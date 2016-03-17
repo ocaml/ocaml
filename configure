@@ -1774,6 +1774,14 @@ if $with_spacetime; then
           libunwind_warning=true
           libunwind_lib="-framework System"
           libunwind_lib_temp="$libunwind_lib"
+          # We need unwinding information at runtime, but since we use
+          # -no_compact_unwind, we also need -keep_dwarf_unwind otherwise
+          # the OS X linker will chuck away the DWARF-like (.eh_frame)
+          # information.
+          # CR mshinwell: this may need an OS X version check, like the
+          # testcase from Bart.
+          mkexe="$mkexe -Wl,-keep_dwarf_unwind"
+          mksharedlib="$mksharedlib -Wl,-keep_dwarf_unwind"
           ;;
         *)
           libunwind_lib="-L$libunwind_lib_dir -lunwind -lunwind-x86_64"

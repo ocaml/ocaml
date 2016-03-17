@@ -41,6 +41,10 @@
 
 #ifdef WITH_SPACETIME
 
+/* We force "noinline" in certain places to be sure we know how many
+   frames there will be on the stack. */
+#define NOINLINE __attribute__((noinline))
+
 #ifdef HAS_LIBUNWIND
 #include "libunwind.h"
 #endif
@@ -706,7 +710,7 @@ CAMLprim value* caml_spacetime_indirect_node_hole_ptr
 
 /* CR mshinwell: check caml_stash_backtrace */
 
-static void* find_trie_node_from_libunwind(int for_allocation)
+static NOINLINE void* find_trie_node_from_libunwind(int for_allocation)
 {
 #ifdef HAS_LIBUNWIND
   /* Given that [caml_last_return_address] is the most recent call site in
@@ -735,8 +739,15 @@ static void* find_trie_node_from_libunwind(int for_allocation)
 
   caml_ext_table_init(&frames, 42);
 
-  unw_getcontext(&ctx);
-  unw_init_local(&cur, &ctx);
+  ret = unw_getcontext(&ctx);
+  if (ret != UNW_ESUCCESS) {
+    return NULL;
+  }
+
+  ret = unw_init_local(&cur, &ctx);
+  if (ret != UNW_ESUCCESS) {
+    return NULL;
+  }
 
   stop = 0;
   while (!stop && (ret = unw_step(&cur)) > 0) {
@@ -747,16 +758,8 @@ static void* find_trie_node_from_libunwind(int for_allocation)
     }
     else {
       caml_ext_table_add(&frames, (void*) ip);
-      debug_printf("pc=%p\n", (void*)ip);
     }
   }
-
-  node_hole = caml_spacetime_trie_node_ptr;
-  debug_printf("*** find_trie_node_from_libunwind: starting at %p\n",
-    (void*) *node_hole);
-  /* Note that if [node_hole] is filled, then it must point to a C node,
-     since it is not possible for there to be a call point in an OCaml
-     function that sometimes calls C and sometimes calls OCaml. */
 
   /* We always need to ignore the frames for:
       #0  find_trie_node_from_libunwind
@@ -766,12 +769,18 @@ static void* find_trie_node_from_libunwind(int for_allocation)
      node for the current C function that triggered us (i.e. frame #3). */
   innermost_frame = for_allocation ? 2 : 3;
 
-  /* CR mshinwell: we need to do something if there aren't enough frames
-     from libunwind.  This will dereference NULL lower down at the moment
-     if it's an allocation. */
   if (frames.size - 1 < innermost_frame) {
-    fprintf(stderr, "*** insufficiently many frames from libunwind\n");
+    /* Insufficiently many frames (maybe no frames) returned from
+       libunwind; just don't do anything. */
+    return NULL;
   }
+
+  node_hole = caml_spacetime_trie_node_ptr;
+  debug_printf("*** find_trie_node_from_libunwind: starting at %p\n",
+    (void*) *node_hole);
+  /* Note that if [node_hole] is filled, then it must point to a C node,
+     since it is not possible for there to be a call point in an OCaml
+     function that sometimes calls C and sometimes calls OCaml. */
 
   for (frame = frames.size - 1; frame >= innermost_frame; frame--) {
     c_node_type expected_type;
@@ -859,21 +868,24 @@ static void* find_trie_node_from_libunwind(int for_allocation)
 #endif
 }
 
-static c_node* graft_backtrace_onto_trie_for_allocation(void)
+static NOINLINE c_node* graft_backtrace_onto_trie_for_allocation(void)
 {
   return (c_node*) find_trie_node_from_libunwind(1);
 }
 
-static void graft_c_backtrace_onto_trie(void)
+static NOINLINE void graft_c_backtrace_onto_trie(void)
 {
   /* Update the trie with the current backtrace, as far back as
      [caml_last_return_address], and leave the node hole pointer at
      the correct place for attachment of a [caml_start_program] node. */
 
 #ifdef HAS_LIBUNWIND
-  /* CR mshinwell: handle NULL return */
-  caml_spacetime_trie_node_ptr
-    = (value*) find_trie_node_from_libunwind(0);
+  value* node;
+
+  node = (value*) find_trie_node_from_libunwind(0);
+  if (node != NULL) {
+    caml_spacetime_trie_node_ptr = node;
+  }
 #endif
 }
 

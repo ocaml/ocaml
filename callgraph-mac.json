@@ -1,0 +1,2748 @@
+start
+foo12
+100
+94
+C about to call OCaml
+C allocating a string
+C about to call OCaml
+C allocating a string
+foo2
+C about to call OCaml
+C allocating a string
+C about to call OCaml
+C allocating a string
+C about to call OCaml
+C allocating a string
+C about to call OCaml
+C allocating a string
+C about to call OCaml
+C allocating a string
+C about to call OCaml
+C allocating a string
+C about to call OCaml
+C allocating a string
+C about to call OCaml
+C allocating a string
+C about to call OCaml
+C allocating a string
+C about to call OCaml
+C allocating a string
+C about to call OCaml
+C allocating a string
+C about to call OCaml
+C allocating a string
+C about to call OCaml
+C allocating a string
+C about to call OCaml
+C allocating a string
+C about to call OCaml
+C allocating a string
+C about to call OCaml
+C allocating a string
+C about to call OCaml
+C allocating a string
+C about to call OCaml
+C allocating a string
+C about to call OCaml
+C allocating a string
+C about to call OCaml
+C allocating a string
+C about to call OCaml
+C allocating a string
+C about to call OCaml
+C allocating a string
+C about to call OCaml
+C allocating a string
+C about to call OCaml
+C allocating a string
+C about to call OCaml
+C allocating a string
+C about to call OCaml
+C allocating a string
+C about to call OCaml
+C allocating a string
+C about to call OCaml
+C allocating a string
+C about to call OCaml
+C allocating a string
+C about to call OCaml
+C allocating a string
+C about to call OCaml
+C allocating a string
+C about to call OCaml
+C allocating a string
+C about to call OCaml
+C allocating a string
+C about to call OCaml
+C allocating a string
+C about to call OCaml
+C allocating a string
+C about to call OCaml
+C allocating a string
+C about to call OCaml
+C allocating a string
+C about to call OCaml
+C allocating a string
+C about to call OCaml
+C allocating a string
+C about to call OCaml
+C allocating a string
+C about to call OCaml
+C allocating a string
+C about to call OCaml
+C allocating a string
+C about to call OCaml
+C allocating a string
+C about to call OCaml
+C allocating a string
+C about to call OCaml
+C allocating a string
+C about to call OCaml
+C allocating a string
+C about to call OCaml
+C allocating a string
+C about to call OCaml
+C allocating a string
+C about to call OCaml
+C allocating a string
+C about to call OCaml
+C allocating a string
+C about to call OCaml
+C allocating a string
+C about to call OCaml
+C allocating a string
+C about to call OCaml
+C allocating a string
+C about to call OCaml
+C allocating a string
+C about to call OCaml
+C allocating a string
+C about to call OCaml
+C allocating a string
+C about to call OCaml
+C allocating a string
+C about to call OCaml
+C allocating a string
+C about to call OCaml
+C allocating a string
+C about to call OCaml
+C allocating a string
+C about to call OCaml
+C allocating a string
+C about to call OCaml
+C allocating a string
+C about to call OCaml
+C allocating a string
+C about to call OCaml
+C allocating a string
+C about to call OCaml
+C allocating a string
+C about to call OCaml
+C allocating a string
+C about to call OCaml
+C allocating a string
+C about to call OCaml
+C allocating a string
+C about to call OCaml
+C allocating a string
+C about to call OCaml
+C allocating a string
+C about to call OCaml
+C allocating a string
+C about to call OCaml
+C allocating a string
+C about to call OCaml
+C allocating a string
+C about to call OCaml
+C allocating a string
+C about to call OCaml
+C allocating a string
+C about to call OCaml
+C allocating a string
+C about to call OCaml
+C allocating a string
+C about to call OCaml
+C allocating a string
+C about to call OCaml
+C allocating a string
+C about to call OCaml
+C allocating a string
+C about to call OCaml
+C allocating a string
+C about to call OCaml
+C allocating a string
+C about to call OCaml
+C allocating a string
+C about to call OCaml
+C allocating a string
+C about to call OCaml
+C allocating a string
+C about to call OCaml
+C allocating a string
+C about to call OCaml
+C allocating a string
+C about to call OCaml
+C allocating a string
+C about to call OCaml
+C allocating a string
+C about to call OCaml
+C allocating a string
+C about to call OCaml
+C allocating a string
+C about to call OCaml
+C allocating a string
+C about to call OCaml
+C allocating a string
+C about to call OCaml
+C allocating a string
+C about to call OCaml
+C allocating a string
+C about to call OCaml
+C allocating a string
+C about to call OCaml
+C allocating a string
+C about to call OCaml
+C allocating a string
+C about to call OCaml
+C allocating a string
+C about to call OCaml
+C allocating a string
+C about to call OCaml
+C allocating a string
+pair is 42, 42
+---------------------------------------------------------------
+Node 0x7ff0d2702438: tag 0, size 4
+Identifying PC=0x10d926018
+Tail chain is empty.
+Indirect call point 0: 0x10d926018 calls...
+Node 0x7ff0d27025c8: tag 1, size 3
+(Debug: about to classify node 0x7ff0d27025c0)
+... 0x10d8680a0: child node=0x7ff0d27025e8
+Node 0x7ff0d27025e8: tag 0, size 89
+Identifying PC=0x10d8680a0
+Tail chain is empty.
+Direct call point 0: 0x8001388b6058d48 calls 0x10d884890, callee was not instrumented
+Direct call point 0 ends
+Direct call point 1: 0x800138869058d48 calls 0x10d889bc0, child node=0x7ff0d27028b8
+Node 0x7ff0d27028b8: tag 0, size 58
+Identifying PC=0x10d889bc0
+Tail chain is empty.
+Allocation point 0: pc=0xe8fffffff93d8b48, profinfo=259
+Direct call point 0: 0x8000bb56b058d48 calls 0x10d91efa0, callee was not instrumented
+Direct call point 0 ends
+Direct call point 1: 0x1d89490824448948 calls 0x10d91e860, callee was not instrumented
+Direct call point 1 ends
+Allocation point 1: pc=0xe8fffffff93d8b48, profinfo=260
+Direct call point 2: 0x8000ba7af1d8d48 calls 0x10d90ff10, callee was not instrumented
+Direct call point 2 ends
+Direct call point 3: 0x8000ba7421d8d48 calls 0x10d90ff10, callee was not instrumented
+Direct call point 3 ends
+Direct call point 4: 0x8000ba6d51d8d48 calls 0x10d90ff10, callee was not instrumented
+Direct call point 4 ends
+Direct call point 5: 0x8000ba6681d8d48 calls 0x10d90ff10, callee was not instrumented
+Direct call point 5 ends
+Direct call point 6: 0x8000ba5fb1d8d48 calls 0x10d90ff10, callee was not instrumented
+Direct call point 6 ends
+Direct call point 7: 0x8000ba58e1d8d48 calls 0x10d90ff10, callee was not instrumented
+Direct call point 7 ends
+Direct call point 8: 0x8000ba4b41d8d48 calls 0x10d914200, callee was not instrumented
+Direct call point 8 ends
+Direct call point 9: 0x8000ba4441d8d48 calls 0x10d9142d0, callee was not instrumented
+Direct call point 9 ends
+Direct call point 10: 0x8000ba3d41d8d48 calls 0x10d9142d0, callee was not instrumented
+Direct call point 10 ends
+Allocation point 2: pc=0xe8fffffff93d8b48, profinfo=270
+Allocation point 3: pc=0xe8fffffff93d8b48, profinfo=271
+Direct call point 11: 0x800000001c0c748 calls 0x10d91efa0, callee was not instrumented
+Direct call point 11 ends
+End of node 0x7ff0d27028b8
+Direct call point 1 ends
+Direct call point 2: 0x80013881c058d48 calls 0x10d8956e0, callee was not instrumented
+Direct call point 2 ends
+Direct call point 3: 0x8001387cf058d48 calls 0x10d895dd0, callee was not instrumented
+Direct call point 3 ends
+Direct call point 4: 0x80013877f058d48 calls 0x10d899710, child node=0x7ff0d240faf8
+Node 0x7ff0d240faf8: tag 0, size 5
+Identifying PC=0x10d899710
+Tail chain is empty.
+Direct call point 0: 0x8000b1dcc1d8d48 calls 0x10d911f20, callee was not instrumented
+Direct call point 0 ends
+End of node 0x7ff0d240faf8
+Direct call point 4 ends
+Direct call point 5: 0x80013872b058d48 calls 0x10d89b7a0, callee was not instrumented
+Direct call point 5 ends
+Direct call point 6: 0x8001386d7058d48 calls 0x10d89bd20, child node=0x7ff0d240fc78
+Node 0x7ff0d240fc78: tag 0, size 21
+Identifying PC=0x10d89bd20
+Tail chain is empty.
+Direct call point 0: 0x8000b19631d8d48 calls 0x10d91b4b0, callee was not instrumented
+Direct call point 0 ends
+Direct call point 1: 0x8000b18f41d8d48 calls 0x10d91bac0, callee was not instrumented
+Direct call point 1 ends
+Allocation point 0: pc=0xe8fffffff93d8b48, profinfo=279
+Direct call point 2: 0x9e5894d24048948 calls 0x10d91e860, callee was not instrumented
+Direct call point 2 ends
+Allocation point 1: pc=0xcfffffff93d8b48, profinfo=280
+End of node 0x7ff0d240fc78
+Direct call point 6 ends
+Direct call point 7: 0x800138683058d48 calls 0x10d89c930, callee was not instrumented
+Direct call point 7 ends
+Direct call point 8: 0x80013862f058d48 calls 0x10d89dcc0, child node=0x7ff0d2410508
+Node 0x7ff0d2410508: tag 0, size 12
+Identifying PC=0x10d89dcc0
+Tail chain is empty.
+Allocation point 0: pc=0xe8fffffff93d8b48, profinfo=281
+Allocation point 1: pc=0xcfffffff93d8b48, profinfo=282
+End of node 0x7ff0d2410508
+Direct call point 8 ends
+Direct call point 9: 0x8001385db058d48 calls 0x10d8a52b0, child node=0x7ff0d2410578
+Node 0x7ff0d2410578: tag 0, size 10
+Identifying PC=0x10d8a52b0
+Tail chain is empty.
+Direct call point 0: 0x9e5894d24048948 calls 0x10d91e860, callee was not instrumented
+Direct call point 0 ends
+Allocation point 0: pc=0xcfffffff93d8b48, profinfo=283
+End of node 0x7ff0d2410578
+Direct call point 9 ends
+Direct call point 10: 0x800138587058d48 calls 0x10d8a5a90, callee was not instrumented
+Direct call point 10 ends
+Direct call point 11: 0x800138533058d48 calls 0x10d8a60b0, callee was not instrumented
+Direct call point 11 ends
+Direct call point 12: 0x8001384df058d48 calls 0x10d8a66d0, callee was not instrumented
+Direct call point 12 ends
+Direct call point 13: 0x80013848b058d48 calls 0x10d8ad2d0, callee was not instrumented
+Direct call point 13 ends
+Direct call point 14: 0x800138437058d48 calls 0x10d8b35d0, callee was not instrumented
+Direct call point 14 ends
+Direct call point 15: 0x8001383e3058d48 calls 0x10d8b4040, child node=0x7ff0d24105d8
+Node 0x7ff0d24105d8: tag 0, size 10
+Identifying PC=0x10d8b4040
+Tail chain is empty.
+Direct call point 0: 0x9dd894924048948 calls 0x10d91e860, callee was not instrumented
+Direct call point 0 ends
+Allocation point 0: pc=0x8fffffff93d8b48, profinfo=284
+End of node 0x7ff0d24105d8
+Direct call point 15 ends
+Direct call point 16: 0x80013838f058d48 calls 0x10d8b6c50, callee was not instrumented
+Direct call point 16 ends
+Direct call point 17: 0x80013833b058d48 calls 0x10d8f54f0, child node=0x7ff0d2410638
+Node 0x7ff0d2410638: tag 0, size 10
+Identifying PC=0x10d8f54f0
+Tail chain is empty.
+Direct call point 0: 0x9e5894d24048948 calls 0x10d91e860, callee was not instrumented
+Direct call point 0 ends
+Allocation point 0: pc=0xcfffffff93d8b48, profinfo=285
+End of node 0x7ff0d2410638
+Direct call point 17 ends
+Direct call point 18: 0x8001382e7058d48 calls 0x10d8f6930, callee was not instrumented
+Direct call point 18 ends
+Direct call point 19: 0x800138293058d48 calls 0x10d8fad70, child node=0x7ff0d2410698
+Node 0x7ff0d2410698: tag 0, size 28
+Identifying PC=0x10d8fad70
+Tail chain is empty.
+Allocation point 0: pc=0xe8fffffff93d8b48, profinfo=286
+Allocation point 1: pc=0xe8fffffff93d8b48, profinfo=287
+Allocation point 2: pc=0xe8fffffff93d8b48, profinfo=288
+Allocation point 3: pc=0xe8fffffff93d8b48, profinfo=289
+Direct call point 0: 0x8000743961d8d48 calls 0x10d91e450, callee was not instrumented
+Direct call point 0 ends
+Direct call point 1: 0x800000001c0c748 calls 0x10d91efa0, callee was not instrumented
+Direct call point 1 ends
+End of node 0x7ff0d2410698
+Direct call point 19 ends
+Direct call point 20: 0x80013823f058d48 calls 0x10d8fc0f0, callee was not instrumented
+Direct call point 20 ends
+Direct call point 21: 0x8001381eb058d48 calls 0x10d8fe870, child node=0x7ff0d24107d8
+Node 0x7ff0d24107d8: tag 0, size 20
+Identifying PC=0x10d8fe870
+Tail chain is empty.
+Allocation point 0: pc=0xe8fffffff93d8b48, profinfo=290
+Allocation point 1: pc=0xe8fffffff93d8b48, profinfo=291
+Direct call point 0: 0xe4748b4824048948 calls 0x10d91e4b0, callee was not instrumented
+Direct call point 0 ends
+Allocation point 2: pc=0xe8fffffff93d8b48, profinfo=293
+End of node 0x7ff0d24107d8
+Direct call point 21 ends
+Direct call point 22: 0x800138197058d48 calls 0x10d905370, child node=0x7ff0d24109d8
+Node 0x7ff0d24109d8: tag 0, size 21
+Identifying PC=0x10d905370
+Tail chain is empty.
+Direct call point 0: 0x74808c483485e41 calls 0x10d91b470, callee was not instrumented
+Direct call point 0 ends
+Direct call point 1: 0xe6eb08c483485e41 calls 0x10d91b470, callee was not instrumented
+Direct call point 1 ends
+Direct call point 2: 0x80006dedc1d8d48 calls 0x10d898f70, child node=0x7ff0d2410a88
+Node 0x7ff0d2410a88: tag 0, size 8
+Identifying PC=0x10d898f70
+Tail chain is empty.
+Direct call point 0: 0x100000003c0c748 calls 0x10d8988c0, child node=0x7ff0d2410ad8
+Node 0x7ff0d2410ad8: tag 0, size 5
+Identifying PC=0x10d8988c0
+Tail chain is empty.
+(Reached uninitialized tail call point.)
+End of node 0x7ff0d2410ad8
+Direct call point 0 ends
+(Reached uninitialized tail call point.)
+End of node 0x7ff0d2410a88
+Direct call point 2 ends
+Allocation point 0: pc=0xe8fffffff93d8b48, profinfo=294
+Allocation point 1: pc=0xcfffffff93d8b48, profinfo=295
+End of node 0x7ff0d24109d8
+Direct call point 22 ends
+Direct call point 23: 0x800138143058d48 calls 0x10d905a10, callee was not instrumented
+Direct call point 23 ends
+Direct call point 24: 0x8001380ef058d48 calls 0x10d906a10, child node=0x7ff0d2410b08
+Node 0x7ff0d2410b08: tag 0, size 37
+Identifying PC=0x10d906a10
+Tail chain is empty.
+Allocation point 0: pc=0xe8fffffff93d8b48, profinfo=296
+Allocation point 1: pc=0xe8fffffff93d8b48, profinfo=297
+Allocation point 2: pc=0xe8fffffff93d8b48, profinfo=298
+Allocation point 3: pc=0xe8fffffff93d8b48, profinfo=299
+Allocation point 4: pc=0xe8fffffff93d8b48, profinfo=300
+Allocation point 5: pc=0xe8fffffff93d8b48, profinfo=301
+Allocation point 6: pc=0x8fffffff93d8b48, profinfo=302
+End of node 0x7ff0d2410b08
+Direct call point 24 ends
+Direct call point 25: 0x80013809b058d48 calls 0x10d87c810, child node=0x7ff0d2800608
+Node 0x7ff0d2800608: tag 0, size 233
+Identifying PC=0x10d87c810
+Tail chain is empty.
+Allocation point 0: pc=0xe8fffffff93d8b48, profinfo=303
+Allocation point 1: pc=0xe8fffffff93d8b48, profinfo=304
+Allocation point 2: pc=0xe8fffffff93d8b48, profinfo=305
+Allocation point 3: pc=0xe8fffffff93d8b48, profinfo=306
+Allocation point 4: pc=0xe8fffffff93d8b48, profinfo=307
+Allocation point 5: pc=0xe8fffffff93d8b48, profinfo=308
+Allocation point 6: pc=0xe8fffffff93d8b48, profinfo=309
+Allocation point 7: pc=0xe8fffffff93d8b48, profinfo=310
+Allocation point 8: pc=0xe8fffffff93d8b48, profinfo=311
+Allocation point 9: pc=0xe8fffffff93d8b48, profinfo=312
+Allocation point 10: pc=0xe8fffffff93d8b48, profinfo=313
+Allocation point 11: pc=0xe8fffffff93d8b48, profinfo=314
+Allocation point 12: pc=0xe8fffffff93d8b48, profinfo=315
+Allocation point 13: pc=0xe8fffffff93d8b48, profinfo=316
+Allocation point 14: pc=0xe8fffffff93d8b48, profinfo=317
+Allocation point 15: pc=0xe8fffffff93d8b48, profinfo=318
+Allocation point 16: pc=0xe8fffffff93d8b48, profinfo=319
+Allocation point 17: pc=0xe8fffffff93d8b48, profinfo=320
+Allocation point 18: pc=0xe8fffffff93d8b48, profinfo=321
+Allocation point 19: pc=0xe8fffffff93d8b48, profinfo=322
+Allocation point 20: pc=0xe8fffffff93d8b48, profinfo=323
+Allocation point 21: pc=0xe8fffffff93d8b48, profinfo=324
+Allocation point 22: pc=0xe8fffffff93d8b48, profinfo=325
+Allocation point 23: pc=0xe8fffffff93d8b48, profinfo=326
+Allocation point 24: pc=0xe8fffffff93d8b48, profinfo=327
+Direct call point 0: 0x1c8b482024448948 calls 0x10d8b33c0, child node=0x7ff0d2410c38
+Node 0x7ff0d2410c38: tag 0, size 10
+Identifying PC=0x10d8b33c0
+Tail chain is empty.
+Direct call point 0: 0xe4748b4824048948 calls 0x10d8b2a60, child node=0x7ff0d2410c98
+Node 0x7ff0d2410c98: tag 0, size 52
+Identifying PC=0x10d8b2a60
+Tail chain is empty.
+Allocation point 0: pc=0xe8fffffff93d8b48, profinfo=328
+Allocation point 1: pc=0xe8fffffff93d8b48, profinfo=329
+Allocation point 2: pc=0xe8fffffff93d8b48, profinfo=330
+Allocation point 3: pc=0x8fffffff93d8b48, profinfo=331
+Allocation point 4: pc=0xe8fffffff93d8b48, profinfo=332
+Allocation point 5: pc=0xe8fffffff93d8b48, profinfo=333
+Allocation point 6: pc=0xe8fffffff93d8b48, profinfo=334
+Allocation point 7: pc=0xe8fffffff93d8b48, profinfo=335
+Allocation point 8: pc=0xe8fffffff93d8b48, profinfo=336
+Allocation point 9: pc=0xcfffffff93d8b48, profinfo=337
+End of node 0x7ff0d2410c98
+Direct call point 0 ends
+Allocation point 0: pc=0xe8fffffff93d8b48, profinfo=338
+End of node 0x7ff0d2410c38
+Direct call point 0 ends
+Allocation point 25: pc=0xe8fffffff93d8b48, profinfo=339
+Direct call point 1: 0xe4648b4c24048948 calls 0x10d8ad0a0, child node=0x7ff0d2410e48
+Node 0x7ff0d2410e48: tag 0, size 10
+Identifying PC=0x10d8ad0a0
+Tail chain is empty.
+Direct call point 0: 0xe4748b4824048948 calls 0x10d8ac4a0, child node=0x7ff0d2410ea8
+Node 0x7ff0d2410ea8: tag 0, size 72
+Identifying PC=0x10d8ac4a0
+Tail chain is empty.
+Allocation point 0: pc=0x8fffffff93d8b48, profinfo=340
+Allocation point 1: pc=0xe8fffffff93d8b48, profinfo=341
+Allocation point 2: pc=0xe8fffffff93d8b48, profinfo=342
+Allocation point 3: pc=0xe8fffffff93d8b48, profinfo=343
+Allocation point 4: pc=0xe8fffffff93d8b48, profinfo=344
+Allocation point 5: pc=0xe8fffffff93d8b48, profinfo=345
+Allocation point 6: pc=0xe8fffffff93d8b48, profinfo=346
+Allocation point 7: pc=0xe8fffffff93d8b48, profinfo=347
+Allocation point 8: pc=0xe8fffffff93d8b48, profinfo=348
+Allocation point 9: pc=0xe8fffffff93d8b48, profinfo=349
+Allocation point 10: pc=0x8fffffff93d8b48, profinfo=350
+Allocation point 11: pc=0xe8fffffff93d8b48, profinfo=351
+Allocation point 12: pc=0xe8fffffff93d8b48, profinfo=352
+Allocation point 13: pc=0xcfffffff93d8b48, profinfo=353
+End of node 0x7ff0d2410ea8
+Direct call point 0 ends
+Allocation point 0: pc=0xe8fffffff93d8b48, profinfo=354
+End of node 0x7ff0d2410e48
+Direct call point 1 ends
+Allocation point 26: pc=0xe8fffffff93d8b48, profinfo=355
+Allocation point 27: pc=0xe8fffffff93d8b48, profinfo=356
+Allocation point 28: pc=0xe8fffffff93d8b48, profinfo=357
+Allocation point 29: pc=0xe8fffffff93d8b48, profinfo=358
+Allocation point 30: pc=0xe8fffffff93d8b48, profinfo=359
+Allocation point 31: pc=0xe8fffffff93d8b48, profinfo=360
+Allocation point 32: pc=0xe8fffffff93d8b48, profinfo=361
+Allocation point 33: pc=0xe8fffffff93d8b48, profinfo=362
+Allocation point 34: pc=0xe8fffffff93d8b48, profinfo=363
+Allocation point 35: pc=0xe8fffffff93d8b48, profinfo=364
+Allocation point 36: pc=0xe8fffffff93d8b48, profinfo=365
+Allocation point 37: pc=0xe8fffffff93d8b48, profinfo=366
+Allocation point 38: pc=0xe8fffffff93d8b48, profinfo=367
+Allocation point 39: pc=0xe8fffffff93d8b48, profinfo=368
+Allocation point 40: pc=0xe8fffffff93d8b48, profinfo=369
+Allocation point 41: pc=0xe8fffffff93d8b48, profinfo=370
+Allocation point 42: pc=0xe8fffffff93d8b48, profinfo=371
+Allocation point 43: pc=0xe8fffffff93d8b48, profinfo=372
+Allocation point 44: pc=0xcfffffff93d8b48, profinfo=373
+End of node 0x7ff0d2800608
+Direct call point 25 ends
+Direct call point 26: 0x800138047058d48 calls 0x10d8810d0, child node=0x7ff0d24110f8
+Node 0x7ff0d24110f8: tag 0, size 60
+Identifying PC=0x10d8810d0
+Tail chain is empty.
+Allocation point 0: pc=0xe8fffffff93d8b48, profinfo=374
+Allocation point 1: pc=0xe8fffffff93d8b48, profinfo=375
+Allocation point 2: pc=0xe8fffffff93d8b48, profinfo=376
+Allocation point 3: pc=0xe8fffffff93d8b48, profinfo=377
+Allocation point 4: pc=0xe8fffffff93d8b48, profinfo=378
+Allocation point 5: pc=0xe8fffffff93d8b48, profinfo=379
+Direct call point 0: 0x8000c066d1d8d48 calls 0x10d8ad0a0, child node=0x7ff0d24112e8
+Node 0x7ff0d24112e8: tag 0, size 10
+Identifying PC=0x10d8ad0a0
+Tail chain is empty.
+Direct call point 0: 0xe4748b4824048948 calls 0x10d8ac4a0, child node=0x7ff0d2411348
+Node 0x7ff0d2411348: tag 0, size 72
+Identifying PC=0x10d8ac4a0
+Tail chain is empty.
+Allocation point 0: pc=0x8fffffff93d8b48, profinfo=380
+Allocation point 1: pc=0xe8fffffff93d8b48, profinfo=381
+Allocation point 2: pc=0xe8fffffff93d8b48, profinfo=382
+Allocation point 3: pc=0xe8fffffff93d8b48, profinfo=383
+Allocation point 4: pc=0xe8fffffff93d8b48, profinfo=384
+Allocation point 5: pc=0xe8fffffff93d8b48, profinfo=385
+Allocation point 6: pc=0xe8fffffff93d8b48, profinfo=386
+Allocation point 7: pc=0xe8fffffff93d8b48, profinfo=387
+Allocation point 8: pc=0xe8fffffff93d8b48, profinfo=388
+Allocation point 9: pc=0xe8fffffff93d8b48, profinfo=389
+Allocation point 10: pc=0x8fffffff93d8b48, profinfo=390
+Allocation point 11: pc=0xe8fffffff93d8b48, profinfo=391
+Allocation point 12: pc=0xe8fffffff93d8b48, profinfo=392
+Allocation point 13: pc=0xcfffffff93d8b48, profinfo=393
+End of node 0x7ff0d2411348
+Direct call point 0 ends
+Allocation point 0: pc=0xe8fffffff93d8b48, profinfo=394
+End of node 0x7ff0d24112e8
+Direct call point 0 ends
+Allocation point 6: pc=0xe8fffffff93d8b48, profinfo=395
+Allocation point 7: pc=0xe8fffffff93d8b48, profinfo=396
+Allocation point 8: pc=0xe8fffffff93d8b48, profinfo=397
+Allocation point 9: pc=0xe8fffffff93d8b48, profinfo=398
+Allocation point 10: pc=0xcfffffff93d8b48, profinfo=399
+End of node 0x7ff0d24110f8
+Direct call point 26 ends
+Direct call point 27: 0x800137ff3058d48 calls 0x10d8717f0, child node=0x7ff0d2802008
+Node 0x7ff0d2802008: tag 0, size 168
+Identifying PC=0x10d8717f0
+Tail chain is empty.
+Direct call point 0: 0x8000c9159058d48 calls 0x10d91efa0, callee was not instrumented
+Direct call point 0 ends
+Direct call point 1: 0x800000013c0c748 calls 0x10d8f6310, child node=0x7ff0d24115d8
+Node 0x7ff0d24115d8: tag 0, size 5
+Identifying PC=0x10d8f6310
+Tail chain:
+  Node 0x7ff0d2411608 (identifying PC=0x10d8f5f50)
+  Node 0x7ff0d283ec08 (identifying PC=0x10d8ed080)
+  Node 0x7ff0d2411668 (identifying PC=0x10d8709f0)
+  Node 0x7ff0d2411718 (identifying PC=0x10d8f5ae0)
+  Node 0x7ff0d24115d8 (identifying PC=0x10d8f6310)
+Direct call point 0: 0x1f0f2e6666666666 calls 0x10d8f5f50, child node=0x7ff0d2411608
+Node 0x7ff0d2411608: tag 0, size 10
+Identifying PC=0x10d8f5f50
+Tail chain:
+  Node 0x7ff0d283ec08 (identifying PC=0x10d8ed080)
+  Node 0x7ff0d2411668 (identifying PC=0x10d8709f0)
+  Node 0x7ff0d2411718 (identifying PC=0x10d8f5ae0)
+  Node 0x7ff0d24115d8 (identifying PC=0x10d8f6310)
+  Node 0x7ff0d2411608 (identifying PC=0x10d8f5f50)
+Allocation point 0: pc=0xe8fffffff93d8b48, profinfo=400
+Direct call point 0: 0xe810c58349dd8949 calls 0x10d8ed080, child node=0x7ff0d283ec08
+Node 0x7ff0d283ec08: tag 0, size 148
+Identifying PC=0x10d8ed080
+Tail chain:
+  Node 0x7ff0d2411668 (identifying PC=0x10d8709f0)
+  Node 0x7ff0d2411718 (identifying PC=0x10d8f5ae0)
+  Node 0x7ff0d24115d8 (identifying PC=0x10d8f6310)
+  Node 0x7ff0d2411608 (identifying PC=0x10d8f5f50)
+  Node 0x7ff0d283ec08 (identifying PC=0x10d8ed080)
+(Reached uninitialized tail call point.)
+(Reached uninitialized tail call point.)
+(Reached uninitialized tail call point.)
+(Reached uninitialized tail call point.)
+(Reached uninitialized tail call point.)
+(Reached uninitialized tail call point.)
+(Reached uninitialized tail call point.)
+(Reached uninitialized tail call point.)
+Allocation point 0: pc=0xe8fffffff93d8b48, profinfo=401
+Direct call point 0: 0xe7058d4818ef8349 calls 0x10d8ed080, child node=0x7ff0d283ec08
+Node 0x7ff0d283ec08: tag 0, size 148
+Identifying PC=0x10d8ed080
+Tail chain:
+  Node 0x7ff0d2411668 (identifying PC=0x10d8709f0)
+  Node 0x7ff0d2411718 (identifying PC=0x10d8f5ae0)
+  Node 0x7ff0d24115d8 (identifying PC=0x10d8f6310)
+  Node 0x7ff0d2411608 (identifying PC=0x10d8f5f50)
+  Node 0x7ff0d283ec08 (identifying PC=0x10d8ed080)
+Node 0x7ff0d283ec08 visited before
+Direct call point 0 ends
+(Reached uninitialized tail call point.)
+(Reached uninitialized tail call point.)
+(Reached uninitialized tail call point.)
+(Reached uninitialized tail call point.)
+(Reached uninitialized tail call point.)
+(Reached uninitialized tail call point.)
+Direct call point 1: 0x1c8948182464894c calls 0x10d8709f0, child node=0x7ff0d2411668
+Node 0x7ff0d2411668: tag 0, size 17
+Identifying PC=0x10d8709f0
+Tail chain:
+  Node 0x7ff0d2411718 (identifying PC=0x10d8f5ae0)
+  Node 0x7ff0d24115d8 (identifying PC=0x10d8f6310)
+  Node 0x7ff0d2411608 (identifying PC=0x10d8f5f50)
+  Node 0x7ff0d283ec08 (identifying PC=0x10d8ed080)
+  Node 0x7ff0d2411668 (identifying PC=0x10d8709f0)
+Indirect call point 0: 0x1c8b481024448b48 calls...
+Node 0x7ff0d24116f8: tag 1, size 3
+(Debug: about to classify node 0x7ff0d24116f0)
+... 0x10d8f5ae0: child node=0x7ff0d2411718
+Node 0x7ff0d2411718: tag 0, size 10
+Identifying PC=0x10d8f5ae0
+Tail chain:
+  Node 0x7ff0d24115d8 (identifying PC=0x10d8f6310)
+  Node 0x7ff0d2411608 (identifying PC=0x10d8f5f50)
+  Node 0x7ff0d283ec08 (identifying PC=0x10d8ed080)
+  Node 0x7ff0d2411668 (identifying PC=0x10d8709f0)
+  Node 0x7ff0d2411718 (identifying PC=0x10d8f5ae0)
+Direct call point 0: 0x8b480824448b48 calls 0x10d8f0f10, child node=0x7ff0d2411778
+Node 0x7ff0d2411778: tag 0, size 61
+Identifying PC=0x10d8f0f10
+Tail chain:
+  Node 0x7ff0d2411b58 (identifying PC=0x10d8870a0)
+  Node 0x7ff0d2411778 (identifying PC=0x10d8f0f10)
+(Reached uninitialized tail call point.)
+(Reached uninitialized tail call point.)
+(Reached uninitialized tail call point.)
+(Reached uninitialized tail call point.)
+Direct call point 0: 0x8588b4824048b48 calls 0x10d8f0f10, child node=0x7ff0d2411968
+Node 0x7ff0d2411968: tag 0, size 61
+Identifying PC=0x10d8f0f10
+Tail chain is empty.
+(Reached uninitialized tail call point.)
+(Reached uninitialized tail call point.)
+(Reached uninitialized tail call point.)
+(Reached uninitialized tail call point.)
+(Reached uninitialized tail call point.)
+End of node 0x7ff0d2411968
+Direct call point 0 ends
+Direct call point 1: 0x548d889483f8b48 calls 0x10d8870a0, child node=0x7ff0d2411b58
+Node 0x7ff0d2411b58: tag 0, size 5
+Identifying PC=0x10d8870a0
+Tail chain:
+  Node 0x7ff0d2411778 (identifying PC=0x10d8f0f10)
+  Node 0x7ff0d2411b58 (identifying PC=0x10d8870a0)
+Direct call point 0: 0x1f0f66c318c48348 calls 0x10d914a50, callee was not instrumented
+Direct call point 0 ends
+End of node 0x7ff0d2411b58
+Direct call point 1 ends
+End of node 0x7ff0d2411778
+Direct call point 0 ends
+Indirect call point 0: 0x1c8b481824448b48 calls...
+Node 0x7ff0d2411b88: tag 1, size 3
+(Debug: about to classify node 0x7ff0d2411b80)
+... 0x10d8f5d40: child node=0x7ff0d2411719
+(Unused indirect tail point--uninstrumented callee)
+(Debug: before 'about to classify node 0x0' with 0x7ff0d2411b80)
+End of node 0x7ff0d2411b88
+Indirect call point 0 ends.
+Direct call point 1: 0x1824448b48c58949 calls 0x10d923e60, callee was not instrumented
+Direct call point 1 ends
+End of node 0x7ff0d2411718
+(Debug: before 'about to classify node 0x0' with 0x7ff0d24116f0)
+End of node 0x7ff0d24116f8
+Indirect call point 0 ends.
+Direct call point 0: 0x1024448b48c58949 calls 0x10d923e60, callee was not instrumented
+Direct call point 0 ends
+End of node 0x7ff0d2411668
+Direct call point 1 ends
+End of node 0x7ff0d283ec08
+Direct call point 0 ends
+End of node 0x7ff0d2411608
+Direct call point 0 ends
+End of node 0x7ff0d24115d8
+Direct call point 1 ends
+Direct call point 2: 0x1b8548f858b60f48 calls 0x10d871090, child node=0x7ff0d2411ba8
+Node 0x7ff0d2411ba8: tag 0, size 18
+Identifying PC=0x10d871090
+Tail chain is empty.
+Allocation point 0: pc=0x8fffffff9058b48, profinfo=402
+(Reached uninitialized tail call point.)
+(Reached uninitialized tail call point.)
+End of node 0x7ff0d2411ba8
+Direct call point 2 ends
+Direct call point 3: 0x8408b4824048b48 calls 0x10d8870a0, child node=0x7ff0d2411c48
+Node 0x7ff0d2411c48: tag 0, size 5
+Identifying PC=0x10d8870a0
+Tail chain is empty.
+Direct call point 0: 0x1f0f66c318c48348 calls 0x10d914a50, callee was not instrumented
+Direct call point 0 ends
+End of node 0x7ff0d2411c48
+Direct call point 3 ends
+Direct call point 4: 0xebb7058d48c38948 calls 0x10d886740, child node=0x7ff0d2411c78
+Node 0x7ff0d2411c78: tag 0, size 5
+Identifying PC=0x10d886740
+Tail chain is empty.
+Direct call point 0: 0x1f0f66c308c48348 calls 0x10d90ef20, callee was not instrumented
+Direct call point 0 ends
+End of node 0x7ff0d2411c78
+Direct call point 4 ends
+Direct call point 5: 0x800000001c0c748 calls 0x10d8870a0, child node=0x7ff0d2411df8
+Node 0x7ff0d2411df8: tag 0, size 5
+Identifying PC=0x10d8870a0
+Tail chain is empty.
+Direct call point 0: 0x1f0f66c318c48348 calls 0x10d914a50, callee was not instrumented
+Direct call point 0 ends
+End of node 0x7ff0d2411df8
+Direct call point 5 ends
+Direct call point 6: 0x800000065c0c748 calls 0x10d8887c0, child node=0x7ff0d2411e28
+Node 0x7ff0d2411e28: tag 0, size 8
+Identifying PC=0x10d8887c0
+Tail chain is empty.
+Direct call point 0: 0x8f88948243c8b48 calls 0x10d9147e0, callee was not instrumented
+Direct call point 0 ends
+Direct call point 1: 0xe66666c308c48348 calls 0x10d914700, callee was not instrumented
+Direct call point 1 ends
+End of node 0x7ff0d2411e28
+Direct call point 6 ends
+Direct call point 7: 0x1b8548f858b60f48 calls 0x10d871090, child node=0x7ff0d2411e78
+Node 0x7ff0d2411e78: tag 0, size 18
+Identifying PC=0x10d871090
+Tail chain is empty.
+Allocation point 0: pc=0x8fffffff9058b48, profinfo=404
+(Reached uninitialized tail call point.)
+(Reached uninitialized tail call point.)
+End of node 0x7ff0d2411e78
+Direct call point 7 ends
+Direct call point 8: 0xea57058d48c38948 calls 0x10d886740, child node=0x7ff0d2411f18
+Node 0x7ff0d2411f18: tag 0, size 5
+Identifying PC=0x10d886740
+Tail chain is empty.
+Direct call point 0: 0x1f0f66c308c48348 calls 0x10d90ef20, callee was not instrumented
+Direct call point 0 ends
+End of node 0x7ff0d2411f18
+Direct call point 8 ends
+Direct call point 9: 0x800000001c0c748 calls 0x10d8870a0, child node=0x7ff0d2412098
+Node 0x7ff0d2412098: tag 0, size 5
+Identifying PC=0x10d8870a0
+Tail chain is empty.
+Direct call point 0: 0x1f0f66c318c48348 calls 0x10d914a50, callee was not instrumented
+Direct call point 0 ends
+End of node 0x7ff0d2412098
+Direct call point 9 ends
+Direct call point 10: 0x4894800000165e9 calls 0x10d8887c0, child node=0x7ff0d24120c8
+Node 0x7ff0d24120c8: tag 0, size 8
+Identifying PC=0x10d8887c0
+Tail chain is empty.
+Direct call point 0: 0x8f88948243c8b48 calls 0x10d9147e0, callee was not instrumented
+Direct call point 0 ends
+Direct call point 1: 0xe66666c308c48348 calls 0x10d914700, callee was not instrumented
+Direct call point 1 ends
+End of node 0x7ff0d24120c8
+Direct call point 10 ends
+Direct call point 11: 0x1b8548f858b60f48 calls 0x10d871090, child node=0x7ff0d2412118
+Node 0x7ff0d2412118: tag 0, size 18
+Identifying PC=0x10d871090
+Tail chain is empty.
+Allocation point 0: pc=0x8fffffff9058b48, profinfo=406
+(Reached uninitialized tail call point.)
+Direct call point 0: 0x948457503fc8349 calls 0x10d871090, child node=0x7ff0d2412118
+Node 0x7ff0d2412118: tag 0, size 18
+Identifying PC=0x10d871090
+Tail chain is empty.
+Node 0x7ff0d2412118 visited before
+Direct call point 0 ends
+End of node 0x7ff0d2412118
+Direct call point 11 ends
+Direct call point 12: 0xe78d058d48c38948 calls 0x10d886740, child node=0x7ff0d24121b8
+Node 0x7ff0d24121b8: tag 0, size 5
+Identifying PC=0x10d886740
+Tail chain is empty.
+Direct call point 0: 0x1f0f66c308c48348 calls 0x10d90ef20, callee was not instrumented
+Direct call point 0 ends
+End of node 0x7ff0d24121b8
+Direct call point 12 ends
+Direct call point 13: 0x800000001c0c748 calls 0x10d8870a0, child node=0x7ff0d2412338
+Node 0x7ff0d2412338: tag 0, size 5
+Identifying PC=0x10d8870a0
+Tail chain is empty.
+Direct call point 0: 0x1f0f66c318c48348 calls 0x10d914a50, callee was not instrumented
+Direct call point 0 ends
+End of node 0x7ff0d2412338
+Direct call point 13 ends
+Direct call point 14: 0x4894800000165e9 calls 0x10d8887c0, child node=0x7ff0d2412368
+Node 0x7ff0d2412368: tag 0, size 8
+Identifying PC=0x10d8887c0
+Tail chain is empty.
+Direct call point 0: 0x8f88948243c8b48 calls 0x10d9147e0, callee was not instrumented
+Direct call point 0 ends
+Direct call point 1: 0xe66666c308c48348 calls 0x10d914700, callee was not instrumented
+Direct call point 1 ends
+End of node 0x7ff0d2412368
+Direct call point 14 ends
+Direct call point 15: 0x1b8548f858b60f48 calls 0x10d871090, child node=0x7ff0d24123b8
+Node 0x7ff0d24123b8: tag 0, size 18
+Identifying PC=0x10d871090
+Tail chain:
+  Node 0x7ff0d2412458 (identifying PC=0x10d870f10)
+  Node 0x7ff0d24127f8 (identifying PC=0x10d870d90)
+  Node 0x7ff0d24123b8 (identifying PC=0x10d871090)
+Allocation point 0: pc=0x8fffffff9058b48, profinfo=414
+Direct call point 0: 0x349727d55fc8349 calls 0x10d870f10, child node=0x7ff0d2412458
+Node 0x7ff0d2412458: tag 0, size 13
+Identifying PC=0x10d870f10
+Tail chain:
+  Node 0x7ff0d24127f8 (identifying PC=0x10d870d90)
+  Node 0x7ff0d24123b8 (identifying PC=0x10d871090)
+  Node 0x7ff0d2412458 (identifying PC=0x10d870f10)
+Allocation point 0: pc=0xe8fffffff93d8b48, profinfo=408
+Direct call point 0: 0x8ffffffffc0c748 calls 0x10d906d90, child node=0x7ff0d2412768
+Node 0x7ff0d2412768: tag 0, size 4
+Identifying PC=0x10d926018
+Tail chain is empty.
+Indirect call point 0: 0x10d926018 calls...
+Node 0x7ff0d2412798: tag 1, size 3
+(Debug: about to classify node 0x7ff0d2412790)
+... 0x10d870ce0: child node=0x7ff0d24127b8
+Node 0x7ff0d24127b8: tag 0, size 7
+Identifying PC=0x10d870ce0
+Tail chain is empty.
+Allocation point 0: pc=0xe8fffffff93d8b48, profinfo=410
+End of node 0x7ff0d24127b8
+(Debug: before 'about to classify node 0x0' with 0x7ff0d2412790)
+End of node 0x7ff0d2412798
+Indirect call point 0 ends.
+End of node 0x7ff0d2412768
+Direct call point 0 ends
+Direct call point 1: 0xe810c58349e5894d calls 0x10d870d90, child node=0x7ff0d24127f8
+Node 0x7ff0d24127f8: tag 0, size 13
+Identifying PC=0x10d870d90
+Tail chain:
+  Node 0x7ff0d24123b8 (identifying PC=0x10d871090)
+  Node 0x7ff0d2412458 (identifying PC=0x10d870f10)
+  Node 0x7ff0d24127f8 (identifying PC=0x10d870d90)
+Allocation point 0: pc=0xe8fffffff93d8b48, profinfo=411
+Direct call point 0: 0xf8894808247c8b48 calls 0x10d906d90, child node=0x7ff0d2412b08
+Node 0x7ff0d2412b08: tag 0, size 4
+Identifying PC=0x10d926018
+Tail chain is empty.
+Indirect call point 0: 0x10d926018 calls...
+Node 0x7ff0d2412b38: tag 1, size 3
+(Debug: about to classify node 0x7ff0d2412b30)
+... 0x10d870ce0: child node=0x7ff0d2412b58
+Node 0x7ff0d2412b58: tag 0, size 7
+Identifying PC=0x10d870ce0
+Tail chain is empty.
+Allocation point 0: pc=0xe8fffffff93d8b48, profinfo=413
+End of node 0x7ff0d2412b58
+(Debug: before 'about to classify node 0x0' with 0x7ff0d2412b30)
+End of node 0x7ff0d2412b38
+Indirect call point 0 ends.
+End of node 0x7ff0d2412b08
+Direct call point 0 ends
+Direct call point 1: 0xe810c58349e5894d calls 0x10d871090, child node=0x7ff0d24123b8
+Node 0x7ff0d24123b8: tag 0, size 18
+Identifying PC=0x10d871090
+Tail chain:
+  Node 0x7ff0d2412458 (identifying PC=0x10d870f10)
+  Node 0x7ff0d24127f8 (identifying PC=0x10d870d90)
+  Node 0x7ff0d24123b8 (identifying PC=0x10d871090)
+Node 0x7ff0d24123b8 visited before
+Direct call point 1 ends
+End of node 0x7ff0d24127f8
+Direct call point 1 ends
+End of node 0x7ff0d2412458
+Direct call point 0 ends
+(Reached uninitialized tail call point.)
+End of node 0x7ff0d24123b8
+Direct call point 15 ends
+Direct call point 16: 0x8408b4824048b48 calls 0x10d8870a0, child node=0x7ff0d2412b98
+Node 0x7ff0d2412b98: tag 0, size 5
+Identifying PC=0x10d8870a0
+Tail chain is empty.
+Direct call point 0: 0x1f0f66c318c48348 calls 0x10d914a50, callee was not instrumented
+Direct call point 0 ends
+End of node 0x7ff0d2412b98
+Direct call point 16 ends
+Direct call point 17: 0xe359058d48c38948 calls 0x10d886740, child node=0x7ff0d2412bc8
+Node 0x7ff0d2412bc8: tag 0, size 5
+Identifying PC=0x10d886740
+Tail chain is empty.
+Direct call point 0: 0x1f0f66c308c48348 calls 0x10d90ef20, callee was not instrumented
+Direct call point 0 ends
+End of node 0x7ff0d2412bc8
+Direct call point 17 ends
+Direct call point 18: 0x800000001c0c748 calls 0x10d8870a0, child node=0x7ff0d2412d48
+Node 0x7ff0d2412d48: tag 0, size 5
+Identifying PC=0x10d8870a0
+Tail chain is empty.
+Direct call point 0: 0x1f0f66c318c48348 calls 0x10d914a50, callee was not instrumented
+Direct call point 0 ends
+End of node 0x7ff0d2412d48
+Direct call point 18 ends
+Direct call point 19: 0x800000003c0c748 calls 0x10d8887c0, child node=0x7ff0d2412d78
+Node 0x7ff0d2412d78: tag 0, size 8
+Identifying PC=0x10d8887c0
+Tail chain is empty.
+Direct call point 0: 0x8f88948243c8b48 calls 0x10d9147e0, callee was not instrumented
+Direct call point 0 ends
+Direct call point 1: 0xe66666c308c48348 calls 0x10d914700, callee was not instrumented
+Direct call point 1 ends
+End of node 0x7ff0d2412d78
+Direct call point 19 ends
+Direct call point 20: 0x8d88948241c8b48 calls 0x10d906d90, child node=0x7ff0d2413068
+Node 0x7ff0d2413068: tag 0, size 4
+Identifying PC=0x10d926018
+Tail chain is empty.
+Indirect call point 0: 0x10d926018 calls...
+Node 0x7ff0d2413098: tag 1, size 3
+(Debug: about to classify node 0x7ff0d2413090)
+... 0x10d870ce0: child node=0x7ff0d24130b8
+Node 0x7ff0d24130b8: tag 0, size 7
+Identifying PC=0x10d870ce0
+Tail chain is empty.
+Allocation point 0: pc=0xe8fffffff93d8b48, profinfo=417
+End of node 0x7ff0d24130b8
+(Debug: before 'about to classify node 0x0' with 0x7ff0d2413090)
+End of node 0x7ff0d2413098
+Indirect call point 0 ends.
+End of node 0x7ff0d2413068
+Direct call point 20 ends
+Direct call point 21: 0xea1d8d4824048948 calls 0x10d906d90, child node=0x7ff0d270f8b8
+Node 0x7ff0d270f8b8: tag 0, size 4
+Identifying PC=0x10d926018
+Tail chain is empty.
+Indirect call point 0: 0x10d926018 calls...
+Node 0x7ff0d270f8e8: tag 1, size 3
+(Debug: about to classify node 0x7ff0d270f8e0)
+... 0x10d870ce0: child node=0x7ff0d270f908
+Node 0x7ff0d270f908: tag 0, size 7
+Identifying PC=0x10d870ce0
+Tail chain is empty.
+Allocation point 0: pc=0xe8fffffff93d8b48, profinfo=518
+End of node 0x7ff0d270f908
+(Debug: before 'about to classify node 0x0' with 0x7ff0d270f8e0)
+End of node 0x7ff0d270f8e8
+Indirect call point 0 ends.
+End of node 0x7ff0d270f8b8
+Direct call point 21 ends
+Direct call point 22: 0x824048b48c78948 calls 0x10d8f6310, child node=0x7ff0d270f948
+Node 0x7ff0d270f948: tag 0, size 5
+Identifying PC=0x10d8f6310
+Tail chain:
+  Node 0x7ff0d270f978 (identifying PC=0x10d8f5f50)
+  Node 0x7ff0d3000008 (identifying PC=0x10d8ed080)
+  Node 0x7ff0d270f9d8 (identifying PC=0x10d8eae00)
+  Node 0x7ff0d270f948 (identifying PC=0x10d8f6310)
+Direct call point 0: 0x1f0f2e6666666666 calls 0x10d8f5f50, child node=0x7ff0d270f978
+Node 0x7ff0d270f978: tag 0, size 10
+Identifying PC=0x10d8f5f50
+Tail chain:
+  Node 0x7ff0d3000008 (identifying PC=0x10d8ed080)
+  Node 0x7ff0d270f9d8 (identifying PC=0x10d8eae00)
+  Node 0x7ff0d270f948 (identifying PC=0x10d8f6310)
+  Node 0x7ff0d270f978 (identifying PC=0x10d8f5f50)
+Allocation point 0: pc=0xe8fffffff93d8b48, profinfo=519
+Direct call point 0: 0xe810c58349dd8949 calls 0x10d8ed080, child node=0x7ff0d3000008
+Node 0x7ff0d3000008: tag 0, size 148
+Identifying PC=0x10d8ed080
+Tail chain:
+  Node 0x7ff0d270f9d8 (identifying PC=0x10d8eae00)
+  Node 0x7ff0d270f948 (identifying PC=0x10d8f6310)
+  Node 0x7ff0d270f978 (identifying PC=0x10d8f5f50)
+  Node 0x7ff0d3000008 (identifying PC=0x10d8ed080)
+(Reached uninitialized tail call point.)
+(Reached uninitialized tail call point.)
+Direct call point 0: 0x281492824548b4c calls 0x10d8eae00, child node=0x7ff0d270f9d8
+Node 0x7ff0d270f9d8: tag 0, size 47
+Identifying PC=0x10d8eae00
+Tail chain:
+  Node 0x7ff0d270f948 (identifying PC=0x10d8f6310)
+  Node 0x7ff0d270f978 (identifying PC=0x10d8f5f50)
+  Node 0x7ff0d3000008 (identifying PC=0x10d8ed080)
+  Node 0x7ff0d270f9d8 (identifying PC=0x10d8eae00)
+Allocation point 0: pc=0x8fffffff9058b48, profinfo=521
+End of node 0x7ff0d270f9d8
+Direct call point 0 ends
+(Reached uninitialized tail call point.)
+(Reached uninitialized tail call point.)
+(Reached uninitialized tail call point.)
+(Reached uninitialized tail call point.)
+(Reached uninitialized tail call point.)
+Allocation point 0: pc=0xe8fffffff93d8b48, profinfo=520
+Direct call point 1: 0xe7058d4818ef8349 calls 0x10d8ed080, child node=0x7ff0d3000008
+Node 0x7ff0d3000008: tag 0, size 148
+Identifying PC=0x10d8ed080
+Tail chain:
+  Node 0x7ff0d270f9d8 (identifying PC=0x10d8eae00)
+  Node 0x7ff0d270f948 (identifying PC=0x10d8f6310)
+  Node 0x7ff0d270f978 (identifying PC=0x10d8f5f50)
+  Node 0x7ff0d3000008 (identifying PC=0x10d8ed080)
+Node 0x7ff0d3000008 visited before
+Direct call point 1 ends
+(Reached uninitialized tail call point.)
+(Reached uninitialized tail call point.)
+(Reached uninitialized tail call point.)
+(Reached uninitialized tail call point.)
+(Reached uninitialized tail call point.)
+(Reached uninitialized tail call point.)
+(Reached uninitialized tail call point.)
+End of node 0x7ff0d3000008
+Direct call point 0 ends
+End of node 0x7ff0d270f978
+Direct call point 0 ends
+End of node 0x7ff0d270f948
+Direct call point 22 ends
+Direct call point 23: 0x8000c8107058d48 calls 0x10d8709f0, child node=0x7ff0d270fb58
+Node 0x7ff0d270fb58: tag 0, size 17
+Identifying PC=0x10d8709f0
+Tail chain:
+  Node 0x7ff0d2710348 (identifying PC=0x10d8f5ae0)
+  Node 0x7ff0d2710068 (identifying PC=0x10d8c1110)
+  Node 0x7ff0d3000c08 (identifying PC=0x10d8ed080)
+  Node 0x7ff0d270fb58 (identifying PC=0x10d8709f0)
+Indirect call point 0: 0x8208b4c24048948 calls...
+Node 0x7ff0d270fbe8: tag 1, size 3
+(Debug: about to classify node 0x7ff0d270fbe0)
+... 0x10d8c1110: child node=0x7ff0d270fc08
+Node 0x7ff0d270fc08: tag 0, size 13
+Identifying PC=0x10d8c1110
+Tail chain:
+  Node 0x7ff0d3000608 (identifying PC=0x10d8ed080)
+  Node 0x7ff0d270fec8 (identifying PC=0x10d8eae00)
+  Node 0x7ff0d270fc08 (identifying PC=0x10d8c1110)
+Direct call point 0: 0xe48b4c1824448948 calls 0x10d8709f0, child node=0x7ff0d270fc78
+Node 0x7ff0d270fc78: tag 0, size 17
+Identifying PC=0x10d8709f0
+Tail chain:
+  Node 0x7ff0d270fd28 (identifying PC=0x10d8e97f0)
+  Node 0x7ff0d270fc78 (identifying PC=0x10d8709f0)
+Indirect call point 0: 0x1c8b481024448b48 calls...
+Node 0x7ff0d270fd08: tag 1, size 3
+(Debug: about to classify node 0x7ff0d270fd00)
+... 0x10d8e97f0: child node=0x7ff0d270fd28
+Node 0x7ff0d270fd28: tag 0, size 8
+Identifying PC=0x10d8e97f0
+Tail chain:
+  Node 0x7ff0d270fc78 (identifying PC=0x10d8709f0)
+  Node 0x7ff0d270fd28 (identifying PC=0x10d8e97f0)
+Direct call point 0: 0xf389480824748b48 calls 0x10d8e91a0, callee was not instrumented
+Direct call point 0 ends
+Direct call point 1: 0xe66666c318c48348 calls 0x10d90ef20, callee was not instrumented
+Direct call point 1 ends
+End of node 0x7ff0d270fd28
+(Debug: before 'about to classify node 0x0' with 0x7ff0d270fd00)
+End of node 0x7ff0d270fd08
+Indirect call point 0 ends.
+Direct call point 0: 0x1024448b48c58949 calls 0x10d923e60, callee was not instrumented
+Direct call point 0 ends
+End of node 0x7ff0d270fc78
+Direct call point 0 ends
+Allocation point 0: pc=0xe8fffffff93d8b48, profinfo=523
+Direct call point 1: 0xe828c58349e5894d calls 0x10d8ed080, child node=0x7ff0d3000608
+Node 0x7ff0d3000608: tag 0, size 148
+Identifying PC=0x10d8ed080
+Tail chain:
+  Node 0x7ff0d270fec8 (identifying PC=0x10d8eae00)
+  Node 0x7ff0d270fc08 (identifying PC=0x10d8c1110)
+  Node 0x7ff0d3000608 (identifying PC=0x10d8ed080)
+(Reached uninitialized tail call point.)
+(Reached uninitialized tail call point.)
+Direct call point 0: 0x281492824548b4c calls 0x10d8eae00, child node=0x7ff0d270fec8
+Node 0x7ff0d270fec8: tag 0, size 47
+Identifying PC=0x10d8eae00
+Tail chain:
+  Node 0x7ff0d270fc08 (identifying PC=0x10d8c1110)
+  Node 0x7ff0d3000608 (identifying PC=0x10d8ed080)
+  Node 0x7ff0d270fec8 (identifying PC=0x10d8eae00)
+Allocation point 0: pc=0x8fffffff9058b48, profinfo=525
+End of node 0x7ff0d270fec8
+Direct call point 0 ends
+(Reached uninitialized tail call point.)
+(Reached uninitialized tail call point.)
+(Reached uninitialized tail call point.)
+(Reached uninitialized tail call point.)
+(Reached uninitialized tail call point.)
+Allocation point 0: pc=0xe8fffffff93d8b48, profinfo=524
+Direct call point 1: 0xe7058d4818ef8349 calls 0x10d8ed080, child node=0x7ff0d3000608
+Node 0x7ff0d3000608: tag 0, size 148
+Identifying PC=0x10d8ed080
+Tail chain:
+  Node 0x7ff0d270fec8 (identifying PC=0x10d8eae00)
+  Node 0x7ff0d270fc08 (identifying PC=0x10d8c1110)
+  Node 0x7ff0d3000608 (identifying PC=0x10d8ed080)
+Node 0x7ff0d3000608 visited before
+Direct call point 1 ends
+(Reached uninitialized tail call point.)
+(Reached uninitialized tail call point.)
+(Reached uninitialized tail call point.)
+(Reached uninitialized tail call point.)
+(Reached uninitialized tail call point.)
+(Reached uninitialized tail call point.)
+(Reached uninitialized tail call point.)
+End of node 0x7ff0d3000608
+Direct call point 1 ends
+End of node 0x7ff0d270fc08
+(Debug: before 'about to classify node 0x0' with 0x7ff0d270fbe0)
+End of node 0x7ff0d270fbe8
+Indirect call point 0 ends.
+Direct call point 0: 0x1024448b48c58949 calls 0x10d923e60, callee was not instrumented
+Direct call point 0 ends
+Indirect call point 0: 0x1c8b481824448b48 calls...
+Node 0x7ff0d2710048: tag 1, size 3
+(Debug: about to classify node 0x7ff0d2710040)
+... 0x10d8c1110: child node=0x7ff0d2710068
+Node 0x7ff0d2710068: tag 0, size 13
+Identifying PC=0x10d8c1110
+Tail chain:
+  Node 0x7ff0d3000c08 (identifying PC=0x10d8ed080)
+  Node 0x7ff0d270fb58 (identifying PC=0x10d8709f0)
+  Node 0x7ff0d2710348 (identifying PC=0x10d8f5ae0)
+  Node 0x7ff0d2710068 (identifying PC=0x10d8c1110)
+Direct call point 0: 0xe48b4c1824448948 calls 0x10d8709f0, child node=0x7ff0d27100d8
+Node 0x7ff0d27100d8: tag 0, size 17
+Identifying PC=0x10d8709f0
+Tail chain:
+  Node 0x7ff0d2710188 (identifying PC=0x10d8e97f0)
+  Node 0x7ff0d27100d8 (identifying PC=0x10d8709f0)
+Indirect call point 0: 0x1c8b481024448b48 calls...
+Node 0x7ff0d2710168: tag 1, size 3
+(Debug: about to classify node 0x7ff0d2710160)
+... 0x10d8e97f0: child node=0x7ff0d2710188
+Node 0x7ff0d2710188: tag 0, size 8
+Identifying PC=0x10d8e97f0
+Tail chain:
+  Node 0x7ff0d27100d8 (identifying PC=0x10d8709f0)
+  Node 0x7ff0d2710188 (identifying PC=0x10d8e97f0)
+Direct call point 0: 0xf389480824748b48 calls 0x10d8e91a0, callee was not instrumented
+Direct call point 0 ends
+Direct call point 1: 0xe66666c318c48348 calls 0x10d90ef20, callee was not instrumented
+Direct call point 1 ends
+End of node 0x7ff0d2710188
+(Debug: before 'about to classify node 0x0' with 0x7ff0d2710160)
+End of node 0x7ff0d2710168
+Indirect call point 0 ends.
+Direct call point 0: 0x1024448b48c58949 calls 0x10d923e60, callee was not instrumented
+Direct call point 0 ends
+End of node 0x7ff0d27100d8
+Direct call point 0 ends
+Allocation point 0: pc=0xe8fffffff93d8b48, profinfo=527
+Direct call point 1: 0xe828c58349e5894d calls 0x10d8ed080, child node=0x7ff0d3000c08
+Node 0x7ff0d3000c08: tag 0, size 148
+Identifying PC=0x10d8ed080
+Tail chain:
+  Node 0x7ff0d270fb58 (identifying PC=0x10d8709f0)
+  Node 0x7ff0d2710348 (identifying PC=0x10d8f5ae0)
+  Node 0x7ff0d2710068 (identifying PC=0x10d8c1110)
+  Node 0x7ff0d3000c08 (identifying PC=0x10d8ed080)
+(Reached uninitialized tail call point.)
+(Reached uninitialized tail call point.)
+(Reached uninitialized tail call point.)
+(Reached uninitialized tail call point.)
+(Reached uninitialized tail call point.)
+(Reached uninitialized tail call point.)
+(Reached uninitialized tail call point.)
+Allocation point 0: pc=0xe8fffffff93d8b48, profinfo=529
+Direct call point 0: 0xe7058d4818ef8349 calls 0x10d8ed080, child node=0x7ff0d3000c08
+Node 0x7ff0d3000c08: tag 0, size 148
+Identifying PC=0x10d8ed080
+Tail chain:
+  Node 0x7ff0d270fb58 (identifying PC=0x10d8709f0)
+  Node 0x7ff0d2710348 (identifying PC=0x10d8f5ae0)
+  Node 0x7ff0d2710068 (identifying PC=0x10d8c1110)
+  Node 0x7ff0d3000c08 (identifying PC=0x10d8ed080)
+Node 0x7ff0d3000c08 visited before
+Direct call point 0 ends
+(Reached uninitialized tail call point.)
+Allocation point 1: pc=0xe8fffffff93d8b48, profinfo=528
+Direct call point 1: 0xe404894810438b48 calls 0x10d8ed080, child node=0x7ff0d3000c08
+Node 0x7ff0d3000c08: tag 0, size 148
+Identifying PC=0x10d8ed080
+Tail chain:
+  Node 0x7ff0d270fb58 (identifying PC=0x10d8709f0)
+  Node 0x7ff0d2710348 (identifying PC=0x10d8f5ae0)
+  Node 0x7ff0d2710068 (identifying PC=0x10d8c1110)
+  Node 0x7ff0d3000c08 (identifying PC=0x10d8ed080)
+Node 0x7ff0d3000c08 visited before
+Direct call point 1 ends
+(Reached uninitialized tail call point.)
+(Reached uninitialized tail call point.)
+(Reached uninitialized tail call point.)
+(Reached uninitialized tail call point.)
+(Reached uninitialized tail call point.)
+Direct call point 2: 0x1c8948182464894c calls 0x10d8709f0, child node=0x7ff0d270fb58
+Node 0x7ff0d270fb58: tag 0, size 17
+Identifying PC=0x10d8709f0
+Tail chain:
+  Node 0x7ff0d2710348 (identifying PC=0x10d8f5ae0)
+  Node 0x7ff0d2710068 (identifying PC=0x10d8c1110)
+  Node 0x7ff0d3000c08 (identifying PC=0x10d8ed080)
+  Node 0x7ff0d270fb58 (identifying PC=0x10d8709f0)
+Node 0x7ff0d270fb58 visited before
+Direct call point 2 ends
+End of node 0x7ff0d3000c08
+Direct call point 1 ends
+End of node 0x7ff0d2710068
+(Debug: before 'about to classify node 0x0' with 0x7ff0d2710040)
+End of node 0x7ff0d2710048
+Indirect call point 0 ends.
+Direct call point 1: 0x1824448b48c58949 calls 0x10d923e60, callee was not instrumented
+Direct call point 1 ends
+Indirect call point 0: 0x1c8b481024448b48 calls...
+Node 0x7ff0d2710328: tag 1, size 3
+(Debug: about to classify node 0x7ff0d2710320)
+... 0x10d8f5ae0: child node=0x7ff0d2710348
+Node 0x7ff0d2710348: tag 0, size 10
+Identifying PC=0x10d8f5ae0
+Tail chain:
+  Node 0x7ff0d2710068 (identifying PC=0x10d8c1110)
+  Node 0x7ff0d3000c08 (identifying PC=0x10d8ed080)
+  Node 0x7ff0d270fb58 (identifying PC=0x10d8709f0)
+  Node 0x7ff0d2710348 (identifying PC=0x10d8f5ae0)
+Direct call point 0: 0x8b480824448b48 calls 0x10d8f0f10, child node=0x7ff0d27103a8
+Node 0x7ff0d27103a8: tag 0, size 61
+Identifying PC=0x10d8f0f10
+Tail chain is empty.
+(Reached uninitialized tail call point.)
+(Reached uninitialized tail call point.)
+(Reached uninitialized tail call point.)
+Direct call point 0: 0xf8894808247c8b48 calls 0x10d8f0f10, child node=0x7ff0d2710598
+Node 0x7ff0d2710598: tag 0, size 61
+Identifying PC=0x10d8f0f10
+Tail chain is empty.
+(Reached uninitialized tail call point.)
+(Reached uninitialized tail call point.)
+(Reached uninitialized tail call point.)
+(Reached uninitialized tail call point.)
+(Reached uninitialized tail call point.)
+Direct call point 0: 0x8708b4824048b48 calls 0x10d8f0f10, child node=0x7ff0d2710788
+Node 0x7ff0d2710788: tag 0, size 61
+Identifying PC=0x10d8f0f10
+Tail chain:
+  Node 0x7ff0d27111c8 (identifying PC=0x10d8870a0)
+  Node 0x7ff0d2710788 (identifying PC=0x10d8f0f10)
+(Reached uninitialized tail call point.)
+(Reached uninitialized tail call point.)
+(Reached uninitialized tail call point.)
+(Reached uninitialized tail call point.)
+Direct call point 0: 0x8588b4824048b48 calls 0x10d8f0f10, child node=0x7ff0d2710978
+Node 0x7ff0d2710978: tag 0, size 61
+Identifying PC=0x10d8f0f10
+Tail chain:
+  Node 0x7ff0d2711198 (identifying PC=0x10d8870a0)
+  Node 0x7ff0d2710978 (identifying PC=0x10d8f0f10)
+(Reached uninitialized tail call point.)
+(Reached uninitialized tail call point.)
+(Reached uninitialized tail call point.)
+(Reached uninitialized tail call point.)
+Direct call point 0: 0x8588b4824048b48 calls 0x10d8f0f10, child node=0x7ff0d2710b68
+Node 0x7ff0d2710b68: tag 0, size 61
+Identifying PC=0x10d8f0f10
+Tail chain:
+  Node 0x7ff0d2711168 (identifying PC=0x10d8870a0)
+  Node 0x7ff0d2710b68 (identifying PC=0x10d8f0f10)
+(Reached uninitialized tail call point.)
+(Reached uninitialized tail call point.)
+(Reached uninitialized tail call point.)
+(Reached uninitialized tail call point.)
+Direct call point 0: 0x8588b4824048b48 calls 0x10d8f0f10, child node=0x7ff0d2710d58
+Node 0x7ff0d2710d58: tag 0, size 61
+Identifying PC=0x10d8f0f10
+Tail chain:
+  Node 0x7ff0d2711138 (identifying PC=0x10d8870a0)
+  Node 0x7ff0d2710d58 (identifying PC=0x10d8f0f10)
+(Reached uninitialized tail call point.)
+(Reached uninitialized tail call point.)
+(Reached uninitialized tail call point.)
+(Reached uninitialized tail call point.)
+Direct call point 0: 0x8588b4824048b48 calls 0x10d8f0f10, child node=0x7ff0d2710f48
+Node 0x7ff0d2710f48: tag 0, size 61
+Identifying PC=0x10d8f0f10
+Tail chain is empty.
+(Reached uninitialized tail call point.)
+(Reached uninitialized tail call point.)
+(Reached uninitialized tail call point.)
+(Reached uninitialized tail call point.)
+(Reached uninitialized tail call point.)
+End of node 0x7ff0d2710f48
+Direct call point 0 ends
+Direct call point 1: 0x548d889483f8b48 calls 0x10d8870a0, child node=0x7ff0d2711138
+Node 0x7ff0d2711138: tag 0, size 5
+Identifying PC=0x10d8870a0
+Tail chain:
+  Node 0x7ff0d2710d58 (identifying PC=0x10d8f0f10)
+  Node 0x7ff0d2711138 (identifying PC=0x10d8870a0)
+Direct call point 0: 0x1f0f66c318c48348 calls 0x10d914a50, callee was not instrumented
+Direct call point 0 ends
+End of node 0x7ff0d2711138
+Direct call point 1 ends
+End of node 0x7ff0d2710d58
+Direct call point 0 ends
+Direct call point 1: 0x548d889483f8b48 calls 0x10d8870a0, child node=0x7ff0d2711168
+Node 0x7ff0d2711168: tag 0, size 5
+Identifying PC=0x10d8870a0
+Tail chain:
+  Node 0x7ff0d2710b68 (identifying PC=0x10d8f0f10)
+  Node 0x7ff0d2711168 (identifying PC=0x10d8870a0)
+Direct call point 0: 0x1f0f66c318c48348 calls 0x10d914a50, callee was not instrumented
+Direct call point 0 ends
+End of node 0x7ff0d2711168
+Direct call point 1 ends
+End of node 0x7ff0d2710b68
+Direct call point 0 ends
+Direct call point 1: 0x548d889483f8b48 calls 0x10d8870a0, child node=0x7ff0d2711198
+Node 0x7ff0d2711198: tag 0, size 5
+Identifying PC=0x10d8870a0
+Tail chain:
+  Node 0x7ff0d2710978 (identifying PC=0x10d8f0f10)
+  Node 0x7ff0d2711198 (identifying PC=0x10d8870a0)
+Direct call point 0: 0x1f0f66c318c48348 calls 0x10d914a50, callee was not instrumented
+Direct call point 0 ends
+End of node 0x7ff0d2711198
+Direct call point 1 ends
+End of node 0x7ff0d2710978
+Direct call point 0 ends
+Direct call point 1: 0x548d889483f8b48 calls 0x10d8870a0, child node=0x7ff0d27111c8
+Node 0x7ff0d27111c8: tag 0, size 5
+Identifying PC=0x10d8870a0
+Tail chain:
+  Node 0x7ff0d2710788 (identifying PC=0x10d8f0f10)
+  Node 0x7ff0d27111c8 (identifying PC=0x10d8870a0)
+Direct call point 0: 0x1f0f66c318c48348 calls 0x10d914a50, callee was not instrumented
+Direct call point 0 ends
+End of node 0x7ff0d27111c8
+Direct call point 1 ends
+End of node 0x7ff0d2710788
+Direct call point 0 ends
+Direct call point 1: 0x41f0fc328c48348 calls 0x10d9147e0, callee was not instrumented
+Direct call point 1 ends
+End of node 0x7ff0d2710598
+Direct call point 0 ends
+Direct call point 1: 0x1f0fc328c48348 calls 0x10d914700, callee was not instrumented
+Direct call point 1 ends
+(Reached uninitialized tail call point.)
+(Reached uninitialized tail call point.)
+End of node 0x7ff0d27103a8
+Direct call point 0 ends
+Indirect call point 0: 0x1c8b481824448b48 calls...
+Node 0x7ff0d27111f8: tag 1, size 3
+(Debug: about to classify node 0x7ff0d27111f0)
+... 0x10d8f5d40: child node=0x7ff0d2710349
+(Unused indirect tail point--uninstrumented callee)
+(Debug: before 'about to classify node 0x0' with 0x7ff0d27111f0)
+End of node 0x7ff0d27111f8
+Indirect call point 0 ends.
+Direct call point 1: 0x1824448b48c58949 calls 0x10d923e60, callee was not instrumented
+Direct call point 1 ends
+End of node 0x7ff0d2710348
+(Debug: before 'about to classify node 0x0' with 0x7ff0d2710320)
+End of node 0x7ff0d2710328
+Indirect call point 0 ends.
+Direct call point 2: 0x1024448b48c58949 calls 0x10d923e60, callee was not instrumented
+Direct call point 2 ends
+End of node 0x7ff0d270fb58
+Direct call point 23 ends
+Direct call point 24: 0xe47c8b4824048948 calls 0x10d906150, child node=0x7ff0d2711218
+Node 0x7ff0d2711218: tag 0, size 10
+Identifying PC=0x10d906150
+Tail chain is empty.
+Direct call point 0: 0xe4748b4824048948 calls 0x10d886350, child node=0x7ff0d2711278
+Node 0x7ff0d2711278: tag 0, size 11
+Identifying PC=0x10d886350
+Tail chain is empty.
+Direct call point 0: 0x10247c8b48c48949 calls 0x10d911f20, callee was not instrumented
+Direct call point 0 ends
+Direct call point 1: 0x789481024448b48 calls 0x10d912600, callee was not instrumented
+Direct call point 1 ends
+Direct call point 2: 0x328c48348e0894c calls 0x10d912600, callee was not instrumented
+Direct call point 2 ends
+End of node 0x7ff0d2711278
+Direct call point 0 ends
+Allocation point 0: pc=0xe8fffffff93d8b48, profinfo=531
+End of node 0x7ff0d2711218
+Direct call point 24 ends
+Direct call point 25: 0x8000c80b61d8d48 calls 0x10d9245c0, callee was not instrumented
+Direct call point 25 ends
+End of node 0x7ff0d2802008
+Direct call point 27 ends
+End of node 0x7ff0d27025e8
+(Debug: before 'about to classify node 0x0' with 0x7ff0d27025c0)
+End of node 0x7ff0d27025c8
+Indirect call point 0 ends.
+End of node 0x7ff0d2702438
+End of trie dump.  Marking trie black.
+Done.
+---------------------------------------------------------------
+end of trace
+---------------------------------------------------------------
+Node 0x7ff0d2702438: tag 0, size 4
+Identifying PC=0x10d926018
+Tail chain is empty.
+Indirect call point 0: 0x10d926018 calls...
+Node 0x7ff0d27025c8: tag 1, size 3
+(Debug: about to classify node 0x7ff0d27025c0)
+... 0x10d8680a0: child node=0x7ff0d27025e8
+Node 0x7ff0d27025e8: tag 0, size 89
+Identifying PC=0x10d8680a0
+Tail chain is empty.
+Direct call point 0: 0x8001388b6058d48 calls 0x10d884890, callee was not instrumented
+Direct call point 0 ends
+Direct call point 1: 0x800138869058d48 calls 0x10d889bc0, child node=0x7ff0d27028b8
+Node 0x7ff0d27028b8: tag 0, size 58
+Identifying PC=0x10d889bc0
+Tail chain is empty.
+Allocation point 0: pc=0xe8fffffff93d8b48, profinfo=259
+Direct call point 0: 0x8000bb56b058d48 calls 0x10d91efa0, callee was not instrumented
+Direct call point 0 ends
+Direct call point 1: 0x1d89490824448948 calls 0x10d91e860, callee was not instrumented
+Direct call point 1 ends
+Allocation point 1: pc=0xe8fffffff93d8b48, profinfo=260
+Direct call point 2: 0x8000ba7af1d8d48 calls 0x10d90ff10, callee was not instrumented
+Direct call point 2 ends
+Direct call point 3: 0x8000ba7421d8d48 calls 0x10d90ff10, callee was not instrumented
+Direct call point 3 ends
+Direct call point 4: 0x8000ba6d51d8d48 calls 0x10d90ff10, callee was not instrumented
+Direct call point 4 ends
+Direct call point 5: 0x8000ba6681d8d48 calls 0x10d90ff10, callee was not instrumented
+Direct call point 5 ends
+Direct call point 6: 0x8000ba5fb1d8d48 calls 0x10d90ff10, callee was not instrumented
+Direct call point 6 ends
+Direct call point 7: 0x8000ba58e1d8d48 calls 0x10d90ff10, callee was not instrumented
+Direct call point 7 ends
+Direct call point 8: 0x8000ba4b41d8d48 calls 0x10d914200, callee was not instrumented
+Direct call point 8 ends
+Direct call point 9: 0x8000ba4441d8d48 calls 0x10d9142d0, callee was not instrumented
+Direct call point 9 ends
+Direct call point 10: 0x8000ba3d41d8d48 calls 0x10d9142d0, callee was not instrumented
+Direct call point 10 ends
+Allocation point 2: pc=0xe8fffffff93d8b48, profinfo=270
+Allocation point 3: pc=0xe8fffffff93d8b48, profinfo=271
+Direct call point 11: 0x800000001c0c748 calls 0x10d91efa0, callee was not instrumented
+Direct call point 11 ends
+End of node 0x7ff0d27028b8
+Direct call point 1 ends
+Direct call point 2: 0x80013881c058d48 calls 0x10d8956e0, callee was not instrumented
+Direct call point 2 ends
+Direct call point 3: 0x8001387cf058d48 calls 0x10d895dd0, callee was not instrumented
+Direct call point 3 ends
+Direct call point 4: 0x80013877f058d48 calls 0x10d899710, child node=0x7ff0d240faf8
+Node 0x7ff0d240faf8: tag 0, size 5
+Identifying PC=0x10d899710
+Tail chain is empty.
+Direct call point 0: 0x8000b1dcc1d8d48 calls 0x10d911f20, callee was not instrumented
+Direct call point 0 ends
+End of node 0x7ff0d240faf8
+Direct call point 4 ends
+Direct call point 5: 0x80013872b058d48 calls 0x10d89b7a0, callee was not instrumented
+Direct call point 5 ends
+Direct call point 6: 0x8001386d7058d48 calls 0x10d89bd20, child node=0x7ff0d240fc78
+Node 0x7ff0d240fc78: tag 0, size 21
+Identifying PC=0x10d89bd20
+Tail chain is empty.
+Direct call point 0: 0x8000b19631d8d48 calls 0x10d91b4b0, callee was not instrumented
+Direct call point 0 ends
+Direct call point 1: 0x8000b18f41d8d48 calls 0x10d91bac0, callee was not instrumented
+Direct call point 1 ends
+Allocation point 0: pc=0xe8fffffff93d8b48, profinfo=279
+Direct call point 2: 0x9e5894d24048948 calls 0x10d91e860, callee was not instrumented
+Direct call point 2 ends
+Allocation point 1: pc=0xcfffffff93d8b48, profinfo=280
+End of node 0x7ff0d240fc78
+Direct call point 6 ends
+Direct call point 7: 0x800138683058d48 calls 0x10d89c930, callee was not instrumented
+Direct call point 7 ends
+Direct call point 8: 0x80013862f058d48 calls 0x10d89dcc0, child node=0x7ff0d2410508
+Node 0x7ff0d2410508: tag 0, size 12
+Identifying PC=0x10d89dcc0
+Tail chain is empty.
+Allocation point 0: pc=0xe8fffffff93d8b48, profinfo=281
+Allocation point 1: pc=0xcfffffff93d8b48, profinfo=282
+End of node 0x7ff0d2410508
+Direct call point 8 ends
+Direct call point 9: 0x8001385db058d48 calls 0x10d8a52b0, child node=0x7ff0d2410578
+Node 0x7ff0d2410578: tag 0, size 10
+Identifying PC=0x10d8a52b0
+Tail chain is empty.
+Direct call point 0: 0x9e5894d24048948 calls 0x10d91e860, callee was not instrumented
+Direct call point 0 ends
+Allocation point 0: pc=0xcfffffff93d8b48, profinfo=283
+End of node 0x7ff0d2410578
+Direct call point 9 ends
+Direct call point 10: 0x800138587058d48 calls 0x10d8a5a90, callee was not instrumented
+Direct call point 10 ends
+Direct call point 11: 0x800138533058d48 calls 0x10d8a60b0, callee was not instrumented
+Direct call point 11 ends
+Direct call point 12: 0x8001384df058d48 calls 0x10d8a66d0, callee was not instrumented
+Direct call point 12 ends
+Direct call point 13: 0x80013848b058d48 calls 0x10d8ad2d0, callee was not instrumented
+Direct call point 13 ends
+Direct call point 14: 0x800138437058d48 calls 0x10d8b35d0, callee was not instrumented
+Direct call point 14 ends
+Direct call point 15: 0x8001383e3058d48 calls 0x10d8b4040, child node=0x7ff0d24105d8
+Node 0x7ff0d24105d8: tag 0, size 10
+Identifying PC=0x10d8b4040
+Tail chain is empty.
+Direct call point 0: 0x9dd894924048948 calls 0x10d91e860, callee was not instrumented
+Direct call point 0 ends
+Allocation point 0: pc=0x8fffffff93d8b48, profinfo=284
+End of node 0x7ff0d24105d8
+Direct call point 15 ends
+Direct call point 16: 0x80013838f058d48 calls 0x10d8b6c50, callee was not instrumented
+Direct call point 16 ends
+Direct call point 17: 0x80013833b058d48 calls 0x10d8f54f0, child node=0x7ff0d2410638
+Node 0x7ff0d2410638: tag 0, size 10
+Identifying PC=0x10d8f54f0
+Tail chain is empty.
+Direct call point 0: 0x9e5894d24048948 calls 0x10d91e860, callee was not instrumented
+Direct call point 0 ends
+Allocation point 0: pc=0xcfffffff93d8b48, profinfo=285
+End of node 0x7ff0d2410638
+Direct call point 17 ends
+Direct call point 18: 0x8001382e7058d48 calls 0x10d8f6930, callee was not instrumented
+Direct call point 18 ends
+Direct call point 19: 0x800138293058d48 calls 0x10d8fad70, child node=0x7ff0d2410698
+Node 0x7ff0d2410698: tag 0, size 28
+Identifying PC=0x10d8fad70
+Tail chain is empty.
+Allocation point 0: pc=0xe8fffffff93d8b48, profinfo=286
+Allocation point 1: pc=0xe8fffffff93d8b48, profinfo=287
+Allocation point 2: pc=0xe8fffffff93d8b48, profinfo=288
+Allocation point 3: pc=0xe8fffffff93d8b48, profinfo=289
+Direct call point 0: 0x8000743961d8d48 calls 0x10d91e450, callee was not instrumented
+Direct call point 0 ends
+Direct call point 1: 0x800000001c0c748 calls 0x10d91efa0, callee was not instrumented
+Direct call point 1 ends
+End of node 0x7ff0d2410698
+Direct call point 19 ends
+Direct call point 20: 0x80013823f058d48 calls 0x10d8fc0f0, callee was not instrumented
+Direct call point 20 ends
+Direct call point 21: 0x8001381eb058d48 calls 0x10d8fe870, child node=0x7ff0d24107d8
+Node 0x7ff0d24107d8: tag 0, size 20
+Identifying PC=0x10d8fe870
+Tail chain is empty.
+Allocation point 0: pc=0xe8fffffff93d8b48, profinfo=290
+Allocation point 1: pc=0xe8fffffff93d8b48, profinfo=291
+Direct call point 0: 0xe4748b4824048948 calls 0x10d91e4b0, callee was not instrumented
+Direct call point 0 ends
+Allocation point 2: pc=0xe8fffffff93d8b48, profinfo=293
+End of node 0x7ff0d24107d8
+Direct call point 21 ends
+Direct call point 22: 0x800138197058d48 calls 0x10d905370, child node=0x7ff0d24109d8
+Node 0x7ff0d24109d8: tag 0, size 21
+Identifying PC=0x10d905370
+Tail chain is empty.
+Direct call point 0: 0x74808c483485e41 calls 0x10d91b470, callee was not instrumented
+Direct call point 0 ends
+Direct call point 1: 0xe6eb08c483485e41 calls 0x10d91b470, callee was not instrumented
+Direct call point 1 ends
+Direct call point 2: 0x80006dedc1d8d48 calls 0x10d898f70, child node=0x7ff0d2410a88
+Node 0x7ff0d2410a88: tag 0, size 8
+Identifying PC=0x10d898f70
+Tail chain is empty.
+Direct call point 0: 0x100000003c0c748 calls 0x10d8988c0, child node=0x7ff0d2410ad8
+Node 0x7ff0d2410ad8: tag 0, size 5
+Identifying PC=0x10d8988c0
+Tail chain is empty.
+(Reached uninitialized tail call point.)
+End of node 0x7ff0d2410ad8
+Direct call point 0 ends
+(Reached uninitialized tail call point.)
+End of node 0x7ff0d2410a88
+Direct call point 2 ends
+Allocation point 0: pc=0xe8fffffff93d8b48, profinfo=294
+Allocation point 1: pc=0xcfffffff93d8b48, profinfo=295
+End of node 0x7ff0d24109d8
+Direct call point 22 ends
+Direct call point 23: 0x800138143058d48 calls 0x10d905a10, callee was not instrumented
+Direct call point 23 ends
+Direct call point 24: 0x8001380ef058d48 calls 0x10d906a10, child node=0x7ff0d2410b08
+Node 0x7ff0d2410b08: tag 0, size 37
+Identifying PC=0x10d906a10
+Tail chain is empty.
+Allocation point 0: pc=0xe8fffffff93d8b48, profinfo=296
+Allocation point 1: pc=0xe8fffffff93d8b48, profinfo=297
+Allocation point 2: pc=0xe8fffffff93d8b48, profinfo=298
+Allocation point 3: pc=0xe8fffffff93d8b48, profinfo=299
+Allocation point 4: pc=0xe8fffffff93d8b48, profinfo=300
+Allocation point 5: pc=0xe8fffffff93d8b48, profinfo=301
+Allocation point 6: pc=0x8fffffff93d8b48, profinfo=302
+End of node 0x7ff0d2410b08
+Direct call point 24 ends
+Direct call point 25: 0x80013809b058d48 calls 0x10d87c810, child node=0x7ff0d2800608
+Node 0x7ff0d2800608: tag 0, size 233
+Identifying PC=0x10d87c810
+Tail chain is empty.
+Allocation point 0: pc=0xe8fffffff93d8b48, profinfo=303
+Allocation point 1: pc=0xe8fffffff93d8b48, profinfo=304
+Allocation point 2: pc=0xe8fffffff93d8b48, profinfo=305
+Allocation point 3: pc=0xe8fffffff93d8b48, profinfo=306
+Allocation point 4: pc=0xe8fffffff93d8b48, profinfo=307
+Allocation point 5: pc=0xe8fffffff93d8b48, profinfo=308
+Allocation point 6: pc=0xe8fffffff93d8b48, profinfo=309
+Allocation point 7: pc=0xe8fffffff93d8b48, profinfo=310
+Allocation point 8: pc=0xe8fffffff93d8b48, profinfo=311
+Allocation point 9: pc=0xe8fffffff93d8b48, profinfo=312
+Allocation point 10: pc=0xe8fffffff93d8b48, profinfo=313
+Allocation point 11: pc=0xe8fffffff93d8b48, profinfo=314
+Allocation point 12: pc=0xe8fffffff93d8b48, profinfo=315
+Allocation point 13: pc=0xe8fffffff93d8b48, profinfo=316
+Allocation point 14: pc=0xe8fffffff93d8b48, profinfo=317
+Allocation point 15: pc=0xe8fffffff93d8b48, profinfo=318
+Allocation point 16: pc=0xe8fffffff93d8b48, profinfo=319
+Allocation point 17: pc=0xe8fffffff93d8b48, profinfo=320
+Allocation point 18: pc=0xe8fffffff93d8b48, profinfo=321
+Allocation point 19: pc=0xe8fffffff93d8b48, profinfo=322
+Allocation point 20: pc=0xe8fffffff93d8b48, profinfo=323
+Allocation point 21: pc=0xe8fffffff93d8b48, profinfo=324
+Allocation point 22: pc=0xe8fffffff93d8b48, profinfo=325
+Allocation point 23: pc=0xe8fffffff93d8b48, profinfo=326
+Allocation point 24: pc=0xe8fffffff93d8b48, profinfo=327
+Direct call point 0: 0x1c8b482024448948 calls 0x10d8b33c0, child node=0x7ff0d2410c38
+Node 0x7ff0d2410c38: tag 0, size 10
+Identifying PC=0x10d8b33c0
+Tail chain is empty.
+Direct call point 0: 0xe4748b4824048948 calls 0x10d8b2a60, child node=0x7ff0d2410c98
+Node 0x7ff0d2410c98: tag 0, size 52
+Identifying PC=0x10d8b2a60
+Tail chain is empty.
+Allocation point 0: pc=0xe8fffffff93d8b48, profinfo=328
+Allocation point 1: pc=0xe8fffffff93d8b48, profinfo=329
+Allocation point 2: pc=0xe8fffffff93d8b48, profinfo=330
+Allocation point 3: pc=0x8fffffff93d8b48, profinfo=331
+Allocation point 4: pc=0xe8fffffff93d8b48, profinfo=332
+Allocation point 5: pc=0xe8fffffff93d8b48, profinfo=333
+Allocation point 6: pc=0xe8fffffff93d8b48, profinfo=334
+Allocation point 7: pc=0xe8fffffff93d8b48, profinfo=335
+Allocation point 8: pc=0xe8fffffff93d8b48, profinfo=336
+Allocation point 9: pc=0xcfffffff93d8b48, profinfo=337
+End of node 0x7ff0d2410c98
+Direct call point 0 ends
+Allocation point 0: pc=0xe8fffffff93d8b48, profinfo=338
+End of node 0x7ff0d2410c38
+Direct call point 0 ends
+Allocation point 25: pc=0xe8fffffff93d8b48, profinfo=339
+Direct call point 1: 0xe4648b4c24048948 calls 0x10d8ad0a0, child node=0x7ff0d2410e48
+Node 0x7ff0d2410e48: tag 0, size 10
+Identifying PC=0x10d8ad0a0
+Tail chain is empty.
+Direct call point 0: 0xe4748b4824048948 calls 0x10d8ac4a0, child node=0x7ff0d2410ea8
+Node 0x7ff0d2410ea8: tag 0, size 72
+Identifying PC=0x10d8ac4a0
+Tail chain is empty.
+Allocation point 0: pc=0x8fffffff93d8b48, profinfo=340
+Allocation point 1: pc=0xe8fffffff93d8b48, profinfo=341
+Allocation point 2: pc=0xe8fffffff93d8b48, profinfo=342
+Allocation point 3: pc=0xe8fffffff93d8b48, profinfo=343
+Allocation point 4: pc=0xe8fffffff93d8b48, profinfo=344
+Allocation point 5: pc=0xe8fffffff93d8b48, profinfo=345
+Allocation point 6: pc=0xe8fffffff93d8b48, profinfo=346
+Allocation point 7: pc=0xe8fffffff93d8b48, profinfo=347
+Allocation point 8: pc=0xe8fffffff93d8b48, profinfo=348
+Allocation point 9: pc=0xe8fffffff93d8b48, profinfo=349
+Allocation point 10: pc=0x8fffffff93d8b48, profinfo=350
+Allocation point 11: pc=0xe8fffffff93d8b48, profinfo=351
+Allocation point 12: pc=0xe8fffffff93d8b48, profinfo=352
+Allocation point 13: pc=0xcfffffff93d8b48, profinfo=353
+End of node 0x7ff0d2410ea8
+Direct call point 0 ends
+Allocation point 0: pc=0xe8fffffff93d8b48, profinfo=354
+End of node 0x7ff0d2410e48
+Direct call point 1 ends
+Allocation point 26: pc=0xe8fffffff93d8b48, profinfo=355
+Allocation point 27: pc=0xe8fffffff93d8b48, profinfo=356
+Allocation point 28: pc=0xe8fffffff93d8b48, profinfo=357
+Allocation point 29: pc=0xe8fffffff93d8b48, profinfo=358
+Allocation point 30: pc=0xe8fffffff93d8b48, profinfo=359
+Allocation point 31: pc=0xe8fffffff93d8b48, profinfo=360
+Allocation point 32: pc=0xe8fffffff93d8b48, profinfo=361
+Allocation point 33: pc=0xe8fffffff93d8b48, profinfo=362
+Allocation point 34: pc=0xe8fffffff93d8b48, profinfo=363
+Allocation point 35: pc=0xe8fffffff93d8b48, profinfo=364
+Allocation point 36: pc=0xe8fffffff93d8b48, profinfo=365
+Allocation point 37: pc=0xe8fffffff93d8b48, profinfo=366
+Allocation point 38: pc=0xe8fffffff93d8b48, profinfo=367
+Allocation point 39: pc=0xe8fffffff93d8b48, profinfo=368
+Allocation point 40: pc=0xe8fffffff93d8b48, profinfo=369
+Allocation point 41: pc=0xe8fffffff93d8b48, profinfo=370
+Allocation point 42: pc=0xe8fffffff93d8b48, profinfo=371
+Allocation point 43: pc=0xe8fffffff93d8b48, profinfo=372
+Allocation point 44: pc=0xcfffffff93d8b48, profinfo=373
+End of node 0x7ff0d2800608
+Direct call point 25 ends
+Direct call point 26: 0x800138047058d48 calls 0x10d8810d0, child node=0x7ff0d24110f8
+Node 0x7ff0d24110f8: tag 0, size 60
+Identifying PC=0x10d8810d0
+Tail chain is empty.
+Allocation point 0: pc=0xe8fffffff93d8b48, profinfo=374
+Allocation point 1: pc=0xe8fffffff93d8b48, profinfo=375
+Allocation point 2: pc=0xe8fffffff93d8b48, profinfo=376
+Allocation point 3: pc=0xe8fffffff93d8b48, profinfo=377
+Allocation point 4: pc=0xe8fffffff93d8b48, profinfo=378
+Allocation point 5: pc=0xe8fffffff93d8b48, profinfo=379
+Direct call point 0: 0x8000c066d1d8d48 calls 0x10d8ad0a0, child node=0x7ff0d24112e8
+Node 0x7ff0d24112e8: tag 0, size 10
+Identifying PC=0x10d8ad0a0
+Tail chain is empty.
+Direct call point 0: 0xe4748b4824048948 calls 0x10d8ac4a0, child node=0x7ff0d2411348
+Node 0x7ff0d2411348: tag 0, size 72
+Identifying PC=0x10d8ac4a0
+Tail chain is empty.
+Allocation point 0: pc=0x8fffffff93d8b48, profinfo=380
+Allocation point 1: pc=0xe8fffffff93d8b48, profinfo=381
+Allocation point 2: pc=0xe8fffffff93d8b48, profinfo=382
+Allocation point 3: pc=0xe8fffffff93d8b48, profinfo=383
+Allocation point 4: pc=0xe8fffffff93d8b48, profinfo=384
+Allocation point 5: pc=0xe8fffffff93d8b48, profinfo=385
+Allocation point 6: pc=0xe8fffffff93d8b48, profinfo=386
+Allocation point 7: pc=0xe8fffffff93d8b48, profinfo=387
+Allocation point 8: pc=0xe8fffffff93d8b48, profinfo=388
+Allocation point 9: pc=0xe8fffffff93d8b48, profinfo=389
+Allocation point 10: pc=0x8fffffff93d8b48, profinfo=390
+Allocation point 11: pc=0xe8fffffff93d8b48, profinfo=391
+Allocation point 12: pc=0xe8fffffff93d8b48, profinfo=392
+Allocation point 13: pc=0xcfffffff93d8b48, profinfo=393
+End of node 0x7ff0d2411348
+Direct call point 0 ends
+Allocation point 0: pc=0xe8fffffff93d8b48, profinfo=394
+End of node 0x7ff0d24112e8
+Direct call point 0 ends
+Allocation point 6: pc=0xe8fffffff93d8b48, profinfo=395
+Allocation point 7: pc=0xe8fffffff93d8b48, profinfo=396
+Allocation point 8: pc=0xe8fffffff93d8b48, profinfo=397
+Allocation point 9: pc=0xe8fffffff93d8b48, profinfo=398
+Allocation point 10: pc=0xcfffffff93d8b48, profinfo=399
+End of node 0x7ff0d24110f8
+Direct call point 26 ends
+Direct call point 27: 0x800137ff3058d48 calls 0x10d8717f0, child node=0x7ff0d2802008
+Node 0x7ff0d2802008: tag 0, size 168
+Identifying PC=0x10d8717f0
+Tail chain is empty.
+Direct call point 0: 0x8000c9159058d48 calls 0x10d91efa0, callee was not instrumented
+Direct call point 0 ends
+Direct call point 1: 0x800000013c0c748 calls 0x10d8f6310, child node=0x7ff0d24115d8
+Node 0x7ff0d24115d8: tag 0, size 5
+Identifying PC=0x10d8f6310
+Tail chain:
+  Node 0x7ff0d2411608 (identifying PC=0x10d8f5f50)
+  Node 0x7ff0d283ec08 (identifying PC=0x10d8ed080)
+  Node 0x7ff0d2411668 (identifying PC=0x10d8709f0)
+  Node 0x7ff0d2411718 (identifying PC=0x10d8f5ae0)
+  Node 0x7ff0d24115d8 (identifying PC=0x10d8f6310)
+Direct call point 0: 0x1f0f2e6666666666 calls 0x10d8f5f50, child node=0x7ff0d2411608
+Node 0x7ff0d2411608: tag 0, size 10
+Identifying PC=0x10d8f5f50
+Tail chain:
+  Node 0x7ff0d283ec08 (identifying PC=0x10d8ed080)
+  Node 0x7ff0d2411668 (identifying PC=0x10d8709f0)
+  Node 0x7ff0d2411718 (identifying PC=0x10d8f5ae0)
+  Node 0x7ff0d24115d8 (identifying PC=0x10d8f6310)
+  Node 0x7ff0d2411608 (identifying PC=0x10d8f5f50)
+Allocation point 0: pc=0xe8fffffff93d8b48, profinfo=400
+Direct call point 0: 0xe810c58349dd8949 calls 0x10d8ed080, child node=0x7ff0d283ec08
+Node 0x7ff0d283ec08: tag 0, size 148
+Identifying PC=0x10d8ed080
+Tail chain:
+  Node 0x7ff0d2411668 (identifying PC=0x10d8709f0)
+  Node 0x7ff0d2411718 (identifying PC=0x10d8f5ae0)
+  Node 0x7ff0d24115d8 (identifying PC=0x10d8f6310)
+  Node 0x7ff0d2411608 (identifying PC=0x10d8f5f50)
+  Node 0x7ff0d283ec08 (identifying PC=0x10d8ed080)
+(Reached uninitialized tail call point.)
+(Reached uninitialized tail call point.)
+(Reached uninitialized tail call point.)
+(Reached uninitialized tail call point.)
+(Reached uninitialized tail call point.)
+(Reached uninitialized tail call point.)
+(Reached uninitialized tail call point.)
+(Reached uninitialized tail call point.)
+Allocation point 0: pc=0xe8fffffff93d8b48, profinfo=401
+Direct call point 0: 0xe7058d4818ef8349 calls 0x10d8ed080, child node=0x7ff0d283ec08
+Node 0x7ff0d283ec08: tag 0, size 148
+Identifying PC=0x10d8ed080
+Tail chain:
+  Node 0x7ff0d2411668 (identifying PC=0x10d8709f0)
+  Node 0x7ff0d2411718 (identifying PC=0x10d8f5ae0)
+  Node 0x7ff0d24115d8 (identifying PC=0x10d8f6310)
+  Node 0x7ff0d2411608 (identifying PC=0x10d8f5f50)
+  Node 0x7ff0d283ec08 (identifying PC=0x10d8ed080)
+Node 0x7ff0d283ec08 visited before
+Direct call point 0 ends
+(Reached uninitialized tail call point.)
+(Reached uninitialized tail call point.)
+(Reached uninitialized tail call point.)
+(Reached uninitialized tail call point.)
+(Reached uninitialized tail call point.)
+(Reached uninitialized tail call point.)
+Direct call point 1: 0x1c8948182464894c calls 0x10d8709f0, child node=0x7ff0d2411668
+Node 0x7ff0d2411668: tag 0, size 17
+Identifying PC=0x10d8709f0
+Tail chain:
+  Node 0x7ff0d2411718 (identifying PC=0x10d8f5ae0)
+  Node 0x7ff0d24115d8 (identifying PC=0x10d8f6310)
+  Node 0x7ff0d2411608 (identifying PC=0x10d8f5f50)
+  Node 0x7ff0d283ec08 (identifying PC=0x10d8ed080)
+  Node 0x7ff0d2411668 (identifying PC=0x10d8709f0)
+Indirect call point 0: 0x1c8b481024448b48 calls...
+Node 0x7ff0d24116f8: tag 1, size 3
+(Debug: about to classify node 0x7ff0d24116f0)
+... 0x10d8f5ae0: child node=0x7ff0d2411718
+Node 0x7ff0d2411718: tag 0, size 10
+Identifying PC=0x10d8f5ae0
+Tail chain:
+  Node 0x7ff0d24115d8 (identifying PC=0x10d8f6310)
+  Node 0x7ff0d2411608 (identifying PC=0x10d8f5f50)
+  Node 0x7ff0d283ec08 (identifying PC=0x10d8ed080)
+  Node 0x7ff0d2411668 (identifying PC=0x10d8709f0)
+  Node 0x7ff0d2411718 (identifying PC=0x10d8f5ae0)
+Direct call point 0: 0x8b480824448b48 calls 0x10d8f0f10, child node=0x7ff0d2411778
+Node 0x7ff0d2411778: tag 0, size 61
+Identifying PC=0x10d8f0f10
+Tail chain:
+  Node 0x7ff0d2411b58 (identifying PC=0x10d8870a0)
+  Node 0x7ff0d2411778 (identifying PC=0x10d8f0f10)
+(Reached uninitialized tail call point.)
+(Reached uninitialized tail call point.)
+(Reached uninitialized tail call point.)
+(Reached uninitialized tail call point.)
+Direct call point 0: 0x8588b4824048b48 calls 0x10d8f0f10, child node=0x7ff0d2411968
+Node 0x7ff0d2411968: tag 0, size 61
+Identifying PC=0x10d8f0f10
+Tail chain is empty.
+(Reached uninitialized tail call point.)
+(Reached uninitialized tail call point.)
+(Reached uninitialized tail call point.)
+(Reached uninitialized tail call point.)
+(Reached uninitialized tail call point.)
+End of node 0x7ff0d2411968
+Direct call point 0 ends
+Direct call point 1: 0x548d889483f8b48 calls 0x10d8870a0, child node=0x7ff0d2411b58
+Node 0x7ff0d2411b58: tag 0, size 5
+Identifying PC=0x10d8870a0
+Tail chain:
+  Node 0x7ff0d2411778 (identifying PC=0x10d8f0f10)
+  Node 0x7ff0d2411b58 (identifying PC=0x10d8870a0)
+Direct call point 0: 0x1f0f66c318c48348 calls 0x10d914a50, callee was not instrumented
+Direct call point 0 ends
+End of node 0x7ff0d2411b58
+Direct call point 1 ends
+End of node 0x7ff0d2411778
+Direct call point 0 ends
+Indirect call point 0: 0x1c8b481824448b48 calls...
+Node 0x7ff0d2411b88: tag 1, size 3
+(Debug: about to classify node 0x7ff0d2411b80)
+... 0x10d8f5d40: child node=0x7ff0d2411719
+(Unused indirect tail point--uninstrumented callee)
+(Debug: before 'about to classify node 0x0' with 0x7ff0d2411b80)
+End of node 0x7ff0d2411b88
+Indirect call point 0 ends.
+Direct call point 1: 0x1824448b48c58949 calls 0x10d923e60, callee was not instrumented
+Direct call point 1 ends
+End of node 0x7ff0d2411718
+(Debug: before 'about to classify node 0x0' with 0x7ff0d24116f0)
+End of node 0x7ff0d24116f8
+Indirect call point 0 ends.
+Direct call point 0: 0x1024448b48c58949 calls 0x10d923e60, callee was not instrumented
+Direct call point 0 ends
+End of node 0x7ff0d2411668
+Direct call point 1 ends
+End of node 0x7ff0d283ec08
+Direct call point 0 ends
+End of node 0x7ff0d2411608
+Direct call point 0 ends
+End of node 0x7ff0d24115d8
+Direct call point 1 ends
+Direct call point 2: 0x1b8548f858b60f48 calls 0x10d871090, child node=0x7ff0d2411ba8
+Node 0x7ff0d2411ba8: tag 0, size 18
+Identifying PC=0x10d871090
+Tail chain is empty.
+Allocation point 0: pc=0x8fffffff9058b48, profinfo=402
+(Reached uninitialized tail call point.)
+(Reached uninitialized tail call point.)
+End of node 0x7ff0d2411ba8
+Direct call point 2 ends
+Direct call point 3: 0x8408b4824048b48 calls 0x10d8870a0, child node=0x7ff0d2411c48
+Node 0x7ff0d2411c48: tag 0, size 5
+Identifying PC=0x10d8870a0
+Tail chain is empty.
+Direct call point 0: 0x1f0f66c318c48348 calls 0x10d914a50, callee was not instrumented
+Direct call point 0 ends
+End of node 0x7ff0d2411c48
+Direct call point 3 ends
+Direct call point 4: 0xebb7058d48c38948 calls 0x10d886740, child node=0x7ff0d2411c78
+Node 0x7ff0d2411c78: tag 0, size 5
+Identifying PC=0x10d886740
+Tail chain is empty.
+Direct call point 0: 0x1f0f66c308c48348 calls 0x10d90ef20, callee was not instrumented
+Direct call point 0 ends
+End of node 0x7ff0d2411c78
+Direct call point 4 ends
+Direct call point 5: 0x800000001c0c748 calls 0x10d8870a0, child node=0x7ff0d2411df8
+Node 0x7ff0d2411df8: tag 0, size 5
+Identifying PC=0x10d8870a0
+Tail chain is empty.
+Direct call point 0: 0x1f0f66c318c48348 calls 0x10d914a50, callee was not instrumented
+Direct call point 0 ends
+End of node 0x7ff0d2411df8
+Direct call point 5 ends
+Direct call point 6: 0x800000065c0c748 calls 0x10d8887c0, child node=0x7ff0d2411e28
+Node 0x7ff0d2411e28: tag 0, size 8
+Identifying PC=0x10d8887c0
+Tail chain is empty.
+Direct call point 0: 0x8f88948243c8b48 calls 0x10d9147e0, callee was not instrumented
+Direct call point 0 ends
+Direct call point 1: 0xe66666c308c48348 calls 0x10d914700, callee was not instrumented
+Direct call point 1 ends
+End of node 0x7ff0d2411e28
+Direct call point 6 ends
+Direct call point 7: 0x1b8548f858b60f48 calls 0x10d871090, child node=0x7ff0d2411e78
+Node 0x7ff0d2411e78: tag 0, size 18
+Identifying PC=0x10d871090
+Tail chain is empty.
+Allocation point 0: pc=0x8fffffff9058b48, profinfo=404
+(Reached uninitialized tail call point.)
+(Reached uninitialized tail call point.)
+End of node 0x7ff0d2411e78
+Direct call point 7 ends
+Direct call point 8: 0xea57058d48c38948 calls 0x10d886740, child node=0x7ff0d2411f18
+Node 0x7ff0d2411f18: tag 0, size 5
+Identifying PC=0x10d886740
+Tail chain is empty.
+Direct call point 0: 0x1f0f66c308c48348 calls 0x10d90ef20, callee was not instrumented
+Direct call point 0 ends
+End of node 0x7ff0d2411f18
+Direct call point 8 ends
+Direct call point 9: 0x800000001c0c748 calls 0x10d8870a0, child node=0x7ff0d2412098
+Node 0x7ff0d2412098: tag 0, size 5
+Identifying PC=0x10d8870a0
+Tail chain is empty.
+Direct call point 0: 0x1f0f66c318c48348 calls 0x10d914a50, callee was not instrumented
+Direct call point 0 ends
+End of node 0x7ff0d2412098
+Direct call point 9 ends
+Direct call point 10: 0x4894800000165e9 calls 0x10d8887c0, child node=0x7ff0d24120c8
+Node 0x7ff0d24120c8: tag 0, size 8
+Identifying PC=0x10d8887c0
+Tail chain is empty.
+Direct call point 0: 0x8f88948243c8b48 calls 0x10d9147e0, callee was not instrumented
+Direct call point 0 ends
+Direct call point 1: 0xe66666c308c48348 calls 0x10d914700, callee was not instrumented
+Direct call point 1 ends
+End of node 0x7ff0d24120c8
+Direct call point 10 ends
+Direct call point 11: 0x1b8548f858b60f48 calls 0x10d871090, child node=0x7ff0d2412118
+Node 0x7ff0d2412118: tag 0, size 18
+Identifying PC=0x10d871090
+Tail chain is empty.
+Allocation point 0: pc=0x8fffffff9058b48, profinfo=406
+(Reached uninitialized tail call point.)
+Direct call point 0: 0x948457503fc8349 calls 0x10d871090, child node=0x7ff0d2412118
+Node 0x7ff0d2412118: tag 0, size 18
+Identifying PC=0x10d871090
+Tail chain is empty.
+Node 0x7ff0d2412118 visited before
+Direct call point 0 ends
+End of node 0x7ff0d2412118
+Direct call point 11 ends
+Direct call point 12: 0xe78d058d48c38948 calls 0x10d886740, child node=0x7ff0d24121b8
+Node 0x7ff0d24121b8: tag 0, size 5
+Identifying PC=0x10d886740
+Tail chain is empty.
+Direct call point 0: 0x1f0f66c308c48348 calls 0x10d90ef20, callee was not instrumented
+Direct call point 0 ends
+End of node 0x7ff0d24121b8
+Direct call point 12 ends
+Direct call point 13: 0x800000001c0c748 calls 0x10d8870a0, child node=0x7ff0d2412338
+Node 0x7ff0d2412338: tag 0, size 5
+Identifying PC=0x10d8870a0
+Tail chain is empty.
+Direct call point 0: 0x1f0f66c318c48348 calls 0x10d914a50, callee was not instrumented
+Direct call point 0 ends
+End of node 0x7ff0d2412338
+Direct call point 13 ends
+Direct call point 14: 0x4894800000165e9 calls 0x10d8887c0, child node=0x7ff0d2412368
+Node 0x7ff0d2412368: tag 0, size 8
+Identifying PC=0x10d8887c0
+Tail chain is empty.
+Direct call point 0: 0x8f88948243c8b48 calls 0x10d9147e0, callee was not instrumented
+Direct call point 0 ends
+Direct call point 1: 0xe66666c308c48348 calls 0x10d914700, callee was not instrumented
+Direct call point 1 ends
+End of node 0x7ff0d2412368
+Direct call point 14 ends
+Direct call point 15: 0x1b8548f858b60f48 calls 0x10d871090, child node=0x7ff0d24123b8
+Node 0x7ff0d24123b8: tag 0, size 18
+Identifying PC=0x10d871090
+Tail chain:
+  Node 0x7ff0d2412458 (identifying PC=0x10d870f10)
+  Node 0x7ff0d24127f8 (identifying PC=0x10d870d90)
+  Node 0x7ff0d24123b8 (identifying PC=0x10d871090)
+Allocation point 0: pc=0x8fffffff9058b48, profinfo=414
+Direct call point 0: 0x349727d55fc8349 calls 0x10d870f10, child node=0x7ff0d2412458
+Node 0x7ff0d2412458: tag 0, size 13
+Identifying PC=0x10d870f10
+Tail chain:
+  Node 0x7ff0d24127f8 (identifying PC=0x10d870d90)
+  Node 0x7ff0d24123b8 (identifying PC=0x10d871090)
+  Node 0x7ff0d2412458 (identifying PC=0x10d870f10)
+Allocation point 0: pc=0xe8fffffff93d8b48, profinfo=408
+Direct call point 0: 0x8ffffffffc0c748 calls 0x10d906d90, child node=0x7ff0d2412768
+Node 0x7ff0d2412768: tag 0, size 4
+Identifying PC=0x10d926018
+Tail chain is empty.
+Indirect call point 0: 0x10d926018 calls...
+Node 0x7ff0d2412798: tag 1, size 3
+(Debug: about to classify node 0x7ff0d2412790)
+... 0x10d870ce0: child node=0x7ff0d24127b8
+Node 0x7ff0d24127b8: tag 0, size 7
+Identifying PC=0x10d870ce0
+Tail chain is empty.
+Allocation point 0: pc=0xe8fffffff93d8b48, profinfo=410
+End of node 0x7ff0d24127b8
+(Debug: before 'about to classify node 0x0' with 0x7ff0d2412790)
+End of node 0x7ff0d2412798
+Indirect call point 0 ends.
+End of node 0x7ff0d2412768
+Direct call point 0 ends
+Direct call point 1: 0xe810c58349e5894d calls 0x10d870d90, child node=0x7ff0d24127f8
+Node 0x7ff0d24127f8: tag 0, size 13
+Identifying PC=0x10d870d90
+Tail chain:
+  Node 0x7ff0d24123b8 (identifying PC=0x10d871090)
+  Node 0x7ff0d2412458 (identifying PC=0x10d870f10)
+  Node 0x7ff0d24127f8 (identifying PC=0x10d870d90)
+Allocation point 0: pc=0xe8fffffff93d8b48, profinfo=411
+Direct call point 0: 0xf8894808247c8b48 calls 0x10d906d90, child node=0x7ff0d2412b08
+Node 0x7ff0d2412b08: tag 0, size 4
+Identifying PC=0x10d926018
+Tail chain is empty.
+Indirect call point 0: 0x10d926018 calls...
+Node 0x7ff0d2412b38: tag 1, size 3
+(Debug: about to classify node 0x7ff0d2412b30)
+... 0x10d870ce0: child node=0x7ff0d2412b58
+Node 0x7ff0d2412b58: tag 0, size 7
+Identifying PC=0x10d870ce0
+Tail chain is empty.
+Allocation point 0: pc=0xe8fffffff93d8b48, profinfo=413
+End of node 0x7ff0d2412b58
+(Debug: before 'about to classify node 0x0' with 0x7ff0d2412b30)
+End of node 0x7ff0d2412b38
+Indirect call point 0 ends.
+End of node 0x7ff0d2412b08
+Direct call point 0 ends
+Direct call point 1: 0xe810c58349e5894d calls 0x10d871090, child node=0x7ff0d24123b8
+Node 0x7ff0d24123b8: tag 0, size 18
+Identifying PC=0x10d871090
+Tail chain:
+  Node 0x7ff0d2412458 (identifying PC=0x10d870f10)
+  Node 0x7ff0d24127f8 (identifying PC=0x10d870d90)
+  Node 0x7ff0d24123b8 (identifying PC=0x10d871090)
+Node 0x7ff0d24123b8 visited before
+Direct call point 1 ends
+End of node 0x7ff0d24127f8
+Direct call point 1 ends
+End of node 0x7ff0d2412458
+Direct call point 0 ends
+(Reached uninitialized tail call point.)
+End of node 0x7ff0d24123b8
+Direct call point 15 ends
+Direct call point 16: 0x8408b4824048b48 calls 0x10d8870a0, child node=0x7ff0d2412b98
+Node 0x7ff0d2412b98: tag 0, size 5
+Identifying PC=0x10d8870a0
+Tail chain is empty.
+Direct call point 0: 0x1f0f66c318c48348 calls 0x10d914a50, callee was not instrumented
+Direct call point 0 ends
+End of node 0x7ff0d2412b98
+Direct call point 16 ends
+Direct call point 17: 0xe359058d48c38948 calls 0x10d886740, child node=0x7ff0d2412bc8
+Node 0x7ff0d2412bc8: tag 0, size 5
+Identifying PC=0x10d886740
+Tail chain is empty.
+Direct call point 0: 0x1f0f66c308c48348 calls 0x10d90ef20, callee was not instrumented
+Direct call point 0 ends
+End of node 0x7ff0d2412bc8
+Direct call point 17 ends
+Direct call point 18: 0x800000001c0c748 calls 0x10d8870a0, child node=0x7ff0d2412d48
+Node 0x7ff0d2412d48: tag 0, size 5
+Identifying PC=0x10d8870a0
+Tail chain is empty.
+Direct call point 0: 0x1f0f66c318c48348 calls 0x10d914a50, callee was not instrumented
+Direct call point 0 ends
+End of node 0x7ff0d2412d48
+Direct call point 18 ends
+Direct call point 19: 0x800000003c0c748 calls 0x10d8887c0, child node=0x7ff0d2412d78
+Node 0x7ff0d2412d78: tag 0, size 8
+Identifying PC=0x10d8887c0
+Tail chain is empty.
+Direct call point 0: 0x8f88948243c8b48 calls 0x10d9147e0, callee was not instrumented
+Direct call point 0 ends
+Direct call point 1: 0xe66666c308c48348 calls 0x10d914700, callee was not instrumented
+Direct call point 1 ends
+End of node 0x7ff0d2412d78
+Direct call point 19 ends
+Direct call point 20: 0x8d88948241c8b48 calls 0x10d906d90, child node=0x7ff0d2413068
+Node 0x7ff0d2413068: tag 0, size 4
+Identifying PC=0x10d926018
+Tail chain is empty.
+Indirect call point 0: 0x10d926018 calls...
+Node 0x7ff0d2413098: tag 1, size 3
+(Debug: about to classify node 0x7ff0d2413090)
+... 0x10d870ce0: child node=0x7ff0d24130b8
+Node 0x7ff0d24130b8: tag 0, size 7
+Identifying PC=0x10d870ce0
+Tail chain is empty.
+Allocation point 0: pc=0xe8fffffff93d8b48, profinfo=417
+End of node 0x7ff0d24130b8
+(Debug: before 'about to classify node 0x0' with 0x7ff0d2413090)
+End of node 0x7ff0d2413098
+Indirect call point 0 ends.
+End of node 0x7ff0d2413068
+Direct call point 20 ends
+Direct call point 21: 0xea1d8d4824048948 calls 0x10d906d90, child node=0x7ff0d270f8b8
+Node 0x7ff0d270f8b8: tag 0, size 4
+Identifying PC=0x10d926018
+Tail chain is empty.
+Indirect call point 0: 0x10d926018 calls...
+Node 0x7ff0d270f8e8: tag 1, size 3
+(Debug: about to classify node 0x7ff0d270f8e0)
+... 0x10d870ce0: child node=0x7ff0d270f908
+Node 0x7ff0d270f908: tag 0, size 7
+Identifying PC=0x10d870ce0
+Tail chain is empty.
+Allocation point 0: pc=0xe8fffffff93d8b48, profinfo=518
+End of node 0x7ff0d270f908
+(Debug: before 'about to classify node 0x0' with 0x7ff0d270f8e0)
+End of node 0x7ff0d270f8e8
+Indirect call point 0 ends.
+End of node 0x7ff0d270f8b8
+Direct call point 21 ends
+Direct call point 22: 0x824048b48c78948 calls 0x10d8f6310, child node=0x7ff0d270f948
+Node 0x7ff0d270f948: tag 0, size 5
+Identifying PC=0x10d8f6310
+Tail chain:
+  Node 0x7ff0d270f978 (identifying PC=0x10d8f5f50)
+  Node 0x7ff0d3000008 (identifying PC=0x10d8ed080)
+  Node 0x7ff0d270f9d8 (identifying PC=0x10d8eae00)
+  Node 0x7ff0d270f948 (identifying PC=0x10d8f6310)
+Direct call point 0: 0x1f0f2e6666666666 calls 0x10d8f5f50, child node=0x7ff0d270f978
+Node 0x7ff0d270f978: tag 0, size 10
+Identifying PC=0x10d8f5f50
+Tail chain:
+  Node 0x7ff0d3000008 (identifying PC=0x10d8ed080)
+  Node 0x7ff0d270f9d8 (identifying PC=0x10d8eae00)
+  Node 0x7ff0d270f948 (identifying PC=0x10d8f6310)
+  Node 0x7ff0d270f978 (identifying PC=0x10d8f5f50)
+Allocation point 0: pc=0xe8fffffff93d8b48, profinfo=519
+Direct call point 0: 0xe810c58349dd8949 calls 0x10d8ed080, child node=0x7ff0d3000008
+Node 0x7ff0d3000008: tag 0, size 148
+Identifying PC=0x10d8ed080
+Tail chain:
+  Node 0x7ff0d270f9d8 (identifying PC=0x10d8eae00)
+  Node 0x7ff0d270f948 (identifying PC=0x10d8f6310)
+  Node 0x7ff0d270f978 (identifying PC=0x10d8f5f50)
+  Node 0x7ff0d3000008 (identifying PC=0x10d8ed080)
+(Reached uninitialized tail call point.)
+(Reached uninitialized tail call point.)
+Direct call point 0: 0x281492824548b4c calls 0x10d8eae00, child node=0x7ff0d270f9d8
+Node 0x7ff0d270f9d8: tag 0, size 47
+Identifying PC=0x10d8eae00
+Tail chain:
+  Node 0x7ff0d270f948 (identifying PC=0x10d8f6310)
+  Node 0x7ff0d270f978 (identifying PC=0x10d8f5f50)
+  Node 0x7ff0d3000008 (identifying PC=0x10d8ed080)
+  Node 0x7ff0d270f9d8 (identifying PC=0x10d8eae00)
+Allocation point 0: pc=0x8fffffff9058b48, profinfo=521
+End of node 0x7ff0d270f9d8
+Direct call point 0 ends
+(Reached uninitialized tail call point.)
+(Reached uninitialized tail call point.)
+(Reached uninitialized tail call point.)
+(Reached uninitialized tail call point.)
+(Reached uninitialized tail call point.)
+Allocation point 0: pc=0xe8fffffff93d8b48, profinfo=520
+Direct call point 1: 0xe7058d4818ef8349 calls 0x10d8ed080, child node=0x7ff0d3000008
+Node 0x7ff0d3000008: tag 0, size 148
+Identifying PC=0x10d8ed080
+Tail chain:
+  Node 0x7ff0d270f9d8 (identifying PC=0x10d8eae00)
+  Node 0x7ff0d270f948 (identifying PC=0x10d8f6310)
+  Node 0x7ff0d270f978 (identifying PC=0x10d8f5f50)
+  Node 0x7ff0d3000008 (identifying PC=0x10d8ed080)
+Node 0x7ff0d3000008 visited before
+Direct call point 1 ends
+(Reached uninitialized tail call point.)
+(Reached uninitialized tail call point.)
+(Reached uninitialized tail call point.)
+(Reached uninitialized tail call point.)
+(Reached uninitialized tail call point.)
+(Reached uninitialized tail call point.)
+(Reached uninitialized tail call point.)
+End of node 0x7ff0d3000008
+Direct call point 0 ends
+End of node 0x7ff0d270f978
+Direct call point 0 ends
+End of node 0x7ff0d270f948
+Direct call point 22 ends
+Direct call point 23: 0x8000c8107058d48 calls 0x10d8709f0, child node=0x7ff0d270fb58
+Node 0x7ff0d270fb58: tag 0, size 17
+Identifying PC=0x10d8709f0
+Tail chain:
+  Node 0x7ff0d2710348 (identifying PC=0x10d8f5ae0)
+  Node 0x7ff0d2710068 (identifying PC=0x10d8c1110)
+  Node 0x7ff0d3000c08 (identifying PC=0x10d8ed080)
+  Node 0x7ff0d270fb58 (identifying PC=0x10d8709f0)
+Indirect call point 0: 0x8208b4c24048948 calls...
+Node 0x7ff0d270fbe8: tag 1, size 3
+(Debug: about to classify node 0x7ff0d270fbe0)
+... 0x10d8c1110: child node=0x7ff0d270fc08
+Node 0x7ff0d270fc08: tag 0, size 13
+Identifying PC=0x10d8c1110
+Tail chain:
+  Node 0x7ff0d3000608 (identifying PC=0x10d8ed080)
+  Node 0x7ff0d270fec8 (identifying PC=0x10d8eae00)
+  Node 0x7ff0d270fc08 (identifying PC=0x10d8c1110)
+Direct call point 0: 0xe48b4c1824448948 calls 0x10d8709f0, child node=0x7ff0d270fc78
+Node 0x7ff0d270fc78: tag 0, size 17
+Identifying PC=0x10d8709f0
+Tail chain:
+  Node 0x7ff0d270fd28 (identifying PC=0x10d8e97f0)
+  Node 0x7ff0d270fc78 (identifying PC=0x10d8709f0)
+Indirect call point 0: 0x1c8b481024448b48 calls...
+Node 0x7ff0d270fd08: tag 1, size 3
+(Debug: about to classify node 0x7ff0d270fd00)
+... 0x10d8e97f0: child node=0x7ff0d270fd28
+Node 0x7ff0d270fd28: tag 0, size 8
+Identifying PC=0x10d8e97f0
+Tail chain:
+  Node 0x7ff0d270fc78 (identifying PC=0x10d8709f0)
+  Node 0x7ff0d270fd28 (identifying PC=0x10d8e97f0)
+Direct call point 0: 0xf389480824748b48 calls 0x10d8e91a0, callee was not instrumented
+Direct call point 0 ends
+Direct call point 1: 0xe66666c318c48348 calls 0x10d90ef20, callee was not instrumented
+Direct call point 1 ends
+End of node 0x7ff0d270fd28
+(Debug: before 'about to classify node 0x0' with 0x7ff0d270fd00)
+End of node 0x7ff0d270fd08
+Indirect call point 0 ends.
+Direct call point 0: 0x1024448b48c58949 calls 0x10d923e60, callee was not instrumented
+Direct call point 0 ends
+End of node 0x7ff0d270fc78
+Direct call point 0 ends
+Allocation point 0: pc=0xe8fffffff93d8b48, profinfo=523
+Direct call point 1: 0xe828c58349e5894d calls 0x10d8ed080, child node=0x7ff0d3000608
+Node 0x7ff0d3000608: tag 0, size 148
+Identifying PC=0x10d8ed080
+Tail chain:
+  Node 0x7ff0d270fec8 (identifying PC=0x10d8eae00)
+  Node 0x7ff0d270fc08 (identifying PC=0x10d8c1110)
+  Node 0x7ff0d3000608 (identifying PC=0x10d8ed080)
+(Reached uninitialized tail call point.)
+(Reached uninitialized tail call point.)
+Direct call point 0: 0x281492824548b4c calls 0x10d8eae00, child node=0x7ff0d270fec8
+Node 0x7ff0d270fec8: tag 0, size 47
+Identifying PC=0x10d8eae00
+Tail chain:
+  Node 0x7ff0d270fc08 (identifying PC=0x10d8c1110)
+  Node 0x7ff0d3000608 (identifying PC=0x10d8ed080)
+  Node 0x7ff0d270fec8 (identifying PC=0x10d8eae00)
+Allocation point 0: pc=0x8fffffff9058b48, profinfo=525
+End of node 0x7ff0d270fec8
+Direct call point 0 ends
+(Reached uninitialized tail call point.)
+(Reached uninitialized tail call point.)
+(Reached uninitialized tail call point.)
+(Reached uninitialized tail call point.)
+(Reached uninitialized tail call point.)
+Allocation point 0: pc=0xe8fffffff93d8b48, profinfo=524
+Direct call point 1: 0xe7058d4818ef8349 calls 0x10d8ed080, child node=0x7ff0d3000608
+Node 0x7ff0d3000608: tag 0, size 148
+Identifying PC=0x10d8ed080
+Tail chain:
+  Node 0x7ff0d270fec8 (identifying PC=0x10d8eae00)
+  Node 0x7ff0d270fc08 (identifying PC=0x10d8c1110)
+  Node 0x7ff0d3000608 (identifying PC=0x10d8ed080)
+Node 0x7ff0d3000608 visited before
+Direct call point 1 ends
+(Reached uninitialized tail call point.)
+(Reached uninitialized tail call point.)
+(Reached uninitialized tail call point.)
+(Reached uninitialized tail call point.)
+(Reached uninitialized tail call point.)
+(Reached uninitialized tail call point.)
+(Reached uninitialized tail call point.)
+End of node 0x7ff0d3000608
+Direct call point 1 ends
+End of node 0x7ff0d270fc08
+(Debug: before 'about to classify node 0x0' with 0x7ff0d270fbe0)
+End of node 0x7ff0d270fbe8
+Indirect call point 0 ends.
+Direct call point 0: 0x1024448b48c58949 calls 0x10d923e60, callee was not instrumented
+Direct call point 0 ends
+Indirect call point 0: 0x1c8b481824448b48 calls...
+Node 0x7ff0d2710048: tag 1, size 3
+(Debug: about to classify node 0x7ff0d2710040)
+... 0x10d8c1110: child node=0x7ff0d2710068
+Node 0x7ff0d2710068: tag 0, size 13
+Identifying PC=0x10d8c1110
+Tail chain:
+  Node 0x7ff0d3000c08 (identifying PC=0x10d8ed080)
+  Node 0x7ff0d270fb58 (identifying PC=0x10d8709f0)
+  Node 0x7ff0d2710348 (identifying PC=0x10d8f5ae0)
+  Node 0x7ff0d2710068 (identifying PC=0x10d8c1110)
+Direct call point 0: 0xe48b4c1824448948 calls 0x10d8709f0, child node=0x7ff0d27100d8
+Node 0x7ff0d27100d8: tag 0, size 17
+Identifying PC=0x10d8709f0
+Tail chain:
+  Node 0x7ff0d2710188 (identifying PC=0x10d8e97f0)
+  Node 0x7ff0d27100d8 (identifying PC=0x10d8709f0)
+Indirect call point 0: 0x1c8b481024448b48 calls...
+Node 0x7ff0d2710168: tag 1, size 3
+(Debug: about to classify node 0x7ff0d2710160)
+... 0x10d8e97f0: child node=0x7ff0d2710188
+Node 0x7ff0d2710188: tag 0, size 8
+Identifying PC=0x10d8e97f0
+Tail chain:
+  Node 0x7ff0d27100d8 (identifying PC=0x10d8709f0)
+  Node 0x7ff0d2710188 (identifying PC=0x10d8e97f0)
+Direct call point 0: 0xf389480824748b48 calls 0x10d8e91a0, callee was not instrumented
+Direct call point 0 ends
+Direct call point 1: 0xe66666c318c48348 calls 0x10d90ef20, callee was not instrumented
+Direct call point 1 ends
+End of node 0x7ff0d2710188
+(Debug: before 'about to classify node 0x0' with 0x7ff0d2710160)
+End of node 0x7ff0d2710168
+Indirect call point 0 ends.
+Direct call point 0: 0x1024448b48c58949 calls 0x10d923e60, callee was not instrumented
+Direct call point 0 ends
+End of node 0x7ff0d27100d8
+Direct call point 0 ends
+Allocation point 0: pc=0xe8fffffff93d8b48, profinfo=527
+Direct call point 1: 0xe828c58349e5894d calls 0x10d8ed080, child node=0x7ff0d3000c08
+Node 0x7ff0d3000c08: tag 0, size 148
+Identifying PC=0x10d8ed080
+Tail chain:
+  Node 0x7ff0d270fb58 (identifying PC=0x10d8709f0)
+  Node 0x7ff0d2710348 (identifying PC=0x10d8f5ae0)
+  Node 0x7ff0d2710068 (identifying PC=0x10d8c1110)
+  Node 0x7ff0d3000c08 (identifying PC=0x10d8ed080)
+(Reached uninitialized tail call point.)
+(Reached uninitialized tail call point.)
+(Reached uninitialized tail call point.)
+(Reached uninitialized tail call point.)
+(Reached uninitialized tail call point.)
+(Reached uninitialized tail call point.)
+(Reached uninitialized tail call point.)
+Allocation point 0: pc=0xe8fffffff93d8b48, profinfo=529
+Direct call point 0: 0xe7058d4818ef8349 calls 0x10d8ed080, child node=0x7ff0d3000c08
+Node 0x7ff0d3000c08: tag 0, size 148
+Identifying PC=0x10d8ed080
+Tail chain:
+  Node 0x7ff0d270fb58 (identifying PC=0x10d8709f0)
+  Node 0x7ff0d2710348 (identifying PC=0x10d8f5ae0)
+  Node 0x7ff0d2710068 (identifying PC=0x10d8c1110)
+  Node 0x7ff0d3000c08 (identifying PC=0x10d8ed080)
+Node 0x7ff0d3000c08 visited before
+Direct call point 0 ends
+(Reached uninitialized tail call point.)
+Allocation point 1: pc=0xe8fffffff93d8b48, profinfo=528
+Direct call point 1: 0xe404894810438b48 calls 0x10d8ed080, child node=0x7ff0d3000c08
+Node 0x7ff0d3000c08: tag 0, size 148
+Identifying PC=0x10d8ed080
+Tail chain:
+  Node 0x7ff0d270fb58 (identifying PC=0x10d8709f0)
+  Node 0x7ff0d2710348 (identifying PC=0x10d8f5ae0)
+  Node 0x7ff0d2710068 (identifying PC=0x10d8c1110)
+  Node 0x7ff0d3000c08 (identifying PC=0x10d8ed080)
+Node 0x7ff0d3000c08 visited before
+Direct call point 1 ends
+(Reached uninitialized tail call point.)
+(Reached uninitialized tail call point.)
+(Reached uninitialized tail call point.)
+(Reached uninitialized tail call point.)
+(Reached uninitialized tail call point.)
+Direct call point 2: 0x1c8948182464894c calls 0x10d8709f0, child node=0x7ff0d270fb58
+Node 0x7ff0d270fb58: tag 0, size 17
+Identifying PC=0x10d8709f0
+Tail chain:
+  Node 0x7ff0d2710348 (identifying PC=0x10d8f5ae0)
+  Node 0x7ff0d2710068 (identifying PC=0x10d8c1110)
+  Node 0x7ff0d3000c08 (identifying PC=0x10d8ed080)
+  Node 0x7ff0d270fb58 (identifying PC=0x10d8709f0)
+Node 0x7ff0d270fb58 visited before
+Direct call point 2 ends
+End of node 0x7ff0d3000c08
+Direct call point 1 ends
+End of node 0x7ff0d2710068
+(Debug: before 'about to classify node 0x0' with 0x7ff0d2710040)
+End of node 0x7ff0d2710048
+Indirect call point 0 ends.
+Direct call point 1: 0x1824448b48c58949 calls 0x10d923e60, callee was not instrumented
+Direct call point 1 ends
+Indirect call point 0: 0x1c8b481024448b48 calls...
+Node 0x7ff0d2710328: tag 1, size 3
+(Debug: about to classify node 0x7ff0d2710320)
+... 0x10d8f5ae0: child node=0x7ff0d2710348
+Node 0x7ff0d2710348: tag 0, size 10
+Identifying PC=0x10d8f5ae0
+Tail chain:
+  Node 0x7ff0d2710068 (identifying PC=0x10d8c1110)
+  Node 0x7ff0d3000c08 (identifying PC=0x10d8ed080)
+  Node 0x7ff0d270fb58 (identifying PC=0x10d8709f0)
+  Node 0x7ff0d2710348 (identifying PC=0x10d8f5ae0)
+Direct call point 0: 0x8b480824448b48 calls 0x10d8f0f10, child node=0x7ff0d27103a8
+Node 0x7ff0d27103a8: tag 0, size 61
+Identifying PC=0x10d8f0f10
+Tail chain is empty.
+(Reached uninitialized tail call point.)
+(Reached uninitialized tail call point.)
+(Reached uninitialized tail call point.)
+Direct call point 0: 0xf8894808247c8b48 calls 0x10d8f0f10, child node=0x7ff0d2710598
+Node 0x7ff0d2710598: tag 0, size 61
+Identifying PC=0x10d8f0f10
+Tail chain is empty.
+(Reached uninitialized tail call point.)
+(Reached uninitialized tail call point.)
+(Reached uninitialized tail call point.)
+(Reached uninitialized tail call point.)
+(Reached uninitialized tail call point.)
+Direct call point 0: 0x8708b4824048b48 calls 0x10d8f0f10, child node=0x7ff0d2710788
+Node 0x7ff0d2710788: tag 0, size 61
+Identifying PC=0x10d8f0f10
+Tail chain:
+  Node 0x7ff0d27111c8 (identifying PC=0x10d8870a0)
+  Node 0x7ff0d2710788 (identifying PC=0x10d8f0f10)
+(Reached uninitialized tail call point.)
+(Reached uninitialized tail call point.)
+(Reached uninitialized tail call point.)
+(Reached uninitialized tail call point.)
+Direct call point 0: 0x8588b4824048b48 calls 0x10d8f0f10, child node=0x7ff0d2710978
+Node 0x7ff0d2710978: tag 0, size 61
+Identifying PC=0x10d8f0f10
+Tail chain:
+  Node 0x7ff0d2711198 (identifying PC=0x10d8870a0)
+  Node 0x7ff0d2710978 (identifying PC=0x10d8f0f10)
+(Reached uninitialized tail call point.)
+(Reached uninitialized tail call point.)
+(Reached uninitialized tail call point.)
+(Reached uninitialized tail call point.)
+Direct call point 0: 0x8588b4824048b48 calls 0x10d8f0f10, child node=0x7ff0d2710b68
+Node 0x7ff0d2710b68: tag 0, size 61
+Identifying PC=0x10d8f0f10
+Tail chain:
+  Node 0x7ff0d2711168 (identifying PC=0x10d8870a0)
+  Node 0x7ff0d2710b68 (identifying PC=0x10d8f0f10)
+(Reached uninitialized tail call point.)
+(Reached uninitialized tail call point.)
+(Reached uninitialized tail call point.)
+(Reached uninitialized tail call point.)
+Direct call point 0: 0x8588b4824048b48 calls 0x10d8f0f10, child node=0x7ff0d2710d58
+Node 0x7ff0d2710d58: tag 0, size 61
+Identifying PC=0x10d8f0f10
+Tail chain:
+  Node 0x7ff0d2711138 (identifying PC=0x10d8870a0)
+  Node 0x7ff0d2710d58 (identifying PC=0x10d8f0f10)
+(Reached uninitialized tail call point.)
+(Reached uninitialized tail call point.)
+(Reached uninitialized tail call point.)
+(Reached uninitialized tail call point.)
+Direct call point 0: 0x8588b4824048b48 calls 0x10d8f0f10, child node=0x7ff0d2710f48
+Node 0x7ff0d2710f48: tag 0, size 61
+Identifying PC=0x10d8f0f10
+Tail chain is empty.
+(Reached uninitialized tail call point.)
+(Reached uninitialized tail call point.)
+(Reached uninitialized tail call point.)
+(Reached uninitialized tail call point.)
+(Reached uninitialized tail call point.)
+End of node 0x7ff0d2710f48
+Direct call point 0 ends
+Direct call point 1: 0x548d889483f8b48 calls 0x10d8870a0, child node=0x7ff0d2711138
+Node 0x7ff0d2711138: tag 0, size 5
+Identifying PC=0x10d8870a0
+Tail chain:
+  Node 0x7ff0d2710d58 (identifying PC=0x10d8f0f10)
+  Node 0x7ff0d2711138 (identifying PC=0x10d8870a0)
+Direct call point 0: 0x1f0f66c318c48348 calls 0x10d914a50, callee was not instrumented
+Direct call point 0 ends
+End of node 0x7ff0d2711138
+Direct call point 1 ends
+End of node 0x7ff0d2710d58
+Direct call point 0 ends
+Direct call point 1: 0x548d889483f8b48 calls 0x10d8870a0, child node=0x7ff0d2711168
+Node 0x7ff0d2711168: tag 0, size 5
+Identifying PC=0x10d8870a0
+Tail chain:
+  Node 0x7ff0d2710b68 (identifying PC=0x10d8f0f10)
+  Node 0x7ff0d2711168 (identifying PC=0x10d8870a0)
+Direct call point 0: 0x1f0f66c318c48348 calls 0x10d914a50, callee was not instrumented
+Direct call point 0 ends
+End of node 0x7ff0d2711168
+Direct call point 1 ends
+End of node 0x7ff0d2710b68
+Direct call point 0 ends
+Direct call point 1: 0x548d889483f8b48 calls 0x10d8870a0, child node=0x7ff0d2711198
+Node 0x7ff0d2711198: tag 0, size 5
+Identifying PC=0x10d8870a0
+Tail chain:
+  Node 0x7ff0d2710978 (identifying PC=0x10d8f0f10)
+  Node 0x7ff0d2711198 (identifying PC=0x10d8870a0)
+Direct call point 0: 0x1f0f66c318c48348 calls 0x10d914a50, callee was not instrumented
+Direct call point 0 ends
+End of node 0x7ff0d2711198
+Direct call point 1 ends
+End of node 0x7ff0d2710978
+Direct call point 0 ends
+Direct call point 1: 0x548d889483f8b48 calls 0x10d8870a0, child node=0x7ff0d27111c8
+Node 0x7ff0d27111c8: tag 0, size 5
+Identifying PC=0x10d8870a0
+Tail chain:
+  Node 0x7ff0d2710788 (identifying PC=0x10d8f0f10)
+  Node 0x7ff0d27111c8 (identifying PC=0x10d8870a0)
+Direct call point 0: 0x1f0f66c318c48348 calls 0x10d914a50, callee was not instrumented
+Direct call point 0 ends
+End of node 0x7ff0d27111c8
+Direct call point 1 ends
+End of node 0x7ff0d2710788
+Direct call point 0 ends
+Direct call point 1: 0x41f0fc328c48348 calls 0x10d9147e0, callee was not instrumented
+Direct call point 1 ends
+End of node 0x7ff0d2710598
+Direct call point 0 ends
+Direct call point 1: 0x1f0fc328c48348 calls 0x10d914700, callee was not instrumented
+Direct call point 1 ends
+(Reached uninitialized tail call point.)
+(Reached uninitialized tail call point.)
+End of node 0x7ff0d27103a8
+Direct call point 0 ends
+Indirect call point 0: 0x1c8b481824448b48 calls...
+Node 0x7ff0d27111f8: tag 1, size 3
+(Debug: about to classify node 0x7ff0d27111f0)
+... 0x10d8f5d40: child node=0x7ff0d2710349
+(Unused indirect tail point--uninstrumented callee)
+(Debug: before 'about to classify node 0x0' with 0x7ff0d27111f0)
+End of node 0x7ff0d27111f8
+Indirect call point 0 ends.
+Direct call point 1: 0x1824448b48c58949 calls 0x10d923e60, callee was not instrumented
+Direct call point 1 ends
+End of node 0x7ff0d2710348
+(Debug: before 'about to classify node 0x0' with 0x7ff0d2710320)
+End of node 0x7ff0d2710328
+Indirect call point 0 ends.
+Direct call point 2: 0x1024448b48c58949 calls 0x10d923e60, callee was not instrumented
+Direct call point 2 ends
+End of node 0x7ff0d270fb58
+Direct call point 23 ends
+Direct call point 24: 0xe47c8b4824048948 calls 0x10d906150, child node=0x7ff0d2711218
+Node 0x7ff0d2711218: tag 0, size 10
+Identifying PC=0x10d906150
+Tail chain is empty.
+Direct call point 0: 0xe4748b4824048948 calls 0x10d886350, child node=0x7ff0d2711278
+Node 0x7ff0d2711278: tag 0, size 11
+Identifying PC=0x10d886350
+Tail chain is empty.
+Direct call point 0: 0x10247c8b48c48949 calls 0x10d911f20, callee was not instrumented
+Direct call point 0 ends
+Direct call point 1: 0x789481024448b48 calls 0x10d912600, callee was not instrumented
+Direct call point 1 ends
+Direct call point 2: 0x328c48348e0894c calls 0x10d912600, callee was not instrumented
+Direct call point 2 ends
+End of node 0x7ff0d2711278
+Direct call point 0 ends
+Allocation point 0: pc=0xe8fffffff93d8b48, profinfo=531
+End of node 0x7ff0d2711218
+Direct call point 24 ends
+Direct call point 25: 0x8000c80b61d8d48 calls 0x10d9245c0, callee was not instrumented
+Direct call point 25 ends
+Direct call point 26: 0xf8894820247c8b48 calls 0x10d8f6310, child node=0x7ff0d2711428
+Node 0x7ff0d2711428: tag 0, size 5
+Identifying PC=0x10d8f6310
+Tail chain:
+  Node 0x7ff0d2711458 (identifying PC=0x10d8f5f50)
+  Node 0x7ff0d3001208 (identifying PC=0x10d8ed080)
+  Node 0x7ff0d27114b8 (identifying PC=0x10d8709f0)
+  Node 0x7ff0d2711568 (identifying PC=0x10d8f5ae0)
+  Node 0x7ff0d2711428 (identifying PC=0x10d8f6310)
+Direct call point 0: 0x1f0f2e6666666666 calls 0x10d8f5f50, child node=0x7ff0d2711458
+Node 0x7ff0d2711458: tag 0, size 10
+Identifying PC=0x10d8f5f50
+Tail chain:
+  Node 0x7ff0d3001208 (identifying PC=0x10d8ed080)
+  Node 0x7ff0d27114b8 (identifying PC=0x10d8709f0)
+  Node 0x7ff0d2711568 (identifying PC=0x10d8f5ae0)
+  Node 0x7ff0d2711428 (identifying PC=0x10d8f6310)
+  Node 0x7ff0d2711458 (identifying PC=0x10d8f5f50)
+Allocation point 0: pc=0xe8fffffff93d8b48, profinfo=532
+Direct call point 0: 0xe810c58349dd8949 calls 0x10d8ed080, child node=0x7ff0d3001208
+Node 0x7ff0d3001208: tag 0, size 148
+Identifying PC=0x10d8ed080
+Tail chain:
+  Node 0x7ff0d27114b8 (identifying PC=0x10d8709f0)
+  Node 0x7ff0d2711568 (identifying PC=0x10d8f5ae0)
+  Node 0x7ff0d2711428 (identifying PC=0x10d8f6310)
+  Node 0x7ff0d2711458 (identifying PC=0x10d8f5f50)
+  Node 0x7ff0d3001208 (identifying PC=0x10d8ed080)
+(Reached uninitialized tail call point.)
+(Reached uninitialized tail call point.)
+(Reached uninitialized tail call point.)
+(Reached uninitialized tail call point.)
+(Reached uninitialized tail call point.)
+(Reached uninitialized tail call point.)
+(Reached uninitialized tail call point.)
+Allocation point 0: pc=0xe8fffffff93d8b48, profinfo=534
+Direct call point 0: 0xe7058d4818ef8349 calls 0x10d8ed080, child node=0x7ff0d3001208
+Node 0x7ff0d3001208: tag 0, size 148
+Identifying PC=0x10d8ed080
+Tail chain:
+  Node 0x7ff0d27114b8 (identifying PC=0x10d8709f0)
+  Node 0x7ff0d2711568 (identifying PC=0x10d8f5ae0)
+  Node 0x7ff0d2711428 (identifying PC=0x10d8f6310)
+  Node 0x7ff0d2711458 (identifying PC=0x10d8f5f50)
+  Node 0x7ff0d3001208 (identifying PC=0x10d8ed080)
+Node 0x7ff0d3001208 visited before
+Direct call point 0 ends
+Allocation point 1: pc=0xe8fffffff93d8b48, profinfo=533
+Direct call point 1: 0xe7058d4818ef8349 calls 0x10d8ed080, child node=0x7ff0d3001208
+Node 0x7ff0d3001208: tag 0, size 148
+Identifying PC=0x10d8ed080
+Tail chain:
+  Node 0x7ff0d27114b8 (identifying PC=0x10d8709f0)
+  Node 0x7ff0d2711568 (identifying PC=0x10d8f5ae0)
+  Node 0x7ff0d2711428 (identifying PC=0x10d8f6310)
+  Node 0x7ff0d2711458 (identifying PC=0x10d8f5f50)
+  Node 0x7ff0d3001208 (identifying PC=0x10d8ed080)
+Node 0x7ff0d3001208 visited before
+Direct call point 1 ends
+(Reached uninitialized tail call point.)
+(Reached uninitialized tail call point.)
+(Reached uninitialized tail call point.)
+(Reached uninitialized tail call point.)
+(Reached uninitialized tail call point.)
+(Reached uninitialized tail call point.)
+Direct call point 2: 0x1c8948182464894c calls 0x10d8709f0, child node=0x7ff0d27114b8
+Node 0x7ff0d27114b8: tag 0, size 17
+Identifying PC=0x10d8709f0
+Tail chain:
+  Node 0x7ff0d2711568 (identifying PC=0x10d8f5ae0)
+  Node 0x7ff0d2711428 (identifying PC=0x10d8f6310)
+  Node 0x7ff0d2711458 (identifying PC=0x10d8f5f50)
+  Node 0x7ff0d3001208 (identifying PC=0x10d8ed080)
+  Node 0x7ff0d27114b8 (identifying PC=0x10d8709f0)
+Indirect call point 0: 0x1c8b481024448b48 calls...
+Node 0x7ff0d2711548: tag 1, size 3
+(Debug: about to classify node 0x7ff0d2711540)
+... 0x10d8f5ae0: child node=0x7ff0d2711568
+Node 0x7ff0d2711568: tag 0, size 10
+Identifying PC=0x10d8f5ae0
+Tail chain:
+  Node 0x7ff0d2711428 (identifying PC=0x10d8f6310)
+  Node 0x7ff0d2711458 (identifying PC=0x10d8f5f50)
+  Node 0x7ff0d3001208 (identifying PC=0x10d8ed080)
+  Node 0x7ff0d27114b8 (identifying PC=0x10d8709f0)
+  Node 0x7ff0d2711568 (identifying PC=0x10d8f5ae0)
+Direct call point 0: 0x8b480824448b48 calls 0x10d8f0f10, child node=0x7ff0d27115c8
+Node 0x7ff0d27115c8: tag 0, size 61
+Identifying PC=0x10d8f0f10
+Tail chain is empty.
+(Reached uninitialized tail call point.)
+(Reached uninitialized tail call point.)
+(Reached uninitialized tail call point.)
+Direct call point 0: 0xf8894808247c8b48 calls 0x10d8f0f10, child node=0x7ff0d27117b8
+Node 0x7ff0d27117b8: tag 0, size 61
+Identifying PC=0x10d8f0f10
+Tail chain:
+  Node 0x7ff0d2711b98 (identifying PC=0x10d8870a0)
+  Node 0x7ff0d27117b8 (identifying PC=0x10d8f0f10)
+(Reached uninitialized tail call point.)
+(Reached uninitialized tail call point.)
+(Reached uninitialized tail call point.)
+(Reached uninitialized tail call point.)
+Direct call point 0: 0x8588b4824048b48 calls 0x10d8f0f10, child node=0x7ff0d27119a8
+Node 0x7ff0d27119a8: tag 0, size 61
+Identifying PC=0x10d8f0f10
+Tail chain is empty.
+(Reached uninitialized tail call point.)
+(Reached uninitialized tail call point.)
+(Reached uninitialized tail call point.)
+(Reached uninitialized tail call point.)
+(Reached uninitialized tail call point.)
+End of node 0x7ff0d27119a8
+Direct call point 0 ends
+Direct call point 1: 0x548d889483f8b48 calls 0x10d8870a0, child node=0x7ff0d2711b98
+Node 0x7ff0d2711b98: tag 0, size 5
+Identifying PC=0x10d8870a0
+Tail chain:
+  Node 0x7ff0d27117b8 (identifying PC=0x10d8f0f10)
+  Node 0x7ff0d2711b98 (identifying PC=0x10d8870a0)
+Direct call point 0: 0x1f0f66c318c48348 calls 0x10d914a50, callee was not instrumented
+Direct call point 0 ends
+End of node 0x7ff0d2711b98
+Direct call point 1 ends
+End of node 0x7ff0d27117b8
+Direct call point 0 ends
+Direct call point 1: 0x1f0fc328c48348 calls 0x10d914700, callee was not instrumented
+Direct call point 1 ends
+(Reached uninitialized tail call point.)
+(Reached uninitialized tail call point.)
+End of node 0x7ff0d27115c8
+Direct call point 0 ends
+Indirect call point 0: 0x1c8b481824448b48 calls...
+Node 0x7ff0d2711bc8: tag 1, size 3
+(Debug: about to classify node 0x7ff0d2711bc0)
+... 0x10d8f5d40: child node=0x7ff0d2711569
+(Unused indirect tail point--uninstrumented callee)
+(Debug: before 'about to classify node 0x0' with 0x7ff0d2711bc0)
+End of node 0x7ff0d2711bc8
+Indirect call point 0 ends.
+Direct call point 1: 0x1824448b48c58949 calls 0x10d923e60, callee was not instrumented
+Direct call point 1 ends
+End of node 0x7ff0d2711568
+(Debug: before 'about to classify node 0x0' with 0x7ff0d2711540)
+End of node 0x7ff0d2711548
+Indirect call point 0 ends.
+Direct call point 0: 0x1024448b48c58949 calls 0x10d923e60, callee was not instrumented
+Direct call point 0 ends
+End of node 0x7ff0d27114b8
+Direct call point 2 ends
+End of node 0x7ff0d3001208
+Direct call point 0 ends
+End of node 0x7ff0d2711458
+Direct call point 0 ends
+End of node 0x7ff0d2711428
+Direct call point 26 ends
+Direct call point 27: 0x8000c80631d8d48 calls 0x10d9245c0, callee was not instrumented
+Direct call point 27 ends
+End of node 0x7ff0d2802008
+Direct call point 27 ends
+End of node 0x7ff0d27025e8
+(Debug: before 'about to classify node 0x0' with 0x7ff0d27025c0)
+End of node 0x7ff0d27025c8
+Indirect call point 0 ends.
+End of node 0x7ff0d2702438
+End of trie dump.  Marking trie black.
+Done.
+---------------------------------------------------------------
+end of second trace
