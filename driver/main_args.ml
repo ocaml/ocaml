@@ -405,6 +405,11 @@ let mk_stdin f =
   "-stdin", Arg.Unit f, " Read script from standard input"
 ;;
 
+let mk_no_strict_sequence f =
+  "-no-strict-sequence", Arg.Unit f,
+  " Left-hand part of a sequence need not have type unit (default)"
+;;
+
 let mk_strict_sequence f =
   "-strict-sequence", Arg.Unit f,
   " Left-hand part of a sequence must have type unit"
@@ -648,15 +653,15 @@ let mk_opaque f =
 
 let mk_strict_formats f =
   "-strict-formats", Arg.Unit f,
-  " Reject invalid formats accepted by legacy implementations (default)\n\
+  " Reject invalid formats accepted by legacy implementations\n\
   \     (Warning: Invalid formats may behave differently from\n\
   \      previous OCaml versions, and will become always-rejected\n\
   \      in future OCaml versions. You should always use this flag\n\
-  \      and instead fix invalid formats.)"
+  \      to detect invalid formats so you can fix them.)"
 
 let mk_no_strict_formats f =
   "-no-strict-formats", Arg.Unit f,
-  " Accept invalid formats accepted by legacy implementations\n\
+  " Accept invalid formats accepted by legacy implementations (default)\n\
   \     (Warning: Invalid formats may behave differently from\n\
   \      previous OCaml versions, and will become always-rejected\n\
   \      in future OCaml versions. You should never use this flag\n\
@@ -684,6 +689,7 @@ module type Common_options = sig
   val _safe_string : unit -> unit
   val _short_paths : unit -> unit
   val _strict_sequence : unit -> unit
+  val _no_strict_sequence : unit -> unit
   val _strict_formats : unit -> unit
   val _no_strict_formats : unit -> unit
   val _unsafe : unit -> unit
@@ -918,6 +924,7 @@ struct
     mk_safe_string F._safe_string;
     mk_short_paths F._short_paths;
     mk_strict_sequence F._strict_sequence;
+    mk_no_strict_sequence F._no_strict_sequence;
     mk_strict_formats F._strict_formats;
     mk_no_strict_formats F._no_strict_formats;
     mk_thread F._thread;
@@ -972,6 +979,7 @@ struct
     mk_short_paths F._short_paths;
     mk_stdin F._stdin;
     mk_strict_sequence F._strict_sequence;
+    mk_no_strict_sequence F._no_strict_sequence;
     mk_strict_formats F._strict_formats;
     mk_no_strict_formats F._no_strict_formats;
     mk_unsafe F._unsafe;
@@ -1063,6 +1071,7 @@ struct
     mk_shared F._shared;
     mk_short_paths F._short_paths;
     mk_strict_sequence F._strict_sequence;
+    mk_no_strict_sequence F._no_strict_sequence;
     mk_strict_formats F._strict_formats;
     mk_no_strict_formats F._no_strict_formats;
     mk_thread F._thread;
@@ -1156,6 +1165,7 @@ module Make_opttop_options (F : Opttop_options) = struct
     mk_short_paths F._short_paths;
     mk_stdin F._stdin;
     mk_strict_sequence F._strict_sequence;
+    mk_no_strict_sequence F._no_strict_sequence;
     mk_strict_formats F._strict_formats;
     mk_no_strict_formats F._no_strict_formats;
     mk_unbox_closures F._unbox_closures;
@@ -1220,6 +1230,7 @@ struct
     mk_safe_string F._safe_string;
     mk_short_paths F._short_paths;
     mk_strict_sequence F._strict_sequence;
+    mk_no_strict_sequence F._no_strict_sequence;
     mk_strict_formats F._strict_formats;
     mk_no_strict_formats F._no_strict_formats;
     mk_thread F._thread;

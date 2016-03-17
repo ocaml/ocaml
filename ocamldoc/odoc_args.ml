@@ -213,6 +213,7 @@ module Options = Main_args.Make_ocamldoc_options(struct
   let _safe_string = unset Clflags.unsafe_string
   let _short_paths = unset Clflags.real_paths
   let _strict_sequence = set Clflags.strict_sequence
+  let _no_strict_sequence = unset Clflags.strict_sequence
   let _strict_formats = set Clflags.strict_formats
   let _no_strict_formats = unset Clflags.strict_formats
   let _thread = set Clflags.use_threads
