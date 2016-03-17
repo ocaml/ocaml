@@ -2284,15 +2284,16 @@ and type_expect_ ?in_function ?(recarg=Rejected) env sexp ty_expected =
       check_duplicates lbl_exp_list;
       let opt_exp, label_definitions =
         let (_lid, lbl, _lbl_exp) = List.hd lbl_exp_list in
+        let matching_label lbl =
+          List.find
+            (fun (_, lbl',_) -> lbl'.lbl_pos = lbl.lbl_pos)
+            lbl_exp_list
+        in
         match opt_exp with
           None ->
             let label_definitions =
               Array.map (fun lbl ->
-                  let (lid, _lbl, lbl_exp) =
-                    List.find
-                      (fun (_, lbl',_) -> lbl'.lbl_pos = lbl.lbl_pos)
-                      lbl_exp_list
-                  in
+                  let (lid, _lbl, lbl_exp) = matching_label lbl in
                   Overridden (lid, lbl_exp))
                 lbl.lbl_all
             in
@@ -2300,11 +2301,7 @@ and type_expect_ ?in_function ?(recarg=Rejected) env sexp ty_expected =
         | Some exp ->
             let ty_exp = instance env exp.exp_type in
             let unify_kept lbl =
-              match
-                List.find
-                  (fun (_, lbl',_) -> lbl'.lbl_pos = lbl.lbl_pos)
-                  lbl_exp_list
-              with
+              match matching_label lbl with
               | lid, _lbl, lbl_exp ->
                   Overridden (lid, lbl_exp)
               | exception Not_found -> begin
