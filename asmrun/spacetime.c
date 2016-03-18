@@ -12,6 +12,8 @@
 /*                                                                        */
 /**************************************************************************/
 
+#pragma GCC optimize ("O0")
+
 #include <assert.h>
 #include <stdio.h>
 #include <stdint.h>
@@ -1022,6 +1024,7 @@ void caml_spacetime_caml_garbage_collection(void)
 
   /* We need to skip over 13 registers to fish out our return address.
      See asmrun/amd64.S:caml_call_gc. */
+  /* CR mshinwell: this should be target-dependent */
   call_site = (void*) *(((uint64_t*) caml_gc_regs) + 13);
   callee = &caml_garbage_collection;
 
@@ -1037,6 +1040,9 @@ void caml_spacetime_caml_ml_array_bound_error(void)
 
   void* call_site;
   void(* callee)();
+
+  /* CR mshinwell: it looks like caml_last_return_address won't be correct
+     here, we need to look at the stack */
 
   call_site = (void*) caml_last_return_address;
   callee = &caml_array_bound_error;

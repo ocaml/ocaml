@@ -14,6 +14,9 @@
 
 module L = Lambda
 
+(* CR mshinwell: Obtain constants by calling C functions so they definitely
+   match the C code. *)
+
 (* CR mshinwell: Make sure the story is completely straight with regards
    to %r13. *)
 
