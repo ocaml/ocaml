@@ -958,6 +958,47 @@ void caml_spacetime_c_to_ocaml(void* ocaml_entry_point,
 }
 
 extern void caml_garbage_collection(void);  /* signals_asm.c */
+extern void caml_array_bound_error(void);  /* fail.c */
+
+static void ocaml_to_c_call_site_without_instrumentation(
+  void* call_site_ptr,
+  void(* callee_ptr)(void))
+{
+  /* See comment on [caml_spacetime_caml_garbage_collection] below. */
+
+  value call_site;
+  value callee;
+  value node;
+
+  /* We need to skip over 13 registers to fish out our return address.
+     See asmrun/amd64.S:caml_call_gc. */
+  call_site = Encode_call_point_pc(call_site_ptr);
+
+  /* See point 1 above. */
+  node = (value) caml_spacetime_trie_node_ptr;
+  assert ((node % sizeof(value)) == 0);
+
+  callee = Encode_call_point_pc(callee_ptr);
+
+  /* If the call site and callee have been set, we don't check whether there
+     is any child node, since it's possible there might not actually be one
+     (e.g. if no allocation or callbacks performed in
+     [caml_garbage_collection]). */
+  assert((Direct_pc_call_site(node, 0) == Val_unit
+      && Direct_pc_callee(node, 0) == Val_unit
+      && Direct_callee_node(node, 0) == Val_unit)
+    || (Direct_pc_call_site(node, 0) == call_site
+      && Direct_pc_callee(node, 0) == callee));
+
+  /* Initialize the direct call point within the node. */
+  Direct_pc_call_site(node, 0) = call_site;
+  Direct_pc_callee(node, 0) = callee;
+
+  /* Set the trie node hole pointer correctly so that when e.g. an
+     allocation occurs from within [caml_garbage_collection] the resulting
+     nodes are attached correctly. */
+  caml_spacetime_trie_node_ptr = &Direct_callee_node(node, 0);
+}
 
 void caml_spacetime_caml_garbage_collection(void)
 {
@@ -976,48 +1017,31 @@ void caml_spacetime_caml_garbage_collection(void)
         such array.
   */
 
-  value call_site;
-  value encoded_caml_garbage_collection;
-  value node;
+  void* call_site;
+  void(* callee)();
 
   /* We need to skip over 13 registers to fish out our return address.
      See asmrun/amd64.S:caml_call_gc. */
-  call_site = Encode_call_point_pc(*(((uint64_t*) caml_gc_regs) + 13));
+  call_site = (void*) *(((uint64_t*) caml_gc_regs) + 13);
+  callee = &caml_garbage_collection;
 
-  /* See point 1 above. */
-  node = (value) caml_spacetime_trie_node_ptr;
-  assert ((node % sizeof(value)) == 0);
-
-  /* The callee is constant. */
-  encoded_caml_garbage_collection =
-    Encode_call_point_pc(&caml_garbage_collection);
-
-  /* If the call site and callee have been set, we don't check whether there
-     is any child node, since it's possible there might not actually be one
-     (e.g. if no allocation or callbacks performed in
-     [caml_garbage_collection]). */
-  assert((Direct_pc_call_site(node, 0) == Val_unit
-      && Direct_pc_callee(node, 0) == Val_unit
-      && Direct_callee_node(node, 0) == Val_unit)
-    || (Direct_pc_call_site(node, 0) == call_site
-      && Direct_pc_callee(node, 0) == encoded_caml_garbage_collection));
-
-  /* Initialize the direct call point within the node. */
-  Direct_pc_call_site(node, 0) = call_site;
-  Direct_pc_callee(node, 0) = encoded_caml_garbage_collection;
-
-  /* Set the trie node hole pointer correctly so that when e.g. an
-     allocation occurs from within [caml_garbage_collection] the resulting
-     nodes are attached correctly. */
-  caml_spacetime_trie_node_ptr = &Direct_callee_node(node, 0);
+  ocaml_to_c_call_site_without_instrumentation(call_site, callee);
 }
 
 void caml_spacetime_caml_ml_array_bound_error(void)
 {
   /* Like [caml_spacetime_caml_ml_array_bound_error], but for array bounds
-     check failures. */
+     check failures.  This one is called via [caml_c_call] so we can use
+     [caml_last_return_address] to find the original call site in OCaml
+     code. */
 
+  void* call_site;
+  void(* callee)();
 
+  call_site = (void*) caml_last_return_address;
+  callee = &caml_array_bound_error;
+
+  ocaml_to_c_call_site_without_instrumentation(call_site, callee);
 }
 
 static uintnat generate_profinfo(void)
