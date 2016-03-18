@@ -20,6 +20,11 @@ module L = Lambda
 (* CR mshinwell: Make sure the story is completely straight with regards
    to %r13. *)
 
+(* CR mshinwell: Revisit whether we should ditch the call site address for
+   direct call points.  We could emit these into separate files at
+   compile time.  This would reduce memory consumption by some amount and
+   also reduce the amount of code at each call site. *)
+
 let index_within_node = ref 2 (* Cf. [Node_num_header_words] in the runtime. *)
 (* The [lazy]s are to ensure that we don't create [Ident.t]s at toplevel
    when not using Spacetime profiling.  (This could cause stamps to differ
@@ -139,7 +144,8 @@ let code_for_blockheader ~value's_header ~node ~dbg =
       Clet (profinfo,
         Cifthenelse (
           Cop (Ccmpi Cne, [Cvar existing_profinfo; Cconst_pointer 1]),
-          (* CR mshinwell: consider storing the profinfo shifted *)
+          (* CR mshinwell: consider storing the profinfo shifted
+             N.B. don't need to shift left again, bottom bit is known clear *)
           (* CR mshinwell: name constant *)
           Cop (Clsl, [Cvar existing_profinfo; Cconst_int 42]),
           generate_new_profinfo),
@@ -177,6 +183,8 @@ let code_for_call ~node ~callee ~is_tail ~label =
   let place_within_node = Ident.create "place_within_node" in
   let open Cmm in
   let encode_pc pc =
+    (* CR mshinwell: consider whether the encoding could be optimised to
+       reduce the overhead here *)
     (* Cf. [Encode_call_point_pc] in the runtime. *)
     Cop (Cor, [Cop (Clsl, [pc; Cconst_int 2]); Cconst_int 3])
   in
