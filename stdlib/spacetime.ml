@@ -51,18 +51,6 @@ module Frame_table = struct
     table
 end
 
-module Annotation = struct
-  type t = int
-
-  let to_int t = t
-end
-
-module Trace = struct
-  external debug : unit -> unit
-    = "caml_spacetime_only_works_for_native_code"
-      "caml_spacetime_debug" "noalloc"
-end
-
 module Heap_snapshot = struct
   let pathname_suffix_trace = "trace"
 
@@ -121,53 +109,3 @@ module Heap_snapshot = struct
       marshal out_channel snapshot;
       free snapshot)
 end
-
-(* XCR mshinwell: must ensure -allocation-profiling does not appear as a
-   compiler option if WITH_SPACETIME was not set *)
-
-external annotation_of_value : 'a -> int
-  = "caml_spacetime_only_works_for_native_code"
-    "caml_spacetime_get_profinfo"
-
-external erase_profiling_annotations : unit -> unit
-  = "caml_spacetime_only_works_for_native_code"
-    "caml_forget_where_values_were_allocated"
-
-external annotate_values_with_allocation_location : unit -> unit
-  = "%identity" (*"caml_do_not_override_profinfo" "noalloc"*)
-
-external annotate_values_with_given_integer : int -> bool
-= "%identity"
-(*
-    = "caml_set_override_profinfo" "noalloc"
-*)
-
-let annotate_values_with_given_integer i =
-  if i < 0 then `Out_of_range
-  else if annotate_values_with_given_integer i then `Ok
-  else `Out_of_range
-
-(* CR mshinwell: make this all work *)
-
-(*
-external max_annotation_value : unit -> int
-= "%identity"
-(*
-  = "caml_spacetime_max_override_profinfo" "noalloc"
-*)
-*)
-
-(*
-type profinfo = int
-external profinfo_none : unit -> profinfo
-  = "caml_spacetime_only_works_for_native_code"
-    "caml_spacetime_profinfo_none" "noalloc"
-
-external profinfo_overflow : unit -> profinfo
-  = "caml_spacetime_only_works_for_native_code"
-    "caml_spacetime_profinfo_none" "noalloc"
-
-external get_profinfo : 'a -> profinfo
-  = "caml_spacetime_only_works_for_native_code"
-    "caml_spacetime_get_profinfo" "noalloc"
-*)

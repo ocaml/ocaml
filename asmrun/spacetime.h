@@ -12,13 +12,25 @@
 /*                                                                        */
 /**************************************************************************/
 
-/* Runtime support for Spacetime profiling. */
+#ifndef CAML_SPACETIME_H
+#define CAML_SPACETIME_H
+
+/* Runtime support for Spacetime profiling.
+ * This header file is not intended for the casual user.
+ *
+ * The implementation is split into three files:
+ *   1. spacetime.c: core management of the instrumentation;
+ *   2. spacetime_snapshot.c: the taking of heap snapshots;
+ *   3. spacetime_offline.c: functions that are also used when examining
+ *      saved profiling data.
+ */
 
 typedef enum {
   CALL,
   ALLOCATION
 } c_node_type;
 
+/* CR mshinwell: fix / rewrite comment */
 /* Layout of static nodes:
 
    OCaml GC header with tag zero
@@ -167,21 +179,15 @@ typedef struct {
 extern value* caml_spacetime_trie_node_ptr;
 extern value* caml_spacetime_finaliser_trie_root;
 
-extern const uintnat caml_profinfo_lowest;
 extern void caml_spacetime_initialize(void);
 extern uintnat caml_spacetime_my_profinfo(void);
-extern void caml_spacetime_register_dynamic_library(
-  const char* filename, void* address_of_code_begin);
+extern void caml_spacetime_register_dynamic_library(const char*, void*);
 extern c_node_type caml_spacetime_classify_c_node(c_node* node);
-extern c_node* caml_spacetime_c_node_of_stored_pointer(
-  value node_stored);
-extern c_node* caml_spacetime_c_node_of_stored_pointer_not_null(
-  value node_stored);
-extern value caml_spacetime_stored_pointer_of_c_node(
-  c_node* node);
-extern value caml_spacetime_min_override_profinfo (value v_unit);
-extern value caml_spacetime_max_override_profinfo (value v_unit);
-extern void caml_spacetime_register_thread(
-  value* trie_node_root, value* finaliser_trie_node_root);
+extern c_node* caml_spacetime_c_node_of_stored_pointer(value);
+extern c_node* caml_spacetime_c_node_of_stored_pointer_not_null(value);
+extern value caml_spacetime_stored_pointer_of_c_node(c_node* node);
+extern void caml_spacetime_register_thread(value*, value*);
 extern void caml_spacetime_caml_garbage_collection(void);
-extern void caml_spacetime_caml_array_bound_error(void);
+extern void caml_spacetime_caml_ml_array_bound_error(void);
+
+#endif

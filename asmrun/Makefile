@@ -34,7 +34,7 @@ COBJS=startup_aux.o startup.o \
   compact.o finalise.o custom.o $(UNIX_OR_WIN32).o backtrace_prim.o \
   backtrace.o \
   natdynlink.o debugger.o meta.o dynlink.o clambda_checks.o \
-  spacetime.o spacetime_offline.o
+  spacetime.o spacetime_snapshot.o spacetime_offline.o
 
 ASMOBJS=$(ARCH).o
 

@@ -12,6 +12,8 @@
 /*                                                                        */
 /**************************************************************************/
 
+/* CR mshinwell: remove pragma and rename assert -> Assert */
+
 #pragma GCC optimize ("O0")
 
 #include <assert.h>
@@ -23,7 +25,6 @@
 #include <fcntl.h>
 #include <limits.h>
 #include <math.h>
-#include <sys/resource.h>
 
 #include "caml/alloc.h"
 #include "caml/backtrace_prim.h"
@@ -51,355 +52,20 @@
 #include "libunwind.h"
 #endif
 
-static void debug_printf(const char* format, ...)
-{
-}
-
 extern value caml_spacetime_debug(value);
 
-/* The following structures must match the type definitions in the
-   [Spacetime] module. */
+typedef struct per_thread {
+  value* trie_node_root;
+  value* finaliser_trie_node_root;
+  struct per_thread* next;
+} per_thread;
 
-typedef struct {
-  /* (GC header here.) */
-  value minor_words;
-  value promoted_words;
-  value major_words;
-  value minor_collections;
-  value major_collections;
-  value heap_words;
-  value heap_chunks;
-  value compactions;
-  value top_heap_words;
-} gc_stats;
+/* List of tries corresponding to threads that have been created. */
+/* CR-soon mshinwell: just include the main trie in this list. */
+static per_thread* per_threads = NULL;
+static int num_per_threads = 0;
 
-typedef struct {
-  value profinfo;
-  value num_blocks;
-  value num_words_including_headers;
-} snapshot_entry;
-
-typedef struct {
-  /* (GC header here.) */
-  snapshot_entry entries[0];
-} snapshot_entries;
-
-typedef struct {
-  /* (GC header here.) */
-  value time;  /* Cf. [Sys.time]. */
-  value gc_stats;
-  value entries;
-  value num_blocks_in_minor_heap;
-  value num_blocks_in_major_heap;
-  value num_blocks_in_minor_heap_with_profinfo;
-  value num_blocks_in_major_heap_with_profinfo;
-} snapshot;
-
-static const uintnat profinfo_none = (uintnat) 0;
-static const uintnat profinfo_overflow = (uintnat) 1;
-uintnat caml_spacetime_profinfo = (uintnat) 2;
-
-static value allocate_outside_heap_with_tag(mlsize_t size_in_bytes, tag_t tag)
-{
-  /* CR mshinwell: this function should live somewhere else */
-  header_t* block;
-
-  assert(size_in_bytes % sizeof(value) == 0);
-  block = caml_stat_alloc(sizeof(header_t) + size_in_bytes);
-  *block = Make_header(size_in_bytes / sizeof(value), tag, Caml_black);
-  return (value) &block[1];
-}
-
-static value allocate_outside_heap(mlsize_t size_in_bytes)
-{
-  assert(size_in_bytes > 0);
-  return allocate_outside_heap_with_tag(size_in_bytes, 0);
-}
-
-static value take_gc_stats(void)
-{
-  value v_stats;
-  gc_stats* stats;
-
-  v_stats = allocate_outside_heap(sizeof(gc_stats));
-  stats = (gc_stats*) v_stats;
-
-  stats->minor_words = Val_long(caml_stat_minor_words);
-  stats->promoted_words = Val_long(caml_stat_promoted_words);
-  stats->major_words =
-    Val_long(((uintnat) caml_stat_major_words)
-             + ((uintnat) caml_allocated_words));
-  stats->minor_collections = Val_long(caml_stat_minor_collections);
-  stats->major_collections = Val_long(caml_stat_major_collections);
-  stats->heap_words = Val_long(caml_stat_heap_wsz / sizeof(value));
-  stats->heap_chunks = Val_long(caml_stat_heap_chunks);
-  stats->compactions = Val_long(caml_stat_compactions);
-  stats->top_heap_words = Val_long(caml_stat_top_heap_wsz / sizeof(value));
-
-  return v_stats;
-}
-
-typedef struct {
-  uintnat num_blocks;
-  uintnat num_words_including_headers;
-} raw_snapshot_entry;
-
-CAMLprim value caml_spacetime_take_heap_snapshot(void)
-{
-  value v_snapshot;
-  snapshot* heap_snapshot;
-  value v_entries;
-  snapshot_entries* entries;
-  char* chunk;
-  value gc_stats;
-  uintnat index;
-  uintnat target_index;
-  value v_time;
-  double time;
-  uintnat profinfo;
-  uintnat num_distinct_profinfos;
-  value* ptr;
-  /* Fixed size buffer to avoid needing a hash table: */
-  static raw_snapshot_entry* raw_entries = NULL;
-  uintnat num_blocks_in_minor_heap = 0;
-  uintnat num_blocks_in_minor_heap_with_profinfo = 0;
-  uintnat num_blocks_in_major_heap = 0;
-  uintnat num_blocks_in_major_heap_with_profinfo = 0;
-
-  time = caml_sys_time_unboxed(Val_unit);
-  gc_stats = take_gc_stats();
-
-  if (raw_entries == NULL) {
-    size_t size = (PROFINFO_MASK + 1) * sizeof(raw_snapshot_entry);
-    raw_entries = caml_stat_alloc(size);
-    memset(raw_entries, '\0', size);
-  }
-
-  num_distinct_profinfos = 0;
-
-  /* Scan the minor heap. */
-  assert(((uintnat) caml_young_ptr) % sizeof(value) == 0);
-  ptr = (value*) caml_young_ptr;
-  assert(ptr >= (value*) caml_young_start);
-  while (ptr < (value*) caml_young_end) {
-    header_t hd;
-    value value_in_minor_heap;
-
-    ptr++;
-    value_in_minor_heap = (value) ptr;
-    assert(Is_young(value_in_minor_heap));
-    assert(Is_block(value_in_minor_heap));
-
-    hd = Hd_val(value_in_minor_heap);
-
-    /* We do not expect the value to be promoted, since this function
-       should not be called during a minor collection. */
-    assert(hd != 0);
-
-    profinfo = Profinfo_hd(hd);
-
-    num_blocks_in_minor_heap++;
-    if (profinfo >= caml_profinfo_lowest && profinfo <= PROFINFO_MASK) {
-      num_blocks_in_minor_heap_with_profinfo++;
-      assert (raw_entries[profinfo].num_blocks >= 0);
-      if (raw_entries[profinfo].num_blocks == 0) {
-        num_distinct_profinfos++;
-      }
-      raw_entries[profinfo].num_blocks++;
-      raw_entries[profinfo].num_words_including_headers +=
-        Whsize_val(value_in_minor_heap);
-    }
-
-    ptr += Wosize_val(value_in_minor_heap);
-  }
-
-  /* Scan the major heap. */
-  chunk = caml_heap_start;
-  while (chunk != NULL) {
-    char* hp;
-    char* limit;
-
-    hp = chunk;
-    limit = chunk + Chunk_size (chunk);
-
-    while (hp < limit) {
-      header_t hd = Hd_hp (hp);
-      switch (Color_hd(hd)) {
-        case Caml_blue:
-          break;
-
-        default:
-          profinfo = Profinfo_hd(hd);
-          num_blocks_in_major_heap++;
-          if (profinfo >= caml_profinfo_lowest && profinfo <= PROFINFO_MASK) {
-            num_blocks_in_major_heap_with_profinfo++;
-            assert (raw_entries[profinfo].num_blocks >= 0);
-            if (raw_entries[profinfo].num_blocks == 0) {
-              num_distinct_profinfos++;
-            }
-            raw_entries[profinfo].num_blocks++;
-            raw_entries[profinfo].num_words_including_headers +=
-              Whsize_hd(hd);
-          }
-          break;
-      }
-      hp += Bhsize_hd (hd);
-      Assert (hp <= limit);
-    }
-
-    chunk = Chunk_next (chunk);
-  }
-
-  if(num_distinct_profinfos > 0) {
-    v_entries = allocate_outside_heap(
-      num_distinct_profinfos*sizeof(snapshot_entry));
-    entries = (snapshot_entries*) v_entries;
-    target_index = 0;
-    for (index = caml_profinfo_lowest; index <= PROFINFO_MASK; index++) {
-      assert(raw_entries[index].num_blocks >= 0);
-      if (raw_entries[index].num_blocks > 0) {
-        assert(target_index < num_distinct_profinfos);
-        entries->entries[target_index].profinfo = Val_long(index);
-        entries->entries[target_index].num_blocks
-          = Val_long(raw_entries[index].num_blocks);
-        entries->entries[target_index].num_words_including_headers
-          = Val_long(raw_entries[index].num_words_including_headers);
-        target_index++;
-      }
-    }
-  } else {
-    v_entries = Atom(0);
-  }
-
-  assert(sizeof(double) == sizeof(value));
-  v_time = allocate_outside_heap_with_tag(sizeof(double), Double_tag);
-  Double_field(v_time, 0) = time;
-
-  v_snapshot = allocate_outside_heap(sizeof(snapshot));
-  heap_snapshot = (snapshot*) v_snapshot;
-
-  heap_snapshot->time = v_time;
-  heap_snapshot->gc_stats = gc_stats;
-  heap_snapshot->entries = v_entries;
-  heap_snapshot->num_blocks_in_minor_heap =
-    Val_long(num_blocks_in_minor_heap);
-  heap_snapshot->num_blocks_in_major_heap =
-    Val_long(num_blocks_in_major_heap);
-  heap_snapshot->num_blocks_in_minor_heap_with_profinfo
-    = Val_long(num_blocks_in_minor_heap_with_profinfo);
-  heap_snapshot->num_blocks_in_major_heap_with_profinfo
-    = Val_long(num_blocks_in_major_heap_with_profinfo);
-
-  return v_snapshot;
-}
-
-CAMLprim value caml_spacetime_free_heap_snapshot(value v_snapshot)
-{
-  snapshot* heap_snapshot = (snapshot*) v_snapshot;
-  caml_stat_free(Hp_val(heap_snapshot->time));
-  caml_stat_free(Hp_val(heap_snapshot->gc_stats));
-  if (Wosize_val(heap_snapshot->entries) > 0) {
-    caml_stat_free(Hp_val(heap_snapshot->entries));
-  }
-  caml_stat_free(Hp_val(v_snapshot));
-  return Val_unit;
-}
-
-CAMLprim value caml_spacetime_marshal_heap_snapshot
-      (value v_channel, value v_snapshot)
-{
-  caml_extern_allow_out_of_heap = 1;
-  caml_output_value(v_channel, v_snapshot, Val_long(0));
-  caml_extern_allow_out_of_heap = 0;
-
-  return Val_unit;
-}
-
-CAMLprim value
-caml_spacetime_num_frame_descriptors(value unit)
-{
-  assert(unit == Val_unit);
-
-  if (caml_frame_descriptors == NULL) {
-    caml_init_frame_descriptors();
-  }
-
-  return Val_long(caml_frame_descriptors_mask + 1);
-}
-
-CAMLprim value
-caml_spacetime_get_frame_descriptor(value v_index)
-{
-  uintnat index;
-  value v_result;
-  frame_descr* descr;
-
-  assert(!Is_block(v_index));
-  index = Long_val(v_index);
-  if (index > caml_frame_descriptors_mask) {
-    caml_failwith("caml_spacetime_get_frametable: bad index");
-  }
-
-  if (caml_frame_descriptors == NULL) {
-    caml_init_frame_descriptors();
-  }
-  
-  descr = caml_frame_descriptors[index];
-
-  if (descr == NULL) {
-    return Val_long(0 /* None */);
-  }
-
-  v_result = caml_alloc_small(1, 1 /* Some */);
-  Field(v_result, 0) = caml_val_raw_backtrace_slot((backtrace_slot) descr);
-
-  return v_result;
-}
-
-CAMLprim value
-caml_spacetime_return_address_of_frame_descriptor(value v_descr)
-{
-  frame_descr* descr;
-
-  descr = (frame_descr*) caml_raw_backtrace_slot_val(v_descr);
-  assert(descr != NULL);
-
-  return caml_copy_int64(descr->retaddr);
-}
-
-CAMLprim value
-caml_forget_where_values_were_allocated (value v_unit)
-{
-
-  assert(v_unit == Val_unit);
-
-  /* CR mshinwell: This function should traverse the minor heap. */
-#if 0
-  char* chunk;
-  caml_minor_collection();
-
-  chunk = caml_heap_start;
-
-  while (chunk != NULL) {
-    char* hp;
-    char* limit;
-
-    hp = chunk;
-    limit = chunk + Chunk_size (chunk);
-
-    while (hp < limit) {
-      header_t hd = Hd_hp (hp);
-      Hd_hp (hp) = Make_header (Wosize_hd(hd), Tag_hd(hd), Color_hd(hd));
-      hp += Bhsize_hd (hd);
-      Assert (hp <= limit);
-    }
-
-    chunk = Chunk_next (chunk);
-  }
-#endif
-
-  return v_unit;
-}
+static uintnat caml_spacetime_profinfo = (uintnat) 0;
 
 static value caml_spacetime_trie_root = Val_unit;
 value* caml_spacetime_trie_node_ptr = &caml_spacetime_trie_root;
@@ -407,9 +73,6 @@ value* caml_spacetime_trie_node_ptr = &caml_spacetime_trie_root;
 static value caml_spacetime_finaliser_trie_root_main_thread = Val_unit;
 value* caml_spacetime_finaliser_trie_root
   = &caml_spacetime_finaliser_trie_root_main_thread;
-
-value caml_spacetime_use_override_profinfo = Val_false;
-uintnat caml_spacetime_override_profinfo;
 
 void caml_spacetime_initialize (void)
 {
@@ -425,39 +88,60 @@ CAMLprim value caml_spacetime_get_trie_root (value v_unit)
   return caml_spacetime_trie_root;
 }
 
-CAMLprim value caml_spacetime_do_not_override_profinfo (value v_unit)
+void caml_spacetime_register_dynamic_library(
+  const char* filename, void* address_of_code_begin)
 {
-  v_unit = Val_unit;
-  caml_spacetime_use_override_profinfo = Val_false;
-  return Val_unit;
+  /* CR mshinwell: implement this */
 }
 
-CAMLprim value caml_spacetime_set_override_profinfo (value v_override)
+void caml_spacetime_register_thread(
+  value* trie_node_root, value* finaliser_trie_node_root)
 {
-  uintnat override = (uintnat) Long_val (v_override);
-  if (override == profinfo_none
-      || override == profinfo_overflow
-      || override > PROFINFO_MASK) {
-    return Val_false;
+  per_thread* thr;
+
+  thr = (per_thread*) malloc(sizeof(per_thread));
+  if (thr == NULL) {
+    fprintf(stderr, "Out of memory while registering thread for profiling\n");
+    abort();
   }
-  caml_spacetime_use_override_profinfo = Val_true;
-  caml_spacetime_override_profinfo = override;
-  return Val_true;
+  thr->next = per_threads;
+  per_threads = thr;
+
+  thr->trie_node_root = trie_node_root;
+  thr->finaliser_trie_node_root = finaliser_trie_node_root;
+
+  /* CR mshinwell: record thread ID (and for the main thread too) */
+
+  num_per_threads++;
 }
 
-CAMLprim value caml_spacetime_get_profinfo (value v)
+CAMLprim value caml_spacetime_marshal_trie (value v_channel)
 {
-  return Val_long(Profinfo_val(v));
-}
+  /* Marshal both the main and finaliser tries, for all threads that have
+     been created, to an [out_channel].  This can be done by using the
+     extern.c code as usual, since the trie looks like standard OCaml values;
+     but we must allow it to traverse outside the heap. */
 
-CAMLprim value caml_spacetime_profinfo_none (value v_unit)
-{
-  return Val_long(profinfo_none);
-}
+  int num_marshalled = 0;
+  per_thread* thr = per_threads;
 
-CAMLprim value caml_spacetime_profinfo_overflow (value v_unit)
-{
-  return Val_long(profinfo_overflow);
+  caml_output_value(v_channel, Val_long(num_per_threads + 1), Val_long(0));
+
+  caml_extern_allow_out_of_heap = 1;
+  caml_output_value(v_channel, caml_spacetime_trie_root, Val_long(0));
+  caml_output_value(v_channel,
+    caml_spacetime_finaliser_trie_root_main_thread, Val_long(0));
+  while (thr != NULL) {
+    caml_output_value(v_channel, *(thr->trie_node_root), Val_long(0));
+    caml_output_value(v_channel, *(thr->finaliser_trie_node_root),
+      Val_long(0));
+    thr = thr->next;
+    num_marshalled++;
+  }
+  caml_extern_allow_out_of_heap = 0;
+  assert(num_marshalled == num_per_threads);
+
+  return Val_unit;
 }
 
 static int pc_inside_c_node_matches(c_node* node, void* pc)
@@ -473,7 +157,6 @@ static value allocate_uninitialized_ocaml_node(int size_including_header)
   /* We don't currently rely on [uintnat] alignment, but we do need some
      alignment, so just be sure. */
   assert (((uintnat) node) % sizeof(uintnat) == 0);
-  debug_printf("allocate ocaml node: Val_hp=%p\n", (void*) Val_hp(node));
   return Val_hp(node);
 }
 
@@ -488,14 +171,11 @@ static value find_tail_node(value node, void* callee)
   value pc;
   value found = Val_unit;
 
-  debug_printf("find_tail_node with callee %p\n", callee);
   starting_node = node;
   pc = Encode_node_pc(callee);
 
   do {
     assert(Is_ocaml_node(node));
-    debug_printf("find_tail_node comparing %p with %p\n",
-      (void*) Decode_node_pc(Node_pc(node)), (void*) callee);
     if (Node_pc(node) == pc) {
       found = node;
     }
@@ -504,21 +184,7 @@ static value find_tail_node(value node, void* callee)
     }
   } while (found == Val_unit && starting_node != node);
 
-  debug_printf("find_tail_node returns value pointer %p\n", (void*) found);
-
   return found;
-}
-
-CAMLprim value caml_spacetime_check_node(
-      value node, void* pc)
-{
-  assert(Is_ocaml_node(node));
-  if (Decode_node_pc(Node_pc(node)) != pc) {
-    debug_printf("check_node failure: OCaml node %p should have PC %p but has %p\n",
-      (void*) node, pc, Decode_node_pc(Node_pc(node)));
-    assert(0);
-  }
-  return Val_unit;
 }
 
 CAMLprim value caml_spacetime_allocate_node(
@@ -543,19 +209,14 @@ CAMLprim value caml_spacetime_allocate_node(
     /* The callee was tail called.  Find whether there already exists a node
        for it in the tail call chain within the caller's node.  The caller's
        node must always be an OCaml node. */
-debug_printf("allocating node for callee that was tail called.  Identifying PC of callee=%p.\n",pc);
     caller_node = Decode_tail_caller_node(node);
     tail_node = find_tail_node(caller_node, pc);
     if (tail_node != Val_unit) {
       /* This tail calling sequence has happened before; just fill the hole
          with the existing node and return. */
       *node_hole = tail_node;
-debug_printf("tail calling sequence has happened before; node=%p\n",(void*)tail_node);
       return 0;  /* indicates an existing node was returned */
     }
-else {
-debug_printf("tail calling sequence has not happened before\n");
-}
   }
 
   node = allocate_uninitialized_ocaml_node(size_including_header);
@@ -570,7 +231,6 @@ debug_printf("tail calling sequence has not happened before\n");
     Tail_link(node) = node;
   }
   else {
-debug_printf("doing tail link\n");
     Tail_link(node) = Tail_link(caller_node);
     Tail_link(caller_node) = node;
   }
@@ -599,6 +259,7 @@ static c_node* allocate_c_node(void)
 {
   c_node* node;
 
+  /* CR-soon mshinwell: consider using a different allocator */
   node = (c_node*) malloc(sizeof(c_node));
   if (!node) {
     abort();
@@ -609,8 +270,6 @@ static c_node* allocate_c_node(void)
     Make_header(sizeof(c_node)/sizeof(uintnat) - 1, C_node_tag, Caml_black);
   node->data.callee_node = Val_unit;
   node->next = Val_unit;
-
-debug_printf("allocate_c_node returns %p\n", (void*) node);
 
   return node;
 }
@@ -624,22 +283,12 @@ CAMLprim value* caml_spacetime_indirect_node_hole_ptr
 
   c_node* c_node;
   int found = 0;
-/*
-  debug_printf("caml_spacetime_indirect_node_hole_ptr: node hole=%p on entry\n",  (void*) node_hole);
-
-*/
 
   /* On entry, the node hole pointer is over the call site address slot,
      so we must advance it to reach the linked list slot. */
   node_hole++;
-/*
-  debug_printf("indirect node hole ptr for callee %p starting at %p contains %p\n",
-    callee, (void*) node_hole, *(void**) node_hole);
-*/
+
   while (!found && *node_hole != Val_unit) {
-/*
-    debug_printf("loop iteration; *node_hole=%p\n", *(void**) node_hole);
-*/
     assert(((uintnat) *node_hole) % sizeof(value) == 0);
     c_node = caml_spacetime_c_node_of_stored_pointer(*node_hole);
     assert(c_node != NULL);
@@ -652,10 +301,6 @@ CAMLprim value* caml_spacetime_indirect_node_hole_ptr
           node_hole = &c_node->next;
         }
         break;
-
-      case ALLOCATION:
-        fprintf(stderr, "Node at %p wrongly marked as ALLOCATION\n", c_node);
-        abort();
 
       default:
         assert(0);
@@ -681,11 +326,6 @@ CAMLprim value* caml_spacetime_indirect_node_hole_ptr
   }
 
   assert(*node_hole != Val_unit);
-/*
-  debug_printf("indirect node hole ptr for callee %p starting at %p is %p\n",
-    callee, (void*) node_hole,
-    (void*) &(c_node->data.callee_node));
-*/
   return &(c_node->data.callee_node);
 }
 
@@ -709,8 +349,6 @@ CAMLprim value* caml_spacetime_indirect_node_hole_ptr
    and can thus accommodate any number of C backtraces leading from
    caml_call_gc.
 */
-
-/* CR mshinwell: check caml_stash_backtrace */
 
 static NOINLINE void* find_trie_node_from_libunwind(int for_allocation)
 {
@@ -778,8 +416,6 @@ static NOINLINE void* find_trie_node_from_libunwind(int for_allocation)
   }
 
   node_hole = caml_spacetime_trie_node_ptr;
-  debug_printf("*** find_trie_node_from_libunwind: starting at %p\n",
-    (void*) *node_hole);
   /* Note that if [node_hole] is filled, then it must point to a C node,
      since it is not possible for there to be a call point in an OCaml
      function that sometimes calls C and sometimes calls OCaml. */
@@ -788,8 +424,6 @@ static NOINLINE void* find_trie_node_from_libunwind(int for_allocation)
     c_node_type expected_type;
     void* pc = frames.contents[frame];
     assert (pc != (void*) caml_last_return_address);
-
-    debug_printf("frames.contents[%d]=%p\n", frame, pc);
 
     if (!for_allocation) {
       expected_type = CALL;
@@ -800,7 +434,6 @@ static NOINLINE void* find_trie_node_from_libunwind(int for_allocation)
 
     if (*node_hole == Val_unit) {
       node = allocate_c_node();
-      debug_printf("making new node %p\n", node);
       /* Note: for CALL nodes, the PC is the program counter at each call
          site.  We do not store program counter addresses of the start of
          callees, unlike for OCaml nodes.  This means that some trie nodes
@@ -815,8 +448,6 @@ static NOINLINE void* find_trie_node_from_libunwind(int for_allocation)
       int found = 0;
 
       node = caml_spacetime_c_node_of_stored_pointer_not_null(*node_hole);
-      debug_printf("using existing node %p (size %lld)\n", (void*) node,
-        (unsigned long long) Wosize_val(*node_hole));
       assert(node != NULL);
       assert(node->next == Val_unit
         || (((uintnat) (node->next)) % sizeof(value) == 0));
@@ -824,14 +455,11 @@ static NOINLINE void* find_trie_node_from_libunwind(int for_allocation)
       prev = NULL;
 
       while (!found && node != NULL) {
-        debug_printf("...linked list entry pc=%p: ", (void*) node->pc);
         if (caml_spacetime_classify_c_node(node) == expected_type
             && pc_inside_c_node_matches(node, pc)) {
-          debug_printf("found\n");
           found = 1;
         }
         else {
-          debug_printf("doesn't match\n");
           prev = node;
           node = caml_spacetime_c_node_of_stored_pointer(node->next);
         }
@@ -850,8 +478,6 @@ static NOINLINE void* find_trie_node_from_libunwind(int for_allocation)
     assert(caml_spacetime_classify_c_node(node) == expected_type);
     assert(pc_inside_c_node_matches(node, pc));
     node_hole = &node->data.callee_node;
-
-    debug_printf("find_trie_node, frame=%d, ra=%p\n", frame, pc);
   }
 
   if (for_allocation) {
@@ -860,9 +486,6 @@ static NOINLINE void* find_trie_node_from_libunwind(int for_allocation)
   }
 
   assert(node->next != (value) NULL);
-
-  debug_printf("find_trie_node_from_libunwind returns %p\n",
-    for_allocation ? (void*) node : (void*) node_hole);
 
   return for_allocation ? (void*) node : (void*) node_hole;
 #else
@@ -902,10 +525,6 @@ void caml_spacetime_c_to_ocaml(void* ocaml_entry_point,
 
   value node;
 
-  debug_printf("c_to_ocaml for ocaml callee at %p, c_s_p identifying pc=%p\n",
-    ocaml_entry_point, identifying_pc_for_caml_start_program);
-  fflush(stdout);
-
   graft_c_backtrace_onto_trie();
 
   if (*caml_spacetime_trie_node_ptr == Val_unit) {
@@ -934,11 +553,6 @@ void caml_spacetime_c_to_ocaml(void* ocaml_entry_point,
   }
 
   assert(Is_ocaml_node(node));
-  if (Decode_node_pc(Node_pc(node)) != identifying_pc_for_caml_start_program) {
-    printf("Indirect node for C -> OCaml has wrong PC %p (expected %p)\n",
-      Decode_node_pc(Node_pc(node)),
-      identifying_pc_for_caml_start_program);
-  }
   assert(Decode_node_pc(Node_pc(node))
     == identifying_pc_for_caml_start_program);
   assert(Tail_link(node) == node);
@@ -953,10 +567,6 @@ void caml_spacetime_c_to_ocaml(void* ocaml_entry_point,
       Val_unit);
   assert(*caml_spacetime_trie_node_ptr == Val_unit
     || Is_ocaml_node(*caml_spacetime_trie_node_ptr));
-
-  debug_printf("c_to_ocaml has moved the node ptr to %p\n",
-    (void*) caml_spacetime_trie_node_ptr);
-  fflush(stdout);
 }
 
 extern void caml_garbage_collection(void);  /* signals_asm.c */
@@ -1050,29 +660,22 @@ void caml_spacetime_caml_ml_array_bound_error(void)
   ocaml_to_c_call_site_without_instrumentation(call_site, callee);
 }
 
-static uintnat generate_profinfo(void)
-{
-  uintnat profinfo;
-
-  if (caml_spacetime_use_override_profinfo == Val_true) {
-    return caml_spacetime_override_profinfo;
-  }
-
-  profinfo = caml_spacetime_profinfo++;
-  if (caml_spacetime_profinfo > PROFINFO_MASK) {
-    /* Profiling counter overflow. */
-    profinfo = profinfo_overflow;
-  }
-
-  return profinfo;
-}
-
 CAMLprim uintnat caml_spacetime_generate_profinfo (void* pc,
     void* profinfo_words)
 {
+  /* Called from code that creates a value's header inside an OCaml
+     function. */
+
   value node;
   uintnat offset;
-  uintnat profinfo = generate_profinfo();
+  uintnat profinfo;
+
+  caml_spacetime_profinfo++;
+  if (caml_spacetime_profinfo > PROFINFO_MASK) {
+    /* Profiling counter overflow. */
+    caml_spacetime_profinfo = PROFINFO_MASK;
+  }
+  profinfo = caml_spacetime_profinfo;
 
   /* [node] isn't really a node; it points into the middle of
      one---specifically to the "profinfo" word of an allocation point pair of
@@ -1088,10 +691,6 @@ CAMLprim uintnat caml_spacetime_generate_profinfo (void* pc,
   Alloc_point_pc(node, offset) = Encode_alloc_point_pc(pc);
   Alloc_point_profinfo(node, offset) = Encode_alloc_point_profinfo(profinfo);
 
-  debug_printf("*** generate_profinfo PC=%p returning 0x%llx\n", pc,
-    (unsigned long long) profinfo);
-  fflush(stdout);
-
   return profinfo << PROFINFO_SHIFT;
 }
 
@@ -1104,8 +703,14 @@ uintnat caml_spacetime_my_profinfo (void)
   c_node* node;
   uint64_t profinfo;
 
+  caml_spacetime_profinfo++;
+  if (caml_spacetime_profinfo > PROFINFO_MASK) {
+    /* Profiling counter overflow. */
+    caml_spacetime_profinfo = PROFINFO_MASK;
+  }
+  profinfo = caml_spacetime_profinfo;
+
   node = graft_backtrace_onto_trie_for_allocation ();
-  profinfo = generate_profinfo();
   if (node != NULL) {
     node->data.profinfo = Val_long(profinfo);
   }
@@ -1114,435 +719,7 @@ uintnat caml_spacetime_my_profinfo (void)
   return profinfo;  /* N.B. not shifted by PROFINFO_SHIFT */
 }
 
-/* List of tries corresponding to threads that have been created. */
-
-/* CR-soon mshinwell: just include the main trie in this list. */
-
-typedef struct per_thread {
-  value* trie_node_root;
-  value* finaliser_trie_node_root;
-  struct per_thread* next;
-} per_thread;
-
-static per_thread* per_threads = NULL;
-static int num_per_threads = 0;
-
-void caml_spacetime_register_thread(
-  value* trie_node_root, value* finaliser_trie_node_root)
-{
-  per_thread* thr;
-
-  thr = (per_thread*) malloc(sizeof(per_thread));
-  if (thr == NULL) {
-    fprintf(stderr, "Out of memory while registering thread for profiling\n");
-    abort();
-  }
-  thr->next = per_threads;
-  per_threads = thr;
-
-  thr->trie_node_root = trie_node_root;
-  thr->finaliser_trie_node_root = finaliser_trie_node_root;
-
-  /* CR mshinwell: record thread ID (and for the main thread too) */
-
-  num_per_threads++;
-}
-
-CAMLprim value caml_spacetime_marshal_trie (value v_channel)
-{
-  /* Marshal both the main and finaliser tries, for all threads that have
-     been created, to an [out_channel].  This can be done by using the
-     extern.c code as usual, since the trie looks like standard OCaml values;
-     but we must allow it to traverse outside the heap. */
-
-  int num_marshalled = 0;
-  per_thread* thr = per_threads;
-
-  caml_output_value(v_channel, Val_long(num_per_threads + 1), Val_long(0));
-
-  caml_extern_allow_out_of_heap = 1;
-  caml_output_value(v_channel, caml_spacetime_trie_root, Val_long(0));
-  caml_output_value(v_channel,
-    caml_spacetime_finaliser_trie_root_main_thread, Val_long(0));
-  while (thr != NULL) {
-    caml_output_value(v_channel, *(thr->trie_node_root), Val_long(0));
-    caml_output_value(v_channel, *(thr->finaliser_trie_node_root),
-      Val_long(0));
-    thr = thr->next;
-    num_marshalled++;
-  }
-  caml_extern_allow_out_of_heap = 0;
-  assert(num_marshalled == num_per_threads);
-
-  return Val_unit;
-}
-
-static void print_tail_chain(value node)
-{
-  value starting_node;
-
-  assert(Is_ocaml_node(node));
-  starting_node = node;
-
-  if (Tail_link(node) == node) {
-    printf("Tail chain is empty.\n");
-  }
-  else {
-    printf("Tail chain:\n");
-    do {
-      node = Tail_link(node);
-      printf("  Node %p (identifying PC=%p)\n", (void*) node,
-        Decode_node_pc(Node_pc(node)));
-    } while (node != starting_node);
-  }
-}
-
-static void print_node_header(value node)
-{
-  uintnat index;
-
-  if (node == Val_unit) {
-    printf("(Uninitialized node)\n");
-  }
-  else {
-    printf("Node %p: tag %d, size %d\n",
-      (void*) node, Tag_val(node), (int) Wosize_val(node));
-    assert(Tag_val(node) == 0 || Tag_val(node) == 1);
-    if (Is_ocaml_node(node)) {
-      printf("Identifying PC=%p\n", Decode_node_pc(Node_pc(node)));
-      print_tail_chain(node);
-    }
-
-    /* Sanity check: there should never be actual NULL pointers in these
-       values.  [Val_unit] is used instead, so we can marshal. */
-    for (index = 0; index < Wosize_val(node); index++) {
-      assert(Field(node, index) != (value) 0);
-    }
-  }
-}
-
-static void print_trie_node(value node, int inside_indirect_node)
-{
-  print_node_header(node);
-  if (node == Val_unit) {
-    return;
-  }
-
-  if (Color_val(node) != Caml_black) {
-    printf("Node %p visited before\n", (void*) node);
-  }
-  else {
-    int field;
-    int alloc_point;
-    int direct_call_point;
-    int indirect_call_point;
-
-    alloc_point = 0;
-    direct_call_point = 0;
-    indirect_call_point = 0;
-
-    Hd_val(node) = Whitehd_hd(Hd_val(node));
-
-    /* CR mshinwell: remove some of the hard-coded offsets below and use the
-       macros */
-
-    if (Is_ocaml_node(node)) {
-      for (field = Node_num_header_words; field < Wosize_val(node); field++) {
-        value entry;
-
-        entry = Field(node, field);
-
-        /* Even though indirect call points have a different size from
-           direct call points and allocation points, it is still safe to just
-           skip until we don't see [Val_unit] any more. */
-        if (entry == Val_unit || entry == (value) 3) {
-          continue;
-        }
-
-        /* We may now be in the middle of an uninitialized direct call point
-           for a tail call.  This can be detected by seeing if the pointer
-           is an encoded pointer to the current node. */
-        if (entry == Encode_tail_caller_node(node)) {
-          /* The pointer should be the third in a group of three words. */
-          assert (field >= Node_num_header_words + 2);
-          printf("(Reached uninitialized tail call point.)\n");
-          continue;
-        }
-
-        /* At this point we should have an encoded program counter value.
-           First distinguish between:
-           (a) a direct or an indirect call point;
-           (b) an allocation point.
-        */
-        switch (Call_or_allocation_point(node, field)) {
-          case CALL: {
-            /* Determine whether this is a direct or an indirect call
-               point by examining the second word in the group.  This will be
-               an immediate encoded PC value for a direct call point, but a
-               pointer for an indirect call point.  It should never be
-               [Val_unit] in either case. */
-            value second_word;
-            assert(field < Wosize_val(node) - 1);
-            /* CR mshinwell: this assumes that the list coincides with
-               the callee slot... */
-            second_word = Indirect_pc_linked_list(node, field);
-            assert(second_word != Val_unit);
-            /* CR mshinwell: consider using a macro */
-            if (Is_block(second_word)) {
-              /* This is an indirect call point. */
-              int i = indirect_call_point;
-              printf("Indirect call point %d: %p calls...\n",
-                indirect_call_point,
-                Decode_call_point_pc(Indirect_pc_call_site(node, field)));
-              assert(!Is_ocaml_node(second_word));
-              print_trie_node(second_word, 1);
-              field++;
-              printf("Indirect call point %d ends.\n", i);
-            }
-            else {
-              /* This is a direct call point. */
-              value child;
-              int i = direct_call_point;
-              assert(field < Wosize_val(node) - 2);
-              child = Direct_callee_node(node, field);
-              printf("Direct call point %d: %p calls %p, ",
-                direct_call_point,
-                Decode_call_point_pc(Direct_pc_call_site(node, field)),
-                Decode_call_point_pc(Direct_pc_callee(node, field)));
-              if (child == Val_unit) {
-                printf("callee was not instrumented\n");
-              } else if (Is_tail_caller_node_encoded(child)) {
-                /* XXX not sure this should happen, since it's always
-                   OCaml -> OCaml */
-                printf("tail-called callee was not instrumented\n");
-              } else {
-                printf("child node=%p\n", (void*) child);
-              }
-              direct_call_point++;
-              if (child != Val_unit
-                  && !Is_tail_caller_node_encoded(child)) {
-                print_trie_node(child, 0);
-              }
-              field += 2;
-              printf("Direct call point %d ends\n", i);
-            }
-            break;
-          }
-
-          case ALLOCATION:
-            assert(field < Wosize_val(node) - 1);
-            printf("Allocation point %d: pc=%p, profinfo=%lld\n", alloc_point,
-              Decode_alloc_point_pc(Alloc_point_pc(node, field)),
-              (unsigned long long)
-                Decode_alloc_point_profinfo(Alloc_point_profinfo(node, field)));
-            alloc_point++;
-            field++;
-            break;
-
-          default:
-            assert(0);
-        }
-      }
-    } else {
-      c_node* c_node = caml_spacetime_c_node_of_stored_pointer(node);
-      assert (c_node != NULL);
-      while (c_node != NULL) {
-        assert(c_node->next != (value) 0);
-        printf("(Debug: about to classify node %p)\n", (void*) c_node);
-        switch (caml_spacetime_classify_c_node(c_node)) {
-          case CALL:
-            printf("%s %p: child node=%p\n",
-              inside_indirect_node ? "..." : "Call site in non-OCaml code ",
-              (void*) (c_node->pc >> 2),
-              (void*) c_node->data.callee_node);
-            if (Is_tail_caller_node_encoded(c_node->data.callee_node)) {
-              printf("(Unused indirect tail point--uninstrumented callee)\n");
-            }
-            else {
-              print_trie_node(c_node->data.callee_node, 0);
-            }
-            break;
-
-          case ALLOCATION:
-            assert(!Is_block(c_node->data.profinfo));
-            printf("Allocation point in non-OCaml code at %p: profinfo=%lld\n",
-              (void*) (c_node->pc >> 2),
-              (unsigned long long) Long_val(c_node->data.profinfo));
-            break;
-
-          default:
-            abort();
-        }
-        printf("(Debug: before 'about to classify node %p' with %p)\n",
-          (void*) (caml_spacetime_c_node_of_stored_pointer(c_node->next)),
-          (void*) c_node);
-        c_node = caml_spacetime_c_node_of_stored_pointer(c_node->next);
-      }
-    }
-    printf("End of node %p\n", (void*) node);
-  }
-}
-
-static void mark_trie_node_black(value node)
-{
-  int field;
-
-  if (node == Val_unit) {
-    return;
-  }
-
-  if (Color_val(node) == Caml_black) {
-    return;
-  }
-  Hd_val(node) = Blackhd_hd(Hd_val(node));
-
-  if (Is_ocaml_node(node)) {
-    for (field = Node_num_header_words; field < Wosize_val(node); field++) {
-      value entry;
-
-      entry = Field(node, field);
-
-      if (entry == Val_unit || entry == (value) 3) {
-        continue;
-      }
-
-      if (entry == Encode_tail_caller_node(node)) {
-        continue;
-      }
-
-      switch (Call_or_allocation_point(node, field)) {
-        case CALL: {
-          value second_word;
-          second_word = Indirect_pc_linked_list(node, field);
-          if (Is_block(second_word)) {
-            assert(!Is_ocaml_node(second_word));
-            mark_trie_node_black(second_word);
-            field++;
-          }
-          else {
-            value child;
-            child = Direct_callee_node(node, field);
-            if (child != Val_unit) {
-              mark_trie_node_black(child);
-            }
-            field += 2;
-          }
-          break;
-        }
-
-        case ALLOCATION:
-          field++;
-          break;
-
-        default:
-          assert(0);
-      }
-    }
-  } else {
-    c_node* c_node = caml_spacetime_c_node_of_stored_pointer(node);
-    assert (c_node != NULL);
-    while (c_node != NULL) {
-      switch (caml_spacetime_classify_c_node(c_node)) {
-        case CALL:
-          if (!Is_tail_caller_node_encoded(c_node->data.callee_node)) {
-            mark_trie_node_black(c_node->data.callee_node);
-          }
-          break;
-
-        default:
-          break;
-      }
-      c_node = caml_spacetime_c_node_of_stored_pointer(c_node->next);
-    }
-  }
-}
-
-CAMLprim value caml_spacetime_debug(value v_unit)
-{
-  value trie_node = caml_spacetime_trie_root;
-
-  printf("---------------------------------------------------------------\n");
-  if (trie_node == Val_unit) {
-    printf("Spacetime trie is empty\n");
-  }
-  else {
-    print_trie_node(trie_node, 0);
-    printf("End of trie dump.  Marking trie black.\n");
-    mark_trie_node_black(trie_node);
-    printf("Done.\n");
-  }
-  printf("---------------------------------------------------------------\n");
-
-  fflush(stdout);
-
-  return Val_unit;
-}
-
 #else
-
-CAMLprim value caml_spacetime_take_heap_snapshot()
-{
-  caml_failwith("Spacetime profiling not enabled");
-  assert(0);  /* unreachable */
-}
-
-CAMLprim value caml_spacetime_marshal_heap_snapshot()
-{
-  caml_failwith("Spacetime profiling not enabled");
-  assert(0);  /* unreachable */
-}
-
-CAMLprim value caml_spacetime_free_heap_snapshot()
-{
-  caml_failwith("Spacetime profiling not enabled");
-  assert(0);  /* unreachable */
-}
-
-CAMLprim value caml_spacetime_get_profinfo()
-{
-  caml_failwith("Spacetime profiling not enabled");
-  assert(0);  /* unreachable */
-}
-
-CAMLprim value caml_spacetime_profinfo_none()
-{
-  caml_failwith("Spacetime profiling not enabled");
-  assert(0);  /* unreachable */
-}
-
-CAMLprim value caml_spacetime_debug()
-{
-  caml_failwith("Spacetime profiling not enabled");
-  assert(0);  /* unreachable */
-}
-
-CAMLprim value
-caml_forget_where_values_were_allocated ()
-{
-  caml_failwith("Spacetime profiling not enabled");
-  assert(0);  /* unreachable */
-}
-
-CAMLprim value
-caml_spacetime_num_frame_descriptors ()
-{
-  caml_failwith("Spacetime profiling not enabled");
-  assert(0);  /* unreachable */
-}
-
-CAMLprim value
-caml_spacetime_get_frame_descriptor ()
-{
-  caml_failwith("Spacetime profiling not enabled");
-  assert(0);  /* unreachable */
-}
-
-CAMLprim value
-caml_spacetime_return_address_of_frame_descriptor ()
-{
-  caml_failwith("Spacetime profiling not enabled");
-  assert(0);  /* unreachable */
-}
 
 CAMLprim value
 caml_spacetime_marshal_trie ()

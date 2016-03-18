@@ -705,10 +705,9 @@ asmcomp/asmgen.cmo : asmcomp/un_anf.cmi bytecomp/translmod.cmi \
     asmcomp/linearize.cmi bytecomp/lambda.cmi asmcomp/interf.cmi \
     asmcomp/flambda_to_clambda.cmi middle_end/flambda.cmi asmcomp/emitaux.cmi \
     asmcomp/emit.cmi asmcomp/deadcode.cmi utils/config.cmi \
-    asmcomp/compilenv.cmi asmcomp/comballoc.cmi asmcomp/coloring.cmi \
-    asmcomp/cmmgen.cmi asmcomp/cmm.cmi asmcomp/closure.cmi utils/clflags.cmi \
-    asmcomp/clambda.cmi asmcomp/CSE.cmo asmcomp/build_export_info.cmi \
-    asmcomp/asmgen.cmi
+    asmcomp/compilenv.cmi asmcomp/coloring.cmi asmcomp/cmmgen.cmi \
+    asmcomp/cmm.cmi asmcomp/closure.cmi utils/clflags.cmi asmcomp/clambda.cmi \
+    asmcomp/CSE.cmo asmcomp/build_export_info.cmi asmcomp/asmgen.cmi
 asmcomp/asmgen.cmx : asmcomp/un_anf.cmx bytecomp/translmod.cmx \
     utils/timings.cmx middle_end/base_types/symbol.cmx asmcomp/split.cmx \
     asmcomp/spill.cmx asmcomp/selection.cmx asmcomp/scheduling.cmx \
@@ -719,10 +718,9 @@ asmcomp/asmgen.cmx : asmcomp/un_anf.cmx bytecomp/translmod.cmx \
     asmcomp/linearize.cmx bytecomp/lambda.cmx asmcomp/interf.cmx \
     asmcomp/flambda_to_clambda.cmx middle_end/flambda.cmx asmcomp/emitaux.cmx \
     asmcomp/emit.cmx asmcomp/deadcode.cmx utils/config.cmx \
-    asmcomp/compilenv.cmx asmcomp/comballoc.cmx asmcomp/coloring.cmx \
-    asmcomp/cmmgen.cmx asmcomp/cmm.cmx asmcomp/closure.cmx utils/clflags.cmx \
-    asmcomp/clambda.cmx asmcomp/CSE.cmx asmcomp/build_export_info.cmx \
-    asmcomp/asmgen.cmi
+    asmcomp/compilenv.cmx asmcomp/coloring.cmx asmcomp/cmmgen.cmx \
+    asmcomp/cmm.cmx asmcomp/closure.cmx utils/clflags.cmx asmcomp/clambda.cmx \
+    asmcomp/CSE.cmx asmcomp/build_export_info.cmx asmcomp/asmgen.cmi
 asmcomp/asmgen.cmi : utils/timings.cmi bytecomp/lambda.cmi \
     middle_end/flambda.cmi asmcomp/cmm.cmi middle_end/backend_intf.cmi
 asmcomp/asmlibrarian.cmo : utils/misc.cmi parsing/location.cmi \
@@ -1038,11 +1036,11 @@ asmcomp/printlinear.cmx : asmcomp/printmach.cmx asmcomp/mach.cmx \
 asmcomp/printlinear.cmi : asmcomp/linearize.cmi
 asmcomp/printmach.cmo : asmcomp/reg.cmi asmcomp/proc.cmi \
     asmcomp/printcmm.cmi asmcomp/mach.cmi bytecomp/lambda.cmi \
-    bytecomp/debuginfo.cmi asmcomp/cmm.cmi asmcomp/arch.cmo \
+    bytecomp/debuginfo.cmi utils/config.cmi asmcomp/cmm.cmi asmcomp/arch.cmo \
     asmcomp/printmach.cmi
 asmcomp/printmach.cmx : asmcomp/reg.cmx asmcomp/proc.cmx \
     asmcomp/printcmm.cmx asmcomp/mach.cmx bytecomp/lambda.cmx \
-    bytecomp/debuginfo.cmx asmcomp/cmm.cmx asmcomp/arch.cmx \
+    bytecomp/debuginfo.cmx utils/config.cmx asmcomp/cmm.cmx asmcomp/arch.cmx \
     asmcomp/printmach.cmi
 asmcomp/printmach.cmi : asmcomp/reg.cmi asmcomp/mach.cmi
 asmcomp/proc.cmo : asmcomp/x86_proc.cmi asmcomp/reg.cmi utils/misc.cmi \
@@ -1093,12 +1091,12 @@ asmcomp/selection.cmx : asmcomp/spacetime_profiling.cmx asmcomp/proc.cmx \
     asmcomp/arch.cmx asmcomp/selection.cmi
 asmcomp/selection.cmi : asmcomp/mach.cmi asmcomp/cmm.cmi
 asmcomp/spacetime_profiling.cmo : utils/tbl.cmi asmcomp/selectgen.cmi \
-    utils/misc.cmi asmcomp/mach.cmi typing/ident.cmi bytecomp/debuginfo.cmi \
-    utils/config.cmi asmcomp/cmm.cmi asmcomp/arch.cmo \
+    utils/misc.cmi asmcomp/mach.cmi bytecomp/lambda.cmi typing/ident.cmi \
+    bytecomp/debuginfo.cmi utils/config.cmi asmcomp/cmm.cmi asmcomp/arch.cmo \
     asmcomp/spacetime_profiling.cmi
 asmcomp/spacetime_profiling.cmx : utils/tbl.cmx asmcomp/selectgen.cmx \
-    utils/misc.cmx asmcomp/mach.cmx typing/ident.cmx bytecomp/debuginfo.cmx \
-    utils/config.cmx asmcomp/cmm.cmx asmcomp/arch.cmx \
+    utils/misc.cmx asmcomp/mach.cmx bytecomp/lambda.cmx typing/ident.cmx \
+    bytecomp/debuginfo.cmx utils/config.cmx asmcomp/cmm.cmx asmcomp/arch.cmx \
     asmcomp/spacetime_profiling.cmi
 asmcomp/spacetime_profiling.cmi : asmcomp/selectgen.cmi
 asmcomp/spill.cmo : asmcomp/reg.cmi asmcomp/proc.cmi utils/misc.cmi \
