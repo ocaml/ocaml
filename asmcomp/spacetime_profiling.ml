@@ -23,6 +23,7 @@ let index_within_node = ref 2 (* Cf. [Node_num_header_words] in the runtime. *)
    between bytecode and native .cmis when no .mli is present, e.g. arch.ml.) *)
 let spacetime_node = ref (lazy (Cmm.Cvar (Ident.create "dummy")))
 let spacetime_node_ident = ref (lazy (Ident.create "dummy"))
+let current_function_label = ref ""
 let direct_tail_call_point_indexes = ref []
 
 let something_was_instrumented () =
@@ -33,11 +34,12 @@ let next_index_within_node ~words_needed =
   index_within_node := !index_within_node + words_needed;
   index
 
-let reset ~spacetime_node_ident:ident =
+let reset ~spacetime_node_ident:ident ~function_label =
   index_within_node := 2;
   spacetime_node := lazy (Cmm.Cvar ident);
   spacetime_node_ident := lazy ident;
-  direct_tail_call_point_indexes := []
+  direct_tail_call_point_indexes := [];
+  current_function_label := function_label
 
 (* Set to [true] to have nodes examined by [caml_spacetime_check_node]
    in function prologues. *)
@@ -161,6 +163,14 @@ type callee =
   | Indirect of Cmm.expression
 
 let code_for_call ~node ~callee ~is_tail ~label =
+  (* We treat self recursive calls as tail calls to avoid blow-ups in the
+     graph. *)
+  let is_self_recursive_call =
+    match callee with
+    | Direct callee -> callee = !current_function_label
+    | Indirect _ -> false
+  in
+  let is_tail = is_tail || is_self_recursive_call in
   let words_needed =
     match callee with
     | Direct _ -> 3  (* Cf. [Direct_num_fields] in the runtime. *)
@@ -397,6 +407,7 @@ class virtual instruction_selection = object (self)
     if Config.spacetime then begin
       disable_instrumentation <- false;
       reset ~spacetime_node_ident:f.Cmm.fun_spacetime_node
+        ~function_label:f.Cmm.fun_name
     end;
     super#emit_fundecl f
 
