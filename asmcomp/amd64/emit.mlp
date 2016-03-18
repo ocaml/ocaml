@@ -664,7 +664,7 @@ let emit_instr fallthrough i =
             else r13, R13
           in
           load_symbol_addr "caml_young_limit" reg;
-          I.cmp (mem64 QWORD 0 reg') r15;
+          I.cmp (mem64 QWORD 0 reg') r15
         end else
           I.cmp (mem64_rip QWORD (emit_symbol "caml_young_limit")) r15;
         let lbl_call_gc = new_label() in
