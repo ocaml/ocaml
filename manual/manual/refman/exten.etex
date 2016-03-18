@@ -577,7 +577,9 @@ Here is another example:
             S.elements (List.fold_right S.add l S.empty)
 \end{verbatim}
 
-It is also extremely useful for first-class modules and GADTs.
+It is also extremely useful for first-class modules (see
+section~\ref{s-first-class-modules}) and generalized algebraic datatypes
+(GADTs: see section~\ref{s:gadts}).
 
 \paragraph{Polymorphic syntax} (Introduced in OCaml 4.00)
 
@@ -607,6 +609,8 @@ is automatically expanded into
         let rec f : 't1 't2. 't1 * 't2 list -> 't1 =
           fun (type t1) (type t2) -> (... : t1 * t2 list -> t1)
 \end{verbatim}
+This syntax can be very useful when defining polymorphically recursive
+functions involving GADTs.
 
 The same feature is provided for method definitions.
 The @'method!'@ form combines this extension with the
@@ -1107,7 +1111,7 @@ intentional and should not trigger the warning.
 
 
 \section{Generalized algebraic datatypes} \ikwd{type\@\texttt{type}}
-\ikwd{match\@\texttt{match}}
+\ikwd{match\@\texttt{match}} \label{s:gadts}
 
 (Introduced in OCaml 4.00)
 
