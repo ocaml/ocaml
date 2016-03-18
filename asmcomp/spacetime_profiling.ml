@@ -39,6 +39,10 @@ let reset ~spacetime_node_ident:ident =
   spacetime_node_ident := lazy ident;
   direct_tail_call_point_indexes := []
 
+(* Set to [true] to have nodes examined by [caml_spacetime_check_node]
+   in function prologues. *)
+let check_node_debugging = false
+
 let code_for_function_prologue ~function_name =
   let node_hole = Ident.create "node_hole" in
   let node = Ident.create "node" in
@@ -101,13 +105,16 @@ let code_for_function_prologue ~function_name =
                 initialize_direct_tail_call_points_and_return_node))),
           (* CR mshinwell: remove this Csequence and just have "Cvar node"
              once debugged *)
-          Csequence (
-            Cop (Cextcall ("caml_spacetime_check_node",
-              [| Int |], false, Debuginfo.none),
-              [Cvar node;
-               Cvar pc;
-              ]),
-            Cvar node))))))
+          if check_node_debugging then
+            Csequence (
+              Cop (Cextcall ("caml_spacetime_check_node",
+                [| Int |], false, Debuginfo.none),
+                [Cvar node;
+                 Cvar pc;
+                ]),
+              Cvar node)
+          else
+            Cvar node)))))
 
 let code_for_blockheader ~value's_header ~node ~dbg =
   let existing_profinfo = Ident.create "existing_profinfo" in
