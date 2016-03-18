@@ -656,8 +656,15 @@ let emit_instr fallthrough i =
         def_label lbl_redo;
         I.sub (int n) r15;
         if !Clflags.dlcode then begin
-          load_symbol_addr "caml_young_limit" rax;
-          I.cmp (mem64 QWORD 0 RAX) r15;
+          (* When using Spacetime, %rax might be the node pointer, so we'd
+             best not clobber it.  Luckily we have %r13 spare at the moment
+             instead. *)
+          let reg, reg' =
+            if not Config.spacetime then rax, RAX
+            else r13, R13
+          in
+          load_symbol_addr "caml_young_limit" reg;
+          I.cmp (mem64 QWORD 0 reg') r15;
         end else
           I.cmp (mem64_rip QWORD (emit_symbol "caml_young_limit")) r15;
         let lbl_call_gc = new_label() in
