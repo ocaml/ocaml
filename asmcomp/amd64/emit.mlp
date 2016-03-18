@@ -328,7 +328,7 @@ let emit_call_gc gc =
        then we would also need an extra frame descriptor rather than reusing
        the one already there---and we might also end up depending on the
        length of the call instruction. *)
-    I.mov rax rax
+    I.nop ()
   end;
   I.jmp (label gc.gc_return_lbl)
 
