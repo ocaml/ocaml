@@ -1789,7 +1789,18 @@ if $with_spacetime; then
           ;;
       esac
     else
-      libunwind_lib=""
+      case "$arch,$system" in
+        amd64,macosx)
+          libunwind_lib="-framework System"
+          libunwind_lib_temp="$libunwind_lib"
+          mkexe="$mkexe -Wl,-keep_dwarf_unwind"
+          mksharedlib="$mksharedlib -Wl,-keep_dwarf_unwind"
+          ;;
+        *)
+          libunwind_lib="-lunwind -lunwind-x86_64"
+          libunwind_lib_temp="$libunwind_lib"
+          ;;
+      esac
     fi
     if test "$libunwind_include_dir" != ""; then
       case "$arch,$system" in
