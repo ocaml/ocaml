@@ -321,13 +321,20 @@ let emit_call_gc gc =
   emit_call "caml_call_gc";
   def_label gc.gc_frame;
   if Config.spacetime then begin
-    (* Add an instruction to add as a spacer between the call and the
+    (* Add instructions to act as a spacer between the call and the
        jump, otherwise their call sites will end up looking the same to
        Spacetime and confusion will result.  We could make Spacetime know the
        address of the call as the start of the call instruction itself, but
        then we would also need an extra frame descriptor rather than reusing
        the one already there---and we might also end up depending on the
        length of the call instruction. *)
+    I.nop ();
+    I.nop ();
+    I.nop ();
+    I.nop ();
+    I.nop ();
+    I.nop ();
+    I.nop ();
     I.nop ()
   end;
   I.jmp (label gc.gc_return_lbl)
