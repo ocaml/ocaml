@@ -15,6 +15,8 @@
 
 (* Combine heap allocations occurring in the same basic block *)
 
+(* CR mshinwell: consider whether this is right, and reenable *)
+
 open Mach
 
 type allocation_state =
