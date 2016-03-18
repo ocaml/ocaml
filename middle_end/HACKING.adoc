@@ -1,0 +1,70 @@
+== Getting a grasp of the Flambda
+
+Flambda is an intermediate representation generated from Lambda by
+Closure_conversion. The representation is defined as a tree of various
+types:
+
+  - Flambda.program is the tree root: it is a sequence of top level
+    expressions.
+  - Flambda.t is the global expression structure
+  - Flambda.named are the let-bound expressions
+
+To understand what everything represents and how this relates to other
+representations Closure_conversion and Flambda_to_clambda are probably
+worth reading.
+
+The middle-end entry point is Middle_end. It contains the code the
+chains the transformations. To quickly see the effect of every pass,
+it is possible to look at the generated code between each one using:
+
+    ocamlopt -dflambda-verbose file.ml
+
+Some passes or analysis are not directly called by Middle_end, for
+instance, when the result of the analysis is used by a pass or when a
+transformation occur during inlining. The `-dump-pass` option can
+display what is happening during those passes. The list of covered
+passes is available with `ocamlopt --help`.
+
+== The inliner
+
+At the heart of Flambda is the inliner.
+  - Inline_and_simplify.run is the entry point. It is a tree
+    traversal maintaining an environment containing an approximation
+    of the set of possible values that variables can carry and use
+    this to perform local optimisations. In particular, if a variable
+    carry a given function, and that variable is used for a call,
+    inlining can occur.
+
+  - Inlining_decision contains the inlining heuristic.
+
+  - Simple_value_approx contains the value approximation type.
+
+  - Inlining_transform contains the functions effectively duplicating
+    code for inlining and specialization.
+
+== Writing a new optimization pass
+
+Most optimization passes can be simply written as a function of type
+`Flambda.program -> Flambda.program` and inserted in Middle_end in the
+`loop` function. `Initialize_symbol_to_let_symbol` is an example of a
+really simple pass. Usually most passes will only need to rewrite parts
+of the tree. Those can usually be quite easily written as an invocation
+of a mapper from `Flambda_iterators`. If the traversal cannot be
+written as a simple mapper, it is possible to use
+`Flambda_iterators.map_subexpressions` instead to control more
+precisely the iteration order.
+
+Note that Flambda expressions can contain extremely long sequences of
+lets, hence any loop traversing Flambda expressions must be
+tail-recursive when iterating on the body of lets. The Flambda module
+provides Helpers functions for let mapping and iterations.
+
+== Checks
+
+Some flambda properties cannot be enforced by the type (for instance
+that every variable used is bound). To help maintain such invariants
+and pinpoint quickly the culprit if a pass fails to maintain it, the
+special invariant checking pass `Flambda_invariants` is called between
+each transformation. If any new pass needs new invariants, a check for
+those should be added there.
+
