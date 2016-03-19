@@ -1202,27 +1202,39 @@ and transl_let rec_flag pat_expr_list body =
           Matching.for_let pat.pat_loc lam pat (transl rem)
       in transl pat_expr_list
   | Recursive ->
-      let idlist =
-        List.map
-          (fun {vb_pat=pat} -> match pat.pat_desc with
-              Tpat_var (id,_) -> id
-            | Tpat_alias ({pat_desc=Tpat_any}, id,_) -> id
-            | _ -> raise(Error(pat.pat_loc, Illegal_letrec_pat)))
-        pat_expr_list in
-      let transl_case {vb_expr=expr; vb_attributes; vb_loc} id =
-        let lam = transl_exp expr in
-        let lam =
-          Translattribute.add_inline_attribute lam vb_loc
-            vb_attributes
-        in
-        let lam =
-          Translattribute.add_specialise_attribute lam vb_loc
-            vb_attributes
-        in
-        if not (check_recursive_lambda idlist lam) then
-          raise(Error(expr.exp_loc, Illegal_letrec_expr));
-        (id, lam) in
-      Lletrec(List.map2 transl_case pat_expr_list idlist, body)
+      let (anonymous, real_bindings) = List.partition
+        (fun {vb_pat = pat} -> match pat.pat_desc with
+            Tpat_any -> true
+          | _ -> false
+        )
+        pat_expr_list
+      in
+      match anonymous with
+          [] ->
+            let idlist =
+              List.map
+                (fun {vb_pat=pat} -> match pat.pat_desc with
+                    Tpat_var (id,_) -> id
+                  | Tpat_alias ({pat_desc=Tpat_any}, id,_) -> id
+                  | _ -> raise(Error(pat.pat_loc, Illegal_letrec_pat)))
+              real_bindings in
+            let transl_case {vb_expr=expr; vb_attributes; vb_loc} id =
+              let lam = transl_exp expr in
+              let lam =
+                Translattribute.add_inline_attribute lam vb_loc
+                  vb_attributes
+              in
+              let lam =
+                Translattribute.add_specialise_attribute lam vb_loc
+                  vb_attributes
+              in
+              if not (check_recursive_lambda idlist lam) then
+                raise(Error(expr.exp_loc, Illegal_letrec_expr));
+              (id, lam) in
+            Lletrec(List.map2 transl_case real_bindings idlist, body)
+        | _ ->
+            transl_let Recursive real_bindings
+               (transl_let Nonrecursive anonymous body)
 
 and transl_setinstvar self var expr =
   let prim =

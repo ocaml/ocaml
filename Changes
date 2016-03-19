@@ -116,6 +116,8 @@ Language features:
   The attribute in "let[@foo] .. in .." is now attached to the value binding,
   not to the expression.
   (Gabriel Radanne)
+- GPR#486: allow recursive bindings with "_"
+  (Olivier Nicole)
 
 Compilers:
 * PR#4231, PR#5461: warning 31 is now fatal by default
