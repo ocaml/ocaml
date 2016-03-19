@@ -609,8 +609,8 @@ is automatically expanded into
         let rec f : 't1 't2. 't1 * 't2 list -> 't1 =
           fun (type t1) (type t2) -> (... : t1 * t2 list -> t1)
 \end{verbatim}
-This syntax can be very useful when defining recursive functions involving GADTs
-(see \ref{s:gadts}).
+This syntax can be very useful when defining recursive functions involving
+GADTs, see the section~\ref{s:gadts} for a more detailed explanation.
 
 The same feature is provided for method definitions.
 The @'method!'@ form combines this extension with the
@@ -1168,6 +1168,31 @@ Here is a concrete example:
         let two = eval (App (App (Add, Int 1), Int 1))
         val two : int = 2
 \end{verbatim}
+It is important to remark that the function "eval" is using the
+polymorphic syntax for locally abstract types. When defining a recursive
+function that manipulates a GADT, explicit polymorphic recursion should
+generally be used. For instance, the following definition fails with a
+type error:
+\begin{verbatim}
+        let rec eval (type a): a term -> a = function
+          | Int n    -> n
+          | Add      -> (fun x y -> x+y)
+          | App(f,x) -> (eval f) (eval x)
+(*                            ^
+   Error: This expression has type ($App_'b -> a) term but an expression was
+   expected of type 'a
+   The type constructor $App_'b would escape its scope
+*)
+\end{verbatim}
+In absence of an explicit polymorphic annotation, a monomorphic type
+is inferred for the recursive function. If a recursive call occurs
+inside the function definition at a type that involves an
+existential GADT type variable, this variable flows to the type of
+the recursive function, and thus escapes its scope. In the above example,
+this happens in the branch "App(f,x)" when "eval" is called with "f" as
+an argument. Since the type of "eval" is "'a term -> 'a" whereas the
+type of f is "($App_ 'b-> a)", the call "eval f" makes the existential
+type "$App_'b" flows to the type variable "'a" and escape its scope.
 
 Type inference for GADTs is notoriously hard.
 This is due to the fact some types may become ambiguous when escaping
