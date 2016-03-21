@@ -898,10 +898,18 @@ module Heap_snapshot = struct
 
     let pathname_suffix_trace = "trace"
 
-    let read ~pathname_prefix =
-      let pathname_prefix = pathname_prefix ^ "." in
-      let chn = open_in (pathname_prefix ^ pathname_suffix_trace) in
-      let num_snapshots : int = Marshal.from_channel chn in
+    let rec read_snapshots chn acc =
+      let finished : bool = Marshal.from_channel chn in
+      if finished then Array.of_list (List.rev acc)
+      else begin
+        let snapshot : heap_snapshot = Marshal.from_channel chn in
+        read_snapshots chn (snapshot :: acc)
+      end
+
+    let read ~path =
+      let chn = open_in path in
+      let snapshots = read_snapshots chn [] in
+      let num_snapshots = Array.length snapshots in
       let time_of_writer_close : float = Marshal.from_channel chn in
       let frame_table : Frame_table.t = Marshal.from_channel chn in
       let shape_table = Shape_table.demarshal chn in
@@ -917,13 +925,6 @@ module Heap_snapshot = struct
         finaliser_traces_by_thread.(thread) <- finaliser_trace
       done;
       close_in chn;
-      let snapshots =
-        Array.init num_snapshots (fun index ->
-          let chn = open_in (pathname_prefix ^ (string_of_int index)) in
-          let snapshot = Marshal.from_channel chn in
-          close_in chn;
-          snapshot)
-      in
       { num_snapshots;
         time_of_writer_close;
         frame_table;

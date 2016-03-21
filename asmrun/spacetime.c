@@ -146,7 +146,7 @@ void caml_spacetime_register_thread(
   num_per_threads++;
 }
 
-CAMLprim value caml_spacetime_marshal_trie (value v_channel)
+void caml_spacetime_extern_trie (struct channel *chan)
 {
   /* Marshal both the main and finaliser tries, for all threads that have
      been created, to an [out_channel].  This can be done by using the
@@ -156,22 +156,30 @@ CAMLprim value caml_spacetime_marshal_trie (value v_channel)
   int num_marshalled = 0;
   per_thread* thr = per_threads;
 
-  caml_output_value(v_channel, Val_long(num_per_threads + 1), Val_long(0));
+  caml_output_val(chan, Val_long(num_per_threads + 1), Val_long(0));
 
   caml_extern_allow_out_of_heap = 1;
-  caml_output_value(v_channel, caml_spacetime_trie_root, Val_long(0));
-  caml_output_value(v_channel,
+  caml_output_val(chan, caml_spacetime_trie_root, Val_long(0));
+  caml_output_val(chan,
     caml_spacetime_finaliser_trie_root_main_thread, Val_long(0));
   while (thr != NULL) {
-    caml_output_value(v_channel, *(thr->trie_node_root), Val_long(0));
-    caml_output_value(v_channel, *(thr->finaliser_trie_node_root),
+    caml_output_val(chan, *(thr->trie_node_root), Val_long(0));
+    caml_output_val(chan, *(thr->finaliser_trie_node_root),
       Val_long(0));
     thr = thr->next;
     num_marshalled++;
   }
   caml_extern_allow_out_of_heap = 0;
   Assert(num_marshalled == num_per_threads);
+}
 
+CAMLprim value caml_spacetime_marshal_trie(value vchan)
+{
+  struct channel * channel = Channel(vchan);
+
+  Lock(channel);
+  caml_spacetime_extern_trie(channel);
+  Unlock(channel);
   return Val_unit;
 }
 

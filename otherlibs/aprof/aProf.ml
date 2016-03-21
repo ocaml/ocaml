@@ -292,8 +292,8 @@ module Series = struct
 
   type t = Snapshot.t list
 
-  let create ?executable profile =
-    let series = Heap_snapshot.Series.read ~pathname_prefix:profile in
+  let create ?executable path =
+    let series = Heap_snapshot.Series.read ~path in
     let trace =
       (* CR mshinwell: fix thread handling! *)
       match

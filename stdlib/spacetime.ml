@@ -1,24 +1,16 @@
-(***********************************************************************)
-(*                                                                     *)
-(*                               OCaml                                 *)
-(*                                                                     *)
-(*                 Mark Shinwell, Jane Street Europe                   *)
-(*                                                                     *)
-(*  Copyright 2013--2015, Jane Street Group, LLC                       *)
-(*                                                                     *)
-(*  Licensed under the Apache License, Version 2.0 (the "License");    *)
-(*  you may not use this file except in compliance with the License.   *)
-(*  You may obtain a copy of the License at                            *)
-(*                                                                     *)
-(*      http://www.apache.org/licenses/LICENSE-2.0                     *)
-(*                                                                     *)
-(*  Unless required by applicable law or agreed to in writing,         *)
-(*  software distributed under the License is distributed on an        *)
-(*  "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND,       *)
-(*  either express or implied.  See the License for the specific       *)
-(*  language governing permissions and limitations under the License.  *)
-(*                                                                     *)
-(***********************************************************************)
+(**************************************************************************)
+(*                                                                        *)
+(*                                 OCaml                                  *)
+(*                                                                        *)
+(*           Mark Shinwell and Leo White, Jane Street Europe              *)
+(*                                                                        *)
+(*   Copyright 2015--2016 Jane Street Group LLC                           *)
+(*                                                                        *)
+(*   All rights reserved.  This file is distributed under the terms of    *)
+(*   the GNU Lesser General Public License version 2.1, with the          *)
+(*   special exception on linking described in the file LICENSE.          *)
+(*                                                                        *)
+(**************************************************************************)
 
 (* CR mshinwell: move to [Gc] module *)
 module Frame_table = struct
@@ -84,44 +76,33 @@ module Shape_table = struct
   (* CR-soon mshinwell: add support for freeing the structure *)
 end
 
-module Heap_snapshot = struct
-  let pathname_suffix_trace = "trace"
+module Series = struct
+  type t = {
+    channel : out_channel;
+    mutable closed : bool;
+  }
 
-  module Writer = struct
-    type t = {
-      pathname_prefix : string;
-      mutable next_index : int;
-      mutable closed : bool;
+  let create ~path =
+    { channel = open_out path;
+      closed = false;
     }
 
-    let create ~pathname_prefix =
-      { pathname_prefix = pathname_prefix ^ ".";
-        next_index = 0;
-        closed = false;
-      }
+  external marshal_global_trace : out_channel -> unit
+    = "caml_spacetime_only_works_for_native_code"
+      "caml_spacetime_marshal_trie"
 
-    let use t ~f =
-      if t.closed then failwith "Heap_snapshot.Writer: is closed";
-      let pathname = t.pathname_prefix ^ (string_of_int t.next_index) in
-      t.next_index <- t.next_index + 1;
-      let chn = open_out pathname in
-      f chn;
-      close_out chn
+  let save_and_close t =
+    if t.closed then failwith "Series is closed";
+    Marshal.to_channel t.channel true [];
+    Marshal.to_channel t.channel (Sys.time ()) [];
+    Marshal.to_channel t.channel (Frame_table.get ()) [];
+    Shape_table.marshal (Shape_table.get ()) t.channel;
+    marshal_global_trace t.channel;
+    close_out t.channel;
+    t.closed <- true
+end
 
-    external marshal_global_trace : out_channel -> unit
-      = "caml_spacetime_only_works_for_native_code"
-        "caml_spacetime_marshal_trie"
-
-    let save_trace_and_close t =
-      let chn = open_out (t.pathname_prefix ^ pathname_suffix_trace) in
-      Marshal.to_channel chn t.next_index [];
-      Marshal.to_channel chn (Sys.time ()) [];
-      Marshal.to_channel chn (Frame_table.get ()) [];
-      Shape_table.marshal (Shape_table.get ()) chn;
-      marshal_global_trace chn;
-      close_out chn;
-      t.closed <- true
-  end
+module Snapshot = struct
 
   type raw_snapshot
 
@@ -137,9 +118,10 @@ module Heap_snapshot = struct
     = "caml_spacetime_only_works_for_native_code"
       "caml_spacetime_free_heap_snapshot" "noalloc"
 
-  let take writer =
-    Writer.use writer ~f:(fun out_channel ->
-      let snapshot = take () in
-      marshal out_channel snapshot;
-      free snapshot)
+  let take { Series.closed; channel } =
+    if closed then failwith "Series is closed";
+    Marshal.to_channel channel false [];
+    let snapshot = take () in
+    marshal channel snapshot;
+    free snapshot
 end

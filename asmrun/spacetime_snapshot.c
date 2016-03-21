@@ -287,12 +287,22 @@ CAMLprim value caml_spacetime_free_heap_snapshot(value v_snapshot)
   return Val_unit;
 }
 
+void caml_spacetime_extern_heap_snapshot
+      (struct channel *chan, value v_snapshot)
+{
+  caml_extern_allow_out_of_heap = 1;
+  caml_output_val(chan, v_snapshot, Val_long(0));
+  caml_extern_allow_out_of_heap = 0;
+}
+
 CAMLprim value caml_spacetime_marshal_heap_snapshot
       (value v_channel, value v_snapshot)
 {
-  caml_extern_allow_out_of_heap = 1;
-  caml_output_value(v_channel, v_snapshot, Val_long(0));
-  caml_extern_allow_out_of_heap = 0;
+  struct channel * channel = Channel(v_channel);
+
+  Lock(channel);
+  caml_spacetime_extern_heap_snapshot(channel, v_snapshot);
+  Unlock(channel);
 
   return Val_unit;
 }
@@ -460,7 +470,7 @@ CAMLprim value caml_spacetime_marshal_shape_table
 
 #else
 
-static void spacetime_disabled()
+static value spacetime_disabled()
 {
   caml_failwith("Spacetime profiling not enabled");
   assert(0);  /* unreachable */
@@ -468,32 +478,32 @@ static void spacetime_disabled()
 
 CAMLprim value caml_spacetime_take_heap_snapshot()
 {
-  spacetime_disabled();
+  return spacetime_disabled();
 }
 
 CAMLprim value caml_spacetime_marshal_heap_snapshot()
 {
-  spacetime_disabled();
+  return spacetime_disabled();
 }
 
 CAMLprim value caml_spacetime_free_heap_snapshot()
 {
-  spacetime_disabled();
+  return spacetime_disabled();
 }
 
 CAMLprim value caml_spacetime_num_frame_descriptors ()
 {
-  spacetime_disabled();
+  return spacetime_disabled();
 }
 
 CAMLprim value caml_spacetime_get_frame_descriptor ()
 {
-  spacetime_disabled();
+  return spacetime_disabled();
 }
 
 CAMLprim value caml_spacetime_return_address_of_frame_descriptor ()
 {
-  spacetime_disabled();
+  return spacetime_disabled();
 }
 
 #endif

@@ -321,7 +321,7 @@ module Heap_snapshot : sig
         garbage collected or freed.  This should not be a problem, since
         the intention is that a post-processor reads the trace and outputs
         another format. *)
-    val read : pathname_prefix:string -> t
+    val read : path:string -> t
 
     val time_of_writer_close : t -> float
     val num_threads : t -> int
