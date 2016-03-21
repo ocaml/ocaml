@@ -219,6 +219,8 @@ PERVASIVES=$(STDLIB_MODULES) outcometree topdirs toploop
 
 compilerlibs/ocamlmiddleend.cma: $(MIDDLE_END)
 	$(CAMLC) -a -o $@ $(MIDDLE_END)
+compilerlibs/ocamlmiddleend.cmxa: $(MIDDLE_END:%.cmo=%.cmx)
+	$(CAMLOPT) -a -o $@ $^
 partialclean::
 	rm -f compilerlibs/ocamlmiddleend.cma
 
@@ -228,17 +230,18 @@ partialclean::
 ocamltools: ocamlc ocamlyacc ocamllex asmcomp/cmx_format.cmi \
             asmcomp/printclambda.cmo compilerlibs/ocamlmiddleend.cma \
             asmcomp/export_info.cmo
-	cd tools ; $(MAKEREC) all
+	+cd tools ; $(MAKEREC) all
 
 ocamltoolsopt: ocamlopt
-	cd tools; $(MAKEREC) opt
+	+cd tools; $(MAKEREC) opt
 
-ocamltoolsopt.opt: ocamlc.opt ocamlyacc ocamllex asmcomp/cmx_format.cmi \
-                   asmcomp/printclambda.cmx
-	cd tools; $(MAKEREC) opt.opt
+ocamltoolsopt.opt: ocamlc.opt ocamlyacc ocamllex.opt asmcomp/cmx_format.cmi \
+                   asmcomp/printclambda.cmx compilerlibs/ocamlmiddleend.cmxa \
+                   asmcomp/export_info.cmx
+	+cd tools; $(MAKEREC) opt.opt
 
 partialclean::
-	cd tools; $(MAKEREC) clean
+	+cd tools; $(MAKEREC) clean
 
 alldepend::
-	cd tools; $(MAKEREC) depend
+	+cd tools; $(MAKEREC) depend

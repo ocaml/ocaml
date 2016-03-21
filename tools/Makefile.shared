@@ -12,10 +12,48 @@
 #*   special exception on linking described in the file LICENSE.          *
 #*                                                                        *
 #**************************************************************************
-
+MAKEFLAGS := -r -R
 include ../config/Makefile
-CAMLRUN ?= ../boot/ocamlrun
-CAMLYACC ?= ../boot/ocamlyacc
+ifndef CAMLRUN
+CAMLRUN := ../boot/ocamlrun
+endif
+ifndef CAMLYACC
+CAMLYACC := ../boot/ocamlyacc
+endif
+DESTDIR ?=
+
+target=''""'$(subst ','\'',$@)'#'
+source=''""'$(subst ','\'',$<)'#'
+install_files :=
+export install_files
+define byte2native
+$(patsubst %.cmo,%.cmx,$(patsubst %.cma,%.cmxa,$1))
+endef
+
+# $1 = target, $2 = OCaml object dependencies, $3 = other dependencies
+define byte_and_opt_
+# ifneq '$$(words $1)' '1'
+# $$(error cannot build file with whitespace in name)
+# endif
+$1: $3 $2
+	$$(CAMLC) $$(LINKFLAGS) -o $${target} $2; test -f $$@
+
+$1.opt: $3 $$(call byte2native,$2)
+	$$(CAMLOPT) $$(LINKFLAGS) -o $$(target) $$(call byte2native,$2)
+
+all: $1
+
+opt.opt: $1.opt
+
+install_files += '$(subst ','\'',$1)'#'
+clean::
+	rm -f -- $1 $1.opt
+
+endef
+
+define byte_and_opt
+$(eval $(call byte_and_opt_,$(subst $$,$$$$,$1),$(subst $$,$$$$,$2),$(subst $$,$$$$,$3)))
+endef
 
 ROOTDIR=..
 
@@ -26,13 +64,16 @@ export OCAML_FLEXLINK:=$(ROOTDIR)/boot/ocamlrun $(ROOTDIR)/flexdll/flexlink.exe
 endif
 
 CAMLC=$(CAMLRUN) ../boot/ocamlc -nostdlib -I ../boot -use-prims ../byterun/primitives
-CAMLOPT=$(CAMLRUN) ../ocamlopt -nostdlib -I ../stdlib
+CAMLOPT := $(CAMLRUN) ../ocamlopt
+CAMLOPT += -nostdlib -I ../stdlib
 CAMLLEX=$(CAMLRUN) ../boot/ocamllex
 INCLUDES=-I ../utils -I ../parsing -I ../typing -I ../bytecomp -I ../asmcomp \
          -I ../middle_end -I ../middle_end/base_types -I ../driver \
          -I ../toplevel
-COMPFLAGS= -absname -w +a-4-9-41-42-44-45-48 -strict-sequence -warn-error A -safe-string -strict-formats $(INCLUDES)
+COMPFLAGS= -absname -w +a-4-9-41-42-44-45-48 -strict-sequence -warn-error A \
+ -safe-string -strict-formats $(INCLUDES)
 LINKFLAGS=$(INCLUDES)
+VPATH := $(filter-out -I,$(INCLUDES))
 
 all: ocamldep ocamlprof ocamlcp ocamloptp ocamlmktop ocamlmklib dumpobj \
      objinfo read_cmt stripdebug cmpbyt
@@ -55,13 +96,9 @@ CAMLDEP_IMPORTS=timings.cmo misc.cmo config.cmo identifiable.cmo numbers.cmo \
   builtin_attributes.cmo ast_invariants.cmo \
   pparse.cmo compenv.cmo depend.cmo
 
-ocamldep: $(CAMLDEP_OBJ)
-	$(CAMLC) $(LINKFLAGS) -compat-32 -o ocamldep $(CAMLDEP_IMPORTS) \
-	         $(CAMLDEP_OBJ)
-
-ocamldep.opt: $(CAMLDEP_OBJ:.cmo=.cmx)
-	$(CAMLOPT) $(LINKFLAGS) -o ocamldep.opt $(CAMLDEP_IMPORTS:.cmo=.cmx) \
-	           $(CAMLDEP_OBJ:.cmo=.cmx)
+$(call byte_and_opt,ocamldep,$(CAMLDEP_IMPORTS) $(CAMLDEP_OBJ),)
+ocamldep: depend.cmi
+ocamldep.opt: depend.cmi
 
 # ocamldep is precious: sometimes we are stuck in the middle of a
 # bootstrap and we need to remake the dependencies
@@ -70,8 +107,8 @@ clean::
 	rm -f ocamldep.opt
 
 
-INSTALL_BINDIR=$(DESTDIR)$(BINDIR)
-INSTALL_LIBDIR=$(DESTDIR)$(LIBDIR)
+export INSTALL_BINDIR:=$(DESTDIR)$(BINDIR)
+export INSTALL_LIBDIR:=$(DESTDIR)$(LIBDIR)
 
 install::
 	cp ocamldep $(INSTALL_BINDIR)/ocamldep.byte$(EXE)
@@ -84,30 +121,24 @@ CSLPROF_IMPORTS=misc.cmo config.cmo identifiable.cmo numbers.cmo \
   warnings.cmo location.cmo longident.cmo docstrings.cmo \
   syntaxerr.cmo ast_helper.cmo parser.cmo lexer.cmo parse.cmo
 
-ocamlprof: $(CSLPROF) profiling.cmo
-	$(CAMLC) $(LINKFLAGS) -o ocamlprof $(CSLPROF_IMPORTS) $(CSLPROF)
+$(call byte_and_opt,ocamlprof,$(CSLPROF_IMPORTS) profiling.cmo $(CSLPROF),)
 
-ocamlcp: ocamlcp.cmo
-	$(CAMLC) $(LINKFLAGS) -o ocamlcp misc.cmo warnings.cmo config.cmo \
-                 identifiable.cmo numbers.cmo arg_helper.cmo clflags.cmo \
-	         main_args.cmo ocamlcp.cmo
+ocamlcp_cmos = misc.cmo warnings.cmo config.cmo identifiable.cmo numbers.cmo \
+              arg_helper.cmo clflags.cmo main_args.cmo
 
-ocamloptp: ocamloptp.cmo
-	$(CAMLC) $(LINKFLAGS) -o ocamloptp misc.cmo warnings.cmo config.cmo \
-                 identifiable.cmo numbers.cmo arg_helper.cmo clflags.cmo \
-	         main_args.cmo \
-	         ocamloptp.cmo
+$(call byte_and_opt,ocamlcp,$(ocamlcp_cmos) ocamlcp.cmo,)
+$(call byte_and_opt,ocamloptp,$(ocamlcp_cmos) ocamloptp.cmo,)
 
 opt:: profiling.cmx
 
 install::
-	cp ocamlprof "$(INSTALL_BINDIR)/ocamlprof$(EXE)"
-	cp ocamlcp "$(INSTALL_BINDIR)/ocamlcp$(EXE)"
-	cp ocamloptp "$(INSTALL_BINDIR)/ocamloptp$(EXE)"
-	cp profiling.cmi profiling.cmo "$(INSTALL_LIBDIR)"
+	cp -- ocamlprof "$${INSTALL_BINDIR}/ocamlprof$${EXE}"
+	cp -- ocamlcp "$${INSTALL_BINDIR}/ocamlcp$${EXE}"
+	cp -- ocamloptp "$${INSTALL_BINDIR}/ocamloptp$${EXE}"
+	cp -- profiling.cmi profiling.cmo "$${INSTALL_LIBDIR}"
 
 installopt::
-	cp profiling.cmx profiling.$(O) "$(INSTALL_LIBDIR)"
+	cp -- profiling.cmx profiling.$(O) "$${INSTALL_LIBDIR}"
 
 clean::
 	rm -f ocamlprof ocamlcp ocamloptp
@@ -120,7 +151,7 @@ ocamlmklib: ocamlmklibconfig.cmo ocamlmklib.cmo
 	         ocamlmklib.cmo
 
 install::
-	cp ocamlmklib "$(INSTALL_BINDIR)/ocamlmklib$(EXE)"
+	cp -- ocamlmklib "$${INSTALL_BINDIR}/ocamlmklib$${EXE}"
 
 clean::
 	rm -f ocamlmklib
@@ -183,7 +214,7 @@ lexer301.ml: lexer301.mll
 	$(CAMLLEX) lexer301.mll
 
 #install::
-#	cp scrapelabels "$(INSTALL_LIBDIR)"
+#	cp scrapelabels "$${INSTALL_LIBDIR}"
 
 clean::
 	rm -f scrapelabels lexer301.ml
@@ -200,7 +231,27 @@ addlabels: addlabels.cmo
 		$(ADDLABELS_IMPORTS) addlabels.cmo
 
 #install::
-#	cp addlabels "$(INSTALL_LIBDIR)"
+#	cp addlabels "$${INSTALL_LIBDIR}"
+
+ifeq '$(EXE)' ''
+LN := ln -sf --
+else ifeq '$(EXE)' '.exe' # Windows
+LN := cp -f --
+else
+$(error $(EXE) must be the empty string or '.exe')
+endif
+
+install::
+	for i in $${install_files}; \
+	do; \
+	  cp -- "$$i" "$${INSTALL_BINDIR}/$$i.byte$${EXE}"; \
+	  if test -f "$$i".opt; then \
+	    cp -- "$$i.opt" "$${INSTALL_BINDIR}/$$i.opt$${EXE}"; \
+	    $(LN) "$$i.opt$${EXE}" "$${INSTALL_BINDIR}/$$i$${EXE}"; \
+	  else \
+	    $(LN) "$$i.byte$${EXE}" "$${INSTALL_BINDIR}/$$i$${EXE}"; \
+	  fi; \
+	done
 
 clean::
 	rm -f addlabels
@@ -214,6 +265,7 @@ cvt_emit: $(CVT_EMIT)
 
 # cvt_emit is precious: sometimes we are stuck in the middle of a
 # bootstrap and we need to remake the dependencies
+.PRECIOUS: cvt_emit
 clean::
 	if test -f cvt_emit; then mv -f cvt_emit cvt_emit.bak; else :; fi
 
@@ -226,27 +278,12 @@ clean::
 beforedepend:: cvt_emit.ml
 
 
-# Reading cmt files
-
-READ_CMT= \
-          ../compilerlibs/ocamlcommon.cma \
-          ../compilerlibs/ocamlbytecomp.cma \
-          \
+READ_CMT= ../compilerlibs/ocamlcommon.cma ../compilerlibs/ocamlbytecomp.cma \
           cmt2annot.cmo read_cmt.cmo
 
-READ_CMT_OPT1 = $(READ_CMT:.cmo=.cmx)
-READ_CMT_OPT = $(READ_CMT_OPT1:.cma=.cmxa)
+# Reading cmt files
+$(call byte_and_opt,read_cmt,$(READ_CMT),)
 
-read_cmt: $(READ_CMT)
-	$(CAMLC) $(LINKFLAGS) -o read_cmt $(READ_CMT)
-
-read_cmt.opt: $(READ_CMT_OPT)
-	$(CAMLOPT) $(LINKFLAGS) -o read_cmt.opt $(READ_CMT_OPT)
-
-clean::
-	rm -f read_cmt read_cmt.opt
-
-beforedepend::
 
 # The bytecode disassembler
 
@@ -304,49 +341,30 @@ OBJINFO=../compilerlibs/ocamlcommon.cma \
         ../asmcomp/export_info.cmo \
         objinfo.cmo
 
-objinfo: objinfo_helper$(EXE) $(OBJINFO)
-	$(CAMLC) -o objinfo $(OBJINFO)
-
-install::
-	cp objinfo "$(INSTALL_BINDIR)/ocamlobjinfo$(EXE)"
-	cp objinfo_helper$(EXE) "$(INSTALL_LIBDIR)/objinfo_helper$(EXE)"
-
-clean::
-	rm -f objinfo objinfo_helper$(EXE)
+$(call byte_and_opt,ocamlobjinfo,$(OBJINFO),objinfo_helper$(EXE))
 
 # Scan object files for required primitives
-
-PRIMREQ=primreq.cmo
-
-primreq: $(PRIMREQ)
-	$(CAMLC) $(LINKFLAGS) -o primreq config.cmo $(PRIMREQ)
+$(call byte_and_opt,primreq,config.cmo primreq.cmo,)
 
 clean::
-	rm -f primreq
+	rm -f "objinfo_helper$${EXE}"
+
 
 # Copy a bytecode executable, stripping debug info
 
-STRIPDEBUG=../compilerlibs/ocamlcommon.cma \
+stripdebug=../compilerlibs/ocamlcommon.cma \
            ../compilerlibs/ocamlbytecomp.cma \
            stripdebug.cmo
 
-stripdebug: $(STRIPDEBUG)
-	$(CAMLC) $(LINKFLAGS) -o stripdebug $(STRIPDEBUG)
-
-clean::
-	rm -f stripdebug
+$(call byte_and_opt,stripdebug,$(stripdebug),)
 
 # Compare two bytecode executables
 
-CMPBYT=../compilerlibs/ocamlcommon.cma \
+cmpbyt=../compilerlibs/ocamlcommon.cma \
        ../compilerlibs/ocamlbytecomp.cma \
        cmpbyt.cmo
 
-cmpbyt: $(CMPBYT)
-	$(CAMLC) $(LINKFLAGS) -o cmpbyt $(CMPBYT)
-
-clean::
-	rm -f cmpbyt
+$(call byte_and_opt,cmpbyt,$(cmpbyt),)
 
 ifeq "$(RUNTIMEI)" "true"
 install::
@@ -356,16 +374,15 @@ endif
 # Common stuff
 
 .SUFFIXES:
-.SUFFIXES: .ml .cmo .mli .cmi .cmx
 
-.ml.cmo:
-	$(CAMLC) -c $(COMPFLAGS) $<
+%.cmo: %.ml
+	$(CAMLC) -c $(COMPFLAGS) - $(source)
 
-.mli.cmi:
-	$(CAMLC) -c $(COMPFLAGS) $<
+%.cmi: %.mli
+	$(CAMLC) -c $(COMPFLAGS) - $(source)
 
-.ml.cmx:
-	$(CAMLOPT) $(COMPFLAGS) -c $<
+%.cmx: %.ml
+	$(CAMLOPT) $(COMPFLAGS) -c - $(source)
 
 clean::
 	rm -f *.cmo *.cmi *.cma *.dll *.so *.lib *.a
@@ -376,3 +393,7 @@ depend: beforedepend
 .PHONY: clean install beforedepend depend
 
 include .depend
+
+# Local Variables:
+# mode: makefile-gmake
+# End:
