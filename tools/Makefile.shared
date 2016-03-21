@@ -232,7 +232,7 @@ endif
 
 install::
 	for i in $${install_files}; \
-	do; \
+	do \
 	  cp -- "$$i" "$${INSTALL_BINDIR}/$$i.byte$${EXE}"; \
 	  if test -f "$$i".opt; then \
 	    cp -- "$$i.opt" "$${INSTALL_BINDIR}/$$i.opt$${EXE}"; \
