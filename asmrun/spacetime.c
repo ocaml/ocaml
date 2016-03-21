@@ -352,7 +352,8 @@ CAMLprim value* caml_spacetime_indirect_node_hole_ptr
     Assert(caml_spacetime_classify_c_node(c_node) == CALL);
 
     if (c_node->pc == encoded_callee) {
-      return &(c_node->data.callee_node);
+      last_indirect_node_hole_ptr_result = &(c_node->data.callee_node);
+      return last_indirect_node_hole_ptr_result;
     }
     else {
       node_hole = &c_node->next;
