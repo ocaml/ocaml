@@ -674,6 +674,19 @@ partialclean::
 alldepend::
 	cd ocamldoc && $(MAKE) depend
 
+middle_end_doc:
+	mkdir middle_end_doc
+
+middle-end_html_doc: ocamldoc | middle_end_doc
+	$(CAMLRUN) ocamldoc/ocamldoc -html -d middle_end_doc \
+	  -I utils -I middle_end -I middle_end/base_types -I bytecomp \
+	  -I typing -I parsing -I asmcomp \
+	  utils/identifiable.mli bytecomp/lambda.mli asmcomp/clambda.mli \
+	  $(MIDDLE_END:.cmo=.mli)
+
+partialclean::
+	rm -rf flambda_doc
+
 # The extra libraries
 
 otherlibraries: ocamltools
