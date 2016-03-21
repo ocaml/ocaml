@@ -22,19 +22,21 @@ CAMLYACC := ../boot/ocamlyacc
 endif
 DESTDIR ?=
 
-target=''""'$(subst ','\'',$@)'#'
-source=''""'$(subst ','\'',$<)'#'
+target=''""'$(subst ','\'',$@)'#'#')'#
+source=''""'$(subst ','\'',$<)'#'#')'#
+installed_tools := ocamldep ocamlprof ocamlcp ocamloptp \
+                   ocamlmktop ocamlmklib ocamlobjinfo
+
 install_files :=
-export install_files
 define byte2native
 $(patsubst %.cmo,%.cmx,$(patsubst %.cma,%.cmxa,$1))
 endef
 
 # $1 = target, $2 = OCaml object dependencies, $3 = other dependencies
 define byte_and_opt_
-# ifneq '$$(words $1)' '1'
-# $$(error cannot build file with whitespace in name)
-# endif
+ifneq '$$(words $1)' '1'
+$$(error cannot build file with whitespace in name)
+endif
 $1: $3 $2
 	$$(CAMLC) $$(LINKFLAGS) -o $${target} $2; test -f $$@
 
@@ -44,15 +46,17 @@ $1.opt: $3 $$(call byte2native,$2)
 all: $1
 
 opt.opt: $1.opt
-
-install_files += '$(subst ','\'',$1)'#'
+ifeq '$$(filter $$(installed_tools),$1)' '$1'
+install_files += '$(subst ','\'',$1)'#'#')#
+endif
 clean::
 	rm -f -- $1 $1.opt
 
 endef
 
 define byte_and_opt
-$(eval $(call byte_and_opt_,$(subst $$,$$$$,$1),$(subst $$,$$$$,$2),$(subst $$,$$$$,$3)))
+$(eval $(call \
+ byte_and_opt_,$(subst $$,$$$$,$1),$(subst $$,$$$$,$2),$(subst $$,$$$$,$3)))
 endef
 
 ROOTDIR=..
@@ -74,9 +78,6 @@ COMPFLAGS= -absname -w +a-4-9-41-42-44-45-48 -strict-sequence -warn-error A \
  -safe-string -strict-formats $(INCLUDES)
 LINKFLAGS=$(INCLUDES)
 VPATH := $(filter-out -I,$(INCLUDES))
-
-all: ocamldep ocamlprof ocamlcp ocamloptp ocamlmktop ocamlmklib dumpobj \
-     ocamlobjinfo read_cmt stripdebug cmpbyt
 
 # scrapelabels addlabels
 
