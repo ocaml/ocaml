@@ -12,11 +12,10 @@
 /*                                                                        */
 /**************************************************************************/
 
-/* CR mshinwell: remove pragma and rename assert -> Assert */
+/* CR mshinwell: remove pragma and rename Assert -> Assert */
 
-#pragma GCC optimize ("O0")
+#pragma GCC optimize ("O3")
 
-#include <assert.h>
 #include <stdio.h>
 #include <stdint.h>
 #include <stdlib.h>
@@ -139,9 +138,36 @@ CAMLprim value caml_spacetime_marshal_trie (value v_channel)
     num_marshalled++;
   }
   caml_extern_allow_out_of_heap = 0;
-  assert(num_marshalled == num_per_threads);
+  Assert(num_marshalled == num_per_threads);
 
   return Val_unit;
+}
+
+c_node_type caml_spacetime_classify_c_node(c_node* node)
+{
+  return (node->pc & 2) ? CALL : ALLOCATION;
+}
+
+c_node* caml_spacetime_c_node_of_stored_pointer(value node_stored)
+{
+  Assert(node_stored == Val_unit || Is_c_node(node_stored));
+  return (node_stored == Val_unit) ? NULL : (c_node*) Hp_val(node_stored);
+}
+
+c_node* caml_spacetime_c_node_of_stored_pointer_not_null(
+      value node_stored)
+{
+  Assert(Is_c_node(node_stored));
+  return (c_node*) Hp_val(node_stored);
+}
+
+value caml_spacetime_stored_pointer_of_c_node(c_node* c_node)
+{
+  value node;
+  Assert(c_node != NULL);
+  node = Val_hp(c_node);
+  Assert(Is_c_node(node));
+  return node;
 }
 
 static int pc_inside_c_node_matches(c_node* node, void* pc)
@@ -152,11 +178,11 @@ static int pc_inside_c_node_matches(c_node* node, void* pc)
 static value allocate_uninitialized_ocaml_node(int size_including_header)
 {
   void* node;
-  assert(size_including_header >= 3);
+  Assert(size_including_header >= 3);
   node = caml_stat_alloc(sizeof(uintnat) * size_including_header);
   /* We don't currently rely on [uintnat] alignment, but we do need some
      alignment, so just be sure. */
-  assert (((uintnat) node) % sizeof(uintnat) == 0);
+  Assert (((uintnat) node) % sizeof(uintnat) == 0);
   return Val_hp(node);
 }
 
@@ -175,7 +201,7 @@ static value find_tail_node(value node, void* callee)
   pc = Encode_node_pc(callee);
 
   do {
-    assert(Is_ocaml_node(node));
+    Assert(Is_ocaml_node(node));
     if (Node_pc(node) == pc) {
       found = node;
     }
@@ -202,7 +228,7 @@ CAMLprim value caml_spacetime_allocate_node(
      that tail called the current function.  (Such a value is necessary to
      be able to find the start of the caller's node, and hence its tail
      chain, so we as a tail-called callee can link ourselves in.) */
-  assert(Is_tail_caller_node_encoded(node));
+  Assert(Is_tail_caller_node_encoded(node));
 
   if (node != Val_unit) {
     value tail_node;
@@ -222,7 +248,7 @@ CAMLprim value caml_spacetime_allocate_node(
   node = allocate_uninitialized_ocaml_node(size_including_header);
   Hd_val(node) =
     Make_header(size_including_header - 1, OCaml_node_tag, Caml_black);
-  assert((((uintnat) pc) % 1) == 0);
+  Assert((((uintnat) pc) % 1) == 0);
   Node_pc(node) = Encode_node_pc(pc);
   /* If the callee was tail called, then the tail link field will link this
      new node into an existing tail chain.  Otherwise, it is initialized with
@@ -241,7 +267,7 @@ CAMLprim value caml_spacetime_allocate_node(
      direct tail call points.  (We cannot just count them and put them at the
      beginning of the node because we need the indexes of elements within the
      node during instruction selection before we have found all call points.)
-     This is now also used for assertion checking in
+     This is now also used for Assertion checking in
      [caml_spacetime_caml_garbage_collection].
   */
 
@@ -265,7 +291,7 @@ static c_node* allocate_c_node(void)
     abort();
   }
 
-  assert((sizeof(c_node) % sizeof(uintnat)) == 0);
+  Assert((sizeof(c_node) % sizeof(uintnat)) == 0);
   node->gc_header =
     Make_header(sizeof(c_node)/sizeof(uintnat) - 1, C_node_tag, Caml_black);
   node->data.callee_node = Val_unit;
@@ -289,9 +315,9 @@ CAMLprim value* caml_spacetime_indirect_node_hole_ptr
   node_hole++;
 
   while (!found && *node_hole != Val_unit) {
-    assert(((uintnat) *node_hole) % sizeof(value) == 0);
+    Assert(((uintnat) *node_hole) % sizeof(value) == 0);
     c_node = caml_spacetime_c_node_of_stored_pointer(*node_hole);
-    assert(c_node != NULL);
+    Assert(c_node != NULL);
     switch (caml_spacetime_classify_c_node(c_node)) {
       case CALL:
         if (pc_inside_c_node_matches(c_node, callee)) {
@@ -303,12 +329,12 @@ CAMLprim value* caml_spacetime_indirect_node_hole_ptr
         break;
 
       default:
-        assert(0);
+        Assert(0);
     }
   }
 
   if (!found) {
-    assert(*node_hole == Val_unit);
+    Assert(*node_hole == Val_unit);
     c_node = allocate_c_node();
     c_node->pc = Encode_c_node_pc_for_call(callee);
 
@@ -322,10 +348,10 @@ CAMLprim value* caml_spacetime_indirect_node_hole_ptr
     }
 
     *node_hole = caml_spacetime_stored_pointer_of_c_node(c_node);
-    assert(((uintnat) *node_hole) % sizeof(value) == 0);
+    Assert(((uintnat) *node_hole) % sizeof(value) == 0);
   }
 
-  assert(*node_hole != Val_unit);
+  Assert(*node_hole != Val_unit);
   return &(c_node->data.callee_node);
 }
 
@@ -423,7 +449,7 @@ static NOINLINE void* find_trie_node_from_libunwind(int for_allocation)
   for (frame = frames.size - 1; frame >= innermost_frame; frame--) {
     c_node_type expected_type;
     void* pc = frames.contents[frame];
-    assert (pc != (void*) caml_last_return_address);
+    Assert (pc != (void*) caml_last_return_address);
 
     if (!for_allocation) {
       expected_type = CALL;
@@ -448,8 +474,8 @@ static NOINLINE void* find_trie_node_from_libunwind(int for_allocation)
       int found = 0;
 
       node = caml_spacetime_c_node_of_stored_pointer_not_null(*node_hole);
-      assert(node != NULL);
-      assert(node->next == Val_unit
+      Assert(node != NULL);
+      Assert(node->next == Val_unit
         || (((uintnat) (node->next)) % sizeof(value) == 0));
 
       prev = NULL;
@@ -465,7 +491,7 @@ static NOINLINE void* find_trie_node_from_libunwind(int for_allocation)
         }
       }
       if (!found) {
-        assert(prev != NULL);
+        Assert(prev != NULL);
         node = allocate_c_node();
         node->pc = (expected_type == CALL ? Encode_c_node_pc_for_call(pc)
           : Encode_c_node_pc_for_alloc_point(pc));
@@ -473,19 +499,19 @@ static NOINLINE void* find_trie_node_from_libunwind(int for_allocation)
       }
     }
 
-    assert(node != NULL);
+    Assert(node != NULL);
 
-    assert(caml_spacetime_classify_c_node(node) == expected_type);
-    assert(pc_inside_c_node_matches(node, pc));
+    Assert(caml_spacetime_classify_c_node(node) == expected_type);
+    Assert(pc_inside_c_node_matches(node, pc));
     node_hole = &node->data.callee_node;
   }
 
   if (for_allocation) {
-    assert(caml_spacetime_classify_c_node(node) == ALLOCATION);
-    assert(caml_spacetime_c_node_of_stored_pointer(node->next) != node);
+    Assert(caml_spacetime_classify_c_node(node) == ALLOCATION);
+    Assert(caml_spacetime_c_node_of_stored_pointer(node->next) != node);
   }
 
-  assert(node->next != (value) NULL);
+  Assert(node->next != (value) NULL);
 
   return for_allocation ? (void*) node : (void*) node_hole;
 #else
@@ -536,7 +562,7 @@ void caml_spacetime_c_to_ocaml(void* ocaml_entry_point,
     node = allocate_uninitialized_ocaml_node(size_including_header);
     Hd_val(node) =
       Make_header(size_including_header - 1, OCaml_node_tag, Caml_black);
-    assert((((uintnat) identifying_pc_for_caml_start_program) % 1) == 0);
+    Assert((((uintnat) identifying_pc_for_caml_start_program) % 1) == 0);
     Node_pc(node) = Encode_node_pc(identifying_pc_for_caml_start_program);
     Tail_link(node) = node;
     Indirect_pc_call_site(node, Node_num_header_words) =
@@ -549,14 +575,14 @@ void caml_spacetime_c_to_ocaml(void* ocaml_entry_point,
     /* If there is a node here already, it should never be an initialized
        (but as yet unused) tail call point, since calls from OCaml into C
        are never tail calls (and no C -> C call is marked as tail). */
-    assert(!Is_tail_caller_node_encoded(node));
+    Assert(!Is_tail_caller_node_encoded(node));
   }
 
-  assert(Is_ocaml_node(node));
-  assert(Decode_node_pc(Node_pc(node))
+  Assert(Is_ocaml_node(node));
+  Assert(Decode_node_pc(Node_pc(node))
     == identifying_pc_for_caml_start_program);
-  assert(Tail_link(node) == node);
-  assert(Wosize_val(node) == Node_num_header_words + Indirect_num_fields);
+  Assert(Tail_link(node) == node);
+  Assert(Wosize_val(node) == Node_num_header_words + Indirect_num_fields);
 
   /* Search the node to find the node hole corresponding to the indirect
      call to the OCaml function. */
@@ -565,7 +591,7 @@ void caml_spacetime_c_to_ocaml(void* ocaml_entry_point,
       ocaml_entry_point,
       &Indirect_pc_call_site(node, Node_num_header_words),
       Val_unit);
-  assert(*caml_spacetime_trie_node_ptr == Val_unit
+  Assert(*caml_spacetime_trie_node_ptr == Val_unit
     || Is_ocaml_node(*caml_spacetime_trie_node_ptr));
 }
 
@@ -588,7 +614,7 @@ static void ocaml_to_c_call_site_without_instrumentation(
 
   /* See point 1 above. */
   node = (value) caml_spacetime_trie_node_ptr;
-  assert ((node % sizeof(value)) == 0);
+  Assert ((node % sizeof(value)) == 0);
 
   callee = Encode_call_point_pc(callee_ptr);
 
@@ -596,7 +622,7 @@ static void ocaml_to_c_call_site_without_instrumentation(
      is any child node, since it's possible there might not actually be one
      (e.g. if no allocation or callbacks performed in
      [caml_garbage_collection]). */
-  assert((Direct_pc_call_site(node, 0) == Val_unit
+  Assert((Direct_pc_call_site(node, 0) == Val_unit
       && Direct_pc_callee(node, 0) == Val_unit
       && Direct_callee_node(node, 0) == Val_unit)
     || (Direct_pc_call_site(node, 0) == call_site
@@ -651,9 +677,6 @@ void caml_spacetime_caml_ml_array_bound_error(void)
   void* call_site;
   void(* callee)();
 
-  /* CR mshinwell: it looks like caml_last_return_address won't be correct
-     here, we need to look at the stack */
-
   call_site = (void*) caml_last_return_address;
   callee = &caml_array_bound_error;
 
@@ -685,8 +708,8 @@ CAMLprim uintnat caml_spacetime_generate_profinfo (void* pc,
   node = (value) (((uintnat*) profinfo_words) - 1);
   offset = 0;
 
-  assert(Alloc_point_pc(node, offset) == Val_unit);
-  assert(Alloc_point_profinfo(node, offset) == Val_unit);
+  Assert(Alloc_point_pc(node, offset) == Val_unit);
+  Assert(Alloc_point_profinfo(node, offset) == Val_unit);
 
   Alloc_point_pc(node, offset) = Encode_alloc_point_pc(pc);
   Alloc_point_profinfo(node, offset) = Encode_alloc_point_profinfo(profinfo);
@@ -715,7 +738,7 @@ uintnat caml_spacetime_my_profinfo (void)
     node->data.profinfo = Val_long(profinfo);
   }
 
-  assert(profinfo <= PROFINFO_MASK);
+  Assert(profinfo <= PROFINFO_MASK);
   return profinfo;  /* N.B. not shifted by PROFINFO_SHIFT */
 }
 
@@ -725,7 +748,7 @@ CAMLprim value
 caml_spacetime_marshal_trie ()
 {
   caml_failwith("Spacetime profiling not enabled");
-  assert(0);  /* unreachable */
+  Assert(0);  /* unreachable */
 }
 
 #endif
