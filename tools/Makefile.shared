@@ -76,14 +76,11 @@ LINKFLAGS=$(INCLUDES)
 VPATH := $(filter-out -I,$(INCLUDES))
 
 all: ocamldep ocamlprof ocamlcp ocamloptp ocamlmktop ocamlmklib dumpobj \
-     objinfo read_cmt stripdebug cmpbyt
+     ocamlobjinfo read_cmt stripdebug cmpbyt
 
 # scrapelabels addlabels
 
-.PHONY: all
-
-opt.opt: ocamldep.opt read_cmt.opt
-.PHONY: opt.opt
+.PHONY: all opt.opt
 
 # The dependency generator
 
@@ -146,9 +143,8 @@ clean::
 
 # To help building mixed-mode libraries (OCaml + C)
 
-ocamlmklib: ocamlmklibconfig.cmo ocamlmklib.cmo
-	$(CAMLC) $(LINKFLAGS) -o ocamlmklib ocamlmklibconfig.cmo config.cmo \
-	         ocamlmklib.cmo
+$(call byte_and_opt,ocamlmklib,ocamlmklibconfig.cmo config.cmo \
+	         ocamlmklib.cmo,)
 
 install::
 	cp -- ocamlmklib "$${INSTALL_BINDIR}/ocamlmklib$${EXE}"
@@ -177,14 +173,7 @@ OCAMLMKTOP=ocamlmktop.cmo
 OCAMLMKTOP_IMPORTS=misc.cmo identifiable.cmo numbers.cmo config.cmo \
              arg_helper.cmo clflags.cmo ccomp.cmo
 
-ocamlmktop: $(OCAMLMKTOP)
-	$(CAMLC) $(LINKFLAGS) -o ocamlmktop $(OCAMLMKTOP_IMPORTS) $(OCAMLMKTOP)
-
-install::
-	cp ocamlmktop "$(INSTALL_BINDIR)/ocamlmktop$(EXE)"
-
-clean::
-	rm -f ocamlmktop
+$(call byte_and_opt,ocamlmktop,$(OCAMLMKTOP_IMPORTS) $(OCAMLMKTOP),)
 
 # Converter olabl/ocaml 2.99 to ocaml 3
 
@@ -289,14 +278,9 @@ $(call byte_and_opt,read_cmt,$(READ_CMT),)
 
 DUMPOBJ=opnames.cmo dumpobj.cmo
 
-dumpobj: $(DUMPOBJ)
-	$(CAMLC) $(LINKFLAGS) -o dumpobj \
-	         misc.cmo identifiable.cmo numbers.cmo \
+$(call byte_and_opt,dumpobj,misc.cmo identifiable.cmo numbers.cmo \
                  tbl.cmo config.cmo ident.cmo \
-	         opcodes.cmo bytesections.cmo $(DUMPOBJ)
-
-clean::
-	rm -f dumpobj
+	         opcodes.cmo bytesections.cmo $(DUMPOBJ))
 
 opnames.ml: ../byterun/caml/instruct.h
 	unset LC_ALL || : ; \
