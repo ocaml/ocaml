@@ -43,7 +43,7 @@ let _label s = D.label ~typ:QWORD s
 
 let int_reg_name =
   [| RAX; RBX; RDI; RSI; RDX; RCX; R8; R9;
-     R12; R10; R11; R13; RBP; |]
+     R12; R13; R10; R11; RBP; |]
 
 let float_reg_name = Array.init 16 (fun i -> XMM i)
 
@@ -657,15 +657,18 @@ let emit_instr fallthrough i =
         def_label lbl_redo;
         I.sub (int n) r15;
         if !Clflags.dlcode then begin
-          (* When using Spacetime, %rax might be the node pointer, so we'd
-             best not clobber it.  Luckily we have %r13 spare at the moment
-             instead. *)
-          let reg, reg' =
-            if not Config.spacetime then rax, RAX
-            else r13, R13
-          in
-          load_symbol_addr "caml_young_limit" reg;
-          I.cmp (mem64 QWORD 0 reg') r15
+          if Config.spacetime then begin
+            (* When using Spacetime, %rax might be the node pointer, which
+               must not be clobbered. *)
+            I.push rax
+          end;
+          load_symbol_addr "caml_young_limit" rax;
+          I.cmp (mem64 QWORD 0 RAX) r15;
+          if Config.spacetime then begin
+            (* This does not affect the flags tested by the conditional
+               jump, below. *)
+            I.pop rax
+          end
         end else
           I.cmp (mem64_rip QWORD (emit_symbol "caml_young_limit")) r15;
         let lbl_call_gc = new_label() in
