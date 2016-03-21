@@ -231,7 +231,7 @@ $(error $(EXE) must be the empty string or '.exe')
 endif
 
 install::
-	for i in $${install_files}; \
+	for i in $(install_files); \
 	do \
 	  cp -- "$$i" "$${INSTALL_BINDIR}/$$i.byte$${EXE}"; \
 	  if test -f "$$i".opt; then \
