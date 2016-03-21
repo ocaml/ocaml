@@ -317,47 +317,46 @@ CAMLprim value* caml_spacetime_indirect_node_hole_ptr
      node, and indicates that this is a tail call site. */
 
   c_node* c_node;
-  int found = 0;
+  value encoded_callee;
 
   /* On entry, the node hole pointer is over the call site address slot,
      so we must advance it to reach the linked list slot. */
   node_hole++;
 
-  while (!found && *node_hole != Val_unit) {
+  encoded_callee = Encode_c_node_pc_for_call(callee);
+
+  while (*node_hole != Val_unit) {
     Assert(((uintnat) *node_hole) % sizeof(value) == 0);
 
-    c_node = caml_spacetime_c_node_of_stored_pointer(*node_hole);
+    c_node = caml_spacetime_c_node_of_stored_pointer_not_null(*node_hole);
 
     Assert(c_node != NULL);
     Assert(caml_spacetime_classify_c_node(c_node) == CALL);
 
-    if (pc_inside_c_node_matches(c_node, callee)) {
-      found = 1;
+    if (c_node->pc == encoded_callee) {
+      return &(c_node->data.callee_node);
     }
     else {
       node_hole = &c_node->next;
     }
   }
 
-  if (!found) {
-    Assert(*node_hole == Val_unit);
-    c_node = allocate_c_node();
-    c_node->pc = Encode_c_node_pc_for_call(callee);
+  c_node = allocate_c_node();
+  c_node->pc = encoded_callee;
 
-    if (caller_node != Val_unit) {
-      /* This is a tail call site.
-         Perform the initialization equivalent to that emitted by
-         [Spacetime.code_for_function_prologue] for direct tail call
-         sites. */
-
-      c_node->data.callee_node = Encode_tail_caller_node(caller_node);
-    }
-
-    *node_hole = caml_spacetime_stored_pointer_of_c_node(c_node);
-    Assert(((uintnat) *node_hole) % sizeof(value) == 0);
+  if (caller_node != Val_unit) {
+    /* This is a tail call site.
+       Perform the initialization equivalent to that emitted by
+       [Spacetime.code_for_function_prologue] for direct tail call
+       sites. */
+    c_node->data.callee_node = Encode_tail_caller_node(caller_node);
   }
 
+  *node_hole = caml_spacetime_stored_pointer_of_c_node(c_node);
+
+  Assert(((uintnat) *node_hole) % sizeof(value) == 0);
   Assert(*node_hole != Val_unit);
+
   return &(c_node->data.callee_node);
 }
 
@@ -446,11 +445,10 @@ static NOINLINE void* find_trie_node_from_libunwind(int for_allocation)
 
   /* We always need to ignore the frames for:
       #0  find_trie_node_from_libunwind
-      #1  graft_c_backtrace_onto_trie
-      #2  caml_spacetime_c_to_ocaml
+      #1  caml_spacetime_c_to_ocaml
      Further, if this is not an allocation point, we should not create the
-     node for the current C function that triggered us (i.e. frame #3). */
-  innermost_frame = for_allocation ? 2 : 3;
+     node for the current C function that triggered us (i.e. frame #2). */
+  innermost_frame = for_allocation ? 1 : 2;
 
   if (frames.size - 1 < innermost_frame) {
     /* Insufficiently many frames (maybe no frames) returned from
@@ -536,27 +534,6 @@ static NOINLINE void* find_trie_node_from_libunwind(int for_allocation)
 #endif
 }
 
-static NOINLINE c_node* graft_backtrace_onto_trie_for_allocation(void)
-{
-  return (c_node*) find_trie_node_from_libunwind(1);
-}
-
-static NOINLINE void graft_c_backtrace_onto_trie(void)
-{
-  /* Update the trie with the current backtrace, as far back as
-     [caml_last_return_address], and leave the node hole pointer at
-     the correct place for attachment of a [caml_start_program] node. */
-
-#ifdef HAS_LIBUNWIND
-  value* node;
-
-  node = (value*) find_trie_node_from_libunwind(0);
-  if (node != NULL) {
-    caml_spacetime_trie_node_ptr = node;
-  }
-#endif
-}
-
 void caml_spacetime_c_to_ocaml(void* ocaml_entry_point,
       void* identifying_pc_for_caml_start_program)
 {
@@ -568,7 +545,17 @@ void caml_spacetime_c_to_ocaml(void* ocaml_entry_point,
 
   value node;
 
-  graft_c_backtrace_onto_trie();
+  /* Update the trie with the current backtrace, as far back as
+     [caml_last_return_address], and leave the node hole pointer at
+     the correct place for attachment of a [caml_start_program] node. */
+
+#ifdef HAS_LIBUNWIND
+  value* node_temp;
+  node_temp = (value*) find_trie_node_from_libunwind(0);
+  if (node_temp != NULL) {
+    caml_spacetime_trie_node_ptr = node_temp;
+  }
+#endif
 
   if (*caml_spacetime_trie_node_ptr == Val_unit) {
     uintnat size_including_header;
@@ -748,7 +735,7 @@ uintnat caml_spacetime_my_profinfo (void)
     caml_spacetime_profinfo = PROFINFO_MASK;
   }
 
-  node = graft_backtrace_onto_trie_for_allocation ();
+  node = find_trie_node_from_libunwind(1);
   if (node != NULL) {
     node->data.profinfo = Val_long(caml_spacetime_profinfo);
   }

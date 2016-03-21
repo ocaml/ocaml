@@ -143,6 +143,7 @@ let code_for_blockheader ~value's_header ~node ~dbg =
     Clet (existing_profinfo, Cop (Cload Word_int, [Cvar address_of_profinfo]),
       Clet (profinfo,
         Cifthenelse (
+          (* CR mshinwell: name constant *)
           Cop (Ccmpi Cne, [Cvar existing_profinfo; Cconst_pointer 1]),
           (* CR mshinwell: consider storing the profinfo shifted
              N.B. don't need to shift left again, bottom bit is known clear *)
