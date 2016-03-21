@@ -105,6 +105,9 @@ char *caml_aligned_malloc (asize_t size, int modulo, void **block)
   return (char *) (aligned_mem - modulo);
 }
 
+/* If you change the caml_ext_table* functions, also update
+   asmrun/spacetime.c:find_trie_node_from_libunwind. */
+
 void caml_ext_table_init(struct ext_table * tbl, int init_capa)
 {
   tbl->size = 0;
@@ -137,6 +140,11 @@ void caml_ext_table_remove(struct ext_table * tbl, void * data)
       tbl->size--;
     }
   }
+}
+
+void caml_ext_table_clear(struct ext_table * tbl)
+{
+  tbl->size = 0;
 }
 
 void caml_ext_table_free(struct ext_table * tbl, int free_entries)

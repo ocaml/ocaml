@@ -53,6 +53,9 @@
 
 extern value caml_spacetime_debug(value);
 
+static c_node* start_of_free_node_block;
+static c_node* end_of_free_node_block;
+
 typedef struct per_thread {
   value* trie_node_root;
   value* finaliser_trie_node_root;
@@ -73,8 +76,15 @@ static value caml_spacetime_finaliser_trie_root_main_thread = Val_unit;
 value* caml_spacetime_finaliser_trie_root
   = &caml_spacetime_finaliser_trie_root_main_thread;
 
-void caml_spacetime_initialize (void)
+static void reinitialise_free_node_block(void)
 {
+  start_of_free_node_block = (c_node*) malloc(sizeof(c_node) * 10000);
+  end_of_free_node_block = start_of_free_node_block + 10000;
+}
+
+void caml_spacetime_initialize(void)
+{
+  reinitialise_free_node_block();
 }
 
 CAMLprim value caml_spacetime_trie_is_initialized (value v_unit)
@@ -285,10 +295,9 @@ static c_node* allocate_c_node(void)
 {
   c_node* node;
 
-  /* CR-soon mshinwell: consider using a different allocator */
-  node = (c_node*) malloc(sizeof(c_node));
-  if (!node) {
-    abort();
+  node = start_of_free_node_block++;
+  if (start_of_free_node_block >= end_of_free_node_block) {
+    reinitialise_free_node_block();
   }
 
   Assert((sizeof(c_node) % sizeof(uintnat)) == 0);
@@ -399,11 +408,15 @@ static NOINLINE void* find_trie_node_from_libunwind(int for_allocation)
   int stop;
   int innermost_frame;
   int frame;
-  struct ext_table frames;
+  static struct ext_table frames;
+  static int ext_table_initialised = 0;
   value* node_hole;
   c_node* node = NULL;
 
-  caml_ext_table_init(&frames, 42);
+  if (!ext_table_initialised) {
+    caml_ext_table_init(&frames, 1000);
+    ext_table_initialised = 1;
+  }
 
   ret = unw_getcontext(&ctx);
   if (ret != UNW_ESUCCESS) {
@@ -423,7 +436,11 @@ static NOINLINE void* find_trie_node_from_libunwind(int for_allocation)
       stop = 1;
     }
     else {
-      caml_ext_table_add(&frames, (void*) ip);
+      if (frames.size < frames.capacity) {
+        frames.contents[frames.size++] = (void*) ip;
+      } else {
+        caml_ext_table_add(&frames, (void*) ip);
+      }
     }
   }
 

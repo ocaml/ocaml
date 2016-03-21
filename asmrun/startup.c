@@ -107,6 +107,9 @@ void caml_main(char **argv)
   value res;
   char tos;
 
+#ifdef WITH_SPACETIME
+  caml_spacetime_initialize();
+#endif
   caml_init_frame_descriptors();
   caml_init_ieee_floats();
 #if defined(_MSC_VER) && __STDC_SECURE_LIB__ >= 200411L
@@ -120,9 +123,6 @@ void caml_main(char **argv)
   caml_parse_ocamlrunparam();
 #ifdef DEBUG
   caml_gc_message (-1, "### OCaml runtime: debug mode ###\n", 0);
-#endif
-#ifdef WITH_SPACETIME
-  caml_spacetime_initialize();
 #endif
   caml_init_gc (caml_init_minor_heap_wsz, caml_init_heap_wsz,
                 caml_init_heap_chunk_sz, caml_init_percent_free,
