@@ -414,6 +414,9 @@ static NOINLINE void* find_trie_node_from_libunwind(int for_allocation)
     caml_ext_table_init(&frames, 1000);
     ext_table_initialised = 1;
   }
+  else {
+    caml_ext_table_clear(&frames);
+  }
 
   ret = unw_getcontext(&ctx);
   if (ret != UNW_ESUCCESS) {
@@ -738,22 +741,20 @@ uintnat caml_spacetime_my_profinfo (void)
      with information obtained from libunwind. */
 
   c_node* node;
-  uint64_t profinfo;
 
   caml_spacetime_profinfo++;
   if (caml_spacetime_profinfo > PROFINFO_MASK) {
     /* Profiling counter overflow. */
     caml_spacetime_profinfo = PROFINFO_MASK;
   }
-  profinfo = caml_spacetime_profinfo;
 
   node = graft_backtrace_onto_trie_for_allocation ();
   if (node != NULL) {
-    node->data.profinfo = Val_long(profinfo);
+    node->data.profinfo = Val_long(caml_spacetime_profinfo);
   }
 
-  Assert(profinfo <= PROFINFO_MASK);
-  return profinfo;  /* N.B. not shifted by PROFINFO_SHIFT */
+  Assert(caml_spacetime_profinfo <= PROFINFO_MASK);
+  return caml_spacetime_profinfo;  /* N.B. not shifted by PROFINFO_SHIFT */
 }
 
 #else
