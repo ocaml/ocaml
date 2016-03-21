@@ -309,6 +309,16 @@ static c_node* allocate_c_node(void)
   return node;
 }
 
+/* Since a given indirect call site either always yields tail calls or
+   always yields non-tail calls, the output of
+   [caml_spacetime_indirect_node_hole_ptr] is uniquely determined by its
+   first two arguments (the callee and the node hole).  We cache these
+   to increase performance of recursive functions containing an indirect
+   call (e.g. [List.map] when not inlined). */
+static void* last_indirect_node_hole_ptr_callee;
+static value* last_indirect_node_hole_ptr_node_hole;
+static value* last_indirect_node_hole_ptr_result;
+
 CAMLprim value* caml_spacetime_indirect_node_hole_ptr
       (void* callee, value* node_hole, value caller_node)
 {
@@ -318,6 +328,14 @@ CAMLprim value* caml_spacetime_indirect_node_hole_ptr
 
   c_node* c_node;
   value encoded_callee;
+
+  if (callee == last_indirect_node_hole_ptr_callee
+      && node_hole == last_indirect_node_hole_ptr_node_hole) {
+    return last_indirect_node_hole_ptr_result;
+  }
+
+  last_indirect_node_hole_ptr_callee = callee;
+  last_indirect_node_hole_ptr_node_hole = node_hole;
 
   /* On entry, the node hole pointer is over the call site address slot,
      so we must advance it to reach the linked list slot. */
@@ -357,7 +375,9 @@ CAMLprim value* caml_spacetime_indirect_node_hole_ptr
   Assert(((uintnat) *node_hole) % sizeof(value) == 0);
   Assert(*node_hole != Val_unit);
 
-  return &(c_node->data.callee_node);
+  last_indirect_node_hole_ptr_result = &(c_node->data.callee_node);
+
+  return last_indirect_node_hole_ptr_result;
 }
 
 /* Some notes on why caml_call_gc doesn't need a distinguished node.
@@ -401,7 +421,6 @@ static NOINLINE void* find_trie_node_from_libunwind(int for_allocation)
   unw_cursor_t cur;
   unw_context_t ctx;
   int ret;
-  int stop;
   int innermost_frame;
   int frame;
   static struct ext_table frames;
@@ -427,12 +446,11 @@ static NOINLINE void* find_trie_node_from_libunwind(int for_allocation)
     return NULL;
   }
 
-  stop = 0;
-  while (!stop && (ret = unw_step(&cur)) > 0) {
+  while ((ret = unw_step(&cur)) > 0) {
     unw_word_t ip;
     unw_get_reg(&cur, UNW_REG_IP, &ip);
     if (caml_last_return_address == (uintnat) ip) {
-      stop = 1;
+      break;
     }
     else {
       if (frames.size < frames.capacity) {
