@@ -71,6 +71,7 @@ type error =
   | No_value_clauses
   | Exception_pattern_below_toplevel
   | Inlined_record_escape
+  | Inlined_record_expected
   | Unrefuted_pattern of pattern
   | Invalid_extension_constructor_payload
   | Not_an_extension_constructor
@@ -119,11 +120,6 @@ let rp node =
   node
 ;;
 
-
-let is_recarg d =
-  match (repr d.val_type).desc with
-  | Tconstr(p, _, _) -> Path.is_constructor_typath p
-  | _ -> false
 
 type recarg =
   | Allowed
@@ -1937,10 +1933,22 @@ and type_expect_ ?in_function ?(recarg=Rejected) env sexp ty_expected =
           let name = Path.name ~paren:Oprint.parenthesized_ident path in
           Stypes.record (Stypes.An_ident (loc, name, annot))
         end;
-        begin match is_recarg desc, recarg with
-        | _, Allowed | true, Required | false, Rejected -> ()
-        | true, Rejected | false, Required ->
-            raise (Error (loc, env, Inlined_record_escape));
+        let is_recarg =
+          match (repr desc.val_type).desc with
+          | Tconstr(p, _, _) -> Path.is_constructor_typath p
+          | _ -> false
+        in
+
+        begin match is_recarg, recarg, (repr desc.val_type).desc with
+        | _, Allowed, _
+        | true, Required, _
+        | false, Rejected, _
+          -> ()
+        | true, Rejected, _
+        | false, Required, Tvar _ ->
+            raise (Error (loc, env, Inlined_record_escape))
+        | false, Required, _  ->
+            () (* will fail later *)
         end;
         rue {
           exp_desc =
@@ -3655,7 +3663,7 @@ and type_construct env loc lid sarg ty_expected attrs =
               Pexp_record (_, (Some {pexp_desc = Pexp_ident _}| None))}] ->
             Required
         | _ ->
-            raise (Error(loc, env, Inlined_record_escape))
+            raise (Error(loc, env, Inlined_record_expected))
         end
   in
   let args =
@@ -4320,6 +4328,9 @@ let report_error env ppf = function
       fprintf ppf
         "@[This form is not allowed as the type of the inlined record could \
          escape.@]"
+  | Inlined_record_expected ->
+      fprintf ppf
+        "@[This constructor expects an inlined record argument.@]"
   | Unrefuted_pattern pat ->
       fprintf ppf
         "@[%s@ %s@ %a@]"
