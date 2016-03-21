@@ -277,7 +277,7 @@ CAMLprim value caml_spacetime_allocate_node(
      direct tail call points.  (We cannot just count them and put them at the
      beginning of the node because we need the indexes of elements within the
      node during instruction selection before we have found all call points.)
-     This is now also used for Assertion checking in
+     This is now also used for assertion checking in
      [caml_spacetime_caml_garbage_collection].
   */
 
