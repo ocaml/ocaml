@@ -325,20 +325,17 @@ CAMLprim value* caml_spacetime_indirect_node_hole_ptr
 
   while (!found && *node_hole != Val_unit) {
     Assert(((uintnat) *node_hole) % sizeof(value) == 0);
-    c_node = caml_spacetime_c_node_of_stored_pointer(*node_hole);
-    Assert(c_node != NULL);
-    switch (caml_spacetime_classify_c_node(c_node)) {
-      case CALL:
-        if (pc_inside_c_node_matches(c_node, callee)) {
-          found = 1;
-        }
-        else {
-          node_hole = &c_node->next;
-        }
-        break;
 
-      default:
-        Assert(0);
+    c_node = caml_spacetime_c_node_of_stored_pointer(*node_hole);
+
+    Assert(c_node != NULL);
+    Assert(caml_spacetime_classify_c_node(c_node) == CALL);
+
+    if (pc_inside_c_node_matches(c_node, callee)) {
+      found = 1;
+    }
+    else {
+      node_hole = &c_node->next;
     }
   }
 
