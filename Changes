@@ -4,14 +4,20 @@ OCaml 4.04.0:
 (Changes that can break existing programs are marked with a "*")
 
 Language features:
+==================
+
 - GPR#301: local exception declarations "let exception ... in"
   (Alain Frisch)
 
 Tools:
+======
+
 - GPR#452: Make the output of ocamldep is more stable
   (Alain Frisch)
 
 Standard library:
+=================
+
 - PR#4747, GPR#328: Optimize Hashtbl by using in-place updates of its
   internal bucket lists.  All operations run in constant stack size
   and are usually faster, except Hashtbl.copy which can be much
@@ -19,20 +25,28 @@ Standard library:
   (Alain Frisch)
 
 Build system:
+=============
+
 - GPR#324: Compiler developpers only: Adding new primitives to the
   standard runtime doesn't require anymore to run `make bootstrap`
   (François Bobot)
+
 - GPR#384: Fix compilation using old Microsoft C Compilers not
   supporting secure CRT functions (SDK Visual Studio 2005 compiler and
   earlier) and standard 64-bit integer literals (Visual Studio .NET
   2002 and earlier)
   (David Allsopp)
+
 - GPR#507: More sharing between Unix and Windows makefiles
   (whitequark, review by Alain Frisch)
 
 Bug fixes:
+==========
+
 - PR#7112: Aliased arguments ignored for equality of module types
 
+===============================================================================
+===============================================================================
 
 OCaml 4.03.0:
 -------------
@@ -1004,6 +1018,9 @@ Build system:
 
 - GPR#388: FlexDLL added as a Git submodule and bootstrappable with the compiler
   (David Allsopp)
+
+===============================================================================
+===============================================================================
 
 OCaml 4.02.3 (27 Jul 2015):
 ---------------------------
