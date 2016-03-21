@@ -1,5 +1,6 @@
 let p n = print_int n; print_newline ()
 let h2 l = List.hd (List.tl l)
+let rec _ = () = ()
 
 (* Test "_" bindings in `let rec` constructs. All bindings produce the same
  * effect to avoid testing evaluation order. *)

@@ -1209,8 +1209,8 @@ and transl_let rec_flag pat_expr_list body =
         )
         pat_expr_list
       in
-      match anonymous with
-          [] ->
+      match (anonymous, real_bindings) with
+          ([], _) ->
             let idlist =
               List.map
                 (fun {vb_pat=pat} -> match pat.pat_desc with
@@ -1232,6 +1232,8 @@ and transl_let rec_flag pat_expr_list body =
                 raise(Error(expr.exp_loc, Illegal_letrec_expr));
               (id, lam) in
             Lletrec(List.map2 transl_case real_bindings idlist, body)
+        | (_, []) ->
+            transl_let Nonrecursive anonymous body
         | _ ->
             transl_let Recursive real_bindings
                (transl_let Nonrecursive anonymous body)
