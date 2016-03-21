@@ -154,6 +154,9 @@ CAMLprim value caml_spacetime_take_heap_snapshot(void)
     size_t size = (PROFINFO_MASK + 1) * sizeof(raw_snapshot_entry);
     raw_entries = caml_stat_alloc(size);
     memset(raw_entries, '\0', size);
+  } else {
+    size_t size = (PROFINFO_MASK + 1) * sizeof(raw_snapshot_entry);
+    memset(raw_entries, '\0', size);
   }
 
   num_distinct_profinfos = 0;
