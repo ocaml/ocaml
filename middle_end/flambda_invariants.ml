@@ -16,10 +16,6 @@
 
 [@@@ocaml.warning "+a-4-30-40-41-42"]
 
-type flambda_kind =
-  | Normal
-  | Lifted
-
 (* Explicit "ignore" functions.  We name every pattern variable, avoiding
    underscores, to try to avoid accidentally failing to handle (for example)
    a particular variable.
@@ -672,8 +668,7 @@ let _every_move_within_set_of_closures_is_to_a_function_in_the_free_vars
                          (fun_var, missing_dependencies)))
           funs)
 
-let check_exn ?(kind=Normal) ?(cmxfile=false) (flam:Flambda.program) =
-  ignore kind;
+let check_exn ?(cmxfile=false) (flam:Flambda.program) =
   try
     variable_and_symbol_invariants flam;
     no_closure_id_is_bound_multiple_times flam;
