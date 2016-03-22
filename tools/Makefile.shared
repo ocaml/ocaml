@@ -24,6 +24,7 @@ DESTDIR ?=
 
 target=''""'$(subst ','\'',$@)'#'#')'#
 source=''""'$(subst ','\'',$<)'#'#')'#
+shellquote=''""'$(subst ','\'',$1)'#'#')'#
 installed_tools := ocamldep ocamlprof ocamlcp ocamloptp \
                    ocamlmktop ocamlmklib ocamlobjinfo
 
@@ -108,9 +109,6 @@ clean::
 export INSTALL_BINDIR:=$(DESTDIR)$(BINDIR)
 export INSTALL_LIBDIR:=$(DESTDIR)$(LIBDIR)
 
-install::
-	cp ocamldep $(INSTALL_BINDIR)/ocamldep.byte$(EXE)
-
 # The profiler
 
 CSLPROF=ocamlprof.cmo
@@ -130,28 +128,16 @@ $(call byte_and_opt,ocamloptp,$(ocamlcp_cmos) ocamloptp.cmo,)
 opt:: profiling.cmx
 
 install::
-	cp -- ocamlprof "$${INSTALL_BINDIR}/ocamlprof$${EXE}"
-	cp -- ocamlcp "$${INSTALL_BINDIR}/ocamlcp$${EXE}"
-	cp -- ocamloptp "$${INSTALL_BINDIR}/ocamloptp$${EXE}"
 	cp -- profiling.cmi profiling.cmo "$${INSTALL_LIBDIR}"
 
 installopt::
 	cp -- profiling.cmx profiling.$(O) "$${INSTALL_LIBDIR}"
-
-clean::
-	rm -f ocamlprof ocamlcp ocamloptp
-
 
 # To help building mixed-mode libraries (OCaml + C)
 
 $(call byte_and_opt,ocamlmklib,ocamlmklibconfig.cmo config.cmo \
 	         ocamlmklib.cmo,)
 
-install::
-	cp -- ocamlmklib "$${INSTALL_BINDIR}/ocamlmklib$${EXE}"
-
-clean::
-	rm -f ocamlmklib
 
 ocamlmklibconfig.ml: ../config/Makefile Makefile
 	(echo 'let bindir = "$(BINDIR)"'; \
