@@ -102,7 +102,7 @@ int caml_page_table_initialize(mlsize_t bytesize);
 #define Hd_no_profinfo(hd) ((hd) & ~(0x3fffffull << PROFINFO_SHIFT))
 
 extern int caml_spacetime;
-extern uintnat caml_spacetime_my_profinfo(void);
+extern uintnat caml_spacetime_my_profinfo(struct ext_table**);
 
 #endif
 
@@ -140,7 +140,26 @@ extern uintnat caml_spacetime_my_profinfo(void);
   }                                                                         \
   Hd_hp (caml_young_ptr) =                                                  \
     Make_header_with_profinfo ((wosize), (tag), Caml_black,                 \
-      caml_spacetime_my_profinfo());                                        \
+      caml_spacetime_my_profinfo(NULL));                                    \
+  (result) = Val_hp (caml_young_ptr);                                       \
+  DEBUG_clear ((result), (wosize));                                         \
+}while(0)
+
+#define Alloc_small_with_profinfo(result, wosize, tag, profinfo) do {       \
+                                                CAMLassert ((wosize) >= 1); \
+                                          CAMLassert ((tag_t) (tag) < 256); \
+                                 CAMLassert ((wosize) <= Max_young_wosize); \
+  caml_young_ptr -= Whsize_wosize (wosize);                                 \
+  if (caml_young_ptr < caml_young_trigger){                                 \
+    caml_young_ptr += Whsize_wosize (wosize);                               \
+    CAML_INSTR_INT ("force_minor/alloc_small@", 1);                         \
+    Setup_for_gc;                                                           \
+    caml_gc_dispatch ();                                                    \
+    Restore_after_gc;                                                       \
+    caml_young_ptr -= Whsize_wosize (wosize);                               \
+  }                                                                         \
+  Hd_hp (caml_young_ptr) =                                                  \
+    Make_header_with_profinfo ((wosize), (tag), Caml_black, profinfo);      \
   (result) = Val_hp (caml_young_ptr);                                       \
   DEBUG_clear ((result), (wosize));                                         \
 }while(0)

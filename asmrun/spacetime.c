@@ -12,7 +12,7 @@
 /*                                                                        */
 /**************************************************************************/
 
-/* CR mshinwell: remove pragma and rename Assert -> Assert */
+/* CR mshinwell: remove pragma? */
 
 #pragma GCC optimize ("O3")
 
@@ -402,7 +402,8 @@ CAMLprim value* caml_spacetime_indirect_node_hole_ptr
    caml_call_gc.
 */
 
-static NOINLINE void* find_trie_node_from_libunwind(int for_allocation)
+static NOINLINE void* find_trie_node_from_libunwind(int for_allocation,
+    struct ext_table** cached_frames)
 {
 #ifdef HAS_LIBUNWIND
   /* Given that [caml_last_return_address] is the most recent call site in
@@ -417,6 +418,15 @@ static NOINLINE void* find_trie_node_from_libunwind(int for_allocation)
      Otherwise, no node is recorded for the innermost frame, and the
      returned pointer is a pointer to the *node hole* where a node for that
      frame should be attached.
+
+     If [cached_frames != NULL] then:
+     1. If [*cached_frames] is NULL then save the captured backtrace in a
+        newly-allocated table and store the pointer to that table in
+        [*cached_frames];
+     2. Otherwise use [*cached_frames] as the unwinding information.
+     The intention is that when the context is known (e.g. a function such
+     as [caml_make_vect] known to have been directly invoked from OCaml),
+     we can avoid expensive calls to libunwind.
   */
 
   unw_cursor_t cur;
@@ -424,40 +434,64 @@ static NOINLINE void* find_trie_node_from_libunwind(int for_allocation)
   int ret;
   int innermost_frame;
   int frame;
-  static struct ext_table frames;
+  static struct ext_table frames_local;
+  struct ext_table* frames;
   static int ext_table_initialised = 0;
+  int have_frames_already = 0;
   value* node_hole;
   c_node* node = NULL;
+  int initial_table_size = 1000;
 
-  if (!ext_table_initialised) {
-    caml_ext_table_init(&frames, 1000);
-    ext_table_initialised = 1;
-  }
-  else {
-    caml_ext_table_clear(&frames);
-  }
-
-  ret = unw_getcontext(&ctx);
-  if (ret != UNW_ESUCCESS) {
-    return NULL;
-  }
-
-  ret = unw_init_local(&cur, &ctx);
-  if (ret != UNW_ESUCCESS) {
-    return NULL;
-  }
-
-  while ((ret = unw_step(&cur)) > 0) {
-    unw_word_t ip;
-    unw_get_reg(&cur, UNW_REG_IP, &ip);
-    if (caml_last_return_address == (uintnat) ip) {
-      break;
+  if (!cached_frames) {
+    if (!ext_table_initialised) {
+      caml_ext_table_init(&frames_local, initial_table_size);
+      ext_table_initialised = 1;
     }
     else {
-      if (frames.size < frames.capacity) {
-        frames.contents[frames.size++] = (void*) ip;
-      } else {
-        caml_ext_table_add(&frames, (void*) ip);
+      caml_ext_table_clear(&frames_local);
+    }
+    frames = &frames_local;
+  } else {
+    if (*cached_frames) {
+      frames = *cached_frames;
+      have_frames_already = 1;
+    }
+    else {
+      frames = (struct ext_table*) malloc(sizeof(struct ext_table));
+      if (!frames) {
+        caml_fatal_error("Not enough memory for ext_table allocation");
+      }
+      caml_ext_table_init(frames, initial_table_size);
+      *cached_frames = frames;
+    }
+  }
+
+  if (!have_frames_already) {
+    /* Get the stack backtrace as far as [caml_last_return_address]. */
+
+    ret = unw_getcontext(&ctx);
+    if (ret != UNW_ESUCCESS) {
+      return NULL;
+    }
+
+    ret = unw_init_local(&cur, &ctx);
+    if (ret != UNW_ESUCCESS) {
+      return NULL;
+    }
+
+    while ((ret = unw_step(&cur)) > 0) {
+      unw_word_t ip;
+      unw_get_reg(&cur, UNW_REG_IP, &ip);
+      if (caml_last_return_address == (uintnat) ip) {
+        break;
+      }
+      else {
+        /* Inlined some of [caml_ext_table_add] for speed. */
+        if (frames->size < frames->capacity) {
+          frames->contents[frames->size++] = (void*) ip;
+        } else {
+          caml_ext_table_add(frames, (void*) ip);
+        }
       }
     }
   }
@@ -469,7 +503,7 @@ static NOINLINE void* find_trie_node_from_libunwind(int for_allocation)
      node for the current C function that triggered us (i.e. frame #2). */
   innermost_frame = for_allocation ? 1 : 2;
 
-  if (frames.size - 1 < innermost_frame) {
+  if (frames->size - 1 < innermost_frame) {
     /* Insufficiently many frames (maybe no frames) returned from
        libunwind; just don't do anything. */
     return NULL;
@@ -480,9 +514,9 @@ static NOINLINE void* find_trie_node_from_libunwind(int for_allocation)
      since it is not possible for there to be a call point in an OCaml
      function that sometimes calls C and sometimes calls OCaml. */
 
-  for (frame = frames.size - 1; frame >= innermost_frame; frame--) {
+  for (frame = frames->size - 1; frame >= innermost_frame; frame--) {
     c_node_type expected_type;
-    void* pc = frames.contents[frame];
+    void* pc = frames->contents[frame];
     Assert (pc != (void*) caml_last_return_address);
 
     if (!for_allocation) {
@@ -570,7 +604,7 @@ void caml_spacetime_c_to_ocaml(void* ocaml_entry_point,
 
 #ifdef HAS_LIBUNWIND
   value* node_temp;
-  node_temp = (value*) find_trie_node_from_libunwind(0);
+  node_temp = (value*) find_trie_node_from_libunwind(0, NULL);
   if (node_temp != NULL) {
     caml_spacetime_trie_node_ptr = node_temp;
   }
@@ -740,7 +774,7 @@ CAMLprim uintnat caml_spacetime_generate_profinfo (void* pc,
   return profinfo << PROFINFO_SHIFT;
 }
 
-uintnat caml_spacetime_my_profinfo (void)
+uintnat caml_spacetime_my_profinfo (struct ext_table** cached_frames)
 {
   /* Return the profinfo value that should be written into a value's header
      during an allocation from C.  This may necessitate extending the trie
@@ -754,7 +788,7 @@ uintnat caml_spacetime_my_profinfo (void)
     caml_spacetime_profinfo = PROFINFO_MASK;
   }
 
-  node = find_trie_node_from_libunwind(1);
+  node = find_trie_node_from_libunwind(1, cached_frames);
   if (node != NULL) {
     node->data.profinfo = Val_long(caml_spacetime_profinfo);
   }

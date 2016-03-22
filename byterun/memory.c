@@ -539,7 +539,7 @@ CAMLexport value caml_alloc_shr (mlsize_t wosize, tag_t tag)
 CAMLexport value caml_alloc_shr (mlsize_t wosize, tag_t tag)
 {
   return caml_alloc_shr_with_profinfo (wosize, tag,
-    caml_spacetime_my_profinfo ());
+    caml_spacetime_my_profinfo (NULL));
 }
 #endif
 

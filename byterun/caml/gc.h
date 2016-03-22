@@ -46,14 +46,15 @@
       )
 
 #ifdef WITH_SPACETIME
-extern uintnat caml_spacetime_my_profinfo(void);
+struct ext_table;
+extern uintnat caml_spacetime_my_profinfo(struct ext_table**);
 #define Make_header_with_profinfo(wosize, tag, color, profinfo)               \
       (Make_header(wosize, tag, color)                                        \
         | ((((intnat) profinfo) & PROFINFO_MASK) << PROFINFO_SHIFT)           \
       )
 #define Make_header_with_my_profinfo(wosize, tag, color)                      \
       (Make_header_with_profinfo(wosize, tag, color,                          \
-        caml_spacetime_my_profinfo())                              \
+        caml_spacetime_my_profinfo(NULL))                                     \
       )
 #else
 #define Make_header_with_my_profinfo Make_header

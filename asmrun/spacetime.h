@@ -176,11 +176,13 @@ typedef struct {
   value next;           /* [Val_unit] for the end of the list */
 } c_node; /* CR mshinwell: rename to dynamic_node */
 
+typedef struct ext_table* spacetime_unwind_info_cache;
+
 extern value* caml_spacetime_trie_node_ptr;
 extern value* caml_spacetime_finaliser_trie_root;
 
 extern void caml_spacetime_initialize(void);
-extern uintnat caml_spacetime_my_profinfo(void);
+extern uintnat caml_spacetime_my_profinfo(spacetime_unwind_info_cache*);
 extern void caml_spacetime_register_dynamic_library(const char*, void*);
 extern c_node_type caml_spacetime_classify_c_node(c_node* node);
 extern c_node* caml_spacetime_c_node_of_stored_pointer(value);
@@ -189,5 +191,9 @@ extern value caml_spacetime_stored_pointer_of_c_node(c_node* node);
 extern void caml_spacetime_register_thread(value*, value*);
 extern void caml_spacetime_caml_garbage_collection(void);
 extern void caml_spacetime_caml_ml_array_bound_error(void);
+
+/* CR mshinwell: need to use _ReturnAddress on Windows */
+#define DIRECTLY_CALLED_FROM_OCAML \
+  (__builtin_return_address(0) == caml_last_return_address)
 
 #endif

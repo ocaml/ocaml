@@ -21,6 +21,10 @@
 #include "caml/misc.h"
 #include "caml/mlvalues.h"
 #include "caml/signals.h"
+#if defined(NATIVE_CODE) && defined(WITH_SPACETIME)
+#include "caml/gc.h"
+#include "spacetime.h"
+#endif
 
 /* returns number of elements (either fields or floats) */
 CAMLexport mlsize_t caml_array_length(value array)
@@ -160,6 +164,8 @@ CAMLprim value caml_make_float_vect(value len)
   return result;
 }
 
+extern void* caml_last_return_address;
+
 /* [len] is a [value] representing number of words or floats */
 CAMLprim value caml_make_vect(value len, value init)
 {
@@ -185,7 +191,29 @@ CAMLprim value caml_make_vect(value len, value init)
   } else {
     if (size > Max_wosize) caml_invalid_argument("Array.make");
     if (size <= Max_young_wosize) {
+#if defined(NATIVE_CODE) && defined(WITH_SPACETIME)
+      static spacetime_unwind_info_cache spacetime_unwind_info = NULL;
+      /* A very common case: directly called from an OCaml function.
+         Try to avoid using libunwind every time. */
+      /* CR-someday mshinwell: Two future possibilities so that the
+         various child nodes look uniform:
+         1. Also add a frame for [caml_alloc_small] to the trie.
+         2. Make all other allocations in this function use this
+            technique. */
+      if (DIRECTLY_CALLED_FROM_OCAML) {
+#define Setup_for_gc
+#define Restore_after_gc
+        Alloc_small_with_profinfo(res, size, 0,
+          caml_spacetime_my_profinfo(&spacetime_unwind_info));
+#undef Setup_for_gc
+#undef Restore_after_gc
+      }
+      else {
+        res = caml_alloc_small(size, 0);
+      }
+#else
       res = caml_alloc_small(size, 0);
+#endif
       for (i = 0; i < size; i++) Field(res, i) = init;
     }
     else if (Is_block(init) && Is_young(init)) {
