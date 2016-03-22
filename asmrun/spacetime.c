@@ -740,8 +740,7 @@ void caml_spacetime_caml_ml_array_bound_error(void)
   ocaml_to_c_call_site_without_instrumentation(call_site, callee);
 }
 
-CAMLprim uintnat caml_spacetime_generate_profinfo (void* pc,
-    void* profinfo_words)
+CAMLprim uintnat caml_spacetime_generate_profinfo (void* profinfo_words)
 {
   /* Called from code that creates a value's header inside an OCaml
      function. */
@@ -749,6 +748,11 @@ CAMLprim uintnat caml_spacetime_generate_profinfo (void* pc,
   value node;
   uintnat offset;
   uintnat profinfo;
+  void* pc;
+
+  /* Since this function is marked as "noalloc", we can use the compiler
+     primitive to find the return address. */
+  pc = __builtin_return_address(0);
 
   caml_spacetime_profinfo++;
   if (caml_spacetime_profinfo > PROFINFO_MASK) {
@@ -759,7 +763,7 @@ CAMLprim uintnat caml_spacetime_generate_profinfo (void* pc,
 
   /* [node] isn't really a node; it points into the middle of
      one---specifically to the "profinfo" word of an allocation point pair of
-     words  It's done like this to avoid re-calculating the place in the node
+     words.  It's done like this to avoid re-calculating the place in the node
      (which already has to be done in the OCaml-generated code run before
      this function). */
   node = (value) (((uintnat*) profinfo_words) - 1);
@@ -768,10 +772,14 @@ CAMLprim uintnat caml_spacetime_generate_profinfo (void* pc,
   Assert(Alloc_point_pc(node, offset) == Val_unit);
   Assert(Alloc_point_profinfo(node, offset) == Val_unit);
 
-  Alloc_point_pc(node, offset) = Encode_alloc_point_pc(pc);
-  Alloc_point_profinfo(node, offset) = Encode_alloc_point_profinfo(profinfo);
+  /* The profinfo value is stored shifted to reduce the number of
+     instructions required on the OCaml side. */
+  profinfo = Encode_alloc_point_profinfo(profinfo << PROFINFO_SHIFT);
 
-  return profinfo << PROFINFO_SHIFT;
+  Alloc_point_pc(node, offset) = Encode_alloc_point_pc(pc);
+  Alloc_point_profinfo(node, offset) = profinfo;
+
+  return profinfo;
 }
 
 uintnat caml_spacetime_my_profinfo (struct ext_table** cached_frames)

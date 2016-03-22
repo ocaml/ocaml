@@ -134,11 +134,12 @@ typedef enum {
 #define Call_or_allocation_point(node, offset) \
   (((Field(node, offset) & 3) == 1) ? ALLOCATION : CALL)
 
-/* Allocation points within OCaml nodes. */
+/* Allocation points within OCaml nodes.
+   The "profinfo" value is stored shifted. */
 #define Encode_alloc_point_pc(pc) ((((value) pc) << 2) | 1)
 #define Decode_alloc_point_pc(pc) ((void*) (((value) pc) >> 2))
-#define Encode_alloc_point_profinfo(profinfo) (Val_long(profinfo))
-#define Decode_alloc_point_profinfo(profinfo) (Long_val(profinfo))
+#define Encode_alloc_point_profinfo(profinfo) (profinfo | 1)
+#define Decode_alloc_point_profinfo(profinfo) (profinfo & ~((uintnat) 1))
 #define Alloc_point_pc(node, offset) (Field(node, offset))
 #define Alloc_point_profinfo(node, offset) (Field(node, (offset) + 1))
 

@@ -114,7 +114,6 @@ let code_for_function_prologue ~function_name =
 let code_for_blockheader ~value's_header ~node ~dbg =
   let existing_profinfo = Ident.create "existing_profinfo" in
   let profinfo = Ident.create "profinfo" in
-  let pc = Ident.create "pc" in
   let address_of_profinfo = Ident.create "address_of_profinfo" in
   let index_within_node =
     (* "1 +" to skip the slot for the PC of the allocation point. *)
@@ -126,11 +125,9 @@ let code_for_blockheader ~value's_header ~node ~dbg =
     (* This will generate a static branch to a function that should usually
        be in the cache, which hopefully gives a good code size/performance
        balance. *)
-    Clet (pc,
-      Cop (Cprogram_counter dbg, []),
-      Cop (Cextcall ("caml_spacetime_generate_profinfo", [| Int |],
-          false, Debuginfo.none),
-        [Cvar pc; Cvar address_of_profinfo]))
+    Cop (Cextcall ("caml_spacetime_generate_profinfo", [| Int |],
+        false, Debuginfo.none),
+      [Cvar address_of_profinfo])
   in
   (* Check if we have already allocated a profinfo value for this allocation
      point with the current backtrace.  If so, use that value; if not,
@@ -145,13 +142,15 @@ let code_for_blockheader ~value's_header ~node ~dbg =
         Cifthenelse (
           (* CR mshinwell: name constant *)
           Cop (Ccmpi Cne, [Cvar existing_profinfo; Cconst_pointer 1]),
-          (* CR mshinwell: consider storing the profinfo shifted
-             N.B. don't need to shift left again, bottom bit is known clear *)
-          (* CR mshinwell: name constant *)
-          Cop (Clsl, [Cvar existing_profinfo; Cconst_int 42]),
+          Cvar existing_profinfo,
           generate_new_profinfo),
-        (* [profinfo] is already shifted by [PROFINFO_SHIFT]. *)
-        Cop (Cor, [Cvar profinfo; Cconst_natint value's_header]))))
+        (* [profinfo] is already shifted by [PROFINFO_SHIFT].
+           It also has the bottom bit set!  To avoid generating more code,
+           we can adjust [value's_header] using a trick.  The effect is to
+           "or" in the profinfo value to the higher bits, whilst preserving
+           all remaining bits. *)
+        let value's_header = Nativeint.logxor value's_header 1n in
+        Cop (Cxor, [Cvar profinfo; Cconst_natint value's_header]))))
 
 type callee =
   | Direct of string

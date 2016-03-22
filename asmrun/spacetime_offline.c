@@ -220,7 +220,9 @@ CAMLprim value caml_spacetime_ocaml_allocation_point_program_counter
 CAMLprim value caml_spacetime_ocaml_allocation_point_annotation
       (value node, value offset)
 {
-  return Alloc_point_profinfo(node, Long_val(offset));
+  uintnat profinfo_shifted;
+  profinfo_shifted = (uintnat) Alloc_point_profinfo(node, Long_val(offset));
+  return Val_long(profinfo_shifted >> PROFINFO_SHIFT);
 }
 
 CAMLprim value caml_spacetime_ocaml_direct_call_point_call_site
