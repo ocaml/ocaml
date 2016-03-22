@@ -184,7 +184,11 @@ let code_for_call ~node ~callee ~is_tail ~label =
   let open Cmm in
   let encode_pc pc =
     (* CR mshinwell: consider whether the encoding could be optimised to
-       reduce the overhead here *)
+       reduce the overhead here
+       If the PC values are sufficiently aligned the shift shouldn't be
+       needed, which is probably more satisfactory anyway.
+       This means we need a way of forcing the alignment of Ilabel.
+       The callee addresses should already be sufficiently aligned. *)
     (* Cf. [Encode_call_point_pc] in the runtime. *)
     Cop (Cor, [Cop (Clsl, [pc; Cconst_int 2]); Cconst_int 3])
   in
@@ -203,16 +207,14 @@ let code_for_call ~node ~callee ~is_tail ~label =
         encode_pc (Cop (Caddress_of_label label, []))]),
       match callee with
       | Direct callee ->
-        let callee_slot = Ident.create "callee" in
-        Clet (callee_slot,
-          within_node ~index:(index_within_node + 1),
-          Csequence (
-            Cop (Cstore (Word_int, L.Assignment), [
-              Cvar callee_slot;
-              encode_pc (Cconst_symbol callee);
-            ]),
-            Cop (Cspacetime_load_node_hole_ptr,
-              [within_node ~index:(index_within_node + 2)])))
+        Csequence (
+          Cop (Cstore (Word_int, L.Assignment), [
+            Cop (Caddi, [Cvar place_within_node; Cconst_int Arch.size_addr]);
+            encode_pc (Cconst_symbol callee);
+          ]),
+          Cop (Cspacetime_load_node_hole_ptr,
+            [Cop (Caddi, [Cvar place_within_node;
+              Cconst_int (2 * Arch.size_addr)])]))
       | Indirect callee ->
         let node_hole_ptr = Ident.create "node_hole_ptr" in
         let caller_node =
