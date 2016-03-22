@@ -339,7 +339,7 @@ $(call byte_and_opt,cmpbyt,$(cmpbyt),)
 
 ifeq "$(RUNTIMEI)" "true"
 install::
-	cp ocaml-instr-graph ocaml-instr-report $(INSTALL_BINDIR)/
+	cp ocaml-instr-graph ocaml-instr-report "$${INSTALL_BINDIR}/"
 endif
 
 # Common stuff
