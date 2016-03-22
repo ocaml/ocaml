@@ -28,6 +28,7 @@
 #include "caml/misc.h"
 #include "caml/mlvalues.h"
 #include "caml/roots.h"
+#include "caml/signals.h"
 #include "caml/weak.h"
 
 #if defined (NATIVE_CODE) && defined (NO_NAKED_POINTERS)
@@ -568,6 +569,7 @@ static void sweep_slice (intnat work)
         ++ caml_stat_major_collections;
         work = 0;
         caml_gc_phase = Phase_idle;
+        caml_request_minor_gc ();
       }else{
         caml_gc_sweep_hp = chunk;
         limit = chunk + Chunk_size (chunk);
