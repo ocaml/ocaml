@@ -52,9 +52,7 @@ let () =
   let module H = A.Heap_snapshot in
   let pathname_prefix = "/tmp/heap_snapshot" in
   let writer = H.Writer.create ~pathname_prefix in
-  A.Trace.debug ();
   Printf.printf "end of trace\n%!";
-  A.Trace.debug ();
   Printf.printf "end of second trace\n%!";
 (*  Printf.printf "taking snapshot\n%!";*)
   H.take writer;

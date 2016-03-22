@@ -83,24 +83,6 @@ end
 module Annotation = struct
   type t = int
 
-  external lowest_allowable : unit -> t
-    = "caml_spacetime_only_works_for_native_code"
-      "caml_spacetime_min_override_profinfo" "noalloc"
-
-  let lowest_allowable = lazy (lowest_allowable ())
-
-  external highest_allowable : unit -> t
-    = "caml_spacetime_only_works_for_native_code"
-      "caml_spacetime_max_override_profinfo" "noalloc"
-
-  let highest_allowable = lazy (highest_allowable ())
-
-  let of_int t =
-    if t >= Lazy.force lowest_allowable
-      && t <= Lazy.force highest_allowable
-    then Some t
-    else None
-
   let to_int t = t
 end
 

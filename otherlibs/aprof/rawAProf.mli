@@ -44,11 +44,7 @@ module Annotation : sig
      Could also randomise the tags on records.
   *)
 
-  val of_int : int -> t option
   val to_int : t -> int
-
-  val lowest_allowable : t Lazy.t
-  val highest_allowable : t Lazy.t
 end
 
 module Program_counter : sig
