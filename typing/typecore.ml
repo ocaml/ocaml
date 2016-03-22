@@ -1944,7 +1944,7 @@ and type_expect_ ?in_function ?(recarg=Rejected) env sexp ty_expected =
         | false, Rejected, _
           -> ()
         | true, Rejected, _
-        | false, Required, Tvar _ ->
+        | false, Required, (Tvar _ | Tconstr _) ->
             raise (Error (loc, env, Inlined_record_escape))
         | false, Required, _  ->
             () (* will fail later *)
