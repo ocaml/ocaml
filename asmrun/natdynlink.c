@@ -23,6 +23,9 @@
 #include "caml/osdeps.h"
 #include "caml/fail.h"
 #include "caml/signals.h"
+#ifdef WITH_SPACETIME
+#include "spacetime.h"
+#endif
 
 #include <stdio.h>
 #include <string.h>
@@ -94,9 +97,7 @@ CAMLprim value caml_natdynlink_run(void *handle, value symbol) {
 
 #ifdef WITH_SPACETIME
   sym = optsym("__spacetime_shapes");
-/*
-  if (NULL != sym) caml_register_spacetime_shapes(sym);
-*/
+  if (NULL != sym) caml_spacetime_register_shapes(sym);
 #endif
 
   sym = optsym("__gc_roots");

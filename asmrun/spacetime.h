@@ -112,6 +112,13 @@ typedef struct {
   value next;           /* [Val_unit] for the end of the list */
 } c_node; /* CR mshinwell: rename to dynamic_node */
 
+typedef struct shape_table {
+  uint64_t** table;
+  struct shape_table* next;
+} shape_table;
+
+extern shape_table* caml_spacetime_shape_tables;
+
 typedef struct ext_table* spacetime_unwind_info_cache;
 
 extern value* caml_spacetime_trie_node_ptr;
@@ -127,6 +134,7 @@ extern value caml_spacetime_stored_pointer_of_c_node(c_node* node);
 extern void caml_spacetime_register_thread(value*, value*);
 extern void caml_spacetime_caml_garbage_collection(void);
 extern void caml_spacetime_caml_ml_array_bound_error(void);
+extern void caml_spacetime_register_shapes(void*);
 
 /* CR mshinwell: need to use _ReturnAddress on Windows */
 #define DIRECTLY_CALLED_FROM_OCAML \

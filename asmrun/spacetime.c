@@ -67,6 +67,12 @@ typedef struct per_thread {
 static per_thread* per_threads = NULL;
 static int num_per_threads = 0;
 
+/* [caml_spacetime_shapes] is defined in the startup file. */
+extern uint64_t** caml_spacetime_shapes;
+
+static shape_table main_spacetime_shape_table;
+shape_table* caml_spacetime_shape_tables = &main_spacetime_shape_table;
+
 static uintnat caml_spacetime_profinfo = (uintnat) 0;
 
 static value caml_spacetime_trie_root = Val_unit;
@@ -85,6 +91,9 @@ static void reinitialise_free_node_block(void)
 void caml_spacetime_initialize(void)
 {
   reinitialise_free_node_block();
+
+  main_spacetime_shape_table.table = caml_spacetime_shapes;
+  main_spacetime_shape_table.next = NULL;
 }
 
 CAMLprim value caml_spacetime_trie_is_initialized (value v_unit)

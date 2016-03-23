@@ -80,6 +80,42 @@ module Frame_table = struct
   let find_exn = Hashtbl.find
 end
 
+module Shape_table = struct
+  type part_of_shape =
+    | Caml_call_gc
+    | Bounds_check_failure
+    | Direct_call of Int64.t
+    | Indirect_call of Int64.t
+    | Allocation_point of Int64.t
+
+  let _ = Caml_call_gc
+  let _ = Bounds_check_failure
+  let _ = Direct_call 0L
+  let _ = Indirect_call 0L
+  let _ = Allocation_point 0L
+
+  let part_of_shape_size = function
+    | Caml_call_gc
+    | Bounds_check_failure
+    | Direct_call _ -> 2
+    | Indirect_call _
+    | Allocation_point _ -> 1
+
+  type raw = (Int64.t * (part_of_shape list)) list
+
+  module Int64_map = Map.Make (Int64)
+
+  type t = part_of_shape list Int64_map.t
+
+  let unmarshal chn : t =
+    let raw : raw = Marshal.from_channel chn in
+    List.fold_left (fun map (key, data) -> Int64_map.add key data map)
+      Int64_map.empty
+      raw
+
+  let find_exn = Int64_map.find
+end
+
 module Annotation = struct
   type t = int
 

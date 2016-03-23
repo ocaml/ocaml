@@ -51,6 +51,38 @@ module Frame_table = struct
     table
 end
 
+module Shape_table = struct
+  type part_of_shape =
+    (* Must match asmrun/spacetime_snapshot.c *)
+    (* CR mshinwell: must also match rawAProf.ml, share this? *)
+    | Caml_call_gc
+    | Bounds_check_failure
+    (* The [Int64.t] arguments give the call/allocation site. *)
+    | Direct_call of Int64.t
+    | Indirect_call of Int64.t
+    | Allocation_point of Int64.t
+
+  let _ = Caml_call_gc
+  let _ = Bounds_check_failure
+  let _ = Direct_call 0L
+  let _ = Indirect_call 0L
+  let _ = Allocation_point 0L
+
+  (* This associative list is indexed by the addresses of the start of
+     functions.
+     The [part_of_shape list] is in order (start of the node first).
+     The whole structure is allocated outside of the OCaml heap. *)
+  type t = (Int64.t * (part_of_shape list)) list
+
+let _f (t : t) = ()
+
+  (* CR-soon mshinwell: add support for freeing the structure *)
+
+(*
+  external get : unit -> t = "caml_spacetime_shape_table" "noalloc"
+*)
+end
+
 module Heap_snapshot = struct
   let pathname_suffix_trace = "trace"
 
@@ -84,6 +116,7 @@ module Heap_snapshot = struct
       Marshal.to_channel chn t.next_index [];
       Marshal.to_channel chn (Sys.time ()) [];
       Marshal.to_channel chn (Frame_table.get ()) [];
+(*      Marshal.to_channel chn (Shape_table.get ()) []; *)
       marshal_global_trace chn;
       close_out chn;
       t.closed <- true

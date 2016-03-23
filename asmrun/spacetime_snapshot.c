@@ -347,6 +347,124 @@ caml_spacetime_return_address_of_frame_descriptor(value v_descr)
   return caml_copy_int64(descr->retaddr);
 }
 
+extern struct caml_custom_operations caml_int64_ops;  /* ints.c */
+
+static value
+allocate_int64_outside_heap(uint64_t i)
+{
+  value v;
+
+  v = allocate_outside_heap_with_tag(2, Custom_tag);
+  Field(v, 0) = (value) &caml_int64_ops;
+  Int64_val(v) = i;
+
+  return v;
+}
+
+CAMLprim value
+caml_spacetime_shape_table(value v_unit)
+{
+  /* Flatten the hierarchy of shape tables into a single associative list
+     mapping from function symbols to node layouts.  The node layouts are
+     themselves lists.
+
+     This function reverses the order of the lists giving the layout of each
+     node; however, spacetime_profiling.ml ensures they are emitted in
+     reverse order, so at the end of it all they're not reversed. */
+
+  value list = Val_long(0);  /* the empty list */
+  shape_table* table = caml_spacetime_shape_tables;
+
+  while (table != NULL) {
+    uint64_t** table_for_one_unit = table->table;
+    while (*table_for_one_unit != (uint64_t) 0) {
+      uint64_t* table_for_one_function = *table_for_one_unit;
+      while (*table_for_one_function != (uint64_t) 0) {
+        value new_list_element, pair, function_address, layout;
+
+        function_address =
+          allocate_int64_outside_heap(*table_for_one_function);
+
+        layout = Val_long(0);  /* the empty list */
+        while (*table_for_one_function != (uint64_t) 0) {
+          int tag;
+          int has_argument;
+          value part_of_shape;
+          value new_part_list_element;
+
+          /* CR mshinwell: share with emit.mlp */
+          switch (*table_for_one_function) {
+            case 1:  /* caml_call_gc */
+              tag = 0;
+              has_argument = 0;
+              break;
+
+            case 2:  /* bounds check failure */
+              tag = 1;
+              has_argument = 0;
+              break;
+
+            case 3:  /* direct call to given location */
+              tag = 0;
+              has_argument = 1;
+              break;
+
+            case 4:  /* indirect call to given location */
+              tag = 1;
+              has_argument = 1;
+              break;
+
+            case 5:  /* allocation at given location */
+              tag = 2;
+              has_argument = 1;
+              break;
+
+            default:
+              assert(0);
+          }
+
+          table_for_one_function++;
+
+          if (!has_argument) {
+            part_of_shape = Val_long(tag);
+          }
+          else {
+            value location;
+
+            location = allocate_int64_outside_heap(*table_for_one_function);
+            table_for_one_function++;
+
+            part_of_shape = allocate_outside_heap_with_tag(1, tag);
+            Field(part_of_shape, 0) = location;
+          }
+
+          new_part_list_element =
+            allocate_outside_heap_with_tag(2, 0 /* (::) */);
+          Field(new_part_list_element, 0) = part_of_shape;
+          Field(new_part_list_element, 1) = layout;
+          layout = new_part_list_element;
+        }
+
+        pair = allocate_outside_heap_with_tag(2, 0);
+        Field(pair, 0) = function_address;
+        Field(pair, 1) = layout;
+
+        new_list_element = allocate_outside_heap_with_tag(2, 0 /* (::) */);
+        Field(new_list_element, 0) = pair;
+        Field(new_list_element, 1) = list;
+        list = new_list_element;
+
+        Assert(*table_for_one_function == 0);
+        table_for_one_function++;
+      }
+      table_for_one_unit++;
+    }
+    table = table->next;
+  }
+
+  return list;
+}
+
 #else
 
 static void spacetime_disabled()

@@ -21,11 +21,6 @@ module M = Mach
 (* CR mshinwell: Make sure the story is completely straight with regards
    to %r13. *)
 
-(* CR mshinwell: Revisit whether we should ditch the call site address for
-   direct call points.  We could emit these into separate files at
-   compile time.  This would reduce memory consumption by some amount and
-   also reduce the amount of code at each call site. *)
-
 let index_within_node = ref 2 (* Cf. [Node_num_header_words] in the runtime. *)
 (* The [lazy]s are to ensure that we don't create [Ident.t]s at toplevel
    when not using Spacetime profiling.  (This could cause stamps to differ
@@ -422,7 +417,9 @@ class virtual instruction_selection = object (self)
         ~last_insn_of_main_prologue:last_insn_of_prologue;
       match !reverse_shape with
       | [] -> None
-      | reverse_shape -> Some (List.rev reverse_shape)
+      (* N.B. We do not reverse the shape list, since the function that
+         reconstructs it (caml_spacetime_shape_table) reverses it again. *)
+      | reverse_shape -> Some reverse_shape
     end else begin
       super#after_body f ~env_after_prologue ~last_insn_of_prologue
     end
