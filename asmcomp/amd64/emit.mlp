@@ -260,8 +260,12 @@ let addressing addr typ i n =
 
 (* Record live pointers at call points -- see Emitaux *)
 
-let record_frame_label live dbg =
-  let lbl = new_label() in
+let record_frame_label ?label live dbg =
+  let lbl =
+    match label with
+    | None -> new_label()
+    | Some label -> label
+  in
   let live_offset = ref [] in
   Reg.Set.iter
     (function
@@ -352,21 +356,21 @@ type bound_error_call =
   }
 
 let bound_error_sites = ref ([] : bound_error_call list)
-let bound_error_call = ref (0, None)
+let bound_error_call = ref ((0, (None, Debuginfo.none)), None)
 
-let bound_error_label dbg ~spacetime =
+let bound_error_label ?label dbg ~spacetime =
   if !Clflags.debug then begin
     let lbl_bound_error = new_label() in
-    let lbl_frame = record_frame_label Reg.Set.empty dbg in
+    let lbl_frame = record_frame_label ?label Reg.Set.empty dbg in
     bound_error_sites :=
       { bd_lbl = lbl_bound_error; bd_frame = lbl_frame;
         bd_spacetime = spacetime; } :: !bound_error_sites;
     lbl_bound_error
   end else begin
     if fst !bound_error_call = 0 then begin
-      bound_error_call := (new_label(), spacetime)
+      bound_error_call := ((new_label(), (label, dbg)), spacetime)
     end;
-    fst !bound_error_call
+    fst (fst !bound_error_call)
   end
 
 let emit_call_bound_error bd =
@@ -381,14 +385,19 @@ let emit_call_bound_error bd =
 
 let emit_call_bound_errors () =
   List.iter emit_call_bound_error !bound_error_sites;
-  if fst !bound_error_call > 0 then begin
-    def_label (fst !bound_error_call);
+  if fst (fst !bound_error_call) > 0 then begin
+    def_label (fst (fst !bound_error_call));
     begin match snd !bound_error_call with
     | None -> ()
     | Some (node_ptr, index) ->
       spacetime_before_uninstrumented_call ~node_ptr ~index
     end;
-    emit_call "caml_ml_array_bound_error"
+    emit_call "caml_ml_array_bound_error";
+    begin match snd (fst !bound_error_call) with
+    | None, _dbg -> ()
+    | Some label, dbg ->
+      def_label (record_frame_label ?label Reg.Set.empty dbg)
+    end
   end
 
 (* Names for instructions *)
@@ -651,7 +660,7 @@ let emit_instr fallthrough i =
       | Double | Double_u ->
           I.movsd (arg i 0) (addressing addr REAL8 i 1)
       end
-  | Lop(Ialloc { words = n; spacetime_index; }) ->
+  | Lop(Ialloc { words = n; label_after_call_gc; spacetime_index; }) ->
       if !fastcode_flag then begin
         let lbl_redo = new_label() in
         def_label lbl_redo;
@@ -669,7 +678,9 @@ let emit_instr fallthrough i =
         end else
           I.cmp (mem64_rip QWORD (emit_symbol "caml_young_limit")) r15;
         let lbl_call_gc = new_label() in
-        let lbl_frame = record_frame_label i.live Debuginfo.none in
+        let lbl_frame =
+          record_frame_label ?label:label_after_call_gc i.live Debuginfo.none
+        in
         I.jb (label lbl_call_gc);
         I.lea (mem64 NONE 8 R15) (res i 0);
         let gc_spacetime =
@@ -694,7 +705,7 @@ let emit_instr fallthrough i =
             I.mov (int n) rax;
             emit_call "caml_allocN"
         end;
-        record_frame i.live Debuginfo.none;
+        record_frame_label ?label:label_after_call_gc i.live Debuginfo.none;
         I.lea (mem64 NONE 8 R15) (res i 0)
       end
   | Lop(Iintop(Icomp cmp)) ->
@@ -705,20 +716,20 @@ let emit_instr fallthrough i =
       I.cmp (int n) (arg i 0);
       I.set (cond cmp) al;
       I.movzx al (res i 0)
-  | Lop(Iintop (Icheckbound { spacetime_index; } )) ->
+  | Lop(Iintop (Icheckbound { label_after_error; spacetime_index; } )) ->
       let spacetime =
         if not Config.spacetime then None
         else Some (arg i 1, spacetime_index)
       in
-      let lbl = bound_error_label i.dbg ~spacetime in
+      let lbl = bound_error_label ?label:label_after_error i.dbg ~spacetime in
       I.cmp (arg i 1) (arg i 0);
       I.jbe (label lbl)
-  | Lop(Iintop_imm(Icheckbound { spacetime_index; }, n)) ->
+  | Lop(Iintop_imm(Icheckbound { label_after_error; spacetime_index; }, n)) ->
       let spacetime =
         if not Config.spacetime then None
         else Some (arg i 1, spacetime_index)
       in
-      let lbl = bound_error_label i.dbg ~spacetime in
+      let lbl = bound_error_label ?label:label_after_error i.dbg ~spacetime in
       I.cmp (int n) (arg i 0);
       I.jbe (label lbl)
   | Lop(Iintop(Idiv | Imod)) ->
@@ -1068,34 +1079,15 @@ let emit_spacetime_shapes () =
       | Some shape ->
         D.comment ("Shape for " ^ fundecl.fun_name ^ ":");
         D.qword (ConstLabel (emit_symbol fundecl.fun_name));
-        List.iter (fun (part_of_shape, location) ->
+        List.iter (fun (part_of_shape, label) ->
             let tag =
               match part_of_shape with
-              | Direct_call_point ->
-                begin match location with
-                | Call_gc -> 1
-                | Bounds_check_failure -> 2
-                | Label _ -> 3
-                end
-              | Indirect_call_point ->
-                begin match location with
-                | Call_gc -> assert false
-                | Bounds_check_failure -> assert false
-                | Label _ -> 4
-                end
-              | Allocation_point ->
-                begin match location with
-                | Call_gc -> assert false
-                | Bounds_check_failure -> assert false
-                | Label _ -> 5
-                end
+              | Direct_call_point -> 1
+              | Indirect_call_point -> 2
+              | Allocation_point -> 3
             in
             D.qword (Const (Int64.of_int tag));
-            begin match location with
-            | Call_gc -> ()
-            | Bounds_check_failure -> ()
-            | Label label -> D.qword (ConstLabel (emit_label label))
-            end)
+            D.qword (ConstLabel (emit_label label)))
           shape;
           D.qword (Const 0L)
       end)

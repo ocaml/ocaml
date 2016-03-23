@@ -35,7 +35,7 @@ let reverse_shape = ref ([] : Mach.spacetime_shape)
 let something_was_instrumented () =
   !index_within_node > 2
 
-let next_index_within_node ~part_of_shape ~location =
+let next_index_within_node ~part_of_shape ~label =
   let words_needed =
     match part_of_shape with
     | M.Direct_call_point -> 2
@@ -44,7 +44,7 @@ let next_index_within_node ~part_of_shape ~location =
   in
   let index = !index_within_node in
   index_within_node := !index_within_node + words_needed;
-  reverse_shape := (part_of_shape, location) :: !reverse_shape;
+  reverse_shape := (part_of_shape, label) :: !reverse_shape;
   index
 
 let reset ~spacetime_node_ident:ident ~function_label =
@@ -113,8 +113,7 @@ let code_for_blockheader ~value's_header ~node ~dbg =
   let address_of_profinfo = Ident.create "address_of_profinfo" in
   let label = Cmm.new_label () in
   let index_within_node =
-    next_index_within_node ~part_of_shape:M.Allocation_point
-      ~location:(M.Label label)
+    next_index_within_node ~part_of_shape:M.Allocation_point ~label
   in
   let offset_into_node = Arch.size_addr * index_within_node in
   let open Cmm in
@@ -166,11 +165,9 @@ let code_for_call ~node ~callee ~is_tail ~label =
   let index_within_node =
     match callee with
     | Direct _ ->
-      next_index_within_node ~part_of_shape:M.Direct_call_point
-        ~location:(M.Label label)
+      next_index_within_node ~part_of_shape:M.Direct_call_point ~label
     | Indirect _ ->
-      next_index_within_node ~part_of_shape:M.Indirect_call_point
-        ~location:(M.Label label)
+      next_index_within_node ~part_of_shape:M.Indirect_call_point ~label
   in
   begin match callee with
     (* If this is a direct tail call point, we need to note down its index,
@@ -355,11 +352,15 @@ class virtual instruction_selection = object (self)
       (* Leave space for a direct call point.  We cannot easily insert any
          instrumentation code, so the fields are filled in instead by
          [caml_spacetime_caml_garbage_collection]. *)
+      let label = Cmm.new_label ()
       let index =
-        next_index_within_node ~part_of_shape:M.Direct_call_point
-          ~location:M.Call_gc
+        next_index_within_node ~part_of_shape:M.Direct_call_point ~label
       in
-      Mach.Ialloc { words; spacetime_index = index; }
+      Mach.Ialloc {
+        words;
+        label_after_call_gc = Some label;
+        spacetime_index = index;
+      }
     end else begin
       super#select_allocation words
     end

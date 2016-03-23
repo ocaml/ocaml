@@ -23,9 +23,11 @@ type integer_operation =
     Iadd | Isub | Imul | Imulh | Idiv | Imod
   | Iand | Ior | Ixor | Ilsl | Ilsr | Iasr
   | Icomp of integer_comparison
-  | Icheckbound of { spacetime_index : int; }
+  | Icheckbound of { label_after_error : Cmm.label option;
+        spacetime_index : int; }
     (** For Spacetime only, [Icheckbound] operations take two arguments, the
-        second being the pointer to the trie node for the current function. *)
+        second being the pointer to the trie node for the current function
+        (and the first being as per non-Spacetime mode). *)
 
 type test =
     Itruetest
@@ -52,8 +54,9 @@ type operation =
   | Iload of Cmm.memory_chunk * Arch.addressing_mode
   | Istore of Cmm.memory_chunk * Arch.addressing_mode * bool
                                  (* false = initialization, true = assignment *)
-  | Ialloc of { words : int; spacetime_index : int; }
-    (** For Spacetime only, takes one argument, being the pointer to the
+  | Ialloc of { words : int; label_after_call_gc : Cmm.label option;
+        spacetime_index : int; }
+    (** For Spacetime only, Ialloc takes one argument, being the pointer to the
         trie node for the current function. *)
   | Iintop of integer_operation
   | Iintop_imm of integer_operation * int
@@ -90,19 +93,13 @@ type spacetime_part_of_shape =
   | Indirect_call_point
   | Allocation_point
 
-type spacetime_location =
-  | Label of Cmm.label
-  | Call_gc
-  | Bounds_check_failure
-
 (** A description of the layout of a Spacetime profiling node associated with
     a given function.  Each call and allocation point instrumented within
     the function is marked with a label in the code and assigned a place
     within the node.  This information is stored within the executable and
     extracted when the user saves a profile.  The aim is to minimise runtime
     memory usage within the nodes and increase performance. *)
-type spacetime_shape =
-  (spacetime_part_of_shape * spacetime_location) list
+type spacetime_shape = (spacetime_part_of_shape * Cmm.label) list
 
 type fundecl =
   { fun_name: string;

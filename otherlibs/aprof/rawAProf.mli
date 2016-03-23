@@ -84,6 +84,10 @@ module Function_identifier : sig
   val to_int64 : t -> Int64.t
 end
 
+module Shape_table : sig
+  type t
+end
+
 module Trace : sig
   (** A value of type [t] holds the dynamic call structure of the program
       (i.e. which functions have called which other functions) together with
@@ -190,10 +194,8 @@ module Trace : sig
       (** This function traverses a circular list. *)
       val next_in_tail_call_chain : t -> t
 
-      val fields : t -> Field.t option
-
+      val fields : t -> shape_table:Shape_table.t -> Field.t option
     end
-
   end
 
   module Foreign : sig

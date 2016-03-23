@@ -55,15 +55,11 @@ module Shape_table = struct
   type part_of_shape =
     (* Must match asmrun/spacetime_snapshot.c *)
     (* CR mshinwell: must also match rawAProf.ml, share this? *)
-    | Caml_call_gc
-    | Bounds_check_failure
     (* The [Int64.t] arguments give the call/allocation site. *)
     | Direct_call of Int64.t
     | Indirect_call of Int64.t
     | Allocation_point of Int64.t
 
-  let _ = Caml_call_gc
-  let _ = Bounds_check_failure
   let _ = Direct_call 0L
   let _ = Indirect_call 0L
   let _ = Allocation_point 0L

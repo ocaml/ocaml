@@ -23,7 +23,8 @@ type integer_operation =
     Iadd | Isub | Imul | Imulh | Idiv | Imod
   | Iand | Ior | Ixor | Ilsl | Ilsr | Iasr
   | Icomp of integer_comparison
-  | Icheckbound of { spacetime_index : int; }
+  | Icheckbound of { label_after_error : Cmm.label option;
+        spacetime_index : int; }
 
 type test =
     Itruetest
@@ -49,7 +50,8 @@ type operation =
   | Istackoffset of int
   | Iload of Cmm.memory_chunk * Arch.addressing_mode
   | Istore of Cmm.memory_chunk * Arch.addressing_mode * bool
-  | Ialloc of { words : int; spacetime_index : int; }
+  | Ialloc of { words : int; label_after_call_gc : Cmm.label option;
+        spacetime_index : int; }
   | Iintop of integer_operation
   | Iintop_imm of integer_operation * int
   | Inegf | Iabsf | Iaddf | Isubf | Imulf | Idivf
@@ -85,13 +87,7 @@ type spacetime_part_of_shape =
   | Indirect_call_point
   | Allocation_point
 
-type spacetime_location =
-  | Label of Cmm.label
-  | Call_gc
-  | Bounds_check_failure
-
-type spacetime_shape =
-  (spacetime_part_of_shape * spacetime_location) list
+type spacetime_shape = (spacetime_part_of_shape * Cmm.label) list
 
 type fundecl =
   { fun_name: string;

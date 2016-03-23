@@ -82,21 +82,11 @@ end
 
 module Shape_table = struct
   type part_of_shape =
-    | Caml_call_gc
-    | Bounds_check_failure
     | Direct_call of Int64.t
     | Indirect_call of Int64.t
     | Allocation_point of Int64.t
 
-  let _ = Caml_call_gc
-  let _ = Bounds_check_failure
-  let _ = Direct_call 0L
-  let _ = Indirect_call 0L
-  let _ = Allocation_point 0L
-
   let part_of_shape_size = function
-    | Caml_call_gc
-    | Bounds_check_failure
     | Direct_call _ -> 2
     | Indirect_call _
     | Allocation_point _ -> 1
@@ -156,10 +146,11 @@ module Trace = struct
   let num_header_words = lazy (node_num_header_words ())
 
   module OCaml = struct
-
     type field_iterator = {
       node : ocaml_node;
       offset : int;
+      part_of_shape : Shape_table.part_of_shape;
+      shape_table : Shape_table.t;
     }
 
     module Allocation_point = struct
@@ -186,7 +177,9 @@ module Trace = struct
         = "caml_spacetime_only_works_for_native_code"
           "caml_spacetime_ocaml_direct_call_point_call_site"
 
-      let call_site t = call_site t.node t.offset
+      let call_site t =
+        match t.part_of_shape with
+        | 
 
       external callee : ocaml_node -> int -> Function_entry_point.t
         = "caml_spacetime_only_works_for_native_code"
@@ -252,8 +245,6 @@ module Trace = struct
     end
 
     module Field = struct
-      type t = field_iterator
-
       type direct_call_point =
         | To_ocaml of ocaml_node Direct_call_point.t
         | To_foreign of foreign_node Direct_call_point.t
@@ -265,29 +256,27 @@ module Trace = struct
         | Direct_call of direct_call_point
         | Indirect_call of Indirect_call_point.t
 
-      external classify : ocaml_node -> int -> int
-        = "caml_spacetime_only_works_for_native_code"
-          "caml_spacetime_ocaml_classify_field" "noalloc"
-
       let classify t =
-        match classify t.node t.offset with
-        | 0 -> Allocation t
-        | 1 -> Direct_call (To_uninstrumented t)
-        | 2 -> Direct_call (To_ocaml t)
-        | 3 -> Direct_call (To_foreign t)
-        | 4 -> Indirect_call t
-        | _ -> assert false
+        ...
 
-      external skip_uninitialized : ocaml_node -> int -> int
+      external direct_call_point_uninitialized : ocaml_node -> int -> bool
         = "caml_spacetime_only_works_for_native_code"
-          "caml_spacetime_ocaml_node_skip_uninitialized"
+          "caml_spacetime_ocaml_direct_call_point_uninitialized"
           "noalloc"
 
-      external next : ocaml_node -> int -> int
+      external indirect_call_point_uninitialized : ocaml_node -> int -> bool
         = "caml_spacetime_only_works_for_native_code"
-          "caml_spacetime_ocaml_node_next" "noalloc"
+          "caml_spacetime_ocaml_indirect_call_point_uninitialized"
+          "noalloc"
+
+      external allocation_point_uninitialized : ocaml_node -> int -> bool
+        = "caml_spacetime_only_works_for_native_code"
+          "caml_spacetime_ocaml_indirect_call_point_uninitialized"
+          "noalloc"
 
       let next t =
+
+
         let offset = next t.node t.offset in
         if offset < 0 then None
         else Some { t with offset; }
@@ -308,10 +297,22 @@ module Trace = struct
         = "caml_spacetime_only_works_for_native_code"
           "caml_spacetime_compare_node" "noalloc"
 
-      let fields t =
-        let offset =
-          Field.skip_uninitialized t (Lazy.force num_header_words)
-        in
+      let fields t ~shape_table =
+        match Shape_table.find_exn (function_identifier t) shape_table with
+        | exception Not_found -> None
+        | [] -> None
+        | layout ->
+          let offset =
+            Field.skip_uninitialized t (Lazy.force num_header_words)
+          in
+          let iterator =
+            { node = t;
+              offset = Lazy.force num_header_words;
+              part_of_shape_size = ...;
+              shape_table;
+            }
+          in
+
         if offset < 0 then None
         else Some { node = t; offset; }
     end
@@ -855,6 +856,7 @@ module Heap_snapshot = struct
       num_snapshots : int;
       time_of_writer_close : float;
       frame_table : Frame_table.t;
+      shape_table : Shape_table.t;
       traces_by_thread : Trace.t array;
       finaliser_traces_by_thread : Trace.t array;
       snapshots : heap_snapshot array;
@@ -868,6 +870,7 @@ module Heap_snapshot = struct
       let num_snapshots : int = Marshal.from_channel chn in
       let time_of_writer_close : float = Marshal.from_channel chn in
       let frame_table : Frame_table.t = Marshal.from_channel chn in
+      let shape_table : Shape_table.t = Marshal.from_channel chn in
       let num_threads : int = Marshal.from_channel chn in
       let traces_by_thread = Array.init num_threads (fun _ -> None) in
       let finaliser_traces_by_thread =
@@ -890,6 +893,7 @@ module Heap_snapshot = struct
       { num_snapshots;
         time_of_writer_close;
         frame_table;
+        shape_table;
         traces_by_thread;
         finaliser_traces_by_thread;
         snapshots;
@@ -909,6 +913,7 @@ module Heap_snapshot = struct
     let num_snapshots t = t.num_snapshots
     let snapshot t ~index = t.snapshots.(index)
     let frame_table t = t.frame_table
+    let shape_table t = t.shape_table
     let time_of_writer_close t = t.time_of_writer_close
   end
 end

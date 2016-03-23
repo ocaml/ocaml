@@ -89,55 +89,6 @@ CAMLprim value caml_spacetime_ocaml_tail_chain(value node)
   return Tail_link(node);
 }
 
-CAMLprim value caml_spacetime_ocaml_classify_field(value node,
-      value offset)
-{
-  /* Note that [offset] should always point at an initialized call or
-     allocation point, by virtue of the behaviour of the function
-     [caml_spacetime_ocaml_node_next], below. */
-
-  uintnat field;
-
-  Assert(!Is_block(offset));
-  field = Long_val(offset);
-
-  Assert(Is_ocaml_node(node));
-  Assert(field >= Node_num_header_words);
-  Assert(field < Wosize_val(node));
-
-  Assert(Field(node, field) != Val_unit);
-
-#if 0
-  switch (Call_or_allocation_point(node, field)) {
-    case CALL: {
-      value callee_node;
-      value second_word;
-      Assert(field < Wosize_val(node) - 1);
-      second_word = Indirect_pc_linked_list(node, field);
-      Assert(second_word != Val_unit);
-      if (Is_block(second_word)) {
-        return Val_long(4);  /* indirect call point */
-      }
-      callee_node = Direct_callee_node(node, field);
-      if (callee_node == Val_unit) {
-        return Val_long(1);  /* direct call point to uninstrumented code */
-      } else if (Is_ocaml_node(callee_node)) {
-        return Val_long(2);  /* direct call point to OCaml code */
-      } else {
-        return Val_long(3);  /* direct call point to non-OCaml code */
-      }
-    }
-
-    case ALLOCATION:
-      Assert(field < Wosize_val(node) - 1);
-      return Val_long(0);
-  }
-#endif
-
-  Assert(0);
-  return Val_unit;  /* silence compiler warning */
-}
-
 CAMLprim value caml_spacetime_ocaml_node_skip_uninitialized
       (value node, value offset)
 {

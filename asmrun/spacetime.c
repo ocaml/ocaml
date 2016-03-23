@@ -623,6 +623,7 @@ void caml_spacetime_c_to_ocaml(void* ocaml_entry_point)
     node = allocate_uninitialized_ocaml_node(size_including_header);
     Hd_val(node) =
       Make_header(size_including_header - 1, OCaml_node_tag, Caml_black);
+/* XXX set Node_pc */
     Tail_link(node) = node;
     Indirect_pc_linked_list(node, Node_num_header_words) = Val_unit;
     *caml_spacetime_trie_node_ptr = node;

@@ -158,6 +158,7 @@ CAMLprim value caml_spacetime_take_heap_snapshot(void)
   num_distinct_profinfos = 0;
 
   /* Scan the minor heap. */
+  /* CR mshinwell: this is wrong, it should start from the roots */
   assert(((uintnat) caml_young_ptr) % sizeof(value) == 0);
   ptr = (value*) caml_young_ptr;
   assert(ptr >= (value*) caml_young_start);
