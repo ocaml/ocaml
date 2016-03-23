@@ -233,10 +233,10 @@ let make_startup_file ppf units_list =
           units_list));
   compile_phrase(Cmmgen.data_segment_table ("_startup" :: name_list));
   compile_phrase(Cmmgen.code_segment_table ("_startup" :: name_list));
-  compile_phrase
-    (Cmmgen.frame_table("_startup" :: "_system" :: name_list));
+  let all_names = "_startup" :: "_system" :: name_list in
+  compile_phrase (Cmmgen.frame_table all_names);
   if Config.spacetime then begin
-    compile_phrase (Cmmgen.spacetime_shapes ("_startup" :: name_list))
+    compile_phrase (Cmmgen.spacetime_shapes all_names);
   end;
   Emit.end_assembly ()
 

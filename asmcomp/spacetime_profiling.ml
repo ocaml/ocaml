@@ -378,11 +378,15 @@ class virtual instruction_selection = object (self)
   method select_checkbound () =
     (* This follows [select_allocation], above. *)
     if self#can_instrument () then begin
+      let label = Cmm.new_label ()
       let index =
         next_index_within_node ~part_of_shape:M.Direct_call_point
           ~location:M.Bounds_check_failure
       in
-      Mach.Icheckbound { spacetime_index = index; }
+      Mach.Icheckbound {
+        label_after_error = Some label;
+        spacetime_index = index;
+      }
     end else begin
       super#select_checkbound ()
     end

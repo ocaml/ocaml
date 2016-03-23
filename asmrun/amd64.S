@@ -514,6 +514,7 @@ LBL(caml_start_program):
         pushq   %rsi; CFI_ADJUST (8)
         /* No need to push %r12: it's callee-save. */
         movq    %r12, %rdi
+        LEA_VAR(caml_start_program, %rsi)
         call    GCALL(caml_spacetime_c_to_ocaml)
         popq    %rsi; CFI_ADJUST (-8)
         popq    %rdi; CFI_ADJUST (-8)
@@ -716,6 +717,16 @@ G(caml_system__frametable):
         .quad   LBL(107)    /* return address into callback */
         .value  -1          /* negative frame size => use callback link */
         .value  0           /* no roots here */
+        .align  EIGHT_ALIGN
+
+        .data
+        .globl  G(caml_system__spacetime_shapes)
+        .align  EIGHT_ALIGN
+G(caml_system__spacetime_shapes):
+        .quad   LBL(107)    /* in caml_start_program / caml_callback* */
+        .quad   1           /* indirect call point to OCaml code */
+        .quad   0           /* end of shapes for caml_start_program */
+        .quad   0           /* end of shape table */
         .align  EIGHT_ALIGN
 
 #if defined(SYS_macosx)

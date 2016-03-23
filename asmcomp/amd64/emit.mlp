@@ -336,10 +336,6 @@ let emit_call_gc gc =
     I.nop ();
     I.nop ();
     I.nop ();
-    I.nop ();
-    I.nop ();
-    I.nop ();
-    I.nop ();
     I.nop ()
   end;
   I.jmp (label gc.gc_return_lbl)

@@ -592,13 +592,18 @@ static NOINLINE void* find_trie_node_from_libunwind(int for_allocation,
 #endif
 }
 
-void caml_spacetime_c_to_ocaml(void* ocaml_entry_point)
+void caml_spacetime_c_to_ocaml(void* ocaml_entry_point,
+      void* identifying_pc_for_caml_start_program)
 {
   /* Called in [caml_start_program] and [caml_callback*] when we are about
      to cross from C into OCaml.  [ocaml_entry_point] is the branch target.
      This situation is handled by ensuring the presence of a new OCaml node
      for the callback veneer; the node contains a single indirect call point
-     which accumulates the [ocaml_entry_point]s. */
+     which accumulates the [ocaml_entry_point]s.
+
+     The layout of the node is described in the "system shape table"; see
+     asmrun/amd64.S.
+  */
 
   value node;
 
@@ -623,7 +628,8 @@ void caml_spacetime_c_to_ocaml(void* ocaml_entry_point)
     node = allocate_uninitialized_ocaml_node(size_including_header);
     Hd_val(node) =
       Make_header(size_including_header - 1, OCaml_node_tag, Caml_black);
-/* XXX set Node_pc */
+    Assert((((uintnat) identifying_pc_for_caml_start_program) % 1) == 0);
+    Node_pc(node) = Encode_node_pc(identifying_pc_for_caml_start_program);
     Tail_link(node) = node;
     Indirect_pc_linked_list(node, Node_num_header_words) = Val_unit;
     *caml_spacetime_trie_node_ptr = node;
@@ -637,6 +643,8 @@ void caml_spacetime_c_to_ocaml(void* ocaml_entry_point)
   }
 
   Assert(Is_ocaml_node(node));
+  Assert(Decode_node_pc(Node_pc(node))
+    == identifying_pc_for_caml_start_program);
   Assert(Tail_link(node) == node);
   Assert(Wosize_val(node) == Node_num_header_words + Indirect_num_fields);
 
