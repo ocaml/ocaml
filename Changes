@@ -652,7 +652,7 @@ Bug fixes:
 - PR#6805: Duplicated expression in case of hole in a non-failing switch.
   (Luc Maranget)
 
-- PR#6808: the parsing of OCAMLRUNPARAM is too lax
+* PR#6808: the parsing of OCAMLRUNPARAM is too lax
   (Damien Doligez)
 
 - PR#6874: Inefficient code generated for module function arguments
