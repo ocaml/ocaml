@@ -50,7 +50,9 @@ type fundecl =
   { fun_name: string;
     fun_body: instruction;
     fun_fast: bool;
-    fun_dbg : Debuginfo.t }
+    fun_dbg : Debuginfo.t;
+    fun_spacetime_shape : Mach.spacetime_shape option;
+  }
 
 val reset : unit -> unit
 val fundecl: Mach.fundecl -> fundecl

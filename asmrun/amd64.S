@@ -514,7 +514,6 @@ LBL(caml_start_program):
         pushq   %rsi; CFI_ADJUST (8)
         /* No need to push %r12: it's callee-save. */
         movq    %r12, %rdi
-        LEA_VAR(caml_start_program, %rsi)
         call    GCALL(caml_spacetime_c_to_ocaml)
         popq    %rsi; CFI_ADJUST (-8)
         popq    %rdi; CFI_ADJUST (-8)

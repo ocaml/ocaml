@@ -75,40 +75,27 @@ typedef enum {
 #define Decode_tail_caller_node(node) ((node) & ~1)
 #define Is_tail_caller_node_encoded(node) (((node) & 1) == 1)
 
-/* Classification as to whether an encoded PC value at the start of a group
-   of words within a node is either:
-   (a) a direct or an indirect call point; or
-   (b) an allocation point. */
-#define Call_or_allocation_point(node, offset) \
-  (((Field(node, offset) & 3) == 1) ? ALLOCATION : CALL)
-
 /* Allocation points within OCaml nodes.
    The "profinfo" value is stored shifted. */
-#define Encode_alloc_point_pc(pc) ((((value) pc) << 2) | 1)
-#define Decode_alloc_point_pc(pc) ((void*) (((value) pc) >> 2))
 #define Encode_alloc_point_profinfo(profinfo) (profinfo | 1)
 #define Decode_alloc_point_profinfo(profinfo) (profinfo & ~((uintnat) 1))
-#define Alloc_point_pc(node, offset) (Field(node, offset))
-#define Alloc_point_profinfo(node, offset) (Field(node, (offset) + 1))
+#define Alloc_point_profinfo(node, offset) (Field(node, offset))
 
 /* Direct call points (tail or non-tail) within OCaml nodes.
-   They hold the PC of the call site, the PC upon entry to the callee and
-   a pointer to the child node. */
-#define Direct_num_fields 3
-#define Direct_pc_call_site(node,offset) (Field(node, offset))
-#define Direct_pc_callee(node,offset) (Field(node, (offset) + 1))
-#define Direct_callee_node(node,offset) (Field(node, (offset) + 2))
-/* The following two are used for indirect call points too. */
-#define Encode_call_point_pc(pc) ((((value) pc) << 2) | 3)
-#define Decode_call_point_pc(pc) ((void*) (((value) pc) >> 2))
+   They hold the PC upon entry to the callee and a pointer to the child
+   node. */
+#define Direct_num_fields 2
+#define Direct_pc_callee(node,offset) (Field(node, offset))
+#define Direct_callee_node(node,offset) (Field(node, (offset) + 1))
+#define Encode_call_point_pc(pc) ((((value) pc) << 1) | 1)
+#define Decode_call_point_pc(pc) ((void*) (((value) pc) >> 1))
 
 /* Indirect call points (tail or non-tail) within OCaml nodes.
-   They hold the PC of the call site and a linked list of (PC upon entry
-   to the callee, pointer to child node) pairs.  The linked list is encoded
-   using C nodes and should be thought of as part of the OCaml node itself. */
-#define Indirect_num_fields 2
-#define Indirect_pc_call_site(node,offset) (Field(node, offset))
-#define Indirect_pc_linked_list(node,offset) (Field(node, (offset) + 1))
+   They hold a linked list of (PC upon entry to the callee, pointer to
+   child node) pairs.  The linked list is encoded using C nodes and should
+   be thought of as part of the OCaml node itself. */
+#define Indirect_num_fields 1
+#define Indirect_pc_linked_list(node,offset) (Field(node, offset))
 
 /* Encodings of the program counter value within a C node. */
 #define Encode_c_node_pc_for_call(pc) ((((value) pc) << 2) | 3)

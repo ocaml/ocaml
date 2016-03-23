@@ -97,7 +97,6 @@ let operation = function
   | Cspacetime_node_hole -> "spacetime_node_hole"
   | Cprogram_counter d -> "program_counter" ^ Debuginfo.to_string d
   | Clabel label -> "label:" ^ string_of_int label
-  | Caddress_of_label label -> "label@" ^ string_of_int label
 
 let rec expr ppf = function
   | Cconst_int n -> fprintf ppf "%i" n

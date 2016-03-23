@@ -107,7 +107,6 @@ and operation =
   | Cspacetime_load_node_hole_ptr
   | Cprogram_counter of Debuginfo.t
   | Clabel of label
-  | Caddress_of_label of label
 
 and expression =
     Cconst_int of int

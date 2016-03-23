@@ -337,10 +337,6 @@ CAMLprim value* caml_spacetime_indirect_node_hole_ptr
   last_indirect_node_hole_ptr_callee = callee;
   last_indirect_node_hole_ptr_node_hole = node_hole;
 
-  /* On entry, the node hole pointer is over the call site address slot,
-     so we must advance it to reach the linked list slot. */
-  node_hole++;
-
   encoded_callee = Encode_c_node_pc_for_call(callee);
 
   while (*node_hole != Val_unit) {
@@ -587,8 +583,7 @@ static NOINLINE void* find_trie_node_from_libunwind(int for_allocation,
 #endif
 }
 
-void caml_spacetime_c_to_ocaml(void* ocaml_entry_point,
-      void* identifying_pc_for_caml_start_program)
+void caml_spacetime_c_to_ocaml(void* ocaml_entry_point)
 {
   /* Called in [caml_start_program] and [caml_callback*] when we are about
      to cross from C into OCaml.  [ocaml_entry_point] is the branch target.
@@ -619,11 +614,7 @@ void caml_spacetime_c_to_ocaml(void* ocaml_entry_point,
     node = allocate_uninitialized_ocaml_node(size_including_header);
     Hd_val(node) =
       Make_header(size_including_header - 1, OCaml_node_tag, Caml_black);
-    Assert((((uintnat) identifying_pc_for_caml_start_program) % 1) == 0);
-    Node_pc(node) = Encode_node_pc(identifying_pc_for_caml_start_program);
     Tail_link(node) = node;
-    Indirect_pc_call_site(node, Node_num_header_words) =
-      Encode_call_point_pc(identifying_pc_for_caml_start_program);
     Indirect_pc_linked_list(node, Node_num_header_words) = Val_unit;
     *caml_spacetime_trie_node_ptr = node;
   }
@@ -636,8 +627,6 @@ void caml_spacetime_c_to_ocaml(void* ocaml_entry_point,
   }
 
   Assert(Is_ocaml_node(node));
-  Assert(Decode_node_pc(Node_pc(node))
-    == identifying_pc_for_caml_start_program);
   Assert(Tail_link(node) == node);
   Assert(Wosize_val(node) == Node_num_header_words + Indirect_num_fields);
 
@@ -646,7 +635,7 @@ void caml_spacetime_c_to_ocaml(void* ocaml_entry_point,
   caml_spacetime_trie_node_ptr =
     caml_spacetime_indirect_node_hole_ptr(
       ocaml_entry_point,
-      &Indirect_pc_call_site(node, Node_num_header_words),
+      &Indirect_pc_linked_list(node, Node_num_header_words),
       Val_unit);
   Assert(*caml_spacetime_trie_node_ptr == Val_unit
     || Is_ocaml_node(*caml_spacetime_trie_node_ptr));
@@ -656,18 +645,12 @@ extern void caml_garbage_collection(void);  /* signals_asm.c */
 extern void caml_array_bound_error(void);  /* fail.c */
 
 static void ocaml_to_c_call_site_without_instrumentation(
-  void* call_site_ptr,
   void(* callee_ptr)(void))
 {
   /* See comment on [caml_spacetime_caml_garbage_collection] below. */
 
-  value call_site;
   value callee;
   value node;
-
-  /* We need to skip over 13 registers to fish out our return address.
-     See asmrun/amd64.S:caml_call_gc. */
-  call_site = Encode_call_point_pc(call_site_ptr);
 
   /* See point 1 above. */
   node = (value) caml_spacetime_trie_node_ptr;
@@ -675,18 +658,15 @@ static void ocaml_to_c_call_site_without_instrumentation(
 
   callee = Encode_call_point_pc(callee_ptr);
 
-  /* If the call site and callee have been set, we don't check whether there
+  /* If the callee has been set, we don't check whether there
      is any child node, since it's possible there might not actually be one
      (e.g. if no allocation or callbacks performed in
      [caml_garbage_collection]). */
-  Assert((Direct_pc_call_site(node, 0) == Val_unit
-      && Direct_pc_callee(node, 0) == Val_unit
+  Assert((Direct_pc_callee(node, 0) == Val_unit
       && Direct_callee_node(node, 0) == Val_unit)
-    || (Direct_pc_call_site(node, 0) == call_site
-      && Direct_pc_callee(node, 0) == callee));
+    || && Direct_pc_callee(node, 0) == callee);
 
   /* Initialize the direct call point within the node. */
-  Direct_pc_call_site(node, 0) = call_site;
   Direct_pc_callee(node, 0) = callee;
 
   /* Set the trie node hole pointer correctly so that when e.g. an
@@ -712,32 +692,15 @@ void caml_spacetime_caml_garbage_collection(void)
         such array.
   */
 
-  void* call_site;
-  void(* callee)();
-
-  /* We need to skip over 13 registers to fish out our return address.
-     See asmrun/amd64.S:caml_call_gc. */
-  /* CR mshinwell: this should be target-dependent */
-  call_site = (void*) *(((uint64_t*) caml_gc_regs) + 13);
-  callee = &caml_garbage_collection;
-
-  ocaml_to_c_call_site_without_instrumentation(call_site, callee);
+  ocaml_to_c_call_site_without_instrumentation(&caml_garbage_collection);
 }
 
 void caml_spacetime_caml_ml_array_bound_error(void)
 {
-  /* Like [caml_spacetime_caml_ml_array_bound_error], but for array bounds
-     check failures.  This one is called via [caml_c_call] so we can use
-     [caml_last_return_address] to find the original call site in OCaml
-     code. */
+  /* Like [caml_spacetime_caml_garbage_collection], but for array bounds
+     check failures. */
 
-  void* call_site;
-  void(* callee)();
-
-  call_site = (void*) caml_last_return_address;
-  callee = &caml_array_bound_error;
-
-  ocaml_to_c_call_site_without_instrumentation(call_site, callee);
+  ocaml_to_c_call_site_without_instrumentation(&caml_array_bound_error);
 }
 
 CAMLprim uintnat caml_spacetime_generate_profinfo (void* profinfo_words)
@@ -748,11 +711,6 @@ CAMLprim uintnat caml_spacetime_generate_profinfo (void* profinfo_words)
   value node;
   uintnat offset;
   uintnat profinfo;
-  void* pc;
-
-  /* Since this function is marked as "noalloc", we can use the compiler
-     primitive to find the return address. */
-  pc = __builtin_return_address(0);
 
   caml_spacetime_profinfo++;
   if (caml_spacetime_profinfo > PROFINFO_MASK) {
@@ -762,21 +720,19 @@ CAMLprim uintnat caml_spacetime_generate_profinfo (void* profinfo_words)
   profinfo = caml_spacetime_profinfo;
 
   /* [node] isn't really a node; it points into the middle of
-     one---specifically to the "profinfo" word of an allocation point pair of
-     words.  It's done like this to avoid re-calculating the place in the node
+     one---specifically to the "profinfo" word of an allocation point.
+     It's done like this to avoid re-calculating the place in the node
      (which already has to be done in the OCaml-generated code run before
      this function). */
   node = (value) (((uintnat*) profinfo_words) - 1);
   offset = 0;
 
-  Assert(Alloc_point_pc(node, offset) == Val_unit);
   Assert(Alloc_point_profinfo(node, offset) == Val_unit);
 
   /* The profinfo value is stored shifted to reduce the number of
      instructions required on the OCaml side. */
   profinfo = Encode_alloc_point_profinfo(profinfo << PROFINFO_SHIFT);
 
-  Alloc_point_pc(node, offset) = Encode_alloc_point_pc(pc);
   Alloc_point_profinfo(node, offset) = profinfo;
 
   return profinfo;

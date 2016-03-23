@@ -52,7 +52,9 @@ type fundecl =
   { fun_name: string;
     fun_body: instruction;
     fun_fast: bool;
-    fun_dbg : Debuginfo.t }
+    fun_dbg : Debuginfo.t;
+    fun_spacetime_shape : Mach.spacetime_shape option;
+  }
 
 (* Invert a test *)
 
@@ -129,9 +131,8 @@ let rec discard_dead_code n =
    as this may cause a stack imbalance later during assembler generation. *)
   | Lpoptrap | Lpushtrap -> n
   | Lop(Istackoffset _) -> n
-  (* Do not discard explicit label references used for profiling. *)
-  | Lop (Ilabel _)
-  | Lop (Iaddress_of_label _) -> n
+  (* Do not discard explicit labels used for profiling. *)
+  | Lop (Ilabel _) -> n
   | _ -> discard_dead_code n.next
 
 (*
@@ -300,4 +301,6 @@ let fundecl f =
   { fun_name = f.Mach.fun_name;
     fun_body = linear f.Mach.fun_body end_instr;
     fun_fast = f.Mach.fun_fast;
-    fun_dbg  = f.Mach.fun_dbg }
+    fun_dbg  = f.Mach.fun_dbg;
+    fun_spacetime_shape = f.Mach.fun_spacetime_shape;
+  }

@@ -152,9 +152,7 @@ let operation op arg ppf res =
   | Ispacetime_load_node_hole_ptr ->
     fprintf ppf "spacetime_load_node_hole_ptr"
   | Ispacetime_node_hole -> fprintf ppf "spacetime_node_hole"
-  | Iprogram_counter -> fprintf ppf "program_counter"
   | Ilabel label -> fprintf ppf "label:%d" label
-  | Iaddress_of_label label -> fprintf ppf "label@%d" label
 
 let rec instr ppf i =
   if !print_live then begin

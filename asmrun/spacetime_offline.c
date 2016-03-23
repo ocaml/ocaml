@@ -107,6 +107,7 @@ CAMLprim value caml_spacetime_ocaml_classify_field(value node,
 
   Assert(Field(node, field) != Val_unit);
 
+#if 0
   switch (Call_or_allocation_point(node, field)) {
     case CALL: {
       value callee_node;
@@ -131,6 +132,7 @@ CAMLprim value caml_spacetime_ocaml_classify_field(value node,
       Assert(field < Wosize_val(node) - 1);
       return Val_long(0);
   }
+#endif
 
   Assert(0);
   return Val_unit;  /* silence compiler warning */
@@ -169,6 +171,7 @@ CAMLprim value caml_spacetime_ocaml_node_skip_uninitialized
 CAMLprim value caml_spacetime_ocaml_node_next(value node,
       value offset)
 {
+#if 0
   uintnat field = Long_val(offset);
 
   Assert(Is_ocaml_node(node));
@@ -206,6 +209,7 @@ CAMLprim value caml_spacetime_ocaml_node_next(value node,
     return caml_spacetime_ocaml_node_skip_uninitialized
         (node, Val_long(field));
   }
+#endif
 
   return Val_long(-1);
 }
@@ -213,8 +217,11 @@ CAMLprim value caml_spacetime_ocaml_node_next(value node,
 CAMLprim value caml_spacetime_ocaml_allocation_point_program_counter
       (value node, value offset)
 {
+return Val_unit;
+#if 0
   return caml_copy_int64((uint64_t) Decode_alloc_point_pc(
     Alloc_point_pc(node, Long_val(offset))));
+#endif
 }
 
 CAMLprim value caml_spacetime_ocaml_allocation_point_annotation
@@ -228,8 +235,11 @@ CAMLprim value caml_spacetime_ocaml_allocation_point_annotation
 CAMLprim value caml_spacetime_ocaml_direct_call_point_call_site
       (value node, value offset)
 {
+return Val_unit;
+#if 0
   return caml_copy_int64((int64_t) Decode_call_point_pc(
       Direct_pc_call_site(node, Long_val(offset))));
+#endif
 }
 
 CAMLprim value caml_spacetime_ocaml_direct_call_point_callee
@@ -248,8 +258,11 @@ CAMLprim value caml_spacetime_ocaml_direct_call_point_callee_node
 CAMLprim value caml_spacetime_ocaml_indirect_call_point_call_site
       (value node, value offset)
 {
+#if 0
   return caml_copy_int64((int64_t) Decode_call_point_pc(
     Indirect_pc_call_site(node, Long_val(offset))));
+#endif
+  return Val_unit;
 }
 
 CAMLprim value caml_spacetime_ocaml_indirect_call_point_callees

@@ -235,6 +235,9 @@ let make_startup_file ppf units_list =
   compile_phrase(Cmmgen.code_segment_table ("_startup" :: name_list));
   compile_phrase
     (Cmmgen.frame_table("_startup" :: "_system" :: name_list));
+  if Config.spacetime then begin
+    compile_phrase (Cmmgen.spacetime_shapes ("_startup" :: name_list))
+  end;
   Emit.end_assembly ()
 
 let make_shared_startup_file ppf units =

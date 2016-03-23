@@ -57,9 +57,7 @@ type operation =
   | Ispecific of Arch.specific_operation
   | Ispacetime_node_hole
   | Ispacetime_load_node_hole_ptr
-  | Iprogram_counter
   | Ilabel of Cmm.label
-  | Iaddress_of_label of Cmm.label
 
 type instruction =
   { desc: instruction_desc;
@@ -82,12 +80,27 @@ and instruction_desc =
   | Itrywith of instruction * instruction
   | Iraise of Lambda.raise_kind
 
+type spacetime_part_of_shape =
+  | Direct_call_point
+  | Indirect_call_point
+  | Allocation_point
+
+type spacetime_location =
+  | Label of Cmm.label
+  | Call_gc
+  | Bounds_check_failure
+
+type spacetime_shape =
+  (spacetime_part_of_shape * spacetime_location) list
+
 type fundecl =
   { fun_name: string;
     fun_args: Reg.t array;
     fun_body: instruction;
     fun_fast: bool;
-    fun_dbg : Debuginfo.t }
+    fun_dbg : Debuginfo.t;
+    fun_spacetime_shape : spacetime_shape option;
+  }
 
 let rec dummy_instr =
   { desc = Iend;

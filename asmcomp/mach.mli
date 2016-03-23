@@ -62,10 +62,8 @@ type operation =
   | Ispecific of Arch.specific_operation
   | Ispacetime_node_hole
   | Ispacetime_load_node_hole_ptr
-  | Iprogram_counter
   (* CR mshinwell: Move [Ilabel] into [instruction_desc]. *)
   | Ilabel of Cmm.label
-  | Iaddress_of_label of Cmm.label
 
 type instruction =
   { desc: instruction_desc;
@@ -87,12 +85,33 @@ and instruction_desc =
   | Itrywith of instruction * instruction
   | Iraise of Lambda.raise_kind
 
+type spacetime_part_of_shape =
+  | Direct_call_point
+  | Indirect_call_point
+  | Allocation_point
+
+type spacetime_location =
+  | Label of Cmm.label
+  | Call_gc
+  | Bounds_check_failure
+
+(** A description of the layout of a Spacetime profiling node associated with
+    a given function.  Each call and allocation point instrumented within
+    the function is marked with a label in the code and assigned a place
+    within the node.  This information is stored within the executable and
+    extracted when the user saves a profile.  The aim is to minimise runtime
+    memory usage within the nodes and increase performance. *)
+type spacetime_shape =
+  (spacetime_part_of_shape * spacetime_location) list
+
 type fundecl =
   { fun_name: string;
     fun_args: Reg.t array;
     fun_body: instruction;
     fun_fast: bool;
-    fun_dbg : Debuginfo.t }
+    fun_dbg : Debuginfo.t;
+    fun_spacetime_shape : spacetime_shape option;
+  }
 
 val dummy_instr: instruction
 val end_instr: unit -> instruction

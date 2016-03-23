@@ -127,7 +127,6 @@ method fundecl f =
   let new_body = self#reload f.fun_body in
   ({fun_name = f.fun_name; fun_args = f.fun_args;
     fun_body = new_body; fun_fast = f.fun_fast;
-    fun_dbg  = f.fun_dbg},
-   redo_regalloc)
-
+    fun_dbg  = f.fun_dbg; fun_spacetime_shape = f.fun_spacetime_shape},
+   redo_regalloc) 
 end

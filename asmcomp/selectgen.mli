@@ -127,7 +127,7 @@ class virtual selector_generic : object
      : Cmm.fundecl
     -> env_after_prologue:(Ident.t, Reg.t array) Tbl.t
     -> last_insn_of_prologue:Mach.instruction
-    -> unit
+    -> Mach.spacetime_shape option
   method insert_env
      : (Ident.t, Reg.t array) Tbl.t
     -> Mach.instruction_desc

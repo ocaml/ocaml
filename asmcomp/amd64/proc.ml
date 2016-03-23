@@ -352,7 +352,7 @@ let op_is_pure = function
   | Ispacetime_load_node_hole_ptr -> false
   | Ispecific(Ilea _) -> true
   | Ispecific _ -> false
-  | Ilabel _ | Iaddress_of_label _ -> false
+  | Ilabel _ -> false
   | _ -> true
 
 (* Layout of the stack frame *)

@@ -50,7 +50,6 @@ let oper_result_type = function
   | Cspacetime_load_node_hole_ptr -> typ_void
   | Cprogram_counter _ -> typ_int
   | Clabel _ -> typ_void
-  | Caddress_of_label _ -> typ_int
 
 (* Infer the size in bytes of the result of a simple expression *)
 
@@ -202,8 +201,8 @@ method is_simple_expr = function
       begin match op with
         (* The following may have side effects *)
       | Capply _ | Cextcall _ | Calloc | Cstore _ | Craise _ -> false
-        (* [Cprogram_counter] and label operations must never be moved *)
-      | Cprogram_counter _ | Clabel _ | Caddress_of_label _ -> false
+        (* Labels must never be moved *)
+      | Clabel _ -> false
         (* The remaining operations are simple if their args are *)
       | _ ->
           List.for_all self#is_simple_expr args
@@ -314,12 +313,10 @@ method select_operation op args =
     let extra_args = self#select_checkbound_extra_args () in
     let op = self#select_checkbound () in
     self#select_arith op (args @ extra_args)
-  | (Cprogram_counter _, _) -> (Iprogram_counter, args)
   | (Cspacetime_node_hole, _) -> (Ispacetime_node_hole, args)
   | (Cspacetime_load_node_hole_ptr, _) ->
     (Ispacetime_load_node_hole_ptr, args)
   | (Clabel lbl, _) -> (Ilabel lbl, args)
-  | (Caddress_of_label lbl, _) -> (Iaddress_of_label lbl, args)
   | _ -> fatal_error "Selection.select_oper"
 
 method private select_arith_comm op = function
@@ -976,7 +973,7 @@ method private emit_tail_sequence env exp =
 
 method initial_env () = Tbl.empty
 
-method after_body _f ~env_after_prologue:_ ~last_insn_of_prologue:_ = ()
+method after_body _f ~env_after_prologue:_ ~last_insn_of_prologue:_ = None
 
 method emit_fundecl f =
   Proc.contains_calls := false;
@@ -995,14 +992,18 @@ method emit_fundecl f =
   let env_after_prologue = env in
   let last_insn_of_prologue = instr_seq in
   self#emit_tail env f.Cmm.fun_body;
-  self#after_body f ~env_after_prologue ~last_insn_of_prologue;
+  let fun_spacetime_shape =
+    self#after_body f ~env_after_prologue ~last_insn_of_prologue
+  in
   let body = self#extract in
   instr_iter (fun instr -> self#mark_instr instr.Mach.desc) body;
   { fun_name = f.Cmm.fun_name;
     fun_args = loc_arg;
     fun_body = body;
     fun_fast = f.Cmm.fun_fast;
-    fun_dbg  = f.Cmm.fun_dbg }
+    fun_dbg  = f.Cmm.fun_dbg;
+    fun_spacetime_shape;
+  }
 
 end
 

@@ -13,6 +13,7 @@
 (**************************************************************************)
 
 module L = Lambda
+module M = Mach
 
 (* CR mshinwell: Obtain constants by calling C functions so they definitely
    match the C code. *)
@@ -34,12 +35,21 @@ let spacetime_node_ident = ref (lazy (Ident.create "dummy"))
 let current_function_label = ref ""
 let direct_tail_call_point_indexes = ref []
 
+let reverse_shape = ref ([] : Mach.spacetime_shape)
+
 let something_was_instrumented () =
   !index_within_node > 2
 
-let next_index_within_node ~words_needed =
+let next_index_within_node ~part_of_shape ~location =
+  let words_needed =
+    match part_of_shape with
+    | M.Direct_call_point -> 2
+    | M.Indirect_call_point -> 1
+    | M.Allocation_point -> 1
+  in
   let index = !index_within_node in
   index_within_node := !index_within_node + words_needed;
+  reverse_shape := (part_of_shape, location) :: !reverse_shape;
   index
 
 let reset ~spacetime_node_ident:ident ~function_label =
@@ -47,7 +57,8 @@ let reset ~spacetime_node_ident:ident ~function_label =
   spacetime_node := lazy (Cmm.Cvar ident);
   spacetime_node_ident := lazy ident;
   direct_tail_call_point_indexes := [];
-  current_function_label := function_label
+  current_function_label := function_label;
+  reverse_shape := []
 
 let code_for_function_prologue ~function_name =
   let node_hole = Ident.create "node_hole" in
@@ -66,21 +77,11 @@ let code_for_function_prologue ~function_name =
       List.fold_left (fun init_code index ->
           (* Cf. [Direct_callee_node] in the runtime. *)
           let offset_in_bytes = index * Arch.size_addr in
-          let place = Ident.create "tail_init" in
-          let place_minus_one = Ident.create "tail_init_minus_one" in
-          Clet (place,
-            Cop (Caddi, [Cvar new_node; Cconst_int offset_in_bytes]),
-            Clet (place_minus_one,
-              Cop (Caddi,
-                [Cvar new_node;
-                Cconst_int (offset_in_bytes - Arch.size_addr)]),
-              Csequence (
-                Cop (Cstore (Word_int, L.Assignment),
-                  [Cvar place; Cvar new_node_encoded]),
-                Csequence (
-                  Cop (Cstore (Word_int, L.Assignment),
-                    [Cvar place_minus_one; Cconst_int 3]),
-                  init_code)))))
+          Csequence (
+            Cop (Cstore (Word_int, L.Assignment),
+              [Cop (Caddi, [Cvar new_node; Cconst_int offset_in_bytes]);
+               Cvar new_node_encoded]),
+            init_code))
         (Cvar new_node)
         indexes
     in
@@ -115,9 +116,10 @@ let code_for_blockheader ~value's_header ~node ~dbg =
   let existing_profinfo = Ident.create "existing_profinfo" in
   let profinfo = Ident.create "profinfo" in
   let address_of_profinfo = Ident.create "address_of_profinfo" in
+  let label = Cmm.new_label () in
   let index_within_node =
-    (* "1 +" to skip the slot for the PC of the allocation point. *)
-    1 + (next_index_within_node ~words_needed:2)
+    next_index_within_node ~part_of_shape:M.Allocation_point
+      ~location:(M.Label label)
   in
   let offset_into_node = Arch.size_addr * index_within_node in
   let open Cmm in
@@ -150,7 +152,8 @@ let code_for_blockheader ~value's_header ~node ~dbg =
            "or" in the profinfo value to the higher bits, whilst preserving
            all remaining bits. *)
         let value's_header = Nativeint.logxor value's_header 1n in
-        Cop (Cxor, [Cvar profinfo; Cconst_natint value's_header]))))
+        Csequence (Cop (Clabel label, []),
+          Cop (Cxor, [Cvar profinfo; Cconst_natint value's_header])))))
 
 type callee =
   | Direct of string
@@ -165,19 +168,22 @@ let code_for_call ~node ~callee ~is_tail ~label =
     | Indirect _ -> false
   in
   let is_tail = is_tail || is_self_recursive_call in
-  let words_needed =
+  let index_within_node =
     match callee with
-    | Direct _ -> 3  (* Cf. [Direct_num_fields] in the runtime. *)
-    | Indirect _ -> 2  (* Cf. [Indirect_num_fields] in the runtime. *)
+    | Direct _ ->
+      next_index_within_node ~part_of_shape:M.Direct_call_point
+        ~location:(M.Label label)
+    | Indirect _ ->
+      next_index_within_node ~part_of_shape:M.Indirect_call_point
+        ~location:(M.Label label)
   in
-  let index_within_node = next_index_within_node ~words_needed in
   begin match callee with
     (* If this is a direct tail call point, we need to note down its index,
        so the correct initialization code can be emitted in the prologue. *)
     | Direct _ when is_tail ->
       direct_tail_call_point_indexes :=
-        (* "+2" to skip the call site and callee PC values. *)
-        (index_within_node + 2)::!direct_tail_call_point_indexes
+        (* "+1" to skip the callee PC value. *)
+        (index_within_node + 1)::!direct_tail_call_point_indexes
     | Direct _ | Indirect _ -> ()
   end;
   let place_within_node = Ident.create "place_within_node" in
@@ -190,42 +196,38 @@ let code_for_call ~node ~callee ~is_tail ~label =
        This means we need a way of forcing the alignment of Ilabel.
        The callee addresses should already be sufficiently aligned. *)
     (* Cf. [Encode_call_point_pc] in the runtime. *)
-    Cop (Cor, [Cop (Clsl, [pc; Cconst_int 2]); Cconst_int 3])
+    Cop (Cor, [Cop (Clsl, [pc; Cconst_int 1]); Cconst_int 1])
   in
   let within_node ~index =
     Cop (Caddi, [node; Cconst_int (index * Arch.size_addr)])
   in
   Clet (place_within_node,
     within_node ~index:index_within_node,
-    Csequence (
-      (* The "call site" address coincides with the return address
-         used for the frame descriptor.  (We insert frame descriptors
-         even in the case of tail calls when using allocation
-         profiling.) *)
-      Cop (Cstore (Word_int, L.Assignment), [
-        Cvar place_within_node;
-        encode_pc (Cop (Caddress_of_label label, []))]),
-      match callee with
-      | Direct callee ->
-        Csequence (
-          Cop (Cstore (Word_int, L.Assignment), [
-            Cop (Caddi, [Cvar place_within_node; Cconst_int Arch.size_addr]);
-            encode_pc (Cconst_symbol callee);
-          ]),
-          Cop (Cspacetime_load_node_hole_ptr,
-            [Cop (Caddi, [Cvar place_within_node;
-              Cconst_int (2 * Arch.size_addr)])]))
-      | Indirect callee ->
-        let node_hole_ptr = Ident.create "node_hole_ptr" in
-        let caller_node =
-          if is_tail then node
-          else Cconst_int 1  (* [Val_unit] *)
-        in
-        Clet (node_hole_ptr,
-          Cop (Cextcall ("caml_spacetime_indirect_node_hole_ptr",
-              [| Int |], false, Debuginfo.none),
-            [callee; Cvar place_within_node; caller_node]),
-          Cop (Cspacetime_load_node_hole_ptr, [Cvar node_hole_ptr]))))
+    (* The "call site" address coincides with the return address
+       used for the frame descriptor.  (We insert frame descriptors
+       even in the case of tail calls when using allocation
+       profiling.) *)
+    match callee with
+    | Direct callee ->
+      Csequence (
+        Cop (Cstore (Word_int, L.Assignment), [
+          Cvar place_within_node;
+          encode_pc (Cconst_symbol callee);
+        ]),
+        Cop (Cspacetime_load_node_hole_ptr,
+          [Cop (Caddi, [Cvar place_within_node;
+            Cconst_int Arch.size_addr])]))
+    | Indirect callee ->
+      let node_hole_ptr = Ident.create "node_hole_ptr" in
+      let caller_node =
+        if is_tail then node
+        else Cconst_int 1  (* [Val_unit] *)
+      in
+      Clet (node_hole_ptr,
+        Cop (Cextcall ("caml_spacetime_indirect_node_hole_ptr",
+            [| Int |], false, Debuginfo.none),
+          [callee; Cvar place_within_node; caller_node]),
+        Cop (Cspacetime_load_node_hole_ptr, [Cvar node_hole_ptr])))
 
 class virtual instruction_selection = object (self)
   inherit Selectgen.selector_generic as super
@@ -358,8 +360,10 @@ class virtual instruction_selection = object (self)
       (* Leave space for a direct call point.  We cannot easily insert any
          instrumentation code, so the fields are filled in instead by
          [caml_spacetime_caml_garbage_collection]. *)
-      let index = !index_within_node in
-      index_within_node := !index_within_node + 3;
+      let index =
+        next_index_within_node ~part_of_shape:M.Direct_call_point
+          ~location:M.Call_gc
+      in
       Mach.Ialloc { words; spacetime_index = index; }
     end else begin
       super#select_allocation words
@@ -378,8 +382,10 @@ class virtual instruction_selection = object (self)
   method select_checkbound () =
     (* This follows [select_allocation], above. *)
     if self#can_instrument () then begin
-      let index = !index_within_node in
-      index_within_node := !index_within_node + 3;
+      let index =
+        next_index_within_node ~part_of_shape:M.Direct_call_point
+          ~location:M.Bounds_check_failure
+      in
       Mach.Icheckbound { spacetime_index = index; }
     end else begin
       super#select_checkbound ()
@@ -413,7 +419,11 @@ class virtual instruction_selection = object (self)
     if Config.spacetime then begin
       self#emit_prologue f ~node:f.Cmm.fun_spacetime_node
         ~env_after_main_prologue:env_after_prologue
-        ~last_insn_of_main_prologue:last_insn_of_prologue
-    end;
-    super#after_body f ~env_after_prologue ~last_insn_of_prologue
+        ~last_insn_of_main_prologue:last_insn_of_prologue;
+      match !reverse_shape with
+      | [] -> None
+      | reverse_shape -> Some (List.rev reverse_shape)
+    end else begin
+      super#after_body f ~env_after_prologue ~last_insn_of_prologue
+    end
 end
