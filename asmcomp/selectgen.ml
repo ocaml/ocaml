@@ -409,9 +409,6 @@ method insert_debug_env _env desc dbg arg res =
 method insert desc arg res =
   instr_seq <- instr_cons desc arg res instr_seq
 
-method insert_env _env desc arg res =
-  self#insert desc arg res
-
 method extract =
   let rec extract res i =
     if i == dummy_instr
@@ -847,7 +844,7 @@ method emit_tail env exp =
                     [| |] [| |])
                 end;
                 self#insert_moves rarg loc_arg;
-                self#insert_env env call
+                self#insert_debug_env env call dbg
                             (Array.append [|r1.(0)|] loc_arg) [||]
               end else begin
                 let rd = self#regs_for ty in
@@ -873,7 +870,7 @@ method emit_tail env exp =
                 let call = Iop (Itailcall_imm lbl) in
                 let label = self#about_to_emit_call env call [| |] in
                 self#insert_moves r1 loc_arg;
-                self#insert_env env call loc_arg [||];
+                self#insert_debug_env env call dbg loc_arg [||];
                 begin match label with
                 | None -> ()
                 | Some label ->
@@ -885,7 +882,7 @@ method emit_tail env exp =
                 let loc_arg' = Proc.loc_parameters r1 in
                 let label = self#about_to_emit_call env call [| |] in
                 self#insert_moves r1 loc_arg';
-                self#insert_env env call loc_arg' [||];
+                self#insert_debug_env env call dbg loc_arg' [||];
                 begin match label with
                 | None -> ()
                 | Some label ->

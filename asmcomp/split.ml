@@ -126,7 +126,7 @@ let rec rename i sub =
     Iend ->
       (i, sub)
   | Ireturn | Iop(Itailcall_ind) | Iop(Itailcall_imm _) ->
-      (instr_cons i.desc (subst_regs i.arg sub) [||] i.next,
+      (instr_cons_debug i.desc (subst_regs i.arg sub) [||] i.dbg i.next,
        None)
   | Iop Ireload when i.res.(0).loc = Unknown ->
       begin match sub with

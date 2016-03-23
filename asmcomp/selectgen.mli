@@ -128,12 +128,6 @@ class virtual selector_generic : object
     -> env_after_prologue:(Ident.t, Reg.t array) Tbl.t
     -> last_insn_of_prologue:Mach.instruction
     -> Mach.spacetime_shape option
-  method insert_env
-     : (Ident.t, Reg.t array) Tbl.t
-    -> Mach.instruction_desc
-    -> Reg.t array
-    -> Reg.t array
-    -> unit
   method insert_debug_env
      : (Ident.t, Reg.t array) Tbl.t
     -> Mach.instruction_desc
