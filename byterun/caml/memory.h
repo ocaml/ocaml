@@ -93,12 +93,13 @@ int caml_page_table_initialize(mlsize_t bytesize);
    we cannot guard some of these sections with NATIVE_CODE as well as
    WITH_SPACETIME, which is a pity.  We should think about this */
 
+#define PROFINFO_SHIFT 42
+
 #ifdef WITH_SPACETIME
 
 #define Decode_profinfo_hd(hd) \
   (((uint64_t) (Profinfo_hd (hd))) << 4)
 
-#define PROFINFO_SHIFT 42
 #define Hd_no_profinfo(hd) ((hd) & ~(0x3fffffull << PROFINFO_SHIFT))
 
 extern int caml_spacetime;
