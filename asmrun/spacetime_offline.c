@@ -39,6 +39,22 @@
 
 #include "../config/s.h"
 
+/* CR lwhite: The following two definitions are copied from spacetime.c
+   because they are needed here, but must be inlined in spacetime.c
+   for performance. Perhaps a macro or "static inline" would be
+   more appropriate. */
+
+c_node* caml_spacetime_offline_c_node_of_stored_pointer_not_null(value node_stored)
+{
+  Assert(Is_c_node(node_stored));
+  return (c_node*) Hp_val(node_stored);
+}
+
+c_node_type caml_spacetime_offline_classify_c_node(c_node* node)
+{
+  return (node->pc & 2) ? CALL : ALLOCATION;
+}
+
 CAMLprim value caml_spacetime_compare_node(
       value node1, value node2)
 {
@@ -139,8 +155,8 @@ CAMLprim value caml_spacetime_c_node_is_call(value node)
   c_node* c_node;
   Assert(node != (value) NULL);
   Assert(Is_c_node(node));
-  c_node = caml_spacetime_c_node_of_stored_pointer_not_null(node);
-  switch (caml_spacetime_classify_c_node(c_node)) {
+  c_node = caml_spacetime_offline_c_node_of_stored_pointer_not_null(node);
+  switch (caml_spacetime_offline_classify_c_node(c_node)) {
     case CALL: return Val_true;
     case ALLOCATION: return Val_false;
   }
@@ -154,8 +170,7 @@ CAMLprim value caml_spacetime_c_node_next(value node)
 
   Assert(node != (value) NULL);
   Assert(Is_c_node(node));
-  c_node = caml_spacetime_c_node_of_stored_pointer_not_null(node);
-
+  c_node = caml_spacetime_offline_c_node_of_stored_pointer_not_null(node);
   Assert(c_node->next == Val_unit || Is_c_node(c_node->next));
   return c_node->next;
 }
@@ -165,7 +180,7 @@ CAMLprim value caml_spacetime_c_node_call_site(value node)
   c_node* c_node;
   Assert(node != (value) NULL);
   Assert(Is_c_node(node));
-  c_node = caml_spacetime_c_node_of_stored_pointer_not_null(node);
+  c_node = caml_spacetime_offline_c_node_of_stored_pointer_not_null(node);
   return caml_copy_int64((uint64_t) Decode_c_node_pc(c_node->pc));
 }
 
@@ -174,8 +189,8 @@ CAMLprim value caml_spacetime_c_node_callee_node(value node)
   c_node* c_node;
   Assert(node != (value) NULL);
   Assert(Is_c_node(node));
-  c_node = caml_spacetime_c_node_of_stored_pointer_not_null(node);
-  Assert(caml_spacetime_classify_c_node(c_node) == CALL);
+  c_node = caml_spacetime_offline_c_node_of_stored_pointer_not_null(node);
+  Assert(caml_spacetime_offline_classify_c_node(c_node) == CALL);
   /* This might be an uninitialised tail call point: for example if an OCaml
      callee was indirectly called but the callee wasn't instrumented (e.g. a
      leaf function that doesn't allocate). */
@@ -190,8 +205,9 @@ CAMLprim value caml_spacetime_c_node_profinfo(value node)
   c_node* c_node;
   Assert(node != (value) NULL);
   Assert(Is_c_node(node));
-  c_node = caml_spacetime_c_node_of_stored_pointer_not_null(node);
-  Assert(caml_spacetime_classify_c_node(c_node) == ALLOCATION);
+  c_node = caml_spacetime_offline_c_node_of_stored_pointer_not_null(node);
+  Assert(caml_spacetime_offline_classify_c_node(c_node) == ALLOCATION);
   Assert(!Is_block(c_node->data.profinfo));
   return c_node->data.profinfo;
 }
+
