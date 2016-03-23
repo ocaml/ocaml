@@ -30,64 +30,12 @@ typedef enum {
   ALLOCATION
 } c_node_type;
 
-/* CR mshinwell: fix / rewrite comment */
-/* Layout of static nodes:
-
-   OCaml GC header with tag zero
-   Tail call words:
-   1. PC value at the start of the function corresponding to this node,
-      shifted left by 1, with bottom bit then set.
-   2. Pointer forming a cyclic list through the nodes involved in any tail
-      call chain.
-   A sequence of:
-   - An allocation point (two words):
-     1. PC value, shifted left by 2, with bottom bit then set.  Bit 1 being
-        clear enables allocation points to be distinguished from call points.
-     2. Profinfo value [that gets written into the value's header]
-   - A direct OCaml -> OCaml call point (three words):
-     1. Call site PC value, shifted left by 2, with bits 0 and 1 then set
-     2. Callee's PC value, shifted left by 2, with bit 0 set
-     3. Pointer to callee's node, which will always be a static node.
-   - An indirect OCaml -> OCaml call point (two words):
-     1. Call site PC value, shifted left by 2, with bits 0 and 1 then set
-     2. Pointer to dynamic node.  Note that this dynamic node is really
-        part of the static node that points to it.  This pointer not having
-        its bottom bit set enables it to be distinguished from the second word
-        of a direct call point.  The dynamic node will only contain CALL
-        entries, pointing at the callee(s).
-   XXX what about indirect OCaml -> C?  Same as indirect OCaml -> OCaml.
-   - A direct OCaml -> C call point (three words):
-     1. Call site PC value, shifted left by 2, with bits 0 and 1 then set
-     2. Callee's PC value, shifted left by 2, with bit 0 set
-     3. Pointer to callee's node, which will always be a dynamic node.
-
-   All pointers between nodes point at the word immediately after the
+/* All pointers between nodes point at the word immediately after the
    GC headers, and everything is traversable using the normal OCaml rules.
-   Any direct call entries for tail calls must come before any other call
-   point or allocation point words.  This is to make them easier to
-   initialize.
-
-   Layout of dynamic nodes, which consist of >= 1 part(s) in a linked list:
-
-   OCaml GC header with tag one
-   PC value, shifted left by 2, with bottom bit then set.  Bit 1 then
-   indicates:
-     - bit 1 set => this is a call point
-     - bit 1 clear => this is an allocation point
-   XXX this next part is wrong for indirect dynamic nodes.  They have
-   the callee address.
-   The PC is either the PC of an allocation point or a *call site*, never the
-     address of a callee.  This means that more conflation between nodes may
-     occur than for OCaml parts of the trie.  This can be recovered afterwards
-     by checking which function every PC value inside a C node corresponds to,
-     and making more trie nodes if required.
-   Pointer to callee's node (for a call point), or profinfo value.
-   Pointer to the next part of the current node in the linked list, or
-     [Val_unit] if this is the last part.
 
    On entry to an OCaml function:
    If the node hole pointer register has the bottom bit set, then the function
-   is being tail called:
+   is being tail called or called from a self-recursive call site:
    - If the node hole is empty, the callee must create a new node and link
      it into the tail chain.  The node hole pointer will point at the tail
      chain.
