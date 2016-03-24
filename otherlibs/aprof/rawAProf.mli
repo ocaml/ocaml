@@ -274,12 +274,14 @@ module Trace : sig
   val to_json
      : t
     -> out_channel
+    -> shape_table:Shape_table.t
     -> resolve_address:(?long:unit -> Program_counter.OCaml.t -> string)
     -> unit
 
   (** Dump an unmarshalled trace to stdout (version written in OCaml). *)
   val debug_ocaml
      : t
+    -> shape_table:Shape_table.t
     -> resolve_return_address:(Program_counter.OCaml.t -> string option)
     -> unit
 end
@@ -328,6 +330,7 @@ module Heap_snapshot : sig
     val trace : t -> kind:trace_kind -> thread_index:int -> Trace.t option
 
     val frame_table : t -> Frame_table.t
+    val shape_table : t -> Shape_table.t
     val num_snapshots : t -> int
     val snapshot : t -> index:int -> heap_snapshot
   end

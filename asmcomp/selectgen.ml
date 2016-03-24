@@ -256,10 +256,12 @@ method mark_instr = function
 
 (* Default instruction selection for operators *)
 
-method select_allocation words = Ialloc { words; spacetime_index = 0; }
+method select_allocation words =
+  Ialloc { words; spacetime_index = 0; label_after_call_gc = None; }
 method select_allocation_args _env = [| |]
 
-method select_checkbound () = Icheckbound { spacetime_index = 0; }
+method select_checkbound () =
+  Icheckbound { spacetime_index = 0; label_after_error = None; }
 method select_checkbound_extra_args () = []
 
 method select_operation op args =
@@ -605,10 +607,12 @@ method emit_expr env exp =
               end;
               self#insert_move_results loc_res rd stack_ofs;
               Some rd
-          | Ialloc { words = _; spacetime_index; } ->
+          | Ialloc { words = _; spacetime_index; label_after_call_gc; } ->
               let rd = self#regs_for typ_val in
               let size = size_expr env (Ctuple new_args) in
-              let op = Ialloc { words = size; spacetime_index; } in
+              let op =
+                Ialloc { words = size; spacetime_index; label_after_call_gc; }
+              in
               let args = self#select_allocation_args env in
               self#insert (Iop op) args rd;
               self#emit_stores env new_args rd;

@@ -722,12 +722,14 @@ G(caml_system__frametable):
         .data
         .globl  G(caml_system__spacetime_shapes)
         .align  EIGHT_ALIGN
+#ifdef WITH_SPACETIME
 G(caml_system__spacetime_shapes):
         .quad   LBL(107)    /* in caml_start_program / caml_callback* */
         .quad   1           /* indirect call point to OCaml code */
         .quad   0           /* end of shapes for caml_start_program */
         .quad   0           /* end of shape table */
         .align  EIGHT_ALIGN
+#endif
 
 #if defined(SYS_macosx)
         .literal16

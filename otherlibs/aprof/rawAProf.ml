@@ -86,6 +86,10 @@ module Shape_table = struct
     | Indirect_call of Int64.t
     | Allocation_point of Int64.t
 
+  let _ = Direct_call 0L
+  let _ = Indirect_call 0L
+  let _ = Allocation_point 0L
+
   let part_of_shape_size = function
     | Direct_call _ -> 2
     | Indirect_call _
@@ -150,17 +154,17 @@ module Trace = struct
       node : ocaml_node;
       offset : int;
       part_of_shape : Shape_table.part_of_shape;
+      remaining_layout : Shape_table.part_of_shape list;
       shape_table : Shape_table.t;
     }
 
     module Allocation_point = struct
       type t = field_iterator
 
-      external program_counter : ocaml_node -> int -> Program_counter.OCaml.t
-        = "caml_spacetime_only_works_for_native_code"
-          "caml_spacetime_ocaml_allocation_point_program_counter"
-
-      let program_counter t = program_counter t.node t.offset
+      let program_counter t =
+        match t.part_of_shape with
+        | Shape_table.Allocation_point call_site -> call_site
+        | _ -> assert false
 
       external annotation : ocaml_node -> int -> Annotation.t
         = "caml_spacetime_only_works_for_native_code"
@@ -173,13 +177,10 @@ module Trace = struct
     module Direct_call_point = struct
       type _ t = field_iterator
 
-      external call_site : ocaml_node -> int -> Program_counter.OCaml.t
-        = "caml_spacetime_only_works_for_native_code"
-          "caml_spacetime_ocaml_direct_call_point_call_site"
-
       let call_site t =
         match t.part_of_shape with
-        | 
+        | Shape_table.Direct_call call_site -> call_site
+        | _ -> assert false
 
       external callee : ocaml_node -> int -> Function_entry_point.t
         = "caml_spacetime_only_works_for_native_code"
@@ -198,11 +199,10 @@ module Trace = struct
     module Indirect_call_point = struct
       type t = field_iterator
 
-      external call_site : ocaml_node -> int -> Program_counter.OCaml.t
-        = "caml_spacetime_only_works_for_native_code"
-          "caml_spacetime_ocaml_indirect_call_point_call_site"
-
-      let call_site t = call_site t.node t.offset
+      let call_site t =
+        match t.part_of_shape with
+        | Shape_table.Indirect_call call_site -> call_site
+        | _ -> assert false
 
       module Callee = struct
         (* CR mshinwell: we should think about the names again.  This is
@@ -245,6 +245,8 @@ module Trace = struct
     end
 
     module Field = struct
+      type t = field_iterator
+
       type direct_call_point =
         | To_ocaml of ocaml_node Direct_call_point.t
         | To_foreign of foreign_node Direct_call_point.t
@@ -256,30 +258,53 @@ module Trace = struct
         | Direct_call of direct_call_point
         | Indirect_call of Indirect_call_point.t
 
+      external classify_direct_call_point : ocaml_node -> int -> int
+        = "caml_spacetime_only_works_for_native_code"
+          "caml_spacetime_classify_direct_call_point"
+          "noalloc"
+
       let classify t =
-        ...
-
-      external direct_call_point_uninitialized : ocaml_node -> int -> bool
-        = "caml_spacetime_only_works_for_native_code"
-          "caml_spacetime_ocaml_direct_call_point_uninitialized"
-          "noalloc"
-
-      external indirect_call_point_uninitialized : ocaml_node -> int -> bool
-        = "caml_spacetime_only_works_for_native_code"
-          "caml_spacetime_ocaml_indirect_call_point_uninitialized"
-          "noalloc"
-
-      external allocation_point_uninitialized : ocaml_node -> int -> bool
-        = "caml_spacetime_only_works_for_native_code"
-          "caml_spacetime_ocaml_indirect_call_point_uninitialized"
-          "noalloc"
+        match t.part_of_shape with
+        | Shape_table.Direct_call _ ->
+          let direct_call_point =
+            match classify_direct_call_point t.node t.offset with
+            | 0 -> To_uninstrumented t
+            | 1 -> To_ocaml t
+            | 2 -> To_foreign t
+            | _ -> assert false
+          in
+          Direct_call direct_call_point
+        | Shape_table.Indirect_call _ -> Indirect_call t
+        | Shape_table.Allocation_point _ -> Allocation t
 
       let next t =
+        match t.remaining_layout with
+        | [] -> None
+        | part_of_shape::remaining_layout ->
+          let size = Shape_table.part_of_shape_size t.part_of_shape in
+          let offset = t.offset + size in
+          assert (offset < Obj.size (Obj.repr t.node));
+          let t =
+            { node = t.node;
+              offset;
+              part_of_shape;
+              remaining_layout;
+              shape_table = t.shape_table;
+            }
+          in
+          Some t
 
+      let is_uninitialised t =
+        (* We use [None] rather than [()] to guard against a clever
+           compiler. *)
+        (Obj.obj (Obj.field (Obj.repr t.node) t.offset)) == None
 
-        let offset = next t.node t.offset in
-        if offset < 0 then None
-        else Some { t with offset; }
+      let rec skip_uninitialised t =
+        if not (is_uninitialised t) then Some t
+        else
+          match next t with
+          | None -> None
+          | Some t -> skip_uninitialised t
     end
 
     module Node = struct
@@ -301,20 +326,16 @@ module Trace = struct
         match Shape_table.find_exn (function_identifier t) shape_table with
         | exception Not_found -> None
         | [] -> None
-        | layout ->
-          let offset =
-            Field.skip_uninitialized t (Lazy.force num_header_words)
-          in
-          let iterator =
+        | part_of_shape::remaining_layout ->
+          let t =
             { node = t;
               offset = Lazy.force num_header_words;
-              part_of_shape_size = ...;
+              part_of_shape;
+              remaining_layout;
               shape_table;
             }
           in
-
-        if offset < 0 then None
-        else Some { node = t; offset; }
+          Field.skip_uninitialised t
     end
   end
 
@@ -416,7 +437,7 @@ module Trace = struct
 
   let root t = t
 
-  let debug_ocaml t ~resolve_return_address =
+  let debug_ocaml t ~shape_table ~resolve_return_address =
     let next_id = ref 0 in
     let visited = ref Node.Map.empty in
     let print_backtrace backtrace =
@@ -536,7 +557,7 @@ module Trace = struct
               end;
               iter_fields (index + 1) (F.next field)
           in
-          iter_fields 0 (O.fields node);
+          iter_fields 0 (O.fields node ~shape_table);
           Printf.printf "End of node %d.\n%!" id
         | Node.Foreign node ->
           Printf.printf "Node %d (C node):\n%!" id;
@@ -575,7 +596,7 @@ module Trace = struct
     | None -> Printf.printf "Trace is empty.\n%!"
     | Some node -> print_node node ~backtrace:[]
 
-  let to_json t channel
+  let to_json t channel ~shape_table
       ~(resolve_address : ?long:unit -> Program_counter.OCaml.t -> string) =
     output_string channel "{\n";
     output_string channel "\"nodes\":[\n";
@@ -641,7 +662,7 @@ module Trace = struct
               end;
               iter_fields (F.next field)
           in
-          iter_fields (O.fields node)
+          iter_fields (O.fields node ~shape_table)
         | Node.Foreign node ->
           let name =
             (* CR mshinwell: instead of doing this we should find out the
@@ -777,7 +798,7 @@ module Trace = struct
               end;
               iter_fields (F.next field)
           in
-          iter_fields (O.fields node)
+          iter_fields (O.fields node ~shape_table)
         | Node.Foreign node ->
           let rec iter_fields = function
             | None -> ()

@@ -363,7 +363,7 @@ let bound_error_label ?label dbg ~spacetime =
         bd_spacetime = spacetime; } :: !bound_error_sites;
     lbl_bound_error
   end else begin
-    if fst !bound_error_call = 0 then begin
+    if fst (fst !bound_error_call) = 0 then begin
       bound_error_call := ((new_label(), (label, dbg)), spacetime)
     end;
     fst (fst !bound_error_call)
@@ -392,7 +392,7 @@ let emit_call_bound_errors () =
     begin match snd (fst !bound_error_call) with
     | None, _dbg -> ()
     | Some label, dbg ->
-      def_label (record_frame_label ?label Reg.Set.empty dbg)
+      def_label (record_frame_label ~label Reg.Set.empty dbg)
     end
   end
 
@@ -701,7 +701,9 @@ let emit_instr fallthrough i =
             I.mov (int n) rax;
             emit_call "caml_allocN"
         end;
-        record_frame_label ?label:label_after_call_gc i.live Debuginfo.none;
+        let _label =
+          record_frame_label ?label:label_after_call_gc i.live Debuginfo.none
+        in
         I.lea (mem64 NONE 8 R15) (res i 0)
       end
   | Lop(Iintop(Icomp cmp)) ->
@@ -941,7 +943,7 @@ let fundecl fundecl =
   stack_offset := 0;
   call_gc_sites := [];
   bound_error_sites := [];
-  bound_error_call := 0, None;
+  bound_error_call := (0, (None, Debuginfo.none)), None;
   all_functions := fundecl :: !all_functions;
   D.text ();
   D.align 16;

@@ -352,7 +352,7 @@ class virtual instruction_selection = object (self)
       (* Leave space for a direct call point.  We cannot easily insert any
          instrumentation code, so the fields are filled in instead by
          [caml_spacetime_caml_garbage_collection]. *)
-      let label = Cmm.new_label ()
+      let label = Cmm.new_label () in
       let index =
         next_index_within_node ~part_of_shape:M.Direct_call_point ~label
       in
@@ -378,10 +378,9 @@ class virtual instruction_selection = object (self)
   method select_checkbound () =
     (* This follows [select_allocation], above. *)
     if self#can_instrument () then begin
-      let label = Cmm.new_label ()
+      let label = Cmm.new_label () in
       let index =
-        next_index_within_node ~part_of_shape:M.Direct_call_point
-          ~location:M.Bounds_check_failure
+        next_index_within_node ~part_of_shape:M.Direct_call_point ~label
       in
       Mach.Icheckbound {
         label_after_error = Some label;

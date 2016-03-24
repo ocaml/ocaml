@@ -69,10 +69,6 @@ CAMLprim value caml_spacetime_node_num_header_words(value unit)
 
 CAMLprim value caml_spacetime_is_ocaml_node(value node)
 {
-  if (!(Is_ocaml_node(node) || Is_c_node(node))) {
-    printf("is_ocaml_node: (value) node = %p has the wrong tag\n",
-      (void*) node);
-  }
   Assert(Is_ocaml_node(node) || Is_c_node(node));
   return Val_bool(Is_ocaml_node(node));
 }
@@ -89,90 +85,24 @@ CAMLprim value caml_spacetime_ocaml_tail_chain(value node)
   return Tail_link(node);
 }
 
-CAMLprim value caml_spacetime_ocaml_node_skip_uninitialized
+CAMLprim value caml_spacetime_classify_direct_call_point
       (value node, value offset)
 {
-  uintnat field = Long_val(offset);
+  uintnat field;
+  value callee_node;
 
   Assert(Is_ocaml_node(node));
-  Assert(field >= Node_num_header_words);
-  Assert(field < Wosize_val(node));
 
-  for (/* nothing */; field < Wosize_val(node); field++) {
-    value entry;
+  field = Long_val(offset);
 
-    entry = Field(node, field);
-
-    if (entry == Val_unit) {
-      continue;
-    }
-
-    if (entry == (value) 3) /*(Encode_tail_caller_node(node))*/ {
-      /* Middle word of uninitialized direct tail call point. */
-      Assert (field >= Node_num_header_words + 1);
-      field++; /* skip the node pointer (third word of the group) */
-      continue;
-    }
-    return Val_long(field);
+  callee_node = Direct_callee_node(node, field);
+  if (callee_node == Val_unit) {
+    return Val_long(0);  /* direct call point to uninstrumented code */
+  } else if (Is_ocaml_node(callee_node)) {
+    return Val_long(1);  /* direct call point to OCaml code */
+  } else {
+    return Val_long(2);  /* direct call point to non-OCaml code */
   }
-
-  return Val_long(-1);
-}
-
-CAMLprim value caml_spacetime_ocaml_node_next(value node,
-      value offset)
-{
-#if 0
-  uintnat field = Long_val(offset);
-
-  Assert(Is_ocaml_node(node));
-  Assert(field >= Node_num_header_words);
-  Assert(field < Wosize_val(node));
-
-  switch (Call_or_allocation_point(node, field)) {
-    case CALL: {
-      value second_word;
-      Assert(field < Wosize_val(node) - 1);
-      second_word = Indirect_pc_linked_list(node, field);
-      Assert(second_word != Val_unit);
-      if (Is_block(second_word)) {
-        /* This is an indirect call point. */
-        field += 2;
-      }
-      else {
-        /* This is a direct call point. */
-        Assert(field < Wosize_val(node) - 2);
-        field += 3;
-      }
-      break;
-    }
-
-    case ALLOCATION:
-      Assert(field < Wosize_val(node) - 1);
-      field += 2;
-      break;
-
-    default:
-      Assert(0);
-  }
-
-  if (field < Wosize_val(node)) {
-    return caml_spacetime_ocaml_node_skip_uninitialized
-        (node, Val_long(field));
-  }
-#endif
-
-  return Val_long(-1);
-}
-
-CAMLprim value caml_spacetime_ocaml_allocation_point_program_counter
-      (value node, value offset)
-{
-return Val_unit;
-#if 0
-  return caml_copy_int64((uint64_t) Decode_alloc_point_pc(
-    Alloc_point_pc(node, Long_val(offset))));
-#endif
 }
 
 CAMLprim value caml_spacetime_ocaml_allocation_point_annotation
@@ -181,16 +111,6 @@ CAMLprim value caml_spacetime_ocaml_allocation_point_annotation
   uintnat profinfo_shifted;
   profinfo_shifted = (uintnat) Alloc_point_profinfo(node, Long_val(offset));
   return Val_long(profinfo_shifted >> PROFINFO_SHIFT);
-}
-
-CAMLprim value caml_spacetime_ocaml_direct_call_point_call_site
-      (value node, value offset)
-{
-return Val_unit;
-#if 0
-  return caml_copy_int64((int64_t) Decode_call_point_pc(
-      Direct_pc_call_site(node, Long_val(offset))));
-#endif
 }
 
 CAMLprim value caml_spacetime_ocaml_direct_call_point_callee
@@ -204,16 +124,6 @@ CAMLprim value caml_spacetime_ocaml_direct_call_point_callee_node
       (value node, value offset)
 {
   return Direct_callee_node(node, Long_val(offset));
-}
-
-CAMLprim value caml_spacetime_ocaml_indirect_call_point_call_site
-      (value node, value offset)
-{
-#if 0
-  return caml_copy_int64((int64_t) Decode_call_point_pc(
-    Indirect_pc_call_site(node, Long_val(offset))));
-#endif
-  return Val_unit;
 }
 
 CAMLprim value caml_spacetime_ocaml_indirect_call_point_callees
@@ -242,11 +152,11 @@ CAMLprim value caml_spacetime_c_node_is_call(value node)
 CAMLprim value caml_spacetime_c_node_next(value node)
 {
   c_node* c_node;
-/*printf("c_node_next: value node=%p\n", (void*) node);*/
+
   Assert(node != (value) NULL);
   Assert(Is_c_node(node));
   c_node = caml_spacetime_c_node_of_stored_pointer_not_null(node);
-/*printf("c_node_next: next ptr=%p\n", (void*) c_node->next);*/
+
   Assert(c_node->next == Val_unit || Is_c_node(c_node->next));
   return c_node->next;
 }
