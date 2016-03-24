@@ -677,8 +677,12 @@ let emit_instr fallthrough i =
         end else
           I.cmp (mem64_rip QWORD (emit_symbol "caml_young_limit")) r15;
         let lbl_call_gc = new_label() in
+        let dbg =
+          if not Config.spacetime then Debuginfo.none
+          else i.dbg
+        in
         let lbl_frame =
-          record_frame_label ?label:label_after_call_gc i.live Debuginfo.none
+          record_frame_label ?label:label_after_call_gc i.live dbg
         in
         I.jb (label lbl_call_gc);
         I.lea (mem64 NONE 8 R15) (res i 0);

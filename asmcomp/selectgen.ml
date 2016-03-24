@@ -34,7 +34,7 @@ let oper_result_type = function
       | Single | Double | Double_u -> typ_float
       | _ -> typ_int
       end
-  | Calloc -> typ_val
+  | Calloc _ -> typ_val
   | Cstore (c, _) -> typ_void
   | Caddi | Csubi | Cmuli | Cmulhi | Cdivi | Cmodi |
     Cand | Cor | Cxor | Clsl | Clsr | Casr |
@@ -166,6 +166,7 @@ let debuginfo_op = function
   | Craise (_, dbg) -> dbg
   | Ccheckbound dbg -> dbg
   | Cprogram_counter dbg -> dbg
+  | Calloc dbg -> dbg
   | _ -> Debuginfo.none
 
 (* Registers for catch constructs *)
@@ -200,7 +201,7 @@ method is_simple_expr = function
   | Cop(op, args) ->
       begin match op with
         (* The following may have side effects *)
-      | Capply _ | Cextcall _ | Calloc | Cstore _ | Craise _ -> false
+      | Capply _ | Cextcall _ | Calloc _ | Cstore _ | Craise _ -> false
         (* Labels must never be moved *)
       | Clabel _ -> false
         (* The remaining operations are simple if their args are *)
@@ -286,7 +287,7 @@ method select_operation op args =
         (Istore(chunk, addr, is_assign), [arg2; eloc])
         (* Inversion addr/datum in Istore *)
       end
-  | (Calloc, _) -> (self#select_allocation 0), args
+  | (Calloc dbg, _) -> (self#select_allocation 0), args
   | (Caddi, _) -> self#select_arith_comm Iadd args
   | (Csubi, _) -> self#select_arith Isub args
   | (Cmuli, _) -> self#select_arith_comm Imul args
@@ -611,7 +612,7 @@ method emit_expr env exp =
                 Ialloc { words = size; spacetime_index; label_after_call_gc; }
               in
               let args = self#select_allocation_args env in
-              self#insert (Iop op) args rd;
+              self#insert_debug (Iop op) dbg args rd;
               self#emit_stores env new_args rd;
               Some rd
           | Ispacetime_node_hole ->

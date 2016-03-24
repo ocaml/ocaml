@@ -58,7 +58,7 @@ let operation = function
   | Cextcall(lbl, ty, alloc, d) ->
       Printf.sprintf "extcall \"%s\"%s" lbl (Debuginfo.to_string d)
   | Cload c -> Printf.sprintf "load %s" (chunk c)
-  | Calloc -> "alloc"
+  | Calloc d -> "alloc" ^ Debuginfo.to_string d
   | Cstore (c, init) ->
     let init =
       match init with

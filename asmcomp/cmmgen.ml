@@ -441,10 +441,10 @@ let test_bool = function
 
 (* Float *)
 
-let box_float dbg c = Cop(Calloc, [alloc_float_header dbg; c])
+let box_float dbg c = Cop(Calloc dbg, [alloc_float_header dbg; c])
 
 let rec unbox_float = function
-    Cop(Calloc, [header; c]) -> c
+    Cop(Calloc _, [header; c]) -> c
   | Clet(id, exp, body) -> Clet(id, exp, unbox_float body)
   | Cifthenelse(cond, e1, e2) ->
       Cifthenelse(cond, unbox_float e1, unbox_float e2)
@@ -457,7 +457,7 @@ let rec unbox_float = function
 (* Complex *)
 
 let box_complex dbg c_re c_im =
-  Cop(Calloc, [alloc_floatarray_header 2 dbg; c_re; c_im])
+  Cop(Calloc dbg, [alloc_floatarray_header 2 dbg; c_re; c_im])
 
 let complex_re c = Cop(Cload Double_u, [c])
 let complex_im c = Cop(Cload Double_u,
@@ -640,7 +640,7 @@ let call_cached_method obj tag cache pos args dbg =
 
 let make_alloc_generic set_fn dbg tag wordsize args =
   if wordsize <= Config.max_young_wosize then
-    Cop(Calloc, Cblockheader(block_header tag wordsize, dbg) :: args)
+    Cop(Calloc dbg, Cblockheader(block_header tag wordsize, dbg) :: args)
   else begin
     let id = Ident.create "alloc" in
     let rec fill_fields idx = function
@@ -798,7 +798,7 @@ let box_int dbg bi arg =
         if bi = Pint32 && size_int = 8 && big_endian
         then Cop(Clsl, [arg; Cconst_int 32])
         else arg in
-      Cop(Calloc, [alloc_header_boxed_int bi dbg;
+      Cop(Calloc dbg, [alloc_header_boxed_int bi dbg;
                    Cconst_symbol(operations_boxed_int bi);
                    arg'])
 
@@ -822,15 +822,15 @@ let split_int64_for_32bit_target arg =
 
 let rec unbox_int bi arg =
   match arg with
-    Cop(Calloc, [hdr; ops; Cop(Clsl, [contents; Cconst_int 32])])
+    Cop(Calloc _, [hdr; ops; Cop(Clsl, [contents; Cconst_int 32])])
     when bi = Pint32 && size_int = 8 && big_endian ->
       (* Force sign-extension of low 32 bits *)
       Cop(Casr, [Cop(Clsl, [contents; Cconst_int 32]); Cconst_int 32])
-  | Cop(Calloc, [hdr; ops; contents])
+  | Cop(Calloc _, [hdr; ops; contents])
     when bi = Pint32 && size_int = 8 && not big_endian ->
       (* Force sign-extension of low 32 bits *)
       Cop(Casr, [Cop(Clsl, [contents; Cconst_int 32]); Cconst_int 32])
-  | Cop(Calloc, [hdr; ops; contents]) ->
+  | Cop(Calloc _, [hdr; ops; contents]) ->
       contents
   | Clet(id, exp, body) -> Clet(id, exp, unbox_int bi body)
   | Cifthenelse(cond, e1, e2) ->
@@ -1476,7 +1476,7 @@ let rec transl env e =
               int_const f.arity ::
               Cconst_symbol f.label ::
               transl_fundecls (pos + 4) rem in
-      Cop(Calloc, transl_fundecls 0 fundecls)
+      Cop(Calloc Debuginfo.none, transl_fundecls 0 fundecls)
   | Uoffset(arg, offset) ->
       (* produces a valid Caml value, pointing just after an infix header *)
       let ptr = transl env arg in
@@ -2924,14 +2924,14 @@ let rec intermediate_curry_functions arity num =
       fun_args = [arg, typ_val; clos, typ_val];
       fun_body =
          if arity - num > 2 && arity <= max_arity_optimized then
-           Cop(Calloc,
+           Cop(Calloc Debuginfo.none,
                [alloc_closure_header 5 Debuginfo.none;
                 Cconst_symbol(name1 ^ "_" ^ string_of_int (num+1));
                 int_const (arity - num - 1);
                 Cconst_symbol(name1 ^ "_" ^ string_of_int (num+1) ^ "_app");
                 Cvar arg; Cvar clos])
          else
-           Cop(Calloc,
+           Cop(Calloc Debuginfo.none,
                      [alloc_closure_header 4 Debuginfo.none;
                       Cconst_symbol(name1 ^ "_" ^ string_of_int (num+1));
                       int_const 1; Cvar arg; Cvar clos]);
