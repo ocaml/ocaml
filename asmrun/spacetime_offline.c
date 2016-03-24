@@ -39,8 +39,6 @@
 
 #include "../config/s.h"
 
-const uintnat caml_profinfo_lowest = (uintnat) 2;
-
 CAMLprim value caml_spacetime_compare_node(
       value node1, value node2)
 {

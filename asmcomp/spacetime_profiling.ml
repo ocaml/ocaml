@@ -97,7 +97,7 @@ let code_for_function_prologue ~function_name =
           Clet (is_new_node,
             Cop (Cextcall ("caml_spacetime_allocate_node",
               [| Int |], false, Debuginfo.none),
-              [Cconst_int (1 + !index_within_node);
+              [Cconst_int (1 (* header *) + !index_within_node);
                Cvar pc;
                Cvar node_hole;
               ]),

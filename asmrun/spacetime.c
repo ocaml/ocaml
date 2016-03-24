@@ -14,7 +14,7 @@
 
 /* CR mshinwell: remove pragma? */
 
-#pragma GCC optimize ("O3")
+#pragma GCC optimize ("O0")
 
 #include <stdio.h>
 #include <stdint.h>
@@ -702,7 +702,7 @@ void caml_spacetime_caml_garbage_collection(void)
      current OCaml node before [caml_garbage_collection] can continue.
 
      On entry we expect:
-     1. [caml_allocation_trie_node_ptr] to point to the first of the three
+     1. [caml_allocation_trie_node_ptr] to point to the first of the two
         fields of a direct call point inside an OCaml node (which is
         arranged by code in asmcomp/amd64/emit.mlp); and
      2. [caml_gc_regs] to point at the usual GC register array on the stack
@@ -727,7 +727,6 @@ CAMLprim uintnat caml_spacetime_generate_profinfo (void* profinfo_words)
      function. */
 
   value node;
-  uintnat offset;
   uintnat profinfo;
 
   caml_spacetime_profinfo++;
@@ -742,16 +741,14 @@ CAMLprim uintnat caml_spacetime_generate_profinfo (void* profinfo_words)
      It's done like this to avoid re-calculating the place in the node
      (which already has to be done in the OCaml-generated code run before
      this function). */
-  node = (value) (((uintnat*) profinfo_words) - 1);
-  offset = 0;
-
-  Assert(Alloc_point_profinfo(node, offset) == Val_unit);
+  node = (value) profinfo_words;
+  Assert(Alloc_point_profinfo(node, 0) == Val_unit);
 
   /* The profinfo value is stored shifted to reduce the number of
      instructions required on the OCaml side. */
   profinfo = Encode_alloc_point_profinfo(profinfo << PROFINFO_SHIFT);
 
-  Alloc_point_profinfo(node, offset) = profinfo;
+  Alloc_point_profinfo(node, 0) = profinfo;
 
   return profinfo;
 }
