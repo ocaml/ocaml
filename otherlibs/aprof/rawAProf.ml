@@ -268,7 +268,9 @@ module Trace = struct
         | Shape_table.Direct_call _ ->
           let direct_call_point =
             match classify_direct_call_point t.node t.offset with
-            | 0 -> To_uninstrumented t
+            | 0 ->
+              (* We should never classify uninitialised call points here. *)
+              assert false
             | 1 -> To_ocaml t
             | 2 -> To_foreign t
             | _ -> assert false
@@ -277,7 +279,26 @@ module Trace = struct
         | Shape_table.Indirect_call _ -> Indirect_call t
         | Shape_table.Allocation_point _ -> Allocation t
 
-      let next t =
+      (* CR-soon mshinwell: change to "is_unused"? *)
+      let is_uninitialised t =
+        let offset_to_node_hole =
+          match t.part_of_shape with
+          | Shape_table.Direct_call _ -> Some 1
+          | Shape_table.Indirect_call _ -> Some 0
+          | Shape_table.Allocation_point _ -> None
+        in
+        match offset_to_node_hole with
+        | None -> false
+        | Some offset_to_node_hole ->
+          (* There are actually two cases:
+             1. A normal unused node hole, which says Val_unit;
+             2. An unused tail call point.  This will contain a pointer to the
+                start of the current node, but it also has the bottom bit
+                set. *)
+          let offset = t.offset + offset_to_node_hole in
+          Obj.is_int (Obj.field (Obj.repr t.node) offset)
+
+      let rec next t =
         match t.remaining_layout with
         | [] -> None
         | part_of_shape::remaining_layout ->
@@ -292,19 +313,11 @@ module Trace = struct
               shape_table = t.shape_table;
             }
           in
-          Some t
+          skip_uninitialised t
 
-      let is_uninitialised t =
-        (* We use [None] rather than [()] to guard against a clever
-           compiler. *)
-        (Obj.obj (Obj.field (Obj.repr t.node) t.offset)) == None
-
-      let rec skip_uninitialised t =
+      and skip_uninitialised t =
         if not (is_uninitialised t) then Some t
-        else
-          match next t with
-          | None -> None
-          | Some t -> skip_uninitialised t
+        else next t
     end
 
     module Node = struct

@@ -94,8 +94,9 @@ CAMLprim value caml_spacetime_classify_direct_call_point
   field = Long_val(offset);
 
   callee_node = Direct_callee_node(node, field);
-  if (callee_node == Val_unit) {
-    return Val_long(0);  /* direct call point to uninstrumented code */
+  if (!Is_block(callee_node)) {
+    /* An unused call point (may be a tail call point). */
+    return Val_long(0);
   } else if (Is_ocaml_node(callee_node)) {
     return Val_long(1);  /* direct call point to OCaml code */
   } else {
