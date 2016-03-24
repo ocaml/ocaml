@@ -20,7 +20,7 @@ let err = Syntaxerr.ill_formed_ast
 
 let empty_record loc = err loc "Records cannot be empty."
 let empty_variant loc = err loc "Variant types cannot be empty."
-let invalid_tuple loc = err loc "Tuples must have at least 2 components."
+let invalid_tuple loc = err loc "Tuples must have at least 1 component."
 let no_args loc = err loc "Function application with no argument."
 let empty_let loc = err loc "Let with no bindings."
 let empty_type loc = err loc "Type declarations cannot be empty."
@@ -48,7 +48,7 @@ let iterator =
     super.typ self ty;
     let loc = ty.ptyp_loc in
     match ty.ptyp_desc with
-    | Ptyp_tuple ([] | [_]) -> invalid_tuple loc
+    | Ptyp_tuple ([]) -> invalid_tuple loc
     | Ptyp_class (id, _) -> simple_longident id
     | Ptyp_package (_, cstrs) ->
       List.iter (fun (id, _) -> simple_longident id) cstrs
@@ -58,7 +58,7 @@ let iterator =
     super.pat self pat;
     let loc = pat.ppat_loc in
     match pat.ppat_desc with
-    | Ppat_tuple ([] | [_]) -> invalid_tuple loc
+    | Ppat_tuple ([]) -> invalid_tuple loc
     | Ppat_record ([], _) -> empty_record loc
     | Ppat_construct (id, _) -> simple_longident id
     | Ppat_record (fields, _) ->
@@ -69,7 +69,7 @@ let iterator =
     super.expr self exp;
     let loc = exp.pexp_loc in
     match exp.pexp_desc with
-    | Pexp_tuple ([] | [_]) -> invalid_tuple loc
+    | Pexp_tuple ([]) -> invalid_tuple loc
     | Pexp_record ([], _) -> empty_record loc
     | Pexp_apply (_, []) -> no_args loc
     | Pexp_let (_, [], _) -> empty_let loc
