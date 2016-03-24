@@ -87,7 +87,16 @@ let intop = function
   | Ilsr -> " >>u "
   | Iasr -> " >>s "
   | Icomp cmp -> intcomp cmp
-  | Icheckbound _ -> " check > "
+  | Icheckbound { label_after_error; spacetime_index; } ->
+    if not Config.spacetime then " check > "
+    else
+      Printf.sprintf "check[lbl=%s,index=%d] > "
+        begin
+          match label_after_error with
+          | None -> ""
+          | Some lbl -> string_of_int lbl
+        end
+        spacetime_index
 
 let test tst ppf arg =
   match tst with

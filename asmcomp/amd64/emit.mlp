@@ -341,8 +341,9 @@ let emit_call_gc gc =
   I.jmp (label gc.gc_return_lbl)
 
 (* Record calls to caml_ml_array_bound_error.
-   In -g mode, we maintain one call to caml_ml_array_bound_error
-   per bound check site.  Without -g, we can share a single call. *)
+   In -g mode, or when using Spacetime profiling, we maintain one call to
+   caml_ml_array_bound_error per bound check site.  Without -g, we can share
+   a single call. *)
 
 type bound_error_call =
   { bd_lbl: label;                      (* Entry label *)
@@ -354,8 +355,10 @@ type bound_error_call =
 let bound_error_sites = ref ([] : bound_error_call list)
 let bound_error_call = ref ((0, (None, Debuginfo.none)), None)
 
+(* CR mshinwell: tidy this code up *)
+
 let bound_error_label ?label dbg ~spacetime =
-  if !Clflags.debug then begin
+  if !Clflags.debug || Config.spacetime then begin
     let lbl_bound_error = new_label() in
     let lbl_frame = record_frame_label ?label Reg.Set.empty dbg in
     bound_error_sites :=
@@ -701,9 +704,10 @@ let emit_instr fallthrough i =
             I.mov (int n) rax;
             emit_call "caml_allocN"
         end;
-        let _label =
+        let label =
           record_frame_label ?label:label_after_call_gc i.live Debuginfo.none
         in
+        def_label label;
         I.lea (mem64 NONE 8 R15) (res i 0)
       end
   | Lop(Iintop(Icomp cmp)) ->
