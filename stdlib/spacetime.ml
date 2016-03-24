@@ -78,6 +78,9 @@ module Shape_table = struct
     = "caml_spacetime_only_works_for_native_code"
       "caml_spacetime_marshal_shape_table"
 
+  let marshal t chan =
+    marshal t chan
+
   (* CR-soon mshinwell: add support for freeing the structure *)
 end
 

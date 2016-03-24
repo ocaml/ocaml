@@ -101,7 +101,7 @@ module Shape_table = struct
 
   type t = part_of_shape list Int64_map.t
 
-  let unmarshal chn : t =
+  let demarshal chn : t =
     let raw : raw = Marshal.from_channel chn in
     List.fold_left (fun map (key, data) -> Int64_map.add key data map)
       Int64_map.empty
@@ -891,7 +891,7 @@ module Heap_snapshot = struct
       let num_snapshots : int = Marshal.from_channel chn in
       let time_of_writer_close : float = Marshal.from_channel chn in
       let frame_table : Frame_table.t = Marshal.from_channel chn in
-      let shape_table : Shape_table.t = Marshal.from_channel chn in
+      let shape_table = Shape_table.demarshal chn in
       let num_threads : int = Marshal.from_channel chn in
       let traces_by_thread = Array.init num_threads (fun _ -> None) in
       let finaliser_traces_by_thread =

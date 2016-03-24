@@ -25,6 +25,7 @@
 
 #include "caml/alloc.h"
 #include "caml/backtrace_prim.h"
+#include "caml/custom.h"
 #include "caml/fail.h"
 #include "caml/gc.h"
 #include "caml/intext.h"
@@ -348,15 +349,15 @@ caml_spacetime_return_address_of_frame_descriptor(value v_descr)
   return caml_copy_int64(descr->retaddr);
 }
 
-extern struct caml_custom_operations caml_int64_ops;  /* ints.c */
+extern struct custom_operations caml_int64_ops;  /* ints.c */
 
 static value
 allocate_int64_outside_heap(uint64_t i)
 {
   value v;
 
-  v = allocate_outside_heap_with_tag(3 * sizeof(value), Custom_tag);
-  Field(v, 0) = (value) &caml_int64_ops;
+  v = allocate_outside_heap_with_tag(2 * sizeof(value), Custom_tag);
+  Custom_ops_val(v) = &caml_int64_ops;
   Int64_val(v) = i;
 
   return v;

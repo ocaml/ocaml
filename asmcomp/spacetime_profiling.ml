@@ -286,7 +286,8 @@ class virtual instruction_selection = object (self)
         self#instrument_indirect_call ~env ~callee:arg.(0)
           ~is_tail:true ~label;
         Some label
-      | M.Iop (M.Iextcall (lbl, _)) ->
+      | M.Iop (M.Iextcall (lbl, true)) ->
+        (* N.B. No need to instrument "noalloc" external calls. *)
         let label = Cmm.new_label () in
         assert (Array.length arg = 0);
         self#instrument_direct_call ~env ~lbl ~is_tail:false ~label;
