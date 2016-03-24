@@ -718,11 +718,14 @@ G(caml_system__frametable):
         .value  -1          /* negative frame size => use callback link */
         .value  0           /* no roots here */
         .align  EIGHT_ALIGN
+        .quad   16
+        .quad   0
+        .string "amd64.S"
 
+#ifdef WITH_SPACETIME
         .data
         .globl  G(caml_system__spacetime_shapes)
         .align  EIGHT_ALIGN
-#ifdef WITH_SPACETIME
 G(caml_system__spacetime_shapes):
         .quad   LBL(107)    /* in caml_start_program / caml_callback* */
         .quad   1           /* indirect call point to OCaml code */

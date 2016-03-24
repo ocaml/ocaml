@@ -96,6 +96,19 @@ void caml_spacetime_initialize(void)
   main_spacetime_shape_table.next = NULL;
 }
 
+void caml_spacetime_register_shapes(void* dynlinked_table)
+{
+  shape_table* table;
+  table = (shape_table*) malloc(sizeof(shape_table));
+  if (table == NULL) {
+    fprintf(stderr, "Out of memory whilst registering shape table");
+    abort();
+  }
+  table->table = (uint64_t**) dynlinked_table;
+  table->next = caml_spacetime_shape_tables;
+  caml_spacetime_shape_tables = table;
+}
+
 CAMLprim value caml_spacetime_trie_is_initialized (value v_unit)
 {
   return (caml_spacetime_trie_root == Val_unit) ? Val_false : Val_true;

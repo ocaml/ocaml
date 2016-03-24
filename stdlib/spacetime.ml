@@ -70,13 +70,11 @@ module Shape_table = struct
      The whole structure is allocated outside of the OCaml heap. *)
   type t = (Int64.t * (part_of_shape list)) list
 
-let _f (t : t) = ()
+  external get : unit -> t
+    = "caml_spacetime_only_works_for_native_code"
+      "caml_spacetime_shape_table" "noalloc"
 
   (* CR-soon mshinwell: add support for freeing the structure *)
-
-(*
-  external get : unit -> t = "caml_spacetime_shape_table" "noalloc"
-*)
 end
 
 module Heap_snapshot = struct
@@ -112,7 +110,7 @@ module Heap_snapshot = struct
       Marshal.to_channel chn t.next_index [];
       Marshal.to_channel chn (Sys.time ()) [];
       Marshal.to_channel chn (Frame_table.get ()) [];
-(*      Marshal.to_channel chn (Shape_table.get ()) []; *)
+      Marshal.to_channel chn (Shape_table.get ()) [];
       marshal_global_trace chn;
       close_out chn;
       t.closed <- true

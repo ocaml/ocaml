@@ -331,6 +331,8 @@ caml_spacetime_get_frame_descriptor(value v_index)
     return Val_long(0 /* None */);
   }
 
+printf("descr=%p, retaddr=%p\n",descr,(void*) (descr->retaddr));
+
   v_result = caml_alloc_small(1, 1 /* Some */);
   Field(v_result, 0) = caml_val_raw_backtrace_slot((backtrace_slot) descr);
 
@@ -355,7 +357,7 @@ allocate_int64_outside_heap(uint64_t i)
 {
   value v;
 
-  v = allocate_outside_heap_with_tag(2, Custom_tag);
+  v = allocate_outside_heap_with_tag(3 * sizeof(value), Custom_tag);
   Field(v, 0) = (value) &caml_int64_ops;
   Int64_val(v) = i;
 
