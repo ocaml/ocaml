@@ -1777,7 +1777,7 @@ let rec do_make_string_test_tree arg sw delta d =
     bind_sw
       (Lprim
          (prim_string_compare,
-          [arg; Lconst (Const_immstring s)];))
+          [arg; Lconst (Const_immstring s)]))
       (fun r ->
         tree_way_test r
           (do_make_string_test_tree arg lt delta d)
