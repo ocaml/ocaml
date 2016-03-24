@@ -87,6 +87,7 @@ let () =
     (H.num_blocks_in_major_heap_with_profinfo snapshot0);
 *)
   let frame_table = H.Series.frame_table series in
+  let shape_table = H.Series.shape_table series in
   let resolve_return_address ?long loc =
     match RawAProf.Frame_table.find_exn frame_table loc with
     | exception Not_found -> None
@@ -119,5 +120,5 @@ let () =
     | None -> Printf.sprintf "0x%Lx" (RawAProf.Program_counter.OCaml.to_int64 loc)
     | Some addr -> addr
   in
-  RawAProf.Trace.to_json trace chn ~resolve_address;
+  RawAProf.Trace.to_json trace chn ~resolve_address ~shape_table;
   close_out chn
