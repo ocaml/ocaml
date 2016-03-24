@@ -727,8 +727,9 @@ G(caml_system__frametable):
         .globl  G(caml_system__spacetime_shapes)
         .align  EIGHT_ALIGN
 G(caml_system__spacetime_shapes):
-        .quad   LBL(107)    /* in caml_start_program / caml_callback* */
+        .quad   G(caml_start_program)
         .quad   1           /* indirect call point to OCaml code */
+        .quad   LBL(107)    /* in caml_start_program / caml_callback* */
         .quad   0           /* end of shapes for caml_start_program */
         .quad   0           /* end of shape table */
         .align  EIGHT_ALIGN

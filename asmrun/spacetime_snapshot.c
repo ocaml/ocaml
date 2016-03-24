@@ -331,8 +331,6 @@ caml_spacetime_get_frame_descriptor(value v_index)
     return Val_long(0 /* None */);
   }
 
-printf("descr=%p, retaddr=%p\n",descr,(void*) (descr->retaddr));
-
   v_result = caml_alloc_small(1, 1 /* Some */);
   Field(v_result, 0) = caml_val_raw_backtrace_slot((backtrace_slot) descr);
 
@@ -380,79 +378,61 @@ caml_spacetime_shape_table(value v_unit)
 
   while (table != NULL) {
     uint64_t** table_for_one_unit = table->table;
+
     while (*table_for_one_unit != (uint64_t) 0) {
-      uint64_t* table_for_one_function = *table_for_one_unit;
+      uint64_t* table_for_one_function = *table_for_one_unit++;
+
       while (*table_for_one_function != (uint64_t) 0) {
         value new_list_element, pair, function_address, layout;
 
         function_address =
-          allocate_int64_outside_heap(*table_for_one_function);
+          allocate_int64_outside_heap(*table_for_one_function++);
 
         layout = Val_long(0);  /* the empty list */
         while (*table_for_one_function != (uint64_t) 0) {
           int tag;
-          int has_argument;
+          int stored_tag;
           value part_of_shape;
           value new_part_list_element;
+          value location;
 
+          stored_tag = *table_for_one_function++;
           /* CR mshinwell: share with emit.mlp */
-          switch (*table_for_one_function) {
-            case 1:  /* caml_call_gc */
+          switch (stored_tag) {
+            case 1:  /* direct call to given location */
               tag = 0;
-              has_argument = 0;
               break;
 
-            case 2:  /* bounds check failure */
+            case 2:  /* indirect call to given location */
               tag = 1;
-              has_argument = 0;
               break;
 
-            case 3:  /* direct call to given location */
-              tag = 0;
-              has_argument = 1;
-              break;
-
-            case 4:  /* indirect call to given location */
-              tag = 1;
-              has_argument = 1;
-              break;
-
-            case 5:  /* allocation at given location */
+            case 3:  /* allocation at given location */
               tag = 2;
-              has_argument = 1;
               break;
 
             default:
               assert(0);
           }
 
-          table_for_one_function++;
+          location = allocate_int64_outside_heap(*table_for_one_function++);
 
-          if (!has_argument) {
-            part_of_shape = Val_long(tag);
-          }
-          else {
-            value location;
-
-            location = allocate_int64_outside_heap(*table_for_one_function);
-            table_for_one_function++;
-
-            part_of_shape = allocate_outside_heap_with_tag(1, tag);
-            Field(part_of_shape, 0) = location;
-          }
+          part_of_shape = allocate_outside_heap_with_tag(sizeof(value), tag);
+          Field(part_of_shape, 0) = location;
 
           new_part_list_element =
-            allocate_outside_heap_with_tag(2, 0 /* (::) */);
+            allocate_outside_heap_with_tag(2 * sizeof(value), 0 /* (::) */);
           Field(new_part_list_element, 0) = part_of_shape;
           Field(new_part_list_element, 1) = layout;
           layout = new_part_list_element;
         }
 
-        pair = allocate_outside_heap_with_tag(2, 0);
+        pair = allocate_outside_heap_with_tag(2 * sizeof(value), 0);
         Field(pair, 0) = function_address;
         Field(pair, 1) = layout;
 
-        new_list_element = allocate_outside_heap_with_tag(2, 0 /* (::) */);
+        new_list_element =
+          allocate_outside_heap_with_tag(2 * sizeof(value), 0 /* (::) */);
         Field(new_list_element, 0) = pair;
         Field(new_list_element, 1) = list;
         list = new_list_element;
@@ -460,12 +440,21 @@ caml_spacetime_shape_table(value v_unit)
         Assert(*table_for_one_function == 0);
         table_for_one_function++;
       }
-      table_for_one_unit++;
     }
     table = table->next;
   }
 
   return list;
+}
+
+CAMLprim value caml_spacetime_marshal_shape_table
+      (value v_table, value v_channel)
+{
+  caml_extern_allow_out_of_heap = 1;
+  caml_output_value(v_channel, v_table, Val_long(0));
+  caml_extern_allow_out_of_heap = 0;
+
+  return Val_unit;
 }
 
 #else

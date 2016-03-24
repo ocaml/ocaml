@@ -68,7 +68,7 @@ static per_thread* per_threads = NULL;
 static int num_per_threads = 0;
 
 /* [caml_spacetime_shapes] is defined in the startup file. */
-extern uint64_t** caml_spacetime_shapes;
+extern uint64_t* caml_spacetime_shapes;
 
 static shape_table main_spacetime_shape_table;
 shape_table* caml_spacetime_shape_tables = &main_spacetime_shape_table;
@@ -92,7 +92,7 @@ void caml_spacetime_initialize(void)
 {
   reinitialise_free_node_block();
 
-  main_spacetime_shape_table.table = caml_spacetime_shapes;
+  main_spacetime_shape_table.table = &caml_spacetime_shapes;
   main_spacetime_shape_table.next = NULL;
 }
 

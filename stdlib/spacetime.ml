@@ -74,6 +74,10 @@ module Shape_table = struct
     = "caml_spacetime_only_works_for_native_code"
       "caml_spacetime_shape_table" "noalloc"
 
+  external marshal : t -> out_channel -> unit
+    = "caml_spacetime_only_works_for_native_code"
+      "caml_spacetime_marshal_shape_table"
+
   (* CR-soon mshinwell: add support for freeing the structure *)
 end
 
@@ -110,7 +114,7 @@ module Heap_snapshot = struct
       Marshal.to_channel chn t.next_index [];
       Marshal.to_channel chn (Sys.time ()) [];
       Marshal.to_channel chn (Frame_table.get ()) [];
-      Marshal.to_channel chn (Shape_table.get ()) [];
+      Shape_table.marshal (Shape_table.get ()) chn;
       marshal_global_trace chn;
       close_out chn;
       t.closed <- true
