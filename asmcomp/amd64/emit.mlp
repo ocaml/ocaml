@@ -353,7 +353,7 @@ type bound_error_call =
   }
 
 let bound_error_sites = ref ([] : bound_error_call list)
-let bound_error_call = ref ((0, (None, Debuginfo.none)), None)
+let bound_error_call = ref 0
 
 (* CR mshinwell: tidy this code up *)
 
@@ -366,10 +366,8 @@ let bound_error_label ?label dbg ~spacetime =
         bd_spacetime = spacetime; } :: !bound_error_sites;
     lbl_bound_error
   end else begin
-    if fst (fst !bound_error_call) = 0 then begin
-      bound_error_call := ((new_label(), (label, dbg)), spacetime)
-    end;
-    fst (fst !bound_error_call)
+    if !bound_error_call = 0 then bound_error_call := new_label();
+    !bound_error_call
   end
 
 let emit_call_bound_error bd =
@@ -384,19 +382,9 @@ let emit_call_bound_error bd =
 
 let emit_call_bound_errors () =
   List.iter emit_call_bound_error !bound_error_sites;
-  if fst (fst !bound_error_call) > 0 then begin
-    def_label (fst (fst !bound_error_call));
-    begin match snd !bound_error_call with
-    | None -> ()
-    | Some (node_ptr, index) ->
-      spacetime_before_uninstrumented_call ~node_ptr ~index
-    end;
-    emit_call "caml_ml_array_bound_error";
-    begin match snd (fst !bound_error_call) with
-    | None, _dbg -> ()
-    | Some label, dbg ->
-      def_label (record_frame_label ~label Reg.Set.empty dbg)
-    end
+  if !bound_error_call > 0 then begin
+    def_label !bound_error_call;
+    emit_call "caml_ml_array_bound_error"
   end
 
 (* Names for instructions *)
@@ -947,7 +935,7 @@ let fundecl fundecl =
   stack_offset := 0;
   call_gc_sites := [];
   bound_error_sites := [];
-  bound_error_call := (0, (None, Debuginfo.none)), None;
+  bound_error_call := 0;
   all_functions := fundecl :: !all_functions;
   D.text ();
   D.align 16;
