@@ -315,8 +315,6 @@ CAMLprim value caml_spacetime_allocate_node(
      direct tail call points.  (We cannot just count them and put them at the
      beginning of the node because we need the indexes of elements within the
      node during instruction selection before we have found all call points.)
-     This is now also used for assertion checking in
-     [caml_spacetime_caml_garbage_collection].
   */
 
   for (field = Node_num_header_words; field < size_including_header - 1;
@@ -337,7 +335,8 @@ static c_node* allocate_c_node(void)
   if (end_of_free_node_block - start_of_free_node_block < sizeof(c_node)) {
     reinitialise_free_node_block();
     node = (c_node*) start_of_free_node_block;
-    Assert(end_of_free_node_block - start_of_free_node_block >= sizeof(c_node));
+    Assert(end_of_free_node_block - start_of_free_node_block
+      >= sizeof(c_node));
   }
   start_of_free_node_block += sizeof(c_node);
 
@@ -438,6 +437,8 @@ CAMLprim value* caml_spacetime_indirect_node_hole_ptr
    and can thus accommodate any number of C backtraces leading from
    caml_call_gc.
 */
+/* CR mshinwell: it might in fact be the case now that nothing called from
+   caml_call_gc will do any allocation that ends up on the trie. */
 
 static NOINLINE void* find_trie_node_from_libunwind(int for_allocation,
     struct ext_table** cached_frames)

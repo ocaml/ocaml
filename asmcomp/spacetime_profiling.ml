@@ -15,9 +15,6 @@
 module L = Lambda
 module M = Mach
 
-(* CR mshinwell: Obtain constants by calling C functions so they definitely
-   match the C code. *)
-
 let index_within_node = ref 2 (* Cf. [Node_num_header_words] in the runtime. *)
 (* The [lazy]s are to ensure that we don't create [Ident.t]s at toplevel
    when not using Spacetime profiling.  (This could cause stamps to differ
@@ -407,6 +404,8 @@ class virtual instruction_selection = object (self)
 
   method! after_body f ~spacetime_node_hole ~env_after_prologue
         ~last_insn_of_prologue =
+    (* CR mshinwell: add check to make sure the node size doesn't exceed the
+       chunk size of the allocator *)
     if Config.spacetime then begin
       let node_hole =
         match spacetime_node_hole with
