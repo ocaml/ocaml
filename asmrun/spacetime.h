@@ -131,8 +131,6 @@ extern c_node* caml_spacetime_c_node_of_stored_pointer(value);
 extern c_node* caml_spacetime_c_node_of_stored_pointer_not_null(value);
 extern value caml_spacetime_stored_pointer_of_c_node(c_node* node);
 extern void caml_spacetime_register_thread(value*, value*);
-extern void caml_spacetime_caml_garbage_collection(void);
-extern void caml_spacetime_caml_ml_array_bound_error(void);
 extern void caml_spacetime_register_shapes(void*);
 
 #if defined(SYS_mingw64) || defined(SYS_cygwin)

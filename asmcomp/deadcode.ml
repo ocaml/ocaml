@@ -23,8 +23,14 @@ open Mach
 
 let rec deadcode i =
   match i.desc with
-  | Iend | Ireturn | Iop(Itailcall_ind) | Iop(Itailcall_imm _) | Iraise _ ->
+  | Iend | Ireturn | Iraise _ ->
       (i, Reg.add_set_array i.live i.arg)
+  | Iop(Itailcall_ind) | Iop(Itailcall_imm _) ->
+      let before = Reg.add_set_array i.live i.arg in
+      if not Config.spacetime then
+        i, Reg.add_set_array i.live i.arg
+      else
+        i, Reg.Set.add Proc.loc_spacetime_node_hole before
   | Iop op ->
       let (s, before) = deadcode i.next in
       if Proc.op_is_pure op                     (* no side effects *)
@@ -35,7 +41,16 @@ let rec deadcode i =
         assert (Array.length i.res > 0);  (* sanity check *)
         (s, before)
       end else begin
-        ({i with next = s}, Reg.add_set_array i.live i.arg)
+        let args =
+          if not Config.spacetime then i.arg
+          else
+            match op with
+            | Icall_ind | Icall_imm _ | Iextcall (_, true) ->
+              Array.concat [ [| Proc.loc_spacetime_node_hole |]; i.arg ]
+            | Itailcall_ind | Itailcall_imm _ -> assert false  (* see above *)
+            | _ -> i.arg
+        in
+        ({i with next = s}, Reg.add_set_array i.live args)
       end
   | Iifthenelse(test, ifso, ifnot) ->
       let (ifso', _) = deadcode ifso in

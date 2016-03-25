@@ -102,12 +102,6 @@ CAMLexport void caml_invalid_argument (char const *msg)
 
 CAMLexport void caml_array_bound_error(void)
 {
-#ifdef NATIVE_CODE
-#ifdef WITH_SPACETIME
-#include "spacetime.h"
-  caml_spacetime_caml_array_bound_error();
-#endif
-#endif
   caml_invalid_argument("index out of bounds");
 }
 

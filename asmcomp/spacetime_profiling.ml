@@ -58,6 +58,7 @@ let code_for_function_prologue ~function_name ~node_hole =
   let must_allocate_node = Ident.create "must_allocate_node" in
   let is_new_node = Ident.create "is_new_node" in
   let open Cmm in
+  let no_tail_calls = List.length !direct_tail_call_point_indexes < 1 in
   let initialize_direct_tail_call_points_and_return_node =
     let new_node_encoded = Ident.create "new_node_encoded" in
     (* The callee node pointers within direct tail call points must initially
@@ -87,20 +88,23 @@ let code_for_function_prologue ~function_name ~node_hole =
   let pc = Ident.create "pc" in
   Clet (node, Cop (Cload Word_int, [Cvar node_hole]),
     Clet (must_allocate_node, Cop (Cand, [Cvar node; Cconst_int 1]),
-      Clet (pc, Cconst_symbol function_name,
         Cifthenelse (Cop (Ccmpi Cne, [Cvar must_allocate_node; Cconst_int 1]),
           Cvar node,  (* re-use a previously allocated node *)
           Clet (is_new_node,
-            Cop (Cextcall ("caml_spacetime_allocate_node",
-              [| Int |], false, Debuginfo.none),
-              [Cconst_int (1 (* header *) + !index_within_node);
-               Cvar pc;
-               Cvar node_hole;
-              ]),
-            Clet (new_node, Cop (Cload Word_int, [Cvar node_hole]),
-              Cifthenelse (Cop (Ccmpi Ceq, [Cvar is_new_node; Cconst_int 0]),
-                Cvar new_node,
-                initialize_direct_tail_call_points_and_return_node)))))))
+            Clet (pc, Cconst_symbol function_name,
+              Cop (Cextcall ("caml_spacetime_allocate_node",
+                [| Int |], false, Debuginfo.none),
+                [Cconst_int (1 (* header *) + !index_within_node);
+                 Cvar pc;
+                 Cvar node_hole;
+                ])),
+              Clet (new_node, Cop (Cload Word_int, [Cvar node_hole]),
+                if no_tail_calls then Cvar new_node
+                else
+                  Cifthenelse (
+                    Cop (Ccmpi Ceq, [Cvar is_new_node; Cconst_int 0]),
+                    Cvar new_node,
+                    initialize_direct_tail_call_points_and_return_node))))))
 
 let code_for_blockheader ~value's_header ~node ~dbg =
   let existing_profinfo = Ident.create "existing_profinfo" in
@@ -170,23 +174,18 @@ let code_for_call ~node ~callee ~is_tail ~label =
        so the correct initialization code can be emitted in the prologue. *)
     | Direct _ when is_tail ->
       direct_tail_call_point_indexes :=
-        (* "+1" to skip the callee PC value. *)
-        (index_within_node + 1)::!direct_tail_call_point_indexes
+        index_within_node::!direct_tail_call_point_indexes
     | Direct _ | Indirect _ -> ()
   end;
   let place_within_node = Ident.create "place_within_node" in
   let open Cmm in
-  let within_node ~index =
-    Cop (Caddi, [node; Cconst_int (index * Arch.size_addr)])
-  in
   Clet (place_within_node,
-    within_node ~index:index_within_node,
+    Cop (Caddi, [node; Cconst_int (index_within_node * Arch.size_addr)]),
     (* The following code returns the address that is to be moved into the
        (hard) node hole pointer register immediately before the call.
        (That move is inserted in [Selectgen].) *)
     match callee with
-    | Direct callee ->
-      Cop (Caddi, [Cvar place_within_node; Cconst_int Arch.size_addr])
+    | Direct callee -> Cvar place_within_node
     | Indirect callee ->
       let caller_node =
         if is_tail then node
