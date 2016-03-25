@@ -63,8 +63,6 @@ type operation =
   | Inegf | Iabsf | Iaddf | Isubf | Imulf | Idivf
   | Ifloatofint | Iintoffloat
   | Ispecific of Arch.specific_operation
-  | Ispacetime_node_hole
-  | Ispacetime_load_node_hole_ptr
   (* CR mshinwell: Move [Ilabel] into [instruction_desc]. *)
   | Ilabel of Cmm.label
 

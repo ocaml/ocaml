@@ -87,8 +87,8 @@ typedef enum {
 #define Direct_num_fields 2
 #define Direct_pc_callee(node,offset) (Field(node, offset))
 #define Direct_callee_node(node,offset) (Field(node, (offset) + 1))
-#define Encode_call_point_pc(pc) ((((value) pc) << 1) | 1)
-#define Decode_call_point_pc(pc) ((void*) (((value) pc) >> 1))
+#define Encode_call_point_pc(pc) (((value) pc) | 1)
+#define Decode_call_point_pc(pc) ((void*) (((value) pc) & ~((uintnat) 1)))
 
 /* Indirect call points (tail or non-tail) within OCaml nodes.
    They hold a linked list of (PC upon entry to the callee, pointer to

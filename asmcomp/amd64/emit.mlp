@@ -16,8 +16,6 @@
 
 (* Emission of Intel x86_64 assembly code *)
 
-(* CR mshinwell: check alignment of call points for Spacetime *)
-
 open Misc
 open Cmm
 open Arch
@@ -43,7 +41,7 @@ let _label s = D.label ~typ:QWORD s
 
 let int_reg_name =
   [| RAX; RBX; RDI; RSI; RDX; RCX; R8; R9;
-     R12; R10; R11; R13; RBP; |]
+     R12; R13; R10; R11; RBP; |]
 
 let float_reg_name = Array.init 16 (fun i -> XMM i)
 
@@ -294,13 +292,13 @@ let record_frame live dbg =
 let spacetime_before_uninstrumented_call ~node_ptr ~index =
   (* At the moment, [node_ptr] is pointing at the node for the current
      OCaml function.  Get hold of the node itself and move the pointer
-     forwards, saving it into the distinguished register, so it's in the
-     correct place just in case [caml_call_gc] is invoked.  (See
-     [caml_spacetime_caml_garbage_collection] for the exact requirements at
-     that point.) *)
-  I.mov node_ptr r13;
+     forwards, saving it into the distinguished register.  This is used
+     for instrumentation of function calls (e.g. caml_call_gc and bounds
+     check failures) not inserted until this stage of the compiler
+     pipeline. *)
+  I.mov node_ptr (reg Proc.loc_spacetime_node_hole);
   assert (index >= 2);
-  I.add (int (index * 8)) r13
+  I.add (int (index * 8)) (reg Proc.loc_spacetime_node_hole)
 
 (* Record calls to the GC -- we've moved them out of the way *)
 
@@ -324,20 +322,6 @@ let emit_call_gc gc =
   end;
   emit_call "caml_call_gc";
   def_label gc.gc_frame;
-  if Config.spacetime then begin
-    (* Add instructions to act as a spacer between the call and the
-       jump, otherwise their call sites will end up looking the same to
-       Spacetime and confusion will result.  We could make Spacetime know the
-       address of the call as the start of the call instruction itself, but
-       then we would also need an extra frame descriptor rather than reusing
-       the one already there---and we might also end up depending on the
-       length of the call instruction. *)
-    (* CR mshinwell: consider how many nops are actually needed *)
-    I.nop ();
-    I.nop ();
-    I.nop ();
-    I.nop ()
-  end;
   I.jmp (label gc.gc_return_lbl)
 
 (* Record calls to caml_ml_array_bound_error.
@@ -354,8 +338,6 @@ type bound_error_call =
 
 let bound_error_sites = ref ([] : bound_error_call list)
 let bound_error_call = ref 0
-
-(* CR mshinwell: tidy this code up *)
 
 let bound_error_label ?label dbg ~spacetime =
   if !Clflags.debug || Config.spacetime then begin
@@ -511,6 +493,7 @@ let emit_global_label s =
   D.global lbl;
   _label lbl
 
+
 (* Output the assembly code for an instruction *)
 
 (* Name of current function *)
@@ -653,15 +636,18 @@ let emit_instr fallthrough i =
         def_label lbl_redo;
         I.sub (int n) r15;
         if !Clflags.dlcode then begin
-          (* When using Spacetime, %rax might be the node pointer, so we'd
-             best not clobber it.  Luckily we have %r13 spare at the moment
-             instead. *)
-          let reg, reg' =
-            if not Config.spacetime then rax, RAX
-            else r13, R13
-          in
-          load_symbol_addr "caml_young_limit" reg;
-          I.cmp (mem64 QWORD 0 reg') r15
+          (* When using Spacetime, %rax might be the node pointer, so we
+             must take care not to clobber it.  (Whilst we can tell the
+             register allocator that %rax is destroyed by Ialloc, we can't
+             force that the argument (the node pointer) is not in %rax.) *)
+          if Config.spacetime then begin
+            I.push rax
+          end;
+          load_symbol_addr "caml_young_limit" rax;
+          I.cmp (mem64 QWORD 0 RAX) r15;
+          if Config.spacetime then begin
+            I.pop rax  (* this does not affect the flags *)
+          end
         end else
           I.cmp (mem64_rip QWORD (emit_symbol "caml_young_limit")) r15;
         let lbl_call_gc = new_label() in
@@ -778,12 +764,6 @@ let emit_instr fallthrough i =
       I.sqrtsd (arg i 0) (res i 0)
   | Lop(Ispecific(Ifloatsqrtf addr)) ->
       I.sqrtsd (addressing addr REAL8 i 0) (res i 0)
-  | Lop Ispacetime_node_hole ->
-     Misc.fatal_error "Ispacetime_node_hole should have been \
-         expanded by Selectgen"
-  | Lop Ispacetime_load_node_hole_ptr ->
-     Misc.fatal_error "Ispacetime_load_node_hole_ptr should have \
-         been expanded by Selectgen"
   | Lop (Ilabel lbl) ->
      _label (emit_label lbl)
   | Lreloadretaddr ->

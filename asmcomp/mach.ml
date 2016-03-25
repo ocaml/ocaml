@@ -57,8 +57,6 @@ type operation =
   | Inegf | Iabsf | Iaddf | Isubf | Imulf | Idivf
   | Ifloatofint | Iintoffloat
   | Ispecific of Arch.specific_operation
-  | Ispacetime_node_hole
-  | Ispacetime_load_node_hole_ptr
   | Ilabel of Cmm.label
 
 type instruction =

@@ -158,9 +158,6 @@ let operation op arg ppf res =
   | Iintoffloat -> fprintf ppf "intoffloat %a" reg arg.(0)
   | Ispecific op ->
       Arch.print_specific_operation reg op ppf arg
-  | Ispacetime_load_node_hole_ptr ->
-    fprintf ppf "spacetime_load_node_hole_ptr"
-  | Ispacetime_node_hole -> fprintf ppf "spacetime_node_hole"
   | Ilabel label -> fprintf ppf "label:%d" label
 
 let rec instr ppf i =
