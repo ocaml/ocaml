@@ -15,8 +15,6 @@
 
 (* Combine heap allocations occurring in the same basic block *)
 
-(* CR mshinwell: consider whether this is right, and reenable *)
-
 open Mach
 
 type allocation_state =
@@ -34,13 +32,13 @@ let rec combine i allocstate =
   match i.desc with
     Iend | Ireturn | Iexit _ | Iraise _ ->
       (i, allocated_size allocstate)
-  | Iop(Ialloc { words = sz; spacetime_index; label_after_call_gc; }) ->
+  | Iop(Ialloc { words = sz; _ }) ->
       begin match allocstate with
         No_alloc ->
           let (newnext, newsz) =
             combine i.next (Pending_alloc(i.res.(0), sz)) in
-          (instr_cons (Iop(Ialloc {words = newsz; spacetime_index;
-              label_after_call_gc; }))
+          (instr_cons (Iop(Ialloc {words = newsz; spacetime_index = 0;
+              label_after_call_gc = None; }))
             i.arg i.res newnext, 0)
       | Pending_alloc(reg, ofs) ->
           if ofs + sz < Config.max_young_wosize * Arch.size_addr then begin
@@ -51,8 +49,8 @@ let rec combine i allocstate =
           end else begin
             let (newnext, newsz) =
               combine i.next (Pending_alloc(i.res.(0), sz)) in
-            (instr_cons (Iop(Ialloc { words = newsz; spacetime_index;
-                label_after_call_gc; }))
+            (instr_cons (Iop(Ialloc { words = newsz; spacetime_index = 0;
+                label_after_call_gc = None; }))
               i.arg i.res newnext, ofs)
           end
       end
@@ -94,4 +92,5 @@ and combine_restart i =
   let (newi, _) = combine i No_alloc in newi
 
 let fundecl f =
-  {f with fun_body = combine_restart f.fun_body}
+  if Config.spacetime then f
+  else {f with fun_body = combine_restart f.fun_body}

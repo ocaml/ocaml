@@ -22,3 +22,9 @@ aProf.cmi :
 rawAProf.cmo : rawAProf.cmi
 rawAProf.cmx : rawAProf.cmi
 rawAProf.cmi :
+raw_spacetime_lib.cmo : raw_spacetime_lib.cmi
+raw_spacetime_lib.cmx : raw_spacetime_lib.cmi
+raw_spacetime_lib.cmi :
+spacetime_lib.cmo : raw_spacetime_lib.cmi spacetime_lib.cmi
+spacetime_lib.cmx : raw_spacetime_lib.cmx spacetime_lib.cmi
+spacetime_lib.cmi :

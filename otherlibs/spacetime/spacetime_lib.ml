@@ -12,7 +12,7 @@
 (*                                                                        *)
 (**************************************************************************)
 
-open RawAProf
+open Raw_spacetime_lib
 
 module Position = struct
 
