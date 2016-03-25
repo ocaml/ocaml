@@ -14,7 +14,7 @@
 
 /* CR mshinwell: remove pragma? */
 
-#pragma GCC optimize ("O0")
+#pragma GCC optimize ("O3")
 
 #include <stdio.h>
 #include <stdint.h>
@@ -53,8 +53,8 @@
 
 extern value caml_spacetime_debug(value);
 
-static c_node* start_of_free_node_block;
-static c_node* end_of_free_node_block;
+static char* start_of_free_node_block;
+static char* end_of_free_node_block;
 
 typedef struct per_thread {
   value* trie_node_root;
@@ -82,10 +82,12 @@ static value caml_spacetime_finaliser_trie_root_main_thread = Val_unit;
 value* caml_spacetime_finaliser_trie_root
   = &caml_spacetime_finaliser_trie_root_main_thread;
 
+static const uintnat chunk_size = 1024 * 1024;
+
 static void reinitialise_free_node_block(void)
 {
-  start_of_free_node_block = (c_node*) malloc(sizeof(c_node) * 10000);
-  end_of_free_node_block = start_of_free_node_block + 10000;
+  start_of_free_node_block = (char*) malloc(chunk_size);
+  end_of_free_node_block = start_of_free_node_block + chunk_size;
 }
 
 void caml_spacetime_initialize(void)
@@ -210,8 +212,22 @@ static int pc_inside_c_node_matches(c_node* node, void* pc)
 static value allocate_uninitialized_ocaml_node(int size_including_header)
 {
   void* node;
+  uintnat size;
+
   Assert(size_including_header >= 3);
   node = caml_stat_alloc(sizeof(uintnat) * size_including_header);
+
+  size = size_including_header * sizeof(value);
+
+  node = (void*) start_of_free_node_block;
+  if (end_of_free_node_block - start_of_free_node_block < size) {
+    reinitialise_free_node_block();
+    node = (void*) start_of_free_node_block;
+    Assert(end_of_free_node_block - start_of_free_node_block >= size);
+  }
+
+  start_of_free_node_block += size;
+
   /* We don't currently rely on [uintnat] alignment, but we do need some
      alignment, so just be sure. */
   Assert (((uintnat) node) % sizeof(uintnat) == 0);
@@ -317,10 +333,13 @@ static c_node* allocate_c_node(void)
 {
   c_node* node;
 
-  node = start_of_free_node_block++;
-  if (start_of_free_node_block >= end_of_free_node_block) {
+  node = (c_node*) start_of_free_node_block;
+  if (end_of_free_node_block - start_of_free_node_block < sizeof(c_node)) {
     reinitialise_free_node_block();
+    node = (c_node*) start_of_free_node_block;
+    Assert(end_of_free_node_block - start_of_free_node_block >= sizeof(c_node));
   }
+  start_of_free_node_block += sizeof(c_node);
 
   Assert((sizeof(c_node) % sizeof(uintnat)) == 0);
   node->gc_header =
