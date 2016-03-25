@@ -133,7 +133,12 @@ static header_t *allocate_block (mlsize_t wh_sz, int flpi, value prev,
       /* In case 1, the following creates the empty block correctly.
          In case 0, it gives an invalid header to the block.  The function
          calling [caml_fl_allocate] will overwrite it. */
-    Hd_op (cur) = Make_header_with_my_profinfo (0, 0, Caml_white);
+#if defined(NATIVE_CODE) && defined(WITH_SPACETIME)
+    /* Don't bother putting profiling information on free blocks. */
+    Hd_op (cur) = Make_header_with_profinfo (0, 0, Caml_white, 0);
+#else
+    Hd_op (cur) = Make_header (0, 0, Caml_white);
+#endif
     if (policy == Policy_first_fit){
       if (flpi + 1 < flp_size && flp[flpi + 1] == cur){
         flp[flpi + 1] = prev;

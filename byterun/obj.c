@@ -26,6 +26,9 @@
 #include "caml/misc.h"
 #include "caml/mlvalues.h"
 #include "caml/prims.h"
+#if defined(NATIVE_CODE) && defined(WITH_SPACETIME)
+#include "spacetime.h"
+#endif
 
 /* [size] is a value encoding a number of bytes */
 CAMLprim value caml_static_alloc(value size)
@@ -85,6 +88,8 @@ CAMLprim value caml_obj_block(value tag, value size)
   return res;
 }
 
+extern void* caml_last_return_address;
+
 CAMLprim value caml_obj_dup(value arg)
 {
   CAMLparam1 (arg);
@@ -99,7 +104,24 @@ CAMLprim value caml_obj_dup(value arg)
     res = caml_alloc(sz, tg);
     memcpy(Bp_val(res), Bp_val(arg), sz * sizeof(value));
   } else if (sz <= Max_young_wosize) {
+#if defined(NATIVE_CODE) && defined(WITH_SPACETIME)
+    static spacetime_unwind_info_cache spacetime_unwind_info = NULL;
+    /* A very common case: directly called from an OCaml function.
+       Try to avoid using libunwind every time. */
+    if (DIRECTLY_CALLED_FROM_OCAML) {
+#define Setup_for_gc
+#define Restore_after_gc
+      Alloc_small_with_profinfo(res, sz, tg,
+        caml_spacetime_my_profinfo(&spacetime_unwind_info));
+#undef Setup_for_gc
+#undef Restore_after_gc
+    }
+    else {
+      res = caml_alloc_small(sz, tg);
+    }
+#else
     res = caml_alloc_small(sz, tg);
+#endif
     for (i = 0; i < sz; i++) Field(res, i) = Field(arg, i);
   } else {
     res = caml_alloc_shr(sz, tg);
