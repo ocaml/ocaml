@@ -12,9 +12,6 @@
 (*                                                                        *)
 (**************************************************************************)
 
-module L = Lambda
-module M = Mach
-
 let index_within_node = ref 2 (* Cf. [Node_num_header_words] in the runtime. *)
 (* The [lazy]s are to ensure that we don't create [Ident.t]s at toplevel
    when not using Spacetime profiling.  (This could cause stamps to differ
@@ -30,14 +27,8 @@ let something_was_instrumented () =
   !index_within_node > 2
 
 let next_index_within_node ~part_of_shape ~label =
-  let words_needed =
-    match part_of_shape with
-    | M.Direct_call_point _ -> 1
-    | M.Indirect_call_point -> 1
-    | M.Allocation_point -> 1
-  in
   let index = !index_within_node in
-  index_within_node := !index_within_node + words_needed;
+  incr index_within_node;
   reverse_shape := (part_of_shape, label) :: !reverse_shape;
   index
 
@@ -67,7 +58,7 @@ let code_for_function_prologue ~function_name ~node_hole =
           (* Cf. [Direct_callee_node] in the runtime. *)
           let offset_in_bytes = index * Arch.size_addr in
           Csequence (
-            Cop (Cstore (Word_int, L.Assignment),
+            Cop (Cstore (Word_int, Lambda.Assignment),
               [Cop (Caddi, [Cvar new_node; Cconst_int offset_in_bytes]);
                Cvar new_node_encoded]),
             init_code))
@@ -109,7 +100,7 @@ let code_for_blockheader ~value's_header ~node ~dbg =
   let address_of_profinfo = Ident.create "address_of_profinfo" in
   let label = Cmm.new_label () in
   let index_within_node =
-    next_index_within_node ~part_of_shape:M.Allocation_point ~label
+    next_index_within_node ~part_of_shape:Mach.Allocation_point ~label
   in
   let offset_into_node = Arch.size_addr * index_within_node in
   let open Cmm in
@@ -161,10 +152,11 @@ let code_for_call ~node ~callee ~is_tail ~label =
   let index_within_node =
     match callee with
     | Direct callee ->
-      next_index_within_node ~part_of_shape:(M.Direct_call_point { callee; })
+      next_index_within_node
+        ~part_of_shape:(Mach.Direct_call_point { callee; })
         ~label
     | Indirect _ ->
-      next_index_within_node ~part_of_shape:M.Indirect_call_point ~label
+      next_index_within_node ~part_of_shape:Mach.Indirect_call_point ~label
   in
   begin match callee with
     (* If this is a direct tail call point, we need to note down its index,
@@ -338,7 +330,7 @@ class virtual instruction_selection = object (self)
       let label = Cmm.new_label () in
       let index =
         next_index_within_node
-          ~part_of_shape:(M.Direct_call_point { callee = "caml_call_gc"; })
+          ~part_of_shape:(Mach.Direct_call_point { callee = "caml_call_gc"; })
           ~label
       in
       Mach.Ialloc {
@@ -367,7 +359,7 @@ class virtual instruction_selection = object (self)
       let index =
         next_index_within_node
           ~part_of_shape:(
-            M.Direct_call_point { callee = "caml_ml_array_bound_error"; })
+            Mach.Direct_call_point { callee = "caml_ml_array_bound_error"; })
           ~label
       in
       Mach.Icheckbound {
