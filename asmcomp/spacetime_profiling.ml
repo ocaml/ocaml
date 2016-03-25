@@ -12,7 +12,8 @@
 (*                                                                        *)
 (**************************************************************************)
 
-let index_within_node = ref 2 (* Cf. [Node_num_header_words] in the runtime. *)
+let node_num_header_words = 2 (* Cf. [Node_num_header_words] in the runtime. *)
+let index_within_node = ref node_num_header_words
 (* The [lazy]s are to ensure that we don't create [Ident.t]s at toplevel
    when not using Spacetime profiling.  (This could cause stamps to differ
    between bytecode and native .cmis when no .mli is present, e.g. arch.ml.) *)
@@ -24,7 +25,7 @@ let direct_tail_call_point_indexes = ref []
 let reverse_shape = ref ([] : Mach.spacetime_shape)
 
 let something_was_instrumented () =
-  !index_within_node > 2
+  !index_within_node > node_num_header_words
 
 let next_index_within_node ~part_of_shape ~label =
   let index = !index_within_node in
@@ -33,7 +34,7 @@ let next_index_within_node ~part_of_shape ~label =
   index
 
 let reset ~spacetime_node_ident:ident ~function_label =
-  index_within_node := 2;
+  index_within_node := node_num_header_words;
   spacetime_node := lazy (Cmm.Cvar ident);
   spacetime_node_ident := lazy ident;
   direct_tail_call_point_indexes := [];
@@ -45,8 +46,8 @@ let code_for_function_prologue ~function_name ~node_hole =
   let new_node = Ident.create "new_node" in
   let must_allocate_node = Ident.create "must_allocate_node" in
   let is_new_node = Ident.create "is_new_node" in
-  let open Cmm in
   let no_tail_calls = List.length !direct_tail_call_point_indexes < 1 in
+  let open Cmm in
   let initialize_direct_tail_call_points_and_return_node =
     let new_node_encoded = Ident.create "new_node_encoded" in
     (* The callee node pointers within direct tail call points must initially
@@ -76,23 +77,23 @@ let code_for_function_prologue ~function_name ~node_hole =
   let pc = Ident.create "pc" in
   Clet (node, Cop (Cload Word_int, [Cvar node_hole]),
     Clet (must_allocate_node, Cop (Cand, [Cvar node; Cconst_int 1]),
-        Cifthenelse (Cop (Ccmpi Cne, [Cvar must_allocate_node; Cconst_int 1]),
-          Cvar node,  (* re-use a previously allocated node *)
-          Clet (is_new_node,
-            Clet (pc, Cconst_symbol function_name,
-              Cop (Cextcall ("caml_spacetime_allocate_node",
-                [| Int |], false, Debuginfo.none),
-                [Cconst_int (1 (* header *) + !index_within_node);
-                 Cvar pc;
-                 Cvar node_hole;
-                ])),
-              Clet (new_node, Cop (Cload Word_int, [Cvar node_hole]),
-                if no_tail_calls then Cvar new_node
-                else
-                  Cifthenelse (
-                    Cop (Ccmpi Ceq, [Cvar is_new_node; Cconst_int 0]),
-                    Cvar new_node,
-                    initialize_direct_tail_call_points_and_return_node))))))
+      Cifthenelse (Cop (Ccmpi Cne, [Cvar must_allocate_node; Cconst_int 1]),
+        Cvar node,
+        Clet (is_new_node,
+          Clet (pc, Cconst_symbol function_name,
+            Cop (Cextcall ("caml_spacetime_allocate_node",
+              [| Int |], false, Debuginfo.none),
+              [Cconst_int (1 (* header *) + !index_within_node);
+               Cvar pc;
+               Cvar node_hole;
+              ])),
+            Clet (new_node, Cop (Cload Word_int, [Cvar node_hole]),
+              if no_tail_calls then Cvar new_node
+              else
+                Cifthenelse (
+                  Cop (Ccmpi Ceq, [Cvar is_new_node; Cconst_int 0]),
+                  Cvar new_node,
+                  initialize_direct_tail_call_points_and_return_node))))))
 
 let code_for_blockheader ~value's_header ~node ~dbg =
   let existing_profinfo = Ident.create "existing_profinfo" in
@@ -124,7 +125,7 @@ let code_for_blockheader ~value's_header ~node ~dbg =
       Clet (profinfo,
         Cifthenelse (
           (* CR mshinwell: name constant *)
-          Cop (Ccmpi Cne, [Cvar existing_profinfo; Cconst_pointer 1]),
+          Cop (Ccmpi Cne, [Cvar existing_profinfo; Cconst_int 1]),
           Cvar existing_profinfo,
           generate_new_profinfo),
         (* [profinfo] is already shifted by [PROFINFO_SHIFT].
