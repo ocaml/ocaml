@@ -38,7 +38,7 @@ extern int caml_in_minor_collection;
 }
 
 struct caml_ref_table CAML_TABLE_STRUCT(value *);
-CAMLextern struct caml_ref_table caml_ref_table, caml_finalize_table;
+CAMLextern struct caml_ref_table caml_ref_table;
 
 struct caml_ephe_ref_elt {
   value ephe;      /* an ephemeron in major heap */
@@ -47,6 +47,15 @@ struct caml_ephe_ref_elt {
 
 struct caml_ephe_ref_table CAML_TABLE_STRUCT(struct caml_ephe_ref_elt);
 CAMLextern struct caml_ephe_ref_table caml_ephe_ref_table;
+
+struct caml_custom_elt {
+  value block;     /* The finalized block in the minor heap. */
+  mlsize_t mem;    /* The parameters for adjusting GC speed. */
+  mlsize_t max;
+};
+
+struct caml_custom_table CAML_TABLE_STRUCT(struct caml_custom_elt);
+CAMLextern struct caml_custom_table caml_custom_table;
 
 extern void caml_set_minor_heap_size (asize_t); /* size in bytes */
 extern void caml_empty_minor_heap (void);
@@ -57,6 +66,9 @@ extern void caml_alloc_table (struct caml_ref_table *, asize_t, asize_t);
 extern void caml_realloc_ephe_ref_table (struct caml_ephe_ref_table *);
 extern void caml_alloc_ephe_table (struct caml_ephe_ref_table *,
                                    asize_t, asize_t);
+extern void caml_realloc_custom_table (struct caml_custom_table *);
+extern void caml_alloc_custom_table (struct caml_custom_table *,
+                                     asize_t, asize_t);
 extern void caml_oldify_one (value, value *);
 extern void caml_oldify_mopup (void);
 
@@ -88,6 +100,20 @@ static inline void add_to_ephe_ref_table (struct caml_ephe_ref_table *tbl,
   ephe_ref->ephe = ar;
   ephe_ref->offset = offset;
   Assert(ephe_ref->offset < Wosize_val(ephe_ref->ephe));
+}
+
+static inline void add_to_custom_table (struct caml_custom_table *tbl, value v,
+                                        mlsize_t mem, mlsize_t max)
+{
+  struct caml_custom_elt *elt;
+  if (tbl->ptr >= tbl->limit){
+    CAMLassert (tbl->ptr == tbl->limit);
+    caml_realloc_custom_table (tbl);
+  }
+  elt = tbl->ptr++;
+  elt->block = v;
+  elt->mem = mem;
+  elt->max = max;
 }
 
 #endif /* CAML_MINOR_GC_H */

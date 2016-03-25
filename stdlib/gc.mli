@@ -185,9 +185,8 @@ external major_slice : int -> int = "caml_gc_major_slice";;
     Do a minor collection and a slice of major collection. [n] is the
     size of the slice: the GC will do enough work to free (on average)
     [n] words of memory. If [n] = 0, the GC will try to do enough work
-    to ensure that the next slice has no work to do.
-    Return an approximation of the work that the next slice will have
-    to do. *)
+    to ensure that the next automatic slice has no work to do.
+    This function returns an unspecified integer (currently: 0). *)
 
 external major : unit -> unit = "caml_gc_major"
 (** Do a minor collection and finish the current major collection cycle. *)

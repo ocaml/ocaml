@@ -299,8 +299,9 @@ Runtime system:
 - GPR#262: Multiple GC roots per compilation unit
   (Pierre Chambart, Mark Shinwell, review by Damien Doligez)
 
-- GPR#297: Several changes to improve the worst-case GC pause time.
-  (Damien Doligez, with help from Leo White and Francois Bobot)
+* GPR#297: Several changes to improve the worst-case GC pause time.
+  Changes Gc.control and Gc.major_slice and adds functions to the Gc module.
+  (Damien Doligez, with help from Francois Bobot, Thomas Braibant, Leo White)
 
 - GPR#325: Add v=0x400 flag to OCAMLRUNPARAM to display GC stats on exit
   (Louis Gesbert, review by Alain Frisch)
