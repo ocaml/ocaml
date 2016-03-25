@@ -112,13 +112,6 @@ CAMLprim value caml_spacetime_ocaml_allocation_point_annotation
   return Val_long(profinfo_shifted >> PROFINFO_SHIFT);
 }
 
-CAMLprim value caml_spacetime_ocaml_direct_call_point_callee
-      (value node, value offset)
-{
-  return caml_copy_int64((int64_t) Decode_call_point_pc(
-      Direct_pc_callee(node, Long_val(offset))));
-}
-
 CAMLprim value caml_spacetime_ocaml_direct_call_point_callee_node
       (value node, value offset)
 {

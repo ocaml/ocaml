@@ -82,11 +82,10 @@ typedef enum {
 #define Alloc_point_profinfo(node, offset) (Field(node, offset))
 
 /* Direct call points (tail or non-tail) within OCaml nodes.
-   They hold the PC upon entry to the callee and a pointer to the child
-   node. */
-#define Direct_num_fields 2
-#define Direct_pc_callee(node,offset) (Field(node, offset))
-#define Direct_callee_node(node,offset) (Field(node, (offset) + 1))
+   They just hold a pointer to the child node.  The call site and callee are
+   both recorded in the shape. */
+#define Direct_num_fields 1
+#define Direct_callee_node(node,offset) (Field(node, offset))
 #define Encode_call_point_pc(pc) (((value) pc) | 1)
 #define Decode_call_point_pc(pc) ((void*) (((value) pc) & ~((uintnat) 1)))
 
@@ -136,8 +135,14 @@ extern void caml_spacetime_caml_garbage_collection(void);
 extern void caml_spacetime_caml_ml_array_bound_error(void);
 extern void caml_spacetime_register_shapes(void*);
 
-/* CR mshinwell: need to use _ReturnAddress on Windows */
+#if defined(SYS_mingw64) || defined(SYS_cygwin)
+#include <intrin.h>
+#pragma intrinsic(_ReturnAddress)
+#define DIRECTLY_CALLED_FROM_OCAML \
+  (_ReturnAddress() == caml_last_return_address)
+#else
 #define DIRECTLY_CALLED_FROM_OCAML \
   (__builtin_return_address(0) == caml_last_return_address)
+#endif
 
 #endif

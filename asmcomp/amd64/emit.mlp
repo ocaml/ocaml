@@ -1052,12 +1052,18 @@ let emit_spacetime_shapes () =
         List.iter (fun (part_of_shape, label) ->
             let tag =
               match part_of_shape with
-              | Direct_call_point -> 1
+              | Direct_call_point _ -> 1
               | Indirect_call_point -> 2
               | Allocation_point -> 3
             in
             D.qword (Const (Int64.of_int tag));
-            D.qword (ConstLabel (emit_label label)))
+            D.qword (ConstLabel (emit_label label));
+            begin match part_of_shape with
+            | Direct_call_point { callee; } ->
+              D.qword (ConstLabel (emit_symbol callee))
+            | Indirect_call_point -> ()
+            | Allocation_point -> ()
+            end)
           shape;
           D.qword (Const 0L)
       end)

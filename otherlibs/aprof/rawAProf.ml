@@ -82,16 +82,16 @@ end
 
 module Shape_table = struct
   type part_of_shape =
-    | Direct_call of Int64.t
+    | Direct_call of { call_site : Int64.t; callee : Int64.t; }
     | Indirect_call of Int64.t
     | Allocation_point of Int64.t
 
-  let _ = Direct_call 0L
+  let _ = Direct_call { call_site = 0L; callee = 0L; }
   let _ = Indirect_call 0L
   let _ = Allocation_point 0L
 
   let part_of_shape_size = function
-    | Direct_call _ -> 2
+    | Direct_call _
     | Indirect_call _
     | Allocation_point _ -> 1
 
@@ -179,14 +179,13 @@ module Trace = struct
 
       let call_site t =
         match t.part_of_shape with
-        | Shape_table.Direct_call call_site -> call_site
+        | Shape_table.Direct_call { call_site; _ } -> call_site
         | _ -> assert false
 
-      external callee : ocaml_node -> int -> Function_entry_point.t
-        = "caml_spacetime_only_works_for_native_code"
-          "caml_spacetime_ocaml_direct_call_point_callee"
-
-      let callee t = callee t.node t.offset
+      let callee t =
+        match t.part_of_shape with
+        | Shape_table.Direct_call { callee; _ } -> callee
+        | _ -> assert false
 
       external callee_node : ocaml_node -> int -> 'target
         = "caml_spacetime_only_works_for_native_code"
@@ -265,7 +264,7 @@ module Trace = struct
 
       let classify t =
         match t.part_of_shape with
-        | Shape_table.Direct_call _ ->
+        | Shape_table.Direct_call callee ->
           let direct_call_point =
             match classify_direct_call_point t.node t.offset with
             | 0 ->
@@ -283,7 +282,7 @@ module Trace = struct
       let is_uninitialised t =
         let offset_to_node_hole =
           match t.part_of_shape with
-          | Shape_table.Direct_call _ -> Some 1
+          | Shape_table.Direct_call _ -> Some 0
           | Shape_table.Indirect_call _ -> Some 0
           | Shape_table.Allocation_point _ -> None
         in

@@ -35,7 +35,7 @@ let something_was_instrumented () =
 let next_index_within_node ~part_of_shape ~label =
   let words_needed =
     match part_of_shape with
-    | M.Direct_call_point -> 2
+    | M.Direct_call_point _ -> 1
     | M.Indirect_call_point -> 1
     | M.Allocation_point -> 1
   in
@@ -88,19 +88,19 @@ let code_for_function_prologue ~function_name ~node_hole =
   Clet (node, Cop (Cload Word_int, [Cvar node_hole]),
     Clet (must_allocate_node, Cop (Cand, [Cvar node; Cconst_int 1]),
       Clet (pc, Cconst_symbol function_name,
-      Cifthenelse (Cop (Ccmpi Ceq, [Cvar must_allocate_node; Cconst_int 1]),
-        Clet (is_new_node,
-          Cop (Cextcall ("caml_spacetime_allocate_node",
-            [| Int |], false, Debuginfo.none),
-            [Cconst_int (1 (* header *) + !index_within_node);
-             Cvar pc;
-             Cvar node_hole;
-            ]),
-          Clet (new_node, Cop (Cload Word_int, [Cvar node_hole]),
-            Cifthenelse (Cop (Ccmpi Ceq, [Cvar is_new_node; Cconst_int 0]),
-              Cvar new_node,
-              initialize_direct_tail_call_points_and_return_node))),
-          Cvar node))))
+        Cifthenelse (Cop (Ccmpi Cne, [Cvar must_allocate_node; Cconst_int 1]),
+          Cvar node,  (* re-use a previously allocated node *)
+          Clet (is_new_node,
+            Cop (Cextcall ("caml_spacetime_allocate_node",
+              [| Int |], false, Debuginfo.none),
+              [Cconst_int (1 (* header *) + !index_within_node);
+               Cvar pc;
+               Cvar node_hole;
+              ]),
+            Clet (new_node, Cop (Cload Word_int, [Cvar node_hole]),
+              Cifthenelse (Cop (Ccmpi Ceq, [Cvar is_new_node; Cconst_int 0]),
+                Cvar new_node,
+                initialize_direct_tail_call_points_and_return_node)))))))
 
 let code_for_blockheader ~value's_header ~node ~dbg =
   let existing_profinfo = Ident.create "existing_profinfo" in
@@ -159,8 +159,9 @@ let code_for_call ~node ~callee ~is_tail ~label =
   let is_tail = is_tail || is_self_recursive_call in
   let index_within_node =
     match callee with
-    | Direct _ ->
-      next_index_within_node ~part_of_shape:M.Direct_call_point ~label
+    | Direct callee ->
+      next_index_within_node ~part_of_shape:(M.Direct_call_point { callee; })
+        ~label
     | Indirect _ ->
       next_index_within_node ~part_of_shape:M.Indirect_call_point ~label
   in
@@ -175,27 +176,17 @@ let code_for_call ~node ~callee ~is_tail ~label =
   end;
   let place_within_node = Ident.create "place_within_node" in
   let open Cmm in
-  let encode_pc pc =
-    (* Cf. [Encode_call_point_pc] in the runtime.
-       We assume function entry points will be at least 2-byte aligned. *)
-    Cop (Cor, [pc; Cconst_int 1])
-  in
   let within_node ~index =
     Cop (Caddi, [node; Cconst_int (index * Arch.size_addr)])
   in
   Clet (place_within_node,
     within_node ~index:index_within_node,
     (* The following code returns the address that is to be moved into the
-       (hard) node hold pointer register immediately before the call.
+       (hard) node hole pointer register immediately before the call.
        (That move is inserted in [Selectgen].) *)
     match callee with
     | Direct callee ->
-      Csequence (
-        Cop (Cstore (Word_int, L.Assignment), [
-          Cvar place_within_node;
-          encode_pc (Cconst_symbol callee);
-        ]),
-        Cop (Caddi, [Cvar place_within_node; Cconst_int Arch.size_addr]))
+      Cop (Caddi, [Cvar place_within_node; Cconst_int Arch.size_addr])
     | Indirect callee ->
       let caller_node =
         if is_tail then node
@@ -267,7 +258,7 @@ class virtual instruction_selection = object (self)
         let label = Cmm.new_label () in
         assert (Array.length arg = 0);
         let reg =
-          self#instrument_direct_call ~env ~lbl ~is_tail:true ~label;
+          self#instrument_direct_call ~env ~lbl ~is_tail:true ~label
         in
         Some (label, reg)
       | M.Iop M.Itailcall_ind ->
@@ -283,7 +274,7 @@ class virtual instruction_selection = object (self)
         let label = Cmm.new_label () in
         assert (Array.length arg = 0);
         let reg =
-          self#instrument_direct_call ~env ~lbl ~is_tail:false ~label;
+          self#instrument_direct_call ~env ~lbl ~is_tail:false ~label
         in
         Some (label, reg)
       | _ -> None
@@ -350,7 +341,9 @@ class virtual instruction_selection = object (self)
          [caml_spacetime_caml_garbage_collection]. *)
       let label = Cmm.new_label () in
       let index =
-        next_index_within_node ~part_of_shape:M.Direct_call_point ~label
+        next_index_within_node
+          ~part_of_shape:(M.Direct_call_point { callee = "caml_call_gc"; })
+          ~label
       in
       Mach.Ialloc {
         words;
@@ -376,7 +369,10 @@ class virtual instruction_selection = object (self)
     if self#can_instrument () then begin
       let label = Cmm.new_label () in
       let index =
-        next_index_within_node ~part_of_shape:M.Direct_call_point ~label
+        next_index_within_node
+          ~part_of_shape:(
+            M.Direct_call_point { callee = "caml_ml_array_bound_error"; })
+          ~label
       in
       Mach.Icheckbound {
         label_after_error = Some label;

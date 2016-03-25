@@ -675,65 +675,6 @@ void caml_spacetime_c_to_ocaml(void* ocaml_entry_point,
 extern void caml_garbage_collection(void);  /* signals_asm.c */
 extern void caml_array_bound_error(void);  /* fail.c */
 
-static void ocaml_to_c_call_site_without_instrumentation(
-  void(* callee_ptr)(void))
-{
-  /* See comment on [caml_spacetime_caml_garbage_collection] below. */
-
-  value callee;
-  value node;
-
-  /* See point 1 above. */
-  node = (value) caml_spacetime_trie_node_ptr;
-  Assert ((node % sizeof(value)) == 0);
-
-  callee = Encode_call_point_pc(callee_ptr);
-
-  /* If the callee has been set, we don't check whether there
-     is any child node, since it's possible there might not actually be one
-     (e.g. if no allocation or callbacks performed in
-     [caml_garbage_collection]). */
-  Assert((Direct_pc_callee(node, 0) == Val_unit
-      && Direct_callee_node(node, 0) == Val_unit)
-    || && Direct_pc_callee(node, 0) == callee);
-
-  /* Initialize the direct call point within the node. */
-  Direct_pc_callee(node, 0) = callee;
-
-  /* Set the trie node hole pointer correctly so that when e.g. an
-     allocation occurs from within [caml_garbage_collection] the resulting
-     nodes are attached correctly. */
-  caml_spacetime_trie_node_ptr = &Direct_callee_node(node, 0);
-}
-
-void caml_spacetime_caml_garbage_collection(void)
-{
-  /* Called upon entry to [caml_garbage_collection].
-     Since [caml_call_gc] points cannot easily be instrumented by
-     [Spacetime_profiling] (the calls are created too late in the
-     compiler pipeline), we have to manually find the correct place in the
-     current OCaml node before [caml_garbage_collection] can continue.
-
-     On entry we expect:
-     1. [caml_allocation_trie_node_ptr] to point to the first of the two
-        fields of a direct call point inside an OCaml node (which is
-        arranged by code in asmcomp/amd64/emit.mlp); and
-     2. [caml_gc_regs] to point at the usual GC register array on the stack
-        with the return address immediately after (at a higher address) than
-        such array.
-  */
-
-  ocaml_to_c_call_site_without_instrumentation(&caml_garbage_collection);
-}
-
-void caml_spacetime_caml_ml_array_bound_error(void)
-{
-  /* Like [caml_spacetime_caml_garbage_collection], but for array bounds
-     check failures. */
-
-  ocaml_to_c_call_site_without_instrumentation(&caml_array_bound_error);
-}
-
 CAMLprim uintnat caml_spacetime_generate_profinfo (void* profinfo_words)
 {
   /* Called from code that creates a value's header inside an OCaml

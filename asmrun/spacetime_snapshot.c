@@ -396,12 +396,14 @@ caml_spacetime_shape_table(value v_unit)
           value part_of_shape;
           value new_part_list_element;
           value location;
+          int has_extra_argument = 0;
 
           stored_tag = *table_for_one_function++;
           /* CR mshinwell: share with emit.mlp */
           switch (stored_tag) {
             case 1:  /* direct call to given location */
               tag = 0;
+              has_extra_argument = 1;  /* the address of the callee */
               break;
 
             case 2:  /* indirect call to given location */
@@ -418,8 +420,13 @@ caml_spacetime_shape_table(value v_unit)
 
           location = allocate_int64_outside_heap(*table_for_one_function++);
 
-          part_of_shape = allocate_outside_heap_with_tag(sizeof(value), tag);
+          part_of_shape = allocate_outside_heap_with_tag(
+            sizeof(value) * (has_extra_argument ? 2 : 1), tag);
           Field(part_of_shape, 0) = location;
+          if (has_extra_argument) {
+            Field(part_of_shape, 1) =
+              allocate_int64_outside_heap(*table_for_one_function++);
+          }
 
           new_part_list_element =
             allocate_outside_heap_with_tag(2 * sizeof(value), 0 /* (::) */);
