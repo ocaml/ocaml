@@ -307,6 +307,7 @@ Runtime system:
   (Louis Gesbert, review by Alain Frisch)
 
 Standard library:
+=================
 
 - PR#1460, GPR#230: Array.map2, Array.iter2
   (John Christopher McAlpine)
@@ -789,6 +790,9 @@ Bug fixes:
 
 - PR#7182: Assertion failure with recursive modules and externals
   (Jacques Garrigue, report by Jeremy Yallop)
+
+- PR#7196: "let open" is not correctly pretty-printed to the left of a ';'
+  (Gabriel Scherer, report by Christophe Raffalli)
 
 - GPR#205: Clear caml_backtrace_last_exn before registering as root
   (report and fix by Frederic Bour)
