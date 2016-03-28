@@ -107,11 +107,11 @@ position in the format tail (('u, .., 'f) fmt). This means that the
 type of the expected format parameter depends of where the %(...%)
 are in the format string:
 
-  # Printf.printf "%(%)";;
+  # Printf.printf "%(%)"
   - : (unit, out_channel, unit, '_a, '_a, unit)
       CamlinternalFormatBasics.format6 -> unit
   = <fun>
-  # Printf.printf "%(%)%d";;
+  # Printf.printf "%(%)%d"
   - : (int -> unit, out_channel, unit, '_a, '_a, int -> unit)
       CamlinternalFormatBasics.format6 -> int -> unit
   = <fun>

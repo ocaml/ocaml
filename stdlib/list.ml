@@ -70,7 +70,7 @@ let rev_map f l =
     | a::l -> rmap_f (f a :: accu) l
   in
   rmap_f [] l
-;;
+
 
 let rec iter f = function
     [] -> ()
@@ -106,7 +106,7 @@ let rev_map2 f l1 l2 =
     | (_, _) -> invalid_arg "List.rev_map2"
   in
   rmap2_f [] l1 l2
-;;
+
 
 let rec iter2 f l1 l2 =
   match (l1, l2) with
@@ -218,7 +218,7 @@ let rec merge cmp l1 l2 =
       if cmp h1 h2 <= 0
       then h1 :: merge cmp t1 l2
       else h2 :: merge cmp l1 t2
-;;
+
 
 let rec chop k l =
   if k = 0 then l else begin
@@ -226,7 +226,7 @@ let rec chop k l =
     | x::t -> chop (k-1) t
     | _ -> assert false
   end
-;;
+
 
 let stable_sort cmp l =
   let rec rev_merge l1 l2 accu =
@@ -292,10 +292,10 @@ let stable_sort cmp l =
   in
   let len = length l in
   if len < 2 then l else sort len l
-;;
 
-let sort = stable_sort;;
-let fast_sort = stable_sort;;
+
+let sort = stable_sort
+let fast_sort = stable_sort
 
 (* Note: on a list of length between about 100000 (depending on the minor
    heap size and the type of the list) and Sys.max_array_size, it is
@@ -320,13 +320,13 @@ let array_to_list_in_place a =
     end
   in
   loop [] (l-1000) l
-;;
+
 
 let stable_sort cmp l =
   let a = Array.of_list l in
   Array.stable_sort cmp a;
   array_to_list_in_place a
-;;
+
 *)
 
 
@@ -430,4 +430,4 @@ let sort_uniq cmp l =
   in
   let len = length l in
   if len < 2 then l else sort len l
-;;
+
