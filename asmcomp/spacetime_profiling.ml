@@ -110,7 +110,7 @@ let code_for_blockheader ~value's_header ~node ~dbg =
        be in the cache, which hopefully gives a good code size/performance
        balance. *)
     Cop (Cextcall ("caml_spacetime_generate_profinfo", [| Int |],
-        false, Debuginfo.none),
+        false, dbg),
       [Cvar address_of_profinfo])
   in
   (* Check if we have already allocated a profinfo value for this allocation

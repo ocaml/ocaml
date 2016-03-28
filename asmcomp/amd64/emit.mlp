@@ -581,6 +581,8 @@ let emit_instr fallthrough i =
       end else begin
         emit_call s;
         if Config.spacetime then begin
+          (* CR mshinwell: probably only needed for
+             caml_spacetime_generate_profinfo calls *)
           record_frame Reg.Set.empty i.dbg
         end
       end
