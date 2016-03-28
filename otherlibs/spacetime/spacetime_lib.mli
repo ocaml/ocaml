@@ -62,8 +62,19 @@ module Entry : sig
 
 end
 
-module Entries : Set.S with type elt = Entry.t
-                         and type t = Set.Make(Entry).t
+module Entry_sorted_by_words_highest_first : sig
+  type t = Entry.t
+  val compare : t -> t -> int
+  val hash : t -> int
+end
+
+module Entries : Set.S
+  with type elt = Entry.t
+  and type t = Set.Make(Entry).t
+
+module Entries_sorted_by_words_highest_first : Set.S
+  with type elt = Entry.t
+  and type t = Set.Make(Entry_sorted_by_words_highest_first).t
 
 module Stats : sig
 
@@ -92,6 +103,9 @@ module Snapshot : sig
   val time : t -> float
   val stats : t -> Stats.t
   val entries : t -> Entries.t
+  val entries_sorted_by_words_highest_first
+     : t
+    -> Entries_sorted_by_words_highest_first.t
 
   val compare : t -> t -> int
   val hash : t -> int
