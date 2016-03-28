@@ -55,7 +55,7 @@ module GenHashTable = struct
 
     and 'a bucketlist =
     | Empty
-    | Cons of int (** hash of the key *) * 'a H.container * 'a bucketlist
+    | Cons of int (* hash of the key *) * 'a H.container * 'a bucketlist
 
     (** the hash of the key is kept in order to test the equality of the hash
       before the key. Same reason as for Weak.Make *)
@@ -167,7 +167,7 @@ module GenHashTable = struct
             | ETrue -> h.size <- h.size - 1; next
             | EFalse -> Cons(hk, c, remove_bucket next)
             | EDead ->
-                (** The dead key is automatically removed. It is acceptable
+                (* The dead key is automatically removed. It is acceptable
                     for this function since it already removes a binding *)
                 h.size <- h.size - 1;
                 remove_bucket next
@@ -188,8 +188,8 @@ module GenHashTable = struct
           | ETrue ->
               begin match H.get_data c with
               | None ->
-                  (** This case is not impossible because the gc can run between
-                      H.equal and H.get_data *)
+                  (* This case is not impossible because the gc can run between
+                     H.equal and H.get_data *)
                   find_rec key hkey rest
               | Some d -> d
               end
@@ -202,7 +202,7 @@ module GenHashTable = struct
 
     let find h key =
       let hkey = H.hash h.seed key in
-      (** TODO inline 3 iterations *)
+      (* TODO inline 3 iterations *)
       find_rec key hkey (h.data.(key_index h hkey))
 
     let find_all h key =
@@ -401,8 +401,8 @@ module K1 = struct
         c
       let hash = H.hash
       let equal c k =
-        (** {!get_key_copy} is not used because the equality of the user can be
-            the physical equality *)
+        (* {!get_key_copy} is not used because the equality of the user can be
+           the physical equality *)
         match get_key c with
         | None -> GenHashTable.EDead
         | Some k' ->
