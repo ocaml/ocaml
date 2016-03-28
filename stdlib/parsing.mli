@@ -35,7 +35,7 @@ val rhs_start : int -> int
 val rhs_end : int -> int
 (** See {!Parsing.rhs_start}. *)
 
-val symbol_start_pos : unit -> Lexing.position;;
+val symbol_start_pos : unit -> Lexing.position
 (** Same as [symbol_start], but return a [position] instead of an offset. *)
 
 val symbol_end_pos : unit -> Lexing.position
