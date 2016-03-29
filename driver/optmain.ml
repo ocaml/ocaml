@@ -304,14 +304,6 @@ let main () =
       Compmisc.init_path true;
       Asmlink.link ppf (get_objfiles ()) target;
       Warnings.check_fatal ();
-begin match Sys.getenv "TRACE" with
-| exception Not_found -> ()
-| _ ->
-  let module H = Spacetime.Heap_snapshot in
-  let writer = H.Writer.create ~pathname_prefix:"/tmp/compiler_spacetime" in
-  H.take writer;
-  H.Writer.save_trace_and_close writer
-end;
     end;
   with x ->
       Location.report_exception ppf x;
