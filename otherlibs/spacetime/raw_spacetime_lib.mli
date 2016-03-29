@@ -68,7 +68,7 @@ module Frame_table : sig
       OCaml program.  The table is indexed by return address. *)
   type t
 
-  val find_exn : t -> Program_counter.OCaml.t -> Printexc.Slot.t
+  val find_exn : Program_counter.OCaml.t -> t -> Printexc.Slot.t
 end
 
 module Function_entry_point : sig

@@ -74,10 +74,20 @@ module Function_entry_point = struct
   let to_int64 t = t
 end
 
-module Frame_table = struct
-  type t = (Program_counter.OCaml.t, Printexc.Slot.t) Hashtbl.t
+module Int64_map = Map.Make (Int64)
 
-  let find_exn = Hashtbl.find
+module Frame_table = struct
+  type raw = (Int64.t * Printexc.Slot.t) list
+
+  type t = Printexc.Slot.t Int64_map.t
+
+  let demarshal chn : t =
+    let raw : raw = Marshal.from_channel chn in
+    List.fold_left (fun map (key, data) -> Int64_map.add key data map)
+      Int64_map.empty
+      raw
+
+  let find_exn = Int64_map.find
 end
 
 module Shape_table = struct
@@ -96,8 +106,6 @@ module Shape_table = struct
     | Allocation_point _ -> 1
 
   type raw = (Int64.t * (part_of_shape list)) list
-
-  module Int64_map = Map.Make (Int64)
 
   type t = part_of_shape list Int64_map.t
 
@@ -910,7 +918,7 @@ module Heap_snapshot = struct
       let snapshots = read_snapshots chn [] in
       let num_snapshots = Array.length snapshots in
       let time_of_writer_close : float = Marshal.from_channel chn in
-      let frame_table : Frame_table.t = Marshal.from_channel chn in
+      let frame_table = Frame_table.demarshal chn in
       let shape_table = Shape_table.demarshal chn in
       let num_threads : int = Marshal.from_channel chn in
       let traces_by_thread = Array.init num_threads (fun _ -> None) in

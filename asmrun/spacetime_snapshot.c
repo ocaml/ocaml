@@ -310,58 +310,6 @@ CAMLprim value caml_spacetime_marshal_heap_snapshot
   return Val_unit;
 }
 
-CAMLprim value
-caml_spacetime_num_frame_descriptors(value unit)
-{
-  assert(unit == Val_unit);
-
-  if (caml_frame_descriptors == NULL) {
-    caml_init_frame_descriptors();
-  }
-
-  return Val_long(caml_frame_descriptors_mask + 1);
-}
-
-CAMLprim value
-caml_spacetime_get_frame_descriptor(value v_index)
-{
-  uintnat index;
-  value v_result;
-  frame_descr* descr;
-
-  assert(!Is_block(v_index));
-  index = Long_val(v_index);
-  if (index > caml_frame_descriptors_mask) {
-    caml_failwith("caml_spacetime_get_frametable: bad index");
-  }
-
-  if (caml_frame_descriptors == NULL) {
-    caml_init_frame_descriptors();
-  }
-  
-  descr = caml_frame_descriptors[index];
-
-  if (descr == NULL) {
-    return Val_long(0 /* None */);
-  }
-
-  v_result = caml_alloc_small(1, 1 /* Some */);
-  Field(v_result, 0) = caml_val_raw_backtrace_slot((backtrace_slot) descr);
-
-  return v_result;
-}
-
-CAMLprim value
-caml_spacetime_return_address_of_frame_descriptor(value v_descr)
-{
-  frame_descr* descr;
-
-  descr = (frame_descr*) caml_raw_backtrace_slot_val(v_descr);
-  assert(descr != NULL);
-
-  return caml_copy_int64(descr->retaddr);
-}
-
 extern struct custom_operations caml_int64_ops;  /* ints.c */
 
 static value
@@ -374,6 +322,94 @@ allocate_int64_outside_heap(uint64_t i)
   Int64_val(v) = i;
 
   return v;
+}
+
+static value
+copy_string_outside_heap(char const *s)
+{
+  int len;
+  mlsize_t wosize, offset_index;
+  value result;
+
+  len = strlen(s);
+  wosize = (len + sizeof (value)) / sizeof (value);
+  result = allocate_outside_heap_with_tag(wosize * sizeof(value), String_tag);
+
+  Field (result, wosize - 1) = 0;
+  offset_index = Bsize_wsize (wosize) - 1;
+  Byte (result, offset_index) = offset_index - len;
+  memmove(String_val(result), s, len);
+
+  return result;
+}
+
+static value
+allocate_loc_outside_heap(struct caml_loc_info li)
+{
+  value result;
+
+  if (li.loc_valid) {
+    result = allocate_outside_heap_with_tag(5 * sizeof(value), 0);
+    Field(result, 0) = Val_bool(li.loc_is_raise);
+    Field(result, 1) = copy_string_outside_heap(li.loc_filename);
+    Field(result, 2) = Val_int(li.loc_lnum);
+    Field(result, 3) = Val_int(li.loc_startchr);
+    Field(result, 4) = Val_int(li.loc_endchr);
+  } else {
+    result = allocate_outside_heap_with_tag(sizeof(value), 1);
+    Field(result, 0) = Val_bool(li.loc_is_raise);
+  }
+
+  return result;
+}
+
+CAMLprim value
+caml_spacetime_frame_table(value v_unit)
+{
+  /* Flatten the frame table into a single associative list. */
+
+  value list = Val_long(0);  /* the empty list */
+
+  if(!caml_debug_info_available()) {
+    return list;
+  }
+
+  if (caml_frame_descriptors == NULL) {
+    caml_init_frame_descriptors();
+  }
+
+  for(uintnat i = 0; i <= caml_frame_descriptors_mask; i++) {
+    frame_descr* descr = caml_frame_descriptors[i];
+    if (descr != NULL) {
+      value location, return_address, pair, new_list_element;
+      struct caml_loc_info li;
+      caml_extract_location_info(descr, &li);
+      location = allocate_loc_outside_heap(li);
+      return_address = allocate_int64_outside_heap(descr->retaddr);
+
+      pair = allocate_outside_heap_with_tag(2 * sizeof(value), 0);
+      Field(pair, 0) = return_address;
+      Field(pair, 1) = location;
+
+      new_list_element =
+        allocate_outside_heap_with_tag(2 * sizeof(value), 0 /* (::) */);
+      Field(new_list_element, 0) = pair;
+      Field(new_list_element, 1) = list;
+      list = new_list_element;
+    }
+  }
+
+  return list;
+}
+
+CAMLprim value caml_spacetime_marshal_frame_table
+      (value v_table, value v_channel)
+{
+  caml_extern_allow_out_of_heap = 1;
+  caml_output_value(v_channel, v_table, Val_long(0));
+  caml_extern_allow_out_of_heap = 0;
+
+  return Val_unit;
 }
 
 CAMLprim value
@@ -501,17 +537,22 @@ CAMLprim value caml_spacetime_free_heap_snapshot()
   return spacetime_disabled();
 }
 
-CAMLprim value caml_spacetime_num_frame_descriptors ()
+CAMLprim value caml_spacetime_marshal_frame_table ()
 {
   return spacetime_disabled();
 }
 
-CAMLprim value caml_spacetime_get_frame_descriptor ()
+CAMLprim value caml_spacetime_frame_table ()
 {
   return spacetime_disabled();
 }
 
-CAMLprim value caml_spacetime_return_address_of_frame_descriptor ()
+CAMLprim value caml_spacetime_marshal_shape_table ()
+{
+  return spacetime_disabled();
+}
+
+CAMLprim value caml_spacetime_shape_table ()
 {
   return spacetime_disabled();
 }

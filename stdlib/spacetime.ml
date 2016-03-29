@@ -14,33 +14,16 @@
 
 (* CR mshinwell: move to [Gc] module *)
 module Frame_table = struct
-  external num_frame_descriptors : unit -> int
-    = "caml_spacetime_only_works_for_native_code"
-      "caml_spacetime_num_frame_descriptors" "noalloc"
+  type t = (Int64.t * Printexc.Slot.t) list
 
-  external get_frame_descriptor : int -> Printexc.raw_backtrace_slot option
+  external get : unit -> t
     = "caml_spacetime_only_works_for_native_code"
-      "caml_spacetime_get_frame_descriptor"
+      "caml_spacetime_frame_table" "noalloc"
 
-  external return_address_of_frame_descriptor
-     : Printexc.raw_backtrace_slot
-    -> Int64.t
+  external marshal : t -> out_channel -> unit
     = "caml_spacetime_only_works_for_native_code"
-      "caml_spacetime_return_address_of_frame_descriptor"
+      "caml_spacetime_marshal_frame_table"
 
-  let get () =
-    let num = num_frame_descriptors () in
-    let table = Hashtbl.create num in
-    for index = 0 to num - 1 do
-      match get_frame_descriptor index with
-      | None -> ()
-      | Some descr ->
-        let return_addr = return_address_of_frame_descriptor descr in
-        assert (not (Hashtbl.mem table return_addr));
-        Hashtbl.add table return_addr
-          (Printexc.convert_raw_backtrace_slot descr)
-    done;
-    table
 end
 
 module Shape_table = struct
@@ -70,9 +53,6 @@ module Shape_table = struct
     = "caml_spacetime_only_works_for_native_code"
       "caml_spacetime_marshal_shape_table"
 
-  let marshal t chan =
-    marshal t chan
-
   (* CR-soon mshinwell: add support for freeing the structure *)
 end
 
@@ -95,7 +75,7 @@ module Series = struct
     if t.closed then failwith "Series is closed";
     Marshal.to_channel t.channel true [];
     Marshal.to_channel t.channel (Sys.time ()) [];
-    Marshal.to_channel t.channel (Frame_table.get ()) [];
+    Frame_table.marshal (Frame_table.get ()) t.channel;
     Shape_table.marshal (Shape_table.get ()) t.channel;
     marshal_global_trace t.channel;
     close_out t.channel;

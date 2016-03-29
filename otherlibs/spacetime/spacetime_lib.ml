@@ -58,7 +58,7 @@ module Location = struct
     let foreign = false in
     let position =
       try
-        let slot = Frame_table.find_exn frame_table pc in
+        let slot = Frame_table.find_exn pc frame_table in
         Printexc.Slot.location slot
       with Not_found -> None
     in
