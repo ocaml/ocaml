@@ -649,7 +649,8 @@ CAMLprim value caml_ml_enable_runtime_warnings(value vbool)
   return Val_unit;
 }
 
-CAMLprim value caml_ml_runtime_warnings_enabled(value vbool)
+CAMLprim value caml_ml_runtime_warnings_enabled(value unit)
 {
+  CAMLassert (unit == Val_unit);
   return Val_bool(caml_runtime_warnings);
 }
