@@ -12,7 +12,7 @@
 (*                                                                        *)
 (**************************************************************************)
 
-open RawAProf
+open Raw_spacetime_lib
 
 module Position = struct
 
@@ -101,7 +101,19 @@ module Entry = struct
 
 end
 
-module Entries = Set.Make(Entry)
+module Entry_sorted_by_words_highest_first = struct
+  type t = Entry.t
+
+  let compare entry1 entry2 =
+    Pervasives.compare entry2.Entry.words entry1.Entry.words
+
+  let hash = Entry.hash
+end
+
+module Entries = Set.Make (Entry)
+
+module Entries_sorted_by_words_highest_first =
+  Set.Make (Entry_sorted_by_words_highest_first)
 
 module Stats = struct
 
@@ -125,6 +137,12 @@ module Snapshot = struct
   let stats { stats } = stats
 
   let entries { entries } = entries
+
+  let entries_sorted_by_words_highest_first { entries; _ } =
+    Entries.fold (fun entry acc ->
+        Entries_sorted_by_words_highest_first.add entry acc)
+      entries
+      Entries_sorted_by_words_highest_first.empty
 
   let rec fold_ocaml_indirect_calls ?executable ~frame_table ~shape_table
             visited f backtrace acc callee =

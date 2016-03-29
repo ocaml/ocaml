@@ -39,9 +39,15 @@ let rec live i finally =
     Iend ->
       i.live <- finally;
       finally
-  | Ireturn | Iop(Itailcall_ind) | Iop(Itailcall_imm _) ->
+  | Ireturn ->
       i.live <- Reg.Set.empty; (* no regs are live across *)
       Reg.set_of_array i.arg
+  | Iop(Itailcall_ind) | Iop(Itailcall_imm _) ->
+      i.live <- Reg.Set.empty; (* no regs are live across *)
+      if not Config.spacetime then
+        Reg.set_of_array i.arg
+      else
+        Reg.Set.add Proc.loc_spacetime_node_hole (Reg.set_of_array i.arg)
   | Iop op ->
       let after = live i.next finally in
       if Proc.op_is_pure op                    (* no side effects *)
@@ -66,7 +72,14 @@ let rec live i finally =
            | _ ->
                across_after in
         i.live <- across;
-        Reg.add_set_array across i.arg
+        let after = Reg.add_set_array across i.arg in
+        if not Config.spacetime then after
+        else
+          match op with
+          | Icall_ind | Icall_imm _ | Iextcall (_, true) ->
+            Reg.Set.add Proc.loc_spacetime_node_hole after
+          | Itailcall_ind | Itailcall_imm _ -> assert false  (* see above *)
+          | _ -> after
       end
   | Iifthenelse(test, ifso, ifnot) ->
       let at_join = live i.next finally in
@@ -128,12 +141,12 @@ let reset () =
 
 let fundecl ppf f =
   let initially_live = live f.fun_body Reg.Set.empty in
-  (* Sanity check: only function parameters can be live at entrypoint *)
+  (* Sanity check: only function parameters (and the Spacetime node hole
+     register, if profiling) can be live at entrypoint *)
   let wrong_live = Reg.Set.diff initially_live (Reg.set_of_array f.fun_args) in
-  (* CR mshinwell: this might not be right *)
   let wrong_live =
     if Config.spacetime then
-      Reg.Set.remove Proc.loc_spacetime_node wrong_live
+      Reg.Set.remove Proc.loc_spacetime_node_hole wrong_live
     else
       wrong_live
   in

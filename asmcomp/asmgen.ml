@@ -100,10 +100,8 @@ let compile_fundecl (ppf : formatter) fd_cmm =
   fd_cmm
   ++ Timings.(accumulate_time (Selection build)) Selection.fundecl
   ++ pass_dump_if ppf dump_selection "After instruction selection"
-(*
   ++ Timings.(accumulate_time (Comballoc build)) Comballoc.fundecl
   ++ pass_dump_if ppf dump_combine "After allocation combining"
-*)
   ++ Timings.(accumulate_time (CSE build)) CSE.fundecl
   ++ pass_dump_if ppf dump_cse "After CSE"
   ++ Timings.(accumulate_time (Liveness build)) (liveness ppf)

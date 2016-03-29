@@ -63,8 +63,6 @@ type operation =
   | Inegf | Iabsf | Iaddf | Isubf | Imulf | Idivf
   | Ifloatofint | Iintoffloat
   | Ispecific of Arch.specific_operation
-  | Ispacetime_node_hole
-  | Ispacetime_load_node_hole_ptr
   (* CR mshinwell: Move [Ilabel] into [instruction_desc]. *)
   | Ilabel of Cmm.label
 
@@ -89,7 +87,7 @@ and instruction_desc =
   | Iraise of Lambda.raise_kind
 
 type spacetime_part_of_shape =
-  | Direct_call_point
+  | Direct_call_point of { callee : string; (* the symbol *) }
   | Indirect_call_point
   | Allocation_point
 

@@ -121,10 +121,11 @@ class virtual selector_generic : object
      : (Ident.t, Reg.t array) Tbl.t
     -> Mach.instruction_desc
     -> Reg.t array
-    -> Cmm.label option
+    -> (Cmm.label * Reg.t array) option
   method initial_env : unit -> (Ident.t, Reg.t array) Tbl.t
   method after_body
      : Cmm.fundecl
+    -> spacetime_node_hole:Ident.t option
     -> env_after_prologue:(Ident.t, Reg.t array) Tbl.t
     -> last_insn_of_prologue:Mach.instruction
     -> Mach.spacetime_shape option

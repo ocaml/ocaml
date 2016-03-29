@@ -14,7 +14,7 @@
 
 /* CR mshinwell: remove pragma? */
 
-#pragma GCC optimize ("O0")
+#pragma GCC optimize ("O3")
 
 #include <stdio.h>
 #include <stdint.h>
@@ -53,8 +53,8 @@
 
 extern value caml_spacetime_debug(value);
 
-static c_node* start_of_free_node_block;
-static c_node* end_of_free_node_block;
+static char* start_of_free_node_block;
+static char* end_of_free_node_block;
 
 typedef struct per_thread {
   value* trie_node_root;
@@ -82,10 +82,12 @@ static value caml_spacetime_finaliser_trie_root_main_thread = Val_unit;
 value* caml_spacetime_finaliser_trie_root
   = &caml_spacetime_finaliser_trie_root_main_thread;
 
+static const uintnat chunk_size = 1024 * 1024;
+
 static void reinitialise_free_node_block(void)
 {
-  start_of_free_node_block = (c_node*) malloc(sizeof(c_node) * 10000);
-  end_of_free_node_block = start_of_free_node_block + 10000;
+  start_of_free_node_block = (char*) malloc(chunk_size);
+  end_of_free_node_block = start_of_free_node_block + chunk_size;
 }
 
 void caml_spacetime_initialize(void)
@@ -218,8 +220,22 @@ static int pc_inside_c_node_matches(c_node* node, void* pc)
 static value allocate_uninitialized_ocaml_node(int size_including_header)
 {
   void* node;
+  uintnat size;
+
   Assert(size_including_header >= 3);
   node = caml_stat_alloc(sizeof(uintnat) * size_including_header);
+
+  size = size_including_header * sizeof(value);
+
+  node = (void*) start_of_free_node_block;
+  if (end_of_free_node_block - start_of_free_node_block < size) {
+    reinitialise_free_node_block();
+    node = (void*) start_of_free_node_block;
+    Assert(end_of_free_node_block - start_of_free_node_block >= size);
+  }
+
+  start_of_free_node_block += size;
+
   /* We don't currently rely on [uintnat] alignment, but we do need some
      alignment, so just be sure. */
   Assert (((uintnat) node) % sizeof(uintnat) == 0);
@@ -307,8 +323,6 @@ CAMLprim value caml_spacetime_allocate_node(
      direct tail call points.  (We cannot just count them and put them at the
      beginning of the node because we need the indexes of elements within the
      node during instruction selection before we have found all call points.)
-     This is now also used for assertion checking in
-     [caml_spacetime_caml_garbage_collection].
   */
 
   for (field = Node_num_header_words; field < size_including_header - 1;
@@ -325,10 +339,14 @@ static c_node* allocate_c_node(void)
 {
   c_node* node;
 
-  node = start_of_free_node_block++;
-  if (start_of_free_node_block >= end_of_free_node_block) {
+  node = (c_node*) start_of_free_node_block;
+  if (end_of_free_node_block - start_of_free_node_block < sizeof(c_node)) {
     reinitialise_free_node_block();
+    node = (c_node*) start_of_free_node_block;
+    Assert(end_of_free_node_block - start_of_free_node_block
+      >= sizeof(c_node));
   }
+  start_of_free_node_block += sizeof(c_node);
 
   Assert((sizeof(c_node) % sizeof(uintnat)) == 0);
   node->gc_header =
@@ -427,6 +445,8 @@ CAMLprim value* caml_spacetime_indirect_node_hole_ptr
    and can thus accommodate any number of C backtraces leading from
    caml_call_gc.
 */
+/* CR mshinwell: it might in fact be the case now that nothing called from
+   caml_call_gc will do any allocation that ends up on the trie. */
 
 static NOINLINE void* find_trie_node_from_libunwind(int for_allocation,
     struct ext_table** cached_frames)
@@ -682,65 +702,6 @@ void caml_spacetime_c_to_ocaml(void* ocaml_entry_point,
 
 extern void caml_garbage_collection(void);  /* signals_asm.c */
 extern void caml_array_bound_error(void);  /* fail.c */
-
-static void ocaml_to_c_call_site_without_instrumentation(
-  void(* callee_ptr)(void))
-{
-  /* See comment on [caml_spacetime_caml_garbage_collection] below. */
-
-  value callee;
-  value node;
-
-  /* See point 1 above. */
-  node = (value) caml_spacetime_trie_node_ptr;
-  Assert ((node % sizeof(value)) == 0);
-
-  callee = Encode_call_point_pc(callee_ptr);
-
-  /* If the callee has been set, we don't check whether there
-     is any child node, since it's possible there might not actually be one
-     (e.g. if no allocation or callbacks performed in
-     [caml_garbage_collection]). */
-  Assert((Direct_pc_callee(node, 0) == Val_unit
-      && Direct_callee_node(node, 0) == Val_unit)
-    || && Direct_pc_callee(node, 0) == callee);
-
-  /* Initialize the direct call point within the node. */
-  Direct_pc_callee(node, 0) = callee;
-
-  /* Set the trie node hole pointer correctly so that when e.g. an
-     allocation occurs from within [caml_garbage_collection] the resulting
-     nodes are attached correctly. */
-  caml_spacetime_trie_node_ptr = &Direct_callee_node(node, 0);
-}
-
-void caml_spacetime_caml_garbage_collection(void)
-{
-  /* Called upon entry to [caml_garbage_collection].
-     Since [caml_call_gc] points cannot easily be instrumented by
-     [Spacetime_profiling] (the calls are created too late in the
-     compiler pipeline), we have to manually find the correct place in the
-     current OCaml node before [caml_garbage_collection] can continue.
-
-     On entry we expect:
-     1. [caml_allocation_trie_node_ptr] to point to the first of the two
-        fields of a direct call point inside an OCaml node (which is
-        arranged by code in asmcomp/amd64/emit.mlp); and
-     2. [caml_gc_regs] to point at the usual GC register array on the stack
-        with the return address immediately after (at a higher address) than
-        such array.
-  */
-
-  ocaml_to_c_call_site_without_instrumentation(&caml_garbage_collection);
-}
-
-void caml_spacetime_caml_ml_array_bound_error(void)
-{
-  /* Like [caml_spacetime_caml_garbage_collection], but for array bounds
-     check failures. */
-
-  ocaml_to_c_call_site_without_instrumentation(&caml_array_bound_error);
-}
 
 CAMLprim uintnat caml_spacetime_generate_profinfo (void* profinfo_words)
 {

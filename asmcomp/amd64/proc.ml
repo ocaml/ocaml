@@ -23,7 +23,6 @@ open Reg
 open Mach
 
 let fp = Config.with_frame_pointers
-let with_spacetime = Config.spacetime
 
 (* Which ABI to use *)
 
@@ -51,9 +50,9 @@ let masm =
     r8          6
     r9          7
     r12         8
-    r10         9
-    r11         10
-    r13         11
+    r13         9
+    r10         10
+    r11         11
     rbp         12
     r14         trap pointer
     r15         allocation pointer
@@ -84,15 +83,12 @@ let max_arguments_for_tailcalls = 10
 
 let int_reg_name =
   match Config.ccomp_type with
-  (* %r11 comes before %r13 since the latter is reserved for allocation
-     profiling and there must be a contiguous block of registers available
-     for allocation prior to that one. *)
   | "msvc" ->
       [| "rax"; "rbx"; "rdi"; "rsi"; "rdx"; "rcx"; "r8"; "r9";
-         "r12"; "r10"; "r11"; "r13"; "rbp" |]
+         "r12"; "r13"; "r10"; "r11"; "rbp" |]
   | _ ->
       [| "%rax"; "%rbx"; "%rdi"; "%rsi"; "%rdx"; "%rcx"; "%r8"; "%r9";
-         "%r12"; "%r10"; "%r11"; "%r13"; "%rbp" |]
+         "%r12"; "%r13"; "%r10"; "%r11"; "%rbp" |]
 
 let float_reg_name =
   match Config.ccomp_type with
@@ -144,7 +140,7 @@ let phys_reg n =
 let rax = phys_reg 0
 let rcx = phys_reg 5
 let rdx = phys_reg 4
-let r13 = phys_reg 11
+let r13 = phys_reg 9
 let rbp = phys_reg 12
 let rxmm15 = phys_reg 115
 
@@ -189,8 +185,7 @@ let outgoing ofs = Outgoing ofs
 let not_supported ofs = fatal_error "Proc.loc_results: cannot call"
 
 let max_int_args_in_regs () =
-  (* CR lwhite: this should really be 10 when Spacetime is off *)
-  (*if with_spacetime then*) 9 (*else 10*)
+  if Config.spacetime then 9 else 10
 
 let loc_arguments arg =
   calling_conventions 0 ((max_int_args_in_regs ()) - 1) 100 109 outgoing arg
@@ -201,6 +196,8 @@ let loc_parameters arg =
   loc
 let loc_results res =
   let (loc, ofs) = calling_conventions 0 0 100 100 not_supported res in loc
+
+let loc_spacetime_node_hole = r13
 
 (* C calling conventions under Unix:
      first integer args in rdi, rsi, rdx, rcx, r8, r9
@@ -263,15 +260,9 @@ let loc_external_arguments arg =
 
 let loc_exn_bucket = rax
 
-let loc_spacetime_node = r13
+(* Volatile registers: none *)
 
-(* Volatile registers: none, except when using Spacetime *)
-
-let regs_are_volatile rs =
-  if not with_spacetime then false
-  else
-    List.exists (fun reg -> reg.loc = loc_spacetime_node.loc)
-      (Array.to_list rs)
+let regs_are_volatile rs = false
 
 (* Registers destroyed by operations *)
 
@@ -284,7 +275,7 @@ let destroyed_at_c_call =
   else
     (* Unix: rbp, rbx, r12-r15 preserved *)
     Array.of_list(List.map phys_reg
-      [0;2;3;4;5;6;7;9;10;
+      [0;2;3;4;5;6;7;10;11;
        100;101;102;103;104;105;106;107;
        108;109;110;111;112;113;114;115])
 
@@ -294,53 +285,41 @@ let destroyed_at_oper = function
   | Iop(Iintop(Idiv | Imod)) | Iop(Iintop_imm((Idiv | Imod), _))
         -> [| rax; rdx |]
   | Iop(Istore(Single, _, _)) -> [| rxmm15 |]
+  | Iop(Ialloc _) when Config.spacetime
+        -> [| rax; loc_spacetime_node_hole |]
   | Iop(Ialloc _ | Iintop(Imulh | Icomp _) | Iintop_imm((Icomp _), _))
         -> [| rax |]
   | Iswitch(_, _) -> [| rax; rdx |]
   | _ ->
-    let destroyed =
-      begin
-        if fp then
-          (* prevent any use of the frame pointer ! *)
-          [rbp]
-        else
-          []
-      end @
-        begin
-          if with_spacetime then
-            [r13]
-          else
-            []
-        end
-    in
-    Array.of_list destroyed
+    if fp then
+(* prevent any use of the frame pointer ! *)
+      [| rbp |]
+    else
+      [||]
+
 
 let destroyed_at_raise = all_phys_regs
 
 (* Maximal register pressure *)
 
-let safe_register_pressure instr =
-  let extra =
-    (if fp then 1 else 0) + (if with_spacetime then 1 else 0)
-  in
-  match instr with
-  | Iextcall(_,_) -> if win64 then 8 - extra else 0
-  | _ -> 11 - extra
 
-let max_register_pressure instr =
-  let int_pressure, float_pressure =
-    match instr with
-    | Iextcall(_, _) -> if win64 then 8, 10 else 4, 0
-    | Iintop(Idiv | Imod) | Iintop_imm((Idiv | Imod), _) -> 11, 16
-    | Ialloc _ | Iintop(Icomp _) | Iintop_imm((Icomp _), _) -> 12, 16
-    | Istore(Single, _, _) -> 13, 15
-    | _ -> 13, 16
-  in
-  let int_pressure =
-    int_pressure - (if fp then 1 else 0)
-      - (if with_spacetime then 2 else 0)  (* see below *)
-  in
-  [| int_pressure; float_pressure |]
+let safe_register_pressure = function
+    Iextcall(_,_) -> if win64 then if fp then 7 else 8 else 0
+  | _ -> if fp then 10 else 11
+
+let max_register_pressure = function
+    Iextcall(_, _) ->
+      if win64 then
+        if fp then [| 7; 10 |]  else [| 8; 10 |]
+        else
+        if fp then [| 3; 0 |] else  [| 4; 0 |]
+  | Iintop(Idiv | Imod) | Iintop_imm((Idiv | Imod), _) ->
+    if fp then [| 10; 16 |] else [| 11; 16 |]
+  | Ialloc _ | Iintop(Icomp _) | Iintop_imm((Icomp _), _) ->
+    if fp then [| 11; 16 |] else [| 12; 16 |]
+  | Istore(Single, _, _) ->
+    if fp then [| 12; 15 |] else [| 13; 15 |]
+  | _ -> if fp then [| 12; 16 |] else [| 13; 16 |]
 
 (* Pure operations (without any side effect besides updating their result
    registers). *)
@@ -349,7 +328,6 @@ let op_is_pure = function
   | Icall_ind | Icall_imm _ | Itailcall_ind | Itailcall_imm _
   | Iextcall _ | Istackoffset _ | Istore _ | Ialloc _
   | Iintop(Icheckbound _) | Iintop_imm(Icheckbound _, _) -> false
-  | Ispacetime_load_node_hole_ptr -> false
   | Ispecific(Ilea _) -> true
   | Ispecific _ -> false
   | Ilabel _ -> false
@@ -366,6 +344,7 @@ let assemble_file infile outfile =
   X86_proc.assemble_file infile outfile
 
 let init () =
-  num_available_registers.(0)
-    <- 13 - (if fp then 1 else 0)
-      - (if with_spacetime then 2 else 0) (* avoid %r13 and %rbp *)
+  if fp then begin
+    num_available_registers.(0) <- 12
+  end else
+    num_available_registers.(0) <- 13

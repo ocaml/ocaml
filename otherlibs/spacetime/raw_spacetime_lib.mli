@@ -66,7 +66,6 @@ module Frame_table : sig
   (* CR-someday mshinwell: move to [Gc] if dependencies permit? *)
   (** A value of type [t] corresponds to the frame table of a running
       OCaml program.  The table is indexed by return address. *)
-  (* XXX do these exactly match with the call site addresses? ... *)
   type t
 
   val find_exn : t -> Program_counter.OCaml.t -> Printexc.Slot.t

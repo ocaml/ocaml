@@ -93,9 +93,6 @@ let operation = function
   | Ccmpf c -> Printf.sprintf "%sf" (comparison c)
   | Craise (k, d) -> Lambda.raise_kind k ^ Debuginfo.to_string d
   | Ccheckbound d -> "checkbound" ^ Debuginfo.to_string d
-  | Cspacetime_load_node_hole_ptr -> "spacetime_load_node_hole_ptr"
-  | Cspacetime_node_hole -> "spacetime_node_hole"
-  | Cprogram_counter d -> "program_counter" ^ Debuginfo.to_string d
   | Clabel label -> "label:" ^ string_of_int label
 
 let rec expr ppf = function

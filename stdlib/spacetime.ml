@@ -48,11 +48,11 @@ module Shape_table = struct
     (* Must match asmrun/spacetime_snapshot.c *)
     (* CR mshinwell: must also match rawAProf.ml, share this? *)
     (* The [Int64.t] arguments give the call/allocation site. *)
-    | Direct_call of Int64.t
+    | Direct_call of { call_site : Int64.t; callee : Int64.t; }
     | Indirect_call of Int64.t
     | Allocation_point of Int64.t
 
-  let _ = Direct_call 0L
+  let _ = Direct_call { call_site = 0L; callee = 0L; }
   let _ = Indirect_call 0L
   let _ = Allocation_point 0L
 

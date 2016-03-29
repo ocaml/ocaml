@@ -235,9 +235,6 @@ method class_of_operation op =
   | Inegf | Iabsf | Iaddf | Isubf | Imulf | Idivf
   | Ifloatofint | Iintoffloat -> Op_pure
   | Ispecific _ -> Op_other
-  (* CR mshinwell: should review these carefully *)
-  | Ispacetime_node_hole -> Op_other
-  | Ispacetime_load_node_hole_ptr -> Op_other
   | Ilabel _ -> Op_other
 
 (* Operations that are so cheap that it isn't worth factoring them. *)

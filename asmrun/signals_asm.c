@@ -28,9 +28,6 @@
 #include "caml/signals_machdep.h"
 #include "signals_osdep.h"
 #include "stack.h"
-#ifdef WITH_SPACETIME
-#include "spacetime.h"
-#endif
 
 #ifdef HAS_STACK_OVERFLOW_DETECTION
 #include <sys/time.h>
@@ -72,9 +69,6 @@ extern char caml_system__code_begin, caml_system__code_end;
 
 void caml_garbage_collection(void)
 {
-#ifdef WITH_SPACETIME
-  caml_spacetime_caml_garbage_collection();
-#endif
   caml_young_limit = caml_young_trigger;
   if (caml_requested_major_slice || caml_requested_minor_gc ||
       caml_young_ptr - caml_young_trigger < Max_young_whsize){

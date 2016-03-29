@@ -103,9 +103,6 @@ and operation =
   | Ccmpf of comparison
   | Craise of Lambda.raise_kind * Debuginfo.t
   | Ccheckbound of Debuginfo.t
-  | Cspacetime_node_hole
-  | Cspacetime_load_node_hole_ptr
-  | Cprogram_counter of Debuginfo.t
   | Clabel of label
 
 and expression =
@@ -135,7 +132,6 @@ type fundecl =
     fun_body: expression;
     fun_fast: bool;
     fun_dbg : Debuginfo.t;
-    fun_spacetime_node : Ident.t;
   }
 
 type data_item =
