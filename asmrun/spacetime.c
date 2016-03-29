@@ -767,4 +767,18 @@ caml_spacetime_marshal_trie ()
   Assert(0);  /* unreachable */
 }
 
+CAMLprim value
+caml_spacetime_marshal_shape_table ()
+{
+  caml_failwith("Spacetime profiling not enabled");
+  Assert(0);  /* unreachable */
+}
+
+CAMLprim value
+caml_spacetime_shape_table ()
+{
+  caml_failwith("Spacetime profiling not enabled");
+  Assert(0);  /* unreachable */
+}
+
 #endif
