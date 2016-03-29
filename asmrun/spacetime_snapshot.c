@@ -125,7 +125,7 @@ static value take_gc_stats(void)
   return v_stats;
 }
 
-CAMLprim value caml_spacetime_take_heap_snapshot(void)
+static value take_snapshot(void)
 {
   value v_snapshot;
   snapshot* heap_snapshot;
@@ -278,36 +278,49 @@ CAMLprim value caml_spacetime_take_heap_snapshot(void)
   return v_snapshot;
 }
 
-CAMLprim value caml_spacetime_free_heap_snapshot(value v_snapshot)
+void save_snapshot (struct channel *chan)
 {
-  snapshot* heap_snapshot = (snapshot*) v_snapshot;
+  value v_snapshot;
+  snapshot* heap_snapshot;
+
+  v_snapshot = take_snapshot();
+
+  caml_output_val(chan, Val_long(0), Val_long(0));
+
+  caml_extern_allow_out_of_heap = 1;
+  caml_output_val(chan, v_snapshot, Val_long(0));
+  caml_extern_allow_out_of_heap = 0;
+
+  heap_snapshot = (snapshot*) v_snapshot;
   caml_stat_free(Hp_val(heap_snapshot->time));
   caml_stat_free(Hp_val(heap_snapshot->gc_stats));
   if (Wosize_val(heap_snapshot->entries) > 0) {
     caml_stat_free(Hp_val(heap_snapshot->entries));
   }
   caml_stat_free(Hp_val(v_snapshot));
-  return Val_unit;
 }
 
-void caml_spacetime_extern_heap_snapshot
-      (struct channel *chan, value v_snapshot)
-{
-  caml_extern_allow_out_of_heap = 1;
-  caml_output_val(chan, v_snapshot, Val_long(0));
-  caml_extern_allow_out_of_heap = 0;
-}
-
-CAMLprim value caml_spacetime_marshal_heap_snapshot
-      (value v_channel, value v_snapshot)
+CAMLprim value caml_spacetime_take_snapshot(value v_channel)
 {
   struct channel * channel = Channel(v_channel);
 
   Lock(channel);
-  caml_spacetime_extern_heap_snapshot(channel, v_snapshot);
+  save_snapshot(channel);
   Unlock(channel);
 
   return Val_unit;
+}
+
+value caml_spacetime_timestamp(void)
+{
+  double time;
+  value v_time;
+
+  time = caml_sys_time_unboxed(Val_unit);
+  v_time = allocate_outside_heap_with_tag(sizeof(double), Double_tag);
+  Double_field(v_time, 0) = time;
+
+  return v_time;
 }
 
 extern struct custom_operations caml_int64_ops;  /* ints.c */
@@ -363,8 +376,7 @@ allocate_loc_outside_heap(struct caml_loc_info li)
   return result;
 }
 
-CAMLprim value
-caml_spacetime_frame_table(value v_unit)
+value caml_spacetime_frame_table(void)
 {
   /* Flatten the frame table into a single associative list. */
 
@@ -402,18 +414,7 @@ caml_spacetime_frame_table(value v_unit)
   return list;
 }
 
-CAMLprim value caml_spacetime_marshal_frame_table
-      (value v_table, value v_channel)
-{
-  caml_extern_allow_out_of_heap = 1;
-  caml_output_value(v_channel, v_table, Val_long(0));
-  caml_extern_allow_out_of_heap = 0;
-
-  return Val_unit;
-}
-
-CAMLprim value
-caml_spacetime_shape_table(value v_unit)
+value caml_spacetime_shape_table(void)
 {
   /* Flatten the hierarchy of shape tables into a single associative list
      mapping from function symbols to node layouts.  The node layouts are
@@ -504,16 +505,6 @@ caml_spacetime_shape_table(value v_unit)
   return list;
 }
 
-CAMLprim value caml_spacetime_marshal_shape_table
-      (value v_table, value v_channel)
-{
-  caml_extern_allow_out_of_heap = 1;
-  caml_output_value(v_channel, v_table, Val_long(0));
-  caml_extern_allow_out_of_heap = 0;
-
-  return Val_unit;
-}
-
 #else
 
 static value spacetime_disabled()
@@ -522,19 +513,9 @@ static value spacetime_disabled()
   assert(0);  /* unreachable */
 }
 
-CAMLprim value caml_spacetime_take_heap_snapshot()
+CAMLprim value caml_spacetime_take_snapshot(value ignored)
 {
-  return spacetime_disabled();
-}
-
-CAMLprim value caml_spacetime_marshal_heap_snapshot()
-{
-  return spacetime_disabled();
-}
-
-CAMLprim value caml_spacetime_free_heap_snapshot()
-{
-  return spacetime_disabled();
+  return Val_unit;
 }
 
 CAMLprim value caml_spacetime_marshal_frame_table ()

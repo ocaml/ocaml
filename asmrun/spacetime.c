@@ -148,17 +148,30 @@ void caml_spacetime_register_thread(
   num_per_threads++;
 }
 
-void caml_spacetime_extern_trie (struct channel *chan)
+void save_trie (struct channel *chan)
 {
+  value v_time, v_frames, v_shapes;
+  int num_marshalled = 0;
+  per_thread* thr = per_threads;
+
+  caml_output_val(chan, Val_long(1), Val_long(0));
+
+  v_time = caml_spacetime_timestamp();
+  v_frames = caml_spacetime_frame_table();
+  v_shapes = caml_spacetime_shape_table();
+
+  caml_extern_allow_out_of_heap = 1;
+  caml_output_val(chan, v_time, Val_long(0));
+  caml_output_val(chan, v_frames, Val_long(0));
+  caml_output_val(chan, v_shapes, Val_long(0));
+  caml_extern_allow_out_of_heap = 0;
+
+  caml_output_val(chan, Val_long(num_per_threads + 1), Val_long(0));
+
   /* Marshal both the main and finaliser tries, for all threads that have
      been created, to an [out_channel].  This can be done by using the
      extern.c code as usual, since the trie looks like standard OCaml values;
      but we must allow it to traverse outside the heap. */
-
-  int num_marshalled = 0;
-  per_thread* thr = per_threads;
-
-  caml_output_val(chan, Val_long(num_per_threads + 1), Val_long(0));
 
   caml_extern_allow_out_of_heap = 1;
   caml_output_val(chan, caml_spacetime_trie_root, Val_long(0));
@@ -175,12 +188,12 @@ void caml_spacetime_extern_trie (struct channel *chan)
   Assert(num_marshalled == num_per_threads);
 }
 
-CAMLprim value caml_spacetime_marshal_trie(value vchan)
+CAMLprim value caml_spacetime_save_trie (value vchan)
 {
   struct channel * channel = Channel(vchan);
 
   Lock(channel);
-  caml_spacetime_extern_trie(channel);
+  save_trie(channel);
   Unlock(channel);
   return Val_unit;
 }
@@ -761,10 +774,9 @@ uintnat caml_spacetime_my_profinfo (struct ext_table** cached_frames)
 #else
 
 CAMLprim value
-caml_spacetime_marshal_trie ()
+caml_spacetime_save_trie (value ignored)
 {
-  caml_failwith("Spacetime profiling not enabled");
-  Assert(0);  /* unreachable */
+  return Val_unit;
 }
 
 #endif
