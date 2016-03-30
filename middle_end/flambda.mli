@@ -77,13 +77,14 @@ type project_var = Projection.project_var
   might be good.) *)
 type specialised_to = {
   var : Variable.t;
-  (** The [projecting_from] value (see projection.mli) of any [projection]
-      must be another free
-      variable or specialised
-      argument (depending on whether this record type is involved in
-      [free_vars] or [specialised_args] respectively) in the same
-      set of closures. *)
+  (** The "outer variable". *)
   projection : Projection.t option;
+  (** The [projecting_from] value (see projection.mli) of any [projection]
+      must be another free variable or specialised argument (depending on
+      whether this record type is involved in [free_vars] or
+      [specialised_args] respectively) in the same set of closures.
+      As such, this field describes a relation of projections between
+      either the [free_vars] or the [specialised_args]. *)
 }
 
 (** Flambda terms are partitioned in a pseudo-ANF manner; many terms are
@@ -214,14 +215,22 @@ and set_of_closures = private {
       The domain of this map is sometimes known as the "variables bound by
       the closure". *)
   specialised_args : specialised_to Variable.Map.t;
-  (* CR mshinwell: Rewrite specialised_args documentation, being sure to
-     note the new "semantic" meaning. *)
-  (** Parameters known to always alias some variable in the scope of the set
-      of closures declaration.  These are the only parameters that may,
-      during [Inline_and_simplify], have non-unknown approximations.
+  (** Parameters whose corresponding arguments are known to always alias a
+      particular value.  These are the only parameters that may, during
+      [Inline_and_simplify], have non-unknown approximations.
 
-      For instance, supposing all call sites of f are represented in this
-      example,
+      An argument may only be specialised to a variable in the scope of the
+      corresponding set of closures declaration.  Usually, that variable
+      itself also appears in the position of the specialised argument at
+      all call sites of the function.  However it may also be the case (for
+      example in code generated as a result of [Augment_specialised_args])
+      that the various call sites of such a function have differing
+      variables in the position of the specialised argument.  This is
+      permissible *so long as it is certain they all alias the same value*.
+      Great care must be taken in transformations that result in this
+      situation since there are no invariant checks for correctness.
+
+      As an example, supposing all call sites of f are represented here:
         [let x = ... in
          let f a b c = ... in
          let y = ... in

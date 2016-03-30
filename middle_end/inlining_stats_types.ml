@@ -84,9 +84,8 @@ module Not_inlined = struct
 
   let summary ppf = function
     | Classic_mode ->
-      (* CR lwhite: make sure this is reworded if the parameter name changes *)
       Format.pp_print_text ppf
-        "This function was prevented from inlining by `-classic-heuristic'."
+        "This function was prevented from inlining by `-Oclassic'."
     | Function_obviously_too_large size ->
       Format.pp_print_text ppf
         "This function was not inlined because \
@@ -181,10 +180,9 @@ module Not_specialised = struct
 
   let summary ppf = function
     | Classic_mode ->
-      (* CR lwhite: make sure this is reworded if the parameter name changes *)
       Format.pp_print_text ppf
         "This function was prevented from specialising by \
-          `-classic-heuristic'."
+          `-Oclassic'."
     | Function_obviously_too_large size ->
       Format.pp_print_text ppf
         "This function was not specialised because \
