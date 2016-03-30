@@ -272,8 +272,9 @@ class printer  ()= object(self:'self)
         pp f "@[<2>[%a%a]@]"
           (fun f l
             ->
-              match l with
-              | [] -> ()
+              match l, closed with
+              | [], Closed -> ()
+              | [], Open -> pp f ">" (* Cf #7200: print [>] correctly *)
               | _ ->
               pp f "%s@;%a"
                 (match (closed,low) with
