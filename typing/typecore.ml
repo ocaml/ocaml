@@ -2423,8 +2423,9 @@ and type_expect_ ?in_function ?(recarg=Rejected) env sexp ty_expected =
           (Texp_constraint cty, loc, sexp.pexp_attributes) :: arg.exp_extra;
       }
   | Pexp_coerce(sarg, sty, sty') ->
-      (* Could be always true, only 1% slowdown for lablgtk *)
-      let separate = !Clflags.principal || Env.has_local_constraints env in
+      let separate = true in (* always separate, 1% slowdown for lablgtk *)
+      (* Also see PR#7199 for a problem with the following:
+         let separate = !Clflags.principal || Env.has_local_constraints env in*)
       let (arg, ty',cty,cty') =
         match sty with
         | None ->
