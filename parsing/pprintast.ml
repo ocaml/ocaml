@@ -1313,6 +1313,11 @@ class printer  ()= object(self:'self)
          self#item_attributes x.ptyext_attributes
 
   method constructor_declaration f (name, args, res, attrs) =
+    let name =
+      match name with
+      | "::" -> "(::)"   (* #7200 *)
+      | s -> s
+    in
     match res with
     | None ->
         pp f "%s%a@;%a" name
