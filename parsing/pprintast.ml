@@ -513,7 +513,12 @@ class printer  ()= object(self:'self)
                    (self#list self#label_x_expression_param)  l)
           | `Prefix s ->
               let s =
-                if List.mem s ["~+";"~-";"~+.";"~-."]
+                if List.mem s ["~+";"~-";"~+.";"~-."] &&
+                   (match l with
+                    (* See #7200: avoid turning (~- 1) into (- 1) which is parsed
+                       as an int literal *)
+                    |[(_,{pexp_desc=Pexp_constant _})] -> false
+                    | _ -> true)
                 then String.sub s 1 (String.length s -1)
                 else s
             in
