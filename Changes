@@ -788,6 +788,9 @@ Bug fixes:
 - PR#7160: Type synonym definitions can weaken gadt constructor types
   (Jacques Garrigue, report by Mikhail Mandrykin)
 
+- PR#7181: Misleading error message with GADTs and polymorphic variants
+  (Jacques Garrigue, report by Pierre Chambart)
+
 - PR#7182: Assertion failure with recursive modules and externals
   (Jacques Garrigue, report by Jeremy Yallop)
 
