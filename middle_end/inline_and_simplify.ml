@@ -31,9 +31,6 @@ module R = Inline_and_simplify_aux.Result
     to always hold a particular constant.
 *)
 
-(* CR mshinwell: make sure "simplify_free_variable" (and not
-   "simplify_var_to_var_using_approx") is always used where necessary. *)
-
 let ret = R.set_approx
 
 type simplify_variable_result =

@@ -167,9 +167,15 @@ module Options = Main_args.Make_optcomp_options (struct
   let _no_unbox_free_vars_of_closures = clear unbox_free_vars_of_closures
   let _no_unbox_specialised_args = clear unbox_specialised_args
   let _o s = output_name := Some s
-  (* CR mshinwell: should stop e.g. -O2 -classic-inlining
+  (* CR-someday mshinwell: should stop e.g. -O2 -classic-inlining
      lgesbert: could be done in main() below, like for -pack and -c, but that
-     would prevent overriding using OCAMLPARAM. *)
+     would prevent overriding using OCAMLPARAM.
+     mshinwell: We're going to defer this for the moment and add a note in
+     the manual that the behaviour is unspecified in cases such as this.
+     We should refactor the code so that the user's requirements are
+     collected, then checked all at once for illegal combinations, and then
+     transformed into the settings of the individual parameters.
+  *)
   let _o2 () =
     default_simplify_rounds := 2;
     use_inlining_arguments_set o2_arguments;
