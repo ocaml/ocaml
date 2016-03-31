@@ -91,6 +91,7 @@ module Ephemeron = struct
 
   type t (** ephemeron *)
 
+   (** To change in sync with weak.h *)
   let additional_values = 2
   let max_ephe_length = Sys.max_array_length - additional_values
 
@@ -133,19 +134,12 @@ module Ephemeron = struct
 
   external blit_key : t -> int -> t -> int -> int -> unit
     = "caml_ephe_blit_key"
+
   let blit_key e1 o1 e2 o2 l =
-    let msg = "Obj.Ephemeron.blit_key" in
-    if l < 0 then invalid_arg msg;
-    if l = 0 then ()
-    else begin
-      raise_if_invalid_offset e1 o1 msg;
-      raise_if_invalid_offset e2 o2 msg;
-      let len1 = length e1 in let len2 = length e2 in
-      if not (l <= len1 && l <= len2 &&
-              o1 <= len1 - l && o2 <= len2 - l) then
-        invalid_arg msg;
-      blit_key e1 o1 e2 o2 l
-    end
+    if l < 0 || o1 < 0 || o1 > length e1 - l
+       || o2 < 0 || o2 > length e2 - l
+    then invalid_arg "Obj.Ephemeron.blit_key"
+    else if l <> 0 then blit_key e1 o1 e2 o2 l
 
   external get_data: t -> obj_t option = "caml_ephe_get_data"
   external get_data_copy: t -> obj_t option = "caml_ephe_get_data_copy"

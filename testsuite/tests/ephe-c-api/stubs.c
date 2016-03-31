@@ -43,11 +43,11 @@ void is_key_value(const char* test, value eph, intnat v) {
 }
 
 void is_key_unset(const char* test, value eph) {
-  is_false(test, "key unset", caml_ephemeron_check_key(eph, 0));
+  is_false(test, "key unset", caml_ephemeron_key_is_set(eph, 0));
 }
 
 void is_data_unset(const char* test, value eph) {
-  is_false(test, "data unset", caml_ephemeron_check_data(eph));
+  is_false(test, "data unset", caml_ephemeron_data_is_set(eph));
 }
 
 extern value caml_gc_minor(value);
@@ -269,8 +269,8 @@ CAMLprim value test8(value ra, value rb) {
 
   x = caml_ephemeron_create(15);
   z = caml_ephemeron_create(3);
-  is_true(test, "eph length=15", caml_ephemeron_key_length(x) == 15);
-  is_true(test, "eph length=3", caml_ephemeron_key_length(z) == 3);
+  is_true(test, "eph length=15", caml_ephemeron_num_keys(x) == 15);
+  is_true(test, "eph length=3", caml_ephemeron_num_keys(z) == 3);
 
   is_false(test, "eph get empty nonull", caml_ephemeron_get_key(x, 5, &y));
   is_false(test, "eph get copy empty nonnull", caml_ephemeron_get_key_copy(x, 5, &y));

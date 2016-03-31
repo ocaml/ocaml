@@ -109,7 +109,10 @@ module Ephemeron: sig
 
   val create: int -> t
   (** [create n] returns an ephemeron with [n] keys.
-      All the keys and the data are initially empty *)
+      All the keys and the data are initially empty.
+      The argument [n] must be between zero
+      and {!max_ephe_length} (limits included).
+  *)
 
   val length: t -> int
   (** return the number of keys *)
@@ -151,5 +154,6 @@ module Ephemeron: sig
   (** Same as {!Ephemeron.K1.blit_data} *)
 
   val max_ephe_length: int
-  (** Maximum length of an ephemeron *)
+  (** Maximum length of an ephemeron, ie the maximum number of keys an
+      ephemeron could contain *)
 end

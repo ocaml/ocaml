@@ -837,6 +837,13 @@ OCaml 4.07.0 (10 July 2018)
 
 ### Runtime system:
 
+- GPR#515 GPR#676 MPR#7173: Add a public C API for weak arrays and
+  ephemerons. Update the documentation for a 4.03 change: finalisation
+  functions are now run before the erasure of the corresponding
+  values.
+  (François Bobot and Jacques-Henri Jourdan, review by Mark Shinwell,
+   Damien Doligez and Frédéric Bour)
+
 - MPR#6411, GPR#1535: don't compile everything with -static-libgcc on mingw32,
   only dllbigarray.dll and libbigarray.a. Allows the use of C++ libraries which
   raise exceptions.
@@ -2932,14 +2939,6 @@ OCaml 4.04.0 (4 Nov 2016):
   (Florian Angeletti)
 
 ### Debugging and profiling:
-- PR#7173 GPR#515: Add a public C API for weak arrays and ephemerons.
-  Update the documentation for a 4.03 change: finalisation functions
-  are now run before the erasure of the corresponding values.
-  (François Bobot and Jacques-Henri Jourdan, review by Mark Shinwell)
-
-- PR#7203, GPR#534: Add a new primitive caml_alloc_float_array to allocate an
-  array of floats
-  (Thomas Braibant)
 
 - GPR#585: Spacetime, a new memory profiler (Mark Shinwell, Leo White)
 
