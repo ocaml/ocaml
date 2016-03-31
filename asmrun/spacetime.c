@@ -51,6 +51,11 @@
 #include "libunwind.h"
 #endif
 
+static int automatic_snapshots = 0;
+static double snapshot_interval = 0.0;
+static double next_snapshot_time = 0.0;
+static struct channel *snapshot_channel;
+
 extern value caml_spacetime_debug(value);
 
 static char* start_of_free_node_block;
@@ -90,12 +95,36 @@ static void reinitialise_free_node_block(void)
   end_of_free_node_block = start_of_free_node_block + chunk_size;
 }
 
+#ifndef O_BINARY
+#define O_BINARY 0
+#endif
+
 void caml_spacetime_initialize(void)
 {
+  char *ap_interval;
+
   reinitialise_free_node_block();
 
   main_spacetime_shape_table.table = &caml_spacetime_shapes;
   main_spacetime_shape_table.next = NULL;
+
+  ap_interval = getenv ("OCAML_SPACETIME_INTERVAL");
+  if (ap_interval != NULL) {
+    unsigned int interval = 0;
+    sscanf(ap_interval, "%u", &interval);
+    if(interval != 0) {
+      int fd;
+      double time;
+      fd = open("spacetime", O_WRONLY | O_CREAT | O_TRUNC | O_BINARY, 0666);
+      if (fd == -1) caml_sys_error(caml_copy_string("spacetime"));
+      snapshot_channel = caml_open_descriptor_out(fd);
+      snapshot_interval = interval / 1e3;
+      time = caml_sys_time_unboxed(Val_unit);
+      next_snapshot_time = time + snapshot_interval;
+      atexit(&caml_spacetime_automatic_save);
+      automatic_snapshots = 1;
+    }
+  }
 }
 
 void caml_spacetime_register_shapes(void* dynlinked_table)
@@ -770,6 +799,29 @@ uintnat caml_spacetime_my_profinfo (struct ext_table** cached_frames)
   Assert(caml_spacetime_profinfo <= PROFINFO_MASK);
   return caml_spacetime_profinfo;  /* N.B. not shifted by PROFINFO_SHIFT */
 }
+
+void caml_spacetime_automatic_snapshot (void)
+{
+  if (automatic_snapshots) {
+    double start_time, end_time;
+    start_time = caml_sys_time_unboxed(Val_unit);
+    if (start_time >= next_snapshot_time) {
+      caml_spacetime_save_snapshot(snapshot_channel);
+      end_time = caml_sys_time_unboxed(Val_unit);
+      next_snapshot_time = end_time + snapshot_interval;
+    }
+  }
+}
+
+void caml_spacetime_automatic_save (void)
+{
+  if (automatic_snapshots) {
+    save_trie(snapshot_channel);
+    caml_flush(snapshot_channel);
+    caml_close_channel(snapshot_channel);
+  }
+}
+
 
 #else
 

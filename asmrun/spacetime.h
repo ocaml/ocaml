@@ -15,6 +15,8 @@
 #ifndef CAML_SPACETIME_H
 #define CAML_SPACETIME_H
 
+#include "caml/io.h"
+
 /* Runtime support for Spacetime profiling.
  * This header file is not intended for the casual user.
  *
@@ -135,6 +137,9 @@ extern void caml_spacetime_register_shapes(void*);
 extern value caml_spacetime_timestamp(void);
 extern value caml_spacetime_frame_table(void);
 extern value caml_spacetime_shape_table(void);
+extern void caml_spacetime_save_snapshot (struct channel *chan);
+extern void caml_spacetime_automatic_snapshot(void);
+extern void caml_spacetime_automatic_save(void);
 
 #if defined(SYS_mingw64) || defined(SYS_cygwin)
 #include <intrin.h>

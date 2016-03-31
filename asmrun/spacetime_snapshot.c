@@ -278,7 +278,7 @@ static value take_snapshot(void)
   return v_snapshot;
 }
 
-void save_snapshot (struct channel *chan)
+void caml_spacetime_save_snapshot (struct channel *chan)
 {
   value v_snapshot;
   snapshot* heap_snapshot;
@@ -305,7 +305,7 @@ CAMLprim value caml_spacetime_take_snapshot(value v_channel)
   struct channel * channel = Channel(v_channel);
 
   Lock(channel);
-  save_snapshot(channel);
+  caml_spacetime_save_snapshot(channel);
   Unlock(channel);
 
   return Val_unit;
