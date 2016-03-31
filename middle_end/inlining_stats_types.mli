@@ -75,6 +75,8 @@ module Prevented : sig
     | Level_exceeded
 end
 
+val choose_rhyme : unit -> [ `ion | `ound ]
+
 module Decision : sig
 
   type t =
@@ -83,6 +85,6 @@ module Decision : sig
     | Inlined of Not_specialised.t * Inlined.t
     | Unchanged of Not_specialised.t * Not_inlined.t
 
-  val summary : Format.formatter -> t -> unit
+  val summary : rhyme:[ `ion | `ound ] -> Format.formatter -> t -> unit
   val calculation : depth:int -> Format.formatter -> t -> unit
 end

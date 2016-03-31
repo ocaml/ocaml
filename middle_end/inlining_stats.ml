@@ -194,36 +194,74 @@ module Inlining_report = struct
   let build log =
     List.fold_left add_decision Place_map.empty log
 
-  let print_stars ppf n =
-    let s = String.make n '*' in
-    Format.fprintf ppf "%s" s
+  let define ~rhyme ppf cl dbg =
+    match rhyme with
+    | `ion ->
+        Format.fprintf ppf "At the place of %a%s's definition\n"
+          Closure_id.print cl
+          (Debuginfo.to_string dbg)
+    | `ound ->
+        Format.fprintf ppf "Where %a%s was first bound\n"
+          Closure_id.print cl
+          (Debuginfo.to_string dbg)
 
-  let rec print ~depth ppf t =
+  let application_header ~rhyme ppf cl dbg =
+    match rhyme with
+    | `ion ->
+        Format.fprintf ppf "One has to handle %a%s's application\n"
+          Closure_id.print cl
+          (Debuginfo.to_string dbg)
+    | `ound ->
+        Format.fprintf ppf "An application of %a%s was found\n"
+          Closure_id.print cl
+          (Debuginfo.to_string dbg)
+
+  let rec print ~depth ?next_verse ppf t =
     Place_map.iter (fun (dbg, cl, _) v ->
        match v with
        | Closure t ->
-         Format.fprintf ppf "@[<h>%a Definition of %a%s@]@."
-           print_stars (depth + 1)
-           Closure_id.print cl
-           (Debuginfo.to_string dbg);
-         print ppf ~depth:(depth + 1) t;
-         if depth = 0 then Format.pp_print_newline ppf ()
+           begin match next_verse with
+           | None ->
+               let rhyme = Inlining_stats_types.choose_rhyme () in
+               define ~rhyme ppf cl dbg;
+               print ppf ~depth:(depth + 1) ~next_verse:rhyme t
+           | Some rhyme ->
+               define ~rhyme ppf cl dbg;
+               print ppf ~depth:(depth + 1) t
+           end
        | Call c ->
          match c.decision with
          | None ->
            Misc.fatal_error "Inlining_report.print: missing call decision"
          | Some decision ->
-           Format.pp_open_vbox ppf (depth + 2);
-           Format.fprintf ppf "@[<h>%a Application of %a%s@]@;@;@[%a@]"
-             print_stars (depth + 1)
-             Closure_id.print cl
-             (Debuginfo.to_string dbg)
-             Inlining_stats_types.Decision.summary decision;
-           Format.pp_close_box ppf ();
-           Format.pp_print_newline ppf ();
-           Format.pp_print_newline ppf ();
-           Inlining_stats_types.Decision.calculation ~depth:(depth + 1)
-             ppf decision;
+             let next_verse =
+               match next_verse with
+               | None ->
+                   let rhyme = Inlining_stats_types.choose_rhyme () in
+                   application_header ~rhyme ppf cl dbg;
+                   Some rhyme
+               | Some rhyme ->
+                   application_header ~rhyme ppf cl dbg;
+                   None
+             in
+             let rhyme =
+               match next_verse with
+               | None ->
+                   let rhyme = Inlining_stats_types.choose_rhyme () in
+                   begin match rhyme with
+                   | `ion ->
+                       Format.pp_print_string ppf
+                         "Follows a summary of our decision\n"
+                   | `ound ->
+                       Format.pp_print_string ppf
+                         "Read on and see if our reasoning was sound\n"
+                   end;
+                   rhyme
+               | Some rhyme -> rhyme
+             in
+             Inlining_stats_types.Decision.summary ~rhyme ppf decision;
+(*              Inlining_stats_types.Decision.calculation ~depth:(depth + 1)
+               ppf decision; *)
            begin
              match c.specialised with
              | None -> ()
