@@ -37,8 +37,8 @@ let use_dup_for_constant_arrays_bigger_than = 4
 
 (* Forward declaration -- to be filled in by Translmod.transl_module *)
 let transl_module =
-  ref((fun loc cc rootpath modl -> assert false) :
-      Location.t -> module_coercion -> Path.t option -> module_expr -> lambda)
+  ref((fun cc rootpath modl -> assert false) :
+        module_coercion -> Path.t option -> module_expr -> lambda)
 
 let transl_object =
   ref (fun id s cl -> assert false :
@@ -129,6 +129,13 @@ let comparisons_table = create_hashtable 11 [
 let primitives_table = create_hashtable 57 [
   "%identity", Pidentity;
   "%ignore", Pignore;
+  "%revapply", Prevapply;
+  "%apply", Pdirapply;
+  "%loc_LOC", Ploc Loc_LOC;
+  "%loc_FILE", Ploc Loc_FILE;
+  "%loc_LINE", Ploc Loc_LINE;
+  "%loc_POS", Ploc Loc_POS;
+  "%loc_MODULE", Ploc Loc_MODULE;
   "%field0", Pfield 0;
   "%field1", Pfield 1;
   "%setfield0", Psetfield(0, Pointer, Assignment);
@@ -305,19 +312,8 @@ let primitives_table = create_hashtable 57 [
   "%opaque", Popaque;
 ]
 
-let prim_obj_dup =
-  Primitive.simple ~name:"caml_obj_dup" ~arity:1 ~alloc:true
-
-let find_primitive loc prim_name =
-  match prim_name with
-      "%revapply" -> Prevapply loc
-    | "%apply" -> Pdirapply loc
-    | "%loc_LOC" -> Ploc Loc_LOC
-    | "%loc_FILE" -> Ploc Loc_FILE
-    | "%loc_LINE" -> Ploc Loc_LINE
-    | "%loc_POS" -> Ploc Loc_POS
-    | "%loc_MODULE" -> Ploc Loc_MODULE
-    | name -> Hashtbl.find primitives_table name
+let find_primitive prim_name =
+  Hashtbl.find primitives_table prim_name
 
 let specialize_comparison table env ty =
   let (gencomp, intcomp, floatcomp, stringcomp,
@@ -336,7 +332,7 @@ let specialize_comparison table env ty =
 (* Specialize a primitive from available type information,
    raise Not_found if primitive is unknown  *)
 
-let specialize_primitive loc p env ty ~has_constant_constructor =
+let specialize_primitive p env ty ~has_constant_constructor =
   try
     let table = Hashtbl.find comparisons_table p.prim_name in
     let (gencomp, intcomp, _, _, _, _, _, simplify_constant_constructor) =
@@ -348,7 +344,7 @@ let specialize_primitive loc p env ty ~has_constant_constructor =
       | Some (lhs,rhs) -> specialize_comparison table env lhs
       | None -> gencomp
   with Not_found ->
-    let p = find_primitive loc p.prim_name in
+    let p = find_primitive p.prim_name in
     (* Try strength reduction based on the type of the argument *)
     let params = match is_function_type env ty with
       | None -> []
@@ -388,7 +384,7 @@ let add_used_primitive loc p env path =
 
 let transl_primitive loc p env ty path =
   let prim =
-    try specialize_primitive loc p env ty ~has_constant_constructor:false
+    try specialize_primitive p env ty ~has_constant_constructor:false
     with Not_found ->
       add_used_primitive loc p env path;
       Pccall p
@@ -407,8 +403,8 @@ let transl_primitive loc p env ty path =
         let param = Ident.create "prim" in
         Lfunction{kind = Curried; params = [param];
                   attr = default_function_attribute;
-                  body = Lprim(Pmakeblock(0, Immutable), [lam; Lvar param],
-                    loc)}
+                  body =
+                    Lprim(Pmakeblock(0, Immutable), [lam; Lvar param], loc)}
       | _ -> assert false
     end
   | _ ->
@@ -429,7 +425,7 @@ let transl_primitive_application loc prim env ty path args =
       | [{exp_desc = Texp_variant(_, None)}; _] -> true
       | _ -> false
     in
-    specialize_primitive loc prim env ty ~has_constant_constructor
+    specialize_primitive prim env ty ~has_constant_constructor
   with Not_found ->
     if String.length prim_name > 0 && prim_name.[0] = '%' then
       raise(Error(loc, Unknown_builtin_primitive prim_name));
@@ -450,7 +446,7 @@ let check_recursive_lambda idlist lam =
         let idlist' = add_letrec bindings idlist in
         List.for_all (fun (id, arg) -> check idlist' arg) bindings &&
         check_top idlist' body
-    | Lprim (Pmakearray (Pgenarray, _), args, _) -> false
+    | Lprim (Pmakearray (Pgenarray, _), _, _) -> false
     | Lprim (Pmakearray (Pfloatarray, _), args, _) ->
         List.for_all (check idlist) args
     | Lsequence (lam1, lam2) -> check idlist lam1 && check_top idlist lam2
@@ -468,7 +464,7 @@ let check_recursive_lambda idlist lam =
         let idlist' = add_letrec bindings idlist in
         List.for_all (fun (id, arg) -> check idlist' arg) bindings &&
         check idlist' body
-    | Lprim(Pmakeblock(tag, mut), args, _) ->
+    | Lprim(Pmakeblock _, args, _) ->
         List.for_all (check idlist) args
     | Lprim (Pmakearray (Pfloatarray, _), _, _) -> false
     | Lprim (Pmakearray _, args, _) ->
@@ -625,8 +621,8 @@ let primitive_is_ccall = function
   (* Determine if a primitive is a Pccall or will be turned later into
      a C function call that may raise an exception *)
   | Pccall _ | Pstringrefs | Pstringsets | Parrayrefs _ | Parraysets _ |
-    Pbigarrayref _ | Pbigarrayset _ | Pduprecord _ | Pdirapply _ |
-    Prevapply _ -> true
+    Pbigarrayref _ | Pbigarrayset _ | Pduprecord _ | Pdirapply |
+    Prevapply -> true
   | _ -> false
 
 (* Assertions *)
@@ -837,8 +833,9 @@ and transl_exp0 e =
                   [Lconst(Const_base(Const_int tag)); lam], e.exp_loc)
       end
   | Texp_record ((_, lbl1, _) :: _ as lbl_expr_list, opt_init_expr) ->
-      transl_record e.exp_loc e.exp_env lbl1.lbl_all lbl1.lbl_repres
-        lbl_expr_list opt_init_expr
+      transl_record e.exp_loc e.exp_env
+        lbl1.lbl_all lbl1.lbl_repres lbl_expr_list
+        opt_init_expr
   | Texp_record ([], _) ->
       fatal_error "Translcore.transl_exp: bad Texp_record"
   | Texp_field(arg, _, lbl) ->
@@ -960,10 +957,9 @@ and transl_exp0 e =
              modifs
              (Lvar cpy))
   | Texp_letmodule(id, _, modl, body) ->
-      Llet(Strict, id, !transl_module e.exp_loc Tcoerce_none None modl,
+      Llet(Strict, id, !transl_module Tcoerce_none None modl,
         transl_exp body)
-  | Texp_pack modl ->
-      !transl_module e.exp_loc Tcoerce_none None modl
+  | Texp_pack modl -> !transl_module Tcoerce_none None modl
   | Texp_assert {exp_desc=Texp_construct(_, {cstr_name="false"}, _)} ->
       assert_failed e
   | Texp_assert (cond) ->

@@ -817,11 +817,12 @@ let transl_class ids cl_id pub_meths cl vflag =
     if inh_keys = [] then Llet(Alias, cached, Lvar tables, lam) else
     Llet(Strict, cached,
          mkappl (oo_prim "lookup_tables",
-                [Lvar tables;
+                 [Lvar tables;
                   Lprim(Pmakeblock(0, Immutable), inh_keys, Location.none)]),
          lam)
   and lset cached i lam =
-    Lprim(Psetfield(i, Pointer, Assignment), [Lvar cached; lam], Location.none)
+    Lprim(Psetfield(i, Pointer, Assignment),
+          [Lvar cached; lam], Location.none)
   in
   let ldirect () =
     ltable cla

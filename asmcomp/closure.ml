@@ -52,7 +52,7 @@ let rec build_closure_env env_param pos = function
 
 let getglobal loc id =
   Uprim(Pgetglobal (Ident.create_persistent (Compilenv.symbol_for_global id)),
-        [], Debuginfo.from_other loc)
+        [], Debuginfo.from_location Debuginfo.Dinfo_call loc)
 
 (* Check if a variable occurs in a [clambda] term. *)
 
@@ -674,8 +674,8 @@ let rec is_pure = function
   | Lprim((Psetglobal _ | Psetfield _ | Psetfloatfield _ | Pduprecord _ |
            Pccall _ | Praise _ | Poffsetref _ | Pstringsetu | Pstringsets |
            Parraysetu _ | Parraysets _ | Pbigarrayset _), _, _) -> false
-  | Lprim(p, args, _) -> List.for_all is_pure args
-  | Levent(lam, ev) -> is_pure lam
+  | Lprim(_, args, _) -> List.for_all is_pure args
+  | Levent(lam, _ev) -> is_pure lam
   | _ -> false
 
 let warning_if_forced_inline ~loc ~attribute warning =
@@ -937,8 +937,8 @@ let rec close fenv cenv = function
         let (ubody, approx) = close fenv_body cenv body in
         (Uletrec(udefs, ubody), approx)
       end
-  | Lprim(Pdirapply loc,[funct;arg], _)
-  | Lprim(Prevapply loc,[arg;funct], _) ->
+  | Lprim(Pdirapply,[funct;arg], loc)
+  | Lprim(Prevapply,[arg;funct], loc) ->
       close fenv cenv (Lapply{ap_should_be_tailcall=false;
                               ap_loc=loc;
                               ap_func=funct;
@@ -951,23 +951,23 @@ let rec close fenv cenv = function
                             (Compilenv.global_approx id)
   | Lprim(Pfield n, [lam], loc) ->
       let (ulam, approx) = close fenv cenv lam in
-      let dbg = Debuginfo.from_other loc in
+      let dbg = Debuginfo.from_location Debuginfo.Dinfo_call loc in
       check_constant_result lam (Uprim(Pfield n, [ulam], dbg))
                             (field_approx n approx)
   | Lprim(Psetfield(n, is_ptr, init),
-        [Lprim(Pgetglobal id, [], gloc); lam], loc) ->
+          [Lprim(Pgetglobal id, [], _); lam], loc) ->
       let (ulam, approx) = close fenv cenv lam in
       if approx <> Value_unknown then
         (!global_approx).(n) <- approx;
-      let dbg = Debuginfo.from_other loc in
-      (Uprim(Psetfield(n, is_ptr, init), [getglobal gloc id; ulam], dbg),
-        Value_unknown)
+      let dbg = Debuginfo.from_location Debuginfo.Dinfo_call loc in
+      (Uprim(Psetfield(n, is_ptr, init), [getglobal loc id; ulam], dbg),
+       Value_unknown)
   | Lprim(Praise k, [Levent(arg, ev)], _) ->
-      let (ulam, approx) = close fenv cenv arg in
+      let (ulam, _approx) = close fenv cenv arg in
       (Uprim(Praise k, [ulam], Debuginfo.from_raise ev),
        Value_unknown)
   | Lprim(p, args, loc) ->
-      let dbg = Debuginfo.from_other loc in
+      let dbg = Debuginfo.from_location Debuginfo.Dinfo_call loc in
       simplif_prim !Clflags.float_const_prop
                    p (close_list_approx fenv cenv args) dbg
   | Lswitch(arg, sw) ->
@@ -1000,7 +1000,7 @@ let rec close fenv cenv = function
             Ucatch (i,[],ubody,uhandler),Value_unknown
           else fn fail
       end
-  | Lstringswitch(arg,sw,d,loc) ->
+  | Lstringswitch(arg,sw,d,_) ->
       let uarg,_ = close fenv cenv arg in
       let usw =
         List.map

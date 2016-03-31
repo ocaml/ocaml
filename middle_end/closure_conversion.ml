@@ -40,7 +40,6 @@ let add_default_argument_wrappers lam =
       Primitive.simple ~name:Closure_conversion_aux.stub_hack_prim_name
         ~arity:1 ~alloc:false
     in
-    (* CR mshinwell for lwhite: fix location *)
     Lprim (Pccall stub_prim, [body], Location.none)
   in
   let defs_are_all_functions (defs : (_ * Lambda.lambda) list) =
@@ -316,7 +315,7 @@ and close t ?debuginfo env (lam : Lambda.lambda) : Flambda.t =
           ~name:"send_arg"
           ~create_body:(fun args ->
               Send { kind; meth = meth_var; obj = obj_var; args; dbg; })))
-  | Lprim ((Pdivint | Pmodint) as prim, [arg1; arg2], _)
+  | Lprim ((Pdivint | Pmodint) as prim, [arg1; arg2], loc)
       when not !Clflags.fast -> (* not -unsafe *)
     let arg2 = close t env arg2 in
     let arg1 = close t env arg1 in
@@ -328,16 +327,25 @@ and close t ?debuginfo env (lam : Lambda.lambda) : Flambda.t =
     let exn_symbol =
       t.symbol_for_global' Predef.ident_division_by_zero
     in
+    let call_dbg =
+      default_debuginfo
+        ~inner_debuginfo:(Debuginfo.from_location Dinfo_call loc)
+        debuginfo;
+    in
+    let raise_dbg =
+      default_debuginfo
+        ~inner_debuginfo:(Debuginfo.from_location Dinfo_raise loc)
+        debuginfo;
+    in
     t.imported_symbols <- Symbol.Set.add exn_symbol t.imported_symbols;
     Flambda.create_let zero (Const (Int 0))
       (Flambda.create_let exn (Symbol exn_symbol)
         (Flambda.create_let denominator (Expr arg2)
           (Flambda.create_let numerator (Expr arg1)
             (Flambda.create_let is_zero
-              (Prim (Pintcomp Ceq, [zero; denominator], Debuginfo.none))
+              (Prim (Pintcomp Ceq, [zero; denominator], call_dbg))
                 (If_then_else (is_zero,
-                  name_expr (Prim (Praise Raise_regular, [exn],
-                      default_debuginfo debuginfo))
+                  name_expr (Prim (Praise Raise_regular, [exn], raise_dbg))
                     ~name:"dummy",
                   (* CR-someday pchambart: find the right event.
                      mshinwell: I briefly looked at this, and couldn't
@@ -348,8 +356,7 @@ and close t ?debuginfo env (lam : Lambda.lambda) : Flambda.t =
                      mshinwell: deferred CR *)
                   (* Debuginfo.from_raise event *)
                   name_expr ~name:"result"
-                    (Prim (prim, [numerator; denominator],
-                      Debuginfo.none))))))))
+                    (Prim (prim, [numerator; denominator], call_dbg))))))))
   | Lprim ((Pdivint | Pmodint), _, _) when not !Clflags.fast ->
     Misc.fatal_error "Pdivint / Pmodint must have exactly two arguments"
   | Lprim (Psequor, [arg1; arg2], _) ->
@@ -371,8 +378,8 @@ and close t ?debuginfo env (lam : Lambda.lambda) : Flambda.t =
   | Lprim ((Psequand | Psequor), _, _) ->
     Misc.fatal_error "Psequand / Psequor must have exactly two arguments"
   | Lprim (Pidentity, [arg], _) -> close t env arg
-  | Lprim (Pdirapply loc, [funct; arg], _)
-  | Lprim (Prevapply loc, [arg; funct], _) ->
+  | Lprim (Pdirapply, [funct; arg], loc)
+  | Lprim (Prevapply, [arg; funct], loc) ->
     let apply : Lambda.lambda_apply =
       { ap_func = funct;
         ap_args = [arg];
@@ -410,7 +417,7 @@ and close t ?debuginfo env (lam : Lambda.lambda) : Flambda.t =
     let symbol = t.symbol_for_global' id in
     t.imported_symbols <- Symbol.Set.add symbol t.imported_symbols;
     name_expr (Symbol symbol) ~name:"Pgetglobal"
-  | Lprim (p, args, _) ->
+  | Lprim (p, args, loc) ->
     (* One of the important consequences of the ANF-like representation
        here is that we obtain names corresponding to the components of
        blocks being made (with [Pmakeblock]).  This information can be used
@@ -423,7 +430,7 @@ and close t ?debuginfo env (lam : Lambda.lambda) : Flambda.t =
       ~name:(name ^ "_arg")
       ~create_body:(fun args ->
         let inner_debuginfo =
-          Debuginfo.from_filename Debuginfo.Dinfo_call t.filename
+          Debuginfo.from_location Debuginfo.Dinfo_call loc
         in
         name_expr (Prim (p, args, default_debuginfo debuginfo ~inner_debuginfo))
           ~name)

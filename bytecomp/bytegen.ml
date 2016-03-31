@@ -153,19 +153,19 @@ let rec size_of_lambda = function
       | Record_float -> RHS_floatblock size
       | Record_extension -> RHS_block (size + 1)
       end
-  | Llet(str, id, arg, body) -> size_of_lambda body
-  | Lletrec(bindings, body) -> size_of_lambda body
-  | Lprim(Pmakeblock(tag, mut), args, _) -> RHS_block (List.length args)
+  | Llet(_str, _id, _arg, body) -> size_of_lambda body
+  | Lletrec(_bindings, body) -> size_of_lambda body
+  | Lprim(Pmakeblock _, args, _) -> RHS_block (List.length args)
   | Lprim (Pmakearray ((Paddrarray|Pintarray), _), args, _) ->
       RHS_block (List.length args)
   | Lprim (Pmakearray (Pfloatarray, _), args, _) ->
       RHS_floatblock (List.length args)
-  | Lprim (Pmakearray (Pgenarray, _), args, _) -> assert false
-  | Lprim (Pduprecord ((Record_regular | Record_inlined _), size), args, _) ->
+  | Lprim (Pmakearray (Pgenarray, _), _, _) -> assert false
+  | Lprim (Pduprecord ((Record_regular | Record_inlined _), size), _, _) ->
       RHS_block size
-  | Lprim (Pduprecord (Record_extension, size), args, _) ->
+  | Lprim (Pduprecord (Record_extension, size), _, _) ->
       RHS_block (size + 1)
-  | Lprim (Pduprecord (Record_float, size), args, _) -> RHS_floatblock size
+  | Lprim (Pduprecord (Record_float, size), _, _) -> RHS_floatblock size
   | Levent (lam, _) -> size_of_lambda lam
   | Lsequence (lam, lam') -> size_of_lambda lam'
   | _ -> RHS_nonrec
@@ -579,8 +579,8 @@ let rec comp_expr env exp sz cont =
       comp_expr env arg sz cont
   | Lprim(Pignore, [arg], _) ->
       comp_expr env arg sz (add_const_unit cont)
-  | Lprim(Pdirapply loc, [func;arg], _)
-  | Lprim(Prevapply loc, [arg;func], _) ->
+  | Lprim(Pdirapply, [func;arg], loc)
+  | Lprim(Prevapply, [arg;func], loc) ->
       let exp = Lapply{ap_should_be_tailcall=false;
                        ap_loc=loc;
                        ap_func=func;
@@ -651,7 +651,7 @@ let rec comp_expr env exp sz cont =
                   Kccall("caml_make_array", 1) :: cont)
       end
   | Lprim (Pduparray (kind, mutability),
-        [Lprim (Pmakearray (kind',_), args, loc)], _) ->
+           [Lprim (Pmakearray (kind',_),args,_)], loc) ->
       assert (kind = kind');
       comp_expr env (Lprim (Pmakearray (kind, mutability), args, loc)) sz cont
   | Lprim (Pduparray _, [arg], loc) ->

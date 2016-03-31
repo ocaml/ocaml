@@ -122,8 +122,9 @@ let transl_label_init_flambda f =
     if !method_count = 0 then expr
     else
       Llet (Strict, method_cache_id,
-        Lprim (Pccall prim_makearray, [int !method_count; int 0],
-          Location.none),
+        Lprim (Pccall prim_makearray,
+               [int !method_count; int 0],
+               Location.none),
         expr)
   in
   transl_label_init_general (fun () -> expr, size)
@@ -131,9 +132,9 @@ let transl_label_init_flambda f =
 let transl_store_label_init glob size f arg =
   assert(not Config.flambda);
   assert(!Clflags.native_code);
-  method_cache :=
-    Lprim(Pfield size, [Lprim(Pgetglobal glob, [], Location.none)],
-      Location.none);
+  method_cache := Lprim(Pfield size,
+                        [Lprim(Pgetglobal glob, [], Location.none)],
+                        Location.none);
   let expr = f arg in
   let (size, expr) =
     if !method_count = 0 then (size, expr) else
@@ -141,8 +142,9 @@ let transl_store_label_init glob size f arg =
      Lsequence(
      Lprim(Psetfield(size, Pointer, Initialization),
            [Lprim(Pgetglobal glob, [], Location.none);
-            Lprim (Pccall prim_makearray, [int !method_count; int 0],
-              Location.none)],
+            Lprim (Pccall prim_makearray,
+                   [int !method_count; int 0],
+                   Location.none)],
            Location.none),
      expr))
   in

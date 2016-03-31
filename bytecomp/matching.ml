@@ -2227,7 +2227,7 @@ let mk_failaction_pos partial seen ctx defs  =
   end
 
 let combine_constant loc arg cst partial ctx def
-    (const_lambda_list, total, pats) =
+    (const_lambda_list, total, _pats) =
   let fail, local_jumps =
     mk_failaction_neg partial ctx def in
   let lambda1 =
@@ -2419,7 +2419,7 @@ let call_switcher_variant_constr loc fail arg int_lambda_list =
        call_switcher
          fail (Lvar v) min_int max_int int_lambda_list)
 
-let combine_variant loc row arg partial ctx def (tag_lambda_list, total1, pats) =
+let combine_variant loc row arg partial ctx def (tag_lambda_list, total1, _pats) =
   let row = Btype.row_repr row in
   let num_constr = ref 0 in
   if row.row_closed then
@@ -2472,7 +2472,7 @@ let combine_variant loc row arg partial ctx def (tag_lambda_list, total1, pats) 
 
 
 let combine_array loc arg kind partial ctx def
-    (len_lambda_list, total1, pats)  =
+    (len_lambda_list, total1, _pats)  =
   let fail, local_jumps = mk_failaction_neg partial  ctx def in
   let lambda1 =
     let newvar = Ident.create "len" in
@@ -2888,7 +2888,7 @@ let check_total total lambda i handler_fun =
     Lstaticcatch(lambda, (i,[]), handler_fun())
   end
 
-let compile_matching loc repr handler_fun arg pat_act_list partial =
+let compile_matching repr handler_fun arg pat_act_list partial =
   let partial = check_partial pat_act_list partial in
   match partial with
   | Partial ->
@@ -2924,16 +2924,16 @@ let partial_function loc () =
                Const_base(Const_int char)]))], loc)], loc)
 
 let for_function loc repr param pat_act_list partial =
-  compile_matching loc repr (partial_function loc) param pat_act_list partial
+  compile_matching repr (partial_function loc) param pat_act_list partial
 
 (* In the following two cases, exhaustiveness info is not available! *)
 let for_trywith param pat_act_list =
-  compile_matching Location.none None
+  compile_matching None
     (fun () -> Lprim(Praise Raise_reraise, [param], Location.none))
     param pat_act_list Partial
 
 let simple_for_let loc param pat body =
-  compile_matching loc None (partial_function loc) param [pat, body] Partial
+  compile_matching None (partial_function loc) param [pat, body] Partial
 
 
 (* Optimize binding of immediate tuples

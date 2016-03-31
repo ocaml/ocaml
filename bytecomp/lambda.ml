@@ -44,8 +44,8 @@ type initialization_or_assignment =
 type primitive =
     Pidentity
   | Pignore
-  | Prevapply of Location.t
-  | Pdirapply of Location.t
+  | Prevapply
+  | Pdirapply
   | Ploc of loc_kind
     (* Globals *)
   | Pgetglobal of Ident.t
@@ -309,11 +309,11 @@ let make_key e =
         let ex = tr_rec env ex in
         let y = make_key x in
         Llet (str,y,ex,tr_rec (Ident.add x (Lvar y) env) e)
-    | Lprim (p,es,loc) ->
+    | Lprim (p,es,_) ->
         Lprim (p,tr_recs env es, Location.none)
     | Lswitch (e,sw) ->
         Lswitch (tr_rec env e,tr_sw env sw)
-    | Lstringswitch (e,sw,d,loc) ->
+    | Lstringswitch (e,sw,d,_) ->
         Lstringswitch
           (tr_rec env e,
            List.map (fun (s,e) -> s,tr_rec env e) sw,
@@ -502,7 +502,7 @@ let rec transl_normal_path = function
       if Ident.global id then
         Lprim(Pgetglobal id, [],Location.none)
       else Lvar id
-  | Pdot(p, s, pos) ->
+  | Pdot(p, _, pos) ->
       Lprim(Pfield pos, [transl_normal_path p], Location.none)
   | Papply(p1, p2) ->
       fatal_error "Lambda.transl_path"
@@ -602,7 +602,8 @@ let rec map f lam =
         Lstringswitch (
           map f e,
           List.map (fun (s, e) -> (s, map f e)) sw,
-          Misc.may_map (map f) default, loc)
+          Misc.may_map (map f) default,
+          loc)
     | Lstaticraise (i, args) ->
         Lstaticraise (i, List.map (map f) args)
     | Lstaticcatch (body, id, handler) ->

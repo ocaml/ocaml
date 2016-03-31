@@ -463,8 +463,8 @@ let primitive_invariants flam ~no_access_to_global_module_identifiers =
             raise (Access_to_global_module_identifier prim)
           end
         | Pidentity -> raise Pidentity_should_not_occur
-        | Pdirapply _ -> raise Pdirapply_should_be_expanded
-        | Prevapply _ -> raise Prevapply_should_be_expanded
+        | Pdirapply -> raise Pdirapply_should_be_expanded
+        | Prevapply -> raise Prevapply_should_be_expanded
         | _ -> ()
         end
       | _ -> ())

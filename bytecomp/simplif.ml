@@ -39,9 +39,9 @@ let rec eliminate_ref id = function
   | Lletrec(idel, e2) ->
       Lletrec(List.map (fun (v, e) -> (v, eliminate_ref id e)) idel,
               eliminate_ref id e2)
-  | Lprim(Pfield 0, [Lvar v], _loc) when Ident.same v id ->
+  | Lprim(Pfield 0, [Lvar v], _) when Ident.same v id ->
       Lvar id
-  | Lprim(Psetfield(0, _, _), [Lvar v; e], _loc) when Ident.same v id ->
+  | Lprim(Psetfield(0, _, _), [Lvar v; e], _) when Ident.same v id ->
       Lassign(id, eliminate_ref id e)
   | Lprim(Poffsetref delta, [Lvar v], loc) when Ident.same v id ->
       Lassign(id, Lprim(Poffsetint delta, [Lvar id], loc))
@@ -117,7 +117,7 @@ let simplify_exits lam =
   | Lletrec(bindings, body) ->
       List.iter (fun (v, l) -> count l) bindings;
       count body
-  | Lprim(p, ll, _) -> List.iter count ll
+  | Lprim(_p, ll, _) -> List.iter count ll
   | Lswitch(l, sw) ->
       count_default sw ;
       count l;
@@ -209,26 +209,26 @@ let simplify_exits lam =
     let ll = List.map simplif ll in
     match p, ll with
         (* Simplify %revapply, for n-ary functions with n > 1 *)
-      | Prevapply loc, [x; Lapply ap]
-      | Prevapply loc, [x; Levent (Lapply ap,_)] ->
+      | Prevapply, [x; Lapply ap]
+      | Prevapply, [x; Levent (Lapply ap,_)] ->
         Lapply {ap with ap_args = ap.ap_args @ [x]; ap_loc = loc}
-      | Prevapply loc, [x; f] -> Lapply {ap_should_be_tailcall=false;
-                                         ap_loc=loc;
-                                         ap_func=f;
-                                         ap_args=[x];
-                                         ap_inlined=Default_inline;
-                                         ap_specialised=Default_specialise}
+      | Prevapply, [x; f] -> Lapply {ap_should_be_tailcall=false;
+                                     ap_loc=loc;
+                                     ap_func=f;
+                                     ap_args=[x];
+                                     ap_inlined=Default_inline;
+                                     ap_specialised=Default_specialise}
 
         (* Simplify %apply, for n-ary functions with n > 1 *)
-      | Pdirapply loc, [Lapply ap; x]
-      | Pdirapply loc, [Levent (Lapply ap,_); x] ->
+      | Pdirapply, [Lapply ap; x]
+      | Pdirapply, [Levent (Lapply ap,_); x] ->
         Lapply {ap with ap_args = ap.ap_args @ [x]; ap_loc = loc}
-      | Pdirapply loc, [f; x] -> Lapply {ap_should_be_tailcall=false;
-                                         ap_loc=loc;
-                                         ap_func=f;
-                                         ap_args=[x];
-                                         ap_inlined=Default_inline;
-                                         ap_specialised=Default_specialise}
+      | Pdirapply, [f; x] -> Lapply {ap_should_be_tailcall=false;
+                                     ap_loc=loc;
+                                     ap_func=f;
+                                     ap_args=[x];
+                                     ap_inlined=Default_inline;
+                                     ap_specialised=Default_specialise}
 
       | _ -> Lprim(p, ll, loc)
      end
@@ -378,7 +378,7 @@ let simplify_lets lam =
   | Lletrec(bindings, body) ->
       List.iter (fun (v, l) -> count bv l) bindings;
       count bv body
-  | Lprim(p, ll, _) -> List.iter (count bv) ll
+  | Lprim(_p, ll, _) -> List.iter (count bv) ll
   | Lswitch(l, sw) ->
       count_default bv sw ;
       count bv l;
