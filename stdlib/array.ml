@@ -132,7 +132,7 @@ let to_list a =
 let rec list_length accu = function
   | [] -> accu
   | h::t -> list_length (succ accu) t
-;;
+
 
 let of_list = function
     [] -> [||]
@@ -189,7 +189,7 @@ let memq x a =
     else loop (succ i) in
   loop 0
 
-exception Bottom of int;;
+exception Bottom of int
 let sort cmp a =
   let maxson l i =
     let i31 = i+i+i+1 in
@@ -236,10 +236,10 @@ let sort cmp a =
     set a i (get a 0);
     trickleup (bubble i 0) e;
   done;
-  if l > 1 then (let e = (get a 1) in set a 1 (get a 0); set a 0 e);
-;;
+  if l > 1 then (let e = (get a 1) in set a 1 (get a 0); set a 0 e)
 
-let cutoff = 5;;
+
+let cutoff = 5
 let stable_sort cmp a =
   let merge src1ofs src1len src2 src2ofs src2len dst dstofs =
     let src1r = src1ofs + src1len and src2r = src2ofs + src2len in
@@ -289,7 +289,7 @@ let stable_sort cmp a =
     sortto l1 t 0 l2;
     sortto 0 a l2 l1;
     merge l2 l1 t 0 l2 a 0;
-  end;
-;;
+  end
 
-let fast_sort = stable_sort;;
+
+let fast_sort = stable_sort

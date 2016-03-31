@@ -152,10 +152,10 @@ module type S = sig
     (** Return statistics on the table.  The numbers are, in order:
         table length, number of entries, sum of bucket lengths,
         smallest bucket length, median bucket length, biggest bucket length. *)
-end;;
+end
 (** The output signature of the functor {!Weak.Make}. *)
 
-module Make (H : Hashtbl.HashedType) : S with type data = H.t;;
+module Make (H : Hashtbl.HashedType) : S with type data = H.t
 (** Functor building an implementation of the weak hash set structure.
     [H.equal] can't be the physical equality, since only shallow
     copies of the elements in the set are given to it.

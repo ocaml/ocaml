@@ -256,9 +256,9 @@ let valid_float_lexem s =
     | _ -> s
   in
   loop 0
-;;
 
-let string_of_float f = valid_float_lexem (format_float "%.12g" f);;
+
+let string_of_float f = valid_float_lexem (format_float "%.12g" f)
 
 external float_of_string : string -> float = "caml_float_of_string"
 
@@ -438,7 +438,7 @@ external seek_in : in_channel -> int -> unit = "caml_ml_seek_in"
 external pos_in : in_channel -> int = "caml_ml_pos_in"
 external in_channel_length : in_channel -> int = "caml_ml_channel_size"
 external close_in : in_channel -> unit = "caml_ml_close_channel"
-let close_in_noerr ic = (try close_in ic with _ -> ());;
+let close_in_noerr ic = (try close_in ic with _ -> ())
 external set_binary_mode_in : in_channel -> bool -> unit
                             = "caml_ml_set_binary_mode"
 

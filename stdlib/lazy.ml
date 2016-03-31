@@ -45,23 +45,23 @@
    rules for the [lazy] keyword.
 *)
 
-type 'a t = 'a lazy_t;;
+type 'a t = 'a lazy_t
 
-exception Undefined = CamlinternalLazy.Undefined;;
+exception Undefined = CamlinternalLazy.Undefined
 
-external make_forward : 'a -> 'a lazy_t = "caml_lazy_make_forward";;
+external make_forward : 'a -> 'a lazy_t = "caml_lazy_make_forward"
 
-external force : 'a t -> 'a = "%lazy_force";;
+external force : 'a t -> 'a = "%lazy_force"
 
-(* let force = force;; *)
+(* let force = force *)
 
-let force_val = CamlinternalLazy.force_val;;
+let force_val = CamlinternalLazy.force_val
 
 let from_fun (f : unit -> 'arg) =
   let x = Obj.new_block Obj.lazy_tag 1 in
   Obj.set_field x 0 (Obj.repr f);
   (Obj.obj x : 'arg t)
-;;
+
 
 let from_val (v : 'arg) =
   let t = Obj.tag (Obj.repr v) in
@@ -70,12 +70,12 @@ let from_val (v : 'arg) =
   end else begin
     (Obj.magic v : 'arg t)
   end
-;;
 
-let is_val (l : 'arg t) = Obj.tag (Obj.repr l) <> Obj.lazy_tag;;
 
-let lazy_from_fun = from_fun;;
+let is_val (l : 'arg t) = Obj.tag (Obj.repr l) <> Obj.lazy_tag
 
-let lazy_from_val = from_val;;
+let lazy_from_fun = from_fun
 
-let lazy_is_val = is_val;;
+let lazy_from_val = from_val
+
+let lazy_is_val = is_val

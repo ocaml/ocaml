@@ -34,7 +34,7 @@ let sub b ofs len =
   if ofs < 0 || len < 0 || ofs > b.position - len
   then invalid_arg "Buffer.sub"
   else Bytes.sub_string b.buffer ofs len
-;;
+
 
 let blit src srcoff dst dstoff len =
   if len < 0 || srcoff < 0 || srcoff > src.position - len
@@ -42,13 +42,13 @@ let blit src srcoff dst dstoff len =
   then invalid_arg "Buffer.blit"
   else
     Bytes.unsafe_blit src.buffer srcoff dst dstoff len
-;;
+
 
 let nth b ofs =
   if ofs < 0 || ofs >= b.position then
    invalid_arg "Buffer.nth"
   else Bytes.unsafe_get b.buffer ofs
-;;
+
 
 let length b = b.position
 
@@ -124,7 +124,7 @@ let output_buffer oc b =
 let closing = function
   | '(' -> ')'
   | '{' -> '}'
-  | _ -> assert false;;
+  | _ -> assert false
 
 (* opening and closing: open and close characters, typically ( and )
    k: balance of opening and closing chars
@@ -137,7 +137,7 @@ let advance_to_closing opening closing k s start =
     if s.[i] = closing then
       if k = 0 then i else advance (k - 1) (i + 1) lim
     else advance k (i + 1) lim in
-  advance k start (String.length s);;
+  advance k start (String.length s)
 
 let advance_to_non_alpha s start =
   let rec advance i lim =
@@ -145,7 +145,7 @@ let advance_to_non_alpha s start =
     match s.[i] with
     | 'a' .. 'z' | 'A' .. 'Z' | '0' .. '9' | '_' -> advance (i + 1) lim
     | _ -> i in
-  advance start (String.length s);;
+  advance start (String.length s)
 
 (* We are just at the beginning of an ident in s, starting at start. *)
 let find_ident s start lim =
@@ -159,7 +159,7 @@ let find_ident s start lim =
   (* Regular ident *)
   | _ ->
      let stop = advance_to_non_alpha s (start + 1) in
-     String.sub s start (stop - start), stop;;
+     String.sub s start (stop - start), stop
 
 (* Substitute $ident, $(ident), or ${ident} in s,
     according to the function mapping f. *)
@@ -187,4 +187,4 @@ let add_substitute b f s =
          subst current (i + 1)
     end else
     if previous = '\\' then add_char b previous in
-  subst ' ' 0;;
+  subst ' ' 0
