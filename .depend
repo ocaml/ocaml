@@ -73,11 +73,11 @@ parsing/ast_helper.cmx : parsing/parsetree.cmi parsing/longident.cmx \
     parsing/location.cmx parsing/docstrings.cmx parsing/asttypes.cmi \
     parsing/ast_helper.cmi
 parsing/ast_invariants.cmo : parsing/syntaxerr.cmi parsing/parsetree.cmi \
-    parsing/longident.cmi parsing/asttypes.cmi parsing/ast_iterator.cmi \
-    parsing/ast_invariants.cmi
+    parsing/longident.cmi parsing/builtin_attributes.cmi parsing/asttypes.cmi \
+    parsing/ast_iterator.cmi parsing/ast_invariants.cmi
 parsing/ast_invariants.cmx : parsing/syntaxerr.cmx parsing/parsetree.cmi \
-    parsing/longident.cmx parsing/asttypes.cmi parsing/ast_iterator.cmx \
-    parsing/ast_invariants.cmi
+    parsing/longident.cmx parsing/builtin_attributes.cmx parsing/asttypes.cmi \
+    parsing/ast_iterator.cmx parsing/ast_invariants.cmi
 parsing/ast_iterator.cmo : parsing/parsetree.cmi parsing/location.cmi \
     parsing/ast_iterator.cmi
 parsing/ast_iterator.cmx : parsing/parsetree.cmi parsing/location.cmx \
@@ -225,12 +225,12 @@ typing/cmt_format.cmx : typing/types.cmx typing/typedtree.cmx \
     typing/tast_mapper.cmx utils/misc.cmx parsing/location.cmx \
     parsing/lexer.cmx typing/env.cmx utils/config.cmx typing/cmi_format.cmx \
     utils/clflags.cmx typing/cmt_format.cmi
-typing/ctype.cmo : typing/types.cmi typing/subst.cmi typing/path.cmi \
-    utils/misc.cmi parsing/longident.cmi parsing/location.cmi \
+typing/ctype.cmo : typing/types.cmi typing/subst.cmi typing/predef.cmi \
+    typing/path.cmi utils/misc.cmi parsing/longident.cmi parsing/location.cmi \
     typing/ident.cmi typing/env.cmi utils/clflags.cmi typing/btype.cmi \
     parsing/asttypes.cmi typing/ctype.cmi
-typing/ctype.cmx : typing/types.cmx typing/subst.cmx typing/path.cmx \
-    utils/misc.cmx parsing/longident.cmx parsing/location.cmx \
+typing/ctype.cmx : typing/types.cmx typing/subst.cmx typing/predef.cmx \
+    typing/path.cmx utils/misc.cmx parsing/longident.cmx parsing/location.cmx \
     typing/ident.cmx typing/env.cmx utils/clflags.cmx typing/btype.cmx \
     parsing/asttypes.cmi typing/ctype.cmi
 typing/datarepr.cmo : typing/types.cmi typing/path.cmi parsing/location.cmi \
