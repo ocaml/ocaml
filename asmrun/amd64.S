@@ -274,10 +274,6 @@ G(caml_system__code_begin):
 
 /* Allocation */
 
-/* [caml_call_gc] does not need its own Spacetime node since it
-   currently doesn't create any trie nodes except if it invokes finalisers,
-   which are handled separately. */
-
 FUNCTION(G(caml_call_gc))
         CFI_STARTPROC
         RECORD_STACK_FRAME(0)
@@ -289,18 +285,15 @@ LBL(caml_call_gc):
         movq    %rax, 0(%rsp)
         addq    $32768, %rsp
 #endif
-    /* Note that Spacetime profiling expects [caml_gc_regs] to be on the
-       stack immediately after the return address.
-       (See [caml_spacetime_caml_garbage_collection].) */
     /* Build array of registers, save it into caml_gc_regs */
 #ifdef WITH_FRAME_POINTERS
         ENTER_FUNCTION          ;
 #else
         pushq   %rbp; CFI_ADJUST(8);
 #endif
-        pushq   %r13; CFI_ADJUST (8);
         pushq   %r11; CFI_ADJUST (8);
         pushq   %r10; CFI_ADJUST (8);
+        pushq   %r13; CFI_ADJUST (8);
         pushq   %r12; CFI_ADJUST (8);
         pushq   %r9; CFI_ADJUST (8);
         pushq   %r8; CFI_ADJUST (8);
@@ -369,9 +362,9 @@ LBL(caml_call_gc):
         popq    %r8; CFI_ADJUST(-8)
         popq    %r9; CFI_ADJUST(-8)
         popq    %r12; CFI_ADJUST(-8)
+        popq    %r13; CFI_ADJUST(-8)
         popq    %r10; CFI_ADJUST(-8)
         popq    %r11; CFI_ADJUST(-8)
-        popq    %r13; CFI_ADJUST(-8)
 #ifdef WITH_FRAME_POINTERS
         LEAVE_FUNCTION
 #else
