@@ -72,6 +72,7 @@ and as a
 \input{ocamlbuild.tex}
 % \input emacs.tex
 \input{intf-c.tex}
+\input{flambda.tex}
 
 \part{The OCaml library}
 \label{p:library}
