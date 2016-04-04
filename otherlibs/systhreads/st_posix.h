@@ -420,7 +420,7 @@ value caml_wait_signal(value sigs) /* ML */
   retcode = sigwait(&set, &signo);
   leave_blocking_section();
   st_check_error(retcode, "Thread.wait_signal");
-  return Val_int(signo);
+  return Val_int(caml_rev_convert_signal_number(signo));
 #else
   invalid_argument("Thread.wait_signal not implemented");
   return Val_int(0);            /* not reached */
