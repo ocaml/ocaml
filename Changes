@@ -45,6 +45,14 @@ Bug fixes:
 
 - PR#7112: Aliased arguments ignored for equality of module types
 
+Other libraries:
+================
+
+* GPR#533: Thread library: fixed [Thread.wait_signal] so that it
+  converts back the signal number returned by [sigwait] to an
+  OS-independent number
+  (Jérémie Dimino)
+
 ===============================================================================
 ===============================================================================
 
