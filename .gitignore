@@ -282,6 +282,8 @@
 /tools/objinfo_helper
 /tools/read_cmt
 /tools/read_cmt.opt
+/tools/cmpbyt
+/tools/stripdebug
 
 /utils/config.ml
 

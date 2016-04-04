@@ -59,28 +59,29 @@ let (++) x f = f x
 let compile_fundecl (ppf : formatter) fd_cmm =
   Proc.init ();
   Reg.reset();
+  let build = Compilenv.current_build () in
   fd_cmm
-  ++ Selection.fundecl
+  ++ Timings.(accumulate_time (Selection build)) Selection.fundecl
   ++ pass_dump_if ppf dump_selection "After instruction selection"
-  ++ Comballoc.fundecl
+  ++ Timings.(accumulate_time (Comballoc build)) Comballoc.fundecl
   ++ pass_dump_if ppf dump_combine "After allocation combining"
-  ++ CSE.fundecl
+  ++ Timings.(accumulate_time (CSE build)) CSE.fundecl
   ++ pass_dump_if ppf dump_cse "After CSE"
-  ++ liveness ppf
-  ++ Deadcode.fundecl
+  ++ Timings.(accumulate_time (Liveness build)) (liveness ppf)
+  ++ Timings.(accumulate_time (Deadcode build)) Deadcode.fundecl
   ++ pass_dump_if ppf dump_live "Liveness analysis"
-  ++ Spill.fundecl
-  ++ liveness ppf
+  ++ Timings.(accumulate_time (Spill build)) Spill.fundecl
+  ++ Timings.(accumulate_time (Liveness build)) (liveness ppf)
   ++ pass_dump_if ppf dump_spill "After spilling"
-  ++ Split.fundecl
+  ++ Timings.(accumulate_time (Split build)) Split.fundecl
   ++ pass_dump_if ppf dump_split "After live range splitting"
-  ++ liveness ppf
-  ++ regalloc ppf 1
-  ++ Linearize.fundecl
+  ++ Timings.(accumulate_time (Liveness build)) (liveness ppf)
+  ++ Timings.(accumulate_time (Regalloc build)) (regalloc ppf 1)
+  ++ Timings.(accumulate_time (Linearize build)) Linearize.fundecl
   ++ pass_dump_linear_if ppf dump_linear "Linearized code"
-  ++ Scheduling.fundecl
+  ++ Timings.(accumulate_time (Scheduling build)) Scheduling.fundecl
   ++ pass_dump_linear_if ppf dump_scheduling "After instruction scheduling"
-  ++ Emit.fundecl
+  ++ Timings.(accumulate_time (Emit build)) Emit.fundecl
 
 let compile_phrase ppf p =
   if !dump_cmm then fprintf ppf "%a@." Printcmm.phrase p;
@@ -99,7 +100,7 @@ let compile_genfuns ppf f =
        | _ -> ())
     (Cmmgen.generic_functions true [Compilenv.current_unit_infos ()])
 
-let compile_unit asm_filename keep_asm obj_filename gen =
+let compile_unit ~sourcefile asm_filename keep_asm obj_filename gen =
   let create_asm = keep_asm || not !Emitaux.binary_backend_available in
   Emitaux.create_asm_file := create_asm;
   try
@@ -112,19 +113,25 @@ let compile_unit asm_filename keep_asm obj_filename gen =
       if not keep_asm then remove_file asm_filename;
       raise exn
     end;
-    if Proc.assemble_file asm_filename obj_filename <> 0
+    let assemble_result =
+      Timings.(time (Assemble sourcefile))
+        (Proc.assemble_file asm_filename) obj_filename
+    in
+    if assemble_result <> 0
     then raise(Error(Assembler_error asm_filename));
     if create_asm && not keep_asm then remove_file asm_filename
   with exn ->
     remove_file obj_filename;
     raise exn
 
-let gen_implementation ?toplevel ppf (size, lam) =
+let gen_implementation ?toplevel ~sourcefile ppf (size, lam) =
   Emit.begin_assembly ();
-  Closure.intro size lam
+  Timings.(time (Clambda sourcefile)) (Closure.intro size) lam
   ++ clambda_dump_if ppf
-  ++ Cmmgen.compunit size
-  ++ List.iter (compile_phrase ppf) ++ (fun () -> ());
+  ++ Timings.(time (Cmm sourcefile)) (Cmmgen.compunit size)
+  ++ Timings.(time (Compile_phrases sourcefile))
+       (List.iter (compile_phrase ppf))
+  ++ (fun () -> ());
   (match toplevel with None -> () | Some f -> compile_genfuns ppf f);
 
   (* We add explicit references to external primitive symbols.  This
@@ -140,14 +147,14 @@ let gen_implementation ?toplevel ppf (size, lam) =
     );
   Emit.end_assembly ()
 
-let compile_implementation ?toplevel prefixname ppf (size, lam) =
+let compile_implementation ?toplevel ~sourcefile prefixname ppf (size, lam) =
   let asmfile =
     if !keep_asm_file || !Emitaux.binary_backend_available
     then prefixname ^ ext_asm
     else Filename.temp_file "camlasm" ext_asm
   in
-  compile_unit asmfile !keep_asm_file (prefixname ^ ext_obj)
-    (fun () -> gen_implementation ?toplevel ppf (size, lam))
+  compile_unit sourcefile asmfile !keep_asm_file (prefixname ^ ext_obj)
+    (fun () -> gen_implementation ?toplevel ~sourcefile ppf (size, lam))
 
 (* Error report *)
 

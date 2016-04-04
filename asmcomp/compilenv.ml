@@ -27,6 +27,8 @@ exception Error of error
 let global_infos_table =
   (Hashtbl.create 17 : (string, unit_infos option) Hashtbl.t)
 
+let sourcefile = ref None
+
 module CstMap =
   Map.Make(struct
     type t = Clambda.ustructured_constant
@@ -79,9 +81,10 @@ let symbolname_for_pack pack name =
       Buffer.contents b
 
 
-let reset ?packname name =
+let reset ?packname ~source_provenance:file name =
   Hashtbl.clear global_infos_table;
   let symbol = symbolname_for_pack packname name in
+  sourcefile := Some file;
   current_unit.ui_name <- name;
   current_unit.ui_symbol <- symbol;
   current_unit.ui_defines <- [symbol];
@@ -99,6 +102,11 @@ let current_unit_infos () =
 
 let current_unit_name () =
   current_unit.ui_name
+
+let current_build () =
+  match !sourcefile with
+  | None -> assert false
+  | Some v -> v
 
 let make_symbol ?(unitname = current_unit.ui_symbol) idopt =
   let prefix = "caml" ^ unitname in

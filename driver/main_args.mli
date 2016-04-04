@@ -83,6 +83,7 @@ module type Compiler_options =  sig
   val _color : string -> unit
 
   val _nopervasives : unit -> unit
+  val _dtimings : unit -> unit
 end
 ;;
 

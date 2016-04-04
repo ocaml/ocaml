@@ -1,1 +1,0 @@
-../byterun/startup_aux.c

@@ -98,6 +98,7 @@ val keep_docs : bool ref
 val keep_locs : bool ref
 val unsafe_string : bool ref
 val opaque : bool ref
+val print_timings : bool ref
 
 type color_setting = Auto | Always | Never
 val parse_color_setting : string -> color_setting option
