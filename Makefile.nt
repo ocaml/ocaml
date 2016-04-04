@@ -16,7 +16,7 @@ include Makefile.shared
 
 # For users who don't read the INSTALL file
 defaultentry:
-	@echo "Please refer to the installation instructions in file README.win32."
+	@echo "Please refer to the installation instructions in file README.win32.adoc."
 
 # Recompile the system using the bootstrap compiler
 all: runtime ocamlc ocamllex ocamlyacc ocamltools library ocaml \
@@ -85,10 +85,10 @@ backup:
 # Promote the newly compiled system to the rank of cross compiler
 # (Runs on the old runtime, produces code for the new runtime)
 promote-cross:
-	cp ocamlc boot/ocamlc
-	cp lex/ocamllex boot/ocamllex
+	$(CAMLRUN) tools/stripdebug ocamlc boot/ocamlc
+	$(CAMLRUN) tools/stripdebug lex/ocamllex boot/ocamllex
 	cp yacc/ocamlyacc.exe boot/ocamlyacc.exe
-	cp tools/ocamldep boot/ocamldep
+	$(CAMLRUN) tools/stripdebug tools/ocamldep boot/ocamldep
 	cd stdlib ; cp $(LIBFILES) ../boot
 
 # Promote the newly compiled system to the rank of bootstrap compiler
@@ -104,9 +104,12 @@ restore:
 
 # Check if fixpoint reached
 compare:
-	- cmp -i 4096 boot/ocamlc ocamlc
-	- cmp -i 4096 boot/ocamllex lex/ocamllex
-	- cmp -i 4096 boot/ocamldep tools/ocamldep
+	@if $(CAMLRUN) tools/cmpbyt boot/ocamlc ocamlc \
+         && $(CAMLRUN) tools/cmpbyt boot/ocamllex lex/ocamllex \
+         && $(CAMLRUN) tools/cmpbyt boot/ocamldep tools/ocamldep; \
+	then echo "Fixpoint reached, bootstrap succeeded."; \
+	else echo "Fixpoint not reached, try one more bootstrapping cycle."; \
+	fi	
 
 # Remove old bootstrap compilers
 cleanboot:
@@ -175,8 +178,8 @@ installbyt:
 	if test -n "$(WITH_OCAMLBUILD)"; then (cd ocamlbuild; $(MAKE) install); \
 	   else :; fi
 	cp config/Makefile $(INSTALL_LIBDIR)/Makefile.config
-	cp README $(INSTALL_DISTRIB)/Readme.general.txt
-	cp README.win32 $(INSTALL_DISTRIB)/Readme.windows.txt
+	cp README.adoc $(INSTALL_DISTRIB)/Readme.general.txt
+	cp README.win32.adoc $(INSTALL_DISTRIB)/Readme.windows.txt
 	cp LICENSE $(INSTALL_DISTRIB)/License.txt
 	cp Changes $(INSTALL_DISTRIB)/Changes.txt
 
