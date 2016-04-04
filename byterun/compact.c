@@ -405,6 +405,7 @@ void caml_compact_heap (void)
   CAMLassert (caml_young_ptr == caml_young_alloc_end);
   CAMLassert (caml_ref_table.ptr == caml_ref_table.base);
   CAMLassert (caml_ephe_ref_table.ptr == caml_ephe_ref_table.base);
+  CAMLassert (caml_custom_table.ptr == caml_custom_table.base);
 
   do_compaction ();
   CAML_INSTR_TIME (tmr, "compact/main");

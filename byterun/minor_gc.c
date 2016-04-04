@@ -164,6 +164,7 @@ void caml_set_minor_heap_size (asize_t bsz)
 
   reset_table ((struct generic_table *) &caml_ref_table);
   reset_table ((struct generic_table *) &caml_ephe_ref_table);
+  reset_table ((struct generic_table *) &caml_custom_table);
 }
 
 static value oldify_todo_list = 0;
