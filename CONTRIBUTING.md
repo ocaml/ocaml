@@ -142,10 +142,9 @@ better than adding redundant explanations.)
 Changes affecting the compiler libraries should be reflected in the
 documentation comments of the relevant `.mli` files.
 
-For changes affecting the OCaml Reference Manual (in particular any
-change in the surface language), you should also prepare a merge
-request against the manual repository,
-<https://github.com/ocaml/ocaml-manual>.
+It is recommended to included changes to the OCaml Reference Manual
+(in particular for any change in the surface language), which is now
+part of the main repository (under `manual/`).
 
 Finally, changes in command-line options should be integrated in the
 manual, but also in the man pages present in the `man/` sub-directory

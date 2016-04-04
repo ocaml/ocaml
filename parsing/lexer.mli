@@ -38,6 +38,7 @@ val in_string : unit -> bool;;
 
 
 val print_warnings : bool ref
+val handle_docstrings: bool ref
 val comments : unit -> (string * Location.t) list
 val token_with_comments : Lexing.lexbuf -> Parser.token
 

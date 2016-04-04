@@ -34,5 +34,11 @@ camlheaderd target_camlheaderd: headernt.c ../config/Makefile
 	mv tmpheader.exe camlheaderd
 	cp camlheaderd target_camlheaderd
 
+camlheaderi: headernt.c ../config/Makefile
+	$(BYTECC) $(BYTECCCOMPOPTS) -c -I../byterun \
+	          -DRUNTIME_NAME='"ocamlruni"' headernt.c
+	$(MKEXE) -o tmpheader.exe headernt.$(O) $(EXTRALIBS)
+	mv tmpheader.exe camlheaderi
+
 # TODO: do not call flexlink to build tmpheader.exe (we don't need
 # the export table)

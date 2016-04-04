@@ -19,6 +19,7 @@
 #include <string.h>
 #include <ctype.h>
 
+#include "caml/instrtrace.h"
 #include "caml/instruct.h"
 #include "caml/misc.h"
 #include "caml/mlvalues.h"

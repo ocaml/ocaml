@@ -128,6 +128,9 @@ module type SCANNING = sig
 
   val close_in : in_channel -> unit;;
 
+  val memo_from_channel : Pervasives.in_channel -> in_channel;;
+  (* Obsolete. *)
+
 end
 ;;
 
@@ -293,12 +296,13 @@ module Scanning : SCANNING = struct
      needed; additionally, the input buffer is the only source of character of
      a scanner. The [scanbuf] input buffers are defined in module {!Scanning}.
 
-     Now we understand that it is extremely important that related successive
-     calls to scanners indeed read from the same input buffer. In effect, if a
-     scanner [scan1] is reading from [ib1] and stores an unused lookahead
-     character [c1] into its input buffer [ib1], then another scanner [scan2]
-     not reading from the same buffer [ib1] will miss the character [c1],
-     seemingly vanished in the air from the point of view of [scan2].
+     Now we understand that it is extremely important that related and
+     successive calls to scanners indeed read from the same input buffer.
+     In effect, if a scanner [scan1] is reading from [ib1] and stores an
+     unused lookahead character [c1] into its input buffer [ib1], then
+     another scanner [scan2] not reading from the same buffer [ib1] will miss
+     the character [c1], seemingly vanished in the air from the point of view
+     of [scan2].
 
      This mechanism works perfectly to read from strings, from files, and from
      functions, since in those cases, allocating two buffers reading from the
@@ -313,22 +317,7 @@ module Scanning : SCANNING = struct
      character in its input buffer. In conclusion, you should never mix direct
      low level reading and high level scanning from the same input channel.
 
-     This phenomenon of reading mess is even worse when one defines more than
-     one scanning buffer reading from the same input channel [ic].
-     Unfortunately, we have no simple way to get rid of this problem
-     (unless the basic input channel API is modified to offer a 'consider this
-     char as unread' procedure to keep back the unused lookahead character as
-     available in the input channel for further reading).
-
-     To prevent some of the confusion the scanning buffer allocation function
-     is a memo function that never allocates two different scanning buffers for
-     the same input channel. This way, the user can naively perform successive
-     call to [fscanf] below, without allocating a new scanning buffer at each
-     invocation and hence preserving the expected semantics.
-
-     As mentioned above, a more ambitious fix could be to change the input
-     channel API to allow arbitrary mixing of direct and formatted reading from
-     input channels. *)
+  *)
 
   (* Perform bufferized input to improve efficiency. *)
   let file_buffer_size = ref 1024;;
@@ -359,19 +348,21 @@ module Scanning : SCANNING = struct
   ;;
 
   let from_ic_close_at_end = from_ic scan_close_at_end;;
+  let from_ic_raise_at_end = from_ic scan_raise_at_end;;
 
   (* The scanning buffer reading from [Pervasives.stdin].
      One could try to define [stdib] as a scanning buffer reading a character
      at a time (no bufferization at all), but unfortunately the top-level
      interaction would be wrong. This is due to some kind of
      'race condition' when reading from [Pervasives.stdin],
-     since the interactive compiler and [scanf] will simultaneously read the
-     material they need from [Pervasives.stdin]; then, confusion will result
-     from what should be read by the top-level and what should be read
-     by [scanf].
-     This is even more complicated by the one character lookahead that [scanf]
-     is sometimes obliged to maintain: the lookahead character will be
-     available for the next ([scanf]) entry, seemingly coming from nowhere.
+     since the interactive compiler and [Scanf.scanf] will simultaneously
+     read the material they need from [Pervasives.stdin]; then, confusion
+     will result from what should be read by the top-level and what should be
+     read by [Scanf.scanf].
+     This is even more complicated by the one character lookahead that
+     [Scanf.scanf] is sometimes obliged to maintain: the lookahead character
+     will be available for the next [Scanf.scanf] entry, seemingly coming from
+     nowhere.
      Also no [End_of_file] is raised when reading from stdin: if not enough
      characters have been read, we simply ask to read more. *)
   let stdin =
@@ -395,47 +386,45 @@ module Scanning : SCANNING = struct
   let from_file = open_in;;
   let from_file_bin = open_in_bin;;
 
-  module Ib :
-    Hashtbl.HashedType
-    with type t = in_channel =
-  struct
-    type t = in_channel;;
-    let equal ib1 ib2 = ib1.ic_input_name = ib2.ic_input_name;;
-    let hash ib = Hashtbl.hash ib;;
-  end
+  let from_channel ic =
+    from_ic_raise_at_end (From_channel ic) ic
   ;;
-
-  module Memo = Weak.Make (Ib);;
-
-  let memo_table = Memo.create 17;;
-
-  let memo_from_ic scan_close_ic ic =
-    let ic_name = From_channel ic in
-    let ib_option =
-      Memo.fold
-        (fun ib opt ->
-         match opt with
-         | None -> if ib.ic_input_name = ic_name then Some ib else opt
-         | opt -> opt)
-        memo_table None in
-    match ib_option with
-    | None ->
-      let ib = from_ic scan_close_ic ic_name ic in
-      Memo.add memo_table ib;
-      ib
-    | Some ib -> ib
-  ;;
-
-  let from_channel = memo_from_ic scan_raise_at_end;;
 
   let close_in ib =
     match ib.ic_input_name with
     | From_channel ic ->
-      Memo.remove memo_table ib;
       Pervasives.close_in ic
     | From_file (_fname, ic) -> Pervasives.close_in ic
-    | From_string | From_function -> ()
+    | From_function | From_string -> ()
   ;;
+
+  (*
+     Obsolete: a memo from_channel version for [Scanning.in_channel]
+     buffer allocation from [Pervasives.in_channel].
+     This function was used to try to preserve the scanning
+     semantics for the (now obsolete) function [fscanf].
+     Given that all scanner must read from a Scanning.in_channel scanning
+     buffer, fscanf must read from one and more precisely, given [ic], all
+     successive calls [fscanf ic] must read from the same scanning buffer.
+     This forces this library to allocated scanning buffers that were
+     not properly garbbage collectable, hence leading to memory leaks.
+     If you need to read from a [Pervasives.in_channel] input channel
+     [ic], simply define a [Scanning.in_channel] formatted input channel as in
+     [let ib = Scanning.from_channel ic],
+     then use [Scanf.bscanf ib] as usual.
+  *)
+  let memo_from_ic =
+    let memo = ref [] in
+    (fun scan_close_ic ic ->
+     try List.assq ic !memo with
+     | Not_found ->
+       let ib =
+         from_ic scan_close_ic (From_channel ic) ic in
+       memo := (ic, ib) :: !memo;
+       ib)
+  ;;
+
+  let memo_from_channel = memo_from_ic scan_raise_at_end;;
 
 end
 ;;
@@ -500,13 +489,13 @@ let rec skip_whites ib =
 (* Checking that [c] is indeed in the input, then skips it.
    In this case, the character [c] has been explicitly specified in the
    format as being mandatory in the input; hence we should fail with
-   End_of_file in case of end_of_input. (Remember that Scan_failure is raised
-   only when (we can prove by evidence) that the input does not match the
-   format string given. We must thus differentiate End_of_file as an error
-   due to lack of input, and Scan_failure which is due to provably wrong
-   input. I am not sure this is worth the burden: it is complex and somehow
-   subliminal; should be clearer to fail with Scan_failure "Not enough input
-   to complete scanning"!)
+   [End_of_file] in case of end_of_input.
+   (Remember that [Scan_failure] is raised only when (we can prove by
+   evidence) that the input does not match the format string given. We must
+   thus differentiate [End_of_file] as an error due to lack of input, and
+   [Scan_failure] which is due to provably wrong input. I am not sure this is
+   worth the burden: it is complex and somehow subliminal; should be clearer
+   to fail with Scan_failure "Not enough input to complete scanning"!)
 
    That's why, waiting for a better solution, we use checked_peek_char here.
    We are also careful to treat "\r\n" in the input as an end of line marker:
@@ -785,8 +774,8 @@ let scan_int_part width ib =
    [int32], [int64], and [native_int] correspondent), the [precision]
    indicates the required minimum width of the token read,
 
-   - on all other conversions, the width and precision are meaningless and
-   ignored (FIXME: lead to a runtime error ? type checking error ?).
+   - on all other conversions, the width and precision specify the [max, min]
+   range for the width of the token read.
 *)
 
 let scan_float width precision ib =
@@ -805,8 +794,10 @@ let scan_float width precision ib =
 ;;
 
 let check_case_insensitive_string width ib error str =
-  let lowercase c = match c with
-    | 'A' .. 'Z' -> char_of_int (int_of_char c - int_of_char 'A' + int_of_char 'a')
+  let lowercase c =
+    match c with
+    | 'A' .. 'Z' ->
+      char_of_int (int_of_char c - int_of_char 'A' + int_of_char 'a')
     | _ -> c in
   let len = String.length str in
   let width = ref width in
@@ -867,8 +858,9 @@ let scan_caml_float_rest width precision ib =
   if width = 0 || Scanning.end_of_input ib then bad_float ();
   let width = scan_decimal_digits width ib in
   if width = 0 || Scanning.end_of_input ib then bad_float ();
-  match Scanning.peek_char ib with
-  | '.' as c ->
+  let c = Scanning.peek_char ib in
+  match c with
+  | '.' ->
     let width = Scanning.store_char width ib c in
     (* The effective width available for scanning the fractional part is
        the minimum of declared precision and width left. *)
@@ -948,8 +940,7 @@ let scan_string stp width ib =
       | None ->
         match c with
         | ' ' | '\t' | '\n' | '\r' -> width
-        | _ -> loop (Scanning.store_char width ib c)
-  in
+        | _ -> loop (Scanning.store_char width ib c) in
   loop width
 ;;
 
@@ -1117,43 +1108,50 @@ let scan_bool ib =
       bad_input
         (Printf.sprintf "the character %C cannot start a boolean" c) in
   scan_string None m ib
+;;
 
 (* Scan a string containing elements in char_set and terminated by scan_indic
    if provided. *)
 let scan_chars_in_char_set char_set scan_indic width ib =
   let rec scan_chars i stp =
     let c = Scanning.peek_char ib in
-    if i > 0 && not (Scanning.eof ib) && is_in_char_set char_set c &&
-      int_of_char c <> stp then
+    if i > 0 && not (Scanning.eof ib) &&
+       is_in_char_set char_set c &&
+       int_of_char c <> stp then
       let _ = Scanning.store_char max_int ib c in
-      scan_chars (i - 1) stp;
-  in
+      scan_chars (i - 1) stp in
   match scan_indic with
   | None -> scan_chars width (-1);
   | Some c ->
     scan_chars width (int_of_char c);
     if not (Scanning.eof ib) then
       let ci = Scanning.peek_char ib in
-      if c = ci then Scanning.invalidate_current_char ib
+      if c = ci
+      then Scanning.invalidate_current_char ib
       else character_mismatch c ci
+;;
 
 (* The global error report function for [Scanf]. *)
 let scanf_bad_input ib = function
   | Scan_failure s | Failure s ->
     let i = Scanning.char_count ib in
-    bad_input (Printf.sprintf "scanf: bad input at char number %i: %S" i s)
+    bad_input (Printf.sprintf "scanf: bad input at char number %i: %s" i s)
   | x -> raise x
+;;
 
 (* Get the content of a counter from an input buffer. *)
-let get_counter ib counter = match counter with
+let get_counter ib counter =
+  match counter with
   | Line_counter -> Scanning.line_count ib
   | Char_counter -> Scanning.char_count ib
   | Token_counter -> Scanning.token_count ib
+;;
 
 (* Compute the width of a padding option (see "%42{" and "%123("). *)
 let width_of_pad_opt pad_opt = match pad_opt with
   | None -> max_int
   | Some width -> width
+;;
 
 let stopper_of_formatting_lit fmting =
   if fmting = Escaped_percent then '%', "" else
@@ -1161,6 +1159,7 @@ let stopper_of_formatting_lit fmting =
     let stp = str.[1] in
     let sub_str = String.sub str 2 (String.length str - 2) in
     stp, sub_str
+;;
 
 (******************************************************************************)
                            (* Readers managment *)
@@ -1488,33 +1487,36 @@ let kscanf ib ef (Format (fmt, str)) =
   in
   take_format_readers k fmt
 
-let kbscanf = kscanf
+(***)
+
+let kbscanf = kscanf;;
+let bscanf ib fmt = kbscanf ib scanf_bad_input fmt;;
+
+let ksscanf s ef fmt = kbscanf (Scanning.from_string s) ef fmt;;
+let sscanf s fmt = kbscanf (Scanning.from_string s) scanf_bad_input fmt;;
+
+let scanf fmt = kscanf Scanning.stdib scanf_bad_input fmt;;
 
 (***)
 
-let ksscanf s ef fmt = kbscanf (Scanning.from_string s) ef fmt
-let kfscanf ic ef fmt = kbscanf (Scanning.from_channel ic) ef fmt
-let bscanf ib fmt = kscanf ib scanf_bad_input fmt
-let fscanf ic fmt = kscanf (Scanning.from_channel ic) scanf_bad_input fmt
-let sscanf s fmt = kscanf (Scanning.from_string s) scanf_bad_input fmt
-let scanf fmt = kscanf Scanning.stdib scanf_bad_input fmt
-
-(***)
-
-let bscanf_format : Scanning.in_channel -> ('a, 'b, 'c, 'd, 'e, 'f) format6 ->
+(* Scanning format strings. *)
+let bscanf_format :
+  Scanning.in_channel -> ('a, 'b, 'c, 'd, 'e, 'f) format6 ->
   (('a, 'b, 'c, 'd, 'e, 'f) format6 -> 'g) -> 'g =
   fun ib format f ->
     let _ = scan_caml_string max_int ib in
     let str = token_string ib in
     let fmt' =
       try format_of_string_format str format
-      with Failure msg -> bad_input msg
-    in
+      with Failure msg -> bad_input msg in
     f fmt'
+;;
 
-let sscanf_format : string -> ('a, 'b, 'c, 'd, 'e, 'f) format6 ->
+let sscanf_format :
+  string -> ('a, 'b, 'c, 'd, 'e, 'f) format6 ->
   (('a, 'b, 'c, 'd, 'e, 'f) format6 -> 'g) -> 'g =
   fun s format f -> bscanf_format (Scanning.from_string s) format f
+;;
 
 let string_to_String s =
   let l = String.length s in
@@ -1536,3 +1538,7 @@ let format_from_string s fmt =
 let unescaped s =
   sscanf ("\"" ^ s ^ "\"") "%S%!" (fun x -> x)
 ;;
+
+(* Deprecated *)
+let kfscanf ic ef fmt = kbscanf (Scanning.memo_from_channel ic) ef fmt;;
+let fscanf ic fmt = kscanf (Scanning.memo_from_channel ic) scanf_bad_input fmt;;

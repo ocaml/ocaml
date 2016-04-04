@@ -225,7 +225,7 @@ and for row types (section~\ref{s-private-rows}).
 type-representation:
           ...
         | '=' 'private' [ '|' ] constr-decl { '|' constr-decl }
-        | '=' 'private' '{' field-decl { ';' field-decl } [ ';' ] '}'
+        | '=' 'private' record-decl
 \end{syntax}
 
 Values of a variant or record type declared @"private"@
@@ -417,9 +417,9 @@ expr:
 
 When the body of a local open expression is delimited by @'[' ']'@,  @'[|' '|]'@,  @'{' '}'@, or @'{<' '>}'@, the parentheses can be omitted.  For example, @module-path'.['expr']'@ is equivalent to @module-path'.(['expr'])'@, and @module-path'.[|' expr '|]'@ is equivalent to @module-path'.([|' expr '|])'@.
 
-\section{Record notations}
+\section{Record and object notations}
 
-(Introduced in OCaml 3.12)
+(Introduced in OCaml 3.12, object copy notation added in Ocaml 4.03)
 
 \begin{syntax}
 pattern:
@@ -430,13 +430,14 @@ expr:
      ...
   | '{' field ['=' expr] { ';' field ['=' expr] } [';'] '}'
   | '{' expr 'with' field ['=' expr] { ';' field ['=' expr] } [';'] '}'
+  | '{' '<' expr 'with' field ['=' expr] { ';' field ['=' expr] } [';'] '>' '}'
+
 \end{syntax}
 
-In a record pattern or a record construction expression, a single
-identifier @id@ stands for @id '=' id@, and a qualified identifier
+In a record pattern, a record construction expression or an object copy expression,
+a single identifier @id@ stands for @id '=' id@, and a qualified identifier
 @module-path '.' id@ stands for @module-path '.' id '=' id@.
-For example, assuming
-the record type
+For example, assuming the record type
 \begin{verbatim}
           type point = { x: float; y: float }
 \end{verbatim}
@@ -445,6 +446,15 @@ has been declared, the following expressions are equivalent:
           let x = 1 and y = 2 in { x = x; y = y }
           let x = 1 and y = 2 in { x; y }
           let x = 1 and y = 2 in { x = x; y }
+\end{verbatim}
+On the object side, all following methods are equivalent:
+\begin{verbatim}
+          object
+            val x=0. val y=0. val z=0.
+            method f_0 x y = {< x; y >}
+            method f_1 x y = {< x = x; y >}
+            method f_2 x y = {< x=x ; y = y >}
+          end
 \end{verbatim}
 Likewise, the following functions are equivalent:
 \begin{verbatim}
@@ -511,12 +521,12 @@ polymorphic.
 \ikwd{type\@\texttt{type}}
 \ikwd{fun\@\texttt{fun}}
 
-(Introduced in OCaml 3.12)
+(Introduced in OCaml 3.12, short syntax added in 4.03)
 
 \begin{syntax}
 parameter:
        ...
-     | '(' "type" typeconstr-name ')'
+     | '(' "type" {{typeconstr-name}} ')'
 \end{syntax}
 
 The expression @"fun" '(' "type" typeconstr-name ')' "->" expr@ introduces a
@@ -535,8 +545,16 @@ and even use the alternative syntax for declaring functions:
 \begin{verbatim}
         let f (type t) (foo : t list) = ...
 \end{verbatim}
+If several locally abstract types need to be introduced, it is possible to use
+the syntax
+@"fun" '(' "type" typeconstr-name_1 \ldots typeconstr-name_n ')' "->" expr@
+as syntactic sugar for @"fun" '(' "type" typeconstr-name_1 ')' "->" \ldots "->"
+'(' "type" typeconstr-name_n ')' "->" expr@. For instance,
+\begin{verbatim}
+        let f = fun (type t u v) -> (foo : (t * u * v) list) -> ...
+\end{verbatim}
 
-This construction is useful because the type constructor it introduces
+This construction is useful because the type constructors it introduces
 can be used in places where a type variable is not allowed. For
 instance, one can use it to define an exception in a local module
 within a polymorphic function.
@@ -1091,7 +1109,7 @@ intentional and should not trigger the warning.
 \begin{syntax}
 constr-decl:
           ...
-        | constr-name ':' [ typexpr { '*' typexpr } '->' ] typexpr
+        | constr-name ':' [ constr-args '->' ] typexpr
 ;
 type-param:
           ...
@@ -1270,8 +1288,9 @@ can trigger a deprecated warning are documented in~\ref{s:bigarray-indexop-compa
 Attributes are ``decorations'' of the syntax tree which are mostly
 ignored by the type-checker but can be used by external tools.  An
 attribute is made of an identifier and a payload, which can be a
-structure, a type expression (prefixed with ":") or a pattern
-(prefixed with "?") optionally followed by a "when" clause:
+structure, a type expression (prefixed with ":"), a signature
+(prefixed with ":") or a pattern (prefixed with "?") optionally
+followed by a "when" clause:
 
 
 \begin{syntax}
@@ -1283,6 +1302,7 @@ attr-id:
 attr-payload:
     [ module-items ]
  |  ':' typexpr
+ |  ':' [ specification ]
  |  '?' pattern ['when' expr]
 ;
 \end{syntax}
@@ -1329,9 +1349,13 @@ field-decl:
           ['mutable'] field-name ':' poly-typexpr {attribute}
 ;
 constr-decl:
-          (constr-name || '()') [ 'of' typexpr { '*' typexpr } ] {attribute}
+          (constr-name || '()') [ 'of' constr-args ] {attribute}
 ;
 \end{syntax}
+
+Note: when a label declaration is followed by a semi-colon, attributes
+can also be put after the semi-colon (in which case they are merged to
+those specified before).
 
 
 The second form of attributes are attached to ``blocks'' such as type
@@ -1754,7 +1778,7 @@ As a side-effect of this generativity, one is allowed to unpack
 first-class modules in the body of generative functors.
 
 \section{Extension operators} \label{s:ext-ops}
-(Introduced in Ocaml 4.02.2 )
+(Introduced in Ocaml 4.02.2)
 \begin{syntax}
 infix-symbol:
           ...
@@ -1768,6 +1792,51 @@ rejected during type-checking. These operators can therefore not be
 used directly in vanilla Ocaml. However, "-ppx" rewriters and other
 external tools can use this parser leniency to extend the language
 with new extension specific "#"-operators.
+
+\section{Inline records}
+(Introduced in OCaml 4.03)
+\begin{syntax}
+  constr-args:
+          ...
+          | record-decl
+;
+\end{syntax}
+
+The arguments of a sum-type constructors can now be defined using the
+same syntax as records.  Mutable and polymorphic fields are allowed.
+GADT syntax is supported.  Attributes can be specified on individual
+fields.
+
+Syntactically, building or matching constructors with such an inline
+record argument is similar to working with a unary constructor whose
+unique argument is a declared record type.  A pattern can bind
+the inline record as a pseudo-value, but the record cannot escape the
+scope of the binding and can only be used with the dot-notation to
+extract or modify fields or to build new constructor values.
+
+\begin{verbatim}
+type t =
+  | Point of {width: int; mutable x: float; mutable y: float}
+  | ...
+
+let v = Point {width = 10; x = 0.; y = 0.}
+
+let scale l = function
+  | Point p -> Point {p with x = l * p.x; y = l * p.y}
+  | ....
+
+let print = function
+  | Point {x; y; _} -> Printf.printf "%f/%f" x y
+  | ....
+
+let reset = function
+  | Point p -> p.x <- 0.; p.y <- 0.
+  | ...
+
+let invalid = function
+  | Point p -> p  (* INVALID *)
+  | ...
+\end{verbatim}
 
 \section{User-defined index operators} \label{s:index-operators}
 

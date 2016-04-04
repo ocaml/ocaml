@@ -62,6 +62,11 @@ val force_val : 'a t -> 'a;;
 
 val from_fun : (unit -> 'a) -> 'a t;;
 (** [from_fun f] is the same as [lazy (f ())] but slightly more efficient.
+
+    [from_fun] should only be used if the function [f] is already defined.
+    In particular it is always less efficient to write
+    [from_fun (fun () -> expr)] than [lazy expr].
+
     @since 4.00.0 *)
 
 val from_val : 'a -> 'a t;;

@@ -17,6 +17,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <float.h>
 #include <limits.h>
 
 #include "caml/alloc.h"
@@ -468,9 +469,11 @@ CAMLexport double caml_hypot(double x, double y)
   return hypot(x, y);
 #else
   double tmp, ratio;
-  if (x != x) return x;  /* NaN */
-  if (y != y) return y;  /* NaN */
   x = fabs(x); y = fabs(y);
+  if (x != x) /* x is NaN */
+    return y > DBL_MAX ? y : x;  /* PR#6321 */
+  if (y != y) /* y is NaN */
+    return x > DBL_MAX ? x : y;  /* PR#6321 */
   if (x < y) { tmp = x; x = y; y = tmp; }
   if (x == 0.0) return 0.0;
   ratio = y / x;

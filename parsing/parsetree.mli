@@ -41,6 +41,7 @@ and attributes = attribute list
 
 and payload =
   | PStr of structure
+  | PSig of signature (* : SIG *)
   | PTyp of core_type  (* : T *)
   | PPat of pattern * expression option  (* ? P  or  ? P when E *)
 

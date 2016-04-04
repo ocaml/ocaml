@@ -38,7 +38,7 @@ CAMLDEP_OBJ=depend.cmo ocamldep.cmo
 CAMLDEP_IMPORTS=misc.cmo config.cmo clflags.cmo terminfo.cmo \
   warnings.cmo location.cmo longident.cmo docstrings.cmo \
   syntaxerr.cmo ast_helper.cmo parser.cmo lexer.cmo parse.cmo \
-  ccomp.cmo ast_mapper.cmo pparse.cmo compenv.cmo
+  ccomp.cmo ast_mapper.cmo pparse.cmo compenv.cmo builtin_attributes.cmo
 
 ocamldep: depend.cmi $(CAMLDEP_OBJ)
 	$(CAMLC) $(LINKFLAGS) -compat-32 -o ocamldep $(CAMLDEP_IMPORTS) $(CAMLDEP_OBJ)
@@ -311,6 +311,11 @@ cmpbyt: $(CMPBYT)
 
 clean::
 	rm -f cmpbyt
+
+ifeq "$(RUNTIMEI)" "true"
+install::
+	cp ocaml-instr-graph ocaml-instr-report $(INSTALL_BINDIR)/
+endif
 
 # Common stuff
 

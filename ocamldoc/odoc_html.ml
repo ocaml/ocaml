@@ -791,8 +791,6 @@ class html =
     val mutable default_style_options =
       [ ".keyword { font-weight : bold ; color : Red }" ;
         ".keywordsign { color : #C04600 }" ;
-        ".superscript { font-size : 4 }" ;
-        ".subscript { font-size : 4 }" ;
         ".comment { color : Green }" ;
         ".constructor { color : Blue }" ;
         ".type { color : #5C6585 }" ;

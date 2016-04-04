@@ -313,10 +313,15 @@ executable file, where
 .BR ocamlrun (1)
 can find it and use it.
 .TP
-.BI \-for\-pack \ ident
-This option is accepted for compatibility with
-.BR ocamlopt (1)
-; it does nothing.
+.BI \-for\-pack \ module\-path
+Generate an object file (.cmx and .o files) that can later be included
+as a sub-module (with the given access path) of a compilation unit
+constructed with
+.BR \-pack .
+For instance,
+.B ocamlc\ \-for\-pack\ P\ \-c\ A.ml
+will generate a.cmo that can later be used with
+.BR "ocamlc -pack -o P.cmo a.cmo" .
 .TP
 .B \-g
 Add debugging information while compiling and linking. This option is
@@ -929,8 +934,8 @@ compiling your program with later versions of OCaml when they add new
 warnings or modify existing warnings.
 
 The default setting is
-.B \-warn\-error \-a
-(all warnings are non-fatal).
+.B \-warn\-error \-a+31
+(all warnings are non-fatal except 31).
 .TP
 .B \-warn\-help
 Show the description of all available warning numbers.

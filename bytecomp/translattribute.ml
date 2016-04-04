@@ -73,7 +73,7 @@ let add_inline_attribute expr loc attributes =
           Location.prerr_warning loc
             (Warnings.Duplicated_attribute "inline")
       end;
-      Lfunction { funct with attr = { inline = inline_attribute } }
+      Lfunction { funct with attr = { attr with inline = inline_attribute } }
   | expr, (Always_inline | Never_inline) ->
       Location.prerr_warning loc
         (Warnings.Misplaced_attribute "inline");
@@ -84,11 +84,17 @@ let add_inline_attribute expr loc attributes =
    used to ensure that this expression is not misplaced: If it
    appears on any expression, it is an error, otherwise it would
    have been removed by this function *)
-let get_inlined_attribute e =
+let get_and_remove_inlined_attribute e =
   let attribute_value, exp_attributes =
     make_get_inline_attribute is_inlined_attribute e.exp_attributes
   in
   attribute_value, { e with exp_attributes }
+
+let get_and_remove_inlined_attribute_on_module e =
+  let attribute_value, mod_attributes =
+    make_get_inline_attribute is_inlined_attribute e.mod_attributes
+  in
+  attribute_value, { e with mod_attributes }
 
 (* It also remove the attribute from the expression, like
    get_inlined_attribute *)
@@ -121,6 +127,21 @@ let check_attribute e ({ txt; loc }, _) =
     end
   | "inlined" | "ocaml.inlined"
   | "tailcall" | "ocaml.tailcall" ->
+      (* Removed by the Texp_apply cases *)
+      Location.prerr_warning loc
+        (Warnings.Misplaced_attribute txt)
+  | _ -> ()
+
+let check_attribute_on_module e ({ txt; loc }, _) =
+  match txt with
+  | "inline" | "ocaml.inline" ->  begin
+      match e.mod_desc with
+      | Tmod_functor _ -> ()
+      | _ ->
+          Location.prerr_warning loc
+            (Warnings.Misplaced_attribute txt)
+    end
+  | "inlined" | "ocaml.inlined" ->
       (* Removed by the Texp_apply cases *)
       Location.prerr_warning loc
         (Warnings.Misplaced_attribute txt)

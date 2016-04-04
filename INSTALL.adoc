@@ -106,6 +106,10 @@ The `configure` script accepts the following options:
         Compile and install the debug version of the runtimes, useful
         for debugging C stubs and other low-level code.
 
+-with-instrumented-runtime::
+        Compile and install the instrumented version of the runtimes,
+        useful mainly for fine-tuning the GC. Works only on Linux.
+
 -verbose::
         Verbose output of the configuration tests. Use it if the outcome
         of configure is not what you were expecting.

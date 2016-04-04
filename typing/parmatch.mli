@@ -73,3 +73,6 @@ val check_unused:
 (* Irrefutability tests *)
 val irrefutable : pattern -> bool
 val fluid : pattern -> bool
+
+(* Ambiguous bindings *)
+val check_ambiguous_bindings : case list -> unit
