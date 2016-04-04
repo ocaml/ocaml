@@ -20,7 +20,7 @@ module T =
       struct
         type t_ = int array
         let _ = fun (_ : t_)  -> ()
-        
+
         let t__of_sexp: sexp -> t_ =
           let _tp_loc = "core_array.ml.T.Int.t_" in
           fun t  -> (array_of_sexp int_of_sexp) t
@@ -61,7 +61,7 @@ module Permissioned :
   struct
     type ('a,-'perms) t = 'a array
     let _ = fun (_ : ('a,'perms) t)  -> ()
-    
+
     let t_of_sexp :
       'a 'perms .
         (sexp -> 'a) ->
@@ -80,7 +80,7 @@ module Permissioned :
         include T.Int
         type -'perms t = t_
         let _ = fun (_ : 'perms t)  -> ()
-        
+
         let t_of_sexp :
           'perms . (sexp -> 'perms) -> sexp -> 'perms t=
           let _tp_loc = "core_array.ml.Permissioned.Int.t" in
@@ -91,4 +91,4 @@ module Permissioned :
           fun _of_perms  -> fun v  -> sexp_of_t_ v
         let _ = sexp_of_t
       end
-  end 
+  end

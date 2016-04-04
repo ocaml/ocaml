@@ -1,15 +1,17 @@
-/***********************************************************************/
-/*                                                                     */
-/*                                OCaml                                */
-/*                                                                     */
-/*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         */
-/*                                                                     */
-/*  Copyright 1996 Institut National de Recherche en Informatique et   */
-/*  en Automatique.  All rights reserved.  This file is distributed    */
-/*  under the terms of the GNU Library General Public License, with    */
-/*  the special exception on linking described in file ../LICENSE.     */
-/*                                                                     */
-/***********************************************************************/
+/**************************************************************************/
+/*                                                                        */
+/*                                 OCaml                                  */
+/*                                                                        */
+/*             Xavier Leroy, projet Cristal, INRIA Rocquencourt           */
+/*                                                                        */
+/*   Copyright 1996 Institut National de Recherche en Informatique et     */
+/*     en Automatique.                                                    */
+/*                                                                        */
+/*   All rights reserved.  This file is distributed under the terms of    */
+/*   the GNU Lesser General Public License version 2.1, with the          */
+/*   special exception on linking described in the file LICENSE.          */
+/*                                                                        */
+/**************************************************************************/
 
 /* The interface of this file is in "caml/mlvalues.h" and "caml/alloc.h" */
 
@@ -240,7 +242,7 @@ static int caml_float_of_hex(const char * s, double * res)
     }
   }
   /* Convert mantissa to FP.  We use a signed conversion because we can
-     (m has 60 bits at most) and because it is faster 
+     (m has 60 bits at most) and because it is faster
      on several architectures. */
   f = (double) (int64_t) m;
   /* Adjust exponent to take decimal point and extra digits into account */
@@ -265,7 +267,7 @@ CAMLprim value caml_float_of_string(value vs)
   src = String_val(vs);
   sign = 1;
   if (*src == '-') { sign = -1; src++; }
-  else if (*src == '+') { src++; }; 
+  else if (*src == '+') { src++; };
   if (src[0] == '0' && (src[1] == 'x' || src[1] == 'X')) {
     if (caml_float_of_hex(src + 2, &d) == -1)
       caml_failwith("float_of_string");

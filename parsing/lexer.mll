@@ -1,14 +1,17 @@
-(***********************************************************************)
-(*                                                                     *)
-(*                                OCaml                                *)
-(*                                                                     *)
-(*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         *)
-(*                                                                     *)
-(*  Copyright 1996 Institut National de Recherche en Informatique et   *)
-(*  en Automatique.  All rights reserved.  This file is distributed    *)
-(*  under the terms of the Q Public License version 1.0.               *)
-(*                                                                     *)
-(***********************************************************************)
+(**************************************************************************)
+(*                                                                        *)
+(*                                 OCaml                                  *)
+(*                                                                        *)
+(*             Xavier Leroy, projet Cristal, INRIA Rocquencourt           *)
+(*                                                                        *)
+(*   Copyright 1996 Institut National de Recherche en Informatique et     *)
+(*     en Automatique.                                                    *)
+(*                                                                        *)
+(*   All rights reserved.  This file is distributed under the terms of    *)
+(*   the GNU Lesser General Public License version 2.1, with the          *)
+(*   special exception on linking described in the file LICENSE.          *)
+(*                                                                        *)
+(**************************************************************************)
 
 (* The lexer definition *)
 
@@ -132,6 +135,10 @@ let in_comment () = !comment_start_loc <> [];;
 let is_in_string = ref false
 let in_string () = !is_in_string
 let print_warnings = ref true
+
+(* Escaped chars are interpreted in strings unless they are in comments. *)
+let store_escaped_char lexbuf c =
+  if in_comment () then store_lexeme lexbuf else store_string_char c
 
 let with_comment_buffer comment lexbuf =
   let start_loc = Location.curr lexbuf  in
@@ -583,34 +590,33 @@ and string = parse
       { () }
   | '\\' newline ([' ' '\t'] * as space)
       { update_loc lexbuf None 1 false (String.length space);
+        if in_comment () then store_lexeme lexbuf;
         string lexbuf
       }
   | '\\' ['\\' '\'' '\"' 'n' 't' 'b' 'r' ' ']
-      { store_string_char(char_for_backslash(Lexing.lexeme_char lexbuf 1));
+      { store_escaped_char lexbuf
+                           (char_for_backslash(Lexing.lexeme_char lexbuf 1));
         string lexbuf }
   | '\\' ['0'-'9'] ['0'-'9'] ['0'-'9']
-      { store_string_char(char_for_decimal_code lexbuf 1);
+      { store_escaped_char lexbuf (char_for_decimal_code lexbuf 1);
          string lexbuf }
   | '\\' 'o' ['0'-'3'] ['0'-'7'] ['0'-'7']
-      { store_string_char(char_for_octal_code lexbuf 2);
+      { store_escaped_char lexbuf (char_for_octal_code lexbuf 2);
          string lexbuf }
   | '\\' 'x' ['0'-'9' 'a'-'f' 'A'-'F'] ['0'-'9' 'a'-'f' 'A'-'F']
-      { store_string_char(char_for_hexadecimal_code lexbuf 2);
+      { store_escaped_char lexbuf (char_for_hexadecimal_code lexbuf 2);
          string lexbuf }
   | '\\' _
-      { if in_comment ()
-        then string lexbuf
-        else begin
+      { if not (in_comment ()) then begin
 (*  Should be an error, but we are very lax.
           raise (Error (Illegal_escape (Lexing.lexeme lexbuf),
                         Location.curr lexbuf))
 *)
           let loc = Location.curr lexbuf in
           Location.prerr_warning loc Warnings.Illegal_backslash;
-          store_string_char (Lexing.lexeme_char lexbuf 0);
-          store_string_char (Lexing.lexeme_char lexbuf 1);
-          string lexbuf
-        end
+        end;
+        store_lexeme lexbuf;
+        string lexbuf
       }
   | newline
       { if not (in_comment ()) then

@@ -1,14 +1,17 @@
-(***********************************************************************)
-(*                                                                     *)
-(*                                OCaml                                *)
-(*                                                                     *)
-(*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         *)
-(*                                                                     *)
-(*  Copyright 1996 Institut National de Recherche en Informatique et   *)
-(*  en Automatique.  All rights reserved.  This file is distributed    *)
-(*  under the terms of the Q Public License version 1.0.               *)
-(*                                                                     *)
-(***********************************************************************)
+(**************************************************************************)
+(*                                                                        *)
+(*                                 OCaml                                  *)
+(*                                                                        *)
+(*             Xavier Leroy, projet Cristal, INRIA Rocquencourt           *)
+(*                                                                        *)
+(*   Copyright 1996 Institut National de Recherche en Informatique et     *)
+(*     en Automatique.                                                    *)
+(*                                                                        *)
+(*   All rights reserved.  This file is distributed under the terms of    *)
+(*   the GNU Lesser General Public License version 2.1, with the          *)
+(*   special exception on linking described in the file LICENSE.          *)
+(*                                                                        *)
+(**************************************************************************)
 
 open Misc
 open Path
@@ -175,7 +178,13 @@ type structured_constant =
 type inline_attribute =
   | Always_inline (* [@inline] or [@inline always] *)
   | Never_inline (* [@inline never] *)
+  | Unroll of int (* [@unroll x] *)
   | Default_inline (* no [@inline] attribute *)
+
+type specialise_attribute =
+  | Always_specialise (* [@specialise] or [@specialise always] *)
+  | Never_specialise (* [@specialise never] *)
+  | Default_specialise (* no [@specialise] attribute *)
 
 type function_kind = Curried | Tupled
 
@@ -187,6 +196,7 @@ type shared_code = (int * int) list
 
 type function_attribute = {
   inline : inline_attribute;
+  specialise : specialise_attribute;
   is_a_functor: bool;
 }
 
@@ -223,7 +233,8 @@ and lambda_apply =
     ap_args : lambda list;
     ap_loc : Location.t;
     ap_should_be_tailcall : bool;
-    ap_inlined : inline_attribute }
+    ap_inlined : inline_attribute;
+    ap_specialised : specialise_attribute; }
 
 and lambda_switch =
   { sw_numconsts: int;
@@ -242,6 +253,7 @@ and lambda_event_kind =
     Lev_before
   | Lev_after of Types.type_expr
   | Lev_function
+  | Lev_pseudo
 
 type program =
   { code : lambda;
@@ -253,6 +265,7 @@ let lambda_unit = Lconst const_unit
 
 let default_function_attribute = {
   inline = Default_inline;
+  specialise = Default_specialise;
   is_a_functor = false;
 }
 
@@ -515,7 +528,8 @@ let subst_lambda s lam =
       begin try Ident.find_same id s with Not_found -> l end
   | Lconst sc as l -> l
   | Lapply ap ->
-      Lapply{ap with ap_func = subst ap.ap_func; ap_args = List.map subst ap.ap_args}
+      Lapply{ap with ap_func = subst ap.ap_func;
+                     ap_args = List.map subst ap.ap_args}
   | Lfunction{kind; params; body; attr} ->
       Lfunction{kind; params; body = subst body; attr}
   | Llet(str, id, arg, body) -> Llet(str, id, subst arg, subst body)
@@ -555,13 +569,14 @@ let rec map f lam =
     | Lvar v -> lam
     | Lconst cst -> lam
     | Lapply { ap_func; ap_args; ap_loc; ap_should_be_tailcall;
-          ap_inlined; } ->
+          ap_inlined; ap_specialised } ->
         Lapply {
           ap_func = map f ap_func;
           ap_args = List.map (map f) ap_args;
           ap_loc;
           ap_should_be_tailcall;
           ap_inlined;
+          ap_specialised;
         }
     | Lfunction { kind; params; body; attr; } ->
         Lfunction { kind; params; body = map f body; attr; }

@@ -1,14 +1,16 @@
-;(***********************************************************************)
-;(*                                                                     *)
-;(*                                OCaml                                *)
-;(*                                                                     *)
-;(*         Jacques Garrigue, Ian T Zimmerman, Damien Doligez           *)
-;(*                                                                     *)
-;(*  Copyright 1997 Institut National de Recherche en Informatique et   *)
-;(*  en Automatique.  All rights reserved.  This file is distributed    *)
-;(*  under the terms of the GNU General Public License.                 *)
-;(*                                                                     *)
-;(***********************************************************************)
+;**************************************************************************
+;*                                                                        *
+;*                                 OCaml                                  *
+;*                                                                        *
+;*          Jacques Garrigue, Ian T Zimmerman, Damien Doligez             *
+;*                                                                        *
+;*   Copyright 1997 Institut National de Recherche en Informatique et     *
+;*     en Automatique.                                                    *
+;*                                                                        *
+;*   All rights reserved.  This file is distributed under the terms of    *
+;*   the GNU General Public License.                                      *
+;*                                                                        *
+;**************************************************************************
 
 ;; caml-font: font-lock support for OCaml files
 ;; now with perfect parsing of comments and strings

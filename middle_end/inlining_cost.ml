@@ -1,6 +1,6 @@
 (**************************************************************************)
 (*                                                                        *)
-(*                                OCaml                                   *)
+(*                                 OCaml                                  *)
 (*                                                                        *)
 (*                       Pierre Chambart, OCamlPro                        *)
 (*           Mark Shinwell and Leo White, Jane Street Europe              *)
@@ -10,7 +10,7 @@
 (*                                                                        *)
 (*   All rights reserved.  This file is distributed under the terms of    *)
 (*   the GNU Lesser General Public License version 2.1, with the          *)
-(*   special exception on linking described in the file ../LICENSE.       *)
+(*   special exception on linking described in the file LICENSE.          *)
 (*                                                                        *)
 (**************************************************************************)
 
@@ -61,6 +61,8 @@ let prim_size (prim : Lambda.primitive) args =
   | _ -> 2 (* arithmetic and comparisons *)
 
 (* Simple approximation of the space cost of an Flambda expression. *)
+
+(* CR-soon mshinwell: Investigate revised size numbers. *)
 
 let direct_call_size = 4
 let project_size = 1
@@ -113,7 +115,6 @@ let lambda_smaller' lam ~than:threshold =
     if !size > threshold then raise Exit;
     match named with
     | Symbol _ | Read_mutable _ -> ()
-    (* CR mshinwell: are these cases correct? *)
     | Const _ | Allocated_const _ -> incr size
     | Read_symbol_field _ -> incr size
     | Set_of_closures ({ function_decls = ffuns }) ->
@@ -236,6 +237,7 @@ module Benefit = struct
   let remove_call t = { t with remove_call = t.remove_call + 1; }
   let remove_alloc t = { t with remove_alloc = t.remove_alloc + 1; }
   let remove_prim t = { t with remove_prim = t.remove_prim + 1; }
+  let remove_prims t n = { t with remove_prim = t.remove_prim + n; }
   let remove_branch t = { t with remove_branch = t.remove_branch + 1; }
   let direct_call_of_indirect t =
     { t with direct_call_of_indirect = t.direct_call_of_indirect + 1; }
@@ -257,12 +259,11 @@ module Benefit = struct
     | Set_of_closures _
     | Prim ((Pmakearray _ | Pmakeblock _ | Pduprecord _), _, _) ->
       b := remove_alloc !b
-      (* CR pchambart: should we consider that boxed integer and float
+      (* CR-soon pchambart: should we consider that boxed integer and float
          operations are allocations ? *)
-      (* CR mshinwell for pchambart: check closure & const cases carefully *)
     | Prim _ | Project_closure _ | Project_var _
-    | Move_within_set_of_closures _ -> b := remove_prim !b
-    | Read_symbol_field _ -> () (* CR mshinwell: might be wrong *)
+    | Move_within_set_of_closures _
+    | Read_symbol_field _ -> b := remove_prim !b
     | Symbol _ | Read_mutable _ | Allocated_const _ | Const _ | Expr _ -> ()
 
   let remove_code lam b =
@@ -276,6 +277,11 @@ module Benefit = struct
     Flambda_iterators.iter_named_toplevel (remove_code_helper b)
       (remove_code_helper_named b) lam;
     !b
+
+  let remove_projection (_proj : Projection.t) b =
+    (* They are all primitives for the moment.  The [Projection.t] argument
+       is here for future expansion. *)
+    remove_prim b
 
   let print ppf b =
     Format.fprintf ppf "@[remove_call: %i@ remove_alloc: %i@ \
@@ -294,7 +300,8 @@ module Benefit = struct
        + t.remove_alloc * (cost !Clflags.inline_alloc_cost ~round)
        + t.remove_prim * (cost !Clflags.inline_prim_cost ~round)
        + t.remove_branch * (cost !Clflags.inline_branch_cost ~round)
-       + t.direct_call_of_indirect * (cost !Clflags.inline_indirect_cost ~round))
+       + (t.direct_call_of_indirect
+         * (cost !Clflags.inline_indirect_cost ~round)))
     + t.requested_inline
 
   let (+) t1 t2 = {
@@ -307,10 +314,29 @@ module Benefit = struct
     requested_inline = t1.requested_inline + t2.requested_inline;
   }
 
+  let (-) t1 t2 = {
+    remove_call = t1.remove_call - t2.remove_call;
+    remove_alloc = t1.remove_alloc - t2.remove_alloc;
+    remove_prim = t1.remove_prim - t2.remove_prim;
+    remove_branch = t1.remove_branch - t2.remove_branch;
+    direct_call_of_indirect =
+      t1.direct_call_of_indirect - t2.direct_call_of_indirect;
+    requested_inline = t1.requested_inline - t2.requested_inline;
+  }
+
   let max ~round t1 t2 =
     let c1 = evaluate ~round t1 in
     let c2 = evaluate ~round t2 in
     if c1 > c2 then t1 else t2
+
+  let add_code lam b =
+    b - (remove_code lam zero)
+
+  let add_code_named lam b =
+    b - (remove_code_named lam zero)
+
+  let add_projection proj b =
+    b - (remove_projection proj zero)
 
   (* Print out a benefit as a table *)
 
@@ -414,12 +440,20 @@ module Whether_sufficient_benefit = struct
          than letting the user directly provide [p], since for every
          positive value of [factor] [p] is in [0, 1]. *)
       let branch_never_taken_estimated_probability =
-        let branch_inline_factor =
-          Clflags.Float_arg_helper.get ~key:t.round !Clflags.branch_inline_factor
+        let inline_branch_factor =
+          let factor =
+            Clflags.Float_arg_helper.get ~key:t.round
+              !Clflags.inline_branch_factor
+          in
+          if not (factor = factor) (* nan *) then
+            Clflags.default_inline_branch_factor
+          else if factor < 0. then
+            0.
+          else
+            factor
         in
-        (* CR pchambart to pchambart: change this assert to a warning *)
-        assert(correct_branch_factor branch_inline_factor);
-        1. /. (1. +. branch_inline_factor)
+        assert (correct_branch_factor inline_branch_factor);
+        1. /. (1. +. inline_branch_factor)
       in
       let call_estimated_probability =
         branch_never_taken_estimated_probability ** float t.branch_depth
@@ -430,21 +464,23 @@ module Whether_sufficient_benefit = struct
   let evaluate t =
     float t.new_size -. estimated_benefit t <= float t.original_size
 
-
   let to_string t =
     let lifting = t.toplevel && t.lifting && t.branch_depth = 0 in
     let evaluated_benefit =
       if lifting then
         let lifting_benefit =
-          Clflags.Int_arg_helper.get ~key:t.round !Clflags.inline_lifting_benefit
+          Clflags.Int_arg_helper.get ~key:t.round
+            !Clflags.inline_lifting_benefit
         in
         t.evaluated_benefit + lifting_benefit
       else t.evaluated_benefit
     in
     let estimate = if t.estimate then "<" else "=" in
-      Printf.sprintf "{benefit%s{call=%d,alloc=%d,prim=%i,branch=%i,indirect=%i,req=%i,\
-                      lifting=%b}, orig_size=%d,new_size=%d,eval_size=%d,eval_benefit%s%d,\
-                      branch_depth=%d}=%s"
+      Printf.sprintf "{benefit%s{call=%d,alloc=%d,prim=%i,branch=%i,\
+          indirect=%i,req=%i,\
+          lifting=%b}, orig_size=%d,new_size=%d,eval_size=%d,\
+          eval_benefit%s%d,\
+          branch_depth=%d}=%s"
         estimate
         t.benefit.remove_call
         t.benefit.remove_alloc
@@ -500,7 +536,8 @@ module Whether_sufficient_benefit = struct
     let total_benefit =
       if lifting then
         let lifting_benefit =
-          Clflags.Int_arg_helper.get ~key:t.round !Clflags.inline_lifting_benefit
+          Clflags.Int_arg_helper.get ~key:t.round
+            !Clflags.inline_lifting_benefit
         in
          t.evaluated_benefit + lifting_benefit
       else t.evaluated_benefit
@@ -524,8 +561,8 @@ module Whether_sufficient_benefit = struct
       Format.pp_print_text ppf " than the expected benefit."
     in
     Format.fprintf ppf "%t@,@[<v>@[<v 2>@;%a@]@;@;%t%t@]%t"
-      pr_intro Benefit.print_table t.benefit pr_requested pr_lifting pr_conclusion
-
+      pr_intro Benefit.print_table t.benefit pr_requested pr_lifting
+      pr_conclusion
 end
 
 let scale_inline_threshold_by = 8
@@ -614,7 +651,7 @@ let default_toplevel_multiplier = 8
 let maximum_interesting_size_of_function_body_base =
   lazy begin
     let max_cost = ref 0 in
-    for round = 0 to !Clflags.simplify_rounds - 1 do
+    for round = 0 to (Clflags.rounds ()) - 1 do
       let max_size =
         let inline_call_cost = cost !Clflags.inline_call_cost ~round in
         direct_call_size + (inline_call_cost * benefit_factor)
@@ -627,7 +664,7 @@ let maximum_interesting_size_of_function_body_base =
 let maximum_interesting_size_of_function_body_multiplier =
   lazy begin
     let max_cost = ref 0 in
-    for round = 0 to !Clflags.simplify_rounds - 1 do
+    for round = 0 to (Clflags.rounds ()) - 1 do
       let max_size =
         let inline_prim_cost = cost !Clflags.inline_prim_cost ~round in
         inline_prim_cost * benefit_factor
@@ -639,5 +676,7 @@ let maximum_interesting_size_of_function_body_multiplier =
 
 let maximum_interesting_size_of_function_body num_free_variables =
   let base = Lazy.force maximum_interesting_size_of_function_body_base in
-  let multiplier = Lazy.force maximum_interesting_size_of_function_body_multiplier in
+  let multiplier =
+    Lazy.force maximum_interesting_size_of_function_body_multiplier
+  in
   base + (num_free_variables * multiplier)

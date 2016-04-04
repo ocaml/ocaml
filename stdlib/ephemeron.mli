@@ -1,26 +1,28 @@
-(***********************************************************************)
-(*                                                                     *)
-(*                                OCaml                                *)
-(*                                                                     *)
-(*            Damien Doligez, projet Para, INRIA Rocquencourt          *)
-(*                                                                     *)
-(*  Copyright 1997 Institut National de Recherche en Informatique et   *)
-(*  en Automatique.  All rights reserved.  This file is distributed    *)
-(*  under the terms of the GNU Library General Public License, with    *)
-(*  the special exception on linking described in file ../LICENSE.     *)
-(*                                                                     *)
-(***********************************************************************)
+(**************************************************************************)
+(*                                                                        *)
+(*                                 OCaml                                  *)
+(*                                                                        *)
+(*             Damien Doligez, projet Para, INRIA Rocquencourt            *)
+(*                                                                        *)
+(*   Copyright 1997 Institut National de Recherche en Informatique et     *)
+(*     en Automatique.                                                    *)
+(*                                                                        *)
+(*   All rights reserved.  This file is distributed under the terms of    *)
+(*   the GNU Lesser General Public License version 2.1, with the          *)
+(*   special exception on linking described in the file LICENSE.          *)
+(*                                                                        *)
+(**************************************************************************)
 
 (** Ephemerons and weak hash table *)
 
 (** Ephemerons and weak hash table
 
-    Ephemerons and weak hashtable are useful when one wants to cache
+    Ephemerons and weak hash table are useful when one wants to cache
     or memorize the computation of a function, as long as the
     arguments and the function are used, without creating memory leaks
     by continuously keeping old computation results that are not
     useful anymore because one argument or the function is freed. An
-    implementation using {Hashtbl.t} is not suitable, because all
+    implementation using {Hashtbl.t} is not suitable because all
     associations would keep in memory the arguments and the result.
 
     Ephemerons can also be used for "adding" a field to an arbitrary
@@ -28,13 +30,13 @@
     created by an external library without memory leaks.
 
     Ephemerons hold some keys and one or no data. They are all boxed
-    ocaml values. The keys of an ephemerons have the same behavior
+    ocaml values. The keys of an ephemeron have the same behavior
     than weak pointers according to the garbage collector. In fact
     ocaml weak pointers are implemented as ephemerons without data.
 
     The keys and data of an ephemeron are said to be full if they
     point to a value, empty if the value have never been set, have
-    been unset, or was erased by the GC. In the function that access
+    been unset, or was erased by the GC. In the function that accesses
     the keys or data these two states are represented by the [option]
     type.
 
@@ -42,7 +44,7 @@
     full keys are alive and if the ephemeron is alive. When one of the
     keys is not considered alive anymore by the GC, the data is
     emptied from the ephemeron. The data could be alive for another
-    reason and in that case the GC will free it, but the ephemerons
+    reason and in that case the GC will free it, but the ephemeron
     will not hold the data anymore.
 
     The ephemerons complicate the notion of liveness of values, because
@@ -56,7 +58,7 @@
 
     Notes:
     - All the types defined in this module cannot be marshaled
-    using {!Pervasives.output_value} nor the functions of the
+    using {!Pervasives.output_value} or the functions of the
     {!Marshal} module.
 
     Ephemerons are defined in a language agnostic way in this paper:
@@ -65,13 +67,13 @@
 *)
 
 module type S = sig
-  (** Propose the same interface than usual hash table. However since
-      the bindings are weak, [mem h k] is true doesn't mean that a
-      just following [find h k] will not raise the exception
-      [Not_found] since the garbage collector can run between the two.
+  (** Propose the same interface as usual hash table. However since
+      the bindings are weak, even if [mem h k] is true, a subsequent
+      [find h k] may raise [Not_found] because the garbage collector
+      can run between the two.
 
-      Secondly during an iteration the table shouldn't be modified use
-      instead {!filter_map_inplace} for that purpose.
+      Moreover, the table shouldn't be modified during a call to [iter].
+      Use [filter_map_inplace] in this case.
   *)
 
   include Hashtbl.S
@@ -102,7 +104,7 @@ module K1 : sig
 
   val create: unit -> ('k,'d) t
   (** [Ephemeron.K1.create ()] creates an ephemeron with one key. The
-      data and key are empty *)
+      data and the key are empty *)
 
   val get_key: ('k,'d) t -> 'k option
   (** [Ephemeron.K1.get_key eph] returns [None] if the key of [eph] is
@@ -121,8 +123,8 @@ module K1 : sig
 
   val unset_key: ('k,'d) t -> unit
   (** [Ephemeron.K1.unset_key eph el] sets the key of [eph] to be an
-      empty key. Since there is only one key, the ephemeron start
-      behaving like a references on the data. *)
+      empty key. Since there is only one key, the ephemeron starts
+      behaving like a reference on the data. *)
 
   val check_key: ('k,'d) t -> bool
   (** [Ephemeron.K1.check_key eph] returns [true] if the key of the [eph]
@@ -156,7 +158,7 @@ module K1 : sig
 
   val unset_data: ('k,'d) t -> unit
   (** [Ephemeron.K1.unset_key eph el] sets the key of [eph] to be an
-      empty key. The ephemeron start behaving like a weak pointer.
+      empty key. The ephemeron starts behaving like a weak pointer.
   *)
 
   val check_data: ('k,'d) t -> bool
@@ -247,7 +249,7 @@ end
 
 module Kn : sig
   type ('k,'d) t (** an ephemeron with an arbitrary number of keys
-                      of the same types *)
+                      of the same type *)
 
   val create: int -> ('k,'d) t
   (** Same as {!Ephemeron.K1.create} *)
@@ -293,7 +295,7 @@ module Kn : sig
 end
 
 module GenHashTable: sig
-  (** Define hash table on generic containers which have a notion of
+  (** Define a hash table on generic containers which have a notion of
       "death" and aliveness. If a binding is dead the hash table can
       automatically remove it. *)
 

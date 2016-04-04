@@ -1,14 +1,17 @@
-#########################################################################
-#                                                                       #
-#                                 OCaml                                 #
-#                                                                       #
-#            Xavier Leroy, projet Cristal, INRIA Rocquencourt           #
-#                                                                       #
-#   Copyright 1999 Institut National de Recherche en Informatique et    #
-#   en Automatique.  All rights reserved.  This file is distributed     #
-#   under the terms of the Q Public License version 1.0.                #
-#                                                                       #
-#########################################################################
+#**************************************************************************
+#*                                                                        *
+#*                                 OCaml                                  *
+#*                                                                        *
+#*            Xavier Leroy, projet Cristal, INRIA Rocquencourt            *
+#*                                                                        *
+#*   Copyright 1999 Institut National de Recherche en Informatique et     *
+#*     en Automatique.                                                    *
+#*                                                                        *
+#*   All rights reserved.  This file is distributed under the terms of    *
+#*   the GNU Lesser General Public License version 2.1, with the          *
+#*   special exception on linking described in the file LICENSE.          *
+#*                                                                        *
+#**************************************************************************
 
 include ../config/Makefile
 CAMLRUN ?= ../boot/ocamlrun
@@ -18,7 +21,8 @@ CAMLC=$(CAMLRUN) ../boot/ocamlc -nostdlib -I ../boot
 CAMLOPT=$(CAMLRUN) ../ocamlopt -nostdlib -I ../stdlib
 CAMLLEX=$(CAMLRUN) ../boot/ocamllex
 INCLUDES=-I ../utils -I ../parsing -I ../typing -I ../bytecomp -I ../asmcomp \
-	 -I ../driver -I ../toplevel
+         -I ../middle_end -I ../middle_end/base_types -I ../driver \
+         -I ../toplevel
 COMPFLAGS= -strict-sequence -w +27+32..39 -warn-error A -safe-string $(INCLUDES)
 LINKFLAGS=$(INCLUDES)
 
@@ -39,11 +43,13 @@ CAMLDEP_IMPORTS=timings.cmo misc.cmo config.cmo identifiable.cmo numbers.cmo \
   arg_helper.cmo clflags.cmo terminfo.cmo \
   warnings.cmo location.cmo longident.cmo docstrings.cmo \
   syntaxerr.cmo ast_helper.cmo parser.cmo lexer.cmo parse.cmo \
-  ccomp.cmo ast_mapper.cmo ast_iterator.cmo ast_invariants.cmo pparse.cmo compenv.cmo \
+  ccomp.cmo ast_mapper.cmo ast_iterator.cmo ast_invariants.cmo pparse.cmo \
+  compenv.cmo \
   builtin_attributes.cmo
 
 ocamldep: depend.cmi $(CAMLDEP_OBJ)
-	$(CAMLC) $(LINKFLAGS) -compat-32 -o ocamldep $(CAMLDEP_IMPORTS) $(CAMLDEP_OBJ)
+	$(CAMLC) $(LINKFLAGS) -compat-32 -o ocamldep $(CAMLDEP_IMPORTS) \
+	         $(CAMLDEP_OBJ)
 
 ocamldep.opt: depend.cmi $(CAMLDEP_OBJ:.cmo=.cmx)
 	$(CAMLOPT) $(LINKFLAGS) -o ocamldep.opt $(CAMLDEP_IMPORTS:.cmo=.cmx) \
@@ -60,9 +66,9 @@ INSTALL_BINDIR=$(DESTDIR)$(BINDIR)
 INSTALL_LIBDIR=$(DESTDIR)$(LIBDIR)
 
 install::
-	cp ocamldep $(INSTALL_BINDIR)/ocamldep$(EXE)
-	if test -f ocamldep.opt; \
-	  then cp ocamldep.opt $(INSTALL_BINDIR)/ocamldep.opt$(EXE); else :; fi
+	cp ocamldep "$(INSTALL_BINDIR)/ocamldep$(EXE)"
+	if test -f ocamldep.opt; then \
+	  cp ocamldep.opt "$(INSTALL_BINDIR)/ocamldep.opt$(EXE)"; else :; fi
 
 # The profiler
 
@@ -77,23 +83,25 @@ ocamlprof: $(CSLPROF) profiling.cmo
 
 ocamlcp: ocamlcp.cmo
 	$(CAMLC) $(LINKFLAGS) -o ocamlcp misc.cmo warnings.cmo config.cmo \
-                 identifiable.cmo numbers.cmo arg_helper.cmo clflags.cmo main_args.cmo ocamlcp.cmo
+                 identifiable.cmo numbers.cmo arg_helper.cmo clflags.cmo \
+	         main_args.cmo ocamlcp.cmo
 
 ocamloptp: ocamloptp.cmo
 	$(CAMLC) $(LINKFLAGS) -o ocamloptp misc.cmo warnings.cmo config.cmo \
-                 identifiable.cmo numbers.cmo arg_helper.cmo clflags.cmo main_args.cmo \
+                 identifiable.cmo numbers.cmo arg_helper.cmo clflags.cmo \
+	         main_args.cmo \
 	         ocamloptp.cmo
 
 opt:: profiling.cmx
 
 install::
-	cp ocamlprof $(INSTALL_BINDIR)/ocamlprof$(EXE)
-	cp ocamlcp $(INSTALL_BINDIR)/ocamlcp$(EXE)
-	cp ocamloptp $(INSTALL_BINDIR)/ocamloptp$(EXE)
-	cp profiling.cmi profiling.cmo $(INSTALL_LIBDIR)
+	cp ocamlprof "$(INSTALL_BINDIR)/ocamlprof$(EXE)"
+	cp ocamlcp "$(INSTALL_BINDIR)/ocamlcp$(EXE)"
+	cp ocamloptp "$(INSTALL_BINDIR)/ocamloptp$(EXE)"
+	cp profiling.cmi profiling.cmo "$(INSTALL_LIBDIR)"
 
 installopt::
-	cp profiling.cmx profiling.$(O) $(INSTALL_LIBDIR)
+	cp profiling.cmx profiling.$(O) "$(INSTALL_LIBDIR)"
 
 clean::
 	rm -f ocamlprof ocamlcp ocamloptp
@@ -102,10 +110,11 @@ clean::
 # To help building mixed-mode libraries (OCaml + C)
 
 ocamlmklib: ocamlmklibconfig.cmo ocamlmklib.cmo
-	$(CAMLC) $(LINKFLAGS) -o ocamlmklib ocamlmklibconfig.cmo config.cmo ocamlmklib.cmo
+	$(CAMLC) $(LINKFLAGS) -o ocamlmklib ocamlmklibconfig.cmo config.cmo \
+	         ocamlmklib.cmo
 
 install::
-	cp ocamlmklib $(INSTALL_BINDIR)/ocamlmklib$(EXE)
+	cp ocamlmklib "$(INSTALL_BINDIR)/ocamlmklib$(EXE)"
 
 clean::
 	rm -f ocamlmklib
@@ -137,7 +146,7 @@ lexer299.ml: lexer299.mll
 	$(CAMLLEX) lexer299.mll
 
 #install::
-#	cp ocaml299to3 $(INSTALL_BINDIR)/ocaml299to3$(EXE)
+#	cp ocaml299to3 "$(INSTALL_BINDIR)/ocaml299to3$(EXE)"
 
 clean::
 	rm -f ocaml299to3 lexer299.ml
@@ -153,7 +162,7 @@ lexer301.ml: lexer301.mll
 	$(CAMLLEX) lexer301.mll
 
 #install::
-#	cp scrapelabels $(INSTALL_LIBDIR)
+#	cp scrapelabels "$(INSTALL_LIBDIR)"
 
 clean::
 	rm -f scrapelabels lexer301.ml
@@ -170,7 +179,7 @@ addlabels: addlabels.cmo
 		$(ADDLABELS_IMPORTS) addlabels.cmo
 
 #install::
-#	cp addlabels $(INSTALL_LIBDIR)
+#	cp addlabels "$(INSTALL_LIBDIR)"
 
 clean::
 	rm -f addlabels
@@ -235,7 +244,7 @@ opnames.ml: ../byterun/caml/instruct.h
 	unset LC_ALL || : ; \
 	unset LC_CTYPE || : ; \
 	unset LC_COLLATE LANG || : ; \
-	sed -e '/\/\*/d' \
+	sed -e '/[/][*]/d' \
 	    -e '/^#/d' \
 	    -e 's/enum \(.*\) {/let names_of_\1 = [|/' \
 	    -e 's/.*};$$/ |]/' \
@@ -269,15 +278,17 @@ objinfo_helper$(EXE): objinfo_helper.c ../config/s.h
 
 OBJINFO=../compilerlibs/ocamlcommon.cma \
         ../compilerlibs/ocamlbytecomp.cma \
+        ../compilerlibs/ocamlmiddleend.cma \
         ../asmcomp/printclambda.cmo \
+        ../asmcomp/export_info.cmo \
         objinfo.cmo
 
 objinfo: objinfo_helper$(EXE) $(OBJINFO)
 	$(CAMLC) -o objinfo $(OBJINFO)
 
 install::
-	cp objinfo $(INSTALL_BINDIR)/ocamlobjinfo$(EXE)
-	cp objinfo_helper$(EXE) $(INSTALL_LIBDIR)/objinfo_helper$(EXE)
+	cp objinfo "$(INSTALL_BINDIR)/ocamlobjinfo$(EXE)"
+	cp objinfo_helper$(EXE) "$(INSTALL_LIBDIR)/objinfo_helper$(EXE)"
 
 clean::
 	rm -f objinfo objinfo_helper$(EXE)

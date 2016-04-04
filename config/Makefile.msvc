@@ -1,15 +1,17 @@
-#########################################################################
-#                                                                       #
-#                                 OCaml                                 #
-#                                                                       #
-#            Xavier Leroy, projet Cristal, INRIA Rocquencourt           #
-#                                                                       #
-#   Copyright 1999 Institut National de Recherche en Informatique et    #
-#   en Automatique.  All rights reserved.  This file is distributed     #
-#   under the terms of the GNU Library General Public License, with     #
-#   the special exception on linking described in file ../LICENSE.      #
-#                                                                       #
-#########################################################################
+#**************************************************************************
+#*                                                                        *
+#*                                 OCaml                                  *
+#*                                                                        *
+#*            Xavier Leroy, projet Cristal, INRIA Rocquencourt            *
+#*                                                                        *
+#*   Copyright 1999 Institut National de Recherche en Informatique et     *
+#*     en Automatique.                                                    *
+#*                                                                        *
+#*   All rights reserved.  This file is distributed under the terms of    *
+#*   the GNU Lesser General Public License version 2.1, with the          *
+#*   special exception on linking described in the file LICENSE.          *
+#*                                                                        *
+#**************************************************************************
 
 # Configuration for Windows, Visual C++ compiler
 
@@ -121,12 +123,16 @@ MKEXE=$(FLEXLINK) -exe
 MKMAINDLL=$(FLEXLINK) -maindll
 
 ### Native command to build ocamlrun.exe without flexlink
-MERGEMANIFESTEXE=test ! -f $(1).manifest || mt -nologo -outputresource:$(1) -manifest $(1).manifest && rm -f $(1).manifest
-MKEXE_BOOT=$(BYTECC) /Fe$(1) $(2) /link /subsystem:console && ($(MERGEMANIFESTEXE))
+MERGEMANIFESTEXE=test ! -f $(1).manifest \
+	         || mt -nologo -outputresource:$(1) -manifest $(1).manifest \
+	            && rm -f $(1).manifest
+MKEXE_BOOT=$(BYTECC) /Fe$(1) $(2) /link /subsystem:console \
+	   && ($(MERGEMANIFESTEXE))
 
 ### How to build a static library
 MKLIB=link -lib -nologo -out:$(1) $(2)
-#ml let mklib out files opts = Printf.sprintf "link -lib -nologo -out:%s %s %s" out opts files;;
+#ml let mklib out files opts =
+#ml   Printf.sprintf "link -lib -nologo -out:%s %s %s" out opts files;;
 MKSHAREDLIBRPATH=
 
 ### Canonicalize the name of a system library

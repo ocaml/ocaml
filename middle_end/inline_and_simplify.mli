@@ -1,6 +1,6 @@
 (**************************************************************************)
 (*                                                                        *)
-(*                                OCaml                                   *)
+(*                                 OCaml                                  *)
 (*                                                                        *)
 (*                       Pierre Chambart, OCamlPro                        *)
 (*           Mark Shinwell and Leo White, Jane Street Europe              *)
@@ -10,7 +10,7 @@
 (*                                                                        *)
 (*   All rights reserved.  This file is distributed under the terms of    *)
 (*   the GNU Lesser General Public License version 2.1, with the          *)
-(*   special exception on linking described in the file ../LICENSE.       *)
+(*   special exception on linking described in the file LICENSE.          *)
 (*                                                                        *)
 (**************************************************************************)
 
@@ -29,3 +29,10 @@ val run
   -> round:int
   -> Flambda.program
   -> Flambda.program
+
+val duplicate_function
+   : env:Inline_and_simplify_aux.Env.t
+  -> set_of_closures:Flambda.set_of_closures
+  -> fun_var:Variable.t
+  -> Flambda.function_declaration
+    * Flambda.specialised_to Variable.Map.t  (* new specialised arguments *)

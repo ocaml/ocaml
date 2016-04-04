@@ -1,14 +1,17 @@
-(***********************************************************************)
-(*                                                                     *)
-(*                                OCaml                                *)
-(*                                                                     *)
-(*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         *)
-(*                                                                     *)
-(*  Copyright 1996 Institut National de Recherche en Informatique et   *)
-(*  en Automatique.  All rights reserved.  This file is distributed    *)
-(*  under the terms of the Q Public License version 1.0.               *)
-(*                                                                     *)
-(***********************************************************************)
+(**************************************************************************)
+(*                                                                        *)
+(*                                 OCaml                                  *)
+(*                                                                        *)
+(*             Xavier Leroy, projet Cristal, INRIA Rocquencourt           *)
+(*                                                                        *)
+(*   Copyright 1996 Institut National de Recherche en Informatique et     *)
+(*     en Automatique.                                                    *)
+(*                                                                        *)
+(*   All rights reserved.  This file is distributed under the terms of    *)
+(*   the GNU Lesser General Public License version 2.1, with the          *)
+(*   special exception on linking described in the file LICENSE.          *)
+(*                                                                        *)
+(**************************************************************************)
 
 (** Abstract syntax tree after typing *)
 
@@ -48,7 +51,7 @@ and pat_extra =
          *)
   | Tpat_type of Path.t * Longident.t loc
         (** #tconst        { pat_desc = disjunction
-                           ; pat_extra = (Tpat_type (P, "tconst"), _, _) :: ... }
+                           ; pat_extra = (Tpat_type (P, "tconst"), _, _) :: ...}
 
                            where [disjunction] is a [Tpat_or _] representing the
                            branches of [tconst].
@@ -97,7 +100,8 @@ and pattern_desc =
   | Tpat_or of pattern * pattern * row_desc option
         (** P1 | P2
 
-            [row_desc = Some _] when translating [Ppat_type _], [None] otherwise.
+            [row_desc] = [Some _] when translating [Ppat_type _],
+                         [None] otherwise.
          *)
   | Tpat_lazy of pattern
         (** lazy P *)
@@ -119,8 +123,8 @@ and exp_extra =
             E : T0 :> T      [Texp_coerce (Some T0, T)]
          *)
   | Texp_open of override_flag * Path.t * Longident.t loc * Env.t
-        (** let open[!] M in     [Texp_open (!, P, M, env)]
-                                 where [env] is the environment after opening [P]
+        (** let open[!] M in    [Texp_open (!, P, M, env)]
+                                where [env] is the environment after opening [P]
          *)
   | Texp_poly of core_type option
         (** Used for method bodies. *)

@@ -1,14 +1,17 @@
-(***********************************************************************)
-(*                                                                     *)
-(*                                OCaml                                *)
-(*                                                                     *)
-(*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         *)
-(*                                                                     *)
-(*  Copyright 1996 Institut National de Recherche en Informatique et   *)
-(*  en Automatique.  All rights reserved.  This file is distributed    *)
-(*  under the terms of the Q Public License version 1.0.               *)
-(*                                                                     *)
-(***********************************************************************)
+(**************************************************************************)
+(*                                                                        *)
+(*                                 OCaml                                  *)
+(*                                                                        *)
+(*             Xavier Leroy, projet Cristal, INRIA Rocquencourt           *)
+(*                                                                        *)
+(*   Copyright 1996 Institut National de Recherche en Informatique et     *)
+(*     en Automatique.                                                    *)
+(*                                                                        *)
+(*   All rights reserved.  This file is distributed under the terms of    *)
+(*   the GNU Lesser General Public License version 2.1, with the          *)
+(*   special exception on linking described in the file LICENSE.          *)
+(*                                                                        *)
+(**************************************************************************)
 
 (* Toplevel directives *)
 
@@ -50,7 +53,8 @@ let order_of_sections =
 
     section_undocumented;
   ])
-
+(* Do not forget to keep the directives synchronized with the manual in
+   manual/manual/cmds/top.etex *)
 
 (* To quit *)
 
@@ -72,7 +76,8 @@ let dir_directory s =
 let _ = add_directive "directory" (Directive_string dir_directory)
     {
       section = section_run;
-      doc = "Add the given directory to search path for source and compiled files.";
+      doc = "Add the given directory to search path for source and compiled \
+             files.";
     }
 
 (* To remove a directory from the load path *)

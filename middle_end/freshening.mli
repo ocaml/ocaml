@@ -1,6 +1,6 @@
 (**************************************************************************)
 (*                                                                        *)
-(*                                OCaml                                   *)
+(*                                 OCaml                                  *)
 (*                                                                        *)
 (*                       Pierre Chambart, OCamlPro                        *)
 (*           Mark Shinwell and Leo White, Jane Street Europe              *)
@@ -10,7 +10,7 @@
 (*                                                                        *)
 (*   All rights reserved.  This file is distributed under the terms of    *)
 (*   the GNU Lesser General Public License version 2.1, with the          *)
-(*   special exception on linking described in the file ../LICENSE.       *)
+(*   special exception on linking described in the file LICENSE.          *)
 (*                                                                        *)
 (**************************************************************************)
 
@@ -114,8 +114,15 @@ module Project_var : sig
   (* The freshening that does nothing. *)
   val empty : t
 
+  (** Composition of two freshenings. *)
+  val compose : earlier:t -> later:t -> t
+
   (** Freshen a closure ID based on the given renaming.  The same ID is
-     returned if the renaming does not affect it. *)
+      returned if the renaming does not affect it.
+      If dealing with approximations, you probably want to use
+      [Simple_value_approx.freshen_and_check_closure_id] instead of this
+      function.
+  *)
   val apply_closure_id : t -> Closure_id.t -> Closure_id.t
 
   (** Like [apply_closure_id], but for variables within closures. *)
@@ -123,16 +130,36 @@ module Project_var : sig
      : t
     -> Var_within_closure.t
     -> Var_within_closure.t
+
+  val print : Format.formatter -> t -> unit
 end
 
 (* CR-soon mshinwell for mshinwell: add comment *)
 val apply_function_decls_and_free_vars
    : t
-  -> 'a Variable.Map.t
+  -> (Flambda.specialised_to * 'a) Variable.Map.t
   -> Flambda.function_declarations
-  -> 'a Variable.Map.t * Flambda.function_declarations * t
+  -> only_freshen_parameters:bool
+  -> (Flambda.specialised_to * 'a) Variable.Map.t
+    * Flambda.function_declarations
+    * t
     * Project_var.t
 
 val does_not_freshen : t -> Variable.t list -> bool
 
 val print : Format.formatter -> t -> unit
+
+(** N.B. This does not freshen the domain of the supplied map, only the
+    range. *)
+(* CR-someday mshinwell: consider fixing that *)
+val freshen_projection_relation
+   : Flambda.specialised_to Variable.Map.t
+  -> freshening:t
+  -> closure_freshening:Project_var.t
+  -> Flambda.specialised_to Variable.Map.t
+
+val freshen_projection_relation'
+   : (Flambda.specialised_to * 'a) Variable.Map.t
+  -> freshening:t
+  -> closure_freshening:Project_var.t
+  -> (Flambda.specialised_to * 'a) Variable.Map.t

@@ -1,6 +1,6 @@
 (**************************************************************************)
 (*                                                                        *)
-(*                                OCaml                                   *)
+(*                                 OCaml                                  *)
 (*                                                                        *)
 (*                       Pierre Chambart, OCamlPro                        *)
 (*           Mark Shinwell and Leo White, Jane Street Europe              *)
@@ -10,7 +10,7 @@
 (*                                                                        *)
 (*   All rights reserved.  This file is distributed under the terms of    *)
 (*   the GNU Lesser General Public License version 2.1, with the          *)
-(*   special exception on linking described in the file ../LICENSE.       *)
+(*   special exception on linking described in the file LICENSE.          *)
 (*                                                                        *)
 (**************************************************************************)
 
@@ -44,6 +44,8 @@ let primitive (p : Lambda.primitive) (args, approxs) expr dbg ~size_int
   | Pmakeblock(tag, Asttypes.Immutable) ->
     let tag = Tag.create_exn tag in
     expr, A.value_block tag (Array.of_list approxs), C.Benefit.zero
+  | Praise _ ->
+    expr, A.value_bottom, C.Benefit.zero
   | Pignore -> begin
       match args, A.descrs approxs with
       | [arg], [(Value_int 0 | Value_constptr 0)] ->

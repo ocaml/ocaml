@@ -1,6 +1,6 @@
 (**************************************************************************)
 (*                                                                        *)
-(*                                OCaml                                   *)
+(*                                 OCaml                                  *)
 (*                                                                        *)
 (*                       Pierre Chambart, OCamlPro                        *)
 (*           Mark Shinwell and Leo White, Jane Street Europe              *)
@@ -10,7 +10,7 @@
 (*                                                                        *)
 (*   All rights reserved.  This file is distributed under the terms of    *)
 (*   the GNU Lesser General Public License version 2.1, with the          *)
-(*   special exception on linking described in the file ../LICENSE.       *)
+(*   special exception on linking described in the file LICENSE.          *)
 (*                                                                        *)
 (**************************************************************************)
 
@@ -18,8 +18,8 @@
 
 type result
 
-(** [inconstants_on_program] finds those variables and set-of-closures identifiers that
-    cannot be compiled to constants by [Flambda_to_clambda].
+(** [inconstants_on_program] finds those variables and set-of-closures
+    identifiers that cannot be compiled to constants by [Flambda_to_clambda].
 *)
 val inconstants_on_program
    : compilation_unit:Compilation_unit.t

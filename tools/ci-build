@@ -1,15 +1,18 @@
 #!/bin/sh
-#########################################################################
-#                                                                       #
-#                                 OCaml                                 #
-#                                                                       #
-#          Damien Doligez, projet Gallium, INRIA Rocquencourt           #
-#                                                                       #
-#   Copyright 2014 Institut National de Recherche en Informatique et    #
-#   en Automatique.  All rights reserved.  This file is distributed     #
-#   under the terms of the Q Public License version 1.0.                #
-#                                                                       #
-#########################################################################
+#**************************************************************************
+#*                                                                        *
+#*                                 OCaml                                  *
+#*                                                                        *
+#*          Damien Doligez, projet Gallium, INRIA Rocquencourt            *
+#*                                                                        *
+#*   Copyright 2014 Institut National de Recherche en Informatique et     *
+#*     en Automatique.                                                    *
+#*                                                                        *
+#*   All rights reserved.  This file is distributed under the terms of    *
+#*   the GNU Lesser General Public License version 2.1, with the          *
+#*   special exception on linking described in the file LICENSE.          *
+#*                                                                        *
+#**************************************************************************
 
 # This script is run on our continuous-integration servers to recompile
 # from scratch and run the test suite.
@@ -18,7 +21,7 @@
 # 1. architecture: bsd, macos, linux, cygwin, mingw, mingw64, msvc, msvc64
 # 2. directory in which to build (trunk, 4.02, etc)
 #    for windows, this is relative to $HOME/jenkins-workspace
-#    for bsd, macos, linux, this is "." or an absolute directory
+#    for bsd, macos, linux, this is ignored and the build is always in .
 # 3. options:
 #    -conf configure-option
 #    -patch1 file-name       apply patch with -p1
@@ -77,13 +80,13 @@ set -ex
 # default values
 make=make
 instdir="$HOME/ocaml-tmp-install"
-workdir="$branch"
 docheckout=false
 nt=
 
 case "$arch" in
   bsd)
     make=gmake
+    workdir=.
   ;;
   macos)
     workdir=.

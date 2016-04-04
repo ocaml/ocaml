@@ -60,7 +60,7 @@ renaming of standard library functions.
   config/::               autoconfiguration stuff
   debugger/::             source-level replay debugger
   driver/::               driver code for the compilers
-  emacs/::                OCaml editing mode and debugger interface for GNU Emacs
+  emacs/::                editing mode and debugger interface for GNU Emacs
   lex/::                  lexer generator
   maccaml/::              the Macintosh GUI
   ocamldoc/::             documentation generator

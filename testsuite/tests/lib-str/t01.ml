@@ -1,14 +1,17 @@
-(***********************************************************************)
-(*                                                                     *)
-(*                                OCaml                                *)
-(*                                                                     *)
-(*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         *)
-(*                                                                     *)
-(*  Copyright 2002 Institut National de Recherche en Informatique et   *)
-(*  en Automatique.  All rights reserved.  This file is distributed    *)
-(*  under the terms of the Q Public License version 1.0.               *)
-(*                                                                     *)
-(***********************************************************************)
+(**************************************************************************)
+(*                                                                        *)
+(*                                OCaml                                   *)
+(*                                                                        *)
+(*             Xavier Leroy, projet Cristal, INRIA Rocquencourt           *)
+(*                                                                        *)
+(*   Copyright 2002 Institut National de Recherche en Informatique et     *)
+(*     en Automatique.                                                    *)
+(*                                                                        *)
+(*   All rights reserved.  This file is distributed under the terms of    *)
+(*   the GNU Lesser General Public License version 2.1, with the          *)
+(*   special exception on linking described in the file LICENSE.          *)
+(*                                                                        *)
+(**************************************************************************)
 
 open Printf
 
@@ -389,11 +392,11 @@ let automated_test() =
   test_search_forward r n "ething"
     [||];
 
-  start_test "Search for /^ÿ/";
-  let r = Str.regexp "^ÿ" in
+  start_test "Search for /^\255/";
+  let r = Str.regexp "^\255" in
   let n = 0 in
-  test_search_forward r n "ÿ"
-    [|"ÿ"|];
+  test_search_forward r n "\255"
+    [|"\255"|];
 
   start_test "Search for /^[0-9]+$/";
   let r = Str.regexp "^[0-9]+$" in

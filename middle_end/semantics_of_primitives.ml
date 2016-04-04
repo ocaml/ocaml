@@ -1,6 +1,6 @@
 (**************************************************************************)
 (*                                                                        *)
-(*                                OCaml                                   *)
+(*                                 OCaml                                  *)
 (*                                                                        *)
 (*                       Pierre Chambart, OCamlPro                        *)
 (*           Mark Shinwell and Leo White, Jane Street Europe              *)
@@ -10,7 +10,7 @@
 (*                                                                        *)
 (*   All rights reserved.  This file is distributed under the terms of    *)
 (*   the GNU Lesser General Public License version 2.1, with the          *)
-(*   special exception on linking described in the file ../LICENSE.       *)
+(*   special exception on linking described in the file LICENSE.          *)
 (*                                                                        *)
 (**************************************************************************)
 
@@ -69,21 +69,21 @@ let for_primitive (prim : Lambda.primitive) =
   | Pisint
   | Pisout
   | Pbittest
-  | Pbintofint _ 
-  | Pintofbint _ 
-  | Pcvtbint _ 
-  | Pnegbint _ 
-  | Paddbint _ 
-  | Psubbint _ 
-  | Pmulbint _ 
-  | Pdivbint _ 
-  | Pmodbint _ 
-  | Pandbint _ 
-  | Porbint _ 
-  | Pxorbint _ 
-  | Plslbint _ 
-  | Plsrbint _ 
-  | Pasrbint _ 
+  | Pbintofint _
+  | Pintofbint _
+  | Pcvtbint _
+  | Pnegbint _
+  | Paddbint _
+  | Psubbint _
+  | Pmulbint _
+  | Pdivbint _
+  | Pmodbint _
+  | Pandbint _
+  | Porbint _
+  | Pxorbint _
+  | Plslbint _
+  | Plsrbint _
+  | Pasrbint _
   | Pbintcomp _ -> No_effects, No_coeffects
   | Pbigarraydim _ ->
     No_effects, Has_coeffects  (* Some people resize bigarrays in place. *)
@@ -92,24 +92,25 @@ let for_primitive (prim : Lambda.primitive) =
   | Pgetglobal _
   | Parrayrefu _
   | Pstringrefu
-  | Pstring_load_16 true 
-  | Pstring_load_32 true 
-  | Pstring_load_64 true 
+  | Pstring_load_16 true
+  | Pstring_load_32 true
+  | Pstring_load_64 true
   | Pbigarrayref (true, _, _, _)
-  | Pbigstring_load_16 true 
-  | Pbigstring_load_32 true 
-  | Pbigstring_load_64 true -> 
+  | Pbigstring_load_16 true
+  | Pbigstring_load_32 true
+  | Pbigstring_load_64 true ->
     No_effects, Has_coeffects
   | Parrayrefs _
   | Pstringrefs
-  | Pstring_load_16 false 
-  | Pstring_load_32 false 
-  | Pstring_load_64 false 
+  | Pstring_load_16 false
+  | Pstring_load_32 false
+  | Pstring_load_64 false
   | Pbigarrayref (false, _, _, _)
-  | Pbigstring_load_16 false 
-  | Pbigstring_load_32 false 
-  | Pbigstring_load_64 false -> 
-    Arbitrary_effects, Has_coeffects  (* May trigger a bounds check exception. *)
+  | Pbigstring_load_16 false
+  | Pbigstring_load_32 false
+  | Pbigstring_load_64 false ->
+    (* May trigger a bounds check exception. *)
+    Arbitrary_effects, Has_coeffects
   | Psetfield _
   | Psetfloatfield _
   | Psetglobal _
@@ -117,12 +118,12 @@ let for_primitive (prim : Lambda.primitive) =
   | Parraysets _
   | Pstringsetu
   | Pstringsets
-  | Pstring_set_16 _ 
-  | Pstring_set_32 _ 
-  | Pstring_set_64 _ 
+  | Pstring_set_16 _
+  | Pstring_set_32 _
+  | Pstring_set_64 _
   | Pbigarrayset _
-  | Pbigstring_set_16 _ 
-  | Pbigstring_set_32 _ 
+  | Pbigstring_set_16 _
+  | Pbigstring_set_32 _
   | Pbigstring_set_64 _ ->
     (* Whether or not some of these are "unsafe" is irrelevant; they always
        have an effect. *)

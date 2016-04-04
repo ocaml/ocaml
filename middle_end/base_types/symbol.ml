@@ -1,6 +1,6 @@
 (**************************************************************************)
 (*                                                                        *)
-(*                                OCaml                                   *)
+(*                                 OCaml                                  *)
 (*                                                                        *)
 (*                       Pierre Chambart, OCamlPro                        *)
 (*           Mark Shinwell and Leo White, Jane Street Europe              *)
@@ -10,7 +10,7 @@
 (*                                                                        *)
 (*   All rights reserved.  This file is distributed under the terms of    *)
 (*   the GNU Lesser General Public License version 2.1, with the          *)
-(*   special exception on linking described in the file ../LICENSE.       *)
+(*   special exception on linking described in the file LICENSE.          *)
 (*                                                                        *)
 (**************************************************************************)
 
@@ -54,7 +54,8 @@ let create compilation_unit label =
       (Compilation_unit.get_linkage_name compilation_unit)
   in
   let label =
-    Linkage_name.create (unit_linkage_name ^ "__" ^ (Linkage_name.to_string label))
+    Linkage_name.create
+      (unit_linkage_name ^ "__" ^ (Linkage_name.to_string label))
   in
   let hash = Linkage_name.hash label in
   { compilation_unit; label; hash; }

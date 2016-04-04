@@ -1,6 +1,6 @@
 (**************************************************************************)
 (*                                                                        *)
-(*                                OCaml                                   *)
+(*                                 OCaml                                  *)
 (*                                                                        *)
 (*                       Pierre Chambart, OCamlPro                        *)
 (*           Mark Shinwell and Leo White, Jane Street Europe              *)
@@ -10,7 +10,7 @@
 (*                                                                        *)
 (*   All rights reserved.  This file is distributed under the terms of    *)
 (*   the GNU Lesser General Public License version 2.1, with the          *)
-(*   special exception on linking described in the file ../LICENSE.       *)
+(*   special exception on linking described in the file LICENSE.          *)
 (*                                                                        *)
 (**************************************************************************)
 
@@ -170,7 +170,8 @@ let iter_named_on_named f_named named =
   iter_general ~toplevel:false (fun (_ : Flambda.t) -> ()) f_named
     (Is_named named)
 
-let iter_toplevel f f_named t = iter_general ~toplevel:true f f_named (Is_expr t)
+let iter_toplevel f f_named t =
+  iter_general ~toplevel:true f f_named (Is_expr t)
 let iter_named_toplevel f f_named named =
   iter_general ~toplevel:true f f_named (Is_named named)
 
@@ -396,7 +397,8 @@ let map_general ~toplevel f f_named tree =
       | Symbol _ | Const _ | Allocated_const _ | Read_mutable _
       | Project_closure _ | Move_within_set_of_closures _ | Project_var _
       | Prim _ | Read_symbol_field _ -> named
-      | Set_of_closures ({ function_decls; free_vars; specialised_args }) ->
+      | Set_of_closures ({ function_decls; free_vars; specialised_args;
+          direct_call_surrogates }) ->
         if toplevel then named
         else begin
           let done_something = ref false in
@@ -413,6 +415,7 @@ let map_general ~toplevel f f_named tree =
                     ~stub:func_decl.stub
                     ~dbg:func_decl.dbg
                     ~inline:func_decl.inline
+                    ~specialise:func_decl.specialise
                     ~is_a_functor:func_decl.is_a_functor
                 end)
               function_decls.funs
@@ -425,7 +428,7 @@ let map_general ~toplevel f f_named tree =
             in
             let set_of_closures =
               Flambda.create_set_of_closures ~function_decls ~free_vars
-                ~specialised_args
+                ~specialised_args ~direct_call_surrogates
             in
             Set_of_closures set_of_closures
         end
@@ -452,7 +455,8 @@ let iter_apply_on_program program ~f =
       (fun _ -> ())
       expr)
 
-let map f f_named tree = map_general ~toplevel:false f (fun _ n -> f_named n) tree
+let map f f_named tree =
+  map_general ~toplevel:false f (fun _ n -> f_named n) tree
 let map_expr f tree = map f (fun named -> named) tree
 let map_named f_named tree = map (fun expr -> expr) f_named tree
 let map_named_with_id f_named tree =
@@ -484,7 +488,8 @@ let map_symbols tree ~f =
     tree
 
 let map_symbols_on_set_of_closures
-    ({ Flambda.function_decls; free_vars; specialised_args } as
+    ({ Flambda.function_decls; free_vars; specialised_args;
+        direct_call_surrogates; } as
       set_of_closures)
     ~f =
   let done_something = ref false in
@@ -500,6 +505,7 @@ let map_symbols_on_set_of_closures
           ~stub:func_decl.stub
           ~dbg:func_decl.dbg
           ~inline:func_decl.inline
+          ~specialise:func_decl.specialise
           ~is_a_functor:func_decl.is_a_functor)
       function_decls.funs
   in
@@ -510,7 +516,7 @@ let map_symbols_on_set_of_closures
       Flambda.update_function_declarations function_decls ~funs
     in
     Flambda.create_set_of_closures ~function_decls ~free_vars
-      ~specialised_args
+      ~specialised_args ~direct_call_surrogates
 
 let map_toplevel_sets_of_closures tree ~f =
   map_toplevel_named (function
@@ -565,19 +571,6 @@ let map_project_var_to_expr_opt tree ~f =
           as named -> named)
     tree
 
-let map_toplevel_project_var_to_expr_opt tree ~f =
-  map_toplevel_named (function
-      | (Project_var project_var) as named ->
-        begin match f project_var with
-        | None -> named
-        | Some expr -> Expr expr
-        end
-      | (Symbol _ | Const _ | Allocated_const _
-      | Set_of_closures _ | Project_closure _ | Move_within_set_of_closures _
-      | Prim _ | Expr _ | Read_mutable _ | Read_symbol_field _)
-          as named -> named)
-    tree
-
 let map_project_var_to_named_opt tree ~f =
   map_named (function
       | (Project_var project_var) as named ->
@@ -605,6 +598,7 @@ let map_function_bodies (set_of_closures : Flambda.set_of_closures) ~f =
             ~stub:function_decl.stub
             ~dbg:function_decl.dbg
             ~inline:function_decl.inline
+            ~specialise:function_decl.specialise
             ~is_a_functor:function_decl.is_a_functor
         end)
       set_of_closures.function_decls.funs
@@ -619,6 +613,7 @@ let map_function_bodies (set_of_closures : Flambda.set_of_closures) ~f =
       ~function_decls
       ~free_vars:set_of_closures.free_vars
       ~specialised_args:set_of_closures.specialised_args
+      ~direct_call_surrogates:set_of_closures.direct_call_surrogates
 
 let map_sets_of_closures_of_program (program : Flambda.program)
     ~(f : Flambda.set_of_closures -> Flambda.set_of_closures) =
@@ -627,7 +622,8 @@ let map_sets_of_closures_of_program (program : Flambda.program)
       let done_something = ref false in
       let function_decls =
         let funs =
-          Variable.Map.map (fun (function_decl : Flambda.function_declaration) ->
+          Variable.Map.map (fun
+                  (function_decl : Flambda.function_declaration) ->
               let body = map_sets_of_closures ~f function_decl.body in
               if body == function_decl.body then
                 function_decl
@@ -638,6 +634,7 @@ let map_sets_of_closures_of_program (program : Flambda.program)
                   ~stub:function_decl.stub
                   ~dbg:function_decl.dbg
                   ~inline:function_decl.inline
+                  ~specialise:function_decl.specialise
                   ~is_a_functor:function_decl.is_a_functor
               end)
             set_of_closures.function_decls.funs
@@ -655,6 +652,7 @@ let map_sets_of_closures_of_program (program : Flambda.program)
         Flambda.create_set_of_closures ~function_decls
           ~free_vars:set_of_closures.free_vars
           ~specialised_args:set_of_closures.specialised_args
+          ~direct_call_surrogates:set_of_closures.direct_call_surrogates
     in
     match program with
     | Let_symbol (symbol, Set_of_closures set_of_closures, program') ->
@@ -737,6 +735,7 @@ let map_exprs_at_toplevel_of_program (program : Flambda.program)
                 ~stub:function_decl.stub
                 ~dbg:function_decl.dbg
                 ~inline:function_decl.inline
+                ~specialise:function_decl.specialise
                 ~is_a_functor:function_decl.is_a_functor
             end)
           set_of_closures.function_decls.funs
@@ -751,6 +750,7 @@ let map_exprs_at_toplevel_of_program (program : Flambda.program)
         Flambda.create_set_of_closures ~function_decls
           ~free_vars:set_of_closures.free_vars
           ~specialised_args:set_of_closures.specialised_args
+          ~direct_call_surrogates:set_of_closures.direct_call_surrogates
     in
     (* CR-soon mshinwell: code very similar to the above function *)
     match program with
@@ -825,3 +825,10 @@ let map_named_of_program (program : Flambda.program)
 let map_all_immutable_let_and_let_rec_bindings (expr : Flambda.t)
       ~(f : Variable.t -> Flambda.named -> Flambda.named) : Flambda.t =
   map_named_with_id f expr
+
+let fold_function_decls_ignoring_stubs
+      (set_of_closures : Flambda.set_of_closures) ~init ~f =
+  Variable.Map.fold (fun fun_var function_decl acc ->
+      f ~fun_var ~function_decl acc)
+    set_of_closures.function_decls.funs
+    init

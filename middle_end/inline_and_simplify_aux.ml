@@ -1,6 +1,6 @@
 (**************************************************************************)
 (*                                                                        *)
-(*                                OCaml                                   *)
+(*                                 OCaml                                  *)
 (*                                                                        *)
 (*                       Pierre Chambart, OCamlPro                        *)
 (*           Mark Shinwell and Leo White, Jane Street Europe              *)
@@ -10,7 +10,7 @@
 (*                                                                        *)
 (*   All rights reserved.  This file is distributed under the terms of    *)
 (*   the GNU Lesser General Public License version 2.1, with the          *)
-(*   special exception on linking described in the file ../LICENSE.       *)
+(*   special exception on linking described in the file LICENSE.          *)
 (*                                                                        *)
 (**************************************************************************)
 
@@ -25,34 +25,41 @@ module Env = struct
     approx : (scope * Simple_value_approx.t) Variable.Map.t;
     approx_mutable : Simple_value_approx.t Mutable_variable.Map.t;
     approx_sym : Simple_value_approx.t Symbol.Map.t;
-    current_functions : Set_of_closures_id.Set.t;
+    projections : Variable.t Projection.Map.t;
+    current_functions : Set_of_closures_origin.Set.t;
     (* The functions currently being declared: used to avoid inlining
        recursively *)
     inlining_level : int;
-    inside_branch : int;
     (* Number of times "inline" has been called recursively *)
+    inside_branch : int;
     freshening : Freshening.t;
     never_inline : bool ;
-    possible_unrolls : int;
+    never_inline_inside_closures : bool;
+    never_inline_outside_closures : bool;
+    unroll_counts : int Set_of_closures_origin.Map.t;
+    inlining_counts : int Closure_id.Map.t;
+    actively_unrolling : int Set_of_closures_origin.Map.t;
     closure_depth : int;
     inlining_stats_closure_stack : Inlining_stats.Closure_stack.t;
   }
 
   let create ~never_inline ~backend ~round =
-    let possible_unrolls =
-      Clflags.Int_arg_helper.get ~key:round !Clflags.unroll
-    in
     { backend;
       round;
       approx = Variable.Map.empty;
       approx_mutable = Mutable_variable.Map.empty;
       approx_sym = Symbol.Map.empty;
-      current_functions = Set_of_closures_id.Set.empty;
+      projections = Projection.Map.empty;
+      current_functions = Set_of_closures_origin.Set.empty;
       inlining_level = 0;
       inside_branch = 0;
       freshening = Freshening.empty;
       never_inline;
-      possible_unrolls;
+      never_inline_inside_closures = false;
+      never_inline_outside_closures = false;
+      unroll_counts = Set_of_closures_origin.Map.empty;
+      inlining_counts = Closure_id.Map.empty;
+      actively_unrolling = Set_of_closures_origin.Map.empty;
       closure_depth = 0;
       inlining_stats_closure_stack =
         Inlining_stats.Closure_stack.create ();
@@ -64,21 +71,24 @@ module Env = struct
   let local env =
     { env with
       approx = Variable.Map.empty;
+      projections = Projection.Map.empty;
       freshening = Freshening.empty_preserving_activation_state env.freshening;
     }
 
   let inlining_level_up env =
     let max_level =
-      Clflags.Int_arg_helper.get ~key:(env.round) !Clflags.max_inlining_depth
+      Clflags.Int_arg_helper.get ~key:(env.round) !Clflags.inline_max_depth
     in
     if (env.inlining_level + 1) > max_level then
       Misc.fatal_error "Inlining level increased above maximum";
     { env with inlining_level = env.inlining_level + 1 }
 
   let print ppf t =
-    Format.fprintf ppf "Environment maps: %a@.Freshening: %a@."
-        Variable.Set.print (Variable.Map.keys t.approx)
-        Freshening.print t.freshening
+    Format.fprintf ppf
+      "Environment maps: %a@.Projections: %a@.Freshening: %a@."
+      Variable.Set.print (Variable.Map.keys t.approx)
+      (Projection.Map.print Variable.print) t.projections
+      Freshening.print t.freshening
 
   let mem t var = Variable.Map.mem var t.approx
 
@@ -133,12 +143,23 @@ module Env = struct
           (Compilation_unit.get_current_exn ())
           (Symbol.compilation_unit symbol)
       then
-        Misc.fatal_errorf "Symbol %a from the current compilation unit is unbound. \
-                           Maybe there is a missing [Let_symbol] or similar?"
+        Misc.fatal_errorf "Symbol %a from the current compilation unit is \
+            unbound.  Maybe there is a missing [Let_symbol] or similar?"
           Symbol.print symbol;
       let module Backend = (val (t.backend) : Backend_intf.S) in
       Backend.import_symbol symbol
     | approx -> approx
+
+  let add_projection t ~projection ~bound_to =
+    { t with
+      projections =
+        Projection.Map.add projection bound_to t.projections;
+    }
+
+  let find_projection t ~projection =
+    match Projection.Map.find projection t.projections with
+    | exception Not_found -> None
+    | var -> Some var
 
   let does_not_bind t vars =
     not (List.exists (mem t) vars)
@@ -172,7 +193,7 @@ module Env = struct
       really_import_approx_with_scope t
         (Variable.Map.find id t.approx)
     with Not_found ->
-      Misc.fatal_errorf "Inlining_env.find_with_scope_exn: Unbound variable \
+      Misc.fatal_errorf "Env.find_with_scope_exn: Unbound variable \
           %a@.%s@. Environment: %a@."
         Variable.print id
         (Printexc.raw_backtrace_to_string (Printexc.get_callstack max_int))
@@ -201,13 +222,13 @@ module Env = struct
   let activate_freshening t =
     { t with freshening = Freshening.activate t.freshening }
 
-  let enter_set_of_closures_declaration ident t =
+  let enter_set_of_closures_declaration origin t =
     { t with
       current_functions =
-        Set_of_closures_id.Set.add ident t.current_functions; }
+        Set_of_closures_origin.Set.add origin t.current_functions; }
 
-  let inside_set_of_closures_declaration closure_id t =
-    Set_of_closures_id.Set.mem closure_id t.current_functions
+  let inside_set_of_closures_declaration origin t =
+    Set_of_closures_origin.Set.mem origin t.current_functions
 
   let at_toplevel t =
     t.closure_depth = 0
@@ -232,53 +253,143 @@ module Env = struct
     }
 
   let set_never_inline t =
-    { t with never_inline = true }
+    if t.never_inline then t
+    else { t with never_inline = true }
 
-  let unrolling_allowed t =
-    t.possible_unrolls > 0
+  let set_never_inline_inside_closures t =
+    if t.never_inline_inside_closures then t
+    else { t with never_inline_inside_closures = true }
 
-  let inside_unrolled_function t =
-    { t with possible_unrolls = t.possible_unrolls - 1 }
+  let unset_never_inline_inside_closures t =
+    if t.never_inline_inside_closures then
+      { t with never_inline_inside_closures = false }
+    else t
+
+  let set_never_inline_outside_closures t =
+    if t.never_inline_outside_closures then t
+    else { t with never_inline_outside_closures = true }
+
+  let unset_never_inline_outside_closures t =
+    if t.never_inline_outside_closures then
+      { t with never_inline_outside_closures = false }
+    else t
+
+  let actively_unrolling t origin =
+    match Set_of_closures_origin.Map.find origin t.actively_unrolling with
+    | count -> Some count
+    | exception Not_found -> None
+
+  let start_actively_unrolling t origin i =
+    let actively_unrolling =
+      Set_of_closures_origin.Map.add origin i t.actively_unrolling
+    in
+    { t with actively_unrolling }
+
+  let continue_actively_unrolling t origin =
+    let unrolling =
+      try
+        Set_of_closures_origin.Map.find origin t.actively_unrolling
+      with Not_found ->
+        Misc.fatal_error "Unexpected actively unrolled function";
+    in
+    let actively_unrolling =
+      Set_of_closures_origin.Map.add origin (unrolling - 1) t.actively_unrolling
+    in
+    { t with actively_unrolling }
+
+  let unrolling_allowed t origin =
+    let unroll_count =
+      try
+        Set_of_closures_origin.Map.find origin t.unroll_counts
+      with Not_found ->
+        Clflags.Int_arg_helper.get
+          ~key:t.round !Clflags.inline_max_unroll
+    in
+    unroll_count > 0
+
+  let inside_unrolled_function t origin =
+    let unroll_count =
+      try
+        Set_of_closures_origin.Map.find origin t.unroll_counts
+      with Not_found ->
+        Clflags.Int_arg_helper.get
+          ~key:t.round !Clflags.inline_max_unroll
+    in
+    let unroll_counts =
+      Set_of_closures_origin.Map.add
+        origin (unroll_count - 1) t.unroll_counts
+    in
+    { t with unroll_counts }
+
+  let inlining_allowed t id =
+    let inlining_count =
+      try
+        Closure_id.Map.find id t.inlining_counts
+      with Not_found ->
+        max 1 (Clflags.Int_arg_helper.get
+                 ~key:t.round !Clflags.inline_max_unroll)
+    in
+    inlining_count > 0
+
+  let inside_inlined_function t id =
+    let inlining_count =
+      try
+        Closure_id.Map.find id t.inlining_counts
+      with Not_found ->
+        max 1 (Clflags.Int_arg_helper.get
+                 ~key:t.round !Clflags.inline_max_unroll)
+    in
+    let inlining_counts =
+      Closure_id.Map.add id (inlining_count - 1) t.inlining_counts
+    in
+    { t with inlining_counts }
 
   let inlining_level t = t.inlining_level
   let freshening t = t.freshening
-  let never_inline t = t.never_inline
+  let never_inline t = t.never_inline || t.never_inline_outside_closures
 
-  (* CR-soon mshinwell: this is a bit contorted (see use in
-     inlining_decision.ml) *)
   let note_entering_closure t ~closure_id ~debuginfo =
-    { t with
-      inlining_stats_closure_stack =
-        Inlining_stats.Closure_stack.note_entering_closure
-          t.inlining_stats_closure_stack ~closure_id ~debuginfo;
-    }
+    if t.never_inline then t
+    else
+      { t with
+        inlining_stats_closure_stack =
+          Inlining_stats.Closure_stack.note_entering_closure
+            t.inlining_stats_closure_stack ~closure_id ~debuginfo;
+      }
 
   let note_entering_call t ~closure_id ~debuginfo =
-    { t with
-      inlining_stats_closure_stack =
-        Inlining_stats.Closure_stack.note_entering_call
-          t.inlining_stats_closure_stack ~closure_id ~debuginfo;
-    }
+    if t.never_inline then t
+    else
+      { t with
+        inlining_stats_closure_stack =
+          Inlining_stats.Closure_stack.note_entering_call
+            t.inlining_stats_closure_stack ~closure_id ~debuginfo;
+      }
 
   let note_entering_inlined t =
-    { t with
-      inlining_stats_closure_stack =
-        Inlining_stats.Closure_stack.note_entering_inlined
-          t.inlining_stats_closure_stack;
-    }
+    if t.never_inline then t
+    else
+      { t with
+        inlining_stats_closure_stack =
+          Inlining_stats.Closure_stack.note_entering_inlined
+            t.inlining_stats_closure_stack;
+      }
 
   let note_entering_specialised t ~closure_ids =
-    { t with
-      inlining_stats_closure_stack =
-        Inlining_stats.Closure_stack.note_entering_specialised
-          t.inlining_stats_closure_stack ~closure_ids;
-    }
+    if t.never_inline then t
+    else
+      { t with
+        inlining_stats_closure_stack =
+          Inlining_stats.Closure_stack.note_entering_specialised
+            t.inlining_stats_closure_stack ~closure_ids;
+      }
 
   let enter_closure t ~closure_id ~inline_inside ~debuginfo ~f =
     let t =
-      if inline_inside then t
+      if inline_inside && not t.never_inline_inside_closures then t
       else set_never_inline t
     in
+    let t = unset_never_inline_outside_closures t in
     f (note_entering_closure t ~closure_id ~debuginfo)
 
   let record_decision t decision =
@@ -350,6 +461,9 @@ module Result = struct
   let map_benefit t f =
     { t with benefit = f t.benefit }
 
+  let add_benefit t b =
+    { t with benefit = Inlining_cost.Benefit.(+) t.benefit b }
+
   let benefit t = t.benefit
 
   let reset_benefit t =
@@ -380,3 +494,187 @@ module Result = struct
   let num_direct_applications t =
     t.num_direct_applications
 end
+
+module A = Simple_value_approx
+module E = Env
+
+let prepare_to_simplify_set_of_closures ~env
+      ~(set_of_closures : Flambda.set_of_closures)
+      ~function_decls ~freshen
+      ~(only_for_function_decl : Flambda.function_declaration option) =
+  let free_vars =
+    Variable.Map.map (fun (external_var : Flambda.specialised_to) ->
+        let var =
+          let var =
+            Freshening.apply_variable (E.freshening env) external_var.var
+          in
+          match
+            A.simplify_var_to_var_using_env (E.find_exn env var)
+              ~is_present_in_env:(fun var -> E.mem env var)
+          with
+          | None -> var
+          | Some var -> var
+        in
+        let approx = E.find_exn env var in
+        (* The projections are freshened below in one step, once we know
+           the closure freshening substitution. *)
+        let projection = external_var.projection in
+        ({ var; projection; } : Flambda.specialised_to), approx)
+      set_of_closures.free_vars
+  in
+  let specialised_args =
+    Variable.Map.filter_map set_of_closures.specialised_args
+      ~f:(fun param (spec_to : Flambda.specialised_to) ->
+        let keep =
+          match only_for_function_decl with
+          | None -> true
+          | Some function_decl ->
+            Variable.Set.mem param (Variable.Set.of_list function_decl.params)
+        in
+        if not keep then None
+        else
+          let external_var = spec_to.var in
+          let var =
+            Freshening.apply_variable (E.freshening env) external_var
+          in
+          let var =
+            match
+              A.simplify_var_to_var_using_env (E.find_exn env var)
+                ~is_present_in_env:(fun var -> E.mem env var)
+            with
+            | None -> var
+            | Some var -> var
+          in
+          let projection = spec_to.projection in
+          Some ({ var; projection; } : Flambda.specialised_to))
+  in
+  let environment_before_cleaning = env in
+  (* [E.local] helps us to catch bugs whereby variables escape their scope. *)
+  let env = E.local env in
+  let free_vars, function_decls, sb, freshening =
+    Freshening.apply_function_decls_and_free_vars (E.freshening env) free_vars
+      function_decls ~only_freshen_parameters:(not freshen)
+  in
+  let env = E.set_freshening env sb in
+  let free_vars =
+    Freshening.freshen_projection_relation' free_vars
+      ~freshening:(E.freshening env)
+      ~closure_freshening:freshening
+  in
+  let specialised_args =
+    let specialised_args =
+      Variable.Map.map_keys (Freshening.apply_variable (E.freshening env))
+        specialised_args
+    in
+    Freshening.freshen_projection_relation specialised_args
+      ~freshening:(E.freshening env)
+      ~closure_freshening:freshening
+  in
+  let parameter_approximations =
+    (* Approximations of parameters that are known to always hold the same
+       argument throughout the body of the function. *)
+    Variable.Map.map_keys (Freshening.apply_variable (E.freshening env))
+      (Variable.Map.mapi (fun _id' (spec_to : Flambda.specialised_to) ->
+          E.find_exn environment_before_cleaning spec_to.var)
+        specialised_args)
+  in
+  let direct_call_surrogates =
+    Variable.Map.fold (fun existing surrogate surrogates ->
+        let existing =
+          Freshening.Project_var.apply_closure_id freshening
+            (Closure_id.wrap existing)
+        in
+        let surrogate =
+          Freshening.Project_var.apply_closure_id freshening
+            (Closure_id.wrap surrogate)
+        in
+        assert (not (Closure_id.Map.mem existing surrogates));
+        Closure_id.Map.add existing surrogate surrogates)
+      set_of_closures.direct_call_surrogates
+      Closure_id.Map.empty
+  in
+  let env =
+    E.enter_set_of_closures_declaration
+      function_decls.set_of_closures_origin env
+  in
+  (* we use the previous closure for evaluating the functions *)
+  let internal_value_set_of_closures =
+    let bound_vars =
+      Variable.Map.fold (fun id (_, desc) map ->
+          Var_within_closure.Map.add (Var_within_closure.wrap id) desc map)
+        free_vars Var_within_closure.Map.empty
+    in
+    A.create_value_set_of_closures ~function_decls ~bound_vars
+      ~invariant_params:(lazy Variable.Map.empty) ~specialised_args
+      ~freshening ~direct_call_surrogates
+  in
+  (* Populate the environment with the approximation of each closure.
+     This part of the environment is shared between all of the closures in
+     the set of closures. *)
+  let set_of_closures_env =
+    Variable.Map.fold (fun closure _ env ->
+        let approx =
+          A.value_closure ~closure_var:closure internal_value_set_of_closures
+            (Closure_id.wrap closure)
+        in
+        E.add env closure approx
+      )
+      function_decls.funs env
+  in
+  free_vars, specialised_args, function_decls, parameter_approximations,
+    internal_value_set_of_closures, set_of_closures_env
+
+(* This adds only the minimal set of approximations to the closures.
+   It is not strictly necessary to have this restriction, but it helps
+   to catch potential substitution bugs. *)
+let populate_closure_approximations
+      ~(function_decl : Flambda.function_declaration)
+      ~(free_vars : (_ * A.t) Variable.Map.t)
+      ~(parameter_approximations : A.t Variable.Map.t)
+      ~set_of_closures_env =
+  (* Add approximations of free variables *)
+  let env =
+    Variable.Map.fold (fun id (_, desc) env ->
+        E.add_outer_scope env id desc)
+      free_vars set_of_closures_env
+  in
+  (* Add known approximations of function parameters *)
+  let env =
+    List.fold_left (fun env id ->
+        let approx =
+          try Variable.Map.find id parameter_approximations
+          with Not_found -> (A.value_unknown Other)
+        in
+        E.add env id approx)
+      env function_decl.params
+  in
+  env
+
+let prepare_to_simplify_closure ~(function_decl : Flambda.function_declaration)
+      ~free_vars ~specialised_args ~parameter_approximations
+      ~set_of_closures_env =
+  let closure_env =
+    populate_closure_approximations ~function_decl ~free_vars
+      ~parameter_approximations ~set_of_closures_env
+  in
+  (* Add definitions of known projections to the environment. *)
+  let add_projections ~closure_env ~which_variables ~map =
+    Variable.Map.fold (fun inner_var spec_arg env ->
+        let (spec_arg : Flambda.specialised_to) = map spec_arg in
+        match spec_arg.projection with
+        | None -> env
+        | Some projection ->
+          let from = Projection.projecting_from projection in
+          if Variable.Set.mem from function_decl.free_variables then
+            E.add_projection env ~projection ~bound_to:inner_var
+          else
+            env)
+      which_variables
+      closure_env
+  in
+  let closure_env =
+    add_projections ~closure_env ~which_variables:specialised_args
+      ~map:(fun spec_to -> spec_to)
+  in
+  add_projections ~closure_env ~which_variables:free_vars
+    ~map:(fun (spec_to, _approx) -> spec_to)

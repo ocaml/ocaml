@@ -1,14 +1,17 @@
-(***********************************************************************)
-(*                                                                     *)
-(*                                OCaml                                *)
-(*                                                                     *)
-(*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         *)
-(*                                                                     *)
-(*  Copyright 1996 Institut National de Recherche en Informatique et   *)
-(*  en Automatique.  All rights reserved.  This file is distributed    *)
-(*  under the terms of the Q Public License version 1.0.               *)
-(*                                                                     *)
-(***********************************************************************)
+(**************************************************************************)
+(*                                                                        *)
+(*                                 OCaml                                  *)
+(*                                                                        *)
+(*             Xavier Leroy, projet Cristal, INRIA Rocquencourt           *)
+(*                                                                        *)
+(*   Copyright 1996 Institut National de Recherche en Informatique et     *)
+(*     en Automatique.                                                    *)
+(*                                                                        *)
+(*   All rights reserved.  This file is distributed under the terms of    *)
+(*   the GNU Lesser General Public License version 2.1, with the          *)
+(*   special exception on linking described in the file LICENSE.          *)
+(*                                                                        *)
+(**************************************************************************)
 
 (* Translation from closed lambda to C-- *)
 
@@ -93,7 +96,7 @@ let cint_const n =
 
 let add_no_overflow n x c =
   let d = n + x in
-  if d = 0 then c else Cop(Caddi, [c; Cconst_int d])  
+  if d = 0 then c else Cop(Caddi, [c; Cconst_int d])
 
 let rec add_const c n =
   if n = 0 then c
@@ -220,6 +223,13 @@ let untag_int = function
       Cop(Clsr, [c; Cconst_int (n+1)])
   | Cop(Cor, [c; Cconst_int 1]) -> Cop(Casr, [c; Cconst_int 1])
   | c -> Cop(Casr, [c; Cconst_int 1])
+
+let if_then_else (cond, ifso, ifnot) =
+  match cond with
+  | Cconst_int 0 -> ifnot
+  | Cconst_int 1 -> ifso
+  | _ ->
+    Cifthenelse(cond, ifso, ifnot)
 
 (* Turning integer divisions into multiply-high then shift.
    The [division_parameters] function is used in module Emit for
@@ -1428,7 +1438,8 @@ let rec transl env e =
       transl_constant sc
   | Uclosure(fundecls, []) ->
       let lbl = Compilenv.new_const_symbol() in
-      constant_closures := ((lbl, Not_global), fundecls, []) :: !constant_closures;
+      constant_closures :=
+        ((lbl, Not_global), fundecls, []) :: !constant_closures;
       List.iter (fun f -> Queue.add f functions) fundecls;
       Cconst_symbol lbl
   | Uclosure(fundecls, clos_vars) ->
@@ -1625,14 +1636,15 @@ let rec transl env e =
         num_true
         (make_catch2
            (fun shared_false ->
-             Cifthenelse
+             if_then_else
                (test_bool (transl env cond),
                 exit_if_true env condso num_true shared_false,
                 exit_if_true env condnot num_true shared_false))
            (transl env ifnot))
         (transl env ifso)
   | Uifthenelse(cond, ifso, ifnot) ->
-      Cifthenelse(test_bool(transl env cond), transl env ifso, transl env ifnot)
+      if_then_else(test_bool(transl env cond), transl env ifso,
+        transl env ifnot)
   | Usequence(exp1, exp2) ->
       Csequence(remove_unit(transl env exp1), transl env exp2)
   | Uwhile(cond, body) ->
@@ -1850,12 +1862,12 @@ and transl_prim_2 env p arg1 arg2 dbg =
 
   (* Boolean operations *)
   | Psequand ->
-      Cifthenelse(test_bool(transl env arg1), transl env arg2, Cconst_int 1)
+      if_then_else(test_bool(transl env arg1), transl env arg2, Cconst_int 1)
       (* let id = Ident.create "res1" in
       Clet(id, transl env arg1,
            Cifthenelse(test_bool(Cvar id), transl env arg2, Cvar id)) *)
   | Psequor ->
-      Cifthenelse(test_bool(transl env arg1), Cconst_int 3, transl env arg2)
+      if_then_else(test_bool(transl env arg1), Cconst_int 3, transl env arg2)
 
   (* Integer operations *)
   | Paddint ->
@@ -1877,9 +1889,11 @@ and transl_prim_2 env p arg1 arg2 dbg =
          | c1, c2 -> incr_int (mul_int (decr_int c1) (untag_int c2))
      end
   | Pdivint ->
-      tag_int(div_int (untag_int(transl env arg1)) (untag_int(transl env arg2)) dbg)
+      tag_int(div_int (untag_int(transl env arg1))
+        (untag_int(transl env arg2)) dbg)
   | Pmodint ->
-      tag_int(mod_int (untag_int(transl env arg1)) (untag_int(transl env arg2)) dbg)
+      tag_int(mod_int (untag_int(transl env arg1))
+        (untag_int(transl env arg2)) dbg)
   | Pandint ->
       Cop(Cand, [transl env arg1; transl env arg2])
   | Porint ->
@@ -2313,13 +2327,13 @@ and exit_if_true env cond nfail otherwise =
   | Uifthenelse (cond, ifso, ifnot) ->
       make_catch2
         (fun shared ->
-          Cifthenelse
+          if_then_else
             (test_bool (transl env cond),
              exit_if_true env ifso nfail shared,
              exit_if_true env ifnot nfail shared))
         otherwise
   | _ ->
-      Cifthenelse(test_bool(transl env cond), Cexit (nfail, []), otherwise)
+      if_then_else(test_bool(transl env cond), Cexit (nfail, []), otherwise)
 
 and exit_if_false env cond otherwise nfail =
   match cond with
@@ -2345,13 +2359,13 @@ and exit_if_false env cond otherwise nfail =
   | Uifthenelse (cond, ifso, ifnot) ->
       make_catch2
         (fun shared ->
-          Cifthenelse
+          if_then_else
             (test_bool (transl env cond),
              exit_if_false env ifso shared nfail,
              exit_if_false env ifnot shared nfail))
         otherwise
   | _ ->
-      Cifthenelse(test_bool(transl env cond), otherwise, Cexit (nfail, []))
+      if_then_else(test_bool(transl env cond), otherwise, Cexit (nfail, []))
 
 and transl_switch env arg index cases = match Array.length cases with
 | 0 -> fatal_error "Cmmgen.transl_switch"

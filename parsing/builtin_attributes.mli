@@ -1,14 +1,17 @@
-(***********************************************************************)
-(*                                                                     *)
-(*                                OCaml                                *)
-(*                                                                     *)
-(*                        Alain Frisch, LexiFi                         *)
-(*                                                                     *)
-(*  Copyright 2012 Institut National de Recherche en Informatique et   *)
-(*  en Automatique.  All rights reserved.  This file is distributed    *)
-(*  under the terms of the Q Public License version 1.0.               *)
-(*                                                                     *)
-(***********************************************************************)
+(**************************************************************************)
+(*                                                                        *)
+(*                                 OCaml                                  *)
+(*                                                                        *)
+(*                         Alain Frisch, LexiFi                           *)
+(*                                                                        *)
+(*   Copyright 2012 Institut National de Recherche en Informatique et     *)
+(*     en Automatique.                                                    *)
+(*                                                                        *)
+(*   All rights reserved.  This file is distributed under the terms of    *)
+(*   the GNU Lesser General Public License version 2.1, with the          *)
+(*   special exception on linking described in the file LICENSE.          *)
+(*                                                                        *)
+(**************************************************************************)
 
 (* Support for some of the builtin attributes:
 
@@ -28,7 +31,8 @@ val deprecated_of_attrs: Parsetree.attributes -> string option
 val deprecated_of_sig: Parsetree.signature -> string option
 val deprecated_of_str: Parsetree.structure -> string option
 
-val check_deprecated_mutable: Location.t -> Parsetree.attributes -> string -> unit
+val check_deprecated_mutable:
+    Location.t -> Parsetree.attributes -> string -> unit
 
 val error_of_extension: Parsetree.extension -> Location.error
 

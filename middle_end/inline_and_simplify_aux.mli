@@ -1,6 +1,6 @@
 (**************************************************************************)
 (*                                                                        *)
-(*                                OCaml                                   *)
+(*                                 OCaml                                  *)
 (*                                                                        *)
 (*                       Pierre Chambart, OCamlPro                        *)
 (*           Mark Shinwell and Leo White, Jane Street Europe              *)
@@ -10,7 +10,7 @@
 (*                                                                        *)
 (*   All rights reserved.  This file is distributed under the terms of    *)
 (*   the GNU Lesser General Public License version 2.1, with the          *)
-(*   special exception on linking described in the file ../LICENSE.       *)
+(*   special exception on linking described in the file LICENSE.          *)
 (*                                                                        *)
 (**************************************************************************)
 
@@ -85,6 +85,20 @@ module Env : sig
      the backend if not available in the environment. *)
   val find_or_load_symbol : t -> Symbol.t -> Simple_value_approx.t
 
+  (** Note that the given [bound_to] holds the given [projection]. *)
+  val add_projection
+     : t
+    -> projection:Projection.t
+    -> bound_to:Variable.t
+    -> t
+
+  (** Determine if the environment knows about a variable that is bound
+      to the given [projection]. *)
+  val find_projection
+     : t
+    -> projection:Projection.t
+    -> Variable.t option
+
   (** Whether the environment has an approximation for the given variable. *)
   val mem : t -> Variable.t -> bool
 
@@ -111,15 +125,15 @@ module Env : sig
 
   (** Note that the inliner is descending into a function body from the given
       set of closures.  A set of such descents is maintained. *)
-  (* CR-someday mshinwell: consider changing name to remove "declaration".  Also,
-     isn't this the inlining stack?  Maybe we can use that instead. *)
-  val enter_set_of_closures_declaration : Set_of_closures_id.t -> t -> t
+  (* CR-someday mshinwell: consider changing name to remove "declaration".
+     Also, isn't this the inlining stack?  Maybe we can use that instead. *)
+  val enter_set_of_closures_declaration : Set_of_closures_origin.t -> t -> t
 
   (** Determine whether the inliner is currently inside a function body from
       the given set of closures.  This is used to detect whether a given
       function call refers to a function which exists somewhere on the current
       inlining stack. *)
-  val inside_set_of_closures_declaration : Set_of_closures_id.t -> t -> bool
+  val inside_set_of_closures_declaration : Set_of_closures_origin.t -> t -> bool
 
   (** Not inside a closure declaration.
       Toplevel code is the one evaluated when the compilation unit is
@@ -137,6 +151,20 @@ module Env : sig
       of the callee(s). *)
   val set_never_inline : t -> t
 
+  (** Equivalent to [set_never_inline] but only applies to code inside
+      a set of closures. *)
+  val set_never_inline_inside_closures : t -> t
+
+  (** Unset the restriction from [set_never_inline_inside_closures] *)
+  val unset_never_inline_inside_closures : t -> t
+
+  (** Equivalent to [set_never_inline] but does not apply to code inside
+      a set of closures. *)
+  val set_never_inline_outside_closures : t -> t
+
+  (** Unset the restriction from [set_never_inline_outside_closures] *)
+  val unset_never_inline_outside_closures : t -> t
+
   (** Return whether [set_never_inline] is currently in effect on the given
       environment. *)
   val never_inline : t -> bool
@@ -148,13 +176,30 @@ module Env : sig
       Unconditionally inlined does not take this into account. *)
   val inlining_level_up : t -> t
 
+  (** Whether we are actively unrolling a given function. *)
+  val actively_unrolling : t -> Set_of_closures_origin.t -> int option
+
+  (** Start actively unrolling a given function [n] times. *)
+  val start_actively_unrolling : t -> Set_of_closures_origin.t -> int -> t
+
+  (** Unroll a function currently actively being unrolled. *)
+  val continue_actively_unrolling : t -> Set_of_closures_origin.t -> t
+
   (** Whether it is permissible to unroll a call to a recursive function
       in the given environment. *)
-  val unrolling_allowed : t -> bool
+  val unrolling_allowed : t -> Set_of_closures_origin.t -> bool
 
   (** Whether the given environment is currently being used to rewrite the
       body of an unrolled recursive function. *)
-  val inside_unrolled_function : t -> t
+  val inside_unrolled_function : t -> Set_of_closures_origin.t -> t
+
+  (** Whether it is permissible to inline a call to a function in the given
+      environment. *)
+  val inlining_allowed : t -> Closure_id.t -> bool
+
+  (** Whether the given environment is currently being used to rewrite the
+      body of an inlined function. *)
+  val inside_inlined_function : t -> Closure_id.t -> t
 
   (** If collecting inlining statistics, record that the inliner is about to
       descend into [closure_id].  This information enables us to produce a
@@ -250,6 +295,10 @@ module Result : sig
     -> (Inlining_cost.Benefit.t -> Inlining_cost.Benefit.t)
     -> t
 
+  (** Add some benefit to the inlining benefit stored within the
+      given result structure. *)
+  val add_benefit : t -> Inlining_cost.Benefit.t -> t
+
   (** Set the benefit of inlining the subexpression corresponding to the
       given result structure to zero. *)
   val reset_benefit : t -> t
@@ -264,7 +313,6 @@ module Result : sig
 
   val seen_direct_application : t -> t
   val num_direct_applications : t -> int
-
 end
 
 (** Command line argument -inline *)
@@ -273,3 +321,24 @@ val initial_inlining_threshold : round:int -> Inlining_cost.Threshold.t
 (** Command line argument -inline-toplevel *)
 val initial_inlining_toplevel_threshold
   : round:int -> Inlining_cost.Threshold.t
+
+val prepare_to_simplify_set_of_closures
+   : env:Env.t
+  -> set_of_closures:Flambda.set_of_closures
+  -> function_decls:Flambda.function_declarations
+  -> freshen:bool
+  -> only_for_function_decl:Flambda.function_declaration option
+  -> (Flambda.specialised_to * Simple_value_approx.t) Variable.Map.t  (* fvs *)
+    * Flambda.specialised_to Variable.Map.t         (* specialised arguments *)
+    * Flambda.function_declarations
+    * Simple_value_approx.t Variable.Map.t       (* parameter approximations *)
+    * Simple_value_approx.value_set_of_closures
+    * Env.t
+
+val prepare_to_simplify_closure
+   : function_decl:Flambda.function_declaration
+  -> free_vars:(Flambda.specialised_to * Simple_value_approx.t) Variable.Map.t
+  -> specialised_args:Flambda.specialised_to Variable.Map.t
+  -> parameter_approximations:Simple_value_approx.t Variable.Map.t
+  -> set_of_closures_env:Env.t
+  -> Env.t

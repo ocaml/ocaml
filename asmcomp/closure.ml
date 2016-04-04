@@ -1,14 +1,17 @@
-(***********************************************************************)
-(*                                                                     *)
-(*                                OCaml                                *)
-(*                                                                     *)
-(*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         *)
-(*                                                                     *)
-(*  Copyright 1996 Institut National de Recherche en Informatique et   *)
-(*  en Automatique.  All rights reserved.  This file is distributed    *)
-(*  under the terms of the Q Public License version 1.0.               *)
-(*                                                                     *)
-(***********************************************************************)
+(**************************************************************************)
+(*                                                                        *)
+(*                                 OCaml                                  *)
+(*                                                                        *)
+(*             Xavier Leroy, projet Cristal, INRIA Rocquencourt           *)
+(*                                                                        *)
+(*   Copyright 1996 Institut National de Recherche en Informatique et     *)
+(*     en Automatique.                                                    *)
+(*                                                                        *)
+(*   All rights reserved.  This file is distributed under the terms of    *)
+(*   the GNU Lesser General Public License version 2.1, with the          *)
+(*   special exception on linking described in the file LICENSE.          *)
+(*                                                                        *)
+(**************************************************************************)
 
 (* Introduction of closures, uncurrying, recognition of direct calls *)
 
@@ -212,7 +215,8 @@ let rec is_pure_clambda = function
 
 let make_const c = (Uconst c, Value_const c)
 let make_const_ref c =
-  make_const(Uconst_ref(Compilenv.new_structured_constant ~shared:true c, Some c))
+  make_const(Uconst_ref(Compilenv.new_structured_constant ~shared:true c,
+    Some c))
 let make_const_int n = make_const (Uconst_int n)
 let make_const_ptr n = make_const (Uconst_ptr n)
 let make_const_bool b = make_const_ptr(if b then 1 else 0)
@@ -686,7 +690,8 @@ let direct_apply fundesc funct ufunct uargs ~loc ~attribute =
   let app =
     match fundesc.fun_inline, attribute with
     | _, Never_inline | None, _ ->
-        warning_if_forced_inline ~loc ~attribute "Function information unavailable";
+        warning_if_forced_inline ~loc ~attribute
+          "Function information unavailable";
         Udirect_apply(fundesc.fun_label, app_args, Debuginfo.none)
     | Some(params, body), _  ->
         bind_params fundesc.fun_float_const_prop params app_args body
@@ -823,7 +828,8 @@ let rec close fenv cenv = function
 
     (* We convert [f a] to [let a' = a in fun b c -> f a' b c]
        when fun_arity > nargs *)
-  | Lapply{ap_func = funct; ap_args = args; ap_loc = loc; ap_inlined = attribute} ->
+  | Lapply{ap_func = funct; ap_args = args; ap_loc = loc;
+        ap_inlined = attribute} ->
       let nargs = List.length args in
       begin match (close fenv cenv funct, close_list fenv cenv args) with
         ((ufunct, Value_closure(fundesc, approx_res)),
@@ -862,7 +868,8 @@ let rec close fenv cenv = function
                              ap_loc=loc;
                              ap_func=funct;
                              ap_args=internal_args;
-                             ap_inlined=Default_inline};
+                             ap_inlined=Default_inline;
+                             ap_specialised=Default_specialise};
                attr = default_function_attribute})
         in
         let new_fun = iter first_args new_fun in
@@ -936,7 +943,8 @@ let rec close fenv cenv = function
                               ap_loc=loc;
                               ap_func=funct;
                               ap_args=[arg];
-                              ap_inlined=Default_inline})
+                              ap_inlined=Default_inline;
+                              ap_specialised=Default_specialise})
   | Lprim(Pgetglobal id, []) as lam ->
       check_constant_result lam
                             (getglobal id)
@@ -1168,6 +1176,7 @@ and close_functions fenv cenv fun_defs =
           int_of_float (inline_threshold *. magic_scale_constant) + n
       | Always_inline -> max_int
       | Never_inline -> min_int
+      | Unroll _ -> assert false
     in
     if lambda_smaller ubody threshold
     then fundesc.fun_inline <- Some(fun_params, ubody);

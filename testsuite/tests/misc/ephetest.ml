@@ -40,11 +40,13 @@ let is_key_unset test eph =
 let is_data_unset test eph =
   is_false test "data unset" (K1.check_data eph)
 
-let ra = ref (ref 1)
-let rb = ref (ref (ref 2))
+let make_ra () = ref (ref 1) [@@inline never]
+let make_rb () = ref (ref (ref 2)) [@@inline never]
+let ra = make_ra ()
+let rb = make_rb ()
 
 (** test: key alive data dangling *)
-let () =
+let test1 () =
   let test = "test1" in
   Gc.minor ();
   Gc.full_major ();
@@ -63,9 +65,10 @@ let () =
   Gc.full_major ();
   is_key_unset test eph;
   is_data_unset test eph
+let () = (test1 [@inlined never]) ()
 
 (** test: key dangling data dangling *)
-let () =
+let test2 () =
   let test = "test2" in
   Gc.minor ();
   Gc.full_major ();
@@ -78,10 +81,10 @@ let () =
   Gc.minor ();
   is_key_unset test eph;
   is_data_unset test eph
-
+let () = (test2 [@inlined never]) ()
 
 (** test: key dangling data alive *)
-let () =
+let test3 () =
   let test = "test3" in
   Gc.minor ();
   Gc.full_major ();
@@ -94,9 +97,10 @@ let () =
   Gc.minor ();
   is_key_unset test eph;
   is_data_unset test eph
+let () = (test3 [@inlined never]) ()
 
 (** test: key alive but one away, data dangling *)
-let () =
+let test4 () =
   let test = "test4" in
   Gc.minor ();
   Gc.full_major ();
@@ -110,9 +114,10 @@ let () =
   Gc.minor ();
   is_key_value test eph 3;
   is_data_value test eph 43
+let () = (test4 [@inlined never]) ()
 
 (** test: key dangling but one away, data dangling *)
-let () =
+let test5 () =
   let test = "test5" in
   Gc.minor ();
   Gc.full_major ();
@@ -127,9 +132,10 @@ let () =
   Gc.minor ();
   is_key_unset test eph;
   is_data_unset test eph
+let () = (test5 [@inlined never]) ()
 
 (** test: key accessible from data but all dangling *)
-let () =
+let test6 () =
   let test = "test6" in
   Gc.minor ();
   Gc.full_major ();
@@ -143,6 +149,7 @@ let () =
   Gc.full_major ();
   is_key_unset test eph;
   is_data_unset test eph
+let () = (test6 [@inlined never]) ()
 
 (** test: ephemeron accessible from data but they are dangling *)
 type t =
@@ -151,7 +158,7 @@ type t =
 
 let rc = ref No
 
-let () =
+let test7 () =
   let test = "test7" in
   Gc.minor ();
   Gc.full_major ();
@@ -170,3 +177,4 @@ let () =
   Gc.full_major ();
   Gc.full_major ();
   is_false test "after" (Weak.check weak 0)
+let () = (test7 [@inlined never]) ()

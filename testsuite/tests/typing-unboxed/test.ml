@@ -1,15 +1,3 @@
-(***********************************************************************)
-(*                                                                     *)
-(*                                OCaml                                *)
-(*                                                                     *)
-(*                 Jeremie Dimino, Jane Street Europe                  *)
-(*                                                                     *)
-(*  Copyright 2015 Institut National de Recherche en Informatique et   *)
-(*  en Automatique.  All rights reserved.  This file is distributed    *)
-(*  under the terms of the Q Public License version 1.0.               *)
-(*                                                                     *)
-(***********************************************************************)
-
 
 external a : (int [@untagged]) -> unit = "a" "a_nat"
 external b : (int32 [@unboxed]) -> unit = "b" "b_nat"
@@ -38,7 +26,7 @@ module Global_attributes = struct
   external d : float -> float = "d" "noalloc"
   external e : float -> float = "e"
 
-  (* Should outputs a warning: no native implementation provided *)
+  (* Should output a warning: no native implementation provided *)
   external f : (int32 [@unboxed]) -> (int32 [@unboxed]) = "f" "noalloc"
   external g : int32 -> int32 = "g" "g_nat" [@@unboxed] [@@noalloc]
 

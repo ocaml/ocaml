@@ -1,6 +1,6 @@
 (**************************************************************************)
 (*                                                                        *)
-(*                                OCaml                                   *)
+(*                                 OCaml                                  *)
 (*                                                                        *)
 (*                       Pierre Chambart, OCamlPro                        *)
 (*           Mark Shinwell and Leo White, Jane Street Europe              *)
@@ -10,7 +10,7 @@
 (*                                                                        *)
 (*   All rights reserved.  This file is distributed under the terms of    *)
 (*   the GNU Lesser General Public License version 2.1, with the          *)
-(*   special exception on linking described in the file ../LICENSE.       *)
+(*   special exception on linking described in the file LICENSE.          *)
 (*                                                                        *)
 (**************************************************************************)
 
@@ -21,8 +21,8 @@ module A = Simple_value_approx
 let import_set_of_closures =
   let import_function_declarations (clos : Flambda.function_declarations)
         : Flambda.function_declarations =
-    (* CR mshinwell for pchambart: Do we still need to do this rewriting?
-       I'm wondering if maybe we don't have to any more. *)
+    (* CR-soon mshinwell for pchambart: Do we still need to do this
+       rewriting?  I'm wondering if maybe we don't have to any more. *)
     let sym_to_fun_var_map (clos : Flambda.function_declarations) =
       Variable.Map.fold (fun fun_var _ acc ->
            let closure_id = Closure_id.wrap fun_var in
@@ -47,6 +47,7 @@ let import_set_of_closures =
           Flambda.create_function_declaration ~params:function_decl.params
             ~body ~stub:function_decl.stub ~dbg:function_decl.dbg
             ~inline:function_decl.inline
+            ~specialise:function_decl.specialise
             ~is_a_functor:function_decl.is_a_functor)
         clos.funs
     in
@@ -90,6 +91,7 @@ let rec import_ex ex =
         ~invariant_params:(lazy invariant_params)
         ~specialised_args:Variable.Map.empty
         ~freshening:Freshening.Project_var.empty
+        ~direct_call_surrogates:Closure_id.Map.empty
   in
   match Export_info.find_description ex_info ex with
   | exception Not_found -> A.value_unknown Other

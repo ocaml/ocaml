@@ -1,15 +1,17 @@
-(***********************************************************************)
-(*                                                                     *)
-(*                                OCaml                                *)
-(*                                                                     *)
-(*            Damien Doligez, projet Para, INRIA Rocquencourt          *)
-(*                                                                     *)
-(*  Copyright 1997 Institut National de Recherche en Informatique et   *)
-(*  en Automatique.  All rights reserved.  This file is distributed    *)
-(*  under the terms of the GNU Library General Public License, with    *)
-(*  the special exception on linking described in file ../LICENSE.     *)
-(*                                                                     *)
-(***********************************************************************)
+(**************************************************************************)
+(*                                                                        *)
+(*                                 OCaml                                  *)
+(*                                                                        *)
+(*             Damien Doligez, projet Para, INRIA Rocquencourt            *)
+(*                                                                        *)
+(*   Copyright 1997 Institut National de Recherche en Informatique et     *)
+(*     en Automatique.                                                    *)
+(*                                                                        *)
+(*   All rights reserved.  This file is distributed under the terms of    *)
+(*   the GNU Lesser General Public License version 2.1, with the          *)
+(*   special exception on linking described in the file LICENSE.          *)
+(*                                                                        *)
+(**************************************************************************)
 
 module type SeededS = sig
   include Hashtbl.SeededS
@@ -45,10 +47,10 @@ module GenHashTable = struct
   = struct
 
     type 'a t =
-      { mutable size: int;                        (* number of entries *)
+      { mutable size: int;                  (* number of entries *)
         mutable data: 'a bucketlist array;  (* the buckets *)
-        mutable seed: int;                        (* for randomization *)
-        initial_size: int;                        (* initial array size *)
+        mutable seed: int;                  (* for randomization *)
+        initial_size: int;                  (* initial array size *)
       }
 
     and 'a bucketlist =
@@ -56,7 +58,7 @@ module GenHashTable = struct
     | Cons of int (** hash of the key *) * 'a H.container * 'a bucketlist
 
     (** the hash of the key is kept in order to test the equality of the hash
-      before the key. Same reason than for Weak.Make *)
+      before the key. Same reason as for Weak.Make *)
 
     type key = H.t
 
@@ -121,7 +123,7 @@ module GenHashTable = struct
 
         So the algorithm:
         - clean the keys before resizing
-        - if the number of remaining key is less than half the size of the
+        - if the number of remaining keys is less than half the size of the
         array, don't resize.
         - if it is more, resize.
 
@@ -166,7 +168,7 @@ module GenHashTable = struct
             | EFalse -> Cons(hk, c, remove_bucket next)
             | EDead ->
                 (** The dead key is automatically removed. It is acceptable
-                    for this function since it already remove a binding *)
+                    for this function since it already removes a binding *)
                 h.size <- h.size - 1;
                 remove_bucket next
             end
@@ -175,7 +177,7 @@ module GenHashTable = struct
       h.data.(i) <- remove_bucket h.data.(i)
 
     (** {!find} don't remove dead keys because it would be surprising for
-        the user that a read-only function mutate the state (eg. concurrent
+        the user that a read-only function mutates the state (eg. concurrent
         access). Same for {!iter}, {!fold}, {!mem}.
     *)
     let rec find_rec key hkey = function
@@ -200,7 +202,7 @@ module GenHashTable = struct
 
     let find h key =
       let hkey = H.hash h.seed key in
-      (** TODO inline 3 iteration *)
+      (** TODO inline 3 iterations *)
       find_rec key hkey (h.data.(key_index h hkey))
 
     let find_all h key =

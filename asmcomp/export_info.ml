@@ -1,6 +1,6 @@
 (**************************************************************************)
 (*                                                                        *)
-(*                                OCaml                                   *)
+(*                                 OCaml                                  *)
 (*                                                                        *)
 (*                       Pierre Chambart, OCamlPro                        *)
 (*           Mark Shinwell and Leo White, Jane Street Europe              *)
@@ -10,7 +10,7 @@
 (*                                                                        *)
 (*   All rights reserved.  This file is distributed under the terms of    *)
 (*   the GNU Lesser General Public License version 2.1, with the          *)
-(*   special exception on linking described in the file ../LICENSE.       *)
+(*   special exception on linking described in the file LICENSE.          *)
 (*                                                                        *)
 (**************************************************************************)
 
@@ -89,7 +89,8 @@ let equal_option eq o1 o2 =
   | Some v1, Some v2 -> eq v1 v2
   | Some _, None | None, Some _ -> false
 
-let equal_set_of_closures (s1:value_set_of_closures) (s2:value_set_of_closures) =
+let equal_set_of_closures (s1:value_set_of_closures)
+      (s2:value_set_of_closures) =
   Set_of_closures_id.equal s1.set_of_closures_id s2.set_of_closures_id &&
   Var_within_closure.Map.equal equal_approx s1.bound_vars s2.bound_vars &&
   Closure_id.Map.equal equal_approx s1.results s2.results &&
@@ -204,7 +205,9 @@ let merge (t1 : t) (t2 : t) : t =
   }
 
 let find_value eid map =
-  let unit_map = Compilation_unit.Map.find (Export_id.get_compilation_unit eid) map in
+  let unit_map =
+    Compilation_unit.Map.find (Export_id.get_compilation_unit eid) map
+  in
   Export_id.Map.find eid unit_map
 
 let find_description (t : t) eid =
@@ -238,7 +241,8 @@ let print_approx ppf (t : t) =
         try
           let descr = find_value id values in
           printed := Export_id.Set.add id !printed;
-          fprintf ppf "@[<hov 2>(%a:@ %a)@]" Export_id.print id print_descr descr
+          fprintf ppf "@[<hov 2>(%a:@ %a)@]"
+            Export_id.print id print_descr descr
         with Not_found ->
           fprintf ppf "(%a: Not available)" Export_id.print id
       end

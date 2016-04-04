@@ -13,7 +13,10 @@
 module S = struct
   include Stack
 
-  let to_list s = let l = ref [] in iter (fun x -> l := x :: !l) s; !l (* from bottom to top *)
+  let to_list s =    (* from bottom to top *)
+    let l = ref [] in
+    iter (fun x -> l := x :: !l) s;
+    !l
 end
 
 let does_raise f s =

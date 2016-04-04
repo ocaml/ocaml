@@ -1,6 +1,6 @@
 (**************************************************************************)
 (*                                                                        *)
-(*                                OCaml                                   *)
+(*                                 OCaml                                  *)
 (*                                                                        *)
 (*                       Pierre Chambart, OCamlPro                        *)
 (*           Mark Shinwell and Leo White, Jane Street Europe              *)
@@ -10,7 +10,7 @@
 (*                                                                        *)
 (*   All rights reserved.  This file is distributed under the terms of    *)
 (*   the GNU Lesser General Public License version 2.1, with the          *)
-(*   special exception on linking described in the file ../LICENSE.       *)
+(*   special exception on linking described in the file LICENSE.          *)
 (*                                                                        *)
 (**************************************************************************)
 
@@ -18,7 +18,7 @@
 
 (** A variable in a closure can either be used by the closure itself
     or by an inlined version of the function. *)
-let remove_unused_closure_variables program =
+let remove_unused_closure_variables ~remove_direct_call_surrogates program =
   let used_vars_within_closure, used_closure_ids =
     let used = Var_within_closure.Tbl.create 13 in
     let used_fun = Closure_id.Tbl.create 13 in
@@ -41,6 +41,12 @@ let remove_unused_closure_variables program =
   let aux_named _ (named : Flambda.named) : Flambda.named =
     match named with
     | Set_of_closures ({ function_decls; free_vars; _ } as set_of_closures) ->
+      let direct_call_surrogates =
+        if remove_direct_call_surrogates then Variable.Set.empty
+        else
+          Variable.Set.of_list
+            (Variable.Map.data set_of_closures.direct_call_surrogates)
+      in
       let rec add_needed needed_funs remaining_funs free_vars_of_kept_funs =
         let new_needed_funs, remaining_funs =
           (* Keep a function if it is used either by the rest of the code,
@@ -49,7 +55,8 @@ let remove_unused_closure_variables program =
           Variable.Map.partition (fun fun_id _ ->
               Variable.Set.mem fun_id free_vars_of_kept_funs
               || Closure_id.Tbl.mem used_closure_ids
-                (Closure_id.wrap fun_id))
+                (Closure_id.wrap fun_id)
+              || Variable.Set.mem fun_id direct_call_surrogates)
             remaining_funs
         in
         if Variable.Map.is_empty new_needed_funs then
@@ -93,9 +100,23 @@ let remove_unused_closure_variables program =
             Variable.Set.mem arg all_remaining_arguments)
           set_of_closures.specialised_args
       in
+      let free_vars =
+        Flambda_utils.clean_projections ~which_variables:free_vars
+      in
+      let direct_call_surrogates =
+        (* Remove direct call surrogates where either the existing function
+           or the surrogate has been eliminated. *)
+        Variable.Map.fold (fun existing surrogate surrogates ->
+            if not (Variable.Map.mem existing funs)
+              || not (Variable.Map.mem surrogate funs)
+            then surrogates
+            else Variable.Map.add existing surrogate surrogates)
+          set_of_closures.direct_call_surrogates
+          Variable.Map.empty
+      in
       let set_of_closures =
-        Flambda.create_set_of_closures ~function_decls ~free_vars
-          ~specialised_args
+        Flambda.create_set_of_closures ~function_decls
+          ~free_vars ~specialised_args ~direct_call_surrogates
       in
       Set_of_closures set_of_closures
     | e -> e

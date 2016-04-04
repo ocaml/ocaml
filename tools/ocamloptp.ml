@@ -1,14 +1,17 @@
-(***********************************************************************)
-(*                                                                     *)
-(*                                OCaml                                *)
-(*                                                                     *)
-(*          Damien Doligez, projet Gallium, INRIA Rocquencourt         *)
-(*                                                                     *)
-(*  Copyright 2012 Institut National de Recherche en Informatique et   *)
-(*  en Automatique.  All rights reserved.  This file is distributed    *)
-(*  under the terms of the Q Public License version 1.0.               *)
-(*                                                                     *)
-(***********************************************************************)
+(**************************************************************************)
+(*                                                                        *)
+(*                                 OCaml                                  *)
+(*                                                                        *)
+(*           Damien Doligez, projet Gallium, INRIA Rocquencourt           *)
+(*                                                                        *)
+(*   Copyright 2012 Institut National de Recherche en Informatique et     *)
+(*     en Automatique.                                                    *)
+(*                                                                        *)
+(*   All rights reserved.  This file is distributed under the terms of    *)
+(*   the GNU Lesser General Public License version 2.1, with the          *)
+(*   special exception on linking described in the file LICENSE.          *)
+(*                                                                        *)
+(**************************************************************************)
 
 open Printf
 
@@ -64,19 +67,19 @@ module Options = Main_args.Make_optcomp_options (struct
   let _impl s = with_impl := true; option_with_arg "-impl" s
   let _inline s = option_with_arg "-inline" s
   let _inline_toplevel n = option_with_arg "-inline-toplevel" n
-  let _inlining_stats = option "-inlining-report"
+  let _inlining_report = option "-inlining-report"
   let _dump_pass = option_with_arg "-dump-pass"
-  let _max_inlining_depth n = option_with_arg "-max-inlining-depth" n
+  let _inline_max_depth n = option_with_arg "-inline-max-depth" n
   let _rounds n = option_with_int "-rounds" n
-  let _unroll n = option_with_arg "-unroll" n
+  let _inline_max_unroll n = option_with_arg "-unroll" n
   let _inline_call_cost n = option_with_arg "-inline-call-cost" n
   let _inline_alloc_cost n = option_with_arg "-inline-alloc-cost" n
   let _inline_prim_cost n = option_with_arg "-inline-prim-cost" n
   let _inline_branch_cost n = option_with_arg "-inline-branch-cost" n
   let _inline_indirect_cost n = option_with_arg "-inline-indirect-cost" n
   let _inline_lifting_benefit n = option_with_arg "-inline-lifting-benefit" n
-  let _branch_inline_factor n = option_with_arg "-branch-inline-factor" n
-  let _classic_inlining = option "-classic-inlining"
+  let _inline_branch_factor n = option_with_arg "-inline-branch-factor" n
+  let _classic_inlining = option "-Oclassic"
   let _intf s = with_intf := true; option_with_arg "-intf" s
   let _intf_suffix s = option_with_arg "-intf-suffix" s
   let _keep_docs = option "-keep-docs"
@@ -89,9 +92,10 @@ module Options = Main_args.Make_optcomp_options (struct
   let _noassert = option "-noassert"
   let _noautolink = option "-noautolink"
   let _nodynlink = option "-nodynlink"
-  let _no_inline_recursive_functions = option "-no-inline-recursive-functions"
   let _nolabels = option "-nolabels"
   let _nostdlib = option "-nostdlib"
+  let _no_unbox_free_vars_of_closures = option "-no-unbox-free-vars-of-closures"
+  let _no_unbox_specialised_args = option "-no-unbox-specialised-args"
   let _o s = option_with_arg "-o" s
   let _o2 = option "-O2"
   let _o3 = option "-O3"
@@ -114,6 +118,7 @@ module Options = Main_args.Make_optcomp_options (struct
   let _shared = option "-shared"
   let _thread = option "-thread"
   let _unbox_closures = option "-unbox-closures"
+  let _unbox_closures_factor = option_with_int "-unbox-closures"
   let _unsafe = option "-unsafe"
   let _unsafe_string = option "-unsafe-string"
   let _v = option "-v"
@@ -134,8 +139,9 @@ module Options = Main_args.Make_optcomp_options (struct
   let _dlambda = option "-dlambda"
   let _drawclambda = option "-drawclambda"
   let _dclambda = option "-dclambda"
+  let _drawflambda = option "-drawflambda"
   let _dflambda = option "-dflambda"
-  let _dflambda_invariants = option "-dflambda-invariants"
+  let _dflambda_no_invariants = option "-dflambda-no-invariants"
   let _dflambda_let stamp = option_with_int "-dflambda-let" stamp
   let _dflambda_verbose = option "-dflambda-verbose"
   let _dcmm = option "-dcmm"

@@ -1,14 +1,17 @@
-(***********************************************************************)
-(*                                                                     *)
-(*                                OCaml                                *)
-(*                                                                     *)
-(*             Damien Doligez, projet Para, INRIA Rocquencourt         *)
-(*                                                                     *)
-(*  Copyright 1998 Institut National de Recherche en Informatique et   *)
-(*  en Automatique.  All rights reserved.  This file is distributed    *)
-(*  under the terms of the Q Public License version 1.0.               *)
-(*                                                                     *)
-(***********************************************************************)
+(**************************************************************************)
+(*                                                                        *)
+(*                                 OCaml                                  *)
+(*                                                                        *)
+(*              Damien Doligez, projet Para, INRIA Rocquencourt           *)
+(*                                                                        *)
+(*   Copyright 1998 Institut National de Recherche en Informatique et     *)
+(*     en Automatique.                                                    *)
+(*                                                                        *)
+(*   All rights reserved.  This file is distributed under the terms of    *)
+(*   the GNU Lesser General Public License version 2.1, with the          *)
+(*   special exception on linking described in the file LICENSE.          *)
+(*                                                                        *)
+(**************************************************************************)
 
 let mk_a f =
   "-a", Arg.Unit f, " Build a library"
@@ -44,7 +47,8 @@ let mk_ccopt f =
 ;;
 
 let mk_clambda_checks f =
-  "-clambda-checks", Arg.Unit f, " Instrument clambda code with closure and field access checks (for debugging the compiler)"
+  "-clambda-checks", Arg.Unit f, " Instrument clambda code with closure and \
+    field access checks (for debugging the compiler)"
 ;;
 
 let mk_compact f =
@@ -126,15 +130,18 @@ let mk_inline_toplevel f =
       toplevel (higher numbers mean more aggressive)"
 ;;
 
-let mk_inlining_stats f =
+let mk_inlining_report f =
   "-inlining-report", Arg.Unit f, " Emit `.<round>.inlining' file(s) (one per \
       round) showing the inliner's decisions"
 ;;
 
 let mk_dump_pass f =
   "-dump-pass", Arg.String f,
-  Format.asprintf " Record transformations performed by these passes: %a"
-    (Format.pp_print_list Format.pp_print_string)
+  Format.asprintf
+    " @[<4>Record transformations performed by these passes:@ @[%a@]@]"
+    (Format.pp_print_list
+       ~pp_sep:Format.pp_print_space
+       Format.pp_print_string)
     !Clflags.all_passes
 ;;
 
@@ -151,26 +158,27 @@ let mk_rounds f =
   "-rounds", Arg.Int f,
     Printf.sprintf "<n>  Repeat tree optimization and inlining phases this \
         many times (default %d).  Rounds are numbered starting from zero."
-      !Clflags.simplify_rounds
+      !Clflags.default_simplify_rounds
 ;;
 
-let mk_unroll f =
-  "-unroll", Arg.String f,
-    Printf.sprintf "<n>|<round>=<n>[,...]  Unroll recursive functions at most this many times \
-        (default %d)"
-      Clflags.default_unroll
+let mk_inline_max_unroll f =
+  "-inline-max-unroll", Arg.String f,
+    Printf.sprintf "<n>|<round>=<n>[,...]  Unroll recursive functions at most \
+      this many times (default %d)"
+      Clflags.default_inline_max_unroll
 ;;
 
 let mk_classic_inlining f =
-  "-classic-inlining", Arg.Unit f, " Make inlining decisions at function definition time \
-        rather than at the call site (replicates previous behaviour of the compiler)"
+  "-Oclassic", Arg.Unit f, " Make inlining decisions at function definition \
+     time rather than at the call site (replicates previous behaviour of the \
+     compiler)"
 ;;
 
 let mk_inline_cost arg descr default f =
   Printf.sprintf "-inline-%s-cost" arg,
   Arg.String f,
-  Printf.sprintf "<n>|<round>=<n>[,...]  The cost of not removing %s during inlining \
-      (default %d, higher numbers more costly)"
+  Printf.sprintf "<n>|<round>=<n>[,...]  The cost of not removing %s during \
+      inlining (default %d, higher numbers more costly)"
     descr
     default
 ;;
@@ -184,7 +192,8 @@ let mk_inline_prim_cost =
 let mk_inline_branch_cost =
   mk_inline_cost "branch" "a conditional" Clflags.default_inline_branch_cost
 let mk_inline_indirect_cost =
-  mk_inline_cost "indirect" "an indirect call" Clflags.default_inline_indirect_cost
+  mk_inline_cost "indirect" "an indirect call"
+    Clflags.default_inline_indirect_cost
 
 let mk_inline_lifting_benefit f =
   "-inline-lifting-benefit",
@@ -194,11 +203,11 @@ let mk_inline_lifting_benefit f =
     Clflags.default_inline_lifting_benefit
 ;;
 
-let mk_branch_inline_factor f =
-  "-branch-inline-factor", Arg.String f,
+let mk_inline_branch_factor f =
+  "-inline-branch-factor", Arg.String f,
     Printf.sprintf "<n>|<round>=<n>[,...]  Estimate the probability of a \
         branch being cold as 1/(1+n) (used for inlining) (default %.2f)"
-    Clflags.default_branch_inline_factor
+    Clflags.default_inline_branch_factor
 ;;
 
 let mk_intf f =
@@ -239,11 +248,11 @@ let mk_make_runtime_2 f =
   "-make_runtime", Arg.Unit f, " (deprecated) same as -make-runtime"
 ;;
 
-let mk_max_inlining_depth f =
-  "-max-inlining-depth", Arg.String f,
-    Printf.sprintf "<n>|<round>=<n>[,...]  Maximum depth of search for inlining opportunities \
-        inside inlined functions (default %d)"
-      Clflags.default_max_inlining_depth
+let mk_inline_max_depth f =
+  "-inline-max-depth", Arg.String f,
+    Printf.sprintf "<n>|<round>=<n>[,...]  Maximum depth of search for \
+      inlining opportunities inside inlined functions (default %d)"
+      Clflags.default_inline_max_depth
 ;;
 
 let mk_modern f =
@@ -291,11 +300,6 @@ let mk_noinit f =
   "-noinit", Arg.Unit f,
   " Do not load any init file"
 
-let mk_no_inline_recursive_functions f =
-  "-no-inline-recursive-functions", Arg.Unit f,
-  " Do not duplicate and specialise declarations of recursive functions"
-;;
-
 let mk_nolabels f =
   "-nolabels", Arg.Unit f, " Ignore non-optional labels in types"
 ;;
@@ -312,6 +316,16 @@ let mk_nopromptcont f =
 let mk_nostdlib f =
   "-nostdlib", Arg.Unit f,
   " Do not add default directory to the list of include directories"
+;;
+
+let mk_no_unbox_free_vars_of_closures f =
+  "-no-unbox-free-vars-of-closures", Arg.Unit f,
+  " Do not unbox variables that will appear inside function closures"
+;;
+
+let mk_no_unbox_specialised_args f =
+  "-no-unbox-specialised-args", Arg.Unit f,
+  " Do not unbox arguments to which functions have been specialised"
 ;;
 
 let mk_o f =
@@ -363,7 +377,7 @@ let mk_rectypes f =
 
 let mk_remove_unused_arguments f =
   "-remove-unused-arguments", Arg.Unit f,
-  " Remove unused function arguments (experimental)"
+  " Remove unused function arguments"
 ;;
 
 let mk_runtime_variant f =
@@ -407,7 +421,15 @@ let mk_dtimings f =
 
 let mk_unbox_closures f =
   "-unbox-closures", Arg.Unit f,
-  " Unbox closures into function arguments (experimental)"
+  " Pass free variables via specialised arguments rather than closures"
+;;
+
+let mk_unbox_closures_factor f =
+  "-unbox-closures-factor", Arg.Int f,
+  Printf.sprintf "<n > 0>  Scale the size threshold above which \
+      unbox-closures will slow down indirect calls rather than duplicating a \
+      function (default %d)"
+    Clflags.default_unbox_closures_factor
 ;;
 
 let mk_unsafe f =
@@ -539,16 +561,23 @@ let mk_dflambda f =
   "-dflambda", Arg.Unit f, " Print Flambda terms"
 ;;
 
-let mk_dflambda_invariants f =
-  "-dflambda-invariants", Arg.Unit f, " Check Flambda invariants around each pass"
+let mk_drawflambda f =
+  "-drawflambda", Arg.Unit f, " Print Flambda terms after closure conversion"
+;;
+
+let mk_dflambda_no_invariants f =
+  "-dflambda-no-invariants", Arg.Unit f, " Do not Check Flambda invariants \
+      around each pass"
 ;;
 
 let mk_dflambda_let f =
-  "-dflambda-let", Arg.Int f, "<stamp>  Print when the given Flambda [Let] is created"
+  "-dflambda-let", Arg.Int f, "<stamp>  Print when the given Flambda [Let] \
+      is created"
 ;;
 
 let mk_dflambda_verbose f =
-  "-dflambda-verbose", Arg.Unit f, " Print Flambda terms including around each pass"
+  "-dflambda-verbose", Arg.Unit f, " Print Flambda terms including around \
+      each pass"
 ;;
 
 let mk_dinstr f =
@@ -685,6 +714,7 @@ module type Compiler_options = sig
   val _linkall : unit -> unit
   val _noautolink : unit -> unit
   val _o : string -> unit
+  val _opaque :  unit -> unit
   val _output_obj : unit -> unit
   val _output_complete_obj : unit -> unit
   val _pack : unit -> unit
@@ -737,11 +767,11 @@ module type Optcommon_options = sig
   val _compact : unit -> unit
   val _inline : string -> unit
   val _inline_toplevel : string -> unit
-  val _inlining_stats : unit -> unit
+  val _inlining_report : unit -> unit
   val _dump_pass : string -> unit
-  val _max_inlining_depth : string -> unit
+  val _inline_max_depth : string -> unit
   val _rounds : int -> unit
-  val _unroll : string -> unit
+  val _inline_max_unroll : string -> unit
   val _classic_inlining : unit -> unit
   val _inline_call_cost : string -> unit
   val _inline_alloc_cost : string -> unit
@@ -750,15 +780,18 @@ module type Optcommon_options = sig
   val _inline_indirect_cost : string -> unit
   val _inline_lifting_benefit : string -> unit
   val _unbox_closures : unit -> unit
-  val _branch_inline_factor : string -> unit
-  val _no_inline_recursive_functions : unit -> unit
+  val _unbox_closures_factor : int -> unit
+  val _inline_branch_factor : string -> unit
   val _remove_unused_arguments : unit -> unit
+  val _no_unbox_free_vars_of_closures : unit -> unit
+  val _no_unbox_specialised_args : unit -> unit
   val _o2 : unit -> unit
   val _o3 : unit -> unit
 
   val _clambda_checks : unit -> unit
   val _dflambda : unit -> unit
-  val _dflambda_invariants : unit -> unit
+  val _drawflambda : unit -> unit
+  val _dflambda_no_invariants : unit -> unit
   val _dflambda_let : int -> unit
   val _dflambda_verbose : unit -> unit
   val _drawclambda : unit -> unit
@@ -789,7 +822,6 @@ module type Optcomp_options = sig
   val _pp : string -> unit
   val _S : unit -> unit
   val _shared : unit -> unit
-  val _opaque :  unit -> unit
 end;;
 
 module type Opttop_options = sig
@@ -864,6 +896,7 @@ struct
     mk_nolabels F._nolabels;
     mk_nostdlib F._nostdlib;
     mk_o F._o;
+    mk_opaque F._opaque;
     mk_open F._open;
     mk_output_obj F._output_obj;
     mk_output_complete_obj F._output_complete_obj;
@@ -956,7 +989,7 @@ struct
     mk_absname F._absname;
     mk_annot F._annot;
     mk_binannot F._binannot;
-    mk_branch_inline_factor F._branch_inline_factor;
+    mk_inline_branch_factor F._inline_branch_factor;
     mk_c F._c;
     mk_cc F._cc;
     mk_cclib F._cclib;
@@ -980,26 +1013,28 @@ struct
     mk_inline_prim_cost F._inline_prim_cost;
     mk_inline_indirect_cost F._inline_indirect_cost;
     mk_inline_lifting_benefit F._inline_lifting_benefit;
-    mk_inlining_stats F._inlining_stats;
+    mk_inlining_report F._inlining_report;
     mk_intf F._intf;
     mk_intf_suffix F._intf_suffix;
     mk_keep_docs F._keep_docs;
     mk_keep_locs F._keep_locs;
     mk_labels F._labels;
     mk_linkall F._linkall;
-    mk_max_inlining_depth F._max_inlining_depth;
+    mk_inline_max_depth F._inline_max_depth;
     mk_no_alias_deps F._no_alias_deps;
     mk_no_app_funct F._no_app_funct;
     mk_no_float_const_prop F._no_float_const_prop;
     mk_noassert F._noassert;
     mk_noautolink_opt F._noautolink;
     mk_nodynlink F._nodynlink;
-    mk_no_inline_recursive_functions F._no_inline_recursive_functions;
     mk_nolabels F._nolabels;
     mk_nostdlib F._nostdlib;
+    mk_no_unbox_free_vars_of_closures F._no_unbox_free_vars_of_closures;
+    mk_no_unbox_specialised_args F._no_unbox_specialised_args;
     mk_o F._o;
     mk_o2 F._o2;
     mk_o3 F._o3;
+    mk_opaque F._opaque;
     mk_open F._open;
     mk_output_obj F._output_obj;
     mk_output_complete_obj F._output_complete_obj;
@@ -1020,7 +1055,8 @@ struct
     mk_strict_formats F._strict_formats;
     mk_thread F._thread;
     mk_unbox_closures F._unbox_closures;
-    mk_unroll F._unroll;
+    mk_unbox_closures_factor F._unbox_closures_factor;
+    mk_inline_max_unroll F._inline_max_unroll;
     mk_unsafe F._unsafe;
     mk_unsafe_string F._unsafe_string;
     mk_v F._v;
@@ -1043,7 +1079,8 @@ struct
     mk_drawclambda F._drawclambda;
     mk_dclambda F._dclambda;
     mk_dflambda F._dflambda;
-    mk_dflambda_invariants F._dflambda_invariants;
+    mk_drawflambda F._drawflambda;
+    mk_dflambda_no_invariants F._dflambda_no_invariants;
     mk_dflambda_let F._dflambda_let;
     mk_dflambda_verbose F._dflambda_verbose;
     mk_dcmm F._dcmm;
@@ -1062,7 +1099,6 @@ struct
     mk_dstartup F._dstartup;
     mk_dtimings F._dtimings;
     mk_dump_pass F._dump_pass;
-    mk_opaque F._opaque;
   ]
 end;;
 
@@ -1074,9 +1110,9 @@ module Make_opttop_options (F : Opttop_options) = struct
     mk_init F._init;
     mk_inline F._inline;
     mk_inline_toplevel F._inline_toplevel;
-    mk_inlining_stats F._inlining_stats;
+    mk_inlining_report F._inlining_report;
     mk_rounds F._rounds;
-    mk_unroll F._unroll;
+    mk_inline_max_unroll F._inline_max_unroll;
     mk_classic_inlining F._classic_inlining;
     mk_inline_call_cost F._inline_call_cost;
     mk_inline_alloc_cost F._inline_alloc_cost;
@@ -1084,17 +1120,18 @@ module Make_opttop_options (F : Opttop_options) = struct
     mk_inline_branch_cost F._inline_branch_cost;
     mk_inline_indirect_cost F._inline_indirect_cost;
     mk_inline_lifting_benefit F._inline_lifting_benefit;
-    mk_branch_inline_factor F._branch_inline_factor;
+    mk_inline_branch_factor F._inline_branch_factor;
     mk_labels F._labels;
     mk_no_alias_deps F._no_alias_deps;
     mk_no_app_funct F._no_app_funct;
     mk_noassert F._noassert;
     mk_noinit F._noinit;
-    mk_no_inline_recursive_functions F._no_inline_recursive_functions;
     mk_nolabels F._nolabels;
     mk_noprompt F._noprompt;
     mk_nopromptcont F._nopromptcont;
     mk_nostdlib F._nostdlib;
+    mk_no_unbox_free_vars_of_closures F._no_unbox_free_vars_of_closures;
+    mk_no_unbox_specialised_args F._no_unbox_specialised_args;
     mk_o2 F._o2;
     mk_o3 F._o3;
     mk_open F._open;
@@ -1109,6 +1146,7 @@ module Make_opttop_options (F : Opttop_options) = struct
     mk_strict_sequence F._strict_sequence;
     mk_strict_formats F._strict_formats;
     mk_unbox_closures F._unbox_closures;
+    mk_unbox_closures_factor F._unbox_closures_factor;
     mk_unsafe F._unsafe;
     mk_unsafe_string F._unsafe_string;
     mk_version F._version;
@@ -1125,6 +1163,7 @@ module Make_opttop_options (F : Opttop_options) = struct
     mk_drawlambda F._drawlambda;
     mk_drawclambda F._drawclambda;
     mk_dclambda F._dclambda;
+    mk_drawflambda F._drawflambda;
     mk_dflambda F._dflambda;
     mk_dcmm F._dcmm;
     mk_dsel F._dsel;

@@ -1,14 +1,17 @@
-(***********************************************************************)
-(*                                                                     *)
-(*                                OCaml                                *)
-(*                                                                     *)
-(*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         *)
-(*                                                                     *)
-(*  Copyright 1996 Institut National de Recherche en Informatique et   *)
-(*  en Automatique.  All rights reserved.  This file is distributed    *)
-(*  under the terms of the Q Public License version 1.0.               *)
-(*                                                                     *)
-(***********************************************************************)
+(**************************************************************************)
+(*                                                                        *)
+(*                                 OCaml                                  *)
+(*                                                                        *)
+(*             Xavier Leroy, projet Cristal, INRIA Rocquencourt           *)
+(*                                                                        *)
+(*   Copyright 1996 Institut National de Recherche en Informatique et     *)
+(*     en Automatique.                                                    *)
+(*                                                                        *)
+(*   All rights reserved.  This file is distributed under the terms of    *)
+(*   the GNU Lesser General Public License version 2.1, with the          *)
+(*   special exception on linking described in the file LICENSE.          *)
+(*                                                                        *)
+(**************************************************************************)
 
 (* The interactive toplevel loop *)
 
@@ -181,7 +184,9 @@ let toplevel_startup_hook = ref (fun () -> ())
 let phrase_seqid = ref 0
 let phrase_name = ref "TOP"
 
-(* CR trefis for mshinwell: copy/pasted from Optmain. Should it be shared or? *)
+(* CR-soon trefis for mshinwell: copy/pasted from Optmain. Should it be shared
+   or?
+   mshinwell: It should be shared, but after 4.03. *)
 module Backend = struct
   (* See backend_intf.mli. *)
 
@@ -194,9 +199,9 @@ module Backend = struct
   let size_int = Arch.size_int
   let big_endian = Arch.big_endian
 
-  (* CR mshinwell: this needs tying through to [Proc], although it may
-     necessitate the introduction of a new field in that module. *)
-  let max_sensible_number_of_arguments = 9
+  let max_sensible_number_of_arguments =
+    (* The "-1" is to allow for a potential closure environment parameter. *)
+    Proc.max_arguments_for_tailcalls - 1
 end
 let backend = (module Backend : Backend_intf.S)
 
@@ -219,7 +224,7 @@ let load_lambda ppf ~module_ident lam size =
       ~backend ~toplevel:need_symbol fn ppf
       (Middle_end.middle_end ppf
          ~source_provenance:Timings.Toplevel ~prefixname:"" ~backend ~size
-         ~module_ident ~module_initializer:lam);
+         ~module_ident ~module_initializer:lam ~filename:"toplevel");
   Asmlink.call_linker_shared [fn ^ ext_obj] dll;
   Sys.remove (fn ^ ext_obj);
 
@@ -367,15 +372,15 @@ let execute_phrase print_outcome ppf phr =
           | Directive_none f, Pdir_none -> f (); true
           | Directive_string f, Pdir_string s -> f s; true
           | Directive_int f, Pdir_int (n,None) ->
-	     begin match Int_literal_converter.int n with
-	     | n -> f n; true
-	     | exception _ ->
-	       fprintf ppf "Integer literal exceeds the range of \
-			    representable integers for directive `%s'.@."
-		       dir_name;
-	       false
-	     end
-	  | Directive_int f, Pdir_int (n, Some _) ->
+             begin match Int_literal_converter.int n with
+             | n -> f n; true
+             | exception _ ->
+               fprintf ppf "Integer literal exceeds the range of \
+                            representable integers for directive `%s'.@."
+                       dir_name;
+               false
+             end
+          | Directive_int f, Pdir_int (n, Some _) ->
               fprintf ppf "Wrong integer literal for directive `%s'.@."
                 dir_name;
               false

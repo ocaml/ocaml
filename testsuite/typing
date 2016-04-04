@@ -7,9 +7,11 @@ tests/basic-modules
 tests/basic-more
 tests/basic-multdef
 tests/basic-private
+tests/typing-extension-constructor
 tests/typing-extensions
 tests/typing-fstclassmod
 tests/typing-gadts
+tests/typing-immediate
 tests/typing-implicit_unpack
 tests/typing-labels
 tests/typing-misc
@@ -26,9 +28,12 @@ tests/typing-polyvariants-bugs-2
 tests/typing-private
 tests/typing-private-bugs
 tests/typing-recmod
+tests/typing-recordarg
 tests/typing-rectypes-bugs
 tests/typing-short-paths
 tests/typing-signatures
 tests/typing-sigsubst
 tests/typing-typeparam
+tests/typing-unboxed
 tests/typing-warnings
+tests/warnings

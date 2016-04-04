@@ -1,14 +1,17 @@
-#########################################################################
-#                                                                       #
-#                                 OCaml                                 #
-#                                                                       #
-#            Xavier Leroy, projet Cristal, INRIA Rocquencourt           #
-#                                                                       #
-#   Copyright 1999 Institut National de Recherche en Informatique et    #
-#   en Automatique.  All rights reserved.  This file is distributed     #
-#   under the terms of the Q Public License version 1.0.                #
-#                                                                       #
-#########################################################################
+#**************************************************************************
+#*                                                                        *
+#*                                 OCaml                                  *
+#*                                                                        *
+#*            Xavier Leroy, projet Cristal, INRIA Rocquencourt            *
+#*                                                                        *
+#*   Copyright 1999 Institut National de Recherche en Informatique et     *
+#*     en Automatique.                                                    *
+#*                                                                        *
+#*   All rights reserved.  This file is distributed under the terms of    *
+#*   the GNU Lesser General Public License version 2.1, with the          *
+#*   special exception on linking described in the file LICENSE.          *
+#*                                                                        *
+#**************************************************************************
 
 # The main Makefile, fragments shared between Makefile and Makefile.nt
 
@@ -19,8 +22,8 @@ include stdlib/StdlibModules
 
 CAMLC=$(CAMLRUN) boot/ocamlc -g -nostdlib -I boot
 CAMLOPT=$(CAMLRUN) ./ocamlopt -g -nostdlib -I stdlib -I otherlibs/dynlink
-COMPFLAGS=-strict-sequence -principal -w +33..39+48+50 -warn-error A -bin-annot \
-          -safe-string -strict-formats $(INCLUDES)
+COMPFLAGS=-strict-sequence -principal -w +33..39+48+50 -warn-error A \
+          -bin-annot -safe-string -strict-formats $(INCLUDES)
 LINKFLAGS=
 
 YACCFLAGS=-v
@@ -139,14 +142,17 @@ MIDDLE_END=\
   middle_end/base_types/mutable_variable.cmo \
   middle_end/base_types/id_types.cmo \
   middle_end/base_types/set_of_closures_id.cmo \
+  middle_end/base_types/set_of_closures_origin.cmo \
   middle_end/base_types/closure_element.cmo \
   middle_end/base_types/closure_id.cmo \
   middle_end/base_types/var_within_closure.cmo \
   middle_end/base_types/static_exception.cmo \
   middle_end/base_types/export_id.cmo \
   middle_end/base_types/symbol.cmo \
+  middle_end/pass_wrapper.cmo \
   middle_end/semantics_of_primitives.cmo \
   middle_end/allocated_const.cmo \
+  middle_end/projection.cmo \
   middle_end/flambda.cmo \
   middle_end/flambda_iterators.cmo \
   middle_end/flambda_utils.cmo \
@@ -174,7 +180,11 @@ MIDDLE_END=\
   middle_end/inlining_stats_types.cmo \
   middle_end/inlining_stats.cmo \
   middle_end/inline_and_simplify_aux.cmo \
-  middle_end/augment_closures.cmo \
+  middle_end/remove_free_vars_equal_to_args.cmo \
+  middle_end/extract_projections.cmo \
+  middle_end/augment_specialised_args.cmo \
+  middle_end/unbox_free_vars_of_closures.cmo \
+  middle_end/unbox_specialised_args.cmo \
   middle_end/unbox_closures.cmo \
   middle_end/inlining_transforms.cmo \
   middle_end/inlining_decision.cmo \
@@ -197,3 +207,35 @@ TOPLEVELSTART=toplevel/topstart.cmo
 OPTTOPLEVELSTART=toplevel/opttopstart.cmo
 
 PERVASIVES=$(STDLIB_MODULES) outcometree topdirs toploop
+
+
+# The middle end (whose .cma library is currently only used for linking
+# the "objinfo" program, since we cannot depend on the whole native code
+# compiler for "make world" and the list of dependencies for
+# asmcomp/export_info.cmo is long).
+
+compilerlibs/ocamlmiddleend.cma: $(MIDDLE_END)
+	$(CAMLC) -a -o $@ $(MIDDLE_END)
+partialclean::
+	rm -f compilerlibs/ocamlmiddleend.cma
+
+
+# Tools
+
+ocamltools: ocamlc ocamlyacc ocamllex asmcomp/cmx_format.cmi \
+            asmcomp/printclambda.cmo compilerlibs/ocamlmiddleend.cma \
+            asmcomp/export_info.cmo
+	cd tools ; $(MAKEREC) all
+
+ocamltoolsopt: ocamlopt
+	cd tools; $(MAKEREC) opt
+
+ocamltoolsopt.opt: ocamlc.opt ocamlyacc ocamllex asmcomp/cmx_format.cmi \
+                   asmcomp/printclambda.cmx
+	cd tools; $(MAKEREC) opt.opt
+
+partialclean::
+	cd tools; $(MAKEREC) clean
+
+alldepend::
+	cd tools; $(MAKEREC) depend

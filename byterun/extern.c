@@ -1,15 +1,17 @@
-/***********************************************************************/
-/*                                                                     */
-/*                                OCaml                                */
-/*                                                                     */
-/*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         */
-/*                                                                     */
-/*  Copyright 1996 Institut National de Recherche en Informatique et   */
-/*  en Automatique.  All rights reserved.  This file is distributed    */
-/*  under the terms of the GNU Library General Public License, with    */
-/*  the special exception on linking described in file ../LICENSE.     */
-/*                                                                     */
-/***********************************************************************/
+/**************************************************************************/
+/*                                                                        */
+/*                                 OCaml                                  */
+/*                                                                        */
+/*             Xavier Leroy, projet Cristal, INRIA Rocquencourt           */
+/*                                                                        */
+/*   Copyright 1996 Institut National de Recherche en Informatique et     */
+/*     en Automatique.                                                    */
+/*                                                                        */
+/*   All rights reserved.  This file is distributed under the terms of    */
+/*   the GNU Lesser General Public License version 2.1, with the          */
+/*   special exception on linking described in the file LICENSE.          */
+/*                                                                        */
+/**************************************************************************/
 
 /* Structured output */
 
@@ -710,14 +712,14 @@ CAMLexport intnat caml_output_value_to_block(value v, value flags,
   char header[32];
   int header_len;
   intnat data_len;
-  /* At this point we don't know the size of the header.  
+  /* At this point we don't know the size of the header.
      Guess that it is small, and fix up later if not. */
   extern_userprovided_output = buf + 20;
   extern_ptr = extern_userprovided_output;
   extern_limit = buf + len;
   data_len = extern_value(v, flags, header, &header_len);
   if (header_len != 20) {
-    /* Bad guess!  Need to shift the output to make room for big header. 
+    /* Bad guess!  Need to shift the output to make room for big header.
        Make sure there is room. */
     if (header_len + data_len > len)
       caml_failwith("Marshal.to_buffer: buffer overflow");
@@ -739,7 +741,7 @@ CAMLprim value caml_output_value_to_buffer(value buf, value ofs, value len,
 CAMLexport void caml_output_value_to_malloc(value v, value flags,
                                             /*out*/ char ** buf,
                                             /*out*/ intnat * len)
-{ 
+{
   char header[32];
   int header_len;
   intnat data_len;

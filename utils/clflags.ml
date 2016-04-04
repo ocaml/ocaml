@@ -1,14 +1,17 @@
-(***********************************************************************)
-(*                                                                     *)
-(*                                OCaml                                *)
-(*                                                                     *)
-(*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         *)
-(*                                                                     *)
-(*  Copyright 1996 Institut National de Recherche en Informatique et   *)
-(*  en Automatique.  All rights reserved.  This file is distributed    *)
-(*  under the terms of the Q Public License version 1.0.               *)
-(*                                                                     *)
-(***********************************************************************)
+(**************************************************************************)
+(*                                                                        *)
+(*                                 OCaml                                  *)
+(*                                                                        *)
+(*             Xavier Leroy, projet Cristal, INRIA Rocquencourt           *)
+(*                                                                        *)
+(*   Copyright 1996 Institut National de Recherche en Informatique et     *)
+(*     en Automatique.                                                    *)
+(*                                                                        *)
+(*   All rights reserved.  This file is distributed under the terms of    *)
+(*   the GNU Lesser General Public License version 2.1, with the          *)
+(*   special exception on linking described in the file LICENSE.          *)
+(*                                                                        *)
+(**************************************************************************)
 
 (* Command-line parameters *)
 
@@ -94,6 +97,7 @@ and dump_rawlambda = ref false          (* -drawlambda *)
 and dump_lambda = ref false             (* -dlambda *)
 and dump_rawclambda = ref false         (* -drawclambda *)
 and dump_clambda = ref false            (* -dclambda *)
+and dump_rawflambda = ref false            (* -drawflambda *)
 and dump_flambda = ref false            (* -dflambda *)
 and dump_flambda_let = ref (None : int option) (* -dflambda-let=... *)
 and dump_flambda_verbose = ref false    (* -dflambda-verbose *)
@@ -117,17 +121,14 @@ let dump_scheduling = ref false         (* -dscheduling *)
 let dump_linear = ref false             (* -dlinear *)
 let keep_startup_file = ref false       (* -dstartup *)
 let dump_combine = ref false            (* -dcombine *)
+let print_timings = ref false           (* -dtimings *)
+
 let native_code = ref false             (* set to true under ocamlopt *)
-let o2 = ref false                      (* -O2 *)
-let o3 = ref false                      (* -O3 *)
-let default_inline_threshold = if Config.flambda then 10. else 10. /. 8.
-let inline_threshold = ref (Float_arg_helper.default default_inline_threshold)
-let inlining_stats = ref false
-let simplify_rounds = ref 1
-let default_unroll = 0
-let unroll = ref (Int_arg_helper.default default_unroll)
+
 let force_slash = ref false             (* for ocamldep *)
 let clambda_checks = ref false          (* -clambda-checks *)
+
+let flambda_invariant_checks = ref true (* -flambda-invariants *)
 
 let dont_write_files = ref false        (* set to true under ocamldoc *)
 
@@ -153,20 +154,33 @@ let keep_docs = ref false              (* -keep-docs *)
 let keep_locs = ref false              (* -keep-locs *)
 let unsafe_string = ref true;;         (* -safe-string / -unsafe-string *)
 
+let classic_inlining = ref false       (* -Oclassic *)
+let inlining_report = ref false    (* -inlining-report *)
+
+let simplify_rounds = ref None        (* -rounds *)
+let default_simplify_rounds = ref 1        (* -rounds *)
+let rounds () =
+  match !simplify_rounds with
+  | None -> !default_simplify_rounds
+  | Some r -> r
+
+let default_inline_threshold = if Config.flambda then 10. else 10. /. 8.
 let inline_toplevel_multiplier = 16
 let default_inline_toplevel_threshold =
   int_of_float ((float inline_toplevel_multiplier) *. default_inline_threshold)
+let default_inline_call_cost = 5
+let default_inline_alloc_cost = 7
+let default_inline_prim_cost = 3
+let default_inline_branch_cost = 5
+let default_inline_indirect_cost = 4
+let default_inline_branch_factor = 0.1
+let default_inline_lifting_benefit = 1300
+let default_inline_max_unroll = 0
+let default_inline_max_depth = 1
+
+let inline_threshold = ref (Float_arg_helper.default default_inline_threshold)
 let inline_toplevel_threshold =
   ref (Int_arg_helper.default default_inline_toplevel_threshold)
-
-let default_inline_call_cost = 5
-let default_inline_alloc_cost = 3
-let default_inline_prim_cost = 3
-let default_inline_branch_cost = 3
-let default_inline_indirect_cost = 2
-let default_branch_inline_factor = 0.1
-let default_inline_lifting_benefit = 1300
-
 let inline_call_cost = ref (Int_arg_helper.default default_inline_call_cost)
 let inline_alloc_cost = ref (Int_arg_helper.default default_inline_alloc_cost)
 let inline_prim_cost = ref (Int_arg_helper.default default_inline_prim_cost)
@@ -174,22 +188,23 @@ let inline_branch_cost =
   ref (Int_arg_helper.default default_inline_branch_cost)
 let inline_indirect_cost =
   ref (Int_arg_helper.default default_inline_indirect_cost)
-let branch_inline_factor =
-  ref (Float_arg_helper.default default_branch_inline_factor)
+let inline_branch_factor =
+  ref (Float_arg_helper.default default_inline_branch_factor)
 let inline_lifting_benefit =
   ref (Int_arg_helper.default default_inline_lifting_benefit)
+let inline_max_unroll =
+  ref (Int_arg_helper.default default_inline_max_unroll)
+let inline_max_depth =
+  ref (Int_arg_helper.default default_inline_max_depth)
 
-let print_timings = ref false          (* -timings *)
 
+let unbox_specialised_args = ref true   (* -no-unbox-specialised-args *)
+let unbox_free_vars_of_closures = ref true
 let unbox_closures = ref false          (* -unbox-closures *)
+let default_unbox_closures_factor = 10
+let unbox_closures_factor =
+  ref default_unbox_closures_factor      (* -unbox-closures-factor *)
 let remove_unused_arguments = ref false (* -remove-unused-arguments *)
-let inline_recursive_functions = ref true  (* -no-inline-recursive-functions *)
-
-let classic_inlining = ref false       (* -classic-inlining *)
-
-let default_max_inlining_depth = 1
-let max_inlining_depth =
-  ref (Int_arg_helper.default default_max_inlining_depth)
 
 type inlining_arguments = {
   inline_call_cost : int option;
@@ -198,55 +213,61 @@ type inlining_arguments = {
   inline_branch_cost : int option;
   inline_indirect_cost : int option;
   inline_lifting_benefit : int option;
-  branch_inline_factor : float option;
-  max_inlining_depth : int option;
-  unroll : int option;
+  inline_branch_factor : float option;
+  inline_max_depth : int option;
+  inline_max_unroll : int option;
   inline_threshold : float option;
   inline_toplevel_threshold : int option;
 }
 
-let set_int_arg round (arg:Int_arg_helper.parsed ref) value =
-  let open Int_arg_helper in
-  match value with
-  | None -> ()
-  | Some value ->
-    let parsed =
-      match round with
-      | None -> { !arg with default = value }
-      | Some round ->
-        { !arg with
-          override = Numbers.Int.Map.add round value !arg.override }
-    in
-    arg := parsed
+let set_int_arg round (arg:Int_arg_helper.parsed ref) default value =
+  let value : int =
+    match value with
+    | None -> default
+    | Some value -> value
+  in
+  match round with
+  | None ->
+    arg := Int_arg_helper.set_base_default value
+             (Int_arg_helper.reset_base_overrides !arg)
+  | Some round ->
+    arg := Int_arg_helper.add_base_override round value !arg
 
-let set_float_arg round (arg:Float_arg_helper.parsed ref) value =
-  let open Float_arg_helper in
-  match value with
-  | None -> ()
-  | Some value ->
-    let parsed =
-      match round with
-      | None -> { !arg with default = value }
-      | Some round ->
-        { !arg with
-          override = Numbers.Int.Map.add round value !arg.override }
-    in
-    arg := parsed
+let set_float_arg round (arg:Float_arg_helper.parsed ref) default value =
+  let value =
+    match value with
+    | None -> default
+    | Some value -> value
+  in
+  match round with
+  | None ->
+    arg := Float_arg_helper.set_base_default value
+             (Float_arg_helper.reset_base_overrides !arg)
+  | Some round ->
+    arg := Float_arg_helper.add_base_override round value !arg
 
 let use_inlining_arguments_set ?round (arg:inlining_arguments) =
   let set_int = set_int_arg round in
   let set_float = set_float_arg round in
-  set_int inline_call_cost arg.inline_call_cost;
-  set_int inline_alloc_cost arg.inline_alloc_cost;
-  set_int inline_prim_cost arg.inline_prim_cost;
-  set_int inline_branch_cost arg.inline_branch_cost;
-  set_int inline_indirect_cost arg.inline_indirect_cost;
-  set_int inline_lifting_benefit arg.inline_lifting_benefit;
-  set_float branch_inline_factor arg.branch_inline_factor;
-  set_int max_inlining_depth arg.max_inlining_depth;
-  set_int unroll arg.unroll;
-  set_float inline_threshold arg.inline_threshold;
-  set_int inline_toplevel_threshold arg.inline_toplevel_threshold
+  set_int inline_call_cost default_inline_call_cost arg.inline_call_cost;
+  set_int inline_alloc_cost default_inline_alloc_cost arg.inline_alloc_cost;
+  set_int inline_prim_cost default_inline_prim_cost arg.inline_prim_cost;
+  set_int inline_branch_cost
+    default_inline_branch_cost arg.inline_branch_cost;
+  set_int inline_indirect_cost
+    default_inline_indirect_cost arg.inline_indirect_cost;
+  set_int inline_lifting_benefit
+    default_inline_lifting_benefit arg.inline_lifting_benefit;
+  set_float inline_branch_factor
+    default_inline_branch_factor arg.inline_branch_factor;
+  set_int inline_max_depth
+    default_inline_max_depth arg.inline_max_depth;
+  set_int inline_max_unroll
+    default_inline_max_unroll arg.inline_max_unroll;
+  set_float inline_threshold
+    default_inline_threshold arg.inline_threshold;
+  set_int inline_toplevel_threshold
+    default_inline_toplevel_threshold arg.inline_toplevel_threshold
 
 (* o1 is the default *)
 let o1_arguments = {
@@ -256,9 +277,9 @@ let o1_arguments = {
   inline_branch_cost = None;
   inline_indirect_cost = None;
   inline_lifting_benefit = None;
-  branch_inline_factor = None;
-  max_inlining_depth = None;
-  unroll = None;
+  inline_branch_factor = None;
+  inline_max_depth = None;
+  inline_max_unroll = None;
   inline_threshold = None;
   inline_toplevel_threshold = None;
 }
@@ -270,9 +291,9 @@ let classic_arguments = {
   inline_branch_cost = None;
   inline_indirect_cost = None;
   inline_lifting_benefit = None;
-  branch_inline_factor = None;
-  max_inlining_depth = None;
-  unroll = None;
+  inline_branch_factor = None;
+  inline_max_depth = None;
+  inline_max_unroll = None;
   (* [inline_threshold] matches the current compiler's default.
      Note that this particular fraction can be expressed exactly in
      floating point. *)
@@ -288,9 +309,9 @@ let o2_arguments = {
   inline_branch_cost = Some (2 * default_inline_branch_cost);
   inline_indirect_cost = Some (2 * default_inline_indirect_cost);
   inline_lifting_benefit = None;
-  branch_inline_factor = None;
-  max_inlining_depth = Some 2;
-  unroll = None;
+  inline_branch_factor = None;
+  inline_max_depth = Some 2;
+  inline_max_unroll = None;
   inline_threshold = Some 25.;
   inline_toplevel_threshold = Some (25 * inline_toplevel_multiplier);
 }
@@ -302,9 +323,9 @@ let o3_arguments = {
   inline_branch_cost = Some (3 * default_inline_branch_cost);
   inline_indirect_cost = Some (3 * default_inline_indirect_cost);
   inline_lifting_benefit = None;
-  branch_inline_factor = Some 0.;
-  max_inlining_depth = Some 3;
-  unroll = Some 1;
+  inline_branch_factor = Some 0.;
+  inline_max_depth = Some 3;
+  inline_max_unroll = Some 1;
   inline_threshold = Some 50.;
   inline_toplevel_threshold = Some (50 * inline_toplevel_multiplier);
 }
@@ -316,17 +337,16 @@ let dumped_pass s =
   List.mem s !dumped_passes_list
 
 let set_dumped_pass s enabled =
-  assert(List.mem s !all_passes);
-  let passes_without_s = List.filter ((<>) s) !dumped_passes_list in
-  let dumped_passes =
-    if enabled then
-      s :: passes_without_s
-    else
-      passes_without_s
-  in
-  dumped_passes_list := dumped_passes
-
-let flambda_invariant_checks = ref false
+  if (List.mem s !all_passes) then begin
+    let passes_without_s = List.filter ((<>) s) !dumped_passes_list in
+    let dumped_passes =
+      if enabled then
+        s :: passes_without_s
+      else
+        passes_without_s
+    in
+    dumped_passes_list := dumped_passes
+  end
 
 let parse_color_setting = function
   | "auto" -> Some Misc.Color.Auto

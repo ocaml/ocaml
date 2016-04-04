@@ -1,14 +1,17 @@
-#########################################################################
-#                                                                       #
-#                                 OCaml                                 #
-#                                                                       #
-#                 Xavier Clerc, SED, INRIA Rocquencourt                 #
-#                                                                       #
-#   Copyright 2010 Institut National de Recherche en Informatique et    #
-#   en Automatique.  All rights reserved.  This file is distributed     #
-#   under the terms of the Q Public License version 1.0.                #
-#                                                                       #
-#########################################################################
+#**************************************************************************
+#*                                                                        *
+#*                                OCaml                                   *
+#*                                                                        *
+#*                 Xavier Clerc, SED, INRIA Rocquencourt                  *
+#*                                                                        *
+#*   Copyright 2010 Institut National de Recherche en Informatique et     *
+#*     en Automatique.                                                    *
+#*                                                                        *
+#*   All rights reserved.  This file is distributed under the terms of    *
+#*   the GNU Lesser General Public License version 2.1, with the          *
+#*   special exception on linking described in the file LICENSE.          *
+#*                                                                        *
+#**************************************************************************
 
 BASEDIR=../..
 EXECNAME=program$(EXE)
@@ -54,10 +57,12 @@ byte:
 skip:
 	@for file in $(ABCDFILES); do \
 	  for arg in a b c d ''; do \
-	    echo " ... testing '$$file' with ocamlopt and argument '$$arg': => skipped"; \
+	    echo " ... testing '$$file' with ocamlopt and argument '$$arg': \
+	=> skipped"; \
 	  done; \
 	done
-	@for file in $(OTHERFILES) $(OTHERFILESNOINLINING) $(OTHERFILESNOINLINING_NATIVE); do \
+	@for file in $(OTHERFILES) $(OTHERFILESNOINLINING) \
+	             $(OTHERFILESNOINLINING_NATIVE); do \
 	  echo " ... testing '$$file' with ocamlopt: => skipped"; \
 	done
 
@@ -67,7 +72,7 @@ native:
 	  rm -f program program.exe; \
 	  $(OCAMLOPT) -g -o $(EXECNAME) $$file; \
 	  for arg in a b c d ''; do \
-	    printf " ... testing '$$file' with ocamlopt and argument '$$arg':"; \
+	    printf " ... testing '$$file' with ocamlopt and argument '$$arg':";\
 	    F="`basename $$file .ml`"; \
 	    (OCAMLRUNPARAM=$$OCAMLRUNPARAM,b=1 \
               ./$(EXECNAME) $$arg || true) \

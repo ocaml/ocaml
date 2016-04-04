@@ -1,14 +1,17 @@
-(***********************************************************************)
-(*                                                                     *)
-(*                                OCaml                                *)
-(*                                                                     *)
-(*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         *)
-(*                                                                     *)
-(*  Copyright 1996 Institut National de Recherche en Informatique et   *)
-(*  en Automatique.  All rights reserved.  This file is distributed    *)
-(*  under the terms of the Q Public License version 1.0.               *)
-(*                                                                     *)
-(***********************************************************************)
+(**************************************************************************)
+(*                                                                        *)
+(*                                 OCaml                                  *)
+(*                                                                        *)
+(*             Xavier Leroy, projet Cristal, INRIA Rocquencourt           *)
+(*                                                                        *)
+(*   Copyright 1996 Institut National de Recherche en Informatique et     *)
+(*     en Automatique.                                                    *)
+(*                                                                        *)
+(*   All rights reserved.  This file is distributed under the terms of    *)
+(*   the GNU Lesser General Public License version 2.1, with the          *)
+(*   special exception on linking described in the file LICENSE.          *)
+(*                                                                        *)
+(**************************************************************************)
 
 (* Compiling C files and building C libraries *)
 
@@ -61,7 +64,7 @@ let display_msvc_output file name =
     close_in c;
     Sys.remove file
 
-let compile_file ~output_name name =
+let compile_file name =
   let (pipe, file) =
     if Config.ccomp_type = "msvc" && not !Clflags.verbose then
       try
@@ -75,17 +78,13 @@ let compile_file ~output_name name =
   let exit =
     command
       (Printf.sprintf
-         "%s%s -c %s %s %s %s %s%s"
+         "%s -c %s %s %s %s %s%s"
          (match !Clflags.c_compiler with
           | Some cc -> cc
           | None ->
               if !Clflags.native_code
               then Config.native_c_compiler
               else Config.bytecomp_c_compiler)
-         (match output_name, Config.ccomp_type with
-            | Some n, "msvc" -> " /Fo" ^ Filename.quote n
-            | Some n, _ -> " -o " ^ Filename.quote n
-            | None, _ -> "")
          (if !Clflags.debug && Config.ccomp_type <> "msvc" then "-g" else "")
          (String.concat " " (List.rev !Clflags.all_ccopts))
          (quote_prefixed "-I" (List.rev !Clflags.include_dirs))

@@ -1,6 +1,6 @@
 (**************************************************************************)
 (*                                                                        *)
-(*                                OCaml                                   *)
+(*                                 OCaml                                  *)
 (*                                                                        *)
 (*                       Pierre Chambart, OCamlPro                        *)
 (*           Mark Shinwell and Leo White, Jane Street Europe              *)
@@ -10,7 +10,7 @@
 (*                                                                        *)
 (*   All rights reserved.  This file is distributed under the terms of    *)
 (*   the GNU Lesser General Public License version 2.1, with the          *)
-(*   special exception on linking described in the file ../LICENSE.       *)
+(*   special exception on linking described in the file LICENSE.          *)
 (*                                                                        *)
 (**************************************************************************)
 
@@ -59,6 +59,7 @@ module Function_decls : sig
       -> params:Ident.t list
       -> body:Lambda.lambda
       -> inline:Lambda.inline_attribute
+      -> specialise:Lambda.specialise_attribute
       -> is_a_functor:bool
       -> t
 
@@ -68,6 +69,7 @@ module Function_decls : sig
     val params : t -> Ident.t list
     val body : t -> Lambda.lambda
     val inline : t -> Lambda.inline_attribute
+    val specialise : t -> Lambda.specialise_attribute
     val is_a_functor : t -> bool
 
     (* [primitive_wrapper t] is [None] iff [t] is not a wrapper for a function

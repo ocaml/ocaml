@@ -1,6 +1,6 @@
 (**************************************************************************)
 (*                                                                        *)
-(*                                OCaml                                   *)
+(*                                 OCaml                                  *)
 (*                                                                        *)
 (*                       Pierre Chambart, OCamlPro                        *)
 (*           Mark Shinwell and Leo White, Jane Street Europe              *)
@@ -10,7 +10,7 @@
 (*                                                                        *)
 (*   All rights reserved.  This file is distributed under the terms of    *)
 (*   the GNU Lesser General Public License version 2.1, with the          *)
-(*   special exception on linking described in the file ../LICENSE.       *)
+(*   special exception on linking described in the file LICENSE.          *)
 (*                                                                        *)
 (**************************************************************************)
 
@@ -26,6 +26,7 @@ let name_expr = Flambda_utils.name_expr
 type t = {
   current_unit_id : Ident.t;
   symbol_for_global' : (Ident.t -> Symbol.t);
+  filename : string;
   mutable imported_symbols : Symbol.Set.t;
 }
 
@@ -65,6 +66,7 @@ let add_default_argument_wrappers lam =
                (function
                  | (id, Lambda.Lfunction {kind; params; body; attr}) ->
                    Simplif.split_default_wrapper id kind params body attr
+                     ~create_wrapper_body:stubify
                  | _ -> assert false)
                defs)
         in
@@ -92,6 +94,7 @@ let tupled_function_call_stub original_params unboxed_version
         kind = Direct (Closure_id.wrap unboxed_version);
         dbg = Debuginfo.none;
         inline = Default_inline;
+        specialise = Default_specialise;
       })
   in
   let _, body =
@@ -104,26 +107,7 @@ let tupled_function_call_stub original_params unboxed_version
   in
   Flambda.create_function_declaration ~params:[tuple_param]
     ~body ~stub:true ~dbg:Debuginfo.none ~inline:Default_inline
-    ~is_a_functor:false
-
-(** Propagate an [Lev_after] debugging event into an adjacent Flambda node. *)
-let add_debug_info (ev : Lambda.lambda_event) (flam : Flambda.t)
-      : Flambda.t =
-  match ev.lev_kind with
-  | Lev_after _ ->
-    begin match flam with
-    | Apply ap ->
-      Apply { ap with dbg = Debuginfo.from_call ev; }
-    | Let let_expr ->
-      Flambda.map_defining_expr_of_let let_expr ~f:(function
-        | Prim (p, args, _dinfo) ->
-          Prim (p, args, Debuginfo.from_call ev)
-        | defining_expr -> defining_expr)
-    | Send { kind; meth; obj; args; dbg = _; } ->
-      Send { kind; meth; obj; args; dbg = Debuginfo.from_call ev; }
-    | _ -> flam
-    end
-  | _ -> flam
+    ~specialise:Default_specialise ~is_a_functor:false
 
 let rec eliminate_const_block (const : Lambda.structured_constant)
       : Lambda.lambda =
@@ -135,6 +119,11 @@ let rec eliminate_const_block (const : Lambda.structured_constant)
   | Const_pointer _
   | Const_immstring _
   | Const_float_array _ -> Lconst const
+
+let default_debuginfo ?(inner_debuginfo = Debuginfo.none) env_debuginfo =
+  match env_debuginfo with
+  | None -> inner_debuginfo
+  | Some debuginfo -> debuginfo
 
 let rec close_const t env (const : Lambda.structured_constant)
       : Flambda.named * string =
@@ -156,7 +145,7 @@ let rec close_const t env (const : Lambda.structured_constant)
   | Const_block _ ->
     Expr (close t env (eliminate_const_block const)), "const_block"
 
-and close t env (lam : Lambda.lambda) : Flambda.t =
+and close t ?debuginfo env (lam : Lambda.lambda) : Flambda.t =
   match lam with
   | Lvar id ->
     begin match Env.find_var_exn env id with
@@ -173,13 +162,17 @@ and close t env (lam : Lambda.lambda) : Flambda.t =
     name_expr cst ~name:("const_" ^ name)
   | Llet ((Strict | Alias | StrictOpt), id, defining_expr, body) ->
     let var = Variable.create_with_same_name_as_ident id in
-    let defining_expr = close_let_bound_expression t var env defining_expr in
+    let defining_expr =
+      close_let_bound_expression t var env defining_expr
+    in
     let body = close t (Env.add_var env id var) body in
     Flambda.create_let var defining_expr body
   | Llet (Variable, id, defining_expr, body) ->
     let mut_var = Mutable_variable.of_ident id in
     let var = Variable.create_with_same_name_as_ident id in
-    let defining_expr = close_let_bound_expression t var env defining_expr in
+    let defining_expr =
+      close_let_bound_expression t var env defining_expr
+    in
     let body = close t (Env.add_mutable_var env id mut_var) body in
     Flambda.create_let var defining_expr (Let_mutable (mut_var, var, body))
   | Lfunction { kind; params; body; attr; } ->
@@ -197,7 +190,8 @@ and close t env (lam : Lambda.lambda) : Flambda.t =
     let set_of_closures =
       let decl =
         Function_decl.create ~let_rec_ident:None ~closure_bound_var ~kind
-          ~params ~body ~inline:attr.inline ~is_a_functor:attr.is_a_functor
+          ~params ~body ~inline:attr.inline ~specialise:attr.specialise
+          ~is_a_functor:attr.is_a_functor
       in
       close_functions t env (Function_decls.create [decl])
     in
@@ -210,7 +204,7 @@ and close t env (lam : Lambda.lambda) : Flambda.t =
       (name_expr (Project_closure (project_closure))
         ~name:("project_closure_" ^ name))
   | Lapply { ap_func; ap_args; ap_loc; ap_should_be_tailcall = _;
-        ap_inlined; } ->
+        ap_inlined; ap_specialised; } ->
     Lift_code.lifting_helper (close_list t env ap_args)
       ~evaluation_order:`Right_to_left
       ~name:"apply_arg"
@@ -222,8 +216,12 @@ and close t env (lam : Lambda.lambda) : Flambda.t =
               func = func_var;
               args;
               kind = Indirect;
-              dbg = Debuginfo.from_location Dinfo_call ap_loc;
+              dbg =
+                default_debuginfo
+                  ~inner_debuginfo:(Debuginfo.from_location Dinfo_call ap_loc)
+                  debuginfo;
               inline = ap_inlined;
+              specialise = ap_specialised;
             })))
   | Lletrec (defs, body) ->
     let env =
@@ -242,7 +240,8 @@ and close t env (lam : Lambda.lambda) : Flambda.t =
             let function_declaration =
               Function_decl.create ~let_rec_ident:(Some let_rec_ident)
                 ~closure_bound_var ~kind ~params ~body
-                ~inline:attr.inline ~is_a_functor:attr.is_a_functor
+                ~inline:attr.inline ~specialise:attr.specialise
+                ~is_a_functor:attr.is_a_functor
             in
             Some function_declaration
           | _ -> None)
@@ -336,7 +335,7 @@ and close t env (lam : Lambda.lambda) : Flambda.t =
               (Prim (Pintcomp Ceq, [zero; denominator], Debuginfo.none))
                 (If_then_else (is_zero,
                   name_expr (Prim (Praise Raise_regular, [exn],
-                      Debuginfo.none))
+                      default_debuginfo debuginfo))
                     ~name:"dummy",
                   (* CR-someday pchambart: find the right event.
                      mshinwell: I briefly looked at this, and couldn't
@@ -381,14 +380,17 @@ and close t env (lam : Lambda.lambda) : Flambda.t =
            inlined attributes to functions applied with the application
            operators. *)
         ap_inlined = Default_inline;
+        ap_specialised = Default_specialise;
       }
     in
-    close t env (Lambda.Lapply apply)
+    close t env ?debuginfo (Lambda.Lapply apply)
   | Lprim (Praise kind, [Levent (arg, event)]) ->
     let arg_var = Variable.create "raise_arg" in
     Flambda.create_let arg_var (Expr (close t env arg))
       (name_expr
-        (Prim (Praise kind, [arg_var], Debuginfo.from_raise event))
+        (Prim (Praise kind, [arg_var],
+               default_debuginfo ~inner_debuginfo:(Debuginfo.from_raise event)
+                 debuginfo))
         ~name:"raise")
   | Lprim (Pfield _, [Lprim (Pgetglobal id, [])])
       when Ident.same id t.current_unit_id ->
@@ -418,7 +420,11 @@ and close t env (lam : Lambda.lambda) : Flambda.t =
       ~evaluation_order:`Right_to_left
       ~name:(name ^ "_arg")
       ~create_body:(fun args ->
-        name_expr (Prim (p, args, Debuginfo.none)) ~name)
+        let inner_debuginfo =
+          Debuginfo.from_filename Debuginfo.Dinfo_call t.filename
+        in
+        name_expr (Prim (p, args, default_debuginfo debuginfo ~inner_debuginfo))
+          ~name)
   | Lswitch (arg, sw) ->
     let scrutinee = Variable.create "switch" in
     let aux (i, lam) = i, close t env lam in
@@ -484,7 +490,13 @@ and close t env (lam : Lambda.lambda) : Flambda.t =
     let new_value_var = Variable.create "new_value" in
     Flambda.create_let new_value_var (Expr (close t env new_value))
       (Assign { being_assigned; new_value = new_value_var; })
-  | Levent (lam, ev) -> add_debug_info ev (close t env lam)
+  | Levent (lam, ev) -> begin
+      match ev.lev_kind with
+      | Lev_after _ ->
+          close t env ~debuginfo:(Debuginfo.from_call ev) lam
+      | _ ->
+          close t env lam
+    end
   | Lifused _ ->
     (* [Lifused] is used to mark that this expression should be alive only if
        an identifier is.  Every use should have been removed by
@@ -537,6 +549,7 @@ and close_functions t external_env function_declarations : Flambda.named =
     let fun_decl =
       Flambda.create_function_declaration ~params ~body ~stub ~dbg
         ~inline:(Function_decl.inline decl)
+        ~specialise:(Function_decl.specialise decl)
         ~is_a_functor:(Function_decl.is_a_functor decl)
     in
     match Function_decl.kind decl with
@@ -551,8 +564,6 @@ and close_functions t external_env function_declarations : Flambda.named =
   in
   let function_decls =
     Flambda.create_function_declarations
-      ~set_of_closures_id:
-        (Set_of_closures_id.create (Compilation_unit.get_current_exn ()))
       ~funs:
         (List.fold_left close_one_function Variable.Map.empty
           (Function_decls.to_list function_declarations))
@@ -566,12 +577,17 @@ and close_functions t external_env function_declarations : Flambda.named =
           let internal_var =
             Env.find_var closure_env_without_parameters var
           in
-          let external_var = Env.find_var external_env var in
+          let external_var : Flambda.specialised_to =
+            { var = Env.find_var external_env var;
+              projection = None;
+            }
+          in
           Variable.Map.add internal_var external_var map)
         all_free_idents Variable.Map.empty
     in
     Flambda.create_set_of_closures ~function_decls ~free_vars
       ~specialised_args:Variable.Map.empty
+      ~direct_call_surrogates:Variable.Map.empty
   in
   Set_of_closures set_of_closures
 
@@ -586,7 +602,8 @@ and close_let_bound_expression t ?let_rec_ident let_bound_var env
     let closure_bound_var = Variable.rename let_bound_var in
     let decl =
       Function_decl.create ~let_rec_ident ~closure_bound_var ~kind ~params
-        ~body ~inline:attr.inline ~is_a_functor:attr.is_a_functor
+        ~body ~inline:attr.inline ~specialise:attr.specialise
+        ~is_a_functor:attr.is_a_functor
     in
     let set_of_closures_var =
       Variable.rename let_bound_var ~append:"_set_of_closures"
@@ -604,14 +621,15 @@ and close_let_bound_expression t ?let_rec_ident let_bound_var env
         ~name:(Variable.unique_name let_bound_var)))
   | lam -> Expr (close t env lam)
 
-let lambda_to_flambda ~backend ~module_ident ~size lam : Flambda.program =
+let lambda_to_flambda ~backend ~module_ident ~size ~filename lam
+      : Flambda.program =
   let lam = add_default_argument_wrappers lam in
   let module Backend = (val backend : Backend_intf.S) in
   let compilation_unit = Compilation_unit.get_current_exn () in
   let t =
-    { current_unit_id =
-        Compilation_unit.get_persistent_ident compilation_unit;
+    { current_unit_id = Compilation_unit.get_persistent_ident compilation_unit;
       symbol_for_global' = Backend.symbol_for_global';
+      filename;
       imported_symbols = Symbol.Set.empty;
     }
   in

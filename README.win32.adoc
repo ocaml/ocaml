@@ -7,7 +7,7 @@ There are no less than five ports of OCaml for MS Windows available:
   - a native Win32 port, built with the 32-bit version of the gcc
     compiler from the mingw-w64 project, packaged in Cygwin
     (under the name mingw64-i686);
-  - a native Win32 port, built with the 64-bit version of the gcc
+  - a native Win64 port, built with the 64-bit version of the gcc
     compiler from the mingw-w64 project, packaged in Cygwin
     (under the name mingw64-x86_64);
   - a port consisting of the Unix sources compiled under the Cygwin
@@ -87,15 +87,16 @@ for Windows.
 You will need the following software components to perform the recompilation:
 
 - Windows NT, 2000, XP, Vista, or 7 (32 or 64 bits).
-- Items <<tps1,[1]>> and <<tps2,[2]>> from the list of recommended software above.
+- Items <<tps1,[1]>> and <<tps2,[2]>> from the list of recommended software
+  above.
 - The Cygwin port of GNU tools, available from http://www.cygwin.com/
   Install at least the following packages (and their dependencies):
   diffutils, dos2unix, gcc-core, make, ncurses.
 
 First, you need to set up your cygwin environment for using the MS
-tools.  The following assumes that you have installed <<tps1,[1]>>, <<tps2,[2]>>, and [3]
-in their default directories.  If this is not the case, you will need
-to adjust the paths accordingly.
+tools.  The following assumes that you have installed <<tps1,[1]>>,
+<<tps2,[2]>>, and [3] in their default directories.  If this is not
+the case, you will need to adjust the paths accordingly.
 
 . Open a Windows Command Prompt and enter the following command:
 
@@ -408,14 +409,15 @@ for Windows.
 
 You will need the following software components to perform the recompilation:
 - Windows XP 64, Windows Server 64, or Windows 7 64.
-- Items <<tps-native1,[1]>> and <<tps-native2,[2]>> from the list of recommended software above.
+- Items <<tps-native1,[1]>> and <<tps-native2,[2]>> from the list of
+  recommended software above.
 - The Cygwin port of GNU tools, available from http://www.cygwin.com/
   Install at least the following packages: diffutils, make, ncurses.
 
 First, you need to set up your cygwin environment for using the MS
-tools.  The following assumes that you have installed <<tps-native1,[1]>> and <<tps-native2,[2]>>
-in their default directories.  If this is not the case, you will need
-to adjust the paths accordingly.
+tools.  The following assumes that you have installed <<tps-native1,[1]>>
+and <<tps-native2,[2]>> in their default directories.  If this is not
+the case, you will need to adjust the paths accordingly.
 
 . Open a Windows Command Prompt and enter the following commands:
 

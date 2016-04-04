@@ -44,7 +44,7 @@ record-decl:
          '{' field-decl { ';' field-decl } [';'] '}'
 ;
 constr-decl:
-          (constr-name || '()') [ 'of' constr-args ]
+          (constr-name || '[]' || '(::)') [ 'of' constr-args ]
 ;
 constr-args:
           typexpr { '*' typexpr }

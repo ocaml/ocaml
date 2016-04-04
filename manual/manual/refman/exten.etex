@@ -1383,7 +1383,8 @@ can trigger a deprecated warning are documented in~\ref{s:bigarray-indexop-compa
 
 \section{Attributes}\label{s:attributes}
 
-(Introduced in OCaml 4.02)
+(Introduced in OCaml 4.02,
+infix notations for constructs other than expressions added in 4.03)
 
 Attributes are ``decorations'' of the syntax tree which are mostly
 ignored by the type-checker but can be used by external tools.  An
@@ -1551,17 +1552,24 @@ cannot be attached to these floating attributes in @class-field-spec@
 and @class-field@.)
 
 
-It is also possible to specify attributes on expressions using an
-infix syntax.  This applies to all expressions starting with one or
-two keywords: "assert", "begin", "for", "fun", "function", "if",
-"lazy", "let", "let module", "let open", "match", "new", "object",
-"try", "while".  Those expressions supports adding one or several
-attributes just after those initial keyword(s).  For instance:
+It is also possible to specify attributes using an infix syntax. For instance:
 
 \begin{verbatim}
-let [@foo][@bar x] x = 2 in x + 1 === (let x = 2 in x + 1)[@foo][@bar x]
-begin[@foo] ... end               === (begin ... end)[@foo]
+let[@foo] x = 2 in x + 1          === (let x = 2 [@@foo] in x + 1)
+begin[@foo][@bar x] ... end       === (begin ... end)[@foo][@@bar x]
+module[@foo] M = ...              === module M = ... [@@foo]
+type[@foo] t = T                  === type t = T [@@foo]
+method[@foo] m = ...              === method m = ... [@@foo]
 \end{verbatim}
+
+For "let", the attributes are applied to each bindings:
+
+\begin{verbatim}
+let[@foo] x = 2 and y = 3 in x + y === (let x = 2 [@@foo] and y = 3 in x + y)
+let[@foo] x = 2
+and[@bar] y = 3 in x + y           === (let x = 2 [@@foo] and y = 3 [@bar] in x + y)
+\end{verbatim}
+
 
 \subsection{Built-in attributes}
 
@@ -1634,6 +1642,12 @@ Some attributes are understood by the type-checker:
   ``noalloc'', ``unboxed'' and ``untagged'' can be used on external
   definitions to obtain finer control over the C-to-OCaml interface. See
   \ref{s:C-cheaper-call} for more details.
+\item
+  ``ocaml.immediate'' or ``immediate'' applied on an abstract type mark the type as
+  having a non-pointer implementation (e.g. ``int'', ``bool'', ``char'' or
+  enumerated types). Mutation of these immediate types does not activate the
+  garbage collector's write barrier, which can significantly boost performance in
+  programs relying heavily on mutable state.
 \end{itemize}
 
 \begin{verbatim}
@@ -1666,6 +1680,14 @@ type fragile =
 let f = function
 | Int 0 | String "constant" -> () (* trigger warning 52 *)
 | _ -> ()
+
+module Immediate: sig
+  type t [@@immediate]
+  val x: t ref
+end = struct
+  type t = A | B
+  let x = ref 0
+end
   ....
 
 \end{verbatim}
@@ -1673,7 +1695,8 @@ let f = function
 
 \section{Extension nodes}\label{s:extension-nodes}
 
-(Introduced in OCaml 4.02)
+(Introduced in OCaml 4.02,
+infix notations for constructs other than expressions added in 4.03)
 
 Extension nodes are generic placeholders in the syntax tree. They are
 rejected by the type-checker and are intended to be ``expanded'' by external
@@ -1732,23 +1755,24 @@ class-field:
 ;
 \end{syntax}
 
-An infix form is available for extension nodes as expressions, when
-the payload is a single expression.  This form applies to all
-expressions starting with one or two keywords: the first keyword
-followed by the percent sign and then an extension identifier.
+An infix form is available for extension nodes when
+the payload is of the same kind
+(expression with expression, pattern with pattern ...).
 
 Examples:
 
 \begin{verbatim}
 let%foo x = 2 in x + 1     === [%foo let x = 2 in x + 1]
 begin%foo ... end          === [%foo begin ... end]
+module%foo M = ..          === [%%foo module M = ... ]
+val%foo x : t              === [%%foo: val x : t]
 \end{verbatim}
 
 When this form is used together with the infix syntax for attributes,
 the attributes are considered to apply to the payload:
 
 \begin{verbatim}
-let%foo[@bar] x = 2 in x + 1 === [%foo (let x = 2 in x + 1) [@bar]]
+fun%foo[@bar] x -> x + 1 === [%foo (fun x -> x + 1)[@foo ] ];
 \end{verbatim}
 
 \subsection{Built-in extension nodes}

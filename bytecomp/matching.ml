@@ -1,14 +1,17 @@
-(***********************************************************************)
-(*                                                                     *)
-(*                                OCaml                                *)
-(*                                                                     *)
-(*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         *)
-(*                                                                     *)
-(*  Copyright 1996 Institut National de Recherche en Informatique et   *)
-(*  en Automatique.  All rights reserved.  This file is distributed    *)
-(*  under the terms of the Q Public License version 1.0.               *)
-(*                                                                     *)
-(***********************************************************************)
+(**************************************************************************)
+(*                                                                        *)
+(*                                 OCaml                                  *)
+(*                                                                        *)
+(*             Xavier Leroy, projet Cristal, INRIA Rocquencourt           *)
+(*                                                                        *)
+(*   Copyright 1996 Institut National de Recherche en Informatique et     *)
+(*     en Automatique.                                                    *)
+(*                                                                        *)
+(*   All rights reserved.  This file is distributed under the terms of    *)
+(*   the GNU Lesser General Public License version 2.1, with the          *)
+(*   special exception on linking described in the file LICENSE.          *)
+(*                                                                        *)
+(**************************************************************************)
 
 (* Compilation of pattern matching *)
 
@@ -1521,7 +1524,8 @@ let inline_lazy_force_cond arg loc =
                        ap_loc=loc;
                        ap_func=force_fun;
                        ap_args=[varg];
-                       ap_inlined=Default_inline},
+                       ap_inlined=Default_inline;
+                       ap_specialised=Default_specialise},
                 (* ... arg *)
                   varg))))
 
@@ -1543,7 +1547,8 @@ let inline_lazy_force_switch arg loc =
                            ap_loc=loc;
                            ap_func=force_fun;
                            ap_args=[varg];
-                           ap_inlined=Default_inline}) ];
+                           ap_inlined=Default_inline;
+                           ap_specialised=Default_specialise}) ];
                sw_failaction = Some varg } ))))
 
 let inline_lazy_force arg loc =
@@ -2978,7 +2983,8 @@ let rec map_return f = function
   | Lsequence (l1, l2) -> Lsequence (l1, map_return f l2)
   | Levent (l, ev) -> Levent (map_return f l, ev)
   | Ltrywith (l1, id, l2) -> Ltrywith (map_return f l1, id, map_return f l2)
-  | Lstaticcatch (l1, b, l2) -> Lstaticcatch (map_return f l1, b, map_return f l2)
+  | Lstaticcatch (l1, b, l2) ->
+      Lstaticcatch (map_return f l1, b, map_return f l2)
   | Lstaticraise _ | Lprim(Praise _, _) as l -> l
   | l -> f l
 

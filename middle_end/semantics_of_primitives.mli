@@ -1,6 +1,6 @@
 (**************************************************************************)
 (*                                                                        *)
-(*                                OCaml                                   *)
+(*                                 OCaml                                  *)
 (*                                                                        *)
 (*                       Pierre Chambart, OCamlPro                        *)
 (*           Mark Shinwell and Leo White, Jane Street Europe              *)
@@ -10,7 +10,7 @@
 (*                                                                        *)
 (*   All rights reserved.  This file is distributed under the terms of    *)
 (*   the GNU Lesser General Public License version 2.1, with the          *)
-(*   special exception on linking described in the file ../LICENSE.       *)
+(*   special exception on linking described in the file LICENSE.          *)
 (*                                                                        *)
 (**************************************************************************)
 
@@ -23,12 +23,12 @@
     of the world.  For example, it must not write to any mutable storage,
     call arbitrary external functions or change control flow (e.g. by raising
     an exception).  Note that allocation is not "No effects" (see below).
- 
+
     It is assumed in the compiler that applications of primitives with no
     effects, whose results are not used, may be eliminated.  It is further
     assumed that applications of primitives with no effects may be
     duplicated (and thus possibly executed more than once).
- 
+
     (Exceptions arising from allocation points, for example "out of memory" or
     exceptions propagated from finalizers or signal handlers, are treated as
     "effects out of the ether" and thus ignored for our determination here
@@ -43,11 +43,11 @@
     primitives, such applications will never be eligible for duplication.
 
     "Arbitrary effects" covers all other primitives.
- 
+
     "No coeffects" means that the primitive does not observe the effects (in
     the sense described above) of other expressions.  For example, it must not
     read from any mutable storage or call arbitrary external functions.
- 
+
     It is assumed in the compiler that, subject to data dependencies,
     expressions with neither effects nor coeffects may be reordered with
     respect to other expressions.
