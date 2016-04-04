@@ -18,7 +18,7 @@ CAMLYACC ?= ../boot/ocamlyacc
 ##########################
 ROOTDIR   = ..
 OCAMLC    = $(CAMLRUN) $(ROOTDIR)/ocamlc -nostdlib -I $(ROOTDIR)/stdlib
-OCAMLOPT  = $(CAMLRUN) $(ROOTDIR)/ocamlopt -nostdlib -I $(ROOTDIR)/stdlib
+OCAMLOPT  = $(if $(wildcard $(ROOTDIR)/flexdll/Makefile),OCAML_FLEXLINK="$(ROOTDIR)/boot/ocamlrun $(ROOTDIR)/flexdll/flexlink.exe") $(CAMLRUN) $(ROOTDIR)/ocamlopt -nostdlib -I $(ROOTDIR)/stdlib
 OCAMLDEP  = $(CAMLRUN) $(ROOTDIR)/tools/ocamldep
 OCAMLLEX  = $(CAMLRUN) $(ROOTDIR)/boot/ocamllex
 OCAMLLIB  = $(LIBDIR)

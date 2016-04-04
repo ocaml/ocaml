@@ -847,7 +847,7 @@ and class_structure cl_num final val_env met_env loc
   if added <> [] then
     Location.prerr_warning loc (Warnings.Implicit_public_methods added);
   let sign = if final then sign else
-      {sign with csig_self = Ctype.expand_head val_env public_self} in
+      {sign with Types.csig_self = Ctype.expand_head val_env public_self} in
   {
     cstr_self = pat;
     cstr_fields = fields;

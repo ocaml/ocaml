@@ -87,8 +87,7 @@ let remove_blanks s =
 
 (** Remove first blank characters of each line of a string, until the first '*' *)
 let remove_stars s =
-  let s2 = Str.global_replace (Str.regexp ("^"^blank^"*\\*")) "" s in
-  s2
+  Str.global_replace (Str.regexp ("^"^blank^"*\\*")) "" s
 }
 
 let lowercase = ['a'-'z' '\223'-'\246' '\248'-'\255' '_']

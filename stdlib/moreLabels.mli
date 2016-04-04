@@ -34,6 +34,8 @@ module Hashtbl : sig
   val remove : ('a, 'b) t -> 'a -> unit
   val replace : ('a, 'b) t -> key:'a -> data:'b -> unit
   val iter : f:(key:'a -> data:'b -> unit) -> ('a, 'b) t -> unit
+  val filter_map_inplace:
+    f:(key:'a -> data:'b -> 'b option) -> ('a, 'b) t -> unit
   val fold :
       f:(key:'a -> data:'b -> 'c -> 'c) ->
         ('a, 'b) t -> init:'c -> 'c
@@ -58,6 +60,8 @@ module Hashtbl : sig
       val replace : 'a t -> key:key -> data:'a -> unit
       val mem : 'a t -> key -> bool
       val iter : f:(key:key -> data:'a -> unit) -> 'a t -> unit
+      val filter_map_inplace:
+        f:(key:key -> data:'a -> 'a option) -> 'a t -> unit
       val fold :
           f:(key:key -> data:'a -> 'b -> 'b) ->
           'a t -> init:'b -> 'b
@@ -79,6 +83,8 @@ module Hashtbl : sig
       val replace : 'a t -> key:key -> data:'a -> unit
       val mem : 'a t -> key -> bool
       val iter : f:(key:key -> data:'a -> unit) -> 'a t -> unit
+      val filter_map_inplace:
+        f:(key:key -> data:'a -> 'a option) -> 'a t -> unit
       val fold :
           f:(key:key -> data:'a -> 'b -> 'b) ->
           'a t -> init:'b -> 'b

@@ -767,7 +767,7 @@ let complete_constrs p all_tags =
 
 let build_other_constrs env p =
   match p.pat_desc with
-    Tpat_construct (_, {cstr_tag=Cstr_constant _|Cstr_block _}, _) -> 
+    Tpat_construct (_, {cstr_tag=Cstr_constant _|Cstr_block _}, _) ->
       let get_tag = function
         | {pat_desc = Tpat_construct (_,c,_)} -> c.cstr_tag
         | _ -> fatal_error "Parmatch.get_tag" in
@@ -976,7 +976,7 @@ let rec satisfiables pss qs = match pss with
         satisfiables pss (q::qs)
     | {pat_desc = (Tpat_any | Tpat_var(_))}::qs ->
         let q0 = discr_pat omega pss in
-        let wild p = 
+        let wild p =
           List.map (fun qs -> p::qs) (satisfiables (filter_extra pss) qs) in
         begin match filter_all q0 pss with
           (* first column of pss is made of variables only *)
@@ -2202,8 +2202,7 @@ let filter_all =
        to get the definitive list of groups *)
     let env = filter_rec [] rs in
     (* then add the omega rows to all groups *)
-    let env = filter_omega env rs in
-    env
+    filter_omega env rs
 
 (* Compute stable bindings *)
 
@@ -2216,7 +2215,7 @@ let rec do_stable rs = match rs with
     match filter_all rs with
     | [] ->
         do_stable (List.map snd rs)
-    | (_,rs)::env ->        
+    | (_,rs)::env ->
         List.fold_left
           (fun xs (_,rs) -> IdSet.inter xs (do_stable rs))
           (do_stable rs) env
@@ -2238,8 +2237,8 @@ let stable p = do_stable [{unseen=[p]; seen=[];}]
 
   Not doing so will yield excessive  warning in
   (module (M:S) } ...) when true -> ....
-  as M is always present in 
-  let module M_mod = unpack M .. in true 
+  as M is always present in
+  let module M_mod = unpack M .. in true
 *)
 
 let all_rhs_idents exp =
@@ -2278,7 +2277,7 @@ let all_rhs_idents exp =
 
 let check_ambiguous_bindings =
   let open Warnings in
-  let warn0 = Ambiguous_pattern [] in  
+  let warn0 = Ambiguous_pattern [] in
   fun cases ->
     if is_active warn0 then
       List.iter

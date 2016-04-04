@@ -43,7 +43,17 @@ SET_LD_PATH=CAML_LD_LIBRARY_PATH="$(LD_PATH)"
 
 include $(TOPDIR)/config/Makefile
 
-OCAMLRUN=$(TOPDIR)/boot/ocamlrun$(EXE)
+ifneq ($(USE_RUNTIME),)
+#Check USE_RUNTIME value
+ifeq ($(findstring $(USE_RUNTIME),d i),)
+$(error If set, USE_RUNTIME must be equal to "d" (debug runtime) or "i" (instrumented runtime))
+endif
+
+RUNTIME_VARIANT=-I $(OTOPDIR)/asmrun -I $(OTOPDIR)/byterun -runtime-variant $(USE_RUNTIME)
+export OCAMLRUNPARAM?=v=0
+endif
+
+OCAMLRUN=$(TOPDIR)/byterun/ocamlrun$(USE_RUNTIME)$(EXE)
 
 OCFLAGS=-nostdlib -I $(OTOPDIR)/stdlib $(COMPFLAGS)
 OCOPTFLAGS=
@@ -56,15 +66,16 @@ endif
 
 OCAML=$(OCAMLRUN) $(OTOPDIR)/ocaml $(OCFLAGS) \
       -init $(OTOPDIR)/testsuite/lib/empty
-OCAMLC=$(OCAMLRUN) $(OTOPDIR)/ocamlc $(CUSTOM) $(OCFLAGS)
-OCAMLOPT=$(OCAMLRUN) $(OTOPDIR)/ocamlopt $(OCFLAGS)
+FLEXLINK_PREFIX=$(if $(FLEXLINK),$(if $(wildcard $(TOPDIR)/flexdll/Makefile),OCAML_FLEXLINK="$(WINTOPDIR)/boot/ocamlrun $(WINTOPDIR)/flexdll/flexlink.exe" ))
+OCAMLC=$(FLEXLINK_PREFIX)$(OCAMLRUN) $(OTOPDIR)/ocamlc $(CUSTOM) $(OCFLAGS) $(RUNTIME_VARIANT)
+OCAMLOPT=$(FLEXLINK_PREFIX)$(OCAMLRUN) $(OTOPDIR)/ocamlopt $(OCFLAGS) $(RUNTIME_VARIANT)
 OCAMLDOC=$(OCAMLRUN) $(OTOPDIR)/ocamldoc/ocamldoc
 OCAMLLEX=$(OCAMLRUN) $(OTOPDIR)/lex/ocamllex
-OCAMLMKLIB=$(OCAMLRUN) $(OTOPDIR)/tools/ocamlmklib \
-		       -ocamlc "$(OTOPDIR)/boot/ocamlrun$(EXE) \
-		                $(OTOPDIR)/ocamlc $(OCFLAGS)" \
-		       -ocamlopt "$(OTOPDIR)/boot/ocamlrun$(EXE) \
-		                  $(OTOPDIR)/ocamlopt $(OCFLAGS)"
+OCAMLMKLIB=$(FLEXLINK_PREFIX)$(OCAMLRUN) $(OTOPDIR)/tools/ocamlmklib \
+		       -ocamlc "$(OTOPDIR)/byterun/ocamlrun$(USE_RUNTIME)$(EXE) \
+		                $(OTOPDIR)/ocamlc $(OCFLAGS) $(RUNTIME_VARIANT)" \
+		       -ocamlopt "$(OTOPDIR)/byterun/ocamlrun$(USE_RUNTIME)$(EXE) \
+		                  $(OTOPDIR)/ocamlopt $(OCFLAGS) $(RUNTIME_VARIANT)"
 OCAMLYACC=$(TOPDIR)/yacc/ocamlyacc$(EXE)
 OCAMLBUILD=$(TOPDIR)/_build/ocamlbuild/ocamlbuild.native
 DUMPOBJ=$(OCAMLRUN) $(OTOPDIR)/tools/dumpobj
@@ -91,7 +102,7 @@ defaultclean:
 	done
 
 .SUFFIXES:
-.SUFFIXES: .mli .ml .mly .mll .cmi .cmo .cmx .cmm .cmxa .s .S .o .so .c .f
+.SUFFIXES: .mli .ml .mly .mll .cmi .cmo .cmx .cmm .cmxa .s .S .$(O) .so .c .f
 
 .mli.cmi:
 	@$(OCAMLC) -c $(ADD_COMPFLAGS) $<
@@ -121,6 +132,11 @@ defaultclean:
 .cmm.o:
 	@$(OCAMLRUN) ./codegen $*.cmm > $*.s
 	@$(ASM) -o $*.o $*.s
+
+.cmm.obj:
+	@$(OCAMLRUN) ./codegen $*.cmm | grep -v "_caml_\(young_ptr\|young_limit\|extra_params\|allocN\|raise_exn\|reraise_exn\)" > $*.s
+	@set -o pipefail ; \
+	$(ASM) $*.obj $*.s | tail -n +2
 
 .S.o:
 	@$(ASPP) $(ASPPFLAGS) -DSYS_$(SYSTEM) -DMODEL_$(MODEL) -o $*.o $*.S

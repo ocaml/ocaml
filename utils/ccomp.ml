@@ -48,25 +48,59 @@ let quote_optfile = function
   | None -> ""
   | Some f -> Filename.quote f
 
+let display_msvc_output file name =
+  let c = open_in file in
+  try
+    let first = input_line c in
+    if first <> Filename.basename name then
+      print_string first;
+    while true do
+      print_string (input_line c)
+    done
+  with _ ->
+    close_in c;
+    Sys.remove file
+
 let compile_file ~output_name name =
-  command
-    (Printf.sprintf
-       "%s%s -c %s %s %s %s %s"
-       (match !Clflags.c_compiler with
-        | Some cc -> cc
-        | None ->
-            if !Clflags.native_code
-            then Config.native_c_compiler
-            else Config.bytecomp_c_compiler)
-       (match output_name, Config.ccomp_type with
-          | Some n, "msvc" -> " /Fo" ^ Filename.quote n
-          | Some n, _ -> " -o " ^ Filename.quote n
-          | None, _ -> "")
-       (if !Clflags.debug && Config.ccomp_type <> "msvc" then "-g" else "")
-       (String.concat " " (List.rev !Clflags.all_ccopts))
-       (quote_prefixed "-I" (List.rev !Clflags.include_dirs))
-       (Clflags.std_include_flag "-I")
-       (Filename.quote name))
+  let (pipe, file) =
+    if Config.ccomp_type = "msvc" && not !Clflags.verbose then
+      try
+        let (t, c) = Filename.open_temp_file "msvc" "stdout" in
+        close_out c;
+        (Printf.sprintf " > %s" (Filename.quote t), t)
+      with _ ->
+        ("", "")
+    else
+      ("", "") in
+  let exit =
+    command
+      (Printf.sprintf
+         "%s%s -c %s %s %s %s %s%s"
+         (match !Clflags.c_compiler with
+          | Some cc -> cc
+          | None ->
+              if !Clflags.native_code
+              then Config.native_c_compiler
+              else Config.bytecomp_c_compiler)
+         (match output_name, Config.ccomp_type with
+            | Some n, "msvc" -> " /Fo" ^ Filename.quote n
+            | Some n, _ -> " -o " ^ Filename.quote n
+            | None, _ -> "")
+         (if !Clflags.debug && Config.ccomp_type <> "msvc" then "-g" else "")
+         (String.concat " " (List.rev !Clflags.all_ccopts))
+         (quote_prefixed "-I" (List.rev !Clflags.include_dirs))
+         (Clflags.std_include_flag "-I")
+         (Filename.quote name)
+         (* cl tediously includes the name of the C file as the first thing it
+            outputs (in fairness, the tedious thing is that there's no switch to
+            disable this behaviour). In the absence of the Unix module, use
+            a temporary file to filter the output (cannot pipe the output to a
+            filter because this removes the exit status of cl, which is wanted.
+          *)
+         pipe) in
+  if pipe <> ""
+  then display_msvc_output file name;
+  exit
 
 let create_archive archive file_list =
   Misc.remove_file archive;

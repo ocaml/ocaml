@@ -294,7 +294,7 @@ CAMLexport value caml_alloc_sprintf(const char * format, ...)
   int n;
   value res;
 
-#ifndef _WIN32
+#if !defined(_WIN32) || defined(_UCRT)
   /* C99-compliant implementation */
   va_start(args, format);
   /* "vsnprintf(dest, sz, format, args)" writes at most "sz" characters

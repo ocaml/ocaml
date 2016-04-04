@@ -186,6 +186,7 @@ let read_OCAMLPARAM ppf position =
       | "nodynlink" -> clear "nodynlink" [ dlcode ] v
       | "short-paths" -> clear "short-paths" [ real_paths ] v
       | "trans-mod" -> set "trans-mod" [ transparent_modules ] v
+      | "opaque" -> set "opaque" [ opaque ] v
 
       | "pp" -> preprocessor := Some v
       | "runtime-variant" -> runtime_variant := v
@@ -205,13 +206,18 @@ let read_OCAMLPARAM ppf position =
       | "wwe" ->               Warnings.parse_options false v
 
       (* inlining *)
-      | "inline" -> begin try
-          inline_threshold := 8 * int_of_string v
-        with _ ->
-          Location.print_warning Location.none ppf
-            (Warnings.Bad_env_variable ("OCAMLPARAM",
-                                        "non-integer parameter for \"inline\""))
-        end
+      | "inline" ->
+          let module F = Float_arg_helper in
+          begin match F.parse_no_error v inline_threshold with
+          | F.Ok -> ()
+          | F.Parse_failed exn ->
+              let error =
+                Printf.sprintf "bad syntax for \"inline\": %s"
+                  (Printexc.to_string exn)
+              in
+              Location.print_warning Location.none ppf
+                (Warnings.Bad_env_variable ("OCAMLPARAM", error))
+          end
 
       (* color output *)
       | "color" ->

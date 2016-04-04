@@ -149,7 +149,8 @@ let rec close_const t env (const : Lambda.structured_constant)
   | Const_pointer c -> Const (Const_pointer c), "pointer"
   | Const_immstring c -> Allocated_const (Immutable_string c), "immstring"
   | Const_float_array c ->
-    Allocated_const (Float_array (List.map float_of_string c)), "float_array"
+    Allocated_const (Immutable_float_array (List.map float_of_string c)),
+      "float_array"
   | Const_block _ ->
     Expr (close t env (eliminate_const_block const)), "const_block"
 

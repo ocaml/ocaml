@@ -102,6 +102,7 @@ module HofM (M: Map.S) : Hashtbl.S with type key = M.key =
     let fold = Hashtbl.fold
     let length = Hashtbl.length
     let stats = Hashtbl.stats
+    let filter_map_inplace = Hashtbl.filter_map_inplace
   end
 
 module HS1 = HofM(MS)

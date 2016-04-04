@@ -427,7 +427,6 @@ let safe_mod_bi =
 
 let test_bool = function
     Cop(Caddi, [Cop(Clsl, [c; Cconst_int 1]); Cconst_int 1]) -> c
-  | Cop(Clsl, [c; Cconst_int 1]) -> c
   | c -> Cop(Ccmpi Cne, [c; Cconst_int 1])
 
 (* Float *)
@@ -687,9 +686,9 @@ let rec expr_size env = function
       expr_size env body
   | Uprim(Pmakeblock(tag, mut), args, _) ->
       RHS_block (List.length args)
-  | Uprim(Pmakearray(Paddrarray | Pintarray), args, _) ->
+  | Uprim(Pmakearray((Paddrarray | Pintarray), _), args, _) ->
       RHS_block (List.length args)
-  | Uprim(Pmakearray(Pfloatarray), args, _) ->
+  | Uprim(Pmakearray(Pfloatarray, _), args, _) ->
       RHS_floatblock (List.length args)
   | Uprim (Pduprecord ((Record_regular | Record_inlined _), sz), _, _) ->
       RHS_block sz
@@ -1504,19 +1503,27 @@ let rec transl env e =
           make_alloc tag (List.map (transl env) args)
       | (Pccall prim, args) ->
           transl_ccall env prim args dbg
-      | (Pmakearray kind, []) ->
+      | (Pduparray (kind, _), [Uprim (Pmakearray (kind', _), args, _dbg)]) ->
+          (* We arrive here in two cases:
+             1. When using Closure, all the time.
+             2. When using Flambda, if a float array longer than
+             [Translcore.use_dup_for_constant_arrays_bigger_than] turns out
+             to be non-constant.
+             If for some reason Flambda fails to lift a constant array we
+             could in theory also end up here.
+             Note that [kind] above is unconstrained, but with the current
+             state of [Translcore], we will in fact only get here with
+             [Pfloatarray]s. *)
+          assert (kind = kind');
+          transl_make_array env kind args
+      | (Pduparray _, [arg]) ->
+          let prim_obj_dup =
+            Primitive.simple ~name:"caml_obj_dup" ~arity:1 ~alloc:true
+          in
+          transl_ccall env prim_obj_dup [arg] dbg
+      | (Pmakearray (kind, _), []) ->
           transl_structured_constant (Uconst_block(0, []))
-      | (Pmakearray kind, args) ->
-          begin match kind with
-            Pgenarray ->
-              Cop(Cextcall("caml_make_array", typ_val, true, Debuginfo.none),
-                  [make_alloc 0 (List.map (transl env) args)])
-          | Paddrarray | Pintarray ->
-              make_alloc 0 (List.map (transl env) args)
-          | Pfloatarray ->
-              make_float_alloc Obj.double_array_tag
-                              (List.map (transl_unbox_float env) args)
-          end
+      | (Pmakearray (kind, _), args) -> transl_make_array env kind args
       | (Pbigarrayref(unsafe, num_dims, elt_kind, layout), arg1 :: argl) ->
           let elt =
             bigarray_get unsafe elt_kind layout
@@ -1666,6 +1673,17 @@ let rec transl env e =
   | Uunreachable ->
       Cop(Cload Word_int, [Cconst_int 0])
 
+and transl_make_array env kind args =
+  match kind with
+  | Pgenarray ->
+      Cop(Cextcall("caml_make_array", typ_val, true, Debuginfo.none),
+          [make_alloc 0 (List.map (transl env) args)])
+  | Paddrarray | Pintarray ->
+      make_alloc 0 (List.map (transl env) args)
+  | Pfloatarray ->
+      make_float_alloc Obj.double_array_tag
+                      (List.map (transl_unbox_float env) args)
+
 and transl_ccall env prim args dbg =
   let transl_arg native_repr arg =
     match native_repr with
@@ -1803,8 +1821,8 @@ and transl_prim_1 env p arg dbg =
       tag_int (Cop(Cextcall("caml_bswap16_direct", typ_int, false,
                             Debuginfo.none),
                    [untag_int (transl env arg)]))
-  | _ ->
-      fatal_error "Cmmgen.transl_prim_1"
+  | prim ->
+      fatal_errorf "Cmmgen.transl_prim_1: %a" Printlambda.primitive prim
 
 and transl_prim_2 env p arg1 arg2 dbg =
   match p with
@@ -2075,8 +2093,8 @@ and transl_prim_2 env p arg1 arg2 dbg =
       tag_int (Cop(Ccmpi(transl_comparison cmp),
                      [transl_unbox_int env bi arg1;
                       transl_unbox_int env bi arg2]))
-  | _ ->
-      fatal_error "Cmmgen.transl_prim_2"
+  | prim ->
+      fatal_errorf "Cmmgen.transl_prim_2: %a" Printlambda.primitive prim
 
 and transl_prim_3 env p arg1 arg2 arg3 dbg =
   match p with
@@ -2212,8 +2230,8 @@ and transl_prim_3 env p arg1 arg2 arg3 dbg =
                                           (Cconst_int 7)) idx
                       (unaligned_set_64 ba_data idx newval))))))
 
-  | _ ->
-    fatal_error "Cmmgen.transl_prim_3"
+  | prim ->
+      fatal_errorf "Cmmgen.transl_prim_3: %a" Printlambda.primitive prim
 
 and transl_unbox_float env = function
     Uconst(Uconst_ref(_, Some (Uconst_float f))) -> Cconst_float f
@@ -2571,9 +2589,9 @@ let transl_all_functions_and_emit_all_constants cont =
   in
   aux StringSet.empty cont
 
-(* Build the table of GC roots for toplevel modules *)
+(* Build the NULL terminated array of gc roots *)
 
-let emit_module_roots_table ~symbols cont =
+let emit_gc_roots_table ~symbols cont =
   let table_symbol = Compilenv.make_symbol (Some "gc_roots") in
   Cdata(Cglobal_symbol table_symbol ::
         Cdefine_symbol table_symbol ::
@@ -2609,7 +2627,7 @@ let emit_preallocated_blocks preallocated_blocks cont =
     List.map (fun ({ Clambda.symbol }:Clambda.preallocated_block) -> symbol)
       preallocated_blocks
   in
-  let c1 = emit_module_roots_table ~symbols cont in
+  let c1 = emit_gc_roots_table ~symbols cont in
   List.fold_left preallocate_block c1 preallocated_blocks
 
 (* Translate a compilation unit *)

@@ -70,7 +70,7 @@ native:
 	  $(OCAMLOPT) -g -o $(EXECNAME) $$file; \
 	  printf " ... testing '$$file' with ocamlopt:"; \
 	  F="`basename $$file .ml`"; \
-	  (OCAMLRUNPARAM=$OCAMLRUNPARAM,b=1 \
+	  (OCAMLRUNPARAM=$$OCAMLRUNPARAM,b=1 \
             ./$(EXECNAME) $$arg || true) \
 	       >$$F.native.result 2>&1; \
 	  $(DIFF) $$F.reference $$F.native.result >/dev/null \

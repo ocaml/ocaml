@@ -110,7 +110,7 @@ let mk_init f =
 ;;
 
 let mk_inline f =
-  "-inline", Arg.Int f, "<n>  Set aggressiveness of inlining to <n>"
+  "-inline", Arg.String f, "<n>  Set aggressiveness of inlining to <n>"
 ;;
 
 let mk_intf f =
@@ -605,7 +605,7 @@ end;;
 
 module type Optcommon_options = sig
   val _compact : unit -> unit
-  val _inline : int -> unit
+  val _inline : string -> unit
 
   val _dclambda : unit -> unit
   val _dcmm : unit -> unit

@@ -29,7 +29,7 @@ CUSTOM_FLAG=`if [ -n "$(C_FILES)" ]; then echo '-custom'; fi`
 ADD_CFLAGS+=$(CUSTOM_FLAG)
 MYRUNTIME=`if [ -z "$(C_FILES)$(CUSTOM)" ]; then echo '$(OCAMLRUN)'; fi`
 
-CC=$(NATIVECC) $(NATIVECCCOMPOPTS)
+C_INCLUDES+=-I $(CTOPDIR)/byterun
 
 .PHONY: default
 default:
@@ -39,7 +39,7 @@ default:
 .PHONY: compile
 compile: $(ML_FILES)
 	@for file in $(C_FILES); do \
-	  $(NATIVECC) $(NATIVECCCOMPOPTS) -c -I$(CTOPDIR)/byterun $$file.c; \
+	  $(OCAMLC) -c $(C_INCLUDES) $$file.c; \
 	done;
 	@if $(NATIVECODE_ONLY); then : ; else \
 	  rm -f program.byte program.byte.exe; \

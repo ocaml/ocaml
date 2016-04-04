@@ -191,6 +191,20 @@ let iter f h =
     do_bucket d.(i)
   done
 
+let filter_map_inplace f h =
+  let rec do_bucket = function
+    | Empty ->
+        Empty
+    | Cons(k, d, rest) ->
+        match f k d with
+        | None -> do_bucket rest
+        | Some new_d -> Cons(k, new_d, do_bucket rest)
+  in
+  let d = h.data in
+  for i = 0 to Array.length d - 1 do
+    d.(i) <- do_bucket d.(i)
+  done
+
 let fold f h init =
   let rec do_bucket b accu =
     match b with
@@ -261,6 +275,7 @@ module type S =
     val replace : 'a t -> key -> 'a -> unit
     val mem : 'a t -> key -> bool
     val iter: (key -> 'a -> unit) -> 'a t -> unit
+    val filter_map_inplace: (key -> 'a -> 'a option) -> 'a t -> unit
     val fold: (key -> 'a -> 'b -> 'b) -> 'a t -> 'b -> 'b
     val length: 'a t -> int
     val stats: 'a t -> statistics
@@ -281,6 +296,7 @@ module type SeededS =
     val replace : 'a t -> key -> 'a -> unit
     val mem : 'a t -> key -> bool
     val iter : (key -> 'a -> unit) -> 'a t -> unit
+    val filter_map_inplace: (key -> 'a -> 'a option) -> 'a t -> unit
     val fold : (key -> 'a -> 'b -> 'b) -> 'a t -> 'b -> 'b
     val length : 'a t -> int
     val stats: 'a t -> statistics
@@ -373,6 +389,7 @@ module MakeSeeded(H: SeededHashedType): (SeededS with type key = H.t) =
       mem_in_bucket h.data.(key_index h key)
 
     let iter = iter
+    let filter_map_inplace = filter_map_inplace
     let fold = fold
     let length = length
     let stats = stats
