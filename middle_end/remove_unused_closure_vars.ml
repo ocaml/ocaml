@@ -14,6 +14,8 @@
 (*                                                                        *)
 (**************************************************************************)
 
+[@@@ocaml.warning "+a-4-9-30-40-41-42"]
+
 (** A variable in a closure can either be used by the closure itself
     or by an inlined version of the function. *)
 let remove_unused_closure_variables program =

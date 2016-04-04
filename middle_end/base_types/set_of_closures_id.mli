@@ -14,6 +14,8 @@
 (*                                                                        *)
 (**************************************************************************)
 
+[@@@ocaml.warning "+a-4-9-30-40-41-42"]
+
 (** An identifier, unique across the whole program, that identifies a set
     of a closures (viz. [Set_of_closures]). *)
 

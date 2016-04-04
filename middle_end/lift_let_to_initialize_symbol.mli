@@ -14,6 +14,8 @@
 (*                                                                        *)
 (**************************************************************************)
 
+[@@@ocaml.warning "+a-4-9-30-40-41-42"]
+
 (** Lift toplevel [Let]-expressions to Flambda [program] constructions such
     that the results of evaluation of such expressions may be accessed
     directly, through symbols, rather than through closures.  The

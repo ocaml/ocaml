@@ -27,7 +27,7 @@ OBJS=parsecmmaux.cmo parsecmm.cmo lexcmm.cmo
 ADD_COMPFLAGS=$(INCLUDES) -w -40 -g
 
 default:
-	@if $(BYTECODE_ONLY) ; then : ; else \
+	@if $(BYTECODE_ONLY) || $(SKIP) ; then $(MAKE) skips ; else \
 	  $(MAKE) all; \
 	fi
 
@@ -44,7 +44,8 @@ parsecmm.mli parsecmm.ml: parsecmm.mly
 lexcmm.ml: lexcmm.mll
 	@$(OCAMLLEX) -q lexcmm.mll
 
-MLCASES=optargs staticalloc bind_tuples
+MLCASES=optargs staticalloc bind_tuples is_static
+ARGS_is_static=-I $(OTOPDIR)/byterun is_in_static_data.c
 
 CASES=fib tak quicksort quicksort2 soli \
       arith checkbound tagged-fib tagged-integr tagged-quicksort tagged-tak
@@ -61,9 +62,14 @@ ARGS_tagged-integr=-DINT_FLOAT -DFUN=test main.c
 ARGS_tagged-quicksort=-DSORT -DFUN=quicksort main.c
 ARGS_tagged-tak=-DUNIT_INT -DFUN=takmain main.c
 
+skips:
+	@for c in $(CASES) $(MLCASES); do \
+	  echo " ... testing '$$c': => skipped"; \
+	done
+
 one_ml:
-	@$(OCAMLOPT) -o $(NAME).exe $(NAME).ml && \
-	./$(NAME).exe && echo " => passed" || echo " => failed"
+	@$(OCAMLOPT) $(ARGS_$(NAME)) -o $(NAME).exe $(NAME).ml && \
+	./$(NAME).exe $(FLAMBDA) && echo " => passed" || echo " => failed"
 
 one:
 	@$(call CC,$(NAME).out $(ARGS_$(NAME)) $(NAME).$(O) $(ARCH).$(O)) \

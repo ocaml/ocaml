@@ -58,7 +58,7 @@ let print_if ppf flag printer arg =
 let (++) x f = f x
 let (+++) (x, y) f = (x, f y)
 
-let implementation ppf sourcefile outputprefix =
+let implementation ppf sourcefile outputprefix ~backend =
   let source_provenance = Timings.File sourcefile in
   Compmisc.init_path true;
   let modulename = module_of_filename ppf sourcefile outputprefix in
@@ -75,19 +75,58 @@ let implementation ppf sourcefile outputprefix =
       ++ Timings.(time (Typing sourcefile))
           (Typemod.type_implementation sourcefile outputprefix modulename env)
       ++ print_if ppf Clflags.dump_typedtree
-        Printtyped.implementation_with_coercion
+          Printtyped.implementation_with_coercion
     in
     if not !Clflags.print_types then begin
-      (typedtree, coercion)
-      ++ Timings.(time (Transl sourcefile))
-          (Translmod.transl_store_implementation modulename)
-      +++ print_if ppf Clflags.dump_rawlambda Printlambda.lambda
-      ++ Timings.(time (Generate sourcefile))
-          (fun (size, lambda) ->
-            (size, Simplif.simplify_lambda lambda)
-            +++ print_if ppf Clflags.dump_lambda Printlambda.lambda
-            ++ Asmgen.compile_implementation ~source_provenance outputprefix ppf;
-            Compilenv.save_unit_info cmxfile)
+      if Config.flambda then begin
+        if !Clflags.o3 then begin
+          Clflags.simplify_rounds := 3;
+          Clflags.use_inlining_arguments_set ~round:0 Clflags.o1_arguments;
+          Clflags.use_inlining_arguments_set ~round:1 Clflags.o2_arguments;
+          Clflags.use_inlining_arguments_set ~round:2 Clflags.o3_arguments
+        end
+        else if !Clflags.o2 then begin
+          Clflags.simplify_rounds := 2;
+          Clflags.use_inlining_arguments_set ~round:0 Clflags.o1_arguments;
+          Clflags.use_inlining_arguments_set ~round:1 Clflags.o2_arguments
+        end
+        else if !Clflags.classic_inlining then begin
+          Clflags.use_inlining_arguments_set Clflags.classic_arguments
+        end;
+        (typedtree, coercion)
+        ++ Timings.(time (Timings.Transl sourcefile)
+            (Translmod.transl_implementation_flambda modulename))
+        +++ print_if ppf Clflags.dump_rawlambda Printlambda.lambda
+        ++ Timings.time (Timings.Generate sourcefile) (fun lambda ->
+          lambda
+          +++ Simplif.simplify_lambda
+          +++ print_if ppf Clflags.dump_lambda Printlambda.lambda
+          ++ (fun ((module_ident, size), lam) ->
+              Middle_end.middle_end ppf ~source_provenance
+                ~prefixname:outputprefix
+                ~size
+                ~module_ident
+                ~backend
+                ~module_initializer:lam)
+          ++ Asmgen.compile_implementation_flambda ~source_provenance
+            outputprefix ~backend ppf;
+          Compilenv.save_unit_info cmxfile)
+      end
+      else begin
+        Clflags.use_inlining_arguments_set Clflags.classic_arguments;
+        (typedtree, coercion)
+        ++ Timings.(time (Transl sourcefile))
+            (Translmod.transl_store_implementation modulename)
+        ++ print_if ppf Clflags.dump_rawlambda Printlambda.program
+        ++ Timings.(time (Generate sourcefile))
+            (fun { Lambda.code; main_module_block_size } ->
+              { Lambda.code = Simplif.simplify_lambda code;
+                main_module_block_size }
+              ++ print_if ppf Clflags.dump_lambda Printlambda.program
+              ++ Asmgen.compile_implementation_clambda ~source_provenance
+                outputprefix ppf;
+              Compilenv.save_unit_info cmxfile)
+      end
     end;
     Warnings.check_fatal ();
     Stypes.dump (Some (outputprefix ^ ".annot"))

@@ -14,6 +14,8 @@
 (*                                                                        *)
 (**************************************************************************)
 
+[@@@ocaml.warning "+a-4-9-30-40-41-42"]
+
 (* CR mshinwell: check comment is up to date *)
 (** The aim of this pass is to assign symbols to values known to be
     constant (in other words, whose values we know at compile time), with

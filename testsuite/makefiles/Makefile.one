@@ -34,7 +34,8 @@ C_INCLUDES+=-I $(CTOPDIR)/byterun
 .PHONY: default
 default:
 	@$(MAKE) compile
-	@$(SET_LD_PATH) $(MAKE) run
+	@$(NATIVECODE_ONLY) && $(BYTECODE_ONLY) && echo " ... testing => skipped" || \
+	$(SET_LD_PATH) $(MAKE) run
 
 .PHONY: compile
 compile: $(ML_FILES)

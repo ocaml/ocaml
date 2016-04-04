@@ -597,7 +597,10 @@ module Color = struct
       mark_close_tag=(mark_close_tag ~or_else:functions.mark_close_tag);
     } in
     pp_set_mark_tags ppf true; (* enable tags *)
-    pp_set_formatter_tag_functions ppf functions'
+    pp_set_formatter_tag_functions ppf functions';
+    (* also setup margins *)
+    pp_set_margin ppf (pp_get_margin std_formatter());
+    ()
 
   external isatty : out_channel -> bool = "caml_sys_isatty"
 
@@ -628,3 +631,10 @@ module Color = struct
       );
       ()
 end
+
+let normalise_eol s =
+  let b = Buffer.create 80 in
+    for i = 0 to String.length s - 1 do
+      if s.[i] <> '\r' then Buffer.add_char b s.[i]
+    done;
+    Buffer.contents b

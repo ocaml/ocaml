@@ -14,6 +14,8 @@
 (*                                                                        *)
 (**************************************************************************)
 
+[@@@ocaml.warning "+a-4-9-30-40-41-42"]
+
 (** Environments and result structures used during inlining and
     simplification.  (See inline_and_simplify.ml.) *)
 

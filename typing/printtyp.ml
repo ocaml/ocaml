@@ -1,3 +1,4 @@
+
 (***********************************************************************)
 (*                                                                     *)
 (*                                OCaml                                *)
@@ -864,10 +865,14 @@ let rec tree_of_type_decl id decl =
         tree_of_manifest Otyp_open,
         Public
   in
+  let immediate =
+    List.exists (fun (loc, _) -> loc.txt = "immediate") decl.type_attributes
+  in
     { otype_name = name;
       otype_params = args;
       otype_type = ty;
       otype_private = priv;
+      otype_immediate = immediate;
       otype_cstrs = constraints }
 
 and tree_of_constructor_arguments = function
@@ -1161,6 +1166,7 @@ let dummy =
     type_private = Public; type_manifest = None; type_variance = [];
     type_newtype_level = None; type_loc = Location.none;
     type_attributes = [];
+    type_immediate = false;
   }
 
 let hide_rec_items = function
@@ -1437,6 +1443,19 @@ let explanation unif t3 t4 ppf =
       end
   | _ -> ()
 
+
+let warn_on_missing_def env ppf t =
+  match t.desc with
+  | Tconstr (p,_,_) ->
+    begin
+      try
+        ignore(Env.find_type p env : Types.type_declaration)
+      with Not_found ->
+        fprintf ppf
+          "@,@[%a is abstract because no corresponding cmi file was found in path.@]" path p
+    end
+  | _ -> ()
+
 let explanation unif mis ppf =
   match mis with
     None -> ()
@@ -1466,7 +1485,7 @@ let rec trace_same_names = function
       type_same_name t1 t2; type_same_name t1' t2'; trace_same_names rem
   | _ -> ()
 
-let unification_error unif tr txt1 ppf txt2 =
+let unification_error env unif tr txt1 ppf txt2 =
   reset ();
   trace_same_names tr;
   let tr = List.map (fun (t, t') -> (t, hide_variant_name t')) tr in
@@ -1490,6 +1509,11 @@ let unification_error unif tr txt1 ppf txt2 =
         txt2 (type_expansion t2) t2'
         (trace false "is not compatible with type") tr
         (explanation unif mis);
+      if env <> Env.empty
+      then begin
+        warn_on_missing_def env ppf t1;
+        warn_on_missing_def env ppf t2
+      end;
       print_labels := true
     with exn ->
       print_labels := true;
@@ -1497,7 +1521,7 @@ let unification_error unif tr txt1 ppf txt2 =
 
 let report_unification_error ppf env ?(unif=true)
     tr txt1 txt2 =
-  wrap_printing_env env (fun () -> unification_error unif tr txt1 ppf txt2)
+  wrap_printing_env env (fun () -> unification_error env unif tr txt1 ppf txt2)
 ;;
 
 let trace fst keep_last txt ppf tr =

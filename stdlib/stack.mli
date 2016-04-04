@@ -53,3 +53,9 @@ val iter : ('a -> unit) -> 'a t -> unit
 (** [iter f s] applies [f] in turn to all elements of [s],
    from the element at the top of the stack to the element at the
    bottom of the stack. The stack itself is unchanged. *)
+
+val fold : ('b -> 'a -> 'b) -> 'b -> 'a t -> 'b
+(** [fold f accu s] is [(f (... (f (f accu x1) x2) ...) xn)]
+    where [x1] is the top of the stack, [x2] the second element,
+    and [xn] the bottom element. The stack is unchanged.
+    @since 4.03 *)

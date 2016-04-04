@@ -229,6 +229,7 @@ module Options = Main_args.Make_ocamldoc_options(struct
   let _dtypedtree = set Clflags.dump_typedtree
   let _drawlambda = set Clflags.dump_rawlambda
   let _dlambda = set Clflags.dump_lambda
+  let _dflambda = set Clflags.dump_flambda
   let _dinstr = set Clflags.dump_instr
   let anonymous = anonymous
 end)

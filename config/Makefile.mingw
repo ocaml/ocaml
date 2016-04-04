@@ -20,9 +20,6 @@ PREFIX=C:/ocamlmgw
 ### Remove this to disable compiling ocamldebug
 WITH_DEBUGGER=ocamldebugger
 
-### Remove this to disable compiling ocamlbuild
-WITH_OCAMLBUILD=ocamlbuild
-
 ### Remove this to disable compiling ocamldoc
 WITH_OCAMLDOC=ocamldoc
 
@@ -189,5 +186,5 @@ OTOPDIR=$(WINTOPDIR)
 CTOPDIR=$(TOPDIR)
 CYGPATH=cygpath -m
 DIFF=diff -q --strip-trailing-cr
-CANKILL=false
 SET_LD_PATH=PATH="$(PATH):$(LD_PATH)"
+MAX_TESTSUITE_DIR_RETRIES=1

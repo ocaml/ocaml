@@ -34,6 +34,8 @@ Language features:
 - GPR#88: allow field punning in object copying expressions:
     {< x; y; >} is sugar for {< x = x; y = y; >}
   (Jeremy Yallop)
+- GPR#112: octal escape sequences for char and string literals
+  (Rafaël Bocquet)
 - GPR#167: allow to annotate externals' arguments and result types so
   they can be unboxed or untagged. Supports untagging int and unboxing
   int32, int64, nativeint and float.
@@ -68,6 +70,12 @@ Language features:
 - PR#6681 GPR#326: signature items are now accepted as payloads for
   extension and attributes, using the syntax [%foo: SIG ] or [@foo: SIG ].
   (Alain Frisch and Gabriel Radanne)
+* GPR#234: allow "[]" as a user-defined constructor. Demand parenthesis
+  around "::" when using "::" as user-defined constructor.
+  (Runhang Li, review by Damien Doligez)
+- GPR#188: accept [@@immediate] attribute on type declarations to mark types
+  that are represented at runtime by an integer
+  (Will Crichton, reviewed by Leo White)
 
 Compilers:
 - PR#4080, PR#6537, PR#5333: fix stack overflow in the compiler when -pack'ing
@@ -123,6 +131,8 @@ Compilers:
   (Vladimir Brankov, review by Alain Frisch)
 - GPR#115: More precise typing of values at the C-- and Mach level,.
   (Xavier Leroy, review by Pierre Chambart)
+- GPR#132: Flambda: new intermediate language and "middle-end" optimizers
+  (Pierre Chambart, Mark Shinwell, Leo White)
 - GPR#207: Colors in compiler messages (warnings, errors)
   (Simon Cruanes, review by Gabriel Scherer)
 - GPR#258: more precise information on PowerPC instruction sizes
@@ -155,6 +165,8 @@ Compilers:
   (David Allsopp)
 - GPR#431: permit constant float arrays to be eligible for pattern match
   branch merging (Pierre Chambart)
+- GPR#392: put all parsetree invariants in a new module Ast_invariants
+  (Jérémie Dimino)
 
 Runtime system:
 - PR#3612: allow allocating custom block with finalizers in the minor heap
@@ -244,11 +256,16 @@ Standard library:
   * Sys.time (and [@@noalloc])
   * Pervasives.ldexp (and [@@noalloc])
   * Pervasives.compare for float, nativeint, int32, int64.
-  (Bobot François)
+  (François Bobot)
+- PR#3622, GPR#195: add function Stack.fold
+  (Simon Cruanes)
 - GPR#329: Add exists, for_all,  mem and memq functions in Array
   (Bernhard Schommer)
 - GPR#337: Add [Hashtbl.filter_map_inplace] (Alain Frisch)
 - GPR#356: Add [Format.kasprintf] (Jérémie Dimino, Mark Shinwell)
+- GPR#22: Add the Ephemeron module that implements ephemerons and weak
+  hash table (François Bobot, review by Damien Doligez, Daniel Bünzli,
+  Alain Frisch, Pierre Chambart)
 
 Type system:
 - PR#5545: Type annotations on methods cannot control the choice of abbreviation
@@ -290,6 +307,9 @@ Other libraries:
   Before, a handled signal could cause Unix.sleep to return early.
   Now, the sleep is restarted until the given time is elapsed.
   (Xavier Leroy)
+- PR#6263: add kind_size_in_bytes and size_in_bytes functions
+  to Bigarray module.
+  (Runhang Li, review by Mark Shinwell)
 - PR#6289: Unix.utimes uses the current time only if both arguments
     are exactly 0.0.  Also, use sub-second resolution if available.
   (Xavier Leroy, report by Christophe Troestler)
@@ -305,19 +325,8 @@ Other libraries:
 - PR#7024: in documentation of Str regular expressions, clarify what
     "end of line" means for "^" and "$" regexps.
 
-OCamlbuild:
-- PR#6794, PR#6809: pass package-specific include flags when building C files
-  (Jérémie Dimino, request by whitequark)
-- GPR#208: add "asm" tag to ocamlbuild to enable flag -S
-  (ygrek)
-- Changed OCamlbuild's license to LGPLv2 with static linking exception.
-- GPR#219: speedup target-already-built builds
-  (ygrek)
-- PR#6605, GPR#117: use ocamlfind, if available, to discover camlp4 path
-  (Vincent Laporte)
-
 OCamldep:
-- GRP#286: add support for module aliases
+- GPR#286: add support for module aliases
   (jacques Garrigue)
 
 Manual:
@@ -458,6 +467,12 @@ Bug fixes:
   Mark Shinwell)
 - GPR#283: Fix memory leaks in intern.c when OOM is raised
   (Marc Lasson, review by Alain Frisch)
+- GPR#22: Fix the cleaning of weak pointers. In very rare cases
+  accessing a value during the cleaning of the weak pointers could
+  result in the value being removed from one weak arrays and kept in
+  another one. That breaks the property that a value is removed from a
+  weak pointer only when it is dead and garbage collected. (François
+  Bobot, review by Damien Doligez)
 - GPR#313: Prevent quadratic cases in CSE
   (Pierre Chambart, review by Xavier Leroy)
 - PR#6795, PR#6996: Make ocamldep report errors passed in
@@ -467,6 +482,10 @@ Bug fixes:
   (Jérémie Dimino, Thomas Refis)
 - GPR#405: fix compilation under Visual Studio 2015
   (David Allsopp)
+- GPR#441: better type error location in presence of type constraints
+  (Thomas Refis, report by Arseniy Alekseyev)
+- PR#7111: reject empty let bindings instead of printing incorrect syntax
+  (Jérémie Dimino)
 
 Features wishes:
 - PR#4518, GPR#29: change location format for reporting errors in ocamldoc
@@ -533,10 +552,14 @@ Features wishes:
   (Hugo Heuzard)
 - GPR#308: add experimental support for NetBSD/arm (verified on RaspberryPi)
   (Rich Neswold)
+- GPR#335: Type error messages specify if a type is abstract
+  because no corresponding cmi could be found. (Hugo Heuzard)
 - GPR#365: prevent printing just a single type variable on one side
   of a type error clash. (Hugo Heuzard)
 - GPR#383: configure: define _ALL_SOURCE for build on AIX7.1
   (tkob)
+- GPR#401: automatically retry failed test directories in the testsuite
+  (David Allsopp)
 
 Build system:
 - GPR#388: FlexDLL added as a Git submodule and bootstrappable with the compiler

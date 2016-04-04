@@ -14,6 +14,8 @@
 (*                                                                        *)
 (**************************************************************************)
 
+[@@@ocaml.warning "+a-4-9-30-40-41-42"]
+
 (* CR-soon mshinwell: we need to document whether these iterators follow any
    particular order. *)
 

@@ -12,6 +12,8 @@
 
 (* From lambda to assembly code *)
 
+[@@@ocaml.warning "+a-4-9-40-41-42"]
+
 open Format
 open Config
 open Clflags
@@ -35,8 +37,39 @@ let pass_dump_linear_if ppf flag message phrase =
   if !flag then fprintf ppf "*** %s@.%a@." message Printlinear.fundecl phrase;
   phrase
 
-let clambda_dump_if ppf ulambda =
-  if !dump_clambda then Printclambda.clambda ppf ulambda; ulambda
+let flambda_raw_clambda_dump_if ppf
+      ({ Flambda_to_clambda. expr = ulambda; preallocated_blocks = _;
+        structured_constants; exported = _; } as input) =
+  if !dump_rawclambda then
+    begin
+      Format.fprintf ppf "@.clambda (before Un_anf):@.";
+      Printclambda.clambda ppf ulambda;
+      Symbol.Map.iter (fun sym cst ->
+          Format.fprintf ppf "%a:@ %a@."
+            Symbol.print sym
+            Printclambda.structured_constant cst)
+        structured_constants
+    end;
+  if !dump_cmm then Format.fprintf ppf "@.cmm:@.";
+  input
+
+type clambda_and_constants =
+  Clambda.ulambda *
+  Clambda.preallocated_block list *
+  Clambda.preallocated_constant list
+
+let raw_clambda_dump_if ppf ((ulambda, _, structured_constants):clambda_and_constants) =
+  if !dump_rawclambda then
+    begin
+      Format.fprintf ppf "@.clambda (before Un_anf):@.";
+      Printclambda.clambda ppf ulambda;
+      List.iter (fun {Clambda.symbol; definition} ->
+          Format.fprintf ppf "%s:@ %a@."
+            symbol
+            Printclambda.structured_constant definition)
+        structured_constants
+    end;
+  if !dump_cmm then Format.fprintf ppf "@.cmm:@."
 
 let rec regalloc ppf round fd =
   if round > 50 then
@@ -100,7 +133,8 @@ let compile_genfuns ppf f =
        | _ -> ())
     (Cmmgen.generic_functions true [Compilenv.current_unit_infos ()])
 
-let compile_unit ~source_provenance asm_filename keep_asm obj_filename gen =
+let compile_unit ~source_provenance _output_prefix asm_filename keep_asm
+      obj_filename gen =
   let create_asm = keep_asm || not !Emitaux.binary_backend_available in
   Emitaux.create_asm_file := create_asm;
   try
@@ -124,20 +158,15 @@ let compile_unit ~source_provenance asm_filename keep_asm obj_filename gen =
     remove_file obj_filename;
     raise exn
 
-let gen_implementation ?toplevel ~source_provenance ppf (size, lam) =
-  let main_module_block =
-    {
-      Clambda.symbol = Compilenv.make_symbol None;
-      exported = true;
-      tag = 0;
-      size;
-    }
-  in
+let set_export_info (ulambda, prealloc, structured_constants, export) =
+  Compilenv.set_export_info export;
+  (ulambda, prealloc, structured_constants)
+
+let end_gen_implementation ?toplevel ~source_provenance ppf
+    (clambda:clambda_and_constants) =
   Emit.begin_assembly ();
-  Timings.(time (Clambda source_provenance)) (Closure.intro size) lam
-  ++ clambda_dump_if ppf
-  ++ Timings.(time (Cmm source_provenance))
-       (fun clam -> Cmmgen.compunit (clam, [main_module_block], []))
+  clambda
+  ++ Timings.(time (Cmm source_provenance)) Cmmgen.compunit
   ++ Timings.(time (Compile_phrases source_provenance))
        (List.iter (compile_phrase ppf))
   ++ (fun () -> ());
@@ -156,14 +185,69 @@ let gen_implementation ?toplevel ~source_provenance ppf (size, lam) =
     );
   Emit.end_assembly ()
 
-let compile_implementation ?toplevel ~source_provenance prefixname ppf (size, lam) =
+let flambda_gen_implementation ?toplevel ~source_provenance ~backend ppf
+    (program:Flambda.program) =
+  let export = Build_export_info.build_export_info ~backend program in
+  let (clambda, preallocated, constants) =
+    Timings.time (Flambda_pass ("backend", source_provenance)) (fun () ->
+      (program, export)
+      ++ Flambda_to_clambda.convert
+      ++ flambda_raw_clambda_dump_if ppf
+      ++ (fun { Flambda_to_clambda. expr; preallocated_blocks;
+                structured_constants; exported; } ->
+             (* "init_code" following the name used in
+                [Cmmgen.compunit_and_constants]. *)
+           Un_anf.apply expr ~what:"init_code", preallocated_blocks,
+           structured_constants, exported)
+      ++ set_export_info) ()
+  in
+  let constants =
+    List.map (fun (symbol, definition) ->
+        { Clambda.symbol = Linkage_name.to_string (Symbol.label symbol);
+          exported = true;
+          definition })
+      (Symbol.Map.bindings constants)
+  in
+  end_gen_implementation ?toplevel ~source_provenance ppf
+    (clambda, preallocated, constants)
+
+let lambda_gen_implementation ?toplevel ~source_provenance ppf
+    (lambda:Lambda.program) =
+  let clambda = Closure.intro lambda.main_module_block_size lambda.code in
+  let preallocated_block =
+    Clambda.{
+      symbol = Compilenv.make_symbol None;
+      exported = true;
+      tag = 0;
+      size = lambda.main_module_block_size;
+    }
+  in
+  let clambda_and_constants =
+    clambda, [preallocated_block], []
+  in
+  raw_clambda_dump_if ppf clambda_and_constants;
+  end_gen_implementation ?toplevel ~source_provenance ppf clambda_and_constants
+
+let compile_implementation_gen ?toplevel ~source_provenance prefixname
+    ppf gen_implementation program =
   let asmfile =
     if !keep_asm_file || !Emitaux.binary_backend_available
     then prefixname ^ ext_asm
     else Filename.temp_file "camlasm" ext_asm
   in
-  compile_unit ~source_provenance asmfile !keep_asm_file (prefixname ^ ext_obj)
-    (fun () -> gen_implementation ?toplevel ~source_provenance ppf (size, lam))
+  compile_unit ~source_provenance prefixname asmfile !keep_asm_file
+      (prefixname ^ ext_obj) (fun () ->
+        gen_implementation ?toplevel ~source_provenance ppf program)
+
+let compile_implementation_clambda ?toplevel ~source_provenance prefixname
+    ppf (program:Lambda.program) =
+  compile_implementation_gen ?toplevel ~source_provenance prefixname
+    ppf lambda_gen_implementation program
+
+let compile_implementation_flambda ?toplevel ~source_provenance prefixname
+    ~backend ppf (program:Flambda.program) =
+  compile_implementation_gen ?toplevel ~source_provenance prefixname
+    ppf (flambda_gen_implementation ~backend) program
 
 (* Error report *)
 

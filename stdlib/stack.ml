@@ -38,3 +38,5 @@ let is_empty s = (s.c = [])
 let length s = s.len
 
 let iter f s = List.iter f s.c
+
+let fold f acc s = List.fold_left f acc s.c

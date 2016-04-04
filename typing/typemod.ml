@@ -177,6 +177,7 @@ let merge_constraint initial_env loc sg constr =
             type_loc = sdecl.ptype_loc;
             type_newtype_level = None;
             type_attributes = [];
+            type_immediate = false;
           }
         and id_row = Ident.create (s^"#row") in
         let initial_env =
@@ -1465,8 +1466,8 @@ and type_structure ?(toplevel = false) funct_body anchor env sstr scope =
 let type_toplevel_phrase env s =
   Env.reset_required_globals ();
   begin
-    let map = Builtin_attributes.emit_external_warnings in
-    ignore (map.Ast_mapper.structure map s)
+    let iter = Builtin_attributes.emit_external_warnings in
+    iter.Ast_iterator.structure iter s
   end;
   type_structure ~toplevel:true false None env s Location.none
 let type_module_alias = type_module ~alias:true true false None
@@ -1570,8 +1571,8 @@ let type_implementation sourcefile outputprefix modulename initial_env ast =
   Typecore.reset_delayed_checks ();
   Env.reset_required_globals ();
   begin
-    let map = Builtin_attributes.emit_external_warnings in
-    ignore (map.Ast_mapper.structure map ast)
+    let iter = Builtin_attributes.emit_external_warnings in
+    iter.Ast_iterator.structure iter ast
   end;
 
   let (str, sg, finalenv) =
@@ -1639,8 +1640,8 @@ let save_signature modname tsg outputprefix source_file initial_env cmi =
 
 let type_interface env ast =
   begin
-    let map = Builtin_attributes.emit_external_warnings in
-    ignore (map.Ast_mapper.signature map ast)
+    let iter = Builtin_attributes.emit_external_warnings in
+    iter.Ast_iterator.signature iter ast
   end;
   transl_signature env ast
 

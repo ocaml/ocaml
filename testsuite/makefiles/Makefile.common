@@ -20,7 +20,6 @@ OTOPDIR=$(TOPDIR)
 CTOPDIR=$(TOPDIR)
 CYGPATH=echo
 DIFF=diff -q
-CANKILL=true
 SORT=sort
 SET_LD_PATH=CAML_LD_LIBRARY_PATH="$(LD_PATH)"
 
@@ -32,8 +31,6 @@ SET_LD_PATH=CAML_LD_LIBRARY_PATH="$(LD_PATH)"
 # CYGPATH is the command that translates unix-style file names into
 #   whichever syntax is appropriate for arguments of OCaml programs.
 # DIFF is a "diff -q" command that ignores trailing CRs under Windows.
-# CANKILL is true if a script launched by Make can kill an OCaml process,
-#   and false for the mingw and MSVC ports.
 # SORT is the Unix "sort" command. Usually a simple command, but may be an
 #   absolute name if the Windows "sort" command is in the PATH.
 # SET_LD_PATH is a command prefix that sets the path for dynamic libraries
@@ -77,7 +74,6 @@ OCAMLMKLIB=$(FLEXLINK_PREFIX)$(OCAMLRUN) $(OTOPDIR)/tools/ocamlmklib \
 		       -ocamlopt "$(OTOPDIR)/byterun/ocamlrun$(USE_RUNTIME)$(EXE) \
 		                  $(OTOPDIR)/ocamlopt $(OCFLAGS) $(RUNTIME_VARIANT)"
 OCAMLYACC=$(TOPDIR)/yacc/ocamlyacc$(EXE)
-OCAMLBUILD=$(TOPDIR)/_build/ocamlbuild/ocamlbuild.native
 DUMPOBJ=$(OCAMLRUN) $(OTOPDIR)/tools/dumpobj
 OBJINFO=$(OCAMLRUN) $(OTOPDIR)/tools/objinfo
 BYTECODE_ONLY=[ "$(ARCH)" = "none" -o "$(ASM)" = "none" ]
@@ -94,7 +90,7 @@ defaultpromote:
 	done
 
 defaultclean:
-	@rm -f *.cmo *.cmi *.cmx *.cma *.cmxa *.cmxs *.$(O) *.$(SO) *.$(A)
+	@rm -f *.cmo *.cmi *.cmx *.cma *.cmxa *.cmxs *.$(O) *.$(SO) *.$(A) *.exe
 	@for dsym in *.dSYM; do \
 	  if [ -d $$dsym ]; then \
 	    rm -fr $$dsym; \

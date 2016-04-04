@@ -14,6 +14,8 @@
 (*                                                                        *)
 (**************************************************************************)
 
+[@@@ocaml.warning "+a-4-9-30-40-41-42"]
+
 type result = {
   expr : Clambda.ulambda;
   preallocated_blocks : Clambda.preallocated_block list;

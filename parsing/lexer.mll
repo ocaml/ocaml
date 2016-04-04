@@ -163,6 +163,12 @@ let char_for_decimal_code lexbuf i =
                       Location.curr lexbuf))
   else Char.chr c
 
+let char_for_octal_code lexbuf i =
+  let c = 64 * (Char.code(Lexing.lexeme_char lexbuf i) - 48) +
+           8 * (Char.code(Lexing.lexeme_char lexbuf (i+1)) - 48) +
+               (Char.code(Lexing.lexeme_char lexbuf (i+2)) - 48) in
+  Char.chr c
+
 let char_for_hexadecimal_code lexbuf i =
   let d1 = Char.code (Lexing.lexeme_char lexbuf i) in
   let val1 = if d1 >= 97 then d1 - 87
@@ -366,6 +372,8 @@ rule token = parse
       { CHAR(char_for_backslash (Lexing.lexeme_char lexbuf 2)) }
   | "\'\\" ['0'-'9'] ['0'-'9'] ['0'-'9'] "\'"
       { CHAR(char_for_decimal_code lexbuf 2) }
+  | "\'\\" 'o' ['0'-'3'] ['0'-'7'] ['0'-'7'] "\'"
+      { CHAR(char_for_octal_code lexbuf 3) }
   | "\'\\" 'x' ['0'-'9' 'a'-'f' 'A'-'F'] ['0'-'9' 'a'-'f' 'A'-'F'] "\'"
       { CHAR(char_for_hexadecimal_code lexbuf 3) }
   | "\'\\" _
@@ -582,6 +590,9 @@ and string = parse
         string lexbuf }
   | '\\' ['0'-'9'] ['0'-'9'] ['0'-'9']
       { store_string_char(char_for_decimal_code lexbuf 1);
+         string lexbuf }
+  | '\\' 'o' ['0'-'3'] ['0'-'7'] ['0'-'7']
+      { store_string_char(char_for_octal_code lexbuf 2);
          string lexbuf }
   | '\\' 'x' ['0'-'9' 'a'-'f' 'A'-'F'] ['0'-'9' 'a'-'f' 'A'-'F']
       { store_string_char(char_for_hexadecimal_code lexbuf 2);

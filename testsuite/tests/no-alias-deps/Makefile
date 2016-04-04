@@ -27,7 +27,7 @@ clean: defaultclean
 	@rm -f *.result
 
 b.cmi: b.cmi.pre
-	cp b.cmi.pre b.cmi
+	@cp b.cmi.pre b.cmi
 
 BASEDIR=../..
 include $(BASEDIR)/makefiles/Makefile.common

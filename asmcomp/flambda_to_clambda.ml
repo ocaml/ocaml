@@ -14,6 +14,8 @@
 (*                                                                        *)
 (**************************************************************************)
 
+[@@@ocaml.warning "+a-4-9-30-40-41-42"]
+
 type for_one_or_more_units = {
   fun_offset_table : int Closure_id.Map.t;
   fv_offset_table : int Var_within_closure.Map.t;
@@ -660,6 +662,7 @@ let convert (program, exported) : result =
     List.map (fun (symbol, tag, fields) ->
         { Clambda.
           symbol = Linkage_name.to_string (Symbol.label symbol);
+          exported = true;
           tag = Tag.to_int tag;
           size = List.length fields;
         })

@@ -14,6 +14,8 @@
 (*                                                                        *)
 (**************************************************************************)
 
+[@@@ocaml.warning "+a-4-9-30-40-41-42"]
+
 val introduce_specialised_args_for_free_vars
    : backend:(module Backend_intf.S)
   -> Flambda.set_of_closures

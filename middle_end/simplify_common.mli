@@ -14,6 +14,8 @@
 (*                                                                        *)
 (**************************************************************************)
 
+[@@@ocaml.warning "+a-4-9-30-40-41-42"]
+
 (** [const_*_expr expr v annot], where the expression [expr] is known to
     evaluate to the value [v], attempt to produce a more simple expression
     together with its approximation and the benefit gained by replacing [expr]

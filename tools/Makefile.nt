@@ -26,4 +26,4 @@ install::
 	cp ocamlmktop $(INSTALL_BINDIR)/ocamlmktop$(EXE)
 
 clean::
-	rm -f ocamlmktop$(EXE)
+	rm -f ocamlmktop objinfo_helper$(EXE).manifest

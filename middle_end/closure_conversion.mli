@@ -14,6 +14,8 @@
 (*                                                                        *)
 (**************************************************************************)
 
+[@@@ocaml.warning "+a-4-9-30-40-41-42"]
+
 (** Generation of [Flambda] intermediate language code from [Lambda] code
   by performing a form of closure conversion.
 

@@ -980,9 +980,7 @@ and class_expr cl_num val_env met_env scl =
           cl_attributes = scl.pcl_attributes;
          }
   | Pcl_apply (scl', sargs) ->
-      if sargs = [] then
-        Syntaxerr.ill_formed_ast scl.pcl_loc
-          "Function application with no argument.";
+      assert (sargs <> []);
       if !Clflags.principal then Ctype.begin_def ();
       let cl = class_expr cl_num val_env met_env scl' in
       if !Clflags.principal then begin
@@ -1215,6 +1213,7 @@ let temp_abbrev loc env id arity =
        type_newtype_level = None;
        type_loc = loc;
        type_attributes = []; (* or keep attrs from the class decl? *)
+       type_immediate = false;
       }
       env
   in
@@ -1461,6 +1460,7 @@ let class_infos define_class kind
      type_newtype_level = None;
      type_loc = cl.pci_loc;
      type_attributes = []; (* or keep attrs from cl? *)
+     type_immediate = false;
     }
   in
   let (cl_params, cl_ty) =
@@ -1478,6 +1478,7 @@ let class_infos define_class kind
      type_newtype_level = None;
      type_loc = cl.pci_loc;
      type_attributes = []; (* or keep attrs from cl? *)
+     type_immediate = false;
     }
   in
   ((cl, id, clty, ty_id, cltydef, obj_id, obj_abbr, cl_id, cl_abbr, ci_params,

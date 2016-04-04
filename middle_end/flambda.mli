@@ -14,6 +14,8 @@
 (*                                                                        *)
 (**************************************************************************)
 
+[@@@ocaml.warning "+a-4-9-30-40-41-42"]
+
 (** Intermediate language used for tree-based analysis and optimization. *)
 
 (** Whether the callee in a function application is known at compile time. *)
@@ -398,8 +400,7 @@ val free_variables_named
   -> named
   -> Variable.Set.t
 
-(** Compute _all_ variables occuring inside an expression.  (This is O(1)
-    for [Let]s). *)
+(** Compute _all_ variables occuring inside an expression. *)
 val used_variables
    : ?ignore_uses_as_callee:unit
   -> ?ignore_uses_as_argument:unit

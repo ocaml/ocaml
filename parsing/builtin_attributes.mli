@@ -37,7 +37,7 @@ val warning_leave_scope: unit -> unit
 val warning_attribute: Parsetree.attributes -> unit
 val with_warning_attribute: Parsetree.attributes -> (unit -> 'a) -> 'a
 
-val emit_external_warnings: Ast_mapper.mapper
+val emit_external_warnings: Ast_iterator.iterator
 
 val warn_on_literal_pattern: Parsetree.attributes -> bool
 val explicit_arity: Parsetree.attributes -> bool

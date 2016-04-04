@@ -118,7 +118,32 @@ end;;
 module type Optcommon_options = sig
   val _compact : unit -> unit
   val _inline : string -> unit
+  val _inline_toplevel : string -> unit
+  val _inlining_stats : unit -> unit
+  val _dump_pass : string -> unit
+  val _max_inlining_depth : string -> unit
+  val _rounds : int -> unit
+  val _unroll : string -> unit
+  val _classic_inlining : unit -> unit
+  val _inline_call_cost : string -> unit
+  val _inline_alloc_cost : string -> unit
+  val _inline_prim_cost : string -> unit
+  val _inline_branch_cost : string -> unit
+  val _inline_indirect_cost : string -> unit
+  val _inline_lifting_benefit : string -> unit
+  val _unbox_closures : unit -> unit
+  val _branch_inline_factor : string -> unit
+  val _no_inline_recursive_functions : unit -> unit
+  val _remove_unused_arguments : unit -> unit
+  val _o2 : unit -> unit
+  val _o3 : unit -> unit
 
+  val _clambda_checks : unit -> unit
+  val _dflambda : unit -> unit
+  val _dflambda_invariants : unit -> unit
+  val _dflambda_let : int -> unit
+  val _dflambda_verbose : unit -> unit
+  val _drawclambda : unit -> unit
   val _dclambda : unit -> unit
   val _dcmm : unit -> unit
   val _dsel : unit -> unit

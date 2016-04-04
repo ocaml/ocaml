@@ -14,6 +14,8 @@
 (*                                                                        *)
 (**************************************************************************)
 
+[@@@ocaml.warning "+a-4-9-30-40-41-42"]
+
 val run :
   env:Inline_and_simplify_aux.Env.t ->
   set_of_closures:Flambda.set_of_closures ->
