@@ -526,6 +526,10 @@ Other libraries:
     "end of line" means for "^" and "$" regexps.
   (Xavier Leroy, question by Fredrik Lindgren)
 
+- PR#7209: do not run at_exit handlers in [Unix.create_process] and
+  similar functions when the [exec] call fails in the child process
+  (Jérémie Dimino)
+
 OCamldep:
 =========
 
