@@ -17,6 +17,8 @@ exception Fatal_error
 let fatal_error msg =
   prerr_string ">> Fatal error: "; prerr_endline msg; raise Fatal_error
 
+let fatal_errorf fmt = Format.kasprintf fatal_error fmt
+
 (* Exceptions *)
 
 let try_finally work cleanup =
