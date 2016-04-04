@@ -30,6 +30,17 @@ type loc_kind =
   | Loc_LOC
   | Loc_POS
 
+type immediate_or_pointer =
+  | Immediate
+  | Pointer
+
+type initialization_or_assignment =
+  (* CR-someday mshinwell: For multicore, perhaps it might be necessary to
+     split [Initialization] into two cases, depending on whether the place
+     being initialized is in the heap or not. *)
+  | Initialization
+  | Assignment
+
 type primitive =
     Pidentity
   | Pignore
@@ -42,9 +53,9 @@ type primitive =
   (* Operations on heap blocks *)
   | Pmakeblock of int * mutable_flag
   | Pfield of int
-  | Psetfield of int * bool
+  | Psetfield of int * immediate_or_pointer * initialization_or_assignment
   | Pfloatfield of int
-  | Psetfloatfield of int
+  | Psetfloatfield of int * initialization_or_assignment
   | Pduprecord of Types.record_representation * int
   (* Force lazy values *)
   | Plazyforce
@@ -125,6 +136,8 @@ type primitive =
   | Pbbswap of boxed_integer
   (* Integer to external pointer *)
   | Pint_as_pointer
+  (* Inhibition of optimisation *)
+  | Popaque
 
 and comparison =
     Ceq | Cneq | Clt | Cgt | Cle | Cge
@@ -260,6 +273,7 @@ val transl_path: ?loc:Location.t -> Env.t -> Path.t -> lambda
 val make_sequence: ('a -> lambda) -> 'a list -> lambda
 
 val subst_lambda: lambda Ident.tbl -> lambda -> lambda
+val map : (lambda -> lambda) -> lambda -> lambda
 val bind : let_kind -> Ident.t -> lambda -> lambda -> lambda
 
 val commute_comparison : comparison -> comparison

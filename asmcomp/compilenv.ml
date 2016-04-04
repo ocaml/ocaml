@@ -160,15 +160,21 @@ let get_global_info global_ident = (
       Hashtbl.find global_infos_table modname
     with Not_found ->
       let (infos, crc) =
-        try
-          let filename =
-            find_in_path_uncap !load_path (modname ^ ".cmx") in
-          let (ui, crc) = read_unit_info filename in
-          if ui.ui_name <> modname then
-            raise(Error(Illegal_renaming(modname, ui.ui_name, filename)));
-          (Some ui, Some crc)
-        with Not_found ->
-          (None, None) in
+        if Env.is_imported_opaque modname then (None, None)
+        else begin
+          try
+            let filename =
+              find_in_path_uncap !load_path (modname ^ ".cmx") in
+            let (ui, crc) = read_unit_info filename in
+            if ui.ui_name <> modname then
+              raise(Error(Illegal_renaming(modname, ui.ui_name, filename)));
+            (Some ui, Some crc)
+          with Not_found ->
+            let warn = Warnings.No_cmx_file modname in
+              Location.prerr_warning Location.none warn;
+              (None, None)
+          end
+      in
       current_unit.ui_imports_cmx <-
         (modname, crc) :: current_unit.ui_imports_cmx;
       Hashtbl.add global_infos_table modname infos;
@@ -200,7 +206,11 @@ let symbol_for_global id =
   if Ident.is_predef_exn id then
     "caml_exn_" ^ Ident.name id
   else begin
-    match get_global_info id with
+    let unitname = Ident.name id in
+    match
+      try ignore (Hashtbl.find toplevel_approx unitname); None
+      with Not_found -> get_global_info id
+    with
     | None -> make_symbol ~unitname:(Ident.name id) None
     | Some ui -> make_symbol ~unitname:ui.ui_symbol None
   end
@@ -279,11 +289,18 @@ let new_structured_constant cst ~shared =
 let add_exported_constant s =
   Hashtbl.replace exported_constants s ()
 
+let clear_structured_constants () =
+  structured_constants := structured_constants_empty
+
 let structured_constants () =
   List.map
-    (fun (lbl, cst) ->
-       (lbl, Hashtbl.mem exported_constants lbl, cst)
-    ) (!structured_constants).strcst_all
+    (fun (symbol, definition) ->
+       {
+         Clambda.symbol;
+         exported = Hashtbl.mem exported_constants symbol;
+         definition;
+       })
+    (!structured_constants).strcst_all
 
 (* Error report *)
 

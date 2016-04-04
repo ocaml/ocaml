@@ -91,6 +91,21 @@ and ident_assert_failure = ident_create_predef_exn "Assert_failure"
 and ident_undefined_recursive_module =
         ident_create_predef_exn "Undefined_recursive_module"
 
+let all_predef_exns = [
+  ident_match_failure;
+  ident_out_of_memory;
+  ident_invalid_argument;
+  ident_failure;
+  ident_not_found;
+  ident_sys_error;
+  ident_end_of_file;
+  ident_division_by_zero;
+  ident_stack_overflow;
+  ident_sys_blocked_io;
+  ident_assert_failure;
+  ident_undefined_recursive_module;
+]
+
 let path_match_failure = Pident ident_match_failure
 and path_assert_failure = Pident ident_assert_failure
 and path_undefined_recursive_module = Pident ident_undefined_recursive_module

@@ -100,6 +100,5 @@ val unsafe_string : bool ref
 val opaque : bool ref
 val print_timings : bool ref
 
-type color_setting = Auto | Always | Never
-val parse_color_setting : string -> color_setting option
-val color : color_setting ref
+val parse_color_setting : string -> Misc.Color.setting option
+val color : Misc.Color.setting ref

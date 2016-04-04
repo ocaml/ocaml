@@ -165,7 +165,8 @@ let load_lambda ppf (size, lam) =
     else Filename.temp_file ("caml" ^ !phrase_name) ext_dll
   in
   let fn = Filename.chop_extension dll in
-  Asmgen.compile_implementation ~toplevel:need_symbol fn ppf (size, slam);
+  Asmgen.compile_implementation ~source_provenance:Timings.Toplevel
+    ~toplevel:need_symbol fn ppf (size, slam);
   Asmlink.call_linker_shared [fn ^ ext_obj] dll;
   Sys.remove (fn ^ ext_obj);
 
@@ -217,7 +218,8 @@ let execute_phrase print_outcome ppf phr =
       let oldenv = !toplevel_env in
       incr phrase_seqid;
       phrase_name := Printf.sprintf "TOP%i" !phrase_seqid;
-      Compilenv.reset ?packname:None !phrase_name;
+      Compilenv.reset ~source_provenance:Timings.Toplevel
+        ?packname:None !phrase_name;
       Typecore.reset_delayed_checks ();
       let (str, sg, newenv) = Typemod.type_toplevel_phrase oldenv sstr in
       if !Clflags.dump_typedtree then Printtyped.implementation ppf str;

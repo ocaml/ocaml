@@ -172,23 +172,28 @@
   "'\\(\015\012\\|[\012\015]\\)"
 )
 
+; match an opening delimiter for a quoted string
+(defconst caml-font-quoted-string-start-re
+  "{\\([a-z]*\\)|"
+)
+
 ; match any token or sequence of tokens that cannot contain a
-; quote, double quote, a start of comment, or a newline
+; quote, double quote, a start of comment or quoted string, or a newline
 ; note: this is only to go faster than one character at a time
 (defconst caml-font-other-re
-  "[^A-Za-z_0-9\012\015\300-\326\330-\366\370-\377'\"(]+"
+  "[^A-Za-z_0-9\012\015\300-\326\330-\366\370-\377'\"({]+"
 )
 
 ; match any sequence of non-special characters in a comment
 ; note: this is only to go faster than one character at a time
 (defconst caml-font-other-comment-re
-  "[^(*\"'\012\015]+"
+  "[^{(*\"'\012\015]+"
 )
 
 ; match any sequence of non-special characters in a string
 ; note: this is only to go faster than one character at a time
 (defconst caml-font-other-string-re
-  "[^\\\"\012\015]"
+  "[^|\\\"\012\015]"
 )
 
 ; match a newline
@@ -230,8 +235,9 @@
 ; depth is the depth of nested comments at this point
 ;   it must be a non-negative integer
 ; st can be:
-;   nil  -- we are in the base state
-;   t    -- we are within a string
+;   nil      -- we are in the base state
+;   t        -- we are within a string
+;   a string -- we are within a quoted string and st is the closing delimiter
 
 (defun caml-font-annotate (st depth)
   (let ((continue t))
@@ -254,6 +260,11 @@
                              'syntax-table (string-to-syntax "|"))
           (goto-char (match-end 0))
           (setq st t))
+         ((caml-font-looking-at caml-font-quoted-string-start-re)
+          (put-text-property (point) (1+ (point))
+                             'syntax-table (string-to-syntax "|"))
+          (goto-char (match-end 0))
+          (setq st (concat "|" (match-string 1) "}")))
          ((caml-font-looking-at "(\\*")
           (put-text-property (point) (1+ (point))
                              'syntax-table (string-to-syntax "!"))
@@ -297,7 +308,7 @@
           (remove-text-properties (point) (1+ (point))
                                   '(syntax-table nil caml-font-state nil))
           (goto-char (1+ (point))))))
-       (t                     ; string state inside or outside a comment
+       ((equal st t)                ; string state inside or outside a comment
         (cond
          ((caml-font-looking-at "\"")
           (when (= depth 0)
@@ -315,7 +326,24 @@
          (t
           (remove-text-properties (point) (1+ (point))
                                   '(syntax-table nil caml-font-state nil))
-          (goto-char (1+ (point)))))))))
+          (goto-char (1+ (point))))))
+       ((stringp st)        ; quoted-string state inside or outside comment
+        (cond
+         ((caml-font-looking-at st)
+          (when (= depth 0)
+            (put-text-property (1- (match-end 0)) (match-end 0)
+                               'syntax-table (string-to-syntax "|")))
+          (goto-char (match-end 0))
+          (setq st nil))
+         ((caml-font-looking-at caml-font-other-string-re)
+          (goto-char (match-end 0)))
+         (t
+          (remove-text-properties (point) (1+ (point))
+                                  '(syntax-table nil caml-font-state nil))
+          (goto-char (1+ (point))))))
+       (t                ; should not happen
+          (remove-text-properties (point) (1+ (point))
+                                  '(syntax-table nil caml-font-state nil))))))
 )
 
 ; This is the hook function for font-lock-extend-after-change-function

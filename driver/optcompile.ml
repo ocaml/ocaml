@@ -59,12 +59,12 @@ let (++) x f = f x
 let (+++) (x, y) f = (x, f y)
 
 let implementation ppf sourcefile outputprefix =
+  let source_provenance = Timings.File sourcefile in
   Compmisc.init_path true;
   let modulename = module_of_filename ppf sourcefile outputprefix in
   Env.set_unit_name modulename;
   let env = Compmisc.initial_env() in
-  Compilenv.reset ~source_provenance:(Timings.File sourcefile)
-    ?packname:!Clflags.for_package modulename;
+  Compilenv.reset ~source_provenance ?packname:!Clflags.for_package modulename;
   let cmxfile = outputprefix ^ ".cmx" in
   let objfile = outputprefix ^ ext_obj in
   let comp ast =
@@ -86,7 +86,7 @@ let implementation ppf sourcefile outputprefix =
           (fun (size, lambda) ->
             (size, Simplif.simplify_lambda lambda)
             +++ print_if ppf Clflags.dump_lambda Printlambda.lambda
-            ++ Asmgen.compile_implementation ~sourcefile outputprefix ppf;
+            ++ Asmgen.compile_implementation ~source_provenance outputprefix ppf;
             Compilenv.save_unit_info cmxfile)
     end;
     Warnings.check_fatal ();

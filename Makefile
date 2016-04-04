@@ -267,6 +267,8 @@ installoptopt:
 	cp ocamlc.opt $(INSTALL_BINDIR)/ocamlc.opt$(EXE)
 	cp ocamlopt.opt $(INSTALL_BINDIR)/ocamlopt.opt$(EXE)
 	cp lex/ocamllex.opt $(INSTALL_BINDIR)/ocamllex.opt$(EXE)
+	cp utils/*.cmx parsing/*.cmx typing/*.cmx bytecomp/*.cmx \
+           driver/*.cmx asmcomp/*.cmx $(INSTALL_COMPLIBDIR)
 	cp compilerlibs/ocamlcommon.cmxa compilerlibs/ocamlcommon.a \
 	   compilerlibs/ocamlbytecomp.cmxa compilerlibs/ocamlbytecomp.a \
 	   compilerlibs/ocamloptcomp.cmxa compilerlibs/ocamloptcomp.a \

@@ -48,6 +48,7 @@ with_ocamldoc=ocamldoc
 with_ocamlbuild=ocamlbuild
 with_frame_pointers=false
 no_naked_pointers=false
+native_compiler=true
 TOOLPREF=""
 with_cfi=true
 
@@ -159,6 +160,8 @@ while : ; do
         no_naked_pointers=true;;
     -no-cfi|--no-cfi)
         with_cfi=false;;
+    -no-native-compiler)
+        native_compiler=false;;
     *) if echo "$1" | grep -q -e '^--\?[a-zA-Z0-9-]\+='; then
          err "configure expects arguments of the form '-prefix /foo/bar'," \
              "not '-prefix=/foo/bar' (note the '=')."
@@ -375,7 +378,7 @@ case "$bytecc,$target" in
     bytecccompopts="$bytecccompopts -DUMK";;
   *,powerpc-*-aix*)
     # Avoid name-space pollution by requiring Unix98-conformant includes
-    bytecccompopts="$bytecccompopts -D_XOPEN_SOURCE=500";;
+    bytecccompopts="$bytecccompopts -D_XOPEN_SOURCE=500 -D_ALL_SOURCE";;
   *,*-*-cygwin*)
     case $target in
       i686-*) flavor=cygwin;;
@@ -860,6 +863,12 @@ esac
 
 case "$arch64,$arch,$model" in
   true,sparc,*|true,power,ppc|false,amd64,*)
+      arch=none; model=default; system=unknown;;
+esac
+
+case "$native_compiler" in
+    true) ;;
+    false)
       arch=none; model=default; system=unknown;;
 esac
 

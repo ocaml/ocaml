@@ -70,6 +70,7 @@ type t =
   | Inlining_impossible of string           (* 55 *)
   | Unreachable_case                        (* 56 *)
   | Ambiguous_pattern of string list        (* 57 *)
+  | No_cmx_file of string                   (* 58 *)
 ;;
 
 val parse_options : bool -> string -> unit;;

@@ -288,7 +288,9 @@ module Analyser =
           let f {Types.cd_id=constructor_name;cd_args;cd_res=ret_type} =
             let constructor_name = Ident.name constructor_name in
             let comment_opt =
-              try List.assoc constructor_name name_comment_list
+              try match List.assoc constructor_name name_comment_list with
+                | Some { i_desc = None | Some []; _ } -> None
+                | x -> x
               with Not_found -> None
             in
             let vc_args =

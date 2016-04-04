@@ -264,20 +264,35 @@ let default_options = Options.list @
   "\n\n *** choosing a generator ***\n";
 
 (* generators *)
-  "-html", Arg.Unit (fun () -> set_generator
-       (Odoc_gen.Html (module Odoc_html.Generator : Odoc_html.Html_generator))),
+  "-html", Arg.Unit (fun () ->
+    match !current_generator with
+      Some (Odoc_gen.Html _) -> ()
+    | _ -> set_generator
+             (Odoc_gen.Html (module Odoc_html.Generator : Odoc_html.Html_generator))),
     M.generate_html ;
-  "-latex", Arg.Unit (fun () -> set_generator
-       (Odoc_gen.Latex (module Odoc_latex.Generator : Odoc_latex.Latex_generator))),
+  "-latex", Arg.Unit (fun () ->
+    match !current_generator with
+      Some (Odoc_gen.Latex _) -> ()
+    | _ -> set_generator
+             (Odoc_gen.Latex (module Odoc_latex.Generator : Odoc_latex.Latex_generator))),
     M.generate_latex ;
-  "-texi", Arg.Unit (fun () -> set_generator
-       (Odoc_gen.Texi (module Odoc_texi.Generator : Odoc_texi.Texi_generator))),
+  "-texi", Arg.Unit (fun () ->
+    match !current_generator with
+      Some (Odoc_gen.Texi _) -> ()
+    | _ -> set_generator
+             (Odoc_gen.Texi (module Odoc_texi.Generator : Odoc_texi.Texi_generator))),
     M.generate_texinfo ;
-  "-man", Arg.Unit (fun () -> set_generator
-       (Odoc_gen.Man (module Odoc_man.Generator : Odoc_man.Man_generator))),
+  "-man", Arg.Unit (fun () ->
+    match !current_generator with
+      Some (Odoc_gen.Man _) -> ()
+    | _ -> set_generator
+             (Odoc_gen.Man (module Odoc_man.Generator : Odoc_man.Man_generator))),
     M.generate_man ;
-  "-dot", Arg.Unit (fun () -> set_generator
-       (Odoc_gen.Dot (module Odoc_dot.Generator : Odoc_dot.Dot_generator))),
+  "-dot", Arg.Unit (fun () ->
+    match !current_generator with
+      Some (Odoc_gen.Dot _) -> ()
+    | _ -> set_generator
+             (Odoc_gen.Dot (module Odoc_dot.Generator : Odoc_dot.Dot_generator))),
     M.generate_dot ;
   "-customdir", Arg.Unit (fun () -> Printf.printf "%s\n" Odoc_config.custom_generators_path; exit 0),
   M.display_custom_generators_dir ;

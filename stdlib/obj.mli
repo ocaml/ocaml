@@ -27,7 +27,12 @@ external tag : t -> int = "caml_obj_tag"
 external set_tag : t -> int -> unit = "caml_obj_set_tag"
 external size : t -> int = "%obj_size"
 external field : t -> int -> t = "%obj_field"
+
+(** When using flambda:
+    [set_field] MUST NOT be called on immutable blocks.  (Blocks allocated
+    in C stubs, or with [new_block] below, are always considered mutable.) *)
 external set_field : t -> int -> t -> unit = "%obj_set_field"
+
 val double_field : t -> int -> float  (* @since 3.11.2 *)
 val set_double_field : t -> int -> float -> unit  (* @since 3.11.2 *)
 external new_block : int -> int -> t = "caml_obj_block"

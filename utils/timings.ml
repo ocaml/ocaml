@@ -16,6 +16,7 @@ type source_provenance =
   | File of file
   | Pack of string
   | Startup
+  | Toplevel
 
 type compiler_pass =
   | All
@@ -24,10 +25,10 @@ type compiler_pass =
   | Typing of file
   | Transl of file
   | Generate of file
-  | Assemble of file
-  | Clambda of file
-  | Cmm of file
-  | Compile_phrases of file
+  | Assemble of source_provenance
+  | Clambda of source_provenance
+  | Cmm of source_provenance
+  | Compile_phrases of source_provenance
   | Selection of source_provenance
   | Comballoc of source_provenance
   | CSE of source_provenance
@@ -39,6 +40,7 @@ type compiler_pass =
   | Linearize of source_provenance
   | Scheduling of source_provenance
   | Emit of source_provenance
+  | Flambda_pass of string * source_provenance
 
 let timings : (compiler_pass, float * float option) Hashtbl.t = Hashtbl.create 20
 let reset () = Hashtbl.clear timings
@@ -98,6 +100,7 @@ let kind_name = function
   | File f -> Printf.sprintf "sourcefile(%s)" f
   | Pack p -> Printf.sprintf "pack(%s)" p
   | Startup -> "startup"
+  | Toplevel  -> "toplevel"
 
 let pass_name = function
   | All -> "all"
@@ -106,10 +109,10 @@ let pass_name = function
   | Typing file -> Printf.sprintf "typing(%s)" file
   | Transl file -> Printf.sprintf "transl(%s)" file
   | Generate file -> Printf.sprintf "generate(%s)" file
-  | Assemble file -> Printf.sprintf "assemble(%s)" file
-  | Clambda file -> Printf.sprintf "clambda(%s)" file
-  | Cmm file -> Printf.sprintf "cmm(%s)" file
-  | Compile_phrases file -> Printf.sprintf "compile_phrases(%s)" file
+  | Assemble k -> Printf.sprintf "assemble(%s)" (kind_name k)
+  | Clambda k -> Printf.sprintf "clambda(%s)" (kind_name k)
+  | Cmm k -> Printf.sprintf "cmm(%s)" (kind_name k)
+  | Compile_phrases k -> Printf.sprintf "compile_phrases(%s)" (kind_name k)
   | Selection k -> Printf.sprintf "selection(%s)" (kind_name k)
   | Comballoc k -> Printf.sprintf "comballoc(%s)" (kind_name k)
   | CSE k -> Printf.sprintf "cse(%s)" (kind_name k)
@@ -121,6 +124,8 @@ let pass_name = function
   | Linearize k -> Printf.sprintf "linearize(%s)" (kind_name k)
   | Scheduling k -> Printf.sprintf "scheduling(%s)" (kind_name k)
   | Emit k -> Printf.sprintf "emit(%s)" (kind_name k)
+  | Flambda_pass (pass, file) ->
+    Printf.sprintf "flambda(%s)(%s)" pass (kind_name file)
 
 let timings_list () =
   let l = Hashtbl.fold (fun pass times l -> (pass, times) :: l) timings [] in

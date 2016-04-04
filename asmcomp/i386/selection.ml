@@ -215,7 +215,7 @@ method! select_operation op args =
       self#select_floatarith Idivf (Ispecific Idivfrev) Ifloatdiv Ifloatdivrev
                              args
   (* Recognize store instructions *)
-  | Cstore (Word_int | Word_val as chunk) ->
+  | Cstore ((Word_int | Word_val) as chunk, _) ->
       begin match args with
         [loc; Cop(Caddi, [Cop(Cload _, [loc']); Cconst_int n])]
         when loc = loc' ->

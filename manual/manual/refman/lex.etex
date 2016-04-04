@@ -80,7 +80,7 @@ float-literal:
           [("e"||"E") ["+"||"-"] ("0"\ldots"9") { "0"\ldots"9"||"_" }]
         | ["-"] ("0x"||"0X")
           ("0"\ldots"9"||"A"\ldots"F"||"a"\ldots"f")
-          { "0"\ldots"9"||"A"\ldots"F"||"a"\ldots"f"||"_" }
+          { "0"\ldots"9"||"A"\ldots"F"||"a"\ldots"f"||"_" }\\
           ["." { "0"\ldots"9"||"A"\ldots"F"||"a"\ldots"f"||"_" }
           [("p"||"P") ["+"||"-"] ("0"\ldots"9") { "0"\ldots"9"||"_" }]
 \end{syntax}

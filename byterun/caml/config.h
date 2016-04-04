@@ -113,14 +113,6 @@ typedef uint64_t uintnat;
 #endif
 
 
-/* We use static inline functions in some cases instead of duplicating
-   code but the MSVC compiler has a slightly different syntax. */
-
-#ifdef _MSC_VER
-#define inline _inline
-#endif
-
-
 /* We use threaded code interpretation if the compiler provides labels
    as first-class values (GCC 2.x). */
 

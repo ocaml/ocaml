@@ -1861,19 +1861,10 @@ let duplicate_ident_types loc caselist env =
   let caselist =
     List.filter (fun {pc_lhs} -> contains_gadt env pc_lhs) caselist in
   let idents = all_idents_cases caselist in
-  List.fold_left
-    (fun env s ->
-      try
-        (* XXX This will mark the value as being used;
-           I don't think this is what we want *)
-        let (path, desc) = Env.lookup_value (Longident.Lident s) env in
-        match path with
-          Path.Pident id ->
-            let desc = {desc with val_type = correct_levels desc.val_type} in
-            Env.add_value id desc env
-        | _ -> env
-      with Not_found -> env)
-    env idents
+  let upd desc = {desc with val_type = correct_levels desc.val_type} in
+  (* Be careful not the mark the original value as being used, and
+     to keep the same internal 'slot' to track unused opens. *)
+  List.fold_left (fun env s -> Env.update_value s upd env) env idents
 
 (* Typing of expressions *)
 

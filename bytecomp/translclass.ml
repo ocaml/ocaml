@@ -58,7 +58,11 @@ let transl_meth_list lst =
             (0, List.map (fun lab -> Const_immstring lab) lst))
 
 let set_inst_var obj id expr =
-  let kind = if Typeopt.maybe_pointer expr then Paddrarray else Pintarray in
+  let kind =
+    match Typeopt.maybe_pointer expr with
+    | Pointer -> Paddrarray
+    | Immediate -> Pintarray
+  in
   Lprim(Parraysetu kind, [Lvar obj; Lvar id; transl_exp expr])
 
 let transl_val tbl create name =
@@ -790,7 +794,7 @@ let transl_class ids cl_id pub_meths cl vflag =
                 [Lvar tables; Lprim(Pmakeblock(0, Immutable), inh_keys)]),
          lam)
   and lset cached i lam =
-    Lprim(Psetfield(i, true), [Lvar cached; lam])
+    Lprim(Psetfield(i, Pointer, Assignment), [Lvar cached; lam])
   in
   let ldirect () =
     ltable cla
