@@ -41,7 +41,7 @@ OCaml 4.04.0:
   and are usually faster, except Hashtbl.copy which can be much
   slower
   (Alain Frisch)
-  
+
 - PR#6279, GPR#553: implement Set.map
   (Gabriel Scherer)
 
@@ -52,6 +52,10 @@ OCaml 4.04.0:
 - PR#6820, GPR#560: Add Obj.reachable_words to compute the
   "transitive" heap size of a value
   (Alain Frisch, review by Marc Shinwell and Damien Doligez)
+
+- PR#7203, GPR#534: Add a new primitive caml_alloc_float_array to allocate an
+  array of floats
+  (Thomas Braibant)
 
 ### Manual:
 
