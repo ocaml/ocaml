@@ -98,7 +98,9 @@ module Options = Main_args.Make_bytecomp_options (struct
   let _intf = intf
   let _intf_suffix s = Config.interface_suffix := s
   let _keep_docs = set keep_docs
+  let _no_keep_docs = unset keep_docs
   let _keep_locs = set keep_locs
+  let _no_keep_locs = unset keep_locs
   let _labels = unset classic
   let _linkall = set link_everything
   let _make_runtime () =
@@ -121,7 +123,9 @@ module Options = Main_args.Make_bytecomp_options (struct
   let _pp s = preprocessor := Some s
   let _ppx s = first_ppx := s :: !first_ppx
   let _principal = set principal
+  let _no_principal = unset principal
   let _rectypes = set recursive_types
+  let _no_rectypes = unset recursive_types
   let _runtime_variant s = runtime_variant := s
   let _safe_string = unset unsafe_string
   let _short_paths = unset real_paths

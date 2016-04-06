@@ -159,7 +159,9 @@ module Options = Main_args.Make_optcomp_options (struct
   let _intf = intf
   let _intf_suffix s = Config.interface_suffix := s
   let _keep_docs = set keep_docs
+  let _no_keep_docs = clear keep_docs
   let _keep_locs = set keep_locs
+  let _no_keep_locs = clear keep_locs
   let _labels = clear classic
   let _linkall = set link_everything
   let _inline_max_depth spec =
@@ -204,7 +206,9 @@ module Options = Main_args.Make_optcomp_options (struct
   let _pp s = preprocessor := Some s
   let _ppx s = first_ppx := s :: !first_ppx
   let _principal = set principal
+  let _no_principal = clear principal
   let _rectypes = set recursive_types
+  let _no_rectypes = clear recursive_types
   let _remove_unused_arguments = set remove_unused_arguments
   let _runtime_variant s = runtime_variant := s
   let _safe_string = clear unsafe_string
