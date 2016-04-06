@@ -75,8 +75,8 @@ static int num_per_threads = 0;
 /* [caml_spacetime_shapes] is defined in the startup file. */
 extern uint64_t* caml_spacetime_shapes;
 
-static shape_table main_spacetime_shape_table;
-shape_table* caml_spacetime_shape_tables = &main_spacetime_shape_table;
+uint64_t** caml_spacetime_static_shape_tables = NULL;
+shape_table* caml_spacetime_dynamic_shape_tables = NULL;
 
 static uintnat caml_spacetime_profinfo = (uintnat) 0;
 
@@ -105,8 +105,7 @@ void caml_spacetime_initialize(void)
 
   reinitialise_free_node_block();
 
-  main_spacetime_shape_table.table = &caml_spacetime_shapes;
-  main_spacetime_shape_table.next = NULL;
+  caml_spacetime_static_shape_tables = &caml_spacetime_shapes;
 
   ap_interval = getenv ("OCAML_SPACETIME_INTERVAL");
   if (ap_interval != NULL) {
@@ -135,9 +134,9 @@ void caml_spacetime_register_shapes(void* dynlinked_table)
     fprintf(stderr, "Out of memory whilst registering shape table");
     abort();
   }
-  table->table = (uint64_t**) dynlinked_table;
-  table->next = caml_spacetime_shape_tables;
-  caml_spacetime_shape_tables = table;
+  table->table = (uint64_t*) dynlinked_table;
+  table->next = caml_spacetime_dynamic_shape_tables;
+  caml_spacetime_dynamic_shape_tables = table;
 }
 
 CAMLprim value caml_spacetime_trie_is_initialized (value v_unit)

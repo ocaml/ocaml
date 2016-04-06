@@ -114,11 +114,12 @@ typedef struct {
 } c_node; /* CR mshinwell: rename to dynamic_node */
 
 typedef struct shape_table {
-  uint64_t** table;
+  uint64_t* table;
   struct shape_table* next;
 } shape_table;
 
-extern shape_table* caml_spacetime_shape_tables;
+extern uint64_t** caml_spacetime_static_shape_tables;
+extern shape_table* caml_spacetime_dynamic_shape_tables;
 
 typedef struct ext_table* spacetime_unwind_info_cache;
 

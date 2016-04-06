@@ -407,92 +407,108 @@ value caml_spacetime_frame_table(void)
   return list;
 }
 
-value caml_spacetime_shape_table(void)
+static void add_unit_to_shape_table(uint64_t *unit_table, value *list)
 {
-  /* Flatten the hierarchy of shape tables into a single associative list
-     mapping from function symbols to node layouts.  The node layouts are
-     themselves lists.
-
-     This function reverses the order of the lists giving the layout of each
+  /* This function reverses the order of the lists giving the layout of each
      node; however, spacetime_profiling.ml ensures they are emitted in
      reverse order, so at the end of it all they're not reversed. */
 
-  value list = Val_long(0);  /* the empty list */
-  shape_table* table = caml_spacetime_shape_tables;
+  uint64_t* ptr = unit_table;
 
-  while (table != NULL) {
-    uint64_t** table_for_one_unit = table->table;
+  while (*ptr != (uint64_t) 0) {
+    value new_list_element, pair, function_address, layout;
 
-    while (*table_for_one_unit != (uint64_t) 0) {
-      uint64_t* table_for_one_function = *table_for_one_unit++;
+    function_address =
+      allocate_int64_outside_heap(*ptr++);
 
-      while (*table_for_one_function != (uint64_t) 0) {
-        value new_list_element, pair, function_address, layout;
+    layout = Val_long(0);  /* the empty list */
+    while (*ptr != (uint64_t) 0) {
+      int tag;
+      int stored_tag;
+      value part_of_shape;
+      value new_part_list_element;
+      value location;
+      int has_extra_argument = 0;
 
-        function_address =
-          allocate_int64_outside_heap(*table_for_one_function++);
+      stored_tag = *ptr++;
+      /* CR mshinwell: share with emit.mlp */
+      switch (stored_tag) {
+        case 1:  /* direct call to given location */
+          tag = 0;
+          has_extra_argument = 1;  /* the address of the callee */
+          break;
 
-        layout = Val_long(0);  /* the empty list */
-        while (*table_for_one_function != (uint64_t) 0) {
-          int tag;
-          int stored_tag;
-          value part_of_shape;
-          value new_part_list_element;
-          value location;
-          int has_extra_argument = 0;
+        case 2:  /* indirect call to given location */
+          tag = 1;
+          break;
 
-          stored_tag = *table_for_one_function++;
-          /* CR mshinwell: share with emit.mlp */
-          switch (stored_tag) {
-            case 1:  /* direct call to given location */
-              tag = 0;
-              has_extra_argument = 1;  /* the address of the callee */
-              break;
+        case 3:  /* allocation at given location */
+          tag = 2;
+          break;
 
-            case 2:  /* indirect call to given location */
-              tag = 1;
-              break;
-
-            case 3:  /* allocation at given location */
-              tag = 2;
-              break;
-
-            default:
-              assert(0);
-          }
-
-          location = allocate_int64_outside_heap(*table_for_one_function++);
-
-          part_of_shape = allocate_outside_heap_with_tag(
-            sizeof(value) * (has_extra_argument ? 2 : 1), tag);
-          Field(part_of_shape, 0) = location;
-          if (has_extra_argument) {
-            Field(part_of_shape, 1) =
-              allocate_int64_outside_heap(*table_for_one_function++);
-          }
-
-          new_part_list_element =
-            allocate_outside_heap_with_tag(2 * sizeof(value), 0 /* (::) */);
-          Field(new_part_list_element, 0) = part_of_shape;
-          Field(new_part_list_element, 1) = layout;
-          layout = new_part_list_element;
-        }
-
-        pair = allocate_outside_heap_with_tag(2 * sizeof(value), 0);
-        Field(pair, 0) = function_address;
-        Field(pair, 1) = layout;
-
-        new_list_element =
-          allocate_outside_heap_with_tag(2 * sizeof(value), 0 /* (::) */);
-        Field(new_list_element, 0) = pair;
-        Field(new_list_element, 1) = list;
-        list = new_list_element;
-
-        Assert(*table_for_one_function == 0);
-        table_for_one_function++;
+        default:
+          assert(0);
       }
+
+      location = allocate_int64_outside_heap(*ptr++);
+
+      part_of_shape = allocate_outside_heap_with_tag(
+        sizeof(value) * (has_extra_argument ? 2 : 1), tag);
+      Field(part_of_shape, 0) = location;
+      if (has_extra_argument) {
+        Field(part_of_shape, 1) =
+          allocate_int64_outside_heap(*ptr++);
+      }
+
+      new_part_list_element =
+        allocate_outside_heap_with_tag(2 * sizeof(value), 0 /* (::) */);
+      Field(new_part_list_element, 0) = part_of_shape;
+      Field(new_part_list_element, 1) = layout;
+      layout = new_part_list_element;
     }
-    table = table->next;
+
+    pair = allocate_outside_heap_with_tag(2 * sizeof(value), 0);
+    Field(pair, 0) = function_address;
+    Field(pair, 1) = layout;
+
+    new_list_element =
+      allocate_outside_heap_with_tag(2 * sizeof(value), 0 /* (::) */);
+    Field(new_list_element, 0) = pair;
+    Field(new_list_element, 1) = *list;
+    *list = new_list_element;
+
+    Assert(*table_for_one_function == 0);
+    ptr++;
+  }
+}
+
+value caml_spacetime_shape_table(void)
+{
+  value list;
+  uint64_t* unit_table;
+  shape_table *dynamic_table;
+  uint64_t** static_table;
+
+  /* Flatten the hierarchy of shape tables into a single associative list
+     mapping from function symbols to node layouts.  The node layouts are
+     themselves lists. */
+
+  list = Val_long(0);  /* the empty list */
+
+  /* Add static shape tables */
+  static_table = caml_spacetime_static_shape_tables;
+  while (*static_table != (uint64_t) 0) {
+    unit_table = *static_table++;
+    add_unit_to_shape_table(unit_table, &list);
+  }
+
+  /* Add dynamic shape tables */
+  dynamic_table = caml_spacetime_dynamic_shape_tables;
+
+  while (dynamic_table != NULL) {
+    unit_table = dynamic_table->table;
+    add_unit_to_shape_table(unit_table, &list);
+    dynamic_table = dynamic_table->next;
   }
 
   return list;
