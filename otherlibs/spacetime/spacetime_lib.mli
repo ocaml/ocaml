@@ -89,6 +89,8 @@ module Stats : sig
   val heap_chunks : t -> int
   val compactions : t -> int
   val top_heap_words : t -> int
+  val words_scanned : t -> int
+  val words_scanned_with_profinfo : t -> int
 
   val compare : t -> t -> int
   val hash : t -> int

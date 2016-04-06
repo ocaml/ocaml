@@ -308,10 +308,8 @@ module Heap_snapshot : sig
 
   val gc_stats : t -> Gc_stats.t
   val entries : t -> Entries.t
-  val num_blocks_in_minor_heap : t -> int
-  val num_blocks_in_major_heap : t -> int
-  val num_blocks_in_minor_heap_with_profinfo : t -> int
-  val num_blocks_in_major_heap_with_profinfo : t -> int
+  val words_scanned : t -> int
+  val words_scanned_with_profinfo : t -> int
 
   module Series : sig
     type t

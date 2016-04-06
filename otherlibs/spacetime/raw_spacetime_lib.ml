@@ -872,10 +872,8 @@ module Heap_snapshot = struct
     timestamp : float;
     gc_stats : Gc_stats.t;
     entries : Entries.t;
-    num_blocks_in_minor_heap : int;
-    num_blocks_in_major_heap : int;
-    num_blocks_in_minor_heap_with_profinfo : int;
-    num_blocks_in_major_heap_with_profinfo : int;
+    words_scanned : int;
+    words_scanned_with_profinfo : int;
   }
 
   type heap_snapshot = t
@@ -883,14 +881,8 @@ module Heap_snapshot = struct
   let timestamp t = t.timestamp
   let gc_stats t = t.gc_stats
   let entries t = t.entries
-  let num_blocks_in_minor_heap t =
-    t.num_blocks_in_minor_heap
-  let num_blocks_in_major_heap t =
-    t.num_blocks_in_major_heap
-  let num_blocks_in_minor_heap_with_profinfo t =
-    t.num_blocks_in_minor_heap_with_profinfo
-  let num_blocks_in_major_heap_with_profinfo t =
-    t.num_blocks_in_major_heap_with_profinfo
+  let words_scanned t = t.words_scanned
+  let words_scanned_with_profinfo t = t.words_scanned_with_profinfo
 
   module Series = struct
     type t = {

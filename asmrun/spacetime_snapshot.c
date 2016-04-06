@@ -74,10 +74,8 @@ typedef struct {
   value time;  /* Cf. [Sys.time]. */
   value gc_stats;
   value entries;
-  value num_blocks_in_minor_heap;
-  value num_blocks_in_major_heap;
-  value num_blocks_in_minor_heap_with_profinfo;
-  value num_blocks_in_major_heap_with_profinfo;
+  value words_scanned;
+  value words_scanned_with_profinfo;
 } snapshot;
 
 typedef struct {
@@ -142,10 +140,8 @@ static value take_snapshot(void)
   value* ptr;
   /* Fixed size buffer to avoid needing a hash table: */
   static raw_snapshot_entry* raw_entries = NULL;
-  uintnat num_blocks_in_minor_heap = 0;
-  uintnat num_blocks_in_minor_heap_with_profinfo = 0;
-  uintnat num_blocks_in_major_heap = 0;
-  uintnat num_blocks_in_major_heap_with_profinfo = 0;
+  uintnat words_scanned = 0;
+  uintnat words_scanned_with_profinfo = 0;
 
   time = caml_sys_time_unboxed(Val_unit);
   gc_stats = take_gc_stats();
@@ -164,9 +160,10 @@ static value take_snapshot(void)
   /* Scan the minor heap. */
   /* CR mshinwell: this is wrong, it should start from the roots */
   assert(((uintnat) caml_young_ptr) % sizeof(value) == 0);
+  assert(!caml_in_minor_collection);
   ptr = (value*) caml_young_ptr;
-  assert(ptr >= (value*) caml_young_start);
-  while (ptr < (value*) caml_young_end) {
+  assert(ptr >= (value*) caml_young_alloc_start);
+  while (ptr < (value*) caml_young_alloc_end) {
     header_t hd;
     value value_in_minor_heap;
 
@@ -183,9 +180,9 @@ static value take_snapshot(void)
 
     profinfo = Profinfo_hd(hd);
 
-    num_blocks_in_minor_heap++;
-    if (profinfo <= PROFINFO_MASK) {
-      num_blocks_in_minor_heap_with_profinfo++;
+    words_scanned += Whsize_val(value_in_minor_heap);
+    if (profinfo > 0 && profinfo < PROFINFO_MASK) {
+      words_scanned_with_profinfo += Whsize_val(value_in_minor_heap);
       assert (raw_entries[profinfo].num_blocks >= 0);
       if (raw_entries[profinfo].num_blocks == 0) {
         num_distinct_profinfos++;
@@ -215,9 +212,9 @@ static value take_snapshot(void)
 
         default:
           profinfo = Profinfo_hd(hd);
-          num_blocks_in_major_heap++;
-          if (profinfo <= PROFINFO_MASK) {
-            num_blocks_in_major_heap_with_profinfo++;
+          words_scanned += Whsize_hd(hd);
+          if (profinfo > 0 && profinfo < PROFINFO_MASK) {
+            words_scanned_with_profinfo += Whsize_hd(hd);
             assert (raw_entries[profinfo].num_blocks >= 0);
             if (raw_entries[profinfo].num_blocks == 0) {
               num_distinct_profinfos++;
@@ -266,14 +263,10 @@ static value take_snapshot(void)
   heap_snapshot->time = v_time;
   heap_snapshot->gc_stats = gc_stats;
   heap_snapshot->entries = v_entries;
-  heap_snapshot->num_blocks_in_minor_heap =
-    Val_long(num_blocks_in_minor_heap);
-  heap_snapshot->num_blocks_in_major_heap =
-    Val_long(num_blocks_in_major_heap);
-  heap_snapshot->num_blocks_in_minor_heap_with_profinfo
-    = Val_long(num_blocks_in_minor_heap_with_profinfo);
-  heap_snapshot->num_blocks_in_major_heap_with_profinfo
-    = Val_long(num_blocks_in_major_heap_with_profinfo);
+  heap_snapshot->words_scanned
+    = Val_long(words_scanned);
+  heap_snapshot->words_scanned_with_profinfo
+    = Val_long(words_scanned_with_profinfo);
 
   return v_snapshot;
 }

@@ -30,6 +30,11 @@ module Position = struct
 
   let hash = Hashtbl.hash
 
+  let print ppf t =
+    let open Printexc in
+    Format.fprintf ppf "%s{%d:%d-%d}"
+      t.filename t.line_number t.start_char t.end_char
+
 end
 
 module Location = struct
@@ -70,6 +75,14 @@ module Location = struct
       position = None;
       foreign = true; }
 
+  let print ppf t =
+    match t.position with
+    | Some pos -> Position.print ppf pos
+    | None ->
+        match t.symbol with
+        | Some symbol -> Format.fprintf ppf "%s" symbol
+        | None -> Format.fprintf ppf "%Ld" t.address
+
 end
 
 module Backtrace = struct
@@ -79,6 +92,14 @@ module Backtrace = struct
   let compare = Pervasives.compare
 
   let hash = Hashtbl.hash
+
+  let rec print ppf = function
+    | [] -> ()
+    | [loc] -> Location.print ppf loc
+    | loc :: res ->
+      Format.fprintf ppf "%a %a"
+        Location.print loc
+        print res
 
 end
 
@@ -117,7 +138,25 @@ module Entries_sorted_by_words_highest_first =
 
 module Stats = struct
 
-  include Gc_stats
+  type t =
+    { gc: Gc_stats.t;
+      words_scanned : int;
+      words_scanned_with_profinfo : int; }
+
+  let minor_words t = Gc_stats.minor_words t.gc
+  let promoted_words t = Gc_stats.promoted_words t.gc
+  let major_words t = Gc_stats.major_words t.gc
+  let minor_collections t = Gc_stats.minor_collections t.gc
+  let major_collections t = Gc_stats.major_collections t.gc
+  let heap_words t = Gc_stats.heap_words t.gc
+  let heap_chunks t = Gc_stats.heap_chunks t.gc
+  let compactions t = Gc_stats.compactions t.gc
+  let top_heap_words t = Gc_stats.top_heap_words t.gc
+
+  let words_scanned { words_scanned } = words_scanned
+
+  let words_scanned_with_profinfo { words_scanned_with_profinfo } =
+    words_scanned_with_profinfo
 
   let compare = Pervasives.compare
 
@@ -129,8 +168,9 @@ module Snapshot = struct
 
   type t =
     { time : float;
-      stats : Gc_stats.t;
-      entries : Entries.t; }
+      stats : Stats.t;
+      entries : Entries.t;
+    }
 
   let time { time } = time
 
@@ -275,7 +315,14 @@ module Snapshot = struct
 
   let create ?executable ~trace ~frame_table ~shape_table ~snapshot =
     let time = Heap_snapshot.timestamp snapshot in
-    let stats = Heap_snapshot.gc_stats snapshot in
+    let gc = Heap_snapshot.gc_stats snapshot in
+    let words_scanned = Heap_snapshot.words_scanned snapshot in
+    let words_scanned_with_profinfo =
+      Heap_snapshot.words_scanned_with_profinfo snapshot
+    in
+    let stats =
+      { Stats.gc; words_scanned; words_scanned_with_profinfo; }
+    in
     let allocs = allocation_table ~snapshot in
     let entries =
       match Trace.root trace with
