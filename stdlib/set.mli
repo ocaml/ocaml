@@ -48,6 +48,7 @@ module type OrderedType =
   sig
     type t
       (** The type of the set elements. *)
+
     val compare : t -> t -> int
       (** A total ordering function over the set elements.
           This is a two-argument function [f] such that

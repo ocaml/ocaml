@@ -46,7 +46,7 @@ type error =
   | Missing of string
   | Message of string
 
-exception Stop of error;; (* used internally *)
+exception Stop of error (* used internally *)
 
 open Printf
 
@@ -55,19 +55,19 @@ let rec assoc3 x l =
   | [] -> raise Not_found
   | (y1, y2, y3) :: t when y1 = x -> y2
   | _ :: t -> assoc3 x t
-;;
+
 
 let split s =
   let i = String.index s '=' in
   let len = String.length s in
   String.sub s 0 i, String.sub s (i+1) (len-(i+1))
-;;
+
 
 let make_symlist prefix sep suffix l =
   match l with
   | [] -> "<none>"
   | h::t -> (List.fold_left (fun x y -> x ^ sep ^ y) (prefix ^ h) t) ^ suffix
-;;
+
 
 let print_spec buf (key, spec, doc) =
   if String.length doc > 0 then
@@ -76,9 +76,9 @@ let print_spec buf (key, spec, doc) =
         bprintf buf "  %s %s%s\n" key (make_symlist "{" "|" "}" l) doc
     | _ ->
         bprintf buf "  %s %s\n" key doc
-;;
 
-let help_action () = raise (Stop (Unknown "-help"));;
+
+let help_action () = raise (Stop (Unknown "-help"))
 
 let add_help speclist =
   let add1 =
@@ -91,24 +91,24 @@ let add_help speclist =
             ["--help", Unit help_action, " Display this list of options"]
   in
   speclist @ (add1 @ add2)
-;;
+
 
 let usage_b buf speclist errmsg =
   bprintf buf "%s\n" errmsg;
-  List.iter (print_spec buf) (add_help speclist);
-;;
+  List.iter (print_spec buf) (add_help speclist)
+
 
 let usage_string speclist errmsg =
   let b = Buffer.create 200 in
   usage_b b speclist errmsg;
-  Buffer.contents b;
-;;
+  Buffer.contents b
+
 
 let usage speclist errmsg =
-  eprintf "%s" (usage_string speclist errmsg);
-;;
+  eprintf "%s" (usage_string speclist errmsg)
 
-let current = ref 0;;
+
+let current = ref 0
 
 let bool_of_string_opt x =
   try Some (bool_of_string x)
@@ -247,28 +247,28 @@ let parse_argv_dynamic ?(current=current) argv speclist anonfun errmsg =
       (try anonfun s with Bad m -> stop (Message m));
       incr current;
     end;
-  done;
-;;
+  done
+
 
 let parse_argv ?(current=current) argv speclist anonfun errmsg =
-  parse_argv_dynamic ~current:current argv (ref speclist) anonfun errmsg;
-;;
+  parse_argv_dynamic ~current:current argv (ref speclist) anonfun errmsg
+
 
 let parse l f msg =
   try
-    parse_argv Sys.argv l f msg;
+    parse_argv Sys.argv l f msg
   with
-  | Bad msg -> eprintf "%s" msg; exit 2;
-  | Help msg -> printf "%s" msg; exit 0;
-;;
+  | Bad msg -> eprintf "%s" msg; exit 2
+  | Help msg -> printf "%s" msg; exit 0
+
 
 let parse_dynamic l f msg =
   try
-    parse_argv_dynamic Sys.argv l f msg;
+    parse_argv_dynamic Sys.argv l f msg
   with
-  | Bad msg -> eprintf "%s" msg; exit 2;
-  | Help msg -> printf "%s" msg; exit 0;
-;;
+  | Bad msg -> eprintf "%s" msg; exit 2
+  | Help msg -> printf "%s" msg; exit 0
+
 
 let second_word s =
   let len = String.length s in
@@ -279,13 +279,13 @@ let second_word s =
   in
   try loop (String.index s ' ')
   with Not_found -> len
-;;
+
 
 let max_arg_len cur (kwd, spec, doc) =
   match spec with
   | Symbol _ -> max cur (String.length kwd)
   | _ -> max cur (String.length kwd + second_word doc)
-;;
+
 
 let add_padding len ksd =
   match ksd with
@@ -308,11 +308,11 @@ let add_padding len ksd =
         let prefix = String.sub msg 0 cutcol in
         let suffix = String.sub msg cutcol (String.length msg - cutcol) in
         (kwd, spec, prefix ^ spaces ^ suffix)
-;;
+
 
 let align ?(limit=max_int) speclist =
   let completed = add_help speclist in
   let len = List.fold_left max_arg_len 0 completed in
   let len = min len limit in
   List.map (add_padding len) completed
-;;
+

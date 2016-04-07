@@ -215,15 +215,19 @@ let init_shape modl =
   and init_shape_struct env sg =
     match sg with
       [] -> []
-    | Sig_value(id, vdesc) :: rem ->
+    | Sig_value(_id, {val_kind=Val_reg; val_type=ty}) :: rem ->
         let init_v =
-          match Ctype.expand_head env vdesc.val_type with
+          match Ctype.expand_head env ty with
             {desc = Tarrow(_,_,_,_)} ->
               Const_pointer 0 (* camlinternalMod.Function *)
           | {desc = Tconstr(p, _, _)} when Path.same p Predef.path_lazy_t ->
               Const_pointer 1 (* camlinternalMod.Lazy *)
           | _ -> raise Not_found in
         init_v :: init_shape_struct env rem
+    | Sig_value(_, {val_kind=Val_prim _}) :: rem ->
+        init_shape_struct env rem
+    | Sig_value _ :: _rem ->
+        assert false
     | Sig_type(id, tdecl, _) :: rem ->
         init_shape_struct (Env.add_type ~check:false id tdecl env) rem
     | Sig_typext(id, ext, _) :: rem ->

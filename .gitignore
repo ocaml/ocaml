@@ -237,6 +237,7 @@
 /testsuite/tests/asmcomp/parsecmm.mli
 /testsuite/tests/asmcomp/lexcmm.ml
 /testsuite/tests/asmcomp/*.s
+/testsuite/tests/asmcomp/*.out.manifest
 
 /testsuite/tests/embedded/caml
 

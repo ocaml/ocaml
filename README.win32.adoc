@@ -11,7 +11,7 @@ There are no less than five ports of OCaml for MS Windows available:
     compiler from the mingw-w64 project, packaged in Cygwin
     (under the name mingw64-x86_64);
   - a port consisting of the Unix sources compiled under the Cygwin
-    Unix-like environment for Windows;
+    Unix-like environment for Windows (both 32-bit and 64-bit).
   - a native Win64 port (64-bit Windows), built with the Microsoft
     development tools.
 
@@ -19,7 +19,7 @@ Here is a summary of the main differences between these ports:
 
 |=====
 |           | Native MS       | Native MinGW        | Cygwin
-|64 bits?   | Win32 or Win64  | Win32 or Win64      | Win32 only
+|64 bits?   | Win32 or Win64  | Win32 or Win64      | Win32 or Win64
 4+^| Third-party software required
 | for base bytecode system              | none          | none          | none
 | for ocamlc -custom                    | MSVC          | Cygwin        | Cygwin
@@ -358,8 +358,6 @@ and follow the instructions for Unix machines given in the file INSTALL.
 - There is a problem with cygwin's port of gcc version 4.5.3.  You should
   use cygwin's setup program to downgrade to 4.3.4 before compiling OCaml.
 - The replay debugger is fully supported.
-- When upgrading from 3.12.0 to 3.12.1, you will need to remove
-  '/usr/local/bin/ocamlmktop.exe' before typing `make install`.
 - In order to use the "graph" library, you will need to use Cygwin's
   setup.exe to install the xinit, and libX11-devel packages before compiling
   OCaml.

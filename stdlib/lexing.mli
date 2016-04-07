@@ -37,7 +37,7 @@ type position = {
    how the lexing engine will manage positions.
  *)
 
-val dummy_pos : position;;
+val dummy_pos : position
 (** A value of type [position], guaranteed to be different from any
    valid position.
  *)

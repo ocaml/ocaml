@@ -72,8 +72,7 @@ let known_valid_projections ~env ~projections ~which_variables =
           field_index >= 0 && field_index < Array.length fields)
     projections
 
-let from_function_decl ~env ~which_variables
-      ~(function_decl : Flambda.function_declaration) =
+let rec analyse_expr ~which_variables expr =
   let projections = ref Projection.Set.empty in
   let used_which_variables = ref Variable.Set.empty in
   let check_free_variable var =
@@ -129,13 +128,33 @@ let from_function_decl ~env ~which_variables
       projections :=
         Projection.Set.add (Field (field_index, var)) !projections
     | Set_of_closures set_of_closures ->
-      let iter_specialised ~which_variables =
-        Variable.Map.iter (fun _ (spec_to : Flambda.specialised_to) ->
-            check_free_variable spec_to.var)
-          which_variables
+      let aliasing_free_vars =
+        Variable.Map.filter (fun _ (spec_to : Flambda.specialised_to) ->
+            Variable.Map.mem spec_to.var which_variables)
+          set_of_closures.free_vars
       in
-      iter_specialised ~which_variables:set_of_closures.free_vars;
-      iter_specialised ~which_variables:set_of_closures.specialised_args
+      let aliasing_specialised_args =
+        Variable.Map.filter (fun _ (spec_to : Flambda.specialised_to) ->
+            Variable.Map.mem spec_to.var which_variables)
+          set_of_closures.specialised_args
+      in
+      let aliasing_vars =
+        Variable.Map.disjoint_union
+          aliasing_free_vars aliasing_specialised_args
+      in
+      if not (Variable.Map.is_empty aliasing_vars) then begin
+        Variable.Map.iter (fun _ (fun_decl : Flambda.function_declaration) ->
+          (* We ignore projections from within nested sets of closures. *)
+          let _, used =
+            analyse_expr fun_decl.body ~which_variables:aliasing_vars
+          in
+          Variable.Set.iter (fun var ->
+            match Variable.Map.find var aliasing_vars with
+            | exception Not_found -> assert false
+            | spec_to -> check_free_variable spec_to.var)
+            used)
+          set_of_closures.function_decls.funs
+      end
     | Prim (_, vars, _) ->
       List.iter check_free_variable vars
     | Symbol _ | Const _ | Allocated_const _ | Read_mutable _
@@ -143,15 +162,22 @@ let from_function_decl ~env ~which_variables
     | Move_within_set_of_closures _
     | Expr _ -> ()
   in
-  Flambda_iterators.iter for_expr for_named function_decl.body;
+  Flambda_iterators.iter_toplevel for_expr for_named expr;
   let projections = !projections in
+  let used_which_variables = !used_which_variables in
+  projections, used_which_variables
+
+let from_function_decl ~env ~which_variables
+      ~(function_decl : Flambda.function_declaration) =
+  let projections, used_which_variables =
+    analyse_expr ~which_variables function_decl.body
+  in
   (* We must use approximation information to determine which projections
      are actually valid in the current environment, other we might lift
      expressions too far. *)
   let projections =
     known_valid_projections ~env ~projections ~which_variables
   in
-  let used_which_variables = !used_which_variables in
   (* Don't extract projections whose [projecting_from] variable is also
      used boxed.  We could in the future consider being more sophisticated
      about this based on the uses in the body, but given we are not doing

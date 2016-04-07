@@ -63,6 +63,24 @@ let rec split_last = function
       (hd :: lst, last)
 
 module Stdlib = struct
+  module String = struct
+    type t = string
+
+    let split s ~on =
+      let is_separator c = (c = on) in
+      let rec split1 res i =
+        if i >= String.length s then res else begin
+          if is_separator s.[i] then split1 res (i+1)
+          else split2 res i (i+1)
+        end
+      and split2 res i j =
+        if j >= String.length s then String.sub s i (j-i) :: res else begin
+          if is_separator s.[j] then split1 (String.sub s i (j-i) :: res) (j+1)
+          else split2 res i (j+1)
+        end
+      in List.rev (split1 [] 0)
+  end
+
   module List = struct
     type 'a t = 'a list
 
@@ -151,24 +169,6 @@ module Stdlib = struct
       match a with
       | None -> default
       | Some a -> f a
-  end
-
-  module String = struct
-    type t = string
-
-    let split s ~on =
-      let is_separator c = (c = on) in
-      let rec split1 res i =
-        if i >= String.length s then res else begin
-          if is_separator s.[i] then split1 res (i+1)
-          else split2 res i (i+1)
-        end
-      and split2 res i j =
-        if j >= String.length s then String.sub s i (j-i) :: res else begin
-          if is_separator s.[j] then split1 (String.sub s i (j-i) :: res) (j+1)
-          else split2 res i (j+1)
-        end
-      in split1 [] 0
   end
 end
 

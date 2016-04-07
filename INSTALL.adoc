@@ -111,6 +111,9 @@ The `configure` script accepts the following options:
 -no-debugger::
         Do not build ocamldebug.
 
+-no-native-compiler::
+        Do not build the native compiler -- bytecode compilation only.
+
 -no-ocamldoc::
         Do not build ocamldoc.
 

@@ -227,7 +227,7 @@ val stats : ('a, 'b) t -> statistics
       module IntHashtbl = Hashtbl.Make(IntHash)
 
       let h = IntHashtbl.create 17 in
-      IntHashtbl.add h 12 "hello";;
+      IntHashtbl.add h 12 "hello"
     ]}
 
     This creates a new module [IntHashtbl], with a new type ['a
@@ -244,8 +244,10 @@ module type HashedType =
   sig
     type t
       (** The type of the hashtable keys. *)
+
     val equal : t -> t -> bool
       (** The equality predicate used to compare keys. *)
+
     val hash : t -> int
       (** A hashing function on keys. It must be such that if two keys are
           equal according to [equal], then they have identical hash values
@@ -300,8 +302,10 @@ module type SeededHashedType =
   sig
     type t
       (** The type of the hashtable keys. *)
+
     val equal: t -> t -> bool
       (** The equality predicate used to compare keys. *)
+
     val hash: int -> t -> int
       (** A seeded hashing function on keys.  The first argument is
           the seed.  It must be the case that if [equal x y] is true,

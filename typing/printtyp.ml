@@ -1431,11 +1431,11 @@ let explanation unif t3 t4 ppf =
         row1.row_fields, row1.row_closed, row2.row_fields, row2.row_closed with
       | [], true, [], true ->
           fprintf ppf "@,These two variant types have no intersection"
-      | [], true, fields, _ ->
+      | [], true, (_::_ as fields), _ ->
           fprintf ppf
             "@,@[The first variant type does not allow tag(s)@ @[<hov>%a@]@]"
             print_tags fields
-      | fields, _, [], true ->
+      | (_::_ as fields), _, [], true ->
           fprintf ppf
             "@,@[The second variant type does not allow tag(s)@ @[<hov>%a@]@]"
             print_tags fields

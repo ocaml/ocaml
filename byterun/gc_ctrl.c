@@ -501,7 +501,6 @@ CAMLprim value caml_gc_major_slice (value v)
 {
   CAML_INSTR_SETUP (tmr, "");
   Assert (Is_long (v));
-  caml_empty_minor_heap ();
   caml_major_collection_slice (Long_val (v));
   CAML_INSTR_TIME (tmr, "explicit/gc_major_slice");
   return Val_long (0);
@@ -607,8 +606,6 @@ CAMLprim value caml_runtime_variant (value unit)
   return caml_copy_string ("d");
 #elif defined (CAML_INSTR)
   return caml_copy_string ("i");
-#elif defined (MMAP_INTERVAL)
-  return caml_copy_string ("m");
 #else
   return caml_copy_string ("");
 #endif

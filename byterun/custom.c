@@ -34,13 +34,9 @@ CAMLexport value caml_alloc_custom(struct custom_operations * ops,
   if (wosize <= Max_young_wosize) {
     result = caml_alloc_small(wosize, Custom_tag);
     Custom_ops_val(result) = ops;
-    if (ops->finalize != NULL) {
-      /* Remembered that the block has a finalizer */
-      if (caml_finalize_table.ptr >= caml_finalize_table.limit){
-        CAMLassert (caml_finalize_table.ptr == caml_finalize_table.limit);
-        caml_realloc_ref_table (&caml_finalize_table);
-      }
-      *caml_finalize_table.ptr++ = (value *)result;
+    if (ops->finalize != NULL || mem != 0) {
+      /* Remember that the block needs processing after minor GC. */
+      add_to_custom_table (&caml_custom_table, result, mem, max);
     }
   } else {
     result = caml_alloc_shr(wosize, Custom_tag);

@@ -1933,6 +1933,13 @@ let non_aliasable p decl =
   (* in_pervasives p ||  (subsumed by in_current_module) *)
   in_current_module p && decl.type_newtype_level = None
 
+(* PR#7113: -safe-string should be a global property *)
+let compatible_paths p1 p2 =
+  let open Predef in
+  Path.same p1 p2 ||
+  Path.same p1 path_bytes && Path.same p2 path_string ||
+  Path.same p1 path_string && Path.same p2 path_bytes
+
 (* Check for datatypes carefully; see PR#6348 *)
 let rec expands_to_datatype env ty =
   let ty = repr ty in
@@ -2071,7 +2078,7 @@ and mcomp_type_decl type_pairs env p1 p2 tl1 tl2 =
   try
     let decl = Env.find_type p1 env in
     let decl' = Env.find_type p2 env in
-    if Path.same p1 p2 then begin
+    if compatible_paths p1 p2 then begin
       let inj =
         try List.map Variance.(mem Inj) (Env.find_type p1 env).type_variance
         with Not_found -> List.map (fun _ -> false) tl1
@@ -2230,7 +2237,7 @@ let complete_type_list ?(allow_absent=false) env nl1 lv2 mty2 nl2 tl2 =
 (* raise Not_found rather than Unify if the module types are incompatible *)
 let unify_package env unify_list lv1 p1 n1 tl1 lv2 p2 n2 tl2 =
   let ntl2 = complete_type_list env n1 lv2 (Mty_ident p2) n2 tl2
-  and ntl1 = complete_type_list env n2 lv2 (Mty_ident p1) n1 tl1 in
+  and ntl1 = complete_type_list env n2 lv1 (Mty_ident p1) n1 tl1 in
   unify_list (List.map snd ntl1) (List.map snd ntl2);
   if eq_package_path env p1 p2
   || !package_subtype env p1 n1 tl1 p2 n2 tl2

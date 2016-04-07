@@ -101,8 +101,8 @@ let rec narrow_unbound_lid_error : 'a. _ -> _ -> _ -> _ -> 'a =
           raise (Error (loc, env, Cannot_scrape_alias(flid, p)))
       | _ -> ()
       end;
-      let mmd = Env.find_module (Env.lookup_module true mlid env) env in
       check_module mlid;
+      let mmd = Env.find_module (Env.lookup_module true mlid env) env in
       begin match Env.scrape_alias env mmd.md_type with
       | Mty_alias p ->
           raise (Error (loc, env, Cannot_scrape_alias(mlid, p)))

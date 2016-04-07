@@ -71,6 +71,7 @@ type error =
   | No_value_clauses
   | Exception_pattern_below_toplevel
   | Inlined_record_escape
+  | Inlined_record_expected
   | Unrefuted_pattern of pattern
   | Invalid_extension_constructor_payload
   | Not_an_extension_constructor
@@ -119,11 +120,6 @@ let rp node =
   node
 ;;
 
-
-let is_recarg d =
-  match (repr d.val_type).desc with
-  | Tconstr(p, _, _) -> Path.is_constructor_typath p
-  | _ -> false
 
 type recarg =
   | Allowed
@@ -1936,10 +1932,22 @@ and type_expect_ ?in_function ?(recarg=Rejected) env sexp ty_expected =
           let name = Path.name ~paren:Oprint.parenthesized_ident path in
           Stypes.record (Stypes.An_ident (loc, name, annot))
         end;
-        begin match is_recarg desc, recarg with
-        | _, Allowed | true, Required | false, Rejected -> ()
-        | true, Rejected | false, Required ->
-            raise (Error (loc, env, Inlined_record_escape));
+        let is_recarg =
+          match (repr desc.val_type).desc with
+          | Tconstr(p, _, _) -> Path.is_constructor_typath p
+          | _ -> false
+        in
+
+        begin match is_recarg, recarg, (repr desc.val_type).desc with
+        | _, Allowed, _
+        | true, Required, _
+        | false, Rejected, _
+          -> ()
+        | true, Rejected, _
+        | false, Required, (Tvar _ | Tconstr _) ->
+            raise (Error (loc, env, Inlined_record_escape))
+        | false, Required, _  ->
+            () (* will fail later *)
         end;
         rue {
           exp_desc =
@@ -2415,8 +2423,9 @@ and type_expect_ ?in_function ?(recarg=Rejected) env sexp ty_expected =
           (Texp_constraint cty, loc, sexp.pexp_attributes) :: arg.exp_extra;
       }
   | Pexp_coerce(sarg, sty, sty') ->
-      (* Could be always true, only 1% slowdown for lablgtk *)
-      let separate = !Clflags.principal || Env.has_local_constraints env in
+      let separate = true in (* always separate, 1% slowdown for lablgtk *)
+      (* Also see PR#7199 for a problem with the following:
+         let separate = !Clflags.principal || Env.has_local_constraints env in*)
       let (arg, ty',cty,cty') =
         match sty with
         | None ->
@@ -3644,7 +3653,7 @@ and type_construct env loc lid sarg ty_expected attrs =
               Pexp_record (_, (Some {pexp_desc = Pexp_ident _}| None))}] ->
             Required
         | _ ->
-            raise (Error(loc, env, Inlined_record_escape))
+            raise (Error(loc, env, Inlined_record_expected))
         end
   in
   let args =
@@ -4004,9 +4013,14 @@ and type_let ?(check = fun s -> Warnings.Unused_var s)
       spat_sexp_list pat_slot_list in
   current_slot := None;
   if is_recursive && not !rec_needed
-  && Warnings.is_active Warnings.Unused_rec_flag then
-    Location.prerr_warning (List.hd spat_sexp_list).pvb_pat.ppat_loc
-      Warnings.Unused_rec_flag;
+  && Warnings.is_active Warnings.Unused_rec_flag then begin
+    let {pvb_pat; pvb_attributes} = List.hd spat_sexp_list in
+    (* See PR#6677 *)
+    Builtin_attributes.with_warning_attribute pvb_attributes
+      (fun () ->
+         Location.prerr_warning pvb_pat.ppat_loc Warnings.Unused_rec_flag
+      )
+  end;
   List.iter2
     (fun pat exp ->
       ignore(check_partial env pat.pat_type pat.pat_loc [case pat exp]))
@@ -4304,6 +4318,9 @@ let report_error env ppf = function
       fprintf ppf
         "@[This form is not allowed as the type of the inlined record could \
          escape.@]"
+  | Inlined_record_expected ->
+      fprintf ppf
+        "@[This constructor expects an inlined record argument.@]"
   | Unrefuted_pattern pat ->
       fprintf ppf
         "@[%s@ %s@ %a@]"

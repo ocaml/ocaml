@@ -1317,8 +1317,12 @@ let prefix_idents_and_subst root sub sg =
   let (pl, sub) = prefix_idents root 0 sub sg in
   pl, sub, lazy (subst_signature sub sg)
 
+let set_nongen_level sub path =
+  Subst.set_nongen_level sub (Path.binding_time path)
+
 let prefix_idents_and_subst root sub sg =
-  if sub = Subst.identity then
+  let sub = set_nongen_level sub root in
+  if sub = set_nongen_level Subst.identity root then
     let sgs =
       try
         Hashtbl.find prefixed_sg root
@@ -1433,7 +1437,7 @@ and components_of_module_maker (env, sub, path, mty) =
           (* fcomp_arg and fcomp_res must be prefixed eagerly, because
              they are interpreted in the outer environment *)
           fcomp_arg = may_map (Subst.modtype sub) ty_arg;
-          fcomp_res = Subst.modtype sub ty_res;
+          fcomp_res = Subst.modtype (set_nongen_level sub path) ty_res;
           fcomp_cache = Hashtbl.create 17;
           fcomp_subst_cache = Hashtbl.create 17 }
   | Mty_ident _
