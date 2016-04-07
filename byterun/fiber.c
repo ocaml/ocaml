@@ -67,6 +67,8 @@ static void dirty_stack(value);
 
 static value save_stack ()
 {
+  Assert (Hd_val(caml_current_stack) &&
+          (Is_minor(caml_current_stack) || !is_garbage(caml_current_stack)));
   value old_stack = caml_current_stack;
   Stack_sp(old_stack) = caml_extern_sp - caml_stack_high;
   Assert(caml_stack_threshold == Stack_base(old_stack) + Stack_threshold / sizeof(value));
@@ -78,6 +80,8 @@ static value save_stack ()
 
 static void load_stack(value newstack)
 {
+  Assert (Hd_val(newstack) &&
+          (Is_minor(newstack) || !is_garbage(newstack)));
   Assert(Tag_val(newstack) == Stack_tag);
   Assert(Stack_dirty_domain(newstack) == 0 || Stack_dirty_domain(newstack) == caml_domain_self());
   caml_stack_threshold = Stack_base(newstack) + Stack_threshold / sizeof(value);
@@ -85,7 +89,6 @@ static void load_stack(value newstack)
   caml_extern_sp = caml_stack_high + Stack_sp(newstack);
   caml_current_stack = newstack;
   caml_scan_stack (forward_pointer, newstack);
-  //caml_gc_log ("load_stack: %p", (value*)newstack);
 }
 
 #define Fiber_stack_wosize ((Stack_threshold / sizeof(value)) *2)
@@ -150,6 +153,7 @@ void caml_init_main_stack()
 value caml_find_performer(value stack)
 {
   value parent = caml_current_stack;
+  Assert (Hd_val(parent) && (Is_minor(parent) || !is_garbage(parent)));
   do {
     value delegator = Stack_parent(stack);
     Stack_parent(stack) = parent;
@@ -252,14 +256,14 @@ void caml_save_stack_gc()
 {
   Assert(!stack_is_saved);
   save_stack();
-  stack_is_saved = 1;
+  ++stack_is_saved;
 }
 
 void caml_restore_stack_gc()
 {
   Assert(stack_is_saved);
   load_stack(caml_current_stack);
-  stack_is_saved = 0;
+  --stack_is_saved;
 }
 
 int caml_stack_is_saved (void)

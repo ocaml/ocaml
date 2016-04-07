@@ -12,6 +12,7 @@
 /***********************************************************************/
 
 #include <string.h>
+
 #include "config.h"
 #include "fail.h"
 #include "finalise.h"
@@ -109,12 +110,8 @@ static void oldify_one (value v, value *p, int promote_stack)
     promote_domain ? promote_domain->state : caml_domain_state;
   char* young_ptr = domain_state->young_ptr;
   char* young_end = domain_state->young_end;
-
-  /* It is either the case that this function was called from `caml_promote` or
-   * `caml_empty_minor_heap`. In the former case, it is possible that the
-   * current domain might not be the domain for which promotion is being
-   * performed (See attempt_rpc_takeover in domain.c). Hence, in this case,
-   * `caml_domain_state` will be different from the promote_domain->state. */
+  Assert (domain_state->young_start <= domain_state->young_ptr &&
+          domain_state->young_ptr <= domain_state->young_end);
 
  tail_call:
   if (Is_block (v) && young_ptr <= Hp_val(v) && Hp_val(v) < young_end) {
@@ -201,6 +198,7 @@ static void oldify_one (value v, value *p, int promote_stack)
       }
     }
   } else {
+    /* XXX KC: Does this operation race with other domain's oldifying operation */
     *p = v;
   }
 }
@@ -228,11 +226,11 @@ static void oldify_mopup (int promote_stack)
     new_v = Op_val (v)[0];                /* Follow forward pointer. */
     if (Tag_val(new_v) == Stack_tag) {
       oldify_todo_list = Op_val (v)[1];   /* Remove from list (stack) */
-      caml_gc_log ("oldify_mopup: caml_scan_stack start old=%p new=%p",
-                   (value*)v, (value*)new_v);
+      //caml_gc_log ("oldify_mopup: caml_scan_stack start old=%p new=%p",
+      //             (value*)v, (value*)new_v);
       caml_scan_stack(caml_oldify_one, new_v);
-      caml_gc_log ("oldify_mopup: caml_scan_stack end old=%p new=%p",
-                   (value*)v, (value*)new_v);
+      //caml_gc_log ("oldify_mopup: caml_scan_stack end old=%p new=%p",
+      //             (value*)v, (value*)new_v);
     } else {
       oldify_todo_list = Op_val (new_v)[1]; /* Remove from list (non-stack) */
 
@@ -294,8 +292,9 @@ CAMLexport value caml_promote(struct domain* domain, value root)
   mlsize_t sz, i;
   tag_t tag;
   int saved_stack = 0;
-  value young_ptr = (value)domain->state->young_ptr;
-  value young_end = (value)domain->state->young_end;
+  struct caml_domain_state *domain_state = domain->state;
+  value young_ptr = (value)domain_state->young_ptr;
+  value young_end = (value)domain_state->young_end;
 
   /* Integers are already shared */
   if (Is_long(root))
@@ -312,9 +311,9 @@ CAMLexport value caml_promote(struct domain* domain, value root)
   }
 
   Assert(!oldify_todo_list);
-  oldest_promoted = (value)domain->state->young_start;
-  // caml_gc_log ("caml_promote: root=%p tag=%u young_ptr=%p owner=%d",
-  //            (value*)root, tag, (value*)young_ptr, domain->id);
+  oldest_promoted = (value)domain_state->young_start;
+  // caml_gc_log ("caml_promote: root=%p tag=%u young_start=%p young_ptr=0x%lx young_end=0x%lx owner=%d",
+  //            (value*)root, tag, domain_state->young_start, young_ptr, young_end, domain->id);
   promote_domain = domain;
 
   if (tag != Stack_tag) {
@@ -336,9 +335,13 @@ CAMLexport value caml_promote(struct domain* domain, value root)
 
   oldify_mopup (0);
 
-  // caml_gc_log ("caml_promote: new root=%p",(value*)root);
+  // caml_gc_log ("caml_promote: new root=0x%lx oldest_promoted=0x%lx",
+  //            root, oldest_promoted);
 
   Assert (!Is_minor(root));
+  /* XXX KC: We might checking for rpc's just before a stw_phase of a major
+   * collection? Is this necessary? */
+  caml_darken(root, 0);
 
   if (tag == Stack_tag) {
     /* Since we've promoted the objects on the stack, the stack is now clean. */
@@ -357,13 +360,9 @@ CAMLexport value caml_promote(struct domain* domain, value root)
     if (Is_block(old_p) && young_ptr <= old_p && old_p < young_end) {
       value new_p = old_p;
       forward_pointer (new_p, &new_p);
-      if (old_p != new_p) {
-        if(!__sync_bool_compare_and_swap (*r,old_p,new_p)) {
-          caml_gc_log ("caml_promote: lost cas *r=%p **r=%p old_p=%p new_p=%p",
-                        *r, (value*)**r,(value*)old_p,(value*)new_p);
-        }
-      }
-      // caml_gc_log ("forward: old_p=%p new_p=%p **r=%p",(value*)old_p, (value*)new_p,(value*)**r);
+      if (old_p != new_p)
+        __sync_bool_compare_and_swap (*r,old_p,new_p);
+      //caml_gc_log ("forward: old_p=%p new_p=%p **r=%p",(value*)old_p, (value*)new_p,(value*)**r);
     }
   }
 
@@ -388,7 +387,7 @@ CAMLexport value caml_promote(struct domain* domain, value root)
       Assert (tag != Infix_tag);
       sz = Bosize_hd (hd);
       Assert (Wosize_hd(hd) <= Max_young_wosize);
-      // caml_gc_log ("Scan: iter=%p sz=%lu tag=%u", (value*)iter, Wsize_bsize(sz), tag);
+      //caml_gc_log ("Scan: iter=%p sz=%lu tag=%u", (value*)iter, Wsize_bsize(sz), tag);
       if (tag < No_scan_tag && tag != Stack_tag) { /* Stacks will be scanned lazily, so skip. */
         for (i = 0; i < Wsize_bsize(sz); i++) {
           f = Op_val(iter)[i];
@@ -414,35 +413,46 @@ CAMLexport value caml_promote(struct domain* domain, value root)
    if needed.
 */
 
-void caml_empty_minor_heap (void)
+void caml_empty_minor_heap_domain (struct domain* domain)
 {
-  uintnat minor_allocated_bytes = caml_domain_state->young_end - caml_domain_state->young_ptr;
+  struct caml_domain_state* domain_state = domain->state;
   unsigned rewritten = 0;
+  int saved_stack = 0;
+  value young_ptr = (value)domain_state->young_ptr;
+  value young_end = (value)domain_state->young_end;
+  uintnat minor_allocated_bytes = young_end - young_ptr;
   value **r;
 
-  caml_save_stack_gc();
+  if (!caml_stack_is_saved()) {
+    saved_stack = 1;
+    caml_save_stack_gc();
+  }
+
+  promote_domain = domain;
 
   stat_live_bytes = 0;
 
   if (minor_allocated_bytes != 0) {
-    caml_gc_log ("Minor collection starting");
-    caml_do_local_roots(&caml_oldify_one, caml_domain_self());
+    caml_gc_log ("Minor collection of domain %d starting", domain->id);
+    caml_do_local_roots(&caml_oldify_one, domain);
 
-    for (r = caml_remembered_set.fiber_ref.base; r < caml_remembered_set.fiber_ref.ptr; r++) {
-      caml_scan_dirty_stack (&caml_oldify_one, (value)*r);
+    for (r = domain->remembered_set->fiber_ref.base; r < domain->remembered_set->fiber_ref.ptr; r++) {
+      caml_scan_dirty_stack_domain (&caml_oldify_one, (value)*r, domain);
     }
 
-    for (r = caml_remembered_set.major_ref.base; r < caml_remembered_set.major_ref.ptr; r++) {
+    for (r = domain->remembered_set->major_ref.base; r < domain->remembered_set->major_ref.ptr; r++) {
       value x = **r;
       caml_oldify_one (x, &x);
     }
 
     caml_oldify_mopup ();
 
-    for (r = caml_remembered_set.major_ref.base; r < caml_remembered_set.major_ref.ptr; r++){
+    for (r = domain->remembered_set->major_ref.base; r < domain->remembered_set->major_ref.ptr; r++){
       value v = **r;
-      if (Is_block (v) && Is_young(v)) {
-        Assert (Hp_val (v) >= caml_domain_state->young_ptr);
+      if (Is_block (v) &&
+          (char*)young_ptr <= Hp_val(v) &&
+          Hp_val(v) < (char*)young_end) {
+        Assert (Hp_val (v) >= domain_state->young_ptr);
         value vnew;
         header_t hd = Hd_val(v);
         int offset = 0;
@@ -452,33 +462,41 @@ void caml_empty_minor_heap (void)
         }
         Assert (Hd_val(v) == 0);
         vnew = Op_val(v)[0] + offset;
-        Assert (Is_block(vnew) && !Is_young(vnew));
+        Assert (Is_block(vnew) && !Is_minor(vnew));
         Assert (Hd_val(vnew));
         if (Tag_hd(hd) == Infix_tag) { Assert(Tag_val(vnew) == Infix_tag); }
         if (__sync_bool_compare_and_swap (*r,v,vnew)) ++rewritten;
+        caml_darken(vnew,0);
       }
       //XXX KC: Could I move the darkening into the conditional above as
       //caml_darken(vnew,0)?
-      caml_darken (**r,*r);
+      //caml_darken (**r,*r);
     }
 
-    clear_table (&caml_remembered_set.major_ref);
-    clear_table (&caml_remembered_set.minor_ref);
+    clear_table (&(domain->remembered_set->major_ref));
+    clear_table (&(domain->remembered_set->minor_ref));
 
-    caml_domain_state->young_ptr = caml_domain_state->young_end;
+    domain_state->young_ptr = domain_state->young_end;
     caml_stat_minor_words += Wsize_bsize (minor_allocated_bytes);
 
-    caml_gc_log ("Minor collection completed: %u of %u kb live, %u pointers rewritten",
-                 (unsigned)stat_live_bytes/1024, (unsigned)minor_allocated_bytes/1024, rewritten);
+    caml_gc_log ("Minor collection of domain %d completed: %u of %u kb live, %u pointers rewritten",
+                 domain->id, (unsigned)stat_live_bytes/1024, (unsigned)minor_allocated_bytes/1024, rewritten);
+  }
+  else {
+    caml_gc_log ("Minor collection of domain %d: skipping", domain->id);
   }
 
-  for (r = caml_remembered_set.fiber_ref.base; r < caml_remembered_set.fiber_ref.ptr; r++) {
-    caml_scan_dirty_stack (&caml_darken, (value)*r);
-    caml_clean_stack ((value)*r);
+  for (r = domain->remembered_set->fiber_ref.base; r < domain->remembered_set->fiber_ref.ptr; r++) {
+    caml_scan_dirty_stack_domain (&caml_darken, (value)*r, domain);
+    caml_clean_stack_domain ((value)*r, domain);
   }
-  clear_table (&caml_remembered_set.fiber_ref);
+  clear_table (&(domain->remembered_set->fiber_ref));
 
-  caml_restore_stack_gc();
+  if (saved_stack) {
+    caml_restore_stack_gc();
+  }
+
+  promote_domain = 0;
 
 
 #ifdef DEBUG
@@ -491,6 +509,11 @@ void caml_empty_minor_heap (void)
     ++ minor_gc_counter;
   }
 #endif
+}
+
+void caml_empty_minor_heap ()
+{
+  caml_empty_minor_heap_domain (caml_domain_self());
 }
 
 /* Do a minor collection and a slice of major collection, call finalisation

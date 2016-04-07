@@ -12,4 +12,4 @@ void caml_darken(value, value* ignored);
 void caml_mark_root(value, value*);
 void caml_empty_mark_stack(void);
 
-#endif
+#endif /* CAML_MAJOR_GC_H */
