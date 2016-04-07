@@ -20,124 +20,121 @@
 
         ./configure
 +
-This generates the three configuration files "Makefile", "m.h" and "s.h"
-in the config/ subdirectory.
+This generates the three configuration files `Makefile`, `m.h` and `s.h`
+in the `config/` subdirectory.
 +
 The `configure` script accepts the following options:
 +
--prefix <dir>::                   (default: '/usr/local')
-        Set the PREFIX variable used to define the defaults of the
-        following three options.  Must be an absolute path name.
+`-prefix <dir>`::                   (default: `/usr/local`)
+        Set the `PREFIX` variable used to define the defaults of the following
+        three options.  Must be an absolute path name.
 
--bindir <dir>::                   (default: '$(PREFIX)/bin')
-        Directory where the binaries will be installed.
-        Must be an absolute path name, or start with "$(PREFIX)"
+`-bindir <dir>`::                   (default: `$(PREFIX)/bin`)
+        Directory where the binaries will be installed.  Must be an absolute
+        path name, or start with `$(PREFIX)`.
 
--libdir <dir>::                   (default: '$(PREFIX)/lib/ocaml')
-        Directory where the OCaml library will be installed
-        Must be an absolute path name, or start with "$(PREFIX)"
+`-libdir <dir>`::                   (default: `$(PREFIX)/lib/ocaml`)
+        Directory where the OCaml library will be installed.  Must be an
+        absolute path name, or start with `$(PREFIX)`.
 
--mandir <dir>::                   (default: '$(PREFIX)/man/man1')
-        Directory where the manual pages will be installed
-        Must be an absolute path name, or start with "$(PREFIX)"
+`-mandir <dir>`::                   (default: `$(PREFIX)/man/man1`)
+        Directory where the manual pages will be installed.  Must be an absolute
+        path name, or start with `$(PREFIX)`.
 
--cc <C compiler and options>::    (default: gcc if available, cc otherwise)
-        C compiler to use for building the system
+`-cc <C compiler and options>`::    (default: `gcc` if found, otherwise `cc`)
+        C compiler to use for building the system.
 
--libs <extra libraries>::         (default: none)
-        Extra libraries to link with the system
+`-libs <extra libraries>`::         (default: none)
+        Extra libraries to link with the system.
 
--no-curses::
+`-no-curses`::
         Do not use the curses library.
 
--host <hosttype>::                (default: determined automatically)
-        The type of the host machine, in GNU's "configuration name"
-        format (CPU-COMPANY-SYSTEM or CPU-COMPANY-KERNEL-SYSTEM).
-        This info is generally determined automatically by the
-        "configure" script, and rarely ever needs to be provided by
-        hand. The installation instructions for gcc or emacs contain a
-        complete list of configuration names.
+`-host <hosttype>`::                (default: determined automatically)
+        The type of the host machine, in GNU's "configuration name" format
+        (CPU-COMPANY-SYSTEM or CPU-COMPANY-KERNEL-SYSTEM).  This info is
+        generally determined automatically by the `configure` script, and rarely
+        ever needs to be provided by hand.  The installation instructions for
+        GCC or GNU Emacs contain a complete list of configuration names.
 
--target <targettype>::            (default: same as -host)
-        The type of the target machine, in GNU's "configuration name"
-        format (CPU-COMPANY-SYSTEM or CPU-COMPANY-KERNEL-SYSTEM).
-        Setting this will setup OCaml as a cross-compiler which runs on
-        $host and produces code for $target. This requires a C toolchain
-        which also produces code for $target and a native OCaml
-        compiler of the exact same version (if you want a cross 4.00.1,
-        you need a native 4.00.1).
+`-target <targettype>`::            (default: same as `-host`)
+        The type of the target machine, in GNU's "configuration name" format
+        (CPU-COMPANY-SYSTEM or CPU-COMPANY-KERNEL-SYSTEM). Setting this will
+        setup OCaml as a cross-compiler which runs on `$host` and produces code
+        for `$target`. This requires a C toolchain which also produces code for
+        `$target` and a native OCaml compiler of the exact same version (if you
+        want a cross 4.00.1, you need a native 4.00.1).
 
--x11include <include_dir>::       (default: determined automatically)
--x11lib     <lib_dir>::           (default: determined automatically)
-        Location of the X11 include directory (e.g. /usr/X11R6/include)
-        and the X11 library directory (e.g. /usr/X11R6/lib).
+`-x11include <include_dir>`::       (default: determined automatically)
+`-x11lib <lib_dir>`::               (default: determined automatically)
+        Location of the X11 include directory (e.g. `/usr/X11R6/include`) and
+        the X11 library directory (e.g. `/usr/X11R6/lib`).
 
--no-pthread::
+`-no-pthread`::
         Do not attempt to use POSIX threads.
 
--with-pthread::
+`-with-pthread`::
         Attempt to use POSIX threads (this is the default).
 
--no-shared-libs::
-        Do not configure support for shared libraries
+`-no-shared-libs`::
+        Do not configure support for shared libraries.
 
--dldefs <cpp flags>::
--dllibs <flags and libraries>::
-        These options specify where to find the libraries for dynamic
-        linking (i.e. use of shared libraries).  "-dldefs" specifies
-        options for finding the header files, and "-dllibs" for finding
-        the C libraries.
+`-dldefs <cpp flags>`::
+`-dllibs <flags and libraries>`::
+        These options specify where to find the libraries for dynamic linking
+        (i.e. use of shared libraries).  `-dldefs` specifies options for finding
+        the header files, and `-dllibs` for finding the C libraries.
 
--as <assembler and options>::     (default: determined automatically)
+`-as <assembler and options>`::     (default: determined automatically)
         The assembler to use for assembling ocamlopt-generated code.
 
--aspp <assembler and options>::   (default: determined automatically)
-        The assembler to use for assembling the parts of the
-        run-time system manually written in assembly language.
-        This assembler must preprocess its input with the C preprocessor.
+`-aspp <assembler and options>`::   (default: determined automatically)
+        The assembler to use for assembling the parts of the run-time system
+        manually written in assembly language. This assembler must pre-process
+        its input with the C preprocessor.
 
--with-debug-runtime::
-        Compile and install the debug version of the runtimes, useful
-        for debugging C stubs and other low-level code.
+`-with-debug-runtime`::
+        Compile and install the debug version of the runtimes, useful for
+        debugging C stubs and other low-level code.
 
--with-instrumented-runtime::
-        Compile and install the instrumented version of the runtimes,
-        useful mainly for fine-tuning the GC. Works only on Linux.
+`-with-instrumented-runtime`::
+        Compile and install the instrumented version of the runtimes, useful
+        mainly for fine-tuning the GC.  Works only on Linux.
 
--verbose::
-        Verbose output of the configuration tests. Use it if the outcome
-        of configure is not what you were expecting.
+`-verbose`::
+        Verbose output of the configuration tests.  Use it if the outcome of
+        `configure` is not what you were expecting.
 
--no-debugger::
-        Do not build ocamldebug.
+`-no-debugger`::
+        Do not build `ocamldebug`.
 
--no-native-compiler::
+`-no-native-compiler`::
         Do not build the native compiler -- bytecode compilation only.
 
--no-ocamldoc::
-        Do not build ocamldoc.
+`-no-ocamldoc`::
+        Do not build `ocamldoc`.
 
--no-ocamlbuild::
-        Deprecated since 4.03.0, as ocamlbuild is now distributed separately
+`-no-ocamlbuild`::
+        Deprecated since 4.03.0, as `ocamlbuild` is now distributed separately
         from the compiler distribution.
 
--no-graph::
+`-no-graph`::
         Do not compile the Graphics library.
 
--partialld <linker and options>::  (default: determined automatically)
-        The linker and options to use for producing an object file
-        (rather than an executable) from several other object files.
+`-partialld <linker and options>`:: (default: determined automatically)
+        The linker and options to use for producing an object file (rather than
+        an executable) from several other object files.
 
--no-cfi::
+`-no-cfi`::
         Do not compile support for CFI directives.
 +
 Examples:
 
-* Standard installation in /usr/{bin,lib,man} instead of /usr/local:
+* Standard installation in `/usr/{bin,lib,man}` instead of `/usr/local`:
     ./configure -prefix /usr
 
 
-* Installation in /usr, man pages in section "l":
+* Installation in `/usr`, man pages in section "l":
 
     ./configure -bindir /usr/bin -libdir /usr/lib/ocaml -mandir /usr/man/manl
 +
@@ -150,32 +147,32 @@ or:
     ./configure -cc "gcc -m32" -as "as --32" -aspp "gcc -m32 -c" \
                 -host i386-linux -partialld "ld -r -melf_i386"
 
-* On a Linux x86-64 host, to build the run-time system in PIC mode,
-  no special options should be required---the libraries should be built
-  automatically.  The old instructions were:
+* On a Linux x86-64 host, to build the run-time system in PIC mode, no special
+  options should be required -- the libraries should be built automatically.
+  The old instructions were:
 
     ./configure -cc "gcc -fPIC" -aspp "gcc -c -fPIC"
 +
-On a 64-bit POWER architecture host running Linux, OCaml only operates
-  in a 32-bit environment.  If your system compiler is configured as 32-bit,
-  e.g. Red Hat 5.9, you don't need to do anything special.  If that is
-  not the case (e.g. Red Hat 6.4), then IBM's "Advance Toolchain" can
-  be used.  For example:
+On a 64-bit POWER architecture host running Linux, OCaml only operates in a
+  32-bit environment.  If your system compiler is configured as 32-bit, e.g.
+  Red Hat 5.9, you don't need to do anything special.  If that is not the case
+  (e.g. Red Hat 6.4), then IBM's "Advance Toolchain" can be used.  For example:
 
     export PATH=/opt/at7.0/bin:$PATH
     ./configure -cc "gcc -m32" -as "as -a32" -aspp "gcc -m32 -c" \
       -partialld "ld -r -m elf32ppc"
 
-* On a MacOSX 10.5/Intel Core 2 or MacOSX 10.5/PowerPC host,
-  to build a 64-bit version of OCaml:
+* On a OS X 10.5/Intel Core 2 or OS X 10.5/PowerPC host, to build a 64-bit
+  version of OCaml:
+
     ./configure -cc "gcc -m64"
 
-* On Intel Mac OS X, to build a 32-bit version of OCaml:
+* On OS X Intel, to build a 32-bit version of OCaml:
 
     ./configure -host "i386-apple-darwin13.2.0" -cc "gcc -arch i386 -m32" \
       -as "as -arch i386" -aspp "gcc -arch i386 -m32 -c"
 
-* For Sun Solaris with the "acc" compiler:
+* For Sun Solaris with the `acc` compiler:
 
     ./configure -cc "acc -fast" -libs "-lucb"
 
@@ -183,12 +180,12 @@ On a 64-bit POWER architecture host running Linux, OCaml only operates
 
     ./configure -cc "gcc -m32" -as "as -32" -aspp "gcc -m32 -c"
 
-* For AIX 4.3 with the IBM compiler xlc:
+* For AIX 4.3 with the IBM compiler `xlc`:
 
     ./configure -cc "xlc_r -D_AIX43 -Wl,-bexpall,-brtl -qmaxmem=8192"
 +
-If something goes wrong during the automatic configuration, or if the
-generated files cause errors later on, then look at the template files
+If something goes wrong during the automatic configuration, or if the generated
+files cause errors later on, then look at the template files:
 
         config/Makefile-templ
         config/m-templ.h
