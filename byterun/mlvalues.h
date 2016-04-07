@@ -210,15 +210,18 @@ static inline value Field(value x, int i) {
   //if (Is_young(v)) Assert(young_ptr < (char*)v);
   return Is_foreign(v) ? caml_read_barrier(x, i) : v;
 }
+
 /*
 static inline value FieldImm(value x, int i) {
+  Assert (!Is_foreign(x));
   Assert (Hd_val(x));
   value v = (((value*)x))[i];
   Assert (v != Debug_free_major);
-  Assert (!Is_foreign(v));
-  // if (Is_young(v)) Assert(young_ptr < (char*)v);
+  Assert (v != Debug_free_minor);
+  //if (Is_young(v)) Assert(young_ptr < (char*)v);
   return v;
 } */
+
 #define FieldImm(x, i) (((value *)(x)) [i])
 //#define Field(x, i) (((value *)(x)) [i] + 0)
 

@@ -26,4 +26,6 @@ void caml_cycle_heap_stw(void);
    (after caml_cycle_heap_stw) */
 void caml_cycle_heap(struct caml_heap_state*);
 
+int is_garbage (value);
+
 #endif /* CAML_SHARED_HEAP_H */

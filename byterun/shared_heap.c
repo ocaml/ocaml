@@ -33,6 +33,10 @@ static header_t With_status_hd(header_t hd, status s) {
   return (hd & ~(3 << 8)) | s;
 }
 
+int is_garbage (value parent) {
+  header_t hd = Hd_val(parent);
+  return Has_status_hd(hd, global.GARBAGE);
+}
 
 typedef struct pool {
   struct pool* next;
@@ -369,7 +373,7 @@ int caml_mark_object(value p) {
   Assert (h && !Has_status_hd(h, global.GARBAGE));
   if (Has_status_hd(h, global.UNMARKED)) {
     Hd_val(p) = With_status_hd(h, global.MARKED);
-    //caml_gc_log ("caml_mark_object: %p hd=%p", (value*)p, (value*)Hd_val(p));
+    // caml_gc_log ("caml_mark_object: %p hd=%p", (value*)p, (value*)Hd_val(p));
     return 1;
   } else {
     return 0;
@@ -424,6 +428,9 @@ static __thread intnat verify_objs = 0;
 static __thread struct addrmap verify_seen = ADDRMAP_INIT;
 
 static void verify_push(value v, value* p) {
+  if (!Is_block(v)) return;
+
+  // caml_gc_log ("verify_push: 0x%lx", v);
   if (verify_sp == verify_stack_len) {
     verify_stack_len = verify_stack_len * 2 + 100;
     verify_stack = caml_stat_resize(verify_stack,
@@ -448,6 +455,7 @@ static void verify_object(value v) {
   if (Has_status_hd(Hd_val(v), NOT_MARKABLE)) return;
   verify_objs++;
 
+  // caml_gc_log ("verify_object: v=0x%lx hd=0x%lx tag=%u", v, Hd_val(v), Tag_val(v));
   if (!Is_minor(v)) {
     Assert(Has_status_hd(Hd_val(v), global.MARKED));
   }
@@ -469,11 +477,13 @@ static void verify_object(value v) {
 
 static void verify_heap() {
   caml_save_stack_gc();
-
+  // caml_gc_log("verify_heap: caml_do_local_roots");
   caml_do_local_roots(&verify_push, caml_domain_self());
+  // caml_gc_log("verify_heap: caml_scan_global_roots");
   caml_scan_global_roots(&verify_push);
+  // caml_gc_log("verify_heap: verify_stack");
   while (verify_sp) verify_object(verify_stack[--verify_sp]);
-  caml_gc_log("Verify: %lu objs", verify_objs);
+  // caml_gc_log("Verify: %lu objs", verify_objs);
 
   caml_addrmap_clear(&verify_seen);
   verify_objs = 0;

@@ -300,3 +300,13 @@ CAMLprim value caml_bvar_is_empty(value bv)
 {
   return Val_int((Long_val(Op_val(bv)[1]) & BVAR_EMPTY) != 0);
 }
+
+#ifdef DEBUG
+int is_minor (value v) {
+  return Is_minor(v);
+}
+
+header_t hd_val(value v) {
+  return Hd_val(v);
+}
+#endif
