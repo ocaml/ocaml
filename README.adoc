@@ -82,8 +82,9 @@ conditions stated in file LICENSE.
 
 == INSTALLATION
 
-See the file INSTALL for installation instructions on Unix, Linux and
-OS X machines.  For MS Windows, see link:README.win32.adoc[].
+See the file INSTALL for installation instructions on machines running Unix,
+Linux, OS X and Cygwin.  For native Microsoft Windows, see
+link:README.win32.adoc[].
 
 == DOCUMENTATION
 
