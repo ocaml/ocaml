@@ -801,6 +801,9 @@ Bug fixes:
 - PR#7196: "let open" is not correctly pretty-printed to the left of a ';'
   (Gabriel Scherer, report by Christophe Raffalli)
 
+- PR#7214: Assertion failure in Env.add_gadt_instances
+  (Jacques Garrigue, report by Stephen Dolan)
+
 - GPR#205: Clear caml_backtrace_last_exn before registering as root
   (report and fix by Frederic Bour)
 

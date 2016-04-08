@@ -1158,10 +1158,10 @@ let rec type_pat ~constrs ~labels ~no_existentials ~mode ~explode ~env
       let (ty_args, ty_res) =
         instance_constructor ~in_pattern:(env, get_newtype_level ()) constr
       in
-      if constr.cstr_generalized && mode <> Inside_or then
-        unify_pat_types_gadt loc env ty_res expected_ty
-      else
-        unify_pat_types loc !env ty_res expected_ty;
+      (* PR#7214: do not use gadt unification for toplevel lets *)
+      if not constr.cstr_generalized || mode = Inside_or || no_existentials
+      then unify_pat_types loc !env ty_res expected_ty
+      else unify_pat_types_gadt loc env ty_res expected_ty;
 
       let rec check_non_escaping p =
         match p.ppat_desc with
