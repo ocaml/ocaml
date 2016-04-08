@@ -760,15 +760,31 @@ value caml_interprete(code_t prog, asize_t prog_size)
     Instruct(GETFIELD):
       accu = FieldImm(accu, *pc); pc++; Next;
     Instruct(GETMUTABLEFIELD0):
-      accu = Field(accu, 0); Next;
+      Setup_for_c_call;
+      accu = Field(accu, 0);
+      Restore_after_c_call;
+      Next;
     Instruct(GETMUTABLEFIELD1):
-      accu = Field(accu, 1); Next;
+      Setup_for_c_call;
+      accu = Field(accu, 1);
+      Restore_after_c_call;
+      Next;
     Instruct(GETMUTABLEFIELD2):
-      accu = Field(accu, 2); Next;
+      Setup_for_c_call;
+      accu = Field(accu, 2);
+      Restore_after_c_call;
+      Next;
     Instruct(GETMUTABLEFIELD3):
-      accu = Field(accu, 3); Next;
+      Setup_for_c_call;
+      accu = Field(accu, 3);
+      Restore_after_c_call;
+      Next;
     Instruct(GETMUTABLEFIELD):
-      accu = Field(accu, *pc); pc++; Next;
+      Setup_for_c_call;
+      accu = Field(accu, *pc);
+      Restore_after_c_call;
+      pc++;
+      Next;
     Instruct(GETFLOATFIELD): {
       double d = Double_field(accu, *pc);
       Alloc_small(accu, Double_wosize, Double_tag);
