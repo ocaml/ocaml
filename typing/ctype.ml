@@ -2735,10 +2735,9 @@ let unify_gadt ~newtype_level:lev (env:Env.t ref) ty1 ty2 =
     newtype_level := None;
     TypePairs.clear unify_eq_set;
   with e ->
+    newtype_level := None;
     TypePairs.clear unify_eq_set;
-    match e with
-      Unify e -> raise (Unify e)
-    | e -> newtype_level := None; raise e
+    raise e
 
 let unify_var env t1 t2 =
   let t1 = repr t1 and t2 = repr t2 in
