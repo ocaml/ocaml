@@ -502,8 +502,8 @@ void caml_empty_minor_heap_domain (struct domain* domain)
 #ifdef DEBUG
   {
     value *p;
-    for (p = (value *) caml_domain_state->young_start;
-         p < (value *) caml_domain_state->young_end; ++p){
+    for (p = (value *) domain_state->young_start;
+         p < (value *) domain_state->young_end; ++p){
       *p = Debug_free_minor;
     }
     ++ minor_gc_counter;
