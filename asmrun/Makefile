@@ -1,15 +1,17 @@
-#########################################################################
-#                                                                       #
-#                                 OCaml                                 #
-#                                                                       #
-#            Xavier Leroy, projet Cristal, INRIA Rocquencourt           #
-#                                                                       #
-#   Copyright 1999 Institut National de Recherche en Informatique et    #
-#   en Automatique.  All rights reserved.  This file is distributed     #
-#   under the terms of the GNU Library General Public License, with     #
-#   the special exception on linking described in file ../LICENSE.      #
-#                                                                       #
-#########################################################################
+#**************************************************************************
+#*                                                                        *
+#*                                 OCaml                                  *
+#*                                                                        *
+#*            Xavier Leroy, projet Cristal, INRIA Rocquencourt            *
+#*                                                                        *
+#*   Copyright 1999 Institut National de Recherche en Informatique et     *
+#*     en Automatique.                                                    *
+#*                                                                        *
+#*   All rights reserved.  This file is distributed under the terms of    *
+#*   the GNU Lesser General Public License version 2.1, with the          *
+#*   special exception on linking described in the file LICENSE.          *
+#*                                                                        *
+#**************************************************************************
 
 include ../config/Makefile
 
@@ -18,26 +20,32 @@ FLAGS=-I../byterun -DCAML_NAME_SPACE -DNATIVE_CODE \
       -DTARGET_$(ARCH) -DMODEL_$(MODEL) -DSYS_$(SYSTEM) $(IFLEXDIR)
 CFLAGS=$(FLAGS) $(NATIVECCCOMPOPTS)
 DFLAGS=$(FLAGS) -g -DDEBUG $(NATIVECCCOMPOPTS)
+IFLAGS=$(FLAGS) -DCAML_INSTR
 PFLAGS=$(FLAGS) -pg -DPROFILING $(NATIVECCPROFOPTS) $(NATIVECCCOMPOPTS)
 PICFLAGS=$(FLAGS) $(SHAREDCCCOMPOPTS) $(NATIVECCCOMPOPTS)
 
 COBJS=startup_aux.o startup.o \
   main.o fail.o roots.o globroots.o signals.o signals_asm.o \
-  misc.o freelist.o major_gc.o minor_gc.o memory.o alloc.o compare.o ints.o \
+  freelist.o misc.o major_gc.o minor_gc.o memory.o alloc.o compare.o ints.o \
   floats.o str.o array.o io.o extern.o intern.o hash.o sys.o parsing.o \
   gc_ctrl.o terminfo.o md5.o obj.o lexing.o printexc.o callback.o weak.o \
   compact.o finalise.o custom.o $(UNIX_OR_WIN32).o backtrace_prim.o \
   backtrace.o \
-  natdynlink.o debugger.o meta.o dynlink.o
+  natdynlink.o debugger.o meta.o dynlink.o clambda_checks.o
 
 ASMOBJS=$(ARCH).o
 
 OBJS=$(COBJS) $(ASMOBJS)
 DOBJS=$(COBJS:.o=.d.o) $(ASMOBJS)
+IOBJS=$(COBJS:.o=.i.o) $(ASMOBJS)
 POBJS=$(COBJS:.o=.p.o) $(ASMOBJS:.o=.p.o)
 PICOBJS=$(COBJS:.o=.pic.o) $(ASMOBJS:.o=.pic.o)
 
 all: libasmrun.a all-$(RUNTIMED) all-$(PROFILING) all-$(SHARED)
+
+ifeq "$(RUNTIMEI)" "true"
+all: libasmruni.a
+endif
 
 libasmrun.a: $(OBJS)
 	rm -f libasmrun.a
@@ -54,6 +62,11 @@ libasmrund.a: $(DOBJS)
 	rm -f libasmrund.a
 	$(ARCMD) rc libasmrund.a $(DOBJS)
 	$(RANLIB) libasmrund.a
+
+libasmruni.a: $(IOBJS)
+	rm -f $@
+	$(ARCMD) rc $@ $^
+	$(RANLIB) $@
 
 all-noprof:
 
@@ -78,40 +91,39 @@ libasmrun_shared.so: $(PICOBJS)
 
 INSTALL_LIBDIR=$(DESTDIR)$(LIBDIR)
 
-install: install-default install-$(RUNTIMED) install-$(PROFILING) \
-         install-$(SHARED)
-
-install-default:
+install::
 	cp libasmrun.a $(INSTALL_LIBDIR)/libasmrun.a
 	cd $(INSTALL_LIBDIR); $(RANLIB) libasmrun.a
 .PHONY: install-default
 
-install-noruntimed:
-.PHONY: install-noruntimed
-
-install-runtimed:
+ifeq "$(RUNTIMED)" "runtimed"
+install::
 	cp libasmrund.a $(INSTALL_LIBDIR)/libasmrund.a
 	cd $(INSTALL_LIBDIR); $(RANLIB) libasmrund.a
-.PHONY: install-runtimed
+endif
 
-install-noprof:
-	rm -f $(INSTALL_LIBDIR)/libasmrunp.a
-	ln -s libasmrun.a $(INSTALL_LIBDIR)/libasmrunp.a
-.PHONY: install-noprof
+ifeq "$(RUNTIMEI)" "true"
+install::
+	cp libasmruni.a $(INSTALL_LIBDIR)/libasmruni.a
+	cd $(INSTALL_LIBDIR); $(RANLIB) libasmruni.a
+endif
 
-install-prof:
+ifeq "$(PROFILING)" "prof"
+install::
 	cp libasmrunp.a $(INSTALL_LIBDIR)/libasmrunp.a
 	cd $(INSTALL_LIBDIR); $(RANLIB) libasmrunp.a
-.PHONY: install-prof
+else
+install::
+	rm -f $(INSTALL_LIBDIR)/libasmrunp.a
+	ln -s libasmrun.a $(INSTALL_LIBDIR)/libasmrunp.a
+endif
 
-install-noshared:
-.PHONY: install-noshared
-
-install-shared:
+ifeq "$(SHARED)" "shared"
+install::
 	cp libasmrun_pic.a $(INSTALL_LIBDIR)/libasmrun_pic.a
 	cd $(INSTALL_LIBDIR); $(RANLIB) libasmrunp.a
 	cp libasmrun_shared.so $(INSTALL_LIBDIR)/libasmrun_shared.so
-.PHONY: install-prof
+endif
 
 main.c: ../byterun/main.c
 	ln -s ../byterun/main.c main.c
@@ -197,6 +209,18 @@ LINKEDFILES=misc.c freelist.c major_gc.c minor_gc.c memory.c alloc.c array.c \
 clean::
 	rm -f $(LINKEDFILES)
 
+%.d.o: %.c
+	$(CC) -c $(DFLAGS) -o $@ $<
+
+%.i.o : %.c
+	$(CC) -c $(IFLAGS) -o $@ $<
+
+%.p.o: %.c
+	$(CC) -c $(PFLAGS) -o $@ $<
+
+%.pic.o: %.c
+	$(CC) -c $(PICFLAGS) -o $@ $<
+
 %.o: %.S
 	$(ASPP) -DSYS_$(SYSTEM) -DMODEL_$(MODEL) -o $@ $< || \
 	{ echo "If your assembler produced syntax errors, it is probably";\
@@ -210,15 +234,6 @@ clean::
 %.pic.o: %.S
 	$(ASPP) -DSYS_$(SYSTEM) -DMODEL_$(MODEL) $(SHAREDCCCOMPOPTS) -o $@ $<
 
-%.d.o: %.c
-	$(CC) -c $(DFLAGS) -o $@ $<
-
-%.p.o: %.c
-	$(CC) -c $(PFLAGS) -o $@ $<
-
-%.pic.o: %.c
-	$(CC) -c $(PICFLAGS) -o $@ $<
-
 %.o: %.s
 	$(ASPP) -DSYS_$(SYSTEM) -o $@ $<
 
@@ -229,11 +244,12 @@ clean::
 	$(ASPP) -DSYS_$(SYSTEM) $(SHAREDCCCOMPOPTS) -o $@ $<
 
 clean::
-	rm -f *.o *.a *~
+	rm -f *.o *.a *.so *~
 
 depend: $(COBJS:.o=.c) ${LINKEDFILES}
 	$(CC) -MM $(FLAGS) *.c > .depend
+	$(CC) -MM $(FLAGS) -DPROFILING *.c | sed -e 's/\.o/.p.o/' >> .depend
 	$(CC) -MM $(FLAGS) -DDEBUG *.c | sed -e 's/\.o/.d.o/' >> .depend
-	$(CC) -MM $(FLAGS) *.c | sed -e 's/\.o/.p.o/' >> .depend
+	$(CC) -MM $(FLAGS) -DCAML_INSTR *.c | sed -e 's/\.o/.i.o/' >> .depend
 
 include .depend

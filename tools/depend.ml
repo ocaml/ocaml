@@ -1,14 +1,17 @@
-(***********************************************************************)
-(*                                                                     *)
-(*                                OCaml                                *)
-(*                                                                     *)
-(*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         *)
-(*                                                                     *)
-(*  Copyright 1999 Institut National de Recherche en Informatique et   *)
-(*  en Automatique.  All rights reserved.  This file is distributed    *)
-(*  under the terms of the Q Public License version 1.0.               *)
-(*                                                                     *)
-(***********************************************************************)
+(**************************************************************************)
+(*                                                                        *)
+(*                                 OCaml                                  *)
+(*                                                                        *)
+(*             Xavier Leroy, projet Cristal, INRIA Rocquencourt           *)
+(*                                                                        *)
+(*   Copyright 1999 Institut National de Recherche en Informatique et     *)
+(*     en Automatique.                                                    *)
+(*                                                                        *)
+(*   All rights reserved.  This file is distributed under the terms of    *)
+(*   the GNU Lesser General Public License version 2.1, with the          *)
+(*   special exception on linking described in the file LICENSE.          *)
+(*                                                                        *)
+(**************************************************************************)
 
 open Asttypes
 open Location
@@ -84,6 +87,14 @@ let add = add_parent
 
 let addmodule bv lid = add_path bv lid.txt
 
+let handle_extension ext =
+  match (fst ext).txt with
+  | "error" | "ocaml.error" ->
+    raise (Location.Error
+             (Builtin_attributes.error_of_extension ext))
+  | _ ->
+    ()
+
 let rec add_type bv ty =
   match ty.ptyp_desc with
     Ptyp_any -> ()
@@ -101,7 +112,7 @@ let rec add_type bv ty =
         fl
   | Ptyp_poly(_, t) -> add_type bv t
   | Ptyp_package pt -> add_package_type bv pt
-  | Ptyp_extension _ -> ()
+  | Ptyp_extension e -> handle_extension e
 
 and add_package_type bv (lid, l) =
   add bv lid;
@@ -153,7 +164,7 @@ let rec add_class_type bv cty =
       List.iter (add_class_type_field bv) fieldl
   | Pcty_arrow(_, ty1, cty2) ->
       add_type bv ty1; add_class_type bv cty2
-  | Pcty_extension _ -> ()
+  | Pcty_extension e -> handle_extension e
 
 and add_class_type_field bv pctf =
   match pctf.pctf_desc with
@@ -162,7 +173,7 @@ and add_class_type_field bv pctf =
   | Pctf_method(_, _, _, ty) -> add_type bv ty
   | Pctf_constraint(ty1, ty2) -> add_type bv ty1; add_type bv ty2
   | Pctf_attribute _ -> ()
-  | Pctf_extension _ -> ()
+  | Pctf_extension e -> handle_extension e
 
 let add_class_description bv infos =
   add_class_type bv infos.pci_expr
@@ -190,7 +201,7 @@ let rec add_pattern bv pat =
   | Ppat_lazy p -> add_pattern bv p
   | Ppat_unpack id -> pattern_bv := StringMap.add id.txt bound !pattern_bv
   | Ppat_exception p -> add_pattern bv p
-  | Ppat_extension _ -> ()
+  | Ppat_extension e -> handle_extension e
 
 let add_pattern bv pat =
   pattern_bv := bv;
@@ -249,14 +260,14 @@ let rec add_expr bv exp =
   | Pexp_pack m -> add_module bv m
   | Pexp_open (_ovf, m, e) ->
       let bv = open_module bv m.txt in add_expr bv e
-  | Pexp_extension ({ txt = ("ocaml.extension_constructor"|
-                             "extension_constructor"); _ },
-                    PStr [item]) ->
+  | Pexp_extension (({ txt = ("ocaml.extension_constructor"|
+                              "extension_constructor"); _ },
+                     PStr [item]) as e) ->
       begin match item.pstr_desc with
       | Pstr_eval ({ pexp_desc = Pexp_construct (c, None) }, _) -> add bv c
-      | _ -> ()
+      | _ -> handle_extension e
       end
-  | Pexp_extension _ -> ()
+  | Pexp_extension e -> handle_extension e
   | Pexp_unreachable -> ()
 
 and add_cases bv cases =
@@ -292,7 +303,7 @@ and add_modtype bv mty =
         )
         cstrl
   | Pmty_typeof m -> add_module bv m
-  | Pmty_extension _ -> ()
+  | Pmty_extension e -> handle_extension e
 
 and add_module_alias bv l =
   try
@@ -360,7 +371,9 @@ and add_sig_item (bv, m) item =
       List.iter (add_class_description bv) cdl; (bv, m)
   | Psig_class_type cdtl ->
       List.iter (add_class_type_declaration bv) cdtl; (bv, m)
-  | Psig_attribute _ | Psig_extension _ ->
+  | Psig_attribute _ -> (bv, m)
+  | Psig_extension (e, _) ->
+      handle_extension e;
       (bv, m)
 
 and add_module_binding bv modl =
@@ -393,8 +406,8 @@ and add_module bv modl =
       add_module bv modl; add_modtype bv mty
   | Pmod_unpack(e) ->
       add_expr bv e
-  | Pmod_extension _ ->
-      ()
+  | Pmod_extension e ->
+      handle_extension e
 
 and add_structure bv item_list =
   let (bv, m) = add_structure_binding bv item_list in
@@ -449,7 +462,9 @@ and add_struct_item (bv, m) item : _ StringMap.t * _ StringMap.t =
       add_names s;
       let add = StringMap.fold StringMap.add m' in
       (add bv, add m)
-  | Pstr_attribute _ | Pstr_extension _ ->
+  | Pstr_attribute _ -> (bv, m)
+  | Pstr_extension (e, _) ->
+      handle_extension e;
       (bv, m)
 
 and add_use_file bv top_phrs =
@@ -482,7 +497,7 @@ and add_class_expr bv ce =
       let bv = add_bindings rf bv pel in add_class_expr bv ce
   | Pcl_constraint(ce, ct) ->
       add_class_expr bv ce; add_class_type bv ct
-  | Pcl_extension _ -> ()
+  | Pcl_extension e -> handle_extension e
 
 and add_class_field bv pcf =
   match pcf.pcf_desc with
@@ -493,7 +508,8 @@ and add_class_field bv pcf =
   | Pcf_method(_, _, Cfk_virtual ty) -> add_type bv ty
   | Pcf_constraint(ty1, ty2) -> add_type bv ty1; add_type bv ty2
   | Pcf_initializer e -> add_expr bv e
-  | Pcf_attribute _ | Pcf_extension _ -> ()
+  | Pcf_attribute _ -> ()
+  | Pcf_extension e -> handle_extension e
 
 and add_class_declaration bv decl =
   add_class_expr bv decl.pci_expr

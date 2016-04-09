@@ -1,14 +1,17 @@
-(***********************************************************************)
-(*                                                                     *)
-(*                                OCaml                                *)
-(*                                                                     *)
-(*         Jerome Vouillon, projet Cristal, INRIA Rocquencourt         *)
-(*                                                                     *)
-(*  Copyright 1996 Institut National de Recherche en Informatique et   *)
-(*  en Automatique.  All rights reserved.  This file is distributed    *)
-(*  under the terms of the Q Public License version 1.0.               *)
-(*                                                                     *)
-(***********************************************************************)
+(**************************************************************************)
+(*                                                                        *)
+(*                                 OCaml                                  *)
+(*                                                                        *)
+(*          Jerome Vouillon, projet Cristal, INRIA Rocquencourt           *)
+(*                                                                        *)
+(*   Copyright 1996 Institut National de Recherche en Informatique et     *)
+(*     en Automatique.                                                    *)
+(*                                                                        *)
+(*   All rights reserved.  This file is distributed under the terms of    *)
+(*   the GNU Lesser General Public License version 2.1, with the          *)
+(*   special exception on linking described in the file LICENSE.          *)
+(*                                                                        *)
+(**************************************************************************)
 
 open Misc
 open Asttypes
@@ -91,7 +94,8 @@ let prim_makearray =
   Primitive.simple ~name:"caml_make_vect" ~arity:2 ~alloc:true
 
 (* Also use it for required globals *)
-let transl_label_init expr =
+let transl_label_init_general f =
+  let expr, size = f () in
   let expr =
     Hashtbl.fold
       (fun c id expr -> Llet(Alias, id, Lconst c, expr))
@@ -104,21 +108,47 @@ let transl_label_init expr =
   in
   Env.reset_required_globals ();*)
   reset_labels ();
-  expr
+  expr, size
+
+let transl_label_init_flambda f =
+  assert(Config.flambda);
+  let method_cache_id = Ident.create "method_cache" in
+  method_cache := Lvar method_cache_id;
+  (* Calling f (usualy Translmod.transl_struct) requires the
+     method_cache variable to be initialised to be able to generate
+     method accesses. *)
+  let expr, size = f () in
+  let expr =
+    if !method_count = 0 then expr
+    else
+      Llet (Strict, method_cache_id,
+        Lprim (Pccall prim_makearray, [int !method_count; int 0]),
+        expr)
+  in
+  transl_label_init_general (fun () -> expr, size)
 
 let transl_store_label_init glob size f arg =
+  assert(not Config.flambda);
+  assert(!Clflags.native_code);
   method_cache := Lprim(Pfield size, [Lprim(Pgetglobal glob, [])]);
   let expr = f arg in
   let (size, expr) =
     if !method_count = 0 then (size, expr) else
     (size+1,
      Lsequence(
-     Lprim(Psetfield(size, false),
+     Lprim(Psetfield(size, Pointer, Initialization),
            [Lprim(Pgetglobal glob, []);
             Lprim (Pccall prim_makearray, [int !method_count; int 0])]),
      expr))
   in
-  (size, transl_label_init expr)
+  let lam, size = transl_label_init_general (fun () -> (expr, size)) in
+  size, lam
+
+let transl_label_init f =
+  if !Clflags.native_code then
+    transl_label_init_flambda f
+  else
+    transl_label_init_general f
 
 (* Share classes *)
 

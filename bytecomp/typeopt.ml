@@ -1,14 +1,17 @@
-(***********************************************************************)
-(*                                                                     *)
-(*                                OCaml                                *)
-(*                                                                     *)
-(*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         *)
-(*                                                                     *)
-(*  Copyright 1998 Institut National de Recherche en Informatique et   *)
-(*  en Automatique.  All rights reserved.  This file is distributed    *)
-(*  under the terms of the Q Public License version 1.0.               *)
-(*                                                                     *)
-(***********************************************************************)
+(**************************************************************************)
+(*                                                                        *)
+(*                                 OCaml                                  *)
+(*                                                                        *)
+(*             Xavier Leroy, projet Cristal, INRIA Rocquencourt           *)
+(*                                                                        *)
+(*   Copyright 1998 Institut National de Recherche en Informatique et     *)
+(*     en Automatique.                                                    *)
+(*                                                                        *)
+(*   All rights reserved.  This file is distributed under the terms of    *)
+(*   the GNU Lesser General Public License version 2.1, with the          *)
+(*   special exception on linking described in the file LICENSE.          *)
+(*                                                                        *)
+(**************************************************************************)
 
 (* Auxiliaries for type-based optimizations, e.g. array kinds *)
 
@@ -33,23 +36,11 @@ let is_base_type env ty base_ty_path =
 let has_base_type exp base_ty_path =
   is_base_type exp.exp_env exp.exp_type base_ty_path
 
-let maybe_pointer_type env typ =
-  match scrape env typ with
-  | Tconstr(p, args, abbrev) ->
-      not (Path.same p Predef.path_int) &&
-      not (Path.same p Predef.path_char) &&
-      begin try
-        match Env.find_type p env with
-        | {type_kind = Type_variant []} -> true (* type exn *)
-        | {type_kind = Type_variant cstrs} ->
-            List.exists (fun c -> c.Types.cd_args <> Cstr_tuple []) cstrs
-        | _ -> true
-      with Not_found -> true
-        (* This can happen due to e.g. missing -I options,
-           causing some .cmi files to be unavailable.
-           Maybe we should emit a warning. *)
-      end
-  | _ -> true
+let maybe_pointer_type env ty =
+  if Ctype.maybe_pointer_type env ty then
+    Pointer
+  else
+    Immediate
 
 let maybe_pointer exp = maybe_pointer_type exp.exp_env exp.exp_type
 
@@ -74,7 +65,7 @@ let array_element_kind env ty =
             {type_kind = Type_abstract} ->
               Pgenarray
           | {type_kind = Type_variant cstrs}
-            when List.for_all (fun c -> c.Types.cd_args = Cstr_tuple [])
+            when List.for_all (fun c -> c.Types.cd_args = Types.Cstr_tuple [])
                 cstrs ->
               Pintarray
           | {type_kind = _} ->

@@ -1,14 +1,17 @@
-(***********************************************************************)
-(*                                                                     *)
-(*                                OCaml                                *)
-(*                                                                     *)
-(*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         *)
-(*                                                                     *)
-(*  Copyright 1996 Institut National de Recherche en Informatique et   *)
-(*  en Automatique.  All rights reserved.  This file is distributed    *)
-(*  under the terms of the Q Public License version 1.0.               *)
-(*                                                                     *)
-(***********************************************************************)
+(**************************************************************************)
+(*                                                                        *)
+(*                                 OCaml                                  *)
+(*                                                                        *)
+(*             Xavier Leroy, projet Cristal, INRIA Rocquencourt           *)
+(*                                                                        *)
+(*   Copyright 1996 Institut National de Recherche en Informatique et     *)
+(*     en Automatique.                                                    *)
+(*                                                                        *)
+(*   All rights reserved.  This file is distributed under the terms of    *)
+(*   the GNU Lesser General Public License version 2.1, with the          *)
+(*   special exception on linking described in the file LICENSE.          *)
+(*                                                                        *)
+(**************************************************************************)
 
 open Format
 open Asttypes
@@ -110,11 +113,26 @@ let primitive ppf = function
   | Pmakeblock(tag, Immutable) -> fprintf ppf "makeblock %i" tag
   | Pmakeblock(tag, Mutable) -> fprintf ppf "makemutable %i" tag
   | Pfield n -> fprintf ppf "field %i" n
-  | Psetfield(n, ptr) ->
-      let instr = if ptr then "setfield_ptr " else "setfield_imm " in
-      fprintf ppf "%s%i" instr n
+  | Psetfield(n, ptr, init) ->
+      let instr =
+        match ptr with
+        | Pointer -> "ptr"
+        | Immediate -> "imm"
+      in
+      let init =
+        match init with
+        | Initialization -> "(init)"
+        | Assignment -> ""
+      in
+      fprintf ppf "setfield_%s%s %i" instr init n
   | Pfloatfield n -> fprintf ppf "floatfield %i" n
-  | Psetfloatfield n -> fprintf ppf "setfloatfield %i" n
+  | Psetfloatfield (n, init) ->
+      let init =
+        match init with
+        | Initialization -> "(init)"
+        | Assignment -> ""
+      in
+      fprintf ppf "setfloatfield%s %i" init n
   | Pduprecord (rep, size) -> fprintf ppf "duprecord %a %i" record_rep rep size
   | Plazyforce -> fprintf ppf "force"
   | Pccall p -> fprintf ppf "%s" p.prim_name
@@ -162,7 +180,10 @@ let primitive ppf = function
   | Pstringrefs -> fprintf ppf "string.get"
   | Pstringsets -> fprintf ppf "string.set"
   | Parraylength k -> fprintf ppf "array.length[%s]" (array_kind k)
-  | Pmakearray k -> fprintf ppf "makearray[%s]" (array_kind k)
+  | Pmakearray (k, Mutable) -> fprintf ppf "makearray[%s]" (array_kind k)
+  | Pmakearray (k, Immutable) -> fprintf ppf "makearray_imm[%s]" (array_kind k)
+  | Pduparray (k, Mutable) -> fprintf ppf "duparray[%s]" (array_kind k)
+  | Pduparray (k, Immutable) -> fprintf ppf "duparray_imm[%s]" (array_kind k)
   | Parrayrefu k -> fprintf ppf "array.unsafe_get[%s]" (array_kind k)
   | Parraysetu k -> fprintf ppf "array.unsafe_set[%s]" (array_kind k)
   | Parrayrefs k -> fprintf ppf "array.get[%s]" (array_kind k)
@@ -245,12 +266,118 @@ let primitive ppf = function
   | Pbswap16 -> fprintf ppf "bswap16"
   | Pbbswap(bi) -> print_boxed_integer "bswap" ppf bi
   | Pint_as_pointer -> fprintf ppf "int_as_pointer"
+  | Popaque -> fprintf ppf "opaque"
 
-let function_attribute ppf { inline } =
-  match inline with
+let name_of_primitive = function
+  | Pidentity -> "Pidentity"
+  | Pignore -> "Pignore"
+  | Prevapply _ -> "Prevapply"
+  | Pdirapply _ -> "Pdirapply"
+  | Ploc _ -> "Ploc"
+  | Pgetglobal _ -> "Pgetglobal"
+  | Psetglobal _ -> "Psetglobal"
+  | Pmakeblock _ -> "Pmakeblock"
+  | Pfield _ -> "Pfield"
+  | Psetfield _ -> "Psetfield"
+  | Pfloatfield _ -> "Pfloatfield"
+  | Psetfloatfield _ -> "Psetfloatfield"
+  | Pduprecord _ -> "Pduprecord"
+  | Plazyforce -> "Plazyforce"
+  | Pccall _ -> "Pccall"
+  | Praise _ -> "Praise"
+  | Psequand -> "Psequand"
+  | Psequor -> "Psequor"
+  | Pnot -> "Pnot"
+  | Pnegint -> "Pnegint"
+  | Paddint -> "Paddint"
+  | Psubint -> "Psubint"
+  | Pmulint -> "Pmulint"
+  | Pdivint -> "Pdivint"
+  | Pmodint -> "Pmodint"
+  | Pandint -> "Pandint"
+  | Porint -> "Porint"
+  | Pxorint -> "Pxorint"
+  | Plslint -> "Plslint"
+  | Plsrint -> "Plsrint"
+  | Pasrint -> "Pasrint"
+  | Pintcomp _ -> "Pintcomp"
+  | Poffsetint _ -> "Poffsetint"
+  | Poffsetref _ -> "Poffsetref"
+  | Pintoffloat -> "Pintoffloat"
+  | Pfloatofint -> "Pfloatofint"
+  | Pnegfloat -> "Pnegfloat"
+  | Pabsfloat -> "Pabsfloat"
+  | Paddfloat -> "Paddfloat"
+  | Psubfloat -> "Psubfloat"
+  | Pmulfloat -> "Pmulfloat"
+  | Pdivfloat -> "Pdivfloat"
+  | Pfloatcomp _ -> "Pfloatcomp"
+  | Pstringlength -> "Pstringlength"
+  | Pstringrefu -> "Pstringrefu"
+  | Pstringsetu -> "Pstringsetu"
+  | Pstringrefs -> "Pstringrefs"
+  | Pstringsets -> "Pstringsets"
+  | Parraylength _ -> "Parraylength"
+  | Pmakearray _ -> "Pmakearray"
+  | Pduparray _ -> "Pduparray"
+  | Parrayrefu _ -> "Parrayrefu"
+  | Parraysetu _ -> "Parraysetu"
+  | Parrayrefs _ -> "Parrayrefs"
+  | Parraysets _ -> "Parraysets"
+  | Pctconst _ -> "Pctconst"
+  | Pisint -> "Pisint"
+  | Pisout -> "Pisout"
+  | Pbittest -> "Pbittest"
+  | Pbintofint _ -> "Pbintofint"
+  | Pintofbint _ -> "Pintofbint"
+  | Pcvtbint _ -> "Pcvtbint"
+  | Pnegbint _ -> "Pnegbint"
+  | Paddbint _ -> "Paddbint"
+  | Psubbint _ -> "Psubbint"
+  | Pmulbint _ -> "Pmulbint"
+  | Pdivbint _ -> "Pdivbint"
+  | Pmodbint _ -> "Pmodbint"
+  | Pandbint _ -> "Pandbint"
+  | Porbint _ -> "Porbint"
+  | Pxorbint _ -> "Pxorbint"
+  | Plslbint _ -> "Plslbint"
+  | Plsrbint _ -> "Plsrbint"
+  | Pasrbint _ -> "Pasrbint"
+  | Pbintcomp _ -> "Pbintcomp"
+  | Pbigarrayref _ -> "Pbigarrayref"
+  | Pbigarrayset _ -> "Pbigarrayset"
+  | Pbigarraydim _ -> "Pbigarraydim"
+  | Pstring_load_16 _ -> "Pstring_load_16"
+  | Pstring_load_32 _ -> "Pstring_load_32"
+  | Pstring_load_64 _ -> "Pstring_load_64"
+  | Pstring_set_16 _ -> "Pstring_set_16"
+  | Pstring_set_32 _ -> "Pstring_set_32"
+  | Pstring_set_64 _ -> "Pstring_set_64"
+  | Pbigstring_load_16 _ -> "Pbigstring_load_16"
+  | Pbigstring_load_32 _ -> "Pbigstring_load_32"
+  | Pbigstring_load_64 _ -> "Pbigstring_load_64"
+  | Pbigstring_set_16 _ -> "Pbigstring_set_16"
+  | Pbigstring_set_32 _ -> "Pbigstring_set_32"
+  | Pbigstring_set_64 _ -> "Pbigstring_set_64"
+  | Pbswap16 -> "Pbswap16"
+  | Pbbswap _ -> "Pbbswap"
+  | Pint_as_pointer -> "Pint_as_pointer"
+  | Popaque -> "Popaque"
+
+let function_attribute ppf { inline; specialise; is_a_functor } =
+  if is_a_functor then
+    fprintf ppf "is_a_functor@ ";
+  begin match inline with
   | Default_inline -> ()
   | Always_inline -> fprintf ppf "always_inline@ "
   | Never_inline -> fprintf ppf "never_inline@ "
+  | Unroll i -> fprintf ppf "unroll(%i)@ " i
+  end;
+  begin match specialise with
+  | Default_specialise -> ()
+  | Always_specialise -> fprintf ppf "always_specialise@ "
+  | Never_specialise -> fprintf ppf "never_specialise@ "
+  end
 
 let apply_tailcall_attribute ppf tailcall =
   if tailcall then
@@ -260,6 +387,12 @@ let apply_inlined_attribute ppf = function
   | Default_inline -> ()
   | Always_inline -> fprintf ppf " always_inline"
   | Never_inline -> fprintf ppf " never_inline"
+  | Unroll i -> fprintf ppf " never_inline(%i)" i
+
+let apply_specialised_attribute ppf = function
+  | Default_specialise -> ()
+  | Always_specialise -> fprintf ppf " always_specialise"
+  | Never_specialise -> fprintf ppf " never_specialise"
 
 let rec lam ppf = function
   | Lvar id ->
@@ -269,9 +402,10 @@ let rec lam ppf = function
   | Lapply ap ->
       let lams ppf largs =
         List.iter (fun l -> fprintf ppf "@ %a" lam l) largs in
-      fprintf ppf "@[<2>(apply@ %a%a%a%a)@]" lam ap.ap_func lams ap.ap_args
+      fprintf ppf "@[<2>(apply@ %a%a%a%a%a)@]" lam ap.ap_func lams ap.ap_args
         apply_tailcall_attribute ap.ap_should_be_tailcall
         apply_inlined_attribute ap.ap_inlined
+        apply_specialised_attribute ap.ap_specialised
   | Lfunction{kind; params; body; attr} ->
       let pr_params ppf params =
         match kind with
@@ -395,7 +529,9 @@ let rec lam ppf = function
        match ev.lev_kind with
        | Lev_before -> "before"
        | Lev_after _  -> "after"
-       | Lev_function -> "funct-body" in
+       | Lev_function -> "funct-body"
+       | Lev_pseudo -> "pseudo"
+      in
       fprintf ppf "@[<2>(%s %s(%i)%s:%i-%i@ %a)@]" kind
               ev.lev_loc.Location.loc_start.Lexing.pos_fname
               ev.lev_loc.Location.loc_start.Lexing.pos_lnum
@@ -415,3 +551,5 @@ and sequence ppf = function
 let structured_constant = struct_const
 
 let lambda = lam
+
+let program ppf { code } = lambda ppf code

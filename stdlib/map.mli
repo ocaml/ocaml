@@ -1,15 +1,17 @@
-(***********************************************************************)
-(*                                                                     *)
-(*                                OCaml                                *)
-(*                                                                     *)
-(*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         *)
-(*                                                                     *)
-(*  Copyright 1996 Institut National de Recherche en Informatique et   *)
-(*  en Automatique.  All rights reserved.  This file is distributed    *)
-(*  under the terms of the GNU Library General Public License, with    *)
-(*  the special exception on linking described in file ../LICENSE.     *)
-(*                                                                     *)
-(***********************************************************************)
+(**************************************************************************)
+(*                                                                        *)
+(*                                 OCaml                                  *)
+(*                                                                        *)
+(*             Xavier Leroy, projet Cristal, INRIA Rocquencourt           *)
+(*                                                                        *)
+(*   Copyright 1996 Institut National de Recherche en Informatique et     *)
+(*     en Automatique.                                                    *)
+(*                                                                        *)
+(*   All rights reserved.  This file is distributed under the terms of    *)
+(*   the GNU Lesser General Public License version 2.1, with the          *)
+(*   special exception on linking described in the file LICENSE.          *)
+(*                                                                        *)
+(**************************************************************************)
 
 (** Association tables over ordered types.
 
@@ -45,6 +47,7 @@ module type OrderedType =
   sig
     type t
       (** The type of the map keys. *)
+
     val compare : t -> t -> int
       (** A total ordering function over the keys.
           This is a two-argument function [f] such that
@@ -103,6 +106,13 @@ module type S =
         value, is determined with the function [f].
         @since 3.12.0
      *)
+
+    val union: (key -> 'a -> 'a -> 'a option) -> 'a t -> 'a t -> 'a t
+    (** [union f m1 m2] computes a map whose keys is the union of keys
+        of [m1] and of [m2].  When the same binding is defined in both
+        arguments, the function [f] is used to combine them.
+        @since 4.03.0
+    *)
 
     val compare: ('a -> 'a -> int) -> 'a t -> 'a t -> int
     (** Total ordering between maps.  The first argument is a total ordering

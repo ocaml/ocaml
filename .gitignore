@@ -1,3 +1,18 @@
+#**************************************************************************
+#*                                                                        *
+#*                                 OCaml                                  *
+#*                                                                        *
+#*                 Damien Doligez, projet Gallium, INRIA                  *
+#*                                                                        *
+#*   Copyright 2015 Institut National de Recherche en Informatique et     *
+#*     en Automatique.                                                    *
+#*                                                                        *
+#*   All rights reserved.  This file is distributed under the terms of    *
+#*   the GNU Lesser General Public License version 2.1, with the          *
+#*   special exception on linking described in the file LICENSE.          *
+#*                                                                        *
+#**************************************************************************
+
 # general patterns
 
 *.o
@@ -17,6 +32,7 @@
 .DS_Store
 *.out
 *.out.dSYM
+*.swp
 
 # local to root directory
 
@@ -101,8 +117,6 @@
 /byterun/*.d.c
 /byterun/*.pic.c
 
-/compilerlibs
-
 /config/m.h
 /config/s.h
 /config/Makefile
@@ -127,9 +141,14 @@
 /lex/ocamllex.opt
 /lex/parser.output
 
+/manual/manual/cmds/warnings-help.etex
+/manual/manual/warnings-help.etex
+
 /ocamlbuild/ocamlbuild_config.ml
 /ocamlbuild/lexers.ml
 /ocamlbuild/glob_lexer.ml
+/ocamlbuild/ocamlbuild.native
+/ocamlbuild/ocamlbuild.byte
 
 /ocamldoc/ocamldoc
 /ocamldoc/ocamldoc.opt
@@ -197,24 +216,28 @@
 
 /stdlib/camlheader
 /stdlib/target_camlheader
-/stdlib/camlheaderd
-/stdlib/target_camlheaderd
+/stdlib/camlheader[di]
+/stdlib/target_camlheader[di]
 /stdlib/camlheader_ur
 /stdlib/labelled-*
 /stdlib/caml
 /stdlib/sys.ml
 
 /testsuite/**/*.result
+/testsuite/**/*.opt_result
 /testsuite/**/*.byte
 /testsuite/**/*.native
 /testsuite/**/program
 /testsuite/**/_log
+
+/testsuite/_retries
 
 /testsuite/tests/asmcomp/codegen
 /testsuite/tests/asmcomp/parsecmm.ml
 /testsuite/tests/asmcomp/parsecmm.mli
 /testsuite/tests/asmcomp/lexcmm.ml
 /testsuite/tests/asmcomp/*.s
+/testsuite/tests/asmcomp/*.out.manifest
 
 /testsuite/tests/embedded/caml
 
@@ -235,6 +258,8 @@
 
 /testsuite/tests/lib-threads/*.byt
 
+/testsuite/tests/opaque/*/*.mli
+
 /testsuite/tests/runtime-errors/*.bytecode
 
 /testsuite/tests/tool-debugger/**/compiler-libs
@@ -242,9 +267,19 @@
 /testsuite/tests/tool-debugger/no_debug_event/out
 /testsuite/tests/tool-debugger/no_debug_event/c
 
+/testsuite/tests/tool-ocamldep-modalias/*.byt*
+/testsuite/tests/tool-ocamldep-modalias/*.opt*
+/testsuite/tests/tool-ocamldep-modalias/depend.mk
+/testsuite/tests/tool-ocamldep-modalias/depend.mk2
+/testsuite/tests/tool-ocamldep-modalias/depend.mod
+/testsuite/tests/tool-ocamldep-modalias/depend.mod2
+/testsuite/tests/tool-ocamldep-modalias/depend.mod3
+
 /testsuite/tests/tool-ocamldoc/*.html
 /testsuite/tests/tool-ocamldoc/*.sty
 /testsuite/tests/tool-ocamldoc/*.css
+
+/testsuite/tests/tool-ocamldoc-2/ocamldoc.sty
 
 /testsuite/tests/tool-lexyacc/scanner.ml
 /testsuite/tests/tool-lexyacc/grammar.mli
@@ -253,7 +288,10 @@
 /testsuite/tests/unboxed-primitive-args/main.ml
 /testsuite/tests/unboxed-primitive-args/stubs.c
 
+/testsuite/tests/unwind/unwind_test
+
 /testsuite/tests/warnings/w55.opt.opt_result
+/testsuite/tests/warnings/w58.opt.opt_result
 
 /tools/ocamldep
 /tools/ocamldep.opt
@@ -282,6 +320,8 @@
 /tools/objinfo_helper
 /tools/read_cmt
 /tools/read_cmt.opt
+/tools/cmpbyt
+/tools/stripdebug
 
 /utils/config.ml
 

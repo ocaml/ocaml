@@ -1,17 +1,43 @@
+#**************************************************************************
+#*                                                                        *
+#*                                 OCaml                                  *
+#*                                                                        *
+#*                 Damien Doligez, projet Gallium, INRIA                  *
+#*                                                                        *
+#*   Copyright 2015 Institut National de Recherche en Informatique et     *
+#*     en Automatique.                                                    *
+#*                                                                        *
+#*   All rights reserved.  This file is distributed under the terms of    *
+#*   the GNU Lesser General Public License version 2.1, with the          *
+#*   special exception on linking described in the file LICENSE.          *
+#*                                                                        *
+#**************************************************************************
+
+# Default behaviour, for if core.autocrlf isn't set
+* text=auto
+
+# Binary files
 boot/ocamlc binary
 boot/ocamllex binary
 boot/ocamldep binary
+*.gif binary
+*.png binary
+*.tfm binary
 
-.gitattributes           ocaml-typo=missing-header
-.gitignore               ocaml-typo=missing-header
-.merlin                  ocaml-typo=missing-header
-.ocp-indent              ocaml-typo=missing-header
-Changes                  ocaml-typo=non-ascii,missing-header
-CONTRIBUTING.md          ocaml-typo=missing-header
-INSTALL                  ocaml-typo=missing-header
-LICENSE                  ocaml-typo=non-printing,missing-header
+# No header for text files (would be too obtrusive).
+*.md                     ocaml-typo=missing-header
+README*                  ocaml-typo=missing-header
+*.adoc                   ocaml-typo=missing-header,long-line,unused-prop
+
+/.merlin                  ocaml-typo=missing-header
+/Changes                  ocaml-typo=non-ascii,missing-header
+/INSTALL                  ocaml-typo=missing-header
+/LICENSE                  ocaml-typo=non-printing,missing-header
+/appveyor.yml             ocaml-typo=long-line,very-long-line
+
 
 asmcomp/*/emit.mlp       ocaml-typo=tab,long-line,unused-prop
+asmcomp/power/NOTES.md   ocaml-typo=missing-header,long-line
 
 asmrun/i386.S            ocaml-typo=long-line
 
@@ -20,9 +46,10 @@ config/gnu               ocaml-typo=prune
 emacs/*.el               ocaml-typo=long-line,unused-prop
 emacs/COPYING            ocaml-typo=tab,non-printing,missing-header
 emacs/ocamltags.in       ocaml-typo=non-printing
-emacs/README*            ocaml-typo=missing-header
 
 experimental             ocaml-typo=prune
+
+manual                   ocaml-typo=prune
 
 ocamlbuild/*             ocaml-typo=long-line
 ocamlbuild/AUTHORS       ocaml-typo=missing-header
@@ -31,3 +58,69 @@ ocamlbuild/TODO          ocaml-typo=missing-header
 
 ocamldoc/Changes.txt     ocaml-typo=missing-header
 ocamldoc/ocamldoc.sty    ocaml-typo=missing-header
+
+otherlibs/win32unix/readlink.c    ocaml-typo=long-line
+otherlibs/win32unix/stat.c        ocaml-typo=long-line
+otherlibs/win32unix/symlink.c     ocaml-typo=long-line
+
+stdlib/sharpbang    ocaml-typo=white-at-eol,missing-lf
+
+# FIXME remove headers in testsuite/tests and remove unused-prop in next line:
+testsuite/tests/**                        ocaml-typo=missing-header,unused-prop
+testsuite/tests/lib-bigarray-2/bigarrf.f  ocaml-typo=missing-header,tab
+testsuite/tests/misc-unsafe/almabench.ml  ocaml-typo=missing-header,long-line
+testsuite/typing                          ocaml-typo=missing-header
+
+tools/magic         ocaml-typo=missing-header
+
+yacc/*.[ch]   ocaml-typo=long-line,very-long-line,unused-prop
+
+# Line-ending specifications, for Windows interoperability
+*.sh text eol=lf
+*.sh.in text eol=lf
+*.awk text eol=lf
+
+# Test suite command fragments
+*.checker text eol=lf
+*.precheck text eol=lf
+*.runner text eol=lf
+
+configure text eol=lf
+config/auto-aux/hasgot text eol=lf
+config/auto-aux/hasgot2 text eol=lf
+config/auto-aux/runtest text eol=lf
+config/auto-aux/searchpath text eol=lf
+config/auto-aux/solaris-ld text eol=lf
+config/auto-aux/tryassemble text eol=lf
+config/auto-aux/trycompile text eol=lf
+config/gnu/config.guess text eol=lf
+config/gnu/config.sub text eol=lf
+ocamldoc/remove_DEBUG text eol=lf
+stdlib/Compflags text eol=lf
+stdlib/sharpbang text eol=lf
+tools/check-typo text eol=lf
+tools/ci-build text eol=lf
+tools/cleanup-header text eol=lf
+tools/gdb-macros text eol=lf
+tools/magic text eol=lf
+tools/make-opcodes text eol=lf
+tools/make-package-macosx text eol=lf
+tools/ocaml-objcopy-macosx text eol=lf
+tools/ocamlmktop.tpl text eol=lf
+tools/ocamlsize text eol=lf
+
+# These two are cat scripts, so may not actually require this
+config/auto-aux/sharpbang text eol=lf
+config/auto-aux/sharpbang2 text eol=lf
+
+# Similarly, these are all Perl scripts, so may not actually require this
+manual/tools/caml-tex text eol=lf
+manual/tools/format-intf text eol=lf
+manual/tools/htmlcut text eol=lf
+manual/tools/htmltbl text eol=lf
+manual/tools/htmlthread text eol=lf
+manual/tools/texexpand text eol=lf
+
+# Checking out the parsetree test files with \r\n endings causes all the
+# locations to change, so use \n endings only, even on Windows
+testsuite/tests/parsing/*.ml text eol=lf

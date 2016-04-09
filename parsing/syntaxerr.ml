@@ -1,14 +1,17 @@
-(***********************************************************************)
-(*                                                                     *)
-(*                                OCaml                                *)
-(*                                                                     *)
-(*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         *)
-(*                                                                     *)
-(*  Copyright 1997 Institut National de Recherche en Informatique et   *)
-(*  en Automatique.  All rights reserved.  This file is distributed    *)
-(*  under the terms of the Q Public License version 1.0.               *)
-(*                                                                     *)
-(***********************************************************************)
+(**************************************************************************)
+(*                                                                        *)
+(*                                 OCaml                                  *)
+(*                                                                        *)
+(*             Xavier Leroy, projet Cristal, INRIA Rocquencourt           *)
+(*                                                                        *)
+(*   Copyright 1997 Institut National de Recherche en Informatique et     *)
+(*     en Automatique.                                                    *)
+(*                                                                        *)
+(*   All rights reserved.  This file is distributed under the terms of    *)
+(*   the GNU Lesser General Public License version 2.1, with the          *)
+(*   special exception on linking described in the file LICENSE.          *)
+(*                                                                        *)
+(**************************************************************************)
 
 (* Auxiliary type for reporting syntax errors *)
 
@@ -20,6 +23,7 @@ type error =
   | Variable_in_scope of Location.t * string
   | Other of Location.t
   | Ill_formed_ast of Location.t * string
+  | Invalid_package_type of Location.t * string
 
 exception Error of error
 exception Escape_error
@@ -54,6 +58,8 @@ let prepare_error = function
       Location.errorf_prefixed ~loc "Syntax error"
   | Ill_formed_ast (loc, s) ->
       Location.errorf_prefixed ~loc "broken invariant in parsetree: %s" s
+  | Invalid_package_type (loc, s) ->
+      Location.errorf_prefixed ~loc "invalid package type: %s" s
 
 let () =
   Location.register_error_of_exn
@@ -73,6 +79,7 @@ let location_of_error = function
   | Other l
   | Not_expecting (l, _)
   | Ill_formed_ast (l, _)
+  | Invalid_package_type (l, _)
   | Expecting (l, _) -> l
 
 

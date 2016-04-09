@@ -1,14 +1,17 @@
-(***********************************************************************)
-(*                                                                     *)
-(*                                OCaml                                *)
-(*                                                                     *)
-(*          Damien Doligez, projet Gallium, INRIA Rocquencourt         *)
-(*                                                                     *)
-(*  Copyright 2012 Institut National de Recherche en Informatique et   *)
-(*  en Automatique.  All rights reserved.  This file is distributed    *)
-(*  under the terms of the Q Public License version 1.0.               *)
-(*                                                                     *)
-(***********************************************************************)
+(**************************************************************************)
+(*                                                                        *)
+(*                                OCaml                                   *)
+(*                                                                        *)
+(*           Damien Doligez, projet Gallium, INRIA Rocquencourt           *)
+(*                                                                        *)
+(*   Copyright 2012 Institut National de Recherche en Informatique et     *)
+(*     en Automatique.                                                    *)
+(*                                                                        *)
+(*   All rights reserved.  This file is distributed under the terms of    *)
+(*   the GNU Lesser General Public License version 2.1, with the          *)
+(*   special exception on linking described in the file LICENSE.          *)
+(*                                                                        *)
+(**************************************************************************)
 
 open Printf;;
 
@@ -45,18 +48,21 @@ let check o =
      printf " ok\n";
 ;;
 
-Weak.set !smuggle 0 (Some (String.make size ' '));;
+let f () =
+  Weak.set !smuggle 0 (Some (String.make size ' '));
 
-(* Check the data just to make sure. *)
-check (Weak.get !smuggle 0);;
+  (* Check the data just to make sure. *)
+  check (Weak.get !smuggle 0);
 
-(* Get a dangling pointer in W. *)
-Gc.full_major ();;
+  (* Get a dangling pointer in W. *)
+  Gc.full_major ();
 
-(* Fill the heap with other stuff. *)
-let rec fill n accu = if n = 0 then accu else fill (n-1) (123 :: accu);;
-let r = fill ((Gc.stat ()).Gc.heap_words / 3) [];;
-Gc.minor ();;
+  (* Fill the heap with other stuff. *)
+  let rec fill n accu = if n = 0 then accu else fill (n-1) (123 :: accu) in
+  let _r : int list = fill ((Gc.stat ()).Gc.heap_words / 3) [] in
+  Gc.minor ();
 
-(* Now follow the dangling pointer and exhibit the problem. *)
-check (Weak.get !smuggle 0);;
+  (* Now follow the dangling pointer and exhibit the problem. *)
+  check (Weak.get !smuggle 0)
+
+let () = (f [@inlined never]) ()

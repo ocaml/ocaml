@@ -1,20 +1,28 @@
-(***********************************************************************)
-(*                                                                     *)
-(*                                OCaml                                *)
-(*                                                                     *)
-(*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         *)
-(*                                                                     *)
-(*  Copyright 1996 Institut National de Recherche en Informatique et   *)
-(*  en Automatique.  All rights reserved.  This file is distributed    *)
-(*  under the terms of the Q Public License version 1.0.               *)
-(*                                                                     *)
-(***********************************************************************)
+(**************************************************************************)
+(*                                                                        *)
+(*                                 OCaml                                  *)
+(*                                                                        *)
+(*             Xavier Leroy, projet Gallium, INRIA Rocquencourt           *)
+(*                       Pierre Chambart, OCamlPro                        *)
+(*           Mark Shinwell and Leo White, Jane Street Europe              *)
+(*                                                                        *)
+(*   Copyright 2010 Institut National de Recherche en Informatique et     *)
+(*     en Automatique                                                     *)
+(*   Copyright 2013--2016 OCamlPro SAS                                    *)
+(*   Copyright 2014--2016 Jane Street Group LLC                           *)
+(*                                                                        *)
+(*   All rights reserved.  This file is distributed under the terms of    *)
+(*   the GNU Lesser General Public License version 2.1, with the          *)
+(*   special exception on linking described in the file LICENSE.          *)
+(*                                                                        *)
+(**************************************************************************)
 
 (* Compilation environments for compilation units *)
 
+[@@@ocaml.warning "+a-4-9-40-41-42"]
+
 open Config
 open Misc
-open Clambda
 open Cmx_format
 
 type error =
@@ -26,6 +34,14 @@ exception Error of error
 
 let global_infos_table =
   (Hashtbl.create 17 : (string, unit_infos option) Hashtbl.t)
+let export_infos_table =
+  (Hashtbl.create 10 : (string, Export_info.t) Hashtbl.t)
+
+let imported_sets_of_closures_table =
+  (Set_of_closures_id.Tbl.create 10
+   : Flambda.function_declarations Set_of_closures_id.Tbl.t)
+
+let sourcefile = ref None
 
 module CstMap =
   Map.Make(struct
@@ -52,17 +68,25 @@ let structured_constants = ref structured_constants_empty
 
 let exported_constants = Hashtbl.create 17
 
+let merged_environment = ref Export_info.empty
+
+let default_ui_export_info =
+  if Config.flambda then
+    Cmx_format.Flambda Export_info.empty
+  else
+    Cmx_format.Clambda Value_unknown
+
 let current_unit =
   { ui_name = "";
     ui_symbol = "";
     ui_defines = [];
     ui_imports_cmi = [];
     ui_imports_cmx = [];
-    ui_approx = Value_unknown;
     ui_curry_fun = [];
     ui_apply_fun = [];
     ui_send_fun = [];
-    ui_force_link = false }
+    ui_force_link = false;
+    ui_export_info = default_ui_export_info }
 
 let symbolname_for_pack pack name =
   match pack with
@@ -78,10 +102,25 @@ let symbolname_for_pack pack name =
       Buffer.add_string b name;
       Buffer.contents b
 
+let unit_id_from_name name = Ident.create_persistent name
 
-let reset ?packname name =
+let concat_symbol unitname id =
+  unitname ^ "__" ^ id
+
+let make_symbol ?(unitname = current_unit.ui_symbol) idopt =
+  let prefix = "caml" ^ unitname in
+  match idopt with
+  | None -> prefix
+  | Some id -> concat_symbol prefix id
+
+let current_unit_linkage_name () =
+  Linkage_name.create (make_symbol ~unitname:current_unit.ui_symbol None)
+
+let reset ?packname ~source_provenance:file name =
   Hashtbl.clear global_infos_table;
+  Set_of_closures_id.Tbl.clear imported_sets_of_closures_table;
   let symbol = symbolname_for_pack packname name in
+  sourcefile := Some file;
   current_unit.ui_name <- name;
   current_unit.ui_symbol <- symbol;
   current_unit.ui_defines <- [symbol];
@@ -92,13 +131,27 @@ let reset ?packname name =
   current_unit.ui_send_fun <- [];
   current_unit.ui_force_link <- false;
   Hashtbl.clear exported_constants;
-  structured_constants := structured_constants_empty
+  structured_constants := structured_constants_empty;
+  current_unit.ui_export_info <- default_ui_export_info;
+  merged_environment := Export_info.empty;
+  Hashtbl.clear export_infos_table;
+  let compilation_unit =
+    Compilation_unit.create
+      (Ident.create_persistent name)
+      (current_unit_linkage_name ())
+  in
+  Compilation_unit.set_current compilation_unit
 
 let current_unit_infos () =
   current_unit
 
 let current_unit_name () =
   current_unit.ui_name
+
+let current_build () =
+  match !sourcefile with
+  | None -> assert false
+  | Some v -> v
 
 let make_symbol ?(unitname = current_unit.ui_symbol) idopt =
   let prefix = "caml" ^ unitname in
@@ -152,15 +205,21 @@ let get_global_info global_ident = (
       Hashtbl.find global_infos_table modname
     with Not_found ->
       let (infos, crc) =
-        try
-          let filename =
-            find_in_path_uncap !load_path (modname ^ ".cmx") in
-          let (ui, crc) = read_unit_info filename in
-          if ui.ui_name <> modname then
-            raise(Error(Illegal_renaming(modname, ui.ui_name, filename)));
-          (Some ui, Some crc)
-        with Not_found ->
-          (None, None) in
+        if Env.is_imported_opaque modname then (None, None)
+        else begin
+          try
+            let filename =
+              find_in_path_uncap !load_path (modname ^ ".cmx") in
+            let (ui, crc) = read_unit_info filename in
+            if ui.ui_name <> modname then
+              raise(Error(Illegal_renaming(modname, ui.ui_name, filename)));
+            (Some ui, Some crc)
+          with Not_found ->
+            let warn = Warnings.No_cmx_file modname in
+              Location.prerr_warning Location.none warn;
+              (None, None)
+          end
+      in
       current_unit.ui_imports_cmx <-
         (modname, crc) :: current_unit.ui_imports_cmx;
       Hashtbl.add global_infos_table modname infos;
@@ -173,18 +232,26 @@ let cache_unit_info ui =
 
 (* Return the approximation of a global identifier *)
 
-let toplevel_approx = Hashtbl.create 16
+let get_clambda_approx ui =
+  assert(not Config.flambda);
+  match ui.ui_export_info with
+  | Flambda _ -> assert false
+  | Clambda approx -> approx
 
-let record_global_approx_toplevel id =
-  Hashtbl.add toplevel_approx current_unit.ui_name current_unit.ui_approx
+let toplevel_approx :
+  (string, Clambda.value_approximation) Hashtbl.t = Hashtbl.create 16
+
+let record_global_approx_toplevel () =
+  Hashtbl.add toplevel_approx current_unit.ui_name
+    (get_clambda_approx current_unit)
 
 let global_approx id =
-  if Ident.is_predef_exn id then Value_unknown
+  if Ident.is_predef_exn id then Clambda.Value_unknown
   else try Hashtbl.find toplevel_approx (Ident.name id)
   with Not_found ->
     match get_global_info id with
-      | None -> Value_unknown
-      | Some ui -> ui.ui_approx
+      | None -> Clambda.Value_unknown
+      | Some ui -> get_clambda_approx ui
 
 (* Return the symbol used to refer to a global identifier *)
 
@@ -192,15 +259,72 @@ let symbol_for_global id =
   if Ident.is_predef_exn id then
     "caml_exn_" ^ Ident.name id
   else begin
-    match get_global_info id with
+    let unitname = Ident.name id in
+    match
+      try ignore (Hashtbl.find toplevel_approx unitname); None
+      with Not_found -> get_global_info id
+    with
     | None -> make_symbol ~unitname:(Ident.name id) None
     | Some ui -> make_symbol ~unitname:ui.ui_symbol None
   end
 
 (* Register the approximation of the module being compiled *)
 
+let unit_for_global id =
+  let sym_label = Linkage_name.create (symbol_for_global id) in
+  Compilation_unit.create id sym_label
+
+let predefined_exception_compilation_unit =
+  Compilation_unit.create (Ident.create_persistent "__dummy__")
+    (Linkage_name.create "__dummy__")
+
+let is_predefined_exception sym =
+  Compilation_unit.equal
+    predefined_exception_compilation_unit
+    (Symbol.compilation_unit sym)
+
+let symbol_for_global' id =
+  let sym_label = Linkage_name.create (symbol_for_global id) in
+  if Ident.is_predef_exn id then
+    Symbol.unsafe_create predefined_exception_compilation_unit sym_label
+  else
+    Symbol.unsafe_create (unit_for_global id) sym_label
+
 let set_global_approx approx =
-  current_unit.ui_approx <- approx
+  assert(not Config.flambda);
+  current_unit.ui_export_info <- Clambda approx
+
+(* Exporting and importing cross module information *)
+
+let get_flambda_export_info ui =
+  assert(Config.flambda);
+  match ui.ui_export_info with
+  | Clambda _ -> assert false
+  | Flambda ei -> ei
+
+let set_export_info export_info =
+  assert(Config.flambda);
+  current_unit.ui_export_info <- Flambda export_info
+
+let approx_for_global comp_unit =
+  let id = Compilation_unit.get_persistent_ident comp_unit in
+  if (Compilation_unit.equal
+      predefined_exception_compilation_unit
+      comp_unit)
+     || Ident.is_predef_exn id
+     || not (Ident.global id)
+  then invalid_arg (Format.asprintf "approx_for_global %a" Ident.print id);
+  let modname = Ident.name id in
+  try Hashtbl.find export_infos_table modname with
+  | Not_found ->
+    let exported = match get_global_info id with
+      | None -> Export_info.empty
+      | Some ui -> get_flambda_export_info ui in
+    Hashtbl.add export_infos_table modname exported;
+    merged_environment := Export_info.merge !merged_environment exported;
+    exported
+
+let approx_env () = !merged_environment
 
 (* Record that a currying function or application function is needed *)
 
@@ -209,6 +333,7 @@ let need_curry_fun n =
     current_unit.ui_curry_fun <- n :: current_unit.ui_curry_fun
 
 let need_apply_fun n =
+  assert(n > 0);
   if not (List.mem n current_unit.ui_apply_fun) then
     current_unit.ui_apply_fun <- n :: current_unit.ui_apply_fun
 
@@ -231,13 +356,18 @@ let save_unit_info filename =
   current_unit.ui_imports_cmi <- Env.imports();
   write_unit_info current_unit filename
 
+let current_unit_linkage_name () =
+  Linkage_name.create (make_symbol ~unitname:current_unit.ui_symbol None)
 
+let current_unit () =
+  match Compilation_unit.get_current () with
+  | Some current_unit -> current_unit
+  | None -> Misc.fatal_error "Compilenv.current_unit"
+
+let current_unit_symbol () =
+  Symbol.unsafe_create (current_unit ()) (current_unit_linkage_name ())
 
 let const_label = ref 0
-
-let new_const_label () =
-  incr const_label;
-  !const_label
 
 let new_const_symbol () =
   incr const_label;
@@ -271,11 +401,36 @@ let new_structured_constant cst ~shared =
 let add_exported_constant s =
   Hashtbl.replace exported_constants s ()
 
+let clear_structured_constants () =
+  structured_constants := structured_constants_empty
+
 let structured_constants () =
   List.map
-    (fun (lbl, cst) ->
-       (lbl, Hashtbl.mem exported_constants lbl, cst)
-    ) (!structured_constants).strcst_all
+    (fun (symbol, definition) ->
+       {
+         Clambda.symbol;
+         exported = Hashtbl.mem exported_constants symbol;
+         definition;
+       })
+    (!structured_constants).strcst_all
+
+let closure_symbol fv =
+  let compilation_unit = Closure_id.get_compilation_unit fv in
+  let unitname =
+    Linkage_name.to_string (Compilation_unit.get_linkage_name compilation_unit)
+  in
+  let linkage_name =
+    concat_symbol unitname ((Closure_id.unique_name fv) ^ "_closure")
+  in
+  Symbol.unsafe_create compilation_unit (Linkage_name.create linkage_name)
+
+let function_label fv =
+  let compilation_unit = Closure_id.get_compilation_unit fv in
+  let unitname =
+    Linkage_name.to_string
+      (Compilation_unit.get_linkage_name compilation_unit)
+  in
+  (concat_symbol unitname (Closure_id.unique_name fv))
 
 (* Error report *)
 

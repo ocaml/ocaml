@@ -1,14 +1,17 @@
-(***********************************************************************)
-(*                                                                     *)
-(*                                OCaml                                *)
-(*                                                                     *)
-(*        Daniel de Rauglaudre, projet Cristal, INRIA Rocquencourt     *)
-(*                                                                     *)
-(*  Copyright 2002 Institut National de Recherche en Informatique et   *)
-(*  en Automatique.  All rights reserved.  This file is distributed    *)
-(*  under the terms of the Q Public License version 1.0.               *)
-(*                                                                     *)
-(***********************************************************************)
+(**************************************************************************)
+(*                                                                        *)
+(*                                 OCaml                                  *)
+(*                                                                        *)
+(*         Daniel de Rauglaudre, projet Cristal, INRIA Rocquencourt       *)
+(*                                                                        *)
+(*   Copyright 2002 Institut National de Recherche en Informatique et     *)
+(*     en Automatique.                                                    *)
+(*                                                                        *)
+(*   All rights reserved.  This file is distributed under the terms of    *)
+(*   the GNU Lesser General Public License version 2.1, with the          *)
+(*   special exception on linking described in the file LICENSE.          *)
+(*                                                                        *)
+(**************************************************************************)
 
 open Format
 
@@ -34,7 +37,9 @@ let call_external_preprocessor sourcefile pp =
 let preprocess sourcefile =
   match !Clflags.preprocessor with
     None -> sourcefile
-  | Some pp -> call_external_preprocessor sourcefile pp
+  | Some pp ->
+      Timings.(time (Preprocessing sourcefile))
+        (call_external_preprocessor sourcefile) pp
 
 
 let remove_preprocessed inputfile =
@@ -143,7 +148,7 @@ let open_and_check_magic inputfile ast_magic =
   in
   (ic, is_ast_file)
 
-let file ppf ~tool_name inputfile parse_fun ast_magic =
+let file_aux ppf ~tool_name inputfile parse_fun invariant_fun ast_magic =
   let (ic, is_ast_file) = open_and_check_magic inputfile ast_magic in
   let ast =
     try
@@ -164,8 +169,12 @@ let file ppf ~tool_name inputfile parse_fun ast_magic =
     with x -> close_in ic; raise x
   in
   close_in ic;
-  apply_rewriters ~restore:false ~tool_name ast_magic ast
+  let ast = apply_rewriters ~restore:false ~tool_name ast_magic ast in
+  if is_ast_file || !Clflags.all_ppx <> [] then invariant_fun ast;
+  ast
 
+let file ppf ~tool_name inputfile parse_fun ast_magic =
+  file_aux ppf ~tool_name inputfile parse_fun ignore ast_magic
 
 let report_error ppf = function
   | CannotRun cmd ->
@@ -182,11 +191,11 @@ let () =
       | _ -> None
     )
 
-let parse_all ~tool_name parse_fun magic ppf sourcefile =
+let parse_all ~tool_name parse_fun invariant_fun magic ppf sourcefile =
   Location.input_name := sourcefile;
   let inputfile = preprocess sourcefile in
   let ast =
-    try file ppf ~tool_name inputfile parse_fun magic
+    try file_aux ppf ~tool_name inputfile parse_fun invariant_fun magic
     with exn ->
       remove_preprocessed inputfile;
       raise exn
@@ -195,8 +204,12 @@ let parse_all ~tool_name parse_fun magic ppf sourcefile =
   ast
 
 let parse_implementation ppf ~tool_name sourcefile =
-  parse_all ~tool_name Parse.implementation
+  parse_all ~tool_name
+    (Timings.(time (Parsing sourcefile)) Parse.implementation)
+    Ast_invariants.structure
     Config.ast_impl_magic_number ppf sourcefile
 let parse_interface ppf ~tool_name sourcefile =
-  parse_all ~tool_name Parse.interface
+  parse_all ~tool_name
+    (Timings.(time (Parsing sourcefile)) Parse.interface)
+    Ast_invariants.signature
     Config.ast_intf_magic_number ppf sourcefile

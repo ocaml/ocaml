@@ -1,14 +1,17 @@
-(***********************************************************************)
-(*                                                                     *)
-(*                                OCaml                                *)
-(*                                                                     *)
-(*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         *)
-(*                                                                     *)
-(*  Copyright 1996 Institut National de Recherche en Informatique et   *)
-(*  en Automatique.  All rights reserved.  This file is distributed    *)
-(*  under the terms of the Q Public License version 1.0.               *)
-(*                                                                     *)
-(***********************************************************************)
+(**************************************************************************)
+(*                                                                        *)
+(*                                 OCaml                                  *)
+(*                                                                        *)
+(*             Xavier Leroy, projet Cristal, INRIA Rocquencourt           *)
+(*                                                                        *)
+(*   Copyright 1996 Institut National de Recherche en Informatique et     *)
+(*     en Automatique.                                                    *)
+(*                                                                        *)
+(*   All rights reserved.  This file is distributed under the terms of    *)
+(*   the GNU Lesser General Public License version 2.1, with the          *)
+(*   special exception on linking described in the file LICENSE.          *)
+(*                                                                        *)
+(**************************************************************************)
 
 (* The interactive toplevel loop *)
 
@@ -28,6 +31,11 @@ type directive_fun =
    | Directive_int of (int -> unit)
    | Directive_ident of (Longident.t -> unit)
    | Directive_bool of (bool -> unit)
+
+type directive_info = {
+  section: string;
+  doc: string;
+}
 
 (* The table of toplevel value bindings and its accessors *)
 
@@ -221,10 +229,17 @@ let print_exception_outcome ppf exn =
           print_string b;
           backtrace := None
 
-(* The table of toplevel directives.
-   Filled by functions from module topdirs. *)
 
-let directive_table = (Hashtbl.create 13 : (string, directive_fun) Hashtbl.t)
+(* Inserting new toplevel directives *)
+
+let directive_table = (Hashtbl.create 23 : (string, directive_fun) Hashtbl.t)
+
+let directive_info_table =
+  (Hashtbl.create 23 : (string, directive_info) Hashtbl.t)
+
+let add_directive name dir_fun dir_info =
+  Hashtbl.add directive_table name dir_fun;
+  Hashtbl.add directive_info_table name dir_info
 
 (* Execute a toplevel phrase *)
 
@@ -299,22 +314,27 @@ let execute_phrase print_outcome ppf phr =
       in
       begin match d with
       | None ->
-          fprintf ppf "Unknown directive `%s'.@." dir_name;
+          fprintf ppf "Unknown directive `%s'." dir_name;
+          let directives =
+            Hashtbl.fold (fun dir _ acc -> dir::acc) directive_table [] in
+          Misc.did_you_mean ppf
+            (fun () -> Misc.spellcheck directives dir_name);
+          fprintf ppf "@.";
           false
       | Some d ->
           match d, dir_arg with
           | Directive_none f, Pdir_none -> f (); true
           | Directive_string f, Pdir_string s -> f s; true
           | Directive_int f, Pdir_int (n,None) ->
-	     begin match Int_literal_converter.int n with
-	     | n -> f n; true
-	     | exception _ ->
-	       fprintf ppf "Integer literal exceeds the range of \
-			    representable integers for directive `%s'.@."
-		       dir_name;
-	       false
-	     end
-	  | Directive_int f, Pdir_int (n, Some _) ->
+             begin match Int_literal_converter.int n with
+             | n -> f n; true
+             | exception _ ->
+               fprintf ppf "Integer literal exceeds the range of \
+                            representable integers for directive `%s'.@."
+                       dir_name;
+               false
+             end
+          | Directive_int f, Pdir_int (n, Some _) ->
               fprintf ppf "Wrong integer literal for directive `%s'.@."
                 dir_name;
               false

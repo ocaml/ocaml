@@ -1,20 +1,24 @@
-#########################################################################
-#                                                                       #
-#                                 OCaml                                 #
-#                                                                       #
-#                  Jeremie Dimino, Jane Street Europe                   #
-#                                                                       #
-#   Copyright 2015 Institut National de Recherche en Informatique et    #
-#   en Automatique.  All rights reserved.  This file is distributed     #
-#   under the terms of the Q Public License version 1.0.                #
-#                                                                       #
-#########################################################################
+#**************************************************************************
+#*                                                                        *
+#*                                OCaml                                   *
+#*                                                                        *
+#*                  Jeremie Dimino, Jane Street Europe                    *
+#*                                                                        *
+#*   Copyright 2015 Institut National de Recherche en Informatique et     *
+#*     en Automatique.                                                    *
+#*                                                                        *
+#*   All rights reserved.  This file is distributed under the terms of    *
+#*   the GNU Lesser General Public License version 2.1, with the          *
+#*   special exception on linking described in the file LICENSE.          *
+#*                                                                        *
+#**************************************************************************
 
 BASEDIR=../..
 LIBRARIES=unix bigarray
 MODULES=common
 MAIN_MODULE=main
 C_FILES=test_common stubs
+C_INCLUDES=-I $(OTOPDIR)/otherlibs/bigarray
 ADD_COMPFLAGS=-I $(OTOPDIR)/otherlibs/bigarray \
 	      -I $(OTOPDIR)/otherlibs/$(UNIXLIB)
 

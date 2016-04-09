@@ -1,15 +1,17 @@
-/***********************************************************************/
-/*                                                                     */
-/*                                OCaml                                */
-/*                                                                     */
-/*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         */
-/*                                                                     */
-/*  Copyright 1996 Institut National de Recherche en Informatique et   */
-/*  en Automatique.  All rights reserved.  This file is distributed    */
-/*  under the terms of the GNU Library General Public License, with    */
-/*  the special exception on linking described in file ../LICENSE.     */
-/*                                                                     */
-/***********************************************************************/
+/**************************************************************************/
+/*                                                                        */
+/*                                 OCaml                                  */
+/*                                                                        */
+/*             Xavier Leroy, projet Cristal, INRIA Rocquencourt           */
+/*                                                                        */
+/*   Copyright 1996 Institut National de Recherche en Informatique et     */
+/*     en Automatique.                                                    */
+/*                                                                        */
+/*   All rights reserved.  This file is distributed under the terms of    */
+/*   the GNU Lesser General Public License version 2.1, with the          */
+/*   special exception on linking described in the file LICENSE.          */
+/*                                                                        */
+/**************************************************************************/
 
 /* The interface of this file is in "caml/mlvalues.h" and "caml/alloc.h" */
 
@@ -17,6 +19,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <float.h>
 #include <limits.h>
 
 #include "caml/alloc.h"
@@ -239,7 +242,7 @@ static int caml_float_of_hex(const char * s, double * res)
     }
   }
   /* Convert mantissa to FP.  We use a signed conversion because we can
-     (m has 60 bits at most) and because it is faster 
+     (m has 60 bits at most) and because it is faster
      on several architectures. */
   f = (double) (int64_t) m;
   /* Adjust exponent to take decimal point and extra digits into account */
@@ -264,7 +267,7 @@ CAMLprim value caml_float_of_string(value vs)
   src = String_val(vs);
   sign = 1;
   if (*src == '-') { sign = -1; src++; }
-  else if (*src == '+') { src++; }; 
+  else if (*src == '+') { src++; };
   if (src[0] == '0' && (src[1] == 'x' || src[1] == 'X')) {
     if (caml_float_of_hex(src + 2, &d) == -1)
       caml_failwith("float_of_string");
@@ -468,9 +471,11 @@ CAMLexport double caml_hypot(double x, double y)
   return hypot(x, y);
 #else
   double tmp, ratio;
-  if (x != x) return x;  /* NaN */
-  if (y != y) return y;  /* NaN */
   x = fabs(x); y = fabs(y);
+  if (x != x) /* x is NaN */
+    return y > DBL_MAX ? y : x;  /* PR#6321 */
+  if (y != y) /* y is NaN */
+    return x > DBL_MAX ? x : y;  /* PR#6321 */
   if (x < y) { tmp = x; x = y; y = tmp; }
   if (x == 0.0) return 0.0;
   ratio = y / x;

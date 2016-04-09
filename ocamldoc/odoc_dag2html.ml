@@ -1,14 +1,17 @@
-(***********************************************************************)
-(*                                                                     *)
-(*                             OCamldoc                                *)
-(*                                                                     *)
-(*            Maxence Guesdon, projet Cristal, INRIA Rocquencourt      *)
-(*                                                                     *)
-(*  Copyright 2001 Institut National de Recherche en Informatique et   *)
-(*  en Automatique.  All rights reserved.  This file is distributed    *)
-(*  under the terms of the Q Public License version 1.0.               *)
-(*                                                                     *)
-(***********************************************************************)
+(**************************************************************************)
+(*                                                                        *)
+(*                                 OCaml                                  *)
+(*                                                                        *)
+(*             Maxence Guesdon, projet Cristal, INRIA Rocquencourt        *)
+(*                                                                        *)
+(*   Copyright 2001 Institut National de Recherche en Informatique et     *)
+(*     en Automatique.                                                    *)
+(*                                                                        *)
+(*   All rights reserved.  This file is distributed under the terms of    *)
+(*   the GNU Lesser General Public License version 2.1, with the          *)
+(*   special exception on linking described in the file LICENSE.          *)
+(*                                                                        *)
+(**************************************************************************)
 
 (** The types and functions to create a html table representing a dag. Thanks to Daniel De Rauglaudre. *)
 
@@ -938,14 +941,16 @@ let tablify phony no_optim no_group d =
       let t = {table = Array.append t.table [| Array.of_list new_row |]} in
       let t =
         if no_group && not (has_phony_children phony d t) then t
-        else
-          let _ = if no_optim then () else equilibrate t in
-          let _ = group_elem t in
-          let _ = group_ghost t in
-          let _ = group_children t in
-          let _ = group_span_by_common_children d t in
+        else begin
+          if no_optim then () else equilibrate t;
+          group_elem t;
+          group_ghost t;
+          group_children t;
+          group_span_by_common_children d t;
           let t = if no_optim then t else treat_gaps d t in
-          let _ = group_span_last_row t in t
+          group_span_last_row t;
+          t
+        end
       in
       loop t
   in
@@ -1442,7 +1447,7 @@ let table_of_dag phony no_optim invert no_group d =
   let d = if invert then invert_dag d else d in
   let t = tablify phony no_optim no_group d in
   let t = if invert then invert_table t else t in
-  let _ = fall () t in
+  fall () t;
   let t = fall2_right t in
   let t = fall2_left t in
   let t = shorten_too_long t in

@@ -1,20 +1,23 @@
-(***********************************************************************)
-(*                                                                     *)
-(*                                OCaml                                *)
-(*                                                                     *)
-(*                        Alain Frisch, LexiFi                         *)
-(*                                                                     *)
-(*  Copyright 2012 Institut National de Recherche en Informatique et   *)
-(*  en Automatique.  All rights reserved.  This file is distributed    *)
-(*  under the terms of the Q Public License version 1.0.               *)
-(*                                                                     *)
-(***********************************************************************)
+(**************************************************************************)
+(*                                                                        *)
+(*                                 OCaml                                  *)
+(*                                                                        *)
+(*                         Alain Frisch, LexiFi                           *)
+(*                                                                        *)
+(*   Copyright 2012 Institut National de Recherche en Informatique et     *)
+(*     en Automatique.                                                    *)
+(*                                                                        *)
+(*   All rights reserved.  This file is distributed under the terms of    *)
+(*   the GNU Lesser General Public License version 2.1, with the          *)
+(*   special exception on linking described in the file LICENSE.          *)
+(*                                                                        *)
+(**************************************************************************)
 
 open Asttypes
 open Parsetree
 
 let string_of_cst = function
-  | PConst_string(s, _) -> Some s
+  | Pconst_string(s, _) -> Some s
   | _ -> None
 
 let string_of_payload = function
@@ -37,13 +40,13 @@ let rec error_of_extension ext =
     in
     begin match p with
     | PStr({pstr_desc=Pstr_eval
-              ({pexp_desc=Pexp_constant(PConst_string(msg,_))}, _)}::
+              ({pexp_desc=Pexp_constant(Pconst_string(msg,_))}, _)}::
            {pstr_desc=Pstr_eval
-              ({pexp_desc=Pexp_constant(PConst_string(if_highlight,_))}, _)}::
+              ({pexp_desc=Pexp_constant(Pconst_string(if_highlight,_))}, _)}::
            inner) ->
         Location.error ~loc ~if_highlight ~sub:(sub_from inner) msg
     | PStr({pstr_desc=Pstr_eval
-              ({pexp_desc=Pexp_constant(PConst_string(msg,_))}, _)}::inner) ->
+              ({pexp_desc=Pexp_constant(Pconst_string(msg,_))}, _)}::inner) ->
         Location.error ~loc ~sub:(sub_from inner) msg
     | _ -> Location.errorf ~loc "Invalid syntax for extension '%s'." txt
     end
@@ -63,7 +66,8 @@ let check_deprecated loc attrs s =
   match deprecated_of_attrs attrs with
   | None -> ()
   | Some "" -> Location.prerr_warning loc (Warnings.Deprecated s)
-  | Some txt -> Location.prerr_warning loc (Warnings.Deprecated (s ^ "\n" ^ txt))
+  | Some txt ->
+      Location.prerr_warning loc (Warnings.Deprecated (s ^ "\n" ^ txt))
 
 let rec check_deprecated_mutable loc attrs s =
   match attrs with
@@ -106,19 +110,17 @@ let emit_external_warnings =
      'ppwarning' attributes during the actual type-checking, making
      sure to cover all contexts (easier and more ugly alternative:
      duplicate here the logic which control warnings locally). *)
-  let open Ast_mapper in
+  let open Ast_iterator in
   {
-    default_mapper with
+    default_iterator with
     attribute = (fun _ a ->
-        begin match a with
+        match a with
         | {txt="ocaml.ppwarning"|"ppwarning"},
           PStr[{pstr_desc=Pstr_eval({pexp_desc=Pexp_constant
-                                         (PConst_string (s, _))},_);
+                                         (Pconst_string (s, _))},_);
                 pstr_loc}] ->
             Location.prerr_warning pstr_loc (Warnings.Preprocessor s)
         | _ -> ()
-        end;
-        a
       )
   }
 
@@ -175,7 +177,8 @@ let with_warning_attribute attrs f =
 let warn_on_literal_pattern =
   List.exists
     (function
-      | ({txt="ocaml.warn_on_literal_pattern"|"warn_on_literal_pattern"; _}, _) -> true
+      | ({txt="ocaml.warn_on_literal_pattern"|"warn_on_literal_pattern"; _}, _)
+        -> true
       | _ -> false
     )
 

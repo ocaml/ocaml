@@ -1,15 +1,17 @@
-/***********************************************************************/
-/*                                                                     */
-/*                                OCaml                                */
-/*                                                                     */
-/*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         */
-/*                                                                     */
-/*  Copyright 1996 Institut National de Recherche en Informatique et   */
-/*  en Automatique.  All rights reserved.  This file is distributed    */
-/*  under the terms of the GNU Library General Public License, with    */
-/*  the special exception on linking described in file ../LICENSE.     */
-/*                                                                     */
-/***********************************************************************/
+/**************************************************************************/
+/*                                                                        */
+/*                                 OCaml                                  */
+/*                                                                        */
+/*             Xavier Leroy, projet Cristal, INRIA Rocquencourt           */
+/*                                                                        */
+/*   Copyright 1996 Institut National de Recherche en Informatique et     */
+/*     en Automatique.                                                    */
+/*                                                                        */
+/*   All rights reserved.  This file is distributed under the terms of    */
+/*   the GNU Lesser General Public License version 2.1, with the          */
+/*   special exception on linking described in the file LICENSE.          */
+/*                                                                        */
+/**************************************************************************/
 
 /* Basic system calls */
 
@@ -44,14 +46,15 @@
 #include "caml/alloc.h"
 #include "caml/debugger.h"
 #include "caml/fail.h"
+#include "caml/gc_ctrl.h"
 #include "caml/instruct.h"
+#include "caml/io.h"
+#include "caml/misc.h"
 #include "caml/mlvalues.h"
 #include "caml/osdeps.h"
 #include "caml/signals.h"
 #include "caml/stacks.h"
 #include "caml/sys.h"
-#include "caml/gc_ctrl.h"
-#include "caml/io.h"
 
 static char * error_message(void)
 {
@@ -135,6 +138,7 @@ CAMLprim value caml_sys_exit(value retcode)
 #ifndef NATIVE_CODE
   caml_debugger(PROGRAM_EXIT);
 #endif
+  CAML_INSTR_ATEXIT ();
   exit(Int_val(retcode));
   return Val_unit;
 }

@@ -1,14 +1,17 @@
-(***********************************************************************)
-(*                                                                     *)
-(*                                OCaml                                *)
-(*                                                                     *)
-(*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         *)
-(*                                                                     *)
-(*  Copyright 1996 Institut National de Recherche en Informatique et   *)
-(*  en Automatique.  All rights reserved.  This file is distributed    *)
-(*  under the terms of the Q Public License version 1.0.               *)
-(*                                                                     *)
-(***********************************************************************)
+(**************************************************************************)
+(*                                                                        *)
+(*                                 OCaml                                  *)
+(*                                                                        *)
+(*             Xavier Leroy, projet Cristal, INRIA Rocquencourt           *)
+(*                                                                        *)
+(*   Copyright 1996 Institut National de Recherche en Informatique et     *)
+(*     en Automatique.                                                    *)
+(*                                                                        *)
+(*   All rights reserved.  This file is distributed under the terms of    *)
+(*   the GNU Lesser General Public License version 2.1, with the          *)
+(*   special exception on linking described in the file LICENSE.          *)
+(*                                                                        *)
+(**************************************************************************)
 
 open Misc
 open Longident
@@ -177,6 +180,7 @@ let merge_constraint initial_env loc sg constr =
             type_loc = sdecl.ptype_loc;
             type_newtype_level = None;
             type_attributes = [];
+            type_immediate = false;
           }
         and id_row = Ident.create (s^"#row") in
         let initial_env =
@@ -800,6 +804,7 @@ and transl_recmodule_modtypes loc env sdecls =
       )
       env ids
   in
+  Ctype.init_def(Ident.current_time()); (* PR#7082 *)
   let init =
     List.map2
       (fun id pmd ->
@@ -1453,16 +1458,20 @@ and type_structure ?(toplevel = false) funct_body anchor env sstr scope =
     (* moved to genannot *)
     List.iter (function {pstr_loc = l} -> Stypes.record_phrase l) sstr;
   let previous_saved_types = Cmt_format.get_saved_types () in
-  Builtin_attributes.warning_enter_scope ();
+  if not toplevel then Builtin_attributes.warning_enter_scope ();
   let (items, sg, final_env) = type_struct env sstr in
   let str = { str_items = items; str_type = sg; str_final_env = final_env } in
-  Builtin_attributes.warning_leave_scope ();
+  if not toplevel then Builtin_attributes.warning_leave_scope ();
   Cmt_format.set_saved_types
     (Cmt_format.Partial_structure str :: previous_saved_types);
   str, sg, final_env
 
 let type_toplevel_phrase env s =
   Env.reset_required_globals ();
+  begin
+    let iter = Builtin_attributes.emit_external_warnings in
+    iter.Ast_iterator.structure iter s
+  end;
   type_structure ~toplevel:true false None env s Location.none
 let type_module_alias = type_module ~alias:true true false None
 let type_module = type_module true false None
@@ -1565,8 +1574,8 @@ let type_implementation sourcefile outputprefix modulename initial_env ast =
   Typecore.reset_delayed_checks ();
   Env.reset_required_globals ();
   begin
-    let map = Builtin_attributes.emit_external_warnings in
-    ignore (map.Ast_mapper.structure map ast)
+    let iter = Builtin_attributes.emit_external_warnings in
+    iter.Ast_iterator.structure iter ast
   end;
 
   let (str, sg, finalenv) =
@@ -1634,8 +1643,8 @@ let save_signature modname tsg outputprefix source_file initial_env cmi =
 
 let type_interface env ast =
   begin
-    let map = Builtin_attributes.emit_external_warnings in
-    ignore (map.Ast_mapper.signature map ast)
+    let iter = Builtin_attributes.emit_external_warnings in
+    iter.Ast_iterator.signature iter ast
   end;
   transl_signature env ast
 

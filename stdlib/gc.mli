@@ -1,15 +1,17 @@
-(***********************************************************************)
-(*                                                                     *)
-(*                                OCaml                                *)
-(*                                                                     *)
-(*             Damien Doligez, projet Para, INRIA Rocquencourt         *)
-(*                                                                     *)
-(*  Copyright 1996 Institut National de Recherche en Informatique et   *)
-(*  en Automatique.  All rights reserved.  This file is distributed    *)
-(*  under the terms of the GNU Library General Public License, with    *)
-(*  the special exception on linking described in file ../LICENSE.     *)
-(*                                                                     *)
-(***********************************************************************)
+(**************************************************************************)
+(*                                                                        *)
+(*                                 OCaml                                  *)
+(*                                                                        *)
+(*              Damien Doligez, projet Para, INRIA Rocquencourt           *)
+(*                                                                        *)
+(*   Copyright 1996 Institut National de Recherche en Informatique et     *)
+(*     en Automatique.                                                    *)
+(*                                                                        *)
+(*   All rights reserved.  This file is distributed under the terms of    *)
+(*   the GNU Lesser General Public License version 2.1, with the          *)
+(*   special exception on linking described in the file LICENSE.          *)
+(*                                                                        *)
+(**************************************************************************)
 
 (** Memory management control and statistics; finalised values. *)
 
@@ -141,6 +143,12 @@ type control =
         first-fit policy, which can be slower in some cases but
         can be better for programs with fragmentation problems.
         Default: 0. @since 3.11.0 *)
+
+    window_size : int;
+    (** The size of the window used by the major GC for smoothing
+        out variations in its workload. This is an integer between
+        1 and 50.
+        Default: 1. @since 4.03.0 *)
 }
 (** The GC parameters are given as a [control] record.  Note that
     these parameters can also be initialised by setting the
@@ -172,10 +180,13 @@ external set : control -> unit = "caml_gc_set"
 external minor : unit -> unit = "caml_gc_minor"
 (** Trigger a minor collection. *)
 
-external major_slice : int -> int = "caml_gc_major_slice";;
-(** Do a minor collection and a slice of major collection.  The argument
-    is the size of the slice, 0 to use the automatically-computed
-    slice size.  In all cases, the result is the computed slice size. *)
+external major_slice : int -> int = "caml_gc_major_slice"
+(** [major_slice n]
+    Do a minor collection and a slice of major collection. [n] is the
+    size of the slice: the GC will do enough work to free (on average)
+    [n] words of memory. If [n] = 0, the GC will try to do enough work
+    to ensure that the next automatic slice has no work to do.
+    This function returns an unspecified integer (currently: 0). *)
 
 external major : unit -> unit = "caml_gc_major"
 (** Do a minor collection and finish the current major collection cycle. *)
@@ -197,6 +208,25 @@ val allocated_bytes : unit -> float
 (** Return the total number of bytes allocated since the program was
    started.  It is returned as a [float] to avoid overflow problems
    with [int] on 32-bit machines. *)
+
+external get_minor_free : unit -> int = "caml_get_minor_free" [@@noalloc]
+(** Return the current size of the free space inside the minor heap. *)
+
+external get_bucket : int -> int = "caml_get_major_bucket" [@@noalloc]
+(** [get_bucket n] returns the current size of the [n]-th future bucket
+    of the GC smoothing system. The unit is one millionth of a full GC.
+    Raise [Invalid_argument] if [n] is negative, return 0 if n is larger
+    than the smoothing window. *)
+
+external get_credit : unit -> int = "caml_get_major_credit" [@@noalloc]
+(** [get_credit ()] returns the current size of the "work done in advance"
+    counter of the GC smoothing system. The unit is one millionth of a
+    full GC. *)
+
+external huge_fallback_count : unit -> int = "caml_gc_huge_fallback_count"
+(** Return the number of times we tried to map huge pages and had to fall
+    back to small pages. This is always 0 if [OCAMLRUNPARAM] contains [H=1].
+    @since 4.03.0 *)
 
 val finalise : ('a -> unit) -> 'a -> unit
 (** [finalise f v] registers [f] as a finalisation function for [v].
@@ -227,7 +257,7 @@ val finalise : ('a -> unit) -> 'a -> unit
 
    Instead you should make sure that [v] is not in the closure of
    the finalisation function by writing:
-   - [ let f = fun x -> ... ;; let v = ... in Gc.finalise f v ]
+   - [ let f = fun x -> ...  let v = ... in Gc.finalise f v ]
 
 
    The [f] function can use all features of OCaml, including
@@ -259,7 +289,7 @@ val finalise : ('a -> unit) -> 'a -> unit
    heap-allocated and non-constant except when the length argument is [0].
 *)
 
-val finalise_release : unit -> unit;;
+val finalise_release : unit -> unit
 (** A finalisation function may call [finalise_release] to tell the
     GC that it can launch the next finalisation function without waiting
     for the current one to return. *)

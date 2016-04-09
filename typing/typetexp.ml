@@ -1,14 +1,17 @@
-(***********************************************************************)
-(*                                                                     *)
-(*                                OCaml                                *)
-(*                                                                     *)
-(*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         *)
-(*                                                                     *)
-(*  Copyright 1996 Institut National de Recherche en Informatique et   *)
-(*  en Automatique.  All rights reserved.  This file is distributed    *)
-(*  under the terms of the Q Public License version 1.0.               *)
-(*                                                                     *)
-(***********************************************************************)
+(**************************************************************************)
+(*                                                                        *)
+(*                                 OCaml                                  *)
+(*                                                                        *)
+(*             Xavier Leroy, projet Cristal, INRIA Rocquencourt           *)
+(*                                                                        *)
+(*   Copyright 1996 Institut National de Recherche en Informatique et     *)
+(*     en Automatique.                                                    *)
+(*                                                                        *)
+(*   All rights reserved.  This file is distributed under the terms of    *)
+(*   the GNU Lesser General Public License version 2.1, with the          *)
+(*   special exception on linking described in the file LICENSE.          *)
+(*                                                                        *)
+(**************************************************************************)
 
 (* typetexp.ml,v 1.34.4.9 2002/01/07 08:39:16 garrigue Exp *)
 
@@ -98,8 +101,8 @@ let rec narrow_unbound_lid_error : 'a. _ -> _ -> _ -> _ -> 'a =
           raise (Error (loc, env, Cannot_scrape_alias(flid, p)))
       | _ -> ()
       end;
-      let mmd = Env.find_module (Env.lookup_module true mlid env) env in
       check_module mlid;
+      let mmd = Env.find_module (Env.lookup_module true mlid env) env in
       begin match Env.scrape_alias env mmd.md_type with
       | Mty_alias p ->
           raise (Error (loc, env, Cannot_scrape_alias(mlid, p)))
@@ -180,11 +183,8 @@ let find_value env loc lid =
   r
 
 let lookup_module ?(load=false) env loc lid =
-  let (path, decl) as r =
-    find_component (fun ?loc lid env -> (Env.lookup_module ~load ?loc lid env, ()))
-      (fun lid -> Unbound_module lid) env loc lid
-  in
-  path
+  find_component (fun ?loc lid env -> (Env.lookup_module ~load ?loc lid env))
+    (fun lid -> Unbound_module lid) env loc lid
 
 let find_module env loc lid =
   let path = lookup_module ~load:true env loc lid in
@@ -359,8 +359,7 @@ let rec transl_type env policy styp =
     let ty = newty (Tarrow(l, ty1, cty2.ctyp_type, Cok)) in
     ctyp (Ttyp_arrow (l, cty1, cty2)) ty
   | Ptyp_tuple stl ->
-    if List.length stl < 2 then
-      Syntaxerr.ill_formed_ast loc "Tuples must have at least 2 components.";
+    assert (List.length stl >= 2);
     let ctys = List.map (transl_type env policy) stl in
     let ty = newty (Ttuple (List.map (fun ctyp -> ctyp.ctyp_type) ctys)) in
     ctyp (Ttyp_tuple ctys) ty

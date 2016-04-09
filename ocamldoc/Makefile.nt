@@ -1,14 +1,17 @@
-#(***********************************************************************)
-#(*                                                                     *)
-#(*                             OCamldoc                                *)
-#(*                                                                     *)
-#(*            Maxence Guesdon, projet Cristal, INRIA Rocquencourt      *)
-#(*                                                                     *)
-#(*  Copyright 2001 Institut National de Recherche en Informatique et   *)
-#(*  en Automatique.  All rights reserved.  This file is distributed    *)
-#(*  under the terms of the Q Public License version 1.0.               *)
-#(*                                                                     *)
-#(***********************************************************************)
+#**************************************************************************
+#*                                                                        *
+#*                                 OCaml                                  *
+#*                                                                        *
+#*             Maxence Guesdon, projet Cristal, INRIA Rocquencourt        *
+#*                                                                        *
+#*   Copyright 2001 Institut National de Recherche en Informatique et     *
+#*     en Automatique.                                                    *
+#*                                                                        *
+#*   All rights reserved.  This file is distributed under the terms of    *
+#*   the GNU Lesser General Public License version 2.1, with the          *
+#*   special exception on linking described in the file LICENSE.          *
+#*                                                                        *
+#**************************************************************************
 
 include ../config/Makefile
 CAMLRUN ?= ../boot/ocamlrun
@@ -18,7 +21,13 @@ CAMLYACC ?= ../boot/ocamlyacc
 ##########################
 ROOTDIR   = ..
 OCAMLC    = $(CAMLRUN) $(ROOTDIR)/ocamlc -nostdlib -I $(ROOTDIR)/stdlib
-OCAMLOPT  = $(CAMLRUN) $(ROOTDIR)/ocamlopt -nostdlib -I $(ROOTDIR)/stdlib
+ifeq "$(wildcard $(ROOTDIR)/flexdll/Makefile)" ""
+  FLEXLINK_ENV=
+else
+  FLEXLINK_ENV=OCAML_FLEXLINK="$(ROOTDIR)/boot/ocamlrun $(ROOTDIR)/flexdll/flexlink.exe"
+endif
+OCAMLOPT  = $(FLEXLINK_ENV) $(CAMLRUN) $(ROOTDIR)/ocamlopt -nostdlib \
+                                       -I $(ROOTDIR)/stdlib
 OCAMLDEP  = $(CAMLRUN) $(ROOTDIR)/tools/ocamldep
 OCAMLLEX  = $(CAMLRUN) $(ROOTDIR)/boot/ocamllex
 OCAMLLIB  = $(LIBDIR)
@@ -210,21 +219,22 @@ odoc_see_lexer.ml: odoc_see_lexer.mll
 # Installation targets
 ######################
 install: dummy
-	$(MKDIR) -p $(INSTALL_BINDIR)
-	$(MKDIR) -p $(INSTALL_LIBDIR)
-	$(CP) $(OCAMLDOC) $(INSTALL_BINDIR)/$(OCAMLDOC)$(EXE)
-	$(CP) ocamldoc.hva *.cmi $(OCAMLDOC_LIBCMA) $(INSTALL_LIBDIR)
-	$(CP) $(INSTALL_MLIS) $(INSTALL_CMIS) $(INSTALL_LIBDIR)
+	$(MKDIR) -p "$(INSTALL_BINDIR)"
+	$(MKDIR) -p "$(INSTALL_LIBDIR)"
+	$(CP) $(OCAMLDOC) "$(INSTALL_BINDIR)/$(OCAMLDOC)$(EXE)"
+	$(CP) ocamldoc.hva *.cmi $(OCAMLDOC_LIBCMA) "$(INSTALL_LIBDIR)"
+	$(CP) $(INSTALL_MLIS) $(INSTALL_CMIS) "$(INSTALL_LIBDIR)"
 
 installopt:
 	if test -f $(OCAMLDOC_OPT); then $(MAKEREC) installopt_really; fi
 
 installopt_really:
-	$(MKDIR) -p $(INSTALL_BINDIR)
-	$(MKDIR) -p $(INSTALL_LIBDIR)
-	$(CP) $(OCAMLDOC_OPT) $(INSTALL_BINDIR)/$(OCAMLDOC_OPT)$(EXE)
-	$(CP) ocamldoc.hva $(OCAMLDOC_LIBA) $(OCAMLDOC_LIBCMXA) $(INSTALL_LIBDIR)
-	$(CP) $(INSTALL_MLIS) $(INSTALL_CMIS) $(INSTALL_LIBDIR)
+	$(MKDIR) -p "$(INSTALL_BINDIR)"
+	$(MKDIR) -p "$(INSTALL_LIBDIR)"
+	$(CP) $(OCAMLDOC_OPT) "$(INSTALL_BINDIR)/$(OCAMLDOC_OPT)$(EXE)"
+	$(CP) ocamldoc.hva $(OCAMLDOC_LIBA) $(OCAMLDOC_LIBCMXA) \
+	  "$(INSTALL_LIBDIR)"
+	$(CP) $(INSTALL_MLIS) $(INSTALL_CMIS) "$(INSTALL_LIBDIR)"
 
 
 # backup, clean and depend :

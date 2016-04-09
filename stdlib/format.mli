@@ -1,15 +1,17 @@
-(***********************************************************************)
-(*                                                                     *)
-(*                                OCaml                                *)
-(*                                                                     *)
-(*            Pierre Weis, projet Cristal, INRIA Rocquencourt          *)
-(*                                                                     *)
-(*  Copyright 1996 Institut National de Recherche en Informatique et   *)
-(*  en Automatique.  All rights reserved.  This file is distributed    *)
-(*  under the terms of the GNU Library General Public License, with    *)
-(*  the special exception on linking described in file ../LICENSE.     *)
-(*                                                                     *)
-(***********************************************************************)
+(**************************************************************************)
+(*                                                                        *)
+(*                                 OCaml                                  *)
+(*                                                                        *)
+(*             Pierre Weis, projet Cristal, INRIA Rocquencourt            *)
+(*                                                                        *)
+(*   Copyright 1996 Institut National de Recherche en Informatique et     *)
+(*     en Automatique.                                                    *)
+(*                                                                        *)
+(*   All rights reserved.  This file is distributed under the terms of    *)
+(*   the GNU Lesser General Public License version 2.1, with the          *)
+(*   special exception on linking described in the file LICENSE.          *)
+(*                                                                        *)
+(**************************************************************************)
 
 (** Pretty printing.
 
@@ -713,6 +715,12 @@ val ikfprintf :
 val ksprintf : (string -> 'a) -> ('b, unit, string, 'a) format4 -> 'b
 (** Same as [sprintf] above, but instead of returning the string,
   passes it to the first argument. *)
+
+val kasprintf : (string -> 'a) -> ('b, formatter, unit, 'a) format4 -> 'b
+(** Same as [asprintf] above, but instead of returning the string,
+  passes it to the first argument.
+  @since 4.03
+*)
 
 (** {6 Deprecated} *)
 

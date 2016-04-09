@@ -1,15 +1,17 @@
-(***********************************************************************)
-(*                                                                     *)
-(*                                OCaml                                *)
-(*                                                                     *)
-(*          Xavier Leroy and Damien Doligez, INRIA Rocquencourt        *)
-(*                                                                     *)
-(*  Copyright 1996 Institut National de Recherche en Informatique et   *)
-(*  en Automatique.  All rights reserved.  This file is distributed    *)
-(*  under the terms of the GNU Library General Public License, with    *)
-(*  the special exception on linking described in file ../LICENSE.     *)
-(*                                                                     *)
-(***********************************************************************)
+(**************************************************************************)
+(*                                                                        *)
+(*                                 OCaml                                  *)
+(*                                                                        *)
+(*           Xavier Leroy and Damien Doligez, INRIA Rocquencourt          *)
+(*                                                                        *)
+(*   Copyright 1996 Institut National de Recherche en Informatique et     *)
+(*     en Automatique.                                                    *)
+(*                                                                        *)
+(*   All rights reserved.  This file is distributed under the terms of    *)
+(*   the GNU Lesser General Public License version 2.1, with the          *)
+(*   special exception on linking described in the file LICENSE.          *)
+(*                                                                        *)
+(**************************************************************************)
 
 let generic_quote quotequote s =
   let l = String.length s in
@@ -72,7 +74,7 @@ module Unix = struct
   let parent_dir_name = ".."
   let dir_sep = "/"
   let is_dir_sep s i = s.[i] = '/'
-  let is_relative n = String.length n < 1 || n.[0] <> '/';;
+  let is_relative n = String.length n < 1 || n.[0] <> '/'
   let is_implicit n =
     is_relative n
     && (String.length n < 2 || String.sub n 0 2 <> "./")
@@ -208,12 +210,12 @@ let chop_extension name =
 external open_desc: string -> open_flag list -> int -> int = "caml_sys_open"
 external close_desc: int -> unit = "caml_sys_close"
 
-let prng = lazy(Random.State.make_self_init ());;
+let prng = lazy(Random.State.make_self_init ())
 
 let temp_file_name temp_dir prefix suffix =
   let rnd = (Random.State.bits (Lazy.force prng)) land 0xFFFFFF in
   concat temp_dir (Printf.sprintf "%s%06x%s" prefix rnd suffix)
-;;
+
 
 let current_temp_dir_name = ref temp_dir_name
 

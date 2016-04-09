@@ -1,15 +1,17 @@
-(***********************************************************************)
-(*                                                                     *)
-(*                                OCaml                                *)
-(*                                                                     *)
-(*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         *)
-(*                                                                     *)
-(*  Copyright 1996 Institut National de Recherche en Informatique et   *)
-(*  en Automatique.  All rights reserved.  This file is distributed    *)
-(*  under the terms of the GNU Library General Public License, with    *)
-(*  the special exception on linking described in file ../../LICENSE.  *)
-(*                                                                     *)
-(***********************************************************************)
+(**************************************************************************)
+(*                                                                        *)
+(*                                 OCaml                                  *)
+(*                                                                        *)
+(*             Xavier Leroy, projet Cristal, INRIA Rocquencourt           *)
+(*                                                                        *)
+(*   Copyright 1996 Institut National de Recherche en Informatique et     *)
+(*     en Automatique.                                                    *)
+(*                                                                        *)
+(*   All rights reserved.  This file is distributed under the terms of    *)
+(*   the GNU Lesser General Public License version 2.1, with the          *)
+(*   special exception on linking described in the file LICENSE.          *)
+(*                                                                        *)
+(**************************************************************************)
 
 type error =
     E2BIG
@@ -378,7 +380,8 @@ external rewinddir : dir_handle -> unit = "unix_rewinddir"
 external closedir : dir_handle -> unit = "unix_closedir"
 
 external pipe : unit -> file_descr * file_descr = "unix_pipe"
-external symlink : string -> string -> unit = "unix_symlink"
+external symlink : ?to_dir:bool -> string -> string -> unit = "unix_symlink"
+external has_symlink : unit -> bool = "unix_has_symlink"
 external readlink : string -> string = "unix_readlink"
 external mkfifo : string -> file_perm -> unit = "unix_mkfifo"
 external select :
@@ -859,12 +862,14 @@ let rec waitpid_non_intr pid =
   try waitpid [] pid
   with Unix_error (EINTR, _, _) -> waitpid_non_intr pid
 
+external sys_exit : int -> 'a = "caml_sys_exit"
+
 let system cmd =
   match fork() with
      0 -> begin try
             execv "/bin/sh" [| "/bin/sh"; "-c"; cmd |]
           with _ ->
-            exit 127
+            sys_exit 127
           end
   | id -> snd(waitpid_non_intr id)
 
@@ -899,7 +904,7 @@ let create_process cmd args new_stdin new_stdout new_stderr =
         perform_redirections new_stdin new_stdout new_stderr;
         execvp cmd args
       with _ ->
-        exit 127
+        sys_exit 127
       end
   | id -> id
 
@@ -910,7 +915,7 @@ let create_process_env cmd args env new_stdin new_stdout new_stderr =
         perform_redirections new_stdin new_stdout new_stderr;
         execvpe cmd args env
       with _ ->
-        exit 127
+        sys_exit 127
       end
   | id -> id
 
@@ -925,11 +930,12 @@ let popen_processes = (Hashtbl.create 7 : (popen_process, int) Hashtbl.t)
 let open_proc cmd proc input output toclose =
   let cloexec = List.for_all try_set_close_on_exec toclose in
   match fork() with
-     0 -> if input <> stdin then begin dup2 input stdin; close input end;
-          if output <> stdout then begin dup2 output stdout; close output end;
-          if not cloexec then List.iter close toclose;
-          begin try execv "/bin/sh" [| "/bin/sh"; "-c"; cmd |]
-          with _ -> exit 127
+     0 -> begin try
+            if input <> stdin then begin dup2 input stdin; close input end;
+            if output <> stdout then begin dup2 output stdout; close output end;
+            if not cloexec then List.iter close toclose;
+            execv "/bin/sh" [| "/bin/sh"; "-c"; cmd |]
+          with _ -> sys_exit 127
           end
   | id -> Hashtbl.add popen_processes proc id
 
@@ -981,12 +987,13 @@ let open_process cmd =
 let open_proc_full cmd env proc input output error toclose =
   let cloexec = List.for_all try_set_close_on_exec toclose in
   match fork() with
-     0 -> dup2 input stdin; close input;
-          dup2 output stdout; close output;
-          dup2 error stderr; close error;
-          if not cloexec then List.iter close toclose;
-          begin try execve "/bin/sh" [| "/bin/sh"; "-c"; cmd |] env
-          with _ -> exit 127
+     0 -> begin try
+            dup2 input stdin; close input;
+            dup2 output stdout; close output;
+            dup2 error stderr; close error;
+            if not cloexec then List.iter close toclose;
+            execve "/bin/sh" [| "/bin/sh"; "-c"; cmd |] env
+          with _ -> sys_exit 127
           end
   | id -> Hashtbl.add popen_processes proc id
 
@@ -1074,7 +1081,7 @@ let establish_server server_fun sockaddr =
     (* The "double fork" trick, the process which calls server_fun will not
        leave a zombie process *)
     match fork() with
-       0 -> if fork() <> 0 then exit 0; (* The son exits, the grandson works *)
+       0 -> if fork() <> 0 then sys_exit 0; (* The son exits, the grandson works *)
             close sock;
             ignore(try_set_close_on_exec s);
             let inchan = in_channel_of_descr s in

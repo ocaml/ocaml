@@ -1,14 +1,18 @@
 {
-(***********************************************************************)
-(*                             OCamldoc                                *)
-(*                                                                     *)
-(*            Maxence Guesdon, projet Cristal, INRIA Rocquencourt      *)
-(*                                                                     *)
-(*  Copyright 2001 Institut National de Recherche en Informatique et   *)
-(*  en Automatique.  All rights reserved.  This file is distributed    *)
-(*  under the terms of the Q Public License version 1.0.               *)
-(*                                                                     *)
-(***********************************************************************)
+(**************************************************************************)
+(*                                                                        *)
+(*                                 OCaml                                  *)
+(*                                                                        *)
+(*             Maxence Guesdon, projet Cristal, INRIA Rocquencourt        *)
+(*                                                                        *)
+(*   Copyright 2001 Institut National de Recherche en Informatique et     *)
+(*     en Automatique.                                                    *)
+(*                                                                        *)
+(*   All rights reserved.  This file is distributed under the terms of    *)
+(*   the GNU Lesser General Public License version 2.1, with the          *)
+(*   special exception on linking described in the file LICENSE.          *)
+(*                                                                        *)
+(**************************************************************************)
 
 (** The lexer for special comments. *)
 
@@ -87,8 +91,7 @@ let remove_blanks s =
 
 (** Remove first blank characters of each line of a string, until the first '*' *)
 let remove_stars s =
-  let s2 = Str.global_replace (Str.regexp ("^"^blank^"*\\*")) "" s in
-  s2
+  Str.global_replace (Str.regexp ("^"^blank^"*\\*")) "" s
 }
 
 let lowercase = ['a'-'z' '\223'-'\246' '\248'-'\255' '_']

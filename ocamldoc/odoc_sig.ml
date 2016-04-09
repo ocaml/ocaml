@@ -1,14 +1,17 @@
-(***********************************************************************)
-(*                                                                     *)
-(*                             OCamldoc                                *)
-(*                                                                     *)
-(*            Maxence Guesdon, projet Cristal, INRIA Rocquencourt      *)
-(*                                                                     *)
-(*  Copyright 2001 Institut National de Recherche en Informatique et   *)
-(*  en Automatique.  All rights reserved.  This file is distributed    *)
-(*  under the terms of the Q Public License version 1.0.               *)
-(*                                                                     *)
-(***********************************************************************)
+(**************************************************************************)
+(*                                                                        *)
+(*                                 OCaml                                  *)
+(*                                                                        *)
+(*             Maxence Guesdon, projet Cristal, INRIA Rocquencourt        *)
+(*                                                                        *)
+(*   Copyright 2001 Institut National de Recherche en Informatique et     *)
+(*     en Automatique.                                                    *)
+(*                                                                        *)
+(*   All rights reserved.  This file is distributed under the terms of    *)
+(*   the GNU Lesser General Public License version 2.1, with the          *)
+(*   special exception on linking described in the file LICENSE.          *)
+(*                                                                        *)
+(**************************************************************************)
 
 (** Analysis of interface files. *)
 
@@ -136,8 +139,7 @@ module Analyser =
        prepare_file must have been called to fill the file global variable.*)
     let get_string_of_file the_start the_end =
       try
-        let s = String.sub !file the_start (the_end-the_start) in
-        s
+        String.sub !file the_start (the_end-the_start)
       with
         Invalid_argument _ ->
           ""
@@ -288,7 +290,9 @@ module Analyser =
           let f {Types.cd_id=constructor_name;cd_args;cd_res=ret_type} =
             let constructor_name = Ident.name constructor_name in
             let comment_opt =
-              try List.assoc constructor_name name_comment_list
+              try match List.assoc constructor_name name_comment_list with
+                | Some { i_desc = None | Some []; _ } -> None
+                | x -> x
               with Not_found -> None
             in
             let vc_args =
@@ -499,14 +503,11 @@ module Analyser =
                 Parsetree.Pcty_constr (longident, _) ->
                   (*of Longident.t * core_type list*)
                   let name = Name.from_longident longident.txt in
-                  let ic =
-                    {
-                      ic_name = Odoc_env.full_class_or_class_type_name env name ;
-                      ic_class = None ;
-                      ic_text = text_opt ;
-                    }
-                  in
-                  ic
+                  {
+                    ic_name = Odoc_env.full_class_or_class_type_name env name ;
+                    ic_class = None ;
+                    ic_text = text_opt ;
+                  }
 
               | Parsetree.Pcty_signature _
               | Parsetree.Pcty_arrow _ ->
@@ -573,15 +574,10 @@ module Analyser =
                 ele.Parsetree.psig_desc
             in
             let new_pos =
-              match ele.Parsetree.psig_desc with
-              | Parsetree.Psig_attribute ({Asttypes.txt = "ocaml.text"}, _) -> last_pos
-                  (* This "signature item" is actually a doc comment; the item is ignored
-                     but don't skip the comment. *)
-              | _ ->
-                 (ele.Parsetree.psig_loc.Location.loc_end.Lexing.pos_cnum + maybe_more)
-                   (* for the comments of constructors in types,
-                      which are after the constructor definition and can
-                      go beyond ele.Parsetree.psig_loc.Location.loc_end.Lexing.pos_cnum *)
+              ele.Parsetree.psig_loc.Location.loc_end.Lexing.pos_cnum + maybe_more
+              (* for the comments of constructors in types,
+                 which are after the constructor definition and can
+                 go beyond ele.Parsetree.psig_loc.Location.loc_end.Lexing.pos_cnum *)
             in
             f (acc_eles @ (ele_comments @ elements))
               new_env
@@ -786,9 +782,23 @@ module Analyser =
                       pos_limit2
                       type_decl
                   in
-                  print_DEBUG ("Type "^name.txt^" : "^(match assoc_com with None -> "sans commentaire" | Some c -> Odoc_misc.string_of_info c));
-                  let f_DEBUG (name, c_opt) = print_DEBUG ("constructor/field "^name^": "^(match c_opt with None -> "sans commentaire" | Some c -> Odoc_misc.string_of_info c)) in
-                  List.iter f_DEBUG name_comment_list;
+(* DEBUG *)       begin
+(* DEBUG *)         let comm =
+(* DEBUG *)           match assoc_com with
+(* DEBUG *)           | None -> "sans commentaire"
+(* DEBUG *)           | Some c -> Odoc_misc.string_of_info c
+(* DEBUG *)         in
+(* DEBUG *)         print_DEBUG ("Type "^name.txt^" : "^comm);
+(* DEBUG *)         let f_DEBUG (name, c_opt) =
+(* DEBUG *)           let comm =
+(* DEBUG *)             match c_opt with
+(* DEBUG *)             | None -> "sans commentaire"
+(* DEBUG *)             | Some c -> Odoc_misc.string_of_info c
+(* DEBUG *)           in
+(* DEBUG *)           print_DEBUG ("constructor/field "^name^": "^comm)
+(* DEBUG *)         in
+(* DEBUG *)         List.iter f_DEBUG name_comment_list;
+(* DEBUG *)       end;
                   (* get the information for the type in the signature *)
                   let sig_type_decl =
                     try Signature_search.search_type table name.txt
@@ -1462,15 +1472,12 @@ module Analyser =
         (Parsetree.Pcty_constr (_, _) (*of Longident.t * core_type list *),
          Types.Cty_constr (p, typ_list, _) (*of Path.t * type_expr list * class_type*)) ->
           print_DEBUG "Cty_constr _";
-           let k =
-             Class_type
-               {
-                 cta_name = Odoc_env.full_class_or_class_type_name env (Name.from_path p) ;
-                 cta_class = None ;
-                 cta_type_parameters = List.map (Odoc_env.subst_type env) typ_list
-               }
-           in
-           k
+          Class_type
+            {
+              cta_name = Odoc_env.full_class_or_class_type_name env (Name.from_path p) ;
+              cta_class = None ;
+              cta_type_parameters = List.map (Odoc_env.subst_type env) typ_list
+            }
 
         | (Parsetree.Pcty_signature {
               Parsetree.pcsig_fields = class_type_field_list;

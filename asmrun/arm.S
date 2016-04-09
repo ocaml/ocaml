@@ -1,16 +1,18 @@
-/***********************************************************************/
-/*                                                                     */
-/*                                OCaml                                */
-/*                                                                     */
-/*                  Benedikt Meurer, University of Siegen              */
-/*                                                                     */
-/*    Copyright 1998 Institut National de Recherche en Informatique    */
-/*    et en Automatique. Copyright 2012 Benedikt Meurer. All rights    */
-/*    reserved. This file is distributed under the terms of the GNU    */
-/*    Library General Public License, with the special exception on    */
-/*    linking described in file ../LICENSE.                            */
-/*                                                                     */
-/***********************************************************************/
+/**************************************************************************/
+/*                                                                        */
+/*                                 OCaml                                  */
+/*                                                                        */
+/*                 Benedikt Meurer, University of Siegen                  */
+/*                                                                        */
+/*   Copyright 1998 Institut National de Recherche en Informatique et     */
+/*     en Automatique.                                                    */
+/*   Copyright 2012 Benedikt Meurer.                                      */
+/*                                                                        */
+/*   All rights reserved.  This file is distributed under the terms of    */
+/*   the GNU Lesser General Public License version 2.1, with the          */
+/*   special exception on linking described in the file LICENSE.          */
+/*                                                                        */
+/**************************************************************************/
 
 /* Asm part of the runtime system, ARM processor */
 /* Must be preprocessed by cpp */
@@ -93,7 +95,9 @@ alloc_limit     .req    r11
 
 /* Support for profiling with gprof */
 
-#if defined(PROFILING) && (defined(SYS_linux_eabihf) || defined(SYS_linux_eabi) || defined(SYS_netbsd))
+#if defined(PROFILING) && (defined(SYS_linux_eabihf) \
+        || defined(SYS_linux_eabi) \
+        || defined(SYS_netbsd))
 #define PROFILE \
         push    {lr}; CFI_ADJUST(4); \
         bl      __gnu_mcount_nc; CFI_ADJUST(-4)
@@ -518,3 +522,6 @@ caml_system__frametable:
         .align  2
         .type   caml_system__frametable, %object
         .size   caml_system__frametable, .-caml_system__frametable
+
+/* Mark stack as non-executable */
+        .section .note.GNU-stack,"",%progbits

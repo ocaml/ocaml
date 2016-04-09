@@ -1,15 +1,18 @@
-
 {
-(***********************************************************************)
-(*                             OCamldoc                                *)
-(*                                                                     *)
-(*            Maxence Guesdon, projet Cristal, INRIA Rocquencourt      *)
-(*                                                                     *)
-(*  Copyright 2001 Institut National de Recherche en Informatique et   *)
-(*  en Automatique.  All rights reserved.  This file is distributed    *)
-(*  under the terms of the Q Public License version 1.0.               *)
-(*                                                                     *)
-(***********************************************************************)
+(**************************************************************************)
+(*                                                                        *)
+(*                                 OCaml                                  *)
+(*                                                                        *)
+(*             Maxence Guesdon, projet Cristal, INRIA Rocquencourt        *)
+(*                                                                        *)
+(*   Copyright 2001 Institut National de Recherche en Informatique et     *)
+(*     en Automatique.                                                    *)
+(*                                                                        *)
+(*   All rights reserved.  This file is distributed under the terms of    *)
+(*   the GNU Lesser General Public License version 2.1, with the          *)
+(*   special exception on linking described in the file LICENSE.          *)
+(*                                                                        *)
+(**************************************************************************)
 
 (** Generation of html code to display OCaml code. *)
 open Lexing
@@ -198,8 +201,7 @@ let string_buffer = Buffer.create 32
 let reset_string_buffer () = Buffer.reset string_buffer
 let store_string_char = Buffer.add_char string_buffer
 let get_stored_string () =
-  let s = Buffer.contents string_buffer in
-  s
+  Buffer.contents string_buffer
 
 (** To translate escape sequences *)
 
@@ -517,7 +519,7 @@ let html_of_code b ?(with_pre=true) code =
      try
        print ~esc: false start ;
        let lexbuf = Lexing.from_string code in
-       let _ = token lexbuf  in
+       token lexbuf;
        print ~esc: false ending ;
        Format.pp_print_flush !fmt () ;
        Buffer.contents buf

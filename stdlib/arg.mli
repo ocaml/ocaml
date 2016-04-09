@@ -1,15 +1,17 @@
-(***********************************************************************)
-(*                                                                     *)
-(*                                OCaml                                *)
-(*                                                                     *)
-(*             Damien Doligez, projet Para, INRIA Rocquencourt         *)
-(*                                                                     *)
-(*  Copyright 1996 Institut National de Recherche en Informatique et   *)
-(*  en Automatique.  All rights reserved.  This file is distributed    *)
-(*  under the terms of the GNU Library General Public License, with    *)
-(*  the special exception on linking described in file ../LICENSE.     *)
-(*                                                                     *)
-(***********************************************************************)
+(**************************************************************************)
+(*                                                                        *)
+(*                                 OCaml                                  *)
+(*                                                                        *)
+(*              Damien Doligez, projet Para, INRIA Rocquencourt           *)
+(*                                                                        *)
+(*   Copyright 1996 Institut National de Recherche en Informatique et     *)
+(*     en Automatique.                                                    *)
+(*                                                                        *)
+(*   All rights reserved.  This file is distributed under the terms of    *)
+(*   the GNU Lesser General Public License version 2.1, with the          *)
+(*   special exception on linking described in the file LICENSE.          *)
+(*                                                                        *)
+(**************************************************************************)
 
 (** Parsing of command line arguments.
 
@@ -141,7 +143,7 @@ val usage_string : (key * spec * doc) list -> usage_msg -> string
 (** Returns the message that would have been printed by {!Arg.usage},
     if provided with the same parameters. *)
 
-val align: ?limit: int -> (key * spec * doc) list -> (key * spec * doc) list;;
+val align: ?limit: int -> (key * spec * doc) list -> (key * spec * doc) list
 (** Align the documentation strings by inserting spaces at the first
     space, according to the length of the keyword.  Use a
     space as the first character in a doc string if you want to

@@ -1,15 +1,17 @@
-/***********************************************************************/
-/*                                                                     */
-/*                                OCaml                                */
-/*                                                                     */
-/*             Damien Doligez, projet Para, INRIA Rocquencourt         */
-/*                                                                     */
-/*  Copyright 1996 Institut National de Recherche en Informatique et   */
-/*  en Automatique.  All rights reserved.  This file is distributed    */
-/*  under the terms of the GNU Library General Public License, with    */
-/*  the special exception on linking described in file ../LICENSE.     */
-/*                                                                     */
-/***********************************************************************/
+/**************************************************************************/
+/*                                                                        */
+/*                                 OCaml                                  */
+/*                                                                        */
+/*              Damien Doligez, projet Para, INRIA Rocquencourt           */
+/*                                                                        */
+/*   Copyright 1996 Institut National de Recherche en Informatique et     */
+/*     en Automatique.                                                    */
+/*                                                                        */
+/*   All rights reserved.  This file is distributed under the terms of    */
+/*   the GNU Lesser General Public License version 2.1, with the          */
+/*   special exception on linking described in the file LICENSE.          */
+/*                                                                        */
+/**************************************************************************/
 
 #ifndef CAML_MAJOR_GC_H
 #define CAML_MAJOR_GC_H
@@ -38,23 +40,41 @@ extern uintnat caml_dependent_size, caml_dependent_allocated;
 extern uintnat caml_fl_wsz_at_phase_change;
 
 #define Phase_mark 0
-#define Phase_sweep 1
-#define Phase_idle 2
-#define Subphase_main 10
-#define Subphase_weak1 11
-#define Subphase_weak2 12
-#define Subphase_final 13
+#define Phase_clean 1
+#define Phase_sweep 2
+#define Phase_idle 3
+
+/* Subphase of mark */
+#define Subphase_mark_roots 10
+/* Subphase_mark_roots: At the end of this subphase all the global
+   roots are marked. */
+#define Subphase_mark_main 11
+/* Subphase_mark_main: At the end of this subphase all the value alive at
+   the start of this subphase and created during it are marked. */
+#define Subphase_mark_final 12
+/* Subphase_mark_final: At the start of this subphase register which
+   value with an ocaml finalizer are not marked, the associated
+   finalizer will be run later. So we mark now these value as alive,
+   since they must be available for their finalizer.
+  */
 
 CAMLextern char *caml_heap_start;
 extern uintnat total_heap_size;
 extern char *caml_gc_sweep_hp;
 
+extern int caml_major_window;
+double caml_major_ring[Max_major_window];
+int caml_major_ring_index;
+double caml_major_work_credit;
+extern double caml_gc_clock;
+
 void caml_init_major_heap (asize_t);           /* size in bytes */
-asize_t caml_round_heap_chunk_wsz (asize_t);
+asize_t caml_clip_heap_chunk_wsz (asize_t wsz);
 void caml_darken (value, value *);
-intnat caml_major_collection_slice (intnat);
+void caml_major_collection_slice (intnat);
 void major_collection (void);
 void caml_finish_major_cycle (void);
+void caml_set_major_window (int);
 
 
 #endif /* CAML_MAJOR_GC_H */

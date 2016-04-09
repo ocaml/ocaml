@@ -1,15 +1,17 @@
-/***********************************************************************/
-/*                                                                     */
-/*                                OCaml                                */
-/*                                                                     */
-/*         Xavier Leroy and Damien Doligez, INRIA Rocquencourt         */
-/*                                                                     */
-/*  Copyright 1996 Institut National de Recherche en Informatique et   */
-/*  en Automatique.  All rights reserved.  This file is distributed    */
-/*  under the terms of the GNU Library General Public License, with    */
-/*  the special exception on linking described in file ../LICENSE.     */
-/*                                                                     */
-/***********************************************************************/
+/**************************************************************************/
+/*                                                                        */
+/*                                 OCaml                                  */
+/*                                                                        */
+/*          Xavier Leroy and Damien Doligez, INRIA Rocquencourt           */
+/*                                                                        */
+/*   Copyright 1996 Institut National de Recherche en Informatique et     */
+/*     en Automatique.                                                    */
+/*                                                                        */
+/*   All rights reserved.  This file is distributed under the terms of    */
+/*   the GNU Lesser General Public License version 2.1, with the          */
+/*   special exception on linking described in the file LICENSE.          */
+/*                                                                        */
+/**************************************************************************/
 
 /* Start-up code */
 
@@ -52,22 +54,6 @@ static void init_static(void)
 
   caml_init_atom_table ();
 
-  /* Register the data in the table of code fragments */
-  cf = caml_stat_alloc(sizeof(struct code_fragment));
-  if (caml_data_segments[0].begin != 0) {
-    cf->data_start = caml_data_segments[0].begin;
-    cf->data_end = caml_data_segments[0].end;
-    for (i = 1; caml_data_segments[i].begin != 0; i ++) {
-      if (caml_data_segments[i].begin < cf->data_start)
-        cf->data_start = caml_data_segments[i].begin;
-      if (caml_data_segments[i].end > cf->data_end)
-        cf->data_end = caml_data_segments[i].end;
-    }
-  } else {
-    cf->data_start = NULL;
-    cf->data_end = NULL;
-  }
-
   for (i = 0; caml_data_segments[i].begin != 0; i++) {
     /* PR#5509: we must include the zero word at end of data segment,
        because pointers equal to caml_data_segments[i].end are static data. */
@@ -86,6 +72,7 @@ static void init_static(void)
       caml_code_area_end = caml_code_segments[i].end;
   }
   /* Register the code in the table of code fragments */
+  cf = caml_stat_alloc(sizeof(struct code_fragment));
   cf->code_start = caml_code_area_start;
   cf->code_end = caml_code_area_end;
   cf->digest_computed = 0;
@@ -122,14 +109,17 @@ void caml_main(char **argv)
   caml_install_invalid_parameter_handler();
 #endif
   caml_init_custom_operations();
-#ifdef DEBUG
-  caml_verb_gc = 63;
-#endif
   caml_top_of_stack = &tos;
+#ifdef DEBUG
+  caml_verb_gc = 0x3F;
+#endif
   caml_parse_ocamlrunparam();
+#ifdef DEBUG
+  caml_gc_message (-1, "### OCaml runtime: debug mode ###\n", 0);
+#endif
   caml_init_gc (caml_init_minor_heap_wsz, caml_init_heap_wsz,
                 caml_init_heap_chunk_sz, caml_init_percent_free,
-                caml_init_max_percent_free);
+                caml_init_max_percent_free, caml_init_major_window);
   init_static();
   caml_init_signals();
   caml_init_backtrace();

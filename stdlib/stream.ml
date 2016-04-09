@@ -1,15 +1,17 @@
-(***********************************************************************)
-(*                                                                     *)
-(*                                OCaml                                *)
-(*                                                                     *)
-(*        Daniel de Rauglaudre, projet Cristal, INRIA Rocquencourt     *)
-(*                                                                     *)
-(*  Copyright 1997 Institut National de Recherche en Informatique et   *)
-(*  en Automatique.  All rights reserved.  This file is distributed    *)
-(*  under the terms of the GNU Library General Public License, with    *)
-(*  the special exception on linking described in file ../LICENSE.     *)
-(*                                                                     *)
-(***********************************************************************)
+(**************************************************************************)
+(*                                                                        *)
+(*                                 OCaml                                  *)
+(*                                                                        *)
+(*         Daniel de Rauglaudre, projet Cristal, INRIA Rocquencourt       *)
+(*                                                                        *)
+(*   Copyright 1997 Institut National de Recherche en Informatique et     *)
+(*     en Automatique.                                                    *)
+(*                                                                        *)
+(*   All rights reserved.  This file is distributed under the terms of    *)
+(*   the GNU Lesser General Public License version 2.1, with the          *)
+(*   special exception on linking described in the file LICENSE.          *)
+(*                                                                        *)
+(**************************************************************************)
 
 type 'a t = 'a cell option
 and 'a cell = { mutable count : int; mutable data : 'a data }
@@ -23,9 +25,9 @@ and 'a data =
 and 'a gen = { mutable curr : 'a option option; func : int -> 'a option }
 and buffio =
   { ic : in_channel; buff : bytes; mutable len : int; mutable ind : int }
-;;
-exception Failure;;
-exception Error of string;;
+
+exception Failure
+exception Error of string
 
 let count = function
   | None -> 0
@@ -36,7 +38,7 @@ let data = function
 
 let fill_buff b =
   b.len <- input b.ic b.buff 0 (Bytes.length b.buff); b.ind <- 0
-;;
+
 
 let rec get_data : type v. int -> v data -> v data = fun count d -> match d with
  (* Returns either Sempty or Scons(a, _) even when d is a generator
@@ -66,7 +68,7 @@ let rec get_data : type v. int -> v data -> v data = fun count d -> match d with
        (* Warning: anyone using g thinks that an item has been read *)
        b.ind <- succ b.ind; Scons(r, d)
  | Slazy f -> get_data count (Lazy.force f)
-;;
+
 
 let rec peek_data : type v. v cell -> v option = fun s ->
  (* consult the first item of s *)
@@ -86,12 +88,12 @@ let rec peek_data : type v. v cell -> v option = fun s ->
      if b.ind >= b.len then fill_buff b;
      if b.len == 0 then begin s.data <- Sempty; None end
      else Some (Bytes.unsafe_get b.buff b.ind)
-;;
+
 
 let peek = function
   | None -> None
   | Some s -> peek_data s
-;;
+
 
 let rec junk_data : type v. v cell -> unit = fun s ->
   match s.data with
@@ -102,7 +104,7 @@ let rec junk_data : type v. v cell -> unit = fun s ->
       match peek_data s with
         None -> ()
       | Some _ -> junk_data s
-;;
+
 
 let junk = function
   | None -> ()
@@ -116,11 +118,14 @@ let rec nget_data n s =
         junk_data s;
         let (al, d, k) = nget_data (pred n) s in a :: al, Scons (a, d), succ k
     | None -> [], s.data, 0
-;;
+
 
 let npeek_data n s =
-  let (al, d, len) = nget_data n s in s.count <- (s.count - len); s.data <- d; al
-;;
+  let (al, d, len) = nget_data n s in
+  s.count <- (s.count - len);
+  s.data <- d;
+  al
+
 
 let npeek n = function
   | None -> []
@@ -130,13 +135,13 @@ let next s =
   match peek s with
     Some a -> junk s; a
   | None -> raise Failure
-;;
+
 
 let empty s =
   match peek s with
     Some _ -> raise Failure
   | None -> ()
-;;
+
 
 let iter f strm =
   let rec do_rec () =
@@ -145,15 +150,15 @@ let iter f strm =
     | None -> ()
   in
   do_rec ()
-;;
+
 
 (* Stream building functions *)
 
-let from f = Some {count = 0; data = Sgen {curr = None; func = f}};;
+let from f = Some {count = 0; data = Sgen {curr = None; func = f}}
 
 let of_list l =
   Some {count = 0; data = List.fold_right (fun x l -> Scons (x, l)) l Sempty}
-;;
+
 
 let of_string s =
   let count = ref 0 in
@@ -168,7 +173,7 @@ let of_string s =
     if c < String.length s
     then (incr count; Some s.[c])
     else None)
-;;
+
 
 let of_bytes s =
   let count = ref 0 in
@@ -177,27 +182,27 @@ let of_bytes s =
     if c < Bytes.length s
     then (incr count; Some (Bytes.get s c))
     else None)
-;;
+
 
 let of_channel ic =
   Some {count = 0;
         data = Sbuffio {ic = ic; buff = Bytes.create 4096; len = 0; ind = 0}}
-;;
+
 
 (* Stream expressions builders *)
 
-let iapp i s = Some {count = 0; data = Sapp (data i, data s)};;
-let icons i s = Some {count = 0; data = Scons (i, data s)};;
-let ising i = Some {count = 0; data = Scons (i, Sempty)};;
+let iapp i s = Some {count = 0; data = Sapp (data i, data s)}
+let icons i s = Some {count = 0; data = Scons (i, data s)}
+let ising i = Some {count = 0; data = Scons (i, Sempty)}
 
 let lapp f s =
   Some {count = 0; data = Slazy (lazy(Sapp (data (f ()), data s)))}
-;;
-let lcons f s = Some {count = 0; data = Slazy (lazy(Scons (f (), data s)))};;
-let lsing f = Some {count = 0; data = Slazy (lazy(Scons (f (), Sempty)))};;
 
-let sempty = None;;
-let slazy f = Some {count = 0; data = Slazy (lazy(data (f ())))};;
+let lcons f s = Some {count = 0; data = Slazy (lazy(Scons (f (), data s)))}
+let lsing f = Some {count = 0; data = Slazy (lazy(Scons (f (), Sempty)))}
+
+let sempty = None
+let slazy f = Some {count = 0; data = Slazy (lazy(data (f ())))}
 
 (* For debugging use *)
 
@@ -226,4 +231,4 @@ and dump_data : type v. (v -> unit) -> v data -> unit = fun f ->
   | Slazy _ -> print_string "Slazy"
   | Sgen _ -> print_string "Sgen"
   | Sbuffio b -> print_string "Sbuffio"
-;;
+

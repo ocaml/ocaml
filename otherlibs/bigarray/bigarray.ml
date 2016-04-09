@@ -1,15 +1,17 @@
-(***********************************************************************)
-(*                                                                     *)
-(*                                OCaml                                *)
-(*                                                                     *)
-(*          Manuel Serrano et Xavier Leroy, INRIA Rocquencourt         *)
-(*                                                                     *)
-(*  Copyright 2000 Institut National de Recherche en Informatique et   *)
-(*  en Automatique.  All rights reserved.  This file is distributed    *)
-(*  under the terms of the GNU Library General Public License, with    *)
-(*  the special exception on linking described in file ../../LICENSE.  *)
-(*                                                                     *)
-(***********************************************************************)
+(**************************************************************************)
+(*                                                                        *)
+(*                                 OCaml                                  *)
+(*                                                                        *)
+(*           Manuel Serrano et Xavier Leroy, INRIA Rocquencourt           *)
+(*                                                                        *)
+(*   Copyright 2000 Institut National de Recherche en Informatique et     *)
+(*     en Automatique.                                                    *)
+(*                                                                        *)
+(*   All rights reserved.  This file is distributed under the terms of    *)
+(*   the GNU Lesser General Public License version 2.1, with the          *)
+(*   special exception on linking described in the file LICENSE.          *)
+(*                                                                        *)
+(**************************************************************************)
 
 (* Module [Bigarray]: large, multi-dimensional, numerical arrays *)
 
@@ -62,6 +64,21 @@ let complex32 = Complex32
 let complex64 = Complex64
 let char = Char
 
+let kind_size_in_bytes : type a b. (a, b) kind -> int = function
+  | Float32 -> 4
+  | Float64 -> 8
+  | Int8_signed -> 1
+  | Int8_unsigned -> 1
+  | Int16_signed -> 2
+  | Int16_unsigned -> 2
+  | Int32 -> 4
+  | Int64 -> 8
+  | Int -> Sys.word_size / 8
+  | Nativeint -> Sys.word_size / 8
+  | Complex32 -> 8
+  | Complex64 -> 16
+  | Char -> 1
+
 type c_layout = C_layout_typ
 type fortran_layout = Fortran_layout_typ
 
@@ -90,8 +107,12 @@ module Genarray = struct
     let d = Array.make n 0 in
     for i = 0 to n-1 do d.(i) <- nth_dim a i done;
     d
+
   external kind: ('a, 'b, 'c) t -> ('a, 'b) kind = "caml_ba_kind"
   external layout: ('a, 'b, 'c) t -> 'c layout = "caml_ba_layout"
+
+  let size_in_bytes arr =
+    (kind_size_in_bytes (kind arr)) * (Array.fold_left ( * ) 1 (dims arr))
 
   external sub_left: ('a, 'b, c_layout) t -> int -> int -> ('a, 'b, c_layout) t
      = "caml_ba_sub"
@@ -126,6 +147,10 @@ module Array1 = struct
   external dim: ('a, 'b, 'c) t -> int = "%caml_ba_dim_1"
   external kind: ('a, 'b, 'c) t -> ('a, 'b) kind = "caml_ba_kind"
   external layout: ('a, 'b, 'c) t -> 'c layout = "caml_ba_layout"
+
+  let size_in_bytes arr =
+    (kind_size_in_bytes (kind arr)) * (dim arr)
+
   external sub: ('a, 'b, 'c) t -> int -> int -> ('a, 'b, 'c) t = "caml_ba_sub"
   external blit: ('a, 'b, 'c) t -> ('a, 'b, 'c) t -> unit = "caml_ba_blit"
   external fill: ('a, 'b, 'c) t -> 'a -> unit = "caml_ba_fill"
@@ -156,6 +181,10 @@ module Array2 = struct
   external dim2: ('a, 'b, 'c) t -> int = "%caml_ba_dim_2"
   external kind: ('a, 'b, 'c) t -> ('a, 'b) kind = "caml_ba_kind"
   external layout: ('a, 'b, 'c) t -> 'c layout = "caml_ba_layout"
+
+  let size_in_bytes arr =
+    (kind_size_in_bytes (kind arr)) * (dim1 arr) * (dim2 arr)
+
   external sub_left: ('a, 'b, c_layout) t -> int -> int -> ('a, 'b, c_layout) t
      = "caml_ba_sub"
   external sub_right:
@@ -203,6 +232,10 @@ module Array3 = struct
   external dim3: ('a, 'b, 'c) t -> int = "%caml_ba_dim_3"
   external kind: ('a, 'b, 'c) t -> ('a, 'b) kind = "caml_ba_kind"
   external layout: ('a, 'b, 'c) t -> 'c layout = "caml_ba_layout"
+
+  let size_in_bytes arr =
+    (kind_size_in_bytes (kind arr)) * (dim1 arr) * (dim2 arr) * (dim3 arr)
+
   external sub_left: ('a, 'b, c_layout) t -> int -> int -> ('a, 'b, c_layout) t
      = "caml_ba_sub"
   external sub_right:

@@ -1,15 +1,17 @@
-#########################################################################
-#                                                                       #
-#                                 OCaml                                 #
-#                                                                       #
-#            Xavier Leroy, projet Cristal, INRIA Rocquencourt           #
-#                                                                       #
-#   Copyright 1999 Institut National de Recherche en Informatique et    #
-#   en Automatique.  All rights reserved.  This file is distributed     #
-#   under the terms of the GNU Library General Public License, with     #
-#   the special exception on linking described in file ../LICENSE.      #
-#                                                                       #
-#########################################################################
+#**************************************************************************
+#*                                                                        *
+#*                                 OCaml                                  *
+#*                                                                        *
+#*            Xavier Leroy, projet Cristal, INRIA Rocquencourt            *
+#*                                                                        *
+#*   Copyright 1999 Institut National de Recherche en Informatique et     *
+#*     en Automatique.                                                    *
+#*                                                                        *
+#*   All rights reserved.  This file is distributed under the terms of    *
+#*   the GNU Lesser General Public License version 2.1, with the          *
+#*   special exception on linking described in the file LICENSE.          *
+#*                                                                        *
+#**************************************************************************
 
 include Makefile.shared
 
@@ -25,36 +27,39 @@ allopt-prof: stdlib.p.cmxa std_exit.p.cmx
 installopt: installopt-default installopt-$(PROFILING)
 
 installopt-default:
-	cp stdlib.cmxa stdlib.a std_exit.o *.cmx $(INSTALL_LIBDIR)
-	cd $(INSTALL_LIBDIR); $(RANLIB) stdlib.a
+	cp stdlib.cmxa stdlib.a std_exit.o *.cmx "$(INSTALL_LIBDIR)"
+	cd "$(INSTALL_LIBDIR)"; $(RANLIB) stdlib.a
 
 installopt-noprof:
-	rm -f $(INSTALL_LIBDIR)/stdlib.p.cmxa; \
-	  ln -s stdlib.cmxa $(INSTALL_LIBDIR)/stdlib.p.cmxa
-	rm -f $(INSTALL_LIBDIR)/stdlib.p.a; \
-	  ln -s stdlib.a $(INSTALL_LIBDIR)/stdlib.p.a
-	rm -f $(INSTALL_LIBDIR)/std_exit.p.cmx; \
-	  ln -s std_exit.cmx $(INSTALL_LIBDIR)/std_exit.p.cmx
-	rm -f $(INSTALL_LIBDIR)/std_exit.p.o; \
-	  ln -s std_exit.o $(INSTALL_LIBDIR)/std_exit.p.o
+	rm -f "$(INSTALL_LIBDIR)/stdlib.p.cmxa"; \
+	  ln -s stdlib.cmxa "$(INSTALL_LIBDIR)/stdlib.p.cmxa"
+	rm -f "$(INSTALL_LIBDIR)/stdlib.p.a"; \
+	  ln -s stdlib.a "$(INSTALL_LIBDIR)/stdlib.p.a"
+	rm -f "$(INSTALL_LIBDIR)/std_exit.p.cmx"; \
+	  ln -s std_exit.cmx "$(INSTALL_LIBDIR)/std_exit.p.cmx"
+	rm -f "$(INSTALL_LIBDIR)/std_exit.p.o"; \
+	  ln -s std_exit.o "$(INSTALL_LIBDIR)/std_exit.p.o"
 
 installopt-prof:
-	cp stdlib.p.cmxa stdlib.p.a std_exit.p.cmx std_exit.p.o $(INSTALL_LIBDIR)
-	cd $(INSTALL_LIBDIR); $(RANLIB) stdlib.p.a
+	cp stdlib.p.cmxa stdlib.p.a std_exit.p.cmx std_exit.p.o \
+	  "$(INSTALL_LIBDIR)"
+	cd "$(INSTALL_LIBDIR)"; $(RANLIB) stdlib.p.a
 
 stdlib.p.cmxa: $(OBJS:.cmo=.p.cmx)
 	$(CAMLOPT) -a -o stdlib.p.cmxa $(OBJS:.cmo=.p.cmx)
 
-camlheader target_camlheader camlheaderd target_camlheaderd camlheader_ur: \
+camlheader target_camlheader camlheader_ur \
+camlheaderd target_camlheaderd \
+camlheaderi target_camlheaderi: \
   header.c ../config/Makefile
 	if $(SHARPBANGSCRIPTS); then \
-	  echo '#!$(BINDIR)/ocamlrun' > camlheader && \
-	  echo '#!$(TARGET_BINDIR)/ocamlrun' > target_camlheader && \
-	  echo '#!$(BINDIR)/ocamlrund' > camlheaderd && \
-	  echo '#!$(TARGET_BINDIR)/ocamlrund' > target_camlheaderd && \
+	  for suff in '' d i; do \
+	    echo '#!$(BINDIR)/ocamlrun'$$suff > camlheader$$suff && \
+	    echo '#!$(TARGET_BINDIR)/ocamlrun'$$suff >target_camlheader$$suff; \
+	  done && \
 	  echo '#!' | tr -d '\012' > camlheader_ur; \
 	else \
-	  for suff in '' d; do \
+	  for suff in '' d i; do \
 	    $(BYTECC) $(BYTECCCOMPOPTS) $(BYTECCLINKOPTS) \
 	              -DRUNTIME_NAME='"$(BINDIR)/ocamlrun'$$suff'"' \
 	              header.c -o tmpheader$(EXE) && \

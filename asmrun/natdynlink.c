@@ -1,15 +1,17 @@
-/***********************************************************************/
-/*                                                                     */
-/*                                OCaml                                */
-/*                                                                     */
-/*            Alain Frisch, projet Gallium, INRIA Rocquencourt         */
-/*                                                                     */
-/*  Copyright 2007 Institut National de Recherche en Informatique et   */
-/*  en Automatique.  All rights reserved.  This file is distributed    */
-/*  under the terms of the GNU Library General Public License, with    */
-/*  the special exception on linking described in file ../LICENSE.     */
-/*                                                                     */
-/***********************************************************************/
+/**************************************************************************/
+/*                                                                        */
+/*                                 OCaml                                  */
+/*                                                                        */
+/*             Alain Frisch, projet Gallium, INRIA Rocquencourt           */
+/*                                                                        */
+/*   Copyright 2007 Institut National de Recherche en Informatique et     */
+/*     en Automatique.                                                    */
+/*                                                                        */
+/*   All rights reserved.  This file is distributed under the terms of    */
+/*   the GNU Lesser General Public License version 2.1, with the          */
+/*   special exception on linking described in the file LICENSE.          */
+/*                                                                        */
+/**************************************************************************/
 
 #include "caml/misc.h"
 #include "caml/mlvalues.h"
@@ -79,7 +81,7 @@ CAMLprim value caml_natdynlink_run(void *handle, value symbol) {
   CAMLparam1 (symbol);
   CAMLlocal1 (result);
   void *sym,*sym2;
-  struct code_fragment * cf = NULL;
+  struct code_fragment * cf;
 
 #define optsym(n) getsym(handle,unit,n)
   char *unit;
@@ -93,6 +95,11 @@ CAMLprim value caml_natdynlink_run(void *handle, value symbol) {
   sym = optsym("__gc_roots");
   if (NULL != sym) caml_register_dyn_global(sym);
 
+  sym = optsym("__data_begin");
+  sym2 = optsym("__data_end");
+  if (NULL != sym && NULL != sym2)
+    caml_page_table_add(In_static_data, sym, sym2);
+
   sym = optsym("__code_begin");
   sym2 = optsym("__code_end");
   if (NULL != sym && NULL != sym2) {
@@ -100,22 +107,9 @@ CAMLprim value caml_natdynlink_run(void *handle, value symbol) {
     cf = caml_stat_alloc(sizeof(struct code_fragment));
     cf->code_start = (char *) sym;
     cf->code_end = (char *) sym2;
-    cf->data_start = NULL;
-    cf->data_end = NULL;
     cf->digest_computed = 0;
+    caml_ext_table_add(&caml_code_fragments_table, cf);
   }
-
-  sym = optsym("__data_begin");
-  sym2 = optsym("__data_end");
-  if (NULL != sym && NULL != sym2) {
-    caml_page_table_add(In_static_data, sym, sym2);
-    if (cf != NULL) {
-      cf->data_start = (char *) sym;
-      cf->data_end = (char *) sym2;
-    }
-  }
-
-  if (cf != NULL) caml_ext_table_add(&caml_code_fragments_table, cf);
 
   entrypoint = optsym("__entry");
   if (NULL != entrypoint) result = caml_callback((value)(&entrypoint), 0);

@@ -1,15 +1,18 @@
-(***********************************************************************)
-(*                                                                     *)
-(*                                OCaml                                *)
-(*                                                                     *)
-(*                  Benedikt Meurer, University of Siegen              *)
-(*                                                                     *)
-(*    Copyright 1998 Institut National de Recherche en Informatique    *)
-(*    et en Automatique. Copyright 2012 Benedikt Meurer. All rights    *)
-(*    reserved.  This file is distributed  under the terms of the Q    *)
-(*    Public License version 1.0.                                      *)
-(*                                                                     *)
-(***********************************************************************)
+(**************************************************************************)
+(*                                                                        *)
+(*                                 OCaml                                  *)
+(*                                                                        *)
+(*                 Benedikt Meurer, University of Siegen                  *)
+(*                                                                        *)
+(*   Copyright 1998 Institut National de Recherche en Informatique et     *)
+(*     en Automatique.                                                    *)
+(*   Copyright 2012 Benedikt Meurer.                                      *)
+(*                                                                        *)
+(*   All rights reserved.  This file is distributed under the terms of    *)
+(*   the GNU Lesser General Public License version 2.1, with the          *)
+(*   special exception on linking described in the file LICENSE.          *)
+(*                                                                        *)
+(**************************************************************************)
 
 (* Description of the ARM processor *)
 
@@ -179,6 +182,8 @@ let not_supported ofs = fatal_error "Proc.loc_results: cannot call"
      first float args in d0...d15 (EABI+VFP)
      remaining args on stack.
    Return values in r0...r7 or d0...d15. *)
+
+let max_arguments_for_tailcalls = 8
 
 let single_regs arg = Array.map (fun arg -> [| arg |]) arg
 let ensure_single_regs res =

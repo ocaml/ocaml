@@ -1,15 +1,17 @@
-/***********************************************************************/
-/*                                                                     */
-/*                                OCaml                                */
-/*                                                                     */
-/*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         */
-/*                                                                     */
-/*  Copyright 1996 Institut National de Recherche en Informatique et   */
-/*  en Automatique.  All rights reserved.  This file is distributed    */
-/*  under the terms of the GNU Library General Public License, with    */
-/*  the special exception on linking described in file ../../LICENSE.  */
-/*                                                                     */
-/***********************************************************************/
+/**************************************************************************/
+/*                                                                        */
+/*                                 OCaml                                  */
+/*                                                                        */
+/*             Xavier Leroy, projet Cristal, INRIA Rocquencourt           */
+/*                                                                        */
+/*   Copyright 1996 Institut National de Recherche en Informatique et     */
+/*     en Automatique.                                                    */
+/*                                                                        */
+/*   All rights reserved.  This file is distributed under the terms of    */
+/*   the GNU Lesser General Public License version 2.1, with the          */
+/*   special exception on linking described in the file LICENSE.          */
+/*                                                                        */
+/**************************************************************************/
 
 #include <caml/fail.h>
 #include <caml/mlvalues.h>
@@ -34,7 +36,7 @@ CAMLprim value unix_utimes(value path, value atime, value mtime)
   mt = Double_val(mtime);
   if (at == 0.0 && mt == 0.0) {
     t = (struct timeval *) NULL;
-  } else {    
+  } else {
     tv[0].tv_sec = at;
     tv[0].tv_usec = (at - tv[0].tv_sec) * 1000000;
     tv[1].tv_sec = mt;
@@ -71,7 +73,7 @@ CAMLprim value unix_utimes(value path, value atime, value mtime)
   mt = Double_val(mtime);
   if (at == 0.0 && mt == 0.0) {
     t = (struct utimbuf *) NULL;
-  } else {    
+  } else {
     times.actime = at;
     times.modtime = mt;
     t = &times;
@@ -91,4 +93,3 @@ CAMLprim value unix_utimes(value path, value atime, value mtime)
 { invalid_argument("utimes not implemented"); }
 
 #endif
-

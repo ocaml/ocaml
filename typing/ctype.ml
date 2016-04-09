@@ -1,14 +1,17 @@
-(***********************************************************************)
-(*                                                                     *)
-(*                                OCaml                                *)
-(*                                                                     *)
-(* Xavier Leroy and Jerome Vouillon, projet Cristal, INRIA Rocquencourt*)
-(*                                                                     *)
-(*  Copyright 1996 Institut National de Recherche en Informatique et   *)
-(*  en Automatique.  All rights reserved.  This file is distributed    *)
-(*  under the terms of the Q Public License version 1.0.               *)
-(*                                                                     *)
-(***********************************************************************)
+(**************************************************************************)
+(*                                                                        *)
+(*                                 OCaml                                  *)
+(*                                                                        *)
+(*  Xavier Leroy and Jerome Vouillon, projet Cristal, INRIA Rocquencourt  *)
+(*                                                                        *)
+(*   Copyright 1996 Institut National de Recherche en Informatique et     *)
+(*     en Automatique.                                                    *)
+(*                                                                        *)
+(*   All rights reserved.  This file is distributed under the terms of    *)
+(*   the GNU Lesser General Public License version 2.1, with the          *)
+(*   special exception on linking described in the file LICENSE.          *)
+(*                                                                        *)
+(**************************************************************************)
 
 (* Operations on core types *)
 
@@ -1100,6 +1103,7 @@ let new_declaration newtype manifest =
     type_newtype_level = newtype;
     type_loc = Location.none;
     type_attributes = [];
+    type_immediate = false;
   }
 
 let instance_constructor ?in_pattern cstr =
@@ -1929,6 +1933,13 @@ let non_aliasable p decl =
   (* in_pervasives p ||  (subsumed by in_current_module) *)
   in_current_module p && decl.type_newtype_level = None
 
+(* PR#7113: -safe-string should be a global property *)
+let compatible_paths p1 p2 =
+  let open Predef in
+  Path.same p1 p2 ||
+  Path.same p1 path_bytes && Path.same p2 path_string ||
+  Path.same p1 path_string && Path.same p2 path_bytes
+
 (* Check for datatypes carefully; see PR#6348 *)
 let rec expands_to_datatype env ty =
   let ty = repr ty in
@@ -2067,7 +2078,7 @@ and mcomp_type_decl type_pairs env p1 p2 tl1 tl2 =
   try
     let decl = Env.find_type p1 env in
     let decl' = Env.find_type p2 env in
-    if Path.same p1 p2 then begin
+    if compatible_paths p1 p2 then begin
       let inj =
         try List.map Variance.(mem Inj) (Env.find_type p1 env).type_variance
         with Not_found -> List.map (fun _ -> false) tl1
@@ -2226,7 +2237,7 @@ let complete_type_list ?(allow_absent=false) env nl1 lv2 mty2 nl2 tl2 =
 (* raise Not_found rather than Unify if the module types are incompatible *)
 let unify_package env unify_list lv1 p1 n1 tl1 lv2 p2 n2 tl2 =
   let ntl2 = complete_type_list env n1 lv2 (Mty_ident p2) n2 tl2
-  and ntl1 = complete_type_list env n2 lv2 (Mty_ident p1) n1 tl1 in
+  and ntl1 = complete_type_list env n2 lv1 (Mty_ident p1) n1 tl1 in
   unify_list (List.map snd ntl1) (List.map snd ntl2);
   if eq_package_path env p1 p2
   || !package_subtype env p1 n1 tl1 p2 n2 tl2
@@ -4314,6 +4325,7 @@ let nondep_type_decl env mid id is_covariant decl =
       type_newtype_level = None;
       type_loc = decl.type_loc;
       type_attributes = decl.type_attributes;
+      type_immediate = decl.type_immediate;
     }
   with Not_found ->
     clear_hash ();
@@ -4444,3 +4456,25 @@ let same_constr env t1 t2 =
 
 let () =
   Env.same_constr := same_constr
+
+let maybe_pointer_type env typ =
+   match (repr typ).desc with
+  | Tconstr(p, args, abbrev) ->
+    begin try
+      let type_decl = Env.find_type p env in
+      not type_decl.type_immediate
+    with Not_found -> true
+    (* This can happen due to e.g. missing -I options,
+       causing some .cmi files to be unavailable.
+       Maybe we should emit a warning. *)
+    end
+  | Tvariant row ->
+      let row = Btype.row_repr row in
+      (* if all labels are devoid of arguments, not a pointer *)
+      not row.row_closed
+      || List.exists
+          (function
+            | _, (Rpresent (Some _) | Reither (false, _, _, _)) -> true
+            | _ -> false)
+          row.row_fields
+  | _ -> true

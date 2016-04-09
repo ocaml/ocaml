@@ -142,10 +142,9 @@ better than adding redundant explanations.)
 Changes affecting the compiler libraries should be reflected in the
 documentation comments of the relevant `.mli` files.
 
-For changes affecting the OCaml Reference Manual (in particular any
-change in the surface language), you should also prepare a merge
-request against the manual repository,
-<https://github.com/ocaml/ocaml-manual>.
+It is recommended to included changes to the OCaml Reference Manual
+(in particular for any change in the surface language), which is now
+part of the main repository (under `manual/`).
 
 Finally, changes in command-line options should be integrated in the
 manual, but also in the man pages present in the `man/` sub-directory
@@ -291,3 +290,15 @@ contribution.
 This ability to re-license allows INRIA to provide members of the
 [Caml Consortium](http://caml.inria.fr/consortium/) with a license on
 the Caml code base that is more permissive than the public license.
+
+### How to sign the CLA
+
+If your contribution is large enough, you should sign the CLA. If you
+are contributing on your own behalf, you should sign [the individual
+CLA](http://caml.inria.fr/pub/docs/CLA-individual.doc). For corporate
+contributions, if your employer has not already done so, they should
+sign [the corporate
+CLA](http://caml.inria.fr/pub/docs/CLA-corporate.doc). Review the CLA,
+sign it, and send it -- scanned PDF by email, or postail mail -- to
+Xavier Leroy ([contact
+info](http://gallium.inria.fr/%7Exleroy/contact.html)).

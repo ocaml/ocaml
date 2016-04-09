@@ -1,14 +1,18 @@
 {
-(***********************************************************************)
-(*                             OCamldoc                                *)
-(*                                                                     *)
-(*            Maxence Guesdon, projet Cristal, INRIA Rocquencourt      *)
-(*                                                                     *)
-(*  Copyright 2001 Institut National de Recherche en Informatique et   *)
-(*  en Automatique.  All rights reserved.  This file is distributed    *)
-(*  under the terms of the Q Public License version 1.0.               *)
-(*                                                                     *)
-(***********************************************************************)
+(**************************************************************************)
+(*                                                                        *)
+(*                                 OCaml                                  *)
+(*                                                                        *)
+(*             Maxence Guesdon, projet Cristal, INRIA Rocquencourt        *)
+(*                                                                        *)
+(*   Copyright 2001 Institut National de Recherche en Informatique et     *)
+(*     en Automatique.                                                    *)
+(*                                                                        *)
+(*   All rights reserved.  This file is distributed under the terms of    *)
+(*   the GNU Lesser General Public License version 2.1, with the          *)
+(*   special exception on linking described in the file LICENSE.          *)
+(*                                                                        *)
+(**************************************************************************)
 
 (** The lexer for string to build text structures. *)
 
@@ -190,12 +194,11 @@ rule main = parse
       if !verb_mode || !target_mode || !code_pre_mode ||
         (!open_brackets >= 1) then
         Char (Lexing.lexeme lexbuf)
-      else
-        let _ =
-          if !ele_ref_mode then
-            ele_ref_mode := false
-        in
+      else begin
+        if !ele_ref_mode then
+          ele_ref_mode := false;
         END
+      end
     }
 | begin_title
     {

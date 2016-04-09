@@ -40,3 +40,15 @@ gen_rec.y <- D "foo";;
 gen_rec.y <- C;;
 flt_rec.y <- 1.;;
 flt_rec'.z <- 1.;;
+
+(* must use a write barrier, type is open *)
+let set_open_poly (r:[>`Foo] ref) y = r := y ;;
+let set_open_poly (r:[<`Foo] ref) y = r := y ;;
+let set_open_poly (r:[`Foo] ref) y = r := y ;;
+let set_open_poly (r:[< `Bar | `Foo | `Baz > `Foo `Bar] ref) y = r := y ;;
+let set_open_poly (r:[>`Foo of int] ref) y = r := y ;;
+let set_open_poly (r:[<`Foo of int] ref) y = r := y ;;
+let set_open_poly (r:[`Foo of int] ref) y = r := y ;;
+let set_open_poly (r:[< `Bar | `Foo of float | `Baz > `Foo `Bar] ref) y =
+  r := y
+;;

@@ -1,14 +1,17 @@
-(***********************************************************************)
-(*                                                                     *)
-(*                                OCaml                                *)
-(*                                                                     *)
-(*                  Fabrice Le Fessant, INRIA Saclay                   *)
-(*                                                                     *)
-(*  Copyright 2012 Institut National de Recherche en Informatique et   *)
-(*  en Automatique.  All rights reserved.  This file is distributed    *)
-(*  under the terms of the Q Public License version 1.0.               *)
-(*                                                                     *)
-(***********************************************************************)
+(**************************************************************************)
+(*                                                                        *)
+(*                                 OCaml                                  *)
+(*                                                                        *)
+(*                   Fabrice Le Fessant, INRIA Saclay                     *)
+(*                                                                        *)
+(*   Copyright 2012 Institut National de Recherche en Informatique et     *)
+(*     en Automatique.                                                    *)
+(*                                                                        *)
+(*   All rights reserved.  This file is distributed under the terms of    *)
+(*   the GNU Lesser General Public License version 2.1, with the          *)
+(*   special exception on linking described in the file LICENSE.          *)
+(*                                                                        *)
+(**************************************************************************)
 
 open Cmi_format
 open Typedtree
@@ -164,6 +167,12 @@ let record_value_dependency vd1 vd2 =
 let save_cmt filename modname binary_annots sourcefile initial_env sg =
   if !Clflags.binary_annotations && not !Clflags.print_types then begin
     let imports = Env.imports () in
+    let flags =
+      List.concat [
+        if !Clflags.recursive_types then [Cmi_format.Rectypes] else [];
+        if !Clflags.opaque then [Cmi_format.Opaque] else [];
+        ]
+    in
     let oc = open_out_bin filename in
     let this_crc =
       match sg with
@@ -172,8 +181,7 @@ let save_cmt filename modname binary_annots sourcefile initial_env sg =
           let cmi = {
             cmi_name = modname;
             cmi_sign = sg;
-            cmi_flags =
-            if !Clflags.recursive_types then [Cmi_format.Rectypes] else [];
+            cmi_flags = flags;
             cmi_crcs = imports;
           } in
           Some (output_cmi filename oc cmi)

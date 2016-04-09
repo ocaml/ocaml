@@ -1,14 +1,17 @@
-#########################################################################
-#                                                                       #
-#                                 OCaml                                 #
-#                                                                       #
-#            Xavier Leroy, projet Cristal, INRIA Rocquencourt           #
-#                                                                       #
-#   Copyright 1999 Institut National de Recherche en Informatique et    #
-#   en Automatique.  All rights reserved.  This file is distributed     #
-#   under the terms of the Q Public License version 1.0.                #
-#                                                                       #
-#########################################################################
+#**************************************************************************
+#*                                                                        *
+#*                                 OCaml                                  *
+#*                                                                        *
+#*            Xavier Leroy, projet Cristal, INRIA Rocquencourt            *
+#*                                                                        *
+#*   Copyright 1999 Institut National de Recherche en Informatique et     *
+#*     en Automatique.                                                    *
+#*                                                                        *
+#*   All rights reserved.  This file is distributed under the terms of    *
+#*   the GNU Lesser General Public License version 2.1, with the          *
+#*   special exception on linking described in the file LICENSE.          *
+#*                                                                        *
+#**************************************************************************
 
 # The lexer generator
 
@@ -17,7 +20,12 @@ CAMLRUN ?= ../boot/ocamlrun
 CAMLYACC ?= ../boot/ocamlyacc
 
 CAMLC=$(CAMLRUN) ../boot/ocamlc -I ../boot
-CAMLOPT=$(CAMLRUN) ../ocamlopt -I ../stdlib
+ifeq "$(wildcard ../flexdll/Makefile)" ""
+  FLEXLINK_ENV=
+else
+  FLEXLINK_ENV=OCAML_FLEXLINK="../boot/ocamlrun ../flexdll/flexlink.exe"
+endif
+CAMLOPT=$(FLEXLINK_ENV) $(CAMLRUN) ../ocamlopt -I ../stdlib
 COMPFLAGS=-warn-error A
 LINKFLAGS=
 YACCFLAGS=-v
@@ -45,7 +53,7 @@ parser.ml parser.mli: parser.mly
 	$(CAMLYACC) $(YACCFLAGS) parser.mly
 
 clean::
-	rm -f parser.ml parser.mli
+	rm -f parser.ml parser.mli parser.output
 
 beforedepend:: parser.ml parser.mli
 

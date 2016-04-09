@@ -1,15 +1,17 @@
-/***********************************************************************/
-/*                                                                     */
-/*                                OCaml                                */
-/*                                                                     */
-/*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         */
-/*                                                                     */
-/*  Copyright 1996 Institut National de Recherche en Informatique et   */
-/*  en Automatique.  All rights reserved.  This file is distributed    */
-/*  under the terms of the GNU Library General Public License, with    */
-/*  the special exception on linking described in file ../../LICENSE.  */
-/*                                                                     */
-/***********************************************************************/
+/**************************************************************************/
+/*                                                                        */
+/*                                 OCaml                                  */
+/*                                                                        */
+/*             Xavier Leroy, projet Cristal, INRIA Rocquencourt           */
+/*                                                                        */
+/*   Copyright 1996 Institut National de Recherche en Informatique et     */
+/*     en Automatique.                                                    */
+/*                                                                        */
+/*   All rights reserved.  This file is distributed under the terms of    */
+/*   the GNU Lesser General Public License version 2.1, with the          */
+/*   special exception on linking described in the file LICENSE.          */
+/*                                                                        */
+/**************************************************************************/
 
 #include <caml/fail.h>
 #include <caml/mlvalues.h>
@@ -19,9 +21,9 @@
 
 #ifdef HAS_SYMLINK
 
-CAMLprim value unix_symlink(value path1, value path2)
+CAMLprim value unix_symlink(value to_dir, value path1, value path2)
 {
-  CAMLparam2(path1, path2);
+  CAMLparam3(to_dir, path1, path2);
   char * p1;
   char * p2;
   int ret;
@@ -39,9 +41,21 @@ CAMLprim value unix_symlink(value path1, value path2)
   CAMLreturn(Val_unit);
 }
 
+CAMLprim value unix_has_symlink(value unit)
+{
+  CAMLparam0();
+  CAMLreturn(Val_true);
+}
+
 #else
 
-CAMLprim value unix_symlink(value path1, value path2)
+CAMLprim value unix_symlink(value to_dir, value path1, value path2)
 { invalid_argument("symlink not implemented"); }
+
+CAMLprim value unix_has_symlink(value unit)
+{
+  CAMLparam0();
+  CAMLreturn(Val_false);
+}
 
 #endif

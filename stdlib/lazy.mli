@@ -1,19 +1,21 @@
-(***********************************************************************)
-(*                                                                     *)
-(*                                OCaml                                *)
-(*                                                                     *)
-(*            Damien Doligez, projet Para, INRIA Rocquencourt          *)
-(*                                                                     *)
-(*  Copyright 1997 Institut National de Recherche en Informatique et   *)
-(*  en Automatique.  All rights reserved.  This file is distributed    *)
-(*  under the terms of the GNU Library General Public License, with    *)
-(*  the special exception on linking described in file ../LICENSE.     *)
-(*                                                                     *)
-(***********************************************************************)
+(**************************************************************************)
+(*                                                                        *)
+(*                                 OCaml                                  *)
+(*                                                                        *)
+(*             Damien Doligez, projet Para, INRIA Rocquencourt            *)
+(*                                                                        *)
+(*   Copyright 1997 Institut National de Recherche en Informatique et     *)
+(*     en Automatique.                                                    *)
+(*                                                                        *)
+(*   All rights reserved.  This file is distributed under the terms of    *)
+(*   the GNU Lesser General Public License version 2.1, with the          *)
+(*   special exception on linking described in the file LICENSE.          *)
+(*                                                                        *)
+(**************************************************************************)
 
 (** Deferred computations. *)
 
-type 'a t = 'a lazy_t;;
+type 'a t = 'a lazy_t
 (** A value of type ['a Lazy.t] is a deferred computation, called
    a suspension, that has a result of type ['a].  The special
    expression syntax [lazy (expr)] makes a suspension of the
@@ -38,10 +40,10 @@ type 'a t = 'a lazy_t;;
 *)
 
 
-exception Undefined;;
+exception Undefined
 
-(* val force : 'a t -> 'a ;; *)
-external force : 'a t -> 'a = "%lazy_force";;
+(* val force : 'a t -> 'a  *)
+external force : 'a t -> 'a = "%lazy_force"
 (** [force x] forces the suspension [x] and returns its result.
    If [x] has already been forced, [Lazy.force x] returns the
    same value again without recomputing it.  If it raised an exception,
@@ -50,7 +52,7 @@ external force : 'a t -> 'a = "%lazy_force";;
    recursively.
 *)
 
-val force_val : 'a t -> 'a;;
+val force_val : 'a t -> 'a
 (** [force_val x] forces the suspension [x] and returns its
     result.  If [x] has already been forced, [force_val x]
     returns the same value again without recomputing it.
@@ -60,29 +62,34 @@ val force_val : 'a t -> 'a;;
     whether [force_val x] raises the same exception or [Undefined].
 *)
 
-val from_fun : (unit -> 'a) -> 'a t;;
+val from_fun : (unit -> 'a) -> 'a t
 (** [from_fun f] is the same as [lazy (f ())] but slightly more efficient.
+
+    [from_fun] should only be used if the function [f] is already defined.
+    In particular it is always less efficient to write
+    [from_fun (fun () -> expr)] than [lazy expr].
+
     @since 4.00.0 *)
 
-val from_val : 'a -> 'a t;;
+val from_val : 'a -> 'a t
 (** [from_val v] returns an already-forced suspension of [v].
     This is for special purposes only and should not be confused with
     [lazy (v)].
     @since 4.00.0 *)
 
-val is_val : 'a t -> bool;;
+val is_val : 'a t -> bool
 (** [is_val x] returns [true] if [x] has already been forced and
     did not raise an exception.
     @since 4.00.0 *)
 
 val lazy_from_fun : (unit -> 'a) -> 'a t
-  [@@ocaml.deprecated "Use Lazy.from_fun instead."];;
+  [@@ocaml.deprecated "Use Lazy.from_fun instead."]
 (** @deprecated synonym for [from_fun]. *)
 
 val lazy_from_val : 'a -> 'a t
-  [@@ocaml.deprecated "Use Lazy.from_val instead."];;
+  [@@ocaml.deprecated "Use Lazy.from_val instead."]
 (** @deprecated synonym for [from_val]. *)
 
 val lazy_is_val : 'a t -> bool
-  [@@ocaml.deprecated "Use Lazy.is_val instead."];;
+  [@@ocaml.deprecated "Use Lazy.is_val instead."]
 (** @deprecated synonym for [is_val]. *)

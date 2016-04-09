@@ -1,14 +1,17 @@
-(***********************************************************************)
-(*                                                                     *)
-(*                                OCaml                                *)
-(*                                                                     *)
-(*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         *)
-(*                                                                     *)
-(*  Copyright 1999 Institut National de Recherche en Informatique et   *)
-(*  en Automatique.  All rights reserved.  This file is distributed    *)
-(*  under the terms of the Q Public License version 1.0.               *)
-(*                                                                     *)
-(***********************************************************************)
+(**************************************************************************)
+(*                                                                        *)
+(*                                 OCaml                                  *)
+(*                                                                        *)
+(*             Xavier Leroy, projet Cristal, INRIA Rocquencourt           *)
+(*                                                                        *)
+(*   Copyright 1999 Institut National de Recherche en Informatique et     *)
+(*     en Automatique.                                                    *)
+(*                                                                        *)
+(*   All rights reserved.  This file is distributed under the terms of    *)
+(*   the GNU Lesser General Public License version 2.1, with the          *)
+(*   special exception on linking described in the file LICENSE.          *)
+(*                                                                        *)
+(**************************************************************************)
 
 open Compenv
 open Parsetree
@@ -261,6 +264,7 @@ let rec lexical_approximation lexbuf =
 
 let read_and_approximate inputfile =
   error_occurred := false;
+  Depend.free_structure_names := Depend.StringSet.empty;
   let ic = open_in_bin inputfile in
   try
     seek_in ic 0;
@@ -366,7 +370,7 @@ let mli_file_dependencies source_file =
     end
 
 let process_file_as process_fun def source_file =
-  Compenv.readenv ppf Before_compile;
+  Compenv.readenv ppf (Before_compile source_file);
   load_path := [];
   List.iter add_to_load_path (
       (!Compenv.last_include_dirs @

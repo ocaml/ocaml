@@ -1,14 +1,17 @@
-(***********************************************************************)
-(*                                                                     *)
-(*                                OCaml                                *)
-(*                                                                     *)
-(* Xavier Leroy and Jerome Vouillon, projet Cristal, INRIA Rocquencourt*)
-(*                                                                     *)
-(*  Copyright 1996 Institut National de Recherche en Informatique et   *)
-(*  en Automatique.  All rights reserved.  This file is distributed    *)
-(*  under the terms of the Q Public License version 1.0.               *)
-(*                                                                     *)
-(***********************************************************************)
+(**************************************************************************)
+(*                                                                        *)
+(*                                 OCaml                                  *)
+(*                                                                        *)
+(*  Xavier Leroy and Jerome Vouillon, projet Cristal, INRIA Rocquencourt  *)
+(*                                                                        *)
+(*   Copyright 1996 Institut National de Recherche en Informatique et     *)
+(*     en Automatique.                                                    *)
+(*                                                                        *)
+(*   All rights reserved.  This file is distributed under the terms of    *)
+(*   the GNU Lesser General Public License version 2.1, with the          *)
+(*   special exception on linking described in the file LICENSE.          *)
+(*                                                                        *)
+(**************************************************************************)
 
 (* Basic operations on core types *)
 
@@ -62,6 +65,34 @@ let default_mty = function
     Some mty -> mty
   | None -> Mty_signature []
 
+(**** Definitions for backtracking ****)
+
+type change =
+    Ctype of type_expr * type_desc
+  | Ccompress of type_expr * type_desc * type_desc
+  | Clevel of type_expr * int
+  | Cname of
+      (Path.t * type_expr list) option ref * (Path.t * type_expr list) option
+  | Crow of row_field option ref * row_field option
+  | Ckind of field_kind option ref * field_kind option
+  | Ccommu of commutable ref * commutable
+  | Cuniv of type_expr option ref * type_expr option
+  | Ctypeset of TypeSet.t ref * TypeSet.t
+
+type changes =
+    Change of change * changes ref
+  | Unchanged
+  | Invalid
+
+let trail = Weak.create 1
+
+let log_change ch =
+  match Weak.get trail 0 with None -> ()
+  | Some r ->
+      let r' = ref Unchanged in
+      r := Change (ch, r');
+      Weak.set trail 0 (Some r')
+
 (**** Representative of a type ****)
 
 let rec field_kind_repr =
@@ -69,25 +100,25 @@ let rec field_kind_repr =
     Fvar {contents = Some kind} -> field_kind_repr kind
   | kind                        -> kind
 
-(*
-let rec repr =
-  function
-    {desc = Tlink t'} ->
-      (*
-         We do no path compression. Path compression does not seem to
-         improve notably efficiency, and it prevents from changing a
-         [Tlink] into another type (for instance, for undoing a
-         unification).
-      *)
-      repr t'
-  | {desc = Tfield (_, k, _, t')} when field_kind_repr k = Fabsent ->
-      repr t'
-  | t -> t
-*)
+let rec repr_link compress t d =
+ function
+   {desc = Tlink t' as d'} ->
+     repr_link true t d' t'
+ | {desc = Tfield (_, k, _, t') as d'} when field_kind_repr k = Fabsent ->
+     repr_link true t d' t'
+ | t' ->
+     if compress then begin
+       log_change (Ccompress (t, t.desc, d)); t.desc <- d
+     end;
+     t'
 
-(* Path compression must be undone by backtracking *)
-let repr_link' = ref (fun _ -> assert false)
-let repr t = !repr_link' 0 t t.desc t
+let repr t =
+  match t.desc with
+   Tlink t' as d ->
+     repr_link false t d t'
+ | Tfield (_, k, _, t') as d when field_kind_repr k = Fabsent ->
+     repr_link false t d t'
+ | _ -> t
 
 let rec commu_repr = function
     Clink r when !r <> Cunknown -> commu_repr !r
@@ -599,18 +630,6 @@ let extract_label l ls = extract_label_aux [] l ls
                   (*  Utilities for backtracking    *)
                   (**********************************)
 
-type change =
-    Ctype of type_expr * type_desc
-  | Ccompress of type_expr * type_desc * type_desc
-  | Clevel of type_expr * int
-  | Cname of
-      (Path.t * type_expr list) option ref * (Path.t * type_expr list) option
-  | Crow of row_field option ref * row_field option
-  | Ckind of field_kind option ref * field_kind option
-  | Ccommu of commutable ref * commutable
-  | Cuniv of type_expr option ref * type_expr option
-  | Ctypeset of TypeSet.t ref * TypeSet.t
-
 let undo_change = function
     Ctype  (ty, desc) -> ty.desc <- desc
   | Ccompress  (ty, desc, _) -> ty.desc <- desc
@@ -622,22 +641,8 @@ let undo_change = function
   | Cuniv  (r, v) -> r := v
   | Ctypeset (r, v) -> r := v
 
-type changes =
-    Change of change * changes ref
-  | Unchanged
-  | Invalid
-
 type snapshot = changes ref * int
-
-let trail = Weak.create 1
 let last_snapshot = ref 0
-
-let log_change ch =
-  match Weak.get trail 0 with None -> ()
-  | Some r ->
-      let r' = ref Unchanged in
-      r := Change (ch, r');
-      Weak.set trail 0 (Some r')
 
 let log_type ty =
   if ty.id <= !last_snapshot then log_change (Ctype (ty, ty.desc))
@@ -720,24 +725,8 @@ let undo_compress (changes, old) =
   | Change _ ->
       let log = rev_compress_log [] changes in
       List.iter
-	(fun r -> match !r with
-	  Change (Ccompress (ty, desc, d), next) when ty.desc == d ->
-	    ty.desc <- desc; r := !next
-	| _ -> ())
-	log
-
-let rec repr_link n t d =
- function
-   {desc = Tlink t' as d'} ->
-     repr_link (succ n) t d' t'
- | {desc = Tfield (_, k, _, t') as d'} when field_kind_repr k = Fabsent ->
-     repr_link (succ n) t d' t'
- | t' ->
-     if n > 1 then begin
-       log_change (Ccompress (t, t.desc, d)); t.desc <- d
-     end;
-     t'
-
-let () = repr_link' := repr_link
-
-let repr t = repr_link 0 t t.desc t
+        (fun r -> match !r with
+          Change (Ccompress (ty, desc, d), next) when ty.desc == d ->
+            ty.desc <- desc; r := !next
+        | _ -> ())
+        log

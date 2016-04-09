@@ -1,15 +1,18 @@
-(***********************************************************************)
-(*                                                                     *)
-(*                                OCaml                                *)
-(*                                                                     *)
-(*                  Benedikt Meurer, University of Siegen              *)
-(*                                                                     *)
-(*    Copyright 1998 Institut National de Recherche en Informatique    *)
-(*    et en Automatique. Copyright 2012 Benedikt Meurer. All rights    *)
-(*    reserved.  This file is distributed  under the terms of the Q    *)
-(*    Public License version 1.0.                                      *)
-(*                                                                     *)
-(***********************************************************************)
+(**************************************************************************)
+(*                                                                        *)
+(*                                 OCaml                                  *)
+(*                                                                        *)
+(*                 Benedikt Meurer, University of Siegen                  *)
+(*                                                                        *)
+(*   Copyright 1998 Institut National de Recherche en Informatique et     *)
+(*     en Automatique.                                                    *)
+(*   Copyright 2012 Benedikt Meurer.                                      *)
+(*                                                                        *)
+(*   All rights reserved.  This file is distributed under the terms of    *)
+(*   the GNU Lesser General Public License version 2.1, with the          *)
+(*   special exception on linking described in the file LICENSE.          *)
+(*                                                                        *)
+(**************************************************************************)
 
 (* Instruction selection for the ARM processor *)
 
@@ -234,11 +237,11 @@ method private select_operation_softfp op args =
   (* Add coercions around loads and stores of 32-bit floats *)
   | (Cload Single, args) ->
       (Iextcall("__aeabi_f2d", false), [Cop(Cload Word_int, args)])
-  | (Cstore Single, [arg1; arg2]) ->
+  | (Cstore (Single, init), [arg1; arg2]) ->
       let arg2' =
         Cop(Cextcall("__aeabi_d2f", typ_int, false, Debuginfo.none),
             [arg2]) in
-      self#select_operation (Cstore Word_int) [arg1; arg2']
+      self#select_operation (Cstore (Word_int, init)) [arg1; arg2']
   (* Other operations are regular *)
   | (op, args) -> super#select_operation op args
 

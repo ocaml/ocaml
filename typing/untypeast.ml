@@ -1,12 +1,15 @@
 (**************************************************************************)
 (*                                                                        *)
-(*                                OCaml                                   *)
+(*                                 OCaml                                  *)
 (*                                                                        *)
 (*    Thomas Gazagnaire (OCamlPro), Fabrice Le Fessant (INRIA Saclay)     *)
 (*                                                                        *)
 (*   Copyright 2007 Institut National de Recherche en Informatique et     *)
-(*   en Automatique.  All rights reserved.  This file is distributed      *)
-(*   under the terms of the Q Public License version 1.0.                 *)
+(*     en Automatique.                                                    *)
+(*                                                                        *)
+(*   All rights reserved.  This file is distributed under the terms of    *)
+(*   the GNU Lesser General Public License version 2.1, with the          *)
+(*   special exception on linking described in the file LICENSE.          *)
 (*                                                                        *)
 (**************************************************************************)
 
@@ -113,13 +116,13 @@ let fresh_name s env =
 (** Mapping functions. *)
 
 let constant = function
-  | Const_char c -> PConst_char c
-  | Const_string (s,d) -> PConst_string (s,d)
-  | Const_int i -> PConst_int (string_of_int i, None)
-  | Const_int32 i -> PConst_int (Int32.to_string i, Some 'l')
-  | Const_int64 i -> PConst_int (Int64.to_string i, Some 'L')
-  | Const_nativeint i -> PConst_int (Nativeint.to_string i, Some 'n')
-  | Const_float f -> PConst_float (f,None)
+  | Const_char c -> Pconst_char c
+  | Const_string (s,d) -> Pconst_string (s,d)
+  | Const_int i -> Pconst_integer (string_of_int i, None)
+  | Const_int32 i -> Pconst_integer (Int32.to_string i, Some 'l')
+  | Const_int64 i -> Pconst_integer (Int64.to_string i, Some 'L')
+  | Const_nativeint i -> Pconst_integer (Nativeint.to_string i, Some 'n')
+  | Const_float f -> Pconst_float (f,None)
 
 let attribute sub (s, p) = (map_loc sub s, p)
 let attributes sub l = List.map (sub.attribute sub) l

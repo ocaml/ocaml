@@ -1,15 +1,17 @@
-/***********************************************************************/
-/*                                                                     */
-/*                                OCaml                                */
-/*                                                                     */
-/*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         */
-/*                                                                     */
-/*  Copyright 1996 Institut National de Recherche en Informatique et   */
-/*  en Automatique.  All rights reserved.  This file is distributed    */
-/*  under the terms of the GNU Library General Public License, with    */
-/*  the special exception on linking described in file ../LICENSE.     */
-/*                                                                     */
-/***********************************************************************/
+/**************************************************************************/
+/*                                                                        */
+/*                                 OCaml                                  */
+/*                                                                        */
+/*             Xavier Leroy, projet Cristal, INRIA Rocquencourt           */
+/*                                                                        */
+/*   Copyright 1996 Institut National de Recherche en Informatique et     */
+/*     en Automatique.                                                    */
+/*                                                                        */
+/*   All rights reserved.  This file is distributed under the terms of    */
+/*   the GNU Lesser General Public License version 2.1, with the          */
+/*   special exception on linking described in the file LICENSE.          */
+/*                                                                        */
+/**************************************************************************/
 
 /* Handling of blocks of bytecode (endianness switch, threading). */
 
@@ -23,13 +25,12 @@
 #include "caml/fix_code.h"
 #include "caml/instruct.h"
 #include "caml/intext.h"
+#include "caml/md5.h"
 #include "caml/memory.h"
 #include "caml/misc.h"
 #include "caml/mlvalues.h"
 #include "caml/reverse.h"
 
-char *caml_data;
-asize_t caml_data_size;
 code_t caml_start_code;
 asize_t caml_code_size;
 unsigned char * caml_saved_code;
@@ -42,9 +43,8 @@ void caml_init_code_fragments(void) {
   cf = caml_stat_alloc(sizeof(struct code_fragment));
   cf->code_start = (char *) caml_start_code;
   cf->code_end = (char *) caml_start_code + caml_code_size;
-  cf->data_start = (char *) caml_data;
-  cf->data_end = (char *) caml_data + caml_data_size;
-  caml_update_code_fragment_digest(cf);
+  caml_md5_block(cf->digest, caml_start_code, caml_code_size);
+  cf->digest_computed = 1;
   caml_ext_table_init(&caml_code_fragments_table, 8);
   caml_ext_table_add(&caml_code_fragments_table, cf);
 }

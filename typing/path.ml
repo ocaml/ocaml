@@ -1,14 +1,17 @@
-(***********************************************************************)
-(*                                                                     *)
-(*                                OCaml                                *)
-(*                                                                     *)
-(*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         *)
-(*                                                                     *)
-(*  Copyright 1996 Institut National de Recherche en Informatique et   *)
-(*  en Automatique.  All rights reserved.  This file is distributed    *)
-(*  under the terms of the Q Public License version 1.0.               *)
-(*                                                                     *)
-(***********************************************************************)
+(**************************************************************************)
+(*                                                                        *)
+(*                                 OCaml                                  *)
+(*                                                                        *)
+(*             Xavier Leroy, projet Cristal, INRIA Rocquencourt           *)
+(*                                                                        *)
+(*   Copyright 1996 Institut National de Recherche en Informatique et     *)
+(*     en Automatique.                                                    *)
+(*                                                                        *)
+(*   All rights reserved.  This file is distributed under the terms of    *)
+(*   the GNU Lesser General Public License version 2.1, with the          *)
+(*   special exception on linking described in the file LICENSE.          *)
+(*                                                                        *)
+(**************************************************************************)
 
 type t =
     Pident of Ident.t
@@ -47,6 +50,14 @@ let rec head = function
     Pident id -> id
   | Pdot(p, s, pos) -> head p
   | Papply(p1, p2) -> assert false
+
+let heads p =
+  let rec heads p acc = match p with
+    | Pident id -> id :: acc
+    | Pdot (p, _s, _pos) -> heads p acc
+    | Papply(p1, p2) ->
+        heads p1 (heads p2 acc)
+  in heads p []
 
 let rec last = function
   | Pident id -> Ident.name id

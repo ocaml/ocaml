@@ -1,21 +1,23 @@
-(***********************************************************************)
-(*                                                                     *)
-(*                                OCaml                                *)
-(*                                                                     *)
-(*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         *)
-(*                                                                     *)
-(*  Copyright 1996 Institut National de Recherche en Informatique et   *)
-(*  en Automatique.  All rights reserved.  This file is distributed    *)
-(*  under the terms of the GNU Library General Public License, with    *)
-(*  the special exception on linking described in file ../LICENSE.     *)
-(*                                                                     *)
-(***********************************************************************)
+(**************************************************************************)
+(*                                                                        *)
+(*                                 OCaml                                  *)
+(*                                                                        *)
+(*             Xavier Leroy, projet Cristal, INRIA Rocquencourt           *)
+(*                                                                        *)
+(*   Copyright 1996 Institut National de Recherche en Informatique et     *)
+(*     en Automatique.                                                    *)
+(*                                                                        *)
+(*   All rights reserved.  This file is distributed under the terms of    *)
+(*   the GNU Lesser General Public License version 2.1, with the          *)
+(*   special exception on linking described in the file LICENSE.          *)
+(*                                                                        *)
+(**************************************************************************)
 
-open Printf;;
+open Printf
 
 let printers = ref []
 
-let locfmt = format_of_string "File \"%s\", line %d, characters %d-%d: %s";;
+let locfmt = format_of_string "File \"%s\", line %d, characters %d-%d: %s"
 
 let field x i =
   let f = Obj.field x i in
@@ -27,18 +29,18 @@ let field x i =
     string_of_float (Obj.magic f : float)
   else
     "_"
-;;
+
 let rec other_fields x i =
   if i >= Obj.size x then ""
   else sprintf ", %s%s" (field x i) (other_fields x (i+1))
-;;
+
 let fields x =
   match Obj.size x with
   | 0 -> ""
   | 1 -> ""
   | 2 -> sprintf "(%s)" (field x 1)
   | n -> sprintf "(%s%s)" (field x 1) (other_fields x 2)
-;;
+
 
 let to_string x =
   let rec conv = function

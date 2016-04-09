@@ -103,3 +103,7 @@ let f () = match None with _ -> .;; (* error *)
 let g () = match None with _ -> () | exception _ -> .;; (* error *)
 let h () = match None with _ -> .  | exception _ -> .;; (* error *)
 let f x = match x with _ -> () | None -> .;; (* do not warn *)
+
+(* #7059, all clauses guarded *)
+
+let f x y = match 1 with 1 when x = y -> 1;;

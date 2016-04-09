@@ -1,14 +1,17 @@
-(***********************************************************************)
-(*                                                                     *)
-(*                                OCaml                                *)
-(*                                                                     *)
-(*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         *)
-(*                                                                     *)
-(*  Copyright 1996 Institut National de Recherche en Informatique et   *)
-(*  en Automatique.  All rights reserved.  This file is distributed    *)
-(*  under the terms of the Q Public License version 1.0.               *)
-(*                                                                     *)
-(***********************************************************************)
+(**************************************************************************)
+(*                                                                        *)
+(*                                 OCaml                                  *)
+(*                                                                        *)
+(*             Xavier Leroy, projet Cristal, INRIA Rocquencourt           *)
+(*                                                                        *)
+(*   Copyright 1996 Institut National de Recherche en Informatique et     *)
+(*     en Automatique.                                                    *)
+(*                                                                        *)
+(*   All rights reserved.  This file is distributed under the terms of    *)
+(*   the GNU Lesser General Public License version 2.1, with the          *)
+(*   special exception on linking described in the file LICENSE.          *)
+(*                                                                        *)
+(**************************************************************************)
 
 (* The interactive toplevel loop *)
 
@@ -20,6 +23,7 @@ open Parsetree
 open Types
 open Typedtree
 open Outcometree
+open Ast_helper
 
 type res = Ok of Obj.t | Err of string
 type evaluation_outcome = Result of Obj.t | Exception of exn
@@ -60,9 +64,35 @@ type directive_fun =
 
 (* Return the value referred to by a path *)
 
+let remembered = ref Ident.empty
+
+let rec remember phrase_name i = function
+  | [] -> ()
+  | Sig_value  (id, _) :: rest
+  | Sig_module (id, _, _) :: rest
+  | Sig_typext (id, _, _) :: rest
+  | Sig_class  (id, _, _) :: rest ->
+      remembered := Ident.add id (phrase_name, i) !remembered;
+      remember phrase_name (succ i) rest
+  | _ :: rest -> remember phrase_name i rest
+
 let toplevel_value id =
-  let (glb,pos) = Translmod.nat_toplevel_name id in
-  (Obj.magic (global_symbol glb)).(pos)
+  try Ident.find_same id !remembered
+  with _ -> Misc.fatal_error @@ "Unknown ident: " ^ Ident.unique_name id
+
+let close_phrase lam =
+  let open Lambda in
+  IdentSet.fold (fun id l ->
+    let glb, pos = toplevel_value id in
+    let glob = Lprim (Pfield pos, [Lprim (Pgetglobal glb, [])]) in
+    Llet(Strict, id, glob, l)
+  ) (free_variables lam) lam
+
+let toplevel_value id =
+  let glob, pos =
+    if Config.flambda then toplevel_value id else Translmod.nat_toplevel_name id
+  in
+  (Obj.magic (global_symbol glob)).(pos)
 
 let rec eval_path = function
   | Pident id ->
@@ -74,12 +104,15 @@ let rec eval_path = function
   | Papply(p1, p2) ->
       fatal_error "Toploop.eval_path"
 
+let eval_path env path =
+  eval_path (Env.normalize_path (Some Location.none) env path)
+
 (* To print values *)
 
 module EvalPath = struct
   type valu = Obj.t
   exception Error
-  let eval_path p = try eval_path p with _ -> raise Error
+  let eval_path env p = try eval_path env p with _ -> raise Error
   let same_value v1 v2 = (v1 == v2)
 end
 
@@ -105,7 +138,13 @@ let outval_of_value env obj ty =
 let print_value env obj ppf ty =
   !print_out_value ppf (outval_of_value env obj ty)
 
+type ('a, 'b) gen_printer = ('a, 'b) Genprintval.gen_printer =
+  | Zero of 'b
+  | Succ of ('a -> ('a, 'b) gen_printer)
+
 let install_printer = Printer.install_printer
+let install_generic_printer = Printer.install_generic_printer
+let install_generic_printer' = Printer.install_generic_printer'
 let remove_printer = Printer.remove_printer
 
 (* Hooks for parsing functions *)
@@ -117,6 +156,25 @@ let print_error = Location.print_error
 let print_warning = Location.print_warning
 let input_name = Location.input_name
 
+let parse_mod_use_file name lb =
+  let modname =
+    String.capitalize_ascii (Filename.chop_extension (Filename.basename name))
+  in
+  let items =
+    List.concat
+      (List.map
+         (function Ptop_def s -> s | Ptop_dir _ -> [])
+         (!parse_use_file lb))
+  in
+  [ Ptop_def
+      [ Str.module_
+          (Mb.mk
+             (Location.mknoloc modname)
+             (Mod.structure items)
+          )
+       ]
+   ]
+
 (* Hooks for initialization *)
 
 let toplevel_startup_hook = ref (fun () -> ())
@@ -126,7 +184,28 @@ let toplevel_startup_hook = ref (fun () -> ())
 let phrase_seqid = ref 0
 let phrase_name = ref "TOP"
 
-let load_lambda ppf (size, lam) =
+(* CR-soon trefis for mshinwell: copy/pasted from Optmain. Should it be shared
+   or?
+   mshinwell: It should be shared, but after 4.03. *)
+module Backend = struct
+  (* See backend_intf.mli. *)
+
+  let symbol_for_global' = Compilenv.symbol_for_global'
+  let closure_symbol = Compilenv.closure_symbol
+
+  let really_import_approx = Import_approx.really_import_approx
+  let import_symbol = Import_approx.import_symbol
+
+  let size_int = Arch.size_int
+  let big_endian = Arch.big_endian
+
+  let max_sensible_number_of_arguments =
+    (* The "-1" is to allow for a potential closure environment parameter. *)
+    Proc.max_arguments_for_tailcalls - 1
+end
+let backend = (module Backend : Backend_intf.S)
+
+let load_lambda ppf ~module_ident lam size =
   if !Clflags.dump_rawlambda then fprintf ppf "%a@." Printlambda.lambda lam;
   let slam = Simplif.simplify_lambda lam in
   if !Clflags.dump_lambda then fprintf ppf "%a@." Printlambda.lambda slam;
@@ -136,7 +215,16 @@ let load_lambda ppf (size, lam) =
     else Filename.temp_file ("caml" ^ !phrase_name) ext_dll
   in
   let fn = Filename.chop_extension dll in
-  Asmgen.compile_implementation ~toplevel:need_symbol fn ppf (size, slam);
+  if not Config.flambda then
+    Asmgen.compile_implementation_clambda ~source_provenance:Timings.Toplevel
+      ~toplevel:need_symbol fn ppf
+      { Lambda.code=lam ; main_module_block_size=size }
+  else
+    Asmgen.compile_implementation_flambda ~source_provenance:Timings.Toplevel
+      ~backend ~toplevel:need_symbol fn ppf
+      (Middle_end.middle_end ppf
+         ~source_provenance:Timings.Toplevel ~prefixname:"" ~backend ~size
+         ~module_ident ~module_initializer:lam ~filename:"toplevel");
   Asmlink.call_linker_shared [fn ^ ext_obj] dll;
   Sys.remove (fn ^ ext_obj);
 
@@ -153,48 +241,13 @@ let load_lambda ppf (size, lam) =
 
 (* Print the outcome of an evaluation *)
 
-let rec pr_item env = function
-  | Sig_value(id, decl) :: rem ->
-      let tree = Printtyp.tree_of_value_description id decl in
-      let valopt =
-        match decl.val_kind with
-        | Val_prim _ -> None
-        | _ ->
-            let v =
-              outval_of_value env (toplevel_value id)
-                decl.val_type
-            in
-            Some v
-      in
-      Some (tree, valopt, rem)
-  | Sig_type(id, _, _) :: rem when Btype.is_row_name (Ident.name id) ->
-      pr_item env rem
-  | Sig_type(id, decl, rs) :: rem ->
-      let tree = Printtyp.tree_of_type_declaration id decl rs in
-      Some (tree, None, rem)
-  | Sig_typext(id, ext, es) :: rem ->
-      let tree = Printtyp.tree_of_extension_constructor id ext es in
-      Some (tree, None, rem)
-  | Sig_module(id, mty, rs) :: rem ->
-      let tree = Printtyp.tree_of_module id mty rs in
-      Some (tree, None, rem)
-  | Sig_modtype(id, decl) :: rem ->
-      let tree = Printtyp.tree_of_modtype_declaration id decl in
-      Some (tree, None, rem)
-  | Sig_class(id, decl, rs) :: cltydecl :: tydecl1 :: tydecl2 :: rem ->
-      let tree = Printtyp.tree_of_class_declaration id decl rs in
-      Some (tree, None, rem)
-  | Sig_class_type(id, decl, rs) :: tydecl1 :: tydecl2 :: rem ->
-      let tree = Printtyp.tree_of_cltype_declaration id decl rs in
-      Some (tree, None, rem)
-  | _ -> None
-
-let rec item_list env = function
-  | [] -> []
-  | items ->
-     match pr_item env items with
-     | None -> []
-     | Some (tree, valopt, items) -> (tree, valopt) :: item_list env items
+let pr_item =
+  Printtyp.print_items
+    (fun env -> function
+      | Sig_value(id, {val_kind = Val_reg; val_type}) ->
+          Some (outval_of_value env (toplevel_value id) val_type)
+      | _ -> None
+    )
 
 (* The current typing environment for the toplevel *)
 
@@ -223,32 +276,71 @@ let execute_phrase print_outcome ppf phr =
       let oldenv = !toplevel_env in
       incr phrase_seqid;
       phrase_name := Printf.sprintf "TOP%i" !phrase_seqid;
-      Compilenv.reset ?packname:None !phrase_name;
+      Compilenv.reset ~source_provenance:Timings.Toplevel
+        ?packname:None !phrase_name;
       Typecore.reset_delayed_checks ();
-      let (str, sg, newenv) = Typemod.type_structure oldenv sstr Location.none
+      let sstr, rewritten =
+        match sstr with
+        | [ { pstr_desc = Pstr_eval (e, attrs) ; pstr_loc = loc } ]
+        | [ { pstr_desc = Pstr_value (Asttypes.Nonrecursive,
+                                      [{ pvb_expr = e
+                                       ; pvb_pat = { ppat_desc = Ppat_any ; _ }
+                                       ; pvb_attributes = attrs
+                                       ; _ }])
+            ; pstr_loc = loc }
+          ] ->
+            let pat = Ast_helper.Pat.var (Location.mknoloc "_$") in
+            let vb = Ast_helper.Vb.mk ~loc ~attrs pat e in
+            [ Ast_helper.Str.value ~loc Asttypes.Nonrecursive [vb] ], true
+        | _ -> sstr, false
       in
+      let (str, sg, newenv) = Typemod.type_toplevel_phrase oldenv sstr in
       if !Clflags.dump_typedtree then Printtyped.implementation ppf str;
+      let sg' = Typemod.simplify_signature sg in
+      (* Why is this done? *)
+      ignore (Includemod.signatures oldenv sg sg');
       Typecore.force_delayed_checks ();
-      let res = Translmod.transl_store_phrases !phrase_name str in
+      let module_ident, res, size =
+        if Config.flambda then
+          let ((module_ident, size), res) =
+            Translmod.transl_implementation_flambda !phrase_name
+              (str, Tcoerce_none)
+          in
+          remember module_ident 0 sg';
+          module_ident, close_phrase res, size
+        else
+          let size, res = Translmod.transl_store_phrases !phrase_name str in
+          Ident.create_persistent !phrase_name, res, size
+      in
       Warnings.check_fatal ();
       begin try
         toplevel_env := newenv;
-        let res = load_lambda ppf res in
+        let res = load_lambda ppf ~module_ident res size in
         let out_phr =
           match res with
           | Result v ->
-              Compilenv.record_global_approx_toplevel ();
+              if Config.flambda then
+                (* CR-someday trefis: *)
+                ()
+              else
+                Compilenv.record_global_approx_toplevel ();
               if print_outcome then
+                Printtyp.wrap_printing_env oldenv (fun () ->
                 match str.str_items with
-                | [ {str_desc = Tstr_eval exp} ] ->
-                    let outv = outval_of_value newenv v exp.exp_type in
-                    let ty = Printtyp.tree_of_type_scheme exp.exp_type in
-                    Ophr_eval (outv, ty)
                 | [] -> Ophr_signature []
                 | _ ->
-                    Ophr_signature (item_list newenv
-                                             (Typemod.simplify_signature sg))
-
+                    if rewritten then
+                      match sg' with
+                      | [ Sig_value (id, vd) ] ->
+                          let outv =
+                            outval_of_value newenv (toplevel_value id)
+                              vd.val_type
+                          in
+                          let ty = Printtyp.tree_of_type_scheme vd.val_type in
+                          Ophr_eval (outv, ty)
+                      | _ -> assert false
+                    else
+                      Ophr_signature (pr_item newenv sg'))
               else Ophr_signature []
           | Exception exn ->
               toplevel_env := oldenv;
@@ -267,19 +359,38 @@ let execute_phrase print_outcome ppf phr =
         toplevel_env := oldenv; raise x
       end
   | Ptop_dir(dir_name, dir_arg) ->
-      try
-        match (Hashtbl.find directive_table dir_name, dir_arg) with
-        | (Directive_none f, Pdir_none) -> f (); true
-        | (Directive_string f, Pdir_string s) -> f s; true
-        | (Directive_int f, Pdir_int n) -> f n; true
-        | (Directive_ident f, Pdir_ident lid) -> f lid; true
-        | (Directive_bool f, Pdir_bool b) -> f b; true
-        | (_, _) ->
-            fprintf ppf "Wrong type of argument for directive `%s'.@." dir_name;
-            false
-      with Not_found ->
-        fprintf ppf "Unknown directive `%s'.@." dir_name;
-        false
+      let d =
+        try Some (Hashtbl.find directive_table dir_name)
+        with Not_found -> None
+      in
+      begin match d with
+      | None ->
+          fprintf ppf "Unknown directive `%s'.@." dir_name;
+          false
+      | Some d ->
+          match d, dir_arg with
+          | Directive_none f, Pdir_none -> f (); true
+          | Directive_string f, Pdir_string s -> f s; true
+          | Directive_int f, Pdir_int (n,None) ->
+             begin match Int_literal_converter.int n with
+             | n -> f n; true
+             | exception _ ->
+               fprintf ppf "Integer literal exceeds the range of \
+                            representable integers for directive `%s'.@."
+                       dir_name;
+               false
+             end
+          | Directive_int f, Pdir_int (n, Some _) ->
+              fprintf ppf "Wrong integer literal for directive `%s'.@."
+                dir_name;
+              false
+          | Directive_ident f, Pdir_ident lid -> f lid; true
+          | Directive_bool f, Pdir_bool b -> f b; true
+          | _ ->
+              fprintf ppf "Wrong type of argument for directive `%s'.@."
+                dir_name;
+              false
+      end
 
 (* Temporary assignment to a reference *)
 
@@ -294,11 +405,25 @@ let protect r newval body =
     r := oldval;
     raise x
 
-(* Read and execute commands from a file *)
+(* Read and execute commands from a file, or from stdin if [name] is "". *)
 
 let use_print_results = ref true
 
-let use_file ppf name =
+let preprocess_phrase ppf phr =
+  let phr =
+    match phr with
+    | Ptop_def str ->
+        let str =
+          Pparse.apply_rewriters_str ~restore:true ~tool_name:"ocaml" str
+        in
+        Ptop_def str
+    | phr -> phr
+  in
+  if !Clflags.dump_parsetree then Printast.top_phrase ppf phr;
+  if !Clflags.dump_source then Pprintast.top_phrase ppf phr;
+  phr
+
+let use_file ppf wrap_mod name =
   try
     let (filename, ic, must_close) =
       if name = "" then
@@ -318,10 +443,12 @@ let use_file ppf name =
         try
           List.iter
             (fun ph ->
-              if !Clflags.dump_parsetree then Printast.top_phrase ppf ph;
-              if !Clflags.dump_source then Pprintast.top_phrase ppf ph;
+              let ph = preprocess_phrase ppf ph in
               if not (execute_phrase !use_print_results ppf ph) then raise Exit)
-            (!parse_use_file lb);
+            (if wrap_mod then
+               parse_mod_use_file name lb
+             else
+               !parse_use_file lb);
           true
         with
         | Exit -> false
@@ -330,6 +457,9 @@ let use_file ppf name =
     if must_close then close_in ic;
     success
   with Not_found -> fprintf ppf "Cannot find file %s.@." name; false
+
+let mod_use_file ppf name = use_file ppf true name
+let use_file ppf name = use_file ppf false name
 
 let use_silently ppf name =
   protect use_print_results false (fun () -> use_file ppf name)
@@ -345,8 +475,8 @@ let read_input_default prompt buffer len =
   try
     while true do
       if !i >= len then raise Exit;
-      let c = input_char stdin in
-      buffer.[!i] <- c;
+      let c = input_char Pervasives.stdin in
+      Bytes.set buffer !i c;
       incr i;
       if c = '\n' then raise Exit;
     done;
@@ -418,6 +548,7 @@ let initialize_toplevel_env () =
 exception PPerror
 
 let loop ppf =
+  Location.formatter_for_warnings := ppf;
   fprintf ppf "        OCaml version %s - native toplevel@.@." Config.version;
   initialize_toplevel_env ();
   let lb = Lexing.from_function refill_lexbuf in
@@ -433,6 +564,8 @@ let loop ppf =
       Location.reset();
       first_line := true;
       let phr = try !parse_toplevel_phrase lb with Exit -> raise PPerror in
+      let phr = preprocess_phrase ppf phr  in
+      Env.reset_cache_toplevel ();
       if !Clflags.dump_parsetree then Printast.top_phrase ppf phr;
       if !Clflags.dump_source then Pprintast.top_phrase ppf phr;
       ignore(execute_phrase true ppf phr)
@@ -443,7 +576,7 @@ let loop ppf =
     | x -> Location.report_exception ppf x; Btype.backtrack snap
   done
 
-(* Execute a script *)
+(* Execute a script.  If [name] is "", read the script from stdin. *)
 
 let run_script ppf name args =
   let len = Array.length args in

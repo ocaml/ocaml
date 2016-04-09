@@ -1,14 +1,17 @@
-(***********************************************************************)
-(*                                                                     *)
-(*                                OCaml                                *)
-(*                                                                     *)
-(*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         *)
-(*                                                                     *)
-(*  Copyright 2002 Institut National de Recherche en Informatique et   *)
-(*  en Automatique.  All rights reserved.  This file is distributed    *)
-(*  under the terms of the Q Public License version 1.0.               *)
-(*                                                                     *)
-(***********************************************************************)
+(**************************************************************************)
+(*                                                                        *)
+(*                                 OCaml                                  *)
+(*                                                                        *)
+(*             Xavier Leroy, projet Cristal, INRIA Rocquencourt           *)
+(*                                                                        *)
+(*   Copyright 2002 Institut National de Recherche en Informatique et     *)
+(*     en Automatique.                                                    *)
+(*                                                                        *)
+(*   All rights reserved.  This file is distributed under the terms of    *)
+(*   the GNU Lesser General Public License version 2.1, with the          *)
+(*   special exception on linking described in the file LICENSE.          *)
+(*                                                                        *)
+(**************************************************************************)
 
 (* The batch compiler *)
 
@@ -43,7 +46,9 @@ let interface ppf sourcefile outputprefix =
   Warnings.check_fatal ();
   if not !Clflags.print_types then begin
     let deprecated = Builtin_attributes.deprecated_of_sig ast in
-    let sg = Env.save_signature ~deprecated sg modulename (outputprefix ^ ".cmi") in
+    let sg =
+      Env.save_signature ~deprecated sg modulename (outputprefix ^ ".cmi")
+    in
     Typemod.save_signature modulename tsg outputprefix sourcefile
       initial_env sg ;
   end
@@ -66,7 +71,8 @@ let implementation ppf sourcefile outputprefix =
       Pparse.parse_implementation ~tool_name ppf sourcefile
       ++ print_if ppf Clflags.dump_parsetree Printast.implementation
       ++ print_if ppf Clflags.dump_source Pprintast.structure
-      ++ Typemod.type_implementation sourcefile outputprefix modulename env
+      ++ Timings.(time (Typing sourcefile))
+          (Typemod.type_implementation sourcefile outputprefix modulename env)
       ++ print_if ppf Clflags.dump_typedtree
         Printtyped.implementation_with_coercion
     in
@@ -76,18 +82,22 @@ let implementation ppf sourcefile outputprefix =
     end else begin
       let bytecode =
         (typedtree, coercion)
-        ++ Translmod.transl_implementation modulename
+        ++ Timings.(time (Transl sourcefile))
+            (Translmod.transl_implementation modulename)
         ++ print_if ppf Clflags.dump_rawlambda Printlambda.lambda
-        ++ Simplif.simplify_lambda
-        ++ print_if ppf Clflags.dump_lambda Printlambda.lambda
-        ++ Bytegen.compile_implementation modulename
-        ++ print_if ppf Clflags.dump_instr Printinstr.instrlist
+        ++ Timings.(accumulate_time (Generate sourcefile))
+            (fun lambda ->
+              Simplif.simplify_lambda lambda
+              ++ print_if ppf Clflags.dump_lambda Printlambda.lambda
+              ++ Bytegen.compile_implementation modulename
+              ++ print_if ppf Clflags.dump_instr Printinstr.instrlist)
       in
       let objfile = outputprefix ^ ".cmo" in
       let oc = open_out_bin objfile in
       try
         bytecode
-        ++ Emitcode.to_file oc modulename objfile;
+        ++ Timings.(accumulate_time (Generate sourcefile))
+            (Emitcode.to_file oc modulename objfile);
         Warnings.check_fatal ();
         close_out oc;
         Stypes.dump (Some (outputprefix ^ ".annot"))
@@ -102,4 +112,4 @@ let implementation ppf sourcefile outputprefix =
 
 let c_file name =
   Location.input_name := name;
-  if Ccomp.compile_file ~output_name:!Clflags.output_name name <> 0 then exit 2
+  if Ccomp.compile_file name <> 0 then exit 2

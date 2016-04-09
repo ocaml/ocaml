@@ -1,14 +1,17 @@
-(***********************************************************************)
-(*                                                                     *)
-(*                                OCaml                                *)
-(*                                                                     *)
-(*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         *)
-(*                                                                     *)
-(*  Copyright 1996 Institut National de Recherche en Informatique et   *)
-(*  en Automatique.  All rights reserved.  This file is distributed    *)
-(*  under the terms of the Q Public License version 1.0.               *)
-(*                                                                     *)
-(***********************************************************************)
+(**************************************************************************)
+(*                                                                        *)
+(*                                 OCaml                                  *)
+(*                                                                        *)
+(*             Xavier Leroy, projet Cristal, INRIA Rocquencourt           *)
+(*                                                                        *)
+(*   Copyright 1996 Institut National de Recherche en Informatique et     *)
+(*     en Automatique.                                                    *)
+(*                                                                        *)
+(*   All rights reserved.  This file is distributed under the terms of    *)
+(*   the GNU Lesser General Public License version 2.1, with the          *)
+(*   special exception on linking described in the file LICENSE.          *)
+(*                                                                        *)
+(**************************************************************************)
 
 open Config
 open Clflags
@@ -54,11 +57,16 @@ let ppf = Format.err_formatter
 
 (* Error messages to standard error formatter *)
 let anonymous filename =
-  readenv ppf Before_compile; process_file ppf filename;;
+  readenv ppf (Before_compile filename);
+  process_file ppf filename;;
+
 let impl filename =
-  readenv ppf Before_compile; process_implementation_file ppf filename;;
+  readenv ppf (Before_compile filename);
+  process_implementation_file ppf filename;;
+
 let intf filename =
-  readenv ppf Before_compile; process_interface_file ppf filename;;
+  readenv ppf (Before_compile filename);
+  process_interface_file ppf filename;;
 
 let show_config () =
   Config.print_config stdout;
@@ -102,6 +110,7 @@ module Options = Main_args.Make_bytecomp_options (struct
   let _noautolink = set no_auto_link
   let _nostdlib = set no_std_include
   let _o s = output_name := Some s
+  let _opaque = set opaque
   let _open s = open_modules := s :: !open_modules
   let _output_obj () = output_c_object := true; custom_runtime := true
   let _output_complete_obj () =
@@ -144,6 +153,7 @@ module Options = Main_args.Make_bytecomp_options (struct
   let _drawlambda = set dump_rawlambda
   let _dlambda = set dump_lambda
   let _dinstr = set dump_instr
+  let _dtimings = set print_timings
   let anonymous = anonymous
 end)
 
@@ -197,9 +207,11 @@ let main () =
       Bytelink.link ppf (get_objfiles ()) target;
       Warnings.check_fatal ();
     end;
-    exit 0
   with x ->
     Location.report_exception ppf x;
     exit 2
 
-let _ = main ()
+let _ =
+  Timings.(time All) main ();
+  if !Clflags.print_timings then Timings.print Format.std_formatter;
+  exit 0

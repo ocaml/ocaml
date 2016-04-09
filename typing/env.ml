@@ -1,14 +1,17 @@
-(***********************************************************************)
-(*                                                                     *)
-(*                                OCaml                                *)
-(*                                                                     *)
-(*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         *)
-(*                                                                     *)
-(*  Copyright 1996 Institut National de Recherche en Informatique et   *)
-(*  en Automatique.  All rights reserved.  This file is distributed    *)
-(*  under the terms of the Q Public License version 1.0.               *)
-(*                                                                     *)
-(***********************************************************************)
+(**************************************************************************)
+(*                                                                        *)
+(*                                 OCaml                                  *)
+(*                                                                        *)
+(*             Xavier Leroy, projet Cristal, INRIA Rocquencourt           *)
+(*                                                                        *)
+(*   Copyright 1996 Institut National de Recherche en Informatique et     *)
+(*     en Automatique.                                                    *)
+(*                                                                        *)
+(*   All rights reserved.  This file is distributed under the terms of    *)
+(*   the GNU Lesser General Public License version 2.1, with the          *)
+(*   special exception on linking described in the file LICENSE.          *)
+(*                                                                        *)
+(**************************************************************************)
 
 (* Environment handling *)
 
@@ -97,8 +100,7 @@ end  = struct
     match !x with Thunk a -> Some a | _ -> None
 
   let create x =
-    let x = ref (Thunk x) in
-    x
+    ref (Thunk x)
 
 end
 
@@ -184,7 +186,8 @@ type t = {
 and module_components =
   {
     deprecated: string option;
-    comps: (t * Subst.t * Path.t * Types.module_type, module_components_repr) EnvLazy.t;
+    comps: (t * Subst.t * Path.t * Types.module_type, module_components_repr)
+           EnvLazy.t;
   }
 
 and module_components_repr =
@@ -349,9 +352,15 @@ let imported_units = ref StringSet.empty
 let add_import s =
   imported_units := StringSet.add s !imported_units
 
+let imported_opaque_units = ref StringSet.empty
+
+let add_imported_opaque s =
+  imported_opaque_units := StringSet.add s !imported_opaque_units
+
 let clear_imports () =
   Consistbl.clear crc_units;
-  imported_units := StringSet.empty
+  imported_units := StringSet.empty;
+  imported_opaque_units := StringSet.empty
 
 let check_consistency ps =
   try
@@ -371,6 +380,12 @@ let check_consistency ps =
 let save_pers_struct crc ps =
   let modname = ps.ps_name in
   Hashtbl.add persistent_structures modname (Some ps);
+  List.iter
+    (function
+        | Rectypes -> ()
+        | Deprecated _ -> ()
+        | Opaque -> add_imported_opaque modname)
+    ps.ps_flags;
   Consistbl.set crc_units modname crc ps.ps_filename;
   add_import modname
 
@@ -401,11 +416,11 @@ let read_pers_struct check modname filename =
     error (Illegal_renaming(modname, ps.ps_name, filename));
   List.iter
     (function
-      | Rectypes ->
-          if not !Clflags.recursive_types then
-            error (Need_recursive_types(ps.ps_name, !current_unit))
-      | Deprecated _ -> ()
-    )
+        | Rectypes ->
+            if not !Clflags.recursive_types then
+              error (Need_recursive_types(ps.ps_name, !current_unit))
+        | Deprecated _ -> ()
+        | Opaque -> add_imported_opaque modname)
     ps.ps_flags;
   if check then check_consistency ps;
   Hashtbl.add persistent_structures modname (Some ps);
@@ -910,6 +925,19 @@ and lookup_class =
 and lookup_cltype =
   lookup (fun env -> env.cltypes) (fun sc -> sc.comp_cltypes)
 
+let update_value s f env =
+  try
+    let ((p, vd), slot) = Ident.find_name s env.values in
+    match p with
+    | Pident id ->
+        let vd2 = f vd in
+        {env with values = Ident.add id ((p, vd2), slot) env.values;
+                  summary = Env_value(env.summary, id, vd2)}
+    | _ ->
+        env
+  with Not_found ->
+    env
+
 let mark_value_used env name vd =
   if not (is_implicit_coercion env) then
     try Hashtbl.find value_declarations (name, vd.val_loc) ()
@@ -1289,8 +1317,12 @@ let prefix_idents_and_subst root sub sg =
   let (pl, sub) = prefix_idents root 0 sub sg in
   pl, sub, lazy (subst_signature sub sg)
 
+let set_nongen_level sub path =
+  Subst.set_nongen_level sub (Path.binding_time path)
+
 let prefix_idents_and_subst root sub sg =
-  if sub = Subst.identity then
+  let sub = set_nongen_level sub root in
+  if sub = set_nongen_level Subst.identity root then
     let sgs =
       try
         Hashtbl.find prefixed_sg root
@@ -1405,7 +1437,7 @@ and components_of_module_maker (env, sub, path, mty) =
           (* fcomp_arg and fcomp_res must be prefixed eagerly, because
              they are interpreted in the outer environment *)
           fcomp_arg = may_map (Subst.modtype sub) ty_arg;
-          fcomp_res = Subst.modtype sub ty_res;
+          fcomp_res = Subst.modtype (set_nongen_level sub path) ty_res;
           fcomp_cache = Hashtbl.create 17;
           fcomp_subst_cache = Hashtbl.create 17 }
   | Mty_ident _
@@ -1770,6 +1802,10 @@ let crc_of_unit name =
 let imports () =
   Consistbl.extract (StringSet.elements !imported_units) crc_units
 
+(* Returns true if [s] is an opaque imported module  *)
+let is_imported_opaque s =
+  StringSet.mem s !imported_opaque_units
+
 (* Save a signature to a file *)
 
 let save_signature_with_imports ~deprecated sg modname filename imports =
@@ -1778,10 +1814,15 @@ let save_signature_with_imports ~deprecated sg modname filename imports =
   Btype.cleanup_abbrev ();
   Subst.reset_for_saving ();
   let sg = Subst.signature (Subst.for_saving Subst.identity) sg in
+  let flags =
+    List.concat [
+      if !Clflags.recursive_types then [Cmi_format.Rectypes] else [];
+      if !Clflags.opaque then [Cmi_format.Opaque] else [];
+      (match deprecated with Some s -> [Deprecated s] | None -> []);
+    ]
+  in
   let oc = open_out_bin filename in
   try
-    let flags = if !Clflags.recursive_types then [Rectypes] else [] in
-    let flags = match deprecated with None -> flags | Some s -> Deprecated s :: flags in
     let cmi = {
       cmi_name = modname;
       cmi_sign = sg;

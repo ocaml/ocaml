@@ -1,14 +1,17 @@
-(***********************************************************************)
-(*                                                                     *)
-(*                                OCaml                                *)
-(*                                                                     *)
-(*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         *)
-(*                                                                     *)
-(*  Copyright 1996 Institut National de Recherche en Informatique et   *)
-(*  en Automatique.  All rights reserved.  This file is distributed    *)
-(*  under the terms of the Q Public License version 1.0.               *)
-(*                                                                     *)
-(***********************************************************************)
+(**************************************************************************)
+(*                                                                        *)
+(*                                 OCaml                                  *)
+(*                                                                        *)
+(*             Xavier Leroy, projet Cristal, INRIA Rocquencourt           *)
+(*                                                                        *)
+(*   Copyright 1996 Institut National de Recherche en Informatique et     *)
+(*     en Automatique.                                                    *)
+(*                                                                        *)
+(*   All rights reserved.  This file is distributed under the terms of    *)
+(*   the GNU Lesser General Public License version 2.1, with the          *)
+(*   special exception on linking described in the file LICENSE.          *)
+(*                                                                        *)
+(**************************************************************************)
 
 (* Insertion of moves to suggest possible spilling / reloading points
    before register allocation. *)
@@ -196,11 +199,13 @@ let rec reload i before =
        finally)
   | Iloop(body) ->
       let date_start = !current_date in
+      let destroyed_at_fork_start = !destroyed_at_fork in
       let at_head = ref before in
       let final_body = ref body in
       begin try
         while true do
           current_date := date_start;
+          destroyed_at_fork := destroyed_at_fork_start;
           let (new_body, new_at_head) = reload body !at_head in
           let merged_at_head = Reg.Set.union !at_head new_at_head in
           if Reg.Set.equal merged_at_head !at_head then begin
@@ -390,7 +395,8 @@ let rec spill i finally =
 let reset () =
   spill_env := Reg.Map.empty;
   use_date := Reg.Map.empty;
-  current_date := 0
+  current_date := 0;
+  destroyed_at_fork := []
 
 let fundecl f =
   reset ();
@@ -401,6 +407,7 @@ let fundecl f =
     add_spills (Reg.inter_set_array tospill_at_entry f.fun_args) body2 in
   spill_env := Reg.Map.empty;
   use_date := Reg.Map.empty;
+  destroyed_at_fork := [];
   { fun_name = f.fun_name;
     fun_args = f.fun_args;
     fun_body = new_body;

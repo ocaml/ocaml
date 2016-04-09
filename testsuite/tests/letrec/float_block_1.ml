@@ -1,21 +1,24 @@
-(***********************************************************************)
-(*                                                                     *)
-(*                                OCaml                                *)
-(*                                                                     *)
-(*          Gabriel Scherer, projet Gallium, INRIA Rocquencourt        *)
-(*                                                                     *)
-(*  Copyright 2012 Institut National de Recherche en Informatique et   *)
-(*  en Automatique.  All rights reserved.  This file is distributed    *)
-(*  under the terms of the Q Public License version 1.0.               *)
-(*                                                                     *)
-(***********************************************************************)
+(**************************************************************************)
+(*                                                                        *)
+(*                                OCaml                                   *)
+(*                                                                        *)
+(*           Gabriel Scherer, projet Gallium, INRIA Rocquencourt          *)
+(*                                                                        *)
+(*   Copyright 2012 Institut National de Recherche en Informatique et     *)
+(*     en Automatique.                                                    *)
+(*                                                                        *)
+(*   All rights reserved.  This file is distributed under the terms of    *)
+(*   the GNU Lesser General Public License version 2.1, with the          *)
+(*   special exception on linking described in the file LICENSE.          *)
+(*                                                                        *)
+(**************************************************************************)
 
-(* a bug in cmmgen.ml provokes a change in compilation order between
-   ocamlc and ocamlopt in certain letrec-bindings involving float
-   arrays *)
+(* Effect are not named to allow different evaluation orders (flambda
+   and clambda differ on this point).
+ *)
 let test =
-  let rec x = print_endline "x"; [| 1; 2; 3 |]
-      and y = print_endline "y"; [| 1.; 2.; 3. |]
+  let rec x = print_endline "effect"; [| 1; 2; 3 |]
+      and y = print_endline "effect"; [| 1.; 2.; 3. |]
   in
   assert (x = [| 1; 2; 3 |]);
   assert (y = [| 1.; 2.; 3. |]);

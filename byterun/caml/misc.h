@@ -1,15 +1,17 @@
-/***********************************************************************/
-/*                                                                     */
-/*                                OCaml                                */
-/*                                                                     */
-/*         Xavier Leroy and Damien Doligez, INRIA Rocquencourt         */
-/*                                                                     */
-/*  Copyright 1996 Institut National de Recherche en Informatique et   */
-/*  en Automatique.  All rights reserved.  This file is distributed    */
-/*  under the terms of the GNU Library General Public License, with    */
-/*  the special exception on linking described in file ../LICENSE.     */
-/*                                                                     */
-/***********************************************************************/
+/**************************************************************************/
+/*                                                                        */
+/*                                 OCaml                                  */
+/*                                                                        */
+/*          Xavier Leroy and Damien Doligez, INRIA Rocquencourt           */
+/*                                                                        */
+/*   Copyright 1996 Institut National de Recherche en Informatique et     */
+/*     en Automatique.                                                    */
+/*                                                                        */
+/*   All rights reserved.  This file is distributed under the terms of    */
+/*   the GNU Lesser General Public License version 2.1, with the          */
+/*   special exception on linking described in the file LICENSE.          */
+/*                                                                        */
+/**************************************************************************/
 
 /* Miscellaneous macros and variables. */
 
@@ -196,10 +198,108 @@ extern void caml_set_fields (intnat v, unsigned long, unsigned long);
 
 /* snprintf emulation for Win32 */
 
-#ifdef _WIN32
+#if defined(_WIN32) && !defined(_UCRT)
 extern int caml_snprintf(char * buf, size_t size, const char * format, ...);
 #define snprintf caml_snprintf
 #endif
+
+#ifdef CAML_INSTR
+/* Timers and counters for GC latency profiling (Linux-only) */
+
+#include <time.h>
+#include <stdio.h>
+
+extern intnat caml_stat_minor_collections;
+extern intnat CAML_INSTR_STARTTIME, CAML_INSTR_STOPTIME;
+
+struct CAML_INSTR_BLOCK {
+  struct timespec ts[10];
+  char *tag[10];
+  int index;
+  struct CAML_INSTR_BLOCK *next;
+};
+
+extern struct CAML_INSTR_BLOCK *CAML_INSTR_LOG;
+
+/* Declare a timer/counter name. [t] must be a new variable name. */
+#define CAML_INSTR_DECLARE(t)                                       \
+  struct CAML_INSTR_BLOCK *t = NULL
+
+/* Allocate the data block for a given name.
+   [t] must have been declared with [CAML_INSTR_DECLARE]. */
+#define CAML_INSTR_ALLOC(t) do{                                     \
+    if (caml_stat_minor_collections >= CAML_INSTR_STARTTIME         \
+        && caml_stat_minor_collections < CAML_INSTR_STOPTIME){      \
+      t = malloc (sizeof (struct CAML_INSTR_BLOCK));                \
+      t->index = 0;                                                 \
+      t->tag[0] = "";                                               \
+      t->next = CAML_INSTR_LOG;                                     \
+      CAML_INSTR_LOG = t;                                           \
+    }                                                               \
+  }while(0)
+
+/* Allocate the data block and start the timer.
+   [t] must have been declared with [CAML_INSTR_DECLARE]
+   and allocated with [CAML_INSTR_ALLOC]. */
+#define CAML_INSTR_START(t, msg) do{                                \
+    if (t != NULL){                                                 \
+      t->tag[0] = msg;                                              \
+      clock_gettime (CLOCK_REALTIME, &(t->ts[0]));                  \
+    }                                                               \
+  }while(0)
+
+/* Declare a timer, allocate its data, and start it.
+   [t] must be a new variable name. */
+#define CAML_INSTR_SETUP(t, msg)                                    \
+  CAML_INSTR_DECLARE (t);                                           \
+  CAML_INSTR_ALLOC (t);                                             \
+  CAML_INSTR_START (t, msg)
+
+/* Record an intermediate time within a given timer.
+   [t] must have been declared, allocated, and started. */
+#define CAML_INSTR_TIME(t, msg) do{                                 \
+    if (t != NULL){                                                 \
+      ++ t->index;                                                  \
+      t->tag[t->index] = (msg);                                     \
+      clock_gettime (CLOCK_REALTIME, &(t->ts[t->index]));           \
+    }                                                               \
+  }while(0)
+
+/* Record an integer data point.
+   If [msg] ends with # it will be interpreted as an integer-valued event.
+   If it ends with @ it will be interpreted as an event counter.
+*/
+#define CAML_INSTR_INT(msg, data) do{                               \
+    CAML_INSTR_SETUP (__caml_tmp, "");                              \
+    if (__caml_tmp != NULL){                                        \
+      __caml_tmp->index = 1;                                        \
+      __caml_tmp->tag[1] = msg;                                     \
+      __caml_tmp->ts[1].tv_sec = 0;                                 \
+      __caml_tmp->ts[1].tv_nsec = (data);                           \
+    }                                                               \
+  }while(0)
+
+/* This function is called at the start of the program to set up
+   the data for the above macros.
+*/
+extern void CAML_INSTR_INIT (void);
+
+/* This function is automatically called by the runtime to output
+   the collected data to the dump file. */
+extern void CAML_INSTR_ATEXIT (void);
+
+#else /* CAML_INSTR */
+
+#define CAML_INSTR_DECLARE(t) /**/
+#define CAML_INSTR_ALLOC(t) /**/
+#define CAML_INSTR_START(t, name) /**/
+#define CAML_INSTR_SETUP(t, name) /**/
+#define CAML_INSTR_TIME(t, msg) /**/
+#define CAML_INSTR_INT(msg, c) /**/
+#define CAML_INSTR_INIT() /**/
+#define CAML_INSTR_ATEXIT() /**/
+
+#endif /* CAML_INSTR */
 
 /* </private> */
 

@@ -1105,9 +1105,10 @@ Compilation of "custom.ml" can be performed by the following command~:
 \begin{alltt}
         ocamldoc -g custom.cmo \var{other-options} \var{source-files}
 \end{alltt}
-\noindent{}It is important not to give the "-html" or any other option
-selecting a built-in generator to "ocamldoc",
-which would result in using this generator instead of the one you just loaded.
+\noindent{}Options selecting a built-in generator to "ocamldoc", such as
+"-html", have no effect if a custom generator of the same kind is provided using
+"-g". If the kinds do not match, the selected built-in generator is used and the
+custom one is ignored.
 
 %%%%%%%%%%%%%%
 \subsubsection{Defining a custom generator class in several files}
@@ -1129,6 +1130,3 @@ ocamlc -o custom.cma -a \var{\nth{file}{1}}.cmo \var{\nth{file}{2}}.cmo ... \var
 \begin{alltt}
         ocamldoc -g custom.cma \var{other-options} \var{source-files}
 \end{alltt}
-\noindent{}Again, it is important not to give the "-html" or any other
-option selecting a built-in generator to "ocamldoc",
-which would result in using this generator instead of the one you just loaded.

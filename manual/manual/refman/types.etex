@@ -47,19 +47,19 @@ in type constraints over patterns and expressions.
 \subsubsection*{Type variables}
 
 The type expression @"'" ident@ stands for the type variable named
-@ident@. The type expression @"_"@ stands for an anonymous type variable.
-In data type definitions, type variables are names for the
-data type parameters. In type constraints, they represent unspecified
-types that can be instantiated by any type to satisfy the type
-constraint.  In general the scope of a named type variable is the
-whole top-level phrase where it appears, and it can only be
-generalized when leaving
-this scope.  Anonymous variables have no such restriction.
-In the following cases, the scope of named type variables is
-restricted to the type expression where they appear: 1) for universal
-(explicitly polymorphic) type variables; 2) for type variables that
-only appear in public method specifications (as those variables will
-be made universal, as described in section~\ref{sec-methspec});
+@ident@. The type expression @"_"@ stands for either an anonymous type
+variable or anonymous type parameters. In data type definitions, type
+variables are names for the data type parameters. In type constraints,
+they represent unspecified types that can be instantiated by any type
+to satisfy the type constraint.  In general the scope of a named type
+variable is the whole top-level phrase where it appears, and it can
+only be generalized when leaving this scope.  Anonymous variables have
+no such restriction. In the following cases, the scope of named type
+variables is restricted to the type expression where they appear:
+1) for universal (explicitly polymorphic) type variables;
+2) for type variables that only appear in public method specifications
+(as those variables will be made universal, as described in
+section~\ref{sec-methspec});
 3) for variables used as aliases, when the type they are aliased to
 would be invalid in the scope of the enclosing definition ({\it i.e.}
 when it contains free universal type variables, or locally
@@ -103,6 +103,11 @@ The type expression @(typexpr_1,\ldots,typexpr_n) typeconstr@, where
 @typeconstr@ is a type constructor with $n$ parameters, denotes the
 application of the $n$-ary type constructor @typeconstr@ to the types
 @typexpr_1@ through @typexpr_n@.
+
+In the type expression @ "_"  typeconstr @, the anonymous type expression
+@ "_" @ stands in for anonymous type parameters and is equivalent to
+@ ("_", \ldots,"_") @ with as many repetitions of "_" as the arity of
+@typeconstr@.
 
 \subsubsection*{Aliased and recursive types}
 

@@ -1,14 +1,17 @@
-(***********************************************************************)
-(*                                                                     *)
-(*                                OCaml                                *)
-(*                                                                     *)
-(*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         *)
-(*                                                                     *)
-(*  Copyright 1996 Institut National de Recherche en Informatique et   *)
-(*  en Automatique.  All rights reserved.  This file is distributed    *)
-(*  under the terms of the Q Public License version 1.0.               *)
-(*                                                                     *)
-(***********************************************************************)
+(**************************************************************************)
+(*                                                                        *)
+(*                                 OCaml                                  *)
+(*                                                                        *)
+(*             Xavier Leroy, projet Cristal, INRIA Rocquencourt           *)
+(*                                                                        *)
+(*   Copyright 1996 Institut National de Recherche en Informatique et     *)
+(*     en Automatique.                                                    *)
+(*                                                                        *)
+(*   All rights reserved.  This file is distributed under the terms of    *)
+(*   the GNU Lesser General Public License version 2.1, with the          *)
+(*   special exception on linking described in the file LICENSE.          *)
+(*                                                                        *)
+(**************************************************************************)
 
 (* Description of primitive functions *)
 
@@ -34,6 +37,7 @@ type description =
 type error =
   | Old_style_float_with_native_repr_attribute
   | Old_style_noalloc_with_noalloc_attribute
+  | No_native_primitive_with_repr_attribute
 
 exception Error of Location.t * error
 
@@ -113,6 +117,11 @@ let parse_declaration valdecl ~native_repr_args ~native_repr_res =
     Location.prerr_warning valdecl.pval_loc
       (Warnings.Deprecated "[@@noalloc] should be used instead of \
                             \"noalloc\"");
+  if native_name = "" &&
+     not (List.for_all is_ocaml_repr native_repr_args &&
+          is_ocaml_repr native_repr_res) then
+    raise (Error (valdecl.pval_loc,
+                  No_native_primitive_with_repr_attribute));
   let noalloc = old_style_noalloc || noalloc_attribute in
   let native_repr_args, native_repr_res =
     if old_style_float then
@@ -200,6 +209,10 @@ let report_error ppf err =
   | Old_style_noalloc_with_noalloc_attribute ->
     Format.fprintf ppf "Cannot use \"noalloc\" in conjunction with \
                         [%@%@noalloc]"
+  | No_native_primitive_with_repr_attribute ->
+    Format.fprintf ppf
+      "The native code version of the primitive is mandatory when \
+       attributes [%@untagged] or [%@unboxed] are present"
 
 let () =
   Location.register_error_of_exn

@@ -1,27 +1,36 @@
-#########################################################################
-#                                                                       #
-#                                 OCaml                                 #
-#                                                                       #
-#            Xavier Leroy, projet Cristal, INRIA Rocquencourt           #
-#                                                                       #
-#   Copyright 1999 Institut National de Recherche en Informatique et    #
-#   en Automatique.  All rights reserved.  This file is distributed     #
-#   under the terms of the GNU Library General Public License, with     #
-#   the special exception on linking described in file ../LICENSE.      #
-#                                                                       #
-#########################################################################
+#**************************************************************************
+#*                                                                        *
+#*                                 OCaml                                  *
+#*                                                                        *
+#*            Xavier Leroy, projet Cristal, INRIA Rocquencourt            *
+#*                                                                        *
+#*   Copyright 1999 Institut National de Recherche en Informatique et     *
+#*     en Automatique.                                                    *
+#*                                                                        *
+#*   All rights reserved.  This file is distributed under the terms of    *
+#*   the GNU Lesser General Public License version 2.1, with the          *
+#*   special exception on linking described in the file LICENSE.          *
+#*                                                                        *
+#**************************************************************************
 
 include Makefile.common
 
 CFLAGS=-DOCAML_STDLIB_DIR='"$(LIBDIR)"' $(IFLEXDIR)
+
+ifdef BOOTSTRAPPING_FLEXLINK
+MAKE_OCAMLRUN=$(MKEXE_BOOT)
+CFLAGS:=-DBOOTSTRAPPING_FLEXLINK $(CFLAGS)
+else
+MAKE_OCAMLRUN=$(MKEXE) -o $(1) $(2)
+endif
 
 DBGO=d.$(O)
 OBJS=$(COMMONOBJS:.o=.$(O)) win32.$(O) main.$(O)
 DOBJS=$(OBJS:.$(O)=.$(DBGO)) instrtrace.$(DBGO)
 
 ocamlrun$(EXE): libcamlrun.$(A) prims.$(O)
-	$(MKEXE) -o ocamlrun$(EXE) prims.$(O) $(call SYSLIB,ws2_32) \
-	         $(EXTRALIBS) libcamlrun.$(A)
+	$(call MAKE_OCAMLRUN,ocamlrun$(EXE),prims.$(O) libcamlrun.$(A) \
+	         $(call SYSLIB,ws2_32) $(EXTRALIBS))
 
 ocamlrund$(EXE): libcamlrund.$(A) prims.$(O) main.$(O)
 	$(MKEXE) -o ocamlrund$(EXE) $(BYTECCDBGCOMPOPTS) prims.$(O) \

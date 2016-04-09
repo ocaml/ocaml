@@ -1,15 +1,18 @@
 # 2 "asmcomp/amd64/emit.mlp"
-(***********************************************************************)
-(*                                                                     *)
-(*                                OCaml                                *)
-(*                                                                     *)
-(*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         *)
-(*                                                                     *)
-(*  Copyright 1996 Institut National de Recherche en Informatique et   *)
-(*  en Automatique.  All rights reserved.  This file is distributed    *)
-(*  under the terms of the Q Public License version 1.0.               *)
-(*                                                                     *)
-(***********************************************************************)
+(**************************************************************************)
+(*                                                                        *)
+(*                                 OCaml                                  *)
+(*                                                                        *)
+(*             Xavier Leroy, projet Cristal, INRIA Rocquencourt           *)
+(*                                                                        *)
+(*   Copyright 1996 Institut National de Recherche en Informatique et     *)
+(*     en Automatique.                                                    *)
+(*                                                                        *)
+(*   All rights reserved.  This file is distributed under the terms of    *)
+(*   the GNU Lesser General Public License version 2.1, with the          *)
+(*   special exception on linking described in the file LICENSE.          *)
+(*                                                                        *)
+(**************************************************************************)
 
 (* Emission of Intel x86_64 assembly code *)
 
@@ -162,7 +165,7 @@ let load_symbol_addr s arg =
 
 let emit_label lbl =
   match system with
-  | S_win64 -> "L" ^ string_of_int lbl
+  | S_macosx | S_win64 -> "L" ^ string_of_int lbl
   | _ -> ".L" ^ string_of_int lbl
 
 let emit_data_label lbl =
@@ -737,9 +740,8 @@ let emit_instr fallthrough i =
       I.jmp (reg tmp1);
 
       begin match system with
-      | S_macosx -> D.section ["__TEXT";"__const"] None []
       | S_mingw64 | S_cygwin -> D.section [".rdata"] (Some "dr") []
-      | S_win64 -> () (* with MASM, use the text segment *)
+      | S_macosx | S_win64 -> () (* with LLVM/OS X and MASM, use the text segment *)
       | _ -> D.section [".rodata"] None []
       end;
       D.align 4;
@@ -841,6 +843,13 @@ let fundecl fundecl =
   emit_all true fundecl.fun_body;
   List.iter emit_call_gc !call_gc_sites;
   emit_call_bound_errors ();
+  if frame_required() then begin
+    let n = frame_size() - 8 - (if fp then 8 else 0) in
+    if n <> 0
+    then begin
+      cfi_adjust_cfa_offset (-n);
+    end;
+  end;
   cfi_endproc ();
   begin match system with
   | S_gnu | S_linux ->

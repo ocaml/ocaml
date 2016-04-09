@@ -1,15 +1,17 @@
-(***********************************************************************)
-(*                                                                     *)
-(*                                OCaml                                *)
-(*                                                                     *)
-(*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         *)
-(*                                                                     *)
-(*  Copyright 1996 Institut National de Recherche en Informatique et   *)
-(*  en Automatique.  All rights reserved.  This file is distributed    *)
-(*  under the terms of the GNU Library General Public License, with    *)
-(*  the special exception on linking described in file ../LICENSE.     *)
-(*                                                                     *)
-(***********************************************************************)
+(**************************************************************************)
+(*                                                                        *)
+(*                                 OCaml                                  *)
+(*                                                                        *)
+(*             Xavier Leroy, projet Cristal, INRIA Rocquencourt           *)
+(*                                                                        *)
+(*   Copyright 1996 Institut National de Recherche en Informatique et     *)
+(*     en Automatique.                                                    *)
+(*                                                                        *)
+(*   All rights reserved.  This file is distributed under the terms of    *)
+(*   the GNU Lesser General Public License version 2.1, with the          *)
+(*   special exception on linking described in the file LICENSE.          *)
+(*                                                                        *)
+(**************************************************************************)
 
 (* The parsing engine *)
 
@@ -193,15 +195,15 @@ let symbol_start_pos () =
     end
   in
   loop env.rule_len
-;;
-let symbol_end_pos () = env.symb_end_stack.(env.asp);;
-let rhs_start_pos n = env.symb_start_stack.(env.asp - (env.rule_len - n));;
-let rhs_end_pos n = env.symb_end_stack.(env.asp - (env.rule_len - n));;
 
-let symbol_start () = (symbol_start_pos ()).pos_cnum;;
-let symbol_end () = (symbol_end_pos ()).pos_cnum;;
-let rhs_start n = (rhs_start_pos n).pos_cnum;;
-let rhs_end n = (rhs_end_pos n).pos_cnum;;
+let symbol_end_pos () = env.symb_end_stack.(env.asp)
+let rhs_start_pos n = env.symb_start_stack.(env.asp - (env.rule_len - n))
+let rhs_end_pos n = env.symb_end_stack.(env.asp - (env.rule_len - n))
+
+let symbol_start () = (symbol_start_pos ()).pos_cnum
+let symbol_end () = (symbol_end_pos ()).pos_cnum
+let rhs_start n = (rhs_start_pos n).pos_cnum
+let rhs_end n = (rhs_end_pos n).pos_cnum
 
 let is_current_lookahead tok =
   (!current_lookahead_fun)(Obj.repr tok)
