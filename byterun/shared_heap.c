@@ -119,7 +119,7 @@ static pool* pool_acquire(struct caml_heap_state* local) {
   } else {
     caml_plat_lock(&pool_freelist.lock);
     if (!pool_freelist.free) {
-      void* mem = caml_mem_map(Bsize_wsize(POOL_WSIZE) * POOLS_PER_ALLOCATION, 
+      void* mem = caml_mem_map(Bsize_wsize(POOL_WSIZE) * POOLS_PER_ALLOCATION,
                                Bsize_wsize(POOL_WSIZE), 0 /* allocate */);
       int i;
       if (mem) {
@@ -169,7 +169,7 @@ static pool* pool_find(struct caml_heap_state* local, sizeclass sz) {
   if (r) return r;
 
   /* Otherwise, try to sweep until we find one */
-  while (!local->avail_pools[sz] && 
+  while (!local->avail_pools[sz] &&
          pool_sweep(local, &local->unswept_avail_pools[sz], sz));
   while (!local->avail_pools[sz] &&
          pool_sweep(local, &local->unswept_full_pools[sz], sz));
@@ -283,7 +283,7 @@ static intnat pool_sweep(struct caml_heap_state* local, pool** plist, sizeclass 
   value* end = (value*)a + POOL_WSIZE;
   mlsize_t wh = wsize_sizeclass[sz];
   int all_free = 1, all_used = 1;
-  
+
   while (p + wh <= end) {
     header_t hd = (header_t)*p;
     if (hd == 0) {
@@ -349,10 +349,12 @@ intnat caml_sweep(struct caml_heap_state* local, intnat work) {
     work -= large_alloc_sweep(local);
   }
 
+#if DEBUG
   if (work > 0) {
     /* sweeping is complete, check everything worked */
     verify_swept(local);
   }
+#endif
   return work;
 }
 
@@ -432,7 +434,7 @@ static void verify_push(value v, value* p) {
     verify_stack_len = verify_stack_len * 2 + 100;
     verify_stack = caml_stat_resize(verify_stack,
          sizeof(value*) * verify_stack_len);
-  } 
+  }
   verify_stack[verify_sp++] = v;
 }
 
@@ -498,11 +500,11 @@ static void verify_pool(pool* a, sizeclass sz, struct mem_stats* s) {
   for (v = a->next_obj; v; v = (value*)v[1]) {
     Assert(*v == 0);
   }
-  
+
   value* p = (value*)((char*)a + POOL_HEADER_SZ);
   value* end = (value*)a + POOL_WSIZE;
   mlsize_t wh = wsize_sizeclass[sz];
-  
+
   while (p + wh <= end) {
     header_t hd = (header_t)*p;
     Assert(hd == 0 || !Has_status_hd(hd, global.GARBAGE));
