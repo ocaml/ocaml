@@ -1234,9 +1234,9 @@ and transl_setinstvar self var expr =
 
 and transl_record env all_labels repres lbl_expr_list opt_init_expr =
   let size = Array.length all_labels in
-  (* Determine if there are "enough" new fields *)
+  (* If this is a record update, determine if there are "enough" fields *)
   let no_init = match opt_init_expr with None -> true | _ -> false in
-  if no_init || size > 255
+  if no_init || size > Config.max_young_wosize
   then begin
     (* Allocate new record with given fields (and remaining fields
        taken from init_expr if any *)
