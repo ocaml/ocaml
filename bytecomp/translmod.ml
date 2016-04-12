@@ -575,13 +575,18 @@ let scan_used_globals lam =
   in
   scan lam; !globals
 
-let wrap_globals body =
+let wrap_globals ~flambda body =
   let globals = scan_used_globals body in
   let add_global id req =
-    if IdentSet.mem id globals then req else IdentSet.add id req in
+    if not flambda && IdentSet.mem id globals then
+      req
+    else
+      IdentSet.add id req
+  in
   let required =
-    Hashtbl.fold (fun path loc -> add_global (Path.head path))
-      used_primitives IdentSet.empty
+    Hashtbl.fold
+      (fun path loc -> add_global (Path.head path)) used_primitives
+      (if flambda then globals else IdentSet.empty)
   in
   let required =
     List.fold_right add_global (Env.get_required_globals ()) required
@@ -589,7 +594,7 @@ let wrap_globals body =
   Env.reset_required_globals ();
   Hashtbl.clear used_primitives;
   IdentSet.fold
-    (fun id expr -> Lsequence(Lprim(Pgetglobal id, []), expr))
+    (fun id expr -> Lsequence(Lprim(Popaque, [Lprim(Pgetglobal id, [])]), expr))
     required body
   (* Location.prerr_warning loc
         (Warnings.Nonrequired_global (Ident.name (Path.head path),
@@ -607,7 +612,7 @@ let transl_implementation_flambda module_name (str, cc) =
     Translobj.transl_label_init
       (fun () -> transl_struct [] cc (global_path module_id) str)
   in
-  (module_id, size), wrap_globals body
+  (module_id, size), wrap_globals ~flambda:true body
 
 let transl_implementation module_name (str, cc) =
   let (module_id, _size), module_initializer =
@@ -961,7 +966,7 @@ let transl_store_implementation module_name (str, restr) =
   let (i, r) = transl_store_gen module_name (str, restr) false in
   transl_store_subst := s;
   { Lambda.main_module_block_size = i;
-    code = wrap_globals r; }
+    code = wrap_globals ~flambda:false r; }
 
 (* Compile a toplevel phrase *)
 
