@@ -804,6 +804,9 @@ Bug fixes:
 - PR#7214: Assertion failure in Env.add_gadt_instances
   (Jacques Garrigue, report by Stephen Dolan)
 
+- PR#7220: fix a memory leak when using both threads and exception backtraces
+  (Gabriel Scherer, review by François Bobot, report by Rob Hoes)
+
 - GPR#205: Clear caml_backtrace_last_exn before registering as root
   (report and fix by Frederic Bour)
 
