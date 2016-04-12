@@ -17,6 +17,14 @@ include ../config/Makefile
 CAMLRUN ?= ../boot/ocamlrun
 CAMLYACC ?= ../boot/ocamlyacc
 
+ROOTDIR=..
+
+ifeq "$(wildcard $(ROOTDIR)/flexdll/Makefile)" ""
+export OCAML_FLEXLINK:=
+else
+export OCAML_FLEXLINK:=$(ROOTDIR)/boot/ocamlrun $(ROOTDIR)/flexdll/flexlink.exe
+endif
+
 CAMLC=$(CAMLRUN) ../boot/ocamlc -nostdlib -I ../boot -use-prims ../byterun/primitives
 CAMLOPT=$(CAMLRUN) ../ocamlopt -nostdlib -I ../stdlib
 CAMLLEX=$(CAMLRUN) ../boot/ocamllex
