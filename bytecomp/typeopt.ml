@@ -126,3 +126,20 @@ let bigarray_type_kind_and_layout env typ =
                             Pbigarray_unknown_layout)
   | _ ->
       (Pbigarray_unknown, Pbigarray_unknown_layout)
+
+let value_kind env ty =
+  match scrape env ty with
+  | Tconstr(p, _, _) when Path.same p Predef.path_int ->
+      Pintval
+  | Tconstr(p, _, _) when Path.same p Predef.path_char ->
+      Pintval
+  | Tconstr(p, _, _) when Path.same p Predef.path_float ->
+      Pfloatval
+  | Tconstr(p, _, _) when Path.same p Predef.path_int32 ->
+      Pboxedintval Pint32
+  | Tconstr(p, _, _) when Path.same p Predef.path_int64 ->
+      Pboxedintval Pint64
+  | Tconstr(p, _, _) when Path.same p Predef.path_nativeint ->
+      Pboxedintval Pnativeint
+  | _ ->
+      Pgenval

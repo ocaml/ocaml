@@ -20,7 +20,7 @@
 let rec tail_variable : Flambda.t -> Variable.t option = function
   | Var v -> Some v
   | Let_rec (_, e)
-  | Let_mutable (_, _, e)
+  | Let_mutable { body = e }
   | Let { body = e; _ } -> tail_variable e
   | _ -> None
 
@@ -63,7 +63,7 @@ let assign_symbols_and_collect_constant_definitions
         (* [Inconstant_idents] always marks these expressions as
            inconstant, so we should never get here. *)
         assert false
-      | Prim (Pmakeblock (tag, _), fields, _) ->
+      | Prim (Pmakeblock (tag, _, _value_kind), fields, _) ->
         assign_symbol ();
         record_definition (AA.Block (Tag.create_exn tag, fields))
       | Read_symbol_field (symbol, field) ->

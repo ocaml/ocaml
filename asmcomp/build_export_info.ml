@@ -207,7 +207,7 @@ let rec approx_of_expr (env : Env.t) (flam : Flambda.t) : Export_info.approx =
     let approx = descr_of_named env defining_expr in
     let env = Env.add_approx env var approx in
     approx_of_expr env body
-  | Let_mutable (_mut_var, _var, body) ->
+  | Let_mutable { body } ->
     approx_of_expr env body
   | Let_rec (defs, body) ->
     let env =
@@ -251,7 +251,7 @@ and descr_of_named (env : Env.t) (named : Flambda.named)
     Value_id (Env.new_descr env (descr_of_constant const))
   | Allocated_const const ->
     Value_id (Env.new_descr env (descr_of_allocated_constant const))
-  | Prim (Pmakeblock (tag, Immutable), args, _dbg) ->
+  | Prim (Pmakeblock (tag, Immutable, _value_kind), args, _dbg) ->
     let approxs = List.map (Env.find_approx env) args in
     let descr : Export_info.descr =
       Value_block (Tag.create_exn tag, Array.of_list approxs)

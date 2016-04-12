@@ -9,6 +9,12 @@ Language features:
 - GPR#301: local exception declarations "let exception ... in"
   (Alain Frisch)
 
+Compilers:
+==========
+
+- PR#7023, GPR#336: Better unboxing strategy
+  (Alain Frisch, Pierre Chambart)
+
 Tools:
 ======
 
