@@ -80,6 +80,6 @@ beforedepend:: lexer.ml
 	$(CAMLOPT) -c $(COMPFLAGS) $<
 
 depend: beforedepend
-	$(CAMLDEP) *.mli *.ml > .depend
+	$(CAMLDEP) -slash *.mli *.ml > .depend
 
 include .depend

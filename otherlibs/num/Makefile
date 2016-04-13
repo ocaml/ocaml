@@ -17,6 +17,6 @@ include Makefile.shared
 
 depend:
 	$(CC) -MM $(CFLAGS) *.c > .depend
-	$(CAMLRUN) ../../tools/ocamldep *.mli *.ml >> .depend
+	$(CAMLRUN) ../../tools/ocamldep -slash *.mli *.ml >> .depend
 
 include .depend

@@ -29,6 +29,6 @@ include ../Makefile
 
 depend:
 	$(CC) -MM $(CFLAGS) *.c | sed -e 's, /[^ ]*\.h,,g' > .depend
-	$(CAMLRUN) ../../tools/ocamldep *.mli *.ml >> .depend
+	$(CAMLRUN) ../../tools/ocamldep -slash *.mli *.ml >> .depend
 
 include .depend

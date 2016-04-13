@@ -373,7 +373,7 @@ clean::
 	rm -f *.cmo *.cmi *.cma *.dll *.so *.lib *.a
 
 depend: beforedepend
-	$(CAMLRUN) ./ocamldep $(INCLUDES) *.mli *.ml > .depend
+	$(CAMLRUN) ./ocamldep -slash $(INCLUDES) *.mli *.ml > .depend
 
 .PHONY: clean install beforedepend depend
 
