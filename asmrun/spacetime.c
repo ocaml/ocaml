@@ -623,6 +623,14 @@ static NOINLINE void* find_trie_node_from_libunwind(int for_allocation,
       node->pc = (expected_type == CALL ? Encode_c_node_pc_for_call(pc)
         : Encode_c_node_pc_for_alloc_point(pc));
       *node_hole = caml_spacetime_stored_pointer_of_c_node(node);
+      if(expected_type == ALLOCATION) {
+        caml_spacetime_profinfo++;
+        if (caml_spacetime_profinfo > PROFINFO_MASK) {
+          /* Profiling counter overflow. */
+          caml_spacetime_profinfo = PROFINFO_MASK;
+        }
+        node->data.profinfo = Val_long(caml_spacetime_profinfo);
+      }
     }
     else {
       c_node* prev;
@@ -783,20 +791,14 @@ uintnat caml_spacetime_my_profinfo (struct ext_table** cached_frames)
      with information obtained from libunwind. */
 
   c_node* node;
-
-  caml_spacetime_profinfo++;
-  if (caml_spacetime_profinfo > PROFINFO_MASK) {
-    /* Profiling counter overflow. */
-    caml_spacetime_profinfo = PROFINFO_MASK;
-  }
+  uintnat profinfo = 0;
 
   node = find_trie_node_from_libunwind(1, cached_frames);
   if (node != NULL) {
-    node->data.profinfo = Val_long(caml_spacetime_profinfo);
+    profinfo = node->data.profinfo;
   }
 
-  Assert(caml_spacetime_profinfo <= PROFINFO_MASK);
-  return caml_spacetime_profinfo;  /* N.B. not shifted by PROFINFO_SHIFT */
+  return profinfo;  /* N.B. not shifted by PROFINFO_SHIFT */
 }
 
 void caml_spacetime_automatic_snapshot (void)
