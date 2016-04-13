@@ -273,6 +273,9 @@ Compilers:
 - GPR#132: Flambda: new intermediate language and "middle-end" optimizers
   (Pierre Chambart, Mark Shinwell, Leo White)
 
+- GPR#212, PR#7226, GPR#542: emit column position in gas assembly `.loc`
+  (Frédéric Bour, Anton Bachin)
+
 - GPR#207: Colors in compiler messages (warnings, errors)
   configure with -color {auto|always|never} or TERM=dumb
   (Simon Cruanes, review by Gabriel Scherer)
