@@ -313,7 +313,21 @@ module Snapshot = struct
     done;
     tbl
 
-  let create ?executable ~trace ~frame_table ~shape_table ~snapshot =
+  let fold_trace ?executable ~frame_table ~shape_table ~alloc_table acc trace =
+    match Trace.root trace with
+    | None -> acc
+    | Some node ->
+      let visited = ref Trace.Node.Set.empty in
+      fold_node ?executable ~frame_table ~shape_table visited
+        (fun backtrace alloc acc ->
+           match Hashtbl.find alloc_table alloc with
+           | (blocks, words) ->
+             let entry = { Entry.backtrace; blocks; words } in
+             Entries.add entry acc
+           | exception Not_found -> acc)
+        [] acc node
+
+  let create ?executable ~series ~frame_table ~shape_table ~snapshot =
     let time = Heap_snapshot.timestamp snapshot in
     let gc = Heap_snapshot.gc_stats snapshot in
     let words_scanned = Heap_snapshot.words_scanned snapshot in
@@ -323,20 +337,36 @@ module Snapshot = struct
     let stats =
       { Stats.gc; words_scanned; words_scanned_with_profinfo; }
     in
-    let allocs = allocation_table ~snapshot in
+    let alloc_table = allocation_table ~snapshot in
     let entries =
-      match Trace.root trace with
-      | None -> Entries.empty
-      | Some node ->
-        let visited = ref Trace.Node.Set.empty in
-        fold_node ?executable ~frame_table ~shape_table visited
-          (fun backtrace alloc acc ->
-             match Hashtbl.find allocs alloc with
-             | (blocks, words) ->
-               let entry = { Entry.backtrace; blocks; words } in
-               Entries.add entry acc
-             | exception Not_found -> acc)
-          [] Entries.empty node
+      let num_threads = Heap_snapshot.Series.num_threads series in
+      let rec loop acc n =
+        if n >= num_threads then acc
+        else begin
+          let normal =
+            Heap_snapshot.Series.trace series Heap_snapshot.Series.Normal n
+          in
+          let acc =
+            match normal with
+            | None -> acc
+            | Some trace ->
+              fold_trace ?executable ~frame_table ~shape_table ~alloc_table
+                acc trace
+          in
+          let finaliser =
+            Heap_snapshot.Series.trace series Heap_snapshot.Series.Finaliser n
+          in
+          let acc =
+            match finaliser with
+            | None -> acc
+            | Some trace ->
+              fold_trace ?executable ~frame_table ~shape_table ~alloc_table
+                acc trace
+          in
+          loop acc (n + 1)
+        end
+      in
+      loop Entries.empty 0
     in
     { time; stats; entries }
 
@@ -359,16 +389,6 @@ module Series = struct
 
   let create ?executable path =
     let series = Heap_snapshot.Series.read ~path in
-    let trace =
-      (* CR mshinwell: fix thread handling! *)
-      match
-        Heap_snapshot.Series.trace series
-          ~kind:Heap_snapshot.Series.Normal
-          ~thread_index:0
-      with
-      | None -> failwith "No threads"
-      | Some trace -> trace
-    in
     let frame_table = Heap_snapshot.Series.frame_table series in
     let shape_table = Heap_snapshot.Series.shape_table series in
     let length = Heap_snapshot.Series.num_snapshots series in
@@ -384,7 +404,7 @@ module Series = struct
     in
       List.map
         (fun snapshot ->
-           Snapshot.create ?executable ~trace ~frame_table ~shape_table
+           Snapshot.create ?executable ~series ~frame_table ~shape_table
              ~snapshot)
         snapshots
 
