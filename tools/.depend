@@ -18,13 +18,6 @@ cmt2annot.cmx : ../typing/untypeast.cmx ../typing/types.cmx \
     ../parsing/asttypes.cmi ../typing/annot.cmi
 cvt_emit.cmo :
 cvt_emit.cmx :
-depend.cmo : ../parsing/parsetree.cmi ../utils/misc.cmi \
-    ../parsing/longident.cmi ../parsing/location.cmi ../utils/clflags.cmi \
-    ../parsing/builtin_attributes.cmi ../parsing/asttypes.cmi depend.cmi
-depend.cmx : ../parsing/parsetree.cmi ../utils/misc.cmx \
-    ../parsing/longident.cmx ../parsing/location.cmx ../utils/clflags.cmx \
-    ../parsing/builtin_attributes.cmx ../parsing/asttypes.cmi depend.cmi
-depend.cmi : ../parsing/parsetree.cmi ../parsing/longident.cmi
 dumpobj.cmo : ../utils/tbl.cmi opnames.cmo ../bytecomp/opcodes.cmo \
     ../parsing/location.cmi ../bytecomp/lambda.cmi ../bytecomp/instruct.cmi \
     ../typing/ident.cmi ../utils/config.cmi ../bytecomp/cmo_format.cmi \
@@ -56,11 +49,13 @@ ocamlcp.cmx : ../driver/main_args.cmx
 ocamldep.cmo : ../driver/pparse.cmi ../parsing/parsetree.cmi \
     ../parsing/parser.cmi ../parsing/parse.cmi ../utils/misc.cmi \
     ../parsing/longident.cmi ../parsing/location.cmi ../parsing/lexer.cmi \
-    depend.cmi ../utils/config.cmi ../driver/compenv.cmi ../utils/clflags.cmi
+    ../parsing/depend.cmi ../utils/config.cmi ../driver/compenv.cmi \
+    ../utils/clflags.cmi
 ocamldep.cmx : ../driver/pparse.cmx ../parsing/parsetree.cmi \
     ../parsing/parser.cmx ../parsing/parse.cmx ../utils/misc.cmx \
     ../parsing/longident.cmx ../parsing/location.cmx ../parsing/lexer.cmx \
-    depend.cmx ../utils/config.cmx ../driver/compenv.cmx ../utils/clflags.cmx
+    ../parsing/depend.cmx ../utils/config.cmx ../driver/compenv.cmx \
+    ../utils/clflags.cmx
 ocamlmklib.cmo : ocamlmklibconfig.cmo ../utils/config.cmi
 ocamlmklib.cmx : ocamlmklibconfig.cmx ../utils/config.cmx
 ocamlmklibconfig.cmo :
