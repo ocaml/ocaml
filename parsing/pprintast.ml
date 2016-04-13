@@ -299,8 +299,8 @@ and core_type1 ctxt f x =
                    (list string_quot) xs) low
     | Ptyp_object (l, o) ->
         let core_field_type f (s, attrs, ct) =
-          pp f "@[<hov2>%s%a@ :%a@ @]" s
-            (attributes ctxt) attrs (core_type ctxt) ct
+          pp f "@[<hov2>%s: %a@ %a@ @]" s
+            (core_type ctxt) ct (attributes ctxt) attrs (* Cf #7200 *)
         in
         let field_var f = function
           | Asttypes.Closed -> ()
@@ -309,8 +309,8 @@ and core_type1 ctxt f x =
               | [] -> pp f ".."
               | _ -> pp f " ;.."
         in
-        pp f "@[<hov2><@ %a%a@ >@]" (list core_field_type ~sep:";") l
-          field_var o
+        pp f "@[<hov2><@ %a%a@ > @]" (list core_field_type ~sep:";") l
+          field_var o (* Cf #7200 *)
     | Ptyp_class (li, l) ->   (*FIXME*)
         pp f "@[<hov2>%a#%a@]"
           (list (core_type ctxt) ~sep:"," ~first:"(" ~last:")") l
@@ -487,7 +487,8 @@ and expression ctxt f x =
         paren true (expression reset_ctxt) f x
     | Pexp_ifthenelse _ | Pexp_sequence _ when ctxt.ifthenelse ->
         paren true (expression reset_ctxt) f x
-    | Pexp_let _ | Pexp_letmodule _ | Pexp_open _ | Pexp_letexception _ when ctxt.semi ->
+    | Pexp_let _ | Pexp_letmodule _ | Pexp_open _ | Pexp_letexception _
+        when ctxt.semi ->
         paren true (expression reset_ctxt) f x
     | Pexp_fun (l, e0, p, e) ->
         pp f "@[<2>fun@;%a@;->@;%a@]"
@@ -868,7 +869,7 @@ and class_expr ctxt f x =
           (bindings ctxt) (rf,l)
           (class_expr ctxt) ce
     | Pcl_apply (ce, l) ->
-        pp f "(%a@ %a)"
+        pp f "((%a)@ %a)" (* Cf: #7200 *)
           (class_expr ctxt) ce
           (list (label_x_expression_param ctxt)) l
     | Pcl_constr (li, l) ->
@@ -1032,7 +1033,8 @@ and module_expr ctxt f x =
         pp f "functor@ (%s@ :@ %a)@;->@;%a"
           s.txt (module_type ctxt) mt (module_expr ctxt) me
     | Pmod_apply (me1, me2) ->
-        pp f "%a(%a)" (module_expr ctxt) me1 (module_expr ctxt) me2
+        pp f "(%a)(%a)" (module_expr ctxt) me1 (module_expr ctxt) me2
+        (* Cf: #7200 *)
     | Pmod_unpack e ->
         pp f "(val@ %a)" (expression ctxt) e
     | Pmod_extension e -> extension ctxt f e
@@ -1312,13 +1314,14 @@ and type_extension ctxt f x =
   let extension_constructor f x =
     pp f "@\n|@;%a" (extension_constructor ctxt) x
   in
-  pp f "@[<2>type %a%a +=%a@]%a"
+  pp f "@[<2>type %a%a += %a@ %a@]%a"
     (fun f -> function
        | [] -> ()
        | l ->
            pp f "%a@;" (list (type_param ctxt) ~first:"(" ~last:")" ~sep:",") l)
     x.ptyext_params
     longident_loc x.ptyext_path
+    private_flag x.ptyext_private (* Cf: #7200 *)
     (list ~sep:"" extension_constructor)
     x.ptyext_constructors
     (item_attributes ctxt) x.ptyext_attributes
@@ -1352,6 +1355,7 @@ and constructor_declaration ctxt f (name, args, res, attrs) =
         (attributes ctxt) attrs
 
 and extension_constructor ctxt f x =
+  (* Cf: #7200 *)
   match x.pext_kind with
   | Pext_decl(l, r) ->
       constructor_declaration ctxt f (x.pext_name.txt, l, r, x.pext_attributes)
