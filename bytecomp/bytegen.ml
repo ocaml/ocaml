@@ -906,9 +906,9 @@ and comp_binary_test env cond ifso ifnot sz cont =
 let comp_block env exp sz cont =
   max_stack_used := 0;
   let code = comp_expr env exp sz cont in
-  (* +1 because comp_expr may have pushed one more word *)
-  if !max_stack_used + 1 > Config.stack_threshold then
-    Kconst(Const_base(Const_int(!max_stack_used + 1))) ::
+  let used_safe = !max_stack_used + Config.stack_safety_margin in
+  if used_safe > Config.stack_threshold then
+    Kconst(Const_base(Const_int used_safe)) ::
     Kccall("caml_ensure_stack_capacity", 1) ::
     code
   else
