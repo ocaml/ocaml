@@ -179,8 +179,7 @@ let loc_external_arguments arg =
       (* int64 unboxed *)
       let loc1 = next_loc Int in
       let loc2 = next_loc Int in
-      assert big_endian;
-      loc.(i) <- [| loc2; loc1 |]
+      loc.(i) <- [| loc1; loc2 |]
     | _ ->
       fatal_error "Proc.loc_external_arguments: cannot call"
   done;

@@ -137,20 +137,19 @@ let calling_conventions
              even-numbered register; or in a stack slot that is 8-byte
              aligned. *)
           int := Misc.align !int 2;
-          let pos_least, pos_most = if big_endian then (1, 0) else (0, 1) in
           if !int <= last_int - 1 then begin
-            let reg_least = phys_reg (!int + pos_least) in
-            let reg_most  = phys_reg (!int + pos_most ) in
-            loc.(i) <- [| reg_least; reg_most |];
+            let reg_lower = phys_reg !int in
+            let reg_upper = phys_reg (!int + 1) in
+            loc.(i) <- [| reg_lower; reg_upper |];
             int := !int + 2
           end else begin
             let size_int64 = 8 in
             ofs := Misc.align !ofs size_int64;
-            let ofs_least = !ofs + size_int * pos_least in
-            let ofs_most  = !ofs + size_int * pos_most  in
-            let stack_least = stack_slot (make_stack ofs_least) Int in
-            let stack_most  = stack_slot (make_stack ofs_most ) Int in
-            loc.(i) <- [| stack_least; stack_most |];
+            let ofs_lower = !ofs in
+            let ofs_upper = !ofs + size_int in
+            let stack_lower = stack_slot (make_stack ofs_lower) Int in
+            let stack_upper = stack_slot (make_stack ofs_upper) Int in
+            loc.(i) <- [| stack_lower; stack_upper |];
             ofs := !ofs + size_int64
           end
       | _, _ ->
