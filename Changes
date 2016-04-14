@@ -602,6 +602,9 @@ Manual:
   the manual are warmly welcome.
   (François Bobot, review by Florian Angeletti)
 
+- PR#6601: replace strcpy with caml_strdup in sample code
+  (Christopher Zimmermann)
+
 - PR#6676: ongoing simplification of the "Language Extensions" section
   (Alain Frisch, John Whitington)
 
