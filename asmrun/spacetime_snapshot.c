@@ -158,7 +158,11 @@ static value take_snapshot(void)
   num_distinct_profinfos = 0;
 
   /* Scan the minor heap. */
-  /* CR mshinwell: this is wrong, it should start from the roots */
+  /* CR mshinwell: this is wrong, it should start from the roots
+     mshinwell: actually, perhaps not, otherwise we might miss
+     short-lived allocations that we have a chance of seeing otherwise.
+     However the current code is wrong because of the "hole" that
+     can be in the minor heap. */
   assert(((uintnat) caml_young_ptr) % sizeof(value) == 0);
   assert(!caml_in_minor_collection);
   ptr = (value*) caml_young_ptr;
