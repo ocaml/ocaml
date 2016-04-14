@@ -789,6 +789,10 @@ let box_int bi arg =
       transl_structured_constant (box_int_constant bi (Nativeint.of_int n))
   | Cconst_natint n ->
       transl_structured_constant (box_int_constant bi n)
+  | Ctuple [Cconst_natint low; Cconst_natint high] when size_int <> 8 ->
+      (* The inverse of the [Uconst_int64] case in [transl_unbox_int]. *)
+      let n = Nativeint.logor low (Nativeint.shift_left high 32) in
+      transl_structured_constant (box_int_constant bi n)
   | _ ->
       let arg' =
         if bi = Pint32 && size_int = 8 && big_endian
