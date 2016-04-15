@@ -102,32 +102,32 @@ let unbox_let_float () =
 
 type block =
   { mutable float : float;
-    mutable int64 : int64 }
+    mutable int32 : int32 }
 
-let make_some_block float int64 =
-  { float; int64 }
+let make_some_block float int32 =
+  { float; int32 }
 
-let unbox_record_1 float int64 =
+let unbox_record_1 float int32 =
   (* There is some let lifting problem to handle that case with one
      round, this currently requires 2 rounds to be correctly
      recognized as a mutable variable pattern *)
-  (* let block = (make_some_block [@inlined]) float int64 in *)
-  let block = { float; int64 } in
+  (* let block = (make_some_block [@inlined]) float int32 in *)
+  let block = { float; int32 } in
   for i = 1 to 1000 do
     let y_float =
       if i mod 2 = 0 then nan else Pervasives.float i
     in
     block.float <- block.float +. (y_float *. 2.);
-    let y_int64 =
-      if i mod 2 = 0 then Int64.max_int else Int64.of_int i
+    let y_int32 =
+      if i mod 2 = 0 then Int32.max_int else Int32.of_int i
     in
-    block.int64 <- Int64.(add block.int64 (mul y_int64 2L))
+    block.int32 <- Int32.(add block.int32 (mul y_int32 2l))
   done
   [@@inline never]
   (* Prevent inlining to test that the type is effectively used *)
 
 let unbox_record () =
-  unbox_record_1 3.14 12L
+  unbox_record_1 3.14 12l
 
 let () =
   let flambda =
@@ -144,7 +144,7 @@ let () =
   check_noalloc "unbox let float" unbox_let_float;
 
   if flambda then begin
-    check_noalloc "float and int64 record" unbox_record;
+    check_noalloc "float and int32 record" unbox_record;
   end;
 
   ()
