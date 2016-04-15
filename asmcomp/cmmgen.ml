@@ -789,10 +789,6 @@ let box_int bi arg =
       transl_structured_constant (box_int_constant bi (Nativeint.of_int n))
   | Cconst_natint n ->
       transl_structured_constant (box_int_constant bi n)
-  | Ctuple [Cconst_natint low; Cconst_natint high] when size_int <> 8 ->
-      (* The inverse of the [Uconst_int64] case in [transl_unbox_int]. *)
-      let n = Nativeint.logor low (Nativeint.shift_left high 32) in
-      transl_structured_constant (box_int_constant bi n)
   | _ ->
       let arg' =
         if bi = Pint32 && size_int = 8 && big_endian
@@ -802,23 +798,12 @@ let box_int bi arg =
                    Cconst_symbol(operations_boxed_int bi);
                    arg'])
 
-(* Offsets of the least and most significant words for
-   an int64 on a 32 bit target *)
-let int64_for_32bit_target_offsets =
-  if Arch.big_endian then
-    (8, 4)
-  else
-    (4, 8)
-
 let split_int64_for_32bit_target arg =
   bind "split_int64" arg (fun arg ->
-    let least_sig_ofs, most_sig_ofs =
-      int64_for_32bit_target_offsets
-    in
-    let least_sig_addr = Cop (Cadda, [Cconst_int least_sig_ofs; arg]) in
-    let most_sig_addr = Cop (Cadda, [Cconst_int most_sig_ofs; arg]) in
-    Ctuple [Cop (Cload Thirtytwo_unsigned, [least_sig_addr]);
-            Cop (Cload Thirtytwo_unsigned, [most_sig_addr])])
+    let first = Cop (Cadda, [Cconst_int size_int; arg]) in
+    let second = Cop (Cadda, [Cconst_int (2 * size_int); arg]) in
+    Ctuple [Cop (Cload Thirtytwo_unsigned, [first]);
+            Cop (Cload Thirtytwo_unsigned, [second])])
 
 let rec unbox_int bi arg =
   match arg with
@@ -2283,10 +2268,12 @@ and transl_unbox_int env bi = function
   | Uconst(Uconst_ref(_, Some (Uconst_int64 n))) ->
       if size_int = 8 then
         Cconst_natint (Int64.to_nativeint n)
-      else
+      else begin
         let low = Int64.to_nativeint n in
         let high = Int64.to_nativeint (Int64.shift_right_logical n 32) in
-        Ctuple [Cconst_natint low; Cconst_natint high]
+        if big_endian then Ctuple [Cconst_natint high; Cconst_natint low]
+        else Ctuple [Cconst_natint low; Cconst_natint high]
+      end
   | Uprim(Pbintofint bi',[Uconst(Uconst_int i)],_) when bi = bi' ->
       Cconst_int i
   | exp -> unbox_int bi (transl env exp)
