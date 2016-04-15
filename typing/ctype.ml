@@ -1898,7 +1898,9 @@ let reify env t =
       match ty.desc with
         Tvar o ->
           let t = create_fresh_constr ty.level o in
-          link_type ty t
+          link_type ty t;
+          if ty.level < newtype_level then
+            raise (Unify [t, newvar2 ty.level])
       | Tvariant r ->
           let r = row_repr r in
           if not (static_row r) then begin
@@ -1909,7 +1911,9 @@ let reify env t =
                 let t = create_fresh_constr m.level o in
                 let row =
                   {r with row_fields=[]; row_fixed=true; row_more = t} in
-                link_type m (newty2 m.level (Tvariant row))
+                link_type m (newty2 m.level (Tvariant row));
+                if m.level < newtype_level then
+                  raise (Unify [t, newvar2 m.level])
             | _ -> assert false
           end;
           iter_row iterator r
