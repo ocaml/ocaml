@@ -270,6 +270,10 @@ Compilers:
   `-no-rectypes`, `-no-strict-formats`
   (Demi Obenour)
 
+- GPR#545: use reraise to preserve backtrace on
+  `match .. with exception e -> raise e`
+  (Nicolas Ojeda Bar, review by Gabriel Scherer)
+
 Runtime system:
 ===============
 
