@@ -1479,7 +1479,7 @@ simple_expr:
       { mkexp_attrs (Pexp_construct (mkloc (Lident "()") (symbol_rloc ()),
                                None)) $2 }
   | BEGIN ext_attributes seq_expr error
-      { unclosed "begin" 1 "end" 3 }
+      { unclosed "begin" 1 "end" 4 }
   | LPAREN seq_expr type_constraint RPAREN
       { mkexp_constraint $2 $3 }
   | simple_expr DOT label_longident
