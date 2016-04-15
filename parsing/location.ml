@@ -389,7 +389,7 @@ let error_of_exn exn =
 
 let rec default_error_reporter ppf ({loc; msg; sub; if_highlight} as err) =
   let highlighted =
-    if if_highlight <> "" then
+    if if_highlight <> "" && loc.loc_start.pos_fname = "//toplevel//" then
       let rec collect_locs locs {loc; sub; if_highlight; _} =
         List.fold_left collect_locs (loc :: locs) sub
       in

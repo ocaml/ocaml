@@ -469,6 +469,9 @@ Toplevel and debugger:
   (whitequark and Jake Donham,
    review by Gabriel Scherer and Jacques-Henri Jourdan)
 
+- PR#6906: wrong error location for unmatched paren with #use in toplevel
+  (Damien Doligez, report by Kenichi Asai)
+
 - PR#6935, GPR#298: crash in debugger when load_printer is given a directory
   (Junsong Li, review by Gabriel Scherer)
 
