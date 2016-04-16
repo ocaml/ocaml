@@ -2147,6 +2147,11 @@ comments} and {\em label comments}. Any comment starting with "**" which
 does not match one of these forms will cause the compiler to emit
 warning 50.
 
+Comments which start with "**" are also used by the ocamldoc
+documentation generator (see \ref{c:ocamldoc}). The three comment forms
+recognised by the compiler are a subset of the forms accepted by
+ocamldoc (see \ref{s:ocamldoc-comments}).
+
 \subsection{Floating comments}
 
 Comments surrounded by blank lines that appear within structures,
@@ -2281,3 +2286,17 @@ will be converted to:
 type t =  T of string [@ocaml.doc " Attaches to T not t "]
 \end{verbatim}
 
+whilst:
+
+\begin{verbatim}
+type t = T of string
+(** Attaches to T not t *)
+(** Attaches to t *)
+\end{verbatim}
+
+will be converted to:
+
+\begin{verbatim}
+type t =  T of string [@ocaml.doc " Attaches to T not t "]
+[@@ocaml.doc " Attaches to t "]
+\end{verbatim}
