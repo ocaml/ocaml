@@ -434,7 +434,7 @@ let message = function
       Printf.sprintf
         "the argument of this constructor should not be matched against a\n\
          constant pattern; the actual value of the argument could change\n\
-         in the future"
+         in the future."
   | Unreachable_case ->
       "this match case is unreachable.\n\
        Consider replacing it with a refutation case '<pat> -> .'"
