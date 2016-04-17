@@ -1642,6 +1642,7 @@ and[@bar] y = 3 in x + y           === (let x = 2 [@@foo] and y = 3 [@bar] in x 
 
 
 \subsection{Built-in attributes}
+\label{ss:builtin-attributes}
 
 Some attributes are understood by the type-checker:
 \begin{itemize}

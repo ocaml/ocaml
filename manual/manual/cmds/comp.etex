@@ -754,6 +754,87 @@ command line, and possibly the "-custom" option.
 This section describes and explains in detail some warnings:
 
 \begin{options}
+\item[Warning 52: fragile constant pattern]
+
+  Some constructors, such as the exception constructors "Failure" and
+  "Invalid_argument", take as parameter a "string" value holding
+  a text message intended for the user.
+
+  These text messages are usually not stable over time: call sites
+  building these constructors may refine the message in a future
+  version to make it more explicit, etc. Therefore, it is dangerous to
+  match over the precise value of the message. For example, until
+  OCaml 4.02, "Array.iter2" would raise the exception
+\begin{verbatim}
+  Invalid_argument "arrays must have the same length"
+\end{verbatim}
+  Since 4.03 it raises the more helpful message
+\begin{verbatim}
+  Invalid_argument "Array.iter2: arrays must have the same length"
+\end{verbatim}
+  but this means that any code of the form
+\begin{verbatim}
+  try ...
+  with Invalid_argument "arrays must have the same length" -> ...
+\end{verbatim}
+  is now broken and may suffer from uncaught exceptions.
+
+  Warning 52 is there to prevent users from writing such fragile code
+  in the first place. It does not occur on every matching on a literal
+  string, but only in the case in which library authors expressed
+  their intent to possibly change the constructor parameter value in
+  the future, by using the attribute "ocaml.warn_on_literal_pattern"
+  (see the manual section on builtin attributes in
+  \ref{ss:builtin-attributes}):
+\begin{verbatim}
+  type t =
+    | Foo of string [@ocaml.warn_on_literal_pattern]
+    | Bar of string
+
+  let no_warning = function
+    | Bar "specific value" -> 0
+    | _ -> 1
+
+  let warning = function
+    | Foo "specific value" -> 0
+    | _ _ -> 1
+
+>    | Foo "specific value" -> 0
+>          ^^^^^^^^^^^^^^^^
+> Warning 52: the argument of this constructor should not be matched against a
+> constant pattern; the actual value of the argument could change
+> in the future.
+\end{verbatim}
+
+  If your code raises this warning, you should {\em not} change the
+  way you test for the specific string to avoid the warning (for
+  example using a string equality inside the right-hand-side instead
+  of a literal pattern), as your code would remain fragile. You should
+  instead enlarge the scope of the pattern by matching on all possible
+  values. This may require some care: if the scrutinee may return
+  several different cases of the same pattern, or raise distinct
+  instances of the same exception, you may need to modify your code to
+  separate those several cases.
+
+  For example,
+\begin{verbatim}
+try (int_of_string count_str, bool_of_string choice_str) with
+  | Failure "int_of_string" -> (0, true)
+  | Failure "bool_of_string" -> (-1, false)
+\end{verbatim}
+  should be rewritten into more atomic tests. For example,
+  using the "exception" patterns documented in Section~\ref{s:exception-match},
+  one can write:
+\begin{verbatim}
+match int_of_string count_str with
+  | exception (Failure _) -> (0, true)
+  | count ->
+    begin match bool_of_string choice_str with
+    | exception (Failure _) -> (-1, false)
+    | choice -> (count, choice)
+    end
+\end{verbatim}
+
 \item[Warning 57: ambiguous variables in or-patterns]
   The semantics of or-patterns in OCaml is specified with
   a left-to-right bias: a value \var{v} matches the pattern \var{p} "|" \var{q}
@@ -793,5 +874,4 @@ This section describes and explains in detail some warnings:
  semantics (any branch can be taken) relatively to a specific guard.
  More precisely, it warns when guard uses ``ambiguous'' variables, that are bound
  to different parts of the scrutinees by different sides of a or-pattern.
-
 \end{options}
