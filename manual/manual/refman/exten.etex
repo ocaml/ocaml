@@ -2133,3 +2133,170 @@ let invalid = function
   | Point p -> p  (* INVALID *)
   | ...
 \end{verbatim}
+
+\section{Documentation comments}
+(Introduced in OCaml 4.03)
+
+Comments which start with "**" are treated specially by the
+compiler. They are automatically converted during parsing into
+attributes (see \ref{s:attributes}) to allow tools to process them as
+documentation.
+
+Such comments can take three forms: {\em floating comments}, {\em item
+comments} and {\em label comments}. Any comment starting with "**" which
+does not match one of these forms will cause the compiler to emit
+warning 50.
+
+Comments which start with "**" are also used by the ocamldoc
+documentation generator (see \ref{c:ocamldoc}). The three comment forms
+recognised by the compiler are a subset of the forms accepted by
+ocamldoc (see \ref{s:ocamldoc-comments}).
+
+\subsection{Floating comments}
+
+Comments surrounded by blank lines that appear within structures,
+signatures, classes or class types are converted into
+@floating-attribute@s. For example:
+
+\begin{verbatim}
+type t = T
+
+(** Now some definitions for [t] *)
+
+let mkT = T
+\end{verbatim}
+
+will be converted to:
+
+\begin{verbatim}
+type t = T
+
+[@@@ocaml.text " Now some definitions for [t] "]
+
+let mkT = T
+\end{verbatim}
+
+\subsection{Item comments}
+
+Comments which appear {\em immediately before} or {\em immediately
+after} a structure item, signature item, class item or class type item
+are converted into @item-attribute@s. Immediately before or immediately
+after means that there must be no blank lines, ";;", or other
+documentation comments between them. For example:
+
+\begin{verbatim}
+type t = T
+(** A description of [t] *)
+
+\end{verbatim}
+
+or
+
+\begin{verbatim}
+
+(** A description of [t] *)
+type t = T
+\end{verbatim}
+
+will be converted to:
+
+\begin{verbatim}
+type t = T
+[@@ocaml.doc " A description of [t] "]
+\end{verbatim}
+
+Note that, if a comment appears immediately next to multiple items,
+as in:
+
+\begin{verbatim}
+type t = T
+(** An ambiguous comment *)
+type s = S
+\end{verbatim}
+
+then it will be attached to both items:
+
+\begin{verbatim}
+type t = T
+[@@ocaml.doc " An ambiguous comment "]
+type s = S
+[@@ocaml.doc " An ambiguous comment "]
+\end{verbatim}
+
+and the compiler will emit warning 50.
+
+\subsection{Label comments}
+
+Comments which appear {\em immediately after} a labelled argument,
+record field, variant constructor, object method or polymorphic variant
+constructor are are converted into @attribute@s. Immediately
+after means that there must be no blank lines or other documentation
+comments between them. For example:
+
+\begin{verbatim}
+type t1 = lbl:int (** Labelled argument *) -> unit
+
+type t2 = {
+  fld: int; (** Record field *)
+  fld2: float;
+}
+
+type t3 =
+  | Cstr of string (** Variant constructor *)
+  | Cstr2 of string
+
+type t4 = < meth: int * int; (** Object method *) >
+
+type t5 = [
+  `PCstr (** Polymorphic variant constructor *)
+]
+\end{verbatim}
+
+will be converted to:
+
+\begin{verbatim}
+type t1 = lbl:(int [@ocaml.doc " Labelled argument "]) -> unit
+
+type t2 = {
+  fld: int [@ocaml.doc " Record field "];
+  fld2: float;
+}
+
+type t3 =
+  | Cstr of string [@ocaml.doc " Variant constructor "]
+  | Cstr2 of string
+
+type t4 = < meth : int * int [@ocaml.doc " Object method "] >
+
+type t5 = [
+  `PCstr [@ocaml.doc " Polymorphic variant constructor "]
+]
+\end{verbatim}
+
+Note that label comments take precedence over item comments, so:
+
+\begin{verbatim}
+type t = T of string
+(** Attaches to T not t *)
+\end{verbatim}
+
+will be converted to:
+
+\begin{verbatim}
+type t =  T of string [@ocaml.doc " Attaches to T not t "]
+\end{verbatim}
+
+whilst:
+
+\begin{verbatim}
+type t = T of string
+(** Attaches to T not t *)
+(** Attaches to t *)
+\end{verbatim}
+
+will be converted to:
+
+\begin{verbatim}
+type t =  T of string [@ocaml.doc " Attaches to T not t "]
+[@@ocaml.doc " Attaches to t "]
+\end{verbatim}
