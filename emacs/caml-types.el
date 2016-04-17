@@ -21,6 +21,12 @@
       (require 'caml-xemacs)
     (require 'caml-emacs)))
 
+(defun caml-types-feedback (info format)
+  "Displays INFO using the given FORMAT."
+  (message (format format info))
+  (with-current-buffer caml-types-buffer
+    (erase-buffer)
+    (insert info)))
 
 (defvar caml-types-build-dirs '("_build" "_obuild")
   "List of possible compilation directories created by build systems.
@@ -174,10 +180,7 @@ See `caml-types-location-re' for annotation file format."
               (right (caml-types-get-pos target-buf (elt node 1)))
               (type (cdr (assoc "type" (elt node 2)))))
           (move-overlay caml-types-expr-ovl left right target-buf)
-          (with-current-buffer caml-types-buffer
-            (erase-buffer)
-            (insert type)
-            (message (format "type: %s" type)))))))
+          (caml-types-feedback type "type: %s")))))
     (if (and (= arg 4)
              (not (window-live-p (get-buffer-window caml-types-buffer))))
         (display-buffer caml-types-buffer))
@@ -218,10 +221,7 @@ See `caml-types-location-re' for annotation file format."
               (right (caml-types-get-pos target-buf (elt node 1)))
               (kind (cdr (assoc "call" (elt node 2)))))
           (move-overlay caml-types-expr-ovl left right target-buf)
-          (with-current-buffer caml-types-buffer
-            (erase-buffer)
-            (insert kind)
-            (message (format "%s call" kind)))))))
+          (caml-types-feedback kind)))))
     (if (and (= arg 4)
              (not (window-live-p (get-buffer-window caml-types-buffer))))
         (display-buffer caml-types-buffer))
@@ -316,10 +316,7 @@ See `caml-types-location-re' for annotation file format."
                                    var-name l-line (- l-cnum l-bol))))))
              ((string-match external-re kind)
               (let ((fullname (match-string 1 kind)))
-                (with-current-buffer caml-types-buffer
-                  (erase-buffer)
-                  (insert fullname)
-                  (message (format "external ident: %s" fullname)))))))))))
+                (caml-types-feedback fullname "external ident: %s")))))))))
     (if (and (= arg 4)
              (not (window-live-p (get-buffer-window caml-types-buffer))))
         (display-buffer caml-types-buffer))
