@@ -835,7 +835,7 @@ match int_of_string count_str with
     end
 \end{verbatim}
 
-\item[Warning 57: ambiguous variables in or-patterns]
+\item[Warning 57: Ambiguous or-pattern variables under guard]
   The semantics of or-patterns in OCaml is specified with
   a left-to-right bias: a value \var{v} matches the pattern \var{p} "|" \var{q}
   if it matches \var{p} or \var{q}, but if it matches both,
