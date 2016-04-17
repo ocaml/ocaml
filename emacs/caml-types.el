@@ -65,8 +65,7 @@ Their format is:
   and second nums.
 
 The current list of keywords is:
-type call ident"
-)
+type call ident")
 
 (defvar caml-types-position-re nil)
 
@@ -127,33 +126,33 @@ type call ident"
 (make-variable-buffer-local 'caml-types-annotation-date)
 
 (defvar caml-types-buffer-name "*caml-types*"
-  "Name of buffer for displaying caml types")
+  "Name of buffer for displaying caml types.")
 (defvar caml-types-buffer nil
-  "buffer for displaying caml types")
+  "Buffer for displaying caml types.")
 
 (defun caml-types-show-type (arg)
   "Show the type of expression or pattern at point.
-   The smallest expression or pattern that contains point is
-   temporarily highlighted.  Its type is highlighted in the .annot
-   file and the mark is set to the beginning of the type.
-   The type is also displayed in the mini-buffer.
 
-   Hints on using the type display:
-   . If you want the type of an identifier, put point within any
-     occurrence of this identifier.
-   . If you want the result type of a function application, put point
-     at the first space after the function name.
-   . If you want the type of a list, put point on a bracket, on a
-     semicolon, or on the :: constructor.
-   . Even if type checking fails, you can still look at the types
-     in the file, up to where the type checker failed.
+The smallest expression or pattern that contains point is
+temporarily highlighted.  Its type is highlighted in the .annot
+file and the mark is set to the beginning of the type.  The type
+is also displayed in the mini-buffer.
+
+Hints on using the type display:
+. If you want the type of an identifier, put point within any
+occurrence of this identifier.
+. If you want the result type of a function application, put
+point at the first space after the function name.  . If you want
+the type of a list, put point on a bracket, on a semicolon, or on
+the :: constructor.
+. Even if type checking fails, you can still look at the types
+in the file, up to where the type checker failed.
 
 Types are also displayed in the buffer *caml-types*, which is
 displayed when the command is called with Prefix argument 4.
 
 See also `caml-types-explore' for exploration by mouse dragging.
-See `caml-types-location-re' for annotation file format.
-"
+See `caml-types-location-re' for annotation file format."
   (interactive "p")
   (let* ((target-buf (current-buffer))
          (target-file (file-name-nondirectory (buffer-file-name)))
@@ -178,28 +177,26 @@ See `caml-types-location-re' for annotation file format.
           (with-current-buffer caml-types-buffer
             (erase-buffer)
             (insert type)
-            (message (format "type: %s" type)))
-          ))))
+            (message (format "type: %s" type)))))))
     (if (and (= arg 4)
              (not (window-live-p (get-buffer-window caml-types-buffer))))
         (display-buffer caml-types-buffer))
     (unwind-protect
         (caml-sit-for 60)
-      (delete-overlay caml-types-expr-ovl)
-      )))
+      (delete-overlay caml-types-expr-ovl))))
 
 (defun caml-types-show-call (arg)
   "Show the kind of call at point.
-   The smallest function call that contains point is
-   temporarily highlighted.  Its kind is highlighted in the .annot
-   file and the mark is set to the beginning of the kind.
-   The kind is also displayed in the mini-buffer.
+
+The smallest function call that contains point is temporarily
+highlighted.  Its kind is highlighted in the .annot file and the
+mark is set to the beginning of the kind.  The kind is also
+displayed in the mini-buffer.
 
 The kind is also displayed in the buffer *caml-types*, which is
 displayed when the command is called with Prefix argument 4.
 
-See `caml-types-location-re' for annotation file format.
-"
+See `caml-types-location-re' for annotation file format."
   (interactive "p")
   (let* ((target-buf (current-buffer))
          (target-file (file-name-nondirectory (buffer-file-name)))
@@ -224,28 +221,26 @@ See `caml-types-location-re' for annotation file format.
           (with-current-buffer caml-types-buffer
             (erase-buffer)
             (insert kind)
-            (message (format "%s call" kind)))
-          ))))
+            (message (format "%s call" kind)))))))
     (if (and (= arg 4)
              (not (window-live-p (get-buffer-window caml-types-buffer))))
         (display-buffer caml-types-buffer))
     (unwind-protect
         (caml-sit-for 60)
-      (delete-overlay caml-types-expr-ovl)
-      )))
+      (delete-overlay caml-types-expr-ovl))))
 
 (defun caml-types-show-ident (arg)
   "Show the binding of identifier at point.
-   The identifier that contains point is
-   temporarily highlighted.  Its binding is highlighted in the .annot
-   file and the mark is set to the beginning of the binding.
-   The binding is also displayed in the mini-buffer.
+
+The identifier that contains point is temporarily highlighted.
+Its binding is highlighted in the .annot file and the mark is set
+to the beginning of the binding.  The binding is also displayed
+in the mini-buffer.
 
 The binding is also displayed in the buffer *caml-types*, which is
 displayed when the command is called with Prefix argument 4.
 
-See `caml-types-location-re' for annotation file format.
-"
+See `caml-types-location-re' for annotation file format."
   (interactive "p")
   (let* ((target-buf (current-buffer))
          (target-file (file-name-nondirectory (buffer-file-name)))
@@ -324,8 +319,7 @@ See `caml-types-location-re' for annotation file format.
                 (with-current-buffer caml-types-buffer
                   (erase-buffer)
                   (insert fullname)
-                  (message (format "external ident: %s" fullname)))))))
-          ))))
+                  (message (format "external ident: %s" fullname)))))))))))
     (if (and (= arg 4)
              (not (window-live-p (get-buffer-window caml-types-buffer))))
         (display-buffer caml-types-buffer))
@@ -333,8 +327,7 @@ See `caml-types-location-re' for annotation file format.
         (caml-sit-for 60)
       (delete-overlay caml-types-expr-ovl)
       (delete-overlay caml-types-def-ovl)
-      (delete-overlay caml-types-scope-ovl)
-      )))
+      (delete-overlay caml-types-scope-ovl))))
 
 (defun caml-types-preprocess (target-path)
   (let* ((type-path (caml-types-locate-type-file target-path))
@@ -357,14 +350,13 @@ See `caml-types-location-re' for annotation file format.
         (setq caml-types-annotation-tree tree
               caml-types-annotation-date type-date)
         (kill-buffer type-buf)
-        (message "done"))
-      )))
+        (message "done")))))
 
 (defun caml-types-parent-dir (d) (file-name-directory (directory-file-name d)))
 
 (defun caml-types-locate-type-file (target-path)
-  "Given the path to an OCaml file, this function tries to locate
-and return the corresponding .annot file."
+  "Given the path to an OCaml file, try to locate and return the
+corresponding .annot file."
   (let ((sibling (concat (file-name-sans-extension target-path) ".annot")))
     (if (file-exists-p sibling)
         sibling
@@ -414,8 +406,7 @@ and return the corresponding .annot file."
   (if (re-search-forward "^[a-z\"]" () t)
       (forward-char -1)
     (goto-char (point-max)))
-  (looking-at "[a-z]")
-)
+  (looking-at "[a-z]"))
 
 ; tree of intervals
 ; each node is a vector
@@ -456,7 +447,7 @@ and return the corresponding .annot file."
                                              accu)))
             (setq stack (cons node stack))))))
     (if (null stack)
-        (error "no annotations found for this source file")
+        (error "No annotations found for this source file")
       (let* ((left-pos (elt (car (last stack)) 0))
              (right-pos (elt (car stack) 1)))
         (if (null (cdr stack))
@@ -594,15 +585,12 @@ and return the corresponding .annot file."
     (unless (verify-visited-file-modtime buf)
       (if (buffer-modified-p buf)
           (find-file-noselect name)
-        (with-current-buffer buf (revert-buffer t t)))
-      ))
+        (with-current-buffer buf (revert-buffer t t)))))
    ((and (file-readable-p name)
          (setq buf (find-file-noselect name)))
-     (with-current-buffer buf (toggle-read-only 1))
-     )
+     (with-current-buffer buf (toggle-read-only 1)))
    (t
-    (error (format "Can't read the annotation file `%s'" name)))
-    )
+    (error (format "Can't read the annotation file `%s'" name))))
   buf))
 
 (defun caml-types-mouse-ignore (event)
@@ -624,8 +612,7 @@ The function uses two overlays.
  . One overlay delimits the largest region whose all subnodes
    are well-typed.
  . Another overlay delimits the current node under the mouse (whose type
-   annotation is being displayed).
-"
+   annotation is being displayed)."
   (interactive "e")
   (set-buffer (window-buffer (caml-event-window event)))
   (let* ((target-buf (current-buffer))
@@ -638,8 +625,7 @@ The function uses two overlays.
          target-tree
          (speed 100)
          (last-time (caml-types-time))
-         (original-event event)
-         )
+         (original-event event))
     (select-window window)
     (unwind-protect
         (progn
@@ -665,15 +651,13 @@ The function uses two overlays.
                           (top (nth 1 win))
                           (bottom (- (nth 3 win) 1))
                           mouse
-                          time
-                          )
+                          time)
                      (while (and
                              (caml-sit-for 0 (/ 500 speed))
                              (setq time (caml-types-time))
                              (> (- time last-time) (/ 500 speed))
                              (setq mouse (caml-mouse-vertical-position))
-                             (or (< mouse top) (>= mouse bottom))
-                             )
+                             (or (< mouse top) (>= mouse bottom)))
                        (setq last-time time)
                        (cond
                         ((< mouse top)
@@ -685,10 +669,8 @@ The function uses two overlays.
                          (setq speed (+ 1 (- mouse bottom)))
                          (condition-case nil
                              (scroll-up 1)
-                           (error (message "End of buffer!"))))
-                        )
-                       (setq speed (* speed speed))
-                       )))
+                           (error (message "End of buffer!")))))
+                       (setq speed (* speed speed)))))
                   ;; main action, when the motion is inside the window
                   ;; or on orginal button down event
                   ((or (caml-mouse-movement-p event)
@@ -737,23 +719,15 @@ The function uses two overlays.
                          (setq limits
                                (caml-types-find-interval target-buf
                                                          target-pos node)
-                               type (cdr (assoc "type" (elt node 2))))
-                         ))
-                        )
+                               type (cdr (assoc "type" (elt node 2)))))))
                        (setq mes (format "type: %s" type))
-                       (insert type)
-                       ))
-                   (message mes)
-                   )
-                  )
+                       (insert type)))
+                   (message mes)))
                  ;; we read next event, unless it is nil, and loop back.
-                 (if event (setq event (caml-read-event)))
-                 )
-               )
+                 (if event (setq event (caml-read-event)))))
             ;; delete overlays at end of exploration
             (delete-overlay caml-types-expr-ovl)
-            (delete-overlay caml-types-typed-ovl)
-            ))
+            (delete-overlay caml-types-typed-ovl)))
       ;; When an error occurs, the mouse release event has not been read.
       ;; We could wait for mouse release to prevent execution of
       ;; a binding of mouse release, such as cut or paste.
@@ -763,8 +737,7 @@ The function uses two overlays.
       ;; Not sure it is robust to loop for mouse release after an error
       ;; occured, as is done for exploration.
       ;; So far, we just ignore next event. (Next line also be uncommenting.)
-      (if event (caml-read-event))
-      )))
+      (if event (caml-read-event)))))
 
 (defun caml-types-typed-make-overlay (target-buf pos)
   (interactive "p")
@@ -776,20 +749,17 @@ The function uses two overlays.
         (if (and (equal target-buf (current-buffer))
                  (setq left (caml-types-get-pos target-buf (elt node 0))
                        right (caml-types-get-pos target-buf (elt node 1)))
-                 (<= left pos) (> right pos)
-                 )
+                 (<= left pos) (> right pos))
             (setq start (min start left)
-                  end (max end right))
-             ))
+                  end (max end right))))
       (move-overlay caml-types-typed-ovl
                     (max (point-min) (- start 1))
                     (min (point-max) (+ end 1)) target-buf)
     (cons start end)))
 
 (defun caml-types-version ()
-  "internal version number of caml-types.el"
+  "Internal version number of caml-types.el."
   (interactive)
-  (message "4")
-)
+  (message "4"))
 
 (provide 'caml-types)
