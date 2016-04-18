@@ -398,7 +398,7 @@ rule token = parse
         else
           COMMENT ("*" ^ s, loc)
       }
-  | "(**" ('*'+) as stars
+  | "(**" (('*'+) as stars)
       { let s, loc =
           with_comment_buffer
             (fun lexbuf ->
@@ -412,8 +412,8 @@ rule token = parse
           Location.prerr_warning (Location.curr lexbuf) Warnings.Comment_start;
         let s, loc = with_comment_buffer comment lexbuf in
         COMMENT (s, loc) }
-  | "(*" ('*'*) as stars "*)"
-      { if !handle_docstrings && stars="(*" then
+  | "(*" (('*'*) as stars) "*)"
+      { if !handle_docstrings && stars="" then
          (* (**) is an empty docstring *)
           DOCSTRING(Docstrings.docstring "" (Location.curr lexbuf))
         else
