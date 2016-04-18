@@ -96,11 +96,7 @@ directive.
 .TP
 .BI \-init \ file
 Load the given file instead of the default initialization file.
-The default file is
-.B .ocamlinit
-in the current directory if it exists, otherwise
-.B .ocamlinit
-in the user's home directory.
+See the "Initialization file" section below.
 .TP
 .B \-labels
 Labels are not ignored in types, labels may be used in applications,
@@ -116,6 +112,10 @@ incompatible structures.
 Do not compile assertion checks.  Note that the special form
 .B assert\ false
 is always compiled because it is typed specially.
+.TP
+.B \-noinit
+Do not load any initialization file.
+See the "Initialization file" section below.
 .TP
 .B \-nolabels
 Ignore non-optional labels in types. Labels cannot be used in
@@ -237,6 +237,26 @@ as a script file name, even when it starts with a hyphen (-).
 .TP
 .BR \-help \ or \ \-\-help
 Display a short usage summary and exit.
+
+.SH INITIALIZATION FILE
+
+When
+.BR ocaml (1)
+is invoked, it will read phrases from an initialization file before
+giving control to the user. The default file is
+.B .ocamlinit
+in the current directory if it exists, otherwise
+.B .ocamlinit
+in the user's home directory. You can specify a different initialization file
+by using the
+.BI \-init \ file
+option, and disable initialization files by using the
+.B \-noinit
+option.
+
+Note that you can also use the
+.B #use
+directive to read phrases from a file.
 
 .SH ENVIRONMENT VARIABLES
 .TP
