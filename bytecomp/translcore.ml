@@ -1344,7 +1344,7 @@ and transl_record env all_labels repres lbl_expr_list opt_init_expr =
 and transl_match e arg pat_expr_list exn_pat_expr_list partial =
   let id = name_pattern "exn" exn_pat_expr_list
   and cases = transl_cases pat_expr_list
-  and exn_cases = transl_cases exn_pat_expr_list in
+  and exn_cases = transl_cases_try exn_pat_expr_list in
   let static_catch body val_ids handler =
     let static_exception_id = next_negative_raise_count () in
     Lstaticcatch
