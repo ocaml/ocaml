@@ -755,7 +755,7 @@ void caml_major_collection_slice (intnat howmuch)
   }
 
   if (caml_gc_phase == Phase_mark || caml_gc_phase == Phase_clean){
-    computed_work = (intnat) (p * (caml_stat_heap_wsz * 250
+    computed_work = (intnat) (p * ((double) caml_stat_heap_wsz * 250
                                    / (100 + caml_percent_free)
                                    + caml_incremental_roots_count));
   }else{
