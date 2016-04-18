@@ -1558,8 +1558,9 @@ and store_type_infos slot id path info env renv =
 and store_extension ~check slot id path ext env renv =
   let loc = ext.ext_loc in
   if check && not loc.Location.loc_ghost &&
-    Warnings.is_active (Warnings.Unused_extension ("", false, false))
+    Warnings.is_active (Warnings.Unused_extension ("", false, false, false))
   then begin
+    let is_exception = Path.same ext.ext_type_path Predef.path_exn in
     let ty = Path.last ext.ext_type_path in
     let n = Ident.name id in
     let k = (ty, loc, n) in
@@ -1571,7 +1572,7 @@ and store_extension ~check slot id path ext env renv =
           if not (is_in_signature env) && not used.cu_positive then
             Location.prerr_warning loc
               (Warnings.Unused_extension
-                 (n, used.cu_pattern, used.cu_privatize)
+                 (n, is_exception, used.cu_pattern, used.cu_privatize)
               )
         )
     end;

@@ -13,6 +13,12 @@ OCaml 4.04.0:
 - PR#7023, GPR#336: Better unboxing strategy
   (Alain Frisch, Pierre Chambart)
 
+### Language tooling and user interface
+
+- PR#7139: clarify the wording of Warning 38
+  (Unused exception or extension constructor)
+  (Gabriel Scherer)
+
 ### Tools:
 
 - GPR#452: Make the output of ocamldep is more stable
