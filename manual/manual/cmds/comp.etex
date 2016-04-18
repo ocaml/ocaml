@@ -753,8 +753,8 @@ command line, and possibly the "-custom" option.
 
 This section describes and explains in detail some warnings:
 
-\begin{options}
-\item[Warning 52: fragile constant pattern]
+\subsection{Warning 52: fragile constant pattern}
+\label{ss:warn52}
 
   Some constructors, such as the exception constructors "Failure" and
   "Invalid_argument", take as parameter a "string" value holding
@@ -835,7 +835,9 @@ match int_of_string count_str with
     end
 \end{verbatim}
 
-\item[Warning 57: Ambiguous or-pattern variables under guard]
+\subsection{Warning 57: Ambiguous or-pattern variables under guard}
+\label{ss:warn57}
+
   The semantics of or-patterns in OCaml is specified with
   a left-to-right bias: a value \var{v} matches the pattern \var{p} "|" \var{q}
   if it matches \var{p} or \var{q}, but if it matches both,
@@ -874,4 +876,3 @@ match int_of_string count_str with
  semantics (any branch can be taken) relatively to a specific guard.
  More precisely, it warns when guard uses ``ambiguous'' variables, that are bound
  to different parts of the scrutinees by different sides of a or-pattern.
-\end{options}
