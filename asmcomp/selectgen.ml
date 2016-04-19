@@ -117,14 +117,19 @@ let join opt_r1 seq1 opt_r2 seq2 =
       assert (l1 = Array.length r2);
       let r = Array.make l1 Reg.dummy in
       for i = 0 to l1-1 do
-        if Reg.anonymous r1.(i) then begin
+        if Reg.anonymous r1.(i)
+          && Cmm.ge_component r1.(i).typ r2.(i).typ
+        then begin
           r.(i) <- r1.(i);
           seq2#insert_move r2.(i) r1.(i)
-        end else if Reg.anonymous r2.(i) then begin
+        end else if Reg.anonymous r2.(i)
+          && Cmm.ge_component r2.(i).typ r1.(i).typ
+        then begin
           r.(i) <- r2.(i);
           seq1#insert_move r1.(i) r2.(i)
         end else begin
-          r.(i) <- Reg.create r1.(i).typ;
+          let typ = Cmm.lub_component r1.(i).typ r2.(i).typ in
+          r.(i) <- Reg.create typ;
           seq1#insert_move r1.(i) r.(i);
           seq2#insert_move r2.(i) r.(i)
         end

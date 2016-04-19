@@ -1006,6 +1006,11 @@ Features wishes:
   GNU parallel tool to run tests in parallel.
   (Gabriel Scherer)
 
+- GPR#555: ensure that register typing constraints are respected at
+  join points in the control flow graph
+  (Mark Shinwell, debugging & test case by Arseniy Alekseyev and Leo White,
+    code review by Xavier Leroy)
+
 Build system:
 =============
 
