@@ -1,4 +1,4 @@
-type +'a n = private int 
+type +'a n = private int
 type nil = private Nil_type
 type (_,_) elt =
   | Elt_fine: 'nat n -> ('l,'nat * 'l) elt
