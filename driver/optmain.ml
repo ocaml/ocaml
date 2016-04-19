@@ -158,7 +158,9 @@ module Options = Main_args.Make_optcomp_options (struct
   let _inline_max_depth spec =
     Int_arg_helper.parse spec ~update:inline_max_depth
       ~help_text:"Syntax: -inline-max-depth <n> | <round>=<n>[,...]"
+  let _alias_deps = clear transparent_modules
   let _no_alias_deps = set transparent_modules
+  let _app_funct = set applicative_functors
   let _no_app_funct = clear applicative_functors
   let _no_float_const_prop = clear float_const_prop
   let _noassert = set noassert
