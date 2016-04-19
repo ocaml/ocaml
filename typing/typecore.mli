@@ -153,3 +153,5 @@ val create_package_type : Location.t -> Env.t ->
   Path.t * (Longident.t * Typedtree.core_type) list * Types.type_expr
 
 val constant: Parsetree.constant -> (Asttypes.constant, error) result
+
+val check_recursive_bindings : Env.t -> Typedtree.value_binding list -> unit

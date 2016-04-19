@@ -1183,6 +1183,9 @@ and class_expr_aux cl_num val_env met_env scl =
           ([], met_env)
       in
       let cl = class_expr cl_num val_env met_env scl' in
+      let () = if rec_flag = Recursive then
+        check_recursive_bindings val_env defs
+      in
       rc {cl_desc = Tcl_let (rec_flag, defs, vals, cl);
           cl_loc = scl.pcl_loc;
           cl_type = cl.cl_type;
