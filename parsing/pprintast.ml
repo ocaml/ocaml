@@ -1053,10 +1053,10 @@ class printer  ()= object(self:'self)
     | ( _ , Ppat_constraint( p ,ty)) -> (* special case for the first*)
         (match ty.ptyp_desc with
         | Ptyp_poly _ ->
-            pp f "%a@;:@;%a=@;%a" self#simple_pattern p
+            pp f "%a@;:@;%a@;=@;%a" self#simple_pattern p
               self#core_type ty self#expression x
         | _ ->
-            pp f "(%a@;:%a)=@;%a" self#simple_pattern p
+            pp f "(%a@;:@;%a)@;=@;%a" self#simple_pattern p
               self#core_type ty self#expression x)
     | Pexp_constraint (e,t1),Ppat_var {txt;_} ->
         pp f "%a@;:@ %a@;=@;%a" protect_ident txt self#core_type t1
