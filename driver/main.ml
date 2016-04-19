@@ -105,7 +105,9 @@ module Options = Main_args.Make_bytecomp_options (struct
   let _linkall = set link_everything
   let _make_runtime () =
     custom_runtime := true; make_runtime := true; link_everything := true
+  let _alias_deps = unset transparent_modules
   let _no_alias_deps = set transparent_modules
+  let _app_funct = set applicative_functors
   let _no_app_funct = unset applicative_functors
   let _noassert = set noassert
   let _nolabels = set classic
