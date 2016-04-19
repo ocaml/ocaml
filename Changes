@@ -9,6 +9,12 @@ Language features:
 - GPR#301: local exception declarations "let exception ... in"
   (Alain Frisch)
 
+Compilers:
+==========
+
+- PR#7023, GPR#336: Better unboxing strategy
+  (Alain Frisch, Pierre Chambart)
+
 Tools:
 ======
 
@@ -255,6 +261,9 @@ Compilers:
   metadata generation. Was a cause of crashes in GUI programs on OS X.
   (Bart Jacobs, review by Mark Shinwell)
 
+- PR#7168: Exceeding stack limit in bytecode can lead to a crash.
+  (Jacques-Henri Jourdan)
+
 - GPR#17: some cmm optimizations of integer operations with constants
   (Stephen Dolan, review by Pierre Chambart)
 
@@ -275,6 +284,9 @@ Compilers:
 
 - GPR#132: Flambda: new intermediate language and "middle-end" optimizers
   (Pierre Chambart, Mark Shinwell, Leo White)
+
+- GPR#212, PR#7226, GPR#542: emit column position in gas assembly `.loc`
+  (Frédéric Bour, Anton Bachin)
 
 - GPR#207: Colors in compiler messages (warnings, errors)
   configure with -color {auto|always|never} or TERM=dumb
@@ -324,6 +336,16 @@ Compilers:
 
 - GPR#455: provide more debugging information to Js_of_ocaml
   (Jérôme Vouillon)
+
+- GPR#514: Added several command-line flags to explicitly enable
+  settings that are currently the default:
+  `-no-keep-docs`, `-no-keep-locs`, `-no-principal`,
+  `-no-rectypes`, `-no-strict-formats`
+  (Demi Obenour)
+
+- GPR#545: use reraise to preserve backtrace on
+  `match .. with exception e -> raise e`
+  (Nicolas Ojeda Bar, review by Gabriel Scherer)
 
 Runtime system:
 ===============
@@ -528,6 +550,9 @@ Toplevel and debugger:
   (whitequark and Jake Donham,
    review by Gabriel Scherer and Jacques-Henri Jourdan)
 
+- PR#6906: wrong error location for unmatched paren with #use in toplevel
+  (Damien Doligez, report by Kenichi Asai)
+
 - PR#6935, GPR#298: crash in debugger when load_printer is given a directory
   (Junsong Li, review by Gabriel Scherer)
 
@@ -604,6 +629,9 @@ Manual:
   subdirectory of the main OCaml source repository. Contributions to
   the manual are warmly welcome.
   (François Bobot, review by Florian Angeletti)
+
+- PR#6601: replace strcpy with caml_strdup in sample code
+  (Christopher Zimmermann)
 
 - PR#6676: ongoing simplification of the "Language Extensions" section
   (Alain Frisch, John Whitington)
@@ -855,6 +883,15 @@ Bug fixes:
 
 - PR#7182: Assertion failure with recursive modules and externals
   (Jacques Garrigue, report by Jeremy Yallop)
+
+- PR#7214: Assertion failure in Env.add_gadt_instances
+  (Jacques Garrigue, report by Stephen Dolan)
+
+- PR#7220: fix a memory leak when using both threads and exception backtraces
+  (Gabriel Scherer, review by François Bobot, report by Rob Hoes)
+
+- PR#7222: Escaped existential type
+  (Jacques Garrigue, report by Florian Angeletti)
 
 - GPR#205: Clear caml_backtrace_last_exn before registering as root
   (report and fix by Frederic Bour)

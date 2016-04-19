@@ -51,7 +51,7 @@ type primitive =
   | Pgetglobal of Ident.t
   | Psetglobal of Ident.t
   (* Operations on heap blocks *)
-  | Pmakeblock of int * mutable_flag
+  | Pmakeblock of int * mutable_flag * block_shape
   | Pfield of int
   | Psetfield of int * immediate_or_pointer * initialization_or_assignment
   | Pfloatfield of int
@@ -143,6 +143,12 @@ type primitive =
 and comparison =
     Ceq | Cneq | Clt | Cgt | Cle | Cge
 
+and value_kind =
+    Pgenval | Pfloatval | Pboxedintval of boxed_integer | Pintval
+
+and block_shape =
+  value_kind list option
+
 and array_kind =
     Pgenarray | Paddrarray | Pintarray | Pfloatarray
 
@@ -205,7 +211,7 @@ type lambda =
   | Lconst of structured_constant
   | Lapply of lambda_apply
   | Lfunction of lfunction
-  | Llet of let_kind * Ident.t * lambda * lambda
+  | Llet of let_kind * value_kind * Ident.t * lambda * lambda
   | Lletrec of (Ident.t * lambda) list * lambda
   | Lprim of primitive * lambda list
   | Lswitch of lambda * lambda_switch
@@ -300,14 +306,14 @@ let make_key e =
         Lapply {ap with ap_func = tr_rec env ap.ap_func;
                         ap_args = tr_recs env ap.ap_args;
                         ap_loc = Location.none}
-    | Llet (Alias,x,ex,e) -> (* Ignore aliases -> substitute *)
+    | Llet (Alias,_k,x,ex,e) -> (* Ignore aliases -> substitute *)
         let ex = tr_rec env ex in
         tr_rec (Ident.add x ex env) e
-    | Llet (str,x,ex,e) ->
+    | Llet (str,k,x,ex,e) ->
      (* Because of side effects, keep other lets with normalized names *)
         let ex = tr_rec env ex in
         let y = make_key x in
-        Llet (str,y,ex,tr_rec (Ident.add x (Lvar y) env) e)
+        Llet (str,k,y,ex,tr_rec (Ident.add x (Lvar y) env) e)
     | Lprim (p,es) ->
         Lprim (p,tr_recs env es)
     | Lswitch (e,sw) ->
@@ -360,7 +366,7 @@ let make_key e =
 let name_lambda strict arg fn =
   match arg with
     Lvar id -> fn id
-  | _ -> let id = Ident.create "let" in Llet(strict, id, arg, fn id)
+  | _ -> let id = Ident.create "let" in Llet(strict, Pgenval, id, arg, fn id)
 
 let name_lambda_list args fn =
   let rec name_list names = function
@@ -369,7 +375,7 @@ let name_lambda_list args fn =
       name_list (arg :: names) rem
   | arg :: rem ->
       let id = Ident.create "let" in
-      Llet(Strict, id, arg, name_list (Lvar id :: names) rem) in
+      Llet(Strict, Pgenval, id, arg, name_list (Lvar id :: names) rem) in
   name_list [] args
 
 
@@ -384,7 +390,7 @@ let iter f = function
       f fn; List.iter f args
   | Lfunction{body} ->
       f body
-  | Llet(_str, _id, arg, body) ->
+  | Llet(_str, _k, _id, arg, body) ->
       f arg; f body
   | Lletrec(decl, body) ->
       f body;
@@ -438,7 +444,7 @@ let free_ids get l =
     match l with
       Lfunction{params} ->
         List.iter (fun param -> fv := IdentSet.remove param !fv) params
-    | Llet(_str, id, _arg, _body) ->
+    | Llet(_str, _k, id, _arg, _body) ->
         fv := IdentSet.remove id !fv
     | Lletrec(decl, _body) ->
         List.iter (fun (id, _exp) -> fv := IdentSet.remove id !fv) decl
@@ -480,15 +486,15 @@ let staticfail = Lstaticraise (0,[])
 
 let rec is_guarded = function
   | Lifthenelse(_cond, _body, Lstaticraise (0,[])) -> true
-  | Llet(_str, _id, _lam, body) -> is_guarded body
+  | Llet(_str, _k, _id, _lam, body) -> is_guarded body
   | Levent(lam, _ev) -> is_guarded lam
   | _ -> false
 
 let rec patch_guarded patch = function
   | Lifthenelse (cond, body, Lstaticraise (0,[])) ->
       Lifthenelse (cond, body, patch)
-  | Llet(str, id, lam, body) ->
-      Llet (str, id, lam, patch_guarded patch body)
+  | Llet(str, k, id, lam, body) ->
+      Llet (str, k, id, lam, patch_guarded patch body)
   | Levent(lam, ev) ->
       Levent (patch_guarded patch lam, ev)
   | _ -> fatal_error "Lambda.patch_guarded"
@@ -532,7 +538,7 @@ let subst_lambda s lam =
                      ap_args = List.map subst ap.ap_args}
   | Lfunction{kind; params; body; attr} ->
       Lfunction{kind; params; body = subst body; attr}
-  | Llet(str, id, arg, body) -> Llet(str, id, subst arg, subst body)
+  | Llet(str, k, id, arg, body) -> Llet(str, k, id, subst arg, subst body)
   | Lletrec(decl, body) -> Lletrec(List.map subst_decl decl, subst body)
   | Lprim(p, args) -> Lprim(p, List.map subst args)
   | Lswitch(arg, sw) ->
@@ -580,8 +586,8 @@ let rec map f lam =
         }
     | Lfunction { kind; params; body; attr; } ->
         Lfunction { kind; params; body = map f body; attr; }
-    | Llet (str, v, e1, e2) ->
-        Llet (str, v, map f e1, map f e2)
+    | Llet (str, k, v, e1, e2) ->
+        Llet (str, k, v, map f e1, map f e2)
     | Lletrec (idel, e2) ->
         Lletrec (List.map (fun (v, e) -> (v, map f e)) idel, map f e2)
     | Lprim (p, el) ->
@@ -629,7 +635,7 @@ let rec map f lam =
 let bind str var exp body =
   match exp with
     Lvar var' when Ident.same var var' -> body
-  | _ -> Llet(str, var, exp, body)
+  | _ -> Llet(str, Pgenval, var, exp, body)
 
 and commute_comparison = function
 | Ceq -> Ceq| Cneq -> Cneq

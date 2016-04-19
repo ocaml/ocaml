@@ -18,6 +18,8 @@ include ../config/Makefile
 CAMLRUN ?= ../boot/ocamlrun
 CAMLYACC ?= ../boot/ocamlyacc
 
+ROOTDIR=..
+
 ifeq "$(wildcard $(ROOTDIR)/flexdll/Makefile)" ""
 export OCAML_FLEXLINK:=
 else
@@ -47,7 +49,7 @@ ocamllex.opt: $(OBJS:.cmo=.cmx)
 
 clean::
 	rm -f ocamllex ocamllex.opt
-	rm -f *.cmo *.cmi *.cmx *.cmt *.cmti *.o *~
+	rm -f *.cmo *.cmi *.cmx *.cmt *.cmti *.$(O) *~
 
 parser.ml parser.mli: parser.mly
 	$(CAMLYACC) $(YACCFLAGS) parser.mly
@@ -78,6 +80,6 @@ beforedepend:: lexer.ml
 	$(CAMLOPT) -c $(COMPFLAGS) $<
 
 depend: beforedepend
-	$(CAMLDEP) *.mli *.ml > .depend
+	$(CAMLDEP) -slash *.mli *.ml > .depend
 
 include .depend

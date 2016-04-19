@@ -132,5 +132,5 @@ include .depend
 # .p.cmx files.  When the compiler imports another compilation unit,
 # it looks for the .cmx file (not .p.cmx).
 depend:
-	$(CAMLDEP) *.mli *.ml > .depend
-	$(CAMLDEP) *.ml | sed -e 's/\.cmx : /.p.cmx : /g' >>.depend
+	$(CAMLDEP) -slash *.mli *.ml > .depend
+	$(CAMLDEP) -slash *.ml | sed -e 's/\.cmx : /.p.cmx : /g' >>.depend

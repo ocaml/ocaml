@@ -18,7 +18,7 @@
    Ref: http://caml.inria.fr/mantis/view.php?id=4800
 *)
 
-let () =
+let f () =
   let x0 = Gc.allocated_bytes () in
   let x1 = Gc.allocated_bytes () in
 
@@ -38,3 +38,6 @@ let () =
   print_int !r;
   assert (!r = 82);
   assert(x1 -. x0 = x2 -. x1) (* check no allocation between x1 and x2 *)
+  [@@inline never]
+
+let () = f ()

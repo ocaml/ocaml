@@ -73,6 +73,13 @@ Display a short usage summary and exit.
 %
 \end{options}
 
+\subsection{Initialization file}
+
+On start-up, the debugger will read commands from an initialization
+file before giving control to the user. The default file is
+".ocamldebug" in the current directory if it exists, otherwise
+".ocamldebug" in the user's home directory.
+
 \subsection{Exiting the debugger}
 
 The command "quit" exits the debugger. You can also exit the debugger

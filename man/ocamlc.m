@@ -193,7 +193,7 @@ linking with this library automatically adds back the
 .BR \-custom , \ \-cclib \ and \ \-ccopt
 options as if they had been provided on the
 command line, unless the
-.B -noautolink
+.B \-noautolink
 option is given. Additionally, a substring
 .B $CAMLORIGIN
 inside a

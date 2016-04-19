@@ -81,7 +81,7 @@ all-%: lib tools
 # but the demangling separation is arguably nicer behavior that we might
 # want to implement at the exec-one level to also have it in the 'all' target.
 .PHONY: parallel-%
-parallel-%: lib
+parallel-%: lib tools
 	@echo | parallel >/dev/null 2>/dev/null \
 	 || (echo "Unable to run the GNU parallel tool;";\
 	     echo "You should install it before using the parallel* targets.";\
