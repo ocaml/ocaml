@@ -99,7 +99,7 @@ module Make (H : Hashtbl.HashedType) : (S with type data = H.t) = struct
     done;
     t.limit <- limit;
     t.oversize <- 0
-  
+
 
   let fold f t init =
     let rec fold_bucket i b accu =
@@ -109,7 +109,7 @@ module Make (H : Hashtbl.HashedType) : (S with type data = H.t) = struct
       | None -> fold_bucket (i+1) b accu
     in
     Array.fold_right (fold_bucket 0) t.table init
-  
+
 
   let iter f t =
     let rec iter_bucket i b =
@@ -119,7 +119,7 @@ module Make (H : Hashtbl.HashedType) : (S with type data = H.t) = struct
       | None -> iter_bucket (i+1) b
     in
     Array.iter (iter_bucket 0) t.table
-  
+
 
   let iter_weak f t =
     let rec iter_bucket i j b =
@@ -129,16 +129,16 @@ module Make (H : Hashtbl.HashedType) : (S with type data = H.t) = struct
       | false -> iter_bucket (i+1) j b
     in
     Array.iteri (iter_bucket 0) t.table
-  
+
 
   let rec count_bucket i b accu =
     if i >= length b then accu else
     count_bucket (i+1) b (accu + (if check b i then 1 else 0))
-  
+
 
   let count t =
     Array.fold_right (count_bucket 0) t.table 0
-  
+
 
   let next_sz n = min (3 * n / 2 + 3) Sys.max_array_length
   let prev_sz n = ((n - 3) * 2 + 2) / 3
@@ -171,7 +171,7 @@ module Make (H : Hashtbl.HashedType) : (S with type data = H.t) = struct
       if len > t.limit && prev_len <= t.limit then t.oversize <- t.oversize - 1;
     end;
     t.rover <- (t.rover + 1) mod (Array.length t.table)
-  
+
 
   let rec resize t =
     let oldlen = Array.length t.table in
@@ -223,12 +223,12 @@ module Make (H : Hashtbl.HashedType) : (S with type data = H.t) = struct
       end;
     in
     loop 0
-  
+
 
   let add t d =
     let h = H.hash d in
     add_aux t set (Some d) h (get_index t h)
-  
+
 
   let find_or t d ifnotfound =
     let h = H.hash d in
@@ -249,11 +249,11 @@ module Make (H : Hashtbl.HashedType) : (S with type data = H.t) = struct
       end else loop (i + 1)
     in
     loop 0
-  
+
 
   let merge t d =
     find_or t d (fun h index -> add_aux t set (Some d) h index; d)
-  
+
 
   let find t d = find_or t d (fun h index -> raise Not_found)
 
@@ -272,7 +272,7 @@ module Make (H : Hashtbl.HashedType) : (S with type data = H.t) = struct
       end else loop (i + 1)
     in
     loop 0
-  
+
 
   let remove t d = find_shadow t d (fun w i -> set w i None) ()
 
@@ -297,7 +297,7 @@ module Make (H : Hashtbl.HashedType) : (S with type data = H.t) = struct
       end else loop (i + 1) accu
     in
     loop 0 []
-  
+
 
   let stats t =
     let len = Array.length t.table in
@@ -305,6 +305,6 @@ module Make (H : Hashtbl.HashedType) : (S with type data = H.t) = struct
     Array.sort compare lens;
     let totlen = Array.fold_left ( + ) 0 lens in
     (len, count t, totlen, lens.(0), lens.(len/2), lens.(len-1))
-  
+
 
 end

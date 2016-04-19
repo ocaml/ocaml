@@ -231,4 +231,3 @@ and dump_data : type v. (v -> unit) -> v data -> unit = fun f ->
   | Slazy _ -> print_string "Slazy"
   | Sgen _ -> print_string "Sgen"
   | Sbuffio b -> print_string "Sbuffio"
-

@@ -22,7 +22,8 @@ CAMLYACC ?= $(ROOTDIR)/boot/ocamlyacc
 
 # Compilation options
 CC=$(BYTECC)
-COMPFLAGS=-w +33..39+50 -warn-error A -bin-annot -g -safe-string $(EXTRACAMLFLAGS)
+COMPFLAGS=-w +33..39+50 -warn-error A -bin-annot -g -safe-string \
+          $(EXTRACAMLFLAGS)
 ifeq "$(FLAMBDA)" "true"
 OPTCOMPFLAGS=-O3
 else

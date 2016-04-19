@@ -147,7 +147,7 @@ module Scanning : SCANNING = struct
     | From_file of file_name * Pervasives.in_channel
     | From_function
     | From_string
-  
+
 
   type in_channel = {
     mutable ic_eof : bool;
@@ -160,7 +160,7 @@ module Scanning : SCANNING = struct
     ic_token_buffer : Buffer.t;
     ic_input_name : in_channel_name;
   }
-  
+
 
   type scanbuf = in_channel
 
@@ -183,13 +183,13 @@ module Scanning : SCANNING = struct
       ib.ic_current_char_is_valid <- false;
       ib.ic_eof <- true;
       c
-  
+
 
   let peek_char ib =
     if ib.ic_current_char_is_valid
     then ib.ic_current_char
     else next_char ib
-  
+
 
   (* Returns a valid current char for the input buffer. In particular
      no irrelevant null character (as set by [next_char] in case of end
@@ -200,12 +200,12 @@ module Scanning : SCANNING = struct
     let c = peek_char ib in
     if ib.ic_eof then raise End_of_file;
     c
-  
+
 
   let end_of_input ib =
     ignore (peek_char ib);
     ib.ic_eof
-  
+
 
   let eof ib = ib.ic_eof
 
@@ -217,13 +217,13 @@ module Scanning : SCANNING = struct
     | From_file (fname, _ic) -> fname
     | From_function -> "unnamed function"
     | From_string -> "unnamed character string"
-  
+
 
   let char_count ib =
     if ib.ic_current_char_is_valid
     then ib.ic_char_count - 1
     else ib.ic_char_count
-  
+
 
   let line_count ib = ib.ic_line_count
 
@@ -237,21 +237,21 @@ module Scanning : SCANNING = struct
     Buffer.clear token_buffer;
     ib.ic_token_count <- succ ib.ic_token_count;
     tok
-  
+
 
   let token_count ib = ib.ic_token_count
 
   let skip_char width ib =
     invalidate_current_char ib;
     width
-  
+
 
   let ignore_char width ib = skip_char (width - 1) ib
 
   let store_char width ib c =
     Buffer.add_char ib.ic_token_buffer c;
     ignore_char width ib
-  
+
 
   let default_token_buffer_size = 1024
 
@@ -266,7 +266,7 @@ module Scanning : SCANNING = struct
     ic_token_buffer = Buffer.create default_token_buffer_size;
     ic_input_name = iname;
   }
-  
+
 
   let from_string s =
     let i = ref 0 in
@@ -277,7 +277,7 @@ module Scanning : SCANNING = struct
       incr i;
       c in
     create From_string next
-  
+
 
   let from_function = create From_function
 
@@ -347,7 +347,7 @@ module Scanning : SCANNING = struct
         end
       end in
     create iname next
-  
+
 
   let from_ic_close_at_end = from_ic scan_close_at_end
   let from_ic_raise_at_end = from_ic scan_raise_at_end
@@ -370,7 +370,7 @@ module Scanning : SCANNING = struct
   let stdin =
     from_ic scan_raise_at_end
       (From_file ("-", Pervasives.stdin)) Pervasives.stdin
-  
+
 
   let stdib = stdin
 
@@ -380,7 +380,7 @@ module Scanning : SCANNING = struct
     | fname ->
       let ic = open_in fname in
       from_ic_close_at_end (From_file (fname, ic)) ic
-  
+
 
   let open_in = open_in_file Pervasives.open_in
   let open_in_bin = open_in_file Pervasives.open_in_bin
@@ -390,7 +390,7 @@ module Scanning : SCANNING = struct
 
   let from_channel ic =
     from_ic_raise_at_end (From_channel ic) ic
-  
+
 
   let close_in ib =
     match ib.ic_input_name with
@@ -398,7 +398,7 @@ module Scanning : SCANNING = struct
       Pervasives.close_in ic
     | From_file (_fname, ic) -> Pervasives.close_in ic
     | From_function | From_string -> ()
-  
+
 
   (*
      Obsolete: a memo [from_channel] version to build a [Scanning.in_channel]
@@ -424,7 +424,7 @@ module Scanning : SCANNING = struct
          from_ic scan_close_ic (From_channel ic) ic in
        memo := (ic, ib) :: !memo;
        ib)
-  
+
 
   (* Obsolete: see {!memo_from_ic} above. *)
   let memo_from_channel = memo_from_ic scan_raise_at_end

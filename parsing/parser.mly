@@ -1230,7 +1230,8 @@ class_sig_field:
       { mkctf (Pctf_inherit $3) ~attrs:($2@$4) ~docs:(symbol_docs ()) }
   | VAL attributes value_type post_item_attributes
       { mkctf (Pctf_val $3) ~attrs:($2@$4) ~docs:(symbol_docs ()) }
-  | METHOD attributes private_virtual_flags label COLON poly_type post_item_attributes
+  | METHOD attributes private_virtual_flags label COLON poly_type
+    post_item_attributes
       {
        let (p, v) = $3 in
        mkctf (Pctf_method ($4, p, v, $6)) ~attrs:($2@$7) ~docs:(symbol_docs ())

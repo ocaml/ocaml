@@ -63,4 +63,3 @@ let force_val (lzv : 'arg lazy_t) =
   if t = Obj.forward_tag then (Obj.obj (Obj.field x 0) : 'arg) else
   if t <> Obj.lazy_tag then (Obj.obj x : 'arg)
   else force_val_lazy_block lzv
-

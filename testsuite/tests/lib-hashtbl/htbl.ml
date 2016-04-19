@@ -256,7 +256,9 @@ let () =
   let h = Hashtbl.create 16 in
   for i = 1 to 1000 do Hashtbl.add h i (i * 2) done;
   Printf.printf "%i elements\n" (Hashtbl.length h);
-  Hashtbl.filter_map_inplace (fun k v -> if k mod 100 = 0 then ((*Hashtbl.add h v v;*) Some (v / 100)) else None) h;
+  Hashtbl.filter_map_inplace (fun k v ->
+      if k mod 100 = 0 then ((*Hashtbl.add h v v;*) Some (v / 100)) else None)
+    h;
   let l = Hashtbl.fold (fun k v acc -> (k, v) :: acc) h [] in
   let l = List.sort compare l in
   List.iter (fun (k, v) -> Printf.printf "%i,%i\n" k v) l;

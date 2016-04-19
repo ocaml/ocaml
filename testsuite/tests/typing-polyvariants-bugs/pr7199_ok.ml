@@ -11,4 +11,3 @@ module Make(T : S) = struct
    T.bar x;
    (x :> [`A | `C] T.t)
 end
-

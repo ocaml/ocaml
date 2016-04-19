@@ -229,4 +229,3 @@ let flush_input lb =
   lb.lex_abs_pos <- 0;
   lb.lex_curr_p <- {lb.lex_curr_p with pos_cnum = 0};
   lb.lex_buffer_len <- 0;
-

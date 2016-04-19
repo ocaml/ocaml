@@ -1081,7 +1081,8 @@ let establish_server server_fun sockaddr =
     (* The "double fork" trick, the process which calls server_fun will not
        leave a zombie process *)
     match fork() with
-       0 -> if fork() <> 0 then sys_exit 0; (* The son exits, the grandson works *)
+       0 -> if fork() <> 0 then sys_exit 0;
+                                (* The son exits, the grandson works *)
             close sock;
             ignore(try_set_close_on_exec s);
             let inchan = in_channel_of_descr s in
