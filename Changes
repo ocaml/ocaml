@@ -255,6 +255,9 @@ Compilers:
 - PR#7168: Exceeding stack limit in bytecode can lead to a crash.
   (Jacques-Henri Jourdan)
 
+- PR#7232: Strange Pprintast output with ppx_deriving
+  (Damien Doligez, report by Anton Bachin)
+
 - GPR#17: some cmm optimizations of integer operations with constants
   (Stephen Dolan, review by Pierre Chambart)
 
