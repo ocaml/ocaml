@@ -268,9 +268,18 @@ let mk_modern f =
   "-modern", Arg.Unit f, " (deprecated) same as -labels"
 ;;
 
+let mk_alias_deps f =
+  "-alias-deps", Arg.Unit f,
+  " Do record dependencies for module aliases"
+;;
+
 let mk_no_alias_deps f =
   "-no-alias-deps", Arg.Unit f,
   " Do not record dependencies for module aliases"
+;;
+
+let mk_app_funct f =
+  "-app-funct", Arg.Unit f, " Activate applicative functors"
 ;;
 
 let mk_no_app_funct f =
@@ -696,7 +705,9 @@ module type Common_options = sig
   val _absname : unit -> unit
   val _I : string -> unit
   val _labels : unit -> unit
+  val _alias_deps : unit -> unit
   val _no_alias_deps : unit -> unit
+  val _app_funct : unit -> unit
   val _no_app_funct : unit -> unit
   val _noassert : unit -> unit
   val _nolabels : unit -> unit
@@ -728,7 +739,7 @@ module type Common_options = sig
   val _dlambda : unit -> unit
 
   val anonymous : string -> unit
-end;;
+end
 
 module type Compiler_options = sig
   val _a : unit -> unit
@@ -888,7 +899,7 @@ module type Ocamldoc_options = sig
   val _v : unit -> unit
   val _verbose : unit -> unit
   val _vmthread : unit -> unit
-end;;
+end
 
 module type Arg_list = sig
     val list : (string * Arg.spec * string) list
@@ -929,7 +940,9 @@ struct
     mk_make_runtime F._make_runtime;
     mk_make_runtime_2 F._make_runtime;
     mk_modern F._labels;
+    mk_alias_deps F._alias_deps;
     mk_no_alias_deps F._no_alias_deps;
+    mk_app_funct F._app_funct;
     mk_no_app_funct F._no_app_funct;
     mk_no_check_prims F._no_check_prims;
     mk_noassert F._noassert;
@@ -991,7 +1004,9 @@ struct
     mk_I F._I;
     mk_init F._init;
     mk_labels F._labels;
+    mk_alias_deps F._alias_deps;
     mk_no_alias_deps F._no_alias_deps;
+    mk_app_funct F._app_funct;
     mk_no_app_funct F._no_app_funct;
     mk_noassert F._noassert;
     mk_noinit F._noinit;
@@ -1072,7 +1087,9 @@ struct
     mk_labels F._labels;
     mk_linkall F._linkall;
     mk_inline_max_depth F._inline_max_depth;
+    mk_alias_deps F._alias_deps;
     mk_no_alias_deps F._no_alias_deps;
+    mk_app_funct F._app_funct;
     mk_no_app_funct F._no_app_funct;
     mk_no_float_const_prop F._no_float_const_prop;
     mk_noassert F._noassert;
@@ -1177,7 +1194,9 @@ module Make_opttop_options (F : Opttop_options) = struct
     mk_inline_lifting_benefit F._inline_lifting_benefit;
     mk_inline_branch_factor F._inline_branch_factor;
     mk_labels F._labels;
+    mk_alias_deps F._alias_deps;
     mk_no_alias_deps F._no_alias_deps;
+    mk_app_funct F._app_funct;
     mk_no_app_funct F._no_app_funct;
     mk_noassert F._noassert;
     mk_noinit F._noinit;
@@ -1253,7 +1272,9 @@ struct
     mk_intf_suffix_2 F._intf_suffix;
     mk_labels F._labels;
     mk_modern F._labels;
+    mk_alias_deps F._alias_deps;
     mk_no_alias_deps F._no_alias_deps;
+    mk_app_funct F._app_funct;
     mk_no_app_funct F._no_app_funct;
     mk_noassert F._noassert;
     mk_nolabels F._nolabels;
