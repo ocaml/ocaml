@@ -575,6 +575,13 @@ Manual:
 - PR#7092, GPR#379: Add missing documentation for new 4.03 features
   (Florian Angeletti)
 
+- PR#7094, GPR#468, GPR#551: add new section 8.5 to document warnings
+  The general idea is to document warnings that may require explanations.
+  Currently documented warnings are:
+  - 52: Fragile constant pattern.
+  - 57: Ambiguous or-pattern variables under guard
+  (Florian Angeletti and Gabriel Scherer)
+
 - PR#7109, GPR#380: Fix bigarray documentation layout
   (Florian Angeletti, Leo White)
 
