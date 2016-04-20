@@ -1726,7 +1726,17 @@ let class_description env sexpr =
   (expr, expr.cltyp_type)
 
 let class_declarations env cls =
-  type_classes true approx_declaration class_declaration env cls
+  let info, env =
+    type_classes true approx_declaration class_declaration env cls
+  in
+  let ids, exprs =
+    List.split
+      (List.map
+         (fun ci -> ci.cls_id, ci.cls_info.ci_expr)
+         info)
+  in
+  check_recursive_class_bindings env ids exprs;
+  info, env
 
 let class_descriptions env cls =
   type_classes true approx_description class_description env cls
