@@ -79,6 +79,7 @@ type error =
   | Unknown_literal of string * char
   | Illegal_letrec_pat
   | Illegal_letrec_expr
+  | Illegal_class_expr
 
 exception Error of Location.t * Env.t * error
 exception Error_forward of Location.error
@@ -1834,14 +1835,16 @@ let rec pattern_variables : Typedtree.pattern -> Ident.t list =
     | Tpat_lazy p ->
         pattern_variables p
 
-(* Check well-formedness of let rec expressions *)
-let check_recursive_expression env idlist expr =
-  let open Rec_context in
+module Rec_check =
+struct
+  open Rec_context
+
   let build_unguarded_env : Ident.t list -> Env.env = fun idlist ->
     List.fold_left
       (fun env id -> Ident.add id (Use.single id Unguarded) env)
       Env.empty
-      idlist in
+      idlist
+
   let rec expression : Env.env -> Typedtree.expression -> Use.t =
     fun env exp -> match exp.exp_desc with
       | Texp_ident (pth, _, _) ->
@@ -2148,20 +2151,44 @@ let check_recursive_expression env idlist expr =
       | Tpat_array _ -> true
       | Tpat_or (l,r,_) -> is_destructuring_pattern l || is_destructuring_pattern r
       | Tpat_lazy _ -> true
-  in
-  let ty = expression (build_unguarded_env idlist) expr in
-  match Use.unguarded ty with
-    [] -> ()
-  | _ :: _ -> raise(Error(expr.exp_loc, env, Illegal_letrec_expr))
+
+  let check_recursive_expression env idlist expr =
+    let ty = expression (build_unguarded_env idlist) expr in
+    match Use.unguarded ty with
+      [] -> ()
+    | _ :: _ -> raise(Error(expr.exp_loc, env, Illegal_letrec_expr))
+
+  let check_class_expr env idlist ce =
+    let rec class_expr : Env.env -> Typedtree.class_expr -> Use.t =
+      fun env ce -> match ce.cl_desc with
+        | Tcl_ident (_, _, _) -> Use.empty
+        | Tcl_structure _ -> Use.empty
+        | Tcl_fun (_, _, _, _, _) -> Use.empty
+        | Tcl_apply (_, _) -> Use.empty
+        | Tcl_let (rec_flag, valbinds, _, ce) ->
+            let _, ty = value_bindings rec_flag env valbinds in
+            Use.join ty (class_expr env ce)
+        | Tcl_constraint (ce, _, _, _, _) ->
+            class_expr env ce
+    in
+    match Use.unguarded (class_expr (build_unguarded_env idlist) ce) with
+    | [] -> ()
+    | _ :: _ -> raise(Error(ce.cl_loc, env, Illegal_class_expr))
+end
 
 let check_recursive_bindings env valbinds =
   let ids = List.concat
       (List.map (fun b -> pattern_variables b.vb_pat) valbinds) in
   List.iter
     (fun {vb_expr} ->
-       check_recursive_expression env ids vb_expr)
+       Rec_check.check_recursive_expression env ids vb_expr)
     valbinds
 
+let check_recursive_class_bindings env ids exprs =
+  List.iter
+    (fun expr ->
+       Rec_check.check_class_expr env ids expr)
+    exprs
 
 (* Approximate the type of an expression, for better recursion *)
 
@@ -4980,7 +5007,8 @@ let report_error env ppf = function
   | Illegal_letrec_expr ->
       fprintf ppf
         "This kind of expression is not allowed as right-hand side of `let rec'"
-
+  | Illegal_class_expr ->
+      fprintf ppf "This kind of recursive class expression is not allowed"
 
 let report_error env ppf err =
   wrap_printing_env env (fun () -> report_error env ppf err)

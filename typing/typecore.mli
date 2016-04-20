@@ -126,6 +126,7 @@ type error =
   | Unknown_literal of string * char
   | Illegal_letrec_pat
   | Illegal_letrec_expr
+  | Illegal_class_expr
 
 exception Error of Location.t * Env.t * error
 exception Error_forward of Location.error
@@ -155,3 +156,5 @@ val create_package_type : Location.t -> Env.t ->
 val constant: Parsetree.constant -> (Asttypes.constant, error) result
 
 val check_recursive_bindings : Env.t -> Typedtree.value_binding list -> unit
+val check_recursive_class_bindings :
+  Env.t -> Ident.t list -> Typedtree.class_expr list -> unit

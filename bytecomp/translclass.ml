@@ -22,7 +22,7 @@ open Translcore
 
 (* XXX Rajouter des evenements... | Add more events... *)
 
-type error = Illegal_class_expr | Tags of label * label
+type error = Tags of label * label
 
 exception Error of Location.t * error
 
@@ -886,8 +886,6 @@ let () =
 open Format
 
 let report_error ppf = function
-  | Illegal_class_expr ->
-      fprintf ppf "This kind of recursive class expression is not allowed"
   | Tags (lab1, lab2) ->
       fprintf ppf "Method labels `%s' and `%s' are incompatible.@ %s"
         lab1 lab2 "Change one of them."
