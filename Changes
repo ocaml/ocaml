@@ -572,6 +572,9 @@ Manual:
 - PR#6676: ongoing simplification of the "Language Extensions" section
   (Alain Frisch, John Whitington)
 
+- PR#6898: Update win32 support documentation of the Unix library
+  (Damien Doligez, report by Daniel Bünzli)
+
 - PR#7092, GPR#379: Add missing documentation for new 4.03 features
   (Florian Angeletti)
 
