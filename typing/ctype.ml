@@ -2171,13 +2171,14 @@ let find_newtype_level env path =
   with Not_found -> assert false
 
 let add_gadt_equation env source destination =
-  if local_non_recursive_abbrev !env (Path.Pident source) destination then
+  if local_non_recursive_abbrev !env (Path.Pident source) destination then begin
     let destination = duplicate_type destination in
     let source_lev = find_newtype_level !env (Path.Pident source) in
     let decl = new_declaration (Some source_lev) (Some destination) in
     let newtype_level = get_newtype_level () in
     env := Env.add_local_constraint source decl newtype_level !env;
     cleanup_abbrev ()
+  end
 
 let unify_eq_set = TypePairs.create 11
 
