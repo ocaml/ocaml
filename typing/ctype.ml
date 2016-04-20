@@ -1655,7 +1655,8 @@ let rec local_non_recursive_abbrev visited env p ty =
   end
 
 let local_non_recursive_abbrev env p ty =
-  try local_non_recursive_abbrev [] env p ty with Occur -> raise (Unify [])
+  try local_non_recursive_abbrev [] env p ty; true
+  with Occur -> false
 
 
                    (*****************************)
@@ -2170,13 +2171,13 @@ let find_newtype_level env path =
   with Not_found -> assert false
 
 let add_gadt_equation env source destination =
-  local_non_recursive_abbrev !env (Path.Pident source) destination;
-  let destination = duplicate_type destination in
-  let source_lev = find_newtype_level !env (Path.Pident source) in
-  let decl = new_declaration (Some source_lev) (Some destination) in
-  let newtype_level = get_newtype_level () in
-  env := Env.add_local_constraint source decl newtype_level !env;
-  cleanup_abbrev ()
+  if local_non_recursive_abbrev !env (Path.Pident source) destination then
+    let destination = duplicate_type destination in
+    let source_lev = find_newtype_level !env (Path.Pident source) in
+    let decl = new_declaration (Some source_lev) (Some destination) in
+    let newtype_level = get_newtype_level () in
+    env := Env.add_local_constraint source decl newtype_level !env;
+    cleanup_abbrev ()
 
 let unify_eq_set = TypePairs.create 11
 
