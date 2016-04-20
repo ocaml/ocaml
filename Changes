@@ -894,6 +894,9 @@ Bug fixes:
 - PR#7222: Escaped existential type
   (Jacques Garrigue, report by Florian Angeletti)
 
+- PR#7234: Compatibility check wrong for abstract type constructors
+  (Jacques Garrigue, report by Stephen Dolan)
+
 - GPR#205: Clear caml_backtrace_last_exn before registering as root
   (report and fix by Frederic Bour)
 
