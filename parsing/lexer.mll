@@ -735,6 +735,7 @@ and skip_hash_bang = parse
           in
           loop lines' docs lexbuf
       | DOCSTRING doc ->
+          Docstrings.register doc;
           add_docstring_comment doc;
           let docs' =
             match docs, lines with
