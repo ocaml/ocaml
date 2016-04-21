@@ -68,8 +68,10 @@ let docstring body loc =
       ds_attached = Unattached;
       ds_associated = Zero; }
   in
-  docstrings := ds :: !docstrings;
   ds
+
+let register ds =
+  docstrings := ds :: !docstrings
 
 let docstring_body ds = ds.ds_body
 
