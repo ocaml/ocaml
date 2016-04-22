@@ -2690,7 +2690,7 @@ let arg_to_var arg cls = match arg with
 *)
 
 let rec compile_match repr partial ctx m = match m with
-| { cases = [] } -> comp_exit ctx m
+| { cases = []; args = [] } -> comp_exit ctx m
 | { cases = ([], action) :: rem } ->
     if is_guarded action then begin
       let (lambda, total) =
