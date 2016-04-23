@@ -1,0 +1,79 @@
+= Hacking the compiler 🐫
+
+Welcome! The purpose of this document is to gather various advices on how to get started in compiler hacking.
+
+=== Tips and tools
+
+1. Install https://github.com/gasche/opam-compiler-conf[opam-compiler-conf].
+
+2. Consult link:INSTALL.adoc[] for build instructions. Here is the gist of it:
++
+----
+opam compiler-conf configure
+make -j world
+----
+
+3. Try the newly built toplevel:
++
+----
+./boot/ocamlrun ./ocaml -nostdlib -I stdlib
+----
+
+4. Hack frenetically.
+
+5. Install in a new opam switch to try things out:
++
+----
+opam compiler-conf install
+----
+
+6. You did it, Well done! Consult link:CONTRIBUTING.md[] to send your contribution upstream.
+
+See <<Annex,the end of this document>> for various helpful commands.
+
+=== What to do
+
+There is always a lot of potential tasks, both for old and newcomers. Here are various potential projects:
+
+* http://caml.inria.fr/mantis/view_all_bug_page.php[The OCaml bugtracker].
+In particular the tag http://caml.inria.fr/mantis/search.php?project_id=1&sticky_issues=1&sortby=last_updated&dir=DESC&highlight_changed=24&hide_status_id=90&tag_string=junior_job[junior_job].
+* https://github.com/ocamllabs/compiler-hacking/wiki/Things-to-work-on[OCamllabs compiler-hacking wiki].
+* Documentation improvements are always most appreciated, either in the various mli files or in the official manual (See link:manual/README.md[]).
+
+== Libraries and tools
+
+link:stdlib/[]:: The standard library. Each file is mostly independent and should not need further knowledge.
+
+link:otherlibs/[]:: External libraries such as +unix+, +threads+, +dynlink+, +str+ and +bigarray+.
+
+link:lex/[]:: The +ocamllex+ lexer generator.
+
+link:yacc/[]:: The +ocamlyacc+ parser generator. Please consider contributing to link:http://gallium.inria.fr/~fpottier/menhir/[menhir] instead.
+
+
+== The compiler
+
+The compiler code base can be intimidating at first sight. Here are a few pointers to get started.
+
+=== The frontend -- link:parsing/[] and link:typing/[]
+
+link:parsing/parsetree.mli[] and link:parsing/asttypes.mli[]:: +Parsetree+ is an AST of the surface language of OCaml. It is well annotated with examples and is a mandatory read before any further exploration of the compiler.
+
+link:parsing/location.mli[]:: +Location+ contains utilities related to locations and error handling.
+
+
+=== The bytecode compiler -- link:bytecomp/[]
+
+=== The native compiler -- link:middle_end/[] and link:asmcomp/[]
+
+== Annex
+
+=== Useful commands
+
++make partialclean+:: Clean the OCaml files but keep the compiled C files.
++make depend+:: Regenerate the +.depend+ file. Should be used each time new dependencies are added between files.
+
+=== Bootstrapping
+
+The OCaml compiler is bootstrapped. This means that a previous version of the OCaml compiler (along with various tools and a compiled version of the standard library) is included in the repository under the link:boot/[] directory.
+Details can be found in link:INSTALL.adoc#bootstrap[INSTALL.adoc].
