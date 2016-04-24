@@ -1,6 +1,9 @@
 FILES= coreexamples.tex lablexamples.tex objectexamples.tex moduleexamples.tex advexamples.tex
 
-CAMLLATEX=../../tools/caml-tex2
+TOPDIR=../../..
+include $(TOPDIR)/testsuite/makefiles/Makefile.tools
+
+CAMLLATEX= $(OCAMLRUN) ../../tools/caml-tex2
 TEXQUOTE=../../tools/texquote2
 
 ALLFILES=$(FILES)
@@ -14,6 +17,6 @@ clean:
 .SUFFIXES: .etex .tex
 
 .etex.tex:
-	$(CAMLLATEX) -n 80 -o - $*.etex | $(TEXQUOTE) > $*.tex
+	$(CAMLLATEX) -caml "TERM=norepeat $(OCAML)" -n 80 -o - $*.etex | $(TEXQUOTE) > $*.tex
 
 $(ALLFILES): $(CAMLLATEX) $(TEXQUOTE)

@@ -1,3 +1,8 @@
+TOPDIR=../..
+LD_PATH=$(TOPDIR)/otherlibs/str
+COMPFLAGS=-I $(OTOPDIR)/otherlibs/str -I $(OTOPDIR)/otherlibs/unix
+include $(TOPDIR)/testsuite/makefiles/Makefile.tools
+
 CFLAGS=-g -O
 
 all: texquote2 transf htmlquote htmlgen dvi2txt caml-tex2
@@ -6,33 +11,31 @@ dvi2txt:
 	cd dvi_to_txt; ${MAKE}
 
 transf: transf.cmo htmltransf.cmo transfmain.cmo
-	ocamlc -o transf -g transf.cmo htmltransf.cmo transfmain.cmo
+	$(OCAMLC) -o transf -g transf.cmo htmltransf.cmo transfmain.cmo
 
 transf.ml: transf.mll
-	ocamllex transf.mll
+	$(OCAMLLEX) transf.mll
 
 htmltransf.ml: htmltransf.mll
-	ocamllex htmltransf.mll
+	$(OCAMLLEX) htmltransf.mll
 
 htmlgen: latexmacros.cmo latexscan.cmo latexmain.cmo
-	ocamlc -o htmlgen -g latexmacros.cmo latexscan.cmo latexmain.cmo
+	$(OCAMLC) -o htmlgen -g latexmacros.cmo latexscan.cmo latexmain.cmo
 
 latexscan.ml: latexscan.mll
 	ocamllex latexscan.mll
 
 caml-tex2: caml_tex2.cmo
-	ocamlc -o caml-tex2 str.cma unix.cma caml_tex2.cmo
-#	ocamlc -custom -o caml-tex2 str.cma unix.cma caml-tex2.cmo \
-#		-cclib -lunix -cclib -lstr
+	$(OCAMLC) -o caml-tex2 str.cma unix.cma caml_tex2.cmo
 
 .SUFFIXES:
 .SUFFIXES: .ml .cmo .mli .cmi .c
 
 .ml.cmo:
-	ocamlc -c $<
+	$(OCAMLC) -c $<
 
 .mli.cmi:
-	ocamlc -c $<
+	$(OCAMLC) -c $<
 
 .c:
 	$(CC) $(CFLAGS) -o $@ $<
@@ -45,7 +48,7 @@ clean:
 	rm -f *~ #*#
 	cd dvi_to_txt; ${MAKE} clean
 
-latexmacros.cmo: latexmacros.cmi 
-latexmain.cmo: latexscan.cmo 
-latexscan.cmo: latexmacros.cmi 
-transfmain.cmo: transf.cmo htmltransf.cmo 
+latexmacros.cmo: latexmacros.cmi
+latexmain.cmo: latexscan.cmo
+latexscan.cmo: latexmacros.cmi
+transfmain.cmo: transf.cmo htmltransf.cmo
