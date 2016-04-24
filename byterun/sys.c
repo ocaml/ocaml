@@ -493,6 +493,10 @@ CAMLprim value caml_sys_const_ostype_cygwin(value unit)
   return Val_bool(0 == strcmp(OCAML_OS_TYPE,"Cygwin"));
 }
 
+CAMLprim value caml_sys_const_backend_type(value unit)
+{
+  return Val_int(1); /* Bytecode backed */
+}
 CAMLprim value caml_sys_get_config(value unit)
 {
   CAMLparam0 ();   /* unit is unused */

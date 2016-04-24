@@ -466,6 +466,7 @@ let simplif_prim_pure fpc p (args, approxs) dbg =
         | Ostype_unix -> make_const_bool (Sys.os_type = "Unix")
         | Ostype_win32 -> make_const_bool (Sys.os_type = "Win32")
         | Ostype_cygwin -> make_const_bool (Sys.os_type = "Cygwin")
+        | Backend_type -> make_const_bool false (* false is the same Native here *)
       end
   (* Catch-all *)
   | _ ->
