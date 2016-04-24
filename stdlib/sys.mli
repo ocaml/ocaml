@@ -93,9 +93,9 @@ val os_type : string
 -  ["Win32"] (for MS-Windows, OCaml compiled with MSVC++ or Mingw),
 -  ["Cygwin"] (for MS-Windows, OCaml compiled with Cygwin). *)
 
-(* val backend_type : backend_type *)
+val backend_type : backend_type
 (** Backend type  currently executing the OCaml program. 
-    @ since 4.03.0
+    @ since 4.04.0
  *)
 
 val unix : bool
