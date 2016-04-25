@@ -1,7 +1,7 @@
 FILES= coreexamples.tex lablexamples.tex objectexamples.tex moduleexamples.tex advexamples.tex
 
 TOPDIR=../../..
-include $(TOPDIR)/testsuite/makefiles/Makefile.tools
+include $(TOPDIR)/Makefile.tools
 
 CAMLLATEX= $(OCAMLRUN) ../../tools/caml-tex2
 TEXQUOTE=../../tools/texquote2

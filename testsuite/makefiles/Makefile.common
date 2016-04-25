@@ -14,7 +14,7 @@
 #**************************************************************************
 
 TOPDIR=$(BASEDIR)/..
-include $(BASEDIR)/makefiles/Makefile.tools
+include $(TOPDIR)/Makefile.tools
 
 defaultpromote:
 	@for file in *.reference; do \

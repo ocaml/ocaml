@@ -1,7 +1,6 @@
 TOPDIR=../..
-LD_PATH=$(TOPDIR)/otherlibs/str
 COMPFLAGS=-I $(OTOPDIR)/otherlibs/str -I $(OTOPDIR)/otherlibs/unix
-include $(TOPDIR)/testsuite/makefiles/Makefile.tools
+include $(TOPDIR)/Makefile.tools
 
 CFLAGS=-g -O
 

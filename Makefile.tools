@@ -13,6 +13,13 @@
 #*                                                                        *
 #**************************************************************************
 
+# This makefile provides variables for using the in-tree compiler,
+# interpreter, lexer and other associated tools. It is intended to be
+# included within other makefiles.
+# See testsuite/makefiles/Makefile.common, manual/tools/Makefile and
+# manual/manual/tutorials/Makefile as examples.
+# Note that these makefile should define the $(TOPDIR) variable on their
+# own.
 
 WINTOPDIR=`cygpath -m "$(TOPDIR)"`
 
@@ -66,8 +73,7 @@ else
   CUSTOM =
 endif
 
-OCAML=$(OCAMLRUN) $(OTOPDIR)/ocaml $(OCFLAGS) \
-      -init $(OTOPDIR)/testsuite/lib/empty
+OCAML=$(OCAMLRUN) $(OTOPDIR)/ocaml $(OCFLAGS) -noinit
 EXPECT_TEST=$(OCAMLRUN) $(OTOPDIR)/testsuite/tools/expect_test$(EXE)
 ifeq "$(FLEXLINK)" ""
   FLEXLINK_PREFIX=
