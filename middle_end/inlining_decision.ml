@@ -43,7 +43,7 @@ let inline env r ~lhs_of_application
     ~self_call ~fun_cost ~inlining_threshold =
   let toplevel = E.at_toplevel env in
   let branch_depth = E.branch_depth env in
-  let always_inline, never_inline, env =
+  let unrolling, always_inline, never_inline, env =
     let unrolling =
       E.actively_unrolling env function_decls.set_of_closures_origin
     in
@@ -54,8 +54,8 @@ let inline env r ~lhs_of_application
           E.continue_actively_unrolling
             env function_decls.set_of_closures_origin
         in
-        true, false, env
-      else false, true, env
+        true, true, false, env
+      else false, false, true, env
     | None -> begin
         let inline_annotation =
           (* Merge call site annotation and function annotation.
@@ -65,17 +65,17 @@ let inline env r ~lhs_of_application
           | Default_inline -> function_decl.inline
         in
         match inline_annotation with
-        | Always_inline -> true, false, env
-        | Never_inline -> false, true, env
-        | Default_inline -> false, false, env
+        | Always_inline -> false, true, false, env
+        | Never_inline -> false, false, true, env
+        | Default_inline -> false, false, false, env
         | Unroll count ->
           if count > 0 then
             let env =
               E.start_actively_unrolling
                 env function_decls.set_of_closures_origin (count - 1)
             in
-            true, false, env
-          else false, true, env
+            true, true, false, env
+          else false, false, true, env
       end
   in
   let remaining_inlining_threshold : Inlining_cost.Threshold.t =
@@ -83,16 +83,18 @@ let inline env r ~lhs_of_application
     else Lazy.force fun_cost
   in
   let try_inlining =
-    if only_use_of_function || always_inline then
+    if unrolling then
+      Try_it
+    else if self_call then
+      Don't_try_it S.Not_inlined.Self_call
+    else if not (E.inlining_allowed env closure_id_being_applied) then
+      Don't_try_it S.Not_inlined.Unrolling_depth_exceeded
+    else if only_use_of_function || always_inline then
       Try_it
     else if never_inline then
       Don't_try_it S.Not_inlined.Annotation
     else if !Clflags.classic_inlining then
       Don't_try_it S.Not_inlined.Classic_mode
-    else if self_call then
-      Don't_try_it S.Not_inlined.Self_call
-    else if not (E.inlining_allowed env closure_id_being_applied) then
-      Don't_try_it S.Not_inlined.Unrolling_depth_exceeded
     else if not (E.unrolling_allowed env function_decls.set_of_closures_origin)
          && (Lazy.force recursive) then
       Don't_try_it S.Not_inlined.Unrolling_depth_exceeded
