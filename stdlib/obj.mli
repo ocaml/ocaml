@@ -27,6 +27,15 @@ external is_block : t -> bool = "caml_obj_is_block"
 external is_int : t -> bool = "%obj_is_int"
 external tag : t -> int = "caml_obj_tag"
 external size : t -> int = "%obj_size"
+external reachable_words : t -> int = "caml_obj_reachable_words"
+  (**
+     Computes the total size (in words, including the headers) of all
+     heap blocks accessible from the argument.  Statically
+     allocated blocks are excluded.
+
+     @Since 4.04
+  *)
+
 external field : t -> int -> t = "%obj_field"
 
 (** When using flambda:
