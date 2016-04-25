@@ -394,7 +394,7 @@ case "$bytecc,$target" in
     dllccompopts="-U_WIN32 -DCAML_DLL"
     if test $with_sharedlibs = yes; then
       flexlink="flexlink -chain $flavor -merge-manifest -stack 16777216"
-      flexdir=`$flexlink -where | dos2unix`
+      flexdir=`$flexlink -where | tr -d '\015'`
       if test -z "$flexdir"; then
         wrn "flexlink not found: native shared libraries won't be available."
         with_sharedlibs=no
