@@ -60,8 +60,6 @@ CAMLextern int caml_huge_fallback_count;
 
 /* void caml_shrink_heap (char *);        Only used in compact.c */
 
-#define PROFINFO_MASK 0x3fffff
-
 /* <private> */
 
 extern uintnat caml_use_huge_pages;
@@ -89,18 +87,10 @@ int caml_page_table_initialize(mlsize_t bytesize);
 #define DEBUG_clear(result, wosize)
 #endif
 
-/* CR mshinwell: Since e.g. Bigarray stubs aren't built with NATIVE_CODE,
-   we cannot guard some of these sections with NATIVE_CODE as well as
-   WITH_SPACETIME, which is a pity.  We should think about this */
-
-#define PROFINFO_SHIFT 42
-
 #ifdef WITH_SPACETIME
 
 #define Decode_profinfo_hd(hd) \
   (((uint64_t) (Profinfo_hd (hd))) << 4)
-
-#define Hd_no_profinfo(hd) ((hd) & ~(0x3fffffull << PROFINFO_SHIFT))
 
 extern int caml_spacetime;
 extern uintnat caml_spacetime_my_profinfo(struct ext_table**);

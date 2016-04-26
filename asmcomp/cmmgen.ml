@@ -509,7 +509,7 @@ let header ptr =
     (* CR mshinwell: use a named constant for the mask *)
     Cop(Cand, [Cop (Cload Word_int,
         [Cop(Cadda, [ptr; Cconst_int(-size_int)])]);
-      Cconst_int 0x0000_03ff_ffff_ffff;
+      Cconst_int 0x0000_003f_ffff_ffff;
     ])
   else
     Cop(Cload Word_int, [Cop(Cadda, [ptr; Cconst_int(-size_int)])])

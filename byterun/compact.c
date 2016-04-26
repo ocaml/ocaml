@@ -48,7 +48,7 @@ extern void caml_shrink_heap (char *);              /* memory.c */
 */
 #define Make_ehd(s,t,c) (((s) << 10) | (t) << 2 | (c))
 #if defined(NATIVE_CODE) && defined(WITH_SPACETIME)
-#define Make_ehd_p(s,t,c,p) (((s) << 10) | (t) << 2 | (c) | ((p) << 42))
+#define Make_ehd_p(s,t,c,p) (((s) << 10) | (t) << 2 | (c) | ((p) << PROFINFO_SHIFT))
 #endif
 #define Whsize_ehd(h) Whsize_hd (h)
 #define Wosize_ehd(h) Wosize_hd (h)

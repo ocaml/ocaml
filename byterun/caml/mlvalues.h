@@ -96,20 +96,28 @@ bits  63    10 9     8 7   0
 
 For x86-64 with Spacetime profiling:  (max block size = 32Gbytes)
 
-           22 bits         32 bits
+           26 bits         28 bits
      +----------------+----------------+-------------+
      | profiling info | wosize         | color | tag |
      +----------------+----------------+-------------+
-bits  63            42 41            10 9     8 7   0
+bits  63            38 37            10 9     8 7   0
 
 */
+
+/* CR mshinwell: Since e.g. Bigarray stubs aren't built with NATIVE_CODE,
+   we cannot guard some of these sections with NATIVE_CODE as well as
+   WITH_SPACETIME, which is a pity.  We should think about this */
+#define PROFINFO_SHIFT 38
+#define PROFINFO_MASK 0x3ffffff
+#define PROFINFO_MASK_ull 0x3ffffffull
 
 #define Tag_hd(hd) ((tag_t) ((hd) & 0xFF))
 #ifndef WITH_SPACETIME
 #define Wosize_hd(hd) ((mlsize_t) ((hd) >> 10))
 #else
-#define Wosize_hd(hd) (((mlsize_t) ((hd) >> 10)) & 0xffffffff)
-#define Profinfo_hd(hd) (((mlsize_t) ((hd) >> 42)) & 0x3fffff)
+#define Hd_no_profinfo(hd) ((hd) & ~(PROFINFO_MASK_ull << PROFINFO_SHIFT))
+#define Wosize_hd(hd) ((mlsize_t) ((Hd_no_profinfo(hd)) >> 10))
+#define Profinfo_hd(hd) (((mlsize_t) ((hd) >> PROFINFO_SHIFT)) & PROFINFO_MASK)
 #endif
 
 #define Hd_val(val) (((header_t *) (val)) [-1])        /* Also an l-value. */
@@ -127,7 +135,7 @@ bits  63            42 41            10 9     8 7   0
 #define Num_tags (1 << 8)
 #ifdef ARCH_SIXTYFOUR
 #ifdef WITH_SPACETIME
-#define Max_wosize (((intnat)1 << 32) - 1)
+#define Max_wosize (((intnat)1 << 28) - 1)
 #else
 #define Max_wosize (((intnat)1 << 54) - 1)
 #endif
