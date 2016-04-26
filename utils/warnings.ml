@@ -400,7 +400,8 @@ let message = function
       String.concat " " tl ^
       "\nThe first one was selected. Please disambiguate if this is wrong."
   | Disambiguated_name s ->
-      "this use of " ^ s ^ " required disambiguation."
+      "this use of " ^ s ^ " relies on type-directed disambiguation,\n\
+       it will not compile with OCaml 4.00 or earlier."
   | Nonoptional_label s ->
       "the label " ^ s ^ " is not optional."
   | Open_shadow_identifier (kind, s) ->
@@ -547,7 +548,7 @@ let descriptions =
    39, "Unused rec flag.";
    40, "Constructor or label name used out of scope.";
    41, "Ambiguous constructor or label name.";
-   42, "Disambiguated constructor or label name.";
+   42, "Disambiguated constructor or label name (compatibility warning).";
    43, "Nonoptional label applied as optional.";
    44, "Open statement shadows an already defined identifier.";
    45, "Open statement shadows an already defined label or constructor.";
