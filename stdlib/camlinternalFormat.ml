@@ -2040,7 +2040,7 @@ let fmt_ebb_of_string ?legacy_behavior str =
   let invalid_format_message str_ind msg =
     failwith_message
       "invalid format %S: at character number %d, %s"
-      str str_ind msg;
+      str str_ind msg
   in
 
   (* Used when the end of the format (or the current sub-format) was encoutered
@@ -2688,14 +2688,14 @@ let fmt_ebb_of_string ?legacy_behavior str =
     let fail_single_percent str_ind =
       failwith_message
         "invalid format %S: '%%' alone is not accepted in character sets, \
-         use %%%% instead at position %d." str str_ind;
+         use %%%% instead at position %d." str str_ind
     in
 
     (* Parse the first character of a char set. *)
     let rec parse_char_set_start str_ind end_ind =
       if str_ind = end_ind then unexpected_end_of_format end_ind;
       let c = str.[str_ind] in
-      parse_char_set_after_char (str_ind + 1) end_ind c;
+      parse_char_set_after_char (str_ind + 1) end_ind c
 
     (* Parse the content of a char set until the first ']'. *)
     and parse_char_set_content str_ind end_ind =
@@ -2705,9 +2705,9 @@ let fmt_ebb_of_string ?legacy_behavior str =
         str_ind + 1
       | '-' ->
         add_char '-';
-        parse_char_set_content (str_ind + 1) end_ind;
+        parse_char_set_content (str_ind + 1) end_ind
       | c ->
-        parse_char_set_after_char (str_ind + 1) end_ind c;
+        parse_char_set_after_char (str_ind + 1) end_ind c
 
     (* Test for range in char set. *)
     and parse_char_set_after_char str_ind end_ind c =
@@ -2838,10 +2838,10 @@ let fmt_ebb_of_string ?legacy_behavior str =
           search_subformat_end (sub_end + 2) end_ind c
         | '}' ->
           (* Error: %(...%}. *)
-          expected_character (str_ind + 1) "character ')'" '}';
+          expected_character (str_ind + 1) "character ')'" '}'
         | ')' ->
           (* Error: %{...%). *)
-          expected_character (str_ind + 1) "character '}'" ')';
+          expected_character (str_ind + 1) "character '}'" ')'
         | _ ->
           search_subformat_end (str_ind + 2) end_ind c
         end
@@ -2931,7 +2931,7 @@ let fmt_ebb_of_string ?legacy_behavior str =
       failwith_message
         "invalid format %S: at character number %d, \
          %s is incompatible with '%c' in sub-format %S"
-        str pct_ind option symb subfmt;
+        str pct_ind option symb subfmt
 
   in parse 0 (String.length str)
 

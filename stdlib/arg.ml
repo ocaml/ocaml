@@ -101,11 +101,11 @@ let usage_b buf speclist errmsg =
 let usage_string speclist errmsg =
   let b = Buffer.create 200 in
   usage_b b speclist errmsg;
-  Buffer.contents b;
+  Buffer.contents b
 ;;
 
 let usage speclist errmsg =
-  eprintf "%s" (usage_string speclist errmsg);
+  eprintf "%s" (usage_string speclist errmsg)
 ;;
 
 let current = ref 0;;

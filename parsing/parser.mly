@@ -1304,7 +1304,13 @@ and_class_type_declaration:
 
 seq_expr:
   | expr        %prec below_SEMI  { $1 }
-  | expr SEMI                     { reloc_exp $1 }
+  | expr SEMI                     {
+    if !Clflags.strict_sequence then
+      let unit = ghexp (Pexp_construct (mkloc (Lident "()") (rhs_loc 2), None)) in
+      mkexp(Pexp_sequence($1, unit))
+    else
+      reloc_exp $1
+  }
   | expr SEMI seq_expr            { mkexp(Pexp_sequence($1, $3)) }
 ;
 labeled_simple_pattern:

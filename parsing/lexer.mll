@@ -503,7 +503,7 @@ and comment = parse
     "(*"
       { comment_start_loc := (Location.curr lexbuf) :: !comment_start_loc;
         store_lexeme lexbuf;
-        comment lexbuf;
+        comment lexbuf
       }
   | "*)"
       { match !comment_start_loc with
@@ -511,7 +511,7 @@ and comment = parse
         | [_] -> comment_start_loc := []; Location.curr lexbuf
         | _ :: l -> comment_start_loc := l;
                   store_lexeme lexbuf;
-                  comment lexbuf;
+                  comment lexbuf
        }
   | "\""
       {
