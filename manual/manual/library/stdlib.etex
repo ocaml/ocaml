@@ -34,6 +34,7 @@ Here is a short listing, by theme, of the standard library modules.
 \subsubsection*{Data structures:}
 \begin{tabular}{lll}
 "Char" & p.~\pageref{Char} & character operations \\
+"Uchar" & p.~\pageref{Uchar} & Unicode characters \\
 "String" & p.~\pageref{String} & string operations \\
 "Bytes" & p.~\pageref{Bytes} & operations on byte sequences\\
 "Array" & p.~\pageref{Array} & array operations \\
@@ -53,7 +54,8 @@ the above 4 modules \\
 "Buffer" & p.~\pageref{Buffer} & buffers that grow on demand \\
 "Lazy"  & p.~\pageref{Lazy} & delayed evaluation \\
 "Weak" & p.~\pageref{Weak} & references that don't prevent objects
-from being garbage-collected
+from being garbage-collected \\
+"Ephemeron" & p.~\pageref{Ephemeron} & ephemerons and weak hash table
 \end{tabular}
 \subsubsection*{Arithmetic:}
 \begin{tabular}{lll}
@@ -102,6 +104,7 @@ be called from C \\
 \item \ahref{libref/Char.html}{Module \texttt{Char}: character operations}
 \item \ahref{libref/Complex.html}{Module \texttt{Complex}: Complex numbers}
 \item \ahref{libref/Digest.html}{Module \texttt{Digest}: MD5 message digest}
+\item \ahref{libref/Ephemeron.html}{Module \texttt{Ephemeron}: Ephemerons and weak hash table}
 \item \ahref{libref/Filename.html}{Module \texttt{Filename}: operations on file names}
 \item \ahref{libref/Format.html}{Module \texttt{Format}: pretty printing}
 \item \ahref{libref/Gc.html}{Module \texttt{Gc}: memory management control and statistics; finalized values}
@@ -132,6 +135,7 @@ be called from C \\
 \item \ahref{libref/String.html}{Module \texttt{String}: string operations}
 \item \ahref{libref/StringLabels.html}{Module \texttt{StringLabels}: string operations (with labels)}
 \item \ahref{libref/Sys.html}{Module \texttt{Sys}: system interface}
+\item \ahref{libref/Uchar.html}{Module \texttt{Uchar}: Unicode characters}
 \item \ahref{libref/Weak.html}{Module \texttt{Weak}: arrays of weak pointers}
 \end{links}
 \else
@@ -143,6 +147,7 @@ be called from C \\
 \input{Char.tex}
 \input{Complex.tex}
 \input{Digest.tex}
+\input{Ephemeron.tex}
 \input{Filename.tex}
 \input{Format.tex}
 \input{Gc.tex}
@@ -171,5 +176,6 @@ be called from C \\
 \input{Stream.tex}
 \input{String.tex}
 \input{Sys.tex}
+\input{Uchar.tex}
 \input{Weak.tex}
 \fi
