@@ -654,6 +654,8 @@ CAMLprim value caml_ml_output(value vchannel, value buff, value start,
   intnat len = Long_val(length);
 
   Lock(channel);
+    /* We cannot call caml_really_putblock here because buff may move
+       during caml_write_fd */
     while (len > 0) {
       int written = caml_putblock(channel, &Byte(buff, pos), len);
       pos += written;
