@@ -4,25 +4,25 @@ OCaml 4.04.0:
 (Changes that can break existing programs are marked with a "*")
 
 Language features:
-==================
+##################
 
 - GPR#301: local exception declarations "let exception ... in"
   (Alain Frisch)
 
 Compilers:
-==========
+##########
 
 - PR#7023, GPR#336: Better unboxing strategy
   (Alain Frisch, Pierre Chambart)
 
 Tools:
-======
+######
 
 - GPR#452: Make the output of ocamldep is more stable
   (Alain Frisch)
 
 Standard library:
-=================
+#################
 
 - PR#4747, GPR#328: Optimize Hashtbl by using in-place updates of its
   internal bucket lists.  All operations run in constant stack size
@@ -31,7 +31,7 @@ Standard library:
   (Alain Frisch)
 
 Build system:
-=============
+#############
 
 - GPR#324: Compiler developpers only: Adding new primitives to the
   standard runtime doesn't require anymore to run `make bootstrap`
@@ -47,20 +47,20 @@ Build system:
   (whitequark, review by Alain Frisch)
 
 Bug fixes:
-==========
+##########
 
 - PR#7112: Aliased arguments ignored for equality of module types
 
 Other libraries:
-================
+################
 
 * GPR#533: Thread library: fixed [Thread.wait_signal] so that it
   converts back the signal number returned by [sigwait] to an
   OS-independent number
   (Jérémie Dimino)
 
-===============================================================================
-===============================================================================
+###############################################################################
+###############################################################################
 
 OCaml 4.03.0:
 -------------
@@ -68,7 +68,7 @@ OCaml 4.03.0:
 (Changes that can break existing programs are marked with a "*")
 
 Language features:
-==================
+##################
 
 - PR#5528: inline records for constructor arguments
   (Alain Frisch)
@@ -168,7 +168,7 @@ Language features:
   (Gabriel Radanne)
 
 Compilers:
-==========
+##########
 
 * PR#4231, PR#5461: warning 31 is now fatal by default
   (Warning 31: A module is linked twice in the same executable.)
@@ -342,7 +342,7 @@ Compilers:
   (Nicolas Ojeda Bar, review by Gabriel Scherer)
 
 Runtime system:
-===============
+###############
 
 - PR#3612, PR#92: allow allocating custom block with finalizers
   in the minor heap.
@@ -390,7 +390,7 @@ Runtime system:
   (Louis Gesbert, review by Alain Frisch)
 
 Standard library:
-=================
+#################
 
 - PR#1460, GPR#230: Array.map2, Array.iter2
   (John Christopher McAlpine)
@@ -515,7 +515,7 @@ Standard library:
   (Jérémie Dimino, Mark Shinwell)
 
 Type system:
-============
+############
 
 - PR#5545: Type annotations on methods cannot control the choice of abbreviation
   (Jacques Garrigue)
@@ -530,7 +530,7 @@ Type system:
   (Jacques Garrigue)
 
 Toplevel and debugger:
-======================
+######################
 
 - PR#6113: Add descriptions to directives, and display them via #help
   (Nick Giannarakis, Berke Durak, Francis Southern and Gabriel Scherer)
@@ -566,7 +566,7 @@ Toplevel and debugger:
   (Alain Frisch, report by Gabriel Radanne)
 
 Other libraries:
-================
+################
 
 * Unix library: channels created by Unix.in_channel_of_descr or
   Unix.out_channel_of_descr no longer support text mode under Windows.
@@ -617,13 +617,13 @@ Other libraries:
   (Jérémie Dimino)
 
 OCamldep:
-=========
+#########
 
 - GPR#286: add support for module aliases
   (Jacques Garrigue)
 
 Manual:
-=======
+#######
 
 - GPR#302: The OCaml reference manual is now included in the manual/
   subdirectory of the main OCaml source repository. Contributions to
@@ -653,7 +653,7 @@ Manual:
   (Florian Angeletti, Leo White)
 
 Bug fixes:
-==========
+##########
 
 - PR#3612: memory leak in bigarray read from file
   (Pierre Chambart, report by Gary Huber)
@@ -967,7 +967,7 @@ Bug fixes:
   (Thomas Refis)
 
 Features wishes:
-================
+################
 
 - PR#4518, GPR#29: change location format for reporting errors in ocamldoc
   (Sergei Lebedev)
@@ -1095,13 +1095,13 @@ Features wishes:
     code review by Xavier Leroy)
 
 Build system:
-=============
+#############
 
 - GPR#388: FlexDLL added as a Git submodule and bootstrappable with the compiler
   (David Allsopp)
 
-===============================================================================
-===============================================================================
+###############################################################################
+###############################################################################
 
 OCaml 4.02.3 (27 Jul 2015):
 ---------------------------
