@@ -103,6 +103,9 @@ Visual C/C++ Compiler.
 
 The command-line tools must be compiled from the Unix source distribution
 (`ocaml-X.YY.Z.tar.gz`), which also contains the files modified for Windows.
+(Note: you should use cygwin's `tar` command to unpack this archive. If you
+use WinZip, you will need to deselect "TAR file smart CR/LF conversion" in
+the WinZip Options Window.)
 
 Microsoft Visual C/C++ is designed to be used from special developer mode
 Command Prompts which set the environment variables for the required compiler.
@@ -244,6 +247,9 @@ package for 64-bit.
 
 The command-line tools must be compiled from the Unix source distribution
 (`ocaml-X.YY.Z.tar.gz`), which also contains the files modified for Windows.
+(Note: you should use cygwin's `tar` command to unpack this archive. If you
+use WinZip, you will need to deselect "TAR file smart CR/LF conversion" in
+the WinZip Options Window.)
 
 Now run:
 

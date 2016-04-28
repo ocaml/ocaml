@@ -59,6 +59,12 @@ Other libraries:
   OS-independent number
   (Jérémie Dimino)
 
+Documentation:
+##############
+
+- PR#7243: warn users against using WinZip to unpack the source archive
+  (Damien Doligez, report by Shayne Fletcher)
+
 ###############################################################################
 ###############################################################################
 
