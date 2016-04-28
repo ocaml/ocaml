@@ -797,7 +797,7 @@ This section describes and explains in detail some warnings:
 
   let warning = function
     | Foo "specific value" -> 0
-    | _ _ -> 1
+    | _ -> 1
 
 >    | Foo "specific value" -> 0
 >          ^^^^^^^^^^^^^^^^
@@ -811,10 +811,19 @@ This section describes and explains in detail some warnings:
   example using a string equality inside the right-hand-side instead
   of a literal pattern), as your code would remain fragile. You should
   instead enlarge the scope of the pattern by matching on all possible
-  values. This may require some care: if the scrutinee may return
-  several different cases of the same pattern, or raise distinct
-  instances of the same exception, you may need to modify your code to
-  separate those several cases.
+  values.
+
+\begin{verbatim}
+
+let warning = function
+  | Foo _ -> 0
+  | _ -> 1
+\end{verbatim}
+
+  This may require some care: if the scrutinee may return several
+  different cases of the same pattern, or raise distinct instances of
+  the same exception, you may need to modify your code to separate
+  those several cases.
 
   For example,
 \begin{verbatim}
