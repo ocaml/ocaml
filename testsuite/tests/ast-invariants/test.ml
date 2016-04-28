@@ -1,17 +1,3 @@
-(***********************************************************************)
-(*                                                                     *)
-(*                                OCaml                                *)
-(*                                                                     *)
-(*                 Jeremie Dimino, Jane Street Europe                  *)
-(*                                                                     *)
-(*  Copyright 2015 Jane Street Group LLC                               *)
-(*                                                                     *)
-(*  All rights reserved.  This file is distributed under the terms of  *)
-(*  the GNU Lesser General Public License version 2.1, with the        *)
-(*  special exception on linking described in the file ../LICENSE.     *)
-(*                                                                     *)
-(***********************************************************************)
-
 (* This test checks all ml files in the ocaml repository that are accepted
    by the parser satisfy [Ast_invariants].
 
