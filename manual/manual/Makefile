@@ -139,5 +139,19 @@ version.tex: $(SRC)/VERSION
 	    $(SRC)/VERSION > version.tex
 
 warnings-help.etex: $(SRC)/utils/warnings.ml $(SRC)/ocamlc
+	(echo "% This file is generated from (ocamlc -warn-help)";\
+	 echo "% according to a rule in manual/manual/Makefile.";\
+	 echo "% In particular, the reference to documentation sections";\
+	 echo "% are inserted through the Makefile, which should be updated";\
+	 echo "% when a new warning is documented.";\
+	 echo "%";\
 	$(SRC)/boot/ocamlrun $(SRC)/ocamlc -warn-help \
-	| sed -e 's/^ *\([0-9A-Z][0-9]*\)\(.*\)/\\item[\1] \2/' >$@
+	| sed -e 's/^ *\([0-9A-Z][0-9]*\)\(.*\)/\\item[\1] \2/'\
+	) >$@
+#	sed --inplace is not portable, emulate
+	for i in 52 57; do\
+		sed\
+		  s'/\\item\['$$i'\]/\\item\['$$i' (see \\ref{ss:warn'$$i'})\]/'\
+                  $@ > $@.tmp;\
+		mv $@.tmp $@;\
+	done
