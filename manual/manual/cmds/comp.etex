@@ -801,9 +801,9 @@ This section describes and explains in detail some warnings:
 
 >    | Foo "specific value" -> 0
 >          ^^^^^^^^^^^^^^^^
-> Warning 52: the argument of this constructor should not be matched against a
-> constant pattern; the actual value of the argument could change
-> in the future.
+> Warning 52: Code should not depend on the actual values of
+> this constructor's arguments. They are only for information
+> and may change in future versions. (See manual section 8.5)
 \end{verbatim}
 
   In particular, all built-in exceptions with a string argument have

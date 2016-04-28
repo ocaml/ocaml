@@ -47,6 +47,12 @@ OCaml 4.04.0:
   "transitive" heap size of a value
   (Alain Frisch, review by Marc Shinwell and Damien Doligez)
 
+### Manual:
+
+- PR#7245, GPR#565: clarification to the wording and documentation
+  of Warning 52 (fragile constant pattern)
+  (Gabriel Scherer, William, Adrien Nader, Jacques Garrigue)
+
 ### Build system:
 
 - GPR#324: Compiler developpers only: Adding new primitives to the

@@ -438,9 +438,9 @@ let message = function
       Printf.sprintf "expected tailcall"
   | Fragile_literal_pattern ->
       Printf.sprintf
-        "the argument of this constructor should not be matched against a\n\
-         constant pattern; the actual value of the argument could change\n\
-         in the future."
+        "Code should not depend on the actual values of\n\
+         this constructor's arguments. They are only for information\n\
+         and may change in future versions. (See manual section 8.5)"
   | Unreachable_case ->
       "this match case is unreachable.\n\
        Consider replacing it with a refutation case '<pat> -> .'"
