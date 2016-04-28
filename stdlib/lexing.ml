@@ -69,7 +69,7 @@ let engine tbl state buf =
                        with pos_cnum = buf.lex_abs_pos + buf.lex_curr_pos};
   end;
   result
-;;
+
 
 let new_engine tbl state buf =
   let result = c_new_engine tbl state buf in
@@ -79,7 +79,7 @@ let new_engine tbl state buf =
                        with pos_cnum = buf.lex_abs_pos + buf.lex_curr_pos};
   end;
   result
-;;
+
 
 let lex_refill read_fun aux_buffer lexbuf =
   let read =
@@ -143,7 +143,7 @@ let zero_pos = {
   pos_lnum = 1;
   pos_bol = 0;
   pos_cnum = 0;
-};;
+}
 
 let from_function f =
   { refill_buff = lex_refill f (Bytes.create 512);
@@ -207,11 +207,11 @@ let sub_lexeme_char_opt lexbuf i =
 let lexeme_char lexbuf i =
   Bytes.get lexbuf.lex_buffer (lexbuf.lex_start_pos + i)
 
-let lexeme_start lexbuf = lexbuf.lex_start_p.pos_cnum;;
-let lexeme_end lexbuf = lexbuf.lex_curr_p.pos_cnum;;
+let lexeme_start lexbuf = lexbuf.lex_start_p.pos_cnum
+let lexeme_end lexbuf = lexbuf.lex_curr_p.pos_cnum
 
-let lexeme_start_p lexbuf = lexbuf.lex_start_p;;
-let lexeme_end_p lexbuf = lexbuf.lex_curr_p;;
+let lexeme_start_p lexbuf = lexbuf.lex_start_p
+let lexeme_end_p lexbuf = lexbuf.lex_curr_p
 
 let new_line lexbuf =
   let lcp = lexbuf.lex_curr_p in
@@ -219,7 +219,7 @@ let new_line lexbuf =
     pos_lnum = lcp.pos_lnum + 1;
     pos_bol = lcp.pos_cnum;
   }
-;;
+
 
 
 (* Discard data left in lexer buffer. *)
@@ -229,4 +229,3 @@ let flush_input lb =
   lb.lex_abs_pos <- 0;
   lb.lex_curr_p <- {lb.lex_curr_p with pos_cnum = 0};
   lb.lex_buffer_len <- 0;
-;;

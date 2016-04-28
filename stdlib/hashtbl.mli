@@ -227,7 +227,7 @@ val stats : ('a, 'b) t -> statistics
       module IntHashtbl = Hashtbl.Make(IntHash)
 
       let h = IntHashtbl.create 17 in
-      IntHashtbl.add h 12 "hello";;
+      IntHashtbl.add h 12 "hello"
     ]}
 
     This creates a new module [IntHashtbl], with a new type ['a

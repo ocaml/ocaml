@@ -382,13 +382,15 @@ Runtime system:
 - GPR#262: Multiple GC roots per compilation unit
   (Pierre Chambart, Mark Shinwell, review by Damien Doligez)
 
-- GPR#297: Several changes to improve the worst-case GC pause time.
-  (Damien Doligez, with help from Leo White and Francois Bobot)
+* GPR#297: Several changes to improve the worst-case GC pause time.
+  Changes Gc.control and Gc.major_slice and adds functions to the Gc module.
+  (Damien Doligez, with help from Francois Bobot, Thomas Braibant, Leo White)
 
 - GPR#325: Add v=0x400 flag to OCAMLRUNPARAM to display GC stats on exit
   (Louis Gesbert, review by Alain Frisch)
 
 Standard library:
+=================
 
 - PR#1460, GPR#230: Array.map2, Array.iter2
   (John Christopher McAlpine)
@@ -610,6 +612,10 @@ Other libraries:
     "end of line" means for "^" and "$" regexps.
   (Xavier Leroy, question by Fredrik Lindgren)
 
+- PR#7209: do not run at_exit handlers in [Unix.create_process] and
+  similar functions when the [exec] call fails in the child process
+  (Jérémie Dimino)
+
 OCamldep:
 =========
 
@@ -629,6 +635,9 @@ Manual:
 
 - PR#6676: ongoing simplification of the "Language Extensions" section
   (Alain Frisch, John Whitington)
+
+- PR#6898: Update win32 support documentation of the Unix library
+  (Damien Doligez, report by Daniel Bünzli)
 
 - PR#7092, GPR#379: Add missing documentation for new 4.03 features
   (Florian Angeletti)
@@ -748,7 +757,7 @@ Bug fixes:
 - PR#6805: Duplicated expression in case of hole in a non-failing switch.
   (Luc Maranget)
 
-- PR#6808: the parsing of OCAMLRUNPARAM is too lax
+* PR#6808: the parsing of OCAMLRUNPARAM is too lax
   (Damien Doligez)
 
 - PR#6874: Inefficient code generated for module function arguments
@@ -882,8 +891,14 @@ Bug fixes:
 - PR#7160: Type synonym definitions can weaken gadt constructor types
   (Jacques Garrigue, report by Mikhail Mandrykin)
 
+- PR#7181: Misleading error message with GADTs and polymorphic variants
+  (Jacques Garrigue, report by Pierre Chambart)
+
 - PR#7182: Assertion failure with recursive modules and externals
   (Jacques Garrigue, report by Jeremy Yallop)
+
+- PR#7196: "let open" is not correctly pretty-printed to the left of a ';'
+  (Gabriel Scherer, report by Christophe Raffalli)
 
 - PR#7214: Assertion failure in Env.add_gadt_instances
   (Jacques Garrigue, report by Stephen Dolan)
@@ -1073,6 +1088,11 @@ Features wishes:
 - GPR#451: an optional 'parallel' target in testsuite/Makefile using the
   GNU parallel tool to run tests in parallel.
   (Gabriel Scherer)
+
+- GPR#555: ensure that register typing constraints are respected at
+  join points in the control flow graph
+  (Mark Shinwell, debugging & test case by Arseniy Alekseyev and Leo White,
+    code review by Xavier Leroy)
 
 Build system:
 =============

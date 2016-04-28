@@ -40,9 +40,9 @@ type 'a t = 'a lazy_t
 *)
 
 
-exception Undefined;;
+exception Undefined
 
-(* val force : 'a t -> 'a ;; *)
+(* val force : 'a t -> 'a  *)
 external force : 'a t -> 'a = "%lazy_force"
 (** [force x] forces the suspension [x] and returns its result.
    If [x] has already been forced, [Lazy.force x] returns the

@@ -128,6 +128,7 @@ let add_info_attrs info attrs =
 type text = docstring list
 
 let empty_text = []
+let empty_text_lazy = lazy []
 
 let text_loc = {txt = "ocaml.text"; loc = Location.none}
 

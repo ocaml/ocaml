@@ -365,12 +365,13 @@ type let_bindings =
     lbs_extension: string Asttypes.loc option;
     lbs_loc: Location.t }
 
-let mklb (p, e) attrs =
+let mklb first (p, e) attrs =
   { lb_pattern = p;
     lb_expression = e;
     lb_attributes = attrs;
     lb_docs = symbol_docs_lazy ();
-    lb_text = symbol_text_lazy ();
+    lb_text = if first then empty_text_lazy
+              else symbol_text_lazy ();
     lb_loc = symbol_rloc (); }
 
 let mklbs ext rf lb =
@@ -1488,7 +1489,7 @@ simple_expr:
       { mkexp_attrs (Pexp_construct (mkloc (Lident "()") (symbol_rloc ()),
                                None)) $2 }
   | BEGIN ext_attributes seq_expr error
-      { unclosed "begin" 1 "end" 3 }
+      { unclosed "begin" 1 "end" 4 }
   | LPAREN seq_expr type_constraint RPAREN
       { mkexp_constraint $2 $3 }
   | simple_expr DOT label_longident
@@ -1640,11 +1641,11 @@ let_bindings:
 let_binding:
     LET ext_attributes rec_flag let_binding_body post_item_attributes
       { let (ext, attr) = $2 in
-        mklbs ext $3 (mklb $4 (attr@$5)) }
+        mklbs ext $3 (mklb true $4 (attr@$5)) }
 ;
 and_let_binding:
     AND attributes let_binding_body post_item_attributes
-      { mklb $3 ($2@$4) }
+      { mklb false $3 ($2@$4) }
 ;
 fun_binding:
     strict_binding
