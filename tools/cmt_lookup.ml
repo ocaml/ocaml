@@ -83,7 +83,6 @@ let let_scope s scope =
         Some (s.txt, Global_variable scope)
     | _ ->
         Some (s.txt, Local_variable scope)
-    else
   else
     None
 
