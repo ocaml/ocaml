@@ -35,7 +35,8 @@ See \"Specifying File Variables\" in the Emacs info manual.")
 (make-variable-buffer-local 'caml-annot-dir)
 (put 'caml-annot-dir 'safe-local-variable #'stringp)
 
-(defvar caml-types-cmt-lookup-path (executable-find "cmt_lookup"))
+(defvar caml-types-cmt-lookup-path
+  (or (executable-find "cmt_lookup.opt") (executable-find "cmt_lookup")))
 
 (defvar caml-types-location-re nil "Regexp to parse *.annot files.
 
