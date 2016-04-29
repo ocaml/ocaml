@@ -35,6 +35,8 @@ See \"Specifying File Variables\" in the Emacs info manual.")
 (make-variable-buffer-local 'caml-annot-dir)
 (put 'caml-annot-dir 'safe-local-variable #'stringp)
 
+(defvar caml-types-cmt-lookup-path (executable-find "cmt_lookup"))
+
 (defvar caml-types-location-re nil "Regexp to parse *.annot files.
 
 Annotation files *.annot may be generated with the \"-annot\" option
@@ -131,7 +133,7 @@ type call ident"
 (defvar caml-types-buffer nil
   "buffer for displaying caml types")
 
-(defun caml-types-show-type (arg)
+(defun caml-types-show-type/annot (arg)
   "Show the type of expression or pattern at point.
    The smallest expression or pattern that contains point is
    temporarily highlighted.  Its type is highlighted in the .annot
@@ -154,7 +156,6 @@ displayed when the command is called with Prefix argument 4.
 See also `caml-types-explore' for exploration by mouse dragging.
 See `caml-types-location-re' for annotation file format.
 "
-  (interactive "p")
   (let* ((target-buf (current-buffer))
          (target-file (file-name-nondirectory (buffer-file-name)))
          (target-line (1+ (count-lines (point-min)
@@ -187,6 +188,55 @@ See `caml-types-location-re' for annotation file format.
         (caml-sit-for 60)
       (delete-overlay caml-types-expr-ovl)
       )))
+
+(defun caml-types-run-cmt-lookup (kind filename l1 c1 l2 c2)
+  (let ((s (format "%s -%s %s %d %d" caml-types-cmt-lookup-path kind filename l1 c1 l2 c2)))
+    ;; (message s)
+    (car (read-from-string (shell-command-to-string s)))))
+
+(defun caml-types-position-of-line-column (line col)
+  (save-excursion
+    (goto-char (point-min))
+    (forward-line (1- line))
+    (move-to-column col)
+    (point)))
+
+(defun caml-types-show-type/cmt (arg)
+  (let* ((target-buf (current-buffer))
+         (target-buf-name (buffer-file-name))
+         (target-file (concat (file-name-directory target-buf-name) (concat (file-name-base target-buf-name) ".cmt")))
+         (target-line (count-lines (point-min) (point)))
+         (target-col (current-column)))
+    ;; (message "%d %d" target-line target-col)
+    (setq caml-types-buffer (get-buffer-create caml-types-buffer-name))
+    (let ((res (caml-types-runcmt-lookup "type" target-file target-line target-col target-line target-col)))
+      (if res
+          (pcase res
+            (`(,l1 ,c1 ,l2 ,c2 ,type)
+             ;; (message "%d %d %d %d %s" result-line1 result-col1 result-line2 result-col2 type)
+             (let ((left (caml-types-position-of-line-column l1 c1))
+                   (right (caml-types-position-of-line-column l2 c2)))
+               (move-overlay caml-types-expr-ovl left right target-buf)
+               (with-current-buffer caml-types-buffer
+                 (erase-buffer)
+                 (insert type)
+                 (message (format "type: %s" type))))))
+        (progn
+          (delete-overlay caml-types-expr-ovl)
+          (message "Point is not within a typechecked expression or pattern"))))
+    (if (and (= arg 4)
+             (not (window-live-p (get-buffer-window caml-types-buffer))))
+        (display-buffer caml-types-buffer))
+    (unwind-protect
+        (caml-sit-for 60)
+      (delete-overlay caml-types-expr-ovl)
+      )))
+
+(defun caml-types-show-type (arg)
+  (interactive "p")
+  (if caml-types-cmt-lookup-path
+      (caml-types-show-type/cmt arg)
+    (caml-types-show-type/annot arg)))
 
 (defun caml-types-show-call (arg)
   "Show the kind of call at point.
@@ -234,7 +284,7 @@ See `caml-types-location-re' for annotation file format.
       (delete-overlay caml-types-expr-ovl)
       )))
 
-(defun caml-types-show-ident (arg)
+(defun caml-types-show-ident/annot (arg)
   "Show the binding of identifier at point.
    The identifier that contains point is
    temporarily highlighted.  Its binding is highlighted in the .annot
@@ -246,7 +296,6 @@ displayed when the command is called with Prefix argument 4.
 
 See `caml-types-location-re' for annotation file format.
 "
-  (interactive "p")
   (let* ((target-buf (current-buffer))
          (target-file (file-name-nondirectory (buffer-file-name)))
          (target-line (1+ (count-lines (point-min)
@@ -335,6 +384,58 @@ See `caml-types-location-re' for annotation file format.
       (delete-overlay caml-types-def-ovl)
       (delete-overlay caml-types-scope-ovl)
       )))
+
+(defun caml-types-show-ident/cmt (arg)
+  (let* ((target-buf (current-buffer))
+         (target-buf-name (buffer-file-name))
+         (target-file (concat (file-name-directory target-buf-name) (concat (file-name-base target-buf-name) ".cmt")))
+         (target-line (count-lines (point-min) (point)))
+         (target-col (current-column)))
+    ;; (message "%d %d" target-line target-col)
+    (setq caml-types-buffer (get-buffer-create caml-types-buffer-name))
+    (let ((res (caml-types-run-cmt-lookup "ident" target-file target-line target-col target-line target-col)))
+      ;; (print res)
+      (if res
+          (pcase res
+            (`(,l1 ,c1 ,l2 ,c2 ,var-name . ,kind)
+             ;; (message "%s %i %i %i %i" kind result-line1 result-col1 result-line2 result-col2)
+             (let ((left (caml-types-position-of-line-column l1 c1))
+                   (right (caml-types-position-of-line-column l2 c2)))
+               (move-overlay caml-types-expr-ovl left right target-buf)
+               (pcase kind
+                 (`(external) (message "external ident: %s" var-name))
+                 (`(internal ,l1 ,c1 ,l2 ,c2)
+                  (let ((left (caml-types-position-of-line-column l1 c1))
+                        (right (caml-types-position-of-line-column l2 c2)))
+                    (move-overlay caml-types-def-ovl left right target-buf)
+                    (message "%s is bound at line %d char %d" var-name l1 c1)))
+                 (`(local-variable ,l1 ,c1 ,l2 ,c2)
+                  (let ((left (caml-types-position-of-line-column l1 c1))
+                        (right (caml-types-position-of-line-column l2 c2)))
+                    (message "local variable %s is bound here" var-name)
+                    (move-overlay caml-types-scope-ovl left right target-buf)))
+                 (`(global-variable ,l1 ,c1 ,_ ,_)
+                  (let ((left (caml-types-position-of-line-column l1 c1))
+                        (right (buffer-size target-buf)))
+                    (message "global variable %s is bound here" var-name)
+                    (move-overlay caml-types-scope-ovl left right target-buf)))))))
+        (progn
+          (delete-overlay caml-types-expr-ovl)
+          (message "Point is not within an identifier.")))
+      (if (and (= arg 4)
+               (not (window-live-p (get-buffer-window caml-types-buffer))))
+          (display-buffer caml-types-buffer))
+      (unwind-protect
+          (caml-sit-for 60)
+        (delete-overlay caml-types-expr-ovl)
+        (delete-overlay caml-types-def-ovl)
+        (delete-overlay caml-types-scope-ovl)))))
+
+(defun caml-types-show-ident (arg)
+  (interactive "p")
+  (if caml-types-cmt-lookup-path
+      (caml-types-show-ident/cmt arg)
+    (caml-types-show-ident/annot arg)))
 
 (defun caml-types-preprocess (target-path)
   (let* ((type-path (caml-types-locate-type-file target-path))
