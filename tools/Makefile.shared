@@ -35,7 +35,7 @@ COMPFLAGS= -absname -w +a-4-9-41-42-44-45-48 -strict-sequence -warn-error A -saf
 LINKFLAGS=$(INCLUDES)
 
 all: ocamldep ocamlprof ocamlcp ocamloptp ocamlmktop ocamlmklib dumpobj \
-     objinfo read_cmt cmt_lookup stripdebug cmpbyt
+     objinfo read_cmt cmt_lookup cmt_lookup.opt stripdebug cmpbyt
 
 # scrapelabels addlabels
 
@@ -270,6 +270,9 @@ clean::
 	rm -f cmt_lookup cmt_lookup.opt
 
 beforedepend::
+
+install::
+	cp cmt_lookup cmt_lookup.opt $(INSTALL_BINDIR)/
 
 # The bytecode disassembler
 
