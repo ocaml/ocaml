@@ -35,7 +35,7 @@ COMPFLAGS= -absname -w +a-4-9-41-42-44-45-48 -strict-sequence -warn-error A -saf
 LINKFLAGS=$(INCLUDES)
 
 all: ocamldep ocamlprof ocamlcp ocamloptp ocamlmktop ocamlmklib dumpobj \
-     objinfo read_cmt stripdebug cmpbyt
+     objinfo read_cmt cmt_lookup stripdebug cmpbyt
 
 # scrapelabels addlabels
 
@@ -247,6 +247,27 @@ read_cmt.opt: $(READ_CMT_OPT)
 
 clean::
 	rm -f read_cmt read_cmt.opt
+
+beforedepend::
+
+# caml-types using cmt files
+
+CMT_LOOKUP= \
+            ../compilerlibs/ocamlcommon.cma \
+            ../compilerlibs/ocamlbytecomp.cma \
+            cmt_lookup.cmo
+
+CMT_LOOKUP_OPT1 = $(CMT_LOOKUP:.cmo=.cmx)
+CMT_LOOKUP_OPT = $(CMT_LOOKUP_OPT1:.cma=.cmxa)
+
+cmt_lookup: $(CMT_LOOKUP)
+	$(CAMLC) $(LINKFLAGS) -o cmt_lookup $(CMT_LOOKUP)
+
+cmt_lookup.opt: $(CMT_LOOKUP_OPT)
+	$(CAMLOPT) $(LINKFLAGS) -o cmt_lookup.opt $(CMT_LOOKUP_OPT)
+
+clean::
+	rm -f cmt_lookup cmt_lookup.opt
 
 beforedepend::
 
