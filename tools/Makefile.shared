@@ -35,13 +35,13 @@ COMPFLAGS= -absname -w +a-4-9-41-42-44-45-48 -strict-sequence -warn-error A -saf
 LINKFLAGS=$(INCLUDES)
 
 all: ocamldep ocamlprof ocamlcp ocamloptp ocamlmktop ocamlmklib dumpobj \
-     objinfo read_cmt cmt_lookup cmt_lookup.opt stripdebug cmpbyt
+     objinfo read_cmt cmt_lookup stripdebug cmpbyt
 
 # scrapelabels addlabels
 
 .PHONY: all
 
-opt.opt: ocamldep.opt read_cmt.opt
+opt.opt: ocamldep.opt read_cmt.opt cmt_lookup.opt
 .PHONY: opt.opt
 
 # The dependency generator
