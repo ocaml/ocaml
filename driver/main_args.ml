@@ -37,6 +37,10 @@ let mk_cc f =
   "-cc", Arg.String f, "<command>  Use <command> as the C compiler and linker"
 ;;
 
+let mk_c_impl f =
+  "-c-impl", Arg.String f, "<file>  Compile <file> as a .c file"
+;;
+
 let mk_cclib f =
   "-cclib", Arg.String f, "<opt>  Pass option <opt> to the C linker"
 ;;
@@ -747,6 +751,7 @@ module type Compiler_options = sig
   val _binannot : unit -> unit
   val _c : unit -> unit
   val _cc : string -> unit
+  val _c_impl : string -> unit
   val _cclib : string -> unit
   val _ccopt : string -> unit
   val _config : unit -> unit
@@ -914,6 +919,7 @@ struct
     mk_binannot F._binannot;
     mk_c F._c;
     mk_cc F._cc;
+    mk_c_impl F._c_impl;
     mk_cclib F._cclib;
     mk_ccopt F._ccopt;
     mk_color F._color;
@@ -1056,6 +1062,7 @@ struct
     mk_inline_branch_factor F._inline_branch_factor;
     mk_c F._c;
     mk_cc F._cc;
+    mk_c_impl F._c_impl;
     mk_cclib F._cclib;
     mk_ccopt F._ccopt;
     mk_clambda_checks F._clambda_checks;

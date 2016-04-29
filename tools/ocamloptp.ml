@@ -55,6 +55,7 @@ module Options = Main_args.Make_optcomp_options (struct
   let _binannot = option "-bin-annot"
   let _c = option "-c"
   let _cc s = option_with_arg "-cc" s
+  let _c_impl s = option_with_arg "-c-impl" s
   let _cclib s = option_with_arg "-cclib" s
   let _ccopt s = option_with_arg "-ccopt" s
   let _clambda_checks = option "-clambda-checks"

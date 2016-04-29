@@ -45,6 +45,11 @@ let process_implementation_file ppf name =
   Optcompile.implementation ppf name opref ~backend;
   objfiles := (opref ^ ".cmx") :: !objfiles
 
+let process_c_file name =
+  let oname = (Misc.chop_extension_if_any name) ^ ext_obj in
+  Optcompile.c_file name;
+  ccobjs := oname :: !ccobjs
+
 let cmxa_present = ref false;;
 
 let process_file ppf name =
@@ -63,11 +68,8 @@ let process_file ppf name =
   else if Filename.check_suffix name ext_obj
        || Filename.check_suffix name ext_lib then
     ccobjs := name :: !ccobjs
-  else if Filename.check_suffix name ".c" then begin
-    Optcompile.c_file name;
-    ccobjs := (Filename.chop_suffix (Filename.basename name) ".c" ^ ext_obj)
-              :: !ccobjs
-  end
+  else if Filename.check_suffix name ".c" then
+    process_c_file name
   else
     raise(Arg.Bad("don't know what to do with " ^ name))
 
@@ -88,6 +90,10 @@ let intf filename =
   readenv ppf (Before_compile filename);
   process_interface_file ppf filename;;
 
+let c_impl filename =
+  readenv ppf (Before_compile filename);
+  process_c_file filename
+
 let show_config () =
   Config.print_config stdout;
   exit 0;
@@ -103,6 +109,7 @@ module Options = Main_args.Make_optcomp_options (struct
   let _binannot = set binary_annotations
   let _c = set compile_only
   let _cc s = c_compiler := Some s
+  let _c_impl = c_impl
   let _cclib s = ccobjs := Misc.rev_split_words s @ !ccobjs
   let _ccopt s = first_ccopts := s :: !first_ccopts
   let _clambda_checks () = clambda_checks := true

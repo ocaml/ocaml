@@ -27,6 +27,11 @@ let process_implementation_file ppf name =
   Compile.implementation ppf name opref;
   objfiles := (opref ^ ".cmo") :: !objfiles
 
+let process_c_file name =
+  let oname = (Misc.chop_extension_if_any name) ^ ext_obj in
+  Compile.c_file name;
+  ccobjs := oname :: !ccobjs
+
 let process_file ppf name =
   if Filename.check_suffix name ".ml"
   || Filename.check_suffix name ".mlt" then
@@ -43,11 +48,8 @@ let process_file ppf name =
     ccobjs := name :: !ccobjs
   else if Filename.check_suffix name ext_dll then
     dllibs := name :: !dllibs
-  else if Filename.check_suffix name ".c" then begin
-    Compile.c_file name;
-    ccobjs := (Filename.chop_suffix (Filename.basename name) ".c" ^ ext_obj)
-              :: !ccobjs
-  end
+  else if Filename.check_suffix name ".c" then
+    process_c_file name
   else
     raise(Arg.Bad("don't know what to do with " ^ name))
 
@@ -68,6 +70,10 @@ let intf filename =
   readenv ppf (Before_compile filename);
   process_interface_file ppf filename;;
 
+let c_impl filename =
+  readenv ppf (Before_compile filename);
+  process_c_file filename;;
+
 let show_config () =
   Config.print_config stdout;
   exit 0;
@@ -82,6 +88,7 @@ module Options = Main_args.Make_bytecomp_options (struct
   let _binannot = set binary_annotations
   let _c = set compile_only
   let _cc s = c_compiler := Some s
+  let _c_impl = c_impl
   let _cclib s = ccobjs := Misc.rev_split_words s @ !ccobjs
   let _ccopt s = first_ccopts := s :: !first_ccopts
   let _compat_32 = set bytecode_compatible_32

@@ -78,7 +78,7 @@ let compile_file name =
   let exit =
     command
       (Printf.sprintf
-         "%s -c %s %s %s %s %s%s"
+         "%s -c %s %s %s %s %s %s%s"
          (match !Clflags.c_compiler with
           | Some cc -> cc
           | None ->
@@ -89,6 +89,8 @@ let compile_file name =
          (String.concat " " (List.rev !Clflags.all_ccopts))
          (quote_prefixed "-I" (List.rev !Clflags.include_dirs))
          (Clflags.std_include_flag "-I")
+         (if Config.ccomp_type = "msvc" then "/Tc"
+          else "-x c")
          (Filename.quote name)
          (* cl tediously includes the name of the C file as the first thing it
             outputs (in fairness, the tedious thing is that there's no switch to
