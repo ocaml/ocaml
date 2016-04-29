@@ -1317,13 +1317,13 @@ let transl_int_switch arg low high cases default = match cases with
 
 type unboxed_number_kind =
     No_unboxing
-  | Boxed of boxed_number
+  | Boxed of boxed_number * bool (* true: boxed form available at no cost *)
   | No_result (* expression never returns a result *)
 
 let unboxed_number_kind_of_unbox = function
   | Same_as_ocaml_repr -> No_unboxing
-  | Unboxed_float -> Boxed Boxed_float
-  | Unboxed_integer bi -> Boxed (Boxed_integer bi)
+  | Unboxed_float -> Boxed (Boxed_float, false)
+  | Unboxed_integer bi -> Boxed (Boxed_integer bi, false)
   | Untagged_int -> No_unboxing
 
 let rec is_unboxed_number ~strict env e =
@@ -1340,7 +1340,7 @@ let rec is_unboxed_number ~strict env e =
  *)
   let join k1 e =
     match k1, is_unboxed_number ~strict env e with
-    | Boxed b1, Boxed b2 when b1 = b2 -> Boxed b1
+    | Boxed (b1, c1), Boxed (b2, c2) when b1 = b2 -> Boxed (b1, c1 && c2)
     | No_result, k | k, No_result ->
         k (* if a branch never returns, it is safe to unbox it *)
     | No_unboxing, k | k, No_unboxing when not strict ->
@@ -1351,55 +1351,55 @@ let rec is_unboxed_number ~strict env e =
   | Uvar id ->
       begin match is_unboxed_id id env with
       | None -> No_unboxing
-      | Some (_, bn) -> Boxed bn
+      | Some (_, bn) -> Boxed (bn, false)
       end
 
   | Uconst(Uconst_ref(_, Some (Uconst_float _))) ->
-      Boxed Boxed_float
+      Boxed (Boxed_float, true)
   | Uconst(Uconst_ref(_, Some (Uconst_int32 _))) ->
-      Boxed (Boxed_integer Pint32)
+      Boxed (Boxed_integer Pint32, true)
   | Uconst(Uconst_ref(_, Some (Uconst_int64 _))) ->
-      Boxed (Boxed_integer Pint64)
+      Boxed (Boxed_integer Pint64, true)
   | Uconst(Uconst_ref(_, Some (Uconst_nativeint _))) ->
-      Boxed (Boxed_integer Pnativeint)
+      Boxed (Boxed_integer Pnativeint, true)
   | Uprim(p, _, _) ->
       begin match simplif_primitive p with
         | Pccall p -> unboxed_number_kind_of_unbox p.prim_native_repr_res
-        | Pfloatfield _ -> Boxed Boxed_float
-        | Pfloatofint -> Boxed Boxed_float
-        | Pnegfloat -> Boxed Boxed_float
-        | Pabsfloat -> Boxed Boxed_float
-        | Paddfloat -> Boxed Boxed_float
-        | Psubfloat -> Boxed Boxed_float
-        | Pmulfloat -> Boxed Boxed_float
-        | Pdivfloat -> Boxed Boxed_float
-        | Parrayrefu Pfloatarray -> Boxed Boxed_float
-        | Parrayrefs Pfloatarray -> Boxed Boxed_float
-        | Pbintofint bi -> Boxed (Boxed_integer bi)
-        | Pcvtbint(_src, dst) -> Boxed (Boxed_integer dst)
-        | Pnegbint bi -> Boxed (Boxed_integer bi)
-        | Paddbint bi -> Boxed (Boxed_integer bi)
-        | Psubbint bi -> Boxed (Boxed_integer bi)
-        | Pmulbint bi -> Boxed (Boxed_integer bi)
-        | Pdivbint bi -> Boxed (Boxed_integer bi)
-        | Pmodbint bi -> Boxed (Boxed_integer bi)
-        | Pandbint bi -> Boxed (Boxed_integer bi)
-        | Porbint bi -> Boxed (Boxed_integer bi)
-        | Pxorbint bi -> Boxed (Boxed_integer bi)
-        | Plslbint bi -> Boxed (Boxed_integer bi)
-        | Plsrbint bi -> Boxed (Boxed_integer bi)
-        | Pasrbint bi -> Boxed (Boxed_integer bi)
+        | Pfloatfield _
+        | Pfloatofint
+        | Pnegfloat
+        | Pabsfloat
+        | Paddfloat
+        | Psubfloat
+        | Pmulfloat
+        | Pdivfloat
+        | Parrayrefu Pfloatarray
+        | Parrayrefs Pfloatarray -> Boxed (Boxed_float, false)
+        | Pbintofint bi
+        | Pcvtbint(_, bi)
+        | Pnegbint bi
+        | Paddbint bi
+        | Psubbint bi
+        | Pmulbint bi
+        | Pdivbint bi
+        | Pmodbint bi
+        | Pandbint bi
+        | Porbint bi
+        | Pxorbint bi
+        | Plslbint bi
+        | Plsrbint bi
+        | Pasrbint bi
+        | Pbbswap bi -> Boxed (Boxed_integer bi, false)
         | Pbigarrayref(_, _, (Pbigarray_float32 | Pbigarray_float64), _) ->
-            Boxed Boxed_float
-        | Pbigarrayref(_, _, Pbigarray_int32, _) -> Boxed (Boxed_integer Pint32)
-        | Pbigarrayref(_, _, Pbigarray_int64, _) -> Boxed (Boxed_integer Pint64)
+            Boxed (Boxed_float, false)
+        | Pbigarrayref(_, _, Pbigarray_int32, _) -> Boxed (Boxed_integer Pint32, false)
+        | Pbigarrayref(_, _, Pbigarray_int64, _) -> Boxed (Boxed_integer Pint64, false)
         | Pbigarrayref(_, _, Pbigarray_native_int,_) ->
-            Boxed (Boxed_integer Pnativeint)
-        | Pstring_load_32(_) -> Boxed (Boxed_integer Pint32)
-        | Pstring_load_64(_) -> Boxed (Boxed_integer Pint64)
-        | Pbigstring_load_32(_) -> Boxed (Boxed_integer Pint32)
-        | Pbigstring_load_64(_) -> Boxed (Boxed_integer Pint64)
-        | Pbbswap bi -> Boxed (Boxed_integer bi)
+            Boxed (Boxed_integer Pnativeint, false)
+        | Pstring_load_32(_) -> Boxed (Boxed_integer Pint32, false)
+        | Pstring_load_64(_) -> Boxed (Boxed_integer Pint64, false)
+        | Pbigstring_load_32(_) -> Boxed (Boxed_integer Pint32, false)
+        | Pbigstring_load_64(_) -> Boxed (Boxed_integer Pint64, false)
         | Praise _ -> No_result
         | _ -> No_unboxing
       end
@@ -2292,9 +2292,9 @@ and transl_let env str kind id exp body =
        used in loops and we really want to avoid repeated boxing. *)
     match str, kind with
     | Mutable, Pfloatval ->
-        Boxed Boxed_float
+        Boxed (Boxed_float, false)
     | Mutable, Pboxedintval bi ->
-        Boxed (Boxed_integer bi)
+        Boxed (Boxed_integer bi, false)
     | _, (Pfloatval | Pboxedintval _) ->
         (* It would be safe to always unbox in this case, but
            we do it only if this indeed allows us to get rid of
@@ -2311,13 +2311,13 @@ and transl_let env str kind id exp body =
         No_unboxing
   in
   match unboxing with
-  | No_unboxing ->
+  | No_unboxing | Boxed (_, true) ->
       Clet(id, transl env exp, transl env body)
   | No_result ->
       (* the let-bound expression never returns a value, we can ignore
          the body *)
       transl env exp
-  | Boxed boxed_number ->
+  | Boxed (boxed_number, _false) ->
       let unboxed_id = Ident.create (Ident.name id) in
       Clet(unboxed_id, transl_unbox_number env boxed_number exp,
            transl (add_unboxed_id id unboxed_id boxed_number env) body)

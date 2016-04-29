@@ -129,6 +129,18 @@ let unbox_record_1 float int32 =
 let unbox_record () =
   unbox_record_1 3.14 12l
 
+let r = ref 0.
+
+let unbox_only_if_useful () =
+  for i = 1 to 1000 do
+    let x =
+      if i mod 2 = 0 then 1.
+      else 0.
+    in
+    r := x; (* would force boxing if the let binding above were unboxed *)
+    r := x  (* use [x] twice to avoid elimination of the let-binding *)
+  done
+
 let () =
   let flambda =
     match Sys.getenv "FLAMBDA" with
@@ -142,6 +154,7 @@ let () =
   check_noalloc "compare float" unbox_compare_float;
   check_noalloc "float refs" unbox_float_refs;
   check_noalloc "unbox let float" unbox_let_float;
+  check_noalloc "unbox only if useful" unbox_only_if_useful;
 
   if flambda then begin
     check_noalloc "float and int32 record" unbox_record;
