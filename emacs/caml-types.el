@@ -210,7 +210,7 @@ See `caml-types-location-re' for annotation file format.
          (target-col (current-column)))
     ;; (message "%d %d" target-line target-col)
     (setq caml-types-buffer (get-buffer-create caml-types-buffer-name))
-    (let ((res (caml-types-runcmt-lookup "type" target-file target-line target-col target-line target-col)))
+    (let ((res (caml-types-run-cmt-lookup "type" target-file target-line target-col target-line target-col)))
       (if res
           (pcase res
             (`(,l1 ,c1 ,l2 ,c2 ,type)

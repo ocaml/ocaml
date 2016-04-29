@@ -78,10 +78,12 @@ type definition =
 
 let let_scope s scope =
   if scope <> Location.none then
-    if scope.loc_end <> Lexing.dummy_pos then
-      Some (s.txt, Local_variable scope)
+    match scope.loc_end with
+    | {pos_lnum = 1; pos_bol = 0; pos_cnum = -1; _} ->
+        Some (s.txt, Global_variable scope)
+    | _ ->
+        Some (s.txt, Local_variable scope)
     else
-      Some (s.txt, Global_variable scope)
   else
     None
 
