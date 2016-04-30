@@ -93,8 +93,8 @@ install-runtimed:
 
 ifeq "$(RUNTIMEI)" "true"
 install::
-	cp ocamlruni$(EXE) $(INSTALL_BINDIR)/ocamlruni$(EXE)
-	cp libcamlruni.$(A) $(INSTALL_LIBDIR)/libcamlruni.$(A)
+	cp ocamlruni$(EXE) "$(INSTALL_BINDIR)/ocamlruni$(EXE)"
+	cp libcamlruni.$(A) "$(INSTALL_LIBDIR)/libcamlruni.$(A)"
 endif
 
 # If primitives contain duplicated lines (e.g. because the code is defined
