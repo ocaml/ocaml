@@ -1,4 +1,4 @@
-#**************************************************************************
+#************************-*-makefile-*-************************************
 #*                                                                        *
 #*                                 OCaml                                  *
 #*                                                                        *
@@ -22,10 +22,10 @@ CAMLYACC := ../boot/ocamlyacc
 endif
 DESTDIR ?=
 
-target=''""'$(subst ','\'',$@)'#'#')'#
-source=''""'$(subst ','\'',$<)'#'#')'#
-shellquote=''""'$(subst ','\'',$1)'#'#')'#
-installed_tools := ocamldep ocamlprof ocamlcp ocamloptp \
+override target=''""'$(subst ','\'',$@)'#'#')'#
+override source=''""'$(subst ','\'',$<)'#'#')'#
+override shellquote=''""'$(subst ','\'',$1)'#'#')'#
+override installed_tools := ocamldep ocamlprof ocamlcp ocamloptp \
                    ocamlmktop ocamlmklib ocamlobjinfo
 
 install_files :=
@@ -34,12 +34,17 @@ $(patsubst %.cmo,%.cmx,$(patsubst %.cma,%.cmxa,$1))
 endef
 
 # $1 = target, $2 = OCaml object dependencies, $3 = other dependencies
+#
+# There is a lot of subtle code here.  The multiple layers of expansion
+# are due to `make`'s eval() function, which evaluates the string
+# passed to it as a makefile fragment.  So it is crucial that variables
+# not get expanded too many times.
 define byte_and_opt_
-ifneq '$$(words $1)' '1'
-$$(error cannot build file with whitespace in name)
-endif
+# This check is defensive programming
+$(and $(filter-out 1,$(words $1)),$(error \
+   cannot build file with whitespace in name))
 $1: $3 $2
-	$$(CAMLC) $$(LINKFLAGS) -o $${target} $2; test -f $$@
+	$$(CAMLC) $$(LINKFLAGS) -o $$(target) $2
 
 $1.opt: $3 $$(call byte2native,$2)
 	$$(CAMLOPT) $$(LINKFLAGS) -o $$(target) $$(call byte2native,$2)
@@ -47,14 +52,15 @@ $1.opt: $3 $$(call byte2native,$2)
 all: $1
 
 opt.opt: $1.opt
-ifeq '$$(filter $$(installed_tools),$1)' '$1'
-install_files += '$(subst ','\'',$1)'#'#')#
+ifeq '$(filter $(installed_tools),$1)' '$1'
+install_files += $(call shellquote,$1)
 endif
 clean::
 	rm -f -- $1 $1.opt
 
 endef
 
+# Escape any $ characters in the arguments and eval the result.
 define byte_and_opt
 $(eval $(call \
  byte_and_opt_,$(subst $$,$$$$,$1),$(subst $$,$$$$,$2),$(subst $$,$$$$,$3)))
