@@ -22,6 +22,9 @@ CAMLYACC := ../boot/ocamlyacc
 endif
 DESTDIR ?=
 
+# Setup GNU make variables storing per-target source and target,
+# a list of installed tools, and a function to quote a filename for
+# the shell.
 override target=''""'$(subst ','\'',$@)'#'#')'#
 override source=''""'$(subst ','\'',$<)'#'#')'#
 override shellquote=''""'$(subst ','\'',$1)'#'#')'#
