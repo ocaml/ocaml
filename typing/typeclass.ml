@@ -21,6 +21,32 @@ open Typecore
 open Typetexp
 open Format
 
+type 'a class_info = {
+  cls_id : Ident.t;
+  cls_id_loc : string loc;
+  cls_decl : class_declaration;
+  cls_ty_id : Ident.t;
+  cls_ty_decl : class_type_declaration;
+  cls_obj_id : Ident.t;
+  cls_obj_abbr : type_declaration;
+  cls_typesharp_id : Ident.t;
+  cls_abbr : type_declaration;
+  cls_arity : int;
+  cls_pub_methods : string list;
+  cls_info : 'a;
+}
+
+type class_type_info = {
+  clsty_ty_id : Ident.t;
+  clsty_id_loc : string loc;
+  clsty_ty_decl : class_type_declaration;
+  clsty_obj_id : Ident.t;
+  clsty_obj_abbr : type_declaration;
+  clsty_typesharp_id : Ident.t;
+  clsty_abbr : type_declaration;
+  clsty_info : Typedtree.class_type_declaration;
+}
+
 type error =
     Unconsistent_constraint of (type_expr * type_expr) list
   | Field_type_mismatch of string * string * (type_expr * type_expr) list
@@ -1589,8 +1615,18 @@ let check_coercions env
       if not (Ctype.opened_object cl_ty) then
         raise(Error(loc, env, Cannot_coerce_self obj_ty))
   end;
-  (id, id_loc, clty, ty_id, cltydef, obj_id, obj_abbr, cl_id, cl_abbr,
-   arity, pub_meths, req)
+  {cls_id = id;
+   cls_id_loc = id_loc;
+   cls_decl = clty;
+   cls_ty_id = ty_id;
+   cls_ty_decl = cltydef;
+   cls_obj_id = obj_id;
+   cls_obj_abbr = obj_abbr;
+   cls_typesharp_id = cl_id;
+   cls_abbr = cl_abbr;
+   cls_arity = arity;
+   cls_pub_methods = pub_meths;
+   cls_info=req}
 
 (*******************************)
 
@@ -1637,15 +1673,20 @@ let class_descriptions env cls =
   type_classes true approx_description class_description env cls
 
 let class_type_declarations env cls =
-  let (decl, env) =
+  let (decls, env) =
     type_classes false approx_description class_description env cls
   in
   (List.map
-     (function
-       (_, id_loc, _, ty_id, cltydef, obj_id, obj_abbr, cl_id, cl_abbr,
-        _, _, ci) ->
-       (ty_id, id_loc, cltydef, obj_id, obj_abbr, cl_id, cl_abbr, ci))
-     decl,
+     (fun decl ->
+        {clsty_ty_id = decl.cls_ty_id;
+         clsty_id_loc = decl.cls_id_loc;
+         clsty_ty_decl = decl.cls_ty_decl;
+         clsty_obj_id = decl.cls_obj_id;
+         clsty_obj_abbr = decl.cls_obj_abbr;
+         clsty_typesharp_id = decl.cls_typesharp_id;
+         clsty_abbr = decl.cls_abbr;
+         clsty_info = decl.cls_info})
+     decls,
    env)
 
 let rec unify_parents env ty cl =

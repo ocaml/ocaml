@@ -404,10 +404,11 @@ and approx_sig env ssg =
           let rem = approx_sig env srem in
           List.flatten
             (map_rec
-              (fun rs (i1, _, d1, i2, d2, i3, d3, _) ->
-                [Sig_class_type(i1, d1, rs);
-                 Sig_type(i2, d2, rs);
-                 Sig_type(i3, d3, rs)])
+               (fun rs decl ->
+                  let module T = Typeclass in
+                  [Sig_class_type(decl.T.clsty_ty_id, decl.T.clsty_ty_decl, rs);
+                   Sig_type(decl.T.clsty_obj_id, decl.T.clsty_obj_abbr, rs);
+                   Sig_type(decl.T.clsty_typesharp_id, decl.T.clsty_abbr, rs)])
               decls [rem])
       | _ ->
           approx_sig env srem
@@ -698,17 +699,17 @@ and transl_signature env sg =
             let (classes, newenv) = Typeclass.class_descriptions env cl in
             let (trem, rem, final_env) = transl_sig newenv srem in
             mksig (Tsig_class
-                     (List.map
-                        (fun (_, _, _, _, _, _, _, _, _, _, _, tcl) -> tcl)
-                        classes)) env loc
+                     (List.map (fun decr ->
+                          decr.Typeclass.cls_info) classes)) env loc
             :: trem,
             List.flatten
               (map_rec
-                 (fun rs (i, _, d, i', d', i'', d'', i''', d''', _, _, _) ->
-                   [Sig_class(i, d, rs);
-                    Sig_class_type(i', d', rs);
-                    Sig_type(i'', d'', rs);
-                    Sig_type(i''', d''', rs)])
+                 (fun rs cls ->
+                    let module T = Typeclass in
+                    [Sig_class(cls.T.cls_id, cls.T.cls_decl, rs);
+                     Sig_class_type(cls.T.cls_ty_id, cls.T.cls_ty_decl, rs);
+                     Sig_type(cls.T.cls_obj_id, cls.T.cls_obj_abbr, rs);
+                     Sig_type(cls.T.cls_typesharp_id, cls.T.cls_abbr, rs)])
                  classes [rem]),
             final_env
         | Psig_class_type cl ->
@@ -717,14 +718,19 @@ and transl_signature env sg =
               cl;
             let (classes, newenv) = Typeclass.class_type_declarations env cl in
             let (trem,rem, final_env) = transl_sig newenv srem in
-            mksig (Tsig_class_type (List.map (fun (_, _, _, _, _, _, _, tcl) -> tcl) classes))
+            mksig (Tsig_class_type
+                     (List.map (fun decl -> decl.Typeclass.clsty_info) classes))
               env loc :: trem,
             List.flatten
               (map_rec
-                 (fun rs (i, _, d, i', d', i'', d'', _) ->
-                   [Sig_class_type(i, d, rs);
-                    Sig_type(i', d', rs);
-                    Sig_type(i'', d'', rs)])
+                 (fun rs decl ->
+                    let module T = Typeclass in
+                    [Sig_class_type(decl.T.clsty_ty_id,
+                                    decl.T.clsty_ty_decl, rs);
+                     Sig_type(decl.T.clsty_obj_id,
+                              decl.T.clsty_obj_abbr, rs);
+                     Sig_type(decl.T.clsty_typesharp_id,
+                              decl.T.clsty_abbr, rs)])
                  classes [rem]),
             final_env
         | Psig_attribute x ->
@@ -1373,7 +1379,9 @@ and type_structure ?(toplevel = false) funct_body anchor env sstr scope =
           cl;
         let (classes, new_env) = Typeclass.class_declarations env cl in
         Tstr_class
-          (List.map (fun (_,_,_,_,_,_,_,_,_,_, m, c) -> (c, m)) classes),
+          (List.map (fun cls ->
+               (cls.Typeclass.cls_info,
+                cls.Typeclass.cls_pub_methods)) classes),
 (* TODO: check with Jacques why this is here
       Tstr_class_type
           (List.map (fun (_,_, i, d, _,_,_,_,_,_,c) -> (i, c)) classes) ::
@@ -1384,11 +1392,12 @@ and type_structure ?(toplevel = false) funct_body anchor env sstr scope =
 *)
         List.flatten
           (map_rec
-             (fun rs (i, _, d, i', d', i'', d'', i''', d''', _, _, _) ->
-                [Sig_class(i, d, rs);
-                 Sig_class_type(i', d', rs);
-                 Sig_type(i'', d'', rs);
-                 Sig_type(i''', d''', rs)])
+            (fun rs cls ->
+              let module T = Typeclass in
+              [Sig_class(cls.T.cls_id, cls.T.cls_decl, rs);
+               Sig_class_type(cls.T.cls_ty_id, cls.T.cls_ty_decl, rs);
+               Sig_type(cls.T.cls_obj_id, cls.T.cls_obj_abbr, rs);
+               Sig_type(cls.T.cls_typesharp_id, cls.T.cls_abbr, rs)])
              classes []),
         new_env
     | Pstr_class_type cl ->
@@ -1397,8 +1406,10 @@ and type_structure ?(toplevel = false) funct_body anchor env sstr scope =
           cl;
         let (classes, new_env) = Typeclass.class_type_declarations env cl in
         Tstr_class_type
-          (List.map (fun (i, i_loc, _, _, _, _, _, c) ->
-               (i, i_loc, c)) classes),
+          (List.map (fun cl ->
+               (cl.Typeclass.clsty_ty_id,
+                cl.Typeclass.clsty_id_loc,
+                cl.Typeclass.clsty_info)) classes),
 (*  TODO: check with Jacques why this is here
            Tstr_type
              (List.map (fun (_, _, i, d, _, _) -> (i, d)) classes) ::
@@ -1406,10 +1417,11 @@ and type_structure ?(toplevel = false) funct_body anchor env sstr scope =
              (List.map (fun (_, _, _, _, i, d) -> (i, d)) classes) :: *)
         List.flatten
           (map_rec
-             (fun rs (i, _, d, i', d', i'', d'', _) ->
-                [Sig_class_type(i, d, rs);
-                 Sig_type(i', d', rs);
-                 Sig_type(i'', d'', rs)])
+             (fun rs decl ->
+                let module T = Typeclass in
+                [Sig_class_type(decl.T.clsty_ty_id, decl.T.clsty_ty_decl, rs);
+                 Sig_type(decl.T.clsty_obj_id, decl.T.clsty_obj_abbr, rs);
+                 Sig_type(decl.T.clsty_typesharp_id, decl.T.clsty_abbr, rs)])
              classes []),
         new_env
     | Pstr_include sincl ->
