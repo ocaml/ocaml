@@ -272,7 +272,7 @@ clean::
 beforedepend::
 
 install::
-	cp cmt_lookup cmt_lookup.opt $(INSTALL_BINDIR)/
+	cp cmt_lookup cmt_lookup.opt "$(INSTALL_BINDIR)/"
 
 # The bytecode disassembler
 
