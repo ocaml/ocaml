@@ -25,6 +25,8 @@ OCaml 4.04.0:
   and are usually faster, except Hashtbl.copy which can be much
   slower
   (Alain Frisch)
+- PR#6279, GPR#553: implement Set.map
+  (Gabriel Scherer)
 
 - GPR#473: Provide `Sys.backend_type` so that user can write backend-specific
   code in some cases (for example,  code generator).

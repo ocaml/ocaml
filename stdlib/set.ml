@@ -38,6 +38,7 @@ module type S =
     val equal: t -> t -> bool
     val subset: t -> t -> bool
     val iter: (elt -> unit) -> t -> unit
+    val map: (elt -> elt) -> t -> t
     val fold: (elt -> 'a -> 'a) -> t -> 'a -> 'a
     val for_all: (elt -> bool) -> t -> bool
     val exists: (elt -> bool) -> t -> bool
@@ -373,6 +374,21 @@ module Make(Ord: OrderedType) =
           let c = Ord.compare x v in
           if c = 0 then v
           else find x (if c < 0 then l else r)
+
+    let rec map f = function
+      | Empty -> Empty
+      | Node (l, v, r, _) as t ->
+         (* enforce left-to-right evaluation order *)
+         let l' = map f l in
+         let v' = f v in
+         let r' = map f r in
+         if l == l' && v == v' && r == r' then t
+         else begin
+             if (l' = Empty || Ord.compare (max_elt l') v < 0)
+                && (r' = Empty || Ord.compare v (min_elt r') < 0)
+             then join l' v' r'
+             else union l' (add v' r')
+         end
 
     let of_sorted_list l =
       let rec sub n l =

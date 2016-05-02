@@ -75,6 +75,17 @@ let test x s1 s2 =
     (let b = S.subset s1 s2 in
      b || not (S.is_empty (S.diff s1 s2)));
 
+  checkbool "map"
+    (S.elements (S.map succ s1) = List.map succ (S.elements s1));
+
+  checkbool "map2"
+    (S.map (fun x -> x) s1 == s1);
+
+  checkbool "map3"
+    ((* check that the traversal is made in increasing element order *)
+     let last = ref min_int in
+     S.map (fun x -> assert (!last <= x); last := x; x) s1 == s1);
+
   checkbool "for_all"
     (let p x = x mod 2 = 0 in
      S.for_all p s1 = List.for_all p (S.elements s1));
