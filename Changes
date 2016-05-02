@@ -3,26 +3,22 @@ OCaml 4.04.0:
 
 (Changes that can break existing programs are marked with a "*")
 
-Language features:
-##################
+### Language features:
 
 - GPR#301: local exception declarations "let exception ... in"
   (Alain Frisch)
 
-Compilers:
-##########
+### Compilers:
 
 - PR#7023, GPR#336: Better unboxing strategy
   (Alain Frisch, Pierre Chambart)
 
-Tools:
-######
+### Tools:
 
 - GPR#452: Make the output of ocamldep is more stable
   (Alain Frisch)
 
-Standard library:
-#################
+### Standard library:
 
 - PR#4747, GPR#328: Optimize Hashtbl by using in-place updates of its
   internal bucket lists.  All operations run in constant stack size
@@ -30,8 +26,7 @@ Standard library:
   slower.
   (Alain Frisch)
 
-Build system:
-#############
+### Build system:
 
 - GPR#324: Compiler developpers only: Adding new primitives to the
   standard runtime doesn't require anymore to run `make bootstrap`
@@ -46,35 +41,28 @@ Build system:
 - GPR#507: More sharing between Unix and Windows makefiles
   (whitequark, review by Alain Frisch)
 
-Bug fixes:
-##########
+### Bug fixes:
 
 - PR#7112: Aliased arguments ignored for equality of module types
 
-Other libraries:
-################
+### Other libraries:
 
 * GPR#533: Thread library: fixed [Thread.wait_signal] so that it
   converts back the signal number returned by [sigwait] to an
   OS-independent number
   (Jérémie Dimino)
 
-Documentation:
-##############
+### Documentation:
 
 - PR#7243: warn users against using WinZip to unpack the source archive
   (Damien Doligez, report by Shayne Fletcher)
-
-###############################################################################
-###############################################################################
 
 OCaml 4.03.0:
 -------------
 
 (Changes that can break existing programs are marked with a "*")
 
-Language features:
-##################
+### Language features:
 
 - PR#5528: inline records for constructor arguments
   (Alain Frisch)
@@ -173,8 +161,7 @@ Language features:
   not to the expression.
   (Gabriel Radanne)
 
-Compilers:
-##########
+### Compilers:
 
 * PR#4231, PR#5461: warning 31 is now fatal by default
   (Warning 31: A module is linked twice in the same executable.)
@@ -347,8 +334,7 @@ Compilers:
   `match .. with exception e -> raise e`
   (Nicolas Ojeda Bar, review by Gabriel Scherer)
 
-Runtime system:
-###############
+### Runtime system:
 
 - PR#3612, PR#92: allow allocating custom block with finalizers
   in the minor heap.
@@ -395,8 +381,7 @@ Runtime system:
 - GPR#325: Add v=0x400 flag to OCAMLRUNPARAM to display GC stats on exit
   (Louis Gesbert, review by Alain Frisch)
 
-Standard library:
-#################
+### Standard library:
 
 - PR#1460, GPR#230: Array.map2, Array.iter2
   (John Christopher McAlpine)
@@ -520,8 +505,7 @@ Standard library:
 - GPR#356: Add [Format.kasprintf]
   (Jérémie Dimino, Mark Shinwell)
 
-Type system:
-############
+### Type system:
 
 - PR#5545: Type annotations on methods cannot control the choice of abbreviation
   (Jacques Garrigue)
@@ -535,8 +519,7 @@ Type system:
 - PR#6593: Functor application in tests/basic-modules fails after commit 15405
   (Jacques Garrigue)
 
-Toplevel and debugger:
-######################
+### Toplevel and debugger:
 
 - PR#6113: Add descriptions to directives, and display them via #help
   (Nick Giannarakis, Berke Durak, Francis Southern and Gabriel Scherer)
@@ -571,8 +554,7 @@ Toplevel and debugger:
 - PR#7119: the toplevel does not respect [@@@warning]
   (Alain Frisch, report by Gabriel Radanne)
 
-Other libraries:
-################
+### Other libraries:
 
 * Unix library: channels created by Unix.in_channel_of_descr or
   Unix.out_channel_of_descr no longer support text mode under Windows.
@@ -622,14 +604,12 @@ Other libraries:
   similar functions when the [exec] call fails in the child process
   (Jérémie Dimino)
 
-OCamldep:
-#########
+### OCamldep:
 
 - GPR#286: add support for module aliases
   (Jacques Garrigue)
 
-Manual:
-#######
+### Manual:
 
 - GPR#302: The OCaml reference manual is now included in the manual/
   subdirectory of the main OCaml source repository. Contributions to
@@ -658,8 +638,7 @@ Manual:
 - PR#7109, GPR#380: Fix bigarray documentation layout
   (Florian Angeletti, Leo White)
 
-Bug fixes:
-##########
+### Bug fixes:
 
 - PR#3612: memory leak in bigarray read from file
   (Pierre Chambart, report by Gary Huber)
@@ -972,8 +951,7 @@ Bug fixes:
   variant and arrow types
   (Thomas Refis)
 
-Features wishes:
-################
+### Features wishes:
 
 - PR#4518, GPR#29: change location format for reporting errors in ocamldoc
   (Sergei Lebedev)
@@ -1100,14 +1078,10 @@ Features wishes:
   (Mark Shinwell, debugging & test case by Arseniy Alekseyev and Leo White,
     code review by Xavier Leroy)
 
-Build system:
-#############
+### Build system:
 
 - GPR#388: FlexDLL added as a Git submodule and bootstrappable with the compiler
   (David Allsopp)
-
-###############################################################################
-###############################################################################
 
 OCaml 4.02.3 (27 Jul 2015):
 ---------------------------
