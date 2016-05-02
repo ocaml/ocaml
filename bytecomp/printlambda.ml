@@ -222,7 +222,8 @@ let primitive ppf = function
        | Max_wosize -> "max_wosize"
        | Ostype_unix -> "ostype_unix"
        | Ostype_win32 -> "ostype_win32"
-       | Ostype_cygwin -> "ostype_cygwin" in
+       | Ostype_cygwin -> "ostype_cygwin"
+       | Backend_type -> "backend_type" in
      fprintf ppf "sys.constant_%s" const_name
   | Pisint -> fprintf ppf "isint"
   | Pisout -> fprintf ppf "isout"

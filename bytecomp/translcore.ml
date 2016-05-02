@@ -161,6 +161,7 @@ let primitives_table = create_hashtable 57 [
   "%sequor", Psequor;
   "%boolnot", Pnot;
   "%big_endian", Pctconst Big_endian;
+  "%backend_type", Pctconst Backend_type;
   "%word_size", Pctconst Word_size;
   "%int_size", Pctconst Int_size;
   "%max_wosize", Pctconst Max_wosize;

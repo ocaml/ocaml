@@ -26,6 +26,10 @@ OCaml 4.04.0:
   slower.
   (Alain Frisch)
 
+- GPR#473: Provide `Sys.backend_type` so that user can write backend-specific
+  code in some cases (for example,  code generator).
+  (Hongbo Zhang)
+
 ### Build system:
 
 - GPR#324: Compiler developpers only: Adding new primitives to the
