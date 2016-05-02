@@ -58,7 +58,7 @@ type t =
   | Unused_for_index of string              (* 35 *)
   | Unused_ancestor of string               (* 36 *)
   | Unused_constructor of string * bool * bool  (* 37 *)
-  | Unused_extension of string * bool * bool    (* 38 *)
+  | Unused_extension of string * bool * bool * bool (* 38 *)
   | Unused_rec_flag                         (* 39 *)
   | Name_out_of_scope of string * string list * bool (* 40 *)
   | Ambiguous_name of string list * string list *  bool    (* 41 *)
@@ -369,16 +369,21 @@ let message = function
       "constructor " ^ s ^
       " is never used to build values.\n\
         Its type is exported as a private type."
-  | Unused_extension (s, false, false) ->
-      "unused extension constructor " ^ s ^ "."
-  | Unused_extension (s, true, _) ->
-      "extension constructor " ^ s ^
-      " is never used to build values.\n\
-        (However, this constructor appears in patterns.)"
-  | Unused_extension (s, false, true) ->
-      "extension constructor " ^ s ^
-      " is never used to build values.\n\
-        It is exported or rebound as a private extension."
+  | Unused_extension (s, is_exception, cu_pattern, cu_privatize) ->
+     let kind =
+       if is_exception then "exception" else "extension constructor" in
+     let name = kind ^ " " ^ s in
+     begin match cu_pattern, cu_privatize with
+       | false, false -> "unused " ^ name
+       | true, _ ->
+          name ^
+          " is never used to build values.\n\
+           (However, this constructor appears in patterns.)"
+       | false, true ->
+          name ^
+          " is never used to build values.\n\
+            It is exported or rebound as a private extension."
+     end
   | Unused_rec_flag ->
       "unused rec flag."
   | Name_out_of_scope (ty, [nm], false) ->
