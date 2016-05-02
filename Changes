@@ -23,12 +23,16 @@ OCaml 4.04.0:
 - PR#4747, GPR#328: Optimize Hashtbl by using in-place updates of its
   internal bucket lists.  All operations run in constant stack size
   and are usually faster, except Hashtbl.copy which can be much
-  slower.
+  slower
   (Alain Frisch)
 
 - GPR#473: Provide `Sys.backend_type` so that user can write backend-specific
   code in some cases (for example,  code generator).
   (Hongbo Zhang)
+
+- PR#6820, GPR#560: Add Obj.reachable_words to compute the
+  "transitive" heap size of a value
+  (Alain Frisch, review by Marc Shinwell and Damien Doligez)
 
 ### Build system:
 
