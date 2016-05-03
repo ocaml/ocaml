@@ -26,6 +26,10 @@ OCaml 4.04.0:
 
 ### Standard library:
 
+- GPR#427: Obj.is_block is now an inlined OCaml function instead of a
+  C external.  This should be faster.
+  (Demi Obenour)
+
 - PR#4747, GPR#328: Optimize Hashtbl by using in-place updates of its
   internal bucket lists.  All operations run in constant stack size
   and are usually faster, except Hashtbl.copy which can be much
