@@ -31,7 +31,7 @@ open Parser_aux
 %token          STAR                    /* *  */
 %token          MINUS                   /* -  */
 %token          DOT                     /* . */
-%token          SHARP                   /* #  */
+%token          HASH                    /* #  */
 %token          AT                      /* @  */
 %token          DOLLAR                  /* $ */
 %token          BANG                    /* ! */
@@ -238,7 +238,7 @@ break_argument_eol :
   | integer_eol                                 { BA_pc $1 }
   | expression end_of_line                      { BA_function $1 }
   | AT opt_longident INTEGER opt_integer_eol    { BA_pos1 ($2, (to_int $3), $4)}
-  | AT opt_longident SHARP integer_eol          { BA_pos2 ($2, $4) }
+  | AT opt_longident HASH integer_eol           { BA_pos2 ($2, $4) }
 ;
 
 /* Arguments for list */

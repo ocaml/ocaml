@@ -188,7 +188,7 @@ rule main = parse
   | ')'  { Trparen }
   | '^'  { Tcaret }
   | '-'  { Tdash }
-  | '#'  { Tsharp }
+  | '#'  { Thash }
   | eof  { Tend }
   | _
     { raise_lexical_error lexbuf

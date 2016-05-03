@@ -17,7 +17,7 @@
 
 val init : unit -> unit
 val token: Lexing.lexbuf -> Parser.token
-val skip_sharp_bang: Lexing.lexbuf -> unit
+val skip_hash_bang: Lexing.lexbuf -> unit
 
 type error =
   | Illegal_character of char

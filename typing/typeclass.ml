@@ -1532,7 +1532,7 @@ let final_decl env define_class
      ci_id_class = id;
      ci_id_class_type = ty_id;
      ci_id_object = obj_id;
-     ci_id_typesharp = cl_id;
+     ci_id_typehash = cl_id;
      ci_expr = expr;
      ci_decl = clty;
      ci_type_decl = cltydef;
