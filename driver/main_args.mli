@@ -104,6 +104,7 @@ module type Toplevel_options = sig
   include Common_options
   val _init : string -> unit
   val _noinit : unit -> unit
+  val _no_version : unit -> unit
   val _noprompt : unit -> unit
   val _nopromptcont : unit -> unit
   val _stdin : unit -> unit
