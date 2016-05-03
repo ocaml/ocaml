@@ -32,7 +32,7 @@ type t =
   | A of int
   | B of t * t
 
-let () =
+let f () =
   let x = Random.int 10 in
   expect_size 0 42;
   expect_size (if native then 0 else 3) (1, 2);
@@ -48,3 +48,6 @@ let () =
   expect_size 5 b;
 
   print_endline "OK"
+
+let () =
+  f ()
