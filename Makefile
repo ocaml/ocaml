@@ -196,16 +196,6 @@ base.opt:
 
 # Installation
 
-COMPLIBDIR=$(LIBDIR)/compiler-libs
-
-override shellquote = ""'''$(subst ','\'',$1)'#)'
-
-INSTALL_BINDIR:=$(call shellquote,$(DESTDIR)$(BINDIR))
-INSTALL_LIBDIR:=$(call shellquote,$(DESTDIR)$(LIBDIR))
-INSTALL_COMPLIBDIR:=$(call shellquote,$(DESTDIR)$(COMPLIBDIR))
-INSTALL_STUBLIBDIR:=$(call shellquote,$(DESTDIR)$(STUBLIBDIR))
-INSTALL_MANDIR:=$(call shellquote,$(DESTDIR)$(MANDIR))
-
 install:
 	if test -d $(INSTALL_BINDIR); then : ; \
 	  else $(MKDIR) $(INSTALL_BINDIR); fi
@@ -385,10 +375,7 @@ partialclean::
 ocamlnat: compilerlibs/ocamlcommon.cmxa compilerlibs/ocamloptcomp.cmxa \
     otherlibs/dynlink/dynlink.cmxa compilerlibs/ocamlopttoplevel.cmxa \
     $(OPTTOPLEVELSTART:.cmo=.cmx)
-	$(CAMLOPT) $(LINKFLAGS) -linkall -o ocamlnat \
-	    otherlibs/dynlink/dynlink.cmxa compilerlibs/ocamlcommon.cmxa \
-	    compilerlibs/ocamloptcomp.cmxa compilerlibs/ocamlopttoplevel.cmxa \
-	    $(OPTTOPLEVELSTART:.cmo=.cmx)
+	$(CAMLOPT) $(LINKFLAGS) -linkall -o $@ $^
 
 partialclean::
 	rm -f ocamlnat
@@ -792,3 +779,4 @@ distclean:
 .PHONY: restore runtime runtimeopt makeruntimeopt world world.opt
 
 include .depend
+

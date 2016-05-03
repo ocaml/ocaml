@@ -16,7 +16,7 @@
 # Common Makefile for otherlibs
 
 ROOTDIR=../..
-include $(ROOTDIR)/config/Makefile
+include $(ROOTDIR)/global.mk
 CAMLRUN ?= $(ROOTDIR)/boot/ocamlrun
 CAMLYACC ?= $(ROOTDIR)/boot/ocamlyacc
 
@@ -80,18 +80,18 @@ INSTALL_STUBLIBDIR=$(DESTDIR)$(STUBLIBDIR)
 
 install::
 	if test -f dll$(CLIBNAME)$(EXT_DLL); then \
-	  cp dll$(CLIBNAME)$(EXT_DLL) "$(INSTALL_STUBLIBDIR)/"; fi
-	cp lib$(CLIBNAME).$(A) "$(INSTALL_LIBDIR)/"
-	cd "$(INSTALL_LIBDIR)"; $(RANLIB) lib$(CLIBNAME).$(A)
-	cp $(LIBNAME).cma $(CMIFILES) $(CMIFILES:.cmi=.mli) "$(INSTALL_LIBDIR)/"
+	  cp dll$(CLIBNAME)$(EXT_DLL) $(INSTALL_STUBLIBDIR)/; fi
+	cp lib$(CLIBNAME).$(A) $(INSTALL_LIBDIR)/
+	cd $(INSTALL_LIBDIR); $(RANLIB) lib$(CLIBNAME).$(A)
+	cp $(LIBNAME).cma $(CMIFILES) $(CMIFILES:.cmi=.mli) $(INSTALL_LIBDIR)/
 	if test -n "$(HEADERS)"; then \
-	  cp $(HEADERS) "$(INSTALL_LIBDIR)/caml/"; fi
+	  cp $(HEADERS) $(INSTALL_LIBDIR)/caml/; fi
 
 installopt:
-	cp $(CAMLOBJS_NAT) $(LIBNAME).cmxa $(LIBNAME).$(A) "$(INSTALL_LIBDIR)/"
-	cd "$(INSTALL_LIBDIR)"; $(RANLIB) $(LIBNAME).a
+	cp $(CAMLOBJS_NAT) $(LIBNAME).cmxa $(LIBNAME).$(A) $(INSTALL_LIBDIR)/
+	cd $(INSTALL_LIBDIR); $(RANLIB) $(LIBNAME).a
 	if test -f $(LIBNAME).cmxs; then \
-	  cp $(LIBNAME).cmxs "$(INSTALL_LIBDIR)/"; fi
+	  cp $(LIBNAME).cmxs $(INSTALL_LIBDIR)/; fi
 
 partialclean:
 	rm -f *.cm*

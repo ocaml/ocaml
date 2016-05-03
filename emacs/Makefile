@@ -12,7 +12,7 @@
 #*                                                                        *
 #**************************************************************************
 
-include ../config/Makefile
+include ../global.mk
 
 # Files to install
 FILES=	caml-font.el caml-hilit.el caml.el camldebug.el \

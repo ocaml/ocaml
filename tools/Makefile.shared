@@ -1,4 +1,4 @@
-#************************-*-makefile-*-************************************
+#**************************************************************************
 #*                                                                        *
 #*                                 OCaml                                  *
 #*                                                                        *
@@ -13,20 +13,14 @@
 #*                                                                        *
 #**************************************************************************
 MAKEFLAGS := -r -R
-include ../config/Makefile
-ifndef CAMLRUN
-CAMLRUN := ../boot/ocamlrun
-endif
-ifndef CAMLYACC
-CAMLYACC := ../boot/ocamlyacc
-endif
+include ../global.mk
+CAMLRUN ?= ../boot/ocamlrun
+CAMLYACC ?= ../boot/ocamlyacc
 DESTDIR ?=
-
+VPATH = ..
 # Setup GNU make variables storing per-target source and target,
 # a list of installed tools, and a function to quote a filename for
 # the shell.
-override target=''""'$(subst ','\'',$@)'#'#')'#
-override source=''""'$(subst ','\'',$<)'#'#')'#
 override shellquote=''""'$(subst ','\'',$1)'#'#')'#
 override installed_tools := ocamldep ocamlprof ocamlcp ocamloptp \
                    ocamlmktop ocamlmklib ocamlobjinfo
@@ -37,7 +31,6 @@ $(patsubst %.cmo,%.cmx,$(patsubst %.cma,%.cmxa,$1))
 endef
 
 # $1 = target, $2 = OCaml object dependencies, $3 = other dependencies
-#
 # There is a lot of subtle code here.  The multiple layers of expansion
 # are due to `make`'s eval() function, which evaluates the string
 # passed to it as a makefile fragment.  So it is crucial that variables
@@ -47,16 +40,17 @@ define byte_and_opt_
 $(and $(filter-out 1,$(words $1)),$(error \
    cannot build file with whitespace in name))
 $1: $3 $2
-	$$(CAMLC) -compat-32 $$(LINKFLAGS) -o $$(target) $2
+	$$(CAMLC) $2 $$(LINKFLAGS) -I .. -o $$@
 
 $1.opt: $3 $$(call byte2native,$2)
-	$$(CAMLOPT) $$(LINKFLAGS) -o $$(target) $$(call byte2native,$2)
+	$$(CAMLOPT) $$(LINKFLAGS) -I .. -o $$@ $$(call byte2native,$2)
 
 all: $1
 
 opt.opt: $1.opt
+
 ifeq '$(filter $(installed_tools),$1)' '$1'
-install_files += $(call shellquote,$1)
+install_files += $1
 endif
 clean::
 	rm -f -- $1 $1.opt
@@ -77,9 +71,9 @@ else
 export OCAML_FLEXLINK:=$(ROOTDIR)/boot/ocamlrun $(ROOTDIR)/flexdll/flexlink.exe
 endif
 
-CAMLC=$(CAMLRUN) ../boot/ocamlc -nostdlib -I ../boot -use-prims ../byterun/primitives
-CAMLOPT := $(CAMLRUN) ../ocamlopt
-CAMLOPT += -nostdlib -I ../stdlib
+CAMLC=$(CAMLRUN) ../boot/ocamlc -nostdlib -I ../boot -use-prims \
+  ../byterun/primitives -I ..
+CAMLOPT := $(CAMLRUN) ../ocamlopt -nostdlib -I ../stdlib
 CAMLLEX=$(CAMLRUN) ../boot/ocamllex
 INCLUDES=-I ../utils -I ../parsing -I ../typing -I ../bytecomp -I ../asmcomp \
          -I ../middle_end -I ../middle_end/base_types -I ../driver \
@@ -87,7 +81,7 @@ INCLUDES=-I ../utils -I ../parsing -I ../typing -I ../bytecomp -I ../asmcomp \
 COMPFLAGS= -absname -w +a-4-9-41-42-44-45-48 -strict-sequence -warn-error A \
  -safe-string -strict-formats $(INCLUDES)
 LINKFLAGS=$(INCLUDES)
-VPATH := $(filter-out -I,$(INCLUDES))
+#VPATH := $(filter-out -I,$(INCLUDES))
 
 # scrapelabels addlabels
 
@@ -96,17 +90,19 @@ VPATH := $(filter-out -I,$(INCLUDES))
 # The dependency generator
 
 CAMLDEP_OBJ=ocamldep.cmo
-CAMLDEP_IMPORTS=timings.cmo misc.cmo config.cmo identifiable.cmo numbers.cmo \
-  arg_helper.cmo clflags.cmo terminfo.cmo \
-  warnings.cmo location.cmo longident.cmo docstrings.cmo \
-  syntaxerr.cmo ast_helper.cmo parser.cmo lexer.cmo parse.cmo \
-  ccomp.cmo ast_mapper.cmo ast_iterator.cmo \
-  builtin_attributes.cmo ast_invariants.cmo \
-  pparse.cmo compenv.cmo depend.cmo
+CAMLDEP_IMPORTS=utils/timings.cmo utils/misc.cmo utils/config.cmo		\
+  utils/identifiable.cmo utils/numbers.cmo utils/arg_helper.cmo			\
+  utils/clflags.cmo utils/terminfo.cmo utils/warnings.cmo parsing/location.cmo	\
+  parsing/longident.cmo parsing/docstrings.cmo parsing/syntaxerr.cmo		\
+  parsing/ast_helper.cmo parsing/parser.cmo parsing/lexer.cmo parsing/parse.cmo	\
+  utils/ccomp.cmo parsing/ast_mapper.cmo parsing/ast_iterator.cmo		\
+  parsing/builtin_attributes.cmo parsing/ast_invariants.cmo driver/pparse.cmo	\
+  driver/compenv.cmo parsing/depend.cmo
 
+ocamldep: LINKFLAGS += -compat-32
 $(call byte_and_opt,ocamldep,$(CAMLDEP_IMPORTS) $(CAMLDEP_OBJ),)
-ocamldep: depend.cmi
-ocamldep.opt: depend.cmi
+ocamldep: parsing/depend.cmi
+ocamldep.opt: parsing/depend.cmi
 
 # ocamldep is precious: sometimes we are stuck in the middle of a
 # bootstrap and we need to remake the dependencies
@@ -115,21 +111,20 @@ clean::
 	rm -f ocamldep.opt
 
 
-export INSTALL_BINDIR:=$(DESTDIR)$(BINDIR)
-export INSTALL_LIBDIR:=$(DESTDIR)$(LIBDIR)
-
 # The profiler
 
 CSLPROF=ocamlprof.cmo
-CSLPROF_IMPORTS=misc.cmo config.cmo identifiable.cmo numbers.cmo \
-  arg_helper.cmo clflags.cmo terminfo.cmo \
-  warnings.cmo location.cmo longident.cmo docstrings.cmo \
-  syntaxerr.cmo ast_helper.cmo parser.cmo lexer.cmo parse.cmo
+CSLPROF_IMPORTS=utils/misc.cmo utils/config.cmo utils/identifiable.cmo		\
+  utils/numbers.cmo utils/arg_helper.cmo utils/clflags.cmo utils/terminfo.cmo	\
+  utils/warnings.cmo parsing/location.cmo parsing/longident.cmo			\
+  parsing/docstrings.cmo parsing/syntaxerr.cmo parsing/ast_helper.cmo		\
+  parsing/parser.cmo parsing/lexer.cmo parsing/parse.cmo
 
 $(call byte_and_opt,ocamlprof,$(CSLPROF_IMPORTS) profiling.cmo $(CSLPROF),)
 
-ocamlcp_cmos = misc.cmo warnings.cmo config.cmo identifiable.cmo numbers.cmo \
-              arg_helper.cmo clflags.cmo main_args.cmo
+ocamlcp_cmos = utils/misc.cmo utils/warnings.cmo utils/config.cmo		\
+            utils/identifiable.cmo utils/numbers.cmo utils/arg_helper.cmo	\
+            utils/clflags.cmo driver/main_args.cmo
 
 $(call byte_and_opt,ocamlcp,$(ocamlcp_cmos) ocamlcp.cmo,)
 $(call byte_and_opt,ocamloptp,$(ocamlcp_cmos) ocamloptp.cmo,)
@@ -137,14 +132,14 @@ $(call byte_and_opt,ocamloptp,$(ocamlcp_cmos) ocamloptp.cmo,)
 opt:: profiling.cmx
 
 install::
-	cp -- profiling.cmi profiling.cmo "$${INSTALL_LIBDIR}"
+	cp -- profiling.cmi profiling.cmo $(INSTALL_LIBDIR)
 
 installopt::
-	cp -- profiling.cmx profiling.$(O) "$${INSTALL_LIBDIR}"
+	cp -- profiling.cmx profiling.$(O) $(INSTALL_LIBDIR)
 
 # To help building mixed-mode libraries (OCaml + C)
 
-$(call byte_and_opt,ocamlmklib,ocamlmklibconfig.cmo config.cmo \
+$(call byte_and_opt,ocamlmklib,ocamlmklibconfig.cmo utils/config.cmo \
 	         ocamlmklib.cmo,)
 
 
@@ -166,15 +161,16 @@ clean::
 # To make custom toplevels
 
 OCAMLMKTOP=ocamlmktop.cmo
-OCAMLMKTOP_IMPORTS=misc.cmo identifiable.cmo numbers.cmo config.cmo \
-             arg_helper.cmo clflags.cmo ccomp.cmo
+OCAMLMKTOP_IMPORTS=utils/misc.cmo utils/identifiable.cmo utils/numbers.cmo	\
+             utils/config.cmo utils/arg_helper.cmo utils/clflags.cmo		\
+             utils/ccomp.cmo
 
 $(call byte_and_opt,ocamlmktop,$(OCAMLMKTOP_IMPORTS) $(OCAMLMKTOP),)
 
 # Converter olabl/ocaml 2.99 to ocaml 3
 
 OCAML299TO3= lexer299.cmo ocaml299to3.cmo
-LIBRARY3= misc.cmo warnings.cmo location.cmo
+LIBRARY3= utils/misc.cmo utils/warnings.cmo location.cmo
 
 ocaml299to3: $(OCAML299TO3)
 	$(CAMLC) $(LINKFLAGS) -o ocaml299to3 $(LIBRARY3) $(OCAML299TO3)
@@ -183,7 +179,7 @@ lexer299.ml: lexer299.mll
 	$(CAMLLEX) lexer299.mll
 
 #install::
-#	cp ocaml299to3 "$(INSTALL_BINDIR)/ocaml299to3$(EXE)"
+#	cp ocaml299to3 $(INSTALL_BINDIR)/ocaml299to3$(EXE)
 
 clean::
 	rm -f ocaml299to3 lexer299.ml
@@ -199,28 +195,29 @@ lexer301.ml: lexer301.mll
 	$(CAMLLEX) lexer301.mll
 
 #install::
-#	cp scrapelabels "$${INSTALL_LIBDIR}"
+#	cp scrapelabels $(INSTALL_LIBDIR)
 
 clean::
 	rm -f scrapelabels lexer301.ml
 
 # Insert labels following an interface file (upgrade 3.02 to 3.03)
 
-ADDLABELS_IMPORTS=misc.cmo config.cmo arg_helper.cmo clflags.cmo \
-  identifiable.cmo numbers.cmo terminfo.cmo \
-  warnings.cmo location.cmo longident.cmo docstrings.cmo \
-  syntaxerr.cmo ast_helper.cmo parser.cmo lexer.cmo parse.cmo
+ADDLABELS_IMPORTS= utils/misc.cmo utils/config.cmo utils/arg_helper.cmo		\
+utils/clflags.cmo utils/identifiable.cmo utils/numbers.cmo utils/terminfo.cmo	\
+utils/warnings.cmo parsing/location.cmo parsing/longident.cmo			\
+parsing/docstrings.cmo parsing/syntaxerr.cmo parsing/ast_helper.cmo		\
+parsing/parser.cmo parsing/lexer.cmo parsing/parse.cmo
 
 addlabels: addlabels.cmo
-	$(CAMLC) $(LINKFLAGS) -w sl -o addlabels \
-		$(ADDLABELS_IMPORTS) addlabels.cmo
+	$(CAMLC) $(LINKFLAGS) -w sl -o addlabels $(ADDLABELS_IMPORTS)	\
+		addlabels.cmo
 
 #install::
-#	cp addlabels "$${INSTALL_LIBDIR}"
+#	cp addlabels $(INSTALL_LIBDIR)
 
-ifeq '$(EXE)' ''
+ifeq ($(EXE),)
 LN := ln -sf --
-else ifeq '$(EXE)' '.exe' # Windows
+else ifeq ($(EXE),.exe) # Windows kernel.  Cygwin cannot create true symlinks.
 LN := cp -f --
 else
 $(error $(EXE) must be the empty string or '.exe')
@@ -229,12 +226,12 @@ endif
 install::
 	for i in $(install_files); \
 	do \
-	  cp -- "$$i" "$${INSTALL_BINDIR}/$$i.byte$${EXE}"; \
+	  cp -- "$$i" $(INSTALL_BINDIR)"/$$i.byte$(EXE)"; \
 	  if test -f "$$i".opt; then \
-	    cp -- "$$i.opt" "$${INSTALL_BINDIR}/$$i.opt$${EXE}"; \
-	    $(LN) "$$i.opt$${EXE}" "$${INSTALL_BINDIR}/$$i$${EXE}"; \
+	    cp -- "$$i.opt" $(INSTALL_BINDIR)"/$$i.opt$(EXE)"; \
+	    $(LN) "$$i.opt$(EXE)" $(INSTALL_BINDIR)"/$$i$(EXE)"; \
 	  else \
-	    $(LN) "$$i.byte$${EXE}" "$${INSTALL_BINDIR}/$$i$${EXE}"; \
+	    $(LN) "$$i.byte$(EXE)" $(INSTALL_BINDIR)"/$$i$(EXE)"; \
 	  fi; \
 	done
 
@@ -263,8 +260,9 @@ clean::
 beforedepend:: cvt_emit.ml
 
 
-READ_CMT= ../compilerlibs/ocamlcommon.cma ../compilerlibs/ocamlbytecomp.cma \
-          cmt2annot.cmo read_cmt.cmo
+READ_CMT=../compilerlibs/ocamlcommon.cma	\
+         ../compilerlibs/ocamlbytecomp.cma	\
+         cmt2annot.cmo read_cmt.cmo
 
 # Reading cmt files
 $(call byte_and_opt,read_cmt,$(READ_CMT),)
@@ -274,9 +272,10 @@ $(call byte_and_opt,read_cmt,$(READ_CMT),)
 
 DUMPOBJ=opnames.cmo dumpobj.cmo
 
-$(call byte_and_opt,dumpobj,misc.cmo identifiable.cmo numbers.cmo \
-                 tbl.cmo config.cmo ident.cmo \
-	         opcodes.cmo bytesections.cmo $(DUMPOBJ))
+$(call byte_and_opt,dumpobj,utils/misc.cmo utils/identifiable.cmo	\
+                 utils/numbers.cmo utils/tbl.cmo utils/config.cmo	\
+                 typing/ident.cmo bytecomp/opcodes.cmo			\
+                 bytecomp/bytesections.cmo $(DUMPOBJ),)
 
 opnames.ml: ../byterun/caml/instruct.h
 	unset LC_ALL || : ; \
@@ -324,10 +323,10 @@ OBJINFO=../compilerlibs/ocamlcommon.cma \
 $(call byte_and_opt,ocamlobjinfo,$(OBJINFO),objinfo_helper$(EXE))
 
 # Scan object files for required primitives
-$(call byte_and_opt,primreq,config.cmo primreq.cmo,)
+$(call byte_and_opt,primreq,utils/config.cmo primreq.cmo,)
 
 clean::
-	rm -f "objinfo_helper$${EXE}"
+	rm -f "objinfo_helper$(EXE)"
 
 
 # Copy a bytecode executable, stripping debug info
@@ -348,7 +347,7 @@ $(call byte_and_opt,cmpbyt,$(cmpbyt),)
 
 ifeq "$(RUNTIMEI)" "true"
 install::
-	cp ocaml-instr-graph ocaml-instr-report "$${INSTALL_BINDIR}/"
+	cp ocaml-instr-graph ocaml-instr-report $(INSTALL_BINDIR)/
 endif
 
 # Common stuff
@@ -356,13 +355,13 @@ endif
 .SUFFIXES:
 
 %.cmo: %.ml
-	$(CAMLC) -c $(COMPFLAGS) - $(source)
+	$(CAMLC) -c $(COMPFLAGS) - $<
 
 %.cmi: %.mli
-	$(CAMLC) -c $(COMPFLAGS) - $(source)
+	$(CAMLC) -c $(COMPFLAGS) - $<
 
 %.cmx: %.ml
-	$(CAMLOPT) $(COMPFLAGS) -c - $(source)
+	$(CAMLOPT) $(COMPFLAGS) -c - $<
 
 clean::
 	rm -f *.cmo *.cmi *.cma *.dll *.so *.lib *.a
@@ -373,7 +372,3 @@ depend: beforedepend
 .PHONY: clean install beforedepend depend
 
 include .depend
-
-# Local Variables:
-# mode: makefile-gmake
-# End:

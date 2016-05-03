@@ -12,8 +12,7 @@
 #*   special exception on linking described in the file LICENSE.          *
 #*                                                                        *
 #**************************************************************************
-
-include ../config/Makefile
+include ../global.mk
 CAMLRUN ?= ../boot/ocamlrun
 CAMLYACC ?= ../boot/ocamlyacc
 
@@ -94,7 +93,7 @@ ocamldebug$(EXE): $(OBJS) $(OTHEROBJS)
 	$(CAMLC) $(LINKFLAGS) -o ocamldebug$(EXE) -linkall $(OTHEROBJS) $(OBJS)
 
 install:
-	cp ocamldebug$(EXE) "$(INSTALL_BINDIR)/ocamldebug$(EXE)"
+	cp ocamldebug$(EXE) $(INSTALL_BINDIR)/ocamldebug$(EXE)
 
 clean::
 	rm -f ocamldebug$(EXE)

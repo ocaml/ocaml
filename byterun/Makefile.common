@@ -13,7 +13,7 @@
 #*                                                                        *
 #**************************************************************************
 
-include ../config/Makefile
+include ../global.mk
 CAMLRUN ?= ../boot/ocamlrun
 CAMLYACC ?= ../boot/ocamlyacc
 
@@ -55,26 +55,22 @@ all:: ocamlruni$(EXE) libcamlruni.$(A)
 endif
 
 ld.conf: ../config/Makefile
-	echo "$(STUBLIBDIR)" > ld.conf
-	echo "$(LIBDIR)" >> ld.conf
+	echo $(STUBLIBDIR) > ld.conf
+	echo $(LIBDIR) >> ld.conf
 
 # Installation
 
-INSTALL_BINDIR=$(DESTDIR)$(BINDIR)
-INSTALL_LIBDIR=$(DESTDIR)$(LIBDIR)
-
-
 install::
-	cp $(CAMLRUN)$(EXE) "$(INSTALL_BINDIR)/ocamlrun$(EXE)"
-	cp libcamlrun.$(A) "$(INSTALL_LIBDIR)/libcamlrun.$(A)"
-	cd "$(INSTALL_LIBDIR)"; $(RANLIB) libcamlrun.$(A)
-	if test -d "$(INSTALL_LIBDIR)/caml"; then : ; \
-	  else mkdir "$(INSTALL_LIBDIR)/caml"; fi
+	cp $(CAMLRUN)$(EXE) $(INSTALL_BINDIR)/ocamlrun$(EXE)
+	cp libcamlrun.$(A) $(INSTALL_LIBDIR)/libcamlrun.$(A)
+	cd $(INSTALL_LIBDIR); $(RANLIB) libcamlrun.$(A)
+	if test ! -d $(INSTALL_LIBDIR)/caml; then \
+	  mkdir $(INSTALL_LIBDIR)/caml; fi
 	for i in $(PUBLIC_INCLUDES); do \
-	  sed -f ../tools/cleanup-header caml/$$i \
-	      > "$(INSTALL_LIBDIR)/caml/$$i"; \
+	  sed -f ../tools/cleanup-header "caml/$$i" \
+	      > $(INSTALL_LIBDIR)/caml/"$$i"; \
 	done
-	cp ld.conf "$(INSTALL_LIBDIR)/ld.conf"
+	cp ld.conf $(INSTALL_LIBDIR)/ld.conf
 .PHONY: install
 
 install:: install-$(RUNTIMED)
@@ -87,14 +83,14 @@ install-noruntimed:
 # because it's an executable for the target machine, while we're installing
 # binaries for the host.
 install-runtimed:
-	cp ocamlrund$(EXE) "$(INSTALL_BINDIR)/ocamlrund$(EXE)"
-	cp libcamlrund.$(A) "$(INSTALL_LIBDIR)/libcamlrund.$(A)"
+	cp ocamlrund$(EXE) $(INSTALL_BINDIR)/ocamlrund$(EXE)
+	cp libcamlrund.$(A) $(INSTALL_LIBDIR)/libcamlrund.$(A)
 .PHONY: install-runtimed
 
 ifeq "$(RUNTIMEI)" "true"
 install::
-	cp ocamlruni$(EXE) "$(INSTALL_BINDIR)/ocamlruni$(EXE)"
-	cp libcamlruni.$(A) "$(INSTALL_LIBDIR)/libcamlruni.$(A)"
+	cp ocamlruni$(EXE) $(INSTALL_BINDIR)/ocamlruni$(EXE)
+	cp libcamlruni.$(A) $(INSTALL_LIBDIR)/libcamlruni.$(A)
 endif
 
 # If primitives contain duplicated lines (e.g. because the code is defined
