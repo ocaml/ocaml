@@ -13,7 +13,7 @@
 (*                                                                        *)
 (**************************************************************************)
 
-(* Long identifiers, used in parsetree. *)
+(** Long identifiers, used in parsetree. *)
 
 type t =
     Lident of string
