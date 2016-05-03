@@ -2,7 +2,7 @@
    by the parser satisfy [Ast_invariants].
 
    We don't check the invariants on the output of the parser, so this test
-   is to ensure that we the parser doesn't accept more than [Ast_invariants].
+   is to ensure that the parser doesn't accept more than [Ast_invariants].
 *)
 
 let root = "../../.."
