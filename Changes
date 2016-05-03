@@ -21,7 +21,7 @@ OCaml 4.04.0:
 
 ### Tools:
 
-- GPR#452: Make the output of ocamldep is more stable
+- GPR#452: Make the output of ocamldep more stable
   (Alain Frisch)
 
 ### Standard library:

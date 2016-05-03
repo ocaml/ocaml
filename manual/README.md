@@ -25,7 +25,7 @@ Building
 1. Run `make` in the manual.
 
 NB: If you already set `LD_LIBRARY_PATH` (OS X: `DYLD_LIBRARY_PATH`)
- in you environnement don't forget to add
+ in your environment don't forget to add
  `otherlibs/unix:otherlibs/str` to it in an absolute way.
 
 Outputs
