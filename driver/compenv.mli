@@ -70,8 +70,10 @@ val intf : string -> unit
 
 val process_deferred_actions :
   Format.formatter *
-  (string -> string -> unit) * (* compile implementation *)
-  (string -> string -> unit) * (* compile interface *)
+  (sourcefile:string -> outputprefix:string -> unit) *
+  (* compile implementation *)
+  (sourcefile:string -> outputprefix:string -> unit) *
+  (* compile interface *)
   string * (* ocaml module extension *)
   string -> (* ocaml library extension *)
   unit

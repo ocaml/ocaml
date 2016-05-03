@@ -822,3 +822,7 @@ let debug_prefix_map_flags () =
         map
         []
   end
+
+let print_if ppf flag printer arg =
+  if !flag then Format.fprintf ppf "%a@." printer arg;
+  arg

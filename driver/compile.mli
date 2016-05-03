@@ -13,7 +13,23 @@
 (*                                                                        *)
 (**************************************************************************)
 
-(* Compile a .ml or .mli file *)
+(** Bytecode compilation for .ml and .mli files. *)
 
-val interface: string -> string -> unit
-val implementation: string -> string -> unit
+val interface:
+  sourcefile:string -> outputprefix:string -> unit
+val implementation:
+  sourcefile:string -> outputprefix:string -> unit
+
+(** {2 Internal functions} **)
+
+val to_bytecode :
+  Compile_common.info ->
+  Typedtree.structure * Typedtree.module_coercion ->
+  Instruct.instruction list * Ident.Set.t
+(** [to_bytecode info typed] takes a typechecked implementation
+    and returns its bytecode.
+*)
+
+val emit_bytecode :
+  Compile_common.info -> Instruct.instruction list * Ident.Set.t -> unit
+(** [emit_bytecode bytecode] output the bytecode executable. *)

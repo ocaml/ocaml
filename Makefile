@@ -112,7 +112,8 @@ COMP=bytecomp/lambda.cmo bytecomp/printlambda.cmo \
   bytecomp/symtable.cmo \
   driver/pparse.cmo driver/main_args.cmo \
   driver/compenv.cmo driver/compmisc.cmo \
-  driver/compdynlink.cmo driver/compplugin.cmo driver/makedepend.cmo
+  driver/compdynlink.cmo driver/compplugin.cmo driver/makedepend.cmo \
+  driver/compile_common.cmo
 
 
 COMMON=$(UTILS) $(PARSING) $(TYPING) $(COMP)

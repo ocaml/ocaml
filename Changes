@@ -232,6 +232,10 @@ Working version
   (François Bobot, Gabriel Scherer, and Nicolás Ojeda Bär, review by Gabriel
   Scherer)
 
+- GPR#1703 : Add the module Compile_common, which factorizes the common
+  part in Compile and Optcompile. This also makes the pipeline more modular.
+  (Gabriel Radanne, review by Mark Shinwell)
+
 ### Bug fixes:
 
 - MPR#7726, GPR#1676: Recursive modules, equi-recursive types and stack overflow
