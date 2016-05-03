@@ -13,6 +13,8 @@
 (*                                                                        *)
 (**************************************************************************)
 
+(** Documentation comments *)
+
 (** (Re)Initialise all docstring state *)
 val init : unit -> unit
 

@@ -13,7 +13,7 @@
 (*                                                                        *)
 (**************************************************************************)
 
-(* Auxiliary a.s.t. types used by parsetree and typedtree. *)
+(** Auxiliary AST types used by parsetree and typedtree. *)
 
 type constant =
     Const_int of int
