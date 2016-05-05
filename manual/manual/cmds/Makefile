@@ -2,7 +2,10 @@ FILES=comp.tex top.tex runtime.tex native.tex lexyacc.tex intf-c.tex \
   depend.tex profil.tex debugger.tex browser.tex ocamldoc.tex \
   warnings-help.tex ocamlbuild.tex flambda.tex
 
-TRANSF=../../tools/transf
+TOPDIR=../../..
+include $(TOPDIR)/Makefile.tools
+
+TRANSF=$(OCAMLRUN) ../../tools/transf
 TEXQUOTE=../../tools/texquote2
 FORMAT=../../tools/format-intf
 
