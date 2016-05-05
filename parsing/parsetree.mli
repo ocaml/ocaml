@@ -220,6 +220,7 @@ and pattern_desc =
         (* exception P *)
   | Ppat_extension of extension
         (* [%id] *)
+  | Ppat_open of Longident.t loc * pattern
 
 (* Value expressions *)
 
