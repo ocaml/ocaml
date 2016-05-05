@@ -5,6 +5,10 @@ OCaml 4.04.0:
 
 ### Language features:
 
+- GPR#187, GPR#578: Local opening of modules in a pattern.
+  Syntax: "M.(p)", "M.[p]","M.[| p |]", "M.{p}"
+  (Florian Angeletti, Jacques Garrigue, review by Alain Frisch)
+
 - GPR#301: local exception declarations "let exception ... in"
   (Alain Frisch)
 
