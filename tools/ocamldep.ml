@@ -293,7 +293,7 @@ let read_parse_and_extract parse_function extract_function def magic
         List.fold_left
           (fun bv modname ->
             Depend.open_module bv (Longident.Lident modname))
-          !module_map !Clflags.open_modules
+          !module_map ((* PR#7248 *) List.rev !Clflags.open_modules)
       in
       let r = extract_function bound_vars ast in
       Pparse.remove_preprocessed input_file;

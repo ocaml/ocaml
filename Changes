@@ -23,6 +23,8 @@ OCaml 4.04.0:
 
 - GPR#452: Make the output of ocamldep more stable
   (Alain Frisch)
+- MPR#7248: have ocamldep interpret -open arguments in left-to-right order
+  (Gabriel Scherer, report by Anton Bachin)
 
 ### Standard library:
 
