@@ -797,24 +797,37 @@ This section describes and explains in detail some warnings:
 
   let warning = function
     | Foo "specific value" -> 0
-    | _ _ -> 1
+    | _ -> 1
 
 >    | Foo "specific value" -> 0
 >          ^^^^^^^^^^^^^^^^
-> Warning 52: the argument of this constructor should not be matched against a
-> constant pattern; the actual value of the argument could change
-> in the future.
+> Warning 52: Code should not depend on the actual values of
+> this constructor's arguments. They are only for information
+> and may change in future versions. (See manual section 8.5)
 \end{verbatim}
+
+  In particular, all built-in exceptions with a string argument have
+  this attribute set: "Invalid_argument", "Failure", "Sys_error" will
+  all raise this warning if you match for a specific string argument.
 
   If your code raises this warning, you should {\em not} change the
   way you test for the specific string to avoid the warning (for
   example using a string equality inside the right-hand-side instead
   of a literal pattern), as your code would remain fragile. You should
   instead enlarge the scope of the pattern by matching on all possible
-  values. This may require some care: if the scrutinee may return
-  several different cases of the same pattern, or raise distinct
-  instances of the same exception, you may need to modify your code to
-  separate those several cases.
+  values.
+
+\begin{verbatim}
+
+let warning = function
+  | Foo _ -> 0
+  | _ -> 1
+\end{verbatim}
+
+  This may require some care: if the scrutinee may return several
+  different cases of the same pattern, or raise distinct instances of
+  the same exception, you may need to modify your code to separate
+  those several cases.
 
   For example,
 \begin{verbatim}
@@ -834,6 +847,13 @@ match int_of_string count_str with
     | choice -> (count, choice)
     end
 \end{verbatim}
+
+The only case where that transformation is not possible is if a given
+function call may raises distinct exceptions with the same constructor
+but different string values. In this case, you will have to check for
+specific string values. This is dangerous API design and it should be
+discouraged: it's better to define more precise exception constructors
+than store useful information in strings.
 
 \subsection{Warning 57: Ambiguous or-pattern variables under guard}
 \label{ss:warn57}
