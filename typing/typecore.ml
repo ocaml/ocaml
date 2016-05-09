@@ -1362,10 +1362,12 @@ let rec type_pat ~constrs ~labels ~no_existentials ~mode ~explode ~env
       k { p with pat_extra =
         (Tpat_type (path, lid), loc, sp.ppat_attributes) :: p.pat_extra }
   | Ppat_open (lid,p) ->
-      let path, new_env = !type_open Asttypes.Fresh (Env.local env) sp.ppat_loc lid in
-      let env = Env.local_update env new_env in
-      type_pat ~env p expected_ty ( fun p ->
-        k { p with pat_extra =( Tpat_open (path,lid,new_env),
+      let path, new_env =
+        !type_open Asttypes.Fresh !env sp.ppat_loc lid in
+      let new_env = ref new_env in
+      type_pat ~env:new_env p expected_ty ( fun p ->
+        env := Env.copy_local !env ~from:!new_env;
+        k { p with pat_extra =( Tpat_open (path,lid,!new_env),
                             loc, sp.ppat_attributes) :: p.pat_extra }
       )
   | Ppat_exception _ ->
