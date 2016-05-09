@@ -35,6 +35,7 @@ val empty: t
 val initial_safe_string: t
 val initial_unsafe_string: t
 val diff: t -> t -> Ident.t list
+val copy_local: from:t -> t -> t
 
 type type_descriptions =
     constructor_description list * label_description list
@@ -133,6 +134,7 @@ val add_modtype: Ident.t -> modtype_declaration -> t -> t
 val add_class: Ident.t -> class_declaration -> t -> t
 val add_cltype: Ident.t -> class_type_declaration -> t -> t
 val add_local_constraint: Ident.t -> type_declaration -> int -> t -> t
+val add_local_type: Ident.t -> type_declaration -> t -> t
 
 (* Insertion of all fields of a signature. *)
 

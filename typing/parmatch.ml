@@ -160,6 +160,8 @@ let rec pretty_val ppf v =
             fprintf ppf "@[(%a : _)@]" pretty_val { v with pat_extra = rem }
           | Tpat_type _ ->
             fprintf ppf "@[(# %a)@]" pretty_val { v with pat_extra = rem }
+          | Tpat_open _ ->
+              fprintf ppf "@[(# %a)@]" pretty_val { v with pat_extra = rem }
         end
     | [] ->
   match v.pat_desc with
