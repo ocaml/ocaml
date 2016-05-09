@@ -50,6 +50,7 @@ CSLDIR=$(RELEASEDIR)
 VPATH=.:$(CSLDIR)/stdlib:$(CSLDIR)/parsing:$(CSLDIR)/otherlibs/unix:$(CSLDIR)/otherlibs/str:$(CSLDIR)/otherlibs/num:$(CSLDIR)/otherlibs/graph:$(CSLDIR)/otherlibs/threads:$(CSLDIR)/otherlibs/dynlink:$(CSLDIR)/otherlibs/bigarray
 
 all: libs
+	./check-stdlib-modules $(CSLDIR)
 
 libs: $(FILES)
 
