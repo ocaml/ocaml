@@ -121,7 +121,7 @@ val generic_instance: Env.t -> type_expr -> type_expr
 val instance_list: Env.t -> type_expr list -> type_expr list
         (* Take an instance of a list of type schemes *)
 val instance_constructor:
-        ?in_pattern:Env.mut * int ->
+        ?in_pattern:Env.t ref * int ->
         constructor_description -> type_expr list * type_expr
         (* Same, for a constructor *)
 val instance_parameterized_type:
@@ -164,7 +164,7 @@ val enforce_constraints: Env.t -> type_expr -> unit
 
 val unify: Env.t -> type_expr -> type_expr -> unit
         (* Unify the two types given. Raise [Unify] if not possible. *)
-val unify_gadt: newtype_level:int -> Env.mut -> type_expr -> type_expr -> unit
+val unify_gadt: newtype_level:int -> Env.t ref -> type_expr -> type_expr -> unit
         (* Unify the two types given and update the environment with the
            local constraints. Raise [Unify] if not possible. *)
 val unify_var: Env.t -> type_expr -> type_expr -> unit

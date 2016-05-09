@@ -158,8 +158,6 @@ module EnvTbl =
 
     let fold_name f = Ident.fold_name (fun k (d,_) -> f k d)
     let keys tbl = Ident.fold_all (fun k _ accu -> k::accu) tbl []
-    let merge tbl1 tbl2=
-      Ident.fold_all Ident.add tbl2 tbl1
   end
 
 type type_descriptions =
@@ -257,54 +255,6 @@ let empty = {
   flags = 0;
   functor_args = Ident.empty;
  }
-
-(* partially mutable environment for typing pattern *)
-type mut = {
-  local: t; (* original environment + new identifiers introduced in pattern open *)
-  shared: t ref; (* share type equalities introduced by typing GADTs in pattern *)
-}
-
-let rec concat_summary new_sum old =
-  match new_sum with
-  | Env_empty -> old
-  | Env_value (summary,b,c) -> Env_value( concat_summary summary old, b, c)
-  | Env_type (summary,b,c) -> Env_type( concat_summary summary old, b, c)
-  | Env_extension (summary,b,c) -> Env_extension( concat_summary summary old, b, c)
-  | Env_module (summary,b,c) -> Env_module( concat_summary summary old, b, c)
-  | Env_modtype (summary,b,c) -> Env_modtype( concat_summary summary old, b, c)
-  | Env_class (summary,b,c) -> Env_class( concat_summary summary old, b, c)
-  | Env_cltype (summary,b,c) -> Env_cltype( concat_summary summary old, b, c)
-  | Env_open (summary,b) -> Env_open( concat_summary summary old, b)
-  | Env_functor_arg (summary,b) -> Env_functor_arg( concat_summary summary old, b)
-
-(* merge back together the shared and local part of the environment *)
-let freeze {shared;local} =
-  let shared = !shared in
-  if shared == empty then local else
- let merge f = EnvTbl.merge (f local) (f shared) in
-  {
-    values = merge (fun x -> x.values);
-    types = merge (fun x -> x.types);
-    constrs = merge (fun x -> x.constrs);
-    labels = merge (fun x -> x.labels);
-    modules = merge (fun x -> x.modules);
-    modtypes = merge (fun x -> x.modtypes);
-    components = merge (fun x -> x.components);
-    classes = merge (fun x -> x.classes);
-    cltypes = merge (fun x -> x.cltypes);
-    functor_args = merge (fun x -> x.functor_args);
-    summary = concat_summary shared.summary local.summary;
-    local_constraints = local.local_constraints || shared.local_constraints;
-    gadt_instances = shared.gadt_instances @ local.gadt_instances;
-    flags = local.flags lor shared.flags;
-  }
-(* create a new partially mutable environment with an empty shared part*)
-let thaw (env:t) = { local = env ; shared = ref empty}
-
-let local m_env = m_env.local
-let shared m_env = !(m_env.shared)
-let local_update m_env local = { m_env with local }
-let shared_update mut env = mut.shared := env
 
 let in_signature b env =
   let flags =

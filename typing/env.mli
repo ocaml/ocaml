@@ -36,30 +36,6 @@ val initial_safe_string: t
 val initial_unsafe_string: t
 val diff: t -> t -> Ident.t list
 
-type mut
-(* Partially mutable environment used in typing patterns and cases.
-   Such environment is split in a local and shared parts.
-   The local part is immutable and used to track new identifiers introduced
-   locally by pattern open.
-   The shared part is mutable and used to propagate type equalities
-   introduced by GADTs.
- *)
-
-(* Thaw creates a new mutable environment, whose local part is the original
-   env and with an empty shared part.*)
-val thaw : t -> mut
-
-(* Freeze merge back together the shared and local parts of the mutable
-   environment to recreate an Env.t.
-   It is guaranteed that: x == freeze (thaw x) *)
-val freeze : mut -> t
-
-(* For manipulating partially mutable environment *)
-val shared: mut -> t
-val local: mut -> t
-val local_update: mut -> t -> mut
-val shared_update: mut ->  t -> unit
-
 type type_descriptions =
     constructor_description list * label_description list
 
