@@ -323,6 +323,8 @@
 /tools/objinfo_helper
 /tools/read_cmt
 /tools/read_cmt.opt
+/tools/cmt_lookup
+/tools/cmt_lookup.opt
 /tools/cmpbyt
 /tools/stripdebug
 
