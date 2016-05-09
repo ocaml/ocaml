@@ -294,13 +294,8 @@ let contains_type env mty =
 
 (* Remove module aliases from a signature *)
 
-module P = struct
-  type t = Path.t
-  let compare p1 p2 =
-    if Path.same p1 p2 then 0 else compare p1 p2
-end
-module PathSet = Set.Make (P)
-module PathMap = Map.Make (P)
+module PathSet = Set.Make (Path)
+module PathMap = Map.Make (Path)
 module IdentSet = Set.Make (Ident)
 
 let rec get_prefixes = function

@@ -28,6 +28,18 @@ let rec same p1 p2 =
        same fun1 fun2 && same arg1 arg2
   | (_, _) -> false
 
+let rec compare p1 p2 =
+  match (p1, p2) with
+    (Pident id1, Pident id2) -> Ident.compare id1 id2
+  | (Pdot(p1, s1, _pos1), Pdot(p2, s2, _pos2)) ->
+      let h = compare p1 p2 in
+      if h <> 0 then h else String.compare s1 s2
+  | (Papply(fun1, arg1), Papply(fun2, arg2)) ->
+      let h = compare fun1 fun2 in
+      if h <> 0 then h else compare arg1 arg2
+  | ((Pident _ | Pdot _), (Pdot _ | Papply _)) -> -1
+  | ((Pdot _ | Papply _), (Pident _ | Pdot _)) -> 1
+
 let rec isfree id = function
     Pident id' -> Ident.same id id'
   | Pdot(p, _s, _pos) -> isfree id p
