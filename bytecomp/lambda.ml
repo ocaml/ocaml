@@ -431,11 +431,7 @@ let iter f = function
       f e
 
 
-module IdentSet =
-  Set.Make(struct
-    type t = Ident.t
-    let compare = compare
-  end)
+module IdentSet = Set.Make(Ident)
 
 let free_ids get l =
   let fv = ref IdentSet.empty in
