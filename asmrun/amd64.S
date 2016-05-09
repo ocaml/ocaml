@@ -362,6 +362,21 @@ LBL(caml_call_gc):
         ret
 CFI_ENDPROC
 
+FUNCTION(G(caml_perform))
+CFI_STARTPROC
+        ret
+CFI_ENDPROC
+
+FUNCTION(G(caml_resume))
+CFI_STARTPROC
+        ret
+CFI_ENDPROC
+
+FUNCTION(G(caml_delegate))
+CFI_STARTPROC
+        ret
+CFI_ENDPROC
+
 FUNCTION(G(caml_alloc1))
 CFI_STARTPROC
 LBL(caml_alloc1):
