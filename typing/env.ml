@@ -1681,6 +1681,10 @@ and add_cltype id ty env =
 let add_module ?arg id mty env =
   add_module_declaration ?arg id (md mty) env
 
+let add_local_type id info env =
+  { env with
+    local_constraints = PathMap.add (Pident id) info env.local_constraints }
+
 let add_local_constraint id info elv env =
   match info with
     {type_manifest = Some _; type_newtype_level = Some (lv, _)} ->
@@ -1688,10 +1692,9 @@ let add_local_constraint id info elv env =
       (* let env =
         add_type ~check:false
           id {info with type_newtype_level = Some (lv, elv)} env in *)
-      let info = {info with type_newtype_level = Some (lv, elv)} in
-      { env with
-        local_constraints = PathMap.add (Pident id) info env.local_constraints }
+      add_local_type id  {info with type_newtype_level = Some (lv, elv)}  env
   | _ -> assert false
+
 
 (* Insertion of bindings by name *)
 
