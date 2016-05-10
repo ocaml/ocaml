@@ -1117,10 +1117,10 @@ let instance_constructor ?in_pattern cstr =
             {desc = Tvar (Some name)} -> "$" ^ cstr.cstr_name ^ "_'" ^ name
           | _ -> "$" ^ cstr.cstr_name
         in
-        let id = Ident.create (get_new_abstract_name name) in
-        let new_env = Env.add_local_type id decl !env in
+        let path = Path.Pident (Ident.create (get_new_abstract_name name)) in
+        let new_env = Env.add_local_type path decl !env in
         env := new_env;
-        let to_unify = newty (Tconstr (Path.Pident id,[],ref Mnil)) in
+        let to_unify = newty (Tconstr (path,[],ref Mnil)) in
         let tv = copy existential in
         assert (is_Tvar tv);
         link_type tv to_unify
@@ -1885,9 +1885,9 @@ let reify env t =
   let create_fresh_constr lev name =
     let decl = new_declaration (Some (newtype_level, newtype_level)) None in
     let name = match name with Some s -> "$'"^s | _ -> "$" in
-    let id = Ident.create (get_new_abstract_name name) in
-    let new_env = Env.add_local_type id decl !env in
-    let t = newty2 lev (Tconstr (Path.Pident id,[],ref Mnil))  in
+    let path = Path.Pident (Ident.create (get_new_abstract_name name)) in
+    let new_env = Env.add_local_type path decl !env in
+    let t = newty2 lev (Tconstr (path,[],ref Mnil))  in
     env := new_env;
     t
   in

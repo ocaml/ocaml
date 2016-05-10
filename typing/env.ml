@@ -104,6 +104,7 @@ end  = struct
 
 end
 
+module PathMap = Map.Make(Path)
 
 type summary =
     Env_empty
@@ -116,6 +117,7 @@ type summary =
   | Env_cltype of summary * Ident.t * class_type_declaration
   | Env_open of summary * Path.t
   | Env_functor_arg of summary * Ident.t
+  | Env_constraints of summary * type_declaration PathMap.t
 
 module EnvTbl =
   struct
@@ -165,8 +167,6 @@ type type_descriptions =
 
 let in_signature_flag = 0x01
 let implicit_coercion_flag = 0x02
-
-module PathMap = Map.Make(Path)
 
 type t = {
   values: (Path.t * value_description) EnvTbl.t;
@@ -1681,18 +1681,16 @@ and add_cltype id ty env =
 let add_module ?arg id mty env =
   add_module_declaration ?arg id (md mty) env
 
-let add_local_type id info env =
+let add_local_type path info env =
   { env with
-    local_constraints = PathMap.add (Pident id) info env.local_constraints }
+    local_constraints = PathMap.add path info env.local_constraints }
 
 let add_local_constraint id info elv env =
   match info with
     {type_manifest = Some _; type_newtype_level = Some (lv, _)} ->
       (* elv is the expansion level, lv is the definition level *)
-      (* let env =
-        add_type ~check:false
-          id {info with type_newtype_level = Some (lv, elv)} env in *)
-      add_local_type id  {info with type_newtype_level = Some (lv, elv)}  env
+      let info = {info with type_newtype_level = Some (lv, elv)} in
+      add_local_type (Pident id) info env
   | _ -> assert false
 
 
@@ -1977,7 +1975,9 @@ let (initial_safe_string, initial_unsafe_string) =
 
 (* Return the environment summary *)
 
-let summary env = env.summary
+let summary env =
+  if PathMap.is_empty env.local_constraints then env.summary
+  else Env_constraints (env.summary, env.local_constraints)
 
 let last_env = ref empty
 let last_reduced_env = ref empty
