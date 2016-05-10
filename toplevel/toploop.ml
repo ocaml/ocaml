@@ -385,7 +385,7 @@ let use_file ppf wrap_mod name =
     Warnings.reset_fatal ();
     Location.init lb filename;
     (* Skip initial #! line if any *)
-    Lexer.skip_sharp_bang lb;
+    Lexer.skip_hash_bang lb;
     let success =
       protect_refs [ R (Location.input_name, filename) ] (fun () ->
         try

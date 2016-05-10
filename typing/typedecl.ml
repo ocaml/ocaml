@@ -881,7 +881,7 @@ let compute_variance_decl env check decl (required, _ as rloc) =
         (mn @ List.map (fun {Types.ld_mutable; ld_type} ->
              (ld_mutable = Mutable, ld_type)) ftl)
 
-let is_sharp id =
+let is_hash id =
   let s = Ident.name id in
   String.length s > 0 && s.[0] = '#'
 
@@ -941,7 +941,7 @@ let rec compute_properties_fixpoint env decls required variances immediacies =
       else ())
       new_decls;
     List.iter2
-      (fun (id, decl) req -> if not (is_sharp id) then
+      (fun (id, decl) req -> if not (is_hash id) then
         ignore (compute_variance_decl new_env true decl req))
       new_decls required;
     new_decls, new_env

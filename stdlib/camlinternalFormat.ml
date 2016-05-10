@@ -2012,7 +2012,7 @@ let fmt_ebb_of_string ?legacy_behavior str =
   (*   - zero:  is the '0' flag defined in the current micro-format.  *)
   (*   - minus: is the '-' flag defined in the current micro-format.  *)
   (*   - plus:  is the '+' flag defined in the current micro-format.  *)
-  (*   - sharp: is the '#' flag defined in the current micro-format.  *)
+  (*   - hash:  is the '#' flag defined in the current micro-format.  *)
   (*   - space: is the ' ' flag defined in the current micro-format.  *)
   (*   - ign:   is the '_' flag defined in the current micro-format.  *)
   (*   - pad: padding of the current micro-format.                    *)
@@ -2105,7 +2105,7 @@ let fmt_ebb_of_string ?legacy_behavior str =
   fun pct_ind str_ind end_ind ign ->
     let zero = ref false and minus = ref false
     and plus = ref false and space = ref false
-    and sharp = ref false in
+    and hash = ref false in
     let set_flag str_ind flag =
       (* in legacy mode, duplicate flags are accepted *)
       if !flag && not legacy_behavior then
@@ -2120,11 +2120,11 @@ let fmt_ebb_of_string ?legacy_behavior str =
       | '0' -> set_flag str_ind zero;  read_flags (str_ind + 1)
       | '-' -> set_flag str_ind minus; read_flags (str_ind + 1)
       | '+' -> set_flag str_ind plus;  read_flags (str_ind + 1)
-      | '#' -> set_flag str_ind sharp; read_flags (str_ind + 1)
+      | '#' -> set_flag str_ind hash; read_flags (str_ind + 1)
       | ' ' -> set_flag str_ind space; read_flags (str_ind + 1)
       | _ ->
         parse_padding pct_ind str_ind end_ind
-          !zero !minus !plus !sharp !space ign
+          !zero !minus !plus !hash !space ign
       end
     in
     read_flags str_ind
@@ -2133,7 +2133,7 @@ let fmt_ebb_of_string ?legacy_behavior str =
   and parse_padding : type e f .
       int -> int -> int -> bool -> bool -> bool -> bool -> bool -> bool ->
         (_, _, e, f) fmt_ebb =
-  fun pct_ind str_ind end_ind zero minus plus sharp space ign ->
+  fun pct_ind str_ind end_ind zero minus plus hash space ign ->
     if str_ind = end_ind then unexpected_end_of_format end_ind;
     let padty = match zero, minus with
       | false, false -> Right
@@ -2145,26 +2145,26 @@ let fmt_ebb_of_string ?legacy_behavior str =
     match str.[str_ind] with
     | '0' .. '9' ->
       let new_ind, width = parse_positive str_ind end_ind 0 in
-      parse_after_padding pct_ind new_ind end_ind minus plus sharp space ign
+      parse_after_padding pct_ind new_ind end_ind minus plus hash space ign
         (Lit_padding (padty, width))
     | '*' ->
-      parse_after_padding pct_ind (str_ind + 1) end_ind minus plus sharp space
+      parse_after_padding pct_ind (str_ind + 1) end_ind minus plus hash space
         ign (Arg_padding padty)
     | _ ->
       begin match padty with
       | Left  ->
         if not legacy_behavior then
           invalid_format_without (str_ind - 1) '-' "padding";
-        parse_after_padding pct_ind str_ind end_ind minus plus sharp space ign
+        parse_after_padding pct_ind str_ind end_ind minus plus hash space ign
           No_padding
       | Zeros ->
          (* a '0' padding indication not followed by anything should
            be interpreted as a Right padding of width 0. This is used
            by scanning conversions %0s and %0c *)
-        parse_after_padding pct_ind str_ind end_ind minus plus sharp space ign
+        parse_after_padding pct_ind str_ind end_ind minus plus hash space ign
           (Lit_padding (Right, 0))
       | Right ->
-        parse_after_padding pct_ind str_ind end_ind minus plus sharp space ign
+        parse_after_padding pct_ind str_ind end_ind minus plus hash space ign
           No_padding
       end
 
@@ -2172,25 +2172,25 @@ let fmt_ebb_of_string ?legacy_behavior str =
   and parse_after_padding : type x e f .
       int -> int -> int -> bool -> bool -> bool -> bool -> bool ->
         (x, _) padding -> (_, _, e, f) fmt_ebb =
-  fun pct_ind str_ind end_ind minus plus sharp space ign pad ->
+  fun pct_ind str_ind end_ind minus plus hash space ign pad ->
     if str_ind = end_ind then unexpected_end_of_format end_ind;
     match str.[str_ind] with
     | '.' ->
-      parse_precision pct_ind (str_ind + 1) end_ind minus plus sharp space ign
+      parse_precision pct_ind (str_ind + 1) end_ind minus plus hash space ign
         pad
     | symb ->
-      parse_conversion pct_ind (str_ind + 1) end_ind plus sharp space ign pad
+      parse_conversion pct_ind (str_ind + 1) end_ind plus hash space ign pad
         No_precision pad symb
 
   (* Read the digital or '*' precision. *)
   and parse_precision : type x e f .
       int -> int -> int -> bool -> bool -> bool -> bool -> bool ->
         (x, _) padding -> (_, _, e, f) fmt_ebb =
-  fun pct_ind str_ind end_ind minus plus sharp space ign pad ->
+  fun pct_ind str_ind end_ind minus plus hash space ign pad ->
     if str_ind = end_ind then unexpected_end_of_format end_ind;
     let parse_literal minus str_ind =
       let new_ind, prec = parse_positive str_ind end_ind 0 in
-      parse_after_precision pct_ind new_ind end_ind minus plus sharp space ign
+      parse_after_precision pct_ind new_ind end_ind minus plus hash space ign
         pad (Lit_precision prec) in
     match str.[str_ind] with
     | '0' .. '9' -> parse_literal minus str_ind
@@ -2205,14 +2205,14 @@ let fmt_ebb_of_string ?legacy_behavior str =
          still blatantly wrong, as 123_456 or 0xFF are rejected. *)
       parse_literal (minus || symb = '-') (str_ind + 1)
     | '*' ->
-      parse_after_precision pct_ind (str_ind + 1) end_ind minus plus sharp space
+      parse_after_precision pct_ind (str_ind + 1) end_ind minus plus hash space
         ign pad Arg_precision
     | _ ->
       if legacy_behavior then
         (* note that legacy implementation did not ignore '.' without
            a number (as it does for padding indications), but
            interprets it as '.0' *)
-        parse_after_precision pct_ind str_ind end_ind minus plus sharp space ign
+        parse_after_precision pct_ind str_ind end_ind minus plus hash space ign
           pad (Lit_precision 0)
       else
         invalid_format_without (str_ind - 1) '.' "precision"
@@ -2221,10 +2221,10 @@ let fmt_ebb_of_string ?legacy_behavior str =
   and parse_after_precision : type x y z t e f .
       int -> int -> int -> bool -> bool -> bool -> bool -> bool ->
         (x, y) padding -> (z, t) precision -> (_, _, e, f) fmt_ebb =
-  fun pct_ind str_ind end_ind minus plus sharp space ign pad prec ->
+  fun pct_ind str_ind end_ind minus plus hash space ign pad prec ->
     if str_ind = end_ind then unexpected_end_of_format end_ind;
     let parse_conv (type u) (type v) (padprec : (u, v) padding) =
-      parse_conversion pct_ind (str_ind + 1) end_ind plus sharp space ign pad
+      parse_conversion pct_ind (str_ind + 1) end_ind plus hash space ign pad
         prec padprec str.[str_ind] in
     (* in legacy mode, some formats (%s and %S) accept a weird mix of
        padding and precision, which is merged as a single padding
@@ -2247,15 +2247,15 @@ let fmt_ebb_of_string ?legacy_behavior str =
   and parse_conversion : type x y z t u v e f .
       int -> int -> int -> bool -> bool -> bool -> bool -> (x, y) padding ->
         (z, t) precision -> (u, v) padding -> char -> (_, _, e, f) fmt_ebb =
-  fun pct_ind str_ind end_ind plus sharp space ign pad prec padprec symb ->
+  fun pct_ind str_ind end_ind plus hash space ign pad prec padprec symb ->
     (* Flags used to check option usages/compatibilities. *)
-    let plus_used  = ref false and sharp_used = ref false
+    let plus_used  = ref false and hash_used = ref false
     and space_used = ref false and ign_used   = ref false
     and pad_used   = ref false and prec_used  = ref false in
 
     (* Access to options, update flags. *)
     let get_plus    () = plus_used  := true; plus
-    and get_sharp   () = sharp_used := true; sharp
+    and get_hash   () = hash_used := true; hash
     and get_space   () = space_used := true; space
     and get_ign     () = ign_used   := true; ign
     and get_pad     () = pad_used   := true; pad
@@ -2374,7 +2374,7 @@ let fmt_ebb_of_string ?legacy_behavior str =
           make_padding_fmt_ebb pad fmt_rest in
         Fmt_EBB (Caml_string (pad', fmt_rest'))
     | 'd' | 'i' | 'x' | 'X' | 'o' | 'u' ->
-      let iconv = compute_int_conv pct_ind str_ind (get_plus ()) (get_sharp ())
+      let iconv = compute_int_conv pct_ind str_ind (get_plus ()) (get_hash ())
         (get_space ()) symb in
       let Fmt_EBB fmt_rest = parse str_ind end_ind in
       if get_ign () then
@@ -2402,7 +2402,7 @@ let fmt_ebb_of_string ?legacy_behavior str =
         Fmt_EBB (Scan_get_counter (counter, fmt_rest))
     | 'l' ->
       let iconv =
-        compute_int_conv pct_ind (str_ind + 1) (get_plus ()) (get_sharp ())
+        compute_int_conv pct_ind (str_ind + 1) (get_plus ()) (get_hash ())
           (get_space ()) str.[str_ind] in
       let Fmt_EBB fmt_rest = parse (str_ind + 1) end_ind in
       if get_ign () then
@@ -2415,7 +2415,7 @@ let fmt_ebb_of_string ?legacy_behavior str =
     | 'n' ->
       let iconv =
         compute_int_conv pct_ind (str_ind + 1) (get_plus ())
-          (get_sharp ()) (get_space ()) str.[str_ind] in
+          (get_hash ()) (get_space ()) str.[str_ind] in
       let Fmt_EBB fmt_rest = parse (str_ind + 1) end_ind in
       if get_ign () then
         let ignored = Ignored_nativeint (iconv, get_pad_opt '_') in
@@ -2426,7 +2426,7 @@ let fmt_ebb_of_string ?legacy_behavior str =
         Fmt_EBB (Nativeint (iconv, pad', prec', fmt_rest'))
     | 'L' ->
       let iconv =
-        compute_int_conv pct_ind (str_ind + 1) (get_plus ()) (get_sharp ())
+        compute_int_conv pct_ind (str_ind + 1) (get_plus ()) (get_hash ())
           (get_space ()) str.[str_ind] in
       let Fmt_EBB fmt_rest = parse (str_ind + 1) end_ind in
       if get_ign () then
@@ -2512,7 +2512,7 @@ let fmt_ebb_of_string ?legacy_behavior str =
     if not legacy_behavior then begin
     if not !plus_used && plus then
       incompatible_flag pct_ind str_ind symb "'+'";
-    if not !sharp_used && sharp then
+    if not !hash_used && hash then
       incompatible_flag pct_ind str_ind symb "'#'";
     if not !space_used && space then
       incompatible_flag pct_ind str_ind symb "' '";
@@ -2858,8 +2858,8 @@ let fmt_ebb_of_string ?legacy_behavior str =
     | 'L' -> Token_counter | _ -> assert false
 
   (* Convert (plus, symb) to its associated int_conv. *)
-  and compute_int_conv pct_ind str_ind plus sharp space symb =
-    match plus, sharp, space, symb with
+  and compute_int_conv pct_ind str_ind plus hash space symb =
+    match plus, hash, space, symb with
     | false, false, false, 'd' -> Int_d  | false, false, false, 'i' -> Int_i
     | false, false,  true, 'd' -> Int_sd | false, false,  true, 'i' -> Int_si
     |  true, false, false, 'd' -> Int_pd |  true, false, false, 'i' -> Int_pi
@@ -2878,15 +2878,15 @@ let fmt_ebb_of_string ?legacy_behavior str =
     | true, _, true, _ ->
       if legacy_behavior then
         (* plus and space: legacy implementation prefers plus *)
-        compute_int_conv pct_ind str_ind plus sharp false symb
+        compute_int_conv pct_ind str_ind plus hash false symb
       else incompatible_flag pct_ind str_ind ' ' "'+'"
     | false, _, true, _    ->
       if legacy_behavior then (* ignore *)
-        compute_int_conv pct_ind str_ind plus sharp false symb
+        compute_int_conv pct_ind str_ind plus hash false symb
       else incompatible_flag pct_ind str_ind symb "' '"
     | true, _, false, _    ->
       if legacy_behavior then (* ignore *)
-        compute_int_conv pct_ind str_ind false sharp space symb
+        compute_int_conv pct_ind str_ind false hash space symb
       else incompatible_flag pct_ind str_ind symb "'+'"
     | false, _, false, _ -> assert false
 

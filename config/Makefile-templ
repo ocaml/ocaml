@@ -33,9 +33,9 @@ MANEXT=1
 ### Do #! scripts work on your system?
 ### Beware: on some systems (e.g. SunOS 4), this will work only if
 ### the string "#!$(BINDIR)/ocamlrun" is less than 32 characters long.
-### In doubt, set SHARPBANGSCRIPTS to false.
-SHARPBANGSCRIPTS=true
-#SHARPBANGSCRIPTS=false
+### In doubt, set HASHBANGSCRIPTS to false.
+HASHBANGSCRIPTS=true
+#HASHBANGSCRIPTS=false
 
 ########## Configuration for the bytecode compiler
 

@@ -20,7 +20,7 @@
 \newcommand\textbar{|}
 \newcommand\textbackslash{\begin{rawhtml}\\end{rawhtml}}
 \newcommand\textasciicircum{\^{}}
-\newcommand\sharp{#}
+\newcommand\hash{#}
 
 \let\ocamldocvspace\vspace
 \newenvironment{ocamldocindent}{\list{}{}\item\relax}{\endlist}
