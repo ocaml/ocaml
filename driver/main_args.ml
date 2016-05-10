@@ -501,6 +501,10 @@ let mk__version f =
   "--version", Arg.Unit f, " Print version and exit"
 ;;
 
+let mk_no_version f =
+  "-no-version", Arg.Unit f, " Do not print version at startup"
+;;
+
 let mk_vmthread f =
   "-vmthread", Arg.Unit f,
   " Generate code that supports the threads library with VM-level\n\
@@ -789,6 +793,7 @@ module type Toplevel_options = sig
   include Common_options
   val _init : string -> unit
   val _noinit : unit -> unit
+  val _no_version : unit -> unit
   val _noprompt : unit -> unit
   val _nopromptcont : unit -> unit
   val _stdin : unit -> unit
@@ -1030,6 +1035,7 @@ struct
     mk_unsafe_string F._unsafe_string;
     mk_version F._version;
     mk__version F._version;
+    mk_no_version F._no_version;
     mk_vnum F._vnum;
     mk_w F._w;
     mk_warn_error F._warn_error;
@@ -1228,6 +1234,7 @@ module Make_opttop_options (F : Opttop_options) = struct
     mk_unsafe_string F._unsafe_string;
     mk_version F._version;
     mk__version F._version;
+    mk_no_version F._no_version;
     mk_vnum F._vnum;
     mk_w F._w;
     mk_warn_error F._warn_error;

@@ -38,7 +38,7 @@ that permits interactive use of the OCaml system through a
 read-eval-print loop. In this mode, the system repeatedly reads OCaml
 phrases from the input, then typechecks, compiles and evaluates
 them, then prints the inferred type and result value, if any. The
-system prints a # (sharp) prompt before reading each phrase.
+system prints a # (hash) prompt before reading each phrase.
 
 A toplevel phrase can span several lines. It is terminated by ;; (a
 double-semicolon). The syntax of toplevel phrases is as follows.
@@ -205,6 +205,9 @@ Print version string and exit.
 .TP
 .B \-vnum
 Print short version number and exit.
+.TP
+.B \-no\-version
+Do not print the version banner at startup.
 .TP
 .BI \-w \ warning\-list
 Enable or disable warnings according to the argument

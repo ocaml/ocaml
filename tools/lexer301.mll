@@ -57,6 +57,7 @@ type token =
   | GREATER
   | GREATERRBRACE
   | GREATERRBRACKET
+  | HASH
   | IF
   | IN
   | INCLUDE
@@ -106,7 +107,6 @@ type token =
   | RPAREN
   | SEMI
   | SEMISEMI
-  | SHARP
   | SIG
   | STAR
   | STRING of (string)
@@ -346,7 +346,7 @@ rule token = parse
   | "#" [' ' '\t']* ['0'-'9']+ [^ '\n' '\r'] * ('\n' | '\r' | "\r\n")
       (* # linenum ...  *)
       { token lexbuf }
-  | "#"  { SHARP }
+  | "#"  { HASH }
   | "&"  { AMPERSAND }
   | "&&" { AMPERAMPER }
   | "`"  { BACKQUOTE }

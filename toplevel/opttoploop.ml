@@ -424,7 +424,7 @@ let use_file ppf wrap_mod name =
     let lb = Lexing.from_channel ic in
     Location.init lb filename;
     (* Skip initial #! line if any *)
-    Lexer.skip_sharp_bang lb;
+    Lexer.skip_hash_bang lb;
     let success =
       protect_refs [ R (Location.input_name, filename) ] (fun () ->
         try
@@ -536,7 +536,8 @@ exception PPerror
 
 let loop ppf =
   Location.formatter_for_warnings := ppf;
-  fprintf ppf "        OCaml version %s - native toplevel@.@." Config.version;
+  if not !Clflags.noversion then
+    fprintf ppf "        OCaml version %s - native toplevel@.@." Config.version;
   initialize_toplevel_env ();
   let lb = Lexing.from_function refill_lexbuf in
   Location.init lb "//toplevel//";

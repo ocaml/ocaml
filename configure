@@ -985,27 +985,27 @@ echo "#define OCAML_STDLIB_DIR \"$libdir\"" >> s.h
 
 # Do #! scripts work?
 
-if (SHELL=/bin/sh; export SHELL; (./sharpbang || ./sharpbang2) >/dev/null); then
+if (SHELL=/bin/sh; export SHELL; (./hashbang || ./hashbang2) >/dev/null); then
   inf "#! appears to work in shell scripts."
   case "$target" in
     *-*-sunos*|*-*-unicos*)
       wrn "We won't use it, though, because under SunOS and Unicos it breaks " \
           "on pathnames longer than 30 characters"
-      echo "SHARPBANGSCRIPTS=false" >> Makefile;;
+      echo "HASHBANGSCRIPTS=false" >> Makefile;;
     *-*-cygwin*)
       wrn "We won't use it, though, because of conflicts with .exe extension " \
           "under Cygwin"
-      echo "SHARPBANGSCRIPTS=false" >> Makefile;;
+      echo "HASHBANGSCRIPTS=false" >> Makefile;;
     *-*-mingw*)
       inf "We won't use it, though, because it's on the target platform " \
           "it would be used and windows doesn't support it."
-      echo "SHARPBANGSCRIPTS=false" >> Makefile;;
+      echo "HASHBANGSCRIPTS=false" >> Makefile;;
     *)
-      echo "SHARPBANGSCRIPTS=true" >> Makefile;;
+      echo "HASHBANGSCRIPTS=true" >> Makefile;;
   esac
 else
   inf "No support for #! in shell scripts"
-  echo "SHARPBANGSCRIPTS=false" >> Makefile
+  echo "HASHBANGSCRIPTS=false" >> Makefile
 fi
 
 # Use 64-bit file offset if possible
