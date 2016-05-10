@@ -30,6 +30,9 @@ OCaml 4.04.0:
 - MPR#7248: have ocamldep interpret -open arguments in left-to-right order
   (Gabriel Scherer, report by Anton Bachin)
 
+- Add the -no-version option to the toplevel
+  (Sébastien Hinderer)
+
 ### Standard library:
 
 - GPR#427: Obj.is_block is now an inlined OCaml function instead of a

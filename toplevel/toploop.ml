@@ -507,7 +507,8 @@ exception PPerror
 
 let loop ppf =
   Location.formatter_for_warnings := ppf;
-  fprintf ppf "        OCaml version %s@.@." Config.version;
+  if not !Clflags.noversion then
+    fprintf ppf "        OCaml version %s@.@." Config.version;
   begin
     try initialize_toplevel_env ()
     with Env.Error _ | Typetexp.Error _ as exn ->

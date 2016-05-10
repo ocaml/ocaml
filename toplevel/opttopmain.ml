@@ -170,6 +170,7 @@ module Options = Main_args.Make_opttop_options (struct
   let _unsafe = set fast
   let _version () = print_version ()
   let _vnum () = print_version_num ()
+  let _no_version = set noversion
   let _w s = Warnings.parse_options false s
   let _warn_error s = Warnings.parse_options true s
   let _warn_help = Warnings.help_warnings

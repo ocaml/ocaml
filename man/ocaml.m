@@ -206,6 +206,9 @@ Print version string and exit.
 .B \-vnum
 Print short version number and exit.
 .TP
+.B \-no\-version
+Do not print the version banner at startup.
+.TP
 .BI \-w \ warning\-list
 Enable or disable warnings according to the argument
 .IR warning-list .
