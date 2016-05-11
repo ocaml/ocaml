@@ -405,10 +405,10 @@ and approx_sig env ssg =
           List.flatten
             (map_rec
                (fun rs decl ->
-                  let module T = Typeclass in
-                  [Sig_class_type(decl.T.clsty_ty_id, decl.T.clsty_ty_decl, rs);
-                   Sig_type(decl.T.clsty_obj_id, decl.T.clsty_obj_abbr, rs);
-                   Sig_type(decl.T.clsty_typesharp_id, decl.T.clsty_abbr, rs)])
+                  let open Typeclass in
+                  [Sig_class_type(decl.clsty_ty_id, decl.clsty_ty_decl, rs);
+                   Sig_type(decl.clsty_obj_id, decl.clsty_obj_abbr, rs);
+                   Sig_type(decl.clsty_typesharp_id, decl.clsty_abbr, rs)])
               decls [rem])
       | _ ->
           approx_sig env srem
@@ -705,11 +705,11 @@ and transl_signature env sg =
             List.flatten
               (map_rec
                  (fun rs cls ->
-                    let module T = Typeclass in
-                    [Sig_class(cls.T.cls_id, cls.T.cls_decl, rs);
-                     Sig_class_type(cls.T.cls_ty_id, cls.T.cls_ty_decl, rs);
-                     Sig_type(cls.T.cls_obj_id, cls.T.cls_obj_abbr, rs);
-                     Sig_type(cls.T.cls_typesharp_id, cls.T.cls_abbr, rs)])
+                    let open Typeclass in
+                    [Sig_class(cls.cls_id, cls.cls_decl, rs);
+                     Sig_class_type(cls.cls_ty_id, cls.cls_ty_decl, rs);
+                     Sig_type(cls.cls_obj_id, cls.cls_obj_abbr, rs);
+                     Sig_type(cls.cls_typesharp_id, cls.cls_abbr, rs)])
                  classes [rem]),
             final_env
         | Psig_class_type cl ->
@@ -724,13 +724,10 @@ and transl_signature env sg =
             List.flatten
               (map_rec
                  (fun rs decl ->
-                    let module T = Typeclass in
-                    [Sig_class_type(decl.T.clsty_ty_id,
-                                    decl.T.clsty_ty_decl, rs);
-                     Sig_type(decl.T.clsty_obj_id,
-                              decl.T.clsty_obj_abbr, rs);
-                     Sig_type(decl.T.clsty_typesharp_id,
-                              decl.T.clsty_abbr, rs)])
+                    let open Typeclass in
+                    [Sig_class_type(decl.clsty_ty_id, decl.clsty_ty_decl, rs);
+                     Sig_type(decl.clsty_obj_id, decl.clsty_obj_abbr, rs);
+                     Sig_type(decl.clsty_typesharp_id, decl.clsty_abbr, rs)])
                  classes [rem]),
             final_env
         | Psig_attribute x ->
@@ -1393,11 +1390,11 @@ and type_structure ?(toplevel = false) funct_body anchor env sstr scope =
         List.flatten
           (map_rec
             (fun rs cls ->
-              let module T = Typeclass in
-              [Sig_class(cls.T.cls_id, cls.T.cls_decl, rs);
-               Sig_class_type(cls.T.cls_ty_id, cls.T.cls_ty_decl, rs);
-               Sig_type(cls.T.cls_obj_id, cls.T.cls_obj_abbr, rs);
-               Sig_type(cls.T.cls_typesharp_id, cls.T.cls_abbr, rs)])
+              let open Typeclass in
+              [Sig_class(cls.cls_id, cls.cls_decl, rs);
+               Sig_class_type(cls.cls_ty_id, cls.cls_ty_decl, rs);
+               Sig_type(cls.cls_obj_id, cls.cls_obj_abbr, rs);
+               Sig_type(cls.cls_typesharp_id, cls.cls_abbr, rs)])
              classes []),
         new_env
     | Pstr_class_type cl ->
@@ -1418,10 +1415,10 @@ and type_structure ?(toplevel = false) funct_body anchor env sstr scope =
         List.flatten
           (map_rec
              (fun rs decl ->
-                let module T = Typeclass in
-                [Sig_class_type(decl.T.clsty_ty_id, decl.T.clsty_ty_decl, rs);
-                 Sig_type(decl.T.clsty_obj_id, decl.T.clsty_obj_abbr, rs);
-                 Sig_type(decl.T.clsty_typesharp_id, decl.T.clsty_abbr, rs)])
+                let open Typeclass in
+                [Sig_class_type(decl.clsty_ty_id, decl.clsty_ty_decl, rs);
+                 Sig_type(decl.clsty_obj_id, decl.clsty_obj_abbr, rs);
+                 Sig_type(decl.clsty_typesharp_id, decl.clsty_abbr, rs)])
              classes []),
         new_env
     | Pstr_include sincl ->
