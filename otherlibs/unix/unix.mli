@@ -882,7 +882,9 @@ val sleep : int -> unit
 
 val sleepf : float -> unit
 (** Stop execution for the given number of seconds.  Like [sleep],
-    but fractions of seconds are supported. *)
+    but fractions of seconds are supported.
+
+    @since 4.03.0 *)
 
 val times : unit -> process_times
 (** Return the execution times of the process.

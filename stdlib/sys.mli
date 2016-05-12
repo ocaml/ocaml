@@ -290,10 +290,14 @@ val enable_runtime_warnings: bool -> unit
 (** Control whether the OCaml runtime system can emit warnings
     on stderr.  Currently, the only supported warning is triggered
     when a channel created by [open_*] functions is finalized without
-    being closed.  Runtime warnings are enabled by default. *)
+    being closed.  Runtime warnings are enabled by default.
+
+    @since 4.03.0 *)
 
 val runtime_warnings_enabled: unit -> bool
-(** Return whether runtime warnings are currently enabled. *)
+(** Return whether runtime warnings are currently enabled.
+
+    @since 4.03.0 *)
 
 (** {6 Optimization} *)
 
@@ -310,4 +314,6 @@ external opaque_identity : 'a -> 'a = "%opaque"
         ignore (Sys.opaque_identity (my_pure_computation ()))
       done
     ]}
+
+    @since 4.03.0
 *)

@@ -210,18 +210,24 @@ val allocated_bytes : unit -> float
    with [int] on 32-bit machines. *)
 
 external get_minor_free : unit -> int = "caml_get_minor_free" [@@noalloc]
-(** Return the current size of the free space inside the minor heap. *)
+(** Return the current size of the free space inside the minor heap.
+
+    @since 4.03.0 *)
 
 external get_bucket : int -> int = "caml_get_major_bucket" [@@noalloc]
 (** [get_bucket n] returns the current size of the [n]-th future bucket
     of the GC smoothing system. The unit is one millionth of a full GC.
     Raise [Invalid_argument] if [n] is negative, return 0 if n is larger
-    than the smoothing window. *)
+    than the smoothing window.
+
+    @since 4.03.0 *)
 
 external get_credit : unit -> int = "caml_get_major_credit" [@@noalloc]
 (** [get_credit ()] returns the current size of the "work done in advance"
     counter of the GC smoothing system. The unit is one millionth of a
-    full GC. *)
+    full GC.
+
+    @since 4.03.0 *)
 
 external huge_fallback_count : unit -> int = "caml_gc_huge_fallback_count"
 (** Return the number of times we tried to map huge pages and had to fall

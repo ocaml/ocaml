@@ -172,7 +172,9 @@ val char : (char, int8_unsigned_elt) kind
 
 val kind_size_in_bytes : ('a, 'b) kind -> int
 (** [kind_size_in_bytes k] is the number of bytes used to store
-   an element of type [k]. *)
+   an element of type [k].
+
+   @since 4.03.0 *)
 
 (** {6 Array layouts} *)
 
@@ -288,7 +290,9 @@ module Genarray :
 
   val size_in_bytes : ('a, 'b, 'c) t -> int
   (** [size_in_bytes a] is the number of elements in [a] multiplied
-    by [a]'s {!kind_size_in_bytes}.*)
+    by [a]'s {!kind_size_in_bytes}.
+
+    @since 4.03.0 *)
 
   external get: ('a, 'b, 'c) t -> int array -> 'a = "caml_ba_get_generic"
   (** Read an element of a generic big array.
@@ -502,7 +506,9 @@ module Array1 : sig
 
   val size_in_bytes : ('a, 'b, 'c) t -> int
   (** [size_in_bytes a] is the number of elements in [a]
-    multiplied by [a]'s {!kind_size_in_bytes}. *)
+    multiplied by [a]'s {!kind_size_in_bytes}.
+
+    @since 4.03.0 *)
 
   external get: ('a, 'b, 'c) t -> int -> 'a = "%caml_ba_ref_1"
   (** [Array1.get a x], or alternatively [a.{x}],
@@ -588,7 +594,9 @@ module Array2 :
 
   val size_in_bytes : ('a, 'b, 'c) t -> int
   (** [size_in_bytes a] is the number of elements in [a]
-    multiplied by [a]'s {!kind_size_in_bytes}. *)
+    multiplied by [a]'s {!kind_size_in_bytes}.
+
+    @since 4.03.0 *)
 
   external get: ('a, 'b, 'c) t -> int -> int -> 'a = "%caml_ba_ref_2"
   (** [Array2.get a x y], also written [a.{x,y}],
@@ -698,7 +706,9 @@ module Array3 :
 
   val size_in_bytes : ('a, 'b, 'c) t -> int
   (** [size_in_bytes a] is the number of elements in [a]
-    multiplied by [a]'s {!kind_size_in_bytes}. *)
+    multiplied by [a]'s {!kind_size_in_bytes}.
+
+    @since 4.03.0 *)
 
   external get: ('a, 'b, 'c) t -> int -> int -> int -> 'a = "%caml_ba_ref_3"
   (** [Array3.get a x y z], also written [a.{x,y,z}],

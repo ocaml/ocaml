@@ -127,7 +127,9 @@ val num_bits_big_int : big_int -> int
         (** Return the number of significant bits in the absolute
             value of the given big integer.  [num_bits_big_int a]
             returns 0 if [a] is 0; otherwise it returns a positive
-            integer [n] such that [2^(n-1) <= |a| < 2^n]. *)
+            integer [n] such that [2^(n-1) <= |a| < 2^n].
+
+            @since 4.03.0 *)
 
 (** {6 Conversions to and from strings} *)
 
@@ -226,10 +228,13 @@ val extract_big_int : big_int -> int -> int -> big_int
 (**/**)
 
 (** {6 For internal use} *)
+
 val nat_of_big_int : big_int -> nat
 val big_int_of_nat : nat -> big_int
 val base_power_big_int: int -> int -> big_int -> big_int
 val sys_big_int_of_string: string -> int -> int -> big_int
 val round_futur_last_digit : bytes -> int -> int -> bool
 val approx_big_int: int -> big_int -> string
+
 val round_big_int_to_float: big_int -> bool -> float
+(* @since 4.03.0 *)
