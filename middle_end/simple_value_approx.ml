@@ -29,15 +29,6 @@ type value_string = {
   size : int;
 }
 
-type value_float_array_contents =
-  | Contents of float option array
-  | Unknown_or_mutable
-
-type value_float_array = {
-  contents : value_float_array_contents;
-  size : int;
-}
-
 type unknown_because_of =
   | Unresolved_symbol of Symbol.t
   | Other
@@ -78,6 +69,15 @@ and value_set_of_closures = {
   specialised_args : Flambda.specialised_to Variable.Map.t;
   freshening : Freshening.Project_var.t;
   direct_call_surrogates : Closure_id.t Closure_id.Map.t;
+}
+
+and value_float_array_contents =
+  | Contents of t array
+  | Unknown_or_mutable
+
+and value_float_array = {
+  contents : value_float_array_contents;
+  size : int;
 }
 
 let descr t = t.descr
@@ -277,8 +277,11 @@ let value_unresolved sym = approx (Value_unresolved sym)
 let value_string size contents = approx (Value_string {size; contents })
 let value_mutable_float_array ~size =
   approx (Value_float_array { contents = Unknown_or_mutable; size; } )
-let value_immutable_float_array contents =
+let value_immutable_float_array (contents:t array) =
   let size = Array.length contents in
+  let contents =
+    Array.map (fun t -> augment_with_kind t Pfloatval) contents
+  in
   approx (Value_float_array { contents = Contents contents; size; } )
 
 let name_expr_fst (named, thing) ~name =
@@ -755,3 +758,21 @@ let check_approx_for_float t : float option =
   | Value_constptr _ | Value_set_of_closures _ | Value_closure _
   | Value_extern _ | Value_boxed_int _ | Value_symbol _ ->
       None
+
+let float_array_as_constant (t:value_float_array) : float list option =
+  match t.contents with
+  | Unknown_or_mutable -> None
+  | Contents contents ->
+    Array.fold_right (fun elt acc ->
+      match acc, elt.descr with
+      | Some acc, Value_float (Some f) ->
+        Some (f :: acc)
+      | None, _
+      | Some _,
+        (Value_float None | Value_unresolved _
+        | Value_unknown _ | Value_string _ | Value_float_array _
+        | Value_bottom | Value_block _ | Value_int _ | Value_char _
+        | Value_constptr _ | Value_set_of_closures _ | Value_closure _
+        | Value_extern _ | Value_boxed_int _ | Value_symbol _)
+        -> None)
+      contents (Some [])

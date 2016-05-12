@@ -104,7 +104,11 @@ let rec import_ex ex =
     | Unknown_or_mutable ->
       A.value_mutable_float_array ~size:float_array.size
     | Contents contents ->
-      A.value_immutable_float_array contents
+      A.value_immutable_float_array
+        (Array.map (function
+           | None -> A.value_any_float
+           | Some f -> A.value_float f)
+           contents)
     end
   | Export_info.Value_boxed_int (t, i) -> A.value_boxed_int t i
   | Value_string { size; contents } ->

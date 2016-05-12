@@ -185,7 +185,7 @@ let approx_for_allocated_const (const : Allocated_const.t) =
   | Float_array a -> A.value_mutable_float_array ~size:(List.length a)
   | Immutable_float_array a ->
       A.value_immutable_float_array
-        (Array.map (fun x -> Some x) (Array.of_list a))
+        (Array.map A.value_float (Array.of_list a))
 
 (* Determine whether a given closure ID corresponds directly to a variable
    (bound to a closure) in the given environment.  This happens when the body
