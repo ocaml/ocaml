@@ -35,8 +35,8 @@ else
   export OCAML_FLEXLINK:=../../boot/ocamlrun ../../flexdll/flexlink.exe
 endif
 
-CAMLOBJS=thread.cmo mutex.cmo condition.cmo event.cmo threadUnix.cmo
-CMIFILES=$(CAMLOBJS:.cmo=.cmi)
+THREAD_OBJS=thread.cmo mutex.cmo condition.cmo event.cmo threadUnix.cmo
+CMIFILES=$(THREAD_OBJS:.cmo=.cmi)
 COBJS=st_stubs_b.$(O)
 COBJS_NAT=st_stubs_n.$(O)
 
@@ -46,9 +46,9 @@ all: lib$(LIBNAME).$(A) $(LIBNAME).cma $(CMIFILES)
 
 allopt: lib$(LIBNAME).$(A) $(LIBNAME).cmxa $(LIBNAME).cmxs $(CMIFILES)
 
-$(LIBNAME).cma: $(CAMLOBJS)
+$(LIBNAME).cma: $(THREAD_OBJS)
 	$(MKLIB) -o $(LIBNAME) -ocamlc "$(CAMLRUN) ../../ocamlc" \
-	         -linkall $(CAMLOBJS) $(LINKOPTS)
+	         -linkall $(THREAD_OBJS) $(LINKOPTS)
 
 lib$(LIBNAME).$(A): $(COBJS)
 	$(MKLIB) -o $(LIBNAME) $(COBJS) $(LDOPTS)
@@ -59,10 +59,10 @@ st_stubs_b.$(O): st_stubs.c st_win32.h
 
 
 
-$(LIBNAME).cmxa: $(CAMLOBJS:.cmo=.cmx)
+$(LIBNAME).cmxa: $(THREAD_OBJS:.cmo=.cmx)
 	$(MKLIB) -o $(LIBNAME)nat \
 	         -ocamlopt "$(CAMLRUN) ../../ocamlopt" -linkall \
-	         $(CAMLOBJS:.cmo=.cmx) $(LINKOPTS)
+	         $(THREAD_OBJS:.cmo=.cmx) $(LINKOPTS)
 	mv $(LIBNAME)nat.cmxa $(LIBNAME).cmxa
 	mv $(LIBNAME)nat.$(A) $(LIBNAME).$(A)
 
@@ -77,7 +77,7 @@ st_stubs_n.$(O): st_stubs.c st_win32.h
 	            $(NATIVECCCOMPOPTS) -c st_stubs.c
 	mv st_stubs.$(O) st_stubs_n.$(O)
 
-$(CAMLOBJS:.cmo=.cmx): ../../ocamlopt
+$(THREAD_OBJS:.cmo=.cmx): ../../ocamlopt
 
 partialclean:
 	rm -f *.cm*
