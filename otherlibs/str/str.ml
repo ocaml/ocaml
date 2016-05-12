@@ -95,7 +95,7 @@ module Charset =
 
     let fold_case s =
       (let r = make_empty() in
-       iter (fun c -> add r (Char.lowercase c); add r (Char.uppercase c)) s;
+       iter (fun c -> add r (Char.lowercase_ascii c); add r (Char.uppercase_ascii c)) s;
        r)[@ocaml.warnerror "-3"]
 
   end
@@ -218,7 +218,7 @@ let charclass_of_regexp fold_case re =
 
 let fold_case_table =
   (let t = Bytes.create 256 in
-   for i = 0 to 255 do Bytes.set t i (Char.lowercase(Char.chr i)) done;
+   for i = 0 to 255 do Bytes.set t i (Char.lowercase_ascii(Char.chr i)) done;
    Bytes.to_string t)[@ocaml.warnerror "-3"]
 
 module StringMap =
@@ -275,8 +275,7 @@ let compile fold_case re =
   let rec emit_code = function
     Char c ->
       if fold_case then
-        emit_instr op_CHARNORM (Char.code (Char.lowercase c))
-          [@ocaml.warnerror "-3"]
+        emit_instr op_CHARNORM (Char.code (Char.lowercase_ascii c))
       else
         emit_instr op_CHAR (Char.code c)
   | String s ->
@@ -284,8 +283,7 @@ let compile fold_case re =
         0 -> ()
       | 1 ->
         if fold_case then
-          emit_instr op_CHARNORM (Char.code (Char.lowercase s.[0]))
-            [@ocaml.warnerror "-3"]
+          emit_instr op_CHARNORM (Char.code (Char.lowercase_ascii s.[0]))
         else
           emit_instr op_CHAR (Char.code s.[0])
       | _ ->
@@ -298,7 +296,7 @@ let compile fold_case re =
           emit_code (String (string_after s (i+1)))
         with Not_found ->
           if fold_case then
-            emit_instr op_STRINGNORM (cpool_index (String.lowercase s))
+            emit_instr op_STRINGNORM (cpool_index (String.lowercase_ascii s))
               [@ocaml.warnerror "-3"]
           else
             emit_instr op_STRING (cpool_index s)
