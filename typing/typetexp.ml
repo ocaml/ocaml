@@ -112,25 +112,26 @@ let rec narrow_unbound_lid_error : 'a. _ -> _ -> _ -> _ -> 'a =
   end;
   raise (Error (loc, env, make_error lid))
 
-let find_component lookup make_error env loc lid =
+let find_component (lookup : ?loc:_ -> _) make_error env loc lid =
   try
     match lid with
     | Longident.Ldot (Longident.Lident "*predef*", s) ->
-        lookup ?loc:(Some loc) (Longident.Lident s) Env.initial_safe_string
+        lookup ~loc (Longident.Lident s) Env.initial_safe_string
     | _ ->
-        lookup ?loc:(Some loc) lid env
+        lookup ~loc lid env
   with Not_found ->
     narrow_unbound_lid_error env loc lid make_error
   | Env.Recmodule ->
     raise (Error (loc, env, Illegal_reference_to_recursive_module))
 
 let find_type env loc lid =
-  let (path, decl) as r =
+  let path =
     find_component Env.lookup_type (fun lid -> Unbound_type_constructor lid)
       env loc lid
   in
+  let decl = Env.find_type path env in
   Builtin_attributes.check_deprecated loc decl.type_attributes (Path.name path);
-  r
+  (path, decl)
 
 let find_constructor =
   find_component Env.lookup_constructor (fun lid -> Unbound_constructor lid)
@@ -381,7 +382,8 @@ let rec transl_type env policy styp =
   | Ptyp_class(lid, stl) ->
       let (path, decl, _is_variant) =
         try
-          let (path, decl) = Env.lookup_type lid.txt env in
+          let path = Env.lookup_type lid.txt env in
+          let decl = Env.find_type path env in
           let rec check decl =
             match decl.type_manifest with
               None -> raise Not_found
@@ -402,7 +404,8 @@ let rec transl_type env policy styp =
             | Longident.Ldot(r, s)   -> Longident.Ldot (r, "#" ^ s)
             | Longident.Lapply(_, _) -> fatal_error "Typetexp.transl_type"
           in
-          let (path, decl) = Env.lookup_type lid2 env in
+          let path = Env.lookup_type lid2 env in
+          let decl = Env.find_type path env in
           (path, decl, false)
         with Not_found ->
           ignore (find_class env styp.ptyp_loc lid.txt); assert false
