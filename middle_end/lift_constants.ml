@@ -379,14 +379,9 @@ let translate_definition_and_resolve_alias inconstants
                Duplicate Pfloatarray %a with unknown symbol: %a"
               Variable.print var
               Alias_analysis.print_constant_defining_value definition
-          | Value_float_array { contents = Contents float_array } ->
+          | Value_float_array value_float_array ->
             let contents =
-              Array.fold_right (fun elt acc ->
-                  match acc, elt with
-                  | None, _ | _, None -> None
-                  | Some acc, Some f ->
-                    Some (f :: acc))
-                float_array (Some [])
+              Simple_value_approx.float_array_as_constant value_float_array
             in
             begin match contents with
             | None ->
