@@ -428,7 +428,7 @@ and transl_structure loc fields cc rootpath final_env = function
                           transl_primitive p.pc_loc
                             p.pc_desc p.pc_env p.pc_type None
                       | _ -> apply_coercion loc Strict cc (get_field pos))
-                    pos_cc_list, loc)
+                    pos_cc_list, loc))
             and id_pos_list =
               List.filter (fun (id,_,_) -> not (IdentSet.mem id ids))
                 id_pos_list

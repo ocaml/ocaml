@@ -853,7 +853,7 @@ let transl_class ids cl_id pub_meths cl vflag =
            lfield cached 1;
            lfield cached 0;
            lenvs]
-        else [lambda_unit; lfield cached 0; lambda_unit; lenvs]),
+        else [lambda_unit; lfield cached 0; lambda_unit; lenvs],
         Location.none
        )))))
 
