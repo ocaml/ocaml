@@ -24,7 +24,6 @@ open Type
 open Value
 open Module
 open Class
-open Parameter
 
 (** A class used to get a [text] for info structures. *)
 class virtual info =
@@ -556,7 +555,7 @@ class virtual to_text =
           [Code ((if with_def_syntax then " : " else "")^
                  Odoc_messages.struct_end^" ")]
 
-      | Module_functor (p, k)  ->
+      | Module_functor (_, k)  ->
           (if with_def_syntax then [Code " : "] else []) @
           [Code "functor ... "] @
           [Code " -> "] @

@@ -58,7 +58,7 @@ type t =
   | Unused_for_index of string              (* 35 *)
   | Unused_ancestor of string               (* 36 *)
   | Unused_constructor of string * bool * bool  (* 37 *)
-  | Unused_extension of string * bool * bool    (* 38 *)
+  | Unused_extension of string * bool * bool * bool (* 38 *)
   | Unused_rec_flag                         (* 39 *)
   | Name_out_of_scope of string * string list * bool (* 40 *)
   | Ambiguous_name of string list * string list *  bool    (* 41 *)
@@ -239,7 +239,7 @@ let parse_opt error active flags s =
     | '+' -> loop_letter_num set (i+1)
     | '-' -> loop_letter_num clear (i+1)
     | '@' -> loop_letter_num set_all (i+1)
-    | c -> error ()
+    | _ -> error ()
   and loop_letter_num myset i =
     if i >= String.length s then error () else
     match s.[i] with
@@ -369,16 +369,21 @@ let message = function
       "constructor " ^ s ^
       " is never used to build values.\n\
         Its type is exported as a private type."
-  | Unused_extension (s, false, false) ->
-      "unused extension constructor " ^ s ^ "."
-  | Unused_extension (s, true, _) ->
-      "extension constructor " ^ s ^
-      " is never used to build values.\n\
-        (However, this constructor appears in patterns.)"
-  | Unused_extension (s, false, true) ->
-      "extension constructor " ^ s ^
-      " is never used to build values.\n\
-        It is exported or rebound as a private extension."
+  | Unused_extension (s, is_exception, cu_pattern, cu_privatize) ->
+     let kind =
+       if is_exception then "exception" else "extension constructor" in
+     let name = kind ^ " " ^ s in
+     begin match cu_pattern, cu_privatize with
+       | false, false -> "unused " ^ name
+       | true, _ ->
+          name ^
+          " is never used to build values.\n\
+           (However, this constructor appears in patterns.)"
+       | false, true ->
+          name ^
+          " is never used to build values.\n\
+            It is exported or rebound as a private extension."
+     end
   | Unused_rec_flag ->
       "unused rec flag."
   | Name_out_of_scope (ty, [nm], false) ->
@@ -395,12 +400,13 @@ let message = function
       s ^ " belongs to several types: " ^ String.concat " " tl ^
       "\nThe first one was selected. Please disambiguate if this is wrong."
   | Ambiguous_name (_, _, false) -> assert false
-  | Ambiguous_name (slist, tl, true) ->
+  | Ambiguous_name (_slist, tl, true) ->
       "these field labels belong to several types: " ^
       String.concat " " tl ^
       "\nThe first one was selected. Please disambiguate if this is wrong."
   | Disambiguated_name s ->
-      "this use of " ^ s ^ " required disambiguation."
+      "this use of " ^ s ^ " relies on type-directed disambiguation,\n\
+       it will not compile with OCaml 4.00 or earlier."
   | Nonoptional_label s ->
       "the label " ^ s ^ " is not optional."
   | Open_shadow_identifier (kind, s) ->
@@ -432,9 +438,9 @@ let message = function
       Printf.sprintf "expected tailcall"
   | Fragile_literal_pattern ->
       Printf.sprintf
-        "the argument of this constructor should not be matched against a\n\
-         constant pattern; the actual value of the argument could change\n\
-         in the future"
+        "Code should not depend on the actual values of\n\
+         this constructor's arguments. They are only for information\n\
+         and may change in future versions. (See manual section 8.5)"
   | Unreachable_case ->
       "this match case is unreachable.\n\
        Consider replacing it with a refutation case '<pat> -> .'"
@@ -455,8 +461,8 @@ let message = function
         | _::_ ->
             "variables " ^ String.concat "," vars in
       Printf.sprintf
-        "Ambiguous guarded pattern, %s may match different or-pattern \
-          arguments"
+        "Ambiguous or-pattern variables under guard;\n\
+         %s may match different arguments. (See manual section 8.5)"
         msg
   | No_cmx_file name ->
       Printf.sprintf
@@ -547,7 +553,7 @@ let descriptions =
    39, "Unused rec flag.";
    40, "Constructor or label name used out of scope.";
    41, "Ambiguous constructor or label name.";
-   42, "Disambiguated constructor or label name.";
+   42, "Disambiguated constructor or label name (compatibility warning).";
    43, "Nonoptional label applied as optional.";
    44, "Open statement shadows an already defined identifier.";
    45, "Open statement shadows an already defined label or constructor.";
@@ -562,7 +568,7 @@ let descriptions =
    54, "Attribute used more than once on an expression";
    55, "Inlining impossible";
    56, "Unreachable case in a pattern-matching (based on type information).";
-   57, "Ambiguous binding by pattern.";
+   57, "Ambiguous or-pattern variables under guard";
    58, "Missing cmx file";
    59, "Assignment to non-mutable value";
   ]

@@ -24,7 +24,7 @@
 #include <caml/signals.h>
 #include "unixsupport.h"
 
-typedef BOOL (WINAPI *LPFN_CREATESYMBOLICLINK) (LPTSTR, LPTSTR, DWORD);
+typedef BOOLEAN (WINAPI *LPFN_CREATESYMBOLICLINK) (LPTSTR, LPTSTR, DWORD);
 
 static LPFN_CREATESYMBOLICLINK pCreateSymbolicLink = NULL;
 static int no_symlink = 0;
@@ -33,7 +33,7 @@ CAMLprim value unix_symlink(value to_dir, value source, value dest)
 {
   CAMLparam3(to_dir, source, dest);
   DWORD flags = (Bool_val(to_dir) ? SYMBOLIC_LINK_FLAG_DIRECTORY : 0);
-  BOOL result;
+  BOOLEAN result;
 
 again:
   if (no_symlink) {

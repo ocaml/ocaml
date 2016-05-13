@@ -147,7 +147,7 @@ external getpid : unit -> int = "unix_getpid"
 let fork () = invalid_arg "Unix.fork not implemented"
 let wait () = invalid_arg "Unix.wait not implemented"
 let getppid () = invalid_arg "Unix.getppid not implemented"
-let nice prio = invalid_arg "Unix.nice not implemented"
+let nice _ = invalid_arg "Unix.nice not implemented"
 
 (* Basic file input/output *)
 
@@ -224,8 +224,8 @@ type seek_command =
 
 external lseek : file_descr -> int -> seek_command -> int = "unix_lseek"
 
-let truncate name len = invalid_arg "Unix.truncate not implemented"
-let ftruncate fd len = invalid_arg "Unix.ftruncate not implemented"
+let truncate _name _len = invalid_arg "Unix.truncate not implemented"
+let ftruncate _fd _len = invalid_arg "Unix.ftruncate not implemented"
 
 (* File statistics *)
 
@@ -270,9 +270,9 @@ module LargeFile =
   struct
     external lseek : file_descr -> int64 -> seek_command -> int64
        = "unix_lseek_64"
-    let truncate name len =
+    let truncate _name _len =
       invalid_arg "Unix.LargeFile.truncate not implemented"
-    let ftruncate name len =
+    let ftruncate _name _len =
       invalid_arg "Unix.LargeFile.ftruncate not implemented"
     type stats =
       { st_dev : int;
@@ -302,10 +302,10 @@ type access_permission =
   | F_OK
 
 external chmod : string -> file_perm -> unit = "unix_chmod"
-let fchmod fd perm = invalid_arg "Unix.fchmod not implemented"
-let chown file perm = invalid_arg "Unix.chown not implemented"
-let fchown fd perm = invalid_arg "Unix.fchown not implemented"
-let umask msk = invalid_arg "Unix.umask not implemented"
+let fchmod _fd _perm = invalid_arg "Unix.fchmod not implemented"
+let chown _file _perm = invalid_arg "Unix.chown not implemented"
+let fchown _fd _perm = invalid_arg "Unix.fchown not implemented"
+let umask _msk = invalid_arg "Unix.umask not implemented"
 
 external access : string -> access_permission list -> unit = "unix_access"
 
@@ -371,7 +371,7 @@ let rewinddir d =
 
 external pipe : unit -> file_descr * file_descr = "unix_pipe"
 
-let mkfifo name perm = invalid_arg "Unix.mkfifo not implemented"
+let mkfifo _name _perm = invalid_arg "Unix.mkfifo not implemented"
 
 (* Symbolic links *)
 
@@ -416,9 +416,9 @@ let kill pid signo =
         (* could be more precise *)
 
 type sigprocmask_command = SIG_SETMASK | SIG_BLOCK | SIG_UNBLOCK
-let sigprocmask cmd sigs = invalid_arg "Unix.sigprocmask not implemented"
+let sigprocmask _cmd _sigs = invalid_arg "Unix.sigprocmask not implemented"
 let sigpending () = invalid_arg "Unix.sigpending not implemented"
-let sigsuspend sigs = invalid_arg "Unix.sigsuspend not implemented"
+let sigsuspend _sigs = invalid_arg "Unix.sigsuspend not implemented"
 let pause () = invalid_arg "Unix.pause not implemented"
 
 (* Time functions *)
@@ -445,7 +445,7 @@ external gettimeofday : unit -> float = "unix_gettimeofday"
 external gmtime : float -> tm = "unix_gmtime"
 external localtime : float -> tm = "unix_localtime"
 external mktime : tm -> float * tm = "unix_mktime"
-let alarm n = invalid_arg "Unix.alarm not implemented"
+let alarm _n = invalid_arg "Unix.alarm not implemented"
 external sleepf : float -> unit = "unix_sleep"
 let sleep n = sleepf (float n)
 external times: unit -> process_times = "unix_times"
@@ -460,18 +460,18 @@ type interval_timer_status =
   { it_interval: float;
     it_value: float }
 
-let getitimer it = invalid_arg "Unix.getitimer not implemented"
-let setitimer it tm = invalid_arg "Unix.setitimer not implemented"
+let getitimer _it = invalid_arg "Unix.getitimer not implemented"
+let setitimer _it _tm = invalid_arg "Unix.setitimer not implemented"
 
 (* User id, group id *)
 
 let getuid () = 1
 let geteuid = getuid
-let setuid id = invalid_arg "Unix.setuid not implemented"
+let setuid _id = invalid_arg "Unix.setuid not implemented"
 
 let getgid () = 1
 let getegid = getgid
-let setgid id = invalid_arg "Unix.setgid not implemented"
+let setgid _id = invalid_arg "Unix.setgid not implemented"
 
 let getgroups () = [|1|]
 let setgroups _ = invalid_arg "Unix.setgroups not implemented"
@@ -493,7 +493,7 @@ type group_entry =
     gr_mem : string array }
 
 let getlogin () = try Sys.getenv "USERNAME" with Not_found -> ""
-let getpwnam x = raise Not_found
+let getpwnam _x = raise Not_found
 let getgrnam = getpwnam
 let getpwuid = getpwnam
 let getgrgid = getpwnam
@@ -549,7 +549,7 @@ type msg_flag =
 
 external socket : socket_domain -> socket_type -> int -> file_descr
                                   = "unix_socket"
-let socketpair dom ty proto = invalid_arg "Unix.socketpair not implemented"
+let socketpair _dom _ty _proto = invalid_arg "Unix.socketpair not implemented"
 external accept : file_descr -> file_descr * sockaddr = "unix_accept"
 external bind : file_descr -> sockaddr -> unit = "unix_bind"
 external connect : file_descr -> sockaddr -> unit = "unix_connect"
@@ -958,7 +958,7 @@ let open_connection sockaddr =
 let shutdown_connection inchan =
   shutdown (descr_of_in_channel inchan) SHUTDOWN_SEND
 
-let establish_server server_fun sockaddr =
+let establish_server _server_fun _sockaddr =
   invalid_arg "Unix.establish_server not implemented"
 
 (* Terminal interface *)
@@ -1006,13 +1006,13 @@ type terminal_io = {
 
 type setattr_when = TCSANOW | TCSADRAIN | TCSAFLUSH
 
-let tcgetattr fd = invalid_arg "Unix.tcgetattr not implemented"
-let tcsetattr fd wh = invalid_arg "Unix.tcsetattr not implemented"
-let tcsendbreak fd n = invalid_arg "Unix.tcsendbreak not implemented"
-let tcdrain fd = invalid_arg "Unix.tcdrain not implemented"
+let tcgetattr _fd = invalid_arg "Unix.tcgetattr not implemented"
+let tcsetattr _fd _wh = invalid_arg "Unix.tcsetattr not implemented"
+let tcsendbreak _fd _n = invalid_arg "Unix.tcsendbreak not implemented"
+let tcdrain _fd = invalid_arg "Unix.tcdrain not implemented"
 
 type flush_queue = TCIFLUSH | TCOFLUSH | TCIOFLUSH
-let tcflush fd q = invalid_arg "Unix.tcflush not implemented"
+let tcflush _fd _q = invalid_arg "Unix.tcflush not implemented"
 type flow_action = TCOOFF | TCOON | TCIOFF | TCION
-let tcflow fd fl = invalid_arg "Unix.tcflow not implemented"
+let tcflow _fd _fl = invalid_arg "Unix.tcflow not implemented"
 let setsid () = invalid_arg "Unix.setsid not implemented"

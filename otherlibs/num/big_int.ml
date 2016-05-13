@@ -464,7 +464,7 @@ let power_base_nat base nat off len =
   if base = 0 then nat_of_int 0 else
   if is_zero_nat nat off len || base = 1 then nat_of_int 1 else
   let power_base = make_nat (succ length_of_digit) in
-  let (pmax, pint) = make_power_base base power_base in
+  let (pmax, _pint) = make_power_base base power_base in
   let (n, rem) =
       let (x, y) = quomod_big_int (sys_big_int_of_nat nat off len)
                                   (big_int_of_int (succ pmax)) in
@@ -662,10 +662,10 @@ let approx_big_int prec bi =
     Bytes.unsafe_of_string
       (string_of_big_int (div_big_int bi (power_int_positive_int 10 n)))
   in
-  let (sign, off, len) =
+  let (sign, off) =
     if Bytes.get s 0 = '-'
-       then ("-", 1, succ prec)
-       else ("", 0, prec) in
+       then ("-", 1)
+       else ("", 0) in
   if (round_futur_last_digit s off (succ prec))
        then (sign^"1."^(String.make prec '0')^"e"^
              (string_of_int (n + 1 - off + Bytes.length s)))

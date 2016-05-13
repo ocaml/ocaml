@@ -15,7 +15,6 @@
 
 (** The man pages generator. *)
 open Odoc_info
-open Parameter
 open Value
 open Type
 open Extension
@@ -195,7 +194,7 @@ class virtual info =
         [] l
 
     (** Print the groff string to display an optional info structure. *)
-    method man_of_info ?(margin=0) b info_opt =
+    method man_of_info ?margin:(_ :int option) b info_opt =
         match info_opt with
         None -> ()
       | Some info ->
@@ -319,12 +318,12 @@ class man =
           bs b "\n.sp\n";
           self#man_of_text2 b t;
           bs b "\n.sp\n"
-      | Odoc_info.Title (n, l_opt, t) ->
+      | Odoc_info.Title (_, _, t) ->
           self#man_of_text2 b [Odoc_info.Code (Odoc_info.string_of_text t)]
       | Odoc_info.Latex _ ->
           (* don't care about LaTeX stuff in HTML. *)
           ()
-      | Odoc_info.Link (s, t) ->
+      | Odoc_info.Link (_, t) ->
           self#man_of_text2 b t
       | Odoc_info.Ref (name, _, _) ->
           self#man_of_text_element b
@@ -340,7 +339,7 @@ class man =
       | Odoc_info.Custom (s,t) -> self#man_of_custom_text b s t
       | Odoc_info.Target (target, code) -> self#man_of_Target b ~target ~code
 
-    method man_of_custom_text b s t = ()
+    method man_of_custom_text _ _ _ = ()
 
     method man_of_Target b ~target ~code =
       if String.lowercase_ascii target = "man" then bs b code else ()
@@ -401,7 +400,7 @@ class man =
     method man_of_type_expr_param_list b m_name t =
       match t.ty_parameters with
         [] -> ()
-      | l ->
+      | _ ->
           let s = Odoc_str.string_of_type_param_list t in
           let s2 = Str.global_replace (Str.regexp "\n") "\n.B " s in
           bs b "\n.B ";
@@ -436,7 +435,7 @@ class man =
       (
         match te.te_type_parameters with
             [] -> ()
-          | l ->
+          | _ ->
               let s = Odoc_str.string_of_type_extension_param_list te in
               let s2 = Str.global_replace (Str.regexp "\n") "\n.B " s in
                 bs b "\n.B ";
@@ -506,7 +505,7 @@ class man =
       (
         match e.ex_args, e.ex_ret with
         | Cstr_tuple [], None -> ()
-        | l, None ->
+        | _, None ->
            bs b ".B of ";
            self#man_of_cstr_args
              ~par: false
@@ -1170,7 +1169,7 @@ class man =
         | h :: q ->
             match acc2 with
               [] -> f acc1 [h] q
-            | h2 :: q2 ->
+            | h2 :: _ ->
                 if (name h) = (name h2) then
                   if List.mem h acc2 then
                     f acc1 acc2 q

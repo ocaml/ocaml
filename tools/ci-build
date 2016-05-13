@@ -23,8 +23,9 @@
 #    for windows, this is relative to $HOME/jenkins-workspace
 #    for bsd, macos, linux, this is ignored and the build is always in .
 # 3. options:
-#    -conf configure-option
+#    -conf configure-option  add configure-option to configure cmd line
 #    -patch1 file-name       apply patch with -p1
+#    -newmakefiles           do not use Makefile.nt even for Windows
 
 error () {
   echo "$1" >&2
@@ -81,7 +82,8 @@ set -ex
 make=make
 instdir="$HOME/ocaml-tmp-install"
 docheckout=false
-nt=
+makefile=Makefile
+configure=unix
 
 case "$arch" in
   bsd)
@@ -102,25 +104,29 @@ case "$arch" in
     instdir=/cygdrive/c/ocamlmgw
     workdir="$HOME/jenkins-workspace/$branch"
     docheckout=true
-    nt=.nt
+    makefile=Makefile.nt
+    configure=nt
   ;;
   mingw64)
     instdir=/cygdrive/c/ocamlmgw64
     workdir="$HOME/jenkins-workspace/$branch"
     docheckout=true
-    nt=.nt
+    makefile=Makefile.nt
+    configure=nt
   ;;
   msvc)
     instdir=/cygdrive/c/ocamlms
     workdir="$HOME/jenkins-workspace/$branch"
     docheckout=true
-    nt=.nt
+    makefile=Makefile.nt
+    configure=nt
   ;;
   msvc64)
     instdir=/cygdrive/c/ocamlms64
     workdir="$HOME/jenkins-workspace/$branch"
     docheckout=true
-    nt=.nt
+    makefile=Makefile.nt
+    configure=nt
   ;;
   *) error "unknown architecture: $arch";;
 esac
@@ -138,10 +144,12 @@ cd "$workdir"
 confoptions=""
 while [ $# -gt 0 ]; do
   case $1 in
-    -conf) confoptions="$confoptions `quote1 "$2"`"; shift 2;;
-    -patch1) patch -f -p1 <"$2"; shift 2;;
+    -conf) confoptions="$confoptions `quote1 "$2"`"; shift;;
+    -patch1) patch -f -p1 <"$2"; shift;;
+    -newmakefiles) makefile=Makefile;;
     *) error "unknown option $1";;
   esac
+  shift
 done
 
 #########################################################################
@@ -150,15 +158,15 @@ done
 # Tell gcc to use only ASCII in its diagnostic outputs.
 export LC_ALL=C
 
-$make -f Makefile$nt distclean || :
+$make -f $makefile distclean || :
 
 if $docheckout; then
   git pull
 fi
 
-case $nt in
-  "") eval "./configure -prefix '$instdir' $confoptions";;
-  .nt)
+case $configure in
+  unix) eval "./configure -prefix '$instdir' $confoptions";;
+  nt)
     cp config/m-nt.h config/m.h
     cp config/s-nt.h config/s.h
     cp config/Makefile.$arch config/Makefile
@@ -166,8 +174,8 @@ case $nt in
   *) error "internal error";;
 esac
 
-$make -f Makefile$nt world.opt
-$make -f Makefile$nt install
+$make -f $makefile world.opt
+$make -f $makefile install
 
 rm -rf "$instdir"
 cd testsuite

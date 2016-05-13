@@ -23,10 +23,19 @@ type t
 external repr : 'a -> t = "%identity"
 external obj : t -> 'a = "%identity"
 external magic : 'a -> 'b = "%identity"
-external is_block : t -> bool = "caml_obj_is_block"
+val [@inline always] is_block : t -> bool
 external is_int : t -> bool = "%obj_is_int"
 external tag : t -> int = "caml_obj_tag"
 external size : t -> int = "%obj_size"
+external reachable_words : t -> int = "caml_obj_reachable_words"
+  (**
+     Computes the total size (in words, including the headers) of all
+     heap blocks accessible from the argument.  Statically
+     allocated blocks are excluded.
+
+     @Since 4.04
+  *)
+
 external field : t -> int -> t = "%obj_field"
 
 (** When using flambda:
@@ -47,8 +56,9 @@ external field : t -> int -> t = "%obj_field"
 external set_field : t -> int -> t -> unit = "%obj_set_field"
 external set_tag : t -> int -> unit = "caml_obj_set_tag"
 
-val double_field : t -> int -> float  (* @since 3.11.2 *)
-val set_double_field : t -> int -> float -> unit  (* @since 3.11.2 *)
+val [@inline always] double_field : t -> int -> float  (* @since 3.11.2 *)
+val [@inline always] set_double_field : t -> int -> float -> unit
+  (* @since 3.11.2 *)
 external new_block : int -> int -> t = "caml_obj_block"
 external dup : t -> t = "caml_obj_dup"
 external truncate : t -> int -> unit = "caml_obj_truncate"
@@ -77,8 +87,8 @@ val out_of_heap_tag : int
 val unaligned_tag : int   (* should never happen @since 3.11.0 *)
 
 val extension_constructor : 'a -> extension_constructor
-val extension_name : extension_constructor -> string
-val extension_id : extension_constructor -> int
+val [@inline always] extension_name : extension_constructor -> string
+val [@inline always] extension_id : extension_constructor -> int
 
 (** The following two functions are deprecated.  Use module {!Marshal}
     instead. *)
@@ -100,32 +110,43 @@ module Ephemeron: sig
   val create: int -> t
   (** [create n] returns an ephemeron with [n] keys.
       All the keys and the data are initially empty *)
+
   val length: t -> int
   (** return the number of keys *)
 
   val get_key: t -> int -> obj_t option
   (** Same as {!Ephemeron.K1.get_key} *)
+
   val get_key_copy: t -> int -> obj_t option
   (** Same as {!Ephemeron.K1.get_key_copy} *)
+
   val set_key: t -> int -> obj_t -> unit
   (** Same as {!Ephemeron.K1.set_key} *)
+
   val unset_key: t -> int -> unit
   (** Same as {!Ephemeron.K1.unset_key} *)
+
   val check_key: t -> int -> bool
   (** Same as {!Ephemeron.K1.check_key} *)
+
   val blit_key : t -> int -> t -> int -> int -> unit
   (** Same as {!Ephemeron.K1.blit_key} *)
 
   val get_data: t -> obj_t option
   (** Same as {!Ephemeron.K1.get_data} *)
+
   val get_data_copy: t -> obj_t option
   (** Same as {!Ephemeron.K1.get_data_copy} *)
+
   val set_data: t -> obj_t -> unit
   (** Same as {!Ephemeron.K1.set_data} *)
+
   val unset_data: t -> unit
   (** Same as {!Ephemeron.K1.unset_data} *)
+
   val check_data: t -> bool
   (** Same as {!Ephemeron.K1.check_data} *)
+
   val blit_data : t -> t -> unit
   (** Same as {!Ephemeron.K1.blit_data} *)
 end

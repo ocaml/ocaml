@@ -19,7 +19,7 @@ open Mach
 
 (* Instruction scheduling for the ARM *)
 
-class scheduler = object(self)
+class scheduler = object
 
 inherit Schedgen.scheduler_generic as super
 

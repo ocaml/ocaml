@@ -57,7 +57,7 @@ let extract l tbl =
 let filter p tbl =
   let to_remove = ref [] in
   Hashtbl.iter
-    (fun name (crc, auth) ->
+    (fun name _ ->
       if not (p name) then to_remove := name :: !to_remove)
     tbl;
   List.iter

@@ -13,6 +13,9 @@
 #*                                                                        *
 #**************************************************************************
 
+# For users who don't read the INSTALL file
+defaultentry:
+
 # The main Makefile, fragments shared between Makefile and Makefile.nt
 
 include config/Makefile
@@ -22,7 +25,7 @@ include stdlib/StdlibModules
 
 CAMLC=$(CAMLRUN) boot/ocamlc -g -nostdlib -I boot -use-prims byterun/primitives
 CAMLOPT=$(CAMLRUN) ./ocamlopt -g -nostdlib -I stdlib -I otherlibs/dynlink
-COMPFLAGS=-strict-sequence -principal -w +33..39+48+50 -warn-error A \
+COMPFLAGS=-strict-sequence -principal -absname -w +a-4-9-41-42-44-45-48 -warn-error A \
           -bin-annot -safe-string -strict-formats $(INCLUDES)
 LINKFLAGS=
 
@@ -52,7 +55,7 @@ PARSING=parsing/location.cmo parsing/longident.cmo \
   parsing/lexer.cmo parsing/parse.cmo parsing/printast.cmo \
   parsing/pprintast.cmo \
   parsing/ast_mapper.cmo parsing/ast_iterator.cmo parsing/attr_helper.cmo \
-  parsing/builtin_attributes.cmo parsing/ast_invariants.cmo
+  parsing/builtin_attributes.cmo parsing/ast_invariants.cmo parsing/depend.cmo
 
 TYPING=typing/ident.cmo typing/path.cmo \
   typing/primitive.cmo typing/types.cmo \
@@ -66,8 +69,8 @@ TYPING=typing/ident.cmo typing/path.cmo \
   typing/tast_mapper.cmo \
   typing/cmt_format.cmo typing/untypeast.cmo \
   typing/includemod.cmo typing/typetexp.cmo typing/parmatch.cmo \
-  typing/stypes.cmo typing/typecore.cmo \
-  typing/typedecl.cmo typing/typeclass.cmo \
+  typing/stypes.cmo typing/typedecl.cmo typing/typecore.cmo \
+  typing/typeclass.cmo \
   typing/typemod.cmo
 
 COMP=bytecomp/lambda.cmo bytecomp/printlambda.cmo \

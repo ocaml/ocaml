@@ -98,12 +98,16 @@ module Options = Main_args.Make_bytecomp_options (struct
   let _intf = intf
   let _intf_suffix s = Config.interface_suffix := s
   let _keep_docs = set keep_docs
+  let _no_keep_docs = unset keep_docs
   let _keep_locs = set keep_locs
+  let _no_keep_locs = unset keep_locs
   let _labels = unset classic
   let _linkall = set link_everything
   let _make_runtime () =
     custom_runtime := true; make_runtime := true; link_everything := true
+  let _alias_deps = unset transparent_modules
   let _no_alias_deps = set transparent_modules
+  let _app_funct = set applicative_functors
   let _no_app_funct = unset applicative_functors
   let _noassert = set noassert
   let _nolabels = set classic
@@ -121,12 +125,16 @@ module Options = Main_args.Make_bytecomp_options (struct
   let _pp s = preprocessor := Some s
   let _ppx s = first_ppx := s :: !first_ppx
   let _principal = set principal
+  let _no_principal = unset principal
   let _rectypes = set recursive_types
+  let _no_rectypes = unset recursive_types
   let _runtime_variant s = runtime_variant := s
   let _safe_string = unset unsafe_string
   let _short_paths = unset real_paths
   let _strict_sequence = set strict_sequence
+  let _no_strict_sequence = unset strict_sequence
   let _strict_formats = set strict_formats
+  let _no_strict_formats = unset strict_formats
   let _thread = set use_threads
   let _vmthread = set use_vmthreads
   let _unsafe = set fast

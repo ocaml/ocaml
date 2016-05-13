@@ -48,7 +48,7 @@ EXTRACFLAGS=-I../unix
 HEADERS=unixsupport.h socketaddr.h
 
 
-include ../Makefile.nt
+include ../Makefile
 
 clean::
 	rm -f $(UNIX_FILES) $(UNIX_CAML_FILES)

@@ -51,7 +51,7 @@ inherit Selectgen.selector_generic as super
 
 method is_immediate n = (n <= 32767) && (n >= -32768)
 
-method select_addressing chunk exp =
+method select_addressing _chunk exp =
   match select_addr exp with
     (Asymbol s, d) ->
       (Ibased(s, d), Ctuple [])

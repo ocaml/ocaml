@@ -332,12 +332,12 @@ let check_global_initialized patchlist =
     List.fold_left
       (fun accu rel ->
         match rel with
-          (Reloc_setglobal id, pos) -> id :: accu
+          (Reloc_setglobal id, _pos) -> id :: accu
         | _ -> accu)
       [] patchlist in
   (* Then check that all referenced, not defined globals have a value *)
   let check_reference = function
-      (Reloc_getglobal id, pos) ->
+      (Reloc_getglobal id, _pos) ->
         if not (List.mem id defined_globals)
         && Obj.is_int (get_global_value id)
         then raise (Error(Uninitialized_global(Ident.name id)))

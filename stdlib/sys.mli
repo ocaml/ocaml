@@ -20,6 +20,13 @@
   an error.
 *)
 
+type backend_type = 
+  | Native
+  | Bytecode
+  | Other of string 
+(** Currently, the official distribution only supports [Native] and [Bytecode], 
+    but it can be other backends with alternative compilers, for example, javascript *)
+
 val argv : string array
 (** The command line arguments given to the process.
    The first element is the command name used to invoke the program.
@@ -85,6 +92,11 @@ val os_type : string
 -  ["Unix"] (for all Unix versions, including Linux and Mac OS X),
 -  ["Win32"] (for MS-Windows, OCaml compiled with MSVC++ or Mingw),
 -  ["Cygwin"] (for MS-Windows, OCaml compiled with Cygwin). *)
+
+val backend_type : backend_type
+(** Backend type  currently executing the OCaml program. 
+    @ since 4.04.0
+ *)
 
 val unix : bool
 (** True if [Sys.os_type = "Unix"].
@@ -266,7 +278,7 @@ val catch_break : bool -> unit
    terminate the program on user interrupt. *)
 
 
-val ocaml_version : string;;
+val ocaml_version : string
 (** [ocaml_version] is the version of OCaml.
     It is a string of the form ["major.minor[.patchlevel][+additional-info]"],
     where [major], [minor], and [patchlevel] are integers, and
@@ -278,10 +290,14 @@ val enable_runtime_warnings: bool -> unit
 (** Control whether the OCaml runtime system can emit warnings
     on stderr.  Currently, the only supported warning is triggered
     when a channel created by [open_*] functions is finalized without
-    being closed.  Runtime warnings are enabled by default. *)
+    being closed.  Runtime warnings are enabled by default.
+
+    @since 4.03.0 *)
 
 val runtime_warnings_enabled: unit -> bool
-(** Return whether runtime warnings are currently enabled. *)
+(** Return whether runtime warnings are currently enabled.
+
+    @since 4.03.0 *)
 
 (** {6 Optimization} *)
 
@@ -298,4 +314,6 @@ external opaque_identity : 'a -> 'a = "%opaque"
         ignore (Sys.opaque_identity (my_pure_computation ()))
       done
     ]}
+
+    @since 4.03.0
 *)

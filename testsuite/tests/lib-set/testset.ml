@@ -1,18 +1,3 @@
-(**************************************************************************)
-(*                                                                        *)
-(*                                OCaml                                   *)
-(*                                                                        *)
-(*             Xavier Leroy, projet Gallium, INRIA Rocquencourt           *)
-(*                                                                        *)
-(*   Copyright 2012 Institut National de Recherche en Informatique et     *)
-(*     en Automatique.                                                    *)
-(*                                                                        *)
-(*   All rights reserved.  This file is distributed under the terms of    *)
-(*   the GNU Lesser General Public License version 2.1, with the          *)
-(*   special exception on linking described in the file LICENSE.          *)
-(*                                                                        *)
-(**************************************************************************)
-
 module S = Set.Make(struct type t = int let compare (x:t) y = compare x y end)
 
 let testvals = [0;1;2;3;4;5;6;7;8;9]
@@ -74,6 +59,17 @@ let test x s1 s2 =
   checkbool "subset2"
     (let b = S.subset s1 s2 in
      b || not (S.is_empty (S.diff s1 s2)));
+
+  checkbool "map"
+    (S.elements (S.map succ s1) = List.map succ (S.elements s1));
+
+  checkbool "map2"
+    (S.map (fun x -> x) s1 == s1);
+
+  checkbool "map3"
+    ((* check that the traversal is made in increasing element order *)
+     let last = ref min_int in
+     S.map (fun x -> assert (!last <= x); last := x; x) s1 == s1);
 
   checkbool "for_all"
     (let p x = x mod 2 = 0 in

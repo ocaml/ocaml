@@ -142,3 +142,23 @@ let for_primitive (prim : Lambda.primitive) =
     Misc.fatal_errorf "The primitive %a should have been eliminated by the \
         [Closure_conversion] pass."
       Printlambda.primitive prim
+
+type return_type =
+  | Float
+  | Other
+
+let return_type_of_primitive (prim:Lambda.primitive) =
+  match prim with
+  | Pfloatofint
+  | Pnegfloat
+  | Pabsfloat
+  | Paddfloat
+  | Psubfloat
+  | Pmulfloat
+  | Pdivfloat
+  | Pfloatfield _
+  | Parrayrefu Pfloatarray
+  | Parrayrefs Pfloatarray ->
+    Float
+  | _ ->
+    Other

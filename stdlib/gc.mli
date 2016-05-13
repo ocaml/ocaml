@@ -180,14 +180,13 @@ external set : control -> unit = "caml_gc_set"
 external minor : unit -> unit = "caml_gc_minor"
 (** Trigger a minor collection. *)
 
-external major_slice : int -> int = "caml_gc_major_slice";;
+external major_slice : int -> int = "caml_gc_major_slice"
 (** [major_slice n]
     Do a minor collection and a slice of major collection. [n] is the
     size of the slice: the GC will do enough work to free (on average)
     [n] words of memory. If [n] = 0, the GC will try to do enough work
-    to ensure that the next slice has no work to do.
-    Return an approximation of the work that the next slice will have
-    to do. *)
+    to ensure that the next automatic slice has no work to do.
+    This function returns an unspecified integer (currently: 0). *)
 
 external major : unit -> unit = "caml_gc_major"
 (** Do a minor collection and finish the current major collection cycle. *)
@@ -211,18 +210,24 @@ val allocated_bytes : unit -> float
    with [int] on 32-bit machines. *)
 
 external get_minor_free : unit -> int = "caml_get_minor_free" [@@noalloc]
-(** Return the current size of the free space inside the minor heap. *)
+(** Return the current size of the free space inside the minor heap.
+
+    @since 4.03.0 *)
 
 external get_bucket : int -> int = "caml_get_major_bucket" [@@noalloc]
 (** [get_bucket n] returns the current size of the [n]-th future bucket
     of the GC smoothing system. The unit is one millionth of a full GC.
     Raise [Invalid_argument] if [n] is negative, return 0 if n is larger
-    than the smoothing window. *)
+    than the smoothing window.
+
+    @since 4.03.0 *)
 
 external get_credit : unit -> int = "caml_get_major_credit" [@@noalloc]
 (** [get_credit ()] returns the current size of the "work done in advance"
     counter of the GC smoothing system. The unit is one millionth of a
-    full GC. *)
+    full GC.
+
+    @since 4.03.0 *)
 
 external huge_fallback_count : unit -> int = "caml_gc_huge_fallback_count"
 (** Return the number of times we tried to map huge pages and had to fall
@@ -258,7 +263,7 @@ val finalise : ('a -> unit) -> 'a -> unit
 
    Instead you should make sure that [v] is not in the closure of
    the finalisation function by writing:
-   - [ let f = fun x -> ... ;; let v = ... in Gc.finalise f v ]
+   - [ let f = fun x -> ...  let v = ... in Gc.finalise f v ]
 
 
    The [f] function can use all features of OCaml, including
@@ -290,7 +295,7 @@ val finalise : ('a -> unit) -> 'a -> unit
    heap-allocated and non-constant except when the length argument is [0].
 *)
 
-val finalise_release : unit -> unit;;
+val finalise_release : unit -> unit
 (** A finalisation function may call [finalise_release] to tell the
     GC that it can launch the next finalisation function without waiting
     for the current one to return. *)

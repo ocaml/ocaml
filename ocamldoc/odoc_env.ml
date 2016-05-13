@@ -137,11 +137,11 @@ let full_module_or_module_type_name env n =
 let full_type_name env n =
   try
     let full = List.assoc n env.env_types in
-(**    print_string ("type "^n^" is "^full);
+(*    print_string ("type "^n^" is "^full);
     print_newline ();*)
     full
   with Not_found ->
-(**    print_string ("type "^n^" not found");
+(*    print_string ("type "^n^" not found");
     print_newline ();*)
     n
 
@@ -174,9 +174,6 @@ let full_class_or_class_type_name env n =
   try List.assoc n env.env_classes
   with Not_found -> full_class_type_name env n
 
-let print_env_types env =
-  List.iter (fun (s1,s2) -> Printf.printf "%s = %s\n" s1 s2) env.env_types
-
 let subst_type env t =
 (*
   print_string "Odoc_env.subst_type\n";
@@ -190,7 +187,7 @@ let subst_type env t =
       deja_vu := t :: !deja_vu;
       Btype.iter_type_expr iter t;
       match t.Types.desc with
-      | Types.Tconstr (p, [ty], a) when Path.same p Predef.path_option ->
+      | Types.Tconstr (p, [_], _) when Path.same p Predef.path_option ->
           ()
       | Types.Tconstr (p, l, a) ->
           let new_p =
@@ -239,7 +236,7 @@ let subst_class_type env t =
         let new_texp_list = List.map (subst_type env) texp_list in
         let new_ct = iter ct in
         Types.Cty_constr (new_p, new_texp_list, new_ct)
-    | Types.Cty_signature cs ->
+    | Types.Cty_signature _ ->
         (* we don't handle vals and methods *)
         t
     | Types.Cty_arrow (l, texp, ct) ->

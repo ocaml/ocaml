@@ -17,7 +17,6 @@
 (****************************** Frames *********************************)
 
 open Instruct
-open Primitives
 
 (* Current frame number *)
 val current_frame : int ref

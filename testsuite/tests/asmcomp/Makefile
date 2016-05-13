@@ -47,9 +47,9 @@ parsecmm.mli parsecmm.ml: parsecmm.mly
 lexcmm.ml: lexcmm.mll
 	@$(OCAMLLEX) -q lexcmm.mll
 
-MLCASES=optargs staticalloc bind_tuples is_static
+MLCASES=optargs staticalloc bind_tuples is_static register_typing
 ARGS_is_static=-I $(OTOPDIR)/byterun is_in_static_data.c
-MLCASES_FLAMBDA=is_static_flambda
+MLCASES_FLAMBDA=is_static_flambda unrolling_flambda
 ARGS_is_static_flambda=-I $(OTOPDIR)/byterun is_in_static_data.c
 
 CASES=fib tak quicksort quicksort2 soli \
@@ -89,7 +89,7 @@ one:
 	&& echo " => passed" || echo " => failed"
 
 clean: defaultclean
-	@rm -f ./codegen *.out *.$(O) *.exe
+	@rm -f ./codegen *.out *.out.manifest *.$(O) *.exe
 	@rm -f parsecmm.ml parsecmm.mli lexcmm.ml
 	@rm -f $(CASES:=.s)
 

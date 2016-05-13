@@ -81,7 +81,7 @@ val set_object_name:
 val remove_object_name: type_expr -> unit
 val hide_private_methods: type_expr -> unit
 val find_cltype_for_path: Env.t -> Path.t -> type_declaration * type_expr
-val lid_of_path: ?sharp:string -> Path.t -> Longident.t
+val lid_of_path: ?hash:string -> Path.t -> Longident.t
 
 val sort_row_fields: (label * row_field) list -> (label * row_field) list
 val merge_row_fields:
@@ -116,7 +116,7 @@ val instance: ?partial:bool -> Env.t -> type_expr -> type_expr
            partial=true  -> newty2 ty.level Tvar for non generic subterms *)
 val instance_def: type_expr -> type_expr
         (* use defaults *)
-val generic_instance: ?partial:bool -> Env.t -> type_expr -> type_expr
+val generic_instance: Env.t -> type_expr -> type_expr
         (* Same as instance, but new nodes at generic_level *)
 val instance_list: Env.t -> type_expr list -> type_expr list
         (* Take an instance of a list of type schemes *)

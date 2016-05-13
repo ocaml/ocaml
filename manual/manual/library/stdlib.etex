@@ -33,27 +33,31 @@ Here is a short listing, by theme, of the standard library modules.
 
 \subsubsection*{Data structures:}
 \begin{tabular}{lll}
-"Char" & p.~\pageref{Char} & character operations \\
+% Beware: these entries must be written in a very rigidly-defined
+% format, or the check-stdlib-modules script will complain.
 "String" & p.~\pageref{String} & string operations \\
 "Bytes" & p.~\pageref{Bytes} & operations on byte sequences\\
 "Array" & p.~\pageref{Array} & array operations \\
 "List" & p.~\pageref{List} & list operations \\
-"StdLabels" &p.~\pageref{StdLabels} & labelized versions of
+"StdLabels" & p.~\pageref{StdLabels} & labelized versions of
 the above 4 modules \\
-"Sort" & p.~\pageref{Sort} & sorting and merging lists \\
+"Char" & p.~\pageref{Char} & character operations \\
+"Uchar" & p.~\pageref{Uchar} & Unicode characters \\
+"Sort" & p.~\pageref{Sort} & (deprecated) \\
 "Hashtbl" & p.~\pageref{Hashtbl} & hash tables and hash functions \\
 "Random" & p.~\pageref{Random} & pseudo-random number generator \\
 "Set" & p.~\pageref{Set} & sets over ordered types \\
 "Map" & p.~\pageref{Map} & association tables over ordered types \\
-"MoreLabels" &p.~\pageref{MoreLabels} & labelized versions of
+"MoreLabels" & p.~\pageref{MoreLabels} & labelized versions of
 "Hashtbl", "Set", and "Map" \\
 "Oo" & p.~\pageref{Oo} & useful functions on objects \\
 "Stack" & p.~\pageref{Stack} & last-in first-out stacks \\
 "Queue" & p.~\pageref{Queue} & first-in first-out queues \\
 "Buffer" & p.~\pageref{Buffer} & buffers that grow on demand \\
-"Lazy"  & p.~\pageref{Lazy} & delayed evaluation \\
+"Lazy" & p.~\pageref{Lazy} & delayed evaluation \\
 "Weak" & p.~\pageref{Weak} & references that don't prevent objects
-from being garbage-collected
+from being garbage-collected \\
+"Ephemeron" & p.~\pageref{Ephemeron} & ephemerons and weak hash tables
 \end{tabular}
 \subsubsection*{Arithmetic:}
 \begin{tabular}{lll}
@@ -102,6 +106,7 @@ be called from C \\
 \item \ahref{libref/Char.html}{Module \texttt{Char}: character operations}
 \item \ahref{libref/Complex.html}{Module \texttt{Complex}: Complex numbers}
 \item \ahref{libref/Digest.html}{Module \texttt{Digest}: MD5 message digest}
+\item \ahref{libref/Ephemeron.html}{Module \texttt{Ephemeron}: Ephemerons and weak hash table}
 \item \ahref{libref/Filename.html}{Module \texttt{Filename}: operations on file names}
 \item \ahref{libref/Format.html}{Module \texttt{Format}: pretty printing}
 \item \ahref{libref/Gc.html}{Module \texttt{Gc}: memory management control and statistics; finalized values}
@@ -125,13 +130,14 @@ be called from C \\
 \item \ahref{libref/Random.html}{Module \texttt{Random}: pseudo-random number generator (PRNG)}
 \item \ahref{libref/Scanf.html}{Module \texttt{Scanf}: formatted input functions}
 \item \ahref{libref/Set.html}{Module \texttt{Set}: sets over ordered types}
-\item \ahref{libref/Sort.html}{Module \texttt{Sort}: sorting and merging lists}
+\item \ahref{libref/Sort.html}{(deprecated)}
 \item \ahref{libref/Stack.html}{Module \texttt{Stack}: last-in first-out stacks}
 \item \ahref{libref/StdLabels.html}{Module \texttt{StdLabels}: Include modules \texttt{Array}, \texttt{List} and \texttt{String} with labels}
 \item \ahref{libref/Stream.html}{Module \texttt{Stream}: streams and parsers}
 \item \ahref{libref/String.html}{Module \texttt{String}: string operations}
 \item \ahref{libref/StringLabels.html}{Module \texttt{StringLabels}: string operations (with labels)}
 \item \ahref{libref/Sys.html}{Module \texttt{Sys}: system interface}
+\item \ahref{libref/Uchar.html}{Module \texttt{Uchar}: Unicode characters}
 \item \ahref{libref/Weak.html}{Module \texttt{Weak}: arrays of weak pointers}
 \end{links}
 \else
@@ -143,6 +149,7 @@ be called from C \\
 \input{Char.tex}
 \input{Complex.tex}
 \input{Digest.tex}
+\input{Ephemeron.tex}
 \input{Filename.tex}
 \input{Format.tex}
 \input{Gc.tex}
@@ -171,5 +178,6 @@ be called from C \\
 \input{Stream.tex}
 \input{String.tex}
 \input{Sys.tex}
+\input{Uchar.tex}
 \input{Weak.tex}
 \fi

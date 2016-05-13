@@ -16,7 +16,6 @@
 (** Generation of Texinfo documentation. *)
 
 open Odoc_info
-open Parameter
 open Value
 open Type
 open Extension
@@ -273,7 +272,7 @@ class text =
 
     (** this method is not used here but is virtual
         in a class we will inherit later *)
-    method label ?(no_ : bool option) (_ : string) : string =
+    method label ?no_:(_ : bool option) (_ : string) : string =
       failwith "gni"
 
     (** Return the Texinfo code corresponding to the [text] parameter.*)
@@ -311,7 +310,7 @@ class text =
       | Odoc_info.Custom (s,t) -> self#texi_of_custom_text s t
       | Odoc_info.Target (target, code) -> self#texi_of_Target ~target ~code
 
-    method texi_of_custom_text s t = ""
+    method texi_of_custom_text _ _ = ""
 
     method texi_of_Target ~target ~code =
       if String.lowercase_ascii target = "texi" then code else ""
@@ -397,7 +396,7 @@ struct
     Texinfo documentation. *)
 class texi =
   object (self)
-    inherit text as to_texi
+    inherit text
     inherit Odoc_to_text.to_text as to_text
 
     (** {3 Small helper stuff.} *)
@@ -476,7 +475,7 @@ class texi =
                    Raw " " ; Raw s ] @ t @ [ Newline ])
            see_l)
 
-    method text_of_before l =
+    method! text_of_before l =
       List.flatten
       (List.map
         (fun x -> linebreak :: (to_text#text_of_before [x])) l)
@@ -886,7 +885,7 @@ class texi =
       self#texi_of_text t
 
     (** Return the Texinfo code for the given class element. *)
-    method texi_of_class_element class_name class_ele =
+    method texi_of_class_element _class_name class_ele =
       match class_ele with
       | Class_attribute att -> self#texi_of_attribute att
       | Class_method met -> self#texi_of_method met

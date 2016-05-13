@@ -129,7 +129,7 @@ let do_pack state_num orig compact =
     done;
     let rec try_pack = function
       [] -> b
-    | (pos, v) :: rem ->
+    | (pos, _v) :: rem ->
         if compact.c_check.(b + pos) = -1 then
           try_pack rem
         else pack_from (b+1) in

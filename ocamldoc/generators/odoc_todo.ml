@@ -107,44 +107,44 @@ struct
                 l;
               p b "</div>"
 
-    method scan_value v =
+    method! scan_value v =
       self#gen_if_tag
         v.val_name
         (Odoc_html.Naming.complete_value_target v)
         v.val_info
 
-    method scan_type t =
+    method! scan_type t =
       self#gen_if_tag
         t.ty_name
         (Odoc_html.Naming.complete_type_target t)
         t.ty_info
 
-    method scan_extension_constructor x =
+    method! scan_extension_constructor x =
       self#gen_if_tag
         x.xt_name
         (Odoc_html.Naming.complete_extension_target x)
         x.xt_type_extension.te_info
 
-    method scan_exception e =
+    method! scan_exception e =
       self#gen_if_tag
         e.ex_name
         (Odoc_html.Naming.complete_exception_target e)
         e.ex_info
 
-    method scan_attribute a =
+    method! scan_attribute a =
       self#gen_if_tag
         a.att_value.val_name
         (Odoc_html.Naming.complete_attribute_target a)
         a.att_value.val_info
 
-    method scan_method m =
+    method! scan_method m =
       self#gen_if_tag
         m.met_value.val_name
         (Odoc_html.Naming.complete_method_target m)
         m.met_value.val_info
 
    (** This method scan the elements of the given module. *)
-    method scan_module_elements m =
+    method! scan_module_elements m =
       List.iter
         (fun ele ->
           match ele with
@@ -161,30 +161,30 @@ struct
         )
         (Odoc_module.module_elements ~trans: false m)
 
-    method scan_included_module _ = ()
+    method! scan_included_module _ = ()
 
-    method scan_class_pre c =
+    method! scan_class_pre c =
       self#gen_if_tag
         c.cl_name
         (fst (Odoc_html.Naming.html_files c.cl_name))
         c.cl_info;
       true
 
-    method scan_class_type_pre ct =
+    method! scan_class_type_pre ct =
       self#gen_if_tag
         ct.clt_name
         (fst (Odoc_html.Naming.html_files ct.clt_name))
         ct.clt_info;
       true
 
-    method scan_module_pre m =
+    method! scan_module_pre m =
       self#gen_if_tag
         m.m_name
         (fst (Odoc_html.Naming.html_files m.m_name))
         m.m_info;
       true
 
-    method scan_module_type_pre mt =
+    method! scan_module_type_pre mt =
       self#gen_if_tag
         mt.mt_name
         (fst (Odoc_html.Naming.html_files mt.mt_name))
@@ -202,7 +202,7 @@ struct
              html generator class *)
       val mutable scanner = new scanner (new Html.html )
 
-      method generate modules =
+      method! generate modules =
       (* prevent having the 'todo' tag signaled as not handled *)
       tag_functions <-  ("todo", (fun _ -> "")) :: tag_functions;
       (* generate doc as usual *)

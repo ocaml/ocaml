@@ -163,16 +163,16 @@ let displ dest from = dest - from - 1
 (* Determine if a regexp can match the empty string *)
 
 let rec is_nullable = function
-    Char c -> false
+    Char _ -> false
   | String s -> s = ""
-  | CharClass(cl, cmpl) -> false
+  | CharClass _ -> false
   | Seq rl -> List.for_all is_nullable rl
   | Alt (r1, r2) -> is_nullable r1 || is_nullable r2
-  | Star r -> true
+  | Star _ -> true
   | Plus r -> is_nullable r
-  | Option r -> true
-  | Group(n, r) -> is_nullable r
-  | Refgroup n -> true
+  | Option _ -> true
+  | Group(_, r) -> is_nullable r
+  | Refgroup _ -> true
   | Bol -> true
   | Eol -> true
   | Wordboundary -> true
@@ -187,11 +187,11 @@ let rec first = function
   | CharClass(cl, cmpl) -> if cmpl then Charset.complement cl else cl
   | Seq rl -> first_seq rl
   | Alt (r1, r2) -> Charset.union (first r1) (first r2)
-  | Star r -> Charset.full
+  | Star _ -> Charset.full
   | Plus r -> first r
-  | Option r -> Charset.full
-  | Group(n, r) -> first r
-  | Refgroup n -> Charset.full
+  | Option _ -> Charset.full
+  | Group(_, r) -> first r
+  | Refgroup _ -> Charset.full
   | Bol -> Charset.full
   | Eol -> Charset.full
   | Wordboundary -> Charset.full
@@ -201,7 +201,7 @@ and first_seq = function
   | (Bol | Eol | Wordboundary) :: rl -> first_seq rl
   | Star r :: rl -> Charset.union (first r) (first_seq rl)
   | Option r :: rl -> Charset.union (first r) (first_seq rl)
-  | r :: rl -> first r
+  | r :: _ -> first r
 
 (* Transform a Char or CharClass regexp into a character class *)
 

@@ -368,7 +368,7 @@ module Make(I:I) = struct
 (* Module entry point *)
 
     let catch arg k = match arg with
-    | Cexit (e,[]) ->  k arg
+    | Cexit (_e,[]) ->  k arg
     | _ ->
         let e =  next_raise_count () in
         Ccatch (e,[],k (Cexit (e,[])),arg)

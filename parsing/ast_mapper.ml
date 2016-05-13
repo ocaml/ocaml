@@ -370,6 +370,10 @@ module E = struct
     | Pexp_letmodule (s, me, e) ->
         letmodule ~loc ~attrs (map_loc sub s) (sub.module_expr sub me)
           (sub.expr sub e)
+    | Pexp_letexception (cd, e) ->
+        letexception ~loc ~attrs
+          (sub.extension_constructor sub cd)
+          (sub.expr sub e)
     | Pexp_assert e -> assert_ ~loc ~attrs (sub.expr sub e)
     | Pexp_lazy e -> lazy_ ~loc ~attrs (sub.expr sub e)
     | Pexp_poly (e, t) ->
@@ -410,6 +414,7 @@ module P = struct
     | Ppat_type s -> type_ ~loc ~attrs (map_loc sub s)
     | Ppat_lazy p -> lazy_ ~loc ~attrs (sub.pat sub p)
     | Ppat_unpack s -> unpack ~loc ~attrs (map_loc sub s)
+    | Ppat_open (lid,p) -> open_ ~loc ~attrs (map_loc sub lid) (sub.pat sub p)
     | Ppat_exception p -> exception_ ~loc ~attrs (sub.pat sub p)
     | Ppat_extension x -> extension ~loc ~attrs (sub.extension sub x)
 end
@@ -613,7 +618,7 @@ let default_mapper =
 
 
 
-    location = (fun this l -> l);
+    location = (fun _this l -> l);
 
     extension = (fun this (s, e) -> (map_loc this s, this.payload this e));
     attribute = (fun this (s, e) -> (map_loc this s, this.payload this e));

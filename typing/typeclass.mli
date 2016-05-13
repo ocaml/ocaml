@@ -17,13 +17,35 @@ open Asttypes
 open Types
 open Format
 
+type 'a class_info = {
+  cls_id : Ident.t;
+  cls_id_loc : string loc;
+  cls_decl : class_declaration;
+  cls_ty_id : Ident.t;
+  cls_ty_decl : class_type_declaration;
+  cls_obj_id : Ident.t;
+  cls_obj_abbr : type_declaration;
+  cls_typesharp_id : Ident.t;
+  cls_abbr : type_declaration;
+  cls_arity : int;
+  cls_pub_methods : string list;
+  cls_info : 'a;
+}
+
+type class_type_info = {
+  clsty_ty_id : Ident.t;
+  clsty_id_loc : string loc;
+  clsty_ty_decl : class_type_declaration;
+  clsty_obj_id : Ident.t;
+  clsty_obj_abbr : type_declaration;
+  clsty_typesharp_id : Ident.t;
+  clsty_abbr : type_declaration;
+  clsty_info : Typedtree.class_type_declaration;
+}
+
 val class_declarations:
   Env.t -> Parsetree.class_declaration list ->
-  (Ident.t * string loc * class_declaration *
-   Ident.t * class_type_declaration *
-   Ident.t * type_declaration *
-   Ident.t * type_declaration *
-   int * string list * Typedtree.class_declaration) list * Env.t
+  Typedtree.class_declaration class_info list * Env.t
 
 (*
 and class_declaration =
@@ -32,11 +54,7 @@ and class_declaration =
 
 val class_descriptions:
   Env.t -> Parsetree.class_description list ->
-  (Ident.t * string loc * class_declaration *
-   Ident.t * class_type_declaration *
-   Ident.t * type_declaration *
-   Ident.t * type_declaration *
-   int * string list * Typedtree.class_description) list * Env.t
+  Typedtree.class_description class_info list * Env.t
 
 (*
 and class_description =
@@ -44,11 +62,7 @@ and class_description =
 *)
 
 val class_type_declarations:
-  Env.t -> Parsetree.class_description list ->
-  (Ident.t * string loc * class_type_declaration *
-   Ident.t * type_declaration *
-   Ident.t * type_declaration *
-  Typedtree.class_type_declaration) list * Env.t
+  Env.t -> Parsetree.class_description list -> class_type_info list * Env.t
 
 (*
 and class_type_declaration =
@@ -56,11 +70,7 @@ and class_type_declaration =
 *)
 
 val approx_class_declarations:
-  Env.t -> Parsetree.class_description list ->
-  (Ident.t * string loc * class_type_declaration *
-   Ident.t * type_declaration *
-   Ident.t * type_declaration *
-  Typedtree.class_type_declaration) list
+  Env.t -> Parsetree.class_description list -> class_type_info list
 
 val virtual_methods: Types.class_signature -> label list
 

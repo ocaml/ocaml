@@ -21,6 +21,7 @@ type t =
   | Papply of t * t
 
 val same: t -> t -> bool
+val compare: t -> t -> int
 val isfree: Ident.t -> t -> bool
 val binding_time: t -> int
 

@@ -63,8 +63,8 @@ let offset_addressing addr delta =
   | Iindexed n -> Iindexed(n + delta)
 
 let num_args_addressing = function
-    Ibased(s, n) -> 0
-  | Iindexed n -> 1
+    Ibased _ -> 0
+  | Iindexed _ -> 1
 
 (* Printing operations and addressing modes *)
 
@@ -77,5 +77,5 @@ let print_addressing printreg addr ppf arg =
       let idx = if n <> 0 then Printf.sprintf " + %i" n else "" in
       fprintf ppf "%a%s" printreg arg.(0) idx
 
-let print_specific_operation printreg op ppf arg =
+let print_specific_operation _printreg _op _ppf _arg =
   Misc.fatal_error "Arch_sparc.print_specific_operation"

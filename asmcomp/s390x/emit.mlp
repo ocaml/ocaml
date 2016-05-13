@@ -86,10 +86,6 @@ let emit_reg r =
   | _ -> fatal_error "Emit.emit_reg"
 
 
-let emit_gpr r = emit_string "%r"; emit_int r
-
-let emit_fpr r = emit_string "%f"; emit_int r
-
 (* Special registers *)
 
 let reg_f15 = phys_reg 115
@@ -292,17 +288,17 @@ let emit_instr i =
         let src = i.arg.(0) and dst = i.res.(0) in
         if src.loc <> dst.loc then begin
            match (src, dst) with
-              {loc = Reg rs; typ = (Val | Int | Addr)}, {loc = Reg rd} ->
+              {loc = Reg _; typ = (Val | Int | Addr)}, {loc = Reg _} ->
                 `	lgr	{emit_reg dst}, {emit_reg src}\n`
-            | {loc = Reg rs; typ = Float}, {loc = Reg rd; typ = Float} ->
+            | {loc = Reg _; typ = Float}, {loc = Reg _; typ = Float} ->
                 `	ldr	{emit_reg dst}, {emit_reg src}\n`
-            | {loc = Reg rs; typ = (Val | Int | Addr)}, {loc = Stack sd} ->
+            | {loc = Reg _; typ = (Val | Int | Addr)}, {loc = Stack _} ->
                 `	stg	{emit_reg src}, {emit_stack dst}\n`
-            | {loc = Reg rs; typ = Float}, {loc = Stack sd} ->
+            | {loc = Reg _; typ = Float}, {loc = Stack _} ->
                 `	std	{emit_reg src}, {emit_stack dst}\n`
-            | {loc = Stack ss; typ = (Val | Int | Addr)}, {loc = Reg rd} ->
+            | {loc = Stack _; typ = (Val | Int | Addr)}, {loc = Reg _} ->
                 `	lg	{emit_reg dst}, {emit_stack src}\n`
-            | {loc = Stack ss; typ = Float}, {loc = Reg rd} ->
+            | {loc = Stack _; typ = Float}, {loc = Reg _} ->
                 `	ldy	{emit_reg dst}, {emit_stack src}\n`
             | (_, _) ->
                 fatal_error "Emit: Imove"

@@ -184,18 +184,18 @@ let make_lexer keywords =
     match Stream.peek strm__ with
       Some '(' -> Stream.junk strm__; maybe_nested_comment strm__
     | Some '*' -> Stream.junk strm__; maybe_end_comment strm__
-    | Some c -> Stream.junk strm__; comment strm__
+    | Some _ -> Stream.junk strm__; comment strm__
     | _ -> raise Stream.Failure
   and maybe_nested_comment (strm__ : _ Stream.t) =
     match Stream.peek strm__ with
       Some '*' -> Stream.junk strm__; let s = strm__ in comment s; comment s
-    | Some c -> Stream.junk strm__; comment strm__
+    | Some _ -> Stream.junk strm__; comment strm__
     | _ -> raise Stream.Failure
   and maybe_end_comment (strm__ : _ Stream.t) =
     match Stream.peek strm__ with
       Some ')' -> Stream.junk strm__; ()
     | Some '*' -> Stream.junk strm__; maybe_end_comment strm__
-    | Some c -> Stream.junk strm__; comment strm__
+    | Some _ -> Stream.junk strm__; comment strm__
     | _ -> raise Stream.Failure
   in
-  fun input -> Stream.from (fun count -> next_token input)
+  fun input -> Stream.from (fun _count -> next_token input)

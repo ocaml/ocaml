@@ -186,6 +186,7 @@ let pat sub x =
   let extra = function
     | Tpat_type _
     | Tpat_unpack as d -> d
+    | Tpat_open (path,loc,env) ->  Tpat_open (path, loc, sub.env sub env)
     | Tpat_constraint ct -> Tpat_constraint (sub.typ sub ct)
   in
   let pat_env = sub.env sub x.pat_env in
@@ -321,6 +322,11 @@ let expr sub x =
           id,
           s,
           sub.module_expr sub mexpr,
+          sub.expr sub exp
+        )
+    | Texp_letexception (cd, exp) ->
+        Texp_letexception (
+          sub.extension_constructor sub cd,
           sub.expr sub exp
         )
     | Texp_assert exp ->

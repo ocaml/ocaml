@@ -31,14 +31,6 @@ let num_of_big_int bi =
  then Int (int_of_big_int bi)
  else Big_int bi
 
-let numerator_num = function
-  Ratio r -> ignore (normalize_ratio r); num_of_big_int (numerator_ratio r)
-| n -> n
-
-let denominator_num = function
-  Ratio r -> ignore (normalize_ratio r); num_of_big_int (denominator_ratio r)
-| n -> Int 1
-
 let normalize_num = function
   Int i -> Int i
 | Big_int bi -> num_of_big_int bi
@@ -158,8 +150,8 @@ let div_num n1 n2 =
 let ( // ) = div_num
 
 let floor_num = function
-  Int i as n -> n
-| Big_int bi as n -> n
+  Int _ as n -> n
+| Big_int _ as n -> n
 | Ratio r -> num_of_big_int (floor_ratio r)
 
 (* Coercion with ratio type *)
@@ -284,18 +276,18 @@ let is_integer_num = function
 
 (* integer_num, floor_num, round_num, ceiling_num rendent des nums *)
 let integer_num = function
-  Int i as n -> n
-| Big_int bi as n -> n
+  Int _ as n -> n
+| Big_int _ as n -> n
 | Ratio r -> num_of_big_int (integer_ratio r)
 
 and round_num = function
-  Int i as n -> n
-| Big_int bi as n -> n
+  Int _ as n -> n
+| Big_int _ as n -> n
 | Ratio r -> num_of_big_int (round_ratio r)
 
 and ceiling_num = function
-  Int i as n -> n
-| Big_int bi as n -> n
+  Int _ as n -> n
+| Big_int _ as n -> n
 | Ratio r -> num_of_big_int (ceiling_ratio r)
 
 (* Comparisons on nums *)

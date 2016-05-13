@@ -84,11 +84,8 @@ let close_phrase lam =
   let open Lambda in
   IdentSet.fold (fun id l ->
     let glb, pos = toplevel_value id in
-    let glob =
-      Lprim (Pfield pos, [Lprim (Pgetglobal glb, [], Location.none)],
-        Location.none)
-    in
-    Llet(Strict, id, glob, l)
+    let glob = Lprim (Pfield pos, [Lprim (Pgetglobal glb, [], Location.none)]) in
+    Llet(Strict, Pgenval, id, glob, l)
   ) (free_variables lam) lam
 
 let toplevel_value id =
@@ -102,9 +99,9 @@ let rec eval_path = function
       if Ident.persistent id || Ident.global id
       then global_symbol id
       else toplevel_value id
-  | Pdot(p, s, pos) ->
+  | Pdot(p, _s, pos) ->
       Obj.field (eval_path p) pos
-  | Papply(p1, p2) ->
+  | Papply _ ->
       fatal_error "Toploop.eval_path"
 
 let eval_path env path =
@@ -321,7 +318,7 @@ let execute_phrase print_outcome ppf phr =
         let res = load_lambda ppf ~module_ident res size in
         let out_phr =
           match res with
-          | Result v ->
+          | Result _ ->
               if Config.flambda then
                 (* CR-someday trefis: *)
                 ()
@@ -383,7 +380,7 @@ let execute_phrase print_outcome ppf phr =
                        dir_name;
                false
              end
-          | Directive_int f, Pdir_int (n, Some _) ->
+          | Directive_int _, Pdir_int (_, Some _) ->
               fprintf ppf "Wrong integer literal for directive `%s'.@."
                 dir_name;
               false
@@ -427,7 +424,7 @@ let use_file ppf wrap_mod name =
     let lb = Lexing.from_channel ic in
     Location.init lb filename;
     (* Skip initial #! line if any *)
-    Lexer.skip_sharp_bang lb;
+    Lexer.skip_hash_bang lb;
     let success =
       protect_refs [ R (Location.input_name, filename) ] (fun () ->
         try
@@ -539,7 +536,8 @@ exception PPerror
 
 let loop ppf =
   Location.formatter_for_warnings := ppf;
-  fprintf ppf "        OCaml version %s - native toplevel@.@." Config.version;
+  if not !Clflags.noversion then
+    fprintf ppf "        OCaml version %s - native toplevel@.@." Config.version;
   initialize_toplevel_env ();
   let lb = Lexing.from_function refill_lexbuf in
   Location.init lb "//toplevel//";

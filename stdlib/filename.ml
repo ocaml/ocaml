@@ -74,7 +74,7 @@ module Unix = struct
   let parent_dir_name = ".."
   let dir_sep = "/"
   let is_dir_sep s i = s.[i] = '/'
-  let is_relative n = String.length n < 1 || n.[0] <> '/';;
+  let is_relative n = String.length n < 1 || n.[0] <> '/'
   let is_implicit n =
     is_relative n
     && (String.length n < 2 || String.sub n 0 2 <> "./")
@@ -130,7 +130,7 @@ module Win32 = struct
         match s.[i] with
         | '\"' -> add_bs (2*n+1); Buffer.add_char b '\"'; loop (i+1);
         | '\\' -> loop_bs (n+1) (i+1);
-        | c    -> add_bs n; loop i
+        | _    -> add_bs n; loop i
       end
     and add_bs n = for _j = 1 to n do Buffer.add_char b '\\'; done
     in
@@ -151,7 +151,7 @@ module Win32 = struct
     let dir = generic_dirname is_dir_sep current_dir_name path in
     drive ^ dir
   let basename s =
-    let (drive, path) = drive_and_path s in
+    let (_drive, path) = drive_and_path s in
     generic_basename is_dir_sep current_dir_name path
 end
 
@@ -210,12 +210,12 @@ let chop_extension name =
 external open_desc: string -> open_flag list -> int -> int = "caml_sys_open"
 external close_desc: int -> unit = "caml_sys_close"
 
-let prng = lazy(Random.State.make_self_init ());;
+let prng = lazy(Random.State.make_self_init ())
 
 let temp_file_name temp_dir prefix suffix =
   let rnd = (Random.State.bits (Lazy.force prng)) land 0xFFFFFF in
   concat temp_dir (Printf.sprintf "%s%06x%s" prefix rnd suffix)
-;;
+
 
 let current_temp_dir_name = ref temp_dir_name
 

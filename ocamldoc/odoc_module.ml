@@ -246,7 +246,7 @@ let rec module_elements ?(trans=true) m =
             mt_is_interface = false ; mt_file = "" ; mt_kind = Some tk ;
             mt_loc = Odoc_types.dummy_loc ;
           }
-    | Module_constraint (k, tk) ->
+    | Module_constraint (k, _tk) ->
         print_DEBUG "Odoc_module.module_element: Module_constraint";
       (* FIXME : use k or tk ? *)
         module_elements ~trans: trans
@@ -416,7 +416,7 @@ and module_parameters ?(trans=true) m =
           | Some (Modtype mt) -> module_type_parameters ~trans mt
         else
           []
-    | Module_constraint (k, tk) ->
+    | Module_constraint (_k, tk) ->
         module_type_parameters ~trans: trans
           { mt_name = "" ; mt_info = None ; mt_type = None ;
             mt_is_interface = false ; mt_file = "" ; mt_kind = Some tk ;

@@ -20,8 +20,9 @@ TARGET_BINDIR ?= $(BINDIR)
 
 COMPILER=../ocamlc
 CAMLC=$(CAMLRUN) $(COMPILER)
-COMPFLAGS=-strict-sequence -w +32+33..39 -g -warn-error A -bin-annot -nostdlib \
-          -safe-string
+COMPFLAGS=-strict-sequence -absname -w +a-4-9-41-42-44-45-48 \
+          -g -warn-error A -bin-annot -nostdlib \
+          -safe-string -strict-formats
 ifeq "$(FLAMBDA)" "true"
 OPTCOMPFLAGS=-O3
 else
@@ -133,5 +134,5 @@ include .depend
 # .p.cmx files.  When the compiler imports another compilation unit,
 # it looks for the .cmx file (not .p.cmx).
 depend:
-	$(CAMLDEP) *.mli *.ml > .depend
-	$(CAMLDEP) *.ml | sed -e 's/\.cmx : /.p.cmx : /g' >>.depend
+	$(CAMLDEP) -slash *.mli *.ml > .depend
+	$(CAMLDEP) -slash *.ml | sed -e 's/\.cmx : /.p.cmx : /g' >>.depend

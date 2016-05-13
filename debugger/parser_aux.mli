@@ -14,10 +14,6 @@
 (*                                                                        *)
 (**************************************************************************)
 
-(*open Globals*)
-
-open Primitives
-
 type expression =
     E_ident of Longident.t              (* x or Mod.x *)
   | E_name of int                       (* $xxx *)

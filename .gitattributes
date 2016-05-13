@@ -17,9 +17,9 @@
 * text=auto
 
 # Binary files
-boot/ocamlc binary
-boot/ocamllex binary
-boot/ocamldep binary
+/boot/ocamlc binary
+/boot/ocamllex binary
+/boot/ocamldep binary
 *.gif binary
 *.png binary
 *.tfm binary
@@ -29,11 +29,12 @@ boot/ocamldep binary
 README*                  ocaml-typo=missing-header
 *.adoc                   ocaml-typo=missing-header,long-line,unused-prop
 
-/.merlin                  ocaml-typo=missing-header
-/Changes                  ocaml-typo=non-ascii,missing-header
-/INSTALL                  ocaml-typo=missing-header
-/LICENSE                  ocaml-typo=non-printing,missing-header
-/appveyor.yml             ocaml-typo=long-line,very-long-line
+/.mailmap                ocaml-typo=long-line,missing-header,non-ascii
+/.merlin                 ocaml-typo=missing-header
+/Changes                 ocaml-typo=non-ascii,missing-header
+/INSTALL                 ocaml-typo=missing-header
+/LICENSE                 ocaml-typo=non-printing,missing-header
+/appveyor.yml            ocaml-typo=long-line,very-long-line
 
 
 asmcomp/*/emit.mlp       ocaml-typo=tab,long-line,unused-prop
@@ -65,8 +66,7 @@ otherlibs/win32unix/symlink.c     ocaml-typo=long-line
 
 stdlib/sharpbang    ocaml-typo=white-at-eol,missing-lf
 
-# FIXME remove headers in testsuite/tests and remove unused-prop in next line:
-testsuite/tests/**                        ocaml-typo=missing-header,unused-prop
+testsuite/tests/**                        ocaml-typo=missing-header
 testsuite/tests/lib-bigarray-2/bigarrf.f  ocaml-typo=missing-header,tab
 testsuite/tests/misc-unsafe/almabench.ml  ocaml-typo=missing-header,long-line
 testsuite/typing                          ocaml-typo=missing-header
@@ -101,6 +101,7 @@ stdlib/sharpbang text eol=lf
 tools/check-typo text eol=lf
 tools/ci-build text eol=lf
 tools/cleanup-header text eol=lf
+tools/msvs-promote-path text eol=lf
 tools/gdb-macros text eol=lf
 tools/magic text eol=lf
 tools/make-opcodes text eol=lf

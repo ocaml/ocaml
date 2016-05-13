@@ -85,8 +85,8 @@ let offset_addressing addr delta =
   | Iindexed2 -> assert false
 
 let num_args_addressing = function
-    Ibased(s, n) -> 0
-  | Iindexed n -> 1
+    Ibased _ -> 0
+  | Iindexed _ -> 1
   | Iindexed2 -> 2
 
 (* Printing operations and addressing modes *)

@@ -16,7 +16,8 @@
 
 [@@@ocaml.warning "+a-4-9-30-40-41-42"]
 
-(* CR mshinwell: Add the new inlining heuristic documentation here. *)
+(** See the Flambda manual chapter for an explanation in prose of the
+    inlining decision procedure. *)
 
 (** Try to inline a full application of a known function, guided by various
     heuristics. *)

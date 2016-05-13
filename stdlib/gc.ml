@@ -30,7 +30,7 @@ type stat = {
   compactions : int;
   top_heap_words : int;
   stack_size : int;
-};;
+}
 
 type control = {
   mutable minor_heap_size : int;
@@ -41,24 +41,24 @@ type control = {
   mutable stack_limit : int;
   mutable allocation_policy : int;
   window_size : int;
-};;
+}
 
-external stat : unit -> stat = "caml_gc_stat";;
-external quick_stat : unit -> stat = "caml_gc_quick_stat";;
-external counters : unit -> (float * float * float) = "caml_gc_counters";;
-external get : unit -> control = "caml_gc_get";;
-external set : control -> unit = "caml_gc_set";;
-external minor : unit -> unit = "caml_gc_minor";;
-external major_slice : int -> int = "caml_gc_major_slice";;
-external major : unit -> unit = "caml_gc_major";;
-external full_major : unit -> unit = "caml_gc_full_major";;
-external compact : unit -> unit = "caml_gc_compaction";;
+external stat : unit -> stat = "caml_gc_stat"
+external quick_stat : unit -> stat = "caml_gc_quick_stat"
+external counters : unit -> (float * float * float) = "caml_gc_counters"
+external get : unit -> control = "caml_gc_get"
+external set : control -> unit = "caml_gc_set"
+external minor : unit -> unit = "caml_gc_minor"
+external major_slice : int -> int = "caml_gc_major_slice"
+external major : unit -> unit = "caml_gc_major"
+external full_major : unit -> unit = "caml_gc_full_major"
+external compact : unit -> unit = "caml_gc_compaction"
 external get_minor_free : unit -> int = "caml_get_minor_free" [@@noalloc]
 external get_bucket : int -> int = "caml_get_major_bucket" [@@noalloc]
 external get_credit : unit -> int = "caml_get_major_credit" [@@noalloc]
 external huge_fallback_count : unit -> int = "caml_gc_huge_fallback_count"
 
-open Printf;;
+open Printf
 
 let print_stat c =
   let st = stat () in
@@ -81,32 +81,32 @@ let print_stat c =
   fprintf c "\n";
   fprintf c "live_blocks: %d\n" st.live_blocks;
   fprintf c "free_blocks: %d\n" st.free_blocks;
-  fprintf c "heap_chunks: %d\n" st.heap_chunks;
-;;
+  fprintf c "heap_chunks: %d\n" st.heap_chunks
+
 
 let allocated_bytes () =
   let (mi, pro, ma) = counters () in
   (mi +. ma -. pro) *. float_of_int (Sys.word_size / 8)
-;;
-
-external finalise : ('a -> unit) -> 'a -> unit = "caml_final_register";;
-external finalise_release : unit -> unit = "caml_final_release";;
 
 
-type alarm = bool ref;;
-type alarm_rec = {active : alarm; f : unit -> unit};;
+external finalise : ('a -> unit) -> 'a -> unit = "caml_final_register"
+external finalise_release : unit -> unit = "caml_final_release"
+
+
+type alarm = bool ref
+type alarm_rec = {active : alarm; f : unit -> unit}
 
 let rec call_alarm arec =
   if !(arec.active) then begin
     finalise call_alarm arec;
     arec.f ();
-  end;
-;;
+  end
+
 
 let create_alarm f =
   let arec = { active = ref true; f = f } in
   finalise call_alarm arec;
   arec.active
-;;
 
-let delete_alarm a = a := false;;
+
+let delete_alarm a = a := false

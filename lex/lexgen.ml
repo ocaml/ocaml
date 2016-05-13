@@ -17,7 +17,7 @@
 (* Compiling a lexer definition *)
 
 open Syntax
-open Printf
+(*open Printf*)
 
 exception Memory_overflow
 
@@ -305,15 +305,6 @@ let rec encode_regexp char_vars act = function
       a previous similar tag.
 *)
 
-let incr_pos = function
-  | None   -> None
-  | Some i -> Some (i+1)
-
-let decr_pos = function
-  | None -> None
-  | Some i -> Some (i-1)
-
-
 let opt = true
 
 let mk_seq r1 r2 = match r1,r2  with
@@ -553,7 +544,7 @@ let rec nullable = function
   | Chars (_,_)|Action _ -> false
   | Seq(r1,r2) -> nullable r1 && nullable r2
   | Alt(r1,r2) -> nullable r1 || nullable r2
-  | Star r     -> true
+  | Star _     -> true
 
 let rec emptymatch = function
   | Empty | Chars (_,_) | Action _ -> Tags.empty
@@ -630,6 +621,7 @@ type 'a dfa_state =
    others : ('a * int TagMap.t) MemMap.t}
 
 
+(*
 let dtag oc t =
   fprintf oc "%s<%s>" t.id (if t.start then "s" else "e")
 
@@ -656,6 +648,7 @@ let dstate {final=(act,(_,m)) ; others=o} =
       dtag_map (fun x -> eprintf "%d" x) (fun () -> prerr_string " ,") m)
     (fun () -> prerr_endline "")
     o
+*)
 
 
 let dfa_state_empty =
@@ -858,7 +851,7 @@ let create_init_state pos =
       (fun (t,tags) st ->
         match t with
         | ToAction n ->
-            let on,otags = st.final in
+            let on,_otags = st.final in
             if n < on then
               {st with final = (n, (0,create_mem_map tags gen))}
             else
@@ -883,10 +876,12 @@ let get_map t st = match t with
 let dest = function | Copy (d,_) | Set d  -> d
 and orig = function | Copy (_,o) -> o | Set _ -> -1
 
+(*
 let pmv oc mv = fprintf oc "%d <- %d" (dest mv) (orig mv)
 let pmvs oc mvs =
   List.iter (fun mv -> fprintf oc "%a " pmv  mv) mvs ;
   output_char oc '\n' ; flush oc
+*)
 
 
 (* Topological sort << a la louche >> *)
@@ -1105,6 +1100,7 @@ let translate_state shortest_match tags chars follow st =
     reachs chars follow st.others)
   end
 
+(*
 let dtags chan tags =
   Tags.iter
     (fun t -> fprintf chan " %a" dtag t)
@@ -1126,6 +1122,7 @@ let dfollow t =
     dtransset t.(i)
   done ;
   prerr_endline "]"
+*)
 
 
 let make_tag_entry id start act a r = match a with

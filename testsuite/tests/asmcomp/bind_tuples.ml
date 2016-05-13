@@ -1,24 +1,9 @@
-(**************************************************************************)
-(*                                                                        *)
-(*                                OCaml                                   *)
-(*                                                                        *)
-(*                         Alain Frisch, LexiFi                           *)
-(*                                                                        *)
-(*   Copyright 2014 Institut National de Recherche en Informatique et     *)
-(*     en Automatique.                                                    *)
-(*                                                                        *)
-(*   All rights reserved.  This file is distributed under the terms of    *)
-(*   the GNU Lesser General Public License version 2.1, with the          *)
-(*   special exception on linking described in the file LICENSE.          *)
-(*                                                                        *)
-(**************************************************************************)
-
 (* Check the effectiveness of optimized compilation of tuple binding
 
    Ref: http://caml.inria.fr/mantis/view.php?id=4800
 *)
 
-let () =
+let f () =
   let x0 = Gc.allocated_bytes () in
   let x1 = Gc.allocated_bytes () in
 
@@ -38,3 +23,6 @@ let () =
   print_int !r;
   assert (!r = 82);
   assert(x1 -. x0 = x2 -. x1) (* check no allocation between x1 and x2 *)
+  [@@inline never]
+
+let () = f ()

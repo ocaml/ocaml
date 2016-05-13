@@ -238,6 +238,9 @@ and pattern i ppf x =
   | Ppat_exception p ->
       line i ppf "Ppat_exception\n";
       pattern i ppf p
+  | Ppat_open (m,p) ->
+      line i ppf "Ppat_open \"%a\"\n" fmt_longident_loc m;
+      pattern i ppf p
   | Ppat_extension (s, arg) ->
       line i ppf "Ppat_extension \"%s\"\n" s.txt;
       payload i ppf arg
@@ -340,6 +343,10 @@ and expression i ppf x =
   | Pexp_letmodule (s, me, e) ->
       line i ppf "Pexp_letmodule %a\n" fmt_string_loc s;
       module_expr i ppf me;
+      expression i ppf e;
+  | Pexp_letexception (cd, e) ->
+      line i ppf "Pexp_letexception\n";
+      extension_constructor i ppf cd;
       expression i ppf e;
   | Pexp_assert (e) ->
       line i ppf "Pexp_assert\n";

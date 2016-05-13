@@ -17,6 +17,9 @@
 
 open Types
 
+module PathMap : Map.S with type key = Path.t
+                        and type 'a t = 'a Map.Make(Path).t
+
 type summary =
     Env_empty
   | Env_value of summary * Ident.t * value_description
@@ -28,6 +31,7 @@ type summary =
   | Env_cltype of summary * Ident.t * class_type_declaration
   | Env_open of summary * Path.t
   | Env_functor_arg of summary * Ident.t
+  | Env_constraints of summary * type_declaration PathMap.t
 
 type t
 
@@ -35,6 +39,7 @@ val empty: t
 val initial_safe_string: t
 val initial_unsafe_string: t
 val diff: t -> t -> Ident.t list
+val copy_local: from:t -> t -> t
 
 type type_descriptions =
     constructor_description list * label_description list
@@ -73,6 +78,8 @@ val normalize_path: Location.t option -> t -> Path.t -> Path.t
    If the option is None, allow returning dangling paths.
    Otherwise raise a Missing_module error, and may add forgotten
    head as required global. *)
+val normalize_path_prefix: Location.t option -> t -> Path.t -> Path.t
+(* Only normalize the prefix part of the path *)
 val reset_required_globals: unit -> unit
 val get_required_globals: unit -> Ident.t list
 val add_required_global: Ident.t -> unit
@@ -131,6 +138,7 @@ val add_modtype: Ident.t -> modtype_declaration -> t -> t
 val add_class: Ident.t -> class_declaration -> t -> t
 val add_cltype: Ident.t -> class_type_declaration -> t -> t
 val add_local_constraint: Ident.t -> type_declaration -> int -> t -> t
+val add_local_type: Path.t -> type_declaration -> t -> t
 
 (* Insertion of all fields of a signature. *)
 

@@ -16,7 +16,7 @@
 (* Output the DFA tables and its entry points *)
 
 val output_lexdef:
-      string -> in_channel -> out_channel -> Common.line_tracker ->
+      in_channel -> out_channel -> Common.line_tracker ->
       Syntax.location ->
       Syntax.location option ->
       Compact.lex_tables ->

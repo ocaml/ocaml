@@ -19,7 +19,6 @@
 open Checkpoints
 open Debugcom
 open Instruct
-open Primitives
 open Printf
 
 (*** Debugging. ***)
@@ -137,7 +136,7 @@ let execute_without_breakpoints f =
       f ();
       change_version version pos
     with
-      x ->
+      _ ->
         change_version version pos
 
 (* Add a position in the position list. *)

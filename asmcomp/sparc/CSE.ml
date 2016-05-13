@@ -18,7 +18,7 @@
 open Mach
 open CSEgen
 
-class cse = object (self)
+class cse = object
 
 inherit cse_generic (* as super *)
 

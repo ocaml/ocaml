@@ -16,8 +16,10 @@
 
 [@@@ocaml.warning "+a-4-9-30-40-41-42"]
 
-(** Eliminate variables bound by closures that are not required. *)
-(* CR mshinwell: update comment, it removes functions too *)
+(* CR-soon mshinwell: Rename this module. *)
+
+(** Eliminate variables bound by sets of closures that are not required.
+    Also eliminate functions within sets of closures that are not required. *)
 val remove_unused_closure_variables
    : remove_direct_call_surrogates:bool
   -> Flambda.program

@@ -99,10 +99,7 @@ let make_package_object ppf members targetobj targetname coercion
   let source_provenance = Timings.Pack targetname in
   let prefixname = chop_extension_if_any objtemp in
   if Config.flambda then begin
-    let size, lam =
-      Translmod.transl_package_flambda
-        components module_ident coercion
-    in
+    let size, lam = Translmod.transl_package_flambda components coercion in
     let flam =
       Middle_end.middle_end ppf
         ~source_provenance
@@ -150,7 +147,7 @@ let build_package_cmx members cmxfile =
   let unit_names =
     List.map (fun m -> m.pm_name) members in
   let filter lst =
-    List.filter (fun (name, crc) -> not (List.mem name unit_names)) lst in
+    List.filter (fun (name, _crc) -> not (List.mem name unit_names)) lst in
   let union lst =
     List.fold_left
       (List.fold_left

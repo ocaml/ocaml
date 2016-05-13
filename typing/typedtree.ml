@@ -38,6 +38,7 @@ type pattern =
 and pat_extra =
   | Tpat_constraint of core_type
   | Tpat_type of Path.t * Longident.t loc
+  | Tpat_open of Path.t * Longident.t loc * Env.t
   | Tpat_unpack
 
 and pattern_desc =
@@ -103,6 +104,7 @@ and expression_desc =
   | Texp_setinstvar of Path.t * Path.t * string loc * expression
   | Texp_override of Path.t * (Path.t * string loc * expression) list
   | Texp_letmodule of Ident.t * string loc * module_expr * expression
+  | Texp_letexception of extension_constructor * expression
   | Texp_assert of expression
   | Texp_lazy of expression
   | Texp_object of class_structure * string list
@@ -505,7 +507,7 @@ and 'a class_infos =
     ci_id_class: Ident.t;
     ci_id_class_type: Ident.t;
     ci_id_object: Ident.t;
-    ci_id_typesharp: Ident.t;
+    ci_id_typehash: Ident.t;
     ci_expr: 'a;
     ci_decl: Types.class_declaration;
     ci_type_decl: Types.class_type_declaration;
@@ -518,10 +520,10 @@ and 'a class_infos =
 let iter_pattern_desc f = function
   | Tpat_alias(p, _, _) -> f p
   | Tpat_tuple patl -> List.iter f patl
-  | Tpat_construct(_, cstr, patl) -> List.iter f patl
+  | Tpat_construct(_, _, patl) -> List.iter f patl
   | Tpat_variant(_, pat, _) -> may f pat
   | Tpat_record (lbl_pat_list, _) ->
-      List.iter (fun (_, lbl, pat) -> f pat) lbl_pat_list
+      List.iter (fun (_, _, pat) -> f pat) lbl_pat_list
   | Tpat_array patl -> List.iter f patl
   | Tpat_or(p1, p2, _) -> f p1; f p2
   | Tpat_lazy p -> f p

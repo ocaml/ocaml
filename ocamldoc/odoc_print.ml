@@ -53,8 +53,8 @@ exception Use_code of string
 let simpl_module_type ?code t =
   let rec iter t =
     match t with
-      Types.Mty_ident p -> t
-    | Types.Mty_alias p -> t
+      Types.Mty_ident _
+    | Types.Mty_alias _ -> t
     | Types.Mty_signature _ ->
         (
          match code with
@@ -79,7 +79,7 @@ let string_of_module_type ?code ?(complete=false) t =
 let simpl_class_type t =
   let rec iter t =
     match t with
-      Types.Cty_constr (p,texp_list,ct) -> t
+      Types.Cty_constr _ -> t
     | Types.Cty_signature cs ->
         (* we delete vals and methods in order to not print them when
            displaying the type *)

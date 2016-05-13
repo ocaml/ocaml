@@ -27,7 +27,7 @@ let rec no_effects (flam : Flambda.t) =
   | Var _ -> true
   | Let { defining_expr; body; _ } ->
     no_effects_named defining_expr && no_effects body
-  | Let_mutable (_, _, body) -> no_effects body
+  | Let_mutable { body } -> no_effects body
   | Let_rec (defs, body) ->
     no_effects body
       && List.for_all (fun (_, def) -> no_effects_named def) defs

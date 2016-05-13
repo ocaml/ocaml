@@ -231,8 +231,7 @@ let loop_at_exit events handler =
 external sound : int -> int -> unit = "caml_gr_sound"
 
 (* Splines *)
-let add (x1, y1) (x2, y2) = (x1 +. x2, y1 +. y2)
-and sub (x1, y1) (x2, y2) = (x1 -. x2, y1 -. y2)
+let sub (x1, y1) (x2, y2) = (x1 -. x2, y1 -. y2)
 and middle (x1, y1) (x2, y2) = ((x1 +. x2) /. 2.0,  (y1 +. y2) /. 2.0)
 and area (x1, y1) (x2, y2) = abs_float (x1 *. y2 -. x2 *. y1)
 and norm (x1, y1) = sqrt (x1 *. x1 +. y1 *. y1);;

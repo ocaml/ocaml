@@ -149,16 +149,16 @@ let calling_conventions first_int last_int first_float last_float make_stack
              aligned. *)
           int := Misc.align !int 2;
           if !int <= last_int - 1 then begin
-            let reg_least = phys_reg !int in
-            let reg_most = phys_reg (1 + !int) in
-            loc.(i) <- [| reg_least; reg_most |];
+            let reg_lower = phys_reg !int in
+            let reg_upper = phys_reg (1 + !int) in
+            loc.(i) <- [| reg_lower; reg_upper |];
             int := !int + 2
           end else begin
             let size_int64 = size_int * 2 in
             ofs := Misc.align !ofs size_int64;
-            let stack_least = stack_slot (make_stack !ofs) Int in
-            let stack_most = stack_slot (make_stack (size_int + !ofs)) Int in
-            loc.(i) <- [| stack_least; stack_most |];
+            let stack_lower = stack_slot (make_stack !ofs) Int in
+            let stack_upper = stack_slot (make_stack (size_int + !ofs)) Int in
+            loc.(i) <- [| stack_lower; stack_upper |];
             ofs := !ofs + size_int64
           end
       | _, _ ->
@@ -175,7 +175,7 @@ let calling_conventions first_int last_int first_float last_float make_stack
 
 let incoming ofs = Incoming ofs
 let outgoing ofs = Outgoing ofs
-let not_supported ofs = fatal_error "Proc.loc_results: cannot call"
+let not_supported _ofs = fatal_error "Proc.loc_results: cannot call"
 
 (* OCaml calling convention:
      first integer args in r0...r7
@@ -224,7 +224,7 @@ let loc_exn_bucket = phys_reg 0
 
 (* Volatile registers: none *)
 
-let regs_are_volatile rs = false
+let regs_are_volatile _rs = false
 
 (* Registers destroyed by operations *)
 

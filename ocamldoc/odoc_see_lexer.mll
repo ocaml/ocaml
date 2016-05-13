@@ -18,7 +18,6 @@ let print_DEBUG2 s = print_string s ; print_newline ()
 
 (** the lexer for special comments. *)
 
-open Lexing
 open Odoc_parser
 
 let buf = Buffer.create 32

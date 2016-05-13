@@ -47,15 +47,16 @@ let add_default_argument_wrappers lam =
   in
   let f (lam : Lambda.lambda) : Lambda.lambda =
     match lam with
-    | Llet (( Strict | Alias | StrictOpt), id,
+    | Llet (( Strict | Alias | StrictOpt), _k, id,
         Lfunction {kind; params; body = fbody; attr}, body) ->
       begin match
         Simplif.split_default_wrapper id kind params fbody attr
           ~create_wrapper_body:stubify
       with
-      | [fun_id, def] -> Llet (Alias, fun_id, def, body)
+      | [fun_id, def] -> Llet (Alias, Pgenval, fun_id, def, body)
       | [fun_id, def; inner_fun_id, def_inner] ->
-        Llet (Alias, inner_fun_id, def_inner, Llet (Alias, fun_id, def, body))
+        Llet (Alias, Pgenval, inner_fun_id, def_inner,
+              Llet (Alias, Pgenval, fun_id, def, body))
       | _ -> assert false
       end
     | Lletrec (defs, body) as lam ->
@@ -114,7 +115,7 @@ let rec eliminate_const_block (const : Lambda.structured_constant)
   match const with
   | Const_block (tag, consts) ->
     (* CR mshinwell for lwhite: fix location *)
-    Lprim (Pmakeblock (tag, Asttypes.Immutable),
+    Lprim (Pmakeblock (tag, Asttypes.Immutable, None),
       List.map eliminate_const_block consts, Location.none)
   | Const_base _
   | Const_pointer _
@@ -161,21 +162,27 @@ and close t ?debuginfo env (lam : Lambda.lambda) : Flambda.t =
   | Lconst cst ->
     let cst, name = close_const t env cst in
     name_expr cst ~name:("const_" ^ name)
-  | Llet ((Strict | Alias | StrictOpt), id, defining_expr, body) ->
+  | Llet ((Strict | Alias | StrictOpt), _value_kind, id, defining_expr, body) ->
+    (* TODO: keep value_kind in flambda *)
     let var = Variable.create_with_same_name_as_ident id in
     let defining_expr =
       close_let_bound_expression t var env defining_expr
     in
     let body = close t (Env.add_var env id var) body in
     Flambda.create_let var defining_expr body
-  | Llet (Variable, id, defining_expr, body) ->
+  | Llet (Variable, block_kind, id, defining_expr, body) ->
     let mut_var = Mutable_variable.of_ident id in
     let var = Variable.create_with_same_name_as_ident id in
     let defining_expr =
       close_let_bound_expression t var env defining_expr
     in
     let body = close t (Env.add_mutable_var env id mut_var) body in
-    Flambda.create_let var defining_expr (Let_mutable (mut_var, var, body))
+    Flambda.create_let var defining_expr
+      (Let_mutable
+         { var = mut_var;
+           initial_value = var;
+           body;
+           contents_kind = block_kind })
   | Lfunction { kind; params; body; attr; } ->
     let name =
       (* Name anonymous functions by their source location, if known. *)

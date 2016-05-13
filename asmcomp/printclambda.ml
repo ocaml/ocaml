@@ -18,6 +18,20 @@ open Format
 open Asttypes
 open Clambda
 
+let mutable_flag = function
+  | Mutable-> "[mut]"
+  | Immutable -> ""
+
+let value_kind =
+  let open Lambda in
+  function
+  | Pgenval -> ""
+  | Pintval -> ":int"
+  | Pfloatval -> ":float"
+  | Pboxedintval Pnativeint -> ":nativeint"
+  | Pboxedintval Pint32 -> ":int32"
+  | Pboxedintval Pint64 -> ":int64"
+
 let rec structured_constant ppf = function
   | Uconst_float x -> fprintf ppf "%F" x
   | Uconst_int32 x -> fprintf ppf "%ldl" x
@@ -78,13 +92,15 @@ and lam ppf = function
         List.iter (fprintf ppf "@ %a" lam) in
       fprintf ppf "@[<2>(closure@ %a %a)@]" funs clos lams fv
   | Uoffset(l,i) -> fprintf ppf "@[<2>(offset %a %d)@]" lam l i
-  | Ulet(id, arg, body) ->
+  | Ulet(mut, kind, id, arg, body) ->
       let rec letbody ul = match ul with
-        | Ulet(id, arg, body) ->
-            fprintf ppf "@ @[<2>%a@ %a@]" Ident.print id lam arg;
+        | Ulet(mut, kind, id, arg, body) ->
+            fprintf ppf "@ @[<2>%a%s%s@ %a@]"
+              Ident.print id (mutable_flag mut) (value_kind kind) lam arg;
             letbody body
         | _ -> ul in
-      fprintf ppf "@[<2>(let@ @[<hv 1>(@[<2>%a@ %a@]" Ident.print id lam arg;
+      fprintf ppf "@[<2>(let@ @[<hv 1>(@[<2>%a%s%s@ %a@]"
+        Ident.print id (mutable_flag mut) (value_kind kind) lam arg;
       let expr = letbody body in
       fprintf ppf ")@]@ %a)@]" lam expr
   | Uletrec(id_arg_list, body) ->

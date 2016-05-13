@@ -75,7 +75,6 @@ INCLUDES_DEP=-I $(OCAMLSRCDIR)/parsing \
 	-I $(OCAMLSRCDIR)/typing \
 	-I $(OCAMLSRCDIR)/driver \
 	-I $(OCAMLSRCDIR)/bytecomp \
-	-I $(OCAMLSRCDIR)/tools \
 	-I $(OCAMLSRCDIR)/toplevel/
 
 INCLUDES_NODEP=	-I $(OCAMLSRCDIR)/stdlib \
@@ -87,7 +86,7 @@ INCLUDES_NODEP=	-I $(OCAMLSRCDIR)/stdlib \
 
 INCLUDES=$(INCLUDES_DEP) $(INCLUDES_NODEP)
 
-COMPFLAGS=$(INCLUDES) -warn-error A -safe-string
+COMPFLAGS=$(INCLUDES) -absname -w +a-4-9-41-42-44-45-48 -warn-error A -safe-string -strict-sequence -strict-formats
 LINKFLAGS=$(INCLUDES) -nostdlib
 
 CMOFILES= odoc_config.cmo \
@@ -151,13 +150,6 @@ LIBCMOFILES=$(CMOFILES)
 LIBCMXFILES= $(LIBCMOFILES:.cmo=.cmx)
 LIBCMIFILES= $(LIBCMOFILES:.cmo=.cmi)
 
-# Les cmo et cmx de la distrib OCAML
-OCAMLCMOFILES= \
-	$(OCAMLSRCDIR)/tools/depend.cmo
-
-OCAMLCMXFILES=$(OCAMLCMOFILES:.cmo=.cmx)
-
-
 STDLIB_MLIS=../stdlib/*.mli \
   ../parsing/*.mli \
 	../otherlibs/$(UNIXLIB)/unix.mli \
@@ -190,17 +182,17 @@ debug:
 $(OCAMLDOC): $(EXECMOFILES)
 	$(OCAMLC) -o $@ -linkall unix.cma str.cma dynlink.cma \
 	          $(OCAMLSRCDIR)/compilerlibs/ocamlcommon.cma \
-	          $(LINKFLAGS) $(OCAMLCMOFILES) $(EXECMOFILES)
+	          $(LINKFLAGS) $(EXECMOFILES)
 $(OCAMLDOC_OPT): $(EXECMXFILES)
 	$(OCAMLOPT) -o $@ -linkall unix.cmxa str.cmxa dynlink.cmxa \
 	            $(OCAMLSRCDIR)/compilerlibs/ocamlcommon.cmxa \
-	            $(LINKFLAGS) $(OCAMLCMXFILES) $(EXECMXFILES)
+	            $(LINKFLAGS) $(EXECMXFILES)
 
 $(OCAMLDOC_LIBCMA): $(LIBCMOFILES)
-	$(OCAMLC) -a -o $@ $(LINKFLAGS) $(OCAMLSRCDIR)/tools/depend.cmo \
+	$(OCAMLC) -a -o $@ $(LINKFLAGS) \
 	          $(LIBCMOFILES)
 $(OCAMLDOC_LIBCMXA): $(LIBCMXFILES)
-	$(OCAMLOPT) -a -o $@ $(LINKFLAGS) $(OCAMLSRCDIR)/tools/depend.cmx \
+	$(OCAMLOPT) -a -o $@ $(LINKFLAGS) \
 	            $(LIBCMXFILES)
 
 manpages: stdlib_man/Pervasives.3o

@@ -52,7 +52,7 @@ camlheader target_camlheader camlheader_ur \
 camlheaderd target_camlheaderd \
 camlheaderi target_camlheaderi: \
   header.c ../config/Makefile
-	if $(SHARPBANGSCRIPTS); then \
+	if $(HASHBANGSCRIPTS); then \
 	  for suff in '' d i; do \
 	    echo '#!$(BINDIR)/ocamlrun'$$suff > camlheader$$suff && \
 	    echo '#!$(TARGET_BINDIR)/ocamlrun'$$suff >target_camlheader$$suff; \

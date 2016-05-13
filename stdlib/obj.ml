@@ -20,17 +20,19 @@ type t
 external repr : 'a -> t = "%identity"
 external obj : t -> 'a = "%identity"
 external magic : 'a -> 'b = "%identity"
-external is_block : t -> bool = "caml_obj_is_block"
 external is_int : t -> bool = "%obj_is_int"
+let [@inline always] is_block a = not (is_int a)
 external tag : t -> int = "caml_obj_tag"
 external set_tag : t -> int -> unit = "caml_obj_set_tag"
 external size : t -> int = "%obj_size"
+external reachable_words : t -> int = "caml_obj_reachable_words"
 external field : t -> int -> t = "%obj_field"
 external set_field : t -> int -> t -> unit = "%obj_set_field"
 external array_get: 'a array -> int -> 'a = "%array_safe_get"
 external array_set: 'a array -> int -> 'a -> unit = "%array_safe_set"
-let double_field x i = array_get (obj x : float array) i
-let set_double_field x i v = array_set (obj x : float array) i v
+let [@inline always] double_field x i = array_get (obj x : float array) i
+let [@inline always] set_double_field x i v =
+  array_set (obj x : float array) i v
 external new_block : int -> int -> t = "caml_obj_block"
 external dup : t -> t = "caml_obj_dup"
 external truncate : t -> int -> unit = "caml_obj_truncate"
@@ -77,10 +79,10 @@ let extension_constructor x =
     if (tag name) = string_tag then (obj slot : extension_constructor)
     else invalid_arg "Obj.extension_constructor"
 
-let extension_name (slot : extension_constructor) =
+let [@inline always] extension_name (slot : extension_constructor) =
   (obj (field (repr slot) 0) : string)
 
-let extension_id (slot : extension_constructor) =
+let [@inline always] extension_id (slot : extension_constructor) =
   (obj (field (repr slot) 1) : int)
 
 module Ephemeron = struct

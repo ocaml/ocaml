@@ -41,7 +41,7 @@ let expunge_map tbl =
   Symtable.filter_global_map (fun id -> keep (Ident.name id)) tbl
 
 let expunge_crcs tbl =
-  List.filter (fun (unit, crc) -> keep unit) tbl
+  List.filter (fun (unit, _crc) -> keep unit) tbl
 
 let main () =
   let input_name = Sys.argv.(1) in

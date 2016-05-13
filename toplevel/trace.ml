@@ -67,7 +67,7 @@ let rec instrument_result env name ppf clos_typ =
         match name with
         | Lident s -> Lident(s ^ "*")
         | Ldot(lid, s) -> Ldot(lid, s ^ "*")
-        | Lapply(l1, l2) -> fatal_error "Trace.instrument_result" in
+        | Lapply _ -> fatal_error "Trace.instrument_result" in
       let trace_res = instrument_result env starred_name ppf t2 in
       (fun clos_val ->
         Obj.repr (fun arg ->

@@ -33,7 +33,7 @@ let consts : (structured_constant, Ident.t) Hashtbl.t = Hashtbl.create 17
 
 let share c =
   match c with
-    Const_block (n, l) when l <> [] ->
+    Const_block (_n, l) when l <> [] ->
       begin try
         Lvar (Hashtbl.find consts c)
       with Not_found ->
@@ -98,7 +98,7 @@ let transl_label_init_general f =
   let expr, size = f () in
   let expr =
     Hashtbl.fold
-      (fun c id expr -> Llet(Alias, id, Lconst c, expr))
+      (fun c id expr -> Llet(Alias, Pgenval, id, Lconst c, expr))
       consts expr
   in
   (*let expr =
@@ -121,10 +121,9 @@ let transl_label_init_flambda f =
   let expr =
     if !method_count = 0 then expr
     else
-      Llet (Strict, method_cache_id,
-        Lprim (Pccall prim_makearray,
-               [int !method_count; int 0],
-               Location.none),
+      Llet (Strict, Pgenval, method_cache_id,
+        Lprim (Pccall prim_makearray, [int !method_count; int 0],
+          Location.none),
         expr)
   in
   transl_label_init_general (fun () -> expr, size)
@@ -183,8 +182,8 @@ let oo_wrap env req f x =
     let lambda =
       List.fold_left
         (fun lambda id ->
-          Llet(StrictOpt, id,
-               Lprim(Pmakeblock(0, Mutable),
+          Llet(StrictOpt, Pgenval, id,
+               Lprim(Pmakeblock(0, Mutable, None),
                      [lambda_unit; lambda_unit; lambda_unit],
                      Location.none),
                lambda))

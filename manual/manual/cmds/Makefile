@@ -1,8 +1,11 @@
 FILES=comp.tex top.tex runtime.tex native.tex lexyacc.tex intf-c.tex \
   depend.tex profil.tex debugger.tex browser.tex ocamldoc.tex \
-  warnings-help.tex ocamlbuild.tex
+  warnings-help.tex ocamlbuild.tex flambda.tex
 
-TRANSF=../../tools/transf
+TOPDIR=../../..
+include $(TOPDIR)/Makefile.tools
+
+TRANSF=$(OCAMLRUN) ../../tools/transf
 TEXQUOTE=../../tools/texquote2
 FORMAT=../../tools/format-intf
 
@@ -26,6 +29,9 @@ top.tex: top.etex $(TRANSF)
 
 intf-c.tex: intf-c.etex $(TRANSF)
 	$(TRANSF) < intf-c.etex | $(TEXQUOTE) > intf-c.tex
+
+flambda.tex: flambda.etex $(TRANSF)
+	$(TRANSF) < flambda.etex | $(TEXQUOTE) > flambda.tex
 
 lexyacc.tex: lexyacc.etex $(TRANSF)
 	$(TRANSF) < lexyacc.etex | $(TEXQUOTE) > lexyacc.tex

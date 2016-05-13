@@ -23,7 +23,7 @@ module type Base = sig
   end;;
 
 module Base_generator : Base = struct
-  class generator : doc_generator = object method generate l = () end
+  class generator : doc_generator = object method generate _ = () end
   end;;
 
 module type Base_functor = functor (G: Base) -> Base

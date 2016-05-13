@@ -501,7 +501,6 @@ CAMLprim value caml_gc_major_slice (value v)
 {
   CAML_INSTR_SETUP (tmr, "");
   Assert (Is_long (v));
-  caml_empty_minor_heap ();
   caml_major_collection_slice (Long_val (v));
   CAML_INSTR_TIME (tmr, "explicit/gc_major_slice");
   return Val_long (0);
@@ -607,8 +606,6 @@ CAMLprim value caml_runtime_variant (value unit)
   return caml_copy_string ("d");
 #elif defined (CAML_INSTR)
   return caml_copy_string ("i");
-#elif defined (MMAP_INTERVAL)
-  return caml_copy_string ("m");
 #else
   return caml_copy_string ("");
 #endif
@@ -651,7 +648,8 @@ CAMLprim value caml_ml_enable_runtime_warnings(value vbool)
   return Val_unit;
 }
 
-CAMLprim value caml_ml_runtime_warnings_enabled(value vbool)
+CAMLprim value caml_ml_runtime_warnings_enabled(value unit)
 {
+  CAMLassert (unit == Val_unit);
   return Val_bool(caml_runtime_warnings);
 }

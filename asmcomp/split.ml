@@ -87,8 +87,8 @@ let identify_sub sub1 sub2 reg =
 let merge_substs sub1 sub2 i =
   match (sub1, sub2) with
     (None, None) -> None
-  | (Some s1, None) -> sub1
-  | (None, Some s2) -> sub2
+  | (Some _, None) -> sub1
+  | (None, Some _) -> sub2
   | (Some s1, Some s2) ->
       Reg.Set.iter (identify_sub s1 s2) (Reg.add_set_array i.live i.arg);
       sub1
@@ -155,9 +155,9 @@ let rec rename i sub =
   | Iswitch(index, cases) ->
       let new_sub_cases = Array.map (fun c -> rename c sub) cases in
       let sub_merge =
-        merge_subst_array (Array.map (fun (n, s) -> s) new_sub_cases) i.next in
+        merge_subst_array (Array.map (fun (_n, s) -> s) new_sub_cases) i.next in
       let (new_next, sub_next) = rename i.next sub_merge in
-      (instr_cons (Iswitch(index, Array.map (fun (n, s) -> n) new_sub_cases))
+      (instr_cons (Iswitch(index, Array.map (fun (n, _s) -> n) new_sub_cases))
                   (subst_regs i.arg sub) [||] new_next,
        sub_next)
   | Iloop(body) ->
@@ -206,7 +206,7 @@ let fundecl f =
   reset ();
 
   let new_args = Array.copy f.fun_args in
-  let (new_body, sub_body) = rename f.fun_body (Some Reg.Map.empty) in
+  let (new_body, _sub_body) = rename f.fun_body (Some Reg.Map.empty) in
   repres_regs new_args;
   set_repres new_body;
   equiv_classes := Reg.Map.empty;

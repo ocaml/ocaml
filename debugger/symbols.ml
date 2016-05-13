@@ -62,7 +62,7 @@ let read_symbols' bytecode_file =
   let num_eventlists = input_binary_int ic in
   let dirs = ref StringSet.empty in
   let eventlists = ref [] in
-  for i = 1 to num_eventlists do
+  for _i = 1 to num_eventlists do
     let orig = input_binary_int ic in
     let evl = (input_value ic : debug_event list) in
     (* Relocate events in event list *)
@@ -182,7 +182,7 @@ let event_near_pos md char =
 (* Flip "event" bit on all instructions *)
 let set_all_events () =
   Hashtbl.iter
-    (fun pc ev ->
+    (fun _pc ev ->
        match ev.ev_kind with
          Event_pseudo -> ()
        | _            -> Debugcom.set_event ev.ev_pos)

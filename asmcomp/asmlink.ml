@@ -135,7 +135,7 @@ let is_required name =
   try ignore (Hashtbl.find missing_globals name); true
   with Not_found -> false
 
-let add_required by (name, crc) =
+let add_required by (name, _crc) =
   try
     let rq = Hashtbl.find missing_globals name in
     rq := by :: !rq

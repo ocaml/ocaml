@@ -71,7 +71,7 @@ val check_unused:
      (string, constructor_description) Hashtbl.t ->
      (string, label_description) Hashtbl.t ->
      Parsetree.pattern -> pattern option) ->
-    Env.t -> case list -> unit
+    case list -> unit
 
 (* Irrefutability tests *)
 val irrefutable : pattern -> bool

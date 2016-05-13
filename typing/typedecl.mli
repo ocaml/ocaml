@@ -40,7 +40,7 @@ val transl_with_constraint:
 
 val abstract_type_decl: int -> type_declaration
 val approx_type_decl:
-    Env.t -> Parsetree.type_declaration list ->
+    Parsetree.type_declaration list ->
                                   (Ident.t * type_declaration) list
 val check_recmod_typedecl:
     Env.t -> Location.t -> Ident.t list -> Path.t -> type_declaration -> unit

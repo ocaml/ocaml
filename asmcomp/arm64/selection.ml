@@ -76,10 +76,6 @@ let rec run_automata nbits state input =
 let is_logical_immediate n =
   n <> 0 && n <> -1 && run_automata 64 0 n
 
-let is_intconst = function
-    Cconst_int _ -> true
-  | _ -> false
-
 let inline_ops =
   [ "sqrt"; "caml_bswap16_direct"; "caml_int32_direct_bswap";
     "caml_int64_direct_bswap"; "caml_nativeint_direct_bswap" ]

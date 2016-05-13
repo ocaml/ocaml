@@ -5,7 +5,7 @@ color.o: color.c libgraph.h \
   ../../byterun/caml/mlvalues.h ../../byterun/caml/compatibility.h \
   ../../byterun/caml/config.h ../../byterun/caml/../../config/m.h \
   ../../byterun/caml/../../config/s.h ../../byterun/caml/misc.h \
-  ../../byterun/caml/misc.h
+ 
 draw.o: draw.c libgraph.h \
   \
   \
@@ -13,17 +13,15 @@ draw.o: draw.c libgraph.h \
   ../../byterun/caml/mlvalues.h ../../byterun/caml/compatibility.h \
   ../../byterun/caml/config.h ../../byterun/caml/../../config/m.h \
   ../../byterun/caml/../../config/s.h ../../byterun/caml/misc.h \
-  ../../byterun/caml/misc.h ../../byterun/caml/alloc.h \
-  ../../byterun/caml/mlvalues.h
+  ../../byterun/caml/alloc.h
 dump_img.o: dump_img.c libgraph.h \
   \
   \
   \
   ../../byterun/caml/mlvalues.h ../../byterun/caml/compatibility.h \
   ../../byterun/caml/config.h ../../byterun/caml/../../config/m.h \
-  ../../byterun/caml/../../config/s.h ../../byterun/caml/misc.h \
-  ../../byterun/caml/misc.h image.h ../../byterun/caml/alloc.h \
-  ../../byterun/caml/mlvalues.h ../../byterun/caml/memory.h \
+  ../../byterun/caml/../../config/s.h ../../byterun/caml/misc.h image.h \
+  ../../byterun/caml/alloc.h ../../byterun/caml/memory.h \
   ../../byterun/caml/gc.h ../../byterun/caml/major_gc.h \
   ../../byterun/caml/freelist.h ../../byterun/caml/minor_gc.h \
   ../../byterun/caml/address_class.h
@@ -34,8 +32,7 @@ events.o: events.c libgraph.h \
   ../../byterun/caml/mlvalues.h ../../byterun/caml/compatibility.h \
   ../../byterun/caml/config.h ../../byterun/caml/../../config/m.h \
   ../../byterun/caml/../../config/s.h ../../byterun/caml/misc.h \
-  ../../byterun/caml/misc.h ../../byterun/caml/alloc.h \
-  ../../byterun/caml/mlvalues.h ../../byterun/caml/signals.h
+  ../../byterun/caml/alloc.h ../../byterun/caml/signals.h
 fill.o: fill.c libgraph.h \
   \
   \
@@ -43,8 +40,7 @@ fill.o: fill.c libgraph.h \
   ../../byterun/caml/mlvalues.h ../../byterun/caml/compatibility.h \
   ../../byterun/caml/config.h ../../byterun/caml/../../config/m.h \
   ../../byterun/caml/../../config/s.h ../../byterun/caml/misc.h \
-  ../../byterun/caml/misc.h ../../byterun/caml/memory.h \
-  ../../byterun/caml/gc.h ../../byterun/caml/mlvalues.h \
+  ../../byterun/caml/memory.h ../../byterun/caml/gc.h \
   ../../byterun/caml/major_gc.h ../../byterun/caml/freelist.h \
   ../../byterun/caml/minor_gc.h ../../byterun/caml/address_class.h
 image.o: image.c libgraph.h \
@@ -53,18 +49,16 @@ image.o: image.c libgraph.h \
   \
   ../../byterun/caml/mlvalues.h ../../byterun/caml/compatibility.h \
   ../../byterun/caml/config.h ../../byterun/caml/../../config/m.h \
-  ../../byterun/caml/../../config/s.h ../../byterun/caml/misc.h \
-  ../../byterun/caml/misc.h image.h ../../byterun/caml/alloc.h \
-  ../../byterun/caml/mlvalues.h ../../byterun/caml/custom.h
+  ../../byterun/caml/../../config/s.h ../../byterun/caml/misc.h image.h \
+  ../../byterun/caml/alloc.h ../../byterun/caml/custom.h
 make_img.o: make_img.c libgraph.h \
   \
   \
   \
   ../../byterun/caml/mlvalues.h ../../byterun/caml/compatibility.h \
   ../../byterun/caml/config.h ../../byterun/caml/../../config/m.h \
-  ../../byterun/caml/../../config/s.h ../../byterun/caml/misc.h \
-  ../../byterun/caml/misc.h image.h ../../byterun/caml/memory.h \
-  ../../byterun/caml/gc.h ../../byterun/caml/mlvalues.h \
+  ../../byterun/caml/../../config/s.h ../../byterun/caml/misc.h image.h \
+  ../../byterun/caml/memory.h ../../byterun/caml/gc.h \
   ../../byterun/caml/major_gc.h ../../byterun/caml/freelist.h \
   ../../byterun/caml/minor_gc.h ../../byterun/caml/address_class.h
 open.o: open.c libgraph.h \
@@ -74,8 +68,7 @@ open.o: open.c libgraph.h \
   ../../byterun/caml/mlvalues.h ../../byterun/caml/compatibility.h \
   ../../byterun/caml/config.h ../../byterun/caml/../../config/m.h \
   ../../byterun/caml/../../config/s.h ../../byterun/caml/misc.h \
-  ../../byterun/caml/misc.h ../../byterun/caml/alloc.h \
-  ../../byterun/caml/mlvalues.h ../../byterun/caml/callback.h \
+  ../../byterun/caml/alloc.h ../../byterun/caml/callback.h \
   ../../byterun/caml/fail.h ../../byterun/caml/memory.h \
   ../../byterun/caml/gc.h ../../byterun/caml/major_gc.h \
   ../../byterun/caml/freelist.h ../../byterun/caml/minor_gc.h \
@@ -86,24 +79,21 @@ point_col.o: point_col.c libgraph.h \
   \
   ../../byterun/caml/mlvalues.h ../../byterun/caml/compatibility.h \
   ../../byterun/caml/config.h ../../byterun/caml/../../config/m.h \
-  ../../byterun/caml/../../config/s.h ../../byterun/caml/misc.h \
-  ../../byterun/caml/misc.h
+  ../../byterun/caml/../../config/s.h ../../byterun/caml/misc.h
 sound.o: sound.c libgraph.h \
   \
   \
   \
   ../../byterun/caml/mlvalues.h ../../byterun/caml/compatibility.h \
   ../../byterun/caml/config.h ../../byterun/caml/../../config/m.h \
-  ../../byterun/caml/../../config/s.h ../../byterun/caml/misc.h \
-  ../../byterun/caml/misc.h
+  ../../byterun/caml/../../config/s.h ../../byterun/caml/misc.h
 subwindow.o: subwindow.c libgraph.h \
   \
   \
   \
   ../../byterun/caml/mlvalues.h ../../byterun/caml/compatibility.h \
   ../../byterun/caml/config.h ../../byterun/caml/../../config/m.h \
-  ../../byterun/caml/../../config/s.h ../../byterun/caml/misc.h \
-  ../../byterun/caml/misc.h
+  ../../byterun/caml/../../config/s.h ../../byterun/caml/misc.h
 text.o: text.c libgraph.h \
   \
   \
@@ -111,8 +101,7 @@ text.o: text.c libgraph.h \
   ../../byterun/caml/mlvalues.h ../../byterun/caml/compatibility.h \
   ../../byterun/caml/config.h ../../byterun/caml/../../config/m.h \
   ../../byterun/caml/../../config/s.h ../../byterun/caml/misc.h \
-  ../../byterun/caml/misc.h ../../byterun/caml/alloc.h \
-  ../../byterun/caml/mlvalues.h
+  ../../byterun/caml/alloc.h
 graphics.cmi :
 graphicsX11.cmi :
 graphics.cmo : graphics.cmi

@@ -116,7 +116,6 @@ let datag = if ppc64 then ".quad" else ".long"
 let mullg = if ppc64 then "mulld" else "mullw"
 let divg = if ppc64 then "divd" else "divw"
 let tglle = if ppc64 then "tdlle" else "twlle"
-let slgi = if ppc64 then "sldi" else "slwi"
 
 (* Output a processor register *)
 
@@ -422,17 +421,17 @@ module BR = Branch_relaxation.Make (struct
 
   let size =
     match abi with
-    | ELF32 -> (fun a b c -> a)
-    | ELF64v1 -> (fun a b c -> b)
-    | ELF64v2 -> (fun a b c -> c)
+    | ELF32 -> (fun a _ _ -> a)
+    | ELF64v1 -> (fun _ b _ -> b)
+    | ELF64v2 -> (fun _ _ c -> c)
 
   let tocload_size() =
     if !big_toc || !Clflags.for_package <> None then 2 else 1
 
   let load_store_size = function
-    | Ibased(s, d) ->
+    | Ibased(_s, d) ->
         if abi = ELF32 then 2 else begin
-          let (lo, hi) = low_high_s d in
+          let (_lo, hi) = low_high_s d in
           tocload_size() + (if hi = 0 then 1 else 2)
         end
     | Iindexed ofs -> if is_immediate ofs then 1 else 3
@@ -443,50 +442,50 @@ module BR = Branch_relaxation.Make (struct
     | Lop(Imove | Ispill | Ireload) -> 1
     | Lop(Iconst_int n | Iconst_blockheader n) ->
       if is_native_immediate n then 1
-      else if (let (lo, hi) = native_low_high_s n in
+      else if (let (_lo, hi) = native_low_high_s n in
                hi >= -0x8000 && hi <= 0x7FFF) then 2
-      else if (let (lo, hi) = native_low_high_u n in
+      else if (let (_lo, hi) = native_low_high_u n in
                hi >= -0x8000 && hi <= 0x7FFF) then 2
       else tocload_size()
-    | Lop(Iconst_float s) -> if abi = ELF32 then 2 else tocload_size()
-    | Lop(Iconst_symbol s) -> if abi = ELF32 then 2 else tocload_size()
+    | Lop(Iconst_float _) -> if abi = ELF32 then 2 else tocload_size()
+    | Lop(Iconst_symbol _) -> if abi = ELF32 then 2 else tocload_size()
     | Lop(Icall_ind) -> size 2 5 4
-    | Lop(Icall_imm s) -> size 1 3 3
+    | Lop(Icall_imm _) -> size 1 3 3
     | Lop(Itailcall_ind) -> size 5 7 6
     | Lop(Itailcall_imm s) ->
         if s = !function_name
         then 1
         else size 4 (7 + tocload_size()) (6 + tocload_size())
-    | Lop(Iextcall(s, true)) -> size 3 (2 + tocload_size()) (2 + tocload_size())
-    | Lop(Iextcall(s, false)) -> size 1 2 2
-    | Lop(Istackoffset n) -> 1
+    | Lop(Iextcall(_s, true)) -> size 3 (2 + tocload_size()) (2 + tocload_size())
+    | Lop(Iextcall(_s, false)) -> size 1 2 2
+    | Lop(Istackoffset _) -> 1
     | Lop(Iload(chunk, addr)) ->
       if chunk = Byte_signed
       then load_store_size addr + 1
       else load_store_size addr
-    | Lop(Istore(chunk, addr, _)) -> load_store_size addr
-    | Lop(Ialloc n) -> 4
-    | Lop(Ispecific(Ialloc_far n)) -> 5
+    | Lop(Istore(_chunk, addr, _)) -> load_store_size addr
+    | Lop(Ialloc _) -> 4
+    | Lop(Ispecific(Ialloc_far _)) -> 5
     | Lop(Iintop Imod) -> 3
-    | Lop(Iintop(Icomp cmp)) -> 4
-    | Lop(Iintop op) -> 1
-    | Lop(Iintop_imm(Icomp cmp, n)) -> 4
-    | Lop(Iintop_imm(op, n)) -> 1
+    | Lop(Iintop(Icomp _)) -> 4
+    | Lop(Iintop _) -> 1
+    | Lop(Iintop_imm(Icomp _, _)) -> 4
+    | Lop(Iintop_imm _) -> 1
     | Lop(Inegf | Iabsf | Iaddf | Isubf | Imulf | Idivf) -> 1
     | Lop(Ifloatofint) -> 9
     | Lop(Iintoffloat) -> 4
-    | Lop(Ispecific sop) -> 1
+    | Lop(Ispecific _) -> 1
     | Lreloadretaddr -> 2
     | Lreturn -> 2
-    | Llabel lbl -> 0
-    | Lbranch lbl -> 1
-    | Lcondbranch(tst, lbl) -> 2
+    | Llabel _ -> 0
+    | Lbranch _ -> 1
+    | Lcondbranch _ -> 2
     | Lcondbranch3(lbl0, lbl1, lbl2) ->
       1 + (if lbl0 = None then 0 else 1)
         + (if lbl1 = None then 0 else 1)
         + (if lbl2 = None then 0 else 1)
-    | Lswitch jumptbl -> size 7 (5 + tocload_size()) (5 + tocload_size())
-    | Lsetuptrap lbl -> size 1 2 2
+    | Lswitch _ -> size 7 (5 + tocload_size()) (5 + tocload_size())
+    | Lsetuptrap _ -> size 1 2 2
     | Lpushtrap -> size 4 5 5
     | Lpoptrap -> 2
     | Lraise _ -> 6
@@ -510,17 +509,17 @@ let emit_instr i =
         let src = i.arg.(0) and dst = i.res.(0) in
         if src.loc <> dst.loc then begin
            match (src, dst) with
-           |  {loc = Reg rs; typ = (Val | Int | Addr)}, {loc = Reg rd} ->
+           |  {loc = Reg _; typ = (Val | Int | Addr)}, {loc = Reg _} ->
                 `	mr	{emit_reg dst}, {emit_reg src}\n`
-            | {loc = Reg rs; typ = Float}, {loc = Reg rd; typ = Float} ->
+            | {loc = Reg _; typ = Float}, {loc = Reg _; typ = Float} ->
                 `	fmr	{emit_reg dst}, {emit_reg src}\n`
-            | {loc = Reg rs; typ = (Val | Int | Addr)}, {loc = Stack sd} ->
+            | {loc = Reg _; typ = (Val | Int | Addr)}, {loc = Stack _} ->
                 `	{emit_string stg}	{emit_reg src}, {emit_stack dst}\n`
-            | {loc = Reg rs; typ = Float}, {loc = Stack sd} ->
+            | {loc = Reg _; typ = Float}, {loc = Stack _} ->
                 `	stfd	{emit_reg src}, {emit_stack dst}\n`
-            | {loc = Stack ss; typ = (Val | Int | Addr)}, {loc = Reg rd} ->
+            | {loc = Stack _; typ = (Val | Int | Addr)}, {loc = Reg _} ->
                 `	{emit_string lg}	{emit_reg dst}, {emit_stack src}\n`
-            | {loc = Stack ss; typ = Float}, {loc = Reg rd} ->
+            | {loc = Stack _; typ = Float}, {loc = Reg _} ->
                 `	lfd	{emit_reg dst}, {emit_stack src}\n`
             | (_, _) ->
                 fatal_error "Emit: Imove"

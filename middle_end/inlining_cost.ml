@@ -57,7 +57,8 @@ let prim_size (prim : Lambda.primitive) args =
   | Psequand | Psequor ->
     Misc.fatal_error "Psequand and Psequor are not allowed in Prim \
         expressions; translate out instead (cf. closure_conversion.ml)"
-  (* CR mshinwell: This match must be made exhaustive. *)
+  (* CR-soon mshinwell: This match must be made exhaustive.
+     mshinwell: Let's do this when we have the new size computation. *)
   | _ -> 2 (* arithmetic and comparisons *)
 
 (* Simple approximation of the space cost of an Flambda expression. *)
@@ -84,7 +85,7 @@ let lambda_smaller' lam ~than:threshold =
     | Let { defining_expr; body; _ } ->
       lambda_named_size defining_expr;
       lambda_size body
-    | Let_mutable (_, _, body) -> lambda_size body
+    | Let_mutable { body } -> lambda_size body
     | Let_rec (bindings, body) ->
       List.iter (fun (_, lam) -> lambda_named_size lam) bindings;
       lambda_size body

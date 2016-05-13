@@ -92,7 +92,7 @@ let check_consistency file_name cu =
              else
                Consistbl.check_noadd !crc_interfaces name crc file_name)
       cu.cu_imports
-  with Consistbl.Inconsistency(name, user, auth) ->
+  with Consistbl.Inconsistency(name, _user, _auth) ->
          raise(Error(Inconsistent_import name))
      | Consistbl.Not_available(name) ->
          raise(Error(Unavailable_unit name))

@@ -220,6 +220,7 @@ and pattern_desc =
         (* exception P *)
   | Ppat_extension of extension
         (* [%id] *)
+  | Ppat_open of Longident.t loc * pattern
 
 (* Value expressions *)
 
@@ -318,6 +319,8 @@ and expression_desc =
         (* {< x1 = E1; ...; Xn = En >} *)
   | Pexp_letmodule of string loc * module_expr * expression
         (* let module M = ME in E *)
+  | Pexp_letexception of extension_constructor * expression
+        (* let exception C in E *)
   | Pexp_assert of expression
         (* assert E
            Note: "assert false" is treated in a special way by the

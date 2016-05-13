@@ -93,7 +93,8 @@ The following environment variables are also consulted:
 \item["OCAMLRUNPARAM"] Set the runtime system options
   and garbage collection parameters.
   (If "OCAMLRUNPARAM" is not set, "CAMLRUNPARAM" will be used instead.)
-  This variable must be a sequence of parameter specifications.
+  This variable must be a sequence of parameter specifications separated
+  by commas.
   A parameter specification is an option letter followed by an "="
   sign, a decimal number (or an hexadecimal number prefixed by "0x"),
   and an optional multiplier.  The options are documented below;
@@ -150,6 +151,11 @@ The following environment variables are also consulted:
   \end{options}
   The multiplier is "k", "M", or "G", for multiplication by $2^{10}$,
   $2^{20}$, and $2^{30}$ respectively.
+
+  If the option letter is not recognized, the whole parameter is ignored;
+  if the equal sign or the number is missing, the value is taken as 1;
+  if the multiplier is not recognized, it is ignored.
+
   For example, on a 32-bit machine, under "bash" the command
 \begin{verbatim}
         export OCAMLRUNPARAM='b,s=256k,v=0x015'
@@ -161,7 +167,7 @@ The following environment variables are also consulted:
 
 \item["CAMLRUNPARAM"]  If "OCAMLRUNPARAM" is not found in the
   environment, then "CAMLRUNPARAM" will be used instead.  If
-  "CAMLRUNPARAM" is not found, then the default values will be used.
+  "CAMLRUNPARAM" is also not found, then the default values will be used.
 
 \item["PATH"] List of directories searched to find the bytecode
 executable file.

@@ -14,15 +14,3 @@
 #**************************************************************************
 
 include Makefile.shared
-
-# To make custom toplevels
-
-ocamlmktop: ocamlmktop.tpl ../config/Makefile
-	sed -e 's|%%BINDIR%%|$(BINDIR)|' ocamlmktop.tpl > ocamlmktop
-	chmod +x ocamlmktop
-
-install::
-	cp ocamlmktop "$(INSTALL_BINDIR)"
-
-clean::
-	rm -f ocamlmktop

@@ -25,6 +25,7 @@ type compile_time_constant =
   | Ostype_unix
   | Ostype_win32
   | Ostype_cygwin
+  | Backend_type
 
 type loc_kind =
   | Loc_FILE
@@ -54,7 +55,7 @@ type primitive =
   | Pgetglobal of Ident.t
   | Psetglobal of Ident.t
   (* Operations on heap blocks *)
-  | Pmakeblock of int * mutable_flag
+  | Pmakeblock of int * mutable_flag * block_shape
   | Pfield of int
   | Psetfield of int * immediate_or_pointer * initialization_or_assignment
   | Pfloatfield of int
@@ -152,6 +153,12 @@ and comparison =
 and array_kind =
     Pgenarray | Paddrarray | Pintarray | Pfloatarray
 
+and value_kind =
+    Pgenval | Pfloatval | Pboxedintval of boxed_integer | Pintval
+
+and block_shape =
+  value_kind list option
+
 and boxed_integer = Primitive.boxed_integer =
     Pnativeint | Pint32 | Pint64
 
@@ -203,7 +210,8 @@ type let_kind = Strict | Alias | StrictOpt | Variable
       in e'
     StrictOpt: e does not have side-effects, but depend on the store;
       we can discard e if x does not appear in e'
-    Variable: the variable x is assigned later in e' *)
+    Variable: the variable x is assigned later in e'
+ *)
 
 type meth_kind = Self | Public | Cached
 
@@ -220,7 +228,7 @@ type lambda =
   | Lconst of structured_constant
   | Lapply of lambda_apply
   | Lfunction of lfunction
-  | Llet of let_kind * Ident.t * lambda * lambda
+  | Llet of let_kind * value_kind * Ident.t * lambda * lambda
   | Lletrec of (Ident.t * lambda) list * lambda
   | Lprim of primitive * lambda list * Location.t
   | Lswitch of lambda * lambda_switch

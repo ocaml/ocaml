@@ -16,7 +16,6 @@
 
 (******************************* Breakpoints ***************************)
 
-open Primitives
 open Instruct
 
 (*** Debugging. ***)

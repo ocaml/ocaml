@@ -23,9 +23,9 @@ native-code compiler currently runs on the following platforms:
 
 Tier 1 (actively used and maintained by the core OCaml team):
 
-AMD64 (Opteron)::    Linux, MacOS X, MS Windows
-IA32 (Pentium)::     Linux, FreeBSD, MacOS X, MS Windows
-PowerPC::            Linux, MacOS X
+AMD64 (Opteron)::    Linux, OS X, MS Windows
+IA32 (Pentium)::     Linux, FreeBSD, OS X, MS Windows
+PowerPC::            Linux, OS X
 ARM::                Linux
 
 Tier 2 (maintained when possible, with help from users):
@@ -47,7 +47,7 @@ renaming of standard library functions.
 == CONTENTS
 
   Changes::               what's new with each release
-  INSTALL::               instructions for installation
+  INSTALL.adoc::          instructions for installation
   LICENSE::               license and copyright notice
   Makefile::              main Makefile
   README.adoc::           this file
@@ -62,7 +62,6 @@ renaming of standard library functions.
   driver/::               driver code for the compilers
   emacs/::                editing mode and debugger interface for GNU Emacs
   lex/::                  lexer generator
-  maccaml/::              the Macintosh GUI
   ocamldoc/::             documentation generator
   otherlibs/::            several external libraries
   parsing/::              syntax analysis
@@ -83,8 +82,9 @@ conditions stated in file LICENSE.
 
 == INSTALLATION
 
-See the file INSTALL for installation instructions on Unix, Linux and
-MacOS X machines.  For MS Windows, see link:README.win32.adoc[].
+See the file INSTALL for installation instructions on machines running Unix,
+Linux, OS X and Cygwin.  For native Microsoft Windows, see
+link:README.win32.adoc[].
 
 == DOCUMENTATION
 

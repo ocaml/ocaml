@@ -130,7 +130,7 @@ and descr = private
   | Value_int of int
   | Value_char of char
   | Value_constptr of int
-  | Value_float of float
+  | Value_float of float option
   | Value_boxed_int : 'a boxed_int * 'a -> descr
   | Value_set_of_closures of value_set_of_closures
   | Value_closure of value_closure
@@ -193,6 +193,7 @@ val value_unknown : unknown_because_of -> t
 val value_int : int -> t
 val value_char : char -> t
 val value_float : float -> t
+val value_any_float : t
 val value_mutable_float_array : size:int -> t
 val value_immutable_float_array : float option array -> t
 val value_string : int -> string option -> t
@@ -254,6 +255,12 @@ val augment_with_symbol_field : t -> Symbol.t -> int -> t
 
 (** Replace the description within an approximation. *)
 val replace_description : t -> descr -> t
+
+(** Improve the description by taking the kind into account *)
+val augment_with_kind : t -> Lambda.value_kind -> t
+
+(** Improve the kind by taking the description into account *)
+val augment_kind_with_approx : t -> Lambda.value_kind -> Lambda.value_kind
 
 val equal_boxed_int : 'a boxed_int -> 'a -> 'b boxed_int -> 'b -> bool
 

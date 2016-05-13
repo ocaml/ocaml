@@ -1243,7 +1243,8 @@ val getaddrinfo:
 
 type name_info =
   { ni_hostname : string;               (** Name or IP address of host *)
-    ni_service : string }               (** Name of service or port number *)
+    ni_service : string;                (** Name of service or port number *)
+  }
 (** Host and service information returned by {!Unix.getnameinfo}. *)
 
 type getnameinfo_option =

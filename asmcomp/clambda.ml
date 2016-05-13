@@ -43,7 +43,7 @@ and ulambda =
   | Ugeneric_apply of ulambda * ulambda list * Debuginfo.t
   | Uclosure of ufunction list * ulambda list
   | Uoffset of ulambda * int
-  | Ulet of Ident.t * ulambda * ulambda
+  | Ulet of mutable_flag * value_kind * Ident.t * ulambda * ulambda
   | Uletrec of (Ident.t * ulambda) list * ulambda
   | Uprim of primitive * ulambda list * Debuginfo.t
   | Uswitch of ulambda * ulambda_switch
@@ -124,7 +124,7 @@ let rec compare_float_lists l1 l2 =
 
 let compare_constants c1 c2 =
   match c1, c2 with
-  | Uconst_ref(lbl1, c1), Uconst_ref(lbl2, c2) -> String.compare lbl1 lbl2
+  | Uconst_ref(lbl1, _c1), Uconst_ref(lbl2, _c2) -> String.compare lbl1 lbl2
       (* Same labels -> same constants.
          Different labels -> different constants, even if the contents
            match, because of string constants that must not be

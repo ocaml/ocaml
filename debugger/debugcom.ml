@@ -282,7 +282,7 @@ module Remote_value =
       Remote(input_remote_value !conn.io_in)
 
     let closure_code = function
-    | Local obj -> assert false
+    | Local _ -> assert false
     | Remote v ->
         output_char !conn.io_out 'C';
         output_remote_value !conn.io_out v;

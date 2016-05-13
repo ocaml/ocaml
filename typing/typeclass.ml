@@ -21,6 +21,32 @@ open Typecore
 open Typetexp
 open Format
 
+type 'a class_info = {
+  cls_id : Ident.t;
+  cls_id_loc : string loc;
+  cls_decl : class_declaration;
+  cls_ty_id : Ident.t;
+  cls_ty_decl : class_type_declaration;
+  cls_obj_id : Ident.t;
+  cls_obj_abbr : type_declaration;
+  cls_typesharp_id : Ident.t;
+  cls_abbr : type_declaration;
+  cls_arity : int;
+  cls_pub_methods : string list;
+  cls_info : 'a;
+}
+
+type class_type_info = {
+  clsty_ty_id : Ident.t;
+  clsty_id_loc : string loc;
+  clsty_ty_decl : class_type_declaration;
+  clsty_obj_id : Ident.t;
+  clsty_obj_abbr : type_declaration;
+  clsty_typesharp_id : Ident.t;
+  clsty_abbr : type_declaration;
+  clsty_info : Typedtree.class_type_declaration;
+}
+
 type error =
     Unconsistent_constraint of (type_expr * type_expr) list
   | Field_type_mismatch of string * string * (type_expr * type_expr) list
@@ -123,18 +149,18 @@ let rec constructor_type constr cty =
   match cty with
     Cty_constr (_, _, cty) ->
       constructor_type constr cty
-  | Cty_signature sign ->
+  | Cty_signature _ ->
       constr
   | Cty_arrow (l, ty, cty) ->
       Ctype.newty (Tarrow (l, ty, constructor_type constr cty, Cok))
 
 let rec class_body cty =
   match cty with
-    Cty_constr (_, _, cty') ->
+    Cty_constr _ ->
       cty (* Only class bodies can be abbreviated *)
-  | Cty_signature sign ->
+  | Cty_signature _ ->
       cty
-  | Cty_arrow (_, ty, cty) ->
+  | Cty_arrow (_, _, cty) ->
       class_body cty
 
 let extract_constraints cty =
@@ -182,7 +208,7 @@ let closed_class cty =
 
 let rec limited_generalize rv =
   function
-    Cty_constr (path, params, cty) ->
+    Cty_constr (_path, params, cty) ->
       List.iter (Ctype.limited_generalize rv) params;
       limited_generalize rv cty
   | Cty_signature sign ->
@@ -365,10 +391,10 @@ let make_method loc cl_num expr =
 
 (*******************************)
 
-let add_val env loc lab (mut, virt, ty) val_sig =
+let add_val lab (mut, virt, ty) val_sig =
   let virt =
     try
-      let (mut', virt', ty') = Vars.find lab val_sig in
+      let (_mut', virt', _ty') = Vars.find lab val_sig in
       if virt' = Concrete then virt' else virt
     with Not_found -> virt
   in
@@ -393,7 +419,7 @@ let rec class_type_field env self_type meths
           parent.cltyp_type
       in
       let val_sig =
-        Vars.fold (add_val env sparent.pcty_loc) cl_sig.csig_vars val_sig in
+        Vars.fold add_val cl_sig.csig_vars val_sig in
       (mkctf (Tctf_inherit parent) :: fields,
        val_sig, concr_meths, inher)
 
@@ -401,7 +427,7 @@ let rec class_type_field env self_type meths
       let cty = transl_simple_type env false sty in
       let ty = cty.ctyp_type in
       (mkctf (Tctf_val (lab, mut, virt, cty)) :: fields,
-      add_val env ctf.pctf_loc lab (mut, virt, ty) val_sig, concr_meths, inher)
+      add_val lab (mut, virt, ty) val_sig, concr_meths, inher)
 
   | Pctf_method (lab, priv, virt, sty)  ->
       let cty =
@@ -569,7 +595,7 @@ let rec class_field self_loc cl_num self_type meths vars
           None ->
             (val_env, met_env, par_env)
         | Some name ->
-            let (id, val_env, met_env, par_env) =
+            let (_id, val_env, met_env, par_env) =
               enter_met_env ~check:(fun s -> Warnings.Unused_ancestor s)
                 sparent.pcl_loc name (Val_anc (inh_meths, cl_num)) self_type
                 val_env met_env par_env
@@ -790,7 +816,7 @@ and class_structure cl_num final val_env met_env loc
   Ctype.unify val_env self_type (Ctype.newvar ());
   let sign =
     {csig_self = public_self;
-     csig_vars = Vars.map (fun (id, mut, vr, ty) -> (mut, vr, ty)) !vars;
+     csig_vars = Vars.map (fun (_id, mut, vr, ty) -> (mut, vr, ty)) !vars;
      csig_concr = concr_meths;
       csig_inher = inher} in
   let methods = get_methods self_type in
@@ -804,7 +830,7 @@ and class_structure cl_num final val_env met_env loc
     let mets = virtual_methods {sign with csig_self = self_type} in
     let vals =
       Vars.fold
-        (fun name (mut, vr, ty) l -> if vr = Virtual then name :: l else l)
+        (fun name (_mut, vr, _ty) l -> if vr = Virtual then name :: l else l)
         sign.csig_vars [] in
     if mets <> [] || vals <> [] then
       raise(Error(loc, val_env, Virtual_class(true, final, mets, vals)));
@@ -838,7 +864,7 @@ and class_structure cl_num final val_env met_env loc
     Meths.iter (fun _ (_,ty) -> Ctype.unify val_env ty (Ctype.newvar ())) ms
   end;
   let fields = List.map Lazy.force (List.rev fields) in
-  let meths = Meths.map (function (id, ty) -> id) !meths in
+  let meths = Meths.map (function (id, _ty) -> id) !meths in
 
   (* Check for private methods made public *)
   let pub_meths' =
@@ -946,7 +972,7 @@ and class_expr cl_num val_env met_env scl =
       end;
       let pv =
         List.map
-          begin fun (id, id_loc, id', ty) ->
+          begin fun (id, id_loc, id', _ty) ->
             let path = Pident id' in
             (* do not mark the value as being used *)
             let vd = Env.find_value path val_env' in
@@ -1415,7 +1441,7 @@ let class_infos define_class kind
     let mets = virtual_methods sign in
     let vals =
       Vars.fold
-        (fun name (mut, vr, ty) l -> if vr = Virtual then name :: l else l)
+        (fun name (_mut, vr, _ty) l -> if vr = Virtual then name :: l else l)
         sign.csig_vars [] in
     if mets <> []  || vals <> [] then
       raise(Error(cl.pci_loc, env, Virtual_class(define_class, false, mets,
@@ -1532,7 +1558,7 @@ let final_decl env define_class
      ci_id_class = id;
      ci_id_class_type = ty_id;
      ci_id_object = obj_id;
-     ci_id_typesharp = cl_id;
+     ci_id_typehash = cl_id;
      ci_expr = expr;
      ci_decl = clty;
      ci_type_decl = cltydef;
@@ -1541,8 +1567,8 @@ let final_decl env define_class
 (*   (cl.pci_variance, cl.pci_loc)) *)
 
 let extract_type_decls
-    (id, id_loc, clty, ty_id, cltydef, obj_id, obj_abbr, cl_id, cl_abbr,
-     arity, pub_meths, coe, expr, required) decls =
+    (_id, _id_loc, clty, _ty_id, cltydef, obj_id, obj_abbr, _cl_id, cl_abbr,
+     _arity, _pub_meths, _coe, _expr, required) decls =
   (obj_id, obj_abbr, cl_abbr, clty, cltydef, required) :: decls
 
 let merge_type_decls
@@ -1552,8 +1578,8 @@ let merge_type_decls
    arity, pub_meths, coe, expr, req)
 
 let final_env define_class env
-    (id, id_loc, clty, ty_id, cltydef, obj_id, obj_abbr, cl_id, cl_abbr,
-     arity, pub_meths, coe, expr, req) =
+    (id, _id_loc, clty, ty_id, cltydef, obj_id, obj_abbr, cl_id, cl_abbr,
+     _arity, _pub_meths, _coe, _expr, _req) =
   (* Add definitions after cleaning them *)
   Env.add_type ~check:true obj_id
     (Subst.type_declaration Subst.identity obj_abbr) (
@@ -1567,7 +1593,7 @@ let final_env define_class env
 (* Check that #c is coercible to c if there is a self-coercion *)
 let check_coercions env
     (id, id_loc, clty, ty_id, cltydef, obj_id, obj_abbr, cl_id, cl_abbr,
-     arity, pub_meths, coercion_locs, expr, req) =
+     arity, pub_meths, coercion_locs, _expr, req) =
   begin match coercion_locs with [] -> ()
   | loc :: _ ->
       let cl_ty, obj_ty =
@@ -1589,8 +1615,18 @@ let check_coercions env
       if not (Ctype.opened_object cl_ty) then
         raise(Error(loc, env, Cannot_coerce_self obj_ty))
   end;
-  (id, id_loc, clty, ty_id, cltydef, obj_id, obj_abbr, cl_id, cl_abbr,
-   arity, pub_meths, req)
+  {cls_id = id;
+   cls_id_loc = id_loc;
+   cls_decl = clty;
+   cls_ty_id = ty_id;
+   cls_ty_decl = cltydef;
+   cls_obj_id = obj_id;
+   cls_obj_abbr = obj_abbr;
+   cls_typesharp_id = cl_id;
+   cls_abbr = cl_abbr;
+   cls_arity = arity;
+   cls_pub_methods = pub_meths;
+   cls_info=req}
 
 (*******************************)
 
@@ -1637,15 +1673,20 @@ let class_descriptions env cls =
   type_classes true approx_description class_description env cls
 
 let class_type_declarations env cls =
-  let (decl, env) =
+  let (decls, env) =
     type_classes false approx_description class_description env cls
   in
   (List.map
-     (function
-       (_, id_loc, _, ty_id, cltydef, obj_id, obj_abbr, cl_id, cl_abbr,
-        _, _, ci) ->
-       (ty_id, id_loc, cltydef, obj_id, obj_abbr, cl_id, cl_abbr, ci))
-     decl,
+     (fun decl ->
+        {clsty_ty_id = decl.cls_ty_id;
+         clsty_id_loc = decl.cls_id_loc;
+         clsty_ty_decl = decl.cls_ty_decl;
+         clsty_obj_id = decl.cls_obj_id;
+         clsty_obj_abbr = decl.cls_obj_abbr;
+         clsty_typesharp_id = decl.cls_typesharp_id;
+         clsty_abbr = decl.cls_abbr;
+         clsty_info = decl.cls_info})
+     decls,
    env)
 
 let rec unify_parents env ty cl =
@@ -1657,7 +1698,7 @@ let rec unify_parents env ty cl =
         Ctype.unify env ty (Ctype.instance env body)
       with
         Not_found -> ()
-      | exn -> assert false
+      | _exn -> assert false
       end
   | Tcl_structure st -> unify_parents_struct env ty st
   | Tcl_fun (_, _, _, cl, _)
@@ -1722,7 +1763,7 @@ let report_error env ppf = function
       fprintf ppf
         "@[This class expression is not a class structure; it has type@ %a@]"
         Printtyp.class_type clty
-  | Cannot_apply clty ->
+  | Cannot_apply _ ->
       fprintf ppf
         "This class expression is not a class function, it cannot be applied"
   | Apply_wrong_label l ->
@@ -1846,7 +1887,7 @@ let report_error env ppf = function
            fprintf ppf "This object is expected to have type")
         (function ppf ->
            fprintf ppf "but actually has type")
-  | Mutability_mismatch (lab, mut) ->
+  | Mutability_mismatch (_lab, mut) ->
       let mut1, mut2 =
         if mut = Immutable then "mutable", "immutable"
         else "immutable", "mutable" in

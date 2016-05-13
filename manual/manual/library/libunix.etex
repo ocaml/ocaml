@@ -64,8 +64,8 @@ fully implemented and behave as described previously in this chapter.
 \entree{"getppid"}{not implemented (meaningless under Windows)}
 \entree{"nice"}{not implemented}
 \entree{"truncate", "ftruncate"}{not implemented}
-\entree{"link", "symlink", "readlink"}{not implemented (no links under
-Windows)}
+\entree{"link"}{implemented (since 3.02)}
+\entree{"symlink", "readlink"}{implemented (since 4.03.0)}
 \entree{"access"}{execute permission "X_OK" cannot be tested,
   it just tests for read permission instead}
 \entree{"fchmod"}{not implemented}
@@ -73,18 +73,20 @@ Windows)}
 file system)}
 \entree{"umask"}{not implemented}
 \entree{"mkfifo"}{not implemented}
-\entree{"kill", "pause"}{not implemented (no inter-process signals in Windows)}
+\entree{"kill"}{partially implemented (since 4.00.0): only the "sigkill" signal
+is implemented}
+\entree{"pause"}{not implemented (no inter-process signals in Windows)}
 \entree{"alarm"}{not implemented}
 \entree{"times"}{partially implemented, will not report timings for child
 processes}
 \entree{"getitimer", "setitimer"}{not implemented}
-\entree{"getuid", "getgid"}{always return 1}
-\entree{"getgid", "getegid", "getgroups"}{not implemented}
-\entree{"setuid", "setgid"}{not implemented}
+\entree{"getuid", "geteuid", "getgid", "getegid"}{always return 1}
+\entree{"getgroups"}{always returns "[|1|]" (since 2.00)}
+\entree{"setuid", "setgid", "setgroups"}{not implemented}
 \entree{"getpwnam", "getpwuid"}{always raise "Not_found"}
 \entree{"getgrnam", "getgrgid"}{always raise "Not_found"}
-\entree{type "socket_domain"}{the domains "PF_UNIX" and "PF_INET6"
-are not supported; "PF_INET" is fully supported}
+\entree{type "socket_domain"}{"PF_INET" is fully supported;
+"PF_INET6" is fully supported (since 4.01.0); "PF_UNIX" is not supported }
 \entree{"establish_server"}{not implemented; use threads}
 \entree{terminal functions ("tc*")}{not implemented}
 \end{tableau}

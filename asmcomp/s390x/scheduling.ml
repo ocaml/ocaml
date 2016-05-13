@@ -44,7 +44,7 @@ method oper_latency = function
   | Ispecific(Imultaddf | Imultsubf) -> 8
   | _ -> 2
 
-method reload_retaddr_latency = 4
+method! reload_retaddr_latency = 4
 
 (* Issue cycles.  Rough approximations. *)
 
@@ -56,7 +56,7 @@ method oper_issue_cycles = function
   | Iintop_imm(Icomp _, _) -> 4
   | _ -> 1
 
-method reload_retaddr_issue_cycles = 1
+method! reload_retaddr_issue_cycles = 1
 
 end
 

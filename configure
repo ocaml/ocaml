@@ -410,7 +410,7 @@ case "$bytecc,$target" in
     dllccompopts="-U_WIN32 -DCAML_DLL"
     if test $with_sharedlibs = yes; then
       flexlink="flexlink -chain $flavor -merge-manifest -stack 16777216"
-      flexdir=`$flexlink -where | dos2unix`
+      flexdir=`$flexlink -where | tr -d '\015'`
       if test -z "$flexdir"; then
         wrn "flexlink not found: native shared libraries won't be available."
         with_sharedlibs=no
@@ -805,7 +805,7 @@ if test $with_sharedlibs = "yes"; then
     i[3456]86-*-haiku*)           natdynlink=true;;
     arm*-*-linux*)                natdynlink=true;;
     arm*-*-freebsd*)              natdynlink=true;;
-    earm*-*-netbsd*)               natdynlink=true;;
+    earm*-*-netbsd*)              natdynlink=true;;
     aarch64-*-linux*)             natdynlink=true;;
   esac
 fi
@@ -890,7 +890,7 @@ esac
 case "$native_compiler" in
     true) ;;
     false)
-      arch=none; model=default; system=unknown;;
+      arch=none; model=default; system=unknown; natdynlink=false;;
 esac
 
 if test -z "$ccoption"; then
@@ -1001,27 +1001,27 @@ echo "#define OCAML_STDLIB_DIR \"$libdir\"" >> s.h
 
 # Do #! scripts work?
 
-if (SHELL=/bin/sh; export SHELL; (./sharpbang || ./sharpbang2) >/dev/null); then
+if (SHELL=/bin/sh; export SHELL; (./hashbang || ./hashbang2) >/dev/null); then
   inf "#! appears to work in shell scripts."
   case "$target" in
     *-*-sunos*|*-*-unicos*)
       wrn "We won't use it, though, because under SunOS and Unicos it breaks " \
           "on pathnames longer than 30 characters"
-      echo "SHARPBANGSCRIPTS=false" >> Makefile;;
+      echo "HASHBANGSCRIPTS=false" >> Makefile;;
     *-*-cygwin*)
       wrn "We won't use it, though, because of conflicts with .exe extension " \
           "under Cygwin"
-      echo "SHARPBANGSCRIPTS=false" >> Makefile;;
+      echo "HASHBANGSCRIPTS=false" >> Makefile;;
     *-*-mingw*)
       inf "We won't use it, though, because it's on the target platform " \
           "it would be used and windows doesn't support it."
-      echo "SHARPBANGSCRIPTS=false" >> Makefile;;
+      echo "HASHBANGSCRIPTS=false" >> Makefile;;
     *)
-      echo "SHARPBANGSCRIPTS=true" >> Makefile;;
+      echo "HASHBANGSCRIPTS=true" >> Makefile;;
   esac
 else
   inf "No support for #! in shell scripts"
-  echo "SHARPBANGSCRIPTS=false" >> Makefile
+  echo "HASHBANGSCRIPTS=false" >> Makefile
 fi
 
 # Use 64-bit file offset if possible
@@ -1856,7 +1856,7 @@ SYSLIB=-l\$(1)
 
 ### How to build a static library
 MKLIB=${TOOLPREF}ar rc \$(1) \$(2); ${TOOLPREF}ranlib \$(1)
-#ml let mklib out files opts =
+#ml let mklib out files opts =      (* "" *)
 #ml   Printf.sprintf "${TOOLPREF}ar rc %s %s %s; ${TOOLPREF}ranlib %s"
 #ml                  out opts files out;;
 EOF

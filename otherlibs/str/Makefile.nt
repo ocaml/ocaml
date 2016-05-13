@@ -13,16 +13,9 @@
 #*                                                                        *
 #**************************************************************************
 
-# Makefile for the str library
+include Makefile.shared
 
-LIBNAME=str
-COBJS=strstubs.$(O)
-CLIBNAME=camlstr
-CAMLOBJS=str.cmo
+.depend.nt: .depend
+	sed -e 's/\.o/.$(O)/g' .depend > .depend.nt
 
-include ../Makefile.nt
-
-depend:
-
-str.cmo: str.cmi
-str.cmx: str.cmi
+include .depend.nt

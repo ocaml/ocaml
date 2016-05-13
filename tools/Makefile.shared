@@ -17,13 +17,21 @@ include ../config/Makefile
 CAMLRUN ?= ../boot/ocamlrun
 CAMLYACC ?= ../boot/ocamlyacc
 
+ROOTDIR=..
+
+ifeq "$(wildcard $(ROOTDIR)/flexdll/Makefile)" ""
+export OCAML_FLEXLINK:=
+else
+export OCAML_FLEXLINK:=$(ROOTDIR)/boot/ocamlrun $(ROOTDIR)/flexdll/flexlink.exe
+endif
+
 CAMLC=$(CAMLRUN) ../boot/ocamlc -nostdlib -I ../boot -use-prims ../byterun/primitives
 CAMLOPT=$(CAMLRUN) ../ocamlopt -nostdlib -I ../stdlib
 CAMLLEX=$(CAMLRUN) ../boot/ocamllex
 INCLUDES=-I ../utils -I ../parsing -I ../typing -I ../bytecomp -I ../asmcomp \
          -I ../middle_end -I ../middle_end/base_types -I ../driver \
          -I ../toplevel
-COMPFLAGS= -strict-sequence -w +27+32..39 -warn-error A -safe-string $(INCLUDES)
+COMPFLAGS= -absname -w +a-4-9-41-42-44-45-48 -strict-sequence -warn-error A -safe-string -strict-formats $(INCLUDES)
 LINKFLAGS=$(INCLUDES)
 
 all: ocamldep ocamlprof ocamlcp ocamloptp ocamlmktop ocamlmklib dumpobj \
@@ -38,20 +46,20 @@ opt.opt: ocamldep.opt read_cmt.opt
 
 # The dependency generator
 
-CAMLDEP_OBJ=depend.cmo ocamldep.cmo
+CAMLDEP_OBJ=ocamldep.cmo
 CAMLDEP_IMPORTS=timings.cmo misc.cmo config.cmo identifiable.cmo numbers.cmo \
   arg_helper.cmo clflags.cmo terminfo.cmo \
   warnings.cmo location.cmo longident.cmo docstrings.cmo \
   syntaxerr.cmo ast_helper.cmo parser.cmo lexer.cmo parse.cmo \
-  ccomp.cmo ast_mapper.cmo ast_iterator.cmo ast_invariants.cmo pparse.cmo \
-  compenv.cmo \
-  builtin_attributes.cmo
+  ccomp.cmo ast_mapper.cmo ast_iterator.cmo \
+  builtin_attributes.cmo ast_invariants.cmo \
+  pparse.cmo compenv.cmo depend.cmo
 
-ocamldep: depend.cmi $(CAMLDEP_OBJ)
+ocamldep: $(CAMLDEP_OBJ)
 	$(CAMLC) $(LINKFLAGS) -compat-32 -o ocamldep $(CAMLDEP_IMPORTS) \
 	         $(CAMLDEP_OBJ)
 
-ocamldep.opt: depend.cmi $(CAMLDEP_OBJ:.cmo=.cmx)
+ocamldep.opt: $(CAMLDEP_OBJ:.cmo=.cmx)
 	$(CAMLOPT) $(LINKFLAGS) -o ocamldep.opt $(CAMLDEP_IMPORTS:.cmo=.cmx) \
 	           $(CAMLDEP_OBJ:.cmo=.cmx)
 
@@ -133,6 +141,21 @@ beforedepend:: ocamlmklibconfig.ml
 
 clean::
 	rm -f ocamlmklibconfig.ml
+
+# To make custom toplevels
+
+OCAMLMKTOP=ocamlmktop.cmo
+OCAMLMKTOP_IMPORTS=misc.cmo identifiable.cmo numbers.cmo config.cmo \
+             arg_helper.cmo clflags.cmo ccomp.cmo
+
+ocamlmktop: $(OCAMLMKTOP)
+	$(CAMLC) $(LINKFLAGS) -o ocamlmktop $(OCAMLMKTOP_IMPORTS) $(OCAMLMKTOP)
+
+install::
+	cp ocamlmktop "$(INSTALL_BINDIR)/ocamlmktop$(EXE)"
+
+clean::
+	rm -f ocamlmktop
 
 # Converter olabl/ocaml 2.99 to ocaml 3
 
@@ -350,7 +373,7 @@ clean::
 	rm -f *.cmo *.cmi *.cma *.dll *.so *.lib *.a
 
 depend: beforedepend
-	$(CAMLRUN) ./ocamldep $(INCLUDES) *.mli *.ml > .depend
+	$(CAMLRUN) ./ocamldep -slash $(INCLUDES) *.mli *.ml > .depend
 
 .PHONY: clean install beforedepend depend
 

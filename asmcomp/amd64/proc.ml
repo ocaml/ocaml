@@ -31,13 +31,6 @@ let win64 =
   | "win64" | "mingw64" | "cygwin" -> true
   | _                   -> false
 
-(* Which asm conventions to use *)
-
-let masm =
-  match Config.ccomp_type with
-  | "msvc" -> true
-  | _      -> false
-
 (* Registers available for register allocation *)
 
 (* Register map:
@@ -138,7 +131,6 @@ let phys_reg n =
   if n < 100 then hard_int_reg.(n) else hard_float_reg.(n - 100)
 
 let rax = phys_reg 0
-let rcx = phys_reg 5
 let rdx = phys_reg 4
 let r13 = phys_reg 9
 let rbp = phys_reg 12
@@ -182,7 +174,7 @@ let calling_conventions first_int last_int first_float last_float make_stack
 
 let incoming ofs = Incoming ofs
 let outgoing ofs = Outgoing ofs
-let not_supported ofs = fatal_error "Proc.loc_results: cannot call"
+let not_supported _ofs = fatal_error "Proc.loc_results: cannot call"
 
 let max_int_args_in_regs () =
   if Config.spacetime then 9 else 10
@@ -190,12 +182,12 @@ let max_int_args_in_regs () =
 let loc_arguments arg =
   calling_conventions 0 ((max_int_args_in_regs ()) - 1) 100 109 outgoing arg
 let loc_parameters arg =
-  let (loc, ofs) =
+  let (loc, _ofs) =
     calling_conventions 0 ((max_int_args_in_regs ()) - 1) 100 109 incoming arg
   in
   loc
 let loc_results res =
-  let (loc, ofs) = calling_conventions 0 0 100 100 not_supported res in loc
+  let (loc, _ofs) = calling_conventions 0 0 100 100 not_supported res in loc
 
 let loc_spacetime_node_hole = r13
 
@@ -213,7 +205,7 @@ let loc_spacetime_node_hole = r13
      Return value in rax or xmm0. *)
 
 let loc_external_results res =
-  let (loc, ofs) = calling_conventions 0 0 100 100 not_supported res in loc
+  let (loc, _ofs) = calling_conventions 0 0 100 100 not_supported res in loc
 
 let unix_loc_external_arguments arg =
   calling_conventions 2 7 100 107 outgoing arg
@@ -262,7 +254,7 @@ let loc_exn_bucket = rax
 
 (* Volatile registers: none *)
 
-let regs_are_volatile rs = false
+let regs_are_volatile _rs = false
 
 (* Registers destroyed by operations *)
 

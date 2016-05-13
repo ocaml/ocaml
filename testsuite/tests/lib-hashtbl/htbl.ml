@@ -1,18 +1,3 @@
-(**************************************************************************)
-(*                                                                        *)
-(*                                OCaml                                   *)
-(*                                                                        *)
-(*             Xavier Leroy, projet Gallium, INRIA Rocquencourt           *)
-(*                                                                        *)
-(*   Copyright 2011 Institut National de Recherche en Informatique et     *)
-(*     en Automatique.                                                    *)
-(*                                                                        *)
-(*   All rights reserved.  This file is distributed under the terms of    *)
-(*   the GNU Lesser General Public License version 2.1, with the          *)
-(*   special exception on linking described in the file LICENSE.          *)
-(*                                                                        *)
-(**************************************************************************)
-
 (* Hashtable operations, using maps as a reference *)
 
 open Printf
@@ -256,7 +241,9 @@ let () =
   let h = Hashtbl.create 16 in
   for i = 1 to 1000 do Hashtbl.add h i (i * 2) done;
   Printf.printf "%i elements\n" (Hashtbl.length h);
-  Hashtbl.filter_map_inplace (fun k v -> if k mod 100 = 0 then ((*Hashtbl.add h v v;*) Some (v / 100)) else None) h;
+  Hashtbl.filter_map_inplace (fun k v ->
+      if k mod 100 = 0 then ((*Hashtbl.add h v v;*) Some (v / 100)) else None)
+    h;
   let l = Hashtbl.fold (fun k v acc -> (k, v) :: acc) h [] in
   let l = List.sort compare l in
   List.iter (fun (k, v) -> Printf.printf "%i,%i\n" k v) l;

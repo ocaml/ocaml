@@ -80,6 +80,7 @@ module type S = sig
 
   val clean: 'a t -> unit
   (** remove all dead bindings. Done automatically during automatic resizing. *)
+
   val stats_alive: 'a t -> Hashtbl.statistics
   (** same as {!Hashtbl.SeededS.stats} but only count the alive bindings *)
 end
@@ -93,6 +94,7 @@ module type SeededS = sig
   include Hashtbl.SeededS
   val clean: 'a t -> unit
   (** remove all dead bindings. Done automatically during automatic resizing. *)
+
   val stats_alive: 'a t -> Hashtbl.statistics
   (** same as {!Hashtbl.SeededS.stats} but only count the alive bindings *)
 end
@@ -192,43 +194,58 @@ module K2 : sig
 
   val get_key1: ('k1,'k2,'d) t -> 'k1 option
   (** Same as {!Ephemeron.K1.get_key} *)
+
   val get_key1_copy: ('k1,'k2,'d) t -> 'k1 option
   (** Same as {!Ephemeron.K1.get_key_copy} *)
+
   val set_key1: ('k1,'k2,'d) t -> 'k1 -> unit
   (** Same as {!Ephemeron.K1.set_key} *)
+
   val unset_key1: ('k1,'k2,'d) t -> unit
   (** Same as {!Ephemeron.K1.unset_key} *)
+
   val check_key1: ('k1,'k2,'d) t ->  bool
   (** Same as {!Ephemeron.K1.check_key} *)
 
   val get_key2: ('k1,'k2,'d) t -> 'k2 option
   (** Same as {!Ephemeron.K1.get_key} *)
+
   val get_key2_copy: ('k1,'k2,'d) t -> 'k2 option
   (** Same as {!Ephemeron.K1.get_key_copy} *)
+
   val set_key2: ('k1,'k2,'d) t -> 'k2 -> unit
   (** Same as {!Ephemeron.K1.get_key} *)
+
   val unset_key2: ('k1,'k2,'d) t -> unit
   (** Same as {!Ephemeron.K1.unset_key} *)
+
   val check_key2: ('k1,'k2,'d) t -> bool
   (** Same as {!Ephemeron.K1.check_key} *)
 
-  val blit_key1  : ('k1,_,_) t -> ('k1,_,_) t -> unit
+  val blit_key1: ('k1,_,_) t -> ('k1,_,_) t -> unit
   (** Same as {!Ephemeron.K1.blit_key} *)
-  val blit_key2  : (_,'k2,_) t -> (_,'k2,_) t -> unit
+
+  val blit_key2: (_,'k2,_) t -> (_,'k2,_) t -> unit
   (** Same as {!Ephemeron.K1.blit_key} *)
-  val blit_key12 : ('k1,'k2,_) t -> ('k1,'k2,_) t -> unit
+
+  val blit_key12: ('k1,'k2,_) t -> ('k1,'k2,_) t -> unit
   (** Same as {!Ephemeron.K1.blit_key} *)
 
   val get_data: ('k1,'k2,'d) t -> 'd option
   (** Same as {!Ephemeron.K1.get_data} *)
+
   val get_data_copy: ('k1,'k2,'d) t -> 'd option
   (** Same as {!Ephemeron.K1.get_data_copy} *)
+
   val set_data: ('k1,'k2,'d) t -> 'd -> unit
   (** Same as {!Ephemeron.K1.set_data} *)
+
   val unset_data: ('k1,'k2,'d) t -> unit
   (** Same as {!Ephemeron.K1.unset_data} *)
+
   val check_data: ('k1,'k2,'d) t -> bool
   (** Same as {!Ephemeron.K1.check_data} *)
+
   val blit_data: ('k1,'k2,'d) t -> ('k1,'k2,'d) t -> unit
   (** Same as {!Ephemeron.K1.blit_data} *)
 
@@ -256,28 +273,37 @@ module Kn : sig
 
   val get_key: ('k,'d) t -> int -> 'k option
   (** Same as {!Ephemeron.K1.get_key} *)
+
   val get_key_copy: ('k,'d) t -> int -> 'k option
   (** Same as {!Ephemeron.K1.get_key_copy} *)
+
   val set_key: ('k,'d) t -> int -> 'k -> unit
   (** Same as {!Ephemeron.K1.set_key} *)
+
   val unset_key: ('k,'d) t -> int -> unit
   (** Same as {!Ephemeron.K1.unset_key} *)
+
   val check_key: ('k,'d) t -> int ->  bool
   (** Same as {!Ephemeron.K1.check_key} *)
 
-  val blit_key  : ('k,_) t -> int -> ('k,_) t -> int -> int -> unit
+  val blit_key: ('k,_) t -> int -> ('k,_) t -> int -> int -> unit
   (** Same as {!Ephemeron.K1.blit_key} *)
 
   val get_data: ('k,'d) t -> 'd option
   (** Same as {!Ephemeron.K1.get_data} *)
+
   val get_data_copy: ('k,'d) t -> 'd option
   (** Same as {!Ephemeron.K1.get_data_copy} *)
+
   val set_data: ('k,'d) t -> 'd -> unit
   (** Same as {!Ephemeron.K1.set_data} *)
+
   val unset_data: ('k,'d) t -> unit
   (** Same as {!Ephemeron.K1.unset_data} *)
+
   val check_data: ('k,'d) t -> bool
   (** Same as {!Ephemeron.K1.check_data} *)
+
   val blit_data: ('k,'d) t -> ('k,'d) t -> unit
   (** Same as {!Ephemeron.K1.blit_data} *)
 
@@ -307,11 +333,13 @@ module GenHashTable: sig
   sig
     type t
     (** keys *)
+
     type 'a container
     (** contains keys and the associated data *)
 
     val hash: int -> t -> int
     (** same as {!Hashtbl.SeededHashedType} *)
+
     val equal: 'a container -> t -> equal
     (** equality predicate used to compare a key with the one in a
         container. Can return [EDead] if the keys in the container are
@@ -320,12 +348,16 @@ module GenHashTable: sig
     val create: t -> 'a -> 'a container
     (** [create key data] creates a container from
         some initials keys and one data *)
+
     val get_key: 'a container -> t option
     (** [get_key cont] returns the keys if they are all alive *)
+
     val get_data: 'a container -> 'a option
     (** [get_data cont] return the data if it is alive *)
+
     val set_key_data: 'a container -> t -> 'a -> unit
     (** [set_key_data cont] modify the key and data *)
+
     val check_key: 'a container -> bool
     (** [check_key cont] checks if all the keys contained in the data
         are alive *)

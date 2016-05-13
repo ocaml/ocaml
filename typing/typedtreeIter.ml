@@ -150,7 +150,7 @@ module MakeIterator(Iter : IteratorArgument) : sig
             List.iter (fun (ci, _) -> iter_class_declaration ci) list
         | Tstr_class_type list ->
             List.iter
-              (fun (id, _, ct) -> iter_class_type_declaration ct)
+              (fun (_, _, ct) -> iter_class_type_declaration ct)
               list
         | Tstr_include incl -> iter_module_expr incl.incl_mod
         | Tstr_attribute _ ->
@@ -174,13 +174,13 @@ module MakeIterator(Iter : IteratorArgument) : sig
       iter_constructor_arguments cd.cd_args;
       option iter_core_type cd.cd_res;
 
-    and iter_type_parameter (ct, v) =
+    and iter_type_parameter (ct, _v) =
       iter_core_type ct
 
     and iter_type_declaration decl =
       Iter.enter_type_declaration decl;
       List.iter iter_type_parameter decl.typ_params;
-      List.iter (fun (ct1, ct2, loc) ->
+      List.iter (fun (ct1, ct2, _loc) ->
           iter_core_type ct1;
           iter_core_type ct2
       ) decl.typ_cstrs;
@@ -224,23 +224,24 @@ module MakeIterator(Iter : IteratorArgument) : sig
       List.iter (fun (cstr, _, _attrs) -> match cstr with
               | Tpat_type _ -> ()
               | Tpat_unpack -> ()
+              | Tpat_open _ -> ()
               | Tpat_constraint ct -> iter_core_type ct) pat.pat_extra;
       begin
         match pat.pat_desc with
           Tpat_any -> ()
-        | Tpat_var (id, _) -> ()
+        | Tpat_var _ -> ()
         | Tpat_alias (pat1, _, _) -> iter_pattern pat1
-        | Tpat_constant cst -> ()
+        | Tpat_constant _ -> ()
         | Tpat_tuple list ->
             List.iter iter_pattern list
         | Tpat_construct (_, _, args) ->
             List.iter iter_pattern args
-        | Tpat_variant (label, pato, _) ->
+        | Tpat_variant (_, pato, _) ->
             begin match pato with
                 None -> ()
               | Some pat -> iter_pattern pat
             end
-        | Tpat_record (list, closed) ->
+        | Tpat_record (list, _closed) ->
             List.iter (fun (_, _, pat) -> iter_pattern pat) list
         | Tpat_array list -> List.iter iter_pattern list
         | Tpat_or (p1, p2, _) -> iter_pattern p1; iter_pattern p2
@@ -258,22 +259,22 @@ module MakeIterator(Iter : IteratorArgument) : sig
             iter_core_type ct
         | Texp_coerce (cty1, cty2) ->
             option iter_core_type cty1; iter_core_type cty2
-        | Texp_open (_, path, _, _) -> ()
+        | Texp_open _ -> ()
         | Texp_poly cto -> option iter_core_type cto
-        | Texp_newtype s -> ())
+        | Texp_newtype _ -> ())
         exp.exp_extra;
       begin
         match exp.exp_desc with
-          Texp_ident (path, _, _) -> ()
-        | Texp_constant cst -> ()
+          Texp_ident _ -> ()
+        | Texp_constant _ -> ()
         | Texp_let (rec_flag, list, exp) ->
             iter_bindings rec_flag list;
             iter_expression exp
-        | Texp_function (label, cases, _) ->
+        | Texp_function (_label, cases, _) ->
             iter_cases cases
         | Texp_apply (exp, list) ->
             iter_expression exp;
-            List.iter (fun (label, expo) ->
+            List.iter (fun (_label, expo) ->
                 match expo with
                   None -> ()
                 | Some exp -> iter_expression exp
@@ -289,7 +290,7 @@ module MakeIterator(Iter : IteratorArgument) : sig
             List.iter iter_expression list
         | Texp_construct (_, _, args) ->
             List.iter iter_expression args
-        | Texp_variant (label, expo) ->
+        | Texp_variant (_label, expo) ->
             begin match expo with
                 None -> ()
               | Some exp -> iter_expression exp
@@ -300,9 +301,9 @@ module MakeIterator(Iter : IteratorArgument) : sig
                 None -> ()
               | Some exp -> iter_expression exp
             end
-        | Texp_field (exp, _, label) ->
+        | Texp_field (exp, _, _label) ->
             iter_expression exp
-        | Texp_setfield (exp1, _, label, exp2) ->
+        | Texp_setfield (exp1, _, _label, exp2) ->
             iter_expression exp1;
             iter_expression exp2
         | Texp_array list ->
@@ -320,27 +321,30 @@ module MakeIterator(Iter : IteratorArgument) : sig
         | Texp_while (exp1, exp2) ->
             iter_expression exp1;
             iter_expression exp2
-        | Texp_for (id, _, exp1, exp2, dir, exp3) ->
+        | Texp_for (_id, _, exp1, exp2, _dir, exp3) ->
             iter_expression exp1;
             iter_expression exp2;
             iter_expression exp3
-        | Texp_send (exp, meth, expo) ->
+        | Texp_send (exp, _meth, expo) ->
             iter_expression exp;
           begin
             match expo with
                 None -> ()
               | Some exp -> iter_expression exp
           end
-        | Texp_new (path, _, _) -> ()
-        | Texp_instvar (_, path, _) -> ()
+        | Texp_new _ -> ()
+        | Texp_instvar _ -> ()
         | Texp_setinstvar (_, _, _, exp) ->
             iter_expression exp
         | Texp_override (_, list) ->
-            List.iter (fun (path, _, exp) ->
+            List.iter (fun (_path, _, exp) ->
                 iter_expression exp
             ) list
-        | Texp_letmodule (id, _, mexpr, exp) ->
+        | Texp_letmodule (_id, _, mexpr, exp) ->
             iter_module_expr mexpr;
+            iter_expression exp
+        | Texp_letexception (cd, exp) ->
+            iter_extension_constructor cd;
             iter_expression exp
         | Texp_assert exp -> iter_expression exp
         | Texp_lazy exp -> iter_expression exp
@@ -357,7 +361,7 @@ module MakeIterator(Iter : IteratorArgument) : sig
 
     and iter_package_type pack =
       Iter.enter_package_type pack;
-      List.iter (fun (s, ct) -> iter_core_type ct) pack.pack_fields;
+      List.iter (fun (_s, ct) -> iter_core_type ct) pack.pack_fields;
       Iter.leave_package_type pack;
 
     and iter_signature sg =
@@ -424,14 +428,14 @@ module MakeIterator(Iter : IteratorArgument) : sig
       Iter.enter_module_type mty;
       begin
         match mty.mty_desc with
-          Tmty_ident (path, _) -> ()
-        | Tmty_alias (path, _) -> ()
+          Tmty_ident _ -> ()
+        | Tmty_alias _ -> ()
         | Tmty_signature sg -> iter_signature sg
-        | Tmty_functor (id, _, mtype1, mtype2) ->
+        | Tmty_functor (_, _, mtype1, mtype2) ->
             Misc.may iter_module_type mtype1; iter_module_type mtype2
         | Tmty_with (mtype, list) ->
             iter_module_type mtype;
-            List.iter (fun (path, _, withc) ->
+            List.iter (fun (_path, _, withc) ->
                 iter_with_constraint withc
             ) list
         | Tmty_typeof mexpr ->
@@ -454,9 +458,9 @@ module MakeIterator(Iter : IteratorArgument) : sig
       Iter.enter_module_expr mexpr;
       begin
         match mexpr.mod_desc with
-          Tmod_ident (p, _) -> ()
+          Tmod_ident _ -> ()
         | Tmod_structure st -> iter_structure st
-        | Tmod_functor (id, _, mtype, mexpr) ->
+        | Tmod_functor (_, _, mtype, mexpr) ->
             Misc.may iter_module_type mtype;
             iter_module_expr mexpr
         | Tmod_apply (mexp1, mexp2, _) ->
@@ -467,7 +471,7 @@ module MakeIterator(Iter : IteratorArgument) : sig
         | Tmod_constraint (mexpr, _, Tmodtype_explicit mtype, _) ->
             iter_module_expr mexpr;
             iter_module_type mtype
-        | Tmod_unpack (exp, mty) ->
+        | Tmod_unpack (exp, _mty) ->
             iter_expression exp
 (*          iter_module_type mty *)
       end;
@@ -480,14 +484,14 @@ module MakeIterator(Iter : IteratorArgument) : sig
         | Tcl_constraint (cl, None, _, _, _ ) ->
             iter_class_expr cl;
         | Tcl_structure clstr -> iter_class_structure clstr
-        | Tcl_fun (label, pat, priv, cl, partial) ->
+        | Tcl_fun (_label, pat, priv, cl, _partial) ->
           iter_pattern pat;
-          List.iter (fun (id, _, exp) -> iter_expression exp) priv;
+          List.iter (fun (_id, _, exp) -> iter_expression exp) priv;
           iter_class_expr cl
 
         | Tcl_apply (cl, args) ->
             iter_class_expr cl;
-            List.iter (fun (label, expo) ->
+            List.iter (fun (_label, expo) ->
                 match expo with
                   None -> ()
                 | Some exp -> iter_expression exp
@@ -495,10 +499,10 @@ module MakeIterator(Iter : IteratorArgument) : sig
 
         | Tcl_let (rec_flat, bindings, ivars, cl) ->
           iter_bindings rec_flat bindings;
-          List.iter (fun (id, _, exp) -> iter_expression exp) ivars;
+          List.iter (fun (_id, _, exp) -> iter_expression exp) ivars;
             iter_class_expr cl
 
-        | Tcl_constraint (cl, Some clty, vals, meths, concrs) ->
+        | Tcl_constraint (cl, Some clty, _vals, _meths, _concrs) ->
             iter_class_expr cl;
             iter_class_type clty
 
@@ -512,9 +516,9 @@ module MakeIterator(Iter : IteratorArgument) : sig
       begin
         match ct.cltyp_desc with
           Tcty_signature csg -> iter_class_signature csg
-        | Tcty_constr (path, _, list) ->
+        | Tcty_constr (_path, _, list) ->
             List.iter iter_core_type list
-        | Tcty_arrow (label, ct, cl) ->
+        | Tcty_arrow (_label, ct, cl) ->
             iter_core_type ct;
             iter_class_type cl
       end;
@@ -532,9 +536,9 @@ module MakeIterator(Iter : IteratorArgument) : sig
       begin
         match ctf.ctf_desc with
           Tctf_inherit ct -> iter_class_type ct
-        | Tctf_val (s, _mut, _virt, ct) ->
+        | Tctf_val (_s, _mut, _virt, ct) ->
             iter_core_type ct
-        | Tctf_method (s, _priv, _virt, ct) ->
+        | Tctf_method (_s, _priv, _virt, ct) ->
             iter_core_type ct
         | Tctf_constraint  (ct1, ct2) ->
             iter_core_type ct1;
@@ -548,22 +552,22 @@ module MakeIterator(Iter : IteratorArgument) : sig
       begin
         match ct.ctyp_desc with
           Ttyp_any -> ()
-        | Ttyp_var s -> ()
-        | Ttyp_arrow (label, ct1, ct2) ->
+        | Ttyp_var _ -> ()
+        | Ttyp_arrow (_label, ct1, ct2) ->
             iter_core_type ct1;
             iter_core_type ct2
         | Ttyp_tuple list -> List.iter iter_core_type list
-        | Ttyp_constr (path, _, list) ->
+        | Ttyp_constr (_path, _, list) ->
             List.iter iter_core_type list
-        | Ttyp_object (list, o) ->
+        | Ttyp_object (list, _o) ->
             List.iter (fun (_, _, t) -> iter_core_type t) list
-        | Ttyp_class (path, _, list) ->
+        | Ttyp_class (_path, _, list) ->
             List.iter iter_core_type list
-        | Ttyp_alias (ct, s) ->
+        | Ttyp_alias (ct, _s) ->
             iter_core_type ct
-        | Ttyp_variant (list, bool, labels) ->
+        | Ttyp_variant (list, _bool, _labels) ->
             List.iter iter_row_field list
-        | Ttyp_poly (list, ct) -> iter_core_type ct
+        | Ttyp_poly (_list, ct) -> iter_core_type ct
         | Ttyp_package pack -> iter_package_type pack
       end;
       Iter.leave_core_type ct
@@ -577,7 +581,7 @@ module MakeIterator(Iter : IteratorArgument) : sig
 
     and iter_row_field rf =
       match rf with
-        Ttag (label, _attrs, bool, list) ->
+        Ttag (_label, _attrs, _bool, list) ->
           List.iter iter_core_type list
       | Tinherit ct -> iter_core_type ct
 
@@ -585,18 +589,18 @@ module MakeIterator(Iter : IteratorArgument) : sig
       Iter.enter_class_field cf;
       begin
         match cf.cf_desc with
-          Tcf_inherit (ovf, cl, super, _vals, _meths) ->
+          Tcf_inherit (_ovf, cl, _super, _vals, _meths) ->
           iter_class_expr cl
       | Tcf_constraint (cty, cty') ->
           iter_core_type cty;
           iter_core_type cty'
-      | Tcf_val (lab, _, _, Tcfk_virtual cty, _) ->
+      | Tcf_val (_lab, _, _, Tcfk_virtual cty, _) ->
           iter_core_type cty
-      | Tcf_val (lab, _, _, Tcfk_concrete (_, exp), _) ->
+      | Tcf_val (_lab, _, _, Tcfk_concrete (_, exp), _) ->
           iter_expression exp
-      | Tcf_method (lab, _, Tcfk_virtual cty) ->
+      | Tcf_method (_lab, _, Tcfk_virtual cty) ->
           iter_core_type cty
-      | Tcf_method (lab, _, Tcfk_concrete (_, exp)) ->
+      | Tcf_method (_lab, _, Tcfk_concrete (_, exp)) ->
           iter_expression exp
       | Tcf_initializer exp ->
           iter_expression exp

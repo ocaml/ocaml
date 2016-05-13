@@ -803,11 +803,17 @@ variable caml-mode-indentation."
 
 ;; Newer emacs versions support line/char ranges
 ;; We will adapt OCaml to output error messages in a compatible format.
-;; In the meantime we add the new format here in addition to the old one.
+;; In the meantime we add new formats here in addition to the old one.
 (defconst caml-error-regexp-newstyle
   (concat "^[ A-\377]+ \"\\([^\"\n]+\\)\", line \\([0-9]+\\),"
           "char \\([0-9]+\\) to line \\([0-9]+\\), char \\([0-9]+\\):")
   "Regular expression matching the error messages produced by ocamlc/ocamlopt.")
+
+(defconst caml-error-regexp-new-newstyle
+  (concat "^[ A-\377]+ \"\\([^\"\n]+\\)\", line \\([0-9]+\\), "
+          "characters \\([0-9]+\\)-\\([0-9]+\\):")
+  "Regular expression matching the error messages produced by ocamlc/ocamlopt.")
+
 
 (if (boundp 'compilation-error-regexp-alist)
     (progn
@@ -820,6 +826,11 @@ variable caml-mode-indentation."
                  compilation-error-regexp-alist)
           (setq compilation-error-regexp-alist
                 (cons (list caml-error-regexp-newstyle 1 '(2 . 4) '(3 . 5))
+                      compilation-error-regexp-alist)))
+      (or (assoc caml-error-regexp-new-newstyle
+                 compilation-error-regexp-alist)
+          (setq compilation-error-regexp-alist
+                (cons (list caml-error-regexp-new-newstyle 1 2 '(3 . 4))
                       compilation-error-regexp-alist)))))
 
 ;; A regexp to extract the range info

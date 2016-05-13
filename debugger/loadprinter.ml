@@ -94,8 +94,8 @@ let loadfile ppf name =
 
 let rec eval_path = function
     Pident id -> Symtable.get_global_value id
-  | Pdot(p, s, pos) -> Obj.field (eval_path p) pos
-  | Papply(p1, p2) -> fatal_error "Loadprinter.eval_path"
+  | Pdot(p, _, pos) -> Obj.field (eval_path p) pos
+  | Papply _ -> fatal_error "Loadprinter.eval_path"
 
 (* Install, remove a printer (as in toplevel/topdirs) *)
 
@@ -146,13 +146,13 @@ let install_printer ppf lid =
       raise(Error(Unavailable_module(s, lid))) in
   let print_function =
     if is_old_style then
-      (fun formatter repr -> Obj.obj v (Obj.obj repr))
+      (fun _formatter repr -> Obj.obj v (Obj.obj repr))
     else
       (fun formatter repr -> Obj.obj v formatter (Obj.obj repr)) in
   Printval.install_printer path ty_arg ppf print_function
 
 let remove_printer lid =
-  let (ty_arg, path, is_old_style) = find_printer_type lid in
+  let (_ty_arg, path, _is_old_style) = find_printer_type lid in
   try
     Printval.remove_printer path
   with Not_found ->

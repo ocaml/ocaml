@@ -25,6 +25,7 @@ type compile_time_constant =
   | Ostype_unix
   | Ostype_win32
   | Ostype_cygwin
+  | Backend_type
 
 type loc_kind =
   | Loc_FILE
@@ -51,7 +52,7 @@ type primitive =
   | Pgetglobal of Ident.t
   | Psetglobal of Ident.t
   (* Operations on heap blocks *)
-  | Pmakeblock of int * mutable_flag
+  | Pmakeblock of int * mutable_flag * block_shape
   | Pfield of int
   | Psetfield of int * immediate_or_pointer * initialization_or_assignment
   | Pfloatfield of int
@@ -143,6 +144,12 @@ type primitive =
 and comparison =
     Ceq | Cneq | Clt | Cgt | Cle | Cge
 
+and value_kind =
+    Pgenval | Pfloatval | Pboxedintval of boxed_integer | Pintval
+
+and block_shape =
+  value_kind list option
+
 and array_kind =
     Pgenarray | Paddrarray | Pintarray | Pfloatarray
 
@@ -205,7 +212,7 @@ type lambda =
   | Lconst of structured_constant
   | Lapply of lambda_apply
   | Lfunction of lfunction
-  | Llet of let_kind * Ident.t * lambda * lambda
+  | Llet of let_kind * value_kind * Ident.t * lambda * lambda
   | Lletrec of (Ident.t * lambda) list * lambda
   | Lprim of primitive * lambda list * Location.t
   | Lswitch of lambda * lambda_switch
@@ -301,16 +308,16 @@ let make_key e =
         Lapply {ap with ap_func = tr_rec env ap.ap_func;
                         ap_args = tr_recs env ap.ap_args;
                         ap_loc = Location.none}
-    | Llet (Alias,x,ex,e) -> (* Ignore aliases -> substitute *)
+    | Llet (Alias,_k,x,ex,e) -> (* Ignore aliases -> substitute *)
         let ex = tr_rec env ex in
         tr_rec (Ident.add x ex env) e
-    | Llet (str,x,ex,e) ->
+    | Llet (str,k,x,ex,e) ->
      (* Because of side effects, keep other lets with normalized names *)
         let ex = tr_rec env ex in
         let y = make_key x in
-        Llet (str,y,ex,tr_rec (Ident.add x (Lvar y) env) e)
+        Llet (str,k,y,ex,tr_rec (Ident.add x (Lvar y) env) e)
     | Lprim (p,es,_) ->
-        Lprim (p,tr_recs env es, Location.none)
+        Lprim (p,tr_recs env es)
     | Lswitch (e,sw) ->
         Lswitch (tr_rec env e,tr_sw env sw)
     | Lstringswitch (e,sw,d,_) ->
@@ -331,7 +338,7 @@ let make_key e =
         Lsequence (tr_rec env e1,tr_rec env e2)
     | Lassign (x,e) ->
         Lassign (x,tr_rec env e)
-    | Lsend (m,e1,e2,es,loc) ->
+    | Lsend (m,e1,e2,es,_loc) ->
         Lsend (m,tr_rec env e1,tr_rec env e2,tr_recs env es,Location.none)
     | Lifused (id,e) -> Lifused (id,tr_rec env e)
     | Lletrec _|Lfunction _
@@ -362,16 +369,16 @@ let make_key e =
 let name_lambda strict arg fn =
   match arg with
     Lvar id -> fn id
-  | _ -> let id = Ident.create "let" in Llet(strict, id, arg, fn id)
+  | _ -> let id = Ident.create "let" in Llet(strict, Pgenval, id, arg, fn id)
 
 let name_lambda_list args fn =
   let rec name_list names = function
     [] -> fn (List.rev names)
-  | (Lvar id as arg) :: rem ->
+  | (Lvar _ as arg) :: rem ->
       name_list (arg :: names) rem
   | arg :: rem ->
       let id = Ident.create "let" in
-      Llet(Strict, id, arg, name_list (Lvar id :: names) rem) in
+      Llet(Strict, Pgenval, id, arg, name_list (Lvar id :: names) rem) in
   name_list [] args
 
 
@@ -384,19 +391,19 @@ let iter f = function
   | Lconst _ -> ()
   | Lapply{ap_func = fn; ap_args = args} ->
       f fn; List.iter f args
-  | Lfunction{kind; params; body} ->
+  | Lfunction{body} ->
       f body
-  | Llet(str, id, arg, body) ->
+  | Llet(_str, _k, _id, arg, body) ->
       f arg; f body
   | Lletrec(decl, body) ->
       f body;
-      List.iter (fun (id, exp) -> f exp) decl
-  | Lprim(p, args,_) ->
+      List.iter (fun (_id, exp) -> f exp) decl
+  | Lprim(p, args, _) ->
       List.iter f args
   | Lswitch(arg, sw) ->
       f arg;
-      List.iter (fun (key, case) -> f case) sw.sw_consts;
-      List.iter (fun (key, case) -> f case) sw.sw_blocks;
+      List.iter (fun (_key, case) -> f case) sw.sw_consts;
+      List.iter (fun (_key, case) -> f case) sw.sw_blocks;
       iter_opt f sw.sw_failaction
   | Lstringswitch (arg,cases,default,_) ->
       f arg ;
@@ -404,9 +411,9 @@ let iter f = function
       iter_opt f default
   | Lstaticraise (_,args) ->
       List.iter f args
-  | Lstaticcatch(e1, (_,vars), e2) ->
+  | Lstaticcatch(e1, _, e2) ->
       f e1; f e2
-  | Ltrywith(e1, exn, e2) ->
+  | Ltrywith(e1, _, e2) ->
       f e1; f e2
   | Lifthenelse(e1, e2, e3) ->
       f e1; f e2; f e3
@@ -414,23 +421,19 @@ let iter f = function
       f e1; f e2
   | Lwhile(e1, e2) ->
       f e1; f e2
-  | Lfor(v, e1, e2, dir, e3) ->
+  | Lfor(_v, e1, e2, _dir, e3) ->
       f e1; f e2; f e3
-  | Lassign(id, e) ->
+  | Lassign(_, e) ->
       f e
-  | Lsend (k, met, obj, args, _) ->
+  | Lsend (_k, met, obj, args, _) ->
       List.iter f (met::obj::args)
-  | Levent (lam, evt) ->
+  | Levent (lam, _evt) ->
       f lam
-  | Lifused (v, e) ->
+  | Lifused (_v, e) ->
       f e
 
 
-module IdentSet =
-  Set.Make(struct
-    type t = Ident.t
-    let compare = compare
-  end)
+module IdentSet = Set.Make(Ident)
 
 let free_ids get l =
   let fv = ref IdentSet.empty in
@@ -438,19 +441,19 @@ let free_ids get l =
     iter free l;
     fv := List.fold_right IdentSet.add (get l) !fv;
     match l with
-      Lfunction{kind; params; body} ->
+      Lfunction{params} ->
         List.iter (fun param -> fv := IdentSet.remove param !fv) params
-    | Llet(str, id, arg, body) ->
+    | Llet(_str, _k, id, _arg, _body) ->
         fv := IdentSet.remove id !fv
-    | Lletrec(decl, body) ->
-        List.iter (fun (id, exp) -> fv := IdentSet.remove id !fv) decl
-    | Lstaticcatch(e1, (_,vars), e2) ->
+    | Lletrec(decl, _body) ->
+        List.iter (fun (id, _exp) -> fv := IdentSet.remove id !fv) decl
+    | Lstaticcatch(_e1, (_,vars), _e2) ->
         List.iter (fun id -> fv := IdentSet.remove id !fv) vars
-    | Ltrywith(e1, exn, e2) ->
+    | Ltrywith(_e1, exn, _e2) ->
         fv := IdentSet.remove exn !fv
-    | Lfor(v, e1, e2, dir, e3) ->
+    | Lfor(v, _e1, _e2, _dir, _e3) ->
         fv := IdentSet.remove v !fv
-    | Lassign(id, e) ->
+    | Lassign(id, _e) ->
         fv := IdentSet.add id !fv
     | Lvar _ | Lconst _ | Lapply _
     | Lprim _ | Lswitch _ | Lstringswitch _ | Lstaticraise _
@@ -462,7 +465,7 @@ let free_variables l =
   free_ids (function Lvar id -> [id] | _ -> []) l
 
 let free_methods l =
-  free_ids (function Lsend(Self, Lvar meth, obj, _, _) -> [meth] | _ -> []) l
+  free_ids (function Lsend(Self, Lvar meth, _, _, _) -> [meth] | _ -> []) l
 
 (* Check if an action has a "when" guard *)
 let raise_count = ref 0
@@ -481,16 +484,16 @@ let next_negative_raise_count () =
 let staticfail = Lstaticraise (0,[])
 
 let rec is_guarded = function
-  | Lifthenelse( cond, body, Lstaticraise (0,[])) -> true
-  | Llet(str, id, lam, body) -> is_guarded body
-  | Levent(lam, ev) -> is_guarded lam
+  | Lifthenelse(_cond, _body, Lstaticraise (0,[])) -> true
+  | Llet(_str, _k, _id, _lam, body) -> is_guarded body
+  | Levent(lam, _ev) -> is_guarded lam
   | _ -> false
 
 let rec patch_guarded patch = function
   | Lifthenelse (cond, body, Lstaticraise (0,[])) ->
       Lifthenelse (cond, body, patch)
-  | Llet(str, id, lam, body) ->
-      Llet (str, id, lam, patch_guarded patch body)
+  | Llet(str, k, id, lam, body) ->
+      Llet (str, k, id, lam, patch_guarded patch body)
   | Levent(lam, ev) ->
       Levent (patch_guarded patch lam, ev)
   | _ -> fatal_error "Lambda.patch_guarded"
@@ -500,11 +503,11 @@ let rec patch_guarded patch = function
 let rec transl_normal_path = function
     Pident id ->
       if Ident.global id then
-        Lprim(Pgetglobal id, [],Location.none)
+        Lprim(Pgetglobal id, [], Location.none)
       else Lvar id
-  | Pdot(p, _, pos) ->
+  | Pdot(p, _s, pos) ->
       Lprim(Pfield pos, [transl_normal_path p], Location.none)
-  | Papply(p1, p2) ->
+  | Papply _ ->
       fatal_error "Lambda.transl_path"
 
 (* Translation of value identifiers *)
@@ -530,13 +533,13 @@ let subst_lambda s lam =
   let rec subst = function
     Lvar id as l ->
       begin try Ident.find_same id s with Not_found -> l end
-  | Lconst sc as l -> l
+  | Lconst _ as l -> l
   | Lapply ap ->
       Lapply{ap with ap_func = subst ap.ap_func;
                      ap_args = List.map subst ap.ap_args}
   | Lfunction{kind; params; body; attr} ->
       Lfunction{kind; params; body = subst body; attr}
-  | Llet(str, id, arg, body) -> Llet(str, id, subst arg, subst body)
+  | Llet(str, k, id, arg, body) -> Llet(str, k, id, subst arg, subst body)
   | Lletrec(decl, body) -> Lletrec(List.map subst_decl decl, subst body)
   | Lprim(p, args, loc) -> Lprim(p, List.map subst args, loc)
   | Lswitch(arg, sw) ->
@@ -570,8 +573,8 @@ let subst_lambda s lam =
 let rec map f lam =
   let lam =
     match lam with
-    | Lvar v -> lam
-    | Lconst cst -> lam
+    | Lvar _ -> lam
+    | Lconst _ -> lam
     | Lapply { ap_func; ap_args; ap_loc; ap_should_be_tailcall;
           ap_inlined; ap_specialised } ->
         Lapply {
@@ -584,8 +587,8 @@ let rec map f lam =
         }
     | Lfunction { kind; params; body; attr; } ->
         Lfunction { kind; params; body = map f body; attr; }
-    | Llet (str, v, e1, e2) ->
-        Llet (str, v, map f e1, map f e2)
+    | Llet (str, k, v, e1, e2) ->
+        Llet (str, k, v, map f e1, map f e2)
     | Lletrec (idel, e2) ->
         Lletrec (List.map (fun (v, e) -> (v, map f e)) idel, map f e2)
     | Lprim (p, el, loc) ->
@@ -634,7 +637,7 @@ let rec map f lam =
 let bind str var exp body =
   match exp with
     Lvar var' when Ident.same var var' -> body
-  | _ -> Llet(str, var, exp, body)
+  | _ -> Llet(str, Pgenval, var, exp, body)
 
 and commute_comparison = function
 | Ceq -> Ceq| Cneq -> Cneq

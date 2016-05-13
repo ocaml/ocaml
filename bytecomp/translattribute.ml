@@ -59,7 +59,7 @@ let parse_inline_attribute attr =
   | Some ({txt;loc} as id, payload) ->
     let open Parsetree in
     if is_unrolled id then begin
-      (* the 'unrolled' attributes muse be used as [@unrolled n]. *)
+      (* the 'unrolled' attributes must be used as [@unrolled n]. *)
       let warning txt = Warnings.Attribute_payload
           (txt, "It must be an integer literal")
       in

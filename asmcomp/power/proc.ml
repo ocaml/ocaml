@@ -137,20 +137,19 @@ let calling_conventions
              even-numbered register; or in a stack slot that is 8-byte
              aligned. *)
           int := Misc.align !int 2;
-          let pos_least, pos_most = if big_endian then (1, 0) else (0, 1) in
           if !int <= last_int - 1 then begin
-            let reg_least = phys_reg (!int + pos_least) in
-            let reg_most  = phys_reg (!int + pos_most ) in
-            loc.(i) <- [| reg_least; reg_most |];
+            let reg_lower = phys_reg !int in
+            let reg_upper = phys_reg (!int + 1) in
+            loc.(i) <- [| reg_lower; reg_upper |];
             int := !int + 2
           end else begin
             let size_int64 = 8 in
             ofs := Misc.align !ofs size_int64;
-            let ofs_least = !ofs + size_int * pos_least in
-            let ofs_most  = !ofs + size_int * pos_most  in
-            let stack_least = stack_slot (make_stack ofs_least) Int in
-            let stack_most  = stack_slot (make_stack ofs_most ) Int in
-            loc.(i) <- [| stack_least; stack_most |];
+            let ofs_lower = !ofs in
+            let ofs_upper = !ofs + size_int in
+            let stack_lower = stack_slot (make_stack ofs_lower) Int in
+            let stack_upper = stack_slot (make_stack ofs_upper) Int in
+            loc.(i) <- [| stack_lower; stack_upper |];
             ofs := !ofs + size_int64
           end
       | _, _ ->
@@ -168,7 +167,7 @@ let calling_conventions
 
 let incoming ofs = Incoming ofs
 let outgoing ofs = Outgoing ofs
-let not_supported ofs = fatal_error "Proc.loc_results: cannot call"
+let not_supported _ofs = fatal_error "Proc.loc_results: cannot call"
 
 let single_regs arg = Array.map (fun arg -> [| arg |]) arg
 let ensure_single_regs res =
@@ -185,12 +184,12 @@ let loc_arguments arg =
   in
   (ensure_single_regs loc, ofs)
 let loc_parameters arg =
-  let (loc, ofs) =
+  let (loc, _ofs) =
     calling_conventions 0 7 100 112 incoming 0 false (single_regs arg)
   in
   ensure_single_regs loc
 let loc_results res =
-  let (loc, ofs) =
+  let (loc, _ofs) =
     calling_conventions 0 7 100 112 not_supported 0 false (single_regs res)
   in
   ensure_single_regs loc
@@ -244,12 +243,10 @@ let loc_external_arguments =
       then (loc, ofs)
       else (loc, 0)
 
-let extcall_use_push = false
-
 (* Results are in GPR 3 and FPR 1 *)
 
 let loc_external_results res =
-  let (loc, ofs) =
+  let (loc, _ofs) =
     calling_conventions 0 1 100 100 not_supported 0 false (single_regs res)
   in
   ensure_single_regs loc
@@ -260,7 +257,7 @@ let loc_exn_bucket = phys_reg 0
 
 (* Volatile registers: none *)
 
-let regs_are_volatile rs = false
+let regs_are_volatile _rs = false
 
 (* Registers destroyed by operations *)
 

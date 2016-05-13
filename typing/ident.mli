@@ -17,6 +17,14 @@
 
 type t = { stamp: int; name: string; mutable flags: int }
 
+include Identifiable.S with type t := t
+(* Notes:
+   - [equal] compares identifiers by name
+   - [compare x y] is 0 if [same x y] is true.
+   - [compare] compares identifiers by binding location
+*)
+
+
 val create: string -> t
 val create_persistent: string -> t
 val create_predef_exn: string -> t
@@ -25,8 +33,6 @@ val name: t -> string
 val unique_name: t -> string
 val unique_toplevel_name: t -> string
 val persistent: t -> bool
-val equal: t -> t -> bool
-        (* Compare identifiers by name. *)
 val same: t -> t -> bool
         (* Compare identifiers by binding location.
            Two identifiers are the same either if they are both
@@ -34,16 +40,11 @@ val same: t -> t -> bool
            [new], or if they are both persistent and have the same
            name. *)
 val compare: t -> t -> int
-        (* [compare x y] is 0 if [same x y] is true. *)
-val hash: t -> int
 val hide: t -> t
         (* Return an identifier with same name as the given identifier,
            but stamp different from any stamp returned by new.
            When put in a 'a tbl, this identifier can only be looked
            up by name. *)
-
-val compare : t -> t -> int
-(* Compare identifiers by binding location *)
 
 val make_global: t -> unit
 val global: t -> bool
@@ -53,9 +54,6 @@ val binding_time: t -> int
 val current_time: unit -> int
 val set_current_time: int -> unit
 val reinit: unit -> unit
-
-val print: Format.formatter -> t -> unit
-val output : out_channel -> t -> unit
 
 type 'a tbl
         (* Association tables from identifiers to type 'a. *)
@@ -73,5 +71,3 @@ val iter: (t -> 'a -> unit) -> 'a tbl -> unit
 (* Idents for sharing keys *)
 
 val make_key_generator : unit -> (t -> t)
-
-include Identifiable.S with type t := t

@@ -63,9 +63,9 @@ type clambda_and_constants =
 
 let raw_clambda_dump_if ppf
       ((ulambda, _, structured_constants):clambda_and_constants) =
-  if !dump_rawclambda then
+  if !dump_rawclambda || !dump_clambda then
     begin
-      Format.fprintf ppf "@.clambda (before Un_anf):@.";
+      Format.fprintf ppf "@.clambda:@.";
       Printclambda.clambda ppf ulambda;
       List.iter (fun {Clambda.symbol; definition} ->
           Format.fprintf ppf "%s:@ %a@."

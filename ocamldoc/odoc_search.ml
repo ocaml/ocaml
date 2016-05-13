@@ -16,7 +16,6 @@
 (** Research of elements through modules. *)
 
 module Name = Odoc_name
-open Odoc_parameter
 open Odoc_value
 open Odoc_type
 open Odoc_extension
@@ -93,7 +92,7 @@ module Search =
       | T.Module_list _
       | T.Index_list -> []
       | T.Target _ -> []
-      | T.Title (n, l_opt, t) ->
+      | T.Title (_, l_opt, t) ->
           (match l_opt with
             None -> []
           | Some s -> search_section t (Name.concat root s) v) @

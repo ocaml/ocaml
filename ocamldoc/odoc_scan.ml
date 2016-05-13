@@ -27,14 +27,13 @@ open Odoc_types
    overriding some methods.*)
 class scanner =
   object (self)
-  (** Scan of 'leaf elements'. *)
 
-    method scan_value (v : Odoc_value.t_value) = ()
+    method scan_value (_ : Odoc_value.t_value) = ()
 
-    method scan_type_pre (t : Odoc_type.t_type) = true
+    method scan_type_pre (_ : Odoc_type.t_type) = true
 
-    method scan_type_recfield t (f : Odoc_type.record_field) = ()
-    method scan_type_const t (f : Odoc_type.variant_constructor) = ()
+    method scan_type_recfield _t (_ : Odoc_type.record_field) = ()
+    method scan_type_const _t (_ : Odoc_type.variant_constructor) = ()
     method scan_type (t : Odoc_type.t_type) =
       if self#scan_type_pre t then
         match t.Odoc_type.ty_kind with
@@ -43,11 +42,11 @@ class scanner =
         | Odoc_type.Type_record l -> List.iter (self#scan_type_recfield t) l
         | Odoc_type.Type_open -> ()
 
-    method scan_extension_constructor (e : Odoc_extension.t_extension_constructor) = ()
-    method scan_exception (e : Odoc_exception.t_exception) = ()
-    method scan_attribute (a : Odoc_value.t_attribute) = ()
-    method scan_method (m : Odoc_value.t_method) = ()
-    method scan_included_module (im : Odoc_module.included_module) = ()
+    method scan_extension_constructor (_ : Odoc_extension.t_extension_constructor) = ()
+    method scan_exception (_ : Odoc_exception.t_exception) = ()
+    method scan_attribute (_ : Odoc_value.t_attribute) = ()
+    method scan_method (_ : Odoc_value.t_method) = ()
+    method scan_included_module (_ : Odoc_module.included_module) = ()
 
   (** Scan of a type extension *)
 
@@ -55,7 +54,7 @@ class scanner =
         private and info. This method is called before scanning the
         extensions's constructors.
         @return true if the extension's constructors must be scanned.*)
-    method scan_type_extension_pre (x: Odoc_extension.t_type_extension) = true
+    method scan_type_extension_pre (_: Odoc_extension.t_type_extension) = true
 
     (** This method scans the constructors of the given type extension. *)
     method scan_type_extension_constructors (x: Odoc_extension.t_type_extension) =
@@ -70,12 +69,12 @@ class scanner =
   (** Scan of a class. *)
 
     (** Scan of a comment inside a class. *)
-    method scan_class_comment (t : text) = ()
+    method scan_class_comment (_ : text) = ()
 
     (** Override this method to perform controls on the class comment
        and params. This method is called before scanning the class elements.
        @return true if the class elements must be scanned.*)
-    method scan_class_pre (c : Odoc_class.t_class) = true
+    method scan_class_pre (_ : Odoc_class.t_class) = true
 
     (** This method scan the elements of the given class.
        A VOIR : scan des classes heritees.*)
@@ -96,12 +95,12 @@ class scanner =
   (** Scan of a class type. *)
 
     (** Scan of a comment inside a class type. *)
-    method scan_class_type_comment (t : text) = ()
+    method scan_class_type_comment (_ : text) = ()
 
     (** Override this method to perform controls on the class type comment
        and form. This method is called before scanning the class type elements.
        @return true if the class type elements must be scanned.*)
-    method scan_class_type_pre (ct : Odoc_class.t_class_type) = true
+    method scan_class_type_pre (_ : Odoc_class.t_class_type) = true
 
     (** This method scan the elements of the given class type.
        A VOIR : scan des classes heritees.*)
@@ -122,12 +121,12 @@ class scanner =
   (** Scan of modules. *)
 
     (** Scan of a comment inside a module. *)
-    method scan_module_comment (t : text) = ()
+    method scan_module_comment (_ : text) = ()
 
     (** Override this method to perform controls on the module comment
        and form. This method is called before scanning the module elements.
        @return true if the module elements must be scanned.*)
-    method scan_module_pre (m : Odoc_module.t_module) = true
+    method scan_module_pre (_ : Odoc_module.t_module) = true
 
     (** This method scan the elements of the given module. *)
     method scan_module_elements m =
@@ -154,12 +153,12 @@ class scanner =
   (** Scan of module types. *)
 
     (** Scan of a comment inside a module type. *)
-    method scan_module_type_comment (t : text) = ()
+    method scan_module_type_comment (_ : text) = ()
 
     (** Override this method to perform controls on the module type comment
        and form. This method is called before scanning the module type elements.
        @return true if the module type elements must be scanned. *)
-    method scan_module_type_pre (mt : Odoc_module.t_module_type) = true
+    method scan_module_type_pre (_ : Odoc_module.t_module_type) = true
 
     (** This method scan the elements of the given module type. *)
     method scan_module_type_elements mt =

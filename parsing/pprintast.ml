@@ -218,7 +218,7 @@ class printer  ()= object(self:'self)
         pp f "[%a] " (* space *)
           (self#list self#type_param ~sep:",") l
 
-  method type_with_label f (label,({ptyp_desc;_}as c) ) =
+  method type_with_label f (label, c) =
     match label with
     | Nolabel ->  self#core_type1 f c (* otherwise parenthesize *)
     | Labelled s -> pp f "%s:%a" s self#core_type1 c
@@ -272,8 +272,9 @@ class printer  ()= object(self:'self)
         pp f "@[<2>[%a%a]@]"
           (fun f l
             ->
-              match l with
-              | [] -> ()
+              match l, closed with
+              | [], Closed -> ()
+              | [], Open -> pp f ">" (* Cf #7200: print [>] correctly *)
               | _ ->
               pp f "%s@;%a"
                 (match (closed,low) with
@@ -330,7 +331,7 @@ class printer  ()= object(self:'self)
     else match x.ppat_desc with
     | Ppat_alias (p, s) -> pp f "@[<2>%a@;as@;%a@]"
           self#pattern p protect_ident s.txt (* RA*)
-    | Ppat_or (p1, p2) -> (* *)
+    | Ppat_or _ -> (* *)
         pp f "@[<hov0>%a@]" (self#list ~sep:"@,|" self#pattern)
            (list_of_pattern [] x)
     | _ -> self#pattern1 f x
@@ -475,7 +476,8 @@ class printer  ()= object(self:'self)
         self#paren true self#reset#expression f x
     | Pexp_ifthenelse _ | Pexp_sequence _ when ifthenelse ->
         self#paren true self#reset#expression f x
-    | Pexp_let _ | Pexp_letmodule _ when semi ->
+    | Pexp_let _ | Pexp_letmodule _ | Pexp_open _ | Pexp_letexception _
+      when semi ->
         self#paren true self#reset#expression f x
     | Pexp_fun (l, e0, p, e) ->
         pp f "@[<2>fun@;%a@;->@;%a@]"
@@ -513,7 +515,12 @@ class printer  ()= object(self:'self)
                    (self#list self#label_x_expression_param)  l)
           | `Prefix s ->
               let s =
-                if List.mem s ["~+";"~-";"~+.";"~-."]
+                if List.mem s ["~+";"~-";"~+.";"~-."] &&
+                   (match l with
+                    (* See #7200: avoid turning (~- 1) into (- 1) which is parsed
+                       as an int literal *)
+                    |[(_,{pexp_desc=Pexp_constant _})] -> false
+                    | _ -> true)
                 then String.sub s 1 (String.length s -1)
                 else s
             in
@@ -571,6 +578,10 @@ class printer  ()= object(self:'self)
     | Pexp_letmodule (s, me, e) ->
         pp f "@[<hov2>let@ module@ %s@ =@ %a@ in@ %a@]" s.txt
           self#reset#module_expr me  self#expression e
+    | Pexp_letexception (cd, e) ->
+        pp f "@[<hov2>let@ exception@ %a@ in@ %a@]"
+          self#extension_constructor cd
+          self#expression e
     | Pexp_assert e ->
         pp f "@[<hov2>assert@ %a@]" self#simple_expr e
     | Pexp_lazy (e) ->
@@ -1053,13 +1064,14 @@ class printer  ()= object(self:'self)
     | ( _ , Ppat_constraint( p ,ty)) -> (* special case for the first*)
         (match ty.ptyp_desc with
         | Ptyp_poly _ ->
-            pp f "%a@;:@;%a=@;%a" self#simple_pattern p
+            pp f "%a@;:@;%a@;=@;%a" self#simple_pattern p
               self#core_type ty self#expression x
         | _ ->
-            pp f "(%a@;:%a)=@;%a" self#simple_pattern p
+            pp f "(%a@;:@;%a)@;=@;%a" self#simple_pattern p
               self#core_type ty self#expression x)
     | Pexp_constraint (e,t1),Ppat_var {txt;_} ->
-        pp f "%a@;:@ %a@;=@;%a" protect_ident txt self#core_type t1 self#expression e
+        pp f "%a@;:@ %a@;=@;%a" protect_ident txt self#core_type t1
+           self#expression e
     | (_, Ppat_var _) ->
         pp f "%a@ %a" self#simple_pattern p pp_print_pexp_function x
     | _ ->
@@ -1302,6 +1314,11 @@ class printer  ()= object(self:'self)
          self#item_attributes x.ptyext_attributes
 
   method constructor_declaration f (name, args, res, attrs) =
+    let name =
+      match name with
+      | "::" -> "(::)"   (* #7200 *)
+      | s -> s
+    in
     match res with
     | None ->
         pp f "%s%a@;%a" name

@@ -56,6 +56,20 @@ val typ_int: machtype
 val typ_float: machtype
 
 val size_component: machtype_component -> int
+
+(** Least upper bound of two [machtype_component]s. *)
+val lub_component
+   : machtype_component
+  -> machtype_component
+  -> machtype_component
+
+(** Returns [true] iff the first supplied [machtype_component] is greater than
+    or equal to the second under the relation used by [lub_component]. *)
+val ge_component
+   : machtype_component
+  -> machtype_component
+  -> bool
+
 val size_machtype: machtype -> int
 
 type comparison =

@@ -879,9 +879,12 @@ val alarm : int -> int
 
 val sleep : int -> unit
 (** Stop execution for the given number of seconds. *)
+
 val sleepf : float -> unit
 (** Stop execution for the given number of seconds.  Like [sleep],
-    but fractions of seconds are supported. *)
+    but fractions of seconds are supported.
+
+    @since 4.03.0 *)
 
 val times : unit -> process_times
 (** Return the execution times of the process.
@@ -1365,7 +1368,8 @@ val getaddrinfo:
 
 type name_info =
   { ni_hostname : string;               (** Name or IP address of host *)
-    ni_service : string }               (** Name of service or port number *)
+    ni_service : string;                (** Name of service or port number *)
+  }
 (** Host and service information returned by {!Unix.getnameinfo}. *)
 
 type getnameinfo_option =

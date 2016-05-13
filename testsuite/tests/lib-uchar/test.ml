@@ -1,19 +1,3 @@
-(**************************************************************************)
-(*                                                                        *)
-(*                                OCaml                                   *)
-(*                                                                        *)
-(*                            Daniel C. Buenzli                           *)
-(*                                                                        *)
-(*   Copyright 2015 Institut National de Recherche en Informatique et     *)
-(*     en Automatique.                                                    *)
-(*                                                                        *)
-(*   All rights reserved.  This file is distributed under the terms of    *)
-(*   the GNU Lesser General Public License version 2.1, with the          *)
-(*   special exception on linking described in the file LICENSE.          *)
-(*                                                                        *)
-(**************************************************************************)
-
-
 let assert_raise_invalid_argument f v =
   assert (try ignore (f v); false with Invalid_argument _ -> true)
 

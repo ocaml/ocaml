@@ -14,7 +14,6 @@
 (**************************************************************************)
 
 val output_lexdef :
-  string ->
   in_channel ->
   out_channel ->
   Common.line_tracker ->

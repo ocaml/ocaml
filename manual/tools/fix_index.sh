@@ -48,5 +48,5 @@ EOF
 
 case $? in
   0) echo "fix_index.sh: fixed $1 successfully.";;
-  *) echo "fix_index.sh: some error occurred."; exit 2;;
+  *) echo "fix_index.sh: some error occurred."; exit 0;;
 esac

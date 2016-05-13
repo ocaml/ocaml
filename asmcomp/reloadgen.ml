@@ -73,7 +73,7 @@ method reload_operation op arg res =
   | _ ->
       (self#makeregs arg, self#makeregs res)
 
-method reload_test tst args =
+method reload_test _tst args =
   self#makeregs args
 
 method private reload i =
