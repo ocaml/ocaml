@@ -1364,14 +1364,14 @@ let rec is_unboxed_number ~strict env e =
       end
 
   | Uconst(Uconst_ref(_, Some (Uconst_float _))) ->
-      Boxed (Boxed_float, true)
+      Boxed (Boxed_float Debuginfo.none, true)
   | Uconst(Uconst_ref(_, Some (Uconst_int32 _))) ->
-      Boxed (Boxed_integer (Pint32, dbg), true)
+      Boxed (Boxed_integer (Pint32, Debuginfo.none), true)
   | Uconst(Uconst_ref(_, Some (Uconst_int64 _))) ->
-      Boxed (Boxed_integer (Pint64, dbg), true)
+      Boxed (Boxed_integer (Pint64, Debuginfo.none), true)
   | Uconst(Uconst_ref(_, Some (Uconst_nativeint _))) ->
-      Boxed (Boxed_integer (Pnativeint, dbg), true)
-  | Uprim(p, _, _) ->
+      Boxed (Boxed_integer (Pnativeint, Debuginfo.none), true)
+  | Uprim(p, _, dbg) ->
       begin match simplif_primitive p with
         | Pccall p -> unboxed_number_kind_of_unbox dbg p.prim_native_repr_res
         | Pfloatfield _
@@ -1383,7 +1383,7 @@ let rec is_unboxed_number ~strict env e =
         | Pmulfloat
         | Pdivfloat
         | Parrayrefu Pfloatarray
-        | Parrayrefs Pfloatarray -> Boxed (Boxed_float, false)
+        | Parrayrefs Pfloatarray -> Boxed (Boxed_float dbg, false)
         | Pbintofint bi
         | Pcvtbint(_, bi)
         | Pnegbint bi
@@ -2305,9 +2305,9 @@ and transl_let env str kind id exp body =
        used in loops and we really want to avoid repeated boxing. *)
     match str, kind with
     | Mutable, Pfloatval ->
-        Boxed (Boxed_float, false)
+        Boxed (Boxed_float Debuginfo.none, false)
     | Mutable, Pboxedintval bi ->
-        Boxed (Boxed_integer bi, false)
+        Boxed (Boxed_integer (bi, Debuginfo.none), false)
     | _, (Pfloatval | Pboxedintval _) ->
         (* It would be safe to always unbox in this case, but
            we do it only if this indeed allows us to get rid of

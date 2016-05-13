@@ -192,7 +192,7 @@ let code_for_call ~node ~callee ~is_tail ~label =
        (hard) node hole pointer register immediately before the call.
        (That move is inserted in [Selectgen].) *)
     match callee with
-    | Direct callee -> Cvar place_within_node
+    | Direct _callee -> Cvar place_within_node
     | Indirect callee ->
       let caller_node =
         if is_tail then node
@@ -240,7 +240,7 @@ class virtual instruction_selection = object (self)
   method private can_instrument () =
     Config.spacetime && not disable_instrumentation
 
-  method about_to_emit_call env desc arg =
+  method! about_to_emit_call env desc arg =
     if not (self#can_instrument ()) then None
     else
       let module M = Mach in
@@ -370,7 +370,7 @@ class virtual instruction_selection = object (self)
       super#select_allocation_args env
     end
 
-  method select_checkbound () =
+  method! select_checkbound () =
     (* This follows [select_allocation], above. *)
     if self#can_instrument () then begin
       let label = Cmm.new_label () in
@@ -388,7 +388,7 @@ class virtual instruction_selection = object (self)
       super#select_checkbound ()
     end
 
-  method select_checkbound_extra_args () =
+  method! select_checkbound_extra_args () =
     if self#can_instrument () then begin
       (* This follows [select_allocation_args], above. *)
       [Cmm.Cvar (Lazy.force !spacetime_node_ident)]

@@ -181,21 +181,6 @@ let emit_Llabel fallthrough lbl =
   if not fallthrough && !fastcode_flag then D.align 4;
   def_label lbl
 
-(* Output code to load the address of a label *)
-
-let load_label_addr lbl arg =
-  if !Clflags.dlcode then begin
-    if windows then begin
-      I.mov (label lbl) arg (* movabsq $foo, ... *)
-    end else begin
-      I.mov (mem64_rip QWORD ((emit_label lbl) ^ "@GOTPCREL")) arg
-    end
-  end else if !Clflags.pic_code then begin
-    I.lea (mem64_rip NONE (emit_label lbl)) arg
-  end else begin
-    I.mov (label lbl) arg
-  end
-
 (* Output a pseudo-register *)
 
 let reg = function

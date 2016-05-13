@@ -161,7 +161,7 @@ method! select_store is_assign addr exp =
       (Ispecific(Istore_int(Nativeint.of_int n, addr, is_assign)), Ctuple [])
   | (Cconst_natint n) when self#is_immediate_natint n ->
       (Ispecific(Istore_int(n, addr, is_assign)), Ctuple [])
-  | (Cblockheader(n, dbg))
+  | (Cblockheader(n, _dbg))
       when self#is_immediate_natint n && not Config.spacetime ->
       (Ispecific(Istore_int(n, addr, is_assign)), Ctuple [])
   | Cconst_pointer n when self#is_immediate n ->
