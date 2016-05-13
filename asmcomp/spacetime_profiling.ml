@@ -29,7 +29,13 @@ let something_was_instrumented () =
 
 let next_index_within_node ~part_of_shape ~label =
   let index = !index_within_node in
-  incr index_within_node;
+  begin match part_of_shape with
+  | Mach.Direct_call_point _ | Mach.Indirect_call_point ->
+    incr index_within_node
+  | Mach.Allocation_point ->
+    incr index_within_node;
+    incr index_within_node
+  end;
   reverse_shape := (part_of_shape, label) :: !reverse_shape;
   index
 
