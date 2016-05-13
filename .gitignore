@@ -110,6 +110,7 @@
 /byterun/caml/version.h
 /byterun/ocamlrun
 /byterun/ocamlrund
+/byterun/ocamlruni
 /byterun/ld.conf
 /byterun/interp.a.lst
 /byterun/*.[sd]obj
@@ -300,17 +301,24 @@
 /tools/ocamldep.opt
 /tools/ocamldep.bak
 /tools/ocamlprof
+/tools/ocamlprof.opt
 /tools/opnames.ml
 /tools/dumpobj
 /tools/dumpapprox
-/tools/objinfo
+/tools/ocamlobjinfo
+/tools/ocamlobjinfo.opt
 /tools/cvt_emit
+/tools/cvt_emit.opt
 /tools/cvt_emit.bak
 /tools/cvt_emit.ml
+/tools/cvt_emit.opt
 /tools/ocamlcp
+/tools/ocamlcp.opt
 /tools/ocamloptp
+/tools/ocamloptp.opt
 /tools/ocamlmktop
 /tools/primreq
+/tools/primreq.opt
 /tools/ocamldumpobj
 /tools/keywords
 /tools/lexer299.ml
@@ -324,7 +332,9 @@
 /tools/read_cmt
 /tools/read_cmt.opt
 /tools/cmpbyt
+/tools/cmpbyt.opt
 /tools/stripdebug
+/tools/stripdebug.opt
 
 /utils/config.ml
 

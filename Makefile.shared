@@ -17,7 +17,6 @@
 defaultentry:
 
 # The main Makefile, fragments shared between Makefile and Makefile.nt
-
 include config/Makefile
 CAMLRUN ?= boot/ocamlrun
 CAMLYACC ?= boot/ocamlyacc
@@ -213,12 +212,14 @@ PERVASIVES=$(STDLIB_MODULES) outcometree topdirs toploop
 
 
 # The middle end (whose .cma library is currently only used for linking
-# the "objinfo" program, since we cannot depend on the whole native code
+# the "ocamlobjinfo" program, since we cannot depend on the whole native code
 # compiler for "make world" and the list of dependencies for
 # asmcomp/export_info.cmo is long).
 
 compilerlibs/ocamlmiddleend.cma: $(MIDDLE_END)
 	$(CAMLC) -a -o $@ $(MIDDLE_END)
+compilerlibs/ocamlmiddleend.cmxa: $(MIDDLE_END:%.cmo=%.cmx)
+	$(CAMLOPT) -a -o $@ $^
 partialclean::
 	rm -f compilerlibs/ocamlmiddleend.cma
 
@@ -228,17 +229,21 @@ partialclean::
 ocamltools: ocamlc ocamlyacc ocamllex asmcomp/cmx_format.cmi \
             asmcomp/printclambda.cmo compilerlibs/ocamlmiddleend.cma \
             asmcomp/export_info.cmo
-	cd tools ; $(MAKEREC) all
+	+cd tools ; $(MAKEREC) all
 
 ocamltoolsopt: ocamlopt
-	cd tools; $(MAKEREC) opt
+	+cd tools; $(MAKEREC) opt
 
-ocamltoolsopt.opt: ocamlc.opt ocamlyacc ocamllex asmcomp/cmx_format.cmi \
-                   asmcomp/printclambda.cmx
-	cd tools; $(MAKEREC) opt.opt
+ocamltoolsopt.opt: ocamlc.opt ocamlyacc ocamllex.opt asmcomp/cmx_format.cmi \
+                   asmcomp/printclambda.cmx compilerlibs/ocamlmiddleend.cmxa \
+                   asmcomp/export_info.cmx
+	+cd tools; $(MAKEREC) opt.opt
 
 partialclean::
-	cd tools; $(MAKEREC) clean
+	+cd tools; $(MAKEREC) clean
 
 alldepend::
-	cd tools; $(MAKEREC) depend
+	+cd tools; $(MAKEREC) depend
+
+#config/Makefile: configure
+#	./configure $(CONFIGURE_ARGS)
