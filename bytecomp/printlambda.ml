@@ -129,8 +129,8 @@ let block_shape ppf shape = match shape with
 let primitive ppf = function
   | Pidentity -> fprintf ppf "id"
   | Pignore -> fprintf ppf "ignore"
-  | Prevapply _ -> fprintf ppf "revapply"
-  | Pdirapply _ -> fprintf ppf "dirapply"
+  | Prevapply -> fprintf ppf "revapply"
+  | Pdirapply -> fprintf ppf "dirapply"
   | Ploc kind -> fprintf ppf "%s" (string_of_loc_kind kind)
   | Pgetglobal id -> fprintf ppf "global %a" Ident.print id
   | Psetglobal id -> fprintf ppf "setglobal %a" Ident.print id
@@ -298,8 +298,8 @@ let primitive ppf = function
 let name_of_primitive = function
   | Pidentity -> "Pidentity"
   | Pignore -> "Pignore"
-  | Prevapply _ -> "Prevapply"
-  | Pdirapply _ -> "Pdirapply"
+  | Prevapply -> "Prevapply"
+  | Pdirapply -> "Pdirapply"
   | Ploc _ -> "Ploc"
   | Pgetglobal _ -> "Pgetglobal"
   | Psetglobal _ -> "Psetglobal"

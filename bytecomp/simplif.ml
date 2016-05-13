@@ -209,26 +209,26 @@ let simplify_exits lam =
     let ll = List.map simplif ll in
     match p, ll with
         (* Simplify %revapply, for n-ary functions with n > 1 *)
-      | Prevapply _, [x; Lapply ap]
-      | Prevapply _, [x; Levent (Lapply ap,_)] ->
+      | Prevapply, [x; Lapply ap]
+      | Prevapply, [x; Levent (Lapply ap,_)] ->
         Lapply {ap with ap_args = ap.ap_args @ [x]; ap_loc = loc}
-      | Prevapply _, [x; f] -> Lapply {ap_should_be_tailcall=false;
-                                       ap_loc=loc;
-                                       ap_func=f;
-                                       ap_args=[x];
-                                       ap_inlined=Default_inline;
-                                       ap_specialised=Default_specialise}
+      | Prevapply, [x; f] -> Lapply {ap_should_be_tailcall=false;
+                                     ap_loc=loc;
+                                     ap_func=f;
+                                     ap_args=[x];
+                                     ap_inlined=Default_inline;
+                                     ap_specialised=Default_specialise}
 
         (* Simplify %apply, for n-ary functions with n > 1 *)
-      | Pdirapply _, [Lapply ap; x]
-      | Pdirapply _, [Levent (Lapply ap,_); x] ->
+      | Pdirapply, [Lapply ap; x]
+      | Pdirapply, [Levent (Lapply ap,_); x] ->
         Lapply {ap with ap_args = ap.ap_args @ [x]; ap_loc = loc}
-      | Pdirapply _, [f; x] -> Lapply {ap_should_be_tailcall=false;
-                                       ap_loc=loc;
-                                       ap_func=f;
-                                       ap_args=[x];
-                                       ap_inlined=Default_inline;
-                                       ap_specialised=Default_specialise}
+      | Pdirapply, [f; x] -> Lapply {ap_should_be_tailcall=false;
+                                     ap_loc=loc;
+                                     ap_func=f;
+                                     ap_args=[x];
+                                     ap_inlined=Default_inline;
+                                     ap_specialised=Default_specialise}
 
       | _ -> Lprim(p, ll, loc)
      end

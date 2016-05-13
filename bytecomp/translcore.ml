@@ -332,10 +332,10 @@ let primitives_table = create_hashtable 57 [
   "%opaque", Popaque;
 ]
 
-let find_primitive loc prim_name =
+let find_primitive _loc prim_name =
   match prim_name with
-      "%revapply" -> Prevapply loc
-    | "%apply" -> Pdirapply loc
+      "%revapply" -> Prevapply
+    | "%apply" -> Pdirapply
     | "%loc_LOC" -> Ploc Loc_LOC
     | "%loc_FILE" -> Ploc Loc_FILE
     | "%loc_LINE" -> Ploc Loc_LINE
@@ -652,8 +652,8 @@ let primitive_is_ccall = function
   (* Determine if a primitive is a Pccall or will be turned later into
      a C function call that may raise an exception *)
   | Pccall _ | Pstringrefs | Pstringsets | Parrayrefs _ | Parraysets _ |
-    Pbigarrayref _ | Pbigarrayset _ | Pduprecord _ | Pdirapply _ |
-    Prevapply _ -> true
+    Pbigarrayref _ | Pbigarrayset _ | Pduprecord _ | Pdirapply |
+    Prevapply -> true
   | _ -> false
 
 (* Assertions *)

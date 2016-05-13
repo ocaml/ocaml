@@ -155,7 +155,7 @@ let rec size_of_lambda = function
       end
   | Llet(_str, _k, _id, _arg, body) -> size_of_lambda body
   | Lletrec(_bindings, body) -> size_of_lambda body
-  | Lprim(Pmakeblock _, args) -> RHS_block (List.length args)
+  | Lprim(Pmakeblock _, args, _) -> RHS_block (List.length args)
   | Lprim (Pmakearray ((Paddrarray|Pintarray), _), args, _) ->
       RHS_block (List.length args)
   | Lprim (Pmakearray (Pfloatarray, _), args, _) ->
