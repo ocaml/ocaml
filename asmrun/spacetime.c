@@ -623,13 +623,14 @@ static NOINLINE void* find_trie_node_from_libunwind(int for_allocation,
       node->pc = (expected_type == CALL ? Encode_c_node_pc_for_call(pc)
         : Encode_c_node_pc_for_alloc_point(pc));
       *node_hole = caml_spacetime_stored_pointer_of_c_node(node);
-      if(expected_type == ALLOCATION) {
+      if (expected_type == ALLOCATION) {
         caml_spacetime_profinfo++;
         if (caml_spacetime_profinfo > PROFINFO_MASK) {
           /* Profiling counter overflow. */
           caml_spacetime_profinfo = PROFINFO_MASK;
         }
-        node->data.profinfo = Val_long(caml_spacetime_profinfo);
+        node->data.allocation.profinfo = Val_long(caml_spacetime_profinfo);
+        node->data.allocation.count = Val_long(0);
       }
     }
     else {
@@ -672,6 +673,8 @@ static NOINLINE void* find_trie_node_from_libunwind(int for_allocation,
   if (for_allocation) {
     Assert(caml_spacetime_classify_c_node(node) == ALLOCATION);
     Assert(caml_spacetime_c_node_of_stored_pointer(node->next) != node);
+    node->data.allocation.count =
+      Val_long(Long_val(node->data.allocation.count) + 1);
   }
 
   Assert(node->next != (value) NULL);
@@ -780,6 +783,9 @@ CAMLprim uintnat caml_spacetime_generate_profinfo (void* profinfo_words)
   profinfo = Encode_alloc_point_profinfo(profinfo << PROFINFO_SHIFT);
 
   Alloc_point_profinfo(node, 0) = profinfo;
+  /* The count is set to zero by the initialisation when the node was
+     created (see above). */
+  Assert(Decode_alloc_point_count(Alloc_point_count(node, 0)) == 0ull);
 
   return profinfo;
 }
@@ -795,7 +801,7 @@ uintnat caml_spacetime_my_profinfo (struct ext_table** cached_frames)
 
   node = find_trie_node_from_libunwind(1, cached_frames);
   if (node != NULL) {
-    profinfo = node->data.profinfo;
+    profinfo = node->data.allocation.profinfo;
   }
 
   return profinfo;  /* N.B. not shifted by PROFINFO_SHIFT */

@@ -78,15 +78,16 @@ typedef enum {
 #define Is_tail_caller_node_encoded(node) (((node) & 1) == 1)
 
 /* Allocation points within OCaml nodes.
-   The "profinfo" value is stored shifted. */
+   The "profinfo" value is stored shifted.
+   The "count" is just an OCaml integer. */
 #define Encode_alloc_point_profinfo(profinfo) (profinfo | 1)
 #define Decode_alloc_point_profinfo(profinfo) (profinfo & ~((uintnat) 1))
 #define Alloc_point_profinfo(node, offset) (Field(node, offset))
+#define Alloc_point_count(node, offset) (Field(node, offset + 1))
 
 /* Direct call points (tail or non-tail) within OCaml nodes.
    They just hold a pointer to the child node.  The call site and callee are
    both recorded in the shape. */
-#define Direct_num_fields 1
 #define Direct_callee_node(node,offset) (Field(node, offset))
 #define Encode_call_point_pc(pc) (((value) pc) | 1)
 #define Decode_call_point_pc(pc) ((void*) (((value) pc) & ~((uintnat) 1)))
@@ -108,7 +109,10 @@ typedef struct {
   uintnat pc;           /* always has bit 0 set.  Bit 1 set => CALL. */
   union {
     value callee_node;  /* for CALL */
-    value profinfo;   /* for ALLOCATION (encoded with [Val_long])*/
+    struct {            /* for ALLOCATION */
+      value profinfo;   /* encoded with [Val_long] */
+      value count;      /* likewise */
+    } allocation;
   } data;
   value next;           /* [Val_unit] for the end of the list */
 } c_node; /* CR mshinwell: rename to dynamic_node */

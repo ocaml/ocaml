@@ -97,6 +97,7 @@ let code_for_function_prologue ~function_name ~node_hole =
 
 let code_for_blockheader ~value's_header ~node ~dbg =
   let existing_profinfo = Ident.create "existing_profinfo" in
+  let existing_count = Ident.create "existing_count" in
   let profinfo = Ident.create "profinfo" in
   let address_of_profinfo = Ident.create "address_of_profinfo" in
   let label = Cmm.new_label () in
@@ -127,14 +128,25 @@ let code_for_blockheader ~value's_header ~node ~dbg =
           Cop (Ccmpi Cne, [Cvar existing_profinfo; Cconst_int 1 (* () *)]),
           Cvar existing_profinfo,
           generate_new_profinfo),
-        (* [profinfo] is already shifted by [PROFINFO_SHIFT].
-           It also has the bottom bit set!  To avoid generating more code,
-           we can adjust [value's_header] using a trick.  The effect is to
-           "or" in the profinfo value to the higher bits, whilst preserving
-           all remaining bits. *)
-        let value's_header = Nativeint.logxor value's_header 1n in
-        Csequence (Cop (Clabel label, []),
-          Cop (Cxor, [Cvar profinfo; Cconst_natint value's_header])))))
+        Clet (existing_count,
+          Cop (Cload Word_int, [
+            Cop (Caddi,
+              [Cvar address_of_profinfo; Cconst_int Arch.size_addr])
+          ]),
+          let value's_header = Nativeint.logxor value's_header 1n in
+          Csequence (Cop (Clabel label, []),
+            Csequence (
+              Cop (Cstore (Word_int, Lambda.Assignment),
+                [Cop (Caddi,
+                  [Cvar address_of_profinfo; Cconst_int Arch.size_addr]);
+                 Cop (Caddi, [Cvar existing_count; Cconst_int 1]);
+                ]),
+              (* [profinfo] is already shifted by [PROFINFO_SHIFT].
+                 It also has the bottom bit set!  To avoid generating more
+                 code, we can adjust [value's_header] using a trick.  The
+                 effect is to "or" in the profinfo value to the higher bits,
+                 whilst preserving all remaining bits. *)
+              Cop (Cxor, [Cvar profinfo; Cconst_natint value's_header])))))))
 
 type callee =
   | Direct of string

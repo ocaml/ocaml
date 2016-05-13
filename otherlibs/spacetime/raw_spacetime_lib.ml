@@ -180,6 +180,13 @@ module Trace = struct
           "noalloc"
 
       let annotation t = annotation t.node t.offset
+
+      external count : ocaml_node -> int -> int
+        = "caml_spacetime_only_works_for_native_code"
+          "caml_spacetime_ocaml_allocation_point_count"
+          "noalloc"
+
+      let count t = count t.node t.offset
     end
 
     module Direct_call_point = struct
@@ -383,6 +390,10 @@ module Trace = struct
       external annotation : t -> Annotation.t
         = "caml_spacetime_only_works_for_native_code"
           "caml_spacetime_c_node_profinfo" "noalloc"
+
+      external count : t -> int
+        = "caml_spacetime_only_works_for_native_code"
+          "caml_spacetime_c_node_allocation_count" "noalloc"
     end
 
     module Call_point = struct
