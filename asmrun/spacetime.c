@@ -114,6 +114,7 @@ void caml_spacetime_initialize(void)
     if(interval != 0) {
       int fd;
       double time;
+      /* CR mshinwell: the filename must vary! */
       fd = open("spacetime", O_WRONLY | O_CREAT | O_TRUNC | O_BINARY, 0666);
       if (fd == -1) caml_sys_error(caml_copy_string("spacetime"));
       snapshot_channel = caml_open_descriptor_out(fd);
