@@ -24,7 +24,7 @@ cp config/Makefile.msvc64 config/Makefile
 PREFIX="C:/Program Files/OCaml"
 echo "Edit config/Makefile so set PREFIX=$PREFIX"
 cp config/Makefile config/Makefile.bak
-sed -e "s|PREFIX=.*|PREFIX=\"$PREFIX\"|" config/Makefile.bak > config/Makefile
+sed -e "s|PREFIX=.*|PREFIX=$PREFIX|" config/Makefile.bak > config/Makefile
 #run "Content of config/Makefile" cat config/Makefile
 
 run "make world" make -f Makefile.nt world
