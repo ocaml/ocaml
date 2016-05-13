@@ -69,7 +69,8 @@ let rec apply_coercion loc strict restr arg =
         let get_field pos = Lprim(Pfield pos,[Lvar id], loc) in
         let lam =
           Lprim(Pmakeblock(0, Immutable, None),
-                List.map (apply_coercion_field get_field) pos_cc_list, loc)
+                List.map (apply_coercion_field loc get_field) pos_cc_list,
+                loc)
         in
         wrap_id_pos_list loc id_pos_list get_field lam)
   | Tcoerce_functor(cc_arg, cc_res) ->
@@ -106,7 +107,7 @@ and wrap_id_pos_list loc id_pos_list get_field lam =
       if IdentSet.mem id' fv then
         let id'' = Ident.create (Ident.name id') in
         (Llet(Alias, Pgenval, id'',
-              apply_coercion Alias c (get_field pos),lam),
+              apply_coercion loc Alias c (get_field pos),lam),
          Ident.add id' (Lvar id'') s)
       else (lam,s))
       (lam, Ident.empty) id_pos_list
@@ -809,7 +810,7 @@ let transl_store_structure glob map prims str =
                            subst_lambda subst
                              (Lprim(Pmakeblock(0, Immutable, None),
                                     List.map field map, loc)),
-                           Lsequence(store_ident id,
+                           Lsequence(store_ident loc id,
                                      transl_store rootpath
                                                   (add_ident true id subst)
                                                   rem)))
@@ -1046,7 +1047,7 @@ let transl_toplevel_item item =
       set_toplevel_unique_name ext.ext_id;
       toploop_setvalue ext.ext_id
         (transl_extension_constructor item.str_env None ext)
-  | Tstr_module {mb_id=id; mb_loc; mb_expr=modl} ->
+  | Tstr_module {mb_id=id; mb_loc = _mb_loc; mb_expr=modl} ->
       (* we need to use the unique name for the module because of issues
          with "open" (PR#1672) *)
       set_toplevel_unique_name id;
@@ -1110,7 +1111,7 @@ let transl_package_flambda component_names coercion =
     | Tcoerce_alias _ -> assert false
   in
   size,
-  apply_coercion Strict coercion
+  apply_coercion Location.none Strict coercion
     (Lprim(Pmakeblock(0, Immutable, None), List.map get_component component_names,
       Location.none))
 
@@ -1118,7 +1119,8 @@ let transl_package component_names target_name coercion =
   let components =
     Lprim(Pmakeblock(0, Immutable, None),
           List.map get_component component_names, Location.none) in
-  Lprim(Psetglobal target_name, [apply_coercion Strict coercion components],
+  Lprim(Psetglobal target_name,
+    [apply_coercion Location.none Strict coercion components],
     Location.none)
   (*
   let components =
@@ -1160,7 +1162,7 @@ let transl_store_package component_names target_name coercion =
       let blk = Ident.create "block" in
       (List.length pos_cc_list,
        Llet (Strict, Pgenval, blk,
-             apply_coercion Strict coercion components,
+             apply_coercion Location.none Strict coercion components,
              make_sequence
                (fun pos _id ->
                  Lprim(Psetfield(pos, Pointer, Initialization),

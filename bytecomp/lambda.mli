@@ -48,8 +48,8 @@ type initialization_or_assignment =
 type primitive =
     Pidentity
   | Pignore
-  | Prevapply
-  | Pdirapply
+  | Prevapply of Location.t
+  | Pdirapply of Location.t
   | Ploc of loc_kind
     (* Globals *)
   | Pgetglobal of Ident.t

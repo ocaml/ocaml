@@ -45,8 +45,8 @@ type initialization_or_assignment =
 type primitive =
     Pidentity
   | Pignore
-  | Prevapply
-  | Pdirapply
+  | Prevapply of Location.t
+  | Pdirapply of Location.t
   | Ploc of loc_kind
     (* Globals *)
   | Pgetglobal of Ident.t
@@ -316,8 +316,8 @@ let make_key e =
         let ex = tr_rec env ex in
         let y = make_key x in
         Llet (str,k,y,ex,tr_rec (Ident.add x (Lvar y) env) e)
-    | Lprim (p,es,_) ->
-        Lprim (p,tr_recs env es)
+    | Lprim (p,es,loc) ->
+        Lprim (p,tr_recs env es,loc)
     | Lswitch (e,sw) ->
         Lswitch (tr_rec env e,tr_sw env sw)
     | Lstringswitch (e,sw,d,_) ->
@@ -398,7 +398,7 @@ let iter f = function
   | Lletrec(decl, body) ->
       f body;
       List.iter (fun (_id, exp) -> f exp) decl
-  | Lprim(p, args, _) ->
+  | Lprim(_p, args, _) ->
       List.iter f args
   | Lswitch(arg, sw) ->
       f arg;

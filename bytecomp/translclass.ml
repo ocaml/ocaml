@@ -273,7 +273,7 @@ let rec build_class_init cla cstr super inh_init cl_init msubst top cl =
           (inh_init,
            Llet (Strict, Pgenval, obj_init,
                  mkappl(Lprim(Pfield 1, [lpath], Location.none), Lvar cla ::
-                        if top then [Lprim(Pfield 3, [lpath])] else []),
+                        if top then [Lprim(Pfield 3, [lpath], cl.cl_loc)] else []),
                  bind_super cla super cl_init))
       | _ ->
           assert false
@@ -848,12 +848,12 @@ let transl_class ids cl_id pub_meths cl vflag =
   make_envs (
   if ids = [] then mkappl (lfield cached 0, [lenvs]) else
   Lprim(Pmakeblock(0, Immutable, None),
-        if concrete then
+        (if concrete then
           [mkappl (lfield cached 0, [lenvs]);
            lfield cached 1;
            lfield cached 0;
            lenvs]
-        else [lambda_unit; lfield cached 0; lambda_unit; lenvs],
+        else [lambda_unit; lfield cached 0; lambda_unit; lenvs]),
         Location.none
        )))))
 

@@ -60,7 +60,8 @@ let transl_extension_constructor env path ext =
     Text_decl _ ->
       Lprim (Pmakeblock (Obj.object_tag, Immutable, None),
         [Lconst (Const_base (Const_string (name, None)));
-         Lprim (prim_fresh_oo_id, [Lconst (Const_base (Const_int 0))])])
+         Lprim (prim_fresh_oo_id, [Lconst (Const_base (Const_int 0))], ext.ext_loc)],
+        ext.ext_loc)
   | Text_rebind(path, _lid) ->
       transl_path ~loc:ext.ext_loc env path
 
@@ -149,8 +150,6 @@ let comparisons_table = create_hashtable 11 [
 let primitives_table = create_hashtable 57 [
   "%identity", Pidentity;
   "%ignore", Pignore;
-  "%revapply", Prevapply;
-  "%apply", Pdirapply;
   "%loc_LOC", Ploc Loc_LOC;
   "%loc_FILE", Ploc Loc_FILE;
   "%loc_LINE", Ploc Loc_LINE;
@@ -361,7 +360,7 @@ let specialize_comparison table env ty =
 (* Specialize a primitive from available type information,
    raise Not_found if primitive is unknown  *)
 
-let specialize_primitive p env ty ~has_constant_constructor =
+let specialize_primitive loc p env ty ~has_constant_constructor =
   try
     let table = Hashtbl.find comparisons_table p.prim_name in
     let (gencomp, intcomp, _, _, _, _, _, simplify_constant_constructor) =
@@ -373,7 +372,7 @@ let specialize_primitive p env ty ~has_constant_constructor =
       | Some (lhs,_rhs) -> specialize_comparison table env lhs
       | None -> gencomp
   with Not_found ->
-    let p = find_primitive p.prim_name in
+    let p = find_primitive loc p.prim_name in
     (* Try strength reduction based on the type of the argument *)
     let params = match is_function_type env ty with
       | None -> []
@@ -416,7 +415,7 @@ let add_used_primitive loc env path =
 
 let transl_primitive loc p env ty path =
   let prim =
-    try specialize_primitive p env ty ~has_constant_constructor:false
+    try specialize_primitive loc p env ty ~has_constant_constructor:false
     with Not_found ->
       add_used_primitive loc env path;
       Pccall p
@@ -457,7 +456,7 @@ let transl_primitive_application loc prim env ty path args =
       | [{exp_desc = Texp_variant(_, None)}; _] -> true
       | _ -> false
     in
-    specialize_primitive prim env ty ~has_constant_constructor
+    specialize_primitive loc prim env ty ~has_constant_constructor
   with Not_found ->
     if String.length prim_name > 0 && prim_name.[0] = '%' then
       raise(Error(loc, Unknown_builtin_primitive prim_name));
@@ -653,8 +652,8 @@ let primitive_is_ccall = function
   (* Determine if a primitive is a Pccall or will be turned later into
      a C function call that may raise an exception *)
   | Pccall _ | Pstringrefs | Pstringsets | Parrayrefs _ | Parraysets _ |
-    Pbigarrayref _ | Pbigarrayset _ | Pduprecord _ | Pdirapply |
-    Prevapply -> true
+    Pbigarrayref _ | Pbigarrayset _ | Pduprecord _ | Pdirapply _ |
+    Prevapply _ -> true
   | _ -> false
 
 (* Assertions *)
