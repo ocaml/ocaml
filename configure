@@ -1230,6 +1230,11 @@ if sh ./hasgot select && \
   has_select=yes
 fi
 
+if sh ./hasgot nanosleep ; then
+  inf "nanosleep() found."
+  echo "#define HAS_NANOSLEEP" >> s.h
+fi
+
 if sh ./hasgot symlink readlink lstat;  then
   inf "symlink() found."
   echo "#define HAS_SYMLINK" >> s.h
