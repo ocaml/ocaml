@@ -93,8 +93,8 @@ OCaml 4.04.0:
 - PR#7243: warn users against using WinZip to unpack the source archive
   (Damien Doligez, report by Shayne Fletcher)
 
-OCaml 4.03.0:
--------------
+OCaml 4.03.0 (25 Apr 2016):
+---------------------------
 
 (Changes that can break existing programs are marked with a "*")
 
