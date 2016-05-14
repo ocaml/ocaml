@@ -31,7 +31,7 @@ CAMLprim value unix_sleep(value duration)
 {
   double d = Double_val(duration);
   if (d <= 0.0) return Val_unit;
-#if _POSIX_C_SOURCE >= 199309L
+#if defined(HAS_NANOSLEEP)
   {
     struct timespec t;
     int ret;
