@@ -223,6 +223,13 @@ compilerlibs/ocamlmiddleend.cmxa: $(MIDDLE_END:%.cmo=%.cmx)
 partialclean::
 	rm -f compilerlibs/ocamlmiddleend.cma
 
+override define newline
+
+
+endef
+
+override sedquote = $(subst \
+$(newline),\\\\n,$(subst |,\\|,$(subst &,\\&,$(subst \\,\\\\,$1))))
 
 # Tools
 

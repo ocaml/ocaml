@@ -389,8 +389,7 @@ otherlibs/dynlink/dynlink.cmxa: otherlibs/dynlink/natdynlink.ml
 
 utils/config.ml: utils/config.mlp config/Makefile
 	@rm -f utils/config.ml
-	sed -e 's|%%LIBDIR%%|'$(LIBDIR)'|' \
-	    -e 's|%%BYTERUN%%|'$(BINDIR)'/ocamlrun|' \
+	sed -e 's|%%BYTERUN%%|'$(BINDIR)'/ocamlrun|' \
 	    -e 's|%%CCOMPTYPE%%|cc|' \
 	    -e 's|%%BYTECC%%|$(BYTECC) $(BYTECCCOMPOPTS) $(SHAREDCCCOMPOPTS)|' \
 	    -e 's|%%NATIVECC%%|$(NATIVECC) $(NATIVECCCOMPOPTS)|' \
@@ -418,6 +417,7 @@ utils/config.ml: utils/config.mlp config/Makefile
 	    -e 's|%%HOST%%|$(HOST)|' \
 	    -e 's|%%TARGET%%|$(TARGET)|' \
 	    -e 's|%%FLAMBDA%%|$(FLAMBDA)|' \
+	    -e 's|%%LIBDIR%%|'$(call sedquote,$(LIBDIR))'|' \
 	    utils/config.mlp > utils/config.ml
 
 partialclean::

@@ -118,12 +118,12 @@ emit_variable_internal () {
 emit_variable() {
   emit_variable_internal "$1" "$#"
   case $value in
-    *["\$'
+    *["\$\"\`\\
 "]*) printf 'define %s :=\n"' "$varname"
      printf "%s" "$value" |
        sed -e 's/["$\\`]/\\&/g' -e 's/\$/$$/g' -e 's/^/$(EMPTY)/'
      printf '"\n\nendef\n';;
-    *) printf "%s := '%s'\\n" "$varname" "$value";;
+    *) printf '%s := "%s"\n' "$varname" "$value";;
   esac
 }
 
