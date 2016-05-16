@@ -208,7 +208,7 @@ module Env : sig
   val note_entering_closure
      : t
     -> closure_id:Closure_id.t
-    -> debuginfo:Debuginfo.t
+    -> dbg:Debuginfo.t
     -> t
 
    (** If collecting inlining statistics, record that the inliner is about to
@@ -218,7 +218,7 @@ module Env : sig
   val note_entering_call
      : t
     -> closure_id:Closure_id.t
-    -> debuginfo:Debuginfo.t
+    -> dbg:Debuginfo.t
     -> t
 
    (** If collecting inlining statistics, record that the inliner is about to
@@ -239,7 +239,7 @@ module Env : sig
      : t
     -> closure_id:Closure_id.t
     -> inline_inside:bool
-    -> debuginfo:Debuginfo.t
+    -> dbg:Debuginfo.t
     -> f:(t -> 'a)
     -> 'a
 

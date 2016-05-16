@@ -29,12 +29,13 @@ exception Error of Location.t * error
 let lfunction params body =
   if params = [] then body else
   match body with
-  | Lfunction {kind = Curried; params = params'; body = body'; attr} ->
-      Lfunction {kind = Curried; params = params @ params'; body = body'; attr}
+  | Lfunction {kind = Curried; params = params'; body = body'; attr; loc} ->
+      Lfunction {kind = Curried; params = params @ params'; body = body'; attr; loc}
   |  _ ->
       Lfunction {kind = Curried; params;
                  body;
-                 attr = default_function_attribute}
+                 attr = default_function_attribute;
+                 loc = Location.none}
 
 let lapply ap =
   match ap.ap_func with
@@ -178,6 +179,7 @@ let rec build_object_init cl_table obj params inh_init obj_init cl =
          let param = name_pattern "param" pat in
          Lfunction {kind = Curried; params = param::params;
                     attr = default_function_attribute;
+                    loc = pat.pat_loc;
                     body = Matching.for_function
                              pat.pat_loc None (Lvar param) [pat, rem] partial}
        in
@@ -429,6 +431,7 @@ let rec transl_class_rebind obj_init cl vf =
         let param = name_pattern "param" pat in
         Lfunction {kind = Curried; params = param::params;
                    attr = default_function_attribute;
+                   loc = pat.pat_loc;
                    body = Matching.for_function
                             pat.pat_loc None (Lvar param) [pat, rem] partial}
       in
@@ -743,6 +746,7 @@ let transl_class ids cl_id pub_meths cl vflag =
   and lclass lam =
     let cl_init = llets (Lfunction{kind = Curried;
                                    attr = default_function_attribute;
+                                   loc = Location.none;
                                    params = [cla]; body = cl_init}) in
     Llet(Strict, Pgenval, class_init, cl_init, lam (free_variables cl_init))
   and lbody fv =
@@ -763,6 +767,7 @@ let transl_class ids cl_id pub_meths cl vflag =
     Lprim(Pmakeblock(0, Immutable, None),
           [lambda_unit; Lfunction{kind = Curried;
                                   attr = default_function_attribute;
+                                  loc = Location.none;
                                   params = [cla]; body = cl_init};
            lambda_unit; lenvs],
          Location.none)
@@ -816,6 +821,7 @@ let transl_class ids cl_id pub_meths cl vflag =
     Llet(Strict, Pgenval, class_init,
          Lfunction{kind = Curried; params = [cla];
                    attr = default_function_attribute;
+                   loc = Location.none;
                    body = def_ids cla cl_init}, lam)
   and lcache lam =
     if inh_keys = [] then Llet(Alias, Pgenval, cached, Lvar tables, lam) else
@@ -835,6 +841,7 @@ let transl_class ids cl_id pub_meths cl vflag =
                       lset cached 0 (Lvar env_init))))
   and lclass_virt () =
     lset cached 0 (Lfunction{kind = Curried; attr = default_function_attribute;
+                             loc = Location.none;
                              params = [cla]; body = def_ids cla cl_init})
   in
   llets (

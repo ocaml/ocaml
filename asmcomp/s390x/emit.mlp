@@ -153,7 +153,7 @@ let emit_set_comp cmp res =
 
 (* Record live pointers at call points *)
 
-let record_frame live dbg =
+let record_frame live raise_ dbg =
   let lbl = new_label() in
   let live_offset = ref [] in
   Reg.Set.iter
@@ -170,6 +170,7 @@ let record_frame live dbg =
     { fd_lbl = lbl;
       fd_frame_size = frame_size();
       fd_live_offset = !live_offset;
+      fd_raise = raise_;
       fd_debuginfo = dbg } :: !frame_descriptors;
   lbl
 
@@ -198,7 +199,7 @@ let bound_error_call = ref 0
 let bound_error_label dbg =
   if !Clflags.debug then begin
     let lbl_bound_error = new_label() in
-    let lbl_frame = record_frame Reg.Set.empty dbg in
+    let lbl_frame = record_frame Reg.Set.empty false dbg in
     bound_error_sites :=
      { bd_lbl = lbl_bound_error; bd_frame = lbl_frame } :: !bound_error_sites;
    lbl_bound_error
@@ -325,7 +326,7 @@ let emit_instr i =
         `	larl	{emit_reg i.res.(0)}, {emit_symbol s}\n`;
     | Lop(Icall_ind) ->
         `	basr	%r14, {emit_reg i.arg.(0)}\n`;
-        let lbl = record_frame i.live i.dbg in
+        let lbl = record_frame i.live false i.dbg in
          `{emit_label lbl}:\n`
 
     | Lop(Icall_imm s) ->
@@ -333,7 +334,7 @@ let emit_instr i =
         `	brasl	%r14, {emit_symbol s}@PLT\n`
         else
         `	brasl	%r14, {emit_symbol s}\n`;
-        let lbl = record_frame i.live i.dbg in
+        let lbl = record_frame i.live false i.dbg in
          `{emit_label lbl}:\n`;
     | Lop(Itailcall_ind) ->
         let n = frame_size() in
@@ -364,7 +365,7 @@ let emit_instr i =
           `	larl	%r7, {emit_symbol s}\n`;
           `	brasl	%r14, {emit_symbol "caml_c_call"}\n`
           end;
-          let lbl = record_frame i.live i.dbg in
+          let lbl = record_frame i.live false i.dbg in
            `{emit_label lbl}:\n`;
         end else begin
           if !pic_code then
@@ -410,7 +411,7 @@ let emit_instr i =
     | Lop(Ialloc n) ->
         let lbl_redo = new_label() in
         let lbl_call_gc = new_label() in
-        let lbl_frame = record_frame i.live i.dbg in
+        let lbl_frame = record_frame i.live false i.dbg in
         call_gc_sites :=
           { gc_lbl = lbl_call_gc;
             gc_return_lbl = lbl_redo;
@@ -610,11 +611,11 @@ let emit_instr i =
         begin match !Clflags.debug, k with
         | true, Lambda.Raise_regular ->
           `	brasl	%r14, {emit_symbol "caml_raise_exn"}\n`;
-          let lbl = record_frame Reg.Set.empty i.dbg in
+          let lbl = record_frame Reg.Set.empty true i.dbg in
           `{emit_label lbl}:\n`
         | true, Lambda.Raise_reraise ->
           `	brasl	%r14, {emit_symbol "caml_reraise_exn"}\n`;
-          let lbl = record_frame Reg.Set.empty i.dbg in
+          let lbl = record_frame Reg.Set.empty true i.dbg in
           `{emit_label lbl}:\n`
         | false, _
         | true, Lambda.Raise_notrace ->
