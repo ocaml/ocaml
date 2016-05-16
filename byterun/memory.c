@@ -410,3 +410,9 @@ CAMLprim value caml_bvar_is_empty(value bv)
 
   return Val_int((Long_val(Op_val(bv)[1]) & BVAR_EMPTY) != 0);
 }
+
+#ifdef DEBUG
+header_t hd_val (value v) {
+  return (header_t)Hd_val(v);
+}
+#endif
