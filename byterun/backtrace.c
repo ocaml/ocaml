@@ -111,7 +111,7 @@ void caml_stash_backtrace(value exn, code_t pc, value * sp, int reraise)
     /* testing the code region is needed: PR#1554 */
     caml_backtrace_buffer[caml_domain_state->backtrace_pos++] = pc;
   }
-  for (/*nothing*/; sp < caml_stack_high + caml_trap_sp_off; sp++) {
+  for (/*nothing*/; sp < caml_domain_state->stack_high + caml_trap_sp_off; sp++) {
     if (Is_long(*sp) && Pc_val(*sp) >= caml_start_code && Pc_val(*sp) < end_code) {
       if (caml_domain_state->backtrace_pos >= BACKTRACE_BUFFER_SIZE) break;
       caml_backtrace_buffer[caml_domain_state->backtrace_pos++] = Pc_val(*sp);
@@ -138,10 +138,10 @@ code_t caml_next_frame_pointer(value ** sp, intnat * trap_spoff)
 {
   code_t end_code = (code_t) ((char *) caml_start_code + caml_code_size);
 
-  while (*sp < caml_stack_high) {
+  while (*sp < caml_domain_state->stack_high) {
     value* p = (*sp)++;
-    if(&Trap_pc(caml_stack_high + *trap_spoff) == p) {
-      *trap_spoff = Trap_link(caml_stack_high + *trap_spoff);
+    if(&Trap_pc(caml_domain_state->stack_high + *trap_spoff) == p) {
+      *trap_spoff = Trap_link(caml_domain_state->stack_high + *trap_spoff);
       continue;
     }
     if (Is_long(*p) &&

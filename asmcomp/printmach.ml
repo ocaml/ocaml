@@ -111,9 +111,9 @@ let operation op arg ppf res =
   | Icall_imm lbl -> fprintf ppf "call \"%s\" %a" lbl regs arg
   | Itailcall_ind -> fprintf ppf "tailcall %a" regs arg
   | Itailcall_imm lbl -> fprintf ppf "tailcall \"%s\" %a" lbl regs arg
-  | Iextcall(lbl, alloc) ->
-      fprintf ppf "extcall \"%s\" %a%s" lbl regs arg
-      (if alloc then "" else " (noalloc)")
+  | Iextcall(lbl, alloc, stack_args) ->
+      fprintf ppf "extcall \"%s\" %a%s (stackargs=%d)" lbl regs arg
+      (if alloc then "" else " (noalloc)") stack_args
   | Istackoffset n ->
       fprintf ppf "offset stack %i" n
   | Iload(chunk, addr) ->

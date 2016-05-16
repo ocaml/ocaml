@@ -186,6 +186,7 @@ let read_OCAMLPARAM ppf position =
       | "pp" -> preprocessor := Some v
       | "runtime-variant" -> runtime_variant := v
       | "cc" -> c_compiler := Some v
+      | "stack-slop" -> stack_slop := 8 * int_of_string v
 
       (* assembly sources *)
       |  "s" ->

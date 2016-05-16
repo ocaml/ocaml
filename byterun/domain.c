@@ -175,11 +175,6 @@ static void create_domain(uintnat initial_minor_heap_size, int is_main) {
 
     d->state.remembered_set = &caml_remembered_set;
     d->state.local_roots = &caml_local_roots;
-#ifdef NATIVE_CODE
-    /* FIXME */
-#else
-    d->state.current_stack = &caml_current_stack;
-#endif
     d->state.state = caml_domain_state;
     d->state.mark_stack = &caml_mark_stack;
     d->state.mark_stack_count = &caml_mark_stack_count;

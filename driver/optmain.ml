@@ -105,6 +105,7 @@ module Options = Main_args.Make_optcomp_options (struct
   let _open s = open_modules := s :: !open_modules
   let _output_obj = set output_c_object
   let _p = set gprofile
+  let _stack_slop n = stack_slop := n * 8
   let _pack = set make_package
   let _pp s = preprocessor := Some s
   let _ppx s = first_ppx := s :: !first_ppx
