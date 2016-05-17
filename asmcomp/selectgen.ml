@@ -22,22 +22,28 @@ open Reg
 open Mach
 
 type environment =
-  { var : (Ident.t, Reg.t array) Tbl.t;
-    exn : (int, Reg.t array list) Tbl.t }
+  { vars : (Ident.t, Reg.t array) Tbl.t;
+    static_exceptions : (int, Reg.t array list) Tbl.t;
+    (** Which registers must be populated when jumping to the given
+        handler. *)
+  }
 
 let env_add id v env =
-  { env with var = Tbl.add id v env.var }
+  { env with vars = Tbl.add id v env.vars }
 
-let env_add_exn id v env =
-  { env with exn = Tbl.add id v env.exn }
+let env_add_static_exception id v env =
+  { env with static_exceptions = Tbl.add id v env.static_exceptions }
 
 let env_find id env =
-  Tbl.find id env.var
+  Tbl.find id env.vars
 
-let env_find_exn id env =
-  Tbl.find id env.exn
+let env_find_static_exception id env =
+  Tbl.find id env.static_exceptions
 
-let env_empty = { var = Tbl.empty; exn = Tbl.empty }
+let env_empty = {
+  vars = Tbl.empty;
+  static_exception = Tbl.empty;
+}
 
 (* Infer the type of the result of an operation *)
 
@@ -659,34 +665,41 @@ method emit_expr (env:environment) exp =
       Some [||]
   | Ccatch([], e1) ->
       self#emit_expr env e1
-  | Ccatch(handlers, e1) ->
+  | Ccatch(handlers, body) ->
       let handlers =
         List.map (fun (nfail, ids, e2) ->
             let rs =
               List.map
+                (* CR-someday mshinwell: consider how we can do better than
+                   [typ_val] when appropriate. *)
                 (fun id -> let r = self#regs_for typ_val in name_regs id r; r)
                 ids in
             (nfail, ids, rs, e2))
-          handlers in
+          handlers
+      in
       let env =
+        (* Since the handlers may be recursive, and called from the body,
+           the same environment is used for translating both the handlers and
+           the body. *)
         List.fold_left (fun env (nfail, _ids, rs, _e2) ->
-            env_add_exn nfail rs env)
-          env handlers in
-      let (r_body, s_body) = self#emit_sequence env e1 in
-      let aux (nfail, ids, rs, e2) =
+            env_add_static_exception nfail rs env)
+          env handlers
+      in
+      let (r_body, s_body) = self#emit_sequence env body in
+      let translate_one_handler (nfail, ids, rs, e2) =
         assert(List.length ids = List.length rs);
         let new_env =
-          List.fold_left
-            (fun env (id,r) -> env_add id r env)
-            env (List.combine ids rs) in
+          List.fold_left (fun env (id, r) -> env_add id r env)
+            env (List.combine ids rs)
+        in
         let (r, s) = self#emit_sequence new_env e2 in
         (nfail, (r, s))
       in
-      let l = List.map aux handlers in
-      let a = Array.of_list ((r_body,s_body) :: List.map snd l) in
+      let l = List.map translate_one_handler handlers in
+      let a = Array.of_list ((r_body, s_body) :: List.map snd l) in
       let r = join_array a in
-      let aux2 (nfail, (_r, s)) = (nfail, s#extract) in
-      self#insert (Icatch(List.map aux2 l, s_body#extract)) [||] [||];
+      let aux (nfail, (_r, s)) = (nfail, s#extract) in
+      self#insert (Icatch (List.map aux l, s_body#extract)) [||] [||];
       r
   | Cexit (nfail,args) ->
       begin match self#emit_parts_list env args with
@@ -694,7 +707,7 @@ method emit_expr (env:environment) exp =
       | Some (simple_list, ext_env) ->
           let src = self#emit_tuple ext_env simple_list in
           let dest_args =
-            try env_find_exn nfail env
+            try env_find_static_exception nfail env
             with Not_found ->
               fatal_error ("Selection.emit_expr: unboun label "^
                            string_of_int nfail)
@@ -945,7 +958,7 @@ method emit_tail (env:environment) exp =
           handlers in
       let env =
         List.fold_left (fun env (nfail, _ids, rs, _e2) ->
-            env_add_exn nfail rs env)
+            env_add_static_exception nfail rs env)
           env handlers in
       let s_body = self#emit_tail_sequence env e1 in
       let aux (nfail, ids, rs, e2) =

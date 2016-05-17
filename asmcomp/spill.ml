@@ -231,6 +231,9 @@ let rec reload i before =
           List.map2 (fun (nfail', handler) (nfail, at_exit) ->
               assert(nfail = nfail');
               reload handler at_exit) handlers at_exits in
+        (* CR mshinwell for pchambart: This should have the "used" thing to
+           stop exponential behaviour.  Also reference the comment about
+           "used" that's now in liveness.ml. *)
         let equal = List.for_all2 (fun (nfail', at_exit) (nfail, new_set) ->
             assert(nfail = nfail');
             Reg.Set.equal at_exit !new_set)
@@ -283,6 +286,8 @@ let rec reload i before =
    NB ter: is it the same thing for catch bodies ?
 *)
 
+(* CR mshinwell for pchambart: Try to test the new algorithms for dealing
+   with Icatch. *)
 
 let spill_at_exit = ref []
 let find_spill_at_exit k =
