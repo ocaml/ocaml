@@ -447,6 +447,7 @@ let emit_instr fallthrough i =
           `	movq	{domain_field Domainstate.Domain_young_ptr}(%r15), %r15\n`;
         end else begin
           ` movq  %rsp, %r10\n`;
+          ` movq  %r15, %r11\n`;
           `	{locate_domain_state ()}, %r11\n`;
           `	movq	{domain_field Domainstate.Domain_system_sp}(%r11), %rsp\n`;
           ` pushq %r10\n`;
@@ -686,6 +687,7 @@ let emit_instr fallthrough i =
         cfi_adjust_cfa_offset 8;
         `	pushq	%r14\n`;
         cfi_adjust_cfa_offset 8;
+        ` movq  %r15, %r14\n`;
         `	{locate_domain_state ()}, %r14\n`;
         `	movq	{domain_field Domainstate.Domain_stack_high}(%r14), %r14\n`;
         ` subq  %rsp, %r14\n`;
@@ -706,6 +708,7 @@ let emit_instr fallthrough i =
           record_frame Reg.Set.empty i.dbg
         | false, _
         | true, Lambda.Raise_notrace ->
+          ` movq  %r15, %rsp\n`;
           `	{locate_domain_state ()}, %rsp\n`;
           `	movq	{domain_field Domainstate.Domain_stack_high}(%rsp), %rsp\n`;
           ` subq  %r14, %rsp\n`;
@@ -839,6 +842,7 @@ let fundecl fundecl =
     let handle_overflow = new_label() in
     let after_overflow = record_frame_label live_initially Debuginfo.none in
 
+    ` movq %r15, %r11\n`;
     `	{locate_domain_state ()}, %r11\n`;
     `	movq	{domain_field Domainstate.Domain_stack_threshold}(%r11), %r11\n`;
     ` addq ${emit_int s}, %r11\n`;
