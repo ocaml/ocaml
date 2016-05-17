@@ -255,21 +255,24 @@ let rec linear i n =
       cons_instr (Llabel lbl_head) n2
   | Icatch(handlers, body) ->
       let (lbl_end, n1) = get_label(linear i.Mach.next n) in
-      let labels = List.map (fun (_io, handler) ->
+      (* CR mshinwell for pchambart:
+         1. rename "io"
+         2. Make sure the test cases cover the "Iend" cases too *)
+      let labels_at_entry_to_handlers = List.map (fun (_io, handler) ->
           match handler.Mach.desc with
           | Iend -> lbl_end
           | _ -> Cmm.new_label ())
           handlers in
       let exit_label_add = List.map2
           (fun (io, _) lbl -> (io, (lbl, !try_depth)))
-          handlers labels in
+          handlers labels_at_entry_to_handlers in
       let previous_exit_label = !exit_label in
       exit_label := exit_label_add @ !exit_label;
       let n2 = List.fold_left2 (fun n (_io, handler) lbl_handler ->
           match handler.Mach.desc with
           | Iend -> n
           | _ -> cons_instr (Llabel lbl_handler) (linear handler n))
-          n1 handlers labels
+          n1 handlers labels_at_entry_to_handlers
       in
       let n3 = linear body (add_branch lbl_end n2) in
       exit_label := previous_exit_label;
