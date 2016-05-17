@@ -16,6 +16,8 @@ OCaml 4.04.0:
 
 - PR#7023, GPR#336: Better unboxing strategy
   (Alain Frisch, Pierre Chambart)
+- PR#7200, GPR#539: Improve, fix, and add test for parsing/pprintast.ml
+  (Runhang Li, David Sheets, Alain Frisch)
 
 ### Language tooling and user interface
 
