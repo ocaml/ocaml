@@ -7,6 +7,7 @@
 #include "alloc.h"
 #include "platform.h"
 #include "fix_code.h"
+#include "memory.h"
 #ifdef NATIVE_CODE
 #include "stack.h"
 #include "frame_descriptors.h"
@@ -473,6 +474,40 @@ value caml_switch_stack(value stk)
   load_stack(stk);
   return s;
 }
+
+CAMLprim value caml_clone_continuation (value cont)
+{
+  CAMLparam1(cont);
+  CAMLlocal3(new_cont, prev_target, source);
+  value target;
+  intnat bvar_stat;
+
+  bvar_stat = caml_bvar_status(cont);
+  if (bvar_stat & BVAR_EMPTY)
+    caml_invalid_argument ("continuation already taken");
+
+  prev_target = Val_unit;
+  source = Field (cont, 0);
+
+  do {
+    Assert (Is_block (source) && Tag_val(source) == Stack_tag);
+
+    target = caml_alloc (Wosize_val(source), Stack_tag);
+    memcpy ((void*)target, (void*)source, Wosize_val(source) * sizeof(value));
+
+    if (prev_target == Val_unit) {
+      new_cont = caml_bvar_create (target);
+    } else {
+      Stack_parent(prev_target) = target;
+    }
+
+    prev_target = target;
+    source = Stack_parent(source);
+  } while (source != Val_unit);
+
+  CAMLreturn(new_cont);
+}
+
 
 #ifdef DEBUG
 uintnat stack_sp(value stk) {
