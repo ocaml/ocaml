@@ -11,18 +11,6 @@
 #ifdef NATIVE_CODE
 #include "stack.h"
 #include "frame_descriptors.h"
-
-/* Communication with [caml_start_program] and [caml_call_gc]. */
-
-/* The global roots.
-   FIXME: These should be promoted, and not scanned here.
-   FIXME: caml_globals_inited makes assumptions about store ordering.
-   XXX KC : What to do here?
-*/
-
-intnat caml_globals_inited = 0;
-static intnat caml_globals_scanned = 0;
-
 #endif
 
 static __thread int stack_is_saved = 0;
@@ -131,19 +119,6 @@ void caml_scan_stack(scanning_action f, value stack)
   struct caml_context* context;
   frame_descr** frame_descriptors;
   int frame_descriptors_mask;
-
-  /* The global roots.
-     FIXME: These should be promoted, and not scanned here.
-     FIXME: caml_globals_inited makes assumptions about store ordering.
-  */
-  value glob;
-  int i, j;
-  for (i = 0; i <= caml_globals_inited && caml_globals[i] != 0; i++) {
-    glob = caml_globals[i];
-    for (j = 0; j < Wosize_val(glob); j++){
-      f(Op_val(glob)[j], &Op_val(glob)[j]);
-    }
-  }
 
   f(caml_frame_descriptor_table, &caml_frame_descriptor_table);
   f(Stack_handle_value(stack), &Stack_handle_value(stack));
