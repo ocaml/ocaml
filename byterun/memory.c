@@ -303,9 +303,6 @@ static int promoted_cas(value obj, int field, value oldval, value newval)
   }
 }
 
-#define BVAR_EMPTY      0x10000
-#define BVAR_OWNER_MASK 0x0ffff
-
 CAMLprim value caml_bvar_create(value v)
 {
   CAMLparam1(v);
@@ -346,7 +343,7 @@ static void handle_bvar_transfer(struct domain* self, void *reqp)
 }
 
 /* Get a bvar's status, transferring it if necessary */
-static intnat bvar_status(value bv)
+intnat caml_bvar_status(value bv)
 {
   while (1) {
     intnat stat = Long_val(Op_val(bv)[1]);
@@ -372,7 +369,7 @@ CAMLprim value caml_bvar_take(value bv)
     bv = caml_addrmap_lookup(&caml_remembered_set.promotion, bv);
   }
 
-  intnat stat = bvar_status(bv);
+  intnat stat = caml_bvar_status(bv);
   if (stat & BVAR_EMPTY) caml_raise_not_found();
   CAMLassert(stat == caml_domain_self()->id);
 
@@ -390,7 +387,7 @@ CAMLprim value caml_bvar_put(value bv, value v)
     bv = caml_addrmap_lookup(&caml_remembered_set.promotion, bv);
   }
 
-  intnat stat = bvar_status(bv);
+  intnat stat = caml_bvar_status(bv);
   if (!(stat & BVAR_EMPTY)) caml_invalid_argument("Put to a full bvar");
   CAMLassert(stat == (caml_domain_self()->id | BVAR_EMPTY));
 
