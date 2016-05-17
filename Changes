@@ -17,6 +17,9 @@ OCaml 4.04.0:
 - PR#7023, GPR#336: Better unboxing strategy
   (Alain Frisch, Pierre Chambart)
 
+- GPR#580: Optimize immutable float records
+  (Pierre Chambart, review by Marc Shinwell)
+
 ### Language tooling and user interface
 
 - PR#7139: clarify the wording of Warning 38
