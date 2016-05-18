@@ -135,7 +135,7 @@ static value get_total_allocations(void)
 
     /* [v_total] is of type [Raw_spacetime_lib.total_allocations]. */
     Field(v_total, 0) = Val_long(Profinfo_hd(total->profinfo));
-    Field(v_total, 1) = Val_long(total->count);
+    Field(v_total, 1) = total->count;
     Field(v_total, 2) = v_total_allocations;
     v_total_allocations = v_total;
 
