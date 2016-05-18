@@ -886,6 +886,9 @@ module Heap_snapshot = struct
         next : total_allocations;
       }
 
+  let (_ : total_allocations) =  (* suppress compiler warning *)
+    Total { annotation = 0; count = 0; next = End; }
+
   type t = {
     timestamp : float;
     gc_stats : Gc_stats.t;
@@ -908,16 +911,16 @@ module Heap_snapshot = struct
 
     let annotation = function
       | End -> assert false
-      | { annotation; _ } -> annotation
+      | Total { annotation; _ } -> annotation
 
     let count = function
       | End -> assert false
-      | { count; _ } -> count
+      | Total { count; _ } -> count
 
     let next = function
       | End -> assert false
-      | T { next = End; _ } -> None
-      | T { next; _ } -> Some next
+      | Total { next = End; _ } -> None
+      | Total { next; _ } -> Some next
   end
 
   let total_allocations t =
