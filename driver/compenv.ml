@@ -522,5 +522,8 @@ let readenv ppf position =
   all_ccopts := !last_ccopts @ !first_ccopts;
   all_ppx := !last_ppx @ !first_ppx
 
-let get_objfiles () =
-  List.rev (!last_objfiles @ !objfiles @ !first_objfiles)
+let get_objfiles ~with_ocamlparam =
+  if with_ocamlparam then
+    List.rev (!last_objfiles @ !objfiles @ !first_objfiles)
+  else
+    List.rev !objfiles

@@ -182,14 +182,14 @@ let main () =
     if !make_archive then begin
       Compmisc.init_path false;
 
-      Bytelibrarian.create_archive ppf  (Compenv.get_objfiles ())
+      Bytelibrarian.create_archive ppf  (Compenv.get_objfiles ~with_ocamlparam:false)
                                    (extract_output !output_name);
       Warnings.check_fatal ();
     end
     else if !make_package then begin
       Compmisc.init_path false;
       let extracted_output = extract_output !output_name in
-      let revd = get_objfiles () in
+      let revd = get_objfiles ~with_ocamlparam:false in
       Bytepackager.package_files ppf (Compmisc.initial_env ())
         revd (extracted_output);
       Warnings.check_fatal ();
@@ -212,7 +212,7 @@ let main () =
           default_output !output_name
       in
       Compmisc.init_path false;
-      Bytelink.link ppf (get_objfiles ()) target;
+      Bytelink.link ppf (get_objfiles ~with_ocamlparam:true) target;
       Warnings.check_fatal ();
     end;
   with x ->
