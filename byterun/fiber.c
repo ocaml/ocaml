@@ -127,7 +127,7 @@ void caml_init_main_stack()
 
 /*
   Find the stack that performed an effect,
-  skipping over several stacks that delegated
+  skipping over several stacks that reperformd
   the effect if necessary.
 
   Reverses the parent pointers to point

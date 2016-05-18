@@ -49,7 +49,7 @@ type primitive =
   (* Context switches *)
   | Pperform
   | Presume
-  | Pdelegate
+  | Preperform
   (* External call *)
   | Pccall of Primitive.description
   (* Exceptions *)

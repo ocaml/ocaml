@@ -100,7 +100,7 @@ let instruction ppf = function
   | Kperform -> fprintf ppf "\tperform"
   | Kresume -> fprintf ppf "\tresume"
   | Kresumeterm n -> fprintf ppf "\tresumeterm %i" n
-  | Kdelegateterm n -> fprintf ppf "\tdelegateterm %i" n
+  | Kreperformterm n -> fprintf ppf "\treperformterm %i" n
   | Kstop -> fprintf ppf "\tstop"
   | Kevent ev -> fprintf ppf "\tevent \"%s\" %i-%i"
                          ev.ev_loc.Location.loc_start.Lexing.pos_fname
