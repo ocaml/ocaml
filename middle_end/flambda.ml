@@ -492,7 +492,7 @@ let rec print_program_body ppf (program : program_body) =
       (Format.pp_print_list lam) fields;
     print_program_body ppf program
   | Effect (expr, program) ->
-    fprintf ppf "@[effect @[<hv 1>%a@]@@]@."
+    fprintf ppf "@[effect @[<hv 1>%a@]@]@."
       lam expr;
     print_program_body ppf program;
   | End root -> fprintf ppf "End %a" Symbol.print root
