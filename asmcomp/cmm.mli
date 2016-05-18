@@ -69,7 +69,7 @@ type operation =
   | Ccheckbound of Debuginfo.t
   | Cperform
   | Cresume
-  | Cdelegate
+  | Creperform
 
 type expression =
     Cconst_int of int

@@ -2993,7 +2993,7 @@ let for_trywith param pat_act_list =
 
 let for_handler param raw_cont pat_act_list =
   compile_matching Location.none None 
-    (fun () -> Lprim (Pdelegate, [param; raw_cont]))
+    (fun () -> Lprim (Preperform, [param; raw_cont]))
     param pat_act_list Partial
 
 let for_let loc param pat body =

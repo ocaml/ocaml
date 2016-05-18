@@ -44,7 +44,7 @@ type operation =
   | Itailcall_ind
   | Itailcall_imm of string
   | Iperform
-  | Idelegate
+  | Ireperform
   | Iresume_ind
   | Itail_resume_ind
   | Iextcall of string * bool    (* false = noalloc, true = alloc *)

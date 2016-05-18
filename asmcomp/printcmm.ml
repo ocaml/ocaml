@@ -86,7 +86,7 @@ let operation = function
   | Ccheckbound d -> "checkbound" ^ Debuginfo.to_string d
   | Cperform -> "perform"
   | Cresume -> "resume"
-  | Cdelegate -> "delegate"
+  | Creperform -> "reperform"
 
 let rec expr ppf = function
   | Cconst_int n -> fprintf ppf "%i" n
