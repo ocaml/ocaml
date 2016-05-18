@@ -258,17 +258,17 @@ let rec linear i n =
       (* CR mshinwell for pchambart:
          1. rename "io"
          2. Make sure the test cases cover the "Iend" cases too *)
-      let labels_at_entry_to_handlers = List.map (fun (_io, handler) ->
+      let labels_at_entry_to_handlers = List.map (fun (_nfail, handler) ->
           match handler.Mach.desc with
           | Iend -> lbl_end
           | _ -> Cmm.new_label ())
           handlers in
       let exit_label_add = List.map2
-          (fun (io, _) lbl -> (io, (lbl, !try_depth)))
+          (fun (nfail, _) lbl -> (nfail, (lbl, !try_depth)))
           handlers labels_at_entry_to_handlers in
       let previous_exit_label = !exit_label in
       exit_label := exit_label_add @ !exit_label;
-      let n2 = List.fold_left2 (fun n (_io, handler) lbl_handler ->
+      let n2 = List.fold_left2 (fun n (_nfail, handler) lbl_handler ->
           match handler.Mach.desc with
           | Iend -> n
           | _ -> cons_instr (Llabel lbl_handler) (linear handler n))
