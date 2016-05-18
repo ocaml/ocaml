@@ -25,7 +25,11 @@ let prepare ppf =
   Toploop.set_paths ();
   try
     let res =
-      List.for_all (Topdirs.load_file ppf) (List.rev !preload_objects) in
+      let objects =
+        List.rev (!preload_objects @ !first_objfiles)
+      in
+      List.for_all (Topdirs.load_file ppf) objects
+    in
     !Toploop.toplevel_startup_hook ();
     res
   with x ->
