@@ -132,12 +132,10 @@ static value get_total_allocations(void)
   while (total != NULL) {
     value v_total;
     v_total = allocate_outside_heap_with_tag(3 * sizeof(value), 0);
+
+    /* [v_total] is of type [Raw_spacetime_lib.total_allocations]. */
     Field(v_total, 0) = Val_long(Profinfo_hd(total->profinfo));
     Field(v_total, 1) = Val_long(total->count);
-printf("get_total_allocations: Added profinfo %lld with count %d\n",
-  (unsigned long long) Long_val(Field(v_total, 0)),
-  Int_val(Field(v_total, 1)));
-fflush(stdout);
     Field(v_total, 2) = v_total_allocations;
     v_total_allocations = v_total;
 
@@ -524,7 +522,6 @@ static void add_unit_to_shape_table(uint64_t *unit_table, value *list)
     Field(new_list_element, 1) = *list;
     *list = new_list_element;
 
-    Assert(*table_for_one_function == 0);
     ptr++;
   }
 }

@@ -119,7 +119,8 @@ let code_for_blockheader ~value's_header ~node ~dbg =
        balance. *)
     Cop (Cextcall ("caml_spacetime_generate_profinfo", [| Int |],
         false, dbg),
-      [Cvar address_of_profinfo])
+      [Cvar address_of_profinfo;
+       Cconst_int (index_within_node + 1)])
   in
   (* Check if we have already allocated a profinfo value for this allocation
      point with the current backtrace.  If so, use that value; if not,
@@ -145,7 +146,8 @@ let code_for_blockheader ~value's_header ~node ~dbg =
               Cop (Cstore (Word_int, Lambda.Assignment),
                 [Cop (Caddi,
                   [Cvar address_of_profinfo; Cconst_int Arch.size_addr]);
-                 Cop (Caddi, [Cvar existing_count; Cconst_int 1]);
+                 (* N.B. "2" not "1", since it's an OCaml integer. *)
+                 Cop (Caddi, [Cvar existing_count; Cconst_int 2]);
                 ]),
               (* [profinfo] looks like a black [Infix_tag] header.  Instead of
                  having to mask [profinfo] before ORing it with the desired
@@ -157,7 +159,7 @@ let code_for_blockheader ~value's_header ~node ~dbg =
                       (Nativeint.shift_left 3n (* <- Caml_black *) 8)))
                     (Nativeint.shift_left
                       (* The following is the [Infix_offset_val], in words. *)
-                      (Nativeint.of_int index_within_node) 10))
+                      (Nativeint.of_int (index_within_node + 1)) 10))
               in
               Cop (Cxor, [Cvar profinfo; Cconst_natint value's_header])))))))
 

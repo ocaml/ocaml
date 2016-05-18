@@ -18,6 +18,7 @@
 /* The interface of this file is "caml/intext.h" */
 
 #include <string.h>
+#include <stdio.h>
 #include "caml/alloc.h"
 #include "caml/config.h"
 #include "caml/custom.h"

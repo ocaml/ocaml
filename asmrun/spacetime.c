@@ -384,6 +384,7 @@ CAMLprim value caml_spacetime_allocate_node(
 static c_node* allocate_c_node(void)
 {
   c_node* node;
+  size_t index;
 
   node = (c_node*) start_of_free_node_block;
   if (end_of_free_node_block - start_of_free_node_block < sizeof(c_node)) {
@@ -395,6 +396,12 @@ static c_node* allocate_c_node(void)
   start_of_free_node_block += sizeof(c_node);
 
   Assert((sizeof(c_node) % sizeof(uintnat)) == 0);
+
+  /* CR mshinwell: remove this and pad the structure properly */
+  for (index = 0; index < sizeof(c_node) / sizeof(value); index++) {
+    ((value*) node)[index] = Val_unit;
+  }
+
   node->gc_header =
     Make_header(sizeof(c_node)/sizeof(uintnat) - 1, C_node_tag, Caml_black);
   node->data.callee_node = Val_unit;
@@ -777,7 +784,8 @@ void caml_spacetime_c_to_ocaml(void* ocaml_entry_point,
 extern void caml_garbage_collection(void);  /* signals_asm.c */
 extern void caml_array_bound_error(void);  /* fail.c */
 
-CAMLprim uintnat caml_spacetime_generate_profinfo (void* profinfo_words)
+CAMLprim uintnat caml_spacetime_generate_profinfo (void* profinfo_words,
+                                                   uintnat index_within_node)
 {
   /* Called from code that creates a value's header inside an OCaml
      function. */
@@ -807,12 +815,14 @@ CAMLprim uintnat caml_spacetime_generate_profinfo (void* profinfo_words)
      instructions required on the OCaml side.  It also enables us to use
      [Infix_tag] to obtain valid value pointers into the middle of nodes,
      which is used for the linked list of all allocation points. */
-  profinfo = Encode_alloc_point_profinfo(profinfo << PROFINFO_SHIFT);
+  profinfo = Make_header_with_profinfo(
+    index_within_node, Infix_tag, Caml_black, profinfo);
 
+  Assert(!Is_block(profinfo));
   Alloc_point_profinfo(node, 0) = profinfo;
   /* The count is set to zero by the initialisation when the node was
      created (see above). */
-  Assert(Decode_alloc_point_count(Alloc_point_count(node, 0)) == 0ull);
+  Assert(Alloc_point_count(node, 0) == Val_long(0));
 
   /* Add the new allocation point into the linked list of all allocation
      points. */

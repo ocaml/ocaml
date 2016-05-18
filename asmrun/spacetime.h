@@ -80,13 +80,16 @@ typedef enum {
 /* Allocation points within OCaml nodes.
    The "profinfo" value looks exactly like a black Infix_tag header.
    This enables us to point just after it and return such pointer as a valid
-   OCaml value.  (Used when traversing all allocation points.)
+   OCaml value.  (Used for the list of all allocation points.  We could do
+   without this and instead just encode the list pointers as integers, but
+   this would mean that the structure was destroyed on marshalling.  This
+   might not be a great problem since it is intended that the total counts
+   be obtained via snapshots, but it seems neater and easier to use
+   Infix_tag.
    The "count" is just an OCaml integer.
    The "pointer to next allocation point" points to the "count" word of the
    next allocation point in the linked list of all allocation points.
    There is no special encoding needed by virtue of the [Infix_tag] trick. */
-#define Encode_alloc_point_profinfo(profinfo) (profinfo | 1)
-#define Decode_alloc_point_profinfo(profinfo) (profinfo & ~((uintnat) 1))
 #define Alloc_point_profinfo(node, offset) (Field(node, offset))
 #define Alloc_point_count(node, offset) (Field(node, offset + 1))
 #define Alloc_point_next_ptr(node, offset) (Field(node, offset + 2))
@@ -110,7 +113,7 @@ typedef enum {
 #define Encode_c_node_pc_for_alloc_point(pc) ((((value) pc) << 2) | 1)
 #define Decode_c_node_pc(pc) ((void*) ((pc) >> 2))
 
-typedef struct allocation_point {
+typedef struct {
   /* The layout and encoding of this structure must match that of the
      allocation points within OCaml nodes, so that the linked list
      traversal across all allocation points works correctly. */
