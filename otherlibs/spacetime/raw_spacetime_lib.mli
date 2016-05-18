@@ -315,6 +315,15 @@ module Heap_snapshot : sig
   val words_scanned : t -> int
   val words_scanned_with_profinfo : t -> int
 
+  module Total_allocation : sig
+    type t
+
+    val annotation : t -> Annotation.t
+    val count : t -> int
+    val next : t -> t option
+  end
+  val total_allocations : t -> Total_allocation.t option
+
   module Series : sig
     type t
 

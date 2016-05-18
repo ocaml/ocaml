@@ -71,11 +71,18 @@ typedef struct {
 
 typedef struct {
   /* (GC header here.) */
+  value profinfo;
+  value count;
+} total_allocation;
+
+typedef struct {
+  /* (GC header here.) */
   value time;  /* Cf. [Sys.time]. */
   value gc_stats;
   value entries;
   value words_scanned;
   value words_scanned_with_profinfo;
+  value total_allocations;
 } snapshot;
 
 typedef struct {
@@ -121,6 +128,36 @@ static value take_gc_stats(void)
   stats->top_heap_words = Val_long(caml_stat_top_heap_wsz / sizeof(value));
 
   return v_stats;
+}
+
+static value get_total_allocations(void)
+{
+  value v_total_allocations = Val_unit;
+  allocation_point* total = all_allocation_points;
+
+  while (total != NULL) {
+    value v_total;
+    v_total = allocate_outside_heap_with_tag(3 * sizeof(value), 0);
+    Field(v_total, 0) = Val_long(Profinfo_hd(total->profinfo));
+    Field(v_total, 1) = Val_long(total->count);
+printf("get_total_allocations: Added profinfo %lld with count %d\n",
+  (unsigned long long) Long_val(Field(v_total, 0)),
+  Int_val(Field(v_total, 1)));
+fflush(stdout);
+    Field(v_total, 2) = v_total_allocations;
+    v_total_allocations = v_total;
+
+    assert (total->next == Val_unit
+      || (Is_block(total->next) && Tag_val(total->next) == Infix_tag));
+    if (total->next == Val_unit) {
+      total = NULL;
+    }
+    else {
+      total = (allocation_point*) Hp_val(total->next);
+    }
+  }
+
+  return v_total_allocations;
 }
 
 static value take_snapshot(void)
@@ -264,6 +301,8 @@ static value take_snapshot(void)
   v_snapshot = allocate_outside_heap(sizeof(snapshot));
   heap_snapshot = (snapshot*) v_snapshot;
 
+  v_total_allocations = get_total_allocations();
+
   heap_snapshot->time = v_time;
   heap_snapshot->gc_stats = gc_stats;
   heap_snapshot->entries = v_entries;
@@ -271,6 +310,7 @@ static value take_snapshot(void)
     = Val_long(words_scanned);
   heap_snapshot->words_scanned_with_profinfo
     = Val_long(words_scanned_with_profinfo);
+  heap_snapshot->total_allocations = v_total_allocations;
 
   return v_snapshot;
 }
@@ -278,6 +318,7 @@ static value take_snapshot(void)
 void caml_spacetime_save_snapshot (struct channel *chan)
 {
   value v_snapshot;
+  value v_total_allocations;
   snapshot* heap_snapshot;
 
   v_snapshot = take_snapshot();
@@ -294,6 +335,13 @@ void caml_spacetime_save_snapshot (struct channel *chan)
   if (Wosize_val(heap_snapshot->entries) > 0) {
     caml_stat_free(Hp_val(heap_snapshot->entries));
   }
+  v_total_allocations = heap_snapshot->total_allocations;
+  while (v_total_allocations != Val_unit) {
+    total_allocation* total = (total_allocation*) v_total_allocations;
+    caml_stat_free(Hp_val(v_total_allocations));
+    v_total_allocations = total->next;
+  }
+
   caml_stat_free(Hp_val(v_snapshot));
 }
 

@@ -78,12 +78,18 @@ typedef enum {
 #define Is_tail_caller_node_encoded(node) (((node) & 1) == 1)
 
 /* Allocation points within OCaml nodes.
-   The "profinfo" value is stored shifted.
-   The "count" is just an OCaml integer. */
+   The "profinfo" value looks exactly like a black Infix_tag header.
+   This enables us to point just after it and return such pointer as a valid
+   OCaml value.  (Used when traversing all allocation points.)
+   The "count" is just an OCaml integer.
+   The "pointer to next allocation point" points to the "count" word of the
+   next allocation point in the linked list of all allocation points.
+   There is no special encoding needed by virtue of the [Infix_tag] trick. */
 #define Encode_alloc_point_profinfo(profinfo) (profinfo | 1)
 #define Decode_alloc_point_profinfo(profinfo) (profinfo & ~((uintnat) 1))
 #define Alloc_point_profinfo(node, offset) (Field(node, offset))
 #define Alloc_point_count(node, offset) (Field(node, offset + 1))
+#define Alloc_point_next_ptr(node, offset) (Field(node, offset + 2))
 
 /* Direct call points (tail or non-tail) within OCaml nodes.
    They just hold a pointer to the child node.  The call site and callee are
@@ -104,15 +110,24 @@ typedef enum {
 #define Encode_c_node_pc_for_alloc_point(pc) ((((value) pc) << 2) | 1)
 #define Decode_c_node_pc(pc) ((void*) ((pc) >> 2))
 
+typedef struct allocation_point {
+  /* The layout and encoding of this structure must match that of the
+     allocation points within OCaml nodes, so that the linked list
+     traversal across all allocation points works correctly. */
+  value profinfo;  /* encoded using [Infix_tag] (see above) */
+  value count;
+  /* [next] is [Val_unit] for the end of the list.
+     Otherwise it points at the second word of this [allocation_point]
+     structure. */
+  value next;
+} allocation_point;
+
 typedef struct {
   uintnat gc_header;
   uintnat pc;           /* always has bit 0 set.  Bit 1 set => CALL. */
   union {
     value callee_node;  /* for CALL */
-    struct {            /* for ALLOCATION */
-      value profinfo;   /* encoded with [Val_long] */
-      value count;      /* likewise */
-    } allocation;
+    allocation_point allocation;  /* for ALLOCATION */
   } data;
   value next;           /* [Val_unit] for the end of the list */
 } c_node; /* CR mshinwell: rename to dynamic_node */
@@ -129,6 +144,8 @@ typedef struct ext_table* spacetime_unwind_info_cache;
 
 extern value* caml_spacetime_trie_node_ptr;
 extern value* caml_spacetime_finaliser_trie_root;
+
+extern allocation_point* all_allocation_points;
 
 extern void caml_spacetime_initialize(void);
 extern uintnat caml_spacetime_my_profinfo(spacetime_unwind_info_cache*);

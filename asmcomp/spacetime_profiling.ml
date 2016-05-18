@@ -34,6 +34,7 @@ let next_index_within_node ~part_of_shape ~label =
     incr index_within_node
   | Mach.Allocation_point ->
     incr index_within_node;
+    incr index_within_node;
     incr index_within_node
   end;
   reverse_shape := (part_of_shape, label) :: !reverse_shape;
@@ -139,7 +140,6 @@ let code_for_blockheader ~value's_header ~node ~dbg =
             Cop (Caddi,
               [Cvar address_of_profinfo; Cconst_int Arch.size_addr])
           ]),
-          let value's_header = Nativeint.logxor value's_header 1n in
           Csequence (Cop (Clabel label, []),
             Csequence (
               Cop (Cstore (Word_int, Lambda.Assignment),
@@ -147,11 +147,18 @@ let code_for_blockheader ~value's_header ~node ~dbg =
                   [Cvar address_of_profinfo; Cconst_int Arch.size_addr]);
                  Cop (Caddi, [Cvar existing_count; Cconst_int 1]);
                 ]),
-              (* [profinfo] is already shifted by [PROFINFO_SHIFT].
-                 It also has the bottom bit set!  To avoid generating more
-                 code, we can adjust [value's_header] using a trick.  The
-                 effect is to "or" in the profinfo value to the higher bits,
-                 whilst preserving all remaining bits. *)
+              (* [profinfo] looks like a black [Infix_tag] header.  Instead of
+                 having to mask [profinfo] before ORing it with the desired
+                 header, we can use an XOR trick, to keep code size down. *)
+              let value's_header =
+                Nativeint.logxor value's_header
+                  (Nativeint.logor
+                    ((Nativeint.logor (Nativeint.of_int Obj.infix_tag)
+                      (Nativeint.shift_left 3n (* <- Caml_black *) 8)))
+                    (Nativeint.shift_left
+                      (* The following is the [Infix_offset_val], in words. *)
+                      (Nativeint.of_int index_within_node) 10))
+              in
               Cop (Cxor, [Cvar profinfo; Cconst_natint value's_header])))))))
 
 type callee =

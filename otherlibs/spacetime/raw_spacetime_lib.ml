@@ -876,8 +876,15 @@ module Heap_snapshot = struct
     let annotation t idx = t.(idx*3)
     let num_blocks t idx = t.(idx*3 + 1)
     let num_words_including_headers t idx = t.(idx*3 + 2)
-
   end
+
+  type total_allocations =
+    | End
+    | Total of {
+        annotation : Annotation.t;
+        count : int;
+        next : total_allocations;
+      }
 
   type t = {
     timestamp : float;
@@ -885,6 +892,7 @@ module Heap_snapshot = struct
     entries : Entries.t;
     words_scanned : int;
     words_scanned_with_profinfo : int;
+    total_allocations : total_allocations;
   }
 
   type heap_snapshot = t
@@ -894,6 +902,28 @@ module Heap_snapshot = struct
   let entries t = t.entries
   let words_scanned t = t.words_scanned
   let words_scanned_with_profinfo t = t.words_scanned_with_profinfo
+
+  module Total_allocation = struct
+    type t = total_allocations  (* [End] is forbidden *)
+
+    let annotation = function
+      | End -> assert false
+      | { annotation; _ } -> annotation
+
+    let count = function
+      | End -> assert false
+      | { count; _ } -> count
+
+    let next = function
+      | End -> assert false
+      | T { next = End; _ } -> None
+      | T { next; _ } -> Some next
+  end
+
+  let total_allocations t =
+    match t.total_allocations with
+    | End -> None
+    | (Total _) as totals -> Some totals
 
   module Series = struct
     type t = {

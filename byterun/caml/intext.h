@@ -132,6 +132,9 @@ extern value caml_input_value_to_outside_heap (value channel);
      casual user. */
 
 extern int caml_extern_allow_out_of_heap;
+  /* Permit the marshaller to traverse structures that look like OCaml
+     values but do not live in the OCaml heap. */
+
 extern value caml_output_value(value vchan, value v, value flags);
 /* </private> */
 
