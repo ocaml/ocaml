@@ -647,12 +647,12 @@ static NOINLINE void* find_trie_node_from_libunwind(int for_allocation,
         /* Add the new allocation point into the linked list of all allocation
            points. */
         if (all_allocation_points != NULL) {
-          node->data.allocation.next_ptr =
-            (value) &all_allocation_points->data.allocation.count;
+          node->data.allocation.next =
+            (value) &all_allocation_points->count;
         } else {
-          node->data.allocation.next_ptr = Val_unit;
+          node->data.allocation.next = Val_unit;
         }
-        all_allocation_points = &node.data.allocation;
+        all_allocation_points = &node->data.allocation;
       }
     }
     else {
@@ -816,14 +816,13 @@ CAMLprim uintnat caml_spacetime_generate_profinfo (void* profinfo_words)
 
   /* Add the new allocation point into the linked list of all allocation
      points. */
-  if (most_recent_allocation_point != NULL) {
-    most_recent_allocation_point->next = &Alloc_point_count(node, 0);
+  if (all_allocation_points != NULL) {
+    Alloc_point_next_ptr(node, 0) = (value) &all_allocation_points->count;
   }
   else {
-    all_allocation_points = (allocation_point*) node;
+    Assert(Alloc_point_next_ptr(node, 0) == Val_unit);
   }
-  most_recent_allocation_point = (allocation_point*) node;
-  Assert(Alloc_point_next_ptr(node, 0) == Val_unit);
+  all_allocation_points = (allocation_point*) node;
 
   return profinfo;
 }

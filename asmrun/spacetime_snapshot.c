@@ -71,12 +71,6 @@ typedef struct {
 
 typedef struct {
   /* (GC header here.) */
-  value profinfo;
-  value count;
-} total_allocation;
-
-typedef struct {
-  /* (GC header here.) */
   value time;  /* Cf. [Sys.time]. */
   value gc_stats;
   value entries;
@@ -179,6 +173,7 @@ static value take_snapshot(void)
   static raw_snapshot_entry* raw_entries = NULL;
   uintnat words_scanned = 0;
   uintnat words_scanned_with_profinfo = 0;
+  value v_total_allocations;
 
   time = caml_sys_time_unboxed(Val_unit);
   gc_stats = take_gc_stats();
@@ -337,9 +332,9 @@ void caml_spacetime_save_snapshot (struct channel *chan)
   }
   v_total_allocations = heap_snapshot->total_allocations;
   while (v_total_allocations != Val_unit) {
-    total_allocation* total = (total_allocation*) v_total_allocations;
+    value next = Field(v_total_allocations, 2);
     caml_stat_free(Hp_val(v_total_allocations));
-    v_total_allocations = total->next;
+    v_total_allocations = next;
   }
 
   caml_stat_free(Hp_val(v_snapshot));
