@@ -125,7 +125,7 @@ CAMLprim value caml_spacetime_ocaml_allocation_point_annotation
 {
   uintnat profinfo_shifted;
   profinfo_shifted = (uintnat) Alloc_point_profinfo(node, Long_val(offset));
-  return Val_long(profinfo_shifted >> PROFINFO_SHIFT);
+  return Val_long(Profinfo_hd(profinfo_shifted));
 }
 
 CAMLprim value caml_spacetime_ocaml_allocation_point_count
@@ -209,7 +209,7 @@ CAMLprim value caml_spacetime_c_node_profinfo(value node)
   c_node = caml_spacetime_offline_c_node_of_stored_pointer_not_null(node);
   Assert(caml_spacetime_offline_classify_c_node(c_node) == ALLOCATION);
   Assert(!Is_block(c_node->data.allocation.profinfo));
-  return c_node->data.allocation.profinfo;
+  return Val_long(Profinfo_hd(c_node->data.allocation.profinfo));
 }
 
 CAMLprim value caml_spacetime_c_node_allocation_count(value node)

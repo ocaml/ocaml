@@ -2,10 +2,25 @@ let () =
   if Array.length Sys.argv <> 3 then begin
     failwith "Syntax: spacetime_decoder <executable> <pathname of profile>"
   end;
+  let module R = Raw_spacetime_lib in
   let module S = Spacetime_lib in
   let series = S.Series.create ~executable:Sys.argv.(1) Sys.argv.(2) in
   List.iteri (fun index snapshot ->
       Printf.printf "Snapshot %d:\n" index;
+      let totals =
+        R.Heap_snapshot.total_allocations (S.Snapshot.raw snapshot)
+      in
+      let rec print_total = function
+        | None -> ()
+        | Some total ->
+          let module T = R.Heap_snapshot.Total_allocation in
+          let annotation = T.annotation total in
+          let count = T.count total in
+          Printf.printf "Annotation %d count %d\n%!"
+            (R.Annotation.to_int annotation) count;
+          print_total (T.next total)
+      in
+      print_total totals;
       let entries =
         S.Snapshot.entries_sorted_by_words_highest_first snapshot
       in

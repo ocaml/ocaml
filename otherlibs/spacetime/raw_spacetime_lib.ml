@@ -102,8 +102,8 @@ module Shape_table = struct
 
   let part_of_shape_size = function
     | Direct_call _
-    | Indirect_call _
-    | Allocation_point _ -> 1
+    | Indirect_call _ -> 1
+    | Allocation_point _ -> 3
 
   type raw = (Int64.t * (part_of_shape list)) list
 

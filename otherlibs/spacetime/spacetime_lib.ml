@@ -170,6 +170,7 @@ module Snapshot = struct
     { time : float;
       stats : Stats.t;
       entries : Entries.t;
+      raw : Heap_snapshot.t;
     }
 
   let time { time } = time
@@ -368,7 +369,7 @@ module Snapshot = struct
       in
       loop Entries.empty 0
     in
-    { time; stats; entries }
+    { time; stats; entries; raw = snapshot; }
 
   let compare x y =
     let cmp = Pervasives.compare x.time y.time in
@@ -381,6 +382,7 @@ module Snapshot = struct
 
   let hash = Hashtbl.hash
 
+  let raw t = t.raw
 end
 
 module Series = struct

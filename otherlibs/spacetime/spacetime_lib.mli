@@ -112,6 +112,7 @@ module Snapshot : sig
   val compare : t -> t -> int
   val hash : t -> int
 
+  val raw : t -> Raw_spacetime_lib.Heap_snapshot.t
 end
 
 module Series : sig
