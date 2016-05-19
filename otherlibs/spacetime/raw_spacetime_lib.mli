@@ -322,6 +322,8 @@ module Heap_snapshot : sig
     val num_words_including_headers : t -> int
     val next : t -> t option
   end
+  (** Total allocations across *all threads*. *)
+  (* CR-someday mshinwell: change the relevant variables to be thread-local *)
   val total_allocations : t -> Total_allocation.t option
 
   module Series : sig
