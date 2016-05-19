@@ -113,7 +113,7 @@ CAMLprim value caml_obj_dup(value arg)
 #define Setup_for_gc
 #define Restore_after_gc
       Alloc_small_with_profinfo(res, sz, tg,
-        caml_spacetime_my_profinfo(&spacetime_unwind_info));
+        caml_spacetime_my_profinfo(&spacetime_unwind_info, sz));
 #undef Setup_for_gc
 #undef Restore_after_gc
     }

@@ -113,8 +113,8 @@ module Trace : sig
           at the given allocation site. *)
       val annotation : t -> Annotation.t
 
-      (** How many times the allocation point has been hit. *)
-      val count : t -> int
+      (** The total number of words allocated at this point. *)
+      val num_words_including_headers : t -> int
     end
 
     module Direct_call_point : sig
@@ -209,7 +209,7 @@ module Trace : sig
 
       val program_counter : t -> Program_counter.Foreign.t
       val annotation : t -> Annotation.t
-      val count : t -> int
+      val num_words_including_headers : t -> int
     end
 
     module Call_point : sig
@@ -319,7 +319,7 @@ module Heap_snapshot : sig
     type t
 
     val annotation : t -> Annotation.t
-    val count : t -> int
+    val num_words_including_headers : t -> int
     val next : t -> t option
   end
   val total_allocations : t -> Total_allocation.t option

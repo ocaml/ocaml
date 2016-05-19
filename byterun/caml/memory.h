@@ -93,7 +93,7 @@ int caml_page_table_initialize(mlsize_t bytesize);
   (((uint64_t) (Profinfo_hd (hd))) << 4)
 
 extern int caml_spacetime;
-extern uintnat caml_spacetime_my_profinfo(struct ext_table**);
+extern uintnat caml_spacetime_my_profinfo(struct ext_table**, uintnat);
 
 #endif
 
@@ -131,7 +131,7 @@ extern uintnat caml_spacetime_my_profinfo(struct ext_table**);
   }                                                                         \
   Hd_hp (caml_young_ptr) =                                                  \
     Make_header_with_profinfo ((wosize), (tag), Caml_black,                 \
-      caml_spacetime_my_profinfo(NULL));                                    \
+      caml_spacetime_my_profinfo(NULL, wosize));                            \
   (result) = Val_hp (caml_young_ptr);                                       \
   DEBUG_clear ((result), (wosize));                                         \
 }while(0)

@@ -204,7 +204,7 @@ CAMLprim value caml_make_vect(value len, value init)
 #define Setup_for_gc
 #define Restore_after_gc
         Alloc_small_with_profinfo(res, size, 0,
-          caml_spacetime_my_profinfo(&spacetime_unwind_info));
+          caml_spacetime_my_profinfo(&spacetime_unwind_info, size));
 #undef Setup_for_gc
 #undef Restore_after_gc
       }

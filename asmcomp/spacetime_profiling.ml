@@ -103,6 +103,7 @@ let code_for_function_prologue ~function_name ~node_hole =
                   initialize_direct_tail_call_points_and_return_node))))))
 
 let code_for_blockheader ~value's_header ~node ~dbg =
+  let num_words = Nativeint.shift_right_logical value's_header 10 in
   let existing_profinfo = Ident.create "existing_profinfo" in
   let existing_count = Ident.create "existing_count" in
   let profinfo = Ident.create "profinfo" in
@@ -146,8 +147,12 @@ let code_for_blockheader ~value's_header ~node ~dbg =
               Cop (Cstore (Word_int, Lambda.Assignment),
                 [Cop (Caddi,
                   [Cvar address_of_profinfo; Cconst_int Arch.size_addr]);
-                 (* N.B. "2" not "1", since it's an OCaml integer. *)
-                 Cop (Caddi, [Cvar existing_count; Cconst_int 2]);
+                  Cop (Caddi, [
+                    Cvar existing_count;
+                    (* N.B. "*2" since the count is an OCaml integer.
+                       The "1 +" is to count the value's header. *)
+                    Cconst_int (2 * (1 + Nativeint.to_int num_words));
+                  ]);
                 ]),
               (* [profinfo] looks like a black [Infix_tag] header.  Instead of
                  having to mask [profinfo] before ORing it with the desired

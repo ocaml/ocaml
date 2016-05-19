@@ -502,7 +502,7 @@ CAMLprim value* caml_spacetime_indirect_node_hole_ptr
    caml_call_gc will do any allocation that ends up on the trie. */
 
 static NOINLINE void* find_trie_node_from_libunwind(int for_allocation,
-    struct ext_table** cached_frames)
+    uintnat wosize, struct ext_table** cached_frames)
 {
 #ifdef HAS_LIBUNWIND
   /* Given that [caml_last_return_address] is the most recent call site in
@@ -517,6 +517,9 @@ static NOINLINE void* find_trie_node_from_libunwind(int for_allocation,
      Otherwise, no node is recorded for the innermost frame, and the
      returned pointer is a pointer to the *node hole* where a node for that
      frame should be attached.
+
+     If [for_allocation] is non-zero then [wosize] must give the size in
+     words, excluding the header, of the value being allocated.
 
      If [cached_frames != NULL] then:
      1. If [*cached_frames] is NULL then save the captured backtrace in a
@@ -703,7 +706,7 @@ static NOINLINE void* find_trie_node_from_libunwind(int for_allocation,
     Assert(caml_spacetime_classify_c_node(node) == ALLOCATION);
     Assert(caml_spacetime_c_node_of_stored_pointer(node->next) != node);
     node->data.allocation.count =
-      Val_long(Long_val(node->data.allocation.count) + 1);
+      Val_long(Long_val(node->data.allocation.count) + (1 + wosize));
   }
 
   Assert(node->next != (value) NULL);
@@ -735,7 +738,7 @@ void caml_spacetime_c_to_ocaml(void* ocaml_entry_point,
 
 #ifdef HAS_LIBUNWIND
   value* node_temp;
-  node_temp = (value*) find_trie_node_from_libunwind(0, NULL);
+  node_temp = (value*) find_trie_node_from_libunwind(0, 0, NULL);
   if (node_temp != NULL) {
     caml_spacetime_trie_node_ptr = node_temp;
   }
@@ -837,7 +840,8 @@ CAMLprim uintnat caml_spacetime_generate_profinfo (void* profinfo_words,
   return profinfo;
 }
 
-uintnat caml_spacetime_my_profinfo (struct ext_table** cached_frames)
+uintnat caml_spacetime_my_profinfo (struct ext_table** cached_frames,
+                                    uintnat wosize)
 {
   /* Return the profinfo value that should be written into a value's header
      during an allocation from C.  This may necessitate extending the trie
@@ -846,7 +850,7 @@ uintnat caml_spacetime_my_profinfo (struct ext_table** cached_frames)
   c_node* node;
   uintnat profinfo = 0;
 
-  node = find_trie_node_from_libunwind(1, cached_frames);
+  node = find_trie_node_from_libunwind(1, wosize, cached_frames);
   if (node != NULL) {
     profinfo = ((uintnat) (node->data.allocation.profinfo)) >> PROFINFO_SHIFT;
   }

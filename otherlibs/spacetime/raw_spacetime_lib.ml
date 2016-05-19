@@ -186,7 +186,7 @@ module Trace = struct
           "caml_spacetime_ocaml_allocation_point_count"
           "noalloc"
 
-      let count t = count t.node t.offset
+      let num_words_including_headers t = count t.node t.offset
     end
 
     module Direct_call_point = struct
@@ -391,7 +391,7 @@ module Trace = struct
         = "caml_spacetime_only_works_for_native_code"
           "caml_spacetime_c_node_profinfo" "noalloc"
 
-      external count : t -> int
+      external num_words_including_headers : t -> int
         = "caml_spacetime_only_works_for_native_code"
           "caml_spacetime_c_node_allocation_count" "noalloc"
     end
@@ -913,7 +913,7 @@ module Heap_snapshot = struct
       | End -> assert false
       | Total { annotation; _ } -> annotation
 
-    let count = function
+    let num_words_including_headers = function
       | End -> assert false
       | Total { count; _ } -> count
 

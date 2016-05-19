@@ -15,8 +15,8 @@ let () =
         | Some total ->
           let module T = R.Heap_snapshot.Total_allocation in
           let annotation = T.annotation total in
-          let count = T.count total in
-          Printf.printf "Annotation %d count %d\n%!"
+          let count = T.num_words_including_headers total in
+          Printf.printf "Annotation %d num words %d\n%!"
             (R.Annotation.to_int annotation) count;
           print_total (T.next total)
       in

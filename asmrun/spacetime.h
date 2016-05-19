@@ -86,7 +86,8 @@ typedef enum {
    might not be a great problem since it is intended that the total counts
    be obtained via snapshots, but it seems neater and easier to use
    Infix_tag.
-   The "count" is just an OCaml integer.
+   The "count" is just an OCaml integer giving the total number of words
+   (including headers) allocated at the point.
    The "pointer to next allocation point" points to the "count" word of the
    next allocation point in the linked list of all allocation points.
    There is no special encoding needed by virtue of the [Infix_tag] trick. */
@@ -151,7 +152,8 @@ extern value* caml_spacetime_finaliser_trie_root;
 extern allocation_point* all_allocation_points;
 
 extern void caml_spacetime_initialize(void);
-extern uintnat caml_spacetime_my_profinfo(spacetime_unwind_info_cache*);
+extern uintnat caml_spacetime_my_profinfo(
+  spacetime_unwind_info_cache*, uintnat);
 extern void caml_spacetime_register_dynamic_library(const char*, void*);
 extern c_node_type caml_spacetime_classify_c_node(c_node* node);
 extern c_node* caml_spacetime_c_node_of_stored_pointer(value);
