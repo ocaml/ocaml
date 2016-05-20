@@ -137,35 +137,35 @@ let code_for_blockheader ~value's_header ~node ~dbg =
           Cop (Ccmpi Cne, [Cvar existing_profinfo; Cconst_int 1 (* () *)]),
           Cvar existing_profinfo,
           generate_new_profinfo),
-        Clet (existing_count,
-          Cop (Cload Word_int, [
-            Cop (Caddi,
-              [Cvar address_of_profinfo; Cconst_int Arch.size_addr])
-          ]),
-          Csequence (
-            Cop (Cstore (Word_int, Lambda.Assignment),
-              [Cop (Caddi,
-                [Cvar address_of_profinfo; Cconst_int Arch.size_addr]);
-                Cop (Caddi, [
-                  Cvar existing_count;
-                  (* N.B. "*2" since the count is an OCaml integer.
-                     The "1 +" is to count the value's header. *)
-                  Cconst_int (2 * (1 + Nativeint.to_int num_words));
-                ]);
-              ]),
-            (* [profinfo] looks like a black [Infix_tag] header.  Instead of
-               having to mask [profinfo] before ORing it with the desired
-               header, we can use an XOR trick, to keep code size down. *)
-            let value's_header =
-              Nativeint.logxor value's_header
-                (Nativeint.logor
-                  ((Nativeint.logor (Nativeint.of_int Obj.infix_tag)
-                    (Nativeint.shift_left 3n (* <- Caml_black *) 8)))
-                  (Nativeint.shift_left
-                    (* The following is the [Infix_offset_val], in words. *)
-                    (Nativeint.of_int (index_within_node + 1)) 10))
-            in
-            Csequence (Cop (Clabel label, []),
+        Csequence (Cop (Clabel label, []),
+          Clet (existing_count,
+            Cop (Cload Word_int, [
+              Cop (Caddi,
+                [Cvar address_of_profinfo; Cconst_int Arch.size_addr])
+            ]),
+            Csequence (
+              Cop (Cstore (Word_int, Lambda.Assignment),
+                [Cop (Caddi,
+                  [Cvar address_of_profinfo; Cconst_int Arch.size_addr]);
+                  Cop (Caddi, [
+                    Cvar existing_count;
+                    (* N.B. "*2" since the count is an OCaml integer.
+                       The "1 +" is to count the value's header. *)
+                    Cconst_int (2 * (1 + Nativeint.to_int num_words));
+                  ]);
+                ]),
+              (* [profinfo] looks like a black [Infix_tag] header.  Instead of
+                 having to mask [profinfo] before ORing it with the desired
+                 header, we can use an XOR trick, to keep code size down. *)
+              let value's_header =
+                Nativeint.logxor value's_header
+                  (Nativeint.logor
+                    ((Nativeint.logor (Nativeint.of_int Obj.infix_tag)
+                      (Nativeint.shift_left 3n (* <- Caml_black *) 8)))
+                    (Nativeint.shift_left
+                      (* The following is the [Infix_offset_val], in words. *)
+                      (Nativeint.of_int (index_within_node + 1)) 10))
+              in
               Cop (Cxor, [Cvar profinfo; Cconst_natint value's_header])))))))
 
 type callee =
