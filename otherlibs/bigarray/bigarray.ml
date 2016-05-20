@@ -110,7 +110,9 @@ module Genarray = struct
 
   external kind: ('a, 'b, 'c) t -> ('a, 'b) kind = "caml_ba_kind"
   external layout: ('a, 'b, 'c) t -> 'c layout = "caml_ba_layout"
-
+  external change_layout: ('a, 'b, 'c) t -> 'd layout -> ('a, 'b, 'd) t
+     = "caml_ba_change_layout"
+ 
   let size_in_bytes arr =
     (kind_size_in_bytes (kind arr)) * (Array.fold_left ( * ) 1 (dims arr))
 

@@ -287,7 +287,13 @@ module Genarray :
 
   external layout: ('a, 'b, 'c) t -> 'c layout = "caml_ba_layout"
   (** Return the layout of the given big array. *)
-
+  
+  external change_layout: ('a, 'b, 'c) t -> 'd layout -> ('a, 'b, 'd) t = "caml_ba_change_layout"
+  (** [Genarray.change_layout a layout] returns a bigarray with the
+      specified [layout], sharing the data with [a] (and hence having
+      the same dimensions as [a]). No copying of elements is involved: the
+      new array and the original array share the same storage space. *)
+   
   val size_in_bytes : ('a, 'b, 'c) t -> int
   (** [size_in_bytes a] is the number of elements in [a] multiplied
     by [a]'s {!kind_size_in_bytes}.

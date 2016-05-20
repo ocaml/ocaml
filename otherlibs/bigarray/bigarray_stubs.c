@@ -1077,7 +1077,25 @@ CAMLprim value caml_ba_slice(value vb, value vind)
 
   #undef b
 }
+    
+/* Changing the layout of an array (memory is shared) */    
 
+CAMLprim value caml_ba_change_layout(value vb, value vlayout)
+{
+  CAMLparam2 (vb, vlayout);
+  CAMLlocal1 (res);
+  #define b ((struct caml_ba_array *) Caml_ba_array_val(vb))
+  /* change to the desired layout */
+  int flags = (b->flags & CAML_BA_KIND_MASK) | Caml_ba_layout_val(vlayout);
+  /* Allocate an OCaml bigarray to hold the result */
+  res = caml_ba_alloc(flags, b->num_dims, b->data, b->dim);
+  /* Create or update proxy in case of managed bigarray */
+  caml_ba_update_proxy(b, Caml_ba_array_val(res));
+  /* Return result */
+  CAMLreturn (res);
+  #undef b
+}
+ 
 /* Extracting a sub-array of same number of dimensions */
 
 CAMLprim value caml_ba_sub(value vb, value vofs, value vlen)
