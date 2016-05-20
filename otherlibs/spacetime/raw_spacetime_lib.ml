@@ -953,10 +953,12 @@ module Heap_snapshot = struct
       let chn = open_in path in
       let snapshots = read_snapshots chn [] in
       let num_snapshots = Array.length snapshots in
+Printf.eprintf "num_snapshots %d\n%!" num_snapshots;
       let time_of_writer_close : float = Marshal.from_channel chn in
       let frame_table = Frame_table.demarshal chn in
       let shape_table = Shape_table.demarshal chn in
       let num_threads : int = Marshal.from_channel chn in
+Printf.eprintf "num_threads %d\n%!" num_threads;
       let traces_by_thread = Array.init num_threads (fun _ -> None) in
       let finaliser_traces_by_thread =
         Array.init num_threads (fun _ -> None)
@@ -965,7 +967,8 @@ module Heap_snapshot = struct
         let trace : Trace.t = Trace.unmarshal chn in
         let finaliser_trace : Trace.t = Trace.unmarshal chn in
         traces_by_thread.(thread) <- trace;
-        finaliser_traces_by_thread.(thread) <- finaliser_trace
+        finaliser_traces_by_thread.(thread) <- finaliser_trace;
+Printf.eprintf "Read one trace\n%!";
       done;
       close_in chn;
       { num_snapshots;

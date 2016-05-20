@@ -24,6 +24,7 @@
 #include <fcntl.h>
 #include <limits.h>
 #include <math.h>
+#include <sys/types.h>
 
 #include "caml/alloc.h"
 #include "caml/backtrace_prim.h"
@@ -118,9 +119,12 @@ void caml_spacetime_initialize(void)
     if(interval != 0) {
       int fd;
       double time;
-      /* CR mshinwell: the filename must vary! */
-      fd = open("spacetime", O_WRONLY | O_CREAT | O_TRUNC | O_BINARY, 0666);
-      if (fd == -1) caml_sys_error(caml_copy_string("spacetime"));
+      char filename[256];
+      snprintf(filename, 256, "spacetime-%d", getpid());
+      filename[255] = '\0';
+      /* CR mshinwell: the filename must vary! - the current fix isn't good enough */
+      fd = open(filename, O_WRONLY | O_CREAT | O_TRUNC | O_BINARY, 0666);
+      if (fd == -1) caml_sys_error(caml_copy_string(filename));
       snapshot_channel = caml_open_descriptor_out(fd);
       snapshot_interval = interval / 1e3;
       time = caml_sys_time_unboxed(Val_unit);
