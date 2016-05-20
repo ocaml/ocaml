@@ -292,7 +292,9 @@ module Genarray :
   (** [Genarray.change_layout a layout] returns a bigarray with the
       specified [layout], sharing the data with [a] (and hence having
       the same dimensions as [a]). No copying of elements is involved: the
-      new array and the original array share the same storage space. *)
+      new array and the original array share the same storage space.
+      The dimensions are reversed, such that [get v [| a; b |]] in
+      C layout becomes [get v [| b+1; a+1 |]] in Fortran layout. *)
    
   val size_in_bytes : ('a, 'b, 'c) t -> int
   (** [size_in_bytes a] is the number of elements in [a] multiplied
