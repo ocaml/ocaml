@@ -1085,23 +1085,24 @@ CAMLprim value caml_ba_change_layout(value vb, value vlayout)
   CAMLparam2 (vb, vlayout);
   CAMLlocal1 (res);
   #define b ((struct caml_ba_array *) Caml_ba_array_val(vb))
-  unsigned int i;
-  intnat new_dim[b->num_dims];
-  /* change the flags to reflect the new layout */
-  int flags = (b->flags & CAML_BA_KIND_MASK) | Caml_ba_layout_val(vlayout);
-  /* if the layout is different, reverse the dimensions */
+  /* if the layout is different, change the flags and reverse the dimensions */
   if (Caml_ba_layout_val(vlayout) != (b->flags & CAML_BA_LAYOUT_MASK)) {
-    for(i=0;i<b->num_dims;i++) new_dim[i] = b->dim[b->num_dims-i-1];
+    /* change the flags to reflect the new layout */
+    int flags = (b->flags & CAML_BA_KIND_MASK) | Caml_ba_layout_val(vlayout);
+    /* reverse the dimensions */
+    intnat new_dim[b->num_dims];
+    unsigned int i;
+    for(i = 0; i < b->num_dims; i++) new_dim[i] = b->dim[b->num_dims - i - 1];
     res = caml_ba_alloc(flags, b->num_dims, b->data, new_dim);
+    caml_ba_update_proxy(b, Caml_ba_array_val(res));
+    CAMLreturn(res);
   } else {
-    res = caml_ba_alloc(flags, b->num_dims, b->data, b->dim);
+  /* otherwise, do nothing */  
+  CAMLreturn(vb);
   }
-  /* Create or update proxy in case of managed bigarray */
-  caml_ba_update_proxy(b, Caml_ba_array_val(res));
-  /* Return result */
-  CAMLreturn (res);
   #undef b
 }
+
 
 /* Extracting a sub-array of same number of dimensions */
 
