@@ -1090,7 +1090,7 @@ CAMLprim value caml_ba_change_layout(value vb, value vlayout)
     /* change the flags to reflect the new layout */
     int flags = (b->flags & CAML_BA_KIND_MASK) | Caml_ba_layout_val(vlayout);
     /* reverse the dimensions */
-    intnat new_dim[b->num_dims];
+    intnat new_dim[CAML_BA_MAX_NUM_DIMS];
     unsigned int i;
     for(i = 0; i < b->num_dims; i++) new_dim[i] = b->dim[b->num_dims - i - 1];
     res = caml_ba_alloc(flags, b->num_dims, b->data, new_dim);
