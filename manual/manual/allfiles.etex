@@ -49,6 +49,7 @@ and as a
 \input{moduleexamples.tex}
 \input{objectexamples.tex}
 \input{lablexamples.tex}
+\input{polymorphism.tex}
 \input{advexamples.tex}
 
 \part{The OCaml language}
