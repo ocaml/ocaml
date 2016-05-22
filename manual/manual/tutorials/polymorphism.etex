@@ -37,8 +37,8 @@ Once the specific type "t" behind the placeholder type "'_a" known, all
 occurrences of "'_a" will be replaced by "t".
 
 This distinction between weakly and generic polymorphic type variable protects
-OCaml program from unsoundness and runtime errors. To understand from where 
-unsoundness might come, consider this simple function which swap a value "x"
+OCaml program from unsoundness and runtime errors. To understand from where
+unsoundness might come, consider this simple function which swaps a value "x"
 with the value stored inside a "store" reference, if there is such value:
 \begin{caml_example}
 let swap store x = match !store with
@@ -81,8 +81,8 @@ module.
 \subsection{The value restriction}\label{ss:valuerestriction}
 
 Identifying the exact context in which polymorphic types should be
-replaced by weak types in a modular way is a difficult question. A first 
-natural idea would be to state that any mutable object like reference, arrays 
+replaced by weak types in a modular way is a difficult question. A first
+natural idea would be to state that any mutable object like reference, arrays
 or a record mutable field should never have a polymorphic type. Unfortunately,
 this rule is not sufficient, as illustrated by the following function that
 hides an uses an internal reference to implement a delayed identity function
@@ -113,7 +113,7 @@ function:
 \begin{caml_example}
 let id_again = fun x -> (fun x -> x) (fun x -> x) x;;
 \end{caml_example}
-Whith this argument, "id_again" is seen as a function definition by the type
+With this argument, "id_again" is seen as a function definition by the type
 checker and can therefore be generalized.
 
 This kind of manipulation is called eta-expansion in lambda calculus and
@@ -173,7 +173,7 @@ polymorphic type "'a" and obtain back a polymorphic type "'a t".
 Allied with this relaxed value restriction, type parameter covariance
 helps to avoid eta-expansion in many situation.
 
-\subsection{Asbract data types}
+\subsection{Abstract data types}
 Moreover, when the associated type definitions are visible, the type checker
 is able to infer variance information on its own and one can benefit from
 the relaxed value restriction even unknowingly. However, this is not the case
@@ -342,8 +342,8 @@ It would then be natural to factorize these two definitions as:
     let average f x y = (f x + f y) / 2;;
 \end{caml_example}
 
-However, the type of "average len" is less generic than the type of 
-"average_len", since it requires the type of the first and second argument to 
+However, the type of "average len" is less generic than the type of
+"average_len", since it requires the type of the first and second argument to
 be the same:
 \begin{caml_example}
   average len (List [2]) (List [[]]);;
@@ -366,9 +366,9 @@ function. Type inference for second-rank polymorphic function and beyond is
 undecidable; therefore using this kind of higher-rank function requires to
 handle manually these universally quantified type.
 
-In OCaml, there is three main way to introduce this kind of explicit universally
-quantified type: explicit polymorphic annotation which only work for first-rank
-polymorphism, universally quantified record fields,
+In OCaml, there are three main ways to introduce this kind of explicit
+universally quantified types: explicit polymorphic annotation which only work
+for first-rank polymorphism, universally quantified record fields,
 \begin{caml_example}
   type 'a nested_reduction = { f:'elt. 'elt nested -> 'a };;
   let boxed_len = { f = len };;
