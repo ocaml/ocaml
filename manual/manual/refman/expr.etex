@@ -100,6 +100,7 @@ pattern-matching:
 let-binding:
     pattern '=' expr
   | value-name { parameter } [':' typexpr] [':>' typexpr] '=' expr
+  | value-name ':' poly-typexpr '=' expr %since 3.12
 ;
 parameter:
     pattern
@@ -415,6 +416,20 @@ The behavior of other forms of @"let" "rec"@ definitions is
 implementation-dependent. The current implementation also supports
 a certain class of recursive definitions of non-functional values,
 as explained in section~\ref{s:letrecvalues}.
+\subsubsection{Explicit polymorphic type annotations}
+(Introduced in OCaml 3.12)
+
+Polymorphic type annotations in @"let"@-definitions behave in a way
+similar to polymorphic methods:
+
+\begin{center}
+@"let" pattern_1 ":" typ_1 \ldots typ_n "." typeexpr "=" expr  @
+\end{center}
+
+These annotations explicitly require the defined value to be polymorphic,
+and allow one to use this polymorphism in recursive occurrences
+(when using @"let" "rec"@). Note however that this is a normal polymorphic
+type, unifiable with any instance of itself.
 
 \subsection{Control structures}
 
