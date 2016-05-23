@@ -1055,64 +1055,64 @@ let flush_buffer_formatter buf ppf =
 let flush_str_formatter () = flush_buffer_formatter stdbuf str_formatter
 
 (*
-  Abstract pretty-printing
+  Symbolic pretty-printing
 *)
 
-type formatter_output_item =
+(*
+  Symbolic pretty-printing is pretty-printing with no low level output.
+
+  When using a symbolic formatter, all regular pretty-printing activities
+  occur but output material is symbolic and stored in a buffer of output
+  items. At the end of pretty-printing, flushing the output buffer allows
+  post-processing of symbolic output before low level output operations.
+*)
+
+type symbolic_output_item =
   | Output_flush
   | Output_newline
   | Output_string of string
   | Output_spaces of int
   | Output_indent of int
-;;
 
-type formatter_output_buffer = {
-  mutable formatter_output_contents : formatter_output_item list;
+type symbolic_output_buffer = {
+  mutable symbolic_output_contents : symbolic_output_item list;
 }
-;;
 
-let make_formatter_output_buffer () =
-  { formatter_output_contents = [] }
-;;
+let make_symbolic_output_buffer () =
+  { symbolic_output_contents = [] }
 
-let clear_formatter_output_buffer fo =
-  fo.formatter_output_contents <- []
-;;
+let clear_symbolic_output_buffer sob =
+  sob.symbolic_output_contents <- []
 
-let get_formatter_output_buffer fo =
-  List.rev fo.formatter_output_contents
-;;
+let get_symbolic_output_buffer sob =
+  List.rev sob.symbolic_output_contents
 
-let flush_formatter_output_buffer fo =
-  let fois = get_formatter_output_buffer fo in
-  clear_formatter_output_buffer fo;
-  fois
-;;
+let flush_symbolic_output_buffer sob =
+  let items = get_symbolic_output_buffer sob in
+  clear_symbolic_output_buffer sob;
+  items
 
-let add_formatter_output_item fo foi =
-  fo.formatter_output_contents <-
-    foi :: fo.formatter_output_contents
-;;
+let add_symbolic_output_item sob item =
+  sob.symbolic_output_contents <- item :: sob.symbolic_output_contents
 
-let formatter_of_formatter_output_buffer fo =
-  let formatter_flush fo () =
-    add_formatter_output_item fo Output_flush
-  and formatter_newline fo () =
-    add_formatter_output_item fo Output_newline
-  and formatter_string fo s i n =
-    add_formatter_output_item fo (Output_string (String.sub s i n))
-  and formatter_spaces fo n =
-    add_formatter_output_item fo (Output_spaces n)
-  and formatter_indent fo n =
-    add_formatter_output_item fo (Output_indent n) in
+let formatter_of_symbolic_output_buffer sob =
+  let symbolic_flush sob () =
+    add_symbolic_output_item sob Output_flush
+  and symbolic_newline sob () =
+    add_symbolic_output_item sob Output_newline
+  and symbolic_string sob s i n =
+    add_symbolic_output_item sob (Output_string (String.sub s i n))
+  and symbolic_spaces sob n =
+    add_symbolic_output_item sob (Output_spaces n)
+  and symbolic_indent sob n =
+    add_symbolic_output_item sob (Output_indent n) in
 
-  let f = formatter_string fo
-  and g = formatter_flush fo
-  and h = formatter_newline fo
-  and i = formatter_spaces fo
-  and j = formatter_indent fo in
+  let f = symbolic_string sob
+  and g = symbolic_flush sob
+  and h = symbolic_newline sob
+  and i = symbolic_spaces sob
+  and j = symbolic_indent sob in
   pp_make_formatter f g h i j
-;;
 
 (*
 
