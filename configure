@@ -1108,7 +1108,14 @@ echo "UNIX_OR_WIN32=$unix_or_win32" >> Makefile
 echo "UNIXLIB=$unixlib" >> Makefile
 echo "GRAPHLIB=$graphlib" >> Makefile
 
-otherlibraries="$unixlib str num dynlink bigarray spacetime"
+otherlibraries="$unixlib str num dynlink bigarray"
+
+# Spacetime profiling is only available for native code.
+
+case "$native_compiler" in
+    true) otherlibraries="$otherlibraries raw_spacetime_lib" ;;
+    *) ;;
+esac
 
 # For the Unix library
 
