@@ -96,8 +96,14 @@ static const uintnat chunk_size = 1024 * 1024;
 
 static void reinitialise_free_node_block(void)
 {
+  size_t index;
+
   start_of_free_node_block = (char*) malloc(chunk_size);
   end_of_free_node_block = start_of_free_node_block + chunk_size;
+
+  for (index = 0; index < chunk_size / sizeof(value); index++) {
+    ((value*) start_of_free_node_block)[index] = Val_unit;
+  }
 }
 
 #ifndef O_BINARY
@@ -322,7 +328,6 @@ static value find_tail_node(value node, void* callee)
 CAMLprim value caml_spacetime_allocate_node(
       int size_including_header, void* pc, value* node_hole)
 {
-  int field;
   value node;
   value caller_node = Val_unit;
 
@@ -373,12 +378,10 @@ CAMLprim value caml_spacetime_allocate_node(
      direct tail call points.  (We cannot just count them and put them at the
      beginning of the node because we need the indexes of elements within the
      node during instruction selection before we have found all call points.)
-  */
 
-  for (field = Node_num_header_words; field < size_including_header - 1;
-       field++) {
-    Field(node, field) = Val_unit;
-  }
+     All other fields have already been initialised by
+     [reinitialise_free_node_block].
+  */
 
   *node_hole = node;
 
