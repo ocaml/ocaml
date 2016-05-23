@@ -563,6 +563,10 @@ let emit_instr fallthrough i =
           load_symbol_addr "caml_young_ptr" r11;
           I.mov (mem64 QWORD 0 R11) r15
         end;
+        (* CR-soon mshinwell: It would be nice to re-use the frame that's
+           already here---but the label instruction isn't in the correct
+           place for that, thanks to the caml_young_ptr reload. *)
+        record_frame Reg.Set.empty i.dbg
       end else begin
         emit_call s;
         if Config.spacetime then begin
