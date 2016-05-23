@@ -49,6 +49,7 @@
 #define NOINLINE __attribute__((noinline))
 
 #ifdef HAS_LIBUNWIND
+#define UNW_LOCAL_ONLY
 #include "libunwind.h"
 #endif
 
