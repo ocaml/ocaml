@@ -13,7 +13,7 @@
 #*                                                                        *
 #**************************************************************************
 
-include ../config/Makefile
+include ../global.mk
 
 INSTALL_DIR=$(DESTDIR)$(MANDIR)/man$(MANEXT)
 

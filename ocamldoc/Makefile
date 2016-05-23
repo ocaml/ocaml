@@ -13,7 +13,7 @@
 #*                                                                        *
 #**************************************************************************
 
-include ../config/Makefile
+include ../global.mk
 CAMLRUN ?= ../boot/ocamlrun
 CAMLYACC ?= ../boot/ocamlyacc
 
@@ -248,24 +248,24 @@ odoc_see_lexer.ml: odoc_see_lexer.mll
 # Installation targets
 ######################
 install: dummy
-	if test -d "$(INSTALL_BINDIR)"; then : ; else $(MKDIR) "$(INSTALL_BINDIR)"; fi
-	if test -d "$(INSTALL_LIBDIR)"; then : ; else $(MKDIR) "$(INSTALL_LIBDIR)"; fi
-	if test -d "$(INSTALL_CUSTOMDIR)"; then : ; else $(MKDIR) "$(INSTALL_CUSTOMDIR)"; fi
-	$(CP) $(OCAMLDOC) "$(INSTALL_BINDIR)/$(OCAMLDOC)$(EXE)"
-	$(CP) ocamldoc.hva *.cmi $(OCAMLDOC_LIBCMA) "$(INSTALL_LIBDIR)"
-	$(CP) $(INSTALL_MLIS) $(INSTALL_CMIS) "$(INSTALL_LIBDIR)"
-	if test -d "$(INSTALL_MANODIR)"; then : ; else $(MKDIR) "$(INSTALL_MANODIR)"; fi
-	if test -d stdlib_man; then $(CP) stdlib_man/* "$(INSTALL_MANODIR)"; else : ; fi
+	if test -d $(INSTALL_BINDIR); then : ; else $(MKDIR) $(INSTALL_BINDIR); fi
+	if test -d $(INSTALL_LIBDIR); then : ; else $(MKDIR) $(INSTALL_LIBDIR); fi
+	if test -d $(INSTALL_CUSTOMDIR); then : ; else $(MKDIR) $(INSTALL_CUSTOMDIR); fi
+	$(CP) $(OCAMLDOC) $(INSTALL_BINDIR)/$(OCAMLDOC)$(EXE)
+	$(CP) ocamldoc.hva *.cmi $(OCAMLDOC_LIBCMA) $(INSTALL_LIBDIR)
+	$(CP) $(INSTALL_MLIS) $(INSTALL_CMIS) $(INSTALL_LIBDIR)
+	if test -d $(INSTALL_MANODIR); then : ; else $(MKDIR) $(INSTALL_MANODIR); fi
+	if test -d stdlib_man; then $(CP) stdlib_man/* $(INSTALL_MANODIR); else : ; fi
 
 installopt:
 	if test -f $(OCAMLDOC_OPT); then $(MAKE) installopt_really ; fi
 
 installopt_really:
-	if test -d "$(INSTALL_BINDIR)"; then : ; else $(MKDIR) "$(INSTALL_BINDIR)"; fi
-	if test -d "$(INSTALL_LIBDIR)"; then : ; else $(MKDIR) "$(INSTALL_LIBDIR)"; fi
-	$(CP) $(OCAMLDOC_OPT) "$(INSTALL_BINDIR)/$(OCAMLDOC_OPT)$(EXE)"
-	$(CP) ocamldoc.hva *.cmx $(OCAMLDOC_LIBA) $(OCAMLDOC_LIBCMXA) "$(INSTALL_LIBDIR)"
-	$(CP) $(INSTALL_MLIS) $(INSTALL_CMIS) "$(INSTALL_LIBDIR)"
+	if test -d $(INSTALL_BINDIR); then : ; else $(MKDIR) $(INSTALL_BINDIR); fi
+	if test -d $(INSTALL_LIBDIR); then : ; else $(MKDIR) $(INSTALL_LIBDIR); fi
+	$(CP) $(OCAMLDOC_OPT) $(INSTALL_BINDIR)/$(OCAMLDOC_OPT)$(EXE)
+	$(CP) ocamldoc.hva *.cmx $(OCAMLDOC_LIBA) $(OCAMLDOC_LIBCMXA) $(INSTALL_LIBDIR)
+	$(CP) $(INSTALL_MLIS) $(INSTALL_CMIS) $(INSTALL_LIBDIR)
 
 # Testing :
 ###########

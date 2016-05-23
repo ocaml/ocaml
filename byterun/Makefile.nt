@@ -15,7 +15,7 @@
 
 include Makefile.common
 
-CFLAGS=-DOCAML_STDLIB_DIR='"$(LIBDIR)"' $(IFLEXDIR)
+CFLAGS="-DOCAML_STDLIB_DIR=\"$(subst ",,$(subst \,\\,$(LIBDIR)))\"" $(IFLEXDIR)
 
 ifdef BOOTSTRAPPING_FLEXLINK
 MAKE_OCAMLRUN=$(MKEXE_BOOT)

@@ -52,11 +52,11 @@ parsing/ast_helper.cmx : parsing/parsetree.cmi parsing/longident.cmx \
 parsing/ast_helper.cmi : parsing/parsetree.cmi parsing/longident.cmi \
     parsing/location.cmi parsing/docstrings.cmi parsing/asttypes.cmi
 parsing/ast_invariants.cmo : parsing/syntaxerr.cmi parsing/parsetree.cmi \
-    parsing/longident.cmi parsing/asttypes.cmi parsing/ast_iterator.cmi \
-    parsing/ast_invariants.cmi
+    parsing/longident.cmi parsing/builtin_attributes.cmi parsing/asttypes.cmi \
+    parsing/ast_iterator.cmi parsing/ast_invariants.cmi
 parsing/ast_invariants.cmx : parsing/syntaxerr.cmx parsing/parsetree.cmi \
-    parsing/longident.cmx parsing/asttypes.cmi parsing/ast_iterator.cmx \
-    parsing/ast_invariants.cmi
+    parsing/longident.cmx parsing/builtin_attributes.cmx parsing/asttypes.cmi \
+    parsing/ast_iterator.cmx parsing/ast_invariants.cmi
 parsing/ast_invariants.cmi : parsing/parsetree.cmi
 parsing/ast_iterator.cmo : parsing/parsetree.cmi parsing/location.cmi \
     parsing/ast_iterator.cmi
@@ -892,11 +892,6 @@ asmcomp/deadcode.cmo : asmcomp/reg.cmi asmcomp/proc.cmi asmcomp/mach.cmi \
 asmcomp/deadcode.cmx : asmcomp/reg.cmx asmcomp/proc.cmx asmcomp/mach.cmx \
     asmcomp/deadcode.cmi
 asmcomp/deadcode.cmi : asmcomp/mach.cmi
-asmcomp/debuginfo.cmo : parsing/location.cmi bytecomp/lambda.cmi \
-    asmcomp/debuginfo.cmi
-asmcomp/debuginfo.cmx : parsing/location.cmx bytecomp/lambda.cmx \
-    asmcomp/debuginfo.cmi
-asmcomp/debuginfo.cmi : parsing/location.cmi bytecomp/lambda.cmi
 asmcomp/emit.cmo : asmcomp/x86_proc.cmi asmcomp/x86_masm.cmi \
     asmcomp/x86_gas.cmi asmcomp/x86_dsl.cmi asmcomp/x86_ast.cmi \
     asmcomp/reg.cmi asmcomp/proc.cmi utils/misc.cmi asmcomp/mach.cmi \

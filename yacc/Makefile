@@ -15,7 +15,7 @@
 
 # Makefile for the parser generator.
 
-include ../config/Makefile
+include ../global.mk
 
 CC=$(BYTECC)
 CFLAGS=-DNDEBUG $(BYTECCCOMPOPTS)
@@ -30,7 +30,9 @@ ocamlyacc$(EXE): $(OBJS)
 	$(MKEXE) -o ocamlyacc$(EXE) $(OBJS) $(EXTRALIBS)
 
 version.h : ../VERSION
-	echo "#define OCAML_VERSION \"`sed -e 1q ../VERSION`\"" >version.h
+	sed -n -e '1s/^/#define OCAML_VERSION "/' \
+	       -e '1s/$$/"/w version.h' \
+	       -e '1q' ../VERSION
 
 clean:
 	rm -f *.$(O) ocamlyacc$(EXE) *~ version.h

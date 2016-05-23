@@ -187,40 +187,34 @@ world.opt: coldstart opt.opt
 
 # Installation
 
-COMPLIBDIR=$(LIBDIR)/compiler-libs
-
-INSTALL_BINDIR=$(DESTDIR)$(BINDIR)
-INSTALL_LIBDIR=$(DESTDIR)$(LIBDIR)
-INSTALL_COMPLIBDIR=$(DESTDIR)$(COMPLIBDIR)
-INSTALL_STUBLIBDIR=$(DESTDIR)$(STUBLIBDIR)
-INSTALL_MANDIR=$(DESTDIR)$(MANDIR)
-INSTALL_DISTRIB=$(DESTDIR)$(PREFIX)
-
 install: installbyt installopt
 
 installbyt:
-	mkdir -p "$(INSTALL_BINDIR)"
-	mkdir -p "$(INSTALL_LIBDIR)"
-	mkdir -p "$(INSTALL_STUBLIBDIR)"
-	mkdir -p "$(INSTALL_COMPLIBDIR)"
-	cp VERSION "$(INSTALL_LIBDIR)/"
+	mkdir -p $(INSTALL_BINDIR)
+	mkdir -p $(INSTALL_LIBDIR)
+	mkdir -p $(INSTALL_STUBLIBDIR)
+	mkdir -p $(INSTALL_COMPLIBDIR)
+	cp VERSION $(INSTALL_LIBDIR)/
 	cd byterun ; $(MAKEREC) install
-	cp ocamlc "$(INSTALL_BINDIR)/ocamlc.exe"
-	cp ocaml "$(INSTALL_BINDIR)/ocaml.exe"
+	cp ocamlc $(INSTALL_BINDIR)/ocamlc.byte.exe
+	cp ocamlc $(INSTALL_BINDIR)/ocamlc.exe
+	cp ocaml $(INSTALL_BINDIR)/ocaml.byte.exe
+	cp ocaml $(INSTALL_BINDIR)/ocaml.exe
 	cd stdlib ; $(MAKEREC) install
-	cp lex/ocamllex "$(INSTALL_BINDIR)/ocamllex.exe"
-	cp yacc/ocamlyacc.exe "$(INSTALL_BINDIR)/ocamlyacc.exe"
+	cp lex/ocamllex $(INSTALL_BINDIR)/ocamllex.byte.exe
+	cp lex/ocamllex $(INSTALL_BINDIR)/ocamllex.exe
+	cp yacc/ocamlyacc.exe $(INSTALL_BINDIR)/ocamlyacc.exe
 	cp utils/*.cmi utils/*.cmt utils/*.cmti \
 	   parsing/*.cmi parsing/*.cmt parsing/*.cmti \
 	   typing/*.cmi typing/*.cmt typing/*.cmti \
 	   bytecomp/*.cmi bytecomp/*.cmt bytecomp/*.cmti \
 	   driver/*.cmi driver/*.cmt driver/*.cmti \
-	   toplevel/*.cmi toplevel/*.cmt toplevel/*.cmti "$(INSTALL_COMPLIBDIR)"
+	   toplevel/*.cmi toplevel/*.cmt toplevel/*.cmti $(INSTALL_COMPLIBDIR)
 	cp compilerlibs/ocamlcommon.cma compilerlibs/ocamlbytecomp.cma \
 	   compilerlibs/ocamltoplevel.cma $(BYTESTART) $(TOPLEVELSTART) \
-	   "$(INSTALL_COMPLIBDIR)"
-	cp expunge "$(INSTALL_LIBDIR)/expunge.exe"
-	cp toplevel/topdirs.cmi "$(INSTALL_LIBDIR)"
+	   $(INSTALL_COMPLIBDIR)
+	cp expunge $(INSTALL_LIBDIR)/expunge.exe
+	cp toplevel/topdirs.cmi $(INSTALL_LIBDIR)
 	cd tools ; $(MAKEREC) install
 	for i in $(OTHERLIBRARIES); do \
 	  $(MAKEREC) -C otherlibs/$$i install || exit $$?; \
@@ -234,12 +228,12 @@ installbyt:
 	if test -n "$(FLEXDLL_SUBMODULE_PRESENT)"; then \
 	  $(MAKEREC) install-flexdll; \
 	fi
-	cp config/Makefile "$(INSTALL_LIBDIR)/Makefile.config"
-	if test -n "$(INSTALL_DISTRIB)"; then \
-	   cp README "$(INSTALL_DISTRIB)/Readme.general.txt"; \
-	   cp README.win32 "$(INSTALL_DISTRIB)/Readme.windows.txt"; \
-	   cp LICENSE "$(INSTALL_DISTRIB)/License.txt"; \
-	   cp Changes "$(INSTALL_DISTRIB)/Changes.txt"; \
+	cp config/Makefile $(INSTALL_LIBDIR)/Makefile.config
+	if test -n $(INSTALL_DISTRIB); then \
+	   cp README $(INSTALL_DISTRIB)/Readme.general.txt; \
+	   cp README.win32 $(INSTALL_DISTRIB)/Readme.windows.txt; \
+	   cp LICENSE $(INSTALL_DISTRIB)/License.txt; \
+	   cp Changes $(INSTALL_DISTRIB)/Changes.txt; \
 	fi
 
 install-flexdll:
@@ -255,14 +249,15 @@ install-flexdll:
 # Installation of the native-code compiler
 installopt:
 	cd asmrun && $(MAKEREC) install
-	cp ocamlopt "$(INSTALL_BINDIR)/ocamlopt.exe"
+	cp ocamlopt $(INSTALL_BINDIR)/ocamlopt.byte.exe
+	cp ocamlopt $(INSTALL_BINDIR)/ocamlopt.exe
 	cd stdlib && $(MAKEREC) installopt
 	cp middle_end/*.cmi middle_end/*.cmt middle_end/*.cmti \
-		"$(INSTALL_COMPLIBDIR)"
+		$(INSTALL_COMPLIBDIR)
 	cp middle_end/base_types/*.cmi middle_end/base_types/*.cmt \
-		middle_end/base_types/*.cmti "$(INSTALL_COMPLIBDIR)"
-	cp asmcomp/*.cmi asmcomp/*.cmt asmcomp/*.cmti "$(INSTALL_COMPLIBDIR)"
-	cp compilerlibs/ocamloptcomp.cma $(OPTSTART) "$(INSTALL_COMPLIBDIR)"
+		middle_end/base_types/*.cmti $(INSTALL_COMPLIBDIR)
+	cp asmcomp/*.cmi asmcomp/*.cmt asmcomp/*.cmti $(INSTALL_COMPLIBDIR)
+	cp compilerlibs/ocamloptcomp.cma $(OPTSTART) $(INSTALL_COMPLIBDIR)
 	if test -n "$(WITH_OCAMLDOC)"; then \
 	  (cd ocamldoc && $(MAKEREC) installopt); \
 	fi
@@ -276,17 +271,20 @@ installopt:
 	fi
 
 installoptopt:
-	cp ocamlc.opt "$(INSTALL_BINDIR)/ocamlc.opt$(EXE)"
-	cp ocamlopt.opt "$(INSTALL_BINDIR)/ocamlopt.opt$(EXE)"
-	cp lex/ocamllex.opt "$(INSTALL_BINDIR)/ocamllex.opt$(EXE)"
+	cp ocamlc.opt $(INSTALL_BINDIR)/ocamlc.opt$(EXE)
+	cp ocamlc.opt $(INSTALL_BINDIR)/ocamlc$(EXE)
+	cp ocamlopt.opt $(INSTALL_BINDIR)/ocamlopt.opt$(EXE)
+	cp ocamlopt.opt $(INSTALL_BINDIR)/ocamlopt$(EXE)
+	cp lex/ocamllex.opt $(INSTALL_BINDIR)/ocamllex.opt$(EXE)
+	cp lex/ocamllex.opt $(INSTALL_BINDIR)/ocamllex$(EXE)
 	cp utils/*.cmx parsing/*.cmx typing/*.cmx bytecomp/*.cmx \
-           driver/*.cmx asmcomp/*.cmx "$(INSTALL_COMPLIBDIR)"
+           driver/*.cmx asmcomp/*.cmx $(INSTALL_COMPLIBDIR)
 	cp compilerlibs/ocamlcommon.cmxa compilerlibs/ocamlcommon.$(A) \
            compilerlibs/ocamlbytecomp.cmxa compilerlibs/ocamlbytecomp.$(A) \
            compilerlibs/ocamloptcomp.cmxa compilerlibs/ocamloptcomp.$(A) \
            $(BYTESTART:.cmo=.cmx) $(BYTESTART:.cmo=.$(O)) \
            $(OPTSTART:.cmo=.cmx) $(OPTSTART:.cmo=.$(O)) \
-           "$(INSTALL_COMPLIBDIR)"
+           $(INSTALL_COMPLIBDIR)
 
 # Run all tests
 
@@ -367,7 +365,7 @@ otherlibs/dynlink/dynlink.cmxa: otherlibs/dynlink/natdynlink.ml
 
 utils/config.ml: utils/config.mlp config/Makefile
 	@rm -f utils/config.ml
-	sed -e "s|%%LIBDIR%%|$(LIBDIR)|" \
+	sed -e "s|%%LIBDIR%%|"$(call sedquote,$(LIBDIR))"|" \
 	    -e "s|%%BYTERUN%%|ocamlrun|" \
 	    -e 's|%%CCOMPTYPE%%|$(CCOMPTYPE)|' \
 	    -e "s|%%BYTECC%%|$(BYTECC) $(BYTECCCOMPOPTS)|" \
