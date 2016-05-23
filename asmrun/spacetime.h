@@ -127,6 +127,8 @@ typedef struct {
 } allocation_point;
 
 typedef struct {
+  /* CR mshinwell: delete [gc_header], all the offset arithmetic will then
+     go away */
   uintnat gc_header;
   uintnat pc;           /* always has bit 0 set.  Bit 1 set => CALL. */
   union {
