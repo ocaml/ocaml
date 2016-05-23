@@ -13,14 +13,14 @@
 #                                                                       #
 #########################################################################
 
-# Makefile for Spacetime_lib
+# Makefile for Raw_spacetime_lib
 
 ROOTDIR=../..
 include $(ROOTDIR)/config/Makefile
 CAMLRUN ?= $(ROOTDIR)/boot/ocamlrun
 
-LIBNAME=spacetime_lib
-CAMLOBJS=raw_spacetime_lib.cmo spacetime_lib.cmo
+LIBNAME=raw_spacetime_lib
+CAMLOBJS=raw_spacetime_lib.cmo
 
 CC=$(BYTECC)
 COMPFLAGS=-w +33..39 -warn-error A -bin-annot -g -safe-string $(EXTRACAMLFLAGS)
