@@ -37,7 +37,6 @@ CAMLexport void caml_modify_field (value obj, int field, value val)
 {
   Assert (Is_block(obj));
   Assert (!Is_foreign(obj));
-  Assert (!Is_foreign(val));
   Assert (!Is_block(val) || Wosize_hd (Hd_val (val)) < (1 << 20)); /* !! */
 
   Assert(field >= 0 && field < Wosize_val(obj));
@@ -411,5 +410,17 @@ CAMLprim value caml_bvar_is_empty(value bv)
 #ifdef DEBUG
 header_t hd_val (value v) {
   return (header_t)Hd_val(v);
+}
+
+int is_minor(value v) {
+  return Is_minor(v);
+}
+
+int is_foreign(value v) {
+  return Is_foreign(v);
+}
+
+int is_young(value v) {
+  return Is_young(v);
 }
 #endif
