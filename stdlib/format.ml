@@ -63,7 +63,7 @@ type pp_token =
   | Pp_if_newline              (* to do something only if this very
                                   line has been broken *)
   | Pp_open_tag of tag         (* opening a tag name *)
-  | Pp_close_tag               (* closing the most recently opened tag *)
+  | Pp_close_tag               (* closing the most recently open tag *)
 
 and tag = string
 
@@ -164,9 +164,9 @@ type formatter = {
   mutable pp_left_total : int;
   (* Total width of tokens ever put in queue. *)
   mutable pp_right_total : int;
-  (* Current number of opened boxes. *)
+  (* Current number of open boxes. *)
   mutable pp_curr_depth : int;
-  (* Maximum number of boxes which can be simultaneously opened. *)
+  (* Maximum number of boxes which can be simultaneously open. *)
   mutable pp_max_boxes : int;
   (* Ellipsis string. *)
   mutable pp_ellipsis : string;
@@ -384,7 +384,7 @@ let format_pp_token state size = function
         | [] -> [n]
         | x :: l as ls -> if n < x then n :: ls else x :: add_tab n l in
       tabs := add_tab (state.pp_margin - state.pp_space_left) !tabs
-    | [] -> () (* No opened tabulation box. *)
+    | [] -> () (* No open tabulation box. *)
     end
 
   | Pp_tbreak (n, off) ->
@@ -406,13 +406,13 @@ let format_pp_token state size = function
       if offset >= 0
       then break_same_line state (offset + n)
       else break_new_line state (tab + off) state.pp_margin
-    | [] -> () (* No opened tabulation box. *)
+    | [] -> () (* No open tabulation box. *)
     end
 
   | Pp_newline ->
     begin match state.pp_format_stack with
     | Format_elem (_, width) :: _ -> break_line state width
-    | [] -> pp_output_newline state (* No opened box. *)
+    | [] -> pp_output_newline state (* No open box. *)
     end
 
   | Pp_if_newline ->
@@ -441,7 +441,7 @@ let format_pp_token state size = function
       | Pp_vbox -> break_new_line state off width
       | Pp_hbox -> break_same_line state n
       end
-    | [] -> () (* No opened box. *)
+    | [] -> () (* No open box. *)
     end
 
    | Pp_open_tag tag_name ->
@@ -579,7 +579,7 @@ let pp_open_box_gen state indent br_ty =
   then enqueue_string state state.pp_ellipsis
 
 
-(* The box which is always opened. *)
+(* The box which is always open. *)
 let pp_open_sys_box state = pp_open_box_gen state 0 Pp_hovbox
 
 (* Close a box, setting sizes of its sub boxes. *)
@@ -671,8 +671,15 @@ let pp_rinit state =
   state.pp_space_left <- state.pp_margin;
   pp_open_sys_box state
 
+let clear_tag_stack state =
+  List.iter
+    (fun _ -> pp_close_tag state ())
+    state.pp_tag_stack
+
+
 (* Flushing pretty-printer queue. *)
 let pp_flush_queue state b =
+  clear_tag_stack state;
   while state.pp_curr_depth > 1 do
     pp_close_box state ()
   done;
