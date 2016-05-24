@@ -135,7 +135,8 @@ val filter_map_inplace: ('a -> 'b -> 'b option) -> ('a, 'b) t -> unit
     returns [Some new_val], the binding is update to associate the key
     to [new_val].
 
-    Other comments for {!Hashtbl.iter} apply as well.  *)
+    Other comments for {!Hashtbl.iter} apply as well.
+    @since 4.03.0 *)
 
 val fold : ('a -> 'b -> 'c -> 'c) -> ('a, 'b) t -> 'c -> 'c
 (** [Hashtbl.fold f tbl init] computes
