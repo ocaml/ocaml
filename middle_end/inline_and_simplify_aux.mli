@@ -253,6 +253,16 @@ module Env : sig
 
   (** Print a human-readable version of the given environment. *)
   val print : Format.formatter -> t -> unit
+
+  (** The environment maintains a list of sites that got inlined to produce
+      precise location information.
+
+      When inlining a call-site, call this function to concatenate the
+      call-site location to the existing list of sites. *)
+  val inline_debuginfo : t -> dbg:Debuginfo.t -> t
+
+  (** Appends the locations of inlined call-sites to the [~dbg] argument *)
+  val add_inlined_debuginfo : t -> dbg:Debuginfo.t -> Debuginfo.t
 end
 
 module Result : sig

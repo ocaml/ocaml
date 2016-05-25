@@ -27,20 +27,6 @@
 #include "caml/mlvalues.h"
 #include "stack.h"
 
-/* In order to prevent the GC from walking through the debug information
-   (which have no headers), we transform frame_descr pointers into
-   31/63 bits ocaml integers by shifting them by 1 to the right. We do
-   not lose information as descr pointers are aligned.  */
-value caml_val_raw_backtrace_slot(backtrace_slot pc)
-{
-  return Val_long((uintnat)pc>>1);
-}
-
-backtrace_slot caml_raw_backtrace_slot_val(value v)
-{
-  return ((backtrace_slot)(Long_val(v)<<1));
-}
-
 /* Returns the next frame descriptor (or NULL if none is available),
    and updates *pc and *sp to point to the following one.  */
 frame_descr * caml_next_frame_descriptor(uintnat * pc, char ** sp)
@@ -167,49 +153,73 @@ CAMLprim value caml_get_current_callstack(value max_frames_value)
     for (trace_pos = 0; trace_pos < trace_size; trace_pos++) {
       frame_descr * descr = caml_next_frame_descriptor(&pc, &sp);
       Assert(descr != NULL);
-      Store_field(trace, trace_pos,
-                  caml_val_raw_backtrace_slot((backtrace_slot) descr));
+      Field(trace, trace_pos) = Val_backtrace_slot((backtrace_slot) descr);
     }
   }
 
   CAMLreturn(trace);
 }
 
-/* Extract location information for the given frame descriptor */
-void caml_extract_location_info(backtrace_slot slot,
-                                /*out*/ struct caml_loc_info * li)
+
+debuginfo caml_debuginfo_extract(backtrace_slot slot)
 {
   uintnat infoptr;
-  uint32_t info1, info2;
   frame_descr * d = (frame_descr *)slot;
 
-  /* If no debugging information available, print nothing.
-     When everything is compiled with -g, this corresponds to
-     compiler-inserted re-raise operations. */
   if ((d->frame_size & 1) == 0) {
-    li->loc_valid = 0;
-    li->loc_is_raise = 1;
-    return;
+    return NULL;
   }
   /* Recover debugging info */
   infoptr = ((uintnat) d +
              sizeof(char *) + sizeof(short) + sizeof(short) +
              sizeof(short) * d->num_live + sizeof(frame_descr *) - 1)
             & -sizeof(frame_descr *);
-  info1 = ((uint32_t *)infoptr)[0];
-  info2 = ((uint32_t *)infoptr)[1];
+  return *((debuginfo*)infoptr);
+}
+
+debuginfo caml_debuginfo_next(debuginfo dbg)
+{
+  uint32_t * infoptr;
+
+  if (dbg == NULL)
+    return NULL;
+
+  infoptr = dbg;
+  infoptr += 2; /* Two packed info fields */
+  return *((debuginfo*)infoptr);
+}
+
+/* Extract location information for the given frame descriptor */
+void caml_debuginfo_location(debuginfo dbg, /*out*/ struct caml_loc_info * li)
+{
+  uint32_t info1, info2;
+
+  /* If no debugging information available, print nothing.
+     When everything is compiled with -g, this corresponds to
+     compiler-inserted re-raise operations. */
+  if (dbg == NULL) {
+    li->loc_valid = 0;
+    li->loc_is_raise = 1;
+    li->loc_is_inlined = 0;
+    return;
+  }
+  /* Recover debugging info */
+  info1 = ((uint32_t *)dbg)[0];
+  info2 = ((uint32_t *)dbg)[1];
   /* Format of the two info words:
        llllllllllllllllllll aaaaaaaa bbbbbbbbbb nnnnnnnnnnnnnnnnnnnnnnnn kk
                           44       36         26                       2  0
                        (32+12)    (32+4)
-     k ( 2 bits): 0 if it's a call, 1 if it's a raise
-     n (24 bits): offset (in 4-byte words) of file name relative to infoptr
+     k ( 2 bits): 0 if it's a call
+                  1 if it's a raise
+     n (24 bits): offset (in 4-byte words) of file name relative to dbg
      l (20 bits): line number
      a ( 8 bits): beginning of character range
      b (10 bits): end of character range */
   li->loc_valid = 1;
-  li->loc_is_raise = (info1 & 3) != 0;
-  li->loc_filename = (char *) infoptr + (info1 & 0x3FFFFFC);
+  li->loc_is_raise = (info1 & 3) == 1;
+  li->loc_is_inlined = caml_debuginfo_next(dbg) != NULL;
+  li->loc_filename = (char *) dbg + (info1 & 0x3FFFFFC);
   li->loc_lnum = info2 >> 12;
   li->loc_startchr = (info2 >> 4) & 0xFF;
   li->loc_endchr = ((info2 & 0xF) << 6) | (info1 >> 26);

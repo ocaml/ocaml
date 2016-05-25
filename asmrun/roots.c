@@ -83,7 +83,7 @@ static frame_descr * next_frame_descr(frame_descr * d) {
      sizeof(char *) + sizeof(short) + sizeof(short) +
      sizeof(short) * d->num_live + sizeof(frame_descr *) - 1)
     & -sizeof(frame_descr *);
-  if (d->frame_size & 1) nextd += 8;
+  if (d->frame_size & 1) nextd += sizeof(void *); /* pointer to debuginfo */
   return((frame_descr *) nextd);
 }
 

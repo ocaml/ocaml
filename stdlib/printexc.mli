@@ -211,6 +211,14 @@ module Slot : sig
       @since 4.02
   *)
 
+  val is_inline : t -> bool
+  (** [is_inline slot] is [true] when [slot] refers to a call
+      that got inlined by the compiler, and [false] when it comes from
+      any other context.
+
+      @since 4.04.0
+  *)
+
   val location : t -> location option
   (** [location slot] returns the location information of the slot,
       if available, and [None] otherwise.
@@ -276,6 +284,12 @@ val convert_raw_backtrace_slot : raw_backtrace_slot -> backtrace_slot
     @since 4.02
 *)
 
+
+val get_raw_backtrace_next_slot : raw_backtrace_slot -> raw_backtrace_slot option
+(** [get_raw_backtrace_next_slot slot] returns the next slot inlined, if any.
+
+    @since 4.04.0
+*)
 
 (** {6 Exception slots} *)
 

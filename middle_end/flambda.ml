@@ -189,7 +189,7 @@ let rec lam ppf (flam : t) =
   match flam with
   | Var (id) ->
       Variable.print ppf id
-  | Apply({func; args; kind; inline}) ->
+  | Apply({func; args; kind; inline; dbg}) ->
     let direct ppf () =
       match kind with
       | Indirect -> ()
@@ -202,7 +202,8 @@ let rec lam ppf (flam : t) =
       | Unroll i -> fprintf ppf "<unroll %i>" i
       | Default_inline -> ()
     in
-    fprintf ppf "@[<2>(apply%a%a@ %a%a)@]" direct () inline ()
+    fprintf ppf "@[<2>(apply%a%a<%s>@ %a%a)@]" direct () inline ()
+      (Debuginfo.to_string dbg)
       Variable.print func Variable.print_list args
   | Assign { being_assigned; new_value; } ->
     fprintf ppf "@[<2>(assign@ %a@ %a)@]"
@@ -343,8 +344,9 @@ and print_named ppf (named : named) =
     print_move_within_set_of_closures ppf move_within_set_of_closures
   | Set_of_closures (set_of_closures) ->
     print_set_of_closures ppf set_of_closures
-  | Prim(prim, args, _) ->
-    fprintf ppf "@[<2>(%a%a)@]" Printlambda.primitive prim
+  | Prim(prim, args, dbg) ->
+    fprintf ppf "@[<2>(%a<%s>%a)@]" Printlambda.primitive prim
+      (Debuginfo.to_string dbg)
       Variable.print_list args
   | Expr expr ->
     fprintf ppf "*%a" lam expr
@@ -492,7 +494,7 @@ let rec print_program_body ppf (program : program_body) =
       (Format.pp_print_list lam) fields;
     print_program_body ppf program
   | Effect (expr, program) ->
-    fprintf ppf "@[effect @[<hv 1>%a@]@@]@."
+    fprintf ppf "@[effect @[<hv 1>%a@]@]@."
       lam expr;
     print_program_body ppf program;
   | End root -> fprintf ppf "End %a" Symbol.print root

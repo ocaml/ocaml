@@ -36,22 +36,37 @@ struct caml_loc_info {
   int loc_lnum;
   int loc_startchr;
   int loc_endchr;
+  int loc_is_inlined;
 };
+
+/* When compiling with -g, backtrace slots have debug info associated.
+ * When a call is inlined in native mode, debuginfos form a linked list.
+ */
+typedef void * debuginfo;
 
 /* Check availability of debug information before extracting a trace.
  * Relevant for bytecode, always true for native code. */
 int caml_debug_info_available(void);
 
-/* Extract locations from backtrace_slot */
-void caml_extract_location_info(backtrace_slot pc,
-                                /*out*/ struct caml_loc_info * li);
+/* Return debuginfo associated to a slot or NULL. */
+debuginfo caml_debuginfo_extract(backtrace_slot slot);
 
-/* Expose a [backtrace_slot] as a OCaml value of type [raw_backtrace_slot].
- * The value returned should be an immediate and not an OCaml block, so that it
- * is safe to store using direct assignment and [Field], and not [Store_field] /
- * [caml_modify].  */
-value caml_val_raw_backtrace_slot(backtrace_slot pc);
-backtrace_slot caml_raw_backtrace_slot_val(value slot);
+/* In case of an inlined call return next debuginfo or NULL otherwise. */
+debuginfo caml_debuginfo_next(debuginfo dbg);
+
+/* Extract locations from backtrace_slot */
+void caml_debuginfo_location(debuginfo dbg, /*out*/ struct caml_loc_info * li);
+
+/* In order to prevent the GC from walking through the debug
+   information (which have no headers), we transform slots to 31/63 bits
+   ocaml integers by shifting them by 1 to the right. We do not lose
+   information as slots are aligned.
+
+   In particular, we do not need to use [caml_modify] when setting
+   an array element with such a value.
+ */
+#define Val_backtrace_slot(bslot) (Val_long(((uintnat)(bslot))>>1))
+#define Backtrace_slot_val(vslot) ((backtrace_slot)(Long_val(vslot) << 1))
 
 #define BACKTRACE_BUFFER_SIZE 1024
 
