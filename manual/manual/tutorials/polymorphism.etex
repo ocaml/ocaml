@@ -225,7 +225,7 @@ Together, the relaxed value restriction and type parameter covariance
 help to avoid eta-expansion in many situations.
 
 \subsection{Abstract data types}
-Moreover, when the associated type definitions are visible, the type checker
+Moreover, when the type definitions are exposed, the type checker
 is able to infer variance information on its own and one can benefit from
 the relaxed value restriction even unknowingly. However, this is not the case
 anymore when defining new abstract type. As an illustration, we can define a
@@ -237,11 +237,11 @@ module type COLLECTION = sig
 end
 
 module Implementation = struct
-  type 'a t = { get: int -> 'a; len:int }
-  let empty ()= let a = [||] in { get = (fun n -> a.(n) ); len = 0 }
+  type 'a t = 'a list
+  let empty ()= []
 end;;
 
-module Read_only_array: COLLECTION = Implementation;;
+module List2: COLLECTION = Implementation;;
 \end{caml_example}
 
 In this situation, when coercing the module "Read_only_array" to the module
@@ -250,7 +250,7 @@ covariant in "'a". Consequently, the relaxed value restriction does not apply
 anymore:
 
 \begin{caml_example}
-  Read_only_array.empty ();;
+  List2.empty ();;
 \end{caml_example}
 
 To keep the relaxed value restriction, we need to declare the abstract type
@@ -261,13 +261,13 @@ module type COLLECTION = sig
   val empty: unit -> 'a t
 end
 
-module Read_only_array: COLLECTION = Implementation;;
+module List2: COLLECTION = Implementation;;
 \end{caml_example}
 
 We then recover polymorphism:
 
 \begin{caml_example}
-  Read_only_array.empty ();;
+  List2.empty ();;
 \end{caml_example}
 
 
