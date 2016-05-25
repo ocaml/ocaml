@@ -38,6 +38,8 @@ typedef struct {
   int timeout;
 } command_settings;
 
+static int timeout_expired = 0;
+
 void fatal_perror(const char *msg)
 {
   perror(msg);
@@ -52,13 +54,13 @@ void fatal_error(const char *msg)
 
 void handle_alarm(int sig)
 {
-  if (sig!=SIGALARM)
+  if (sig!=SIGALRM)
   {
     char message[256];
     sprintf(message, "Received unexpected signal %s", strsignal(sig));
     fatal_error(message);
   }
-
+  timeout_expired = 1;
 }
 
 int run_command(const command_settings *settings)
@@ -100,11 +102,33 @@ int run_command(const command_settings *settings)
     if (execve(settings->filename, *settings->argv, *settings->envp) == -1)
       fatal_perror("execve");
   } else { /* father */
+    int waiting = 1;
     int child_status, result;
-    result = waitpid(child_pid, &child_status, 0);
-    if (result == -1) fatal_perror("waitpid");
-    else if (result != child_pid)
-      fatal_error("waitpid returned a pid different from the expected one");
+    if (settings->timeout>0)
+    {
+      struct sigaction action;
+      action.sa_handler = handle_alarm;
+      sigemptyset(&action.sa_mask);
+      action.sa_flags = SA_RESETHAND;
+      if ( sigaction(SIGALRM, &action, NULL) == -1) fatal_perror("sigaction");
+      if (alarm(settings->timeout) == -1) fatal_perror("alarm");
+    }
+    while (waiting)
+    {
+      result = wait(&child_status);
+      if (result == -1)
+      {
+        if ((settings->timeout > 0) && (errno==EINTR) && (timeout_expired))
+        {
+          timeout_expired = 0;
+          fprintf(stderr, "Timeout expired, killing %s (pid=%d)\n",
+            settings->filename, child_pid);
+          if (kill(child_pid, SIGKILL) == -1) fatal_perror("kill");
+        } else fatal_perror("waitpid");
+      } else if (result != child_pid)
+        fatal_error("wait returned a pid different from the expected one");
+      else waiting = 0;
+    }
     if (WIFEXITED(child_status)) {
       int code = WEXITSTATUS(child_status);
       fprintf(stderr, "Child terminated, code=%d\n", code);
@@ -119,7 +143,8 @@ int run_command(const command_settings *settings)
 #endif /* WCOREDUMP */
       corestr = core ? "" : "no ";
       fprintf(stderr,
-        "Child got signal %d (%score dumped)\n", signal, corestr
+        "Child got signal %d(%s), %score dumped\n",
+        signal, strsignal(signal), corestr
       );
       if (core)
       {
@@ -141,10 +166,11 @@ int run_command(const command_settings *settings)
   return -1; /* To please gcc. Never reached */
 }
 
-int main()
+int main(int argc, char *argv[])
 {
   int result;
-  char *program = "./testprog";
+  if (argc<2) fatal_error("Specify which program to execute");
+  char *program = argv[1];
   char *args[] = { program, NULL };
   char *env[] = { NULL };
   command_settings settings;
@@ -165,11 +191,14 @@ int main()
     settings.stdout = "/tmp/output";
     settings.stderr = "/tmp/error";
   */
-  /* Case 5: */
+  /* Case 5:
     settings.stdout = "/tmp/log";
     settings.stderr = "/tmp/log";
+  */
+  settings.stdout = settings.stderr = NULL;
   settings.argv = &args;
   settings.envp = &env;
+  settings.timeout = 2;
   result = run_command(&settings);
   fprintf(stderr, "run_command returned %d\n", result);
 }
