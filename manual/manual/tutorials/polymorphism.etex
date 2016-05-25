@@ -16,7 +16,7 @@ recursion or higher-rank polymorphism.
 This chapter details each of these situations and, if it is possible,
 how to recover genericity.
 
-\section{Weak polymorphism and mutations}
+\section{Weak polymorphism and mutation}
 \subsection{Weakly polymorphic types}
 \label{ss:weaktypes}
 Maybe the most frequent examples of non-genericity derive from the
