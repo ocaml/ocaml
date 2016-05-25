@@ -312,8 +312,8 @@ CAMLexport value caml_promote(struct domain* domain, value root)
 
   Assert(!oldify_todo_list);
   oldest_promoted = (value)domain_state->young_start;
-  // caml_gc_log ("caml_promote: root=%p tag=%u young_start=%p young_ptr=0x%lx young_end=0x%lx owner=%d",
-  //            (value*)root, tag, domain_state->young_start, young_ptr, young_end, domain->id);
+  caml_gc_log ("caml_promote: root=%p tag=%u young_start=%p young_ptr=0x%lx young_end=0x%lx owner=%d",
+               (value*)root, tag, domain_state->young_start, young_ptr, young_end, domain->id);
   promote_domain = domain;
 
   if (tag != Stack_tag) {
@@ -352,7 +352,7 @@ CAMLexport value caml_promote(struct domain* domain, value root)
   caml_do_local_roots (forward_pointer, domain);
 
   /* Scan current stack */
-  caml_scan_stack (forward_pointer, *(domain->current_stack));
+  caml_scan_stack (forward_pointer, domain->state->current_stack);
 
   /* Scan major to young pointers. */
   for (r = domain->remembered_set->major_ref.base; r < domain->remembered_set->major_ref.ptr; r++) {

@@ -42,10 +42,6 @@ let oper_result_type = function
   | Cintoffloat -> typ_int
   | Craise _ -> typ_void
   | Ccheckbound _ -> typ_void
-  | Cperform -> typ_addr
-  | Cresume -> typ_addr
-  | Cdelegate -> typ_addr
-
 
 (* Infer the size in bytes of the result of a simple expression *)
 
@@ -253,7 +249,7 @@ method select_operation op args =
   match (op, args) with
     (Capply(ty, dbg), Cconst_symbol s :: rem) -> (Icall_imm s, rem)
   | (Capply(ty, dbg), _) -> (Icall_ind, args)
-  | (Cextcall(s, ty, alloc, dbg), _) -> (Iextcall(s, alloc), args)
+  | (Cextcall(s, ty, alloc, dbg), _) -> (Iextcall(s, alloc, -1), args)
   | (Cload chunk, [arg]) ->
       let (addr, eloc) = self#select_addressing chunk arg in
       (Iload(chunk, addr), [eloc])
@@ -292,9 +288,6 @@ method select_operation op args =
   | (Cfloatofint, _) -> (Ifloatofint, args)
   | (Cintoffloat, _) -> (Iintoffloat, args)
   | (Ccheckbound _, _) -> self#select_arith Icheckbound args
-  | (Cperform, _) -> (Iperform, args)
-  | (Cresume, _) -> (Iresume_ind, args)
-  | (Cdelegate, _) -> (Idelegate, args)
   | _ -> fatal_error "Selection.select_oper"
 
 method private select_arith_comm op = function
@@ -515,12 +508,13 @@ method emit_expr env exp =
               self#insert_debug (Iop(Icall_imm lbl)) dbg loc_arg loc_res;
               self#insert_move_results loc_res rd stack_ofs;
               Some rd
-          | Iextcall(lbl, alloc) ->
+          | Iextcall(lbl, alloc, dummy_ofs) ->
+              assert (dummy_ofs = -1);
               let (loc_arg, stack_ofs) =
                 self#emit_extcall_args env new_args in
               let rd = self#regs_for ty in
-              let loc_res = self#insert_op_debug (Iextcall(lbl, alloc)) dbg
-                                    loc_arg (Proc.loc_external_results rd) in
+              let loc_res = self#insert_op_debug (Iextcall(lbl, alloc, stack_ofs))
+                              dbg loc_arg (Proc.loc_external_results rd) in
               self#insert_move_results loc_res rd stack_ofs;
               Some rd
           | Ialloc _ ->

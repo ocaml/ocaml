@@ -762,7 +762,7 @@ let rec add_debug_info ev u =
 
 let prim_promote =
   Pccall { Primitive.prim_name = "caml_obj_promote_to"; prim_arity = 2;
-           prim_alloc = false; prim_native_name = "";
+           prim_alloc = true; prim_native_name = "";
            prim_native_float = false }
 
 (* Uncurry an expression and explicitate closures.
@@ -940,6 +940,15 @@ let rec close fenv cenv = function
       let (ulam, approx) = close fenv cenv arg in
       (Uprim(Praise k, [ulam], Debuginfo.from_raise ev),
        Value_unknown)
+  | Lprim(Pperform, args) ->
+      let args = close_list fenv cenv args in
+      (Udirect_apply ("caml_perform", args, Debuginfo.none), Value_unknown)
+  | Lprim(Presume, args) ->
+      let args = close_list fenv cenv args in
+      (Udirect_apply ("caml_resume", args, Debuginfo.none), Value_unknown)
+  | Lprim(Pdelegate, args) ->
+      let args = close_list fenv cenv args in
+      (Udirect_apply ("caml_delegate", args, Debuginfo.none), Value_unknown)
   | Lprim(p, args) ->
       simplif_prim !Clflags.float_const_prop
                    p (close_list_approx fenv cenv args) Debuginfo.none
