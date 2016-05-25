@@ -16,9 +16,12 @@
 (* Run programs and log their stdout/stderr, with a timer... *)
 
 type settings = {
+  filename : string;
+  argv : string array;
+  envp : string array;
   stdout : string;
   stderr : string;
-  combined : string;
+  timeout : int;
 }
 
-val run : settings -> string -> int
+val run : settings -> int

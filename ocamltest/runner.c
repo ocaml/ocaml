@@ -63,107 +63,113 @@ void handle_alarm(int sig)
   timeout_expired = 1;
 }
 
+int run_command_child(const command_settings *settings)
+{
+  int res;
+  int stdout_fd = -1, stderr_fd = -1;
+  int flags = O_WRONLY | O_CREAT | O_TRUNC;
+  int mode = 0644;
+  if (settings->stdout && *(settings->stdout))
+  {
+    stdout_fd = open(settings->stdout, flags, mode);
+    if (stdout_fd < 0) fatal_perror("open");
+    if ( dup2(stdout_fd, 1) == -1 ) fatal_perror("dup2");
+  }
+  if (settings->stderr && *(settings->stderr))
+  {
+    if (stdout_fd != -1)
+    {
+      char stdout_realpath[PATH_MAX], stderr_realpath[PATH_MAX];
+      if (realpath(settings->stdout, stdout_realpath) == NULL)
+        fatal_perror("realpath");
+      if ((realpath(settings->stderr, stderr_realpath) == NULL) && (errno != ENOENT))
+        fatal_perror("realpath");
+      if (strcmp(stdout_realpath, stderr_realpath) == 0)
+        stderr_fd = stdout_fd;
+    }
+    if (stderr_fd == -1)
+    {
+      stderr_fd = open(settings->stderr, flags, mode);
+      if (stderr_fd == -1) fatal_perror("open");
+    }
+    if ( dup2(stderr_fd, 2) == -1 ) fatal_perror("dup2");
+  }
+  res = execve(settings->filename, *settings->argv, *settings->envp);
+  if (res == -1) fatal_perror("execve");
+  return res;
+}
+
+int run_command_parent(const command_settings *settings, pid_t child_pid)
+{
+  int waiting = 1;
+  int child_status, result;
+  if (settings->timeout>0)
+  {
+    struct sigaction action;
+    action.sa_handler = handle_alarm;
+    sigemptyset(&action.sa_mask);
+    action.sa_flags = SA_RESETHAND;
+    if (sigaction(SIGALRM, &action, NULL) == -1) fatal_perror("sigaction");
+    if (alarm(settings->timeout) == -1) fatal_perror("alarm");
+  }
+  while (waiting)
+  {
+    result = wait(&child_status);
+    if (result == -1)
+    {
+      if ((settings->timeout > 0) && (errno==EINTR) && (timeout_expired))
+      {
+        timeout_expired = 0;
+        fprintf(stderr, "Timeout expired, killing %s (pid=%d)\n",
+          settings->filename, child_pid);
+        if (kill(child_pid, SIGKILL) == -1) fatal_perror("kill");
+      } else fatal_perror("waitpid");
+    } else if (result != child_pid)
+      fatal_error("wait returned a pid different from the expected one");
+    else waiting = 0;
+  }
+  if (WIFEXITED(child_status)) {
+    int code = WEXITSTATUS(child_status);
+    fprintf(stderr, "Child terminated, code=%d\n", code);
+    return code;
+  }
+  if ( WIFSIGNALED(child_status) ) {
+    int signal = WTERMSIG(child_status);
+    int core = 0;
+    char *corestr;
+#ifdef WCOREDUMP
+    core = WCOREDUMP(child_status);
+#endif /* WCOREDUMP */
+    corestr = core ? "" : "no ";
+    fprintf(stderr,
+      "Child got signal %d(%s), %score dumped\n",
+      signal, strsignal(signal), corestr
+    );
+    if (core)
+    {
+      if ( access("core", F_OK) == -1)
+        fprintf(stderr, "Could not find core file.\n");
+      else {
+        char corefile[strlen(settings->filename) + 6];
+        sprintf(corefile, "%s.core", settings->filename);
+        if ( rename("core", corefile) == -1)
+          fprintf(stderr, "Tge core file exists but could not be renamed.\n");
+        else
+          fprintf(stderr,"The core file has been renamed to %s\n", corefile);
+      }
+    }
+    return -signal;
+  }
+  fatal_error("Child neither terminated normally nor received a signal!?");
+  return -1;
+}
+
 int run_command(const command_settings *settings)
 {
-  pid_t child_pid;
-
-  int stdout_fd = -1, stderr_fd = -1;
-  child_pid = fork();
+  pid_t child_pid = fork();
   if (child_pid == -1) fatal_perror("fork");
-  if (child_pid == 0)
-  { /* child */
-    int flags = O_WRONLY | O_CREAT | O_TRUNC;
-    int mode = 0644;
-    if (settings->stdout && *(settings->stdout))
-    {
-      stdout_fd = open(settings->stdout, flags, mode);
-      if (stdout_fd < 0) fatal_perror("open");
-      if ( dup2(stdout_fd, 1) == -1 ) fatal_perror("dup2");
-    }
-    if (settings->stderr && *(settings->stderr))
-    {
-      if (stdout_fd != -1)
-      {
-        char stdout_realpath[PATH_MAX], stderr_realpath[PATH_MAX];
-        if (realpath(settings->stdout, stdout_realpath) == NULL)
-          fatal_perror("realpath");
-        if ((realpath(settings->stderr, stderr_realpath) == NULL) && (errno != ENOENT))
-          fatal_perror("realpath");
-        if (strcmp(stdout_realpath, stderr_realpath) == 0)
-          stderr_fd = stdout_fd;
-      }
-      if (stderr_fd == -1)
-      {
-        stderr_fd = open(settings->stderr, flags, mode);
-        if (stderr_fd == -1) fatal_perror("open");
-      }
-      if ( dup2(stderr_fd, 2) == -1 ) fatal_perror("dup2");
-    }
-    if (execve(settings->filename, *settings->argv, *settings->envp) == -1)
-      fatal_perror("execve");
-  } else { /* father */
-    int waiting = 1;
-    int child_status, result;
-    if (settings->timeout>0)
-    {
-      struct sigaction action;
-      action.sa_handler = handle_alarm;
-      sigemptyset(&action.sa_mask);
-      action.sa_flags = SA_RESETHAND;
-      if ( sigaction(SIGALRM, &action, NULL) == -1) fatal_perror("sigaction");
-      if (alarm(settings->timeout) == -1) fatal_perror("alarm");
-    }
-    while (waiting)
-    {
-      result = wait(&child_status);
-      if (result == -1)
-      {
-        if ((settings->timeout > 0) && (errno==EINTR) && (timeout_expired))
-        {
-          timeout_expired = 0;
-          fprintf(stderr, "Timeout expired, killing %s (pid=%d)\n",
-            settings->filename, child_pid);
-          if (kill(child_pid, SIGKILL) == -1) fatal_perror("kill");
-        } else fatal_perror("waitpid");
-      } else if (result != child_pid)
-        fatal_error("wait returned a pid different from the expected one");
-      else waiting = 0;
-    }
-    if (WIFEXITED(child_status)) {
-      int code = WEXITSTATUS(child_status);
-      fprintf(stderr, "Child terminated, code=%d\n", code);
-      return code;
-    }
-    if ( WIFSIGNALED(child_status) ) {
-      int signal = WTERMSIG(child_status);
-      int core = 0;
-      char *corestr;
-#ifdef WCOREDUMP
-      core = WCOREDUMP(child_status);
-#endif /* WCOREDUMP */
-      corestr = core ? "" : "no ";
-      fprintf(stderr,
-        "Child got signal %d(%s), %score dumped\n",
-        signal, strsignal(signal), corestr
-      );
-      if (core)
-      {
-        if ( access("core", F_OK) == -1)
-          fprintf(stderr, "Could not find core file.\n");
-        else {
-          char corefile[strlen(settings->filename) + 6];
-          sprintf(corefile, "%s.core", settings->filename);
-          if ( rename("core", corefile) == -1)
-            fprintf(stderr, "Tge core file exists but could not be renamed.\n");
-          else
-            fprintf(stderr,"The core file has been renamed to %s\n", corefile);
-        }
-      }
-      return -signal;
-    }
-    fatal_error("Child neither terminated normally nor received a signal!?");
-  }
-  return -1; /* To please gcc. Never reached */
+  if (child_pid == 0) return run_command_child(settings);
+  else return run_command_parent(settings, child_pid);
 }
 
 int main(int argc, char *argv[])
