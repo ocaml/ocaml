@@ -70,15 +70,14 @@ been replaced by the type "int"
 store;;
 \end{caml_example}
 Therefore, after placing an "int" in "store", we cannot use it to store any
-value other than an "int".
+value other than an "int". More generally, weak types protect the program from
+undue mutation of values with a polymorphic type.
 
-More generally, weak types protect the program from undue mutation of
-values with a polymorphic type.
-
+%todo: fix indentation in pdfmanual
 Moreover, weak type cannot appear as the type of toplevel values:
 types must be known at compilation time. Otherwise, different compilation
 units could replace the weak type with different and incompatible types.
-For this reason, compiling the small piece of code
+For this reason, compiling the following small piece of code
 \begin{verbatim}
 let option_ref = ref None
 \end{verbatim}
@@ -92,7 +91,7 @@ type
 \begin{verbatim}
 let option_ref: int option ref = ref None
 \end{verbatim}
-or by transforming "option_ref" in a function
+or by transforming "option_ref" in a function%
 \begin{verbatim}
 let option_ref () = ref None
 \end{verbatim}
@@ -136,10 +135,8 @@ function:
 let id_again = fun x -> (fun x -> x) (fun x -> x) x;;
 \end{caml_example}
 With this argument, "id_again" is seen as a function definition by the type
-checker and can therefore be generalized.
-
-This kind of manipulation is called eta-expansion in lambda calculus and
-is sometimes referred under this name.
+checker and can therefore be generalized. This kind of manipulation is called
+eta-expansion in lambda calculus and is sometimes referred under this name.
 
 \subsection{The relaxed value restriction}
 
@@ -195,9 +192,9 @@ it can also handle values of type "x":
 \begin{caml_example}
   let f' = (f :> x -> unit);;
 \end{caml_example}
-Note that if we can write down the type of "f" and "f'" as
+Note that we can simplify the type of "f" and "f'" as
 \begin{caml_example}
-  type 'a proc = 'a -> unit;;
+  type 'a proc = 'a -> unit
   let f' = (f: xy proc :> x proc);;
 \end{caml_example}
 In this case, we have "x :> xy" implies "xy proc :> x proc". Notice
