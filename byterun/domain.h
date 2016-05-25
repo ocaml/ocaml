@@ -14,12 +14,6 @@ struct domain {
   struct caml_heap_state* shared_heap;
   struct caml_remembered_set* remembered_set;
   struct caml__roots_block** local_roots;
-#ifdef NATIVE_CODE
-  /* FIXME: represent current stack here */
-#else
-  value* current_stack;
-#endif
-
   struct caml_domain_state* state;
   value** mark_stack;
   int* mark_stack_count;

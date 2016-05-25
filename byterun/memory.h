@@ -34,6 +34,8 @@
 extern "C" {
 #endif
 
+#define BVAR_EMPTY      0x10000
+#define BVAR_OWNER_MASK 0x0ffff
 
 CAMLextern value caml_alloc_shr (mlsize_t, tag_t);
 CAMLextern void caml_adjust_gc_speed (mlsize_t, mlsize_t);
@@ -57,7 +59,14 @@ color_t caml_allocation_color (void *hp);
 
 /* <private> */
 
-//  caml_gc_log ("Alloc_small: v=%p sz=%lu", (value*)result, (value)wosize);
+/* FIXME */
+/* There are two GC bits in the object header, with the following
+   possible values:
+    00: new object, not forwarded
+    11: forwarded by a fault promotion */
+
+#define Is_promoted_hd(hd)  (((hd) & (3 << 8)) == (3 << 8))
+#define Promotedhd_hd(hd)  ((hd) | (3 << 8))
 
 #ifdef DEBUG
 #define DEBUG_clear(result, wosize) do{ \
@@ -402,7 +411,10 @@ CAMLextern value caml_read_root (caml_root);
 
 CAMLextern void caml_modify_root (caml_root, value);
 
+/* BVars */
 
+CAMLprim value caml_bvar_create(value);
+intnat caml_bvar_status(value);
 
 #ifdef __cplusplus
 }

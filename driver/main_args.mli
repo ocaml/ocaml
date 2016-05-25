@@ -140,6 +140,7 @@ module type Optcomp_options = sig
   val _p : unit -> unit
   val _pp : string -> unit
   val _S : unit -> unit
+  val _stack_slop : int -> unit
   val _shared : unit -> unit
   val _opaque :  unit -> unit
 end;;
