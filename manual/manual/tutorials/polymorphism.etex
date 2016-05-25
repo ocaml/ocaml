@@ -73,10 +73,32 @@ Therefore, after placing an "int" in "store", we cannot use it to store any
 value other than an "int".
 
 More generally, weak types protect the program from undue mutation of
-values with a polymorphic type. Moreover, weak type cannot appear as the type
-of toplevel values: the type of values must be known at compilation time.
-Therefore, weak type must be determined by the end of the current toplevel
-module.
+values with a polymorphic type.
+
+Moreover, weak type cannot appear as the type of toplevel values:
+types must be known at compilation time. Otherwise, different compilation
+units could replace the weak type with different and incompatible types.
+For this reason, compiling the small piece of code
+\begin{verbatim}
+let option_ref = ref None
+\end{verbatim}
+yields a compilation error
+\begin{verbatim}
+Error: The type of this expression, '_a option ref,
+       contains type variables that cannot be generalized
+\end{verbatim}
+In this case, the error can be solved by either fixing the relevant
+type
+\begin{verbatim}
+let option_ref: int option ref = ref None
+\end{verbatim}
+or by transforming "option_ref" in a function
+\begin{verbatim}
+let option_ref () = ref None
+\end{verbatim}
+An important point is that, by nature, this error cannot appear in OCaml
+interactive toplevel: in the toplevel, any weak type can always unified
+to a specific type sometimes in the future.
 
 \subsection{The value restriction}\label{ss:valuerestriction}
 
