@@ -146,8 +146,9 @@ is sometimes referred under this name.
 There is another partial solution to the problem of unnecessary weak type
 in the type of value, which is implemented directly within the type
 checker. Briefly, it is possible to prove that weak types that only appear
-as type parameters in a covariant position can be safely generalized to
-polymorphic types. For instance, the type "'a  list" is covariant in "'a":
+as type parameters in covariant positions --also called positive positions--
+can be safely generalized to polymorphic types. For instance, the type
+"'a  list" is covariant in "'a":
 \begin{caml_example}
   let f () = [];;
   let empty = f ();;
@@ -159,41 +160,69 @@ function application.
 The value restriction combined with this generalization for covariant type
 parameters is called the relaxed value restriction.
 
-%todo: once the manual contains a detailed covariant/contravariant
-% subsection, add a link to this part
-\subsection{Covariance and value restriction}
-Remember that a type constructor "'a t", for instance
-\begin{caml_example}
-  type 'a tree = Leaf of 'a | Branch of 'a tree * 'a tree;;
-\end{caml_example}
-is covariant in its parameter "'a" if it preserves the order of the
-subtyping relationship. As an illustration, we can construct a pair of type
-"x" and "xy" with "xy" a subtype of "x", i.e "xy :> x":
+%question: is here the better place for describing variance?
+\subsection{Variance and value restriction}
+Variance describes how type constructor behaves with respect to subtyping.
+Consider for instance a pair of type "x" and "xy" with "xy" a subtype of "x",
+i.e "xy :> x":
 \begin{caml_example}
   type x = [ `X ];;
+  type xy = [ `X | `Y ];;
+\end{caml_example}
+As "x" is a subtype of "xy", we can convert a value of type "x"
+to a value of type "xy":
+\begin{caml_example}
   let x:x = `X;;
-  type xy = [ `X | ` Y ];;
   let x' = ( x :> xy);;
 \end{caml_example}
-Then, if the type constructor "'a t" is covariant in "'a",
-the subtyping relationship "x :> xy" can be lifted to "x t :> xy t".
+Similarly, if we have a value of type "x list", we can convert it to a value
+of type "xy list", since we could convert each element one by one:
+\begin{caml_example}
+  let l:x list = [`X; `X];;
+  let l' = ( l :> xy list);;
+\end{caml_example}
+In other word, "x :> xy" implies that "x list :> xy list", therefore
+the type constructor "'a list" is covariant (it preserves subtyping)
+in its parameter "'a"
 
-This notion of covariance can be used to prove that a weak type"'_a" that
-only appears in covariant position in a type expression can be safely
-generalized to a polymorphic type.
+Contrarily, if we have a function that can handle values of type "xy"
+\begin{caml_example}
+  let f = function
+  | `X -> ()
+  | `Y -> ();;
+\end{caml_example}
+it can also handle values of type "x":
+\begin{caml_example}
+  let f' = (f :> x -> unit);;
+\end{caml_example}
+Note that if we can write down the type of "f" and "f'" as
+\begin{caml_example}
+  type 'a proc = 'a -> unit;;
+  let f' = (f: xy proc :> x proc);;
+\end{caml_example}
+In this case, we have "x :> xy" implies "xy proc :> x proc". Notice
+that the second subtyping relation reverse the order of "x" and "xy":
+the type constructor "'a proc" is contravariant in its parameter "'a".
+More generally, the function type constructor "'a -> 'b" is covariant in
+its return type "'b" and contravariant in its argument type "'a".
 
-Let's denote this type expression by "'_a t" as an abuse of notation. Then,
-since the type "'_a" is not yet known, we can replace it by any type of
-our convenience. In particular, we can replace "'_a" by "empty" where "empty"
-is a type with no existing values. Since "empty" appears only in covariant
-position inside "empty t", we can then use covariance to replace "empty" by
-any of its supertypes. A property of the empty set is that all its elements
-(i.e. none) belongs to any type, all types are therefore a supertype of
-"empty". Consequently, we can use covariance to replace "empty" by a
-polymorphic type "'a" and obtain back a polymorphic type "'a t".
+A type constructor can also be invariant in some of its type parameters,
+neither covariant nor contravariant. A typical example is a reference:
+\begin{caml_example}
+  let x: x ref = ref `X;;
+\end{caml_example}
+If we were able to coerce "x" to the type "xy ref" as a variable "xy",
+we could use "xy" to store the value "`Y" inside the reference and then use
+the "x" value to read this content as a value of type "x",
+which would break the type system.
 
-Allied with this relaxed value restriction, type parameter covariance
-helps to avoid eta-expansion in many situation.
+More generally, as soon as a type variable appears in a position describing
+mutable state it becomes invariant. As a corollary, covariant variables will
+never denote mutable locations and can be safely generalized.
+%todo: insert link to Jacques Guarrigue article
+
+Together, the relaxed value restriction and type parameter covariance
+help to avoid eta-expansion in many situations.
 
 \subsection{Abstract data types}
 Moreover, when the associated type definitions are visible, the type checker
