@@ -190,6 +190,17 @@ interactive session.
 .B \-strict\-sequence
 Force the left-hand part of each sequence to have type unit.
 .TP
+.B \-unboxed\-types
+When a type is unboxable (i.e. a record with a single argument or a
+concrete datatype with a single constructor of one argument) it will
+be unboxed unless annotated with
+.BR [@@ocaml.boxed] .
+.TP
+.B \-no-unboxed\-types
+When a type is unboxable  it will be boxed unless annotated with
+.BR [@@ocaml.unboxed] .
+This is the default.
+.TP
 .B \-unsafe
 Turn bound checking off on array and string accesses (the
 .BR v.(i) and s.[i]

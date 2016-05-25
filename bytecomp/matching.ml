@@ -1355,6 +1355,7 @@ let make_constr_matching p def ctx = function
         else match cstr.cstr_tag with
           Cstr_constant _ | Cstr_block _ ->
             make_field_args p.pat_loc Alias arg 0 (cstr.cstr_arity - 1) argl
+        | Cstr_unboxed -> (arg, Alias) :: argl
         | Cstr_extension _ ->
             make_field_args p.pat_loc Alias arg 1 cstr.cstr_arity argl in
       {pm=
@@ -1637,15 +1638,17 @@ let make_record_matching loc all_labels def = function
           let lbl = all_labels.(pos) in
           let access =
             match lbl.lbl_repres with
-              Record_regular | Record_inlined _ -> Pfield lbl.lbl_pos
-            | Record_float -> Pfloatfield lbl.lbl_pos
-            | Record_extension -> Pfield (lbl.lbl_pos + 1)
+            | Record_regular | Record_inlined _ ->
+              Lprim (Pfield lbl.lbl_pos, [arg], loc)
+            | Record_unboxed _ -> arg
+            | Record_float -> Lprim (Pfloatfield lbl.lbl_pos, [arg], loc)
+            | Record_extension -> Lprim (Pfield (lbl.lbl_pos + 1), [arg], loc)
           in
           let str =
             match lbl.lbl_mut with
               Immutable -> Alias
             | Mutable -> StrictOpt in
-          (Lprim(access, [arg], loc), str) :: make_args(pos + 1)
+          (access, str) :: make_args(pos + 1)
         end in
       let nfields = Array.length all_labels in
       let def= make_default (matcher_record nfields) def in
@@ -2288,7 +2291,8 @@ let split_cases tag_lambda_list =
         match cstr with
           Cstr_constant n -> ((n, act) :: consts, nonconsts)
         | Cstr_block n    -> (consts, (n, act) :: nonconsts)
-        | _ -> assert false in
+        | Cstr_unboxed    -> (consts, (0, act) :: nonconsts)
+        | Cstr_extension _ -> assert false in
   let const, nonconst = split_rec tag_lambda_list in
   sort_int_lambda_list const,
   sort_int_lambda_list nonconst

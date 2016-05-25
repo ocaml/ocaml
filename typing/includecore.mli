@@ -33,6 +33,7 @@ type type_mismatch =
   | Field_names of int * Ident.t * Ident.t
   | Field_missing of bool * Ident.t
   | Record_representation of bool
+  | Unboxed_representation of bool
   | Immediate
 
 val value_descriptions:

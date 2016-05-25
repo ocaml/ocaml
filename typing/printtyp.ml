@@ -863,6 +863,7 @@ let rec tree_of_type_decl id decl =
       otype_type = ty;
       otype_private = priv;
       otype_immediate = immediate;
+      otype_unboxed = decl.type_unboxed.unboxed;
       otype_cstrs = constraints }
 
 and tree_of_constructor_arguments = function
@@ -1157,6 +1158,7 @@ let dummy =
     type_newtype_level = None; type_loc = Location.none;
     type_attributes = [];
     type_immediate = false;
+    type_unboxed = { unboxed = false; default = false };
   }
 
 let hide_rec_items = function

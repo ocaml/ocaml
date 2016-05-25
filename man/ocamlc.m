@@ -602,6 +602,17 @@ Compile or link multithreaded programs, in combination with the
 system "threads" library described in
 .IR The\ OCaml\ user's\ manual .
 .TP
+.B \-unboxed\-types
+When a type is unboxable (i.e. a record with a single argument or a
+concrete datatype with a single constructor of one argument) it will
+be unboxed unless annotated with
+.BR [@@ocaml.boxed] .
+.TP
+.B \-no-unboxed\-types
+When a type is unboxable  it will be boxed unless annotated with
+.BR [@@ocaml.unboxed] .
+This is the default.
+.TP
 .B \-unsafe
 Turn bound checking off for array and string accesses (the
 .BR v.(i) and s.[i]
@@ -894,6 +905,9 @@ mutually recursive types.
 60
 \ \ Unused module declaration.
 
+61
+\ \ Unannotated unboxable type in primitive declaration.
+
 The letters stand for the following sets of warnings.  Any letter not
 mentioned here corresponds to the empty set.
 
@@ -977,7 +991,7 @@ warnings or modify existing warnings.
 
 The default setting is
 .B \-warn\-error \-a+31
-(all warnings are non-fatal except 31).
+(only warning 31 is fatal).
 .TP
 .B \-warn\-help
 Show the description of all available warning numbers.

@@ -76,6 +76,7 @@ type t =
   | No_cmx_file of string                   (* 58 *)
   | Assignment_to_non_mutable_value         (* 59 *)
   | Unused_module of string                 (* 60 *)
+  | Unboxable_type_in_prim_decl of string   (* 61 *)
 ;;
 
 val parse_options : bool -> string -> unit;;
