@@ -26,8 +26,6 @@
 #include <math.h>
 #include <sys/types.h>
 
-#include <Assert.h>
-
 #include "caml/alloc.h"
 #include "caml/backtrace_prim.h"
 #include "caml/fail.h"
@@ -641,7 +639,6 @@ static NOINLINE void* find_trie_node_from_libunwind(int for_allocation,
 
     if (*node_hole == Val_unit) {
       node = allocate_c_node();
-
       /* Note: for CALL nodes, the PC is the program counter at each call
          site.  We do not store program counter addresses of the start of
          callees, unlike for OCaml nodes.  This means that some trie nodes
