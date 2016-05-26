@@ -504,4 +504,8 @@ struct domain* stack_dirty_domain(value stk) {
 value stack_parent(value stk) {
   return Stack_parent(stk);
 }
+
+value stack_high(value stk) {
+  return Stack_high(stk);
+}
 #endif
