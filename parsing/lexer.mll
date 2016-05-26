@@ -398,6 +398,9 @@ rule token = parse
         else
           COMMENT ("*" ^ s, loc)
       }
+  | "(*)"
+      { let s, loc = with_comment_buffer line_comment lexbuf in
+        COMMENT (s, loc) }
   | "(**" (('*'+) as stars)
       { let s, loc =
           with_comment_buffer
@@ -517,6 +520,11 @@ and comment = parse
                   store_lexeme lexbuf;
                   comment lexbuf;
        }
+  | "(*)"
+      { comment_start_loc := (Location.curr lexbuf) :: !comment_start_loc;
+        store_lexeme lexbuf;
+        line_comment lexbuf
+      }
   | "\""
       {
         string_start_loc := Location.curr lexbuf;
@@ -588,6 +596,21 @@ and comment = parse
       }
   | _
       { store_lexeme lexbuf; comment lexbuf }
+
+and line_comment = parse
+  | newline
+      { update_loc lexbuf None 1 false 0;
+        match !comment_start_loc with
+        | [] -> assert false
+        | [_] -> comment_start_loc := []; Location.curr lexbuf
+        | _ :: l -> comment_start_loc := l;
+                  store_lexeme lexbuf;
+                  comment lexbuf;
+      }
+  | eof
+      { Location.curr lexbuf }
+  | _
+      { store_lexeme lexbuf; line_comment lexbuf }
 
 and string = parse
     '\"'
