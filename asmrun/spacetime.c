@@ -26,6 +26,8 @@
 #include <math.h>
 #include <sys/types.h>
 
+#include <Assert.h>
+
 #include "caml/alloc.h"
 #include "caml/backtrace_prim.h"
 #include "caml/fail.h"
@@ -551,6 +553,7 @@ static NOINLINE void* find_trie_node_from_libunwind(int for_allocation,
   value* node_hole;
   c_node* node = NULL;
   int initial_table_size = 1000;
+  int must_initialise_node_for_allocation = 0;
 
   if (!cached_frames) {
     if (!ext_table_initialised) {
@@ -638,6 +641,7 @@ static NOINLINE void* find_trie_node_from_libunwind(int for_allocation,
 
     if (*node_hole == Val_unit) {
       node = allocate_c_node();
+
       /* Note: for CALL nodes, the PC is the program counter at each call
          site.  We do not store program counter addresses of the start of
          callees, unlike for OCaml nodes.  This means that some trie nodes
@@ -647,30 +651,7 @@ static NOINLINE void* find_trie_node_from_libunwind(int for_allocation,
         : Encode_c_node_pc_for_alloc_point(pc));
       *node_hole = caml_spacetime_stored_pointer_of_c_node(node);
       if (expected_type == ALLOCATION) {
-        caml_spacetime_profinfo++;
-        if (caml_spacetime_profinfo > PROFINFO_MASK) {
-          /* Profiling counter overflow. */
-          caml_spacetime_profinfo = PROFINFO_MASK;
-        }
-        node->data.allocation.profinfo =
-          Make_header_with_profinfo(
-            /* "-1" because [c_node] has the GC header as its first
-               element. */
-            offsetof(c_node, data.allocation.count)/sizeof(value) - 1,
-            Infix_tag,
-            Caml_black,
-            caml_spacetime_profinfo);
-        node->data.allocation.count = Val_long(0);
-
-        /* Add the new allocation point into the linked list of all allocation
-           points. */
-        if (all_allocation_points != NULL) {
-          node->data.allocation.next =
-            (value) &all_allocation_points->count;
-        } else {
-          node->data.allocation.next = Val_unit;
-        }
-        all_allocation_points = &node->data.allocation;
+        must_initialise_node_for_allocation = 1;
       }
     }
     else {
@@ -699,6 +680,9 @@ static NOINLINE void* find_trie_node_from_libunwind(int for_allocation,
         node = allocate_c_node();
         node->pc = (expected_type == CALL ? Encode_c_node_pc_for_call(pc)
           : Encode_c_node_pc_for_alloc_point(pc));
+        if (expected_type == ALLOCATION) {
+          must_initialise_node_for_allocation = 1;
+        }
         prev->next = caml_spacetime_stored_pointer_of_c_node(node);
       }
     }
@@ -710,9 +694,37 @@ static NOINLINE void* find_trie_node_from_libunwind(int for_allocation,
     node_hole = &node->data.callee_node;
   }
 
+  if (must_initialise_node_for_allocation) {
+    caml_spacetime_profinfo++;
+    if (caml_spacetime_profinfo > PROFINFO_MASK) {
+      /* Profiling counter overflow. */
+      caml_spacetime_profinfo = PROFINFO_MASK;
+    }
+    node->data.allocation.profinfo =
+      Make_header_with_profinfo(
+        /* "-1" because [c_node] has the GC header as its first
+           element. */
+        offsetof(c_node, data.allocation.count)/sizeof(value) - 1,
+        Infix_tag,
+        Caml_black,
+        caml_spacetime_profinfo);
+    node->data.allocation.count = Val_long(0);
+
+    /* Add the new allocation point into the linked list of all allocation
+       points. */
+    if (all_allocation_points != NULL) {
+      node->data.allocation.next =
+        (value) &all_allocation_points->count;
+    } else {
+      node->data.allocation.next = Val_unit;
+    }
+    all_allocation_points = &node->data.allocation;
+  }
+
   if (for_allocation) {
     Assert(caml_spacetime_classify_c_node(node) == ALLOCATION);
     Assert(caml_spacetime_c_node_of_stored_pointer(node->next) != node);
+    Assert(Profinfo_hd(node->data.allocation.profinfo) > 0);
     node->data.allocation.count =
       Val_long(Long_val(node->data.allocation.count) + (1 + wosize));
   }

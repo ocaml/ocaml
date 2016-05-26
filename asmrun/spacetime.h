@@ -112,7 +112,7 @@ typedef enum {
 /* Encodings of the program counter value within a C node. */
 #define Encode_c_node_pc_for_call(pc) ((((value) pc) << 2) | 3)
 #define Encode_c_node_pc_for_alloc_point(pc) ((((value) pc) << 2) | 1)
-#define Decode_c_node_pc(pc) ((void*) ((pc) >> 2))
+#define Decode_c_node_pc(pc) ((void*) (((uintnat) (pc)) >> 2))
 
 typedef struct {
   /* The layout and encoding of this structure must match that of the
@@ -130,7 +130,7 @@ typedef struct {
   /* CR mshinwell: delete [gc_header], all the offset arithmetic will then
      go away */
   uintnat gc_header;
-  uintnat pc;           /* always has bit 0 set.  Bit 1 set => CALL. */
+  uintnat pc;           /* see above for encodings */
   union {
     value callee_node;  /* for CALL */
     allocation_point allocation;  /* for ALLOCATION */

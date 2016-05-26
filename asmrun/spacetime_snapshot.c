@@ -225,6 +225,9 @@ static value take_snapshot(void)
       raw_entries[profinfo].num_words_including_headers +=
         Whsize_val(value_in_minor_heap);
     }
+    else {
+      fprintf(stderr, "Block without profinfo at %p\n", ptr);
+    }
 
     ptr += Wosize_val(value_in_minor_heap);
   }
@@ -256,6 +259,9 @@ static value take_snapshot(void)
             raw_entries[profinfo].num_blocks++;
             raw_entries[profinfo].num_words_including_headers +=
               Whsize_hd(hd);
+          }
+          else {
+            fprintf(stderr, "Block without profinfo (major heap) at %p, header %p\n", (void*) Val_hp(hp), (void*) hd);
           }
           break;
       }
