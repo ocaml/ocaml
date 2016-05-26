@@ -27,30 +27,43 @@
 #include <signal.h>
 
 typedef char *array[];
-typedef array * arrayptr;
 
 typedef struct {
-  const char *filename;
-  arrayptr argv;
-  arrayptr envp;
-  const char *stdout;
-  const char *stderr;
+  const char *program;
+  array *argv;
+  array *envp;
+  const char *stdout_filename;
+  const char *stderr_filename;
   int timeout;
 } command_settings;
 
-static int timeout_expired = 0;
+static volatile int timeout_expired = 0;
 
-void fatal_perror(const char *msg)
+/* is_defined(str) returns 1 iff str points to a non-empty string */
+/* Otherwise returns 0 */
+static inline int is_defined(const char *str)
 {
+  return (str != NULL) && (*str != '\0');
+}
+
+__attribute__((__noreturn__)) /* TODO: make sure compiler supports this */
+void fatal_error_with_location(const char *file, int line, const char *msg)
+{
+  fprintf(stderr, "%s:%d: %s\n", file, line, msg);
+  exit(EXIT_FAILURE);
+}
+
+#define fatal_error(msg) fatal_error_with_location(__FILE__, __LINE__, msg)
+
+__attribute__((__noreturn__)) /* TODO: make sure compiler supports this */
+void fatal_perror_with_location(const char *file, int line, const char *msg)
+{
+  fprintf(stderr, "%s:%d: ", file, line);
   perror(msg);
   exit(EXIT_FAILURE);
 }
 
-void fatal_error(const char *msg)
-{
-  fprintf(stderr, "%s\n", msg);
-  exit(EXIT_FAILURE);
-}
+#define fatal_perror(msg) fatal_perror_with_location(__FILE__, __LINE__, msg)
 
 void handle_alarm(int sig)
 {
@@ -66,36 +79,58 @@ void handle_alarm(int sig)
 int run_command_child(const command_settings *settings)
 {
   int res;
-  int stdout_fd = -1, stderr_fd = -1;
+  int stdout_fd = -1, stderr_fd = -1; /* -1 means not redirected */
   int flags = O_WRONLY | O_CREAT | O_TRUNC;
-  int mode = 0644;
-  if (settings->stdout && *(settings->stdout))
+  int mode = 0666;
+
+  if (setpgid(0, 0) == -1) fatal_perror("setpgid");
+
+  if (is_defined(settings->stdout_filename))
   {
-    stdout_fd = open(settings->stdout, flags, mode);
+    stdout_fd = open(settings->stdout_filename, flags, mode);
     if (stdout_fd < 0) fatal_perror("open");
-    if ( dup2(stdout_fd, 1) == -1 ) fatal_perror("dup2");
+    if ( dup2(stdout_fd, STDOUT_FILENO) == -1 ) fatal_perror("dup2");
   }
-  if (settings->stderr && *(settings->stderr))
+
+  if (is_defined(settings->stderr_filename))
   {
     if (stdout_fd != -1)
     {
+#ifdef __GLIBC__
+      char *stdout_realpath, *stderr_realpath;
+      stdout_realpath = realpath(settings->stdout_filename, NULL);
+      if (stdout_realpath == NULL) fatal_perror("realpath");
+      stderr_realpath = realpath(settings->stderr_filename, NULL);
+      if ( (stderr_realpath == NULL)  && (errno != ENOENT) )
+      {
+        free(stdout_realpath);
+        fatal_perror("realpath");
+      }
+#else
       char stdout_realpath[PATH_MAX], stderr_realpath[PATH_MAX];
-      if (realpath(settings->stdout, stdout_realpath) == NULL)
+      if (realpath(settings->stdout_filename, stdout_realpath) == NULL)
         fatal_perror("realpath");
-      if ((realpath(settings->stderr, stderr_realpath) == NULL) && (errno != ENOENT))
+      if ((realpath(settings->stderr_filename, stderr_realpath) == NULL) && (errno != ENOENT))
         fatal_perror("realpath");
+#endif /* __GLIBC__ */
       if (strcmp(stdout_realpath, stderr_realpath) == 0)
         stderr_fd = stdout_fd;
+#ifdef __GLIBC__
+      free(stdout_realpath);
+      free(stderr_realpath);
+#endif /* __GLIBC__ */
     }
     if (stderr_fd == -1)
     {
-      stderr_fd = open(settings->stderr, flags, mode);
+      stderr_fd = open(settings->stderr_filename, flags, mode);
       if (stderr_fd == -1) fatal_perror("open");
     }
-    if ( dup2(stderr_fd, 2) == -1 ) fatal_perror("dup2");
+    if ( dup2(stderr_fd, STDERR_FILENO) == -1 ) fatal_perror("dup2");
   }
-  res = execve(settings->filename, *settings->argv, *settings->envp);
-  if (res == -1) fatal_perror("execve");
+
+  res = execve(settings->program, *settings->argv, *settings->envp);
+
+  fatal_perror("execve");
   return res;
 }
 
@@ -103,6 +138,7 @@ int run_command_parent(const command_settings *settings, pid_t child_pid)
 {
   int waiting = 1;
   int child_status, result;
+
   if (settings->timeout>0)
   {
     struct sigaction action;
@@ -112,6 +148,7 @@ int run_command_parent(const command_settings *settings, pid_t child_pid)
     if (sigaction(SIGALRM, &action, NULL) == -1) fatal_perror("sigaction");
     if (alarm(settings->timeout) == -1) fatal_perror("alarm");
   }
+
   while (waiting)
   {
     result = wait(&child_status);
@@ -121,13 +158,13 @@ int run_command_parent(const command_settings *settings, pid_t child_pid)
       {
         timeout_expired = 0;
         fprintf(stderr, "Timeout expired, killing %s (pid=%d)\n",
-          settings->filename, child_pid);
-        if (kill(child_pid, SIGKILL) == -1) fatal_perror("kill");
-      } else fatal_perror("waitpid");
-    } else if (result != child_pid)
-      fatal_error("wait returned a pid different from the expected one");
-    else waiting = 0;
+          settings->program, child_pid);
+        if (kill(-child_pid, SIGKILL) == -1) fatal_perror("kill");
+      } else if (errno == ECHILD) waiting = 0;
+      else fatal_perror("wait");
+    }
   }
+
   if (WIFEXITED(child_status)) {
     int code = WEXITSTATUS(child_status);
     fprintf(stderr, "Child terminated, code=%d\n", code);
@@ -150,8 +187,8 @@ int run_command_parent(const command_settings *settings, pid_t child_pid)
       if ( access("core", F_OK) == -1)
         fprintf(stderr, "Could not find core file.\n");
       else {
-        char corefile[strlen(settings->filename) + 6];
-        sprintf(corefile, "%s.core", settings->filename);
+        char corefile[strlen(settings->program) + 6];
+        sprintf(corefile, "%s.core", settings->program);
         if ( rename("core", corefile) == -1)
           fprintf(stderr, "Tge core file exists but could not be renamed.\n");
         else
@@ -180,28 +217,28 @@ int main(int argc, char *argv[])
   char *args[] = { program, NULL };
   char *env[] = { NULL };
   command_settings settings;
-  settings.filename = program;
+  settings.program = program;
   /* Case 1:
-    settings.stdout = NULL;
-    settings.stderr = NULL;
+    settings.stdout_filename = NULL;
+    settings.stderr_filename = NULL;
   */
   /* Case 2:
-    settings.stdout = "/tmp/output";
-    settings.stderr = NULL;
+    settings.stdout_filename = "/tmp/output";
+    settings.stderr_filename = NULL;
   */
   /* Case 3:
-    settings.stdout = NULL;
-    settings.stderr = "/tmp/error";
+    settings.stdout_filename = NULL;
+    settings.stderr_filename = "/tmp/error";
   */
   /* Case 4:
-    settings.stdout = "/tmp/output";
-    settings.stderr = "/tmp/error";
+    settings.stdout_filename = "/tmp/output";
+    settings.stderr_filename = "/tmp/error";
   */
   /* Case 5:
-    settings.stdout = "/tmp/log";
-    settings.stderr = "/tmp/log";
+    settings.stdout_filename = "/tmp/log";
+    settings.stderr_filename = "/tmp/log";
   */
-  settings.stdout = settings.stderr = NULL;
+  settings.stdout_filename = settings.stderr_filename = NULL;
   settings.argv = &args;
   settings.envp = &env;
   settings.timeout = 2;
