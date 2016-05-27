@@ -51,7 +51,7 @@ let compile_test_spec ppf env spec =
         t
       end in
   let test_env = interprete_statements env spec.test_environemnt in
-  (test, env)
+  (test, test_env)
 
 let rec compile_test_specs ppf env = function
   | [] -> []
