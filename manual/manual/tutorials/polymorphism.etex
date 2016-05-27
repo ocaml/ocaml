@@ -241,8 +241,8 @@ end;;
 module List2: COLLECTION = Implementation;;
 \end{caml_example}
 
-In this situation, when coercing the module "Read_only_array" to the module
-type "COLLECTION", the type checker forgets that "'a Read_only_array.t" was
+In this situation, when coercing the module "List2" to the module
+type "COLLECTION", the type checker forgets that "'a List2.t" was
 covariant in "'a". Consequently, the relaxed value restriction does not apply
 anymore:
 
