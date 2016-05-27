@@ -26,18 +26,9 @@
 #include <errno.h>
 #include <signal.h>
 
+#include "run.h"
+
 #define COREFILENAME "core"
-
-typedef char *array[];
-
-typedef struct {
-  const char *program;
-  array *argv;
-  array *envp;
-  const char *stdout_filename;
-  const char *stderr_filename;
-  int timeout;
-} command_settings;
 
 static volatile int timeout_expired = 0;
 
@@ -237,6 +228,7 @@ int run_command(const command_settings *settings)
   else return run_command_parent(settings, child_pid);
 }
 
+#if 0
 int main(int argc, char *argv[])
 {
   int result;
@@ -273,3 +265,4 @@ int main(int argc, char *argv[])
   result = run_command(&settings);
   fprintf(stderr, "run_command returned %d\n", result);
 }
+#endif /* 0 */
