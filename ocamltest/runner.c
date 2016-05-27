@@ -26,6 +26,8 @@
 #include <errno.h>
 #include <signal.h>
 
+#define COREFILENAME "core"
+
 typedef char *array[];
 
 typedef struct {
@@ -134,10 +136,58 @@ int run_command_child(const command_settings *settings)
   return res;
 }
 
+/* Handles the termination of a process. Arguments:
+ * The pid of the terminated process
+ * Its termination status as returned by wait(2)
+ * A string giving a prefix for the core file name.
+   (the file will be called prefix.pid.core but may come from a
+   diffferent process)
+ * Returns the code to return if this is the child process
+ */
+int handle_process_termination(pid_t pid, int status, const char *corefilename_prefix)
+{
+  int signal, core = 0;
+  char *corestr;
+
+  if (WIFEXITED(status)) return WEXITSTATUS(status);
+
+  if ( !WIFSIGNALED(status) )
+  {
+    char msg[256];
+    sprintf(msg, "Process with pid %d neither terminated normally nor received a signal!?", pid);
+    fatal_error(msg);
+  }
+
+  /* From here we know that the process terminated due to a signal */
+  signal = WTERMSIG(status);
+#ifdef WCOREDUMP
+  core = WCOREDUMP(status);
+#endif /* WCOREDUMP */
+  corestr = core ? "" : "no ";
+  fprintf(stderr,
+    "Process %d got signal %d(%s), %score dumped\n",
+    pid, signal, strsignal(signal), corestr
+  );
+  if (core)
+  {
+    if ( access(COREFILENAME, F_OK) == -1)
+      fprintf(stderr, "Could not find core file.\n");
+    else {
+      char corefile[strlen(corefilename_prefix) + 128];
+      sprintf(corefile, "%s.%d.core", corefilename_prefix, pid);
+      if ( rename(COREFILENAME, corefile) == -1)
+        fprintf(stderr, "Tge core file exists but could not be renamed.\n");
+      else
+        fprintf(stderr,"The core file has been renamed to %s\n", corefile);
+    }
+  }
+  return -signal;
+}
+
 int run_command_parent(const command_settings *settings, pid_t child_pid)
 {
-  int waiting = 1;
-  int child_status, result;
+  int waiting = 1, status, code, child_code;
+  pid_t pid;
 
   if (settings->timeout>0)
   {
@@ -151,54 +201,32 @@ int run_command_parent(const command_settings *settings, pid_t child_pid)
 
   while (waiting)
   {
-    result = wait(&child_status);
-    if (result == -1)
+    pid = wait(&status);
+    if (pid == -1)
     {
-      if ((settings->timeout > 0) && (errno==EINTR) && (timeout_expired))
+      switch errno
       {
-        timeout_expired = 0;
-        fprintf(stderr, "Timeout expired, killing %s (pid=%d)\n",
-          settings->program, child_pid);
-        if (kill(-child_pid, SIGKILL) == -1) fatal_perror("kill");
-      } else if (errno == ECHILD) waiting = 0;
-      else fatal_perror("wait");
+        case EINTR:
+          if ((settings->timeout > 0) && (timeout_expired))
+          {
+            timeout_expired = 0;
+            fprintf(stderr, "Timeout expired, killing all child processes");
+            if (kill(-child_pid, SIGKILL) == -1) fatal_perror("kill");
+          };
+          break;
+        case ECHILD:
+          waiting = 0;
+          break;
+        default:
+          fatal_perror("wait");
+      }
+    } else { /* Got a pid */
+      code = handle_process_termination(pid, status, settings->program);
+      if (pid == child_pid) child_code = code;
     }
   }
 
-  if (WIFEXITED(child_status)) {
-    int code = WEXITSTATUS(child_status);
-    fprintf(stderr, "Child terminated, code=%d\n", code);
-    return code;
-  }
-  if ( WIFSIGNALED(child_status) ) {
-    int signal = WTERMSIG(child_status);
-    int core = 0;
-    char *corestr;
-#ifdef WCOREDUMP
-    core = WCOREDUMP(child_status);
-#endif /* WCOREDUMP */
-    corestr = core ? "" : "no ";
-    fprintf(stderr,
-      "Child got signal %d(%s), %score dumped\n",
-      signal, strsignal(signal), corestr
-    );
-    if (core)
-    {
-      if ( access("core", F_OK) == -1)
-        fprintf(stderr, "Could not find core file.\n");
-      else {
-        char corefile[strlen(settings->program) + 6];
-        sprintf(corefile, "%s.core", settings->program);
-        if ( rename("core", corefile) == -1)
-          fprintf(stderr, "Tge core file exists but could not be renamed.\n");
-        else
-          fprintf(stderr,"The core file has been renamed to %s\n", corefile);
-      }
-    }
-    return -signal;
-  }
-  fatal_error("Child neither terminated normally nor received a signal!?");
-  return -1;
+  return child_code;
 }
 
 int run_command(const command_settings *settings)
