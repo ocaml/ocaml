@@ -16,12 +16,12 @@
 (* Run programs and log their stdout/stderr, with a timer... *)
 
 type settings = {
-  filename : string;
+  progname : string;
   argv : string array;
   envp : string array;
-  stdout : string;
-  stderr : string;
+  stdout_filename : string;
+  stderr_filename : string;
   timeout : int;
 }
 
-val run : settings -> int
+external run : settings -> int = "caml_run_command"

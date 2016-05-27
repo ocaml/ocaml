@@ -1,4 +1,6 @@
 modules :=\
+  run.o \
+  run_stubs.o \
   environments.cmo \
   builtin_environments.cmo \
   actions.cmo \
@@ -9,6 +11,7 @@ modules :=\
   tsl_parser.cmo \
   tsl_lexer.cmo \
   tsl_semantics.cmo \
+  run.cmo \
   main.cmo
 
 bcflags = -nostdlib -I ../parsing -I ../stdlib -I ../compilerlibs
