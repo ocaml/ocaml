@@ -24,8 +24,8 @@ OTHERFILESNOINLINING=pr6920_why_at.ml pr6920_why_swallow.ml
 OTHERFILESNOINLINING_NATIVE=backtraces_and_finalizers.ml
 
 # Keep only filenames, lines and character ranges
-LOCATIONFILTER=grep -o \
-							 '[a-zA-Z_]\+\.ml\(:[0-9]\+\)\?\|\(line\|characters\) [0-9-]\+'
+LOCATIONFILTER=grep -oE \
+							 '[a-zA-Z_]+\.ml(:[0-9]+)?|(line|characters) [0-9-]+'
 
 default:
 	@$(MAKE) byte
