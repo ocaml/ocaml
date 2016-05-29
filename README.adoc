@@ -151,3 +151,5 @@ small) that exhibits the unexpected behavior, and the configuration you are
 using (machine type, etc).
 
 You can also contact the implementors directly at mailto:caml@inria.fr[].
+
+For information on contributing to OCaml, see the file CONTRIBUTING.md.
