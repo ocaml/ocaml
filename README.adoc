@@ -46,26 +46,41 @@ renaming of standard library functions.
 
 == Contents
 
+  appveyor.yml::          configuration for appveyor CI
+  appveyor_build.sh::     appveyor CI script
   Changes::               what's new with each release
+  configure::             configure script
+  CONTRIBUTING.md::       how to contribute to OCaml
   INSTALL.adoc::          instructions for installation
   LICENSE::               license and copyright notice
   Makefile::              main Makefile
+  Makefile.nt::           MS Windows Makefile
+  Makefile.shared::       common Makefile
+  Makefile.tools::        used by manual/ and testsuite/ Makefiles
   README.adoc::           this file
   README.win32.adoc::     info on the MS Windows ports of OCaml
+  VERSION::               version string
   asmcomp/::              native-code compiler and linker
   asmrun/::               native-code runtime library
   boot/::                 bootstrap compiler
   bytecomp/::             bytecode compiler and linker
   byterun/::              bytecode interpreter and runtime system
+  compilerlibs/::         the OCaml compiler as a library
   config/::               autoconfiguration stuff
   debugger/::             source-level replay debugger
   driver/::               driver code for the compilers
   emacs/::                editing mode and debugger interface for GNU Emacs
+  experimental/::         experiments not built by default
+  flexdll/::              empty (see README.win32.adoc)
   lex/::                  lexer generator
+  man/::                  man pages
+  manual/::               system to generate the manual
+  middle_end/::           the flambda optimisation phase
   ocamldoc/::             documentation generator
   otherlibs/::            several external libraries
   parsing/::              syntax analysis
   stdlib/::               standard library
+  testsuite/::            tests
   tools/::                various utilities
   toplevel/::             interactive system
   typing/::               typechecking
