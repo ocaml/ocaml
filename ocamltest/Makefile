@@ -39,7 +39,7 @@ main.cmo: main.ml
 .PHONY: clean
 
 clean:
-	rm -rf *.cm* ocamltest.byte
+	rm -rf *.cm* *.o ocamltest.byte
 	rm -rf tsl_parser.ml tsl_parser.mli tsl_lexer.ml
 
 
