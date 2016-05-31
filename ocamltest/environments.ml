@@ -29,7 +29,11 @@ type t = string StringMap.t
 
 let empty = StringMap.empty
 
-let lookup = StringMap.find
+let lookup var env =
+  try Some (StringMap.find var env) with Not_found -> None
+
+let safe_lookup var env =
+  try (StringMap.find var env) with Not_found -> ""
 
 let add_aux variable value env =
   if StringMap.mem variable env then raise (Variable_already_defined variable)

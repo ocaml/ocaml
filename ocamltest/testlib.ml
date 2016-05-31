@@ -13,18 +13,30 @@
 (*                                                                        *)
 (**************************************************************************)
 
-(* Definition of tests, built from actions *)
+(* Miscellaneous library functions *)
 
-type t = {
-  test_name : string;
-  test_run_by_default : bool;
-  test_actions : Actions.t list
-}
+let is_blank c =
+  c = ' ' || c = '\012' || c = '\n' || c = '\r' || c =  '\t'
 
-val register : string -> bool -> Actions.t list -> unit
+let words s =
+  let l = String.length s in
+  let i = ref (l-1) and j = ref (l-1) in
+  let find_word () =
+    while !j >= 0 && (is_blank s.[!j]) do decr j; done;
+    if !j>=0 then begin
+      i := !j - 1;
+      while !i >= 0 && (not (is_blank s.[!i])) do decr i; done;
+      let word = String.sub s (!i+1) (!j - !i) in
+      j := !i - 1;
+      Some word
+    end else None in
+  let rec f words_acc = match find_word() with
+    | None -> words_acc
+    | Some word -> f (word :: words_acc) in
+  f []
 
-val default_tests : unit -> t list
-
-val lookup : string -> t option
-
-val run : Format.formatter -> Environments.t -> t -> Actions.result
+let file_is_empty filename =
+  let ic = open_in filename in
+  let filesize = in_channel_length ic in
+  close_in ic;
+  filesize = 0

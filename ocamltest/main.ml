@@ -45,22 +45,15 @@ let print_usage () =
 let dump_tsl_program ppf = ()
 
 let runtest ppf n (test, env) =
-  Format.fprintf ppf "Running test #%d: %s\n" (n+1) test.Tests.test_name
-
-(* Strips .ml extension of its argument *)
-(* Raises Invalid_argument if argument does not end with .ml *)
-let basename filename =
-  let l = String.length filename in
-  let extension fn = String.sub fn (l-3) 3 in
-  if (String.length filename <= 3) || ((extension filename) <> ".ml")
-  then raise (Invalid_argument "basename")
-  else String.sub filename 0 (l-3)
+  Format.fprintf ppf "Running test #%d: %s\n" (n+1) test.Tests.test_name;
+  let result = Tests.run ppf env test in
+  Format.fprintf ppf "%s\n%!" (Actions.string_of_result result)
 
 let initial_env filename =
   let add env (variable, value) = Environments.add variable value env in
   let l =
   [
-    ("testfile", (basename filename));
+    ("testfile", filename);
   ] in
   List.fold_left add Environments.empty l
 
@@ -71,8 +64,11 @@ let main () =
       1
     end else begin
       let filename = Sys.argv.(1) in
+      let dirname = Filename.dirname filename in
+      let basename = Filename.basename filename in
       let tslprogram = tslprogram_of_file filename in
-      let init_env = (initial_env filename) in
+      Sys.chdir dirname;
+      let init_env = (initial_env basename) in
       let root_environment =
         Tsl_semantics.interprete_statements init_env tslprogram.Tsl_ast.root_environment in
       let tests_to_run = match tslprogram.Tsl_ast.tests with

@@ -1,6 +1,7 @@
 modules :=\
   run.o \
   run_stubs.o \
+  testlib.cmo \
   environments.cmo \
   builtin_environments.cmo \
   actions.cmo \
@@ -14,9 +15,9 @@ modules :=\
   run.cmo \
   main.cmo
 
-bcflags = -nostdlib -I ../parsing -I ../stdlib -I ../compilerlibs
+bcflags = -g -nostdlib -I ../parsing -I ../stdlib -I ../compilerlibs
 
-ocamlc := ocamlc $(bcflags)
+ocamlc := ../byterun/ocamlrun ../ocamlc $(bcflags)
 
 ocamltest.byte: $(modules)
 	$(ocamlc) -custom ocamlcommon.cma -o $@ $^

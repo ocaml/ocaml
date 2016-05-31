@@ -27,7 +27,8 @@ type t
 
 val empty : t
 
-val lookup : string -> t -> string
+val lookup : string -> t -> string option
+val safe_lookup : string -> t -> string
 
 val add : string -> string -> t -> t
 

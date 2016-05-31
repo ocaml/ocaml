@@ -33,17 +33,28 @@ type body = Environments.t -> result
 
 type t = {
   action_name : string;
+  action_generated_files : Environments.t -> string list;
   action_body : body
 }
 
+let no_generated_files env = []
+
 let (actions : (string, t) Hashtbl.t) = Hashtbl.create 10
 
-let register name body =
-  let act = { action_name = name; action_body = body } in
+let register name generated_files body =
+  let act = {
+    action_name = name;
+    action_generated_files = generated_files;
+    action_body = body
+  } in
   Hashtbl.add actions name act
 
 let lookup name =
   try Some (Hashtbl.find actions name)
   with Not_found -> None
 
-let run env action = action.action_body env
+let run ppf env action =
+  let files = action.action_generated_files env in
+  Format.fprintf ppf "Generated files:\n";
+  List.iter (Format.fprintf ppf "%s\n") files;
+  action.action_body env

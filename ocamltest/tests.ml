@@ -39,14 +39,18 @@ let lookup name =
   try Some (Hashtbl.find tests name)
   with Not_found -> None
 
-let rec run_actions env = function
+let rec run_actions ppf env = function
   | [] -> Actions.Pass env
   | action::remaining_actions ->
     begin
-      let result = Actions.run env action in
+      let result = Actions.run ppf env action in
       match result with
-        | Actions.Pass env' -> run_actions env' remaining_actions
+        | Actions.Pass env' -> run_actions ppf env' remaining_actions
         | _ -> result
     end
 
-let run env test = run_actions env test.test_actions
+let run ppf env test =
+  Format.fprintf ppf "Running test %s with %d actions\n%!"
+    test.test_name
+    (List.length test.test_actions);
+  run_actions ppf env test.test_actions

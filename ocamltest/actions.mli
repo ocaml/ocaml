@@ -26,11 +26,14 @@ type body = Environments.t -> result
 
 type t = {
   action_name : string;
+  action_generated_files : Environments.t -> string list;
   action_body : body
 }
 
-val register : string -> body -> unit
+val no_generated_files : Environments.t -> string list
+
+val register : string -> (Environments.t -> string list) -> body -> unit
 
 val lookup : string -> t option
 
-val run : Environments.t -> t -> result
+val run : Format.formatter -> Environments.t -> t -> result

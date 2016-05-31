@@ -13,18 +13,8 @@
 (*                                                                        *)
 (**************************************************************************)
 
-(* Definition of tests, built from actions *)
+(* Miscellaneous library functions *)
 
-type t = {
-  test_name : string;
-  test_run_by_default : bool;
-  test_actions : Actions.t list
-}
+val words : string -> string list
 
-val register : string -> bool -> Actions.t list -> unit
-
-val default_tests : unit -> t list
-
-val lookup : string -> t option
-
-val run : Format.formatter -> Environments.t -> t -> Actions.result
+val file_is_empty : string -> bool
