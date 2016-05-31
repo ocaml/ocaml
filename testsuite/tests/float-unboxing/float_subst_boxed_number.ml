@@ -126,6 +126,11 @@ let unbox_only_if_useful () =
     r := x  (* use [x] twice to avoid elimination of the let-binding *)
   done
 
+let unbox_minor_words () =
+  for i = 1 to 1000 do
+    ignore (Gc.minor_words () = 0.)
+  done
+
 let () =
   let flambda =
     match Sys.getenv "FLAMBDA" with
@@ -145,4 +150,5 @@ let () =
     check_noalloc "float and int32 record" unbox_record;
   end;
 
+  check_noalloc "Gc.minor_words" unbox_minor_words;
   ()
