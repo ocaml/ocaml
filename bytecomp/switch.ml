@@ -27,12 +27,13 @@ exception Not_simple
 module type Stored = sig
   type t
   type key
+  val compare_key : key -> key -> int
   val make_key : t -> key option
 end
 
 module Store(A:Stored) = struct
   module AMap =
-    Map.Make(struct type t = A.key let compare = Pervasives.compare end)
+    Map.Make(struct type t = A.key let compare = A.compare_key end)
 
   type intern =
       { mutable map : (bool * int)  AMap.t ;

@@ -734,16 +734,16 @@ let substitute_read_symbol_field_for_variables
 
 (* CR-soon mshinwell: implement this so that sharing can occur in
    matches.  Should probably leave this for the first release. *)
-type sharing_key = unit
-let make_key _ = None
+module Stored = struct
 
-module Switch_storer =
-  Switch.Store
-    (struct
-      type t = Flambda.t
-      type key = sharing_key
-      let make_key = make_key
-    end)
+  type t = Flambda.t
+  type key = unit
+  let make_key _ = None
+  let compare_key () () = 0
+
+end
+
+module Switch_storer = Switch.Store(Stored)
 
 let fun_vars_referenced_in_decls
       (function_decls : Flambda.function_declarations) ~backend =
