@@ -13,16 +13,16 @@
 
 /* Registration of global memory roots */
 
-#include "memory.h"
-#include "misc.h"
-#include "mlvalues.h"
-#include "roots.h"
-#include "globroots.h"
-#include "callback.h"
-#include "platform.h"
-#include "alloc.h"
+#include "caml/memory.h"
+#include "caml/misc.h"
+#include "caml/mlvalues.h"
+#include "caml/roots.h"
+#include "caml/globroots.h"
+#include "caml/callback.h"
+#include "caml/platform.h"
+#include "caml/alloc.h"
 #ifdef NATIVE_CODE
-#include "stack.h"
+#include "caml/stack.h"
 #endif
 
 /* A caml_root is in fact a value. We don't expose that fact outside
@@ -43,18 +43,18 @@ static caml_plat_mutex roots_mutex;
 static value roots_all = Val_unit;
 
 
-void caml_init_global_roots() 
+void caml_init_global_roots()
 {
   caml_plat_mutex_init(&roots_mutex);
 }
 
-CAMLexport caml_root caml_create_root(value init) 
+CAMLexport caml_root caml_create_root(value init)
 {
   CAMLparam1(init);
   value v = caml_alloc_shr(3, 0);
   caml_initialize_field(v, 0, init);
   caml_initialize_field(v, 1, Val_int(1));
-  
+
   caml_plat_lock(&roots_mutex);
   caml_initialize_field(v, 2, roots_all);
   roots_all = v;
@@ -92,7 +92,7 @@ static void scan_global_roots(scanning_action f)
   caml_plat_lock(&roots_mutex);
   r = roots_all;
   caml_plat_unlock(&roots_mutex);
-  
+
   Assert(!Is_minor(r));
   newr = r;
   f(newr, &newr);
@@ -176,7 +176,7 @@ static void scan_native_globals(scanning_action f)
   iter_list(dyn_globals, lnk) {
     glob = (value) lnk->data;
     for (j = 0; j < Wosize_val(glob); j++){
-      f (Op_val(glob)[j], &Op_val(glob)[j]);      
+      f (Op_val(glob)[j], &Op_val(glob)[j]);
     }
   }
 }

@@ -1,5 +1,5 @@
-#include "misc.h"
-#include "fail.h"
+#include "caml/misc.h"
+#include "caml/fail.h"
 
 /* Put (f,v) in the recent set. */
 CAMLprim value caml_final_register (value f, value v)

@@ -15,11 +15,11 @@
 
 #include <stdio.h>
 #include <string.h>
-#include "config.h"
-#include "mlvalues.h"
-#include "memory.h"
-#include "alloc.h"
-#include "startup.h"
+#include "caml/config.h"
+#include "caml/mlvalues.h"
+#include "caml/memory.h"
+#include "caml/alloc.h"
+#include "caml/startup.h"
 
 #define ERRCODE 256
 
@@ -162,12 +162,12 @@ CAMLprim value caml_parse_engine(struct parser_tables *tables,
     RESTORE;
     if (Is_block(arg)) {
       env->curr_char = Field(tables->transl_block, Tag_val(arg));
-      caml_modify_field((value)env, 
+      caml_modify_field((value)env,
                         offsetof(struct parser_env, lval) / sizeof(value),
                         Field(arg, 0));
     } else {
       env->curr_char = Field(tables->transl_const, Int_val(arg));
-      caml_modify_field((value)env, 
+      caml_modify_field((value)env,
                         offsetof(struct parser_env, lval) / sizeof(value),
                         Val_long(0));
     }

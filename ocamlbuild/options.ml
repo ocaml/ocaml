@@ -101,7 +101,9 @@ let show_documentation = ref false
 let recursive = ref false
 let ext_lib = ref Ocamlbuild_config.a
 let ext_obj = ref Ocamlbuild_config.o
-let ext_dll = ref Ocamlbuild_config.so
+let ext_dll =
+  let s = Ocamlbuild_config.ext_dll in
+  ref (String.sub s 1 (String.length s - 1))
 let exe = ref Ocamlbuild_config.exe
 
 let targets_internal = ref []

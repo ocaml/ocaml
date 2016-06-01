@@ -452,7 +452,11 @@ module Genarray :
      the initial call to [map_file]. Therefore, you should make sure no
      other process modifies the mapped file while you're accessing it,
      or a SIGBUS signal may be raised. This happens, for instance, if the
-     file is shrinked. *)
+     file is shrunk.
+
+     This function raises [Sys_error] in the case of any errors from the
+     underlying system calls.  [Invalid_argument] or [Failure] may be
+     raised in cases where argument validation fails. *)
 
   end
 

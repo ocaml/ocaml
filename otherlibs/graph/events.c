@@ -13,8 +13,8 @@
 
 #include <signal.h>
 #include "libgraph.h"
-#include <alloc.h>
-#include <signals.h>
+#include <caml/alloc.h>
+#include <caml/signals.h>
 #include <sys/types.h>
 #include <sys/time.h>
 #ifdef HAS_SYS_SELECT_H

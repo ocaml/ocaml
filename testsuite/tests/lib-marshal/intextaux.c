@@ -10,8 +10,8 @@
 /*                                                                     */
 /***********************************************************************/
 
-#include <mlvalues.h>
-#include <intext.h>
+#include <caml/mlvalues.h>
+#include <caml/intext.h>
 
 value marshal_to_block(value vbuf, value vlen, value v, value vflags)
 {

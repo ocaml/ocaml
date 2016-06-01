@@ -1,7 +1,7 @@
 #include <sys/mman.h>
 #include <unistd.h>
-#include "platform.h"
-#include "fail.h"
+#include "caml/platform.h"
+#include "caml/fail.h"
 
 /* One-shot events */
 
@@ -67,7 +67,7 @@ void* caml_mem_map(uintnat size, uintnat alignment, int reserve_only)
   if (mem == MAP_FAILED) {
     return 0;
   }
-  
+
   /* trim to an aligned region */
   base = (uintnat)mem;
   aligned_start = round_up(base, alignment);

@@ -197,9 +197,14 @@ class printer  ()= object(self:'self)
     | Virtual -> pp f "virtual@;"
 
   (* trailing space added *)
-  method rec_flag f = function
+  method rec_flag f rf =
+    match rf with
     | Nonrecursive -> ()
     | Recursive -> pp f "rec "
+  method nonrec_flag f rf =
+    match rf with
+    | Nonrecursive -> pp f "nonrec "
+    | Recursive -> ()
   method direction_flag f = function
     | Upto -> pp f "to@ "
     | Downto -> pp f "downto@ "
@@ -268,12 +273,12 @@ class printer  ()= object(self:'self)
     | Ptyp_variant (l, closed, low) ->
         let type_variant_helper f x =
           match x with
-          | Rtag (l, attrs, _, ctl) -> pp f "@[<2>%a%a%a@]" self#string_quot l
-                self#attributes attrs
+          | Rtag (l, attrs, _, ctl) -> pp f "@[<2>%a%a@;%a@]" self#string_quot l
                 (fun f l -> match l with
                 |[] -> ()
                 | _ -> pp f "@;of@;%a"
                       (self#list self#core_type ~sep:"&")  ctl) ctl
+                self#attributes attrs
           | Rinherit ct -> self#core_type f ct in
         pp f "@[<2>[%a%a]@]"
           (fun f l
@@ -363,7 +368,8 @@ class printer  ()= object(self:'self)
           | None -> pp f "%a@;"self#longident_loc li )
     | _ -> self#simple_pattern f x
   method simple_pattern (f:Format.formatter) (x:pattern) :unit =
-    match x.ppat_desc with
+    if x.ppat_attributes <> [] then self#pattern f x
+    else match x.ppat_desc with
     | Ppat_construct (({txt=Lident ("()"|"[]" as x);_}), _) -> pp f  "%s" x
     | Ppat_any -> pp f "_";
     | Ppat_var ({txt = txt;_}) -> protect_ident f txt
@@ -399,6 +405,7 @@ class printer  ()= object(self:'self)
         pp f "@[<2>exception@;%a@]" self#pattern1 p
     | Ppat_effect(p1, p2) ->
         pp f "@[<2>effect@;%a@;%a@]" self#pattern1 p1 self#pattern1 p2
+    | Ppat_extension e -> self#extension f e
     | _ -> self#paren true self#pattern f x
 
   method label_exp f (l,opt,p) =
@@ -610,7 +617,7 @@ class printer  ()= object(self:'self)
         pp f "@[<hov2>assert@ %a@]" self#simple_expr e
     | Pexp_lazy (e) ->
         pp f "@[<hov2>lazy@ %a@]" self#simple_expr e
-    (* Pexp_poly: impossible but we should print it anyway, rather than assert false *) 
+    (* Pexp_poly: impossible but we should print it anyway, rather than assert false *)
     | Pexp_poly (e, None) ->
         pp f "@[<hov2>!poly!@ %a@]" self#simple_expr e
     | Pexp_poly (e, Some ct) ->
@@ -1230,13 +1237,24 @@ class printer  ()= object(self:'self)
     [] -> ()
   | l -> pp f "%a " (self#list self#type_param ~first:"(" ~last:")" ~sep:",") l
   method  type_def_list f l =
-    let type_decl kwd f x =
+    let rf =
+      let is_nonrec =
+        List.exists
+          (fun td ->
+             List.exists (fun (n, _) -> n.txt = "nonrec")
+               td.ptype_attributes)
+          l
+      in
+      if is_nonrec then Nonrecursive else Recursive
+    in
+    let type_decl kwd rf f x =
       let eq =
         if (x.ptype_kind = Ptype_abstract)
            && (x.ptype_manifest = None) then ""
         else " ="
       in
-      pp f "@[<2>%s %a%s%s%a@]%a" kwd
+      pp f "@[<2>%s %a%a%s%s%a@]%a" kwd
+        self#nonrec_flag rf
         self#type_params x.ptype_params
         x.ptype_name.txt eq
         self#type_declaration x
@@ -1244,10 +1262,10 @@ class printer  ()= object(self:'self)
     in
     match l with
     | [] -> assert false
-    | [x] -> type_decl "type" f x
+    | [x] -> type_decl "type" rf f x
     | x :: xs -> pp f "@[<v>%a@,%a@]"
-          (type_decl "type") x
-          (self#list ~sep:"@," (type_decl "and")) xs
+          (type_decl "type" rf) x
+          (self#list ~sep:"@," (type_decl "and" Recursive)) xs
   method type_declaration f x =
     let priv f =
       match x.ptype_private with
@@ -1260,25 +1278,30 @@ class printer  ()= object(self:'self)
       | Some y -> pp f "@;%a" self#core_type y
     in
     let constructor_declaration f pcd =
-      match pcd.pcd_res with
-      | None ->
+      match pcd.pcd_args, pcd.pcd_res with
+      | _, None ->
           pp f "|@;%s%a%a" pcd.pcd_name.txt
-             self#attributes pcd.pcd_attributes
              (fun f -> function
               | [] -> ()
               | l -> pp f "@;of@;%a" (self#list self#core_type1 ~sep:"*@;") l)
              pcd.pcd_args
-      | Some x ->
-          pp f "|@;%s%a:@;%a" pcd.pcd_name.txt
              self#attributes pcd.pcd_attributes
-             (self#list self#core_type1 ~sep:"@;->@;") (pcd.pcd_args@[x])
+      | [], Some x ->
+          pp f "|@;%s:@;%a%a" pcd.pcd_name.txt
+             self#core_type1 x
+             self#attributes pcd.pcd_attributes
+      | args, Some x ->
+          pp f "|@;%s:@;%a@;->@;%a%a" pcd.pcd_name.txt
+            (self#list self#core_type1 ~sep:"*@;") args
+            self#core_type1 x
+            self#attributes pcd.pcd_attributes
     in
     let label_declaration f pld =
-      pp f "@[<2>%a%s%a:@;%a;@]"
+      pp f "@[<2>%a%s:@;%a%a;@]"
          self#mutable_flag pld.pld_mutable
          pld.pld_name.txt
-         self#attributes pld.pld_attributes
          self#core_type pld.pld_type
+         self#attributes pld.pld_attributes
     in
     let repr f =
       let intro f =
@@ -1298,7 +1321,7 @@ class printer  ()= object(self:'self)
     let constraints f =
       self#list ~first:"@ "
         (fun f (ct1,ct2,_) ->
-           pp f "@[<hov2>constraint@ %a@ =@ %a@]"
+           pp f "@[<hov2> constraint@ %a@ =@ %a@]"
               self#core_type ct1 self#core_type ct2)
         f x.ptype_cstrs
     in

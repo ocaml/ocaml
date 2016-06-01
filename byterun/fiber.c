@@ -1,12 +1,12 @@
 #include <string.h>
 #include <unistd.h>
-#include "fiber.h"
-#include "gc_ctrl.h"
-#include "instruct.h"
-#include "fail.h"
-#include "alloc.h"
-#include "platform.h"
-#include "fix_code.h"
+#include "caml/fiber.h"
+#include "caml/gc_ctrl.h"
+#include "caml/instruct.h"
+#include "caml/fail.h"
+#include "caml/alloc.h"
+#include "caml/platform.h"
+#include "caml/fix_code.h"
 
 #ifdef NATIVE_CODE
 
@@ -131,7 +131,7 @@ void caml_init_main_stack()
   the effect if necessary.
 
   Reverses the parent pointers to point
-  performer -> delegator instead of 
+  performer -> delegator instead of
   delegator -> performer.
 */
 value caml_find_performer(value stack)

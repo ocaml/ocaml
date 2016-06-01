@@ -11,6 +11,9 @@
 /*                                                                     */
 /***********************************************************************/
 
+#ifndef CAML_UNIXSUPPORT_H
+#define CAML_UNIXSUPPORT_H
+
 #define WIN32_LEAN_AND_MEAN
 #include <wtypes.h>
 #include <winbase.h>
@@ -22,6 +25,10 @@
 #ifdef HAS_IPV6
 #include <ws2tcpip.h>
 #include <wspiapi.h>
+#endif
+
+#ifdef __cplusplus
+extern "C" {
 #endif
 
 struct filedescr {
@@ -62,3 +69,9 @@ extern value unix_freeze_buffer (value);
 #define FLAGS_FD_IS_BLOCKING (1<<0)
 
 #define UNIX_BUFFER_SIZE 65536
+
+#ifdef __cplusplus
+}
+#endif
+
+#endif /* CAML_UNIXSUPPORT_H */

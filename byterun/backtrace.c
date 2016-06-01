@@ -18,24 +18,24 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "config.h"
+#include "caml/config.h"
 #ifdef HAS_UNISTD
 #include <unistd.h>
 #endif
 
-#include "mlvalues.h"
-#include "alloc.h"
-#include "io.h"
-#include "instruct.h"
-#include "intext.h"
-#include "exec.h"
-#include "fix_code.h"
-#include "memory.h"
-#include "startup.h"
-#include "fiber.h"
-#include "sys.h"
-#include "backtrace.h"
-#include "fail.h"
+#include "caml/mlvalues.h"
+#include "caml/alloc.h"
+#include "caml/io.h"
+#include "caml/instruct.h"
+#include "caml/intext.h"
+#include "caml/exec.h"
+#include "caml/fix_code.h"
+#include "caml/memory.h"
+#include "caml/startup.h"
+#include "caml/fiber.h"
+#include "caml/sys.h"
+#include "caml/backtrace.h"
+#include "caml/fail.h"
 
 CAMLexport __thread code_t * caml_backtrace_buffer = NULL;
 CAMLexport __thread caml_root caml_backtrace_last_exn;

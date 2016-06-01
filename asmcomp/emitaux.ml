@@ -195,6 +195,15 @@ let cfi_adjust_cfa_offset n =
     emit_string "\t.cfi_adjust_cfa_offset\t"; emit_int n; emit_string "\n";
   end
 
+let cfi_offset ~reg ~offset =
+  if is_cfi_enabled () then begin
+    emit_string "\t.cfi_offset ";
+    emit_int reg;
+    emit_string ", ";
+    emit_int offset;
+    emit_string "\n"
+  end
+
 (* Emit debug information *)
 
 (* This assoc list is expected to be very short *)

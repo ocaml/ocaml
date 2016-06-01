@@ -13,25 +13,25 @@
 
 /* The bytecode interpreter */
 #include <stdio.h>
-#include "alloc.h"
-#include "backtrace.h"
-#include "callback.h"
-#include "debugger.h"
-#include "fail.h"
-#include "fix_code.h"
-#include "instrtrace.h"
-#include "instruct.h"
-#include "interp.h"
-#include "major_gc.h"
-#include "memory.h"
-#include "misc.h"
-#include "mlvalues.h"
-#include "prims.h"
-#include "signals.h"
-#include "fiber.h"
-#include "domain.h"
-#include "globroots.h"
-#include "startup.h"
+#include "caml/alloc.h"
+#include "caml/backtrace.h"
+#include "caml/callback.h"
+#include "caml/debugger.h"
+#include "caml/fail.h"
+#include "caml/fix_code.h"
+#include "caml/instrtrace.h"
+#include "caml/instruct.h"
+#include "caml/interp.h"
+#include "caml/major_gc.h"
+#include "caml/memory.h"
+#include "caml/misc.h"
+#include "caml/mlvalues.h"
+#include "caml/prims.h"
+#include "caml/signals.h"
+#include "caml/fiber.h"
+#include "caml/domain.h"
+#include "caml/globroots.h"
+#include "caml/startup.h"
 
 /* Registers for the abstract machine:
         pc         the code pointer
@@ -223,7 +223,7 @@ value caml_interprete(code_t prog, asize_t prog_size)
 
 #ifdef THREADED_CODE
   static void * jumptable[] = {
-#    include "jumptbl.h"
+#include "caml/jumptbl.h"
   };
 #endif
 
@@ -232,12 +232,12 @@ value caml_interprete(code_t prog, asize_t prog_size)
 #ifdef THREADED_CODE
     caml_instr_table = (char **) jumptable;
     caml_instr_base = Jumptbl_base;
-    caml_thread_code(raise_unhandled_code, 
+    caml_thread_code(raise_unhandled_code,
                      sizeof(raise_unhandled_code));
 #endif
     value raise_unhandled_closure =
       caml_alloc_small(1, Closure_tag);
-    Init_field(raise_unhandled_closure, 0, 
+    Init_field(raise_unhandled_closure, 0,
                Val_bytecode(raise_unhandled_code));
     raise_unhandled = caml_create_root(raise_unhandled_closure);
     caml_global_data = caml_create_root(Val_unit);
@@ -500,7 +500,7 @@ value caml_interprete(code_t prog, asize_t prog_size)
         value parent_stack = Stack_parent(caml_current_stack);
         value hval = Stack_handle_value(caml_current_stack);
         Assert(parent_stack != Val_long(0));
-        
+
         caml_extern_sp = sp;
         value old_stack = caml_switch_stack(parent_stack);
         sp = caml_extern_sp;
@@ -1245,7 +1245,7 @@ do_resume:
       caml_extern_sp = sp;
       caml_switch_stack(accu);
       sp = caml_extern_sp;
-      
+
       caml_trap_sp_off = Long_val(sp[0]);
       sp[0] = resume_arg;
       accu = resume_fn;

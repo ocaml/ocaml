@@ -1,43 +1,43 @@
 
-#         Characters 92-115:
+#         Characters 88-115:
     type _ t = T : 'a -> 'a s t
-        ^^^^^^^^^^^^^^^^^^^^^^^
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Error: In this definition, a type variable cannot be deduced
        from the type parameters.
 # * * *             Characters 140-141:
   module F (S : sig type #'a s end) = struct
                          ^
 Error: Syntax error
-# * * * * *             Characters 296-374:
-  ........['a] c x =
+# * * * * *             Characters 290-374:
+  ..class ['a] c x =
       object constraint 'a = 'b T.t val x' : 'b = x method x = x' end
 Error: In this definition, a type variable cannot be deduced
        from the type parameters.
-#       Characters 83-128:
+#       Characters 79-128:
   type 'x t = A of 'a constraint 'x = [< `X of 'a ] ;; (* fail *)
-      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Error: In this definition, a type variable cannot be deduced
        from the type parameters.
 #     Characters 36-37:
     let A x = A x in
         ^
 Error: Unbound constructor A
-# Characters 4-37:
+# Characters 0-37:
   type 'a t = A : 'a -> [< `X of 'a ] t;; (* fail *)
-      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Error: In this definition, a type variable cannot be deduced
        from the type parameters.
 #     type (_, _) eq = Eq : ('a, 'a) eq
 # val eq : 'a = <poly>
 #   val eq : ('a Queue.t, 'b Queue.t) eq = Eq
-# Characters 4-33:
+# Characters 0-33:
   type _ t = T : 'a -> 'a Queue.t t;; (* fail *)
-      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Error: In this definition, a type variable cannot be deduced
        from the type parameters.
-# * * * *             Characters 254-277:
+# * * * *             Characters 250-277:
     type _ t = T : 'a -> 'a s t
-        ^^^^^^^^^^^^^^^^^^^^^^^
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Error: In this definition, a type variable cannot be deduced
        from the type parameters.
 #   Characters 59-60:
@@ -50,17 +50,17 @@ Error: Unbound module type S
                       ^
 Error: Syntax error
 # * * * *       type 'a q = Q
-# Characters 5-36:
+# Characters 0-36:
   type +'a t = 'b constraint 'a = 'b q;;
-       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Error: In this definition, a type variable has a variance that
        cannot be deduced from the type parameters.
        It was expected to be unrestricted, but it is covariant.
 #     type 'a t = T of 'a
 # type +'a s = 'b constraint 'a = 'b t
-# Characters 5-36:
+# Characters 0-36:
   type -'a s = 'b constraint 'a = 'b t;; (* fail *)
-       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Error: In this definition, a type variable has a variance that
        is not reflected by its occurrence in type parameters.
        It was expected to be contravariant, but it is covariant.
@@ -68,9 +68,9 @@ Error: In this definition, a type variable has a variance that
 # type 'a t = T of ('a -> 'a)
 # type -'a s = 'b constraint 'a = 'b t
 # type +'a s = 'b constraint 'a = 'b q t
-# Characters 5-38:
+# Characters 0-38:
   type +'a s = 'b constraint 'a = 'b t q;; (* fail *)
-       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Error: In this definition, a type variable has a variance that
        cannot be deduced from the type parameters.
        It was expected to be unrestricted, but it is covariant.
@@ -81,9 +81,9 @@ Error: In this definition, a type variable has a variance that
     method virtual add : 'a -> unit
   end
 #       type +'a t = unit constraint 'a = 'b list
-# Characters 4-27:
+# Characters 0-27:
   type _ g = G : 'a -> 'a t g;; (* fail *)
-      ^^^^^^^^^^^^^^^^^^^^^^^
+  ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Error: In this definition, a type variable cannot be deduced
        from the type parameters.
 # 

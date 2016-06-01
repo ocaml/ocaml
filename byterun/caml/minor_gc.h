@@ -14,7 +14,6 @@
 #ifndef CAML_MINOR_GC_H
 #define CAML_MINOR_GC_H
 
-
 #include "misc.h"
 #include "addrmap.h"
 

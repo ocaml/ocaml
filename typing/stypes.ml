@@ -198,6 +198,10 @@ let dump filename =
         | Some filename -> open_out filename in
     sort_filter_phrases ();
     ignore (List.fold_left (print_info pp) Location.none info);
+    begin match filename with
+    | None -> ()
+    | Some _ -> close_out pp
+    end;
     phrases := [];
   end else begin
     annotations := [];

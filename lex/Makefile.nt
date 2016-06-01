@@ -13,15 +13,16 @@
 # The lexer generator
 
 include ../config/Makefile
+CAMLRUN ?= ../boot/ocamlrun
+CAMLYACC ?= ../boot/ocamlyacc
 
-CAMLC=../boot/ocamlrun ../boot/ocamlc -I ../boot
-CAMLOPT=../boot/ocamlrun ../ocamlopt -I ../stdlib
+CAMLC=$(CAMLRUN) ../boot/ocamlc -I ../boot
+CAMLOPT=$(CAMLRUN) ../ocamlopt -I ../stdlib
 COMPFLAGS=-warn-error A
 LINKFLAGS=
-CAMLYACC=../boot/ocamlyacc
 YACCFLAGS=-v
-CAMLLEX=../boot/ocamlrun ../boot/ocamllex
-CAMLDEP=../boot/ocamlrun ../tools/ocamldep
+CAMLLEX=$(CAMLRUN) ../boot/ocamllex
+CAMLDEP=$(CAMLRUN) ../tools/ocamldep
 DEPFLAGS=
 
 OBJS=cset.cmo syntax.cmo parser.cmo lexer.cmo table.cmo lexgen.cmo \

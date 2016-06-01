@@ -976,6 +976,12 @@ let flush_str_formatter () =
   s
 ;;
 
+let flush_buf_formatter buf ppf =
+  pp_flush_queue ppf false;
+  let s = Buffer.contents buf in
+  Buffer.reset buf;
+  s
+
 (**************************************************************
 
   Basic functions on the standard formatter
@@ -1176,12 +1182,11 @@ let printf fmt = fprintf std_formatter fmt
 let eprintf fmt = fprintf err_formatter fmt
 
 let ksprintf k (Format (fmt, _)) =
+  let b = Buffer.create 512 in
+  let ppf = formatter_of_buffer b in
   let k' () acc =
-    let b = Buffer.create 512 in
-    let ppf = formatter_of_buffer b in
     strput_acc ppf acc;
-    pp_flush_queue ppf false;
-    k (Buffer.contents b) in
+    k (flush_buf_formatter b ppf) in
   make_printf k' () End_of_acc fmt
 
 let sprintf fmt =
@@ -1194,7 +1199,7 @@ let asprintf (Format (fmt, _)) =
     = fun ppf acc ->
       output_acc ppf acc;
       pp_flush_queue ppf false;
-      Buffer.contents b in
+      flush_buf_formatter b ppf in
   make_printf k' ppf End_of_acc fmt
 
 (**************************************************************

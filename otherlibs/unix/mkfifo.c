@@ -13,10 +13,10 @@
 
 #include <sys/types.h>
 #include <sys/stat.h>
-#include <fail.h>
-#include <mlvalues.h>
-#include <memory.h>
-#include <signals.h>
+#include <caml/fail.h>
+#include <caml/mlvalues.h>
+#include <caml/memory.h>
+#include <caml/signals.h>
 #include "unixsupport.h"
 
 #ifdef HAS_MKFIFO

@@ -12,11 +12,11 @@
 /***********************************************************************/
 
 #include <sys/types.h>
-#include <mlvalues.h>
-#include <memory.h>
-#include <fail.h>
-#include <signals.h>
-#include <io.h>
+#include <caml/mlvalues.h>
+#include <caml/memory.h>
+#include <caml/fail.h>
+#include <caml/signals.h>
+#include <caml/io.h>
 #include "unixsupport.h"
 #ifdef HAS_UNISTD
 #include <unistd.h>

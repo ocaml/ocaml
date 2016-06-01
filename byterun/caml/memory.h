@@ -64,8 +64,7 @@ color_t caml_allocation_color (void *hp);
     11: forwarded by a fault promotion */
 
 #define Is_promoted_hd(hd)  (((hd) & (3 << 8)) == (3 << 8))
-#define Promotedhd_hd(hd)  ((hd) | (3 << 8))  
-
+#define Promotedhd_hd(hd)  ((hd) | (3 << 8))
 
 #ifdef DEBUG
 #define DEBUG_clear(result, wosize) do{ \
@@ -303,7 +302,7 @@ CAMLextern __thread struct caml__roots_block *caml_local_roots;  /* defined in r
 #define CAMLreturn(result) CAMLreturnT(value, result)
 
 #define CAMLnoreturn ((void) caml__frame)
-  
+
   /* modify a field */
 #define Store_field(block, offset, val) caml_modify_field(block, offset, val)
 

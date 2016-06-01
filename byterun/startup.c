@@ -17,41 +17,41 @@
 #include <stdlib.h>
 #include <string.h>
 #include <fcntl.h>
-#include "config.h"
+#include "caml/config.h"
 #ifdef HAS_UNISTD
 #include <unistd.h>
 #endif
 #ifdef _WIN32
 #include <process.h>
 #endif
-#include "alloc.h"
-#include "backtrace.h"
-#include "callback.h"
-#include "custom.h"
-#include "debugger.h"
-#include "dynlink.h"
-#include "eventlog.h"
-#include "exec.h"
-#include "fail.h"
-#include "fix_code.h"
-#include "gc_ctrl.h"
-#include "instrtrace.h"
-#include "interp.h"
-#include "intext.h"
-#include "io.h"
-#include "memory.h"
-#include "minor_gc.h"
-#include "misc.h"
-#include "mlvalues.h"
-#include "osdeps.h"
-#include "prims.h"
-#include "printexc.h"
-#include "reverse.h"
-#include "signals.h"
-#include "fiber.h"
-#include "sys.h"
-#include "startup.h"
-#include "version.h"
+#include "caml/alloc.h"
+#include "caml/backtrace.h"
+#include "caml/callback.h"
+#include "caml/custom.h"
+#include "caml/debugger.h"
+#include "caml/dynlink.h"
+#include "caml/eventlog.h"
+#include "caml/exec.h"
+#include "caml/fail.h"
+#include "caml/fix_code.h"
+#include "caml/gc_ctrl.h"
+#include "caml/instrtrace.h"
+#include "caml/interp.h"
+#include "caml/intext.h"
+#include "caml/io.h"
+#include "caml/memory.h"
+#include "caml/minor_gc.h"
+#include "caml/misc.h"
+#include "caml/mlvalues.h"
+#include "caml/osdeps.h"
+#include "caml/prims.h"
+#include "caml/printexc.h"
+#include "caml/reverse.h"
+#include "caml/signals.h"
+#include "caml/fiber.h"
+#include "caml/sys.h"
+#include "caml/startup.h"
+#include "caml/version.h"
 
 #ifndef O_BINARY
 #define O_BINARY 0
@@ -353,7 +353,7 @@ CAMLexport void caml_startup_code(
     exe_name = proc_self_exe;
   caml_external_raise = NULL;
   caml_startup_params.exe_name = exe_name;
-  caml_startup_params.main_argv = argv; 
+  caml_startup_params.main_argv = argv;
   /* Initialize the abstract machine */
   caml_init_gc ();
   if (caml_startup_params.backtrace_enabled_init) caml_record_backtrace(Val_int(1));

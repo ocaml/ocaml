@@ -11,7 +11,7 @@
 /*                                                                     */
 /***********************************************************************/
 
-#include <mlvalues.h>
+#include <caml/mlvalues.h>
 #include "unixsupport.h"
 
 CAMLprim value unix_getpid(value unit)

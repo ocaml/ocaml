@@ -61,6 +61,7 @@ module Options = Main_args.Make_optcomp_options (struct
   let _inline n = option_with_int "-inline" n
   let _intf s = with_intf := true; option_with_arg "-intf" s
   let _intf_suffix s = option_with_arg "-intf-suffix" s
+  let _keep_docs = option "-keep-docs"
   let _keep_locs = option "-keep-locs"
   let _labels = option "-labels"
   let _linkall = option "-linkall"
@@ -75,6 +76,7 @@ module Options = Main_args.Make_optcomp_options (struct
   let _o s = option_with_arg "-o" s
   let _open s = option_with_arg "-open" s
   let _output_obj = option "-output-obj"
+  let _output_complete_obj = option "-output-complete-obj"
   let _p = option "-p"
   let _pack = option "-pack"
   let _pp _s = incompatible "-pp"
