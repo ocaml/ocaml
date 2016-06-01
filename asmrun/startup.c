@@ -28,7 +28,7 @@
 #include "caml/mlvalues.h"
 #include "caml/osdeps.h"
 #include "caml/printexc.h"
-#include "caml/stack.h"
+#include "stack.h"
 #include "caml/sys.h"
 #include "caml/params.h"
 #ifdef HAS_UI

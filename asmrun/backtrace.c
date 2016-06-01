@@ -196,6 +196,16 @@ CAMLprim value caml_get_current_callstack(value max_frames_value) {
 
 /* Extract location information for the given frame descriptor */
 
+struct caml_loc_info {
+  int loc_valid;
+  int loc_is_raise;
+  char * loc_filename;
+  int loc_lnum;
+  int loc_startchr;
+  int loc_endchr;
+};
+
+
 CAMLexport void extract_location_info(frame_descr * d,
                                   /*out*/ struct caml_loc_info * li)
 {
@@ -276,7 +286,7 @@ static void print_location(struct caml_loc_info * li, int index)
 void caml_print_exception_backtrace(void)
 {
   intnat i;
-  struct loc_info li;
+  struct caml_loc_info li;
 
   for (i = 0; i < caml_domain_state->backtrace_pos; i++) {
     extract_location_info((frame_descr *) (caml_backtrace_buffer[i]), &li);
