@@ -170,6 +170,14 @@ external counters : unit -> float * float * float = "caml_gc_counters"
 (** Return [(minor_words, promoted_words, major_words)].  This function
     is as fast as [quick_stat]. *)
 
+external minor_words : unit -> (float [@unboxed])
+  = "caml_gc_minor_words" "caml_gc_minor_words_unboxed" [@@noalloc]
+(** Number of words allocated in the minor heap since the program was
+    started. This number is accurate in byte-code programs, but only an
+    approximation in programs compiled to native code.
+
+    In native code this function does not allocate. *)
+
 external get : unit -> control = "caml_gc_get"
 (** Return the current values of the GC parameters in a [control] record. *)
 

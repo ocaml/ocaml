@@ -141,6 +141,11 @@ let eliminate_intermediate_float_record () =
   done;
   ignore (Sys.opaque_identity !r)
 
+let unbox_minor_words () =
+  for i = 1 to 1000 do
+    ignore (Gc.minor_words () = 0.)
+  done
+
 let () =
   let flambda =
     match Sys.getenv "FLAMBDA" with
@@ -162,4 +167,5 @@ let () =
       eliminate_intermediate_float_record;
   end;
 
+  check_noalloc "Gc.minor_words" unbox_minor_words;
   ()

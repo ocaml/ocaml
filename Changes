@@ -40,6 +40,10 @@ OCaml 4.04.0:
 
 ### Standard library:
 
+- GPR#589: Add a non-allocating function to recover the number of
+  allocated minor words.
+  (Pierre Chambart, review by Damien Doligez and Gabriel Scherer)
+
 - GPR#427: Obj.is_block is now an inlined OCaml function instead of a
   C external.  This should be faster.
   (Demi Obenour)
