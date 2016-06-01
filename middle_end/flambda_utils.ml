@@ -732,14 +732,120 @@ let substitute_read_symbol_field_for_variables
   in
   Flambda_iterators.map_toplevel f (fun v -> v) expr
 
-(* CR-soon mshinwell: implement this so that sharing can occur in
-   matches.  Should probably leave this for the first release. *)
 module Stored = struct
 
   type t = Flambda.t
-  type key = unit
-  let make_key _ = None
-  let compare_key () () = 0
+
+  (* Comparable subset of Flambda.t *)
+  type key =
+    | Var of Variable.t
+    | Let of Variable.t * key_named * key
+    | Static_raise of Static_exception.t * Variable.t list
+  and key_named =
+    | Symbol of Symbol.t
+    | Const of Flambda.const
+    | Prim of Lambda.primitive * Variable.t list
+    | Expr of key
+
+  exception Not_comparable
+
+  let rec make_expr_key (expr:Flambda.t) : key =
+    match expr with
+    | Var v ->
+      Var v
+    | Let { var; defining_expr; body } ->
+      Let (var, make_named_key defining_expr, make_expr_key body)
+    | Static_raise (e, args) ->
+      Static_raise (e, args)
+    | _ ->
+      raise Not_comparable
+
+  and make_named_key (named:Flambda.named) : key_named =
+    match named with
+    | Symbol s ->
+      Symbol s
+    | Const c ->
+      Const c
+    | Expr e ->
+      Expr (make_expr_key e)
+    | Prim (prim, args, _dbg) ->
+      Prim (prim, args)
+    | _ ->
+      raise Not_comparable
+
+  let make_key expr =
+    try Some (make_expr_key expr)
+    with Not_comparable ->
+      None
+
+  let compare_key e1 e2 =
+    (* The environment is the mapping from variable from e1 to
+       variables from e2. Every variable to compare in e2 must have an
+       equivalent in e1, otherwise the comparison wouldn't have gone
+       past the Let binding. Hence Variable.Map.find is safe here *)
+    let compare_var env v1 v2 =
+      match Variable.Map.find v2 env with
+      | exception Not_found ->
+        (* The variable is free in the expression, hence we can
+           compare the variables directly *)
+        Variable.compare v1 v2
+      | bound ->
+        Variable.compare v1 bound
+    in
+
+    let rec compare_var_list env l1 l2 =
+      match l1, l2 with
+      | [], [] -> 0
+      | h1 :: t1, h2 :: t2 ->
+        let c = compare_var env h1 h2 in
+        if c <> 0 then c
+        else compare_var_list env t1 t2
+      | [], _ :: _ -> -1
+      | _ :: _, [] ->  1
+    in
+
+    let rec compare_expr env (e1:key) (e2:key) : int =
+      match e1, e2 with
+      | Var v1, Var v2 ->
+        compare_var env v1 v2
+      | Var _, (Let _| Static_raise _) -> -1
+      | (Let _| Static_raise _), Var _ ->  1
+      | Let ( v1, n1, b1 ),
+        Let ( v2, n2, b2 ) ->
+        let comp_named = compare_named env n1 n2 in
+        if comp_named <> 0 then comp_named
+        else
+          let env = Variable.Map.add v2 v1 env in
+          compare_expr env b1 b2
+      | Let _, Static_raise _ -> -1
+      | Static_raise _, Let _ ->  1
+      | Static_raise (sexn1, args1), Static_raise (sexn2, args2) ->
+        let comp_sexn = Static_exception.compare sexn1 sexn2 in
+        if comp_sexn <> 0 then comp_sexn
+        else
+          compare_var_list env args1 args2
+
+    and compare_named env (n1:key_named) (n2:key_named) : int =
+      match n1, n2 with
+      | Symbol s1, Symbol s2 ->
+        Symbol.compare s1 s2
+      | Symbol _, (Const _ | Expr _ | Prim _) -> -1
+      | (Const _ | Expr _ | Prim _), Symbol _ ->  1
+      | Const c1, Const c2 ->
+        compare c1 c2
+      | Const _, (Expr _ | Prim _) -> -1
+      | (Expr _ | Prim _), Const _ ->  1
+      | Expr e1, Expr e2 ->
+        compare_expr env e1 e2
+      | Expr _, Prim _ -> -1
+      | Prim _, Expr _ ->  1
+      | Prim (prim1, args1), Prim (prim2, args2) ->
+        let comp_prim = Pervasives.compare prim1 prim2 in
+        if comp_prim <> 0 then comp_prim
+        else
+          compare_var_list env args1 args2
+    in
+    compare_expr Variable.Map.empty e1 e2
 
 end
 
