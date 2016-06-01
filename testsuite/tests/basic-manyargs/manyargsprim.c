@@ -10,7 +10,7 @@
 /*                                                                     */
 /***********************************************************************/
 
-#include "mlvalues.h"
+#include "caml/mlvalues.h"
 #include "stdio.h"
 
 value manyargs(value a, value b, value c, value d, value e, value f,

@@ -12,12 +12,12 @@
 /***********************************************************************/
 
 #include <string.h>
-#include <mlvalues.h>
-#include <alloc.h>
-#include <fail.h>
-#include <memory.h>
-#include <misc.h>
-#include <signals.h>
+#include <caml/mlvalues.h>
+#include <caml/alloc.h>
+#include <caml/fail.h>
+#include <caml/memory.h>
+#include <caml/misc.h>
+#include <caml/signals.h>
 #include "unixsupport.h"
 #include "cst2constr.h"
 

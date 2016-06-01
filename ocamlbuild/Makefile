@@ -11,13 +11,14 @@
 #########################################################################
 
 include ../config/Makefile
+CAMLRUN ?= ../boot/ocamlrun
+CAMLYACC ?= ../boot/ocamlyacc
 
 ROOTDIR   = ..
-OCAMLRUN  = $(ROOTDIR)/boot/ocamlrun
-OCAMLC    = $(OCAMLRUN) $(ROOTDIR)/ocamlc -nostdlib -I $(ROOTDIR)/stdlib
-OCAMLOPT  = $(OCAMLRUN) $(ROOTDIR)/ocamlopt -nostdlib -I $(ROOTDIR)/stdlib
-OCAMLDEP  = $(OCAMLRUN) $(ROOTDIR)/tools/ocamldep
-OCAMLLEX  = $(OCAMLRUN) $(ROOTDIR)/boot/ocamllex
+OCAMLC    = $(CAMLRUN) $(ROOTDIR)/ocamlc -nostdlib -I $(ROOTDIR)/stdlib
+OCAMLOPT  = $(CAMLRUN) $(ROOTDIR)/ocamlopt -nostdlib -I $(ROOTDIR)/stdlib
+OCAMLDEP  = $(CAMLRUN) $(ROOTDIR)/tools/ocamldep
+OCAMLLEX  = $(CAMLRUN) $(ROOTDIR)/boot/ocamllex
 CP        = cp
 COMPFLAGS= -warn-error A -w L -w R -w Z -I ../otherlibs/$(UNIXLIB) -safe-string
 LINKFLAGS= -I ../otherlibs/$(UNIXLIB)
@@ -125,8 +126,10 @@ ocamlbuildlib.cmxa: ocamlbuild_pack.cmx $(EXTRA_CMX)
 
 # The packs
 
-ocamlbuild_pack.cmo ocamlbuild_pack.cmi: $(PACK_CMO)
+ocamlbuild_pack.cmo: $(PACK_CMO)
 	$(OCAMLC) -pack $(PACK_CMO) -o ocamlbuild_pack.cmo
+
+ocamlbuild_pack.cmi: ocamlbuild_pack.cmo
 
 ocamlbuild_pack.cmx: $(PACK_CMX)
 	$(OCAMLOPT) -pack $(PACK_CMX) -o ocamlbuild_pack.cmx
@@ -135,13 +138,14 @@ ocamlbuild_pack.cmx: $(PACK_CMX)
 
 ocamlbuild_config.ml: ../config/Makefile
 	(echo 'let bindir = "$(BINDIR)"'; \
-         echo 'let libdir = "$(LIBDIR)"'; \
-         echo 'let supports_shared_libraries = $(SUPPORTS_SHARED_LIBRARIES)';\
-         echo 'let a = "$(A)"'; \
-         echo 'let o = "$(O)"'; \
-         echo 'let so = "$(SO)"'; \
-         echo 'let exe = "$(EXE)"'; \
-        ) > ocamlbuild_config.ml
+	 echo 'let libdir = "$(LIBDIR)"'; \
+	 echo 'let supports_shared_libraries = $(SUPPORTS_SHARED_LIBRARIES)';\
+	 echo 'let a = "$(A)"'; \
+	 echo 'let o = "$(O)"'; \
+	 echo 'let so = "$(SO)"'; \
+	 echo 'let ext_dll = "$(EXT_DLL)"'; \
+	 echo 'let exe = "$(EXE)"'; \
+	) > ocamlbuild_config.ml
 clean::
 	rm -f ocamlbuild_config.ml
 beforedepend:: ocamlbuild_config.ml

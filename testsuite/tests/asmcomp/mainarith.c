@@ -16,7 +16,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "../../../byterun/config.h"
+#include "../../../byterun/caml/config.h"
 #define FMT ARCH_INTNAT_PRINTF_FORMAT
 
 void caml_ml_array_bound_error(void)

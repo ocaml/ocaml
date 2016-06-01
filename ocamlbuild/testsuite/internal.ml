@@ -160,6 +160,13 @@ let () = test "OutputObj"
   ~tree:[T.f "hello.ml" ~content:"print_endline \"Hello, World!\""]
   ~targets:("hello.byte.o",["hello.byte.c";"hello.native.o"]) ();;
 
+let () = test "OutputShared"
+  ~options:[`no_ocamlfind]
+  ~description:"output_shared targets for native and bytecode (PR #6733)"
+  ~tree:[T.f "hello.ml" ~content:"print_endline \"Hello, World!\"";
+         T.f "_tags" ~content:"<*.so>: runtime_variant(_pic)"]
+  ~targets:("hello.byte.so",["hello.native.so"]) ();;
+
 let () = test "StrictSequenceFlag"
   ~options:[`no_ocamlfind; `quiet]
   ~description:"strict_sequence tag"

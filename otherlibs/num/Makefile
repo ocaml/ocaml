@@ -31,7 +31,7 @@ bng.$(O): bng.h bng_digit.c \
        bng_amd64.c bng_ia32.c bng_ppc.c bng_sparc.c
 
 depend:
-	gcc -MM $(CFLAGS) *.c > .depend
-	../../boot/ocamlrun ../../tools/ocamldep *.mli *.ml >> .depend
+	$(CC) -MM $(CFLAGS) *.c > .depend
+	$(CAMLRUN) ../../tools/ocamldep *.mli *.ml >> .depend
 
 include .depend

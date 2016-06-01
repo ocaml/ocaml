@@ -20,10 +20,7 @@ exception Error of error
 
 (* Optionally preprocess a source file *)
 
-let preprocess sourcefile =
-  match !Clflags.preprocessor with
-    None -> sourcefile
-  | Some pp ->
+let call_external_preprocessor sourcefile pp =
       let tmpfile = Filename.temp_file "ocamlpp" "" in
       let comm = Printf.sprintf "%s %s > %s"
                                 pp (Filename.quote sourcefile) tmpfile
@@ -33,6 +30,12 @@ let preprocess sourcefile =
         raise (Error (CannotRun comm));
       end;
       tmpfile
+
+let preprocess sourcefile =
+  match !Clflags.preprocessor with
+    None -> sourcefile
+  | Some pp -> call_external_preprocessor sourcefile pp
+
 
 let remove_preprocessed inputfile =
   match !Clflags.preprocessor with
@@ -124,7 +127,7 @@ let apply_rewriters ?restore ~tool_name magic ast =
 
 exception Outdated_version
 
-let file ppf ~tool_name inputfile parse_fun ast_magic =
+let open_and_check_magic inputfile ast_magic =
   let ic = open_in_bin inputfile in
   let is_ast_file =
     try
@@ -138,6 +141,10 @@ let file ppf ~tool_name inputfile parse_fun ast_magic =
         Misc.fatal_error "OCaml and preprocessor have incompatible versions"
     | _ -> false
   in
+  (ic, is_ast_file)
+
+let file ppf ~tool_name inputfile parse_fun ast_magic =
+  let (ic, is_ast_file) = open_and_check_magic inputfile ast_magic in
   let ast =
     try
       if is_ast_file then begin
@@ -158,6 +165,7 @@ let file ppf ~tool_name inputfile parse_fun ast_magic =
   in
   close_in ic;
   apply_rewriters ~restore:false ~tool_name ast_magic ast
+
 
 let report_error ppf = function
   | CannotRun cmd ->

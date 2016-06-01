@@ -12,24 +12,24 @@
 /***********************************************************************/
 
 #include <string.h>
-#include "config.h"
-#include "fail.h"
-#include "finalise.h"
-#include "gc.h"
-#include "gc_ctrl.h"
-#include "major_gc.h"
-#include "memory.h"
-#include "minor_gc.h"
-#include "misc.h"
-#include "mlvalues.h"
-#include "roots.h"
-#include "signals.h"
-#include "weak.h"
-#include "domain.h"
-#include "shared_heap.h"
-#include "addrmap.h"
-#include "fiber.h"
-#include "eventlog.h"
+#include "caml/config.h"
+#include "caml/fail.h"
+#include "caml/finalise.h"
+#include "caml/gc.h"
+#include "caml/gc_ctrl.h"
+#include "caml/major_gc.h"
+#include "caml/memory.h"
+#include "caml/minor_gc.h"
+#include "caml/misc.h"
+#include "caml/mlvalues.h"
+#include "caml/roots.h"
+#include "caml/signals.h"
+#include "caml/weak.h"
+#include "caml/domain.h"
+#include "caml/shared_heap.h"
+#include "caml/addrmap.h"
+#include "caml/fiber.h"
+#include "caml/eventlog.h"
 
 asize_t __thread caml_minor_heap_size;
 
@@ -443,7 +443,6 @@ void caml_empty_minor_heap (void)
   clear_table (&caml_remembered_set.fiber_ref);
 
   caml_restore_stack_gc();
-
 
 #ifdef DEBUG
   {

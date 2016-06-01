@@ -11,10 +11,10 @@
 /*                                                                     */
 /***********************************************************************/
 
-#include <mlvalues.h>
+#include <caml/mlvalues.h>
 #include "unixsupport.h"
 #include <windows.h>
-#include <osdeps.h>
+#include <caml/osdeps.h>
 
 static int win_has_console(void);
 

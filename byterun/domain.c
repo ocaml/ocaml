@@ -1,20 +1,20 @@
 #include <stdio.h>
 #include <unistd.h>
 #include <pthread.h>
-#include "domain.h"
-#include "platform.h"
-#include "custom.h"
-#include "major_gc.h"
-#include "shared_heap.h"
-#include "memory.h"
-#include "fail.h"
-#include "globroots.h"
-#include "signals.h"
-#include "alloc.h"
-#include "startup.h"
-#include "fiber.h"
-#include "callback.h"
-#include "minor_gc.h"
+#include "caml/domain.h"
+#include "caml/platform.h"
+#include "caml/custom.h"
+#include "caml/major_gc.h"
+#include "caml/shared_heap.h"
+#include "caml/memory.h"
+#include "caml/fail.h"
+#include "caml/globroots.h"
+#include "caml/signals.h"
+#include "caml/alloc.h"
+#include "caml/startup.h"
+#include "caml/fiber.h"
+#include "caml/callback.h"
+#include "caml/minor_gc.h"
 
 /* Since we support both heavyweight OS threads and lightweight
    userspace threads, the word "thread" is ambiguous. This file deals

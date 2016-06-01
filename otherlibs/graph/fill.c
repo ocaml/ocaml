@@ -12,7 +12,7 @@
 /***********************************************************************/
 
 #include "libgraph.h"
-#include <memory.h>
+#include <caml/memory.h>
 
 value caml_gr_fill_rect(value vx, value vy, value vw, value vh)
 {

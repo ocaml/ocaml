@@ -1,10 +1,10 @@
 #include <stdio.h>
 #include <string.h>
-#include "misc.h"
-#include "params.h"
-#include "version.h"
-#include "prims.h"
-#include "dynlink.h"
+#include "caml/misc.h"
+#include "caml/params.h"
+#include "caml/version.h"
+#include "caml/prims.h"
+#include "caml/dynlink.h"
 
 /* Configuration parameters and flags */
 

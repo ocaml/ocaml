@@ -610,8 +610,12 @@ let instr_break ppf lexbuf =
         let module_name = convert_module (module_of_longident mdle) in
         new_breakpoint
           (try
+            let ev =  event_at_pos module_name 0 in
+            let ev_pos =
+              {Lexing.dummy_pos with
+               pos_fname = (Events.get_pos ev).pos_fname} in
              let buffer =
-               try get_buffer Lexing.dummy_pos module_name with
+               try get_buffer ev_pos module_name with
                | Not_found ->
                   eprintf "No source file for %s.@." module_name;
                   raise Toplevel

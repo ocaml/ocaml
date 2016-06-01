@@ -285,6 +285,7 @@ let extract_concrete_record env ty =
 let extract_concrete_variant env ty =
   match extract_concrete_typedecl env ty with
     (p0, p, {type_kind=Type_variant cstrs}) -> (p0, p, cstrs)
+  | (p0, p, {type_kind=Type_open}) -> (p0, p, [])
   | _ -> raise Not_found
 
 let extract_label_names sexp env ty =
@@ -890,7 +891,7 @@ let unify_head_only loc env ty constr =
   | Tconstr(p,args,m) ->
       ty_res.desc <- Tconstr(p,List.map (fun _ -> newvar ()) args,m);
       enforce_constraints env ty_res;
-      unify_pat_types loc env ty ty_res
+      unify_pat_types loc env ty_res ty
   | _ -> assert false
 
 (* Typing of patterns *)
@@ -1261,6 +1262,9 @@ let partial_pred ~lev env expected_ty constrs labels p =
   with _ ->
     backtrack snap;
     None
+
+let check_partial ?(lev=get_current_level ()) env expected_ty =
+  Parmatch.check_partial_gadt (partial_pred ~lev env expected_ty)
 
 let rec iter3 f lst1 lst2 lst3 =
   match lst1,lst2,lst3 with
@@ -2909,6 +2913,7 @@ and type_format loc str env =
         | Bool_ty rest      -> mk_constr "Bool_ty"      [ mk_fmtty rest ]
         | Alpha_ty rest     -> mk_constr "Alpha_ty"     [ mk_fmtty rest ]
         | Theta_ty rest     -> mk_constr "Theta_ty"     [ mk_fmtty rest ]
+        | Any_ty rest       -> mk_constr "Any_ty"       [ mk_fmtty rest ]
         | Reader_ty rest    -> mk_constr "Reader_ty"    [ mk_fmtty rest ]
         | Ignored_reader_ty rest ->
           mk_constr "Ignored_reader_ty" [ mk_fmtty rest ]
@@ -3028,6 +3033,10 @@ and type_format loc str env =
           mk_constr "Ignored_param" [ mk_ignored ign; mk_fmt rest ]
         | End_of_format ->
           mk_constr "End_of_format" []
+        | Custom _ ->
+          (* Custom formatters have no syntax so they will never appear
+             in formats parsed from strings. *)
+          assert false
       in
       let legacy_behavior = not !Clflags.strict_formats in
       let Fmt_EBB fmt = fmt_ebb_of_string ~legacy_behavior str in
@@ -3587,7 +3596,7 @@ and type_cases ?in_function env ty_arg ty_res ?conts partial_flag loc caselist =
   end;
   let partial =
     if partial_flag then
-      Parmatch.check_partial_gadt (partial_pred ~lev env ty_arg) loc cases
+      check_partial ~lev env ty_arg loc cases
     else
       Partial
   in
@@ -3795,7 +3804,8 @@ and type_let ?(check = fun s -> Warnings.Unused_var s)
     Location.prerr_warning (List.hd spat_sexp_list).pvb_pat.ppat_loc
       Warnings.Unused_rec_flag;
   List.iter2
-    (fun pat exp -> ignore(Parmatch.check_partial pat.pat_loc [case pat exp]))
+    (fun pat exp ->
+      ignore(check_partial env pat.pat_type pat.pat_loc [case pat exp]))
     pat_list exp_list;
   end_def();
   List.iter2

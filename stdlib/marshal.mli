@@ -114,7 +114,8 @@ external to_bytes :
 (** [Marshal.to_bytes v flags] returns a byte sequence containing
    the representation of [v].
    The [flags] argument has the same meaning as for
-   {!Marshal.to_channel}. *)
+   {!Marshal.to_channel}.
+   @since 4.02.0 *)
 
 external to_string :
   'a -> extern_flags list -> string = "caml_output_value_to_string"
@@ -141,7 +142,8 @@ val from_bytes : bytes -> int -> 'a
    like {!Marshal.from_channel} does, except that the byte
    representation is not read from a channel, but taken from
    the byte sequence [buff], starting at position [ofs].
-   The byte sequence is not mutated. *)
+   The byte sequence is not mutated.
+   @since 4.02.0 *)
 
 val from_string : string -> int -> 'a
 (** Same as [from_bytes] but take a string as argument instead of a

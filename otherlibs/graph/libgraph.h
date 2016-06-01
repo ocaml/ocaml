@@ -14,7 +14,7 @@
 #include <stdio.h>
 #include <X11/Xlib.h>
 #include <X11/Xutil.h>
-#include <mlvalues.h>
+#include <caml/mlvalues.h>
 
 struct canvas {
   int w, h;                     /* Dimensions of the drawable */

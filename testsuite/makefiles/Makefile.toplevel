@@ -12,10 +12,10 @@
 
 default:
 	@for file in *.ml; do \
-	  $(OCAML) $(TOPFLAGS) <$$file 2>&1 \
+	  TERM=dumb $(OCAML) $(TOPFLAGS) <$$file 2>&1 \
 	    | grep -v '^        OCaml version' > $$file.result; \
 	  if [ -f $$file.principal.reference ]; then \
-	    $(OCAML) $(TOPFLAGS) -principal <$$file 2>&1 \
+	    TERM=dumb $(OCAML) $(TOPFLAGS) -principal <$$file 2>&1 \
 	      | grep -v '^        OCaml version' > $$file.principal.result; \
 	  fi; \
 	done

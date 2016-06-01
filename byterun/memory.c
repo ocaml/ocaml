@@ -1,14 +1,14 @@
 #include <string.h>
 #include <stdlib.h>
 #include <stdio.h>
-#include "misc.h"
-#include "fail.h"
-#include "memory.h"
-#include "shared_heap.h"
-#include "domain.h"
-#include "addrmap.h"
-#include "roots.h"
-#include "alloc.h"
+#include "caml/misc.h"
+#include "caml/fail.h"
+#include "caml/memory.h"
+#include "caml/shared_heap.h"
+#include "caml/domain.h"
+#include "caml/addrmap.h"
+#include "caml/roots.h"
+#include "caml/alloc.h"
 
 static void shared_heap_write_barrier(value obj, int field, value val)
 {

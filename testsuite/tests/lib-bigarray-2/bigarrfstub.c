@@ -11,7 +11,7 @@
 /***********************************************************************/
 
 #include <stdio.h>
-#include <mlvalues.h>
+#include <caml/mlvalues.h>
 #include <bigarray.h>
 
 extern void filltab_(void);

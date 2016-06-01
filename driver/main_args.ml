@@ -126,6 +126,10 @@ let mk_intf_suffix_2 f =
   "-intf_suffix", Arg.String f, "<string>  (deprecated) same as -intf-suffix"
 ;;
 
+let mk_keep_docs f =
+  "-keep-docs", Arg.Unit f, " Keep documentation strings in .cmi files"
+;;
+
 let mk_keep_locs f =
   "-keep-locs", Arg.Unit f, " Keep locations in .cmi files"
 ;;
@@ -158,6 +162,10 @@ let mk_no_alias_deps f =
 
 let mk_no_app_funct f =
   "-no-app-funct", Arg.Unit f, " Deactivate applicative functors"
+;;
+
+let mk_no_check_prims f =
+  "-no-check-prims", Arg.Unit f, " Do not check runtime for primitives"
 ;;
 
 let mk_no_float_const_prop f =
@@ -214,7 +222,12 @@ let mk_open f =
   "-open", Arg.String f, "<module>  Opens the module <module> before typing"
 
 let mk_output_obj f =
-  "-output-obj", Arg.Unit f, " Output a C object file instead of an executable"
+  "-output-obj", Arg.Unit f, " Output an object file instead of an executable"
+;;
+
+let mk_output_complete_obj f =
+  "-output-complete-obj", Arg.Unit f,
+  " Output an object file, including runtime, instead of an executable"
 ;;
 
 let mk_p f =
@@ -516,11 +529,13 @@ module type Compiler_options = sig
   val _impl : string -> unit
   val _intf : string -> unit
   val _intf_suffix : string -> unit
+  val _keep_docs : unit -> unit
   val _keep_locs : unit -> unit
   val _linkall : unit -> unit
   val _noautolink : unit -> unit
   val _o : string -> unit
   val _output_obj : unit -> unit
+  val _output_complete_obj : unit -> unit
   val _pack : unit -> unit
   val _pp : string -> unit
   val _principal : unit -> unit
@@ -541,6 +556,7 @@ module type Bytecomp_options = sig
   include Compiler_options
   val _compat_32 : unit -> unit
   val _custom : unit -> unit
+  val _no_check_prims : unit -> unit
   val _dllib : string -> unit
   val _dllpath : string -> unit
   val _make_runtime : unit -> unit
@@ -642,6 +658,7 @@ struct
     mk_compat_32 F._compat_32;
     mk_config F._config;
     mk_custom F._custom;
+    mk_custom F._no_check_prims;
     mk_dllib F._dllib;
     mk_dllpath F._dllpath;
     mk_dtypes F._annot;
@@ -653,6 +670,7 @@ struct
     mk_intf F._intf;
     mk_intf_suffix F._intf_suffix;
     mk_intf_suffix_2 F._intf_suffix;
+    mk_keep_docs F._keep_docs;
     mk_keep_locs F._keep_locs;
     mk_labels F._labels;
     mk_linkall F._linkall;
@@ -661,6 +679,7 @@ struct
     mk_modern F._labels;
     mk_no_alias_deps F._no_alias_deps;
     mk_no_app_funct F._no_app_funct;
+    mk_no_check_prims F._no_check_prims;
     mk_noassert F._noassert;
     mk_noautolink_byt F._noautolink;
     mk_nolabels F._nolabels;
@@ -668,6 +687,7 @@ struct
     mk_o F._o;
     mk_open F._open;
     mk_output_obj F._output_obj;
+    mk_output_complete_obj F._output_complete_obj;
     mk_pack_byt F._pack;
     mk_pp F._pp;
     mk_ppx F._ppx;
@@ -769,6 +789,7 @@ struct
     mk_inline F._inline;
     mk_intf F._intf;
     mk_intf_suffix F._intf_suffix;
+    mk_keep_docs F._keep_docs;
     mk_keep_locs F._keep_locs;
     mk_labels F._labels;
     mk_linkall F._linkall;
@@ -783,6 +804,7 @@ struct
     mk_o F._o;
     mk_open F._open;
     mk_output_obj F._output_obj;
+    mk_output_complete_obj F._output_complete_obj;
     mk_p F._p;
     mk_pack_opt F._pack;
     mk_pp F._pp;

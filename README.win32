@@ -1,11 +1,14 @@
        Release notes on the MS Windows ports of OCaml
        ----------------------------------------------
 
-There are no less than four ports of OCaml for MS Windows available:
+There are no less than five ports of OCaml for MS Windows available:
   - a native Win32 port, built with the Microsoft development tools;
   - a native Win32 port, built with the 32-bit version of the gcc
     compiler from the mingw-w64 project, packaged in Cygwin
     (under the name mingw64-i686);
+  - a native Win32 port, built with the 64-bit version of the gcc
+    compiler from the mingw-w64 project, packaged in Cygwin
+    (under the name mingw64-x86_64);
   - a port consisting of the Unix sources compiled under the Cygwin
     Unix-like environment for Windows;
   - a native Win64 port (64-bit Windows), built with the Microsoft
@@ -15,7 +18,7 @@ Here is a summary of the main differences between these ports:
 
                                       Native MS     Native MinGW        Cygwin
 
-64 bits?                            Win32 or Win64    Win32 only      Win32 only
+64 bits?                            Win32 or Win64  Win32 or Win64     Win32 only
 
 Third-party software required
   - for base bytecode system            none            none            none
@@ -161,12 +164,12 @@ contributed his changes to the OCaml project.
 
 ------------------------------------------------------------------------------
 
-           The native Win32 port built with Mingw
-           --------------------------------------
+           The native Win32 and Win64 ports built with Mingw
+           -------------------------------------------------
 
 REQUIREMENTS:
 
-This port runs under MS Windows Seven, Vista, XP, and 2000.
+Those ports run under MS Windows Seven, Vista, XP, and 2000.
 
 The base bytecode system (ocamlc, ocaml, ocamllex, ocamlyacc, ...)
 runs without any additional tools.
@@ -177,14 +180,18 @@ the Cygwin development tools, available at
         http://www.cygwin.com/
 and the flexdll tool, available at
         http://alain.frisch.fr/flexdll.html
-You will need to install at least the following Cygwin packages (use
-the Setup tool from Cygwin):
+You will need to install at least the following Cygwin packages for
+the 32-bit flavor (use the Setup tool from Cygwin):
 
  mingw64-i686-binutils
- mingw64-i686-gcc
  mingw64-i686-gcc-core
  mingw64-i686-runtime
 
+and the following packages for the 64-bit:
+
+ mingw64-x86_64-binutils
+ mingw64-x86_64-gcc-core
+ mingw64-x86_64-runtime
 
 NOTES:
 
@@ -218,13 +225,22 @@ You will need the following software components to perform the recompilation:
 - Cygwin: http://cygwin.com/
   Install at least the following packages (and their dependencies, as
   computed by Cygwin's setup.exe):
-     mingw64-i686-binutils
-     mingw64-i686-gcc
-     mingw64-i686-gcc-core
-     mingw64-i686-runtime
+
+  For both flavor of OCaml (32-bit and 64-bit):
      diffutils
      make
      ncurses
+
+  For the 32 bit flavor of OCaml:
+     mingw64-i686-binutils
+     mingw64-i686-gcc-core
+     mingw64-i686-runtime
+
+  For the 64 bit flavor of OCaml:
+     mingw64-x86_64-binutils
+     mingw64-x86_64-gcc-core
+     mingw64-x86_64-runtime
+
 - The flexdll tool (see above).  Do not forget to add the flexdll directory
   to your PATH
 
@@ -238,7 +254,12 @@ directory of the OCaml distribution.  Then, do
 
         cp config/m-nt.h config/m.h
         cp config/s-nt.h config/s.h
+
+For a 32 bit OCaml:
         cp config/Makefile.mingw config/Makefile
+
+For a 64 bit OCaml:
+        cp config/Makefile.mingw64 config/Makefile
 
 Then, edit config/Makefile as needed, following the comments in this file.
 Normally, the only variable that need to be changed is
@@ -260,7 +281,7 @@ NOTES:
 
 * The replay debugger is partially supported (no reverse execution).
 
-* The default Makefile.mingw passes -static-libgcc to the linker.
+* The default Makefile.mingw and Makefile.mingw64 pass -static-libgcc to the linker.
   For more information on this topic:
 
   http://gcc.gnu.org/onlinedocs/gcc-4.9.1/gcc/Link-Options.html#Link-Options

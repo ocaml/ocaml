@@ -11,10 +11,10 @@
 /*                                                                     */
 /***********************************************************************/
 
-#include <mlvalues.h>
-#include <memory.h>
-#include <alloc.h>
-#include <fail.h>
+#include <caml/mlvalues.h>
+#include <caml/memory.h>
+#include <caml/alloc.h>
+#include <caml/fail.h>
 #include "unixsupport.h"
 
 #ifdef HAS_SOCKETS
@@ -194,6 +194,7 @@ unix_getsockopt_aux(char * name,
 
   switch (ty) {
   case TYPE_BOOL:
+    return Val_bool(optval.i);
   case TYPE_INT:
     return Val_int(optval.i);
   case TYPE_LINGER:
