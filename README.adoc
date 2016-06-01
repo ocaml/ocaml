@@ -45,8 +45,6 @@ library functions.
 
 == Contents
 
-  appveyor.yml::          configuration for appveyor CI
-  appveyor_build.sh::     appveyor CI script
   Changes::               what's new with each release
   configure::             configure script
   CONTRIBUTING.md::       how to contribute to OCaml
@@ -140,6 +138,10 @@ OCaml.
 
 The IRC channel `#ocaml` on https://freenode.net/[Freenode] also has several
 hundred users and welcomes questions.
+
+The OCaml Community website is
+
+http://ocaml.org/
 
 == Bug Reports and User Feedback
 
