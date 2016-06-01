@@ -326,8 +326,7 @@ let let_bound_vars_that_can_be_moved ident_info (clam : Clambda.ulambda) =
       let_stack := []
     | Ustaticfail (static_exn, args) ->
       ignore_int static_exn;
-      ignore_ulambda_list args;
-      let_stack := []
+      examine_argument_list args
     | Ucatch (static_exn, idents, body, handler) ->
       ignore_int static_exn;
       ignore_ident_list idents;
