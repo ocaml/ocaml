@@ -14,13 +14,13 @@
 #include "caml/misc.h"
 #include "caml/mlvalues.h"
 #include "caml/memory.h"
-#include "caml/stack.h"
+#include "stack.h"
 #include "caml/callback.h"
 #include "caml/alloc.h"
 #include "caml/intext.h"
 #include "caml/osdeps.h"
 #include "caml/fail.h"
-#include "caml/frame_descriptors.h"
+#include "frame_descriptors.h"
 #include "caml/globroots.h"
 
 #include <stdio.h>

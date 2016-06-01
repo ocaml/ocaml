@@ -22,7 +22,7 @@
 #include "caml/platform.h"
 #include "caml/alloc.h"
 #ifdef NATIVE_CODE
-#include "caml/stack.h"
+#include "stack.h"
 #endif
 
 /* A caml_root is in fact a value. We don't expose that fact outside

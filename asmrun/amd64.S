@@ -93,7 +93,7 @@
 /* Access to the current domain state block. */
 
 #define CAML_CONFIG_H_NO_TYPEDEFS
-#include "../byterun/config.h"
+#include "../byterun/caml/config.h"
 
 #define GET_DOMAIN_STATE(reg) \
 	movq	%r15, reg ; \
@@ -127,7 +127,7 @@
         popq    %r13 ;                           \
         store_caml_##name %r13 ;                 \
   .endm
-#include "../byterun/domain_state.tbl"
+#include "../byterun/caml/domain_state.tbl"
 #undef DOMAIN_STATE
 
 

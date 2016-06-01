@@ -27,7 +27,7 @@
 #include "caml/fiber.h"
 
 #ifdef NATIVE_CODE
-#include "caml/frame_descriptors.h"
+#include "frame_descriptors.h"
 
 /* Communication with [caml_start_program] and [caml_call_gc]. */
 
