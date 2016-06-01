@@ -47,7 +47,8 @@ parsecmm.mli parsecmm.ml: parsecmm.mly
 lexcmm.ml: lexcmm.mll
 	@$(OCAMLLEX) -q lexcmm.mll
 
-MLCASES=optargs staticalloc bind_tuples is_static register_typing
+MLCASES=optargs staticalloc bind_tuples is_static register_typing \
+  register_typing_switch
 ARGS_is_static=-I $(OTOPDIR)/byterun is_in_static_data.c
 MLCASES_FLAMBDA=is_static_flambda unrolling_flambda
 ARGS_is_static_flambda=-I $(OTOPDIR)/byterun is_in_static_data.c

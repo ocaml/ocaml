@@ -86,6 +86,9 @@ OCaml 4.04.0:
 
 - PR#7112: Aliased arguments ignored for equality of module types
 
+- GPR#600: (similar to GPR#555) ensure that register typing constraints are
+  respected at N-way join points in the control flow graph (Mark Shinwell)
+
 ### Other libraries:
 
 * GPR#533: Thread library: fixed [Thread.wait_signal] so that it
