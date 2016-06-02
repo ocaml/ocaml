@@ -86,18 +86,15 @@ yields a compilation error
 Error: The type of this expression, '_a option ref,
        contains type variables that cannot be generalized
 \end{verbatim}
-In this case, the error can be solved by either fixing the relevant
-type
+To solve this error, it suffices to add an explicit type annotation to
+specify the type at declaration time:
 \begin{verbatim}
 let option_ref: int option ref = ref None
 \end{verbatim}
-or by transforming "option_ref" in a function%
-\begin{verbatim}
-let option_ref () = ref None
-\end{verbatim}
-An important point is that, by nature, this error cannot appear in OCaml
-interactive toplevel: in the toplevel, any weak type can always unified
-to a specific type sometimes in the future.
+This is in any case a good practice for such global mutable variables.
+Otherwise, they will pick out the type of first use. If there is a mistake
+at this point, this can result in confusing type errors when later, correct
+uses are flagged as errors.
 
 \subsection{The value restriction}\label{ss:valuerestriction}
 
