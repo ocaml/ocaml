@@ -89,6 +89,8 @@ OCaml 4.04.0:
 ### Bug fixes:
 
 - PR#7112: Aliased arguments ignored for equality of module types
+- PR#7269: Segfault from conjunctive constraints in GADT
+  (Jacques Garrigue, report by Stephen Dolan)
 
 ### Other libraries:
 

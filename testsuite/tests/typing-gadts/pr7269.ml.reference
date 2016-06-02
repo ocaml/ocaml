@@ -1,0 +1,10 @@
+
+# type s = [ `A | `B ]
+and sub = [ `B ]
+# Characters 0-65:
+  type +'a t = T : [< `Conj of 'a & sub | `Other of string] -> 'a t;; (* fail *)
+  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Error: In this definition, expected parameter variances are not satisfied.
+       The 1st type parameter was expected to be covariant,
+       but it is invariant.
+#   * * *   
