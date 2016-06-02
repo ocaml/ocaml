@@ -306,7 +306,8 @@ let execute_phrase print_outcome ppf phr =
       Typecore.force_delayed_checks ();
       let module_ident, res, required_globals, size =
         if Config.flambda then
-          let ((module_ident, size), required_globals, res) =
+          let { Translmod.module_ident; main_module_block_size = size;
+                required_globals; code = res } =
             Translmod.transl_implementation_flambda !phrase_name
               (str, Tcoerce_none)
           in

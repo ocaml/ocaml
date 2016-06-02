@@ -62,7 +62,6 @@ let print_if ppf flag printer arg =
 
 let (++) x f = f x
 let (+++) (x, y) f = (x, f y)
-let (++|+) (x, y, z) f = (x, y, f z)
 
 let implementation ppf sourcefile outputprefix ~backend =
   let source_provenance = Timings.File sourcefile in
@@ -94,10 +93,11 @@ let implementation ppf sourcefile outputprefix ~backend =
         (typedtree, coercion)
         ++ Timings.(time (Timings.Transl sourcefile)
             (Translmod.transl_implementation_flambda modulename))
-        ++|+ print_if ppf Clflags.dump_rawlambda Printlambda.lambda
         ++ Timings.time (Timings.Generate sourcefile)
-          (fun (modu, required_globals, body) ->
-          (modu, body)
+          (fun { Translmod.module_ident; main_module_block_size;
+                 required_globals; code } ->
+          ((module_ident, main_module_block_size), code)
+          +++ print_if ppf Clflags.dump_rawlambda Printlambda.lambda
           +++ Simplif.simplify_lambda
           +++ print_if ppf Clflags.dump_lambda Printlambda.lambda
           ++ (fun ((module_ident, size), lam) ->

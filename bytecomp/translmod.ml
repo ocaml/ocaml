@@ -608,6 +608,12 @@ let wrap_globals ~flambda body =
 
 (* Compile an implementation *)
 
+type implementation =
+  { module_ident : Ident.t;
+    main_module_block_size : int;
+    required_globals : Ident.Set.t;
+    code : lambda }
+
 let transl_implementation_flambda module_name (str, cc) =
   reset_labels ();
   primitive_declarations := [];
@@ -618,16 +624,18 @@ let transl_implementation_flambda module_name (str, cc) =
       (fun () -> transl_struct Location.none [] cc
                    (global_path module_id) str)
   in
-  (module_id, size),
-  required_globals ~flambda:true body,
-  body
+  { module_ident = module_id;
+    main_module_block_size = size;
+    required_globals = required_globals ~flambda:true body;
+    code = body }
 
 let transl_implementation module_name (str, cc) =
-  let (module_id, _size), required_globals, module_initializer =
+  let implementation =
     transl_implementation_flambda module_name (str, cc)
   in
-  Lprim (Psetglobal module_id,
-         [wrap_required_globals required_globals module_initializer],
+  Lprim (Psetglobal implementation.module_ident,
+         [wrap_required_globals implementation.required_globals
+            implementation.code],
          Location.none)
 
 (* Build the list of value identifiers defined by a toplevel structure
