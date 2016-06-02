@@ -2454,7 +2454,8 @@ and type_expect_ ?in_function ?(recarg=Rejected) env sexp ty_expected =
                 end_def ();
                 let tv = newvar () in
                 let gen = generalizable tv.level arg.exp_type in
-                unify_var env tv arg.exp_type;
+                (try unify_var env tv arg.exp_type with Unify trace ->
+                  raise(Error(arg.exp_loc, env, Expr_type_clash trace)));
                 gen
               end else true
             in
