@@ -209,7 +209,7 @@ module Backend = struct
 end
 let backend = (module Backend : Backend_intf.S)
 
-let load_lambda ppf ~module_ident lam size =
+let load_lambda ppf ~module_ident ~required_globals lam size =
   if !Clflags.dump_rawlambda then fprintf ppf "%a@." Printlambda.lambda lam;
   let slam = Simplif.simplify_lambda lam in
   if !Clflags.dump_lambda then fprintf ppf "%a@." Printlambda.lambda slam;
@@ -225,7 +225,7 @@ let load_lambda ppf ~module_ident lam size =
       { Lambda.code=lam ; main_module_block_size=size }
   else
     Asmgen.compile_implementation_flambda ~source_provenance:Timings.Toplevel
-      ~backend ~toplevel:need_symbol fn ppf
+      ~required_globals ~backend ~toplevel:need_symbol fn ppf
       (Middle_end.middle_end ppf
          ~source_provenance:Timings.Toplevel ~prefixname:"" ~backend ~size
          ~module_ident ~module_initializer:lam ~filename:"toplevel");
@@ -304,22 +304,22 @@ let execute_phrase print_outcome ppf phr =
       (* Why is this done? *)
       ignore (Includemod.signatures oldenv sg sg');
       Typecore.force_delayed_checks ();
-      let module_ident, res, size =
+      let module_ident, res, required_globals, size =
         if Config.flambda then
-          let ((module_ident, size), res) =
+          let ((module_ident, size), required_globals, res) =
             Translmod.transl_implementation_flambda !phrase_name
               (str, Tcoerce_none)
           in
           remember module_ident 0 sg';
-          module_ident, close_phrase res, size
+          module_ident, close_phrase res, required_globals, size
         else
           let size, res = Translmod.transl_store_phrases !phrase_name str in
-          Ident.create_persistent !phrase_name, res, size
+          Ident.create_persistent !phrase_name, res, Ident.Set.empty, size
       in
       Warnings.check_fatal ();
       begin try
         toplevel_env := newenv;
-        let res = load_lambda ppf ~module_ident res size in
+        let res = load_lambda ppf ~required_globals ~module_ident res size in
         let out_phr =
           match res with
           | Result _ ->

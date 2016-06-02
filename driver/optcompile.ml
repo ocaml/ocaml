@@ -62,6 +62,7 @@ let print_if ppf flag printer arg =
 
 let (++) x f = f x
 let (+++) (x, y) f = (x, f y)
+let (++|+) (x, y, z) f = (x, y, f z)
 
 let implementation ppf sourcefile outputprefix ~backend =
   let source_provenance = Timings.File sourcefile in
@@ -93,9 +94,10 @@ let implementation ppf sourcefile outputprefix ~backend =
         (typedtree, coercion)
         ++ Timings.(time (Timings.Transl sourcefile)
             (Translmod.transl_implementation_flambda modulename))
-        +++ print_if ppf Clflags.dump_rawlambda Printlambda.lambda
-        ++ Timings.time (Timings.Generate sourcefile) (fun lambda ->
-          lambda
+        ++|+ print_if ppf Clflags.dump_rawlambda Printlambda.lambda
+        ++ Timings.time (Timings.Generate sourcefile)
+          (fun (modu, required_globals, body) ->
+          (modu, body)
           +++ Simplif.simplify_lambda
           +++ print_if ppf Clflags.dump_lambda Printlambda.lambda
           ++ (fun ((module_ident, size), lam) ->
@@ -107,7 +109,7 @@ let implementation ppf sourcefile outputprefix ~backend =
                 ~backend
                 ~module_initializer:lam)
           ++ Asmgen.compile_implementation_flambda ~source_provenance
-            outputprefix ~backend ppf;
+            outputprefix ~required_globals ~backend ppf;
           Compilenv.save_unit_info cmxfile)
       end
       else begin
