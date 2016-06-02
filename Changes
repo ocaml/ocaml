@@ -222,6 +222,10 @@ OCaml 4.04.0:
   it now calls (nano)sleep for 0 seconds as in (< 4.03) versions.
   (Hannes Mehnert, review by Damien Doligez)
 
+- PR#7259 and GPR#603: flambda does not collapse pattern matching
+  in some cases
+  (Pierre Chambart, report by Reed Wilson)
+
 - PR#7260: GADT + subtyping compile time crash
   (Jacques Garrigue, report by Nicolas Ojeda Bar)
 
