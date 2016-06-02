@@ -2071,11 +2071,16 @@ and type_expect_ ?in_function ?(recarg=Rejected) env sexp ty_expected =
           default;
        ]
       in
+      let sloc =
+        { Location.loc_start = spat.ppat_loc.Location.loc_start;
+          loc_end = default_loc.Location.loc_end;
+          loc_ghost = true }
+      in
       let smatch =
-        Exp.match_ ~loc (Exp.ident ~loc (mknoloc (Longident.Lident "*opt*")))
+        Exp.match_ ~loc:sloc (Exp.ident ~loc (mknoloc (Longident.Lident "*opt*")))
           scases
       in
-      let pat = Pat.var ~loc (mknoloc "*opt*") in
+      let pat = Pat.var ~loc:sloc (mknoloc "*opt*") in
       let body =
         Exp.let_ ~loc Nonrecursive ~attrs:[mknoloc "#default",PStr []]
           [Vb.mk spat smatch] sbody
