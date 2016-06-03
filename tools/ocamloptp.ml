@@ -60,6 +60,7 @@ module Options = Main_args.Make_optcomp_options (struct
   let _cclib s = option_with_arg "-cclib" s
   let _ccopt s = option_with_arg "-ccopt" s
   let _clambda_checks = option "-clambda-checks"
+  let _cmx_contains_all_code = option "-lto"
   let _compact = option "-compact"
   let _config = option "-config"
   let _for_pack s = option_with_arg "-for-pack" s

@@ -141,6 +141,7 @@ type t = {
   offset_fv : int Var_within_closure.Map.t;
   constant_sets_of_closures : Set_of_closures_id.Set.t;
   invariant_params : Variable.Set.t Variable.Map.t Set_of_closures_id.Map.t;
+  code : Flambda.program option;
 }
 
 let empty : t = {
@@ -152,11 +153,12 @@ let empty : t = {
   offset_fv = Var_within_closure.Map.empty;
   constant_sets_of_closures = Set_of_closures_id.Set.empty;
   invariant_params = Set_of_closures_id.Map.empty;
+  code = None;
 }
 
 let create ~sets_of_closures ~closures ~values ~symbol_id
       ~offset_fun ~offset_fv ~constant_sets_of_closures
-      ~invariant_params =
+      ~invariant_params ~code =
   { sets_of_closures;
     closures;
     values;
@@ -165,6 +167,7 @@ let create ~sets_of_closures ~closures ~values ~symbol_id
     offset_fv;
     constant_sets_of_closures;
     invariant_params;
+    code;
   }
 
 let add_clambda_info t ~offset_fun ~offset_fv ~constant_sets_of_closures =
@@ -203,6 +206,7 @@ let merge (t1 : t) (t2 : t) : t =
         ~print:(Variable.Map.print Variable.Set.print)
         ~eq:(Variable.Map.equal Variable.Set.equal)
         t1.invariant_params t2.invariant_params;
+    code = None;
   }
 
 let find_value eid map =

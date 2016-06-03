@@ -204,6 +204,7 @@ let import_for_pack ~pack_units ~pack (exp : Export_info.t) =
     ~invariant_params:
       (Set_of_closures_id.Map.map_keys import_set_of_closures_id
          exp.invariant_params)
+    ~code:None
 
 let clear_import_state () =
   Set_of_closures_id.Tbl.clear imported_function_declarations_table;

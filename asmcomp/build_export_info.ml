@@ -542,6 +542,12 @@ let build_export_info ~(backend : (module Backend_intf.S))
     let values =
       Export_info.nest_eid_map unnested_values
     in
+    let code =
+      if !Clflags.cmx_contains_all_code then
+        Some program
+      else
+        None
+    in
     Export_info.create ~values
       ~symbol_id:(Env.Global.symbol_to_export_id_map env)
       ~offset_fun:Closure_id.Map.empty
@@ -549,3 +555,4 @@ let build_export_info ~(backend : (module Backend_intf.S))
       ~sets_of_closures ~closures
       ~constant_sets_of_closures:Set_of_closures_id.Set.empty
       ~invariant_params
+      ~code

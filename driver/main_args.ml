@@ -51,6 +51,11 @@ let mk_clambda_checks f =
     field access checks (for debugging the compiler)"
 ;;
 
+let mk_cmx_contains_all_code f =
+  "-lto", Arg.Unit f, " Store all the code in the cmx file \
+    for link time dead code elimination"
+;;
+
 let mk_compact f =
   "-compact", Arg.Unit f, " Optimize code size rather than speed"
 ;;
@@ -931,6 +936,7 @@ module type Optcomp_options = sig
   include Common_options
   include Compiler_options
   include Optcommon_options
+  val _cmx_contains_all_code : unit -> unit
   val _no_float_const_prop : unit -> unit
   val _nodynlink : unit -> unit
   val _p : unit -> unit
@@ -1138,6 +1144,7 @@ struct
     mk_ccopt F._ccopt;
     mk_clambda_checks F._clambda_checks;
     mk_classic_inlining F._classic_inlining;
+    mk_cmx_contains_all_code F._cmx_contains_all_code;
     mk_color F._color;
     mk_compact F._compact;
     mk_config F._config;
