@@ -100,7 +100,7 @@ let rec loop (program : Flambda.program_body)
       let dep = Symbol.Set.union new_dep dep in
       Effect (effect, program), dep
     end
-  | End symbol -> program, Symbol.Set.singleton symbol
+  | End symbol -> program, symbol
 
 let remove_unused_program_constructs (program : Flambda.program) =
   { program with

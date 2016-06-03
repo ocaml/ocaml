@@ -648,7 +648,7 @@ let lambda_to_flambda ~backend ~module_ident ~size ~filename lam
         module_symbol,
         Tag.create_exn 0,
         Array.to_list fields,
-        End module_symbol))
+        End (Symbol.Set.singleton module_symbol)))
   in
   { imported_symbols = t.imported_symbols;
     program_body = module_initializer;
