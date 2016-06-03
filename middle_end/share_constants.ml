@@ -53,10 +53,10 @@ let cannot_share (const : Flambda.constant_defining_value) =
     false
 
 let share_definition constant_to_symbol_tbl sharing_symbol_tbl
-    symbol def end_symbol =
+    symbol def (end_symbols:Symbol.Set.t) =
   let def = update_constant_for_sharing sharing_symbol_tbl def in
-  if cannot_share def || Symbol.equal symbol end_symbol then
-    (* The symbol exported by the unit (end_symbol), cannot be removed
+  if cannot_share def || Symbol.Set.mem symbol end_symbols then
+    (* The symbols exported by the unit (end_symbols), cannot be removed
        from the module. We prevent it from being shared to avoid that. *)
     Some def
   else
@@ -69,17 +69,17 @@ let share_definition constant_to_symbol_tbl sharing_symbol_tbl
       None
     end
 
-let rec end_symbol (program : Flambda.program_body) =
+let rec end_symbols (program : Flambda.program_body) : Symbol.Set.t =
   match program with
   | End symbol -> symbol
   | Let_symbol (_, _, program)
   | Let_rec_symbol (_, program)
   | Initialize_symbol (_, _, _, program)
   | Effect (_, program) ->
-    end_symbol program
+    end_symbols program
 
 let share_constants (program : Flambda.program) =
-  let end_symbol = end_symbol program.program_body in
+  let end_symbols = end_symbols program.program_body in
   let sharing_symbol_tbl = Symbol.Tbl.create 42 in
   let constant_to_symbol_tbl = Constant_defining_value.Tbl.create 42 in
   let rec loop (program : Flambda.program_body) : Flambda.program_body =
@@ -87,7 +87,7 @@ let share_constants (program : Flambda.program) =
     | Let_symbol (symbol,def,program) ->
       begin match
         share_definition constant_to_symbol_tbl sharing_symbol_tbl symbol
-          def end_symbol
+          def end_symbols
       with
       | None ->
         loop program

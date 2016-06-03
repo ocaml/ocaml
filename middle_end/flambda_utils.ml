@@ -435,7 +435,7 @@ let introduce_needed_import_symbols program : Flambda.program =
     imported_symbols = needed_import_symbols program;
   }
 
-let root_symbol (program : Flambda.program) =
+let root_symbols (program : Flambda.program) : Symbol.Set.t =
   let rec loop (program : Flambda.program_body) =
     match program with
     | Effect (_, program)

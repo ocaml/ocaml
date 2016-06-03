@@ -160,7 +160,7 @@ type program_body =
   | Let_rec_symbol of (Symbol.t * constant_defining_value) list * program_body
   | Initialize_symbol of Symbol.t * Tag.t * t list * program_body
   | Effect of t * program_body
-  | End of Symbol.t
+  | End of Symbol.Set.t
 
 type program = {
   imported_symbols : Symbol.Set.t;
@@ -497,7 +497,7 @@ let rec print_program_body ppf (program : program_body) =
     fprintf ppf "@[effect @[<hv 1>%a@]@]@."
       lam expr;
     print_program_body ppf program;
-  | End root -> fprintf ppf "End %a" Symbol.print root
+  | End root -> fprintf ppf "End %a" Symbol.Set.print root
 
 let print_program ppf program =
   Symbol.Set.iter (fun symbol ->
@@ -979,7 +979,7 @@ let free_symbols_program (program : program) =
     | Effect (expr, program) ->
       symbols := Symbol.Set.union !symbols (free_symbols expr);
       loop program
-    | End symbol -> symbols := Symbol.Set.add symbol !symbols
+    | End symbol -> symbols := Symbol.Set.union symbol !symbols
   in
   (* Note that there is no need to count the [imported_symbols]. *)
   loop program.program_body;

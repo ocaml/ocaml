@@ -105,7 +105,7 @@ val needed_import_symbols : Flambda.program -> Symbol.Set.t
 
 val introduce_needed_import_symbols : Flambda.program -> Flambda.program
 
-val root_symbol : Flambda.program -> Symbol.t
+val root_symbols : Flambda.program -> Symbol.Set.t
 
 (** Returns [true] iff the given term might raise the given static
     exception. *)

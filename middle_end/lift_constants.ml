@@ -1032,7 +1032,7 @@ let lift_constants (program : Flambda.program) ~backend =
     add_definitions_of_symbols constant_definitions
       initialize_symbol_tbl
       effect_tbl
-      (End (Flambda_utils.root_symbol program))
+      (End (Flambda_utils.root_symbols program))
       components
   in
   Flambda_utils.introduce_needed_import_symbols { program with program_body; }
