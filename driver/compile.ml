@@ -80,24 +80,25 @@ let implementation ppf sourcefile outputprefix =
       Warnings.check_fatal ();
       Stypes.dump (Some (outputprefix ^ ".annot"))
     end else begin
-      let bytecode =
+      let bytecode, required_globals =
         (typedtree, coercion)
         ++ Timings.(time (Transl sourcefile))
             (Translmod.transl_implementation modulename)
-        ++ print_if ppf Clflags.dump_rawlambda Printlambda.lambda
         ++ Timings.(accumulate_time (Generate sourcefile))
-            (fun lambda ->
-              Simplif.simplify_lambda lambda
+            (fun { Lambda.code = lambda; required_globals } ->
+              print_if ppf Clflags.dump_rawlambda Printlambda.lambda lambda
+              ++ Simplif.simplify_lambda
               ++ print_if ppf Clflags.dump_lambda Printlambda.lambda
               ++ Bytegen.compile_implementation modulename
-              ++ print_if ppf Clflags.dump_instr Printinstr.instrlist)
+              ++ print_if ppf Clflags.dump_instr Printinstr.instrlist
+              ++ fun bytecode -> bytecode, required_globals)
       in
       let objfile = outputprefix ^ ".cmo" in
       let oc = open_out_bin objfile in
       try
         bytecode
         ++ Timings.(accumulate_time (Generate sourcefile))
-            (Emitcode.to_file oc modulename objfile);
+            (Emitcode.to_file oc modulename objfile ~required_globals);
         Warnings.check_fatal ();
         close_out oc;
         Stypes.dump (Some (outputprefix ^ ".annot"))

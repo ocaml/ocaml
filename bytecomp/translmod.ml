@@ -590,14 +590,6 @@ let required_globals ~flambda body =
   Hashtbl.clear used_primitives;
   required
 
-let wrap_required_globals required body =
-  Ident.Set.fold
-    (fun id expr ->
-       Lsequence(Lprim(Popaque,
-                       [Lprim(Pgetglobal id, [], Location.none)],
-                       Location.none), expr))
-    required body
-
 (* Compile an implementation *)
 
 let transl_implementation_flambda module_name (str, cc) =
@@ -619,10 +611,11 @@ let transl_implementation module_name (str, cc) =
   let implementation =
     transl_implementation_flambda module_name (str, cc)
   in
-  Lprim (Psetglobal implementation.module_ident,
-         [wrap_required_globals implementation.required_globals
-            implementation.code],
-         Location.none)
+  let code =
+    Lprim (Psetglobal implementation.module_ident, [implementation.code],
+           Location.none)
+  in
+  { implementation with code }
 
 (* Build the list of value identifiers defined by a toplevel structure
    (excluding primitive declarations). *)

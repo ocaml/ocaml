@@ -207,6 +207,14 @@ let build_global_target oc target_name members mapping pos coercion =
 let package_object_files ppf files targetfile targetname coercion =
   let members =
     map_left_right read_member_info files in
+  let required_globals =
+    List.fold_left (fun required_globals -> function
+        | { pm_kind = PM_intf } ->
+            required_globals
+        | { pm_kind = PM_impl { cu_required_globals } } ->
+            List.fold_right Ident.Set.add cu_required_globals required_globals)
+      Ident.Set.empty members
+  in
   let unit_names =
     List.map (fun m -> m.pm_name) members in
   let mapping =
@@ -242,6 +250,7 @@ let package_object_files ppf files targetfile targetname coercion =
         cu_imports =
           (targetname, Some (Env.crc_of_unit targetname)) :: imports;
         cu_primitives = !primitives;
+        cu_required_globals = Ident.Set.elements required_globals;
         cu_force_link = !force_link;
         cu_debug = if pos_final > pos_debug then pos_debug else 0;
         cu_debugsize = pos_final - pos_debug } in
