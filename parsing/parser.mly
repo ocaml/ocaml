@@ -1811,7 +1811,8 @@ simple_pattern_not_ident:
   | mod_longident DOT simple_delimited_pattern
       { mkpat @@ Ppat_open(mkrhs $1 1, $3) }
   | mod_longident DOT LBRACKET RBRACKET
-    { mkpat @@ Ppat_construct ( mkrhs (Lident "[]") 1, None) }
+    { mkpat @@ Ppat_open(mkrhs $1 1, mkpat @@
+               Ppat_construct ( mkrhs (Lident "[]") 4, None)) }
   | mod_longident DOT LPAREN RPAREN
       { mkpat @@ Ppat_open( mkrhs $1 1, mkpat @@
                  Ppat_construct ( mkrhs (Lident "()") 4, None) ) }
