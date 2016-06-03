@@ -94,7 +94,7 @@ let implementation ppf sourcefile outputprefix ~backend =
         ++ Timings.(time (Timings.Transl sourcefile)
             (Translmod.transl_implementation_flambda modulename))
         ++ Timings.time (Timings.Generate sourcefile)
-          (fun { Translmod.module_ident; main_module_block_size;
+          (fun { Lambda.module_ident; main_module_block_size;
                  required_globals; code } ->
           ((module_ident, main_module_block_size), code)
           +++ print_if ppf Clflags.dump_rawlambda Printlambda.lambda
@@ -119,9 +119,9 @@ let implementation ppf sourcefile outputprefix ~backend =
             (Translmod.transl_store_implementation modulename)
         ++ print_if ppf Clflags.dump_rawlambda Printlambda.program
         ++ Timings.(time (Generate sourcefile))
-            (fun { Lambda.code; main_module_block_size } ->
-              { Lambda.code = Simplif.simplify_lambda code;
-                main_module_block_size }
+            (fun program ->
+              { program with
+                Lambda.code = Simplif.simplify_lambda program.Lambda.code }
               ++ print_if ppf Clflags.dump_lambda Printlambda.program
               ++ Asmgen.compile_implementation_clambda ~source_provenance
                 outputprefix ppf;

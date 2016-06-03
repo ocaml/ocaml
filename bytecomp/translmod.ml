@@ -598,21 +598,7 @@ let wrap_required_globals required body =
                        Location.none), expr))
     required body
 
-let wrap_globals ~flambda body =
-  let required = required_globals ~flambda body in
-  wrap_required_globals required body
-  (* Location.prerr_warning loc
-        (Warnings.Nonrequired_global (Ident.name (Path.head path),
-                                      "uses the primitive " ^
-                                      Printtyp.string_of_path path))) *)
-
 (* Compile an implementation *)
-
-type implementation =
-  { module_ident : Ident.t;
-    main_module_block_size : int;
-    required_globals : Ident.Set.t;
-    code : lambda }
 
 let transl_implementation_flambda module_name (str, cc) =
   reset_labels ();
@@ -995,10 +981,14 @@ let transl_store_phrases module_name str =
 let transl_store_implementation module_name (str, restr) =
   let s = !transl_store_subst in
   transl_store_subst := Ident.empty;
-  let (i, r) = transl_store_gen module_name (str, restr) false in
+  let (i, code) = transl_store_gen module_name (str, restr) false in
   transl_store_subst := s;
   { Lambda.main_module_block_size = i;
-    code = wrap_globals ~flambda:false r; }
+    code;
+    (* module_ident is not used by closure, but this allow to share
+       the type with the flambda version *)
+    module_ident = Ident.create_persistent module_name;
+    required_globals = required_globals ~flambda:true code }
 
 (* Compile a toplevel phrase *)
 

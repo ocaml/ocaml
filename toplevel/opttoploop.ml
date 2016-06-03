@@ -222,7 +222,8 @@ let load_lambda ppf ~module_ident ~required_globals lam size =
   if not Config.flambda then
     Asmgen.compile_implementation_clambda ~source_provenance:Timings.Toplevel
       ~toplevel:need_symbol fn ppf
-      { Lambda.code=lam ; main_module_block_size=size }
+      { Lambda.code=lam ; main_module_block_size=size;
+        module_ident; required_globals }
   else
     Asmgen.compile_implementation_flambda ~source_provenance:Timings.Toplevel
       ~required_globals ~backend ~toplevel:need_symbol fn ppf
@@ -306,7 +307,7 @@ let execute_phrase print_outcome ppf phr =
       Typecore.force_delayed_checks ();
       let module_ident, res, required_globals, size =
         if Config.flambda then
-          let { Translmod.module_ident; main_module_block_size = size;
+          let { Lambda.module_ident; main_module_block_size = size;
                 required_globals; code = res } =
             Translmod.transl_implementation_flambda !phrase_name
               (str, Tcoerce_none)

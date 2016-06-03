@@ -24,14 +24,8 @@ val transl_store_phrases: string -> structure -> int * lambda
 val transl_store_implementation:
       string -> structure * module_coercion -> Lambda.program
 
-type implementation =
-  { module_ident : Ident.t;
-    main_module_block_size : int;
-    required_globals : Ident.Set.t;
-    code : lambda }
-
 val transl_implementation_flambda:
-  string -> structure * module_coercion -> implementation
+  string -> structure * module_coercion -> Lambda.program
 
 val transl_toplevel_definition: structure -> lambda
 val transl_package:

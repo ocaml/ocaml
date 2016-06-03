@@ -247,7 +247,8 @@ let compile_implementation_gen ?toplevel ~source_provenance prefixname
 let compile_implementation_clambda ?toplevel ~source_provenance prefixname
     ppf (program:Lambda.program) =
   compile_implementation_gen ?toplevel ~source_provenance prefixname
-    ~required_globals:Ident.Set.empty ppf lambda_gen_implementation program
+    ~required_globals:program.Lambda.required_globals
+    ppf lambda_gen_implementation program
 
 let compile_implementation_flambda ?toplevel ~source_provenance prefixname
     ~required_globals ~backend ppf (program:Flambda.program) =

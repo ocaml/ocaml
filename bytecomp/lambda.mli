@@ -282,8 +282,10 @@ and lambda_event_kind =
   | Lev_pseudo
 
 type program =
-  { code : lambda;
-    main_module_block_size : int; }
+  { module_ident : Ident.t;
+    main_module_block_size : int;
+    required_globals : Ident.Set.t;
+    code : lambda }
 (* Lambda code for the Closure middle-end. The main module block size
    is required for preallocating the block *)
 
