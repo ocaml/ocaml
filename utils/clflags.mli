@@ -193,6 +193,7 @@ val inline_max_depth : Int_arg_helper.parsed ref
 val remove_unused_arguments : bool ref
 val dump_flambda_verbose : bool ref
 val classic_inlining : bool ref
+val cmx_contains_all_code : bool ref
 
 val all_passes : string list ref
 val dumped_pass : string -> bool

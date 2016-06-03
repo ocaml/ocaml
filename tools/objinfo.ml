@@ -131,7 +131,13 @@ let print_cmx_infos (ui, crc) =
         (Linkage_name.create "__dummy__")
     in
     Compilation_unit.set_current cu;
-    Format.printf " %a\n" Export_info.print_all export
+    Format.printf " %a\n" Export_info.print_all export;
+    let lto ppf = function
+      | None -> Format.fprintf ppf "no"
+      | Some _ -> Format.fprintf ppf "yes"
+    in
+    Format.printf "Whole program information: %a\n"
+      lto export.Export_info.code;
   end;
   let pr_funs _ fns =
     List.iter (fun arity -> printf " %d" arity) fns in

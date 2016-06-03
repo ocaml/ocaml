@@ -158,6 +158,8 @@ let unsafe_string = ref (not Config.safe_string)    (* -safe-string / -unsafe-st
 let classic_inlining = ref false       (* -Oclassic *)
 let inlining_report = ref false    (* -inlining-report *)
 
+let cmx_contains_all_code = ref false  (* -lto *)
+
 let simplify_rounds = ref None        (* -rounds *)
 let default_simplify_rounds = ref 1        (* -rounds *)
 let rounds () =
