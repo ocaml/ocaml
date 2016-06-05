@@ -21,6 +21,7 @@
 #include "caml/roots.h"
 #include "caml/signals.h"
 #include "caml/minor_gc.h"
+#include "caml/compact.h"
 
 struct final {
   value fun;
@@ -164,7 +165,8 @@ void caml_final_do_calls (void)
 
 /* Call [*f] on the closures of the finalisable set and
    the closures and values of the finalising set.
-   This is called by the major GC through [caml_darken_all_roots].
+   This is called by the major GC [caml_darken_all_roots]
+   and by the compactor through [caml_do_roots]
 */
 void caml_final_do_strong_roots (scanning_action f)
 {
@@ -182,15 +184,17 @@ void caml_final_do_strong_roots (scanning_action f)
   }
 }
 
-/* Call [*f] on the values of the finalisable set.
-   This is called directly by the compactor.
+/* Call invert_root on the values of the finalisable set. This is called
+   directly by the compactor.
 */
-void caml_final_do_weak_roots (scanning_action f)
+void caml_final_invert_finalisable_values ()
 {
   uintnat i;
 
   CAMLassert (old <= young);
-  for (i = 0; i < young; i++) Call_action (f, final_table[i].val);
+  for (i = 0; i < young; i++){
+    invert_root(final_table[i].val,&final_table[i].val);
+  };
 }
 
 /* Call [*f] on the closures and values of the recent set.
