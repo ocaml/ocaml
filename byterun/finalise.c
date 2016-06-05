@@ -29,9 +29,12 @@ struct final {
 
 static struct final *final_table = NULL;
 static uintnat old = 0, young = 0, size = 0;
-/* [0..old) : finalisable set
-   [old..young) : recent set
+/* [0..old) : finalisable set, the values are in the major heap
+   [old..young) : recent set, the values could be in the minor heap
    [young..size) : free space
+
+   The element of the finalisable set are moved to the finalising set
+   below when the value are unreachable (for the first time).
 */
 
 struct to_do {
@@ -42,6 +45,13 @@ struct to_do {
 
 static struct to_do *to_do_hd = NULL;
 static struct to_do *to_do_tl = NULL;
+/*
+  to_do_hd: head of the list of finalisation functions that can be run.
+  to_do_tl: tail of the list of finalisation functions that can be run.
+
+  It is the finalising set.
+*/
+
 
 /* [size] is a number of elements for the [to_do.item] array */
 static void alloc_to_do (int size)
@@ -76,6 +86,15 @@ void caml_final_update (void)
     if (Is_white_val (final_table[i].val)) ++ todo_count;
   }
 
+  /** invariant:
+      - 0 <= j <= i /\ 0 <= k <= i /\ 0 <= k <= todo_count
+      - i : index in final_table, before i all the values are black
+      (alive or in the minor heap) or the finalizer have been copied
+      in to_do_tl.
+      - j : index in final_table, before j all the values are black
+      (alive or in the minor heap), next available slot.
+      - k : index in to_do_tl, next available slot.
+  */
   if (todo_count > 0){
     alloc_to_do (todo_count);
     j = k = 0;
