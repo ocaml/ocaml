@@ -168,7 +168,7 @@ void caml_final_do_calls (void)
    This is called by the major GC [caml_darken_all_roots]
    and by the compactor through [caml_do_roots]
 */
-void caml_final_do_strong_roots (scanning_action f)
+void caml_final_do_roots (scanning_action f)
 {
   uintnat i;
   struct to_do *todo;

@@ -89,7 +89,7 @@ void caml_do_roots (scanning_action f, int do_globals)
   caml_scan_global_roots(f);
   CAML_INSTR_TIME (tmr, "major_roots/C");
   /* Finalised values */
-  caml_final_do_strong_roots (f);
+  caml_final_do_roots (f);
   CAML_INSTR_TIME (tmr, "major_roots/finalised");
   /* Hook */
   if (caml_scan_roots_hook != NULL) (*caml_scan_roots_hook)(f);
