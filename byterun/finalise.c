@@ -20,6 +20,7 @@
 #include "caml/mlvalues.h"
 #include "caml/roots.h"
 #include "caml/signals.h"
+#include "caml/minor_gc.h"
 
 struct final {
   value fun;
@@ -195,14 +196,14 @@ void caml_final_do_weak_roots (scanning_action f)
 /* Call [*f] on the closures and values of the recent set.
    This is called by the minor GC through [caml_oldify_local_roots].
 */
-void caml_final_do_young_roots (scanning_action f)
+void caml_final_do_young_roots ()
 {
   uintnat i;
 
   Assert (old <= young);
   for (i = old; i < young; i++){
-    Call_action (f, final_table[i].fun);
-    Call_action (f, final_table[i].val);
+    caml_oldify_one(final_table[i].fun, &final_table[i].fun);
+    caml_oldify_one(final_table[i].val, &final_table[i].val);
   }
 }
 
