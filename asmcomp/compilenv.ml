@@ -341,9 +341,28 @@ let need_send_fun n =
   if not (List.mem n current_unit.ui_send_fun) then
     current_unit.ui_send_fun <- n :: current_unit.ui_send_fun
 
+let check_required_modules_are_compiled_with_lto () =
+  Hashtbl.iter (fun unit_name unit ->
+      match unit with
+      | None ->
+          (* This was compiled with opaque: there is no way to check,
+             we must delay that to the link. *)
+          ()
+      | Some unit ->
+          match (get_flambda_export_info unit).code with
+          | None ->
+              Format.ksprintf failwith "The module %s was not compiled using\
+                                        the -lto option"
+                unit_name
+          | Some _ ->
+              ())
+    global_infos_table
+
 (* Write the description of the current unit *)
 
 let write_unit_info info filename =
+  if Config.flambda && !Clflags.cmx_contains_all_code then
+    check_required_modules_are_compiled_with_lto ();
   let oc = open_out_bin filename in
   output_string oc cmx_magic_number;
   output_value oc info;
