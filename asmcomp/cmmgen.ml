@@ -1921,8 +1921,8 @@ and transl_prim_2 p arg1 arg2 dbg =
   | Pbintcomp(bi, cmp) ->
       tag_int (Cop(Ccmpi(transl_comparison cmp),
                      [transl_unbox_int bi arg1; transl_unbox_int bi arg2]))
-  | Pdelegate ->
-      Cop(Cdelegate, [transl arg1; transl arg2])
+  | Preperform ->
+      Cop(Creperform, [transl arg1; transl arg2])
   | prim ->
       let (_ : string) = Format.flush_str_formatter () in
       Printlambda.primitive Format.str_formatter prim;

@@ -44,7 +44,7 @@ let oper_result_type = function
   | Ccheckbound _ -> typ_void
   | Cperform -> typ_addr
   | Cresume -> typ_addr
-  | Cdelegate -> typ_addr
+  | Creperform -> typ_addr
 
 
 (* Infer the size in bytes of the result of a simple expression *)
@@ -294,7 +294,7 @@ method select_operation op args =
   | (Ccheckbound _, _) -> self#select_arith Icheckbound args
   | (Cperform, _) -> (Iperform, args)
   | (Cresume, _) -> (Iresume_ind, args)
-  | (Cdelegate, _) -> (Idelegate, args)
+  | (Creperform, _) -> (Ireperform, args)
   | _ -> fatal_error "Selection.select_oper"
 
 method private select_arith_comm op = function

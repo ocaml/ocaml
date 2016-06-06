@@ -46,7 +46,7 @@ let discontinue k e =
 
 external perform : 'a eff -> 'a = "%perform"
 
-let delegate e k =
+let reperform e k =
   match perform e with
   | v -> continue k v
   | exception e -> discontinue k e

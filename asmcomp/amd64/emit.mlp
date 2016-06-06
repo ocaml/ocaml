@@ -414,7 +414,7 @@ let emit_instr fallthrough i =
         output_epilogue begin fun () ->
         `	jmp	*{emit_reg i.arg.(0)}\n`
         end
-    | Lop(Iperform | Idelegate | Iresume_ind | Itail_resume_ind) ->
+    | Lop(Iperform | Ireperform | Iresume_ind | Itail_resume_ind) ->
        `        /* this was a bad idea to begin with */`
     | Lop(Itailcall_imm s) ->
         if s = !function_name then
