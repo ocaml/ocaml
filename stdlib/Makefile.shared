@@ -28,6 +28,11 @@ OPTCOMPFLAGS=-O3 -lto
 else
 OPTCOMPFLAGS=
 endif
+ifeq "$(FLAMBDA)" "true"
+OPTLIBFLAGS=-lto
+else
+OPTLIBFLAGS=
+endif
 OPTCOMPILER=../ocamlopt
 CAMLOPT=$(CAMLRUN) $(OPTCOMPILER)
 CAMLDEP=$(CAMLRUN) ../tools/ocamldep
@@ -81,7 +86,7 @@ stdlib.cma: $(OBJS)
 	$(CAMLC) -a -o stdlib.cma $(OBJS)
 
 stdlib.cmxa: $(OBJS:.cmo=.cmx)
-	$(CAMLOPT) -a -o stdlib.cmxa $(OBJS:.cmo=.cmx)
+	$(CAMLOPT) $(OPTLIBFLAGS) -a -o stdlib.cmxa $(OBJS:.cmo=.cmx)
 
 sys.ml: sys.mlp ../VERSION
 	sed -e "s|%%VERSION%%|`sed -e 1q ../VERSION`|" sys.mlp >sys.ml
