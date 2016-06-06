@@ -350,7 +350,7 @@ intnat caml_sweep(struct caml_heap_state* local, intnat work) {
     work -= large_alloc_sweep(local);
   }
 
-#if DEBUG
+#ifdef DEBUG
   if (work > 0) {
     /* sweeping is complete, check everything worked */
     verify_swept(local);
