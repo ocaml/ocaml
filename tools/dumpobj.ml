@@ -399,7 +399,7 @@ let op_shapes = [
   opPERFORM, Nothing;
   opRESUME, Nothing;
   opRESUMETERM, Uint;
-  opDELEGATETERM, Uint;
+  opREPERFORMTERM, Uint;
   opSTOP, Nothing;
   opEVENT, Nothing;
   opBREAK, Nothing;
