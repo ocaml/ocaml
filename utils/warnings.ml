@@ -81,6 +81,7 @@ type t =
   | No_cmx_file of string                   (* 58 *)
   | Assignment_to_non_mutable_value         (* 59 *)
   | Unused_module of string                 (* 60 *)
+  | Module_compiled_without_lto of string   (* 61 *)
 ;;
 
 (* If you remove a warning, leave a hole in the numbering.  NEVER change
@@ -150,9 +151,10 @@ let number = function
   | No_cmx_file _ -> 58
   | Assignment_to_non_mutable_value -> 59
   | Unused_module _ -> 60
+  | Module_compiled_without_lto _ -> 61
 ;;
 
-let last_warning_number = 60
+let last_warning_number = 61
 ;;
 
 (* Must be the max number returned by the [number] function. *)
@@ -475,6 +477,11 @@ let message = function
         in this source file.  Such assignments may generate incorrect code \n\
         when using Flambda."
   | Unused_module s -> "unused module " ^ s ^ "."
+  | Module_compiled_without_lto name ->
+      Printf.sprintf
+        "The required module %s was built without -lto. Linking it in -lto\
+         mode will probably not be possible."
+        name
 ;;
 
 let nerrors = ref 0;;
