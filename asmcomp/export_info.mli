@@ -99,6 +99,11 @@ type t = private {
 (** Export information for a compilation unit that exports nothing. *)
 val empty : t
 
+(** Export information for a compilation unit that exports nothing but
+    the code. Used to build cmxa files with for whole program
+    compilation. *)
+val empty_with_code : code:Flambda.program option -> t
+
 (** Create a new export information structure. *)
 val create
    : sets_of_closures:Flambda.function_declarations Set_of_closures_id.Map.t

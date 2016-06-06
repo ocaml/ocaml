@@ -351,9 +351,8 @@ let check_required_modules_are_compiled_with_lto () =
       | Some unit ->
           match (get_flambda_export_info unit).code with
           | None ->
-              Format.ksprintf failwith "The module %s was not compiled using\
-                                        the -lto option"
-                unit_name
+              Location.prerr_warning Location.none
+                (Warnings.Module_compiled_without_lto unit_name)
           | Some _ ->
               ())
     global_infos_table

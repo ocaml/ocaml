@@ -156,6 +156,8 @@ let empty : t = {
   code = None;
 }
 
+let empty_with_code ~code : t = { empty with code }
+
 let create ~sets_of_closures ~closures ~values ~symbol_id
       ~offset_fun ~offset_fv ~constant_sets_of_closures
       ~invariant_params ~code =
