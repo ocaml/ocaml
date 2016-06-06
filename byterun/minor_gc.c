@@ -284,6 +284,8 @@ void forward_pointer (value v, value *p) {
   }
 }
 
+void caml_empty_minor_heap_domain (struct domain* domain);
+
 CAMLexport value caml_promote(struct domain* domain, value root)
 {
   value **r;
@@ -295,6 +297,7 @@ CAMLexport value caml_promote(struct domain* domain, value root)
   struct caml_domain_state *domain_state = domain->state;
   value young_ptr = (value)domain_state->young_ptr;
   value young_end = (value)domain_state->young_end;
+  float percent_to_scan;
 
   /* Integers are already shared */
   if (Is_long(root))
@@ -312,8 +315,8 @@ CAMLexport value caml_promote(struct domain* domain, value root)
 
   Assert(!oldify_todo_list);
   oldest_promoted = (value)domain_state->young_start;
-  caml_gc_log ("caml_promote: root=%p tag=%u young_start=%p young_ptr=0x%lx young_end=0x%lx owner=%d",
-               (value*)root, tag, domain_state->young_start, young_ptr, young_end, domain->id);
+  // caml_gc_log ("caml_promote: root=%p tag=%u young_start=%p young_ptr=0x%lx young_end=0x%lx owner=%d",
+  //             (value*)root, tag, domain_state->young_start, young_ptr, young_end, domain->id);
   promote_domain = domain;
 
   if (tag != Stack_tag) {
@@ -348,62 +351,74 @@ CAMLexport value caml_promote(struct domain* domain, value root)
     caml_clean_stack_domain(root, domain);
   }
 
-  /* Scan local roots */
-  caml_do_local_roots (forward_pointer, domain);
+  percent_to_scan = oldest_promoted <= young_ptr ? 0.0 :
+    (((float)(oldest_promoted - young_ptr)) * 100.0 /
+     (young_end - (value)domain_state->young_start));
 
-  /* Scan current stack */
-  caml_scan_stack (forward_pointer, domain->state->current_stack);
+  if (percent_to_scan > Percent_to_promote_with_GC) {
+    caml_gc_log("caml_promote: forcing minor GC. %%_minor_to_scan=%f", percent_to_scan);
+    if (saved_stack) caml_restore_stack_gc();
+    promote_domain = 0;
+    caml_empty_minor_heap_domain (domain);
+  } else {
+    /* Scan local roots */
+    caml_do_local_roots (forward_pointer, domain);
 
-  /* Scan major to young pointers. */
-  for (r = domain->remembered_set->major_ref.base; r < domain->remembered_set->major_ref.ptr; r++) {
-    value old_p = **r;
-    if (Is_block(old_p) && young_ptr <= old_p && old_p < young_end) {
-      value new_p = old_p;
-      forward_pointer (new_p, &new_p);
-      if (old_p != new_p)
-        __sync_bool_compare_and_swap (*r,old_p,new_p);
-      //caml_gc_log ("forward: old_p=%p new_p=%p **r=%p",(value*)old_p, (value*)new_p,(value*)**r);
+    /* Scan current stack */
+    caml_scan_stack (forward_pointer, domain->state->current_stack);
+
+    /* Scan major to young pointers. */
+    for (r = domain->remembered_set->major_ref.base; r < domain->remembered_set->major_ref.ptr; r++) {
+      value old_p = **r;
+      if (Is_block(old_p) && young_ptr <= old_p && old_p < young_end) {
+        value new_p = old_p;
+        forward_pointer (new_p, &new_p);
+        if (old_p != new_p)
+          __sync_bool_compare_and_swap (*r,old_p,new_p);
+        //caml_gc_log ("forward: old_p=%p new_p=%p **r=%p",(value*)old_p, (value*)new_p,(value*)**r);
+      }
     }
-  }
 
-  /* Scan young to young pointers */
-  for (r = domain->remembered_set->minor_ref.base; r < domain->remembered_set->minor_ref.ptr; r++) {
-    forward_pointer (**r, *r);
-  }
+    /* Scan young to young pointers */
+    for (r = domain->remembered_set->minor_ref.base; r < domain->remembered_set->minor_ref.ptr; r++) {
+      forward_pointer (**r, *r);
+    }
 
-  /* Scan newer objects */
-  iter = young_ptr;
-  Assert(oldest_promoted < young_end);
-  while (iter <= oldest_promoted) {
-    hd = Hd_hp(iter);
-    iter = Val_hp(iter);
-    if (hd == 0) {
-      /* Fowarded object. */
-      mlsize_t wsz = Wosize_val(Op_val(iter)[0]);
-      Assert (wsz <= Max_young_wosize);
-      sz = Bsize_wsize(wsz);
-    } else {
-      tag = Tag_hd (hd);
-      Assert (tag != Infix_tag);
-      sz = Bosize_hd (hd);
-      Assert (Wosize_hd(hd) <= Max_young_wosize);
-      //caml_gc_log ("Scan: iter=%p sz=%lu tag=%u", (value*)iter, Wsize_bsize(sz), tag);
-      if (tag < No_scan_tag && tag != Stack_tag) { /* Stacks will be scanned lazily, so skip. */
-        for (i = 0; i < Wsize_bsize(sz); i++) {
-          f = Op_val(iter)[i];
-          if (Is_block(f)) {
-            forward_pointer (f,((value*)iter) + i);
+    /* Scan newer objects */
+    iter = young_ptr;
+    Assert(oldest_promoted < young_end);
+    while (iter <= oldest_promoted) {
+      hd = Hd_hp(iter);
+      iter = Val_hp(iter);
+      if (hd == 0) {
+        /* Fowarded object. */
+        mlsize_t wsz = Wosize_val(Op_val(iter)[0]);
+        Assert (wsz <= Max_young_wosize);
+        sz = Bsize_wsize(wsz);
+      } else {
+        tag = Tag_hd (hd);
+        Assert (tag != Infix_tag);
+        sz = Bosize_hd (hd);
+        Assert (Wosize_hd(hd) <= Max_young_wosize);
+        //caml_gc_log ("Scan: iter=%p sz=%lu tag=%u", (value*)iter, Wsize_bsize(sz), tag);
+        if (tag < No_scan_tag && tag != Stack_tag) { /* Stacks will be scanned lazily, so skip. */
+          for (i = 0; i < Wsize_bsize(sz); i++) {
+            f = Op_val(iter)[i];
+            if (Is_block(f)) {
+              forward_pointer (f,((value*)iter) + i);
+            }
           }
         }
       }
+      iter += sz;
     }
-    iter += sz;
+
+    if (saved_stack)
+      caml_restore_stack_gc();
+
+    promote_domain = 0;
+    domain_state->promoted_in_current_cycle = 1;
   }
-
-  if (saved_stack)
-    caml_restore_stack_gc();
-
-  promote_domain = 0;
   return root;
 }
 
@@ -497,7 +512,7 @@ void caml_empty_minor_heap_domain (struct domain* domain)
   }
 
   promote_domain = 0;
-
+  domain_state->promoted_in_current_cycle = 0;
 
 #ifdef DEBUG
   {

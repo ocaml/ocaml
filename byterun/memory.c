@@ -12,6 +12,8 @@
 
 static void write_barrier(value obj, int field, value val)
 {
+  value old_val;
+
   Assert (Is_block(obj));
 
   if (Is_block(val)) {
@@ -26,6 +28,14 @@ static void write_barrier(value obj, int field, value val)
       }
     } else if (Is_young(val) && val < obj) {
       /* Both obj and val are young and val is more recent than obj. */
+
+      old_val = Op_val(obj)[field];
+      /* If old_val is also young, and younger than obj, then it must be the
+       * case that `Op_val(obj)+field` is already in minor_ref. We can safely
+       * skip adding it again. */
+      if (Is_block(old_val) && Is_young(old_val) && old_val < obj)
+        return;
+
       Ref_table_add(&caml_remembered_set.minor_ref, Op_val(obj) + field);
     }
   }
