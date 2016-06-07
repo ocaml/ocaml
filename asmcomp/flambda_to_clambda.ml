@@ -34,27 +34,37 @@ type ('a, 'b) declaration_position =
   | Not_declared
 
 let get_fun_offset t closure_id =
-  let fun_offset_table =
-    if Closure_id.in_compilation_unit closure_id (Compilenv.current_unit ())
-    then t.current_unit.fun_offset_table
-    else t.imported_units.fun_offset_table
-  in
-  try Closure_id.Map.find closure_id fun_offset_table
-  with Not_found ->
+  let error closure_id =
     Misc.fatal_errorf "Flambda_to_clambda: missing offset for closure %a"
       Closure_id.print closure_id
+  in
+  try Closure_id.Map.find closure_id t.current_unit.fun_offset_table
+  with Not_found ->
+    if Closure_id.in_compilation_unit closure_id (Compilenv.current_unit ())
+    then error closure_id
+    else
+      try Closure_id.Map.find closure_id t.imported_units.fun_offset_table
+      with Not_found ->
+        error closure_id
 
 let get_fv_offset t var_within_closure =
-  let fv_offset_table =
-    if Var_within_closure.in_compilation_unit var_within_closure
-        (Compilenv.current_unit ())
-    then t.current_unit.fv_offset_table
-    else t.imported_units.fv_offset_table
-  in
-  try Var_within_closure.Map.find var_within_closure fv_offset_table
-  with Not_found ->
+  let error var_within_closure =
     Misc.fatal_errorf "Flambda_to_clambda: missing offset for variable %a"
       Var_within_closure.print var_within_closure
+  in
+  try
+    Var_within_closure.Map.find var_within_closure
+      t.current_unit.fv_offset_table
+  with Not_found ->
+    if Var_within_closure.in_compilation_unit var_within_closure
+        (Compilenv.current_unit ())
+    then error var_within_closure
+    else
+      try
+        Var_within_closure.Map.find var_within_closure
+          t.imported_units.fv_offset_table
+      with Not_found ->
+        error var_within_closure
 
 let function_declaration_position t closure_id =
   try
