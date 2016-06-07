@@ -840,6 +840,7 @@ let projection_to_named (projection : Projection.t) : Flambda.named =
   | Field (field_index, var) ->
     Prim (Pfield field_index, [var], Debuginfo.none)
 
+
 type specialised_to_same_as =
   | Not_specialised
   | Specialised_and_aliased_to of Variable.Set.t
@@ -863,3 +864,57 @@ let parameters_specialised_to_the_same_variable
               (Variable.Map.find var specialised_arg_aliasing))
         params)
     function_decls.funs
+
+(* Written in CPS style to avoid stack overflows *)
+let rec concatenate_body (head:Flambda.program_body) (tail:Symbol.Set.t * Flambda.program_body list)
+  : Flambda.program_body =
+  match head with
+  | Let_rec_symbol (defs, program) ->
+    concatenate_body program tail |> fun program : Flambda.program_body ->
+    Let_rec_symbol (defs, program)
+  | Let_symbol (symbol, def, program) ->
+    concatenate_body program tail |> fun program : Flambda.program_body ->
+    Let_symbol (symbol, def, program)
+  | Initialize_symbol (symbol, _tag, fields, program) ->
+    concatenate_body program tail |> fun program : Flambda.program_body ->
+    Initialize_symbol (symbol, _tag, fields, program)
+  | Effect (expr, program) ->
+    concatenate_body program tail |> fun program : Flambda.program_body ->
+    Effect (expr, program)
+  | End root ->
+    let (roots, tail_programs) = tail in
+    match tail_programs with
+    | [] ->
+      End (Symbol.Set.union roots root)
+    | new_head :: new_tail_programs ->
+      let roots = Symbol.Set.union roots root in
+      concatenate_body new_head (roots, new_tail_programs)
+
+let concatenate (l:Flambda.program list) : Flambda.program =
+  match l with
+  | [] ->
+    { program_body = End Symbol.Set.empty;
+      imported_symbols = Symbol.Set.empty }
+  | head :: tail ->
+    let program_body =
+      concatenate_body head.program_body
+        (Symbol.Set.empty,
+         List.map (fun p -> p.Flambda.program_body) tail)
+    in
+    introduce_needed_import_symbols { head with program_body }
+
+let rec clear_end (p:Flambda.program_body) : Flambda.program_body =
+  match p with
+  | Let_rec_symbol (defs, program) ->
+    Let_rec_symbol (defs, clear_end program)
+  | Let_symbol (symbol, def, program) ->
+    Let_symbol (symbol, def, clear_end program)
+  | Initialize_symbol (symbol, _tag, fields, program) ->
+    Initialize_symbol (symbol, _tag, fields, clear_end program)
+  | Effect (expr, program) ->
+    Effect (expr, clear_end program)
+  | End _ ->
+    End (Symbol.Set.empty)
+
+let clear_all_exported_symbols (p:Flambda.program) =
+  { p with program_body = clear_end p.program_body }
