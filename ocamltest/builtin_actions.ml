@@ -23,7 +23,9 @@ let run_command ppf env cmd =
   Format.fprintf ppf "Commandline: %s\n" cmd';
   let progname = List.hd lst in
   let arguments = Array.of_list lst in
-  let environment = [| |] in
+  let environment =
+    try [|Sys.getenv "PATH" |]
+    with Not_found -> [| |] in
   Run.run {
     Run.progname = progname;
     Run.argv = arguments;
