@@ -30,6 +30,7 @@ type error =
   | Linking_error
   | Multiple_definition of string * string * string
   | Missing_cmx of string * string
+  | Module_compiled_without_lto of string
 
 exception Error of error
 
@@ -203,7 +204,7 @@ let scan_file obj_name tolink = match read_file obj_name with
 
 (* Second pass: generate the startup file and link it with everything else *)
 
-let make_startup_file ppf units_list =
+let make_startup_file ppf ~no_global_map units_list =
   let compile_phrase p = Asmgen.compile_phrase ppf p in
   Location.input_name := "caml_startup"; (* set name of "current" input *)
   Compilenv.reset ~source_provenance:Timings.Startup "_startup";
@@ -218,6 +219,7 @@ let make_startup_file ppf units_list =
     (fun i name -> compile_phrase (Cmmgen.predef_exception i name))
     Runtimedef.builtin_exceptions;
   compile_phrase (Cmmgen.global_table name_list);
+  if not no_global_map then begin
   compile_phrase
     (Cmmgen.globals_map
        (List.map
@@ -230,7 +232,8 @@ let make_startup_file ppf units_list =
                  with Not_found -> assert false
                in
                  (unit.ui_name, intf_crc, crc, unit.ui_defines))
-          units_list));
+          units_list))
+  end;
   compile_phrase(Cmmgen.data_segment_table ("_startup" :: name_list));
   compile_phrase(Cmmgen.code_segment_table ("_startup" :: name_list));
   let all_names = "_startup" :: "_system" :: name_list in
@@ -310,9 +313,58 @@ let call_linker file_list startup_file output_name =
   if not (Ccomp.call_linker mode output_name files c_lib)
   then raise(Error Linking_error)
 
+let get_flambda_codes units_to_link =
+  assert(Config.flambda);
+  List.map (fun (info, _, _) ->
+    match info.Cmx_format.ui_export_info with
+    | Clambda _ -> assert false
+    | Flambda { Export_info.code } ->
+      match code with
+      | None ->
+        raise (Error (Module_compiled_without_lto info.Cmx_format.ui_name))
+      | Some code ->
+        code)
+    units_to_link
+
+let link_whole_program ~backend ppf units_to_link =
+  let codes = get_flambda_codes units_to_link in
+  let program =
+    Flambda_utils.clear_all_exported_symbols
+      (Flambda_utils.concatenate codes)
+  in
+  Compilation_unit.(
+    set_current
+      (create
+         (Ident.create_persistent "_link_")
+         (Linkage_name.create "_link_")));
+  let cleaned_program =
+    Remove_unused_program_constructs.remove_unused_program_constructs program
+  in
+  if !Clflags.dump_rawflambda then
+    Format.fprintf ppf "After concatenation:@ %a@."
+      Flambda.print_program program;
+  if !Clflags.dump_flambda then
+    Format.fprintf ppf "After cleaning:@ %a@."
+      Flambda.print_program cleaned_program;
+  Compilenv.reset ~source_provenance:Timings.Startup "_link_";
+  let () =
+    Asmgen.compile_implementation_flambda
+      ~source_provenance:Timings.Startup (* TODO change *)
+      "_link_" (* TODO change *)
+      ~required_globals:Ident.Set.empty
+      ~backend
+      ppf
+      cleaned_program
+  in
+  (* TODO: in tmp, and remove after, or do not emit *)
+  let unit_filename = "_link_.cmx" in
+  Compilenv.save_unit_info unit_filename;
+  let single_unit = scan_file "_link_.cmx" [] in
+  [unit_filename], (fun () -> make_startup_file ~no_global_map:true ppf single_unit)
+
 (* Main entry point *)
 
-let link ppf objfiles output_name =
+let link ~backend ppf objfiles output_name =
   let stdlib =
     if !Clflags.gprofile then "stdlib.p.cmxa" else "stdlib.cmxa" in
   let stdexit =
@@ -338,9 +390,15 @@ let link ppf objfiles output_name =
     then output_name ^ ".startup" ^ ext_asm
     else Filename.temp_file "camlstartup" ext_asm in
   let startup_obj = Filename.temp_file "camlstartup" ext_obj in
+  let objfiles, make_startup =
+    if !Clflags.cmx_contains_all_code && Config.flambda then
+      link_whole_program ~backend ppf units_tolink
+    else
+      objfiles, (fun () -> make_startup_file ~no_global_map:false ppf units_tolink)
+  in
   Asmgen.compile_unit ~source_provenance:Timings.Startup output_name
     startup !Clflags.keep_startup_file startup_obj
-    (fun () -> make_startup_file ppf units_tolink);
+    make_startup;
   Misc.try_finally
     (fun () ->
       call_linker (List.map object_file_name objfiles) startup_obj output_name)
@@ -403,6 +461,11 @@ let report_error ppf = function
          so that %s.cmx@ is found.@]"
         Location.print_filename filename name
         Location.print_filename  filename
+        name
+  | Module_compiled_without_lto name ->
+      fprintf ppf
+        "@[<hov>Modules %s@ was compiled without the `-lto`@ \
+         option. It is needed for linking with the `-lto` option.@]"
         name
 
 let () =
