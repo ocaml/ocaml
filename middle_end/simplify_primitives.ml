@@ -176,9 +176,19 @@ let primitive (p : Lambda.primitive) (args, approxs) expr dbg ~size_int
     | [A.Value_boxed_int(A.Nativeint, n)] ->
       I.Simplify_boxed_nativeint.simplify_unop p Nativeint expr n
     | [A.Value_boxed_int(A.Int32, n)] ->
-      I.Simplify_boxed_int32.simplify_unop p Int32 expr n
+      begin match p with
+        | Pccall { prim_name = "caml_int32_float_of_bits" } ->
+          S.const_float_expr expr (Int32.float_of_bits n)
+        | _ ->
+          I.Simplify_boxed_int32.simplify_unop p Int32 expr n
+      end
     | [A.Value_boxed_int(A.Int64, n)] ->
-      I.Simplify_boxed_int64.simplify_unop p Int64 expr n
+      begin match p with
+        | Pccall { prim_name = "caml_int64_float_of_bits" } ->
+          S.const_float_expr expr (Int64.float_of_bits n)
+        | _ ->
+          I.Simplify_boxed_int64.simplify_unop p Int64 expr n
+      end
     | [A.Value_boxed_int(A.Nativeint, n1);
        A.Value_boxed_int(A.Nativeint, n2)] ->
       I.Simplify_boxed_nativeint.simplify_binop p Nativeint expr n1 n2

@@ -33,8 +33,11 @@ let for_primitive (prim : Lambda.primitive) =
       Only_generative_effects, Has_coeffects
   | Pccall { prim_name =
                ( "caml_format_float" | "caml_format_int" | "caml_int32_format"
-               | "caml_nativeint_format" | "caml_int64_format" ) } ->
+               | "caml_nativeint_format" | "caml_int64_format"
+               | "caml_int64_float_of_bits" | "caml_int32_float_of_bits" ) } ->
       No_effects, No_coeffects
+  | Pccall { prim_name = "caml_fresh_oo_id" } ->
+      No_effects, Has_coeffects
   | Plazyforce
   | Pccall _ -> Arbitrary_effects, Has_coeffects
   | Praise _ -> Arbitrary_effects, No_coeffects
