@@ -1,4 +1,6 @@
-(* TEST *)
+(* TEST
+  arguments = "wc.ml"
+*)
 
 (* Counts characters, lines and words in one or several files. *)
 
