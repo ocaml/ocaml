@@ -23,13 +23,7 @@ type t = {
 
 let (tests: (string, t) Hashtbl.t) = Hashtbl.create 20
 
-let register name run_by_default actions =
-  let test =
-    { test_name = name;
-      test_run_by_default = run_by_default;
-      test_actions = actions
-    } in
-  Hashtbl.add tests name test
+let register test = Hashtbl.add tests test.test_name test
 
 let default_tests () =
   let f name test acc = if test.test_run_by_default then test::acc else acc in

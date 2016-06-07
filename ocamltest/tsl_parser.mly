@@ -53,7 +53,7 @@ test:
     {
       { Tsl_ast.test_name = $2;
         Tsl_ast.test_kind = Tsl_ast.Declared_test;
-        test_environemnt = $3 }
+        test_environment = $3 }
     }
 
 %%

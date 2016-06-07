@@ -29,9 +29,6 @@ let nativecode = {
   test_actions = [Builtin_actions.nativecode_compile; Builtin_actions.execute]
 }
 
-let register' t =
-  register t.test_name t.test_run_by_default t.test_actions
-
 let _ =
-  register' bytecode;
-  register' nativecode
+  register bytecode;
+  register nativecode

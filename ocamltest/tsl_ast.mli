@@ -28,7 +28,7 @@ type test_kind =
 type test_spec = {
   test_name : string;
   test_kind: test_kind;
-  test_environemnt: environment_description;
+  test_environment: environment_description;
 }
 
 type program = {

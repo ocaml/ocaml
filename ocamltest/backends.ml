@@ -13,18 +13,27 @@
 (*                                                                        *)
 (**************************************************************************)
 
-(* Definition of tests, built from actions *)
+(* Backends of the OCaml compiler and their properties *)
 
-type t = {
-  test_name : string;
-  test_run_by_default : bool;
-  test_actions : Actions.t list
-}
+type t = Sys.backend_type
 
-val register : t -> unit
+let string_of_backend = function
+  | Sys.Bytecode -> "bytecode"
+  | Sys.Native -> "native"
+  | Sys.Other backend_name -> backend_name
 
-val default_tests : unit -> t list
+(* Creates a function that returns its first argument for Bytecode,          *)
+(* its second argument for Native code and fails for other backends          *)
+let make_backend_function bytecode_value native_value = function
+  | Sys.Bytecode -> bytecode_value
+  | Sys.Native -> native_value
+  | Sys.Other backend_name ->
+    let error_message =
+      ("Other backend " ^ backend_name ^ " not supported") in
+    raise (Invalid_argument error_message)
 
-val lookup : string -> t option
+let module_extension = make_backend_function "cmo" "cmx"
 
-val run : Format.formatter -> Environments.t -> t -> Actions.result
+let library_extension = make_backend_function "cma" "cmxa"
+
+let executable_extension = make_backend_function "byte" "opt"

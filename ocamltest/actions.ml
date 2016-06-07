@@ -29,10 +29,11 @@ let string_of_result = function
   | Fail reason -> string_of_reason "Fail" reason
   | Skip reason -> string_of_reason "Skip" reason
 
-type body = Environments.t -> result
+type body = Format.formatter -> Environments.t -> result
 
 type t = {
   action_name : string;
+  action_environment : Environments.t -> Environments.t;
   action_generated_files : Environments.t -> string list;
   action_body : body
 }
@@ -41,20 +42,19 @@ let no_generated_files env = []
 
 let (actions : (string, t) Hashtbl.t) = Hashtbl.create 10
 
-let register name generated_files body =
-  let act = {
-    action_name = name;
-    action_generated_files = generated_files;
-    action_body = body
-  } in
-  Hashtbl.add actions name act
+let register action =
+  Hashtbl.add actions action.action_name action
 
 let lookup name =
   try Some (Hashtbl.find actions name)
   with Not_found -> None
 
+let update_environment initial_env actions =
+  let f env act = act.action_environment env in
+  List.fold_left f initial_env actions
+
 let run ppf env action =
   let files = action.action_generated_files env in
   Format.fprintf ppf "Generated files:\n";
   List.iter (Format.fprintf ppf "%s\n") files;
-  action.action_body env
+  action.action_body ppf env

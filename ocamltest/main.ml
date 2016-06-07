@@ -44,9 +44,10 @@ let print_usage () =
 
 let dump_tsl_program ppf = ()
 
-let runtest ppf n (test, env) =
+let runtest ppf rootenv n (test, envspec) =
   Format.fprintf ppf "Running test #%d: %s\n" (n+1) test.Tests.test_name;
-  let result = Tests.run ppf env test in
+  let testenv = Tsl_semantics.interprete_statements rootenv envspec in
+  let result = Tests.run ppf testenv test in
   Format.fprintf ppf "%s\n%!" (Actions.string_of_result result)
 
 let initial_env filename =
@@ -58,33 +59,26 @@ let initial_env filename =
   List.fold_left add Environments.empty l
 
 let main () =
-  let exit_code =
-    if Array.length Sys.argv < 2 then begin
-      print_usage();
-      1
-    end else begin
-      let filename = Sys.argv.(1) in
-      let dirname = Filename.dirname filename in
-      let basename = Filename.basename filename in
-      let tslprogram = tslprogram_of_file filename in
-      Sys.chdir dirname;
-      let init_env = (initial_env basename) in
-      let root_environment =
-        Tsl_semantics.interprete_statements init_env tslprogram.Tsl_ast.root_environment in
-      let tests_to_run = match tslprogram.Tsl_ast.tests with
-        | [] ->
-          let f x = (x, root_environment) in
-          List.map f (Tests.default_tests() )
-        | _ as l ->
-          Tsl_semantics.compile_test_specs
-            Format.std_formatter
-            root_environment l in
-      List.iteri
-        (runtest Format.std_formatter)
-        tests_to_run;
-      (* dump_tsl_program Format.std_formatter; *)
-      0
-    end
-  in exit exit_code
+  let ppf = Format.std_formatter in
+  if Array.length Sys.argv < 2 then begin
+    print_usage();
+    exit 1
+  end;
+  let filename = Sys.argv.(1) in
+  let dirname = Filename.dirname filename in
+  let basename = Filename.basename filename in
+  let tslprogram = tslprogram_of_file filename in
+  Sys.chdir dirname;
+  let init_env = (initial_env basename) in
+  let root_environment =
+    Tsl_semantics.interprete_statements init_env tslprogram.Tsl_ast.root_environment in
+  let tests_to_run = match tslprogram.Tsl_ast.tests with
+    | [] -> List.map (fun t -> (t,[])) ( Tests.default_tests() )
+    | _ as l -> Tsl_semantics.tests_of_ast ppf l in
+  let actions_to_run =
+    let tmptests = List.map fst tests_to_run in
+    Tsl_semantics.actions_of_tests tmptests in
+  let rootenv = Actions.update_environment root_environment actions_to_run in
+  List.iteri (runtest ppf rootenv) tests_to_run
 
 let _ = main()

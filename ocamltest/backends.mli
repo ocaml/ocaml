@@ -13,18 +13,16 @@
 (*                                                                        *)
 (**************************************************************************)
 
-(* Definition of tests, built from actions *)
+(* Backends of the OCaml compiler and their properties *)
 
-type t = {
-  test_name : string;
-  test_run_by_default : bool;
-  test_actions : Actions.t list
-}
+type t = Sys.backend_type
 
-val register : t -> unit
+val string_of_backend : t -> string
 
-val default_tests : unit -> t list
+val make_backend_function : 'a -> 'a -> t -> 'a
 
-val lookup : string -> t option
+val module_extension : t -> string
 
-val run : Format.formatter -> Environments.t -> t -> Actions.result
+val library_extension : t -> string
+
+val executable_extension : t -> string

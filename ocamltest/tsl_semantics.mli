@@ -19,10 +19,11 @@ val interprete_statement :
   Environments.t -> Tsl_ast.statement -> Environments.t
 val interprete_statements :
   Environments.t -> Tsl_ast.statement list -> Environments.t
-val compile_test_spec :
+val tests_of_ast :
   Format.formatter ->
-  Environments.t -> Tsl_ast.test_spec -> Tests.t * Environments.t
+  Tsl_ast.test_spec list ->
+  (Tests.t * Tsl_ast.environment_description) list
 
-val compile_test_specs :
-  Format.formatter ->
-  Environments.t -> Tsl_ast.test_spec list -> (Tests.t * Environments.t) list
+val actions_of_tests :
+  (* Format.formatter -> *)
+  Tests.t list -> Actions.t list

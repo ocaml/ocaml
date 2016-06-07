@@ -2,6 +2,7 @@ modules :=\
   run.o \
   run_stubs.o \
   testlib.cmo \
+  backends.cmo \
   environments.cmo \
   builtin_environments.cmo \
   actions.cmo \

@@ -22,18 +22,21 @@ type result =
 
 val string_of_result : result -> string
 
-type body = Environments.t -> result
+type body = Format.formatter -> Environments.t -> result
 
 type t = {
   action_name : string;
+  action_environment : Environments.t -> Environments.t;
   action_generated_files : Environments.t -> string list;
   action_body : body
 }
 
 val no_generated_files : Environments.t -> string list
 
-val register : string -> (Environments.t -> string list) -> body -> unit
+val register : t -> unit
 
 val lookup : string -> t option
+
+val update_environment : Environments.t -> t list -> Environments.t
 
 val run : Format.formatter -> Environments.t -> t -> result
