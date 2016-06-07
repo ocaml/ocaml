@@ -58,7 +58,8 @@ CAMLprim value caml_run_command(value caml_settings)
   settings.envp = &envp;
   settings.stdout_filename = String_val(Field(caml_settings, 3));
   settings.stderr_filename = String_val(Field(caml_settings, 4));
-  settings.timeout = Int_val(Field(caml_settings, 5));
+  settings.append = Bool_val(Field(caml_settings, 5));
+  settings.timeout = Int_val(Field(caml_settings, 6));
   res = run_command(&settings);
   CAMLreturn(Val_int(res));
 }

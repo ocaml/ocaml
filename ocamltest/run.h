@@ -27,6 +27,7 @@ typedef struct {
   array *envp;
   const char *stdout_filename;
   const char *stderr_filename;
+  int append;
   int timeout;
 } command_settings;
 

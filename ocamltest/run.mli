@@ -21,6 +21,7 @@ type settings = {
   envp : string array;
   stdout_filename : string;
   stderr_filename : string;
+  append : bool;
   timeout : int;
 }
 
