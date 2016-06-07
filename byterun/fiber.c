@@ -85,8 +85,7 @@ value caml_alloc_stack (value hval, value hexn, value heff) {
   ctxt->gc_regs = NULL;
   Stack_sp(stack) = -(3 + sizeof(struct caml_context) / sizeof(value));
 
-  caml_gc_log ("Allocate stack=0x%lx of %lu words\n",
-               stack, caml_fiber_wsz);
+  caml_gc_log ("Allocate stack=0x%lx of %lu words", stack, caml_fiber_wsz);
 
   CAMLreturn (stack);
 }
