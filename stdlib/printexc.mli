@@ -159,8 +159,8 @@ val set_uncaught_exception_handler: (exn -> raw_backtrace -> unit) -> unit
 
 (** {6 Manipulation of backtrace information}
 
-    Those function allow to traverse the slots of a raw backtrace,
-    extract information from them in a programmer-friendly format.
+    These functions are used to traverse the slots of a raw backtrace
+    and extract information from them in a programmer-friendly format.
 *)
 
 type backtrace_slot
