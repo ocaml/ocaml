@@ -106,7 +106,7 @@ Info files.  It is available at
 http://caml.inria.fr/
 
 The community also maintains the Web site http://ocaml.org, with tutorials
-and other useful informations for OCaml users.
+and other useful information for OCaml users.
 
 == Availability
 
