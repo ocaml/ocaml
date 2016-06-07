@@ -36,9 +36,9 @@ let run_command ppf env cmd =
 
 let filename_concat components = List.fold_left Filename.concat "" components
 
-let ocamlsrcdir () = match Sys.getenv "OCAMLSRCDIR" with
-  | "" -> failwith "The OCAMLSRCDIR environment variable is not set"
-  | _ as s -> s
+let ocamlsrcdir () =
+  try Sys.getenv "OCAMLSRCDIR"
+  with Not_found -> failwith "The OCAMLSRCDIR environment variable is not set"
 
 let ocamlrun ocamlsrcdir =
   filename_concat [ocamlsrcdir; "byterun"; "ocamlrun"]
