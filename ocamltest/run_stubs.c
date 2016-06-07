@@ -48,12 +48,12 @@ char ** cstringvect(value arg)
 CAMLprim value caml_run_command(value caml_settings)
 {
   int res;
-  char **argv, **envp;
+  array argv, envp;
   command_settings settings;
   CAMLparam1(caml_settings);
   settings.program = String_val(Field(caml_settings, 0));
   argv = cstringvect(Field(caml_settings, 1));
-  settings.argv = argv;
+  settings.argv = &argv;
   envp = cstringvect(Field(caml_settings, 2));
   settings.envp = &envp;
   settings.stdout_filename = String_val(Field(caml_settings, 3));

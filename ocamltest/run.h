@@ -19,7 +19,7 @@
 
 #define __RUN_H__
 
-typedef char *array[];
+typedef char **array;
 
 typedef struct {
   const char *program;
