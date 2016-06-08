@@ -127,6 +127,10 @@ type t = string
 let compare (x: t) (y: t) = Pervasives.compare x y
 external equal : string -> string -> bool = "caml_string_equal"
 
+let reverse s =
+  let len = length s in
+  init len (fun spot -> unsafe_get s (len - spot - 1))
+
 (* Deprecated functions implemented via other deprecated functions *)
 [@@@ocaml.warning "-3"]
 let uppercase s =
