@@ -326,6 +326,9 @@ let get_flambda_codes units_to_link =
         code)
     units_to_link
 
+let copy_unit_info unit =
+  { unit with ui_name = unit.Cmx_format.ui_name }
+
 let link_whole_program ~backend ppf units_to_link =
   let codes = get_flambda_codes units_to_link in
   let concatenated_program =
@@ -352,22 +355,44 @@ let link_whole_program ~backend ppf units_to_link =
     Format.fprintf ppf "After cleaning:@ %a@."
       Flambda.print_program cleaned_program;
   Compilenv.reset ~source_provenance:Timings.Link "_link_";
-  let () =
-    Asmgen.compile_implementation_flambda
-      ~source_provenance:Timings.Link
-      "_link_" (* TODO change *)
-      ~required_globals:Ident.Set.empty
-      ~backend
-      ppf
-      cleaned_program
-  in
-  (* TODO: in tmp, and remove after, or do not emit *)
-  let unit_filename = "_link_.cmx" in
-  Compilenv.save_unit_info unit_filename;
-  let single_unit = scan_file "_link_.cmx" [] in
-  [unit_filename], (fun () -> make_startup_file ~no_global_map:true ppf single_unit)
+  let unit_prefix = Filename.temp_file "caml_link" "" in
+  Asmgen.compile_implementation_flambda
+    ~source_provenance:Timings.Link
+    unit_prefix
+    ~required_globals:Ident.Set.empty
+    ~backend
+    ppf
+    cleaned_program;
+  (* This cmx file is never written. *)
+  let unit_filename = unit_prefix ^ ".cmx" in
+  let object_filename = unit_prefix ^ ext_obj in
+  (* cmx information are mutable, we need to copy them
+     to prevent clobering from startup compilation. *)
+  let unit_infos = copy_unit_info (Compilenv.current_unit_infos ()) in
+  let digest = "----------------" in
+  let single_unit = [unit_infos, unit_filename, digest] in
+  [object_filename], [object_filename],
+  (fun () -> make_startup_file ~no_global_map:true ppf single_unit)
 
 (* Main entry point *)
+
+let compile_startup_and_call_linker
+    ~removed_objects ~object_files ~output_name
+    ~make_startup =
+  let startup =
+    if !Clflags.keep_startup_file || !Emitaux.binary_backend_available
+    then output_name ^ ".startup" ^ ext_asm
+    else Filename.temp_file "camlstartup" ext_asm in
+  let startup_obj = Filename.temp_file "camlstartup" ext_obj in
+  Asmgen.compile_unit ~source_provenance:Timings.Startup output_name
+    startup !Clflags.keep_startup_file startup_obj
+    make_startup;
+  Misc.try_finally
+    (fun () ->
+      call_linker object_files startup_obj output_name)
+    (fun () ->
+       remove_file startup_obj;
+       List.iter remove_file removed_objects)
 
 let link ~backend ppf objfiles output_name =
   let stdlib =
@@ -390,24 +415,19 @@ let link ~backend ppf objfiles output_name =
   Clflags.ccobjs := !Clflags.ccobjs @ !lib_ccobjs;
   Clflags.all_ccopts := !lib_ccopts @ !Clflags.all_ccopts;
                                                (* put user's opts first *)
-  let startup =
-    if !Clflags.keep_startup_file || !Emitaux.binary_backend_available
-    then output_name ^ ".startup" ^ ext_asm
-    else Filename.temp_file "camlstartup" ext_asm in
-  let startup_obj = Filename.temp_file "camlstartup" ext_obj in
-  let objfiles, make_startup =
+  let removed_objects, object_files, make_startup =
     if !Clflags.cmx_contains_all_code && Config.flambda then
       link_whole_program ~backend ppf units_tolink
     else
-      objfiles, (fun () -> make_startup_file ~no_global_map:false ppf units_tolink)
+      [],
+      List.map object_file_name objfiles,
+      (fun () -> make_startup_file ~no_global_map:false ppf units_tolink)
   in
-  Asmgen.compile_unit ~source_provenance:Timings.Startup output_name
-    startup !Clflags.keep_startup_file startup_obj
-    make_startup;
-  Misc.try_finally
-    (fun () ->
-      call_linker (List.map object_file_name objfiles) startup_obj output_name)
-    (fun () -> remove_file startup_obj)
+  compile_startup_and_call_linker
+    ~removed_objects
+    ~object_files
+    ~output_name
+    ~make_startup
 
 (* Error report *)
 
