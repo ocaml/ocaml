@@ -339,6 +339,9 @@ let link_whole_program ~backend ppf units_to_link =
     Timings.(time (Flambda_pass ("clear_all_exported_symbols", Link)))
       Flambda_utils.clear_all_exported_symbols concatenated_program
   in
+  if !Clflags.dump_rawflambda then
+    Format.fprintf ppf "After concatenation:@ %a@."
+      Flambda.print_program program;
   Compilation_unit.(
     set_current
       (create
@@ -348,14 +351,33 @@ let link_whole_program ~backend ppf units_to_link =
     Timings.(time (Flambda_pass ("remove_unused_program_constructs", Link)))
       Remove_unused_program_constructs.remove_unused_program_constructs program
   in
-  if !Clflags.dump_rawflambda then
-    Format.fprintf ppf "After concatenation:@ %a@."
-      Flambda.print_program program;
+  let cleaned_program =
+    Timings.(time (Flambda_pass ("inline_and_simplify", Link)))
+      (Inline_and_simplify.run ~never_inline:true ~backend ~prefixname:"_link_" ~round:0)
+      cleaned_program
+  in
+  let cleaned_program =
+    Timings.(time (Flambda_pass ("lift_constants", Link)))
+      (Lift_constants.lift_constants ~backend) cleaned_program
+  in
+  let cleaned_program =
+    Timings.(time (Flambda_pass ("share_constants", Link)))
+      Share_constants.share_constants cleaned_program
+  in
+  let cleaned_program =
+    Timings.(time (Flambda_pass ("remove_unused_program_constructs_2", Link)))
+      Remove_unused_program_constructs.remove_unused_program_constructs cleaned_program
+  in
   if !Clflags.dump_flambda then
     Format.fprintf ppf "After cleaning:@ %a@."
       Flambda.print_program cleaned_program;
   Compilenv.reset ~source_provenance:Timings.Link "_link_";
-  let unit_prefix = Filename.temp_file "caml_link" "" in
+  let unit_prefix =
+    if !Clflags.keep_startup_file then
+      "link"
+    else
+      Filename.temp_file "caml_link" ""
+  in
   Asmgen.compile_implementation_flambda
     ~source_provenance:Timings.Link
     unit_prefix
