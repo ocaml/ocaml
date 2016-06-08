@@ -18,23 +18,11 @@
 #define Stack_handle_effect(stk) (*(Op_val(stk) + 4))
 #define Stack_parent(stk) (*(Op_val(stk) + 5))
 
-
-CAMLextern __thread value caml_current_stack;
-CAMLextern __thread value * caml_stack_high;
-CAMLextern __thread value * caml_stack_threshold;
 CAMLextern __thread value * caml_extern_sp;
 CAMLextern __thread intnat caml_trap_sp_off;
 CAMLextern __thread intnat caml_trap_barrier_off;
 
 value caml_find_performer(value stack);
-
-void caml_scan_dirty_stack(scanning_action, value stack);
-void caml_scan_stack(scanning_action, value stack);
-void caml_save_stack_gc();
-void caml_restore_stack_gc();
-void caml_clean_stack(value stack);
-void caml_clean_stack_domain(value stack, struct domain* domain);
-
 
 /* The table of global identifiers */
 extern caml_root caml_global_data;
@@ -42,17 +30,18 @@ extern caml_root caml_global_data;
 #define Trap_pc(tp) ((tp)[0])
 #define Trap_link(tp) ((tp)[1])
 
-
-
+void caml_init_main_stack();
+void caml_scan_dirty_stack(scanning_action, value stack);
+void caml_scan_stack(scanning_action, value stack);
+void caml_save_stack_gc();
+void caml_restore_stack_gc();
+void caml_clean_stack(value stack);
+void caml_clean_stack_domain(value stack, struct domain* domain);
 void caml_realloc_stack (asize_t required_size, value* save, int nsave);
 void caml_change_max_stack_size (uintnat new_max_size);
-int caml_on_current_stack(value*);
-
+int  caml_on_current_stack(value*);
+int  caml_running_main_fiber();
 value caml_switch_stack(value stk);
-
-void caml_init_main_stack();
-
-int caml_running_main_fiber();
 value caml_fiber_death();
 
 #endif /* CAML_FIBER_H */

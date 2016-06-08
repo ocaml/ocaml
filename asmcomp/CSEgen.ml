@@ -187,7 +187,6 @@ method class_of_operation op =
   | Iconst_int _ | Iconst_float _ | Iconst_symbol _
   | Iconst_blockheader _ -> Op_pure
   | Icall_ind | Icall_imm _ | Itailcall_ind | Itailcall_imm _
-  | Iperform | Ireperform | Iresume_ind | Itail_resume_ind
   | Iextcall _ -> assert false                 (* treated specially *)
   | Istackoffset _ -> Op_other
   | Iload(_,_) -> Op_load
@@ -227,7 +226,7 @@ method private cse n i =
          as to the argument reg. *)
       let n1 = set_move n i.arg.(0) i.res.(0) in
       {i with next = self#cse n1 i.next}
-  | Iop (Icall_ind | Icall_imm _ | Iextcall _ | Iperform | Iresume_ind | Ireperform) ->
+  | Iop (Icall_ind | Icall_imm _ | Iextcall _) ->
       (* For function calls and context switches, we should at least forget:
          - equations involving memory loads, since the callee can
            perform arbitrary memory stores;
