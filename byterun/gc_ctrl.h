@@ -30,7 +30,8 @@ extern intnat
      caml_stat_heap_chunks;
 
 extern uintnat
-     caml_max_stack_size;
+     caml_max_stack_size,
+     caml_fiber_wsz;
 
 uintnat caml_normalize_heap_increment (uintnat);
 

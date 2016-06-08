@@ -43,11 +43,7 @@ type operation =
   | Icall_imm of string
   | Itailcall_ind
   | Itailcall_imm of string
-  | Iperform
-  | Ireperform
-  | Iresume_ind
-  | Itail_resume_ind
-  | Iextcall of string * bool    (* false = noalloc, true = alloc *)
+  | Iextcall of string * bool * int (* false = noalloc, true = alloc, n = stack_args *)
   | Istackoffset of int
   | Iload of Cmm.memory_chunk * Arch.addressing_mode
   | Istore of Cmm.memory_chunk * Arch.addressing_mode * bool

@@ -136,8 +136,11 @@ let emit_frames a =
     a.efa_16 (if Debuginfo.is_none fd.fd_debuginfo
               then fd.fd_frame_size
               else fd.fd_frame_size + 1);
-    a.efa_16 (List.length fd.fd_live_offset);
-    List.iter a.efa_16 fd.fd_live_offset;
+    let uniq_fd_live_offset =
+      List.sort_uniq compare fd.fd_live_offset
+    in
+    a.efa_16 (List.length uniq_fd_live_offset);
+    List.iter a.efa_16 uniq_fd_live_offset;
     a.efa_align Arch.size_addr;
     if not (Debuginfo.is_none fd.fd_debuginfo) then begin
       let d = fd.fd_debuginfo in

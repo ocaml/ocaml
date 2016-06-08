@@ -1682,8 +1682,6 @@ and transl_prim_1 p arg dbg =
       tag_int (Cop(Cextcall("caml_bswap16_direct", typ_int, false,
                             Debuginfo.none),
                    [untag_int (transl arg)]))
-  | Pperform ->
-      Cop(Cperform, [transl arg])
   | prim ->
       let (_ : string) = Format.flush_str_formatter () in
       Printlambda.primitive Format.str_formatter prim;
@@ -1921,8 +1919,6 @@ and transl_prim_2 p arg1 arg2 dbg =
   | Pbintcomp(bi, cmp) ->
       tag_int (Cop(Ccmpi(transl_comparison cmp),
                      [transl_unbox_int bi arg1; transl_unbox_int bi arg2]))
-  | Preperform ->
-      Cop(Creperform, [transl arg1; transl arg2])
   | prim ->
       let (_ : string) = Format.flush_str_formatter () in
       Printlambda.primitive Format.str_formatter prim;
@@ -2055,9 +2051,6 @@ and transl_prim_3 p arg1 arg2 arg3 dbg =
           check_bound unsafe dbg (sub_int (Cop(Cload Word,[field_address ba 5]))
                                           (Cconst_int 7)) idx
                       (unaligned_set_64 ba_data idx newval))))))
-
-  | Presume ->
-     Cop(Cresume, [transl arg1; transl arg2; transl arg3])
 
   | _ ->
     fatal_error "Cmmgen.transl_prim_3"

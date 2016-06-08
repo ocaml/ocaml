@@ -940,6 +940,15 @@ let rec close fenv cenv = function
       let (ulam, approx) = close fenv cenv arg in
       (Uprim(Praise k, [ulam], Debuginfo.from_raise ev),
        Value_unknown)
+  | Lprim(Pperform, args) ->
+      let args = close_list fenv cenv args in
+      (Udirect_apply ("caml_perform", args, Debuginfo.none), Value_unknown)
+  | Lprim(Presume, args) ->
+      let args = close_list fenv cenv args in
+      (Udirect_apply ("caml_resume", args, Debuginfo.none), Value_unknown)
+  | Lprim(Preperform, args) ->
+      let args = close_list fenv cenv args in
+      (Udirect_apply ("caml_reperform", args, Debuginfo.none), Value_unknown)
   | Lprim(p, args) ->
       simplif_prim !Clflags.float_const_prop
                    p (close_list_approx fenv cenv args) Debuginfo.none

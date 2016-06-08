@@ -649,7 +649,7 @@ let rec comp_expr env exp sz cont =
         comp_args env args sz
           (Kreperformterm(sz + nargs) :: discard_dead_code cont)
       else
-        fatal_error "Delegate used in non-tail position"
+        fatal_error "Reperform used in non-tail position"
 
 (* Integer first for enabling futher optimization (cf. emitcode.ml)  *)
   | Lprim (Pintcomp c, [arg ; (Lconst _ as k)]) ->
