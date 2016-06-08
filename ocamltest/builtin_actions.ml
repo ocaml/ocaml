@@ -272,13 +272,14 @@ let execute_program ppf env =
   | None -> failwith "No program to execute"
   | Some program ->
     let arguments = Environments.safe_lookup "arguments" env in
-    begin
-      if arguments=""
-      then Format.fprintf ppf "Executing program %s without any argument\n" program
-      else Format.fprintf ppf "Executing program %s with arguments %s\n"
-        program arguments;
-    end;
-    Pass env
+    let commandline = program ^ " " ^ arguments in
+    let what = "Executing program " ^ program ^ " " ^
+    begin if arguments="" then "without any argument"
+    else "with arguments " ^ arguments
+    end in
+    match run_command ppf env commandline with
+      | 0 -> Pass env
+      | _ as exitcode -> Fail (mkreason what commandline exitcode)
 
 let env_id env = env
 
