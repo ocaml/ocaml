@@ -19,6 +19,11 @@ static void init_startup_params()
   p->heap_chunk_init = Heap_chunk_def;
   p->heap_size_init = Init_heap_def;
   p->max_stack_init = Max_stack_def;
+#ifdef PROFILING
+  p->fiber_wsz_init = Profile_slop + (Stack_threshold * 2) / sizeof(value);
+#else
+  p->fiber_wsz_init = (Stack_threshold * 2) / sizeof(value);
+#endif
 #ifdef DEBUG
   p->verb_gc = 1;
 #endif
@@ -71,6 +76,7 @@ void caml_init_startup_params(void)
       case 't': caml_startup_params.trace_flag = 1; break;
 #endif
       case 'v': scanmult (opt, &caml_startup_params.verb_gc); break;
+      case 'f': scanmult (opt, &caml_startup_params.fiber_wsz_init); break;
       case 'e': caml_startup_params.eventlog_enabled = 1; break;
       }
     }

@@ -282,6 +282,10 @@ let mk_short_paths f =
   "-short-paths", Arg.Unit f, " Shorten paths in types"
 ;;
 
+let mk_stack_slop f =
+  "-stack-slop", Arg.Int f, " Extra stack slop (in words) for fiber stacks"
+;;
+
 let mk_stdin f =
   "-stdin", Arg.Unit f, " Read script from standard input"
 ;;
@@ -609,6 +613,7 @@ module type Optcomp_options = sig
   val _p : unit -> unit
   val _pp : string -> unit
   val _S : unit -> unit
+  val _stack_slop : int -> unit
   val _shared : unit -> unit
   val _opaque :  unit -> unit
 end;;
@@ -814,6 +819,7 @@ struct
     mk_runtime_variant F._runtime_variant;
     mk_S F._S;
     mk_safe_string F._safe_string;
+    mk_stack_slop F._stack_slop;
     mk_shared F._shared;
     mk_short_paths F._short_paths;
     mk_strict_sequence F._strict_sequence;

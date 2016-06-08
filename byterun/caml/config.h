@@ -117,6 +117,9 @@ typedef uint64 uintnat;
    It must be a multiple of [sizeof (value)] and >= 8 and <= 20. */
 #define Page_log 12             /* A page is 4 kilobytes. */
 
+/* Size of extra stack slop space if profiling is enabled (words) */
+#define Profile_slop 128
+
 /* Initial size of stack (bytes). */
 #define Stack_size (4096 * sizeof(value))
 

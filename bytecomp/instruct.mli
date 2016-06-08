@@ -123,7 +123,7 @@ type instruction =
   | Kperform
   | Kresume
   | Kresumeterm of int
-  | Kdelegateterm of int
+  | Kreperformterm of int
   | Kstop
 
 val immed_min: int

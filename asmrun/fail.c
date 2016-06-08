@@ -52,15 +52,18 @@ extern void caml_raise_exception (value bucket) Noreturn;
 
 void caml_raise(value v)
 {
-  if (caml_domain_state->exception_pointer == NULL) caml_fatal_uncaught_exception(v);
+  if (caml_domain_state->system_exnptr_offset == 0)
+    caml_fatal_uncaught_exception(v);
 
 #ifndef Stack_grows_upwards
 #define PUSHED_AFTER <
 #else
 #define PUSHED_AFTER >
 #endif
+  char* exception_pointer = caml_domain_state->system_stack_high
+                          - caml_domain_state->system_exnptr_offset;
   while (caml_local_roots != NULL &&
-         (char *) caml_local_roots PUSHED_AFTER caml_domain_state->exception_pointer) {
+         (char *) caml_local_roots PUSHED_AFTER exception_pointer) {
     Assert(caml_local_roots != NULL);
     struct caml__mutex_unwind* m = caml_local_roots->mutexes;
     while (m) {

@@ -37,7 +37,6 @@ CAMLexport void caml_modify_field (value obj, int field, value val)
 {
   Assert (Is_block(obj));
   Assert (!Is_foreign(obj));
-  Assert (!Is_foreign(val));
   Assert (!Is_block(val) || Wosize_hd (Hd_val (val)) < (1 << 20)); /* !! */
 
   Assert(field >= 0 && field < Wosize_val(obj));
@@ -303,9 +302,6 @@ static int promoted_cas(value obj, int field, value oldval, value newval)
   }
 }
 
-#define BVAR_EMPTY      0x10000
-#define BVAR_OWNER_MASK 0x0ffff
-
 CAMLprim value caml_bvar_create(value v)
 {
   CAMLparam1(v);
@@ -346,7 +342,7 @@ static void handle_bvar_transfer(struct domain* self, void *reqp)
 }
 
 /* Get a bvar's status, transferring it if necessary */
-static intnat bvar_status(value bv)
+intnat caml_bvar_status(value bv)
 {
   while (1) {
     intnat stat = Long_val(Op_val(bv)[1]);
@@ -372,7 +368,7 @@ CAMLprim value caml_bvar_take(value bv)
     bv = caml_addrmap_lookup(&caml_remembered_set.promotion, bv);
   }
 
-  intnat stat = bvar_status(bv);
+  intnat stat = caml_bvar_status(bv);
   if (stat & BVAR_EMPTY) caml_raise_not_found();
   CAMLassert(stat == caml_domain_self()->id);
 
@@ -390,7 +386,7 @@ CAMLprim value caml_bvar_put(value bv, value v)
     bv = caml_addrmap_lookup(&caml_remembered_set.promotion, bv);
   }
 
-  intnat stat = bvar_status(bv);
+  intnat stat = caml_bvar_status(bv);
   if (!(stat & BVAR_EMPTY)) caml_invalid_argument("Put to a full bvar");
   CAMLassert(stat == (caml_domain_self()->id | BVAR_EMPTY));
 
@@ -410,3 +406,21 @@ CAMLprim value caml_bvar_is_empty(value bv)
 
   return Val_int((Long_val(Op_val(bv)[1]) & BVAR_EMPTY) != 0);
 }
+
+#ifdef DEBUG
+header_t hd_val (value v) {
+  return (header_t)Hd_val(v);
+}
+
+int is_minor(value v) {
+  return Is_minor(v);
+}
+
+int is_foreign(value v) {
+  return Is_foreign(v);
+}
+
+int is_young(value v) {
+  return Is_young(v);
+}
+#endif

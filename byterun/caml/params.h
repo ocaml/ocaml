@@ -20,6 +20,7 @@ extern struct caml_startup_params {
   uintnat heap_chunk_init;
   uintnat heap_size_init;
   uintnat max_stack_init;
+  uintnat fiber_wsz_init;
   int backtrace_enabled_init;
 } caml_startup_params;
 

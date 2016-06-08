@@ -46,8 +46,8 @@ CAMLexport value caml_callbackN_exn(value closure, int narg, value args[])
   CAMLlocal1(parent_stack);
   int i;
   value res;
-  parent_stack = Stack_parent(caml_current_stack);
-  Stack_parent(caml_current_stack) = Val_unit;
+  parent_stack = Stack_parent(caml_domain_state->current_stack);
+  Stack_parent(caml_domain_state->current_stack) = Val_unit;
 
   Assert(narg + 4 <= 256);
   caml_extern_sp -= narg + 4;
@@ -66,8 +66,8 @@ CAMLexport value caml_callbackN_exn(value closure, int narg, value args[])
   res = caml_interprete(code, sizeof(code));
   if (Is_exception_result(res)) caml_extern_sp += narg + 4; /* PR#1228 */
 
-  Assert(Stack_parent(caml_current_stack) == Val_unit);
-  Stack_parent(caml_current_stack) = parent_stack;
+  Assert(Stack_parent(caml_domain_state->current_stack) == Val_unit);
+  Stack_parent(caml_domain_state->current_stack) = parent_stack;
   CAMLreturn (res);
 }
 
@@ -96,7 +96,7 @@ CAMLexport value caml_callback3_exn(value closure,
   return caml_callbackN_exn(closure, 3, arg);
 }
 
-#else
+#else /* Nativecode callbacks */
 
 static void init_callback_code(void)
 {

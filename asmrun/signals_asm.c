@@ -153,10 +153,12 @@ DECLARE_SIGNAL_HANDLER(trap_handler)
     sigprocmask(SIG_UNBLOCK, &mask, NULL);
   }
 #endif
-  caml_domain_state->exception_pointer = (char *) CONTEXT_EXCEPTION_POINTER;
+  //TODO KC
+  caml_fatal_error ("DECLARE_SIGNAL_HANDLER");
+  // caml_domain_state->exception_pointer = (char *) CONTEXT_EXCEPTION_POINTER;
   caml_domain_state->young_ptr = (char *) CONTEXT_YOUNG_PTR;
-  caml_domain_state->bottom_of_stack = (char *) CONTEXT_SP;
-  caml_domain_state->last_return_address = (uintnat) CONTEXT_PC;
+  //caml_domain_state->bottom_of_stack = (char *) CONTEXT_SP;
+  //caml_domain_state->last_return_address = (uintnat) CONTEXT_PC;
   caml_array_bound_error();
 }
 #endif
@@ -212,7 +214,8 @@ DECLARE_SIGNAL_HANDLER(segv_handler)
 #else
     /* Raise a Stack_overflow exception straight from this signal handler */
 #if defined(CONTEXT_YOUNG_PTR) && defined(CONTEXT_EXCEPTION_POINTER)
-    caml_domain_state->exception_pointer = (char *) CONTEXT_EXCEPTION_POINTER;
+    //TODO KC
+    //caml_domain_state->exception_pointer = (char *) CONTEXT_EXCEPTION_POINTER;
     caml_domain_state->young_ptr = (char *) CONTEXT_YOUNG_PTR;
 #endif
     caml_raise_stack_overflow();
