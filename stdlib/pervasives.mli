@@ -64,7 +64,7 @@ val continue: ('a, 'b) continuation -> 'a -> 'b
     resumed. *)
 val discontinue: ('a, 'b) continuation -> exn -> 'b
 
-(** [delegate e k] is semantically equivalent to:
+(** [reperform e k] is semantically equivalent to:
 
     {[
       match perform e with
@@ -75,7 +75,7 @@ val discontinue: ('a, 'b) continuation -> exn -> 'b
     but it can be implemented directly more efficiently and is a
     very common case: it is what you should do with effects that
     you don't handle. *)
-val delegate: 'a eff -> ('a, 'b) continuation -> 'b
+val reperform: 'a eff -> ('a, 'b) continuation -> 'b
 
 (** {6 Comparisons} *)
 

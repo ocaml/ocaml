@@ -926,7 +926,7 @@ LBL(112):
         jmp LBL(caml_raise_exn)
 CFI_ENDPROC
 
-FUNCTION(G(caml_delegate))
+FUNCTION(G(caml_reperform))
 CFI_STARTPROC
     /* %rax -> effect (first argument), %rbx -> performer */
         movq    %rax, %r12
