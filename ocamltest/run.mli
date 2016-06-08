@@ -18,7 +18,7 @@
 type settings = {
   progname : string;
   argv : string array;
-  envp : string array;
+  (* envp : string array; *)
   stdout_filename : string;
   stderr_filename : string;
   append : bool;

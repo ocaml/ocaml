@@ -160,7 +160,7 @@ int run_command_child(const command_settings *settings)
       fatal_perror("dup2 for stderr");
   }
 
-  res = execve(settings->program, *settings->argv, *settings->envp);
+  res = execv(settings->program, *settings->argv); /* , *settings->envp); */
 
   fatal_perror("execve");
   return res;
