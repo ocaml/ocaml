@@ -282,6 +282,9 @@ val equal: t -> t -> bool
 (** The equal function for strings.
     @since 4.03.0 *)
 
+val reverse: t -> t
+(** Get a new reversed string *)
+
 (**/**)
 
 (* The following is for system use only. Do not call directly. *)
