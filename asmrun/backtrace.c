@@ -92,9 +92,10 @@ frame_descr * caml_next_frame_descriptor(uintnat * pc, char ** sp)
     } else {
       /* Special frame marking the top of a stack chunk for an ML callback.
          Skip C portion of stack and continue with next ML stack chunk. */
-      struct caml_context * next_context = Callback_link(*sp);
-      *sp = next_context->bottom_of_stack;
-      *pc = next_context->last_retaddr;
+      caml_fatal_error ("caml_next_frame_descriptor");
+      //struct caml_context * next_context = Callback_link(*sp);
+      //*sp = next_context->bottom_of_stack;
+      //*pc = next_context->last_retaddr;
       /* A null sp means no more ML stack chunks; stop here. */
       if (*sp == NULL) return NULL;
     }
@@ -155,23 +156,24 @@ CAMLprim value caml_get_current_callstack(value max_frames_value) {
 
   /* first compute the size of the trace */
   {
-    uintnat pc = caml_domain_state->last_return_address;
+    caml_fatal_error("caml_get_current_callstack");
+    //uintnat pc = caml_domain_state->last_return_address;
     /* note that [caml_bottom_of_stack] always points to the most recent
      * frame, independently of the [Stack_grows_upwards] setting */
-    char * sp = caml_domain_state->bottom_of_stack;
-    char * limitsp = caml_domain_state->top_of_stack;
+    //char * sp = caml_domain_state->bottom_of_stack;
+    //char * limitsp = caml_domain_state->top_of_stack;
 
     trace_size = 0;
     while (1) {
-      frame_descr * descr = caml_next_frame_descriptor(&pc, &sp);
-      if (descr == NULL) break;
+      //frame_descr * descr = caml_next_frame_descriptor(&pc, &sp);
+      //if (descr == NULL) break;
       if (trace_size >= max_frames) break;
       ++trace_size;
 
 #ifndef Stack_grows_upwards
-      if (sp > limitsp) break;
+      //if (sp > limitsp) break;
 #else
-      if (sp < limitsp) break;
+      //if (sp < limitsp) break;
 #endif
     }
   }
@@ -180,6 +182,8 @@ CAMLprim value caml_get_current_callstack(value max_frames_value) {
 
   /* then collect the trace */
   {
+    caml_fatal_error("caml_get_current_callstack");
+#if 0
     uintnat pc = caml_domain_state->last_return_address;
     char * sp = caml_domain_state->bottom_of_stack;
     intnat trace_pos;
@@ -189,8 +193,8 @@ CAMLprim value caml_get_current_callstack(value max_frames_value) {
       Assert(descr != NULL);
       caml_initialize_field(trace, trace_pos, Val_Descrptr(descr));
     }
+#endif
   }
-
   CAMLreturn(trace);
 }
 
@@ -211,6 +215,8 @@ CAMLexport void extract_location_info(frame_descr * d,
 {
   uintnat infoptr;
   uint32 info1, info2;
+
+  caml_fatal_error("extract_location_info");
 
   /* If no debugging information available, print nothing.
      When everything is compiled with -g, this corresponds to

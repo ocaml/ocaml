@@ -92,3 +92,5 @@ let extension_slot x =
   try
     extension_slot x
   with Not_found -> invalid_arg "Obj.extension_slot"
+
+external clone_continuation : ('a,'b) continuation -> ('a,'b) continuation = "caml_clone_continuation"

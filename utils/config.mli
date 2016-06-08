@@ -87,7 +87,10 @@ val max_young_wosize: int
 val stack_threshold: int
         (* Size in words of safe area at bottom of VM stack,
            see byterun/config.h *)
-
+val profile_slop : int
+        (* Size in words of extra stack slop space at the bottom of stack if
+           profiling is enabled. See byterun/config.h *)
+ 
 val architecture: string
         (* Name of processor type for the native-code compiler *)
 val model: string

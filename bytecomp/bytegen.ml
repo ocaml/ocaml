@@ -641,15 +641,15 @@ let rec comp_expr env exp sz cont =
           (Kresumeterm(sz + nargs) :: discard_dead_code cont)
       else
         comp_args env args sz (Kresume :: cont)
-  | Lprim(Pdelegate, args) ->
+  | Lprim(Preperform, args) ->
       let nargs = List.length args - 1 in
       assert (nargs = 1);
       check_stack (sz + 3);
       if is_tailcall cont then
         comp_args env args sz
-          (Kdelegateterm(sz + nargs) :: discard_dead_code cont)
+          (Kreperformterm(sz + nargs) :: discard_dead_code cont)
       else
-        fatal_error "Delegate used in non-tail position"
+        fatal_error "Reperform used in non-tail position"
 
 (* Integer first for enabling futher optimization (cf. emitcode.ml)  *)
   | Lprim (Pintcomp c, [arg ; (Lconst _ as k)]) ->

@@ -4,6 +4,9 @@
 #include "caml/mlvalues.h"
 #include "caml/roots.h"
 
+#define Hash_retaddr(addr, mask)                          \
+  (((uintnat)(addr) >> 3) & (mask))
+
 /* Structure of frame descriptors */
 
 typedef struct {
@@ -18,9 +21,8 @@ void caml_init_frame_descriptors(void);
 
 void caml_register_frametable(intnat *table);
 
-void caml_scan_stack_roots(scanning_action f,
-                           char* sp, uintnat retaddr, value* regs);
-
 frame_descr* caml_find_frame_descr(uintnat pc);
+
+CAMLextern value caml_frame_descriptor_table;
 
 #endif /* CAML_FRAME_DESCRIPTORS_H */

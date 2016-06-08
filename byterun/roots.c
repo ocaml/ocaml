@@ -27,15 +27,17 @@
 #include "caml/fiber.h"
 
 #ifdef NATIVE_CODE
-#include "frame_descriptors.h"
-
+#include "stack.h"
 /* Communication with [caml_start_program] and [caml_call_gc]. */
 
-/* FIXME: there should be one of these per domain */
+/* The global roots.
+   FIXME: These should be promoted, and not scanned here.
+   FIXME: caml_globals_inited makes assumptions about store ordering.
+   XXX KC : What to do here?
+*/
 
 intnat caml_globals_inited = 0;
 static intnat caml_globals_scanned = 0;
-
 #endif
 
 CAMLexport __thread struct caml__roots_block *caml_local_roots = NULL;
@@ -47,12 +49,20 @@ CAMLexport void caml_do_local_roots (scanning_action f, struct domain* domain)
   value* sp;
 
 #ifdef NATIVE_CODE
-  struct caml_domain_state* st = domain->state;
-  caml_scan_stack_roots(f, st->bottom_of_stack,
-                        st->last_return_address, st->gc_regs);
-#else
-  f(*(domain->current_stack), domain->current_stack);
+  /* The global roots.
+     FIXME: These should be promoted, and not scanned here.
+     FIXME: caml_globals_inited makes assumptions about store ordering.
+  */
+  value glob;
+  for (i = 0; i <= caml_globals_inited && caml_globals[i] != 0; i++) {
+    glob = caml_globals[i];
+    for (j = 0; j < Wosize_val(glob); j++){
+      f(Op_val(glob)[j], &Op_val(glob)[j]);
+    }
+  }
 #endif
+
+  f(domain->state->current_stack, &(domain->state->current_stack));
   for (lr = *(domain->local_roots); lr != NULL; lr = lr->next) {
     for (i = 0; i < lr->ntables; i++){
       for (j = 0; j < lr->nitems; j++){

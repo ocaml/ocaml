@@ -10,10 +10,6 @@ typedef struct link {
 #define iter_list(list,lnk) \
   for (lnk = list; lnk != NULL; lnk = lnk->next)
 
-
-#define Hash_retaddr(addr, mask)                          \
-  (((uintnat)(addr) >> 3) & (mask))
-
 static value build_frame_descriptors(link* frametables)
 {
   intnat num_descr, tblsize, i, j, len;
@@ -58,7 +54,10 @@ static value build_frame_descriptors(link* frametables)
          sizeof(char *) + sizeof(short) + sizeof(short) +
          sizeof(short) * d->num_live + sizeof(frame_descr *) - 1)
         & -sizeof(frame_descr *);
-      if (d->frame_size & 1) nextd += 8;
+      if (d->frame_size & 1 &&
+          d->frame_size != (unsigned short)-1) {
+        nextd += 8;
+      }
       d = (frame_descr *) nextd;
     }
   }
@@ -68,7 +67,7 @@ static value build_frame_descriptors(link* frametables)
 
 static caml_plat_mutex descr_mutex;
 static link* frametables;
-static value frame_descriptor_table = Val_unit;
+CAMLexport value caml_frame_descriptor_table = Val_unit;
 
 static link *cons(intnat *frametable, link *tl) {
   link *lnk = caml_stat_alloc(sizeof(link));
@@ -81,111 +80,29 @@ void caml_init_frame_descriptors(void)
 {
   int i;
 
-  Assert(frame_descriptor_table == Val_unit);
+  Assert(caml_frame_descriptor_table == Val_unit);
   caml_plat_mutex_init(&descr_mutex);
 
   caml_plat_lock(&descr_mutex);
   for (i = 0; caml_frametable[i] != 0; i++)
     frametables = cons(caml_frametable[i], frametables);
 
-  frame_descriptor_table = build_frame_descriptors(frametables);
+  caml_frame_descriptor_table = build_frame_descriptors(frametables);
   caml_plat_unlock(&descr_mutex);
 }
 
 void caml_register_frametable(intnat *table)
 {
-  Assert(frame_descriptor_table != Val_unit);
+  Assert(caml_frame_descriptor_table != Val_unit);
 
   caml_plat_lock(&descr_mutex);
 
   frametables = cons(table, frametables);
-  frame_descriptor_table = build_frame_descriptors(frametables);
+  caml_frame_descriptor_table = build_frame_descriptors(frametables);
   /* old frame_descriptor_table is GC'd eventually */
 
   caml_plat_unlock(&descr_mutex);
 }
-
-
-
-
-void caml_scan_stack_roots(scanning_action f,
-                           char* sp, uintnat retaddr, value* regs) {
-  frame_descr * d;
-  uintnat h;
-  int n, ofs;
-#ifdef Stack_grows_upwards
-  short * p;  /* PR#4339: stack offsets are negative in this case */
-#else
-  unsigned short * p;
-#endif
-  frame_descr** frame_descriptors;
-  int frame_descriptors_mask;
-  value* root;
-
-
-  /* The global roots.
-     FIXME: These should be promoted, and not scanned here.
-     FIXME: caml_globals_inited makes assumptions about store ordering.
-  */
-  value glob;
-  int i, j;
-  for (i = 0; i <= caml_globals_inited && caml_globals[i] != 0; i++) {
-    glob = caml_globals[i];
-    for (j = 0; j < Wosize_val(glob); j++){
-      f(Op_val(glob)[j], &Op_val(glob)[j]);
-    }
-  }
-
-
-  f(frame_descriptor_table, &frame_descriptor_table);
-
-  if (sp != NULL) {
-    Assert(frame_descriptor_table != Val_unit);
-    frame_descriptors = Data_abstract_val(frame_descriptor_table);
-    frame_descriptors_mask = Wosize_val(frame_descriptor_table) - 1;
-
-    while (1) {
-      /* Find the descriptor corresponding to the return address */
-      h = Hash_retaddr(retaddr, frame_descriptors_mask);
-      while(1) {
-        d = frame_descriptors[h];
-        if (d->retaddr == retaddr) break;
-        h = (h+1) & frame_descriptors_mask;
-      }
-      if (d->frame_size != 0xFFFF) {
-        /* Scan the roots in this frame */
-        for (p = d->live_ofs, n = d->num_live; n > 0; n--, p++) {
-          ofs = *p;
-          if (ofs & 1) {
-            root = regs + (ofs >> 1);
-          } else {
-            root = (value *)(sp + ofs);
-          }
-          f (*root, root);
-        }
-        /* Move to next frame */
-#ifndef Stack_grows_upwards
-        sp += (d->frame_size & 0xFFFC);
-#else
-        sp -= (d->frame_size & 0xFFFC);
-#endif
-        retaddr = Saved_return_address(sp);
-        /* FIXME: support Already_scanned for POWER */
-      } else {
-        /* This marks the top of a stack chunk for an ML callback.
-           Skip C portion of stack and continue with next ML stack chunk. */
-        struct caml_context * next_context = Callback_link(sp);
-        sp = next_context->bottom_of_stack;
-        retaddr = next_context->last_retaddr;
-        regs = next_context->gc_regs;
-        /* A null sp means no more ML stack chunks; stop here. */
-        if (sp == NULL) break;
-      }
-    }
-  }
-}
-
-
 
 frame_descr* caml_find_frame_descr(uintnat pc)
 {
@@ -194,9 +111,9 @@ frame_descr* caml_find_frame_descr(uintnat pc)
   frame_descr * d;
   uintnat h;
 
-  Assert(frame_descriptor_table != Val_unit);
-  frame_descriptors = Data_abstract_val(frame_descriptor_table);
-  frame_descriptors_mask = Wosize_val(frame_descriptor_table) - 1;
+  Assert(caml_frame_descriptor_table != Val_unit);
+  frame_descriptors = Data_abstract_val(caml_frame_descriptor_table);
+  frame_descriptors_mask = Wosize_val(caml_frame_descriptor_table) - 1;
 
   h = Hash_retaddr(pc, frame_descriptors_mask);
   while (1) {

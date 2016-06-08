@@ -47,6 +47,7 @@ CAMLexport value caml_alloc (mlsize_t wosize, tag_t tag)
     if (tag < No_scan_tag){
       for (i = 0; i < wosize; i++) Op_val(result)[i] = Val_unit;
     }
+    if (tag == Stack_tag) Stack_sp(result) = 0;
     result = caml_check_urgent_gc (result);
   }
   return result;

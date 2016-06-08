@@ -103,7 +103,7 @@ type instruction =
   | Kperform
   | Kresume
   | Kresumeterm of int
-  | Kdelegateterm of int
+  | Kreperformterm of int
   | Kstop
 
 let immed_min = -0x40000000

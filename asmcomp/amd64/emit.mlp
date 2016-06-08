@@ -40,6 +40,8 @@ let stack_offset = ref 0
 
 (* Layout of the stack frame *)
 
+let stack_threshold_size = Config.stack_threshold * 8 (* bytes *)
+
 let frame_required () =
   fp || !contains_calls || num_stack_slots.(0) > 0 || num_stack_slots.(1) > 0
 
@@ -420,8 +422,6 @@ let emit_instr fallthrough i =
         output_epilogue begin fun () ->
         `	jmp	*{emit_reg i.arg.(0)}\n`
         end
-    | Lop(Iperform | Idelegate | Iresume_ind | Itail_resume_ind) ->
-       `        /* this was a bad idea to begin with */`
     | Lop(Itailcall_imm s) ->
         if s = !function_name then
           `	jmp	{emit_label !tailrec_entry_point}\n`
@@ -430,8 +430,20 @@ let emit_instr fallthrough i =
           `	{emit_jump s}\n`
           end
         end
-    | Lop(Iextcall(s, alloc)) ->
-        if alloc then begin
+    | Lop(Iextcall(s, alloc, stack_off)) ->
+        if stack_off > 0 then
+          begin
+            ` leaq  (%rsp), %r13\n`;
+            ` leaq  {emit_int stack_off}(%rsp), %r12\n`;
+            ` {load_symbol_addr s}, %rax\n`;
+            ` {emit_call "caml_c_call_stack_args"}\n`;
+            record_frame i.live i.dbg;
+          (* caml_c_call preserves the old value of %r15, but this may no longer
+             be the correct minor heap pointer, so we reload young_ptr *)
+          `	{locate_domain_state ()}, %r15\n`;
+          `	movq	{domain_field Domainstate.Domain_young_ptr}(%r15), %r15\n`;
+          end
+        else if alloc then begin
           `	{load_symbol_addr s}, %rax\n`;
           `	{emit_call "caml_c_call"}\n`;
           record_frame i.live i.dbg;
@@ -440,7 +452,14 @@ let emit_instr fallthrough i =
           `	{locate_domain_state ()}, %r15\n`;
           `	movq	{domain_field Domainstate.Domain_young_ptr}(%r15), %r15\n`;
         end else begin
-          `	{emit_call s}\n`
+          ` movq  %rsp, %r10\n`;
+          ` movq  %r15, %r11\n`;
+          `	{locate_domain_state ()}, %r11\n`;
+          `	movq	{domain_field Domainstate.Domain_system_sp}(%r11), %rsp\n`;
+          ` pushq %r10\n`;
+          `	{emit_call s}\n`;
+          ` popq  %r10\n`;
+          ` movq  %r10, %rsp\n`
         end
     | Lop(Istackoffset n) ->
         if n < 0
@@ -659,7 +678,7 @@ let emit_instr fallthrough i =
         if macosx then
           `	.const\n`
         else if mingw64 || cygwin then
-          `	.section .rdata,\"dr\"\n`
+          `	.section .rdata,\"dr\"\n` 
         else
           `	.section .rodata\n`;
         emit_align 4;
@@ -674,7 +693,10 @@ let emit_instr fallthrough i =
         cfi_adjust_cfa_offset 8;
         `	pushq	%r14\n`;
         cfi_adjust_cfa_offset 8;
-        `	movq	%rsp, %r14\n`;
+        ` movq  %r15, %r14\n`;
+        `	{locate_domain_state ()}, %r14\n`;
+        `	movq	{domain_field Domainstate.Domain_stack_high}(%r14), %r14\n`;
+        ` subq  %rsp, %r14\n`;
         stack_offset := !stack_offset + 16
     | Lpoptrap ->
         `	popq	%r14\n`;
@@ -692,7 +714,10 @@ let emit_instr fallthrough i =
           record_frame Reg.Set.empty i.dbg
         | false, _
         | true, Lambda.Raise_notrace ->
-          `	movq	%r14, %rsp\n`;
+          ` movq  %r15, %rsp\n`;
+          `	{locate_domain_state ()}, %rsp\n`;
+          `	movq	{domain_field Domainstate.Domain_stack_high}(%rsp), %rsp\n`;
+          ` subq  %r14, %rsp\n`;
           `	popq	%r14\n`;
           `	ret\n`
         end
@@ -721,6 +746,39 @@ let emit_profile () =
       `	popq	%r10\n`
   | _ ->
       () (*unsupported yet*)
+
+
+type preproc_fun_result =
+  {max_stack_size : int;
+   contains_nontail_calls : bool;
+   contains_external_calls : bool}
+
+let preproc_fun fun_body fun_name =
+  let rec proc_instr r a i =
+    if i.desc = Lend then r else
+        let upd_size r delta =
+          {r with max_stack_size = max r.max_stack_size (a+delta)}
+        in
+        let (r',a') = match i.desc with
+          | Lop (Istackoffset n) -> (upd_size r n, a+n)
+          | Lpushtrap -> (upd_size r 16, a+16)
+          | Lpoptrap -> (r, a-16)
+          | Lop (Iextcall _ | Ialloc _ | Iintop Icheckbound
+                 | Iintop_imm (Icheckbound, _)) ->
+              ({r with contains_external_calls = true}, a)
+          | Lop (Icall_ind | Icall_imm _ ) ->
+              ({r with contains_nontail_calls = true}, a)
+          | _ -> (r, a)
+        in
+        proc_instr r' a' i.next
+  in
+  let fs = frame_size () in
+  let r =
+    {max_stack_size = fs;
+     contains_nontail_calls = false;
+     contains_external_calls = false}
+  in
+  proc_instr r fs fun_body
 
 (* Emission of a function declaration *)
 
@@ -758,9 +816,53 @@ let fundecl fundecl =
     `	subq	${emit_int n}, %rsp\n`;
     cfi_adjust_cfa_offset n;
   end;
-  `{emit_label !tailrec_entry_point}:\n`;
-  emit_all true fundecl.fun_body;
-  List.iter emit_call_gc !call_gc_sites;
+
+  let preproc_res = preproc_fun fundecl.fun_body fundecl.fun_name in
+  let s = !Clflags.stack_slop + preproc_res.max_stack_size in
+
+  (* Extra 1k bytes slop space if profiling is enabled. Ensures that `mcount`
+   * and signal handlers do not stack overflow. *)
+  let profile_slop =
+    if !Clflags.gprofile then Config.profile_slop * 8 else 0
+  in
+  let s = s + profile_slop in
+
+  (* Extra 24 bytes for caml_context at the bottom of OCaml stack if the
+   * function makes external calls *)
+  let s = if preproc_res.contains_external_calls then s + 24 else s in
+
+  if not preproc_res.contains_nontail_calls &&
+     s < stack_threshold_size + profile_slop
+  then begin
+    `{emit_label !tailrec_entry_point}:\n`;
+    emit_all true fundecl.fun_body;
+    List.iter emit_call_gc !call_gc_sites;
+  end
+  else begin
+    (* XXX KC: fundecl.fun_body.live does not capture liveness at the start of
+    the function properly. *)
+    let live_initially =
+      Reg.Set.(fold (fun r s -> add {r with typ = Addr} s)
+        fundecl.fun_args empty)
+    in
+    let handle_overflow = new_label() in
+    let after_overflow = record_frame_label live_initially Debuginfo.none in
+
+    ` movq %r15, %r11\n`;
+    `	{locate_domain_state ()}, %r11\n`;
+    `	movq	{domain_field Domainstate.Domain_stack_threshold}(%r11), %r11\n`;
+    ` addq ${emit_int s}, %r11\n`;
+    ` cmpq %r11, %rsp\n`;
+    ` jb {emit_label handle_overflow}\n`;
+    `{emit_label !tailrec_entry_point}:\n`;
+    emit_all true fundecl.fun_body;
+    List.iter emit_call_gc !call_gc_sites;
+    `{emit_label handle_overflow}:\n`;
+    ` {emit_call "caml_call_realloc_stack"}\n`;
+    `{emit_label after_overflow}:\n`;
+    ` jmp {emit_label !tailrec_entry_point}\n`;
+  end;
+
   emit_call_bound_errors ();
   cfi_endproc ();
   begin match Config.system with

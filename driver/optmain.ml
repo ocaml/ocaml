@@ -108,6 +108,7 @@ module Options = Main_args.Make_optcomp_options (struct
   let _output_complete_obj s =
     set output_c_object s; set output_complete_object s
   let _p = set gprofile
+  let _stack_slop n = stack_slop := n * 8
   let _pack = set make_package
   let _pp s = preprocessor := Some s
   let _ppx s = first_ppx := s :: !first_ppx

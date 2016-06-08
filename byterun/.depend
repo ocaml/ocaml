@@ -83,7 +83,7 @@ fiber.o: fiber.c caml/fiber.h caml/misc.h caml/compatibility.h \
  caml/mlvalues.h caml/memory.h caml/gc.h caml/major_gc.h caml/minor_gc.h \
  caml/addrmap.h caml/domain.h caml/domain_state.h caml/domain_state.tbl \
  caml/roots.h caml/gc_ctrl.h caml/instruct.h caml/fail.h caml/alloc.h \
- caml/platform.h caml/fix_code.h
+ caml/platform.h caml/fix_code.h caml/memory.h
 finalise.o: finalise.c caml/misc.h caml/compatibility.h caml/config.h \
  caml/../../config/m.h caml/../../config/s.h caml/fail.h caml/misc.h \
  caml/mlvalues.h
@@ -169,12 +169,6 @@ md5.o: md5.c caml/alloc.h caml/compatibility.h caml/misc.h caml/config.h \
  caml/domain_state.h caml/domain_state.tbl caml/memory.h caml/mlvalues.h \
  caml/io.h caml/reverse.h
 memory.o: memory.c caml/misc.h caml/compatibility.h caml/config.h \
- caml/../../config/m.h caml/../../config/s.h caml/fail.h caml/misc.h \
- caml/mlvalues.h caml/memory.h caml/gc.h caml/major_gc.h caml/minor_gc.h \
- caml/addrmap.h caml/domain.h caml/domain_state.h caml/domain_state.tbl \
- caml/shared_heap.h caml/domain.h caml/addrmap.h caml/roots.h \
- caml/memory.h caml/alloc.h
-memory.d.o: memory.d.c caml/misc.h caml/compatibility.h caml/config.h \
  caml/../../config/m.h caml/../../config/s.h caml/fail.h caml/misc.h \
  caml/mlvalues.h caml/memory.h caml/gc.h caml/major_gc.h caml/minor_gc.h \
  caml/addrmap.h caml/domain.h caml/domain_state.h caml/domain_state.tbl \
@@ -384,7 +378,7 @@ fiber.d.o: fiber.c caml/fiber.h caml/misc.h caml/compatibility.h \
  caml/mlvalues.h caml/memory.h caml/gc.h caml/major_gc.h caml/minor_gc.h \
  caml/addrmap.h caml/domain.h caml/domain_state.h caml/domain_state.tbl \
  caml/roots.h caml/gc_ctrl.h caml/instruct.h caml/fail.h caml/alloc.h \
- caml/platform.h caml/fix_code.h
+ caml/platform.h caml/fix_code.h caml/memory.h
 finalise.d.o: finalise.c caml/misc.h caml/compatibility.h caml/config.h \
  caml/../../config/m.h caml/../../config/s.h caml/fail.h caml/misc.h \
  caml/mlvalues.h
@@ -476,12 +470,6 @@ md5.d.o: md5.c caml/alloc.h caml/compatibility.h caml/misc.h caml/config.h \
  caml/domain_state.h caml/domain_state.tbl caml/memory.h caml/mlvalues.h \
  caml/io.h caml/reverse.h
 memory.d.o: memory.c caml/misc.h caml/compatibility.h caml/config.h \
- caml/../../config/m.h caml/../../config/s.h caml/fail.h caml/misc.h \
- caml/mlvalues.h caml/memory.h caml/gc.h caml/major_gc.h caml/minor_gc.h \
- caml/addrmap.h caml/domain.h caml/domain_state.h caml/domain_state.tbl \
- caml/shared_heap.h caml/domain.h caml/addrmap.h caml/roots.h \
- caml/memory.h caml/alloc.h
-memory.d.d.o: memory.d.c caml/misc.h caml/compatibility.h caml/config.h \
  caml/../../config/m.h caml/../../config/s.h caml/fail.h caml/misc.h \
  caml/mlvalues.h caml/memory.h caml/gc.h caml/major_gc.h caml/minor_gc.h \
  caml/addrmap.h caml/domain.h caml/domain_state.h caml/domain_state.tbl \
@@ -691,7 +679,7 @@ fiber.pic.o: fiber.c caml/fiber.h caml/misc.h caml/compatibility.h \
  caml/mlvalues.h caml/memory.h caml/gc.h caml/major_gc.h caml/minor_gc.h \
  caml/addrmap.h caml/domain.h caml/domain_state.h caml/domain_state.tbl \
  caml/roots.h caml/gc_ctrl.h caml/instruct.h caml/fail.h caml/alloc.h \
- caml/platform.h caml/fix_code.h
+ caml/platform.h caml/fix_code.h caml/memory.h
 finalise.pic.o: finalise.c caml/misc.h caml/compatibility.h caml/config.h \
  caml/../../config/m.h caml/../../config/s.h caml/fail.h caml/misc.h \
  caml/mlvalues.h
@@ -777,12 +765,6 @@ md5.pic.o: md5.c caml/alloc.h caml/compatibility.h caml/misc.h caml/config.h \
  caml/domain_state.h caml/domain_state.tbl caml/memory.h caml/mlvalues.h \
  caml/io.h caml/reverse.h
 memory.pic.o: memory.c caml/misc.h caml/compatibility.h caml/config.h \
- caml/../../config/m.h caml/../../config/s.h caml/fail.h caml/misc.h \
- caml/mlvalues.h caml/memory.h caml/gc.h caml/major_gc.h caml/minor_gc.h \
- caml/addrmap.h caml/domain.h caml/domain_state.h caml/domain_state.tbl \
- caml/shared_heap.h caml/domain.h caml/addrmap.h caml/roots.h \
- caml/memory.h caml/alloc.h
-memory.d.pic.o: memory.d.c caml/misc.h caml/compatibility.h caml/config.h \
  caml/../../config/m.h caml/../../config/s.h caml/fail.h caml/misc.h \
  caml/mlvalues.h caml/memory.h caml/gc.h caml/major_gc.h caml/minor_gc.h \
  caml/addrmap.h caml/domain.h caml/domain_state.h caml/domain_state.tbl \
