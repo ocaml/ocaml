@@ -69,7 +69,7 @@ void fatal_perror_with_location(const char *file, int line, const char *msg, ...
   vfprintf(stderr, msg, ap);
   va_end(ap);
   fprintf(stderr, ": ");
-  perror(msg);
+  perror("");
   exit(EXIT_FAILURE);
 }
 
