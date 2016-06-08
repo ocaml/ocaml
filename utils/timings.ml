@@ -20,6 +20,7 @@ type source_provenance =
   | Pack of string
   | Startup
   | Toplevel
+  | Link
 
 type compiler_pass =
   | All
@@ -113,6 +114,7 @@ let kind_name = function
   | Pack p -> Printf.sprintf "pack(%s)" p
   | Startup -> "startup"
   | Toplevel  -> "toplevel"
+  | Link -> "link"
 
 let pass_name = function
   | All -> "all"

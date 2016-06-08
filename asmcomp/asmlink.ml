@@ -329,11 +329,11 @@ let get_flambda_codes units_to_link =
 let link_whole_program ~backend ppf units_to_link =
   let codes = get_flambda_codes units_to_link in
   let concatenated_program =
-    Timings.(time (Flambda_pass ("concatenate", Startup)))
+    Timings.(time (Flambda_pass ("concatenate", Link)))
       Flambda_utils.concatenate codes
   in
   let program =
-    Timings.(time (Flambda_pass ("clear_all_exported_symbols", Startup)))
+    Timings.(time (Flambda_pass ("clear_all_exported_symbols", Link)))
       Flambda_utils.clear_all_exported_symbols concatenated_program
   in
   Compilation_unit.(
@@ -342,8 +342,7 @@ let link_whole_program ~backend ppf units_to_link =
          (Ident.create_persistent "_link_")
          (Linkage_name.create "_link_")));
   let cleaned_program =
-    (* TODO: change provenance *)
-    Timings.(time (Flambda_pass ("remove_unused_program_constructs", Startup)))
+    Timings.(time (Flambda_pass ("remove_unused_program_constructs", Link)))
       Remove_unused_program_constructs.remove_unused_program_constructs program
   in
   if !Clflags.dump_rawflambda then
@@ -352,10 +351,10 @@ let link_whole_program ~backend ppf units_to_link =
   if !Clflags.dump_flambda then
     Format.fprintf ppf "After cleaning:@ %a@."
       Flambda.print_program cleaned_program;
-  Compilenv.reset ~source_provenance:Timings.Startup "_link_";
+  Compilenv.reset ~source_provenance:Timings.Link "_link_";
   let () =
     Asmgen.compile_implementation_flambda
-      ~source_provenance:Timings.Startup (* TODO change *)
+      ~source_provenance:Timings.Link
       "_link_" (* TODO change *)
       ~required_globals:Ident.Set.empty
       ~backend
