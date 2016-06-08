@@ -162,7 +162,7 @@ int run_command_child(const command_settings *settings)
 
   res = execv(settings->program, *settings->argv); /* , *settings->envp); */
 
-  fatal_perror("execve");
+  fatal_perror("Cannot execute %s", settings->program);
   return res;
 }
 
