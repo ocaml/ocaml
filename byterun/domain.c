@@ -207,19 +207,22 @@ void caml_init_domains(uintnat minor_size) {
 
   for (i = 0; i < Max_domains; i++) {
     struct dom_internal* dom = &all_domains[i];
+    uintnat domain_minor_heap_base;
+
     caml_plat_mutex_init(&dom->roots_lock);
     dom->running = 0;
     dom->state.id = i;
 
-    dom->tls_area = minor_heaps_base +
+    domain_minor_heap_base = minor_heaps_base +
       (uintnat)(1 << Minor_heap_align_bits) * (uintnat)i;
+    dom->tls_area = domain_minor_heap_base;
     dom->tls_area_end =
       caml_mem_round_up_pages(dom->tls_area +
                               sizeof(struct caml_domain_state));
     dom->minor_heap_area = /* skip guard page */
       caml_mem_round_up_pages(dom->tls_area_end + 1);
     dom->minor_heap_area_end =
-      dom->minor_heap_area + (1 << Minor_heap_align_bits);
+      domain_minor_heap_base + (1 << Minor_heap_align_bits);
   }
 
 
