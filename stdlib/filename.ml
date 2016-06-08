@@ -207,6 +207,12 @@ let chop_extension name =
     else search_dot (i - 1) in
   search_dot (String.length name - 1)
 
+let extension name =
+  try
+    let dot_spot = String.rindex name '.' in
+    String.sub name dot_spot (String.length name - dot_spot)
+  with Not_found -> ""
+
 external open_desc: string -> open_flag list -> int -> int = "caml_sys_open"
 external close_desc: int -> unit = "caml_sys_close"
 
