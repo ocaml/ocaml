@@ -6,7 +6,7 @@
 #   - : int = 7
 # - : unit = ()
 # - : int = 10
-#   val q : < get_x : int; move : int -> unit > = <obj>
+#   val q : point = <obj>
 #   - : int * int = (10, 17)
 #           class color_point :
   int ->
@@ -64,7 +64,7 @@ Error: Some type variables are unbound in this type:
     method set_center : 'a -> unit
   end
 #   val c : point circle = <obj>
-val c' : < color : string; get_x : int; move : int -> unit > circle = <obj>
+val c' : color_point circle = <obj>
 #           class ['a] color_circle :
   'a ->
   object

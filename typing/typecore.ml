@@ -2112,7 +2112,7 @@ and type_expect_ ?in_function ?(recarg=Rejected) env sexp ty_expected =
       end_def ();
       wrap_trace_gadt_instances env (lower_args []) ty;
       begin_def ();
-      let (args, ty_res) = type_application env funct sargs in
+      let (args, ty_res) = type_application loc env funct sargs ty_expected in
       end_def ();
       unify_var env (newvar()) funct.exp_type;
       rue {
@@ -3418,7 +3418,7 @@ and type_argument ?recarg env sarg ty_expected' ty_expected =
       unify_exp env texp ty_expected;
       texp
 
-and type_application env funct sargs =
+and type_application loc env funct sargs ty_expected =
   (* funct.exp_type may be generic *)
   let result_type omitted ty_fun =
     List.fold_left
@@ -3435,11 +3435,13 @@ and type_application env funct sargs =
       (Asttypes.arg_label * (unit -> Typedtree.expression) option) list)
     omitted ty_fun = function
       [] ->
-        (List.map
-            (function l, None -> l, None
-                | l, Some f -> l, Some (f ()))
-           (List.rev args),
-         instance env (result_type omitted ty_fun))
+        let result_type = instance env (result_type omitted ty_fun) in
+        unify_exp_types loc env result_type (instance env ty_expected);
+        let force = function
+          | (l, None) -> (l, None)
+          | (l, Some f) -> (l, Some (f ()))
+        in
+        (List.map force (List.rev args), result_type)
     | (l1, sarg1) :: sargl ->
         let (ty1, ty2) =
           let ty_fun = expand_head env ty_fun in

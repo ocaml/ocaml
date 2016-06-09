@@ -145,25 +145,25 @@ Error: This pattern matches values of type 'a t
 #   val ky : 'a -> 'a -> 'a = <fun>
 #       val test : 'a t -> 'a = <fun>
 #       val test : 'a t -> int = <fun>
-#       Characters 49-61:
+#       Characters 60-61:
     function Int -> ky (1 : a) 1  (* fails *)
-                    ^^^^^^^^^^^^
-Error: This expression has type a = int
-       but an expression was expected of type 'a
+                               ^
+Error: This expression has type int but an expression was expected of type
+         a = int
        This instance of int is ambiguous:
        it would escape the scope of its equation
-#         Characters 70-82:
+#         Characters 81-82:
     let r = match x with Int -> ky (1 : a) 1  (* fails *)
-                                ^^^^^^^^^^^^
-Error: This expression has type a = int
-       but an expression was expected of type 'a
+                                           ^
+Error: This expression has type int but an expression was expected of type
+         a = int
        This instance of int is ambiguous:
        it would escape the scope of its equation
-#       Characters 69-81:
+#       Characters 74-81:
     let r = match x with Int -> ky 1 (1 : a)  (* fails *)
-                                ^^^^^^^^^^^^
+                                     ^^^^^^^
 Error: This expression has type a = int
-       but an expression was expected of type 'a
+       but an expression was expected of type int
        This instance of int is ambiguous:
        it would escape the scope of its equation
 #       val test : 'a t -> int = <fun>
@@ -173,11 +173,11 @@ Error: This expression has type a = int
 #         val test2 : 'a t -> 'a option = <fun>
 #         val test2 : 'a t -> 'a option = <fun>
 #           val test2 : 'a t -> 'a option = <fun>
-#           Characters 152-154:
+#           Characters 153-154:
     begin match x with Int -> u := Some 1; r := !u end;
-                                                ^^
-Error: This expression has type int option
-       but an expression was expected of type a option
+                                                 ^
+Error: This expression has type int option ref
+       but an expression was expected of type a option ref
        Type int is not compatible with type a = int 
        This instance of int is ambiguous:
        it would escape the scope of its equation
