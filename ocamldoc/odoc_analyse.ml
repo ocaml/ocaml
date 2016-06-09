@@ -19,7 +19,6 @@
 let print_DEBUG s = print_string s ; print_newline ()
 
 open Config
-open Misc
 open Format
 open Typedtree
 
@@ -33,17 +32,28 @@ let init_path () =
     "" :: List.rev (Config.standard_library :: !Clflags.include_dirs);
   Env.reset_cache ()
 
+
+let open_in env m =
+  try
+    Env.open_pers_signature m env
+  with
+  | Not_found ->
+      Misc.fatal_error @@ Printf.sprintf "cannot open %s.cmi"
+        (String.uncapitalize_ascii m)
+
 (** Return the initial environment in which compilation proceeds. *)
 let initial_env () =
   let initial =
     if !Clflags.unsafe_string then Env.initial_unsafe_string
     else Env.initial_safe_string
   in
-  try
-    if !Clflags.nopervasives then initial else
-    Env.open_pers_signature "Pervasives" initial
-  with Not_found ->
-    fatal_error "cannot open pervasives.cmi"
+  let initial =
+    if !Clflags.nopervasives then
+      initial
+    else
+        open_in initial "Pervasives"
+  in
+  List.fold_left open_in initial (List.rev !Clflags.open_modules)
 
 (** Optionally preprocess a source file *)
 let preprocess sourcefile =
