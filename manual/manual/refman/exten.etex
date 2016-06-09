@@ -2341,3 +2341,19 @@ will be converted to:
 type t =  T of string [@ocaml.doc " Attaches to T not t "]
 [@@ocaml.doc " Attaches to t "]
 \end{verbatim}
+
+In the absence of meaningful comment on the last constructor of
+a type, an empty comment~"(**)" can be used instead:
+
+\begin{verbatim}
+type t = T of string
+(**)
+(** Attaches to t *)
+\end{verbatim}
+
+will be converted directly to
+
+\begin{verbatim}
+type t =  T of string
+[@@ocaml.doc " Attaches to t "]
+\end{verbatim}
