@@ -18,6 +18,8 @@ OCaml 4.04.0:
   (Alain Frisch, Pierre Chambart)
 - PR#7200, GPR#539: Improve, fix, and add test for parsing/pprintast.ml
   (Runhang Li, David Sheets, Alain Frisch)
+- GPR#548: empty documentation comments
+  (Florian Angeletti)
 
 - GPR#580: Optimize immutable float records
   (Pierre Chambart, review by Marc Shinwell)
