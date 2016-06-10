@@ -33,16 +33,15 @@ let init_path () =
   Env.reset_cache ()
 
 
-let open_in env m =
-  try
-    Env.open_pers_signature m env
-  with
-  | Not_found ->
-      Misc.fatal_error @@ Printf.sprintf "cannot open %s.cmi"
-        (String.uncapitalize_ascii m)
-
 (** Return the initial environment in which compilation proceeds. *)
 let initial_env () =
+  let open_cmi env m =
+    try
+      Env.open_pers_signature m env
+    with
+    | Not_found ->
+        Misc.fatal_error @@ Printf.sprintf "cannot open %s.cmi"
+          (String.uncapitalize_ascii m) in
   let initial =
     if !Clflags.unsafe_string then Env.initial_unsafe_string
     else Env.initial_safe_string
@@ -51,9 +50,9 @@ let initial_env () =
     if !Clflags.nopervasives then
       initial
     else
-        open_in initial "Pervasives"
+        open_cmi initial "Pervasives"
   in
-  List.fold_left open_in initial (List.rev !Clflags.open_modules)
+  List.fold_left open_cmi initial (List.rev !Clflags.open_modules)
 
 (** Optionally preprocess a source file *)
 let preprocess sourcefile =
