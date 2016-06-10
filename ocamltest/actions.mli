@@ -31,6 +31,8 @@ type t = {
   action_body : body
 }
 
+val compare : t -> t -> int
+
 val no_generated_files : Environments.t -> string list
 
 val register : t -> unit

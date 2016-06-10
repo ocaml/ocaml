@@ -21,6 +21,8 @@ type t = {
   test_actions : Actions.t list
 }
 
+let compare t1 t2 = String.compare t1.test_name t2.test_name
+
 let (tests: (string, t) Hashtbl.t) = Hashtbl.create 20
 
 let register test = Hashtbl.add tests test.test_name test

@@ -38,6 +38,8 @@ type t = {
   action_body : body
 }
 
+let compare a1 a2 = String.compare a1.action_name a2.action_name
+
 let no_generated_files env = []
 
 let (actions : (string, t) Hashtbl.t) = Hashtbl.create 10

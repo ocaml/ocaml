@@ -21,6 +21,8 @@ type t = {
   test_actions : Actions.t list
 }
 
+val compare : t -> t -> int
+
 val register : t -> unit
 
 val default_tests : unit -> t list
