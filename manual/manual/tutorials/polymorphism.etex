@@ -7,7 +7,7 @@
 \bigskip
 
 \noindent This chapter covers more advanced questions related to the
-limitations of polymorphic functions and types. There is some situations
+limitations of polymorphic functions and types. There are some situations
 in OCaml where the type inferred by the type system may be less generic
 than expected. Such non-genericity can stem from interactions between
 side-effect and typing or the difficulties of implicit polymorphic
@@ -28,10 +28,10 @@ let store = ref None ;;
 \end{caml_example}
 
 Since the type of "None" is "'a option" and the function "ref" has type
-" 'b -> 'b ref", a natural deduction for the type of "store" would be
+"'b -> 'b ref", a natural deduction for the type of "store" would be
 "'a option ref". However, the inferred type, "'_a option ref", is slightly
 different. Type variables whose name starts with an "_" like "'_a" are weakly
-polymorphic type variables, sometimes shortened as weak type variable. A weak
+polymorphic type variables, sometimes shortened as weak type variables. A weak
 type variable is a placeholder for a single type that is currently unknown.
 Once the specific type "t" behind the placeholder type "'_a" known, all
 occurrences of "'_a" will be replaced by "t".
@@ -100,21 +100,22 @@ uses are flagged as errors.
 
 Identifying the exact context in which polymorphic types should be
 replaced by weak types in a modular way is a difficult question. A first
-natural idea would be to state that any mutable object like reference, arrays
+natural idea would be to state that any mutable object like reference, array
 or a record mutable field should never have a polymorphic type. Unfortunately,
 this rule is not sufficient, as illustrated by the following function that
-hides an uses an internal reference to implement a delayed identity function
+uses an internal reference to implement a delayed identity function
 \begin{caml_example}
 let make_fake_id () =
   let store = ref None in
   fun x -> swap store x ;;
 let fake_id = make_fake_id();;
 \end{caml_example}
-It would be unsound to apply this fake_id function to values with different
-kinds. The function "fake_id" is therefore rightfully typed with weak types.
+It would be unsound to apply this "fake_id" function to values with different
+types. The function "fake_id" is therefore rightfully assigned the type
+"'_a -> '_a" rather than "'a -> 'a".
 
 To circumvent this difficulty, the type checker consider that all values
-returned by a function might rely on persistent mutable state behind the
+returned by a function might rely on persistent mutable states behind the
 scene and should be given a weak type. This restriction on the type of mutable
 values and function application is called the value restriction. Note that
 this value restriction is conservative: there are situations where the value
@@ -138,11 +139,11 @@ eta-expansion in lambda calculus and is sometimes referred under this name.
 \subsection{The relaxed value restriction}
 
 There is another partial solution to the problem of unnecessary weak type
-in the type of value, which is implemented directly within the type
-checker. Briefly, it is possible to prove that weak types that only appear
-as type parameters in covariant positions --also called positive positions--
-can be safely generalized to polymorphic types. For instance, the type
-"'a  list" is covariant in "'a":
+in the type of value, which is implemented directly within the type checker.
+Briefly, it is possible to prove that weak types that only appear as type
+parameters in covariant positions --also called positive positions-- can be
+safely generalized to polymorphic types. For instance, the type "'a  list"
+is covariant in "'a":
 \begin{caml_example}
   let f () = [];;
   let empty = f ();;
@@ -154,7 +155,7 @@ function application.
 The value restriction combined with this generalization for covariant type
 parameters is called the relaxed value restriction.
 
-%question: is here the better place for describing variance?
+%question: is here the best place for describing variance?
 \subsection{Variance and value restriction}
 Variance describes how type constructor behaves with respect to subtyping.
 Consider for instance a pair of type "x" and "xy" with "xy" a subtype of "x",
@@ -177,7 +178,7 @@ of type "xy list", since we could convert each element one by one:
 \end{caml_example}
 In other word, "x :> xy" implies that "x list :> xy list", therefore
 the type constructor "'a list" is covariant (it preserves subtyping)
-in its parameter "'a"
+in its parameter "'a".
 
 Contrarily, if we have a function that can handle values of type "xy"
 \begin{caml_example}
@@ -222,7 +223,7 @@ help to avoid eta-expansion in many situations.
 Moreover, when the type definitions are exposed, the type checker
 is able to infer variance information on its own and one can benefit from
 the relaxed value restriction even unknowingly. However, this is not the case
-anymore when defining new abstract type. As an illustration, we can define a
+anymore when defining new abstract types. As an illustration, we can define a
 module type collection as:
 \begin{caml_example}
 module type COLLECTION = sig
@@ -238,10 +239,9 @@ end;;
 module List2: COLLECTION = Implementation;;
 \end{caml_example}
 
-In this situation, when coercing the module "List2" to the module
-type "COLLECTION", the type checker forgets that "'a List2.t" was
-covariant in "'a". Consequently, the relaxed value restriction does not apply
-anymore:
+In this situation, when coercing the module "List2" to the module type
+"COLLECTION", the type checker forgets that "'a List2.t" was covariant
+in "'a". Consequently, the relaxed value restriction does not apply anymore:
 
 \begin{caml_example}
   List2.empty ();;
@@ -268,9 +268,9 @@ We then recover polymorphism:
 \section{Polymorphic recursion}\label{s:polymorphic-recursion}
 
 The second major class of non-genericty is directly related to the problem
-of type inference for polymorphic function. In particular, in some
-circumstances, the type inferred by OCaml might be not general enough to
-allow the definition of some recursive functions on recursive type.
+of type inference for polymorphic function. In some circumstances, the type
+inferred by OCaml might be not general enough to allow the definition of
+some recursive functions on recursive type.
 
 A good example might come from looking at arbitrarily nested list
 defined as
@@ -373,8 +373,8 @@ let shape n =
 
 Explicit polymorphic annotations are however not sufficient to cover all
 the cases where the inferred type of a function is less general than
-expected. Another case happens when using polymorphic function as arguments
-of a higher-order function. For instance, we could want to compute the average
+expected. A similar problem arises when using polymorphic functions as arguments
+of a higher-order functions. For instance, we could want to compute the average
 depth or length of two nested lists:
 \begin{caml_example}
   let average_depth x y = (depth x + depth y) / 2;;
