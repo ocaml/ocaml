@@ -400,29 +400,31 @@ However, the type of "average len" is less generic than the type of
 "average_len", since it requires the type of the first and second argument to
 be the same:
 \begin{caml_example}
+  average_len (List [2]) (List [[]]);;
   average len (List [2]) (List [[]]);;
 \end{caml_example}
 
-As for polymorphic definition, the problem stems from the fact that type
-variables are introduced only at the start of the "let" definitions. When we
-compute both "f x" and "f y", the type of "x" and "y" are unified to the type
-variable "'a". As previously, we need to indicate to the type checker that f
-is polymophic in its first argument. In some sense, we would want average to
-have type
+As previously with polymorphic recursion, the problem stems from the fact that
+type variables are introduced only at the start of the "let" definitions. When
+we compute both "f x" and "f y", the type of "x" and "y" are unified together.
+To avoid this unification, we need to indicate to the type checker
+that f is polymorphic in its first argument. In some sense, we would want
+"average" to have type
 \begin{verbatim}
 val average: ('a. 'a nested -> int) -> 'a nested -> 'b nested -> int
 \end{verbatim}
-Note that "average" has an universally quantified type "'a" inside the type of
-one of its argument whereas for polymorphic recursion the universally quantified
-type was introduced before the rest of the type. This position of the
-universally quantified type means that "f" is a second-rank polymorphic
-function. Type inference for second-rank polymorphic function and beyond is
-undecidable; therefore using this kind of higher-rank function requires to
-handle manually these universally quantified type.
+Note that this syntax is not valid within OCaml: "average" has an universally
+quantified type "'a" inside the type of one of its argument whereas for
+polymorphic recursion the universally quantified type was introduced before
+the rest of the type. This position of the universally quantified type means
+that "f" is a second-rank polymorphic function. This kind of higher-rank
+function are not directly supported by OCaml: type inference for second-rank
+polymorphic function and beyond is undecidable; therefore using this kind of
+higher-rank functions requires to handle manually these universally quantified
+types.
 
-In OCaml, there are three main ways to introduce this kind of explicit
-universally quantified types: explicit polymorphic annotation which only work
-for first-rank polymorphism, universally quantified record fields,
+In OCaml, there are two ways to introduce this kind of explicit universally
+quantified types: universally quantified record fields,
 \begin{caml_example}
   type 'a nested_reduction = { f:'elt. 'elt nested -> 'a };;
   let boxed_len = { f = len };;
