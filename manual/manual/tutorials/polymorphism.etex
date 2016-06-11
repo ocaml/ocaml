@@ -311,6 +311,7 @@ annotation for the type "'a":
 let rec depth: 'a. 'a nested -> int = function
   | List _ -> 1
   | Nested n -> 1 + depth n;;
+depth ( Nested(List [ [7]; [8] ]) );;
 \end{caml_example}
 In the type of "depth",  "'a.'a nested -> int", the type variable "'a"
 is universally quantified, i.e "'a.'a nested -> int" reads as
@@ -353,23 +354,28 @@ lists
       | Nested n -> len (map_and_sum nested_len) n
     in
   len List.length nested;;
+len (Nested(Nested(List [ [ [1;2]; [3] ]; [ []; [4]; [5;6;7]]; [[]] ])));;
 \end{caml_example}
 
 Similarly, it may be necessary to use more than one explicitly
-polymorphic type variable, like for computing the shape of the nested
-lists:
+polymorphic type variable, like for computing the nested list of
+list lengths of the nested list:
 \begin{caml_example}
 let shape n =
   let rec shape: 'a 'b. ('a nested -> int nested) ->
-    ('b list -> 'a list) -> 'b nested -> int nested
+    ('b list list -> 'a list) -> 'b nested -> int nested
     = fun nest nested_shape ->
       function
-      | List l -> nest @@ List (nested_shape l)
+      | List l -> raise
+       (Invalid_argument "shape requires nested_list of depth greater than 1")
+      | Nested (List l) -> nest @@ List (nested_shape l)
       | Nested n ->
         let nested_shape = List.map nested_shape in
         let nest x = nest (Nested x) in
         shape nest nested_shape n in
-  shape (fun  n -> n ) (fun l -> [List.length l] ) n;;
+  shape (fun n -> n ) (fun l -> List.map List.length l ) n;;
+
+shape (Nested(Nested(List [ [ [1;2]; [3] ]; [ []; [4]; [5;6;7]]; [[]] ])));;
 \end{caml_example}
 
 \section{Higher-rank polymorphic functions}
