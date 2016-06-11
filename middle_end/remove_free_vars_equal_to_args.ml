@@ -34,7 +34,7 @@ let rewrite_one_function_decl ~(function_decl : Flambda.function_declaration)
             (* No free variables equal to the param *)
             subst
           | set ->
-            (* Replace the free variables equal to an parameter *)
+            (* Replace the free variables equal to a parameter *)
             Variable.Set.fold (fun free_var subst ->
                 Variable.Map.add free_var param subst)
               set subst)

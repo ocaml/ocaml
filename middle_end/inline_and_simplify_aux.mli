@@ -172,7 +172,7 @@ module Env : sig
   val inlining_level : t -> int
 
   (** Mark that this environment is used to rewrite code for inlining. This is
-      used by the inlining heuristics to decide wether to continue.
+      used by the inlining heuristics to decide whether to continue.
       Unconditionally inlined does not take this into account. *)
   val inlining_level_up : t -> t
 

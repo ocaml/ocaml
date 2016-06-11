@@ -421,7 +421,7 @@ and close t ?debuginfo env (lam : Lambda.lambda) : Flambda.t =
        blocks being made (with [Pmakeblock]).  This information can be used
        by the simplification pass to increase the likelihood of eliminating
        the allocation, since some field accesses can be tracked back to known
-       field values. ,*)
+       field values. *)
     let name = Printlambda.name_of_primitive p in
     Lift_code.lifting_helper (close_list t env args)
       ~evaluation_order:`Right_to_left

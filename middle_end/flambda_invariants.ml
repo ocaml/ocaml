@@ -362,7 +362,7 @@ let variable_and_symbol_invariants (program : Flambda.program) =
       (* CR-someday pchambart: Ignore it to avoid the warning: get rid of that
          when the case is settled *)
       ignore (Set_of_closures_free_vars_map_has_wrong_range bad_free_vars);
-      (* Check that free variables variables are not bound somewhere
+      (* Check that free variables are not bound somewhere
          else in the program *)
       declare_variables (Variable.Map.keys free_vars);
       (* Check that every "specialised arg" is a parameter of one of the

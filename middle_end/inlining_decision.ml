@@ -119,7 +119,7 @@ let inline env r ~lhs_of_application
 
           We may need to think a bit about that. I can't see a lot of
           meaningful examples right now, but there are some cases where some
-          optimisation can happen even if we don't know anything about the
+          optimization can happen even if we don't know anything about the
           shape of the arguments.
 
           For instance
@@ -251,7 +251,7 @@ let inline env r ~lhs_of_application
       else if num_direct_applications_seen < 1 then begin
       (* Inlining the body of the function did not appear sufficiently
          beneficial; however, it may become so if we inline within the body
-         first.  We try that next, unless it is known that there are were
+         first.  We try that next, unless it is known that there were
          no direct applications in the simplified body computed above, meaning
          no opportunities for inlining. *)
         Original (S.Not_inlined.Without_subfunctions wsb)

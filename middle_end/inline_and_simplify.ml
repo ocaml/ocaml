@@ -422,7 +422,7 @@ let simplify_move_within_set_of_closures env r
 
    If the function is declared outside of the alpha renamed part, there is
    no need for renaming in the [Ffunction] and [Project_var].
-   This is not usualy the case, except when the closure declaration is a
+   This is not usually the case, except when the closure declaration is a
    symbol.
 
    What ensures that this information is available at [Project_var]
@@ -554,7 +554,7 @@ let rec simplify_project_var env r ~(project_var : Flambda.project_var)
    will be introduced in the current scope for [y_1] each time.
 
 
-   If the function where a recursive one comming from another compilation
+   If the function where a recursive one coming from another compilation
    unit, the code already went through [Flambdasym] that could have
    replaced the function variable by the symbol identifying the function
    (this occur if the function contains only constants in its closure).
@@ -1617,7 +1617,7 @@ let run ~never_inline ~backend ~prefixname ~round program =
   let result = Flambda_utils.introduce_needed_import_symbols result in
   if not (Static_exception.Set.is_empty (R.used_static_exceptions r))
   then begin
-    Misc.fatal_error (Format.asprintf "remaining static exceptions: %a@.%a@."
+    Misc.fatal_error (Format.asprintf "Remaining static exceptions: %a@.%a@."
       Static_exception.Set.print (R.used_static_exceptions r)
       Flambda.print_program result)
   end;
