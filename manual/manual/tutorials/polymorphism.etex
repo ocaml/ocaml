@@ -214,7 +214,10 @@ which would break the type system.
 More generally, as soon as a type variable appears in a position describing
 mutable state it becomes invariant. As a corollary, covariant variables will
 never denote mutable locations and can be safely generalized.
-%todo: insert link to Jacques Guarrigue article
+For a better description, interested reader can consult the original
+article by Jacque Guarrigue on
+\url{http://www.math.nagoya-u.ac.jp/~garrigue/papers/morepoly-long.pdf}
+%question: what is the best url for this article?
 
 Together, the relaxed value restriction and type parameter covariance
 help to avoid eta-expansion in many situations.
