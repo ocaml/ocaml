@@ -17,43 +17,55 @@
 
 %{
 
+open Location
+open Tsl_ast
+
+let mkstring s = make_string ~loc:(symbol_rloc()) s
+
+let mkidentifier id = make_identifier ~loc:(symbol_rloc()) id
+
+let mkenvstmt envstmt =
+  let located_env_statement =
+    make_environment_statement ~loc:(symbol_rloc()) envstmt in
+  Environment_statement located_env_statement
+
 %}
 
 %token TSL_BEGIN TSL_END
-%token STAR EQUAL COLON
+%token <int> TEST_DEPTH
+%token EQUAL
+/* %token COLON */
 %token INCLUDE
 %token <string> IDENTIFIER
 %token <string> STRING
 
-%start tsl_program
-%type <Tsl_ast.program> tsl_program
+%start tsl_block
+%type <Tsl_ast.tsl_block> tsl_block
 
 %%
 
-tsl_program:
-  TSL_BEGIN statements tests TSL_END
-    {
-      { Tsl_ast.root_environment = $2; tests = $3 }
-    }
+tsl_block:
+  TSL_BEGIN tsl_items TSL_END { $2 }
 
-statements:
-    { [] }
-  | statement statements { $1 :: $2 }
+tsl_items:
+| { [] }
+| tsl_item tsl_items { $1 :: $2 }
 
-tests:
-    { [] }
-  | test tests { $1 :: $2 }
+tsl_item:
+| test_item { $1 }
+| env_item { $1 }
 
-statement:
-    IDENTIFIER EQUAL STRING { Tsl_ast.Assignment ($1, $3) }
-  | INCLUDE IDENTIFIER { Tsl_ast.Include $2 }
+test_item:
+  TEST_DEPTH identifier { (Test ($1, $2)) }
 
-test:
-  STAR IDENTIFIER statements 
-    {
-      { Tsl_ast.test_name = $2;
-        Tsl_ast.test_kind = Tsl_ast.Declared_test;
-        test_environment = $3 }
-    }
+env_item:
+| identifier EQUAL string
+  { mkenvstmt (Assignment ($1, $3)) }
+| INCLUDE identifier
+  { mkenvstmt (Include $2) }
+
+identifier: IDENTIFIER { mkidentifier $1 }
+
+string: STRING { mkstring $1 }
 
 %%

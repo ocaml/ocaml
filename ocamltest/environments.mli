@@ -23,6 +23,8 @@ exception Variable_already_defined of string
 
 exception Environment_already_registered of string
 
+exception Environment_not_found of string
+
 type t
 
 val empty : t

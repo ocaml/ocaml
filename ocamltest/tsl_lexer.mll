@@ -26,12 +26,12 @@ let blank = [' ' '\009' '\012']
 let identchar = ['A'-'Z' 'a'-'z' '_' '\'' '0'-'9']
 
 rule token = parse
-  | (blank | newline) * { token lexbuf }
+  | blank * { token lexbuf }
+  | newline { Lexing.new_line lexbuf; token lexbuf }
   | "(*" blank* "TEST" { TSL_BEGIN }
   | "*)" { TSL_END }
-  | "*" { STAR }
+  | '*'+ { TEST_DEPTH (String.length (Lexing.lexeme lexbuf)) }
   | "=" { EQUAL }  
-  | ":" { COLON }
   | identchar *
     { let s = Lexing.lexeme lexbuf in
       if s="include" then INCLUDE else IDENTIFIER s

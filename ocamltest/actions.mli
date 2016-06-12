@@ -39,6 +39,8 @@ val register : t -> unit
 
 val lookup : string -> t option
 
-val update_environment : Environments.t -> t list -> Environments.t
-
 val run : Format.formatter -> Environments.t -> t -> result
+
+module ActionSet : Set.S with type elt = t
+
+val update_environment : Environments.t -> ActionSet.t -> Environments.t

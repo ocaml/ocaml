@@ -50,3 +50,9 @@ let run ppf env test =
     test.test_name
     (List.length test.test_actions);
   run_actions ppf env test.test_actions
+
+module TestSet = Set.Make
+(struct
+  type nonrec t = t
+  let compare = compare
+end)

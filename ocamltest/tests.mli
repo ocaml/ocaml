@@ -30,3 +30,5 @@ val default_tests : unit -> t list
 val lookup : string -> t option
 
 val run : Format.formatter -> Environments.t -> t -> Actions.result
+
+module TestSet : Set.S with type elt = t

@@ -23,6 +23,8 @@ exception Variable_already_defined of string
 
 exception Environment_already_registered of string
 
+exception Environment_not_found of string
+
 module StringMap = Map.Make (String)
 
 type t = string StringMap.t
@@ -51,9 +53,13 @@ let register environment_name environment =
   then raise (Environment_already_registered environment_name)
   else Hashtbl.add registered_environments environment_name environment
 
+let find_environemnt environment_name =
+  try Hashtbl.find registered_environments environment_name
+  with Not_found -> raise (Environment_not_found environment_name)
+
+
 let include_ environment_name environment =
-  let registered_environment =
-    Hashtbl.find registered_environments environment_name in
+  let registered_environment = find_environemnt environment_name in
   StringMap.fold add_aux registered_environment environment
 
 let dump_assignment ppf (variable, value) =

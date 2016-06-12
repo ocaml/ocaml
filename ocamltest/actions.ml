@@ -51,12 +51,18 @@ let lookup name =
   try Some (Hashtbl.find actions name)
   with Not_found -> None
 
-let update_environment initial_env actions =
-  let f env act = act.action_environment env in
-  List.fold_left f initial_env actions
-
 let run ppf env action =
   let files = action.action_generated_files env in
   Format.fprintf ppf "Generated files:\n";
   List.iter (Format.fprintf ppf "%s\n") files;
   action.action_body ppf env
+
+module ActionSet = Set.Make
+(struct
+  type nonrec t = t
+  let compare = compare
+end)
+
+let update_environment initial_env actions =
+  let f act env = act.action_environment env in
+  ActionSet.fold f actions initial_env

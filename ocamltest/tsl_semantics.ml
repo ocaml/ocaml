@@ -13,61 +13,119 @@
 (*                                                                        *)
 (**************************************************************************)
 
-(* Interpretation of TSL parse trees *)
+(* Interpretation of TSL blocks and operations on test trees *)
 
 open Tsl_ast
 
-let interprete_statement env = function
+let variable_already_defined loc variable context =
+  let ctxt = match context with
+    | None -> ""
+    | Some envname -> " while including environment " ^ envname in
+  Location.print_loc Format.err_formatter loc;
+  Format.eprintf "Variable %s already defined%s\n%!" variable ctxt;
+  exit 2
+
+let no_such_environment loc environment_name =
+  Location.print_loc Format.err_formatter loc;
+  Format.eprintf "No such environment %s\n%!" environment_name;
+  exit 2
+
+let interprete_environment_statement env statement = match statement.node with
   | Assignment (variable, value) ->
-    Environments.add variable value env
-  | Include env_name -> Environments.include_ env_name env
+    begin
+      try Environments.add variable.node value.node env with
+      Environments.Variable_already_defined variable ->
+        variable_already_defined statement.loc variable None
+    end
+  | Include env_name ->
+    begin
+      try Environments.include_ env_name.node env with
+      | Environments.Environment_not_found envname ->
+        no_such_environment statement.loc envname
+      | Environments.Variable_already_defined variable ->
+        variable_already_defined statement.loc variable (Some env_name.node)
+    end
 
-let interprete_statements env l =
-  List.fold_left interprete_statement env l
+let interprete_environment_statements env l =
+  List.fold_left interprete_environment_statement env l
 
-let action_of_name ppf name = match Actions.lookup name with
-  | None -> Format.fprintf ppf "Unknown action %s\n" name; exit 1
-  | Some action -> action
+type test_tree =
+  | Node of (Tsl_ast.environment_statement located list) * Tests.t * (test_tree list)
 
-let test_of_ast ppf ast =
-  let test = match ast.test_kind, (Tests.lookup ast.test_name) with
-    | Declared_test, Some test -> test
-    | Declared_test, None ->
-      Format.fprintf ppf "No such test %s\n" ast.test_name;
-      exit 1
-    | New_test _, Some _ ->
-      Format.fprintf ppf "Test %s already exists\n" ast.test_name;
-      exit 1
-    | New_test action_names, None ->
-      begin
-        let t = {
-          Tests.test_name = ast.test_name;
-          test_run_by_default = false;
-          test_actions = List.map (action_of_name ppf) action_names
-        } in
-        Tests.register t;
-        t
-      end in
-  (test, ast.test_environment)
+let too_deep testname max_level real_level =
+  Printf.eprintf "Test %s should have depth atmost %d but has depth %d\n%!"
+    testname max_level real_level;
+  exit 2
 
-let tests_of_ast ppf ast =
-  List.map (test_of_ast ppf) ast
+let unexpected_environment_statement s =
+  Location.print_loc Format.err_formatter s.loc;
+  Format.eprintf "Unexpected environment statement\n%!";
+  exit 2
 
-let rec memf f x = function
-  | [] -> false
-  | y::ys -> f x y || memf f x ys
+let no_such_test t =
+  Location.print_loc Format.err_formatter t.loc;
+  Format.eprintf "No such test: %s\n%!" t.node;
+  exit 2
 
-let consf f x l = if memf f x l then l else x::l
+let test_trees_of_tsl_block tsl_block =
+  let rec env_of_lines = function
+    | [] -> ([], [])
+    | Environment_statement s :: lines ->
+      let (env', remaining_lines) = env_of_lines lines in
+      (s :: env', remaining_lines)
+    | lines -> ([], lines)
+  and tree_of_lines depth = function
+    | [] -> (None, [])
+    | line::remaining_lines as l ->
+      begin match line with
+        | Environment_statement s -> unexpected_environment_statement s
+        | Test (test_depth, test_name_located) ->
+          begin
+            let test_name = test_name_located.node in
+            if test_depth > depth then too_deep test_name depth test_depth
+            else if test_depth < depth then (None, l)
+            else
+              let (env, rem) = env_of_lines remaining_lines in
+              let (trees, rem) = trees_of_lines (depth+1) rem in
+              match Tests.lookup test_name with
+                | None -> no_such_test test_name_located
+                | Some test ->
+                  (Some (Node (env, test, trees)), rem)
+          end
+      end
+  and trees_of_lines depth lines =
+    let remaining_lines = ref lines in
+    let trees = ref [] in
+    let continue = ref true in
+    while !continue; do
+      let (tree, rem) = tree_of_lines depth !remaining_lines in
+      remaining_lines := rem;
+      match tree with
+        | None -> continue := false
+        | Some t -> trees := t :: !trees
+    done;
+    (List.rev !trees, !remaining_lines) in
+  let (env, rem) = env_of_lines tsl_block in
+  let (trees, rem) = trees_of_lines 1 rem in
+  match rem with
+    | [] -> (env, trees)
+    | (Environment_statement s)::_ -> unexpected_environment_statement s
+    | _ -> assert false
 
-let rec appendf f l1 l2 = match l1 with
-  | [] -> l2
-  | x::xs -> consf f x (appendf f xs l2)
+let rec tests_in_tree_aux set = function Node (_, test, subtrees) ->
+  let set' = List.fold_left tests_in_tree_aux set subtrees in
+  Tests.TestSet.add test set'
 
-let same_action action_1 action_2 =
-  action_1.Actions.action_name = action_2.Actions.action_name
+let tests_in_tree t = tests_in_tree_aux Tests.TestSet.empty t
 
-let append_actions = appendf same_action
+let tests_in_trees subtrees =
+  List.fold_left tests_in_tree_aux Tests.TestSet.empty subtrees
 
-let actions_of_tests tests =
-  let f actions test = append_actions actions (test.Tests.test_actions) in
-  List.fold_left f [] tests
+let actions_in_test test =
+  let add action_set action = Actions.ActionSet.add action action_set in
+  List.fold_left add Actions.ActionSet.empty test.Tests.test_actions
+
+let actions_in_tests tests =
+  let f test action_set =
+    Actions.ActionSet.union (actions_in_test test) action_set in
+  Tests.TestSet.fold f tests Actions.ActionSet.empty

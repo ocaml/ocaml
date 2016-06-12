@@ -15,23 +15,23 @@
 
 (* Abstract Syntax Tree for the Tests Specification Language *)
 
-type statement =
-  | Assignment of string * string (* variable = value *)
-  | Include of string (* import environemnt *)
-
-type environment_description = statement list
-
-type test_kind =
-  | Declared_test (* Use an already declared test *)
-  | New_test of string list (* declare a new test and use it *)
-
-type test_spec = {
-  test_name : string;
-  test_kind: test_kind;
-  test_environment: environment_description;
+type 'a located = {
+  node : 'a;
+  loc : Location.t
 }
 
-type program = {
-  root_environment : environment_description;
-  tests: test_spec list
-}
+type environment_statement =
+  | Assignment of string located * string located (* variable = value *)
+  | Include of string located (* include named environemnt *)
+
+type tsl_item =
+  | Environment_statement of environment_statement located
+  | Test of int * string located (* depth and name *)
+
+type tsl_block = tsl_item list
+
+let make ?(loc = Location.none) foo = { node = foo; loc = loc }
+
+let make_identifier = make
+let make_string = make
+let make_environment_statement = make
