@@ -63,19 +63,35 @@ let add_stdlib_flags ocamlsrcdir env = match Environments.lookup "stdlibflags" e
     let stdlibflags = "-nostdlib -I " ^ stdlib_path in
     Environments.add "stdlibflags" stdlibflags env
 
+let add_ocamlrun ocamlrun env = match Environments.lookup "ocamlrun" env with
+  | Some _ -> env
+  | None ->
+    Environments.add "ocamlrun" ocamlrun env
+
 let bytecode_environment env =
   let dir = ocamlsrcdir() in
   let ocamlrun = ocamlrun dir in
   let ocamlc = ocamlc dir in
   let envwithstdlibflags = add_stdlib_flags dir env in
-  Environments.add "ocamlc" (ocamlrun ^ " " ^ ocamlc) envwithstdlibflags
+  let env_with_ocamlrun = add_ocamlrun ocamlrun envwithstdlibflags in
+  Environments.add "ocamlc" (ocamlrun ^ " " ^ ocamlc) env_with_ocamlrun
 
 let nativecode_environment env =
   let dir = ocamlsrcdir() in
   let ocamlrun = ocamlrun dir in
   let ocamlopt = ocamlopt dir in
   let envwithstdlibflags = add_stdlib_flags dir env in
-  Environments.add "ocamlopt" (ocamlrun ^ " " ^ ocamlopt) envwithstdlibflags
+  let env_with_ocamlrun = add_ocamlrun ocamlrun envwithstdlibflags in
+  Environments.add "ocamlopt" (ocamlrun ^ " " ^ ocamlopt) env_with_ocamlrun
+
+let use_runtime env = function
+  | Sys.Native -> ""
+  | Sys.Bytecode ->
+    begin match Environments.lookup "ocamlrun" env with
+      | None -> ""
+      | Some runtime ->"-use-runtime " ^ runtime
+    end
+  | Other _ -> assert false
 
 let file_extension filename =
   let l = String.length filename in
@@ -225,6 +241,7 @@ let link_modules backend ppf env modules =
   let commandline = String.concat " "
   [
     linker env backend;
+    use_runtime env backend;
     stdlib_flags env;
     common_flags env;
     backend_flags env backend;
