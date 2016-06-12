@@ -45,7 +45,7 @@ let print_usage () =
 
 let rec run_test ppf path rootenv = function
   Node (testenvspec, test, subtrees) ->
-  Format.printf "Running test %s (%s) ... "
+  Format.printf "Running test %s (%s) ... %!"
     path test.Tests.test_name;
   let print_test_result str = Format.printf "%s\n%!" str in
   let testenv = interprete_environment_statements rootenv testenvspec in
