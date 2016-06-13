@@ -238,3 +238,6 @@ val concatenate : Flambda.program list -> Flambda.program
 val clear_all_exported_symbols : Flambda.program -> Flambda.program
 (** Remove all exported symbols from the program, leading to a program
     where only side effects matters. *)
+
+val replace_compilation_unit_of_symbols
+  : Compilation_unit.t -> Flambda.program -> Flambda.program

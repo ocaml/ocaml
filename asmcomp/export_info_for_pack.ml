@@ -40,7 +40,7 @@ let import_eid_for_pack units pack id =
 let import_symbol_for_pack units pack symbol =
   let compilation_unit = Symbol.compilation_unit symbol in
   if Compilation_unit.Set.mem compilation_unit units
-  then Symbol.import_for_pack ~pack symbol
+  then Symbol.import_to_compilation_unit ~unit:pack symbol
   else symbol
 
 let import_approx_for_pack units pack (approx : Export_info.approx)
