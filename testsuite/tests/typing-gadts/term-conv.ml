@@ -26,6 +26,21 @@ module Typeable = struct
   let gcast : type t t'. t ty -> t' ty -> t -> t' = fun t t' x ->
     match check_eq t t' with Eq -> x
 end;;
+[%%expect{|
+module Typeable :
+  sig
+    type 'a ty =
+        Int : int ty
+      | String : string ty
+      | List : 'a ty -> 'a list ty
+      | Pair : ('a ty * 'b ty) -> ('a * 'b) ty
+      | Fun : ('a ty * 'b ty) -> ('a -> 'b) ty
+    type (_, _) eq = Eq : ('a, 'a) eq
+    exception CastFailure
+    val check_eq : 't ty -> 't' ty -> ('t, 't') eq
+    val gcast : 't ty -> 't' ty -> 't -> 't'
+  end
+|}];;
 
 module HOAS = struct
   open Typeable
@@ -42,6 +57,17 @@ module HOAS = struct
     | Lam (_, f) -> fun x -> intp (f (Con x))
     | App (f, a) -> intp f (intp a)
 end;;
+[%%expect{|
+module HOAS :
+  sig
+    type _ term =
+        Tag : 't Typeable.ty * int -> 't term
+      | Con : 't -> 't term
+      | Lam : 's Typeable.ty * ('s term -> 't term) -> ('s -> 't) term
+      | App : ('s -> 't) term * 's term -> 't term
+    val intp : 't term -> 't
+  end
+|}];;
 
 module DeBruijn = struct
   type ('env,'t) ix =
@@ -74,6 +100,25 @@ module DeBruijn = struct
     | Lam b  -> fun x -> intp b (Push (s, x))
     | App(f,a) -> intp f s (intp a s)
 end;;
+[%%expect{|
+module DeBruijn :
+  sig
+    type ('env, 't) ix =
+        ZeroIx : ('env * 't, 't) ix
+      | SuccIx : ('env, 't) ix -> ('env * 's, 't) ix
+    val to_int : ('env, 't) ix -> int
+    type ('env, 't) term =
+        Var : ('env, 't) ix -> ('env, 't) term
+      | Con : 't -> ('env, 't) term
+      | Lam : ('env * 's, 't) term -> ('env, 's -> 't) term
+      | App : ('env, 's -> 't) term * ('env, 's) term -> ('env, 't) term
+    type _ stack =
+        Empty : unit stack
+      | Push : 'env stack * 't -> ('env * 't) stack
+    val prj : ('env, 't) ix -> 'env stack -> 't
+    val intp : ('env, 't) term -> 'env stack -> 't
+  end
+|}];;
 
 module Convert = struct
   type (_,_) layout =
@@ -113,6 +158,21 @@ module Convert = struct
 
   let convert t = cvt EmptyLayout t
 end;;
+[%%expect{|
+module Convert :
+  sig
+    type (_, _) layout =
+        EmptyLayout : ('env, unit) layout
+      | PushLayout : 't Typeable.ty * ('env, 'env') layout *
+          ('env, 't) DeBruijn.ix -> ('env, 'env' * 't) layout
+    val size : ('env, 'env') layout -> int
+    val inc : ('env, 'env') layout -> ('env * 't, 'env') layout
+    val prj :
+      't Typeable.ty -> int -> ('env, 'env') layout -> ('env, 't) DeBruijn.ix
+    val cvt : ('env, 'env) layout -> 't HOAS.term -> ('env, 't) DeBruijn.term
+    val convert : 'a HOAS.term -> (unit, 'a) DeBruijn.term
+  end
+|}];;
 
 module Main = struct
   open HOAS
@@ -137,3 +197,22 @@ module Main = struct
   let plus_2_3' = convert (plus_2_3 Typeable.Int)
   let eval_plus_2_3' = DeBruijn.intp plus_2_3' DeBruijn.Empty succ 0
 end;;
+[%%expect{|
+module Main :
+  sig
+    val i : 'a Typeable.ty -> ('a -> 'a) HOAS.term
+    val zero : 'a Typeable.ty -> (('a -> 'a) -> 'a -> 'a) HOAS.term
+    val one : 'a Typeable.ty -> (('a -> 'a) -> 'a -> 'a) HOAS.term
+    val two : 'a Typeable.ty -> (('a -> 'a) -> 'a -> 'a) HOAS.term
+    val three : 'a Typeable.ty -> (('a -> 'a) -> 'a -> 'a) HOAS.term
+    val plus :
+      'a Typeable.ty ->
+      ((('a -> 'a) -> 'a -> 'a) ->
+       (('a -> 'a) -> 'a -> 'a) -> ('a -> 'a) -> 'a -> 'a)
+      HOAS.term
+    val plus_2_3 : 'a Typeable.ty -> (('a -> 'a) -> 'a -> 'a) HOAS.term
+    val i' : (unit, int -> int) DeBruijn.term
+    val plus_2_3' : (unit, (int -> int) -> int -> int) DeBruijn.term
+    val eval_plus_2_3' : int
+  end
+|}];;
