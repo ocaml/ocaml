@@ -107,7 +107,10 @@ val lookup_all_labels:
   ?loc:Location.t ->
   Longident.t -> t -> (label_description * (unit -> unit)) list
 val lookup_type:
-  ?loc:Location.t -> Longident.t -> t -> Path.t * type_declaration
+  ?loc:Location.t -> Longident.t -> t -> Path.t
+  (* Since 4.04, this function no longer returns [type_description].
+     To obtain it, you should either call [Env.find_type], or replace
+     it by [Typetexp.find_type] *)
 val lookup_module:
   load:bool -> ?loc:Location.t -> Longident.t -> t -> Path.t
 val lookup_modtype:
@@ -137,7 +140,7 @@ val add_module_declaration: ?arg:bool -> Ident.t -> module_declaration -> t -> t
 val add_modtype: Ident.t -> modtype_declaration -> t -> t
 val add_class: Ident.t -> class_declaration -> t -> t
 val add_cltype: Ident.t -> class_type_declaration -> t -> t
-val add_local_constraint: Ident.t -> type_declaration -> int -> t -> t
+val add_local_constraint: Path.t -> type_declaration -> int -> t -> t
 val add_local_type: Path.t -> type_declaration -> t -> t
 
 (* Insertion of all fields of a signature. *)

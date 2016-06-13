@@ -266,7 +266,7 @@ let merge_constraint initial_env loc sg constr =
           with Exit ->
             raise(Error(sdecl.ptype_loc, initial_env, With_need_typeconstr))
         in
-        let (path, _) =
+        let path =
           try Env.lookup_type lid.txt initial_env with Not_found -> assert false
         in
         let sub = Subst.add_type id path Subst.identity in

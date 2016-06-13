@@ -1935,6 +1935,17 @@ let non_aliasable p decl =
   (* in_pervasives p ||  (subsumed by in_current_module) *)
   in_current_module p && decl.type_newtype_level = None
 
+let is_instantiable env p =
+  try
+    let decl = Env.find_type p env in
+    decl.type_kind = Type_abstract &&
+    decl.type_private = Public &&
+    decl.type_arity = 0 &&
+    decl.type_manifest = None &&
+    not (non_aliasable p decl)
+  with Not_found -> false
+  
+
 (* PR#7113: -safe-string should be a global property *)
 let compatible_paths p1 p2 =
   let open Predef in
@@ -2164,13 +2175,13 @@ let find_lowest_level ty =
 let find_newtype_level env path =
   try match (Env.find_type path env).type_newtype_level with
     Some x -> x
-  | None -> assert false
-  with Not_found -> assert false
+  | None -> raise Not_found
+  with Not_found -> let lev = Path.binding_time path in (lev, lev)
 
 let add_gadt_equation env source destination =
-  if local_non_recursive_abbrev !env (Path.Pident source) destination then begin
+  if local_non_recursive_abbrev !env source destination then begin
     let destination = duplicate_type destination in
-    let source_lev = find_newtype_level !env (Path.Pident source) in
+    let source_lev = find_newtype_level !env source in
     let decl = new_declaration (Some source_lev) (Some destination) in
     let newtype_level = get_newtype_level () in
     env := Env.add_local_constraint source decl newtype_level !env;
@@ -2220,10 +2231,10 @@ let complete_type_list ?(allow_absent=false) env nl1 lv2 mty2 nl2 tl2 =
         nt2 :: complete (if n = n2 then nl else nl1) ntl'
     | n :: nl, _ ->
         try
-          let (_, decl) =
+          let path =
             Env.lookup_type (concat_longident (Longident.Lident "Pkg") n) env'
           in
-          match decl with
+          match Env.find_type path env' with
             {type_arity = 0; type_kind = Type_abstract;
              type_private = Public; type_manifest = Some t2} ->
                (n, nondep_instance env' lv2 id2 t2) :: complete nl ntl2
@@ -2433,24 +2444,24 @@ and unify3 env t1 t1' t2 t2' =
                       reify env t1; reify env t2
                   end)
               inj (List.combine tl1 tl2)
-      | (Tconstr ((Path.Pident p) as path,[],_),
-         Tconstr ((Path.Pident p') as path',[],_))
-        when is_newtype !env path && is_newtype !env path'
+      | (Tconstr (path,[],_),
+         Tconstr (path',[],_))
+        when is_instantiable !env path && is_instantiable !env path'
         && !generate_equations ->
           let source, destination =
             if find_newtype_level !env path > find_newtype_level !env path'
-            then  p,t2'
-            else  p',t1'
+            then  path , t2'
+            else  path', t1'
           in
           add_gadt_equation env source destination
-      | (Tconstr ((Path.Pident p) as path,[],_), _)
-        when is_newtype !env path && !generate_equations ->
+      | (Tconstr (path,[],_), _)
+        when is_instantiable !env path && !generate_equations ->
           reify env t2';
-          add_gadt_equation env p t2'
-      | (_, Tconstr ((Path.Pident p) as path,[],_))
-        when is_newtype !env path && !generate_equations ->
+          add_gadt_equation env path t2'
+      | (_, Tconstr (path,[],_))
+        when is_instantiable !env path && !generate_equations ->
           reify env t1';
-          add_gadt_equation env p t1'
+          add_gadt_equation env path t1'
       | (Tconstr (_,_,_), _) | (_, Tconstr (_,_,_)) when !umode = Pattern ->
           reify env t1';
           reify env t2';
@@ -3667,7 +3678,8 @@ let rec lid_of_path ?(hash="") = function
       Longident.Lapply (lid_of_path ~hash p1, lid_of_path p2)
 
 let find_cltype_for_path env p =
-  let _path, cl_abbr = Env.lookup_type (lid_of_path ~hash:"#" p) env in
+  let cl_path = Env.lookup_type (lid_of_path ~hash:"#" p) env in
+  let cl_abbr = Env.find_type cl_path env in
 
   match cl_abbr.type_manifest with
     Some ty ->

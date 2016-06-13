@@ -1009,7 +1009,7 @@ let lookup_value ?loc lid env =
 let lookup_type ?loc lid env =
   let (path, (decl, _)) = lookup_type ?loc lid env in
   mark_type_used env (Longident.last lid) decl;
-  (path, decl)
+  path
 
 let mark_type_path env path =
   try
@@ -1685,12 +1685,12 @@ let add_local_type path info env =
   { env with
     local_constraints = PathMap.add path info env.local_constraints }
 
-let add_local_constraint id info elv env =
+let add_local_constraint path info elv env =
   match info with
     {type_manifest = Some _; type_newtype_level = Some (lv, _)} ->
       (* elv is the expansion level, lv is the definition level *)
       let info = {info with type_newtype_level = Some (lv, elv)} in
-      add_local_type (Pident id) info env
+      add_local_type path info env
   | _ -> assert false
 
 
