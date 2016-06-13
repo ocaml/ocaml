@@ -1430,7 +1430,7 @@ and may be improved in future versions.
 \paragraph{Equations on non-local abstract types} (Introduced in OCaml
 4.04)
 
-GADT pattern-matching may also add a type equations to non-local
+GADT pattern-matching may also add type equations to non-local
 abstract types. The behaviour is the same as with local abstract
 types. Reusing the above "eq" type, one can write:
 \begin{verbatim}
