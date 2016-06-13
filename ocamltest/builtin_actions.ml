@@ -17,7 +17,12 @@
 
 open Actions
 
-let run_command ppf env cmd =
+let run_command
+  ?(stdout_variable="stdout")
+  ?(stderr_variable="")
+  ?(append=false)
+  ?(timeout=0)
+  ppf env cmd =
   let lst = Testlib.words cmd in
   let cmd' = String.concat " " lst in
   Format.fprintf ppf "Commandline: %s\n" cmd';
@@ -32,10 +37,10 @@ let run_command ppf env cmd =
     Run.progname = progname;
     Run.argv = arguments;
     (* Run.envp = environment; *)
-    Run.stdout_filename = "";
-    Run.stderr_filename = "";
-    Run.append = false;
-    Run.timeout = 0
+    Run.stdout_filename = Environments.safe_lookup stdout_variable env;
+    Run.stderr_filename = Environments.safe_lookup stderr_variable env;
+    Run.append = append;
+    Run.timeout = timeout
   }
 
 let filename_concat components = List.fold_left Filename.concat "" components
@@ -294,6 +299,13 @@ let execute_program ppf env =
     begin if arguments="" then "without any argument"
     else "with arguments " ^ arguments
     end in
+    let output = program ^ ".output" in
+    let bindings =
+    [
+      "stdout", output;
+      "stderr", output
+    ] in
+    let env = Environments.add_variables bindings env in
     match run_command ppf env commandline with
       | 0 -> Pass env
       | _ as exitcode -> Fail (mkreason what commandline exitcode)

@@ -33,6 +33,7 @@ val lookup : string -> t -> string option
 val safe_lookup : string -> t -> string
 
 val add : string -> string -> t -> t
+val add_variables : (string * string) list -> t -> t
 
 val register : string -> t -> unit
 

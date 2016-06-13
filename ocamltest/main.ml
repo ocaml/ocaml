@@ -61,12 +61,7 @@ and run_test_i ppf path rootenv i test_tree =
   run_test ppf new_path rootenv test_tree
 
 let initial_env filename =
-  let add env (variable, value) = Environments.add variable value env in
-  let l =
-  [
-    ("testfile", filename);
-  ] in
-  List.fold_left add Environments.empty l
+  Environments.add "testfile" filename Environments.empty
 
 let log_filename_of_test_filename test_filename =
   test_filename ^ ".log" (* one may want to remove the extension *)

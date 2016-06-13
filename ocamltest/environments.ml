@@ -45,6 +45,10 @@ let add variable value env =
   if variable="" then raise Empty_variable_name
   else add_aux variable value env
 
+let add_variables bindings env =
+  let f env (variable, value) = add variable value env in
+  List.fold_left f env bindings
+
 let (registered_environments : (string, t) Hashtbl.t) = Hashtbl.create 20
 
 let register environment_name environment =
