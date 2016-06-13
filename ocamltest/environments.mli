@@ -39,4 +39,4 @@ val register : string -> t -> unit
 
 val include_ : string -> t -> t
 
-val dump : Format.formatter -> t -> unit
+val dump : out_channel -> t -> unit

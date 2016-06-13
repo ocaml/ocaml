@@ -22,10 +22,10 @@ let run_command
   ?(stderr_variable="")
   ?(append=false)
   ?(timeout=0)
-  ppf env cmd =
+  log env cmd =
   let lst = Testlib.words cmd in
   let cmd' = String.concat " " lst in
-  Format.fprintf ppf "Commandline: %s\n" cmd';
+  Printf.fprintf log "Commandline: %s\n" cmd';
   let progname = List.hd lst in
   let arguments = Array.of_list lst in
   (*
@@ -96,7 +96,7 @@ let use_runtime env = function
       | None -> ""
       | Some runtime ->"-use-runtime " ^ runtime
     end
-  | Other _ -> assert false
+  | Sys.Other _ -> assert false
 
 let file_extension filename =
   let l = String.length filename in
@@ -125,7 +125,7 @@ let file_type filename =
   | "mly" -> Grammar
   | _ as ext -> raise (Unknown_file_extension ext)
 
-let noop ppf env = Pass env
+let noop log env = Pass env
 
 let get_modules env =
   let modules = Testlib.words (Environments.safe_lookup "modules" env) in
@@ -189,13 +189,13 @@ let libraries env = get_backend_value_from_env env "bclibs" "nclibs"
 let stdlib_flags env = Environments.safe_lookup "stdlibflags" env
 
 let mkreason what commandline exitcode =
-  Format.sprintf "%s: command\n%s\nfailed with exit code %d"
+  Printf.sprintf "%s: command\n%s\nfailed with exit code %d"
     what commandline exitcode
 
-let compile_module backend ppf env module_name =
-  let what = Format.sprintf "Compiling %s module %s"
+let compile_module backend log env module_name =
+  let what = Printf.sprintf "Compiling %s module %s"
     (Backends.string_of_backend backend) module_name in
-  Format.fprintf ppf "%s\n%!" what;
+  Printf.fprintf log "%s\n%!" what;
   let compile = "-c " ^ module_name in
   let module_base_name = Filename.chop_extension module_name in
   let module_extension = Backends.module_extension backend in
@@ -210,7 +210,7 @@ let compile_module backend ppf env module_name =
     compile;
     output
   ] in
-  match run_command ppf env commandline with
+  match run_command log env commandline with
     | 0 -> Ok module_output_name
     | _ as exitcode -> Error (mkreason what commandline exitcode)
 
@@ -226,22 +226,22 @@ let rec fold_left_result f g init = function
       | Error _ as e -> e
     )
 
-let compile_modules backend ppf env module_names =
+let compile_modules backend log env module_names =
   let cons x xs = x::xs in
   fold_left_result
-    (compile_module backend ppf env)
+    (compile_module backend log env)
     cons
     []
     module_names
 
-let link_modules backend ppf env modules =
+let link_modules backend log env modules =
   let executable_name = match Environments.lookup "program" env with
     | None -> assert false
     | Some program -> program in
   let module_names = String.concat " " modules in
-  let what = Format.sprintf "Linking modules %s into %s"
+  let what = Printf.sprintf "Linking modules %s into %s"
     module_names executable_name in
-  Format.fprintf ppf "%s\n%!" what;
+  Printf.fprintf log "%s\n%!" what;
   let output = "-o " ^ executable_name in
   let commandline = String.concat " "
   [
@@ -253,27 +253,27 @@ let link_modules backend ppf env modules =
     module_names;
     output
   ] in
-  match run_command ppf env commandline with
+  match run_command log env commandline with
     | 0 -> Ok ()
     | _ as exitcode -> Error (mkreason what commandline exitcode)
 
-let compile_program backend ppf env modules =
-  match compile_modules ppf backend env modules with
+let compile_program backend log env modules =
+  match compile_modules log backend env modules with
     | Ok module_binaries ->
-      (match link_modules ppf backend env module_binaries with
+      (match link_modules log backend env module_binaries with
         | Ok _ -> Pass env
         | Error reason -> Fail reason
       )
     | Error reason -> Fail reason
 
-let compile_test_program backend ppf env =
+let compile_test_program backend log env =
   let testfile = testfile env in
   let testfile_basename = Filename.chop_extension testfile in
   let executable_filename =
     mkfilename testfile_basename (Backends.executable_extension backend) in
   let newenv = Environments.add "program" executable_filename env in
   let modules = (get_modules env) @ [testfile] in
-  compile_program ppf backend newenv modules
+  compile_program log backend newenv modules
 
 let bytecode_compile = {
   action_name = "bytecode-compile";
@@ -289,7 +289,7 @@ let nativecode_compile = {
   action_body = compile_test_program Sys.Native
 }
 
-let execute_program ppf env =
+let execute_program log env =
   match Environments.lookup "program" env with
   | None -> failwith "No program to execute"
   | Some program ->
@@ -306,7 +306,7 @@ let execute_program ppf env =
       "stderr", output
     ] in
     let env = Environments.add_variables bindings env in
-    match run_command ppf env commandline with
+    match run_command log env commandline with
       | 0 -> Pass env
       | _ as exitcode -> Fail (mkreason what commandline exitcode)
 

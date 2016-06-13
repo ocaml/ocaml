@@ -66,10 +66,8 @@ let include_ environment_name environment =
   let registered_environment = find_environemnt environment_name in
   StringMap.fold add_aux registered_environment environment
 
-let dump_assignment ppf (variable, value) =
-  Format.fprintf ppf "%s = %s" variable value
+let dump_assignment log (variable, value) =
+  Printf.fprintf log "%s = %s\n%!" variable value
 
-let dump ppf environment =
-  Format.fprintf ppf "@[";
-  Format.pp_print_list dump_assignment ppf (StringMap.bindings environment);
-  Format.fprintf ppf "@]"
+let dump log environment =
+  List.iter (dump_assignment log) (StringMap.bindings environment);

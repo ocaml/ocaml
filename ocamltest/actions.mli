@@ -22,7 +22,7 @@ type result =
 
 val string_of_result : result -> string
 
-type body = Format.formatter -> Environments.t -> result
+type body = out_channel -> Environments.t -> result
 
 type t = {
   action_name : string;
@@ -39,7 +39,7 @@ val register : t -> unit
 
 val lookup : string -> t option
 
-val run : Format.formatter -> Environments.t -> t -> result
+val run : out_channel -> Environments.t -> t -> result
 
 module ActionSet : Set.S with type elt = t
 

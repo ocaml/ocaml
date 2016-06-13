@@ -40,3 +40,9 @@ let file_is_empty filename =
   let filesize = in_channel_length ic in
   close_in ic;
   filesize = 0
+
+let string_of_location loc =
+  let buf = Buffer.create 64 in
+  let fmt = Format.formatter_of_buffer buf in
+  Location.print_loc fmt loc;
+  Buffer.contents buf

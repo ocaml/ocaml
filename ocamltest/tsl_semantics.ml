@@ -21,13 +21,13 @@ let variable_already_defined loc variable context =
   let ctxt = match context with
     | None -> ""
     | Some envname -> " while including environment " ^ envname in
-  Location.print_loc Format.err_formatter loc;
-  Format.eprintf "Variable %s already defined%s\n%!" variable ctxt;
+  let locstr = Testlib.string_of_location loc in
+  Printf.eprintf "%s\nVariable %s already defined%s\n%!" locstr variable ctxt;
   exit 2
 
 let no_such_environment loc environment_name =
-  Location.print_loc Format.err_formatter loc;
-  Format.eprintf "No such environment %s\n%!" environment_name;
+  let locstr = Testlib.string_of_location loc in
+  Printf.eprintf "%s\nNo such environment %s\n%!" locstr environment_name;
   exit 2
 
 let interprete_environment_statement env statement = match statement.node with
@@ -58,13 +58,13 @@ let too_deep testname max_level real_level =
   exit 2
 
 let unexpected_environment_statement s =
-  Location.print_loc Format.err_formatter s.loc;
-  Format.eprintf "Unexpected environment statement\n%!";
+  let locstr = Testlib.string_of_location s.loc in
+  Printf.eprintf "%s\nUnexpected environment statement\n%!" locstr;
   exit 2
 
 let no_such_test t =
-  Location.print_loc Format.err_formatter t.loc;
-  Format.eprintf "No such test: %s\n%!" t.node;
+  let locstr = Testlib.string_of_location t.loc in
+  Printf.eprintf "%s\nNo such test: %s\n%!" locstr t.node;
   exit 2
 
 let test_trees_of_tsl_block tsl_block =

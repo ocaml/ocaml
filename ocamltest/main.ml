@@ -43,22 +43,22 @@ let tsl_block_of_file test_filename =
 let print_usage () =
   Printf.printf "Usage: %s testfile\n" Sys.argv.(0)
 
-let rec run_test ppf path rootenv = function
+let rec run_test log path rootenv = function
   Node (testenvspec, test, subtrees) ->
-  Format.printf "Running test %s (%s) ... %!"
+  Printf.printf "Running test %s (%s) ... %!"
     path test.Tests.test_name;
-  let print_test_result str = Format.printf "%s\n%!" str in
+  let print_test_result str = Printf.printf "%s\n%!" str in
   let testenv = interprete_environment_statements rootenv testenvspec in
-  match Tests.run ppf testenv test with
+  match Tests.run log testenv test with
     | Actions.Pass newenv ->
       print_test_result "passed";
-      List.iteri (run_test_i ppf path newenv) subtrees
+      List.iteri (run_test_i log path newenv) subtrees
     | Actions.Fail _ -> print_test_result "failed"
     | Actions.Skip _ -> print_test_result "skipped"
-and run_test_i ppf path rootenv i test_tree =
+and run_test_i log path rootenv i test_tree =
   let prefix = if path="" then "" else path ^ "." in
   let new_path = Printf.sprintf "%s%d" prefix (i+1) in
-  run_test ppf new_path rootenv test_tree
+  run_test log new_path rootenv test_tree
 
 let initial_env filename =
   Environments.add "testfile" filename Environments.empty
@@ -75,8 +75,7 @@ let main () =
   let log_filename = log_filename_of_test_filename test_filename in
   Printf.printf "# reading test file %s, logging test details to %s\n%!"
     test_filename log_filename;
-  let log_channel = open_out log_filename in
-  let ppf = Format.formatter_of_out_channel log_channel in
+  let log = open_out log_filename in
   let dirname = Filename.dirname test_filename in
   let basename = Filename.basename test_filename in
   let tsl_block = tsl_block_of_file test_filename in
@@ -93,7 +92,7 @@ let main () =
     | _ -> test_trees in
   let actions = actions_in_tests (tests_in_trees test_trees) in
   let rootenv = Actions.update_environment root_environment actions in
-  List.iteri (run_test_i ppf "" rootenv) test_trees;
-  close_out log_channel
+  List.iteri (run_test_i log "" rootenv) test_trees;
+  close_out log
 
 let _ = main()

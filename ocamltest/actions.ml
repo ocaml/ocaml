@@ -29,7 +29,7 @@ let string_of_result = function
   | Fail reason -> string_of_reason "Fail" reason
   | Skip reason -> string_of_reason "Skip" reason
 
-type body = Format.formatter -> Environments.t -> result
+type body = out_channel -> Environments.t -> result
 
 type t = {
   action_name : string;
@@ -51,11 +51,11 @@ let lookup name =
   try Some (Hashtbl.find actions name)
   with Not_found -> None
 
-let run ppf env action =
+let run log env action =
   let files = action.action_generated_files env in
-  Format.fprintf ppf "Generated files:\n";
-  List.iter (Format.fprintf ppf "%s\n") files;
-  action.action_body ppf env
+  Printf.fprintf log "Generated files:\n";
+  List.iter (Printf.fprintf log "%s\n") files;
+  action.action_body log env
 
 module ActionSet = Set.Make
 (struct
