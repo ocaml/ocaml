@@ -63,8 +63,36 @@ and run_test_i log path rootenv i test_tree =
 let initial_env filename =
   Environments.add "testfile" filename Environments.empty
 
-let log_filename_of_test_filename test_filename =
-  test_filename ^ ".log" (* one may want to remove the extension *)
+let run_command command = match Sys.command command with
+  | 0 -> ()
+  | _ as exitcode ->
+    Printf.eprintf "%s failed with status %d\n%!"
+      command exitcode;
+    exit 2
+
+let get_test_source_directory test_dirname =
+  if not (Filename.is_relative test_dirname) then test_dirname
+  else let pwd = Sys.getcwd() in
+  Filename.concat pwd test_dirname
+
+let get_test_build_directory test_dirname =
+  let ocamltestdir_variable = "OCAMLTESTDIR" in
+  let root = try Sys.getenv ocamltestdir_variable with
+    | Not_found ->
+      let default_root = "/tmp/ocamltest" in
+      Printf.eprintf "The %s environment variable is not defined. Using %s.\n%!"
+        ocamltestdir_variable default_root;
+      default_root in
+  Filename.concat root test_dirname
+
+let make_directory dir = run_command ("mkdir -p " ^ dir)
+
+let setup_symlinks test_source_directory test_build_directory files =
+  let symlink filename =
+    let src = Filename.concat test_source_directory filename in
+    let cmd = "ln -s " ^ src ^" " ^ test_build_directory in
+    run_command cmd in
+  List.iter symlink files
 
 let main () =
   if Array.length Sys.argv < 2 then begin
@@ -72,18 +100,9 @@ let main () =
     exit 1
   end;
   let test_filename = Sys.argv.(1) in
-  let log_filename = log_filename_of_test_filename test_filename in
-  Printf.printf "# reading test file %s, logging test details to %s\n%!"
-    test_filename log_filename;
-  let log = open_out log_filename in
-  let dirname = Filename.dirname test_filename in
-  let basename = Filename.basename test_filename in
+  Printf.printf "# reading test file %s\n%!" test_filename;
   let tsl_block = tsl_block_of_file test_filename in
-  Sys.chdir dirname;
-  let init_env = (initial_env basename) in
   let (rootenv_statements, test_trees) = test_trees_of_tsl_block tsl_block in
-  let root_environment =
-    interprete_environment_statements init_env rootenv_statements in
   let test_trees = match test_trees with
     | [] ->
       let default_tests = Tests.default_tests() in
@@ -91,7 +110,24 @@ let main () =
       List.map make_tree default_tests
     | _ -> test_trees in
   let actions = actions_in_tests (tests_in_trees test_trees) in
+  let init_env = initial_env (Filename.basename test_filename) in
+  let root_environment =
+    interprete_environment_statements init_env rootenv_statements in
   let rootenv = Actions.update_environment root_environment actions in
+  let test_dirname = Filename.dirname test_filename in
+  let test_basename = Filename.basename test_filename in
+  let test_prefix = Filename.chop_extension test_basename in
+  let test_source_directory = get_test_source_directory test_dirname in
+  let test_build_directory = get_test_build_directory test_dirname in
+  let modules_value = Environments.safe_lookup "modules" rootenv in
+  let modules = Testlib.words modules_value in
+  setup_symlinks
+    test_source_directory
+    test_build_directory
+    (test_basename::modules);
+  Sys.chdir test_build_directory;
+  let log_filename = test_prefix ^ ".log" in
+  let log = open_out log_filename in
   List.iteri (run_test_i log "" rootenv) test_trees;
   close_out log
 
