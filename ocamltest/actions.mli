@@ -27,13 +27,10 @@ type body = out_channel -> Environments.t -> result
 type t = {
   action_name : string;
   action_environment : Environments.t -> Environments.t;
-  action_generated_files : Environments.t -> string list;
   action_body : body
 }
 
 val compare : t -> t -> int
-
-val no_generated_files : Environments.t -> string list
 
 val register : t -> unit
 

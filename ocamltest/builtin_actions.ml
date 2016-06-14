@@ -133,42 +133,9 @@ let get_modules env =
 
 let mkfilename name ext = name ^ "." ^ ext
 
-let rec files_generated_when_compiling module_base_name module_type backend =
-  let mkmodname ext = mkfilename module_base_name ext in
-  match module_type with
-    | Implementation ->
-      let extension = Backends.module_extension backend in
-      [mkmodname extension]
-    | Interface -> [mkmodname "cmi"]
-    | C | C_minor -> assert false
-    | Lexer ->
-      let l = files_generated_when_compiling module_base_name Implementation backend in
-      (mkmodname "ml") :: l
-    | Grammar ->
-      let l1 = files_generated_when_compiling module_base_name Interface backend in
-      let l2 = files_generated_when_compiling module_base_name Implementation backend in
-      (mkmodname "ml") :: (mkmodname "mli") :: (l1 @ l2)
-
 let testfile env = match Environments.lookup "testfile" env with
   | None -> assert false
   | Some t -> t
-
-let generated_files backend env =
-  let testfile = testfile env in
-  let testfile_basename = Filename.chop_extension testfile in
-  let executable_filename =
-    mkfilename testfile_basename (Backends.executable_extension backend) in
-  let modules = (get_modules env) @ [testfile] in
-  let f modul files =
-    let mod_name = Filename.chop_extension modul in
-    let mod_type = file_type modul in
-    (files_generated_when_compiling mod_name mod_type backend) @ files in
-  let l = List.fold_right f modules [] in
-  l @ [executable_filename]
-
-let bytecode_compile_generated_files = generated_files Sys.Bytecode
-
-let nativecode_compile_generated_files = generated_files Sys.Native
 
 let common_flags env = Environments.safe_lookup "flags" env
 
@@ -277,14 +244,12 @@ let compile_test_program backend log env =
 
 let bytecode_compile = {
   action_name = "bytecode-compile";
-  action_generated_files = bytecode_compile_generated_files;
   action_environment = bytecode_environment;
   action_body = compile_test_program Sys.Bytecode
 }
 
 let nativecode_compile = {
   action_name = "nativecode-compile";
-  action_generated_files = nativecode_compile_generated_files;
   action_environment = nativecode_environment;
   action_body = compile_test_program Sys.Native
 }
@@ -314,7 +279,6 @@ let env_id env = env
 
 let execute = {
   action_name = "execute";
-  action_generated_files = no_generated_files;
   action_environment = env_id;
   action_body = execute_program
 }
