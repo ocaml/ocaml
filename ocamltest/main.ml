@@ -90,7 +90,7 @@ let make_directory dir = run_command ("mkdir -p " ^ dir)
 let setup_symlinks test_source_directory test_build_directory files =
   let symlink filename =
     let src = Filename.concat test_source_directory filename in
-    let cmd = "ln -s " ^ src ^" " ^ test_build_directory in
+    let cmd = "ln -sf " ^ src ^" " ^ test_build_directory in
     run_command cmd in
   List.iter symlink files
 
