@@ -131,27 +131,9 @@ fiber.o: fiber.c ../byterun/caml/fiber.h ../byterun/caml/misc.h \
  ../byterun/caml/domain_state.tbl ../byterun/caml/roots.h \
  ../byterun/caml/gc_ctrl.h ../byterun/caml/instruct.h \
  ../byterun/caml/fail.h ../byterun/caml/alloc.h \
- ../byterun/caml/platform.h ../byterun/caml/fix_code.h
-fiber.d.o: fiber.d.c ../byterun/caml/fiber.h ../byterun/caml/misc.h \
- ../byterun/caml/config.h ../byterun/caml/../../config/m.h \
- ../byterun/caml/../../config/s.h ../byterun/caml/mlvalues.h \
- ../byterun/caml/memory.h ../byterun/caml/gc.h ../byterun/caml/major_gc.h \
- ../byterun/caml/minor_gc.h ../byterun/caml/addrmap.h \
- ../byterun/caml/domain.h ../byterun/caml/domain_state.h \
- ../byterun/caml/domain_state.tbl ../byterun/caml/roots.h \
- ../byterun/caml/gc_ctrl.h ../byterun/caml/instruct.h \
- ../byterun/caml/fail.h ../byterun/caml/alloc.h \
- ../byterun/caml/platform.h ../byterun/caml/fix_code.h
-fiber.p.o: fiber.p.c ../byterun/caml/fiber.h ../byterun/caml/misc.h \
- ../byterun/caml/config.h ../byterun/caml/../../config/m.h \
- ../byterun/caml/../../config/s.h ../byterun/caml/mlvalues.h \
- ../byterun/caml/memory.h ../byterun/caml/gc.h ../byterun/caml/major_gc.h \
- ../byterun/caml/minor_gc.h ../byterun/caml/addrmap.h \
- ../byterun/caml/domain.h ../byterun/caml/domain_state.h \
- ../byterun/caml/domain_state.tbl ../byterun/caml/roots.h \
- ../byterun/caml/gc_ctrl.h ../byterun/caml/instruct.h \
- ../byterun/caml/fail.h ../byterun/caml/alloc.h \
- ../byterun/caml/platform.h ../byterun/caml/fix_code.h
+ ../byterun/caml/platform.h ../byterun/caml/fix_code.h \
+ ../byterun/caml/memory.h stack.h frame_descriptors.h \
+ ../byterun/caml/mlvalues.h ../byterun/caml/roots.h
 finalise.o: finalise.c ../byterun/caml/misc.h ../byterun/caml/config.h \
  ../byterun/caml/../../config/m.h ../byterun/caml/../../config/s.h \
  ../byterun/caml/fail.h ../byterun/caml/misc.h ../byterun/caml/mlvalues.h
@@ -283,15 +265,6 @@ memory.o: memory.c ../byterun/caml/misc.h ../byterun/caml/config.h \
  ../byterun/caml/domain_state.tbl ../byterun/caml/shared_heap.h \
  ../byterun/caml/domain.h ../byterun/caml/addrmap.h \
  ../byterun/caml/roots.h ../byterun/caml/memory.h ../byterun/caml/alloc.h
-memory.d.o: memory.d.c ../byterun/caml/misc.h ../byterun/caml/config.h \
- ../byterun/caml/../../config/m.h ../byterun/caml/../../config/s.h \
- ../byterun/caml/fail.h ../byterun/caml/misc.h ../byterun/caml/mlvalues.h \
- ../byterun/caml/memory.h ../byterun/caml/gc.h ../byterun/caml/major_gc.h \
- ../byterun/caml/minor_gc.h ../byterun/caml/addrmap.h \
- ../byterun/caml/domain.h ../byterun/caml/domain_state.h \
- ../byterun/caml/domain_state.tbl ../byterun/caml/shared_heap.h \
- ../byterun/caml/domain.h ../byterun/caml/addrmap.h \
- ../byterun/caml/roots.h ../byterun/caml/memory.h ../byterun/caml/alloc.h
 meta.o: meta.c ../byterun/caml/alloc.h ../byterun/caml/misc.h \
  ../byterun/caml/config.h ../byterun/caml/../../config/m.h \
  ../byterun/caml/../../config/s.h ../byterun/caml/mlvalues.h \
@@ -359,11 +332,6 @@ params.o: params.c ../byterun/caml/misc.h ../byterun/caml/config.h \
  ../byterun/caml/params.h ../byterun/caml/mlvalues.h \
  ../byterun/caml/misc.h ../byterun/caml/exec.h ../byterun/caml/version.h \
  ../byterun/caml/prims.h ../byterun/caml/dynlink.h
-params.p.o: params.p.c ../byterun/caml/misc.h ../byterun/caml/config.h \
- ../byterun/caml/../../config/m.h ../byterun/caml/../../config/s.h \
- ../byterun/caml/params.h ../byterun/caml/mlvalues.h \
- ../byterun/caml/misc.h ../byterun/caml/exec.h ../byterun/caml/version.h \
- ../byterun/caml/prims.h ../byterun/caml/dynlink.h
 parsing.o: parsing.c ../byterun/caml/config.h \
  ../byterun/caml/../../config/m.h ../byterun/caml/../../config/s.h \
  ../byterun/caml/mlvalues.h ../byterun/caml/config.h \
@@ -403,7 +371,7 @@ roots.o: roots.c ../byterun/caml/finalise.h ../byterun/caml/globroots.h \
  ../byterun/caml/memory.h ../byterun/caml/minor_gc.h \
  ../byterun/caml/misc.h ../byterun/caml/mlvalues.h \
  ../byterun/caml/roots.h ../byterun/caml/fiber.h \
- ../byterun/caml/shared_heap.h frame_descriptors.h
+ ../byterun/caml/shared_heap.h stack.h
 shared_heap.o: shared_heap.c ../byterun/caml/platform.h \
  ../byterun/caml/mlvalues.h ../byterun/caml/config.h \
  ../byterun/caml/../../config/m.h ../byterun/caml/../../config/s.h \
@@ -626,27 +594,9 @@ fiber.d.o: fiber.c ../byterun/caml/fiber.h ../byterun/caml/misc.h \
  ../byterun/caml/domain_state.tbl ../byterun/caml/roots.h \
  ../byterun/caml/gc_ctrl.h ../byterun/caml/instruct.h \
  ../byterun/caml/fail.h ../byterun/caml/alloc.h \
- ../byterun/caml/platform.h ../byterun/caml/fix_code.h
-fiber.d.d.o: fiber.d.c ../byterun/caml/fiber.h ../byterun/caml/misc.h \
- ../byterun/caml/config.h ../byterun/caml/../../config/m.h \
- ../byterun/caml/../../config/s.h ../byterun/caml/mlvalues.h \
- ../byterun/caml/memory.h ../byterun/caml/gc.h ../byterun/caml/major_gc.h \
- ../byterun/caml/minor_gc.h ../byterun/caml/addrmap.h \
- ../byterun/caml/domain.h ../byterun/caml/domain_state.h \
- ../byterun/caml/domain_state.tbl ../byterun/caml/roots.h \
- ../byterun/caml/gc_ctrl.h ../byterun/caml/instruct.h \
- ../byterun/caml/fail.h ../byterun/caml/alloc.h \
- ../byterun/caml/platform.h ../byterun/caml/fix_code.h
-fiber.p.d.o: fiber.p.c ../byterun/caml/fiber.h ../byterun/caml/misc.h \
- ../byterun/caml/config.h ../byterun/caml/../../config/m.h \
- ../byterun/caml/../../config/s.h ../byterun/caml/mlvalues.h \
- ../byterun/caml/memory.h ../byterun/caml/gc.h ../byterun/caml/major_gc.h \
- ../byterun/caml/minor_gc.h ../byterun/caml/addrmap.h \
- ../byterun/caml/domain.h ../byterun/caml/domain_state.h \
- ../byterun/caml/domain_state.tbl ../byterun/caml/roots.h \
- ../byterun/caml/gc_ctrl.h ../byterun/caml/instruct.h \
- ../byterun/caml/fail.h ../byterun/caml/alloc.h \
- ../byterun/caml/platform.h ../byterun/caml/fix_code.h
+ ../byterun/caml/platform.h ../byterun/caml/fix_code.h \
+ ../byterun/caml/memory.h stack.h frame_descriptors.h \
+ ../byterun/caml/mlvalues.h ../byterun/caml/roots.h
 finalise.d.o: finalise.c ../byterun/caml/misc.h ../byterun/caml/config.h \
  ../byterun/caml/../../config/m.h ../byterun/caml/../../config/s.h \
  ../byterun/caml/fail.h ../byterun/caml/misc.h ../byterun/caml/mlvalues.h
@@ -778,15 +728,6 @@ memory.d.o: memory.c ../byterun/caml/misc.h ../byterun/caml/config.h \
  ../byterun/caml/domain_state.tbl ../byterun/caml/shared_heap.h \
  ../byterun/caml/domain.h ../byterun/caml/addrmap.h \
  ../byterun/caml/roots.h ../byterun/caml/memory.h ../byterun/caml/alloc.h
-memory.d.d.o: memory.d.c ../byterun/caml/misc.h ../byterun/caml/config.h \
- ../byterun/caml/../../config/m.h ../byterun/caml/../../config/s.h \
- ../byterun/caml/fail.h ../byterun/caml/misc.h ../byterun/caml/mlvalues.h \
- ../byterun/caml/memory.h ../byterun/caml/gc.h ../byterun/caml/major_gc.h \
- ../byterun/caml/minor_gc.h ../byterun/caml/addrmap.h \
- ../byterun/caml/domain.h ../byterun/caml/domain_state.h \
- ../byterun/caml/domain_state.tbl ../byterun/caml/shared_heap.h \
- ../byterun/caml/domain.h ../byterun/caml/addrmap.h \
- ../byterun/caml/roots.h ../byterun/caml/memory.h ../byterun/caml/alloc.h
 meta.d.o: meta.c ../byterun/caml/alloc.h ../byterun/caml/misc.h \
  ../byterun/caml/config.h ../byterun/caml/../../config/m.h \
  ../byterun/caml/../../config/s.h ../byterun/caml/mlvalues.h \
@@ -854,11 +795,6 @@ params.d.o: params.c ../byterun/caml/misc.h ../byterun/caml/config.h \
  ../byterun/caml/params.h ../byterun/caml/mlvalues.h \
  ../byterun/caml/misc.h ../byterun/caml/exec.h ../byterun/caml/version.h \
  ../byterun/caml/prims.h ../byterun/caml/dynlink.h
-params.p.d.o: params.p.c ../byterun/caml/misc.h ../byterun/caml/config.h \
- ../byterun/caml/../../config/m.h ../byterun/caml/../../config/s.h \
- ../byterun/caml/params.h ../byterun/caml/mlvalues.h \
- ../byterun/caml/misc.h ../byterun/caml/exec.h ../byterun/caml/version.h \
- ../byterun/caml/prims.h ../byterun/caml/dynlink.h
 parsing.d.o: parsing.c ../byterun/caml/config.h \
  ../byterun/caml/../../config/m.h ../byterun/caml/../../config/s.h \
  ../byterun/caml/mlvalues.h ../byterun/caml/config.h \
@@ -898,7 +834,7 @@ roots.d.o: roots.c ../byterun/caml/finalise.h ../byterun/caml/globroots.h \
  ../byterun/caml/memory.h ../byterun/caml/minor_gc.h \
  ../byterun/caml/misc.h ../byterun/caml/mlvalues.h \
  ../byterun/caml/roots.h ../byterun/caml/fiber.h \
- ../byterun/caml/shared_heap.h frame_descriptors.h
+ ../byterun/caml/shared_heap.h stack.h
 shared_heap.d.o: shared_heap.c ../byterun/caml/platform.h \
  ../byterun/caml/mlvalues.h ../byterun/caml/config.h \
  ../byterun/caml/../../config/m.h ../byterun/caml/../../config/s.h \
@@ -1121,27 +1057,9 @@ fiber.p.o: fiber.c ../byterun/caml/fiber.h ../byterun/caml/misc.h \
  ../byterun/caml/domain_state.tbl ../byterun/caml/roots.h \
  ../byterun/caml/gc_ctrl.h ../byterun/caml/instruct.h \
  ../byterun/caml/fail.h ../byterun/caml/alloc.h \
- ../byterun/caml/platform.h ../byterun/caml/fix_code.h
-fiber.d.p.o: fiber.d.c ../byterun/caml/fiber.h ../byterun/caml/misc.h \
- ../byterun/caml/config.h ../byterun/caml/../../config/m.h \
- ../byterun/caml/../../config/s.h ../byterun/caml/mlvalues.h \
- ../byterun/caml/memory.h ../byterun/caml/gc.h ../byterun/caml/major_gc.h \
- ../byterun/caml/minor_gc.h ../byterun/caml/addrmap.h \
- ../byterun/caml/domain.h ../byterun/caml/domain_state.h \
- ../byterun/caml/domain_state.tbl ../byterun/caml/roots.h \
- ../byterun/caml/gc_ctrl.h ../byterun/caml/instruct.h \
- ../byterun/caml/fail.h ../byterun/caml/alloc.h \
- ../byterun/caml/platform.h ../byterun/caml/fix_code.h
-fiber.p.p.o: fiber.p.c ../byterun/caml/fiber.h ../byterun/caml/misc.h \
- ../byterun/caml/config.h ../byterun/caml/../../config/m.h \
- ../byterun/caml/../../config/s.h ../byterun/caml/mlvalues.h \
- ../byterun/caml/memory.h ../byterun/caml/gc.h ../byterun/caml/major_gc.h \
- ../byterun/caml/minor_gc.h ../byterun/caml/addrmap.h \
- ../byterun/caml/domain.h ../byterun/caml/domain_state.h \
- ../byterun/caml/domain_state.tbl ../byterun/caml/roots.h \
- ../byterun/caml/gc_ctrl.h ../byterun/caml/instruct.h \
- ../byterun/caml/fail.h ../byterun/caml/alloc.h \
- ../byterun/caml/platform.h ../byterun/caml/fix_code.h
+ ../byterun/caml/platform.h ../byterun/caml/fix_code.h \
+ ../byterun/caml/memory.h stack.h frame_descriptors.h \
+ ../byterun/caml/mlvalues.h ../byterun/caml/roots.h
 finalise.p.o: finalise.c ../byterun/caml/misc.h ../byterun/caml/config.h \
  ../byterun/caml/../../config/m.h ../byterun/caml/../../config/s.h \
  ../byterun/caml/fail.h ../byterun/caml/misc.h ../byterun/caml/mlvalues.h
@@ -1273,15 +1191,6 @@ memory.p.o: memory.c ../byterun/caml/misc.h ../byterun/caml/config.h \
  ../byterun/caml/domain_state.tbl ../byterun/caml/shared_heap.h \
  ../byterun/caml/domain.h ../byterun/caml/addrmap.h \
  ../byterun/caml/roots.h ../byterun/caml/memory.h ../byterun/caml/alloc.h
-memory.d.p.o: memory.d.c ../byterun/caml/misc.h ../byterun/caml/config.h \
- ../byterun/caml/../../config/m.h ../byterun/caml/../../config/s.h \
- ../byterun/caml/fail.h ../byterun/caml/misc.h ../byterun/caml/mlvalues.h \
- ../byterun/caml/memory.h ../byterun/caml/gc.h ../byterun/caml/major_gc.h \
- ../byterun/caml/minor_gc.h ../byterun/caml/addrmap.h \
- ../byterun/caml/domain.h ../byterun/caml/domain_state.h \
- ../byterun/caml/domain_state.tbl ../byterun/caml/shared_heap.h \
- ../byterun/caml/domain.h ../byterun/caml/addrmap.h \
- ../byterun/caml/roots.h ../byterun/caml/memory.h ../byterun/caml/alloc.h
 meta.p.o: meta.c ../byterun/caml/alloc.h ../byterun/caml/misc.h \
  ../byterun/caml/config.h ../byterun/caml/../../config/m.h \
  ../byterun/caml/../../config/s.h ../byterun/caml/mlvalues.h \
@@ -1349,11 +1258,6 @@ params.p.o: params.c ../byterun/caml/misc.h ../byterun/caml/config.h \
  ../byterun/caml/params.h ../byterun/caml/mlvalues.h \
  ../byterun/caml/misc.h ../byterun/caml/exec.h ../byterun/caml/version.h \
  ../byterun/caml/prims.h ../byterun/caml/dynlink.h
-params.p.p.o: params.p.c ../byterun/caml/misc.h ../byterun/caml/config.h \
- ../byterun/caml/../../config/m.h ../byterun/caml/../../config/s.h \
- ../byterun/caml/params.h ../byterun/caml/mlvalues.h \
- ../byterun/caml/misc.h ../byterun/caml/exec.h ../byterun/caml/version.h \
- ../byterun/caml/prims.h ../byterun/caml/dynlink.h
 parsing.p.o: parsing.c ../byterun/caml/config.h \
  ../byterun/caml/../../config/m.h ../byterun/caml/../../config/s.h \
  ../byterun/caml/mlvalues.h ../byterun/caml/config.h \
@@ -1393,7 +1297,7 @@ roots.p.o: roots.c ../byterun/caml/finalise.h ../byterun/caml/globroots.h \
  ../byterun/caml/memory.h ../byterun/caml/minor_gc.h \
  ../byterun/caml/misc.h ../byterun/caml/mlvalues.h \
  ../byterun/caml/roots.h ../byterun/caml/fiber.h \
- ../byterun/caml/shared_heap.h frame_descriptors.h
+ ../byterun/caml/shared_heap.h stack.h
 shared_heap.p.o: shared_heap.c ../byterun/caml/platform.h \
  ../byterun/caml/mlvalues.h ../byterun/caml/config.h \
  ../byterun/caml/../../config/m.h ../byterun/caml/../../config/s.h \
