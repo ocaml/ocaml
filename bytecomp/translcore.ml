@@ -1342,7 +1342,7 @@ and transl_record env all_labels repres lbl_expr_list opt_init_expr =
        [check_recursive_recordwith] in this file. *)
     let copy_id = Ident.create "newrecord" in
     let update_field (_, lbl, expr) cont =
-      let set = set_record_label lbl expr Initialization in
+      let set = set_record_label lbl expr Assignment in
       Lsequence(Lprim(set, [Lvar copy_id; transl_exp expr]), cont) in
     begin match opt_init_expr with
       None -> assert false
