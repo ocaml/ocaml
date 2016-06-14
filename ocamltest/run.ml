@@ -23,6 +23,7 @@ type settings = {
   stderr_filename : string;
   append : bool;
   timeout : int;
+  log : out_channel;
 }
 
 external run : settings -> int = "caml_run_command"

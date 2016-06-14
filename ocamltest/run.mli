@@ -23,6 +23,7 @@ type settings = {
   stderr_filename : string;
   append : bool;
   timeout : int;
+  log : out_channel;
 }
 
 val run : settings -> int

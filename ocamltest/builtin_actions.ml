@@ -40,7 +40,8 @@ let run_command
     Run.stdout_filename = Environments.safe_lookup stdout_variable env;
     Run.stderr_filename = Environments.safe_lookup stderr_variable env;
     Run.append = append;
-    Run.timeout = timeout
+    Run.timeout = timeout;
+    Run.log = log
   }
 
 let filename_concat components = List.fold_left Filename.concat "" components

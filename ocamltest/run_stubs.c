@@ -15,8 +15,11 @@
 
 /* Stubs to let OCaml programs use the run library */
 
+#define _GNU_SOURCE
+
 #include <stdio.h>
 #include <stdlib.h>
+#include <stdarg.h>
 #include <sys/types.h>
 #include <string.h>
 
@@ -24,8 +27,9 @@
 
 #define CAML_NAME_SPACE
 
-#include <caml/mlvalues.h>
-#include <caml/memory.h>
+#include "caml/mlvalues.h"
+#include "caml/memory.h"
+#include "caml/io.h"
 
 /* cstringvect: inspired by similar function in otherlibs/unix/cstringv.c */
 char ** cstringvect(value arg)
@@ -45,11 +49,26 @@ char ** cstringvect(value arg)
   return res;
 }
 
+static void logToChannel(void *voidchannel, const char *fmt, ...)
+{
+  va_list ap;
+  struct channel *channel = (struct channel *) voidchannel;
+  char **text;
+  int res;
+  va_start(ap, fmt);
+  res = vasprintf(text, fmt, ap);
+  va_end(ap);
+  if (res <= 0) return;
+  caml_putblock(channel, *text, res);
+  free(*text);
+}
+
 CAMLprim value caml_run_command(value caml_settings)
 {
   int res;
   array argv, envp;
   command_settings settings;
+
   CAMLparam1(caml_settings);
   settings.program = String_val(Field(caml_settings, 0));
   argv = cstringvect(Field(caml_settings, 1));
@@ -60,6 +79,8 @@ CAMLprim value caml_run_command(value caml_settings)
   settings.stderr_filename = String_val(Field(caml_settings, 3));
   settings.append = Bool_val(Field(caml_settings, 4));
   settings.timeout = Int_val(Field(caml_settings, 5));
+  settings.logger = logToChannel;
+  settings.loggerData = Channel(Field(caml_settings, 6));
   res = run_command(&settings);
   CAMLreturn(Val_int(res));
 }
