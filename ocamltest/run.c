@@ -40,19 +40,31 @@ static inline int is_defined(const char *str)
   return (str != NULL) && (*str != '\0');
 }
 
-__attribute__((__noreturn__)) /* TODO: make sure compiler supports this */
-void fatal_error_with_location(const char *file, int line, const char *msg, ...)
+void defaultLogger(const char *format, ...)
 {
   va_list ap;
+  va_start(ap, format);
+  vfprintf(stderr, format, ap);
+}
+
+__attribute__((__noreturn__)) /* TODO: make sure compiler supports this */
+void fatal_error_with_location(
+  const char *file, int line,
+  const command_settings *settings,
+  const char *msg, ...)
+{
+  va_list ap;
+  Logger *logger = (settings->logger != NULL) ? settings->logger
+                                              : defaultLogger;
   va_start(ap, msg);
-  fprintf(stderr, "%s:%d: ", file, line);
-  vfprintf(stderr, msg, ap);
+  logger("%s:%d: ", file, line);
+  logger(msg, ap);
   va_end(ap);
   exit(EXIT_FAILURE);
 }
 
 #define fatal_error(msg, ...) \
-fatal_error_with_location(__FILE__, __LINE__, msg, ## __VA_ARGS__)
+fatal_error_with_location(__FILE__, __LINE__, settings, msg, ## __VA_ARGS__)
 
 /*
   Note: the ## __VA_ARGS__ construct is gcc specific.
@@ -61,46 +73,53 @@ fatal_error_with_location(__FILE__, __LINE__, msg, ## __VA_ARGS__)
 */
 
 __attribute__((__noreturn__)) /* TODO: make sure compiler supports this */
-void fatal_perror_with_location(const char *file, int line, const char *msg, ...)
+void fatal_perror_with_location(
+  const char *file, int line,
+  const command_settings *settings,
+  const char *msg, ...)
 {
   va_list ap;
+  Logger *logger = (settings->logger != NULL) ? settings->logger
+                                              : defaultLogger;
   va_start(ap, msg);
-  fprintf(stderr, "%s:%d: ", file, line);
-  vfprintf(stderr, msg, ap);
+  logger("%s:%d: ", file, line);
+  logger(msg, ap);
   va_end(ap);
-  fprintf(stderr, ": ");
-  perror("");
+  logger(": %s\n", strerror(errno));
   exit(EXIT_FAILURE);
 }
 
 #define fatal_perror(msg, ...) \
-fatal_perror_with_location(__FILE__, __LINE__, msg, ## __VA_ARGS__)
+fatal_perror_with_location(__FILE__, __LINE__, settings, msg, ## __VA_ARGS__)
 
 /* Same remark as for the fatal_error macro. */
 
 __attribute__((__noreturn__)) /* TODO: make sure compiler supports this */
-void open_error_with_location(const char *file, int line, const char *msg)
+void open_error_with_location(
+  const char *file, int line,
+  const command_settings *settings,
+  const char *msg)
 {
-  fatal_perror_with_location(file, line, "Can not open %s", msg);
+  fatal_perror_with_location(file, line, settings, "Can not open %s", msg);
 }
 
 #define open_error(filename) \
-open_error_with_location(__FILE__, __LINE__, filename)
+open_error_with_location(__FILE__, __LINE__, settings, filename)
 
 __attribute__((__noreturn__)) /* TODO: make sure compiler supports this */
-void realpath_error_with_location(const char *file, int line, const char *msg)
+void realpath_error_with_location(
+  const char *file, int line,
+  const command_settings *settings,
+  const char *msg)
 {
-  fatal_perror_with_location(file, line, "realpath(\"%s\") failed", msg);
+  fatal_perror_with_location(file, line, settings, "realpath(\"%s\") failed", msg);
 }
 
 #define realpath_error(filename) \
-realpath_error_with_location(__FILE__, __LINE__, filename)
+realpath_error_with_location(__FILE__, __LINE__, settings, filename)
 
 void handle_alarm(int sig)
 {
-  if (sig!=SIGALRM)
-    fatal_error("Received unexpected signal %s", strsignal(sig));
-
   timeout_expired = 1;
 }
 
@@ -174,7 +193,9 @@ int run_command_child(const command_settings *settings)
    diffferent process)
  * Returns the code to return if this is the child process
  */
-int handle_process_termination(pid_t pid, int status, const char *corefilename_prefix)
+int handle_process_termination(
+  const command_settings *settings,
+  pid_t pid, int status, const char *corefilename_prefix)
 {
   int signal, core = 0;
   char *corestr;
@@ -249,7 +270,7 @@ int run_command_parent(const command_settings *settings, pid_t child_pid)
           fatal_perror("wait");
       }
     } else { /* Got a pid */
-      code = handle_process_termination(pid, status, settings->program);
+      code = handle_process_termination(settings, pid, status, settings->program);
       if (pid == child_pid) child_code = code;
     }
   }
