@@ -913,7 +913,7 @@ and transl_exp0 e =
         if List.length ll <= use_dup_for_constant_arrays_bigger_than then
           raise Not_constant;
         match List.map extract_constant ll with
-        | exception Not_constant when kind = Pfloatarray ->
+        | exception Not_constant when kind = Pfloatarray -> begin
             (* We cannot currently lift [Pintarray] arrays safely in Flambda
                because [caml_modify] might be called upon them (e.g. from
                code operating on polymorphic arrays, or functions such as
@@ -927,8 +927,11 @@ and transl_exp0 e =
                When not [Pfloatarray], the exception propagates to the handler
                below. *)
             let imm_array = Lprim (Pmakearray (kind, Immutable), ll) in
-            Lprim (Pduparray (kind, Mutable), [imm_array])
-        | cl ->
+            match lbl.lbl_mut with
+            | Immutable -> imm_array
+            | Mutable -> Lprim (Pduparray (kind, Mutable), [imm_array])
+          end
+        | cl -> begin
             let imm_array =
               match kind with
               | Paddrarray ->
@@ -938,9 +941,12 @@ and transl_exp0 e =
               | Pgenarray ->
                   raise Not_constant    (* can this really happen? *)
             in
-            Lprim (Pduparray (kind, Mutable), [imm_array])
+            match lbl.lbl_mut with
+            | Immutable -> imm_array
+            | Mutable -> Lprim (Pduparray (kind, Mutable), [imm_array])
+          end
       with Not_constant ->
-        Lprim(Pmakearray (kind, Mutable), ll)
+        Lprim(Pmakearray (kind, lbl.lbl_mut), ll)
       end
   | Texp_arraycomprehension(lbl, arg, param, _, low, dir, high) ->
       event_after e
