@@ -17,8 +17,15 @@ OCaml 4.04.0:
 
 ### Compilers:
 
+* PR#6475, GPR#464: interpret all command-line options before compiling any files,
+  changes (improves) the semantics of repeated -o options or -o combined with -c
+  see the super-detailed commit message at
+    https://github.com/ocaml/ocaml/commit/da56cf6dfdc13c09905c2e07f1d4849c8346eec8
+  (whitequark)
+
 - PR#7023, GPR#336: Better unboxing strategy
   (Alain Frisch, Pierre Chambart)
+
 - PR#7200, GPR#539: Improve, fix, and add test for parsing/pprintast.ml
   (Runhang Li, David Sheets, Alain Frisch)
 
