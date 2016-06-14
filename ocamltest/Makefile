@@ -1,3 +1,4 @@
+CFLAGS = -I ../stdlib -g
 modules :=\
   run.o \
   run_stubs.o \
