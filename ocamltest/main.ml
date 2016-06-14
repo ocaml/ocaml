@@ -119,6 +119,7 @@ let main () =
   let test_prefix = Filename.chop_extension test_basename in
   let test_source_directory = get_test_source_directory test_dirname in
   let test_build_directory = get_test_build_directory test_dirname in
+  make_directory test_build_directory;
   let modules_value = Environments.safe_lookup "modules" rootenv in
   let modules = Testlib.words modules_value in
   setup_symlinks
