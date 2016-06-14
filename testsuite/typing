@@ -7,6 +7,7 @@ tests/basic-modules
 tests/basic-more
 tests/basic-multdef
 tests/basic-private
+tests/typing-array-data-types
 tests/typing-extension-constructor
 tests/typing-extensions
 tests/typing-fstclassmod

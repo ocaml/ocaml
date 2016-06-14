@@ -1,0 +1,10 @@
+
+#                                                     module Normal : sig type 'a t = [| 'a |] end
+module Dynamic : sig type 'a t = [| 'a |] end
+module Float : sig type t = [| float |] end
+val normal_string : string Normal.t = [|"hello"|]
+val dynamic_string : string Dynamic.t = [|"hello"|]
+val normal_float : float Normal.t = [|4.5|]
+val dynamic_float : float Dynamic.t = [|4.5|]
+val float_float : Float.t = [|4.5|]
+#     #     #     #     #     # 
