@@ -21,7 +21,7 @@
 
 typedef char **array;
 
-typedef void Logger(const char *, ...);
+typedef void Logger(void *, const char *, ...);
 
 typedef struct {
   const char *program;
@@ -32,6 +32,7 @@ typedef struct {
   int append;
   int timeout;
   Logger *logger;
+  void *loggerData;
 } command_settings;
 
 extern int run_command(const command_settings *settings);

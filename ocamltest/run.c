@@ -40,7 +40,7 @@ static inline int is_defined(const char *str)
   return (str != NULL) && (*str != '\0');
 }
 
-void defaultLogger(const char *format, ...)
+void defaultLogger(void *where, const char *format, ...)
 {
   va_list ap;
   va_start(ap, format);
@@ -57,8 +57,8 @@ void fatal_error_with_location(
   Logger *logger = (settings->logger != NULL) ? settings->logger
                                               : defaultLogger;
   va_start(ap, msg);
-  logger("%s:%d: ", file, line);
-  logger(msg, ap);
+  logger(settings->loggerData, "%s:%d: ", file, line);
+  logger(settings->loggerData, msg, ap);
   va_end(ap);
   exit(EXIT_FAILURE);
 }
@@ -82,10 +82,10 @@ void fatal_perror_with_location(
   Logger *logger = (settings->logger != NULL) ? settings->logger
                                               : defaultLogger;
   va_start(ap, msg);
-  logger("%s:%d: ", file, line);
-  logger(msg, ap);
+  logger(settings->loggerData, "%s:%d: ", file, line);
+  logger(settings->loggerData, msg, ap);
   va_end(ap);
-  logger(": %s\n", strerror(errno));
+  logger(settings->loggerData, ": %s\n", strerror(errno));
   exit(EXIT_FAILURE);
 }
 
