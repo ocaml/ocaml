@@ -304,6 +304,7 @@
 /tools/ocamlprof.opt
 /tools/opnames.ml
 /tools/dumpobj
+/tools/dumpobj.opt
 /tools/dumpapprox
 /tools/ocamlobjinfo
 /tools/ocamlobjinfo.opt
@@ -311,12 +312,12 @@
 /tools/cvt_emit.opt
 /tools/cvt_emit.bak
 /tools/cvt_emit.ml
-/tools/cvt_emit.opt
 /tools/ocamlcp
 /tools/ocamlcp.opt
 /tools/ocamloptp
 /tools/ocamloptp.opt
 /tools/ocamlmktop
+/tools/ocamlmktop.opt
 /tools/primreq
 /tools/primreq.opt
 /tools/ocamldumpobj
@@ -324,6 +325,7 @@
 /tools/lexer299.ml
 /tools/ocaml299to3
 /tools/ocamlmklib
+/tools/ocamlmklib.opt
 /tools/ocamlmklibconfig.ml
 /tools/lexer301.ml
 /tools/scrapelabels
