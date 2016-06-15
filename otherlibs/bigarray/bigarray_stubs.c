@@ -1077,6 +1077,32 @@ CAMLprim value caml_ba_slice(value vb, value vind)
 
   #undef b
 }
+    
+/* Changing the layout of an array (memory is shared) */    
+
+CAMLprim value caml_ba_change_layout(value vb, value vlayout)
+{
+  CAMLparam2 (vb, vlayout);
+  CAMLlocal1 (res);
+  #define b ((struct caml_ba_array *) Caml_ba_array_val(vb))
+  /* if the layout is different, change the flags and reverse the dimensions */
+  if (Caml_ba_layout_val(vlayout) != (b->flags & CAML_BA_LAYOUT_MASK)) {
+    /* change the flags to reflect the new layout */
+    int flags = (b->flags & CAML_BA_KIND_MASK) | Caml_ba_layout_val(vlayout);
+    /* reverse the dimensions */
+    intnat new_dim[CAML_BA_MAX_NUM_DIMS];
+    unsigned int i;
+    for(i = 0; i < b->num_dims; i++) new_dim[i] = b->dim[b->num_dims - i - 1];
+    res = caml_ba_alloc(flags, b->num_dims, b->data, new_dim);
+    caml_ba_update_proxy(b, Caml_ba_array_val(res));
+    CAMLreturn(res);
+  } else {
+  /* otherwise, do nothing */  
+  CAMLreturn(vb);
+  }
+  #undef b
+}
+
 
 /* Extracting a sub-array of same number of dimensions */
 
