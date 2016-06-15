@@ -159,7 +159,7 @@ module Processed_what_to_specialise = struct
        of closures (corresponding to another new specialised argument),
        we should re-use its "new outer var" to avoid duplication of
        projection definitions.  Likewise if the definition is just
-       [Existing_inner_free_var], in in which case we can use the
+       [Existing_inner_free_var], in which case we can use the
        corresponding existing outer free variable. *)
     let new_outer_var, t =
       let existing_outer_var =

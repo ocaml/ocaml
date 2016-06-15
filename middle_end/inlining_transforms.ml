@@ -198,7 +198,7 @@ let inline_by_copying_function_declaration ~env ~r
   in
   (* Arguments of functions that are not directly called but are
      aliased to arguments of a directly called one may need to be
-     marked as specialiased. *)
+     marked as specialised. *)
   let specialisable_args_with_aliases =
     Variable.Map.fold (fun arg outside_var map ->
         match Variable.Map.find arg (Lazy.force invariant_params) with

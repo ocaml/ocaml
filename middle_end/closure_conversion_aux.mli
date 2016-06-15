@@ -73,7 +73,7 @@ module Function_decls : sig
     val is_a_functor : t -> bool
 
     (* [primitive_wrapper t] is [None] iff [t] is not a wrapper for a function
-       with default optionnal arguments. Otherwise it is [Some body], where
+       with default optional arguments. Otherwise it is [Some body], where
        [body] is the body of the wrapper. *)
     val primitive_wrapper : t -> Lambda.lambda option
 

@@ -63,7 +63,7 @@ module Transform = struct
                 (* If for function [f] we would extract a projection expression
                    [e] from some specialised argument [x] of [f], and we know
                    from [Invariant_params] that a specialised argument [y] of
-                   another function [g] flows to [x], we will add add [e] with
+                   another function [g] flows to [x], we will add [e] with
                    [y] substituted for [x] throughout as a newly-specialised
                    argument for [g].  This should help reduce the number of
                    simplification rounds required for mutually-recursive

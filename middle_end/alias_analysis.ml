@@ -144,7 +144,7 @@ and fetch_symbol_field
       | fields ->
         begin match List.nth fields field with
         | None ->
-          Misc.fatal_errorf "constant field access to an inconstant %a"
+          Misc.fatal_errorf "Constant field access to an inconstant %a"
             Symbol.print sym
         | Some v ->
           fetch_variable definitions v ~the_dead_constant
