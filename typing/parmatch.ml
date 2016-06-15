@@ -2234,53 +2234,81 @@ module IdSet = Set.Make(Ident)
 let pattern_vars p = IdSet.of_list (Typedtree.pat_bound_idents p)
 
 (* Row for ambiguous variable search,
-   unseen is the traditional pattern row,
-   seen   is a list of position bindings *)
+   row is the traditional pattern row,
+   varsets contain a list of head variable sets (varsets)
 
-type amb_row = { unseen : pattern list ; seen : IdSet.t list; }
+   A given varset contains all the variables that appeared at the head
+   of a pattern in the row at some point during traversal: they would
+   all be bound to the same value at matching time. On the contrary,
+   two variables of different varsets appeared at different places in
+   the pattern and may be bound to distinct sub-parts of the matched
+   value.
 
-(* Push binding variables now *)
+   All rows of a (sub)matrix have rows of the same length,
+   but also varsets of the same length.
+*)
 
-let rec do_push r p ps seen k = match p.pat_desc with
-| Tpat_alias (p,x,_) -> do_push (IdSet.add x r) p ps seen k
-| Tpat_var (x,_) ->
-    (omega,{ unseen = ps; seen=IdSet.add x r::seen; })::k
-| Tpat_or (p1,p2,_) ->
-    do_push r p1 ps seen (do_push r p2 ps seen k)
-| _ ->
-    (p,{ unseen = ps; seen = r::seen; })::k
+type amb_row = { row : pattern list ; varsets : IdSet.t list; }
 
-let rec push_vars = function
+(* Given a matrix of non-empty rows
+   p1 :: r1...
+   p2 :: r2...
+   p3 :: r3...
+
+   Simplify the first column [p1 p2 p3] by splitting all or-patterns and
+   collecting the head-bound variables (the varset). The result is a list of couples
+     (simple head pattern, rest of row)
+   where a "simple head pattern" starts with either the catch-all pattern omega (_) or
+   a head constructor, and the "rest of the row" has the head-bound variables
+   pushed as a new varset.
+
+   For example,
+     { row = x :: r1; varsets = s1 }
+     { row = (Some _) as y :: r2; varsets  = s2 }
+     { row = (None as x) as y :: r3; varsets = s3 }
+     { row = (Some x | (None as x)) :: r4 with varsets = s4 }
+   becomes
+     (_, { row = r1; varsets = {x} :: s1 })
+     (Some _, { row = r2; varsets = {y} :: s2 })
+     (None, { row = r3; varsets = s3 ++ {x, y} })
+     (Some x, { row = r4; varsets = {} :: s4 })
+     (None, { row = r4; varsets = {x} :: s4 })
+ *)
+let rec simplify_first_col = function
   | [] -> []
-  | { unseen = [] }::_ -> assert false
-  | { unseen = p::ps; seen; }::rem ->
-      do_push IdSet.empty p ps seen (push_vars rem)
+  | { row = [] } :: _ -> assert false
+  | { row = p::ps; varsets; }::rem ->
+      simplify_head_pat IdSet.empty p ps varsets (simplify_first_col rem)
 
-(*********************************************)
-(* Filtering utilities for our specific rows *)
-(*********************************************)
+and simplify_head_pat r p ps varsets k = match p.pat_desc with
+| Tpat_alias (p,x,_) -> simplify_head_pat (IdSet.add x r) p ps varsets k
+| Tpat_var (x,_) ->
+    (omega, { row = ps; varsets = IdSet.add x r :: varsets; }) :: k
+| Tpat_or (p1,p2,_) ->
+    simplify_head_pat r p1 ps varsets (simplify_head_pat r p2 ps varsets k)
+| _ ->
+    (p, { row = ps; varsets = r :: varsets; }) :: k
 
-(* Take a pattern matrix as a list (rows) of lists (columns) of patterns
-     | p1, p2, .., pn
-     | q1, q2, .., qn
-     | r1, r2, .., rn
+(* Consider a pattern matrix whose first column has been simplified
+   to contain only _ or a head constructor
+     | p1, r1...
+     | p2, r2...
+     | p3, r3...
      | ...
 
    We split this matrix into a list of sub-matrices, one for each head
-   constructor appearing in the leftmost column. For each row whose
-   left column starts with a head constructor, remove this head
+   constructor appearing in the first column. For each row whose
+   first column starts with a head constructor, remove this head
    column, prepend one column for each argument of the constructor,
    and add the resulting row in the sub-matrix corresponding to this
    head constructor.
 
    Rows whose left column is omega (the Any pattern _) may match any
-   head constructor, so they are added to all groups.
-
-   The list of sub-matrices is represented as a list of pair
-     (head constructor, submatrix)
+   head constructor, so they are added to all groups. If there are no
+   non-omega group, the omega rows form a single group: there is
+   always at least one group in the result.
 *)
-
-let filter_all =
+let split_rows rows =
   (* the head constructor (as a pattern with omega arguments) of
      a pattern *)
   let discr_head pat =
@@ -2291,102 +2319,78 @@ let filter_all =
            would drop the pattern arguments for non-mentioned fields *)
         let lbls = all_record_args lbls in
         normalize_pat { pat with pat_desc = Tpat_record (lbls, closed) }
-    | _ -> normalize_pat pat
-  in
+    | _ -> normalize_pat pat in
+
+  let extend_group discr p r rs =
+    let r = { r with row = simple_match_args discr p @ r.row } in
+    (discr, r :: rs) in
 
   (* insert a row of head [p] and rest [r] into the right group *)
-  let rec insert p r env = match env with
+  let rec insert_constr p r env = match env with
   | [] ->
       (* if no group matched this row, it has a head constructor that
          was never seen before; add a new sub-matrix for this head *)
-      let p0 = discr_head p in
-      [p0,[{ r with unseen = simple_match_args p0 p @ r.unseen }]]
+      [extend_group (discr_head p) p r []]
   | (q0,rs) as bd::env ->
-      if simple_match q0 p then begin
-        let r = { r with unseen = simple_match_args q0 p@r.unseen; } in
-        (q0,r::rs)::env
-      end
-      else bd::insert p r env in
+      if simple_match q0 p
+      then extend_group q0 p r rs :: env
+      else bd :: insert_constr p r env in
 
   (* insert a row of head omega into all groups *)
   let insert_omega r env =
-    List.map
-      (fun (q0,rs) ->
-         let r =
-           { r with unseen = simple_match_args q0 omega @ r.unseen; } in
-         (q0,r::rs))
-      env
-  in
+    List.map (fun (q0,rs) -> extend_group q0 omega r rs) env in
 
-  let rec filter_rec env = function
-    | [] -> env
+  let rec form_groups constr_groups omega_tails = function
+    | [] -> (constr_groups, omega_tails)
     | ({pat_desc=(Tpat_var _|Tpat_alias _|Tpat_or _)},_)::_ -> assert false
-    | ({pat_desc=Tpat_any}, _)::rs -> filter_rec env rs
-    | (p,r)::rs -> filter_rec (insert p r env) rs in
+    | ({pat_desc=Tpat_any}, tail) :: rest ->
+       (* note that calling insert_omega here would be wrong
+          as some groups may not have been formed yet, if the
+          first row with this head pattern comes after in the list *)
+       form_groups constr_groups (tail :: omega_tails) rest
+    | (p,r) :: rest ->
+       form_groups (insert_constr p r constr_groups) omega_tails rest in
 
-  let rec filter_omega env = function
-    | [] -> env
-    | ({pat_desc=(Tpat_var _|Tpat_alias _|Tpat_or _)},_)::_ -> assert false
-    | ({pat_desc=Tpat_any},r)::rs -> filter_omega (insert_omega r env) rs
-    | _::rs -> filter_omega env rs in
-
-  fun rs ->
-    (* first insert the rows with head constructors,
-       to get the definitive list of groups *)
-    let env = filter_rec [] rs in
-    (* then add the omega rows to all groups *)
-    filter_omega env rs
-
-(* the non-empty list of submatrices as a pair (first group, others) *)
-let submatrices rs =
-   (* collect the variables bound at the root of the patterns
-      of the first column, expanding their or-patterns into several rows
-      on the fly. The resulting matrix has only constructors or omega
-      patterns in its first row. *)
-  let rs = push_vars rs in
-
-  (* groups rows by head constructor *)
-  let filtered = List.map snd (filter_all rs) in
-
-  match filtered with
-  | r::rs -> (r, rs)
-  | [] ->
-    (* if no row is a head constructor (all rows are omega (_)),
-       [filtered] is the empty list; then we pop this useless first column,
-       and the result forms a single submatrix *)
-    (List.map snd rs, [])
+  let constr_groups, omega_tails = form_groups [] [] rows in
+  if constr_groups = [] then
+    (* no head constructors: the omega tails form a single submatrix *)
+    [omega_tails]
+  else begin
+    (* insert omega rows in all groups *)
+    let full_groups = List.fold_right insert_omega omega_tails constr_groups in
+    List.map snd full_groups
+  end
 
 (* Compute stable bindings *)
 
-let rec do_stable rs = match rs with
+let reduce f = function
+| [] -> invalid_arg "reduce"
+| x::xs -> List.fold_left f x xs
+
+let rec matrix_stable_vars rs = match rs with
 | [] -> assert false (* No empty matrix *)
-| { unseen=[]; seen = first_row } :: rem ->
-    (* If the first row is empty (all columns have been split maximally),
-       we know that all rows are empty as all rows have the same number of columns.
+| { row = []; _ } :: _ ->
+    (* All rows have the same number of columns;
+       if the first row is empty, they all are. *)
+    List.iter (fun {row; _} -> assert (row = [])) rs;
 
-       The only information left in the rows are the variable binding sets
-       (the 'seen' field of amb_row), which correspond to the positions in
-       the pattern structures of each row in which the variables are bound.
-       The stable variables can now be collected: a variable is stable if
-       it appears in the exact same position in each row.
-     *)
-    let row_variables_rem =
-      List.map (fun { unseen; seen } -> assert (unseen = []); seen) rem in
-    let stable_positions =
-      (* a variable is stable at a given position if it is in the intersection
-         of the variable set at this position in each row *)
-      List.fold_left (List.map2 IdSet.inter) first_row row_variables_rem
-    in
-    (* stable variables are those stable in any row *)
-    List.fold_left IdSet.union IdSet.empty stable_positions
-| _ ->
-    let rs, rss = submatrices rs in
-    (* stable variables are stable across all submatrices *)
-    let vs, vss = do_stable rs, List.map do_stable rss in
-    List.fold_left IdSet.inter vs vss
+    (* A variable is stable in a given varset if, in each row, it
+       appears in this varset -- rather than in another position in
+       the list of binding sets. We can thus compute the stable
+       variables of each varset by pairwise intersection. *)
+    let rows_varsets = List.map (fun { varsets; _ } -> varsets) rs in
+    let stables_in_varsets = reduce (List.map2 IdSet.inter) rows_varsets in
 
-let stable p = do_stable [{unseen=[p]; seen=[];}]
+    (* The stable variables are those stable at any position *)
+    List.fold_left IdSet.union IdSet.empty stables_in_varsets
+| rs ->
+   let submatrices = split_rows (simplify_first_col rs) in
+   let submat_stable = List.map matrix_stable_vars submatrices in
+   (* a stable variable must be stable in each submatrix;
+      if the matrix has at least one row, there is at least one submatrix *)
+   reduce IdSet.inter submat_stable
 
+let pattern_stable_vars p = matrix_stable_vars [{varsets = []; row = [p]}]
 
 (* All identifier paths that appear in an expression that occurs
    as a clause right hand side or guard.
@@ -2452,9 +2456,9 @@ let check_ambiguous_bindings =
             let all =
               IdSet.inter (pattern_vars p) (all_rhs_idents g) in
             if not (IdSet.is_empty all) then begin
-              let st = stable p in
-              let ambiguous = IdSet.diff all st in
-              if not (IdSet.is_empty  ambiguous) then begin
+              let stable = pattern_stable_vars p in
+              let ambiguous = IdSet.diff all stable in
+              if not (IdSet.is_empty ambiguous) then begin
                 let pps = IdSet.elements ambiguous |> List.map Ident.name in
                 let warn = Ambiguous_pattern pps in
                 Location.prerr_warning p.pat_loc warn
