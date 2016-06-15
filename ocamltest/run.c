@@ -218,7 +218,7 @@ int handle_process_termination(
       char corefile[strlen(corefilename_prefix) + 128];
       snprintf(corefile, sizeof(corefile), "%s.%d.core", corefilename_prefix, pid);
       if ( rename(COREFILENAME, corefile) == -1)
-        fprintf(stderr, "Tge core file exists but could not be renamed.\n");
+        fprintf(stderr, "The core file exists but could not be renamed.\n");
       else
         fprintf(stderr,"The core file has been renamed to %s\n", corefile);
     }
