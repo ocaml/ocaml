@@ -312,7 +312,6 @@
 /tools/cvt_emit.opt
 /tools/cvt_emit.bak
 /tools/cvt_emit.ml
-/tools/cvt_emit.opt
 /tools/ocamlcp
 /tools/ocamlcp.opt
 /tools/ocamloptp
