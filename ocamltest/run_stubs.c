@@ -53,14 +53,14 @@ static void logToChannel(void *voidchannel, const char *fmt, ...)
 {
   va_list ap;
   struct channel *channel = (struct channel *) voidchannel;
-  char **text;
+  char *text;
   int res;
   va_start(ap, fmt);
-  res = vasprintf(text, fmt, ap);
+  res = vasprintf(&text, fmt, ap);
   va_end(ap);
   if (res <= 0) return;
-  caml_putblock(channel, *text, res);
-  free(*text);
+  caml_putblock(channel, text, res);
+  free(text);
 }
 
 CAMLprim value caml_run_command(value caml_settings)
