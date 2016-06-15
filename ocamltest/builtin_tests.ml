@@ -20,13 +20,23 @@ open Tests
 let bytecode = {
   test_name = "bytecode";
   test_run_by_default = true;
-  test_actions = [Builtin_actions.bytecode_compile; Builtin_actions.execute]
+  test_actions =
+  [
+    Builtin_actions.bytecode_compile;
+    Builtin_actions.execute;
+    Builtin_actions.check_program_output
+  ]
 }
 
 let nativecode = {
   test_name = "nativecode";
   test_run_by_default = true;
-  test_actions = [Builtin_actions.nativecode_compile; Builtin_actions.execute]
+  test_actions =
+  [
+    Builtin_actions.nativecode_compile;
+    Builtin_actions.execute;
+    Builtin_actions.check_program_output
+  ]
 }
 
 let _ =

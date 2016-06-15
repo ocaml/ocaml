@@ -276,9 +276,9 @@ let execute_program log env =
       "stdout", output;
       "stderr", output
     ] in
-    let env = Environments.add_variables bindings env in
-    match run_command log env commandline with
-      | 0 -> Pass env
+    let env' = Environments.add_variables bindings env in
+    match run_command log env' commandline with
+      | 0 -> Pass (Environments.add "output" output env)
       | _ as exitcode -> Fail (mkreason what commandline exitcode)
 
 let env_id env = env
@@ -289,7 +289,42 @@ let execute = {
   action_body = execute_program
 }
 
+let check_prog_output log env =
+  let reference_filename = Environments.safe_lookup "reference" env in
+  let output_filename = Environments.safe_lookup "output" env in
+  Printf.fprintf log "Comparing program output %s to reference %s\n%!"
+    output_filename reference_filename;
+  let files =
+  {
+    Filecompare.reference_filename = reference_filename;
+    Filecompare.output_filename = output_filename
+  } in
+  match Filecompare.check_file files with
+    | Filecompare.Same -> Pass env
+    | Filecompare.Different ->
+      let reason = Printf.sprintf "Program output %s differs from reference %s"
+        output_filename reference_filename in
+      (Actions.Fail reason)
+    | Filecompare.Unexpected_output ->
+      let reason = Printf.sprintf "The file %s was expected to be empty because there is no reference file %s but it is not"
+        output_filename reference_filename in
+      (Actions.Fail reason)
+    | Filecompare.Error (commandline, exitcode) ->
+      let reason = Printf.sprintf "The command %s failed with status %d"
+        commandline exitcode in
+      (Actions.Fail reason)
+
+let check_program_output = {
+  action_name = "check-program-output";
+  action_environment = env_id;
+  action_body = check_prog_output
+}
+
 let _ =
-  register bytecode_compile;
-  register nativecode_compile;
-  register execute
+  List.iter register
+  [
+    bytecode_compile;
+    nativecode_compile;
+    execute;
+    check_program_output
+  ]

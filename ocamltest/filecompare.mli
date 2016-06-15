@@ -15,15 +15,25 @@
 
 (* File comparison tools *)
 
-type t = {
+type result =
+  | Same
+  | Different
+  | Unexpected_output
+  | Error of string * int
+
+type tool = {
+  tool_name : string;
+  tool_flags : string;
+  result_of_exitcode : string -> int -> result
+}
+
+val default_comparison_tool : tool
+
+type files = {
   reference_filename : string;
   output_filename : string;
 }
 
-val default_cmp_tool : string
+val compare_files : ?tool:tool -> files -> result
 
-val default_cmp_flags : string
-
-val compare_files : ?cmp_tool:string -> ?cmp_flags:string -> t -> bool
-
-val check_file : ?cmp_tool:string -> ?cmp_flags:string -> t -> bool
+val check_file : ?tool:tool -> files -> result

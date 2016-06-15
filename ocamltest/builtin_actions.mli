@@ -20,3 +20,4 @@ val bytecode_compile : Actions.t
 val nativecode_compile : Actions.t
 
 val execute : Actions.t
+val check_program_output : Actions.t
