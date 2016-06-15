@@ -16,7 +16,6 @@
 (* Lexer definitions for the Tests Specification Language *)
 
 {
-open Lexing
 open Tsl_parser
 
 }

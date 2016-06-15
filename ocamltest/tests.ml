@@ -28,7 +28,8 @@ let (tests: (string, t) Hashtbl.t) = Hashtbl.create 20
 let register test = Hashtbl.add tests test.test_name test
 
 let default_tests () =
-  let f name test acc = if test.test_run_by_default then test::acc else acc in
+  let f _test_namename test acc =
+    if test.test_run_by_default then test::acc else acc in
   Hashtbl.fold f tests []
 
 let lookup name =

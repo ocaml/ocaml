@@ -15,7 +15,6 @@
 
 (* Main program for the test handler *)
 
-open Tsl_ast
 open Tsl_semantics
 
 let first_token filename =
@@ -28,7 +27,7 @@ let first_token filename =
 
 let is_test filename =
   match first_token filename with
-    | exception e -> false
+    | exception _ -> false
     | Tsl_parser.TSL_BEGIN -> true
     | _ -> false
 

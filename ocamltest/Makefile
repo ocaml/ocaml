@@ -18,7 +18,9 @@ modules :=\
   tsl_semantics.cmo \
   main.cmo
 
-bcflags = -g -nostdlib -I ../parsing -I ../stdlib -I ../compilerlibs
+bcflags = -g -nostdlib -I ../parsing -I ../stdlib -I ../compilerlibs \
+  -strict-sequence -safe-string -strict-formats \
+  -w +a-4-9-41-42-44-45-48 -warn-error A
 
 ocamlc := ../byterun/ocamlrun ../ocamlc $(bcflags)
 

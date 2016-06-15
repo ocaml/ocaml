@@ -99,13 +99,16 @@ let use_runtime env = function
     end
   | Sys.Other _ -> assert false
 
+(*
 let file_extension filename =
   let l = String.length filename in
   let pos_dot = ref (l-1) in
   while !pos_dot >= 0 && (filename.[!pos_dot] <> '.'); do decr pos_dot; done;
   if !pos_dot < 0 then ""
   else String.sub filename (!pos_dot+1) (l - !pos_dot -1)
+*)
 
+(*
 type file_type =
   | Implementation
   | Interface
@@ -113,9 +116,11 @@ type file_type =
   | C_minor
   | Lexer
   | Grammar
+*)
 
-exception Unknown_file_extension of string
+(* exception Unknown_file_extension of string *)
 
+(*
 let file_type filename =
   match (file_extension filename) with
   | "ml" -> Implementation
@@ -125,8 +130,7 @@ let file_type filename =
   | "mll" -> Lexer
   | "mly" -> Grammar
   | _ as ext -> raise (Unknown_file_extension ext)
-
-let noop log env = Pass env
+*)
 
 let get_modules env =
   let modules = Testlib.words (Environments.safe_lookup "modules" env) in
@@ -152,7 +156,7 @@ let linker env = get_backend_value_from_env env "ocamlc" "ocamlopt"
 let backend_flags env =
   get_backend_value_from_env env "bcflags" "ncflags"
 
-let libraries env = get_backend_value_from_env env "bclibs" "nclibs"
+let libraries env = Environments.safe_lookup "libraries" env
 
 let stdlib_flags env = Environments.safe_lookup "stdlibflags" env
 
@@ -217,6 +221,7 @@ let link_modules backend log env modules =
     use_runtime env backend;
     stdlib_flags env;
     common_flags env;
+    libraries env;
     backend_flags env backend;
     module_names;
     output
