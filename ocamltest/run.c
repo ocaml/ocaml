@@ -58,6 +58,7 @@ void error_with_location(
   va_start(ap, msg);
   logger(settings->loggerData, "%s:%d: ", file, line);
   logger(settings->loggerData, msg, ap);
+  logger(settings->loggerData, "\n");
   va_end(ap);
 }
 
