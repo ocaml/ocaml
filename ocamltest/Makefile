@@ -4,6 +4,7 @@ modules :=\
   run_stubs.o \
   run.cmo \
   testlib.cmo \
+  filecompare.cmo \
   backends.cmo \
   environments.cmo \
   builtin_environments.cmo \
