@@ -49,6 +49,8 @@ let add_variables bindings env =
   let f env (variable, value) = add variable value env in
   List.fold_left f env bindings
 
+let from_list bindings = add_variables bindings empty
+
 let (registered_environments : (string, t) Hashtbl.t) = Hashtbl.create 20
 
 let register environment_name environment =

@@ -29,6 +29,8 @@ type t
 
 val empty : t
 
+val from_list : (string * string) list -> t
+
 val lookup : string -> t -> string option
 val safe_lookup : string -> t -> string
 

@@ -109,15 +109,21 @@ let main () =
       List.map make_tree default_tests
     | _ -> test_trees in
   let actions = actions_in_tests (tests_in_trees test_trees) in
-  let init_env = initial_env (Filename.basename test_filename) in
-  let root_environment =
-    interprete_environment_statements init_env rootenv_statements in
-  let rootenv = Actions.update_environment root_environment actions in
   let test_dirname = Filename.dirname test_filename in
   let test_basename = Filename.basename test_filename in
   let test_prefix = Filename.chop_extension test_basename in
   let test_source_directory = get_test_source_directory test_dirname in
   let test_build_directory = get_test_build_directory test_dirname in
+  let reference_filename = Filename.concat
+    test_source_directory (test_prefix ^ ".reference") in
+  let initial_environment = Environments.from_list
+  [
+    "testfile", test_basename;
+    "reference", reference_filename;
+  ] in
+  let root_environment =
+    interprete_environment_statements initial_environment rootenv_statements in
+  let rootenv = Actions.update_environment root_environment actions in
   make_directory test_build_directory;
   let modules_value = Environments.safe_lookup "modules" rootenv in
   let modules = Testlib.words modules_value in
