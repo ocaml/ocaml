@@ -43,7 +43,10 @@ let rec run_actions log env = function
       let result = Actions.run log env action in
       match result with
         | Actions.Pass env' -> run_actions log env' remaining_actions
-        | _ -> result
+        | _ ->
+          Printf.fprintf log "Action %s returned %s\n%!"
+            action.Actions.action_name (Actions.string_of_result result);
+          result
     end
 
 let run log env test =
