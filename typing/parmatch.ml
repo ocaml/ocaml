@@ -2239,7 +2239,6 @@ let pattern_vars p = IdSet.of_list (Typedtree.pat_bound_idents p)
 
 type amb_row = { unseen : pattern list ; seen : IdSet.t list; }
 
-
 (* Push binding variables now *)
 
 let rec do_push r p ps seen k = match p.pat_desc with
@@ -2256,18 +2255,6 @@ let rec push_vars = function
   | { unseen = [] }::_ -> assert false
   | { unseen = p::ps; seen; }::rem ->
       do_push IdSet.empty p ps seen (push_vars rem)
-
-let collect_stable = function
-  | [] -> assert false
-  | { seen=xss; _}::rem ->
-      let rec c_rec xss = function
-        | [] -> xss
-        | {seen=yss; _}::rem ->
-            let xss = List.map2 IdSet.inter xss yss in
-            c_rec xss rem in
-      let inters = c_rec xss rem in
-      List.fold_left IdSet.union IdSet.empty inters
-
 
 (*********************************************)
 (* Filtering utilities for our specific rows *)
@@ -2350,21 +2337,53 @@ let filter_all =
     (* then add the omega rows to all groups *)
     filter_omega env rs
 
+(* the non-empty list of submatrices as a pair (first group, others) *)
+let submatrices rs =
+   (* collect the variables bound at the root of the patterns
+      of the first column, expanding their or-patterns into several rows
+      on the fly. The resulting matrix has only constructors or omega
+      patterns in its first row. *)
+  let rs = push_vars rs in
+
+  (* groups rows by head constructor *)
+  let filtered = List.map snd (filter_all rs) in
+
+  match filtered with
+  | r::rs -> (r, rs)
+  | [] ->
+    (* if no row is a head constructor (all rows are omega (_)),
+       [filtered] is the empty list; then we pop this useless first column,
+       and the result forms a single submatrix *)
+    (List.map snd rs, [])
+
 (* Compute stable bindings *)
 
 let rec do_stable rs = match rs with
 | [] -> assert false (* No empty matrix *)
-| { unseen=[]; _ }::_ ->
-    collect_stable rs
+| { unseen=[]; seen = first_row } :: rem ->
+    (* If the first row is empty (all columns have been split maximally),
+       we know that all rows are empty as all rows have the same number of columns.
+
+       The only information left in the rows are the variable binding sets
+       (the 'seen' field of amb_row), which correspond to the positions in
+       the pattern structures of each row in which the variables are bound.
+       The stable variables can now be collected: a variable is stable if
+       it appears in the exact same position in each row.
+     *)
+    let row_variables_rem =
+      List.map (fun { unseen; seen } -> assert (unseen = []); seen) rem in
+    let stable_positions =
+      (* a variable is stable at a given position if it is in the intersection
+         of the variable set at this position in each row *)
+      List.fold_left (List.map2 IdSet.inter) first_row row_variables_rem
+    in
+    (* stable variables are those stable in any row *)
+    List.fold_left IdSet.union IdSet.empty stable_positions
 | _ ->
-    let rs = push_vars rs in
-    match filter_all rs with
-    | [] ->
-        do_stable (List.map snd rs)
-    | (_,rs)::env ->
-        List.fold_left
-          (fun xs (_,rs) -> IdSet.inter xs (do_stable rs))
-          (do_stable rs) env
+    let rs, rss = submatrices rs in
+    (* stable variables are stable across all submatrices *)
+    let vs, vss = do_stable rs, List.map do_stable rss in
+    List.fold_left IdSet.inter vs vss
 
 let stable p = do_stable [{unseen=[p]; seen=[];}]
 
