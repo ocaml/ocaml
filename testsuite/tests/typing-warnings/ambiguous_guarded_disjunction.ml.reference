@@ -118,23 +118,25 @@ val ambiguous__module_variable :
   (module S) * (module S) * (int * int) -> bool -> int = <fun>
 #           val not_ambiguous__module_variable :
   (module S) * (module S) * (int * int) -> bool -> int = <fun>
-#         type t = A of int * int | B of int * int
+#         type t2 = A of int * int | B of int * int
 #         Characters 55-56:
     | A (x as z,(0 as y))|A (0 as y as z,x)|B (x,(y as z)) when g x (y+z) -> 1
       ^
-Warning 41: A belongs to several types: t t
+Warning 41: A belongs to several types: t2 t
 The first one was selected. Please disambiguate if this is wrong.
 Characters 42-138:
   .........................................function
     | A (x as z,(0 as y))|A (0 as y as z,x)|B (x,(y as z)) when g x (y+z) -> 1
     | _ -> 2
 Warning 4: this pattern-matching is fragile.
-It will remain exhaustive when constructors are added to type t.
+It will remain exhaustive when constructors are added to type t2.
 Characters 55-107:
     | A (x as z,(0 as y))|A (0 as y as z,x)|B (x,(y as z)) when g x (y+z) -> 1
       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Warning 57: Ambiguous or-pattern variables under guard;
 variables x,y may match different arguments. (See manual section 8.5)
-val ambiguous_xy_but_not_ambiguous_z : (int -> int -> bool) -> t -> int =
+val ambiguous_xy_but_not_ambiguous_z : (int -> int -> bool) -> t2 -> int =
   <fun>
+#   * * * * * * * *         val not_ambiguous__as_disjoint_on_second_column_split :
+  int option * int -> unit = <fun>
 # 
