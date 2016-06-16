@@ -137,7 +137,6 @@ world:
 
 # Compile also native code compiler and libraries, fast
 world.opt:
-	$(error Multicore doesn't yet support native code compiler. `make world` will build the bytecode compiler)
 	$(MAKE) coldstart
 	$(MAKE) opt.opt
 

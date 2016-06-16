@@ -29,6 +29,7 @@
 #include "osdeps.h"
 #include "printexc.h"
 #include "stack.h"
+#include "fiber.h"
 #include "sys.h"
 #include "params.h"
 #ifdef HAS_UI
@@ -95,7 +96,11 @@ void caml_main(char **argv)
 #endif
   caml_init_custom_operations();
   caml_init_gc ();
-  caml_domain_state->top_of_stack = &tos;
+
+  /* Capture 16-byte aligned (ceil) system_stack_high */
+  caml_domain_state->system_stack_high =
+    (char*)((((uintnat)&tos + 16) >> 4) << 4);
+
   init_segments();
   caml_init_signals();
   caml_debugger_init (); /* force debugger.o stub to be linked */
@@ -111,6 +116,7 @@ void caml_main(char **argv)
     if (caml_termination_hook != NULL) caml_termination_hook(NULL);
     return;
   }
+  caml_init_main_stack();
   res = caml_start_program(caml_domain_state->young_ptr);
   if (Is_exception_result(res))
     caml_fatal_uncaught_exception(Extract_exception(res));

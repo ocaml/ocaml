@@ -33,6 +33,7 @@
 #include "startup.h"
 
 uintnat caml_max_stack_size;
+uintnat caml_fiber_wsz;
 
 double caml_stat_minor_words = 0.0,
        caml_stat_promoted_words = 0.0,
@@ -464,6 +465,7 @@ void caml_init_gc ()
       Bsize_wsize (caml_normalize_heap_increment (caml_startup_params.heap_size_init)); */
 
   caml_max_stack_size = caml_startup_params.max_stack_init;
+  caml_fiber_wsz = caml_startup_params.fiber_wsz_init;
   caml_percent_free = norm_pfree (caml_startup_params.percent_free_init);
   caml_gc_log ("Initial stack limit: %luk bytes",
                caml_max_stack_size / 1024 * sizeof (value));
