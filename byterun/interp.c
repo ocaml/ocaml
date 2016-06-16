@@ -1300,7 +1300,7 @@ do_resume:
       goto check_stacks;
     }
 
-    Instruct(DELEGATETERM): {
+    Instruct(REPERFORMTERM): {
       value eff = accu;
       value performer = sp[0];
       value self = caml_domain_state->current_stack;

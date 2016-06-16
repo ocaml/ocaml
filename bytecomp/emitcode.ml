@@ -279,7 +279,7 @@ let emit_instr = function
   | Kperform -> out opPERFORM
   | Kresume -> out opRESUME
   | Kresumeterm n -> out opRESUMETERM; out_int n
-  | Kdelegateterm n -> out opDELEGATETERM; out_int n
+  | Kreperformterm n -> out opREPERFORMTERM; out_int n
   | Kstop -> out opSTOP
 
 (* Emission of a list of instructions. Include some peephole optimization. *)

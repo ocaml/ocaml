@@ -126,7 +126,7 @@ let primitive ppf = function
   | Plazyforce -> fprintf ppf "force"
   | Pperform -> fprintf ppf "perform"
   | Presume -> fprintf ppf "resume"
-  | Pdelegate -> fprintf ppf "delegate"
+  | Preperform -> fprintf ppf "reperform"
   | Pccall p -> fprintf ppf "%s" p.prim_name
   | Praise k -> fprintf ppf "%s" (Lambda.raise_kind k)
   | Psequand -> fprintf ppf "&&"
