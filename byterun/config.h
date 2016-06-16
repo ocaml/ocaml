@@ -117,6 +117,9 @@ typedef uint64 uintnat;
    It must be a multiple of [sizeof (value)] and >= 8 and <= 20. */
 #define Page_log 12             /* A page is 4 kilobytes. */
 
+/* Size of extra stack slop space if profiling is enabled (words) */
+#define Profile_slop 128
+
 /* Initial size of stack (bytes). */
 #define Stack_size (4096 * sizeof(value))
 
@@ -180,5 +183,11 @@ typedef uint64 uintnat;
  */
 #define Max_percent_free_def 500
 
+/* Default setting for promoting with minor GC: 10%.
+   If the portion of the minor heap to be scanned during a promotion is greater
+   than 10%, then we promote the object by performing a local garbage
+   collection.
+ */
+#define Percent_to_promote_with_GC 10
 
 #endif /* CAML_CONFIG_H */
