@@ -56,8 +56,14 @@ let ocamlrun ocamlsrcdir =
 let ocamlc ocamlsrcdir =
   filename_concat [ocamlsrcdir; "ocamlc"]
 
+let ocamlc_dot_opt ocamlsrcdir =
+  filename_concat [ocamlsrcdir; "ocamlc.opt"]
+
 let ocamlopt ocamlsrcdir =
   filename_concat [ocamlsrcdir; "ocamlopt"]
+
+let ocamlopt_dot_opt ocamlsrcdir =
+  filename_concat [ocamlsrcdir; "ocamlopt.opt"]
 
 let stdlib ocamlsrcdir =
   filename_concat [ocamlsrcdir; "stdlib"]
@@ -133,8 +139,7 @@ let file_type filename =
 *)
 
 let get_modules env =
-  let modules = Testlib.words (Environments.safe_lookup "modules" env) in
-  modules
+  Testlib.words (Environments.safe_lookup "modules" env)
 
 let mkfilename name ext = name ^ "." ^ ext
 
