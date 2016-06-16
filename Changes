@@ -110,6 +110,9 @@ OCaml 4.04.0:
 - PR#7269: Segfault from conjunctive constraints in GADT
   (Jacques Garrigue, report by Stephen Dolan)
 
+- GPR#600: (similar to GPR#555) ensure that register typing constraints are
+  respected at N-way join points in the control flow graph (Mark Shinwell)
+
 ### Other libraries:
 
 * GPR#533: Thread library: fixed [Thread.wait_signal] so that it
