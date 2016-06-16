@@ -4,7 +4,7 @@ EXE=test1.native test2.native test3.native test4.native test5.native \
 		test16.native test17.native test18.native test19.native test20.native
 DEBUG=false
 FLAGS=
-OCAMLOPT=ocamlopt
+OCAMLOPT=../ocamlopt.opt
 
 ifeq ($(DEBUG),true)
 	FLAGS=-g -runtime-variant d -S
