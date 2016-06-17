@@ -273,12 +273,13 @@ let rec eq_structure_item_desc :
   | (Pstr_primitive (a0, a1), Pstr_primitive (b0, b1)) ->
       (Asttypes.eq_loc eq_string (a0, b0)) &&
         (eq_value_description (a1, b1))
-  | (Pstr_type a0, Pstr_type b0) ->
+  | (Pstr_type (a0, a1), Pstr_type (b0, b1)) ->
+      (Asttypes.eq_rec_flag (a0, b0)) &&
       eq_list
         (fun ((a0, a1), (b0, b1)) ->
            (Asttypes.eq_loc eq_string (a0, b0)) &&
              (eq_type_declaration (a1, b1)))
-        (a0, b0)
+        (a1, b1)
   | (Pstr_exception (a0, a1), Pstr_exception (b0, b1)) ->
       (Asttypes.eq_loc eq_string (a0, b0)) &&
         (eq_exception_declaration (a1, b1))
@@ -359,12 +360,13 @@ and eq_signature_item_desc :
   | (Psig_value (a0, a1), Psig_value (b0, b1)) ->
       (Asttypes.eq_loc eq_string (a0, b0)) &&
         (eq_value_description (a1, b1))
-  | (Psig_type a0, Psig_type b0) ->
+  | (Psig_type (a0, a1), Psig_type (b0, b1)) ->
+      (Asttypes.eq_rec_flag (a0, b0)) &&
       eq_list
         (fun ((a0, a1), (b0, b1)) ->
            (Asttypes.eq_loc eq_string (a0, b0)) &&
              (eq_type_declaration (a1, b1)))
-        (a0, b0)
+        (a1, b1)
   | (Psig_exception (a0, a1), Psig_exception (b0, b1)) ->
       (Asttypes.eq_loc eq_string (a0, b0)) &&
         (eq_exception_declaration (a1, b1))

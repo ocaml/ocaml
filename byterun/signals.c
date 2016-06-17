@@ -15,17 +15,17 @@
 
 #include <signal.h>
 #include <errno.h>
-#include "alloc.h"
-#include "callback.h"
-#include "config.h"
-#include "fail.h"
-#include "memory.h"
-#include "misc.h"
-#include "mlvalues.h"
-#include "roots.h"
-#include "signals.h"
-#include "signals_machdep.h"
-#include "sys.h"
+#include "caml/alloc.h"
+#include "caml/callback.h"
+#include "caml/config.h"
+#include "caml/fail.h"
+#include "caml/memory.h"
+#include "caml/misc.h"
+#include "caml/mlvalues.h"
+#include "caml/roots.h"
+#include "caml/signals.h"
+#include "caml/signals_machdep.h"
+#include "caml/sys.h"
 
 #ifndef NSIG
 #define NSIG 64

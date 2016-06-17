@@ -24,8 +24,8 @@
 #   val get_x : < get_x : 'a; .. > -> 'a = <fun>
 # val set_x : < set_x : 'a; .. > -> 'a = <fun>
 # - : int list = [10; 5]
-#           Characters 7-96:
-  ......ref x_init = object
+#           Characters 1-96:
+  class ref x_init = object
     val mutable x = x_init
     method get = x
     method set y = x <- y

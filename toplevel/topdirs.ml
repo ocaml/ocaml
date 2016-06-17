@@ -185,17 +185,40 @@ let _ = Hashtbl.add directive_table "mod_use"
 
 (* Install, remove a printer *)
 
+let filter_arrow ty =
+  let ty = Ctype.expand_head !toplevel_env ty in
+  match ty.desc with
+  | Tarrow (lbl, l, r, _) when not (Btype.is_optional lbl) -> Some (l, r)
+  | _ -> None
+
+let rec extract_last_arrow desc =
+  match filter_arrow desc with
+  | None -> raise (Ctype.Unify [])
+  | Some (_, r as res) ->
+      try extract_last_arrow r
+      with Ctype.Unify _ -> res
+
+let extract_target_type ty = fst (extract_last_arrow ty)
+let extract_target_parameters ty =
+  let ty = extract_target_type ty |> Ctype.expand_head !toplevel_env in
+  match ty.desc with
+  | Tconstr (path, (_ :: _ as args), _)
+      when Ctype.all_distinct_vars !toplevel_env args -> Some (path, args)
+  | _ -> None
+
 type 'a printer_type_new = Format.formatter -> 'a -> unit
 type 'a printer_type_old = 'a -> unit
 
-let match_printer_type ppf desc typename =
+let printer_type ppf typename =
   let (printer_type, _) =
     try
       Env.lookup_type (Ldot(Lident "Topdirs", typename)) !toplevel_env
     with Not_found ->
       fprintf ppf "Cannot find type Topdirs.%s.@." typename;
       raise Exit in
-  Ctype.init_def(Ident.current_time());
+  printer_type
+
+let match_simple_printer_type ppf desc printer_type =
   Ctype.begin_def();
   let ty_arg = Ctype.newvar() in
   Ctype.unify !toplevel_env
@@ -203,16 +226,45 @@ let match_printer_type ppf desc typename =
     (Ctype.instance_def desc.val_type);
   Ctype.end_def();
   Ctype.generalize ty_arg;
-  ty_arg
+  (ty_arg, None)
+
+let match_generic_printer_type ppf desc path args printer_type =
+  Ctype.begin_def();
+  let args = List.map (fun _ -> Ctype.newvar ()) args in
+  let ty_target = Ctype.newty (Tconstr (path, args, ref Mnil)) in
+  let ty_args =
+    List.map (fun ty_var -> Ctype.newconstr printer_type [ty_var]) args in
+  let ty_expected =
+    List.fold_right
+      (fun ty_arg ty -> Ctype.newty (Tarrow ("", ty_arg, ty, Cunknown)))
+      ty_args (Ctype.newconstr printer_type [ty_target]) in
+  Ctype.unify !toplevel_env
+    ty_expected
+    (Ctype.instance_def desc.val_type);
+  Ctype.end_def();
+  Ctype.generalize ty_expected;
+  if not (Ctype.all_distinct_vars !toplevel_env args) then
+    raise (Ctype.Unify []);
+  (ty_expected, Some (path, ty_args))
+
+let match_printer_type ppf desc =
+  let printer_type_new = printer_type ppf "printer_type_new" in
+  let printer_type_old = printer_type ppf "printer_type_old" in
+  Ctype.init_def(Ident.current_time());
+  match extract_target_parameters desc.val_type with
+  | None ->
+     (try
+        (match_simple_printer_type ppf desc printer_type_new, false)
+      with Ctype.Unify _ ->
+        (match_simple_printer_type ppf desc printer_type_old, true))
+  | Some (path, args) ->
+     (* only 'new' style is available for generic printers *)
+     match_generic_printer_type ppf desc path args printer_type_new, false
 
 let find_printer_type ppf lid =
   try
     let (path, desc) = Env.lookup_value lid !toplevel_env in
-    let (ty_arg, is_old_style) =
-      try
-        (match_printer_type ppf desc "printer_type_new", false)
-      with Ctype.Unify _ ->
-        (match_printer_type ppf desc "printer_type_old", true) in
+    let (ty_arg, is_old_style) = match_printer_type ppf desc in
     (ty_arg, path, is_old_style)
   with
   | Not_found ->
@@ -225,14 +277,30 @@ let find_printer_type ppf lid =
 
 let dir_install_printer ppf lid =
   try
-    let (ty_arg, path, is_old_style) = find_printer_type ppf lid in
+    let ((ty_arg, ty), path, is_old_style) =
+      find_printer_type ppf lid in
     let v = eval_path !toplevel_env path in
-    let print_function =
-      if is_old_style then
-        (fun formatter repr -> Obj.obj v (Obj.obj repr))
-      else
-        (fun formatter repr -> Obj.obj v formatter (Obj.obj repr)) in
-    install_printer path ty_arg print_function
+    match ty with
+    | None ->
+       let print_function =
+         if is_old_style then
+           (fun formatter repr -> Obj.obj v (Obj.obj repr))
+         else
+           (fun formatter repr -> Obj.obj v formatter (Obj.obj repr)) in
+       install_printer path ty_arg print_function
+    | Some (ty_path, ty_args) ->
+       let rec build v = function
+         | [] ->
+            let print_function =
+              if is_old_style then
+                (fun formatter repr -> Obj.obj v (Obj.obj repr))
+              else
+                (fun formatter repr -> Obj.obj v formatter (Obj.obj repr)) in
+            Zero print_function
+         | _ :: args ->
+            Succ
+              (fun fn -> build ((Obj.obj v : _ -> Obj.t) fn) args) in
+       install_generic_printer' path ty_path (build v ty_args)
   with Exit -> ()
 
 let dir_remove_printer ppf lid =
@@ -361,7 +429,8 @@ let show_prim to_sig ppf lid =
     in
     let id = Ident.create_persistent s in
     let sg = to_sig env loc id lid in
-    fprintf ppf "@[%a@]@." Printtyp.signature sg
+    Printtyp.wrap_printing_env env
+      (fun () -> fprintf ppf "@[%a@]@." Printtyp.signature sg)
   with
   | Not_found ->
       fprintf ppf "@[Unknown element.@]@."

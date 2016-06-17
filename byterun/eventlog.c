@@ -3,15 +3,15 @@
 #include <errno.h>
 #include <stdlib.h>
 
-#include "config.h"
+#include "caml/config.h"
 #ifdef HAS_GETTIMEOFDAY
 #include <sys/time.h>
 #endif
 
-#include "mlvalues.h"
-#include "eventlog.h"
-#include "startup.h"
-#include "domain.h"
+#include "caml/mlvalues.h"
+#include "caml/eventlog.h"
+#include "caml/startup.h"
+#include "caml/domain.h"
 
 struct event_details {
   EventType type;
@@ -84,7 +84,7 @@ void caml_setup_eventlog() {
 #if !defined(HAS_GETTIMEOFDAY)
   caml_gc_log("No gettimeofday() on this system, event logging disabled");
 #endif
-  
+
   sprintf(filename, "%.200s.eventlog", caml_startup_params.exe_name);
   output = fopen(filename, "w");
   if (!output) {

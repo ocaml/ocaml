@@ -10,7 +10,7 @@
 /*                                                                     */
 /***********************************************************************/
 
-#if defined(SYS_solaris) || defined(SYS_elf)
+#if defined(SYS_solaris) || defined(SYS_linux)
 #define Call_gen_code call_gen_code
 #define Caml_c_call caml_c_call
 #else

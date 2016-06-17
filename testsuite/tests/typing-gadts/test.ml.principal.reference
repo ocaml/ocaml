@@ -47,6 +47,24 @@ module Nonexhaustive :
     type 'a v = Foo : t -> t v | Bar : u -> u v
     val same_type : 's v * 's v -> bool
   end
+#           Characters 34-42:
+    class c (Some x) = object method x : int = x end
+            ^^^^^^^^
+Warning 8: this pattern-matching is not exhaustive.
+Here is an example of a value that is not matched:
+None
+Characters 139-147:
+    class d (Just x) = object method x : int = x end
+            ^^^^^^^^
+Warning 8: this pattern-matching is not exhaustive.
+Here is an example of a value that is not matched:
+Nothing
+module PR6862 :
+  sig
+    class c : int option -> object method x : int end
+    type _ opt = Just : 'a -> 'a opt | Nothing : 'a opt
+    class d : int opt -> object method x : int end
+  end
 #               Characters 118-119:
       let eval (D x) = x
                        ^
@@ -75,6 +93,11 @@ Error: This expression has type bool but an expression was expected of type s
                               ^
 Error: This pattern matches values of type b
        but a pattern was expected which matches values of type a
+#             Characters 89-92:
+        Foo -> 5
+        ^^^
+Error: This pattern matches values of type 'a t
+       but a pattern was expected which matches values of type int
 #   type _ t = Int : int t
 #   val ky : 'a -> 'a -> 'a = <fun>
 #       val test : 'a t -> 'a = <fun>

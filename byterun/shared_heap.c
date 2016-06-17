@@ -1,16 +1,16 @@
 #include <stdlib.h>
 #include <string.h>
-#include "platform.h"
-#include "mlvalues.h"
-#include "gc.h"
-#include "fail.h"
-#include "memory.h"
-#include "sizeclasses.h"
-#include "addrmap.h"
-#include "roots.h"
-#include "globroots.h"
-#include "shared_heap.h"
-#include "fiber.h" /* for verification */
+#include "caml/platform.h"
+#include "caml/mlvalues.h"
+#include "caml/gc.h"
+#include "caml/fail.h"
+#include "caml/memory.h"
+#include "caml/sizeclasses.h"
+#include "caml/addrmap.h"
+#include "caml/roots.h"
+#include "caml/globroots.h"
+#include "caml/shared_heap.h"
+#include "caml/fiber.h" /* for verification */
 
 typedef unsigned int sizeclass;
 typedef uintnat status;

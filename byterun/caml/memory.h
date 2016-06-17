@@ -68,7 +68,6 @@ color_t caml_allocation_color (void *hp);
 #define Is_promoted_hd(hd)  (((hd) & (3 << 8)) == (3 << 8))
 #define Promotedhd_hd(hd)  ((hd) | (3 << 8))
 
-
 #ifdef DEBUG
 #define DEBUG_clear(result, wosize) do{ \
   uintnat caml__DEBUG_i; \

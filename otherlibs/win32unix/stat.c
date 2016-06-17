@@ -12,9 +12,9 @@
 /***********************************************************************/
 
 #include <errno.h>
-#include <mlvalues.h>
-#include <memory.h>
-#include <alloc.h>
+#include <caml/mlvalues.h>
+#include <caml/memory.h>
+#include <caml/alloc.h>
 #include "unixsupport.h"
 #include "cst2constr.h"
 #define _INTEGRAL_MAX_BITS 64

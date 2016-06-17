@@ -41,6 +41,9 @@ val type_self_pattern:
         (Ident.t * Asttypes.mutable_flag * Asttypes.virtual_flag * type_expr)
             Vars.t ref *
         Env.t * Env.t * Env.t
+val check_partial:
+        ?lev:int -> Env.t -> type_expr ->
+	Location.t -> Typedtree.case list -> Typedtree.partial
 val type_expect:
         ?in_function:(Location.t * type_expr) ->
         Env.t -> Parsetree.expression -> type_expr -> Typedtree.expression
