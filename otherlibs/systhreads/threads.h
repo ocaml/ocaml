@@ -14,6 +14,10 @@
 #ifndef CAML_THREADS_H
 #define CAML_THREADS_H
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 CAMLextern void caml_enter_blocking_section (void);
 CAMLextern void caml_leave_blocking_section (void);
 #define caml_acquire_runtime_system caml_leave_blocking_section
@@ -54,5 +58,9 @@ CAMLextern int caml_c_thread_unregister(void);
    Before the thread finishes, it must call [caml_c_thread_unregister].
    Both functions return 1 on success, 0 on error.
 */
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* CAML_THREADS_H */

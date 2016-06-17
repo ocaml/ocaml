@@ -45,23 +45,28 @@ installopt-prof:
 stdlib.p.cmxa: $(OBJS:.cmo=.p.cmx)
 	$(CAMLOPT) -a -o stdlib.p.cmxa $(OBJS:.cmo=.p.cmx)
 
-camlheader camlheaderd camlheader_ur: header.c ../config/Makefile
+camlheader target_camlheader camlheaderd target_camlheaderd camlheader_ur: \
+  header.c ../config/Makefile
 	if $(SHARPBANGSCRIPTS); then \
 	  echo '#!$(BINDIR)/ocamlrun' > camlheader && \
+	  echo '#!$(TARGET_BINDIR)/ocamlrun' > target_camlheader && \
 	  echo '#!$(BINDIR)/ocamlrund' > camlheaderd && \
+	  echo '#!$(TARGET_BINDIR)/ocamlrund' > target_camlheaderd && \
 	  echo '#!' | tr -d '\012' > camlheader_ur; \
 	else \
-	  $(BYTECC) $(BYTECCCOMPOPTS) $(BYTECCLINKOPTS) \
-	            -DRUNTIME_NAME='"$(BINDIR)/ocamlrun"' \
-	            header.c -o tmpheader$(EXE) && \
-	  strip tmpheader$(EXE) && \
-	  mv tmpheader$(EXE) camlheader && \
-	  cp camlheader camlheader_ur && \
-	  $(BYTECC) $(BYTECCCOMPOPTS) $(BYTECCLINKOPTS) \
-	            -DRUNTIME_NAME='"$(BINDIR)/ocamlrund"' \
-	            header.c -o tmpheader$(EXE) && \
-	  strip tmpheader$(EXE) && \
-	  mv tmpheader$(EXE) camlheaderd; \
+	  for suff in '' d; do \
+	    $(BYTECC) $(BYTECCCOMPOPTS) $(BYTECCLINKOPTS) \
+	              -DRUNTIME_NAME='"$(BINDIR)/ocamlrun'$$suff'"' \
+	              header.c -o tmpheader$(EXE) && \
+	    strip tmpheader$(EXE) && \
+	    mv tmpheader$(EXE) camlheader$$suff && \
+	    $(BYTECC) $(BYTECCCOMPOPTS) $(BYTECCLINKOPTS) \
+	              -DRUNTIME_NAME='"$(TARGET_BINDIR)/ocamlrun'$$suff'"' \
+	              header.c -o tmpheader$(EXE) && \
+	    strip tmpheader$(EXE) && \
+	    mv tmpheader$(EXE) target_camlheader$$suff; \
+	  done && \
+	  cp camlheader camlheader_ur; \
 	fi
 
 .PHONY: all allopt allopt-noprof allopt-prof install installopt

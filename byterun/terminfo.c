@@ -13,12 +13,12 @@
 
 /* Read and output terminal commands */
 
-#include "config.h"
-#include "alloc.h"
-#include "fail.h"
-#include "io.h"
-#include "mlvalues.h"
-#include "memory.h"
+#include "caml/config.h"
+#include "caml/alloc.h"
+#include "caml/fail.h"
+#include "caml/io.h"
+#include "caml/mlvalues.h"
+#include "caml/memory.h"
 
 #define Uninitialised (Val_int(0))
 #define Bad_term (Val_int(1))

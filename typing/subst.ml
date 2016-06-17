@@ -42,11 +42,22 @@ let remove_loc =
   let open Ast_mapper in
   {default_mapper with location = (fun _this _loc -> Location.none)}
 
-let attrs s x =
-  if s.for_saving && not !Clflags.keep_locs
-  then remove_loc.Ast_mapper.attributes remove_loc x
-  else x
+let is_not_doc = function
+  | ({Location.txt = "ocaml.doc"}, _) -> false
+  | ({Location.txt = "ocaml.text"}, _) -> false
+  | ({Location.txt = "doc"}, _) -> false
+  | ({Location.txt = "text"}, _) -> false
+  | _ -> true
 
+let attrs s x =
+  let x =
+    if s.for_saving && not !Clflags.keep_docs then
+      List.filter is_not_doc x
+    else x
+  in
+    if s.for_saving && not !Clflags.keep_locs
+    then remove_loc.Ast_mapper.attributes remove_loc x
+    else x
 
 let rec module_path s = function
     Pident id as p ->
@@ -306,7 +317,7 @@ let extension_constructor s ext =
       ext_args = List.map (typexp s) ext.ext_args;
       ext_ret_type = may_map (typexp s) ext.ext_ret_type;
       ext_private = ext.ext_private;
-      ext_attributes = ext.ext_attributes;
+      ext_attributes = attrs s ext.ext_attributes;
       ext_loc = if s.for_saving then Location.none else ext.ext_loc; }
   in
     cleanup_types ();

@@ -13,8 +13,8 @@
 
 #include "libgraph.h"
 #include "image.h"
-#include <alloc.h>
-#include <memory.h>
+#include <caml/alloc.h>
+#include <caml/memory.h>
 
 value caml_gr_dump_image(value image)
 {

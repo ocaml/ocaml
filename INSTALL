@@ -140,14 +140,23 @@ Examples:
   or:
     ./configure -prefix /usr -mandir '$(PREFIX)/man/manl'
 
-  On a Linux x86/64 bits host, to build a 32-bit version of OCaml:
+  On a Linux x86-64 host, to build a 32-bit version of OCaml:
     ./configure -cc "gcc -m32" -as "as --32" -aspp "gcc -m32 -c" \
                 -host i386-linux -partialld "ld -r -melf_i386"
 
-  On a Linux x86/64 bits host, to build the run-time system in PIC mode
-  (enables putting the runtime in a shared library,
-   at a small performance cost):
+  On a Linux x86-64 host, to build the run-time system in PIC mode,
+  no special options should be required---the libraries should be built
+  automatically.  The old instructions were:
     ./configure -cc "gcc -fPIC" -aspp "gcc -c -fPIC"
+
+  On a 64-bit POWER architecture host running Linux, OCaml only operates
+  in a 32-bit environment.  If your system compiler is configured as 32-bit,
+  e.g. Red Hat 5.9, you don't need to do anything special.  If that is
+  not the case (e.g. Red Hat 6.4), then IBM's "Advance Toolchain" can
+  be used.  For example:
+    export PATH=/opt/at7.0/bin:$PATH
+    ./configure -cc "gcc -m32" -as "as -a32" -aspp "gcc -m32 -c" \
+      -partialld "ld -r -m elf32ppc"
 
   On a MacOSX 10.5/Intel Core 2 or MacOSX 10.5/PowerPC host,
   to build a 64-bit version of OCaml:

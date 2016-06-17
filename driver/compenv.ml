@@ -56,25 +56,27 @@ let first_objfiles = ref []
 let last_objfiles = ref []
 
 (* Check validity of module name *)
-let check_unit_name ppf filename name =
+let is_unit_name name =
   try
     begin match name.[0] with
     | 'A'..'Z' -> ()
     | _ ->
-       Location.print_warning (Location.in_file filename) ppf
-        (Warnings.Bad_module_name name);
        raise Exit;
     end;
     for i = 1 to String.length name - 1 do
       match name.[i] with
       | 'A'..'Z' | 'a'..'z' | '0'..'9' | '_' | '\'' -> ()
       | _ ->
-         Location.print_warning (Location.in_file filename) ppf
-           (Warnings.Bad_module_name name);
          raise Exit;
     done;
-  with Exit -> ()
+    true
+  with Exit -> false
 ;;
+
+let check_unit_name ppf filename name =
+  if not (is_unit_name name) then
+    Location.print_warning (Location.in_file filename) ppf
+      (Warnings.Bad_module_name name);;
 
 (* Compute name of module from output file name *)
 let module_of_filename ppf inputfile outputprefix =
@@ -175,6 +177,7 @@ let read_OCAMLPARAM ppf position =
       | "verbose" -> set "verbose" [ verbose ] v
       | "nopervasives" -> set "nopervasives" [ nopervasives ] v
       | "slash" -> set "slash" [ force_slash ] v (* for ocamldep *)
+      | "keep-docs" -> set "keep-docs" [ Clflags.keep_docs ] v
       | "keep-locs" -> set "keep-locs" [ Clflags.keep_locs ] v
 
       | "compact" -> clear "compact" [ optimize_for_speed ] v

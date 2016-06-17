@@ -11,26 +11,26 @@
 /*                                                                     */
 /***********************************************************************/
 
-#include "alloc.h"
-#include "custom.h"
-#include "finalise.h"
-#include "gc.h"
-#include "gc_ctrl.h"
-#include "major_gc.h"
-#include "minor_gc.h"
-#include "shared_heap.h"
-#include "misc.h"
-#include "mlvalues.h"
+#include "caml/alloc.h"
+#include "caml/custom.h"
+#include "caml/finalise.h"
+#include "caml/gc.h"
+#include "caml/gc_ctrl.h"
+#include "caml/major_gc.h"
+#include "caml/minor_gc.h"
+#include "caml/shared_heap.h"
+#include "caml/misc.h"
+#include "caml/mlvalues.h"
 #ifdef NATIVE_CODE
 #include "stack.h"
 #include "frame_descriptors.h"
 #else
-#include "fiber.h"
+#include "caml/fiber.h"
 #endif
-#include "domain.h"
-#include "globroots.h"
-#include "signals.h"
-#include "startup.h"
+#include "caml/domain.h"
+#include "caml/globroots.h"
+#include "caml/signals.h"
+#include "caml/startup.h"
 
 uintnat caml_max_stack_size;
 uintnat caml_fiber_wsz;

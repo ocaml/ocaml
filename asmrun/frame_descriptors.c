@@ -1,6 +1,6 @@
 #include "frame_descriptors.h"
 #include "stack.h"
-#include "platform.h"
+#include "caml/platform.h"
 
 typedef struct link {
   intnat* frametable;

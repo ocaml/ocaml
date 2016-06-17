@@ -11,10 +11,10 @@
 /*                                                                     */
 /***********************************************************************/
 
-#include <mlvalues.h>
-#include <alloc.h>
-#include <memory.h>
-#include <signals.h>
+#include <caml/mlvalues.h>
+#include <caml/alloc.h>
+#include <caml/memory.h>
+#include <caml/signals.h>
 #include "unixsupport.h"
 #include <mswsock.h>   // for SO_OPENTYPE and SO_SYNCHRONOUS_NONALERT
 #include "socketaddr.h"

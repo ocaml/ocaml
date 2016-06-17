@@ -18,22 +18,22 @@
 #include <limits.h>
 #include <string.h>
 #include <sys/types.h>
-#include "config.h"
+#include "caml/config.h"
 #ifdef HAS_UNISTD
 #include <unistd.h>
 #endif
 #ifdef __CYGWIN__
 #include </usr/include/io.h>
 #endif
-#include "alloc.h"
-#include "custom.h"
-#include "fail.h"
-#include "io.h"
-#include "memory.h"
-#include "misc.h"
-#include "mlvalues.h"
-#include "signals.h"
-#include "sys.h"
+#include "caml/alloc.h"
+#include "caml/custom.h"
+#include "caml/fail.h"
+#include "caml/io.h"
+#include "caml/memory.h"
+#include "caml/misc.h"
+#include "caml/mlvalues.h"
+#include "caml/signals.h"
+#include "caml/sys.h"
 
 #ifndef SEEK_SET
 #define SEEK_SET 0

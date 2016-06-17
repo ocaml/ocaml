@@ -95,7 +95,7 @@
 /******************************************************************************/
 
 #define CAML_CONFIG_H_NO_TYPEDEFS
-#include "../byterun/config.h"
+#include "../byterun/caml/config.h"
 
 #define GET_DOMAIN_STATE(reg) \
 	movq	%r15, reg ; \
@@ -129,7 +129,7 @@
         popq    %r13 ;                           \
         store_caml_##name %r13 ;                 \
   .endm
-#include "../byterun/domain_state.tbl"
+#include "../byterun/caml/domain_state.tbl"
 #undef DOMAIN_STATE
 
 /* Load from the current domain state block.  Clobbers only the destination. */
@@ -203,7 +203,8 @@
     /* Switch to OCaml stack */ \
         LOAD_TL_VAR(caml_stack_high, %rsp); \
         LOAD_TL_VAR(caml_current_stack, REG); \
-        movq    (REG), REG; \ /* REG is Stack_sp(caml_current_stack) */
+    /* REG is Stack_sp(caml_current_stack) */ \
+        movq    (REG), REG; \
         salq    $3, REG; \
         addq    REG, %rsp
 #else
@@ -837,7 +838,7 @@ CFI_STARTPROC
         movq    C_ARG_2, %rdi      /* closure */
         movq    C_ARG_3, %rax      /* first argument */
         movq    C_ARG_4, %rbx      /* second argument */
-        leaq    GCALL(caml_apply2)(%rip), %r12  /* code pointer */
+        LEA_VAR(caml_apply2, %r12) /* code pointer */
         movq    $0, %rsi           /* dummy */
         jmp     LBL(caml_start_program)
 CFI_ENDPROC
@@ -851,8 +852,8 @@ CFI_STARTPROC
         movq    0(C_ARG_3), %rax   /* first argument */
         movq    8(C_ARG_3), %rbx   /* second argument */
         movq    C_ARG_2, %rsi      /* closure */
-        movq    16(C_ARG_3), %rdi      /* third argument */
-        leaq    GCALL(caml_apply3)(%rip), %r12  /* code pointer */
+        movq    16(C_ARG_3), %rdi  /* third argument */
+        LEA_VAR(caml_apply3, %r12) /* code pointer */
         jmp     LBL(caml_start_program)
 CFI_ENDPROC
 
@@ -973,7 +974,7 @@ CFI_ENDPROC
 
 FUNCTION(G(caml_ml_array_bound_error))
 CFI_STARTPROC
-        leaq    GCALL(caml_array_bound_error)(%rip), %rax
+        LEA_VAR(caml_array_bound_error, %rax)
         jmp     LBL(caml_c_call)
 CFI_ENDPROC
 

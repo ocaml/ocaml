@@ -11,10 +11,10 @@
 /*                                                                     */
 /***********************************************************************/
 
-#include <mlvalues.h>
-#include <fail.h>
-#include <alloc.h>
-#include <signals.h>
+#include <caml/mlvalues.h>
+#include <caml/fail.h>
+#include <caml/alloc.h>
+#include <caml/signals.h>
 #include "unixsupport.h"
 #include <errno.h>
 #include <sys/types.h>

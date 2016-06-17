@@ -231,6 +231,32 @@ let emit_intconst dst n =
   in
     if n < 0n then emit_neg true 48 else emit_pos true 48
 
+let num_instructions_for_intconst n =
+  let num_instructions = ref 0 in
+  let rec count_pos first shift =
+    if shift < 0 then begin
+      if first then incr num_instructions
+    end else begin
+      let s = Nativeint.(logand (shift_right_logical n shift) 0xFFFFn) in
+      if s = 0n then count_pos first (shift - 16) else begin
+        incr num_instructions;
+        count_pos false (shift - 16)
+      end
+    end
+  and count_neg first shift =
+    if shift < 0 then begin
+      if first then incr num_instructions
+    end else begin
+      let s = Nativeint.(logand (shift_right_logical n shift) 0xFFFFn) in
+      if s = 0xFFFFn then count_neg first (shift - 16) else begin
+        incr num_instructions;
+        count_neg false (shift - 16)
+      end
+    end
+  in
+  if n < 0n then count_neg true 48 else count_pos true 48;
+  !num_instructions
+
 (* Recognize float constants appropriate for FMOV dst, #fpimm instruction:
    "a normalized binary floating point encoding with 1 sign bit, 4
     bits of fraction and a 3-bit exponent" *)
@@ -300,6 +326,217 @@ let emit_load_symbol_addr dst s =
   end else begin
     `	adrp	{emit_reg dst}, :got:{emit_symbol s}\n`;
     `	ldr	{emit_reg dst}, [{emit_reg dst}, #:got_lo12:{emit_symbol s}]\n`
+  end
+
+(* The following functions are used for calculating the sizes of the
+   call GC and bounds check points emitted out-of-line from the function
+   body.  See branch_relaxation.mli. *)
+
+let num_call_gc_and_check_bound_points instr =
+  let rec loop instr ((call_gc, check_bound) as totals) =
+    match instr.desc with
+    | Lend -> totals
+    | Lop (Ialloc _) when !fastcode_flag ->
+      loop instr.next (call_gc + 1, check_bound)
+    | Lop (Iintop Icheckbound)
+    | Lop (Iintop_imm (Icheckbound, _))
+    | Lop (Ispecific (Ishiftcheckbound _)) ->
+      let check_bound =
+        (* When not in debug mode, there is at most one check-bound point. *)
+        if not !Clflags.debug then 1
+        else check_bound + 1
+      in
+      loop instr.next (call_gc, check_bound)
+    (* The following four should never be seen, since this function is run
+       before branch relaxation. *)
+    | Lop (Ispecific (Ifar_alloc _))
+    | Lop (Ispecific Ifar_intop_checkbound)
+    | Lop (Ispecific (Ifar_intop_imm_checkbound _))
+    | Lop (Ispecific (Ifar_shiftcheckbound _)) -> assert false
+    | _ -> loop instr.next totals
+  in
+  loop instr (0, 0)
+
+let max_out_of_line_code_offset instr ~num_call_gc ~num_check_bound =
+  if num_call_gc < 1 && num_check_bound < 1 then 0
+  else begin
+    let size_of_call_gc = 2 in
+    let size_of_check_bound = 1 in
+    let size_of_last_thing =
+      (* Call-GC points come before check-bound points. *)
+      if num_check_bound >= 1 then size_of_check_bound else size_of_call_gc
+    in
+    let total_size =
+      size_of_call_gc*num_call_gc + size_of_check_bound*num_check_bound
+    in
+    let max_offset = total_size - size_of_last_thing in
+    assert (max_offset >= 0);
+    max_offset
+  end
+
+module BR = Branch_relaxation.Make (struct
+  (* CR-someday mshinwell: B and BL have +/- 128Mb ranges; for the moment we
+     assume we will never exceed this.  It would seem to be most likely to
+     occur for branches between functions; in this case, the linker should be
+     able to insert veneers anyway.  (See section 4.6.7 of the document
+     "ELF for the ARM 64-bit architecture (AArch64)".) *)
+
+  type distance = int
+
+  module Cond_branch = struct
+    type t = TB | CB | Bcc
+
+    let all = [TB; CB; Bcc]
+
+    (* AArch64 instructions are 32 bits wide, so [distance] in this module
+       means units of 32-bit words. *)
+    let max_displacement = function
+      | TB -> 32 * 1024 / 4  (* +/- 32Kb *)
+      | CB | Bcc -> 1 * 1024 * 1024 / 4  (* +/- 1Mb *)
+
+    let classify_instr = function
+      | Lop (Ialloc _)
+      | Lop (Iintop Icheckbound)
+      | Lop (Iintop_imm (Icheckbound, _))
+      | Lop (Ispecific (Ishiftcheckbound _)) -> Some Bcc
+      (* The various "far" variants in [specific_operation] don't need to
+         return [Some] here, since their code sequences never contain any
+         conditional branches that might need relaxing. *)
+      | Lcondbranch (Itruetest, _)
+      | Lcondbranch (Ifalsetest, _) -> Some CB
+      | Lcondbranch (Iinttest _, _)
+      | Lcondbranch (Iinttest_imm _, _)
+      | Lcondbranch (Ifloattest _, _) -> Some Bcc
+      | Lcondbranch (Ioddtest, _)
+      | Lcondbranch (Ieventest, _) -> Some TB
+      | Lcondbranch3 _ -> Some Bcc
+      | _ -> None
+  end
+
+  let offset_pc_at_branch = 0
+
+  let epilogue_size () =
+    if !contains_calls then 3 else 2
+
+  let instr_size = function
+    | Lend -> 0
+    | Lop (Imove | Ispill | Ireload) -> 1
+    | Lop (Iconst_int n | Iconst_blockheader n) ->
+      num_instructions_for_intconst n
+    | Lop (Iconst_float _) -> 2
+    | Lop (Iconst_symbol _) -> 2
+    | Lop (Icall_ind) -> 1
+    | Lop (Icall_imm _) -> 1
+    | Lop (Itailcall_ind) -> epilogue_size ()
+    | Lop (Itailcall_imm s) ->
+      if s = !function_name then 1 else epilogue_size ()
+    | Lop (Iextcall (_, false)) -> 1
+    | Lop (Iextcall (_, true)) -> 3
+    | Lop (Istackoffset _) -> 2
+    | Lop (Iload (size, addr)) | Lop (Istore (size, addr, _)) ->
+      let based = match addr with Iindexed _ -> 0 | Ibased _ -> 1 in
+      based + begin match size with Single -> 2 | _ -> 1 end
+    | Lop (Ialloc _) when !fastcode_flag -> 4
+    | Lop (Ispecific (Ifar_alloc _)) when !fastcode_flag -> 5
+    | Lop (Ialloc num_words) | Lop (Ispecific (Ifar_alloc num_words)) ->
+      begin match num_words with
+      | 16 | 24 | 32 -> 1
+      | _ -> 1 + num_instructions_for_intconst (Nativeint.of_int num_words)
+      end
+    | Lop (Iintop (Icomp _)) -> 2
+    | Lop (Iintop_imm (Icomp _, _)) -> 2
+    | Lop (Iintop Icheckbound) -> 2
+    | Lop (Ispecific Ifar_intop_checkbound) -> 3
+    | Lop (Iintop_imm (Icheckbound, _)) -> 2
+    | Lop (Ispecific (Ifar_intop_imm_checkbound _)) -> 3
+    | Lop (Ispecific (Ishiftcheckbound _)) -> 2
+    | Lop (Ispecific (Ifar_shiftcheckbound _)) -> 3
+    | Lop (Iintop Imod) -> 2
+    | Lop (Iintop Imulh) -> 1
+    | Lop (Iintop _) -> 1
+    | Lop (Iintop_imm _) -> 1
+    | Lop (Ifloatofint | Iintoffloat | Iabsf | Inegf | Ispecific Isqrtf) -> 1
+    | Lop (Iaddf | Isubf | Imulf | Idivf | Ispecific Inegmulf) -> 1
+    | Lop (Ispecific (Imuladdf | Inegmuladdf | Imulsubf | Inegmulsubf)) -> 1
+    | Lop (Ispecific (Ishiftarith _)) -> 1
+    | Lop (Ispecific (Imuladd | Imulsub)) -> 1
+    | Lop (Ispecific (Ibswap 16)) -> 2
+    | Lop (Ispecific (Ibswap _)) -> 1
+    | Lreloadretaddr -> 0
+    | Lreturn -> epilogue_size ()
+    | Llabel _ -> 0
+    | Lbranch _ -> 1
+    | Lcondbranch (tst, _) ->
+      begin match tst with
+      | Itruetest -> 1
+      | Ifalsetest -> 1
+      | Iinttest _ -> 2
+      | Iinttest_imm _ -> 2
+      | Ifloattest _ -> 2
+      | Ioddtest -> 1
+      | Ieventest -> 1
+      end
+    | Lcondbranch3 (lbl0, lbl1, lbl2) ->
+      1 + begin match lbl0 with None -> 0 | Some _ -> 1 end
+        + begin match lbl1 with None -> 0 | Some _ -> 1 end
+        + begin match lbl2 with None -> 0 | Some _ -> 1 end
+    | Lswitch jumptbl -> 3 + Array.length jumptbl
+    | Lsetuptrap _ -> 2
+    | Lpushtrap -> 3
+    | Lpoptrap -> 1
+    | Lraise k ->
+      begin match !Clflags.debug, k with
+      | true, (Lambda.Raise_regular | Lambda.Raise_reraise) -> 1
+      | false, _
+      | true, Lambda.Raise_notrace -> 4
+      end
+
+  let relax_allocation ~num_words =
+    Lop (Ispecific (Ifar_alloc num_words))
+
+  let relax_intop_checkbound () =
+    Lop (Ispecific Ifar_intop_checkbound)
+
+  let relax_intop_imm_checkbound ~bound =
+    Lop (Ispecific (Ifar_intop_imm_checkbound bound))
+
+  let relax_specific_op = function
+    | Ishiftcheckbound shift -> Lop (Ispecific (Ifar_shiftcheckbound shift))
+    | _ -> assert false
+end)
+
+(* Output the assembly code for allocation. *)
+
+let assembly_code_for_allocation i ~n ~far =
+  let lbl_frame = record_frame_label i.live i.dbg in
+  if !fastcode_flag then begin
+    let lbl_redo = new_label() in
+    let lbl_call_gc = new_label() in
+    `{emit_label lbl_redo}:`;
+    `	sub	{emit_reg reg_alloc_ptr}, {emit_reg reg_alloc_ptr}, #{emit_int n}\n`;
+    `	cmp	{emit_reg reg_alloc_ptr}, {emit_reg reg_alloc_limit}\n`;
+    `	add	{emit_reg i.res.(0)}, {emit_reg reg_alloc_ptr}, #8\n`;
+    if not far then begin
+      `	b.lo	{emit_label lbl_call_gc}\n`
+    end else begin
+      let lbl = new_label () in
+      `	b.cs	{emit_label lbl}\n`;
+      `	b	{emit_label lbl_call_gc}\n`;
+      `{emit_label lbl}:\n`
+    end;
+    call_gc_sites :=
+      { gc_lbl = lbl_call_gc;
+        gc_return_lbl = lbl_redo;
+        gc_frame_lbl = lbl_frame } :: !call_gc_sites
+  end else begin
+    begin match n with
+    | 16 -> `	bl	{emit_symbol "caml_alloc1"}\n`
+    | 24 -> `	bl	{emit_symbol "caml_alloc2"}\n`
+    | 32 -> `	bl	{emit_symbol "caml_alloc3"}\n`
+    | _  -> emit_intconst reg_x15 (Nativeint.of_int n);
+            `	bl	{emit_symbol "caml_allocN"}\n`
+    end;
+    `{emit_label lbl_frame}:	add	{emit_reg i.res.(0)}, {emit_reg reg_alloc_ptr}, #8\n`
   end
 
 (* Output the assembly code for an instruction *)
@@ -410,29 +647,9 @@ let emit_instr i =
             `	str	{emit_reg src}, {emit_addressing addr base}\n`
         end
     | Lop(Ialloc n) ->
-        let lbl_frame = record_frame_label i.live i.dbg in
-        if !fastcode_flag then begin
-          let lbl_redo = new_label() in
-          let lbl_call_gc = new_label() in
-          `{emit_label lbl_redo}:`;
-          `	sub	{emit_reg reg_alloc_ptr}, {emit_reg reg_alloc_ptr}, #{emit_int n}\n`;
-          `	cmp	{emit_reg reg_alloc_ptr}, {emit_reg reg_alloc_limit}\n`;
-          `	add	{emit_reg i.res.(0)}, {emit_reg reg_alloc_ptr}, #8\n`;
-          `	b.lo	{emit_label lbl_call_gc}\n`;
-          call_gc_sites :=
-            { gc_lbl = lbl_call_gc;
-              gc_return_lbl = lbl_redo;
-              gc_frame_lbl = lbl_frame } :: !call_gc_sites
-        end else begin
-          begin match n with
-          | 16 -> `	bl	{emit_symbol "caml_alloc1"}\n`
-          | 24 -> `	bl	{emit_symbol "caml_alloc2"}\n`
-          | 32 -> `	bl	{emit_symbol "caml_alloc3"}\n`
-          | _  -> emit_intconst reg_x15 (Nativeint.of_int n);
-                  `	bl	{emit_symbol "caml_allocN"}\n`
-          end;
-          `{emit_label lbl_frame}:	add	{emit_reg i.res.(0)}, {emit_reg reg_alloc_ptr}, #8\n`
-        end
+        assembly_code_for_allocation i ~n ~far:false
+    | Lop(Ispecific (Ifar_alloc n)) ->
+        assembly_code_for_allocation i ~n ~far:true
     | Lop(Iintop(Icomp cmp)) ->
         `	cmp	{emit_reg i.arg.(0)}, {emit_reg i.arg.(1)}\n`;
         `	cset	{emit_reg i.res.(0)}, {emit_string (name_for_comparison cmp)}\n`
@@ -443,14 +660,35 @@ let emit_instr i =
         let lbl = bound_error_label i.dbg in
         `	cmp	{emit_reg i.arg.(0)}, {emit_reg i.arg.(1)}\n`;
         `	b.ls	{emit_label lbl}\n`
+    | Lop(Ispecific Ifar_intop_checkbound) ->
+        let lbl = bound_error_label i.dbg in
+        let lbl2 = new_label () in
+        `	cmp	{emit_reg i.arg.(0)}, {emit_reg i.arg.(1)}\n`;
+        `	b.hi	{emit_label lbl2}\n`;
+        `	b	{emit_label lbl}\n`;
+        `{emit_label lbl2}:\n`;
     | Lop(Iintop_imm(Icheckbound, n)) ->
         let lbl = bound_error_label i.dbg in
         `	cmp	{emit_reg i.arg.(0)}, #{emit_int n}\n`;
         `	b.ls	{emit_label lbl}\n`
+    | Lop(Ispecific(Ifar_intop_imm_checkbound bound)) ->
+        let lbl = bound_error_label i.dbg in
+        let lbl2 = new_label () in
+        `	cmp	{emit_reg i.arg.(0)}, #{emit_int bound}\n`;
+        `	b.hi	{emit_label lbl2}\n`;
+        `	b	{emit_label lbl}\n`;
+        `{emit_label lbl2}:\n`;
     | Lop(Ispecific(Ishiftcheckbound shift)) ->
         let lbl = bound_error_label i.dbg in
         `	cmp	{emit_reg i.arg.(1)}, {emit_reg i.arg.(0)}, lsr #{emit_int shift}\n`;
         `	b.cs	{emit_label lbl}\n`
+    | Lop(Ispecific(Ifar_shiftcheckbound shift)) ->
+        let lbl = bound_error_label i.dbg in
+        let lbl2 = new_label () in
+        `	cmp	{emit_reg i.arg.(1)}, {emit_reg i.arg.(0)}, lsr #{emit_int shift}\n`;
+        `	b.lo	{emit_label lbl2}\n`;
+        `	b	{emit_label lbl}\n`;
+        `{emit_label lbl2}:\n`;
     | Lop(Iintop Imod) ->
         `	sdiv	{emit_reg reg_tmp1}, {emit_reg i.arg.(0)}, {emit_reg i.arg.(1)}\n`;
         `	msub	{emit_reg i.res.(0)}, {emit_reg reg_tmp1}, {emit_reg i.arg.(1)}, {emit_reg i.arg.(0)}\n`
@@ -506,7 +744,7 @@ let emit_instr i =
         begin match size with
         | 16 ->
             `	rev16	{emit_wreg i.res.(0)}, {emit_wreg i.arg.(0)}\n`;
-            `	ubfm	{emit_reg i.res.(0)}, {emit_reg i.res.(0)}, #0, #16\n`
+            `	ubfm	{emit_reg i.res.(0)}, {emit_reg i.res.(0)}, #0, #15\n`
         | 32 ->
             `	rev	{emit_wreg i.res.(0)}, {emit_wreg i.arg.(0)}\n`
         | 64 ->
@@ -654,12 +892,24 @@ let fundecl fundecl =
   let n = frame_size() in
   if n > 0 then
     emit_stack_adjustment (-n);
-  if !contains_calls then
-    `	str	x30, [sp, #{emit_int (n-8)}]\n`;
+  if !contains_calls then begin
+    cfi_offset ~reg:30 (* return address *) ~offset:(-8);
+    `	str	x30, [sp, #{emit_int (n-8)}]\n`
+  end;
   `{emit_label !tailrec_entry_point}:\n`;
+  let num_call_gc, num_check_bound =
+    num_call_gc_and_check_bound_points fundecl.fun_body
+  in
+  let max_out_of_line_code_offset =
+    max_out_of_line_code_offset fundecl.fun_body ~num_call_gc
+      ~num_check_bound
+  in
+  BR.relax fundecl.fun_body ~max_out_of_line_code_offset;
   emit_all fundecl.fun_body;
   List.iter emit_call_gc !call_gc_sites;
   List.iter emit_call_bound_error !bound_error_sites;
+  assert (List.length !call_gc_sites = num_call_gc);
+  assert (List.length !bound_error_sites = num_check_bound);
   cfi_endproc();
   `	.type	{emit_symbol fundecl.fun_name}, %function\n`;
   `	.size	{emit_symbol fundecl.fun_name}, .-{emit_symbol fundecl.fun_name}\n`;
