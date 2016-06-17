@@ -44,7 +44,9 @@ type unit_infos =
     mutable ui_apply_fun: int list;             (* Apply functions needed *)
     mutable ui_send_fun: int list;              (* Send functions needed *)
     mutable ui_export_info: export_info;
-    mutable ui_force_link: bool }               (* Always linked *)
+    mutable ui_force_link: bool;                (* Always linked *)
+    mutable ui_features: Clflags.Feature_combination.t;
+  }
 
 (* Each .a library has a matching .cmxa file that provides the following
    infos on the library: *)
@@ -64,6 +66,7 @@ type dynunit = {
   dynu_imports_cmi: (string * Digest.t option) list;
   dynu_imports_cmx: (string * Digest.t option) list;
   dynu_defines: string list;
+  dynu_features: Clflags.Feature_combination.t;
 }
 
 type dynheader = {

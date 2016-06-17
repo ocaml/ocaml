@@ -852,7 +852,7 @@ let fundecl fundecl =
   `{emit_symbol fundecl.fun_name}:\n`;
   emit_debug_info fundecl.fun_dbg;
   cfi_startproc();
-  if !Clflags.gprofile then emit_profile();
+  if Clflags.gprofile () then emit_profile();
   let n = frame_size() in
   if n > 0 then begin
     ignore(emit_stack_adjustment (-n));

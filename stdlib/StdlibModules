@@ -34,6 +34,7 @@ STDLIB_MODULES=\
   char \
   complex \
   digest \
+  ephemeron \
   filename \
   format \
   gc \

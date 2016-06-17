@@ -38,6 +38,7 @@ type error =
   | Linking_error
   | Multiple_definition of string * string * string
   | Missing_cmx of string * string
+  | All_units_must_be_compiled_with_features of Clflags.Feature_combination.t
 
 exception Error of error
 

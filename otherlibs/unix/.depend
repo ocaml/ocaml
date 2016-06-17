@@ -636,9 +636,9 @@ write.o: write.c ../../byterun/caml/mlvalues.h \
   ../../byterun/caml/major_gc.h ../../byterun/caml/freelist.h \
   ../../byterun/caml/minor_gc.h ../../byterun/caml/address_class.h \
   ../../byterun/caml/signals.h unixsupport.h
-unix.cmi :
-unixLabels.cmi : unix.cmi
 unix.cmo : unix.cmi
 unix.cmx : unix.cmi
+unix.cmi :
 unixLabels.cmo : unix.cmi unixLabels.cmi
 unixLabels.cmx : unix.cmx unixLabels.cmi
+unixLabels.cmi : unix.cmi

@@ -46,7 +46,9 @@ let native_c_libraries = "%%NATIVECCLIBS%%"
 let native_pack_linker = "%%PACKLD%%"
 let ranlib = "%%RANLIBCMD%%"
 let ar = "%%ARCMD%%"
-let cc_profile = "%%CC_PROFILE%%"
+let cc_gprof = "%%CC_GPROF%%"
+let cc_pic = "%%CC_PIC%%"
+let cc_with_frame_pointers = "%%CC_WITH_FRAME_POINTERS%%"
 let mkdll, mkexe, mkmaindll =
   (* @@DRA Cygwin - but only if shared libraries are enabled, which we
      should be able to detect? *)
@@ -107,7 +109,11 @@ let system = "%%SYSTEM%%"
 
 let asm = "%%ASM%%"
 let asm_cfi_supported = %%ASM_CFI_SUPPORTED%%
-let with_frame_pointers = %%WITH_FRAME_POINTERS%%
+
+let with_frame_pointers = %%DEFAULT_WITH_FRAME_POINTERS%%
+let no_naked_pointers = %%DEFAULT_NO_NAKED_POINTERS%%
+
+let feature_combinations = %%FEATURE_COMBINATIONS%%
 
 let ext_obj = "%%EXT_OBJ%%"
 let ext_asm = "%%EXT_ASM%%"
@@ -139,13 +145,16 @@ let print_config oc =
   p "native_c_libraries" native_c_libraries;
   p "native_pack_linker" native_pack_linker;
   p "ranlib" ranlib;
-  p "cc_profile" cc_profile;
+  p "cc_gprof" cc_gprof;
+  p "cc_pic" cc_pic;
+  p "cc_with_frame_pointers" cc_with_frame_pointers;
   p "architecture" architecture;
   p "model" model;
   p "system" system;
   p "asm" asm;
   p_bool "asm_cfi_supported" asm_cfi_supported;
-  p_bool "with_frame_pointers" with_frame_pointers;
+  p_bool "with_frame_pointers as default?" with_frame_pointers;
+  p_bool "no_naked_pointers as default?" no_naked_pointers;
   p "ext_obj" ext_obj;
   p "ext_asm" ext_asm;
   p "ext_lib" ext_lib;
@@ -156,6 +165,7 @@ let print_config oc =
   p "host" host;
   p "target" target;
   p_bool "flambda" flambda;
+  p "feature_combinations" feature_combinations;
 
   (* print the magic number *)
   p "exec_magic_number" exec_magic_number;

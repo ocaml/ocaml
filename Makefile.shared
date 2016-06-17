@@ -20,10 +20,12 @@ defaultentry:
 include config/Makefile
 CAMLRUN ?= boot/ocamlrun
 CAMLYACC ?= boot/ocamlyacc
+CAMLOPT_BINARY ?= $(CAMLRUN) ./ocamlopt
 include stdlib/StdlibModules
 
 CAMLC=$(CAMLRUN) boot/ocamlc -g -nostdlib -I boot -use-prims byterun/primitives
-CAMLOPT=$(CAMLRUN) ./ocamlopt -g -nostdlib -I stdlib -I otherlibs/dynlink
+CAMLOPT=$(CAMLOPT_BINARY) -g -nostdlib -I stdlib \
+  -I otherlibs/dynlink
 COMPFLAGS=-strict-sequence -principal -absname -w +a-4-9-41-42-44-45-48 -warn-error A \
           -bin-annot -safe-string -strict-formats $(INCLUDES)
 LINKFLAGS=
@@ -40,6 +42,16 @@ OCAMLDOC_OPT=$(WITH_OCAMLDOC:=.opt)
 
 INCLUDES=-I utils -I parsing -I typing -I bytecomp -I middle_end \
         -I middle_end/base_types -I asmcomp -I driver -I toplevel
+
+MLI_ONLY=parsing/asttypes.mli parsing/parsetree.mli typing/outcometree.mli \
+  typing/annot.mli middle_end/backend_intf.mli \
+  middle_end/simplify_boxed_integer_ops_intf.mli \
+  middle_end/inlining_decision_intf.mli asmcomp/x86_ast.mli \
+  asmcomp/cmx_format.mli bytecomp/cmo_format.mli
+
+HAS_MLP_AND_OTHERS=parsing/lexer.mll parsing/parser.mly utils/config.mlp
+
+ML_ONLY=asmcomp/arch.cmo
 
 UTILS=utils/config.cmo utils/misc.cmo \
   utils/identifiable.cmo utils/numbers.cmo utils/arg_helper.cmo \
@@ -204,6 +216,9 @@ BYTESTART=driver/main.cmo
 
 OPTSTART=driver/optmain.cmo
 
+EVERYTHING_IN_COMPILERLIBS=$(COMMON) $(MIDDLE_END) $(ASMCOMP) \
+  $(BYTECOMP) $(OPTSTART)
+
 TOPLEVELSTART=toplevel/topstart.cmo
 
 OPTTOPLEVELSTART=toplevel/opttopstart.cmo
@@ -247,3 +262,266 @@ alldepend::
 
 #config/Makefile: configure
 #	./configure $(CONFIGURE_ARGS)
+#
+
+# Note that Makefiles that require a wrapper for cross compilation (e.g.
+# systhreads/Makefile) are not to be included in this list.
+EVERYTHING_IN_OTHERLIBS_OTHER=\
+  otherlibs/unix/getsockname.c \
+  otherlibs/unix/setsid.c \
+  otherlibs/unix/wait.c \
+  otherlibs/unix/fcntl.c \
+  otherlibs/unix/readlink.c \
+  otherlibs/unix/errmsg.c \
+  otherlibs/unix/time.c \
+  otherlibs/unix/gettimeofday.c \
+  otherlibs/unix/setuid.c \
+  otherlibs/unix/exit.c \
+  otherlibs/unix/open.c \
+  otherlibs/unix/rmdir.c \
+  otherlibs/unix/gethostname.c \
+  otherlibs/unix/closedir.c \
+  otherlibs/unix/read.c \
+  otherlibs/unix/itimer.c \
+  otherlibs/unix/unixsupport.c \
+  otherlibs/unix/getegid.c \
+  otherlibs/unix/getserv.c \
+  otherlibs/unix/ftruncate.c \
+  otherlibs/unix/umask.c \
+  otherlibs/unix/bind.c \
+  otherlibs/unix/geteuid.c \
+  otherlibs/unix/getgid.c \
+  otherlibs/unix/setgroups.c \
+  otherlibs/unix/symlink.c \
+  otherlibs/unix/sockopt.c \
+  otherlibs/unix/getgr.c \
+  otherlibs/unix/socketaddr.h \
+  otherlibs/unix/fork.c \
+  otherlibs/unix/select.c \
+  otherlibs/unix/nice.c \
+  otherlibs/unix/fchmod.c \
+  otherlibs/unix/unixsupport.h \
+  otherlibs/unix/mkdir.c \
+  otherlibs/unix/shutdown.c \
+  otherlibs/unix/mkfifo.c \
+  otherlibs/unix/unlink.c \
+  otherlibs/unix/rewinddir.c \
+  otherlibs/unix/link.c \
+  otherlibs/unix/pipe.c \
+  otherlibs/unix/getpid.c \
+  otherlibs/unix/getuid.c \
+  otherlibs/unix/opendir.c \
+  otherlibs/unix/getgroups.c \
+  otherlibs/unix/sendrecv.c \
+  otherlibs/unix/listen.c \
+  otherlibs/unix/getaddrinfo.c \
+  otherlibs/unix/connect.c \
+  otherlibs/unix/execv.c \
+  otherlibs/unix/stat.c \
+  otherlibs/unix/envir.c \
+  otherlibs/unix/truncate.c \
+  otherlibs/unix/lseek.c \
+  otherlibs/unix/sleep.c \
+  otherlibs/unix/initgroups.c \
+  otherlibs/unix/getcwd.c \
+  otherlibs/unix/rename.c \
+  otherlibs/unix/dup2.c \
+  otherlibs/unix/termios.c \
+  otherlibs/unix/times.c \
+  otherlibs/unix/lockf.c \
+  otherlibs/unix/execvp.c \
+  otherlibs/unix/utimes.c \
+  otherlibs/unix/setgid.c \
+  otherlibs/unix/cst2constr.c \
+  otherlibs/unix/socketaddr.c \
+  otherlibs/unix/gethost.c \
+  otherlibs/unix/kill.c \
+  otherlibs/unix/chdir.c \
+  otherlibs/unix/getnameinfo.c \
+  otherlibs/unix/fchown.c \
+  otherlibs/unix/putenv.c \
+  otherlibs/unix/socket.c \
+  otherlibs/unix/nanosecond_stat.h \
+  otherlibs/unix/dup.c \
+  otherlibs/unix/close.c \
+  otherlibs/unix/getproto.c \
+  otherlibs/unix/socketpair.c \
+  otherlibs/unix/gmtime.c \
+  otherlibs/unix/chmod.c \
+  otherlibs/unix/isatty.c \
+  otherlibs/unix/chown.c \
+  otherlibs/unix/getppid.c \
+  otherlibs/unix/write.c \
+  otherlibs/unix/strofaddr.c \
+  otherlibs/unix/alarm.c \
+  otherlibs/unix/getpeername.c \
+  otherlibs/unix/access.c \
+  otherlibs/unix/getlogin.c \
+  otherlibs/unix/readdir.c \
+  otherlibs/unix/addrofstr.c \
+  otherlibs/unix/cst2constr.h \
+  otherlibs/unix/accept.c \
+  otherlibs/unix/getpw.c \
+  otherlibs/unix/execve.c \
+  otherlibs/unix/cstringv.c \
+  otherlibs/unix/chroot.c \
+  otherlibs/unix/signals.c \
+  otherlibs/threads/scheduler.c \
+  otherlibs/win32graph/open.c \
+  otherlibs/win32graph/libgraph.h \
+  otherlibs/win32graph/dib.c \
+  otherlibs/win32graph/draw.c \
+  otherlibs/win32graph/events.c \
+  otherlibs/bigarray/bigarray.h \
+  otherlibs/bigarray/mmap_win32.c \
+  otherlibs/bigarray/mmap_unix.c \
+  otherlibs/bigarray/bigarray_stubs.c \
+  otherlibs/num/bng.c \
+  otherlibs/num/nat_stubs.c \
+  otherlibs/num/bng_amd64.c \
+  otherlibs/num/bng_ia32.c \
+  otherlibs/num/bng.h \
+  otherlibs/num/bng_ppc.c \
+  otherlibs/num/bng_digit.c \
+  otherlibs/num/bng_sparc.c \
+  otherlibs/num/bng_arm64.c \
+  otherlibs/num/nat.h \
+  otherlibs/win32unix/getsockname.c \
+  otherlibs/win32unix/readlink.c \
+  otherlibs/win32unix/errmsg.c \
+  otherlibs/win32unix/gettimeofday.c \
+  otherlibs/win32unix/open.c \
+  otherlibs/win32unix/winworker.h \
+  otherlibs/win32unix/createprocess.c \
+  otherlibs/win32unix/read.c \
+  otherlibs/win32unix/unixsupport.c \
+  otherlibs/win32unix/nonblock.c \
+  otherlibs/win32unix/system.c \
+  otherlibs/win32unix/bind.c \
+  otherlibs/win32unix/startup.c \
+  otherlibs/win32unix/channels.c \
+  otherlibs/win32unix/symlink.c \
+  otherlibs/win32unix/sockopt.c \
+  otherlibs/win32unix/socketaddr.h \
+  otherlibs/win32unix/select.c \
+  otherlibs/win32unix/windbug.h \
+  otherlibs/win32unix/winlist.c \
+  otherlibs/win32unix/unixsupport.h \
+  otherlibs/win32unix/mkdir.c \
+  otherlibs/win32unix/shutdown.c \
+  otherlibs/win32unix/link.c \
+  otherlibs/win32unix/pipe.c \
+  otherlibs/win32unix/getpid.c \
+  otherlibs/win32unix/sendrecv.c \
+  otherlibs/win32unix/listen.c \
+  otherlibs/win32unix/winwait.c \
+  otherlibs/win32unix/connect.c \
+  otherlibs/win32unix/stat.c \
+  otherlibs/win32unix/lseek.c \
+  otherlibs/win32unix/close_on.c \
+  otherlibs/win32unix/windbug.c \
+  otherlibs/win32unix/sleep.c \
+  otherlibs/win32unix/rename.c \
+  otherlibs/win32unix/dup2.c \
+  otherlibs/win32unix/times.c \
+  otherlibs/win32unix/lockf.c \
+  otherlibs/win32unix/winworker.c \
+  otherlibs/win32unix/socket.c \
+  otherlibs/win32unix/dup.c \
+  otherlibs/win32unix/close.c \
+  otherlibs/win32unix/write.c \
+  otherlibs/win32unix/getpeername.c \
+  otherlibs/win32unix/windir.c \
+  otherlibs/win32unix/winlist.h \
+  otherlibs/win32unix/accept.c \
+  otherlibs/str/strstubs.c \
+  otherlibs/systhreads/st_stubs.c \
+  otherlibs/systhreads/threads.h \
+  otherlibs/systhreads/st_win32.h \
+  otherlibs/systhreads/st_posix.h \
+  otherlibs/graph/color.c \
+  otherlibs/graph/open.c \
+  otherlibs/graph/libgraph.h \
+  otherlibs/graph/image.c \
+  otherlibs/graph/subwindow.c \
+  otherlibs/graph/draw.c \
+  otherlibs/graph/point_col.c \
+  otherlibs/graph/text.c \
+  otherlibs/graph/image.h \
+  otherlibs/graph/dump_img.c \
+  otherlibs/graph/fill.c \
+  otherlibs/graph/events.c \
+  otherlibs/graph/sound.c \
+  otherlibs/graph/make_img.c \
+  otherlibs/unix/.depend \
+  otherlibs/threads/.depend \
+  otherlibs/bigarray/.depend \
+  otherlibs/num/.depend \
+  otherlibs/win32unix/.depend \
+  otherlibs/str/.depend \
+  otherlibs/systhreads/.depend \
+  otherlibs/graph/.depend \
+  otherlibs/unix/Makefile \
+  otherlibs/threads/Makefile \
+  otherlibs/bigarray/Makefile \
+  otherlibs/bigarray/Makefile.shared \
+  otherlibs/num/Makefile \
+  otherlibs/num/Makefile.shared \
+  otherlibs/dynlink/Makefile \
+  otherlibs/str/Makefile \
+  otherlibs/str/Makefile.shared \
+  otherlibs/graph/Makefile
+
+EVERYTHING_IN_OTHERLIBS_OCAML=\
+  otherlibs/unix/unix.cmo \
+  otherlibs/unix/unixLabels.cmo \
+  otherlibs/threads/unix.cmo \
+  otherlibs/threads/marshal.cmo \
+  otherlibs/threads/threadUnix.cmo \
+  otherlibs/threads/condition.cmo \
+  otherlibs/threads/event.cmo \
+  otherlibs/threads/mutex.cmo \
+  otherlibs/threads/pervasives.cmo \
+  otherlibs/threads/thread.cmo \
+  otherlibs/bigarray/bigarray.cmo \
+  otherlibs/num/ratio.cmo \
+  otherlibs/num/arith_status.cmo \
+  otherlibs/num/int_misc.cmo \
+  otherlibs/num/num.cmo \
+  otherlibs/num/big_int.cmo \
+  otherlibs/num/arith_flags.cmo \
+  otherlibs/num/nat.cmo \
+  otherlibs/dynlink/dynlink.cmo \
+  otherlibs/str/str.cmo \
+  otherlibs/systhreads/threadUnix.cmo \
+  otherlibs/systhreads/condition.cmo \
+  otherlibs/systhreads/thread.cmo \
+  otherlibs/systhreads/event.cmo \
+  otherlibs/systhreads/mutex.cmo \
+  otherlibs/graph/graphicsX11.cmo \
+  otherlibs/graph/graphics.cmo
+
+EVERYTHING_IN_OTHERLIBS_ML_ONLY=\
+  otherlibs/dynlink/natdynlink.cmo \
+  otherlibs/dynlink/extract_crc.cmo \
+  otherlibs/win32unix/unix.cmo
+
+export ASMRUN_LINKEDFILES=\
+  misc.c freelist.c major_gc.c minor_gc.c memory.c alloc.c array.c \
+  compare.c ints.c floats.c str.c io.c extern.c intern.c hash.c sys.c \
+  parsing.c gc_ctrl.c terminfo.c md5.c obj.c lexing.c printexc.c callback.c \
+  weak.c compact.c finalise.c meta.c custom.c main.c globroots.c \
+  $(UNIX_OR_WIN32).c dynlink.c signals.c debugger.c
+
+export ASMRUN_COBJS=startup_aux.o startup.o \
+  main.o fail.o roots.o globroots.o signals.o signals_asm.o \
+  freelist.o misc.o major_gc.o minor_gc.o memory.o alloc.o compare.o ints.o \
+  floats.o str.o array.o io.o extern.o intern.o hash.o sys.o parsing.o \
+  gc_ctrl.o terminfo.o md5.o obj.o lexing.o printexc.o callback.o weak.o \
+  compact.o finalise.o custom.o $(UNIX_OR_WIN32).o backtrace_prim.o \
+  backtrace.o \
+  natdynlink.o debugger.o meta.o dynlink.o clambda_checks.o
+
+ASMRUN_HEADERS=signals_osdep.h stack.h
+
+ASMRUN_ASMFILES=amd64.S arm64.S arm.S i386.S power.S s390x.S sparc.S

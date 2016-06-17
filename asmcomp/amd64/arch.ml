@@ -17,7 +17,7 @@
 
 let command_line_options =
   [ "-fPIC", Arg.Set Clflags.pic_code,
-      " Generate position-independent machine code (default)";
+      " Generate position-independent machine code";
     "-fno-PIC", Arg.Clear Clflags.pic_code,
       " Generate position-dependent machine code" ]
 

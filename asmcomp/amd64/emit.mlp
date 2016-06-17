@@ -63,8 +63,6 @@ let cfi_adjust_cfa_offset n =
 let emit_debug_info dbg =
   emit_debug_info_gen dbg D.file D.loc
 
-let fp = Config.with_frame_pointers
-
 (* Tradeoff between code size and code speed *)
 
 let fastcode_flag = ref true
@@ -74,13 +72,14 @@ let stack_offset = ref 0
 (* Layout of the stack frame *)
 
 let frame_required () =
-  fp || !contains_calls || num_stack_slots.(0) > 0 || num_stack_slots.(1) > 0
+  Clflags.with_frame_pointers () || !contains_calls || num_stack_slots.(0) > 0
+    || num_stack_slots.(1) > 0
 
 let frame_size () =                     (* includes return address *)
   if frame_required() then begin
     let sz =
       (!stack_offset + 8 * (num_stack_slots.(0) + num_stack_slots.(1)) + 8
-       + (if fp then 8 else 0))
+       + (if Clflags.with_frame_pointers () then 8 else 0))
     in Misc.align sz 16
   end else
     !stack_offset + 8
@@ -404,13 +403,15 @@ let emit_float_test cmp neg i lbl =
 
 let output_epilogue f =
   if frame_required() then begin
-    let n = frame_size() - 8 - (if fp then 8 else 0) in
+    let n =
+      frame_size() - 8 - (if Clflags.with_frame_pointers () then 8 else 0)
+    in
     if n <> 0
     then begin
       I.add (int n) rsp;
       cfi_adjust_cfa_offset (-n);
     end;
-    if fp then I.pop rbp;
+    if Clflags.with_frame_pointers () then I.pop rbp;
     f ();
     (* reset CFA back cause function body may continue *)
     if n <> 0
@@ -797,7 +798,7 @@ let emit_profile () =
        need to preserve other regs.  We do need to initialize rbp
        like mcount expects it, though. *)
     I.push r10;
-    if not fp then I.mov rsp rbp;
+    if not (Clflags.with_frame_pointers ()) then I.mov rsp rbp;
     emit_call "mcount";
     I.pop r10
   end
@@ -825,14 +826,16 @@ let fundecl fundecl =
   D.label (emit_symbol fundecl.fun_name);
   emit_debug_info fundecl.fun_dbg;
   cfi_startproc ();
-  if fp then begin
+  if Clflags.with_frame_pointers () then begin
     I.push rbp;
     cfi_adjust_cfa_offset 8;
     I.mov rsp rbp;
   end;
   if !Clflags.gprofile then emit_profile();
   if frame_required() then begin
-    let n = frame_size() - 8 - (if fp then 8 else 0) in
+    let n =
+      frame_size() - 8 - (if Clflags.with_frame_pointers () then 8 else 0)
+    in
     if n <> 0
     then begin
       I.sub (int n) rsp;
@@ -844,7 +847,9 @@ let fundecl fundecl =
   List.iter emit_call_gc !call_gc_sites;
   emit_call_bound_errors ();
   if frame_required() then begin
-    let n = frame_size() - 8 - (if fp then 8 else 0) in
+    let n =
+      frame_size() - 8 - (if Clflags.with_frame_pointers () then 8 else 0)
+    in
     if n <> 0
     then begin
       cfi_adjust_cfa_offset (-n);

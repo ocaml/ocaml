@@ -174,6 +174,8 @@ module Options = Main_args.Make_optcomp_options (struct
     Int_arg_helper.parse spec
       "Syntax: -inline-max-depth <n> | <round>=<n>[,...]"
        inline_max_depth
+  let _no_naked_pointers () = override_no_naked_pointers := Some true
+  let _naked_pointers () = override_no_naked_pointers := Some false
   let _alias_deps = clear transparent_modules
   let _no_alias_deps = set transparent_modules
   let _app_funct = set applicative_functors
@@ -239,6 +241,10 @@ module Options = Main_args.Make_optcomp_options (struct
   let _w s = Warnings.parse_options false s
   let _warn_error s = Warnings.parse_options true s
   let _warn_help = Warnings.help_warnings
+  let _with_frame_pointers () =
+    override_with_frame_pointers := Some true
+  let _without_frame_pointers () =
+    override_with_frame_pointers := Some false
   let _color option =
     begin match Clflags.parse_color_setting option with
           | None -> ()

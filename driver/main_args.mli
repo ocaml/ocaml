@@ -157,6 +157,10 @@ module type Optcommon_options = sig
   val _no_unbox_specialised_args : unit -> unit
   val _o2 : unit -> unit
   val _o3 : unit -> unit
+  val _with_frame_pointers : unit -> unit
+  val _without_frame_pointers : unit -> unit
+  val _no_naked_pointers : unit -> unit
+  val _naked_pointers : unit -> unit
 
   val _clambda_checks : unit -> unit
   val _dflambda : unit -> unit

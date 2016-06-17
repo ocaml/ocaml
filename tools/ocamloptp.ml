@@ -88,6 +88,8 @@ module Options = Main_args.Make_optcomp_options (struct
   let _no_keep_locs = option "-no-keep-locs"
   let _labels = option "-labels"
   let _linkall = option "-linkall"
+  let _naked_pointers = option "-naked-pointers"
+  let _no_naked_pointers = option "-no-naked-pointers"
   let _alias_deps = option "-alias-deps"
   let _no_alias_deps = option "-no-alias-deps"
   let _app_funct = option "-app-funct"
@@ -138,6 +140,8 @@ module Options = Main_args.Make_optcomp_options (struct
   let _warn_help = option "-warn-help"
   let _color s = option_with_arg "-color" s
   let _where = option "-where"
+  let _with_frame_pointers = option "-fno-omit-frame-pointer"
+  let _without_frame_pointers = option "-fomit-frame-pointer"
 
   let _nopervasives = option "-nopervasives"
   let _dsource = option "-dsource"

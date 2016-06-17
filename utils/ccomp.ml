@@ -158,6 +158,13 @@ let call_linker mode output_name files extra =
         (quote_files (remove_Wl files))
         extra
     else
+      let feature_flags =
+        (if !Clflags.gprofile then [Config.cc_gprof] else [])
+          @ (if Clflags.with_frame_pointers ()
+            then [Config.cc_with_frame_pointers]
+            else [])
+          @ (if !Clflags.pic_code then [Config.cc_pic] else [])
+      in
       Printf.sprintf "%s -o %s %s %s %s %s %s %s"
         (match !Clflags.c_compiler, mode with
         | Some cc, _ -> cc
@@ -167,7 +174,7 @@ let call_linker mode output_name files extra =
         | None, Partial -> assert false
         )
         (Filename.quote output_name)
-        (if !Clflags.gprofile then Config.cc_profile else "")
+        (String.concat " " feature_flags)
         ""  (*(Clflags.std_include_flag "-I")*)
         (quote_prefixed "-L" !Config.load_path)
         (String.concat " " (List.rev !Clflags.all_ccopts))

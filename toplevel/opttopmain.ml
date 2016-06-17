@@ -145,6 +145,8 @@ module Options = Main_args.Make_opttop_options (struct
     set dump_flambda_verbose ()
   let _dflambda_no_invariants = clear flambda_invariant_checks
   let _labels = clear classic
+  let _no_naked_pointers () = override_no_naked_pointers := Some true
+  let _naked_pointers () = override_no_naked_pointers := Some false
   let _alias_deps = clear transparent_modules
   let _no_alias_deps = set transparent_modules
   let _app_funct = set applicative_functors
@@ -174,6 +176,10 @@ module Options = Main_args.Make_opttop_options (struct
   let _w s = Warnings.parse_options false s
   let _warn_error s = Warnings.parse_options true s
   let _warn_help = Warnings.help_warnings
+  let _with_frame_pointers () =
+    override_with_frame_pointers := Some true
+  let _without_frame_pointers () =
+    override_with_frame_pointers := Some false
 
   let _dsource = set dump_source
   let _dparsetree = set dump_parsetree

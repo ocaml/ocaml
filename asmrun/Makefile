@@ -21,27 +21,17 @@ FLAGS=-I../byterun -DCAML_NAME_SPACE -DNATIVE_CODE \
 CFLAGS=$(FLAGS) $(NATIVECCCOMPOPTS)
 DFLAGS=$(FLAGS) -g -DDEBUG $(NATIVECCCOMPOPTS)
 IFLAGS=$(FLAGS) -DCAML_INSTR
-PFLAGS=$(FLAGS) -pg -DPROFILING $(NATIVECCPROFOPTS) $(NATIVECCCOMPOPTS)
-PICFLAGS=$(FLAGS) $(SHAREDCCCOMPOPTS) $(NATIVECCCOMPOPTS)
+ASPPFLAGS=
 
-COBJS=startup_aux.o startup.o \
-  main.o fail.o roots.o globroots.o signals.o signals_asm.o \
-  freelist.o misc.o major_gc.o minor_gc.o memory.o alloc.o compare.o ints.o \
-  floats.o str.o array.o io.o extern.o intern.o hash.o sys.o parsing.o \
-  gc_ctrl.o terminfo.o md5.o obj.o lexing.o printexc.o callback.o weak.o \
-  compact.o finalise.o custom.o $(UNIX_OR_WIN32).o backtrace_prim.o \
-  backtrace.o \
-  natdynlink.o debugger.o meta.o dynlink.o clambda_checks.o
+COBJS=$(ASMRUN_COBJS)
 
 ASMOBJS=$(ARCH).o
 
 OBJS=$(COBJS) $(ASMOBJS)
 DOBJS=$(COBJS:.o=.d.o) $(ASMOBJS)
 IOBJS=$(COBJS:.o=.i.o) $(ASMOBJS)
-POBJS=$(COBJS:.o=.p.o) $(ASMOBJS:.o=.p.o)
-PICOBJS=$(COBJS:.o=.pic.o) $(ASMOBJS:.o=.pic.o)
 
-all: libasmrun.a all-$(RUNTIMED) all-$(PROFILING) all-$(SHARED)
+all: libasmrun.a all-$(RUNTIMED)
 
 ifeq "$(RUNTIMEI)" "true"
 all: libasmruni.a
@@ -68,31 +58,20 @@ libasmruni.a: $(IOBJS)
 	$(ARCMD) rc $@ $^
 	$(RANLIB) $@
 
-all-noprof:
+libasmrun_shared.so: $(OBJS)
+	$(MKDLL) -o libasmrun_shared.so $(OBJS) $(NATIVECCLIBS)
 
-all-prof: libasmrunp.a
+libasmrun_shared.so-:
+.PHONY: libasmrun_shared.so-
 
-libasmrunp.a: $(POBJS)
-	rm -f libasmrunp.a
-	$(ARCMD) rc libasmrunp.a $(POBJS)
-	$(RANLIB) libasmrunp.a
-
-all-noshared:
-
-all-shared: libasmrun_pic.a libasmrun_shared.so
-
-libasmrun_pic.a: $(PICOBJS)
-	rm -f libasmrun_pic.a
-	$(ARCMD) rc libasmrun_pic.a $(PICOBJS)
-	$(RANLIB) libasmrun_pic.a
-
-libasmrun_shared.so: $(PICOBJS)
-	$(MKDLL) -o libasmrun_shared.so $(PICOBJS) $(NATIVECCLIBS)
+libasmrun_shared.so-pic: libasmrun_shared.so
+.PHONY: libasmrun_shared.so-pic
 
 INSTALL_LIBDIR=$(DESTDIR)$(LIBDIR)
 
 install::
 	cp libasmrun.a $(INSTALL_LIBDIR)/libasmrun.a
+	-cp libasmrun_shared.so $(INSTALL_LIBDIR)/libasmrun_shared.so
 	cd $(INSTALL_LIBDIR); $(RANLIB) libasmrun.a
 .PHONY: install-default
 
@@ -106,23 +85,6 @@ ifeq "$(RUNTIMEI)" "true"
 install::
 	cp libasmruni.a $(INSTALL_LIBDIR)/libasmruni.a
 	cd $(INSTALL_LIBDIR); $(RANLIB) libasmruni.a
-endif
-
-ifeq "$(PROFILING)" "prof"
-install::
-	cp libasmrunp.a $(INSTALL_LIBDIR)/libasmrunp.a
-	cd $(INSTALL_LIBDIR); $(RANLIB) libasmrunp.a
-else
-install::
-	rm -f $(INSTALL_LIBDIR)/libasmrunp.a
-	ln -s libasmrun.a $(INSTALL_LIBDIR)/libasmrunp.a
-endif
-
-ifeq "$(SHARED)" "shared"
-install::
-	cp libasmrun_pic.a $(INSTALL_LIBDIR)/libasmrun_pic.a
-	cd $(INSTALL_LIBDIR); $(RANLIB) libasmrunp.a
-	cp libasmrun_shared.so $(INSTALL_LIBDIR)/libasmrun_shared.so
 endif
 
 main.c: ../byterun/main.c
@@ -200,11 +162,7 @@ signals.c: ../byterun/signals.c
 debugger.c: ../byterun/debugger.c
 	ln -s ../byterun/debugger.c debugger.c
 
-LINKEDFILES=misc.c freelist.c major_gc.c minor_gc.c memory.c alloc.c array.c \
-  compare.c ints.c floats.c str.c io.c extern.c intern.c hash.c sys.c \
-  parsing.c gc_ctrl.c terminfo.c md5.c obj.c lexing.c printexc.c callback.c \
-  weak.c compact.c finalise.c meta.c custom.c main.c globroots.c \
-  $(UNIX_OR_WIN32).c dynlink.c signals.c debugger.c
+LINKEDFILES=$(ASMRUN_LINKEDFILES)
 
 clean::
 	rm -f $(LINKEDFILES)
@@ -215,40 +173,21 @@ clean::
 %.i.o : %.c
 	$(CC) -c $(IFLAGS) -o $@ $<
 
-%.p.o: %.c
-	$(CC) -c $(PFLAGS) -o $@ $<
-
-%.pic.o: %.c
-	$(CC) -c $(PICFLAGS) -o $@ $<
-
 %.o: %.S
-	$(ASPP) -DSYS_$(SYSTEM) -DMODEL_$(MODEL) -o $@ $< || \
+	$(ASPP) $(ASPPFLAGS) -DSYS_$(SYSTEM) -DMODEL_$(MODEL) -o $@ $< || \
 	{ echo "If your assembler produced syntax errors, it is probably";\
           echo "unhappy with the preprocessor. Check your assembler, or";\
           echo "try producing $*.o by hand.";\
           exit 2; }
 
-%.p.o: %.S
-	$(ASPP) -DSYS_$(SYSTEM) -DMODEL_$(MODEL) $(ASPPPROFFLAGS) -o $@ $<
-
-%.pic.o: %.S
-	$(ASPP) -DSYS_$(SYSTEM) -DMODEL_$(MODEL) $(SHAREDCCCOMPOPTS) -o $@ $<
-
 %.o: %.s
-	$(ASPP) -DSYS_$(SYSTEM) -o $@ $<
-
-%.p.o: %.s
-	$(ASPP) -DSYS_$(SYSTEM) $(ASPPPROFFLAGS) -o $@ $<
-
-%.pic.o: %.s
-	$(ASPP) -DSYS_$(SYSTEM) $(SHAREDCCCOMPOPTS) -o $@ $<
+	$(ASPP) $(ASPPFLAGS) -DSYS_$(SYSTEM) -o $@ $<
 
 clean::
 	rm -f *.o *.a *.so *~
 
 depend: $(COBJS:.o=.c) ${LINKEDFILES}
 	$(CC) -MM $(FLAGS) *.c > .depend
-	$(CC) -MM $(FLAGS) -DPROFILING *.c | sed -e 's/\.o/.p.o/' >> .depend
 	$(CC) -MM $(FLAGS) -DDEBUG *.c | sed -e 's/\.o/.d.o/' >> .depend
 	$(CC) -MM $(FLAGS) -DCAML_INSTR *.c | sed -e 's/\.o/.i.o/' >> .depend
 

@@ -82,7 +82,7 @@ and strict_sequence = ref false         (* -strict-sequence *)
 and strict_formats = ref false          (* -strict-formats *)
 and applicative_functors = ref true     (* -no-app-funct *)
 and make_runtime = ref false            (* -make-runtime *)
-and gprofile = ref false                (* -p *)
+and gprofile = ref false                (* -[no-]p *)
 and c_compiler = ref (None: string option) (* -cc *)
 and no_auto_link = ref false            (* -noautolink *)
 and dllpaths = ref ([] : string list)   (* -dllpath *)
@@ -133,23 +133,130 @@ let flambda_invariant_checks = ref true (* -flambda-invariants *)
 
 let dont_write_files = ref false        (* set to true under ocamldoc *)
 
+let shared = ref false (* -shared *)
+let dlcode = ref true (* not -nodynlink *)
+let override_with_frame_pointers = ref None  (* -f[no-]omit-frame-pointer *)
+let override_no_naked_pointers = ref None (* -f[no-]naked-pointers *)
+
+let pic_code = ref false
+
+let no_naked_pointers () =
+  match !override_no_naked_pointers with
+  | None -> Config.no_naked_pointers
+  | Some override -> override
+
+let with_frame_pointers () =
+  match !override_with_frame_pointers with
+  | None -> Config.with_frame_pointers
+  | Some override -> override
+
+module Feature = struct
+  type t =
+    | Gprof
+    | No_naked_pointers
+    | With_frame_pointers
+    | PIC
+
+  let to_string = function
+    | Gprof -> "gprof"
+    | No_naked_pointers -> "no_naked_pointers"
+    | With_frame_pointers -> "with_frame_pointers"
+    | PIC -> "pic"
+
+  let of_string s =
+    match String.lowercase_ascii s with
+    | "gprof" -> Gprof
+    | "no_naked_pointers" -> No_naked_pointers
+    | "with_frame_pointers" -> With_frame_pointers
+    | "pic" -> PIC
+    | _ -> Misc.fatal_errorf "Unknown feature '%s'" s
+
+  include Identifiable.Make (struct
+    type nonrec t = t
+
+    let output chan t =
+      output_string chan (to_string t)
+
+    let hash = function
+      | Gprof -> 0
+      | No_naked_pointers -> 1
+      | With_frame_pointers -> 2
+      | PIC -> 3
+
+    let compare t1 t2 = Pervasives.compare (hash t1) (hash t2)
+
+    let equal t1 t2 = (hash t1) = (hash t2)
+
+    let print ppf t =
+      Format.fprintf ppf "%s" (to_string t)
+  end)
+
+  let required_across_all_units = function
+    | Gprof
+    | No_naked_pointers -> false
+    | With_frame_pointers
+    | PIC -> true
+end
+
+module Feature_combination = struct
+  type t = Feature.Set.t
+
+  let directory t =
+    let as_strings = List.map Feature.to_string (Feature.Set.elements t) in
+    let sorted = List.sort Pervasives.compare as_strings in
+    String.concat "+" sorted
+
+  let print ppf t =
+    Format.fprintf ppf "%s" (directory t)
+
+  let current () =
+    let module F = Feature in
+    let features =
+      (if !gprofile then [F.Gprof] else [])
+        @ (if no_naked_pointers () then [F.No_naked_pointers] else [])
+        @ (if with_frame_pointers () then [F.With_frame_pointers] else [])
+        @ (if !pic_code then [F.PIC] else [])
+    in
+    Feature.Set.of_list features
+
+  let all_available =
+    let features =
+      Misc.Stdlib.String.split Config.feature_combinations ~on:' '
+    in
+    Feature.Set.of_list (List.map Feature.of_string features)
+
+  let available t =
+    Feature.Set.subset t all_available
+
+  let subset = Feature.Set.subset
+  let union = Feature.Set.union
+
+  let filter t ~f = Feature.Set.filter f t
+end
+
+let runtime_variant = ref "";;      (* -runtime-variant *)
+
+let stdlib_path () =
+  let module FC = Feature_combination in
+  let current = FC.current () in
+  if not (FC.available current) then begin
+    Format.eprintf "This compiler does not support the requested \
+        feature combination (%a).\n"
+      FC.print current;
+    exit 1
+  end else begin
+    Config.standard_library ^ Filename.dir_sep ^ Config.target
+      ^ Filename.dir_sep ^ (FC.directory current)
+  end
+
 let std_include_flag prefix =
   if !no_std_include then ""
-  else (prefix ^ (Filename.quote Config.standard_library))
+  else (prefix ^ (Filename.quote (stdlib_path ())))
 ;;
 
 let std_include_dir () =
-  if !no_std_include then [] else [Config.standard_library]
+  if !no_std_include then [] else [stdlib_path ()]
 ;;
-
-let shared = ref false (* -shared *)
-let dlcode = ref true (* not -nodynlink *)
-
-let pic_code = ref (match Config.architecture with (* -fPIC *)
-                     | "amd64" -> true
-                     | _       -> false)
-
-let runtime_variant = ref "";;      (* -runtime-variant *)
 
 let keep_docs = ref false              (* -keep-docs *)
 let keep_locs = ref false              (* -keep-locs *)

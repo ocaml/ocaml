@@ -914,7 +914,7 @@ let emit_external_symbols () =
     [ "symbol_stubs"; "self_modifying_code+pure_instructions"; "5" ];
   StringSet.iter emit_external_symbol_direct !external_symbols_direct;
   external_symbols_direct := StringSet.empty;
-  if !Clflags.gprofile then begin
+  if Clflags.gprofile () then begin
     _label "Lmcount$stub";
     D.indirect_symbol "mcount";
     I.hlt (); I.hlt (); I.hlt () ; I.hlt () ; I.hlt ()
@@ -962,7 +962,7 @@ let fundecl fundecl =
   D.label (emit_symbol fundecl.fun_name);
   emit_debug_info fundecl.fun_dbg;
   cfi_startproc ();
-  if !Clflags.gprofile then emit_profile();
+  if Clflags.gprofile () then emit_profile();
   let n = frame_size() - 4 in
   if n > 0 then  begin
     I.sub (int n) esp;

@@ -685,7 +685,7 @@ let fundecl fundecl =
   if Config.system = "solaris" then
     `	.type	{emit_symbol fundecl.fun_name},#function\n`;
   `{emit_symbol fundecl.fun_name}:\n`;
-  if !Clflags.gprofile then emit_profile();
+  if Clflags.gprofile () then emit_profile();
   let n = frame_size() in
   if n > 0 then
     `	sub	%sp, {emit_int n}, %sp\n`;

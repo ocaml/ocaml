@@ -165,6 +165,9 @@ while : ; do
         with_cfi=false;;
     -no-native-compiler|--no-native-compiler)
         native_compiler=false;;
+    -at-most-features|--at-most-features)
+        # The argument to this option is a space-separated list.
+        at_most_features="$2"; shift;;
     -flambda|--flambda)
         flambda=true;;
     *) if echo "$1" | grep -q -e '^--\?[a-zA-Z0-9-]\+='; then
@@ -1716,22 +1719,6 @@ else
   inf "Assembler does not support CFI"
 fi
 
-if test "$with_frame_pointers" = "true"; then
-  case "$target,$cc" in
-    x86_64-*-linux*,gcc*)
-       nativecccompopts="$nativecccompopts -g  -fno-omit-frame-pointer"
-       bytecccompopts="$bytecccompopts -g  -fno-omit-frame-pointer"
-       nativecclinkopts="$nativecclinkopts -g"
-       echo "#define WITH_FRAME_POINTERS" >> m.h
-       ;;
-    *) err "Unsupported architecture with frame pointers";;
-  esac
-fi
-
-if $no_naked_pointers; then
-  echo "#define NO_NAKED_POINTERS" >> m.h
-fi
-
 # Check for mmap support for huge pages and contiguous heap
 if sh ./runtest mmap-huge.c; then
     has_huge_pages=true
@@ -1740,6 +1727,61 @@ if sh ./runtest mmap-huge.c; then
     inf "mmap supports huge pages"
 else
     has_huge_pages=false
+fi
+
+# Configuration for different feature combinations in native code.
+# For the moment, each combination is a single feature, but that could be
+# extended in the future (e.g. for building PIC + with-frame-pointers).
+
+feature_combinations="no_naked_pointers"
+echo "CCOMP_FLAGS_no_naked_pointers=-DNO_NAKED_POINTERS" >> Makefile
+echo "OCAMLCOMP_FLAGS_no_naked_pointers=-no-naked-pointers" >> Makefile
+
+if test "$profiling" = "prof"; then
+  feature_combinations="$feature_combinations gprof"
+  echo "CCOMP_FLAGS_gprof=$cc_profile" >> Makefile
+  echo "OCAMLCOMP_FLAGS_gprof=-p" >> Makefile
+fi
+
+if $shared_libraries_supported; then
+  feature_combinations="$feature_combinations pic"
+  echo "CCOMP_FLAGS_pic=-fPIC" >> Makefile
+  echo "OCAMLCOMP_FLAGS_pic=-fPIC" >> Makefile
+fi
+
+case "$target,$cc" in
+  x86_64-*-linux*,gcc*)
+    feature_combinations="$feature_combinations with_frame_pointers"
+    echo "CCOMP_FLAGS_with_frame_pointers=-fno-omit-frame-pointer \
+-g -DWITH_FRAME_POINTERS" >> Makefile
+    echo "OCAMLCOMP_FLAGS_with_frame_pointers=-fno-omit-frame-pointer" \
+      >> Makefile
+    ;;
+  *)
+    ;;
+esac
+
+# Restrict compiled features if -at-most-features was specified.
+# (This still leaves some extra environment variable settings, from above,
+# in the Makefile but that doesn't matter.)
+
+if test "$at_most_features" != ""; then
+  ok_feature_combinations=""
+  for combination in $feature_combinations; do
+    ok=false
+    for allowed_combination in $at_most_features; do
+      if test "$allowed_combination" = "$combination"; then
+        ok=true
+      fi
+    done
+    if $ok; then
+      ok_feature_combinations="$combination $ok_feature_combinations"
+    fi
+  done
+  potential_feature_combinations="$feature_combinations"
+  feature_combinations="$ok_feature_combinations"
+else
+  potential_feature_combinations="$feature_combinations"
 fi
 
 # Finish generated files
@@ -1816,6 +1858,7 @@ echo "WITH_DEBUGGER=${with_debugger}" >>Makefile
 echo "WITH_OCAMLDOC=${with_ocamldoc}" >>Makefile
 echo "ASM_CFI_SUPPORTED=$asm_cfi_supported" >> Makefile
 echo "WITH_FRAME_POINTERS=$with_frame_pointers" >> Makefile
+echo "NO_NAKED_POINTERS=$no_naked_pointers" >> Makefile
 echo "TARGET=$target" >> Makefile
 echo "HOST=$host" >> Makefile
 if [ "$ostype" = Cygwin ]; then
@@ -1823,6 +1866,7 @@ if [ "$ostype" = Cygwin ]; then
 fi
 echo "FLAMBDA=$flambda" >> Makefile
 echo "MAX_TESTSUITE_DIR_RETRIES=$max_testsuite_dir_retries" >> Makefile
+echo "FEATURE_COMBINATIONS=$feature_combinations" >> Makefile
 
 
 rm -f tst hasgot.c
@@ -1876,21 +1920,18 @@ else
   inf "        assembler supports CFI ... no"
   fi
   if test "$with_frame_pointers" = "true"; then
-  inf "        with frame pointers....... yes"
+  inf "        with frame pointers by default....... yes"
   else
-  inf "        with frame pointers....... no"
+  inf "        with frame pointers by default....... no"
   fi
   if $no_naked_pointers; then
-  inf "        naked pointers forbidden.. yes"
+  inf "        naked pointers forbidden by default.. yes"
   else
-  inf "        naked pointers forbidden.. no"
+  inf "        naked pointers forbidden by default.. no"
   fi
   inf "        native dynlink ........... $natdynlink"
-  if test "$profiling" = "prof"; then
-  inf "        profiling with gprof ..... supported"
-  else
-  inf "        profiling with gprof ..... not supported"
-  fi
+  inf "        potential features ....... $potential_feature_combinations"
+  inf "        enabled features ......... $feature_combinations"
   if test "$flambda" = "true"; then
   inf "        using flambda middle-end . yes"
   else

@@ -5,6 +5,6 @@ strstubs.o: strstubs.c ../../byterun/caml/mlvalues.h \
   ../../byterun/caml/gc.h ../../byterun/caml/major_gc.h \
   ../../byterun/caml/freelist.h ../../byterun/caml/minor_gc.h \
   ../../byterun/caml/address_class.h ../../byterun/caml/fail.h
-str.cmi :
 str.cmo : str.cmi
 str.cmx : str.cmi
+str.cmi :

@@ -22,8 +22,6 @@ open Cmm
 open Reg
 open Mach
 
-let fp = Config.with_frame_pointers
-
 (* Which ABI to use *)
 
 let win64 =
@@ -272,7 +270,7 @@ let destroyed_at_oper = function
         -> [| rax |]
   | Iswitch(_, _) -> [| rax; rdx |]
   | _ ->
-    if fp then
+    if Clflags.with_frame_pointers () then
 (* prevent any use of the frame pointer ! *)
       [| rbp |]
     else
@@ -284,12 +282,16 @@ let destroyed_at_raise = all_phys_regs
 (* Maximal register pressure *)
 
 
-let safe_register_pressure = function
-    Iextcall(_,_) -> if win64 then if fp then 7 else 8 else 0
+let safe_register_pressure insn =
+  let fp = Clflags.with_frame_pointers () in
+  match insn with
+  | Iextcall(_,_) -> if win64 then if fp then 7 else 8 else 0
   | _ -> if fp then 10 else 11
 
-let max_register_pressure = function
-    Iextcall(_, _) ->
+let max_register_pressure insn =
+  let fp = Clflags.with_frame_pointers () in
+  match insn with
+  | Iextcall(_, _) ->
       if win64 then
         if fp then [| 7; 10 |]  else [| 8; 10 |]
         else
@@ -324,7 +326,7 @@ let assemble_file infile outfile =
   X86_proc.assemble_file infile outfile
 
 let init () =
-  if fp then begin
+  if Clflags.with_frame_pointers () then begin
     num_available_registers.(0) <- 12
   end else
     num_available_registers.(0) <- 13

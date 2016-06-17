@@ -30,6 +30,7 @@ type error =
   | Linking_error
   | Multiple_definition of string * string * string
   | Missing_cmx of string * string
+  | All_units_must_be_compiled_with_features of Clflags.Feature_combination.t
 
 exception Error of error
 
@@ -105,9 +106,8 @@ let add_ccobjs origin l =
 
 let runtime_lib () =
   let libname =
-    if !Clflags.gprofile
-    then "libasmrunp" ^ ext_lib
-    else "libasmrun" ^ !Clflags.runtime_variant ^ ext_lib in
+    "libasmrun" ^ !Clflags.runtime_variant ^ ext_lib
+  in
   try
     if !Clflags.nopervasives then []
     else [ find_in_path !load_path libname ]
@@ -302,13 +302,28 @@ let call_linker file_list startup_file output_name =
   if not (Ccomp.call_linker mode output_name files c_lib)
   then raise(Error Linking_error)
 
+let check_feature_consistency units_tolink =
+  let module FC = Clflags.Feature_combination in
+  let all_features =
+    List.fold_left (fun all_features (unit_info, _, _) ->
+        FC.union unit_info.ui_features all_features)
+      (FC.current ())
+      units_tolink
+  in
+  let required =
+    FC.filter all_features ~f:Clflags.Feature.required_across_all_units
+  in
+  List.iter (fun (unit_info, _, _) ->
+      if not (FC.subset required unit_info.ui_features) then begin
+        raise (Error (All_units_must_be_compiled_with_features required))
+      end)
+    units_tolink
+
 (* Main entry point *)
 
 let link ppf objfiles output_name =
-  let stdlib =
-    if !Clflags.gprofile then "stdlib.p.cmxa" else "stdlib.cmxa" in
-  let stdexit =
-    if !Clflags.gprofile then "std_exit.p.cmx" else "std_exit.cmx" in
+  let stdlib = "stdlib.cmxa" in
+  let stdexit = "std_exit.cmx" in
   let objfiles =
     if !Clflags.nopervasives then objfiles
     else if !Clflags.output_c_object then stdlib :: objfiles
@@ -322,6 +337,7 @@ let link ppf objfiles output_name =
   List.iter
     (fun (info, file_name, crc) -> check_consistency file_name info crc)
     units_tolink;
+  check_feature_consistency units_tolink;
   Clflags.ccobjs := !Clflags.ccobjs @ !lib_ccobjs;
   Clflags.all_ccopts := !lib_ccopts @ !Clflags.all_ccopts;
                                                (* put user's opts first *)
@@ -396,6 +412,11 @@ let report_error ppf = function
         Location.print_filename filename name
         Location.print_filename  filename
         name
+  | All_units_must_be_compiled_with_features features ->
+      fprintf ppf
+        "@[<hov>All units must be compiled with a compatible set of \
+          features (which for the given set of units is: %a)@]"
+        Clflags.Feature_combination.print features
 
 let () =
   Location.register_error_of_exn

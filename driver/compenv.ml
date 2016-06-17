@@ -33,6 +33,9 @@ let print_version_string () =
   print_string Config.version; print_newline(); exit 0
 
 let print_standard_library () =
+  (* N.B. Despite the name, this prints the root of the installation
+     (the "../lib/ocaml/" directory) rather than the specific stdlib
+     directory in use. *)
   print_string Config.standard_library; print_newline(); exit 0
 
 let fatal err =
@@ -188,6 +191,7 @@ let read_one_param ppf position name v =
   match name with
   | "g" -> set "g" [ Clflags.debug ] v
   | "p" -> set "p" [ Clflags.gprofile ] v
+  (* CR mshinwell: add support for -fno-omit-frame-pointers etc. *)
   | "bin-annot" -> set "bin-annot" [ Clflags.binary_annotations ] v
   | "annot" -> set "annot" [ Clflags.annotations ] v
   | "absname" -> set "absname" [ Location.absname ] v

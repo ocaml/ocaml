@@ -13,12 +13,12 @@
 #*                                                                        *
 #**************************************************************************
 
-include ../config/Makefile
-CAMLRUN ?= ../boot/ocamlrun
-CAMLYACC ?= ../boot/ocamlyacc
+include $(ROOTDIR)/config/Makefile
+CAMLRUN ?= $(ROOTDIR)/boot/ocamlrun
+CAMLYACC ?= $(ROOTDIR)/boot/ocamlyacc
 TARGET_BINDIR ?= $(BINDIR)
 
-COMPILER=../ocamlc
+COMPILER=$(ROOTDIR)/ocamlc
 CAMLC=$(CAMLRUN) $(COMPILER)
 COMPFLAGS=-strict-sequence -absname -w +a-4-9-41-42-44-45-48 \
           -g -warn-error A -bin-annot -nostdlib \
@@ -28,9 +28,10 @@ OPTCOMPFLAGS=-O3
 else
 OPTCOMPFLAGS=
 endif
-OPTCOMPILER=../ocamlopt
-CAMLOPT=$(CAMLRUN) $(OPTCOMPILER)
-CAMLDEP=$(CAMLRUN) ../tools/ocamldep
+CAMLOPT_BINARY ?= $(CAMLRUN) $(ROOTDIR)/ocamlopt
+OPTCOMPILER=$(CAMLOPT_BINARY)
+CAMLOPT=$(OPTCOMPILER)
+CAMLDEP=$(CAMLRUN) $(ROOTDIR)/tools/ocamldep
 
 OBJS=camlinternalFormatBasics.cmo pervasives.cmo $(OTHERS)
 OTHERS=list.cmo char.cmo bytes.cmo string.cmo sys.cmo \
@@ -63,8 +64,7 @@ INSTALL_LIBDIR=$(DESTDIR)$(LIBDIR)
 
 install::
 	cp stdlib.cma std_exit.cmo *.cmi *.cmt *.cmti *.mli *.ml \
-	  camlheader_ur \
-	  "$(INSTALL_LIBDIR)"
+	  camlheader_ur "$(INSTALL_LIBDIR)"
 	cp target_camlheader "$(INSTALL_LIBDIR)/camlheader"
 
 ifeq "$(RUNTIMED)" "runtimed"
@@ -83,8 +83,8 @@ stdlib.cma: $(OBJS)
 stdlib.cmxa: $(OBJS:.cmo=.cmx)
 	$(CAMLOPT) -a -o stdlib.cmxa $(OBJS:.cmo=.cmx)
 
-sys.ml: sys.mlp ../VERSION
-	sed -e "s|%%VERSION%%|`sed -e 1q ../VERSION`|" sys.mlp >sys.ml
+sys.ml: sys.mlp $(ROOTDIR)/VERSION
+	sed -e "s|%%VERSION%%|`sed -e 1q $(ROOTDIR)/VERSION`|" sys.mlp >sys.ml
 
 clean::
 	rm -f sys.ml
@@ -92,35 +92,29 @@ clean::
 clean::
 	rm -f camlheader target_camlheader camlheader_ur target_camlheader[di]
 
-.SUFFIXES: .mli .ml .cmi .cmo .cmx .p.cmx
+.SUFFIXES: .mli .ml .cmi .cmo .cmx
 
 .mli.cmi:
-	$(CAMLC) $(COMPFLAGS) `./Compflags $@` -c $<
+	$(CAMLC) $(COMPFLAGS) `$(ROOTDIR)/stdlib/Compflags $@` -c $<
 
 .ml.cmo:
-	$(CAMLC) $(COMPFLAGS) `./Compflags $@` -c $<
+	$(CAMLC) $(COMPFLAGS) `$(ROOTDIR)/stdlib/Compflags $@` -c $<
 
 .ml.cmx:
-	$(CAMLOPT) $(COMPFLAGS) $(OPTCOMPFLAGS) `./Compflags $@` -c $<
-
-.ml.p.cmx:
-	$(CAMLOPT) $(COMPFLAGS) $(OPTCOMPFLAGS) `./Compflags $@` \
-	           -p -c -o $*.p.cmx $<
+	$(CAMLOPT) $(COMPFLAGS) $(OPTCOMPFLAGS) \
+	  `$(ROOTDIR)/stdlib/Compflags $@` -c $<
 
 # Dependencies on the compiler
 COMPILER_DEPS=$(filter-out -use-prims, $(COMPILER))
 $(OBJS) std_exit.cmo: $(COMPILER_DEPS)
 $(OBJS:.cmo=.cmi) std_exit.cmi: $(COMPILER_DEPS)
 $(OBJS:.cmo=.cmx) std_exit.cmx: $(OPTCOMPILER)
-$(OBJS:.cmo=.p.cmx) std_exit.p.cmx: $(OPTCOMPILER)
 
 # Dependencies on Pervasives (not tracked by ocamldep)
 $(OTHERS) std_exit.cmo: pervasives.cmi
 $(OTHERS:.cmo=.cmi) std_exit.cmi: pervasives.cmi
 $(OBJS:.cmo=.cmx) std_exit.cmx: pervasives.cmi
-$(OBJS:.cmo=.p.cmx) std_exit.p.cmx: pervasives.cmi
 $(OTHERS:.cmo=.cmx) std_exit.cmx: pervasives.cmx
-$(OTHERS:.cmo=.p.cmx) std_exit.p.cmx: pervasives.cmx
 
 clean::
 	rm -f *.cm* *.$(O) *.$(A)
@@ -129,9 +123,5 @@ clean::
 
 include .depend
 
-# Note that .p.cmx targets do not depend (for compilation) upon other
-# .p.cmx files.  When the compiler imports another compilation unit,
-# it looks for the .cmx file (not .p.cmx).
 depend:
 	$(CAMLDEP) -slash *.mli *.ml > .depend
-	$(CAMLDEP) -slash *.ml | sed -e 's/\.cmx : /.p.cmx : /g' >>.depend

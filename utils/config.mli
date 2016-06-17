@@ -19,7 +19,10 @@ val version: string
         (* The current version number of the system *)
 
 val standard_library: string
-        (* The directory containing the standard libraries *)
+        (* The directory containing the root of the standard libraries.
+           Variants of the standard library exist in subdirectories for
+           native code compilation.  Use functions in [Clflags] instead
+           of this variable to choose the correct one. *)
 val standard_runtime: string
         (* The full path to the standard bytecode interpreter ocamlrun *)
 val ccomp_type: string
@@ -49,8 +52,10 @@ val ranlib: string
         (* Command to randomize a library, or "" if not needed *)
 val ar: string
         (* Name of the ar command, or "" if not needed  (MSVC) *)
-val cc_profile : string
-        (* The command line option to the C compiler to enable profiling. *)
+val cc_gprof : string
+val cc_with_frame_pointers : string
+val cc_pic : string
+        (* Command line option(s) to the C compiler for various features. *)
 
 val load_path: string list ref
         (* Directories in the search path for .cmi and .cmo files *)
@@ -110,7 +115,9 @@ val asm: string
 val asm_cfi_supported: bool
         (* Whether assembler understands CFI directives *)
 val with_frame_pointers : bool
-        (* Whether assembler should maintain frame pointers *)
+        (* Whether -fno-omit-frame-pointer should be on by default *)
+val no_naked_pointers : bool
+        (* Whether -no-naked-pointers should be on by default *)
 
 val ext_obj: string
         (* Extension for object files, e.g. [.o] under Unix. *)
@@ -133,6 +140,9 @@ val host : string
 
 val target : string
         (* Whether the compiler is a cross-compiler *)
+
+val feature_combinations : string
+        (* Space-separated list of all feature combinations supported *)
 
 val print_config : out_channel -> unit;;
 

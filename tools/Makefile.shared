@@ -74,8 +74,6 @@ $(eval $(call \
  byte_and_opt_,$(subst $$,$$$$,$1),$(subst $$,$$$$,$2),$(subst $$,$$$$,$3)))
 endef
 
-ROOTDIR=..
-
 ifeq "$(wildcard $(ROOTDIR)/flexdll/Makefile)" ""
 export OCAML_FLEXLINK:=
 else

@@ -108,6 +108,9 @@ val strict_formats : bool ref
 val applicative_functors : bool ref
 val make_runtime : bool ref
 val gprofile : bool ref
+val with_frame_pointers : unit -> bool
+val override_with_frame_pointers : bool option ref
+val override_no_naked_pointers : bool option ref
 val c_compiler : string option ref
 val no_auto_link : bool ref
 val dllpaths : string list ref
@@ -200,3 +203,21 @@ val set_dumped_pass : string -> bool -> unit
 
 val parse_color_setting : string -> Misc.Color.setting option
 val color : Misc.Color.setting ref
+
+module Feature : sig
+  type t
+
+  val required_across_all_units : t -> bool
+end
+
+module Feature_combination : sig
+  type t
+
+  val current : unit -> t
+
+  val filter : t -> f:(Feature.t -> bool) -> t
+  val subset : t -> t -> bool
+  val union : t -> t -> t
+
+  val print : Format.formatter -> t -> unit
+end

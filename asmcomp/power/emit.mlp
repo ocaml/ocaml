@@ -1016,7 +1016,7 @@ let fundecl fundecl =
   end;
   emit_debug_info fundecl.fun_dbg;
   cfi_startproc();
-  if !Clflags.gprofile then emit_profile();
+  if Clflags.gprofile () then emit_profile();
   let n = frame_size() in
   if n > 0 then begin
     `	addi	1, 1, {emit_int(-n)}\n`;
@@ -1164,7 +1164,7 @@ let end_assembly() =
      functions in every generated file, instead of defining
      them once in asmrun/power.S, so that we can call them
      without risking to save r2 in the wrong place. *)
-  if ppc64 && !Clflags.gprofile then begin
+  if ppc64 && Clflags.gprofile () then begin
     let save_area = reserved_stack_space + (if abi = ELF64v1 then 8*8 else 0) in
     let stacksize = save_area + 8*8 in
     emit_string code_space;

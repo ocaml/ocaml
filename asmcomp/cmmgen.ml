@@ -3114,7 +3114,8 @@ let plugin_header units =
       dynu_crc = crc;
       dynu_imports_cmi = ui.ui_imports_cmi;
       dynu_imports_cmx = ui.ui_imports_cmx;
-      dynu_defines = ui.ui_defines
+      dynu_defines = ui.ui_defines;
+      dynu_features = ui.ui_features;
     } in
   global_data "caml_plugin_header"
     { dynu_magic = Config.cmxs_magic_number; dynu_units = List.map mk units }

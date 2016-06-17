@@ -268,6 +268,20 @@ let mk_modern f =
   "-modern", Arg.Unit f, " (deprecated) same as -labels"
 ;;
 
+let mk_no_naked_pointers f =
+  "-no-naked-pointers", Arg.Unit f,
+  Printf.sprintf
+    " Improve runtime performance by disallowing naked pointers%s"
+    (if Config.no_naked_pointers then " (default)" else "")
+;;
+
+let mk_naked_pointers f =
+  "-naked-pointers", Arg.Unit f,
+  Printf.sprintf
+    " Permit naked pointers at the expense of runtime performance%s"
+    (if not Config.no_naked_pointers then " (default)" else "")
+;;
+
 let mk_alias_deps f =
   "-alias-deps", Arg.Unit f,
   " Do record dependencies for module aliases"
@@ -364,8 +378,8 @@ let mk_output_complete_obj f =
 
 let mk_p f =
   "-p", Arg.Unit f,
-  " Compile and link with profiling support for \"gprof\"\n\
-  \     (not supported on all platforms)"
+  Printf.sprintf " Compile and link with profiling support for \"gprof\"\n\
+\     (not supported on all platforms)"
 ;;
 
 let mk_pack_byt f =
@@ -541,6 +555,20 @@ let mk_warn_help f =
   "-warn-help", Arg.Unit f, " Show description of warning numbers"
 ;;
 
+let mk_with_frame_pointers f =
+  "-fno-omit-frame-pointer", Arg.Unit f,
+  Printf.sprintf
+    " Generate static links on the stack using frame pointers%s"
+    (if Config.with_frame_pointers then " (default)" else "")
+;;
+
+let mk_without_frame_pointers f =
+  "-fomit-frame-pointer", Arg.Unit f,
+  Printf.sprintf
+    " Omit static links on the stack using frame pointers%s"
+    (if not Config.with_frame_pointers then " (default)" else "")
+;;
+
 let mk_color f =
   "-color", Arg.Symbol (["auto"; "always"; "never"], f),
   Printf.sprintf
@@ -555,7 +583,8 @@ let mk_color f =
 ;;
 
 let mk_where f =
-  "-where", Arg.Unit f, " Print location of standard library and exit"
+  "-where", Arg.Unit f,
+    " Print the path of the OCaml library directory and exit"
 ;;
 
 let mk_nopervasives f =
@@ -846,6 +875,10 @@ module type Optcommon_options = sig
   val _no_unbox_specialised_args : unit -> unit
   val _o2 : unit -> unit
   val _o3 : unit -> unit
+  val _with_frame_pointers : unit -> unit
+  val _without_frame_pointers : unit -> unit
+  val _no_naked_pointers : unit -> unit
+  val _naked_pointers : unit -> unit
 
   val _clambda_checks : unit -> unit
   val _dflambda : unit -> unit
@@ -1069,6 +1102,8 @@ struct
     mk_compact F._compact;
     mk_config F._config;
     mk_dtypes F._annot;
+    mk_without_frame_pointers F._without_frame_pointers;
+    mk_with_frame_pointers F._with_frame_pointers;
     mk_for_pack_opt F._for_pack;
     mk_g_opt F._g;
     mk_i F._i;
@@ -1101,6 +1136,8 @@ struct
     mk_noautolink_opt F._noautolink;
     mk_nodynlink F._nodynlink;
     mk_nolabels F._nolabels;
+    mk_naked_pointers F._naked_pointers;
+    mk_no_naked_pointers F._no_naked_pointers;
     mk_nostdlib F._nostdlib;
     mk_no_unbox_free_vars_of_closures F._no_unbox_free_vars_of_closures;
     mk_no_unbox_specialised_args F._no_unbox_specialised_args;
@@ -1183,6 +1220,8 @@ module Make_opttop_options (F : Opttop_options) = struct
   let list = [
     mk_absname F._absname;
     mk_compact F._compact;
+    mk_with_frame_pointers F._with_frame_pointers;
+    mk_without_frame_pointers F._without_frame_pointers;
     mk_I F._I;
     mk_init F._init;
     mk_inline F._inline;
@@ -1199,6 +1238,8 @@ module Make_opttop_options (F : Opttop_options) = struct
     mk_inline_lifting_benefit F._inline_lifting_benefit;
     mk_inline_branch_factor F._inline_branch_factor;
     mk_labels F._labels;
+    mk_naked_pointers F._naked_pointers;
+    mk_no_naked_pointers F._no_naked_pointers;
     mk_alias_deps F._alias_deps;
     mk_no_alias_deps F._no_alias_deps;
     mk_app_funct F._app_funct;

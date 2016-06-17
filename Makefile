@@ -18,8 +18,10 @@
 MAKEREC=$(MAKE)
 include Makefile.shared
 
+ABSOLUTE_ROOTDIR=$(abspath .)
+
 SHELL=/bin/sh
-MKDIR=mkdir -p
+export MKDIR=mkdir -p
 
 # For users who don't read the INSTALL file
 defaultentry:
@@ -158,16 +160,383 @@ compare:
 cleanboot:
 	rm -rf boot/Saved/Saved.prev/*
 
+# Cross-compilation for native code, currently with the same target machine,
+# but different compilation options.
+
+# $(1) = feature combination directory
+# $(2) = target
+define prepare-basics-for-cross
+cross/$(2)/$(1):
+	$(MKDIR) $$@
+
+cross/$(2)/$(1)/.depend: cross/$(2)/$(1)
+	ln -f -s $(ABSOLUTE_ROOTDIR)/.depend $$@
+
+cross/$(2)/$(1)/VERSION: cross/$(2)/$(1)
+	ln -f -s $(ABSOLUTE_ROOTDIR)/VERSION $$@
+
+cross/$(2)/$(1)/Makefile: cross/$(2)/$(1)
+	echo "include $(ABSOLUTE_ROOTDIR)/Makefile" > $$@
+	echo "COMPFLAGS += $(OCAMLCOMP_FLAGS_$(1))" >> $$@
+
+cross/$(2)/$(1)/Makefile.shared: cross/$(2)/$(1)
+	ln -f -s $(ABSOLUTE_ROOTDIR)/Makefile.shared $$@
+
+cross/$(2)/$(1)/config/Makefile:
+	$(MKDIR) $$(dir $$@)
+	ln -f -s $(ABSOLUTE_ROOTDIR)/config/Makefile $$@
+
+cross/$(2)/$(1)/otherlibs/Makefile:
+	$(MKDIR) $$(dir $$@)
+	echo "include $(ABSOLUTE_ROOTDIR)/otherlibs/Makefile" > $$@
+	echo "CAMLOPT += $(OCAMLCOMP_FLAGS_$(1))" >> $$@
+	echo "INSTALL_LIBDIR := $$(INSTALL_LIBDIR)/$(2)/$(1)" >> $$@
+	echo \
+	  "INSTALL_STUBLIBDIR := \
+	     $$(INSTALL_STUBLIBDIR)/$(2)/$(1)/stublibs" >> $$@
+
+cross/$(2)/$(1)/otherlibs/systhreads/Makefile:
+	$(MKDIR) $$(dir $$@)
+	echo "include $(ABSOLUTE_ROOTDIR)/otherlibs/systhreads/Makefile" > $$@
+	echo "CAMLOPT += $(OCAMLCOMP_FLAGS_$(1))" >> $$@
+	echo "INSTALL_LIBDIR := $$(INSTALL_LIBDIR)/$(2)/$(1)" >> $$@
+	echo \
+	  "INSTALL_STUBLIBDIR := \
+	    $$(INSTALL_STUBLIBDIR)/$(2)/$(1)/stublibs" >> $$@
+
+cross/$(2)/$(1)/boot/ocamlc:
+	$(MKDIR) $$(dir $$@)
+	ln -f -s $(ABSOLUTE_ROOTDIR)/boot/ocamlc $$@
+
+cross/$(2)/$(1)/boot/ocamlrun:
+	$(MKDIR) $$(dir $$@)
+	ln -f -s $(ABSOLUTE_ROOTDIR)/boot/ocamlrun $$@
+
+cross/$(2)/$(1)/ocamlc: cross/$(2)/$(1)
+	ln -f -s $(ABSOLUTE_ROOTDIR)/ocamlc $$@
+
+cross/$(2)/$(1)/ocamlopt: cross/$(2)/$(1)
+	ln -f -s $(ABSOLUTE_ROOTDIR)/ocamlopt $$@
+
+cross/$(2)/$(1)/ocamlopt.opt: cross/$(2)/$(1)
+	ln -f -s $(ABSOLUTE_ROOTDIR)/ocamlopt.opt $$@
+
+cross/$(2)/$(1)/compilerlibs/ocamlcommon.cma:
+	$(MKDIR) $$(dir $$@)
+	ln -f -s $(ABSOLUTE_ROOTDIR)/compilerlibs/ocamlcommon.cma $$@
+
+cross/$(2)/$(1)/compilerlibs/ocamloptcomp.cma:
+	$(MKDIR) $$(dir $$@)
+	ln -f -s $(ABSOLUTE_ROOTDIR)/compilerlibs/ocamloptcomp.cma $$@
+
+cross/$(2)/$(1)/byterun:
+	ln -f -s $(ABSOLUTE_ROOTDIR)/byterun $$@
+
+cross/$(2)/$(1)/asmcomp/amd64:
+	$(MKDIR) cross/$(2)/$(1)/asmcomp
+	ln -f -s $(ABSOLUTE_ROOTDIR)/asmcomp/amd64 $$@
+
+cross/$(2)/$(1)/asmcomp:
+	$(MKDIR) $$@
+
+cross/$(2)/$(1)/asmcomp/arm: cross/$(2)/$(1)/asmcomp
+	ln -f -s $(ABSOLUTE_ROOTDIR)/asmcomp/arm $$@
+
+cross/$(2)/$(1)/asmcomp/arm64: cross/$(2)/$(1)/asmcomp
+	ln -f -s $(ABSOLUTE_ROOTDIR)/asmcomp/arm64 $$@
+
+cross/$(2)/$(1)/asmcomp/i386: cross/$(2)/$(1)/asmcomp
+	ln -f -s $(ABSOLUTE_ROOTDIR)/asmcomp/i386 $$@
+
+cross/$(2)/$(1)/asmcomp/power: cross/$(2)/$(1)/asmcomp
+	ln -f -s $(ABSOLUTE_ROOTDIR)/asmcomp/power $$@
+
+cross/$(2)/$(1)/asmcomp/s390x: cross/$(2)/$(1)/asmcomp
+	ln -f -s $(ABSOLUTE_ROOTDIR)/asmcomp/s390x $$@
+
+cross/$(2)/$(1)/asmcomp/sparc: cross/$(2)/$(1)/asmcomp
+	ln -f -s $(ABSOLUTE_ROOTDIR)/sparc $$@
+ 
+cross/$(2)/$(1)/tools/cvt_emit:
+	$(MKDIR) $$(dir $$@)
+	ln -f -s $(ABSOLUTE_ROOTDIR)/tools/cvt_emit $$@
+
+cross/$(2)/$(1)/tools/cvt_emit.mll:
+	$(MKDIR) $$(dir $$@)
+	ln -f -s $(ABSOLUTE_ROOTDIR)/tools/cvt_emit.mll $$@
+
+cross/$(2)/$(1)/tools/make-opcodes:
+	$(MKDIR) $$(dir $$@)
+	ln -f -s $(ABSOLUTE_ROOTDIR)/tools/make-opcodes $$@
+
+cross/$(2)/$(1)/tools/ocamlmklib:
+	$(MKDIR) $$(dir $$@)
+	ln -f -s $(ABSOLUTE_ROOTDIR)/tools/ocamlmklib $$@
+
+prepare-basics-for-cross-$(2):: \
+  cross/$(2)/$(1)/.depend \
+  cross/$(2)/$(1)/VERSION \
+  cross/$(2)/$(1)/Makefile \
+  cross/$(2)/$(1)/Makefile.shared \
+  cross/$(2)/$(1)/boot/ocamlrun \
+  cross/$(2)/$(1)/boot/ocamlc \
+  cross/$(2)/$(1)/config/Makefile \
+  cross/$(2)/$(1)/otherlibs/Makefile \
+  cross/$(2)/$(1)/otherlibs/systhreads/Makefile \
+  cross/$(2)/$(1)/ocamlc \
+  cross/$(2)/$(1)/ocamlopt \
+  cross/$(2)/$(1)/ocamlopt.opt \
+  cross/$(2)/$(1)/compilerlibs/ocamlcommon.cma \
+  cross/$(2)/$(1)/compilerlibs/ocamloptcomp.cma \
+  cross/$(2)/$(1)/byterun \
+  cross/$(2)/$(1)/asmcomp/amd64 \
+  cross/$(2)/$(1)/asmcomp/arm \
+  cross/$(2)/$(1)/asmcomp/arm64 \
+  cross/$(2)/$(1)/asmcomp/i386 \
+  cross/$(2)/$(1)/asmcomp/power \
+  cross/$(2)/$(1)/asmcomp/s390x \
+  cross/$(2)/$(1)/asmcomp/sparc \
+  cross/$(2)/$(1)/tools/cvt_emit \
+  cross/$(2)/$(1)/tools/cvt_emit.mll \
+  cross/$(2)/$(1)/tools/make-opcodes \
+  cross/$(2)/$(1)/tools/ocamlmklib
+endef
+
+# $(1) = feature combination directory
+# $(2) = source file (e.g. parsing/asttypes.mli)
+# $(3) = target
+define link-file-for-cross
+cross/$(3)/$(1)/$(2):
+	$(MKDIR) $$(dir $$@)
+	ln -f -s $(ABSOLUTE_ROOTDIR)/$(2) $$@
+
+link-source-files-for-cross-$(3):: \
+  cross/$(3)/$(1)/$(2)
+endef
+
+# $(1) = feature combination directory
+# $(2) = source file (e.g. parsing/asttypes.mli)
+# $(3) = target file
+# $(4) = target
+define link-file-for-cross2
+cross/$(4)/$(1)/$(3):
+	$(MKDIR) $$(dir $$@)
+	ln -f -s $(ABSOLUTE_ROOTDIR)/$(2) $$@
+
+link-source-files-for-cross-$(4):: \
+  cross/$(4)/$(1)/$(3)
+endef
+
+# $(1) = feature combination directory
+# $(2) = source file (e.g. typing/typecore.ml)
+# $(3) = target
+define link-unit-for-cross
+cross/$(3)/$(1)/$(2):
+	$(MKDIR) $$(dir $$@)
+	ln -f -s $(ABSOLUTE_ROOTDIR)/$(2) $$@
+
+cross/$(3)/$(1)/$(2:%.cmo=%.ml):
+	$(MKDIR) $$(dir $$@)
+	-ln -f -s $(ABSOLUTE_ROOTDIR)/$(2:%.cmo=%.ml) $$@
+
+cross/$(3)/$(1)/$(2:%.cmo=%.mli):
+	$(MKDIR) $$(dir $$@)
+	-ln -f -s $(ABSOLUTE_ROOTDIR)/$(2:%.cmo=%.mli) $$@
+
+cross/$(3)/$(1)/$(2:%.cmo=%.cmi):
+	$(MKDIR) $$(dir $$@)
+	ln -f -s $(ABSOLUTE_ROOTDIR)/$(2:%.cmo=%.cmi) $$@
+
+link-source-files-for-cross-$(3):: \
+  cross/$(3)/$(1)/$(2) \
+  cross/$(3)/$(1)/$(2:%.cmo=%.ml) \
+  cross/$(3)/$(1)/$(2:%.cmo=%.mli) \
+  cross/$(3)/$(1)/$(2:%.cmo=%.cmi)
+endef
+
+# $(1) = feature combination directory
+# $(2) = target
+define prepare-stdlib-basics-for-cross
+cross/$(2)/$(1)/stdlib:
+	$(MKDIR) $$@
+
+cross/$(2)/$(1)/stdlib/.depend: cross/$(2)/$(1)/stdlib
+	ln -f -s $(ABSOLUTE_ROOTDIR)/stdlib/.depend $$@
+
+cross/$(2)/$(1)/stdlib/Compflags: cross/$(2)/$(1)/stdlib
+	ln -f -s $(ABSOLUTE_ROOTDIR)/stdlib/Compflags $$@
+
+cross/$(2)/$(1)/stdlib/StdlibModules: cross/$(2)/$(1)/stdlib
+	ln -f -s $(ABSOLUTE_ROOTDIR)/stdlib/StdlibModules $$@
+
+cross/$(2)/$(1)/stdlib/Makefile: cross/$(2)/$(1)/stdlib
+	ln -f -s $(ABSOLUTE_ROOTDIR)/stdlib/Makefile $$@
+
+cross/$(2)/$(1)/stdlib/Makefile.shared: cross/$(2)/$(1)/stdlib
+	echo "include $(ABSOLUTE_ROOTDIR)/stdlib/Makefile.shared" > $$@
+	echo "OPTCOMPFLAGS += $(OCAMLCOMP_FLAGS_$(1))" >> $$@
+	echo "INSTALL_LIBDIR := $$(INSTALL_LIBDIR)/$(2)/$(1)" >> $$@
+	echo \
+	  "INSTALL_STUBLIBDIR := \
+	    $$(INSTALL_STUBLIBDIR)/$(2)/$(1)/stublibs" >> $$@
+
+cross/$(2)/$(1)/stdlib/sys.mlp: cross/$(2)/$(1)/stdlib
+	$(MKDIR) $$(dir $$@)
+	ln -f -s $(ABSOLUTE_ROOTDIR)/stdlib/sys.mlp $$@
+
+prepare-stdlib-basics-for-cross-$(2):: \
+  cross/$(2)/$(1)/stdlib/.depend \
+  cross/$(2)/$(1)/stdlib/Compflags \
+  cross/$(2)/$(1)/stdlib/StdlibModules \
+  cross/$(2)/$(1)/stdlib/Makefile \
+  cross/$(2)/$(1)/stdlib/Makefile.shared \
+  cross/$(2)/$(1)/stdlib/sys.mlp
+endef
+
+# $(1) = feature combination directory
+# $(2) = target
+define prepare-asmrun-basics-for-cross
+cross/$(2)/$(1)/asmrun:
+	$(MKDIR) $$@
+
+cross/$(2)/$(1)/asmrun/.depend: cross/$(2)/$(1)/asmrun
+	ln -f -s $(ABSOLUTE_ROOTDIR)/asmrun/.depend $$@
+
+cross/$(2)/$(1)/asmrun/Makefile: cross/$(2)/$(1)/asmrun
+	echo "include $(ABSOLUTE_ROOTDIR)/asmrun/Makefile" > $$@
+	echo "INSTALL_LIBDIR := $$(INSTALL_LIBDIR)/$(2)/$(1)" >> $$@
+	echo "NATIVECCCOMPOPTS += $(CCOMP_FLAGS_$(1))" >> $$@
+	echo "ASPPFLAGS += $(CCOMP_FLAGS_$(1))" >> $$@
+
+cross/$(2)/$(1)/config/m.h: config/m.h
+	$(MKDIR) $$(dir $$@)
+	cp $(ABSOLUTE_ROOTDIR)/config/m.h $$@
+
+prepare-asmrun-basics-for-cross-$(2):: \
+  cross/$(2)/$(1)/asmrun/.depend \
+  cross/$(2)/$(1)/asmrun/Makefile \
+  cross/$(2)/$(1)/config/m.h
+endef
+
+$(foreach combination, $(FEATURE_COMBINATIONS), \
+  $(eval $(call prepare-basics-for-cross,$(combination),$(TARGET))) \
+  $(eval $(call prepare-stdlib-basics-for-cross,$(combination),$(TARGET))) \
+  $(eval $(call prepare-asmrun-basics-for-cross,$(combination),$(TARGET))) \
+  $(foreach file, $(ASMRUN_LINKEDFILES), \
+    $(eval $(call \
+      link-file-for-cross2,$(combination),byterun/$(file),asmrun/$(file),$(TARGET)))) \
+  $(foreach file, $(filter-out \
+        $(ASMRUN_LINKEDFILES),$(ASMRUN_ASMFILES) $(ASMRUN_COBJS:%.o=%.c)) \
+      $(ASMRUN_HEADERS), \
+    $(eval $(call \
+      link-file-for-cross,$(combination),asmrun/$(file),$(TARGET)))) \
+  $(foreach cmo, $(filter-out $(ML_ONLY),$(EVERYTHING_IN_COMPILERLIBS)), \
+    $(eval $(call \
+      link-unit-for-cross,$(combination),$(cmo),$(TARGET)))) \
+  $(foreach module, $(STDLIB_MODULES), \
+    $(eval $(call \
+      link-unit-for-cross,$(combination),stdlib/$(module).cmo,$(TARGET))))\
+  $(eval $(call \
+    link-unit-for-cross,$(combination),stdlib/std_exit.cmo,$(TARGET))) \
+  $(foreach otherlib, $(OTHERLIBRARIES), \
+    $(foreach cmo, \
+      $(filter otherlibs/$(otherlib)/%, $(EVERYTHING_IN_OTHERLIBS_OCAML)), \
+      $(eval $(call \
+        link-unit-for-cross,$(combination),$(cmo),$(TARGET)))) \
+    $(foreach file, \
+      $(filter otherlibs/$(otherlib)/%, $(EVERYTHING_IN_OTHERLIBS_ML_ONLY)), \
+      $(eval $(call \
+        link-file-for-cross,$(combination),$(file:.cmo=.ml),$(TARGET))) \
+      $(eval $(call link-file-for-cross,$(combination),$(file),$(TARGET)))) \
+    $(foreach file, \
+      $(filter otherlibs/$(otherlib)/%, $(EVERYTHING_IN_OTHERLIBS_OTHER)), \
+      $(eval $(call link-file-for-cross,$(combination),$(file),$(TARGET))))) \
+  $(foreach file, $(ML_ONLY), \
+    $(eval $(call \
+      link-file-for-cross,$(combination),$(file:.cmo=.ml),$(TARGET))) \
+    $(eval $(call link-file-for-cross,$(combination),$(file),$(TARGET)))) \
+  $(foreach file, $(MLI_ONLY), \
+    $(eval $(call link-file-for-cross,$(combination),$(file),$(TARGET))) \
+    $(eval $(call \
+      link-file-for-cross,$(combination),$(file:.mli=.cmi),$(TARGET)))) \
+  $(foreach file, $(HAS_MLP_AND_OTHERS), \
+    $(eval $(call link-file-for-cross,$(combination),$(file),$(TARGET)))))
+
+prepare-for-cross-$(TARGET): ocamltools tools/cvt_emit \
+  prepare-basics-for-cross-$(TARGET) \
+  prepare-stdlib-basics-for-cross-$(TARGET) \
+  prepare-asmrun-basics-for-cross-$(TARGET) \
+  link-source-files-for-cross-$(TARGET)
+
+.PHONY: prepare-for-cross-$(TARGET)
+
+# $(1) = feature combination directory
+# $(2) = target
+define build-stdlib-for-cross
+libraryopt-cross-$(2):: prepare-for-cross-$(2)
+	$(MAKE) -C cross/$(2)/$(1)/stdlib allopt
+endef
+
+$(foreach combination, $(FEATURE_COMBINATIONS), \
+  $(eval $(call build-stdlib-for-cross,$(combination),$(TARGET))))
+
+.PHONY: libraryopt-cross-$(TARGET)
+
+# $(1) = feature combination directory
+# $(2) = target
+define build-compilerlibs-for-cross
+build-compilerlibs-cross-$(2):: prepare-for-cross-$(2)
+	$(MAKE) -C cross/$(2)/$(1) compilerlibs/ocamlbytecomp.cmxa \
+	  compilerlibs/ocamlcommon.cmxa compilerlibs/ocamloptcomp.cmxa \
+	  CAMLOPT_BINARY=$(ABSOLUTE_ROOTDIR)/ocamlopt.opt
+endef
+
+$(foreach combination, $(FEATURE_COMBINATIONS), \
+  $(eval $(call build-compilerlibs-for-cross,$(combination),$(TARGET))))
+
+.PHONY: build-compilerlibs-cross-$(TARGET)
+
+# $(1) = feature combination directory
+# $(2) = target
+define build-otherlibs-for-cross
+build-otherlibs-cross-$(2):: prepare-for-cross-$(2)
+	$(MAKE) -C cross/$(2)/$(1) otherlibrariesopt \
+	  CAMLOPT_BINARY=$(ABSOLUTE_ROOTDIR)/ocamlopt.opt
+endef
+
+$(foreach combination, $(FEATURE_COMBINATIONS), \
+  $(eval $(call build-otherlibs-for-cross,$(combination),$(TARGET))))
+
+.PHONY: build-otherlibs-cross-$(TARGET)
+
+# $(1) = feature combination directory
+# $(2) = target
+define build-asmrun-for-cross
+runtimeopt-cross-$(2):: prepare-for-cross-$(2)
+	$(MAKE) -C cross/$(2)/$(1)/asmrun all
+	$(MAKE) -C cross/$(2)/$(1)/asmrun \
+	  libasmrun_shared.so-$(findstring pic,$(1))
+endef
+
+$(foreach combination, $(FEATURE_COMBINATIONS), \
+  $(eval $(call build-asmrun-for-cross,$(combination),$(TARGET))))
+
+.PHONY: runtimeopt-cross-$(TARGET)
+
 # Compile the native-code compiler
 opt-core:
 	$(MAKE) runtimeopt
 	$(MAKE) ocamlopt
 	$(MAKE) libraryopt
+	$(MAKE) runtimeopt-cross-$(TARGET)
+	$(MAKE) libraryopt-cross-$(TARGET)
 
 opt:
 	$(MAKE) runtimeopt
 	$(MAKE) ocamlopt
 	$(MAKE) libraryopt
+	$(MAKE) runtimeopt-cross-$(TARGET)
+	$(MAKE) libraryopt-cross-$(TARGET)
 	$(MAKE) otherlibrariesopt ocamltoolsopt
 
 # Native-code versions of the tools
@@ -182,6 +551,8 @@ opt.opt:
 	$(MAKE) ocamlopt.opt
 	$(MAKE) otherlibrariesopt
 	$(MAKE) ocamllex.opt ocamltoolsopt ocamltoolsopt.opt $(OCAMLDOC_OPT)
+	$(MAKE) build-compilerlibs-cross-$(TARGET)
+	$(MAKE) build-otherlibs-cross-$(TARGET)
 
 base.opt:
 	$(MAKE) checkstack
@@ -265,6 +636,18 @@ installopt:
 		else :; fi
 	for i in $(OTHERLIBRARIES); \
 	  do (cd otherlibs/$$i; $(MAKE) installopt) || exit $$?; done
+	for combination in $(FEATURE_COMBINATIONS); do \
+	  mkdir -p $(INSTALL_LIBDIR)/$(TARGET)/$$combination/threads; \
+	  $(MAKE) -C cross/$(TARGET)/$$combination/asmrun install; \
+	  for i in $(OTHERLIBRARIES); \
+	    do (cd cross/$(TARGET)/$$combination/otherlibs/$$i; \
+	        $(MAKE) installopt) || exit $$?; \
+	  done; \
+	done
+	for combination in $(FEATURE_COMBINATIONS); do \
+	  (cd cross/$(TARGET)/$$combination/stdlib; $(MAKE) installopt \
+	    || exit $?); \
+	done
 	if test -f ocamlopt.opt ; then $(MAKE) installoptopt; else \
 	   cd $(INSTALL_BINDIR); ln -sf ocamlopt.byte$(EXE) ocamlopt$(EXE); fi
 	cd tools; $(MAKE) installopt
@@ -285,6 +668,24 @@ installoptopt:
 	   $(BYTESTART:.cmo=.cmx) $(BYTESTART:.cmo=.o) \
 	   $(OPTSTART:.cmo=.cmx) $(OPTSTART:.cmo=.o) \
 	   $(INSTALL_COMPLIBDIR)
+	for combination in $(FEATURE_COMBINATIONS); do \
+	  mkdir -p \
+	    $(INSTALL_COMPLIBDIR)/../$(TARGET)/$$combination/compiler-libs; \
+	  cp cross/$(TARGET)/$$combination/utils/*.cmx \
+	     cross/$(TARGET)/$$combination/parsing/*.cmx \
+	     cross/$(TARGET)/$$combination/typing/*.cmx \
+	     cross/$(TARGET)/$$combination/bytecomp/*.cmx \
+	     cross/$(TARGET)/$$combination/driver/*.cmx \
+	     cross/$(TARGET)/$$combination/asmcomp/*.cmx \
+	     $(INSTALL_COMPLIBDIR)/../$(TARGET)/$$combination/compiler-libs; \
+	  cp cross/$(TARGET)/$$combination/compilerlibs/ocamlcommon.cmxa \
+	     cross/$(TARGET)/$$combination/compilerlibs/ocamlcommon.a \
+	     cross/$(TARGET)/$$combination/compilerlibs/ocamlbytecomp.cmxa \
+	     cross/$(TARGET)/$$combination/compilerlibs/ocamlbytecomp.a \
+	     cross/$(TARGET)/$$combination/compilerlibs/ocamloptcomp.cmxa \
+	     cross/$(TARGET)/$$combination/compilerlibs/ocamloptcomp.a \
+	     $(INSTALL_COMPLIBDIR)/../$(TARGET)/$$combination/compiler-libs; \
+	done
 	if test -f ocamlnat ; then \
 	  cp ocamlnat $(INSTALL_BINDIR)/ocamlnat$(EXE); \
 	  cp toplevel/opttopdirs.cmi $(INSTALL_LIBDIR); \
@@ -408,7 +809,9 @@ utils/config.ml: utils/config.mlp config/Makefile
 	    -e 's|%%NATIVECCLIBS%%|$(NATIVECCLIBS)|' \
 	    -e 's|%%RANLIBCMD%%|$(RANLIBCMD)|' \
 	    -e 's|%%ARCMD%%|$(ARCMD)|' \
-	    -e 's|%%CC_PROFILE%%|$(CC_PROFILE)|' \
+	    -e 's|%%CC_GPROF%%|$(CCOMP_FLAGS_gprof)|' \
+	    -e 's|%%CC_PIC%%|$(CCOMP_FLAGS_pic)|' \
+	    -e 's|%%CC_WITH_FRAME_POINTERS%%|$(CCOMP_FLAGS_with_frame_pointers)|' \
 	    -e 's|%%ARCH%%|$(ARCH)|' \
 	    -e 's|%%MODEL%%|$(MODEL)|' \
 	    -e 's|%%SYSTEM%%|$(SYSTEM)|' \
@@ -419,13 +822,15 @@ utils/config.ml: utils/config.mlp config/Makefile
 	    -e 's|%%SYSTHREAD_SUPPORT%%|$(SYSTHREAD_SUPPORT)|' \
 	    -e 's|%%ASM%%|$(ASM)|' \
 	    -e 's|%%ASM_CFI_SUPPORTED%%|$(ASM_CFI_SUPPORTED)|' \
-	    -e 's|%%WITH_FRAME_POINTERS%%|$(WITH_FRAME_POINTERS)|' \
+	    -e 's|%%DEFAULT_WITH_FRAME_POINTERS%%|$(WITH_FRAME_POINTERS)|' \
+	    -e 's|%%DEFAULT_NO_NAKED_POINTERS%%|$(NO_NAKED_POINTERS)|' \
 	    -e 's|%%MKDLL%%|$(MKDLL)|' \
 	    -e 's|%%MKEXE%%|$(MKEXE)|' \
 	    -e 's|%%MKMAINDLL%%|$(MKMAINDLL)|' \
 	    -e 's|%%HOST%%|$(HOST)|' \
 	    -e 's|%%TARGET%%|$(TARGET)|' \
 	    -e 's|%%FLAMBDA%%|$(FLAMBDA)|' \
+	    -e 's|%%FEATURE_COMBINATIONS%%|"$(FEATURE_COMBINATIONS)"|' \
 	    utils/config.mlp > utils/config.ml
 
 partialclean::
@@ -756,6 +1161,7 @@ partialclean::
 	for d in utils parsing typing bytecomp asmcomp middle_end \
 	         middle_end/base_types driver toplevel tools; \
 	  do rm -f $$d/*.cm[ioxt] $$d/*.cmti $$d/*.annot $$d/*.[so] $$d/*~; done
+	rm -rf cross
 	rm -f *~
 
 depend: beforedepend
