@@ -1398,8 +1398,10 @@ let partial_pred ~lev ?mode ?explode env expected_ty constrs labels p =
   try
     reset_pattern None true;
     let typed_p =
-      type_pat ~allow_existentials:true ~lev
-        ~constrs ~labels ?mode ?explode env p expected_ty
+      Ctype.with_passive_variants
+        (type_pat ~allow_existentials:true ~lev
+           ~constrs ~labels ?mode ?explode env p)
+        expected_ty
     in
     set_state state env;
     (* types are invalidated but we don't need them here *)
@@ -1655,7 +1657,8 @@ let rec approx_type env sty =
       newty (Ttuple (List.map (approx_type env) args))
   | Ptyp_constr (lid, ctl) ->
       begin try
-        let (path, decl) = Env.lookup_type lid.txt env in
+        let path = Env.lookup_type lid.txt env in
+        let decl = Env.find_type path env in
         if List.length ctl <> decl.type_arity then raise Not_found;
         let tyl = List.map (approx_type env) ctl in
         newconstr path tyl
@@ -2071,11 +2074,16 @@ and type_expect_ ?in_function ?(recarg=Rejected) env sexp ty_expected =
           default;
        ]
       in
+      let sloc =
+        { Location.loc_start = spat.ppat_loc.Location.loc_start;
+          loc_end = default_loc.Location.loc_end;
+          loc_ghost = true }
+      in
       let smatch =
-        Exp.match_ ~loc (Exp.ident ~loc (mknoloc (Longident.Lident "*opt*")))
+        Exp.match_ ~loc:sloc (Exp.ident ~loc (mknoloc (Longident.Lident "*opt*")))
           scases
       in
-      let pat = Pat.var ~loc (mknoloc "*opt*") in
+      let pat = Pat.var ~loc:sloc (mknoloc "*opt*") in
       let body =
         Exp.let_ ~loc Nonrecursive ~attrs:[mknoloc "#default",PStr []]
           [Vb.mk spat smatch] sbody
@@ -2454,7 +2462,8 @@ and type_expect_ ?in_function ?(recarg=Rejected) env sexp ty_expected =
                 end_def ();
                 let tv = newvar () in
                 let gen = generalizable tv.level arg.exp_type in
-                unify_var env tv arg.exp_type;
+                (try unify_var env tv arg.exp_type with Unify trace ->
+                  raise(Error(arg.exp_loc, env, Expr_type_clash trace)));
                 gen
               end else true
             in

@@ -61,7 +61,8 @@ let unbox_classify_float () =
   for i = 1 to 1000 do
     assert (classify_float !x = FP_normal);
     x := !x +. 1.
-  done
+  done;
+  ignore (Sys.opaque_identity !x)
 
 let unbox_compare_float () =
   let module M = struct type sf = { mutable x: float; y: float; } end in
@@ -69,12 +70,13 @@ let unbox_compare_float () =
   for i = 1 to 1000 do
     assert (compare x.M.x x.M.y >= 0);
     x.M.x <- x.M.x +. 1.
-  done
-
+  done;
+  ignore (Sys.opaque_identity x.M.x)
 
 let unbox_float_refs () =
   let r = ref nan in
-  for i = 1 to 1000 do r := !r +. float i done
+  for i = 1 to 1000 do r := !r +. float i done;
+  ignore (Sys.opaque_identity !r)
 
 let unbox_let_float () =
   let r = ref 0. in
@@ -83,7 +85,8 @@ let unbox_let_float () =
       if i mod 2 = 0 then nan else float i
     in
     r := !r +. (y *. 2.)
-  done
+  done;
+  ignore (Sys.opaque_identity !r)
 
 type block =
   { mutable float : float;
@@ -107,7 +110,9 @@ let unbox_record_1 float int32 =
       if i mod 2 = 0 then Int32.max_int else Int32.of_int i
     in
     block.int32 <- Int32.(add block.int32 (mul y_int32 2l))
-  done
+  done;
+  ignore (Sys.opaque_identity block.float);
+  ignore (Sys.opaque_identity block.int32)
   [@@inline never]
   (* Prevent inlining to test that the type is effectively used *)
 
@@ -124,6 +129,21 @@ let unbox_only_if_useful () =
     in
     r := x; (* would force boxing if the let binding above were unboxed *)
     r := x  (* use [x] twice to avoid elimination of the let-binding *)
+  done;
+  ignore (Sys.opaque_identity !r)
+
+let eliminate_intermediate_float_record () =
+  let r = ref 0. in
+  for n = 1 to 1000 do
+    let open Complex in
+    let c = { re = float n; im = 0. } in
+    r := !r +. (norm [@inlined]) ((add [@inlined]) c i);
+  done;
+  ignore (Sys.opaque_identity !r)
+
+let unbox_minor_words () =
+  for i = 1 to 1000 do
+    ignore (Gc.minor_words () = 0.)
   done
 
 let () =
@@ -143,6 +163,9 @@ let () =
 
   if flambda then begin
     check_noalloc "float and int32 record" unbox_record;
+    check_noalloc "eliminate intermediate immutable float record"
+      eliminate_intermediate_float_record;
   end;
 
+  check_noalloc "Gc.minor_words" unbox_minor_words;
   ()

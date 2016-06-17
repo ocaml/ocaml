@@ -143,15 +143,24 @@ let join_array rs =
   let some_res = ref None in
   for i = 0 to Array.length rs - 1 do
     let (r, _) = rs.(i) in
-    if r <> None then some_res := r
+    match r with
+    | None -> ()
+    | Some r ->
+      match !some_res with
+      | None -> some_res := Some (r, Array.map (fun r -> r.typ) r)
+      | Some (r', types) ->
+        let types =
+          Array.map2 (fun r typ -> Cmm.lub_component r.typ typ) r types
+        in
+        some_res := Some (r', types)
   done;
   match !some_res with
     None -> None
-  | Some template ->
+  | Some (template, types) ->
       let size_res = Array.length template in
       let res = Array.make size_res Reg.dummy in
       for i = 0 to size_res - 1 do
-        res.(i) <- Reg.create template.(i).typ
+        res.(i) <- Reg.create types.(i)
       done;
       for i = 0 to Array.length rs - 1 do
         let (r, s) = rs.(i) in

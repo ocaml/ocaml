@@ -116,7 +116,7 @@ let inline_by_copying_function_body ~env ~r
       ~(inline_requested : Lambda.inline_attribute)
       ~(specialise_requested : Lambda.specialise_attribute)
       ~closure_id_being_applied
-      ~(function_decl : Flambda.function_declaration) ~args ~simplify =
+      ~(function_decl : Flambda.function_declaration) ~args ~dbg ~simplify =
   assert (E.mem env lhs_of_application);
   assert (List.for_all (E.mem env) args);
   let r =
@@ -175,6 +175,7 @@ let inline_by_copying_function_body ~env ~r
       bindings_for_vars_bound_by_closure_and_params_to_args
   in
   let env = E.activate_freshening (E.set_never_inline env) in
+  let env = E.inline_debuginfo ~dbg env in
   simplify env r expr
 
 let inline_by_copying_function_declaration ~env ~r
@@ -197,7 +198,7 @@ let inline_by_copying_function_declaration ~env ~r
   in
   (* Arguments of functions that are not directly called but are
      aliased to arguments of a directly called one may need to be
-     marked as specialiased. *)
+     marked as specialised. *)
   let specialisable_args_with_aliases =
     Variable.Map.fold (fun arg outside_var map ->
         match Variable.Map.find arg (Lazy.force invariant_params) with

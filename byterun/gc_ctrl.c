@@ -307,6 +307,18 @@ CAMLprim value caml_gc_quick_stat(value v)
   CAMLreturn (res);
 }
 
+double caml_gc_minor_words_unboxed()
+{
+  return (caml_stat_minor_words
+          + (double) (caml_young_alloc_end - caml_young_ptr));
+}
+
+CAMLprim value caml_gc_minor_words(value v)
+{
+  CAMLparam0 ();   /* v is ignored */
+  CAMLreturn(caml_copy_double(caml_gc_minor_words_unboxed()));
+}
+
 CAMLprim value caml_gc_counters(value v)
 {
   CAMLparam0 ();   /* v is ignored */

@@ -37,7 +37,7 @@ let inline env r ~lhs_of_application
     ~(function_decls : Flambda.function_declarations)
     ~closure_id_being_applied ~(function_decl : Flambda.function_declaration)
     ~value_set_of_closures ~only_use_of_function ~original ~recursive
-    ~(args : Variable.t list) ~size_from_approximation ~simplify
+    ~(args : Variable.t list) ~size_from_approximation ~dbg ~simplify
     ~(inline_requested : Lambda.inline_attribute)
     ~(specialise_requested : Lambda.specialise_attribute)
     ~self_call ~fun_cost ~inlining_threshold =
@@ -119,7 +119,7 @@ let inline env r ~lhs_of_application
 
           We may need to think a bit about that. I can't see a lot of
           meaningful examples right now, but there are some cases where some
-          optimisation can happen even if we don't know anything about the
+          optimization can happen even if we don't know anything about the
           shape of the arguments.
 
           For instance
@@ -192,7 +192,7 @@ let inline env r ~lhs_of_application
       Inlining_transforms.inline_by_copying_function_body ~env
         ~r:(R.reset_benefit r) ~function_decls ~lhs_of_application
         ~closure_id_being_applied ~specialise_requested ~inline_requested
-        ~function_decl ~args ~simplify
+        ~function_decl ~args ~dbg ~simplify
     in
     let num_direct_applications_seen =
       (R.num_direct_applications r_inlined) - (R.num_direct_applications r)
@@ -251,7 +251,7 @@ let inline env r ~lhs_of_application
       else if num_direct_applications_seen < 1 then begin
       (* Inlining the body of the function did not appear sufficiently
          beneficial; however, it may become so if we inline within the body
-         first.  We try that next, unless it is known that there are were
+         first.  We try that next, unless it is known that there were
          no direct applications in the simplified body computed above, meaning
          no opportunities for inlining. *)
         Original (S.Not_inlined.Without_subfunctions wsb)
@@ -528,9 +528,10 @@ let for_call_site ~env ~r ~(function_decls : Flambda.function_declarations)
   in
   if function_decl.stub then
     let body, r =
-      Inlining_transforms.inline_by_copying_function_body ~env ~r
-        ~function_decls ~lhs_of_application ~closure_id_being_applied
-        ~inline_requested ~specialise_requested ~function_decl ~args ~simplify
+      Inlining_transforms.inline_by_copying_function_body ~env
+        ~r ~function_decls ~lhs_of_application
+        ~closure_id_being_applied ~specialise_requested ~inline_requested
+        ~function_decl ~args ~dbg ~simplify
     in
     simplify env r body
   else if E.never_inline env then
@@ -629,7 +630,7 @@ let for_call_site ~env ~r ~(function_decls : Flambda.function_declarations)
               ~closure_id_being_applied ~function_decl ~value_set_of_closures
               ~only_use_of_function ~original ~recursive
               ~inline_requested ~specialise_requested ~args
-              ~size_from_approximation ~simplify ~fun_cost ~self_call
+              ~size_from_approximation ~dbg ~simplify ~fun_cost ~self_call
               ~inlining_threshold
           in
           match inline_result with
