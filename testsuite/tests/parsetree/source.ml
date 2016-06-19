@@ -7245,3 +7245,16 @@ end and ['a] d () = object
   inherit ['a] c ()
 end;;
 *)
+
+(* New syntax for user-defined indexing operator *)
+module I = struct
+  type t = Nil
+  let (.[]) Nil _n = succ n
+  let (.[]<-) Nil (_n:int) Nil = ()
+  let (.{}) Nil _n = succ n
+  let (.{}<-) Nil (_n:int) Nil = ()
+  let x = Nil
+end
+
+let () = I.x.I.[0] <- I.x.I.{0}
+let () = I.x.I.{0} <- I.x.I.[0]

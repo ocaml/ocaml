@@ -29,7 +29,7 @@ open Parsetree
 
 let prefix_symbols  = [ '!'; '?'; '~' ] ;;
 let infix_symbols = [ '='; '<'; '>'; '@'; '^'; '|'; '&'; '+'; '-'; '*'; '/';
-                      '$'; '%' ]
+                      '$'; '%'; '.' ]
 (* type fixity = Infix| Prefix  *)
 let special_infix_strings =
   ["asr"; "land"; "lor"; "lsl"; "lsr"; "lxor"; "mod"; "or"; ":="; "!=" ]
@@ -440,42 +440,59 @@ and sugar_expr ctxt f e =
   | Pexp_apply ({ pexp_desc = Pexp_ident {txt = id; _};
                   pexp_attributes=[]; _}, args)
     when List.for_all (fun (lab, _) -> lab = Nolabel) args -> begin
-      let print a left right print_index indexes rem_args =
-        match rem_args with
+      let print ?module_ a left right print_index indexes assign rem_args =
+        match assign with
         | None ->
-            pp f "@[%a.%s%a%s@]"
+            pp f "@[@[%a.%a%s%a%s@]%a@]"
               (simple_expr ctxt) a
-              left (list ~sep:"," print_index) indexes right; true
+              (option ~last:"." longident) module_
+              left (list ~sep:"," print_index) indexes right
+              (list ~sep:" " @@ expression ctxt) rem_args
+          ; true
         | Some v ->
-            pp f "@[%a.%s%a%s@ <-@;<1 2>%a@]"
+            pp f "@[%a.%a%s%a%s@ <-@;<1 2>%a@]"
               (simple_expr ctxt) a
+              (option ~last:"." longident) module_
               left (list ~sep:"," print_index) indexes right
               (simple_expr ctxt) v; true in
+      let pp_indexop ?module_ id args =
+        let print = print ?module_ in
+        match id, args with
+        | ".[]"|".{}" as s, a :: i :: rest ->
+          let left = String.sub s 1 1 and right = String.sub s 2 1 in
+          print a left right (expression ctxt) [i] None rest
+        | ".[]<-"|".{}<-" as s, a::i::v::rest ->
+          let left = String.sub s 1 1 and right = String.sub s 2 1 in
+          print a left right (expression ctxt) [i] (Some v) rest
+        | ".{,}", a :: i1 :: i2 :: rest ->
+          print a "{" "}" (simple_expr ctxt) [i1;i2] None rest
+        | ".{,,}", a :: i1 :: i2 :: i3 :: rest ->
+          print a "{" "}" (simple_expr ctxt) [i1;i2;i3] None rest
+        | ".{,}<-", [a; i1; i2; v] ->
+          print a "{" "}" (simple_expr ctxt) [i1;i2] (Some v) []
+        | ".{,,}<-", [a; i1; i2; i3; v] ->
+          print a "{" "}" (simple_expr ctxt) [i1;i2;i3] (Some v) []
+        | ".{,..,}",
+          a :: {pexp_desc = Pexp_array ls; pexp_attributes = []} :: rest ->
+          print a "{" "}" (simple_expr ctxt) ls None rest
+        | ".{,..,}<-",
+          [a; {pexp_desc = Pexp_array ls; pexp_attributes = []}; v] ->
+          print a "{" "}" (simple_expr ctxt) ls (Some v) []
+        | _ -> false in
       match id, List.map snd args with
       | Lident "!", [e] ->
           pp f "@[<hov>!%a@]" (simple_expr ctxt) e; true
-      | Lident (".[]"|".{}" as s), [a; i] ->
-          let left = String.sub s 1 1 and right = String.sub s 2 1 in
-          print a left right (expression ctxt) [i] None
-      | Lident (".[]<-"|".{}<-" as s), [a; i; v] ->
-          let left = String.sub s 1 1 and right = String.sub s 2 1 in
-          print a left right (expression ctxt) [i] (Some v)
-      | Lident (".{,}"|".{,,}"), a :: is ->
-          print a "{" "}" (simple_expr ctxt) is None
-      | Lident ".{,}<-", [a; i1; i2; v] ->
-          print a "{" "}" (simple_expr ctxt) [i1;i2] (Some v)
-      | Lident ".{,,}<-", [a; i1; i2; i3; v] ->
-          print a "{" "}" (simple_expr ctxt) [i1;i2;i3] (Some v)
-      | Lident ".{,..,}", [a; {pexp_desc = Pexp_array ls; pexp_attributes = []}] ->
-          print a "{" "}" (simple_expr ctxt) ls None
-      | Lident ".{,..,}<-", [a; {pexp_desc = Pexp_array ls; pexp_attributes = []}; v] ->
-          print a "{" "}" (simple_expr ctxt) ls (Some v)
       | Ldot (Lident "Array", ("get"|"unsafe_get") ), a :: i ->
-          print a "(" ")" (expression ctxt) i None
+          print a "(" ")" (expression ctxt) i None []
       | Ldot (Lident "Array", ("set"|"unsafe_set") ), [a;i;v] ->
-          print a "(" ")" (expression ctxt) [i] (Some v)
+          print a "(" ")" (expression ctxt) [i] (Some v) []
+      | Lident e, args ->
+          pp_indexop e args
+      | Ldot(m,e), args ->
+          pp_indexop ~module_:m e args
       | _ -> false
-    end
+
+end
   | _ -> false
 
 and expression ctxt f x =
