@@ -2363,7 +2363,7 @@ and assigned with the well-know syntax
                 & acces                 & assignment                        \\ \hline
 array           & @expr_a".("expr_i")"@ & @expr_a".("expr_i")" "<-" expr_v@ \\
 string or bytes & @expr_s".["expr_i"]"@ & @expr_s".["expr_i"]" "<-" expr_v@ \\
-bigarray & @expr_s".{"expr_i"}"@ & @expr_s".{"expr_i"}" "<-" expr_v@ \\ \hline
+bigarray        & @expr_s".{"expr_i"}"@ & @expr_s".{"expr_i"}" "<-" expr_v@ \\ \hline
 \end{tabular}\end{center}
 This extension generalizes this standard syntax by associating the access
 and assignment operations for "string" (or "bytes") and "bigarray" to two
@@ -2376,9 +2376,9 @@ bigarray-like & ".{}" & ".{}<-"    \\ \hline
 The concrete syntaxes "string.[index]",\dots, "bigarray.{index}<-value"
 are then redefined as syntactic sugar for these new operators
 \begin{center}\begin{tabular}{lll} \hline
-              & concrete syntax                   & translation                            \\ \hline
-string-like   & @expr_s'.['expr_i']'@             & @'(' '.[]' ')' expr_s expr_i@          \\
-              & @expr_s'.['expr_i']' '<-' expr_v@ & @'(' '.[]<-' ')' expr_s expr_i expr_v@ \\ \hline
+              & concrete syntax                     & translation                              \\ \hline
+string-like   & @expr_s'.['expr_i']'@               & @'(' '.[]' ')' expr_s expr_i@            \\
+              & @expr_s'.['expr_i']' '<-' expr_v@   & @'(' '.[]<-' ')' expr_s expr_i expr_v@   \\ \hline
 bigarray-like & @expr_s'.{'expr_i^*'}'@             & @'(' '.{}' ')' expr_s expr_i^*@          \\
               & @expr_s'.{'expr_i^*'}' '<-' expr_v@ & @'(' '.{}<-' ')' expr_s expr_i^* expr_v@ \\ \hline
 \end{tabular}\end{center}
@@ -2462,7 +2462,7 @@ dimension $2$   & @expr_a'.{'i_1,i_2'}'@                     & @'(.{,})'   expr_
                 & @expr_a'.{'i_1,i_2} '<-' expr_v@           & @'(.{,}<-)' expr_a i_1 i_2 expr_v@                       \\ \hline
 dimension $3$   & @expr_a'.{'i_1,i_2,i_3'}'@                 & @'(.{,,})'   expr_a i_1 i_2 i_3@                         \\
                 & @expr_a'.{'i_1,i_2,i_3'}' '<-' expr_v@     & @'(.{,,}<-)' expr_a i_1 i_2 i_3 expr_v@                  \\ \hline
-dimension $n>3$ & @expr_a'.{'i_1,\ldots,i_n'}'@              &   @'(.{,..,})'  expr_a '[|'i_1';'\ldots';'i_n'|]'@       \\
+dimension $n>3$ & @expr_a'.{'i_1,\ldots,i_n'}'@              & @'(.{,..,})'  expr_a '[|'i_1';'\ldots';'i_n'|]'@         \\
                 & @expr_a'.{'i_1,\ldots,i_n'}' '<-' expr_v@  & @'(.{,..,}<-)' expr_a '[|'i_1';'\ldots';'i_n'|]' expr_v@ \\ \hline
 \end{tabular}\end{center}
 %
