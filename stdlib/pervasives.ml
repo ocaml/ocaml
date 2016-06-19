@@ -269,6 +269,10 @@ let rec ( @ ) l1 l2 =
     [] -> l2
   | hd :: tl -> hd :: (tl @ l2)
 
+(* String index operators *)
+external  ( .[] )  : string -> int -> char = "%string_opt_get"
+external  ( .[] <- ) : bytes -> int -> char -> unit = "%string_opt_set"
+
 (* I/O operations *)
 
 type in_channel
