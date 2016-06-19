@@ -1453,9 +1453,10 @@ as such cause a type error rather than introduce an equation.
 
 (Introduced in Objective Caml 3.00, deprecated in 4.04)
 
-This extension has been superseded by the user-defined index operators
+This extension has been superseded by the customizable index operators
 extension~\ref{s:index-operators}. Some source compatibility problems
-are documented in~\ref{s:bigarray-indexop-compatibility}.
+that can trigger a deprecated warning are documented
+in~\ref{s:bigarray-indexop-compatibility}.
 
 \section{Attributes}\label{s:attributes}
 
@@ -2482,7 +2483,7 @@ let x = v.{i} (* vector access *)
 let m = mat.{i,j} (* matrix access *)
 \end{verbatim}
 Another example, the "Bigarray"[\moduleref{Bigarray}] library defines
-these operators as
+these operators in the "Operators" submodule as
 %
 \begin{tableau}{ll}{operator}{function}
 \entree{ "( .{} )"       } {"Array1.get"}
@@ -2495,18 +2496,27 @@ these operators as
 \entree{ "( .{,..,}<- )" } {"Genarray.set"}
 \end{tableau}
 %
-With these definitions, it is then possible to use the short
-syntax @bigarray'.{'index'}'@ with bigarray values by opening
-the "Bigarray" module in scope.
+With these definitions, it is then possible to use the short syntax
+@bigarray'.{'index'}'@ with bigarray values by opening the
+"Bigarray.Operators" submodule in scope. Since the "Operators" submodule
+is included inside the "Bigarray" module, opening the "Bigarray" module
+is another option to bring this operators in scope.
 
-\subsection{Backward compatibility warning for the "Bigarray" library} \label{s:bigarray-indexop-compatibility}
+\subsection{Backward compatibility warning for the "Bigarray" library}%
+\label{s:bigarray-indexop-compatibility}
 
-One of the reasons behind the existence of the 6 special @"( .{"\ldots"} )"@
-operators is to preserve backward compatibility with the "Bigarray" library
-special syntax. However, this extension \emph{does break} partially source
-compatibility with the bigarray syntax extension: before Ocaml 4.04, it was
-possible to use the @bigarray'.{'index'}'@ syntax without opening the
-"Bigarray" module. This usage is no longer possible since the
-@"(.{"\ldots"})"@ index operators are now defined inside the "Bigarray" module.
-This problem can be fixed by opening the "Bigarray" module (or by bringing in
-scope the index operators defined in the "Bigarray" module).
+One of the reasons behind the existence of the 6 special
+@"(" ".{"\ldots"}" ")"@ operators is to preserve backward compatibility
+with the "Bigarray" library special syntax. However, this backward
+compatibility is not perfect. On the one hand, the new extension should
+require to explicitly bring in scope the "Bigarray"
+@"(" ".{"\ldots"}" ")"@ operator before using them. On the other hand,
+with the deprecated bigarray syntax extension, these operators always
+implicitly referred to the "Bigarray" module. In order to bridge the gap
+between these two different behaviors, implicit uses of the
+@"Bigarray.(" ".{"\ldots"}" ")"@ operators are still allowed but emit a
+deprecated warning. This warning can be avoided by explicitly bringing
+in scope the corresponding @"Bigarray.(" ".{"\ldots"}" ")"@ operator;
+for instance by opening the "Bigarray.Operators" module or the
+"Bigarray" module. Note that this warning might turn in a full-fledged
+error in future versions.
