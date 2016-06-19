@@ -2340,10 +2340,10 @@ type t =  T of string [@ocaml.doc " Attaches to T not t "]
 \begin{syntax}
 expr:
           ...
-        | expr '.[' expr ']'
-        | expr '.[' expr ']' '<-' expr
-        | expr '.{' expr '}'
-        | expr '.{' expr '}' '<-' expr
+        | expr [module-path'.'] '.[' expr ']'
+        | expr [module-path'.'] '.[' expr ']' '<-' expr
+        | expr [module-path'.'] '.{' expr '}'
+        | expr [module-path'.'] '.{' expr '}' '<-' expr
 ;
 operator:
           ...
@@ -2377,10 +2377,10 @@ The concrete syntaxes "string.[index]",\dots, "bigarray.{index}<-value"
 are then redefined as syntactic sugar for these new operators
 \begin{center}\begin{tabular}{lll} \hline
               & concrete syntax                     & translation                              \\ \hline
-string-like   & @expr_s'.['expr_i']'@               & @'(' '.[]' ')' expr_s expr_i@            \\
-              & @expr_s'.['expr_i']' '<-' expr_v@   & @'(' '.[]<-' ')' expr_s expr_i expr_v@   \\ \hline
-bigarray-like & @expr_s'.{'expr_i^*'}'@             & @'(' '.{}' ')' expr_s expr_i^*@          \\
-              & @expr_s'.{'expr_i^*'}' '<-' expr_v@ & @'(' '.{}<-' ')' expr_s expr_i^* expr_v@ \\ \hline
+string-like   & @expr_s '.' [module-path '.'] '['expr_i']'@               & @ [module-path'.'] '(' '.[]' ')' expr_s expr_i@            \\
+              & @expr_s '.' [module-path '.'] '['expr_i']' '<-' expr_v@   & @ [module-path'.'] '(' '.[]<-' ')' expr_s expr_i expr_v@   \\ \hline
+bigarray-like & @expr_s '.' [module-path '.'] '{'expr_i^*'}'@             & @ [module-path'.'] '(' '.{}' ')' expr_s expr_i^*@          \\
+              & @expr_s '.' [module-path '.'] '{'expr_i^*'}' '<-' expr_v@ & @ [module-path'.'] '(' '.{}<-' ')' expr_s expr_i^* expr_v@ \\ \hline
 \end{tabular}\end{center}
 %
 Note that the syntactic sugar for the "( .{} )" bigarray operator family
@@ -2414,6 +2414,8 @@ let dict =
 let () =
   let open Dict in
   assert( dict.["one"] = 1 )
+let () =
+  assert( dict.Dict.["one"] = 1 )
 \end{verbatim}
 
 \subsection{Multidimensional index operators}\label{s:m-index-operators}
@@ -2421,8 +2423,8 @@ let () =
 \begin{syntax}
 expr:
           ...
-        | expr '.{' expr { ',' expr } '}'
-        | expr '.{' expr { ',' expr } '}' '<-' expr
+        | expr '.' [module-path '.'] '{' expr { ',' expr } '}'
+        | expr '.' [module-path '.'] '{' expr { ',' expr } '}' '<-' expr
 ;
 operator:
           ...
@@ -2475,7 +2477,8 @@ with custom types. For instance, we can implement an unified "'a tensor" type
 for vectors and matrices and define separated access operators for vectors
 and matrices using "( .{} )" and "( .{,} )":
 \begin{verbatim}
-type 'a tensor = { dim: int; array: float array } constraint 'a = [< `Vector | `Matrix ]
+type 'a tensor = { dim: int; array: float array }
+constraint 'a = [< `Vector | `Matrix ]
 let  ( .{} ) ( v: [`Vector] tensor ) i = v.array.(i)
 let  ( .{,} ) ( mat: [`Matrix] tensor ) i j = mat.array.( i*mat.dim + j )
 ...
