@@ -42,4 +42,12 @@ rule token = parse
       STRING s'
     }
   | _
-    { failwith "Unexpected character in tsl_lexer" }
+    {
+      let pos = Lexing.lexeme_start_p lexbuf in
+      let file = pos.Lexing.pos_fname in
+      let line = pos.Lexing.pos_lnum in
+      let column = pos.Lexing.pos_cnum - pos.Lexing.pos_bol in
+      Printf.eprintf "%s:%d:%d: unexpected character %s\n%!"
+        file line column (Lexing.lexeme lexbuf);
+      exit 2
+    }
