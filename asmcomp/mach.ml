@@ -59,7 +59,7 @@ type operation =
 
 type instruction =
   { desc: instruction_desc;
-    next: instruction;
+    mutable next: instruction;
     arg: Reg.t array;
     res: Reg.t array;
     dbg: Debuginfo.t;
