@@ -222,7 +222,7 @@ static __thread uintnat stat_live_bytes = 0;
 static value alloc_shared(mlsize_t wosize, tag_t tag)
 {
   void* mem = caml_shared_try_alloc(caml_domain_self()->shared_heap, wosize, tag, 0 /* not promotion */);
-  caml_allocated_words += Whsize_wosize(wosize);
+  caml_domain_state->allocated_words += Whsize_wosize(wosize);
   if (mem == NULL) {
     caml_fatal_error("allocation failure during minor GC");
   }
