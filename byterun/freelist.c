@@ -471,7 +471,7 @@ header_t *caml_fl_merge_block (value bp)
   if (last_fragment == Hp_bp (bp)){
     mlsize_t bp_whsz = Whsize_val (bp);
     if (bp_whsz <= Max_wosize){
-      hd = Make_header_with_my_profinfo (bp_whsz, 0, Caml_white);
+      hd = Make_header_allocated_here (bp_whsz, 0, Caml_white);
       bp = (value) last_fragment;
       Hd_val (bp) = hd;
       caml_fl_cur_wsz += Whsize_wosize (0);
@@ -593,7 +593,7 @@ void caml_make_free_blocks (value *p, mlsize_t size, int do_merge, int color)
       sz = size;
     }
     *(header_t *)p =
-      Make_header_with_my_profinfo (Wosize_whsize (sz), 0, color);
+      Make_header_allocated_here (Wosize_whsize (sz), 0, color);
     if (do_merge) caml_fl_merge_block (Val_hp (p));
     size -= sz;
     p += sz;

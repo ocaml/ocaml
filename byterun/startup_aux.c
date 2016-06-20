@@ -30,7 +30,7 @@ void caml_init_atom_table(void)
   int i;
   for(i = 0; i < 256; i++) {
 #ifdef NATIVE_CODE
-    caml_atom_table[i] = Make_header_with_my_profinfo(0, i, Caml_white);
+    caml_atom_table[i] = Make_header_allocated_here(0, i, Caml_white);
 #else
     caml_atom_table[i] = Make_header(0, i, Caml_white);
 #endif

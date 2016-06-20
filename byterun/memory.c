@@ -393,7 +393,7 @@ static value *expand_heap (mlsize_t request)
   }else{
     Field (Val_hp (prev), 0) = (value) NULL;
     if (remain == 1) {
-      Hd_hp (hp) = Make_header_with_my_profinfo (0, 0, Caml_white);
+      Hd_hp (hp) = Make_header_allocated_here (0, 0, Caml_white);
     }
   }
   Assert (Wosize_hp (mem) >= request);
@@ -523,23 +523,30 @@ CAMLexport value caml_alloc_shr_no_raise (mlsize_t wosize, tag_t tag)
   return caml_alloc_shr_aux(wosize, tag, 0, 0);
 }
 
+#if defined(NATIVE_CODE) && defined(WITH_SPACETIME)
+#include "spacetime.h"
+
 CAMLexport value caml_alloc_shr_with_profinfo (mlsize_t wosize, tag_t tag,
                                                intnat profinfo)
 {
   return caml_alloc_shr_aux(wosize, tag, 1, profinfo);
 }
 
-#if !(defined(NATIVE_CODE) && defined(WITH_SPACETIME))
-CAMLexport value caml_alloc_shr (mlsize_t wosize, tag_t tag)
+CAMLexport value caml_alloc_shr_preserving_profinfo (mlsize_t wosize,
+  tag_t tag, header_t old_header)
 {
-  return caml_alloc_shr_with_profinfo (wosize, tag, 0);
+  return caml_alloc_shr_with_profinfo (wosize, tag, Profinfo_hd(old_header));
 }
-#else
-#include "spacetime.h"
+
 CAMLexport value caml_alloc_shr (mlsize_t wosize, tag_t tag)
 {
   return caml_alloc_shr_with_profinfo (wosize, tag,
     caml_spacetime_my_profinfo (NULL, wosize));
+}
+#else
+CAMLexport value caml_alloc_shr (mlsize_t wosize, tag_t tag)
+{
+  return caml_alloc_shr_aux (wosize, tag, 1, 0);
 }
 #endif
 

@@ -52,12 +52,12 @@ extern uintnat caml_spacetime_my_profinfo(struct ext_table**, uintnat);
       (Make_header(wosize, tag, color)                                        \
         | ((((intnat) profinfo) & PROFINFO_MASK) << PROFINFO_SHIFT)           \
       )
-#define Make_header_with_my_profinfo(wosize, tag, color)                      \
+#define Make_header_allocated_here(wosize, tag, color)                      \
       (Make_header_with_profinfo(wosize, tag, color,                          \
         caml_spacetime_my_profinfo(NULL, wosize))                             \
       )
 #else
-#define Make_header_with_my_profinfo Make_header
+#define Make_header_allocated_here Make_header
 #define Make_header_with_profinfo(wosize, tag, color, profinfo) \
   Make_header(wosize, tag, color)
 #endif

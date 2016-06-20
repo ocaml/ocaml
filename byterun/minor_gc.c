@@ -191,11 +191,7 @@ void caml_oldify_one (value v, value *p)
         value field0;
 
         sz = Wosize_hd (hd);
-#if !(defined(NATIVE_CODE) && defined(WITH_SPACETIME))
-        result = caml_alloc_shr (sz, tag);
-#else
-        result = caml_alloc_shr_with_profinfo (sz, tag, Profinfo_hd(hd));
-#endif
+        result = caml_alloc_shr_preserving_profinfo (sz, tag, hd);
         *p = result;
         field0 = Field (v, 0);
         Hd_val (v) = 0;            /* Set forward flag */
@@ -212,11 +208,7 @@ void caml_oldify_one (value v, value *p)
         }
       }else if (tag >= No_scan_tag){
         sz = Wosize_hd (hd);
-#if !(defined(NATIVE_CODE) && defined(WITH_SPACETIME))
-        result = caml_alloc_shr (sz, tag);
-#else
-        result = caml_alloc_shr_with_profinfo (sz, tag, Profinfo_hd(hd));
-#endif
+        result = caml_alloc_shr_preserving_profinfo (sz, tag, hd);
         for (i = 0; i < sz; i++) Field (result, i) = Field (v, i);
         Hd_val (v) = 0;            /* Set forward flag */
         Field (v, 0) = result;     /*  and forward pointer. */
@@ -245,12 +237,7 @@ void caml_oldify_one (value v, value *p)
         if (!vv || ft == Forward_tag || ft == Lazy_tag || ft == Double_tag){
           /* Do not short-circuit the pointer.  Copy as a normal block. */
           Assert (Wosize_hd (hd) == 1);
-#if !(defined(NATIVE_CODE) && defined(WITH_SPACETIME))
-        result = caml_alloc_shr (1, Forward_tag);
-#else
-        result = caml_alloc_shr_with_profinfo (1, Forward_tag,
-          Profinfo_hd(hd));
-#endif
+          result = caml_alloc_shr_preserving_profinfo (1, Forward_tag, hd);
           *p = result;
           Hd_val (v) = 0;             /* Set (GC) forward flag */
           Field (v, 0) = result;      /*  and forward pointer. */
