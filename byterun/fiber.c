@@ -26,7 +26,7 @@ static void dirty_stack(value stack)
            Stack_dirty_domain(stack) == caml_domain_self());
     if (Stack_dirty_domain(stack) == 0) {
       Stack_dirty_domain(stack) = caml_domain_self();
-      Ref_table_add(&caml_remembered_set.fiber_ref, stack, 0);
+      Ref_table_add(&caml_domain_state->remembered_set->fiber_ref, stack, 0);
     }
   }
 }

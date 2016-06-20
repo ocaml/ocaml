@@ -1,6 +1,8 @@
 #include <stdio.h>
 #include <unistd.h>
 #include <pthread.h>
+#include <string.h>
+#include "caml/alloc.h"
 #include "caml/domain.h"
 #include "caml/platform.h"
 #include "caml/custom.h"
@@ -32,7 +34,6 @@ struct dom_internal {
   domain_rpc_handler rpc_handler;
   void* rpc_data;
   atomic_uintnat* rpc_completion_signal;
-
 
   caml_plat_mutex roots_lock;
 
@@ -166,6 +167,10 @@ static void create_domain(uintnat initial_minor_heap_size, int is_main) {
     }
     caml_domain_state->young_start = caml_domain_state->young_end =
       caml_domain_state->young_ptr = 0;
+    caml_domain_state->remembered_set =
+      caml_stat_alloc(sizeof(struct caml_remembered_set));
+    memset ((void*)caml_domain_state->remembered_set, 0,
+            sizeof(struct caml_remembered_set));
 
     d->state.shared_heap = caml_init_shared_heap();
     caml_init_major_gc();
@@ -173,7 +178,6 @@ static void create_domain(uintnat initial_minor_heap_size, int is_main) {
 
     caml_init_main_stack();
 
-    d->state.remembered_set = &caml_remembered_set;
     d->state.local_roots = &caml_local_roots;
     d->state.state = caml_domain_state;
     d->state.mark_stack = &caml_mark_stack;
