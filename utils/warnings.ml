@@ -479,7 +479,7 @@ let message = function
   | Unused_module s -> "unused module " ^ s ^ "."
   | Module_compiled_without_lto name ->
       Printf.sprintf
-        "The required module %s was built without -lto. Linking it in -lto\
+        "The required module %s was built without -lto. Linking it in -lto \
          mode will probably not be possible."
         name
 ;;

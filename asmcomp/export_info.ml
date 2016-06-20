@@ -207,7 +207,7 @@ let merge (t1 : t) (t2 : t) : t =
       Set_of_closures_id.Map.disjoint_union
         ~eq:(Variable.Map.equal Variable.Set.equal)
         t1.invariant_params t2.invariant_params;
-    code = None;
+    code = t1.code;
   }
 
 let find_value eid map =
