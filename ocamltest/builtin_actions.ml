@@ -106,6 +106,9 @@ let ocamlopt_dot_byte ocamlsrcdir =
 let ocamlopt_dot_opt ocamlsrcdir =
   make_path [ocamlsrcdir; "ocamlopt.opt"]
 
+let cmpbyt ocamlsrcdir =
+  make_path [ocamlsrcdir; "tools"; "cmpbyt"]
+
 let stdlib ocamlsrcdir =
   make_path [ocamlsrcdir; "stdlib"]
 
@@ -348,6 +351,58 @@ let check_program_output = {
   action_body = check_prog_output
 }
 
+let compare_programs backend comparison_tool log env =
+  let program = Environments.safe_lookup "program" env in
+  let program2 = Environments.safe_lookup "program2" env in
+  let what = Printf.sprintf "Comparing %s programs %s and %s"
+    (Backends.string_of_backend backend) program program2 in
+  Printf.fprintf log "%s\n%!" what;
+  let files = {
+    Filecompare.reference_filename = program;
+    Filecompare.output_filename = program2
+  } in
+  match Filecompare.compare_files ~tool:comparison_tool files with
+    | Filecompare.Same -> Pass env
+
+    | Filecompare.Different ->
+      let reason = Printf.sprintf "Files %s and %s are different"
+        program program2 in
+      Fail reason
+    | Filecompare.Unexpected_output -> assert false
+    | Filecompare.Error (commandline, exitcode) ->
+      let reason = mkreason what commandline exitcode in
+      Fail reason
+
+let make_bytecode_programs_comparison_tool ocamlsrcdir =
+  let ocamlrun = ocamlrun ocamlsrcdir in
+  let cmpbyt = cmpbyt ocamlsrcdir in
+  let tool_name = ocamlrun ^ " " ^ cmpbyt in
+  {
+    Filecompare.tool_name = tool_name;
+    Filecompare.tool_flags = "";
+    Filecompare.result_of_exitcode = Filecompare.cmp_result_of_exitcode
+  }
+
+let nativecode_programs_comparison_tool = Filecompare.default_comparison_tool
+
+let compare_bytecode_programs_body log env =
+  let ocamlsrcdir = ocamlsrcdir () in
+  let bytecode_programs_comparison_tool =
+    make_bytecode_programs_comparison_tool ocamlsrcdir in
+  compare_programs Sys.Bytecode bytecode_programs_comparison_tool log env
+
+let compare_bytecode_programs = {
+  action_name = "compare-bytecode-programs";
+  action_environment = env_id;
+  action_body = compare_bytecode_programs_body
+}
+
+let compare_nativecode_programs = {
+  action_name = "compare-nativecode-programs";
+  action_environment = env_id;
+  action_body = compare_programs Sys.Native nativecode_programs_comparison_tool
+}
+
 let _ =
   List.iter register
   [
@@ -356,5 +411,7 @@ let _ =
     compile_nativecode_with_bytecode_compiler;
     compile_nativecode_with_nativecode_compiler;
     execute;
-    check_program_output
+    check_program_output;
+    compare_bytecode_programs;
+    compare_nativecode_programs
   ]

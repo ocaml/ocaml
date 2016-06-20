@@ -24,9 +24,10 @@ let bytecode = {
   test_actions =
   [
     compile_bytecode_with_bytecode_compiler;
-    compile_bytecode_with_nativecode_compiler;
     execute;
-    check_program_output
+    check_program_output;
+    compile_bytecode_with_nativecode_compiler;
+    compare_bytecode_programs;
   ]
 }
 
@@ -36,13 +37,16 @@ let nativecode = {
   test_actions =
   [
     compile_nativecode_with_bytecode_compiler;
-    compile_nativecode_with_nativecode_compiler;
     execute;
-    check_program_output
+    check_program_output;
+    compile_nativecode_with_nativecode_compiler;
+    compare_nativecode_programs;
   ]
-
 }
 
 let _ =
-  register bytecode;
-  register nativecode
+  List.iter register
+  [
+     bytecode;
+    nativecode;
+  ]

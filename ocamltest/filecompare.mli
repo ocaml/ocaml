@@ -37,3 +37,5 @@ type files = {
 val compare_files : ?tool:tool -> files -> result
 
 val check_file : ?tool:tool -> files -> result
+
+val cmp_result_of_exitcode : string -> int -> result
