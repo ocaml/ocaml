@@ -102,45 +102,6 @@ extern uintnat caml_spacetime_my_profinfo(struct ext_table**, uintnat);
 
 #endif
 
-#ifndef WITH_SPACETIME
-#define Alloc_small(result, wosize, tag) do {                               \
-                                                CAMLassert ((wosize) >= 1); \
-                                          CAMLassert ((tag_t) (tag) < 256); \
-                                 CAMLassert ((wosize) <= Max_young_wosize); \
-  caml_young_ptr -= Whsize_wosize (wosize);                                 \
-  if (caml_young_ptr < caml_young_trigger){                                 \
-    caml_young_ptr += Whsize_wosize (wosize);                               \
-    CAML_INSTR_INT ("force_minor/alloc_small@", 1);                         \
-    Setup_for_gc;                                                           \
-    caml_gc_dispatch ();                                                    \
-    Restore_after_gc;                                                       \
-    caml_young_ptr -= Whsize_wosize (wosize);                               \
-  }                                                                         \
-  Hd_hp (caml_young_ptr) = Make_header ((wosize), (tag), Caml_black);       \
-  (result) = Val_hp (caml_young_ptr);                                       \
-  DEBUG_clear ((result), (wosize));                                         \
-}while(0)
-#else
-#define Alloc_small(result, wosize, tag) do {                               \
-                                                CAMLassert ((wosize) >= 1); \
-                                          CAMLassert ((tag_t) (tag) < 256); \
-                                 CAMLassert ((wosize) <= Max_young_wosize); \
-  caml_young_ptr -= Whsize_wosize (wosize);                                 \
-  if (caml_young_ptr < caml_young_trigger){                                 \
-    caml_young_ptr += Whsize_wosize (wosize);                               \
-    CAML_INSTR_INT ("force_minor/alloc_small@", 1);                         \
-    Setup_for_gc;                                                           \
-    caml_gc_dispatch ();                                                    \
-    Restore_after_gc;                                                       \
-    caml_young_ptr -= Whsize_wosize (wosize);                               \
-  }                                                                         \
-  Hd_hp (caml_young_ptr) =                                                  \
-    Make_header_with_profinfo ((wosize), (tag), Caml_black,                 \
-      caml_spacetime_my_profinfo(NULL, wosize));                            \
-  (result) = Val_hp (caml_young_ptr);                                       \
-  DEBUG_clear ((result), (wosize));                                         \
-}while(0)
-
 #define Alloc_small_with_profinfo(result, wosize, tag, profinfo) do {       \
                                                 CAMLassert ((wosize) >= 1); \
                                           CAMLassert ((tag_t) (tag) < 256); \
@@ -159,6 +120,14 @@ extern uintnat caml_spacetime_my_profinfo(struct ext_table**, uintnat);
   (result) = Val_hp (caml_young_ptr);                                       \
   DEBUG_clear ((result), (wosize));                                         \
 }while(0)
+
+#if defined(NATIVE_CODE) && defined(SPACETIME)
+#define Alloc_small(result, wosize, tag) \
+  Alloc_small_with_profinfo(result, wosize, tag, \
+    caml_spacetime_my_profinfo(NULL, wosize))
+#else
+#define Alloc_small(result, wosize, tag) \
+  Alloc_small_with_profinfo(result, wosize, tag, (uintnat) 0)
 #endif
 
 /* Deprecated alias for [caml_modify] */
