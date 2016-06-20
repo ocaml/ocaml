@@ -58,7 +58,7 @@ let operation = function
   | Cextcall(lbl, _ty, _alloc, d) ->
       Printf.sprintf "extcall \"%s\"%s" lbl (Debuginfo.to_string d)
   | Cload c -> Printf.sprintf "load %s" (chunk c)
-  | Calloc -> "alloc"
+  | Calloc d -> "alloc" ^ Debuginfo.to_string d
   | Cstore (c, init) ->
     let init =
       match init with
@@ -96,8 +96,11 @@ let operation = function
 
 let rec expr ppf = function
   | Cconst_int n -> fprintf ppf "%i" n
-  | Cconst_natint n | Cconst_blockheader n ->
+  | Cconst_natint n ->
     fprintf ppf "%s" (Nativeint.to_string n)
+  | Cconst_blockheader(n, d) ->
+    fprintf ppf "block-hdr(%s)%s"
+      (Nativeint.to_string n) (Debuginfo.to_string d)
   | Cconst_float n -> fprintf ppf "%F" n
   | Cconst_symbol s -> fprintf ppf "\"%s\"" s
   | Cconst_pointer n -> fprintf ppf "%ia" n
