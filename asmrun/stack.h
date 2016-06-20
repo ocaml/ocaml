@@ -73,6 +73,20 @@
 #define Callback_link(sp) ((struct caml_context *)((sp) + 16))
 #endif
 
+/* Detection as to whether the current C function was called from OCaml. */
+
+#ifdef NATIVE_CODE
+#if defined(SYS_mingw64) || defined(SYS_cygwin)
+#include <intrin.h>
+#pragma intrinsic(_ReturnAddress)
+#define DIRECTLY_CALLED_FROM_OCAML \
+  (_ReturnAddress() == (void*) caml_last_return_address)
+#else
+#define DIRECTLY_CALLED_FROM_OCAML \
+  (__builtin_return_address(0) == (void*) caml_last_return_address)
+#endif
+#endif
+
 /* Structure of OCaml callback contexts */
 
 struct caml_context {

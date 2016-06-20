@@ -435,7 +435,7 @@ value caml_spacetime_frame_table(void)
     if (descr != NULL) {
       value location, return_address, pair, new_list_element;
       struct caml_loc_info li;
-      caml_extract_location_info(descr, &li);
+      caml_debuginfo_location(descr, &li);
       location = allocate_loc_outside_heap(li);
       return_address = allocate_int64_outside_heap(descr->retaddr);
 
