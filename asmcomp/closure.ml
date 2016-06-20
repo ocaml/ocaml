@@ -50,9 +50,9 @@ let rec build_closure_env env_param pos = function
    and no longer in Cmmgen so that approximations stored in .cmx files
    contain the right names if the -for-pack option is active. *)
 
-let getglobal id =
+let getglobal loc id =
   Uprim(Pgetglobal (Ident.create_persistent (Compilenv.symbol_for_global id)),
-        [], Debuginfo.none)
+        [], Debuginfo.from_location Debuginfo.Dinfo_call loc)
 
 (* Check if a variable occurs in a [clambda] term. *)
 
@@ -682,8 +682,8 @@ let rec is_pure = function
   | Lconst _ -> true
   | Lprim((Psetglobal _ | Psetfield _ | Psetfloatfield _ | Pduprecord _ |
            Pccall _ | Praise _ | Poffsetref _ | Pstringsetu | Pstringsets |
-           Parraysetu _ | Parraysets _ | Pbigarrayset _), _) -> false
-  | Lprim(_, args) -> List.for_all is_pure args
+           Parraysetu _ | Parraysets _ | Pbigarrayset _), _, _) -> false
+  | Lprim(_, args, _) -> List.for_all is_pure args
   | Levent(lam, _ev) -> is_pure lam
   | _ -> false
 
@@ -955,35 +955,39 @@ let rec close fenv cenv = function
         let (ubody, approx) = close fenv_body cenv body in
         (Uletrec(udefs, ubody), approx)
       end
-  | Lprim(Pdirapply loc,[funct;arg])
-  | Lprim(Prevapply loc,[arg;funct]) ->
+  | Lprim(Pdirapply,[funct;arg], loc)
+  | Lprim(Prevapply,[arg;funct], loc) ->
       close fenv cenv (Lapply{ap_should_be_tailcall=false;
                               ap_loc=loc;
                               ap_func=funct;
                               ap_args=[arg];
                               ap_inlined=Default_inline;
                               ap_specialised=Default_specialise})
-  | Lprim(Pgetglobal id, []) as lam ->
+  | Lprim(Pgetglobal id, [], loc) as lam ->
       check_constant_result lam
-                            (getglobal id)
+                            (getglobal loc id)
                             (Compilenv.global_approx id)
-  | Lprim(Pfield n, [lam]) ->
+  | Lprim(Pfield n, [lam], loc) ->
       let (ulam, approx) = close fenv cenv lam in
-      check_constant_result lam (Uprim(Pfield n, [ulam], Debuginfo.none))
+      let dbg = Debuginfo.from_location Debuginfo.Dinfo_call loc in
+      check_constant_result lam (Uprim(Pfield n, [ulam], dbg))
                             (field_approx n approx)
-  | Lprim(Psetfield(n, is_ptr, init), [Lprim(Pgetglobal id, []); lam]) ->
+  | Lprim(Psetfield(n, is_ptr, init),
+          [Lprim(Pgetglobal id, [], _); lam], loc) ->
       let (ulam, approx) = close fenv cenv lam in
       if approx <> Value_unknown then
         (!global_approx).(n) <- approx;
-      (Uprim(Psetfield(n, is_ptr, init), [getglobal id; ulam], Debuginfo.none),
+      let dbg = Debuginfo.from_location Debuginfo.Dinfo_call loc in
+      (Uprim(Psetfield(n, is_ptr, init), [getglobal loc id; ulam], dbg),
        Value_unknown)
-  | Lprim(Praise k, [Levent(arg, ev)]) ->
+  | Lprim(Praise k, [Levent(arg, ev)], _) ->
       let (ulam, _approx) = close fenv cenv arg in
       (Uprim(Praise k, [ulam], Debuginfo.from_raise ev),
        Value_unknown)
-  | Lprim(p, args) ->
+  | Lprim(p, args, loc) ->
+      let dbg = Debuginfo.from_location Debuginfo.Dinfo_call loc in
       simplif_prim !Clflags.float_const_prop
-                   p (close_list_approx fenv cenv args) Debuginfo.none
+                   p (close_list_approx fenv cenv args) dbg
   | Lswitch(arg, sw) ->
       let fn fail =
         let (uarg, _) = close fenv cenv arg in
@@ -1014,7 +1018,7 @@ let rec close fenv cenv = function
             Ucatch (i,[],ubody,uhandler),Value_unknown
           else fn fail
       end
-  | Lstringswitch(arg,sw,d) ->
+  | Lstringswitch(arg,sw,d,_) ->
       let uarg,_ = close fenv cenv arg in
       let usw =
         List.map
