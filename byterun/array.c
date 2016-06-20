@@ -17,7 +17,6 @@
 #include <string.h>
 #include "caml/alloc.h"
 #include "caml/fail.h"
-#include "caml/gc.h"
 #include "caml/memory.h"
 #include "caml/misc.h"
 #include "caml/mlvalues.h"
