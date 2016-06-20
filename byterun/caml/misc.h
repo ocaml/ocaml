@@ -304,6 +304,20 @@ extern void CAML_INSTR_ATEXIT (void);
 
 /* </private> */
 
+/* <private> */
+
+#if defined(SYS_mingw64) || defined(SYS_cygwin)
+#include <intrin.h>
+#pragma intrinsic(_ReturnAddress)
+#define DIRECTLY_CALLED_FROM_OCAML \
+  (_ReturnAddress() == caml_last_return_address)
+#else
+#define DIRECTLY_CALLED_FROM_OCAML \
+  (__builtin_return_address(0) == caml_last_return_address)
+#endif
+
+/* </private> */
+
 #ifdef __cplusplus
 }
 #endif

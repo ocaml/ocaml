@@ -64,6 +64,23 @@ CAMLexport value caml_alloc_small (mlsize_t wosize, tag_t tag)
   return result;
 }
 
+CAMLexport value caml_alloc_small_with_my_or_given_profinfo (mlsize_t wosize,
+  tag_t tag, uintnat profinfo)
+{
+  if (profinfo == 0) {
+    return caml_alloc_small(wosize, tag);
+  }
+  else {
+    value result;
+
+    Assert (wosize > 0);
+    Assert (wosize <= Max_young_wosize);
+    Assert (tag < 256);
+    Alloc_small_with_profinfo (result, wosize, tag, profinfo);
+    return result;
+  }
+}
+
 /* [n] is a number of words (fields) */
 CAMLexport value caml_alloc_tuple(mlsize_t n)
 {

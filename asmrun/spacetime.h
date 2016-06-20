@@ -16,6 +16,7 @@
 #define CAML_SPACETIME_H
 
 #include "caml/io.h"
+#include "caml/misc.h"
 
 /* Runtime support for Spacetime profiling.
  * This header file is not intended for the casual user.
@@ -170,14 +171,18 @@ extern void caml_spacetime_save_snapshot (struct channel *chan);
 extern void caml_spacetime_automatic_snapshot(void);
 extern void caml_spacetime_automatic_save(void);
 
-#if defined(SYS_mingw64) || defined(SYS_cygwin)
-#include <intrin.h>
-#pragma intrinsic(_ReturnAddress)
-#define DIRECTLY_CALLED_FROM_OCAML \
-  (_ReturnAddress() == caml_last_return_address)
-#else
-#define DIRECTLY_CALLED_FROM_OCAML \
-  (__builtin_return_address(0) == caml_last_return_address)
-#endif
+/* For use in runtime functions that are frequently executed from OCaml
+   code, to save the overhead of using libunwind every time. */
+#define Get_my_profinfo_maybe_cache_backtrace(profinfo, size) \
+  do { \
+    static spacetime_unwind_info_cache spacetime_unwind_info = NULL; \
+    if (DIRECTLY_CALLED_FROM_OCAML) { \
+      profinfo = caml_spacetime_my_profinfo(&spacetime_unwind_info, size); \
+    } \
+    else { \
+      profinfo = (uintnat) 0; \
+    } \
+  } \
+  while (0);
 
 #endif
