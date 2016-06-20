@@ -1,0 +1,16 @@
+File "indexop_deprecated.ml", line 32, characters 4-22:
+Warning 3: deprecated: implicit use of Bigarray.( .{}<- ) when it was not in scope. To avoid this warning, you can open either the Bigarray.Operators or Bigarray module.
+File "indexop_deprecated.ml", line 32, characters 15-22:
+Warning 3: deprecated: implicit use of Bigarray.( .{} ) when it was not in scope. To avoid this warning, you can open either the Bigarray.Operators or Bigarray module.
+File "indexop_deprecated.ml", line 33, characters 4-26:
+Warning 3: deprecated: implicit use of Bigarray.( .{,}<- ) when it was not in scope. To avoid this warning, you can open either the Bigarray.Operators or Bigarray module.
+File "indexop_deprecated.ml", line 33, characters 17-26:
+Warning 3: deprecated: implicit use of Bigarray.( .{,} ) when it was not in scope. To avoid this warning, you can open either the Bigarray.Operators or Bigarray module.
+File "indexop_deprecated.ml", line 34, characters 4-30:
+Warning 3: deprecated: implicit use of Bigarray.( .{,,}<- ) when it was not in scope. To avoid this warning, you can open either the Bigarray.Operators or Bigarray module.
+File "indexop_deprecated.ml", line 34, characters 19-30:
+Warning 3: deprecated: implicit use of Bigarray.( .{,,} ) when it was not in scope. To avoid this warning, you can open either the Bigarray.Operators or Bigarray module.
+File "indexop_deprecated.ml", line 35, characters 4-38:
+Warning 3: deprecated: implicit use of Bigarray.( .{,..,}<- ) when it was not in scope. To avoid this warning, you can open either the Bigarray.Operators or Bigarray module.
+File "indexop_deprecated.ml", line 35, characters 23-38:
+Warning 3: deprecated: implicit use of Bigarray.( .{,..,} ) when it was not in scope. To avoid this warning, you can open either the Bigarray.Operators or Bigarray module.

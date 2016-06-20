@@ -622,6 +622,15 @@ external snd : 'a * 'b -> 'b = "%field1"
 val ( @ ) : 'a list -> 'a list -> 'a list
 (** List concatenation.  Not tail-recursive (length of the first argument). *)
 
+(** {6 String index operators} *)
+
+external  ( .[] ) : string -> int -> char= "%string_opt_get"
+(** Bracket index operator for strings.
+ [ a.[index] ] is desugared to [ (.[]) a index ]. *)
+
+external  ( .[] <- ) : bytes -> int -> char-> unit =  "%string_opt_set"
+(** Bracket indexed assignment operator for bytes.
+ [ a.[index] <- val ]  is desugared to [ ( .[]<- ) a index val ]. *)
 
 (** {6 Input/output}
     Note: all input/output functions can raise [Sys_error] when the system

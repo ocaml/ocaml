@@ -5,6 +5,17 @@ OCaml 4.04.0:
 
 ### Language features:
 
+- GPR#69, GPR#622: User-defined indexing operators: ( .[] ), ( .{} ) etc.
+  (Florian Angeletti)
+  The syntax "foo.M.[bar] <- baz" now desugars into "M.( .[]<- ) foo bar baz";
+  this should allow user to define their own notations by overriding.
+  The bigarray notations ( .{} ), ( .{,} ) etc. are defined in the Bigarray
+  module, which means that the foo.{bar,baz} syntactic sugar should only be
+  available when the Bigarray is opened. To avoid breaking existing program,
+  the compiler emits, for now, a deprecated warning when these Bigarray
+  operators are used implicitly. Opening either the Bigarray.Operators or
+  Bigarray modules fixes this compatibility problem.
+
 - GPR#187, GPR#578: Local opening of modules in a pattern.
   Syntax: "M.(p)", "M.[p]","M.[| p |]", "M.{p}"
   (Florian Angeletti, Jacques Garrigue, review by Alain Frisch)

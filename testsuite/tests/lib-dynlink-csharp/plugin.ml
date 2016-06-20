@@ -1,3 +1,4 @@
+open Bigarray
 let f x = x.{2}
 
 let () =

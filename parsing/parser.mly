@@ -149,8 +149,16 @@ let mkpat_opt_constraint p = function
   | None -> p
   | Some typ -> mkpat (Ppat_constraint(p, typ))
 
-let array_function str name =
-  ghloc (Ldot(Lident str, (if !Clflags.fast then "unsafe_" ^ name else name)))
+let indexop_function ?path assign=
+  let op = (if assign then ".[]<-" else ".[]") in
+  let lid = match path with
+  | None -> Lident op
+  | Some m -> Ldot(m, op) in
+  ghloc lid
+
+let array_function assign =
+  let name = if assign then "set" else "get" in
+  ghloc (Ldot(Lident "Array", (if !Clflags.fast then "unsafe_" ^ name else name)))
 
 let syntax_error () =
   raise Syntaxerr.Escape_error
@@ -165,45 +173,54 @@ let expecting pos nonterm =
 let not_expecting pos nonterm =
     raise Syntaxerr.(Error(Not_expecting(rhs_loc pos, nonterm)))
 
-let bigarray_function str name =
-  ghloc (Ldot(Ldot(Lident "Bigarray", str), name))
+let bigarray_function ?path order assign =
+  let op =
+    match order with
+      | 1 -> ".{}"
+      | 2 -> ".{,}"
+      | 3 -> ".{,,}"
+      | _ -> ".{,..,}"
+  in
+  let op= if assign then op^"<-" else op in
+  let lid = match path with
+  | None -> Lident op
+  | Some p -> Ldot( p , op) in
+  ghloc lid
 
 let bigarray_untuplify = function
     { pexp_desc = Pexp_tuple explist; pexp_loc = _ } -> explist
   | exp -> [exp]
 
-let bigarray_get arr arg =
-  let get = if !Clflags.fast then "unsafe_get" else "get" in
+let bigarray_get ?path arr arg =
+  let get order = bigarray_function ?path order false in
   match bigarray_untuplify arg with
     [c1] ->
-      mkexp(Pexp_apply(ghexp(Pexp_ident(bigarray_function "Array1" get)),
+      mkexp(Pexp_apply(ghexp(Pexp_ident(get 1)),
                        [Nolabel, arr; Nolabel, c1]))
   | [c1;c2] ->
-      mkexp(Pexp_apply(ghexp(Pexp_ident(bigarray_function "Array2" get)),
+      mkexp(Pexp_apply(ghexp(Pexp_ident(get 2)),
                        [Nolabel, arr; Nolabel, c1; Nolabel, c2]))
   | [c1;c2;c3] ->
-      mkexp(Pexp_apply(ghexp(Pexp_ident(bigarray_function "Array3" get)),
+      mkexp(Pexp_apply(ghexp(Pexp_ident(get 3)),
                        [Nolabel, arr; Nolabel, c1; Nolabel, c2; Nolabel, c3]))
   | coords ->
-      mkexp(Pexp_apply(ghexp(Pexp_ident(bigarray_function "Genarray" "get")),
+      mkexp(Pexp_apply(ghexp(Pexp_ident(get 0)),
                        [Nolabel, arr; Nolabel, ghexp(Pexp_array coords)]))
 
-let bigarray_set arr arg newval =
-  let set = if !Clflags.fast then "unsafe_set" else "set" in
+let bigarray_set ?path arr arg newval =
+  let set order = bigarray_function ?path order true in
   match bigarray_untuplify arg with
     [c1] ->
-      mkexp(Pexp_apply(ghexp(Pexp_ident(bigarray_function "Array1" set)),
+      mkexp(Pexp_apply(ghexp(Pexp_ident(set 1)),
                        [Nolabel, arr; Nolabel, c1; Nolabel, newval]))
   | [c1;c2] ->
-      mkexp(Pexp_apply(ghexp(Pexp_ident(bigarray_function "Array2" set)),
-                       [Nolabel, arr; Nolabel, c1;
-                        Nolabel, c2; Nolabel, newval]))
+      mkexp(Pexp_apply(ghexp(Pexp_ident(set 2)),
+                       [Nolabel, arr; Nolabel, c1; Nolabel, c2; Nolabel, newval]))
   | [c1;c2;c3] ->
-      mkexp(Pexp_apply(ghexp(Pexp_ident(bigarray_function "Array3" set)),
-                       [Nolabel, arr; Nolabel, c1;
-                        Nolabel, c2; Nolabel, c3; Nolabel, newval]))
+      mkexp(Pexp_apply(ghexp(Pexp_ident(set 3)),
+                       [Nolabel, arr; Nolabel, c1; Nolabel, c2; Nolabel, c3; Nolabel, newval]))
   | coords ->
-      mkexp(Pexp_apply(ghexp(Pexp_ident(bigarray_function "Genarray" "set")),
+      mkexp(Pexp_apply(ghexp(Pexp_ident(set 0)),
                        [Nolabel, arr;
                         Nolabel, ghexp(Pexp_array coords);
                         Nolabel, newval]))
@@ -1448,13 +1465,18 @@ expr:
   | simple_expr DOT label_longident LESSMINUS expr
       { mkexp(Pexp_setfield($1, mkrhs $3 3, $5)) }
   | simple_expr DOT LPAREN seq_expr RPAREN LESSMINUS expr
-      { mkexp(Pexp_apply(ghexp(Pexp_ident(array_function "Array" "set")),
+      { mkexp(Pexp_apply(ghexp(Pexp_ident(array_function true)),
                          [Nolabel,$1; Nolabel,$4; Nolabel,$7])) }
   | simple_expr DOT LBRACKET seq_expr RBRACKET LESSMINUS expr
-      { mkexp(Pexp_apply(ghexp(Pexp_ident(array_function "String" "set")),
+      { mkexp(Pexp_apply(ghexp(Pexp_ident(indexop_function true)),
                          [Nolabel,$1; Nolabel,$4; Nolabel,$7])) }
+  | simple_expr DOT mod_longident DOT LBRACKET seq_expr RBRACKET LESSMINUS expr
+      { mkexp(Pexp_apply(ghexp(Pexp_ident(indexop_function ~path:($3) true)),
+                         [Nolabel,$1; Nolabel,$6; Nolabel,$9])) }
   | simple_expr DOT LBRACE expr RBRACE LESSMINUS expr
       { bigarray_set $1 $4 $7 }
+  | simple_expr DOT mod_longident DOT LBRACE expr RBRACE LESSMINUS expr
+      { bigarray_set ~path:($3) $1 $6 $9 }
   | label LESSMINUS expr
       { mkexp(Pexp_setinstvar(mkrhs $1 1, $3)) }
   | ASSERT ext_attributes simple_expr %prec below_HASH
@@ -1502,18 +1524,27 @@ simple_expr:
   | mod_longident DOT LPAREN seq_expr error
       { unclosed "(" 3 ")" 5 }
   | simple_expr DOT LPAREN seq_expr RPAREN
-      { mkexp(Pexp_apply(ghexp(Pexp_ident(array_function "Array" "get")),
+      { mkexp(Pexp_apply(ghexp(Pexp_ident(array_function false)),
                          [Nolabel,$1; Nolabel,$4])) }
   | simple_expr DOT LPAREN seq_expr error
       { unclosed "(" 3 ")" 5 }
   | simple_expr DOT LBRACKET seq_expr RBRACKET
-      { mkexp(Pexp_apply(ghexp(Pexp_ident(array_function "String" "get")),
+      { mkexp(Pexp_apply(ghexp(Pexp_ident(indexop_function false)),
                          [Nolabel,$1; Nolabel,$4])) }
   | simple_expr DOT LBRACKET seq_expr error
+      { unclosed "[" 3 "]" 5 }
+  | simple_expr DOT mod_longident DOT LBRACKET seq_expr RBRACKET
+      { mkexp(Pexp_apply(ghexp(Pexp_ident(indexop_function ~path:($3) false)),
+                         [Nolabel,$1; Nolabel,$6])) }
+  | simple_expr DOT mod_longident DOT LBRACKET seq_expr error
       { unclosed "[" 3 "]" 5 }
   | simple_expr DOT LBRACE expr RBRACE
       { bigarray_get $1 $4 }
   | simple_expr DOT LBRACE expr_comma_list error
+      { unclosed "{" 3 "}" 5 }
+  | simple_expr DOT mod_longident DOT LBRACE expr RBRACE
+      { bigarray_get ~path:($3) $1 $6 }
+  | simple_expr DOT mod_longident DOT LBRACE expr_comma_list error
       { unclosed "{" 3 "}" 5 }
   | LBRACE record_expr RBRACE
       { let (exten, fields) = $2 in mkexp (Pexp_record(fields, exten)) }
@@ -2404,7 +2435,24 @@ operator:
   | COLONEQUAL                                  { ":=" }
   | PLUSEQ                                      { "+=" }
   | PERCENT                                     { "%" }
+  | index_operator                              { $1 }
 ;
+index_operator:
+    DOT index_operator_core opt_assign_arrow { $2^$3 }
+;
+index_operator_core:
+  | LBRACKET RBRACKET                           { ".[]" }
+  | LBRACE RBRACE                               { ".{}" }
+  | LBRACE COMMA  RBRACE                        { ".{,}" }
+  | LBRACE COMMA COMMA RBRACE                   { ".{,,}" }
+  | LBRACE COMMA DOTDOT COMMA RBRACE            { ".{,..,}"}
+;
+
+opt_assign_arrow:
+                                                { "" }
+  | LESSMINUS                                   { "<-" }
+;
+
 constr_ident:
     UIDENT                                      { $1 }
   | LBRACKET RBRACKET                           { "[]" }
