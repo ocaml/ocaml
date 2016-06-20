@@ -294,6 +294,7 @@ static void do_compaction (void)
           }
           *p = Make_header_with_profinfo (Wosize_whsize (sz), t, Caml_white,
             profinfo);
+
           if (infixes != NULL){
             /* Rebuild the infix headers and revert the infix pointers. */
             while (Ecolor ((word) infixes) != 3){

@@ -98,10 +98,6 @@ int caml_page_table_initialize(mlsize_t bytesize);
 
 #ifdef WITH_SPACETIME
 
-#define Decode_profinfo_hd(hd) \
-  (((uint64_t) (Profinfo_hd (hd))) << 4)
-
-extern int caml_spacetime;
 extern uintnat caml_spacetime_my_profinfo(struct ext_table**, uintnat);
 
 #endif
