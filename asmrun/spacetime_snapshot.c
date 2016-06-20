@@ -28,6 +28,7 @@
 #include "caml/custom.h"
 #include "caml/fail.h"
 #include "caml/gc.h"
+#include "caml/gc_ctrl.h"
 #include "caml/intext.h"
 #include "caml/major_gc.h"
 #include "caml/memory.h"

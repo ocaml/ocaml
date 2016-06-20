@@ -26,11 +26,9 @@
 #include "gc.h"
 #include "major_gc.h"
 #include "minor_gc.h"
-#include "gc_ctrl.h"
 /* </private> */
 #include "misc.h"
 #include "mlvalues.h"
-#include <stdint.h>
 
 #ifdef __cplusplus
 extern "C" {
