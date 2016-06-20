@@ -61,7 +61,6 @@ static caml_plat_mutex all_domains_lock;
 static struct dom_internal all_domains[Max_domains];
 static uintnat minor_heaps_base;
 static __thread dom_internal* domain_self;
-
 CAMLexport __thread struct caml_domain_state* caml_domain_state;
 
 static __thread char domains_locked[Max_domains];
@@ -180,8 +179,6 @@ static void create_domain(uintnat initial_minor_heap_size, int is_main) {
 
     d->state.local_roots = &caml_local_roots;
     d->state.state = caml_domain_state;
-    d->state.mark_stack = &caml_mark_stack;
-    d->state.mark_stack_count = &caml_mark_stack_count;
     d->state.vm_inited = 1;
   }
   caml_plat_unlock(&all_domains_lock);
