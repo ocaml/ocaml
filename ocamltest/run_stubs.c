@@ -32,9 +32,9 @@
 #include "caml/io.h"
 
 /* cstringvect: inspired by similar function in otherlibs/unix/cstringv.c */
-char ** cstringvect(value arg)
+array cstringvect(value arg)
 {
-  char ** res;
+  array res;
   mlsize_t size, i;
 
   size = Wosize_val(arg);
@@ -43,7 +43,7 @@ char ** cstringvect(value arg)
     if (! caml_string_is_c_safe(Field(arg, i)))
       unix_error(EINVAL, cmdname, Field(arg, i));
   */
-  res = (char **) caml_stat_alloc((size + 1) * sizeof(char *));
+  res = (array) caml_stat_alloc((size + 1) * sizeof(char *));
   for (i = 0; i < size; i++) res[i] = String_val(Field(arg, i));
   res[size] = NULL;
   return res;
@@ -71,10 +71,8 @@ CAMLprim value caml_run_command(value caml_settings)
 
   CAMLparam1(caml_settings);
   settings.program = String_val(Field(caml_settings, 0));
-  argv = cstringvect(Field(caml_settings, 1));
-  settings.argv = &argv;
-  /* envp = cstringvect(Field(caml_settings, 2)); */
-  /* settings.envp = &envp; */
+  settings.argv = cstringvect(Field(caml_settings, 1));
+  /* settings.envp = cstringvect(Field(caml_settings, 2)); */
   settings.stdout_filename = String_val(Field(caml_settings, 2));
   settings.stderr_filename = String_val(Field(caml_settings, 3));
   settings.append = Bool_val(Field(caml_settings, 4));

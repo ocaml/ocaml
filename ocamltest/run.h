@@ -25,8 +25,8 @@ typedef void Logger(void *, const char *, ...);
 
 typedef struct {
   const char *program;
-  array *argv;
-  /* array *envp; */
+  array argv;
+  /* array envp; */
   const char *stdout_filename;
   const char *stderr_filename;
   int append;
