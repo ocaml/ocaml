@@ -36,18 +36,24 @@ let lookup name =
   try Some (Hashtbl.find tests name)
   with Not_found -> None
 
-let rec run_actions log env = function
-  | [] -> Actions.Pass env
-  | action::remaining_actions ->
-    begin
-      let result = Actions.run log env action in
-      match result with
-        | Actions.Pass env' -> run_actions log env' remaining_actions
-        | _ ->
-          Printf.fprintf log "Action %s returned %s\n%!"
-            action.Actions.action_name (Actions.string_of_result result);
-          result
-    end
+let run_actions log testenv actions =
+  let total = List.length actions in
+  let rec run_actions_aux action_number env = function
+    | [] -> Actions.Pass env
+    | action::remaining_actions ->
+      begin
+        Printf.fprintf log "Running action %d/%d (%s)\n%!"
+          action_number total action.Actions.action_name;
+        let result = Actions.run log env action in
+        Printf.fprintf log "Result of action %d/%d (%s): %s\n%!"
+          action_number total action.Actions.action_name
+          (Actions.string_of_result result);
+        match result with
+          | Actions.Pass env' ->
+            run_actions_aux (action_number+1) env' remaining_actions
+          | _ -> result
+      end in
+  run_actions_aux 1 testenv actions
 
 let run log env test =
   Printf.fprintf log "Running test %s with %d actions\n%!"
