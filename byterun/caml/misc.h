@@ -306,6 +306,8 @@ extern void CAML_INSTR_ATEXIT (void);
 
 /* <private> */
 
+#ifdef NATIVE_CODE
+extern void* caml_last_return_address;
 #if defined(SYS_mingw64) || defined(SYS_cygwin)
 #include <intrin.h>
 #pragma intrinsic(_ReturnAddress)
@@ -314,6 +316,7 @@ extern void CAML_INSTR_ATEXIT (void);
 #else
 #define DIRECTLY_CALLED_FROM_OCAML \
   (__builtin_return_address(0) == caml_last_return_address)
+#endif
 #endif
 
 /* </private> */

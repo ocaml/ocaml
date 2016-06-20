@@ -162,8 +162,6 @@ CAMLprim value caml_make_float_vect(value len)
   return result;
 }
 
-extern void* caml_last_return_address;
-
 /* [len] is a [value] representing number of words or floats */
 CAMLprim value caml_make_vect(value len, value init)
 {

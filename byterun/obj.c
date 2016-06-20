@@ -87,8 +87,6 @@ CAMLprim value caml_obj_block(value tag, value size)
   return res;
 }
 
-extern void* caml_last_return_address;
-
 CAMLprim value caml_obj_dup(value arg)
 {
   CAMLparam1 (arg);
