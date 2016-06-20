@@ -1,4 +1,4 @@
-default: native
+default: native warning
 
 native:
 	printf " ... testing native 'test.reference':"
@@ -10,6 +10,14 @@ native:
 	@./test.native > test.result
 	@$(DIFF) test.result test.reference >/dev/null \
 	    && echo " => passed" || echo " => failed"
+
+warning:
+	printf " ... testing warning with lto 'warning.reference':"
+	@$(OCAMLOPT) -c no_lto.ml # no lto
+	@$(OCAMLOPT) -lto -c main_warning.ml 2> warning.result
+	@$(DIFF) warning.result warning.reference >/dev/null \
+	    && echo " => passed" || echo " => failed"
+
 
 promote: defaultpromote
 
