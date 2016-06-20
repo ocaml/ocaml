@@ -208,7 +208,7 @@ let merge (t1 : t) (t2 : t) : t =
         ~print:(Variable.Map.print Variable.Set.print)
         ~eq:(Variable.Map.equal Variable.Set.equal)
         t1.invariant_params t2.invariant_params;
-    code = None;
+    code = t1.code;
   }
 
 let find_value eid map =

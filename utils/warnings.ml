@@ -487,7 +487,7 @@ let message = function
          or [@@unboxed]." t t
   | Module_compiled_without_lto name ->
       Printf.sprintf
-        "The required module %s was built without -lto. Linking it in -lto\
+        "The required module %s was built without -lto. Linking it in -lto \
          mode will probably not be possible."
         name
 ;;

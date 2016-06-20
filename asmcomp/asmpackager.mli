@@ -31,6 +31,7 @@ type error =
   | Linking_error
   | Assembler_error of string
   | File_not_found of string
+  | Module_compiled_without_lto of string
 
 exception Error of error
 

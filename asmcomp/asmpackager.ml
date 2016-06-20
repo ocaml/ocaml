@@ -26,6 +26,7 @@ type error =
   | Linking_error
   | Assembler_error of string
   | File_not_found of string
+  | Module_compiled_without_lto of string
 
 
 exception Error of error
@@ -145,7 +146,20 @@ let get_approx ui =
   | Flambda _ -> assert false
   | Clambda info -> info
 
-let build_package_cmx members cmxfile =
+let get_flambda_codes pack_units =
+  assert(Config.flambda);
+  List.map (fun info ->
+    match info.Cmx_format.ui_export_info with
+    | Clambda _ -> assert false
+    | Flambda { Export_info.code } ->
+      match code with
+      | None ->
+        raise (Error (Module_compiled_without_lto info.Cmx_format.ui_name))
+      | Some code ->
+        code)
+    pack_units
+
+let build_package_cmx ppf members cmxfile =
   let unit_names =
     List.map (fun m -> m.pm_name) members in
   let filter lst =
@@ -183,12 +197,47 @@ let build_package_cmx members cmxfile =
   let ui = Compilenv.current_unit_infos() in
   let ui_export_info =
     if Config.flambda then
+      let current_ui_export_info =
+        if !Clflags.cmx_contains_all_code then begin
+          let codes = get_flambda_codes units in
+          let current_unit_code =
+            match (get_export_info ui).Export_info.code with
+            | None -> assert false (* We compiled with -lto *)
+            | Some code -> code
+          in
+          let program =
+            (* Only the pack symbol is directly accessible from outside *)
+            Flambda_utils.clear_all_exported_symbols
+              (Flambda_utils.concatenate codes)
+          in
+          let program =
+            Flambda_utils.replace_compilation_unit_of_symbols
+              (Compilenv.current_unit ())
+              (Flambda_utils.concatenate [program; current_unit_code])
+          in
+          if !Clflags.dump_rawflambda then
+            Format.fprintf ppf "After concatenation:@ %a@."
+              Flambda.print_program program;
+          let cleaned_program =
+            Remove_unused_program_constructs.remove_unused_program_constructs
+              program
+          in
+          if !Clflags.dump_flambda then
+            Format.fprintf ppf "After cleaning:@ %a@."
+              Flambda.print_program cleaned_program;
+          Export_info.merge
+            (Export_info.empty_with_code ~code:(Some cleaned_program))
+            (get_export_info ui)
+        end
+        else
+          get_export_info ui
+      in
       let ui_export_info =
         List.fold_left (fun acc info ->
             Export_info.merge acc (get_export_info info))
           (Export_info_for_pack.import_for_pack ~pack_units
              ~pack:(Compilenv.current_unit ())
-             (get_export_info ui))
+             current_ui_export_info)
           units
       in
       Flambda ui_export_info
@@ -230,7 +279,7 @@ let package_object_files ppf files targetcmx
   let members = map_left_right (read_member_info pack_path) files in
   check_units members;
   make_package_object ppf members targetobj targetname coercion ~backend;
-  build_package_cmx members targetcmx
+  build_package_cmx ppf members targetcmx
 
 (* The entry point *)
 
@@ -280,6 +329,11 @@ let report_error ppf = function
       fprintf ppf "Error while assembling %s" file
   | Linking_error ->
       fprintf ppf "Error during partial linking"
+  | Module_compiled_without_lto name ->
+      fprintf ppf
+        "@[<hov>Modules %s@ was compiled without the `-lto` option.@ \
+         It is needed for building a pack with the `-lto` option.@]"
+        name
 
 let () =
   Location.register_error_of_exn
