@@ -96,12 +96,6 @@ int caml_page_table_initialize(mlsize_t bytesize);
 #define DEBUG_clear(result, wosize)
 #endif
 
-#ifdef WITH_SPACETIME
-
-extern uintnat caml_spacetime_my_profinfo(struct ext_table**, uintnat);
-
-#endif
-
 #define Alloc_small_with_profinfo(result, wosize, tag, profinfo) do {       \
                                                 CAMLassert ((wosize) >= 1); \
                                           CAMLassert ((tag_t) (tag) < 256); \
@@ -122,6 +116,7 @@ extern uintnat caml_spacetime_my_profinfo(struct ext_table**, uintnat);
 }while(0)
 
 #if defined(NATIVE_CODE) && defined(SPACETIME)
+extern uintnat caml_spacetime_my_profinfo(struct ext_table**, uintnat);
 #define Alloc_small(result, wosize, tag) \
   Alloc_small_with_profinfo(result, wosize, tag, \
     caml_spacetime_my_profinfo(NULL, wosize))
