@@ -35,6 +35,7 @@ let words s =
     | Some word -> f (word :: words_acc) in
   f []
 
+
 let file_is_empty filename =
   let ic = open_in filename in
   let filesize = in_channel_length ic in
@@ -46,3 +47,12 @@ let string_of_location loc =
   let fmt = Format.formatter_of_buffer buf in
   Location.print_loc fmt loc;
   Buffer.contents buf
+
+let run_system_command command = match Sys.command command with
+  | 0 -> ()
+  | _ as exitcode ->
+    Printf.eprintf "%s failed with status %d\n%!"
+      command exitcode;
+    exit 2
+
+let make_directory dir = run_system_command ("mkdir -p " ^ dir)

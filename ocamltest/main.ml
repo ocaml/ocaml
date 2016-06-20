@@ -59,16 +59,6 @@ and run_test_i log path rootenv i test_tree =
   let new_path = Printf.sprintf "%s%d" prefix (i+1) in
   run_test log new_path rootenv test_tree
 
-let initial_env filename =
-  Environments.add "testfile" filename Environments.empty
-
-let run_command command = match Sys.command command with
-  | 0 -> ()
-  | _ as exitcode ->
-    Printf.eprintf "%s failed with status %d\n%!"
-      command exitcode;
-    exit 2
-
 let get_test_source_directory test_dirname =
   if not (Filename.is_relative test_dirname) then test_dirname
   else let pwd = Sys.getcwd() in
@@ -83,15 +73,6 @@ let get_test_build_directory test_dirname =
         ocamltestdir_variable default_root;
       default_root in
   Filename.concat root test_dirname
-
-let make_directory dir = run_command ("mkdir -p " ^ dir)
-
-let setup_symlinks test_source_directory test_build_directory files =
-  let symlink filename =
-    let src = Filename.concat test_source_directory filename in
-    let cmd = "ln -sf " ^ src ^" " ^ test_build_directory in
-    run_command cmd in
-  List.iter symlink files
 
 let main () =
   if Array.length Sys.argv < 2 then begin
@@ -112,25 +93,22 @@ let main () =
   let test_dirname = Filename.dirname test_filename in
   let test_basename = Filename.basename test_filename in
   let test_prefix = Filename.chop_extension test_basename in
+  let test_directory = Filename.concat test_dirname test_prefix in
   let test_source_directory = get_test_source_directory test_dirname in
-  let test_build_directory = get_test_build_directory test_dirname in
+  let test_build_directory = get_test_build_directory test_directory in
   let reference_filename = Filename.concat
     test_source_directory (test_prefix ^ ".reference") in
   let initial_environment = Environments.from_list
   [
     "testfile", test_basename;
     "reference", reference_filename;
+    "testsrcdir", test_source_directory;
+    "testbuilddir", test_build_directory;
   ] in
   let root_environment =
     interprete_environment_statements initial_environment rootenv_statements in
   let rootenv = Actions.update_environment root_environment actions in
-  make_directory test_build_directory;
-  let modules_value = Environments.safe_lookup "modules" rootenv in
-  let modules = Testlib.words modules_value in
-  setup_symlinks
-    test_source_directory
-    test_build_directory
-    (test_basename::modules);
+  Testlib.make_directory test_build_directory;
   Sys.chdir test_build_directory;
   let log_filename = test_prefix ^ ".log" in
   let log = open_out log_filename in

@@ -15,9 +15,10 @@
 
 (* Definition of a few builtin actions *)
 
-val bytecode_compile : Actions.t
-
-val nativecode_compile : Actions.t
+val compile_bytecode_with_bytecode_compiler : Actions.t
+val compile_bytecode_with_nativecode_compiler : Actions.t
+val compile_nativecode_with_bytecode_compiler : Actions.t
+val compile_nativecode_with_nativecode_compiler : Actions.t
 
 val execute : Actions.t
 val check_program_output : Actions.t

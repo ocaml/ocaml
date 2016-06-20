@@ -16,15 +16,17 @@
 (* Definitions of builtin tests *)
 
 open Tests
+open Builtin_actions
 
 let bytecode = {
   test_name = "bytecode";
   test_run_by_default = true;
   test_actions =
   [
-    Builtin_actions.bytecode_compile;
-    Builtin_actions.execute;
-    Builtin_actions.check_program_output
+    compile_bytecode_with_bytecode_compiler;
+    compile_bytecode_with_nativecode_compiler;
+    execute;
+    check_program_output
   ]
 }
 
@@ -33,10 +35,12 @@ let nativecode = {
   test_run_by_default = true;
   test_actions =
   [
-    Builtin_actions.nativecode_compile;
-    Builtin_actions.execute;
-    Builtin_actions.check_program_output
+    compile_nativecode_with_bytecode_compiler;
+    compile_nativecode_with_nativecode_compiler;
+    execute;
+    check_program_output
   ]
+
 }
 
 let _ =

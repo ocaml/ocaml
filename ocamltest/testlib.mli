@@ -20,3 +20,7 @@ val words : string -> string list
 val file_is_empty : string -> bool
 
 val string_of_location: Location.t -> string
+
+val run_system_command : string -> unit
+
+val make_directory : string -> unit
