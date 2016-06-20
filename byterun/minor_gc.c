@@ -33,8 +33,6 @@
 
 asize_t __thread caml_minor_heap_size;
 
-CAMLexport __thread struct caml_remembered_set caml_remembered_set;
-
 #ifdef DEBUG
 static __thread unsigned long minor_gc_counter = 0;
 #endif
@@ -76,7 +74,7 @@ void caml_set_minor_heap_size (asize_t size)
 
   caml_reallocate_minor_heap(size);
 
-  reset_table (&caml_remembered_set.ref);
+  reset_table (&caml_domain_state->remembered_set->ref);
 }
 
 
@@ -140,7 +138,7 @@ static value caml_promote_one(struct promotion_stack* stk, struct domain* domain
 
   if (Is_promoted_hd(curr_block_hd)) {
     /* already promoted */
-    return caml_addrmap_lookup(&domain->remembered_set->promotion, curr) + infix_offset;
+    return caml_addrmap_lookup(&domain->state->remembered_set->promotion, curr) + infix_offset;
   } else if (curr_block_hd == 0) {
     /* promoted by minor GC */
     return Op_val(curr)[0] + infix_offset;
@@ -153,8 +151,8 @@ static value caml_promote_one(struct promotion_stack* stk, struct domain* domain
   value promoted = Val_hp(mem);
   Hd_val(curr) = Promotedhd_hd(curr_block_hd);
 
-  caml_addrmap_insert(&domain->remembered_set->promotion, curr, promoted);
-  caml_addrmap_insert(&domain->remembered_set->promotion_rev, promoted, curr);
+  caml_addrmap_insert(&domain->state->remembered_set->promotion, curr, promoted);
+  caml_addrmap_insert(&domain->state->remembered_set->promotion_rev, promoted, curr);
 
   if (Tag_hd(curr_block_hd) >= No_scan_tag) {
     int i;
@@ -207,7 +205,7 @@ CAMLexport value caml_promote(struct domain* domain, value root)
     value x = Op_val(local)[field];
     if (Is_block(x) && Tag_val(x) == Stack_tag) {
       /* stacks are not promoted unless explicitly requested */
-      Ref_table_add(&domain->remembered_set->ref, global, field);
+      Ref_table_add(&domain->state->remembered_set->ref, global, field);
     } else {
       x = caml_promote_one(&stk, domain, x);
     }
@@ -247,7 +245,7 @@ static void caml_oldify_one (value v, value *p)
     hd = Hd_val (v);
     stat_live_bytes += Bhsize_hd(hd);
     if (Is_promoted_hd (hd)) {
-      *p = caml_addrmap_lookup(&caml_remembered_set.promotion, v);
+      *p = caml_addrmap_lookup(&caml_domain_state->remembered_set->promotion, v);
     } else if (hd == 0){         /* If already forwarded */
       *p = Op_val(v)[0];  /*  then forward pointer is first field. */
     }else{
@@ -365,8 +363,8 @@ static void caml_oldify_mopup (void)
 
 static void unpin_promoted_object(value local, value promoted)
 {
-  Assert (caml_addrmap_lookup(&caml_remembered_set.promotion, local) == promoted);
-  Assert (caml_addrmap_lookup(&caml_remembered_set.promotion_rev, promoted) == local);
+  Assert (caml_addrmap_lookup(&caml_domain_state->remembered_set->promotion, local) == promoted);
+  Assert (caml_addrmap_lookup(&caml_domain_state->remembered_set->promotion_rev, promoted) == local);
   caml_shared_unpin(promoted);
   caml_darken(promoted, 0);
 }
@@ -387,18 +385,18 @@ void caml_empty_minor_heap (void)
     caml_gc_log ("Minor collection starting");
     caml_do_local_roots(&caml_oldify_one, caml_domain_self());
 
-    for (r = caml_remembered_set.ref.base; r < caml_remembered_set.ref.ptr; r++){
+    for (r = caml_domain_state->remembered_set->ref.base; r < caml_domain_state->remembered_set->ref.ptr; r++){
       value x;
       caml_oldify_one (Op_val(r->obj)[r->field], &x);
     }
 
-    for (r = caml_remembered_set.fiber_ref.base; r < caml_remembered_set.fiber_ref.ptr; r++) {
+    for (r = caml_domain_state->remembered_set->fiber_ref.base; r < caml_domain_state->remembered_set->fiber_ref.ptr; r++) {
       caml_scan_dirty_stack(&caml_oldify_one, r->obj);
     }
 
     caml_oldify_mopup ();
 
-    for (r = caml_remembered_set.ref.base; r < caml_remembered_set.ref.ptr; r++){
+    for (r = caml_domain_state->remembered_set->ref.base; r < caml_domain_state->remembered_set->ref.ptr; r++){
       value v = Op_val(r->obj)[r->field];
       if (Is_block(v) && Is_young(v)) {
         Assert (Hp_val (v) >= caml_domain_state->young_ptr);
@@ -406,7 +404,7 @@ void caml_empty_minor_heap (void)
         header_t hd = Hd_val(v);
         // FIXME: call oldify_one here?
         if (Is_promoted_hd(hd)) {
-          vnew = caml_addrmap_lookup(&caml_remembered_set.promotion, v);
+          vnew = caml_addrmap_lookup(&caml_domain_state->remembered_set->promotion, v);
         } else {
           int offset = 0;
           if (Tag_hd(hd) == Infix_tag) {
@@ -423,24 +421,24 @@ void caml_empty_minor_heap (void)
       }
     }
 
-    caml_addrmap_iter(&caml_remembered_set.promotion, unpin_promoted_object);
+    caml_addrmap_iter(&caml_domain_state->remembered_set->promotion, unpin_promoted_object);
 
     if (caml_domain_state->young_ptr < caml_domain_state->young_start)
       caml_domain_state->young_ptr = caml_domain_state->young_start;
     caml_stat_minor_words += Wsize_bsize (minor_allocated_bytes);
     caml_domain_state->young_ptr = caml_domain_state->young_end;
-    clear_table (&caml_remembered_set.ref);
-    caml_addrmap_clear(&caml_remembered_set.promotion);
-    caml_addrmap_clear(&caml_remembered_set.promotion_rev);
+    clear_table (&caml_domain_state->remembered_set->ref);
+    caml_addrmap_clear(&caml_domain_state->remembered_set->promotion);
+    caml_addrmap_clear(&caml_domain_state->remembered_set->promotion_rev);
     caml_gc_log ("Minor collection completed: %u of %u kb live, %u pointers rewritten",
                  (unsigned)stat_live_bytes/1024, (unsigned)minor_allocated_bytes/1024, rewritten);
   }
 
-  for (r = caml_remembered_set.fiber_ref.base; r < caml_remembered_set.fiber_ref.ptr; r++) {
+  for (r = caml_domain_state->remembered_set->fiber_ref.base; r < caml_domain_state->remembered_set->fiber_ref.ptr; r++) {
     caml_scan_dirty_stack(&caml_darken, r->obj);
     caml_clean_stack(r->obj);
   }
-  clear_table (&caml_remembered_set.fiber_ref);
+  clear_table (&caml_domain_state->remembered_set->fiber_ref);
 
   caml_restore_stack_gc();
 

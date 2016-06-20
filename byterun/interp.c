@@ -1077,11 +1077,13 @@ value caml_interprete(code_t prog, asize_t prog_size)
         accu = Val_int((intnat) accu == (intnat) *sp++);
         Next;
       }
-      if (Is_promoted_hd(Hd_val(accu)) && Is_young(accu))
-        accu = caml_addrmap_lookup(&caml_remembered_set.promotion, accu);
+      if (Is_promoted_hd(Hd_val(accu)) && Is_young(accu)) {
+        accu = caml_addrmap_lookup(&caml_domain_state->remembered_set->promotion, accu);
+      }
       value v2 = *(value*)sp;
-      if (Is_promoted_hd(Hd_val(v2)) && Is_young(v2))
-        v2 = caml_addrmap_lookup(&caml_remembered_set.promotion, v2);
+      if (Is_promoted_hd(Hd_val(v2)) && Is_young(v2)) {
+        v2 = caml_addrmap_lookup(&caml_domain_state->remembered_set->promotion, v2);
+      }
       accu = Val_int((intnat) accu == (intnat) v2);
       sp++;
       Next;
