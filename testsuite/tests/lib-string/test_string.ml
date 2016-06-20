@@ -21,3 +21,18 @@ let raw_string = build_string char 256 [];;
 let ref_string = build_string reference 256 [];;
 
 if String.escaped raw_string <> ref_string then failwith "test:String.escaped";;
+
+
+let check_split sep s =
+  let l = String.split sep s in
+  assert(List.length l > 0);
+  assert(String.concat (String.make 1 sep) (String.split sep s) = s);
+  List.iter (String.iter (fun c -> assert (c <> sep))) l
+;;
+
+let () =
+  let s = " abc def " in
+  for i = 0 to String.length s do
+    check_split ' ' (String.sub s 0 i)
+  done
+;;

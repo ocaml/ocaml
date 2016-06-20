@@ -282,6 +282,21 @@ val equal: t -> t -> bool
 (** The equal function for strings.
     @since 4.03.0 *)
 
+val split: char -> string -> string list
+(** [String.split sep s] returns the list of all (possibly empty)
+    substrings of [s] that are delimited by the [sep] character.
+
+    The function's output is specified by the following invariants:
+
+    - The list is not empty.
+    - Concatenating its elements using [sep] as a separator returns a
+      string equal to the input ([String.concat (String.make 1 sep)
+      (String.split sep s) = s]).
+    - No string in the result contains the [sep] character.
+
+    @since 4.04.0
+*)
+
 (**/**)
 
 (* The following is for system use only. Do not call directly. *)
