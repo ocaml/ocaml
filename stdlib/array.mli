@@ -189,12 +189,14 @@ val map2 : ('a -> 'b -> 'c) -> 'a array -> 'b array -> 'c array
 val for_all : ('a -> bool) -> 'a array -> bool
 (** [Array.for_all p [|a1; ...; an|]] checks if all elements of the array
    satisfy the predicate [p]. That is, it returns
-   [(p a1) && (p a2) && ... && (p an)]. *)
+   [(p a1) && (p a2) && ... && (p an)].
+   @since 4.03 *)
 
 val exists : ('a -> bool) -> 'a array -> bool
 (** [Array.exists p [|a1; ...; an|]] checks if at least one element of
     the array satisfies the predicate [p]. That is, it returns
-    [(p a1) || (p a2) || ... || (p an)]. *)
+    [(p a1) || (p a2) || ... || (p an)].
+    @since 4.03 *)
 
 val mem : 'a -> 'a array -> bool
 (** [mem a l] is true if and only if [a] is equal
