@@ -1193,7 +1193,7 @@ function that manipulates a GADT, explicit polymorphic recursion should
 generally be used. For instance, the following definition fails with a
 type error:
 \begin{verbatim}
-        let rec eval (type a): a term -> a = function
+        let rec eval (type a) : a term -> a = function
           | Int n    -> n
           | Add      -> (fun x y -> x+y)
           | App(f,x) -> (eval f) (eval x)
@@ -1213,7 +1213,7 @@ In this branch, the type of "f" is "($App_ 'b-> a)". The prefix "$" in
 "$App_ 'b" denotes an existential type named by the compiler
 (see~\ref{p:existential-names}). Since the type of "eval" is
 "'a term -> 'a", the call "eval f" makes the existential type "$App_'b"
-flows to the type variable "'a" and escape its scope. This triggers the
+flow to the type variable "'a" and escape its scope. This triggers the
 above error.
 
 \paragraph{Type inference}
@@ -1270,7 +1270,7 @@ exhaustive (the "Add" case cannot happen).
 \end{verbatim}
 
 
-\paragraph{Refutation cases and redundancy} (Introduced in 4.03)
+\paragraph{Refutation cases and redundancy} (Introduced in OCaml 4.03)
 
 Usually, the exhaustiveness check only tries to check whether the
 cases omitted from the pattern matching are typable or not.
@@ -1373,9 +1373,9 @@ to implement dynamic types.
           | None -> None
           | Some Eq -> Some x
 \end{verbatim}
+
 \paragraph{Existential type names in error messages}%
 \label{p:existential-names}
-
 (Updated in OCaml 4.03.0)
 
 The typing of pattern matching in presence of GADT can generate many
@@ -1426,6 +1426,28 @@ which could not be named using one of the previous schemes.
 
 As shown by the last item, the current behavior is imperfect
 and may be improved in future versions.
+
+\paragraph{Equations on non-local abstract types} (Introduced in OCaml
+4.04)
+
+GADT pattern-matching may also add type equations to non-local
+abstract types. The behaviour is the same as with local abstract
+types. Reusing the above "eq" type, one can write:
+\begin{verbatim}
+        module M : sig type t val x : t val e : (x,int) eq end = struct
+          type t = int
+          let x = 33
+          let e = Eq
+        end
+
+        let x : int = let Eq = M.e in M.x
+\end{verbatim}
+
+Of course, not all abstract types can be refined, as this would
+contradict the exhaustiveness check. Namely, builtin types (those
+defined by the compiler itself, such as "int" or "array"), and
+abstract types defined by the local module, are non-instantiable, and
+as such cause a type error rather than introduce an equation.
 
 \section{Syntax for Bigarray access}\label{s:bigarray-access}
 

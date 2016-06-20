@@ -66,8 +66,7 @@ let primitive (p : Lambda.primitive) (args, approxs) expr dbg ~size_int
       expr, approx, C.Benefit.zero
   | Pmakearray (Pfloatarray, Immutable) ->
       let approx =
-        A.value_immutable_float_array
-          (Array.of_list (List.map A.check_approx_for_float approxs))
+        A.value_immutable_float_array (Array.of_list approxs)
       in
       expr, approx, C.Benefit.zero
   | Pintcomp Ceq when phys_equal approxs ->
@@ -213,8 +212,8 @@ let primitive (p : Lambda.primitive) (args, approxs) expr dbg ~size_int
         | Pfloatfield i ->
           begin match contents with
           | A.Contents a when i >= 0 && i < size ->
-            begin match a.(i) with
-            | None -> expr, A.value_any_float, C.Benefit.zero
+            begin match A.check_approx_for_float a.(i) with
+            | None -> expr, a.(i), C.Benefit.zero
             | Some v -> S.const_float_expr expr v
             end
           | Contents _ | Unknown_or_mutable ->

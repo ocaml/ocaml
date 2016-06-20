@@ -14,3 +14,8 @@
 #**************************************************************************
 
 include Makefile.shared
+
+ifneq "$(wildcard ../flexdll/Makefile)" ""
+CAMLOPT := OCAML_FLEXLINK="../boot/ocamlrun ../flexdll/flexlink.exe" \
+  $(CAMLOPT)
+endif

@@ -109,7 +109,7 @@ let () =
   ignore (Env.read_signature "Topdirs" topdirs)
 
 let match_printer_type desc typename =
-  let (printer_type, _) =
+  let printer_type =
     try
       Env.lookup_type (Ldot(Lident "Topdirs", typename)) Env.empty
     with Not_found ->

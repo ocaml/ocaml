@@ -84,27 +84,38 @@ let catch fct arg =
     exit 2
 
 type raw_backtrace_slot
-type raw_backtrace = raw_backtrace_slot array
+type raw_backtrace
 
 external get_raw_backtrace:
   unit -> raw_backtrace = "caml_get_exception_raw_backtrace"
 
 type backtrace_slot =
-  | Known_location of bool   (* is_raise *)
-                    * string (* filename *)
-                    * int    (* line number *)
-                    * int    (* start char *)
-                    * int    (* end char *)
-  | Unknown_location of bool (*is_raise*)
+  | Known_location of {
+      is_raise    : bool;
+      filename    : string;
+      line_number : int;
+      start_char  : int;
+      end_char    : int;
+      is_inline   : bool;
+    }
+  | Unknown_location of {
+      is_raise : bool
+    }
 
 (* to avoid warning *)
-let _ = [Known_location (false, "", 0, 0, 0); Unknown_location false]
+let _ = [Known_location { is_raise = false; filename = "";
+                          line_number = 0; start_char = 0; end_char = 0;
+                          is_inline = false };
+         Unknown_location { is_raise = false }]
 
 external convert_raw_backtrace_slot:
   raw_backtrace_slot -> backtrace_slot = "caml_convert_raw_backtrace_slot"
 
-let convert_raw_backtrace rbckt =
-  try Some (Array.map convert_raw_backtrace_slot rbckt)
+external convert_raw_backtrace:
+  raw_backtrace -> backtrace_slot array = "caml_convert_raw_backtrace"
+
+let convert_raw_backtrace bt =
+  try Some (convert_raw_backtrace bt)
   with Failure _ -> None
 
 let format_backtrace_slot pos slot =
@@ -115,12 +126,16 @@ let format_backtrace_slot pos slot =
       if pos = 0 then "Raised by primitive operation at" else "Called from"
   in
   match slot with
-  | Unknown_location true -> (* compiler-inserted re-raise, skipped *) None
-  | Unknown_location false ->
-      Some (sprintf "%s unknown location" (info false))
-  | Known_location(is_raise, filename, lineno, startchar, endchar) ->
-      Some (sprintf "%s file \"%s\", line %d, characters %d-%d"
-              (info is_raise) filename lineno startchar endchar)
+  | Unknown_location l ->
+      if l.is_raise then
+        (* compiler-inserted re-raise, skipped *) None
+      else
+        Some (sprintf "%s unknown location" (info false))
+  | Known_location l ->
+      Some (sprintf "%s file \"%s\"%s, line %d, characters %d-%d"
+              (info l.is_raise) l.filename
+              (if l.is_inline then " (inlined)" else "")
+              l.line_number l.start_char l.end_char)
 
 let print_exception_backtrace outchan backtrace =
   match backtrace with
@@ -158,8 +173,12 @@ let raw_backtrace_to_string raw_backtrace =
   backtrace_to_string (convert_raw_backtrace raw_backtrace)
 
 let backtrace_slot_is_raise = function
-  | Known_location(is_raise, _, _, _, _) -> is_raise
-  | Unknown_location(is_raise) -> is_raise
+  | Known_location l -> l.is_raise
+  | Unknown_location l -> l.is_raise
+
+let backtrace_slot_is_inline = function
+  | Known_location l -> l.is_inline
+  | Unknown_location _ -> false
 
 type location = {
   filename : string;
@@ -170,13 +189,12 @@ type location = {
 
 let backtrace_slot_location = function
   | Unknown_location _ -> None
-  | Known_location(_is_raise, filename, line_number,
-                   start_char, end_char) ->
+  | Known_location l ->
     Some {
-      filename;
-      line_number;
-      start_char;
-      end_char;
+      filename    = l.filename;
+      line_number = l.line_number;
+      start_char  = l.start_char;
+      end_char    = l.end_char;
     }
 
 let backtrace_slots raw_backtrace =
@@ -203,11 +221,18 @@ module Slot = struct
   type t = backtrace_slot
   let format = format_backtrace_slot
   let is_raise = backtrace_slot_is_raise
+  let is_inline = backtrace_slot_is_inline
   let location = backtrace_slot_location
 end
 
-let raw_backtrace_length bckt = Array.length bckt
-let get_raw_backtrace_slot bckt i = Array.get bckt i
+external raw_backtrace_length :
+  raw_backtrace -> int = "caml_raw_backtrace_length" [@@noalloc]
+
+external get_raw_backtrace_slot :
+  raw_backtrace -> int -> raw_backtrace_slot = "caml_raw_backtrace_slot"
+
+external get_raw_backtrace_next_slot :
+  raw_backtrace_slot -> raw_backtrace_slot option = "caml_raw_backtrace_next_slot"
 
 (* confusingly named:
    returns the *string* corresponding to the global current backtrace *)

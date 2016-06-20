@@ -281,7 +281,7 @@ type 'a printer_type_new = Format.formatter -> 'a -> unit
 type 'a printer_type_old = 'a -> unit
 
 let printer_type ppf typename =
-  let (printer_type, _) =
+  let printer_type =
     try
       Env.lookup_type (Ldot(Lident "Topdirs", typename)) !toplevel_env
     with Not_found ->

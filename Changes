@@ -12,10 +12,25 @@ OCaml 4.04.0:
 - GPR#301: local exception declarations "let exception ... in"
   (Alain Frisch)
 
+- PR#7233: Support GADT equations on non-local abstract types
+  (Jacques Garrigue)
+
 ### Compilers:
+
+* PR#6475, GPR#464: interpret all command-line options before compiling any files,
+  changes (improves) the semantics of repeated -o options or -o combined with -c
+  see the super-detailed commit message at
+    https://github.com/ocaml/ocaml/commit/da56cf6dfdc13c09905c2e07f1d4849c8346eec8
+  (whitequark)
 
 - PR#7023, GPR#336: Better unboxing strategy
   (Alain Frisch, Pierre Chambart)
+
+- PR#7200, GPR#539: Improve, fix, and add test for parsing/pprintast.ml
+  (Runhang Li, David Sheets, Alain Frisch)
+
+- GPR#580: Optimize immutable float records
+  (Pierre Chambart, review by Marc Shinwell)
 
 ### Language tooling and user interface
 
@@ -27,6 +42,8 @@ OCaml 4.04.0:
 
 - GPR#452: Make the output of ocamldep more stable
   (Alain Frisch)
+- GPR#613: make ocamldoc use -open arguments
+  (Florian Angeletti)
 - MPR#7248: have ocamldep interpret -open arguments in left-to-right order
   (Gabriel Scherer, report by Anton Bachin)
 
@@ -34,6 +51,10 @@ OCaml 4.04.0:
   (Sébastien Hinderer)
 
 ### Standard library:
+
+- GPR#589: Add a non-allocating function to recover the number of
+  allocated minor words.
+  (Pierre Chambart, review by Damien Doligez and Gabriel Scherer)
 
 - GPR#427: Obj.is_block is now an inlined OCaml function instead of a
   C external.  This should be faster.
@@ -64,6 +85,10 @@ OCaml 4.04.0:
 
 ### Build system:
 
+- GPR#512: Installed `ocamlc`, `ocamlopt`, and `ocamllex` are now the
+  native-code versions of the tools, if those versions were built.
+  (Demi Obenour)
+
 - GPR#324: Compiler developpers only: Adding new primitives to the
   standard runtime doesn't require anymore to run `make bootstrap`
   (François Bobot)
@@ -80,6 +105,13 @@ OCaml 4.04.0:
 ### Bug fixes:
 
 - PR#7112: Aliased arguments ignored for equality of module types
+- PR#7260: GADT + subtyping compile time crash
+  (Jacques Garrigue, report by Nicolas Ojeda Bar)
+- PR#7269: Segfault from conjunctive constraints in GADT
+  (Jacques Garrigue, report by Stephen Dolan)
+
+- GPR#600: (similar to GPR#555) ensure that register typing constraints are
+  respected at N-way join points in the control flow graph (Mark Shinwell)
 
 ### Other libraries:
 

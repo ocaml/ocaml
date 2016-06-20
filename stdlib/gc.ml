@@ -46,6 +46,8 @@ type control = {
 external stat : unit -> stat = "caml_gc_stat"
 external quick_stat : unit -> stat = "caml_gc_quick_stat"
 external counters : unit -> (float * float * float) = "caml_gc_counters"
+external minor_words : unit -> (float [@unboxed])
+  = "caml_gc_minor_words" "caml_gc_minor_words_unboxed" [@@noalloc]
 external get : unit -> control = "caml_gc_get"
 external set : control -> unit = "caml_gc_set"
 external minor : unit -> unit = "caml_gc_minor"

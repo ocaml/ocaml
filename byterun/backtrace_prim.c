@@ -247,24 +247,6 @@ void caml_stash_backtrace(value exn, code_t pc, value * sp, int reraise)
   }
 }
 
-/* In order to prevent the GC from walking through the debug
-   information (which have no headers), we transform code pointers to
-   31/63 bits ocaml integers by shifting them by 1 to the right. We do
-   not lose information as code pointers are aligned.
-
-   In particular, we do not need to use [caml_modify] when setting
-   an array element with such a value.
-*/
-value caml_val_raw_backtrace_slot(backtrace_slot pc)
-{
-  return Val_long ((uintnat)pc >> 1);
-}
-
-backtrace_slot caml_raw_backtrace_slot_val(value v)
-{
-  return ((backtrace_slot)(Long_val(v) << 1));
-}
-
 /* returns the next frame pointer (or NULL if none is available);
    updates *sp to point to the following one, and *trsp to the next
    trap frame, which we will skip when we reach it  */
@@ -323,7 +305,7 @@ CAMLprim value caml_get_current_callstack(value max_frames_value)
     for (trace_pos = 0; trace_pos < trace_size; trace_pos++) {
       code_t p = caml_next_frame_pointer(&sp, &trsp);
       Assert(p != NULL);
-      Store_field(trace, trace_pos, caml_val_raw_backtrace_slot(p));
+      Field(trace, trace_pos) = Val_backtrace_slot(p);
     }
   }
 
@@ -436,10 +418,10 @@ static struct ev_info *event_for_location(code_t pc)
 
 /* Extract location information for the given PC */
 
-void caml_extract_location_info(backtrace_slot slot,
-                                /*out*/ struct caml_loc_info * li)
+void caml_debuginfo_location(debuginfo dbg,
+                             /*out*/ struct caml_loc_info * li)
 {
-  code_t pc = slot;
+  code_t pc = dbg;
   struct ev_info *event = event_for_location(pc);
   li->loc_is_raise =
     caml_is_instruction(*pc, RAISE) ||
@@ -449,8 +431,20 @@ void caml_extract_location_info(backtrace_slot slot,
     return;
   }
   li->loc_valid = 1;
+  li->loc_is_inlined = 0;
   li->loc_filename = event->ev_filename;
   li->loc_lnum = event->ev_lnum;
   li->loc_startchr = event->ev_startchr;
   li->loc_endchr = event->ev_endchr;
+}
+
+debuginfo caml_debuginfo_extract(backtrace_slot slot)
+{
+  return (debuginfo)slot;
+}
+
+debuginfo caml_debuginfo_next(debuginfo dbg)
+{
+  /* No inlining in bytecode */
+  return NULL;
 }

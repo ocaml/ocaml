@@ -278,7 +278,7 @@ let analyse_functions ~backend ~param_to_param
      let rec f x = ...
      and g y = f x
 
-   We record [(f, x) <- Top] when some unknown values can flow to a the
+   We record [(f, x) <- Top] when some unknown values can flow to the
    [y] parameter.
 
      let rec f x = f 1

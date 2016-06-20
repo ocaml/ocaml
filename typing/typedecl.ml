@@ -320,7 +320,7 @@ let transl_declaration env sdecl id =
     Ctype.end_def ();
   (* Add abstract row *)
     if is_fixed_type sdecl then begin
-      let (p, _) =
+      let p =
         try Env.lookup_type (Longident.Lident(Ident.name id ^ "#row")) env
         with Not_found -> assert false in
       set_fixed_row env sdecl.ptype_loc p decl
@@ -688,6 +688,8 @@ let compute_variance env visited vari ty =
                     null [May_pos; May_neg; May_weak]
                 in
                 let v = inter vari upper in
+                (* cf PR#7269:
+                   if List.length tyl > 1 then upper else inter vari upper *)
                 List.iter (compute_variance_rec v) tyl
             | _ -> ())
           row.row_fields;
