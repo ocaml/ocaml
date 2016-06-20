@@ -1,0 +1,2 @@
+File "_none_", line 1:
+Warning 60: The required module No_lto was built without -lto. Linking it in -lto mode will probably not be possible.
