@@ -47,12 +47,6 @@ struct custom_operations {
 extern "C" {
 #endif
 
-CAMLextern value caml_alloc_custom_with_profinfo(struct custom_operations * ops,
-                                                 uintnat size,
-                                                 mlsize_t mem,
-                                                 mlsize_t max,
-                                                 intnat profinfo);
-
 CAMLextern value caml_alloc_custom(struct custom_operations * ops,
                                    uintnat size, /*size in bytes*/
                                    mlsize_t mem, /*resources consumed*/
