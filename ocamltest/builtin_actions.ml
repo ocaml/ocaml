@@ -170,6 +170,8 @@ let testfile env = match Environments.lookup "testfile" env with
 
 let modules env = Testlib.words (Environments.safe_lookup "modules" env)
 
+let files env = Testlib.words (Environments.safe_lookup "files" env)
+
 let flags env = Environments.safe_lookup "flags" env
 
 let libraries env = Environments.safe_lookup "libraries" env
@@ -258,6 +260,7 @@ let compile_test_program program_variable compiler backend log env =
   let newenv = Environments.add program_variable executable_path env in
   Testlib.make_directory build_directory;
   setup_symlinks test_source_directory build_directory modules;
+  setup_symlinks test_source_directory build_directory (files env);
   Sys.chdir build_directory;
   let ocamlsrcdir = ocamlsrcdir () in
   let compilername = compiler.compiler_name ocamlsrcdir in
