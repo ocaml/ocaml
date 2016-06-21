@@ -65,7 +65,7 @@ OCaml 4.04.0:
   and are usually faster, except Hashtbl.copy which can be much
   slower
   (Alain Frisch)
-  
+
 - PR#6279, GPR#553: implement Set.map
   (Gabriel Scherer)
 
@@ -105,13 +105,21 @@ OCaml 4.04.0:
 ### Bug fixes:
 
 - PR#7112: Aliased arguments ignored for equality of module types
+
 - PR#7260: GADT + subtyping compile time crash
   (Jacques Garrigue, report by Nicolas Ojeda Bar)
+
 - PR#7269: Segfault from conjunctive constraints in GADT
   (Jacques Garrigue, report by Stephen Dolan)
 
+- PR#7276: Support more than FD_SETSIZE sockets in Windows' emulation
+  of select
+  (djs55, review by Alain Frisch)
+
 - GPR#600: (similar to GPR#555) ensure that register typing constraints are
-  respected at N-way join points in the control flow graph (Mark Shinwell)
+  respected at N-way join points in the control flow graph
+  (Mark Shinwell)
+
 
 ### Other libraries:
 
