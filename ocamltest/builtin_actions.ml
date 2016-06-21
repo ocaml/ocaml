@@ -37,12 +37,14 @@ let run_command
     try [|Sys.getenv "PATH" |]
     with Not_found -> [| |] in
   *)
+  let stdout_filename = Environments.safe_lookup stdout_variable env in
+  let stderr_filename = Environments.safe_lookup stderr_variable env in
   Run.run {
     Run.progname = progname;
     Run.argv = arguments;
     (* Run.envp = environment; *)
-    Run.stdout_filename = Environments.safe_lookup stdout_variable env;
-    Run.stderr_filename = Environments.safe_lookup stderr_variable env;
+    Run.stdout_filename = stdout_filename;
+    Run.stderr_filename = stderr_filename;
     Run.append = append;
     Run.timeout = timeout;
     Run.log = log
@@ -126,7 +128,8 @@ let use_runtime backend ocamlsrcdir = match backend with
 
 type compiler_info = {
   compiler_name : string -> string;
-  compiler_directory : string
+  compiler_directory : string;
+  compileroutput_variable : string
 }
 
 (* Compilers compiling byte-code programs *)
@@ -134,13 +137,15 @@ type compiler_info = {
 let bytecode_bytecode_compiler =
 {
   compiler_name = ocamlc_dot_byte;
-  compiler_directory = "ocamlc.byte"
+  compiler_directory = "ocamlc.byte";
+  compileroutput_variable = "compileroutput"
 }
 
 let bytecode_nativecode_compiler =
 {
   compiler_name = ocamlc_dot_opt;
-  compiler_directory = "ocamlc.opt"
+  compiler_directory = "ocamlc.opt";
+  compileroutput_variable = "compileroutput2"
 }
 
 (* Compilers compiling native-code programs *)
@@ -148,13 +153,15 @@ let bytecode_nativecode_compiler =
 let nativecode_bytecode_compiler =
 {
   compiler_name = ocamlopt_dot_byte;
-  compiler_directory = "ocamlopt.byte"
+  compiler_directory = "ocamlopt.byte";
+  compileroutput_variable = "compileroutput"
 }
 
 let nativecode_nativecode_compiler =
 {
   compiler_name = ocamlopt_dot_opt;
-  compiler_directory = "ocamlopt.opt"
+  compiler_directory = "ocamlopt.opt";
+  compileroutput_variable = "compileroutput2"
 }
 
 (* Extracting information from environment *)
@@ -183,7 +190,7 @@ let test_source_directory env = Environments.safe_lookup "testsrcdir" env
 
 let test_build_directory env = Environments.safe_lookup "testbuilddir" env
 
-let compile_module ocamlsrcdir compilername backend log env module_name =
+let compile_module ocamlsrcdir compilername compileroutput backend log env module_name =
   let what = Printf.sprintf "Compiling %s module %s"
     (Backends.string_of_backend backend) module_name in
   Printf.fprintf log "%s\n%!" what;
@@ -202,19 +209,25 @@ let compile_module ocamlsrcdir compilername backend log env module_name =
     compile;
     output
   ] in
-  match run_command log env commandline with
+  match
+    run_command
+      ~stdout_variable:compileroutput
+      ~stderr_variable:compileroutput
+      ~append:true
+      log env commandline
+  with
     | 0 -> Ok module_output_name
     | _ as exitcode -> Error (mkreason what commandline exitcode)
 
-let compile_modules ocamlsrcdir compilername backend log env module_names =
+let compile_modules ocamlsrcdir compilername compileroutput backend log env module_names =
   let cons x xs = x::xs in
   map_reduce_result
-    (compile_module ocamlsrcdir compilername backend log env)
+    (compile_module ocamlsrcdir compilername compileroutput backend log env)
     cons
     []
     module_names
 
-let link_modules ocamlsrcdir compilername program_variable backend log env modules =
+let link_modules ocamlsrcdir compilername compileroutput program_variable backend log env modules =
   let executable_name = match Environments.lookup program_variable env with
     | None -> assert false
     | Some program -> program in
@@ -234,14 +247,22 @@ let link_modules ocamlsrcdir compilername program_variable backend log env modul
     module_names;
     output
   ] in
-  match run_command log env commandline with
+  match
+    run_command
+      ~stdout_variable:compileroutput
+      ~stderr_variable:compileroutput
+      ~append:true
+      log env commandline
+  with
     | 0 -> Ok ()
     | _ as exitcode -> Error (mkreason what commandline exitcode)
 
-let compile_program ocamlsrcdir compilername program_variable backend log env modules =
-  match compile_modules ocamlsrcdir compilername log backend env modules with
+let compile_program ocamlsrcdir compilername compileroutput program_variable backend log env modules =
+  match
+    compile_modules ocamlsrcdir compilername compileroutput log backend env modules
+  with
     | Ok module_binaries ->
-      (match link_modules ocamlsrcdir compilername program_variable log backend env module_binaries with
+      (match link_modules ocamlsrcdir compilername compileroutput program_variable log backend env module_binaries with
         | Ok _ -> Pass env
         | Error reason -> Fail reason
       )
@@ -257,14 +278,23 @@ let compile_test_program program_variable compiler backend log env =
   let build_directory =
     make_path [test_build_directory env; compiler.compiler_directory] in
   let executable_path = make_path [build_directory; executable_filename] in
-  let newenv = Environments.add program_variable executable_path env in
+  let compiler_output_filename =
+    make_file_name compiler.compiler_directory "output" in
+  let compiler_output =
+    make_path [build_directory; compiler_output_filename] in
+  let compileroutput_variable = compiler.compileroutput_variable in
+  let newenv = Environments.add_variables
+    [
+      (program_variable, executable_path);
+      (compileroutput_variable, compiler_output);
+    ] env in
   Testlib.make_directory build_directory;
   setup_symlinks test_source_directory build_directory modules;
   setup_symlinks test_source_directory build_directory (files env);
   Sys.chdir build_directory;
   let ocamlsrcdir = ocamlsrcdir () in
   let compilername = compiler.compiler_name ocamlsrcdir in
-  compile_program ocamlsrcdir compilername program_variable log backend newenv modules
+  compile_program ocamlsrcdir compilername compileroutput_variable program_variable log backend newenv modules
 
 (* Compile actions *)
 
