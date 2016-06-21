@@ -123,7 +123,7 @@ int run_command_child(const command_settings *settings)
 {
   int res;
   int stdout_fd = -1, stderr_fd = -1; /* -1 means not redirected */
-  int flags = O_WRONLY | (settings->append ? O_APPEND : O_CREAT | O_TRUNC);
+  int flags = O_CREAT | O_WRONLY | (settings->append ? O_APPEND : O_TRUNC);
   int mode = 0666;
 
   if (setpgid(0, 0) == -1) myperror("setpgid");
