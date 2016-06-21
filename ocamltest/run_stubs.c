@@ -60,6 +60,7 @@ static void logToChannel(void *voidchannel, const char *fmt, ...)
   va_end(ap);
   if (res <= 0) return;
   caml_putblock(channel, text, res);
+  caml_flush(channel);
   free(text);
 }
 
