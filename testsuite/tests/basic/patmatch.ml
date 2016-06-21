@@ -1,3 +1,5 @@
+(* TEST *)
+
 (* Tests for matchings on integers and characters *)
 
 (* Dense integer switch *)
