@@ -1,13 +1,8 @@
-- Exécuter commandes dans environnemnet de ocamltest
-- Redirections stdout (resp. stderr) à l'exécution:
-  * Si $stdout (resp. $stderr) est défini on l'utilise
-  * Sinon on redirige dans $program.output
-  * Tenir compte de ce comportement pour la liste des fichiers générés
+Loguer une ligne pour chaque test qui échoue ou est sauté, même si
+c'est parce que ses parents ont été sautés / ont échoué
 
-- Redirections lors de la compilation
-  * Voir où et à quoi on compare
-  * En tenir compte pour les fichiers générés
+Loguer la sortie du compilateur dans compiler.output.
 
-- Prévoir une option -log-commands
-  * Si elle est définie, ce log fait-il partie des fichiers générés
-    et donc à effacer si le test réussit?
+On peut la comparer à [nom-du-compilateur].reference.
+
+S'il n'y a qu'un module, compiler et linker en une seule fois.
