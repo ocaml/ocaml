@@ -161,7 +161,7 @@ void set_signals(void)
 
 void usage(void)
 {
-    fprintf(stderr, "usage: %s [-v] [-e] [-q] [-b file_prefix] filename\n",
+    fprintf(stderr, "usage: %s [-v] [--strict] [-q] [-b file_prefix] filename\n",
             myname);
     exit(1);
 }
@@ -185,6 +185,10 @@ void getargs(int argc, char **argv)
             return;
 
         case '-':
+            if (!strcmp (argv[i], "--strict")){
+              eflag = 1;
+              goto end_of_option;
+            }
             ++i;
             goto no_more_options;
 
@@ -212,10 +216,6 @@ void getargs(int argc, char **argv)
                 file_prefix = argv[i];
             else
                 usage();
-            continue;
-
-        case 'e':
-            eflag = 1;
             continue;
 
         default:

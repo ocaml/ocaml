@@ -317,7 +317,7 @@ void polymorphic_entry_point(char *s)
 void forbidden_conflicts(void)
 {
     fprintf(stderr,
-            "%s: the grammar has conflicts, but -e was specified\n",
+            "%s: the grammar has conflicts, but --strict was specified\n",
             myname);
     done(1);
 }
