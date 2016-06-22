@@ -79,7 +79,7 @@ instead of the default naming convention.
 .B \-q
 This option has no effect.
 .TP
-.B \-e
+.B \--strict
 Reject grammars with conflicts.
 .TP
 .B \-v
