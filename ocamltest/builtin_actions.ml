@@ -372,11 +372,11 @@ let execute = {
   action_body = execute_program
 }
 
-let check_prog_output log env =
-  let reference_filename = Environments.safe_lookup "reference" env in
-  let output_filename = Environments.safe_lookup "output" env in
-  Printf.fprintf log "Comparing program output %s to reference %s\n%!"
-    output_filename reference_filename;
+let check_output kind_of_output output_variable reference_variable log env =
+  let reference_filename = Environments.safe_lookup reference_variable env in
+  let output_filename = Environments.safe_lookup output_variable env in
+  Printf.fprintf log "Comparing %s output %s to reference %s\n%!"
+    kind_of_output output_filename reference_filename;
   let files =
   {
     Filecompare.reference_filename = reference_filename;
@@ -385,8 +385,8 @@ let check_prog_output log env =
   match Filecompare.check_file files with
     | Filecompare.Same -> Pass env
     | Filecompare.Different ->
-      let reason = Printf.sprintf "Program output %s differs from reference %s"
-        output_filename reference_filename in
+      let reason = Printf.sprintf "%s output %s differs from reference %s"
+        kind_of_output output_filename reference_filename in
       (Actions.Fail reason)
     | Filecompare.Unexpected_output ->
       let reason = Printf.sprintf "The file %s was expected to be empty because there is no reference file %s but it is not"
@@ -400,7 +400,7 @@ let check_prog_output log env =
 let check_program_output = {
   action_name = "check-program-output";
   action_environment = env_id;
-  action_body = check_prog_output
+  action_body = check_output "program" "output" "reference"
 }
 
 let compare_programs backend comparison_tool log env =
