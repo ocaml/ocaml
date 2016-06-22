@@ -169,6 +169,15 @@ let nativecode_nativecode_compiler =
   compileroutput_variable = "compileroutput2"
 }
 
+let compiler_reference_filename prefix compiler =
+  let suffix = "reference" in
+  let mk s = make_file_name (make_file_name prefix s) suffix in
+  let filename = mk compiler.compiler_directory in
+  if Sys.file_exists filename then filename else
+  let filename = mk (Backends.string_of_backend compiler.compiler_backend) in
+  if Sys.file_exists filename then filename else
+  mk "compilers"
+
 (* Extracting information from environment *)
 
 let get_backend_value_from_env env bytecode_var native_var =
