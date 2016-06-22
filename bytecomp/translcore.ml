@@ -982,9 +982,14 @@ and transl_exp0 e =
            !transl_module Tcoerce_none None modl,
            transl_exp body)
   | Texp_letexception(cd, body) ->
-      Llet(Strict, Pgenval,
-           cd.ext_id, transl_extension_constructor e.exp_env None cd,
-           transl_exp body)
+      let exn = transl_extension_constructor e.exp_env None cd  in
+      let r = Llet(Strict, Pgenval, cd.ext_id, exn, transl_exp body) in
+      if Attr_helper.has_no_payload_attribute ["static"; "ocaml.static"]
+          cd.ext_attributes
+      || Attr_helper.has_no_payload_attribute ["static"; "ocaml.static"]
+           e.exp_attributes
+      then Lprim(Pstatic_exn e.exp_loc, [r])
+      else r
   | Texp_pack modl ->
       !transl_module Tcoerce_none None modl
   | Texp_assert {exp_desc=Texp_construct(_, {cstr_name="false"}, _)} ->

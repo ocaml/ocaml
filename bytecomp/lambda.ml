@@ -141,6 +141,9 @@ type primitive =
   (* Inhibition of optimisation *)
   | Popaque
 
+  (* Marker for static exception *)
+  | Pstatic_exn of Location.t
+
 and comparison =
     Ceq | Cneq | Clt | Cgt | Cle | Cge
 

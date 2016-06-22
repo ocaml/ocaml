@@ -681,11 +681,222 @@ let split_default_wrapper ?(create_wrapper_body = fun lam -> lam)
   with Exit ->
     [(fun_id, Lfunction{kind; params; body; attr})]
 
+(* Detect raises which jump to the innermost try-with handler
+   and turn them into staticraises. *)
+
+let map f = function
+  | Lvar _ | Lconst _ as lam -> lam
+  | Lapply ap -> Lapply {ap with ap_func = f ap.ap_func;
+                                 ap_args = List.map f ap.ap_args}
+  | Lfunction fu -> Lfunction {fu with body = f fu.body}
+  | Llet(str, k, v, e1, e2) -> Llet(str, k, v, f e1, f e2)
+  | Lletrec(idel, e2) ->
+      Lletrec(List.map (fun (v, e) -> (v, f e)) idel, f e2)
+  | Lprim(p, el) -> Lprim(p, List.map f el)
+  | Lswitch(e, sw) ->
+      Lswitch(f e,
+        {sw_numconsts = sw.sw_numconsts;
+         sw_consts =
+            List.map (fun (n, e) -> (n, f e)) sw.sw_consts;
+         sw_numblocks = sw.sw_numblocks;
+         sw_blocks =
+            List.map (fun (n, e) -> (n, f e)) sw.sw_blocks;
+         sw_failaction = match sw.sw_failaction with
+         | None -> None
+         | Some l -> Some (f l)})
+  | Lstringswitch(e, sw, default) ->
+      Lstringswitch
+        (f e,
+         List.map (fun (s, e) -> (s, f e)) sw,
+         Misc.may_map f default)
+  | Lstaticraise (i,args) -> Lstaticraise (i,List.map f args)
+  | Lstaticcatch(e1, i, e2) -> Lstaticcatch(f e1, i, f e2)
+  | Ltrywith(e1, v, e2) -> Ltrywith(f e1, v, f e2)
+  | Lifthenelse(e1, e2, e3) -> Lifthenelse(f e1, f e2, f e3)
+  | Lsequence(e1, e2) -> Lsequence(f e1, f e2)
+  | Lwhile(e1, e2) -> Lwhile(f e1, f e2)
+  | Lfor(v, e1, e2, dir, e3) -> Lfor(v, f e1, f e2, dir, f e3)
+  | Lassign(v, e) -> Lassign(v, f e)
+  | Lsend(k, m, o, el, loc) -> Lsend(k, f m, f o, List.map f el, loc)
+  | Levent(l, ev) -> Levent(f l, ev)
+  | Lifused(v, e) -> Lifused(v, f e)
+
+
+let remove_event = function
+  | Levent(l, _) -> l
+  | l -> l
+
+
+exception CanEscape
+
+(* Analyze a try..with handler to extract the branch corresponding to
+   the local exception 'local'.  'raised' is the id bound to the
+   captured exception.  The function returns Reraise (resp. Exit i) if
+   the handler doesn't deal with the local exception and just reraises
+   it (resp. does some check on other exception constructors and if
+   none matches finish with a staticraise i), or Split (h, rest) if h
+   is the handler for the local exception and rest is a new handler
+   obtained by removing the part for the local exception. *)
+
+type handler =
+  | Split of lambda * lambda
+  | Reraise
+  | Exit of int
+
+let rec handler_for local raised tag_ids = function
+  | Lifthenelse
+      (Lprim
+         (Pintcomp Ceq, [Lvar v | Lprim(Pfield 0, [Lvar v]); exn]) as comp,
+       body, rest
+      )
+    when Ident.same raised v || List.exists (Ident.same v) tag_ids ->
+      begin match exn with
+      | Lvar v when Ident.same local v ->
+          Split (body, rest)
+      | Lvar _ | Lprim((Pfield _ | Pgetglobal _), _) ->
+          begin match handler_for local raised tag_ids rest with
+          | Split (h, rest) -> Split (h, Lifthenelse(comp, body, rest))
+          | Reraise | Exit _ as r -> r
+          end
+      | _ -> raise CanEscape
+      end
+  | Llet(Alias, k, id, (Lprim(Pfield 0, [Lvar v]) as e0), e) when
+      Ident.same raised v ->
+      (* this case is required when the alias-let is not inlined,
+         which happens in bytecode -g mode *)
+      begin match handler_for local raised (id :: tag_ids) e with
+      | Split (h, rest) when IdentSet.mem id (free_variables rest) ->
+          Split (h, Llet(Alias, k, id, e0, rest))
+      | r -> r
+      end
+
+  | Lstaticraise (i, []) ->
+      Exit i
+
+  | Lstaticcatch (e1, (i, []), e2) ->
+      begin match handler_for local raised tag_ids e1 with
+      | Exit j when i = j ->
+          begin match handler_for local raised tag_ids e2 with
+          | Split (h, rest) -> Split (h, Lstaticcatch (e1, (i, []), rest))
+          | Reraise | Exit _ as r -> r
+          end
+      | _ -> raise CanEscape
+      end
+
+  | Lprim(Praise Raise_reraise, [Lvar v]) when Ident.same raised v ->
+      Reraise
+
+  | _ ->
+      raise CanEscape
+
+let rec static id lam =
+  match lam with
+  | Ltrywith(body, v, Lstaticcatch(e1, i, e2))
+    when not (IdentSet.mem v (free_variables e2)) ->
+      (* When multiple handlers in the try...with blocks have the same
+         action (or or-pattern are used), they can be shared with a
+         staticcatch.  Let's put the staticcatch handler out of the
+         trywith to simplify detection. *)
+
+      static id (Lstaticcatch(Ltrywith(body, v, e1), i, e2))
+  | lam ->
+    let lam = map (static id) lam in
+    match lam with
+    | Ltrywith(body, v, handler) ->
+        begin match handler_for id v [] handler with
+        | Reraise | Exit _ -> lam
+        | Split (h, other_handlers) ->
+            staticify_trywith id body v h other_handlers
+        end
+    | _ -> lam
+
+and staticify_trywith id body v handler other_handlers =
+  let slot = next_negative_raise_count () in
+  let nargs = ref (-1) in
+
+  (* rewrite raise into staticraise in body *)
+  let rec rewrite = function
+    | Lprim(Praise _, [exn]) as lam ->
+        let exn = remove_event exn in
+        begin match exn with
+        | Lvar v when Ident.same v id ->
+            nargs := 0;
+            Lstaticraise(slot, [])
+        | Lprim(Pmakeblock(0, Immutable, _), Lvar v :: args)
+          when Ident.same v id ->
+            nargs := List.length args;
+            Lstaticraise(slot, args)
+        | _ ->
+            map rewrite lam
+        end
+    | Lfunction _ as lam -> lam
+    | lam -> map rewrite lam
+  in
+  let body = rewrite body in
+
+  (* recreate the try...with if it deals with other exceptions *)
+  let body =
+    match other_handlers with
+    | Lprim(Praise Raise_reraise, [Lvar v2]) when Ident.same v v2 -> body
+    | lam -> Ltrywith(body, v, lam)
+  in
+
+  if !nargs < 0 then body (* handler unused -> warning? *)
+  else if !nargs = 0 then Lstaticcatch(body, (slot, []), handler)
+  else
+    (* rewrite the handler to get its arguments through
+       staticcatch parameters instead of from the exception block *)
+    let mk_arg i = Ident.create (Printf.sprintf "arg%i" i) in
+    let args = Array.init !nargs mk_arg in
+    let rec subst = function
+      | Lprim(Pfield i, [Lvar v2]) when Ident.same v v2 -> Lvar args.(i - 1)
+      | lam -> map subst lam
+    in
+    Lstaticcatch(body, (slot, Array.to_list args), subst handler)
+
+let rec check id = function
+  | Lvar v when Ident.same v id -> raise CanEscape
+  | lam -> map (check id) lam
+
+(* Recognize lambda code created by Translcore.transl_extension_constructor *)
+let match_let_exn = function
+  | Llet(Strict, _k, id,
+         Lprim (Pmakeblock (object_tag, Immutable, None),
+                [Lconst (Const_base (Const_string (_name, None)));
+                 Lprim (Pccall{Primitive.prim_name = "caml_fresh_oo_id"},
+                        [Lconst (Const_base (Const_int 0))])]),
+         scope)
+    when object_tag = Obj.object_tag ->
+      Some (id, scope)
+  | _ -> None
+
+let rec simplify_local_raises loc = function
+  | Lprim(Pstatic_exn loc, [l]) ->
+      simplify_local_raises (Some loc) l
+  | l0 ->
+      let l1 = map (simplify_local_raises None) l0 in
+      let l2 =
+        match match_let_exn l1 with
+        | Some (id, scope) ->
+            begin try Some (check id (static id scope))
+            with CanEscape -> None
+            end
+        | None -> None
+      in
+      match l2, loc with
+      | Some l2, _ -> l2
+      | None, None -> l1
+      | None, Some loc ->
+          Location.prerr_warning loc Warnings.Exception_not_static;
+          l1
+
+
 (* The entry point:
    simplification + emission of tailcall annotations, if needed. *)
 
 let simplify_lambda lam =
   let res = simplify_lets (simplify_exits lam) in
+  let res = simplify_local_raises None res in
   if !Clflags.annotations || Warnings.is_active Warnings.Expect_tailcall
     then emit_tail_infos true res;
   res

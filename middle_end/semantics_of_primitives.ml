@@ -37,6 +37,7 @@ let for_primitive (prim : Lambda.primitive) =
   | Plazyforce
   | Pccall _ -> Arbitrary_effects, Has_coeffects
   | Praise _ -> Arbitrary_effects, No_coeffects
+  | Pstatic_exn _
   | Pnot
   | Pnegint
   | Paddint

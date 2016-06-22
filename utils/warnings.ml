@@ -80,6 +80,7 @@ type t =
   | Ambiguous_pattern of string list        (* 57 *)
   | No_cmx_file of string                   (* 58 *)
   | Assignment_to_non_mutable_value         (* 59 *)
+  | Exception_not_static                    (* 60 *)
 ;;
 
 (* If you remove a warning, leave a hole in the numbering.  NEVER change
@@ -148,9 +149,10 @@ let number = function
   | Ambiguous_pattern _ -> 57
   | No_cmx_file _ -> 58
   | Assignment_to_non_mutable_value -> 59
+  | Exception_not_static -> 60
 ;;
 
-let last_warning_number = 59
+let last_warning_number = 60
 ;;
 
 (* Must be the max number returned by the [number] function. *)
@@ -472,6 +474,8 @@ let message = function
       "A potential assignment to a non-mutable value was detected \n\
         in this source file.  Such assignments may generate incorrect code \n\
         when using Flambda."
+  | Exception_not_static ->
+      "this exception is not static"
 ;;
 
 let nerrors = ref 0;;
@@ -571,6 +575,7 @@ let descriptions =
    57, "Ambiguous or-pattern variables under guard";
    58, "Missing cmx file";
    59, "Assignment to non-mutable value";
+   60, "Local exception marked with @static is not static."
   ]
 ;;
 
