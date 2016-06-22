@@ -49,15 +49,12 @@ array cstringvect(value arg)
   return res;
 }
 
-static void logToChannel(void *voidchannel, const char *fmt, ...)
+static void logToChannel(void *voidchannel, const char *fmt, va_list ap)
 {
-  va_list ap;
   struct channel *channel = (struct channel *) voidchannel;
   char *text;
   int res;
-  va_start(ap, fmt);
   res = vasprintf(&text, fmt, ap);
-  va_end(ap);
   if (res <= 0) return;
   caml_putblock(channel, text, res);
   caml_flush(channel);

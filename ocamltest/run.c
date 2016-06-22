@@ -40,11 +40,16 @@ static inline int is_defined(const char *str)
   return (str != NULL) && (*str != '\0');
 }
 
-void defaultLogger(void *where, const char *format, ...)
+void defaultLogger(void *where, const char *format, va_list ap)
+{
+  vfprintf(stderr, format, ap);
+}
+
+void mylog(Logger *logger, void *loggerData, char *fmt, ...)
 {
   va_list ap;
-  va_start(ap, format);
-  vfprintf(stderr, format, ap);
+  va_start(ap, fmt);
+  logger(loggerData, fmt, ap);
   va_end(ap);
 }
 
@@ -56,10 +61,11 @@ void error_with_location(
   va_list ap;
   Logger *logger = (settings->logger != NULL) ? settings->logger
                                               : defaultLogger;
+  void *loggerData = settings->loggerData;
   va_start(ap, msg);
-  logger(settings->loggerData, "%s:%d: ", file, line);
-  logger(settings->loggerData, msg, ap);
-  logger(settings->loggerData, "\n");
+  mylog(logger, loggerData, "%s:%d: ", file, line);
+  logger(loggerData, msg, ap);
+  mylog(logger, loggerData, "\n");
   va_end(ap);
 }
 
@@ -80,11 +86,12 @@ void myperror_with_location(
   va_list ap;
   Logger *logger = (settings->logger != NULL) ? settings->logger
                                               : defaultLogger;
+  void *loggerData = settings->loggerData;
   va_start(ap, msg);
-  logger(settings->loggerData, "%s:%d: ", file, line);
-  logger(settings->loggerData, msg, ap);
+  mylog(logger, loggerData, "%s:%d: ", file, line);
+  logger(loggerData, msg, ap);
+  mylog(logger, loggerData, ": %s\n", strerror(errno));
   va_end(ap);
-  logger(settings->loggerData, ": %s\n", strerror(errno));
 }
 
 #define myperror(msg, ...) \

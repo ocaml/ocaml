@@ -19,9 +19,11 @@
 
 #define __RUN_H__
 
+#include <stdarg.h>
+
 typedef char **array;
 
-typedef void Logger(void *, const char *, ...);
+typedef void Logger(void *, const char *, va_list ap);
 
 typedef struct {
   const char *program;
