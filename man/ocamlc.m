@@ -499,6 +499,11 @@ file, without linking, in which case it sets the name of the cmi or
 cmo file, and also sets the module name to the file name up to the
 first dot.
 .TP
+.B \-opaque
+Disables generation of cross\-module optimization information.
+This reduces necessary recompilation on module change and makes
+library .cmx files not mandatory.
+.TP
 .BI \-open \ module
 Opens the given module before processing the interface or
 implementation files. If several
