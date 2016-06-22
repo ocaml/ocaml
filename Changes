@@ -109,6 +109,9 @@ OCaml 4.04.0:
 
 ### Bug fixes:
 
+- PR#6505: Missed Type-error leads to a segfault upon record access
+  (Jacques Garrigue, extra report by Stephen Dolan)
+
 - PR#7112: Aliased arguments ignored for equality of module types
 
 - PR#7257, GPR#583: revert a 4.03 change of behavior on (Unix.sleep 0.),

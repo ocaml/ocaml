@@ -941,13 +941,6 @@ Error: Constraints are not satisfied in this type.
        ([> `B of 'a ], 'a) b as 'a
        should be an instance of
        (('b, [> `A of 'b ] as 'c) a as 'b, 'c) b
-|}, Principal{|
-Line _, characters 0-71:
-Error: Constraints are not satisfied in this type.
-       Type
-       ([> `B of 'a ], 'a) b as 'a
-       should be an instance of
-       (('b, [> `A of ('d, 'c) a as 'd ] as 'c) a as 'b, 'c) b
 |}];;
 
 (* PR#1917: expanding may change original in Ctype.unify2 *)

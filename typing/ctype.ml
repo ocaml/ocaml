@@ -2770,8 +2770,10 @@ let unify_gadt ~newtype_level:lev (env:Env.t ref) ty1 ty2 =
 let unify_var env t1 t2 =
   let t1 = repr t1 and t2 = repr t2 in
   if t1 == t2 then () else
-  match t1.desc with
-    Tvar _ ->
+  match t1.desc, t2.desc with
+    Tvar _, Tconstr _ when deep_occur t1 t2 ->
+      unify (ref env) t1 t2
+  | Tvar _, _ ->
       let reset_tracing = check_trace_gadt_instances env in
       begin try
         occur env t1 t2;
