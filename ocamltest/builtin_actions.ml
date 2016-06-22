@@ -130,6 +130,7 @@ type compiler_info = {
   compiler_name : string -> string;
   compiler_directory : string;
   compiler_backend : Sys.backend_type;
+  compilerreference_variable : string;
   compileroutput_variable : string
 }
 
@@ -140,6 +141,7 @@ let bytecode_bytecode_compiler =
   compiler_name = ocamlc_dot_byte;
   compiler_directory = "ocamlc.byte";
   compiler_backend = Sys.Bytecode;
+  compilerreference_variable = "compilerreference";
   compileroutput_variable = "compileroutput"
 }
 
@@ -148,6 +150,7 @@ let bytecode_nativecode_compiler =
   compiler_name = ocamlc_dot_opt;
   compiler_directory = "ocamlc.opt";
   compiler_backend = Sys.Bytecode;
+  compilerreference_variable = "compilerreference2";
   compileroutput_variable = "compileroutput2"
 }
 
@@ -158,6 +161,7 @@ let nativecode_bytecode_compiler =
   compiler_name = ocamlopt_dot_byte;
   compiler_directory = "ocamlopt.byte";
   compiler_backend = Sys.Native;
+  compilerreference_variable = "compilerreference";
   compileroutput_variable = "compileroutput"
 }
 
@@ -166,6 +170,7 @@ let nativecode_nativecode_compiler =
   compiler_name = ocamlopt_dot_opt;
   compiler_directory = "ocamlopt.opt";
   compiler_backend = Sys.Native;
+  compilerreference_variable = "compilerreference2";
   compileroutput_variable = "compileroutput2"
 }
 
