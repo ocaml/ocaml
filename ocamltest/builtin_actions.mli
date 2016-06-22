@@ -25,3 +25,8 @@ val check_program_output : Actions.t
 
 val compare_bytecode_programs : Actions.t
 val compare_nativecode_programs : Actions.t
+
+val check_ocamlc_dot_byte_output : Actions.t
+val check_ocamlc_dot_opt_output : Actions.t
+val check_ocamlopt_dot_byte_output : Actions.t
+val check_ocamlopt_dot_opt_output : Actions.t

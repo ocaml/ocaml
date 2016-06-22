@@ -294,6 +294,10 @@ let compile_test_program program_variable compiler backend log env =
     make_file_name testfile_basename (Backends.executable_extension backend) in
   let modules = (modules env) @ [testfile] in
   let test_source_directory = test_source_directory env in
+  let compilerreference_prefix =
+    make_path [test_source_directory; testfile_basename] in
+  let compilerreference_filename =
+    compiler_reference_filename compilerreference_prefix compiler in
   let build_directory =
     make_path [test_build_directory env; compiler.compiler_directory] in
   let executable_path = make_path [build_directory; executable_filename] in
@@ -302,9 +306,11 @@ let compile_test_program program_variable compiler backend log env =
   let compiler_output =
     make_path [build_directory; compiler_output_filename] in
   let compileroutput_variable = compiler.compileroutput_variable in
+  let compilerreference_variable = compiler.compilerreference_variable in
   let newenv = Environments.add_variables
     [
       (program_variable, executable_path);
+      (compilerreference_variable, compilerreference_filename);
       (compileroutput_variable, compiler_output);
     ] env in
   Testlib.make_directory build_directory;
@@ -313,7 +319,11 @@ let compile_test_program program_variable compiler backend log env =
   Sys.chdir build_directory;
   let ocamlsrcdir = ocamlsrcdir () in
   let compilername = compiler.compiler_name ocamlsrcdir in
-  compile_program ocamlsrcdir compilername compileroutput_variable program_variable log backend newenv modules
+  compile_program
+    ocamlsrcdir
+    compilername
+    compileroutput_variable
+    program_variable log backend newenv modules
 
 (* Compile actions *)
 
@@ -397,6 +407,28 @@ let check_output kind_of_output output_variable reference_variable log env =
         commandline exitcode in
       (Actions.Fail reason)
 
+let make_check_compiler_output name compiler = {
+  action_name = name;
+  action_environment = env_id;
+  action_body =
+    check_output
+      "compiler"
+      compiler.compileroutput_variable
+      compiler.compilerreference_variable
+}
+
+let check_ocamlc_dot_byte_output = make_check_compiler_output
+  "check-ocamlc-byte-output" bytecode_bytecode_compiler
+
+let check_ocamlc_dot_opt_output = make_check_compiler_output
+  "check-ocamlc-opt-output" bytecode_nativecode_compiler
+
+let check_ocamlopt_dot_byte_output = make_check_compiler_output
+  "check-ocamlopt-byte-output" nativecode_bytecode_compiler
+
+let check_ocamlopt_dot_opt_output = make_check_compiler_output
+  "check-ocamlopt-opt-output" nativecode_nativecode_compiler
+
 let check_program_output = {
   action_name = "check-program-output";
   action_environment = env_id;
@@ -465,5 +497,9 @@ let _ =
     execute;
     check_program_output;
     compare_bytecode_programs;
-    compare_nativecode_programs
+    compare_nativecode_programs;
+    check_ocamlc_dot_byte_output;
+    check_ocamlc_dot_opt_output;
+    check_ocamlopt_dot_byte_output;
+    check_ocamlopt_dot_opt_output
   ]

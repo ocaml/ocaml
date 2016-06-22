@@ -24,9 +24,11 @@ let bytecode = {
   test_actions =
   [
     compile_bytecode_with_bytecode_compiler;
+    check_ocamlc_dot_byte_output;
     execute;
     check_program_output;
     compile_bytecode_with_nativecode_compiler;
+    check_ocamlc_dot_opt_output;
     compare_bytecode_programs;
   ]
 }
@@ -37,9 +39,11 @@ let nativecode = {
   test_actions =
   [
     compile_nativecode_with_bytecode_compiler;
+    check_ocamlopt_dot_byte_output;
     execute;
     check_program_output;
     compile_nativecode_with_nativecode_compiler;
+    check_ocamlopt_dot_opt_output;
     compare_nativecode_programs;
   ]
 }
@@ -47,6 +51,6 @@ let nativecode = {
 let _ =
   List.iter register
   [
-     bytecode;
+    bytecode;
     nativecode;
   ]
