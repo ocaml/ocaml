@@ -42,6 +42,10 @@ type initialization_or_assignment =
   | Initialization
   | Assignment
 
+type const_coercion =
+  | Coerce_to_int
+  | Coerce_to_pointer
+
 type primitive =
     Pidentity
   | Pignore
@@ -140,6 +144,8 @@ type primitive =
   | Pint_as_pointer
   (* Inhibition of optimisation *)
   | Popaque
+  (* Convert constants to fixed type *)
+  | Pcoerce of const_coercion
 
 and comparison =
     Ceq | Cneq | Clt | Cgt | Cle | Cge

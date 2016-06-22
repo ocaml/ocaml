@@ -377,7 +377,7 @@ let comp_primitive p args =
        | Max_wosize -> "max_wosize"
        | Ostype_unix -> "ostype_unix"
        | Ostype_win32 -> "ostype_win32"
-       | Ostype_cygwin -> "ostype_cygwin" 
+       | Ostype_cygwin -> "ostype_cygwin"
        | Backend_type -> "backend_type" in
      Kccall(Printf.sprintf "caml_sys_const_%s" const_name, 1)
   | Pisint -> Kisint
@@ -666,6 +666,8 @@ let rec comp_expr env exp sz cont =
       let p = Pintcomp (commute_comparison c)
       and args = [k ; arg] in
       comp_args env args sz (comp_primitive p args :: cont)
+  | Lprim (Pcoerce _, [arg]) ->
+      comp_expr env arg sz cont
   | Lprim(p, args) ->
       comp_args env args sz (comp_primitive p args :: cont)
   | Lstaticcatch (body, (i, vars) , handler) ->

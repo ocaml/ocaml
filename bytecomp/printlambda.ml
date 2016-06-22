@@ -294,6 +294,11 @@ let primitive ppf = function
   | Pbbswap(bi) -> print_boxed_integer "bswap" ppf bi
   | Pint_as_pointer -> fprintf ppf "int_as_pointer"
   | Popaque -> fprintf ppf "opaque"
+  | Pcoerce coerce_to ->
+    fprintf ppf "coerce_to_%s"
+      (match coerce_to with
+       | Coerce_to_int -> "int"
+       | Coerce_to_pointer -> "pointer")
 
 let name_of_primitive = function
   | Pidentity -> "Pidentity"
@@ -390,6 +395,7 @@ let name_of_primitive = function
   | Pbbswap _ -> "Pbbswap"
   | Pint_as_pointer -> "Pint_as_pointer"
   | Popaque -> "Popaque"
+  | Pcoerce _ -> "Pcoerce"
 
 let function_attribute ppf { inline; specialise; is_a_functor } =
   if is_a_functor then
