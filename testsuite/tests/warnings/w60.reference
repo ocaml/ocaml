@@ -1,0 +1,6 @@
+File "w60.ml", line 91, characters 2-381:
+Warning 60: this exception is not static
+File "w60.ml", line 24, characters 2-82:
+Warning 60: this exception is not static
+File "w60.ml", line 3, characters 2-33:
+Warning 60: this exception is not static
