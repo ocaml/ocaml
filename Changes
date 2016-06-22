@@ -126,7 +126,7 @@ OCaml 4.04.0:
 
 - PR#7276: Support more than FD_SETSIZE sockets in Windows' emulation
   of select
-  (djs55, review by Alain Frisch)
+  (David Scott, review by Alain Frisch)
 
 - GPR#600: (similar to GPR#555) ensure that register typing constraints are
   respected at N-way join points in the control flow graph
