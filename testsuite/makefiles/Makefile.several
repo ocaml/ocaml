@@ -34,7 +34,7 @@ SKIP=false
 
 .PHONY: check
 check:
-	@if [ -n "$(FORTRAN_COMPILER)" -o -z "$(F_FILES)" ]; then \
+	if [ -n "$(FORTRAN_COMPILER)" -o -z "$(F_FILES)" ]; then \
 	  $(SET_LD_PATH) $(MAKE) run-all; \
 	else \
 	  $(MAKE) C_FILES= F_FILES= SKIP=true run-all; \
@@ -42,13 +42,13 @@ check:
 
 .PHONY: run-all
 run-all:
-	@for file in $(C_FILES); do \
+	for file in $(C_FILES); do \
 	  $(OCAMLC) -c $(C_INCLUDES) -c $$file.c; \
 	done;
-	@for file in $(F_FILES); do \
+	for file in $(F_FILES); do \
 	  $(FORTRAN_COMPILER) -c $$file.f; \
 	done;
-	@for file in *.ml; do \
+	for file in *.ml; do \
 	  printf " ... testing '$$file':"; \
 	  if $(SKIP) ; then \
 	    echo " => skipped"; continue; \
@@ -97,10 +97,10 @@ run-all:
 
 .PHONY: run-file
 run-file:
-	@printf " $(DESC)"
-	@rm -f program program.exe
-	@$(COMP) $(COMPFLAGS) $(FILE) -o program$(EXE)
-	@F="`basename $(FILE) .ml`"; \
+	printf " $(DESC)"
+	rm -f program program.exe
+	$(COMP) $(COMPFLAGS) $(FILE) -o program$(EXE)
+	F="`basename $(FILE) .ml`"; \
 	if [ -f $$F.runner ]; then \
 	  RUNTIME="$(RUNTIME)" sh $$F.runner; \
 	else \
@@ -124,4 +124,4 @@ promote: defaultpromote
 
 .PHONY: clean
 clean: defaultclean
-	@rm -f *.result program program.exe
+	rm -f *.result program program.exe
