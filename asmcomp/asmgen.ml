@@ -31,13 +31,13 @@ let liveness ppf phrase =
   Liveness.fundecl ppf phrase; phrase
 
 let dump_if ppf flag message phrase =
-  if !flag then Printmach.phase message ppf phrase
+  if !flag then Printmach.phase message Proc.register_name Arch.print_addressing Arch.print_specific_operation ppf phrase
 
 let pass_dump_if ppf flag message phrase =
   dump_if ppf flag message phrase; phrase
 
 let pass_dump_linear_if ppf flag message phrase =
-  if !flag then fprintf ppf "*** %s@.%a@." message Printlinear.fundecl phrase;
+  if !flag then fprintf ppf "*** %s@.%a@." message (Printlinear.fundecl Proc.register_name Arch.print_addressing Arch.print_specific_operation) phrase;
   phrase
 
 let flambda_raw_clambda_dump_if ppf
@@ -81,8 +81,8 @@ let rec regalloc ppf round fd =
                 ": function too complex, cannot complete register allocation");
   dump_if ppf dump_live "Liveness analysis" fd;
   Interf.build_graph fd;
-  if !dump_interf then Printmach.interferences ppf ();
-  if !dump_prefer then Printmach.preferences ppf ();
+  if !dump_interf then Printmach.interferences Proc.register_name ppf ();
+  if !dump_prefer then Printmach.preferences Proc.register_name ppf ();
   Coloring.allocate_registers();
   dump_if ppf dump_regalloc "After register allocation" fd;
   let (newfd, redo_regalloc) = Reload.fundecl fd in
