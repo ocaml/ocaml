@@ -47,7 +47,7 @@ let split_filename name =
     if i < 0 || is_dir_sep name i then (name, "")
     else if name.[i] = '.' then
       let basename = String.sub name 0 i in
-      let extension = String.sub name (i+1) (l-i) in
+      let extension = String.sub name (i+1) (l-i-1) in
       (basename, extension)
     else search_dot (i - 1) in
   search_dot (l - 1)
