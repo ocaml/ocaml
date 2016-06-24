@@ -15,6 +15,12 @@
 
 (* From lambda to assembly code *)
 
+module type S = sig
+module Emit : sig
+  val begin_assembly: unit -> unit
+  val end_assembly: unit -> unit
+end
+
 val compile_implementation_flambda :
     ?toplevel:(string -> bool) ->
     source_provenance:Timings.source_provenance ->
@@ -41,3 +47,6 @@ val compile_unit:
   string(*prefixname*) ->
   string(*asm file*) -> bool(*keep asm*) ->
   string(*obj file*) -> (unit -> unit) -> unit
+end
+
+module Make (B : Native_backend_intf.S) : S with module Emit = B.Emit

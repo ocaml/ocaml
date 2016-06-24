@@ -17,6 +17,20 @@ open Config
 open Clflags
 open Compenv
 
+module B = struct
+  module Arch = Arch
+  module Proc = Proc
+  module Reload = Reload
+  module Scheduling = Scheduling
+  module Selection = Selection
+  module CSE = CSE
+  module Emit = Emit
+end
+
+module Asmgen = Asmgen.Make (B)
+module Asmpackager = Asmpackager.Make (Asmgen)
+module Asmlink = Asmlink.Make (Asmgen)
+
 module Backend = struct
   (* See backend_intf.mli. *)
 
@@ -42,7 +56,7 @@ let process_interface_file ppf name =
 
 let process_implementation_file ppf name =
   let opref = output_prefix name in
-  Optcompile.implementation ppf name opref ~backend;
+  Optcompile.implementation (module Asmgen) ppf name opref ~backend;
   objfiles := (opref ^ ".cmx") :: !objfiles
 
 let cmxa_present = ref false;;

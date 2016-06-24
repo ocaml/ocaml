@@ -76,6 +76,7 @@ let check_units members =
       check (list_remove mb.pm_name forbidden) tl in
   check (List.map (fun mb -> mb.pm_name) members) members
 
+module Make (Asmgen : Asmgen.S) = struct
 (* Make the .o file for the package *)
 
 let make_package_object ppf members targetobj targetname coercion
@@ -256,6 +257,7 @@ let package_files ppf initial_env files targetcmx ~backend =
   with x ->
     remove_file targetcmx; remove_file targetobj;
     raise x
+end
 
 (* Error report *)
 
