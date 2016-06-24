@@ -1,3 +1,5 @@
+(* TEST *)
+
 module Float_record : sig
   type t = private float;;
 
