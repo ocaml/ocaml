@@ -213,30 +213,58 @@ let compile_module ocamlsrcdir compilername compileroutput backend log env modul
   let what = Printf.sprintf "Compiling %s module %s"
     (Backends.string_of_backend backend) module_name in
   Printf.fprintf log "%s\n%!" what;
-  let compile = "-c " ^ module_name in
   let module_base_name = Filename.chop_extension module_name in
   let module_extension = Backends.module_extension backend in
   let module_output_name = make_file_name module_base_name module_extension in
   let output = "-o " ^ module_output_name in
-  let commandline = String.concat " "
+  let compile_commandline = String.concat " "
   [
     compilername;
     stdlib_flags ocamlsrcdir;
     flags env;
     backend_flags env backend;
     libraries env;
-    compile;
-    output
+    "-c";
   ] in
-  match
-    run_command
-      ~stdout_variable:compileroutput
-      ~stderr_variable:compileroutput
-      ~append:true
-      log env commandline
-  with
-    | 0 -> Ok module_output_name
-    | _ as exitcode -> Error (mkreason what commandline exitcode)
+  let interface_result = match Filetype.filetype module_name with
+    | (basename, Filetype.Implementation) ->
+      let interface_name =
+        Filetype.make_filename basename Filetype.Interface in
+      if Sys.file_exists interface_name then
+      begin
+        let what = "Compiling interface " ^ interface_name in
+        let commandline = compile_commandline ^ " " ^ interface_name in
+        match
+          run_command
+            ~stdout_variable:compileroutput
+            ~stderr_variable:compileroutput
+            ~append:true
+            log env commandline
+        with
+          | 0 -> Ok interface_name
+          | _ as exitcode -> Error (mkreason what commandline exitcode)
+      end else (Ok ("Module " ^ " has no interface"))
+    | _ -> (Error ("ocamltest does not know how to compile " ^ module_name)) in
+  match interface_result with
+    | Error _ -> interface_result
+    | Ok _ ->
+      begin
+        let commandline = String.concat " "
+        [
+          compile_commandline;
+          module_name;
+          output
+        ] in
+        match
+          run_command
+            ~stdout_variable:compileroutput
+            ~stderr_variable:compileroutput
+            ~append:true
+            log env commandline
+        with
+          | 0 -> Ok module_output_name
+          | _ as exitcode -> Error (mkreason what commandline exitcode)
+      end
 
 let compile_modules ocamlsrcdir compilername compileroutput backend log env module_names =
   let cons x xs = x::xs in
@@ -287,6 +315,25 @@ let compile_program ocamlsrcdir compilername compileroutput program_variable bac
       )
     | Error reason -> Fail reason
 
+let module_has_interface directory module_name =
+  match Filetype.filetype module_name with
+  | (basename, Filetype.Implementation) ->
+    let interface_name = Filetype.make_filename basename Filetype.Interface in
+    let interface_fullpath = make_path [directory;interface_name] in
+    if Sys.file_exists interface_fullpath then Some interface_name else None
+  | _ -> None
+
+let rec find_module_interfaces directory = function
+  | [] -> []
+  | module_name :: module_names ->
+    begin
+      let interfaces =
+        find_module_interfaces directory module_names in
+      match module_has_interface directory module_name with
+      | None -> interfaces
+      | Some interface -> interface::interfaces
+    end
+
 let compile_test_program program_variable compiler backend log env =
   let testfile = testfile env in
   let testfile_basename = Filename.chop_extension testfile in
@@ -294,6 +341,8 @@ let compile_test_program program_variable compiler backend log env =
     make_file_name testfile_basename (Backends.executable_extension backend) in
   let modules = (modules env) @ [testfile] in
   let test_source_directory = test_source_directory env in
+  let module_interfaces =
+    find_module_interfaces test_source_directory modules in
   let compilerreference_prefix =
     make_path [test_source_directory; testfile_basename] in
   let compilerreference_filename =
@@ -315,6 +364,7 @@ let compile_test_program program_variable compiler backend log env =
     ] env in
   Testlib.make_directory build_directory;
   setup_symlinks test_source_directory build_directory modules;
+  setup_symlinks test_source_directory build_directory module_interfaces;
   setup_symlinks test_source_directory build_directory (files env);
   Sys.chdir build_directory;
   let ocamlsrcdir = ocamlsrcdir () in
