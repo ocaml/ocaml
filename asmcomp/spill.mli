@@ -16,5 +16,5 @@
 (* Insertion of moves to suggest possible spilling / reloading points
    before register allocation. *)
 
-val fundecl: Mach.fundecl -> Mach.fundecl
+val fundecl: (Arch.addressing_mode, Arch.specific_operation) Mach.fundecl -> (Arch.addressing_mode, Arch.specific_operation) Mach.fundecl
 val reset : unit -> unit

@@ -21,6 +21,22 @@ open Cmm
 open Reg
 open Mach
 
+let rec dummy_instr =
+  { Mach.desc = Iend;
+    next = dummy_instr;
+    arg = [||];
+    res = [||];
+    dbg = Debuginfo.none;
+    live = Reg.Set.empty }
+
+let end_instr () =
+  { Mach.desc = Iend;
+    next = dummy_instr;
+    arg = [||];
+    res = [||];
+    dbg = Debuginfo.none;
+    live = Reg.Set.empty }
+
 type environment = (Ident.t, Reg.t array) Tbl.t
 
 (* Infer the type of the result of an operation *)
@@ -390,7 +406,7 @@ method regs_for tys = Reg.createv tys
 
 (* Buffering of instruction sequences *)
 
-val mutable instr_seq = dummy_instr
+val mutable instr_seq : (Arch.addressing_mode, Arch.specific_operation) Mach.instruction = dummy_instr
 
 method insert_debug desc dbg arg res =
   instr_seq <- instr_cons_debug desc arg res dbg instr_seq

@@ -16,4 +16,4 @@
 (* Construction of the interference graph.
    Annotate pseudoregs with interference lists and preference lists. *)
 
-val build_graph: Mach.fundecl -> unit
+val build_graph: (Arch.addressing_mode, Arch.specific_operation) Mach.fundecl -> unit

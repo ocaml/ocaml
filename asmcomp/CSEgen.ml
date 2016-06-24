@@ -33,7 +33,7 @@ type op_class =
        valnums = operation(valnums)
    plus a mapping from registers to valnums (value numbers). *)
 
-type rhs = operation * valnum array
+type rhs = (Arch.addressing_mode, Arch.specific_operation) operation * valnum array
 
 module Equations = struct
   module Rhs_map =

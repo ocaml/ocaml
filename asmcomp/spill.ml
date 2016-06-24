@@ -114,7 +114,7 @@ let add_superpressure_regs op live_regs res_regs spilled =
 
 (* A-list recording what is destroyed at if-then-else points. *)
 
-let destroyed_at_fork = ref ([] : (instruction * Reg.Set.t) list)
+let destroyed_at_fork = ref ([] : ((Arch.addressing_mode, Arch.specific_operation) instruction * Reg.Set.t) list)
 
 (* First pass: insert reload instructions based on an approximation of
    what is destroyed at pressure points. *)

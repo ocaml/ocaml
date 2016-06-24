@@ -49,18 +49,18 @@ val loc_exn_bucket: Reg.t
 val max_arguments_for_tailcalls : int
 
 (* Maximal register pressures for pre-spilling *)
-val safe_register_pressure: Mach.operation -> int
-val max_register_pressure: Mach.operation -> int array
+val safe_register_pressure: (Arch.addressing_mode, Arch.specific_operation) Mach.operation -> int
+val max_register_pressure: (Arch.addressing_mode, Arch.specific_operation) Mach.operation -> int array
 
 (* Registers destroyed by operations *)
-val destroyed_at_oper: Mach.instruction_desc -> Reg.t array
+val destroyed_at_oper: (Arch.addressing_mode, Arch.specific_operation) Mach.instruction_desc -> Reg.t array
 val destroyed_at_raise: Reg.t array
 
 (* Volatile registers: those that change value when read *)
 val regs_are_volatile: Reg.t array -> bool
 
 (* Pure operations *)
-val op_is_pure: Mach.operation -> bool
+val op_is_pure: (Arch.addressing_mode, Arch.specific_operation) Mach.operation -> bool
 
 (* Info for laying out the stack frame *)
 val num_stack_slots: int array

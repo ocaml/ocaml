@@ -15,4 +15,4 @@
 
 (* Insert load/stores for pseudoregs that got assigned to stack locations. *)
 
-val fundecl: Mach.fundecl -> Mach.fundecl * bool
+val fundecl: (Arch.addressing_mode, Arch.specific_operation) Mach.fundecl -> (Arch.addressing_mode, Arch.specific_operation) Mach.fundecl * bool

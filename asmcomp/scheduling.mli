@@ -15,4 +15,4 @@
 
 (* Instruction scheduling *)
 
-val fundecl: Linearize.fundecl -> Linearize.fundecl
+val fundecl: (Arch.addressing_mode, Arch.specific_operation) Linearize.fundecl -> (Arch.addressing_mode, Arch.specific_operation) Linearize.fundecl

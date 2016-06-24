@@ -16,4 +16,4 @@
 (* Selection of pseudo-instructions, assignment of pseudo-registers,
    sequentialization. *)
 
-val fundecl: Cmm.fundecl -> Mach.fundecl
+val fundecl: Cmm.fundecl -> (Arch.addressing_mode, Arch.specific_operation) Mach.fundecl

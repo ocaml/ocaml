@@ -16,4 +16,4 @@
 (* Dead code elimination: remove pure instructions whose results are
    not used. *)
 
-val fundecl: Mach.fundecl -> Mach.fundecl
+val fundecl: (Arch.addressing_mode, Arch.specific_operation) Mach.fundecl -> (Arch.addressing_mode, Arch.specific_operation) Mach.fundecl

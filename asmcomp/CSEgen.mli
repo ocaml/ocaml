@@ -27,12 +27,12 @@ class cse_generic : object
   (* The following methods can be overriden to handle processor-specific
      operations. *)
 
-  method class_of_operation: Mach.operation -> op_class
+  method class_of_operation: (Arch.addressing_mode, Arch.specific_operation) Mach.operation -> op_class
 
-  method is_cheap_operation: Mach.operation -> bool
+  method is_cheap_operation: (Arch.addressing_mode, Arch.specific_operation) Mach.operation -> bool
     (* Operations that are so cheap that it isn't worth factoring them. *)
 
   (* The following method is the entry point and should not be overridden *)
-  method fundecl: Mach.fundecl -> Mach.fundecl
+  method fundecl: (Arch.addressing_mode, Arch.specific_operation) Mach.fundecl -> (Arch.addressing_mode, Arch.specific_operation) Mach.fundecl
 
 end

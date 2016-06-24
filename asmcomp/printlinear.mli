@@ -18,5 +18,5 @@
 open Format
 open Linearize
 
-val instr: formatter -> instruction -> unit
-val fundecl: formatter -> fundecl -> unit
+val instr: formatter -> (Arch.addressing_mode, Arch.specific_operation) instruction -> unit
+val fundecl: formatter -> (Arch.addressing_mode, Arch.specific_operation) fundecl -> unit

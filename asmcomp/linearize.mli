@@ -18,17 +18,17 @@
 type label = int
 val new_label: unit -> label
 
-type instruction =
-  { mutable desc: instruction_desc;
-    mutable next: instruction;
+type ('addr, 'op) instruction =
+  { mutable desc: ('addr, 'op) instruction_desc;
+    mutable next: ('addr, 'op) instruction;
     arg: Reg.t array;
     res: Reg.t array;
     dbg: Debuginfo.t;
     live: Reg.Set.t }
 
-and instruction_desc =
+and ('addr, 'op) instruction_desc =
     Lend
-  | Lop of Mach.operation
+  | Lop of ('addr, 'op) Mach.operation
   | Lreloadretaddr
   | Lreturn
   | Llabel of label
@@ -41,17 +41,17 @@ and instruction_desc =
   | Lpoptrap
   | Lraise of Lambda.raise_kind
 
-val has_fallthrough :  instruction_desc -> bool
-val end_instr: instruction
+val has_fallthrough :  ('addr, 'op) instruction_desc -> bool
+val end_instr: unit -> ('addr, 'op) instruction
 val instr_cons:
-  instruction_desc -> Reg.t array -> Reg.t array -> instruction -> instruction
+  ('addr, 'op) instruction_desc -> Reg.t array -> Reg.t array -> ('addr, 'op) instruction -> ('addr, 'op) instruction
 val invert_test: Mach.test -> Mach.test
 
-type fundecl =
+type ('addr, 'op) fundecl =
   { fun_name: string;
-    fun_body: instruction;
+    fun_body: ('addr, 'op) instruction;
     fun_fast: bool;
     fun_dbg : Debuginfo.t }
 
 val reset : unit -> unit
-val fundecl: Mach.fundecl -> fundecl
+val fundecl: ('addr, 'op) Mach.fundecl -> ('addr, 'op) fundecl

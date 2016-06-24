@@ -15,4 +15,4 @@
 
 (* Combine heap allocations occurring in the same basic block *)
 
-val fundecl: Mach.fundecl -> Mach.fundecl
+val fundecl: ('addr, 'op) Mach.fundecl -> ('addr, 'op) Mach.fundecl
