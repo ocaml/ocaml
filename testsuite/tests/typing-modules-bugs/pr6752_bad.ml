@@ -1,4 +1,5 @@
-(* Adding a type annotation is sufficient to make typing go through *)
+(* Sorry, we have to disable this as this requires accepting
+   potentially badly formed programs (after expliciting) *)
 
 module Common0 =
  struct
@@ -9,7 +10,7 @@ module Common0 =
    let old = !handle_msg in
    handle_msg := f old
 
-   let q : msg Queue.t = Queue.create ()
+   let q : _ Queue.t = Queue.create ()
    let add msg = Queue.add msg q
    let handle_queue_messages () = Queue.iter !handle_msg q
  end
@@ -25,7 +26,7 @@ module Common =
    let old = !handle_msg in
    handle_msg := f old
 
-   let q : msg Queue.t = Queue.create ()
+   let q : _ Queue.t = Queue.create ()
    let add msg = Queue.add msg q
    let handle_queue_messages () = Queue.iter !handle_msg q
  end

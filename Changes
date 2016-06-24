@@ -112,7 +112,13 @@ OCaml 4.04.0:
 - PR#6505: Missed Type-error leads to a segfault upon record access
   (Jacques Garrigue, extra report by Stephen Dolan)
 
+* PR#6752: Extensible variant types and scope escaping
+  Revert to strict scope, see comments on Mantis.
+  (Jacques Garrigue, following discussion with Jeremy Yallop,
+   Nicolas Ojeda Bar and Alain Frisch)
+
 - PR#7112: Aliased arguments ignored for equality of module types
+  (Jacques Garrigue, report by Leo White)
 
 - PR#7257, GPR#583: revert a 4.03 change of behavior on (Unix.sleep 0.),
   it now calls (nano)sleep for 0 seconds as in (< 4.03) versions.
