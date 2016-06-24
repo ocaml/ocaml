@@ -23,6 +23,14 @@ type t =
   | Lexer
   | Grammar
 
+let string_of_filetype = function
+  | Implementation -> "implementation"
+  | Interface -> "interface"
+  | C -> "C source file"
+  | C_minor -> "C minor source file"
+  | Lexer -> "lexer"
+  | Grammar -> "grammar"
+
 let extension_of_filetype = function
   | Implementation -> "ml"
   | Interface -> "mli"

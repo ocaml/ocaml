@@ -23,6 +23,8 @@ type t =
   | Lexer
   | Grammar
 
+val string_of_filetype : t -> string
+
 val extension_of_filetype : t -> string
 
 val filetype_of_extension : string -> t

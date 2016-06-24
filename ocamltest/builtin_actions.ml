@@ -209,72 +209,84 @@ let test_source_directory env = Environments.safe_lookup "testsrcdir" env
 
 let test_build_directory env = Environments.safe_lookup "testbuilddir" env
 
-let compile_module ocamlsrcdir compilername compileroutput backend log env module_name =
-  let what = Printf.sprintf "Compiling %s module %s"
-    (Backends.string_of_backend backend) module_name in
-  Printf.fprintf log "%s\n%!" what;
-  let module_base_name = Filename.chop_extension module_name in
-  let module_extension = Backends.module_extension backend in
-  let module_output_name = make_file_name module_base_name module_extension in
-  let output = "-o " ^ module_output_name in
-  let compile_commandline = String.concat " "
-  [
-    compilername;
-    stdlib_flags ocamlsrcdir;
-    flags env;
-    backend_flags env backend;
-    libraries env;
-    "-c";
-  ] in
-  let interface_result = match Filetype.filetype module_name with
-    | (basename, Filetype.Implementation) ->
-      let interface_name =
-        Filetype.make_filename basename Filetype.Interface in
-      if Sys.file_exists interface_name then
-      begin
-        let what = "Compiling interface " ^ interface_name in
-        let commandline = compile_commandline ^ " " ^ interface_name in
-        match
-          run_command
-            ~stdout_variable:compileroutput
-            ~stderr_variable:compileroutput
-            ~append:true
-            log env commandline
-        with
-          | 0 -> Ok interface_name
-          | _ as exitcode -> Error (mkreason what commandline exitcode)
-      end else (Ok ("Module " ^ " has no interface"))
-    | _ -> (Error ("ocamltest does not know how to compile " ^ module_name)) in
-  match interface_result with
-    | Error _ -> interface_result
-    | Ok _ ->
-      begin
-        let commandline = String.concat " "
-        [
-          compile_commandline;
-          module_name;
-          output
-        ] in
-        match
-          run_command
-            ~stdout_variable:compileroutput
-            ~stderr_variable:compileroutput
-            ~append:true
-            log env commandline
-        with
-          | 0 -> Ok module_output_name
-          | _ as exitcode -> Error (mkreason what commandline exitcode)
-      end
+let action_of_filetype = function
+  | Filetype.Implementation -> "Compiling implementation"
+  | Filetype.Interface -> "Compiling interface"
+  | Filetype.C -> "Compiling C source file"
+  | Filetype.C_minor -> "Processing C Minor file"
+  | Filetype.Lexer -> "Generating lexer"
+  | Filetype.Grammar -> "Generating parser"
 
-let compile_modules ocamlsrcdir compilername compileroutput backend log env module_names =
+let rec compile_module
+  ocamlsrcdir compilername compileroutput backend log env
+  (module_basename, module_filetype) =
+  let filename = Filetype.make_filename module_basename module_filetype in
+  let what = Printf.sprintf "%s for file %s"
+    (action_of_filetype module_filetype) filename in
+  let compile_commandline input_file output_file =
+    let compile = "-c " ^ input_file in
+    let output = match output_file with
+      | None -> ""
+      | Some file -> "-o " ^ file in
+    String.concat " "
+    [
+      compilername;
+      stdlib_flags ocamlsrcdir;
+      flags env;
+      backend_flags env backend;
+      libraries env;
+      compile;
+      output;
+    ] in
+  let exec commandline output =
+    Printf.fprintf log "%s\n%!" what;
+    match run_command ~stdout_variable:compileroutput ~stderr_variable:compileroutput ~append:true log env commandline with
+      | 0 -> Ok output
+      | _ as exitcode -> Error (mkreason what commandline exitcode) in
+  match module_filetype with
+    | Filetype.Interface ->
+      let interface_name =
+        Filetype.make_filename module_basename Filetype.Interface in
+      let commandline = compile_commandline interface_name None in
+      exec commandline ""
+    | Filetype.Implementation ->
+      (* First see if the module has an interface. *)
+      (* If it has one, compile it first *)
+      let interface_result =
+        let interface_name =
+          Filetype.make_filename module_basename Filetype.Interface in
+        if Sys.file_exists interface_name
+        then compile_module
+          ocamlsrcdir compilername compileroutput backend log env
+          (module_basename, Filetype.Interface)
+        else (Ok ("Module " ^ module_basename ^ " has no interface")) in
+      begin match interface_result with
+        | Error _ -> interface_result
+        | Ok _ ->
+          let module_extension = Backends.module_extension backend in
+          let module_output_name = make_file_name module_basename module_extension in
+          let commandline =
+            compile_commandline filename (Some module_output_name) in
+          exec commandline module_output_name
+      end
+    | Filetype.C ->
+      let object_filename = make_file_name module_basename "o" in
+      let commandline = compile_commandline filename None in
+      exec commandline object_filename
+    | _ ->
+      let reason = Printf.sprintf "File %s of type %s not supported yet"
+        filename (Filetype.string_of_filetype module_filetype) in
+      (Error reason)
+
+let compile_modules ocamlsrcdir compilername compileroutput backend log env modules_with_filetypes =
   let cons x xs = x::xs in
   map_reduce_result
     (compile_module ocamlsrcdir compilername compileroutput backend log env)
     cons
     []
-    module_names
+    modules_with_filetypes
 
-let link_modules ocamlsrcdir compilername compileroutput program_variable backend log env modules =
+let link_modules ocamlsrcdir compilername compileroutput program_variable custom backend log env modules =
   let executable_name = match Environments.lookup program_variable env with
     | None -> assert false
     | Some program -> program in
@@ -283,9 +295,11 @@ let link_modules ocamlsrcdir compilername compileroutput program_variable backen
     module_names executable_name in
   Printf.fprintf log "%s\n%!" what;
   let output = "-o " ^ executable_name in
+  let customstr = if custom then "-custom" else "" in
   let commandline = String.concat " "
   [
     compilername;
+    customstr;
     use_runtime backend ocamlsrcdir;
     stdlib_flags ocamlsrcdir;
     flags env;
@@ -304,12 +318,15 @@ let link_modules ocamlsrcdir compilername compileroutput program_variable backen
     | 0 -> Ok ()
     | _ as exitcode -> Error (mkreason what commandline exitcode)
 
-let compile_program ocamlsrcdir compilername compileroutput program_variable backend log env modules =
+let compile_program ocamlsrcdir compilername compileroutput program_variable backend log env modules_with_filetypes =
   match
-    compile_modules ocamlsrcdir compilername compileroutput log backend env modules
+    compile_modules ocamlsrcdir compilername compileroutput backend log env modules_with_filetypes
   with
-    | Ok module_binaries ->
-      (match link_modules ocamlsrcdir compilername compileroutput program_variable log backend env module_binaries with
+    | Ok module_objects ->
+      let is_c_file (_filename, filetype) = filetype=Filetype.C in
+      let has_c_file = List.exists is_c_file modules_with_filetypes in
+      let custom = (backend = Sys.Bytecode) && has_c_file in
+      (match link_modules ocamlsrcdir compilername compileroutput program_variable custom backend log env module_objects with
         | Ok _ -> Pass env
         | Error reason -> Fail reason
       )
@@ -340,6 +357,7 @@ let compile_test_program program_variable compiler backend log env =
   let executable_filename =
     make_file_name testfile_basename (Backends.executable_extension backend) in
   let modules = (modules env) @ [testfile] in
+  let modules_with_filetypes = List.map Filetype.filetype modules in
   let test_source_directory = test_source_directory env in
   let module_interfaces =
     find_module_interfaces test_source_directory modules in
@@ -375,7 +393,7 @@ let compile_test_program program_variable compiler backend log env =
     ocamlsrcdir
     compilername
     compileroutput_variable
-    program_variable log backend newenv modules
+    program_variable backend log newenv modules_with_filetypes
 
 (* Compile actions *)
 
