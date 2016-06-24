@@ -19,11 +19,18 @@ modules :=\
   tsl_semantics.cmo \
   main.cmo
 
-bcflags = -g -nostdlib -I ../parsing -I ../stdlib -I ../compilerlibs \
+optmodules := $(modules:.cmo=.cmx)
+
+flags = -g -nostdlib -I ../parsing -I ../stdlib -I ../compilerlibs \
   -strict-sequence -safe-string -strict-formats \
   -w +a-4-9-41-42-44-45-48 -warn-error A
 
-ocamlc := ../byterun/ocamlrun ../ocamlc $(bcflags)
+ocamlc := ../byterun/ocamlrun ../ocamlc $(flags)
+
+ocamlopt := ../byterun/ocamlrun ../ocamlopt $(flags)
+
+#ocamltest.opt: $(optmodules)
+#	$(ocamlopt) ocamlcommon.cmxa -o $@ $^
 
 ocamltest.byte: $(modules)
 	$(ocamlc) -custom ocamlcommon.cma -o $@ $^
@@ -31,8 +38,14 @@ ocamltest.byte: $(modules)
 %.cmo: %.ml %.cmi
 	$(ocamlc) -c $<
 
+%.cmx: %.ml %.cmi
+	$(ocamlopt) -c $<
+
 main.cmo: main.ml
 	$(ocamlc) -c $<
+
+main.cmx: main.ml
+	$(ocamlopt) -c $<
 
 %.cmi: %.mli
 	$(ocamlc) -c $<
@@ -46,7 +59,7 @@ main.cmo: main.ml
 .PHONY: clean
 
 clean:
-	rm -rf *.cm* *.o ocamltest.byte
+	rm -rf *.cm* *.o ocamltest.byte ocamltest.opt
 	rm -rf tsl_parser.ml tsl_parser.mli tsl_lexer.ml
 
 
