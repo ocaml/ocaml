@@ -367,6 +367,8 @@ let compile_test_program program_variable compiler backend log env =
   setup_symlinks test_source_directory build_directory module_interfaces;
   setup_symlinks test_source_directory build_directory (files env);
   Sys.chdir build_directory;
+  if Sys.file_exists compiler_output_filename then
+    Sys.remove compiler_output_filename;
   let ocamlsrcdir = ocamlsrcdir () in
   let compilername = compiler.compiler_name ocamlsrcdir in
   compile_program
