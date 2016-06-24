@@ -58,6 +58,7 @@ type out_type =
   | Otyp_manifest of out_type * out_type
   | Otyp_object of (string * out_type) list * bool option
   | Otyp_record of (string * bool * out_type) list
+  | Otyp_array of bool * out_type
   | Otyp_stuff of string
   | Otyp_sum of (string * out_type list * out_type option) list
   | Otyp_tuple of out_type list

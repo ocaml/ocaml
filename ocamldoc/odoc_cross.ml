@@ -999,6 +999,7 @@ and assoc_comments_type module_list t =
       List.iter
         (fun rf -> rf.rf_text <- ao (assoc_comments_info parent module_list) rf.rf_text)
         fl
+  | Type_array _ -> ()
   | Type_open -> ()
   );
   t

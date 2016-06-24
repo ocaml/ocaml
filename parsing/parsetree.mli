@@ -290,8 +290,17 @@ and expression_desc =
         (* E.l *)
   | Pexp_setfield of expression * Longident.t loc * expression
         (* E1.l <- E2 *)
+  | Pexp_arrayfield of expression * Longident.t loc option * expression
+        (* E.(E2) *)
+  | Pexp_setarrayfield of expression * Longident.t loc option * expression * expression
+        (* E1.(E2) <- E3 *)
   | Pexp_array of expression list
         (* [| E1; ...; En |] *)
+  | Pexp_arraycomprehension of
+      expression * pattern * expression * direction_flag * expression
+        (* [| E1 for i = E2 to E3 |] (flag = Upto)
+           [| E1 for i = E2 downto E3 |] (flag = Downto)
+         *)
   | Pexp_ifthenelse of expression * expression * expression option
         (* if E1 then E2 else E3 *)
   | Pexp_sequence of expression * expression
@@ -406,6 +415,7 @@ and type_kind =
   | Ptype_record of label_declaration list
         (* Invariant: non-empty list *)
   | Ptype_open
+  | Ptype_array of array_declaration
 
 and label_declaration =
     {
@@ -443,6 +453,19 @@ and constructor_arguments =
   | C: {...} -> T0         (res = Some T0, args = Pcstr_record)
   | C of {...} as t        (res = None,    args = Pcstr_record)
 *)
+
+and array_declaration =
+    {
+     pad_mutable: mutable_flag;
+     pad_type: core_type;
+     pad_loc: Location.t;
+     pad_attributes: attributes; (*  *)
+    }
+(*  [| T |]            (mutable=Immutable)
+    [| mutable T |]    (mutable=Mutable)
+
+    Note: T can be a Ptyp_poly.
+ *)
 
 and type_extension =
     {

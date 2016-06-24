@@ -164,32 +164,65 @@ let none = {desc = Ttuple []; level = -1; id = -1}
                                         (* Clearly ill-formed type *)
 let dummy_label =
   { lbl_name = ""; lbl_res = none; lbl_arg = none; lbl_mut = Immutable;
-    lbl_pos = (-1); lbl_all = [||]; lbl_repres = Record_regular;
+    lbl_pos = (-1); lbl_all = [||];
+    lbl_kind = Record Record_regular;
     lbl_private = Public;
     lbl_loc = Location.none;
     lbl_attributes = [];
+  }
+
+let label_descr ty_res repres priv pos all ld =
+  { lbl_name = Ident.name ld.ld_id;
+    lbl_res = ty_res;
+    lbl_arg = ld.ld_type;
+    lbl_mut = ld.ld_mutable;
+    lbl_pos = pos;
+    lbl_all = all;
+    lbl_kind = Record repres;
+    lbl_private = priv;
+    lbl_loc = ld.ld_loc;
+    lbl_attributes = ld.ld_attributes;
   }
 
 let label_descrs ty_res lbls repres priv =
   let all_labels = Array.make (List.length lbls) dummy_label in
   let rec describe_labels num = function
       [] -> []
-    | l :: rest ->
-        let lbl =
-          { lbl_name = Ident.name l.ld_id;
-            lbl_res = ty_res;
-            lbl_arg = l.ld_type;
-            lbl_mut = l.ld_mutable;
-            lbl_pos = num;
-            lbl_all = all_labels;
-            lbl_repres = repres;
-            lbl_private = priv;
-            lbl_loc = l.ld_loc;
-            lbl_attributes = l.ld_attributes;
-          } in
+    | ld :: rest ->
+        let lbl = label_descr ty_res repres priv num all_labels ld in
         all_labels.(num) <- lbl;
-        (l.ld_id, lbl) :: describe_labels (num+1) rest in
+        (ld.ld_id, lbl) :: describe_labels (num+1) rest in
   describe_labels 0 lbls
+
+let array_descrs ty_res ad priv =
+  let all_labels = Array.make 2 dummy_label in
+  let length_descr =
+    { lbl_name = Ident.name ad.ad_length.ld_id;
+      lbl_res = ty_res;
+      lbl_arg = Predef.type_int;
+      lbl_mut = Asttypes.Immutable;
+      lbl_pos = 0;
+      lbl_all = all_labels;
+      lbl_kind = ArrayLength ad.ad_repr;
+      lbl_private = priv;
+      lbl_loc = ad.ad_loc;
+      lbl_attributes = []; }
+  in
+  let array_descr =
+    { lbl_name = Ident.name ad.ad_id;
+      lbl_res = ty_res;
+      lbl_arg = ad.ad_type;
+      lbl_mut = ad.ad_mutable;
+      lbl_pos = 1;
+      lbl_all = all_labels;
+      lbl_kind = Array ad.ad_repr;
+      lbl_private = priv;
+      lbl_loc = ad.ad_loc;
+      lbl_attributes = []; }
+  in
+    all_labels.(0) <- length_descr;
+    all_labels.(1) <- array_descr;
+    [(ad.ad_length.ld_id, length_descr); (ad.ad_id, array_descr)]
 
 exception Constr_not_found
 
@@ -211,11 +244,14 @@ let find_constr_by_tag tag cstrlist =
 let constructors_of_type ty_path decl =
   match decl.type_kind with
   | Type_variant cstrs -> constructor_descrs ty_path decl cstrs
-  | Type_record _ | Type_abstract | Type_open -> []
+  | Type_record _ | Type_abstract | Type_open | Type_array _ -> []
 
 let labels_of_type ty_path decl =
   match decl.type_kind with
   | Type_record(labels, rep) ->
-      label_descrs (newgenconstr ty_path decl.type_params)
-        labels rep decl.type_private
+      let ty_res = newgenconstr ty_path decl.type_params in
+        label_descrs ty_res labels rep decl.type_private
+  | Type_array ad ->
+      let ty_res = newgenconstr ty_path decl.type_params in
+        array_descrs ty_res ad decl.type_private
   | Type_variant _ | Type_abstract | Type_open -> []

@@ -714,6 +714,11 @@ class texi =
                         )
                      l ) )
                @  [ Raw " }" ]
+           | Type_array (mut, typ) ->
+               (Raw (" = "^(if priv then "private " else "")^"[|\n"))
+               :: (if mut then [Raw "mutable "] else [])
+               @ (self#text_of_short_type_expr (Name.father ty.ty_name) typ)
+               @ [ Raw " }" ]
            | Type_open -> [ Raw " = .." ; Newline ]
           ) ) ;
           self#index `Type ty.ty_name ; Newline ] @

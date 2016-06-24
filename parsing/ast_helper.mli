@@ -130,7 +130,16 @@ module Exp:
     val field: ?loc:loc -> ?attrs:attrs -> expression -> lid -> expression
     val setfield: ?loc:loc -> ?attrs:attrs -> expression -> lid -> expression
                   -> expression
+    val arrayfield: ?loc:loc -> ?attrs:attrs -> expression -> lid option
+                    -> expression -> expression
+    val setarrayfield: ?loc:loc -> ?attrs:attrs -> expression -> lid option
+                       -> expression -> expression -> expression
+
     val array: ?loc:loc -> ?attrs:attrs -> expression list -> expression
+    val arraycomprehension: ?loc:loc -> ?attrs:attrs -> expression -> pattern
+                            -> expression -> direction_flag -> expression
+                            -> expression
+
     val ifthenelse: ?loc:loc -> ?attrs:attrs -> expression -> expression
                     -> expression option -> expression
     val sequence: ?loc:loc -> ?attrs:attrs -> expression -> expression
@@ -188,6 +197,8 @@ module Type:
       constructor_declaration
     val field: ?loc:loc -> ?attrs:attrs -> ?info:info ->
       ?mut:mutable_flag -> str -> core_type -> label_declaration
+    val array: ?loc:loc -> ?attrs:attrs -> ?info:info ->
+      ?mut:mutable_flag -> core_type -> array_declaration
   end
 
 (** Type extensions *)

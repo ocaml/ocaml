@@ -167,6 +167,7 @@ let type_deps t =
         cl
   | T.Type_record rl ->
       List.iter (fun r -> ty r.T.rf_type) rl
+  | T.Type_array(_, typ) -> ty typ
   | T.Type_open -> ()
   );
 

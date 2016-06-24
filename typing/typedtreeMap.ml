@@ -182,6 +182,8 @@ module MakeMap(Map : MapArgument) = struct
         in
         Ttype_record list
       | Ttype_open -> Ttype_open
+      | Ttype_array ad ->
+          Ttype_array {ad with ad_type = map_core_type ad.ad_type}
     in
     let typ_manifest = may_map map_core_type decl.typ_manifest in
     Map.leave_type_declaration { decl with typ_params = typ_params;
@@ -243,7 +245,8 @@ module MakeMap(Map : MapArgument) = struct
         | Tpat_record (list, closed) ->
           Tpat_record (List.map (fun (lid, lab_desc, pat) ->
             (lid, lab_desc, map_pattern pat) ) list, closed)
-        | Tpat_array list -> Tpat_array (List.map map_pattern list)
+        | Tpat_array(lab_desc, list) ->
+            Tpat_array (lab_desc, List.map map_pattern list)
         | Tpat_or (p1, p2, rowo) ->
           Tpat_or (map_pattern p1, map_pattern p2, rowo)
         | Tpat_lazy p -> Tpat_lazy (map_pattern p)
@@ -324,8 +327,26 @@ module MakeMap(Map : MapArgument) = struct
             lid,
             label,
             map_expression exp2)
-        | Texp_array list ->
-          Texp_array (List.map map_expression list)
+        | Texp_arrayfield (exp1, lid, label, exp2) ->
+          Texp_arrayfield (
+              map_expression exp1, lid, label, map_expression exp2)
+        | Texp_setarrayfield (exp1, lid, label, exp2, exp3) ->
+          Texp_setarrayfield (
+            map_expression exp1,
+            lid,
+            label,
+            map_expression exp2,
+            map_expression exp3)
+        | Texp_array (arr, list) ->
+          Texp_array (arr, List.map map_expression list)
+        | Texp_arraycomprehension (arr, exp1, id, pat, exp2, dir, exp3) ->
+          Texp_arraycomprehension (
+            arr,
+            map_expression exp1,
+            id, pat,
+            map_expression exp2,
+            dir,
+            map_expression exp3)
         | Texp_ifthenelse (exp1, exp2, expo) ->
           Texp_ifthenelse (
             map_expression exp1,

@@ -47,6 +47,7 @@ type type_kind =
                    (** constructors *)
   | Type_record of record_field list
                    (** fields *)
+  | Type_array of bool * Types.type_expr
   | Type_open
 
 type object_field = {

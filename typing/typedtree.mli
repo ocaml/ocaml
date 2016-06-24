@@ -96,7 +96,7 @@ and pattern_desc =
 
             Invariant: n > 0
          *)
-  | Tpat_array of pattern list
+  | Tpat_array of label_description * pattern list
         (** [| P1; ...; Pn |] *)
   | Tpat_or of pattern * pattern * row_desc option
         (** P1 | P2
@@ -192,7 +192,15 @@ and expression_desc =
   | Texp_field of expression * Longident.t loc * label_description
   | Texp_setfield of
       expression * Longident.t loc * label_description * expression
-  | Texp_array of expression list
+  | Texp_arrayfield of
+      expression * Longident.t loc option * label_description * expression
+  | Texp_setarrayfield of
+      expression * Longident.t loc option * label_description
+      * expression * expression
+  | Texp_array of label_description * expression list
+  | Texp_arraycomprehension of
+      label_description * expression * Ident.t * Parsetree.pattern * expression *
+        direction_flag * expression
   | Texp_ifthenelse of expression * expression * expression option
   | Texp_sequence of expression * expression
   | Texp_while of expression * expression
@@ -517,6 +525,7 @@ and type_kind =
   | Ttype_variant of constructor_declaration list
   | Ttype_record of label_declaration list
   | Ttype_open
+  | Ttype_array of array_declaration
 
 and label_declaration =
     {
@@ -541,6 +550,16 @@ and constructor_declaration =
 and constructor_arguments =
   | Cstr_tuple of core_type list
   | Cstr_record of label_declaration list
+
+and array_declaration =
+    {
+     ad_id: Ident.t;
+     ad_id_length: Ident.t;
+     ad_mutable: mutable_flag;
+     ad_type: core_type;
+     ad_loc: Location.t;
+     ad_attributes: attributes;
+    }
 
 and type_extension =
   {

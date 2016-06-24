@@ -28,7 +28,6 @@ val constructors_of_type:
   Path.t -> type_declaration ->
   (Ident.t * constructor_description) list
 
-
 exception Constr_not_found
 
 val find_constr_by_tag:

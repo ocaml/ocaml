@@ -274,6 +274,8 @@ module Type :
                    (** constructors *)
       | Type_record of record_field list
                    (** fields *)
+      | Type_array of bool * Types.type_expr
+                   (** mutability, type *)
       | Type_open (** Type is open *)
 
     type object_field = Odoc_type.object_field = {

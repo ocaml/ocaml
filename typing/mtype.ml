@@ -57,7 +57,8 @@ and strengthen_sig env sg p pos =
       let newdecl =
         match decl.type_manifest, decl.type_private, decl.type_kind with
           Some _, Public, _ -> decl
-        | Some _, Private, (Type_record _ | Type_variant _) -> decl
+        | Some _, Private, (Type_record _ | Type_variant _
+                             | Type_array _) -> decl
         | _ ->
             let manif =
               Some(Btype.newgenty(Tconstr(Pdot(p, Ident.name id, nopos),

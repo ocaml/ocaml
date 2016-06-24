@@ -118,6 +118,7 @@ module Search =
                 List.flatten (List.map (fun rf -> search_recfield t rf v) l)
             | Type_variant l ->
                 List.flatten (List.map (fun rf -> search_const t rf v) l)
+            | Type_array _ -> []
             | Type_open -> []
       in
       if ok then (Res_type t) :: l else l

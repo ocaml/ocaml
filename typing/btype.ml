@@ -311,8 +311,8 @@ let iter_type_expr_kind f = function
         cstrs
   | Type_record(lbls, _) ->
       List.iter (fun d -> f d.ld_type) lbls
-  | Type_open ->
-      ()
+  | Type_open -> ()
+  | Type_array ad -> f ad.ad_type
 
 
 let type_iterators =

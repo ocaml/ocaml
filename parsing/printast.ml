@@ -299,9 +299,26 @@ and expression i ppf x =
       expression i ppf e1;
       longident_loc i ppf li;
       expression i ppf e2;
+  | Pexp_arrayfield (e1, lio, e2) ->
+      line i ppf "Pexp_arrayfield\n";
+      expression i ppf e1;
+      option i longident_loc ppf lio;
+      expression i ppf e2;
+  | Pexp_setarrayfield (e1, lio, e2, e3) ->
+      line i ppf "Pexp_setarrayfield\n";
+      expression i ppf e1;
+      option i longident_loc ppf lio;
+      expression i ppf e2;
+      expression i ppf e3;
   | Pexp_array (l) ->
       line i ppf "Pexp_array\n";
       list i expression ppf l;
+  | Pexp_arraycomprehension (e1, p, e2, df, e3) ->
+      line i ppf "Pexp_arraycomprehension %a\n" fmt_direction_flag df;
+      expression i ppf e1;
+      pattern i ppf p;
+      expression i ppf e2;
+      expression i ppf e3;
   | Pexp_ifthenelse (e1, e2, eo) ->
       line i ppf "Pexp_ifthenelse\n";
       expression i ppf e1;
@@ -431,6 +448,9 @@ and type_kind i ppf x =
   | Ptype_record l ->
       line i ppf "Ptype_record\n";
       list (i+1) label_decl ppf l;
+  | Ptype_array x ->
+      line i ppf "Ptype_array\n";
+      array_decl (i+1) ppf x;
   | Ptype_open ->
       line i ppf "Ptype_open\n";
 
@@ -842,6 +862,12 @@ and label_decl i ppf {pld_name; pld_mutable; pld_type; pld_loc; pld_attributes}=
   line (i+1) ppf "%a\n" fmt_mutable_flag pld_mutable;
   line (i+1) ppf "%a" fmt_string_loc pld_name;
   core_type (i+1) ppf pld_type
+
+and array_decl i ppf {pad_mutable; pad_type; pad_loc; pad_attributes} =
+  line i ppf "%a\n" fmt_location pad_loc;
+  attributes i ppf pad_attributes;
+  line (i+1) ppf "%a\n" fmt_mutable_flag pad_mutable;
+  core_type (i+1) ppf pad_type
 
 and longident_x_pattern i ppf (li, p) =
   line i ppf "%a\n" fmt_longident_loc li;

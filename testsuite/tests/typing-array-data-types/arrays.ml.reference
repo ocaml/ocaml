@@ -1,0 +1,27 @@
+
+#             module Foo : sig type t = [| mutable int |] end
+#         Characters 45-50:
+  let warning (x : Foo.t) = x.(0) (* WARNING: .() is not in scope *)
+                            ^^^^^
+Warning 40: .() was selected from type Foo.t.
+It is not visible in the current scope, and will not 
+be selected if the type becomes unknown.
+val warning : Foo.t -> int = <fun>
+#             val get_foo : Foo.t -> int = <fun>
+#     val get_foo2 : Foo.t -> int = <fun>
+#         val set_foo : Foo.t -> unit = <fun>
+#     val set_foo2 : Foo.t -> unit = <fun>
+#         val lit_foo : Foo.t = [|1; 2; 3|]
+#     val lit_foo2 : Foo.t = [|1; 2; 3|]
+#                 val length : int = 3
+val comp_foo : Foo.t = [|0; 1; 2; 3; 4; 5; 6; 7; 8; 9; 10|]
+#     val comp_foo2 : Foo.t = [|0; 1; 4; 9; 16; 25; 36; 49; 64; 81; 100|]
+#     val comp_down_foo : Foo.t = [|10; 9; 8; 7; 6; 5; 4; 3; 2; 1; 0|]
+#         val empty_foo : Foo.t = [||]
+#     val empty_down_foo : Foo.t = [||]
+#         type bar = [| int |]
+#     Characters 25-35:
+  let set_bar (x : bar) = x.(0) <- 9 (* ERROR: bar is not mutable *)
+                          ^^^^^^^^^^
+Error: This array is not mutable
+#   

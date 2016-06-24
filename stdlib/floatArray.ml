@@ -1,60 +1,56 @@
-(**************************************************************************)
-(*                                                                        *)
-(*                                 OCaml                                  *)
-(*                                                                        *)
-(*             Xavier Leroy, projet Cristal, INRIA Rocquencourt           *)
-(*                                                                        *)
-(*   Copyright 1996 Institut National de Recherche en Informatique et     *)
-(*     en Automatique.                                                    *)
-(*                                                                        *)
-(*   All rights reserved.  This file is distributed under the terms of    *)
-(*   the GNU Lesser General Public License version 2.1, with the          *)
-(*   special exception on linking described in the file LICENSE.          *)
-(*                                                                        *)
-(**************************************************************************)
+(***********************************************************************)
+(*                                                                     *)
+(*                           OCaml                                     *)
+(*                                                                     *)
+(*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         *)
+(*                                                                     *)
+(*  Copyright 1996 Institut National de Recherche en Informatique et   *)
+(*  en Automatique.  All rights reserved.  This file is distributed    *)
+(*  under the terms of the GNU Library General Public License, with    *)
+(*  the special exception on linking described in file ../LICENSE.     *)
+(*                                                                     *)
+(***********************************************************************)
 
-(* Array operations *)
+(* Float array operations *)
 
-type 'a t = 'a array = [| mutable 'a [@dynamic_boxing] |]
+type t = [| mutable float |]
 
-external length : 'a array -> int = "%array_length"
-external get: 'a array -> int -> 'a = "%array_safe_get"
-external set: 'a array -> int -> 'a -> unit = "%array_safe_set"
-external unsafe_get: 'a array -> int -> 'a = "%array_unsafe_get"
-external unsafe_set: 'a array -> int -> 'a -> unit = "%array_unsafe_set"
-external make: int -> 'a -> 'a array = "caml_make_vect"
-external create: int -> 'a -> 'a array = "caml_make_vect"
-external unsafe_sub : 'a array -> int -> int -> 'a array = "caml_array_sub"
-external append_prim : 'a array -> 'a array -> 'a array = "caml_array_append"
-external concat : 'a array list -> 'a array = "caml_array_concat"
+external length : t -> int = "%float_array_length"
+external get: t -> int -> float = "%float_array_safe_get"
+external set: t -> int -> float -> unit = "%float_array_safe_set"
+external unsafe_get: t -> int -> float = "%float_array_unsafe_get"
+external unsafe_set: t -> int -> float -> unit = "%float_array_unsafe_set"
+external make: int -> float -> t = "caml_make_double_array"
+external create: int -> t = "caml_create_double_array"
+external unsafe_sub : t -> int -> int -> t = "caml_double_array_sub"
+external append_prim : t -> t -> t = "caml_double_array_append"
+external concat : t list -> t = "caml_double_array_concat"
 external unsafe_blit :
-  'a array -> int -> 'a array -> int -> int -> unit = "caml_array_blit"
-external create_float: int -> float array = "caml_make_float_vect"
-let make_float = create_float
+  t -> int -> t -> int -> int -> unit = "caml_double_array_blit"
+
+let empty = create 0
 
 let init l f =
-  if l = 0 then [||] else
-  if l < 0 then invalid_arg "Array.init"
+  if l = 0 then empty else
+  if l < 0 then invalid_arg "FloatArray.init"
   (* See #6575. We could also check for maximum array size, but this depends
      on whether we create a float array or a regular one... *)
   else
-   let res = create l (f 0) in
+   let res = make l (f 0) in
    for i = 1 to pred l do
      unsafe_set res i (f i)
    done;
    res
 
 let make_matrix sx sy init =
-  let res = create sx [||] in
+  let res = Array.make sx empty in
   for x = 0 to pred sx do
-    unsafe_set res x (create sy init)
+    Array.unsafe_set res x (make sy init)
   done;
   res
 
-let create_matrix = make_matrix
-
 let copy a =
-  let l = length a in if l = 0 then [||] else unsafe_sub a 0 l
+  let l = length a in if l = 0 then empty else unsafe_sub a 0 l
 
 let append a1 a2 =
   let l1 = length a1 in
@@ -63,53 +59,32 @@ let append a1 a2 =
   else append_prim a1 a2
 
 let sub a ofs len =
-  if ofs < 0 || len < 0 || ofs > length a - len
-  then invalid_arg "Array.sub"
+  if len < 0 || ofs > length a - len
+  then invalid_arg "FloatArray.sub"
   else unsafe_sub a ofs len
 
 let fill a ofs len v =
   if ofs < 0 || len < 0 || ofs > length a - len
-  then invalid_arg "Array.fill"
+  then invalid_arg "FloatArray.fill"
   else for i = ofs to ofs + len - 1 do unsafe_set a i v done
 
 let blit a1 ofs1 a2 ofs2 len =
   if len < 0 || ofs1 < 0 || ofs1 > length a1 - len
              || ofs2 < 0 || ofs2 > length a2 - len
-  then invalid_arg "Array.blit"
+  then invalid_arg "FloatArray.blit"
   else unsafe_blit a1 ofs1 a2 ofs2 len
 
 let iter f a =
   for i = 0 to length a - 1 do f(unsafe_get a i) done
 
-let iter2 f a b =
-  if length a <> length b then
-    invalid_arg "Array.iter2: arrays must have the same length"
-  else
-    for i = 0 to length a - 1 do f (unsafe_get a i) (unsafe_get b i) done
-
 let map f a =
   let l = length a in
-  if l = 0 then [||] else begin
-    let r = create l (f(unsafe_get a 0)) in
+  if l = 0 then empty else begin
+    let r = make l (f(unsafe_get a 0)) in
     for i = 1 to l - 1 do
       unsafe_set r i (f(unsafe_get a i))
     done;
     r
-  end
-
-let map2 f a b =
-  let la = length a in
-  let lb = length b in
-  if la <> lb then
-    invalid_arg "Array.map2: arrays must have the same length"
-  else begin
-    if la = 0 then [||] else begin
-      let r = create la (f (unsafe_get a 0) (unsafe_get b 0)) in
-      for i = 1 to la - 1 do
-        unsafe_set r i (f (unsafe_get a i) (unsafe_get b i))
-      done;
-      r
-    end
   end
 
 let iteri f a =
@@ -117,8 +92,8 @@ let iteri f a =
 
 let mapi f a =
   let l = length a in
-  if l = 0 then [||] else begin
-    let r = create l (f 0 (unsafe_get a 0)) in
+  if l = 0 then empty else begin
+    let r = make l (f 0 (unsafe_get a 0)) in
     for i = 1 to l - 1 do
       unsafe_set r i (f i (unsafe_get a i))
     done;
@@ -130,15 +105,10 @@ let to_list a =
     if i < 0 then res else tolist (i - 1) (unsafe_get a i :: res) in
   tolist (length a - 1) []
 
-(* Cannot use List.length here because the List module depends on Array. *)
-let rec list_length accu = function
-  | [] -> accu
-  | _::t -> list_length (succ accu) t
-
 let of_list = function
-    [] -> [||]
+    [] -> empty
   | hd::tl as l ->
-      let a = create (list_length 0 l) hd in
+      let a = make (List.length l) hd in
       let rec fill i = function
           [] -> a
         | hd::tl -> unsafe_set a i hd; fill (i+1) tl in
@@ -158,39 +128,7 @@ let fold_right f a x =
   done;
   !r
 
-let exists p a =
-  let n = length a in
-  let rec loop i =
-    if i = n then false
-    else if p (unsafe_get a i) then true
-    else loop (succ i) in
-  loop 0
-
-let for_all p a =
-  let n = length a in
-  let rec loop i =
-    if i = n then true
-    else if p (unsafe_get a i) then loop (succ i)
-    else false in
-  loop 0
-
-let mem x a =
-  let n = length a in
-  let rec loop i =
-    if i = n then false
-    else if compare (unsafe_get a i) x = 0 then true
-    else loop (succ i) in
-  loop 0
-
-let memq x a =
-  let n = length a in
-  let rec loop i =
-    if i = n then false
-    else if x == (unsafe_get a i) then true
-    else loop (succ i) in
-  loop 0
-
-exception Bottom of int
+exception Bottom of int;;
 let sort cmp a =
   let maxson l i =
     let i31 = i+i+i+1 in
@@ -237,10 +175,10 @@ let sort cmp a =
     set a i (get a 0);
     trickleup (bubble i 0) e;
   done;
-  if l > 1 then (let e = (get a 1) in set a 1 (get a 0); set a 0 e)
+  if l > 1 then (let e = (get a 1) in set a 1 (get a 0); set a 0 e);
+;;
 
-
-let cutoff = 5
+let cutoff = 5;;
 let stable_sort cmp a =
   let merge src1ofs src1len src2 src2ofs src2len dst dstofs =
     let src1r = src1ofs + src1len and src2r = src2ofs + src2len in
@@ -290,7 +228,7 @@ let stable_sort cmp a =
     sortto l1 t 0 l2;
     sortto 0 a l2 l1;
     merge l2 l1 t 0 l2 a 0;
-  end
+  end;
+;;
 
-
-let fast_sort = stable_sort
+let fast_sort = stable_sort;;

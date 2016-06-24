@@ -238,8 +238,24 @@ and rw_exp iflag sexp =
     rewrite_exp iflag srecord;
     rewrite_exp iflag snewval
 
+  | Pexp_arrayfield(sarray, _, sindex) ->
+    rewrite_exp iflag sarray;
+    rewrite_exp iflag sindex
+
+  | Pexp_setarrayfield(sarray, _, sindex, snewval) ->
+    rewrite_exp iflag sarray;
+    rewrite_exp iflag sindex;
+    rewrite_exp iflag snewval
+
   | Pexp_array(sargl) ->
     rewrite_exp_list iflag sargl
+
+  | Pexp_arraycomprehension(sbody, _, slow, _, shigh) ->
+    rewrite_exp iflag slow;
+    rewrite_exp iflag shigh;
+    if !instr_loops && not sexp.pexp_loc.loc_ghost
+    then insert_profile rw_exp sbody
+    else rewrite_exp iflag sbody
 
   | Pexp_ifthenelse(scond, sifso, None) ->
       rewrite_exp iflag scond;

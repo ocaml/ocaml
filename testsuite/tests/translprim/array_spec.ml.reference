@@ -1,15 +1,15 @@
 (setglobal Array_spec!
   (let
-    (int_a = (makearray[int] 1 2 3)
+    (int_a = (makearray[addr] 1 2 3)
      float_a = (makearray[float] 1. 2. 3.)
      addr_a = (makearray[addr] "a" "b" "c"))
-    (seq (array.length[int] int_a) (array.length[float] float_a)
+    (seq (array.length[addr] int_a) (array.length[float] float_a)
       (array.length[addr] addr_a)
       (function a (array.length[gen] a))
-      (array.get[int] int_a 0) (array.get[float] float_a 0)
+      (array.get[addr] int_a 0) (array.get[float] float_a 0)
       (array.get[addr] addr_a 0)
       (function a (array.get[gen] a 0))
-      (array.unsafe_get[int] int_a 0)
+      (array.unsafe_get[addr] int_a 0)
       (array.unsafe_get[float] float_a 0)
       (array.unsafe_get[addr] addr_a 0)
       (function a (array.unsafe_get[gen] a 0))
@@ -36,13 +36,13 @@
            (function prim prim prim
              (array.unsafe_set[gen] prim prim prim))
          eta_int_len =
-           (function prim (array.length[int] prim))
+           (function prim (array.length[addr] prim))
          eta_int_safe_get =
            (function prim prim
-             (array.get[int] prim prim))
+             (array.get[addr] prim prim))
          eta_int_unsafe_get =
            (function prim prim
-             (array.unsafe_get[int] prim prim))
+             (array.unsafe_get[addr] prim prim))
          eta_int_safe_set =
            (function prim prim prim
              (array.set[int] prim prim prim))

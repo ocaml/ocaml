@@ -128,6 +128,9 @@ type type_mismatch =
   | Field_missing of bool * Ident.t
   | Record_representation of bool
   | Immediate
+  | Array_representation of array_representation * array_representation
+  | Array_type
+  | Array_mutable
 
 let report_type_mismatch0 first second decl ppf err =
   let pr fmt = Format.fprintf ppf fmt in
@@ -155,6 +158,22 @@ let report_type_mismatch0 first second decl ppf err =
         (if b then second else first) decl
         "uses unboxed float representation"
   | Immediate -> pr "%s is not an immediate type" first
+  | Array_representation(r1, r2) ->
+      let which, repr =
+        match r1, r2 with
+        | Array_dynamic, _ -> first, "uses dynamic boxing"
+        | _, Array_dynamic -> second, "uses dynamic_boxing"
+        | Array_float, _ -> first, "uses unboxed float representation"
+        | _, Array_float -> second, "uses unboxed float representation"
+        | Array_regular, Array_regular -> assert false
+      in
+      pr "Their internal representations differ:@ %s %s %s"
+        which decl repr
+  | Array_type ->
+      pr "The types for the arrays are not equal"
+  | Array_mutable ->
+      pr "The mutability of the arrays are not equal"
+
 
 let report_type_mismatch first second decl ppf =
   List.iter
@@ -215,6 +234,17 @@ and compare_records env params1 params2 n labels1 labels2 =
       then compare_records env params1 params2 (n+1) rem1 rem2
       else [Field_type lab1]
 
+and compare_arrays env params1 params2 a1 a2 =
+  if a1.Types.ad_mutable <> a2.Types.ad_mutable then
+    [Array_mutable]
+  else if not (Ctype.equal env true
+                 (a1.Types.ad_type :: params1)
+                 (a2.Types.ad_type :: params2)) then
+    [Array_type]
+  else if a1.ad_repr <> a2.ad_repr then
+    [Array_representation(a1.ad_repr, a2.ad_repr)]
+  else []
+
 let type_declarations ?(equality = false) env name decl1 id decl2 =
   if decl1.type_arity <> decl2.type_arity then [Arity] else
   if not (private_flags decl1 decl2) then [Privacy] else
@@ -258,6 +288,8 @@ let type_declarations ?(equality = false) env name decl1 id decl2 =
             1 labels1 labels2 in
         if err <> [] || rep1 = rep2 then err else
         [Record_representation (rep2 = Record_float)]
+    | (Type_array a1, Type_array a2) ->
+        compare_arrays env decl1.type_params decl2.type_params a1 a2
     | (Type_open, Type_open) -> []
     | (_, _) -> [Kind]
   in

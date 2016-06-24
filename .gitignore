@@ -74,6 +74,7 @@
 /asmrun/globroots.c
 /asmrun/hash.c
 /asmrun/intern.c
+/asmrun/double_array.c
 /asmrun/ints.c
 /asmrun/io.c
 /asmrun/lexing.c

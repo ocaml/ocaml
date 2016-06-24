@@ -43,6 +43,8 @@ type mapper = {
     mapper -> Typedtree.include_description -> include_description;
   label_declaration:
     mapper -> Typedtree.label_declaration -> label_declaration;
+  array_declaration:
+    mapper -> Typedtree.array_declaration -> array_declaration;
   location: mapper -> Location.t -> Location.t;
   module_binding: mapper -> Typedtree.module_binding -> module_binding;
   module_declaration:

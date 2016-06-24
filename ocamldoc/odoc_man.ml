@@ -640,6 +640,13 @@ class man =
              field_comment r.rf_text ;
            ) l;
           bs b "\n }\n"
+      | Type_array (mut, typ) ->
+          bs b "= ";
+          if priv then bs b "private ";
+          bs b "[|";
+          bs b (if mut then "\n\n.B mutable \n" else "\n ");
+          self#man_of_type_expr b father typ;
+          bs b "\n |]\n"
       | Type_open ->
           bs b "= ..";
           bs b "\n"

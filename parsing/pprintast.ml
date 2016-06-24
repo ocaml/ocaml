@@ -458,8 +458,6 @@ and sugar_expr ctxt f e =
             | _ -> false
           in
           match path, other_args with
-          | Lident "Array", i :: rest ->
-            print "(" ")" (expression ctxt) [i] rest
           | Lident "String", i :: rest ->
             print "[" "]" (expression ctxt) [i] rest
           | Ldot (Lident "Bigarray", "Array1"), i1 :: rest ->
@@ -561,6 +559,15 @@ and expression ctxt f x =
     | Pexp_setfield (e1, li, e2) ->
         pp f "@[<2>%a.%a@ <-@ %a@]"
           (simple_expr ctxt) e1 longident_loc li (expression ctxt) e2
+    | Pexp_setarrayfield (e1, lio, e2, e3) -> begin
+        match lio with
+        | None ->
+            pp f "@[<2>%a.(%a)@ <-@ %a@]" (simple_expr ctxt) e1
+               (expression ctxt) e2 (expression ctxt) e3
+        | Some li ->
+            pp f "@[<2>%a.%a.(%a)@ <-@ %a@]" (simple_expr ctxt) e1
+               longident_loc li (expression ctxt) e2 (expression ctxt) e3
+      end
     | Pexp_ifthenelse (e1, e2, eo) ->
         (* @;@[<2>else@ %a@]@] *)
         let fmt:(_,_,_)format ="@[<hv0>@[<2>if@ %a@]@;@[<2>then@ %a@]%a@]" in
@@ -626,6 +633,14 @@ and expression2 ctxt f x =
   else match x.pexp_desc with
     | Pexp_field (e, li) ->
         pp f "@[<hov2>%a.%a@]" (simple_expr ctxt) e longident_loc li
+    | Pexp_arrayfield (e1, lio, e2) -> begin
+        match lio with
+        | None ->
+            pp f "@[<hov2>%a.(%a)@]" (simple_expr ctxt) e1 (expression ctxt) e2
+        | Some li ->
+            pp f "@[<hov2>%a.%a.(%a)@]" (simple_expr ctxt) e1
+               longident_loc li (expression ctxt) e2
+      end
     | Pexp_send (e, s) -> pp f "@[<hov2>%a#%s@]" (simple_expr ctxt) e s
 
     | _ -> simple_expr ctxt f x
@@ -675,6 +690,10 @@ and simple_expr ctxt f x =
     | Pexp_array (l) ->
         pp f "@[<0>@[<2>[|%a|]@]@]"
           (list (simple_expr (under_semi ctxt)) ~sep:";") l
+    | Pexp_arraycomprehension (e1, s, e2, df, e3) ->
+        pp f "@[<0>@[<2>[|%a for %a =@;%a@;%a%a|]@]@]"
+          (expression ctxt) e1 (pattern ctxt) s (expression ctxt)e2
+          direction_flag df (expression ctxt) e3
     | Pexp_while (e1, e2) ->
         let fmt : (_,_,_) format = "@[<2>while@;%a@;do@;%a@;done@]" in
         pp f fmt (expression ctxt) e1 (expression ctxt) e2
@@ -1265,6 +1284,12 @@ and record_declaration ctxt f lbls =
   pp f "{@\n%a}"
     (list type_record_field ~sep:";@\n" )  lbls
 
+and array_declaration ctxt f pad =
+  pp f "[|@[<2>%a@;%a@;%a@]|]"
+      mutable_flag pad.pad_mutable
+      (core_type ctxt) pad.pad_type
+      (attributes ctxt) pad.pad_attributes
+
 and type_declaration ctxt f x =
   (* type_declaration has an attribute field,
      but it's been printed by the caller of this method *)
@@ -1299,6 +1324,8 @@ and type_declaration ctxt f x =
     | Ptype_abstract -> ()
     | Ptype_record l ->
         pp f "%t%t@;%a" intro priv (record_declaration ctxt) l
+    | Ptype_array a ->
+        pp f "%t@;%a" intro (array_declaration ctxt) a
     | Ptype_open -> pp f "%t%t@;.." intro priv
   in
   let constraints f =

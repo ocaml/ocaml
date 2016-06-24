@@ -25,5 +25,6 @@
 
 module Array = ArrayLabels
 module Bytes = BytesLabels
+module FloatArray = FloatArrayLabels
 module List = ListLabels
 module String = StringLabels

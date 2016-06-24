@@ -194,6 +194,7 @@ module MakeIterator(Iter : IteratorArgument) : sig
                 iter_core_type ld.ld_type
             ) list
         | Ttype_open -> ()
+        | Ttype_array ad -> iter_core_type ad.ad_type
       end;
       option iter_core_type decl.typ_manifest;
       Iter.leave_type_declaration decl
@@ -243,7 +244,7 @@ module MakeIterator(Iter : IteratorArgument) : sig
             end
         | Tpat_record (list, _closed) ->
             List.iter (fun (_, _, pat) -> iter_pattern pat) list
-        | Tpat_array list -> List.iter iter_pattern list
+        | Tpat_array(_, list) -> List.iter iter_pattern list
         | Tpat_or (p1, p2, _) -> iter_pattern p1; iter_pattern p2
         | Tpat_lazy p -> iter_pattern p
       end;
@@ -306,8 +307,19 @@ module MakeIterator(Iter : IteratorArgument) : sig
         | Texp_setfield (exp1, _, _label, exp2) ->
             iter_expression exp1;
             iter_expression exp2
-        | Texp_array list ->
+        | Texp_arrayfield (exp1, _, _, exp2) ->
+            iter_expression exp1;
+            iter_expression exp2
+        | Texp_setarrayfield (exp1, _, _, exp2, exp3) ->
+            iter_expression exp1;
+            iter_expression exp2;
+            iter_expression exp3
+        | Texp_array(_, list) ->
             List.iter iter_expression list
+        | Texp_arraycomprehension (_, exp1, _, _, exp2, _, exp3) ->
+            iter_expression exp1;
+            iter_expression exp2;
+            iter_expression exp3
         | Texp_ifthenelse (exp1, exp2, expo) ->
             iter_expression exp1;
             iter_expression exp2;

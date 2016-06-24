@@ -302,6 +302,7 @@ and type_kind =
   | Type_record of label_declaration list  * record_representation
   | Type_variant of constructor_declaration list
   | Type_open
+  | Type_array of array_declaration
 
 and record_representation =
     Record_regular                      (* All fields are boxed / tagged *)
@@ -330,6 +331,22 @@ and constructor_declaration =
 and constructor_arguments =
   | Cstr_tuple of type_expr list
   | Cstr_record of label_declaration list
+
+and array_representation =
+    Array_regular                      (* All fields are boxed / tagged *)
+  | Array_dynamic                      (* Boxing is decided at run-time *)
+  | Array_float                        (* All fields are floats *)
+
+and array_declaration =
+  {
+    ad_id: Ident.t;
+    ad_length: label_declaration;
+    ad_mutable: mutable_flag;
+    ad_type: type_expr;
+    ad_repr: array_representation;
+    ad_loc: Location.t;
+    ad_attributes: Parsetree.attributes;
+  }
 
 type extension_constructor =
     {
@@ -459,8 +476,13 @@ type label_description =
     lbl_mut: mutable_flag;              (* Is this a mutable field? *)
     lbl_pos: int;                       (* Position in block *)
     lbl_all: label_description array;   (* All the labels in this type *)
-    lbl_repres: record_representation;  (* Representation for this record *)
+    lbl_kind: label_kind;               (* Kind of label *)
     lbl_private: private_flag;          (* Read-only field? *)
     lbl_loc: Location.t;
     lbl_attributes: Parsetree.attributes;
   }
+
+and label_kind =
+  | Record of record_representation
+  | Array of array_representation
+  | ArrayLength of array_representation

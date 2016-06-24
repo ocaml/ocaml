@@ -43,6 +43,7 @@ type mapper = {
   include_declaration: mapper -> T.include_declaration -> include_declaration;
   include_description: mapper -> T.include_description -> include_description;
   label_declaration: mapper -> T.label_declaration -> label_declaration;
+  array_declaration: mapper -> T.array_declaration -> array_declaration;
   location: mapper -> Location.t -> Location.t;
   module_binding: mapper -> T.module_binding -> module_binding;
   module_declaration: mapper -> T.module_declaration -> module_declaration;
@@ -216,6 +217,8 @@ let type_kind sub tk = match tk with
   | Ttype_record list ->
       Ptype_record (List.map (sub.label_declaration sub) list)
   | Ttype_open -> Ptype_open
+  | Ttype_array ad ->
+      Ptype_array (sub.array_declaration sub ad)
 
 let constructor_arguments sub = function
    | Cstr_tuple l -> Pcstr_tuple (List.map (sub.typ sub) l)
@@ -236,6 +239,13 @@ let label_declaration sub ld =
     ~mut:ld.ld_mutable
     (map_loc sub ld.ld_name)
     (sub.typ sub ld.ld_type)
+
+let array_declaration sub ad =
+  let loc = sub.location sub ad.ad_loc; in
+  let attrs = sub.attributes sub ad.ad_attributes in
+  Type.array ~loc ~attrs
+    ~mut:ad.ad_mutable
+    (sub.typ sub ad.ad_type)
 
 let type_extension sub tyext =
   let attrs = sub.attributes sub tyext.tyext_attributes in
@@ -311,7 +321,7 @@ let pattern sub pat =
     | Tpat_record (list, closed) ->
         Ppat_record (List.map (fun (lid, _, pat) ->
             map_loc sub lid, sub.pat sub pat) list, closed)
-    | Tpat_array list -> Ppat_array (List.map (sub.pat sub) list)
+    | Tpat_array(_, list) -> Ppat_array (List.map (sub.pat sub) list)
     | Tpat_or (p1, p2, _) -> Ppat_or (sub.pat sub p1, sub.pat sub p2)
     | Tpat_lazy p -> Ppat_lazy (sub.pat sub p)
   in
@@ -420,8 +430,17 @@ let expression sub exp =
     | Texp_setfield (exp1, lid, _label, exp2) ->
         Pexp_setfield (sub.expr sub exp1, map_loc sub lid,
           sub.expr sub exp2)
-    | Texp_array list ->
+    | Texp_arrayfield (exp1, lid, _label, exp2) ->
+        Pexp_arrayfield (sub.expr sub exp1, map_opt (map_loc sub) lid,
+          sub.expr sub exp2)
+    | Texp_setarrayfield (exp1, lid, _label, exp2, exp3) ->
+        Pexp_setarrayfield (sub.expr sub exp1, map_opt (map_loc sub) lid,
+          sub.expr sub exp2, sub.expr sub exp3)
+    | Texp_array(_, list) ->
         Pexp_array (List.map (sub.expr sub) list)
+    | Texp_arraycomprehension (_, exp1, _, pat, exp2, dir, exp3) ->
+        Pexp_arraycomprehension (sub.expr sub exp1, pat,
+          sub.expr sub exp2, dir, sub.expr sub exp3)
     | Texp_ifthenelse (exp1, exp2, expo) ->
         Pexp_ifthenelse (sub.expr sub exp1,
           sub.expr sub exp2,
@@ -790,6 +809,7 @@ let default_mapper =
     value_binding = value_binding;
     constructor_declaration = constructor_declaration;
     label_declaration = label_declaration;
+    array_declaration = array_declaration;
     cases = cases;
     case = case;
     location = location;

@@ -238,7 +238,7 @@ let in_pervasives p =
 
 let is_datatype decl=
   match decl.type_kind with
-    Type_record _ | Type_variant _ | Type_open -> true
+    Type_record _ | Type_variant _ | Type_open | Type_array _ -> true
   | Type_abstract -> false
 
 
@@ -513,6 +513,7 @@ let closed_type_decl decl =
           v
     | Type_record(r, _rep) ->
         List.iter (fun l -> closed_type l.ld_type) r
+    | Type_array ad -> closed_type ad.ad_type
     | Type_open -> ()
     end;
     begin match decl.type_manifest with
@@ -1163,6 +1164,8 @@ let map_kind f = function
           (fun l ->
              {l with ld_type = f l.ld_type}
           ) fl, rr)
+  | Type_array ad ->
+      Type_array {ad with ad_type = f ad.ad_type}
 
 
 let instance_declaration decl =
@@ -2111,6 +2114,9 @@ and mcomp_type_decl type_pairs env p1 p2 tl1 tl2 =
           mcomp_variant_description type_pairs env v1 v2
       | Type_open, Type_open ->
           mcomp_list type_pairs env tl1 tl2
+      | Type_array v1, Type_array v2 ->
+          mcomp_list type_pairs env tl1 tl2;
+          mcomp_array_description type_pairs env v1 v2
       | Type_abstract, Type_abstract -> ()
       | Type_abstract, _ when not (non_aliasable p1 decl)-> ()
       | _, Type_abstract when not (non_aliasable p2 decl') -> ()
@@ -2155,6 +2161,9 @@ and mcomp_record_description type_pairs env =
     | _ -> raise (Unify [])
   in
   iter
+
+and mcomp_array_description type_pairs env ad1 ad2 =
+  mcomp type_pairs env ad1.ad_type ad2.ad_type
 
 let mcomp env t1 t2 =
   mcomp (TypePairs.create 4) env t1 t2

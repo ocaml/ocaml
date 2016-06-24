@@ -579,8 +579,6 @@ let array_indexing ?typ log2size ptr ofs =
 
 let addr_array_ref arr ofs =
   Cop(Cload Word_val, [array_indexing log2_size_addr arr ofs])
-let int_array_ref arr ofs =
-  Cop(Cload Word_int, [array_indexing log2_size_addr arr ofs])
 let unboxed_float_array_ref arr ofs =
   Cop(Cload Double_u, [array_indexing log2_size_float arr ofs])
 let float_array_ref arr ofs =
@@ -701,7 +699,7 @@ let rec expr_size env = function
       expr_size env body
   | Uprim(Pmakeblock _, args, _) ->
       RHS_block (List.length args)
-  | Uprim(Pmakearray((Paddrarray | Pintarray), _), args, _) ->
+  | Uprim(Pmakearray(Paddrarray, _), args, _) ->
       RHS_block (List.length args)
   | Uprim(Pmakearray(Pfloatarray, _), args, _) ->
       RHS_floatblock (List.length args)
@@ -1699,7 +1697,7 @@ and transl_make_array env kind args =
   | Pgenarray ->
       Cop(Cextcall("caml_make_array", typ_val, true, Debuginfo.none),
           [make_alloc 0 (List.map (transl env) args)])
-  | Paddrarray | Pintarray ->
+  | Paddrarray ->
       make_alloc 0 (List.map (transl env) args)
   | Pfloatarray ->
       make_float_alloc Obj.double_array_tag
@@ -1811,7 +1809,7 @@ and transl_prim_1 env p arg dbg =
                             Cop(Clsr, [hdr; Cconst_int wordsize_shift]),
                             Cop(Clsr, [hdr; Cconst_int numfloat_shift]))) in
           Cop(Cor, [len; Cconst_int 1])
-      | Paddrarray | Pintarray ->
+      | Paddrarray ->
           Cop(Cor, [addr_array_length(header(transl env arg)); Cconst_int 1])
       | Pfloatarray ->
           Cop(Cor, [float_array_length(header(transl env arg)); Cconst_int 1])
@@ -2015,8 +2013,6 @@ and transl_prim_2 env p arg1 arg2 dbg =
                           float_array_ref arr idx)))
       | Paddrarray ->
           addr_array_ref (transl env arg1) (transl env arg2)
-      | Pintarray ->
-          int_array_ref (transl env arg1) (transl env arg2)
       | Pfloatarray ->
           float_array_ref (transl env arg1) (transl env arg2)
       end
@@ -2042,11 +2038,6 @@ and transl_prim_2 env p arg1 arg2 dbg =
           bind "arr" (transl env arg1) (fun arr ->
             Csequence(make_checkbound dbg [addr_array_length(header arr); idx],
                       addr_array_ref arr idx)))
-      | Pintarray ->
-          bind "index" (transl env arg2) (fun idx ->
-          bind "arr" (transl env arg1) (fun arr ->
-            Csequence(make_checkbound dbg [addr_array_length(header arr); idx],
-                      int_array_ref arr idx)))
       | Pfloatarray ->
           box_float(
             bind "index" (transl env arg2) (fun idx ->
@@ -2137,7 +2128,7 @@ and transl_prim_3 env p arg1 arg2 arg3 dbg =
                   [add_int str idx; untag_int(transl env arg3)])))))
 
   (* Array operations *)
-  | Parraysetu kind ->
+  | Parraysetu(kind, ptr) ->
       return_unit(begin match kind with
         Pgenarray ->
           bind "newval" (transl env arg3) (fun newval ->
@@ -2147,14 +2138,17 @@ and transl_prim_3 env p arg1 arg2 arg3 dbg =
                             addr_array_set arr index newval,
                             float_array_set arr index (unbox_float newval)))))
       | Paddrarray ->
-          addr_array_set (transl env arg1) (transl env arg2) (transl env arg3)
-      | Pintarray ->
-          int_array_set (transl env arg1) (transl env arg2) (transl env arg3)
+        let array_set =
+          match ptr with
+          | Pointer -> addr_array_set
+          | Immediate -> int_array_set
+        in
+        array_set (transl env arg1) (transl env arg2) (transl env arg3)
       | Pfloatarray ->
           float_array_set (transl env arg1) (transl env arg2)
             (transl_unbox_float env arg3)
       end)
-  | Parraysets kind ->
+  | Parraysets(kind, ptr) ->
       return_unit(begin match kind with
       | Pgenarray ->
           bind "newval" (transl env arg3) (fun newval ->
@@ -2175,17 +2169,16 @@ and transl_prim_3 env p arg1 arg2 arg3 dbg =
                           float_array_set arr idx
                                           (unbox_float newval)))))))
       | Paddrarray ->
-          bind "newval" (transl env arg3) (fun newval ->
-          bind "index" (transl env arg2) (fun idx ->
-          bind "arr" (transl env arg1) (fun arr ->
-            Csequence(make_checkbound dbg [addr_array_length(header arr); idx],
-                      addr_array_set arr idx newval))))
-      | Pintarray ->
-          bind "newval" (transl env arg3) (fun newval ->
-          bind "index" (transl env arg2) (fun idx ->
-          bind "arr" (transl env arg1) (fun arr ->
-            Csequence(make_checkbound dbg [addr_array_length(header arr); idx],
-                      int_array_set arr idx newval))))
+          let array_set =
+            match ptr with
+            | Pointer -> addr_array_set
+            | Immediate -> int_array_set 
+          in
+            bind "newval" (transl env arg3) (fun newval ->
+            bind "index" (transl env arg2) (fun idx ->
+            bind "arr" (transl env arg1) (fun arr ->
+              Csequence(make_checkbound dbg [addr_array_length(header arr); idx],
+                        array_set arr idx newval))))
       | Pfloatarray ->
           bind_load "newval" (transl_unbox_float env arg3) (fun newval ->
           bind "index" (transl env arg2) (fun idx ->

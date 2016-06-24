@@ -125,9 +125,9 @@ let prim_size prim args =
   | Pmakearray _ -> 5 + List.length args
   | Parraylength kind -> if kind = Pgenarray then 6 else 2
   | Parrayrefu kind -> if kind = Pgenarray then 12 else 2
-  | Parraysetu kind -> if kind = Pgenarray then 16 else 4
+  | Parraysetu(kind, _) -> if kind = Pgenarray then 16 else 4
   | Parrayrefs kind -> if kind = Pgenarray then 18 else 8
-  | Parraysets kind -> if kind = Pgenarray then 22 else 10
+  | Parraysets(kind, _) -> if kind = Pgenarray then 22 else 10
   | Pbittest -> 3
   | Pbigarrayref(_, ndims, _, _) -> 4 + ndims * 6
   | Pbigarrayset(_, ndims, _, _) -> 4 + ndims * 6

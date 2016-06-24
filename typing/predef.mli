@@ -52,8 +52,12 @@ val path_lazy_t: Path.t
 val path_extension_constructor: Path.t
 
 val path_match_failure: Path.t
+val path_invalid_argument: Path.t
 val path_assert_failure : Path.t
 val path_undefined_recursive_module : Path.t
+
+val name_array_project: string
+val name_array_length: string
 
 (* To build the initial environment. Since there is a nasty mutual
    recursion between predef and env, we break it by parameterizing

@@ -92,6 +92,8 @@ type error =
   | Cannot_unbox_or_untag_type of native_repr_kind
   | Deep_unbox_or_untag_attribute of native_repr_kind
   | Bad_immediate_attribute
+  | Multiple_boxing_attributes
+  | Invalid_boxing_attribute_payload
 
 exception Error of Location.t * error
 

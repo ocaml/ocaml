@@ -256,6 +256,11 @@ let string_of_type t =
   | M.Type_open ->
       "= .." (* FIXME MG: when introducing new constuctors next time,
                 thanks to setup a minimal correct output *)
+  | M.Type_array(mut, typ) ->
+     P.sprintf "= %s[|\n%s%s\n|]\n"
+       (if priv then "private " else "")
+       (if mut then "mutable " else "")
+       (Odoc_print.string_of_type_expr typ)
   | M.Type_record l ->
      P.sprintf "= %s{\n%s\n}\n" (if priv then "private " else "")
        (string_of_record l)
