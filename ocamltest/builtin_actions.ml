@@ -118,6 +118,11 @@ let stdlib_flags ocamlsrcdir =
   let stdlib_path = stdlib ocamlsrcdir in
   "-nostdlib -I " ^ stdlib_path
 
+let testingmodule_flags ocamlsrcdir =
+  let testing_module_directory =
+    make_path [ocamlsrcdir; "testsuite"; "lib"] in
+  "-I " ^ testing_module_directory
+
 let use_runtime backend ocamlsrcdir = match backend with
   | Sys.Bytecode ->
     let ocamlrun = ocamlrun ocamlsrcdir in
@@ -198,6 +203,8 @@ let modules env = Testlib.words (Environments.safe_lookup "modules" env)
 
 let files env = Testlib.words (Environments.safe_lookup "files" env)
 
+let use_testing_module env = (Environments.safe_lookup "usetestingmodule" env) <> ""
+
 let flags env = Environments.safe_lookup "flags" env
 
 let libraries env = Environments.safe_lookup "libraries" env
@@ -232,6 +239,7 @@ let rec compile_module
     [
       compilername;
       stdlib_flags ocamlsrcdir;
+      if use_testing_module env then testingmodule_flags ocamlsrcdir else "";
       flags env;
       backend_flags env backend;
       libraries env;
@@ -287,6 +295,12 @@ let compile_modules ocamlsrcdir compilername compileroutput backend log env modu
     modules_with_filetypes
 
 let link_modules ocamlsrcdir compilername compileroutput program_variable custom backend log env modules =
+  let modules =
+    if use_testing_module env then
+      let testing_module =
+        make_file_name "testing" (Backends.module_extension backend) in
+      testing_module::modules
+    else modules in
   let executable_name = match Environments.lookup program_variable env with
     | None -> assert false
     | Some program -> program in
@@ -302,6 +316,7 @@ let link_modules ocamlsrcdir compilername compileroutput program_variable custom
     customstr;
     use_runtime backend ocamlsrcdir;
     stdlib_flags ocamlsrcdir;
+    if use_testing_module env then testingmodule_flags ocamlsrcdir else "";
     flags env;
     libraries env;
     backend_flags env backend;

@@ -16,3 +16,5 @@
 (* Definition of a few builtin environments *)
 
 val principal : Environments.t
+
+val testing : Environments.t

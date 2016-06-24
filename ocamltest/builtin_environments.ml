@@ -19,4 +19,8 @@ open Environments
 
 let principal = add "compiler-flags" "-principal" empty
 
-let _ = register "principal" principal
+let testing = add "usetestingmodule" "yes" empty
+
+let _ =
+  register "principal" principal;
+  register "testing" testing
