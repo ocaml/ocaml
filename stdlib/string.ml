@@ -224,3 +224,12 @@ let capitalize s =
   B.capitalize (bos s) |> bts
 let uncapitalize s =
   B.uncapitalize (bos s) |> bts
+
+(** {6 Iterators} *)
+
+let to_iter s = bos s |> B.to_iter
+
+let to_iteri s = bos s |> B.to_iteri
+
+let of_iter g = B.of_iter g |> bts
+

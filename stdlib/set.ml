@@ -60,6 +60,10 @@ module type S =
     val find_last: (elt -> bool) -> t -> elt
     val find_last_opt: (elt -> bool) -> t -> elt option
     val of_list: elt list -> t
+    val to_iter_at : elt -> t -> elt Iter.t
+    val to_iter : t -> elt Iter.t
+    val add_iter : t -> elt Iter.t -> t
+    val of_iter : elt Iter.t -> t
   end
 
 module Make(Ord: OrderedType) =
@@ -521,4 +525,28 @@ module Make(Ord: OrderedType) =
       | [x0; x1; x2; x3] -> add x3 (add x2 (add x1 (singleton x0)))
       | [x0; x1; x2; x3; x4] -> add x4 (add x3 (add x2 (add x1 (singleton x0))))
       | _ -> of_sorted_list (List.sort_uniq Ord.compare l)
+
+    let add_iter m i =
+      Iter.fold_left (fun s x -> add x s) m i
+
+    let of_iter i = add_iter empty i
+
+    let to_iter_next_ = function
+      | End -> Iter.Done
+      | More (x, t, rest) -> Iter.Yield (x, cons_enum t rest)
+
+    let to_iter s =
+      Iter.Sequence (cons_enum s End, to_iter_next_)
+
+    let to_iter_at low s =
+      let rec aux low s c = match s with
+        | Empty -> c
+        | Node (l, x, r, _) ->
+            begin match Ord.compare x low with
+              | 0 -> More (x, r, c)
+              | n when n<0 -> aux low r c
+              | _ -> aux low l (More (x, r, c))
+            end
+      in
+      Iter.Sequence (aux low s End, to_iter_next_)
   end

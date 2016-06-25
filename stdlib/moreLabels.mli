@@ -47,6 +47,12 @@ module Hashtbl : sig
   val is_randomized : unit -> bool
   type statistics = Hashtbl.statistics
   val stats : ('a, 'b) t -> statistics
+  val to_iter : ('a,'b) t -> ('a * 'b) Iter.t
+  val to_iter_keys : ('a,_) t -> 'a Iter.t
+  val to_iter_values : (_,'b) t -> 'b Iter.t
+  val add_iter : ('a,'b) t -> ('a * 'b) Iter.t -> unit
+  val replace_iter : ('a,'b) t -> ('a * 'b) Iter.t -> unit
+  val of_iter : ('a * 'b) Iter.t -> ('a, 'b) t
   module type HashedType = Hashtbl.HashedType
   module type SeededHashedType = Hashtbl.SeededHashedType
   module type S =
@@ -147,6 +153,10 @@ module Map : sig
       val find_last_opt : f:(key -> bool) -> 'a t -> (key * 'a) option
       val map : f:('a -> 'b) -> 'a t -> 'b t
       val mapi : f:(key -> 'a -> 'b) -> 'a t -> 'b t
+      val to_iter : 'a t -> (key * 'a) Iter.t
+      val to_iter_at : key -> 'a t -> (key * 'a) Iter.t
+      val add_iter : 'a t -> (key * 'a) Iter.t -> 'a t
+      val of_iter : (key * 'a) Iter.t -> 'a t
   end
   module Make : functor (Ord : OrderedType) -> S with type key = Ord.t
 end
@@ -192,6 +202,10 @@ module Set : sig
       val find_last: f:(elt -> bool) -> t -> elt
       val find_last_opt: f:(elt -> bool) -> t -> elt option
       val of_list: elt list -> t
+      val to_iter_at : elt -> t -> elt Iter.t
+      val to_iter : t -> elt Iter.t
+      val add_iter : t -> elt Iter.t -> t
+      val of_iter : elt Iter.t -> t
     end
   module Make : functor (Ord : OrderedType) -> S with type elt = Ord.t
 end

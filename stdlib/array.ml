@@ -292,3 +292,38 @@ let stable_sort cmp a =
 
 
 let fast_sort = stable_sort
+
+(** {6 Iterators} *)
+
+let to_iter a =
+  let next i =
+    if i < length a
+    then
+      let x = unsafe_get a i in
+      Iter.Yield (x, i+1)
+    else Iter.Done
+  in Iter.Sequence (0, next)
+
+let to_iteri a =
+  let next i =
+    if i < length a
+    then
+      let x = unsafe_get a i in
+      Iter.Yield ((i,x), i+1)
+    else Iter.Done
+  in Iter.Sequence (0, next)
+
+let of_rev_list = function
+    [] -> [||]
+  | hd::tl as l ->
+      let len = list_length 0 l in
+      let a = create len hd in
+      let rec fill i = function
+          [] -> a
+        | hd::tl -> unsafe_set a i hd; fill (i-1) tl
+      in
+      fill (len-1) tl
+
+let of_iter i =
+  let l = Iter.fold_left (fun acc x -> x::acc) [] i in
+  of_rev_list l

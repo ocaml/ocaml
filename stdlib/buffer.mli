@@ -136,3 +136,22 @@ val truncate : t -> int -> unit
 (** [truncate b len] truncates the length of [b] to [len]
   Note: the internal byte sequence is not shortened.
   Raise [Invalid_argument] if [len < 0] or [len > length b]. *)
+
+(** {6 Iterators} *)
+
+val to_iter : t -> char Iter.t
+(** Iterate on the buffer, in increasing order
+    @since NEXT_RELEASE *)
+
+val to_iteri : t -> (int * char) Iter.t
+(** Iterate on the buffer, in increasing order, yielding indices along chars
+    @since NEXT_RELEASE *)
+
+val add_iter : t -> char Iter.t -> unit
+(** Add chars to the buffer
+    @since NEXT_RELEASE *)
+
+val of_iter : char Iter.t -> t
+(** Create a buffer from the generator
+    @since NEXT_RELEASE *)
+

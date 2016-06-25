@@ -57,6 +57,10 @@ module type S =
     val find_last_opt: (key -> bool) -> 'a t -> (key * 'a) option
     val map: ('a -> 'b) -> 'a t -> 'b t
     val mapi: (key -> 'a -> 'b) -> 'a t -> 'b t
+    val to_iter : 'a t -> (key * 'a) Iter.t
+    val to_iter_at : key -> 'a t -> (key * 'a) Iter.t
+    val add_iter : 'a t -> (key * 'a) Iter.t -> 'a t
+    val of_iter : (key * 'a) Iter.t -> 'a t
   end
 
 module Make(Ord: OrderedType) = struct
@@ -456,4 +460,27 @@ module Make(Ord: OrderedType) = struct
 
     let choose_opt = min_binding_opt
 
+    let add_iter m i =
+      Iter.fold_left (fun m (k,v) -> add k v m) m i
+
+    let of_iter i = add_iter empty i
+
+    let to_iter_next_ = function
+      | End -> Iter.Done
+      | More (k,v,t,rest) -> Iter.Yield ((k,v), cons_enum t rest)
+
+    let to_iter m =
+      Iter.Sequence (cons_enum m End, to_iter_next_)
+
+    let to_iter_at low m =
+      let rec aux low m c = match m with
+        | Empty -> c
+        | Node (l, k, v, r, _) ->
+            begin match Ord.compare k low with
+              | 0 -> More (k, v, r, c)
+              | n when n<0 -> aux low r c
+              | _ -> aux low l (More (k, v, r, c))
+            end
+      in
+      Iter.Sequence (aux low m End, to_iter_next_)
 end
