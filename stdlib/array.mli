@@ -256,6 +256,20 @@ val fast_sort : ('a -> 'a -> int) -> 'a array -> unit
 *)
 
 
+(** {6 Iterators} *)
+
+val to_seq : 'a array -> 'a Seq.t
+(** Iterate on the array, in increasing order
+    @since NEXT_RELEASE *)
+
+val to_seqi : 'a array -> (int * 'a) Seq.t
+(** Iterate on the array, in increasing order, yielding indices along elements
+    @since NEXT_RELEASE *)
+
+val of_seq : 'a Seq.t -> 'a array
+(** Create an array from the generator
+    @since NEXT_RELEASE *)
+
 (**/**)
 (** {1 Undocumented functions} *)
 

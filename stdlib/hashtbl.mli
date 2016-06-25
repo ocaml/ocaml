@@ -216,6 +216,36 @@ val stats : ('a, 'b) t -> statistics
    buckets by size.
    @since 4.00.0 *)
 
+(** {6 Seq constructors} *)
+
+val to_seq : ('a,'b) t -> ('a * 'b) Seq.t
+(** Seq.te on the whole table, in unspecified order.
+
+    The behavior is not defined if the hash table is modified
+    during the iteration.
+
+    @since NEXT_RELEASE *)
+
+val to_seq_keys : ('a,_) t -> 'a Seq.t
+(** Seq.te on 'as, in ascending order
+    @since NEXT_RELEASE *)
+
+val to_seq_values : (_,'b) t -> 'b Seq.t
+(** Seq.te on values, in ascending order of their corresponding 'a
+    @since NEXT_RELEASE *)
+
+val add_seq : ('a,'b) t -> ('a * 'b) Seq.t -> unit
+(** Add the given bindings to the table, using {!add}
+    @since NEXT_RELEASE *)
+
+val replace_seq : ('a,'b) t -> ('a * 'b) Seq.t -> unit
+(** Add the given bindings to the table, using {!replace}
+    @since NEXT_RELEASE *)
+
+val of_seq : ('a * 'b) Seq.t -> ('a, 'b) t
+(** Build a table from the given bindings
+    @since NEXT_RELEASE *)
+
 (** {1 Functorial interface} *)
 
 (** The functorial interface allows the use of specific comparison
@@ -297,9 +327,20 @@ module type S =
     val length : 'a t -> int
     val stats: 'a t -> statistics (** @since 4.00.0 *)
   end
-(** The output signature of the functor {!Hashtbl.Make}. *)
+(** The core output signature of the functor {!Hashtbl.Make}. *)
 
-module Make (H : HashedType) : S with type key = H.t
+module type FULL =
+  sig
+    include S
+    val to_seq : 'a t -> (key * 'a) Seq.t
+    val to_seq_keys : _ t -> key Seq.t
+    val to_seq_values : 'a t -> 'a Seq.t
+    val add_seq : 'a t -> (key * 'a) Seq.t -> unit
+    val replace_seq : 'a t -> (key * 'a) Seq.t -> unit
+    val of_seq : (key * 'a) Seq.t -> 'a t
+  end
+
+module Make (H : HashedType) : FULL with type key = H.t
 (** Functor building an implementation of the hashtable structure.
     The functor [Hashtbl.Make] returns a structure containing
     a type [key] of keys and a type ['a t] of hash tables
@@ -353,10 +394,23 @@ module type SeededS =
     val length : 'a t -> int
     val stats: 'a t -> statistics
   end
-(** The output signature of the functor {!Hashtbl.MakeSeeded}.
+(** The core output signature of the functor {!Hashtbl.MakeSeeded}.
     @since 4.00.0 *)
 
-module MakeSeeded (H : SeededHashedType) : SeededS with type key = H.t
+module type SeededSFull =
+  sig
+    include SeededS
+    val to_seq : 'a t -> (key * 'a) Seq.t
+    val to_seq_keys : _ t -> key Seq.t
+    val to_seq_values : 'a t -> 'a Seq.t
+    val add_seq : 'a t -> (key * 'a) Seq.t -> unit
+    val replace_seq : 'a t -> (key * 'a) Seq.t -> unit
+    val of_seq : (key * 'a) Seq.t -> 'a t
+  end
+(** The full output signature of the functor {!Hashtbl.MakeSeeded}.
+    @since NEXT_RELEASE *)
+
+module MakeSeeded (H : SeededHashedType) : SeededSFull with type key = H.t
 (** Functor building an implementation of the hashtable structure.
     The functor [Hashtbl.MakeSeeded] returns a structure containing
     a type [key] of keys and a type ['a t] of hash tables

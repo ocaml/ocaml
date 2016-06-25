@@ -354,6 +354,35 @@ let stats h =
     max_bucket_length = mbl;
     bucket_histogram = histo }
 
+(** {6 Seq.tors} *)
+
+let to_seq tbl =
+  (* state: index * next bucket to traverse *)
+  let rec aux i buck () = match buck with
+    | Empty ->
+        if i = Array.length tbl.data
+        then Seq.Nil
+        else aux(i+1) tbl.data.(i) ()
+    | Cons {key; data; next} ->
+        Seq.Cons ((key, data), aux i next)
+  in
+  aux 0 Empty
+
+let to_seq_keys m = Seq.map fst (to_seq m)
+
+let to_seq_values m = Seq.map snd (to_seq m)
+
+let add_seq tbl i =
+  Seq.iter (fun (k,v) -> add tbl k v) i
+
+let replace_seq tbl i =
+  Seq.iter (fun (k,v) -> replace tbl k v) i
+
+let of_seq i =
+  let tbl = create 16 in
+  replace_seq tbl i;
+  tbl
+
 (* Functorial interface *)
 
 module type HashedType =
@@ -377,19 +406,30 @@ module type S =
     val create: int -> 'a t
     val clear : 'a t -> unit
     val reset : 'a t -> unit
-    val copy: 'a t -> 'a t
-    val add: 'a t -> key -> 'a -> unit
-    val remove: 'a t -> key -> unit
-    val find: 'a t -> key -> 'a
+    val copy : 'a t -> 'a t
+    val add : 'a t -> key -> 'a -> unit
+    val remove : 'a t -> key -> unit
+    val find : 'a t -> key -> 'a
     val find_opt: 'a t -> key -> 'a option
-    val find_all: 'a t -> key -> 'a list
+    val find_all : 'a t -> key -> 'a list
     val replace : 'a t -> key -> 'a -> unit
     val mem : 'a t -> key -> bool
-    val iter: (key -> 'a -> unit) -> 'a t -> unit
+    val iter : (key -> 'a -> unit) -> 'a t -> unit
     val filter_map_inplace: (key -> 'a -> 'a option) -> 'a t -> unit
-    val fold: (key -> 'a -> 'b -> 'b) -> 'a t -> 'b -> 'b
-    val length: 'a t -> int
+    val fold : (key -> 'a -> 'b -> 'b) -> 'a t -> 'b -> 'b
+    val length : 'a t -> int
     val stats: 'a t -> statistics
+  end
+
+module type FULL =
+  sig
+    include S
+    val to_seq : 'a t -> (key * 'a) Seq.t
+    val to_seq_keys : _ t -> key Seq.t
+    val to_seq_values : 'a t -> 'a Seq.t
+    val add_seq : 'a t -> (key * 'a) Seq.t -> unit
+    val replace_seq : 'a t -> (key * 'a) Seq.t -> unit
+    val of_seq : (key * 'a) Seq.t -> 'a t
   end
 
 module type SeededS =
@@ -414,7 +454,18 @@ module type SeededS =
     val stats: 'a t -> statistics
   end
 
-module MakeSeeded(H: SeededHashedType): (SeededS with type key = H.t) =
+module type SeededSFull =
+  sig
+    include SeededS
+    val to_seq : 'a t -> (key * 'a) Seq.t
+    val to_seq_keys : _ t -> key Seq.t
+    val to_seq_values : 'a t -> 'a Seq.t
+    val add_seq : 'a t -> (key * 'a) Seq.t -> unit
+    val replace_seq : 'a t -> (key * 'a) Seq.t -> unit
+    val of_seq : (key * 'a) Seq.t -> 'a t
+  end
+
+module MakeSeeded(H: SeededHashedType): (SeededSFull with type key = H.t) =
   struct
     type key = H.t
     type 'a hashtbl = (key, 'a) t
@@ -531,9 +582,15 @@ module MakeSeeded(H: SeededHashedType): (SeededS with type key = H.t) =
     let fold = fold
     let length = length
     let stats = stats
+    let to_seq = to_seq
+    let to_seq_keys = to_seq_keys
+    let to_seq_values = to_seq_values
+    let add_seq = add_seq
+    let replace_seq = replace_seq
+    let of_seq = of_seq
   end
 
-module Make(H: HashedType): (S with type key = H.t) =
+module Make(H: HashedType): (FULL with type key = H.t) =
   struct
     include MakeSeeded(struct
         type t = H.t

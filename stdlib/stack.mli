@@ -61,3 +61,19 @@ val fold : ('b -> 'a -> 'b) -> 'b -> 'a t -> 'b
     where [x1] is the top of the stack, [x2] the second element,
     and [xn] the bottom element. The stack is unchanged.
     @since 4.03 *)
+
+(** {6 Iterators} *)
+
+val to_seq : 'a t -> 'a Seq.t
+(** Iterate on the stack, top to bottom.
+    It is safe to modify the stack during iteration.
+    @since NEXT_RELEASE *)
+
+val add_seq : 'a t -> 'a Seq.t -> unit
+(** Add the elements from the iterator on the top of the stack.
+    @since NEXT_RELEASE *)
+
+val of_seq : 'a Seq.t -> 'a t
+(** Create a stack from the iterator
+    @since NEXT_RELEASE *)
+
