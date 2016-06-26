@@ -1,9 +1,1 @@
-Loguer une ligne pour chaque test qui échoue ou est sauté, même si
-c'est parce que ses parents ont été sautés / ont échoué
-
 S'il n'y a qu'un module, compiler et linker en une seule fois.
-
-Pour la sortie des compilatuers, s'assurer qu'elle n'existe pas au
-début de la compilation:
-- Soit on l'efface
-- Soit on compile le premier module avec append=false
