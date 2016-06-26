@@ -313,3 +313,11 @@ void polymorphic_entry_point(char *s)
             myname, s);
     done(1);
 }
+
+void forbidden_conflicts(void)
+{
+    fprintf(stderr,
+            "%s: the grammar has conflicts, but --strict was specified\n",
+            myname);
+    done(1);
+}
