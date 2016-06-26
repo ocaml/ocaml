@@ -39,7 +39,8 @@ OCAMLBUILDNATIVE=$(WITH_OCAMLBUILD:=.native)
 OCAMLDOC_OPT=$(WITH_OCAMLDOC:=.opt)
 
 INCLUDES=-I utils -I parsing -I typing -I bytecomp -I middle_end \
-        -I middle_end/base_types -I asmcomp -I driver -I toplevel
+        -I middle_end/base_types -I asmcomp -I driver -I toplevel \
+        -I asmcomp/amd64
 
 UTILS=utils/config.cmo utils/misc.cmo \
   utils/identifiable.cmo utils/numbers.cmo utils/arg_helper.cmo \
@@ -106,9 +107,9 @@ endif
 
 ASMCOMP=\
   $(ARCH_SPECIFIC_ASMCOMP) \
-  asmcomp/arch.cmo \
+  asmcomp/amd64/amd64_arch.cmo \
   asmcomp/cmm.cmo asmcomp/printcmm.cmo \
-  asmcomp/reg.cmo asmcomp/mach.cmo asmcomp/proc.cmo \
+  asmcomp/reg.cmo asmcomp/mach.cmo asmcomp/amd64/amd64_proc.cmo \
   asmcomp/arch_intf.cmo asmcomp/proc_intf.cmo \
   asmcomp/native_backend_intf.cmo \
   asmcomp/clambda.cmo asmcomp/printclambda.cmo \
@@ -122,19 +123,19 @@ ASMCOMP=\
   asmcomp/import_approx.cmo \
   asmcomp/un_anf.cmo \
   asmcomp/strmatch.cmo asmcomp/cmmgen.cmo \
-  asmcomp/printmach.cmo asmcomp/selectgen.cmo asmcomp/selection.cmo \
+  asmcomp/printmach.cmo asmcomp/selectgen.cmo asmcomp/amd64/amd64_selection.cmo \
   asmcomp/comballoc.cmo \
-  asmcomp/CSEgen.cmo asmcomp/CSE.cmo \
+  asmcomp/CSEgen.cmo asmcomp/amd64/amd64_CSE.cmo \
   asmcomp/liveness.cmo \
   asmcomp/spill.cmo asmcomp/split.cmo \
   asmcomp/interf.cmo asmcomp/coloring.cmo \
-  asmcomp/reloadgen.cmo asmcomp/reload.cmo \
+  asmcomp/reloadgen.cmo asmcomp/amd64/amd64_reload.cmo \
   asmcomp/deadcode.cmo \
   asmcomp/printlinear.cmo asmcomp/linearize.cmo \
-  asmcomp/schedgen.cmo asmcomp/scheduling.cmo \
+  asmcomp/schedgen.cmo asmcomp/amd64/amd64_scheduling.cmo \
   asmcomp/branch_relaxation_intf.cmo \
   asmcomp/branch_relaxation.cmo \
-  asmcomp/emitaux.cmo asmcomp/emit.cmo asmcomp/asmgen.cmo \
+  asmcomp/emitaux.cmo asmcomp/amd64/amd64_emit.cmo asmcomp/asmgen.cmo \
   asmcomp/asmlink.cmo asmcomp/asmlibrarian.cmo asmcomp/asmpackager.cmo \
   driver/opterrors.cmo driver/optcompile.cmo
 

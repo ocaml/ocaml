@@ -1,10 +1,14 @@
 module type S = sig
-  module Arch : Arch_intf.S
-  module Proc : Proc_intf.S with type addressing_mode = Arch.addressing_mode
-                             and type specific_operation = Arch.specific_operation
+  type addressing_mode
+  type specific_operation
 
-  type fundecl = (Arch.addressing_mode, Arch.specific_operation) Mach.fundecl
-  type linearize_fundecl = (Arch.addressing_mode, Arch.specific_operation) Linearize.fundecl
+  module Arch : Arch_intf.S with type addressing_mode = addressing_mode
+                             and type specific_operation = specific_operation
+  module Proc : Proc_intf.S with type addressing_mode = addressing_mode
+                             and type specific_operation = specific_operation
+
+  type fundecl = (addressing_mode, specific_operation) Mach.fundecl
+  type linearize_fundecl = (addressing_mode, specific_operation) Linearize.fundecl
 
   module Reload : sig
     val fundecl: fundecl -> fundecl * bool

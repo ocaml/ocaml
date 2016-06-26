@@ -62,7 +62,7 @@ let stackp r =
 
 class reload = object (self)
 
-inherit [Arch.addressing_mode, Arch.specific_operation] Reloadgen.reload_generic as super
+inherit [Amd64_arch.addressing_mode, Amd64_arch.specific_operation] Reloadgen.reload_generic as super
 
 method! reload_operation op arg res =
   match op with

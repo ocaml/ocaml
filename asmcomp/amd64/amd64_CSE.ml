@@ -2,9 +2,9 @@
 (*                                                                        *)
 (*                                 OCaml                                  *)
 (*                                                                        *)
-(*             Xavier Leroy, projet Cristal, INRIA Rocquencourt           *)
+(*             Xavier Leroy, projet Gallium, INRIA Rocquencourt           *)
 (*                                                                        *)
-(*   Copyright 1996 Institut National de Recherche en Informatique et     *)
+(*   Copyright 2014 Institut National de Recherche en Informatique et     *)
 (*     en Automatique.                                                    *)
 (*                                                                        *)
 (*   All rights reserved.  This file is distributed under the terms of    *)
@@ -13,9 +13,31 @@
 (*                                                                        *)
 (**************************************************************************)
 
-(* Generation of assembly code *)
+(* CSE for the AMD64 *)
 
-val fundecl: (Arch.addressing_mode, Arch.specific_operation) Linearize.fundecl -> unit
-val data: Cmm.data_item list -> unit
-val begin_assembly: unit -> unit
-val end_assembly: unit -> unit
+module CSEgen = CSEgen.Make (Amd64_proc)
+
+open Amd64_arch
+open Mach
+open CSEgen
+
+class cse = object
+
+inherit cse_generic as super
+
+method! class_of_operation op =
+  match op with
+  | Ispecific spec ->
+    begin match spec with
+    | Ilea _ -> Op_pure
+    | Istore_int(_, _, is_asg) | Istore_symbol(_, _, is_asg) -> Op_store is_asg
+    | Ioffset_loc(_, _) -> Op_store true
+    | Ifloatarithmem _ | Ifloatsqrtf _ -> Op_load
+    | Ibswap _ | Isqrtf -> super#class_of_operation op
+    end
+  | _ -> super#class_of_operation op
+
+end
+
+let fundecl f =
+  (new cse)#fundecl f

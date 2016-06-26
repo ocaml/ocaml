@@ -18,13 +18,17 @@ open Clflags
 open Compenv
 
 module B = struct
-  module Arch = Arch
-  module Proc = Proc
-  module Reload = Reload
-  module Scheduling = Scheduling
-  module Selection = Selection
-  module CSE = CSE
-  module Emit = Emit
+  type addressing_mode = Amd64_arch.addressing_mode
+  type specific_operation = Amd64_arch.specific_operation
+  module Arch = Amd64_arch
+  module Proc = Amd64_proc
+  type fundecl = (Arch.addressing_mode, Arch.specific_operation) Mach.fundecl
+  type linearize_fundecl = (Arch.addressing_mode, Arch.specific_operation) Linearize.fundecl
+  module Reload = Amd64_reload
+  module Scheduling = Amd64_scheduling
+  module Selection = Amd64_selection
+  module CSE = Amd64_CSE
+  module Emit = Amd64_emit
 end
 
 module Asmgen = Asmgen.Make (B)
@@ -40,12 +44,12 @@ module Backend = struct
   let really_import_approx = Import_approx.really_import_approx
   let import_symbol = Import_approx.import_symbol
 
-  let size_int = Arch.size_int
-  let big_endian = Arch.big_endian
+  let size_int = B.Arch.size_int
+  let big_endian = B.Arch.big_endian
 
   let max_sensible_number_of_arguments =
     (* The "-1" is to allow for a potential closure environment parameter. *)
-    Proc.max_arguments_for_tailcalls - 1
+    B.Proc.max_arguments_for_tailcalls - 1
 end
 let backend = (module Backend : Backend_intf.S)
 
@@ -300,7 +304,7 @@ let main () =
   let ppf = Format.err_formatter in
   try
     readenv ppf Before_args;
-    Arg.parse (Arch.command_line_options @ Options.list) anonymous usage;
+    Arg.parse (B.Arch.command_line_options @ Options.list) anonymous usage;
     if !output_name <> None && !compile_only &&
           List.length !process_thunks > 1 then
       fatal "Options -c -o are incompatible with compiling multiple files";

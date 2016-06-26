@@ -16,10 +16,12 @@
 
 (* Emission of Intel x86_64 assembly code *)
 
+module Emitaux = Emitaux.Make (Amd64_arch)
+
 open Misc
 open Cmm
-open Arch
-open Proc
+open Amd64_arch
+open Amd64_proc
 open Reg
 open Mach
 open Linearize
