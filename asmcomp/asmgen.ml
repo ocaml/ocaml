@@ -24,12 +24,12 @@ open Misc
 open Cmm
 
 module type S = sig
-module Emit : sig
-  val begin_assembly: unit -> unit
-  val end_assembly: unit -> unit
-end
+(* Re-exported from Emit *)
+val begin_assembly: unit -> unit
+val end_assembly: unit -> unit
+(* Re-exported from Emitaux *)
+val binary_backend_available: bool ref
 module Cmmgen : Cmmgen.S
-module Emitaux : Emitaux.S
 
 val compile_implementation_flambda :
     ?toplevel:(string -> bool) ->
@@ -73,6 +73,10 @@ module Comballoc = Comballoc.Make (Arch)
 module Coloring = Coloring.Make (Proc)
 module Deadcode = Deadcode.Make (Proc)
 module Liveness = Liveness.Make (Proc)
+
+let begin_assembly = Emit.begin_assembly
+let end_assembly = Emit.end_assembly
+let binary_backend_available = Emitaux.binary_backend_available
 
 type error = Assembler_error of string
 

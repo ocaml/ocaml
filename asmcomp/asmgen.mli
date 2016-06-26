@@ -16,12 +16,13 @@
 (* From lambda to assembly code *)
 
 module type S = sig
-module Emit : sig
-  val begin_assembly: unit -> unit
-  val end_assembly: unit -> unit
-end
+(* Re-exported from Emit *)
+val begin_assembly: unit -> unit
+val end_assembly: unit -> unit
+(* Re-exported from Emitaux *)
+val binary_backend_available: bool ref
+
 module Cmmgen : Cmmgen.S
-module Emitaux : Emitaux.S
 
 val compile_implementation_flambda :
     ?toplevel:(string -> bool) ->
@@ -51,4 +52,4 @@ val compile_unit:
   string(*obj file*) -> (unit -> unit) -> unit
 end
 
-module Make (B : Native_backend_intf.S) : S with module Emit = B.Emit
+module Make (B : Native_backend_intf.S) : S
