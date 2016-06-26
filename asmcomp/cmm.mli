@@ -55,7 +55,13 @@ val typ_addr: machtype
 val typ_int: machtype
 val typ_float: machtype
 
-val size_component: machtype_component -> int
+module type Arch_intf = sig
+  val size_addr: int
+  val size_int: int
+  val size_float: int
+end
+
+val size_component: (module Arch_intf) -> machtype_component -> int
 
 (** Least upper bound of two [machtype_component]s. *)
 val lub_component
@@ -70,7 +76,7 @@ val ge_component
   -> machtype_component
   -> bool
 
-val size_machtype: machtype -> int
+val size_machtype: (module Arch_intf) -> machtype -> int
 
 type comparison =
     Ceq

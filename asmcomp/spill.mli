@@ -16,5 +16,7 @@
 (* Insertion of moves to suggest possible spilling / reloading points
    before register allocation. *)
 
-val fundecl: Mach.fundecl -> Mach.fundecl
+module Make (Proc : Proc_intf.S) : sig
+val fundecl: (Proc.addressing_mode, Proc.specific_operation) Mach.fundecl -> (Proc.addressing_mode, Proc.specific_operation) Mach.fundecl
 val reset : unit -> unit
+end

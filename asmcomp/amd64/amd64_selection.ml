@@ -15,8 +15,8 @@
 
 (* Instruction selection for the AMD64 *)
 
-open Arch
-open Proc
+open Amd64_arch
+open Amd64_proc
 open Cmm
 open Mach
 
@@ -120,6 +120,8 @@ let inline_ops =
     "caml_int64_direct_bswap"; "caml_nativeint_direct_bswap" ]
 
 (* The selector class *)
+
+module Selectgen = Selectgen.Make (Amd64_arch) (Amd64_proc)
 
 class selector = object (self)
 
@@ -238,7 +240,7 @@ method select_floatarith commutative regular_op mem_op args =
       assert false
 
 method! mark_c_tailcall =
-  Proc.contains_calls := true
+  Amd64_proc.contains_calls := true
 
 (* Deal with register constraints *)
 

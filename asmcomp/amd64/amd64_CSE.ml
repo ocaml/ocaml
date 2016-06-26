@@ -15,7 +15,9 @@
 
 (* CSE for the AMD64 *)
 
-open Arch
+module CSEgen = CSEgen.Make (Amd64_proc)
+
+open Amd64_arch
 open Mach
 open CSEgen
 

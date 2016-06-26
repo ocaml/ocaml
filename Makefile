@@ -527,16 +527,6 @@ beforedepend:: bytecomp/runtimedef.ml
 
 # Choose the right machine-dependent files
 
-ARCH_SPECIFIC = \
-  asmcomp/arch.ml asmcomp/proc.ml asmcomp/CSE.ml asmcomp/selection.ml \
-  asmcomp/scheduling.ml asmcomp/reload.ml asmcomp/scheduling.ml \
-  asmcomp/emit.ml
-
-partialclean::
-	rm -f $(ARCH_SPECIFIC)
-
-beforedepend:: $(ARCH_SPECIFIC)
-
 ARCH_OCAMLOPT:=$(ARCH)
 
 .PHONY: check_arch check_all_arches
@@ -555,30 +545,12 @@ ARCHES=amd64 i386 arm arm64 power sparc s390x
 check_all_arches:
 	@for i in $(ARCHES); do $(MAKE) --no-print-directory check_arch ARCH=$$i; done
 
-asmcomp/arch.ml: asmcomp/$(ARCH_OCAMLOPT)/arch.ml
-	ln -s $(ARCH_OCAMLOPT)/arch.ml asmcomp/arch.ml
-
-asmcomp/proc.ml: asmcomp/$(ARCH_OCAMLOPT)/proc.ml
-	ln -s $(ARCH_OCAMLOPT)/proc.ml asmcomp/proc.ml
-
-asmcomp/selection.ml: asmcomp/$(ARCH_OCAMLOPT)/selection.ml
-	ln -s $(ARCH_OCAMLOPT)/selection.ml asmcomp/selection.ml
-
-asmcomp/CSE.ml: asmcomp/$(ARCH_OCAMLOPT)/CSE.ml
-	ln -s $(ARCH_OCAMLOPT)/CSE.ml asmcomp/CSE.ml
-
-asmcomp/reload.ml: asmcomp/$(ARCH_OCAMLOPT)/reload.ml
-	ln -s $(ARCH_OCAMLOPT)/reload.ml asmcomp/reload.ml
-
-asmcomp/scheduling.ml: asmcomp/$(ARCH_OCAMLOPT)/scheduling.ml
-	ln -s $(ARCH_OCAMLOPT)/scheduling.ml asmcomp/scheduling.ml
-
 # Preprocess the code emitters
 
-asmcomp/emit.ml: asmcomp/$(ARCH_OCAMLOPT)/emit.mlp tools/cvt_emit
-	echo \# 1 \"$(ARCH_OCAMLOPT)/emit.mlp\" > asmcomp/emit.ml
-	$(CAMLRUN) tools/cvt_emit <asmcomp/$(ARCH_OCAMLOPT)/emit.mlp >>asmcomp/emit.ml \
-	|| { rm -f asmcomp/emit.ml; exit 2; }
+asmcomp/$(ARCH_OCAMLOPT)/$(ARCH_OCAMLOPT)_emit.ml: asmcomp/$(ARCH_OCAMLOPT)/$(ARCH_OCAMLOPT)_emit.mlp tools/cvt_emit
+	echo \# 1 \"$(ARCH_OCAMLOPT)/$(ARCH_OCAMLOPT)_emit.mlp\" > asmcomp/$(ARCH_OCAMLOPT)/$(ARCH_OCAMLOPT)_emit.ml
+	$(CAMLRUN) tools/cvt_emit <asmcomp/$(ARCH_OCAMLOPT)/$(ARCH_OCAMLOPT)_emit.mlp >>asmcomp/$(ARCH_OCAMLOPT)/$(ARCH_OCAMLOPT)_emit.ml \
+	|| { rm -f asmcomp/$(ARCH_OCAMLOPT)/$(ARCH_OCAMLOPT)_emit.ml; exit 2; }
 
 tools/cvt_emit: tools/cvt_emit.mll
 	cd tools && $(MAKE) cvt_emit
@@ -759,7 +731,7 @@ partialclean::
 	rm -f *~
 
 depend: beforedepend
-	(for d in utils parsing typing bytecomp asmcomp middle_end \
+	(for d in utils parsing typing bytecomp asmcomp middle_end asmcomp/amd64 \
 	 middle_end/base_types driver toplevel; \
 	 do $(CAMLDEP) $(DEPFLAGS) $$d/*.mli $$d/*.ml; \
 	 done) > .depend

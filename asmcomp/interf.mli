@@ -16,4 +16,6 @@
 (* Construction of the interference graph.
    Annotate pseudoregs with interference lists and preference lists. *)
 
-val build_graph: Mach.fundecl -> unit
+module Make (Proc : Proc_intf.S) : sig
+val build_graph: (Proc.addressing_mode, Proc.specific_operation) Mach.fundecl -> unit
+end

@@ -15,5 +15,5 @@
 
 (* Introduction of closures, uncurrying, recognition of direct calls *)
 
-val intro: int -> Lambda.lambda -> Clambda.ulambda
+val intro: (module Arch_intf.S) -> int -> Lambda.lambda -> Clambda.ulambda
 val reset : unit -> unit

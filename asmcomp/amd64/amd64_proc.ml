@@ -17,10 +17,13 @@
 (* Description of the AMD64 processor *)
 
 open Misc
-open Arch
+open Amd64_arch
 open Cmm
 open Reg
 open Mach
+
+type addressing_mode = Amd64_arch.addressing_mode
+type specific_operation = Amd64_arch.specific_operation
 
 let fp = Config.with_frame_pointers
 

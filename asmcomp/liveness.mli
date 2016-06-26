@@ -18,5 +18,7 @@
 
 open Format
 
+module Make (Proc : Proc_intf.S) : sig
 val reset : unit -> unit
-val fundecl: formatter -> Mach.fundecl -> unit
+val fundecl: formatter -> (Proc.addressing_mode, Proc.specific_operation) Mach.fundecl -> unit
+end

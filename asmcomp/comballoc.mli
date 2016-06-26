@@ -15,4 +15,6 @@
 
 (* Combine heap allocations occurring in the same basic block *)
 
-val fundecl: Mach.fundecl -> Mach.fundecl
+module Make (Arch : Arch_intf.S) : sig
+val fundecl: ('addr, 'op) Mach.fundecl -> ('addr, 'op) Mach.fundecl
+end

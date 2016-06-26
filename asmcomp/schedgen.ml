@@ -19,10 +19,12 @@ open Reg
 open Mach
 open Linearize
 
+module Make (Arch : Arch_intf.S) (Proc : Proc_intf.S with type addressing_mode = Arch.addressing_mode and type specific_operation = Arch.specific_operation) = struct
+
 (* Representation of the code DAG. *)
 
 type code_dag_node =
-  { instr: instruction;                 (* The instruction *)
+  { instr: (Arch.addressing_mode, Arch.specific_operation) instruction;                 (* The instruction *)
     delay: int;           (* How many cycles before result is available *)
     mutable sons: (code_dag_node * int) list;
                                         (* Instructions that depend on it *)
@@ -32,7 +34,7 @@ type code_dag_node =
     mutable emitted_ancestors: int }    (* Number of emitted ancestors *)
 
 let dummy_node =
-  { instr = end_instr; delay = 0; sons = []; date = 0;
+  { instr = end_instr (); delay = 0; sons = []; date = 0;
     length = -1; ancestors = 0; emitted_ancestors = 0 }
 
 (* The code dag itself is represented by two tables from registers to nodes:
@@ -206,7 +208,7 @@ method private instr_is_checkbound instr =
 
 (* Estimate the latency of an operation. *)
 
-method virtual oper_latency : Mach.operation -> int
+method virtual oper_latency : (Arch.addressing_mode, Arch.specific_operation) Mach.operation -> int
 
 (* Estimate the latency of a Lreloadretaddr operation. *)
 
@@ -222,7 +224,7 @@ method private instr_latency instr =
 
 (* Estimate the number of cycles consumed by emitting an operation. *)
 
-method virtual oper_issue_cycles : Mach.operation -> int
+method virtual oper_issue_cycles : (Arch.addressing_mode, Arch.specific_operation) Mach.operation -> int
 
 (* Estimate the number of cycles consumed by emitting a Lreloadretaddr. *)
 
@@ -396,3 +398,5 @@ method schedule_fundecl f =
 end
 
 let reset () = clear_code_dag ()
+
+end

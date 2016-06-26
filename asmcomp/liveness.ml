@@ -18,6 +18,8 @@
 
 open Mach
 
+module Make (Proc : Proc_intf.S) = struct
+
 let live_at_exit = ref []
 
 let find_live_at_exit k =
@@ -131,6 +133,8 @@ let fundecl ppf f =
   (* Sanity check: only function parameters can be live at entrypoint *)
   let wrong_live = Reg.Set.diff initially_live (Reg.set_of_array f.fun_args) in
   if not (Reg.Set.is_empty wrong_live) then begin
-    Format.fprintf ppf "%a@." Printmach.regset wrong_live;
+    Format.fprintf ppf "%a@." (Printmach.regset Proc.register_name) wrong_live;
     Misc.fatal_error "Liveness.fundecl"
   end
+
+end

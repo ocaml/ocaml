@@ -88,6 +88,76 @@ let extract_crc_interfaces () =
 let extract_crc_implementations () =
   Consistbl.extract !implementations crc_implementations
 
+(* Error report *)
+
+open Format
+
+let report_error ppf = function
+  | File_not_found name ->
+      fprintf ppf "Cannot find file %s" name
+  | Not_an_object_file name ->
+      fprintf ppf "The file %a is not a compilation unit description"
+        Location.print_filename name
+  | Missing_implementations l ->
+     let print_references ppf = function
+       | [] -> ()
+       | r1 :: rl ->
+           fprintf ppf "%s" r1;
+           List.iter (fun r -> fprintf ppf ",@ %s" r) rl in
+      let print_modules ppf =
+        List.iter
+         (fun (md, rq) ->
+            fprintf ppf "@ @[<hov 2>%s referenced from %a@]" md
+            print_references rq) in
+      fprintf ppf
+       "@[<v 2>No implementations provided for the following modules:%a@]"
+       print_modules l
+  | Inconsistent_interface(intf, file1, file2) ->
+      fprintf ppf
+       "@[<hov>Files %a@ and %a@ make inconsistent assumptions \
+              over interface %s@]"
+       Location.print_filename file1
+       Location.print_filename file2
+       intf
+  | Inconsistent_implementation(intf, file1, file2) ->
+      fprintf ppf
+       "@[<hov>Files %a@ and %a@ make inconsistent assumptions \
+              over implementation %s@]"
+       Location.print_filename file1
+       Location.print_filename file2
+       intf
+  | Assembler_error file ->
+      fprintf ppf "Error while assembling %a" Location.print_filename file
+  | Linking_error ->
+      fprintf ppf "Error during linking"
+  | Multiple_definition(modname, file1, file2) ->
+      fprintf ppf
+        "@[<hov>Files %a@ and %a@ both define a module named %s@]"
+        Location.print_filename file1
+        Location.print_filename file2
+        modname
+  | Missing_cmx(filename, name) ->
+      fprintf ppf
+        "@[<hov>File %a@ was compiled without access@ \
+         to the .cmx file@ for module %s,@ \
+         which was produced by `ocamlopt -for-pack'.@ \
+         Please recompile %a@ with the correct `-I' option@ \
+         so that %s.cmx@ is found.@]"
+        Location.print_filename filename name
+        Location.print_filename  filename
+        name
+
+let () =
+  Location.register_error_of_exn
+    (function
+      | Error err -> Some (Location.error_of_printer_file report_error err)
+      | _ -> None
+    )
+
+module Make (Asmgen : Asmgen.S) = struct
+
+  module Cmmgen = Asmgen.Cmmgen
+
 (* Add C objects and options and "custom" info from a library descriptor.
    See bytecomp/bytelink.ml for comments on the order of C objects. *)
 
@@ -208,7 +278,7 @@ let make_startup_file ppf units_list =
   Location.input_name := "caml_startup"; (* set name of "current" input *)
   Compilenv.reset ~source_provenance:Timings.Startup "_startup";
   (* set the name of the "current" compunit *)
-  Emit.begin_assembly ();
+  Asmgen.begin_assembly ();
   let name_list =
     List.flatten (List.map (fun (info,_,_) -> info.ui_defines) units_list) in
   compile_phrase (Cmmgen.entry_point name_list);
@@ -235,13 +305,13 @@ let make_startup_file ppf units_list =
   compile_phrase(Cmmgen.code_segment_table ("_startup" :: name_list));
   compile_phrase
     (Cmmgen.frame_table("_startup" :: "_system" :: name_list));
-  Emit.end_assembly ()
+  Asmgen.end_assembly ()
 
 let make_shared_startup_file ppf units =
   let compile_phrase p = Asmgen.compile_phrase ppf p in
   Location.input_name := "caml_startup";
   Compilenv.reset ~source_provenance:Timings.Startup "_shared_startup";
-  Emit.begin_assembly ();
+  Asmgen.begin_assembly ();
   List.iter compile_phrase
     (Cmmgen.generic_functions true (List.map fst units));
   compile_phrase (Cmmgen.plugin_header units);
@@ -250,7 +320,7 @@ let make_shared_startup_file ppf units =
        (List.map (fun (ui,_) -> ui.ui_symbol) units));
   (* this is to force a reference to all units, otherwise the linker
      might drop some of them (in case of libraries) *)
-  Emit.end_assembly ()
+  Asmgen.end_assembly ()
 
 let call_linker_shared file_list output_name =
   if not (Ccomp.call_linker Ccomp.Dll output_name file_list "")
@@ -267,7 +337,7 @@ let link_shared ppf objfiles output_name =
     (List.rev !Clflags.ccobjs) in
 
   let startup =
-    if !Clflags.keep_startup_file || !Emitaux.binary_backend_available
+    if !Clflags.keep_startup_file || !Asmgen.binary_backend_available
     then output_name ^ ".startup" ^ ext_asm
     else Filename.temp_file "camlstartup" ext_asm in
   let startup_obj = output_name ^ ".startup" ^ ext_obj in
@@ -326,7 +396,7 @@ let link ppf objfiles output_name =
   Clflags.all_ccopts := !lib_ccopts @ !Clflags.all_ccopts;
                                                (* put user's opts first *)
   let startup =
-    if !Clflags.keep_startup_file || !Emitaux.binary_backend_available
+    if !Clflags.keep_startup_file || !Asmgen.binary_backend_available
     then output_name ^ ".startup" ^ ext_asm
     else Filename.temp_file "camlstartup" ext_asm in
   let startup_obj = Filename.temp_file "camlstartup" ext_obj in
@@ -338,72 +408,6 @@ let link ppf objfiles output_name =
       call_linker (List.map object_file_name objfiles) startup_obj output_name)
     (fun () -> remove_file startup_obj)
 
-(* Error report *)
-
-open Format
-
-let report_error ppf = function
-  | File_not_found name ->
-      fprintf ppf "Cannot find file %s" name
-  | Not_an_object_file name ->
-      fprintf ppf "The file %a is not a compilation unit description"
-        Location.print_filename name
-  | Missing_implementations l ->
-     let print_references ppf = function
-       | [] -> ()
-       | r1 :: rl ->
-           fprintf ppf "%s" r1;
-           List.iter (fun r -> fprintf ppf ",@ %s" r) rl in
-      let print_modules ppf =
-        List.iter
-         (fun (md, rq) ->
-            fprintf ppf "@ @[<hov 2>%s referenced from %a@]" md
-            print_references rq) in
-      fprintf ppf
-       "@[<v 2>No implementations provided for the following modules:%a@]"
-       print_modules l
-  | Inconsistent_interface(intf, file1, file2) ->
-      fprintf ppf
-       "@[<hov>Files %a@ and %a@ make inconsistent assumptions \
-              over interface %s@]"
-       Location.print_filename file1
-       Location.print_filename file2
-       intf
-  | Inconsistent_implementation(intf, file1, file2) ->
-      fprintf ppf
-       "@[<hov>Files %a@ and %a@ make inconsistent assumptions \
-              over implementation %s@]"
-       Location.print_filename file1
-       Location.print_filename file2
-       intf
-  | Assembler_error file ->
-      fprintf ppf "Error while assembling %a" Location.print_filename file
-  | Linking_error ->
-      fprintf ppf "Error during linking"
-  | Multiple_definition(modname, file1, file2) ->
-      fprintf ppf
-        "@[<hov>Files %a@ and %a@ both define a module named %s@]"
-        Location.print_filename file1
-        Location.print_filename file2
-        modname
-  | Missing_cmx(filename, name) ->
-      fprintf ppf
-        "@[<hov>File %a@ was compiled without access@ \
-         to the .cmx file@ for module %s,@ \
-         which was produced by `ocamlopt -for-pack'.@ \
-         Please recompile %a@ with the correct `-I' option@ \
-         so that %s.cmx@ is found.@]"
-        Location.print_filename filename name
-        Location.print_filename  filename
-        name
-
-let () =
-  Location.register_error_of_exn
-    (function
-      | Error err -> Some (Location.error_of_printer_file report_error err)
-      | _ -> None
-    )
-
 let reset () =
   Consistbl.clear crc_interfaces;
   Consistbl.clear crc_implementations;
@@ -411,3 +415,4 @@ let reset () =
   cmx_required := [];
   interfaces := [];
   implementations := []
+end

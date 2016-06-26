@@ -28,6 +28,8 @@ let allocated_size = function
     No_alloc -> 0
   | Pending_alloc(_, ofs) -> ofs
 
+module Make (Arch : Arch_intf.S) = struct
+
 let rec combine i allocstate =
   match i.desc with
     Iend | Ireturn | Iexit _ | Iraise _ ->
@@ -89,3 +91,5 @@ and combine_restart i =
 
 let fundecl f =
   {f with fun_body = combine_restart f.fun_body}
+
+end

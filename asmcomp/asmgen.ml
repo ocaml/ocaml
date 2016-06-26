@@ -23,6 +23,60 @@ open Clflags
 open Misc
 open Cmm
 
+module type S = sig
+(* Re-exported from Emit *)
+val begin_assembly: unit -> unit
+val end_assembly: unit -> unit
+(* Re-exported from Emitaux *)
+val binary_backend_available: bool ref
+module Cmmgen : Cmmgen.S
+
+val compile_implementation_flambda :
+    ?toplevel:(string -> bool) ->
+    source_provenance:Timings.source_provenance ->
+    string ->
+    backend:(module Backend_intf.S) ->
+    Format.formatter -> Flambda.program -> unit
+
+val compile_implementation_clambda :
+    ?toplevel:(string -> bool) ->
+    source_provenance:Timings.source_provenance ->
+    string ->
+    Format.formatter -> Lambda.program -> unit
+
+val compile_phrase :
+    Format.formatter -> Cmm.phrase -> unit
+
+type error = Assembler_error of string
+exception Error of error
+val report_error: Format.formatter -> error -> unit
+
+
+val compile_unit:
+  source_provenance:Timings.source_provenance ->
+  string(*prefixname*) ->
+  string(*asm file*) -> bool(*keep asm*) ->
+  string(*obj file*) -> (unit -> unit) -> unit
+end
+
+module Make (B : Native_backend_intf.S) = struct
+
+open B
+
+module Cmmgen = Cmmgen.Make (Arch) (Proc)
+module Emitaux = Emit.Emitaux
+module Emit = Emit
+module Interf = Interf.Make (Proc)
+module Spill = Spill.Make (Proc)
+module Comballoc = Comballoc.Make (Arch)
+module Coloring = Coloring.Make (Proc)
+module Deadcode = Deadcode.Make (Proc)
+module Liveness = Liveness.Make (Proc)
+
+let begin_assembly = Emit.begin_assembly
+let end_assembly = Emit.end_assembly
+let binary_backend_available = Emitaux.binary_backend_available
+
 type error = Assembler_error of string
 
 exception Error of error
@@ -31,13 +85,13 @@ let liveness ppf phrase =
   Liveness.fundecl ppf phrase; phrase
 
 let dump_if ppf flag message phrase =
-  if !flag then Printmach.phase message ppf phrase
+  if !flag then Printmach.phase message Proc.register_name Arch.print_addressing Arch.print_specific_operation ppf phrase
 
 let pass_dump_if ppf flag message phrase =
   dump_if ppf flag message phrase; phrase
 
 let pass_dump_linear_if ppf flag message phrase =
-  if !flag then fprintf ppf "*** %s@.%a@." message Printlinear.fundecl phrase;
+  if !flag then fprintf ppf "*** %s@.%a@." message (Printlinear.fundecl Proc.register_name Arch.print_addressing Arch.print_specific_operation) phrase;
   phrase
 
 let flambda_raw_clambda_dump_if ppf
@@ -81,8 +135,8 @@ let rec regalloc ppf round fd =
                 ": function too complex, cannot complete register allocation");
   dump_if ppf dump_live "Liveness analysis" fd;
   Interf.build_graph fd;
-  if !dump_interf then Printmach.interferences ppf ();
-  if !dump_prefer then Printmach.preferences ppf ();
+  if !dump_interf then Printmach.interferences Proc.register_name ppf ();
+  if !dump_prefer then Printmach.preferences Proc.register_name ppf ();
   Coloring.allocate_registers();
   dump_if ppf dump_regalloc "After register allocation" fd;
   let (newfd, redo_regalloc) = Reload.fundecl fd in
@@ -114,7 +168,7 @@ let compile_fundecl (ppf : formatter) fd_cmm =
   ++ pass_dump_if ppf dump_split "After live range splitting"
   ++ Timings.(accumulate_time (Liveness build)) (liveness ppf)
   ++ Timings.(accumulate_time (Regalloc build)) (regalloc ppf 1)
-  ++ Timings.(accumulate_time (Linearize build)) Linearize.fundecl
+  ++ Timings.(accumulate_time (Linearize build)) (Linearize.fundecl ~contains_calls:!Proc.contains_calls)
   ++ pass_dump_linear_if ppf dump_linear "Linearized code"
   ++ Timings.(accumulate_time (Scheduling build)) Scheduling.fundecl
   ++ pass_dump_linear_if ppf dump_scheduling "After instruction scheduling"
@@ -217,7 +271,7 @@ let flambda_gen_implementation ?toplevel ~source_provenance ~backend ppf
 
 let lambda_gen_implementation ?toplevel ~source_provenance ppf
     (lambda:Lambda.program) =
-  let clambda = Closure.intro lambda.main_module_block_size lambda.code in
+  let clambda = Closure.intro (module Arch) lambda.main_module_block_size lambda.code in
   let preallocated_block =
     Clambda.{
       symbol = Compilenv.make_symbol None;
@@ -266,3 +320,4 @@ let () =
       | Error err -> Some (Location.error_of_printer_file report_error err)
       | _ -> None
     )
+end

@@ -60,6 +60,7 @@ let record_use regv =
       use_date := Reg.Map.add r !current_date !use_date
   done
 
+module Make (Proc : Proc_intf.S) = struct
 (* Check if the register pressure overflows the maximum pressure allowed
    at that point. If so, spill enough registers to lower the pressure. *)
 
@@ -114,7 +115,7 @@ let add_superpressure_regs op live_regs res_regs spilled =
 
 (* A-list recording what is destroyed at if-then-else points. *)
 
-let destroyed_at_fork = ref ([] : (instruction * Reg.Set.t) list)
+let destroyed_at_fork = ref ([] : ((Proc.addressing_mode, Proc.specific_operation) instruction * Reg.Set.t) list)
 
 (* First pass: insert reload instructions based on an approximation of
    what is destroyed at pressure points. *)
@@ -413,3 +414,4 @@ let fundecl f =
     fun_body = new_body;
     fun_fast = f.fun_fast;
     fun_dbg  = f.fun_dbg }
+end

@@ -18,5 +18,5 @@
 open Format
 open Linearize
 
-val instr: formatter -> instruction -> unit
-val fundecl: formatter -> fundecl -> unit
+val instr: (int -> string) -> ((formatter -> Reg.t -> unit) -> 'addr -> formatter -> Reg.t array -> unit) -> ((formatter -> Reg.t -> unit) -> 'op -> formatter -> Reg.t array -> unit) -> formatter -> ('addr, 'op) instruction -> unit
+val fundecl: (int -> string) -> ((formatter -> Reg.t -> unit) -> 'addr -> formatter -> Reg.t array -> unit) -> ((formatter -> Reg.t -> unit) -> 'op -> formatter -> Reg.t array -> unit) -> formatter -> ('addr, 'op) fundecl -> unit

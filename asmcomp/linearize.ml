@@ -24,17 +24,17 @@ let label_counter = ref 99
 
 let new_label() = incr label_counter; !label_counter
 
-type instruction =
-  { mutable desc: instruction_desc;
-    mutable next: instruction;
+type ('addr, 'op) instruction =
+  { mutable desc: ('addr, 'op) instruction_desc;
+    mutable next: ('addr, 'op) instruction;
     arg: Reg.t array;
     res: Reg.t array;
     dbg: Debuginfo.t;
     live: Reg.Set.t }
 
-and instruction_desc =
+and ('addr, 'op) instruction_desc =
     Lend
-  | Lop of operation
+  | Lop of ('addr, 'op) operation
   | Lreloadretaddr
   | Lreturn
   | Llabel of label
@@ -52,9 +52,9 @@ let has_fallthrough = function
   | Lop Itailcall_ind | Lop (Itailcall_imm _) -> false
   | _ -> true
 
-type fundecl =
+type ('addr, 'op) fundecl =
   { fun_name: string;
-    fun_body: instruction;
+    fun_body: ('addr, 'op) instruction;
     fun_fast: bool;
     fun_dbg : Debuginfo.t }
 
@@ -75,13 +75,16 @@ let invert_test = function
 
 (* The "end" instruction *)
 
-let rec end_instr =
-  { desc = Lend;
-    next = end_instr;
-    arg = [||];
-    res = [||];
-    dbg = Debuginfo.none;
-    live = Reg.Set.empty }
+let end_instr () =
+  let rec i =
+    { desc = Lend;
+      next = i;
+      arg = [||];
+      res = [||];
+      dbg = Debuginfo.none;
+      live = Reg.Set.empty }
+  in
+  i
 
 (* Cons an instruction (live, debug empty) *)
 
@@ -177,7 +180,8 @@ let local_exit k =
 
 (* Linearize an instruction [i]: add it in front of the continuation [n] *)
 
-let rec linear i n =
+let rec linear ~contains_calls i n =
+  let linear = linear ~contains_calls in
   match i.Mach.desc with
     Iend -> n
   | Iop(Itailcall_ind | Itailcall_imm _ as op) ->
@@ -189,7 +193,7 @@ let rec linear i n =
       copy_instr (Lop op) i (linear i.Mach.next n)
   | Ireturn ->
       let n1 = copy_instr Lreturn i (discard_dead_code n) in
-      if !Proc.contains_calls
+      if contains_calls
       then cons_instr Lreloadretaddr n1
       else n1
   | Iifthenelse(test, ifso, ifnot) ->
@@ -293,8 +297,8 @@ let reset () =
   label_counter := 99;
   exit_label := []
 
-let fundecl f =
+let fundecl ~contains_calls f =
   { fun_name = f.Mach.fun_name;
-    fun_body = linear f.Mach.fun_body end_instr;
+    fun_body = linear ~contains_calls f.Mach.fun_body (end_instr ());
     fun_fast = f.Mach.fun_fast;
     fun_dbg  = f.Mach.fun_dbg }

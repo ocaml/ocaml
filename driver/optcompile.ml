@@ -63,7 +63,7 @@ let print_if ppf flag printer arg =
 let (++) x f = f x
 let (+++) (x, y) f = (x, f y)
 
-let implementation ppf sourcefile outputprefix ~backend =
+let implementation (module Asmgen : Asmgen.S) ppf sourcefile outputprefix ~backend =
   let source_provenance = Timings.File sourcefile in
   Compmisc.init_path true;
   let modulename = module_of_filename ppf sourcefile outputprefix in

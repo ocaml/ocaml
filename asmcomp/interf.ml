@@ -28,6 +28,7 @@ module IntPairSet =
 open Reg
 open Mach
 
+module Make (Proc : Proc_intf.S) = struct
 let build_graph fundecl =
 
   (* The interference graph is represented in two ways:
@@ -189,3 +190,4 @@ let build_graph fundecl =
   in
 
   interf fundecl.fun_body; prefer 8 fundecl.fun_body
+end

@@ -27,7 +27,13 @@ let typ_addr = [|Addr|]
 let typ_int = [|Int|]
 let typ_float = [|Float|]
 
-let size_component = function
+module type Arch_intf = sig
+  val size_addr: int
+  val size_int: int
+  val size_float: int
+end
+
+let size_component (module Arch : Arch_intf) = function
   | Val | Addr -> Arch.size_addr
   | Int -> Arch.size_int
   | Float -> Arch.size_float
@@ -82,10 +88,10 @@ let ge_component comp1 comp2 =
   | Float, (Int | Addr | Val) ->
     assert false
 
-let size_machtype mty =
+let size_machtype arch mty =
   let size = ref 0 in
   for i = 0 to Array.length mty - 1 do
-    size := !size + size_component mty.(i)
+    size := !size + size_component arch mty.(i)
   done;
   !size
 

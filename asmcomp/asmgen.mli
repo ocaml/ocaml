@@ -15,6 +15,15 @@
 
 (* From lambda to assembly code *)
 
+module type S = sig
+(* Re-exported from Emit *)
+val begin_assembly: unit -> unit
+val end_assembly: unit -> unit
+(* Re-exported from Emitaux *)
+val binary_backend_available: bool ref
+
+module Cmmgen : Cmmgen.S
+
 val compile_implementation_flambda :
     ?toplevel:(string -> bool) ->
     source_provenance:Timings.source_provenance ->
@@ -41,3 +50,6 @@ val compile_unit:
   string(*prefixname*) ->
   string(*asm file*) -> bool(*keep asm*) ->
   string(*obj file*) -> (unit -> unit) -> unit
+end
+
+module Make (B : Native_backend_intf.S) : S

@@ -21,6 +21,8 @@ open Cmm
 open Reg
 open Mach
 
+module Make (Arch : Arch_intf.S) (Proc : Proc_intf.S) = struct
+
 type environment = (Ident.t, Reg.t array) Tbl.t
 
 (* Infer the type of the result of an operation *)
@@ -62,7 +64,7 @@ let size_expr env exp =
         with Not_found ->
         try
           let regs = Tbl.find id env in
-          size_machtype (Array.map (fun r -> r.typ) regs)
+          size_machtype (module Arch) (Array.map (fun r -> r.typ) regs)
         with Not_found ->
           fatal_error("Selection.size_expr: unbound var " ^
                       Ident.unique_name id)
@@ -70,7 +72,7 @@ let size_expr env exp =
     | Ctuple el ->
         List.fold_right (fun e sz -> size localenv e + sz) el 0
     | Cop(op, _) ->
-        size_machtype(oper_result_type op)
+        size_machtype (module Arch) (oper_result_type op)
     | Clet(id, arg, body) ->
         size (Tbl.add id (size localenv arg) localenv) body
     | Csequence(_e1, e2) ->
@@ -182,6 +184,16 @@ let catch_regs = ref []
 
 (* Name of function being compiled *)
 let current_function_name = ref ""
+
+let dummy_instr = dummy_instr ()
+
+let end_instr () =
+  { desc = Iend;
+    next = dummy_instr;
+    arg = [||];
+    res = [||];
+    dbg = Debuginfo.none;
+    live = Reg.Set.empty }
 
 (* The default instruction selection class *)
 
@@ -390,7 +402,7 @@ method regs_for tys = Reg.createv tys
 
 (* Buffering of instruction sequences *)
 
-val mutable instr_seq = dummy_instr
+val mutable instr_seq : (Arch.addressing_mode, Arch.specific_operation) Mach.instruction = dummy_instr
 
 method insert_debug desc dbg arg res =
   instr_seq <- instr_cons_debug desc arg res dbg instr_seq
@@ -740,7 +752,7 @@ method emit_stores env data regs_addr =
                 let kind = if r.typ = Float then Double_u else Word_val in
                 self#insert (Iop(Istore(kind, !a, false)))
                             (Array.append [|r|] regs_addr) [||];
-                a := Arch.offset_addressing !a (size_component r.typ)
+                a := Arch.offset_addressing !a (size_component (module Arch) r.typ)
               done
           | _ ->
               self#insert (Iop op) (Array.append regs regs_addr) [||];
@@ -913,3 +925,5 @@ let _ =
 let reset () =
   catch_regs := [];
   current_function_name := ""
+
+end

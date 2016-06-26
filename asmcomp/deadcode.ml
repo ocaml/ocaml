@@ -18,6 +18,8 @@
 
 open Mach
 
+module Make (Proc : Proc_intf.S) = struct
+
 (* [deadcode i] returns a pair of an optimized instruction [i']
    and a set of registers live "before" instruction [i]. *)
 
@@ -68,3 +70,5 @@ let rec deadcode i =
 let fundecl f =
   let (new_body, _) = deadcode f.fun_body in
   {f with fun_body = new_body}
+
+end
