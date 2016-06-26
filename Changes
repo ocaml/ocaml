@@ -82,6 +82,10 @@ OCaml 4.04.0:
   "transitive" heap size of a value
   (Alain Frisch, review by Marc Shinwell and Damien Doligez)
 
+- PR#7203, GPR#534: Add a new primitive caml_alloc_float_array to allocate an
+  array of floats
+  (Thomas Braibant)
+
 ### Manual:
 
 - PR#7245, GPR#565: clarification to the wording and documentation

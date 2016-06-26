@@ -134,6 +134,23 @@ CAMLexport value caml_alloc_array(value (*funct)(char const *),
   }
 }
 
+/* [len] is a number of floats */
+CAMLprim value caml_alloc_float_array(mlsize_t len)
+{
+  mlsize_t wosize = len * Double_wosize;
+  value result;
+  if (wosize == 0)
+    return Atom(0);
+  else if (wosize <= Max_young_wosize){
+    Alloc_small (result, wosize, Double_array_tag);
+  }else {
+    result = caml_alloc_shr (wosize, Double_array_tag);
+    result = caml_check_urgent_gc (result);
+  }
+  return result;
+}
+
+
 CAMLexport value caml_copy_string_array(char const ** arr)
 {
   return caml_alloc_array(caml_copy_string, arr);
