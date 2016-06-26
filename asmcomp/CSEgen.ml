@@ -18,6 +18,8 @@
 
 open Mach
 
+module Make (Proc : Proc_intf.S) = struct
+
 type valnum = int
 
 (* Classification of operations *)
@@ -33,7 +35,7 @@ type op_class =
        valnums = operation(valnums)
    plus a mapping from registers to valnums (value numbers). *)
 
-type rhs = (Arch.addressing_mode, Arch.specific_operation) operation * valnum array
+type rhs = (Proc.addressing_mode, Proc.specific_operation) operation * valnum array
 
 module Equations = struct
   module Rhs_map =
@@ -362,4 +364,5 @@ method private cse n i =
 method fundecl f =
   {f with fun_body = self#cse empty_numbering f.fun_body}
 
+end
 end

@@ -84,16 +84,16 @@ type ('addr, 'op) fundecl =
     fun_fast: bool;
     fun_dbg : Debuginfo.t }
 
-(* let dummy_instr () = *)
-(*   let rec i = *)
-(*     { desc = Iend; *)
-(*       next = i; *)
-(*       arg = [||]; *)
-(*       res = [||]; *)
-(*       dbg = Debuginfo.none; *)
-(*       live = Reg.Set.empty } *)
-(*   in *)
-(*   i *)
+let dummy_instr () =
+  let rec i =
+    { desc = Iend;
+      next = i;
+      arg = [||];
+      res = [||];
+      dbg = Debuginfo.none;
+      live = Reg.Set.empty }
+  in
+  i
 
 (* let end_instr () = *)
 (*   { desc = Iend; *)

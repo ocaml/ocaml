@@ -85,7 +85,7 @@ type ('addr, 'op) fundecl =
     fun_fast: bool;
     fun_dbg : Debuginfo.t }
 
-(* val dummy_instr: unit -> ('addr, 'op) instruction *)
+val dummy_instr: unit -> ('addr, 'op) instruction
 (* val end_instr: unit -> ('addr, 'op) instruction *)
 val instr_cons:
       ('addr, 'op) instruction_desc -> Reg.t array -> Reg.t array -> ('addr, 'op) instruction ->

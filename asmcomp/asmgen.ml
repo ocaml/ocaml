@@ -23,6 +23,13 @@ open Clflags
 open Misc
 open Cmm
 
+module Interf = Interf.Make (Proc)
+module Spill = Spill.Make (Proc)
+module Comballoc = Comballoc.Make (Arch)
+module Coloring = Coloring.Make (Proc)
+module Deadcode = Deadcode.Make (Proc)
+module Liveness = Liveness.Make (Proc)
+
 type error = Assembler_error of string
 
 exception Error of error
@@ -114,7 +121,7 @@ let compile_fundecl (ppf : formatter) fd_cmm =
   ++ pass_dump_if ppf dump_split "After live range splitting"
   ++ Timings.(accumulate_time (Liveness build)) (liveness ppf)
   ++ Timings.(accumulate_time (Regalloc build)) (regalloc ppf 1)
-  ++ Timings.(accumulate_time (Linearize build)) Linearize.fundecl
+  ++ Timings.(accumulate_time (Linearize build)) (Linearize.fundecl ~contains_calls:!Proc.contains_calls)
   ++ pass_dump_linear_if ppf dump_linear "Linearized code"
   ++ Timings.(accumulate_time (Scheduling build)) Scheduling.fundecl
   ++ pass_dump_linear_if ppf dump_scheduling "After instruction scheduling"

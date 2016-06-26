@@ -32,6 +32,7 @@ module OrderedRegSet =
 
 open Reg
 
+module Make (Proc : Proc_intf.S) = struct
 let allocate_registers() =
 
   (* Constrained regs with degree >= number of available registers,
@@ -224,3 +225,4 @@ let allocate_registers() =
   List.iter remove_reg (Reg.all_registers());
   OrderedRegSet.iter assign_location !constrained;
   List.iter assign_location !unconstrained
+end

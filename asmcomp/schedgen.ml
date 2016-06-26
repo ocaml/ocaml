@@ -19,6 +19,8 @@ open Reg
 open Mach
 open Linearize
 
+module Make (Arch : Arch_intf.S) (Proc : Proc_intf.S with type addressing_mode = Arch.addressing_mode and type specific_operation = Arch.specific_operation) = struct
+
 (* Representation of the code DAG. *)
 
 type code_dag_node =
@@ -396,3 +398,5 @@ method schedule_fundecl f =
 end
 
 let reset () = clear_code_dag ()
+
+end

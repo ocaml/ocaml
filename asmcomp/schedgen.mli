@@ -15,6 +15,7 @@
 
 (* Instruction scheduling *)
 
+module Make (Arch : Arch_intf.S) (Proc : Proc_intf.S with type addressing_mode = Arch.addressing_mode and type specific_operation = Arch.specific_operation) : sig
 type code_dag_node =
   { instr: (Arch.addressing_mode, Arch.specific_operation) Linearize.instruction;
     delay: int;
@@ -47,3 +48,4 @@ class virtual scheduler_generic : object
 end
 
 val reset : unit -> unit
+end

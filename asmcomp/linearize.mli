@@ -54,4 +54,4 @@ type ('addr, 'op) fundecl =
     fun_dbg : Debuginfo.t }
 
 val reset : unit -> unit
-val fundecl: ('addr, 'op) Mach.fundecl -> ('addr, 'op) fundecl
+val fundecl: contains_calls:bool -> ('addr, 'op) Mach.fundecl -> ('addr, 'op) fundecl

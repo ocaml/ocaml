@@ -16,4 +16,6 @@
 (* Dead code elimination: remove pure instructions whose results are
    not used. *)
 
-val fundecl: (Arch.addressing_mode, Arch.specific_operation) Mach.fundecl -> (Arch.addressing_mode, Arch.specific_operation) Mach.fundecl
+module Make (Proc : Proc_intf.S) : sig
+val fundecl: (Proc.addressing_mode, Proc.specific_operation) Mach.fundecl -> (Proc.addressing_mode, Proc.specific_operation) Mach.fundecl
+end

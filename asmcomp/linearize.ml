@@ -180,7 +180,8 @@ let local_exit k =
 
 (* Linearize an instruction [i]: add it in front of the continuation [n] *)
 
-let rec linear i n =
+let rec linear ~contains_calls i n =
+  let linear = linear ~contains_calls in
   match i.Mach.desc with
     Iend -> n
   | Iop(Itailcall_ind | Itailcall_imm _ as op) ->
@@ -296,8 +297,8 @@ let reset () =
   label_counter := 99;
   exit_label := []
 
-let fundecl f =
+let fundecl ~contains_calls f =
   { fun_name = f.Mach.fun_name;
-    fun_body = linear f.Mach.fun_body (end_instr ());
+    fun_body = linear ~contains_calls f.Mach.fun_body (end_instr ());
     fun_fast = f.Mach.fun_fast;
     fun_dbg  = f.Mach.fun_dbg }

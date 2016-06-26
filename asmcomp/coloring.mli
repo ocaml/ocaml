@@ -15,4 +15,6 @@
 
 (* Register allocation by coloring of the interference graph *)
 
+module Make (Proc : Proc_intf.S) : sig
 val allocate_registers: unit -> unit
+end

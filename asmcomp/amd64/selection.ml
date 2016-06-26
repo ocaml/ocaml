@@ -121,6 +121,8 @@ let inline_ops =
 
 (* The selector class *)
 
+module Selectgen = Selectgen.Make (Arch) (Proc)
+
 class selector = object (self)
 
 inherit Selectgen.selector_generic as super

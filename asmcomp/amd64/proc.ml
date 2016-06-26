@@ -22,6 +22,9 @@ open Cmm
 open Reg
 open Mach
 
+type addressing_mode = Arch.addressing_mode
+type specific_operation = Arch.specific_operation
+
 let fp = Config.with_frame_pointers
 
 (* Which ABI to use *)

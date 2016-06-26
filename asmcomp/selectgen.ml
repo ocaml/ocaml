@@ -21,22 +21,6 @@ open Cmm
 open Reg
 open Mach
 
-let rec dummy_instr =
-  { Mach.desc = Iend;
-    next = dummy_instr;
-    arg = [||];
-    res = [||];
-    dbg = Debuginfo.none;
-    live = Reg.Set.empty }
-
-let end_instr () =
-  { Mach.desc = Iend;
-    next = dummy_instr;
-    arg = [||];
-    res = [||];
-    dbg = Debuginfo.none;
-    live = Reg.Set.empty }
-
 type environment = (Ident.t, Reg.t array) Tbl.t
 
 (* Infer the type of the result of an operation *)
@@ -198,6 +182,18 @@ let catch_regs = ref []
 
 (* Name of function being compiled *)
 let current_function_name = ref ""
+
+module Make (Arch : Arch_intf.S) (Proc : Proc_intf.S) = struct
+
+let dummy_instr = dummy_instr ()
+
+let end_instr () =
+  { desc = Iend;
+    next = dummy_instr;
+    arg = [||];
+    res = [||];
+    dbg = Debuginfo.none;
+    live = Reg.Set.empty }
 
 (* The default instruction selection class *)
 
@@ -929,3 +925,5 @@ let _ =
 let reset () =
   catch_regs := [];
   current_function_name := ""
+
+end

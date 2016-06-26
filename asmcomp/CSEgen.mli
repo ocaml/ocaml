@@ -16,6 +16,8 @@
 (* Common subexpression elimination by value numbering over extended
    basic blocks. *)
 
+module Make (Proc : Proc_intf.S) : sig
+
 type op_class =
   | Op_pure     (* pure, produce one result *)
   | Op_checkbound     (* checkbound-style: no result, can raise an exn *)
@@ -27,12 +29,13 @@ class cse_generic : object
   (* The following methods can be overriden to handle processor-specific
      operations. *)
 
-  method class_of_operation: (Arch.addressing_mode, Arch.specific_operation) Mach.operation -> op_class
+  method class_of_operation: (Proc.addressing_mode, Proc.specific_operation) Mach.operation -> op_class
 
-  method is_cheap_operation: (Arch.addressing_mode, Arch.specific_operation) Mach.operation -> bool
+  method is_cheap_operation: (Proc.addressing_mode, Proc.specific_operation) Mach.operation -> bool
     (* Operations that are so cheap that it isn't worth factoring them. *)
 
   (* The following method is the entry point and should not be overridden *)
-  method fundecl: (Arch.addressing_mode, Arch.specific_operation) Mach.fundecl -> (Arch.addressing_mode, Arch.specific_operation) Mach.fundecl
+  method fundecl: (Proc.addressing_mode, Proc.specific_operation) Mach.fundecl -> (Proc.addressing_mode, Proc.specific_operation) Mach.fundecl
 
+end
 end

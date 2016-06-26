@@ -31,18 +31,8 @@ let insert_moves src dst next =
     else insert_move src.(i) dst.(i) (insmoves (i+1))
   in insmoves 0
 
-class reload_generic =
-
-let rec dummy_instr : (Arch.addressing_mode, Arch.specific_operation) instruction =
-  { desc = Iend;
-    next = dummy_instr;
-    arg = [||];
-    res = [||];
-    dbg = Debuginfo.none;
-    live = Reg.Set.empty }
-in
-object (self)
-
+class ['addr, 'op] reload_generic = object (self)
+val dummy_instr : ('addr, 'op) instruction = dummy_instr ()
 val mutable redo_regalloc = false
 
 method makereg r =

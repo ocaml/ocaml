@@ -18,6 +18,8 @@
 
 open Mach
 
+module Make (Proc : Proc_intf.S) = struct
+
 let live_at_exit = ref []
 
 let find_live_at_exit k =
@@ -134,3 +136,5 @@ let fundecl ppf f =
     Format.fprintf ppf "%a@." (Printmach.regset Proc.register_name) wrong_live;
     Misc.fatal_error "Liveness.fundecl"
   end
+
+end
