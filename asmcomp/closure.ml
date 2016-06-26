@@ -15,6 +15,8 @@
 
 (* Introduction of closures, uncurrying, recognition of direct calls *)
 
+module Make (Arch : Arch_intf.S) = struct
+
 open Misc
 open Asttypes
 open Primitive
@@ -1367,3 +1369,5 @@ let intro size lam =
   else collect_exported_structured_constants (Value_tuple !global_approx);
   global_approx := [||];
   ulam
+
+end

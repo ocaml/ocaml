@@ -23,6 +23,7 @@ module type S = sig
     val fundecl: fundecl -> fundecl
   end
   module Emit : sig
+    module Emitaux : Emitaux.S
     val fundecl: linearize_fundecl -> unit
     val data: Cmm.data_item list -> unit
     val begin_assembly: unit -> unit

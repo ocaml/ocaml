@@ -15,6 +15,7 @@
 
 (* Translation from closed lambda to C-- *)
 
+module type S = sig
 val compunit:
     Clambda.ulambda
     * Clambda.preallocated_block list
@@ -35,3 +36,8 @@ val data_segment_table: string list -> Cmm.phrase
 val code_segment_table: string list -> Cmm.phrase
 val predef_exception: int -> string -> Cmm.phrase
 val plugin_header: (Cmx_format.unit_infos * Digest.t) list -> Cmm.phrase
+
+end
+
+module Make (Arch : Arch_intf.S) (Proc : Proc_intf.S with type addressing_mode = Arch.addressing_mode
+                                                      and type specific_operation = Arch.specific_operation) : S

@@ -156,6 +156,10 @@ let () =
 
 module Make (Asmgen : Asmgen.S) = struct
 
+  module Emit = Asmgen.Emit
+  module Cmmgen = Asmgen.Cmmgen
+  module Emitaux = Asmgen.Emitaux
+
 (* Add C objects and options and "custom" info from a library descriptor.
    See bytecomp/bytelink.ml for comments on the order of C objects. *)
 

@@ -15,6 +15,8 @@
 (**************************************************************************)
 
 module type S = sig
+  module Arch : Arch_intf.S
+
   (* The distance between two instructions, in arbitrary units (typically
      the natural word size of instructions). *)
   type distance = int

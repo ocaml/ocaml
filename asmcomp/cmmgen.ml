@@ -15,6 +15,33 @@
 
 (* Translation from closed lambda to C-- *)
 
+module type S = sig
+val compunit:
+    Clambda.ulambda
+    * Clambda.preallocated_block list
+    * Clambda.preallocated_constant list
+  -> Cmm.phrase list
+
+val apply_function: int -> Cmm.phrase
+val send_function: int -> Cmm.phrase
+val curry_function: int -> Cmm.phrase list
+val generic_functions: bool -> Cmx_format.unit_infos list -> Cmm.phrase list
+val entry_point: string list -> Cmm.phrase
+val global_table: string list -> Cmm.phrase
+val reference_symbols: string list -> Cmm.phrase
+val globals_map: (string * Digest.t * Digest.t * string list) list ->
+  Cmm.phrase
+val frame_table: string list -> Cmm.phrase
+val data_segment_table: string list -> Cmm.phrase
+val code_segment_table: string list -> Cmm.phrase
+val predef_exception: int -> string -> Cmm.phrase
+val plugin_header: (Cmx_format.unit_infos * Digest.t) list -> Cmm.phrase
+
+end
+
+module Make (Arch : Arch_intf.S) (Proc : Proc_intf.S with type addressing_mode = Arch.addressing_mode
+                                                      and type specific_operation = Arch.specific_operation) = struct
+
 open Misc
 open Arch
 open Asttypes
@@ -1426,6 +1453,7 @@ let functions = (Queue.create() : ufunction Queue.t)
 let strmatch_compile =
   let module S =
     Strmatch.Make
+      (Arch)
       (struct
         let string_block_length = get_size
         let transl_switch = transl_int_switch
@@ -3118,3 +3146,5 @@ let plugin_header units =
     } in
   global_data "caml_plugin_header"
     { dynu_magic = Config.cmxs_magic_number; dynu_units = List.map mk units }
+
+end

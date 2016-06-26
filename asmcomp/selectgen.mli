@@ -16,11 +16,12 @@
 (* Selection of pseudo-instructions, assignment of pseudo-registers,
    sequentialization. *)
 
+module Make (Arch : Arch_intf.S) (Proc : Proc_intf.S) : sig
+
 type environment = (Ident.t, Reg.t array) Tbl.t
 
 val size_expr : environment -> Cmm.expression -> int
 
-module Make (Arch : Arch_intf.S) (Proc : Proc_intf.S) : sig
 class virtual selector_generic : object
   (* The following methods must or can be overridden by the processor
      description *)

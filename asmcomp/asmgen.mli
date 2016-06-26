@@ -20,6 +20,8 @@ module Emit : sig
   val begin_assembly: unit -> unit
   val end_assembly: unit -> unit
 end
+module Cmmgen : Cmmgen.S
+module Emitaux : Emitaux.S
 
 val compile_implementation_flambda :
     ?toplevel:(string -> bool) ->

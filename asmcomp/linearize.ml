@@ -193,7 +193,7 @@ let rec linear ~contains_calls i n =
       copy_instr (Lop op) i (linear i.Mach.next n)
   | Ireturn ->
       let n1 = copy_instr Lreturn i (discard_dead_code n) in
-      if !Proc.contains_calls
+      if contains_calls
       then cons_instr Lreloadretaddr n1
       else n1
   | Iifthenelse(test, ifso, ifnot) ->

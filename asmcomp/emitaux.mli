@@ -15,6 +15,7 @@
 
 (* Common functions for emitting assembly code *)
 
+module type S = sig
 val output_channel: out_channel ref
 val emit_string: string -> unit
 val emit_int: int -> unit
@@ -73,3 +74,6 @@ val binary_backend_available: bool ref
 
 val create_asm_file: bool ref
     (** Are we actually generating the textual assembly file? *)
+end
+
+module Make (Arch : Arch_intf.S) : S
