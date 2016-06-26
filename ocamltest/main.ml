@@ -50,8 +50,11 @@ let print_usage () =
 
 let rec run_test log path rootenv ancestor_result = function
   Node (testenvspec, test, subtrees) ->
-  Printf.printf "Running test %s (%s) ... %!"
-    path test.Tests.test_name;
+  (*
+    Printf.printf "Running test %s (%s) ... %!"
+      path test.Tests.test_name;
+  *)
+  Printf.printf "%s %s => %!" path test.Tests.test_name;
   let print_test_result str = Printf.printf "%s\n%!" str in
   match ancestor_result with
     | Actions.Pass _ -> (* Ancestor succeded, really run the test *)
@@ -71,10 +74,12 @@ let rec run_test log path rootenv ancestor_result = function
     | Actions.Skip _ ->
       print_test_result "skipped";
       List.iteri (run_test_i log path rootenv ancestor_result) subtrees
-and run_test_i log path rootenv ancestor_result i test_tree =
-  let prefix = if path="" then "" else path ^ "." in
-  let new_path = Printf.sprintf "%s%d" prefix (i+1) in
-  run_test log new_path rootenv ancestor_result test_tree
+and run_test_i log path rootenv ancestor_result _i test_tree =
+  (*
+    let prefix = if path="" then "" else path ^ "." in
+    le t new_path = Printf.sprintf "%s%d" prefix (i+1) in
+  *)
+  run_test log path rootenv ancestor_result test_tree
 
 let get_test_source_directory test_dirname =
   if not (Filename.is_relative test_dirname) then test_dirname
@@ -97,7 +102,7 @@ let main () =
     exit 1
   end;
   let test_filename = Sys.argv.(1) in
-  Printf.printf "# reading test file %s\n%!" test_filename;
+  (* Printf.printf "# reading test file %s\n%!" test_filename; *)
   let tsl_block = tsl_block_of_file_safe test_filename in
   let (rootenv_statements, test_trees) = test_trees_of_tsl_block tsl_block in
   let test_trees = match test_trees with
@@ -129,7 +134,8 @@ let main () =
   Sys.chdir test_build_directory;
   let log_filename = test_prefix ^ ".log" in
   let log = open_out log_filename in
-  List.iteri (run_test_i log "" rootenv (Actions.Pass rootenv)) test_trees;
+  let prefix = " ... testing '" ^ test_basename ^ "':" in
+  List.iteri (run_test_i log prefix rootenv (Actions.Pass rootenv)) test_trees;
   close_out log
 
 let _ = main()
