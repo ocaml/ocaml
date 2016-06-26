@@ -1,3 +1,7 @@
+(* TEST
+  include testing
+*)
+
 (**************************************************************)
 (*  This suite tests the pattern-matching compiler            *)
 (*  it should just compile and run.                           *)
@@ -5,14 +9,28 @@
 (**************************************************************)
 
 (*
-File "morematch.ml", line 38, characters 10-93:
-Warning: this pattern-matching is not exhaustive.
+File "morematch.ml", line 249, characters 33-47:
+Warning 12: this sub-pattern is unused.
+File "morematch.ml", line 1093, characters 8-65:
+Warning 8: this pattern-matching is not exhaustive.
 Here is an example of a value that is not matched:
-0
-File "morematch.ml", line 376, characters 2-15:
-Warning: this match case is unused.
-File "morematch.ml", line 443, characters 2-7:
-Warning: this match case is unused.
+(A `D|B (`B, (`A|`C)))
+File "morematch.ml", line 92, characters 2-5:
+Warning 12: this sub-pattern is unused.
+File "morematch.ml", line 93, characters 2-3:
+Warning 12: this sub-pattern is unused.
+File "morematch.ml", line 418, characters 2-15:
+Warning 11: this match case is unused.
+File "morematch.ml", line 462, characters 43-44:
+Warning 12: this sub-pattern is unused.
+File "morematch.ml", line 487, characters 7-8:
+Warning 12: this sub-pattern is unused.
+File "morematch.ml", line 488, characters 2-7:
+Warning 11: this match case is unused.
+File "morematch.ml", line 1127, characters 5-51:
+Warning 11: this match case is unused.
+File "morematch.ml", line 1129, characters 5-51:
+Warning 11: this match case is unused.
 *)
 
 let test msg f arg r =

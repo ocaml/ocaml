@@ -1,3 +1,7 @@
+(* TEST
+  include testing
+*)
+
 (* PR6216: wrong inlining of GADT match *)
 
 type _ t =
