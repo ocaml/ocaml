@@ -48,22 +48,33 @@ let tsl_block_of_file_safe test_filename =
 let print_usage () =
   Printf.printf "Usage: %s testfile\n" Sys.argv.(0)
 
-let rec run_test log path rootenv = function
+let rec run_test log path rootenv ancestor_result = function
   Node (testenvspec, test, subtrees) ->
   Printf.printf "Running test %s (%s) ... %!"
     path test.Tests.test_name;
   let print_test_result str = Printf.printf "%s\n%!" str in
-  let testenv = interprete_environment_statements rootenv testenvspec in
-  match Tests.run log testenv test with
-    | Actions.Pass newenv ->
-      print_test_result "passed";
-      List.iteri (run_test_i log path newenv) subtrees
-    | Actions.Fail _ -> print_test_result "failed"
-    | Actions.Skip _ -> print_test_result "skipped"
-and run_test_i log path rootenv i test_tree =
+  match ancestor_result with
+    | Actions.Pass _ -> (* Ancestor succeded, really run the test *)
+      begin
+        let testenv = interprete_environment_statements rootenv testenvspec in
+        let test_result = Tests.run log testenv test in
+        match test_result with
+          | Actions.Pass newenv ->
+            print_test_result "passed";
+            List.iteri (run_test_i log path newenv test_result) subtrees
+          | Actions.Fail _ -> print_test_result "failed"
+          | Actions.Skip _ -> print_test_result "skipped"
+      end
+    | Actions.Fail _ ->
+      print_test_result "failed";
+      List.iteri (run_test_i log path rootenv ancestor_result) subtrees
+    | Actions.Skip _ ->
+      print_test_result "skipped";
+      List.iteri (run_test_i log path rootenv ancestor_result) subtrees
+and run_test_i log path rootenv ancestor_result i test_tree =
   let prefix = if path="" then "" else path ^ "." in
   let new_path = Printf.sprintf "%s%d" prefix (i+1) in
-  run_test log new_path rootenv test_tree
+  run_test log new_path rootenv ancestor_result test_tree
 
 let get_test_source_directory test_dirname =
   if not (Filename.is_relative test_dirname) then test_dirname
@@ -118,7 +129,7 @@ let main () =
   Sys.chdir test_build_directory;
   let log_filename = test_prefix ^ ".log" in
   let log = open_out log_filename in
-  List.iteri (run_test_i log "" rootenv) test_trees;
+  List.iteri (run_test_i log "" rootenv (Actions.Pass rootenv)) test_trees;
   close_out log
 
 let _ = main()
