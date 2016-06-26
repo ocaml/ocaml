@@ -65,7 +65,6 @@ open B
 
 module Cmmgen = Cmmgen.Make (Arch) (Proc)
 module Emitaux = Emit.Emitaux
-module Closure = Closure.Make (Arch)
 module Emit = Emit
 module Interf = Interf.Make (Proc)
 module Spill = Spill.Make (Proc)
@@ -272,7 +271,7 @@ let flambda_gen_implementation ?toplevel ~source_provenance ~backend ppf
 
 let lambda_gen_implementation ?toplevel ~source_provenance ppf
     (lambda:Lambda.program) =
-  let clambda = Closure.intro lambda.main_module_block_size lambda.code in
+  let clambda = Closure.intro (module Arch) lambda.main_module_block_size lambda.code in
   let preallocated_block =
     Clambda.{
       symbol = Compilenv.make_symbol None;

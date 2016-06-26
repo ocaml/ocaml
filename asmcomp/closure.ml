@@ -15,8 +15,6 @@
 
 (* Introduction of closures, uncurrying, recognition of direct calls *)
 
-module Make (Arch : Arch_intf.S) = struct
-
 open Misc
 open Asttypes
 open Primitive
@@ -239,7 +237,8 @@ let make_const_int64 n = make_const_ref (Uconst_int64 n)
 (* The [fpc] parameter is true if constant propagation of
    floating-point computations is allowed *)
 
-let simplif_arith_prim_pure fpc p (args, approxs) dbg =
+let simplif_arith_prim_pure arch fpc p (args, approxs) dbg =
+  let (module Arch : Arch_intf.S) = arch in
   let default = (Uprim(p, args, dbg), Value_unknown) in
   match approxs with
   (* int (or enumerated type) *)
@@ -420,7 +419,8 @@ let field_approx n = function
       Value_const (List.nth l n)
   | _ -> Value_unknown
 
-let simplif_prim_pure fpc p (args, approxs) dbg =
+let simplif_prim_pure arch fpc p (args, approxs) dbg =
+  let (module Arch : Arch_intf.S) = arch in
   match p, args, approxs with
   (* Block construction *)
   | Pmakeblock(tag, Immutable, _kind), _, _ ->
@@ -472,11 +472,11 @@ let simplif_prim_pure fpc p (args, approxs) dbg =
       end
   (* Catch-all *)
   | _ ->
-      simplif_arith_prim_pure fpc p (args, approxs) dbg
+      simplif_arith_prim_pure arch fpc p (args, approxs) dbg
 
-let simplif_prim fpc p (args, approxs as args_approxs) dbg =
+let simplif_prim arch fpc p (args, approxs as args_approxs) dbg =
   if List.for_all is_pure_clambda args
-  then simplif_prim_pure fpc p args_approxs dbg
+  then simplif_prim_pure arch fpc p args_approxs dbg
   else
     (* XXX : always return the same approxs as simplif_prim_pure? *)
     let approx =
@@ -516,7 +516,8 @@ let subst_debuginfo loc dbg =
   else
     dbg
 
-let rec substitute loc fpc sb ulam =
+let rec substitute arch loc fpc sb ulam =
+  let substitute = substitute arch in
   match ulam with
     Uvar v ->
       begin try Tbl.find v sb with Not_found -> ulam end
@@ -559,7 +560,7 @@ let rec substitute loc fpc sb ulam =
       let sargs = List.map (substitute loc fpc sb) args in
       let dbg = subst_debuginfo loc dbg in
       let (res, _) =
-        simplif_prim fpc p (sargs, List.map approx_ulam sargs) dbg in
+        simplif_prim arch fpc p (sargs, List.map approx_ulam sargs) dbg in
       res
   | Uswitch(arg, sw) ->
       let sarg = substitute loc fpc sb arg in
@@ -648,12 +649,12 @@ let no_effects = function
   | Uclosure _ -> true
   | u -> is_simple_argument u
 
-let rec bind_params_rec loc fpc subst params args body =
+let rec bind_params_rec arch loc fpc subst params args body =
   match (params, args) with
-    ([], []) -> substitute loc fpc subst body
+    ([], []) -> substitute arch loc fpc subst body
   | (p1 :: pl, a1 :: al) ->
       if is_simple_argument a1 then
-        bind_params_rec loc fpc (Tbl.add p1 a1 subst) pl al body
+        bind_params_rec arch loc fpc (Tbl.add p1 a1 subst) pl al body
       else begin
         let p1' = Ident.rename p1 in
         let u1, u2 =
@@ -664,17 +665,17 @@ let rec bind_params_rec loc fpc subst params args body =
               a1, Uvar p1'
         in
         let body' =
-          bind_params_rec loc fpc (Tbl.add p1 u2 subst) pl al body in
+          bind_params_rec arch loc fpc (Tbl.add p1 u2 subst) pl al body in
         if occurs_var p1 body then Ulet(Immutable, Pgenval, p1', u1, body')
         else if no_effects a1 then body'
         else Usequence(a1, body')
       end
   | (_, _) -> assert false
 
-let bind_params loc fpc params args body =
+let bind_params arch loc fpc params args body =
   (* Reverse parameters and arguments to preserve right-to-left
      evaluation order (PR#2910). *)
-  bind_params_rec loc fpc Tbl.empty (List.rev params) (List.rev args) body
+  bind_params_rec arch loc fpc Tbl.empty (List.rev params) (List.rev args) body
 
 (* Check if a lambda term is ``pure'',
    that is without side-effects *and* not containing function definitions *)
@@ -695,7 +696,7 @@ let warning_if_forced_inline ~loc ~attribute warning =
 
 (* Generate a direct application *)
 
-let direct_apply fundesc funct ufunct uargs ~loc ~attribute =
+let direct_apply arch fundesc funct ufunct uargs ~loc ~attribute =
   let app_args =
     if fundesc.fun_closed then uargs else uargs @ [ufunct] in
   let app =
@@ -705,7 +706,7 @@ let direct_apply fundesc funct ufunct uargs ~loc ~attribute =
           "Function information unavailable";
         Udirect_apply(fundesc.fun_label, app_args, Debuginfo.none)
     | Some(params, body), _  ->
-        bind_params loc fundesc.fun_float_const_prop params app_args body
+        bind_params arch loc fundesc.fun_float_const_prop params app_args body
   in
   (* If ufunct can contain side-effects or function definitions,
      we must make sure that it is evaluated exactly once.
@@ -808,7 +809,9 @@ let close_approx_var fenv cenv id =
 let close_var fenv cenv id =
   let (ulam, _app) = close_approx_var fenv cenv id in ulam
 
-let rec close fenv cenv = function
+let rec close arch fenv cenv lam =
+  let close = close arch in
+  match lam with
     Lvar id ->
       close_approx_var fenv cenv id
   | Lconst cst ->
@@ -840,24 +843,24 @@ let rec close fenv cenv = function
       in
       make_const (transl cst)
   | Lfunction _ as funct ->
-      close_one_function fenv cenv (Ident.create "fun") funct
+      close_one_function arch fenv cenv (Ident.create "fun") funct
 
     (* We convert [f a] to [let a' = a in fun b c -> f a' b c]
        when fun_arity > nargs *)
   | Lapply{ap_func = funct; ap_args = args; ap_loc = loc;
         ap_inlined = attribute} ->
       let nargs = List.length args in
-      begin match (close fenv cenv funct, close_list fenv cenv args) with
+      begin match (close fenv cenv funct, close_list arch fenv cenv args) with
         ((ufunct, Value_closure(fundesc, approx_res)),
          [Uprim(Pmakeblock _, uargs, _)])
         when List.length uargs = - fundesc.fun_arity ->
           let app =
-            direct_apply ~loc ~attribute fundesc funct ufunct uargs in
+            direct_apply arch ~loc ~attribute fundesc funct ufunct uargs in
           (app, strengthen_approx app approx_res)
       | ((ufunct, Value_closure(fundesc, approx_res)), uargs)
         when nargs = fundesc.fun_arity ->
           let app =
-            direct_apply ~loc ~attribute fundesc funct ufunct uargs in
+            direct_apply arch ~loc ~attribute fundesc funct ufunct uargs in
           (app, strengthen_approx app approx_res)
 
       | ((_ufunct, Value_closure(fundesc, _approx_res)), uargs)
@@ -898,7 +901,7 @@ let rec close fenv cenv = function
         when fundesc.fun_arity > 0 && nargs > fundesc.fun_arity ->
           let (first_args, rem_args) = split_list fundesc.fun_arity uargs in
           warning_if_forced_inline ~loc ~attribute "Over-application";
-          (Ugeneric_apply(direct_apply ~loc ~attribute
+          (Ugeneric_apply(direct_apply arch ~loc ~attribute
                             fundesc funct ufunct first_args,
                           rem_args, Debuginfo.none),
            Value_unknown)
@@ -909,10 +912,10 @@ let rec close fenv cenv = function
   | Lsend(kind, met, obj, args, _) ->
       let (umet, _) = close fenv cenv met in
       let (uobj, _) = close fenv cenv obj in
-      (Usend(kind, umet, uobj, close_list fenv cenv args, Debuginfo.none),
+      (Usend(kind, umet, uobj, close_list arch fenv cenv args, Debuginfo.none),
        Value_unknown)
   | Llet(str, kind, id, lam, body) ->
-      let (ulam, alam) = close_named fenv cenv id lam in
+      let (ulam, alam) = close_named arch fenv cenv id lam in
       begin match (str, alam) with
         (Variable, _) ->
           let (ubody, abody) = close fenv cenv body in
@@ -930,7 +933,7 @@ let rec close fenv cenv = function
            defs
       then begin
         (* Simple case: only function definitions *)
-        let (clos, infos) = close_functions fenv cenv defs in
+        let (clos, infos) = close_functions arch fenv cenv defs in
         let clos_ident = Ident.create "clos" in
         let fenv_body =
           List.fold_right
@@ -943,7 +946,7 @@ let rec close fenv cenv = function
               Tbl.add id (Uoffset(Uvar clos_ident, pos)) sb)
             infos Tbl.empty in
         (Ulet(Immutable, Pgenval, clos_ident, clos,
-              substitute Location.none !Clflags.float_const_prop sb ubody),
+              substitute arch Location.none !Clflags.float_const_prop sb ubody),
          approx)
       end else begin
         (* General case: recursive definition of values *)
@@ -951,7 +954,7 @@ let rec close fenv cenv = function
           [] -> ([], fenv)
         | (id, lam) :: rem ->
             let (udefs, fenv_body) = clos_defs rem in
-            let (ulam, approx) = close_named fenv cenv id lam in
+            let (ulam, approx) = close_named arch fenv cenv id lam in
             ((id, ulam) :: udefs, Tbl.add id approx fenv_body) in
         let (udefs, fenv_body) = clos_defs defs in
         let (ubody, approx) = close fenv_body cenv body in
@@ -960,11 +963,11 @@ let rec close fenv cenv = function
   | Lprim(Pdirapply loc,[funct;arg])
   | Lprim(Prevapply loc,[arg;funct]) ->
       close fenv cenv (Lapply{ap_should_be_tailcall=false;
-                              ap_loc=loc;
-                              ap_func=funct;
-                              ap_args=[arg];
-                              ap_inlined=Default_inline;
-                              ap_specialised=Default_specialise})
+                                   ap_loc=loc;
+                                   ap_func=funct;
+                                   ap_args=[arg];
+                                   ap_inlined=Default_inline;
+                                   ap_specialised=Default_specialise})
   | Lprim(Pgetglobal id, []) as lam ->
       check_constant_result lam
                             (getglobal id)
@@ -984,15 +987,15 @@ let rec close fenv cenv = function
       (Uprim(Praise k, [ulam], Debuginfo.from_raise ev),
        Value_unknown)
   | Lprim(p, args) ->
-      simplif_prim !Clflags.float_const_prop
-                   p (close_list_approx fenv cenv args) Debuginfo.none
+      simplif_prim arch !Clflags.float_const_prop
+                   p (close_list_approx arch fenv cenv args) Debuginfo.none
   | Lswitch(arg, sw) ->
       let fn fail =
         let (uarg, _) = close fenv cenv arg in
         let const_index, const_actions, fconst =
-          close_switch fenv cenv sw.sw_consts sw.sw_numconsts fail
+          close_switch arch fenv cenv sw.sw_consts sw.sw_numconsts fail
         and block_index, block_actions, fblock =
-          close_switch fenv cenv sw.sw_blocks sw.sw_numblocks fail in
+          close_switch arch fenv cenv sw.sw_blocks sw.sw_numblocks fail in
         let ulam =
           Uswitch
             (uarg,
@@ -1031,7 +1034,7 @@ let rec close fenv cenv = function
             ud) d in
       Ustringswitch (uarg,usw,ud),Value_unknown
   | Lstaticraise (i, args) ->
-      (Ustaticfail (i, close_list fenv cenv args), Value_unknown)
+      (Ustaticfail (i, close_list arch fenv cenv args), Value_unknown)
   | Lstaticcatch(body, (i, vars), handler) ->
       let (ubody, _) = close fenv cenv body in
       let (uhandler, _) = close fenv cenv handler in
@@ -1072,28 +1075,28 @@ let rec close fenv cenv = function
   | Lifused _ ->
       assert false
 
-and close_list fenv cenv = function
+and close_list arch fenv cenv = function
     [] -> []
   | lam :: rem ->
-      let (ulam, _) = close fenv cenv lam in
-      ulam :: close_list fenv cenv rem
+      let (ulam, _) = close arch fenv cenv lam in
+      ulam :: close_list arch fenv cenv rem
 
-and close_list_approx fenv cenv = function
+and close_list_approx arch fenv cenv = function
     [] -> ([], [])
   | lam :: rem ->
-      let (ulam, approx) = close fenv cenv lam in
-      let (ulams, approxs) = close_list_approx fenv cenv rem in
+      let (ulam, approx) = close arch fenv cenv lam in
+      let (ulams, approxs) = close_list_approx arch fenv cenv rem in
       (ulam :: ulams, approx :: approxs)
 
-and close_named fenv cenv id = function
+and close_named arch fenv cenv id = function
     Lfunction _ as funct ->
-      close_one_function fenv cenv id funct
+      close_one_function arch fenv cenv id funct
   | lam ->
-      close fenv cenv lam
+      close arch fenv cenv lam
 
 (* Build a shared closure for a set of mutually recursive functions *)
 
-and close_functions fenv cenv fun_defs =
+and close_functions arch fenv cenv fun_defs =
   let fun_defs =
     List.flatten
       (List.map
@@ -1166,7 +1169,7 @@ and close_functions fenv cenv fun_defs =
         (fun (id, _params, _body, _fundesc) pos env ->
           Tbl.add id (Uoffset(Uvar env_param, pos - env_pos)) env)
         uncurried_defs clos_offsets cenv_fv in
-    let (ubody, approx) = close fenv_rec cenv_body body in
+    let (ubody, approx) = close arch fenv_rec cenv_body body in
     if !useless_env && occurs_var env_param ubody then raise NotClosed;
     let fun_params = if !useless_env then params else params @ [env_param] in
     let f =
@@ -1234,14 +1237,14 @@ and close_functions fenv cenv fun_defs =
 
 (* Same, for one non-recursive function *)
 
-and close_one_function fenv cenv id funct =
-  match close_functions fenv cenv [id, funct] with
+and close_one_function arch fenv cenv id funct =
+  match close_functions arch fenv cenv [id, funct] with
   | (clos, (i, _, approx) :: _) when id = i -> (clos, approx)
   | _ -> fatal_error "Closure.close_one_function"
 
 (* Close a switch *)
 
-and close_switch fenv cenv cases num_keys default =
+and close_switch arch fenv cenv cases num_keys default =
   let ncases = List.length cases in
   let index = Array.make num_keys 0
   and store = Storer.mk_store () in
@@ -1268,10 +1271,10 @@ and close_switch fenv cenv cases num_keys default =
     Array.map
       (function
         | Single lam|Shared (Lstaticraise (_,[]) as lam) ->
-            let ulam,_ = close fenv cenv lam in
+            let ulam,_ = close arch fenv cenv lam in
             ulam
         | Shared lam ->
-            let ulam,_ = close fenv cenv lam in
+            let ulam,_ = close arch fenv cenv lam in
             let i = next_raise_count () in
 (*
             let string_of_lambda e =
@@ -1354,12 +1357,12 @@ let reset () =
 
 (* The entry point *)
 
-let intro size lam =
+let intro arch size lam =
   reset ();
   let id = Compilenv.make_symbol None in
   global_approx := Array.init size (fun i -> Value_global_field (id, i));
   Compilenv.set_global_approx(Value_tuple !global_approx);
-  let (ulam, _approx) = close Tbl.empty Tbl.empty lam in
+  let (ulam, _approx) = close arch Tbl.empty Tbl.empty lam in
   let opaque =
     !Clflags.opaque
     || Env.is_imported_opaque (Compilenv.current_unit_name ())
@@ -1369,5 +1372,3 @@ let intro size lam =
   else collect_exported_structured_constants (Value_tuple !global_approx);
   global_approx := [||];
   ulam
-
-end

@@ -15,7 +15,5 @@
 
 (* Introduction of closures, uncurrying, recognition of direct calls *)
 
-module Make (Arch : Arch_intf.S) : sig
-val intro: int -> Lambda.lambda -> Clambda.ulambda
+val intro: (module Arch_intf.S) -> int -> Lambda.lambda -> Clambda.ulambda
 val reset : unit -> unit
-end
