@@ -6,8 +6,15 @@ DOCFLAGS=-I $(OTOPDIR)/stdlib $(COMPFLAGS)
 SRC= main.ml alias.ml inner.ml
 ODOCS=$(SRC:%.ml=%.odoc)
 
-.PHONY: doc
+.PHONY: default
+default:
+	@if ! $(SUPPORTS_SHARED_LIBRARIES); then \
+	  echo 'skipped (shared libraries not available)'; \
+	else \
+	  $(SET_LD_PATH) $(MAKE) doc; \
+	fi
 
+.PHONY: doc
 doc: $(ODOCS)
 	@printf " ... testing ocamldoc '-open' option";\
 	$(OCAMLDOC) $(DOCFLAGS) -hide-warnings \
