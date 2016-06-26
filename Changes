@@ -16,7 +16,12 @@ OCaml 4.04.0:
   (Jacques Garrigue)
 
 
-### Compilers:
+### Compilers and runtime system:
+
+- PR#6217, GPR#538: Optimize performance of record update:
+  no more performance cliff when { foo with t1 = ..; t2 = ...; ... }
+  hits 6 updated fields
+  (Olivier Nicole, review by Thomas Braibant)
 
 * PR#6475, GPR#464: interpret all command-line options before compiling any files,
   changes (improves) the semantics of repeated -o options or -o combined with -c
@@ -98,7 +103,7 @@ OCaml 4.04.0:
   native-code versions of the tools, if those versions were built.
   (Demi Obenour)
 
-- GPR#324: Compiler developpers only: Adding new primitives to the
+- GPR#324: Compiler developers: Adding new primitives to the
   standard runtime doesn't require anymore to run `make bootstrap`
   (François Bobot)
 
