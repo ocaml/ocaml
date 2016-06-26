@@ -1,3 +1,7 @@
+(* TEST
+  modules = "length.ml"
+*)
+
 (*
 
 A testbed file for private type abbreviation definitions.
