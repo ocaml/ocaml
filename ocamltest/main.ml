@@ -38,6 +38,12 @@ let tsl_block_of_file test_filename =
   match Tsl_parser.tsl_block Tsl_lexer.token lexbuf with
     | exception e -> close_in input_channel; raise e
     | _ as tsl_block -> close_in input_channel; tsl_block
+
+let tsl_block_of_file_safe test_filename =
+  try tsl_block_of_file test_filename with
+  | Sys_error message ->
+    Printf.eprintf "%s\n" message;
+    exit 1
   
 let print_usage () =
   Printf.printf "Usage: %s testfile\n" Sys.argv.(0)
@@ -81,7 +87,7 @@ let main () =
   end;
   let test_filename = Sys.argv.(1) in
   Printf.printf "# reading test file %s\n%!" test_filename;
-  let tsl_block = tsl_block_of_file test_filename in
+  let tsl_block = tsl_block_of_file_safe test_filename in
   let (rootenv_statements, test_trees) = test_trees_of_tsl_block tsl_block in
   let test_trees = match test_trees with
     | [] ->
