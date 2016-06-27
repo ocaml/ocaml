@@ -47,7 +47,11 @@ void make_parser(void)
     find_final_state();
     remove_conflicts();
     unused_rules();
-    if (SRtotal + RRtotal > 0) total_conflicts();
+    if (SRtotal + RRtotal > 0) {
+        total_conflicts();
+        if (eflag)
+            forbidden_conflicts();
+    }
     defreds();
 }
 
