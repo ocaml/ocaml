@@ -24,6 +24,8 @@ include ../config/Makefile
 default:
 	@echo "Available targets:"
 	@echo "  all             launch all tests"
+	@echo "  legacy          launch legacy tests"
+	@echo "  new             launch new tests"
 	@echo "  all-foo         launch all tests beginning with foo"
 	@echo "  parallel        launch all tests using GNU parallel"
 	@echo "  parallel-foo    launch all tests beginning with foo using \
@@ -41,12 +43,33 @@ default:
 	@echo "(default value = $(MAX_TESTSUITE_DIR_RETRIES))"
 
 .PHONY: all
-all: lib tools
+all:
+	rm -f _log
+	@$(MAKE) legacy-without-report
+	@$(MAKE) new-without-report
+	@$(MAKE) report
+
+.PHONY: legacy
+legacy:
+	rm -f _log
+	@$(MAKE) legacy-without-report
+	@$(MAKE) report
+
+.PHONY: legacy-without-report
+legacy-without-report: lib tools
 	@for dir in tests/*; do \
 	  $(MAKE) $(NO_PRINT) exec-one DIR=$$dir; \
-	done 2>&1 | tee _log
+	done 2>&1 | tee -a _log
 	@$(MAKE) $(NO_PRINT) retries
+
+.PHONY: new
+new:
+	rm -f _log
+	@$(MAKE) new-without-report
 	@$(MAKE) report
+
+new-without-report: lib tools
+	true # Run new tests here
 
 .PHONY: all-%
 all-%: lib tools
@@ -126,13 +149,13 @@ one: lib tools
 
 .PHONY: exec-one
 exec-one:
-	@if [ ! -f $(DIR)/Makefile ]; then \
+	@if [ ! -f $(DIR)/Makefile -a ! -f $(DIR)/ocamltests ]; then \
 	  for dir in $(DIR)/*; do \
 	    if [ -d $$dir ]; then \
 	      $(MAKE) exec-one DIR=$$dir; \
 	    fi; \
 	  done; \
-	else \
+	elif [ -f $(DIR)/Makefile ]; then \
 	  echo "Running tests from '$$DIR' ..."; \
 	  cd $(DIR) && \
 	  $(MAKE) TERM=dumb BASEDIR=$(BASEDIR) || echo '=> unexpected error'; \
