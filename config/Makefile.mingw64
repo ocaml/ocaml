@@ -171,6 +171,17 @@ NATIVECCLINKOPTS=
 ### Build partially-linked object file
 PACKLD=$(TOOLPREF)ld -r $(NATIVECCLINKOPTS) -o # must have a space after '-o'
 
+### Set to false to make -fomit-frame-pointer the default
+WITH_FRAME_POINTERS=true
+
+### Set to true to build against the no-naked-pointers runtime by default
+NO_NAKED_POINTERS=false
+
+### Which combinations of features to enable
+FEATURE_COMBINATIONS=pic
+CCOMP_FLAGS_pic=
+OCAMLCOMP_FLAGS_pic=-fPIC
+
 ############# Configuration for the contributed libraries
 
 OTHERLIBRARIES=win32unix str num win32graph dynlink bigarray systhreads
