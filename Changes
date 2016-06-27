@@ -51,6 +51,10 @@ OCaml 4.04.0:
 - GPR#452: Make the output of ocamldep more stable
   (Alain Frisch)
 
+- GPR#598: Add a --strict option to ocamlyacc treat conflicts as errors
+  (this option is now used for the compiler's parser)
+  (Jeremy Yallop)
+
 - GPR#613: make ocamldoc use -open arguments
   (Florian Angeletti)
 
