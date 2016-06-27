@@ -153,8 +153,8 @@ let print_config oc =
   p "system" system;
   p "asm" asm;
   p_bool "asm_cfi_supported" asm_cfi_supported;
-  p_bool "with_frame_pointers as default?" with_frame_pointers;
-  p_bool "no_naked_pointers as default?" no_naked_pointers;
+  p_bool "with_frame_pointers_default" with_frame_pointers;
+  p_bool "no_naked_pointers_default" no_naked_pointers;
   p "ext_obj" ext_obj;
   p "ext_asm" ext_asm;
   p "ext_lib" ext_lib;
