@@ -96,11 +96,11 @@ type memory_chunk =
   | Double                             (* 64-bit-aligned 64-bit float *)
   | Double_u                           (* word-aligned 64-bit float *)
 
-type operation =
+and operation =
     Capply of machtype * Debuginfo.t
   | Cextcall of string * machtype * bool * Debuginfo.t
   | Cload of memory_chunk
-  | Calloc
+  | Calloc of Debuginfo.t
   | Cstore of memory_chunk * Lambda.initialization_or_assignment
   | Caddi | Csubi | Cmuli | Cmulhi | Cdivi | Cmodi
   | Cand | Cor | Cxor | Clsl | Clsr | Casr
@@ -115,14 +115,14 @@ type operation =
   | Craise of Lambda.raise_kind * Debuginfo.t
   | Ccheckbound of Debuginfo.t
 
-type expression =
+and expression =
     Cconst_int of int
   | Cconst_natint of nativeint
   | Cconst_float of float
   | Cconst_symbol of string
   | Cconst_pointer of int
   | Cconst_natpointer of nativeint
-  | Cconst_blockheader of nativeint
+  | Cconst_blockheader of nativeint * Debuginfo.t
   | Cvar of Ident.t
   | Clet of Ident.t * expression * expression
   | Cassign of Ident.t * expression

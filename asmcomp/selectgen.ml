@@ -34,8 +34,8 @@ let oper_result_type = function
       | Single | Double | Double_u -> typ_float
       | _ -> typ_int
       end
-  | Calloc -> typ_val
-  | Cstore _ -> typ_void
+  | Calloc _ -> typ_val
+  | Cstore (_c, _) -> typ_void
   | Caddi | Csubi | Cmuli | Cmulhi | Cdivi | Cmodi |
     Cand | Cor | Cxor | Clsl | Clsr | Casr |
     Ccmpi _ | Ccmpa _ | Ccmpf _ -> typ_int
@@ -175,6 +175,7 @@ let debuginfo_op = function
   | Cextcall(_, _, _, dbg) -> dbg
   | Craise (_, dbg) -> dbg
   | Ccheckbound dbg -> dbg
+  | Calloc dbg -> dbg
   | _ -> Debuginfo.none
 
 (* Registers for catch constructs *)
@@ -209,7 +210,7 @@ method is_simple_expr = function
   | Cop(op, args) ->
       begin match op with
         (* The following may have side effects *)
-      | Capply _ | Cextcall _ | Calloc | Cstore _ | Craise _ -> false
+      | Capply _ | Cextcall _ | Calloc _ | Cstore _ | Craise _ -> false
         (* The remaining operations are simple if their args are *)
       | _ ->
           List.for_all self#is_simple_expr args
@@ -285,7 +286,7 @@ method select_operation op args =
         (Istore(chunk, addr, is_assign), [arg2; eloc])
         (* Inversion addr/datum in Istore *)
       end
-  | (Calloc, _) -> (Ialloc 0, args)
+  | (Calloc _dbg, _) -> (Ialloc 0, args)
   | (Caddi, _) -> self#select_arith_comm Iadd args
   | (Csubi, _) -> self#select_arith Isub args
   | (Cmuli, _) -> self#select_arith_comm Imul args
@@ -466,7 +467,7 @@ method emit_expr env exp =
   | Cconst_natint n ->
       let r = self#regs_for typ_int in
       Some(self#insert_op (Iconst_int n) [||] r)
-  | Cconst_blockheader n ->
+  | Cconst_blockheader (n, _dbg) ->
       let r = self#regs_for typ_int in
       Some(self#insert_op (Iconst_blockheader n) [||] r)
   | Cconst_float n ->

@@ -120,11 +120,11 @@ type memory_chunk =
   | Double
   | Double_u
 
-type operation =
+and operation =
     Capply of machtype * Debuginfo.t
   | Cextcall of string * machtype * bool * Debuginfo.t
   | Cload of memory_chunk
-  | Calloc
+  | Calloc of Debuginfo.t
   | Cstore of memory_chunk * Lambda.initialization_or_assignment
   | Caddi | Csubi | Cmuli | Cmulhi | Cdivi | Cmodi
   | Cand | Cor | Cxor | Clsl | Clsr | Casr
@@ -145,7 +145,7 @@ type expression =
   | Cconst_symbol of string
   | Cconst_pointer of int
   | Cconst_natpointer of nativeint
-  | Cconst_blockheader of nativeint
+  | Cconst_blockheader of nativeint * Debuginfo.t
   | Cvar of Ident.t
   | Clet of Ident.t * expression * expression
   | Cassign of Ident.t * expression
