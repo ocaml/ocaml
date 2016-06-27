@@ -126,7 +126,7 @@ one: lib tools
 
 .PHONY: exec-one
 exec-one:
-	if [ ! -f $(DIR)/Makefile ]; then \
+	@if [ ! -f $(DIR)/Makefile ]; then \
 	  for dir in $(DIR)/*; do \
 	    if [ -d $$dir ]; then \
 	      $(MAKE) exec-one DIR=$$dir; \

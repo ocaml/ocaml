@@ -36,24 +36,24 @@ C_INCLUDES+=-I $(CTOPDIR)/byterun
 
 .PHONY: default
 default:
-	$(MAKE) compile
-	$(NATIVECODE_ONLY) && $(BYTECODE_ONLY) \
+	@$(MAKE) compile
+	@$(NATIVECODE_ONLY) && $(BYTECODE_ONLY) \
 	 && echo " ... testing => skipped" \
 	 || $(SET_LD_PATH) $(MAKE) run
 
 .PHONY: compile
 compile: $(ML_FILES)
-	for file in $(C_FILES); do \
+	@for file in $(C_FILES); do \
 	  $(OCAMLC) -c $(C_INCLUDES) $$file.c; \
 	done
-	if $(NATIVECODE_ONLY); then : ; else \
+	@if $(NATIVECODE_ONLY); then : ; else \
 	  rm -f program.byte program.byte.exe; \
 	  $(MAKE) $(CMO_FILES) $(MAIN_MODULE).cmo; \
 	  $(OCAMLC) $(ADD_COMPFLAGS) $(ADD_CFLAGS) -o program.byte$(EXE) \
 	            $(O_FILES) $(CMA_FILES) $(CMO_FILES) $(ADD_CMO_FILES) \
 	            $(MAIN_MODULE).cmo; \
 	fi
-	if $(BYTECODE_ONLY); then : ; else \
+	@if $(BYTECODE_ONLY); then : ; else \
 	  rm -f program.native program.native.exe; \
 	  $(MAKE) $(CMX_FILES) $(MAIN_MODULE).cmx; \
 	  $(OCAMLOPT) $(ADD_COMPFLAGS) $(ADD_OPTCOMPFLAGS) \
@@ -64,8 +64,8 @@ compile: $(ML_FILES)
 
 .PHONY: run
 run:
-	printf " ... testing with"
-	if $(NATIVECODE_ONLY); then : ; else \
+	@printf " ... testing with"
+	@if $(NATIVECODE_ONLY); then : ; else \
 	   printf " ocamlc"; \
 	   FLAMBDA=$(FLAMBDA) $(MYRUNTIME) ./program.byte$(EXE) $(EXEC_ARGS) \
 	                >$(MAIN_MODULE).result \
@@ -86,6 +86,6 @@ promote: defaultpromote
 
 .PHONY: clean
 clean: defaultclean
-	rm -f *.result program.byte program.byte.exe \
+	@rm -f *.result program.byte program.byte.exe \
 	       program.native program.native.exe \
 	       $(GENERATED_SOURCES) $(O_FILES) $(TEST_TEMP_FILES)
