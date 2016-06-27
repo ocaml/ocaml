@@ -139,11 +139,18 @@ void caml_ext_table_remove(struct ext_table * tbl, void * data)
   }
 }
 
-void caml_ext_table_free(struct ext_table * tbl, int free_entries)
+void caml_ext_table_clear(struct ext_table * tbl, int free_entries)
 {
   int i;
-  if (free_entries)
+  if (free_entries) {
     for (i = 0; i < tbl->size; i++) caml_stat_free(tbl->contents[i]);
+  }
+  tbl->size = 0;
+}
+
+void caml_ext_table_free(struct ext_table * tbl, int free_entries)
+{
+  caml_ext_table_clear(tbl, free_entries);
   caml_stat_free(tbl->contents);
 }
 
