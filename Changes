@@ -143,7 +143,7 @@ OCaml 4.04.0:
   of select
   (David Scott, review by Alain Frisch)
 
-- PR#7278: Prevent private inline records from being mutated
+* PR#7278: Prevent private inline records from being mutated
   (Alain Frisch, report by Pierre Chambart)
 
 - GPR#600: (similar to GPR#555) ensure that register typing constraints are
