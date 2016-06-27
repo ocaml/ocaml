@@ -15,7 +15,7 @@
 #**************************************************************************
 
 default:
-	printf " ... testing 'test.reference':"
+	@printf " ... testing 'test.reference':"
 	@$(OCAMLOPT) -c submodule.ml
 	@$(OCAMLOPT) -c aliases.ml
 	@$(OCAMLOPT) -c test.ml
