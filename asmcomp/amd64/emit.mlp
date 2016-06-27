@@ -959,7 +959,8 @@ let end_assembly() =
 
   let setcnt = ref 0 in
   emit_frames
-    { efa_label = (fun l -> D.qword (ConstLabel (emit_label l)));
+    { efa_code_label = (fun l -> D.qword (ConstLabel (emit_label l)));
+      efa_data_label = (fun l -> D.qword (ConstLabel (emit_label l)));
       efa_16 = (fun n -> D.word (const n));
       efa_32 = (fun n -> D.long (const_32 n));
       efa_word = (fun n -> D.qword (const n));
