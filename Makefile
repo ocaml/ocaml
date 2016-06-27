@@ -641,12 +641,14 @@ installopt:
 	  $(MAKE) -C cross/$(TARGET)/$$combination/asmrun install; \
 	  for i in $(OTHERLIBRARIES); \
 	    do (cd cross/$(TARGET)/$$combination/otherlibs/$$i; \
-	        $(MAKE) installopt) || exit $$?; \
+	        $(MAKE) installopt \
+	          INSTALL_LIBDIR=$(INSTALL_LIBDIR)/$(TARGET)/$$combination \
+	    ) || exit $$?; \
 	  done; \
 	done
 	for combination in $(FEATURE_COMBINATIONS); do \
-	  (cd cross/$(TARGET)/$$combination/stdlib; $(MAKE) installopt \
-	    || exit $?); \
+	  (cd cross/$(TARGET)/$$combination/stdlib;\
+	   $(MAKE) installopt || exit $?); \
 	done
 	if test -f ocamlopt.opt ; then $(MAKE) installoptopt; else \
 	   cd $(INSTALL_BINDIR); ln -sf ocamlopt.byte$(EXE) ocamlopt$(EXE); fi
