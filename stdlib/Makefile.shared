@@ -13,6 +13,7 @@
 #*                                                                        *
 #**************************************************************************
 
+ROOTDIR ?= ..
 include $(ROOTDIR)/config/Makefile
 CAMLRUN ?= $(ROOTDIR)/boot/ocamlrun
 CAMLYACC ?= $(ROOTDIR)/boot/ocamlyacc
