@@ -17,6 +17,10 @@
 
 include Makefile.shared
 
+export ABSOLUTE_ROOTDIR=$(abspath .)
+export MKDIR=mkdir -p
+include Makefile.cross
+
 # For users who don't read the INSTALL file
 defaultentry:
 	@echo "Please refer to the instructions in file README.win32.adoc."
@@ -171,6 +175,8 @@ opt-core:
 	$(MAKEREC) runtimeopt
 	$(MAKEREC) ocamlopt
 	$(MAKEREC) libraryopt
+	$(MAKEREC) runtimeopt-cross-$(TARGET)
+	$(MAKEREC) libraryopt-cross-$(TARGET)
 
 opt:
 	$(MAKEREC) opt-core
@@ -180,6 +186,8 @@ opt:
 # If the submodule is initialised, then opt.opt will build a native flexlink
 opt.opt: core opt-core ocamlc.opt all ocamlopt.opt ocamllex.opt \
          ocamltoolsopt ocamltoolsopt.opt otherlibrariesopt $(OCAMLDOC_OPT) \
+         $(MAKEREC) build-compilerlibs-cross-$(TARGET) \
+         $(MAKEREC) build-otherlibs-cross-$(TARGET) \
          $(if $(wildcard flexdll/Makefile),flexlink.opt)
 
 # Complete build using fast compilers
@@ -272,6 +280,20 @@ installopt:
 	for i in $(OTHERLIBRARIES); do \
 	  $(MAKEREC) -C otherlibs/$$i installopt || exit $$?; \
 	done
+	for combination in $(FEATURE_COMBINATIONS); do \
+	  mkdir -p $(INSTALL_LIBDIR)/$(TARGET)/$$combination/threads; \
+	  $(MAKEREC) -C cross/$(TARGET)/$$combination/asmrun install; \
+	  for i in $(OTHERLIBRARIES); \
+	    do (cd cross/$(TARGET)/$$combination/otherlibs/$$i; \
+	        $(MAKEREC) installopt \
+	          INSTALL_LIBDIR=$(INSTALL_LIBDIR)/$(TARGET)/$$combination \
+	    ) || exit $$?; \
+	  done; \
+	done
+	for combination in $(FEATURE_COMBINATIONS); do \
+	  (cd cross/$(TARGET)/$$combination/stdlib;\
+	   $(MAKEREC) installopt || exit $?); \
+	done
 	if test -f ocamlopt.opt ; then $(MAKEREC) installoptopt; fi
 	cd tools; $(MAKEREC) installopt
 	if test -f ocamlopt.opt -a -f flexdll/flexlink.opt ; then \
@@ -293,6 +315,24 @@ installoptopt:
            $(BYTESTART:.cmo=.cmx) $(BYTESTART:.cmo=.$(O)) \
            $(OPTSTART:.cmo=.cmx) $(OPTSTART:.cmo=.$(O)) \
            "$(INSTALL_COMPLIBDIR)"
+	for combination in $(FEATURE_COMBINATIONS); do \
+	  mkdir -p \
+	    $(INSTALL_COMPLIBDIR)/../$(TARGET)/$$combination/compiler-libs; \
+	  cp cross/$(TARGET)/$$combination/utils/*.cmx \
+	     cross/$(TARGET)/$$combination/parsing/*.cmx \
+	     cross/$(TARGET)/$$combination/typing/*.cmx \
+	     cross/$(TARGET)/$$combination/bytecomp/*.cmx \
+	     cross/$(TARGET)/$$combination/driver/*.cmx \
+	     cross/$(TARGET)/$$combination/asmcomp/*.cmx \
+	     $(INSTALL_COMPLIBDIR)/../$(TARGET)/$$combination/compiler-libs; \
+	  cp cross/$(TARGET)/$$combination/compilerlibs/ocamlcommon.cmxa \
+	     cross/$(TARGET)/$$combination/compilerlibs/ocamlcommon.a \
+	     cross/$(TARGET)/$$combination/compilerlibs/ocamlbytecomp.cmxa \
+	     cross/$(TARGET)/$$combination/compilerlibs/ocamlbytecomp.a \
+	     cross/$(TARGET)/$$combination/compilerlibs/ocamloptcomp.cmxa \
+	     cross/$(TARGET)/$$combination/compilerlibs/ocamloptcomp.a \
+	     $(INSTALL_COMPLIBDIR)/../$(TARGET)/$$combination/compiler-libs; \
+	done
 
 # Run all tests
 
@@ -384,6 +424,9 @@ utils/config.ml: utils/config.mlp config/Makefile
 	    -e "s|%%NATIVECCLIBS%%|$(NATIVECCLIBS)|" \
 	    -e 's|%%RANLIBCMD%%|$(RANLIBCMD)|' \
 	    -e 's|%%ARCMD%%|$(ARCMD)|' \
+	    -e 's|%%CC_GPROF%%|$(CCOMP_FLAGS_gprof)|' \
+	    -e 's|%%CC_PIC%%|$(CCOMP_FLAGS_pic)|' \
+	    -e 's|%%CC_WITH_FRAME_POINTERS%%|$(CCOMP_FLAGS_with_frame_pointers)|' \
 	    -e 's|%%BINUTILS_NM%%|$(BINUTILS_NM)|' \
 	    -e 's|%%BINUTILS_OBJCOPY%%|$(BINUTILS_OBJCOPY)|' \
 	    -e "s|%%ARCH%%|$(ARCH)|" \
@@ -396,14 +439,15 @@ utils/config.ml: utils/config.mlp config/Makefile
 	    -e "s|%%SYSTHREAD_SUPPORT%%|true|" \
 	    -e 's|%%ASM%%|$(ASM)|' \
 	    -e 's|%%ASM_CFI_SUPPORTED%%|false|' \
-	    -e 's|%%WITH_FRAME_POINTERS%%|false|' \
+	    -e 's|%%DEFAULT_WITH_FRAME_POINTERS%%|$(WITH_FRAME_POINTERS)|' \
+	    -e 's|%%DEFAULT_NO_NAKED_POINTERS%%|$(NO_NAKED_POINTERS)|' \
 	    -e 's|%%MKDLL%%|$(MKDLL)|' \
 	    -e 's|%%MKEXE%%|$(MKEXE)|' \
 	    -e 's|%%MKMAINDLL%%|$(MKMAINDLL)|' \
-	    -e 's|%%CC_PROFILE%%||' \
 	    -e 's|%%HOST%%|$(HOST)|' \
 	    -e 's|%%TARGET%%|$(TARGET)|' \
 	    -e 's|%%FLAMBDA%%|$(FLAMBDA)|' \
+	    -e 's|%%FEATURE_COMBINATIONS%%|"$(FEATURE_COMBINATIONS)"|' \
 	    -e 's|%%FLEXLINK_FLAGS%%|$(FLEXLINK_FLAGS)|' \
 	    utils/config.mlp > utils/config.ml
 
@@ -708,6 +752,7 @@ partialclean::
 	rm -f driver/*.cm* driver/*.$(O) driver/*.$(S)
 	rm -f toplevel/*.cm* toplevel/*.$(O) toplevel/*.$(S)
 	rm -f tools/*.cm* tools/*.$(O) tools/*.$(S)
+	rm -rf cross
 
 depend: beforedepend
 	(for d in utils parsing typing bytecomp asmcomp middle_end \
