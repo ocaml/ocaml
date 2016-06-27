@@ -49,7 +49,7 @@ let free_vars ?(param=false) ty =
 
 let newgenconstr path tyl = newgenty (Tconstr (path, tyl, ref Mnil))
 
-let constructor_args cd_args cd_res path rep =
+let constructor_args priv cd_args cd_res path rep =
   let tyl =
     match cd_args with
     | Cstr_tuple l -> l
@@ -73,7 +73,7 @@ let constructor_args cd_args cd_res path rep =
           type_params;
           type_arity = List.length type_params;
           type_kind = Type_record (lbls, rep);
-          type_private = Public;
+          type_private = priv;
           type_manifest = None;
           type_variance = List.map (fun _ -> Variance.full) type_params;
           type_newtype_level = None;
@@ -111,7 +111,7 @@ let constructor_descrs ty_path decl cstrs =
 
         let cstr_name = Ident.name cd_id in
         let existentials, cstr_args, cstr_inlined =
-          constructor_args cd_args cd_res
+          constructor_args decl.type_private cd_args cd_res
             (Path.Pdot (ty_path, cstr_name, Path.nopos))
             (Record_inlined idx_nonconst)
         in
@@ -141,7 +141,7 @@ let extension_descr path_ext ext =
       | None -> newgenconstr ext.ext_type_path ext.ext_type_params
   in
   let existentials, cstr_args, cstr_inlined =
-    constructor_args ext.ext_args ext.ext_ret_type
+    constructor_args ext.ext_private ext.ext_args ext.ext_ret_type
       path_ext Record_extension
   in
     { cstr_name = Path.last path_ext;
