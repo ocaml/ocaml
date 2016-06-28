@@ -637,6 +637,13 @@ ocamlyacc:
 clean::
 	cd yacc; $(MAKE) clean
 
+# OCamltest
+ocamltest: ocamlc ocamlyacc ocamllex
+	cd ocamltest && $(MAKE)
+
+#ocamltest.opt: ocamlc.opt ocamlyacc ocamllex
+#	cd ocamltest && $(MAKE) opt.opt
+
 # OCamldoc
 
 ocamldoc: ocamlc ocamlyacc ocamllex otherlibraries
