@@ -44,14 +44,14 @@ default:
 
 .PHONY: all
 all:
-	rm -f _log
+	@rm -f _log
 	@$(MAKE) $(NO_PRINT) legacy-without-report
 	@$(MAKE) $(NO_PRINT) new-without-report
 	@$(MAKE) $(NO_PRINT) report
 
 .PHONY: legacy
 legacy:
-	rm -f _log
+	@rm -f _log
 	@$(MAKE) $(NO_PRINT) legacy-without-report
 	@$(MAKE) $(NO_PRINT) report
 
@@ -64,7 +64,7 @@ legacy-without-report: lib tools
 
 .PHONY: new
 new:
-	rm -f _log
+	@rm -f _log
 	@$(MAKE) $(NO_PRINT) new-without-report
 	@$(MAKE) $(NO_PRINT) report
 
