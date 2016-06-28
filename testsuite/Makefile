@@ -45,15 +45,15 @@ default:
 .PHONY: all
 all:
 	rm -f _log
-	@$(MAKE) legacy-without-report
-	@$(MAKE) new-without-report
-	@$(MAKE) report
+	@$(MAKE) $(NO_PRINT) legacy-without-report
+	@$(MAKE) $(NO_PRINT) new-without-report
+	@$(MAKE) $(NO_PRINT) report
 
 .PHONY: legacy
 legacy:
 	rm -f _log
-	@$(MAKE) legacy-without-report
-	@$(MAKE) report
+	@$(MAKE) $(NO_PRINT) legacy-without-report
+	@$(MAKE) $(NO_PRINT) report
 
 .PHONY: legacy-without-report
 legacy-without-report: lib tools
@@ -65,8 +65,8 @@ legacy-without-report: lib tools
 .PHONY: new
 new:
 	rm -f _log
-	@$(MAKE) new-without-report
-	@$(MAKE) report
+	@$(MAKE) $(NO_PRINT) new-without-report
+	@$(MAKE) $(NO_PRINT) report
 
 new-without-report: lib tools
 	@for file in `find tests -name ocamltests`; do \
