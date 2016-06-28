@@ -219,6 +219,10 @@ external ( @@ ) : ('a -> 'b) -> 'a -> 'b = "%apply"
    @since 4.01
 *)
 
+val tap : ('a -> _) -> 'a -> 'a
+(** [x |> tap f] discards the result of [f x] and returns [x]
+*)
+
 (** {6 Integer arithmetic} *)
 
 (** Integers are 31 bits wide (or 63 bits on 64-bit processors).

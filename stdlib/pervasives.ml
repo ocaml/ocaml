@@ -38,6 +38,7 @@ exception Exit
 
 external ( |> ) : 'a -> ('a -> 'b) -> 'b = "%revapply"
 external ( @@ ) : ('a -> 'b) -> 'a -> 'b = "%apply"
+let tap f x = let _ = f x in x
 
 (* Debugging *)
 
