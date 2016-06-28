@@ -29,6 +29,7 @@ typedef struct {
   const char *program;
   array argv;
   /* array envp; */
+  const char *stdin_filename;
   const char *stdout_filename;
   const char *stderr_filename;
   int append;

@@ -22,6 +22,7 @@ open Actions
 let env_id env = env
 
 let run_command
+  ?(stdin_variable="stdin")
   ?(stdout_variable="stdout")
   ?(stderr_variable="")
   ?(append=false)
@@ -37,12 +38,14 @@ let run_command
     try [|Sys.getenv "PATH" |]
     with Not_found -> [| |] in
   *)
+  let stdin_filename = Environments.safe_lookup stdin_variable env in
   let stdout_filename = Environments.safe_lookup stdout_variable env in
   let stderr_filename = Environments.safe_lookup stderr_variable env in
   Run.run {
     Run.progname = progname;
     Run.argv = arguments;
     (* Run.envp = environment; *)
+    Run.stdin_filename = stdin_filename;
     Run.stdout_filename = stdout_filename;
     Run.stderr_filename = stderr_filename;
     Run.append = append;

@@ -71,12 +71,13 @@ CAMLprim value caml_run_command(value caml_settings)
   settings.program = String_val(Field(caml_settings, 0));
   settings.argv = cstringvect(Field(caml_settings, 1));
   /* settings.envp = cstringvect(Field(caml_settings, 2)); */
-  settings.stdout_filename = String_val(Field(caml_settings, 2));
-  settings.stderr_filename = String_val(Field(caml_settings, 3));
-  settings.append = Bool_val(Field(caml_settings, 4));
-  settings.timeout = Int_val(Field(caml_settings, 5));
+  settings.stdin_filename = String_val(Field(caml_settings, 2));
+  settings.stdout_filename = String_val(Field(caml_settings, 4));
+  settings.stderr_filename = String_val(Field(caml_settings, 4));
+  settings.append = Bool_val(Field(caml_settings, 5));
+  settings.timeout = Int_val(Field(caml_settings, 6));
   settings.logger = logToChannel;
-  settings.loggerData = Channel(Field(caml_settings, 6));
+  settings.loggerData = Channel(Field(caml_settings, 7));
   res = run_command(&settings);
   CAMLreturn(Val_int(res));
 }

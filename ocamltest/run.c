@@ -33,6 +33,7 @@
 
 static volatile int timeout_expired = 0;
 
+
 /* is_defined(str) returns 1 iff str points to a non-empty string */
 /* Otherwise returns 0 */
 static inline int is_defined(const char *str)
@@ -129,15 +130,25 @@ void handle_alarm(int sig)
 int run_command_child(const command_settings *settings)
 {
   int res;
-  int stdout_fd = -1, stderr_fd = -1; /* -1 means not redirected */
-  int flags = O_CREAT | O_WRONLY | (settings->append ? O_APPEND : O_TRUNC);
-  int mode = 0666;
+  int stdin_fd = -1, stdout_fd = -1, stderr_fd = -1; /* -1 means not redirected */
+  int inputFlags = O_RDONLY;
+  int outputFlags = O_CREAT | O_WRONLY | (settings->append ? O_APPEND : O_TRUNC);
+  int inputMode = 0400, outputMode = 0666;
 
   if (setpgid(0, 0) == -1) myperror("setpgid");
 
+  if (is_defined(settings->stdin_filename))
+  {
+    stdin_fd = open(settings->stdin_filename, inputFlags, inputMode);
+    if (stdin_fd < 0)
+      open_error(settings->stdin_filename);
+    if ( dup2(stdin_fd, STDIN_FILENO) == -1 )
+      myperror("dup2 for stdin");
+  }
+
   if (is_defined(settings->stdout_filename))
   {
-    stdout_fd = open(settings->stdout_filename, flags, mode);
+    stdout_fd = open(settings->stdout_filename, outputFlags, outputMode);
     if (stdout_fd < 0)
       open_error(settings->stdout_filename);
     if ( dup2(stdout_fd, STDOUT_FILENO) == -1 )
@@ -175,7 +186,7 @@ int run_command_child(const command_settings *settings)
     }
     if (stderr_fd == -1)
     {
-      stderr_fd = open(settings->stderr_filename, flags, mode);
+      stderr_fd = open(settings->stderr_filename, outputFlags, outputMode);
       if (stderr_fd == -1) open_error(settings->stderr_filename);
     }
     if ( dup2(stderr_fd, STDERR_FILENO) == -1 )
