@@ -819,9 +819,6 @@ method private emit_return env exp =
       self#insert_moves r loc;
       self#insert Ireturn loc [||]
 
-(* CR mshinwell: factor out Spacetime parts and ensure we avoid generating
-   e.g. mov %r13, %r13 prior to a call *)
-
 method emit_tail env exp =
   match exp with
     Clet(v, e1, e2) ->
