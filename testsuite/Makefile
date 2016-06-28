@@ -69,7 +69,13 @@ new:
 	@$(MAKE) report
 
 new-without-report: lib tools
-	true # Run new tests here
+	@for file in `find tests -name ocamltests`; do \
+	  dir=`dirname $$file`; \
+	  echo Running tests from \'$$dir\' ... ; \
+	  while read testfile; do \
+	    ../ocamltest/ocamltest.byte $$dir/$$testfile; \
+	  done < $$file; \
+	done 2>&1 | tee -a _log
 
 .PHONY: all-%
 all-%: lib tools
