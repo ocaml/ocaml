@@ -1,0 +1,3 @@
+#!/bin/sh
+# Prints the number of files declared as being ocamltest files
+cat `find . -name ocamltests` | wc -l
