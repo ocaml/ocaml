@@ -417,9 +417,6 @@ val mutable instr_seq = dummy_instr
 method insert_debug desc dbg arg res =
   instr_seq <- instr_cons_debug desc arg res dbg instr_seq
 
-method insert_debug_env _env desc dbg arg res =
-  self#insert_debug desc dbg arg res
-
 method insert desc arg res =
   instr_seq <- instr_cons desc arg res instr_seq
 
@@ -475,10 +472,6 @@ method insert_move_results loc res stacksize =
 
 method insert_op_debug op dbg rs rd =
   self#insert_debug (Iop op) dbg rs rd;
-  rd
-
-method private insert_op_debug_env env op dbg rs rd =
-  self#insert_debug_env env (Iop op) dbg rs rd;
   rd
 
 method insert_op op rs rd =
@@ -584,7 +577,7 @@ method emit_expr env exp =
               in
               self#insert_move_args rarg loc_arg stack_ofs;
               self#maybe_emit_spacetime_move ~spacetime_reg;
-              self#insert_debug_env env (Iop new_op) dbg
+              self#insert_debug (Iop new_op) dbg
                           (Array.append [|r1.(0)|] loc_arg) loc_res;
               self#insert_move_results loc_res rd stack_ofs;
               Some rd
@@ -598,7 +591,7 @@ method emit_expr env exp =
               in
               self#insert_move_args r1 loc_arg stack_ofs;
               self#maybe_emit_spacetime_move ~spacetime_reg;
-              self#insert_debug_env env (Iop new_op) dbg loc_arg
+              self#insert_debug (Iop new_op) dbg loc_arg
                 loc_res;
               self#insert_move_results loc_res rd stack_ofs;
               Some rd
@@ -610,7 +603,7 @@ method emit_expr env exp =
               self#maybe_emit_spacetime_move ~spacetime_reg;
               let rd = self#regs_for ty in
               let loc_res =
-                self#insert_op_debug_env env new_op dbg
+                self#insert_op_debug new_op dbg
                   loc_arg (Proc.loc_external_results rd) in
               self#insert_move_results loc_res rd stack_ofs;
               Some rd
@@ -843,7 +836,7 @@ method emit_tail env exp =
                 in
                 self#insert_moves rarg loc_arg;
                 self#maybe_emit_spacetime_move ~spacetime_reg;
-                self#insert_debug_env env call dbg
+                self#insert_debug call dbg
                             (Array.append [|r1.(0)|] loc_arg) [||];
               end else begin
                 let rd = self#regs_for ty in
@@ -853,7 +846,7 @@ method emit_tail env exp =
                 in
                 self#insert_move_args rarg loc_arg stack_ofs;
                 self#maybe_emit_spacetime_move ~spacetime_reg;
-                self#insert_debug_env env (Iop new_op) dbg
+                self#insert_debug (Iop new_op) dbg
                             (Array.append [|r1.(0)|] loc_arg) loc_res;
                 self#insert(Iop(Istackoffset(-stack_ofs))) [||] [||];
                 self#insert Ireturn loc_res [||]
@@ -868,7 +861,7 @@ method emit_tail env exp =
                 in
                 self#insert_moves r1 loc_arg;
                 self#maybe_emit_spacetime_move ~spacetime_reg;
-                self#insert_debug_env env call dbg loc_arg [||];
+                self#insert_debug call dbg loc_arg [||];
               end else if func = !current_function_name then begin
                 let call = Iop (Itailcall_imm { func; label_after; }) in
                 let loc_arg' = Proc.loc_parameters r1 in
@@ -877,7 +870,7 @@ method emit_tail env exp =
                 in
                 self#insert_moves r1 loc_arg';
                 self#maybe_emit_spacetime_move ~spacetime_reg;
-                self#insert_debug_env env call dbg loc_arg' [||];
+                self#insert_debug call dbg loc_arg' [||];
               end else begin
                 let rd = self#regs_for ty in
                 let loc_res = Proc.loc_results rd in
@@ -886,7 +879,7 @@ method emit_tail env exp =
                 in
                 self#insert_move_args r1 loc_arg stack_ofs;
                 self#maybe_emit_spacetime_move ~spacetime_reg;
-                self#insert_debug_env env (Iop new_op) dbg loc_arg loc_res;
+                self#insert_debug (Iop new_op) dbg loc_arg loc_res;
                 self#insert(Iop(Istackoffset(-stack_ofs))) [||] [||];
                 self#insert Ireturn loc_res [||]
               end
