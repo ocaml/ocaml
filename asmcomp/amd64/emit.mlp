@@ -620,17 +620,20 @@ let emit_instr fallthrough i =
         let lbl_redo = new_label() in
         def_label lbl_redo;
         I.sub (int n) r15;
+        let spacetime_node_hole_ptr_is_in_rax =
+          Config.spacetime && (i.arg.(0).loc = Reg 0)
+        in
         if !Clflags.dlcode then begin
           (* When using Spacetime, %rax might be the node pointer, so we
              must take care not to clobber it.  (Whilst we can tell the
              register allocator that %rax is destroyed by Ialloc, we can't
              force that the argument (the node pointer) is not in %rax.) *)
-          if Config.spacetime then begin
+          if spacetime_node_hole_ptr_is_in_rax then begin
             I.push rax
           end;
           load_symbol_addr "caml_young_limit" rax;
           I.cmp (mem64 QWORD 0 RAX) r15;
-          if Config.spacetime then begin
+          if spacetime_node_hole_ptr_is_in_rax then begin
             I.pop rax  (* this does not affect the flags *)
           end
         end else
