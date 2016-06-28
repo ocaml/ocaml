@@ -94,7 +94,7 @@ For 64-bit architectures:
      +--------+-------+-----+
 bits  63    10 9     8 7   0
 
-For x86-64 with Spacetime profiling:  (max block size = 32Gbytes)
+For x86-64 with Spacetime profiling:  (max block size = just under 4Gbytes)
 
            26 bits         28 bits
      +----------------+----------------+-------------+

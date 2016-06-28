@@ -591,8 +591,7 @@ method emit_expr env exp =
               in
               self#insert_move_args r1 loc_arg stack_ofs;
               self#maybe_emit_spacetime_move ~spacetime_reg;
-              self#insert_debug (Iop new_op) dbg loc_arg
-                loc_res;
+              self#insert_debug (Iop new_op) dbg loc_arg loc_res;
               self#insert_move_results loc_res rd stack_ofs;
               Some rd
           | Iextcall _ ->
