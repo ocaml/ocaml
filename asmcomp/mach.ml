@@ -35,6 +35,8 @@ type test =
   | Ioddtest
   | Ieventest
 
+type label = Cmm.label
+
 type operation =
     Imove
   | Ispill
@@ -42,11 +44,11 @@ type operation =
   | Iconst_int of nativeint
   | Iconst_float of int64
   | Iconst_symbol of string
-  | Icall_ind
-  | Icall_imm of string
-  | Itailcall_ind
-  | Itailcall_imm of string
-  | Iextcall of string * bool
+  | Icall_ind of { label_after : label; }
+  | Icall_imm of { func : string; label_after : label; }
+  | Itailcall_ind of { label_after : label; }
+  | Itailcall_imm of { func : string; label_after : label; }
+  | Iextcall of { func : string; alloc : bool; label_after : label; }
   | Istackoffset of int
   | Iload of Cmm.memory_chunk * Arch.addressing_mode
   | Istore of Cmm.memory_chunk * Arch.addressing_mode * bool
@@ -57,7 +59,6 @@ type operation =
   | Inegf | Iabsf | Iaddf | Isubf | Imulf | Idivf
   | Ifloatofint | Iintoffloat
   | Ispecific of Arch.specific_operation
-  | Ilabel of Cmm.label
 
 type instruction =
   { desc: instruction_desc;
@@ -126,7 +127,7 @@ let rec instr_iter f i =
       f i;
       match i.desc with
         Iend -> ()
-      | Ireturn | Iop(Itailcall_ind) | Iop(Itailcall_imm _) -> ()
+      | Ireturn | Iop(Itailcall_ind _) | Iop(Itailcall_imm _) -> ()
       | Iifthenelse(_tst, ifso, ifnot) ->
           instr_iter f ifso; instr_iter f ifnot; instr_iter f i.next
       | Iswitch(_index, cases) ->

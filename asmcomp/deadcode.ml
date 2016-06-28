@@ -25,7 +25,7 @@ let rec deadcode i =
   match i.desc with
   | Iend | Ireturn | Iraise _ ->
       (i, Reg.add_set_array i.live i.arg)
-  | Iop(Itailcall_ind) | Iop(Itailcall_imm _) ->
+  | Iop(Itailcall_ind _) | Iop(Itailcall_imm _) ->
       let before = Reg.add_set_array i.live i.arg in
       if not Config.spacetime then
         i, Reg.add_set_array i.live i.arg
@@ -45,9 +45,9 @@ let rec deadcode i =
           if not Config.spacetime then i.arg
           else
             match op with
-            | Icall_ind | Icall_imm _ | Iextcall (_, true) ->
+            | Icall_ind _ | Icall_imm _ | Iextcall { alloc = true; } ->
               Array.concat [ [| Proc.loc_spacetime_node_hole |]; i.arg ]
-            | Itailcall_ind | Itailcall_imm _ -> assert false  (* see above *)
+            | Itailcall_ind _ | Itailcall_imm _ -> assert false  (* see above *)
             | _ -> i.arg
         in
         ({i with next = s}, Reg.add_set_array i.live args)

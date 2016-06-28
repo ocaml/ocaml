@@ -268,8 +268,8 @@ let record_frame_label ?label live dbg =
       fd_debuginfo = dbg } :: !frame_descriptors;
   lbl
 
-let record_frame live dbg =
-  let lbl = record_frame_label live dbg in
+let record_frame ?label live dbg =
+  let lbl = record_frame_label ?label live dbg in
   def_label lbl
 
 (* Spacetime instrumentation *)
@@ -518,40 +518,40 @@ let emit_instr fallthrough i =
   | Lop(Iconst_symbol s) ->
       add_used_symbol s;
       load_symbol_addr s (res i 0)
-  | Lop(Icall_ind) ->
+  | Lop(Icall_ind { label_after; }) ->
       I.call (arg i 0);
-      record_frame i.live i.dbg
-  | Lop(Icall_imm s) ->
-      add_used_symbol s;
-      emit_call s;
-      record_frame i.live i.dbg
-  | Lop(Itailcall_ind) ->
+      record_frame i.live i.dbg ~label:label_after
+  | Lop(Icall_imm { func; label_after; }) ->
+      add_used_symbol func;
+      emit_call func;
+      record_frame i.live i.dbg ~label:label_after
+  | Lop(Itailcall_ind { label_after; }) ->
       output_epilogue begin fun () ->
         I.jmp (arg i 0);
         if Config.spacetime then begin
-          record_frame Reg.Set.empty i.dbg
+          record_frame Reg.Set.empty i.dbg ~label:label_after
         end
       end
-  | Lop(Itailcall_imm s) ->
+  | Lop(Itailcall_imm { func; label_after; }) ->
       begin
-        if s = !function_name then
+        if func = !function_name then
           I.jmp (label !tailrec_entry_point)
         else begin
           output_epilogue begin fun () ->
-            add_used_symbol s;
-            emit_jump s
+            add_used_symbol func;
+            emit_jump func
           end
         end
       end;
       if Config.spacetime then begin
-        record_frame Reg.Set.empty i.dbg
+        record_frame Reg.Set.empty i.dbg ~label:label_after
       end
-  | Lop(Iextcall(s, alloc)) ->
-      add_used_symbol s;
+  | Lop(Iextcall { func; alloc; label_after; }) ->
+      add_used_symbol func;
       if alloc then begin
-        load_symbol_addr s rax;
+        load_symbol_addr func rax;
         emit_call "caml_c_call";
-        record_frame i.live i.dbg;
+        record_frame i.live i.dbg ~label:label_after;
         if system <> S_win64 then begin
           (* TODO: investigate why such a diff.
              This comes from:
@@ -562,17 +562,11 @@ let emit_instr fallthrough i =
           *)
           load_symbol_addr "caml_young_ptr" r11;
           I.mov (mem64 QWORD 0 R11) r15
-        end;
-        (* CR-soon mshinwell: It would be nice to re-use the frame that's
-           already here---but the label instruction isn't in the correct
-           place for that, thanks to the caml_young_ptr reload. *)
-        record_frame Reg.Set.empty i.dbg
+        end
       end else begin
-        emit_call s;
+        emit_call func;
         if Config.spacetime then begin
-          (* CR mshinwell: probably only needed for
-             caml_spacetime_generate_profinfo calls *)
-          record_frame Reg.Set.empty i.dbg
+          record_frame Reg.Set.empty i.dbg ~label:label_after
         end
       end
   | Lop(Istackoffset n) ->
@@ -759,8 +753,6 @@ let emit_instr fallthrough i =
       I.sqrtsd (arg i 0) (res i 0)
   | Lop(Ispecific(Ifloatsqrtf addr)) ->
       I.sqrtsd (addressing addr REAL8 i 0) (res i 0)
-  | Lop (Ilabel lbl) ->
-     _label (emit_label lbl)
   | Lreloadretaddr ->
       ()
   | Lreturn ->

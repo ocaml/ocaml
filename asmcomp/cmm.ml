@@ -128,7 +128,9 @@ type memory_chunk =
 
 and operation =
     Capply of machtype * Debuginfo.t
-  | Cextcall of string * machtype * bool * Debuginfo.t
+  | Cextcall of string * machtype * bool * Debuginfo.t * label option
+    (** If specified, the given label will be placed immediately after the
+        call (at the same place as any frame descriptor would reference). *)
   | Cload of memory_chunk
   | Calloc of Debuginfo.t
   | Cstore of memory_chunk * Lambda.initialization_or_assignment
@@ -143,7 +145,6 @@ and operation =
   | Ccmpf of comparison
   | Craise of Lambda.raise_kind * Debuginfo.t
   | Ccheckbound of Debuginfo.t
-  | Clabel of label
 
 type expression =
     Cconst_int of int

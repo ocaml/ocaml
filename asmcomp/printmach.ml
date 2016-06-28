@@ -122,12 +122,12 @@ let operation op arg ppf res =
   | Iconst_int n -> fprintf ppf "%s" (Nativeint.to_string n)
   | Iconst_float f -> fprintf ppf "%F" (Int64.float_of_bits f)
   | Iconst_symbol s -> fprintf ppf "\"%s\"" s
-  | Icall_ind -> fprintf ppf "call %a" regs arg
-  | Icall_imm lbl -> fprintf ppf "call \"%s\" %a" lbl regs arg
-  | Itailcall_ind -> fprintf ppf "tailcall %a" regs arg
-  | Itailcall_imm lbl -> fprintf ppf "tailcall \"%s\" %a" lbl regs arg
-  | Iextcall(lbl, alloc) ->
-      fprintf ppf "extcall \"%s\" %a%s" lbl regs arg
+  | Icall_ind _ -> fprintf ppf "call %a" regs arg
+  | Icall_imm { func; _ } -> fprintf ppf "call \"%s\" %a" func regs arg
+  | Itailcall_ind _ -> fprintf ppf "tailcall %a" regs arg
+  | Itailcall_imm { func; } -> fprintf ppf "tailcall \"%s\" %a" func regs arg
+  | Iextcall { func; alloc; _ } ->
+      fprintf ppf "extcall \"%s\" %a%s" func regs arg
       (if alloc then "" else " (noalloc)")
   | Istackoffset n ->
       fprintf ppf "offset stack %i" n
@@ -158,7 +158,6 @@ let operation op arg ppf res =
   | Iintoffloat -> fprintf ppf "intoffloat %a" reg arg.(0)
   | Ispecific op ->
       Arch.print_specific_operation reg op ppf arg
-  | Ilabel label -> fprintf ppf "label:%d" label
 
 let rec instr ppf i =
   if !print_live then begin

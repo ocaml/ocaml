@@ -42,7 +42,7 @@ let rec live i finally =
   | Ireturn ->
       i.live <- Reg.Set.empty; (* no regs are live across *)
       Reg.set_of_array i.arg
-  | Iop(Itailcall_ind) | Iop(Itailcall_imm _) ->
+  | Iop(Itailcall_ind _) | Iop(Itailcall_imm _) ->
       i.live <- Reg.Set.empty; (* no regs are live across *)
       if not Config.spacetime then
         Reg.set_of_array i.arg
@@ -62,7 +62,7 @@ let rec live i finally =
         let across_after = Reg.diff_set_array after i.res in
         let across =
           match op with
-          | Icall_ind | Icall_imm _ | Iextcall _
+          | Icall_ind _ | Icall_imm _ | Iextcall _
           | Iintop (Icheckbound _) | Iintop_imm(Icheckbound _, _) ->
               (* The function call may raise an exception, branching to the
                  nearest enclosing try ... with. Similarly for bounds checks.
@@ -76,9 +76,9 @@ let rec live i finally =
         if not Config.spacetime then after
         else
           match op with
-          | Icall_ind | Icall_imm _ | Iextcall (_, true) ->
+          | Icall_ind _ | Icall_imm _ | Iextcall { alloc = true; } ->
             Reg.Set.add Proc.loc_spacetime_node_hole after
-          | Itailcall_ind | Itailcall_imm _ -> assert false  (* see above *)
+          | Itailcall_ind _ | Itailcall_imm _ -> assert false  (* see above *)
           | _ -> after
       end
   | Iifthenelse(_test, ifso, ifnot) ->

@@ -55,7 +55,7 @@ let chunk = function
 
 let operation = function
   | Capply(_ty, d) -> "app" ^ Debuginfo.to_string d
-  | Cextcall(lbl, _ty, _alloc, d) ->
+  | Cextcall(lbl, _ty, _alloc, d, _) ->
       Printf.sprintf "extcall \"%s\"%s" lbl (Debuginfo.to_string d)
   | Cload c -> Printf.sprintf "load %s" (chunk c)
   | Calloc d -> "alloc" ^ Debuginfo.to_string d
@@ -93,7 +93,6 @@ let operation = function
   | Ccmpf c -> Printf.sprintf "%sf" (comparison c)
   | Craise (k, d) -> Lambda.raise_kind k ^ Debuginfo.to_string d
   | Ccheckbound d -> "checkbound" ^ Debuginfo.to_string d
-  | Clabel label -> "label:" ^ string_of_int label
 
 let rec expr ppf = function
   | Cconst_int n -> fprintf ppf "%i" n
@@ -138,7 +137,7 @@ let rec expr ppf = function
       List.iter (fun e -> fprintf ppf "@ %a" expr e) el;
       begin match op with
       | Capply (mty, _) -> fprintf ppf "@ %a" machtype mty
-      | Cextcall(_, mty, _, _) -> fprintf ppf "@ %a" machtype mty
+      | Cextcall(_, mty, _, _, _) -> fprintf ppf "@ %a" machtype mty
       | _ -> ()
       end;
       fprintf ppf ")@]"

@@ -45,7 +45,7 @@ and instruction_desc =
 
 let has_fallthrough = function
   | Lreturn | Lbranch _ | Lswitch _ | Lraise _
-  | Lop Itailcall_ind | Lop (Itailcall_imm _) -> false
+  | Lop Itailcall_ind _ | Lop (Itailcall_imm _) -> false
   | _ -> true
 
 type fundecl =
@@ -131,8 +131,6 @@ let rec discard_dead_code n =
    as this may cause a stack imbalance later during assembler generation. *)
   | Lpoptrap | Lpushtrap -> n
   | Lop(Istackoffset _) -> n
-  (* Do not discard explicit labels used for profiling. *)
-  | Lop (Ilabel _) -> n
   | _ -> discard_dead_code n.next
 
 (*
@@ -180,7 +178,7 @@ let local_exit k =
 let rec linear i n =
   match i.Mach.desc with
     Iend -> n
-  | Iop(Itailcall_ind | Itailcall_imm _ as op) ->
+  | Iop(Itailcall_ind _ | Itailcall_imm _ as op) ->
       if not Config.spacetime then
         copy_instr (Lop op) i (discard_dead_code n)
       else

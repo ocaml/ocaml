@@ -89,7 +89,7 @@ let code_for_function_prologue ~function_name ~node_hole =
         Clet (is_new_node,
           Clet (pc, Cconst_symbol function_name,
             Cop (Cextcall ("caml_spacetime_allocate_node",
-              [| Int |], false, Debuginfo.none),
+              [| Int |], false, Debuginfo.none, None),
               [Cconst_int (1 (* header *) + !index_within_node);
                Cvar pc;
                Cvar node_hole;
@@ -117,9 +117,14 @@ let code_for_blockheader ~value's_header ~node ~dbg =
   let generate_new_profinfo =
     (* This will generate a static branch to a function that should usually
        be in the cache, which hopefully gives a good code size/performance
-       balance. *)
+       balance.
+       The "Some label" is important: it provides the link between the shape
+       table, the allocation point, and the frame descriptor table---enabling
+       the latter table to be used for resolving a program counter at such
+       a point to a location.
+    *)
     Cop (Cextcall ("caml_spacetime_generate_profinfo", [| Int |],
-        false, dbg),
+        false, dbg, Some label),
       [Cvar address_of_profinfo;
        Cconst_int (index_within_node + 1)])
   in
@@ -137,36 +142,35 @@ let code_for_blockheader ~value's_header ~node ~dbg =
           Cop (Ccmpi Cne, [Cvar existing_profinfo; Cconst_int 1 (* () *)]),
           Cvar existing_profinfo,
           generate_new_profinfo),
-        Csequence (Cop (Clabel label, []),
-          Clet (existing_count,
-            Cop (Cload Word_int, [
-              Cop (Caddi,
-                [Cvar address_of_profinfo; Cconst_int Arch.size_addr])
-            ]),
-            Csequence (
-              Cop (Cstore (Word_int, Lambda.Assignment),
-                [Cop (Caddi,
-                  [Cvar address_of_profinfo; Cconst_int Arch.size_addr]);
-                  Cop (Caddi, [
-                    Cvar existing_count;
-                    (* N.B. "*2" since the count is an OCaml integer.
-                       The "1 +" is to count the value's header. *)
-                    Cconst_int (2 * (1 + Nativeint.to_int num_words));
-                  ]);
-                ]),
-              (* [profinfo] looks like a black [Infix_tag] header.  Instead of
-                 having to mask [profinfo] before ORing it with the desired
-                 header, we can use an XOR trick, to keep code size down. *)
-              let value's_header =
-                Nativeint.logxor value's_header
-                  (Nativeint.logor
-                    ((Nativeint.logor (Nativeint.of_int Obj.infix_tag)
-                      (Nativeint.shift_left 3n (* <- Caml_black *) 8)))
-                    (Nativeint.shift_left
-                      (* The following is the [Infix_offset_val], in words. *)
-                      (Nativeint.of_int (index_within_node + 1)) 10))
-              in
-              Cop (Cxor, [Cvar profinfo; Cconst_natint value's_header])))))))
+        Clet (existing_count,
+          Cop (Cload Word_int, [
+            Cop (Caddi,
+              [Cvar address_of_profinfo; Cconst_int Arch.size_addr])
+          ]),
+          Csequence (
+            Cop (Cstore (Word_int, Lambda.Assignment),
+              [Cop (Caddi,
+                [Cvar address_of_profinfo; Cconst_int Arch.size_addr]);
+                Cop (Caddi, [
+                  Cvar existing_count;
+                  (* N.B. "*2" since the count is an OCaml integer.
+                     The "1 +" is to count the value's header. *)
+                  Cconst_int (2 * (1 + Nativeint.to_int num_words));
+                ]);
+              ]),
+            (* [profinfo] looks like a black [Infix_tag] header.  Instead of
+               having to mask [profinfo] before ORing it with the desired
+               header, we can use an XOR trick, to keep code size down. *)
+            let value's_header =
+              Nativeint.logxor value's_header
+                (Nativeint.logor
+                  ((Nativeint.logor (Nativeint.of_int Obj.infix_tag)
+                    (Nativeint.shift_left 3n (* <- Caml_black *) 8)))
+                  (Nativeint.shift_left
+                    (* The following is the [Infix_offset_val], in words. *)
+                    (Nativeint.of_int (index_within_node + 1)) 10))
+            in
+            Cop (Cxor, [Cvar profinfo; Cconst_natint value's_header]))))))
 
 type callee =
   | Direct of string
@@ -213,7 +217,7 @@ let code_for_call ~node ~callee ~is_tail ~label =
         else Cconst_int 1  (* [Val_unit] *)
       in
       Cop (Cextcall ("caml_spacetime_indirect_node_hole_ptr",
-          [| Int |], false, Debuginfo.none),
+          [| Int |], false, Debuginfo.none, None),
         [callee; Cvar place_within_node; caller_node]))
 
 class virtual instruction_selection = object (self)
@@ -223,19 +227,20 @@ class virtual instruction_selection = object (self)
      instrumentation... *)
   val mutable disable_instrumentation = false
 
-  method private instrument_direct_call ~env ~lbl ~is_tail ~label =
+  method private instrument_direct_call ~env ~func ~is_tail ~label_after =
     let instrumentation =
       code_for_call
         ~node:(Lazy.force !spacetime_node)
-        ~callee:(Direct lbl)
+        ~callee:(Direct func)
         ~is_tail
-        ~label
+        ~label:label_after
     in
     match self#emit_expr env instrumentation with
     | None -> assert false
-    | Some reg -> reg
+    | Some reg -> Some reg
 
-  method private instrument_indirect_call ~env ~callee ~is_tail ~label =
+  method private instrument_indirect_call ~env ~callee ~is_tail
+        ~label_after =
     (* [callee] is a pseudoregister, so we have to bind it in the environment
        and reference the variable to which it is bound. *)
     let callee_ident = Ident.create "callee" in
@@ -245,11 +250,11 @@ class virtual instruction_selection = object (self)
         ~node:(Lazy.force !spacetime_node)
         ~callee:(Indirect (Cmm.Cvar callee_ident))
         ~is_tail
-        ~label
+        ~label:label_after
     in
     match self#emit_expr env instrumentation with
     | None -> assert false
-    | Some reg -> reg
+    | Some reg -> Some reg
 
   method private can_instrument () =
     Config.spacetime && not disable_instrumentation
@@ -259,44 +264,24 @@ class virtual instruction_selection = object (self)
     else
       let module M = Mach in
       match desc with
-      | M.Iop (M.Icall_imm lbl) ->
+      | M.Iop (M.Icall_imm { func; label_after; }) ->
         assert (Array.length arg = 0);
-        let label = Cmm.new_label () in
-        let reg =
-          self#instrument_direct_call ~env ~lbl ~is_tail:false ~label
-        in
-        Some (label, reg)
-      | M.Iop M.Icall_ind ->
-        let label = Cmm.new_label () in
+        self#instrument_direct_call ~env ~func ~is_tail:false ~label_after
+      | M.Iop (M.Icall_ind { label_after; }) ->
         assert (Array.length arg = 1);
-        let reg =
-          self#instrument_indirect_call ~env ~callee:arg.(0)
-            ~is_tail:false ~label
-        in
-        Some (label, reg)
-      | M.Iop (M.Itailcall_imm lbl) ->
-        let label = Cmm.new_label () in
+        self#instrument_indirect_call ~env ~callee:arg.(0)
+          ~is_tail:false ~label_after
+      | M.Iop (M.Itailcall_imm { func; label_after; }) ->
         assert (Array.length arg = 0);
-        let reg =
-          self#instrument_direct_call ~env ~lbl ~is_tail:true ~label
-        in
-        Some (label, reg)
-      | M.Iop M.Itailcall_ind ->
-        let label = Cmm.new_label () in
+        self#instrument_direct_call ~env ~func ~is_tail:true ~label_after
+      | M.Iop (M.Itailcall_ind { label_after; }) ->
         assert (Array.length arg = 1);
-        let reg =
-          self#instrument_indirect_call ~env ~callee:arg.(0)
-            ~is_tail:true ~label;
-        in
-        Some (label, reg)
-      | M.Iop (M.Iextcall (lbl, true)) ->
+        self#instrument_indirect_call ~env ~callee:arg.(0)
+          ~is_tail:true ~label_after
+      | M.Iop (M.Iextcall { func; alloc = true; label_after; }) ->
         (* N.B. No need to instrument "noalloc" external calls. *)
-        let label = Cmm.new_label () in
         assert (Array.length arg = 0);
-        let reg =
-          self#instrument_direct_call ~env ~lbl ~is_tail:false ~label
-        in
-        Some (label, reg)
+        self#instrument_direct_call ~env ~func ~is_tail:false ~label_after
       | _ -> None
 
   method private instrument_blockheader ~env ~value's_header ~dbg =
