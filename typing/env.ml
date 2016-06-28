@@ -1338,7 +1338,7 @@ let prefix_idents_and_subst root sub sg =
   pl, sub, lazy (subst_signature sub sg)
 
 let set_nongen_level sub path =
-  Subst.set_nongen_level sub (Path.binding_time path)
+  Subst.set_nongen_level sub (Path.binding_time path - 1)
 
 let prefix_idents_and_subst root sub sg =
   let sub = set_nongen_level sub root in

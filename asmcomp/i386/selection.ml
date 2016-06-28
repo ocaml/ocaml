@@ -185,7 +185,7 @@ method! select_store is_assign addr exp =
   match exp with
     Cconst_int n ->
       (Ispecific(Istore_int(Nativeint.of_int n, addr, is_assign)), Ctuple [])
-  | (Cconst_natint n | Cconst_blockheader n) ->
+  | (Cconst_natint n | Cconst_blockheader (n, _)) ->
       (Ispecific(Istore_int(n, addr, is_assign)), Ctuple [])
   | Cconst_pointer n ->
       (Ispecific(Istore_int(Nativeint.of_int n, addr, is_assign)), Ctuple [])

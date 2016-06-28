@@ -116,7 +116,8 @@ type frame_descr =
 let frame_descriptors = ref([] : frame_descr list)
 
 type emit_frame_actions =
-  { efa_label: int -> unit;
+  { efa_code_label: int -> unit;
+    efa_data_label: int -> unit;
     efa_16: int -> unit;
     efa_32: int32 -> unit;
     efa_word: int -> unit;
@@ -148,10 +149,10 @@ let emit_frames a =
       lbl
   in
   let emit_debuginfo_label d =
-    a.efa_label (label_debuginfos (Debuginfo.unroll_inline_chain d))
+    a.efa_data_label (label_debuginfos (Debuginfo.unroll_inline_chain d))
   in
   let emit_frame fd =
-    a.efa_label fd.fd_lbl;
+    a.efa_code_label fd.fd_lbl;
     a.efa_16 (if Debuginfo.is_none fd.fd_debuginfo
               then fd.fd_frame_size
               else fd.fd_frame_size + 1);
@@ -190,7 +191,7 @@ let emit_frames a =
       (Int64.to_int32 info);
     a.efa_32 (Int64.to_int32 (Int64.shift_right info 32));
     begin match next with
-    | Some next -> a.efa_label next
+    | Some next -> a.efa_data_label next
     | None -> a.efa_word 0
     end
   in

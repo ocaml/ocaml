@@ -21,7 +21,7 @@ BuildAndTest () {
   echo<<EOF
 ------------------------------------------------------------------------
 This test builds the OCaml compiler distribution with your pull request,
-runs its testsuite, and then tries to install some important OCaml softare
+runs its testsuite, and then tries to install some important OCaml software
 (currently camlp4) on top of it.
 
 Failing to build the compiler distribution, or testsuite failures are
@@ -98,7 +98,7 @@ CheckTestsuiteModified () {
 This test checks that the OCaml testsuite has been modified by the
 pull request. Any new feature should come with tests, bugs should come
 with regression tests, and generally any change in behavior that can
-be exercized by a test should come with a test or modify and existing
+be exercised by a test should come with a test or modify and existing
 test. See our contributor documentation:
 
   https://github.com/ocaml/ocaml/blob/trunk/CONTRIBUTING.md#test-you-must

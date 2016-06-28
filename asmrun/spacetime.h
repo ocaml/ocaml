@@ -174,6 +174,7 @@ extern void caml_spacetime_automatic_save(void);
 
 /* For use in runtime functions that are frequently executed from OCaml
    code, to save the overhead of using libunwind every time. */
+#ifdef WITH_SPACETIME
 #define Get_my_profinfo_maybe_cache_backtrace(profinfo, size) \
   do { \
     static spacetime_unwind_info_cache spacetime_unwind_info = NULL; \
@@ -185,5 +186,9 @@ extern void caml_spacetime_automatic_save(void);
     } \
   } \
   while (0);
+#else
+#define Get_my_profinfo_maybe_cache_backtrace(profinfo, size) \
+  profinfo = (uintnat) 0;
+#endif
 
 #endif

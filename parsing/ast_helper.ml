@@ -188,9 +188,10 @@ module Sig = struct
   let extension ?loc ?(attrs = []) a = mk ?loc (Psig_extension (a, attrs))
   let attribute ?loc a = mk ?loc (Psig_attribute a)
   let text txt =
+    let f_txt = List.filter (fun ds -> docstring_body ds <> "") txt in
     List.map
       (fun ds -> attribute ~loc:(docstring_loc ds) (text_attr ds))
-      txt
+      f_txt
 end
 
 module Str = struct
@@ -212,9 +213,10 @@ module Str = struct
   let extension ?loc ?(attrs = []) a = mk ?loc (Pstr_extension (a, attrs))
   let attribute ?loc a = mk ?loc (Pstr_attribute a)
   let text txt =
+    let f_txt = List.filter (fun ds -> docstring_body ds <> "") txt in
     List.map
       (fun ds -> attribute ~loc:(docstring_loc ds) (text_attr ds))
-      txt
+      f_txt
 end
 
 module Cl = struct
@@ -266,9 +268,10 @@ module Ctf = struct
   let extension ?loc ?attrs a = mk ?loc ?attrs (Pctf_extension a)
   let attribute ?loc a = mk ?loc (Pctf_attribute a)
   let text txt =
-    List.map
+   let f_txt = List.filter (fun ds -> docstring_body ds <> "") txt in
+     List.map
       (fun ds -> attribute ~loc:(docstring_loc ds) (text_attr ds))
-      txt
+      f_txt
 
   let attr d a = {d with pctf_attributes = d.pctf_attributes @ [a]}
 
@@ -291,9 +294,10 @@ module Cf = struct
   let extension ?loc ?attrs a = mk ?loc ?attrs (Pcf_extension a)
   let attribute ?loc a = mk ?loc (Pcf_attribute a)
   let text txt =
+    let f_txt = List.filter (fun ds -> docstring_body ds <> "") txt in
     List.map
       (fun ds -> attribute ~loc:(docstring_loc ds) (text_attr ds))
-      txt
+      f_txt
 
   let virtual_ ct = Cfk_virtual ct
   let concrete o e = Cfk_concrete (o, e)

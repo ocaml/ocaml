@@ -210,6 +210,7 @@ extern char tflag;
 extern char vflag;
 extern char qflag;
 extern char sflag;
+extern char eflag;
 extern char big_endian;
 
 extern char *myname;
@@ -335,6 +336,7 @@ extern void output (void);
 extern void over_unionized (char *u_cptr) Noreturn;
 extern void prec_redeclared (void);
 extern void polymorphic_entry_point(char *s) Noreturn;
+extern void forbidden_conflicts (void);
 extern void reader (void);
 extern void reflexive_transitive_closure (unsigned int *R, int n);
 extern void reprec_warning (char *s);

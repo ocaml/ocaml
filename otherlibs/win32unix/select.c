@@ -932,14 +932,19 @@ static value find_handle(LPSELECTRESULT iterResult, value readfds,
 #define MAX(a, b) ((a) > (b) ? (a) : (b))
 
 /* Convert fdlist to an fd_set if all the handles in fdlist are
- * sockets and return 0.  Returns 1 if a non-socket value is
- * encountered.
+ * sockets and return 1.  Returns 0 if a non-socket value is
+ * encountered, or if there are more than FD_SETSIZE sockets.
  */
 static int fdlist_to_fdset(value fdlist, fd_set *fdset)
 {
   value l, c;
+  int n = 0;
   FD_ZERO(fdset);
   for (l = fdlist; l != Val_int(0); l = Field(l, 1)) {
+    if (++n > FD_SETSIZE) {
+      DEBUG_PRINT("More than FD_SETSIZE sockets");
+      return 0;
+    }
     c = Field(l, 0);
     if (Descr_kind_val(c) == KIND_SOCKET) {
       FD_SET(Socket_val(c), fdset);
