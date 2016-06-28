@@ -43,6 +43,9 @@ exception Division_by_zero = Division_by_zero
 exception Sys_blocked_io = Sys_blocked_io
 exception Undefined_recursive_module = Undefined_recursive_module
 
+let protect_apply_ f g x =
+  protect ~finally:(fun () -> g x) (fun () -> f x)
+
 (* Composition operators *)
 
 external ( |> ) : 'a -> ('a -> 'b) -> 'b = "%revapply"
@@ -295,6 +298,13 @@ let rec ( @ ) l1 l2 =
     [] -> l2
   | hd :: tl -> hd :: (tl @ l2)
 
+let list_rev l =
+  let rec rev_append l1 l2 = match l1 with
+    | [] -> l2
+    | x :: tail1 -> rev_append tail1 (x :: l2)
+  in
+  rev_append l []
+
 (* I/O operations *)
 
 type in_channel
@@ -389,6 +399,27 @@ let close_out_noerr oc =
 external set_binary_mode_out : out_channel -> bool -> unit
                              = "caml_ml_set_binary_mode"
 
+let wrap_out ~ok ~err f x =
+  try
+    let res = f x in
+    ok x;
+    res
+  with e ->
+    err x;
+    raise e
+
+let with_open_out_gen mode perm name f =
+  let c = open_out_gen mode perm name in
+  wrap_out ~ok:close_out ~err:close_out_noerr f c
+
+let with_open_out name f =
+  let c = open_out name in
+  wrap_out ~ok:close_out ~err:close_out_noerr f c
+
+let with_open_out_bin name f =
+  let c = open_out_bin name in
+  wrap_out ~ok:close_out ~err:close_out_noerr f c
+
 (* General input functions *)
 
 external set_in_channel_name: in_channel -> string -> unit =
@@ -433,6 +464,28 @@ let really_input_string ic len =
   really_input ic s 0 len;
   bytes_unsafe_to_string s
 
+let string_of_in_channel ic =
+  let buf = ref (bytes_create 1024) in
+  let len = ref 0 in
+  try
+    while true do
+      (* resize, by doubling the size of [buf] *)
+      if !len = bytes_length !buf then (
+        let new_buf = bytes_create (2 * !len) in
+        bytes_blit !buf 0 new_buf 0 !len;
+        buf := new_buf;
+      );
+      assert (bytes_length !buf > !len);
+      let n = input ic !buf !len (bytes_length !buf - !len) in
+      len := !len + n;
+      if n = 0 then raise Exit;  (* exhausted *)
+    done;
+    assert false (* never reached*)
+  with Exit ->
+    let res = bytes_create !len in
+    bytes_blit !buf 0 res 0 !len;
+    bytes_unsafe_to_string res
+
 external input_scan_line : in_channel -> int = "caml_ml_input_scan_line"
 
 let input_line chan =
@@ -463,6 +516,16 @@ let input_line chan =
     end
   in bytes_unsafe_to_string (scan [] 0)
 
+let input_lines ic =
+  let l = ref [] in
+  try
+    while true do
+      l := input_line ic :: !l
+    done;
+    assert false
+  with End_of_file ->
+    list_rev !l
+
 external input_byte : in_channel -> int = "caml_ml_input_char"
 external input_binary_int : in_channel -> int = "caml_ml_input_int"
 external input_value : in_channel -> 'a = "caml_input_value"
@@ -473,6 +536,18 @@ external close_in : in_channel -> unit = "caml_ml_close_channel"
 let close_in_noerr ic = (try close_in ic with _ -> ())
 external set_binary_mode_in : in_channel -> bool -> unit
                             = "caml_ml_set_binary_mode"
+
+let with_open_in_gen mode perm name f =
+  let c = open_in_gen mode perm name in
+  protect_apply_ f close_in_noerr c
+
+let with_open_in name f =
+  let c = open_in name in
+  protect_apply_ f close_in_noerr c
+
+let with_open_in_bin name f =
+  let c = open_in_bin name in
+  protect_apply_ f close_in_noerr c
 
 (* Output functions on standard output *)
 

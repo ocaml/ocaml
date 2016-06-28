@@ -927,6 +927,28 @@ val open_out_gen : open_flag list -> int -> string -> out_channel
    {!Stdlib.open_out} and {!Stdlib.open_out_bin} are special
    cases of this function. *)
 
+val with_open_out : string -> (out_channel -> 'a) -> 'a
+(** [with_open_out file f] open the named file for writing,
+    obtaining a channel [c], then calls [f c]. It then behaves like
+    [f c], returning or raising the same way, except that it will close
+    the file in any case before returning.
+    see {!open_out} for more details
+    @since NEXT_RELEASE *)
+
+val with_open_out_bin : string -> (out_channel -> 'a) -> 'a
+(** Same as {!Pervasives.with_open_out}, but the file is opened in binary mode,
+   so that no translation takes place during writes. On operating
+   systems that do not distinguish between text mode and binary
+    mode, this function behaves like {!Pervasives.with_open_out}.
+    @since NEXT_RELEASE *)
+
+val with_open_out_gen : open_flag list -> int -> string -> (out_channel -> 'a) -> 'a
+(** [with_open_out_gen mode perm filename f] opens the named file for writing,
+    as described above, then gives the channel to [f] and ensures
+    that the channel is closed after [f] raises or returns.
+    see {!open_out_gen} for more details on the other arguments
+    @since NEXT_RELEASE *)
+
 val flush : out_channel -> unit
 (** Flush the buffer associated with the given output channel,
    performing all pending writes on that channel.
@@ -1035,6 +1057,24 @@ val open_in_gen : open_flag list -> int -> string -> in_channel
    {!Stdlib.open_in} and {!Stdlib.open_in_bin} are special
    cases of this function. *)
 
+val with_open_in : string -> (in_channel -> 'a) -> 'a
+(** [with_open_in file f] opens the named file for reading,
+    gives the channel to [f], and takes care of closing the channel
+    once [f] returns or raises.
+    @since NEXT_RELEASE *)
+
+val with_open_in_bin : string -> (in_channel -> 'a) -> 'a
+(** Same as {!Pervasives.with_open_in}, but the file is opened in binary mode.
+    see {!open_in_bin}
+    @since NEXT_RELEASE *)
+
+val with_open_in_gen : open_flag list -> int -> string -> (in_channel -> 'a) -> 'a
+(** [with_open_in_gen mode perm filename f] opens the named file for reading,
+    as described above, and gives the channel to [f]. It closes the channel
+    once [f] is done.
+    see {!open_in_gen} for more details on the other arguments
+    @since NEXT_RELEASE *)
+
 val input_char : in_channel -> char
 (** Read one character from the given input channel.
    Raise [End_of_file] if there are no more characters to read. *)
@@ -1077,6 +1117,16 @@ val really_input_string : in_channel -> int -> string
    Raise [End_of_file] if the end of file is reached before [len]
    characters have been read.
    @since 4.02.0 *)
+
+val string_of_in_channel : in_channel -> string
+(** [string_of_in_channel c] reads the whole content of [c] into a string.
+    If [c] is an infinite stream (e.g. a socket) this will never return.
+    @since NEXT_RELEASE *)
+
+val input_lines : in_channel -> string list
+(** [input_lines c] reads every line in [c] into a list.
+    If [c] is an infinite stream (e.g. a socket) this will never return.
+    @since NEXT_RELEASE *)
 
 val input_byte : in_channel -> int
 (** Same as {!Stdlib.input_char}, but return the 8-bit integer representing
