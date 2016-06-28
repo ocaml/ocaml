@@ -1,1 +1,4 @@
 S'il n'y a qu'un module, compiler et linker en une seule fois.
+
+Si un test réussit on pourrait effacer son répertoire de build?
+Ou il faudrait ne le faire que pour les tests aux feuilles.
