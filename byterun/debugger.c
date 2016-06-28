@@ -220,7 +220,7 @@ void caml_debugger_init(void)
 static value getval(struct channel *chan)
 {
   value res;
-  if (caml_really_getblock(chan, (char *) &res, sizeof(res)) == 0)
+  if (caml_really_getblock(chan, (char *) &res, sizeof(res)) < sizeof(res))
     caml_raise_end_of_file(); /* Bad, but consistent with caml_getword */
   return res;
 }

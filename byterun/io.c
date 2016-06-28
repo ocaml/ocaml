@@ -307,16 +307,18 @@ CAMLexport int caml_getblock(struct channel *channel, char *p, intnat len)
   }
 }
 
-CAMLexport int caml_really_getblock(struct channel *chan, char *p, intnat n)
+/* Returns the number of bytes read. */
+CAMLexport intnat caml_really_getblock(struct channel *chan, char *p, intnat n)
 {
+  intnat k = n;
   int r;
-  while (n > 0) {
-    r = caml_getblock(chan, p, n);
+  while (k > 0) {
+    r = caml_getblock(chan, p, k);
     if (r == 0) break;
     p += r;
-    n -= r;
+    k -= r;
   }
-  return (n == 0);
+  return n - k;
 }
 
 CAMLexport void caml_seek_in(struct channel *channel, file_offset dest)
