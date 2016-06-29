@@ -53,6 +53,7 @@ static int automatic_snapshots = 0;
 static double snapshot_interval = 0.0;
 static double next_snapshot_time = 0.0;
 static struct channel *snapshot_channel;
+static int pid_when_snapshot_channel_opened;
 
 extern value caml_spacetime_debug(value);
 
@@ -107,6 +108,35 @@ static void reinitialise_free_node_block(void)
 #define O_BINARY 0
 #endif
 
+static void open_snapshot_channel(void)
+{
+  int fd;
+  double time;
+  char filename[256];
+  snprintf(filename, 256, "spacetime-%d", getpid());
+  filename[255] = '\0';
+  /* CR mshinwell: the filename must vary! - the current fix isn't good enough */
+  fd = open(filename, O_WRONLY | O_CREAT | O_TRUNC | O_BINARY, 0666);
+  if (fd == -1) caml_sys_error(caml_copy_string(filename));
+  snapshot_channel = caml_open_descriptor_out(fd);
+  pid_when_snapshot_channel_opened = getpid();
+}
+
+static void maybe_reopen_snapshot_channel(void)
+{
+  /* This function should be used before writing to the automatic snapshot
+     channel.  It detects whether we have forked since the channel was opened.
+     If so, we close the old channel (ignoring any errors just in case the
+     old fd has been closed, e.g. in a double-fork situation where the middle
+     process has a loop to manually close all fds and no Spacetime snapshot
+     was written during that time) and then open a new one. */
+
+  if (getpid() != pid_when_snapshot_channel_opened) {
+    caml_close_channel(snapshot_channel);
+    open_snapshot_channel();
+  }
+}
+
 void caml_spacetime_initialize(void)
 {
   char *ap_interval;
@@ -119,16 +149,8 @@ void caml_spacetime_initialize(void)
   if (ap_interval != NULL) {
     unsigned int interval = 0;
     sscanf(ap_interval, "%u", &interval);
-    if(interval != 0) {
-      int fd;
-      double time;
-      char filename[256];
-      snprintf(filename, 256, "spacetime-%d", getpid());
-      filename[255] = '\0';
-      /* CR mshinwell: the filename must vary! - the current fix isn't good enough */
-      fd = open(filename, O_WRONLY | O_CREAT | O_TRUNC | O_BINARY, 0666);
-      if (fd == -1) caml_sys_error(caml_copy_string(filename));
-      snapshot_channel = caml_open_descriptor_out(fd);
+    if (interval != 0) {
+      open_snapshot_channel();
       snapshot_interval = interval / 1e3;
       time = caml_sys_time_unboxed(Val_unit);
       next_snapshot_time = time + snapshot_interval;
@@ -872,6 +894,7 @@ void caml_spacetime_automatic_snapshot (void)
     double start_time, end_time;
     start_time = caml_sys_time_unboxed(Val_unit);
     if (start_time >= next_snapshot_time) {
+      maybe_reopen_snapshot_channel();
       caml_spacetime_save_snapshot(snapshot_channel);
       end_time = caml_sys_time_unboxed(Val_unit);
       next_snapshot_time = end_time + snapshot_interval;
@@ -882,6 +905,7 @@ void caml_spacetime_automatic_snapshot (void)
 void caml_spacetime_automatic_save (void)
 {
   if (automatic_snapshots) {
+    maybe_reopen_snapshot_channel();
     save_trie(snapshot_channel);
     caml_flush(snapshot_channel);
     caml_close_channel(snapshot_channel);
