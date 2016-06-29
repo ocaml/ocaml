@@ -100,6 +100,9 @@ let ocamlrun ocamlsrcdir =
 let ocamlc ocamlsrcdir =
   make_path [ocamlsrcdir; "ocamlc"]
 
+let ocaml ocamlsrcdir =
+  make_path [ocamlsrcdir; "ocaml"]
+
 let ocamlc_dot_byte ocamlsrcdir =
   let ocamlrun = ocamlrun ocamlsrcdir in
   let ocamlc = ocamlc ocamlsrcdir in
@@ -118,6 +121,14 @@ let ocamlopt_dot_byte ocamlsrcdir =
 
 let ocamlopt_dot_opt ocamlsrcdir =
   make_path [ocamlsrcdir; "ocamlopt.opt"]
+
+let ocaml_dot_byte ocamlsrcdir =
+  let ocamlrun = ocamlrun ocamlsrcdir in
+  let ocaml = ocaml ocamlsrcdir in
+  ocamlrun ^ " " ^ ocaml
+
+let ocaml_dot_opt ocamlsrcdir =
+  make_path [ocamlsrcdir; "ocamlnat"]
 
 let cmpbyt ocamlsrcdir =
   make_path [ocamlsrcdir; "tools"; "cmpbyt"]
@@ -188,6 +199,24 @@ let nativecode_nativecode_compiler =
   compiler_backend = Sys.Native;
   compilerreference_variable = "compilerreference2";
   compileroutput_variable = "compileroutput2"
+}
+
+(* Top-levels *)
+
+let bytecode_toplevel = {
+  compiler_name = ocaml_dot_byte;
+  compiler_directory = "ocaml.byte";
+  compiler_backend = Sys.Bytecode;
+  compilerreference_variable = "compilerreference";
+  compileroutput_variable = "compileroutput";
+}
+
+let nativecode_toplevel = {
+  compiler_name = ocaml_dot_opt;
+  compiler_directory = "ocaml.opt";
+  compiler_backend = Sys.Native;
+  compilerreference_variable = "compilerreference2";
+  compileroutput_variable = "compileroutput2";
 }
 
 let compiler_reference_filename prefix compiler =
@@ -583,6 +612,70 @@ let compare_nativecode_programs = {
   action_body = compare_programs Sys.Native nativecode_programs_comparison_tool
 }
 
+let run_test_program_in_toplevel toplevel log env =
+  let testfile = testfile env in
+  let what = Printf.sprintf "Running %s in %s toplevel"
+    testfile (Backends.string_of_backend toplevel.compiler_backend) in
+  Printf.fprintf log "%s\n%!" what;
+  let testfile_basename = Filename.chop_extension testfile in
+  let test_source_directory = test_source_directory env in
+  let compilerreference_prefix =
+    make_path [test_source_directory; testfile_basename] in
+  let compilerreference_filename =
+    compiler_reference_filename compilerreference_prefix toplevel in
+  let build_directory =
+    make_path [test_build_directory env; toplevel.compiler_directory] in
+  let compiler_output_filename =
+    make_file_name toplevel.compiler_directory "output" in
+  let compiler_output =
+    make_path [build_directory; compiler_output_filename] in
+  let compileroutput_variable = toplevel.compileroutput_variable in
+  let compilerreference_variable = toplevel.compilerreference_variable in
+  let newenv = Environments.add_variables
+    [
+      (compilerreference_variable, compilerreference_filename);
+      (compileroutput_variable, compiler_output);
+    ] env in
+  Testlib.make_directory build_directory;
+  setup_symlinks test_source_directory build_directory [testfile];
+  setup_symlinks test_source_directory build_directory (files env);
+  Sys.chdir build_directory;
+  if Sys.file_exists compiler_output_filename then
+    Sys.remove compiler_output_filename;
+  let ocamlsrcdir = ocamlsrcdir () in
+  let toplevel_name = toplevel.compiler_name ocamlsrcdir in
+  let toplevel_default_flags = "-noinit -no-version -noprompt" in
+  let commandline = String.concat " "
+  [
+    toplevel_name;
+    toplevel_default_flags;
+    stdlib_flags ocamlsrcdir;
+    flags env;
+  ] in
+  match run_command ~stdin_variable:"testfile" ~stdout_variable:compileroutput_variable ~stderr_variable:compileroutput_variable log newenv commandline with
+    | 0 -> Pass newenv
+    | _ as exitcode -> Fail (mkreason what commandline exitcode)
+
+let run_in_bytecode_toplevel =
+{
+  action_name = "run-in-bytecode-toplevel";
+  action_environment = env_id;
+  action_body = run_test_program_in_toplevel bytecode_toplevel;
+}
+
+let run_in_nativecode_toplevel =
+{
+  action_name = "run-in-nativecode-toplevel";
+  action_environment = env_id;
+  action_body = run_test_program_in_toplevel nativecode_toplevel;
+}
+
+let check_bytecode_toplevel_output = make_check_compiler_output
+  "check-bytecode-toplevel-output" bytecode_toplevel
+
+let check_nativecode_toplevel_output = make_check_compiler_output
+  "check-nativecode-toplevel-output" nativecode_toplevel
+
 let _ =
   List.iter register
   [
@@ -597,5 +690,9 @@ let _ =
     check_ocamlc_dot_byte_output;
     check_ocamlc_dot_opt_output;
     check_ocamlopt_dot_byte_output;
-    check_ocamlopt_dot_opt_output
+    check_ocamlopt_dot_opt_output;
+    run_in_bytecode_toplevel;
+    run_in_nativecode_toplevel;
+    check_bytecode_toplevel_output;
+    check_nativecode_toplevel_output;
   ]

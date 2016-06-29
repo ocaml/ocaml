@@ -30,3 +30,11 @@ val check_ocamlc_dot_byte_output : Actions.t
 val check_ocamlc_dot_opt_output : Actions.t
 val check_ocamlopt_dot_byte_output : Actions.t
 val check_ocamlopt_dot_opt_output : Actions.t
+
+val run_in_bytecode_toplevel : Actions.t
+
+val run_in_nativecode_toplevel : Actions.t
+
+val check_bytecode_toplevel_output : Actions.t
+
+val check_nativecode_toplevel_output : Actions.t

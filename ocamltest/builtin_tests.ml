@@ -48,9 +48,22 @@ let nativecode = {
   ]
 }
 
+let toplevel = {
+  test_name = "toplevel";
+  test_run_by_default = false;
+  test_actions =
+  [
+    run_in_bytecode_toplevel;
+    check_bytecode_toplevel_output;
+    run_in_nativecode_toplevel;
+    check_nativecode_toplevel_output;
+  ]
+}
+
 let _ =
   List.iter register
   [
     bytecode;
     nativecode;
+    toplevel;
   ]
