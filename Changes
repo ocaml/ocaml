@@ -133,6 +133,8 @@ OCaml 4.04.0:
 - PR#7112: Aliased arguments ignored for equality of module types
   (Jacques Garrigue, report by Leo White)
 
+- PR#7153: document that Unix.SOCK_SEQPACKET is not really usable.
+
 - PR#7257, GPR#583: revert a 4.03 change of behavior on (Unix.sleep 0.),
   it now calls (nano)sleep for 0 seconds as in (< 4.03) versions.
   (Hannes Mehnert, review by Damien Doligez)
