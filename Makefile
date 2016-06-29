@@ -335,9 +335,9 @@ compilerlibs/ocamloptcomp.cma: $(MIDDLE_END) $(ASMCOMP)
 partialclean::
 	rm -f compilerlibs/ocamloptcomp.cma
 
-ocamlopt: compilerlibs/ocamlcommon.cma compilerlibs/ocamloptcomp.cma $(OPTSTART)
+ocamlopt: compilerlibs/ocamlcommon.cma compilerlibs/ocamloptcomp.cma compilerlibs/ocamlbytecomp.cma $(OPTSTART)
 	$(CAMLC) $(LINKFLAGS) -o ocamlopt \
-	  compilerlibs/ocamlcommon.cma compilerlibs/ocamloptcomp.cma $(OPTSTART)
+	  compilerlibs/ocamlcommon.cma compilerlibs/ocamloptcomp.cma compilerlibs/ocamlbytecomp.cma $(OPTSTART)
 
 partialclean::
 	rm -f ocamlopt
@@ -384,6 +384,7 @@ partialclean::
 	rm -f compilerlibs/ocamlopttoplevel.cmxa
 
 ocamlnat: compilerlibs/ocamlcommon.cmxa compilerlibs/ocamloptcomp.cmxa \
+    compilerlibs/ocamlbytecomp.cmxa \
     otherlibs/dynlink/dynlink.cmxa compilerlibs/ocamlopttoplevel.cmxa \
     $(OPTTOPLEVELSTART:.cmo=.cmx)
 	$(CAMLOPT) $(LINKFLAGS) -linkall -o $@ $^
@@ -486,10 +487,10 @@ compilerlibs/ocamloptcomp.cmxa: $(MIDDLE_END:.cmo=.cmx) $(ASMCOMP:.cmo=.cmx)
 partialclean::
 	rm -f compilerlibs/ocamloptcomp.cmxa compilerlibs/ocamloptcomp.a
 
-ocamlopt.opt: compilerlibs/ocamlcommon.cmxa compilerlibs/ocamloptcomp.cmxa \
+ocamlopt.opt: compilerlibs/ocamlcommon.cmxa compilerlibs/ocamloptcomp.cmxa compilerlibs/ocamlbytecomp.cmxa  \
               $(OPTSTART:.cmo=.cmx)
 	$(CAMLOPT) $(LINKFLAGS) -o ocamlopt.opt \
-	   compilerlibs/ocamlcommon.cmxa compilerlibs/ocamloptcomp.cmxa \
+	   compilerlibs/ocamlcommon.cmxa compilerlibs/ocamloptcomp.cmxa compilerlibs/ocamlbytecomp.cmxa  \
 	   $(OPTSTART:.cmo=.cmx)
 
 partialclean::
@@ -738,6 +739,10 @@ depend: beforedepend
 	 middle_end/base_types driver toplevel; \
 	 do $(CAMLDEP) $(DEPFLAGS) $$d/*.mli $$d/*.ml; \
 	 done) > .depend
+	$(CAMLDEP) $(DEPFLAGS) -native \
+		-impl driver/compdynlink.mlopt >> .depend
+	$(CAMLDEP) $(DEPFLAGS) -bytecode \
+		-impl driver/compdynlink.mlbyte >> .depend
 
 alldepend:: depend
 

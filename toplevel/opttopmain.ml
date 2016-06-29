@@ -199,6 +199,7 @@ module Options = Main_args.Make_opttop_options (struct
   let _safe_string = clear unsafe_string
   let _unsafe_string = set unsafe_string
   let _open s = open_modules := s :: !open_modules
+  let _plugin p = Compplugin.load p
 
   let anonymous = file_argument
 end);;
