@@ -62,7 +62,6 @@ type operation =
 
 type instruction =
   { desc: instruction_desc;
-    (* CR mshinwell: find out if it is acceptable for this to be mutable. *)
     mutable next: instruction;
     arg: Reg.t array;
     res: Reg.t array;

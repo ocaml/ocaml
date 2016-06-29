@@ -158,7 +158,6 @@ extern allocation_point* caml_all_allocation_points;
 extern void caml_spacetime_initialize(void);
 extern uintnat caml_spacetime_my_profinfo(
   spacetime_unwind_info_cache*, uintnat);
-extern void caml_spacetime_register_dynamic_library(const char*, void*);
 extern c_node_type caml_spacetime_classify_c_node(c_node* node);
 extern c_node* caml_spacetime_c_node_of_stored_pointer(value);
 extern c_node* caml_spacetime_c_node_of_stored_pointer_not_null(value);

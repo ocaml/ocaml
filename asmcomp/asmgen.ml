@@ -96,7 +96,6 @@ let (++) x f = f x
 let compile_fundecl (ppf : formatter) fd_cmm =
   Proc.init ();
   Reg.reset();
-  (* CR mshinwell: resetting of label counter in Cmm? *)
   let build = Compilenv.current_build () in
   fd_cmm
   ++ Timings.(accumulate_time (Selection build)) Selection.fundecl

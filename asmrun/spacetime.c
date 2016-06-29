@@ -12,10 +12,6 @@
 /*                                                                        */
 /**************************************************************************/
 
-/* CR mshinwell: remove pragma? */
-
-#pragma GCC optimize ("O3")
-
 #include <stdio.h>
 #include <stdint.h>
 #include <stdlib.h>
@@ -165,12 +161,6 @@ CAMLprim value caml_spacetime_get_trie_root (value v_unit)
   return caml_spacetime_trie_root;
 }
 
-void caml_spacetime_register_dynamic_library(
-  const char* filename, void* address_of_code_begin)
-{
-  /* CR mshinwell: implement this */
-}
-
 void caml_spacetime_register_thread(
   value* trie_node_root, value* finaliser_trie_node_root)
 {
@@ -187,7 +177,7 @@ void caml_spacetime_register_thread(
   thr->trie_node_root = trie_node_root;
   thr->finaliser_trie_node_root = finaliser_trie_node_root;
 
-  /* CR mshinwell: record thread ID (and for the main thread too) */
+  /* CR-soon mshinwell: record thread ID (and for the main thread too) */
 
   num_per_threads++;
 }
@@ -405,7 +395,7 @@ static c_node* allocate_c_node(void)
 
   Assert((sizeof(c_node) % sizeof(uintnat)) == 0);
 
-  /* CR mshinwell: remove this and pad the structure properly */
+  /* CR-soon mshinwell: remove this and pad the structure properly */
   for (index = 0; index < sizeof(c_node) / sizeof(value); index++) {
     ((value*) node)[index] = Val_unit;
   }
@@ -506,8 +496,9 @@ CAMLprim value* caml_spacetime_indirect_node_hole_ptr
    and can thus accommodate any number of C backtraces leading from
    caml_call_gc.
 */
-/* CR mshinwell: it might in fact be the case now that nothing called from
-   caml_call_gc will do any allocation that ends up on the trie. */
+/* CR-soon mshinwell: it might in fact be the case now that nothing called
+   from caml_call_gc will do any allocation that ends up on the trie.  We
+   can revisit this after the first release. */
 
 static NOINLINE void* find_trie_node_from_libunwind(int for_allocation,
     uintnat wosize, struct ext_table** cached_frames)
