@@ -44,7 +44,10 @@ let tsl_block_of_file_safe test_filename =
   | Sys_error message ->
     Printf.eprintf "%s\n" message;
     exit 1
-  
+  | Parsing.Parse_error ->
+    Printf.eprintf "Could not read test block in %s\n" test_filename;
+    exit 1
+
 let print_usage () =
   Printf.printf "Usage: %s testfile\n" Sys.argv.(0)
 
