@@ -399,8 +399,8 @@ module Env = struct
     Inlining_stats.record_decision decision
       ~closure_stack:t.inlining_stats_closure_stack
 
-  let inline_debuginfo t ~dbg =
-    { t with inlined_debuginfo = Debuginfo.concat dbg t.inlined_debuginfo }
+  let set_inline_debuginfo t ~dbg =
+    { t with inlined_debuginfo = dbg }
 
   let add_inlined_debuginfo t ~dbg =
     Debuginfo.concat t.inlined_debuginfo dbg
