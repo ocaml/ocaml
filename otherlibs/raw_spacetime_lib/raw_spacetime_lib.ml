@@ -219,13 +219,13 @@ module Trace = struct
         | _ -> assert false
 
       module Callee = struct
-        (* CR mshinwell: we should think about the names again.  This is
+        (* CR-soon mshinwell: we should think about the names again.  This is
            a "c_node" but it isn't foreign. *)
         type t = foreign_node
 
         let is_null = foreign_node_is_null
 
-        (* CR mshinwell: maybe rename ...c_node_call_site -> c_node_pc,
+        (* CR-soon mshinwell: maybe rename ...c_node_call_site -> c_node_pc,
            since it isn't a call site in this case. *)
         external callee : t -> Function_entry_point.t
           = "caml_spacetime_only_works_for_native_code"
