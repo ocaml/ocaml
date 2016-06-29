@@ -41,15 +41,6 @@ class virtual selector_generic : object
     bool -> Arch.addressing_mode -> Cmm.expression ->
                                          Mach.operation * Cmm.expression
     (* Can be overridden to deal with special store constant instructions *)
-  method select_allocation : int -> Mach.operation
-    (* Can be overridden to change instruction selection for [Ialloc] *)
-  method select_allocation_args : (Ident.t, Reg.t array) Tbl.t -> Reg.t array
-    (* Can be overridden to map arguments of [Ialloc] operations *)
-  method select_checkbound : unit -> Mach.integer_operation
-    (* Can be overriden to change instruction selection for [Icheckbound] *)
-  method select_checkbound_extra_args : unit -> Cmm.expression list
-    (* Can be overridden to provide extra arguments for checkbound
-       instructions *)
   method regs_for : Cmm.machtype -> Reg.t array
     (* Return an array of fresh registers of the given type.
        Default implementation is like Reg.createv.

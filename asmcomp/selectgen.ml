@@ -228,16 +228,6 @@ method virtual select_addressing :
 
 (* Default instruction selection for stores (of words) *)
 
-method select_allocation words =
-  Ialloc { words; label_after_call_gc = None; }
-
-method select_allocation_args _env = [| |]
-
-method select_checkbound () =
-  Icheckbound { label_after_error = None; }
-
-method select_checkbound_extra_args () = []
-
 method select_store is_assign addr arg =
   (Istore(Word_val, addr, is_assign), arg)
 
@@ -306,7 +296,7 @@ method select_operation op args =
         (Istore(chunk, addr, is_assign), [arg2; eloc])
         (* Inversion addr/datum in Istore *)
       end
-  | (Calloc _dbg, _) -> (self#select_allocation 0), args
+  | (Calloc _dbg, _) -> Ialloc { words = 0; label_after_call_gc = None; }, args
   | (Caddi, _) -> self#select_arith_comm Iadd args
   | (Csubi, _) -> self#select_arith Isub args
   | (Cmuli, _) -> self#select_arith_comm Imul args
@@ -332,9 +322,7 @@ method select_operation op args =
   | (Cfloatofint, _) -> (Ifloatofint, args)
   | (Cintoffloat, _) -> (Iintoffloat, args)
   | (Ccheckbound _, _) ->
-    let extra_args = self#select_checkbound_extra_args () in
-    let op = self#select_checkbound () in
-    self#select_arith op (args @ extra_args)
+    self#select_arith (Icheckbound { label_after_error = None; }) args
   | _ -> fatal_error "Selection.select_oper"
 
 method private select_arith_comm op = function
@@ -585,8 +573,7 @@ method emit_expr env exp =
               let rd = self#regs_for typ_val in
               let size = size_expr env (Ctuple new_args) in
               let op = Ialloc { words = size; label_after_call_gc; } in
-              let args = self#select_allocation_args env in
-              self#insert_debug (Iop op) dbg args rd;
+              self#insert_debug (Iop op) dbg [| |] rd;
               self#emit_stores env new_args rd;
               Some rd
           | op ->
