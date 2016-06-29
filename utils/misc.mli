@@ -294,3 +294,26 @@ val normalise_eol : string -> string
 val delete_eol_spaces : string -> string
 (** [delete_eol_spaces s] returns a fresh copy of [s] with any end of line spaces
    removed. Intended to normalize the output of the toplevel for tests. *)
+
+
+
+
+(* Hooks machinery:
+  [add_hook name f] will register a function that will be called on the
+    argument of a later call to [apply_hooks]. Hooks are applied in the
+    lexicographical order of their names.
+*)
+
+exception HookExn of exn
+
+type hook_info = {
+  sourcefile : string;
+}
+
+module type HookSig = sig
+  type t
+  val add_hook : string -> (hook_info -> t -> t) -> unit
+  val apply_hooks : hook_info -> t -> t
+end
+
+module MakeHooks : functor (M : sig type t end) -> HookSig with type t = M.t

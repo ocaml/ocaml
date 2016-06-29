@@ -30,7 +30,7 @@ val type_implementation:
   string -> string -> string -> Env.t -> Parsetree.structure ->
   Typedtree.structure * Typedtree.module_coercion
 val type_interface:
-        Env.t -> Parsetree.signature -> Typedtree.signature
+        string -> Env.t -> Parsetree.signature -> Typedtree.signature
 val transl_signature:
         Env.t -> Parsetree.signature -> Typedtree.signature
 val check_nongen_schemes:
@@ -79,3 +79,9 @@ exception Error of Location.t * Env.t * error
 exception Error_forward of Location.error
 
 val report_error: Env.t -> formatter -> error -> unit
+
+
+module ImplementationHooks : Misc.HookSig
+  with type t = Typedtree.structure * Typedtree.module_coercion
+module InterfaceHooks : Misc.HookSig
+  with type t = Typedtree.signature

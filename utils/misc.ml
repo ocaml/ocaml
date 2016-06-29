@@ -647,3 +647,40 @@ let delete_eol_spaces src =
   in
   let stop = loop 0 0 in
   Bytes.sub_string dst 0 stop
+
+type hook_info = {
+  sourcefile : string;
+}
+
+exception HookExn of exn
+let fold_hooks list info ast =
+  List.fold_left (fun ast (name,f) ->
+    try
+      f info ast
+    with
+    | HookExn e -> raise e
+    | e ->
+      Printf.eprintf "Error: exception %S while running hook %S on %S\n%!"
+        (Printexc.to_string e) name info.sourcefile;
+      exit 2
+  ) ast (List.sort compare list)
+
+module type HookSig = sig
+  type t
+
+  val add_hook : string -> (hook_info -> t -> t) -> unit
+  val apply_hooks : hook_info -> t -> t
+end
+
+module MakeHooks(M: sig
+    type t
+  end) : HookSig with type t = M.t
+= struct
+
+  type t = M.t
+
+  let hooks = ref []
+  let add_hook name f = hooks := (name, f) :: !hooks
+  let apply_hooks sourcefile intf =
+    fold_hooks !hooks sourcefile intf
+end
