@@ -1,3 +1,5 @@
+(* TEST *)
+
 let () =
   let a = [|0;1;2;3;4;5;6;7;8;9|] in
   assert (Array.exists (fun a -> a < 10) a);
