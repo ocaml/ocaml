@@ -24,7 +24,7 @@ let env_id env = env
 let run_command
   ?(stdin_variable="stdin")
   ?(stdout_variable="stdout")
-  ?(stderr_variable="")
+  ?(stderr_variable="stderr")
   ?(append=false)
   ?(timeout=0)
   log env cmd =
