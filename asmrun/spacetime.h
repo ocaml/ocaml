@@ -153,7 +153,7 @@ typedef struct ext_table* spacetime_unwind_info_cache;
 extern value* caml_spacetime_trie_node_ptr;
 extern value* caml_spacetime_finaliser_trie_root;
 
-extern allocation_point* all_allocation_points;
+extern allocation_point* caml_all_allocation_points;
 
 extern void caml_spacetime_initialize(void);
 extern uintnat caml_spacetime_my_profinfo(

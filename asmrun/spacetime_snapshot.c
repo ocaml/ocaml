@@ -128,7 +128,7 @@ static value take_gc_stats(void)
 static value get_total_allocations(void)
 {
   value v_total_allocations = Val_unit;
-  allocation_point* total = all_allocation_points;
+  allocation_point* total = caml_all_allocation_points;
 
   while (total != NULL) {
     value v_total;

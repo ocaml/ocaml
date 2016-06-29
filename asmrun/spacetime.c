@@ -91,7 +91,7 @@ value* caml_spacetime_finaliser_trie_root
 
 /* CR-someday mshinwell: think about thread safety of the manipulation of
    this list for multicore */
-allocation_point* all_allocation_points = NULL;
+allocation_point* caml_all_allocation_points = NULL;
 
 static const uintnat chunk_size = 1024 * 1024;
 
@@ -709,13 +709,13 @@ static NOINLINE void* find_trie_node_from_libunwind(int for_allocation,
 
     /* Add the new allocation point into the linked list of all allocation
        points. */
-    if (all_allocation_points != NULL) {
+    if (caml_all_allocation_points != NULL) {
       node->data.allocation.next =
-        (value) &all_allocation_points->count;
+        (value) &caml_all_allocation_points->count;
     } else {
       node->data.allocation.next = Val_unit;
     }
-    all_allocation_points = &node->data.allocation;
+    caml_all_allocation_points = &node->data.allocation;
   }
 
   if (for_allocation) {
@@ -846,13 +846,13 @@ CAMLprim uintnat caml_spacetime_generate_profinfo (void* profinfo_words,
 
   /* Add the new allocation point into the linked list of all allocation
      points. */
-  if (all_allocation_points != NULL) {
-    Alloc_point_next_ptr(node, 0) = (value) &all_allocation_points->count;
+  if (caml_all_allocation_points != NULL) {
+    Alloc_point_next_ptr(node, 0) = (value) &caml_all_allocation_points->count;
   }
   else {
     Assert(Alloc_point_next_ptr(node, 0) == Val_unit);
   }
-  all_allocation_points = (allocation_point*) node;
+  caml_all_allocation_points = (allocation_point*) node;
 
   return profinfo;
 }
