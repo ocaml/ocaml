@@ -1098,8 +1098,6 @@ let emit_item = function
       declare_global_data s
   | Cdefine_symbol s ->
       `{emit_symbol s}:\n`;
-  | Cdefine_label lbl ->
-      `{emit_data_label lbl}:\n`
   | Cint8 n ->
       `	.byte	{emit_int n}\n`
   | Cint16 n ->
@@ -1116,8 +1114,6 @@ let emit_item = function
       else emit_float64_split_directive ".long" (Int64.bits_of_float f)
   | Csymbol_address s ->
       `	{emit_string datag}	{emit_symbol s}\n`
-  | Clabel_address lbl ->
-      `	{emit_string datag}	{emit_data_label lbl}\n`
   | Cstring s ->
       emit_bytes_directive "	.byte	" s
   | Cskip n ->

@@ -708,8 +708,6 @@ let emit_item = function
       `	.global	{emit_symbol s}\n`;
   | Cdefine_symbol s ->
       `{emit_symbol s}:\n`
-  | Cdefine_label lbl ->
-      `{emit_data_label lbl}:\n`
   | Cint8 n ->
       `	.byte	{emit_int n}\n`
   | Cint16 n ->
@@ -724,8 +722,6 @@ let emit_item = function
       emit_float64_split_directive ".word" (Int64.bits_of_float f)
   | Csymbol_address s ->
       `	.word	{emit_symbol s}\n`
-  | Clabel_address lbl ->
-      `	.word	{emit_data_label lbl}\n`
   | Cstring s ->
       emit_string_directive "	.ascii	" s
   | Cskip n ->
