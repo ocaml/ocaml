@@ -131,7 +131,7 @@ method is_immediate_natint n = n <= 0x7FFFFFFFn && n >= -0x80000000n
 
 method! is_simple_expr e =
   match e with
-  | Cop(Cextcall(fn, _, _, _), args)
+  | Cop(Cextcall (fn, _, _, _, _), args)
     when List.mem fn inline_ops ->
       (* inlined ops are simple if their arguments are *)
       List.for_all self#is_simple_expr args
@@ -189,7 +189,7 @@ method! select_operation op args =
       self#select_floatarith true Imulf Ifloatmul args
   | Cdivf ->
       self#select_floatarith false Idivf Ifloatdiv args
-  | Cextcall("sqrt", _, false, _) ->
+  | Cextcall("sqrt", _, false, _, _) ->
      begin match args with
        [Cop(Cload (Double|Double_u as chunk), [loc])] ->
          let (addr, arg) = self#select_addressing chunk loc in
@@ -209,12 +209,12 @@ method! select_operation op args =
       | _ ->
           super#select_operation op args
       end
-  | Cextcall("caml_bswap16_direct", _, _, _) ->
+  | Cextcall("caml_bswap16_direct", _, _, _, _) ->
       (Ispecific (Ibswap 16), args)
-  | Cextcall("caml_int32_direct_bswap", _, _, _) ->
+  | Cextcall("caml_int32_direct_bswap", _, _, _, _) ->
       (Ispecific (Ibswap 32), args)
-  | Cextcall("caml_int64_direct_bswap", _, _, _)
-  | Cextcall("caml_nativeint_direct_bswap", _, _, _) ->
+  | Cextcall("caml_int64_direct_bswap", _, _, _, _)
+  | Cextcall("caml_nativeint_direct_bswap", _, _, _, _) ->
       (Ispecific (Ibswap 64), args)
   (* AMD64 does not support immediate operands for multiply high signed *)
   | Cmulhi ->

@@ -107,6 +107,12 @@ let swap_comparison = function
   | Clt -> Cgt | Cle -> Cge
   | Cgt -> Clt | Cge -> Cle
 
+type label = int
+
+let label_counter = ref 99
+
+let new_label() = incr label_counter; !label_counter
+
 type memory_chunk =
     Byte_unsigned
   | Byte_signed
@@ -122,7 +128,9 @@ type memory_chunk =
 
 and operation =
     Capply of machtype * Debuginfo.t
-  | Cextcall of string * machtype * bool * Debuginfo.t
+  | Cextcall of string * machtype * bool * Debuginfo.t * label option
+    (** If specified, the given label will be placed immediately after the
+        call (at the same place as any frame descriptor would reference). *)
   | Cload of memory_chunk
   | Calloc of Debuginfo.t
   | Cstore of memory_chunk * Lambda.initialization_or_assignment

@@ -83,6 +83,9 @@ type comparison =
 val negate_comparison: comparison -> comparison
 val swap_comparison: comparison -> comparison
 
+type label = int
+val new_label: unit -> label
+
 type memory_chunk =
     Byte_unsigned
   | Byte_signed
@@ -98,7 +101,7 @@ type memory_chunk =
 
 and operation =
     Capply of machtype * Debuginfo.t
-  | Cextcall of string * machtype * bool * Debuginfo.t
+  | Cextcall of string * machtype * bool * Debuginfo.t * label option
   | Cload of memory_chunk
   | Calloc of Debuginfo.t
   | Cstore of memory_chunk * Lambda.initialization_or_assignment

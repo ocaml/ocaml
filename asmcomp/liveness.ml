@@ -39,7 +39,7 @@ let rec live i finally =
     Iend ->
       i.live <- finally;
       finally
-  | Ireturn | Iop(Itailcall_ind) | Iop(Itailcall_imm _) ->
+  | Ireturn | Iop(Itailcall_ind _) | Iop(Itailcall_imm _) ->
       i.live <- Reg.Set.empty; (* no regs are live across *)
       Reg.set_of_array i.arg
   | Iop op ->
@@ -56,8 +56,8 @@ let rec live i finally =
         let across_after = Reg.diff_set_array after i.res in
         let across =
           match op with
-          | Icall_ind | Icall_imm _ | Iextcall _
-          | Iintop Icheckbound | Iintop_imm(Icheckbound, _) ->
+          | Icall_ind _ | Icall_imm _ | Iextcall _
+          | Iintop (Icheckbound _) | Iintop_imm(Icheckbound _, _) ->
               (* The function call may raise an exception, branching to the
                  nearest enclosing try ... with. Similarly for bounds checks.
                  Hence, everything that must be live at the beginning of
