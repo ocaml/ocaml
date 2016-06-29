@@ -268,7 +268,6 @@ let rec linear i n =
          only to inform the later pass about this stack offset
          (corresponding to N traps).
        *)
-      (* CR mshinwell: needs fixing for Spacetime profiling *)
       let rec loop i tt =
         if t = tt then i
         else loop (cons_instr Lpushtrap i) (tt - 1)

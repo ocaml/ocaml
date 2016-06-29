@@ -653,8 +653,6 @@ let make_alloc_generic set_fn dbg tag wordsize args =
       [] -> Cvar id
     | e1::el -> Csequence(set_fn (Cvar id) (Cconst_int idx) e1,
                           fill_fields (idx + 2) el) in
-    (* CR mshinwell: [caml_alloc] should use the register's value here for
-       profinfo. *)
     Clet(id,
          Cop(Cextcall("caml_alloc", typ_val, true, Debuginfo.none, None),
                  [Cconst_int wordsize; Cconst_int tag]),

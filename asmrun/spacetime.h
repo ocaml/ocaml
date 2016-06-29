@@ -129,8 +129,8 @@ typedef struct {
 } allocation_point;
 
 typedef struct {
-  /* CR mshinwell: delete [gc_header], all the offset arithmetic will then
-     go away */
+  /* CR-soon mshinwell: delete [gc_header], all the offset arithmetic will
+     then go away */
   uintnat gc_header;
   uintnat pc;           /* see above for encodings */
   union {
@@ -138,7 +138,7 @@ typedef struct {
     allocation_point allocation;  /* for ALLOCATION */
   } data;
   value next;           /* [Val_unit] for the end of the list */
-} c_node; /* CR mshinwell: rename to dynamic_node */
+} c_node; /* CR-soon mshinwell: rename to dynamic_node */
 
 typedef struct shape_table {
   uint64_t* table;

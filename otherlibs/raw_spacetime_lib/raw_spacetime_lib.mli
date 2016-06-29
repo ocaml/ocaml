@@ -79,7 +79,7 @@ end
 
 module Function_identifier : sig
   type t
-  (* CR mshinwell: same as [Function_entry_point] now *)
+  (* CR-soon mshinwell: same as [Function_entry_point] now *)
   val to_int64 : t -> Int64.t
 end
 
@@ -169,8 +169,9 @@ module Trace : sig
       type direct_call_point =
         | To_ocaml of ocaml_node Direct_call_point.t
         | To_foreign of foreign_node Direct_call_point.t
-        (* CR mshinwell: once everything's finished, "uninstrumented" should
-           be able to go away. *)
+        (* CR-soon mshinwell: once everything's finished, "uninstrumented"
+           should be able to go away.  Let's try to do this after the
+           first release. *)
         | To_uninstrumented of
             uninstrumented_node Direct_call_point.t
 
