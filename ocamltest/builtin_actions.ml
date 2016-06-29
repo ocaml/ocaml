@@ -445,7 +445,7 @@ let compile_nativecode_with_nativecode_compiler = {
 
 let execute_program log env =
   match Environments.lookup "program" env with
-  | None -> failwith "No program to execute"
+  | None -> Fail "In execute action: No \"program\" variable in environment"
   | Some program ->
     let arguments = Environments.safe_lookup "arguments" env in
     let commandline = program ^ " " ^ arguments in
