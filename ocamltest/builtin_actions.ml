@@ -28,6 +28,11 @@ let run_command
   ?(append=false)
   ?(timeout=0)
   log env cmd =
+  let log_redirection std filename =
+    if filename<>"" then
+    begin
+      Printf.fprintf log "  Redirecting %s to %s \n%!" std filename
+    end in
   let lst = Testlib.words cmd in
   let cmd' = String.concat " " lst in
   Printf.fprintf log "Commandline: %s\n" cmd';
@@ -41,6 +46,9 @@ let run_command
   let stdin_filename = Environments.safe_lookup stdin_variable env in
   let stdout_filename = Environments.safe_lookup stdout_variable env in
   let stderr_filename = Environments.safe_lookup stderr_variable env in
+  log_redirection "stdin" stdin_filename;
+  log_redirection "stdout" stdout_filename;
+  log_redirection "stderr" stderr_filename;
   Run.run {
     Run.progname = progname;
     Run.argv = arguments;
