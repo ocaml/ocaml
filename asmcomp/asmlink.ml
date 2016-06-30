@@ -156,8 +156,6 @@ let () =
 
 module Make (Asmgen : Asmgen.S) = struct
 
-  module Cmmgen = Asmgen.Cmmgen
-
 (* Add C objects and options and "custom" info from a library descriptor.
    See bytecomp/bytelink.ml for comments on the order of C objects. *)
 
@@ -281,15 +279,15 @@ let make_startup_file ppf units_list =
   Asmgen.begin_assembly ();
   let name_list =
     List.flatten (List.map (fun (info,_,_) -> info.ui_defines) units_list) in
-  compile_phrase (Cmmgen.entry_point name_list);
+  compile_phrase (Asmgen.entry_point name_list);
   let units = List.map (fun (info,_,_) -> info) units_list in
-  List.iter compile_phrase (Cmmgen.generic_functions false units);
+  List.iter compile_phrase (Asmgen.generic_functions false units);
   Array.iteri
-    (fun i name -> compile_phrase (Cmmgen.predef_exception i name))
+    (fun i name -> compile_phrase (Asmgen.predef_exception i name))
     Runtimedef.builtin_exceptions;
-  compile_phrase (Cmmgen.global_table name_list);
+  compile_phrase (Asmgen.global_table name_list);
   compile_phrase
-    (Cmmgen.globals_map
+    (Asmgen.globals_map
        (List.map
           (fun (unit,_,crc) ->
                let intf_crc =
@@ -301,10 +299,10 @@ let make_startup_file ppf units_list =
                in
                  (unit.ui_name, intf_crc, crc, unit.ui_defines))
           units_list));
-  compile_phrase(Cmmgen.data_segment_table ("_startup" :: name_list));
-  compile_phrase(Cmmgen.code_segment_table ("_startup" :: name_list));
+  compile_phrase(Asmgen.data_segment_table ("_startup" :: name_list));
+  compile_phrase(Asmgen.code_segment_table ("_startup" :: name_list));
   compile_phrase
-    (Cmmgen.frame_table("_startup" :: "_system" :: name_list));
+    (Asmgen.frame_table("_startup" :: "_system" :: name_list));
   Asmgen.end_assembly ()
 
 let make_shared_startup_file ppf units =
@@ -313,10 +311,10 @@ let make_shared_startup_file ppf units =
   Compilenv.reset ~source_provenance:Timings.Startup "_shared_startup";
   Asmgen.begin_assembly ();
   List.iter compile_phrase
-    (Cmmgen.generic_functions true (List.map fst units));
-  compile_phrase (Cmmgen.plugin_header units);
+    (Asmgen.generic_functions true (List.map fst units));
+  compile_phrase (Asmgen.plugin_header units);
   compile_phrase
-    (Cmmgen.global_table
+    (Asmgen.global_table
        (List.map (fun (ui,_) -> ui.ui_symbol) units));
   (* this is to force a reference to all units, otherwise the linker
      might drop some of them (in case of libraries) *)

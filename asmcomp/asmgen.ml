@@ -24,12 +24,18 @@ open Misc
 open Cmm
 
 module type S = sig
-(* Re-exported from Emit *)
 val begin_assembly: unit -> unit
 val end_assembly: unit -> unit
-(* Re-exported from Emitaux *)
 val binary_backend_available: bool ref
-module Cmmgen : Cmmgen.S
+val entry_point: string list -> Cmm.phrase
+val generic_functions: bool -> Cmx_format.unit_infos list -> Cmm.phrase list
+val predef_exception: int -> string -> Cmm.phrase
+val plugin_header: (Cmx_format.unit_infos * Digest.t) list -> Cmm.phrase
+val frame_table: string list -> Cmm.phrase
+val data_segment_table: string list -> Cmm.phrase
+val code_segment_table: string list -> Cmm.phrase
+val globals_map: (string * Digest.t * Digest.t * string list) list -> Cmm.phrase
+val global_table: string list -> Cmm.phrase
 
 val compile_implementation_flambda :
     ?toplevel:(string -> bool) ->
@@ -76,6 +82,15 @@ module Liveness = Liveness.Make (Proc)
 let begin_assembly = Emit.begin_assembly
 let end_assembly = Emit.end_assembly
 let binary_backend_available = Emitaux.binary_backend_available
+let entry_point = Cmmgen.entry_point
+let generic_functions = Cmmgen.generic_functions
+let predef_exception = Cmmgen.predef_exception
+let plugin_header = Cmmgen.plugin_header
+let frame_table = Cmmgen.frame_table
+let data_segment_table = Cmmgen.data_segment_table
+let code_segment_table = Cmmgen.code_segment_table
+let globals_map = Cmmgen.globals_map
+let global_table = Cmmgen.global_table
 
 type error = Assembler_error of string
 

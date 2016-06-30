@@ -21,8 +21,16 @@ val begin_assembly: unit -> unit
 val end_assembly: unit -> unit
 (* Re-exported from Emitaux *)
 val binary_backend_available: bool ref
-
-module Cmmgen : Cmmgen.S
+(* Re-exported from Cmmgen *)
+val entry_point: string list -> Cmm.phrase
+val generic_functions: bool -> Cmx_format.unit_infos list -> Cmm.phrase list
+val predef_exception: int -> string -> Cmm.phrase
+val plugin_header: (Cmx_format.unit_infos * Digest.t) list -> Cmm.phrase
+val frame_table: string list -> Cmm.phrase
+val data_segment_table: string list -> Cmm.phrase
+val code_segment_table: string list -> Cmm.phrase
+val globals_map: (string * Digest.t * Digest.t * string list) list -> Cmm.phrase
+val global_table: string list -> Cmm.phrase
 
 val compile_implementation_flambda :
     ?toplevel:(string -> bool) ->
