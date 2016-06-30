@@ -73,7 +73,7 @@ new-without-report: lib tools
 	  dir=`dirname $$file`; \
 	  echo Running tests from \'$$dir\' ... ; \
 	  while read testfile; do \
-	    ../ocamltest/ocamltest.byte $$dir/$$testfile; \
+	    TERM=dumb ../ocamltest/ocamltest.byte $$dir/$$testfile; \
 	  done < $$file; \
 	done 2>&1 | tee -a _log
 
