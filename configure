@@ -1778,6 +1778,10 @@ if $with_spacetime; then
   if $spacetime_supported; then
     echo "Spacetime profiling will be available."
     echo "#define WITH_SPACETIME" >> m.h
+    # The number of bits used for profiling information is configurable here.
+    # The more bits used for profiling, the smaller will be Max_wosize.
+    profinfo_width=26
+    echo "#define PROFINFO_WIDTH $profinfo_width" >> m.h
     # On Mac OS X, we always use the system libunwind.
     if test "$libunwind_lib_dir" != ""; then
       case "$arch,$system" in
@@ -1925,6 +1929,7 @@ echo "WITH_SPACETIME=$with_spacetime" >> Makefile
 echo "LIBUNWIND_AVAILABLE=$libunwind_available" >> Makefile
 echo "LIBUNWIND_INCLUDE_FLAGS=$libunwind_include" >> Makefile
 echo "LIBUNWIND_LINK_FLAGS=$libunwind_lib" >> Makefile
+echo "PROFINFO_WIDTH=$profinfo_width" >> Makefile
 echo "TARGET=$target" >> Makefile
 echo "HOST=$host" >> Makefile
 if [ "$ostype" = Cygwin ]; then

@@ -111,7 +111,6 @@ static void reinitialise_free_node_block(void)
 static void open_snapshot_channel(void)
 {
   int fd;
-  double time;
   char filename[256];
   snprintf(filename, 256, "spacetime-%d", getpid());
   filename[255] = '\0';
@@ -150,6 +149,7 @@ void caml_spacetime_initialize(void)
     unsigned int interval = 0;
     sscanf(ap_interval, "%u", &interval);
     if (interval != 0) {
+      double time;
       open_snapshot_channel();
       snapshot_interval = interval / 1e3;
       time = caml_sys_time_unboxed(Val_unit);
@@ -572,7 +572,7 @@ static NOINLINE void* find_trie_node_from_libunwind(int for_allocation,
       ext_table_initialised = 1;
     }
     else {
-      caml_ext_table_clear(&frames_local);
+      caml_ext_table_clear(&frames_local, 0);
     }
     frames = &frames_local;
   } else {

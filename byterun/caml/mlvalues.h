@@ -94,29 +94,25 @@ For 64-bit architectures:
      +--------+-------+-----+
 bits  63    10 9     8 7   0
 
-For x86-64 with Spacetime profiling:  (max block size = just under 4Gbytes)
-
-           26 bits         28 bits
+For x86-64 with Spacetime profiling:
+  P = PROFINFO_WIDTH (as set by "configure", currently 26 bits, giving a
+    maximum block size of just under 4Gb)
      +----------------+----------------+-------------+
      | profiling info | wosize         | color | tag |
      +----------------+----------------+-------------+
-bits  63            38 37            10 9     8 7   0
+bits  63        (64-P) (63-P)        10 9     8 7   0
 
 */
 
-/* CR mshinwell: Since e.g. Bigarray stubs aren't built with NATIVE_CODE,
-   we cannot guard some of these sections with NATIVE_CODE as well as
-   WITH_SPACETIME, which is a pity.  We should think about this */
-#define PROFINFO_SHIFT 38
-#define PROFINFO_MASK 0x3ffffff
-#define PROFINFO_MASK_ull 0x3ffffffull
+#define PROFINFO_SHIFT (64 - PROFINFO_WIDTH)
+#define PROFINFO_MASK ((1ull << PROFINFO_WIDTH) - 1ull)
 
 #define Tag_hd(hd) ((tag_t) ((hd) & 0xFF))
 #ifndef WITH_SPACETIME
 #define Wosize_hd(hd) ((mlsize_t) ((hd) >> 10))
 #define Profinfo_hd(hd) ((uintnat) 0)
 #else
-#define Hd_no_profinfo(hd) ((hd) & ~(PROFINFO_MASK_ull << PROFINFO_SHIFT))
+#define Hd_no_profinfo(hd) ((hd) & ~(PROFINFO_MASK << PROFINFO_SHIFT))
 #define Wosize_hd(hd) ((mlsize_t) ((Hd_no_profinfo(hd)) >> 10))
 #define Profinfo_hd(hd) (((mlsize_t) ((hd) >> PROFINFO_SHIFT)) & PROFINFO_MASK)
 #endif

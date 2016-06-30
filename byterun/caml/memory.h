@@ -46,7 +46,6 @@ CAMLextern value caml_alloc_shr_preserving_profinfo (mlsize_t, tag_t,
 #define caml_alloc_shr_preserving_profinfo(size, tag, header) \
   caml_alloc_shr(size, tag)
 #endif
-/* CR mshinwell: add "_no_raise_with_profinfo"?  Used in intern.c. */
 CAMLextern value caml_alloc_shr_no_raise (mlsize_t wosize, tag_t);
 CAMLextern void caml_adjust_gc_speed (mlsize_t, mlsize_t);
 CAMLextern void caml_alloc_dependent_memory (mlsize_t bsz);

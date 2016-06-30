@@ -141,6 +141,9 @@ val flambda : bool
 
 val spacetime : bool
         (* Whether the compiler was configured for Spacetime profiling *)
+val profinfo_width : int
+        (* How many bits are to be used in values' headers for profiling
+           information *)
 val libunwind_available : bool
         (* Whether the libunwind library is available on the target *)
 val libunwind_link_flags : string

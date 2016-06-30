@@ -511,10 +511,10 @@ let set_field ptr n newval init =
 
 let header ptr =
   if Config.spacetime then
-    (* CR mshinwell: use a named constant for the mask *)
+    let profinfo_mask = (1 lsl Config.profinfo_width) - 1 in
     Cop(Cand, [Cop (Cload Word_int,
         [Cop(Cadda, [ptr; Cconst_int(-size_int)])]);
-      Cconst_int 0x0000_003f_ffff_ffff;
+      Cconst_int profinfo_mask;
     ])
   else
     Cop(Cload Word_int, [Cop(Cadda, [ptr; Cconst_int(-size_int)])])
