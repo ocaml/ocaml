@@ -1,3 +1,6 @@
+(* TEST
+  * toplevel
+*)
 
 (* By using two types we can have a recursive constraint *)
 type 'a class_name = .. constraint 'a = < cast: 'a. 'a name -> 'a; ..>

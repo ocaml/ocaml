@@ -1,3 +1,6 @@
+(* TEST
+  * toplevel
+*)
 
 type foo = ..
 ;;
