@@ -279,15 +279,14 @@ let read_and_approximate inputfile =
     report_err exn;
     !Depend.free_structure_names
 
-let read_parse_and_extract parse_function extract_function def magic
-    source_file =
+let read_parse_and_extract parse_function extract_function def ast_kind source_file =
   Depend.free_structure_names := Depend.StringSet.empty;
   try
     let input_file = Pparse.preprocess source_file in
     begin try
       let ast =
         Pparse.file ~tool_name Format.err_formatter
-                    input_file parse_function magic
+                    input_file parse_function ast_kind
       in
       let bound_vars =
         List.fold_left
@@ -359,14 +358,14 @@ let ml_file_dependencies source_file =
   in
   let (extracted_deps, ()) =
     read_parse_and_extract parse_use_file_as_impl Depend.add_implementation ()
-                           Config.ast_impl_magic_number source_file
+                           Pparse.Structure source_file
   in
   files := (source_file, ML, extracted_deps) :: !files
 
 let mli_file_dependencies source_file =
   let (extracted_deps, ()) =
     read_parse_and_extract Parse.interface Depend.add_signature ()
-                           Config.ast_intf_magic_number source_file
+                           Pparse.Signature source_file
   in
   files := (source_file, MLI, extracted_deps) :: !files
 
@@ -494,11 +493,11 @@ let rec dump_map s0 ppf m =
 
 let process_ml_map =
   read_parse_and_extract Parse.implementation Depend.add_implementation_binding
-                         StringMap.empty Config.ast_impl_magic_number
+                         StringMap.empty Pparse.Structure
 
 let process_mli_map =
   read_parse_and_extract Parse.interface Depend.add_signature_binding
-                         StringMap.empty Config.ast_intf_magic_number
+                         StringMap.empty Pparse.Signature
 
 let parse_map fname =
   map_files := fname :: !map_files ;
