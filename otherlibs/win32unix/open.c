@@ -18,21 +18,24 @@
 #include "unixsupport.h"
 #include <fcntl.h>
 
-static int open_access_flags[14] = {
+static int open_access_flags[15] = {
   GENERIC_READ, GENERIC_WRITE, GENERIC_READ|GENERIC_WRITE,
-  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
 };
 
-static int open_create_flags[14] = {
-  0, 0, 0, 0, 0, O_CREAT, O_TRUNC, O_EXCL, 0, 0, 0, 0, 0, 0
+static int open_create_flags[15] = {
+  0, 0, 0, 0, 0, O_CREAT, O_TRUNC, O_EXCL, 0, 0, 0, 0, 0, 0, 0
 };
 
-static int open_share_flags[14] = {
-  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, FILE_SHARE_DELETE, 0
+static int open_share_flags[15] = {
+  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, FILE_SHARE_DELETE, 0, 0
 };
 
-static int open_cloexec_flags[14] = {
-  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1
+#define CLOEXEC 1
+#define KEEPEXEC 2
+
+static int open_cloexec_flags[15] = {
+  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, CLOEXEC, KEEPEXEC
 };
 
 CAMLprim value unix_open(value path, value flags, value perm)
@@ -66,7 +69,11 @@ CAMLprim value unix_open(value path, value flags, value perm)
   cloexec = caml_convert_flag_list(flags, open_cloexec_flags);
   attr.nLength = sizeof(attr);
   attr.lpSecurityDescriptor = NULL;
-  attr.bInheritHandle = cloexec ? FALSE : TRUE;
+#if CLOEXEC_DEFAULT == 1
+  attr.bInheritHandle = cloexec & CLOEXEC ? FALSE : TRUE;
+#else
+  attr.bInheritHandle = cloexec & KEEPEXEC ? TRUE : FALSE;
+#endif
 
   h = CreateFile(String_val(path), fileaccess,
                  sharemode, &attr,

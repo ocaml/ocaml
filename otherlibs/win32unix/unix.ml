@@ -172,6 +172,7 @@ type open_flag =
   | O_RSYNC
   | O_SHARE_DELETE
   | O_CLOEXEC
+  | O_KEEPEXEC
 
 type file_perm = int
 
@@ -311,8 +312,9 @@ external access : string -> access_permission list -> unit = "unix_access"
 
 (* Operations on file descriptors *)
 
-external dup : file_descr -> file_descr = "unix_dup"
-external dup2 : file_descr -> file_descr -> unit = "unix_dup2"
+external dup : ?cloexec: bool -> file_descr -> file_descr = "unix_dup"
+external dup2 :
+   ?cloexec: bool -> file_descr -> file_descr -> unit = "unix_dup2"
 
 external set_nonblock : file_descr -> unit = "unix_set_nonblock"
 external clear_nonblock : file_descr -> unit = "unix_clear_nonblock"
@@ -369,7 +371,8 @@ let rewinddir d =
 
 (* Pipes *)
 
-external pipe : unit -> file_descr * file_descr = "unix_pipe"
+external pipe :
+  ?cloexec: bool -> unit -> file_descr * file_descr = "unix_pipe"
 
 let mkfifo _name _perm = invalid_arg "Unix.mkfifo not implemented"
 
@@ -547,10 +550,12 @@ type msg_flag =
   | MSG_DONTROUTE
   | MSG_PEEK
 
-external socket : socket_domain -> socket_type -> int -> file_descr
-                                  = "unix_socket"
-let socketpair _dom _ty _proto = invalid_arg "Unix.socketpair not implemented"
-external accept : file_descr -> file_descr * sockaddr = "unix_accept"
+external socket : 
+  ?cloexec: bool -> socket_domain -> socket_type -> int -> file_descr
+  = "unix_socket"
+let socketpair ?cloexec:_ _dom _ty _proto = invalid_arg "Unix.socketpair not implemented"
+external accept :
+  ?cloexec: bool -> file_descr -> file_descr * sockaddr = "unix_accept"
 external bind : file_descr -> sockaddr -> unit = "unix_bind"
 external connect : file_descr -> sockaddr -> unit = "unix_connect"
 external listen : file_descr -> int -> unit = "unix_listen"

@@ -22,7 +22,7 @@
 /* PR#4749: pick a size that matches that of I/O buffers */
 #define SIZEBUF 4096
 
-CAMLprim value unix_pipe(value unit)
+CAMLprim value unix_pipe(value cloexec, value unit)
 {
   SECURITY_ATTRIBUTES attr;
   HANDLE readh, writeh;
@@ -30,7 +30,7 @@ CAMLprim value unix_pipe(value unit)
 
   attr.nLength = sizeof(attr);
   attr.lpSecurityDescriptor = NULL;
-  attr.bInheritHandle = TRUE;
+  attr.bInheritHandle = unix_cloexec_p(cloexec) ? FALSE : TRUE;
   if (! CreatePipe(&readh, &writeh, &attr, SIZEBUF)) {
     win32_maperr(GetLastError());
     uerror("pipe", Nothing);
