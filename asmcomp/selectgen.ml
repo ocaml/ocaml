@@ -51,11 +51,11 @@ let oper_result_type = function
 
 let size_expr env exp =
   let rec size localenv = function
-      Cconst_int _ | Cconst_natint _
-    | Cconst_blockheader _ -> Arch.size_int
+      Cconst_int _ | Cconst_natint _ -> Arch.size_int
     | Cconst_symbol _ | Cconst_pointer _ | Cconst_natpointer _ ->
         Arch.size_addr
     | Cconst_float _ -> Arch.size_float
+    | Cblockheader _ -> Arch.size_int
     | Cvar id ->
         begin try
           Tbl.find id localenv
@@ -198,11 +198,11 @@ class virtual selector_generic = object (self)
 method is_simple_expr = function
     Cconst_int _ -> true
   | Cconst_natint _ -> true
-  | Cconst_blockheader _ -> true
   | Cconst_float _ -> true
   | Cconst_symbol _ -> true
   | Cconst_pointer _ -> true
   | Cconst_natpointer _ -> true
+  | Cblockheader _ -> true
   | Cvar _ -> true
   | Ctuple el -> List.for_all self#is_simple_expr el
   | Clet(_id, arg, body) -> self#is_simple_expr arg && self#is_simple_expr body
@@ -467,9 +467,6 @@ method emit_expr env exp =
   | Cconst_natint n ->
       let r = self#regs_for typ_int in
       Some(self#insert_op (Iconst_int n) [||] r)
-  | Cconst_blockheader (n, _dbg) ->
-      let r = self#regs_for typ_int in
-      Some(self#insert_op (Iconst_blockheader n) [||] r)
   | Cconst_float n ->
       let r = self#regs_for typ_float in
       Some(self#insert_op (Iconst_float (Int64.bits_of_float n)) [||] r)
@@ -482,6 +479,9 @@ method emit_expr env exp =
   | Cconst_natpointer n ->
       let r = self#regs_for typ_val in  (* integer as Caml value *)
       Some(self#insert_op (Iconst_int n) [||] r)
+  | Cblockheader (n, _dbg) ->
+      let r = self#regs_for typ_int in
+      Some(self#insert_op (Iconst_blockheader n) [||] r)
   | Cvar v ->
       begin try
         Some(Tbl.find v env)

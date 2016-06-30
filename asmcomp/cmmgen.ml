@@ -31,7 +31,7 @@ let bind name arg fn =
   match arg with
     Cvar _ | Cconst_int _ | Cconst_natint _ | Cconst_symbol _
   | Cconst_pointer _ | Cconst_natpointer _
-  | Cconst_blockheader _ -> fn arg
+  | Cblockheader _ -> fn arg
   | _ -> let id = Ident.create name in Clet(id, arg, fn (Cvar id))
 
 let bind_load name arg fn =
@@ -43,7 +43,7 @@ let bind_nonvar name arg fn =
   match arg with
     Cconst_int _ | Cconst_natint _ | Cconst_symbol _
   | Cconst_pointer _ | Cconst_natpointer _
-  | Cconst_blockheader _ -> fn arg
+  | Cblockheader _ -> fn arg
   | _ -> let id = Ident.create name in Clet(id, arg, fn (Cvar id))
 
 let caml_black = Nativeint.shift_left (Nativeint.of_int 3) 8
@@ -72,13 +72,13 @@ let boxedint32_header = block_header Obj.custom_tag 2
 let boxedint64_header = block_header Obj.custom_tag (1 + 8 / size_addr)
 let boxedintnat_header = block_header Obj.custom_tag 2
 
-let alloc_float_header dbg = Cconst_blockheader(float_header, dbg)
-let alloc_floatarray_header len dbg = Cconst_blockheader(floatarray_header len, dbg)
-let alloc_closure_header sz dbg = Cconst_blockheader(white_closure_header sz, dbg)
-let alloc_infix_header ofs dbg = Cconst_blockheader(infix_header ofs, dbg)
-let alloc_boxedint32_header dbg = Cconst_blockheader(boxedint32_header, dbg)
-let alloc_boxedint64_header dbg = Cconst_blockheader(boxedint64_header, dbg)
-let alloc_boxedintnat_header dbg = Cconst_blockheader(boxedintnat_header, dbg)
+let alloc_float_header dbg = Cblockheader(float_header, dbg)
+let alloc_floatarray_header len dbg = Cblockheader(floatarray_header len, dbg)
+let alloc_closure_header sz dbg = Cblockheader(white_closure_header sz, dbg)
+let alloc_infix_header ofs dbg = Cblockheader(infix_header ofs, dbg)
+let alloc_boxedint32_header dbg = Cblockheader(boxedint32_header, dbg)
+let alloc_boxedint64_header dbg = Cblockheader(boxedint64_header, dbg)
+let alloc_boxedintnat_header dbg = Cblockheader(boxedintnat_header, dbg)
 
 (* Integers *)
 
@@ -638,7 +638,7 @@ let call_cached_method obj tag cache pos args dbg =
 
 let make_alloc_generic set_fn dbg tag wordsize args =
   if wordsize <= Config.max_young_wosize then
-    Cop(Calloc dbg, Cconst_blockheader(block_header tag wordsize, dbg) :: args)
+    Cop(Calloc dbg, Cblockheader(block_header tag wordsize, dbg) :: args)
   else begin
     let id = Ident.create "alloc" in
     let rec fill_fields idx = function
