@@ -301,7 +301,7 @@ installoptopt:
 
 # Run all tests
 
-tests: opt.opt
+tests: opt.opt ocamlnat ocamltest
 	cd testsuite; $(MAKE) clean && $(MAKE) all
 
 # The clean target
