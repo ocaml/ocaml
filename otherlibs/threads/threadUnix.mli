@@ -62,7 +62,7 @@ val select :
 
 (** {6 Pipes and redirections} *)
 
-val pipe : unit -> Unix.file_descr * Unix.file_descr
+val pipe : ?cloexec:bool -> unit -> Unix.file_descr * Unix.file_descr
 val open_process_in : string -> in_channel
 val open_process_out : string -> out_channel
 val open_process : string -> in_channel * out_channel
@@ -75,11 +75,14 @@ val sleep : int -> unit
 
 (** {6 Sockets} *)
 
-val socket : Unix.socket_domain -> Unix.socket_type -> int -> Unix.file_descr
+val socket :
+  ?cloexec:bool -> Unix.socket_domain -> Unix.socket_type -> int ->
+    Unix.file_descr
 val socketpair :
-  Unix.socket_domain -> Unix.socket_type -> int ->
+  ?cloexec:bool -> Unix.socket_domain -> Unix.socket_type -> int ->
     Unix.file_descr * Unix.file_descr
-val accept : Unix.file_descr -> Unix.file_descr * Unix.sockaddr
+val accept :
+  ?cloexec:bool -> Unix.file_descr -> Unix.file_descr * Unix.sockaddr
 val connect : Unix.file_descr -> Unix.sockaddr -> unit
 val recv :
   Unix.file_descr -> bytes -> int -> int -> Unix.msg_flag list -> int

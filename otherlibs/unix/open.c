@@ -42,19 +42,28 @@
 #define O_CLOEXEC 0
 #endif
 
-static int open_flag_table[14] = {
+static int open_flag_table[15] = {
   O_RDONLY, O_WRONLY, O_RDWR, O_NONBLOCK, O_APPEND, O_CREAT, O_TRUNC, O_EXCL,
   O_NOCTTY, O_DSYNC, O_SYNC, O_RSYNC,
   0, /* O_SHARE_DELETE, Windows-only */
-  O_CLOEXEC
+  O_CLOEXEC, 0
 };
 
 #ifdef NEED_CLOEXEC_EMULATION
-static int open_cloexec_table[14] = {
+static int open_cloexec_table[15] = {
   0, 0, 0, 0, 0, 0, 0, 0,
   0, 0, 0, 0,
   0,
-  1
+  1, 0
+};
+#endif
+
+#if CLOEXEC_DEFAULT == 1
+static int open_keepexec_table[15] = {
+  0, 0, 0, 0, 0, 0, 0, 0,
+  0, 0, 0, 0,
+  0,
+  0, 1
 };
 #endif
 
@@ -66,6 +75,10 @@ CAMLprim value unix_open(value path, value flags, value perm)
 
   caml_unix_check_path(path, "open");
   cv_flags = caml_convert_flag_list(flags, open_flag_table);
+#if CLOEXEC_DEFAULT == 1 && !defined(NEED_CLOEXEC_EMULATION)
+  if (convert_flag_list(flags, open_keepexec_table) == 0)
+    cv_flags |= O_CLOEXEC;
+#endif
   p = caml_strdup(String_val(path));
   /* open on a named FIFO can block (PR#1533) */
   caml_enter_blocking_section();
@@ -73,13 +86,14 @@ CAMLprim value unix_open(value path, value flags, value perm)
   caml_leave_blocking_section();
   caml_stat_free(p);
   if (fd == -1) uerror("open", path);
-#if defined(NEED_CLOEXEC_EMULATION) && defined(FD_CLOEXEC)
-  if (caml_convert_flag_list(flags, open_cloexec_table) != 0) {
-    int flags = fcntl(fd, F_GETFD, 0);
-    if (flags == -1 ||
-        fcntl(fd, F_SETFD, flags | FD_CLOEXEC) == -1)
-      uerror("open", path);
-  }
+#if defined(NEED_CLOEXEC_EMULATION)
+#if CLOEXEC_DEFAULT == 1
+  if (caml_convert_flag_list(flags, open_keepexec_table) == 0)
+    unix_set_cloexec(fd, "open", path);
+#else
+  if (caml_convert_flag_list(flags, open_cloexec_table) != 0)
+    unix_set_cloexec(fd, "open", path);
+#endif
 #endif
   CAMLreturn (Val_int(fd));
 }
