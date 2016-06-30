@@ -1,0 +1,5 @@
+- : ('a -> 'b -> 'a) -> 'a -> 'b list -> 'a = <fun>
+Unknown directive `trace'.
+- : int = 0
+- : int = 6
+

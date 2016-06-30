@@ -1,8 +1,7 @@
-
-# - : ('a -> 'b -> 'a) -> 'a -> 'b list -> 'a = <fun>
-# List.fold_left is now traced.
-# - : int = 0
-# List.fold_left <-- <fun>
+- : ('a -> 'b -> 'a) -> 'a -> 'b list -> 'a = <fun>
+List.fold_left is now traced.
+- : int = 0
+List.fold_left <-- <fun>
 List.fold_left --> <fun>
 List.fold_left* <-- <poly>
 List.fold_left* --> <fun>
@@ -27,4 +26,4 @@ List.fold_left** --> <poly>
 List.fold_left** --> <poly>
 List.fold_left** --> <poly>
 - : int = 6
-# 
+
