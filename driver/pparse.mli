@@ -29,6 +29,11 @@ type 'a ast_kind =
 | Signature : Parsetree.signature ast_kind
 
 val clear_ppx : unit -> unit
+(** Forget about all installed rewriters: in-process and external ones *)
+
+val clear_in_process_ppx: unit -> unit
+(** Forget about all installed in-process rewriters *)
+
 val add_external_ppx : path:string -> unit
 val add_in_process_ppx : Ast_mapper.mapper -> unit
 

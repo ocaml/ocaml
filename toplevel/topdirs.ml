@@ -446,6 +446,13 @@ let _ = add_directive "ppxs_clear"
              (external and in-process)";
     }
 
+let _ = add_directive "remove_in_process_ppxs"
+    (Directive_none Pparse.clear_in_process_ppx)
+    {
+      section = section_options;
+      doc = "Forget all added in process PPX preprocessors";
+    }
+
 (* The trace *)
 
 external current_environment: unit -> Obj.t = "caml_get_current_environment"

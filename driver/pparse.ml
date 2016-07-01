@@ -119,6 +119,9 @@ type rewriter_kind =
 let installed_ppxs = ref []
 
 let clear_ppx () = installed_ppxs := []
+let clear_in_process_ppx () =
+  installed_ppxs := List.filter (function External _ -> true | _ -> false) !installed_ppxs
+
 let add_external_ppx ~path =
   installed_ppxs := (External path) :: !installed_ppxs
 
