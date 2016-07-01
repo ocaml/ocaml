@@ -3,7 +3,7 @@
        match M.is_t () with None -> 0
        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Warning 8: this pattern-matching is not exhaustive.
-Here is an example of a value that is not matched:
+Here is an example of a case that is not matched:
 Some (Is Eq)
 module TypEq : sig type (_, _) t = Eq : ('a, 'a) t end
 module type T =

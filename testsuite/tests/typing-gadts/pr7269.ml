@@ -9,7 +9,7 @@ and sub = [ `B ]
 type +'a t = T : [< `Conj of 'a & sub | `Other of string ] -> 'a t
 Line _, characters 6-47:
 Warning 8: this pattern-matching is not exhaustive.
-Here is an example of a value that is not matched:
+Here is an example of a case that is not matched:
 T (`Conj _)
 val f : s t -> unit = <fun>
 Exception: Match_failure ("", 4, 6).
@@ -35,7 +35,7 @@ module M :
   end
 Line _, characters 12-59:
 Warning 8: this pattern-matching is not exhaustive.
-Here is an example of a value that is not matched:
+Here is an example of a case that is not matched:
 T (`Conj _)
 Exception: Match_failure ("", 11, 12).
 |}];;
@@ -65,7 +65,7 @@ module M :
   end
 Line _, characters 21-57:
 Warning 8: this pattern-matching is not exhaustive.
-Here is an example of a value that is not matched:
+Here is an example of a case that is not matched:
 `Conj _
 Exception: Match_failure ("", 13, 21).
 |}];;
