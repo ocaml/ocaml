@@ -50,6 +50,10 @@ OCaml 4.04.0:
   (Unused exception or extension constructor)
   (Gabriel Scherer)
 
+- PR#7169, clarify the wording of Warning 8
+  (Non-exhaustivity warning for pattern matching)
+  (Florian Angeletti, review and report by Gabriel Scherer)
+
 ### Tools:
 
 - MPR#7189: toplevel #show, follow chains of module aliases
