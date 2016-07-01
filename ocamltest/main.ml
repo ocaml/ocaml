@@ -51,7 +51,7 @@ let tsl_block_of_file_safe test_filename =
 let print_usage () =
   Printf.printf "Usage: %s testfile\n" Sys.argv.(0)
 
-let rec run_test log path rootenv ancestor_result = function
+let rec run_test log path ancestor_result = function
   Node (testenvspec, test, subtrees) ->
   (*
     Printf.printf "Running test %s (%s) ... %!"
@@ -59,30 +59,29 @@ let rec run_test log path rootenv ancestor_result = function
   *)
   Printf.printf "%s %s => %!" path test.Tests.test_name;
   let print_test_result str = Printf.printf "%s\n%!" str in
-  match ancestor_result with
-    | Actions.Pass _ -> (* Ancestor succeded, really run the test *)
-      begin
-        let testenv = interprete_environment_statements rootenv testenvspec in
-        let test_result = Tests.run log testenv test in
-        match test_result with
-          | Actions.Pass newenv ->
-            print_test_result "passed";
-            List.iteri (run_test_i log path newenv test_result) subtrees
-          | Actions.Fail _ -> print_test_result "failed"
-          | Actions.Skip _ -> print_test_result "skipped"
-      end
+  let test_result = match ancestor_result with
+    | Actions.Pass env -> (* Ancestor succeded, really run the test *)
+      let testenv = interprete_environment_statements env testenvspec in
+      Tests.run log testenv test
+    | Actions.Skip _ -> (Actions.Skip "ancestor test skipped")
+    | Actions.Fail _ -> (Actions.Skip "ancestor test failed") in
+  let result_to_pass = match test_result with
+    | Actions.Pass _ ->
+      print_test_result "passed";
+      test_result
     | Actions.Fail _ ->
       print_test_result "failed";
-      List.iteri (run_test_i log path rootenv ancestor_result) subtrees
+      ancestor_result
     | Actions.Skip _ ->
       print_test_result "skipped";
-      List.iteri (run_test_i log path rootenv ancestor_result) subtrees
-and run_test_i log path rootenv ancestor_result _i test_tree =
+      ancestor_result in
+  List.iteri (run_test_i log path result_to_pass) subtrees
+and run_test_i log path ancestor_result _i test_tree =
   (*
     let prefix = if path="" then "" else path ^ "." in
     le t new_path = Printf.sprintf "%s%d" prefix (i+1) in
   *)
-  run_test log path rootenv ancestor_result test_tree
+  run_test log path ancestor_result test_tree
 
 let get_test_source_directory test_dirname =
   if not (Filename.is_relative test_dirname) then test_dirname
@@ -138,7 +137,7 @@ let main () =
   let log_filename = test_prefix ^ ".log" in
   let log = open_out log_filename in
   let prefix = " ... testing '" ^ test_basename ^ "':" in
-  List.iteri (run_test_i log prefix rootenv (Actions.Pass rootenv)) test_trees;
+  List.iteri (run_test_i log prefix (Actions.Pass rootenv)) test_trees;
   close_out log
 
 let _ = main()
