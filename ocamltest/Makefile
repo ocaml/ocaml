@@ -29,14 +29,16 @@ ocamlc := ../byterun/ocamlrun ../ocamlc $(flags)
 
 ocamlopt := ../byterun/ocamlrun ../ocamlopt $(flags)
 
-#ocamltest.opt: $(optmodules)
-#	$(ocamlopt) ocamlcommon.cmxa -o $@ $^
-
 ocamltest.byte: $(modules)
 	$(ocamlc) -custom ocamlcommon.cma -o $@ $^
 
 %.cmo: %.ml %.cmi
 	$(ocamlc) -c $<
+
+ocamltest.opt: $(optmodules)
+	$(ocamlopt) ocamlcommon.cmxa -o $@ $^
+
+
 
 %.cmx: %.ml %.cmi
 	$(ocamlopt) -c $<
