@@ -2,7 +2,7 @@ CFLAGS = -I ../stdlib -g -O0
 modules :=\
   run.o \
   run_stubs.o \
-  run.cmo \
+  run_command.cmo \
   testlib.cmo \
   filetype.cmo \
   filecompare.cmo \

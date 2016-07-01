@@ -49,16 +49,16 @@ let run_command
   log_redirection "stdin" stdin_filename;
   log_redirection "stdout" stdout_filename;
   log_redirection "stderr" stderr_filename;
-  Run.run {
-    Run.progname = progname;
-    Run.argv = arguments;
-    (* Run.envp = environment; *)
-    Run.stdin_filename = stdin_filename;
-    Run.stdout_filename = stdout_filename;
-    Run.stderr_filename = stderr_filename;
-    Run.append = append;
-    Run.timeout = timeout;
-    Run.log = log
+  Run_command.run {
+    Run_command.progname = progname;
+    Run_command.argv = arguments;
+    (* Run_command.envp = environment; *)
+    Run_command.stdin_filename = stdin_filename;
+    Run_command.stdout_filename = stdout_filename;
+    Run_command.stderr_filename = stderr_filename;
+    Run_command.append = append;
+    Run_command.timeout = timeout;
+    Run_command.log = log
   }
 
 let mkreason what commandline exitcode =
