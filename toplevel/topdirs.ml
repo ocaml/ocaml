@@ -407,21 +407,20 @@ let _ = add_directive "remove_printer"
 let install_ppx_mapper ppf (lid: Longident.t) =
   try
     let (path, desc) = Env.lookup_value lid !toplevel_env in
-    let open Path in
-    let rec is_good_type t =
-      match t.desc with
-      | Tlink l -> is_good_type l
-      | Tconstr (Pdot (Pident {Ident.name="Ast_mapper";_}, "mapper", _), [], _) -> true
-      | _ -> false
-    in
-    if is_good_type desc.val_type
-    then
-      let mapper = eval_path !toplevel_env path in
-      Pparse.add_in_process_ppx (Obj.obj mapper)
-    else
-      fprintf ppf "Type of the value should be 'Ast_mapper.mapper'. Nothing added.\n%!"
+
+    let mapper_type = Env.lookup_type (Ldot(Lident "Ast_mapper", "mapper")) !toplevel_env in
+    Ctype.begin_def();
+    Ctype.unify !toplevel_env
+      (Ctype.newconstr mapper_type [])
+      (Ctype.instance_def desc.val_type);
+    Ctype.end_def();
+
+    let mapper = eval_path !toplevel_env path in
+    Pparse.add_in_process_ppx (Obj.obj mapper)
   with
-    Not_found -> fprintf ppf "Identifier is unbound in the current environment.\n%!"
+  | Ctype.Unify _ ->
+      fprintf ppf "Type of the value should be 'Ast_mapper.mapper'. Nothing added.\n%!"
+  | Not_found -> fprintf ppf "Identifier is unbound in the current environment.\n%!"
 
 let _ = add_directive "ppx"
     (Directive_string(fun path -> Pparse.add_external_ppx ~path))

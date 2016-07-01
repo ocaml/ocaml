@@ -10,18 +10,13 @@
 #load "numbers.cmo";;
 #load "arg_helper.cmo";;
 #load "clflags.cmo";;
-#directory "../../..//parsing";;
+#directory "../../../parsing";;
 #load "location.cmo";;
 #load "docstrings.cmo";;
 #load "ast_helper.cmo";;
 #load "ast_mapper.cmo";;
 #load "longident.cmo";;
 #load "pprintast.cmo";;
-(* #directory "compilerlibs";; *)
-(* #load "ocamlcommon.cma";; *)
-(* #directory "../parsing";; *)
-(* #load "longident.cmo";; *)
-(* #load "ast_mapper.cmo";; *)
 
 
 let mapper1 =
@@ -57,3 +52,4 @@ let mapper2 =
 #plugin_ppx mapper1;;
 #plugin_ppx mapper2;;
 print_char 'a';;
+#plugin_ppx print_endline;;

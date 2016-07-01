@@ -1,5 +1,5 @@
 
-# # # # # # # # # # # # # # # # # # # #                                 val mapper1 : Ast_mapper.mapper =
+# # # # # # # # # # # # # # # # # # # #                       val mapper1 : Ast_mapper.mapper =
   {Ast_mapper.attribute = <fun>; attributes = <fun>; case = <fun>;
    cases = <fun>; class_declaration = <fun>; class_description = <fun>;
    class_expr = <fun>; class_field = <fun>; class_signature = <fun>;
@@ -39,4 +39,5 @@ got an expr
 got an expr
 print_char
 A- : unit = ()
+# Type of the value should be 'Ast_mapper.mapper'. Nothing added.
 # 
