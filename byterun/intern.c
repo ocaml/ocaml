@@ -726,6 +726,10 @@ static value caml_input_val_core(struct channel *chan, int outside_heap)
   if (!outside_heap) {
     intern_add_to_heap(h.whsize);
   } else {
+<<<<<<< HEAD
+=======
+    caml_disown_for_heap(intern_extra_block);
+>>>>>>> ocaml/trunk
     intern_extra_block = NULL;
     intern_block = 0;
   }

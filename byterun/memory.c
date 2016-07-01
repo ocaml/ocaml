@@ -284,6 +284,15 @@ char *caml_alloc_for_heap (asize_t request)
   }
 }
 
+/* Use this function if a block allocated with [caml_alloc_for_heap] is
+   not actually going to be added to the heap.  The caller is responsible
+   for freeing it. */
+void caml_disown_for_heap (char* mem)
+{
+  /* Currently a no-op. */
+  mem = mem;
+}
+
 /* Use this function to free a block allocated with [caml_alloc_for_heap]
    if you don't add it with [caml_add_to_heap].
 */

@@ -23,7 +23,11 @@ open Mach
 
 let rec deadcode i =
   match i.desc with
+<<<<<<< HEAD
   | Iend | Ireturn | Iraise _ ->
+=======
+  | Iend | Ireturn | Iop(Itailcall_ind _) | Iop(Itailcall_imm _) | Iraise _ ->
+>>>>>>> ocaml/trunk
       (i, Reg.add_set_array i.live i.arg)
   | Iop(Itailcall_ind _) | Iop(Itailcall_imm _) ->
       let before = Reg.add_set_array i.live i.arg in

@@ -54,5 +54,4 @@ type fundecl =
     fun_spacetime_shape : Mach.spacetime_shape option;
   }
 
-val reset : unit -> unit
 val fundecl: Mach.fundecl -> fundecl

@@ -39,7 +39,11 @@ let rec live i finally =
     Iend ->
       i.live <- finally;
       finally
+<<<<<<< HEAD
   | Ireturn ->
+=======
+  | Ireturn | Iop(Itailcall_ind _) | Iop(Itailcall_imm _) ->
+>>>>>>> ocaml/trunk
       i.live <- Reg.Set.empty; (* no regs are live across *)
       Reg.set_of_array i.arg
   | Iop(Itailcall_ind _) | Iop(Itailcall_imm _) ->

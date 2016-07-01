@@ -298,8 +298,13 @@ let rec spill i finally =
       let before1 = Reg.diff_set_array after i.res in
       let before =
         match i.desc with
+<<<<<<< HEAD
           Iop Icall_ind _ | Iop(Icall_imm _) | Iop(Iextcall _)
         | Iop(Iintop (Icheckbound _)) | Iop(Iintop_imm((Icheckbound _), _)) ->
+=======
+          Iop(Icall_ind _) | Iop(Icall_imm _) | Iop(Iextcall _)
+        | Iop(Iintop (Icheckbound _)) | Iop(Iintop_imm(Icheckbound _, _)) ->
+>>>>>>> ocaml/trunk
             Reg.Set.union before1 !spill_at_raise
         | _ ->
             before1 in

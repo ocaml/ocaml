@@ -126,7 +126,11 @@ let rec rename i sub =
     Iend ->
       (i, sub)
   | Ireturn | Iop(Itailcall_ind _) | Iop(Itailcall_imm _) ->
+<<<<<<< HEAD
       (instr_cons_debug i.desc (subst_regs i.arg sub) [||] i.dbg i.next,
+=======
+      (instr_cons i.desc (subst_regs i.arg sub) [||] i.next,
+>>>>>>> ocaml/trunk
        None)
   | Iop Ireload when i.res.(0).loc = Unknown ->
       begin match sub with
