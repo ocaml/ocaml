@@ -15,7 +15,8 @@
 
 (* Transformation of Mach code into a list of pseudo-instructions. *)
 
-type label = Cmm.label
+type label = int
+val new_label: unit -> label
 
 type instruction =
   { mutable desc: instruction_desc;
@@ -52,4 +53,5 @@ type fundecl =
     fun_fast: bool;
     fun_dbg : Debuginfo.t }
 
+val reset : unit -> unit
 val fundecl: Mach.fundecl -> fundecl
