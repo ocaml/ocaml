@@ -219,8 +219,13 @@ let nativecode_toplevel = {
   compileroutput_variable = "compileroutput2";
 }
 
-let compiler_reference_filename prefix compiler =
-  let suffix = "reference" in
+let compiler_reference_filename env prefix compiler =
+  let compiler_reference_suffix =
+    Environments.safe_lookup "compiler_reference_suffix" env in
+  let suffix =
+    if compiler_reference_suffix<>""
+    then compiler_reference_suffix ^ ".reference"
+    else "reference" in
   let mk s = make_file_name (make_file_name prefix s) suffix in
   let filename = mk compiler.compiler_directory in
   if Sys.file_exists filename then filename else
@@ -419,14 +424,18 @@ let compile_test_program program_variable compiler backend log env =
   let compilerreference_prefix =
     make_path [test_source_directory; testfile_basename] in
   let compilerreference_filename =
-    compiler_reference_filename compilerreference_prefix compiler in
-  let build_directory =
-    make_path [test_build_directory env; compiler.compiler_directory] in
-  let executable_path = make_path [build_directory; executable_filename] in
+    compiler_reference_filename env compilerreference_prefix compiler in
+  let compiler_directory_suffix =
+    Environments.safe_lookup "compiler_directory_suffix" env in
+  let compiler_directory_name =
+    compiler.compiler_directory ^ compiler_directory_suffix in
+  let compiler_directory =
+    make_path [test_build_directory env; compiler_directory_name] in
+  let executable_path = make_path [compiler_directory; executable_filename] in
   let compiler_output_filename =
     make_file_name compiler.compiler_directory "output" in
   let compiler_output =
-    make_path [build_directory; compiler_output_filename] in
+    make_path [compiler_directory; compiler_output_filename] in
   let compileroutput_variable = compiler.compileroutput_variable in
   let compilerreference_variable = compiler.compilerreference_variable in
   let newenv = Environments.add_variables
@@ -435,11 +444,11 @@ let compile_test_program program_variable compiler backend log env =
       (compilerreference_variable, compilerreference_filename);
       (compileroutput_variable, compiler_output);
     ] env in
-  Testlib.make_directory build_directory;
-  setup_symlinks test_source_directory build_directory modules;
-  setup_symlinks test_source_directory build_directory module_interfaces;
-  setup_symlinks test_source_directory build_directory (files env);
-  Sys.chdir build_directory;
+  Testlib.make_directory compiler_directory;
+  setup_symlinks test_source_directory compiler_directory modules;
+  setup_symlinks test_source_directory compiler_directory module_interfaces;
+  setup_symlinks test_source_directory compiler_directory (files env);
+  Sys.chdir compiler_directory;
   if Sys.file_exists compiler_output_filename then
     Sys.remove compiler_output_filename;
   let ocamlsrcdir = ocamlsrcdir () in
@@ -622,7 +631,7 @@ let run_test_program_in_toplevel toplevel log env =
   let compilerreference_prefix =
     make_path [test_source_directory; testfile_basename] in
   let compilerreference_filename =
-    compiler_reference_filename compilerreference_prefix toplevel in
+    compiler_reference_filename env compilerreference_prefix toplevel in
   let build_directory =
     make_path [test_build_directory env; toplevel.compiler_directory] in
   let compiler_output_filename =
