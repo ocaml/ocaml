@@ -18,11 +18,7 @@
 open Reg
 open Mach
 
-type label = int
-
-let label_counter = ref 99
-
-let new_label() = incr label_counter; !label_counter
+type label = Cmm.label
 
 type instruction =
   { mutable desc: instruction_desc;
@@ -49,7 +45,7 @@ and instruction_desc =
 
 let has_fallthrough = function
   | Lreturn | Lbranch _ | Lswitch _ | Lraise _
-  | Lop Itailcall_ind | Lop (Itailcall_imm _) -> false
+  | Lop Itailcall_ind _ | Lop (Itailcall_imm _) -> false
   | _ -> true
 
 type fundecl =
@@ -113,7 +109,7 @@ let get_label n = match n.desc with
     Lbranch lbl -> (lbl, n)
   | Llabel lbl -> (lbl, n)
   | Lend -> (-1, n)
-  | _ -> let lbl = new_label() in (lbl, cons_instr (Llabel lbl) n)
+  | _ -> let lbl = Cmm.new_label() in (lbl, cons_instr (Llabel lbl) n)
 
 (* Check the fallthrough label *)
 let check_label n = match n.desc with
@@ -180,7 +176,7 @@ let local_exit k =
 let rec linear i n =
   match i.Mach.desc with
     Iend -> n
-  | Iop(Itailcall_ind | Itailcall_imm _ as op) ->
+  | Iop(Itailcall_ind _ | Itailcall_imm _ as op) ->
       copy_instr (Lop op) i (discard_dead_code n)
   | Iop(Imove | Ireload | Ispill)
     when i.Mach.arg.(0).loc = i.Mach.res.(0).loc ->
@@ -248,7 +244,7 @@ let rec linear i n =
       end else
         copy_instr (Lswitch(Array.map (fun n -> lbl_cases.(n)) index)) i !n2
   | Iloop body ->
-      let lbl_head = new_label() in
+      let lbl_head = Cmm.new_label() in
       let n1 = linear i.Mach.next n in
       let n2 = linear body (cons_instr (Lbranch lbl_head) n1) in
       cons_instr (Llabel lbl_head) n2
@@ -288,10 +284,6 @@ let rec linear i n =
         (linear handler (add_branch lbl_join n2))
   | Iraise k ->
       copy_instr (Lraise k) i (discard_dead_code n)
-
-let reset () =
-  label_counter := 99;
-  exit_label := []
 
 let fundecl f =
   { fun_name = f.Mach.fun_name;
