@@ -49,6 +49,7 @@ CAMLextern void * caml_stat_resize (void *, asize_t);     /* Size in bytes. */
 CAMLextern int caml_init_alloc_for_heap (void);
 CAMLextern char *caml_alloc_for_heap (asize_t request);   /* Size in bytes. */
 CAMLextern void caml_free_for_heap (char *mem);
+CAMLextern void caml_disown_for_heap (char *mem);
 CAMLextern int caml_add_to_heap (char *mem);
 CAMLextern color_t caml_allocation_color (void *hp);
 

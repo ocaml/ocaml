@@ -554,7 +554,8 @@ static void intern_rec(value *dest)
   intern_free_stack();
 }
 
-static void intern_alloc(mlsize_t whsize, mlsize_t num_objects)
+static void intern_alloc(mlsize_t whsize, mlsize_t num_objects,
+      int outside_heap)
 {
   mlsize_t wosize;
 
@@ -564,7 +565,7 @@ static void intern_alloc(mlsize_t whsize, mlsize_t num_objects)
     return;
   }
   wosize = Wosize_whsize(whsize);
-  if (wosize > Max_wosize) {
+  if (wosize > Max_wosize || outside_heap) {
     /* Round desired size up to next page */
     asize_t request =
       ((Bsize_wsize(whsize) + Page_size - 1) >> Page_log) << Page_log;
@@ -573,7 +574,8 @@ static void intern_alloc(mlsize_t whsize, mlsize_t num_objects)
       intern_cleanup();
       caml_raise_out_of_memory();
     }
-    intern_color = caml_allocation_color(intern_extra_block);
+    intern_color =
+      outside_heap ? Caml_black : caml_allocation_color(intern_extra_block);
     intern_dest = (header_t *) intern_extra_block;
     Assert (intern_block == 0);
   } else {
@@ -686,7 +688,7 @@ static void caml_parse_header(char * fun_name,
 
 /* Reading from a channel */
 
-value caml_input_val(struct channel *chan)
+static value caml_input_val_core(struct channel *chan, int outside_heap)
 {
   char header[32];
   struct marshal_header h;
@@ -718,13 +720,24 @@ value caml_input_val(struct channel *chan)
   }
   /* Initialize global state */
   intern_init(block, block);
-  intern_alloc(h.whsize, h.num_objects);
+  intern_alloc(h.whsize, h.num_objects, outside_heap);
   /* Fill it in */
   intern_rec(&res);
-  intern_add_to_heap(h.whsize);
+  if (!outside_heap) {
+    intern_add_to_heap(h.whsize);
+  } else {
+    caml_disown_for_heap(intern_extra_block);
+    intern_extra_block = NULL;
+    intern_block = 0;
+  }
   /* Free everything */
   intern_cleanup();
   return caml_check_urgent_gc(res);
+}
+
+value caml_input_val(struct channel* chan)
+{
+  return caml_input_val_core(chan, 0);
 }
 
 CAMLprim value caml_input_value(value vchan)
@@ -741,6 +754,18 @@ CAMLprim value caml_input_value(value vchan)
 
 /* Reading from memory-resident blocks */
 
+CAMLprim value caml_input_value_to_outside_heap(value vchan)
+{
+  CAMLparam1 (vchan);
+  struct channel * chan = Channel(vchan);
+  CAMLlocal1 (res);
+
+  Lock(chan);
+  res = caml_input_val_core(chan, 1);
+  Unlock(chan);
+  CAMLreturn (res);
+}
+
 CAMLexport value caml_input_val_from_string(value str, intnat ofs)
 {
   CAMLparam1 (str);
@@ -753,7 +778,7 @@ CAMLexport value caml_input_val_from_string(value str, intnat ofs)
   if (ofs + h.header_len + h.data_len > caml_string_length(str))
     caml_failwith("input_val_from_string: bad length");
   /* Allocate result */
-  intern_alloc(h.whsize, h.num_objects);
+  intern_alloc(h.whsize, h.num_objects, 0);
   intern_src = &Byte_u(str, ofs + h.header_len); /* If a GC occurred */
   /* Fill it in */
   intern_rec(&obj);
@@ -772,7 +797,7 @@ static value input_val_from_block(struct marshal_header * h)
 {
   value obj;
   /* Allocate result */
-  intern_alloc(h->whsize, h->num_objects);
+  intern_alloc(h->whsize, h->num_objects, 0);
   /* Fill it in */
   intern_rec(&obj);
   intern_add_to_heap(h->whsize);
