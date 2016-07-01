@@ -1,4 +1,5 @@
 ocamltest.byte
+ocamltest.opt
 tsl_lexer.ml
 tsl_parser.ml
 tsl_parser.mli
