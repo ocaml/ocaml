@@ -23,7 +23,7 @@ CAMLprim value unix_dup(value cloexec, value fd)
   int ret;
 #ifdef F_DUPFD_CLOEXEC
   if (unix_cloexec_p(cloexec))
-    ret = fcntl(F_DUPFD_CLOEXEC, Int_val(fd));
+    ret = fcntl(Int_val(fd), F_DUPFD_CLOEXEC);
   else
     ret = dup(Int_val(fd));
 #else
