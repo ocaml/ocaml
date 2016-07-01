@@ -23,7 +23,7 @@ type integer_operation =
     Iadd | Isub | Imul | Imulh | Idiv | Imod
   | Iand | Ior | Ixor | Ilsl | Ilsr | Iasr
   | Icomp of integer_comparison
-  | Icheckbound of { label_after_error : Cmm.label option; }
+  | Icheckbound
 
 type test =
     Itruetest
@@ -34,8 +34,6 @@ type test =
   | Ioddtest
   | Ieventest
 
-type label = Cmm.label
-
 type operation =
     Imove
   | Ispill
@@ -44,15 +42,15 @@ type operation =
   | Iconst_float of int64
   | Iconst_symbol of string
   | Iconst_blockheader of nativeint
-  | Icall_ind of { label_after : label; }
-  | Icall_imm of { func : string; label_after : label; }
-  | Itailcall_ind of { label_after : label; }
-  | Itailcall_imm of { func : string; label_after : label; }
-  | Iextcall of { func : string; alloc : bool; label_after : label; }
+  | Icall_ind
+  | Icall_imm of string
+  | Itailcall_ind
+  | Itailcall_imm of string
+  | Iextcall of string * bool
   | Istackoffset of int
   | Iload of Cmm.memory_chunk * Arch.addressing_mode
   | Istore of Cmm.memory_chunk * Arch.addressing_mode * bool
-  | Ialloc of { words : int; label_after_call_gc : Cmm.label option; }
+  | Ialloc of int
   | Iintop of integer_operation
   | Iintop_imm of integer_operation * int
   | Inegf | Iabsf | Iaddf | Isubf | Imulf | Idivf
@@ -116,7 +114,7 @@ let rec instr_iter f i =
       f i;
       match i.desc with
         Iend -> ()
-      | Ireturn | Iop(Itailcall_ind _) | Iop(Itailcall_imm _) -> ()
+      | Ireturn | Iop(Itailcall_ind) | Iop(Itailcall_imm _) -> ()
       | Iifthenelse(_tst, ifso, ifnot) ->
           instr_iter f ifso; instr_iter f ifnot; instr_iter f i.next
       | Iswitch(_index, cases) ->

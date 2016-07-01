@@ -132,7 +132,7 @@ let emit_frames a =
     try
       Hashtbl.find filenames name
     with Not_found ->
-      let lbl = Cmm.new_label () in
+      let lbl = Linearize.new_label () in
       Hashtbl.add filenames name lbl;
       lbl
   in
@@ -140,7 +140,7 @@ let emit_frames a =
   let rec label_debuginfos key =
     try fst (Hashtbl.find debuginfos key)
     with Not_found ->
-      let lbl = Cmm.new_label () in
+      let lbl = Linearize.new_label () in
       let next = match key with
         | _d, (d' :: ds') -> Some (label_debuginfos (d',ds'))
         | _d, [] -> None
