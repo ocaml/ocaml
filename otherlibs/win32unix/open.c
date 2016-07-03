@@ -31,8 +31,7 @@ static int open_share_flags[15] = {
   0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, FILE_SHARE_DELETE, 0, 0
 };
 
-#define CLOEXEC 1
-#define KEEPEXEC 2
+enum { CLOEXEC = 1, KEEPEXEC = 2 };
 
 static int open_cloexec_flags[15] = {
   0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, CLOEXEC, KEEPEXEC
@@ -69,11 +68,10 @@ CAMLprim value unix_open(value path, value flags, value perm)
   cloexec = caml_convert_flag_list(flags, open_cloexec_flags);
   attr.nLength = sizeof(attr);
   attr.lpSecurityDescriptor = NULL;
-#if CLOEXEC_DEFAULT == 1
-  attr.bInheritHandle = cloexec & CLOEXEC ? FALSE : TRUE;
-#else
-  attr.bInheritHandle = cloexec & KEEPEXEC ? TRUE : FALSE;
-#endif
+  attr.bInheritHandle =
+    cloexec & CLOEXEC ? FALSE
+                      : cloexec & KEEPEXEC ? TRUE
+                                           : unix_cloexec_default;
 
   h = CreateFile(String_val(path), fileaccess,
                  sharemode, &attr,

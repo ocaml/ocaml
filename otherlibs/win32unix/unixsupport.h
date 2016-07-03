@@ -72,7 +72,7 @@ extern void caml_unix_check_path(value path, char * cmdname);
 extern value unix_freeze_buffer (value);
 extern char ** cstringvect(value arg, char * cmdname);
 
-#define CLOEXEC_DEFAULT 0
+extern int unix_cloexec_default;
 extern int unix_cloexec_p(value cloexec);
 
 /* Information stored in flags_fd, describing more precisely the socket
