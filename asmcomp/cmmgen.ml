@@ -1778,28 +1778,37 @@ and transl_prim_1 env p arg dbg =
      (* always a pointer outside the heap *)
   (* Pointer operations *)
   | Pload8 ->
-     let ptr = transl env arg in
-     tag_int (Cop(Cload Byte_unsigned, [ptr]))
+     tag_int (Cop(Cload Byte_unsigned,
+                  [transl_unbox_int env Pnativeint arg]))
   | Pload16 aligned ->
-     let ptr = transl env arg in
-     if aligned then tag_int (Cop(Cload Sixteen_unsigned, [ptr]))
-     else unaligned_load_16 ptr (Cconst_int 0)
+     let unboxed_arg = transl_unbox_int env Pnativeint arg in
+     tag_int (
+       if aligned then
+         Cop(Cload Sixteen_unsigned, [unboxed_arg])
+       else unaligned_load_16 unboxed_arg (Cconst_int 0))
   | Pload(Pint32, aligned) ->
-     let ptr = transl env arg in
-     if aligned then Cop(Cload Thirtytwo_unsigned, [ptr])
-     else unaligned_load_32 ptr (Cconst_int 0)
+     let unboxed_arg = transl_unbox_int env Pnativeint arg in
+     box_int dbg Pint32 (
+       if aligned then
+         Cop(Cload Thirtytwo_unsigned, [unboxed_arg])
+       else unaligned_load_32 unboxed_arg (Cconst_int 0))
   | Pload(Pint64, aligned) ->
      assert(size_int = 8);
-     let ptr = transl env arg in
-     if aligned then Cop(Cload Word_val, [ptr])
-     else unaligned_load_64 ptr (Cconst_int 0)
+     let unboxed_arg = transl_unbox_int env Pnativeint arg in
+     box_int dbg Pint64 (
+       if aligned then
+         Cop(Cload Word_val, [unboxed_arg])
+       else unaligned_load_64 unboxed_arg (Cconst_int 0))
   | Pload(Pnativeint, aligned) ->
-     let ptr = transl env arg in
-     if aligned then Cop(Cload Word_val, [ptr])
-     else (match size_int with
-           | 4 -> unaligned_load_32 ptr (Cconst_int 0)
-           | 8 -> unaligned_load_64 ptr (Cconst_int 0)
-           | _ -> assert false)
+     let unboxed_arg = transl_unbox_int env Pnativeint arg in
+     box_int dbg Pnativeint (
+       if aligned then
+         Cop(Cload Word_val, [unboxed_arg])
+       else
+         match size_int with
+         | 4 -> unaligned_load_32 unboxed_arg (Cconst_int 0)
+         | 8 -> unaligned_load_64 unboxed_arg (Cconst_int 0)
+         | _ -> assert false)
   (* Exceptions *)
   | Praise k ->
       Cop(Craise (k, dbg), [transl env arg])
