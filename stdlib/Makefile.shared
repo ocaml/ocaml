@@ -35,7 +35,7 @@ CAMLDEP=$(CAMLRUN) ../tools/ocamldep
 OBJS=camlinternalFormatBasics.cmo pervasives.cmo $(OTHERS)
 OTHERS=list.cmo char.cmo bytes.cmo string.cmo sys.cmo \
   sort.cmo marshal.cmo obj.cmo array.cmo \
-  int32.cmo int64.cmo nativeint.cmo \
+  int32.cmo int64.cmo nativeint.cmo ptr.cmo \
   lexing.cmo parsing.cmo \
   set.cmo map.cmo stack.cmo queue.cmo \
   camlinternalLazy.cmo lazy.cmo stream.cmo \
@@ -92,18 +92,16 @@ clean::
 clean::
 	rm -f camlheader target_camlheader camlheader_ur target_camlheader[di]
 
-.SUFFIXES: .mli .ml .cmi .cmo .cmx .p.cmx
-
-.mli.cmi:
+%.cmi: %.mli
 	$(CAMLC) $(COMPFLAGS) `./Compflags $@` -c $<
 
-.ml.cmo:
+%.cmo: %.ml %.cmi
 	$(CAMLC) $(COMPFLAGS) `./Compflags $@` -c $<
 
-.ml.cmx:
+%.cmx: %.ml %.cmi
 	$(CAMLOPT) $(COMPFLAGS) $(OPTCOMPFLAGS) `./Compflags $@` -c $<
 
-.ml.p.cmx:
+%.p.cmx: %.ml %.cmi
 	$(CAMLOPT) $(COMPFLAGS) $(OPTCOMPFLAGS) `./Compflags $@` \
 	           -p -c -o $*.p.cmx $<
 

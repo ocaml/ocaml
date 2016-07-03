@@ -137,8 +137,7 @@ parsing/pprintast.cmo : parsing/parsetree.cmi utils/misc.cmi \
 parsing/pprintast.cmx : parsing/parsetree.cmi utils/misc.cmx \
     parsing/longident.cmx parsing/location.cmx parsing/asttypes.cmi \
     parsing/pprintast.cmi
-parsing/pprintast.cmi : parsing/parsetree.cmi parsing/longident.cmi \
-    parsing/asttypes.cmi
+parsing/pprintast.cmi : parsing/parsetree.cmi
 parsing/printast.cmo : parsing/parsetree.cmi utils/misc.cmi \
     parsing/longident.cmi parsing/location.cmi parsing/asttypes.cmi \
     parsing/printast.cmi
@@ -1459,7 +1458,7 @@ middle_end/inline_and_simplify_aux.cmo : middle_end/base_types/variable.cmi \
     middle_end/projection.cmi utils/numbers.cmi \
     middle_end/base_types/mutable_variable.cmi utils/misc.cmi \
     middle_end/inlining_stats.cmi middle_end/inlining_cost.cmi \
-    middle_end/freshening.cmi middle_end/flambda.cmi \
+    middle_end/freshening.cmi middle_end/flambda.cmi bytecomp/debuginfo.cmi \
     middle_end/base_types/compilation_unit.cmi \
     middle_end/base_types/closure_id.cmi utils/clflags.cmi \
     middle_end/backend_intf.cmi middle_end/inline_and_simplify_aux.cmi
@@ -1472,7 +1471,7 @@ middle_end/inline_and_simplify_aux.cmx : middle_end/base_types/variable.cmx \
     middle_end/projection.cmx utils/numbers.cmx \
     middle_end/base_types/mutable_variable.cmx utils/misc.cmx \
     middle_end/inlining_stats.cmx middle_end/inlining_cost.cmx \
-    middle_end/freshening.cmx middle_end/flambda.cmx \
+    middle_end/freshening.cmx middle_end/flambda.cmx bytecomp/debuginfo.cmx \
     middle_end/base_types/compilation_unit.cmx \
     middle_end/base_types/closure_id.cmx utils/clflags.cmx \
     middle_end/backend_intf.cmi middle_end/inline_and_simplify_aux.cmi
@@ -2032,12 +2031,14 @@ driver/optmain.cmx : utils/warnings.cmx utils/timings.cmx asmcomp/proc.cmx \
     asmcomp/asmpackager.cmx asmcomp/asmlink.cmx asmcomp/asmlibrarian.cmx \
     asmcomp/arch.cmx driver/optmain.cmi
 driver/optmain.cmi :
-driver/pparse.cmo : utils/timings.cmi parsing/parse.cmi utils/misc.cmi \
-    parsing/location.cmi utils/config.cmi utils/clflags.cmi utils/ccomp.cmi \
-    parsing/ast_mapper.cmi parsing/ast_invariants.cmi driver/pparse.cmi
-driver/pparse.cmx : utils/timings.cmx parsing/parse.cmx utils/misc.cmx \
-    parsing/location.cmx utils/config.cmx utils/clflags.cmx utils/ccomp.cmx \
-    parsing/ast_mapper.cmx parsing/ast_invariants.cmx driver/pparse.cmi
+driver/pparse.cmo : utils/timings.cmi parsing/parsetree.cmi \
+    parsing/parse.cmi utils/misc.cmi parsing/location.cmi utils/config.cmi \
+    utils/clflags.cmi utils/ccomp.cmi parsing/ast_mapper.cmi \
+    parsing/ast_invariants.cmi driver/pparse.cmi
+driver/pparse.cmx : utils/timings.cmx parsing/parsetree.cmi \
+    parsing/parse.cmx utils/misc.cmx parsing/location.cmx utils/config.cmx \
+    utils/clflags.cmx utils/ccomp.cmx parsing/ast_mapper.cmx \
+    parsing/ast_invariants.cmx driver/pparse.cmi
 driver/pparse.cmi : parsing/parsetree.cmi
 toplevel/expunge.cmo : bytecomp/symtable.cmi bytecomp/runtimedef.cmi \
     utils/misc.cmi typing/ident.cmi bytecomp/bytesections.cmi
@@ -2110,24 +2111,24 @@ toplevel/opttopmain.cmx : utils/warnings.cmx asmcomp/printmach.cmx \
 toplevel/opttopmain.cmi :
 toplevel/opttopstart.cmo : toplevel/opttopmain.cmi
 toplevel/opttopstart.cmx : toplevel/opttopmain.cmx
-toplevel/topdirs.cmo : utils/warnings.cmi typing/typetexp.cmi \
-    typing/types.cmi toplevel/trace.cmi toplevel/toploop.cmi \
-    bytecomp/symtable.cmi typing/printtyp.cmi typing/predef.cmi \
-    typing/path.cmi parsing/parsetree.cmi bytecomp/opcodes.cmo utils/misc.cmi \
-    bytecomp/meta.cmi parsing/longident.cmi parsing/location.cmi \
-    typing/ident.cmi typing/env.cmi bytecomp/dll.cmi typing/ctype.cmi \
-    utils/consistbl.cmi utils/config.cmi bytecomp/cmo_format.cmi \
-    utils/clflags.cmi typing/btype.cmi parsing/asttypes.cmi \
-    toplevel/topdirs.cmi
-toplevel/topdirs.cmx : utils/warnings.cmx typing/typetexp.cmx \
-    typing/types.cmx toplevel/trace.cmx toplevel/toploop.cmx \
-    bytecomp/symtable.cmx typing/printtyp.cmx typing/predef.cmx \
-    typing/path.cmx parsing/parsetree.cmi bytecomp/opcodes.cmx utils/misc.cmx \
-    bytecomp/meta.cmx parsing/longident.cmx parsing/location.cmx \
-    typing/ident.cmx typing/env.cmx bytecomp/dll.cmx typing/ctype.cmx \
-    utils/consistbl.cmx utils/config.cmx bytecomp/cmo_format.cmi \
-    utils/clflags.cmx typing/btype.cmx parsing/asttypes.cmi \
-    toplevel/topdirs.cmi
+toplevel/topdirs.cmo : utils/warnings.cmi typing/untypeast.cmi \
+    typing/typetexp.cmi typing/types.cmi toplevel/trace.cmi \
+    toplevel/toploop.cmi bytecomp/symtable.cmi typing/printtyp.cmi \
+    typing/predef.cmi typing/path.cmi parsing/parsetree.cmi \
+    bytecomp/opcodes.cmo utils/misc.cmi bytecomp/meta.cmi \
+    parsing/longident.cmi parsing/location.cmi typing/ident.cmi \
+    typing/env.cmi bytecomp/dll.cmi typing/ctype.cmi utils/consistbl.cmi \
+    utils/config.cmi bytecomp/cmo_format.cmi utils/clflags.cmi \
+    typing/btype.cmi parsing/asttypes.cmi toplevel/topdirs.cmi
+toplevel/topdirs.cmx : utils/warnings.cmx typing/untypeast.cmx \
+    typing/typetexp.cmx typing/types.cmx toplevel/trace.cmx \
+    toplevel/toploop.cmx bytecomp/symtable.cmx typing/printtyp.cmx \
+    typing/predef.cmx typing/path.cmx parsing/parsetree.cmi \
+    bytecomp/opcodes.cmx utils/misc.cmx bytecomp/meta.cmx \
+    parsing/longident.cmx parsing/location.cmx typing/ident.cmx \
+    typing/env.cmx bytecomp/dll.cmx typing/ctype.cmx utils/consistbl.cmx \
+    utils/config.cmx bytecomp/cmo_format.cmi utils/clflags.cmx \
+    typing/btype.cmx parsing/asttypes.cmi toplevel/topdirs.cmi
 toplevel/topdirs.cmi : parsing/longident.cmi
 toplevel/toploop.cmo : utils/warnings.cmi typing/typetexp.cmi \
     typing/types.cmi typing/typemod.cmi typing/typedtree.cmi \

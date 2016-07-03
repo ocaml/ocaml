@@ -1,10 +1,10 @@
 type 'a t = nativeint
 
-let offset : nativeint -> 'a t -> 'a t = Nativeint.(+) [@@inline]
+let offset : nativeint -> 'a t -> 'a t = Nativeint.add [@@inline]
 external cast_ptr : 'a t -> 'b t = "%identity"
 external to_nativeint : 'a t -> nativeint = "%identity"
 external of_nativeint : nativeint -> 'a t = "%identity"
-external aligned_load8 : 'a t -> char = "%load8"
+external load8: 'a t -> char = "%load8"
 external aligned_load16 : 'a t -> int = "%aligned_load16"
 external aligned_load32 : 'a t -> int32 = "%aligned_load32"
 external aligned_load64 : 'a t -> int64 = "%aligned_load64"
