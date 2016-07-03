@@ -81,11 +81,14 @@ let print_bigarray name unsafe kind ppf layout =
      | Pbigarray_caml_int -> "camlint"
      | Pbigarray_native_int -> "nativeint"
      | Pbigarray_complex32 -> "complex32"
-     | Pbigarray_complex64 -> "complex64")
+     | Pbigarray_complex64 -> "complex64"
+     | Pbigarray_int_least31 -> "int_least31"
+    )
     (match layout with
-    |  Pbigarray_unknown_layout -> "unknown"
+     | Pbigarray_unknown_layout -> "unknown"
      | Pbigarray_c_layout -> "C"
-     | Pbigarray_fortran_layout -> "Fortran")
+     | Pbigarray_fortran_layout -> "Fortran"
+    )
 
 let record_rep ppf r =
   match r with

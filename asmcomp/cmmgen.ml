@@ -888,6 +888,7 @@ let bigarray_elt_size = function
   | Pbigarray_native_int -> size_int
   | Pbigarray_complex32 -> 8
   | Pbigarray_complex64 -> 16
+  | Pbigarray_int_least31 -> 4
 
 (* Produces a pointer to the element of the bigarray [b] on the position
    [args].  [args] is given as a list of tagged int expressions, one per array
@@ -951,6 +952,7 @@ let bigarray_word_kind = function
   | Pbigarray_native_int -> Word_int
   | Pbigarray_complex32 -> Single
   | Pbigarray_complex64 -> Double
+  | Pbigarray_int_least31 -> Thirtytwo_signed
 
 let bigarray_get unsafe elt_kind layout b args dbg =
   bind "ba" b (fun b ->

@@ -31,6 +31,7 @@ type int_elt = Int_elt
 type nativeint_elt = Nativeint_elt
 type complex32_elt = Complex32_elt
 type complex64_elt = Complex64_elt
+type int_least31_elt = Int_least31_elt
 
 type ('a, 'b) kind =
     Float32 : (float, float32_elt) kind
@@ -46,6 +47,7 @@ type ('a, 'b) kind =
   | Complex32 : (Complex.t, complex32_elt) kind
   | Complex64 : (Complex.t, complex64_elt) kind
   | Char : (char, int8_unsigned_elt) kind
+  | Int_least31 : (int, int_least31_elt) kind
 
 (* Keep those constants in sync with the caml_ba_kind enumeration
    in bigarray.h *)
@@ -63,6 +65,7 @@ let nativeint = Nativeint
 let complex32 = Complex32
 let complex64 = Complex64
 let char = Char
+let int_least31 = Int_least31
 
 let kind_size_in_bytes : type a b. (a, b) kind -> int = function
   | Float32 -> 4
@@ -78,6 +81,7 @@ let kind_size_in_bytes : type a b. (a, b) kind -> int = function
   | Complex32 -> 8
   | Complex64 -> 16
   | Char -> 1
+  | Int_least31 -> 4
 
 type c_layout = C_layout_typ
 type fortran_layout = Fortran_layout_typ

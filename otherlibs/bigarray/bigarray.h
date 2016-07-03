@@ -47,6 +47,8 @@ enum caml_ba_kind {
   CAML_BA_COMPLEX32,           /* Single-precision complex */
   CAML_BA_COMPLEX64,           /* Double-precision complex */
   CAML_BA_CHAR,                /* Characters */
+  CAML_BA_INT_LEAST31,         /* Small Caml-style integers (least signed 31 bits) */
+  CAML_BA_LAST = CAML_BA_INT_LEAST31, /* last known bigarray kind */
   CAML_BA_KIND_MASK = 0xFF     /* Mask for kind in flags field */
 };
 

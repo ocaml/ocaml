@@ -54,7 +54,8 @@ int caml_ba_element_size[] =
   4 /*INT32*/, 8 /*INT64*/,
   sizeof(value) /*CAML_INT*/, sizeof(value) /*NATIVE_INT*/,
   8 /*COMPLEX32*/, 16 /*COMPLEX64*/,
-  1 /*CHAR*/
+  1 /*CHAR*/,
+  4 /*INT_LEAST31*/,
 };
 
 /* Compute the number of bytes for the elements of a big array */
@@ -297,6 +298,8 @@ value caml_ba_get_N(value vb, value * vind, int nind)
       return copy_two_doubles(p[0], p[1]); }
   case CAML_BA_CHAR:
     return Val_int(((unsigned char *) b->data)[offset]);
+  case CAML_BA_INT_LEAST31:
+    return Val_int(((int32_t *) b->data)[offset]);
   }
 }
 
@@ -467,6 +470,8 @@ static value caml_ba_set_aux(value vb, value * vind, intnat nind, value newval)
       p[0] = Double_field(newval, 0);
       p[1] = Double_field(newval, 1);
       break; }
+  case CAML_BA_INT_LEAST31:
+    ((int32_t *) b->data)[offset] = Int_val(newval); break;
   }
   return Val_unit;
 }
@@ -769,6 +774,8 @@ static int caml_ba_compare(value v1, value v2)
   case CAML_BA_CAML_INT:
   case CAML_BA_NATIVE_INT:
     DO_INTEGER_COMPARISON(intnat);
+  case CAML_BA_INT_LEAST31:
+    DO_INTEGER_COMPARISON(int32_t);
   default:
     Assert(0);
     return 0;                   /* should not happen */
@@ -821,6 +828,7 @@ static intnat caml_ba_hash(value v)
       h = caml_hash_mix_uint32(h, p[0]);
     break;
   }
+  case CAML_BA_INT_LEAST31:
   case CAML_BA_INT32:
   {
     uint32_t * p = b->data;
@@ -918,6 +926,7 @@ static void caml_ba_serialize(value v,
   case CAML_BA_UINT16:
     caml_serialize_block_2(b->data, num_elts); break;
   case CAML_BA_FLOAT32:
+  case CAML_BA_INT_LEAST31:
   case CAML_BA_INT32:
     caml_serialize_block_4(b->data, num_elts); break;
   case CAML_BA_COMPLEX32:
@@ -974,7 +983,7 @@ uintnat caml_ba_deserialize(void * dst)
   /* Compute total number of elements */
   num_elts = caml_ba_num_elts(b);
   /* Determine element size in bytes */
-  if ((b->flags & CAML_BA_KIND_MASK) > CAML_BA_CHAR)
+  if ((b->flags & CAML_BA_KIND_MASK) > CAML_BA_LAST)
     caml_deserialize_error("input_value: bad bigarray kind");
   elt_size = caml_ba_element_size[b->flags & CAML_BA_KIND_MASK];
   /* Allocate room for data */
@@ -991,6 +1000,7 @@ uintnat caml_ba_deserialize(void * dst)
   case CAML_BA_UINT16:
     caml_deserialize_block_2(b->data, num_elts); break;
   case CAML_BA_FLOAT32:
+  case CAML_BA_INT_LEAST31:
   case CAML_BA_INT32:
     caml_deserialize_block_4(b->data, num_elts); break;
   case CAML_BA_COMPLEX32:
@@ -1251,6 +1261,12 @@ CAMLprim value caml_ba_fill(value vb, value vinit)
     double init1 = Double_field(vinit, 1);
     double * p;
     FILL_COMPLEX_LOOP;
+    break;
+  }
+  case CAML_BA_INT_LEAST31: {
+    int init = Int_val(vinit);
+    int32_t * p;
+    FILL_SCALAR_LOOP;
     break;
   }
   }
