@@ -294,6 +294,13 @@ let primitive ppf = function
   | Pbbswap(bi) -> print_boxed_integer "bswap" ppf bi
   | Pint_as_pointer -> fprintf ppf "int_as_pointer"
   | Popaque -> fprintf ppf "opaque"
+  | Pload8 -> fprintf ppf "ptr.load8"
+  | Pload16(aligned) ->
+     if aligned then fprintf ppf "ptr.aligned_load16"
+     else fprintf ppf "ptr.unaligned_load16"
+  | Pload(bi, aligned) ->
+        fprintf ppf "ptr.%saligned_load" (if aligned then "" else "un");
+        print_boxed_integer "" ppf bi
 
 let name_of_primitive = function
   | Pidentity -> "Pidentity"
@@ -390,6 +397,9 @@ let name_of_primitive = function
   | Pbbswap _ -> "Pbbswap"
   | Pint_as_pointer -> "Pint_as_pointer"
   | Popaque -> "Popaque"
+  | Pload8 -> "Pload8"
+  | Pload16 _ -> "Pload16"
+  | Pload _ -> "Pload"
 
 let function_attribute ppf { inline; specialise; is_a_functor } =
   if is_a_functor then

@@ -1196,6 +1196,8 @@ let simplif_primitive_32bits = function
       Pccall (default_prim ("caml_ba_set_" ^ string_of_int n))
   | Pstring_load_64(_) -> Pccall (default_prim "caml_string_get64")
   | Pstring_set_64(_) -> Pccall (default_prim "caml_string_set64")
+  | Pload(Pint64, true) -> Pccall (default_prim "caml_load64")
+  | Pload(Pint64, false) -> Pccall (default_prim "caml_load64_unaligned")
   | Pbigstring_load_64(_) -> Pccall (default_prim "caml_ba_uint8_get64")
   | Pbigstring_set_64(_) -> Pccall (default_prim "caml_ba_uint8_set64")
   | Pbbswap Pint64 -> Pccall (default_prim "caml_int64_bswap")
@@ -1418,6 +1420,7 @@ let rec is_unboxed_number ~strict env e =
         | Pbigstring_load_32(_) -> Boxed (Boxed_integer (Pint32, dbg), false)
         | Pbigstring_load_64(_) -> Boxed (Boxed_integer (Pint64, dbg), false)
         | Praise _ -> No_result
+        | Pload(bi, _) -> Boxed(Boxed_integer (bi, dbg), false)
         | _ -> No_unboxing
       end
   | Ulet (_, _, _, _, e) | Uletrec (_, e) | Usequence (_, e) ->
@@ -1773,6 +1776,30 @@ and transl_prim_1 env p arg dbg =
   | Pint_as_pointer ->
      Cop(Caddi, [transl env arg; Cconst_int (-1)])
      (* always a pointer outside the heap *)
+  (* Pointer operations *)
+  | Pload8 ->
+     let ptr = transl env arg in
+     tag_int (Cop(Cload Byte_unsigned, [ptr]))
+  | Pload16 aligned ->
+     let ptr = transl env arg in
+     if aligned then tag_int (Cop(Cload Sixteen_unsigned, [ptr]))
+     else unaligned_load_16 ptr (Cconst_int 0)
+  | Pload(Pint32, aligned) ->
+     let ptr = transl env arg in
+     if aligned then Cop(Cload Thirtytwo_unsigned, [ptr])
+     else unaligned_load_32 ptr (Cconst_int 0)
+  | Pload(Pint64, aligned) ->
+     assert(size_int = 8);
+     let ptr = transl env arg in
+     if aligned then Cop(Cload Word_val, [ptr])
+     else unaligned_load_64 ptr (Cconst_int 0)
+  | Pload(Pnativeint, aligned) ->
+     let ptr = transl env arg in
+     if aligned then Cop(Cload Word_val, [ptr])
+     else (match size_int with
+           | 4 -> unaligned_load_32 ptr (Cconst_int 0)
+           | 8 -> unaligned_load_64 ptr (Cconst_int 0)
+           | _ -> assert false)
   (* Exceptions *)
   | Praise k ->
       Cop(Craise (k, dbg), [transl env arg])

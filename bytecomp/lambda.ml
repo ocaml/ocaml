@@ -140,6 +140,10 @@ type primitive =
   | Pint_as_pointer
   (* Inhibition of optimisation *)
   | Popaque
+  (* Pointer operations: (assumes alignment) *)
+  | Pload8
+  | Pload16 of bool
+  | Pload of boxed_integer * bool
 
 and comparison =
     Ceq | Cneq | Clt | Cgt | Cle | Cge

@@ -324,6 +324,15 @@ let primitives_table = create_hashtable 57 [
   "%bswap_native", Pbbswap(Pnativeint);
   "%int_as_pointer", Pint_as_pointer;
   "%opaque", Popaque;
+  "%load8", Pload8;
+  "%unaligned_load16", Pload16(false);
+  "%aligned_load16", Pload16(true);
+  "%unaligned_load32", Pload(Pint32, false); 
+  "%aligned_load32", Pload(Pint32, true);
+  "%unaligned_load64", Pload(Pint64, false); 
+  "%aligned_load64", Pload(Pint64, true);
+  "%unaligned_loadnative", Pload(Pnativeint, false); 
+  "%aligned_loadnative", Pload(Pnativeint, true);
 ]
 
 let find_primitive loc prim_name =

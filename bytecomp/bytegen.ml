@@ -421,6 +421,11 @@ let comp_primitive p args =
   | Pbswap16 -> Kccall("caml_bswap16", 1)
   | Pbbswap(bi) -> comp_bint_primitive bi "bswap" args
   | Pint_as_pointer -> Kccall("caml_int_as_pointer", 1)
+  | Pload8 -> Kccall("caml_load_byte", 1)
+  | Pload16(_) -> Kccall("caml_load16", 1)
+  | Pload(Pnativeint, _) -> Kccall("caml_load_nativeint", 1)
+  | Pload(Pint32, _) -> Kccall("caml_load32", 1)
+  | Pload(Pint64, _) -> Kccall("caml_load64", 1)
   | _ -> fatal_error "Bytegen.comp_primitive"
 
 let is_immed n = immed_min <= n && n <= immed_max
