@@ -150,6 +150,12 @@ let _ =
                   Complex.i, Complex.i;
                   {im=0.5;re= -2.0}, {im=0.5;re= -2.0};
                   {im=3.1415;re=1.2345678}, {im=3.1415;re=1.2345678}]);
+  test 13 true
+    (test_setget int_least31
+                 [0, 0;
+                  123, 123;
+                  -456, -456;
+                  0x12345678, 0x12345678]);
 
   let from_list kind vals =
     let a = Array1.create kind c_layout (List.length vals) in
@@ -186,7 +192,7 @@ let _ =
         && Array1.unsafe_get fb (i     ) = v
         && Array1.unsafe_get fb (i + 10) = v
     done;
-    test 13 true !return
+    test 14 true !return
   end;
   begin
     let v = 123 in
@@ -205,7 +211,7 @@ let _ =
         && Array1.unsafe_get fb (i     ) = v
         && Array1.unsafe_get fb (i + 10) = v
     done;
-    test 14 true !return
+    test 15 true !return
   end;
   begin
     let v = 123. in
@@ -224,7 +230,7 @@ let _ =
         && Array1.unsafe_get fb (i     ) = v
         && Array1.unsafe_get fb (i + 10) = v
     done;
-    test 15 true !return
+    test 16 true !return
   end;
 
   begin
@@ -244,7 +250,26 @@ let _ =
         && Array1.unsafe_get fb (i     ) = v
         && Array1.unsafe_get fb (i + 10) = v
     done;
-    test 16 true !return
+    test 17 true !return
+  end;
+  begin
+    let v = 123 in
+    let cb = Array1.create int_least31 c_layout 1000 in
+    let fb = Array1.create int_least31 fortran_layout 1000 in
+    Array1.fill cb v;
+    Array1.fill fb v;
+    let return = ref true in
+    for i = 1 to 99 do
+      let i = i * 10 in
+      return := !return
+        && Array1.unsafe_get cb (i - 10) = v
+        && Array1.unsafe_get cb (i     ) = v
+        && Array1.unsafe_get cb (i +  9) = v
+        && Array1.unsafe_get fb (i -  9) = v
+        && Array1.unsafe_get fb (i     ) = v
+        && Array1.unsafe_get fb (i + 10) = v
+    done;
+    test 18 true !return
   end;
 
   testing_function "set/get (specialized)";
@@ -272,6 +297,12 @@ let _ =
   test 18 true (try ignore d.{4}; false with Invalid_argument _ -> true);
   test 19 true (try ignore d.{0}; false with Invalid_argument _ -> true);
 
+  let a = Array1.create int_least31 c_layout 3 in
+  for i = 0 to 2 do a.{i} <- i done;
+  for i = 0 to 2 do test (i+20) a.{i} i done;
+  test 23 true (try ignore a.{3}; false with Invalid_argument _ -> true);
+  test 24 true (try ignore a.{-1}; false with Invalid_argument _ -> true);
+
   testing_function "set/get (unsafe, specialized)";
   let a = Array1.create int c_layout 3 in
   for i = 0 to 2 do Array1.unsafe_set a i i done;
@@ -280,6 +311,10 @@ let _ =
   let b = Array1.create float64 fortran_layout 3 in
   for i = 1 to 3 do Array1.unsafe_set b i (float i) done;
   for i = 1 to 3 do test (5 + i) (Array1.unsafe_get b i) (float i) done;
+
+  let a = Array1.create int_least31 c_layout 3 in
+  for i = 0 to 2 do Array1.unsafe_set a i i done;
+  for i = 0 to 2 do test (i+9) (Array1.unsafe_get a i) i done;
 
   testing_function "comparisons";
   let normalize_comparison n =
@@ -410,6 +445,16 @@ let _ =
      (from_list complex64 [Complex.zero; Complex.one; Complex.one])
      (from_list complex64 [Complex.zero; Complex.one; Complex.i])));
 
+  test 50 0 (normalize_comparison (compare
+     (from_list int_least31 [1;2;3;-4;127;-128])
+     (from_list int_least31 [1;2;3;-4;127;-128])));
+  test 51 (-1) (normalize_comparison (compare
+     (from_list int_least31 [1;2;3;-4;127;-128])
+     (from_list int_least31 [1;2;3;4;127;-128])));
+  test 52 1 (normalize_comparison (compare
+     (from_list int_least31 [1;2;3;-4;127;-128])
+     (from_list int_least31 [1;2;3;-4;42;-128])));
+
   testing_function "dim";
   test 1 (Array1.dim (from_list int [1;2;3;4;5])) 5;
   test 2 (Array1.dim (from_list_fortran int [1;2;3])) 3;
@@ -421,6 +466,8 @@ let _ =
   let int64list = (from_list int64 (List.map Int64.of_int [1;2;3;4;5])) in
   test 3 (Array1.size_in_bytes int64list) (5 * (kind_size_in_bytes int64));
   test 4 (Array1.size_in_bytes (from_list int64 (List.map Int64.of_int []))) 0;
+  test 5 (Array1.size_in_bytes (from_list int_least31 [1;2;3;4;5]))
+    (5 * (kind_size_in_bytes int_least31));
 
   testing_function "kind & layout";
   let a = from_list int [1;2;3] in
@@ -452,6 +499,13 @@ let _ =
          (from_list_fortran float64 [1.0;2.0]);
   test 9 (Array1.sub a 1 8)
          (from_list_fortran float64 [1.0;2.0;3.0;4.0;5.0;6.0;7.0;8.0]);
+  let a = from_list int_least31 [1;2;3;4;5;6;7;8] in
+  test 10 (Array1.sub a 2 5)
+          (from_list int_least31 [3;4;5;6;7]);
+  test 11 (Array1.sub a 0 2)
+          (from_list int_least31 [1;2]);
+  test 12 (Array1.sub a 0 8)
+          (from_list int_least31 [1;2;3;4;5;6;7;8]);
   Gc.full_major();  (* test GC of proxies *)
 
   testing_function "blit, fill";
@@ -487,6 +541,7 @@ let _ =
                              Complex.i 1 1);
   test 12 true (test_blit_fill complex64 [Complex.zero; Complex.one; Complex.i]
                              Complex.i 1 1);
+  test 13 true (test_blit_fill int_least31 [1;2;5;8;-100;212] 7 3 2);
 
 (* Bi-dimensional arrays *)
 
@@ -551,6 +606,10 @@ let _ =
   test 14 true
     (check_array2 (make_array2 complex64 fortran_layout 1 10 20 makecomplex)
                   1 10 20 makecomplex);
+  test 15 true
+    (check_array2 (make_array2 int_least31 c_layout 0 10 20 id) 0 10 20 id);
+  test 16 true
+    (check_array2 (make_array2 int_least31 fortran_layout 1 10 20 id) 1 10 20 id);
 
   testing_function "set/get (specialized)";
   let a = Array2.create int16_signed c_layout 3 3 in
@@ -716,6 +775,10 @@ let _ =
   test 14 true
     (check_array3 (make_array3 complex64 fortran_layout 1 4 5 6 makecomplex)
                   1 4 5 6 makecomplex);
+  test 15 true
+    (check_array3 (make_array3 int_least31 c_layout 0 4 5 6 id) 0 4 5 6 id);
+  test 16 true
+    (check_array3 (make_array3 int_least31 fortran_layout 1 4 5 6 id) 1 4 5 6 id);
 
 
   testing_function "set/get (specialized)";
@@ -808,6 +871,8 @@ let _ =
   test 12 (kind_size_in_bytes Complex64) (Array1.size_in_bytes arr1);
   let arr1 = Array1.create Char c_layout 1 in
   test 13 (kind_size_in_bytes Char) (Array1.size_in_bytes arr1);
+  let arr1 = Array1.create Int_least31 c_layout 1 in
+  test 14 (kind_size_in_bytes Int_least31) (Array1.size_in_bytes arr1);
 
 (* Reshaping *)
   print_newline();
@@ -864,6 +929,10 @@ let _ =
   test_structured_io 13 (make_array2 complex32 c_layout 0 100 100 makecomplex);
   test_structured_io 14 (make_array3 complex64 fortran_layout 1 10 20 30
                                      makecomplex);
+  test_structured_io 15 (from_list int_least31 [1;2;3;-4;127;-128]);
+  test_structured_io 16 (make_array2 int_least31 c_layout 0 100 100 id);
+  test_structured_io 17 (make_array3 int_least31 fortran_layout 1 10
+			             20 30 id);
 
   testing_function "map_file";
   let mapped_file = Filename.temp_file "bigarray" ".data" in
