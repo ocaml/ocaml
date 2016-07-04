@@ -7,6 +7,7 @@ modules :=\
   filetype.cmo \
   filecompare.cmo \
   backends.cmo \
+  variables.cmo \
   environments.cmo \
   builtin_environments.cmo \
   actions.cmo \

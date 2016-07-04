@@ -15,8 +15,6 @@
 
 (* Definition of environments, used to pass parameters to tests and actions *)
 
-exception Empty_variable_name
-
 exception Empty_environment_name
 
 exception Variable_already_defined of string
@@ -42,7 +40,7 @@ let add_aux variable value env =
   else StringMap.add variable value env
 
 let add variable value env =
-  if variable="" then raise Empty_variable_name
+  if variable="" then raise Variables.Empty_variable_name
   else add_aux variable value env
 
 let add_variables bindings env =

@@ -13,30 +13,36 @@
 (*                                                                        *)
 (**************************************************************************)
 
-(* Definition of environments, used to pass parameters to tests and actions *)
+(* Definition of environment variabless *)
 
-exception Empty_environment_name
+type t = {
+  variable_name : string;
+  variable_description : string
+}
 
-exception Variable_already_defined of string
+let compare v1 v2 = String.compare v1.variable_name v2.variable_name
 
-exception Environment_already_registered of string
+exception Empty_variable_name
 
-exception Environment_not_found of string
+exception Variable_already_registered
 
-type t
+let make (name, description) =
+  if name="" then raise Empty_variable_name else {
+    variable_name = name;
+    variable_description = description
+  }
 
-val empty : t
+let name_of_variable v = v.variable_name
 
-val from_list : (string * string) list -> t
+let description_of_variable v = v.variable_description
 
-val lookup : string -> t -> string option
-val safe_lookup : string -> t -> string
+let (variables : (string, t) Hashtbl.t) = Hashtbl.create 10
 
-val add : string -> string -> t -> t
-val add_variables : (string * string) list -> t -> t
+let register_variable variable =
+  if Hashtbl.mem variables variable.variable_name
+  then raise Variable_already_registered
+  else Hashtbl.add variables variable.variable_name variable
 
-val register : string -> t -> unit
-
-val include_ : string -> t -> t
-
-val dump : out_channel -> t -> unit
+let find_variable variable_name =
+  try Some (Hashtbl.find variables variable_name)
+  with Not_found -> None
