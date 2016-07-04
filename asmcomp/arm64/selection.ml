@@ -96,7 +96,7 @@ method is_immediate n =
 
 method! is_simple_expr = function
   (* inlined floating-point ops are simple if their arguments are *)
-  | Cop(Cextcall(fn, _, _, _), args) when List.mem fn inline_ops ->
+  | Cop(Cextcall { func; _ }, args) when List.mem func inline_ops ->
       List.for_all self#is_simple_expr args
   | e -> super#is_simple_expr e
 
@@ -221,12 +221,12 @@ method! select_operation op args =
   | Cextcall("sqrt", _, _, _) ->
       (Ispecific Isqrtf, args)
   (* Recognize bswap instructions *)
-  | Cextcall("caml_bswap16_direct", _, _, _) ->
+  | Cextcall("caml_bswap16_direct", _, _, _, _) ->
       (Ispecific(Ibswap 16), args)
-  | Cextcall("caml_int32_direct_bswap", _, _, _) ->
+  | Cextcall("caml_int32_direct_bswap", _, _, _, _) ->
       (Ispecific(Ibswap 32), args)
   | Cextcall(("caml_int64_direct_bswap"|"caml_nativeint_direct_bswap"),
-              _, _, _) ->
+              _, _, _, _) ->
       (Ispecific (Ibswap 64), args)
   (* Other operations are regular *)
   | _ ->
