@@ -13,6 +13,8 @@
 /*                                                                        */
 /**************************************************************************/
 
+#define CAML_INTERNALS
+
 #include <signal.h>
 #include "libgraph.h"
 #include <caml/alloc.h>

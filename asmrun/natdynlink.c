@@ -13,10 +13,12 @@
 /*                                                                        */
 /**************************************************************************/
 
+#define CAML_INTERNALS
+
 #include "caml/misc.h"
 #include "caml/mlvalues.h"
 #include "caml/memory.h"
-#include "stack.h"
+#include "caml/stack.h"
 #include "caml/callback.h"
 #include "caml/alloc.h"
 #include "caml/intext.h"

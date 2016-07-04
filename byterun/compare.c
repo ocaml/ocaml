@@ -13,6 +13,8 @@
 /*                                                                        */
 /**************************************************************************/
 
+#define CAML_INTERNALS
+
 #include <string.h>
 #include <stdlib.h>
 #include "caml/custom.h"

@@ -16,6 +16,8 @@
 #ifndef CAML_GC_CTRL_H
 #define CAML_GC_CTRL_H
 
+#ifdef CAML_INTERNALS
+
 #include "misc.h"
 
 extern double
@@ -50,5 +52,7 @@ CAMLextern value caml_gc_stat(value v);
 #ifdef DEBUG
 void caml_heap_check (void);
 #endif
+
+#endif /* CAML_INTERNALS */
 
 #endif /* CAML_GC_CTRL_H */

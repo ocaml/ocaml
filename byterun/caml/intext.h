@@ -122,7 +122,7 @@ CAMLextern intnat caml_output_value_to_block(value v, value flags,
      in bytes.  Return the number of bytes actually written in buffer.
      Raise [Failure] if buffer is too short. */
 
-/* <private> */
+#ifdef CAML_INTERNALS
 value caml_input_val (struct channel * chan);
   /* Read a structured value from the channel [chan]. */
 
@@ -136,7 +136,7 @@ extern int caml_extern_allow_out_of_heap;
      values but do not live in the OCaml heap. */
 
 extern value caml_output_value(value vchan, value v, value flags);
-/* </private> */
+#endif /* CAML_INTERNALS */
 
 CAMLextern value caml_input_val_from_string (value str, intnat ofs);
   /* Read a structured value from the OCaml string [str], starting
@@ -183,7 +183,7 @@ CAMLextern void caml_deserialize_block_8(void * data, intnat len);
 CAMLextern void caml_deserialize_block_float_8(void * data, intnat len);
 CAMLextern void caml_deserialize_error(char * msg);
 
-/* <private> */
+#ifdef CAML_INTERNALS
 
 /* Auxiliary stuff for sending code pointers */
 
@@ -198,7 +198,7 @@ CAMLextern struct code_fragment * caml_extern_find_code(char *addr);
 
 struct ext_table caml_code_fragments_table;
 
-/* </private> */
+#endif /* CAML_INTERNALS */
 
 #ifdef __cplusplus
 }

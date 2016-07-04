@@ -13,6 +13,8 @@
 /*                                                                        */
 /**************************************************************************/
 
+#define CAML_INTERNALS
+
 /* The interface of this file is in "caml/mlvalues.h" and "caml/alloc.h" */
 
 #include <math.h>

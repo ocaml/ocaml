@@ -192,6 +192,12 @@ These files reside in the "caml/" subdirectory of the OCaml
 standard library directory, which is returned by the command
 "ocamlc -where" (usually "/usr/local/lib/ocaml" or "/usr/lib/ocaml").
 
+By default, header files in the "caml/" subdirectory give only access
+to the public interface of the OCaml runtime. It is possible to define
+the macro "CAML_INTERNALS" to get access to a lower-level interface,
+but this lower-level interface is more likely to change and break
+programs that use it.
+
 {\bf Note:} It is recommended to define the macro "CAML_NAME_SPACE"
 before including these header files. If you do not define it, the
 header files will also define short names (without the "caml_" prefix)

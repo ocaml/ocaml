@@ -19,6 +19,8 @@
 #ifndef CAML_INT64_FORMAT_H
 #define CAML_INT64_FORMAT_H
 
+#ifdef CAML_INTERNALS
+
 static void I64_format(char * buffer, char * fmt, int64_t x)
 {
   static char conv_lower[] = "0123456789abcdef";
@@ -103,5 +105,7 @@ static void I64_format(char * buffer, char * fmt, int64_t x)
   }
   *p = 0;
 }
+
+#endif /* CAML_INTERNALS */
 
 #endif /* CAML_INT64_FORMAT_H */

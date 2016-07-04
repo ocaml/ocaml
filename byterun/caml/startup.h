@@ -16,6 +16,8 @@
 #ifndef CAML_STARTUP_H
 #define CAML_STARTUP_H
 
+#ifdef CAML_INTERNALS
+
 #include "mlvalues.h"
 #include "exec.h"
 
@@ -37,5 +39,6 @@ extern int32_t caml_seek_optional_section(int fd, struct exec_trailer *trail,
 extern int32_t caml_seek_section(int fd, struct exec_trailer *trail,
                                  char *name);
 
+#endif /* CAML_INTERNALS */
 
 #endif /* CAML_STARTUP_H */

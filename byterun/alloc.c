@@ -13,6 +13,8 @@
 /*                                                                        */
 /**************************************************************************/
 
+#define CAML_INTERNALS
+
 /* 1. Allocation functions doing the same work as the macros in the
       case where [Setup_for_gc] and [Restore_after_gc] are no-ops.
    2. Convenience functions related to allocation.

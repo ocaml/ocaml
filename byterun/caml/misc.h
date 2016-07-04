@@ -36,9 +36,9 @@ typedef size_t asize_t;
 #define NULL 0
 #endif
 
-/* <private> */
+#ifdef CAML_INTERNALS
 typedef char * addr;
-/* </private> */
+#endif /* CAML_INTERNALS */
 
 /* Noreturn is preserved for compatibility reasons.
    Instead of the legacy GCC/Clang-only
@@ -124,7 +124,7 @@ CAMLnoreturn_end;
 CAMLextern char * caml_strdup(const char * s);
 CAMLextern char * caml_strconcat(int n, ...); /* n args of const char * type */
 
-/* <private> */
+#ifdef CAML_INTERNALS
 
 /* Data structures */
 
@@ -302,7 +302,7 @@ extern void CAML_INSTR_ATEXIT (void);
 
 #endif /* CAML_INSTR */
 
-/* </private> */
+#endif /* CAML_INTERNALS */
 
 #ifdef __cplusplus
 }

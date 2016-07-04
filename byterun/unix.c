@@ -13,6 +13,8 @@
 /*                                                                        */
 /**************************************************************************/
 
+#define CAML_INTERNALS
+
 /* Unix-specific stuff */
 
 #define _GNU_SOURCE

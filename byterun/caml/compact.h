@@ -16,6 +16,7 @@
 #ifndef CAML_COMPACT_H
 #define CAML_COMPACT_H
 
+#ifdef CAML_INTERNALS
 
 #include "config.h"
 #include "misc.h"
@@ -23,5 +24,6 @@
 extern void caml_compact_heap (void);
 extern void caml_compact_heap_maybe (void);
 
+#endif /* CAML_INTERNALS */
 
 #endif /* CAML_COMPACT_H */

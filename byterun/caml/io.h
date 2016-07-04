@@ -18,6 +18,8 @@
 #ifndef CAML_IO_H
 #define CAML_IO_H
 
+#ifdef CAML_INTERNALS
+
 #include "misc.h"
 #include "mlvalues.h"
 
@@ -114,5 +116,7 @@ CAMLextern struct channel * caml_all_opened_channels;
 
 #define Val_file_offset(fofs) caml_copy_int64(fofs)
 #define File_offset_val(v) ((file_offset) Int64_val(v))
+
+#endif /* CAML_INTERNALS */
 
 #endif /* CAML_IO_H */

@@ -16,6 +16,8 @@
 #ifndef CAML_ROOTS_H
 #define CAML_ROOTS_H
 
+#ifdef CAML_INTERNALS
+
 #include "misc.h"
 #include "memory.h"
 
@@ -36,5 +38,7 @@ CAMLextern void caml_do_local_roots(scanning_action f, char * bottom_of_stack,
 #endif
 
 CAMLextern void (*caml_scan_roots_hook) (scanning_action);
+
+#endif /* CAML_INTERNALS */
 
 #endif /* CAML_ROOTS_H */

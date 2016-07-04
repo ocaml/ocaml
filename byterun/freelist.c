@@ -13,6 +13,8 @@
 /*                                                                        */
 /**************************************************************************/
 
+#define CAML_INTERNALS
+
 #define FREELIST_DEBUG 0
 #if FREELIST_DEBUG
 #include <stdio.h>

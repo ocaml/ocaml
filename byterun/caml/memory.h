@@ -22,11 +22,11 @@
 #include "compatibility.h"
 #endif
 #include "config.h"
-/* <private> */
+#ifdef CAML_INTERNALS
 #include "gc.h"
 #include "major_gc.h"
 #include "minor_gc.h"
-/* </private> */
+#endif /* CAML_INTERNALS */
 #include "misc.h"
 #include "mlvalues.h"
 
@@ -57,7 +57,7 @@ CAMLextern int caml_huge_fallback_count;
 
 /* void caml_shrink_heap (char *);        Only used in compact.c */
 
-/* <private> */
+#ifdef CAML_INTERNALS
 
 extern uintnat caml_use_huge_pages;
 
@@ -105,7 +105,7 @@ int caml_page_table_initialize(mlsize_t bytesize);
 
 #define Modify(fp,val) caml_modify((fp), (val))
 
-/* </private> */
+#endif /* CAML_INTERNALS */
 
 struct caml__roots_block {
   struct caml__roots_block *next;

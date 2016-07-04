@@ -16,6 +16,8 @@
 #ifndef CAML_SYS_H
 #define CAML_SYS_H
 
+#ifdef CAML_INTERNALS
+
 #include "misc.h"
 
 #define NO_ARG Val_int(0)
@@ -28,5 +30,7 @@ CAMLextern value caml_sys_exit (value);
 CAMLextern value caml_sys_get_argv(value unit);
 
 extern char * caml_exe_name;
+
+#endif /* CAML_INTERNALS */
 
 #endif /* CAML_SYS_H */
