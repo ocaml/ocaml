@@ -114,19 +114,23 @@ let rewrite kind ppxs ast =
 
 type rewriter_kind =
   | External of string
-  | InProcess of Ast_mapper.mapper
+  | InProcess of Longident.t * Ast_mapper.mapper
 
 let installed_ppxs = ref []
 
+let disable_in_process_ppx lid =
+  installed_ppxs :=
+    List.filter (function InProcess (l,_) when l=lid -> false | _ -> true) !installed_ppxs
+
 let clear_ppx () = installed_ppxs := []
-let clear_in_process_ppx () =
+let clear_in_process_ppxs () =
   installed_ppxs := List.filter (function External _ -> true | _ -> false) !installed_ppxs
 
 let add_external_ppx ~path =
   installed_ppxs := (External path) :: !installed_ppxs
 
-let add_in_process_ppx mapper =
-  installed_ppxs := (InProcess mapper) :: !installed_ppxs
+let add_in_process_ppx ident mapper =
+  installed_ppxs := (InProcess (ident, mapper)) :: !installed_ppxs
 
 let apply_rewriters_str ?(restore = true) ~tool_name ast =
   List.fold_right (fun ppx ast ->
@@ -136,7 +140,7 @@ let apply_rewriters_str ?(restore = true) ~tool_name ast =
        |> Ast_mapper.add_ppx_context_str ~tool_name
        |> rewrite Structure [path]
        |> Ast_mapper.drop_ppx_context_str ~restore
-    | InProcess mapper ->
+    | InProcess (_,mapper) ->
         Ast_mapper.(mapper.structure mapper ast)
   ) !installed_ppxs ast
 
@@ -148,7 +152,7 @@ let apply_rewriters_sig ?(restore = true) ~tool_name ast =
        |> Ast_mapper.add_ppx_context_sig ~tool_name
        |> rewrite Signature [path]
        |> Ast_mapper.drop_ppx_context_sig ~restore
-    | InProcess mapper ->
+    | InProcess (_,mapper) ->
         Ast_mapper.(mapper.signature mapper ast)
   ) !installed_ppxs ast
 

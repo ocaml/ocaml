@@ -31,11 +31,15 @@ type 'a ast_kind =
 val clear_ppx : unit -> unit
 (** Forget about all installed rewriters: in-process and external ones *)
 
-val clear_in_process_ppx: unit -> unit
+val clear_in_process_ppxs: unit -> unit
 (** Forget about all installed in-process rewriters *)
 
+val disable_in_process_ppx: Longident.t -> unit
+(** [diable_in_process_ppx lid] forgets in-process ppx installed using
+    specified `lid` *)
+
 val add_external_ppx : path:string -> unit
-val add_in_process_ppx : Ast_mapper.mapper -> unit
+val add_in_process_ppx : Longident.t -> Ast_mapper.mapper -> unit
 
 val read_ast : 'a ast_kind -> string -> 'a
 val write_ast : 'a ast_kind -> string -> 'a -> unit

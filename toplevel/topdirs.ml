@@ -416,7 +416,7 @@ let install_ppx_mapper ppf (lid: Longident.t) =
     Ctype.end_def();
 
     let mapper = eval_path !toplevel_env path in
-    Pparse.add_in_process_ppx (Obj.obj mapper)
+    Pparse.add_in_process_ppx lid (Obj.obj mapper)
   with
   | Ctype.Unify _ ->
       fprintf ppf "Type of the value should be 'Ast_mapper.mapper'. Nothing added.\n%!"
@@ -430,24 +430,23 @@ let _ = add_directive "ppx"
           syntax tree through the preprocessor command.";
     }
 
-let _ = add_directive "plugin_ppx"
+let _ = add_directive "in_process_ppx"
     (Directive_ident(install_ppx_mapper std_out))
     {
       section = section_options;
       doc = "After parsing, pipe the abstract \
-          syntax tree to specified PPX mappers.";
+          syntax tree to specified PPX mapper.";
     }
 
-let _ = add_directive "ppxs_clear"
-    (Directive_none Pparse.clear_ppx)
+let _ = add_directive "remove_in_process_ppx"
+    (Directive_ident Pparse.disable_in_process_ppx)
     {
       section = section_options;
-      doc = "Forget all added PPX preprocessor \
-             (external and in-process)";
+      doc = "Forget specified in-process PPX preprocessor";
     }
 
-let _ = add_directive "remove_in_process_ppxs"
-    (Directive_none Pparse.clear_in_process_ppx)
+let _ = add_directive "clear_in_process_ppxs"
+    (Directive_none Pparse.clear_in_process_ppxs)
     {
       section = section_options;
       doc = "Forget all added in process PPX preprocessors";

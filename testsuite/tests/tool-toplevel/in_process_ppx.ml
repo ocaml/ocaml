@@ -1,4 +1,4 @@
-#ppxs_clear;;
+#clear_in_process_ppxs;;
 #dump_parsetree false;;
 #dump_source false;;
 #directory "../../../utils";;
@@ -49,7 +49,9 @@ let mapper2 =
     }
 ;;
 
-#plugin_ppx mapper1;;
-#plugin_ppx mapper2;;
+#in_process_ppx mapper1;;
+#in_process_ppx mapper2;;
 print_char 'a';;
-#plugin_ppx print_endline;;
+#in_process_ppx print_endline;;
+#remove_in_process_ppx mapper1;;
+#remove_in_process_ppx mapper2;;
