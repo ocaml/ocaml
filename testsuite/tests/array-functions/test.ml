@@ -26,7 +26,7 @@ let () =
   assert (not (Array.exists (fun a -> a mod 2 = 0)  [|1;3;5|]));
   assert (not (Array.exists (fun _ -> true) [||]));
   assert (Array.exists (fun a -> a.(9) = 1) (Array.make_matrix 10 10 1));
-  let f = Array.make_float 10 in
+  let f = Array.create_float 10 in
   Array.fill f 0 10 1.0;
   assert (Array.exists (fun a -> a = 1.0) f);
 ;;
@@ -99,7 +99,7 @@ let () =
   assert (not (Array.for_all (fun x -> x mod 2 = 0) [|2;3;6|]));
   assert (Array.for_all (fun _ -> false) [||]);
   assert (Array.for_all (fun a -> a.(9) = 1) (Array.make_matrix 10 10 1));
-  let f = Array.make_float 10 in
+  let f = Array.create_float 10 in
   Array.fill f 0 10 1.0;
   assert (Array.for_all (fun a -> a = 1.0) f);
 ;;
@@ -147,7 +147,7 @@ let () =
   assert (Array.mem [|1;2;3|] [|[|1;2;3|];[|2;3;4|];[|0|]|]);
   assert (Array.mem 1 (Array.make 100 1));
   assert (Array.mem (ref 1) (Array.make 100 (ref 1)));
-  let f = Array.make_float 10 in
+  let f = Array.create_float 10 in
   Array.fill f 0 10 1.0;
   assert (Array.mem 1.0 f);
 ;;
@@ -174,7 +174,7 @@ let () =
   assert (not (Array.memq [|1;2;3|] [|[|1;2;3|];[|2;3;4|];[|0|]|]));
   assert (Array.memq 1 (Array.make 100 1));
   assert (not (Array.memq (ref 1) (Array.make 100 (ref 1))));
-  let f = Array.make_float 10 in
+  let f = Array.create_float 10 in
   Array.fill f 0 10 1.0;
   assert (not (Array.memq 1.0 f));
 ;;

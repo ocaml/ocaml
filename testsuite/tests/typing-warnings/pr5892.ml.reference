@@ -6,7 +6,7 @@
   let f : label choice -> bool = function Left -> true;; (* warn *)
                                  ^^^^^^^^^^^^^^^^^^^^^
 Warning 8: this pattern-matching is not exhaustive.
-Here is an example of a value that is not matched:
+Here is an example of a case that is not matched:
 Right
 val f : CamlinternalOO.label choice -> bool = <fun>
 # 

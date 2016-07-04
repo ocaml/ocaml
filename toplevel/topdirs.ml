@@ -569,9 +569,19 @@ let () =
 let () =
   reg_show_prim "show_module"
     (fun env loc id lid ->
-       let _path, md = Typetexp.find_module env loc lid in
-       [ Sig_module (id, {md with md_type = trim_signature md.md_type},
-                     Trec_not) ]
+       let rec accum_aliases lid acc =
+         let _, md = Typetexp.find_module env loc lid in
+         let acc =
+           Sig_module (id, {md with md_type = trim_signature md.md_type},
+                       Trec_not) :: acc in
+         match md.md_type with
+         | Mty_alias path ->
+             let lid' = Untypeast.lident_of_path path in
+             accum_aliases lid' acc
+         | Mty_ident _ | Mty_signature _ | Mty_functor _ ->
+             List.rev acc
+       in
+       accum_aliases lid []
     )
     "Print the signature of the corresponding module."
 

@@ -19,7 +19,7 @@ let x = N.f A;;
 type (_, _) t = A : ('a, 'a) t | B : string -> ('a, 'b) t
 Line _, characters 52-74:
 Warning 8: this pattern-matching is not exhaustive.
-Here is an example of a value that is not matched:
+Here is an example of a case that is not matched:
 A
 module M :
   functor (A : sig module type T end) (B : sig module type T end) ->

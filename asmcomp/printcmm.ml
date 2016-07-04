@@ -98,7 +98,7 @@ let rec expr ppf = function
   | Cconst_int n -> fprintf ppf "%i" n
   | Cconst_natint n ->
     fprintf ppf "%s" (Nativeint.to_string n)
-  | Cconst_blockheader(n, d) ->
+  | Cblockheader(n, d) ->
     fprintf ppf "block-hdr(%s)%s"
       (Nativeint.to_string n) (Debuginfo.to_string d)
   | Cconst_float n -> fprintf ppf "%F" n

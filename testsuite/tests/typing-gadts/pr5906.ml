@@ -25,7 +25,7 @@ type (_, _, _) binop =
   | Add : (int, int, int) binop
 Line _, characters 2-195:
 Warning 8: this pattern-matching is not exhaustive.
-Here is an example of a value that is not matched:
+Here is an example of a case that is not matched:
 (Eq, Int _, _)
 val eval : ('a, 'b, 'c) binop -> 'a constant -> 'b constant -> 'c constant =
   <fun>

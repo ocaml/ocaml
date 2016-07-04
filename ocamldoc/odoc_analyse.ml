@@ -18,7 +18,6 @@
 
 let print_DEBUG s = print_string s ; print_newline ()
 
-open Config
 open Format
 open Typedtree
 
@@ -28,7 +27,7 @@ open Typedtree
    then the directories specified with the -I option (in command-line order),
    then the standard library directory. *)
 let init_path () =
-  load_path :=
+  Config.load_path :=
     "" :: List.rev (Config.standard_library :: !Clflags.include_dirs);
   Env.reset_cache ()
 
@@ -88,7 +87,7 @@ let process_implementation_file sourcefile =
   try
     let parsetree =
       Pparse.file ~tool_name Format.err_formatter inputfile
-        (no_docstring Parse.implementation) ast_impl_magic_number
+        (no_docstring Parse.implementation) Pparse.Structure
     in
     let typedtree =
       Typemod.type_implementation
@@ -119,7 +118,7 @@ let process_interface_file sourcefile =
   let inputfile = preprocess sourcefile in
   let ast =
     Pparse.file ~tool_name Format.err_formatter inputfile
-      (no_docstring Parse.interface) ast_intf_magic_number
+      (no_docstring Parse.interface) Pparse.Signature
   in
   let sg = Typemod.type_interface (initial_env()) ast in
   Warnings.check_fatal ();
