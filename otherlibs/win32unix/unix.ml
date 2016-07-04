@@ -842,11 +842,19 @@ let make_process_env env =
     env;
   String.concat "\000" (Array.to_list env) ^ "\000"
 
+let create_process_aux prog args optenv fd1 fd2 fd3 =
+  let fd1 = dup ~cloexec:false fd1 in
+  let fd2 = dup ~cloexec:false fd2 in
+  let fd3 = dup ~cloexec:false fd3 in
+  let res = win_create_process prog args optenv fd1 fd2 fd3 in
+  close fd1; close fd2; close fd3;
+  res
+
 let create_process prog args fd1 fd2 fd3 =
-  win_create_process prog (make_cmdline args) None fd1 fd2 fd3
+  create_process_aux prog (make_cmdline args) None fd1 fd2 fd3
 
 let create_process_env prog args env fd1 fd2 fd3 =
-  win_create_process prog (make_cmdline args)
+  create_process_aux prog (make_cmdline args)
                      (Some(make_process_env env))
                      fd1 fd2 fd3
 

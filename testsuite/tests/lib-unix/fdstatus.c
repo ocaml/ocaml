@@ -12,10 +12,7 @@
 
 void process_fd(char * s)
 {
-  long n;
   int fd;
-  char * endp;
-  struct stat st;
   HANDLE h;
   DWORD flags;
 

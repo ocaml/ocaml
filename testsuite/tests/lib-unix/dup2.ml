@@ -10,7 +10,10 @@ let out fd txt =
   ignore (Unix.write_substring fd txt 0 (String.length txt))
 
 let _ =
-  let fd = Unix.(openfile "./tmp.txt" [O_WRONLY;O_TRUNC;O_CREAT] 0o600) in
+  let fd =
+    Unix.(openfile "./tmp.txt"
+                   [O_WRONLY;O_TRUNC;O_CREAT;O_SHARE_DELETE]
+		   0o600) in
   out fd "---\n";
   Unix.dup2 ~cloexec:true fd Unix.stderr;
   Unix.close fd;

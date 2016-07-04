@@ -43,5 +43,6 @@ let _ =
       (Array.append [| "fdstatus" |] (Array.map string_of_fd fds))
       Unix.stdin Unix.stdout Unix.stderr in
   ignore (Unix.waitpid [] pid);
+  Array.iter (fun fd -> try Unix.close fd with Unix.Unix_error _ -> ()) fds;
   Sys.remove "tmp.txt"
 

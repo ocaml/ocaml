@@ -71,7 +71,7 @@ CAMLprim value unix_open(value path, value flags, value perm)
   attr.bInheritHandle =
     cloexec & CLOEXEC ? FALSE
                       : cloexec & KEEPEXEC ? TRUE
-                                           : unix_cloexec_default;
+                                           : !unix_cloexec_default;
 
   h = CreateFile(String_val(path), fileaccess,
                  sharemode, &attr,
