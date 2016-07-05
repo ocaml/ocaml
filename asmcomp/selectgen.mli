@@ -123,11 +123,12 @@ class virtual selector_generic : object
     -> Reg.t array
     -> Reg.t array option
   method initial_env : unit -> (Ident.t, Reg.t array) Tbl.t
-  method after_body
+  method insert_prologue
      : Cmm.fundecl
+    -> loc_arg:Reg.t array
+    -> rarg:Reg.t array
     -> spacetime_node_hole:Ident.t option
-    -> env_after_prologue:(Ident.t, Reg.t array) Tbl.t
-    -> last_insn_of_prologue:Mach.instruction
+    -> env:(Ident.t, Reg.t array) Tbl.t
     -> Mach.spacetime_shape option
 
   val mutable instr_seq : Mach.instruction

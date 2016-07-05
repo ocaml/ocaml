@@ -398,11 +398,9 @@ class virtual instruction_selection = object (self)
     end;
     super#emit_fundecl f
 
-  method! after_body f ~loc_arg ~rarg ~spacetime_node_hole ~env_after_prologue
-        ~last_insn_of_prologue =
+  method! insert_prologue f ~loc_arg ~rarg ~spacetime_node_hole ~env =
     let fun_spacetime_shape =
-      super#insert_prologue f ~loc_arg ~rarg ~spacetime_node_hole
-        ~env_after_prologue ~last_insn_of_prologue
+      super#insert_prologue f ~loc_arg ~rarg ~spacetime_node_hole ~env
     in
     (* CR mshinwell: add check to make sure the node size doesn't exceed the
        chunk size of the allocator *)
