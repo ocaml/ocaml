@@ -1,6 +1,5 @@
-
-# Characters 10-16:
+Characters 35-41:
   let f (x: #M.foo) = 0;;
             ^^^^^^
 Error: Unbound module M
-# 
+

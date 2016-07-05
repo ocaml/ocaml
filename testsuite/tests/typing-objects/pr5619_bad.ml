@@ -1,3 +1,9 @@
+(* TEST
+  * toplevel
+  * toplevel
+    include principal
+*)
+
 class type foo_t =
   object
     method foo: string

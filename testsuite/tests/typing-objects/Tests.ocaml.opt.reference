@@ -1,0 +1,18 @@
+- : < x : int > ->
+    < x : int > -> < x : int > -> < x : int > * < x : int > * < x : int >
+= <fun>
+class ['a] c : unit -> object constraint 'a = int method f : int c end
+and ['a] d : unit -> object constraint 'a = int method f : int c end
+Characters 230-271:
+  ....and d () = object
+    inherit ['a] c ()
+  end..
+Error: Some type variables are unbound in this type:
+         class d : unit -> object method f : 'a -> unit end
+       The method f has type 'a -> unit where 'a is unbound
+class virtual c : unit -> object  end
+and ['a] d :
+  unit -> object constraint 'a = < x : int; .. > method f : 'a -> int end
+class ['a] c : unit -> object constraint 'a = int end
+and ['a] d : unit -> object constraint 'a = int #c end
+Fatal error: exception File "asmcomp/closure.ml", line 1071, characters 6-12: Assertion failed
