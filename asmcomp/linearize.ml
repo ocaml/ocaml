@@ -179,14 +179,10 @@ let rec linear i n =
   match i.Mach.desc with
     Iend -> n
   | Iop(Itailcall_ind _ | Itailcall_imm _ as op) ->
-<<<<<<< HEAD
       if not Config.spacetime then
         copy_instr (Lop op) i (discard_dead_code n)
       else
         copy_instr (Lop op) i (linear i.Mach.next n)
-=======
-      copy_instr (Lop op) i (discard_dead_code n)
->>>>>>> ocaml/trunk
   | Iop(Imove | Ireload | Ispill)
     when i.Mach.arg.(0).loc = i.Mach.res.(0).loc ->
       linear i.Mach.next n
@@ -295,12 +291,6 @@ let rec linear i n =
   | Iraise k ->
       copy_instr (Lraise k) i (discard_dead_code n)
 
-<<<<<<< HEAD
-let reset () =
-  exit_label := []
-
-=======
->>>>>>> ocaml/trunk
 let fundecl f =
   { fun_name = f.Mach.fun_name;
     fun_body = linear f.Mach.fun_body end_instr;

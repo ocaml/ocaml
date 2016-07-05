@@ -87,7 +87,6 @@ let intop = function
   | Ilsr -> " >>u "
   | Iasr -> " >>s "
   | Icomp cmp -> intcomp cmp
-<<<<<<< HEAD
   | Icheckbound { label_after_error; spacetime_index; } ->
     if not Config.spacetime then " check > "
     else
@@ -98,9 +97,6 @@ let intop = function
           | Some lbl -> string_of_int lbl
         end
         spacetime_index
-=======
-  | Icheckbound _ -> " check > "
->>>>>>> ocaml/trunk
 
 let test tst ppf arg =
   match tst with
@@ -145,15 +141,11 @@ let operation op arg ppf res =
        (Array.sub arg 1 (Array.length arg - 1))
        reg arg.(0)
        (if is_assign then "(assign)" else "(init)")
-<<<<<<< HEAD
   | Ialloc { words = n; _ } ->
     fprintf ppf "alloc %i" n;
     if Config.spacetime then begin
       fprintf ppf "(spacetime node = %a)" reg arg.(0)
     end
-=======
-  | Ialloc { words = n; _ } -> fprintf ppf "alloc %i" n
->>>>>>> ocaml/trunk
   | Iintop(op) -> fprintf ppf "%a%s%a" reg arg.(0) (intop op) reg arg.(1)
   | Iintop_imm(op, n) -> fprintf ppf "%a%s%i" reg arg.(0) (intop op) n
   | Inegf -> fprintf ppf "-f %a" reg arg.(0)

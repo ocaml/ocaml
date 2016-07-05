@@ -51,12 +51,8 @@ let oper_result_type = function
 
 let size_expr env exp =
   let rec size localenv = function
-<<<<<<< HEAD
       Cconst_int _ | Cconst_natint _
     | Cblockheader _ -> Arch.size_int
-=======
-      Cconst_int _ | Cconst_natint _ -> Arch.size_int
->>>>>>> ocaml/trunk
     | Cconst_symbol _ | Cconst_pointer _ | Cconst_natpointer _ ->
         Arch.size_addr
     | Cconst_float _ -> Arch.size_float
@@ -203,10 +199,6 @@ class virtual selector_generic = object (self)
 method is_simple_expr = function
     Cconst_int _ -> true
   | Cconst_natint _ -> true
-<<<<<<< HEAD
-  | Cblockheader _ -> true
-=======
->>>>>>> ocaml/trunk
   | Cconst_float _ -> true
   | Cconst_symbol _ -> true
   | Cconst_pointer _ -> true
@@ -313,11 +305,7 @@ method select_operation op args =
         (Istore(chunk, addr, is_assign), [arg2; eloc])
         (* Inversion addr/datum in Istore *)
       end
-<<<<<<< HEAD
   | (Calloc _dbg, _) -> (self#select_allocation 0), args
-=======
-  | (Calloc _dbg, _) -> Ialloc { words = 0; label_after_call_gc = None; }, args
->>>>>>> ocaml/trunk
   | (Caddi, _) -> self#select_arith_comm Iadd args
   | (Csubi, _) -> self#select_arith Isub args
   | (Cmuli, _) -> self#select_arith_comm Imul args
@@ -343,13 +331,9 @@ method select_operation op args =
   | (Cfloatofint, _) -> (Ifloatofint, args)
   | (Cintoffloat, _) -> (Iintoffloat, args)
   | (Ccheckbound _, _) ->
-<<<<<<< HEAD
     let extra_args = self#select_checkbound_extra_args () in
     let op = self#select_checkbound () in
     self#select_arith op (args @ extra_args)
-=======
-    self#select_arith (Icheckbound { label_after_error = None; }) args
->>>>>>> ocaml/trunk
   | _ -> fatal_error "Selection.select_oper"
 
 method private select_arith_comm op = function
@@ -534,14 +518,8 @@ method emit_expr env exp =
   | Cconst_natpointer n ->
       let r = self#regs_for typ_val in  (* integer as Caml value *)
       Some(self#insert_op (Iconst_int n) [||] r)
-<<<<<<< HEAD
   | Cblockheader(n, dbg) ->
       self#emit_blockheader env n dbg
-=======
-  | Cblockheader (n, _dbg) ->
-      let r = self#regs_for typ_int in
-      Some(self#insert_op (Iconst_blockheader n) [||] r)
->>>>>>> ocaml/trunk
   | Cvar v ->
       begin try
         Some(Tbl.find v env)
@@ -600,10 +578,7 @@ method emit_expr env exp =
                 self#about_to_emit_call env (Iop new_op) [| r1.(0) |]
               in
               self#insert_move_args rarg loc_arg stack_ofs;
-<<<<<<< HEAD
               self#maybe_emit_spacetime_move ~spacetime_reg;
-=======
->>>>>>> ocaml/trunk
               self#insert_debug (Iop new_op) dbg
                           (Array.append [|r1.(0)|] loc_arg) loc_res;
               self#insert_move_results loc_res rd stack_ofs;
@@ -617,20 +592,14 @@ method emit_expr env exp =
                 self#about_to_emit_call env (Iop new_op) [| |]
               in
               self#insert_move_args r1 loc_arg stack_ofs;
-<<<<<<< HEAD
               self#maybe_emit_spacetime_move ~spacetime_reg;
-=======
->>>>>>> ocaml/trunk
               self#insert_debug (Iop new_op) dbg loc_arg loc_res;
               self#insert_move_results loc_res rd stack_ofs;
               Some rd
           | Iextcall _ ->
-<<<<<<< HEAD
               let spacetime_reg =
                 self#about_to_emit_call env (Iop new_op) [| |]
               in
-=======
->>>>>>> ocaml/trunk
               let (loc_arg, stack_ofs) = self#emit_extcall_args env new_args in
               self#maybe_emit_spacetime_move ~spacetime_reg;
               let rd = self#regs_for ty in
@@ -639,7 +608,6 @@ method emit_expr env exp =
                   loc_arg (Proc.loc_external_results rd) in
               self#insert_move_results loc_res rd stack_ofs;
               Some rd
-<<<<<<< HEAD
           | Ialloc { words = _; spacetime_index; label_after_call_gc; } ->
               let rd = self#regs_for typ_val in
               let size = size_expr env (Ctuple new_args) in
@@ -648,13 +616,6 @@ method emit_expr env exp =
               in
               let args = self#select_allocation_args env in
               self#insert_debug (Iop op) dbg args rd;
-=======
-          | Ialloc { words = _; label_after_call_gc; } ->
-              let rd = self#regs_for typ_val in
-              let size = size_expr env (Ctuple new_args) in
-              let op = Ialloc { words = size; label_after_call_gc; } in
-              self#insert_debug (Iop op) dbg [| |] rd;
->>>>>>> ocaml/trunk
               self#emit_stores env new_args rd;
               Some rd
           | op ->
@@ -871,15 +832,11 @@ method emit_tail env exp =
               let (loc_arg, stack_ofs) = Proc.loc_arguments rarg in
               if stack_ofs = 0 then begin
                 let call = Iop (Itailcall_ind { label_after; }) in
-<<<<<<< HEAD
                 let spacetime_reg =
                   self#about_to_emit_call env call [| r1.(0) |]
                 in
                 self#insert_moves rarg loc_arg;
                 self#maybe_emit_spacetime_move ~spacetime_reg;
-=======
-                self#insert_moves rarg loc_arg;
->>>>>>> ocaml/trunk
                 self#insert_debug call dbg
                             (Array.append [|r1.(0)|] loc_arg) [||];
               end else begin
@@ -889,10 +846,7 @@ method emit_tail env exp =
                   self#about_to_emit_call env (Iop new_op) [| r1.(0) |]
                 in
                 self#insert_move_args rarg loc_arg stack_ofs;
-<<<<<<< HEAD
                 self#maybe_emit_spacetime_move ~spacetime_reg;
-=======
->>>>>>> ocaml/trunk
                 self#insert_debug (Iop new_op) dbg
                             (Array.append [|r1.(0)|] loc_arg) loc_res;
                 self#insert(Iop(Istackoffset(-stack_ofs))) [||] [||];
@@ -903,15 +857,11 @@ method emit_tail env exp =
               let (loc_arg, stack_ofs) = Proc.loc_arguments r1 in
               if stack_ofs = 0 then begin
                 let call = Iop (Itailcall_imm { func; label_after; }) in
-<<<<<<< HEAD
                 let spacetime_reg =
                   self#about_to_emit_call env call [| |]
                 in
                 self#insert_moves r1 loc_arg;
                 self#maybe_emit_spacetime_move ~spacetime_reg;
-=======
-                self#insert_moves r1 loc_arg;
->>>>>>> ocaml/trunk
                 self#insert_debug call dbg loc_arg [||];
               end else if func = !current_function_name then begin
                 let call = Iop (Itailcall_imm { func; label_after; }) in
@@ -920,10 +870,7 @@ method emit_tail env exp =
                   self#about_to_emit_call env call [| |]
                 in
                 self#insert_moves r1 loc_arg';
-<<<<<<< HEAD
                 self#maybe_emit_spacetime_move ~spacetime_reg;
-=======
->>>>>>> ocaml/trunk
                 self#insert_debug call dbg loc_arg' [||];
               end else begin
                 let rd = self#regs_for ty in
@@ -932,10 +879,7 @@ method emit_tail env exp =
                   self#about_to_emit_call env (Iop new_op) [| |]
                 in
                 self#insert_move_args r1 loc_arg stack_ofs;
-<<<<<<< HEAD
                 self#maybe_emit_spacetime_move ~spacetime_reg;
-=======
->>>>>>> ocaml/trunk
                 self#insert_debug (Iop new_op) dbg loc_arg loc_res;
                 self#insert(Iop(Istackoffset(-stack_ofs))) [||] [||];
                 self#insert Ireturn loc_res [||]

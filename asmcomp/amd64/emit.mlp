@@ -324,13 +324,8 @@ type bound_error_call =
 let bound_error_sites = ref ([] : bound_error_call list)
 let bound_error_call = ref 0
 
-<<<<<<< HEAD
 let bound_error_label ?label dbg ~spacetime =
   if !Clflags.debug || Config.spacetime then begin
-=======
-let bound_error_label ?label dbg =
-  if !Clflags.debug then begin
->>>>>>> ocaml/trunk
     let lbl_bound_error = new_label() in
     let lbl_frame = record_frame_label ?label Reg.Set.empty dbg in
     bound_error_sites :=
@@ -530,18 +525,13 @@ let emit_instr fallthrough i =
       add_used_symbol func;
       emit_call func;
       record_frame i.live i.dbg ~label:label_after
-<<<<<<< HEAD
   | Lop(Itailcall_ind { label_after; }) ->
-=======
-  | Lop(Itailcall_ind { label_after = _; }) ->
->>>>>>> ocaml/trunk
       output_epilogue begin fun () ->
         I.jmp (arg i 0);
         if Config.spacetime then begin
           record_frame Reg.Set.empty i.dbg ~label:label_after
         end
       end
-<<<<<<< HEAD
   | Lop(Itailcall_imm { func; label_after; }) ->
       begin
         if func = !function_name then
@@ -551,15 +541,6 @@ let emit_instr fallthrough i =
             add_used_symbol func;
             emit_jump func
           end
-=======
-  | Lop(Itailcall_imm { func; label_after = _; }) ->
-      if func = !function_name then
-        I.jmp (label !tailrec_entry_point)
-      else begin
-        output_epilogue begin fun () ->
-          add_used_symbol func;
-          emit_jump func
->>>>>>> ocaml/trunk
         end
       end;
       if Config.spacetime then begin
@@ -581,7 +562,6 @@ let emit_instr fallthrough i =
           *)
           load_symbol_addr "caml_young_ptr" r11;
           I.mov (mem64 QWORD 0 R11) r15
-<<<<<<< HEAD
         end
       end else begin
         emit_call func;
@@ -589,11 +569,6 @@ let emit_instr fallthrough i =
           record_frame Reg.Set.empty i.dbg ~label:label_after
         end
       end
-=======
-        end;
-      end else
-        emit_call func
->>>>>>> ocaml/trunk
   | Lop(Istackoffset n) ->
       if n < 0
       then I.add (int (-n)) rsp
@@ -640,11 +615,7 @@ let emit_instr fallthrough i =
       | Double | Double_u ->
           I.movsd (arg i 0) (addressing addr REAL8 i 1)
       end
-<<<<<<< HEAD
   | Lop(Ialloc { words = n; label_after_call_gc; spacetime_index; }) ->
-=======
-  | Lop(Ialloc { words = n; label_after_call_gc; }) ->
->>>>>>> ocaml/trunk
       if !fastcode_flag then begin
         let lbl_redo = new_label() in
         def_label lbl_redo;
@@ -713,7 +684,6 @@ let emit_instr fallthrough i =
       I.cmp (int n) (arg i 0);
       I.set (cond cmp) al;
       I.movzx al (res i 0)
-<<<<<<< HEAD
   | Lop(Iintop (Icheckbound { label_after_error; spacetime_index; } )) ->
       let spacetime =
         if not Config.spacetime then None
@@ -728,14 +698,6 @@ let emit_instr fallthrough i =
         else Some (arg i 1, spacetime_index)
       in
       let lbl = bound_error_label ?label:label_after_error i.dbg ~spacetime in
-=======
-  | Lop(Iintop (Icheckbound { label_after_error; } )) ->
-      let lbl = bound_error_label ?label:label_after_error i.dbg in
-      I.cmp (arg i 1) (arg i 0);
-      I.jbe (label lbl)
-  | Lop(Iintop_imm(Icheckbound { label_after_error; }, n)) ->
-      let lbl = bound_error_label ?label:label_after_error i.dbg in
->>>>>>> ocaml/trunk
       I.cmp (int n) (arg i 0);
       I.jbe (label lbl)
   | Lop(Iintop(Idiv | Imod)) ->
