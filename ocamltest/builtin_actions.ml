@@ -289,8 +289,9 @@ let action_of_filetype = function
   | Filetype.Grammar -> "Generating parser"
 
 let rec compile_module
-  ocamlsrcdir compilername compileroutput backend log env
+  ocamlsrcdir compiler compilername compileroutput log env
   (module_basename, module_filetype) =
+  let backend = compiler.compiler_backend in
   let filename = Filetype.make_filename module_basename module_filetype in
   let what = Printf.sprintf "%s for file %s"
     (action_of_filetype module_filetype) filename in
@@ -330,7 +331,7 @@ let rec compile_module
           Filetype.make_filename module_basename Filetype.Interface in
         if Sys.file_exists interface_name
         then compile_module
-          ocamlsrcdir compilername compileroutput backend log env
+          ocamlsrcdir compiler compilername compileroutput log env
           (module_basename, Filetype.Interface)
         else (Ok ("Module " ^ module_basename ^ " has no interface")) in
       begin match interface_result with
@@ -351,15 +352,16 @@ let rec compile_module
         filename (Filetype.string_of_filetype module_filetype) in
       (Error reason)
 
-let compile_modules ocamlsrcdir compilername compileroutput backend log env modules_with_filetypes =
+let compile_modules ocamlsrcdir compiler compilername compileroutput log env modules_with_filetypes =
   let cons x xs = x::xs in
   map_reduce_result
-    (compile_module ocamlsrcdir compilername compileroutput backend log env)
+    (compile_module ocamlsrcdir compiler compilername compileroutput log env)
     cons
     []
     modules_with_filetypes
 
-let link_modules ocamlsrcdir compilername compileroutput program_variable custom backend log env modules =
+let link_modules ocamlsrcdir compiler compilername compileroutput program_variable custom log env modules =
+  let backend = compiler.compiler_backend in
   let modules =
     if use_testing_module env then
       let testing_module =
@@ -398,15 +400,16 @@ let link_modules ocamlsrcdir compilername compileroutput program_variable custom
     | 0 -> Ok ()
     | _ as exitcode -> Error (mkreason what commandline exitcode)
 
-let compile_program ocamlsrcdir compilername compileroutput program_variable backend log env modules_with_filetypes =
+let compile_program ocamlsrcdir compiler compilername compileroutput program_variable log env modules_with_filetypes =
   match
-    compile_modules ocamlsrcdir compilername compileroutput backend log env modules_with_filetypes
+    compile_modules ocamlsrcdir compiler compilername compileroutput log env modules_with_filetypes
   with
     | Ok module_objects ->
       let is_c_file (_filename, filetype) = filetype=Filetype.C in
       let has_c_file = List.exists is_c_file modules_with_filetypes in
+      let backend = compiler.compiler_backend in
       let custom = (backend = Sys.Bytecode) && has_c_file in
-      (match link_modules ocamlsrcdir compilername compileroutput program_variable custom backend log env module_objects with
+      (match link_modules ocamlsrcdir compiler compilername compileroutput program_variable custom log env module_objects with
         | Ok _ -> Pass env
         | Error reason -> Fail reason
       )
@@ -431,7 +434,8 @@ let rec find_module_interfaces directory = function
       | Some interface -> interface::interfaces
     end
 
-let compile_test_program program_variable compiler backend log env =
+let compile_test_program program_variable compiler log env =
+  let backend = compiler.compiler_backend in
   let testfile = testfile env in
   let testfile_basename = Filename.chop_extension testfile in
   let executable_filename =
@@ -475,9 +479,10 @@ let compile_test_program program_variable compiler backend log env =
   let compilername = compiler.compiler_name ocamlsrcdir in
   compile_program
     ocamlsrcdir
+    compiler
     compilername
     compiler_output_variable
-    program_variable backend log newenv modules_with_filetypes
+    program_variable log newenv modules_with_filetypes
 
 (* Compile actions *)
 
@@ -486,7 +491,7 @@ let compile_bytecode_with_bytecode_compiler = {
   action_environment = env_id;
   action_body =
     compile_test_program
-      Builtin_variables.program bytecode_bytecode_compiler Sys.Bytecode
+      Builtin_variables.program bytecode_bytecode_compiler
 }
 
 let compile_bytecode_with_nativecode_compiler = {
@@ -494,7 +499,7 @@ let compile_bytecode_with_nativecode_compiler = {
   action_environment = env_id;
   action_body =
     compile_test_program
-      Builtin_variables.program2 bytecode_nativecode_compiler Sys.Bytecode
+      Builtin_variables.program2 bytecode_nativecode_compiler
 }
 
 let compile_nativecode_with_bytecode_compiler = {
@@ -502,7 +507,7 @@ let compile_nativecode_with_bytecode_compiler = {
   action_environment = env_id;
   action_body =
     compile_test_program
-      Builtin_variables.program nativecode_bytecode_compiler Sys.Native
+      Builtin_variables.program nativecode_bytecode_compiler
 }
 
 let compile_nativecode_with_nativecode_compiler = {
@@ -510,7 +515,7 @@ let compile_nativecode_with_nativecode_compiler = {
   action_environment = env_id;
   action_body =
     compile_test_program
-      Builtin_variables.program2 nativecode_nativecode_compiler Sys.Native
+      Builtin_variables.program2 nativecode_nativecode_compiler
 }
 
 let execute_program log env =
