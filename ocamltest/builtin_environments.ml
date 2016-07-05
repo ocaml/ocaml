@@ -16,8 +16,14 @@
 (* Definition of a few builtin environments *)
 
 open Environments
+open Builtin_variables
 
-let principal = add Builtin_variables.flags "-principal" empty
+let principal = from_bindings
+  [
+    use_principal_flag, "yes";
+    compiler_directory_suffix, ".principal";
+    compiler_reference_suffix, ".principal";
+  ]
 
 let testing = add Builtin_variables.use_testing_module "yes" empty
 
