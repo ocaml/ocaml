@@ -152,8 +152,8 @@ set.cmi :
 sort.cmo : array.cmi sort.cmi
 sort.cmx : array.cmx sort.cmi
 sort.cmi :
-spacetime.cmo : spacetime.cmi
-spacetime.cmx : spacetime.cmi
+spacetime.cmo : gc.cmi spacetime.cmi
+spacetime.cmx : gc.cmx spacetime.cmi
 spacetime.cmi :
 stack.cmo : list.cmi stack.cmi
 stack.cmx : list.cmx stack.cmi
@@ -296,8 +296,8 @@ set.cmo : list.cmi set.cmi
 set.p.cmx : list.cmx set.cmi
 sort.cmo : array.cmi sort.cmi
 sort.p.cmx : array.cmx sort.cmi
-spacetime.cmo : spacetime.cmi
-spacetime.p.cmx : spacetime.cmi
+spacetime.cmo : gc.cmi spacetime.cmi
+spacetime.p.cmx : gc.cmx spacetime.cmi
 stack.cmo : list.cmi stack.cmi
 stack.p.cmx : list.cmx stack.cmi
 stdLabels.cmo : stringLabels.cmi listLabels.cmi bytesLabels.cmi \

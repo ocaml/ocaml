@@ -188,47 +188,10 @@ static value take_snapshot(void)
 
   num_distinct_profinfos = 0;
 
-  /* Scan the minor heap. */
-  /* CR mshinwell: this is wrong, it should start from the roots
-     mshinwell: actually, perhaps not, otherwise we might miss
-     short-lived allocations that we have a chance of seeing otherwise.
-     However the current code is wrong because of the "hole" that
-     can be in the minor heap. */
-  assert(((uintnat) caml_young_ptr) % sizeof(value) == 0);
-  assert(!caml_in_minor_collection);
-  ptr = (value*) caml_young_ptr;
-  assert(ptr >= (value*) caml_young_alloc_start);
-  while (ptr < (value*) caml_young_alloc_end) {
-    header_t hd;
-    value value_in_minor_heap;
-
-    ptr++;
-    value_in_minor_heap = (value) ptr;
-    assert(Is_young(value_in_minor_heap));
-    assert(Is_block(value_in_minor_heap));
-
-    hd = Hd_val(value_in_minor_heap);
-
-    /* We do not expect the value to be promoted, since this function
-       should not be called during a minor collection. */
-    assert(hd != 0);
-
-    profinfo = Profinfo_hd(hd);
-
-    words_scanned += Whsize_val(value_in_minor_heap);
-    if (profinfo > 0 && profinfo < PROFINFO_MASK) {
-      words_scanned_with_profinfo += Whsize_val(value_in_minor_heap);
-      assert (raw_entries[profinfo].num_blocks >= 0);
-      if (raw_entries[profinfo].num_blocks == 0) {
-        num_distinct_profinfos++;
-      }
-      raw_entries[profinfo].num_blocks++;
-      raw_entries[profinfo].num_words_including_headers +=
-        Whsize_val(value_in_minor_heap);
-    }
-
-    ptr += Wosize_val(value_in_minor_heap);
-  }
+  /* CR-someday mshinwell: consider reintroducing minor heap scanning,
+     properly from roots, which would then give a snapshot function
+     that doesn't do a minor GC.  Although this may not be that important
+     and potentially not worth the effort (it's quite tricky). */
 
   /* Scan the major heap. */
   chunk = caml_heap_start;
@@ -479,7 +442,7 @@ static void add_unit_to_shape_table(uint64_t *unit_table, value *list)
       int has_extra_argument = 0;
 
       stored_tag = *ptr++;
-      /* CR mshinwell: share with emit.mlp */
+      /* CR-soon mshinwell: share with emit.mlp */
       switch (stored_tag) {
         case 1:  /* direct call to given location */
           tag = 0;

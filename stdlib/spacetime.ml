@@ -42,6 +42,7 @@ module Snapshot = struct
 
   let take { Series.closed; channel } =
     if closed then failwith "Series is closed";
+    Gc.minor ();
     take channel
 
 end
