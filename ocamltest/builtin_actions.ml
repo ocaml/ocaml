@@ -22,9 +22,9 @@ open Actions
 let env_id env = env
 
 let run_command
-  ?(stdin_variable="stdin")
-  ?(stdout_variable="stdout")
-  ?(stderr_variable="stderr")
+  ?(stdin_variable=Builtin_variables.stdin)
+  ?(stdout_variable=Builtin_variables.stdout)
+  ?(stderr_variable=Builtin_variables.stderr)
   ?(append=false)
   ?(timeout=0)
   log env cmd =
@@ -65,7 +65,7 @@ let mkreason what commandline exitcode =
   Printf.sprintf "%s: command\n%s\nfailed with exit code %d"
     what commandline exitcode
 
-let make_file_name name ext = name ^ "." ^ ext
+let make_file_name name ext = String.concat "." [name; ext]
 
 let make_path components = List.fold_left Filename.concat "" components
 
@@ -157,8 +157,8 @@ type compiler_info = {
   compiler_name : string -> string;
   compiler_directory : string;
   compiler_backend : Sys.backend_type;
-  compilerreference_variable : string;
-  compileroutput_variable : string
+  compiler_reference_variable : Variables.t;
+  compiler_output_variable : Variables.t
 }
 
 (* Compilers compiling byte-code programs *)
@@ -168,8 +168,8 @@ let bytecode_bytecode_compiler =
   compiler_name = ocamlc_dot_byte;
   compiler_directory = "ocamlc.byte";
   compiler_backend = Sys.Bytecode;
-  compilerreference_variable = "compilerreference";
-  compileroutput_variable = "compileroutput"
+  compiler_reference_variable = Builtin_variables.compiler_reference;
+  compiler_output_variable = Builtin_variables.compiler_output;
 }
 
 let bytecode_nativecode_compiler =
@@ -177,8 +177,8 @@ let bytecode_nativecode_compiler =
   compiler_name = ocamlc_dot_opt;
   compiler_directory = "ocamlc.opt";
   compiler_backend = Sys.Bytecode;
-  compilerreference_variable = "compilerreference2";
-  compileroutput_variable = "compileroutput2"
+  compiler_reference_variable = Builtin_variables.compiler_reference2;
+  compiler_output_variable = Builtin_variables.compiler_output2;
 }
 
 (* Compilers compiling native-code programs *)
@@ -188,8 +188,8 @@ let nativecode_bytecode_compiler =
   compiler_name = ocamlopt_dot_byte;
   compiler_directory = "ocamlopt.byte";
   compiler_backend = Sys.Native;
-  compilerreference_variable = "compilerreference";
-  compileroutput_variable = "compileroutput"
+  compiler_reference_variable = Builtin_variables.compiler_reference;
+  compiler_output_variable = Builtin_variables.compiler_output;
 }
 
 let nativecode_nativecode_compiler =
@@ -197,8 +197,8 @@ let nativecode_nativecode_compiler =
   compiler_name = ocamlopt_dot_opt;
   compiler_directory = "ocamlopt.opt";
   compiler_backend = Sys.Native;
-  compilerreference_variable = "compilerreference2";
-  compileroutput_variable = "compileroutput2"
+  compiler_reference_variable = Builtin_variables.compiler_reference2;
+  compiler_output_variable = Builtin_variables.compiler_output2;
 }
 
 (* Top-levels *)
@@ -207,21 +207,21 @@ let bytecode_toplevel = {
   compiler_name = ocaml_dot_byte;
   compiler_directory = "ocaml.byte";
   compiler_backend = Sys.Bytecode;
-  compilerreference_variable = "compilerreference";
-  compileroutput_variable = "compileroutput";
+  compiler_reference_variable = Builtin_variables.compiler_reference;
+  compiler_output_variable = Builtin_variables.compiler_output;
 }
 
 let nativecode_toplevel = {
   compiler_name = ocaml_dot_opt;
   compiler_directory = "ocaml.opt";
   compiler_backend = Sys.Native;
-  compilerreference_variable = "compilerreference2";
-  compileroutput_variable = "compileroutput2";
+  compiler_reference_variable = Builtin_variables.compiler_reference2;
+  compiler_output_variable = Builtin_variables.compiler_output2;
 }
 
 let compiler_reference_filename env prefix compiler =
   let compiler_reference_suffix =
-    Environments.safe_lookup "compiler_reference_suffix" env in
+    Environments.safe_lookup Builtin_variables.compiler_reference_suffix env in
   let suffix =
     if compiler_reference_suffix<>""
     then compiler_reference_suffix ^ ".reference"
@@ -240,26 +240,35 @@ let get_backend_value_from_env env bytecode_var native_var =
     (Environments.safe_lookup bytecode_var env)
     (Environments.safe_lookup native_var env)
 
-let testfile env = match Environments.lookup "testfile" env with
+let testfile env =
+  match Environments.lookup Builtin_variables.test_file env with
   | None -> assert false
   | Some t -> t
 
-let modules env = Testlib.words (Environments.safe_lookup "modules" env)
+let words_of_variable variable env =
+  Testlib.words (Environments.safe_lookup variable env)
 
-let files env = Testlib.words (Environments.safe_lookup "files" env)
+let modules env = words_of_variable Builtin_variables.modules env
 
-let use_testing_module env = (Environments.safe_lookup "usetestingmodule" env) <> ""
+let files env = words_of_variable Builtin_variables.files env
 
-let flags env = Environments.safe_lookup "flags" env
+let use_testing_module env =
+  (Environments.safe_lookup Builtin_variables.use_testing_module env) <> ""
 
-let libraries env = Environments.safe_lookup "libraries" env
+let flags env = Environments.safe_lookup Builtin_variables.flags env
+
+let libraries env = Environments.safe_lookup Builtin_variables.libraries env
 
 let backend_flags env =
-  get_backend_value_from_env env "bcflags" "ncflags"
+  get_backend_value_from_env env
+    Builtin_variables.bcflags
+    Builtin_variables.ncflags
 
-let test_source_directory env = Environments.safe_lookup "testsrcdir" env
+let test_source_directory env =
+  Environments.safe_lookup Builtin_variables.test_source_directory env
 
-let test_build_directory env = Environments.safe_lookup "testbuilddir" env
+let test_build_directory env =
+  Environments.safe_lookup Builtin_variables.test_build_directory env
 
 let action_of_filetype = function
   | Filetype.Implementation -> "Compiling implementation"
@@ -426,7 +435,7 @@ let compile_test_program program_variable compiler backend log env =
   let compilerreference_filename =
     compiler_reference_filename env compilerreference_prefix compiler in
   let compiler_directory_suffix =
-    Environments.safe_lookup "compiler_directory_suffix" env in
+    Environments.safe_lookup Builtin_variables.compiler_directory_suffix env in
   let compiler_directory_name =
     compiler.compiler_directory ^ compiler_directory_suffix in
   let compiler_directory =
@@ -436,13 +445,13 @@ let compile_test_program program_variable compiler backend log env =
     make_file_name compiler.compiler_directory "output" in
   let compiler_output =
     make_path [compiler_directory; compiler_output_filename] in
-  let compileroutput_variable = compiler.compileroutput_variable in
-  let compilerreference_variable = compiler.compilerreference_variable in
+  let compiler_output_variable = compiler.compiler_output_variable in
+  let compiler_reference_variable = compiler.compiler_reference_variable in
   let newenv = Environments.add_variables
     [
       (program_variable, executable_path);
-      (compilerreference_variable, compilerreference_filename);
-      (compileroutput_variable, compiler_output);
+      (compiler_reference_variable, compilerreference_filename);
+      (compiler_output_variable, compiler_output);
     ] env in
   Testlib.make_directory compiler_directory;
   setup_symlinks test_source_directory compiler_directory modules;
@@ -456,7 +465,7 @@ let compile_test_program program_variable compiler backend log env =
   compile_program
     ocamlsrcdir
     compilername
-    compileroutput_variable
+    compiler_output_variable
     program_variable backend log newenv modules_with_filetypes
 
 (* Compile actions *)
@@ -465,35 +474,39 @@ let compile_bytecode_with_bytecode_compiler = {
   action_name = "compile-bytecode-with-bytecode-compiler";
   action_environment = env_id;
   action_body =
-    compile_test_program "program" bytecode_bytecode_compiler Sys.Bytecode
+    compile_test_program
+      Builtin_variables.program bytecode_bytecode_compiler Sys.Bytecode
 }
 
 let compile_bytecode_with_nativecode_compiler = {
   action_name = "compile-bytecode-with-nativecode-compiler";
   action_environment = env_id;
   action_body =
-    compile_test_program "program2" bytecode_nativecode_compiler Sys.Bytecode
+    compile_test_program
+      Builtin_variables.program2 bytecode_nativecode_compiler Sys.Bytecode
 }
 
 let compile_nativecode_with_bytecode_compiler = {
   action_name = "compile-nativecode-with-bytecode-compiler";
   action_environment = env_id;
   action_body =
-  compile_test_program "program" nativecode_bytecode_compiler Sys.Native
+    compile_test_program
+      Builtin_variables.program nativecode_bytecode_compiler Sys.Native
 }
 
 let compile_nativecode_with_nativecode_compiler = {
   action_name = "compile-nativecode-with-nativecode-compiler";
   action_environment = env_id;
   action_body =
-    compile_test_program "program2" nativecode_nativecode_compiler Sys.Native
+    compile_test_program
+      Builtin_variables.program2 nativecode_nativecode_compiler Sys.Native
 }
 
 let execute_program log env =
-  match Environments.lookup "program" env with
+  match Environments.lookup Builtin_variables.program env with
   | None -> Fail "In execute action: No \"program\" variable in environment"
   | Some program ->
-    let arguments = Environments.safe_lookup "arguments" env in
+    let arguments = Environments.safe_lookup Builtin_variables.arguments env in
     let commandline = program ^ " " ^ arguments in
     let what = "Executing program " ^ program ^ " " ^
     begin if arguments="" then "without any argument"
@@ -502,12 +515,12 @@ let execute_program log env =
     let output = program ^ ".output" in
     let bindings =
     [
-      "stdout", output;
-      "stderr", output
+      Builtin_variables.stdout, output;
+      Builtin_variables.stderr, output
     ] in
     let env' = Environments.add_variables bindings env in
     match run_command log env' commandline with
-      | 0 -> Pass (Environments.add "output" output env)
+      | 0 -> Pass (Environments.add Builtin_variables.output output env)
       | _ as exitcode -> Fail (mkreason what commandline exitcode)
 
 let execute = {
@@ -547,8 +560,8 @@ let make_check_compiler_output name compiler = {
   action_body =
     check_output
       "compiler"
-      compiler.compileroutput_variable
-      compiler.compilerreference_variable
+      compiler.compiler_output_variable
+      compiler.compiler_reference_variable
 }
 
 let check_ocamlc_dot_byte_output = make_check_compiler_output
@@ -566,12 +579,14 @@ let check_ocamlopt_dot_opt_output = make_check_compiler_output
 let check_program_output = {
   action_name = "check-program-output";
   action_environment = env_id;
-  action_body = check_output "program" "output" "reference"
+  action_body = check_output "program"
+    Builtin_variables.output
+    Builtin_variables.reference
 }
 
 let compare_programs backend comparison_tool log env =
-  let program = Environments.safe_lookup "program" env in
-  let program2 = Environments.safe_lookup "program2" env in
+  let program = Environments.safe_lookup Builtin_variables.program env in
+  let program2 = Environments.safe_lookup Builtin_variables.program2 env in
   let what = Printf.sprintf "Comparing %s programs %s and %s"
     (Backends.string_of_backend backend) program program2 in
   Printf.fprintf log "%s\n%!" what;
@@ -638,12 +653,12 @@ let run_test_program_in_toplevel toplevel log env =
     make_file_name toplevel.compiler_directory "output" in
   let compiler_output =
     make_path [build_directory; compiler_output_filename] in
-  let compileroutput_variable = toplevel.compileroutput_variable in
-  let compilerreference_variable = toplevel.compilerreference_variable in
+  let compiler_output_variable = toplevel.compiler_output_variable in
+  let compiler_reference_variable = toplevel.compiler_reference_variable in
   let newenv = Environments.add_variables
     [
-      (compilerreference_variable, compilerreference_filename);
-      (compileroutput_variable, compiler_output);
+      (compiler_reference_variable, compilerreference_filename);
+      (compiler_output_variable, compiler_output);
     ] env in
   Testlib.make_directory build_directory;
   setup_symlinks test_source_directory build_directory [testfile];
@@ -661,7 +676,13 @@ let run_test_program_in_toplevel toplevel log env =
     stdlib_flags ocamlsrcdir;
     flags env;
   ] in
-  match run_command ~stdin_variable:"testfile" ~stdout_variable:compileroutput_variable ~stderr_variable:compileroutput_variable log newenv commandline with
+  match
+    run_command
+      ~stdin_variable:Builtin_variables.test_file
+      ~stdout_variable:compiler_output_variable
+      ~stderr_variable:compiler_output_variable
+      log newenv commandline
+  with
     | 0 -> Pass newenv
     | _ as exitcode -> Fail (mkreason what commandline exitcode)
 

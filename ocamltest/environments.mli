@@ -17,7 +17,7 @@
 
 exception Empty_environment_name
 
-exception Variable_already_defined of string
+exception Variable_already_defined of Variables.t
 
 exception Environment_already_registered of string
 
@@ -27,13 +27,13 @@ type t
 
 val empty : t
 
-val from_list : (string * string) list -> t
+val from_list : (Variables.t * string) list -> t
 
-val lookup : string -> t -> string option
-val safe_lookup : string -> t -> string
+val lookup : Variables.t -> t -> string option
+val safe_lookup : Variables.t -> t -> string
 
-val add : string -> string -> t -> t
-val add_variables : (string * string) list -> t -> t
+val add : Variables.t -> string -> t -> t
+val add_variables : (Variables.t * string) list -> t -> t
 
 val register : string -> t -> unit
 

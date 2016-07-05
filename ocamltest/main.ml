@@ -124,10 +124,10 @@ let main () =
     test_source_directory (test_prefix ^ ".reference") in
   let initial_environment = Environments.from_list
   [
-    "testfile", test_basename;
-    "reference", reference_filename;
-    "testsrcdir", test_source_directory;
-    "testbuilddir", test_build_directory;
+    Builtin_variables.test_file, test_basename;
+    Builtin_variables.reference, reference_filename;
+    Builtin_variables.test_source_directory, test_source_directory;
+    Builtin_variables.test_build_directory, test_build_directory;
   ] in
   let root_environment =
     interprete_environment_statements initial_environment rootenv_statements in

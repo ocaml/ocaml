@@ -17,9 +17,9 @@
 
 open Environments
 
-let principal = add "compiler-flags" "-principal" empty
+let principal = add Builtin_variables.flags "-principal" empty
 
-let testing = add "usetestingmodule" "yes" empty
+let testing = add Builtin_variables.use_testing_module "yes" empty
 
 let _ =
   register "principal" principal;

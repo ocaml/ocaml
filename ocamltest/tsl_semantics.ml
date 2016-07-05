@@ -31,11 +31,16 @@ let no_such_environment loc environment_name =
   exit 2
 
 let interprete_environment_statement env statement = match statement.node with
-  | Assignment (variable, value) ->
+  | Assignment (var, value) ->
     begin
-      try Environments.add variable.node value.node env with
+      let variable_name = var.node in
+      let variable = match Variables.find_variable variable_name with
+        | None -> Variables.make (variable_name, "User variable")
+        | Some variable -> variable in
+      try Environments.add variable value.node env with
       Environments.Variable_already_defined variable ->
-        variable_already_defined statement.loc variable None
+        variable_already_defined statement.loc
+          (Variables.name_of_variable variable) None
     end
   | Include env_name ->
     begin
@@ -43,7 +48,8 @@ let interprete_environment_statement env statement = match statement.node with
       | Environments.Environment_not_found envname ->
         no_such_environment statement.loc envname
       | Environments.Variable_already_defined variable ->
-        variable_already_defined statement.loc variable (Some env_name.node)
+        variable_already_defined statement.loc
+          (Variables.name_of_variable variable) (Some env_name.node)
     end
 
 let interprete_environment_statements env l =

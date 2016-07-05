@@ -17,31 +17,28 @@
 
 exception Empty_environment_name
 
-exception Variable_already_defined of string
+exception Variable_already_defined of Variables.t
 
 exception Environment_already_registered of string
 
 exception Environment_not_found of string
 
-module StringMap = Map.Make (String)
+module VariableMap = Map.Make (Variables)
 
-type t = string StringMap.t
+type t = string VariableMap.t
 
-let empty = StringMap.empty
+let empty = VariableMap.empty
 
-let lookup var env =
-  try Some (StringMap.find var env) with Not_found -> None
+let lookup variable env =
+  try Some (VariableMap.find variable env) with Not_found -> None
 
-let safe_lookup var env =
-  try (StringMap.find var env) with Not_found -> ""
-
-let add_aux variable value env =
-  if StringMap.mem variable env then raise (Variable_already_defined variable)
-  else StringMap.add variable value env
+let safe_lookup variable env =
+  try (VariableMap.find variable env) with Not_found -> ""
 
 let add variable value env =
-  if variable="" then raise Variables.Empty_variable_name
-  else add_aux variable value env
+  if VariableMap.mem variable env
+  then raise (Variable_already_defined variable)
+  else VariableMap.add variable value env
 
 let add_variables bindings env =
   let f env (variable, value) = add variable value env in
@@ -61,13 +58,12 @@ let find_environemnt environment_name =
   try Hashtbl.find registered_environments environment_name
   with Not_found -> raise (Environment_not_found environment_name)
 
-
 let include_ environment_name environment =
   let registered_environment = find_environemnt environment_name in
-  StringMap.fold add_aux registered_environment environment
+  VariableMap.fold add registered_environment environment
 
 let dump_assignment log (variable, value) =
-  Printf.fprintf log "%s = %s\n%!" variable value
+  Printf.fprintf log "%s = %s\n%!" (Variables.name_of_variable variable) value
 
 let dump log environment =
-  List.iter (dump_assignment log) (StringMap.bindings environment);
+  List.iter (dump_assignment log) (VariableMap.bindings environment);
