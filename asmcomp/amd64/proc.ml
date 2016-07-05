@@ -283,6 +283,9 @@ let destroyed_at_oper = function
   | Iop(Ialloc _ | Iintop(Imulh | Icomp _) | Iintop_imm((Icomp _), _))
         -> [| rax |]
   | Iswitch(_, _) -> [| rax; rdx |]
+  | Iintop(Icheckbound _) | Iintop_imm(Icheckbound _, _)
+        when Config.spacetime ->
+      [| loc_spacetime_node_hole |]
   | _ ->
     if fp then
 (* prevent any use of the frame pointer ! *)
