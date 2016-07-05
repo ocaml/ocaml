@@ -676,12 +676,16 @@ let run_test_program_in_toplevel toplevel log env =
     make_path [test_source_directory; testfile_basename] in
   let compilerreference_filename =
     compiler_reference_filename env compilerreference_prefix toplevel in
-  let build_directory =
-    make_path [test_build_directory env; toplevel.compiler_directory] in
+  let compiler_directory_suffix =
+    Environments.safe_lookup Builtin_variables.compiler_directory_suffix env in
+  let compiler_directory_name =
+    toplevel.compiler_directory ^ compiler_directory_suffix in
+  let compiler_directory =
+    make_path [test_build_directory env; compiler_directory_name] in
   let compiler_output_filename =
     make_file_name toplevel.compiler_directory "output" in
   let compiler_output =
-    make_path [build_directory; compiler_output_filename] in
+    make_path [compiler_directory; compiler_output_filename] in
   let compiler_output_variable = toplevel.compiler_output_variable in
   let compiler_reference_variable = toplevel.compiler_reference_variable in
   let newenv = Environments.add_bindings
@@ -689,10 +693,10 @@ let run_test_program_in_toplevel toplevel log env =
       (compiler_reference_variable, compilerreference_filename);
       (compiler_output_variable, compiler_output);
     ] env in
-  Testlib.make_directory build_directory;
-  setup_symlinks test_source_directory build_directory [testfile];
-  setup_symlinks test_source_directory build_directory (files env);
-  Sys.chdir build_directory;
+  Testlib.make_directory compiler_directory;
+  setup_symlinks test_source_directory compiler_directory [testfile];
+  setup_symlinks test_source_directory compiler_directory (files env);
+  Sys.chdir compiler_directory;
   if Sys.file_exists compiler_output_filename then
     Sys.remove compiler_output_filename;
   let ocamlsrcdir = ocamlsrcdir () in
