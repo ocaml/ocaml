@@ -1765,6 +1765,7 @@ else
     has_huge_pages=false
 fi
 
+profinfo_width=0
 if $with_spacetime; then
   case "$arch,$system" in
     amd64,*)
