@@ -707,6 +707,7 @@ let run_test_program_in_toplevel toplevel log env =
     toplevel_name;
     toplevel_default_flags;
     stdlib_flags ocamlsrcdir;
+    if use_principal_flag env then "-principal" else "";
     flags env;
   ] in
   let exit_status =
