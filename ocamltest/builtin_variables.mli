@@ -60,4 +60,6 @@ val test_file : Variables.t
 
 val test_source_directory : Variables.t
 
+val use_principal_flag : Variables.t
+
 val use_testing_module : Variables.t

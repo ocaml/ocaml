@@ -87,5 +87,8 @@ let test_file = make ("test_file",
 let test_source_directory = make ("test_source_directory",
   "Directory containing the test source files")
 
+let use_principal_flag = make ("use_principal_flag",
+  "Whether the -principal flag should be passed to compilers")
+
 let use_testing_module = make ("use_testing_module",
   "Whether the test depends on the testing module or not")
