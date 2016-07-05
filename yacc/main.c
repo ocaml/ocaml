@@ -462,6 +462,7 @@ int main(int argc, char **argv)
     lalr();
     make_parser();
     verbose();
+    if (eflag && SRtotal + RRtotal > 0) forbidden_conflicts();
     output();
     done(0);
     /*NOTREACHED*/
