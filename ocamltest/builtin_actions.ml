@@ -226,6 +226,11 @@ let nativecode_toplevel = {
   compiler_output_variable = Builtin_variables.compiler_output2;
 }
 
+let expected_compiler_exit_status env compiler =
+  try int_of_string
+    (Environments.safe_lookup compiler.compiler_exit_status_variabe env)
+  with _ -> 0 
+
 let compiler_reference_filename env prefix compiler =
   let compiler_reference_suffix =
     Environments.safe_lookup Builtin_variables.compiler_reference_suffix env in
@@ -293,8 +298,9 @@ let rec compile_module
   (module_basename, module_filetype) =
   let backend = compiler.compiler_backend in
   let filename = Filetype.make_filename module_basename module_filetype in
-  let what = Printf.sprintf "%s for file %s"
-    (action_of_filetype module_filetype) filename in
+  let expected_exit_status = expected_compiler_exit_status env compiler in
+  let what = Printf.sprintf "%s for file %s (expected exit status: %d\n)"
+    (action_of_filetype module_filetype) filename (expected_exit_status) in
   let compile_commandline input_file output_file =
     let compile = "-c " ^ input_file in
     let output = match output_file with
@@ -314,9 +320,14 @@ let rec compile_module
     ] in
   let exec commandline output =
     Printf.fprintf log "%s\n%!" what;
-    match run_command ~stdout_variable:compileroutput ~stderr_variable:compileroutput ~append:true log env commandline with
-      | 0 -> Ok output
-      | _ as exitcode -> Error (mkreason what commandline exitcode) in
+    let exit_status = 
+      run_command
+        ~stdout_variable:compileroutput
+        ~stderr_variable:compileroutput 
+        ~append:true log env commandline in
+    if exit_status=expected_exit_status
+    then Ok output
+    else Error (mkreason what commandline exit_status) in
   match module_filetype with
     | Filetype.Interface ->
       let interface_name =
@@ -362,6 +373,7 @@ let compile_modules ocamlsrcdir compiler compilername compileroutput log env mod
 
 let link_modules ocamlsrcdir compiler compilername compileroutput program_variable custom log env modules =
   let backend = compiler.compiler_backend in
+  let expected_exit_status = expected_compiler_exit_status env compiler in
   let modules =
     if use_testing_module env then
       let testing_module =
@@ -390,15 +402,15 @@ let link_modules ocamlsrcdir compiler compilername compileroutput program_variab
     module_names;
     output
   ] in
-  match
+  let exit_status =
     run_command
       ~stdout_variable:compileroutput
       ~stderr_variable:compileroutput
       ~append:true
-      log env commandline
-  with
-    | 0 -> Ok ()
-    | _ as exitcode -> Error (mkreason what commandline exitcode)
+      log env commandline in
+  if exit_status=expected_exit_status
+  then Ok ()
+  else Error (mkreason what commandline exit_status)
 
 let compile_program ocamlsrcdir compiler compilername compileroutput program_variable log env modules_with_filetypes =
   match
@@ -654,8 +666,9 @@ let compare_nativecode_programs = {
 
 let run_test_program_in_toplevel toplevel log env =
   let testfile = testfile env in
-  let what = Printf.sprintf "Running %s in %s toplevel"
-    testfile (Backends.string_of_backend toplevel.compiler_backend) in
+  let expected_exit_status = expected_compiler_exit_status env toplevel in
+  let what = Printf.sprintf "Running %s in %s toplevel (expected exit status: %d)"
+    testfile (Backends.string_of_backend toplevel.compiler_backend) expected_exit_status in
   Printf.fprintf log "%s\n%!" what;
   let testfile_basename = Filename.chop_extension testfile in
   let test_source_directory = test_source_directory env in
@@ -692,15 +705,15 @@ let run_test_program_in_toplevel toplevel log env =
     stdlib_flags ocamlsrcdir;
     flags env;
   ] in
-  match
+  let exit_status =
     run_command
       ~stdin_variable:Builtin_variables.test_file
       ~stdout_variable:compiler_output_variable
       ~stderr_variable:compiler_output_variable
-      log newenv commandline
-  with
-    | 0 -> Pass newenv
-    | _ as exitcode -> Fail (mkreason what commandline exitcode)
+      log newenv commandline in
+  if exit_status=expected_exit_status
+  then Pass newenv
+  else Fail (mkreason what commandline exit_status)
 
 let run_in_bytecode_toplevel =
 {
