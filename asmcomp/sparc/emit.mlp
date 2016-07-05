@@ -338,10 +338,10 @@ let rec emit_instr i dslot =
         `	sethi	%hi({emit_symbol s}), %g1\n`;
         `	or	%g1, %lo({emit_symbol s}), {emit_reg i.res.(0)}\n`
     | Lop(Icall_ind { label_after; }) ->
-        `{record_frame i.live ?label:label_after}	call	{emit_reg i.arg.(0)}\n`;
+        `{record_frame i.live ~label:label_after}	call	{emit_reg i.arg.(0)}\n`;
         fill_delay_slot dslot
     | Lop(Icall_imm { func; label_after; }) ->
-        `{record_frame i.live ?label:label_after}	call	{emit_symbol func}\n`;
+        `{record_frame i.live ~label:label_after}	call	{emit_symbol func}\n`;
         fill_delay_slot dslot
     | Lop(Itailcall_ind { label_after = _; }) ->
         let n = frame_size() in
@@ -351,20 +351,20 @@ let rec emit_instr i dslot =
         `	add	%sp, {emit_int n}, %sp\n` (* in delay slot *)
     | Lop(Itailcall_imm { func; label_after = _; }) ->
         let n = frame_size() in
-        if s = !function_name then begin
+        if func = !function_name then begin
             `	b	{emit_label !tailrec_entry_point}\n`;
             fill_delay_slot dslot
         end else begin
           if !contains_calls then
             `	ld	[%sp + {emit_int(n - 4 + 96)}], %o7\n`;
-          `	sethi	%hi({emit_symbol s}), %g1\n`;
-          `	jmp	%g1 + %lo({emit_symbol s})\n`;
+          `	sethi	%hi({emit_symbol func}), %g1\n`;
+          `	jmp	%g1 + %lo({emit_symbol func})\n`;
           `	add	%sp, {emit_int n}, %sp\n` (* in delay slot *)
         end
-    | Lop(Iextcall { func; alloc; }) ->
+    | Lop(Iextcall { func; alloc; label_after; }) ->
         if alloc then begin
           `	sethi	%hi({emit_symbol func}), %g2\n`;
-          `{record_frame i.live}	call	{emit_symbol "caml_c_call"}\n`;
+          `{record_frame i.live ~label:label_after}	call	{emit_symbol "caml_c_call"}\n`;
           `	or	%g2, %lo({emit_symbol func}), %g2\n` (* in delay slot *)
         end else begin
           `	call	{emit_symbol func}\n`;
@@ -411,7 +411,7 @@ let rec emit_instr i dslot =
               | _ -> "st" in
             emit_store storeinstr addr i.arg src
         end
-    | Lop(Ialloc n) ->
+    | Lop(Ialloc { words = n; label_after_call_gc; }) ->
         if !fastcode_flag then begin
           let lbl_cont = new_label() in
           if solaris then begin
@@ -424,7 +424,7 @@ let rec emit_instr i dslot =
           end;
           `	bgeu	{emit_label lbl_cont}\n`;
           `	add	%l6, 4, {emit_reg i.res.(0)}\n`; (* in delay slot *)
-          `{record_frame i.live}	call	{emit_symbol "caml_call_gc"}\n`;
+          `{record_frame i.live ?label:label_after_call_gc}	call	{emit_symbol "caml_call_gc"}\n`;
           `	mov	{emit_int n}, %g2\n`; (* in delay slot *)
           `	add	%l6, 4, {emit_reg i.res.(0)}\n`;
           `{emit_label lbl_cont}:\n`

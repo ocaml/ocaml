@@ -161,7 +161,7 @@ method is_immediate (_n : int) = true
 
 method! is_simple_expr e =
   match e with
-  | Cop(Cextcall(fn, _, _, _), args)
+  | Cop(Cextcall(fn, _, _, _, _), args)
     when !fast_math && List.mem fn inline_float_ops ->
       (* inlined float ops are simple if their arguments are *)
       List.for_all self#is_simple_expr args

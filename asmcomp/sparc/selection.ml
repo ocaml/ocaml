@@ -38,6 +38,9 @@ method select_addressing _chunk = function
   | arg ->
       (Iindexed 0, arg)
 
+method private iextcall (func, alloc) =
+  Iextcall { func; alloc; label_after = Cmm.new_label (); }
+
 method! select_operation op args =
   match (op, args) with
   (* For SPARC V7 multiplication, division and modulus are turned into
@@ -45,11 +48,11 @@ method! select_operation op args =
      For SPARC V8 and V9, use hardware multiplication and division,
      but C library routine for modulus. *)
     (Cmuli, _) when !arch_version = SPARC_V7 ->
-      (Iextcall(".umul", false), args)
+      (self#iextcall(".umul", false), args)
   | (Cdivi, _) when !arch_version = SPARC_V7 ->
-      (Iextcall(".div", false), args)
+      (self#iextcall(".div", false), args)
   | (Cmodi, _) ->
-      (Iextcall(".rem", false), args)
+      (self#iextcall(".rem", false), args)
   | _ ->
       super#select_operation op args
 

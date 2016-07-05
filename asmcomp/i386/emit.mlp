@@ -562,7 +562,7 @@ let emit_instr fallthrough i =
           emit_call func
         else begin
           external_symbols_direct :=
-            StringSet.add s !external_symbols_direct;
+            StringSet.add func !external_symbols_direct;
           I.call (sym (Printf.sprintf "L%s$stub" (emit_symbol func)))
         end
       end
@@ -658,7 +658,6 @@ let emit_instr fallthrough i =
       I.jbe (label lbl)
   | Lop(Iintop_imm(Icheckbound { label_after_error; }, n)) ->
       let lbl = bound_error_label ?label:label_after_error i.dbg in
-      let lbl = bound_error_label i.dbg in
       I.cmp (int n) (reg i.arg.(0));
       I.jbe (label lbl)
   | Lop(Iintop(Idiv | Imod)) ->

@@ -267,7 +267,7 @@ let destroyed_at_c_call =
      100; 101; 102; 103; 104; 105; 106; 107; 108; 109; 110; 111; 112])
 
 let destroyed_at_oper = function
-    Iop(Icall_ind | Icall_imm _ | Iextcall { alloc = true; _ }) ->
+    Iop(Icall_ind _ | Icall_imm _ | Iextcall { alloc = true; _ }) ->
     all_phys_regs
   | Iop(Iextcall { alloc = false; _ }) -> destroyed_at_c_call
   | _ -> [||]

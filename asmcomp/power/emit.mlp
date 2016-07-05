@@ -303,8 +303,12 @@ let adjust_stack_offset delta =
 
 (* Record live pointers at call points *)
 
-let record_frame live dbg =
-  let lbl = new_label() in
+let record_frame ?label live dbg =
+  let lbl =
+    match label with
+    | None -> new_label()
+    | Some label -> label
+  in
   let live_offset = ref [] in
   Reg.Set.iter
     (function
@@ -581,26 +585,26 @@ let emit_instr i =
         | ELF32 ->
           `	mtctr	{emit_reg i.arg.(0)}\n`;
           `	bctrl\n`;
-          record_frame i.live i.dbg ?label:label_after
+          record_frame i.live i.dbg ~label:label_after
         | ELF64v1 ->
           `	ld	0, 0({emit_reg i.arg.(0)})\n`;  (* code pointer *)
           `	mtctr	0\n`;
           `	ld	2, 8({emit_reg i.arg.(0)})\n`;  (* TOC for callee *)
           `	bctrl\n`;
-          record_frame i.live i.dbg ?label:label_after;
+          record_frame i.live i.dbg ~label:label_after;
           emit_reload_toc()
         | ELF64v2 ->
           `	mtctr	{emit_reg i.arg.(0)}\n`;
           `	mr	12, {emit_reg i.arg.(0)}\n`;  (* addr of fn in r12 *)
           `	bctrl\n`;
-          record_frame i.live i.dbg ?label:label_after;
+          record_frame i.live i.dbg ~label:label_after;
           emit_reload_toc()
         end
     | Lop(Icall_imm { func; label_after; }) ->
         begin match abi with
         | ELF32 ->
             emit_call func;
-            record_frame i.live i.dbg ?label:label_after
+            record_frame i.live i.dbg ~label:label_after
         | ELF64v1 | ELF64v2 ->
         (* For PPC64, we cannot just emit a "bl s; nop" sequence, because
            of the following scenario:
@@ -620,7 +624,7 @@ let emit_instr i =
                 Cost: 3 instructions if same TOC, 7 if different TOC.
            Let's try option 2. *)
             emit_call func;
-            record_frame i.live i.dbg ?label:label_after;
+            record_frame i.live i.dbg ~label:label_after;
             `	nop\n`;
             emit_reload_toc()
         end
@@ -682,7 +686,7 @@ let emit_instr i =
             emit_call "caml_c_call";
             record_frame i.live i.dbg
           | ELF64v1 | ELF64v2 ->
-            emit_tocload emit_gpr 28 (TocSym s);
+            emit_tocload emit_gpr 28 (TocSym func);
             emit_call "caml_c_call";
             record_frame i.live i.dbg;
             `	nop\n`
@@ -715,16 +719,24 @@ let emit_instr i =
           | Single -> "stfs"
           | Double | Double_u -> "stfd" in
         emit_load_store storeinstr addr i.arg 1 i.arg.(0)
-    | Lop(Ialloc n) ->
-        if !call_gc_label = 0 then call_gc_label := new_label();
+    | Lop(Ialloc { words = n; label_after_call_gc; }) ->
+        if !call_gc_label = 0 then begin
+          match label_after_call_gc with
+          | None -> call_gc_label := new_label ()
+          | Some label -> call_gc_label := label
+        end;
         `	addi    31, 31, {emit_int(-n)}\n`;
         `	{emit_string cmplg}	31, 30\n`;
         `	addi	{emit_reg i.res.(0)}, 31, {emit_int size_addr}\n`;
         `	bltl	{emit_label !call_gc_label}\n`;
         (* Exactly 4 instructions after the beginning of the alloc sequence *)
         record_frame i.live Debuginfo.none
-    | Lop(Ispecific(Ialloc_far n)) ->
-        if !call_gc_label = 0 then call_gc_label := new_label();
+    | Lop(Ispecific(Ialloc_far { words = n; label_after_call_gc; })) ->
+        if !call_gc_label = 0 then begin
+          match label_after_call_gc with
+          | None -> call_gc_label := new_label ()
+          | Some label -> call_gc_label := label
+        end;
         let lbl = new_label() in
         `	addi    31, 31, {emit_int(-n)}\n`;
         `	{emit_string cmplg}	31, 30\n`;

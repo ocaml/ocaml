@@ -330,7 +330,7 @@ let emit_instr i =
         `	larl	{emit_reg i.res.(0)}, {emit_symbol s}\n`;
     | Lop(Icall_ind { label_after; }) ->
         `	basr	%r14, {emit_reg i.arg.(0)}\n`;
-        let lbl = record_frame i.live i.dbg ?label:label_after in
+        let lbl = record_frame i.live i.dbg ~label:label_after in
          `{emit_label lbl}:\n`
 
     | Lop(Icall_imm { func; label_after; }) ->
@@ -338,7 +338,7 @@ let emit_instr i =
         `	brasl	%r14, {emit_symbol func}@PLT\n`
         else
         `	brasl	%r14, {emit_symbol func}\n`;
-        let lbl = record_frame i.live i.dbg ?label:label_after in
+        let lbl = record_frame i.live i.dbg ~label:label_after in
          `{emit_label lbl}:\n`;
     | Lop(Itailcall_ind { label_after = _; }) ->
         let n = frame_size() in
@@ -369,7 +369,7 @@ let emit_instr i =
           `	larl	%r7, {emit_symbol func}\n`;
           `	brasl	%r14, {emit_symbol "caml_c_call"}\n`
           end;
-          let lbl = record_frame i.live i.dbg ?label:label_after in
+          let lbl = record_frame i.live i.dbg ~label:label_after in
            `{emit_label lbl}:\n`;
         end else begin
           if !pic_code then
@@ -412,10 +412,10 @@ let emit_instr i =
           | Double | Double_u -> "stdy" in
         emit_load_store storeinstr addr i.arg 1 i.arg.(0)
 
-    | Lop(Ialloc { words = n; label_after; }) ->
+    | Lop(Ialloc { words = n; label_after_call_gc; }) ->
         let lbl_redo = new_label() in
         let lbl_call_gc = new_label() in
-        let lbl_frame = record_frame i.live i.dbg ?label:label_after in
+        let lbl_frame = record_frame i.live i.dbg ?label:label_after_call_gc in
         call_gc_sites :=
           { gc_lbl = lbl_call_gc;
             gc_return_lbl = lbl_redo;

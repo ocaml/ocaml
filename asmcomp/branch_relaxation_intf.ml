@@ -65,8 +65,7 @@ module type S = sig
     -> label_after_call_gc:Cmm.label option
     -> Linearize.instruction_desc
   val relax_intop_checkbound
-     : unit
-    -> label_after_error:Cmm.label option
+     : label_after_error:Cmm.label option
     -> Linearize.instruction_desc
   val relax_intop_imm_checkbound
      : bound:int
