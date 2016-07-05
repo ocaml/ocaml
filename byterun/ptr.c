@@ -4,6 +4,9 @@
 #include <string.h>
 
 typedef uintnat unativeint_t;
+#ifdef _MSC_VER
+typedef unsigned char uint8_t;
+#endif
 #define caml_copy_int16 Val_int
 #define caml_copy_int8 Val_int
 
