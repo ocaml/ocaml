@@ -437,12 +437,15 @@ method insert_debug desc dbg arg res =
 method insert desc arg res =
   instr_seq <- instr_cons desc arg res instr_seq
 
-method extract =
+method extract_core ~end_instr =
   let rec extract res i =
     if i == dummy_instr
     then res
     else extract {i with next = res} i.next in
-  extract (end_instr()) instr_seq
+  extract end_instr instr_seq
+
+method extract =
+  self#extract_core ~end_instr:(end_instr ())
 
 (* Insert a sequence of moves from one pseudoreg set to another. *)
 
@@ -500,10 +503,8 @@ method emit_blockheader _env n _dbg =
 
 method about_to_emit_call _env _insn _arg = None
 
-(* Immediately prior to a function call, update the Spacetime node hole
-   pointer hard register.  This must be called after all arguments have been
-   moved into position, in case one of those arguments is occupying the node
-   hole pointer hard register. *)
+(* Prior to a function call, update the Spacetime node hole pointer hard
+   register. *)
 
 method private maybe_emit_spacetime_move ~spacetime_reg =
   Misc.Stdlib.Option.iter (fun reg ->
@@ -1003,12 +1004,16 @@ method private emit_tail_sequence env exp =
   s#emit_tail env exp;
   s#extract
 
+(* Insertion of the function prologue *)
+
+method insert_prologue _f ~loc_arg ~rarg ~spacetime_node_hole:_
+      ~env =
+  self#insert_moves loc_arg rarg;
+  None
+
 (* Sequentialization of a function definition *)
 
 method initial_env () = Tbl.empty
-
-method after_body _f ~spacetime_node_hole:_ ~env_after_prologue:_
-      ~last_insn_of_prologue:_ = None
 
 method emit_fundecl f =
   Proc.contains_calls := false;
@@ -1019,27 +1024,30 @@ method emit_fundecl f =
       f.Cmm.fun_args in
   let rarg = Array.concat rargs in
   let loc_arg = Proc.loc_parameters rarg in
+  (* To make it easier to add the Spacetime instrumentation code, we
+     first emit the body and extract the resulting instruction sequence;
+     then we emit the prologue followed by any Spacetime instrumentation.  The
+     sequence resulting from extracting the latter (prologue + instrumentation)
+     together is then simply prepended to the body. *)
   let env =
     List.fold_right2
       (fun (id, _ty) r env -> Tbl.add id r env)
       f.Cmm.fun_args rargs (self#initial_env ()) in
-  self#insert_moves loc_arg rarg;
-  let spacetime_node_hole, env_after_prologue =
-    if not Config.spacetime then None, env
+  let spacetime_node_hole, env =
+    if not Config.spacetime then None
     else begin
       let reg = self#regs_for typ_int in
-      self#insert_moves [| Proc.loc_spacetime_node_hole |] reg;
       let node_hole = Ident.create "spacetime_node_hole" in
-      Some node_hole, Tbl.add node_hole reg env
-    end 
+      Some (node_hole, reg), Tbl.add node_hole reg env
+    end
   in
-  let last_insn_of_prologue = instr_seq in
   self#emit_tail env f.Cmm.fun_body;
-  let fun_spacetime_shape =
-    self#after_body f ~spacetime_node_hole ~env_after_prologue
-      ~last_insn_of_prologue
-  in
   let body = self#extract in
+  self#instr_seq <- dummy_instr;
+  let fun_spacetime_shape =
+    self#insert_prologue f ~loc_arg ~rarg ~spacetime_node_hole:node_hole ~env
+  in
+  let body = self#extract_core ~end_instr:body in
   instr_iter (fun instr -> self#mark_instr instr.Mach.desc) body;
   { fun_name = f.Cmm.fun_name;
     fun_args = loc_arg;

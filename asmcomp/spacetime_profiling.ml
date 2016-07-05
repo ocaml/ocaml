@@ -12,11 +12,12 @@
 (*                                                                        *)
 (**************************************************************************)
 
-let node_num_header_words = 2 (* Cf. [Node_num_header_words] in the runtime. *)
+let node_num_header_words = 2 (* [Node_num_header_words] in the runtime. *)
 let index_within_node = ref node_num_header_words
 (* The [lazy]s are to ensure that we don't create [Ident.t]s at toplevel
    when not using Spacetime profiling.  (This could cause stamps to differ
-   between bytecode and native .cmis when no .mli is present, e.g. arch.ml.) *)
+   between bytecode and native .cmis when no .mli is present, e.g.
+   arch.ml.) *)
 let spacetime_node = ref (lazy (Cmm.Cvar (Ident.create "dummy")))
 let spacetime_node_ident = ref (lazy (Ident.create "dummy"))
 let current_function_label = ref ""
@@ -301,16 +302,6 @@ class virtual instruction_selection = object (self)
       let prologue_cmm =
         code_for_function_prologue ~function_name:f.Cmm.fun_name ~node_hole
       in
-      (* Splice the allocation prologue after the main prologue but before the
-         function body.  Remember that [instr_seq] points at the last
-         instruction (the list is in reverse order). *)
-      let last_insn_of_body = instr_seq in
-      let first_insn_of_body = ref Mach.dummy_instr in
-      while not (instr_seq == last_insn_of_main_prologue) do
-        first_insn_of_body := instr_seq;
-        instr_seq <- instr_seq.Mach.next
-      done;
-      instr_seq <- last_insn_of_main_prologue;
       disable_instrumentation <- true;
       let node_temp_reg =
         match self#emit_expr env_after_main_prologue prologue_cmm with
@@ -322,11 +313,7 @@ class virtual instruction_selection = object (self)
       disable_instrumentation <- false;
       let node = Lazy.force !spacetime_node_ident in
       let node_reg = Tbl.find node env_after_main_prologue in
-      self#insert_moves node_temp_reg node_reg;
-      if not (!first_insn_of_body == Mach.dummy_instr) then begin
-        (!first_insn_of_body).Mach.next <- instr_seq;
-        instr_seq <- last_insn_of_body
-      end
+      self#insert_moves node_temp_reg node_reg
     end
 
   method! emit_blockheader env n dbg =
@@ -411,16 +398,22 @@ class virtual instruction_selection = object (self)
     end;
     super#emit_fundecl f
 
-  method! after_body f ~spacetime_node_hole ~env_after_prologue
+  method! after_body f ~loc_arg ~rarg ~spacetime_node_hole ~env_after_prologue
         ~last_insn_of_prologue =
+    let fun_spacetime_shape =
+      super#insert_prologue f ~loc_arg ~rarg ~spacetime_node_hole
+        ~env_after_prologue ~last_insn_of_prologue
+    in
     (* CR mshinwell: add check to make sure the node size doesn't exceed the
        chunk size of the allocator *)
-    if Config.spacetime then begin
-      let node_hole =
+    if not Config.spacetime then None
+    else begin
+      let node_hole, node_hole_reg =
         match spacetime_node_hole with
         | None -> assert false
-        | Some node_hole -> node_hole
+        | Some node_hole_reg -> node_hole, reg
       in
+      self#insert_moves [| Proc.loc_spacetime_node_hole |] node_hole_reg;
       self#emit_prologue f ~node_hole
         ~env_after_main_prologue:env_after_prologue
         ~last_insn_of_main_prologue:last_insn_of_prologue;
@@ -429,8 +422,5 @@ class virtual instruction_selection = object (self)
       (* N.B. We do not reverse the shape list, since the function that
          reconstructs it (caml_spacetime_shape_table) reverses it again. *)
       | reverse_shape -> Some reverse_shape
-    end else begin
-      super#after_body f ~spacetime_node_hole ~env_after_prologue
-        ~last_insn_of_prologue
     end
 end
