@@ -31,6 +31,7 @@ val from_bindings : (Variables.t * string) list -> t
 
 val lookup : Variables.t -> t -> string option
 val safe_lookup : Variables.t -> t -> string
+val is_variable_defined : Variables.t -> t -> bool
 
 val add : Variables.t -> string -> t -> t
 val add_bindings : (Variables.t * string) list -> t -> t

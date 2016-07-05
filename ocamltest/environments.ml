@@ -35,6 +35,9 @@ let lookup variable env =
 let safe_lookup variable env =
   try (VariableMap.find variable env) with Not_found -> ""
 
+let is_variable_defined variable env =
+  VariableMap.mem variable env
+
 let add variable value env =
   if VariableMap.mem variable env
   then raise (Variable_already_defined variable)

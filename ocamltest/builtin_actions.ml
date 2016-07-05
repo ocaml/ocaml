@@ -253,7 +253,7 @@ let modules env = words_of_variable Builtin_variables.modules env
 let files env = words_of_variable Builtin_variables.files env
 
 let use_testing_module env =
-  (Environments.safe_lookup Builtin_variables.use_testing_module env) <> ""
+  Environments.is_variable_defined Builtin_variables.use_testing_module env
 
 let flags env = Environments.safe_lookup Builtin_variables.flags env
 
