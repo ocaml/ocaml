@@ -51,8 +51,7 @@ let oper_result_type = function
 
 let size_expr env exp =
   let rec size localenv = function
-      Cconst_int _ | Cconst_natint _
-    | Cblockheader _ -> Arch.size_int
+      Cconst_int _ | Cconst_natint _ -> Arch.size_int
     | Cconst_symbol _ | Cconst_pointer _ | Cconst_natpointer _ ->
         Arch.size_addr
     | Cconst_float _ -> Arch.size_float
@@ -950,8 +949,7 @@ method private emit_tail_sequence env exp =
 
 (* Insertion of the function prologue *)
 
-method insert_prologue _f ~loc_arg ~rarg ~spacetime_node_hole:_
-      ~env =
+method insert_prologue _f ~loc_arg ~rarg ~spacetime_node_hole:_ ~env:_ =
   self#insert_moves loc_arg rarg;
   None
 
@@ -978,7 +976,7 @@ method emit_fundecl f =
       (fun (id, _ty) r env -> Tbl.add id r env)
       f.Cmm.fun_args rargs (self#initial_env ()) in
   let spacetime_node_hole, env =
-    if not Config.spacetime then None
+    if not Config.spacetime then None, env
     else begin
       let reg = self#regs_for typ_int in
       let node_hole = Ident.create "spacetime_node_hole" in
@@ -987,9 +985,9 @@ method emit_fundecl f =
   in
   self#emit_tail env f.Cmm.fun_body;
   let body = self#extract in
-  self#instr_seq <- dummy_instr;
+  instr_seq <- dummy_instr;
   let fun_spacetime_shape =
-    self#insert_prologue f ~loc_arg ~rarg ~spacetime_node_hole:node_hole ~env
+    self#insert_prologue f ~loc_arg ~rarg ~spacetime_node_hole ~env
   in
   let body = self#extract_core ~end_instr:body in
   instr_iter (fun instr -> self#mark_instr instr.Mach.desc) body;

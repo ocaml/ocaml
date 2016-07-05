@@ -94,6 +94,7 @@ class virtual selector_generic : object
      declared "private" in the current implementation because they
      are not always applied to "self", but ideally they should be private. *)
   method extract : Mach.instruction
+  method extract_core : end_instr:Mach.instruction -> Mach.instruction
   method insert : Mach.instruction_desc -> Reg.t array -> Reg.t array -> unit
   method insert_debug : Mach.instruction_desc -> Debuginfo.t ->
                                         Reg.t array -> Reg.t array -> unit
@@ -127,7 +128,7 @@ class virtual selector_generic : object
      : Cmm.fundecl
     -> loc_arg:Reg.t array
     -> rarg:Reg.t array
-    -> spacetime_node_hole:Ident.t option
+    -> spacetime_node_hole:(Ident.t * Reg.t array) option
     -> env:(Ident.t, Reg.t array) Tbl.t
     -> Mach.spacetime_shape option
 

@@ -293,8 +293,7 @@ class virtual instruction_selection = object (self)
     in
     self#emit_expr env instrumentation
 
-  method private emit_prologue f ~node_hole ~env_after_main_prologue
-        ~last_insn_of_main_prologue =
+  method private emit_prologue f ~node_hole ~env =
     (* We don't need the prologue unless we inserted some instrumentation.
        This corresponds to adding the prologue if the function contains one
        or more call or allocation points. *)
@@ -304,7 +303,7 @@ class virtual instruction_selection = object (self)
       in
       disable_instrumentation <- true;
       let node_temp_reg =
-        match self#emit_expr env_after_main_prologue prologue_cmm with
+        match self#emit_expr env prologue_cmm with
         | None ->
           Misc.fatal_error "Spacetime prologue instruction \
               selection did not yield a destination register"
@@ -312,7 +311,7 @@ class virtual instruction_selection = object (self)
       in
       disable_instrumentation <- false;
       let node = Lazy.force !spacetime_node_ident in
-      let node_reg = Tbl.find node env_after_main_prologue in
+      let node_reg = Tbl.find node env in
       self#insert_moves node_temp_reg node_reg
     end
 
@@ -404,17 +403,15 @@ class virtual instruction_selection = object (self)
     in
     (* CR mshinwell: add check to make sure the node size doesn't exceed the
        chunk size of the allocator *)
-    if not Config.spacetime then None
+    if not Config.spacetime then fun_spacetime_shape
     else begin
       let node_hole, node_hole_reg =
         match spacetime_node_hole with
         | None -> assert false
-        | Some node_hole_reg -> node_hole, reg
+        | Some (node_hole, reg) -> node_hole, reg
       in
       self#insert_moves [| Proc.loc_spacetime_node_hole |] node_hole_reg;
-      self#emit_prologue f ~node_hole
-        ~env_after_main_prologue:env_after_prologue
-        ~last_insn_of_main_prologue:last_insn_of_prologue;
+      self#emit_prologue f ~node_hole ~env;
       match !reverse_shape with
       | [] -> None
       (* N.B. We do not reverse the shape list, since the function that
