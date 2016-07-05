@@ -9,6 +9,7 @@ modules :=\
   backends.cmo \
   variables.cmo \
   environments.cmo \
+  builtin_variables.cmo \
   builtin_environments.cmo \
   actions.cmo \
   builtin_actions.cmo \
