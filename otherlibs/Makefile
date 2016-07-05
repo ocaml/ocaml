@@ -36,9 +36,11 @@ CC=$(BYTECC)
 COMPFLAGS=-absname -w +a-4-9-41-42-44-45-48 -warn-error A -bin-annot -g \
           -safe-string -strict-sequence -strict-formats $(EXTRACAMLFLAGS)
 ifeq "$(FLAMBDA)" "true"
-OPTCOMPFLAGS=-O3
+OPTCOMPFLAGS=-O3 -lto
+OPTLINKFLAGS=-lto
 else
 OPTCOMPFLAGS=
+OPTLINKFLAGS=
 endif
 MKLIB=$(CAMLRUN) $(ROOTDIR)/tools/ocamlmklib
 
@@ -68,7 +70,7 @@ $(LIBNAME).cma: $(CAMLOBJS)
 
 $(LIBNAME).cmxa: $(CAMLOBJS_NAT)
 	$(MKLIB) -o $(LIBNAME) -oc $(CLIBNAME) -ocamlopt '$(CAMLOPT)' -linkall \
-	         $(CAMLOBJS_NAT) $(LINKOPTS)
+	         $(CAMLOBJS_NAT) $(LINKOPTS) $(OPTLINKFLAGS)
 
 $(LIBNAME).cmxs: $(LIBNAME).cmxa lib$(CLIBNAME).$(A)
 	$(CAMLOPT) -shared -o $(LIBNAME).cmxs -I . $(LIBNAME).cmxa
