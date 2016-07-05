@@ -157,6 +157,7 @@ type compiler_info = {
   compiler_name : string -> string;
   compiler_directory : string;
   compiler_backend : Sys.backend_type;
+  compiler_exit_status_variabe : Variables.t;
   compiler_reference_variable : Variables.t;
   compiler_output_variable : Variables.t
 }
@@ -168,6 +169,7 @@ let bytecode_bytecode_compiler =
   compiler_name = ocamlc_dot_byte;
   compiler_directory = "ocamlc.byte";
   compiler_backend = Sys.Bytecode;
+  compiler_exit_status_variabe = Builtin_variables.ocamlc_byte_exit_status;
   compiler_reference_variable = Builtin_variables.compiler_reference;
   compiler_output_variable = Builtin_variables.compiler_output;
 }
@@ -177,6 +179,7 @@ let bytecode_nativecode_compiler =
   compiler_name = ocamlc_dot_opt;
   compiler_directory = "ocamlc.opt";
   compiler_backend = Sys.Bytecode;
+  compiler_exit_status_variabe = Builtin_variables.ocamlc_opt_exit_status;
   compiler_reference_variable = Builtin_variables.compiler_reference2;
   compiler_output_variable = Builtin_variables.compiler_output2;
 }
@@ -188,6 +191,7 @@ let nativecode_bytecode_compiler =
   compiler_name = ocamlopt_dot_byte;
   compiler_directory = "ocamlopt.byte";
   compiler_backend = Sys.Native;
+  compiler_exit_status_variabe = Builtin_variables.ocamlopt_byte_exit_status;
   compiler_reference_variable = Builtin_variables.compiler_reference;
   compiler_output_variable = Builtin_variables.compiler_output;
 }
@@ -197,6 +201,7 @@ let nativecode_nativecode_compiler =
   compiler_name = ocamlopt_dot_opt;
   compiler_directory = "ocamlopt.opt";
   compiler_backend = Sys.Native;
+  compiler_exit_status_variabe = Builtin_variables.ocamlopt_opt_exit_status;
   compiler_reference_variable = Builtin_variables.compiler_reference2;
   compiler_output_variable = Builtin_variables.compiler_output2;
 }
@@ -207,6 +212,7 @@ let bytecode_toplevel = {
   compiler_name = ocaml_dot_byte;
   compiler_directory = "ocaml.byte";
   compiler_backend = Sys.Bytecode;
+  compiler_exit_status_variabe = Builtin_variables.ocaml_byte_exit_status;
   compiler_reference_variable = Builtin_variables.compiler_reference;
   compiler_output_variable = Builtin_variables.compiler_output;
 }
@@ -215,6 +221,7 @@ let nativecode_toplevel = {
   compiler_name = ocaml_dot_opt;
   compiler_directory = "ocaml.opt";
   compiler_backend = Sys.Native;
+  compiler_exit_status_variabe = Builtin_variables.ocaml_opt_exit_status;
   compiler_reference_variable = Builtin_variables.compiler_reference2;
   compiler_output_variable = Builtin_variables.compiler_output2;
 }
