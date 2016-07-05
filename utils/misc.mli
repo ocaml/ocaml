@@ -297,18 +297,32 @@ val delete_eol_spaces : string -> string
 
 
 
+(** {2 Hook machinery} *)
 
 (* Hooks machinery:
-  [add_hook name f] will register a function that will be called on the
+   [add_hook name f] will register a function that will be called on the
     argument of a later call to [apply_hooks]. Hooks are applied in the
     lexicographical order of their names.
 *)
 
-exception HookExn of exn
-
 type hook_info = {
   sourcefile : string;
 }
+
+exception HookExnWrapper of
+    {
+      error: exn;
+      hook_name: string;
+      hook_info: hook_info;
+    }
+    (** An exception raised by a hook will be wrapped into a [HookExnWrapper] constructor
+        by the hook machinery.
+    *)
+
+
+val raise_direct_hook_exn: exn -> 'a
+  (** A hook can use [raise_unwrapped_hook_exn] to raise an exception that will
+      not be wrapped into a [HookExnWrapper]. *)
 
 module type HookSig = sig
   type t

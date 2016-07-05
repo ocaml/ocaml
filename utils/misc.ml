@@ -652,17 +652,27 @@ type hook_info = {
   sourcefile : string;
 }
 
+exception HookExnWrapper of
+    {
+      error: exn;
+      hook_name: string;
+      hook_info: hook_info;
+    }
+
 exception HookExn of exn
-let fold_hooks list info ast =
-  List.fold_left (fun ast (name,f) ->
+
+let raise_direct_hook_exn e = raise (HookExn e)
+
+let fold_hooks list hook_info ast =
+  List.fold_left (fun ast (hook_name,f) ->
     try
-      f info ast
+      f hook_info ast
     with
     | HookExn e -> raise e
-    | e ->
-      Printf.eprintf "Error: exception %S while running hook %S on %S\n%!"
-        (Printexc.to_string e) name info.sourcefile;
-      exit 2
+    | error -> raise (HookExnWrapper {error; hook_name; hook_info})
+       (* when explicit reraise with backtrace will be available,
+          it should be used here *)
+
   ) ast (List.sort compare list)
 
 module type HookSig = sig
