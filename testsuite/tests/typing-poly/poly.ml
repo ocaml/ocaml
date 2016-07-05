@@ -810,7 +810,8 @@ type t = { f : 'a 'b. ('b -> (#ct as 'a) -> 'b) -> 'b; }
 type t = u and u = t;;
 [%%expect {|
 Line _, characters 0-10:
-Error: The type abbreviation t is cyclic
+Error: The definition of t contains a cycle:
+       u
 |}];;
 
 (* PR#1731 *)
@@ -936,11 +937,8 @@ type ('a, 'b) a = 'a -> unit constraint 'a = [> `B of ('a, 'b) b as 'b]
 and  ('a, 'b) b = 'b -> unit constraint 'b = [> `A of ('a, 'b) a as 'a];;
 [%%expect {|
 Line _, characters 0-71:
-Error: Constraints are not satisfied in this type.
-       Type
-       ([> `B of 'a ], 'a) b as 'a
-       should be an instance of
-       (('b, [> `A of 'b ] as 'c) a as 'b, 'c) b
+Error: The definition of a contains a cycle:
+       [> `B of ('a, 'b) b as 'b ] as 'a
 |}];;
 
 (* PR#1917: expanding may change original in Ctype.unify2 *)

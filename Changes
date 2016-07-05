@@ -133,8 +133,11 @@ OCaml 4.04.0:
 
 ### Bug fixes:
 
-- PR#6505: Missed Type-error leads to a segfault upon record access
+* PR#6505: Missed Type-error leads to a segfault upon record access.
   (Jacques Garrigue, extra report by Stephen Dolan)
+  Proper fix required a more restrictive approach to recursive types:
+  mutually recursive types are seen as abstract types (i.e. non-contractive)
+  when checking the well-foundedness of the recursion.
 
 * PR#6752: Extensible variant types and scope escaping
   Revert to strict scope, see comments on Mantis.

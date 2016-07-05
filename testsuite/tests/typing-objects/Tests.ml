@@ -90,7 +90,7 @@ and 'a d = <f : int c>;;
 type 'a u = < x : 'a>
 and 'a t = 'a t u;;
 type 'a u = 'a
-and 'a t = 'a t u;;
+and 'a t = 'a t u;; (* fails since 4.04 *)
 type 'a u = 'a;;
 type t = t u * t u;;
 
