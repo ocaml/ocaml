@@ -237,8 +237,8 @@ let compiler_reference_filename env prefix compiler =
   let suffix =
     if compiler_reference_suffix<>""
     then compiler_reference_suffix ^ ".reference"
-    else "reference" in
-  let mk s = make_file_name (make_file_name prefix s) suffix in
+    else ".reference" in
+  let mk s = (make_file_name prefix s) ^suffix in
   let filename = mk compiler.compiler_directory in
   if Sys.file_exists filename then filename else
   let filename = mk (Backends.string_of_backend compiler.compiler_backend) in
