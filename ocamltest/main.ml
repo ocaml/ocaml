@@ -122,7 +122,7 @@ let main () =
   let test_build_directory = get_test_build_directory test_directory in
   let reference_filename = Filename.concat
     test_source_directory (test_prefix ^ ".reference") in
-  let initial_environment = Environments.from_list
+  let initial_environment = Environments.from_bindings
   [
     Builtin_variables.test_file, test_basename;
     Builtin_variables.reference, reference_filename;

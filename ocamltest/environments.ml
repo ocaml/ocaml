@@ -40,11 +40,11 @@ let add variable value env =
   then raise (Variable_already_defined variable)
   else VariableMap.add variable value env
 
-let add_variables bindings env =
+let add_bindings bindings env =
   let f env (variable, value) = add variable value env in
   List.fold_left f env bindings
 
-let from_list bindings = add_variables bindings empty
+let from_bindings bindings = add_bindings bindings empty
 
 let (registered_environments : (string, t) Hashtbl.t) = Hashtbl.create 20
 

@@ -27,13 +27,13 @@ type t
 
 val empty : t
 
-val from_list : (Variables.t * string) list -> t
+val from_bindings : (Variables.t * string) list -> t
 
 val lookup : Variables.t -> t -> string option
 val safe_lookup : Variables.t -> t -> string
 
 val add : Variables.t -> string -> t -> t
-val add_variables : (Variables.t * string) list -> t -> t
+val add_bindings : (Variables.t * string) list -> t -> t
 
 val register : string -> t -> unit
 

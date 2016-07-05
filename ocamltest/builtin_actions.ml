@@ -447,7 +447,7 @@ let compile_test_program program_variable compiler backend log env =
     make_path [compiler_directory; compiler_output_filename] in
   let compiler_output_variable = compiler.compiler_output_variable in
   let compiler_reference_variable = compiler.compiler_reference_variable in
-  let newenv = Environments.add_variables
+  let newenv = Environments.add_bindings
     [
       (program_variable, executable_path);
       (compiler_reference_variable, compilerreference_filename);
@@ -518,7 +518,7 @@ let execute_program log env =
       Builtin_variables.stdout, output;
       Builtin_variables.stderr, output
     ] in
-    let env' = Environments.add_variables bindings env in
+    let env' = Environments.add_bindings bindings env in
     match run_command log env' commandline with
       | 0 -> Pass (Environments.add Builtin_variables.output output env)
       | _ as exitcode -> Fail (mkreason what commandline exitcode)
@@ -655,7 +655,7 @@ let run_test_program_in_toplevel toplevel log env =
     make_path [build_directory; compiler_output_filename] in
   let compiler_output_variable = toplevel.compiler_output_variable in
   let compiler_reference_variable = toplevel.compiler_reference_variable in
-  let newenv = Environments.add_variables
+  let newenv = Environments.add_bindings
     [
       (compiler_reference_variable, compilerreference_filename);
       (compiler_output_variable, compiler_output);
