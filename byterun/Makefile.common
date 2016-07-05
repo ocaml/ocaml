@@ -55,8 +55,14 @@ all:: ocamlruni$(EXE) libcamlruni.$(A)
 endif
 
 ld.conf: ../config/Makefile
+ifeq ($(TOOLCHAIN),cc)
 	echo "$(STUBLIBDIR)" > ld.conf
 	echo "$(LIBDIR)" >> ld.conf
+else
+	# Convert forward-slashes and backslashes and use Windows line-endings
+	echo "$(shell echo $(STUBLIBDIR)|sed -e 's:/:\\\\:g')"| sed -e "s/$$/\r/" > ld.conf
+	echo "$(shell echo $(LIBDIR)| sed -e 's:/:\\\\:g')"| sed -e "s/$$/\r/" >> ld.conf
+endif
 
 # Installation
 
