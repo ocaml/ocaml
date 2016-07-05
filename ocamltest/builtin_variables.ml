@@ -63,6 +63,24 @@ let modules = make ("modules",
 let ncflags = make ("ncflags",
   "Flags passed to ocamlopt.byte and ocamlopt.opt")
 
+let ocaml_byte_exit_status = make ("ocaml_byte_exit_status",
+  "Expected exit status of ocaml.byte")
+
+let ocamlc_byte_exit_status = make ("ocamlc_byte_exit_status",
+  "Expected exit status of ocac.byte")
+
+let ocamlopt_byte_exit_status = make ("ocamlopt_byte_exit_status",
+  "Expected exit status of ocamlopt.byte")
+
+let ocaml_opt_exit_status = make ("ocaml_opt_exit_status",
+  "Expected exit status of ocaml.opt")
+
+let ocamlc_opt_exit_status = make ("ocamlc_opt_exit_status",
+  "Expected exit status of ocac.opt")
+
+let ocamlopt_opt_exit_status = make ("ocamlopt_opt_exit_status",
+  "Expected exit status of ocamlopt.opt")
+
 let output = make ("output",
   "Where the output of executing the program is saved")
 

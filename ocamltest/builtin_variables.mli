@@ -43,6 +43,18 @@ val modules : Variables.t
 
 val ncflags : Variables.t
 
+val ocaml_byte_exit_status : Variables.t
+
+val ocamlc_byte_exit_status : Variables.t
+
+val ocamlopt_byte_exit_status : Variables.t
+
+val ocaml_opt_exit_status : Variables.t
+
+val ocamlc_opt_exit_status : Variables.t
+
+val ocamlopt_opt_exit_status : Variables.t
+
 val output : Variables.t
 
 val program : Variables.t
