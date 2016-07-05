@@ -2,7 +2,7 @@ File "morematch.ml", line 249, characters 33-47:
 Warning 12: this sub-pattern is unused.
 File "morematch.ml", line 1093, characters 8-65:
 Warning 8: this pattern-matching is not exhaustive.
-Here is an example of a value that is not matched:
+Here is an example of a case that is not matched:
 (A `D|B (`B, (`A|`C)))
 File "morematch.ml", line 92, characters 2-5:
 Warning 12: this sub-pattern is unused.
