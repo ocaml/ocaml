@@ -15,6 +15,10 @@
 
 (* Representation of machine code by sequences of pseudoinstructions *)
 
+(** N.B. Backends vary in their treatment of call gc and checkbound
+    points.  If the positioning of any labels associated with these is
+    important for some new feature in the compiler, the relevant backends'
+    behaviour should be checked. *)
 type label = Cmm.label
 
 type integer_comparison =
