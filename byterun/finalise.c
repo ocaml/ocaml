@@ -214,7 +214,7 @@ void caml_final_invert_finalisable_values ()
 /* Call [*f] on the closures and values of the recent set.
    This is called by the minor GC through [caml_oldify_local_roots].
 */
-void caml_final_do_young_roots ()
+void caml_final_oldify_young_roots ()
 {
   uintnat i;
 
