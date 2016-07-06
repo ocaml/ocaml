@@ -34,7 +34,7 @@ let [@inline always] double_field x i = array_get (obj x : float array) i
 let [@inline always] set_double_field x i v =
   array_set (obj x : float array) i v
 external new_block : int -> int -> t = "caml_obj_block"
-external dup : t -> t = "caml_obj_dup"
+external dup : t -> t = "caml_obj_dup_from_ocaml"
 external truncate : t -> int -> unit = "caml_obj_truncate"
 external add_offset : t -> Int32.t -> t = "caml_obj_add_offset"
 

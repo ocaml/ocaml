@@ -315,7 +315,7 @@ let comp_primitive p args =
   | Psetfield(n, _ptr, _init) -> Ksetfield n
   | Pfloatfield n -> Kgetfloatfield n
   | Psetfloatfield (n, _init) -> Ksetfloatfield n
-  | Pduprecord _ -> Kccall("caml_obj_dup", 1)
+  | Pduprecord _ -> Kccall("caml_obj_dup_from_ocaml", 1)
   | Pccall p -> Kccall(p.prim_name, p.prim_arity)
   | Pnegint -> Knegint
   | Paddint -> Kaddint
@@ -656,7 +656,7 @@ let rec comp_expr env exp sz cont =
       comp_expr env (Lprim (Pmakearray (kind, mutability), args)) sz cont
   | Lprim (Pduparray _, [arg]) ->
       let prim_obj_dup =
-        Primitive.simple ~name:"caml_obj_dup" ~arity:1 ~alloc:true
+        Primitive.simple ~name:"caml_obj_dup_from_ocaml" ~arity:1 ~alloc:true
       in
       comp_expr env (Lprim (Pccall prim_obj_dup, [arg])) sz cont
   | Lprim (Pduparray _, _) ->

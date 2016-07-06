@@ -1204,7 +1204,7 @@ let simplif_primitive_32bits = function
 let simplif_primitive p =
   match p with
   | Pduprecord _ ->
-      Pccall (default_prim "caml_obj_dup")
+      Pccall (default_prim "caml_obj_dup_from_ocaml")
   | Pbigarrayref(_unsafe, n, Pbigarray_unknown, _layout) ->
       Pccall (default_prim ("caml_ba_get_" ^ string_of_int n))
   | Pbigarrayset(_unsafe, n, Pbigarray_unknown, _layout) ->
@@ -1555,7 +1555,8 @@ let rec transl env e =
           transl_make_array dbg env kind args
       | (Pduparray _, [arg]) ->
           let prim_obj_dup =
-            Primitive.simple ~name:"caml_obj_dup" ~arity:1 ~alloc:true
+            Primitive.simple ~name:"caml_obj_dup_from_ocaml" ~arity:1
+              ~alloc:true
           in
           transl_ccall env prim_obj_dup [arg] dbg
       | (Pmakearray _, []) ->

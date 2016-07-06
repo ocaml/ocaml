@@ -60,7 +60,7 @@ val [@inline always] double_field : t -> int -> float  (* @since 3.11.2 *)
 val [@inline always] set_double_field : t -> int -> float -> unit
   (* @since 3.11.2 *)
 external new_block : int -> int -> t = "caml_obj_block"
-external dup : t -> t = "caml_obj_dup"
+external dup : t -> t = "caml_obj_dup_from_ocaml"
 external truncate : t -> int -> unit = "caml_obj_truncate"
 external add_offset : t -> Int32.t -> t = "caml_obj_add_offset"
          (* @since 3.12.0 *)

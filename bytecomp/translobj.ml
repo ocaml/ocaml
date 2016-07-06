@@ -91,7 +91,7 @@ let reset_labels () =
 let int n = Lconst (Const_base (Const_int n))
 
 let prim_makearray =
-  Primitive.simple ~name:"caml_make_vect" ~arity:2 ~alloc:true
+  Primitive.simple ~name:"caml_make_vect_from_ocaml" ~arity:2 ~alloc:true
 
 (* Also use it for required globals *)
 let transl_label_init_general f =
