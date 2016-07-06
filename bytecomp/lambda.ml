@@ -234,7 +234,8 @@ and lfunction =
   { kind: function_kind;
     params: Ident.t list;
     body: lambda;
-    attr: function_attribute; } (* specified with [@inline] attribute *)
+    attr: function_attribute; (* specified with [@inline] attribute *)
+    loc: Location.t; }
 
 and lambda_apply =
   { ap_func : lambda;
@@ -316,8 +317,8 @@ let make_key e =
         let ex = tr_rec env ex in
         let y = make_key x in
         Llet (str,k,y,ex,tr_rec (Ident.add x (Lvar y) env) e)
-    | Lprim (p,es,loc) ->
-        Lprim (p,tr_recs env es,loc)
+    | Lprim (p,es,_) ->
+        Lprim (p,tr_recs env es, Location.none)
     | Lswitch (e,sw) ->
         Lswitch (tr_rec env e,tr_sw env sw)
     | Lstringswitch (e,sw,d,_) ->
@@ -398,7 +399,7 @@ let iter f = function
   | Lletrec(decl, body) ->
       f body;
       List.iter (fun (_id, exp) -> f exp) decl
-  | Lprim(_p, args, _) ->
+  | Lprim(_p, args, _loc) ->
       List.iter f args
   | Lswitch(arg, sw) ->
       f arg;
@@ -502,9 +503,7 @@ let rec patch_guarded patch = function
 
 let rec transl_normal_path = function
     Pident id ->
-      if Ident.global id then
-        Lprim(Pgetglobal id, [], Location.none)
-      else Lvar id
+      if Ident.global id then Lprim(Pgetglobal id, [], Location.none) else Lvar id
   | Pdot(p, _s, pos) ->
       Lprim(Pfield pos, [transl_normal_path p], Location.none)
   | Papply _ ->
@@ -537,8 +536,8 @@ let subst_lambda s lam =
   | Lapply ap ->
       Lapply{ap with ap_func = subst ap.ap_func;
                      ap_args = List.map subst ap.ap_args}
-  | Lfunction{kind; params; body; attr} ->
-      Lfunction{kind; params; body = subst body; attr}
+  | Lfunction{kind; params; body; attr; loc} ->
+      Lfunction{kind; params; body = subst body; attr; loc}
   | Llet(str, k, id, arg, body) -> Llet(str, k, id, subst arg, subst body)
   | Lletrec(decl, body) -> Lletrec(List.map subst_decl decl, subst body)
   | Lprim(p, args, loc) -> Lprim(p, List.map subst args, loc)
@@ -585,8 +584,8 @@ let rec map f lam =
           ap_inlined;
           ap_specialised;
         }
-    | Lfunction { kind; params; body; attr; } ->
-        Lfunction { kind; params; body = map f body; attr; }
+    | Lfunction { kind; params; body; attr; loc; } ->
+        Lfunction { kind; params; body = map f body; attr; loc; }
     | Llet (str, k, v, e1, e2) ->
         Llet (str, k, v, map f e1, map f e2)
     | Lletrec (idel, e2) ->

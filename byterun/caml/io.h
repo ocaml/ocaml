@@ -88,7 +88,7 @@ CAMLextern void caml_really_putblock (struct channel *, char *, intnat);
 CAMLextern unsigned char caml_refill (struct channel *);
 CAMLextern uint32_t caml_getword (struct channel *);
 CAMLextern int caml_getblock (struct channel *, char *, intnat);
-CAMLextern int caml_really_getblock (struct channel *, char *, intnat);
+CAMLextern intnat caml_really_getblock (struct channel *, char *, intnat);
 
 /* Extract a struct channel * from the heap object representing it */
 

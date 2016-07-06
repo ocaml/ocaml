@@ -162,6 +162,7 @@ CAMLprim value caml_make_float_vect(value len)
 }
 
 /* [len] is a [value] representing number of words or floats */
+/* Spacetime profiling assumes that this function is only called from OCaml. */
 CAMLprim value caml_make_vect(value len, value init)
 {
   CAMLparam2 (len, init);
@@ -187,7 +188,7 @@ CAMLprim value caml_make_vect(value len, value init)
     if (size > Max_wosize) caml_invalid_argument("Array.make");
     if (size <= Max_young_wosize) {
       uintnat profinfo;
-      Get_my_profinfo_maybe_cache_backtrace(profinfo, size);
+      Get_my_profinfo_with_cached_backtrace(profinfo, size);
       res = caml_alloc_small_with_my_or_given_profinfo(size, 0, profinfo);
       for (i = 0; i < size; i++) Field(res, i) = init;
     }

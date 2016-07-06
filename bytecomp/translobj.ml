@@ -122,8 +122,9 @@ let transl_label_init_flambda f =
     if !method_count = 0 then expr
     else
       Llet (Strict, Pgenval, method_cache_id,
-        Lprim (Pccall prim_makearray, [int !method_count; int 0],
-          Location.none),
+        Lprim (Pccall prim_makearray,
+               [int !method_count; int 0],
+               Location.none),
         expr)
   in
   transl_label_init_general (fun () -> expr, size)

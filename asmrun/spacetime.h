@@ -171,10 +171,10 @@ extern void caml_spacetime_save_snapshot (struct channel *chan);
 extern void caml_spacetime_automatic_snapshot(void);
 extern void caml_spacetime_automatic_save(void);
 
-/* For use in runtime functions that are frequently executed from OCaml
+/* For use in runtime functions that are executed from OCaml
    code, to save the overhead of using libunwind every time. */
 #ifdef WITH_SPACETIME
-#define Get_my_profinfo_maybe_cache_backtrace(profinfo, size) \
+#define Get_my_profinfo_with_cached_backtrace(profinfo, size) \
   do { \
     static spacetime_unwind_info_cache spacetime_unwind_info = NULL; \
     if (DIRECTLY_CALLED_FROM_OCAML) { \
@@ -186,7 +186,7 @@ extern void caml_spacetime_automatic_save(void);
   } \
   while (0);
 #else
-#define Get_my_profinfo_maybe_cache_backtrace(profinfo, size) \
+#define Get_my_profinfo_with_cached_backtrace(profinfo, size) \
   profinfo = (uintnat) 0;
 #endif
 

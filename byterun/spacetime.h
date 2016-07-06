@@ -15,7 +15,7 @@
 #ifndef CAML_SPACETIME_H
 #define CAML_SPACETIME_H
 
-#define Get_my_profinfo_maybe_cache_backtrace(profinfo, size) \
+#define Get_my_profinfo_with_cached_backtrace(profinfo, size) \
   profinfo = (uintnat) 0;
 
 #endif

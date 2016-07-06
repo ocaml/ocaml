@@ -537,6 +537,36 @@ let test_mutual_rec_regression () =
   test 700 (try ignore (Marshal.to_string f [Marshal.Closures]); true
             with _ -> false)
 
+let test_end_of_file_regression () =
+  (* See PR#7142 *)
+  let write oc n =
+    for k = 0 to n - 1 do
+      Marshal.to_channel oc k []
+    done
+  in
+  let read ic n =
+    let k = ref 0 in
+    try
+      while true do
+        if Marshal.from_channel ic != !k then
+          failwith "unexpected integer";
+        incr k
+      done
+    with
+      | End_of_file when !k != n -> failwith "missing integer"
+      | End_of_file -> ()
+  in
+  test 800 (try
+    let n = 100 in
+    let oc = open_out_bin "intext.data" in
+    (write oc n;
+     close_out oc);
+    let ic = open_in_bin "intext.data" in
+    read ic n;
+    true
+  with _ -> false)
+
+
 let main() =
   if Array.length Sys.argv <= 2 then begin
     test_out "intext.data"; test_in "intext.data";
@@ -550,6 +580,7 @@ let main() =
     test_objects();
     test_infix ();
     test_mutual_rec_regression ();
+    test_end_of_file_regression ();
   end else
   if Sys.argv.(1) = "make" then begin
     let n = int_of_string Sys.argv.(2) in

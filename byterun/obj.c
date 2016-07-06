@@ -87,6 +87,7 @@ CAMLprim value caml_obj_block(value tag, value size)
   return res;
 }
 
+/* Spacetime profiling assumes that this function is only called from OCaml. */
 CAMLprim value caml_obj_dup(value arg)
 {
   CAMLparam1 (arg);
@@ -102,7 +103,7 @@ CAMLprim value caml_obj_dup(value arg)
     memcpy(Bp_val(res), Bp_val(arg), sz * sizeof(value));
   } else if (sz <= Max_young_wosize) {
     uintnat profinfo;
-    Get_my_profinfo_maybe_cache_backtrace(profinfo, sz);
+    Get_my_profinfo_with_cached_backtrace(profinfo, sz);
     res = caml_alloc_small_with_my_or_given_profinfo(sz, tg, profinfo);
     for (i = 0; i < sz; i++) Field(res, i) = Field(arg, i);
   } else {

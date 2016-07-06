@@ -167,7 +167,6 @@ static value take_snapshot(void)
   double time;
   uintnat profinfo;
   uintnat num_distinct_profinfos;
-  value* ptr;
   /* Fixed size buffer to avoid needing a hash table: */
   static raw_snapshot_entry* raw_entries = NULL;
   uintnat words_scanned = 0;

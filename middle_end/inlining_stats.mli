@@ -24,13 +24,13 @@ module Closure_stack : sig
   val note_entering_closure
      : t
     -> closure_id:Closure_id.t
-    -> debuginfo:Debuginfo.t
+    -> dbg:Debuginfo.t
     -> t
 
   val note_entering_call
     : t
     -> closure_id:Closure_id.t
-    -> debuginfo:Debuginfo.t
+    -> dbg:Debuginfo.t
     -> t
 
   val note_entering_inlined : t -> t

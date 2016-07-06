@@ -78,7 +78,6 @@ COMP=bytecomp/lambda.cmo bytecomp/printlambda.cmo \
   bytecomp/translcore.cmo \
   bytecomp/translclass.cmo bytecomp/translmod.cmo \
   bytecomp/simplif.cmo bytecomp/runtimedef.cmo \
-  bytecomp/debuginfo.cmo \
   driver/pparse.cmo driver/main_args.cmo \
   driver/compenv.cmo driver/compmisc.cmo
 
@@ -138,6 +137,7 @@ ASMCOMP=\
   driver/opterrors.cmo driver/optcompile.cmo
 
 MIDDLE_END=\
+  middle_end/debuginfo.cmo \
   middle_end/base_types/tag.cmo \
   middle_end/base_types/linkage_name.cmo \
   middle_end/base_types/compilation_unit.cmo \
