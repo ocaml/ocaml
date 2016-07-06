@@ -129,8 +129,8 @@ let block_shape ppf shape = match shape with
 let primitive ppf = function
   | Pidentity -> fprintf ppf "id"
   | Pignore -> fprintf ppf "ignore"
-  | Prevapply _ -> fprintf ppf "revapply"
-  | Pdirapply _ -> fprintf ppf "dirapply"
+  | Prevapply -> fprintf ppf "revapply"
+  | Pdirapply -> fprintf ppf "dirapply"
   | Ploc kind -> fprintf ppf "%s" (string_of_loc_kind kind)
   | Pgetglobal id -> fprintf ppf "global %a" Ident.print id
   | Psetglobal id -> fprintf ppf "setglobal %a" Ident.print id
@@ -298,8 +298,8 @@ let primitive ppf = function
 let name_of_primitive = function
   | Pidentity -> "Pidentity"
   | Pignore -> "Pignore"
-  | Prevapply _ -> "Prevapply"
-  | Pdirapply _ -> "Pdirapply"
+  | Prevapply -> "Prevapply"
+  | Pdirapply -> "Pdirapply"
   | Ploc _ -> "Ploc"
   | Pgetglobal _ -> "Pgetglobal"
   | Psetglobal _ -> "Psetglobal"
@@ -473,7 +473,7 @@ let rec lam ppf = function
           id_arg_list in
       fprintf ppf
         "@[<2>(letrec@ (@[<hv 1>%a@])@ %a)@]" bindings id_arg_list lam body
-  | Lprim(prim, largs) ->
+  | Lprim(prim, largs, _) ->
       let lams ppf largs =
         List.iter (fun l -> fprintf ppf "@ %a" lam l) largs in
       fprintf ppf "@[<2>(%a%a)@]" primitive prim lams largs
@@ -500,7 +500,7 @@ let rec lam ppf = function
        "@[<1>(%s %a@ @[<v 0>%a@])@]"
        (match sw.sw_failaction with None -> "switch*" | _ -> "switch")
        lam larg switch sw
-  | Lstringswitch(arg, cases, default) ->
+  | Lstringswitch(arg, cases, default, _) ->
       let switch ppf cases =
         let spc = ref false in
         List.iter

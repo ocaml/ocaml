@@ -543,7 +543,7 @@ let for_call_site ~env ~r ~(function_decls : Flambda.function_declarations)
     let env = E.unset_never_inline_inside_closures env in
     let env =
       E.note_entering_call env
-        ~closure_id:closure_id_being_applied ~debuginfo:dbg
+        ~closure_id:closure_id_being_applied ~dbg:dbg
     in
     let max_level =
       Clflags.Int_arg_helper.get ~key:(E.round env) !Clflags.inline_max_depth

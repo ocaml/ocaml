@@ -208,7 +208,7 @@ module Env : sig
   val note_entering_closure
      : t
     -> closure_id:Closure_id.t
-    -> debuginfo:Debuginfo.t
+    -> dbg:Debuginfo.t
     -> t
 
    (** If collecting inlining statistics, record that the inliner is about to
@@ -218,7 +218,7 @@ module Env : sig
   val note_entering_call
      : t
     -> closure_id:Closure_id.t
-    -> debuginfo:Debuginfo.t
+    -> dbg:Debuginfo.t
     -> t
 
    (** If collecting inlining statistics, record that the inliner is about to
@@ -239,7 +239,7 @@ module Env : sig
      : t
     -> closure_id:Closure_id.t
     -> inline_inside:bool
-    -> debuginfo:Debuginfo.t
+    -> dbg:Debuginfo.t
     -> f:(t -> 'a)
     -> 'a
 
@@ -254,12 +254,9 @@ module Env : sig
   (** Print a human-readable version of the given environment. *)
   val print : Format.formatter -> t -> unit
 
-  (** The environment maintains a list of sites that got inlined to produce
-      precise location information.
-
-      When inlining a call-site, call this function to concatenate the
-      call-site location to the existing list of sites. *)
-  val inline_debuginfo : t -> dbg:Debuginfo.t -> t
+  (** The environment stores the call-site being inlined to produce precise location
+      information. This function sets the current call-site being inlined.  *)
+  val set_inline_debuginfo : t -> dbg:Debuginfo.t -> t
 
   (** Appends the locations of inlined call-sites to the [~dbg] argument *)
   val add_inlined_debuginfo : t -> dbg:Debuginfo.t -> Debuginfo.t

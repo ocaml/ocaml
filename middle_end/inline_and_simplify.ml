@@ -593,7 +593,7 @@ and simplify_set_of_closures original_env r
       E.enter_closure closure_env ~closure_id:(Closure_id.wrap fun_var)
         ~inline_inside:
           (Inlining_decision.should_inline_inside_declaration function_decl)
-        ~debuginfo:function_decl.dbg
+        ~dbg:function_decl.dbg
         ~f:(fun body_env -> simplify body_env r function_decl.body)
     in
     let inline : Lambda.inline_attribute =
@@ -1374,7 +1374,7 @@ and duplicate_function ~env ~(set_of_closures : Flambda.set_of_closures)
     E.enter_closure closure_env
       ~closure_id:(Closure_id.wrap fun_var)
       ~inline_inside:false
-      ~debuginfo:function_decl.dbg
+      ~dbg:function_decl.dbg
       ~f:(fun body_env ->
         simplify body_env (R.create ()) function_decl.body)
   in
