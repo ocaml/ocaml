@@ -54,6 +54,8 @@ TOOLPREF=""
 with_cfi=true
 flambda=false
 max_testsuite_dir_retries=0
+with_cplugins=true
+with_fpic=false
 
 # Try to turn internationalization off, can cause config.guess to malfunction!
 unset LANG
@@ -167,6 +169,10 @@ while : ; do
         native_compiler=false;;
     -flambda|--flambda)
         flambda=true;;
+    -no-cplugins|--no-cplugins)
+        with_cplugins=false;;
+    -fPIC|--fPIC)
+        with_fpic=true;;
     *) if echo "$1" | grep -q -e '^--\?[a-zA-Z0-9-]\+='; then
          err "configure expects arguments of the form '-prefix /foo/bar'," \
              "not '-prefix=/foo/bar' (note the '=')."
@@ -1742,6 +1748,26 @@ else
     has_huge_pages=false
 fi
 
+
+if ! $shared_libraries_supported; then
+  with_cplugins=false
+fi
+
+if $with_fpic; then
+  bytecccompopts="$bytecccompopts $sharedcccompopts"
+  nativecccompopts="$nativecccompopts $sharedcccompopts"
+  aspp="$aspp $sharedcccompopts"
+fi
+
+
+if $with_cplugins; then
+  echo "#define CAML_WITH_CPLUGINS" >> m.h
+fi
+
+if $with_fpic; then
+  echo "#define CAML_WITH_FPIC" >> m.h
+fi
+
 # Finish generated files
 
 cclibs="$cclibs $mathlib"
@@ -1816,6 +1842,8 @@ echo "WITH_DEBUGGER=${with_debugger}" >>Makefile
 echo "WITH_OCAMLDOC=${with_ocamldoc}" >>Makefile
 echo "ASM_CFI_SUPPORTED=$asm_cfi_supported" >> Makefile
 echo "WITH_FRAME_POINTERS=$with_frame_pointers" >> Makefile
+echo "WITH_CPLUGINS=$with_cplugins" >> Makefile
+echo "WITH_FPIC=$with_fpic" >> Makefile
 echo "TARGET=$target" >> Makefile
 echo "HOST=$host" >> Makefile
 if [ "$ostype" = Cygwin ]; then
@@ -1884,6 +1912,16 @@ else
   inf "        naked pointers forbidden.. yes"
   else
   inf "        naked pointers forbidden.. no"
+  fi
+  if $with_cplugins; then
+  inf "        C plugins................. yes"
+  else
+  inf "        C plugins................. no"
+  fi
+  if $with_fpic; then
+  inf "        compile with -fPIC........ yes"
+  else
+  inf "        compile with -fPIC........ no"
   fi
   inf "        native dynlink ........... $natdynlink"
   if test "$profiling" = "prof"; then
