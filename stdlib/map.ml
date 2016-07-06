@@ -47,10 +47,10 @@ module type S =
     val choose: 'a t -> (key * 'a)
     val split: key -> 'a t -> 'a t * 'a option * 'a t
     val find: key -> 'a t -> 'a
-    val map: ('a -> 'b) -> 'a t -> 'b t
-    val mapi: (key -> 'a -> 'b) -> 'a t -> 'b t
     val find_after : (key -> 'a -> bool) -> key -> 'a t -> key * 'a
     val find_before : (key -> 'a -> bool) -> key -> 'a t -> key * 'a
+    val map: ('a -> 'b) -> 'a t -> 'b t
+    val mapi: (key -> 'a -> 'b) -> 'a t -> 'b t
   end
 
 module Make(Ord: OrderedType) = struct
@@ -367,7 +367,7 @@ module Make(Ord: OrderedType) = struct
         function
         | Empty ->
             None
-        | Node(l, v, d, r, h) ->
+        | Node(l, v, d, r, _) ->
             if iterating then (
               match recurse true l with
                 | Some _ as found -> found
@@ -394,7 +394,7 @@ module Make(Ord: OrderedType) = struct
         function
         | Empty ->
             None
-        | Node(l, v, d, r, h) ->
+        | Node(l, v, d, r, _) ->
             if iterating then (
               match recurse true r with
                 | Some _ as found -> found
