@@ -49,6 +49,8 @@ module type S =
     val find: key -> 'a t -> 'a
     val map: ('a -> 'b) -> 'a t -> 'b t
     val mapi: (key -> 'a -> 'b) -> 'a t -> 'b t
+    val find_after : (key -> 'a -> bool) -> key -> 'a t -> key * 'a
+    val find_before : (key -> 'a -> bool) -> key -> 'a t -> key * 'a
   end
 
 module Make(Ord: OrderedType) = struct
@@ -355,5 +357,63 @@ module Make(Ord: OrderedType) = struct
       bindings_aux [] s
 
     let choose = min_binding
+
+    let find_after f x m =
+      (* if [iterating] we already found the position where x is or should be,
+         and are iterating over the successors. If not [iterating] we are
+         descending into the tree
+       *)
+      let rec recurse iterating =
+        function
+        | Empty ->
+            None
+        | Node(l, v, d, r, h) ->
+            if iterating then (
+              match recurse true l with
+                | Some _ as found -> found
+                | None -> if f v d then Some(v,d) else recurse true r
+            ) else
+              let c = Ord.compare x v in
+              if c < 0 then
+                match recurse false l with
+                  | Some _ as found -> found
+                  | None ->
+                      if f v d then Some(v,d) else recurse true r
+              else if c > 0 then
+                match recurse false r with
+                  | Some _ as found -> found
+                  | None -> None
+              else
+                if f v d then Some(v,d) else recurse true r in
+      match recurse false m with
+        | Some kv -> kv
+        | _ -> raise Not_found
+
+    let find_before f x m =
+      let rec recurse iterating =
+        function
+        | Empty ->
+            None
+        | Node(l, v, d, r, h) ->
+            if iterating then (
+              match recurse true r with
+                | Some _ as found -> found
+                | None -> if f v d then Some(v,d) else recurse true l
+            ) else
+              let c = Ord.compare x v in
+              if c < 0 then
+                match recurse false l with
+                  | Some _ as found -> found
+                  | None -> None
+              else if c > 0 then
+                match recurse false r with
+                  | Some _ as found -> found
+                  | None ->
+                      if f v d then Some(v,d) else recurse true l
+              else
+                if f v d then Some(v,d) else recurse true l in
+      match recurse false m with
+        | Some kv -> kv
+        | _ -> raise Not_found
 
 end
