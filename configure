@@ -39,6 +39,7 @@ x11_lib_dir=''
 libunwind_include_dir=''
 libunwind_lib_dir=''
 libunwind_available=false
+disable_libunwind=false
 graph_wanted=yes
 pthread_wanted=yes
 dl_defs=''
@@ -128,6 +129,8 @@ while : ; do
         libunwind_include_dir=$2; shift;;
     -libunwindlib|--libunwindlib)
         libunwind_lib_dir=$2; shift;;
+    -disable-libunwind|--disable-libunwind)
+        disable_libunwind=true;;
     -host*|--host*)
         host_type=$2; shift;;
     -target*|--target*)
@@ -1765,6 +1768,8 @@ else
     has_huge_pages=false
 fi
 
+# Spacetime profiling, including libunwind detection
+
 profinfo_width=0
 if $with_spacetime; then
   case "$arch,$system" in
@@ -1783,66 +1788,71 @@ if $with_spacetime; then
     # The more bits used for profiling, the smaller will be Max_wosize.
     profinfo_width=26
     echo "#define PROFINFO_WIDTH $profinfo_width" >> m.h
-    # On Mac OS X, we always use the system libunwind.
-    if test "$libunwind_lib_dir" != ""; then
-      case "$arch,$system" in
-        amd64,macosx)
-          inf "[WARNING] -libunwind* options are ignored on Mac OS X"
-          libunwind_warning=true
-          libunwind_lib="-framework System"
-          libunwind_lib_temp="$libunwind_lib"
-          # We need unwinding information at runtime, but since we use
-          # -no_compact_unwind, we also need -keep_dwarf_unwind otherwise
-          # the OS X linker will chuck away the DWARF-like (.eh_frame)
-          # information.
-          # CR mshinwell: this may need an OS X version check, like the
-          # testcase from Bart.
-          mkexe="$mkexe -Wl,-keep_dwarf_unwind"
-          mksharedlib="$mksharedlib -Wl,-keep_dwarf_unwind"
-          ;;
-        *)
-          libunwind_lib="-L$libunwind_lib_dir -lunwind -lunwind-x86_64"
-          libunwind_lib_temp="-Xl $libunwind_lib"
-          ;;
-      esac
-    else
-      case "$arch,$system" in
-        amd64,macosx)
-          libunwind_lib="-framework System"
-          libunwind_lib_temp="$libunwind_lib"
-          mkexe="$mkexe -Wl,-keep_dwarf_unwind"
-          mksharedlib="$mksharedlib -Wl,-keep_dwarf_unwind"
-          ;;
-        *)
-          libunwind_lib="-lunwind -lunwind-x86_64"
-          libunwind_lib_temp="$libunwind_lib"
-          ;;
-      esac
-    fi
-    if test "$libunwind_include_dir" != ""; then
-      case "$arch,$system" in
-        amd64,macosx)
-          if ! $libunwind_warning; then
-            inf "[WARNING] -libunwind* options are ignored on Mac OS X"
-          fi
-          libunwind_include=""
-          ;;
-        *)
-          libunwind_include="-I$libunwind_include_dir"
-          ;;
-      esac
-    else
-      libunwind_include=""
-    fi
-    if sh ./hasgot -i libunwind.h $libunwind_lib_temp $libunwind_include; then
-      echo "#define HAS_LIBUNWIND" >> s.h
-      has_libunwind=yes
-      libunwind_available=true
-      echo "libunwind support for Spacetime profiling will be available."
-    else
+    if $disable_libunwind; then
       has_libunwind=no
       libunwind_available=false
-      echo "libunwind support for Spacetime profiling will not be available."
+      echo "libunwind support for Spacetime profiling was explicitly disabled."
+    else
+      # On Mac OS X, we always use the system libunwind.
+      if test "$libunwind_lib_dir" != ""; then
+        case "$arch,$system" in
+          amd64,macosx)
+            inf "[WARNING] -libunwind* options are ignored on Mac OS X"
+            libunwind_warning=true
+            libunwind_lib="-framework System"
+            libunwind_lib_temp="$libunwind_lib"
+            # We need unwinding information at runtime, but since we use
+            # -no_compact_unwind, we also need -keep_dwarf_unwind otherwise
+            # the OS X linker will chuck away the DWARF-like (.eh_frame)
+            # information.  (Older versions of OS X don't provide this.)
+            mkexe="$mkexe -Wl,-keep_dwarf_unwind"
+            mksharedlib="$mksharedlib -Wl,-keep_dwarf_unwind"
+            ;;
+          *)
+            libunwind_lib="-L$libunwind_lib_dir -lunwind -lunwind-x86_64"
+            libunwind_lib_temp="-Xl $libunwind_lib"
+            ;;
+        esac
+      else
+        case "$arch,$system" in
+          amd64,macosx)
+            libunwind_lib="-framework System"
+            libunwind_lib_temp="$libunwind_lib"
+            mkexe="$mkexe -Wl,-keep_dwarf_unwind"
+            mksharedlib="$mksharedlib -Wl,-keep_dwarf_unwind"
+            ;;
+          *)
+            libunwind_lib="-lunwind -lunwind-x86_64"
+            libunwind_lib_temp="$libunwind_lib"
+            ;;
+        esac
+      fi
+      if test "$libunwind_include_dir" != ""; then
+        case "$arch,$system" in
+          amd64,macosx)
+            if ! $libunwind_warning; then
+              inf "[WARNING] -libunwind* options are ignored on Mac OS X"
+            fi
+            libunwind_include=""
+            ;;
+          *)
+            libunwind_include="-I$libunwind_include_dir"
+            ;;
+        esac
+      else
+        libunwind_include=""
+      fi
+      if sh ./hasgot -i libunwind.h $libunwind_lib_temp $libunwind_include; \
+      then
+        echo "#define HAS_LIBUNWIND" >> s.h
+        has_libunwind=yes
+        libunwind_available=true
+        echo "libunwind support for Spacetime profiling will be available."
+      else
+        has_libunwind=no
+        libunwind_available=false
+        echo "libunwind support for Spacetime profiling will not be available."
+      fi
     fi
   else
     echo "Spacetime profiling is not available on 32-bit platforms."
