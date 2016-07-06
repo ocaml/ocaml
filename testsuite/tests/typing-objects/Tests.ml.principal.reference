@@ -67,8 +67,11 @@ Error: In the definition of d, type int c should be 'a c
 and 'a d = < f : 'a c >
 #   type 'a c = < f : 'a c >
 and 'a d = < f : int c >
-#   type 'a u = < x : 'a >
-and 'a t = 'a t u
+#   Characters 22-39:
+  and 'a t = 'a t u;; (* fails since 4.04 *)
+  ^^^^^^^^^^^^^^^^^
+Error: The definition of t contains a cycle:
+       'a t u
 #   Characters 15-32:
   and 'a t = 'a t u;;
   ^^^^^^^^^^^^^^^^^

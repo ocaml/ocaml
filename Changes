@@ -34,6 +34,10 @@ OCaml 4.04.0:
 
 - PR#7200, GPR#539: Improve, fix, and add test for parsing/pprintast.ml
   (Runhang Li, David Sheets, Alain Frisch)
+
+- GPR#351: make driver/pparse.ml functions type-safe
+  (Gabriel Scherer, Dmitrii Kosarev, review by Jérémie Dimino)
+
 - GPR#548: empty documentation comments
   (Florian Angeletti)
 
@@ -46,7 +50,17 @@ OCaml 4.04.0:
   (Unused exception or extension constructor)
   (Gabriel Scherer)
 
+- PR#7169, clarify the wording of Warning 8
+  (Non-exhaustivity warning for pattern matching)
+  (Florian Angeletti, review and report by Gabriel Scherer)
+
 ### Tools:
+
+- MPR#7189: toplevel #show, follow chains of module aliases
+  (Gabriel Scherer, report by Daniel Bünzli, review by Thomas Refis)
+
+- MPR#7248: have ocamldep interpret -open arguments in left-to-right order
+  (Gabriel Scherer, report by Anton Bachin)
 
 - GPR#452: Make the output of ocamldep more stable
   (Alain Frisch)
@@ -57,9 +71,6 @@ OCaml 4.04.0:
 
 - GPR#613: make ocamldoc use -open arguments
   (Florian Angeletti)
-
-- MPR#7248: have ocamldep interpret -open arguments in left-to-right order
-  (Gabriel Scherer, report by Anton Bachin)
 
 - Add the -no-version option to the toplevel
   (Sébastien Hinderer)
@@ -122,8 +133,11 @@ OCaml 4.04.0:
 
 ### Bug fixes:
 
-- PR#6505: Missed Type-error leads to a segfault upon record access
+* PR#6505: Missed Type-error leads to a segfault upon record access.
   (Jacques Garrigue, extra report by Stephen Dolan)
+  Proper fix required a more restrictive approach to recursive types:
+  mutually recursive types are seen as abstract types (i.e. non-contractive)
+  when checking the well-foundedness of the recursion.
 
 * PR#6752: Extensible variant types and scope escaping
   Revert to strict scope, see comments on Mantis.
@@ -132,6 +146,8 @@ OCaml 4.04.0:
 
 - PR#7112: Aliased arguments ignored for equality of module types
   (Jacques Garrigue, report by Leo White)
+
+- PR#7153: document that Unix.SOCK_SEQPACKET is not really usable.
 
 - PR#7257, GPR#583: revert a 4.03 change of behavior on (Unix.sleep 0.),
   it now calls (nano)sleep for 0 seconds as in (< 4.03) versions.
@@ -149,6 +165,9 @@ OCaml 4.04.0:
 
 * PR#7278: Prevent private inline records from being mutated
   (Alain Frisch, report by Pierre Chambart)
+
+- PR#7284: Bug in mcomp_fields leads to segfault
+  (Jacques Garrigue, report by Leo White)
 
 - GPR#600: (similar to GPR#555) ensure that register typing constraints are
   respected at N-way join points in the control flow graph

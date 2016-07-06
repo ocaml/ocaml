@@ -96,7 +96,7 @@ method is_immediate n =
 
 method! is_simple_expr = function
   (* inlined floating-point ops are simple if their arguments are *)
-  | Cop(Cextcall(fn, _, _, _), args) when List.mem fn inline_ops ->
+  | Cop(Cextcall (fn, _, _, _, _), args) when List.mem fn inline_ops ->
       List.for_all self#is_simple_expr args
   | e -> super#is_simple_expr e
 
@@ -179,7 +179,8 @@ method! select_operation op args =
   | Ccheckbound _ ->
       begin match args with
       | [Cop(Clsr, [arg1; Cconst_int n]); arg2] when n > 0 && n < 64 ->
-          (Ispecific(Ishiftcheckbound n), [arg1; arg2])
+          (Ispecific(Ishiftcheckbound { shift = n; label_after_error = None; }),
+            [arg1; arg2])
       | _ ->
           super#select_operation op args
       end
@@ -218,15 +219,15 @@ method! select_operation op args =
           super#select_operation op args
       end
   (* Recognize floating-point square root *)
-  | Cextcall("sqrt", _, _, _) ->
+  | Cextcall("sqrt", _, _, _, _) ->
       (Ispecific Isqrtf, args)
   (* Recognize bswap instructions *)
-  | Cextcall("caml_bswap16_direct", _, _, _) ->
+  | Cextcall("caml_bswap16_direct", _, _, _, _) ->
       (Ispecific(Ibswap 16), args)
-  | Cextcall("caml_int32_direct_bswap", _, _, _) ->
+  | Cextcall("caml_int32_direct_bswap", _, _, _, _) ->
       (Ispecific(Ibswap 32), args)
   | Cextcall(("caml_int64_direct_bswap"|"caml_nativeint_direct_bswap"),
-              _, _, _) ->
+              _, _, _, _) ->
       (Ispecific (Ibswap 64), args)
   (* Other operations are regular *)
   | _ ->

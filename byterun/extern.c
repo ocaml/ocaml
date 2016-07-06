@@ -383,6 +383,8 @@ static void writecode64(int code, intnat val)
 
 /* Marshal the given value in the output buffer */
 
+int caml_extern_allow_out_of_heap = 0;
+
 static void extern_rec(value v)
 {
   struct code_fragment * cf;
@@ -409,7 +411,7 @@ static void extern_rec(value v)
       writecode32(CODE_INT32, n);
     goto next_item;
   }
-  if (Is_in_value_area(v)) {
+  if (Is_in_value_area(v) || caml_extern_allow_out_of_heap) {
     header_t hd = Hd_val(v);
     tag_t tag = Tag_hd(hd);
     mlsize_t sz = Wosize_hd(hd);

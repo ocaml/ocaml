@@ -492,9 +492,9 @@ let check_abbrev env sdecl (id, decl) =
 
 let check_well_founded env loc path to_check ty =
   let visited = ref TypeMap.empty in
-  let rec check ty0 exp_nodes ty =
+  let rec check ty0 parents ty =
     let ty = Btype.repr ty in
-    if TypeSet.mem ty exp_nodes then begin
+    if TypeSet.mem ty parents then begin
       (*Format.eprintf "@[%a@]@." Printtyp.raw_type_expr ty;*)
       if match ty0.desc with
       | Tconstr (p, _, _) -> Path.same p path
@@ -502,41 +502,51 @@ let check_well_founded env loc path to_check ty =
       then raise (Error (loc, Recursive_abbrev (Path.name path)))
       else raise (Error (loc, Cycle_in_def (Path.name path, ty0)))
     end;
-    let (fini, exp_nodes) =
+    let (fini, parents) =
       try
         let prev = TypeMap.find ty !visited in
-        if TypeSet.subset exp_nodes prev then (true, exp_nodes) else
-        (false, TypeSet.union exp_nodes prev)
+        if TypeSet.subset parents prev then (true, parents) else
+        (false, TypeSet.union parents prev)
       with Not_found ->
-        (false, exp_nodes)
+        (false, parents)
     in
-    let snap = Btype.snapshot () in
-    if fini then () else try
-      visited := TypeMap.add ty exp_nodes !visited;
+    if fini then () else
+    let rec_ok =
       match ty.desc with
-      | Tconstr(p, _, _)
-        when not (TypeSet.is_empty exp_nodes) || to_check p ->
+        Tconstr(p,_,_) ->
+          !Clflags.recursive_types && Ctype.is_contractive env p
+      | Tobject _ | Tvariant _ -> true
+      | _ -> !Clflags.recursive_types
+    in
+    let visited' = TypeMap.add ty parents !visited in
+    let arg_exn =
+      try
+        visited := visited';
+        let parents =
+          if rec_ok then TypeSet.empty else TypeSet.add ty parents in
+        Btype.iter_type_expr (check ty0 parents) ty;
+        None
+      with e ->
+        visited := visited'; Some e
+    in
+    match ty.desc with
+    | Tconstr(p, _, _) when arg_exn <> None || to_check p ->
+        if to_check p then may raise arg_exn
+        else Btype.iter_type_expr (check ty0 TypeSet.empty) ty;
+        begin try
           let ty' = Ctype.try_expand_once_opt env ty in
-          let ty0 = if TypeSet.is_empty exp_nodes then ty else ty0 in
-          check ty0 (TypeSet.add ty exp_nodes) ty'
-      | _ -> raise Ctype.Cannot_expand
-    with
-    | Ctype.Cannot_expand ->
-        let rec_ok =
-          match ty.desc with
-            Tconstr(p,_,_) ->
-              !Clflags.recursive_types && Ctype.is_contractive env p
-          | Tobject _ | Tvariant _ -> true
-          | _ -> !Clflags.recursive_types
-        in
-        let nodes =
-          if rec_ok then TypeSet.empty else exp_nodes in
-        Btype.iter_type_expr (check ty0 nodes) ty
-    | Ctype.Unify _ ->
-        (* Will be detected by check_recursion *)
-        Btype.backtrack snap
+          let ty0 = if TypeSet.is_empty parents then ty else ty0 in
+          check ty0 (TypeSet.add ty parents) ty'
+        with
+          Ctype.Cannot_expand -> may raise arg_exn
+        end
+    | _ -> may raise arg_exn
   in
-  Ctype.wrap_trace_gadt_instances env (check ty TypeSet.empty) ty
+  let snap = Btype.snapshot () in
+  try Ctype.wrap_trace_gadt_instances env (check ty TypeSet.empty) ty
+  with Ctype.Unify _ ->
+    (* Will be detected by check_recursion *)
+    Btype.backtrack snap
 
 let check_well_founded_manifest env loc path decl =
   if decl.type_manifest = None then () else

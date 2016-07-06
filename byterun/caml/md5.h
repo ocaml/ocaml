@@ -27,6 +27,8 @@ CAMLextern value caml_md5_chan (value vchan, value len);
 CAMLextern void caml_md5_block(unsigned char digest[16],
                                void * data, uintnat len);
 
+CAMLextern value caml_md5_channel(struct channel *chan, intnat toread);
+
 struct MD5Context {
         uint32_t buf[4];
         uint32_t bits[2];

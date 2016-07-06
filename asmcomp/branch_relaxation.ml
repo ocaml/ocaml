@@ -51,8 +51,8 @@ module Make (T : Branch_relaxation_intf.S) = struct
       in
       match instr.desc with
       | Lop (Ialloc _)
-      | Lop (Iintop Icheckbound)
-      | Lop (Iintop_imm (Icheckbound, _))
+      | Lop (Iintop (Icheckbound _))
+      | Lop (Iintop_imm (Icheckbound _, _))
       | Lop (Ispecific _) ->
         (* We assume that any branches eligible for relaxation generated
            by these instructions only branch forward.  We further assume
@@ -86,20 +86,21 @@ module Make (T : Branch_relaxation_intf.S) = struct
           fixup did_fix (pc + T.instr_size instr.desc) instr.next
         else
           match instr.desc with
-          | Lop (Ialloc num_words) ->
-            instr.desc <- T.relax_allocation ~num_words;
+          | Lop (Ialloc { words = num_words; label_after_call_gc; }) ->
+            instr.desc <- T.relax_allocation ~num_words ~label_after_call_gc;
             fixup true (pc + T.instr_size instr.desc) instr.next
-          | Lop (Iintop Icheckbound) ->
-            instr.desc <- T.relax_intop_checkbound ();
+          | Lop (Iintop (Icheckbound { label_after_error; })) ->
+            instr.desc <- T.relax_intop_checkbound ~label_after_error;
             fixup true (pc + T.instr_size instr.desc) instr.next
-          | Lop (Iintop_imm (Icheckbound, bound)) ->
-            instr.desc <- T.relax_intop_imm_checkbound ~bound;
+          | Lop (Iintop_imm (Icheckbound { label_after_error; }, bound)) ->
+            instr.desc
+              <- T.relax_intop_imm_checkbound ~bound ~label_after_error;
             fixup true (pc + T.instr_size instr.desc) instr.next
           | Lop (Ispecific specific) ->
             instr.desc <- T.relax_specific_op specific;
             fixup true (pc + T.instr_size instr.desc) instr.next
           | Lcondbranch (test, lbl) ->
-            let lbl2 = new_label() in
+            let lbl2 = Cmm.new_label() in
             let cont =
               instr_cons (Lbranch lbl) [||] [||]
                 (instr_cons (Llabel lbl2) [||] [||] instr.next)

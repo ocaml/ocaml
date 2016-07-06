@@ -10,7 +10,7 @@ let fbool (type t) (x : t) (tag : t ty) =
 type 'a ty = Int : int ty | Bool : bool ty
 Line _, characters 2-30:
 Warning 8: this pattern-matching is not exhaustive.
-Here is an example of a value that is not matched:
+Here is an example of a case that is not matched:
 Int
 val fbool : 'a -> 'a ty -> 'a = <fun>
 |}];;
@@ -24,7 +24,7 @@ let fint (type t) (x : t) (tag : t ty) =
 [%%expect{|
 Line _, characters 2-33:
 Warning 8: this pattern-matching is not exhaustive.
-Here is an example of a value that is not matched:
+Here is an example of a case that is not matched:
 Bool
 val fint : 'a -> 'a ty -> bool = <fun>
 |}];;
