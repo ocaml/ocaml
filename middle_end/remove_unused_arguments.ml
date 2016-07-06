@@ -78,13 +78,12 @@ let make_stub unused var (fun_decl : Flambda.function_declaration)
   in
   let args = List.map (fun (_, var) -> var) used_args' in
   let kind = Flambda.Direct (Closure_id.wrap renamed) in
-  let dbg = fun_decl.dbg in
   let body : Flambda.t =
     Apply {
       func = renamed;
       args;
       kind;
-      dbg;
+      dbg = fun_decl.dbg;
       inline = Default_inline;
       specialise = Default_specialise;
     }

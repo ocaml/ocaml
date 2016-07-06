@@ -84,7 +84,11 @@ let close_phrase lam =
   let open Lambda in
   IdentSet.fold (fun id l ->
     let glb, pos = toplevel_value id in
-    let glob = Lprim (Pfield pos, [Lprim (Pgetglobal glb, [])]) in
+    let glob =
+      Lprim (Pfield pos,
+             [Lprim (Pgetglobal glb, [], Location.none)],
+             Location.none)
+    in
     Llet(Strict, Pgenval, id, glob, l)
   ) (free_variables lam) lam
 

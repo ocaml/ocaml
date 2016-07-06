@@ -29,6 +29,7 @@ val split_default_wrapper
   -> Ident.t list
   -> lambda
   -> function_attribute
+  -> Location.t
   -> (Ident.t * lambda) list
 
 (* To be filled by asmcomp/selectgen.ml *)

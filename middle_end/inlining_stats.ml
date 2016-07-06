@@ -27,23 +27,23 @@ module Closure_stack = struct
 
   let create () = []
 
-  let note_entering_closure t ~closure_id ~debuginfo =
+  let note_entering_closure t ~closure_id ~dbg =
     if not !Clflags.inlining_report then t
     else
       match t with
       | [] | (Closure _ | Inlined | Specialised _)  :: _->
-        (Closure (closure_id, debuginfo)) :: t
+        (Closure (closure_id, dbg)) :: t
       | (Call _) :: _ ->
         Misc.fatal_errorf "note_entering_closure: unexpected Call node"
 
   (* CR-someday lwhite: since calls do not have a unique id it is possible
      some calls will end up sharing nodes. *)
-  let note_entering_call t ~closure_id ~debuginfo =
+  let note_entering_call t ~closure_id ~dbg =
     if not !Clflags.inlining_report then t
     else
       match t with
       | [] | (Closure _ | Inlined | Specialised _) :: _ ->
-        (Call (closure_id, debuginfo)) :: t
+        (Call (closure_id, dbg)) :: t
       | (Call _) :: _ ->
         Misc.fatal_errorf "note_entering_call: unexpected Call node"
 
@@ -91,13 +91,7 @@ module Inlining_report = struct
     type t = Debuginfo.t * Closure_id.t * kind
 
     let compare ((d1, cl1, k1) : t) ((d2, cl2, k2) : t) =
-      let c = compare d1.dinfo_file d2.dinfo_file in
-      if c <> 0 then c else
-      let c = compare d1.dinfo_line d2.dinfo_line in
-      if c <> 0 then c else
-      let c = compare d1.dinfo_char_end d2.dinfo_char_end in
-      if c <> 0 then c else
-      let c = compare d1.dinfo_char_start d2.dinfo_char_start in
+      let c = Debuginfo.compare d1 d2 in
       if c <> 0 then c else
       let c = Closure_id.compare cl1 cl2 in
       if c <> 0 then c else

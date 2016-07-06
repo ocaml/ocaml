@@ -135,8 +135,8 @@ let for_primitive (prim : Lambda.primitive) =
   | Popaque -> Arbitrary_effects, Has_coeffects
   | Ploc _ ->
     Misc.fatal_error "[Ploc] should have been eliminated by [Translcore]"
-  | Prevapply _
-  | Pdirapply _
+  | Prevapply
+  | Pdirapply
   | Psequand
   | Psequor ->
     Misc.fatal_errorf "The primitive %a should have been eliminated by the \

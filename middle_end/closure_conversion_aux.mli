@@ -61,6 +61,7 @@ module Function_decls : sig
       -> inline:Lambda.inline_attribute
       -> specialise:Lambda.specialise_attribute
       -> is_a_functor:bool
+      -> loc:Location.t
       -> t
 
     val let_rec_ident : t -> Ident.t
@@ -71,6 +72,7 @@ module Function_decls : sig
     val inline : t -> Lambda.inline_attribute
     val specialise : t -> Lambda.specialise_attribute
     val is_a_functor : t -> bool
+    val loc : t -> Location.t
 
     (* [primitive_wrapper t] is [None] iff [t] is not a wrapper for a function
        with default optional arguments. Otherwise it is [Some body], where

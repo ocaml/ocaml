@@ -39,14 +39,14 @@ let rec eliminate_ref id = function
   | Lletrec(idel, e2) ->
       Lletrec(List.map (fun (v, e) -> (v, eliminate_ref id e)) idel,
               eliminate_ref id e2)
-  | Lprim(Pfield 0, [Lvar v]) when Ident.same v id ->
+  | Lprim(Pfield 0, [Lvar v], _) when Ident.same v id ->
       Lvar id
-  | Lprim(Psetfield(0, _, _), [Lvar v; e]) when Ident.same v id ->
+  | Lprim(Psetfield(0, _, _), [Lvar v; e], _) when Ident.same v id ->
       Lassign(id, eliminate_ref id e)
-  | Lprim(Poffsetref delta, [Lvar v]) when Ident.same v id ->
-      Lassign(id, Lprim(Poffsetint delta, [Lvar id]))
-  | Lprim(p, el) ->
-      Lprim(p, List.map (eliminate_ref id) el)
+  | Lprim(Poffsetref delta, [Lvar v], loc) when Ident.same v id ->
+      Lassign(id, Lprim(Poffsetint delta, [Lvar id], loc))
+  | Lprim(p, el, loc) ->
+      Lprim(p, List.map (eliminate_ref id) el, loc)
   | Lswitch(e, sw) ->
       Lswitch(eliminate_ref id e,
         {sw_numconsts = sw.sw_numconsts;
@@ -57,11 +57,11 @@ let rec eliminate_ref id = function
             List.map (fun (n, e) -> (n, eliminate_ref id e)) sw.sw_blocks;
          sw_failaction =
             Misc.may_map (eliminate_ref id) sw.sw_failaction; })
-  | Lstringswitch(e, sw, default) ->
+  | Lstringswitch(e, sw, default, loc) ->
       Lstringswitch
         (eliminate_ref id e,
          List.map (fun (s, e) -> (s, eliminate_ref id e)) sw,
-         Misc.may_map (eliminate_ref id) default)
+         Misc.may_map (eliminate_ref id) default, loc)
   | Lstaticraise (i,args) ->
       Lstaticraise (i,List.map (eliminate_ref id) args)
   | Lstaticcatch(e1, i, e2) ->
@@ -117,13 +117,13 @@ let simplify_exits lam =
   | Lletrec(bindings, body) ->
       List.iter (fun (_v, l) -> count l) bindings;
       count body
-  | Lprim(_p, ll) -> List.iter count ll
+  | Lprim(_p, ll, _) -> List.iter count ll
   | Lswitch(l, sw) ->
       count_default sw ;
       count l;
       List.iter (fun (_, l) -> count l) sw.sw_consts;
       List.iter (fun (_, l) -> count l) sw.sw_blocks
-  | Lstringswitch(l, sw, d) ->
+  | Lstringswitch(l, sw, d, _) ->
       count l;
       List.iter (fun (_, l) -> count l) sw;
       begin match  d with
@@ -200,37 +200,37 @@ let simplify_exits lam =
   | Lapply ap ->
       Lapply{ap with ap_func = simplif ap.ap_func;
                      ap_args = List.map simplif ap.ap_args}
-  | Lfunction{kind; params; body = l; attr} ->
-     Lfunction{kind; params; body = simplif l; attr}
+  | Lfunction{kind; params; body = l; attr; loc} ->
+     Lfunction{kind; params; body = simplif l; attr; loc}
   | Llet(str, kind, v, l1, l2) -> Llet(str, kind, v, simplif l1, simplif l2)
   | Lletrec(bindings, body) ->
       Lletrec(List.map (fun (v, l) -> (v, simplif l)) bindings, simplif body)
-  | Lprim(p, ll) -> begin
+  | Lprim(p, ll, loc) -> begin
     let ll = List.map simplif ll in
     match p, ll with
         (* Simplify %revapply, for n-ary functions with n > 1 *)
-      | Prevapply loc, [x; Lapply ap]
-      | Prevapply loc, [x; Levent (Lapply ap,_)] ->
+      | Prevapply, [x; Lapply ap]
+      | Prevapply, [x; Levent (Lapply ap,_)] ->
         Lapply {ap with ap_args = ap.ap_args @ [x]; ap_loc = loc}
-      | Prevapply loc, [x; f] -> Lapply {ap_should_be_tailcall=false;
-                                         ap_loc=loc;
-                                         ap_func=f;
-                                         ap_args=[x];
-                                         ap_inlined=Default_inline;
-                                         ap_specialised=Default_specialise}
+      | Prevapply, [x; f] -> Lapply {ap_should_be_tailcall=false;
+                                     ap_loc=loc;
+                                     ap_func=f;
+                                     ap_args=[x];
+                                     ap_inlined=Default_inline;
+                                     ap_specialised=Default_specialise}
 
         (* Simplify %apply, for n-ary functions with n > 1 *)
-      | Pdirapply loc, [Lapply ap; x]
-      | Pdirapply loc, [Levent (Lapply ap,_); x] ->
+      | Pdirapply, [Lapply ap; x]
+      | Pdirapply, [Levent (Lapply ap,_); x] ->
         Lapply {ap with ap_args = ap.ap_args @ [x]; ap_loc = loc}
-      | Pdirapply loc, [f; x] -> Lapply {ap_should_be_tailcall=false;
-                                         ap_loc=loc;
-                                         ap_func=f;
-                                         ap_args=[x];
-                                         ap_inlined=Default_inline;
-                                         ap_specialised=Default_specialise}
+      | Pdirapply, [f; x] -> Lapply {ap_should_be_tailcall=false;
+                                     ap_loc=loc;
+                                     ap_func=f;
+                                     ap_args=[x];
+                                     ap_inlined=Default_inline;
+                                     ap_specialised=Default_specialise}
 
-      | _ -> Lprim(p, ll)
+      | _ -> Lprim(p, ll, loc)
      end
   | Lswitch(l, sw) ->
       let new_l = simplif l
@@ -241,10 +241,10 @@ let simplify_exits lam =
         (new_l,
          {sw with sw_consts = new_consts ; sw_blocks = new_blocks;
                   sw_failaction = new_fail})
-  | Lstringswitch(l,sw,d) ->
+  | Lstringswitch(l,sw,d,loc) ->
       Lstringswitch
         (simplif l,List.map (fun (s,l) -> s,simplif l) sw,
-         Misc.may_map simplif d)
+         Misc.may_map simplif d,loc)
   | Lstaticraise (i,[]) as l ->
       begin try
         let _,handler =  Hashtbl.find subst i in
@@ -359,7 +359,7 @@ let simplify_lets lam =
     when optimize && List.length params = List.length args ->
       count bv (beta_reduce params body args)
   | Lapply{ap_func = Lfunction{kind = Tupled; params; body};
-           ap_args = [Lprim(Pmakeblock _, args)]}
+           ap_args = [Lprim(Pmakeblock _, args, _)]}
     when optimize && List.length params = List.length args ->
       count bv (beta_reduce params body args)
   | Lapply{ap_func = l1; ap_args = ll} ->
@@ -378,13 +378,13 @@ let simplify_lets lam =
   | Lletrec(bindings, body) ->
       List.iter (fun (_v, l) -> count bv l) bindings;
       count bv body
-  | Lprim(_p, ll) -> List.iter (count bv) ll
+  | Lprim(_p, ll, _) -> List.iter (count bv) ll
   | Lswitch(l, sw) ->
       count_default bv sw ;
       count bv l;
       List.iter (fun (_, l) -> count bv l) sw.sw_consts;
       List.iter (fun (_, l) -> count bv l) sw.sw_blocks
-  | Lstringswitch(l, sw, d) ->
+  | Lstringswitch(l, sw, d, _) ->
       count bv l ;
       List.iter (fun (_, l) -> count bv l) sw ;
       begin match d with
@@ -452,24 +452,24 @@ let simplify_lets lam =
     when optimize && List.length params = List.length args ->
       simplif (beta_reduce params body args)
   | Lapply{ap_func = Lfunction{kind = Tupled; params; body};
-           ap_args = [Lprim(Pmakeblock _, args)]}
+           ap_args = [Lprim(Pmakeblock _, args, _)]}
     when optimize && List.length params = List.length args ->
       simplif (beta_reduce params body args)
   | Lapply ap -> Lapply {ap with ap_func = simplif ap.ap_func;
                                  ap_args = List.map simplif ap.ap_args}
-  | Lfunction{kind; params; body = l; attr} ->
+  | Lfunction{kind; params; body = l; attr; loc} ->
       begin match simplif l with
-        Lfunction{kind=Curried; params=params'; body; attr}
+        Lfunction{kind=Curried; params=params'; body; attr; loc}
         when kind = Curried && optimize ->
-          Lfunction{kind; params = params @ params'; body; attr}
+          Lfunction{kind; params = params @ params'; body; attr; loc}
       | body ->
-          Lfunction{kind; params; body; attr}
+          Lfunction{kind; params; body; attr; loc}
       end
   | Llet(_str, _k, v, Lvar w, l2) when optimize ->
       Hashtbl.add subst v (simplif (Lvar w));
       simplif l2
   | Llet(Strict, kind, v,
-         Lprim(Pmakeblock(0, Mutable, kind_ref) as prim, [linit]), lbody)
+         Lprim(Pmakeblock(0, Mutable, kind_ref) as prim, [linit], loc), lbody)
     when optimize && Config.flambda = false ->
       let slinit = simplif linit in
       let slbody = simplif lbody in
@@ -481,7 +481,7 @@ let simplify_lets lam =
         in
         mklet Variable kind v slinit (eliminate_ref v slbody)
       with Real_reference ->
-        mklet Strict kind v (Lprim(prim, [slinit])) slbody
+        mklet Strict kind v (Lprim(prim, [slinit], loc)) slbody
       end
   | Llet(Alias, kind, v, l1, l2) ->
       begin match count_var v with
@@ -497,7 +497,7 @@ let simplify_lets lam =
   | Llet(str, kind, v, l1, l2) -> mklet str kind v (simplif l1) (simplif l2)
   | Lletrec(bindings, body) ->
       Lletrec(List.map (fun (v, l) -> (v, simplif l)) bindings, simplif body)
-  | Lprim(p, ll) -> Lprim(p, List.map simplif ll)
+  | Lprim(p, ll, loc) -> Lprim(p, List.map simplif ll, loc)
   | Lswitch(l, sw) ->
       let new_l = simplif l
       and new_consts =  List.map (fun (n, e) -> (n, simplif e)) sw.sw_consts
@@ -507,10 +507,10 @@ let simplify_lets lam =
         (new_l,
          {sw with sw_consts = new_consts ; sw_blocks = new_blocks;
                   sw_failaction = new_fail})
-  | Lstringswitch (l,sw,d) ->
+  | Lstringswitch (l,sw,d,loc) ->
       Lstringswitch
         (simplif l,List.map (fun (s,l) -> s,simplif l) sw,
-         Misc.may_map simplif d)
+         Misc.may_map simplif d,loc)
   | Lstaticraise (i,ls) ->
       Lstaticraise (i, List.map simplif ls)
   | Lstaticcatch(l1, (i,args), l2) ->
@@ -566,20 +566,20 @@ let rec emit_tail_infos is_tail lambda =
   | Lletrec (bindings, body) ->
       List.iter (fun (_, lam) -> emit_tail_infos false lam) bindings;
       emit_tail_infos is_tail body
-  | Lprim (Pidentity, [arg]) ->
+  | Lprim (Pidentity, [arg], _) ->
       emit_tail_infos is_tail arg
-  | Lprim (Psequand, [arg1; arg2])
-  | Lprim (Psequor, [arg1; arg2]) ->
+  | Lprim (Psequand, [arg1; arg2], _)
+  | Lprim (Psequor, [arg1; arg2], _) ->
       emit_tail_infos false arg1;
       emit_tail_infos is_tail arg2
-  | Lprim (_, l) ->
+  | Lprim (_, l, _) ->
       list_emit_tail_infos false l
   | Lswitch (lam, sw) ->
       emit_tail_infos false lam;
       list_emit_tail_infos_fun snd is_tail sw.sw_consts;
       list_emit_tail_infos_fun snd is_tail sw.sw_blocks;
       Misc.may  (emit_tail_infos is_tail) sw.sw_failaction
-  | Lstringswitch (lam, sw, d) ->
+  | Lstringswitch (lam, sw, d, _) ->
       emit_tail_infos false lam;
       List.iter
         (fun (_,lam) ->  emit_tail_infos is_tail lam)
@@ -633,7 +633,7 @@ and list_emit_tail_infos is_tail =
    function's body. *)
 
 let split_default_wrapper ?(create_wrapper_body = fun lam -> lam)
-      fun_id kind params body attr =
+      fun_id kind params body attr loc =
   let rec aux map = function
     | Llet(Strict, k, id, (Lifthenelse(Lvar optparam, _, _) as def), rest) when
         Ident.name optparam = "*opt*" && List.mem optparam params
@@ -670,16 +670,16 @@ let split_default_wrapper ?(create_wrapper_body = fun lam -> lam)
         in
         let body = Lambda.subst_lambda subst body in
         let inner_fun =
-          Lfunction { kind = Curried; params = new_ids; body; attr; }
+          Lfunction { kind = Curried; params = new_ids; body; attr; loc; }
         in
         (wrapper_body, (inner_id, inner_fun))
   in
   try
     let wrapper_body, inner = aux [] body in
     [(fun_id, Lfunction{kind; params; body = create_wrapper_body wrapper_body;
-       attr}); inner]
+       attr; loc}); inner]
   with Exit ->
-    [(fun_id, Lfunction{kind; params; body; attr})]
+    [(fun_id, Lfunction{kind; params; body; attr; loc})]
 
 (* The entry point:
    simplification + emission of tailcall annotations, if needed. *)
