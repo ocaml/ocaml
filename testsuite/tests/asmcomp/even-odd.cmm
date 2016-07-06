@@ -2,7 +2,7 @@
   (catch (exit even b)
    with (odd v)
      (if (== v 0) 0
-         (exit even (- b 1)))
+         (exit even (- v 1)))
    and (even v)
      (if (== v 0) 1
-         (exit odd (- b 1)))))
+         (exit odd (- v 1)))))
