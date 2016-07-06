@@ -18,7 +18,8 @@
 
 #include "roots.h"
 
-void caml_final_update (void);
+void caml_final_update_mark_phase (void);
+void caml_final_update_clean_phase (void);
 void caml_final_do_calls (void);
 void caml_final_do_roots (scanning_action f);
 void caml_final_invert_finalisable_values ();

@@ -40,10 +40,12 @@ struct finalisable {
    [young..size) : free space
 
    The element of the finalisable set are moved to the finalising set
-   below when the value are unreachable (for the first time).
+   below when the value are unreachable (for the first or last time).
+
 */
 
 static struct finalisable finalisable_first = {NULL,0,0,0};
+static struct finalisable finalisable_last = {NULL,0,0,0};
 
 struct to_do {
   struct to_do *next;
@@ -80,9 +82,9 @@ static void alloc_to_do (int size)
 }
 
 /* Find white finalisable values, move them to the finalising set, and
-   darken them.
+   darken them (if darken_value is true).
 */
-static void generic_final_update (struct finalisable * final)
+static void generic_final_update (struct finalisable * final, int darken_value)
 {
   uintnat i, j, k;
   uintnat todo_count = 0;
@@ -111,7 +113,14 @@ static void generic_final_update (struct finalisable * final)
       Assert (Is_in_heap (final->table[i].val));
       Assert (Tag_val (final->table[i].val) != Forward_tag);
       if (Is_white_val (final->table[i].val)){
-        to_do_tl->item[k++] = final->table[i];
+        to_do_tl->item[k] = final->table[i];
+        if(!darken_value){
+          /* The value is not darken so the finalisation function
+             is called with unit not with the value */
+          to_do_tl->item[k].val = Val_unit;
+          to_do_tl->item[k].offset = 0;
+        };
+        k++;
       }else{
         final->table[j++] = final->table[i];
       }
@@ -123,16 +132,22 @@ static void generic_final_update (struct finalisable * final)
     }
     final->young = j;
     to_do_tl->size = k;
-    for (i = 0; i < k; i++){
-      /* Note that item may already be dark due to multiple entries in
-         the final table. */
-      caml_darken (to_do_tl->item[i].val, NULL);
+    if(darken_value){
+      for (i = 0; i < k; i++){
+        /* Note that item may already be dark due to multiple entries in
+           the final table. */
+        caml_darken (to_do_tl->item[i].val, NULL);
+      }
     }
   }
 }
 
-void caml_final_update (){
-  generic_final_update(&finalisable_first);
+void caml_final_update_mark_phase (){
+  generic_final_update(&finalisable_first, /* darken_value */ 1);
+}
+
+void caml_final_update_clean_phase (){
+  generic_final_update(&finalisable_last, /* darken_value */ 0);
 }
 
 
@@ -189,6 +204,11 @@ void caml_final_do_roots (scanning_action f, struct finalisable *final)
     Call_action (f, finalisable_first.table[i].fun);
   };
 
+  Assert (finalisable_last.old <= finalisable_last.young);
+  for (i = 0; i < finalisable_last.young; i++){
+    Call_action (f, finalisable_last.table[i].fun);
+  };
+
   for (todo = to_do_hd; todo != NULL; todo = todo->next){
     for (i = 0; i < todo->size; i++){
       Call_action (f, todo->item[i].fun);
@@ -209,6 +229,12 @@ void caml_final_invert_finalisable_values ()
     invert_root(finalisable_first.table[i].val,
                 &finalisable_first.table[i].val);
   };
+
+  CAMLassert (finalisable_last.old <= finalisable_last.young);
+  for (i = 0; i < finalisable_last.young; i++){
+    invert_root(finalisable_last.table[i].val,
+                &finalisable_last.table[i].val);
+  };
 }
 
 /* Call [*f] on the closures and values of the recent set.
@@ -225,6 +251,14 @@ void caml_final_oldify_young_roots ()
     caml_oldify_one(finalisable_first.table[i].val,
                     &finalisable_first.table[i].val);
   }
+
+  Assert (finalisable_last.old <= finalisable_last.young);
+  for (i = finalisable_last.old; i < finalisable_last.young; i++){
+    caml_oldify_one(finalisable_last.table[i].fun,
+                    &finalisable_last.table[i].fun);
+    caml_oldify_one(finalisable_first.table[i].val,
+                    &finalisable_first.table[i].val);
+  }
 }
 
 /* Empty the recent set into the finalisable set.
@@ -234,6 +268,7 @@ void caml_final_oldify_young_roots ()
 void caml_final_empty_young (void)
 {
   finalisable_first.old = finalisable_first.young;
+  finalisable_last.old = finalisable_last.young;
 }
 
 /* Put (f,v) in the recent set. */
@@ -277,6 +312,11 @@ static void generic_final_register (struct finalisable *final, value f, value v)
 
 CAMLprim value caml_final_register (value f, value v){
   generic_final_register(&finalisable_first, f, v);
+  return Val_unit;
+}
+
+CAMLprim value caml_final_register_called_without_value (value f, value v){
+  generic_final_register(&finalisable_last, f, v);
   return Val_unit;
 }
 

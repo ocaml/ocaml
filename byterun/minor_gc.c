@@ -37,7 +37,7 @@
        this interval.
    [caml_young_alloc_start]...[caml_young_alloc_end]
        The allocation arena: newly-allocated blocks are carved from
-       this interval.
+       this interval, starting at [caml_young_alloc_end].
    [caml_young_alloc_mid] is the mid-point of this interval.
    [caml_young_ptr], [caml_young_trigger], [caml_young_limit]
        These pointers are all inside the allocation arena.
@@ -394,6 +394,7 @@ void caml_empty_minor_heap (void)
     ++ caml_stat_minor_collections;
     if (caml_minor_gc_end_hook != NULL) (*caml_minor_gc_end_hook) ();
   }else{
+    /* The minor heap is empty nothing to do. */
     caml_final_empty_young ();
   }
 #ifdef DEBUG

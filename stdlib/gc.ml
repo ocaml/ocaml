@@ -92,6 +92,8 @@ let allocated_bytes () =
 
 
 external finalise : ('a -> unit) -> 'a -> unit = "caml_final_register"
+external finalise_last : (unit -> unit) -> 'a -> unit =
+  "caml_final_register_called_without_value"
 external finalise_release : unit -> unit = "caml_final_release"
 
 

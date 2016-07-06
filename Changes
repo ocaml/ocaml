@@ -57,6 +57,15 @@ OCaml 4.04.0:
   (Non-exhaustivity warning for pattern matching)
   (Florian Angeletti, review and report by Gabriel Scherer)
 
+### Runtime system:
+
+- PR#7210, GPR#562: Allows to register finalisation function that are
+  called only when a value will never be reachable anymore. The
+  drawbacks compared to the existing one is that the finalisation
+  function is not called with the value as argument. These finalisers
+  are registered with `GC.finalise_last`
+  (François Bobot)
+
 ### Tools:
 
 - MPR#7189: toplevel #show, follow chains of module aliases
