@@ -322,7 +322,8 @@
 
 /****************** PowerPC, BSD */
 
-#elif defined(TARGET_power) && (defined(SYS_bsd) || defined(SYS_bsd_elf) || defined(SYS_netbsd))
+#elif defined(TARGET_power) && \
+    (defined(SYS_bsd) || defined(SYS_bsd_elf) || defined(SYS_netbsd))
 
   #define DECLARE_SIGNAL_HANDLER(name) \
     static void name(int sig, int code, struct sigcontext * context)
