@@ -690,6 +690,7 @@ static void caml_parse_header(char * fun_name,
 
 static value caml_input_val_core(struct channel *chan, int outside_heap)
 {
+  intnat r;
   char header[32];
   struct marshal_header h;
   char * block;
@@ -698,12 +699,15 @@ static value caml_input_val_core(struct channel *chan, int outside_heap)
   if (! caml_channel_binary_mode(chan))
     caml_failwith("input_value: not a binary channel");
   /* Read and parse the header */
-  if (caml_really_getblock(chan, header, 20) == 0)
+  r = caml_really_getblock(chan, header, 20);
+  if (r == 0)
+    caml_raise_end_of_file();
+  else if (r < 20)
     caml_failwith("input_value: truncated object");
   intern_src = (unsigned char *) header;
   if (read32u() == Intext_magic_number_big) {
     /* Finish reading the header */
-    if (caml_really_getblock(chan, header + 20, 32 - 20) == 0)
+    if (caml_really_getblock(chan, header + 20, 32 - 20) < 32 - 20)
       caml_failwith("input_value: truncated object");
   }
   intern_src = (unsigned char *) header;
@@ -714,7 +718,7 @@ static value caml_input_val_core(struct channel *chan, int outside_heap)
      can take place (via signal handlers or context switching in systhreads),
      and [intern_input] may change.  So, wait until [caml_really_getblock]
      is over before using [intern_input] and the other global vars. */
-  if (caml_really_getblock(chan, block, h.data_len) == 0) {
+  if (caml_really_getblock(chan, block, h.data_len) < h.data_len) {
     caml_stat_free(block);
     caml_failwith("input_value: truncated object");
   }
