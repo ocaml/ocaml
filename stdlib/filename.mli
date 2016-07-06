@@ -140,4 +140,9 @@ val quote : string -> string
     Warning: under Windows, the output is only suitable for use
     with programs that follow the standard Windows quoting
     conventions.
- *)
+*)
+
+val extension : string -> string
+(** Get the extension of a file if there is one, includes the . when
+    there is an extension. Gives back empty string is no extension
+    found. *)
