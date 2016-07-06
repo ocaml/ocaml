@@ -184,9 +184,9 @@ let destroyed_at_c_call =
      124;125;126;127;128;129;130;131])
 
 let destroyed_at_oper = function
-  | Iop(Icall_ind | Icall_imm _) | Iop(Iextcall(_, true)) ->
+  | Iop(Icall_ind _ | Icall_imm _) | Iop(Iextcall { alloc = true; }) ->
       all_phys_regs
-  | Iop(Iextcall(_, false)) ->
+  | Iop(Iextcall { alloc = false; }) ->
       destroyed_at_c_call
   | Iop(Ialloc _) ->
       [| reg_x15 |]
@@ -199,12 +199,12 @@ let destroyed_at_raise = all_phys_regs
 (* Maximal register pressure *)
 
 let safe_register_pressure = function
-  | Iextcall(_, _) -> 8
+  | Iextcall _ -> 8
   | Ialloc _ -> 25
   | _ -> 26
 
 let max_register_pressure = function
-  | Iextcall(_, _) -> [| 10; 8 |]
+  | Iextcall _ -> [| 10; 8 |]
   | Ialloc _ -> [| 25; 32 |]
   | Iintoffloat | Ifloatofint
   | Iload(Single, _) | Istore(Single, _, _) -> [| 26; 31 |]
@@ -214,9 +214,9 @@ let max_register_pressure = function
    registers). *)
 
 let op_is_pure = function
-  | Icall_ind | Icall_imm _ | Itailcall_ind | Itailcall_imm _
+  | Icall_ind _ | Icall_imm _ | Itailcall_ind _ | Itailcall_imm _
   | Iextcall _ | Istackoffset _ | Istore _ | Ialloc _
-  | Iintop(Icheckbound) | Iintop_imm(Icheckbound, _)
+  | Iintop(Icheckbound _) | Iintop_imm(Icheckbound _, _)
   | Ispecific(Ishiftcheckbound _) -> false
   | _ -> true
 

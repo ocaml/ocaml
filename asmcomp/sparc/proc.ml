@@ -204,8 +204,9 @@ let destroyed_at_c_call = (* %l0-%l4, %i0-%i5 preserved *)
      108; 109; 110; 111; 112; 113; 114])
 
 let destroyed_at_oper = function
-    Iop(Icall_ind | Icall_imm _ | Iextcall(_, true)) -> all_phys_regs
-  | Iop(Iextcall(_, false)) -> destroyed_at_c_call
+    Iop(Icall_ind _ | Icall_imm _ | Iextcall { alloc = true; }) ->
+    all_phys_regs
+  | Iop(Iextcall { alloc = false; }) -> destroyed_at_c_call
   | _ -> [||]
 
 let destroyed_at_raise = all_phys_regs
@@ -213,20 +214,20 @@ let destroyed_at_raise = all_phys_regs
 (* Maximal register pressure *)
 
 let safe_register_pressure = function
-    Iextcall(_, _) -> 0
+    Iextcall _ -> 0
   | _ -> 15
 
 let max_register_pressure = function
-    Iextcall(_, _) -> [| 11; 0 |]
+    Iextcall _ -> [| 11; 0 |]
   | _ -> [| 19; 15 |]
 
 (* Pure operations (without any side effect besides updating their result
    registers). *)
 
 let op_is_pure = function
-  | Icall_ind | Icall_imm _ | Itailcall_ind | Itailcall_imm _
+  | Icall_ind _ | Icall_imm _ | Itailcall_ind _ | Itailcall_imm _
   | Iextcall _ | Istackoffset _ | Istore _ | Ialloc _
-  | Iintop(Icheckbound) | Iintop_imm(Icheckbound, _) -> false
+  | Iintop(Icheckbound _) | Iintop_imm(Icheckbound _, _) -> false
   | _ -> true
 
 (* Layout of the stack *)

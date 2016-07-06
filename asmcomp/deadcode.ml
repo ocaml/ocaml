@@ -23,7 +23,7 @@ open Mach
 
 let rec deadcode i =
   match i.desc with
-  | Iend | Ireturn | Iop(Itailcall_ind) | Iop(Itailcall_imm _) | Iraise _ ->
+  | Iend | Ireturn | Iop(Itailcall_ind _) | Iop(Itailcall_imm _) | Iraise _ ->
       (i, Reg.add_set_array i.live i.arg)
   | Iop op ->
       let (s, before) = deadcode i.next in

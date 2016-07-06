@@ -35,12 +35,14 @@ type addressing_mode =
 (* Specific operations *)
 
 type specific_operation =
-  | Ifar_alloc of int
-  | Ifar_intop_checkbound
-  | Ifar_intop_imm_checkbound of int
+  | Ifar_alloc of { words : int; label_after_call_gc : Cmm.label option; }
+  | Ifar_intop_checkbound of { label_after_error : Cmm.label option; }
+  | Ifar_intop_imm_checkbound of
+      { bound : int; label_after_error : Cmm.label option; }
   | Ishiftarith of arith_operation * int
-  | Ishiftcheckbound of int
-  | Ifar_shiftcheckbound of int
+  | Ishiftcheckbound of { shift : int; label_after_error : Cmm.label option; }
+  | Ifar_shiftcheckbound of
+      { shift : int; label_after_error : Cmm.label option; }
   | Imuladd       (* multiply and add *)
   | Imulsub       (* multiply and subtract *)
   | Inegmulf      (* floating-point negate and multiply *)
@@ -96,12 +98,12 @@ let print_addressing printreg addr ppf arg =
 
 let print_specific_operation printreg op ppf arg =
   match op with
-  | Ifar_alloc n ->
-    fprintf ppf "(far) alloc %i" n
-  | Ifar_intop_checkbound ->
+  | Ifar_alloc { words; label_after_call_gc = _; } ->
+    fprintf ppf "(far) alloc %i" words
+  | Ifar_intop_checkbound _ ->
     fprintf ppf "%a (far) check > %a" printreg arg.(0) printreg arg.(1)
-  | Ifar_intop_imm_checkbound n ->
-    fprintf ppf "%a (far) check > %i" printreg arg.(0) n
+  | Ifar_intop_imm_checkbound { bound; _ } ->
+    fprintf ppf "%a (far) check > %i" printreg arg.(0) bound
   | Ishiftarith(op, shift) ->
       let op_name = function
       | Ishiftadd -> "+"
@@ -112,11 +114,12 @@ let print_specific_operation printreg op ppf arg =
        else sprintf ">> %i" (-shift) in
       fprintf ppf "%a %s %a %s"
        printreg arg.(0) (op_name op) printreg arg.(1) shift_mark
-  | Ishiftcheckbound n ->
-      fprintf ppf "check %a >> %i > %a" printreg arg.(0) n printreg arg.(1)
-  | Ifar_shiftcheckbound n ->
+  | Ishiftcheckbound { shift; _ } ->
+      fprintf ppf "check %a >> %i > %a" printreg arg.(0) shift
+        printreg arg.(1)
+  | Ifar_shiftcheckbound { shift; _ } ->
       fprintf ppf
-        "(far) check %a >> %i > %a" printreg arg.(0) n printreg arg.(1)
+        "(far) check %a >> %i > %a" printreg arg.(0) shift printreg arg.(1)
   | Imuladd ->
       fprintf ppf "(%a * %a) + %a"
         printreg arg.(0)

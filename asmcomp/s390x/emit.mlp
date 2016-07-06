@@ -154,8 +154,12 @@ let emit_set_comp cmp res =
 
 (* Record live pointers at call points *)
 
-let record_frame live dbg =
-  let lbl = new_label() in
+let record_frame ?label live dbg =
+  let lbl =
+    match label with
+    | None -> new_label()
+    | Some label -> label
+  in
   let live_offset = ref [] in
   Reg.Set.iter
     (function
@@ -196,10 +200,10 @@ type bound_error_call =
 let bound_error_sites = ref ([] : bound_error_call list)
 let bound_error_call = ref 0
 
-let bound_error_label dbg =
+let bound_error_label ?label dbg =
   if !Clflags.debug then begin
     let lbl_bound_error = new_label() in
-    let lbl_frame = record_frame Reg.Set.empty dbg in
+    let lbl_frame = record_frame ?label Reg.Set.empty dbg in
     bound_error_sites :=
      { bd_lbl = lbl_bound_error; bd_frame = lbl_frame } :: !bound_error_sites;
    lbl_bound_error
@@ -324,26 +328,26 @@ let emit_instr i =
         `	lgrl	{emit_reg i.res.(0)}, {emit_symbol s}@GOTENT\n`
         else
         `	larl	{emit_reg i.res.(0)}, {emit_symbol s}\n`;
-    | Lop(Icall_ind) ->
+    | Lop(Icall_ind { label_after; }) ->
         `	basr	%r14, {emit_reg i.arg.(0)}\n`;
-        let lbl = record_frame i.live i.dbg in
+        let lbl = record_frame i.live i.dbg ~label:label_after in
          `{emit_label lbl}:\n`
 
-    | Lop(Icall_imm s) ->
+    | Lop(Icall_imm { func; label_after; }) ->
         if !pic_code then
-        `	brasl	%r14, {emit_symbol s}@PLT\n`
+        `	brasl	%r14, {emit_symbol func}@PLT\n`
         else
-        `	brasl	%r14, {emit_symbol s}\n`;
-        let lbl = record_frame i.live i.dbg in
+        `	brasl	%r14, {emit_symbol func}\n`;
+        let lbl = record_frame i.live i.dbg ~label:label_after in
          `{emit_label lbl}:\n`;
-    | Lop(Itailcall_ind) ->
+    | Lop(Itailcall_ind { label_after = _; }) ->
         let n = frame_size() in
         if !contains_calls then
           `	lg	%r14, {emit_int(n - size_addr)}(%r15)\n`;
         emit_stack_adjust (-n);
         `	br	{emit_reg i.arg.(0)}\n`
-    | Lop(Itailcall_imm s) ->
-        if s = !function_name then
+    | Lop(Itailcall_imm { func; label_after = _; }) ->
+        if func = !function_name then
           `	brcl	15, {emit_label !tailrec_entry_point}\n`
         else begin
           let n = frame_size() in
@@ -351,27 +355,27 @@ let emit_instr i =
             `	lg	%r14, {emit_int(n - size_addr)}(%r15)\n`;
           emit_stack_adjust (-n);
           if !pic_code then
-            `	brcl	15, {emit_symbol s}@PLT\n`
+            `	brcl	15, {emit_symbol func}@PLT\n`
           else
-            `	brcl	15, {emit_symbol s}\n`
+            `	brcl	15, {emit_symbol func}\n`
         end
 
-     | Lop(Iextcall(s, alloc)) ->
+     | Lop(Iextcall { func; alloc; label_after; }) ->
         if alloc then begin
           if !pic_code then begin
-          `	lgrl	%r7, {emit_symbol s}@GOTENT\n`;
+          `	lgrl	%r7, {emit_symbol func}@GOTENT\n`;
           `	brasl	%r14, {emit_symbol "caml_c_call"}@PLT\n`
           end else begin
-          `	larl	%r7, {emit_symbol s}\n`;
+          `	larl	%r7, {emit_symbol func}\n`;
           `	brasl	%r14, {emit_symbol "caml_c_call"}\n`
           end;
-          let lbl = record_frame i.live i.dbg in
+          let lbl = record_frame i.live i.dbg ~label:label_after in
            `{emit_label lbl}:\n`;
         end else begin
           if !pic_code then
-          `	brasl	%r14, {emit_symbol s}@PLT\n`
+          `	brasl	%r14, {emit_symbol func}@PLT\n`
           else
-          `	brasl	%r14, {emit_symbol s}\n`
+          `	brasl	%r14, {emit_symbol func}\n`
        end
 
      | Lop(Istackoffset n) ->
@@ -408,10 +412,10 @@ let emit_instr i =
           | Double | Double_u -> "stdy" in
         emit_load_store storeinstr addr i.arg 1 i.arg.(0)
 
-    | Lop(Ialloc n) ->
+    | Lop(Ialloc { words = n; label_after_call_gc; }) ->
         let lbl_redo = new_label() in
         let lbl_call_gc = new_label() in
-        let lbl_frame = record_frame i.live i.dbg in
+        let lbl_frame = record_frame i.live i.dbg ?label:label_after_call_gc in
         call_gc_sites :=
           { gc_lbl = lbl_call_gc;
             gc_return_lbl = lbl_redo;
@@ -464,8 +468,8 @@ let emit_instr i =
         `	brc	{emit_int mask}, {emit_label lbl}\n`;
         `	lghi	{emit_reg i.res.(0)}, 0\n`;
         `{emit_label lbl}:\n`
-    | Lop(Iintop Icheckbound) ->
-        let lbl = bound_error_label i.dbg in
+    | Lop(Iintop (Icheckbound { label_after_error; })) ->
+        let lbl = bound_error_label i.dbg ?label:label_after_error in
         `	clgr	{emit_reg i.arg.(0)}, {emit_reg i.arg.(1)}\n`;
         `	brcl	12, {emit_label lbl}\n`  (* branch if unsigned le *)
     | Lop(Iintop op) ->
@@ -484,8 +488,8 @@ let emit_instr i =
         `	brc	{emit_int mask}, {emit_label lbl}\n`;
         `	lghi	{emit_reg i.res.(0)}, 0\n`;
         `{emit_label lbl}:\n`
-    | Lop(Iintop_imm(Icheckbound, n)) ->
-       let lbl = bound_error_label i.dbg in
+    | Lop(Iintop_imm(Icheckbound { label_after_error; }, n)) ->
+       let lbl = bound_error_label i.dbg ?label:label_after_error in
        if n >= 0 then begin
         `	clgfi	{emit_reg i.arg.(0)}, {emit_int n}\n`;
         `	brcl	12, {emit_label lbl}\n`  (* branch if unsigned le *)
