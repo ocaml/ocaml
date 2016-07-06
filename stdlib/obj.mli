@@ -150,3 +150,90 @@ module Ephemeron: sig
   val blit_data : t -> t -> unit
   (** Same as {!Ephemeron.K1.blit_data} *)
 end
+
+module Pointer : sig
+(** Operations on raw pointers.
+
+   This module provides operations on pointers, which represent raw machine
+   addresses.  Any external pointer can be stored in an {!Obj.Pointer.t} and
+   presented back to external code.  Furthermore, pointers can be
+   dereferenced, yielding the contents of the memory location they point to.
+
+   It is almost always a very bad idea to expose pointers in library module
+   interfaces -- they are intended for FFI work, such as accessing C data
+   structures from OCaml without copying.  Libraries that use pointers
+   should use them only to access data allocated by foreign allocators.
+
+   Most users should not use pointers directly.  They are intended for use
+   by higher-level libraries (such as ocaml-ctypes) as a faster alternative
+   to C externals for accessing individual words of foreign data structures.
+
+   If you control where the data is allocated, use the {!Bigarray} module
+   instead, or use other libraries that provide safe abstractions.  The
+   {!Bigarray} module ensures that the data lives as long as the bigarray is
+   alive, and that it is freed when no longer accessible by OCaml code.
+   Like raw pointers, the data contained in a bigarray can be accessed by
+   other code without copying.
+
+   Other libraries that provide higher-level functionality for manipulating
+   foreign data include ocaml-ctypes and cstruct.
+
+   Pointers are {e highly} unsafe.  There is no check (and indeed no way to
+   check) that a pointer actually points to the location in memory that it
+   claims to.  In fact, pointers are even less safe than C pointers, because
+   OCaml pointers are untyped, while C pointers are typed.It is the
+   responsibilty of any code that uses pointers to ensure that such use is safe,
+   even given invalid or malicious input.  If you fail to do so, you will get a
+   crash at best.  If the process is processing untrusted data, a misuse of
+   pointers is likely to result in corruption of memory that allows for an
+   attacker to execute arbitrary code.  Note that this applies to the rest of
+   the {!Obj} module as well.
+
+   @since 4.04.0
+ *)
+
+type t
+(** The type of raw pointers *)
+
+val offset : nativeint -> t -> t [@@inline]
+(** [offset n ptr] creates a new pointer with offset [n] from [ptr]. *)
+
+external to_nativeint : t -> nativeint = "%identity"
+(** Get the address pointed to as a number *)
+
+external of_nativeint : nativeint -> t = "%identity"
+(** Convert a nativeint to a pointer *)
+
+external load8 : t -> char = "%load8"
+(** Load a byte from the pointer.  The result is placed in an OCaml [char] *)
+
+external aligned_load16 : t -> int = "%aligned_load16"
+(** Load 16 bits from a pointer.  The pointer must point to an even address,
+    but this is not checked. *)
+
+external aligned_load32 : t -> int32 = "%aligned_load32"
+(** Load 32 bits from a pointer.  The pointer must point to an address that
+    is divisible by 4, but this is not checked. *)
+
+external aligned_load64 : t -> int64 = "%aligned_load64"
+(** Load 64 bits from a pointer.  The pointer must point to an address that
+    is divisible by 8, but this is not checked. *)
+
+external aligned_loadnative : t -> nativeint = "%aligned_loadnative"
+(** Load a machine word from a pointer.  The pointer must point to an
+    address that is a multiple of the size of a machine word in bytes,
+    but this is not checked. *)
+
+external unaligned_load16 : t -> int = "%unaligned_load16"
+(** Load 16 bits from a pointer.  The pointer need not be aligned. *)
+
+external unaligned_load32 : t -> int32 = "%unaligned_load32"
+(** Load 32 bits from a pointer.  The pointer need not be aligned. *)
+
+external unaligned_load64 : t -> int64 = "%unaligned_load64"
+(** Load 64 bits from a pointer.  The pointer need not be aligned. *)
+
+external unaligned_loadnative : t -> nativeint = "%unaligned_loadnative"
+(** Load a machine word from a pointer.  The pointer need not be aligned. *)
+
+end

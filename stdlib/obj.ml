@@ -108,6 +108,21 @@ module Ephemeron = struct
   external unset_data: t -> unit = "caml_ephe_unset_data"
   external check_data: t -> bool = "caml_ephe_check_data"
   external blit_data : t -> t -> unit = "caml_ephe_blit_data"
+end
 
+module Pointer = struct
+  type t = nativeint
 
+  let offset : nativeint -> t -> t = Nativeint.add [@@inline]
+  external to_nativeint : t -> nativeint = "%identity"
+  external of_nativeint : nativeint -> t = "%identity"
+  external load8: t -> char = "%load8"
+  external aligned_load16 : t -> int = "%aligned_load16"
+  external aligned_load32 : t -> int32 = "%aligned_load32"
+  external aligned_load64 : t -> int64 = "%aligned_load64"
+  external aligned_loadnative : t -> nativeint = "%aligned_loadnative"
+  external unaligned_load16 : t -> int = "%unaligned_load16"
+  external unaligned_load32 : t -> int32 = "%unaligned_load32"
+  external unaligned_load64 : t -> int64 = "%unaligned_load64"
+  external unaligned_loadnative : t -> nativeint = "%unaligned_loadnative"
 end
