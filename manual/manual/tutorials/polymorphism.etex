@@ -22,11 +22,9 @@ how to recover genericity.
 Maybe the most frequent examples of non-genericity derive from the
 interactions between polymorphic types and mutation. A simple example
 appears when typing the following functions
-
 \begin{caml_example}
 let store = ref None ;;
 \end{caml_example}
-
 Since the type of "None" is "'a option" and the function "ref" has type
 "'b -> 'b ref", a natural deduction for the type of "store" would be
 "'a option ref". However, the inferred type, "'_a option ref", is slightly
