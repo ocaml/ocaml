@@ -141,5 +141,5 @@ void caml_fatal_uncaught_exception(value exn)
   else
     default_fatal_uncaught_exception(exn);
   /* Terminate the process */
-  exit(2);
+  CAML_SYS_EXIT(2); exit(2); /* Second exit needed for the Noreturn flag */
 }
