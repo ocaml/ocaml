@@ -78,7 +78,7 @@ let check_units members =
 let make_package_object ppf members targetobj targetname coercion =
   let objtemp =
     if !Clflags.keep_asm_file
-    then chop_extension_if_any targetobj ^ ".pack" ^ Config.ext_obj
+    then Filename.remove_extension targetobj ^ ".pack" ^ Config.ext_obj
     else
       (* Put the full name of the module in the temporary file name
          to avoid collisions with MSVC's link /lib in case of successive
@@ -92,12 +92,12 @@ let make_package_object ppf members targetobj targetname coercion =
         | PM_impl _ -> Some(Ident.create_persistent m.pm_name))
       members in
   Asmgen.compile_implementation
-    (chop_extension_if_any objtemp) ppf
+    (Filename.remove_extension objtemp) ppf
     (Translmod.transl_store_package
        components (Ident.create_persistent targetname) coercion);
   let objfiles =
     List.map
-      (fun m -> chop_extension_if_any m.pm_file ^ Config.ext_obj)
+      (fun m -> Filename.remove_extension m.pm_file ^ Config.ext_obj)
       (List.filter (fun m -> m.pm_kind <> PM_intf) members) in
   let ok =
     Ccomp.call_linker Ccomp.Partial targetobj (objtemp :: objfiles) ""
@@ -170,7 +170,7 @@ let package_files ppf initial_env files targetcmx =
       files in
   let prefix = chop_extensions targetcmx in
   let targetcmi = prefix ^ ".cmi" in
-  let targetobj = chop_extension_if_any targetcmx ^ Config.ext_obj in
+  let targetobj = Filename.remove_extension targetcmx ^ Config.ext_obj in
   let targetname = String.capitalize_ascii(Filename.basename prefix) in
   (* Set the name of the current "input" *)
   Location.input_name := targetcmx;
