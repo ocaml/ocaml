@@ -22,9 +22,7 @@ let live_at_exit = ref []
 
 let find_live_at_exit k =
   try
-    let (used, set) = List.assoc k !live_at_exit in
-    used := true;
-    set
+    List.assoc k !live_at_exit
   with
   | Not_found -> Misc.fatal_error "Liveness.find_live_at_exit"
 
@@ -103,7 +101,7 @@ let rec live i finally =
       end;
       i.live <- !at_top;
       !at_top
-  | Icatch(handlers, body) ->
+  | Icatch(rec_flag, handlers, body) ->
       let at_join = live i.next finally in
       let aux (nfail,handler) (nfail', before_handler) =
         assert(nfail = nfail');
@@ -117,7 +115,7 @@ let rec live i finally =
       let live_at_exit_before = !live_at_exit in
       let live_at_exit_add before_handlers =
         List.map (fun (nfail, before_handler) ->
-            (nfail, (ref false, before_handler)))
+            (nfail, before_handler))
           before_handlers
       in
       let rec fixpoint before_handlers =
@@ -125,14 +123,13 @@ let rec live i finally =
         live_at_exit := live_at_exit_add @ !live_at_exit;
         let before_handlers' = List.map2 aux handlers before_handlers in
         live_at_exit := live_at_exit_before;
-        (* [used] is there to stop behaviour exponential in the nesting depth
-           of static-catch constructs in the simple cases (where only one
-           iteration is required to reach a fixpoint). *)
-        let not_used = List.for_all
-            (fun (_, (used, _)) -> not !used) live_at_exit_add in
-        if not_used || List.for_all2 aux_equal before_handlers before_handlers'
-        then before_handlers'
-        else fixpoint before_handlers'
+        match rec_flag with
+        | Cmm.Nonrecursive ->
+            before_handlers'
+        | Cmm.Recursive ->
+            if List.for_all2 aux_equal before_handlers before_handlers'
+            then before_handlers'
+            else fixpoint before_handlers'
       in
       let init_state =
         List.map (fun (nfail, _handler) -> nfail, Reg.Set.empty) handlers

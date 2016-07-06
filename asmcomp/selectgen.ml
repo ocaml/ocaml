@@ -42,7 +42,7 @@ let env_find_static_exception id env =
 
 let env_empty = {
   vars = Tbl.empty;
-  static_exception = Tbl.empty;
+  static_exceptions = Tbl.empty;
 }
 
 (* Infer the type of the result of an operation *)
@@ -663,9 +663,9 @@ method emit_expr (env:environment) exp =
       let (_rarg, sbody) = self#emit_sequence env ebody in
       self#insert (Iloop(sbody#extract)) [||] [||];
       Some [||]
-  | Ccatch([], e1) ->
+  | Ccatch(_, [], e1) ->
       self#emit_expr env e1
-  | Ccatch(handlers, body) ->
+  | Ccatch(rec_flag, handlers, body) ->
       let handlers =
         List.map (fun (nfail, ids, e2) ->
             let rs =
@@ -699,7 +699,7 @@ method emit_expr (env:environment) exp =
       let a = Array.of_list ((r_body, s_body) :: List.map snd l) in
       let r = join_array a in
       let aux (nfail, (_r, s)) = (nfail, s#extract) in
-      self#insert (Icatch (List.map aux l, s_body#extract)) [||] [||];
+      self#insert (Icatch (rec_flag, List.map aux l, s_body#extract)) [||] [||];
       r
   | Cexit (nfail,args) ->
       begin match self#emit_parts_list env args with
@@ -945,9 +945,9 @@ method emit_tail (env:environment) exp =
             (Iswitch(index, Array.map (self#emit_tail_sequence env) ecases))
             rsel [||]
       end
-  | Ccatch([], e1) ->
+  | Ccatch(_, [], e1) ->
       self#emit_tail env e1
-  | Ccatch(handlers, e1) ->
+  | Ccatch(rec_flag, handlers, e1) ->
       let handlers =
         List.map (fun (nfail, ids, e2) ->
             let rs =
@@ -969,7 +969,7 @@ method emit_tail (env:environment) exp =
             env (List.combine ids rs) in
         nfail, self#emit_tail_sequence new_env e2
       in
-      self#insert (Icatch(List.map aux handlers, s_body)) [||] [||]
+      self#insert (Icatch(rec_flag, List.map aux handlers, s_body)) [||] [||]
   | Ctrywith(e1, v, e2) ->
       let (opt_r1, s1) = self#emit_sequence env e1 in
       let rv = self#regs_for typ_val in

@@ -253,7 +253,7 @@ let rec linear i n =
       let n1 = linear i.Mach.next n in
       let n2 = linear body (cons_instr (Lbranch lbl_head) n1) in
       cons_instr (Llabel lbl_head) n2
-  | Icatch(handlers, body) ->
+  | Icatch(_rec_flag, handlers, body) ->
       let (lbl_end, n1) = get_label(linear i.Mach.next n) in
       (* CR mshinwell for pchambart:
          1. rename "io"
