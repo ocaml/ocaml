@@ -17,7 +17,7 @@ let output_prefix name =
     match !output_name with
     | None -> name
     | Some n -> if !compile_only then (output_name := None; n) else name in
-  Misc.chop_extension_if_any oname
+  Filename.remove_extension oname
 
 let print_version_and_library compiler =
   Printf.printf "The OCaml %s, version " compiler;

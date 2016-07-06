@@ -47,13 +47,37 @@ val chop_suffix : string -> string -> string
    the filename [name]. The behavior is undefined if [name] does not
    end with the suffix [suff]. *)
 
-val chop_extension : string -> string
-(** Return the given file name without its extension. The extension
-   is the shortest suffix starting with a period and not including
-   a directory separator, [.xyz] for instance.
+val extension : string -> string
+(** [extension name] is the shortest suffix [ext] of [name0] where:
 
-   Raise [Invalid_argument] if the given name does not contain
-   an extension. *)
+    - [name0] is the longest suffix of [name] that does not
+      contain a directory separator;
+    - [ext] starts with a period;
+    - [ext] is preceded by at least one non-period character
+      in [name0].
+
+    If such a suffix does not exist, [extension name] is the empty
+    string.
+
+    @since 4.04
+*)
+
+val remove_extension : string -> string
+(** Return the given file name without its extension, as defined
+    in {!Filename.extension}. If the extension is empty, the function
+    returns the given file name.
+
+    The following invariant holds for any file name [s]:
+
+    [remove_extension s ^ extension s = s]
+
+    @since 4.04
+*)
+
+val chop_extension : string -> string
+(** Same as {!Filename.remove_extension}, but raise [Invalid_argument]
+    if the given name has an empty extension. *)
+
 
 val basename : string -> string
 (** Split a file name into directory name / base file name.

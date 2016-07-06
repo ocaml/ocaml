@@ -1629,7 +1629,7 @@ let type_implementation sourcefile outputprefix modulename initial_env ast =
     (str, Tcoerce_none)   (* result is ignored by Compile.implementation *)
   end else begin
     let sourceintf =
-      Misc.chop_extension_if_any sourcefile ^ !Config.interface_suffix in
+      Filename.remove_extension sourcefile ^ !Config.interface_suffix in
     if Sys.file_exists sourceintf then begin
       let intf_file =
         try
@@ -1721,7 +1721,7 @@ let package_units initial_env objfiles cmifile modulename =
   Ident.reinit();
   let sg = package_signatures Subst.identity units in
   (* See if explicit interface is provided *)
-  let prefix = chop_extension_if_any cmifile in
+  let prefix = Filename.remove_extension cmifile in
   let mlifile = prefix ^ !Config.interface_suffix in
   if Sys.file_exists mlifile then begin
     if not (Sys.file_exists cmifile) then begin

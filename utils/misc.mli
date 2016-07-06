@@ -84,10 +84,6 @@ val no_overflow_lsl: int -> bool
         (* [no_overflow_add n] returns [true] if the computation of
            [n lsl 1] does not overflow. *)
 
-val chop_extension_if_any: string -> string
-        (* Like Filename.chop_extension but returns the initial file
-           name if it has no extension *)
-
 val chop_extensions: string -> string
         (* Return the given file name without its extensions. The extensions
            is the longest suffix starting with a period and not including
