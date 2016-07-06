@@ -190,8 +190,9 @@ let rec instr ppf i =
       fprintf ppf "@,endswitch"
   | Iloop(body) ->
       fprintf ppf "@[<v 2>loop@,%a@;<0 -2>endloop@]" instr body
-  | Icatch(handlers, body) ->
-      fprintf ppf "@[<v 2>catch@,%a@;<0 -2>with" instr body;
+  | Icatch(flag, handlers, body) ->
+      fprintf ppf "@[<v 2>catch%a@,%a@;<0 -2>with"
+        Printcmm.rec_flag flag instr body;
       let h (nfail, handler) =
         fprintf ppf "(%d)@,%a@;" nfail instr handler in
       let rec aux = function

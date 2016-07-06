@@ -85,7 +85,7 @@ and instruction_desc =
   | Iifthenelse of test * instruction * instruction
   | Iswitch of int array * instruction array
   | Iloop of instruction
-  | Icatch of (int * instruction) list * instruction
+  | Icatch of Cmm.rec_flag * (int * instruction) list * instruction
   | Iexit of int
   | Itrywith of instruction * instruction
   | Iraise of Cmm.raise_kind
@@ -123,7 +123,3 @@ val instr_cons_debug:
 val instr_iter: (instruction -> unit) -> instruction -> unit
 
 val spacetime_node_hole_pointer_is_live_before : instruction -> bool
-
-(* CR mshinwell: change Icatch to have a record, then simplify this
-   function *)
-val recursive_handlers: instruction -> Numbers.Int.Set.t

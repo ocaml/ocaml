@@ -18,6 +18,10 @@
 open Format
 open Cmm
 
+let rec_flag ppf = function
+  | Nonrecursive -> ()
+  | Recursive -> fprintf ppf " rec"
+
 let machtype_component ppf = function
   | Val -> fprintf ppf "val"
   | Addr -> fprintf ppf "addr"
@@ -161,7 +165,7 @@ let rec expr ppf = function
       fprintf ppf "@[<v 0>@[<2>(switch@ %a@ @]%t)@]" expr e1 print_cases
   | Cloop e ->
       fprintf ppf "@[<2>(loop@ %a)@]" sequence e
-  | Ccatch(handlers, e1) ->
+  | Ccatch(flag, handlers, e1) ->
       let print_handler ppf (i, ids, e2) =
         fprintf ppf "(%d%a)@ %a"
           i
@@ -175,7 +179,8 @@ let rec expr ppf = function
         List.iter (print_handler ppf) l
       in
       fprintf ppf
-        "@[<2>(catch@ %a@;<1 -2>with%a)@]"
+        "@[<2>(catch%a@ %a@;<1 -2>with%a)@]"
+        rec_flag flag
         sequence e1
         print_handlers handlers
   | Cexit (i, el) ->

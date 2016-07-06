@@ -219,7 +219,7 @@ let rec reload i before =
       let (new_next, finally) = reload i.next Reg.Set.empty in
       (instr_cons (Iloop(!final_body)) i.arg i.res new_next,
        finally)
-  | Icatch(handlers, body) ->
+  | Icatch(rec_flag, handlers, body) ->
       let new_sets = List.map
           (fun (nfail, _) -> nfail, ref Reg.Set.empty) handlers in
       let previous_reload_at_exit = !reload_at_exit in
@@ -231,16 +231,18 @@ let rec reload i before =
           List.map2 (fun (nfail', handler) (nfail, at_exit) ->
               assert(nfail = nfail');
               reload handler at_exit) handlers at_exits in
-        (* CR mshinwell for pchambart: This should have the "used" thing to
-           stop exponential behaviour.  Also reference the comment about
-           "used" that's now in liveness.ml. *)
-        let equal = List.for_all2 (fun (nfail', at_exit) (nfail, new_set) ->
-            assert(nfail = nfail');
-            Reg.Set.equal at_exit !new_set)
-            at_exits new_sets in
-        if equal
-        then res
-        else fixpoint () in
+        match rec_flag with
+        | Cmm.Nonrecursive ->
+            res
+        | Cmm.Recursive ->
+            let equal = List.for_all2 (fun (nfail', at_exit) (nfail, new_set) ->
+                assert(nfail = nfail');
+                Reg.Set.equal at_exit !new_set)
+                at_exits new_sets in
+            if equal
+            then res
+            else fixpoint ()
+      in
       let res = fixpoint () in
       reload_at_exit := previous_reload_at_exit;
       let union = List.fold_left
@@ -250,7 +252,8 @@ let rec reload i before =
       let new_handlers = List.map2
           (fun (nfail, _) (new_handler, _) -> nfail, new_handler)
           handlers res in
-      (instr_cons (Icatch(new_handlers, new_body)) i.arg i.res new_next,
+      (instr_cons
+         (Icatch(rec_flag, new_handlers, new_body)) i.arg i.res new_next,
        finally)
   | Iexit nfail ->
       let set = find_reload_at_exit nfail in
@@ -391,7 +394,7 @@ let rec spill i finally =
       inside_loop := saved_inside_loop;
       (instr_cons (Iloop(!final_body)) i.arg i.res new_next,
        !at_head)
-  | Icatch(handlers, body) ->
+  | Icatch(rec_flag, handlers, body) ->
       let (new_next, at_join) = spill i.next finally in
       let saved_inside_catch = !inside_catch in
       inside_catch := true ;
@@ -403,15 +406,23 @@ let rec spill i finally =
       let rec fixpoint at_exits =
         let spill_at_exit_add = spill_at_exit_add at_exits in
         spill_at_exit := spill_at_exit_add @ !spill_at_exit;
-        let res = List.map (fun (_, handler) -> spill handler at_join) handlers in
+        let res =
+          List.map (fun (_, handler) -> spill handler at_join) handlers
+        in
         spill_at_exit := previous_spill_at_exit;
-        let equal =
-          List.for_all2 (fun (_new_handler, new_at_exit) (_, (used, at_exit)) ->
-              Reg.Set.equal at_exit new_at_exit || not !used)
-            res spill_at_exit_add in
-        if equal
-        then res
-        else fixpoint (List.map snd res) in
+        match rec_flag with
+        | Cmm.Nonrecursive ->
+            res
+        | Cmm.Recursive ->
+            let equal =
+              List.for_all2
+                (fun (_new_handler, new_at_exit) (_, (used, at_exit)) ->
+                   Reg.Set.equal at_exit new_at_exit || not !used)
+                res spill_at_exit_add in
+            if equal
+            then res
+            else fixpoint (List.map snd res)
+      in
       let res = fixpoint (List.map (fun _ -> Reg.Set.empty) handlers) in
       inside_catch := saved_inside_catch ;
       let spill_at_exit_add = spill_at_exit_add (List.map snd res) in
@@ -421,7 +432,8 @@ let rec spill i finally =
       let new_handlers = List.map2
           (fun (nfail, _) (handler, _) -> nfail, handler)
           handlers res in
-      (instr_cons (Icatch(new_handlers, new_body)) i.arg i.res new_next,
+      (instr_cons (Icatch(rec_flag, new_handlers, new_body))
+         i.arg i.res new_next,
        before)
   | Iexit nfail ->
       (i, find_spill_at_exit nfail)

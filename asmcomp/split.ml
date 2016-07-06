@@ -165,7 +165,7 @@ let rec rename i sub =
       let (new_next, sub_next) = rename i.next (merge_substs sub sub_body i) in
       (instr_cons (Iloop(new_body)) [||] [||] new_next,
        sub_next)
-  | Icatch(handlers, body) ->
+  | Icatch(rec_flag, handlers, body) ->
       let new_subst = List.map (fun (nfail, _) -> nfail, ref None)
           handlers in
       let previous_exit_subst = !exit_subst in
@@ -181,7 +181,8 @@ let rec rename i sub =
       let (new_next, sub_next) = rename i.next merged_subst in
       let new_handlers = List.map2 (fun (nfail, _) (handler, _) ->
           (nfail, handler)) handlers res in
-      (instr_cons (Icatch(new_handlers, new_body)) [||] [||] new_next,
+      (instr_cons
+         (Icatch(rec_flag, new_handlers, new_body)) [||] [||] new_next,
        sub_next)
   | Iexit nfail ->
       let r = find_exit_subst nfail in

@@ -90,6 +90,8 @@ type raise_kind =
   | Raise_withtrace
   | Raise_notrace
 
+type rec_flag = Nonrecursive | Recursive
+
 type memory_chunk =
     Byte_unsigned
   | Byte_signed
@@ -143,7 +145,7 @@ and expression =
   | Cifthenelse of expression * expression * expression
   | Cswitch of expression * int array * expression array * Debuginfo.t
   | Cloop of expression
-  | Ccatch of (int * Ident.t list * expression) list * expression
+  | Ccatch of rec_flag * (int * Ident.t list * expression) list * expression
   | Cexit of int * expression list
   | Ctrywith of expression * Ident.t * expression
 

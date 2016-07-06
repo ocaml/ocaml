@@ -75,7 +75,7 @@ and instruction_desc =
   | Iifthenelse of test * instruction * instruction
   | Iswitch of int array * instruction array
   | Iloop of instruction
-  | Icatch of (int * instruction) list * instruction
+  | Icatch of Cmm.rec_flag * (int * instruction) list * instruction
   | Iexit of int
   | Itrywith of instruction * instruction
   | Iraise of Cmm.raise_kind
@@ -136,7 +136,7 @@ let rec instr_iter f i =
           instr_iter f i.next
       | Iloop(body) ->
           instr_iter f body; instr_iter f i.next
-      | Icatch(handlers, body) ->
+      | Icatch(_, handlers, body) ->
           instr_iter f body;
           List.iter (fun (_n, handler) -> instr_iter f handler) handlers;
           instr_iter f i.next
@@ -179,59 +179,3 @@ let spacetime_node_hole_pointer_is_live_before insn =
     end
   | Iend | Ireturn | Iifthenelse _ | Iswitch _ | Iloop _ | Icatch _
   | Iexit _ | Itrywith _ | Iraise _ -> false
-
-module LabelSet = Numbers.Int.Set
-
-type result =
-  { reachable_exits : LabelSet.t;
-    recursive_handlers : LabelSet.t }
-
-let empty_result =
-  { reachable_exits = LabelSet.empty;
-    recursive_handlers = LabelSet.empty }
-
-let result_union r1 r2 =
-  { reachable_exits =
-      LabelSet.union r1.reachable_exits r2.reachable_exits;
-    recursive_handlers =
-      LabelSet.union r1.recursive_handlers r2.recursive_handlers }
-
-let recursive_handlers i =
-  let rec loop i =
-    match i.desc with
-      Iend -> empty_result
-    | Ireturn | Iop(Itailcall_ind _) | Iop(Itailcall_imm _) -> empty_result
-    | Iraise _ -> empty_result
-    | Iifthenelse(_tst, ifso, ifnot) ->
-        result_union
-          (result_union (loop ifso) (loop ifnot))
-          (loop i.next)
-    | Iswitch(_index, cases) ->
-        Array.fold_left (fun acc case -> result_union acc (loop case))
-          (loop i.next) cases
-    | Iloop body ->
-        result_union (loop body) (loop i.next)
-    | Icatch(handlers, body) ->
-        let r =
-          List.fold_left (fun acc (nfail, handler) ->
-              let acc = result_union acc (loop handler) in
-              if LabelSet.mem nfail acc.reachable_exits
-              then { acc with
-                     recursive_handlers =
-                       LabelSet.add nfail acc.recursive_handlers }
-              else acc)
-            empty_result handlers
-        in
-        result_union r
-          (result_union (loop body) (loop i.next))
-    | Iexit n ->
-        { empty_result with
-          reachable_exits = LabelSet.singleton n }
-    | Itrywith(body, handler) ->
-        result_union
-          (result_union (loop body) (loop handler))
-          (loop i.next)
-    | Iop _ ->
-        loop i.next
-  in
-  (loop i).recursive_handlers

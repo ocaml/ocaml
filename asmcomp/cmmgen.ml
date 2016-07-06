@@ -460,11 +460,11 @@ let test_bool dbg cmm =
 
 let box_float dbg c = Cop(Calloc, [alloc_float_header dbg; c], dbg)
 
-let map_ccatch f handlers body =
+let map_ccatch f rec_flag handlers body =
   let handlers = List.map
       (fun (n, ids, handler) -> (n, ids, f handler))
       handlers in
-  Ccatch(handlers, f body)
+  Ccatch(rec_flag, handlers, f body)
 
 let rec unbox_float dbg cmm =
   match cmm with
@@ -475,8 +475,8 @@ let rec unbox_float dbg cmm =
   | Csequence(e1, e2) -> Csequence(e1, unbox_float dbg e2)
   | Cswitch(e, tbl, el, dbg) ->
     Cswitch(e, tbl, Array.map (unbox_float dbg) el, dbg)
-  | Ccatch(handlers, body) ->
-    map_ccatch (unbox_float dbg) handlers body
+  | Ccatch(rec_flag, handlers, body) ->
+    map_ccatch (unbox_float dbg) rec_flag handlers body
   | Ctrywith(e1, id, e2) -> Ctrywith(unbox_float dbg e1, id, unbox_float dbg e2)
   | c -> Cop(Cload Double_u, [c], dbg)
 
@@ -502,8 +502,8 @@ let rec remove_unit = function
       Cifthenelse(cond, remove_unit ifso, remove_unit ifnot)
   | Cswitch(sel, index, cases, dbg) ->
       Cswitch(sel, index, Array.map remove_unit cases, dbg)
-  | Ccatch(handlers, body) ->
-      map_ccatch remove_unit handlers body
+  | Ccatch(rec_flag, handlers, body) ->
+      map_ccatch remove_unit rec_flag handlers body
   | Ctrywith(body, exn, handler) ->
       Ctrywith(remove_unit body, exn, remove_unit handler)
   | Clet(id, c1, c2) ->
@@ -861,8 +861,8 @@ let rec unbox_int bi arg dbg =
   | Csequence(e1, e2) -> Csequence(e1, unbox_int bi e2 dbg)
   | Cswitch(e, tbl, el, dbg) ->
       Cswitch(e, tbl, Array.map (fun e -> unbox_int bi e dbg) el, dbg)
-  | Ccatch(handlers, body) ->
-      map_ccatch (fun e -> unbox_int bi e dbg) handlers body
+  | Ccatch(rec_flag, handlers, body) ->
+      map_ccatch (fun e -> unbox_int bi e dbg) rec_flag handlers body
   | Ctrywith(e1, id, e2) ->
       Ctrywith(unbox_int bi e1 dbg, id, unbox_int bi e2 dbg)
   | _ ->
