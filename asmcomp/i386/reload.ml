@@ -40,7 +40,7 @@ method! makereg r =
 
 method! reload_operation op arg res =
   match op with
-    Iintop(Iadd|Isub|Iand|Ior|Ixor|Icomp _|Icheckbound) ->
+    Iintop(Iadd|Isub|Iand|Ior|Ixor|Icomp _|Icheckbound _) ->
       (* One of the two arguments can reside in the stack *)
       if stackp arg.(0) && stackp arg.(1)
       then ([|arg.(0); self#makereg arg.(1)|], res)

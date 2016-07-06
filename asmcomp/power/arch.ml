@@ -46,7 +46,8 @@ let command_line_options = [
 type specific_operation =
     Imultaddf                           (* multiply and add *)
   | Imultsubf                           (* multiply and subtract *)
-  | Ialloc_far of int                   (* allocation in large functions *)
+  | Ialloc_far of                       (* allocation in large functions *)
+      { words : int; label_after_call_gc : Cmm.label option; }
 
 (* Addressing modes *)
 
@@ -110,5 +111,5 @@ let print_specific_operation printreg op ppf arg =
   | Imultsubf ->
       fprintf ppf "%a *f %a -f %a"
         printreg arg.(0) printreg arg.(1) printreg arg.(2)
-  | Ialloc_far n ->
-      fprintf ppf "alloc_far %d" n
+  | Ialloc_far { words; _ } ->
+      fprintf ppf "alloc_far %d" words

@@ -290,7 +290,7 @@ char *caml_alloc_for_heap (asize_t request)
 void caml_disown_for_heap (char* mem)
 {
   /* Currently a no-op. */
-  mem = mem;
+  (void)mem; /* can CAMLunused_{start,end} be used here? */
 }
 
 /* Use this function to free a block allocated with [caml_alloc_for_heap]

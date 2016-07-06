@@ -121,8 +121,12 @@ let emit_addressing addr r =
 
 (* Record live pointers at call points *)
 
-let record_frame_label live dbg =
-  let lbl = new_label() in
+let record_frame_label ?label live dbg =
+  let lbl =
+    match label with
+    | None -> new_label()
+    | Some label -> label
+  in
   let live_offset = ref [] in
   Reg.Set.iter
     (function
@@ -141,8 +145,8 @@ let record_frame_label live dbg =
       fd_debuginfo = dbg } :: !frame_descriptors;
   lbl
 
-let record_frame live dbg =
-  let lbl = record_frame_label live dbg in `{emit_label lbl}:`
+let record_frame ?label live dbg =
+  let lbl = record_frame_label ?label live dbg in `{emit_label lbl}:`
 
 (* Record calls to the GC -- we've moved them out of the way *)
 
@@ -167,10 +171,10 @@ type bound_error_call =
 
 let bound_error_sites = ref ([] : bound_error_call list)
 
-let bound_error_label dbg =
+let bound_error_label ?label dbg =
   if !Clflags.debug || !bound_error_sites = [] then begin
     let lbl_bound_error = new_label() in
-    let lbl_frame = record_frame_label Reg.Set.empty dbg in
+    let lbl_frame = record_frame_label ?label Reg.Set.empty dbg in
     bound_error_sites :=
       { bd_lbl = lbl_bound_error;
         bd_frame_lbl = lbl_frame } :: !bound_error_sites;
@@ -343,8 +347,8 @@ let num_call_gc_and_check_bound_points instr =
     | Lend -> totals
     | Lop (Ialloc _) when !fastcode_flag ->
       loop instr.next (call_gc + 1, check_bound)
-    | Lop (Iintop Icheckbound)
-    | Lop (Iintop_imm (Icheckbound, _))
+    | Lop (Iintop Icheckbound _)
+    | Lop (Iintop_imm (Icheckbound _, _))
     | Lop (Ispecific (Ishiftcheckbound _)) ->
       let check_bound =
         (* When not in debug mode, there is at most one check-bound point. *)
@@ -355,7 +359,7 @@ let num_call_gc_and_check_bound_points instr =
     (* The following four should never be seen, since this function is run
        before branch relaxation. *)
     | Lop (Ispecific (Ifar_alloc _))
-    | Lop (Ispecific Ifar_intop_checkbound)
+    | Lop (Ispecific Ifar_intop_checkbound _)
     | Lop (Ispecific (Ifar_intop_imm_checkbound _))
     | Lop (Ispecific (Ifar_shiftcheckbound _)) -> assert false
     | _ -> loop instr.next totals
@@ -401,8 +405,8 @@ module BR = Branch_relaxation.Make (struct
 
     let classify_instr = function
       | Lop (Ialloc _)
-      | Lop (Iintop Icheckbound)
-      | Lop (Iintop_imm (Icheckbound, _))
+      | Lop (Iintop Icheckbound _)
+      | Lop (Iintop_imm (Icheckbound _, _))
       | Lop (Ispecific (Ishiftcheckbound _)) -> Some Bcc
       (* The various "far" variants in [specific_operation] don't need to
          return [Some] here, since their code sequences never contain any
@@ -430,29 +434,30 @@ module BR = Branch_relaxation.Make (struct
       num_instructions_for_intconst n
     | Lop (Iconst_float _) -> 2
     | Lop (Iconst_symbol _) -> 2
-    | Lop (Icall_ind) -> 1
+    | Lop (Icall_ind _) -> 1
     | Lop (Icall_imm _) -> 1
-    | Lop (Itailcall_ind) -> epilogue_size ()
-    | Lop (Itailcall_imm s) ->
-      if s = !function_name then 1 else epilogue_size ()
-    | Lop (Iextcall (_, false)) -> 1
-    | Lop (Iextcall (_, true)) -> 3
+    | Lop (Itailcall_ind _) -> epilogue_size ()
+    | Lop (Itailcall_imm { func; _ }) ->
+      if func = !function_name then 1 else epilogue_size ()
+    | Lop (Iextcall { alloc = false; }) -> 1
+    | Lop (Iextcall { alloc = true; }) -> 3
     | Lop (Istackoffset _) -> 2
     | Lop (Iload (size, addr)) | Lop (Istore (size, addr, _)) ->
       let based = match addr with Iindexed _ -> 0 | Ibased _ -> 1 in
       based + begin match size with Single -> 2 | _ -> 1 end
     | Lop (Ialloc _) when !fastcode_flag -> 4
     | Lop (Ispecific (Ifar_alloc _)) when !fastcode_flag -> 5
-    | Lop (Ialloc num_words) | Lop (Ispecific (Ifar_alloc num_words)) ->
+    | Lop (Ialloc { words = num_words; _ })
+    | Lop (Ispecific (Ifar_alloc { words = num_words; _ })) ->
       begin match num_words with
       | 16 | 24 | 32 -> 1
       | _ -> 1 + num_instructions_for_intconst (Nativeint.of_int num_words)
       end
     | Lop (Iintop (Icomp _)) -> 2
     | Lop (Iintop_imm (Icomp _, _)) -> 2
-    | Lop (Iintop Icheckbound) -> 2
-    | Lop (Ispecific Ifar_intop_checkbound) -> 3
-    | Lop (Iintop_imm (Icheckbound, _)) -> 2
+    | Lop (Iintop (Icheckbound _)) -> 2
+    | Lop (Ispecific (Ifar_intop_checkbound _)) -> 3
+    | Lop (Iintop_imm (Icheckbound _, _)) -> 2
     | Lop (Ispecific (Ifar_intop_imm_checkbound _)) -> 3
     | Lop (Ispecific (Ishiftcheckbound _)) -> 2
     | Lop (Ispecific (Ifar_shiftcheckbound _)) -> 3
@@ -496,24 +501,27 @@ module BR = Branch_relaxation.Make (struct
       | true, Lambda.Raise_notrace -> 4
       end
 
-  let relax_allocation ~num_words =
-    Lop (Ispecific (Ifar_alloc num_words))
+  let relax_allocation ~num_words ~label_after_call_gc =
+    Lop (Ispecific (Ifar_alloc { words = num_words; label_after_call_gc; }))
 
-  let relax_intop_checkbound () =
-    Lop (Ispecific Ifar_intop_checkbound)
+  let relax_intop_checkbound ~label_after_error =
+    Lop (Ispecific (Ifar_intop_checkbound { label_after_error; }))
 
-  let relax_intop_imm_checkbound ~bound =
-    Lop (Ispecific (Ifar_intop_imm_checkbound bound))
+  let relax_intop_imm_checkbound ~bound ~label_after_error =
+    Lop (Ispecific (Ifar_intop_imm_checkbound { bound; label_after_error; }))
 
   let relax_specific_op = function
-    | Ishiftcheckbound shift -> Lop (Ispecific (Ifar_shiftcheckbound shift))
+    | Ishiftcheckbound { shift; label_after_error; } ->
+      Lop (Ispecific (Ifar_shiftcheckbound { shift; label_after_error; }))
     | _ -> assert false
 end)
 
 (* Output the assembly code for allocation. *)
 
-let assembly_code_for_allocation i ~n ~far =
-  let lbl_frame = record_frame_label i.live i.dbg in
+let assembly_code_for_allocation ?label_after_call_gc i ~n ~far =
+  let lbl_frame =
+    record_frame_label ?label:label_after_call_gc i.live i.dbg
+  in
   if !fastcode_flag then begin
     let lbl_redo = new_label() in
     let lbl_call_gc = new_label() in
@@ -579,25 +587,25 @@ let emit_instr i =
         end
     | Lop(Iconst_symbol s) ->
         emit_load_symbol_addr i.res.(0) s
-    | Lop(Icall_ind) ->
+    | Lop(Icall_ind { label_after; }) ->
         `	blr	{emit_reg i.arg.(0)}\n`;
-        `{record_frame i.live i.dbg}\n`
-    | Lop(Icall_imm s) ->
-        `	bl	{emit_symbol s}\n`;
-        `{record_frame i.live i.dbg}\n`
-    | Lop(Itailcall_ind) ->
+        `{record_frame i.live i.dbg ~label:label_after}\n`
+    | Lop(Icall_imm { func; label_after; }) ->
+        `	bl	{emit_symbol func}\n`;
+        `{record_frame i.live i.dbg ~label:label_after}\n`
+    | Lop(Itailcall_ind { label_after = _; }) ->
         output_epilogue (fun () -> `	br	{emit_reg i.arg.(0)}\n`)
-    | Lop(Itailcall_imm s) ->
-        if s = !function_name then
+    | Lop(Itailcall_imm { func; label_after = _; }) ->
+        if func = !function_name then
           `	b	{emit_label !tailrec_entry_point}\n`
         else
-          output_epilogue (fun () -> `	b	{emit_symbol s}\n`)
-    | Lop(Iextcall(s, false)) ->
-        `	bl	{emit_symbol s}\n`
-    | Lop(Iextcall(s, true)) ->
-        emit_load_symbol_addr reg_x15 s;
+          output_epilogue (fun () -> `	b	{emit_symbol func}\n`)
+    | Lop(Iextcall { func; alloc = false; label_after = _; }) ->
+        `	bl	{emit_symbol func}\n`
+    | Lop(Iextcall { func; alloc = true; label_after; }) ->
+        emit_load_symbol_addr reg_x15 func;
         `	bl	{emit_symbol "caml_c_call"}\n`;
-        `{record_frame i.live i.dbg}\n`
+        `{record_frame i.live i.dbg ~label:label_after}\n`
     | Lop(Istackoffset n) ->
         assert (n mod 16 = 0);
         emit_stack_adjustment (-n);
@@ -650,44 +658,45 @@ let emit_instr i =
         | Word_int | Word_val | Double | Double_u ->
             `	str	{emit_reg src}, {emit_addressing addr base}\n`
         end
-    | Lop(Ialloc n) ->
-        assembly_code_for_allocation i ~n ~far:false
-    | Lop(Ispecific (Ifar_alloc n)) ->
-        assembly_code_for_allocation i ~n ~far:true
+    | Lop(Ialloc { words = n; label_after_call_gc; }) ->
+        assembly_code_for_allocation i ~n ~far:false ?label_after_call_gc
+    | Lop(Ispecific (Ifar_alloc { words = n; label_after_call_gc; })) ->
+        assembly_code_for_allocation i ~n ~far:true ?label_after_call_gc
     | Lop(Iintop(Icomp cmp)) ->
         `	cmp	{emit_reg i.arg.(0)}, {emit_reg i.arg.(1)}\n`;
         `	cset	{emit_reg i.res.(0)}, {emit_string (name_for_comparison cmp)}\n`
     | Lop(Iintop_imm(Icomp cmp, n)) ->
         `	cmp	{emit_reg i.arg.(0)}, #{emit_int n}\n`;
         `	cset	{emit_reg i.res.(0)}, {emit_string (name_for_comparison cmp)}\n`
-    | Lop(Iintop Icheckbound) ->
-        let lbl = bound_error_label i.dbg in
+    | Lop(Iintop (Icheckbound { label_after_error; })) ->
+        let lbl = bound_error_label i.dbg ?label:label_after_error in
         `	cmp	{emit_reg i.arg.(0)}, {emit_reg i.arg.(1)}\n`;
         `	b.ls	{emit_label lbl}\n`
-    | Lop(Ispecific Ifar_intop_checkbound) ->
-        let lbl = bound_error_label i.dbg in
+    | Lop(Ispecific Ifar_intop_checkbound { label_after_error; }) ->
+        let lbl = bound_error_label i.dbg ?label:label_after_error in
         let lbl2 = new_label () in
         `	cmp	{emit_reg i.arg.(0)}, {emit_reg i.arg.(1)}\n`;
         `	b.hi	{emit_label lbl2}\n`;
         `	b	{emit_label lbl}\n`;
         `{emit_label lbl2}:\n`;
-    | Lop(Iintop_imm(Icheckbound, n)) ->
-        let lbl = bound_error_label i.dbg in
+    | Lop(Iintop_imm(Icheckbound { label_after_error; }, n)) ->
+        let lbl = bound_error_label i.dbg ?label:label_after_error in
         `	cmp	{emit_reg i.arg.(0)}, #{emit_int n}\n`;
         `	b.ls	{emit_label lbl}\n`
-    | Lop(Ispecific(Ifar_intop_imm_checkbound bound)) ->
-        let lbl = bound_error_label i.dbg in
+    | Lop(Ispecific(
+          Ifar_intop_imm_checkbound { bound; label_after_error; })) ->
+        let lbl = bound_error_label i.dbg ?label:label_after_error in
         let lbl2 = new_label () in
         `	cmp	{emit_reg i.arg.(0)}, #{emit_int bound}\n`;
         `	b.hi	{emit_label lbl2}\n`;
         `	b	{emit_label lbl}\n`;
         `{emit_label lbl2}:\n`;
-    | Lop(Ispecific(Ishiftcheckbound shift)) ->
-        let lbl = bound_error_label i.dbg in
+    | Lop(Ispecific(Ishiftcheckbound { shift; label_after_error; })) ->
+        let lbl = bound_error_label i.dbg ?label:label_after_error in
         `	cmp	{emit_reg i.arg.(1)}, {emit_reg i.arg.(0)}, lsr #{emit_int shift}\n`;
         `	b.cs	{emit_label lbl}\n`
-    | Lop(Ispecific(Ifar_shiftcheckbound shift)) ->
-        let lbl = bound_error_label i.dbg in
+    | Lop(Ispecific(Ifar_shiftcheckbound { shift; label_after_error; })) ->
+        let lbl = bound_error_label i.dbg ?label:label_after_error in
         let lbl2 = new_label () in
         `	cmp	{emit_reg i.arg.(1)}, {emit_reg i.arg.(0)}, lsr #{emit_int shift}\n`;
         `	b.lo	{emit_label lbl2}\n`;

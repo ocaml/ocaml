@@ -32,7 +32,8 @@ type 'a pair = {left: 'a; right: 'a};;
 
 let f : (int t box pair * bool) option -> unit = function None -> ();;
 let f : (string t box pair * bool) option -> unit = function None -> ();;
-
+let f = function {left=Box 0; _ } -> ();;
+let f = function {left=Box 0;right=Box 1} -> ();;
 
 (* Examples from ML2015 paper *)
 

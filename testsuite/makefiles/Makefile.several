@@ -108,9 +108,15 @@ run-file:
 	fi \
 	&& \
 	if [ -f $$F.checker ]; then \
-	  DIFF="$(DIFF)" SORT="$(SORT)" sh $$F.checker; \
+	  DIFF="$(DIFF)" SORT="$(SORT)" sh $$F.checker || { \
+	    printf "  Error: output checker failed!\n"; \
+	    exit 1; \
+	  }; \
 	else \
-	  $(DIFF) $$F.reference $$F.result >/dev/null; \
+	  $(DIFF) $$F.reference $$F.result >/dev/null || { \
+	    printf "  Error: results don't match reference output!\n"; \
+	    exit 1; \
+	  }; \
 	fi
 
 .PHONY: promote

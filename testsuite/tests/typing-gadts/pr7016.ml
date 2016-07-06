@@ -9,7 +9,7 @@ type (_, _) t =
   | Cons : 'a * ('b, 'tl) t -> ('a * 'b, 'tl) t
 Line _, characters 9-43:
 Warning 8: this pattern-matching is not exhaustive.
-Here is an example of a value that is not matched:
+Here is an example of a case that is not matched:
 Nil
 val get1 : ('b * 'a, 'a) t -> 'b = <fun>
 |}];;
