@@ -99,7 +99,7 @@ and typ x : Parsetree.core_type =
 let mli_of_ml ppf sourcefile =
   Location.input_name := sourcefile;
   Compmisc.init_path false;
-  let file = chop_extension_if_any sourcefile in
+  let file = Filename.remove_extension sourcefile in
   let modulename = String.capitalize(Filename.basename file) in
   Env.set_unit_name modulename;
   let inputfile = Pparse.preprocess sourcefile in
@@ -111,4 +111,3 @@ let mli_of_ml ppf sourcefile =
 
 let () =
   mli_of_ml Format.err_formatter Sys.argv.(1)
-

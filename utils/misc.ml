@@ -309,9 +309,6 @@ end
 
 (* String operations *)
 
-let chop_extension_if_any fname =
-  try Filename.chop_extension fname with Invalid_argument _ -> fname
-
 let chop_extensions file =
   let dirname = Filename.dirname file and basename = Filename.basename file in
   try
