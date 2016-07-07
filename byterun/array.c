@@ -161,7 +161,8 @@ CAMLprim value caml_make_float_vect(value len)
 }
 
 /* [len] is a [value] representing number of words or floats */
-CAMLprim value caml_make_vect(value len, value init)
+static inline value caml_make_vect_internal(value len, value init,
+    int called_from_ocaml)
 {
   CAMLparam2 (len, init);
   CAMLlocal1 (res);
@@ -205,6 +206,16 @@ CAMLprim value caml_make_vect(value len, value init)
     }
   }
   CAMLreturn (res);
+}
+
+CAMLprim value caml_make_vect(value len, value init)
+{
+  return caml_make_vect_internal(len, init, 0);
+}
+
+CAMLprim value caml_make_vect_from_ocaml(value len, value init)
+{
+  return caml_make_vect_internal(len, init, 1);
 }
 
 CAMLprim value caml_make_array(value init)

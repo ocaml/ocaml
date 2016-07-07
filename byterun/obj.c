@@ -86,7 +86,7 @@ CAMLprim value caml_obj_block(value tag, value size)
   return res;
 }
 
-CAMLprim value caml_obj_dup(value arg)
+static inline value caml_obj_dup_internal(value arg, int called_from_ocaml)
 {
   CAMLparam1 (arg);
   CAMLlocal1 (res);
@@ -107,6 +107,16 @@ CAMLprim value caml_obj_dup(value arg)
     for (i = 0; i < sz; i++) caml_initialize(&Field(res, i), Field(arg, i));
   }
   CAMLreturn (res);
+}
+
+CAMLprim value caml_obj_dup(value arg)
+{
+  return caml_obj_dup_internal(arg, 0);
+}
+
+CAMLprim value caml_obj_dup_from_ocaml(value arg)
+{
+  return caml_obj_dup_internal(arg, 1);
 }
 
 /* Shorten the given block to the given size and return void.
