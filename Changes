@@ -21,7 +21,7 @@ OCaml 4.04.0:
 - PR#6217, GPR#538: Optimize performance of record update:
   no more performance cliff when { foo with t1 = ..; t2 = ...; ... }
   hits 6 updated fields
-  (Olivier Nicole, review by Thomas Braibant)
+  (Olivier Nicole, review by Thomas Braibant and Pierre Chambart)
 
 * PR#6475, GPR#464: interpret all command-line options before compiling any files,
   changes (improves) the semantics of repeated -o options or -o combined with -c
