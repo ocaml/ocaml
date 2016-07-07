@@ -82,9 +82,11 @@ static void alloc_to_do (int size)
 }
 
 /* Find white finalisable values, move them to the finalising set, and
-   darken them (if darken_value is true).
+   darken them (if darken_value is true). If major_collection is true we are
+   during major collection otherwise during minor collection.
 */
-static void generic_final_update (struct finalisable * final, int darken_value)
+static void generic_final_update (struct finalisable * final, int darken_value,
+                                  int major_collection)
 {
   uintnat i, j, k;
   uintnat todo_count = 0;
@@ -93,7 +95,10 @@ static void generic_final_update (struct finalisable * final, int darken_value)
   for (i = 0; i < final->old; i++){
     Assert (Is_block (final->table[i].val));
     Assert (Is_in_heap (final->table[i].val));
-    if (Is_white_val (final->table[i].val)) ++ todo_count;
+    if (major_collection ?
+        Is_white_val (final->table[i].val) :
+        Is_young(final->table[i].val) && Hd_val(final->table[i].val) != 0
+        ) ++ todo_count;
   }
 
   /** invariant:
@@ -112,7 +117,11 @@ static void generic_final_update (struct finalisable * final, int darken_value)
       Assert (Is_block (final->table[i].val));
       Assert (Is_in_heap (final->table[i].val));
       Assert (Tag_val (final->table[i].val) != Forward_tag);
-      if (Is_white_val (final->table[i].val)){
+      if(major_collection ?
+         Is_white_val (final->table[i].val) :
+         Is_young(final->table[j].val) && Hd_val(final->table[i].val) != 0
+         ){
+        /** dead */
         to_do_tl->item[k] = final->table[i];
         if(!darken_value){
           /* The value is not darken so the finalisation function
@@ -122,7 +131,13 @@ static void generic_final_update (struct finalisable * final, int darken_value)
         };
         k++;
       }else{
-        final->table[j++] = final->table[i];
+        /** alive */
+        final->table[j] = final->table[i];
+        if(!major_collection && Is_young(final->table[j].val)){
+          /** get the new value location in major heap */
+          final->table[j].val = Field(final->table[j].val,0);
+        }
+        j++;
       }
     }
     CAMLassert (i == final->old);
@@ -143,11 +158,13 @@ static void generic_final_update (struct finalisable * final, int darken_value)
 }
 
 void caml_final_update_mark_phase (){
-  generic_final_update(&finalisable_first, /* darken_value */ 1);
+  generic_final_update(&finalisable_first, /* darken_value */ 1,
+                       /* major collection */ 1);
 }
 
 void caml_final_update_clean_phase (){
-  generic_final_update(&finalisable_last, /* darken_value */ 0);
+  generic_final_update(&finalisable_last, /* darken_value */ 0,
+                       /* major collection */ 1);
 }
 
 
@@ -256,9 +273,18 @@ void caml_final_oldify_young_roots ()
   for (i = finalisable_last.old; i < finalisable_last.young; i++){
     caml_oldify_one(finalisable_last.table[i].fun,
                     &finalisable_last.table[i].fun);
-    caml_oldify_one(finalisable_first.table[i].val,
-                    &finalisable_first.table[i].val);
   }
+
+}
+
+/* At the end of minor collection update the finalise_last roots in
+   minor heap when moved to major heap or moved them to the finalising
+   set when dead.
+*/
+void caml_final_update_minor_roots ()
+{
+  generic_final_update(&finalisable_last, /* darken_value */ 0,
+                       /* major collection */ 0);
 }
 
 /* Empty the recent set into the finalisable set.

@@ -365,6 +365,8 @@ void caml_empty_minor_heap (void)
         }
       }
     }
+    /* Update the OCaml finalise_last values */
+    caml_final_update_minor_roots();
     /* Run custom block finalisation of dead minor values */
     for (elt = caml_custom_table.base; elt < caml_custom_table.ptr; elt++){
       value v = elt->block;
