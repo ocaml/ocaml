@@ -94,7 +94,6 @@ CAMLnoreturn_start
 static void extern_stack_overflow(void)
 CAMLnoreturn_end;
 
-static struct code_fragment * extern_find_code(char *addr);
 static void extern_replay_trail(void);
 static void free_extern_output(void);
 
@@ -574,7 +573,7 @@ static void extern_rec(value v)
     }
     }
   }
-  else if ((cf = extern_find_code((char *) v)) != NULL) {
+  else if ((cf = caml_extern_find_code((char *) v)) != NULL) {
     if ((extern_flags & CLOSURES) == 0)
       extern_invalid_argument("output_value: functional value");
     writecode32(CODE_CODEPOINTER, (char *) v - cf->code_start);
@@ -891,7 +890,7 @@ CAMLexport void caml_serialize_block_float_8(void * data, intnat len)
 
 /* Find where a code pointer comes from */
 
-static struct code_fragment * extern_find_code(char *addr)
+CAMLexport struct code_fragment * caml_extern_find_code(char *addr)
 {
   int i;
   for (i = caml_code_fragments_table.size - 1; i >= 0; i--) {

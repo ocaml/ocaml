@@ -194,6 +194,8 @@ struct code_fragment {
   char digest_computed;
 };
 
+CAMLextern struct code_fragment * caml_extern_find_code(char *addr);
+
 struct ext_table caml_code_fragments_table;
 
 /* </private> */

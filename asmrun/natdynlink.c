@@ -36,8 +36,6 @@ static void *getsym(void *handle, char *module, char *name){
   return sym;
 }
 
-extern char caml_globals_map[];
-
 CAMLprim value caml_natdynlink_getmap(value unit)
 {
   return (value)caml_globals_map;
