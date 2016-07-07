@@ -33,6 +33,8 @@ let command_line_options =
 
 type specific_operation = unit          (* None worth mentioning *)
 
+let spacetime_node_hole_pointer_is_live_before _specific_op = false
+
 (* Addressing modes *)
 
 type addressing_mode =

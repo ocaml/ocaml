@@ -885,8 +885,13 @@ uintnat caml_spacetime_my_profinfo (struct ext_table** cached_frames,
 
 void caml_spacetime_automatic_snapshot (void)
 {
-  if (automatic_snapshots) {
+  /* Marshalling may trigger a thread switch, which might cause us to be
+     reentered from [caml_garbage_collection]. */
+  static int reentered = 0;
+
+  if (automatic_snapshots && !reentered) {
     double start_time, end_time;
+    reentered = 1;
     start_time = caml_sys_time_unboxed(Val_unit);
     if (start_time >= next_snapshot_time) {
       maybe_reopen_snapshot_channel();
@@ -894,19 +899,25 @@ void caml_spacetime_automatic_snapshot (void)
       end_time = caml_sys_time_unboxed(Val_unit);
       next_snapshot_time = end_time + snapshot_interval;
     }
+    reentered = 0;
   }
 }
 
 void caml_spacetime_automatic_save (void)
 {
+  /* Called from [atexit]. */
+
   if (automatic_snapshots) {
+    /* The marshalling might trigger a thread switch, which in turn might
+       cause us to attempt to take a snapshot; to avoid this we disable
+       automatic snapshots. */
+    automatic_snapshots = 0;
     maybe_reopen_snapshot_channel();
     save_trie(snapshot_channel);
     caml_flush(snapshot_channel);
     caml_close_channel(snapshot_channel);
   }
 }
-
 
 #else
 

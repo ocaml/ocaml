@@ -173,6 +173,7 @@ static value take_snapshot(void)
   uintnat words_scanned_with_profinfo = 0;
   value v_total_allocations;
 
+  /* CR-soon mshinwell: use a wall clock time function */
   time = caml_sys_time_unboxed(Val_unit);
   gc_stats = take_gc_stats();
 

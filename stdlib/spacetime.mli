@@ -42,7 +42,7 @@ end
 module Snapshot : sig
   (** [take series] takes a snapshot of the profiling annotations on the values
       in the minor and major heaps, together with GC stats, and write the
-      result to the [series] file.  This function triggers a minor GC but only
-      allocates a very small amount of memory itself. *)
+      result to the [series] file.  This function triggers a minor GC but does
+      not allocate any memory itself. *)
   val take : Series.t -> unit
 end

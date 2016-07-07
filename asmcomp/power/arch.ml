@@ -49,6 +49,10 @@ type specific_operation =
   | Ialloc_far of                       (* allocation in large functions *)
       { words : int; label_after_call_gc : Cmm.label option; }
 
+let spacetime_node_hole_pointer_is_live_before = function
+  | Imultaddf | Imultsubf -> false
+  | Ialloc_far _ -> true
+
 (* Addressing modes *)
 
 type addressing_mode =
