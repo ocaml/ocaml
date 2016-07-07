@@ -35,7 +35,12 @@ let rec live i finally =
      before the instruction sequence.
      The instruction i is annotated by the set of registers live across
      the instruction. *)
-  let arg = i.arg in
+  let arg =
+    if Config.spacetime
+      && Mach.spacetime_node_hole_pointer_is_live_before i
+    then Array.append i.arg [| Proc.loc_spacetime_node_hole |]
+    else i.arg
+  in
   match i.desc with
     Iend ->
       i.live <- finally;

@@ -2131,8 +2131,8 @@ and type_expect_ ?in_function ?(recarg=Rejected) env sexp ty_expected =
       begin_def ();
       let arg = type_exp env sarg in
       end_def ();
-      if is_nonexpansive arg then generalize arg.exp_type
-      else generalize_expansive env arg.exp_type;
+      if not (is_nonexpansive arg) then generalize_expansive env arg.exp_type;
+      generalize arg.exp_type;
       let rec split_cases vc ec = function
         | [] -> List.rev vc, List.rev ec
         | {pc_lhs = {ppat_desc=Ppat_exception p}} as c :: rest ->
@@ -4102,8 +4102,8 @@ let type_expression env sexp =
   begin_def();
   let exp = type_exp env sexp in
   end_def();
-  if is_nonexpansive exp then generalize exp.exp_type
-  else generalize_expansive env exp.exp_type;
+  if not (is_nonexpansive exp) then generalize_expansive env exp.exp_type;
+  generalize exp.exp_type;
   match sexp.pexp_desc with
     Pexp_ident lid ->
       (* Special case for keeping type variables when looking-up a variable *)
