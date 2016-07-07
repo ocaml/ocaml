@@ -64,7 +64,7 @@ OCaml 4.04.0:
   drawbacks compared to the existing one is that the finalisation
   function is not called with the value as argument. These finalisers
   are registered with `GC.finalise_last`
-  (François Bobot)
+  (François Bobot reviewed by Damien Doligez and Leo White)
 
 ### Tools:
 

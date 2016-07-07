@@ -98,7 +98,9 @@ static void generic_final_update (struct finalisable * final, int darken_value,
     if (major_collection ?
         Is_white_val (final->table[i].val) :
         Is_young(final->table[i].val) && Hd_val(final->table[i].val) != 0
-        ) ++ todo_count;
+        ){
+      ++ todo_count;
+    }
   }
 
   /** invariant:
