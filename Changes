@@ -169,6 +169,9 @@ OCaml 4.04.0:
 - PR#7284: Bug in mcomp_fields leads to segfault
   (Jacques Garrigue, report by Leo White)
 
+- PR#7285: Relaxed value restriction broken with principal
+  (Jacques Garrigue, report by Leo White)
+
 - GPR#600: (similar to GPR#555) ensure that register typing constraints are
   respected at N-way join points in the control flow graph
   (Mark Shinwell)

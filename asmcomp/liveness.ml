@@ -35,24 +35,24 @@ let rec live i finally =
      before the instruction sequence.
      The instruction i is annotated by the set of registers live across
      the instruction. *)
+  let arg =
+    if Config.spacetime
+      && Mach.spacetime_node_hole_pointer_is_live_before i
+    then Array.append i.arg [| Proc.loc_spacetime_node_hole |]
+    else i.arg
+  in
   match i.desc with
     Iend ->
       i.live <- finally;
       finally
-  | Ireturn ->
+  | Ireturn | Iop(Itailcall_ind _) | Iop(Itailcall_imm _) ->
       i.live <- Reg.Set.empty; (* no regs are live across *)
-      Reg.set_of_array i.arg
-  | Iop(Itailcall_ind _) | Iop(Itailcall_imm _) ->
-      i.live <- Reg.Set.empty; (* no regs are live across *)
-      if not Config.spacetime then
-        Reg.set_of_array i.arg
-      else
-        Reg.Set.add Proc.loc_spacetime_node_hole (Reg.set_of_array i.arg)
+      Reg.set_of_array arg
   | Iop op ->
       let after = live i.next finally in
       if Proc.op_is_pure op                    (* no side effects *)
       && Reg.disjoint_set_array after i.res    (* results are not used after *)
-      && not (Proc.regs_are_volatile i.arg)    (* no stack-like hard reg *)
+      && not (Proc.regs_are_volatile arg)      (* no stack-like hard reg *)
       && not (Proc.regs_are_volatile i.res)    (*            is involved *)
       then begin
         (* This operation is dead code.  Ignore its arguments. *)
@@ -72,20 +72,13 @@ let rec live i finally =
            | _ ->
                across_after in
         i.live <- across;
-        let after = Reg.add_set_array across i.arg in
-        if not Config.spacetime then after
-        else
-          match op with
-          | Icall_ind _ | Icall_imm _ | Iextcall { alloc = true; } ->
-            Reg.Set.add Proc.loc_spacetime_node_hole after
-          | Itailcall_ind _ | Itailcall_imm _ -> assert false  (* see above *)
-          | _ -> after
+        Reg.add_set_array across arg
       end
   | Iifthenelse(_test, ifso, ifnot) ->
       let at_join = live i.next finally in
       let at_fork = Reg.Set.union (live ifso at_join) (live ifnot at_join) in
       i.live <- at_fork;
-      Reg.add_set_array at_fork i.arg
+      Reg.add_set_array at_fork arg
   | Iswitch(_index, cases) ->
       let at_join = live i.next finally in
       let at_fork = ref Reg.Set.empty in
@@ -93,7 +86,7 @@ let rec live i finally =
         at_fork := Reg.Set.union !at_fork (live cases.(i) at_join)
       done;
       i.live <- !at_fork;
-      Reg.add_set_array !at_fork i.arg
+      Reg.add_set_array !at_fork arg
   | Iloop(body) ->
       let at_top = ref Reg.Set.empty in
       (* Yes, there are better algorithms, but we'll just iterate till
@@ -133,7 +126,7 @@ let rec live i finally =
       before_body
   | Iraise _ ->
       i.live <- !live_at_raise;
-      Reg.add_set_array !live_at_raise i.arg
+      Reg.add_set_array !live_at_raise arg
 
 let reset () =
   live_at_raise := Reg.Set.empty;
@@ -145,10 +138,8 @@ let fundecl ppf f =
      register, if profiling) can be live at entrypoint *)
   let wrong_live = Reg.Set.diff initially_live (Reg.set_of_array f.fun_args) in
   let wrong_live =
-    if Config.spacetime then
-      Reg.Set.remove Proc.loc_spacetime_node_hole wrong_live
-    else
-      wrong_live
+    if not Config.spacetime then wrong_live
+    else Reg.Set.remove Proc.loc_spacetime_node_hole wrong_live
   in
   if not (Reg.Set.is_empty wrong_live) then begin
     Format.fprintf ppf "%a@." Printmach.regset wrong_live;

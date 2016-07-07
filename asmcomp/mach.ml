@@ -144,3 +144,27 @@ let rec instr_iter f i =
       | Iraise _ -> ()
       | _ ->
           instr_iter f i.next
+
+let spacetime_node_hole_pointer_is_live_before insn =
+  match insn.desc with
+  | Iop op ->
+    begin match op with
+    | Icall_ind _ | Icall_imm _ | Itailcall_ind _ | Itailcall_imm _
+    | Ialloc _ -> true
+    | Iextcall { alloc; } -> alloc
+    | Iintop op | Iintop_imm (op, _) ->
+      begin match op with
+      | Icheckbound _ -> true
+      | Iadd | Isub | Imul | Imulh | Idiv | Imod
+      | Iand | Ior | Ixor | Ilsl | Ilsr | Iasr
+      | Icomp _ -> false
+      end
+    | Ispecific specific_op ->
+      Arch.spacetime_node_hole_pointer_is_live_before specific_op
+    | Imove | Ispill | Ireload | Iconst_int _ | Iconst_float _
+    | Iconst_symbol _ | Istackoffset _ | Iload _ | Istore _
+    | Inegf | Iabsf | Iaddf | Isubf | Imulf | Idivf
+    | Ifloatofint | Iintoffloat -> false
+    end
+  | Iend | Ireturn | Iifthenelse _ | Iswitch _ | Iloop _ | Icatch _
+  | Iexit _ | Itrywith _ | Iraise _ -> false
