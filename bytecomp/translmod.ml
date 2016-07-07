@@ -1053,7 +1053,7 @@ let transl_toplevel_item item =
       set_toplevel_unique_name ext.ext_id;
       toploop_setvalue ext.ext_id
         (transl_extension_constructor item.str_env None ext)
-  | Tstr_module {mb_id=id; mb_loc = _mb_loc; mb_expr=modl} ->
+  | Tstr_module {mb_id=id; mb_expr=modl} ->
       (* we need to use the unique name for the module because of issues
          with "open" (PR#1672) *)
       set_toplevel_unique_name id;
@@ -1138,7 +1138,7 @@ let transl_package component_names target_name coercion =
               (* ignore id_pos_list as the ids are already bound *)
         let g = Array.of_list component_names in
         List.map
-          (fun (pos, cc) -> apply_coercion loc Strict cc (get_component g.(pos)))
+          (fun (pos, cc) -> apply_coercion Strict cc (get_component g.(pos)))
           pos_cc_list
     | _ ->
         assert false in
@@ -1185,7 +1185,7 @@ let transl_store_package component_names target_name coercion =
          (fun dst (src, cc) ->
            Lprim(Psetfield(dst, false),
                  [Lprim(Pgetglobal target_name, []);
-                  apply_coercion loc Strict cc (get_component id.(src))]))
+                  apply_coercion Strict cc (get_component id.(src))]))
          0 pos_cc_list)
   *)
   | _ -> assert false
