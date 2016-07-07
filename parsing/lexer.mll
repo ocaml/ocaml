@@ -608,7 +608,13 @@ and line_comment = parse
                   comment lexbuf;
       }
   | eof
-      { Location.curr lexbuf }
+      { match !comment_start_loc with
+        | [] -> assert false
+        | loc :: _ ->
+          let start = List.hd (List.rev !comment_start_loc) in
+          comment_start_loc := [];
+          raise (Error (Unterminated_comment start, loc))
+      }
   | _
       { store_lexeme lexbuf; line_comment lexbuf }
 
