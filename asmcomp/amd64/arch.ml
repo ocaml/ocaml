@@ -46,6 +46,8 @@ type specific_operation =
 and float_operation =
     Ifloatadd | Ifloatsub | Ifloatmul | Ifloatdiv
 
+let spacetime_node_hole_pointer_is_live_before _specific_op = false
+
 (* Sizes, endianness *)
 
 let big_endian = false
