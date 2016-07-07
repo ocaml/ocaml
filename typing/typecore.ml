@@ -1574,7 +1574,7 @@ let rec is_nonexpansive exp =
       List.for_all is_nonexpansive el
   | Texp_variant(_, arg) -> is_nonexpansive_opt arg
   | Texp_record (lbl_definitions, lbl_descriptions, _, opt_init_exp) ->
-      Misc.array_for_all2
+      Misc.Stdlib.Array.for_all2
         (fun definition lbl ->
            match definition with
            | Overridden (_, exp) ->

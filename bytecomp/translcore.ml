@@ -1262,14 +1262,6 @@ and transl_setinstvar loc self var expr =
 
 and transl_record loc env all_labels repres lbl_definitions opt_init_expr =
   let size = Array.length all_labels in
-  let _, lbl_expr_list =
-    Array.fold_left (fun (i, l) -> function
-        | Kept _ ->
-            succ i, l
-        | Overridden (lid, exp) ->
-            succ i, (lid, all_labels.(i), exp) :: l)
-      (0, []) lbl_definitions
-  in
   (* Determine if there are "enough" fields (only relevant if this is a
      functional-style record update *)
   let no_init = match opt_init_expr with None -> true | _ -> false in
@@ -1277,33 +1269,26 @@ and transl_record loc env all_labels repres lbl_definitions opt_init_expr =
   then begin
     (* Allocate new record with given fields (and remaining fields
        taken from init_expr if any *)
-    let lv = Array.make (Array.length all_labels) (staticfail, Pgenval) in
     let init_id = Ident.create "init" in
-    begin match opt_init_expr with
-      None -> ()
-    | Some _ ->
-        for i = 0 to Array.length all_labels - 1 do
-          let access =
-            match all_labels.(i).lbl_repres with
-              Record_regular | Record_inlined _ -> Pfield i
-            | Record_extension -> Pfield (i + 1)
-            | Record_float -> Pfloatfield i in
-          let field_kind =
-            (* TODO recover the kind from the type of the original record *)
-            Pgenval
-          in
-          lv.(i) <- Lprim(access, [Lvar init_id], loc), field_kind
-        done
-    end;
-    List.iter
-      (fun (_, lbl, expr) ->
-         let kind = value_kind expr.exp_env expr.exp_type in
-         lv.(lbl.lbl_pos) <- transl_exp expr, kind)
-      lbl_expr_list;
-    let ll, shape = List.split (Array.to_list lv) in
+    let lv =
+      Array.mapi
+        (fun i definition ->
+           match definition with
+           | Kept _type ->
+               let access =
+                 match repres with
+                   Record_regular | Record_inlined _ -> Pfield i
+                 | Record_extension -> Pfield (i + 1)
+                 | Record_float -> Pfloatfield i in
+               Lprim(access, [Lvar init_id], loc)
+           | Overridden (_lid, expr) ->
+               transl_exp expr)
+        lbl_definitions
+    in
+    let ll = Array.to_list lv in
+    let shape = List.map (fun _ -> Pgenval) ll in
     let mut =
-      if List.exists (fun lbl -> lbl.lbl_mut = Mutable)
-        (Array.to_list all_labels)
+      if Array.exists (fun lbl -> lbl.lbl_mut = Mutable) all_labels
       then Mutable
       else Immutable in
     let lam =
@@ -1345,23 +1330,28 @@ and transl_record loc env all_labels repres lbl_definitions opt_init_expr =
     (* If you change anything here, you will likely have to change
        [check_recursive_recordwith] in this file. *)
     let copy_id = Ident.create "newrecord" in
-    let update_field (_, lbl, expr) cont =
-      let upd =
-        match lbl.lbl_repres with
-          Record_regular
-        | Record_inlined _ ->
-          Psetfield(lbl.lbl_pos, maybe_pointer expr, Assignment)
-        | Record_float -> Psetfloatfield (lbl.lbl_pos, Assignment)
-        | Record_extension ->
-          Psetfield(lbl.lbl_pos + 1, maybe_pointer expr, Assignment)
-      in
-      Lsequence(Lprim(upd, [Lvar copy_id; transl_exp expr], loc), cont) in
+    let update_field definition lbl cont =
+      match definition with
+      | Kept _type -> cont
+      | Overridden (_lid, expr) ->
+          let upd =
+            match repres with
+              Record_regular
+            | Record_inlined _ ->
+                Psetfield(lbl.lbl_pos, maybe_pointer expr, Assignment)
+            | Record_float -> Psetfloatfield (lbl.lbl_pos, Assignment)
+            | Record_extension ->
+                Psetfield(lbl.lbl_pos + 1, maybe_pointer expr, Assignment)
+          in
+          Lsequence(Lprim(upd, [Lvar copy_id; transl_exp expr], loc), cont)
+    in
     begin match opt_init_expr with
       None -> assert false
     | Some init_expr ->
         Llet(Strict, Pgenval, copy_id,
              Lprim(Pduprecord (repres, size), [transl_exp init_expr], loc),
-             List.fold_right update_field lbl_expr_list (Lvar copy_id))
+             Misc.Stdlib.Array.fold_right2 update_field
+               lbl_definitions all_labels (Lvar copy_id))
     end
   end
 
