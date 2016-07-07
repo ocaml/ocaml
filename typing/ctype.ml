@@ -749,38 +749,36 @@ let rec update_level env level ty =
 
 (* Generalize and lower levels of contravariant branches simultaneously *)
 
-let generalize_contravariant env =
-  if !Clflags.principal then generalize_structure else update_level env
-
 let rec generalize_expansive env var_level visited ty =
   let ty = repr ty in
   if ty.level = generic_level || ty.level <= var_level then () else
-  if TypeSet.mem ty visited then () else
-  let visited = TypeSet.add ty visited in
-  match ty.desc with
-    Tconstr (path, tyl, abbrev) ->
-      let variance =
-        try (Env.find_type path env).type_variance
-        with Not_found -> List.map (fun _ -> Variance.may_inv) tyl in
-      abbrev := Mnil;
-      List.iter2
-        (fun v t ->
-          if Variance.(mem May_weak v)
-          then generalize_contravariant env var_level t
-          else generalize_expansive env var_level visited t)
-        variance tyl
-  | Tpackage (_, _, tyl) ->
-      List.iter (generalize_contravariant env var_level) tyl
-  | Tarrow (_, t1, t2, _) ->
-      generalize_contravariant env var_level t1;
-      generalize_expansive env var_level visited t2
-  | _ ->
-      iter_type_expr (generalize_expansive env var_level visited) ty
+  if not (Hashtbl.mem visited ty.id) then begin
+    Hashtbl.add visited ty.id ();
+    match ty.desc with
+      Tconstr (path, tyl, abbrev) ->
+        let variance =
+          try (Env.find_type path env).type_variance
+          with Not_found -> List.map (fun _ -> Variance.may_inv) tyl in
+        abbrev := Mnil;
+        List.iter2
+          (fun v t ->
+            if Variance.(mem May_weak v)
+            then generalize_structure var_level t
+            else generalize_expansive env var_level visited t)
+          variance tyl
+    | Tpackage (_, _, tyl) ->
+        List.iter (generalize_structure var_level) tyl
+    | Tarrow (_, t1, t2, _) ->
+        generalize_structure var_level t1;
+        generalize_expansive env var_level visited t2
+    | _ ->
+        iter_type_expr (generalize_expansive env var_level visited) ty
+  end
 
 let generalize_expansive env ty =
   simple_abbrevs := Mnil;
   try
-    generalize_expansive env !nongen_level TypeSet.empty ty
+    generalize_expansive env !nongen_level (Hashtbl.create 7) ty
   with Unify ([_, ty'] as tr) ->
     raise (Unify ((ty, ty') :: tr))
 
