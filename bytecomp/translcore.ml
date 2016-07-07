@@ -864,10 +864,8 @@ and transl_exp0 e =
             Lprim(Pmakeblock(0, Immutable, None),
                   [Lconst(Const_base(Const_int tag)); lam], e.exp_loc)
       end
-  | Texp_record (label_definitions, label_descriptions, repr, opt_init_expr) ->
-      transl_record e.exp_loc e.exp_env
-        label_descriptions repr label_definitions
-        opt_init_expr
+  | Texp_record (fields, repr, opt_init_expr) ->
+      transl_record e.exp_loc e.exp_env fields repr opt_init_expr
   | Texp_field(arg, _, lbl) ->
       let access =
         match lbl.lbl_repres with
@@ -1260,8 +1258,8 @@ and transl_setinstvar loc self var expr =
   in
   Lprim(Parraysetu prim, [self; transl_normal_path var; transl_exp expr], loc)
 
-and transl_record loc env all_labels repres lbl_definitions opt_init_expr =
-  let size = Array.length all_labels in
+and transl_record loc env fields repres opt_init_expr =
+  let size = Array.length fields in
   (* Determine if there are "enough" fields (only relevant if this is a
      functional-style record update *)
   let no_init = match opt_init_expr with None -> true | _ -> false in
@@ -1272,7 +1270,7 @@ and transl_record loc env all_labels repres lbl_definitions opt_init_expr =
     let init_id = Ident.create "init" in
     let lv =
       Array.mapi
-        (fun i definition ->
+        (fun i (definition, _) ->
            match definition with
            | Kept typ ->
                let field_kind = value_kind env typ in
@@ -1285,11 +1283,11 @@ and transl_record loc env all_labels repres lbl_definitions opt_init_expr =
            | Overridden (_lid, expr) ->
                let field_kind = value_kind expr.exp_env expr.exp_type in
                transl_exp expr, field_kind)
-        lbl_definitions
+        fields
     in
     let ll, shape = List.split (Array.to_list lv) in
     let mut =
-      if Array.exists (fun lbl -> lbl.lbl_mut = Mutable) all_labels
+      if Array.exists (fun (_, lbl) -> lbl.lbl_mut = Mutable) fields
       then Mutable
       else Immutable in
     let lam =
@@ -1313,7 +1311,8 @@ and transl_record loc env all_labels repres lbl_definitions opt_init_expr =
             Lprim(Pmakearray (Pfloatarray, mut), ll, loc)
         | Record_extension ->
             let path =
-              match all_labels.(0).lbl_res.desc with
+              let (_, label) = fields.(0) in
+              match label.lbl_res.desc with
               | Tconstr(p, _, _) -> p
               | _ -> assert false
             in
@@ -1331,7 +1330,7 @@ and transl_record loc env all_labels repres lbl_definitions opt_init_expr =
     (* If you change anything here, you will likely have to change
        [check_recursive_recordwith] in this file. *)
     let copy_id = Ident.create "newrecord" in
-    let update_field definition lbl cont =
+    let update_field (definition, lbl) cont =
       match definition with
       | Kept _type -> cont
       | Overridden (_lid, expr) ->
@@ -1351,8 +1350,7 @@ and transl_record loc env all_labels repres lbl_definitions opt_init_expr =
     | Some init_expr ->
         Llet(Strict, Pgenval, copy_id,
              Lprim(Pduprecord (repres, size), [transl_exp init_expr], loc),
-             Misc.Stdlib.Array.fold_right2 update_field
-               lbl_definitions all_labels (Lvar copy_id))
+             Array.fold_right update_field fields (Lvar copy_id))
     end
   end
 

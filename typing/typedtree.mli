@@ -187,13 +187,19 @@ and expression_desc =
          *)
   | Texp_variant of label * expression option
   | Texp_record of
-      record_label_definition array * Types.label_description array *
+      ( record_label_definition * Types.label_description ) array *
       Types.record_representation * expression option
         (** { l1=P1; ...; ln=Pn }           (None)
             { E0 with l1=P1; ...; ln=Pn }   (Some E0)
 
             Invariant: n > 0
-         *)
+
+            If the type is { l1: t1; l2: t2 }, the expression
+            { E0 with t2=P2 } is represented as
+            Texp_record
+              ([| Kept t1, l1; Override P2, l2 |], representation,
+               Some E0)
+        *)
   | Texp_field of expression * Longident.t loc * label_description
   | Texp_setfield of
       expression * Longident.t loc * label_description * expression

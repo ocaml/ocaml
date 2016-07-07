@@ -255,15 +255,16 @@ let expr sub x =
         Texp_construct (lid, cd, List.map (sub.expr sub) args)
     | Texp_variant (l, expo) ->
         Texp_variant (l, opt (sub.expr sub) expo)
-    | Texp_record (fields, labels, repr, expo) ->
+    | Texp_record (fields, repr, expo) ->
         let fields = Array.map (function
-            | Kept t -> Kept t
-            | Overridden (lid, exp) ->
-                Overridden (lid, sub.expr sub exp))
+            | Kept t, label -> Kept t, label
+            | Overridden (lid, exp), label ->
+                Overridden (lid, sub.expr sub exp),
+                label)
             fields
         in
         Texp_record (
-          fields, labels, repr,
+          fields, repr,
           opt (sub.expr sub) expo
         )
     | Texp_field (exp, lid, ld) ->

@@ -323,7 +323,7 @@ and expression i ppf x =
   | Texp_variant (l, eo) ->
       line i ppf "Texp_variant \"%s\"\n" l;
       option i expression ppf eo;
-  | Texp_record (l, _, _, eo) ->
+  | Texp_record (l, _, eo) ->
       line i ppf "Texp_record\n";
       array i record_field ppf l;
       option i expression ppf eo;
@@ -838,10 +838,10 @@ and string_x_expression i ppf (s, _, e) =
   expression (i+1) ppf e;
 
 and record_field i ppf = function
-  | Overridden (li, e) ->
+  | Overridden (li, e), _ ->
       line i ppf "%a\n" fmt_longident li;
       expression (i+1) ppf e;
-  | Kept _ ->
+  | Kept _, _ ->
       line i ppf "<kept>"
 
 and label_x_expression i ppf (l, e) =
