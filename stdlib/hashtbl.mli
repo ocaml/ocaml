@@ -136,9 +136,7 @@ val filter_map_inplace: ('a -> 'b -> 'b option) -> ('a, 'b) t -> unit
     to [new_val].
 
     Other comments for {!Hashtbl.iter} apply as well.
-
-    @since 4.03
-  *)
+    @since 4.03.0 *)
 
 val fold : ('a -> 'b -> 'c -> 'c) -> ('a, 'b) t -> 'c -> 'c
 (** [Hashtbl.fold f tbl init] computes

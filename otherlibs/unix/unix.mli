@@ -716,9 +716,7 @@ val has_symlink : unit -> bool
    simply indicates that the symlink system call is available. *)
 
 val readlink : string -> string
-(** Read the contents of a link.
-
-   On Windows: not implemented. *)
+(** Read the contents of a symbolic link. *)
 
 
 (** {6 Polling} *)
