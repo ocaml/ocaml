@@ -1274,19 +1274,20 @@ and transl_record loc env all_labels repres lbl_definitions opt_init_expr =
       Array.mapi
         (fun i definition ->
            match definition with
-           | Kept _type ->
+           | Kept typ ->
+               let field_kind = value_kind env typ in
                let access =
                  match repres with
                    Record_regular | Record_inlined _ -> Pfield i
                  | Record_extension -> Pfield (i + 1)
                  | Record_float -> Pfloatfield i in
-               Lprim(access, [Lvar init_id], loc)
+               Lprim(access, [Lvar init_id], loc), field_kind
            | Overridden (_lid, expr) ->
-               transl_exp expr)
+               let field_kind = value_kind expr.exp_env expr.exp_type in
+               transl_exp expr, field_kind)
         lbl_definitions
     in
-    let ll = Array.to_list lv in
-    let shape = List.map (fun _ -> Pgenval) ll in
+    let ll, shape = List.split (Array.to_list lv) in
     let mut =
       if Array.exists (fun lbl -> lbl.lbl_mut = Mutable) all_labels
       then Mutable
