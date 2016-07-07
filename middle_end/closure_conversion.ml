@@ -416,7 +416,9 @@ and close t env (lam : Lambda.lambda) : Flambda.t =
     Lift_code.lifting_helper (close_list t env args)
       ~evaluation_order:`Right_to_left
       ~name:(name ^ "_arg")
-      ~create_body:(fun args -> name_expr (Prim (p, args, dbg)) ~name)
+      ~create_body:(fun args ->
+        name_expr (Prim (p, args, dbg))
+          ~name)
   | Lswitch (arg, sw) ->
     let scrutinee = Variable.create "switch" in
     let aux (i, lam) = i, close t env lam in
