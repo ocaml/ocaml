@@ -215,6 +215,12 @@ Working version
 - GPR#1886: move the Location.absname reference to Clflags.absname
   (Armaël Guéneau, review by Jérémie Dimino)
 
+- GPR#374: use Misc.try_finally for resource cleanup in the compiler
+  codebase. This should fix the problem of catch-and-reraise `try .. with`
+  blocks destroying backtrace information.
+  (François Bobot, Gabriel Scherer, and Nicolás Ojeda Bär, review by Gabriel
+  Scherer)
+
 ### Bug fixes:
 
 - MPR#7726, GPR#1676: Recursive modules, equi-recursive types and stack overflow
@@ -2589,7 +2595,7 @@ OCaml 4.04.0 (4 Nov 2016):
 
 ### Compiler distribution build system:
 
-- GPR#324: Compiler developers: Adding new primitives to the
+- GPR#324: Compiler developers: Adding new C primitives to the
   standard runtime doesn't require anymore to run `make bootstrap`
   (François Bobot)
 
