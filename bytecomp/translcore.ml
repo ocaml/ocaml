@@ -1267,7 +1267,7 @@ and transl_record loc env all_labels repres lbl_expr_list opt_init_expr =
   (* Determine if there are "enough" fields (only relevant if this is a
      functional-style record update *)
   let no_init = match opt_init_expr with None -> true | _ -> false in
-  if no_init || size <= Config.max_young_wosize
+  if no_init || size < Config.max_young_wosize
   then begin
     (* Allocate new record with given fields (and remaining fields
        taken from init_expr if any *)
