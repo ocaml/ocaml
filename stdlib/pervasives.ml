@@ -510,14 +510,23 @@ external sys_exit : int -> 'a = "caml_sys_exit"
 
 let exit_function = ref flush_all
 
+exception Already_exiting (* Handles [exit] calls in [at_exit] functions *)
+
 let at_exit f =
   let g = !exit_function in
-  exit_function := (fun () -> f(); g())
+  exit_function := (fun () -> (try f() with Already_exiting -> ()); g())
 
 let do_at_exit () = (!exit_function) ()
 
-let exit retcode =
-  do_at_exit ();
-  sys_exit retcode
+let exit_code = ref None
+let exit retcode = match !exit_code with
+| Some _ when retcode = 0 -> raise Already_exiting
+| Some _ -> exit_code := Some retcode; raise Already_exiting
+| None ->
+    exit_code := Some retcode;
+    do_at_exit ();
+    match !exit_code with
+    | None -> assert false
+    | Some retcode -> sys_exit retcode
 
 let _ = register_named_value "Pervasives.do_at_exit" do_at_exit
