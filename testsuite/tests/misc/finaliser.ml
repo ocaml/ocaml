@@ -15,14 +15,14 @@ let gc_print where _ =
       stat.Gc.major_collections
       where
 
-let r = Array.init m (fun _ -> Array.create m 1)
+let r = Array.init m (fun _ -> Array.make m 1)
 
 
 let () =
   gc_print "[Before]" ();
   let rec aux n =
     if n < k then begin
-      r.(n mod m) <- (Array.create m' 1);
+      r.(n mod m) <- (Array.make m' 1);
       begin match n mod m with
       | 0 ->
           gc_print (Printf.sprintf "[Create %i first]" n) ();
