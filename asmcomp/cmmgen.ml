@@ -511,10 +511,10 @@ let set_field ptr n newval init =
 
 let header ptr =
   if Config.spacetime then
-    let profinfo_mask = (1 lsl Config.profinfo_width) - 1 in
+    let non_profinfo_mask = (1 lsl (64 - Config.profinfo_width)) - 1 in
     Cop(Cand, [Cop (Cload Word_int,
         [Cop(Cadda, [ptr; Cconst_int(-size_int)])]);
-      Cconst_int profinfo_mask;
+      Cconst_int non_profinfo_mask;
     ])
   else
     Cop(Cload Word_int, [Cop(Cadda, [ptr; Cconst_int(-size_int)])])

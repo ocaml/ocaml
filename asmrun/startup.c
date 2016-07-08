@@ -17,8 +17,6 @@
 
 #include <stdio.h>
 #include <stdlib.h>
-#include <stdint.h>
-#include <unistd.h>
 #include "caml/callback.h"
 #include "caml/backtrace.h"
 #include "caml/custom.h"
