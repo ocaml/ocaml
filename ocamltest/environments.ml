@@ -15,13 +15,7 @@
 
 (* Definition of environments, used to pass parameters to tests and actions *)
 
-exception Empty_environment_name
-
 exception Variable_already_defined of Variables.t
-
-exception Environment_already_registered of string
-
-exception Environment_not_found of string
 
 module VariableMap = Map.Make (Variables)
 
@@ -43,27 +37,19 @@ let add variable value env =
   then raise (Variable_already_defined variable)
   else VariableMap.add variable value env
 
+let replace variable value environment =
+  VariableMap.add variable value environment
+  
+let append variable appened_value environment =
+  let previous_value = safe_lookup variable environment in
+  let new_value = previous_value ^ appened_value in
+  VariableMap.add variable new_value environment
+
 let add_bindings bindings env =
   let f env (variable, value) = add variable value env in
   List.fold_left f env bindings
 
 let from_bindings bindings = add_bindings bindings empty
-
-let (registered_environments : (string, t) Hashtbl.t) = Hashtbl.create 20
-
-let register environment_name environment =
-  if environment_name="" then raise Empty_environment_name
-  else if Hashtbl.mem registered_environments environment_name
-  then raise (Environment_already_registered environment_name)
-  else Hashtbl.add registered_environments environment_name environment
-
-let find_environemnt environment_name =
-  try Hashtbl.find registered_environments environment_name
-  with Not_found -> raise (Environment_not_found environment_name)
-
-let include_ environment_name environment =
-  let registered_environment = find_environemnt environment_name in
-  VariableMap.fold add registered_environment environment
 
 let dump_assignment log (variable, value) =
   Printf.fprintf log "%s = %s\n%!" (Variables.name_of_variable variable) value
@@ -81,6 +67,27 @@ type modifier =
 
 type modifiers = modifier list
 
-let apply_modifier env _m = env
+exception Empty_modifiers_name
+exception Modifiers_name_already_registered of string
+exception Modifiers_name_not_found of string
 
-let apply_modifiers env _mods = env
+let (registered_modifiers : (string, modifiers) Hashtbl.t) = Hashtbl.create 20
+
+let register modifiers name =
+  if name="" then raise Empty_modifiers_name
+  else if Hashtbl.mem registered_modifiers name
+  then raise (Modifiers_name_already_registered name)
+  else Hashtbl.add registered_modifiers name modifiers
+
+let find_modifiers name =
+  try Hashtbl.find registered_modifiers name
+  with Not_found -> raise (Modifiers_name_not_found name)
+
+let rec apply_modifier environment = function
+  | Include modifiers_name ->
+    apply_modifiers environment (find_modifiers modifiers_name)
+  | Add (variable, value) -> add variable value environment
+  | Replace (variable, value) -> replace variable value environment
+  | Append (variable, value) -> append variable value environment
+and apply_modifiers environment modifiers =
+  List.fold_left apply_modifier environment modifiers

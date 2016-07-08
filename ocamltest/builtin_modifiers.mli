@@ -13,8 +13,8 @@
 (*                                                                        *)
 (**************************************************************************)
 
-(* Definition of a few builtin environments *)
+(* Definition of a few builtin environment modifiers *)
 
-val principal : Environments.t
+val principal : Environments.modifiers
 
-val testing : Environments.t
+val testing : Environments.modifiers

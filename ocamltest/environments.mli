@@ -15,13 +15,7 @@
 
 (* Definition of environments, used to pass parameters to tests and actions *)
 
-exception Empty_environment_name
-
 exception Variable_already_defined of Variables.t
-
-exception Environment_already_registered of string
-
-exception Environment_not_found of string
 
 type t
 
@@ -35,10 +29,6 @@ val is_variable_defined : Variables.t -> t -> bool
 
 val add : Variables.t -> string -> t -> t
 val add_bindings : (Variables.t * string) list -> t -> t
-
-val register : string -> t -> unit
-
-val include_ : string -> t -> t
 
 val dump : out_channel -> t -> unit
 
@@ -54,3 +44,9 @@ type modifiers = modifier list
 
 val apply_modifier : t -> modifier -> t
 val apply_modifiers : t -> modifiers -> t
+
+exception Empty_modifiers_name
+exception Modifiers_name_already_registered of string
+exception Modifiers_name_not_found of string
+
+val register : modifiers -> string -> unit

@@ -13,20 +13,23 @@
 (*                                                                        *)
 (**************************************************************************)
 
-(* Definition of a few builtin environments *)
+(* Definition of a few builtin environment modifiers *)
 
 open Environments
 open Builtin_variables
 
-let principal = from_bindings
-  [
-    use_principal_flag, "yes";
-    compiler_directory_suffix, ".principal";
-    compiler_reference_suffix, ".principal";
-  ]
+let principal =
+[
+  Add (use_principal_flag, "yes");
+  Add (compiler_directory_suffix, ".principal");
+  Add (compiler_reference_suffix, ".principal");
+]
 
-let testing = add Builtin_variables.use_testing_module "yes" empty
+let testing =
+[
+  Add (use_testing_module, "yes")
+]
 
 let _ =
-  register "principal" principal;
-  register "testing" testing
+  register principal "principal";
+  register testing "testing"

@@ -25,9 +25,9 @@ let variable_already_defined loc variable context =
   Printf.eprintf "%s\nVariable %s already defined%s\n%!" locstr variable ctxt;
   exit 2
 
-let no_such_environment loc environment_name =
+let no_such_modifiers loc name =
   let locstr = Testlib.string_of_location loc in
-  Printf.eprintf "%s\nNo such environment %s\n%!" locstr environment_name;
+  Printf.eprintf "%s\nNo such modifiers %s\n%!" locstr name;
   exit 2
 
 let interprete_environment_statement env statement = match statement.node with
@@ -42,14 +42,16 @@ let interprete_environment_statement env statement = match statement.node with
         variable_already_defined statement.loc
           (Variables.name_of_variable variable) None
     end
-  | Include env_name ->
+  | Include modifiers_name ->
     begin
-      try Environments.include_ env_name.node env with
-      | Environments.Environment_not_found envname ->
-        no_such_environment statement.loc envname
+      let name = modifiers_name.node in
+      let modifier = Environments.Include name in
+      try Environments.apply_modifier env modifier with
+      | Environments.Modifiers_name_not_found name ->
+        no_such_modifiers statement.loc name
       | Environments.Variable_already_defined variable ->
         variable_already_defined statement.loc
-          (Variables.name_of_variable variable) (Some env_name.node)
+          (Variables.name_of_variable variable) (Some name)
     end
 
 let interprete_environment_statements env l =

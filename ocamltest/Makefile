@@ -10,7 +10,7 @@ modules :=\
   variables.cmo \
   environments.cmo \
   builtin_variables.cmo \
-  builtin_environments.cmo \
+  builtin_modifiers.cmo \
   actions.cmo \
   builtin_actions.cmo \
   tests.cmo \
