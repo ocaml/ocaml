@@ -178,12 +178,7 @@ extern value caml_spacetime_timestamp(double time_override,
 #define Get_my_profinfo_with_cached_backtrace(profinfo, size) \
   do { \
     static spacetime_unwind_info_cache spacetime_unwind_info = NULL; \
-    if (DIRECTLY_CALLED_FROM_OCAML) { \
-      profinfo = caml_spacetime_my_profinfo(&spacetime_unwind_info, size); \
-    } \
-    else { \
-      profinfo = (uintnat) 0; \
-    } \
+    profinfo = caml_spacetime_my_profinfo(&spacetime_unwind_info, size); \
   } \
   while (0);
 #else
