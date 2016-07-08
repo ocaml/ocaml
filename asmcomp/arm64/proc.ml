@@ -104,6 +104,8 @@ let reg_d7 = phys_reg 107
 let stack_slot slot ty =
   Reg.at_location ty (Stack slot)
 
+let loc_spacetime_node_hole = Reg.dummy  (* Spacetime unsupported *)
+
 (* Calling conventions *)
 
 let calling_conventions

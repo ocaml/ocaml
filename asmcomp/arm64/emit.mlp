@@ -431,7 +431,7 @@ module BR = Branch_relaxation.Make (struct
   let instr_size = function
     | Lend -> 0
     | Lop (Imove | Ispill | Ireload) -> 1
-    | Lop (Iconst_int n | Iconst_blockheader n) ->
+    | Lop (Iconst_int n) ->
       num_instructions_for_intconst n
     | Lop (Iconst_float _) -> 2
     | Lop (Iconst_symbol _) -> 2
@@ -574,7 +574,7 @@ let emit_instr i =
           | _ ->
               assert false
         end
-    | Lop(Iconst_int n | Iconst_blockheader n) ->
+    | Lop(Iconst_int n) ->
         emit_intconst i.res.(0) n
     | Lop(Iconst_float f) ->
         if f = 0L then

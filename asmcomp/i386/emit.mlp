@@ -501,7 +501,7 @@ let emit_instr fallthrough i =
         else
           I.mov (reg src) (reg dst)
       end
-  | Lop(Iconst_int n | Iconst_blockheader n) ->
+  | Lop(Iconst_int n) ->
       if n = 0n then begin
         match i.res.(0).loc with
         | Reg _ -> I.xor (reg i.res.(0)) (reg i.res.(0))

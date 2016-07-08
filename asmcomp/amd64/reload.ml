@@ -24,8 +24,7 @@ open Mach
    Operation                    Res     Arg1    Arg2
      Imove                      R       S
                              or S       R
-     Iconst_int         ]       S if 32-bit signed, R otherwise
-     Iconst_blockheader ]
+     Iconst_int                 S if 32-bit signed, R otherwise
      Iconst_float               R
      Iconst_symbol (not PIC)    S
      Iconst_symbol (PIC)        R
