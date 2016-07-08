@@ -168,8 +168,6 @@ extern value caml_spacetime_timestamp(void);
 extern value caml_spacetime_frame_table(void);
 extern value caml_spacetime_shape_table(void);
 extern void caml_spacetime_save_snapshot (struct channel *chan);
-extern void caml_spacetime_automatic_snapshot(void);
-extern void caml_spacetime_automatic_save(void);
 
 /* For use in runtime functions that are executed from OCaml
    code, to save the overhead of using libunwind every time. */

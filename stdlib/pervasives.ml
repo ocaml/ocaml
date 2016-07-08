@@ -508,12 +508,7 @@ let ( ^^ ) (Format (fmt1, str1)) (Format (fmt2, str2)) =
 
 external sys_exit : int -> 'a = "caml_sys_exit"
 
-external caml_spacetime_automatic_save : unit -> unit
-  = "%identity"
-    "caml_spacetime_automatic_save"
-
-let exit_function =
-  ref (fun () -> caml_spacetime_automatic_save (); flush_all ())
+let exit_function = ref flush_all
 
 let at_exit f =
   let g = !exit_function in

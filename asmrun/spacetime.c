@@ -223,6 +223,11 @@ value caml_spacetime_stored_pointer_of_c_node(c_node* c_node)
   return node;
 }
 
+static int pc_inside_c_node_matches(c_node* node, void* pc)
+{
+  return Decode_c_node_pc(node->pc) == pc;
+}
+
 static value allocate_uninitialized_ocaml_node(int size_including_header)
 {
   void* node;
