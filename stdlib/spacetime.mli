@@ -34,8 +34,10 @@ module Series : sig
   (** [save_and_close series] writes information into [series] required for
       interpeting the snapshots that [series] contains and then closes the
       [series] file. This function must be called to produce a valid series
-      file. *)
-  val save_and_close : t -> unit
+      file.
+      The optional [time] parameter is as for [Snapshot.take].
+  *)
+  val save_and_close : ?time:float -> t -> unit
 
 end
 
@@ -43,6 +45,13 @@ module Snapshot : sig
   (** [take series] takes a snapshot of the profiling annotations on the values
       in the minor and major heaps, together with GC stats, and write the
       result to the [series] file.  This function triggers a minor GC but does
-      not allocate any memory itself. *)
-  val take : Series.t -> unit
+      not allocate any memory itself.
+      If the optional [time] is specified, it will be used instead of the
+      result of [Sys.time] as the timestamp of the snapshot.  Such [time]s
+      should start from zero and be monotonically increasing.  This parameter
+      is intended to be used so that snapshots can be correlated against wall
+      clock time (which is not supported in the standard library) rather than
+      elapsed CPU time.
+  *)
+  val take : ?time:float -> Series.t -> unit
 end

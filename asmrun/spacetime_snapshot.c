@@ -153,7 +153,7 @@ static value get_total_allocations(void)
   return v_total_allocations;
 }
 
-static value take_snapshot(void)
+static value take_snapshot(double time_override, int use_time_override)
 {
   value v_snapshot;
   snapshot* heap_snapshot;
@@ -173,8 +173,13 @@ static value take_snapshot(void)
   uintnat words_scanned_with_profinfo = 0;
   value v_total_allocations;
 
-  /* CR-soon mshinwell: use a wall clock time function */
-  time = caml_sys_time_unboxed(Val_unit);
+  if (!use_time_override) {
+    time = caml_sys_time_unboxed(Val_unit);
+  }
+  else {
+    time = time_override;
+  }
+
   gc_stats = take_gc_stats();
 
   if (raw_entries == NULL) {
@@ -274,13 +279,14 @@ static value take_snapshot(void)
   return v_snapshot;
 }
 
-void caml_spacetime_save_snapshot (struct channel *chan)
+void caml_spacetime_save_snapshot (struct channel *chan, double time_override,
+                                   int use_time_override)
 {
   value v_snapshot;
   value v_total_allocations;
   snapshot* heap_snapshot;
 
-  v_snapshot = take_snapshot();
+  v_snapshot = take_snapshot(time_override, use_time_override);
 
   caml_output_val(chan, Val_long(0), Val_long(0));
 
@@ -304,27 +310,22 @@ void caml_spacetime_save_snapshot (struct channel *chan)
   caml_stat_free(Hp_val(v_snapshot));
 }
 
-CAMLprim value caml_spacetime_take_snapshot(value v_channel)
+CAMLprim value caml_spacetime_take_snapshot(value v_time_opt, value v_channel)
 {
   struct channel * channel = Channel(v_channel);
+  double time_override = 0.0;
+  int use_time_override = 0;
+
+  if (Is_block(v_time_opt)) {
+    time_override = Double_field(Field(v_time_opt, 0), 0);
+    use_time_override = 1;
+  }
 
   Lock(channel);
-  caml_spacetime_save_snapshot(channel);
+  caml_spacetime_save_snapshot(channel, time_override, use_time_override);
   Unlock(channel);
 
   return Val_unit;
-}
-
-value caml_spacetime_timestamp(void)
-{
-  double time;
-  value v_time;
-
-  time = caml_sys_time_unboxed(Val_unit);
-  v_time = allocate_outside_heap_with_tag(sizeof(double), Double_tag);
-  Double_field(v_time, 0) = time;
-
-  return v_time;
 }
 
 extern struct custom_operations caml_int64_ops;  /* ints.c */
@@ -378,6 +379,24 @@ allocate_loc_outside_heap(struct caml_loc_info li)
   }
 
   return result;
+}
+
+value caml_spacetime_timestamp(double time_override, int use_time_override)
+{
+  double time;
+  value v_time;
+
+  if (!use_time_override) {
+    time = caml_sys_time_unboxed(Val_unit);
+  }
+  else {
+    time = time_override;
+  }
+
+  v_time = allocate_outside_heap_with_tag(sizeof(double), Double_tag);
+  Double_field(v_time, 0) = time;
+
+  return v_time;
 }
 
 value caml_spacetime_frame_table(void)

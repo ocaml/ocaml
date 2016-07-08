@@ -164,10 +164,13 @@ extern c_node* caml_spacetime_c_node_of_stored_pointer_not_null(value);
 extern value caml_spacetime_stored_pointer_of_c_node(c_node* node);
 extern void caml_spacetime_register_thread(value*, value*);
 extern void caml_spacetime_register_shapes(void*);
-extern value caml_spacetime_timestamp(void);
 extern value caml_spacetime_frame_table(void);
 extern value caml_spacetime_shape_table(void);
-extern void caml_spacetime_save_snapshot (struct channel *chan);
+extern void caml_spacetime_save_snapshot (struct channel *chan,
+                                          double time_override,
+                                          int use_time_override);
+extern value caml_spacetime_timestamp(double time_override,
+                                      int use_time_override);
 
 /* For use in runtime functions that are executed from OCaml
    code, to save the overhead of using libunwind every time. */

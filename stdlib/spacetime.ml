@@ -23,26 +23,24 @@ module Series = struct
       closed = false;
     }
 
-  external save_trie : out_channel -> unit
+  external save_trie : ?time:float -> out_channel -> unit
     = "caml_spacetime_only_works_for_native_code"
       "caml_spacetime_save_trie"
 
-  let save_and_close t =
+  let save_and_close ?time t =
     if t.closed then failwith "Series is closed";
-    save_trie t.channel;
+    save_trie ?time t.channel;
     close_out t.channel;
     t.closed <- true
 end
 
 module Snapshot = struct
-
-  external take : out_channel -> unit
+  external take : ?time:float -> out_channel -> unit
     = "caml_spacetime_only_works_for_native_code"
       "caml_spacetime_take_snapshot"
 
-  let take { Series.closed; channel } =
+  let take ?time { Series.closed; channel } =
     if closed then failwith "Series is closed";
     Gc.minor ();
-    take channel
-
+    take ?time channel
 end

@@ -146,7 +146,8 @@ void caml_spacetime_register_thread(
   num_per_threads++;
 }
 
-void save_trie (struct channel *chan)
+void save_trie (struct channel *chan, double time_override,
+                int use_time_override)
 {
   value v_time, v_frames, v_shapes;
   int num_marshalled = 0;
@@ -154,7 +155,7 @@ void save_trie (struct channel *chan)
 
   caml_output_val(chan, Val_long(1), Val_long(0));
 
-  v_time = caml_spacetime_timestamp();
+  v_time = caml_spacetime_timestamp(time_override, use_time_override);
   v_frames = caml_spacetime_frame_table();
   v_shapes = caml_spacetime_shape_table();
 
@@ -186,13 +187,21 @@ void save_trie (struct channel *chan)
   Assert(num_marshalled == num_per_threads);
 }
 
-CAMLprim value caml_spacetime_save_trie (value vchan)
+CAMLprim value caml_spacetime_save_trie (value v_time_opt, value v_channel)
 {
-  struct channel * channel = Channel(vchan);
+  struct channel * channel = Channel(v_channel);
+  double time_override = 0.0;
+  int use_time_override = 0;
+
+  if (Is_block(v_time_opt)) {
+    time_override = Double_field(Field(v_time_opt, 0), 0);
+    use_time_override = 1;
+  }
 
   Lock(channel);
-  save_trie(channel);
+  save_trie(channel, time_override, use_time_override);
   Unlock(channel);
+
   return Val_unit;
 }
 
