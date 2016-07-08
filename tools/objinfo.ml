@@ -49,10 +49,15 @@ let print_name_crc (name, crco) =
 let print_line name =
   printf "\t%s\n" name
 
+let print_required_global id =
+  printf "\t%s\n" (Ident.name id)
+
 let print_cmo_infos cu =
   printf "Unit name: %s\n" cu.cu_name;
   print_string "Interfaces imported:\n";
   List.iter print_name_crc cu.cu_imports;
+  print_string "Required globals:\n";
+  List.iter print_required_global cu.cu_required_globals;
   printf "Uses unsafe features: ";
   (match cu.cu_primitives with
     | [] -> printf "no\n"

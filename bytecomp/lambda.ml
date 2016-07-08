@@ -265,8 +265,10 @@ and lambda_event_kind =
   | Lev_pseudo
 
 type program =
-  { code : lambda;
-    main_module_block_size : int; }
+  { module_ident : Ident.t;
+    main_module_block_size : int;
+    required_globals : Ident.Set.t;
+    code : lambda }
 
 let const_unit = Const_pointer 0
 

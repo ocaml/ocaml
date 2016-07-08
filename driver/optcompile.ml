@@ -93,9 +93,11 @@ let implementation ppf sourcefile outputprefix ~backend =
         (typedtree, coercion)
         ++ Timings.(time (Timings.Transl sourcefile)
             (Translmod.transl_implementation_flambda modulename))
-        +++ print_if ppf Clflags.dump_rawlambda Printlambda.lambda
-        ++ Timings.time (Timings.Generate sourcefile) (fun lambda ->
-          lambda
+        ++ Timings.time (Timings.Generate sourcefile)
+          (fun { Lambda.module_ident; main_module_block_size;
+                 required_globals; code } ->
+          ((module_ident, main_module_block_size), code)
+          +++ print_if ppf Clflags.dump_rawlambda Printlambda.lambda
           +++ Simplif.simplify_lambda
           +++ print_if ppf Clflags.dump_lambda Printlambda.lambda
           ++ (fun ((module_ident, size), lam) ->
@@ -107,7 +109,7 @@ let implementation ppf sourcefile outputprefix ~backend =
                 ~backend
                 ~module_initializer:lam)
           ++ Asmgen.compile_implementation_flambda ~source_provenance
-            outputprefix ~backend ppf;
+            outputprefix ~required_globals ~backend ppf;
           Compilenv.save_unit_info cmxfile)
       end
       else begin
@@ -117,9 +119,9 @@ let implementation ppf sourcefile outputprefix ~backend =
             (Translmod.transl_store_implementation modulename)
         ++ print_if ppf Clflags.dump_rawlambda Printlambda.program
         ++ Timings.(time (Generate sourcefile))
-            (fun { Lambda.code; main_module_block_size } ->
-              { Lambda.code = Simplif.simplify_lambda code;
-                main_module_block_size }
+            (fun program ->
+              { program with
+                Lambda.code = Simplif.simplify_lambda program.Lambda.code }
               ++ print_if ppf Clflags.dump_lambda Printlambda.program
               ++ Asmgen.compile_implementation_clambda ~source_provenance
                 outputprefix ppf;

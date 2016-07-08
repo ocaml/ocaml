@@ -560,45 +560,35 @@ let _ =
 (* Introduce dependencies on modules referenced only by "external". *)
 
 let scan_used_globals lam =
-  let globals = ref IdentSet.empty in
+  let globals = ref Ident.Set.empty in
   let rec scan lam =
     Lambda.iter scan lam;
     match lam with
       Lprim ((Pgetglobal id | Psetglobal id), _, _) ->
-        globals := IdentSet.add id !globals
+        globals := Ident.Set.add id !globals
     | _ -> ()
   in
   scan lam; !globals
 
-let wrap_globals ~flambda body =
+let required_globals ~flambda body =
   let globals = scan_used_globals body in
   let add_global id req =
-    if not flambda && IdentSet.mem id globals then
+    if not flambda && Ident.Set.mem id globals then
       req
     else
-      IdentSet.add id req
+      Ident.Set.add id req
   in
   let required =
     Hashtbl.fold
       (fun path _ -> add_global (Path.head path)) used_primitives
-      (if flambda then globals else IdentSet.empty)
+      (if flambda then globals else Ident.Set.empty)
   in
   let required =
     List.fold_right add_global (Env.get_required_globals ()) required
   in
   Env.reset_required_globals ();
   Hashtbl.clear used_primitives;
-  IdentSet.fold
-    (fun id expr ->
-      Lsequence(Lprim(Popaque,
-                      [Lprim(Pgetglobal id, [], Location.none)],
-                      Location.none),
-                expr))
-    required body
-  (* Location.prerr_warning loc
-        (Warnings.Nonrequired_global (Ident.name (Path.head path),
-                                      "uses the primitive " ^
-                                      Printtyp.string_of_path path))) *)
+  required
 
 (* Compile an implementation *)
 
@@ -612,13 +602,20 @@ let transl_implementation_flambda module_name (str, cc) =
       (fun () -> transl_struct Location.none [] cc
                    (global_path module_id) str)
   in
-  (module_id, size), wrap_globals ~flambda:true body
+  { module_ident = module_id;
+    main_module_block_size = size;
+    required_globals = required_globals ~flambda:true body;
+    code = body }
 
 let transl_implementation module_name (str, cc) =
-  let (module_id, _size), module_initializer =
+  let implementation =
     transl_implementation_flambda module_name (str, cc)
   in
-  Lprim (Psetglobal module_id, [module_initializer], Location.none)
+  let code =
+    Lprim (Psetglobal implementation.module_ident, [implementation.code],
+           Location.none)
+  in
+  { implementation with code }
 
 (* Build the list of value identifiers defined by a toplevel structure
    (excluding primitive declarations). *)
@@ -977,10 +974,14 @@ let transl_store_phrases module_name str =
 let transl_store_implementation module_name (str, restr) =
   let s = !transl_store_subst in
   transl_store_subst := Ident.empty;
-  let (i, r) = transl_store_gen module_name (str, restr) false in
+  let (i, code) = transl_store_gen module_name (str, restr) false in
   transl_store_subst := s;
   { Lambda.main_module_block_size = i;
-    code = wrap_globals ~flambda:false r; }
+    code;
+    (* module_ident is not used by closure, but this allow to share
+       the type with the flambda version *)
+    module_ident = Ident.create_persistent module_name;
+    required_globals = required_globals ~flambda:true code }
 
 (* Compile a toplevel phrase *)
 
