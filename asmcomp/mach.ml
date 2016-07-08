@@ -149,12 +149,21 @@ let spacetime_node_hole_pointer_is_live_before insn =
   match insn.desc with
   | Iop op ->
     begin match op with
-    | Icall_ind _ | Icall_imm _ | Itailcall_ind _ | Itailcall_imm _
-    | Ialloc _ -> true
+    | Icall_ind _ | Icall_imm _ | Itailcall_ind _ | Itailcall_imm _ -> true
     | Iextcall { alloc; } -> alloc
+    | Ialloc _ ->
+      (* Allocations are special: the call to [caml_call_gc] requires some
+         instrumentation code immediately prior, but this is not inserted until
+         the emitter (since the call is not visible prior to that in any IR).
+         As such, none of the Mach / Linearize analyses will ever see that
+         we use the node hole pointer for these, and we do not need to say
+         that it is live at such points. *)
+      false
     | Iintop op | Iintop_imm (op, _) ->
       begin match op with
-      | Icheckbound _ -> true
+      | Icheckbound _ 
+        (* [Icheckbound] doesn't need to return [true] for the same reason as
+           [Ialloc]. *)
       | Iadd | Isub | Imul | Imulh | Idiv | Imod
       | Iand | Ior | Ixor | Ilsl | Ilsr | Iasr
       | Icomp _ -> false
