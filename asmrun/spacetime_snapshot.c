@@ -414,19 +414,25 @@ value caml_spacetime_frame_table(void)
     if (descr != NULL) {
       value location, return_address, pair, new_list_element;
       struct caml_loc_info li;
-      caml_debuginfo_location(descr, &li);
-      location = allocate_loc_outside_heap(li);
-      return_address = allocate_int64_outside_heap(descr->retaddr);
+      debuginfo dbg;
+      if (descr->frame_size != 0xffff) {
+        dbg = caml_debuginfo_extract(descr);
+        if (dbg != NULL) {
+          caml_debuginfo_location(dbg, &li);
+          location = allocate_loc_outside_heap(li);
+          return_address = allocate_int64_outside_heap(descr->retaddr);
 
-      pair = allocate_outside_heap_with_tag(2 * sizeof(value), 0);
-      Field(pair, 0) = return_address;
-      Field(pair, 1) = location;
+          pair = allocate_outside_heap_with_tag(2 * sizeof(value), 0);
+          Field(pair, 0) = return_address;
+          Field(pair, 1) = location;
 
-      new_list_element =
-        allocate_outside_heap_with_tag(2 * sizeof(value), 0 /* (::) */);
-      Field(new_list_element, 0) = pair;
-      Field(new_list_element, 1) = list;
-      list = new_list_element;
+          new_list_element =
+            allocate_outside_heap_with_tag(2 * sizeof(value), 0 /* (::) */);
+          Field(new_list_element, 0) = pair;
+          Field(new_list_element, 1) = list;
+          list = new_list_element;
+        }
+      }
     }
   }
 
