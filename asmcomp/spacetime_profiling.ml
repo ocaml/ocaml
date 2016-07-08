@@ -401,8 +401,8 @@ class virtual instruction_selection = object (self)
     let fun_spacetime_shape =
       super#insert_prologue f ~loc_arg ~rarg ~spacetime_node_hole ~env
     in
-    (* CR mshinwell: add check to make sure the node size doesn't exceed the
-       chunk size of the allocator *)
+    (* CR-soon mshinwell: add check to make sure the node size doesn't exceed
+       the chunk size of the allocator *)
     if not Config.spacetime then fun_spacetime_shape
     else begin
       let node_hole, node_hole_reg =

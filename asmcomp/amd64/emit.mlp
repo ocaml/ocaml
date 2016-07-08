@@ -689,7 +689,7 @@ let emit_instr fallthrough i =
   | Lop(Iintop (Icheckbound { label_after_error; spacetime_index; } )) ->
       let spacetime =
         if not Config.spacetime then None
-        else Some (arg i 1, spacetime_index)
+        else Some (arg i 2, spacetime_index)
       in
       let lbl = bound_error_label ?label:label_after_error i.dbg ~spacetime in
       I.cmp (arg i 1) (arg i 0);

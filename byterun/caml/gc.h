@@ -60,7 +60,7 @@ extern uintnat caml_spacetime_my_profinfo(struct ext_table**, uintnat);
 #else
 #define Make_header_allocated_here Make_header
 #define Make_header_with_profinfo(wosize, tag, color, profinfo) \
-  Make_header(wosize, tag, color)
+  Make_header(wosize | (profinfo & (intnat) 0), tag, color)
 #endif
 
 #define Is_white_val(val) (Color_val(val) == Caml_white)
