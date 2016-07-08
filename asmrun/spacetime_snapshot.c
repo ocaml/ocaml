@@ -84,7 +84,7 @@ typedef struct {
 
 static value allocate_outside_heap_with_tag(mlsize_t size_in_bytes, tag_t tag)
 {
-  /* CR mshinwell: this function should live somewhere else */
+  /* CR-soon mshinwell: this function should live somewhere else */
   header_t* block;
 
   assert(size_in_bytes % sizeof(value) == 0);
