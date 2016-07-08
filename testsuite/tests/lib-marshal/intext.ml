@@ -556,15 +556,23 @@ let test_end_of_file_regression () =
       | End_of_file when !k != n -> failwith "missing integer"
       | End_of_file -> ()
   in
-  test 800 (try
-    let n = 100 in
-    let oc = open_out_bin "intext.data" in
-    (write oc n;
-     close_out oc);
-    let ic = open_in_bin "intext.data" in
-    read ic n;
-    true
-  with _ -> false)
+  test 800 (
+    try
+      let n = 100 in
+      let oc = open_out_bin "intext.data" in
+      write oc n;
+      close_out oc;
+
+      let ic = open_in_bin "intext.data" in
+      try
+        read ic n;
+        close_in ic;
+        true
+      with _ ->
+        close_in ic;
+        false
+    with _ -> false
+  )
 
 
 let main() =
