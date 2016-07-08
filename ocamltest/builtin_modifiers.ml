@@ -20,7 +20,7 @@ open Builtin_variables
 
 let principal =
 [
-  Add (use_principal_flag, "yes");
+  Append (flags, " -principal ");
   Add (compiler_directory_suffix, ".principal");
   Add (compiler_reference_suffix, ".principal");
 ]

@@ -267,9 +267,6 @@ let files env = words_of_variable Builtin_variables.files env
 let use_testing_module env =
   Environments.is_variable_defined Builtin_variables.use_testing_module env
 
-let use_principal_flag env =
-  Environments.is_variable_defined Builtin_variables.use_principal_flag env
-
 let flags env = Environments.safe_lookup Builtin_variables.flags env
 
 let libraries env = Environments.safe_lookup Builtin_variables.libraries env
@@ -311,7 +308,6 @@ let rec compile_module
       compilername;
       stdlib_flags ocamlsrcdir;
       if use_testing_module env then testingmodule_flags ocamlsrcdir else "";
-      if use_principal_flag env then "-principal" else "";
       flags env;
       backend_flags env backend;
       libraries env;
@@ -707,7 +703,6 @@ let run_test_program_in_toplevel toplevel log env =
     toplevel_name;
     toplevel_default_flags;
     stdlib_flags ocamlsrcdir;
-    if use_principal_flag env then "-principal" else "";
     flags env;
   ] in
   let exit_status =
