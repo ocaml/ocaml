@@ -274,7 +274,9 @@ static void do_compaction (void)
           while (Ecolor (q) == 0) q = * (word *) q;
           sz = Whsize_ehd (q);
           t = Tag_ehd (q);
+#ifdef WITH_SPACETIME
           profinfo = Profinfo_ehd (q);
+#endif
 
           if (t == Infix_tag){
             /* Get the original header of this block. */

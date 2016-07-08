@@ -104,6 +104,11 @@ else
 SKIP=false
 endif
 
+ifeq "$(WITH_SPACETIME)" "true"
+# These tests have not been ported for Spacetime
+SKIP=true
+endif
+
 ifeq ($(CCOMPTYPE),msvc)
 CC=set -o pipefail ; $(NATIVECC) $(CFLAGS) /Fe$(1) | tail -n +2
 CFLAGS=$(NATIVECCCOMPOPTS)
