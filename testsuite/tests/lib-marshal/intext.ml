@@ -571,7 +571,6 @@ let main() =
   if Array.length Sys.argv <= 2 then begin
     test_out "intext.data"; test_in "intext.data";
     test_out "intext.data"; test_in "intext.data";
-    Sys.remove "intext.data";
     test_string();
     test_buffer();
     test_size();
@@ -581,6 +580,7 @@ let main() =
     test_infix ();
     test_mutual_rec_regression ();
     test_end_of_file_regression ();
+    Sys.remove "intext.data";
   end else
   if Sys.argv.(1) = "make" then begin
     let n = int_of_string Sys.argv.(2) in
