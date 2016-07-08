@@ -69,7 +69,7 @@ typedef struct {
 
 typedef struct {
   /* (GC header here.) */
-  value time;  /* Cf. [Sys.time]. */
+  value time;
   value gc_stats;
   value entries;
   value words_scanned;
