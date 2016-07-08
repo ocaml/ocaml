@@ -110,7 +110,7 @@ bits  63        (64-P) (63-P)        10 9     8 7   0
 #define Tag_hd(hd) ((tag_t) ((hd) & 0xFF))
 #ifndef WITH_SPACETIME
 #define Wosize_hd(hd) ((mlsize_t) ((hd) >> 10))
-#define Profinfo_hd(hd) ((uintnat) 0)
+#define Profinfo_hd(hd) ((uintnat) (hd & 0))
 #else
 #define Hd_no_profinfo(hd) ((hd) & ~(PROFINFO_MASK << PROFINFO_SHIFT))
 #define Wosize_hd(hd) ((mlsize_t) ((Hd_no_profinfo(hd)) >> 10))
