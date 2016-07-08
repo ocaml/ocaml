@@ -269,7 +269,12 @@ let use_testing_module env =
 
 let flags env = Environments.safe_lookup Builtin_variables.flags env
 
-let libraries env = Environments.safe_lookup Builtin_variables.libraries env
+let libraries backend env =
+  let value = Environments.safe_lookup Builtin_variables.libraries env in
+  let libs = Testlib.words value in
+  let extension = Backends.library_extension backend in
+  let add_extension lib = make_file_name lib extension in
+  String.concat " " (List.map add_extension libs)
 
 let backend_flags env =
   get_backend_value_from_env env
@@ -310,7 +315,7 @@ let rec compile_module
       if use_testing_module env then testingmodule_flags ocamlsrcdir else "";
       flags env;
       backend_flags env backend;
-      libraries env;
+      libraries backend env;
       compile;
       output;
     ] in
@@ -393,7 +398,7 @@ let link_modules ocamlsrcdir compiler compilername compileroutput program_variab
     stdlib_flags ocamlsrcdir;
     if use_testing_module env then testingmodule_flags ocamlsrcdir else "";
     flags env;
-    libraries env;
+    libraries backend env;
     backend_flags env backend;
     module_names;
     output
