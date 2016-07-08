@@ -59,6 +59,7 @@ module Options = Main_args.Make_optcomp_options (struct
   let _compact = clear optimize_for_speed
   let _config () = show_config ()
   let _cmx_contains_all_code = set cmx_contains_all_code
+  let _whole_program_rebuild = set whole_program_rebuild
   let _for_pack s = for_package := Some s
   let _g = set debug
   let _i () = print_types := true; compile_only := true

@@ -162,6 +162,7 @@ let inlining_report = ref false    (* -inlining-report *)
 let afl_instrument = ref Config.afl_instrument (* -afl-instrument *)
 let afl_inst_ratio = ref 100           (* -afl-inst-ratio *)
 let cmx_contains_all_code = ref false  (* -lto *)
+let whole_program_rebuild = ref false  (* -use-lto *)
 
 let simplify_rounds = ref None        (* -rounds *)
 let default_simplify_rounds = ref 1        (* -rounds *)

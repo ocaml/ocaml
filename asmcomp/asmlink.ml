@@ -120,7 +120,7 @@ let object_file_name name =
     try
       find_in_path !load_path name
     with Not_found ->
-      fatal_error "Asmlink.object_file_name: not found" in
+      fatal_errorf "Asmlink.object_file_name: not found %s" name in
   if Filename.check_suffix file_name ".cmx" then
     Filename.chop_suffix file_name ".cmx" ^ ext_obj
   else if Filename.check_suffix file_name ".cmxa" then
@@ -446,7 +446,7 @@ let link ~backend ppf objfiles output_name =
   Clflags.all_ccopts := !lib_ccopts @ !Clflags.all_ccopts;
                                                (* put user's opts first *)
   let removed_objects, object_files, make_startup =
-    if !Clflags.cmx_contains_all_code && Config.flambda then
+    if !Clflags.whole_program_rebuild && Config.flambda then
       link_whole_program ~backend ppf units_tolink
     else
       [],
@@ -519,8 +519,8 @@ let report_error ppf = function
         name
   | Module_compiled_without_lto name ->
       fprintf ppf
-        "@[<hov>Modules %s@ was compiled without the `-lto`@ \
-         option. It is needed for linking with the `-lto` option.@]"
+        "@[<hov>Modules %s@ was compiled without the `-lto` option.@ \
+         It is needed for linking with the `-lto` option.@]"
         name
 
 let () =

@@ -197,6 +197,7 @@ module type Optcomp_options = sig
   include Compiler_options
   include Optcommon_options
   val _cmx_contains_all_code : unit -> unit
+  val _whole_program_rebuild : unit -> unit
   val _no_float_const_prop : unit -> unit
   val _nodynlink : unit -> unit
   val _p : unit -> unit
