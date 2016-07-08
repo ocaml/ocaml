@@ -15,4 +15,4 @@ and ['a] d :
   unit -> object constraint 'a = < x : int; .. > method f : 'a -> int end
 class ['a] c : unit -> object constraint 'a = int end
 and ['a] d : unit -> object constraint 'a = int #c end
-Fatal error: exception File "asmcomp/closure.ml", line 1071, characters 6-12: Assertion failed
+Fatal error: exception File "asmcomp/closure.ml", line 1050, characters 6-12: Assertion failed
