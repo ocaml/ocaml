@@ -70,3 +70,17 @@ let dump_assignment log (variable, value) =
 
 let dump log environment =
   List.iter (dump_assignment log) (VariableMap.bindings environment);
+
+(* Environment modifiers *)
+
+type modifier =
+  | Include of string
+  | Add of Variables.t * string
+  | Replace of Variables.t * string
+  | Append of Variables.t * string
+
+type modifiers = modifier list
+
+let apply_modifier env _m = env
+
+let apply_modifiers env _mods = env

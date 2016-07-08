@@ -41,3 +41,16 @@ val register : string -> t -> unit
 val include_ : string -> t -> t
 
 val dump : out_channel -> t -> unit
+
+(* Environment modifiers *)
+
+type modifier =
+  | Include of string
+  | Add of Variables.t * string
+  | Replace of Variables.t * string
+  | Append of Variables.t * string
+
+type modifiers = modifier list
+
+val apply_modifier : t -> modifier -> t
+val apply_modifiers : t -> modifiers -> t
