@@ -74,7 +74,6 @@ void caml_garbage_collection(void)
       caml_young_ptr - caml_young_trigger < Max_young_whsize){
     caml_gc_dispatch ();
   }
-
   caml_process_pending_signals();
 }
 
