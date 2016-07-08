@@ -36,7 +36,7 @@
 
 #include "../config/s.h"
 
-/* CR lwhite: The following two definitions are copied from spacetime.c
+/* CR-someday lwhite: The following two definitions are copied from spacetime.c
    because they are needed here, but must be inlined in spacetime.c
    for performance. Perhaps a macro or "static inline" would be
    more appropriate. */

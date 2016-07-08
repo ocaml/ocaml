@@ -450,7 +450,7 @@ module Trace = struct
       | OCaml of OCaml.Node.t
       | Foreign of Foreign.Node.t
 
-    (* CR lwhite: These functions should work in bytecode *)
+    (* CR-soon lwhite: These functions should work in bytecode *)
     external is_ocaml_node : t -> bool
       = "caml_spacetime_only_works_for_native_code"
         "caml_spacetime_is_ocaml_node" "noalloc"
