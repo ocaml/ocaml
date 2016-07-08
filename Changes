@@ -820,6 +820,9 @@ OCaml 4.04.0 (4 Nov 2016):
 
 - GPR#590: Do not perform compaction if the real overhead is less than expected
   (Thomas Braibant)
+- GPR#608: Whole program dead code elimination
+  (Pierre Chambart)
+
 
 ### Tools:
 
