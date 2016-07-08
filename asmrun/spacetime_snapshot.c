@@ -17,11 +17,8 @@
 #include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
-#include <unistd.h>
-#include <fcntl.h>
 #include <limits.h>
 #include <math.h>
-#include <sys/resource.h>
 
 #include "caml/alloc.h"
 #include "caml/backtrace_prim.h"
