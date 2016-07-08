@@ -23,11 +23,17 @@ type t = string VariableMap.t
 
 let empty = VariableMap.empty
 
+let expand value =
+  let subst s = try Sys.getenv s with Not_found -> "" in
+  let b = Buffer.create 100 in
+  try Buffer.add_substitute b subst value; Buffer.contents b with _ -> value
+  
 let lookup variable env =
-  try Some (VariableMap.find variable env) with Not_found -> None
+  try Some (expand (VariableMap.find variable env)) with Not_found -> None
 
-let safe_lookup variable env =
-  try (VariableMap.find variable env) with Not_found -> ""
+let safe_lookup variable env = match lookup variable env with
+  | None -> ""
+  | Some value -> value
 
 let is_variable_defined variable env =
   VariableMap.mem variable env
