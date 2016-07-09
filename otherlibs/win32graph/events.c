@@ -22,7 +22,8 @@ enum {
   EVENT_BUTTON_DOWN = 1,
   EVENT_BUTTON_UP = 2,
   EVENT_KEY_PRESSED = 4,
-  EVENT_MOUSE_MOTION = 8
+  EVENT_MOUSE_MOTION = 8,
+  EVENT_WINDOW_CLOSED = 16
 };
 
 struct event_data {
@@ -105,6 +106,10 @@ void caml_gr_handle_event(UINT msg, WPARAM wParam, LPARAM lParam)
     last_pos = lParam;
     caml_gr_enqueue_event(EVENT_MOUSE_MOTION, lParam, last_button, 0);
     break;
+  case WM_DESTROY:
+    // Release any calls to Graphics.wait_next_event
+    ReleaseSemaphore(caml_gr_queue_semaphore, 1, NULL);
+    break;
   }
 }
 
@@ -157,15 +162,20 @@ static value caml_gr_wait_event_blocking(int mask)
     /* Pop oldest event in queue */
     EnterCriticalSection(&caml_gr_queue_mutex);
     ev = caml_gr_queue[caml_gr_head];
-    /* Queue should never be empty at this point, but just in case... */
+    /* Empty queue means the window was closed */
     if (QueueIsEmpty) {
-      ev.kind = 0;
+      ev.kind = EVENT_WINDOW_CLOSED;
     } else {
       caml_gr_head = (caml_gr_head + 1) % SIZE_QUEUE;
     }
     LeaveCriticalSection(&caml_gr_queue_mutex);
     /* Check if it matches */
   } while ((ev.kind & mask) == 0);
+
+  if (ev.kind == EVENT_WINDOW_CLOSED) {
+    gr_fail("graphic screen not opened", NULL);
+  }
+
   return caml_gr_wait_allocate_result(ev.mouse_x, ev.mouse_y, ev.button,
                                       ev.kind == EVENT_KEY_PRESSED,
                                       ev.key);
@@ -176,7 +186,7 @@ CAMLprim value caml_gr_wait_event(value eventlist) /* ML */
   int mask, poll;
 
   gr_check_open();
-  mask = 0;
+  mask = EVENT_WINDOW_CLOSED;
   poll = 0;
   while (eventlist != Val_int(0)) {
     switch (Int_val(Field(eventlist, 0))) {

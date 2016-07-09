@@ -190,6 +190,10 @@ OCaml 4.04.0:
   OS-independent number
   (Jérémie Dimino)
 
+- GPR#678: Graphics.close_graph crashes 64-bit Windows ports (re-implementation
+  of PR#3963)
+  (David Allsopp)
+
 ### Documentation:
 
 - PR#7243: warn users against using WinZip to unpack the source archive
