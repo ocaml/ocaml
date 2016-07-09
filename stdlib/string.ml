@@ -127,6 +127,17 @@ type t = string
 let compare (x: t) (y: t) = Pervasives.compare x y
 external equal : string -> string -> bool = "caml_string_equal"
 
+let split sep s =
+  let r = ref [] in
+  let j = ref (length s) in
+  for i = length s - 1 downto 0 do
+    if unsafe_get s i = sep then begin
+      r := sub s (i + 1) (!j - i - 1) :: !r;
+      j := i
+    end
+  done;
+  sub s 0 !j :: !r
+
 (* Deprecated functions implemented via other deprecated functions *)
 [@@@ocaml.warning "-3"]
 let uppercase s =
