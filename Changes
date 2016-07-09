@@ -112,6 +112,10 @@ OCaml 4.04.0:
 - GPR#626: String.split
   (Alain Frisch)
 
+- GPR#669: Filename.extension and Filename.remove_extension
+  (Alain Frisch, request by Edgar Aroutiounian, review by Daniel Bunzli
+  and Damien Doligez)
+
 ### Manual:
 
 - PR#7245, GPR#565: clarification to the wording and documentation
