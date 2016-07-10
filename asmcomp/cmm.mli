@@ -148,7 +148,6 @@ type fundecl =
 
 type data_item =
     Cdefine_symbol of string
-  | Cdefine_label of int
   | Cglobal_symbol of string
   | Cint8 of int
   | Cint16 of int
@@ -157,7 +156,6 @@ type data_item =
   | Csingle of float
   | Cdouble of float
   | Csymbol_address of string
-  | Clabel_address of int
   | Cstring of string
   | Cskip of int
   | Calign of int

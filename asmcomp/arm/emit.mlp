@@ -883,7 +883,6 @@ let fundecl fundecl =
 let emit_item = function
     Cglobal_symbol s -> `	.globl	{emit_symbol s}\n`;
   | Cdefine_symbol s -> `{emit_symbol s}:\n`
-  | Cdefine_label lbl -> `{emit_data_label lbl}:\n`
   | Cint8 n -> `	.byte	{emit_int n}\n`
   | Cint16 n -> `	.short	{emit_int n}\n`
   | Cint32 n -> `	.long	{emit_int32 (Nativeint.to_int32 n)}\n`
@@ -891,7 +890,6 @@ let emit_item = function
   | Csingle f -> emit_float32_directive ".long" (Int32.bits_of_float f)
   | Cdouble f -> emit_float64_split_directive ".long" (Int64.bits_of_float f)
   | Csymbol_address s -> `	.word	{emit_symbol s}\n`
-  | Clabel_address lbl -> `	.word	{emit_data_label lbl}\n`
   | Cstring s -> emit_string_directive "	.ascii  " s
   | Cskip n -> if n > 0 then `	.space	{emit_int n}\n`
   | Calign n -> `	.align	{emit_int(Misc.log2 n)}\n`
