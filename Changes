@@ -44,6 +44,12 @@ OCaml 4.04.0:
 - GPR#580: Optimize immutable float records
   (Pierre Chambart, review by Marc Shinwell)
 
+- GPR#591: Improve support for OCAMLPARAM: (i) do not use objects
+  files with -a, -pack, -shared; (ii) use "before" objects in the toplevel
+  (but not "after" objects); (iii) use -I dirs in the toplevel,
+  (iv) fix bug where -I dirs were ignored when using threads
+  (Marc Lasson, review by Damien Doliged and Alain Frisch)
+
 - GPR#602: Do not generate dummy code to force module linking
   (Pierre Chambart, reviewed by Jacques Garrigue)
 
