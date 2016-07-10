@@ -495,7 +495,9 @@ let set_paths () =
      but keep the directories that user code linked in with ocamlmktop
      may have added to load_path. *)
   load_path := !load_path @ [Filename.concat Config.standard_library "camlp4"];
-  load_path := "" :: (List.rev !Clflags.include_dirs @ !load_path);
+  load_path := "" :: List.rev (!Compenv.last_include_dirs @
+                               !Clflags.include_dirs @
+                               !Compenv.first_include_dirs) @ !load_path;
   Dll.add_path !load_path
 
 let initialize_toplevel_env () =

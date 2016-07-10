@@ -309,20 +309,20 @@ let main () =
         fatal "Option -a cannot be used with .cmxa input files.";
       Compmisc.init_path true;
       let target = extract_output !output_name in
-      Asmlibrarian.create_archive (get_objfiles ()) target;
+      Asmlibrarian.create_archive (get_objfiles ~with_ocamlparam:false) target;
       Warnings.check_fatal ();
     end
     else if !make_package then begin
       Compmisc.init_path true;
       let target = extract_output !output_name in
       Asmpackager.package_files ppf (Compmisc.initial_env ())
-        (get_objfiles ()) target ~backend;
+        (get_objfiles ~with_ocamlparam:false) target ~backend;
       Warnings.check_fatal ();
     end
     else if !shared then begin
       Compmisc.init_path true;
       let target = extract_output !output_name in
-      Asmlink.link_shared ppf (get_objfiles ()) target;
+      Asmlink.link_shared ppf (get_objfiles ~with_ocamlparam:false) target;
       Warnings.check_fatal ();
     end
     else if not !compile_only && !objfiles <> [] then begin
@@ -342,7 +342,7 @@ let main () =
           default_output !output_name
       in
       Compmisc.init_path true;
-      Asmlink.link ppf (get_objfiles ()) target;
+      Asmlink.link ppf (get_objfiles ~with_ocamlparam:true) target;
       Warnings.check_fatal ();
     end;
   with x ->
