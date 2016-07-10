@@ -186,6 +186,8 @@ OCaml 4.04.0:
   respected at N-way join points in the control flow graph
   (Mark Shinwell)
 
+- GPR#672: Fix float_of_hex parser to correctly reject some invalid forms
+  (Bogdan Tătăroiu, review by Thomas Braibant and Alain Frisch)
 
 ### Other libraries:
 
