@@ -83,9 +83,6 @@ let label_prefix = ".L"
 let emit_label lbl =
   emit_string label_prefix; emit_int lbl
 
-let emit_data_label lbl =
-  emit_string label_prefix; emit_string "d"; emit_int lbl
-
 (* Section switching *)
 
 let code_space =

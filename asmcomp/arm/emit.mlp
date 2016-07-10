@@ -35,9 +35,6 @@ let fastcode_flag = ref true
 let emit_label lbl =
   emit_string ".L"; emit_int lbl
 
-let emit_data_label lbl =
-  emit_string ".Ld"; emit_int lbl
-
 (* Symbols *)
 
 let emit_symbol s =

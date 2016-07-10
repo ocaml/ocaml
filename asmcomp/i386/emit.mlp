@@ -116,9 +116,6 @@ let label_prefix =
 let emit_label lbl =
   Printf.sprintf "%s%d" label_prefix lbl
 
-let emit_data_label lbl =
-  Printf.sprintf "%sd%d" label_prefix lbl
-
 let label s = sym (emit_label s)
 
 let def_label s = D.label (emit_label s)
