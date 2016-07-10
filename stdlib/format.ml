@@ -83,12 +83,10 @@ and tbox = Pp_tbox of int list ref  (* Tabulation box *)
 (* The pretty-printer queue: polymorphic queue definition. *)
 type 'a queue_elem =
   | Nil
-  | Cons of 'a queue_cell
-
-and 'a queue_cell = {
-  mutable head : 'a;
-  mutable tail : 'a queue_elem;
-}
+  | Cons of {
+      head : 'a;
+      mutable tail : 'a queue_elem;
+    }
 
 
 type 'a queue = {
