@@ -50,9 +50,6 @@ val string_trim : string -> string
 (* isprefix s1 s2 returns true if s1 is a prefix of s2. *)
 val isprefix : string -> string -> bool
 
-(* Split a string at the given delimiter char *)
-val split_string : char -> string -> string list
-
 (*** I/O channels ***)
 
 type io_channel = {

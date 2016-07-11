@@ -95,23 +95,6 @@ let isprefix s1 s2 =
   let l1 = String.length s1 and l2 = String.length s2 in
   (l1 = l2 && s1 = s2) || (l1 < l2 && s1 = String.sub s2 0 l1)
 
-(* Split a string at the given delimiter char *)
-
-let split_string sep str =
-  let rec split i j =
-    if j >= String.length str then
-      if i >= j then [] else [String.sub str i (j-i)]
-    else if str.[j] = sep then
-      if i >= j
-      then skip_sep (j+1)
-      else String.sub str i (j-i) :: skip_sep (j+1)
-    else
-      split i (j+1)
-  and skip_sep j =
-    if j < String.length str && str.[j] = sep
-    then skip_sep (j+1)
-    else split j j
-  in split 0 0
 
 (*** I/O channels ***)
 
