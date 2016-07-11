@@ -1331,7 +1331,7 @@ and transl_record loc env fields repres opt_init_expr =
     (* If you change anything here, you will likely have to change
        [check_recursive_recordwith] in this file. *)
     let copy_id = Ident.create "newrecord" in
-    let update_field (lbl, definition) cont =
+    let update_field cont (lbl, definition) =
       match definition with
       | Kept _type -> cont
       | Overridden (_lid, expr) ->
@@ -1351,7 +1351,7 @@ and transl_record loc env fields repres opt_init_expr =
     | Some init_expr ->
         Llet(Strict, Pgenval, copy_id,
              Lprim(Pduprecord (repres, size), [transl_exp init_expr], loc),
-             Array.fold_right update_field fields (Lvar copy_id))
+             Array.fold_left update_field (Lvar copy_id) fields)
     end
   end
 
