@@ -898,9 +898,7 @@ let is_hash id =
   String.length s > 0 && s.[0] = '#'
 
 let marked_as_immediate decl =
-  List.exists
-    (fun (loc, _) -> loc.txt = "immediate")
-    decl.type_attributes
+  Builtin_attributes.immediate decl.type_attributes
 
 let compute_immediacy env tdecl =
   match (tdecl.type_kind, tdecl.type_manifest) with
