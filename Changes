@@ -220,7 +220,7 @@ OCaml 4.04.0:
 
 - GPR#516: Improve Texp_record constructor representation, and
   propagate updated record type information
-  (Pierre Chambart)
+  (Pierre Chambart, review by Alain Frisch)
 
 - GPR#679: delay registration of docstring after the mapper is applied
   (Hugo Heuzard, review by Leo White)

@@ -199,8 +199,8 @@ and expression_desc =
             If the type is { l1: t1; l2: t2 }, the expression
             { E0 with t2=P2 } is represented as
             Texp_record
-              ([| l1, Kept t1; l2 Override P2 |], representation,
-               Some E0)
+              { fields = [| l1, Kept t1; l2 Override P2 |]; representation;
+                extended_expression = Some E0 }
         *)
   | Texp_field of expression * Longident.t loc * label_description
   | Texp_setfield of
