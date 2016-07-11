@@ -31,7 +31,7 @@ compile-targets: testing.cmi testing.cmo testing.cma
 	fi
 
 testing.cma: testing.cmo
-	$(OCAMLC) -a $(ADD_COMPFLAGS) -o $@ $<
+	$(OCAMLC) -a -linkall $(ADD_COMPFLAGS) -o $@ $<
 
 testing.cmxa: testing.cmx
-	$(OCAMLOPT) -a $(ADD_COMPFLAGS) -o $@ $<
+	$(OCAMLOPT) -a -linkall $(ADD_COMPFLAGS) -o $@ $<
