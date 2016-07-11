@@ -1573,7 +1573,7 @@ let rec is_nonexpansive exp =
   | Texp_construct( _, _, el) ->
       List.for_all is_nonexpansive el
   | Texp_variant(_, arg) -> is_nonexpansive_opt arg
-  | Texp_record (fields, _, opt_init_exp) ->
+  | Texp_record { fields; extended_expression } ->
       Array.for_all
         (fun (lbl, definition) ->
            match definition with
@@ -1581,7 +1581,7 @@ let rec is_nonexpansive exp =
                lbl.lbl_mut = Immutable && is_nonexpansive exp
            | Kept _ -> true)
         fields
-      && is_nonexpansive_opt opt_init_exp
+      && is_nonexpansive_opt extended_expression
   | Texp_field(exp, _, _) -> is_nonexpansive exp
   | Texp_array [] -> true
   | Texp_ifthenelse(_cond, ifso, ifnot) ->
@@ -2335,7 +2335,7 @@ and type_expect_ ?in_function ?(recarg=Rejected) env sexp ty_expected =
         | (_, lbl,_)::_ -> Array.length lbl.lbl_all in
       if opt_sexp <> None && List.length lid_sexp_list = num_fields then
         Location.prerr_warning loc Warnings.Useless_record_with;
-      let label_descriptions, record_representation =
+      let label_descriptions, representation =
         let (_, { lbl_all; lbl_repres }, _) = List.hd lbl_exp_list in
         lbl_all, lbl_repres
       in
@@ -2344,8 +2344,10 @@ and type_expect_ ?in_function ?(recarg=Rejected) env sexp ty_expected =
           label_descriptions label_definitions
       in
       re {
-        exp_desc = Texp_record(fields,
-                               record_representation, opt_exp);
+        exp_desc = Texp_record {
+            fields; representation;
+            extended_expression = opt_exp
+          };
         exp_loc = loc; exp_extra = [];
         exp_type = instance env ty_expected;
         exp_attributes = sexp.pexp_attributes;

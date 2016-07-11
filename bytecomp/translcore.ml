@@ -864,8 +864,9 @@ and transl_exp0 e =
             Lprim(Pmakeblock(0, Immutable, None),
                   [Lconst(Const_base(Const_int tag)); lam], e.exp_loc)
       end
-  | Texp_record (fields, repr, opt_init_expr) ->
-      transl_record e.exp_loc e.exp_env fields repr opt_init_expr
+  | Texp_record {fields; representation; extended_expression} ->
+      transl_record e.exp_loc e.exp_env fields representation
+        extended_expression
   | Texp_field(arg, _, lbl) ->
       let access =
         match lbl.lbl_repres with

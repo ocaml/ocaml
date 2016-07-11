@@ -186,11 +186,13 @@ and expression_desc =
             C (E1, ..., En)  [E1;...;En]
          *)
   | Texp_variant of label * expression option
-  | Texp_record of
-      ( Types.label_description * record_label_definition ) array *
-      Types.record_representation * expression option
-        (** { l1=P1; ...; ln=Pn }           (None)
-            { E0 with l1=P1; ...; ln=Pn }   (Some E0)
+  | Texp_record of {
+      fields : ( Types.label_description * record_label_definition ) array;
+      representation : Types.record_representation;
+      extended_expression : expression option;
+    }
+        (** { l1=P1; ...; ln=Pn }           (extended_expression = None)
+            { E0 with l1=P1; ...; ln=Pn }   (extended_expression = Some E0)
 
             Invariant: n > 0
 

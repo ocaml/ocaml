@@ -295,12 +295,12 @@ module MakeIterator(Iter : IteratorArgument) : sig
                 None -> ()
               | Some exp -> iter_expression exp
             end
-        | Texp_record (fields, _, expo) ->
+        | Texp_record { fields; extended_expression; _ } ->
             Array.iter (function
                 | _, Kept _ -> ()
                 | _, Overridden (_, exp) -> iter_expression exp)
               fields;
-            begin match expo with
+            begin match extended_expression with
                 None -> ()
               | Some exp -> iter_expression exp
             end
