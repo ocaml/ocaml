@@ -527,34 +527,6 @@ beforedepend:: bytecomp/runtimedef.ml
 
 # Choose the right machine-dependent files
 
-ARCH_SPECIFIC = \
-  asmcomp/arch.ml asmcomp/proc.ml asmcomp/CSE.ml asmcomp/selection.ml \
-  asmcomp/scheduling.ml asmcomp/reload.ml asmcomp/scheduling.ml \
-  asmcomp/emit.ml
-
-partialclean::
-	rm -f $(ARCH_SPECIFIC)
-
-beforedepend:: $(ARCH_SPECIFIC)
-
-ARCH_OCAMLOPT:=$(ARCH)
-
-.PHONY: check_arch check_all_arches
-
-# This rule provides a quick way to check that machine-dependent
-# files compiles fine for a foreign architecture (passed as ARCH=xxx).
-
-check_arch:
-	@echo "========= CHECKING asmcomp/$(ARCH) =============="
-	@rm -f $(ARCH_SPECIFIC) $(ARCH_SPECIFIC:.ml=.cmo)
-	@$(MAKE) ARCH_OCAMLOPT=$(ARCH) compilerlibs/ocamloptcomp.cma > /dev/null
-	@rm -f $(ARCH_SPECIFIC) $(ARCH_SPECIFIC:.ml=.cmo)
-
-ARCHES=amd64 i386 arm arm64 power sparc s390x
-
-check_all_arches:
-	@for i in $(ARCHES); do $(MAKE) --no-print-directory check_arch ARCH=$$i; done
-
 asmcomp/arch.ml: asmcomp/$(ARCH_OCAMLOPT)/arch.ml
 	ln -s $(ARCH_OCAMLOPT)/arch.ml asmcomp/arch.ml
 
