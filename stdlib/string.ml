@@ -127,7 +127,7 @@ type t = string
 let compare (x: t) (y: t) = Pervasives.compare x y
 external equal : string -> string -> bool = "caml_string_equal"
 
-let split sep s =
+let split_on_char sep s =
   let r = ref [] in
   let j = ref (length s) in
   for i = length s - 1 downto 0 do

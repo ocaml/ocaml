@@ -59,7 +59,7 @@ OCaml 4.04.0:
   "transitive" heap size of a value
   (Alain Frisch, review by Marc Shinwell and Damien Doligez)
 
-- GPR#626: String.split
+- GPR#626: String.split_on_char
   (Alain Frisch)
 
 - GPR#669: Filename.extension and Filename.remove_extension

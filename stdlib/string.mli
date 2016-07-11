@@ -282,7 +282,7 @@ val equal: t -> t -> bool
 (** The equal function for strings.
     @since 4.03.0 *)
 
-val split: char -> string -> string list
+val split_on_char: char -> string -> string list
 (** [String.split sep s] returns the list of all (possibly empty)
     substrings of [s] that are delimited by the [sep] character.
 

@@ -24,9 +24,9 @@ if String.escaped raw_string <> ref_string then failwith "test:String.escaped";;
 
 
 let check_split sep s =
-  let l = String.split sep s in
+  let l = String.split_on_char sep s in
   assert(List.length l > 0);
-  assert(String.concat (String.make 1 sep) (String.split sep s) = s);
+  assert(String.concat (String.make 1 sep) l = s);
   List.iter (String.iter (fun c -> assert (c <> sep))) l
 ;;
 
