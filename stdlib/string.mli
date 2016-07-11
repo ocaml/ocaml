@@ -283,7 +283,7 @@ val equal: t -> t -> bool
     @since 4.03.0 *)
 
 val split_on_char: char -> string -> string list
-(** [String.split sep s] returns the list of all (possibly empty)
+(** [String.split_on_char sep s] returns the list of all (possibly empty)
     substrings of [s] that are delimited by the [sep] character.
 
     The function's output is specified by the following invariants:
@@ -291,7 +291,7 @@ val split_on_char: char -> string -> string list
     - The list is not empty.
     - Concatenating its elements using [sep] as a separator returns a
       string equal to the input ([String.concat (String.make 1 sep)
-      (String.split sep s) = s]).
+      (String.split_on_char sep s) = s]).
     - No string in the result contains the [sep] character.
 
     @since 4.04.0
