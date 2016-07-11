@@ -312,10 +312,8 @@ let rec compile_module
     [
       compilername;
       stdlib_flags ocamlsrcdir;
-      if use_testing_module env then testingmodule_flags ocamlsrcdir else "";
       flags env;
       backend_flags env backend;
-      libraries backend env;
       compile;
       output;
     ] in
