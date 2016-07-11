@@ -838,10 +838,10 @@ and string_x_expression i ppf (s, _, e) =
   expression (i+1) ppf e;
 
 and record_field i ppf = function
-  | Overridden (li, e), _ ->
+  | _, Overridden (li, e) ->
       line i ppf "%a\n" fmt_longident li;
       expression (i+1) ppf e;
-  | Kept _, _ ->
+  | _, Kept _ ->
       line i ppf "<kept>"
 
 and label_x_expression i ppf (l, e) =

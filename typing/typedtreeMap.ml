@@ -309,10 +309,9 @@ module MakeMap(Map : MapArgument) = struct
         | Texp_record (fields, repr, expo) ->
           let fields =
             Array.map (function
-                | Kept t, label -> Kept t, label
-                | Overridden (lid, exp), label ->
-                    Overridden (lid, map_expression exp),
-                    label)
+                | label, Kept t -> label, Kept t
+                | label, Overridden (lid, exp) ->
+                    label, Overridden (lid, map_expression exp))
               fields
           in
           let expo = match expo with

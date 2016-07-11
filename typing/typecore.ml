@@ -1575,7 +1575,7 @@ let rec is_nonexpansive exp =
   | Texp_variant(_, arg) -> is_nonexpansive_opt arg
   | Texp_record (fields, _, opt_init_exp) ->
       Array.for_all
-        (fun (definition, lbl) ->
+        (fun (lbl, definition) ->
            match definition with
            | Overridden (_, exp) ->
                lbl.lbl_mut = Immutable && is_nonexpansive exp
@@ -2340,8 +2340,8 @@ and type_expect_ ?in_function ?(recarg=Rejected) env sexp ty_expected =
         lbl_all, lbl_repres
       in
       let fields =
-        Array.map2 (fun def descr -> def, descr)
-          label_definitions label_descriptions
+        Array.map2 (fun descr def -> descr, def)
+          label_descriptions label_definitions
       in
       re {
         exp_desc = Texp_record(fields,

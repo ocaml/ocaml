@@ -1270,7 +1270,7 @@ and transl_record loc env fields repres opt_init_expr =
     let init_id = Ident.create "init" in
     let lv =
       Array.mapi
-        (fun i (definition, _) ->
+        (fun i (_, definition) ->
            match definition with
            | Kept typ ->
                let field_kind = value_kind env typ in
@@ -1287,7 +1287,7 @@ and transl_record loc env fields repres opt_init_expr =
     in
     let ll, shape = List.split (Array.to_list lv) in
     let mut =
-      if Array.exists (fun (_, lbl) -> lbl.lbl_mut = Mutable) fields
+      if Array.exists (fun (lbl, _) -> lbl.lbl_mut = Mutable) fields
       then Mutable
       else Immutable in
     let lam =
@@ -1311,7 +1311,7 @@ and transl_record loc env fields repres opt_init_expr =
             Lprim(Pmakearray (Pfloatarray, mut), ll, loc)
         | Record_extension ->
             let path =
-              let (_, label) = fields.(0) in
+              let (label, _) = fields.(0) in
               match label.lbl_res.desc with
               | Tconstr(p, _, _) -> p
               | _ -> assert false
@@ -1330,7 +1330,7 @@ and transl_record loc env fields repres opt_init_expr =
     (* If you change anything here, you will likely have to change
        [check_recursive_recordwith] in this file. *)
     let copy_id = Ident.create "newrecord" in
-    let update_field (definition, lbl) cont =
+    let update_field (lbl, definition) cont =
       match definition with
       | Kept _type -> cont
       | Overridden (_lid, expr) ->

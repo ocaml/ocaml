@@ -297,8 +297,8 @@ module MakeIterator(Iter : IteratorArgument) : sig
             end
         | Texp_record (fields, _, expo) ->
             Array.iter (function
-                | Kept _, _ -> ()
-                | Overridden (_, exp), _ -> iter_expression exp)
+                | _, Kept _ -> ()
+                | _, Overridden (_, exp) -> iter_expression exp)
               fields;
             begin match expo with
                 None -> ()

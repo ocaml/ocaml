@@ -86,7 +86,7 @@ and expression_desc =
       Longident.t loc * constructor_description * expression list
   | Texp_variant of label * expression option
   | Texp_record of
-      ( record_label_definition * Types.label_description ) array *
+      ( Types.label_description * record_label_definition ) array *
       Types.record_representation * expression option
   | Texp_field of expression * Longident.t loc * label_description
   | Texp_setfield of
