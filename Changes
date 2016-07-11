@@ -53,7 +53,10 @@ OCaml 4.04.0:
 - GPR#602: Do not generate dummy code to force module linking
   (Pierre Chambart, reviewed by Jacques Garrigue)
 
-### Language tooling and user interface
+- GPR#679: delay registration of docstring after the mapper is applied
+  (Hugo Heuzard, review by Leo White)
+
+### Language tooling and user interface:
 
 - PR#7139: clarify the wording of Warning 38
   (Unused exception or extension constructor)
