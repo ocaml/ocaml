@@ -31,7 +31,7 @@ OCaml 4.04.0:
   files with -a, -pack, -shared; (ii) use "before" objects in the toplevel
   (but not "after" objects); (iii) use -I dirs in the toplevel,
   (iv) fix bug where -I dirs were ignored when using threads
-  (Marc Lasson, review by Damien Doliged and Alain Frisch)
+  (Marc Lasson, review by Damien Doligez and Alain Frisch)
 
 - PR#7139: clarify the wording of Warning 38
   (Unused exception or extension constructor)
