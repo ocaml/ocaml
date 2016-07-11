@@ -301,7 +301,7 @@ let rec compile_module
   let backend = compiler.compiler_backend in
   let filename = Filetype.make_filename module_basename module_filetype in
   let expected_exit_status = expected_compiler_exit_status env compiler in
-  let what = Printf.sprintf "%s for file %s (expected exit status: %d\n)"
+  let what = Printf.sprintf "%s for file %s (expected exit status: %d)"
     (action_of_filetype module_filetype) filename (expected_exit_status) in
   let compile_commandline input_file output_file =
     let compile = "-c " ^ input_file in
