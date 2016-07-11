@@ -1233,8 +1233,9 @@ and type_structure ?(toplevel = false) funct_body anchor env sstr scope =
         (* Note: Env.find_value does not trigger the value_used event. Values
            will be marked as being used during the signature inclusion test. *)
         Tstr_value(rec_flag, defs),
-        List.map (fun id -> Sig_value(id, Env.find_value (Pident id) newenv))
-          (let_bound_idents defs),
+        List.map
+          (fun id -> Sig_value(id, Env.find_value (Pident id) newenv))
+          (let_bound_idents ~with_private:false defs),
         newenv
     | Pstr_primitive sdesc ->
         let (desc, newenv) = Typedecl.transl_value_decl env loc sdesc in

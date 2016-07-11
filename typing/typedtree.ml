@@ -557,33 +557,52 @@ let map_pattern_desc f d =
 
 let idents = ref([]: (Ident.t * string loc) list)
 
-let rec bound_idents pat =
+let rec public_bound_idents pat =
   match pat.pat_desc with
-  | Tpat_var (id,s) -> idents := (id,s) :: !idents
-  | Tpat_alias(p, id, s ) ->
-      bound_idents p; idents := (id,s) :: !idents
+  | Tpat_var (id,s) ->
+      if not (Builtin_attributes.private_decl pat.pat_attributes)
+      then idents := (id,s) :: !idents
+  | Tpat_alias(p, id, s) ->
+      public_bound_idents p;
+      if not (Builtin_attributes.private_decl pat.pat_attributes)
+      then idents := (id,s) :: !idents
   | Tpat_or(p1, _, _) ->
       (* Invariant : both arguments binds the same variables *)
-      bound_idents p1
-  | d -> iter_pattern_desc bound_idents d
+      public_bound_idents p1
+  | d -> iter_pattern_desc public_bound_idents d
 
-let pat_bound_idents pat =
+let rec all_bound_idents pat =
+  match pat.pat_desc with
+  | Tpat_var (id,s) -> idents := (id,s) :: !idents
+  | Tpat_alias(p, id, s) -> all_bound_idents p; idents := (id,s) :: !idents
+  | Tpat_or(p1, _, _) ->
+      (* Invariant : both arguments binds the same variables *)
+      all_bound_idents p1
+  | d -> iter_pattern_desc all_bound_idents d
+
+let bound_idents ~with_private p =
+  if with_private then all_bound_idents p else public_bound_idents p
+
+let pat_bound_idents ~with_private pat =
   idents := [];
-  bound_idents pat;
+  bound_idents ~with_private pat;
   let res = !idents in
   idents := [];
   List.map fst res
 
-let rev_let_bound_idents_with_loc bindings =
+let rev_let_bound_idents_with_loc ~with_private bindings =
   idents := [];
-  List.iter (fun vb -> bound_idents vb.vb_pat) bindings;
+  List.iter (fun vb -> bound_idents ~with_private vb.vb_pat) bindings;
   let res = !idents in idents := []; res
 
-let let_bound_idents_with_loc pat_expr_list =
-  List.rev(rev_let_bound_idents_with_loc pat_expr_list)
+let let_bound_idents_with_loc ~with_private pat_expr_list =
+  List.rev(rev_let_bound_idents_with_loc ~with_private pat_expr_list)
 
-let rev_let_bound_idents pat = List.map fst (rev_let_bound_idents_with_loc pat)
-let let_bound_idents pat = List.map  fst (let_bound_idents_with_loc pat)
+let rev_let_bound_idents ~with_private pat =
+  List.map fst (rev_let_bound_idents_with_loc ~with_private pat)
+
+let let_bound_idents ~with_private pat =
+  List.map  fst (let_bound_idents_with_loc ~with_private pat)
 
 let alpha_var env id = List.assoc id env
 

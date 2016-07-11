@@ -1153,7 +1153,7 @@ and class_expr cl_num val_env met_env scl =
              ((id', id_loc, expr)
               :: vals,
               Env.add_value id' desc met_env))
-          (let_bound_idents_with_loc defs)
+          (let_bound_idents_with_loc ~with_private:true defs)
           ([], met_env)
       in
       let cl = class_expr cl_num val_env met_env scl' in

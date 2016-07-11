@@ -2077,7 +2077,8 @@ let check_partial_gadt pred loc casel =
 
 module IdSet = Set.Make(Ident)
 
-let pattern_vars p = IdSet.of_list (Typedtree.pat_bound_idents p)
+let pattern_vars p =
+  IdSet.of_list (Typedtree.pat_bound_idents ~with_private:true p)
 
 (* Row for ambiguous variable search,
    unseen is the traditional pattern row,

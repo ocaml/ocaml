@@ -3023,7 +3023,7 @@ let assign_pat opt nraise catch_ids loc pat lam =
   | _ ->
     (* pattern idents will be bound in staticcatch (let body), so we
        refresh them here to guarantee binders  uniqueness *)
-    let pat_ids = pat_bound_idents pat in
+    let pat_ids = pat_bound_idents ~with_private:true pat in
     let fresh_ids = List.map (fun id -> id, Ident.rename id) pat_ids in
     (fresh_ids, alpha_pat fresh_ids pat, lam) :: acc
   in
@@ -3058,7 +3058,7 @@ let for_let loc param pat body =
   | _ ->
       let opt = ref false in
       let nraise = next_raise_count () in
-      let catch_ids = pat_bound_idents pat in
+      let catch_ids = pat_bound_idents ~with_private:true pat in
       let bind = map_return (assign_pat opt nraise catch_ids loc pat) param in
       if !opt then Lstaticcatch(bind, (nraise, catch_ids), body)
       else simple_for_let loc param pat body

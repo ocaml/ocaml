@@ -4013,7 +4013,7 @@ and type_let ?(check = fun s -> Warnings.Unused_var s)
                       some_used := true
                 )
             )
-            (Typedtree.pat_bound_idents pat);
+            (Typedtree.pat_bound_idents ~with_private:true pat);
           pat, Some slot
         )
       pat_list

@@ -628,11 +628,11 @@ and 'a class_infos =
 val iter_pattern_desc: (pattern -> unit) -> pattern_desc -> unit
 val map_pattern_desc: (pattern -> pattern) -> pattern_desc -> pattern_desc
 
-val let_bound_idents: value_binding list -> Ident.t list
-val rev_let_bound_idents: value_binding list -> Ident.t list
+val let_bound_idents: with_private:bool -> value_binding list -> Ident.t list
+val rev_let_bound_idents: with_private:bool -> value_binding list -> Ident.t list
 
 val let_bound_idents_with_loc:
-    value_binding list -> (Ident.t * string loc) list
+    with_private:bool -> value_binding list -> (Ident.t * string loc) list
 
 (** Alpha conversion of patterns *)
 val alpha_pat: (Ident.t * Ident.t) list -> pattern -> pattern
@@ -640,4 +640,4 @@ val alpha_pat: (Ident.t * Ident.t) list -> pattern -> pattern
 val mknoloc: 'a -> 'a Asttypes.loc
 val mkloc: 'a -> Location.t -> 'a Asttypes.loc
 
-val pat_bound_idents: pattern -> Ident.t list
+val pat_bound_idents: with_private:bool -> pattern -> Ident.t list

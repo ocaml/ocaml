@@ -460,7 +460,9 @@ and transl_structure loc fields cc rootpath final_env = function
           in
           Lsequence(transl_exp expr, body), size
       | Tstr_value(rec_flag, pat_expr_list) ->
-          let ext_fields = rev_let_bound_idents pat_expr_list @ fields in
+          let ext_fields =
+            rev_let_bound_idents ~with_private:false pat_expr_list @ fields
+          in
           let body, size =
             transl_structure loc ext_fields cc rootpath final_env rem
           in
@@ -626,7 +628,7 @@ let rec defined_idents = function
     match item.str_desc with
     | Tstr_eval _ -> defined_idents rem
     | Tstr_value(_rec_flag, pat_expr_list) ->
-      let_bound_idents pat_expr_list @ defined_idents rem
+      let_bound_idents ~with_private:false pat_expr_list @ defined_idents rem
     | Tstr_primitive _ -> defined_idents rem
     | Tstr_type _ -> defined_idents rem
     | Tstr_typext tyext ->
@@ -652,7 +654,11 @@ let rec more_idents = function
   | item :: rem ->
     match item.str_desc with
     | Tstr_eval _ -> more_idents rem
-    | Tstr_value _ -> more_idents rem
+    | Tstr_value(_, pat_expr_list) ->
+        let l = let_bound_idents ~with_private:true pat_expr_list in
+        let public = let_bound_idents ~with_private:false pat_expr_list in
+        let l = List.filter (fun id -> not (List.memq id public)) l in
+        l @ more_idents rem
     | Tstr_primitive _ -> more_idents rem
     | Tstr_type _ -> more_idents rem
     | Tstr_typext _ -> more_idents rem
@@ -677,7 +683,7 @@ and all_idents = function
     match item.str_desc with
     | Tstr_eval _ -> all_idents rem
     | Tstr_value(_rec_flag, pat_expr_list) ->
-      let_bound_idents pat_expr_list @ all_idents rem
+      let_bound_idents ~with_private:true pat_expr_list @ all_idents rem
     | Tstr_primitive _ -> all_idents rem
     | Tstr_type _ -> all_idents rem
     | Tstr_typext tyext ->
@@ -734,7 +740,7 @@ let transl_store_structure glob map prims str =
             Lsequence(subst_lambda subst (transl_exp expr),
                       transl_store rootpath subst rem)
         | Tstr_value(rec_flag, pat_expr_list) ->
-            let ids = let_bound_idents pat_expr_list in
+            let ids = let_bound_idents ~with_private:true pat_expr_list in
             let lam =
               transl_let rec_flag pat_expr_list (store_idents Location.none ids)
             in
@@ -1038,7 +1044,7 @@ let transl_toplevel_item item =
          in a Lsequence returning unit. *)
       transl_exp expr
   | Tstr_value(rec_flag, pat_expr_list) ->
-      let idents = let_bound_idents pat_expr_list in
+      let idents = let_bound_idents ~with_private:true (* !!! *) pat_expr_list in
       transl_let rec_flag pat_expr_list
         (make_sequence toploop_setvalue_id idents)
   | Tstr_typext(tyext) ->
