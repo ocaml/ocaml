@@ -15,13 +15,11 @@ OCaml 4.04.0:
 - PR#7233: Support GADT equations on non-local abstract types
   (Jacques Garrigue)
 
+- GPR#548: empty documentation comments
+  (Florian Angeletti)
 
-### Compilers and runtime system:
 
-- PR#6217, GPR#538: Optimize performance of record update:
-  no more performance cliff when { foo with t1 = ..; t2 = ...; ... }
-  hits 6 updated fields
-  (Olivier Nicole, review by Thomas Braibant and Pierre Chambart)
+### Compiler user-interface:
 
 * PR#6475, GPR#464: interpret all command-line options before compiling any files,
   changes (improves) the semantics of repeated -o options or -o combined with -c
@@ -29,34 +27,11 @@ OCaml 4.04.0:
     https://github.com/ocaml/ocaml/commit/da56cf6dfdc13c09905c2e07f1d4849c8346eec8
   (whitequark)
 
-- PR#7023, GPR#336: Better unboxing strategy
-  (Alain Frisch, Pierre Chambart)
-
-- PR#7200, GPR#539: Improve, fix, and add test for parsing/pprintast.ml
-  (Runhang Li, David Sheets, Alain Frisch)
-
-- GPR#351: make driver/pparse.ml functions type-safe
-  (Gabriel Scherer, Dmitrii Kosarev, review by Jérémie Dimino)
-
-- GPR#548: empty documentation comments
-  (Florian Angeletti)
-
-- GPR#580: Optimize immutable float records
-  (Pierre Chambart, review by Marc Shinwell)
-
-- GPR#591: Improve support for OCAMLPARAM: (i) do not use objects
+* GPR#591: Improve support for OCAMLPARAM: (i) do not use objects
   files with -a, -pack, -shared; (ii) use "before" objects in the toplevel
   (but not "after" objects); (iii) use -I dirs in the toplevel,
   (iv) fix bug where -I dirs were ignored when using threads
   (Marc Lasson, review by Damien Doliged and Alain Frisch)
-
-- GPR#602: Do not generate dummy code to force module linking
-  (Pierre Chambart, reviewed by Jacques Garrigue)
-
-- GPR#679: delay registration of docstring after the mapper is applied
-  (Hugo Heuzard, review by Leo White)
-
-### Language tooling and user interface:
 
 - PR#7139: clarify the wording of Warning 38
   (Unused exception or extension constructor)
@@ -65,6 +40,59 @@ OCaml 4.04.0:
 - PR#7169, clarify the wording of Warning 8
   (Non-exhaustivity warning for pattern matching)
   (Florian Angeletti, review and report by Gabriel Scherer)
+
+
+### Standard library:
+
+- GPR#589: Add a non-allocating function to recover the number of
+  allocated minor words.
+  (Pierre Chambart, review by Damien Doligez and Gabriel Scherer)
+
+- PR#6279, GPR#553: implement Set.map
+  (Gabriel Scherer)
+
+- GPR#473: Provide `Sys.backend_type` so that user can write backend-specific
+  code in some cases (for example,  code generator).
+  (Hongbo Zhang)
+
+- PR#6820, GPR#560: Add Obj.reachable_words to compute the
+  "transitive" heap size of a value
+  (Alain Frisch, review by Marc Shinwell and Damien Doligez)
+
+- GPR#626: String.split
+  (Alain Frisch)
+
+- GPR#669: Filename.extension and Filename.remove_extension
+  (Alain Frisch, request by Edgar Aroutiounian, review by Daniel Bunzli
+  and Damien Doligez)
+
+
+### Code generation and optimizations:
+
+- PR#4747, GPR#328: Optimize Hashtbl by using in-place updates of its
+  internal bucket lists.  All operations run in constant stack size
+  and are usually faster, except Hashtbl.copy which can be much
+  slower
+  (Alain Frisch)
+
+- GPR#427: Obj.is_block is now an inlined OCaml function instead of a
+  C external.  This should be faster.
+  (Demi Obenour)
+
+- PR#6217, GPR#538: Optimize performance of record update:
+  no more performance cliff when { foo with t1 = ..; t2 = ...; ... }
+  hits 6 updated fields
+  (Olivier Nicole, review by Thomas Braibant and Pierre Chambart)
+
+- PR#7023, GPR#336: Better unboxing strategy
+  (Alain Frisch, Pierre Chambart)
+
+- GPR#580: Optimize immutable float records
+  (Pierre Chambart, review by Marc Shinwell)
+
+- GPR#602: Do not generate dummy code to force module linking
+  (Pierre Chambart, reviewed by Jacques Garrigue)
+
 
 ### Tools:
 
@@ -87,49 +115,23 @@ OCaml 4.04.0:
 - Add the -no-version option to the toplevel
   (Sébastien Hinderer)
 
-### Standard library:
 
-- GPR#589: Add a non-allocating function to recover the number of
-  allocated minor words.
-  (Pierre Chambart, review by Damien Doligez and Gabriel Scherer)
-
-- GPR#427: Obj.is_block is now an inlined OCaml function instead of a
-  C external.  This should be faster.
-  (Demi Obenour)
-
-- PR#4747, GPR#328: Optimize Hashtbl by using in-place updates of its
-  internal bucket lists.  All operations run in constant stack size
-  and are usually faster, except Hashtbl.copy which can be much
-  slower
-  (Alain Frisch)
-
-- PR#6279, GPR#553: implement Set.map
-  (Gabriel Scherer)
-
-- GPR#473: Provide `Sys.backend_type` so that user can write backend-specific
-  code in some cases (for example,  code generator).
-  (Hongbo Zhang)
-
-- PR#6820, GPR#560: Add Obj.reachable_words to compute the
-  "transitive" heap size of a value
-  (Alain Frisch, review by Marc Shinwell and Damien Doligez)
+### Runtime system:
 
 - PR#7203, GPR#534: Add a new primitive caml_alloc_float_array to allocate an
   array of floats
   (Thomas Braibant)
 
-- GPR#626: String.split
-  (Alain Frisch)
 
-- GPR#669: Filename.extension and Filename.remove_extension
-  (Alain Frisch, request by Edgar Aroutiounian, review by Daniel Bunzli
-  and Damien Doligez)
+### Manual and documentation:
 
-### Manual:
+- PR#7243: warn users against using WinZip to unpack the source archive
+  (Damien Doligez, report by Shayne Fletcher)
 
 - PR#7245, GPR#565: clarification to the wording and documentation
   of Warning 52 (fragile constant pattern)
   (Gabriel Scherer, William, Adrien Nader, Jacques Garrigue)
+
 
 ### Build system:
 
@@ -149,6 +151,7 @@ OCaml 4.04.0:
 
 - GPR#507: More sharing between Unix and Windows makefiles
   (whitequark, review by Alain Frisch)
+
 
 ### Bug fixes:
 
@@ -191,6 +194,11 @@ OCaml 4.04.0:
 - PR#7285: Relaxed value restriction broken with principal
   (Jacques Garrigue, report by Leo White)
 
+* GPR#533: Thread library: fixed [Thread.wait_signal] so that it
+  converts back the signal number returned by [sigwait] to an
+  OS-independent number
+  (Jérémie Dimino)
+
 - GPR#600: (similar to GPR#555) ensure that register typing constraints are
   respected at N-way join points in the control flow graph
   (Mark Shinwell)
@@ -198,17 +206,19 @@ OCaml 4.04.0:
 - GPR#672: Fix float_of_hex parser to correctly reject some invalid forms
   (Bogdan Tătăroiu, review by Thomas Braibant and Alain Frisch)
 
-### Other libraries:
 
-* GPR#533: Thread library: fixed [Thread.wait_signal] so that it
-  converts back the signal number returned by [sigwait] to an
-  OS-independent number
-  (Jérémie Dimino)
+### Internal/compiler-libs changes:
 
-### Documentation:
+- PR#7200, GPR#539: Improve, fix, and add test for parsing/pprintast.ml
+  (Runhang Li, David Sheets, Alain Frisch)
 
-- PR#7243: warn users against using WinZip to unpack the source archive
-  (Damien Doligez, report by Shayne Fletcher)
+- GPR#351: make driver/pparse.ml functions type-safe
+  (Gabriel Scherer, Dmitrii Kosarev, review by Jérémie Dimino)
+
+- GPR#679: delay registration of docstring after the mapper is applied
+  (Hugo Heuzard, review by Leo White)
+
+
 
 OCaml 4.03.0 (25 Apr 2016):
 ---------------------------
