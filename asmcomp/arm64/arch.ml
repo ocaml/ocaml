@@ -34,15 +34,18 @@ type addressing_mode =
 
 (* Specific operations *)
 
+type cmm_label = int
+  (* Do not introduce a dependency to Cmm *)
+
 type specific_operation =
-  | Ifar_alloc of { words : int; label_after_call_gc : Cmm.label option; }
-  | Ifar_intop_checkbound of { label_after_error : Cmm.label option; }
+  | Ifar_alloc of { words : int; label_after_call_gc : cmm_label option; }
+  | Ifar_intop_checkbound of { label_after_error : cmm_label option; }
   | Ifar_intop_imm_checkbound of
-      { bound : int; label_after_error : Cmm.label option; }
+      { bound : int; label_after_error : cmm_label option; }
   | Ishiftarith of arith_operation * int
-  | Ishiftcheckbound of { shift : int; label_after_error : Cmm.label option; }
+  | Ishiftcheckbound of { shift : int; label_after_error : cmm_label option; }
   | Ifar_shiftcheckbound of
-      { shift : int; label_after_error : Cmm.label option; }
+      { shift : int; label_after_error : cmm_label option; }
   | Imuladd       (* multiply and add *)
   | Imulsub       (* multiply and subtract *)
   | Inegmulf      (* floating-point negate and multiply *)
