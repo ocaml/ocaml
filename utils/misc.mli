@@ -235,13 +235,6 @@ val did_you_mean : Format.formatter -> (unit -> string list) -> unit
     the failure even if producing the hint is slow.
 *)
 
-val split : string -> char -> string list
-(** [String.split string char] splits the string [string] at every char
-    [char], and returns the list of sub-strings between the chars.
-    [String.concat (String.make 1 c) (String.split s c)] is the identity.
-    @since 4.01
- *)
-
 val cut_at : string -> char -> string * string
 (** [String.cut_at s c] returns a pair containing the sub-string before
    the first occurrence of [c] in [s], and the sub-string after the

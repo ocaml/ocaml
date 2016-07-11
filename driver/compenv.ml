@@ -106,7 +106,7 @@ type readenv_position =
 exception SyntaxError of string
 
 let parse_args s =
-  let args = Misc.split s ',' in
+  let args = String.split_on_char ',' s in
   let rec iter is_after args before after =
     match args with
       [] ->
