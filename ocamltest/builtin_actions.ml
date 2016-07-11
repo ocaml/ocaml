@@ -515,13 +515,16 @@ let compile_nativecode_with_nativecode_compiler = {
       Builtin_variables.program2 nativecode_nativecode_compiler
 }
 
-let execute_program log env =
-  match Environments.lookup Builtin_variables.program env with
-  | None -> Fail "In execute action: No \"program\" variable in environment"
+let exec log_message redirect_output prog_variable args_variable log env =
+  match Environments.lookup prog_variable env with
+  | None ->
+    let msg = Printf.sprintf "%s: variable %s is undefined"
+      log_message (Variables.name_of_variable prog_variable) in
+    Fail msg
   | Some program ->
-    let arguments = Environments.safe_lookup Builtin_variables.arguments env in
+    let arguments = Environments.safe_lookup args_variable env in
     let commandline = program ^ " " ^ arguments in
-    let what = "Executing program " ^ program ^ " " ^
+    let what = log_message ^ " " ^ program ^ " " ^
     begin if arguments="" then "without any argument"
     else "with arguments " ^ arguments
     end in
@@ -531,10 +534,24 @@ let execute_program log env =
       Builtin_variables.stdout, output;
       Builtin_variables.stderr, output
     ] in
-    let env' = Environments.add_bindings bindings env in
-    match run_command log env' commandline with
-      | 0 -> Pass (Environments.add Builtin_variables.output output env)
+    let execution_env =
+      if redirect_output then Environments.add_bindings bindings env 
+      else env in
+    match run_command log execution_env commandline with
+      | 0 ->
+        let newenv =
+          if redirect_output
+          then Environments.add Builtin_variables.output output env
+          else env in
+        Pass newenv
       | _ as exitcode -> Fail (mkreason what commandline exitcode)
+
+let execute_program =
+  exec
+    "Executing program"
+    true
+    Builtin_variables.program
+    Builtin_variables.arguments
 
 let execute = {
   action_name = "execute";
