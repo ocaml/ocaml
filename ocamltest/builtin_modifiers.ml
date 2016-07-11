@@ -27,7 +27,8 @@ let principal =
 
 let testing =
 [
-  Add (use_testing_module, "yes")
+  Append (flags, " -I ${OCAMLSRCDIR}/testsuite/lib ");
+  Append (libraries, " testing ");
 ]
 
 let _ =

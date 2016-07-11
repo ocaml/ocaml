@@ -140,11 +140,6 @@ let stdlib_flags ocamlsrcdir =
   let stdlib_path = stdlib ocamlsrcdir in
   "-nostdlib -I " ^ stdlib_path
 
-let testingmodule_flags ocamlsrcdir =
-  let testing_module_directory =
-    make_path [ocamlsrcdir; "testsuite"; "lib"] in
-  "-I " ^ testing_module_directory
-
 let use_runtime backend ocamlsrcdir = match backend with
   | Sys.Bytecode ->
     let ocamlrun = ocamlrun ocamlsrcdir in
@@ -264,9 +259,6 @@ let modules env = words_of_variable Builtin_variables.modules env
 
 let files env = words_of_variable Builtin_variables.files env
 
-let use_testing_module env =
-  Environments.is_variable_defined Builtin_variables.use_testing_module env
-
 let flags env = Environments.safe_lookup Builtin_variables.flags env
 
 let libraries backend env =
@@ -373,12 +365,6 @@ let compile_modules ocamlsrcdir compiler compilername compileroutput log env mod
 let link_modules ocamlsrcdir compiler compilername compileroutput program_variable custom log env modules =
   let backend = compiler.compiler_backend in
   let expected_exit_status = expected_compiler_exit_status env compiler in
-  let modules =
-    if use_testing_module env then
-      let testing_module =
-        make_file_name "testing" (Backends.module_extension backend) in
-      testing_module::modules
-    else modules in
   let executable_name = match Environments.lookup program_variable env with
     | None -> assert false
     | Some program -> program in
@@ -394,7 +380,6 @@ let link_modules ocamlsrcdir compiler compilername compileroutput program_variab
     customstr;
     use_runtime backend ocamlsrcdir;
     stdlib_flags ocamlsrcdir;
-    if use_testing_module env then testingmodule_flags ocamlsrcdir else "";
     flags env;
     libraries backend env;
     backend_flags env backend;
