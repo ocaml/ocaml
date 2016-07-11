@@ -90,15 +90,6 @@ module Stdlib : sig
     val fold : ('a -> 'b -> 'b) -> 'a t -> 'b -> 'b
     val value_default : ('a -> 'b) -> default:'b -> 'a t -> 'b
   end
-
-  module String : sig
-    type t = string
-
-    val split : t -> on:char -> t list
-    (** Splits the given string at every occurrence of the given separator.
-        Does not return empty substrings when the separator is repeated or
-        present at the start or end of the string. *)
-  end
 end
 
 val find_in_path: string list -> string -> string

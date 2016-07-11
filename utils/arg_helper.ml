@@ -61,7 +61,9 @@ end) = struct
   exception Parse_failure of exn
 
   let parse_exn str ~update =
-    let values = Misc.Stdlib.String.split str ~on:',' in
+    (* Is the removal of empty chunks really relevant here? *)
+    (* (It has been added to mimic the old Misc.String.split.) *)
+    let values = String.split_on_char ',' str |> List.filter ((<>) "") in
     let parsed =
       List.fold_left (fun acc value ->
           match String.index value '=' with
