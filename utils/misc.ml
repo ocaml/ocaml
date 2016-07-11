@@ -163,26 +163,6 @@ module Stdlib = struct
       | None -> default
       | Some a -> f a
   end
-
-  module Array = struct
-    let for_all2 p a1 a2 =
-      if Array.length a1 <> Array.length a2 then
-        invalid_arg "Misc.array_for_all2";
-      let rec loop i =
-        if i = Array.length a1 then true
-        else if p a1.(i) a2.(i) then loop (succ i)
-        else false in
-      loop 0
-
-    let fold_right2 f a1 a2 acc =
-      if Array.length a1 <> Array.length a2 then
-        invalid_arg "Misc.array_fold_right2";
-      let acc = ref acc in
-      for i = Array.length a1 - 1 downto 0 do
-        acc := f a1.(i) a2.(i) !acc;
-      done;
-      !acc
-  end
 end
 
 let may = Stdlib.Option.iter
