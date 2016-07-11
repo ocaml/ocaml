@@ -554,9 +554,22 @@ let execute_program =
     Builtin_variables.arguments
 
 let execute = {
-  action_name = "execute";
+  action_name = "execute-program";
   action_environment = env_id;
   action_body = execute_program
+}
+
+let run_script =
+  exec
+    "Running script"
+    false
+    Builtin_variables.script
+    Builtin_variables.test_file
+
+let script = {
+  action_name = "run-script";
+  action_environment = env_id;
+  action_body = run_script
 }
 
 let check_output kind_of_output output_variable reference_variable log env =
@@ -749,6 +762,7 @@ let _ =
     compile_nativecode_with_bytecode_compiler;
     compile_nativecode_with_nativecode_compiler;
     execute;
+    script;
     check_program_output;
     compare_bytecode_programs;
     compare_nativecode_programs;

@@ -21,6 +21,7 @@ val compile_nativecode_with_bytecode_compiler : Actions.t
 val compile_nativecode_with_nativecode_compiler : Actions.t
 
 val execute : Actions.t
+val script : Actions.t
 val check_program_output : Actions.t
 
 val compare_bytecode_programs : Actions.t
