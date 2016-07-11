@@ -25,7 +25,7 @@
 open Variables (* Should not be necessary with a ppx *)
 
 let arguments = make ("arguments",
-  "Arguments passed to the executed program")
+  "Arguments passed to executed programs and scripts")
 
 let bcflags = make ("bcflags",
   "Flags passed to ocamlc.byte and ocamlc.opt")
@@ -91,6 +91,9 @@ let program2 = make ("program2",
 
 let reference = make ("reference",
   "Path of file to which program output should be compared")
+
+let script = make ("script",
+  "External script to run")
 
 let stdin = make ("stdin", "Default standard input")
 let stdout = make ("stdout", "Default standard output")

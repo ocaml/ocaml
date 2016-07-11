@@ -62,6 +62,8 @@ val program2 : Variables.t
 
 val reference : Variables.t
 
+val script : Variables.t
+
 val stdin : Variables.t
 val stdout : Variables.t
 val stderr : Variables.t
