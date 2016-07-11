@@ -380,6 +380,7 @@ let link_modules ocamlsrcdir compiler compilername compileroutput program_variab
     customstr;
     use_runtime backend ocamlsrcdir;
     stdlib_flags ocamlsrcdir;
+    "-linkall";
     flags env;
     libraries backend env;
     backend_flags env backend;
