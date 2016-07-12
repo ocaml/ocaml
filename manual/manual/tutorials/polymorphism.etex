@@ -104,11 +104,10 @@ uses are flagged as errors.
 \subsection{The value restriction}\label{ss:valuerestriction}
 
 Identifying the exact context in which polymorphic types should be
-replaced by weak types in a modular way is a difficult question. A first
-natural idea would be to state that any mutable object like reference, array
-or a record mutable field should never have a polymorphic type. Unfortunately,
-this rule is not sufficient, as illustrated by the following function that
-uses an internal reference to implement a delayed identity function
+replaced by weak types in a modular way is a difficult question. Indeed
+the type system must handle the possibility that functions may hide persistent
+mutable state. For instance, the following function uses an internal reference
+to implement a delayed identity function
 \begin{caml_example}
 let make_fake_id () =
   let store = ref None in
@@ -117,20 +116,20 @@ let fake_id = make_fake_id();;
 \end{caml_example}
 It would be unsound to apply this "fake_id" function to values with different
 types. The function "fake_id" is therefore rightfully assigned the type
-"'_a -> '_a" rather than "'a -> 'a".
+"'_a -> '_a" rather than "'a -> 'a". At the same time, it ought to be possible
+to use a local mutable state without impacting the type of a function.
+%todo: add an example?
 
-To circumvent this difficulty, the type checker consider that all values
-returned by a function might rely on persistent mutable states behind the
-scene and should be given a weak type. This restriction on the type of mutable
-values and function application is called the value restriction. Note that
-this value restriction is conservative: there are situations where the value
-restriction is too cautious and gives a weak type to a value that could be
+To circumvent these dual difficulties, the type checker considers that any value
+returned by a function might rely on persistent mutable states behind the scene
+and should be given a weak type. This restriction on the type of mutable
+values and the results of function application is called the value restriction.
+Note that this value restriction is conservative: there are situations where the
+value restriction is too cautious and gives a weak type to a value that could be
 safely generalized to a polymorphic type:
-
 \begin{caml_example}
 let not_id = (fun x -> x) (fun x -> x);;
 \end{caml_example}
-
 Quite often, this happens when defining function using higher order function.
 To avoid this problem, a solution is to add an explicit argument to the
 function:
