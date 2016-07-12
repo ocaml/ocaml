@@ -188,3 +188,10 @@ let explicit_arity =
       | ({txt="ocaml.explicit_arity"|"explicit_arity"; _}, _) -> true
       | _ -> false
     )
+
+let immediate =
+  List.exists
+    (function
+      | ({txt="ocaml.immediate"|"immediate"; _}, _) -> true
+      | _ -> false
+    )
