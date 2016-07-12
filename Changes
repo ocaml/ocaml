@@ -82,7 +82,7 @@ OCaml 4.04.0:
   C external.  This should be faster.
   (Demi Obenour)
 
-- PR#6217, GPR#538: Optimize performance of record update:
+* PR#6217, GPR#538: Optimize performance of record update:
   no more performance cliff when { foo with t1 = ..; t2 = ...; ... }
   hits 6 updated fields
   (Olivier Nicole, review by Thomas Braibant and Pierre Chambart)
@@ -220,6 +220,10 @@ OCaml 4.04.0:
 
 - GPR#351: make driver/pparse.ml functions type-safe
   (Gabriel Scherer, Dmitrii Kosarev, review by Jérémie Dimino)
+
+- GPR#516: Improve Texp_record constructor representation, and
+  propagate updated record type information
+  (Pierre Chambart, review by Alain Frisch)
 
 - GPR#679: delay registration of docstring after the mapper is applied
   (Hugo Heuzard, review by Leo White)
