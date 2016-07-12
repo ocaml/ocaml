@@ -18,6 +18,8 @@
 #ifndef CAML_PRIMS_H
 #define CAML_PRIMS_H
 
+#ifdef CAML_INTERNALS
+
 typedef value (*c_primitive)();
 
 extern c_primitive caml_builtin_cprim[];
@@ -32,5 +34,7 @@ extern struct ext_table caml_prim_name_table;
 
 extern char * caml_section_table;
 extern asize_t caml_section_table_size;
+
+#endif /* CAML_INTERNALS */
 
 #endif /* CAML_PRIMS_H */

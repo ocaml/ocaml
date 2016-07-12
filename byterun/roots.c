@@ -13,6 +13,8 @@
 /*                                                                        */
 /**************************************************************************/
 
+#define CAML_INTERNALS
+
 /* To walk the memory roots for garbage collection */
 
 #include "caml/finalise.h"

@@ -13,6 +13,8 @@
 /*                                                                        */
 /**************************************************************************/
 
+#define CAML_INTERNALS
+
 /* Interface with the byte-code debugger */
 
 #ifdef _WIN32

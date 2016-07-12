@@ -13,6 +13,8 @@
 /*                                                                        */
 /**************************************************************************/
 
+#define CAML_INTERNALS
+
 /* Print an uncaught exception and abort */
 
 #include <stdio.h>

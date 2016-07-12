@@ -16,6 +16,7 @@
 #ifndef CAML_MAJOR_GC_H
 #define CAML_MAJOR_GC_H
 
+#ifdef CAML_INTERNALS
 
 #include "freelist.h"
 #include "misc.h"
@@ -80,5 +81,6 @@ void major_collection (void);
 void caml_finish_major_cycle (void);
 void caml_set_major_window (int);
 
+#endif /* CAML_INTERNALS */
 
 #endif /* CAML_MAJOR_GC_H */

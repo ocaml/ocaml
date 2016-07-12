@@ -18,6 +18,8 @@
 #ifndef CAML_SIGNALS_MACHDEP_H
 #define CAML_SIGNALS_MACHDEP_H
 
+#ifdef CAML_INTERNALS
+
 #if defined(__GNUC__) && defined(__ATOMIC_SEQ_CST) \
     && defined(__GCC_ATOMIC_LONG_LOCK_FREE)
 
@@ -66,5 +68,7 @@
 #define Read_and_clear(dst,src) ((dst) = (src), (src) = 0)
 
 #endif
+
+#endif /* CAML_INTERNALS */
 
 #endif /* CAML_SIGNALS_MACHDEP_H */

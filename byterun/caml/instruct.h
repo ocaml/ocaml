@@ -18,6 +18,8 @@
 #ifndef CAML_INSTRUCT_H
 #define CAML_INSTRUCT_H
 
+#ifdef CAML_INTERNALS
+
 enum instructions {
   ACC0, ACC1, ACC2, ACC3, ACC4, ACC5, ACC6, ACC7,
   ACC, PUSH,
@@ -60,5 +62,6 @@ enum instructions {
   RERAISE, RAISE_NOTRACE,
 FIRST_UNIMPLEMENTED_OP};
 
+#endif /* CAML_INTERNALS */
 
 #endif /* CAML_INSTRUCT_H */

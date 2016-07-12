@@ -13,6 +13,8 @@
 /*                                                                        */
 /**************************************************************************/
 
+#define CAML_INTERNALS
+
 #include <stdio.h>
 #include <string.h>
 #include "caml/alloc.h"

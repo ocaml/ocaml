@@ -13,6 +13,8 @@
 /*                                                                        */
 /**************************************************************************/
 
+#define CAML_INTERNALS
+
 /* Structured output */
 
 /* The interface of this file is "caml/intext.h" */

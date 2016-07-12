@@ -16,6 +16,8 @@
 #ifndef CAML_BACKTRACE_H
 #define CAML_BACKTRACE_H
 
+#ifdef CAML_INTERNALS
+
 #include "mlvalues.h"
 #include "exec.h"
 
@@ -128,5 +130,7 @@ CAMLextern void caml_print_exception_backtrace(void);
 
 void caml_init_backtrace(void);
 CAMLexport void caml_init_debug_info(void);
+
+#endif /* CAML_INTERNALS */
 
 #endif /* CAML_BACKTRACE_H */

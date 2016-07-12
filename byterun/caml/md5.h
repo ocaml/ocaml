@@ -18,6 +18,7 @@
 #ifndef CAML_MD5_H
 #define CAML_MD5_H
 
+#ifdef CAML_INTERNALS
 
 #include "mlvalues.h"
 #include "io.h"
@@ -41,5 +42,6 @@ CAMLextern void caml_MD5Update (struct MD5Context *context, unsigned char *buf,
 CAMLextern void caml_MD5Final (unsigned char *digest, struct MD5Context *ctx);
 CAMLextern void caml_MD5Transform (uint32_t *buf, uint32_t *in);
 
+#endif /* CAML_INTERNALS */
 
 #endif /* CAML_MD5_H */

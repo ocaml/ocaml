@@ -13,6 +13,8 @@
 /*                                                                        */
 /**************************************************************************/
 
+#define CAML_INTERNALS
+
 /* Win32-specific stuff */
 
 #define WIN32_LEAN_AND_MEAN

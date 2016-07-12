@@ -13,6 +13,8 @@
 /*                                                                        */
 /**************************************************************************/
 
+#define CAML_INTERNALS
+
 /* Start-up code */
 
 #include <stdio.h>
@@ -31,7 +33,7 @@
 #include "caml/mlvalues.h"
 #include "caml/osdeps.h"
 #include "caml/printexc.h"
-#include "stack.h"
+#include "caml/stack.h"
 #include "caml/startup_aux.h"
 #include "caml/sys.h"
 #ifdef HAS_UI

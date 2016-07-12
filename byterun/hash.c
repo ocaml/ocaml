@@ -13,6 +13,8 @@
 /*                                                                        */
 /**************************************************************************/
 
+#define CAML_INTERNALS
+
 /* The generic hashing primitive */
 
 /* The interface of this file is in "mlvalues.h" (for [caml_hash_variant])
