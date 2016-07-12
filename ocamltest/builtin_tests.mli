@@ -17,6 +17,8 @@
 
 val bytecode : Tests.t
 
+val expect : Tests.t
+
 val nativecode : Tests.t
 
 val script : Tests.t

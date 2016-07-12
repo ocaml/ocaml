@@ -584,6 +584,17 @@ let script = {
   action_body = run_script
 }
 
+let run_expect log env =
+  let modifier = Environments.Include "expect" in
+  let newenv = Environments.apply_modifier env modifier in
+  run_script log newenv
+
+let expect = {
+  action_name = "run-expect";
+  action_environment = env_id;
+  action_body = run_expect
+}
+  
 let check_output kind_of_output output_variable reference_variable log env =
   let reference_filename = Environments.safe_lookup reference_variable env in
   let output_filename = Environments.safe_lookup output_variable env in

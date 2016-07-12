@@ -33,6 +33,12 @@ let bytecode = {
   ]
 }
 
+let expect = {
+  test_name = "expect";
+  test_run_by_default = false;
+  test_actions = [expect];
+}
+
 let nativecode = {
   test_name = "nativecode";
   test_run_by_default = true;
@@ -70,6 +76,7 @@ let _ =
   List.iter register
   [
     bytecode;
+    expect;
     nativecode;
     script;
     toplevel;
