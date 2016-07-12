@@ -564,12 +564,19 @@ let execute = {
   action_body = execute_program
 }
 
-let run_script =
+let run_script log env =
+  let testfile = testfile env in
+  (* let testfile_basename = Filename.chop_extension testfile in *)
+  let source_directory = test_source_directory env in
+  let build_directory = test_build_directory env in
+  let _modules =
+    setup_build_environment testfile source_directory build_directory env in
   exec
     "Running script"
     false
     Builtin_variables.script
     Builtin_variables.test_file
+    log env
 
 let script = {
   action_name = "run-script";
