@@ -32,8 +32,15 @@ different. Type variables whose name starts with an "_" like "'_a" are weakly
 polymorphic type variables, sometimes shortened as weak type variables. A weak
 type variable is a placeholder for a single type that is currently unknown.
 Once the specific type "t" behind the placeholder type "'_a" known, all
-occurrences of "'_a" will be replaced by "t".
-
+occurrences of "'_a" will be replaced by "t". For instance, we can define
+another option reference and store an "int" inside:
+\begin{caml_example}
+let another_store = ref None ;;
+another_store := Some 0;
+another_store ;;
+\end{caml_example}
+After storing an "int" inside "another_store", the type of "another_store" has
+been updated from "'_a option ref" to "int option ref".
 This distinction between weakly and generic polymorphic type variable protects
 OCaml program from unsoundness and runtime errors. To understand from where
 unsoundness might come, consider this simple function which swaps a value "x"
