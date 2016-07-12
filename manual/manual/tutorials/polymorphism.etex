@@ -417,19 +417,17 @@ shape (Nested(Nested(List [ [ [1;2]; [3] ]; [ []; [4]; [5;6;7]]; [[]] ])));;
 Explicit polymorphic annotations are however not sufficient to cover all
 the cases where the inferred type of a function is less general than
 expected. A similar problem arises when using polymorphic functions as arguments
-of a higher-order functions. For instance, we could want to compute the average
+of a higher-order functions. For instance, we may want to compute the average
 depth or length of two nested lists:
 \begin{caml_example}
   let average_depth x y = (depth x + depth y) / 2;;
   let average_len x y = (len x + len y) / 2;;
   let one = average_len (List [2]) (List [[]]);;
 \end{caml_example}
-
-It would then be natural to factorize these two definitions as:
+It would be natural to factorize these two definitions as:
 \begin{caml_example}
     let average f x y = (f x + f y) / 2;;
 \end{caml_example}
-
 However, the type of "average len" is less generic than the type of
 "average_len", since it requires the type of the first and second argument to
 be the same:
@@ -451,8 +449,8 @@ Note that this syntax is not valid within OCaml: "average" has an universally
 quantified type "'a" inside the type of one of its argument whereas for
 polymorphic recursion the universally quantified type was introduced before
 the rest of the type. This position of the universally quantified type means
-that "f" is a second-rank polymorphic function. This kind of higher-rank
-function are not directly supported by OCaml: type inference for second-rank
+that "average" is a second-rank polymorphic function. This kind of higher-rank
+functions is not directly supported by OCaml: type inference for second-rank
 polymorphic function and beyond is undecidable; therefore using this kind of
 higher-rank functions requires to handle manually these universally quantified
 types.
