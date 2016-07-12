@@ -439,7 +439,7 @@ let _ = add_directive "in_process_ppx"
     }
 
 let _ = add_directive "remove_in_process_ppx"
-    (Directive_ident Pparse.disable_in_process_ppx)
+    (Directive_ident Pparse.remove_in_process_ppx)
     {
       section = section_options;
       doc = "Forget specified in-process PPX preprocessor";

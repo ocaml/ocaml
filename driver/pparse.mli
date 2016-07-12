@@ -34,8 +34,8 @@ val clear_ppx : unit -> unit
 val clear_in_process_ppxs: unit -> unit
 (** Forget about all installed in-process rewriters *)
 
-val disable_in_process_ppx: Longident.t -> unit
-(** [diable_in_process_ppx lid] forgets in-process ppx installed using
+val remove_in_process_ppx: Longident.t -> unit
+(** [remove_in_process_ppx lid] forgets in-process ppx installed using
     specified `lid` *)
 
 val add_external_ppx : path:string -> unit

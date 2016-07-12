@@ -668,6 +668,7 @@ let tool_name_ref = ref "_none_"
 
 let tool_name () = !tool_name_ref
 
+let set_tool_name name = tool_name_ref := name
 
 module PpxContext = struct
   open Longident

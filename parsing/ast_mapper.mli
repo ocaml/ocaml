@@ -117,6 +117,8 @@ val tool_name: unit -> string
     [Config.load_path], [Clflags.open_modules], [Clflags.for_package],
     [Clflags.debug]. *)
 
+val set_tool_name: string -> unit
+(** Sets name of tool which is going to apply PPX preprocessor *)
 
 val apply: source:string -> target:string -> mapper -> unit
 (** Apply a mapper (parametrized by the unit name) to a dumped
