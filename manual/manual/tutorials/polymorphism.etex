@@ -342,10 +342,10 @@ is universally quantified, i.e "'a.'a nested -> int" reads as
 Whereas the standard type "'a nested -> int" can be interpreted
 as ``let be a type variable "'a", then "depth" maps "'a nested" values
 to integers''. There is two major differences with these two type
-expression. First, the explicit polymorphic annotation indicates to the
+expressions. First, the explicit polymorphic annotation indicates to the
 type checker that it needs to introduce a new type variable every times
-the function depth is applied. This solves our problem with the definition
-of the function depth.
+the function "depth" is applied. This solves our problem with the definition
+of the function "depth".
 
 Second, it also notifies the type checker that the type of the function should
 be polymorphic. Indeed, without explicit polymorphic type annotation, the
@@ -353,9 +353,9 @@ following type annotation is perfectly valid
 \begin{caml_example}
   let sum: 'a -> 'b -> 'c = fun x y -> x + y;;
 \end{caml_example}
-since "'a" denotes a type variable that may or may not be polymorphic.
-Whereas, it is an error to unify an explicitly polymorphic type with a
-non-polymorphic type:
+since "'a","'b" and "'c" denote type variables that may or may not be
+polymorphic. Whereas, it is an error to unify an explicitly polymorphic type
+with a non-polymorphic type:
 \begin{caml_example}
   let sum: 'a 'b 'c. 'a -> 'b -> 'c = fun x y -> x + y;;
 \end{caml_example}
@@ -377,7 +377,7 @@ With explicit polymorphic annotations, it becomes possible to implement
 any recursive function that depends only on the structure of the nested
 lists and not on the type of the elements. For instance, a more complex
 example would be to compute the total number of elements of the nested
-lists
+lists:
 \begin{caml_example}
   let len nested =
     let map_and_sum f = List.fold_left (fun acc x -> acc + f x) 0 in
@@ -392,7 +392,7 @@ len (Nested(Nested(List [ [ [1;2]; [3] ]; [ []; [4]; [5;6;7]]; [[]] ])));;
 \end{caml_example}
 
 Similarly, it may be necessary to use more than one explicitly
-polymorphic type variable, like for computing the nested list of
+polymorphic type variables, like for computing the nested list of
 list lengths of the nested list:
 \begin{caml_example}
 let shape n =
