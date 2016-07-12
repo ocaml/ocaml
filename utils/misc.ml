@@ -647,3 +647,50 @@ let delete_eol_spaces src =
   in
   let stop = loop 0 0 in
   Bytes.sub_string dst 0 stop
+
+type hook_info = {
+  sourcefile : string;
+}
+
+exception HookExnWrapper of
+    {
+      error: exn;
+      hook_name: string;
+      hook_info: hook_info;
+    }
+
+exception HookExn of exn
+
+let raise_direct_hook_exn e = raise (HookExn e)
+
+let fold_hooks list hook_info ast =
+  List.fold_left (fun ast (hook_name,f) ->
+    try
+      f hook_info ast
+    with
+    | HookExn e -> raise e
+    | error -> raise (HookExnWrapper {error; hook_name; hook_info})
+       (* when explicit reraise with backtrace will be available,
+          it should be used here *)
+
+  ) ast (List.sort compare list)
+
+module type HookSig = sig
+  type t
+
+  val add_hook : string -> (hook_info -> t -> t) -> unit
+  val apply_hooks : hook_info -> t -> t
+end
+
+module MakeHooks(M: sig
+    type t
+  end) : HookSig with type t = M.t
+= struct
+
+  type t = M.t
+
+  let hooks = ref []
+  let add_hook name f = hooks := (name, f) :: !hooks
+  let apply_hooks sourcefile intf =
+    fold_hooks !hooks sourcefile intf
+end

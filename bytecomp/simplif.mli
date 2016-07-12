@@ -20,7 +20,7 @@
 
 open Lambda
 
-val simplify_lambda: lambda -> lambda
+val simplify_lambda: string -> lambda -> lambda
 
 val split_default_wrapper
    : ?create_wrapper_body:(lambda -> lambda)
@@ -35,3 +35,5 @@ val split_default_wrapper
 (* To be filled by asmcomp/selectgen.ml *)
 val is_tail_native_heuristic: (int -> bool) ref
                           (* # arguments -> can tailcall *)
+
+module Hooks : Misc.HookSig with type t = lambda

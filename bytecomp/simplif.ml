@@ -681,11 +681,16 @@ let split_default_wrapper ?(create_wrapper_body = fun lam -> lam)
   with Exit ->
     [(fun_id, Lfunction{kind; params; body; attr; loc})]
 
+module Hooks = Misc.MakeHooks(struct
+    type t = lambda
+  end)
+
 (* The entry point:
    simplification + emission of tailcall annotations, if needed. *)
 
-let simplify_lambda lam =
+let simplify_lambda sourcefile lam =
   let res = simplify_lets (simplify_exits lam) in
+  let res = Hooks.apply_hooks { Misc.sourcefile } res in
   if !Clflags.annotations || Warnings.is_active Warnings.Expect_tailcall
     then emit_tail_infos true res;
   res
