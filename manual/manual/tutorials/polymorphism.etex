@@ -21,7 +21,7 @@ how to recover genericity.
 \label{ss:weaktypes}
 Maybe the most frequent examples of non-genericity derive from the
 interactions between polymorphic types and mutation. A simple example
-appears when typing the following functions
+appears when typing the following expression
 \begin{caml_example}
 let store = ref None ;;
 \end{caml_example}
@@ -42,7 +42,7 @@ another_store ;;
 After storing an "int" inside "another_store", the type of "another_store" has
 been updated from "'_a option ref" to "int option ref".
 This distinction between weakly and generic polymorphic type variable protects
-OCaml program from unsoundness and runtime errors. To understand from where
+OCaml programs from unsoundness and runtime errors. To understand from where
 unsoundness might come, consider this simple function which swaps a value "x"
 with the value stored inside a "store" reference, if there is such value:
 \begin{caml_example}
@@ -50,7 +50,7 @@ let swap store x = match !store with
   | None -> store := Some x; x
   | Some y -> store := Some x; y;;
 \end{caml_example}
-We can then apply this function to our store
+We can apply this function to our store
 \begin{caml_example}
 let one = swap store 1
 let one_again = swap store 2
@@ -65,7 +65,7 @@ let error = swap store (fun x -> x);;
 At this point, the type checker rightfully complains that it is not
 possible to swap an integer and a function, and that an "int" should always
 be traded for another "int". Furthermore, the type checker prevents us to
-change manually the value stored by "store":
+change manually the type of the value stored by "store":
 \begin{caml_example}
 store := Some (fun x -> x);;
 \end{caml_example}
