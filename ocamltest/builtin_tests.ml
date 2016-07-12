@@ -48,6 +48,12 @@ let nativecode = {
   ]
 }
 
+let script = {
+  test_name = "script";
+  test_run_by_default = false;
+  test_actions = [script];
+}
+
 let toplevel = {
   test_name = "toplevel";
   test_run_by_default = false;
@@ -65,5 +71,6 @@ let _ =
   [
     bytecode;
     nativecode;
+    script;
     toplevel;
   ]

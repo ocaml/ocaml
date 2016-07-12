@@ -19,4 +19,6 @@ val bytecode : Tests.t
 
 val nativecode : Tests.t
 
+val script : Tests.t
+
 val toplevel : Tests.t
