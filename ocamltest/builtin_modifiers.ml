@@ -18,6 +18,11 @@
 open Environments
 open Builtin_variables
 
+let expect =
+[
+  Replace (script, "${OCAMLSRCDIR}/testsuite/tools/expect");
+]
+
 let principal =
 [
   Append (flags, " -principal ");
@@ -32,5 +37,6 @@ let testing =
 ]
 
 let _ =
+  register expect "expect";
   register principal "principal";
   register testing "testing"
