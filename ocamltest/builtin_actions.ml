@@ -431,49 +431,54 @@ let rec find_module_interfaces directory = function
       | Some interface -> interface::interfaces
     end
 
+let setup_build_environment testfile source_directory build_directory env =
+  let modules = (modules env) @ [testfile] in
+  let module_interfaces =
+    find_module_interfaces source_directory modules in
+  Testlib.make_directory build_directory;
+  setup_symlinks source_directory build_directory modules;
+  setup_symlinks source_directory build_directory module_interfaces;
+  setup_symlinks source_directory build_directory (files env);
+  Sys.chdir build_directory;
+  modules
+  
 let compile_test_program program_variable compiler log env =
   let backend = compiler.compiler_backend in
   let testfile = testfile env in
   let testfile_basename = Filename.chop_extension testfile in
-  let executable_filename =
-    make_file_name testfile_basename (Backends.executable_extension backend) in
-  let modules = (modules env) @ [testfile] in
-  let modules_with_filetypes = List.map Filetype.filetype modules in
-  let test_source_directory = test_source_directory env in
-  let module_interfaces =
-    find_module_interfaces test_source_directory modules in
-  let compilerreference_prefix =
-    make_path [test_source_directory; testfile_basename] in
-  let compilerreference_filename =
-    compiler_reference_filename env compilerreference_prefix compiler in
+  let source_directory = test_source_directory env in
   let compiler_directory_suffix =
     Environments.safe_lookup Builtin_variables.compiler_directory_suffix env in
   let compiler_directory_name =
     compiler.compiler_directory ^ compiler_directory_suffix in
-  let compiler_directory =
+  let build_directory =
     make_path [test_build_directory env; compiler_directory_name] in
-  let executable_path = make_path [compiler_directory; executable_filename] in
+  let modules =
+    setup_build_environment testfile source_directory build_directory env in
+  let compilerreference_prefix =
+    make_path [source_directory; testfile_basename] in
+  let compilerreference_filename =
+    compiler_reference_filename env compilerreference_prefix compiler in
+  let compiler_reference_variable = compiler.compiler_reference_variable in
+  let executable_filename =
+    make_file_name testfile_basename (Backends.executable_extension backend) in
+  let executable_path = make_path [build_directory; executable_filename] in
   let compiler_output_filename =
     make_file_name compiler.compiler_directory "output" in
   let compiler_output =
-    make_path [compiler_directory; compiler_output_filename] in
+    make_path [build_directory; compiler_output_filename] in
   let compiler_output_variable = compiler.compiler_output_variable in
-  let compiler_reference_variable = compiler.compiler_reference_variable in
   let newenv = Environments.add_bindings
     [
       (program_variable, executable_path);
       (compiler_reference_variable, compilerreference_filename);
       (compiler_output_variable, compiler_output);
     ] env in
-  Testlib.make_directory compiler_directory;
-  setup_symlinks test_source_directory compiler_directory modules;
-  setup_symlinks test_source_directory compiler_directory module_interfaces;
-  setup_symlinks test_source_directory compiler_directory (files env);
-  Sys.chdir compiler_directory;
   if Sys.file_exists compiler_output_filename then
     Sys.remove compiler_output_filename;
   let ocamlsrcdir = ocamlsrcdir () in
   let compilername = compiler.compiler_name ocamlsrcdir in
+  let modules_with_filetypes = List.map Filetype.filetype modules in
   compile_program
     ocamlsrcdir
     compiler
@@ -681,37 +686,35 @@ let compare_nativecode_programs = {
 
 let run_test_program_in_toplevel toplevel log env =
   let testfile = testfile env in
+  let testfile_basename = Filename.chop_extension testfile in
   let expected_exit_status = expected_compiler_exit_status env toplevel in
   let what = Printf.sprintf "Running %s in %s toplevel (expected exit status: %d)"
     testfile (Backends.string_of_backend toplevel.compiler_backend) expected_exit_status in
   Printf.fprintf log "%s\n%!" what;
-  let testfile_basename = Filename.chop_extension testfile in
-  let test_source_directory = test_source_directory env in
-  let compilerreference_prefix =
-    make_path [test_source_directory; testfile_basename] in
-  let compilerreference_filename =
-    compiler_reference_filename env compilerreference_prefix toplevel in
+  let source_directory = test_source_directory env in
   let compiler_directory_suffix =
     Environments.safe_lookup Builtin_variables.compiler_directory_suffix env in
   let compiler_directory_name =
     toplevel.compiler_directory ^ compiler_directory_suffix in
-  let compiler_directory =
+  let build_directory =
     make_path [test_build_directory env; compiler_directory_name] in
+  let _modules =
+    setup_build_environment testfile source_directory build_directory env in
+  let compilerreference_prefix =
+    make_path [source_directory; testfile_basename] in
+  let compilerreference_filename =
+    compiler_reference_filename env compilerreference_prefix toplevel in
+  let compiler_reference_variable = toplevel.compiler_reference_variable in
   let compiler_output_filename =
     make_file_name toplevel.compiler_directory "output" in
   let compiler_output =
-    make_path [compiler_directory; compiler_output_filename] in
+    make_path [build_directory; compiler_output_filename] in
   let compiler_output_variable = toplevel.compiler_output_variable in
-  let compiler_reference_variable = toplevel.compiler_reference_variable in
   let newenv = Environments.add_bindings
     [
       (compiler_reference_variable, compilerreference_filename);
       (compiler_output_variable, compiler_output);
     ] env in
-  Testlib.make_directory compiler_directory;
-  setup_symlinks test_source_directory compiler_directory [testfile];
-  setup_symlinks test_source_directory compiler_directory (files env);
-  Sys.chdir compiler_directory;
   if Sys.file_exists compiler_output_filename then
     Sys.remove compiler_output_filename;
   let ocamlsrcdir = ocamlsrcdir () in
