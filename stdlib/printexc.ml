@@ -282,23 +282,33 @@ let handle_uncaught_exception' exn debugger_in_use =
       else
         try_get_raw_backtrace ()
     in
-    (try Pervasives.do_at_exit () with _ -> ());
-    match !uncaught_exception_handler with
-    | None ->
-        eprintf "Fatal error: exception %s\n" (to_string exn);
-        print_raw_backtrace stderr raw_backtrace;
-        flush stderr
-    | Some handler ->
-        try
-          handler exn raw_backtrace
-        with exn' ->
-          let raw_backtrace' = try_get_raw_backtrace () in
+    let rec loop exn raw_backtrace =
+      begin match !uncaught_exception_handler with
+      | None ->
           eprintf "Fatal error: exception %s\n" (to_string exn);
           print_raw_backtrace stderr raw_backtrace;
-          eprintf "Fatal error in uncaught exception handler: exception %s\n"
-            (to_string exn');
-          print_raw_backtrace stderr raw_backtrace';
           flush stderr
+      | Some handler ->
+          try
+            handler exn raw_backtrace
+          with exn' ->
+            let raw_backtrace' = try_get_raw_backtrace () in
+            eprintf "Fatal error: exception %s\n" (to_string exn);
+            print_raw_backtrace stderr raw_backtrace;
+            eprintf "Fatal error in uncaught exception handler: exception %s\n"
+              (to_string exn');
+            print_raw_backtrace stderr raw_backtrace';
+            flush stderr
+      end;
+      try Pervasives.do_at_exit () with
+      | exn ->
+          let raw_backtrace =
+            if debugger_in_use then empty_backtrace else
+            try_get_raw_backtrace ()
+          in
+          loop exn raw_backtrace
+    in
+    loop exn raw_backtrace
   with
     | Out_of_memory ->
         prerr_endline

@@ -143,9 +143,9 @@ val set_uncaught_exception_handler: (exn -> raw_backtrace -> unit) -> unit
     for uncaught exceptions. The default handler prints the exception and
     backtrace on standard error output.
 
-    Note that when [fn] is called all the functions registered with
-    {!Pervasives.at_exit} have already been called. Because of this you must
-    make sure any output channel [fn] writes on is flushed.
+    Note that when [fn] is called all the functions that are registered with
+    {!Pervasives.at_exit} that have not been called yet will be called
+    after the call to [fn].
 
     Also note that exceptions raised by user code in the interactive toplevel
     are not passed to this function as they are caught by the toplevel itself.

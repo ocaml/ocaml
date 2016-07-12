@@ -508,13 +508,13 @@ let ( ^^ ) (Format (fmt1, str1)) (Format (fmt2, str2)) =
 
 external sys_exit : int -> 'a = "caml_sys_exit"
 
-let exit_function = ref flush_all
+let exit_functions = ref [flush_all]
 
-let at_exit f =
-  let g = !exit_function in
-  exit_function := (fun () -> f(); g())
+let at_exit f = exit_functions := f :: !exit_functions
 
-let do_at_exit () = (!exit_function) ()
+let rec do_at_exit () = match !exit_functions with
+| [] -> ()
+| f :: fs -> exit_functions := fs; f (); do_at_exit ()
 
 let exit retcode =
   do_at_exit ();

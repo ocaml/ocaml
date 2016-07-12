@@ -1124,7 +1124,9 @@ val at_exit : (unit -> unit) -> unit
    will be called when the program executes {!Pervasives.exit},
    or terminates, either normally or because of an uncaught exception.
    The functions are called in 'last in, first out' order:
-   the function most recently added with [at_exit] is called first. *)
+   the function most recently added with [at_exit] is called first.
+   If the registered function raises an uncaught exception it is given
+   to the handler setup by {!Printexc.set_uncaught_exception_handler}. *)
 
 (**/**)
 
