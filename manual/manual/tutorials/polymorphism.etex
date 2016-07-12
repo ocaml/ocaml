@@ -360,8 +360,19 @@ non-polymorphic type:
   let sum: 'a 'b 'c. 'a -> 'b -> 'c = fun x y -> x + y;;
 \end{caml_example}
 
-\subsection{More examples}
+An important remark here is that it is not needed to explicit fully
+the type of "depth": it is sufficient to add annotations only for the
+universally quantified type variables:
+\begin{caml_example}
+let rec depth: 'a. 'a nested -> _ = function
+  | List _ -> 1
+  | Nested n -> 1 + depth n;;
+depth ( Nested(List [ [7]; [8] ]) );;
+\end{caml_example}
 
+%todo: add a paragraph on the interaction with locally abstract type
+
+\subsection{More examples}
 With explicit polymorphic annotations, it becomes possible to implement
 any recursive function that depends only on the structure of the nested
 lists and not on the type of the elements. For instance, a more complex
