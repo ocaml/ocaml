@@ -79,7 +79,7 @@ value other than an "int". More generally, weak types protect the program from
 undue mutation of values with a polymorphic type.
 
 %todo: fix indentation in pdfmanual
-Moreover, weak type cannot appear as the type of toplevel values:
+Moreover, weak types cannot appear in the signature of toplevel modules:
 types must be known at compilation time. Otherwise, different compilation
 units could replace the weak type with different and incompatible types.
 For this reason, compiling the following small piece of code
