@@ -1,0 +1,34 @@
+#!/bin/sh
+#**************************************************************************
+#*                                                                        *
+#*                                 OCaml                                  *
+#*                                                                        *
+#*            Sébastien Hinderer, projet Gallium, INRIA Paris             *
+#*                                                                        *
+#*   Copyright 1999 Institut National de Recherche en Informatique et     *
+#*     en Automatique.                                                    *
+#*                                                                        *
+#*   All rights reserved.  This file is distributed under the terms of    *
+#*   the GNU Lesser General Public License version 2.1, with the          *
+#*   special exception on linking described in the file LICENSE.          *
+#*                                                                        *
+#**************************************************************************
+
+# Script to let ocamltest run expect tests
+
+set -e
+
+export TERM=dumb
+
+ocamlrun=${OCAMLSRCDIR}/byterun/ocamlrun
+
+expect_tool=${OCAMLSRCDIR}/testsuite/tools/expect_test
+
+call_expect="${ocamlrun} ${expect_tool} -repo-root ${OCAMLSRCDIR}"
+
+file=$1
+
+${call_expect} ${file}
+${call_expect} -principal ${file}.corrected
+mv ${file}.corrected.corrected ${file}.corrected
+cmp -s ${file} ${file}.corrected
