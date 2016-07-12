@@ -270,41 +270,61 @@ We then recover polymorphism:
   List2.empty ();;
 \end{caml_example}
 
-
 \section{Polymorphic recursion}\label{s:polymorphic-recursion}
 
-The second major class of non-genericty is directly related to the problem
+The second major class of non-genericity is directly related to the problem
 of type inference for polymorphic function. In some circumstances, the type
 inferred by OCaml might be not general enough to allow the definition of
-some recursive functions on recursive type.
+some recursive functions on non-regular algebraic data type.
 
-A good example might come from looking at arbitrarily nested list
-defined as
+With a regular polymorphic algebraic data type, the type parameters of
+the type constructor are constant within the definition of the type. For
+instance, we can look at arbitrarily nested list defined as:
+\begin{caml_example}
+  type 'a regular_nested = List of 'a list | Nested of 'a regular_nested list
+  let l = Nested[ List [1]; Nested [List[2;3]]; Nested[Nested[]] ];;
+\end{caml_example}
+Note that the type constructor "regular_nested" always appears as
+"'a regular_nested" in the definition above, with the same parameter
+"'a". Equipped with this type, one can compute a maximal depth with
+a classic recursive function
+\begin{caml_example}
+  let rec maximal_depth = function
+  | List _ -> 1
+  | Nested [] -> 0
+  | Nested (a::q) -> 1 + max (maximal_depth a) (maximal_depth (Nested q));;
+\end{caml_example}
+
+Non-regular recursive algebraic data types correspond to polymorphic algebraic
+data types whose parameters types varies between the left and right side of
+the type definition. For instance, it might be interesting to define a datatype
+that ensures that all lists are nested at the same depth:
 \begin{caml_example}
   type 'a nested = List of 'a list | Nested of 'a list nested;;
 \end{caml_example}
 Intuitively, a value of type "'a nested" is a list of list \dots of list of
-elements "a" with "k" nested list. An interesting function on this type would
-be the "depth" function that compute this "k". As a first try, we can define
+elements "a" with "k" nested list. We can then adapt the "maximal_depth"
+function defined on "regular_depth" into a "depth" function that computes this
+"k". As a first try, we may define
 \begin{caml_example}
 let rec depth = function
   | List _ -> 1
   | Nested n -> 1 + depth n;;
 \end{caml_example}
 The type error here comes from the fact that during the definition of "depth",
-the type checker first assign to it the type "'a -> 'b ".
+the type checker first assigns to it the type "'a -> 'b ".
 When typing the pattern matching, it becomes "'a nested -> 'b" then
 "'a nested -> int" once the "List" branch is typed.
 However, when typing the application "depth n" in the "Nested" branch,
-the type checker encounter a problem: "depth n" is applied to
+the type checker encounters a problem: "depth n" is applied to
 "'a list nested", it must therefore have the type
-"'a list nested -> 'b", unifying this constraint with the previous one,
-leads to the impossible constraint "'a list nested = 'a nested"
-
+"'a list nested -> 'b". Unifying this constraint with the previous one
+leads to the impossible constraint "'a list nested = 'a nested".
 In other words, within its definition, the recursive function "depth" is
-applied to values of type "'a t" with different types "'a". This creates a
-problem because the type checker introduces new type variable "'a" only at the
-\emph{definition} of the function "depth" whereas, here, it should use a
+applied to values of type "'a t" with different types "'a" due to the
+non-regularity of the type constructor "nested". This creates a problem because
+the type checker had introduced a new type variable "'a" only at the
+\emph{definition} of the function "depth" whereas, here, it should have used a
 different type variable for every \emph{application} of the function "depth".
 
 \subsection{Explicitly polymorphic annotations}
