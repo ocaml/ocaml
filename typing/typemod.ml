@@ -25,6 +25,7 @@ type error =
     Cannot_apply of module_type
   | Not_included of Includemod.error list
   | Cannot_eliminate_dependency of module_type
+  | Cannot_eliminate_private_module of Ident.t * signature
   | Signature_expected
   | Structure_expected of module_type
   | With_no_component of Longident.t
@@ -1457,7 +1458,26 @@ and type_structure ?(toplevel = false) funct_body anchor env sstr scope =
         Cmt_format.set_saved_types (Cmt_format.Partial_structure_item str
                                     :: previous_saved_types);
         let (str_rem, sig_rem, final_env) = type_struct new_env srem in
-        (str :: str_rem, sg @ sig_rem, final_env)
+
+        let new_sg =
+          match desc with
+          | Tstr_module {mb_id; mb_attributes; _} when
+              Builtin_attributes.is_private mb_attributes ->
+
+              let s = Mty_signature sig_rem in
+              begin match Mtype.nondep_supertype new_env mb_id s with
+              | Mty_signature sg -> sg
+              | exception Not_found ->
+                  raise(Error(pstr.pstr_loc, env,
+                              Cannot_eliminate_private_module (mb_id, sig_rem)))
+
+              | _ -> assert false
+              end
+
+          | _ ->
+              sg @ sig_rem
+        in
+        (str :: str_rem, new_sg, final_env)
   in
   if !Clflags.annotations then
     (* moved to genannot *)
@@ -1734,6 +1754,10 @@ let report_error ppf = function
         "@[This functor has type@ %a@ \
            The parameter cannot be eliminated in the result type.@  \
            Please bind the argument to a module identifier.@]" modtype mty
+  | Cannot_eliminate_private_module (id, sg) ->
+      fprintf ppf
+        "@[This declaration is followed by items@ %a@ \
+           The private module %a cannot be eliminated from this signature.@]" signature sg ident id
   | Signature_expected -> fprintf ppf "This module type is not a signature"
   | Structure_expected mty ->
       fprintf ppf

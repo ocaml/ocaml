@@ -188,3 +188,10 @@ let explicit_arity =
       | ({txt="ocaml.explicit_arity"|"explicit_arity"; _}, _) -> true
       | _ -> false
     )
+
+let is_private =
+  List.exists
+    (function
+      | ({txt="ocaml.private"|"private"; _}, _) -> true
+      | _ -> false
+    )
