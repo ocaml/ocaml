@@ -142,12 +142,11 @@ eta-expansion in lambda calculus and is sometimes referred under this name.
 
 \subsection{The relaxed value restriction}
 
-There is another partial solution to the problem of unnecessary weak type
-in the type of value, which is implemented directly within the type checker.
-Briefly, it is possible to prove that weak types that only appear as type
-parameters in covariant positions --also called positive positions-- can be
-safely generalized to polymorphic types. For instance, the type "'a  list"
-is covariant in "'a":
+There is another partial solution to the problem of unnecessary weak type,
+which is implemented directly within the type checker. Briefly, it is possible
+to prove that weak types that only appear as type parameters in covariant
+positions --also called positive positions-- can be safely generalized to
+polymorphic types. For instance, the type "'a  list" is covariant in "'a":
 \begin{caml_example}
   let f () = [];;
   let empty = f ();;
@@ -161,7 +160,7 @@ parameters is called the relaxed value restriction.
 
 %question: is here the best place for describing variance?
 \subsection{Variance and value restriction}
-Variance describes how type constructor behaves with respect to subtyping.
+Variance describes how type constructors behave with respect to subtyping.
 Consider for instance a pair of type "x" and "xy" with "xy" a subtype of "x",
 i.e "xy :> x":
 \begin{caml_example}
@@ -194,7 +193,7 @@ it can also handle values of type "x":
 \begin{caml_example}
   let f' = (f :> x -> unit);;
 \end{caml_example}
-Note that we can simplify the type of "f" and "f'" as
+Note that we can rewrite the type of "f" and "f'" as
 \begin{caml_example}
   type 'a proc = 'a -> unit
   let f' = (f: xy proc :> x proc);;
