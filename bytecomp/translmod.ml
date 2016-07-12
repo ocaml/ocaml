@@ -487,8 +487,12 @@ and transl_structure loc fields cc rootpath final_env = function
                body), size
       | Tstr_module mb ->
           let id = mb.mb_id in
+          let fields =
+            if Builtin_attributes.is_private mb.mb_attributes then fields
+            else id :: fields
+          in
           let body, size =
-            transl_structure loc (id :: fields) cc rootpath final_env rem
+            transl_structure loc fields cc rootpath final_env rem
           in
           let module_body =
             transl_module Tcoerce_none (field_path rootpath id) mb.mb_expr
@@ -633,6 +637,8 @@ let rec defined_idents = function
       List.map (fun ext -> ext.ext_id) tyext.tyext_constructors
       @ defined_idents rem
     | Tstr_exception ext -> ext.ext_id :: defined_idents rem
+    | Tstr_module mb when Builtin_attributes.is_private mb.mb_attributes ->
+        defined_idents rem
     | Tstr_module mb -> mb.mb_id :: defined_idents rem
     | Tstr_recmodule decls ->
       List.map (fun mb -> mb.mb_id) decls @ defined_idents rem
@@ -663,12 +669,15 @@ let rec more_idents = function
     | Tstr_class _ -> more_idents rem
     | Tstr_class_type _ -> more_idents rem
     | Tstr_include _ -> more_idents rem
-    | Tstr_module {mb_expr={mod_desc = Tmod_structure str}}
-    | Tstr_module{mb_expr={mod_desc =
-                             Tmod_constraint ({mod_desc = Tmod_structure str},
-                                              _, _, _)}} ->
-        all_idents str.str_items @ more_idents rem
-    | Tstr_module _ -> more_idents rem
+    | Tstr_module mb ->
+        (if Builtin_attributes.is_private mb.mb_attributes then [mb.mb_id] else []) @
+        begin match mb.mb_expr with
+        | {mod_desc = Tmod_structure str}
+        | {mod_desc = Tmod_constraint ({mod_desc = Tmod_structure str}, _, _, _)} ->
+            all_idents str.str_items
+        | _ -> []
+        end @
+        more_idents rem
     | Tstr_attribute _ -> more_idents rem
 
 and all_idents = function

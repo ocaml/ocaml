@@ -56,6 +56,7 @@ type error =
     Cannot_apply of module_type
   | Not_included of Includemod.error list
   | Cannot_eliminate_dependency of module_type
+  | Cannot_eliminate_private_module of Ident.t * signature
   | Signature_expected
   | Structure_expected of module_type
   | With_no_component of Longident.t
