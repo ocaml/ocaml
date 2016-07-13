@@ -54,9 +54,6 @@ enum { RPC_IDLE = 0,
        RPC_REQUEST_INITIALISING = 1,
        RPC_REQUEST_SENT = 2 };
 
-#define Max_domains (1 << Minor_heap_sel_bits)
-
-
 static caml_plat_mutex all_domains_lock;
 static struct dom_internal all_domains[Max_domains];
 static uintnat minor_heaps_base;
@@ -234,6 +231,11 @@ void caml_init_domains(uintnat minor_size) {
   caml_init_signal_handling();
 }
 
+void caml_init_domain_self(int domain_id) {
+  Assert (domain_id >= 0 && domain_id < Max_domains);
+  domain_self = &all_domains[domain_id];
+  caml_domain_state = domain_self->state.state;
+}
 
 static void domain_terminate() {
   caml_gc_log("Domain terminating");
@@ -408,8 +410,25 @@ void caml_handle_gc_interrupt() {
   }
 }
 
+static void caml_enter_blocking_section_default(void)
+{
+  return;
+}
+
+static void caml_leave_blocking_section_default(void)
+{
+  return;
+}
+
+
+CAMLexport void (*caml_enter_blocking_section_hook)(void) =
+   caml_enter_blocking_section_default;
+CAMLexport void (*caml_leave_blocking_section_hook)(void) =
+   caml_leave_blocking_section_default;
+
 CAMLexport void caml_leave_blocking_section() {
   caml_plat_lock(&domain_self->roots_lock);
+  caml_leave_blocking_section_hook();
   caml_restore_stack_gc();
   caml_process_pending_signals();
 }
@@ -417,6 +436,7 @@ CAMLexport void caml_leave_blocking_section() {
 CAMLexport void caml_enter_blocking_section() {
   caml_process_pending_signals();
   caml_save_stack_gc();
+  caml_enter_blocking_section_hook();
   caml_plat_unlock(&domain_self->roots_lock);
 }
 

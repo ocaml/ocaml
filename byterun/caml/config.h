@@ -183,5 +183,6 @@ typedef uint64 uintnat;
  */
 #define Max_percent_free_def 500
 
+#define Max_domains (1 << Minor_heap_sel_bits)
 
 #endif /* CAML_CONFIG_H */

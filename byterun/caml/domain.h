@@ -35,7 +35,11 @@ void caml_interrupt_self(void);
 CAMLextern void caml_enter_blocking_section(void);
 CAMLextern void caml_leave_blocking_section(void);
 
+CAMLextern void (*caml_enter_blocking_section_hook)(void);
+CAMLextern void (*caml_leave_blocking_section_hook)(void);
+
 void caml_init_domains(uintnat minor_heap_size);
+void caml_init_domain_self(int);
 
 
 struct domain* caml_domain_self();
