@@ -53,6 +53,7 @@ native_compiler=true
 TOOLPREF=""
 with_cfi=true
 flambda=false
+safe_string=false
 max_testsuite_dir_retries=0
 with_cplugins=true
 with_fpic=false
@@ -173,6 +174,8 @@ while : ; do
         with_cplugins=false;;
     -fPIC|--fPIC)
         with_fpic=true;;
+    -safe-string|--safe-string)
+        safe_string=true;;
     *) if echo "$1" | grep -q -e '^--\?[a-zA-Z0-9-]\+='; then
          err "configure expects arguments of the form '-prefix /foo/bar'," \
              "not '-prefix=/foo/bar' (note the '=')."
@@ -1851,6 +1854,7 @@ if [ "$ostype" = Cygwin ]; then
   echo "DIFF=diff -q --strip-trailing-cr" >>Makefile
 fi
 echo "FLAMBDA=$flambda" >> Makefile
+echo "SAFE_STRING=$safe_string" >> Makefile
 echo "MAX_TESTSUITE_DIR_RETRIES=$max_testsuite_dir_retries" >> Makefile
 
 
@@ -1934,6 +1938,11 @@ else
   inf "        using flambda middle-end . yes"
   else
   inf "        using flambda middle-end . no"
+  fi
+  if test "$safe_string" = "true"; then
+  inf "        safe strings ............. yes"
+  else
+  inf "        safe strings ............. no"
   fi
 fi
 

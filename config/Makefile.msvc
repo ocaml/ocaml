@@ -80,6 +80,7 @@ ASM_CFI_SUPPORTED=false
 UNIXLIB=win32unix
 GRAPHLIB=win32graph
 FLAMBDA=false
+SAFE_STRING=false
 
 ########## Configuration for the bytecode compiler
 
