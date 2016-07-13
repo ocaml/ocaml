@@ -264,9 +264,25 @@ and lambda_event_kind =
   | Lev_function
   | Lev_pseudo
 
+type module_map = {
+  map :  (int * Ident.t) list;
+  prims : (int * string) list;
+  methcache : int option;
+  size : int;
+}
+
+let module_map ?methcache map prims size =
+  let map = Ident.fold_all (fun id (pos, _cc) list ->
+    (pos, id) :: list) map [] in
+  let prims = List.map (fun (pos, prim) ->
+    pos, prim.Typedtree.pc_desc.Primitive.prim_name
+  ) prims in
+  { map; prims; methcache; size }
+
 type program =
   { module_ident : Ident.t;
     main_module_block_size : int;
+    module_map : module_map option;
     required_globals : Ident.Set.t;
     code : lambda }
 

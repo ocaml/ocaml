@@ -35,3 +35,6 @@ val data_segment_table: string list -> Cmm.phrase
 val code_segment_table: string list -> Cmm.phrase
 val predef_exception: int -> string -> Cmm.phrase
 val plugin_header: (Cmx_format.unit_infos * Digest.t) list -> Cmm.phrase
+
+val module_map : Lambda.module_map -> Cmm.phrase
+val module_map_table : string list -> Cmm.phrase

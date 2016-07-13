@@ -129,18 +129,20 @@ let transl_label_init_flambda f =
   in
   transl_label_init_general (fun () -> expr, size)
 
-let transl_store_label_init glob size f arg =
+let transl_store_label_init glob modmap f arg =
   assert(not Config.flambda);
   assert(!Clflags.native_code);
-  method_cache := Lprim(Pfield size,
+  method_cache := Lprim(Pfield modmap.size,
                         [Lprim(Pgetglobal glob, [], Location.none)],
                         Location.none);
   let expr = f arg in
-  let (size, expr) =
-    if !method_count = 0 then (size, expr) else
-    (size+1,
+  let (modmap, expr) =
+    if !method_count = 0 then (modmap, expr) else
+      ({ modmap with
+        size = modmap.size+1;
+        methcache = Some modmap.size },
      Lsequence(
-     Lprim(Psetfield(size, Pointer, Initialization),
+     Lprim(Psetfield(modmap.size, Pointer, Initialization),
            [Lprim(Pgetglobal glob, [], Location.none);
             Lprim (Pccall prim_makearray,
                    [int !method_count; int 0],
@@ -148,7 +150,7 @@ let transl_store_label_init glob size f arg =
            Location.none),
      expr))
   in
-  let lam, size = transl_label_init_general (fun () -> (expr, size)) in
+  let lam, size = transl_label_init_general (fun () -> (expr, modmap)) in
   size, lam
 
 let transl_label_init f =

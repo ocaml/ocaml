@@ -281,9 +281,21 @@ and lambda_event_kind =
   | Lev_function
   | Lev_pseudo
 
+type module_map = {
+  map :  (int * Ident.t) list;
+  prims : (int * string) list;
+  methcache : int option;
+  size : int;
+}
+
+val module_map : ?methcache:int ->
+           (int * 'a) Ident.tbl ->
+           (int * Typedtree.primitive_coercion) list -> int -> module_map
+
 type program =
   { module_ident : Ident.t;
     main_module_block_size : int;
+    module_map : module_map option;
     required_globals : Ident.Set.t;    (* Modules whose initializer side effects
                                           must occur before [code]. *)
     code : lambda }

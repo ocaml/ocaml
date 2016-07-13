@@ -3082,6 +3082,31 @@ let global_data name v =
   Cdata(emit_structured_constant (name, Global)
           (Uconst_string (Marshal.to_string v [])) [])
 
+let module_map_debug = try
+                         ignore (Sys.getenv "CAML_MODMAP_DEBUG"); true
+  with Not_found -> false
+
+let module_map modmap =
+  if module_map_debug then begin
+    Printf.eprintf "Module Map:\n%!";
+    List.iter (fun (pos,id) ->
+      Printf.eprintf "   val  %3d -> %S\n" pos (Ident.name id)) modmap.map;
+    List.iter (fun (pos, name) ->
+      Printf.eprintf "   prim %3d -> %S\n" pos name
+    ) modmap.prims;
+    Printf.eprintf "%!";
+  end;
+  global_data (Compilenv.make_symbol (Some "module_map")) modmap
+
+let module_map_table namelist =
+  let mksym name =
+    Csymbol_address (Compilenv.make_symbol ~unitname:name (Some "module_map"))
+  in
+  Cdata(Cglobal_symbol "caml_module_map_table" ::
+        Cdefine_symbol "caml_module_map_table" ::
+        List.map mksym namelist
+        @ [cint_zero])
+
 let globals_map v = global_data "caml_globals_map" v
 
 (* Generate the master table of frame descriptors *)
@@ -3112,6 +3137,8 @@ let data_segment_table namelist =
 
 let code_segment_table namelist =
   segment_table namelist "caml_code_segments" "code_begin" "code_end"
+
+
 
 (* Initialize a predefined exception *)
 

@@ -166,7 +166,7 @@ let set_export_info (ulambda, prealloc, structured_constants, export) =
   Compilenv.set_export_info export;
   (ulambda, prealloc, structured_constants)
 
-let end_gen_implementation ?toplevel ~source_provenance ppf
+let end_gen_implementation ?toplevel ~source_provenance ppf modmap
     (clambda:clambda_and_constants) =
   Emit.begin_assembly ();
   clambda
@@ -187,6 +187,9 @@ let end_gen_implementation ?toplevel ~source_provenance ppf
        (List.filter (fun s -> s <> "" && s.[0] <> '%')
           (List.map Primitive.native_name !Translmod.primitive_declarations))
     );
+  (match modmap with
+  | None -> ()
+  | Some modmap -> compile_phrase ppf (Cmmgen.module_map modmap));
   Emit.end_assembly ()
 
 let flambda_gen_implementation ?toplevel ~source_provenance ~backend ppf
@@ -212,7 +215,7 @@ let flambda_gen_implementation ?toplevel ~source_provenance ~backend ppf
           definition })
       (Symbol.Map.bindings constants)
   in
-  end_gen_implementation ?toplevel ~source_provenance ppf
+  end_gen_implementation ?toplevel ~source_provenance ppf None
     (clambda, preallocated, constants)
 
 let lambda_gen_implementation ?toplevel ~source_provenance ppf
@@ -230,7 +233,8 @@ let lambda_gen_implementation ?toplevel ~source_provenance ppf
     clambda, [preallocated_block], []
   in
   raw_clambda_dump_if ppf clambda_and_constants;
-  end_gen_implementation ?toplevel ~source_provenance ppf clambda_and_constants
+  end_gen_implementation ?toplevel ~source_provenance ppf
+    lambda.module_map clambda_and_constants
 
 let compile_implementation_gen ?toplevel ~source_provenance prefixname
     ~required_globals ppf gen_implementation program =

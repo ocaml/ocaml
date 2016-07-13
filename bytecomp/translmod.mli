@@ -31,7 +31,8 @@ val transl_toplevel_definition: structure -> lambda
 val transl_package:
       Ident.t option list -> Ident.t -> module_coercion -> lambda
 val transl_store_package:
-      Ident.t option list -> Ident.t -> module_coercion -> int * lambda
+  Ident.t option list -> Ident.t -> module_coercion ->
+  Lambda.module_map * lambda
 
 val transl_package_flambda:
       Ident.t option list -> module_coercion -> int * lambda

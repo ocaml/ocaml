@@ -603,6 +603,7 @@ let transl_implementation_flambda module_name (str, cc) =
                    (global_path module_id) str)
   in
   { module_ident = module_id;
+    module_map = None;
     main_module_block_size = size;
     required_globals = required_globals ~flambda:true body;
     code = body }
@@ -965,18 +966,21 @@ let transl_store_gen module_name ({ str_items = str }, restr) topl =
         assert (size = 0);
         subst_lambda !transl_store_subst (transl_exp expr)
     | str -> transl_store_structure module_id map prims str in
-  transl_store_label_init module_id size f str
+  transl_store_label_init module_id
+    (Lambda.module_map map prims size) f str
   (*size, transl_label_init (transl_store_structure module_id map prims str)*)
 
 let transl_store_phrases module_name str =
-  transl_store_gen module_name (str,Tcoerce_none) true
+  let modmap, expr = transl_store_gen module_name (str,Tcoerce_none) true in
+  modmap.size, expr
 
 let transl_store_implementation module_name (str, restr) =
   let s = !transl_store_subst in
   transl_store_subst := Ident.empty;
   let (i, code) = transl_store_gen module_name (str, restr) false in
   transl_store_subst := s;
-  { Lambda.main_module_block_size = i;
+  { Lambda.main_module_block_size = i.size;
+    module_map = Some i;
     code;
     (* module_ident is not used by closure, but this allow to share
        the type with the flambda version *)
@@ -1153,22 +1157,35 @@ let transl_store_package component_names target_name coercion =
     | hd :: tl -> Lsequence(fn pos hd, make_sequence fn (pos + 1) tl) in
   match coercion with
     Tcoerce_none ->
-      (List.length component_names,
+      let size, map = List.fold_left (fun (i,map) id ->
+        let map = match id with
+        | None -> map
+        | Some id -> Ident.add id (i, Tcoerce_none) map
+        in
+        (i+1, map)
+      ) (0, Ident.empty) component_names in
+      Lambda.module_map map [] size,
        make_sequence
          (fun pos id ->
            Lprim(Psetfield(pos, Pointer, Initialization),
                  [Lprim(Pgetglobal target_name, [], Location.none);
                   get_component id],
                  Location.none))
-         0 component_names)
-  | Tcoerce_structure (pos_cc_list, _id_pos_list) ->
+         0 component_names
+  | Tcoerce_structure (pos_cc_list, id_pos_list) ->
       let components =
         Lprim(Pmakeblock(0, Immutable, None),
               List.map get_component component_names,
               Location.none)
       in
       let blk = Ident.create "block" in
-      (List.length pos_cc_list,
+      let size = List.length pos_cc_list in
+      let map =
+        List.fold_left (fun map (id,pos,cc) ->
+          Ident.add id (pos, cc) map
+        ) Ident.empty id_pos_list
+      in
+      (Lambda.module_map map [] size,
        Llet (Strict, Pgenval, blk,
              apply_coercion Location.none Strict coercion components,
              make_sequence
