@@ -61,6 +61,7 @@ type error =
   | Illegal_renaming of string * string * string
   | Inconsistent_import of string * string * string
   | Need_recursive_types of string * string
+  | Depend_on_unsafe_string_unit of string * string
   | Missing_module of Location.t * Path.t * Path.t
   | Illegal_value_name of Location.t * string
 
@@ -395,6 +396,7 @@ let save_pers_struct crc ps =
     (function
         | Rectypes -> ()
         | Deprecated _ -> ()
+        | Unsafe_string -> ()
         | Opaque -> add_imported_opaque modname)
     ps.ps_flags;
   Consistbl.set crc_units modname crc ps.ps_filename;
@@ -426,11 +428,15 @@ let read_pers_struct check modname filename =
            } in
   if ps.ps_name <> modname then
     error (Illegal_renaming(modname, ps.ps_name, filename));
+
   List.iter
     (function
         | Rectypes ->
             if not !Clflags.recursive_types then
               error (Need_recursive_types(ps.ps_name, !current_unit))
+        | Unsafe_string ->
+            if Config.safe_string then
+              error (Depend_on_unsafe_string_unit (ps.ps_name, !current_unit));
         | Deprecated _ -> ()
         | Opaque -> add_imported_opaque modname)
     ps.ps_flags;
@@ -477,6 +483,9 @@ let check_pers_struct name =
         | Need_recursive_types(name, _) ->
             Format.sprintf
               "%s uses recursive types"
+              name
+        | Depend_on_unsafe_string_unit (name, _) ->
+            Printf.sprintf "%s uses -unsafe-string"
               name
         | Missing_module _ -> assert false
         | Illegal_value_name _ -> assert false
@@ -1868,6 +1877,7 @@ let save_signature_with_imports ~deprecated sg modname filename imports =
     List.concat [
       if !Clflags.recursive_types then [Cmi_format.Rectypes] else [];
       if !Clflags.opaque then [Cmi_format.Opaque] else [];
+      (if !Clflags.unsafe_string then [Cmi_format.Unsafe_string] else []);
       (match deprecated with Some s -> [Deprecated s] | None -> []);
     ]
   in
@@ -2050,6 +2060,10 @@ let report_error ppf = function
       fprintf ppf
         "@[<hov>Unit %s imports from %s, which uses recursive types.@ %s@]"
         export import "The compilation flag -rectypes is required"
+  | Depend_on_unsafe_string_unit(import, export) ->
+      fprintf ppf
+        "@[<hov>Unit %s imports from %s, compiled with -unsafe-string.@ %s@]"
+        export import "This compiler has been configured in strict -safe-string mode"
   | Missing_module(_, path1, path2) ->
       fprintf ppf "@[@[<hov>";
       if Path.same path1 path2 then
