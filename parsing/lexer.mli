@@ -23,6 +23,7 @@ type error =
   | Illegal_character of char
   | Illegal_escape of string
   | Unterminated_comment of Location.t
+  | Interrupted_line_comment of Location.t
   | Unterminated_string
   | Unterminated_string_in_comment of Location.t * Location.t
   | Keyword_as_label of string

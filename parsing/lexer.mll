@@ -24,6 +24,7 @@ type error =
   | Illegal_character of char
   | Illegal_escape of string
   | Unterminated_comment of Location.t
+  | Interrupted_line_comment of Location.t
   | Unterminated_string
   | Unterminated_string_in_comment of Location.t * Location.t
   | Keyword_as_label of string
@@ -250,6 +251,8 @@ let report_error ppf = function
       fprintf ppf "Illegal backslash escape in string or character (%s)" s
   | Unterminated_comment _ ->
       fprintf ppf "Comment not terminated"
+  | Interrupted_line_comment _ ->
+      fprintf ppf "Line comment interrupted before reaching end-of-line"
   | Unterminated_string ->
       fprintf ppf "String literal not terminated"
   | Unterminated_string_in_comment (_, loc) ->
@@ -410,11 +413,6 @@ rule token = parse
             lexbuf
         in
         COMMENT (s, loc) }
-  | "(*)"
-      { if !print_warnings then
-          Location.prerr_warning (Location.curr lexbuf) Warnings.Comment_start;
-        let s, loc = with_comment_buffer comment lexbuf in
-        COMMENT (s, loc) }
   | "(*" (('*'*) as stars) "*)"
       { if !handle_docstrings && stars="" then
          (* (**) is an empty docstring *)
@@ -521,9 +519,8 @@ and comment = parse
                   comment lexbuf;
        }
   | "(*)"
-      { comment_start_loc := (Location.curr lexbuf) :: !comment_start_loc;
-        store_lexeme lexbuf;
-        line_comment lexbuf
+      { store_lexeme lexbuf;
+        comment lexbuf
       }
   | "\""
       {
@@ -601,19 +598,22 @@ and line_comment = parse
   | newline
       { update_loc lexbuf None 1 false 0;
         match !comment_start_loc with
-        | [] -> assert false
         | [_] -> comment_start_loc := []; Location.curr lexbuf
-        | _ :: l -> comment_start_loc := l;
-                  store_lexeme lexbuf;
-                  comment lexbuf;
+        | _ -> assert false
       }
   | eof
       { match !comment_start_loc with
-        | [] -> assert false
-        | loc :: _ ->
-          let start = List.hd (List.rev !comment_start_loc) in
+        | [_] -> comment_start_loc := []; Location.curr lexbuf
+        | _ -> assert false
+      }
+  | "(*)"
+      { store_lexeme lexbuf; line_comment lexbuf }
+  | "(*" | "*)"
+      { match !comment_start_loc with
+        | [loc] ->
           comment_start_loc := [];
-          raise (Error (Unterminated_comment start, loc))
+          raise (Error (Interrupted_line_comment loc, Location.curr lexbuf))
+        | _ -> assert false
       }
   | _
       { store_lexeme lexbuf; line_comment lexbuf }
