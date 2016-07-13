@@ -40,25 +40,10 @@ static value save_stack ()
   return old_stack;
 }
 
-void caml_save_stack_gc()
-{
-  Assert(!stack_is_saved);
-  save_stack();
-  stack_is_saved = 1;
-}
-
 static void load_stack (value stack) {
   caml_domain_state->stack_threshold = Stack_base(stack) + Stack_threshold / sizeof(value);
   caml_domain_state->stack_high = Stack_high(stack);
   caml_domain_state->current_stack = stack;
-}
-
-void caml_restore_stack_gc()
-{
-  Assert(stack_is_saved);
-  Assert(Tag_val(caml_domain_state->current_stack) == Stack_tag);
-  load_stack(caml_domain_state->current_stack);
-  stack_is_saved = 0;
 }
 
 extern void caml_fiber_exn_handler (value) Noreturn;
@@ -306,20 +291,6 @@ void caml_change_max_stack_size (uintnat new_max_size)
   Used by the GC to find roots on the stacks of running or runnable fibers.
 */
 
-void caml_save_stack_gc()
-{
-  Assert(!stack_is_saved);
-  save_stack();
-  stack_is_saved = 1;
-}
-
-void caml_restore_stack_gc()
-{
-  Assert(stack_is_saved);
-  load_stack(caml_domain_state->current_stack);
-  stack_is_saved = 0;
-}
-
 void caml_scan_stack(scanning_action f, value stack)
 {
   value *low, *high, *sp;
@@ -483,6 +454,26 @@ CAMLprim value caml_clone_continuation (value cont)
   CAMLreturn(new_cont);
 }
 
+void caml_save_stack_gc()
+{
+  Assert(!stack_is_saved);
+  save_stack();
+  stack_is_saved = 1;
+}
+
+void caml_restore_stack_gc()
+{
+  Assert(stack_is_saved);
+  Assert(Tag_val(caml_domain_state->current_stack) == Stack_tag);
+  load_stack(caml_domain_state->current_stack);
+  stack_is_saved = 0;
+}
+
+void caml_restore_stack()
+{
+  Assert(Tag_val(caml_domain_state->current_stack) == Stack_tag);
+  load_stack(caml_domain_state->current_stack);
+}
 
 #ifdef DEBUG
 uintnat stack_sp(value stk) {
