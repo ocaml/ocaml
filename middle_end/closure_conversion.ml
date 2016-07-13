@@ -126,7 +126,9 @@ let rec close_const t env (const : Lambda.structured_constant)
   match const with
   | Const_base (Const_int c) -> Const (Int c), "int"
   | Const_base (Const_char c) -> Const (Char c), "char"
-  | Const_base (Const_string (s, _)) -> Allocated_const (String s), "string"
+  | Const_base (Const_string (s, _)) ->
+    if Config.safe_string then Allocated_const (Immutable_string s), "immstring"
+    else Allocated_const (String s), "string"
   | Const_base (Const_float c) ->
     Allocated_const (Float (float_of_string c)), "float"
   | Const_base (Const_int32 c) -> Allocated_const (Int32 c), "int32"

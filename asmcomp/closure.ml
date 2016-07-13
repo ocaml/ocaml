@@ -799,9 +799,13 @@ let rec close fenv cenv = function
         | Const_immstring s ->
             str (Uconst_string s)
         | Const_base (Const_string (s, _)) ->
-              (* strings (even literal ones) are mutable! *)
-              (* of course, the empty string is really immutable *)
-            str ~shared:false(*(String.length s = 0)*) (Uconst_string s)
+              (* Strings (even literal ones) must be assumed to be mutable...
+                 except when OCaml has been
+                 configured with -safe-string.  Passing -safe-string at compilation time
+                 is not enough, since the unit could be linked with another one
+                 compiled without -safe-string, and that one could modify our
+                 string literal.  *)
+            str ~shared:Config.safe_string (Uconst_string s)
         | Const_base(Const_float x) -> str (Uconst_float (float_of_string x))
         | Const_base(Const_int32 x) -> str (Uconst_int32 x)
         | Const_base(Const_int64 x) -> str (Uconst_int64 x)
