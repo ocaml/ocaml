@@ -754,8 +754,8 @@ an array of floating-point numbers.)
 \item
 "caml_copy_string_array("\var{p}")" allocates an array of strings or byte
 sequences, copied from the pointer to a string array \var{p}
-(a \verb"char **").  \var{p} must be NULL-terminated.
-\item "caml_alloc_float_array ("\var{n}"")" allocates an array of floating point
+(a "char **").  \var{p} must be NULL-terminated.
+\item "caml_alloc_float_array("\var{n}")" allocates an array of floating point
   numbers of size \var{n}. The array initially contains uninitialized values.
 \end{itemize}
 
