@@ -295,6 +295,27 @@ type file_kind =
   | S_FIFO
   | S_SOCK
 
+module LongInode =
+  struct
+    type stats =
+      { st_dev : int32;
+        st_ino : int64;
+        st_kind : file_kind;
+        st_perm : file_perm;
+        st_nlink : int;
+        st_uid : int;
+        st_gid : int;
+        st_rdev : int32;
+        st_size : int64;
+        st_atime : float;
+        st_mtime : float;
+        st_ctime : float;
+      }
+    external stat : string -> stats = "unix_stat_64"
+    external lstat : string -> stats = "unix_lstat_64"
+    external fstat : file_descr -> stats = "unix_fstat_64"
+  end
+
 type stats =
   { st_dev : int;
     st_ino : int;
@@ -309,13 +330,43 @@ type stats =
     st_mtime : float;
     st_ctime : float }
 
-external stat : string -> stats = "unix_stat"
-external lstat : string -> stats = "unix_lstat"
-external fstat : file_descr -> stats = "unix_fstat"
 external isatty : file_descr -> bool = "unix_isatty"
 external unlink : string -> unit = "unix_unlink"
 external rename : string -> string -> unit = "unix_rename"
 external link : string -> string -> unit = "unix_link"
+
+let int_of_32 i =
+  let mask = Int32.shift_left 0xfffffffel (Sys.int_size - 1) in
+  if Int32.equal Int32.zero (Int32.logand mask i)
+  then Int32.to_int i
+  else raise(Unix_error(EOVERFLOW, "stat", ""))
+let int_of_64 i =
+  let mask = Int64.shift_left 0xfffffffffffffffeL (Sys.int_size - 1) in
+  if Int64.equal Int64.zero (Int64.logand mask i)
+  then Int64.to_int i
+  else raise(Unix_error(EOVERFLOW, "stat", ""))
+
+let stat, lstat, fstat =
+  let convert_stat stat = {
+    st_dev   = int_of_32 stat.LongInode.st_dev;
+    st_ino   = int_of_64 stat.LongInode.st_ino;
+    st_kind  = stat.LongInode.st_kind;
+    st_perm  = stat.LongInode.st_perm;
+    st_nlink = stat.LongInode.st_nlink;
+    st_uid   = stat.LongInode.st_uid;
+    st_gid   = stat.LongInode.st_gid;
+    st_rdev  = int_of_32 stat.LongInode.st_dev;
+    st_size  = int_of_64 stat.LongInode.st_size;
+    st_atime = stat.LongInode.st_atime;
+    st_mtime = stat.LongInode.st_mtime;
+    st_ctime = stat.LongInode.st_ctime }
+  in
+  (fun path -> try convert_stat (LongInode.stat path)
+    with Unix_error (e, _, _) -> raise(Unix_error((e, "stat", path)))),
+  (fun path -> try convert_stat (LongInode.lstat path)
+    with Unix_error (e, _, _) -> raise(Unix_error((e, "lstat", path)))),
+  (fun descr -> try convert_stat (LongInode.fstat descr)
+    with Unix_error (e, _, _) -> raise(Unix_error((e, "fstat", ""))))
 
 module LargeFile =
   struct
@@ -337,9 +388,28 @@ module LargeFile =
         st_mtime : float;
         st_ctime : float;
       }
-    external stat : string -> stats = "unix_stat_64"
-    external lstat : string -> stats = "unix_lstat_64"
-    external fstat : file_descr -> stats = "unix_fstat_64"
+
+    let stat, lstat, fstat =
+      let convert_stat stat = {
+        st_dev   = int_of_32 stat.LongInode.st_dev;
+        st_ino   = int_of_64 stat.LongInode.st_ino;
+        st_kind  = stat.LongInode.st_kind;
+        st_perm  = stat.LongInode.st_perm;
+        st_nlink = stat.LongInode.st_nlink;
+        st_uid   = stat.LongInode.st_uid;
+        st_gid   = stat.LongInode.st_gid;
+        st_rdev  = int_of_32 stat.LongInode.st_dev;
+        st_size  = stat.LongInode.st_size;
+        st_atime = stat.LongInode.st_atime;
+        st_mtime = stat.LongInode.st_mtime;
+        st_ctime = stat.LongInode.st_ctime }
+      in
+      (fun path -> try convert_stat (LongInode.stat path)
+        with Unix_error (e, _, _) -> raise(Unix_error((e, "stat", path)))),
+      (fun path -> try convert_stat (LongInode.lstat path)
+        with Unix_error (e, _, _) -> raise(Unix_error((e, "lstat", path)))),
+      (fun descr -> try convert_stat (LongInode.fstat descr)
+        with Unix_error (e, _, _) -> raise(Unix_error((e, "fstat", ""))))
   end
 
 external map_internal:

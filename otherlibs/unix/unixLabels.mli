@@ -348,6 +348,30 @@ type file_kind = Unix.file_kind =
   | S_FIFO                      (** Named pipe *)
   | S_SOCK                      (** Socket *)
 
+(** {6 Stat calls for 64 bit inodes} *)
+
+module LongInode :
+  sig
+    type stats =
+      { st_dev : int32;             (** Device number *)
+        st_ino : int64;             (** Inode number *)
+        st_kind : file_kind;        (** Kind of the file *)
+        st_perm : file_perm;        (** Access rights *)
+        st_nlink : int;             (** Number of links *)
+        st_uid : int;               (** User id of the owner *)
+        st_gid : int;               (** Group ID of the file's group *)
+        st_rdev : int32;            (** Device minor number *)
+        st_size : int64;            (** Size in bytes *)
+        st_atime : float;           (** Last access time *)
+        st_mtime : float;           (** Last modification time *)
+        st_ctime : float;           (** Last status change time *)
+      }
+
+    val stat : string -> stats
+    val lstat : string -> stats
+    val fstat : file_descr -> stats
+  end
+
 type stats = Unix.stats =
   { st_dev : int;               (** Device number *)
     st_ino : int;               (** Inode number *)

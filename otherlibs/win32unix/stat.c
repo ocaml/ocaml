@@ -52,26 +52,34 @@ static int file_kind_table[] = {
   S_IFREG, S_IFDIR, S_IFCHR, S_IFBLK, S_IFLNK, S_IFIFO, S_IFSOCK
 };
 
-static value stat_aux(int use_64, __int64 st_ino, struct _stat64 *buf)
+static value stat_aux(__int64 st_ino, struct _stat64 *buf)
 {
-  CAMLparam0 ();
-  CAMLlocal1 (v);
+  CAMLparam0();
+  CAMLlocal5(size, ino, dev, rdev, v);
+  CAMLlocal3(atime, mtime, ctime);
 
-  v = caml_alloc (12, 0);
-  Store_field (v, 0, Val_int (buf->st_dev));
-  Store_field (v, 1, Val_int (st_ino ? st_ino & Max_long : buf->st_ino));
-  Store_field (v, 2, cst_to_constr (buf->st_mode & S_IFMT, file_kind_table,
-                                    sizeof(file_kind_table) / sizeof(int), 0));
-  Store_field (v, 3, Val_int(buf->st_mode & 07777));
-  Store_field (v, 4, Val_int (buf->st_nlink));
-  Store_field (v, 5, Val_int (buf->st_uid));
-  Store_field (v, 6, Val_int (buf->st_gid));
-  Store_field (v, 7, Val_int (buf->st_rdev));
-  Store_field (v, 8,
-               use_64 ? caml_copy_int64(buf->st_size) : Val_int (buf->st_size));
-  Store_field (v, 9, caml_copy_double((double) buf->st_atime));
-  Store_field (v, 10, caml_copy_double((double) buf->st_mtime));
-  Store_field (v, 11, caml_copy_double((double) buf->st_ctime));
+  atime = caml_copy_double((double) buf->st_atime);
+  mtime = caml_copy_double((double) buf->st_mtime);
+  ctime = caml_copy_double((double) buf->st_ctime);
+  dev = caml_copy_int32(buf->st_dev);
+  rdev = caml_copy_int32(buf->st_rdev);
+  ino = caml_copy_int64(st_ino ? st_ino : buf->st_ino);
+  size = caml_copy_int64(buf->st_size);
+
+  v = caml_alloc_small(12, 0);
+  Field (v, 0) = dev;
+  Field (v, 1) = ino;
+  Field (v, 2) = cst_to_constr (buf->st_mode & S_IFMT, file_kind_table,
+				sizeof(file_kind_table) / sizeof(int), 0);
+  Field (v, 3) = Val_int(buf->st_mode & 07777);
+  Field (v, 4) = Val_int (buf->st_nlink);
+  Field (v, 5) = Val_int (buf->st_uid);
+  Field (v, 6) = Val_int (buf->st_gid);
+  Field (v, 7) = rdev;
+  Field (v, 8) = size;
+  Field (v, 9) = atime;
+  Field (v, 10) = mtime;
+  Field (v, 11) = ctime;
   CAMLreturn (v);
 }
 
@@ -143,7 +151,7 @@ static int convert_time(FILETIME* time, __time64_t* result, __time64_t def)
 }
 
 /* path allocated outside the OCaml heap */
-static int safe_do_stat(int do_lstat, int use_64, char* path, mlsize_t l, HANDLE fstat, __int64* st_ino, struct _stat64* res)
+static int safe_do_stat(int do_lstat, char* path, mlsize_t l, HANDLE fstat, __int64* st_ino, struct _stat64* res)
 {
   BY_HANDLE_FILE_INFORMATION info;
   int i;
@@ -253,11 +261,6 @@ static int safe_do_stat(int do_lstat, int use_64, char* path, mlsize_t l, HANDLE
       }
     }
 
-    if (!use_64 && res->st_size > Max_long) {
-      win32_maperr(ERROR_ARITHMETIC_OVERFLOW);
-      return 0;
-    }
-
     if (!convert_time(&info.ftLastWriteTime, &res->st_mtime, 0) ||
         !convert_time(&info.ftLastAccessTime, &res->st_atime, res->st_mtime) ||
         !convert_time(&info.ftCreationTime, &res->st_ctime, res->st_mtime)) {
@@ -300,26 +303,14 @@ static int safe_do_stat(int do_lstat, int use_64, char* path, mlsize_t l, HANDLE
   return 1;
 }
 
-static int do_stat(int do_lstat, int use_64, char* opath, mlsize_t l, HANDLE fstat, __int64* st_ino, struct _stat64* res)
+static int do_stat(int do_lstat, char* opath, mlsize_t l, HANDLE fstat, __int64* st_ino, struct _stat64* res)
 {
   char* path;
   int ret;
   path = caml_stat_strdup(opath);
-  ret = safe_do_stat(do_lstat, use_64, path, l, fstat, st_ino, res);
+  ret = safe_do_stat(do_lstat, path, l, fstat, st_ino, res);
   caml_stat_free(path);
   return ret;
-}
-
-CAMLprim value unix_stat(value path)
-{
-  struct _stat64 buf;
-  __int64 st_ino;
-
-  caml_unix_check_path(path, "stat");
-  if (!do_stat(0, 0, String_val(path), caml_string_length(path), NULL, &st_ino, &buf)) {
-    uerror("stat", path);
-  }
-  return stat_aux(0, st_ino, &buf);
 }
 
 CAMLprim value unix_stat_64(value path)
@@ -328,22 +319,10 @@ CAMLprim value unix_stat_64(value path)
   __int64 st_ino;
 
   caml_unix_check_path(path, "stat");
-  if (!do_stat(0, 1, String_val(path), caml_string_length(path), NULL, &st_ino, &buf)) {
+  if (!do_stat(0, String_val(path), caml_string_length(path), NULL, &st_ino, &buf)) {
     uerror("stat", path);
   }
-  return stat_aux(1, st_ino, &buf);
-}
-
-CAMLprim value unix_lstat(value path)
-{
-  struct _stat64 buf;
-  __int64 st_ino;
-
-  caml_unix_check_path(path, "lstat");
-  if (!do_stat(1, 0, String_val(path), caml_string_length(path), NULL, &st_ino, &buf)) {
-    uerror("lstat", path);
-  }
-  return stat_aux(0, st_ino, &buf);
+  return stat_aux(st_ino, &buf);
 }
 
 CAMLprim value unix_lstat_64(value path)
@@ -352,13 +331,13 @@ CAMLprim value unix_lstat_64(value path)
   __int64 st_ino;
 
   caml_unix_check_path(path, "lstat");
-  if (!do_stat(1, 1, String_val(path), caml_string_length(path), NULL, &st_ino, &buf)) {
+  if (!do_stat(1, String_val(path), caml_string_length(path), NULL, &st_ino, &buf)) {
     uerror("lstat", path);
   }
-  return stat_aux(1, st_ino, &buf);
+  return stat_aux(st_ino, &buf);
 }
 
-static value do_fstat(value handle, int use_64)
+CAMLprim value unix_fstat_64(value handle)
 {
   int ret;
   struct _stat64 buf;
@@ -374,7 +353,7 @@ static value do_fstat(value handle, int use_64)
   ft = GetFileType(h) & ~FILE_TYPE_REMOTE;
   switch(ft) {
   case FILE_TYPE_DISK:
-    if (!safe_do_stat(0, use_64, NULL, 0, Handle_val(handle), &st_ino, &buf)) {
+    if (!safe_do_stat(0, NULL, 0, Handle_val(handle), &st_ino, &buf)) {
       uerror("fstat", Nothing);
     }
     break;
@@ -401,15 +380,5 @@ static value do_fstat(value handle, int use_64)
     win32_maperr(GetLastError());
     uerror("fstat", Nothing);
   }
-  return stat_aux(use_64, st_ino, &buf);
-}
-
-CAMLprim value unix_fstat(value handle)
-{
-  return do_fstat(handle, 0);
-}
-
-CAMLprim value unix_fstat_64(value handle)
-{
-  return do_fstat(handle, 1);
+  return stat_aux(st_ino, &buf);
 }
