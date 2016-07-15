@@ -19,7 +19,9 @@ clean::
 .SUFFIXES: .tex .etex
 
 .etex.tex:
-	$(TEXQUOTE) < $*.etex > $*.tex
+	@$(TEXQUOTE) < $*.etex > $*.texquote_error.tex\
+	&& mv $*.texquote_error.tex $*.tex\
+	|| printf "Failure when generating %s\n" $*.tex
 
 ocamldoc.tex: ocamldoc.etex $(TRANSF)
 	$(TRANSF) < ocamldoc.etex | $(TEXQUOTE) > ocamldoc.tex

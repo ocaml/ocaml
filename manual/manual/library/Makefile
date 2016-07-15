@@ -98,7 +98,10 @@ clean:
 .SUFFIXES: .tex .etex .mli
 
 .etex.tex: $(TEXQUOTE)
-	$(TEXQUOTE) < $*.etex > $*.tex
+	@$(TEXQUOTE) < $*.etex > $*.texquote_error.tex\
+	&& cp $*.texquote_error.tex $*.tex\
+	|| printf "Failure when generating %s\n" $*.tex
+
 
 .mli.tex: $(FORMAT)
 	$(FORMAT) $< > $*.tex < $<

@@ -20,6 +20,11 @@ clean:
 .SUFFIXES: .etex .tex
 
 .etex.tex:
-	$(OCAMLRUN) $(TRANSF) < $*.etex | $(TEXQUOTE) > $*.tex
+	@$(OCAMLRUN) $(TRANSF) < $*.etex > $*.transf_error.tex \
+	&& mv $*.transf_error.tex $*.gen.tex\
+	&& $(TEXQUOTE) < $*.gen.tex  > $*.texquote_error.tex\
+	&& mv $*.texquote_error.tex $*.tex\
+	|| printf "Failure when generating %s\n" $*.tex
+
 
 $(ALLFILES): $(TRANSF) $(TEXQUOTE)
