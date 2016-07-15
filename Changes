@@ -155,6 +155,12 @@ OCaml 4.04.0:
 - GPR#507: More sharing between Unix and Windows makefiles
   (whitequark, review by Alain Frisch)
 
+- GPR#692: optimistically enable native dynlink on recent 32bit darwin hosts
+  (natdynlink is known to not work on darwin{10,11} (OSX 10.6, 10.7),
+   and seems to work on darwin15 (OSX 10.11); please open an issue if
+   you notice that it is broken on darwin{12,13,14})
+  (Gabriel Scherer, report by Maciej Woś)
+
 
 ### Bug fixes:
 
