@@ -150,6 +150,7 @@ let use_runtime backend ocamlsrcdir = match backend with
 
 type compiler_info = {
   compiler_name : string -> string;
+  compiler_flags : string;
   compiler_directory : string;
   compiler_backend : Sys.backend_type;
   compiler_exit_status_variabe : Variables.t;
@@ -162,6 +163,7 @@ type compiler_info = {
 let bytecode_bytecode_compiler =
 {
   compiler_name = ocamlc_dot_byte;
+  compiler_flags = "";
   compiler_directory = "ocamlc.byte";
   compiler_backend = Sys.Bytecode;
   compiler_exit_status_variabe = Builtin_variables.ocamlc_byte_exit_status;
@@ -172,6 +174,7 @@ let bytecode_bytecode_compiler =
 let bytecode_nativecode_compiler =
 {
   compiler_name = ocamlc_dot_opt;
+  compiler_flags = "";
   compiler_directory = "ocamlc.opt";
   compiler_backend = Sys.Bytecode;
   compiler_exit_status_variabe = Builtin_variables.ocamlc_opt_exit_status;
@@ -184,6 +187,7 @@ let bytecode_nativecode_compiler =
 let nativecode_bytecode_compiler =
 {
   compiler_name = ocamlopt_dot_byte;
+  compiler_flags = "";
   compiler_directory = "ocamlopt.byte";
   compiler_backend = Sys.Native;
   compiler_exit_status_variabe = Builtin_variables.ocamlopt_byte_exit_status;
@@ -194,6 +198,7 @@ let nativecode_bytecode_compiler =
 let nativecode_nativecode_compiler =
 {
   compiler_name = ocamlopt_dot_opt;
+  compiler_flags = "";
   compiler_directory = "ocamlopt.opt";
   compiler_backend = Sys.Native;
   compiler_exit_status_variabe = Builtin_variables.ocamlopt_opt_exit_status;
@@ -205,6 +210,7 @@ let nativecode_nativecode_compiler =
 
 let bytecode_toplevel = {
   compiler_name = ocaml_dot_byte;
+  compiler_flags = "";
   compiler_directory = "ocaml.byte";
   compiler_backend = Sys.Bytecode;
   compiler_exit_status_variabe = Builtin_variables.ocaml_byte_exit_status;
@@ -214,6 +220,7 @@ let bytecode_toplevel = {
 
 let nativecode_toplevel = {
   compiler_name = ocaml_dot_opt;
+  compiler_flags = "-S"; (* Keep intermediate assembly files *)
   compiler_directory = "ocaml.opt";
   compiler_backend = Sys.Native;
   compiler_exit_status_variabe = Builtin_variables.ocaml_opt_exit_status;
@@ -742,6 +749,7 @@ let run_test_program_in_toplevel toplevel log env =
   [
     toplevel_name;
     toplevel_default_flags;
+    toplevel.compiler_flags;
     stdlib_flags ocamlsrcdir;
     flags env;
   ] in
