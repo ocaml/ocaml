@@ -69,7 +69,7 @@ It is convenient to have the following ocamltest script in a directory
 appearing in PATH, like ~/bin:
 
 #!/bin/sh
-TERM=dumb ${OCAMLSRCDIR}/ocamltest/ocamltest.byte $*
+TERM=dumb OCAMLRUNPARAM= ${OCAMLSRCDIR}/ocamltest/ocamltest.byte $*
 
 Once this file has been made executable, one can for instance run:
 
