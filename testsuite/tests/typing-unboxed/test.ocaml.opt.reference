@@ -1,0 +1,2 @@
+>> Fatal error: Opttoploop.dll_run /tmp/ocamltest/tests/typing-unboxed/test/ocaml.opt/TOP1.so: undefined symbol: b_nat
+Fatal error: exception Misc.Fatal_error
