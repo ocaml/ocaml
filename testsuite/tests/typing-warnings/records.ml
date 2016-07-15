@@ -1,3 +1,10 @@
+(* TEST
+  flags = " -w A "
+  * toplevel
+  * toplevel
+    include principal
+*)
+
 (* Use type information *)
 module M1 = struct
   type t = {x: int; y: int}

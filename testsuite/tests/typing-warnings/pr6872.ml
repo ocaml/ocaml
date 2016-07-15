@@ -1,3 +1,10 @@
+(* TEST
+  flags = " -w A "
+  * toplevel
+  * toplevel
+    include principal
+*)
+
 exception A;;
 type a = A;;
 

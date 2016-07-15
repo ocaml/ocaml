@@ -1,3 +1,8 @@
+(* TEST
+  flags = " -w A "
+  * toplevel
+*)
+
 module Unused : sig
 end = struct
   type unused = int
