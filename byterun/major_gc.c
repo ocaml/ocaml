@@ -401,7 +401,7 @@ static void mark_slice (intnat work)
       if (Tag_hd (hd) < No_scan_tag){
         start = size < start ? size : start;
         end = size < end ? size : end;
-        CAMLassert (end > start);
+        CAMLassert (end >= start);
         INSTR (slice_fields += end - start;)
         INSTR (if (size > end)
                  CAML_INSTR_INT ("major/mark/slice/remain", size - end);)
