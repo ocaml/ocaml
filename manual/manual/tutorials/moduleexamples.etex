@@ -81,7 +81,7 @@ function is not accessible and the actual representation of priority
 queues is hidden:
 \begin{caml_example}
 module AbstractPrioQueue = (PrioQueue : PRIOQUEUE);;
-AbstractPrioQueue.remove_top;;
+AbstractPrioQueue.remove_top [@@expect error];;
 AbstractPrioQueue.insert AbstractPrioQueue.empty 1 "hello";;
 \end{caml_example}
 The restriction can also be performed during the definition of the
@@ -191,7 +191,7 @@ module type SET =
   end;;
 module WrongSet = (Set : functor(Elt: ORDERED_TYPE) -> SET);;
 module WrongStringSet = WrongSet(OrderedString);;
-WrongStringSet.add "gee" WrongStringSet.empty;;
+WrongStringSet.add "gee" WrongStringSet.empty [@@expect error];;
 \end{caml_example}
 The problem here is that "SET" specifies the type "element"
 abstractly, so that the type equality between "element" in the result
@@ -230,7 +230,7 @@ module NoCaseString =
       OrderedString.compare (String.lowercase_ascii s1) (String.lowercase_ascii s2)
   end;;
 module NoCaseStringSet = AbstractSet(NoCaseString);;
-NoCaseStringSet.add "FOO" AbstractStringSet.empty;;
+NoCaseStringSet.add "FOO" AbstractStringSet.empty [@@expect error];;
 \end{caml_example}
 Note that the two types "AbstractStringSet.set" and
 "NoCaseStringSet.set" are not compatible, and values of these

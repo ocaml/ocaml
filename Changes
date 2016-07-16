@@ -39,6 +39,12 @@ Next version (tbd):
   (Laurent Mazare,
    review by Gabriel Scherer, Alain Frisch and Hezekiah M. Carty)
 
+### Manual and documentation:
+- GPR#693: fail on unexpected errors or warnings within caml_example
+  environment.
+  (Florian Angeletti)
+
+
 OCaml 4.04.0:
 -------------
 

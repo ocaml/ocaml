@@ -34,6 +34,127 @@ let (~!) =
       memo := (key, data) :: !memo;
       data
 
+(** The Output module deals with the analysis and classification
+    of the interpreter output and the parsing of status-related options
+    or annotations for the caml_example environment *)
+module Output = struct
+
+  (** Interpreter output status *)
+  type status =
+    | Ok
+    | Warning of int
+    | Error
+
+  type kind = Annotation | Option
+
+  (** Pretty printer for status *)
+  let pp_status ppf = function
+    | Error -> Printf.fprintf ppf "error"
+    | Ok -> Printf.fprintf ppf "ok"
+    | Warning n -> Printf.fprintf ppf "warning %d" n
+
+  (** Pretty printer for status preceded with an undefined determinant *)
+  let pp_a_status ppf = function
+    | Error -> Printf.fprintf ppf "an error"
+    | Ok -> Printf.fprintf ppf "an ok"
+    | Warning n -> Printf.fprintf ppf "a warning %d" n
+
+  (** {2 Exceptions } *)
+  exception Parsing_error of kind * string
+  type unexpected_report = {source:string; expected:status; got:status}
+  exception Unexpected_status of unexpected_report
+
+  let print_unexpected {source; expected; got} =
+    if expected = Ok then
+      Printf.eprintf
+        "Error when evaluating a caml_example environment in %s:\n\
+         unexpected %a.\n\
+         If %a status was expected, add an [@@expect %a] annotation.\n"
+        source
+        pp_status got
+        pp_a_status got
+        pp_status got
+    else
+      Printf.eprintf
+        "Error when evaluating a guarded caml_example environment in %s:\n \
+         %a status was expected, got %a status.\n\
+         If %a states was in fact expected, change the status annotation to\
+         [@@expect %a].\n"
+        source
+        pp_a_status expected
+        pp_a_status got
+        pp_a_status got
+        pp_status got;
+    flush stderr
+
+  let print_parsing_error k s =
+    match k with
+    | Option ->
+        Printf.eprintf
+          "Unknown caml_example option: [%s].\n\
+           Supported options are \"ok\",\"error\", or \"warning=n\" (with n \
+           a warning number).\n" s
+    | Annotation ->
+        Printf.eprintf
+          "Unknown caml_example phrase annotation: [@@expect %s].\n\
+           Supported annotations are [@@expect ok], [@@expect error],\n\
+           and [@@expect warning n] (with n a warning number).\n" s
+
+
+  (** {2 Output analysis} *)
+  let catch_error s =
+    if string_match ~!{|Error:|} s 0 then Some Error else None
+
+  let catch_warning s =
+    if string_match ~!{|Warning \([0-9]+\):|} s 0 then
+      Some (Warning (int_of_string @@ matched_group 1 s))
+    else
+      None
+
+  let status s = match catch_warning s, catch_error s with
+    | Some w, _ -> w
+    | _, Some e -> e
+    | None, None -> Ok
+
+  (** {2 Parsing caml_example options } *)
+
+  (** Parse [warning=n] options for caml_example options *)
+  let parse_warning s =
+    if string_match ~!{|warning=\([0-9]+\)|} s 0 then
+      Some (Warning (int_of_string @@ matched_group 1 s))
+    else
+      None
+
+  (** Parse [warning n] annotations *)
+  let parse_local_warning s =
+    if string_match ~!{|warning \([0-9]+\)|} s 0 then
+      Some (Warning (int_of_string @@ matched_group 1 s))
+    else
+      None
+
+  let parse_error s =
+    if s="error" then Some Error else None
+
+  let parse_ok s =
+    if s = "ok" then Some Ok else None
+
+  (** Parse the environment-wide expected status output *)
+  let expected s =
+    match parse_warning s, parse_error s with
+    | Some w, _ -> w
+    | _, Some e -> e
+    | None, None -> raise (Parsing_error (Option,s))
+
+  (** Parse the local (i.e. phrase-wide) expected status output *)
+  let local_expected s =
+    match parse_local_warning s, parse_error s, parse_ok s with
+    | Some w, _, _ -> w
+    | _, Some e, _ -> e
+    | _, _, Some ok -> ok
+    | None, None, None -> raise (Parsing_error (Annotation,s))
+
+end
+
 let caml_input, caml_output =
   let cmd = !camllight ^ " 2>&1" in
   try Unix.open_process cmd with _ -> failwith "Cannot start toplevel"
@@ -83,34 +204,52 @@ let process_file file =
     with _ -> failwith "Cannot open output file" in
   try while true do
     let input = ref (input_line ic) in
-    if string_match ~!"\\\\begin{caml_example\\(\\*?\\)}[ \t]*$"
+    if string_match
+        ~!"\\\\begin{caml_example\\(\\*?\\)}[ \t]*\\(\\[\\(.*\\)\\]\\)?[ \t]*$"
         !input 0
     then begin
       let omit_answer = matched_group 1 !input = "*" in
+      let global_expected = try Output.expected @@ matched_group 3 !input
+            with Not_found -> Output.Ok
+      in
       output_string oc camlbegin;
       let first = ref true in
       let read_phrase () =
         let phrase = Buffer.create 256 in
-        while
-          let input = input_line ic in
+        let rec read () =
+          let input =  input_line ic in
           if string_match ~!"\\\\end{caml_example\\*?}[ \t]*$"
               input 0
           then raise End_of_file;
           if Buffer.length phrase > 0 then Buffer.add_char phrase '\n';
-          Buffer.add_string phrase input;
-          not (string_match ~!".*;;[ \t]*$" input 0)
-        do
-          ()
-        done;
-        Buffer.contents phrase
+          let stop = string_match ~!"\\(.*\\)[ \t]*;;[ \t]*$" input 0 in
+          if not stop then (
+            Buffer.add_string phrase input; read ()
+          )
+          else
+            let last_input = matched_group 1 input in
+            let expected =
+              if string_match ~!{|\(.*\)\[@@expect \(.*\)\]|} last_input 0 then
+                ( Buffer.add_string phrase (matched_group 1 last_input);
+                  Output.local_expected @@ matched_group 2 last_input )
+              else
+                (Buffer.add_string phrase last_input; global_expected)
+            in
+            Buffer.add_string phrase ";;\n";
+            Buffer.contents phrase, expected in
+        read ()
       in
       try while true do
-        let phrase = read_phrase () in
+        let phrase, expected = read_phrase () in
         fprintf caml_output "%s\n" phrase;
         flush caml_output;
         output_string caml_output "\"end_of_input\";;\n";
         flush caml_output;
         let output, (b, e) = read_output () in
+        let status = Output.status output in
+        if status <> expected then
+          raise (Output.Unexpected_status
+                   {Output.got=status; expected; source=file} );
         let phrase =
           if b < e then begin
             let start = String.sub phrase ~pos:0 ~len:b
@@ -154,7 +293,12 @@ let process_file file =
       flush oc
     end
   done with
-    End_of_file -> close_in ic; close_out oc
+  |  End_of_file -> close_in ic; close_out oc
+  | Output.Unexpected_status r ->
+          ( Output.print_unexpected r; close_in ic; close_out oc; exit 1 )
+  | Output.Parsing_error (k,s) ->
+      ( Output.print_parsing_error k s;
+        close_in ic; close_out oc; exit 1 )
 
 let _ =
   if !outfile <> "-" && !outfile <> "" then begin
@@ -162,4 +306,3 @@ let _ =
     with _ -> failwith "Cannot open output file"
   end;
   List.iter process_file (List.rev !files)
-
