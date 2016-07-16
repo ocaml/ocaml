@@ -1,0 +1,63 @@
+This document is a work-in-progress attempt to provide useful
+information for people willing to inspect or modify the compiler
+distribution's codebase. Feel free to improve it by sending change
+proposals for it.
+
+== Contents
+
+  Changes::               what's new with each release
+  configure::             configure script
+  CONTRIBUTING.md::       how to contribute to OCaml
+  HACKING.adoc::          tips for people modifying the code
+  INSTALL.adoc::          instructions for installation
+  LICENSE::               license and copyright notice
+  Makefile::              main Makefile
+  Makefile.nt::           MS Windows Makefile
+  Makefile.shared::       common Makefile
+  Makefile.tools::        used by manual/ and testsuite/ Makefiles
+  README.adoc::           this file
+  README.win32.adoc::     info on the MS Windows ports of OCaml
+  VERSION::               version string
+  asmcomp/::              native-code compiler and linker
+  asmrun/::               native-code runtime library
+  boot/::                 bootstrap compiler
+  bytecomp/::             bytecode compiler and linker
+  byterun/::              bytecode interpreter and runtime system
+  compilerlibs/::         the OCaml compiler as a library
+  config/::               autoconfiguration stuff
+  debugger/::             source-level replay debugger
+  driver/::               driver code for the compilers
+  emacs/::                editing mode and debugger interface for GNU Emacs
+  experimental/::         experiments not built by default
+  flexdll/::              empty (see README.win32.adoc)
+  lex/::                  lexer generator
+  man/::                  man pages
+  manual/::               system to generate the manual
+  middle_end/::           the flambda optimisation phase
+  ocamldoc/::             documentation generator
+  otherlibs/::            several external libraries
+  parsing/::              syntax analysis
+  stdlib/::               standard library
+  testsuite/::            tests
+  tools/::                various utilities
+  toplevel/::             interactive system
+  typing/::               typechecking
+  utils/::                utility libraries
+  yacc/::                 parser generator
+
+== Useful Makefile targets
+
+Besides the targets listed in link:INSTALL.adoc for build and
+installation, the following targets may be of use:
+
+  make runtop::           builds and runs the ocaml toplevel of the distribution
+                          (optionally uses `rlwrap` for readline+history support)
+  make natruntop::        builds and runs the native ocaml toplevel (experimental)
+
+== opam compiler script
+
+The separately-distributed script
+https://github.com/gasche/opam-compiler-conf[`opam-compiler-conf`] can
+be used to easily build opam switches out of a git branch of the
+compiler distribution. This lets you easily install and test opam
+packages from an under-modification compiler version.
