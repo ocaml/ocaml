@@ -333,6 +333,10 @@ $(call byte_and_opt,primreq,config.cmo primreq.cmo,)
 clean::
 	rm -f "objinfo_helper$(EXE)"
 
+# List units in .cma/.cmxa file, extract units
+cmar = cmar.cmo
+
+$(call byte_and_opt,cmar,config.cmo misc.cmo $(cmar),)
 
 # Copy a bytecode executable, stripping debug info
 
