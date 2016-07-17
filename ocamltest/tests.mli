@@ -25,6 +25,8 @@ val compare : t -> t -> int
 
 val register : t -> unit
 
+val get_registered_tests : unit -> t list
+
 val default_tests : unit -> t list
 
 val lookup : string -> t option

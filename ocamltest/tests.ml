@@ -27,6 +27,11 @@ let (tests: (string, t) Hashtbl.t) = Hashtbl.create 20
 
 let register test = Hashtbl.add tests test.test_name test
 
+let get_registered_tests () =
+  let f _test_name test acc = test::acc in
+  let unsorted_tests = Hashtbl.fold f tests [] in
+  List.sort compare unsorted_tests
+
 let default_tests () =
   let f _test_name test acc =
     if test.test_run_by_default then test::acc else acc in
