@@ -150,8 +150,8 @@ let transl_store_label_init glob modmap f arg =
            Location.none),
      expr))
   in
-  let lam, size = transl_label_init_general (fun () -> (expr, modmap)) in
-  size, lam
+  let lam, modmap = transl_label_init_general (fun () -> (expr, modmap)) in
+  modmap, lam
 
 let transl_label_init f =
   if !Clflags.native_code then
