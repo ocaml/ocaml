@@ -36,6 +36,7 @@ modules :=\
   tsl_parser.cmo \
   tsl_lexer.cmo \
   tsl_semantics.cmo \
+  options.cmo \
   main.cmo
 
 optmodules := $(modules:.cmo=.cmx)

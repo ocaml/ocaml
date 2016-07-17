@@ -49,7 +49,7 @@ let tsl_block_of_file_safe test_filename =
     exit 1
 
 let print_usage () =
-  Printf.printf "Usage: %s testfile\n" Sys.argv.(0)
+  Printf.printf "%s\n%!" Options.usage
 
 let rec run_test log path ancestor_result = function
   Node (testenvspec, test, subtrees) ->
@@ -99,11 +99,11 @@ let get_test_build_directory test_dirname =
   Filename.concat root test_dirname
 
 let main () =
-  if Array.length Sys.argv < 2 then begin
+  if !Options.testfile = "" then begin
     print_usage();
     exit 1
   end;
-  let test_filename = Sys.argv.(1) in
+  let test_filename = !Options.testfile in
   (* Printf.printf "# reading test file %s\n%!" test_filename; *)
   let tsl_block = tsl_block_of_file_safe test_filename in
   let (rootenv_statements, test_trees) = test_trees_of_tsl_block tsl_block in
