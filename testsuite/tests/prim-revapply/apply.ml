@@ -1,3 +1,5 @@
+(* TEST *)
+
 external ( @@ ) :  ('a -> 'b) -> 'a -> 'b = "%apply"
 
 let f x = x + x
