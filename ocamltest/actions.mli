@@ -34,6 +34,8 @@ val compare : t -> t -> int
 
 val register : t -> unit
 
+val get_registered_actions : unit -> t list
+
 val lookup : string -> t option
 
 val run : out_channel -> Environments.t -> t -> result

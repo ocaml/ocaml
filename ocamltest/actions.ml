@@ -44,6 +44,11 @@ let (actions : (string, t) Hashtbl.t) = Hashtbl.create 10
 let register action =
   Hashtbl.add actions action.action_name action
 
+let get_registered_actions () =
+  let f _action_name action acc = action::acc in
+  let unsorted_actions = Hashtbl.fold f actions [] in
+  List.sort compare unsorted_actions
+
 let lookup name =
   try Some (Hashtbl.find actions name)
   with Not_found -> None
