@@ -3089,12 +3089,15 @@ let module_map_debug = try
 let module_map modmap =
   if module_map_debug then begin
     Printf.eprintf "Module Map:\n%!";
-    List.iter (fun (pos,id) ->
-      Printf.eprintf "   val  %3d -> %S\n" pos (Ident.name id)) modmap.map;
-    List.iter (fun (pos, name) ->
-      Printf.eprintf "   prim %3d -> %S\n" pos name
-    ) modmap.prims;
-    Printf.eprintf "%!";
+    match modmap with
+    | None -> Printf.eprintf "   None (flambda)\n%!"
+    | Some modmap ->
+      List.iter (fun (pos,id) ->
+        Printf.eprintf "   val  %3d -> %S\n" pos (Ident.name id)) modmap.map;
+      List.iter (fun (pos, name) ->
+        Printf.eprintf "   prim %3d -> %S\n" pos name
+      ) modmap.prims;
+      Printf.eprintf "%!";
   end;
   global_data (Compilenv.make_symbol (Some "module_map")) modmap
 

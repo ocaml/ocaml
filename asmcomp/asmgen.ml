@@ -187,9 +187,7 @@ let end_gen_implementation ?toplevel ~source_provenance ppf modmap
        (List.filter (fun s -> s <> "" && s.[0] <> '%')
           (List.map Primitive.native_name !Translmod.primitive_declarations))
     );
-  (match modmap with
-  | None -> ()
-  | Some modmap -> compile_phrase ppf (Cmmgen.module_map modmap));
+  compile_phrase ppf (Cmmgen.module_map modmap);
   Emit.end_assembly ()
 
 let flambda_gen_implementation ?toplevel ~source_provenance ~backend ppf
