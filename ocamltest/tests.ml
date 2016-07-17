@@ -36,6 +36,13 @@ let lookup name =
   try Some (Hashtbl.find tests name)
   with Not_found -> None
 
+let test_of_action action =
+{
+  test_name = action.Actions.action_name;
+  test_run_by_default = false;
+  test_actions = [action]
+}
+
 let run_actions log testenv actions =
   let total = List.length actions in
   let rec run_actions_aux action_number env = function

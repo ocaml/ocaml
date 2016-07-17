@@ -31,4 +31,6 @@ val lookup : string -> t option
 
 val run : out_channel -> Environments.t -> t -> Actions.result
 
+val test_of_action : Actions.t -> t
+
 module TestSet : Set.S with type elt = t

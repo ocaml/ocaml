@@ -70,9 +70,9 @@ let unexpected_environment_statement s =
   Printf.eprintf "%s\nUnexpected environment statement\n%!" locstr;
   exit 2
 
-let no_such_test t =
+let no_such_test_or_action t =
   let locstr = Testlib.string_of_location t.loc in
-  Printf.eprintf "%s\nNo such test: %s\n%!" locstr t.node;
+  Printf.eprintf "%s\nNo such test or action: %s\n%!" locstr t.node;
   exit 2
 
 let test_trees_of_tsl_block tsl_block =
@@ -87,16 +87,22 @@ let test_trees_of_tsl_block tsl_block =
     | line::remaining_lines as l ->
       begin match line with
         | Environment_statement s -> unexpected_environment_statement s
-        | Test (test_depth, test_name_located) ->
+        | Test (test_depth, located_name) ->
           begin
-            let test_name = test_name_located.node in
-            if test_depth > depth then too_deep test_name depth test_depth
+            let name = located_name.node in
+            if test_depth > depth then too_deep name depth test_depth
             else if test_depth < depth then (None, l)
             else
               let (env, rem) = env_of_lines remaining_lines in
               let (trees, rem) = trees_of_lines (depth+1) rem in
-              match Tests.lookup test_name with
-                | None -> no_such_test test_name_located
+              match Tests.lookup name with
+                | None -> 
+                  begin match Actions.lookup name with
+                    | None -> no_such_test_or_action located_name
+                    | Some action ->
+                      let test = Tests.test_of_action action in
+                      (Some (Node (env, test, trees)), rem)
+                  end
                 | Some test ->
                   (Some (Node (env, test, trees)), rem)
           end
