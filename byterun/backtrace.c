@@ -175,23 +175,28 @@ CAMLprim value caml_get_exception_raw_backtrace(value unit)
 CAMLprim value caml_restore_raw_backtrace(value exn, value backtrace)
 {
   intnat i;
+  mlsize_t bt_size;
 
   caml_backtrace_last_exn = exn;
-  caml_backtrace_pos = Wosize_val(backtrace);
-  if(caml_backtrace_pos > BACKTRACE_BUFFER_SIZE){
-    caml_backtrace_pos = BACKTRACE_BUFFER_SIZE;
+
+  bt_size = Wosize_val(backtrace);
+  if(bt_size > BACKTRACE_BUFFER_SIZE){
+    bt_size = BACKTRACE_BUFFER_SIZE;
   }
 
   /* We don't allocate if the backtrace is empty (no -g or backtrace
      not activated) */
-  if(caml_backtrace_pos == 0) return Val_unit;
-
-  /* Allocate if needed and copy the backtrace buffer */
-  if (caml_backtrace_buffer == NULL && caml_alloc_backtrace_buffer() == -1){
+  if(bt_size == 0){
     caml_backtrace_pos = 0;
     return Val_unit;
   }
 
+  /* Allocate if needed and copy the backtrace buffer */
+  if (caml_backtrace_buffer == NULL && caml_alloc_backtrace_buffer() == -1){
+    return Val_unit;
+  }
+
+  caml_backtrace_pos = bt_size;
   for(i=0; i < caml_backtrace_pos; i++){
     caml_backtrace_buffer[i] = Backtrace_slot_val(Field(backtrace, i));
   }
