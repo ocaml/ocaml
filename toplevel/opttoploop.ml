@@ -222,7 +222,7 @@ let load_lambda ppf ~module_ident ~required_globals lam size =
   if not Config.flambda then
     Asmgen.compile_implementation_clambda ~source_provenance:Timings.Toplevel
       ~toplevel:need_symbol fn ppf
-      { Lambda.code=lam ; main_module_block_size=size;
+      { Lambda.code=lam ; main_module_block_size=size; module_map = None;
         module_ident; required_globals }
   else
     Asmgen.compile_implementation_flambda ~source_provenance:Timings.Toplevel
