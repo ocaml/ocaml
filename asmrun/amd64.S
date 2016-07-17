@@ -677,6 +677,9 @@ G(caml_system__frametable):
         .value  -1          /* negative frame size => use callback link */
         .value  0           /* no roots here */
         .align  EIGHT_ALIGN
+        .quad   16
+        .quad   0
+        .string "amd64.S"
 
 #if defined(SYS_macosx)
         .literal16
