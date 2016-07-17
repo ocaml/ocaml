@@ -24,3 +24,5 @@ val string_of_location: Location.t -> string
 val run_system_command : string -> unit
 
 val make_directory : string -> unit
+
+val string_of_file : string -> string

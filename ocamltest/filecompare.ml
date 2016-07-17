@@ -61,3 +61,15 @@ let check_file ?(tool = default_comparison_tool) files =
     then Same
     else Unexpected_output
   end
+
+let diff files =
+  let temporary_file = Filename.temp_file "ocamltest" "diff" in
+  let diff_commandline = String.concat " "
+  [
+    "diff -u";
+    files.reference_filename;
+    files.output_filename;
+    "> " ^ temporary_file
+  ] in
+  if (Sys.command diff_commandline) = 2 then Pervasives.Error "diff"
+  else Ok (Testlib.string_of_file temporary_file)

@@ -57,3 +57,16 @@ let run_system_command command = match Sys.command command with
     exit 2
 
 let make_directory dir = run_system_command ("mkdir -p " ^ dir)
+
+let string_of_file filename =
+  let chan = open_in filename in
+  let filesize = in_channel_length chan in
+  if filesize > Sys.max_string_length then
+  begin
+    close_in chan;
+    filename
+  end else begin
+    let result = really_input_string chan filesize in
+    close_in chan;
+    result
+  end

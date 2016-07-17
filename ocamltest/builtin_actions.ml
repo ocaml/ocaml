@@ -615,12 +615,22 @@ let check_output kind_of_output output_variable reference_variable log env =
   match Filecompare.check_file files with
     | Filecompare.Same -> Pass env
     | Filecompare.Different ->
-      let reason = Printf.sprintf "%s output %s differs from reference %s"
-        kind_of_output output_filename reference_filename in
+      let diff = Filecompare.diff files in
+      let diffstr = match diff with
+        | Ok difference -> difference
+        | Error diff_file -> ("See " ^ diff_file) in
+      let reason =
+        Printf.sprintf "%s output %s differs from reference %s: \n%s\n"
+        kind_of_output output_filename reference_filename diffstr in
       (Actions.Fail reason)
     | Filecompare.Unexpected_output ->
-      let reason = Printf.sprintf "The file %s was expected to be empty because there is no reference file %s but it is not"
-        output_filename reference_filename in
+      let banner = String.make 40 '=' in
+      let unexpected_output = Testlib.string_of_file output_filename in
+      let unexpected_output_with_banners = Printf.sprintf
+        "%s\n%s%s\n" banner unexpected_output banner in
+      let reason = Printf.sprintf
+        "The file %s was expected to be empty because there is no reference file %s but it is not:\n%s\n"
+        output_filename reference_filename unexpected_output_with_banners in
       (Actions.Fail reason)
     | Filecompare.Error (commandline, exitcode) ->
       let reason = Printf.sprintf "The command %s failed with status %d"
