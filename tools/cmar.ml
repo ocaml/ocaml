@@ -78,29 +78,6 @@ let strip_extension unit_name =
       unit_name
 ;;
 
-(* Compare two lists of units - ones in library and ones to extract.
- * NOTE - both lists should be sorted. *)
-let find_missing_units library_units units_to_extract =
-  fst (
-    List.fold_left
-      (fun (missing_in_library, library_units) unit_to_extract ->
-        match library_units with
-        | [] -> (unit_to_extract::missing_in_library, [])
-        | library_unit::library_rest ->
-          let cmp = compare library_unit unit_to_extract in
-          if cmp <> 0 then
-          (
-            if cmp > 0 then
-              ((unit_to_extract::missing_in_library), library_rest)
-            else
-              (missing_in_library, library_rest)
-          )
-          else
-            (missing_in_library, library_rest)
-      )
-      ([], library_units) units_to_extract)
-;;
-
 type unit_type = CMOUnit of Cmo_format.compilation_unit | 
                  CMXUnit of Cmx_format.unit_infos * Digest.t;;
 
@@ -161,17 +138,34 @@ let extract_unit (library_ichannel, library_info) unit_name =
 (* Extract contents of the library. Units may have .cmo or .cmx extension,
  * or have no extension at all. *)
 let extract_library_contents ichannel library_info units_to_extract =
-  let library_units = List.sort_uniq compare (unit_names_of_library library_info) in
+  let library_units = unit_names_of_library library_info in
   let units_to_extract = List.sort_uniq compare units_to_extract in
-  let missing_in_library = find_missing_units library_units units_to_extract in
+  let (_, missing_in_library) = 
+    List.partition
+      (fun unit_to_extract ->
+        try
+          let _ = List.find ((=) unit_to_extract) library_units in
+          true
+        with Not_found -> false
+      ) units_to_extract
+  in
   match missing_in_library with
   | [] -> 
     List.iter (extract_unit (ichannel, library_info)) units_to_extract
+  | _::[] ->
+  (
+    Printf.eprintf "Module ";
+    List.iter (Printf.eprintf "%s ") missing_in_library;
+    Printf.eprintf "is not in the library.\n";
+    exit (-1)
+  )
   | _ ->
+  (
     Printf.eprintf "Modules ";
     List.iter (Printf.eprintf "%s ") missing_in_library;
     Printf.eprintf "are not in the library.\n";
     exit (-1)
+  )
 ;;
 
 (* Print unit names from library_info. *)
