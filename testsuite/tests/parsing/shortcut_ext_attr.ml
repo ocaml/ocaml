@@ -11,6 +11,7 @@ let () =
   (if%foo[@foo] () then () else ()) ;
   while%foo[@foo] () do () done ;
   for%foo[@foo] x = () to () do () done ;
+  () ;%foo () ;
   assert%foo[@foo] true ;
   lazy%foo[@foo] x ;
   object%foo[@foo] end ;
