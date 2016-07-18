@@ -208,20 +208,20 @@ let nativecode_nativecode_compiler =
 
 (* Top-levels *)
 
-let bytecode_toplevel = {
+let ocaml = {
   compiler_name = ocaml_dot_byte;
   compiler_flags = "";
-  compiler_directory = "ocaml.byte";
+  compiler_directory = "ocaml";
   compiler_backend = Sys.Bytecode;
   compiler_exit_status_variabe = Builtin_variables.ocaml_byte_exit_status;
   compiler_reference_variable = Builtin_variables.compiler_reference;
   compiler_output_variable = Builtin_variables.compiler_output;
 }
 
-let nativecode_toplevel = {
+let ocamlnat = {
   compiler_name = ocaml_dot_opt;
   compiler_flags = "-S"; (* Keep intermediate assembly files *)
-  compiler_directory = "ocaml.opt";
+  compiler_directory = "ocamlnat";
   compiler_backend = Sys.Native;
   compiler_exit_status_variabe = Builtin_variables.ocaml_opt_exit_status;
   compiler_reference_variable = Builtin_variables.compiler_reference2;
@@ -773,25 +773,25 @@ let run_test_program_in_toplevel toplevel log env =
   then Pass newenv
   else Fail (mkreason what commandline exit_status)
 
-let run_in_bytecode_toplevel =
+let run_in_ocaml =
 {
   action_name = "run-in-bytecode-toplevel";
   action_environment = env_id;
-  action_body = run_test_program_in_toplevel bytecode_toplevel;
+  action_body = run_test_program_in_toplevel ocaml;
 }
 
-let run_in_nativecode_toplevel =
+let run_in_ocamlnat =
 {
   action_name = "run-in-nativecode-toplevel";
   action_environment = env_id;
-  action_body = run_test_program_in_toplevel nativecode_toplevel;
+  action_body = run_test_program_in_toplevel ocamlnat;
 }
 
-let check_bytecode_toplevel_output = make_check_compiler_output
-  "check-bytecode-toplevel-output" bytecode_toplevel
+let check_ocaml_output = make_check_compiler_output
+  "check-bytecode-toplevel-output" ocaml
 
-let check_nativecode_toplevel_output = make_check_compiler_output
-  "check-nativecode-toplevel-output" nativecode_toplevel
+let check_ocamlnat_output = make_check_compiler_output
+  "check-nativecode-toplevel-output" ocamlnat
 
 let _ =
   List.iter register
@@ -809,8 +809,8 @@ let _ =
     check_ocamlc_dot_opt_output;
     check_ocamlopt_dot_byte_output;
     check_ocamlopt_dot_opt_output;
-    run_in_bytecode_toplevel;
-    run_in_nativecode_toplevel;
-    check_bytecode_toplevel_output;
-    check_nativecode_toplevel_output;
+    run_in_ocaml;
+    run_in_ocamlnat;
+    check_ocaml_output;
+    check_ocamlnat_output;
   ]

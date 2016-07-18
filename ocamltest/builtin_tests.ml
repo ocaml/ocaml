@@ -65,10 +65,10 @@ let toplevel = {
   test_run_by_default = false;
   test_actions =
   [
-    run_in_bytecode_toplevel;
-    check_bytecode_toplevel_output;
-    run_in_nativecode_toplevel;
-    check_nativecode_toplevel_output;
+    run_in_ocaml;
+    check_ocaml_output;
+    run_in_ocamlnat;
+    check_ocamlnat_output;
   ]
 }
 
