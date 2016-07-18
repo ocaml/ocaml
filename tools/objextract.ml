@@ -139,7 +139,11 @@ let extract_unit (library_ichannel, library_info) unit_name =
  * or have no extension at all. *)
 let extract_library_contents ichannel library_info units_to_extract =
   let library_units = unit_names_of_library library_info in
-  let units_to_extract = List.sort_uniq compare units_to_extract in
+  let units_to_extract =
+    match units_to_extract with
+    | [] -> library_units
+    | _ -> List.sort_uniq compare units_to_extract
+  in
   let (_, missing_in_library) = 
     List.partition
       (fun unit_to_extract ->
@@ -200,11 +204,12 @@ let files : string list ref = ref [];;
 
 (* Command line arguments *)
 let arg_list = [
-  "-list", Arg.Unit (fun _ -> mode := List), " : list the contents of .cma or .cmxa file (default)";
-  "-extract", Arg.Unit (fun _ -> mode := Extract), " : extract all object files from .cma or .cmxa file";
+  "-list", Arg.Unit (fun _ -> mode := List), " : list units containing in .cma or .cmxa file (default)";
+  "-extract", Arg.Unit (fun _ -> mode := Extract), " : extract [UNITS] from .cma or .cmxa file \
+    (extract all if [UNITS] is empty)";
 ]
 let arg_usage =
-  Printf.sprintf "%s [OPTIONS] LIBRARY [UNITS] : list or extract contents of the library"
+  Printf.sprintf "%s [OPTIONS] LIBRARYFILE [UNITS] : list or extract contents of the library"
                  Sys.argv.(0)
 
 let arg_anon_fun name = files := (!files) @ [name];;
