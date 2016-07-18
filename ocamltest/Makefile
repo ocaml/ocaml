@@ -49,6 +49,10 @@ ocamlc := ../byterun/ocamlrun ../ocamlc $(flags)
 
 ocamlopt := ../byterun/ocamlrun ../ocamlopt $(flags)
 
+ocamllex := ../byterun/ocamlrun ../lex/ocamllex
+
+ocamlyacc := ../yacc/ocamlyacc
+
 ocamltest.byte: $(modules)
 	$(ocamlc) -custom ocamlcommon.cma -o $@ $^
 
@@ -57,8 +61,6 @@ ocamltest.byte: $(modules)
 
 ocamltest.opt: $(optmodules)
 	$(ocamlopt) ocamlcommon.cmxa -o $@ $^
-
-
 
 %.cmx: %.ml %.cmi
 	$(ocamlopt) -c $<
@@ -73,10 +75,10 @@ main.cmx: main.ml
 	$(ocamlc) -c $<
 
 %.ml %.mli: %.mly
-	ocamlyacc $<
+	$(ocamlyacc) $<
 
 %.ml: %.mll
-	ocamllex -q $<
+	$(ocamllex) -q $<
 
 .PHONY: clean
 
