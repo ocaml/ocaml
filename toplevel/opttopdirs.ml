@@ -81,11 +81,11 @@ let load_file ppf name0 =
       (* The Dynlink interface does not allow us to distinguish between
           a Dynlink.Error exceptions raised in the loaded modules
           or a genuine error during dynlink... *)
-      try Dynlink.loadfile fn; true
+      try Compdynlink.loadfile fn; true
       with
-      | Dynlink.Error err ->
+      | Compdynlink.Error err ->
         fprintf ppf "Error while loading %s: %s.@."
-          name (Dynlink.error_message err);
+          name (Compdynlink.error_message err);
         false
       | exn ->
         print_exception_outcome ppf exn;
