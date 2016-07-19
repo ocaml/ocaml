@@ -142,6 +142,11 @@ Opens the given module before starting the toplevel. If several
 options are given, they are processed in order, just as if
 the statements open! module1;; ... open! moduleN;; were input.
 .TP
+.BI \-plugin \ plugin
+Dynamically load the code of the given
+.I plugin
+(a .cmo or .cma file) in the toplevel.
+.TP
 .BI \-ppx \ command
 After parsing, pipe the abstract syntax tree through the preprocessor
 .IR command .

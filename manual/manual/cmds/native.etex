@@ -328,6 +328,14 @@ Multiple levels of packing can be achieved by combining "-pack" with
 The resulting "P.cmx" object file has sub-modules "P.Q", "P.Q.A"
 and "P.B".
 
+\item["-plugin" \var{plugin}]
+Dynamically load the code of the given \var{plugin}
+(a ".cmo", ".cma" or ".cmxs" file) in the compiler. \var{plugin} must exist in
+the same kind of code as the compiler ("ocamlopt.byte" must load bytecode
+plugins, while "ocamlopt.opt" must load native code plugins), and
+extension adaptation is done automatically for ".cma" files (to ".cmxs" files
+if the compiler is compiled in native code).
+
 \item["-pp" \var{command}]
 Cause the compiler to call the given \var{command} as a preprocessor
 for each source file. The output of \var{command} is redirected to

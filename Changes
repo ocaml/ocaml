@@ -50,6 +50,10 @@ OCaml 4.04.0:
 - GPR#684: Detect unused module declarations
   (Alain Frisch)
 
+- GPR#648: New -plugin option for ocamlc and ocamlopt, to dynamically extend
+  the compilers at runtime.
+  (Fabrice Le Fessant)
+
 ### Standard library:
 
 - GPR#589: Add a non-allocating function to recover the number of
