@@ -27,6 +27,8 @@ type tool = {
   result_of_exitcode : string -> int -> result
 }
 
+val make_cmp_tool : int -> tool
+
 val default_comparison_tool : tool
 
 type files = {

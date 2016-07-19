@@ -32,11 +32,18 @@ let cmp_result_of_exitcode commandline = function
   | 1 -> Different
   | exit_code -> (Error (commandline, exit_code))
 
-let default_comparison_tool = {
-  tool_name = "cmp";
-  tool_flags = "-s";
-  result_of_exitcode = cmp_result_of_exitcode
-}
+let make_cmp_tool bytes_to_ignore =
+  let i_flag =
+    if bytes_to_ignore <= 0
+    then ""
+    else ("-i " ^ (string_of_int bytes_to_ignore)) in
+  {
+    tool_name = "cmp";
+    tool_flags = "-s " ^ i_flag;
+    result_of_exitcode = cmp_result_of_exitcode
+  }
+
+let default_comparison_tool = make_cmp_tool 0
 
 type files = {
   reference_filename : string;
