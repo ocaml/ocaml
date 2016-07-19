@@ -136,5 +136,5 @@ val target : string
 
 val print_config : out_channel -> unit;;
 
-val flambda : bool
+val default_flambda : bool
         (* Whether the compiler was configured for flambda *)

@@ -2493,7 +2493,7 @@ and transl_letrec env bindings cont =
 
 let transl_function f =
   let body =
-    if Config.flambda then
+    if !Clflags.flambda then
       Un_anf.apply f.body ~what:f.label
     else
       f.body
@@ -2604,7 +2604,7 @@ and emit_boxed_int64_constant n cont =
 
 let emit_constant_closure ((_, global_symb) as symb) fundecls clos_vars cont =
   let closure_symbol f =
-    if Config.flambda then
+    if !Clflags.flambda then
       cdefine_symbol (f.label ^ "_closure", global_symb)
     else
       []

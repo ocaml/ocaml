@@ -70,8 +70,8 @@ let exported_constants = Hashtbl.create 17
 
 let merged_environment = ref Export_info.empty
 
-let default_ui_export_info =
-  if Config.flambda then
+let default_ui_export_info () =
+  if !Clflags.flambda then
     Cmx_format.Flambda Export_info.empty
   else
     Cmx_format.Clambda Value_unknown
@@ -86,7 +86,7 @@ let current_unit =
     ui_apply_fun = [];
     ui_send_fun = [];
     ui_force_link = false;
-    ui_export_info = default_ui_export_info }
+    ui_export_info = Cmx_format.Clambda Value_unknown (* will be overwritten anyway *) }
 
 let symbolname_for_pack pack name =
   match pack with
@@ -132,7 +132,7 @@ let reset ?packname ~source_provenance:file name =
   current_unit.ui_force_link <- false;
   Hashtbl.clear exported_constants;
   structured_constants := structured_constants_empty;
-  current_unit.ui_export_info <- default_ui_export_info;
+  current_unit.ui_export_info <- default_ui_export_info ();
   merged_environment := Export_info.empty;
   Hashtbl.clear export_infos_table;
   let compilation_unit =
@@ -211,6 +211,15 @@ let get_global_info global_ident = (
             let filename =
               find_in_path_uncap !load_path (modname ^ ".cmx") in
             let (ui, crc) = read_unit_info filename in
+            begin match ui.ui_export_info, !Clflags.flambda with
+            | Flambda _, false | Clambda _, true ->
+                Warnings.Cannot_use_cross_module_info
+                  (filename, not !Clflags.flambda)
+                |> Location.prerr_warning Location.none
+            | Flambda _, true | Clambda _, false ->
+                ()
+            end;
+
             if ui.ui_name <> modname then
               raise(Error(Illegal_renaming(modname, ui.ui_name, filename)));
             (Some ui, Some crc)
@@ -233,9 +242,9 @@ let cache_unit_info ui =
 (* Return the approximation of a global identifier *)
 
 let get_clambda_approx ui =
-  assert(not Config.flambda);
+  assert(not !Clflags.flambda);
   match ui.ui_export_info with
-  | Flambda _ -> assert false
+  | Flambda _ -> Clambda.Value_unknown
   | Clambda approx -> approx
 
 let toplevel_approx :
@@ -291,19 +300,19 @@ let symbol_for_global' id =
     Symbol.unsafe_create (unit_for_global id) sym_label
 
 let set_global_approx approx =
-  assert(not Config.flambda);
+  assert(not !Clflags.flambda);
   current_unit.ui_export_info <- Clambda approx
 
 (* Exporting and importing cross module information *)
 
 let get_flambda_export_info ui =
-  assert(Config.flambda);
+  assert !Clflags.flambda;
   match ui.ui_export_info with
-  | Clambda _ -> assert false
+  | Clambda _ -> Export_info.empty
   | Flambda ei -> ei
 
 let set_export_info export_info =
-  assert(Config.flambda);
+  assert !Clflags.flambda;
   current_unit.ui_export_info <- Flambda export_info
 
 let approx_for_global comp_unit =

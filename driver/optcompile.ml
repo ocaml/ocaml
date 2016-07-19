@@ -83,7 +83,7 @@ let implementation ppf sourcefile outputprefix ~backend =
           Printtyped.implementation_with_coercion
     in
     if not !Clflags.print_types then begin
-      if Config.flambda then begin
+      if !Clflags.flambda then begin
         if !Clflags.classic_inlining then begin
           Clflags.default_simplify_rounds := 1;
           Clflags.use_inlining_arguments_set Clflags.classic_arguments;

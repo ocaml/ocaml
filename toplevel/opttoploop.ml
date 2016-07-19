@@ -94,7 +94,7 @@ let close_phrase lam =
 
 let toplevel_value id =
   let glob, pos =
-    if Config.flambda then toplevel_value id else Translmod.nat_toplevel_name id
+    if !Clflags.flambda then toplevel_value id else Translmod.nat_toplevel_name id
   in
   (Obj.magic (global_symbol glob)).(pos)
 
@@ -219,7 +219,7 @@ let load_lambda ppf ~module_ident ~required_globals lam size =
     else Filename.temp_file ("caml" ^ !phrase_name) ext_dll
   in
   let fn = Filename.chop_extension dll in
-  if not Config.flambda then
+  if not !Clflags.flambda then
     Asmgen.compile_implementation_clambda ~source_provenance:Timings.Toplevel
       ~toplevel:need_symbol fn ppf
       { Lambda.code=lam ; main_module_block_size=size;
@@ -306,7 +306,7 @@ let execute_phrase print_outcome ppf phr =
       ignore (Includemod.signatures oldenv sg sg');
       Typecore.force_delayed_checks ();
       let module_ident, res, required_globals, size =
-        if Config.flambda then
+        if !Clflags.flambda then
           let { Lambda.module_ident; main_module_block_size = size;
                 required_globals; code = res } =
             Translmod.transl_implementation_flambda !phrase_name
@@ -325,7 +325,7 @@ let execute_phrase print_outcome ppf phr =
         let out_phr =
           match res with
           | Result _ ->
-              if Config.flambda then
+              if !Clflags.flambda then
                 (* CR-someday trefis: *)
                 ()
               else

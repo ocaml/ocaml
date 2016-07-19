@@ -130,6 +130,7 @@ let force_slash = ref false             (* for ocamldep *)
 let clambda_checks = ref false          (* -clambda-checks *)
 
 let flambda_invariant_checks = ref true (* -flambda-invariants *)
+let flambda = ref Config.default_flambda
 
 let dont_write_files = ref false        (* set to true under ocamldoc *)
 
@@ -165,7 +166,10 @@ let rounds () =
   | None -> !default_simplify_rounds
   | Some r -> r
 
-let default_inline_threshold = if Config.flambda then 10. else 10. /. 8.
+let default_inline_threshold =
+  if Config.default_flambda then 10. else 10. /. 8.
+  (* TODO: make this a dynamic value *)
+
 let inline_toplevel_multiplier = 16
 let default_inline_toplevel_threshold =
   int_of_float ((float inline_toplevel_multiplier) *. default_inline_threshold)

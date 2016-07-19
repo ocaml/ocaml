@@ -111,7 +111,7 @@ let transl_label_init_general f =
   expr, size
 
 let transl_label_init_flambda f =
-  assert(Config.flambda);
+  assert !Clflags.flambda;
   let method_cache_id = Ident.create "method_cache" in
   method_cache := Lvar method_cache_id;
   (* Calling f (usualy Translmod.transl_struct) requires the
@@ -130,8 +130,8 @@ let transl_label_init_flambda f =
   transl_label_init_general (fun () -> expr, size)
 
 let transl_store_label_init glob size f arg =
-  assert(not Config.flambda);
-  assert(!Clflags.native_code);
+  assert (not !Clflags.flambda);
+  assert !Clflags.native_code;
   method_cache := Lprim(Pfield size,
                         [Lprim(Pgetglobal glob, [], Location.none)],
                         Location.none);

@@ -705,6 +705,16 @@ let mk_no_strict_formats f =
   \      and instead fix invalid formats.)"
 ;;
 
+let mk_flambda f =
+  "-flambda", Arg.Unit f,
+  " Enable the flambda optimizer" ^ (if Config.default_flambda then " (default)" else "")
+;;
+
+let mk_no_flambda f =
+  "-no-flambda", Arg.Unit f,
+  " Disable the flambda optimizer" ^ (if Config.default_flambda then "" else " (default)")
+;;
+
 let mk__ f =
   "-", Arg.String f,
   "<file>  Treat <file> as a file name (even if it starts with `-')"
@@ -853,6 +863,8 @@ module type Optcommon_options = sig
   val _no_unbox_specialised_args : unit -> unit
   val _o2 : unit -> unit
   val _o3 : unit -> unit
+  val _flambda : unit -> unit
+  val _no_flambda : unit -> unit
 
   val _clambda_checks : unit -> unit
   val _dflambda : unit -> unit
@@ -1155,6 +1167,8 @@ struct
     mk_warn_error F._warn_error;
     mk_warn_help F._warn_help;
     mk_where F._where;
+    mk_flambda F._flambda;
+    mk_no_flambda F._no_flambda;
     mk__ F.anonymous;
 
     mk_nopervasives F._nopervasives;

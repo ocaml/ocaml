@@ -29,6 +29,8 @@ val imported_sets_of_closures_table
   : Flambda.function_declarations Set_of_closures_id.Tbl.t
         (* flambda-only *)
 
+val default_ui_export_info: unit -> export_info
+
 val reset: ?packname:string -> source_provenance:Timings.source_provenance ->
         string -> unit
         (* Reset the environment and record the name of the unit being
@@ -83,6 +85,9 @@ val symbol_for_global': Ident.t -> Symbol.t
 val global_approx: Ident.t -> Clambda.value_approximation
         (* Return the approximation for the given global identifier
            clambda-only *)
+val get_clambda_approx: unit_infos -> Clambda.value_approximation
+        (* Return the approximation for the given compilation unit
+           clambda-only *)
 val set_global_approx: Clambda.value_approximation -> unit
         (* Record the approximation of the unit being compiled
            clambda-only *)
@@ -98,6 +103,9 @@ val approx_env: unit -> Export_info.t
            flambda-only *)
 val approx_for_global: Compilation_unit.t -> Export_info.t
         (* Loads the exported information declaring the compilation_unit
+           flambda-only *)
+val get_flambda_export_info: unit_infos -> Export_info.t
+        (* Return the approximation for the given compilation unit
            flambda-only *)
 
 val need_curry_fun: int -> unit

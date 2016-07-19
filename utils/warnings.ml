@@ -81,6 +81,7 @@ type t =
   | No_cmx_file of string                   (* 58 *)
   | Assignment_to_non_mutable_value         (* 59 *)
   | Unused_module of string                 (* 60 *)
+  | Cannot_use_cross_module_info of string * bool (* 61 *)
 ;;
 
 (* If you remove a warning, leave a hole in the numbering.  NEVER change
@@ -150,9 +151,10 @@ let number = function
   | No_cmx_file _ -> 58
   | Assignment_to_non_mutable_value -> 59
   | Unused_module _ -> 60
+  | Cannot_use_cross_module_info _ -> 61
 ;;
 
-let last_warning_number = 60
+let last_warning_number = 61
 ;;
 
 (* Must be the max number returned by the [number] function. *)
@@ -475,6 +477,11 @@ let message = function
         in this source file.  Such assignments may generate incorrect code \n\
         when using Flambda."
   | Unused_module s -> "unused module " ^ s ^ "."
+  | Cannot_use_cross_module_info (file, flambda) ->
+      Printf.sprintf
+        "File %s has %sbeen compiled in flambda mode;\n\
+         its cross-module optimization info will be ignored."
+        file (if flambda then "" else "not ")
 ;;
 
 let nerrors = ref 0;;
@@ -575,6 +582,7 @@ let descriptions =
    58, "Missing cmx file";
    59, "Assignment to non-mutable value";
    60, "Unused module declaration";
+   61, "Cannot use cross-module optimization info from an imported a cmx file";
   ]
 ;;
 

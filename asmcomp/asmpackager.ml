@@ -98,7 +98,7 @@ let make_package_object ppf members targetobj targetname coercion
   let module_ident = Ident.create_persistent targetname in
   let source_provenance = Timings.Pack targetname in
   let prefixname = Filename.remove_extension objtemp in
-  if Config.flambda then begin
+  if !Clflags.flambda then begin
     let size, lam = Translmod.transl_package_flambda components coercion in
     let flam =
       Middle_end.middle_end ppf
@@ -132,18 +132,6 @@ let make_package_object ppf members targetobj targetname coercion
 
 (* Make the .cmx file for the package *)
 
-let get_export_info ui =
-  assert(Config.flambda);
-  match ui.ui_export_info with
-  | Clambda _ -> assert false
-  | Flambda info -> info
-
-let get_approx ui =
-  assert(not Config.flambda);
-  match ui.ui_export_info with
-  | Flambda _ -> assert false
-  | Clambda info -> info
-
 let build_package_cmx members cmxfile =
   let unit_names =
     List.map (fun m -> m.pm_name) members in
@@ -167,32 +155,32 @@ let build_package_cmx members cmxfile =
            (Compilenv.unit_for_global unit_id) set)
       Compilation_unit.Set.empty units in
   let units =
-    if Config.flambda then
+    if !Clflags.flambda then
       List.map (fun info ->
           { info with
             ui_export_info =
               Flambda
                 (Export_info_for_pack.import_for_pack ~pack_units
                    ~pack:(Compilenv.current_unit ())
-                   (get_export_info info)) })
+                   (Compilenv.get_flambda_export_info info)) })
         units
     else
       units
   in
   let ui = Compilenv.current_unit_infos() in
   let ui_export_info =
-    if Config.flambda then
+    if !Clflags.flambda then
       let ui_export_info =
         List.fold_left (fun acc info ->
-            Export_info.merge acc (get_export_info info))
+            Export_info.merge acc (Compilenv.get_flambda_export_info info))
           (Export_info_for_pack.import_for_pack ~pack_units
              ~pack:(Compilenv.current_unit ())
-             (get_export_info ui))
+             (Compilenv.get_flambda_export_info ui))
           units
       in
       Flambda ui_export_info
     else
-      Clambda (get_approx ui)
+      Clambda (Compilenv.get_clambda_approx ui)
   in
   Export_info_for_pack.clear_import_state ();
   let pkg_infos =
