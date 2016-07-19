@@ -160,6 +160,11 @@ OCaml 4.04.0:
 - GPR#507: More sharing between Unix and Windows makefiles
   (whitequark, review by Alain Frisch)
 
+- GPR#687: "./configure -safe-string" to get a system where
+  "-unsafe-string" is not allowed, thus giving stronger non-local
+  guarantees about immutability of strings
+  (Alain Frisch, review by Hezekiah M. Carty)
+
 
 ### Bug fixes:
 
