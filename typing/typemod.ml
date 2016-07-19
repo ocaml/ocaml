@@ -388,7 +388,8 @@ and approx_sig env ssg =
           in
           let newenv =
             List.fold_left
-              (fun env (id, md) -> Env.add_module_declaration id md env)
+              (fun env (id, md) -> Env.add_module_declaration ~check:false
+                  id md env)
               env decls in
           map_rec (fun rs (id, md) -> Sig_module(id, md, rs)) decls
                   (approx_sig newenv srem)
@@ -1352,7 +1353,7 @@ and type_structure ?(toplevel = false) funct_body anchor env sstr scope =
                    md_loc = md.md_loc;
                  }
                in
-               Env.add_module_declaration md.md_id mdecl env
+               Env.add_module_declaration ~check:true md.md_id mdecl env
             )
             env decls
         in

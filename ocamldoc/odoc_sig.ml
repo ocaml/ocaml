@@ -21,7 +21,6 @@ open Types
 
 let print_DEBUG s = print_string s ; print_newline ();;
 
-module Name = Odoc_name
 open Odoc_parameter
 open Odoc_value
 open Odoc_type

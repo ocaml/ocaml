@@ -16,9 +16,6 @@
 
 [@@@ocaml.warning "+a-4-9-30-40-41-42"]
 
-module A = Simple_value_approx
-module C = Inlining_cost
-
 type lifter = Flambda.program -> Flambda.program
 
 let rebuild_let

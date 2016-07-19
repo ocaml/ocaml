@@ -432,8 +432,6 @@ let initial_inlining_toplevel_threshold ~round : Inlining_cost.Threshold.t =
     (unscaled * Inlining_cost.scale_inline_threshold_by)
 
 module Result = struct
-  module Int = Numbers.Int
-
   type t =
     { approx : Simple_value_approx.t;
       used_static_exceptions : Static_exception.Set.t;

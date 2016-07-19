@@ -218,7 +218,8 @@ let init_shape modl =
         raise Not_found
     | Sig_module(id, md, _) :: rem ->
         init_shape_mod env md.md_type ::
-        init_shape_struct (Env.add_module_declaration id md env) rem
+        init_shape_struct (Env.add_module_declaration ~check:false
+                             id md env) rem
     | Sig_modtype(id, minfo) :: rem ->
         init_shape_struct (Env.add_modtype id minfo env) rem
     | Sig_class _ :: rem ->
