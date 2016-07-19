@@ -68,6 +68,7 @@ let mkdll, mkexe, mkmaindll =
     "%%MKDLL%%", "%%MKEXE%%", "%%MKMAINDLL%%"
 
 let flambda = %%FLAMBDA%%
+let safe_string = %%SAFE_STRING%%
 
 let exec_magic_number = "Caml1999X011"
 and cmi_magic_number = "Caml1999I020"
