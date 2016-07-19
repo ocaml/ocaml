@@ -510,7 +510,7 @@ let refill_lexbuf buffer len =
 
 let _ =
   Sys.interactive := true;
-  Dynlink.init ();
+  Compdynlink.init ();
   Compmisc.init_path true;
   Clflags.dlcode := true;
   ()
