@@ -58,6 +58,7 @@
 #include "caml/stacks.h"
 #include "caml/sys.h"
 #include "caml/version.h"
+#include "caml/roots.h"
 
 static char * error_message(void)
 {
@@ -635,3 +636,9 @@ void caml_cplugins_init(char * exe_name, char **argv)
 }
 
 #endif /* CAML_WITH_CPLUGINS */
+
+/* Hooks to profile systhreads */
+CAMLexport void (*caml_st_root_scan_hook)(value thread_id,
+                                          char* bottom,
+                                          uintnat retaddr) = NULL;
+CAMLexport void (*caml_st_change_hook)(value thread_id, int change) = NULL;

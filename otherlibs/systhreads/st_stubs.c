@@ -34,6 +34,7 @@
 #endif
 #include "caml/sys.h"
 #include "threads.h"
+#include "caml/hooks.h"
 
 #if defined(NATIVE_CODE) && defined(WITH_SPACETIME)
 #include "caml/spacetime.h"
@@ -96,6 +97,7 @@ struct caml_thread_struct {
   int backtrace_pos;            /* Saved caml_backtrace_pos */
   backtrace_slot * backtrace_buffer;    /* Saved caml_backtrace_buffer */
   value backtrace_last_exn;     /* Saved caml_backtrace_last_exn (root) */
+  value uniq_ident;             /* a pre-copy of caml_thread_descr uid */
 };
 
 typedef struct caml_thread_struct * caml_thread_t;
@@ -151,15 +153,20 @@ static void caml_thread_scan_roots(scanning_action action)
     /* Don't rescan the stack of the current thread, it was done already */
     if (th != curr_thread) {
 #ifdef NATIVE_CODE
-      if (th->bottom_of_stack != NULL)
+      if (th->bottom_of_stack != NULL){
+        CAML_ST_ROOT_SCAN_HOOK(th->uniq_ident,
+                               th->bottom_of_stack, th->last_retaddr);
         caml_do_local_roots(action, th->bottom_of_stack, th->last_retaddr,
                        th->gc_regs, th->local_roots);
+      }
 #else
+      CAML_ST_ROOT_SCAN_HOOK(th->uniq_ident, NULL, 0);
       caml_do_local_roots(action, th->sp, th->stack_high, th->local_roots);
 #endif
     }
     th = th->next;
   } while (th != curr_thread);
+  CAML_ST_ROOT_SCAN_HOOK(0, NULL, 0);
   /* Hook */
   if (prev_scan_roots_hook != NULL) (*prev_scan_roots_hook)(action);
 }
@@ -192,10 +199,12 @@ static inline void caml_thread_save_runtime_state(void)
   curr_thread->backtrace_pos = caml_backtrace_pos;
   curr_thread->backtrace_buffer = caml_backtrace_buffer;
   curr_thread->backtrace_last_exn = caml_backtrace_last_exn;
+  CAML_ST_CHANGE_HOOK(curr_thread->uniq_ident,CAML_HOOK_ST_YIELD);
 }
 
 static inline void caml_thread_restore_runtime_state(void)
 {
+  CAML_ST_CHANGE_HOOK(curr_thread->uniq_ident,CAML_HOOK_ST_SCHEDULE);
 #ifdef NATIVE_CODE
   caml_bottom_of_stack= curr_thread->bottom_of_stack;
   caml_last_return_address = curr_thread->last_retaddr;
@@ -372,7 +381,14 @@ static caml_thread_t caml_thread_new_info(void)
 
 /* Allocate a thread descriptor block. */
 
-static value caml_thread_new_descriptor(value clos)
+static value caml_thread_new_ident()
+{
+   value id = Val_long(thread_next_ident);
+   thread_next_ident++;
+   return id;
+}
+
+static value caml_thread_new_descriptor(value clos, value th_id)
 {
   value mu = Val_unit;
   value descr;
@@ -381,10 +397,9 @@ static value caml_thread_new_descriptor(value clos)
     mu = caml_threadstatus_new();
     /* Create a descriptor for the new thread */
     descr = caml_alloc_small(3, 0);
-    Ident(descr) = Val_long(thread_next_ident);
+    Ident(descr) = th_id;
     Start_closure(descr) = clos;
     Terminated(descr) = mu;
-    thread_next_ident++;
   End_roots();
   return descr;
 }
@@ -435,6 +450,7 @@ static void caml_thread_reinitialize(void)
      just in case the fork happened while other threads were doing
      caml_leave_blocking_section */
   st_masterlock_init(&caml_master_lock);
+  CAML_ST_CHANGE_HOOK(curr_thread->uniq_ident,CAML_HOOK_ST_REINIT);
   /* Tick thread is not currently running in child process, will be
      re-created at next Thread.create */
   caml_tick_thread_running = 0;
@@ -465,7 +481,8 @@ CAMLprim value caml_thread_initialize(value unit)   /* ML */
   /* Set up a thread info block for the current thread */
   curr_thread =
     (caml_thread_t) caml_stat_alloc(sizeof(struct caml_thread_struct));
-  curr_thread->descr = caml_thread_new_descriptor(Val_unit);
+  curr_thread->uniq_ident = caml_thread_new_ident();
+  curr_thread->descr = caml_thread_new_descriptor(Val_unit,curr_thread->uniq_ident);
   curr_thread->next = curr_thread;
   curr_thread->prev = curr_thread;
   all_threads = curr_thread;
@@ -495,6 +512,7 @@ CAMLprim value caml_thread_initialize(value unit)   /* ML */
   /* Set up fork() to reinitialize the thread machinery in the child
      (PR#4577) */
   st_atfork(caml_thread_reinitialize);
+  CAML_ST_CHANGE_HOOK(curr_thread->uniq_ident,CAML_HOOK_ST_INIT);
   return Val_unit;
 }
 
@@ -520,6 +538,7 @@ static void caml_thread_stop(void)
      curr_thread data to make sure that the cleanup logic
      below uses accurate information. */
   caml_thread_save_runtime_state();
+  CAML_ST_CHANGE_HOOK(curr_thread->uniq_ident,CAML_HOOK_ST_STOP);
   /* Signal that the thread has terminated */
   caml_threadstatus_terminate(Terminated(curr_thread->descr));
   /* Remove th from the doubly-linked list of threads and free its info block */
@@ -573,7 +592,8 @@ CAMLprim value caml_thread_new(value clos)          /* ML */
   th = caml_thread_new_info();
   if (th == NULL) caml_raise_out_of_memory();
   /* Equip it with a thread descriptor */
-  th->descr = caml_thread_new_descriptor(clos);
+  th->uniq_ident = caml_thread_new_ident();
+  th->descr = caml_thread_new_descriptor(clos,th->uniq_ident);
   /* Add thread info block to the list of threads */
   th->next = curr_thread->next;
   th->prev = curr_thread;
@@ -594,6 +614,7 @@ CAMLprim value caml_thread_new(value clos)          /* ML */
     st_check_error(err, "Thread.create");
     caml_tick_thread_running = 1;
   }
+  CAML_ST_CHANGE_HOOK(th->uniq_ident,CAML_HOOK_ST_CREATE);
   return th->descr;
 }
 
@@ -614,6 +635,9 @@ CAMLexport int caml_c_thread_register(void)
 #endif
   /* Take master lock to protect access to the chaining of threads */
   st_masterlock_acquire(&caml_master_lock);
+  th->uniq_ident = caml_thread_new_ident();
+  CAML_ST_CHANGE_HOOK(th->uniq_ident,CAML_HOOK_ST_REGISTER);
+  CAML_ST_CHANGE_HOOK(th->uniq_ident,CAML_HOOK_ST_SCHEDULE);
   /* Add thread info block to the list of threads */
   if (all_threads == NULL) {
     th->next = th;
@@ -627,11 +651,12 @@ CAMLexport int caml_c_thread_register(void)
   }
   /* Associate the thread descriptor with the thread */
   st_tls_set(thread_descriptor_key, (void *) th);
+  CAML_ST_CHANGE_HOOK(th->uniq_ident,CAML_HOOK_ST_YIELD);
   /* Release the master lock */
   st_masterlock_release(&caml_master_lock);
   /* Now we can re-enter the run-time system and heap-allocate the descriptor */
   caml_leave_blocking_section();
-  th->descr = caml_thread_new_descriptor(Val_unit);  /* no closure */
+  th->descr = caml_thread_new_descriptor(Val_unit,th->uniq_ident);  /* no closure */
   /* Create the tick thread if not already done.  */
   if (! caml_tick_thread_running) {
     err = st_thread_create(&caml_tick_thread_id, caml_thread_tick, NULL);
@@ -654,6 +679,7 @@ CAMLexport int caml_c_thread_unregister(void)
   st_masterlock_acquire(&caml_master_lock);
   /* Forget the thread descriptor */
   st_tls_set(thread_descriptor_key, NULL);
+  CAML_ST_CHANGE_HOOK(th->uniq_ident,CAML_HOOK_ST_UNREGISTER);
   /* Remove thread info block from list of threads, and free it */
   caml_thread_remove_info(th);
   /* Release the runtime */
