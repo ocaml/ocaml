@@ -667,6 +667,38 @@ let check_program_output = {
     Builtin_variables.reference
 }
 
+(*
+let comparison_start_address portable_executable_filename =
+  let portable_executalbe_signature = "PE\000\000" in
+  let signature_length = String.length portable_executalbe_signature in
+  let address_length = 4 in
+  let start_address = 0x3c in
+  let ic = open_in portable_executable_filename in
+  seek_in ic start_address;
+  let portable_executable_signature_address_str =
+    really_input_string ic address_length in
+  let b0 = int_of_char portable_executable_signature_address_str.[0] in
+  let b1 = int_of_char portable_executable_signature_address_str.[1] in
+  let b2 = int_of_char portable_executable_signature_address_str.[2] in
+  let b3 = int_of_char portable_executable_signature_address_str.[3] in
+  let signature_address =
+    b0 +
+    b1 * 256 +
+    b2 * 256 * 256 +
+    b3 * 256 * 256 * 256 in
+  seek_in ic signature_address;
+  let signature =
+    really_input_string ic signature_length in
+  if signature<>portable_executalbe_signature
+  then failwith
+    (portable_executable_filename ^ " does not contain the PE signature");
+  let result = signature_address + 12 in
+  (* 12 is 4-bytes signature, 2-bytes machine type, *)
+  (* 2-bytes number of sections, 4-bytes timestamp *)
+  close_in ic;
+  result
+*)
+
 let compare_programs backend comparison_tool log env =
   let program = Environments.safe_lookup Builtin_variables.program env in
   let program2 = Environments.safe_lookup Builtin_variables.program2 env in
@@ -677,6 +709,11 @@ let compare_programs backend comparison_tool log env =
     Filecompare.reference_filename = program;
     Filecompare.output_filename = program2
   } in
+  let comparison_tool =
+    if backend=Sys.Native && (Sys.os_type="Win32" || Sys.os_type="Cygwin")
+      then let bytes_to_ignore = 256 (* comparison_start_address program *) in
+      Filecompare.make_cmp_tool bytes_to_ignore
+    else comparison_tool in
   match Filecompare.compare_files ~tool:comparison_tool files with
     | Filecompare.Same -> Pass env
 
