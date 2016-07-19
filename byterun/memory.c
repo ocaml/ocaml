@@ -483,10 +483,16 @@ static inline value caml_alloc_shr_aux (mlsize_t wosize, tag_t tag,
     else
       return 0;
   }
+#ifdef WITH_GC_HOOKS
+  MAYBE_HOOK3(caml_alloc_shr_begin_hook, wosize, tag, profinfo);
+#endif
   hp = caml_fl_allocate (wosize);
   if (hp == NULL){
     new_block = expand_heap (wosize);
     if (new_block == NULL) {
+#ifdef WITH_GC_HOOKS
+      MAYBE_HOOK1(caml_alloc_shr_end_hook, -1);
+#endif
       if (!raise_oom)
         return 0;
       else if (caml_in_minor_collection)
@@ -526,6 +532,9 @@ static inline value caml_alloc_shr_aux (mlsize_t wosize, tag_t tag,
     }
   }
 #endif
+#ifdef WITH_GC_HOOKS
+  MAYBE_HOOK1(caml_alloc_shr_end_hook, Val_hp(hp) );
+#endif
   return Val_hp (hp);
 }
 
@@ -551,24 +560,26 @@ CAMLexport value caml_alloc_shr_preserving_profinfo (mlsize_t wosize,
   return caml_alloc_shr_with_profinfo (wosize, tag, Profinfo_hd(old_header));
 }
 
-#else
-#define NO_PROFINFO 0
-#endif /* WITH_PROFINFO */
-
-#if defined(NATIVE_CODE) && defined(WITH_SPACETIME)
-#include "caml/spacetime.h"
-
 CAMLexport value caml_alloc_shr (mlsize_t wosize, tag_t tag)
 {
-  return caml_alloc_shr_with_profinfo (wosize, tag,
-    caml_spacetime_my_profinfo (NULL, wosize));
+  uintnat profinfo;
+
+  if( caml_alloc_get_profinfo == NULL ){
+    profinfo = NO_PROFINFO;
+  } else {
+    profinfo = caml_alloc_get_profinfo(wosize);
+  }
+  return caml_alloc_shr_aux (wosize, tag, 1, profinfo);
 }
+
 #else
+#define NO_PROFINFO 0
+
 CAMLexport value caml_alloc_shr (mlsize_t wosize, tag_t tag)
 {
   return caml_alloc_shr_aux (wosize, tag, 1, NO_PROFINFO);
 }
-#endif
+#endif /* WITH_PROFINFO */
 
 /* Dependent memory is all memory blocks allocated out of the heap
    that depend on the GC (and finalizers) for deallocation.

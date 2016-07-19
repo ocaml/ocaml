@@ -36,9 +36,8 @@
 #include "caml/stack.h"
 #include "caml/startup_aux.h"
 #include "caml/sys.h"
-#ifdef WITH_SPACETIME
 #include "caml/spacetime.h"
-#endif
+
 #ifdef HAS_UI
 #include "caml/ui.h"
 #endif

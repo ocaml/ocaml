@@ -144,11 +144,13 @@ void caml_set_minor_heap_size (asize_t bsz)
     caml_empty_minor_heap ();
   }
   CAMLassert (caml_young_ptr == caml_young_alloc_end);
+  MAYBE_HOOK1(caml_set_minor_heap_size_begin_hook,bsz);
   new_heap = caml_aligned_malloc(bsz, 0, &new_heap_base);
-  if (new_heap == NULL) caml_raise_out_of_memory();
-  if (caml_page_table_add(In_young, new_heap, new_heap + bsz) != 0)
+  if (new_heap == NULL ||
+      caml_page_table_add(In_young, new_heap, new_heap + bsz) != 0){
+    MAYBE_HOOK1(caml_set_minor_heap_size_end_hook,-1);
     caml_raise_out_of_memory();
-
+  }
   if (caml_young_start != NULL){
     caml_page_table_remove(In_young, caml_young_start, caml_young_end);
     free (caml_young_base);
@@ -167,6 +169,7 @@ void caml_set_minor_heap_size (asize_t bsz)
   reset_table ((struct generic_table *) &caml_ref_table);
   reset_table ((struct generic_table *) &caml_ephe_ref_table);
   reset_table ((struct generic_table *) &caml_custom_table);
+  MAYBE_HOOK1(caml_set_minor_heap_size_end_hook,0);
 }
 
 static value oldify_todo_list = 0;
@@ -337,7 +340,7 @@ void caml_empty_minor_heap (void)
   struct caml_ephe_ref_elt *re;
 
   if (caml_young_ptr != caml_young_alloc_end){
-    if (caml_minor_gc_begin_hook != NULL) (*caml_minor_gc_begin_hook) ();
+    MAYBE_HOOK1(caml_minor_gc_begin_hook,);
     CAML_INSTR_SETUP (tmr, "minor");
     prev_alloc_words = caml_allocated_words;
     caml_in_minor_collection = 1;
@@ -396,7 +399,7 @@ void caml_empty_minor_heap (void)
     caml_stat_promoted_words += caml_allocated_words - prev_alloc_words;
     CAML_INSTR_INT ("minor/promoted#", caml_allocated_words - prev_alloc_words);
     ++ caml_stat_minor_collections;
-    if (caml_minor_gc_end_hook != NULL) (*caml_minor_gc_end_hook) ();
+    MAYBE_HOOK1(caml_minor_gc_end_hook,);
   }else{
     /* The minor heap is empty nothing to do. */
     caml_final_empty_young ();

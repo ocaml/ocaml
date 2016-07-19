@@ -557,6 +557,7 @@ static void intern_rec(value *dest)
   }
   /* We are done. Cleanup the stack and leave the function */
   intern_free_stack();
+  MAYBE_HOOK1(caml_intern_rec_end_hook,0);
 }
 
 static void intern_alloc(mlsize_t whsize, mlsize_t num_objects,
@@ -569,6 +570,7 @@ static void intern_alloc(mlsize_t whsize, mlsize_t num_objects,
          && intern_obj_table == NULL);
     return;
   }
+  MAYBE_HOOK1(caml_intern_alloc_begin_hook, Wosize_whsize(whsize));
   wosize = Wosize_whsize(whsize);
   if (wosize > Max_wosize || outside_heap) {
     /* Round desired size up to next page */
@@ -604,6 +606,7 @@ static void intern_alloc(mlsize_t whsize, mlsize_t num_objects,
     intern_dest = (header_t *) Hp_val(intern_block);
     Assert (intern_extra_block == NULL);
   }
+  MAYBE_HOOK1(caml_intern_alloc_end_hook, intern_dest);
   obj_counter = 0;
   if (num_objects > 0) {
     intern_obj_table = (value *) malloc(num_objects * sizeof(value));

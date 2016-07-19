@@ -43,6 +43,7 @@
 #include "caml/stack.h"
 #include "caml/sys.h"
 #include "caml/spacetime.h"
+#include "caml/dynlink.h"
 
 #ifdef WITH_SPACETIME
 
@@ -188,12 +189,63 @@ static void maybe_reopen_snapshot_channel(void)
 
 extern void caml_spacetime_automatic_save(void);
 
+static void spacetime_natdynlink_run_hook(void *handle,char* unit)
+{
+#define optsym(n) caml_natdynlink_getsym(handle,unit,n)
+  void *sym;
+  sym = optsym("__spacetime_shapes");
+  if (NULL != sym) caml_spacetime_register_shapes(sym);
+#undef optsym
+}
+
+static void spacetime_garbage_collection_end_hook(void)
+{
+ if (caml_young_ptr == caml_young_alloc_end) {
+    caml_spacetime_automatic_snapshot();
+  }
+}
+
+static uintnat spacetime_get_profinfo(mlsize_t wosize)
+{
+  return caml_spacetime_my_profinfo(NULL, wosize);
+}
+
+static caml_link *cons(void *data, caml_link *tl) {
+  caml_link *lnk = caml_stat_alloc(sizeof(link));
+  lnk->data = data;
+  lnk->next = tl;
+  return lnk;
+}
+
+caml_link* caml_spacetime_saved_trie_node_ptr = NULL;
+static void spacetime_save_trie_node_ptr(void)
+{
+  caml_spacetime_saved_trie_node_ptr =
+    cons(caml_spacetime_trie_node_ptr, caml_spacetime_saved_trie_node_ptr);
+  caml_spacetime_trie_node_ptr = caml_spacetime_finaliser_trie_root;
+}
+
+static void spacetime_restore_trie_node_ptr(void)
+{
+  caml_spacetime_trie_node_ptr = caml_spacetime_saved_trie_node_ptr->data;
+  caml_spacetime_saved_trie_node_ptr = caml_spacetime_saved_trie_node_ptr->next;
+}
+
 void caml_spacetime_initialize(void)
 {
   /* Note that this is called very early (even prior to GC initialisation). */
 
   char *ap_interval;
 
+  /* Set hooks for Spacetime */
+  caml_natdynlink_hook = spacetime_natdynlink_run_hook;
+  caml_garbage_collection_end_hook = spacetime_garbage_collection_end_hook;
+  caml_alloc_get_profinfo = spacetime_get_profinfo;
+  caml_final_do_call_begin_hook = spacetime_save_trie_node_ptr;
+  caml_final_do_call_end_hook = spacetime_restore_trie_node_ptr;
+  caml_execute_signal_begin_hook = spacetime_save_trie_node_ptr;
+  caml_execute_signal_end_hook = spacetime_restore_trie_node_ptr;
+  
   reinitialise_free_node_block();
 
   caml_spacetime_static_shape_tables = &caml_spacetime_shapes;

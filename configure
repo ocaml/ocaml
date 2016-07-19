@@ -54,6 +54,7 @@ with_ocamldoc=ocamldoc
 with_frame_pointers=false
 with_spacetime=false
 with_profinfo=false
+with_gc_hooks=false
 profinfo_width=0
 no_naked_pointers=false
 native_compiler=true
@@ -194,6 +195,8 @@ while : ; do
             *) err "--reserved-header-bits argument must be less than 32"
         esac
         ;;
+    -gc-hooks|--gc-hooks)
+        with_gc_hooks=true;;
     -no-cfi|--no-cfi)
         with_cfi=false;;
     -no-native-compiler|--no-native-compiler)
@@ -1849,6 +1852,9 @@ echo "#define PROFINFO_WIDTH $profinfo_width" >> m.h
 if $with_profinfo; then
     echo "#define WITH_PROFINFO" >> m.h
 fi
+if $with_gc_hooks; then
+    echo "#define WITH_GC_HOOKS" >> m.h
+fi
 
 if $with_spacetime; then
   case "$arch,$system" in
@@ -2026,6 +2032,7 @@ echo "ASM_CFI_SUPPORTED=$asm_cfi_supported" >> Makefile
 echo "WITH_FRAME_POINTERS=$with_frame_pointers" >> Makefile
 echo "WITH_SPACETIME=$with_spacetime" >> Makefile
 echo "WITH_PROFINFO=$with_profinfo" >> Makefile
+echo "WITH_GC_HOOKS=$with_gc_hooks" >> Makefile
 echo "LIBUNWIND_AVAILABLE=$libunwind_available" >> Makefile
 echo "LIBUNWIND_INCLUDE_FLAGS=$libunwind_include" >> Makefile
 echo "LIBUNWIND_LINK_FLAGS=$libunwind_lib" >> Makefile
@@ -2113,6 +2120,11 @@ else
     inf "        reserved bits in header... $profinfo_width"
   else
     inf "        reserved bits in header... no"
+  fi
+  if $with_gc_hooks; then
+    inf "        expensive gc hooks........ $with_gc_hooks"
+  else
+    inf "        expensive gc hooks........ no"
   fi
   case "$arch,$system" in
     amd64,macosx)

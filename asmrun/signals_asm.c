@@ -72,19 +72,15 @@ extern char caml_system__code_begin, caml_system__code_end;
 
 void caml_garbage_collection(void)
 {
+  MAYBE_HOOK1(caml_garbage_collection_begin_hook,);
   caml_young_limit = caml_young_trigger;
   if (caml_requested_major_slice || caml_requested_minor_gc ||
       caml_young_ptr - caml_young_trigger < Max_young_whsize){
     caml_gc_dispatch ();
   }
-
-#ifdef WITH_SPACETIME
-  if (caml_young_ptr == caml_young_alloc_end) {
-    caml_spacetime_automatic_snapshot();
-  }
-#endif
-
+  MAYBE_HOOK1(caml_garbage_collection_middle_hook,);
   caml_process_pending_signals();
+  MAYBE_HOOK1(caml_garbage_collection_end_hook,);
 }
 
 DECLARE_SIGNAL_HANDLER(handle_signal)

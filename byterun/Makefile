@@ -97,7 +97,7 @@ OBJS=$(addsuffix .$(O), \
   compare ints floats str array io extern intern \
   hash sys meta parsing gc_ctrl terminfo md5 obj \
   lexing callback debugger weak compact finalise custom \
-  dynlink spacetime afl $(UNIX_OR_WIN32) main)
+  dynlink spacetime afl cplugins $(UNIX_OR_WIN32) main)
 
 DOBJS=$(OBJS:.$(O)=.$(DBGO)) instrtrace.$(DBGO)
 IOBJS=$(OBJS:.$(O)=.i.$(O))

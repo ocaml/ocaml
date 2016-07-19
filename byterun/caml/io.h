@@ -54,7 +54,7 @@ struct channel {
 
 enum {
   CHANNEL_FLAG_FROM_SOCKET = 1,  /* For Windows */
-#if defined(NATIVE_CODE) && defined(WITH_SPACETIME)
+#ifdef WITH_PROFINFO
   CHANNEL_FLAG_BLOCKING_WRITE = 2,
 #endif
 };

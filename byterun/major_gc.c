@@ -32,6 +32,7 @@
 #include "caml/roots.h"
 #include "caml/signals.h"
 #include "caml/weak.h"
+#include "caml/hooks.h"
 
 #if defined (NATIVE_CODE) && defined (NO_NAKED_POINTERS)
 #define NATIVE_CODE_AND_NO_NAKED_POINTERS
@@ -116,8 +117,6 @@ double caml_gc_clock = 0.0;
 #ifdef DEBUG
 static unsigned long major_gc_counter = 0;
 #endif
-
-void (*caml_major_gc_hook)(void) = NULL;
 
 static void realloc_gray_vals (void)
 {
@@ -226,7 +225,7 @@ static void init_sweep_phase(void)
   caml_gc_sweep_hp = chunk;
   limit = chunk + Chunk_size (chunk);
   caml_fl_wsz_at_phase_change = caml_fl_cur_wsz;
-  if (caml_major_gc_hook) (*caml_major_gc_hook)();
+  MAYBE_HOOK1(caml_major_gc_hook,);
 }
 
 /* auxillary function of mark_slice */
@@ -669,7 +668,7 @@ void caml_major_collection_slice (intnat howmuch)
      This slice will either mark MS words or sweep SS words.
   */
 
-  if (caml_major_slice_begin_hook != NULL) (*caml_major_slice_begin_hook) ();
+  MAYBE_HOOK1(caml_major_slice_begin_hook,);
   CAML_INSTR_SETUP (tmr, "major");
 
   p = (double) caml_allocated_words * 3.0 * (100 + caml_percent_free)
@@ -806,7 +805,7 @@ void caml_major_collection_slice (intnat howmuch)
   caml_allocated_words = 0;
   caml_dependent_allocated = 0;
   caml_extra_heap_resources = 0.0;
-  if (caml_major_slice_end_hook != NULL) (*caml_major_slice_end_hook) ();
+  MAYBE_HOOK1(caml_major_slice_end_hook,);
 }
 
 /* This does not call [caml_compact_heap_maybe] because the estimates of
