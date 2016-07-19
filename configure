@@ -776,10 +776,16 @@ if test $with_sharedlibs = "yes"; then
     i[3456]86-*-gnu*)             natdynlink=true;;
     x86_64-*-linux*)              natdynlink=true;;
     i[3456]86-*-darwin[89].*)     natdynlink=true;;
-    i[3456]86-*-darwin*)
+    i[3456]86-*-darwin1[01].*)
+      # the 32bit toolchains of darwin{10,11} (OSX 10.6 and 10.7)
+      # are known to break native dynlink
       if test $arch64 == true; then
         natdynlink=true
       fi;;
+    i[3456]86-*-darwin*)
+      # for darwin versions above darwin12 we optimistically enable
+      # native dynlink even on 32bit setups
+      natdynlink=true;;
     x86_64-*-darwin*)             natdynlink=true;;
     s390x*-*-linux*)              natdynlink=true;;
     powerpc*-*-linux*)            natdynlink=true;;
