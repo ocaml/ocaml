@@ -21,7 +21,7 @@ OCaml 4.04.0:
   (Florian Angeletti)
 
 
-### Compiler user-interfaceand warnings:
+### Compiler user-interface and warnings:
 
 * PR#6475, GPR#464: interpret all command-line options before compiling any files,
   changes (improves) the semantics of repeated -o options or -o combined with -c
