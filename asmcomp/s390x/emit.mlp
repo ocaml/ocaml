@@ -16,9 +16,6 @@
 
 (* Emission of Linux on Z 64-bit assembly code *)
 
-module StringSet =
-  Set.Make(struct type t = string let compare (x:t) y = compare x y end)
-
 open Misc
 open Cmm
 open Arch
