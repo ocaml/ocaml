@@ -643,7 +643,7 @@ ocamltest: ocamlc ocamlyacc ocamllex
 ocamltest.opt: ocamlc.opt ocamlyacc ocamllex
 	cd ocamltest && $(MAKEREC) ocamltest.opt
 
-partialclean:
+partialclean::
 	cd ocamltest && $(MAKEREC) clean
 
 # OCamldoc
