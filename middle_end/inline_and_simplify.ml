@@ -1314,27 +1314,42 @@ and simplify env r (tree : Flambda.t) : Flambda.t * R.t =
         Switch (arg, sw), r
       end)
   | String_switch (arg, sw, def) ->
-    simplify_free_variable env arg ~f:(fun env arg _arg_approx ->
-      let env = E.inside_branch env in
-      let sw, r =
-        List.fold_right (fun (str, lam) (sw, r) ->
+    simplify_free_variable env arg ~f:(fun env arg arg_approx ->
+      match A.check_approx_for_string arg_approx with
+      | None ->
+        let env = E.inside_branch env in
+        let sw, r =
+          List.fold_right (fun (str, lam) (sw, r) ->
+              let approx = R.approx r in
+              let lam, r = simplify env r lam in
+              (str, lam)::sw,
+                R.meet_approx r env approx)
+            sw
+            ([], r)
+        in
+        let def, r =
+          match def with
+          | None -> def, r
+          | Some def ->
             let approx = R.approx r in
-            let lam, r = simplify env r lam in
-            (str, lam)::sw,
-              R.meet_approx r env approx)
-          sw
-          ([], r)
-      in
-      let def, r =
-        match def with
-        | None -> def, r
-        | Some def ->
-          let approx = R.approx r in
-          let def, r = simplify env r def in
-          Some def,
-            R.meet_approx r env approx
-      in
-      String_switch (arg, sw, def), r)
+            let def, r = simplify env r def in
+            Some def,
+              R.meet_approx r env approx
+        in
+        String_switch (arg, sw, def), ret r (A.value_unknown Other)
+      | Some arg_string ->
+        let branch =
+          match List.find (fun (str, _) -> str = arg_string) sw with
+          | (_, branch) -> branch
+          | exception Not_found ->
+            match def with
+            | None ->
+              Flambda.Proved_unreachable
+            | Some def ->
+              def
+        in
+        let branch, r = simplify env r branch in
+        branch, R.map_benefit r B.remove_branch)
   | Proved_unreachable -> tree, ret r A.value_bottom
 
 and simplify_list env r l =
