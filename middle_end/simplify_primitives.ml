@@ -71,6 +71,8 @@ let primitive (p : Lambda.primitive) (args, approxs) expr dbg ~size_int
       expr, approx, C.Benefit.zero
   | Pintcomp Ceq when phys_equal approxs ->
     S.const_bool_expr expr true
+  | Pintcomp Cneq when phys_equal approxs ->
+    S.const_bool_expr expr false
     (* N.B. Having [not (phys_equal approxs)] would not on its own tell us
        anything about whether the two values concerned are unequal.  To judge
        that, it would be necessary to prove that the approximations are
