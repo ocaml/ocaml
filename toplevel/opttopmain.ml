@@ -168,6 +168,7 @@ module Options = Main_args.Make_opttop_options (struct
   let _short_paths = clear real_paths
   let _stdin () = file_argument ""
   let _unsafe = set fast
+  let _verbose = set verbose
   let _version () = print_version ()
   let _vnum () = print_version_num ()
   let _no_version = set noversion

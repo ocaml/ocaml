@@ -902,6 +902,7 @@ end;;
 module type Opttop_options = sig
   include Toplevel_options
   include Optcommon_options
+  val _verbose : unit -> unit
   val _S : unit -> unit
 end;;
 
@@ -1252,6 +1253,7 @@ module Make_opttop_options (F : Opttop_options) = struct
     mk_unbox_closures_factor F._unbox_closures_factor;
     mk_unsafe F._unsafe;
     mk_unsafe_string F._unsafe_string;
+    mk_verbose F._verbose;
     mk_version F._version;
     mk__version F._version;
     mk_no_version F._no_version;
