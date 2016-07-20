@@ -20,7 +20,7 @@ let output_prefix name =
     match !output_name with
     | None -> name
     | Some n -> if !compile_only then (output_name := None; n) else name in
-  Misc.chop_extension_if_any oname
+  Filename.remove_extension oname
 
 let print_version_and_library compiler =
   Printf.printf "The OCaml %s, version " compiler;
@@ -106,7 +106,7 @@ type readenv_position =
 exception SyntaxError of string
 
 let parse_args s =
-  let args = Misc.split s ',' in
+  let args = String.split_on_char ',' s in
   let rec iter is_after args before after =
     match args with
       [] ->
@@ -167,6 +167,8 @@ let float_setter ppf name option s =
       (Warnings.Bad_env_variable
          ("OCAMLPARAM", Printf.sprintf "non-float parameter for \"%s\"" name))
 *)
+
+let load_plugin = ref (fun _ -> ())
 
 let check_bool ppf name s =
   match s with
@@ -400,6 +402,8 @@ let read_one_param ppf position name v =
 
   | "timings" -> set "timings" [ print_timings ] v
 
+  | "plugin" -> !load_plugin v
+
   | _ ->
     if not (List.mem name !can_discard) then begin
       can_discard := name :: !can_discard;
@@ -522,5 +526,8 @@ let readenv ppf position =
   all_ccopts := !last_ccopts @ !first_ccopts;
   all_ppx := !last_ppx @ !first_ppx
 
-let get_objfiles () =
-  List.rev (!last_objfiles @ !objfiles @ !first_objfiles)
+let get_objfiles ~with_ocamlparam =
+  if with_ocamlparam then
+    List.rev (!last_objfiles @ !objfiles @ !first_objfiles)
+  else
+    List.rev !objfiles

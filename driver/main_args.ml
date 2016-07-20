@@ -385,6 +385,11 @@ let mk_ppx f =
   "<command>  Pipe abstract syntax trees through preprocessor <command>"
 ;;
 
+let mk_plugin f =
+  "-plugin", Arg.String f,
+  "<plugin>  Load dynamic plugin <plugin>"
+;;
+
 let mk_principal f =
   "-principal", Arg.Unit f, " Check principality of type inference"
 ;;
@@ -418,7 +423,9 @@ let mk_S f =
 ;;
 
 let mk_safe_string f =
-  "-safe-string", Arg.Unit f, " Make strings immutable"
+  "-safe-string", Arg.Unit f,
+  if Config.safe_string then " Make strings immutable (default)"
+  else " Make strings immutable"
 ;;
 
 let mk_shared f =
@@ -471,7 +478,14 @@ let mk_unsafe f =
 ;;
 
 let mk_unsafe_string f =
-  "-unsafe-string", Arg.Unit f, " Make strings mutable (default)"
+  if Config.safe_string then
+    let err () =
+      raise (Arg.Bad "OCaml has been configured with -safe-string: \
+                      -unsafe-string is not available")
+    in
+    "-unsafe-string", Arg.Unit err, " (option not available)"
+  else
+    "-unsafe-string", Arg.Unit f, " Make strings mutable (default)"
 ;;
 
 let mk_use_runtime f =
@@ -771,6 +785,7 @@ module type Compiler_options = sig
   val _output_obj : unit -> unit
   val _output_complete_obj : unit -> unit
   val _pack : unit -> unit
+  val _plugin : string -> unit
   val _pp : string -> unit
   val _principal : unit -> unit
   val _no_principal : unit -> unit
@@ -796,6 +811,7 @@ module type Toplevel_options = sig
   val _no_version : unit -> unit
   val _noprompt : unit -> unit
   val _nopromptcont : unit -> unit
+  val _plugin : string -> unit
   val _stdin : unit -> unit
 end
 ;;
@@ -961,6 +977,7 @@ struct
     mk_pack_byt F._pack;
     mk_pp F._pp;
     mk_ppx F._ppx;
+    mk_plugin F._plugin;
     mk_principal F._principal;
     mk_no_principal F._no_principal;
     mk_rectypes F._rectypes;
@@ -1020,6 +1037,7 @@ struct
     mk_nostdlib F._nostdlib;
     mk_open F._open;
     mk_ppx F._ppx;
+    mk_plugin F._plugin;
     mk_principal F._principal;
     mk_no_principal F._no_principal;
     mk_rectypes F._rectypes;
@@ -1113,6 +1131,7 @@ struct
     mk_output_complete_obj F._output_complete_obj;
     mk_p F._p;
     mk_pack_opt F._pack;
+    mk_plugin F._plugin;
     mk_pp F._pp;
     mk_ppx F._ppx;
     mk_principal F._principal;
@@ -1214,6 +1233,7 @@ module Make_opttop_options (F : Opttop_options) = struct
     mk_o2 F._o2;
     mk_o3 F._o3;
     mk_open F._open;
+    mk_plugin F._plugin;
     mk_ppx F._ppx;
     mk_principal F._principal;
     mk_no_principal F._no_principal;

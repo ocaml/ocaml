@@ -13,10 +13,12 @@
 /*                                                                        */
 /**************************************************************************/
 
+#define CAML_INTERNALS
+
 #include "caml/misc.h"
 #include "caml/mlvalues.h"
 #include "caml/memory.h"
-#include "stack.h"
+#include "caml/stack.h"
 #include "caml/callback.h"
 #include "caml/alloc.h"
 #include "caml/intext.h"
@@ -35,8 +37,6 @@ static void *getsym(void *handle, char *module, char *name){
   caml_stat_free(fullname);
   return sym;
 }
-
-extern char caml_globals_map[];
 
 CAMLprim value caml_natdynlink_getmap(value unit)
 {

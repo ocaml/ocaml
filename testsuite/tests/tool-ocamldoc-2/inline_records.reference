@@ -1,0 +1,66 @@
+\documentclass[11pt]{article} 
+\usepackage[latin1]{inputenc} 
+\usepackage[T1]{fontenc} 
+\usepackage{textcomp}
+\usepackage{fullpage} 
+\usepackage{url} 
+\usepackage{ocamldoc}
+\begin{document}
+\tableofcontents
+\section{Module {\tt{Inline\_records}} : This test focuses on the printing of documentation for inline record
+  within the latex generator.}
+\label{Inline-underscorerecords}\index{Inline-underscorerecords@\verb`Inline_records`}
+
+
+
+
+\ocamldocvspace{0.5cm}
+
+
+
+\label{TYPInline-underscorerecords.r}\begin{ocamldoccode}
+type r = {\char123}
+  lbl : int ;
+\end{ocamldoccode}
+\begin{ocamldoccomment}
+Field documentation
+
+
+\end{ocamldoccomment}
+\begin{ocamldoccode}
+  more : int list ;
+\end{ocamldoccode}
+\begin{ocamldoccomment}
+More documentation
+
+
+\end{ocamldoccomment}
+\begin{ocamldoccode}
+{\char125}
+\end{ocamldoccode}
+\index{r@\verb`r`}
+\begin{ocamldocdescription}
+A simple record type for reference
+
+
+\end{ocamldocdescription}
+
+
+
+
+\label{TYPInline-underscorerecords.t}\begin{ocamldoccode}
+type t =
+  | C of {\char123}
+   lbl : int;
+   more : int list;
+{\char125}
+\end{ocamldoccode}
+\index{t@\verb`t`}
+\begin{ocamldocdescription}
+A sum type with an inline record
+
+
+\end{ocamldocdescription}
+
+
+\end{document}

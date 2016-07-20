@@ -432,6 +432,10 @@ let function_label fv =
   in
   (concat_symbol unitname (Closure_id.unique_name fv))
 
+let require_global global_ident =
+  if not (Ident.is_predef_exn global_ident) then
+    ignore (get_global_info global_ident : Cmx_format.unit_infos option)
+
 (* Error report *)
 
 open Format

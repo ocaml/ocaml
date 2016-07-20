@@ -13,30 +13,27 @@
 (*                                                                        *)
 (**************************************************************************)
 
-type kind = Dinfo_call | Dinfo_raise | Dinfo_inline of t
-
-and t = private {
-  dinfo_kind: kind;
+type item = private {
   dinfo_file: string;
   dinfo_line: int;
   dinfo_char_start: int;
   dinfo_char_end: int
 }
 
-val none: t
+type t = item list
 
-val is_none: t -> bool
+val none : t
 
-val to_string: t -> string
+val is_none : t -> bool
 
-val from_location: kind -> Location.t -> t
-val from_filename: kind -> string -> t
+val to_string : t -> string
 
-val from_call: Lambda.lambda_event -> t
-val from_raise: Lambda.lambda_event -> t
+val from_location : Location.t -> t
 
-val to_location: t -> Location.t
+val to_location : t -> Location.t
 
 val concat: t -> t -> t
+
 val inline: Location.t -> t -> t
-val unroll_inline_chain : t -> t * t list
+
+val compare : t -> t -> int

@@ -47,6 +47,13 @@ type error =
 exception Error of Location.t * Env.t * error
 exception Error_forward of Location.error
 
+module ImplementationHooks = Misc.MakeHooks(struct
+    type t = Typedtree.structure * Typedtree.module_coercion
+  end)
+module InterfaceHooks = Misc.MakeHooks(struct
+    type t = Typedtree.signature
+  end)
+
 open Typedtree
 
 let fst3 (x,_,_) = x
@@ -381,7 +388,8 @@ and approx_sig env ssg =
           in
           let newenv =
             List.fold_left
-              (fun env (id, md) -> Env.add_module_declaration id md env)
+              (fun env (id, md) -> Env.add_module_declaration ~check:false
+                  id md env)
               env decls in
           map_rec (fun rs (id, md) -> Sig_module(id, md, rs)) decls
                   (approx_sig newenv srem)
@@ -1345,7 +1353,7 @@ and type_structure ?(toplevel = false) funct_body anchor env sstr scope =
                    md_loc = md.md_loc;
                  }
                in
-               Env.add_module_declaration md.md_id mdecl env
+               Env.add_module_declaration ~check:true md.md_id mdecl env
             )
             env decls
         in
@@ -1477,7 +1485,13 @@ let type_toplevel_phrase env s =
     let iter = Builtin_attributes.emit_external_warnings in
     iter.Ast_iterator.structure iter s
   end;
-  type_structure ~toplevel:true false None env s Location.none
+  let (str, sg, env) =
+    type_structure ~toplevel:true false None env s Location.none in
+  let (str, _coerce) = ImplementationHooks.apply_hooks
+      { Misc.sourcefile = "//toplevel//" } (str, Tcoerce_none)
+  in
+  (str, sg, env)
+
 let type_module_alias = type_module ~alias:true true false None
 let type_module = type_module true false None
 let type_structure = type_structure false None
@@ -1592,7 +1606,7 @@ let type_implementation sourcefile outputprefix modulename initial_env ast =
     (str, Tcoerce_none)   (* result is ignored by Compile.implementation *)
   end else begin
     let sourceintf =
-      Misc.chop_extension_if_any sourcefile ^ !Config.interface_suffix in
+      Filename.remove_extension sourcefile ^ !Config.interface_suffix in
     if Sys.file_exists sourceintf then begin
       let intf_file =
         try
@@ -1641,17 +1655,20 @@ let type_implementation sourcefile outputprefix modulename initial_env ast =
       (Some sourcefile) initial_env None;
     raise e
 
+let type_implementation sourcefile outputprefix modulename initial_env ast =
+  ImplementationHooks.apply_hooks { Misc.sourcefile }
+    (type_implementation sourcefile outputprefix modulename initial_env ast)
 
 let save_signature modname tsg outputprefix source_file initial_env cmi =
   Cmt_format.save_cmt  (outputprefix ^ ".cmti") modname
     (Cmt_format.Interface tsg) (Some source_file) initial_env (Some cmi)
 
-let type_interface env ast =
+let type_interface sourcefile env ast =
   begin
     let iter = Builtin_attributes.emit_external_warnings in
     iter.Ast_iterator.signature iter ast
   end;
-  transl_signature env ast
+  InterfaceHooks.apply_hooks { Misc.sourcefile } (transl_signature env ast)
 
 (* "Packaging" of several compilation units into one unit
    having them as sub-modules.  *)
@@ -1687,7 +1704,7 @@ let package_units initial_env objfiles cmifile modulename =
   Ident.reinit();
   let sg = package_signatures Subst.identity units in
   (* See if explicit interface is provided *)
-  let prefix = chop_extension_if_any cmifile in
+  let prefix = Filename.remove_extension cmifile in
   let mlifile = prefix ^ !Config.interface_suffix in
   if Sys.file_exists mlifile then begin
     if not (Sys.file_exists cmifile) then begin

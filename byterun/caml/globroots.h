@@ -18,10 +18,14 @@
 #ifndef CAML_GLOBROOTS_H
 #define CAML_GLOBROOTS_H
 
+#ifdef CAML_INTERNALS
+
 #include "mlvalues.h"
 #include "roots.h"
 
 void caml_scan_global_roots(scanning_action f);
 void caml_scan_global_young_roots(scanning_action f);
+
+#endif /* CAML_INTERNALS */
 
 #endif /* CAML_GLOBROOTS_H */

@@ -13,6 +13,8 @@
 /*                                                                        */
 /**************************************************************************/
 
+#define CAML_INTERNALS
+
 #include <stdlib.h>
 #include <string.h>
 #include "caml/address_class.h"

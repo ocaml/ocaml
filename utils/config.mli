@@ -138,3 +138,6 @@ val print_config : out_channel -> unit;;
 
 val flambda : bool
         (* Whether the compiler was configured for flambda *)
+
+val safe_string: bool
+        (* Whether the compiler was configured with -safe-string *)

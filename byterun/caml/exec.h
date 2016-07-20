@@ -18,6 +18,8 @@
 #ifndef CAML_EXEC_H
 #define CAML_EXEC_H
 
+#ifdef CAML_INTERNALS
+
 /* Executable bytecode files are composed of a number of sections,
    identified by 4-character names.  A table of contents at the
    end of the file lists the section names along with their sizes,
@@ -58,5 +60,6 @@ struct exec_trailer {
 
 #define EXEC_MAGIC "Caml1999X011"
 
+#endif /* CAML_INTERNALS */
 
 #endif /* CAML_EXEC_H */

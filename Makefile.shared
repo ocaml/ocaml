@@ -78,7 +78,6 @@ COMP=bytecomp/lambda.cmo bytecomp/printlambda.cmo \
   bytecomp/translcore.cmo \
   bytecomp/translclass.cmo bytecomp/translmod.cmo \
   bytecomp/simplif.cmo bytecomp/runtimedef.cmo \
-  bytecomp/debuginfo.cmo \
   driver/pparse.cmo driver/main_args.cmo \
   driver/compenv.cmo driver/compmisc.cmo
 
@@ -88,6 +87,7 @@ BYTECOMP=bytecomp/meta.cmo bytecomp/instruct.cmo bytecomp/bytegen.cmo \
   bytecomp/printinstr.cmo bytecomp/opcodes.cmo bytecomp/emitcode.cmo \
   bytecomp/bytesections.cmo bytecomp/dll.cmo bytecomp/symtable.cmo \
   bytecomp/bytelink.cmo bytecomp/bytelibrarian.cmo bytecomp/bytepackager.cmo \
+  driver/compdynlink.cmo driver/compplugin.cmo \
   driver/errors.cmo driver/compile.cmo
 
 INTEL_ASM=\
@@ -137,6 +137,7 @@ ASMCOMP=\
   driver/opterrors.cmo driver/optcompile.cmo
 
 MIDDLE_END=\
+  middle_end/debuginfo.cmo \
   middle_end/base_types/tag.cmo \
   middle_end/base_types/linkage_name.cmo \
   middle_end/base_types/compilation_unit.cmo \
@@ -247,3 +248,65 @@ alldepend::
 
 #config/Makefile: configure
 #	./configure $(CONFIGURE_ARGS)
+
+## Test compilation of backend-specific parts
+
+ARCH_SPECIFIC = \
+  asmcomp/arch.ml asmcomp/proc.ml asmcomp/CSE.ml asmcomp/selection.ml \
+  asmcomp/scheduling.ml asmcomp/reload.ml asmcomp/scheduling.ml \
+  asmcomp/emit.ml
+
+partialclean::
+	rm -f $(ARCH_SPECIFIC)
+
+beforedepend:: $(ARCH_SPECIFIC)
+
+ARCH_OCAMLOPT:=$(ARCH)
+
+.PHONY: check_arch check_all_arches
+
+# This rule provides a quick way to check that machine-dependent
+# files compiles fine for a foreign architecture (passed as ARCH=xxx).
+
+check_arch:
+	@echo "========= CHECKING asmcomp/$(ARCH) =============="
+	@rm -f $(ARCH_SPECIFIC) asmcomp/*.cm*
+	@$(MAKEREC) ARCH_OCAMLOPT=$(ARCH) compilerlibs/ocamloptcomp.cma > /dev/null
+	@rm -f $(ARCH_SPECIFIC) asmcomp/*.cm*
+
+ARCHES=amd64 i386 arm arm64 power sparc s390x
+
+check_all_arches:
+	@for i in $(ARCHES); do $(MAKEREC) --no-print-directory check_arch ARCH=$$i; done
+
+# Compiler Plugins
+
+DYNLINK_DIR=otherlibs/dynlink
+
+driver/compdynlink.mlbyte: $(DYNLINK_DIR)/dynlink.ml driver/compdynlink.mli
+	grep -v 'REMOVE_ME for ../../debugger/dynlink.ml' \
+	     $(DYNLINK_DIR)/dynlink.ml >driver/compdynlink.mlbyte
+
+ifeq ($(NATDYNLINK),true)
+driver/compdynlink.mlopt: $(DYNLINK_DIR)/natdynlink.ml driver/compdynlink.mli
+	cp $(DYNLINK_DIR)/natdynlink.ml driver/compdynlink.mlopt
+else
+driver/compdynlink.mlopt: driver/compdynlink.mlno driver/compdynlink.mli
+	cp driver/compdynlink.mlno driver/compdynlink.mlopt
+endif
+
+driver/compdynlink.mli: $(DYNLINK_DIR)/dynlink.mli
+	cp $(DYNLINK_DIR)/dynlink.mli driver/compdynlink.mli
+
+driver/compdynlink.cmo: driver/compdynlink.mlbyte driver/compdynlink.cmi
+	$(CAMLC) $(COMPFLAGS) -c -impl $<
+
+driver/compdynlink.cmx: driver/compdynlink.mlopt driver/compdynlink.cmi
+	$(CAMLOPT) $(COMPFLAGS) -c -impl $<
+
+beforedepend:: driver/compdynlink.mlbyte driver/compdynlink.mlopt driver/compdynlink.mli
+partialclean::
+	rm -f driver/compdynlink.mlbyte
+	rm -f driver/compdynlink.mli
+	rm -f driver/compdynlink.mlopt
+

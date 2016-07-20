@@ -108,6 +108,7 @@ module Options = Main_args.Make_optcomp_options (struct
   let _output_complete_obj = option "-output-complete-obj"
   let _p = option "-p"
   let _pack = option "-pack"
+  let _plugin = option_with_arg "-plugin"
   let _pp _s = incompatible "-pp"
   let _ppx _s = incompatible "-ppx"
   let _principal = option "-principal"

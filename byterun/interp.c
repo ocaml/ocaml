@@ -13,6 +13,8 @@
 /*                                                                        */
 /**************************************************************************/
 
+#define CAML_INTERNALS
+
 /* The bytecode interpreter */
 #include <stdio.h>
 #include "caml/alloc.h"

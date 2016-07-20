@@ -173,7 +173,7 @@ expr:
   | LPAREN APPLY expr exprlist machtype RPAREN
                 { Cop(Capply($5, Debuginfo.none), $3 :: List.rev $4) }
   | LPAREN EXTCALL STRING exprlist machtype RPAREN
-                { Cop(Cextcall($3, $5, false, Debuginfo.none), List.rev $4) }
+                { Cop(Cextcall($3, $5, false, Debuginfo.none, None), List.rev $4) }
   | LPAREN SUBF expr RPAREN { Cop(Cnegf, [$3]) }
   | LPAREN SUBF expr expr RPAREN { Cop(Csubf, [$3; $4]) }
   | LPAREN unaryop expr RPAREN { Cop($2, [$3]) }
@@ -307,15 +307,12 @@ datalist:
 ;
 dataitem:
     STRING COLON                { Cdefine_symbol $1 }
-  | INTCONST COLON              { Cdefine_label $1 }
   | BYTE INTCONST               { Cint8 $2 }
   | HALF INTCONST               { Cint16 $2 }
   | INT INTCONST                { Cint(Nativeint.of_int $2) }
   | FLOAT FLOATCONST            { Cdouble (float_of_string $2) }
   | ADDR STRING                 { Csymbol_address $2 }
-  | ADDR INTCONST               { Clabel_address $2 }
   | VAL STRING                 { Csymbol_address $2 }
-  | VAL INTCONST               { Clabel_address $2 }
   | KSTRING STRING              { Cstring $2 }
   | SKIP INTCONST               { Cskip $2 }
   | ALIGN INTCONST              { Calign $2 }

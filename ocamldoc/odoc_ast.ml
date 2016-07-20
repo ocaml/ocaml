@@ -24,7 +24,6 @@ let print_DEBUG s = print_string s ; print_newline ();;
 
 type typedtree = (Typedtree.structure * Typedtree.module_coercion)
 
-module Name = Odoc_name
 open Odoc_parameter
 open Odoc_value
 open Odoc_type

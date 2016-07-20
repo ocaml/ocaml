@@ -1424,3 +1424,13 @@ Line _, characters 19-22:
 Error: This expression has type M.t but an expression was expected of type 'x
        The type constructor M.t would escape its scope
 |}];;
+
+(* PR#7285 *)
+type (+'a,-'b) foo = private int;;
+let f (x : int) : ('a,'a) foo = Obj.magic x;;
+let x = f 3;;
+[%%expect{|
+type (+'a, -'b) foo = private int
+val f : int -> ('a, 'a) foo = <fun>
+val x : ('_a, '_a) foo = 3
+|}]

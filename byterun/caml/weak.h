@@ -18,6 +18,8 @@
 #ifndef CAML_WEAK_H
 #define CAML_WEAK_H
 
+#ifdef CAML_INTERNALS
+
 #include "mlvalues.h"
 
 extern value caml_ephe_list_head;
@@ -85,5 +87,7 @@ static inline void caml_ephe_clean (value v){
       }
   }
 }
+
+#endif /* CAML_INTERNALS */
 
 #endif /* CAML_WEAK_H */

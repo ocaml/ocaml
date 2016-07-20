@@ -92,15 +92,15 @@ type block =
   { mutable float : float;
     mutable int32 : int32 }
 
-let make_some_block float int32 =
-  { float; int32 }
+let make_some_block record =
+  { record with int32 = record.int32 }
 
-let unbox_record_1 float int32 =
+let unbox_record_1 record =
   (* There is some let lifting problem to handle that case with one
      round, this currently requires 2 rounds to be correctly
      recognized as a mutable variable pattern *)
-  (* let block = (make_some_block [@inlined]) float int32 in *)
-  let block = { float; int32 } in
+  (* let block = (make_some_block [@inlined]) record in *)
+  let block = { record with int32 = record.int32 } in
   for i = 1 to 1000 do
     let y_float =
       if i mod 2 = 0 then nan else Pervasives.float i
@@ -116,8 +116,10 @@ let unbox_record_1 float int32 =
   [@@inline never]
   (* Prevent inlining to test that the type is effectively used *)
 
+let float_int32_record = { float = 3.14; int32 = 12l }
+
 let unbox_record () =
-  unbox_record_1 3.14 12l
+  unbox_record_1 float_int32_record
 
 let r = ref 0.
 

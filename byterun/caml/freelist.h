@@ -18,6 +18,7 @@
 #ifndef CAML_FREELIST_H
 #define CAML_FREELIST_H
 
+#ifdef CAML_INTERNALS
 
 #include "misc.h"
 #include "mlvalues.h"
@@ -32,5 +33,6 @@ void caml_fl_add_blocks (value);
 void caml_make_free_blocks (value *, mlsize_t wsz, int, int);
 void caml_set_allocation_policy (uintnat);
 
+#endif /* CAML_INTERNALS */
 
 #endif /* CAML_FREELIST_H */

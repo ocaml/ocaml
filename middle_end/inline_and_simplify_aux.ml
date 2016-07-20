@@ -351,22 +351,22 @@ module Env = struct
   let freshening t = t.freshening
   let never_inline t = t.never_inline || t.never_inline_outside_closures
 
-  let note_entering_closure t ~closure_id ~debuginfo =
+  let note_entering_closure t ~closure_id ~dbg =
     if t.never_inline then t
     else
       { t with
         inlining_stats_closure_stack =
           Inlining_stats.Closure_stack.note_entering_closure
-            t.inlining_stats_closure_stack ~closure_id ~debuginfo;
+            t.inlining_stats_closure_stack ~closure_id ~dbg;
       }
 
-  let note_entering_call t ~closure_id ~debuginfo =
+  let note_entering_call t ~closure_id ~dbg =
     if t.never_inline then t
     else
       { t with
         inlining_stats_closure_stack =
           Inlining_stats.Closure_stack.note_entering_call
-            t.inlining_stats_closure_stack ~closure_id ~debuginfo;
+            t.inlining_stats_closure_stack ~closure_id ~dbg;
       }
 
   let note_entering_inlined t =
@@ -387,20 +387,20 @@ module Env = struct
             t.inlining_stats_closure_stack ~closure_ids;
       }
 
-  let enter_closure t ~closure_id ~inline_inside ~debuginfo ~f =
+  let enter_closure t ~closure_id ~inline_inside ~dbg ~f =
     let t =
       if inline_inside && not t.never_inline_inside_closures then t
       else set_never_inline t
     in
     let t = unset_never_inline_outside_closures t in
-    f (note_entering_closure t ~closure_id ~debuginfo)
+    f (note_entering_closure t ~closure_id ~dbg)
 
   let record_decision t decision =
     Inlining_stats.record_decision decision
       ~closure_stack:t.inlining_stats_closure_stack
 
-  let inline_debuginfo t ~dbg =
-    { t with inlined_debuginfo = Debuginfo.concat dbg t.inlined_debuginfo }
+  let set_inline_debuginfo t ~dbg =
+    { t with inlined_debuginfo = dbg }
 
   let add_inlined_debuginfo t ~dbg =
     Debuginfo.concat t.inlined_debuginfo dbg
@@ -432,8 +432,6 @@ let initial_inlining_toplevel_threshold ~round : Inlining_cost.Threshold.t =
     (unscaled * Inlining_cost.scale_inline_threshold_by)
 
 module Result = struct
-  module Int = Numbers.Int
-
   type t =
     { approx : Simple_value_approx.t;
       used_static_exceptions : Static_exception.Set.t;

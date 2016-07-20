@@ -35,6 +35,7 @@ let value_declarations : ((string * Location.t), (unit -> unit)) Hashtbl.t =
        cf Includemod.value_descriptions). *)
 
 let type_declarations = Hashtbl.create 16
+let module_declarations = Hashtbl.create 16
 
 type constructor_usage = Positive | Pattern | Privatize
 type constructor_usages =
@@ -60,6 +61,7 @@ type error =
   | Illegal_renaming of string * string * string
   | Inconsistent_import of string * string * string
   | Need_recursive_types of string * string
+  | Depend_on_unsafe_string_unit of string * string
   | Missing_module of Location.t * Path.t * Path.t
   | Illegal_value_name of Location.t * string
 
@@ -188,6 +190,7 @@ type t = {
 and module_components =
   {
     deprecated: string option;
+    loc: Location.t;
     comps: (t * Subst.t * Path.t * Types.module_type, module_components_repr)
            EnvLazy.t;
   }
@@ -305,8 +308,9 @@ let diff env1 env2 =
 (* Forward declarations *)
 
 let components_of_module' =
-  ref ((fun ~deprecated:_ _env _sub _path _mty -> assert false) :
-         deprecated:string option -> t -> Subst.t -> Path.t -> module_type ->
+  ref ((fun ~deprecated:_ ~loc:__env _sub _path _mty -> assert false) :
+         deprecated:string option -> loc:Location.t -> t -> Subst.t ->
+       Path.t -> module_type ->
        module_components)
 let components_of_module_maker' =
   ref ((fun (_env, _sub, _path, _mty) -> assert false) :
@@ -392,6 +396,7 @@ let save_pers_struct crc ps =
     (function
         | Rectypes -> ()
         | Deprecated _ -> ()
+        | Unsafe_string -> ()
         | Opaque -> add_imported_opaque modname)
     ps.ps_flags;
   Consistbl.set crc_units modname crc ps.ps_filename;
@@ -409,7 +414,8 @@ let read_pers_struct check modname filename =
       flags
   in
   let comps =
-      !components_of_module' ~deprecated empty Subst.identity
+      !components_of_module' ~deprecated ~loc:Location.none
+        empty Subst.identity
                              (Pident(Ident.create_persistent name))
                              (Mty_signature sign)
   in
@@ -422,11 +428,15 @@ let read_pers_struct check modname filename =
            } in
   if ps.ps_name <> modname then
     error (Illegal_renaming(modname, ps.ps_name, filename));
+
   List.iter
     (function
         | Rectypes ->
             if not !Clflags.recursive_types then
               error (Need_recursive_types(ps.ps_name, !current_unit))
+        | Unsafe_string ->
+            if Config.safe_string then
+              error (Depend_on_unsafe_string_unit (ps.ps_name, !current_unit));
         | Deprecated _ -> ()
         | Opaque -> add_imported_opaque modname)
     ps.ps_flags;
@@ -474,6 +484,9 @@ let check_pers_struct name =
             Format.sprintf
               "%s uses recursive types"
               name
+        | Depend_on_unsafe_string_unit (name, _) ->
+            Printf.sprintf "%s uses -unsafe-string"
+              name
         | Missing_module _ -> assert false
         | Illegal_value_name _ -> assert false
       in
@@ -503,6 +516,7 @@ let reset_cache () =
   clear_imports ();
   Hashtbl.clear value_declarations;
   Hashtbl.clear type_declarations;
+  Hashtbl.clear module_declarations;
   Hashtbl.clear used_constructors;
   Hashtbl.clear prefixed_sg
 
@@ -516,6 +530,7 @@ let reset_cache_toplevel () =
   List.iter (Hashtbl.remove persistent_structures) l;
   Hashtbl.clear value_declarations;
   Hashtbl.clear type_declarations;
+  Hashtbl.clear module_declarations;
   Hashtbl.clear used_constructors;
   Hashtbl.clear prefixed_sg
 
@@ -790,6 +805,11 @@ let report_deprecated ?loc p deprecated =
                                 (Path.name p) txt))
   | _ -> ()
 
+let mark_module_used env name loc =
+  if not (is_implicit_coercion env) then
+    try Hashtbl.find module_declarations (name, loc) ()
+    with Not_found -> ()
+
 let rec lookup_module_descr_aux ?loc lid env =
   match lid with
     Lident s ->
@@ -823,6 +843,11 @@ let rec lookup_module_descr_aux ?loc lid env =
 
 and lookup_module_descr ?loc lid env =
   let (p, comps) as res = lookup_module_descr_aux ?loc lid env in
+  mark_module_used env (Path.last p) comps.loc;
+(*
+  Format.printf "USE module %s at %a@." (Path.last p)
+    Location.print comps.loc;
+*)
   report_deprecated ?loc p comps.deprecated;
   res
 
@@ -830,7 +855,10 @@ and lookup_module ~load ?loc lid env : Path.t =
   match lid with
     Lident s ->
       begin try
-        let (p, {md_type; md_attributes}) = EnvTbl.find_name s env.modules in
+        let (p, {md_type; md_attributes; md_loc}) =
+          EnvTbl.find_name s env.modules
+        in
+        mark_module_used env s md_loc;
         begin match md_type with
         | Mty_ident (Path.Pident id) when Ident.name id = "#recmod#" ->
           (* see #5965 *)
@@ -1367,9 +1395,10 @@ let add_to_tbl id decl tbl =
     try Tbl.find id tbl with Not_found -> [] in
   Tbl.add id (decl :: decls) tbl
 
-let rec components_of_module ~deprecated env sub path mty =
+let rec components_of_module ~deprecated ~loc env sub path mty =
   {
     deprecated;
+    loc;
     comps = EnvLazy.create (env, sub, path, mty)
   }
 
@@ -1430,10 +1459,10 @@ and components_of_module_maker (env, sub, path, mty) =
             let deprecated =
               Builtin_attributes.deprecated_of_attrs md.md_attributes
             in
-            let comps = components_of_module ~deprecated !env sub path mty in
+            let comps = components_of_module ~deprecated ~loc:md.md_loc !env sub path mty in
             c.comp_components <-
               Tbl.add (Ident.name id) (comps, !pos) c.comp_components;
-            env := store_module None id (Pident id) md !env !env;
+            env := store_module ~check:false None id (Pident id) md !env !env;
             incr pos
         | Sig_modtype(id, decl) ->
             let decl' = Subst.modtype_declaration sub decl in
@@ -1593,14 +1622,19 @@ and store_extension ~check slot id path ext env renv =
                 env.constrs renv.constrs;
     summary = Env_extension(env.summary, id, ext) }
 
-and store_module slot id path md env renv =
+and store_module ~check slot id path md env renv =
+  let loc = md.md_loc in
+  if check then
+    check_usage loc id (fun s -> Warnings.Unused_module s)
+      module_declarations;
+
   let deprecated = Builtin_attributes.deprecated_of_attrs md.md_attributes in
   { env with
     modules = EnvTbl.add slot (fun x -> `Module x) id (path, md)
         env.modules renv.modules;
     components =
       EnvTbl.add slot (fun x -> `Component x) id
-        (path, components_of_module ~deprecated
+        (path, components_of_module ~deprecated ~loc:md.md_loc
            env Subst.identity path md.md_type)
         env.components renv.components;
     summary = Env_module(env.summary, id, md) }
@@ -1632,7 +1666,8 @@ let components_of_functor_appl f env p1 p2 =
     let p = Papply(p1, p2) in
     let sub = Subst.add_module f.fcomp_param p2 Subst.identity in
     let mty = Subst.modtype sub f.fcomp_res in
-    let comps = components_of_module ~deprecated:None (*???*)
+    let comps = components_of_module ~deprecated:None ~loc:Location.none
+        (*???*)
         env Subst.identity p mty in
     Hashtbl.add f.fcomp_cache p2 comps;
     comps
@@ -1660,13 +1695,13 @@ let add_type ~check id info env =
 and add_extension ~check id ext env =
   store_extension ~check None id (Pident id) ext env env
 
-and add_module_declaration ?(arg=false) id md env =
+and add_module_declaration ?(arg=false) ~check id md env =
   let path =
     (*match md.md_type with
       Mty_alias path -> normalize_path env path
     | _ ->*) Pident id
   in
-  let env = store_module None id path md env env in
+  let env = store_module ~check None id path md env env in
   if arg then add_functor_arg id env else env
 
 and add_modtype id info env =
@@ -1679,7 +1714,7 @@ and add_cltype id ty env =
   store_cltype None id (Pident id) ty env env
 
 let add_module ?arg id mty env =
-  add_module_declaration ?arg id (md mty) env
+  add_module_declaration ~check:false ?arg id (md mty) env
 
 let add_local_type path info env =
   { env with
@@ -1703,7 +1738,7 @@ let enter_value ?check = enter (store_value ?check)
 and enter_type = enter (store_type ~check:true)
 and enter_extension = enter (store_extension ~check:true)
 and enter_module_declaration ?arg id md env =
-  add_module_declaration ?arg id md env
+  add_module_declaration ?arg ~check:true id md env
   (* let (id, env) = enter store_module name md env in
   (id, add_functor_arg ?arg id env) *)
 and enter_modtype = enter store_modtype
@@ -1721,7 +1756,7 @@ let add_item comp env =
     Sig_value(id, decl)     -> add_value id decl env
   | Sig_type(id, decl, _)   -> add_type ~check:false id decl env
   | Sig_typext(id, ext, _)  -> add_extension ~check:false id ext env
-  | Sig_module(id, md, _)   -> add_module_declaration id md env
+  | Sig_module(id, md, _)   -> add_module_declaration ~check:false id md env
   | Sig_modtype(id, decl)   -> add_modtype id decl env
   | Sig_class(id, decl, _)  -> add_class id decl env
   | Sig_class_type(id, decl, _) -> add_cltype id decl env
@@ -1751,7 +1786,7 @@ let open_signature slot root sg env0 =
         | Sig_typext(id, ext, _) ->
             store_extension ~check:false slot (Ident.hide id) p ext env env0
         | Sig_module(id, mty, _) ->
-            store_module slot (Ident.hide id) p mty env env0
+            store_module ~check:false slot (Ident.hide id) p mty env env0
         | Sig_modtype(id, decl) ->
             store_modtype slot (Ident.hide id) p decl env env0
         | Sig_class(id, decl, _) ->
@@ -1842,6 +1877,7 @@ let save_signature_with_imports ~deprecated sg modname filename imports =
     List.concat [
       if !Clflags.recursive_types then [Cmi_format.Rectypes] else [];
       if !Clflags.opaque then [Cmi_format.Opaque] else [];
+      (if !Clflags.unsafe_string then [Cmi_format.Unsafe_string] else []);
       (match deprecated with Some s -> [Deprecated s] | None -> []);
     ]
   in
@@ -1858,7 +1894,8 @@ let save_signature_with_imports ~deprecated sg modname filename imports =
     (* Enter signature in persistent table so that imported_unit()
        will also return its crc *)
     let comps =
-      components_of_module ~deprecated empty Subst.identity
+      components_of_module ~deprecated ~loc:Location.none
+        empty Subst.identity
         (Pident(Ident.create_persistent modname)) (Mty_signature sg) in
     let ps =
       { ps_name = modname;
@@ -2023,6 +2060,10 @@ let report_error ppf = function
       fprintf ppf
         "@[<hov>Unit %s imports from %s, which uses recursive types.@ %s@]"
         export import "The compilation flag -rectypes is required"
+  | Depend_on_unsafe_string_unit(import, export) ->
+      fprintf ppf
+        "@[<hov>Unit %s imports from %s, compiled with -unsafe-string.@ %s@]"
+        export import "This compiler has been configured in strict -safe-string mode"
   | Missing_module(_, path1, path2) ->
       fprintf ppf "@[@[<hov>";
       if Path.same path1 path2 then

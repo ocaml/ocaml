@@ -13,6 +13,11 @@
 /*                                                                        */
 /**************************************************************************/
 
+#ifndef CAML_STARTUP_AUX_H
+#define CAML_STARTUP_AUX_H
+
+#ifdef CAML_INTERNALS
+
 #include "config.h"
 
 extern void caml_init_atom_table (void);
@@ -27,3 +32,7 @@ extern uintnat caml_init_major_window;
 extern uintnat caml_trace_level;
 
 extern void caml_parse_ocamlrunparam (void);
+
+#endif /* CAML_INTERNALS */
+
+#endif /* CAML_STARTUP_AUX_H */

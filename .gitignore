@@ -126,8 +126,9 @@
 /debugger/parser.ml
 /debugger/parser.mli
 /debugger/ocamldebug
-/debugger/dynlink.ml
-/debugger/dynlink.mli
+/driver/compdynlink.mlopt
+/driver/compdynlink.mlbyte
+/driver/compdynlink.mli
 
 /emacs/ocamltags
 /emacs/*.elc

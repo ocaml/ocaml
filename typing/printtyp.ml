@@ -856,7 +856,7 @@ let rec tree_of_type_decl id decl =
         Public
   in
   let immediate =
-    List.exists (fun (loc, _) -> loc.txt = "immediate") decl.type_attributes
+    Builtin_attributes.immediate decl.type_attributes
   in
     { otype_name = name;
       otype_params = args;

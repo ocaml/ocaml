@@ -228,7 +228,8 @@ class virtual to_text =
 
     method normal_cstr_args ?par m_name = function
       | Cstr_tuple l -> self#normal_type_list ?par m_name " * " l
-      | Cstr_record _ -> "{...}" (* TODO *)
+      | Cstr_record r -> self#relative_idents m_name
+                            (Odoc_str.string_of_record r)
 
     (** Get a string for a list of class or class type type parameters
        where all idents are relative. *)
@@ -335,22 +336,20 @@ class virtual to_text =
       Format.fprintf Format.str_formatter "@[<hov 2>exception %s" s_name ;
       (match e.ex_args, e.ex_ret with
          Cstr_tuple [], None -> ()
-       | Cstr_tuple l, None ->
-           Format.fprintf Format.str_formatter " %s@ %s"
-             "of"
-             (self#normal_type_list ~par: false father " * " l)
        | Cstr_tuple [], Some r ->
            Format.fprintf Format.str_formatter " %s@ %s"
              ":"
              (self#normal_type father r)
-       | Cstr_tuple l, Some r ->
+       | args, None ->
+           Format.fprintf Format.str_formatter " %s@ %s"
+             "of"
+             (self#normal_cstr_args ~par:false father args)
+       | args, Some r ->
            Format.fprintf Format.str_formatter " %s@ %s@ %s@ %s"
              ":"
-             (self#normal_type_list ~par: false father " * " l)
+             (self#normal_cstr_args ~par:false father args)
              "->"
              (self#normal_type father r)
-       | Cstr_record _, _ ->
-           assert false
       );
       (match e.ex_alias with
          None -> ()

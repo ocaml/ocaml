@@ -18,6 +18,8 @@
 #ifndef CAML_REVERSE_H
 #define CAML_REVERSE_H
 
+#ifdef CAML_INTERNALS
+
 #define Reverse_16(dst,src) {                                               \
   char * _p, * _q;                                                          \
   char _a;                                                                  \
@@ -84,5 +86,7 @@
   _p[Perm_index(perm_dst, 6)] = _g;                                         \
   _p[Perm_index(perm_dst, 7)] = _h;                                         \
 }
+
+#endif /* CAML_INTERNALS */
 
 #endif /* CAML_REVERSE_H */

@@ -186,9 +186,22 @@ and expression_desc =
             C (E1, ..., En)  [E1;...;En]
          *)
   | Texp_variant of label * expression option
-  | Texp_record of
-      (Longident.t loc * label_description * expression) list *
-        expression option
+  | Texp_record of {
+      fields : ( Types.label_description * record_label_definition ) array;
+      representation : Types.record_representation;
+      extended_expression : expression option;
+    }
+        (** { l1=P1; ...; ln=Pn }           (extended_expression = None)
+            { E0 with l1=P1; ...; ln=Pn }   (extended_expression = Some E0)
+
+            Invariant: n > 0
+
+            If the type is { l1: t1; l2: t2 }, the expression
+            { E0 with t2=P2 } is represented as
+            Texp_record
+              { fields = [| l1, Kept t1; l2 Override P2 |]; representation;
+                extended_expression = Some E0 }
+        *)
   | Texp_field of expression * Longident.t loc * label_description
   | Texp_setfield of
       expression * Longident.t loc * label_description * expression
@@ -223,6 +236,10 @@ and case =
      c_guard: expression option;
      c_rhs: expression;
     }
+
+and record_label_definition =
+  | Kept of Types.type_expr
+  | Overridden of Longident.t loc * expression
 
 (* Value expressions for the class language *)
 

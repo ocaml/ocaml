@@ -13,6 +13,8 @@
 /*                                                                        */
 /**************************************************************************/
 
+#define CAML_INTERNALS
+
 /* Signal handling, code common to the bytecode and native systems */
 
 #include <signal.h>

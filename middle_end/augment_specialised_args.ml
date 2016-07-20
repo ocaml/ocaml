@@ -16,7 +16,6 @@
 
 [@@@ocaml.warning "+a-4-9-30-40-41-42"]
 
-module A = Simple_value_approx
 module E = Inline_and_simplify_aux.Env
 module B = Inlining_cost.Benefit
 

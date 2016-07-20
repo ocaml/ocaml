@@ -28,6 +28,7 @@ type error =
   | Unterminated_string_in_comment of Location.t * Location.t
   | Keyword_as_label of string
   | Invalid_literal of string
+  | Invalid_directive of string * string option
 ;;
 
 exception Error of error * Location.t;;
@@ -260,6 +261,12 @@ let report_error ppf = function
       fprintf ppf "`%s' is a keyword, it cannot be used as label name" kwd
   | Invalid_literal s ->
       fprintf ppf "Invalid literal %s" s
+  | Invalid_directive (dir, explanation) ->
+      fprintf ppf "Invalid lexer directive %S" dir;
+      begin match explanation with
+        | None -> ()
+        | Some expl -> fprintf ppf ": %s" expl
+      end
 
 let () =
   Location.register_error_of_exn
@@ -426,11 +433,23 @@ rule token = parse
         lexbuf.lex_curr_p <- { curpos with pos_cnum = curpos.pos_cnum - 1 };
         STAR
       }
-  | "#" [' ' '\t']* (['0'-'9']+ as num) [' ' '\t']*
-        ("\"" ([^ '\010' '\013' '\"' ] * as name) "\"")?
+  | ("#" [' ' '\t']* (['0'-'9']+ as num) [' ' '\t']*
+        ("\"" ([^ '\010' '\013' '\"' ] * as name) "\"")?) as directive
         [^ '\010' '\013'] * newline
-      { update_loc lexbuf name (int_of_string num) true 0;
-        token lexbuf
+      {
+        match int_of_string num with
+        | exception _ ->
+            (* PR#7165 *)
+            let loc = Location.curr lexbuf in
+            let explanation = "line number out of range" in
+            let error = Invalid_directive (directive, Some explanation) in
+            raise (Error (error, loc))
+        | line_num ->
+           (* Documentation says that the line number should be
+              positive, but we have never guarded against this and it
+              might have useful hackish uses. *)
+            update_loc lexbuf name line_num true 0;
+            token lexbuf
       }
   | "#"  { HASH }
   | "&"  { AMPERSAND }
@@ -735,6 +754,7 @@ and skip_hash_bang = parse
           in
           loop lines' docs lexbuf
       | DOCSTRING doc ->
+          Docstrings.register doc;
           add_docstring_comment doc;
           let docs' =
             match docs, lines with

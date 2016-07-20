@@ -142,6 +142,10 @@ val cache_unit_info: unit_infos -> unit
            honored by [symbol_for_global] and [global_approx]
            without looking at the corresponding .cmx file. *)
 
+val require_global: Ident.t -> unit
+        (* Enforce a link dependency of the current compilation
+           unit to the required module *)
+
 val read_library_info: string -> library_infos
 
 type error =

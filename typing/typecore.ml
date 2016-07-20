@@ -1573,11 +1573,15 @@ let rec is_nonexpansive exp =
   | Texp_construct( _, _, el) ->
       List.for_all is_nonexpansive el
   | Texp_variant(_, arg) -> is_nonexpansive_opt arg
-  | Texp_record(lbl_exp_list, opt_init_exp) ->
-      List.for_all
-        (fun (_, lbl, exp) -> lbl.lbl_mut = Immutable && is_nonexpansive exp)
-        lbl_exp_list
-      && is_nonexpansive_opt opt_init_exp
+  | Texp_record { fields; extended_expression } ->
+      Array.for_all
+        (fun (lbl, definition) ->
+           match definition with
+           | Overridden (_, exp) ->
+               lbl.lbl_mut = Immutable && is_nonexpansive exp
+           | Kept _ -> true)
+        fields
+      && is_nonexpansive_opt extended_expression
   | Texp_field(exp, _, _) -> is_nonexpansive exp
   | Texp_array [] -> true
   | Texp_ifthenelse(_cond, ifso, ifnot) ->
@@ -2131,8 +2135,8 @@ and type_expect_ ?in_function ?(recarg=Rejected) env sexp ty_expected =
       begin_def ();
       let arg = type_exp env sarg in
       end_def ();
-      if is_nonexpansive arg then generalize arg.exp_type
-      else generalize_expansive env arg.exp_type;
+      if not (is_nonexpansive arg) then generalize_expansive env arg.exp_type;
+      generalize arg.exp_type;
       let rec split_cases vc ec = function
         | [] -> List.rev vc, List.rev ec
         | {pc_lhs = {ppat_desc=Ppat_exception p}} as c :: rest ->
@@ -2278,47 +2282,72 @@ and type_expect_ ?in_function ?(recarg=Rejected) env sexp ty_expected =
         | [] -> ()
       in
       check_duplicates lbl_exp_list;
-      let opt_exp =
-        match opt_exp, lbl_exp_list with
-          None, _ -> None
-        | Some exp, (_lid, lbl, _lbl_exp) :: _ ->
+      let opt_exp, label_definitions =
+        let (_lid, lbl, _lbl_exp) = List.hd lbl_exp_list in
+        let matching_label lbl =
+          List.find
+            (fun (_, lbl',_) -> lbl'.lbl_pos = lbl.lbl_pos)
+            lbl_exp_list
+        in
+        match opt_exp with
+          None ->
+            let label_definitions =
+              Array.map (fun lbl ->
+                  match matching_label lbl with
+                  | (lid, _lbl, lbl_exp) ->
+                      Overridden (lid, lbl_exp)
+                  | exception Not_found ->
+                      let present_indices =
+                        List.map (fun (_, lbl, _) -> lbl.lbl_pos) lbl_exp_list in
+                      let label_names = extract_label_names env ty_expected in
+                      let rec missing_labels n = function
+                          [] -> []
+                        | lbl :: rem ->
+                            if List.mem n present_indices then missing_labels (n + 1) rem
+                            else lbl :: missing_labels (n + 1) rem
+                      in
+                      let missing = missing_labels 0 label_names in
+                      raise(Error(loc, env, Label_missing missing)))
+                lbl.lbl_all
+            in
+            None, label_definitions
+        | Some exp ->
             let ty_exp = instance env exp.exp_type in
             let unify_kept lbl =
-              (* do not connect overridden labels *)
-              if List.for_all
-                  (fun (_, lbl',_) -> lbl'.lbl_pos <> lbl.lbl_pos)
-                  lbl_exp_list
-              then begin
-                let _, ty_arg1, ty_res1 = instance_label false lbl
-                and _, ty_arg2, ty_res2 = instance_label false lbl in
-                unify env ty_arg1 ty_arg2;
-                unify env (instance env ty_expected) ty_res2;
-                unify_exp_types exp.exp_loc env ty_exp ty_res1;
-              end in
-            Array.iter unify_kept lbl.lbl_all;
-            Some {exp with exp_type = ty_exp}
-        | _ -> assert false
+              match matching_label lbl with
+              | lid, _lbl, lbl_exp ->
+                  Overridden (lid, lbl_exp)
+              | exception Not_found -> begin
+                (* do not connect overridden labels *)
+                  let _, ty_arg1, ty_res1 = instance_label false lbl
+                  and _, ty_arg2, ty_res2 = instance_label false lbl in
+                  unify env ty_arg1 ty_arg2;
+                  unify env (instance env ty_expected) ty_res2;
+                  unify_exp_types exp.exp_loc env ty_exp ty_res1;
+                  Kept ty_arg1
+                end
+            in
+            let label_definitions = Array.map unify_kept lbl.lbl_all in
+            Some {exp with exp_type = ty_exp}, label_definitions
       in
       let num_fields =
         match lbl_exp_list with [] -> assert false
         | (_, lbl,_)::_ -> Array.length lbl.lbl_all in
-      if opt_sexp = None && List.length lid_sexp_list <> num_fields then begin
-        let present_indices =
-          List.map (fun (_, lbl, _) -> lbl.lbl_pos) lbl_exp_list in
-        let label_names = extract_label_names env ty_expected in
-        let rec missing_labels n = function
-            [] -> []
-          | lbl :: rem ->
-              if List.mem n present_indices then missing_labels (n + 1) rem
-              else lbl :: missing_labels (n + 1) rem
-        in
-        let missing = missing_labels 0 label_names in
-        raise(Error(loc, env, Label_missing missing))
-      end
-      else if opt_sexp <> None && List.length lid_sexp_list = num_fields then
+      if opt_sexp <> None && List.length lid_sexp_list = num_fields then
         Location.prerr_warning loc Warnings.Useless_record_with;
+      let label_descriptions, representation =
+        let (_, { lbl_all; lbl_repres }, _) = List.hd lbl_exp_list in
+        lbl_all, lbl_repres
+      in
+      let fields =
+        Array.map2 (fun descr def -> descr, def)
+          label_descriptions label_definitions
+      in
       re {
-        exp_desc = Texp_record(lbl_exp_list, opt_exp);
+        exp_desc = Texp_record {
+            fields; representation;
+            extended_expression = opt_exp
+          };
         exp_loc = loc; exp_extra = [];
         exp_type = instance env ty_expected;
         exp_attributes = sexp.pexp_attributes;
@@ -4102,8 +4131,8 @@ let type_expression env sexp =
   begin_def();
   let exp = type_exp env sexp in
   end_def();
-  if is_nonexpansive exp then generalize exp.exp_type
-  else generalize_expansive env exp.exp_type;
+  if not (is_nonexpansive exp) then generalize_expansive env exp.exp_type;
+  generalize exp.exp_type;
   match sexp.pexp_desc with
     Pexp_ident lid ->
       (* Special case for keeping type variables when looking-up a variable *)

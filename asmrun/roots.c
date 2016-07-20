@@ -13,6 +13,8 @@
 /*                                                                        */
 /**************************************************************************/
 
+#define CAML_INTERNALS
+
 /* To walk the memory roots for garbage collection */
 
 #include "caml/finalise.h"
@@ -22,7 +24,7 @@
 #include "caml/minor_gc.h"
 #include "caml/misc.h"
 #include "caml/mlvalues.h"
-#include "stack.h"
+#include "caml/stack.h"
 #include "caml/roots.h"
 #include <string.h>
 #include <stdio.h>

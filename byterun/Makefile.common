@@ -34,13 +34,6 @@ PRIMS=\
   signals.c str.c sys.c terminfo.c callback.c weak.c finalise.c stacks.c \
   dynlink.c backtrace_prim.c backtrace.c
 
-PUBLIC_INCLUDES=\
-  address_class.h alloc.h callback.h config.h custom.h fail.h gc.h \
-  hash.h intext.h \
-  memory.h misc.h mlvalues.h printexc.h signals.h compatibility.h \
-  version.h
-
-
 all:: ocamlrun$(EXE) ld.conf libcamlrun.$(A) all-$(RUNTIMED) primitives
 .PHONY: all
 
@@ -70,9 +63,9 @@ install::
 	cd "$(INSTALL_LIBDIR)"; $(RANLIB) libcamlrun.$(A)
 	if test -d "$(INSTALL_LIBDIR)/caml"; then : ; \
 	  else mkdir "$(INSTALL_LIBDIR)/caml"; fi
-	for i in $(PUBLIC_INCLUDES); do \
-	  sed -f ../tools/cleanup-header caml/$$i \
-	      > "$(INSTALL_LIBDIR)/caml/$$i"; \
+	for i in caml/*.h; do \
+	  sed -f ../tools/cleanup-header $$i \
+	      > "$(INSTALL_LIBDIR)/$$i"; \
 	done
 	cp ld.conf "$(INSTALL_LIBDIR)/ld.conf"
 .PHONY: install
@@ -116,7 +109,8 @@ primitives : $(PRIMS)
 	  | sort | uniq > primitives
 
 prims.c : primitives
-	(echo '#include "caml/mlvalues.h"'; \
+	(echo '#define CAML_INTERNALS'; \
+         echo '#include "caml/mlvalues.h"'; \
 	 echo '#include "caml/prims.h"'; \
 	 sed -e 's/.*/extern value &();/' primitives; \
 	 echo 'c_primitive caml_builtin_cprim[] = {'; \
