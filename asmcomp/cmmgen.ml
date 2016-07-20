@@ -15,6 +15,13 @@
 
 (* Translation from closed lambda to C-- *)
 
+(* This module is mostly concerned with
+   - Translating higher-level constructs into lower-level ones
+   - Simplification of constant expressions
+   - Handling unboxing
+   - Adding required functions and constants, such as currying functions
+*)
+
 open Misc
 open Arch
 open Asttypes
@@ -24,6 +31,21 @@ open Lambda
 open Clambda
 open Cmm
 open Cmx_format
+
+(* Note: Closure Format
+   --------------------
+
+   The format of function closures at the cmm level is
+   {
+     code : The next curry function to call, or, at the N-1 level,
+            the actual code of the function.
+     arity : Remaining arity of the function.
+     direct : Shortcut application function. Missing at N-1 level, or
+             for unoptimized arity levels.
+     val[0] : The argument stored in this closure.
+     val[1] : Pointer to the previous closure.
+   }
+*)
 
 (* Local binding of complex expressions *)
 
@@ -2787,6 +2809,13 @@ let cache_public_method meths tag cache =
             Cvar tagged)))))
 
 (* Generate an application function:
+
+   See (Note: Closure Format)
+
+   If we're applying the full arity of the function, we can go ahead
+   and call the direct application function. If not, we must go through
+   each stage of application, creating each closure as we go.
+
      (defun caml_applyN (a1 ... aN clos)
        (if (= clos.arity N)
          (app clos.direct a1 ... aN clos)
@@ -2871,8 +2900,10 @@ let apply_function arity =
     fun_dbg  = Debuginfo.none }
 
 (* Generate tuplifying functions:
-      (defun caml_tuplifyN (arg clos)
-        (app clos.direct #0(arg) ... #N-1(arg) clos)) *)
+   The argument is a block with all the arguments.
+
+    (defun caml_tuplifyN (arg clos)
+      (app clos.direct #0(arg) ... #N-1(arg) clos)) *)
 
 let tuplify_function arity =
   let arg = Ident.create "arg" in
@@ -2891,11 +2922,24 @@ let tuplify_function arity =
     fun_dbg  = Debuginfo.none }
 
 (* Generate currying functions:
+
+   See (Note: Closure Format)
+
+    The currying code to build these closures is:
+
       (defun caml_curryN (arg clos)
          (alloc HDR caml_curryN_1 <arity (N-1)> caml_curry_N_1_app arg clos))
       (defun caml_curryN_1 (arg clos)
          (alloc HDR caml_curryN_2 <arity (N-2)> caml_curry_N_2_app arg clos))
       ...
+
+    This means the by referencing the function at position 0, we can find the
+    next currying function.
+
+    The final curry function is the one that applies the code. Note how it
+    needs to load the entire linked-list of closures, and obtain the argument
+    saved in each one:
+
       (defun caml_curryN_N-1 (arg clos)
          (let (closN-2 clos.vars[1]
                closN-3 closN-2.vars[1]
@@ -2905,9 +2949,10 @@ let tuplify_function arity =
            (app clos.direct
                 clos1.vars[0] ... closN-2.vars[0] clos.vars[0] arg clos)))
 
-    Special "shortcut" functions are also generated to handle the
-    case where a partially applied function is applied to all remaining
-    arguments in one go.  For instance:
+    Special "shortcut" functions (with the suffix 'app') are also generated
+    to handle the case where a partially applied function is applied to all
+    remaining arguments in one go.  For instance:
+
       (defun caml_curry_N_1_app (arg2 ... argN clos)
         (let clos' clos.vars[1]
            (app clos'.direct clos.vars[0] arg2 ... argN clos')))
