@@ -238,6 +238,11 @@ OCaml 4.04.0:
 - GPR#679: delay registration of docstring after the mapper is applied
   (Hugo Heuzard, review by Leo White)
 
+- GPR#678: Graphics.close_graph crashes 64-bit Windows ports (re-implementation
+  of PR#3963)
+  (David Allsopp)
+
+### Documentation:
 
 
 OCaml 4.03.0 (25 Apr 2016):
