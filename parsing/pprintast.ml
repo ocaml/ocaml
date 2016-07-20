@@ -839,7 +839,7 @@ and class_field ctxt f x =
            | Pexp_poly (e, Some ct) ->
                pp f "%s :@;%a=@;%a"
                  s.txt (core_type ctxt) ct (expression ctxt) e
-           | Pexp_poly (e,None) -> bind e
+           | Pexp_poly (e, None) -> bind e
            | _ -> bind e) e
         (item_attributes ctxt) x.pcf_attributes
   | Pcf_constraint (ct1, ct2) ->
@@ -1093,9 +1093,11 @@ and binding ctxt f {pvb_pat=p; pvb_expr=x; _} =
             pp f "(%a@;:@;%a)@;=@;%a" (simple_pattern ctxt) p
               (core_type ctxt) ty (expression ctxt) x
         end
+(*
     | Pexp_constraint (e,t1),Ppat_var {txt;_} ->
       pp f "%a@;:@ %a@;=@;%a" protect_ident txt
         (core_type ctxt) t1 (expression ctxt) e
+*)
     | (_, Ppat_var _) ->
         pp f "%a@ %a" (simple_pattern ctxt) p pp_print_pexp_function x
     | _ ->
