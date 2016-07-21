@@ -305,3 +305,15 @@ val fold_cltypes:
 (** Utilities *)
 val scrape_alias: t -> module_type -> module_type
 val check_value_name: string -> Location.t -> unit
+
+module Persistent_signature : sig
+  type t =
+    { filename : string; (** Name of the file containing the signature. *)
+      cmi : Cmi_format.cmi_infos }
+
+  (** Function used to load a persistent signature. The default is to look for
+      the .cmi file in the load path. This function can be overridden to load
+      it from memory, for instance to build a self-contained toplevel. *)
+  val load : (unit_name:string -> t option) ref
+end
+
