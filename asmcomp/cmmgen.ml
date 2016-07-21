@@ -329,7 +329,7 @@ let raise_regular dbg exc =
 let raise_symbol dbg symb =
   raise_regular dbg (Cconst_symbol symb)
 
-let rec div_int c1 c2 dbg =
+let rec div_int c1 c2 is_safe dbg =
   match (c1, c2) with
     (c1, Cconst_int 0) ->
       Csequence(c1, raise_symbol dbg "caml_exn_Division_by_zero")
@@ -354,7 +354,7 @@ let rec div_int c1 c2 dbg =
                      add_int c1 t);
                    Cconst_int l])
       else if n < 0 then
-        sub_int (Cconst_int 0) (div_int c1 (Cconst_int (-n)) dbg)
+        sub_int (Cconst_int 0) (div_int c1 (Cconst_int (-n)) is_safe dbg)
       else begin
         let (m, p) = divimm_parameters (Nativeint.of_int n) in
         (* Algorithm:
@@ -369,7 +369,7 @@ let rec div_int c1 c2 dbg =
           let t = if p > 0 then Cop(Casr, [t; Cconst_int p]) else t in
           add_int t (lsr_int c1 (Cconst_int (Nativeint.size - 1))))
       end
-  | (c1, c2) when !Clflags.fast ->
+  | (c1, c2) when !Clflags.fast || is_safe = Lambda.Unsafe ->
       Cop(Cdivi, [c1; c2])
   | (c1, c2) ->
       bind "divisor" c2 (fun c2 ->
@@ -377,7 +377,7 @@ let rec div_int c1 c2 dbg =
                     Cop(Cdivi, [c1; c2]),
                     raise_symbol dbg "caml_exn_Division_by_zero"))
 
-let mod_int c1 c2 dbg =
+let mod_int c1 c2 is_safe dbg =
   match (c1, c2) with
     (c1, Cconst_int 0) ->
       Csequence(c1, raise_symbol dbg "caml_exn_Division_by_zero")
@@ -405,8 +405,9 @@ let mod_int c1 c2 dbg =
           sub_int c1 t)
       else
         bind "dividend" c1 (fun c1 ->
-          sub_int c1 (mul_int (div_int c1 c2 dbg) c2))
-  | (c1, c2) when !Clflags.fast ->
+          sub_int c1 (mul_int (div_int c1 c2 is_safe dbg) c2))
+  | (c1, c2) when !Clflags.fast || is_safe = Lambda.Unsafe ->
+      (* Flambda already generates that test *)
       Cop(Cmodi, [c1; c2])
   | (c1, c2) ->
       bind "divisor" c2 (fun c2 ->
@@ -425,7 +426,7 @@ let is_different_from x = function
 let safe_divmod_bi mkop mkm1 c1 c2 bi dbg =
   bind "dividend" c1 (fun c1 ->
   bind "divisor" c2 (fun c2 ->
-    let c = mkop c1 c2 dbg in
+    let c = mkop c1 c2 Lambda.Safe dbg in
     if Arch.division_crashes_on_overflow
     && (size_int = 4 || bi <> Pint32)
     && not (is_different_from (-1) c2)
@@ -1935,12 +1936,12 @@ and transl_prim_2 env p arg1 arg2 dbg =
              incr_int (mul_int (untag_int c1) (decr_int c2))
          | c1, c2 -> incr_int (mul_int (decr_int c1) (untag_int c2))
      end
-  | Pdivint ->
+  | Pdivint is_safe ->
       tag_int(div_int (untag_int(transl env arg1))
-        (untag_int(transl env arg2)) dbg)
-  | Pmodint ->
+        (untag_int(transl env arg2)) is_safe dbg)
+  | Pmodint is_safe ->
       tag_int(mod_int (untag_int(transl env arg1))
-        (untag_int(transl env arg2)) dbg)
+        (untag_int(transl env arg2)) is_safe dbg)
   | Pandint ->
       Cop(Cand, [transl env arg1; transl env arg2])
   | Porint ->

@@ -42,6 +42,10 @@ type initialization_or_assignment =
   | Initialization
   | Assignment
 
+type is_safe =
+  | Safe
+  | Unsafe
+
 type primitive =
   | Pidentity
   | Pbytes_to_string
@@ -69,7 +73,8 @@ type primitive =
   (* Boolean operations *)
   | Psequand | Psequor | Pnot
   (* Integer operations *)
-  | Pnegint | Paddint | Psubint | Pmulint | Pdivint | Pmodint
+  | Pnegint | Paddint | Psubint | Pmulint
+  | Pdivint of is_safe | Pmodint of is_safe
   | Pandint | Porint | Pxorint
   | Plslint | Plsrint | Pasrint
   | Pintcomp of comparison

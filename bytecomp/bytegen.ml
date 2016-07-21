@@ -324,8 +324,8 @@ let comp_primitive p args =
   | Paddint -> Kaddint
   | Psubint -> Ksubint
   | Pmulint -> Kmulint
-  | Pdivint -> Kdivint
-  | Pmodint -> Kmodint
+  | Pdivint _ -> Kdivint
+  | Pmodint _ -> Kmodint
   | Pandint -> Kandint
   | Porint -> Korint
   | Pxorint -> Kxorint

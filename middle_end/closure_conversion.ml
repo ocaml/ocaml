@@ -315,7 +315,7 @@ and close t env (lam : Lambda.lambda) : Flambda.t =
           ~name:"send_arg"
           ~create_body:(fun args ->
               Send { kind; meth = meth_var; obj = obj_var; args; dbg; })))
-  | Lprim ((Pdivint | Pmodint) as prim, [arg1; arg2], loc)
+  | Lprim ((Pdivint Safe | Pmodint Safe) as prim, [arg1; arg2], loc)
       when not !Clflags.fast -> (* not -unsafe *)
     let arg2 = close t env arg2 in
     let arg1 = close t env arg1 in
@@ -328,6 +328,12 @@ and close t env (lam : Lambda.lambda) : Flambda.t =
       t.symbol_for_global' Predef.ident_division_by_zero
     in
     let dbg = Debuginfo.from_location loc in
+    let prim : Lambda.primitive =
+      match prim with
+      | Pdivint _ -> Pdivint Unsafe
+      | Pmodint _ -> Pmodint Unsafe
+      | _ -> assert false
+    in
     t.imported_symbols <- Symbol.Set.add exn_symbol t.imported_symbols;
     Flambda.create_let zero (Const (Int 0))
       (Flambda.create_let exn (Symbol exn_symbol)
@@ -347,7 +353,7 @@ and close t env (lam : Lambda.lambda) : Flambda.t =
                      mshinwell: deferred CR *)
                   name_expr ~name:"result"
                     (Prim (prim, [numerator; denominator], dbg))))))))
-  | Lprim ((Pdivint | Pmodint), _, _) when not !Clflags.fast ->
+  | Lprim ((Pdivint Safe | Pmodint Safe), _, _) when not !Clflags.fast ->
     Misc.fatal_error "Pdivint / Pmodint must have exactly two arguments"
   | Lprim (Psequor, [arg1; arg2], _) ->
     let arg1 = close t env arg1 in
