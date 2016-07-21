@@ -91,3 +91,26 @@ let () =
     try (failwith [@inlined always]) "some other string" with exn -> exn
   in
   assert(is_in_static_data exn)
+
+(* Verify that approximation intersection correctly loads exported
+   approximations.
+
+   Is_static_flambda_dep.cpl is a couple with 1 as first element. The
+   intersection of approximations should return a block of size 2 and
+   tag 0 containing 1 in the first field.
+*)
+let f x =
+  let cpl =
+    if Sys.opaque_identity x then
+      (1, 2), 3
+    else
+      Is_static_flambda_dep.cpl, 4
+  in
+  let n = fst (fst cpl) in
+  let res = n, n in
+  assert(is_in_static_data res)
+  [@@inline never]
+
+let () =
+  f true;
+  f false
