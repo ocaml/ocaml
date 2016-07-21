@@ -56,6 +56,10 @@ let mk_cmx_contains_all_code f =
     for link time dead code elimination"
 ;;
 
+let mk_no_cmx_contains_all_code f =
+  "-no-lto", Arg.Unit f, " Disable -lto"
+;;
+
 let mk_whole_program_rebuild f =
   "-use-lto", Arg.Unit f, " Eliminate dead code at link time. Requires cmx \
     files to be built using the -lto option"
@@ -941,7 +945,7 @@ module type Optcomp_options = sig
   include Common_options
   include Compiler_options
   include Optcommon_options
-  val _cmx_contains_all_code : unit -> unit
+  val _cmx_contains_all_code : bool -> unit -> unit
   val _whole_program_rebuild : unit -> unit
   val _no_float_const_prop : unit -> unit
   val _nodynlink : unit -> unit
@@ -1150,7 +1154,8 @@ struct
     mk_ccopt F._ccopt;
     mk_clambda_checks F._clambda_checks;
     mk_classic_inlining F._classic_inlining;
-    mk_cmx_contains_all_code F._cmx_contains_all_code;
+    mk_cmx_contains_all_code (F._cmx_contains_all_code true);
+    mk_no_cmx_contains_all_code (F._cmx_contains_all_code false);
     mk_whole_program_rebuild F._whole_program_rebuild;
     mk_color F._color;
     mk_compact F._compact;

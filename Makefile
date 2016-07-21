@@ -312,6 +312,7 @@ utils/config.ml: utils/config.mlp config/Makefile
 	    -e 's|%%BYTERUN%%|$(BYTERUN)|' \
 	    -e 's|%%CCOMPTYPE%%|$(CCOMPTYPE)|' \
 	    -e 's|%%CC_PROFILE%%|$(CC_PROFILE)|' \
+	    -e 's|%%CMX_CONTAINS_ALL_CODE%%|$(CMX_CONTAINS_ALL_CODE)|' \
 	    -e 's|%%EXT_ASM%%|$(EXT_ASM)|' \
 	    -e 's|%%EXT_DLL%%|$(EXT_DLL)|' \
 	    -e 's|%%EXT_EXE%%|$(EXE)|' \

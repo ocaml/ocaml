@@ -60,6 +60,7 @@ let mkdll, mkexe, mkmaindll =
 let profiling = %%PROFILING%%
 let flambda = %%FLAMBDA%%
 let safe_string = %%SAFE_STRING%%
+let cmx_contains_all_code = %%CMX_CONTAINS_ALL_CODE%%
 
 let afl_instrument = %%AFL_INSTRUMENT%%
 
@@ -166,6 +167,7 @@ let print_config oc =
   p_bool "flambda" flambda;
   p_bool "spacetime" spacetime;
   p_bool "safe_string" safe_string;
+  p_bool "cmx_contains_all_code" cmx_contains_all_code;
 
   (* print the magic number *)
   p "exec_magic_number" exec_magic_number;

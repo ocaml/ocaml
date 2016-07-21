@@ -62,6 +62,7 @@ with_cfi=true
 flambda=false
 safe_string=false
 afl_instrument=false
+cmx_contains_all_code=false
 max_testsuite_dir_retries=0
 with_cplugins=true
 with_fpic=false
@@ -208,6 +209,8 @@ while : ; do
         safe_string=true;;
     -afl-instrument)
         afl_instrument=true;;
+    -lto|--lto)
+        cmx_contains_all_code=true;;
     *) if echo "$1" | grep -q -e '^--\?[a-zA-Z0-9-]\+='; then
          err "configure expects arguments of the form '-prefix /foo/bar'," \
              "not '-prefix=/foo/bar' (note the '=')."
@@ -2064,6 +2067,7 @@ fi
 echo "FLAMBDA=$flambda" >> Makefile
 echo "SAFE_STRING=$safe_string" >> Makefile
 echo "AFL_INSTRUMENT=$afl_instrument" >> Makefile
+echo "CMX_CONTAINS_ALL_CODE=$cmx_contains_all_code" >> Makefile
 echo "MAX_TESTSUITE_DIR_RETRIES=$max_testsuite_dir_retries" >> Makefile
 
 
