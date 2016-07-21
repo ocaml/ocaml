@@ -376,6 +376,8 @@ and expression i ppf x =
       payload i ppf arg
   | Pexp_unreachable ->
       line i ppf "Pexp_unreachable"
+  | Pexp_external s ->
+      line i ppf "Pexp_external %s" s
 
 and value_description i ppf x =
   line i ppf "value_description %a %a\n" fmt_string_loc

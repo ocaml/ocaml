@@ -359,6 +359,8 @@ module MakeIterator(Iter : IteratorArgument) : sig
             ()
         | Texp_extension_constructor _ ->
             ()
+        | Texp_external _ ->
+            ()
       end;
       Iter.leave_expression exp;
 

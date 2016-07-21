@@ -36,6 +36,7 @@ let for_primitive (prim : Lambda.primitive) =
     No_effects, No_coeffects
   | Plazyforce
   | Pccall _ -> Arbitrary_effects, Has_coeffects
+  | Pcsymbol _ -> No_effects, No_coeffects
   | Praise _ -> Arbitrary_effects, No_coeffects
   | Pnot
   | Pnegint
@@ -159,6 +160,6 @@ let return_type_of_primitive (prim:Lambda.primitive) =
   | Pfloatfield _
   | Parrayrefu Pfloatarray
   | Parrayrefs Pfloatarray ->
-    Float
+      Float
   | _ ->
     Other

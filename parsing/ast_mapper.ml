@@ -385,6 +385,7 @@ module E = struct
         open_ ~loc ~attrs ovf (map_loc sub lid) (sub.expr sub e)
     | Pexp_extension x -> extension ~loc ~attrs (sub.extension sub x)
     | Pexp_unreachable -> unreachable ~loc ~attrs ()
+    | Pexp_external s -> external_ ~loc ~attrs s
 end
 
 module P = struct

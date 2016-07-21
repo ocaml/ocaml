@@ -111,6 +111,7 @@ type instruction =
   | Kraise of raise_kind
   | Kcheck_signals
   | Kccall of string * int
+  | Kcsymbol of string
   | Knegint | Kaddint | Ksubint | Kmulint | Kdivint | Kmodint
   | Kandint | Korint | Kxorint | Klslint | Klsrint | Kasrint
   | Kintcomp of comparison

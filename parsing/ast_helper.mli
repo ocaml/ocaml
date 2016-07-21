@@ -163,6 +163,7 @@ module Exp:
                -> expression
     val extension: ?loc:loc -> ?attrs:attrs -> extension -> expression
     val unreachable: ?loc:loc -> ?attrs:attrs -> unit -> expression
+    val external_: ?loc:loc -> ?attrs:attrs -> string -> expression
 
     val case: pattern -> ?guard:expression -> expression -> case
   end

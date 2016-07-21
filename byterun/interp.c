@@ -938,6 +938,11 @@ value caml_interprete(code_t prog, asize_t prog_size)
       Next;
     }
 
+    Instruct(C_SYMBOL):
+      accu = caml_copy_nativeint((intnat) Primitive(*pc));
+      pc++;
+      Next;
+
 /* Integer constants */
 
     Instruct(CONST0):

@@ -20,6 +20,10 @@ OCaml 4.04.0:
 - GPR#548: empty documentation comments
   (Florian Angeletti)
 
+- GPR#711: `external "mysymbol"` in an expression is a nativeint that
+  is equal to the adress of the symbol "mysymbol"
+  (François Bobot)
+
 
 ### Compiler user-interface and warnings:
 

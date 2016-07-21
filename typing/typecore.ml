@@ -174,6 +174,7 @@ let iter_expression f e =
     | Pexp_object { pcstr_fields = fs } -> List.iter class_field fs
     | Pexp_pack me -> module_expr me
     | Pexp_unreachable -> ()
+    | Pexp_external _ -> ()
 
   and case {pc_lhs = _; pc_guard; pc_rhs} =
     may expr pc_guard;
@@ -2988,6 +2989,14 @@ and type_expect_ ?in_function ?(recarg=Rejected) env sexp ty_expected =
            exp_type = instance env ty_expected;
            exp_attributes = sexp.pexp_attributes;
            exp_env = env }
+  | Pexp_external s ->
+      rue {
+        exp_desc = Texp_external s;
+        exp_loc = loc; exp_extra = [];
+        exp_type = instance_def Predef.type_nativeint;
+        exp_attributes = sexp.pexp_attributes;
+        exp_env = env }
+
 
 and type_function ?in_function loc attrs env ty_expected l caselist =
   let (loc_fun, ty_fun) =

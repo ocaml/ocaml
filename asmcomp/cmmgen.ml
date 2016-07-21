@@ -1535,6 +1535,8 @@ let rec transl env e =
       begin match (simplif_primitive prim, args) with
         (Pgetglobal id, []) ->
           Cconst_symbol (Ident.name id)
+      | (Pcsymbol s, []) ->
+          box_int dbg Pnativeint (Cconst_symbol s)
       | (Pmakeblock _, []) ->
           assert false
       | (Pmakeblock(tag, _mut, _kind), args) ->

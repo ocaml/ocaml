@@ -62,6 +62,7 @@ type primitive =
   | Plazyforce
   (* External call *)
   | Pccall of Primitive.description
+  | Pcsymbol of string
   (* Exceptions *)
   | Praise of raise_kind
   (* Boolean operations *)

@@ -317,6 +317,7 @@ let comp_primitive p args =
   | Psetfloatfield (n, _init) -> Ksetfloatfield n
   | Pduprecord _ -> Kccall("caml_obj_dup", 1)
   | Pccall p -> Kccall(p.prim_name, p.prim_arity)
+  | Pcsymbol s -> Kcsymbol s
   | Pnegint -> Knegint
   | Paddint -> Kaddint
   | Psubint -> Ksubint

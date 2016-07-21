@@ -608,6 +608,7 @@ conflicts.
 The precedences must be listed from low to high.
 */
 
+%nonassoc EXTERNAL
 %nonassoc IN
 %nonassoc below_SEMI
 %nonassoc SEMI                          /* below EQUAL ({lbl=...; lbl=...}) */
@@ -1465,7 +1466,9 @@ expr:
   | expr attribute
       { Exp.attr $1 $2 }
   | UNDERSCORE
-     { not_expecting 1 "wildcard \"_\"" }
+      { not_expecting 1 "wildcard \"_\"" }
+  | EXTERNAL STRING
+      { mkexp (Pexp_external (fst $2)) }
 ;
 simple_expr:
     val_longident

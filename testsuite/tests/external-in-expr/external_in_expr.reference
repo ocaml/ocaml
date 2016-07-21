@@ -1,0 +1,4 @@
+foobar same address: true
+var_global same address: true
+foobar same computation: true
+foobar unboxed result: 3

@@ -263,6 +263,8 @@ let emit_instr = function
       if n <= 5
       then (out (opC_CALL1 + n - 1); slot_for_c_prim name)
       else (out opC_CALLN; out_int n; slot_for_c_prim name)
+  | Kcsymbol name ->
+      out opC_SYMBOL; slot_for_c_prim name
   | Knegint -> out opNEGINT  | Kaddint -> out opADDINT
   | Ksubint -> out opSUBINT  | Kmulint -> out opMULINT
   | Kdivint -> out opDIVINT  | Kmodint -> out opMODINT

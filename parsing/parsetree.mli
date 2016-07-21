@@ -349,6 +349,8 @@ and expression_desc =
         (* [%id] *)
   | Pexp_unreachable
         (* . *)
+  | Pexp_external of string
+        (* external "..." *)
 
 and case =   (* (P -> E) or (P when E0 -> E) *)
     {

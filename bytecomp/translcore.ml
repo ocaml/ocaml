@@ -1068,6 +1068,8 @@ and transl_exp0 e =
          }
   | Texp_unreachable ->
       raise (Error (e.exp_loc, Unreachable_reached))
+  | Texp_external s ->
+      Lprim(Pcsymbol s,[], e.exp_loc)
 
 and transl_list expr_list =
   List.map transl_exp expr_list

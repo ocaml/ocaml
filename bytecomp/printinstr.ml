@@ -74,6 +74,8 @@ let instruction ppf = function
   | Kcheck_signals -> fprintf ppf "\tcheck_signals"
   | Kccall(s, n) ->
       fprintf ppf "\tccall %s, %i" s n
+  | Kcsymbol s ->
+      fprintf ppf "\tcsymbol %s" s
   | Knegint -> fprintf ppf "\tnegint"
   | Kaddint -> fprintf ppf "\taddint"
   | Ksubint -> fprintf ppf "\tsubint"
