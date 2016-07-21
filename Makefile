@@ -431,6 +431,7 @@ utils/config.ml: utils/config.mlp config/Makefile
 	    -e 's|%%TARGET%%|$(TARGET)|' \
 	    -e 's|%%FLAMBDA%%|$(FLAMBDA)|' \
 	    -e 's|%%SAFE_STRING%%|$(SAFE_STRING)|' \
+	    -e 's|%%CMX_CONTAINS_ALL_CODE%%|$(CMX_CONTAINS_ALL_CODE)|' \
 	    utils/config.mlp > utils/config.ml
 
 partialclean::

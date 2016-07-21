@@ -69,6 +69,7 @@ let mkdll, mkexe, mkmaindll =
 
 let flambda = %%FLAMBDA%%
 let safe_string = %%SAFE_STRING%%
+let cmx_contains_all_code = %%CMX_CONTAINS_ALL_CODE%%
 
 let exec_magic_number = "Caml1999X011"
 and cmi_magic_number = "Caml1999I020"
@@ -158,6 +159,8 @@ let print_config oc =
   p "host" host;
   p "target" target;
   p_bool "flambda" flambda;
+  p_bool "safe_string" safe_string;
+  p_bool "cmx_contains_all_code" cmx_contains_all_code;
 
   (* print the magic number *)
   p "exec_magic_number" exec_magic_number;
