@@ -266,7 +266,7 @@ val equal_boxed_int : 'a boxed_int -> 'a -> 'b boxed_int -> 'b -> bool
 
 (* CR-soon mshinwell for pchambart: Add comment describing semantics.  (Maybe
    we should move the comment from the .ml file into here.) *)
-val meet : t -> t -> t
+val meet : really_import_approx:(t -> t) -> t -> t -> t
 
 (** An approximation is "known" iff it is not [Value_unknown]. *)
 val known : t -> bool

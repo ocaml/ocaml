@@ -1216,8 +1216,10 @@ and simplify env r (tree : Flambda.t) : Flambda.t * R.t =
         let ifso_approx = R.approx r in
         let ifnot, r = simplify env r ifnot in
         let ifnot_approx = R.approx r in
+        let module Backend = (val (E.backend env) : Backend_intf.S) in
+        let really_import_approx = Backend.really_import_approx in
         If_then_else (arg, ifso, ifnot),
-          ret r (A.meet ifso_approx ifnot_approx)
+          ret r (A.meet ~really_import_approx ifso_approx ifnot_approx)
       end)
   | While (cond, body) ->
     let cond, r = simplify env r cond in
@@ -1293,10 +1295,13 @@ and simplify env r (tree : Flambda.t) : Flambda.t * R.t =
         lam, R.map_benefit r B.remove_branch
       | _ ->
         let env = E.inside_branch env in
+        let module Backend = (val (E.backend env) : Backend_intf.S) in
+        let really_import_approx = Backend.really_import_approx in
         let f (i, v) (acc, r) =
           let approx = R.approx r in
           let lam, r = simplify env r v in
-          ((i, lam)::acc, R.set_approx r (A.meet (R.approx r) approx))
+          ((i, lam)::acc,
+           R.set_approx r (A.meet ~really_import_approx (R.approx r) approx))
         in
         let r = R.set_approx r A.value_bottom in
         let consts, r = List.fold_right f sw.consts ([], r) in
@@ -1307,7 +1312,8 @@ and simplify env r (tree : Flambda.t) : Flambda.t * R.t =
           | Some l ->
             let approx = R.approx r in
             let l, r = simplify env r l in
-            Some l, R.set_approx r (A.meet (R.approx r) approx)
+            Some l,
+            R.set_approx r (A.meet ~really_import_approx (R.approx r) approx)
         in
         let sw = { sw with failaction; consts; blocks; } in
         Switch (arg, sw), r
