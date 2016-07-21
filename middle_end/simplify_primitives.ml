@@ -128,6 +128,11 @@ let primitive (p : Lambda.primitive) (args, approxs) expr dbg ~size_int
       | Pisout -> S.const_bool_expr expr (y > x || y < 0)
       | _ -> expr, A.value_unknown Other, C.Benefit.zero
       end
+    | [Value_char x; Value_char y] ->
+      begin match p with
+      | Pintcomp cmp -> S.const_comparison_expr expr cmp x y
+      | _ -> expr, A.value_unknown Other, C.Benefit.zero
+      end
     | [Value_constptr x] ->
       begin match p with
       (* [Pidentity] should probably never appear, but is here for
