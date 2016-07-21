@@ -126,7 +126,6 @@ let primitive (p : Lambda.primitive) (args, approxs) expr dbg ~size_int
       | Pasrint when shift_precond -> S.const_int_expr expr (x asr y)
       | Pintcomp cmp -> S.const_comparison_expr expr cmp x y
       | Pisout -> S.const_bool_expr expr (y > x || y < 0)
-      (* [Psequand] and [Psequor] have special simplification rules, above. *)
       | _ -> expr, A.value_unknown Other, C.Benefit.zero
       end
     | [Value_constptr x] ->
