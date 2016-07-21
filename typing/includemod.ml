@@ -256,7 +256,8 @@ and try_modtypes env cxt subst mty1 mty2 =
         raise (Error[cxt, env, Unbound_module_path path])
       in
       let mty1 =
-        Mtype.strengthen true env (expand_module_alias env cxt p1) p1
+        Mtype.strengthen ~aliasable:true env
+          (expand_module_alias env cxt p1) p1
       in
       let cc = modtypes env cxt subst mty1 mty2 in
       match pres1 with
@@ -409,7 +410,8 @@ and signature_components old_env env cxt subst paired =
       let p1 = Pident id1 in
       let cc =
         modtypes env (Module id1::cxt) subst
-          (Mtype.strengthen true env mty1.md_type p1) mty2.md_type in
+          (Mtype.strengthen ~aliasable:true env mty1.md_type p1) mty2.md_type
+      in
       (pos, cc) :: comps_rec rem
   | (Sig_modtype(id1, info1), Sig_modtype(id2, info2), pos) :: rem ->
       modtype_infos env cxt subst id1 info1 info2;
@@ -463,9 +465,9 @@ let can_alias env path =
 
 let check_modtype_inclusion env mty1 path1 mty2 =
   try
-    let alias = can_alias env path1 in
+    let aliasable = can_alias env path1 in
     ignore(modtypes env [] Subst.identity
-                    (Mtype.strengthen alias env mty1 path1) mty2)
+                    (Mtype.strengthen ~aliasable env mty1 path1) mty2)
   with Error _ ->
     raise Not_found
 
