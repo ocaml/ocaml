@@ -407,8 +407,8 @@ type program_body =
   (** Cause the given expression, which may have a side effect, to be
       executed.  The resulting value is discarded.  [Effect] constructions
       are never re-ordered. *)
-  | End of Symbol.t
-  (** [End] accepts the root symbol: the only symbol that can never be
+  | End of Symbol.Set.t
+  (** [End] accepts the root symbols: the symbols that can never be
       eliminated. *)
 
 type program = {

@@ -443,7 +443,7 @@ let variable_and_symbol_invariants (program : Flambda.program) =
       loop env expr;
       loop_program_body env program
     | End root ->
-      check_symbol_is_bound env root
+      Symbol.Set.iter (check_symbol_is_bound env) root
   in
   let env =
     Symbol.Set.fold (fun symbol env ->

@@ -93,10 +93,16 @@ type t = private {
   invariant_params : Variable.Set.t Variable.Map.t Set_of_closures_id.Map.t;
   (* Function parameters known to be invariant (see [Invariant_params])
      indexed by set of closures ID. *)
+  code : Flambda.program option;
 }
 
 (** Export information for a compilation unit that exports nothing. *)
 val empty : t
+
+(** Export information for a compilation unit that exports nothing but
+    the code. Used to build cmxa files with for whole program
+    compilation. *)
+val empty_with_code : code:Flambda.program option -> t
 
 (** Create a new export information structure. *)
 val create
@@ -108,6 +114,7 @@ val create
   -> offset_fv:int Var_within_closure.Map.t
   -> constant_sets_of_closures:Set_of_closures_id.Set.t
   -> invariant_params:Variable.Set.t Variable.Map.t Set_of_closures_id.Map.t
+  -> code:Flambda.program option
   -> t
 
 (* CR-someday pchambart: Should we separate [t] in 2 types: one created by the

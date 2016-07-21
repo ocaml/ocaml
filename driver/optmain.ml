@@ -114,6 +114,8 @@ module Options = Main_args.Make_optcomp_options (struct
   let _clambda_checks () = clambda_checks := true
   let _compact = clear optimize_for_speed
   let _config () = show_config ()
+  let _cmx_contains_all_code b () = cmx_contains_all_code := b
+  let _whole_program_rebuild = set whole_program_rebuild
   let _for_pack s = for_package := Some s
   let _g = set debug
   let _i () = print_types := true; compile_only := true
@@ -343,7 +345,7 @@ let main () =
           default_output !output_name
       in
       Compmisc.init_path true;
-      Asmlink.link ppf (get_objfiles ~with_ocamlparam:true) target;
+      Asmlink.link ~backend ppf (get_objfiles ~with_ocamlparam:true) target;
       Warnings.check_fatal ();
     end;
   with x ->

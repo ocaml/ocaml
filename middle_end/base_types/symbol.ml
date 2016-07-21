@@ -64,7 +64,7 @@ let unsafe_create compilation_unit label =
   let hash = Linkage_name.hash label in
   { compilation_unit; label; hash; }
 
-let import_for_pack ~pack:compilation_unit symbol =
+let import_to_compilation_unit ~unit:compilation_unit symbol =
   let hash = Linkage_name.hash symbol.label in
   { compilation_unit; label = symbol.label; hash; }
 

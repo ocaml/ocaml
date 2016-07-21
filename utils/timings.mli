@@ -22,6 +22,7 @@ type source_provenance =
   | Pack of string
   | Startup
   | Toplevel
+  | Link
 
 type compiler_pass =
   | All

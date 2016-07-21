@@ -23,6 +23,9 @@ open Misc
 open Config
 open Cmo_format
 
+(* Command line option to prevent printing approximation *)
+let no_approx = ref false
+
 let input_stringlist ic len =
   let get_string_list sect len =
     let rec fold s e acc =
@@ -122,16 +125,28 @@ let print_cmx_infos (ui, crc) =
     ui.ui_name crc ui.ui_defines ui.ui_imports_cmi ui.ui_imports_cmx;
   begin match ui.ui_export_info with
   | Clambda approx ->
-    printf "Approximation:\n";
-    Format.fprintf Format.std_formatter "  %a@." Printclambda.approx approx
+    if not !no_approx then begin
+      printf "Clambda approximation:\n";
+      Format.fprintf Format.std_formatter "  %a@." Printclambda.approx approx
+    end else
+      Format.printf "Clambda unit@.";
   | Flambda export ->
-    printf "Flambda export information:\n";
-    let cu =
-      Compilation_unit.create (Ident.create_persistent ui.ui_name)
-        (Linkage_name.create "__dummy__")
+    if not !no_approx then begin
+      printf "Flambda export information:\n";
+      let cu =
+        Compilation_unit.create (Ident.create_persistent ui.ui_name)
+          (Linkage_name.create "__dummy__")
+      in
+      Compilation_unit.set_current cu;
+      Format.printf " %a@." Export_info.print_all export
+    end else
+      Format.printf "Flambda unit@.";
+    let lto ppf = function
+      | None -> Format.fprintf ppf "no"
+      | Some _ -> Format.fprintf ppf "yes"
     in
-    Compilation_unit.set_current cu;
-    Format.printf " %a\n" Export_info.print_all export
+    Format.printf "Whole program information: %a\n"
+      lto export.Export_info.code;
   end;
   let pr_funs _ fns =
     List.iter (fun arity -> printf " %d" arity) fns in
@@ -291,7 +306,9 @@ let dump_obj filename =
     end
   end
 
-let arg_list = []
+let arg_list = [
+  "-no-approx", Arg.Set no_approx, " Do not print module approximation information"
+]
 let arg_usage =
    Printf.sprintf "%s [OPTIONS] FILES : give information on files" Sys.argv.(0)
 

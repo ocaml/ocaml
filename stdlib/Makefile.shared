@@ -24,9 +24,14 @@ COMPFLAGS=-strict-sequence -absname -w +a-4-9-41-42-44-45-48 \
           -g -warn-error A -bin-annot -nostdlib \
           -safe-string -strict-formats
 ifeq "$(FLAMBDA)" "true"
-OPTCOMPFLAGS=-O3
+OPTCOMPFLAGS=-O3 -lto
 else
 OPTCOMPFLAGS=
+endif
+ifeq "$(FLAMBDA)" "true"
+OPTLIBFLAGS=-lto
+else
+OPTLIBFLAGS=
 endif
 OPTCOMPILER=../ocamlopt
 CAMLOPT=$(CAMLRUN) $(OPTCOMPILER)
@@ -81,7 +86,7 @@ stdlib.cma: $(OBJS)
 	$(CAMLC) -a -o stdlib.cma $(OBJS)
 
 stdlib.cmxa: $(OBJS:.cmo=.cmx)
-	$(CAMLOPT) -a -o stdlib.cmxa $(OBJS:.cmo=.cmx)
+	$(CAMLOPT) $(OPTLIBFLAGS) -a -o stdlib.cmxa $(OBJS:.cmo=.cmx)
 
 sys.ml: sys.mlp ../VERSION
 	sed -e "s|%%VERSION%%|`sed -e 1q ../VERSION`|" sys.mlp >sys.ml

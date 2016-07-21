@@ -434,7 +434,7 @@ let introduce_needed_import_symbols program : Flambda.program =
     imported_symbols = needed_import_symbols program;
   }
 
-let root_symbol (program : Flambda.program) =
+let root_symbols (program : Flambda.program) : Symbol.Set.t =
   let rec loop (program : Flambda.program_body) =
     match program with
     | Effect (_, program)
@@ -838,3 +838,121 @@ let projection_to_named (projection : Projection.t) : Flambda.named =
   | Move_within_set_of_closures move -> Move_within_set_of_closures move
   | Field (field_index, var) ->
     Prim (Pfield field_index, [var], Debuginfo.none)
+
+(* Written in CPS style to avoid stack overflows *)
+let rec concatenate_body (head:Flambda.program_body) (tail:Symbol.Set.t * Flambda.program_body list)
+  : Flambda.program_body =
+  match head with
+  | Let_rec_symbol (defs, program) ->
+    concatenate_body program tail |> fun program : Flambda.program_body ->
+    Let_rec_symbol (defs, program)
+  | Let_symbol (symbol, def, program) ->
+    concatenate_body program tail |> fun program : Flambda.program_body ->
+    Let_symbol (symbol, def, program)
+  | Initialize_symbol (symbol, tag, fields, program) ->
+    concatenate_body program tail |> fun program : Flambda.program_body ->
+    Initialize_symbol (symbol, tag, fields, program)
+  | Effect (expr, program) ->
+    concatenate_body program tail |> fun program : Flambda.program_body ->
+    Effect (expr, program)
+  | End root ->
+    let (roots, tail_programs) = tail in
+    match tail_programs with
+    | [] ->
+      End (Symbol.Set.union roots root)
+    | new_head :: new_tail_programs ->
+      let roots = Symbol.Set.union roots root in
+      concatenate_body new_head (roots, new_tail_programs)
+
+let concatenate (l:Flambda.program list) : Flambda.program =
+  match l with
+  | [] ->
+    { program_body = End Symbol.Set.empty;
+      imported_symbols = Symbol.Set.empty }
+  | head :: tail ->
+    let program_body =
+      concatenate_body head.program_body
+        (Symbol.Set.empty,
+         List.map (fun p -> p.Flambda.program_body) tail)
+    in
+    introduce_needed_import_symbols { head with program_body }
+
+let rec clear_end (p:Flambda.program_body) : Flambda.program_body =
+  match p with
+  | Let_rec_symbol (defs, program) ->
+    Let_rec_symbol (defs, clear_end program)
+  | Let_symbol (symbol, def, program) ->
+    Let_symbol (symbol, def, clear_end program)
+  | Initialize_symbol (symbol, tag, fields, program) ->
+    Initialize_symbol (symbol, tag, fields, clear_end program)
+  | Effect (expr, program) ->
+    Effect (expr, clear_end program)
+  | End _ ->
+    End (Symbol.Set.empty)
+
+let clear_all_exported_symbols (p:Flambda.program) =
+  { p with program_body = clear_end p.program_body }
+
+type replace_env = Symbol.t Symbol.Map.t
+
+let empty_replace_env = Symbol.Map.empty
+
+let redefine_symbol env compilation_unit symbol =
+  let new_symbol =
+    Symbol.import_to_compilation_unit ~unit:compilation_unit symbol
+  in
+  new_symbol, Symbol.Map.add symbol new_symbol env
+
+let rec replace_definitions
+    (env:replace_env) (compilation_unit:Compilation_unit.t)
+    (program:Flambda.program_body)
+  : Flambda.program_body * replace_env =
+  match program with
+  | Let_symbol (symbol, def, program) ->
+    let symbol, env = redefine_symbol env compilation_unit symbol in
+    replace_definitions env compilation_unit program |> fun (program, env) ->
+    Flambda.Let_symbol (symbol, def, program), env
+  | Initialize_symbol (symbol, tag, fields, program) ->
+    let symbol, env = redefine_symbol env compilation_unit symbol in
+    replace_definitions env compilation_unit program |> fun (program, env) ->
+    Flambda.Initialize_symbol (symbol, tag, fields, program), env
+  | Effect (expr, program) ->
+    replace_definitions env compilation_unit program |> fun (program, env) ->
+    Flambda.Effect (expr, program), env
+  | Let_rec_symbol (defs, program) ->
+    let defs, env =
+      List.fold_right (fun (symbol, expr) (defs, env) ->
+          let symbol, env = redefine_symbol env compilation_unit symbol in
+          (symbol, expr) :: defs, env)
+        defs ([], env)
+    in
+    replace_definitions env compilation_unit program |> fun (program, env) ->
+    Flambda.Let_rec_symbol (defs, program), env
+  | End set ->
+    Flambda.End (Symbol.Set.map (fun s -> Symbol.Map.find s env) set),
+    env
+
+let replace_symbol_in_code env (program:Flambda.program) =
+  let get_symbol sym =
+    match Symbol.Map.find sym env with
+    | exception Not_found ->
+      if Symbol.Set.mem sym program.imported_symbols then
+        sym
+      else
+        Misc.fatal_errorf "Missing symbol: %a@." Symbol.print sym
+    | sym -> sym
+  in
+  Flambda_iterators.map_named_of_program program ~f:(fun _ named ->
+      match named with
+      | Symbol sym -> Symbol (get_symbol sym)
+      | Read_symbol_field (sym, field) ->
+        Read_symbol_field (get_symbol sym, field)
+      | e -> e)
+
+let replace_compilation_unit_of_symbols
+    (compilation_unit:Compilation_unit.t) (program:Flambda.program)
+  : Flambda.program =
+  let program_body, env =
+    replace_definitions empty_replace_env compilation_unit program.program_body
+  in
+  replace_symbol_in_code env { program with program_body }

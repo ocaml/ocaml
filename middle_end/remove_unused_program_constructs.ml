@@ -70,7 +70,12 @@ let rec loop (program : Flambda.program_body)
     let defs =
       List.filter (fun (sym, _) -> Symbol.Set.mem sym dep) defs
     in
-    Let_rec_symbol (defs, program), dep
+    begin match defs with
+    | [] ->
+      program, dep
+    | _ ->
+      Let_rec_symbol (defs, program), dep
+    end
   | Initialize_symbol (sym, tag, fields, program) ->
     let program, dep = loop program in
     if Symbol.Set.mem sym dep then
@@ -100,7 +105,7 @@ let rec loop (program : Flambda.program_body)
       let dep = Symbol.Set.union new_dep dep in
       Effect (effect, program), dep
     end
-  | End symbol -> program, Symbol.Set.singleton symbol
+  | End symbol -> program, symbol
 
 let remove_unused_program_constructs (program : Flambda.program) =
   { program with
