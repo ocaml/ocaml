@@ -575,7 +575,7 @@ let () =
            Sig_module (id, {md with md_type = trim_signature md.md_type},
                        Trec_not) :: acc in
          match md.md_type with
-         | Mty_alias path ->
+         | Mty_alias(_, path) ->
              let lid' = Untypeast.lident_of_path path in
              accum_aliases lid' acc
          | Mty_ident _ | Mty_signature _ | Mty_functor _ ->

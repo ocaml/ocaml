@@ -87,7 +87,7 @@ let rec narrow_unbound_lid_error : 'a. _ -> _ -> _ -> _ -> 'a =
       begin match Env.scrape_alias env md.md_type with
       | Mty_functor _ ->
           raise (Error (loc, env, Access_functor_as_structure mlid))
-      | Mty_alias p ->
+      | Mty_alias(_, p) ->
           raise (Error (loc, env, Cannot_scrape_alias(mlid, p)))
       | _ -> ()
       end
@@ -97,14 +97,14 @@ let rec narrow_unbound_lid_error : 'a. _ -> _ -> _ -> _ -> 'a =
       begin match Env.scrape_alias env fmd.md_type with
       | Mty_signature _ ->
           raise (Error (loc, env, Apply_structure_as_functor flid))
-      | Mty_alias p ->
+      | Mty_alias(_, p) ->
           raise (Error (loc, env, Cannot_scrape_alias(flid, p)))
       | _ -> ()
       end;
       check_module mlid;
       let mmd = Env.find_module (Env.lookup_module ~load:true mlid env) env in
       begin match Env.scrape_alias env mmd.md_type with
-      | Mty_alias p ->
+      | Mty_alias(_, p) ->
           raise (Error (loc, env, Cannot_scrape_alias(mlid, p)))
       | _ ->
           raise (Error (loc, env, Ill_typed_functor_application lid))
