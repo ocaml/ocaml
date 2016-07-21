@@ -197,7 +197,8 @@ let primitive (p : Lambda.primitive) (args, approxs) expr dbg ~size_int
        (Value_int x | Value_constptr x)] when x >= 0 && x < size ->
         begin match p with
         | Pstringrefu
-        | Pstringrefs -> S.const_char_expr expr s.[x]
+        | Pstringrefs ->
+          S.const_char_expr (Prim(Pstringrefu, args, dbg)) s.[x]
         | _ -> expr, A.value_unknown Other, C.Benefit.zero
         end
     | [Value_string { size; contents = None };
