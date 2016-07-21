@@ -1,3 +1,9 @@
+(* TEST
+  * toplevel
+  * toplevel
+    include principal
+*)
+
 type foo = int;;
 
 class o =

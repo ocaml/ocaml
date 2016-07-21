@@ -1,3 +1,5 @@
+(* TEST *)
+
 open Printf
 
 external bswap16: int -> int = "%bswap16"

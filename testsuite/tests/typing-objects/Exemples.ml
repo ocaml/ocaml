@@ -1,3 +1,9 @@
+(* TEST
+  ocaml_opt_exit_status = "2"
+  * toplevel
+  * toplevel
+    include principal
+*)
 
 class point x_init = object
   val mutable x = x_init

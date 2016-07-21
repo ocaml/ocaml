@@ -1,3 +1,8 @@
+(* TEST
+  flags = " -w A "
+  * toplevel
+*)
+
 module TypEq = struct
  type (_, _) t = Eq : ('a, 'a) t
 end

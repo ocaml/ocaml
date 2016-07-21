@@ -1,3 +1,7 @@
+(* TEST
+  modules = "offset.ml pr6726.ml"
+*)
+
 (* PR#6435 *)
 
 module F (M : sig

@@ -301,7 +301,7 @@ installoptopt:
 
 # Run all tests
 
-tests: opt.opt
+tests: opt.opt ocamlnat ocamltest
 	cd testsuite; $(MAKE) clean && $(MAKE) all
 
 # The clean target
@@ -636,6 +636,16 @@ ocamlyacc:
 
 clean::
 	cd yacc; $(MAKE) clean
+
+# OCamltest
+ocamltest: ocamlc ocamlyacc ocamllex
+	cd ocamltest && $(MAKE)
+
+ocamltest.opt: ocamlc.opt ocamlyacc ocamllex
+	cd ocamltest && $(MAKE) ocamltest.opt
+
+partialclean::
+	cd ocamltest && $(MAKE) clean
 
 # OCamldoc
 

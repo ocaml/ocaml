@@ -1,0 +1,181 @@
+# Introduction
+
+## Purpose
+
+The OCaml compiler's testsuite consists of a set of programs that
+are compiled and run by a set of makefiles to see whether the results
+they produce match the expected results.
+
+The aim of ocamltest is to replace the makefiles for compiling and
+running the tests and then checking their results, given that the exact way
+each test should be compiled and executed is specified in a dedicated
+comment appearing at the beginning of the main test file.
+
+## Constraints
+
+It may look odd at first glance to write the tool used to test the
+compiler in its target language. There are, however, parts of the
+compiler and the standard library that are already tested in a way,
+namely those used to compile the compiler itself. Therefore, these
+components can be considered more trustworthy than those that have
+not yet been used and that's
+why ocamltst relies only on the part of the stdlib that has been
+used to develop the compiler itself.
+
+This excludes for instance the use of the Unix and Str libraries.
+
+# Initial set-up
+
+Define the following environment variables:
+
+export OCAMLSRCDIR=/path/to/your/clone/of/ocaml/sources
+export OCAMLTESTDIR=/tmp/ocamltest
+
+OCAMLTESTDIR represents the directory where tests will be built
+It is expected to be outside of the source tree.
+
+Then, compile OCaml:
+
+./configure
+make world.opt
+make tests
+
+The last command will compile all the prerequisites of tets and run them.
+
+In particular, it is worth noting that, by default, when
+ocamltest encounters a toplevel test, it will run it under both bytecode
+and native toplevels, so that ocamlnat becomes a prerequisite for
+certain tests.
+
+# Running tests
+
+(all the commands below are assumed to be run from OCAMLSRCDIR/testsuite)
+
+From here, one can:
+
+## Run all tests: make all
+
+This runs the complete testsuite. Thhis includes the "legacy" tests
+that still use the makefile-based infrastructure and the "new" tests
+that have been migrated to use ocamltest.
+
+## Run legacy tests: make legacy
+
+## Run new tests: make new
+
+## Run tests manually
+
+It is convenient to have the following ocamltest script in a directory
+appearing in PATH, like ~/bin:
+
+#!/bin/sh
+TERM=dumb OCAMLRUNPARAM= ${OCAMLSRCDIR}/ocamltest/ocamltest.byte $*
+
+Once this file has been made executable, one can for instance run:
+
+ocamltest tests/basic-io/wc.ml
+
+As can be seen, ocamltest's output looks similar to the legacy format. 
+
+This is to make the transition between the makefile-based
+infrastructure and ocamltest as smooth as possible. Once all the
+tests will have been migrated to ocamltest, it will become possible to
+change this output format.
+
+The details of what exactly has been tested can be found in
+${OCAMLTESTDIR}/tests/basic-io/wc/wc.log
+
+One can then have a look to tests/basic-io/wc.ml to see how the file
+had to be annotated to produce such a result.
+
+Other tests have also already been migrated and it may be useful to see
+how the test files have been annotated.
+
+git log tests
+
+gives a list of tests that have been modified and can therefore be used
+as starting points to understand what ocamltest can do.
+
+# Migrating tests from makefiles to ocamltest
+
+It may be a good idea to run make new from the testsuite directory before
+starting to migrate tests. This will show how many "new" tests there
+already are.
+
+Then, when running make new after having migrated n tests,
+the number of new tests reported by make new should have increased by n.
+
+OCaml's testsuite is divided into directories, each of them
+containing one or several tests, which can each consist of one or
+several files.
+
+Thus, directories are the smallest unit that can be migrated.
+
+To see which directories still need to be migrated, do:
+
+find tests -name 'Makefile'
+
+In other words, the directories that still need to be migrated are all
+the directories of testsuite/tests that still contain a Makefile.
+
+Once you knwo which directory you want to migrate, say foo, here is how
+you can do:
+
+Read foo/Makefile to see how many tests the directory contains and how
+they are compiled. If the makefile only includes other makefiles and
+does not define any variable, then it means that nothing special
+has to be done to compile or run the tests.
+
+For each test, annotate its main file with a test block, i.e. a
+comment that looks like this:
+
+(* TEST
+  Optional variable assignments and tests
+*)
+
+In particular, if the test's main file is foo.ml and the test uses
+modules m1.ml and m2.ml, the test block will look like ths:
+
+(* TEST
+  modules = "m1.ml m2.ml"
+*)
+
+And if the test consists of a single file foo.ml that needs to be
+run under the top-level, then its test block will look like this:
+
+(* TEST
+  * toplevel
+*)
+
+Or, if there are two reference files for that test and the name
+of one of them contains "principal", then it means the file should
+be tested with the toplevel, without and with the -principal option.
+This is expressed as follows:
+
+(* TEST
+  * toplevel
+  * toplevel
+    include principal
+*)
+
+Lines starting with stars indicate which tests to run. If no test is
+specified, then the tests that are enabled by default are used,
+namely to compile the test program with both bytecode and native
+compilers, roughly speaking.
+
+Once your test has been annotated, run ocamltest on it and see
+whether it passes or fails. If it fails, see the log file to understand why
+and make the necessary adjustments until all the tests pass.
+
+The adjustments will mostly consist in renaming reference files and
+updating their content.
+
+Note that there are different types of refrence files, those for
+compiler output and those for program output.
+
+Once this has been done for all tests, create a file called "ocamltests"
+(mark the final s!) and containing the names of all the files that
+have been annotated for ocamltest, one per line.
+
+Finally, git rm the Makefile and run make new from the testsuite directory
+to make sure the number of new tests has increased as expected.

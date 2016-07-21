@@ -1,3 +1,5 @@
+(* TEST *)
+
 external ( |> ) : 'a -> ('a -> 'b) -> 'b = "%revapply"
 
 let f x = x + x

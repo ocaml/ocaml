@@ -1,3 +1,10 @@
+(* TEST
+  ocaml_opt_exit_status = "2"
+  * toplevel
+  * toplevel
+    include principal
+*)
+
 (* Subtyping is "syntactic" *)
 fun (x : < x : int >) y z -> (y :> 'a), (x :> 'a), (z :> 'a);;
 (* - : (< x : int > as 'a) -> 'a -> 'a * 'a = <fun> *)

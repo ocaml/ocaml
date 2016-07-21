@@ -1,3 +1,8 @@
+(* TEST
+  flags = " -w A "
+  * toplevel
+*)
+
 type t = A : t;;
 
 module X1 : sig end = struct

@@ -1,3 +1,7 @@
+(* TEST
+  * toplevel
+*)
+
 (* Benoit's patch did not support %_[nlNL]; test their behavior *)
 
 (* not supported by Printf or Format: fails at runtime *)

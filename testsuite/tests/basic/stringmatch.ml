@@ -1,3 +1,5 @@
+(* TEST *)
+
 (* Empty string oddities *)
 
 let rec tst01 s = match s with

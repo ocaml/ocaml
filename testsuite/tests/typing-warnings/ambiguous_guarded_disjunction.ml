@@ -1,3 +1,8 @@
+(* TEST
+  flags = " -w A "
+  * toplevel
+*)
+
 let () = print_endline "\n\
   <----------------------------------------------------------------------\n\
   To check the result file for this test, it suffices to look for \"val\"\n\

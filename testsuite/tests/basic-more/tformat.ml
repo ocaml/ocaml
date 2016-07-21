@@ -1,3 +1,7 @@
+(* TEST
+  include testing
+*)
+
 (*
 
 A testbed file for the module Format.
@@ -12,6 +16,7 @@ open Format;;
 let test0 () =
   let b = Buffer.create 10 in
   let msg = "Hello world!" in
+
   Format.bprintf b "%s" msg;
   let s = Buffer.contents b in
   s = msg
