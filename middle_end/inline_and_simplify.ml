@@ -1144,6 +1144,7 @@ and simplify env r (tree : Flambda.t) : Flambda.t * R.t =
             simplify env r handler
           | _ ->
             let vars, sb = Freshening.add_variables' (E.freshening env) vars in
+            let approx = R.approx r in
             let env =
               List.fold_left (fun env id ->
                   E.add env id (A.value_unknown Other))
@@ -1152,8 +1153,10 @@ and simplify env r (tree : Flambda.t) : Flambda.t * R.t =
             let env = E.inside_branch env in
             let handler, r = simplify env r handler in
             let r = R.exit_scope_catch r i in
+            let module Backend = (val (E.backend env) : Backend_intf.S) in
+            let really_import_approx = Backend.really_import_approx in
             Static_catch (i, vars, body, handler),
-              ret r (A.value_unknown Other)
+            R.set_approx r (A.meet ~really_import_approx (R.approx r) approx)
         end
     end
   | Try_with (body, id, handler) ->
@@ -1285,10 +1288,15 @@ and simplify env r (tree : Flambda.t) : Flambda.t * R.t =
       end)
   | String_switch (arg, sw, def) ->
     simplify_free_variable env arg ~f:(fun env arg _arg_approx ->
+      let module Backend = (val (E.backend env) : Backend_intf.S) in
+      let really_import_approx = Backend.really_import_approx in
+      let env = E.inside_branch env in
       let sw, r =
         List.fold_right (fun (str, lam) (sw, r) ->
+            let approx = R.approx r in
             let lam, r = simplify env r lam in
-            (str, lam)::sw, r)
+            (str, lam)::sw,
+            R.set_approx r (A.meet ~really_import_approx (R.approx r) approx))
           sw
           ([], r)
       in
@@ -1296,10 +1304,12 @@ and simplify env r (tree : Flambda.t) : Flambda.t * R.t =
         match def with
         | None -> def, r
         | Some def ->
+          let approx = R.approx r in
           let def, r = simplify env r def in
-          Some def, r
+          Some def,
+          R.set_approx r (A.meet ~really_import_approx (R.approx r) approx)
       in
-      String_switch (arg, sw, def), ret r (A.value_unknown Other))
+      String_switch (arg, sw, def), r)
   | Proved_unreachable -> tree, ret r A.value_bottom
 
 and simplify_list env r l =
