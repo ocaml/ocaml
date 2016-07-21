@@ -33,18 +33,18 @@ let rec scrape env mty =
 let freshen mty =
   Subst.modtype Subst.identity mty
 
-let rec strengthen alias env mty p =
+let rec strengthen ~aliasable env mty p =
   match scrape env mty with
     Mty_signature sg ->
-      Mty_signature(strengthen_sig alias env sg p 0)
+      Mty_signature(strengthen_sig ~aliasable env sg p 0)
   | Mty_functor(param, arg, res)
     when !Clflags.applicative_functors && Ident.name param <> "*" ->
       Mty_functor(param, arg,
-        strengthen false env res (Papply(p, Pident param)))
+        strengthen ~aliasable:false env res (Papply(p, Pident param)))
   | mty ->
       mty
 
-and strengthen_sig alias env sg p pos =
+and strengthen_sig ~aliasable env sg p pos =
   match sg with
     [] -> []
   | (Sig_value(_, desc) as sigelt) :: rem ->
@@ -53,11 +53,11 @@ and strengthen_sig alias env sg p pos =
         | Val_prim _ -> pos
         | _ -> pos + 1
       in
-      sigelt :: strengthen_sig alias env rem p nextpos
+      sigelt :: strengthen_sig ~aliasable env rem p nextpos
   | Sig_type(id, {type_kind=Type_abstract}, _) ::
     (Sig_type(id', {type_private=Private}, _) :: _ as rem)
     when Ident.name id = Ident.name id' ^ "#row" ->
-      strengthen_sig alias env rem p pos
+      strengthen_sig ~aliasable env rem p pos
   | Sig_type(id, decl, rs) :: rem ->
       let newdecl =
         match decl.type_manifest, decl.type_private, decl.type_kind with
@@ -72,13 +72,13 @@ and strengthen_sig alias env sg p pos =
             else
               { decl with type_manifest = manif }
       in
-      Sig_type(id, newdecl, rs) :: strengthen_sig alias env rem p pos
+      Sig_type(id, newdecl, rs) :: strengthen_sig ~aliasable env rem p pos
   | (Sig_typext _ as sigelt) :: rem ->
-      sigelt :: strengthen_sig alias env rem p (pos+1)
+      sigelt :: strengthen_sig ~aliasable env rem p (pos+1)
   | Sig_module(id, md, rs) :: rem ->
-      let str = strengthen_decl alias env md (Pdot(p, Ident.name id, pos)) in
+      let str = strengthen_decl ~aliasable env md (Pdot(p, Ident.name id, pos)) in
       Sig_module(id, str, rs)
-      :: strengthen_sig alias
+      :: strengthen_sig ~aliasable
         (Env.add_module_declaration ~check:false id md env) rem p (pos+1)
       (* Need to add the module in case it defines manifest module types *)
   | Sig_modtype(id, decl) :: rem ->
@@ -90,18 +90,18 @@ and strengthen_sig alias env sg p pos =
             decl
       in
       Sig_modtype(id, newdecl) ::
-      strengthen_sig alias (Env.add_modtype id decl env) rem p pos
+      strengthen_sig ~aliasable (Env.add_modtype id decl env) rem p pos
       (* Need to add the module type in case it is manifest *)
   | (Sig_class _ as sigelt) :: rem ->
-      sigelt :: strengthen_sig alias env rem p (pos+1)
+      sigelt :: strengthen_sig ~aliasable env rem p (pos+1)
   | (Sig_class_type _ as sigelt) :: rem ->
-      sigelt :: strengthen_sig alias env rem p pos
+      sigelt :: strengthen_sig ~aliasable env rem p pos
 
-and strengthen_decl alias env md p =
+and strengthen_decl ~aliasable env md p =
   match md.md_type with
   | Mty_alias _ -> md
-  | _ when alias -> {md with md_type = Mty_alias(Mta_present, p)}
-  | mty -> {md with md_type = strengthen alias env mty p}
+  | _ when aliasable -> {md with md_type = Mty_alias(Mta_present, p)}
+  | mty -> {md with md_type = strengthen ~aliasable env mty p}
 
 let () = Env.strengthen := strengthen
 

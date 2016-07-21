@@ -324,8 +324,8 @@ let check_modtype_inclusion =
           t -> module_type -> Path.t -> module_type -> unit)
 let strengthen =
   (* to be filled with Mtype.strengthen *)
-  ref ((fun _alias _env _mty _path -> assert false) :
-         bool -> t -> module_type -> Path.t -> module_type)
+  ref ((fun ~aliasable:_ _env _mty _path -> assert false) :
+         aliasable:bool -> t -> module_type -> Path.t -> module_type)
 
 let md md_type =
   {md_type; md_attributes=[]; md_loc=Location.none}
@@ -1307,7 +1307,7 @@ let rec scrape_alias env ?path mty =
         mty
       end
   | mty, Some path ->
-      !strengthen true env mty path
+      !strengthen ~aliasable:true env mty path
   | _ -> mty
 
 let scrape_alias env mty = scrape_alias env mty
