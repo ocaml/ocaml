@@ -53,8 +53,8 @@ exception Use_code of string
 let simpl_module_type ?code t =
   let rec iter t =
     match t with
-      Types.Mty_ident p -> t
-    | Types.Mty_alias p -> t
+      Types.Mty_ident _
+    | Types.Mty_alias(_, _) -> t
     | Types.Mty_signature _ ->
         (
          match code with
