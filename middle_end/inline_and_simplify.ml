@@ -1008,8 +1008,7 @@ and simplify_named env r (tree : Flambda.named) : Flambda.named * R.t =
               | None | Some (_, Some _ ) ->
                 (* This [Pfield] is either not projecting from a symbol at all,
                    or it is the projection of a projection from a symbol. *)
-                let module Backend = (val (E.backend env) : Backend_intf.S) in
-                let approx' = Backend.really_import_approx approx in
+                let approx' = E.really_import_approx env approx in
                 tree, approx'
             in
             simplify_named_using_approx_and_env env r tree approx
@@ -1187,8 +1186,7 @@ and simplify env r (tree : Flambda.t) : Flambda.t * R.t =
             let env = E.inside_branch env in
             let handler, r = simplify env r handler in
             let r = R.exit_scope_catch r i in
-            let module Backend = (val (E.backend env) : Backend_intf.S) in
-            let really_import_approx = Backend.really_import_approx in
+            let really_import_approx = E.really_import_approx env in
             Static_catch (i, vars, body, handler),
             R.set_approx r (A.meet ~really_import_approx (R.approx r) approx)
         end
@@ -1219,8 +1217,7 @@ and simplify env r (tree : Flambda.t) : Flambda.t * R.t =
         let ifso_approx = R.approx r in
         let ifnot, r = simplify env r ifnot in
         let ifnot_approx = R.approx r in
-        let module Backend = (val (E.backend env) : Backend_intf.S) in
-        let really_import_approx = Backend.really_import_approx in
+        let really_import_approx = E.really_import_approx env in
         If_then_else (arg, ifso, ifnot),
           ret r (A.meet ~really_import_approx ifso_approx ifnot_approx)
       end)
@@ -1298,8 +1295,7 @@ and simplify env r (tree : Flambda.t) : Flambda.t * R.t =
         lam, R.map_benefit r B.remove_branch
       | _ ->
         let env = E.inside_branch env in
-        let module Backend = (val (E.backend env) : Backend_intf.S) in
-        let really_import_approx = Backend.really_import_approx in
+        let really_import_approx = E.really_import_approx env in
         let f (i, v) (acc, r) =
           let approx = R.approx r in
           let lam, r = simplify env r v in
@@ -1323,8 +1319,7 @@ and simplify env r (tree : Flambda.t) : Flambda.t * R.t =
       end)
   | String_switch (arg, sw, def) ->
     simplify_free_variable env arg ~f:(fun env arg _arg_approx ->
-      let module Backend = (val (E.backend env) : Backend_intf.S) in
-      let really_import_approx = Backend.really_import_approx in
+      let really_import_approx = E.really_import_approx env in
       let env = E.inside_branch env in
       let sw, r =
         List.fold_right (fun (str, lam) (sw, r) ->

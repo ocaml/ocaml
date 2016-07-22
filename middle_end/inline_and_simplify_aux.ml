@@ -115,9 +115,9 @@ module Env = struct
         Mutable_variable.Map.add mut_var approx t.approx_mutable;
     }
 
-  let really_import_approx t approx =
+  let really_import_approx t =
     let module Backend = (val (t.backend) : Backend_intf.S) in
-    Backend.really_import_approx approx
+    Backend.really_import_approx
 
   let really_import_approx_with_scope t (scope, approx) =
     scope, really_import_approx t approx
