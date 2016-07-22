@@ -101,6 +101,9 @@ OCaml 4.04.0:
   (Alain Frisch, request by Edgar Aroutiounian, review by Daniel Bunzli
   and Damien Doligez)
 
+-* PR#7279 GPR#710: `Weak.get_copy` `Ephemeron.*_copy` doesn't copy anymore custom blocks
+  (François Bobot, Alain Frisch, bug reported by Martin R. Neuhäußer,
+  review by Thomas Braibant and Damien Doligez)
 
 ### Code generation and optimizations:
 
