@@ -1073,8 +1073,9 @@ let rec type_module ?(alias=false) sttn funct_body anchor env smod =
                  mod_env = env;
                  mod_attributes = smod.pmod_attributes;
                  mod_loc = smod.pmod_loc } in
+      let aliasable = not (Env.is_functor_arg path env) in
       let md =
-        if alias && not (Env.is_functor_arg path env) then
+        if alias && aliasable then
           (Env.add_required_global (Path.head path); md)
         else match (Env.find_module path env).md_type with
           Mty_alias(_, p1) when not alias ->
@@ -1088,7 +1089,7 @@ let rec type_module ?(alias=false) sttn funct_body anchor env smod =
                 else mty }
         | mty ->
             let mty =
-              if sttn then Mtype.strengthen ~aliasable:true env mty path
+              if sttn then Mtype.strengthen ~aliasable env mty path
               else mty
             in
             { md with mod_type = mty }
