@@ -39,6 +39,10 @@ module Env : sig
       compiler backend being used for compilation. *)
   val backend : t -> (module Backend_intf.S)
 
+  (** Obtain the really_import_approx function from the backend module. *)
+  val really_import_approx : t ->
+    (Simple_value_approx.t -> Simple_value_approx.t)
+
   (** Which simplification round we are currently in. *)
   val round : t -> int
 
