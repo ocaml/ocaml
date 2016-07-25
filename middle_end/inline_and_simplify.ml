@@ -1186,9 +1186,8 @@ and simplify env r (tree : Flambda.t) : Flambda.t * R.t =
             let env = E.inside_branch env in
             let handler, r = simplify env r handler in
             let r = R.exit_scope_catch r i in
-            let really_import_approx = E.really_import_approx env in
             Static_catch (i, vars, body, handler),
-            R.set_approx r (A.meet ~really_import_approx (R.approx r) approx)
+              R.meet_approx r env approx
         end
     end
   | Try_with (body, id, handler) ->
@@ -1216,10 +1215,8 @@ and simplify env r (tree : Flambda.t) : Flambda.t * R.t =
         let ifso, r = simplify env r ifso in
         let ifso_approx = R.approx r in
         let ifnot, r = simplify env r ifnot in
-        let ifnot_approx = R.approx r in
-        let really_import_approx = E.really_import_approx env in
         If_then_else (arg, ifso, ifnot),
-          ret r (A.meet ~really_import_approx ifso_approx ifnot_approx)
+          R.meet_approx r env ifso_approx
       end)
   | While (cond, body) ->
     let cond, r = simplify env r cond in
@@ -1295,12 +1292,11 @@ and simplify env r (tree : Flambda.t) : Flambda.t * R.t =
         lam, R.map_benefit r B.remove_branch
       | _ ->
         let env = E.inside_branch env in
-        let really_import_approx = E.really_import_approx env in
         let f (i, v) (acc, r) =
           let approx = R.approx r in
           let lam, r = simplify env r v in
-          ((i, lam)::acc,
-           R.set_approx r (A.meet ~really_import_approx (R.approx r) approx))
+          (i, lam)::acc,
+            R.meet_approx r env approx
         in
         let r = R.set_approx r A.value_bottom in
         let consts, r = List.fold_right f sw.consts ([], r) in
@@ -1312,21 +1308,20 @@ and simplify env r (tree : Flambda.t) : Flambda.t * R.t =
             let approx = R.approx r in
             let l, r = simplify env r l in
             Some l,
-            R.set_approx r (A.meet ~really_import_approx (R.approx r) approx)
+              R.meet_approx r env approx
         in
         let sw = { sw with failaction; consts; blocks; } in
         Switch (arg, sw), r
       end)
   | String_switch (arg, sw, def) ->
     simplify_free_variable env arg ~f:(fun env arg _arg_approx ->
-      let really_import_approx = E.really_import_approx env in
       let env = E.inside_branch env in
       let sw, r =
         List.fold_right (fun (str, lam) (sw, r) ->
             let approx = R.approx r in
             let lam, r = simplify env r lam in
             (str, lam)::sw,
-            R.set_approx r (A.meet ~really_import_approx (R.approx r) approx))
+              R.meet_approx r env approx)
           sw
           ([], r)
       in
@@ -1337,7 +1332,7 @@ and simplify env r (tree : Flambda.t) : Flambda.t * R.t =
           let approx = R.approx r in
           let def, r = simplify env r def in
           Some def,
-          R.set_approx r (A.meet ~really_import_approx (R.approx r) approx)
+            R.meet_approx r env approx
       in
       String_switch (arg, sw, def), r)
   | Proved_unreachable -> tree, ret r A.value_bottom

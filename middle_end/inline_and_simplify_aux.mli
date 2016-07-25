@@ -40,8 +40,9 @@ module Env : sig
   val backend : t -> (module Backend_intf.S)
 
   (** Obtain the really_import_approx function from the backend module. *)
-  val really_import_approx : t ->
-    (Simple_value_approx.t -> Simple_value_approx.t)
+  val really_import_approx
+     : t
+    -> (Simple_value_approx.t -> Simple_value_approx.t)
 
   (** Which simplification round we are currently in. *)
   val round : t -> int
@@ -282,6 +283,12 @@ module Result : sig
       simplified.  Typically used just before returning from a case of the
       simplification algorithm. *)
   val set_approx : t -> Simple_value_approx.t -> t
+
+  (** Set the approximation of the subexpression to the meet of the
+      current return aprroximation and the provided one. Typically
+      used just before returning from a branch case of the
+      simplification algorithm. *)
+  val meet_approx : t -> Env.t -> Simple_value_approx.t -> t
 
   (** All static exceptions for which [use_staticfail] has been called on
       the given result structure. *)
