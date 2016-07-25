@@ -157,7 +157,7 @@ let value_kind env ty =
 
 
 let lazy_val_requires_forward env ty =
-  let ty = Ctype.repr ty in
+  let ty = scrape_ty env ty in
   match ty.desc with
   (* the following may represent a float/forward/lazy: need a
      forward_tag *)
