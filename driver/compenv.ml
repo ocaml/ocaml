@@ -205,6 +205,7 @@ let read_one_param ppf position name v =
   | "strict-sequence" -> set "strict-sequence" [ strict_sequence ] v
   | "strict-formats" -> set "strict-formats" [ strict_formats ] v
   | "thread" -> set "thread" [ use_threads ] v
+  | "unboxed-types" -> set "unboxed-types" [ unboxed_types ] v
   | "unsafe" -> set "unsafe" [ fast ] v
   | "verbose" -> set "verbose" [ verbose ] v
   | "nopervasives" -> set "nopervasives" [ nopervasives ] v

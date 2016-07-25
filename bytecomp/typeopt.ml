@@ -21,7 +21,20 @@ open Typedtree
 open Lambda
 
 let scrape env ty =
-  (Ctype.repr (Ctype.expand_head_opt env (Ctype.correct_levels ty))).desc
+  match
+    (Ctype.repr (Ctype.expand_head_opt env (Ctype.correct_levels ty))).desc
+  with
+  | Tconstr (p, _, _) as desc ->
+      begin match Env.find_type p env with
+      | {type_unboxed = {unboxed = true; _}; _} ->
+        begin match Typedecl.get_unboxed_type_representation env ty with
+        | None -> desc
+        | Some ty2 -> ty2.desc
+        end
+      | _ -> desc
+      | exception Not_found -> desc
+      end
+  | desc -> desc
 
 let is_function_type env ty =
   match scrape env ty with

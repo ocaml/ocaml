@@ -71,7 +71,7 @@ let flambda = %%FLAMBDA%%
 let safe_string = %%SAFE_STRING%%
 
 let exec_magic_number = "Caml1999X011"
-and cmi_magic_number = "Caml1999I020"
+and cmi_magic_number = "Caml1999I021"
 and cmo_magic_number = "Caml1999O011"
 and cma_magic_number = "Caml1999A012"
 and cmx_magic_number =
@@ -87,7 +87,7 @@ and cmxa_magic_number =
 and ast_impl_magic_number = "Caml1999M019"
 and ast_intf_magic_number = "Caml1999N018"
 and cmxs_magic_number = "Caml2007D002"
-and cmt_magic_number = "Caml2012T007"
+and cmt_magic_number = "Caml2012T008"
 
 let load_path = ref ([] : string list)
 

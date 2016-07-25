@@ -1758,6 +1758,22 @@ Some attributes are understood by the type-checker:
   enumerated types). Mutation of these immediate types does not activate the
   garbage collector's write barrier, which can significantly boost performance in
   programs relying heavily on mutable state.
+\item
+  "ocaml.unboxed" or "unboxed" can be used on a type definition if the
+  type is a single-field record or a concrete type with a single
+  constructor that has a single argument. It tells the compiler to
+  optimize the representation of the type by removing the block that
+  represents the record or the constructor (i.e. a value of this type
+  is physically equal to its argument). In the case of GADTs, an
+  additional restriction applies: the argument must not be an
+  existential variable, represented by an existential type variable,
+  or an abstract type constructor applied to an existential type
+  variable.
+\item
+   "ocaml.boxed" or "boxed" can be used on type definitions to mean
+   the opposite of "ocaml.unboxed": keep the unoptimized
+   representation of the type. When there is no annotation, the
+   default is currently "boxed" but it may change in the future.
 \end{itemize}
 
 \begin{verbatim}
