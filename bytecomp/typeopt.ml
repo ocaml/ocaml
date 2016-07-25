@@ -158,7 +158,8 @@ let value_kind env ty =
 
 let lazy_val_requires_forward env ty =
   let ty = scrape_ty env ty in
-  match ty.desc with
+  if maybe_pointer_type env ty = Immediate then false
+  else match ty.desc with
   (* the following may represent a float/forward/lazy: need a
      forward_tag *)
   | Tvar _ | Tunivar _
@@ -168,22 +169,17 @@ let lazy_val_requires_forward env ty =
      optimize *)
   | Tarrow _ | Ttuple _ | Tpackage _ | Tobject _ | Tnil | Tvariant _ ->
       false
-  (* optimize predefined types (excepted float) *)
-  | Tconstr _ when
-      is_base_type env ty Predef.path_int
-      || is_base_type env ty Predef.path_char
-      || is_base_type env ty Predef.path_string
-      || is_base_type env ty Predef.path_bool
-      || is_base_type env ty Predef.path_unit
-      || is_base_type env ty Predef.path_exn
-      || is_base_type env ty Predef.path_array
-      || is_base_type env ty Predef.path_list
-      || is_base_type env ty Predef.path_option
-      || is_base_type env ty Predef.path_nativeint
-      || is_base_type env ty Predef.path_int32
-      || is_base_type env ty Predef.path_int64 ->
-      false
+
+  (* optimize predefined types (excepted float);
+     immediate types (int, bool, unit, char) have been dealt with already *)
   | Tconstr _ ->
-      true
+      not (is_base_type env ty Predef.path_string
+           || is_base_type env ty Predef.path_exn
+           || is_base_type env ty Predef.path_array
+           || is_base_type env ty Predef.path_list
+           || is_base_type env ty Predef.path_option
+           || is_base_type env ty Predef.path_nativeint
+           || is_base_type env ty Predef.path_int32
+           || is_base_type env ty Predef.path_int64)
   | Tlink _ | Tsubst _ ->
       assert false
