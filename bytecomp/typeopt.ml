@@ -48,9 +48,6 @@ let is_base_type env ty base_ty_path =
   | Tconstr(p, _, _) -> Path.same p base_ty_path
   | _ -> false
 
-let has_base_type exp base_ty_path =
-  is_base_type exp.exp_env exp.exp_type base_ty_path
-
 let maybe_pointer_type env ty =
   if Ctype.maybe_pointer_type env ty then
     Pointer
@@ -59,7 +56,7 @@ let maybe_pointer_type env ty =
 
 let maybe_pointer exp = maybe_pointer_type exp.exp_env exp.exp_type
 
-let array_element_kind env ty =
+let classify ~for_lazy env ty =
   let ty = scrape_ty env ty in
   if maybe_pointer_type env ty = Immediate then Pintarray
   else match ty.desc with
@@ -70,7 +67,7 @@ let array_element_kind env ty =
         Pfloatarray
       else if Path.same p Predef.path_string
            || Path.same p Predef.path_bytes
-           || Path.same p Predef.path_lazy_t
+           || (Path.same p Predef.path_lazy_t && not for_lazy)
            || Path.same p Predef.path_array
            || Path.same p Predef.path_nativeint
            || Path.same p Predef.path_int32
@@ -89,14 +86,16 @@ let array_element_kind env ty =
              Maybe we should emit a warning. *)
           Pgenarray
       end
-  | _ ->
+  | Tarrow _ | Ttuple _ | Tpackage _ | Tobject _ | Tnil | Tvariant _ ->
       Paddrarray
+  | Tlink _ | Tsubst _ | Tpoly _ | Tfield _ ->
+      assert false
 
 let array_type_kind env ty =
   match scrape env ty with
   | Tconstr(p, [elt_ty], _) | Tpoly({desc = Tconstr(p, [elt_ty], _)}, _)
     when Path.same p Predef.path_array ->
-      array_element_kind env elt_ty
+      classify ~for_lazy:false  env elt_ty
   | _ ->
       (* This can happen with e.g. Obj.field *)
       Pgenarray
@@ -159,30 +158,6 @@ let value_kind env ty =
 
 
 let lazy_val_requires_forward env ty =
-  let ty = scrape_ty env ty in
-  if maybe_pointer_type env ty = Immediate then false
-  else match ty.desc with
-  (* the following may represent a float/forward/lazy: need a
-     forward_tag *)
-  | Tvar _ | Tunivar _
-  | Tpoly _ | Tfield _ ->
-      true
-  (* the following cannot be represented as float/forward/lazy:
-     optimize *)
-  | Tarrow _ | Ttuple _ | Tpackage _ | Tobject _ | Tnil | Tvariant _ ->
-      false
-
-  (* optimize predefined types (excepted float);
-     immediate types (int, bool, unit, char) have been dealt with already *)
-  | Tconstr _ ->
-      not (is_base_type env ty Predef.path_string
-           || is_base_type env ty Predef.path_bytes
-           || is_base_type env ty Predef.path_exn
-           || is_base_type env ty Predef.path_array
-           || is_base_type env ty Predef.path_list
-           || is_base_type env ty Predef.path_option
-           || is_base_type env ty Predef.path_nativeint
-           || is_base_type env ty Predef.path_int32
-           || is_base_type env ty Predef.path_int64)
-  | Tlink _ | Tsubst _ ->
-      assert false
+  match classify ~for_lazy:true env ty with
+  | Pintarray | Paddrarray -> false
+  | Pgenarray | Pfloatarray -> true
