@@ -154,3 +154,36 @@ let value_kind env ty =
       Pboxedintval Pnativeint
   | _ ->
       Pgenval
+
+
+let lazy_val_requires_forward env ty =
+  let ty = Ctype.repr ty in
+  match ty.desc with
+  (* the following may represent a float/forward/lazy: need a
+     forward_tag *)
+  | Tvar _ | Tunivar _
+  | Tpoly _ | Tfield _ ->
+      true
+  (* the following cannot be represented as float/forward/lazy:
+     optimize *)
+  | Tarrow _ | Ttuple _ | Tpackage _ | Tobject _ | Tnil | Tvariant _ ->
+      false
+  (* optimize predefined types (excepted float) *)
+  | Tconstr _ when
+      is_base_type env ty Predef.path_int
+      || is_base_type env ty Predef.path_char
+      || is_base_type env ty Predef.path_string
+      || is_base_type env ty Predef.path_bool
+      || is_base_type env ty Predef.path_unit
+      || is_base_type env ty Predef.path_exn
+      || is_base_type env ty Predef.path_array
+      || is_base_type env ty Predef.path_list
+      || is_base_type env ty Predef.path_option
+      || is_base_type env ty Predef.path_nativeint
+      || is_base_type env ty Predef.path_int32
+      || is_base_type env ty Predef.path_int64 ->
+      false
+  | Tconstr _ ->
+      true
+  | Tlink _ | Tsubst _ ->
+      assert false
