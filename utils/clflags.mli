@@ -179,6 +179,7 @@ val force_slash : bool ref
 val keep_docs : bool ref
 val keep_locs : bool ref
 val unsafe_string : bool ref
+val safe_syntax : bool ref
 val opaque : bool ref
 val print_timings : bool ref
 val flambda_invariant_checks : bool ref

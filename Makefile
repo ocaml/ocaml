@@ -443,20 +443,27 @@ beforedepend:: utils/config.ml
 parsing/parser.mli parsing/parser.ml: parsing/parser.mly
 	$(CAMLYACC) $(YACCFLAGS) parsing/parser.mly
 
-partialclean::
-	rm -f parsing/parser.mli parsing/parser.ml parsing/parser.output
+parsing/parser_safe.mli parsing/parser_safe.ml: parsing/parser_safe.mly
+	$(CAMLYACC) $(YACCFLAGS) parsing/parser_safe.mly
 
-beforedepend:: parsing/parser.mli parsing/parser.ml
+partialclean::
+	rm -f parsing/parser.mli parsing/parser.ml parsing/parser.output \
+	    parsing/parser_safe.ml parsing/parser_safe.mli parsing/parser_safe.output
+
+beforedepend:: parsing/parser.mli parsing/parser.ml parsing/parser_safe.mli parsing/parser_safe.ml
 
 # The lexer
 
 parsing/lexer.ml: parsing/lexer.mll
 	$(CAMLLEX) parsing/lexer.mll
 
-partialclean::
-	rm -f parsing/lexer.ml
+parsing/lexer_safe.ml: parsing/lexer_safe.mll
+	$(CAMLLEX) parsing/lexer_safe.mll
 
-beforedepend:: parsing/lexer.ml
+partialclean::
+	rm -f parsing/lexer.ml parsing/lexer_safe.ml
+
+beforedepend:: parsing/lexer.ml parsing/lexer_safe.ml
 
 # Shared parts of the system compiled with the native-code compiler
 

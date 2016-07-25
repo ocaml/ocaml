@@ -221,6 +221,7 @@ module Options = Main_args.Make_optcomp_options (struct
   let _remove_unused_arguments = set remove_unused_arguments
   let _runtime_variant s = runtime_variant := s
   let _safe_string = clear unsafe_string
+  let _safe_syntax = set safe_syntax
   let _short_paths = clear real_paths
   let _strict_sequence = set strict_sequence
   let _no_strict_sequence = clear strict_sequence
@@ -235,6 +236,7 @@ module Options = Main_args.Make_optcomp_options (struct
   let _no_unboxed_types = clear unboxed_types
   let _unsafe = set fast
   let _unsafe_string = set unsafe_string
+  let _unsafe_syntax = clear safe_syntax
   let _v () = print_version_and_library "native-code compiler"
   let _version () = print_version_string ()
   let _vnum () = print_version_string ()

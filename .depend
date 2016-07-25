@@ -104,6 +104,11 @@ parsing/lexer.cmo : utils/warnings.cmi parsing/parser.cmi utils/misc.cmi \
 parsing/lexer.cmx : utils/warnings.cmx parsing/parser.cmx utils/misc.cmx \
     parsing/location.cmx parsing/docstrings.cmx parsing/lexer.cmi
 parsing/lexer.cmi : parsing/parser.cmi parsing/location.cmi
+parsing/lexer_safe.cmo : utils/warnings.cmi parsing/parser_safe.cmi utils/misc.cmi \
+    parsing/location.cmi parsing/docstrings.cmi parsing/lexer_safe.cmi
+parsing/lexer_safe.cmx : utils/warnings.cmx parsing/parser_safe.cmx utils/misc.cmx \
+    parsing/location.cmx parsing/docstrings.cmx parsing/lexer_safe.cmi
+parsing/lexer_safe.cmi : parsing/parser_safe.cmi parsing/location.cmi
 parsing/location.cmo : utils/warnings.cmi utils/terminfo.cmi utils/misc.cmi \
     utils/clflags.cmi parsing/location.cmi
 parsing/location.cmx : utils/warnings.cmx utils/terminfo.cmx utils/misc.cmx \
@@ -112,11 +117,11 @@ parsing/location.cmi : utils/warnings.cmi
 parsing/longident.cmo : utils/misc.cmi parsing/longident.cmi
 parsing/longident.cmx : utils/misc.cmx parsing/longident.cmi
 parsing/longident.cmi :
-parsing/parse.cmo : parsing/syntaxerr.cmi parsing/parser.cmi \
-    parsing/location.cmi parsing/lexer.cmi parsing/docstrings.cmi \
+parsing/parse.cmo : parsing/syntaxerr.cmi parsing/parser.cmi parsing/parser_safe.cmi \
+    parsing/location.cmi parsing/lexer.cmi parsing/lexer_safe.cmi parsing/docstrings.cmi \
     parsing/parse.cmi
-parsing/parse.cmx : parsing/syntaxerr.cmx parsing/parser.cmx \
-    parsing/location.cmx parsing/lexer.cmx parsing/docstrings.cmx \
+parsing/parse.cmx : parsing/syntaxerr.cmx parsing/parser.cmx parsing/parser_safe.cmx \
+    parsing/location.cmx parsing/lexer.cmx parsing/lexer_safe.cmx parsing/docstrings.cmx \
     parsing/parse.cmi
 parsing/parse.cmi : parsing/parsetree.cmi
 parsing/parser.cmo : parsing/syntaxerr.cmi parsing/parsetree.cmi \
@@ -128,6 +133,16 @@ parsing/parser.cmx : parsing/syntaxerr.cmx parsing/parsetree.cmi \
     utils/clflags.cmx parsing/asttypes.cmi parsing/ast_helper.cmx \
     parsing/parser.cmi
 parsing/parser.cmi : parsing/parsetree.cmi parsing/location.cmi \
+    parsing/docstrings.cmi
+parsing/parser_safe.cmo : parsing/syntaxerr.cmi parsing/parsetree.cmi \
+    parsing/longident.cmi parsing/location.cmi parsing/docstrings.cmi \
+    utils/clflags.cmi parsing/asttypes.cmi parsing/ast_helper.cmi \
+    parsing/parser_safe.cmi
+parsing/parser_safe.cmx : parsing/syntaxerr.cmx parsing/parsetree.cmi \
+    parsing/longident.cmx parsing/location.cmx parsing/docstrings.cmx \
+    utils/clflags.cmx parsing/asttypes.cmi parsing/ast_helper.cmx \
+    parsing/parser_safe.cmi
+parsing/parser_safe.cmi : parsing/parsetree.cmi parsing/location.cmi \
     parsing/docstrings.cmi
 parsing/parsetree.cmi : parsing/longident.cmi parsing/location.cmi \
     parsing/asttypes.cmi
