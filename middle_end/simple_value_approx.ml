@@ -794,3 +794,55 @@ let check_approx_for_string t : string option =
   | Value_constptr _ | Value_set_of_closures _ | Value_closure _
   | Value_extern _ | Value_boxed_int _ | Value_symbol _ ->
       None
+
+let potentially_taken_const_switch_branch t branch =
+  match t.descr with
+  | (Value_unresolved _
+    | Value_unknown _
+    | Value_extern _
+    | Value_symbol _) ->
+    (* In theory symbol cannot contain integers but this shouldn't
+       matter as this will always be an imported approximation *)
+    true
+
+  | (Value_constptr i | Value_int i) ->
+    i = branch
+  | Value_char c ->
+    Char.code c = branch
+
+  | ( Value_block _ | Value_float _ | Value_float_array _
+    | Value_string _ | Value_closure _ | Value_set_of_closures _
+    | Value_boxed_int _ | Value_bottom ) ->
+    false
+
+let potentially_taken_block_switch_branch t tag =
+  match t.descr with
+  | (Value_unresolved _
+    | Value_unknown _
+    | Value_extern _
+    | Value_symbol _) ->
+    true
+
+  | (Value_constptr _ | Value_int _| Value_char _) ->
+    false
+
+  | Value_block (block_tag, _) ->
+    Tag.to_int block_tag = tag
+
+  | Value_float _ ->
+    tag = Obj.double_tag
+
+  | Value_float_array _ ->
+    tag = Obj.double_array_tag
+
+  | Value_string _ ->
+    tag = Obj.string_tag
+
+  | (Value_closure _ | Value_set_of_closures _) ->
+    tag = Obj.closure_tag || tag = Obj.infix_tag
+
+  | Value_boxed_int _ ->
+    tag = Obj.custom_tag
+
+  | Value_bottom ->
+    false

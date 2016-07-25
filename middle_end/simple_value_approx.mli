@@ -412,3 +412,7 @@ val float_array_as_constant : value_float_array -> float list option
 
 (** Returns the value if it can be proved to be a constant string *)
 val check_approx_for_string : t -> string option
+
+(** Check that the branch is compatible with the approximation *)
+val potentially_taken_const_switch_branch : t -> int -> bool
+val potentially_taken_block_switch_branch : t -> int -> bool
