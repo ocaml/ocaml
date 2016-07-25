@@ -399,3 +399,7 @@ val check_approx_for_closure_allowing_unresolved
 
 (** Returns the value if it can be proved to be a constant float *)
 val check_approx_for_float : t -> float option
+
+(** Check that the branch is compatible with the approximation *)
+val potentially_taken_const_switch_branch : t -> int -> bool
+val potentially_taken_block_switch_branch : t -> int -> bool
