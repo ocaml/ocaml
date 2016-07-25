@@ -70,6 +70,7 @@ let array_element_kind env ty =
         Pfloatarray
       else if Path.same p Predef.path_string
            || Path.same p Predef.path_bytes
+           || Path.same p Predef.path_lazy_t
            || Path.same p Predef.path_array
            || Path.same p Predef.path_nativeint
            || Path.same p Predef.path_int32
