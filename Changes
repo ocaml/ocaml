@@ -118,6 +118,8 @@ OCaml 4.04.0:
 - GPR#602: Do not generate dummy code to force module linking
   (Pierre Chambart, reviewed by Jacques Garrigue)
 
+- GPR#707: Load cross module information during a meet
+  (Pierre Chambart, report by Leo White, review by Marc Shinwell)
 
 ### Tools:
 
