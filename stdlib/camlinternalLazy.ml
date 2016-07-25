@@ -19,16 +19,9 @@ exception Undefined
 
 let raise_undefined = Obj.repr (fun () -> raise Undefined)
 
-external opaque_identity : 'a -> 'a = "%opaque"
-
 (* Assume [blk] is a block with tag lazy *)
 let force_lazy_block (blk : 'arg lazy_t) =
   let closure = (Obj.obj (Obj.field (Obj.repr blk) 0) : unit -> 'arg) in
-  (* Ensure that Flambda does not complain about writes to immutable blocks
-     when this function is inlined.
-     (Values resulting from [lazy] may be immutable---for example when the
-     argument is manifestly a closure.) *)
-  let blk = opaque_identity blk in
   Obj.set_field (Obj.repr blk) 0 raise_undefined;
   try
     let result = closure () in
@@ -44,7 +37,6 @@ let force_lazy_block (blk : 'arg lazy_t) =
 (* Assume [blk] is a block with tag lazy *)
 let force_val_lazy_block (blk : 'arg lazy_t) =
   let closure = (Obj.obj (Obj.field (Obj.repr blk) 0) : unit -> 'arg) in
-  let blk = opaque_identity blk in  (* see comment above *)
   Obj.set_field (Obj.repr blk) 0 raise_undefined;
   let result = closure () in
   (* do set_field BEFORE set_tag *)
