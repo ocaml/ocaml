@@ -69,6 +69,7 @@ let array_element_kind env ty =
       if Path.same p Predef.path_float then
         Pfloatarray
       else if Path.same p Predef.path_string
+           || Path.same p Predef.path_bytes
            || Path.same p Predef.path_array
            || Path.same p Predef.path_nativeint
            || Path.same p Predef.path_int32
@@ -174,6 +175,7 @@ let lazy_val_requires_forward env ty =
      immediate types (int, bool, unit, char) have been dealt with already *)
   | Tconstr _ ->
       not (is_base_type env ty Predef.path_string
+           || is_base_type env ty Predef.path_bytes
            || is_base_type env ty Predef.path_exn
            || is_base_type env ty Predef.path_array
            || is_base_type env ty Predef.path_list
