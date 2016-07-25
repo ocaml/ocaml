@@ -1017,7 +1017,7 @@ and transl_exp0 e =
           Lprim(Pmakeblock(Obj.forward_tag, Immutable, None),
                 [transl_exp e], e.exp_loc)
       | Texp_ident(_, _, _) -> (* according to the type *)
-          begin match e.exp_type.desc with
+          begin match (Ctype.repr e.exp_type).desc with
           (* the following may represent a float/forward/lazy: need a
              forward_tag *)
           | Tvar _ | Tlink _ | Tsubst _ | Tunivar _

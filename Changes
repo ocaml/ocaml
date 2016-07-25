@@ -81,6 +81,9 @@ OCaml 4.04.0:
 
 ### Code generation and optimizations:
 
+- Lack of type normalization lead to missing simple compilation for "lazy x"
+  (Alain Frisch)
+
 - PR#4747, GPR#328: Optimize Hashtbl by using in-place updates of its
   internal bucket lists.  All operations run in constant stack size
   and are usually faster, except Hashtbl.copy which can be much
