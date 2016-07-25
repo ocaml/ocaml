@@ -54,6 +54,11 @@ OCaml 4.04.0:
   the compilers at runtime.
   (Fabrice Le Fessant)
 
+- GPR#706: Add a settable Env.Persistent_signature.load function so
+  that cmi files can be loaded from other sources. This can be used to
+  create self-contained toplevels.
+  (Jérémie Dimino)
+
 ### Standard library:
 
 - GPR#589: Add a non-allocating function to recover the number of
