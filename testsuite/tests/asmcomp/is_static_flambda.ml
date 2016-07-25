@@ -95,18 +95,17 @@ let () =
 (* Verify that approximation intersection correctly loads exported
    approximations.
 
-   Is_static_flambda_dep.cpl is a couple with 1 as first element. The
-   intersection of approximations should return a block of size 2 and
-   tag 0 containing 1 in the first field.
-*)
+   Is_static_flambda_dep.pair is a pair with 1 as first element. The
+   intersection of approximations should return a block with
+   approximation: [tag 0: [tag 0: Int 1, Unknown], Unknown] *)
 let f x =
-  let cpl =
+  let pair =
     if Sys.opaque_identity x then
       (1, 2), 3
     else
-      Is_static_flambda_dep.cpl, 4
+      Is_static_flambda_dep.pair, 4
   in
-  let n = fst (fst cpl) in
+  let n = fst (fst pair) in
   let res = n, n in
   assert(is_in_static_data res)
   [@@inline never]

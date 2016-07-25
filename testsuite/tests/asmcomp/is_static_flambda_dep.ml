@@ -1,1 +1,1 @@
-let cpl = 1, 12
+let pair = 1, 12
