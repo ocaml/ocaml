@@ -20,21 +20,23 @@ open Types
 open Typedtree
 open Lambda
 
-let scrape env ty =
-  match
-    (Ctype.repr (Ctype.expand_head_opt env (Ctype.correct_levels ty))).desc
-  with
-  | Tconstr (p, _, _) as desc ->
+let scrape_ty env ty =
+  let ty = Ctype.expand_head_opt env (Ctype.correct_levels ty) in
+  match ty.desc with
+  | Tconstr (p, _, _) ->
       begin match Env.find_type p env with
       | {type_unboxed = {unboxed = true; _}; _} ->
         begin match Typedecl.get_unboxed_type_representation env ty with
-        | None -> desc
-        | Some ty2 -> ty2.desc
+        | None -> ty
+        | Some ty2 -> ty2
         end
       | _ -> desc
-      | exception Not_found -> desc
+      | exception Not_found -> ty
       end
-  | desc -> desc
+  | _ -> ty
+
+let scrape env ty =
+  (scrape_ty env ty).desc
 
 let is_function_type env ty =
   match scrape env ty with
@@ -58,13 +60,13 @@ let maybe_pointer_type env ty =
 let maybe_pointer exp = maybe_pointer_type exp.exp_env exp.exp_type
 
 let array_element_kind env ty =
-  match scrape env ty with
+  let ty = scrape_ty env ty in
+  if maybe_pointer_type env ty = Immediate then Pintarray
+  else match ty.desc with
   | Tvar _ | Tunivar _ ->
       Pgenarray
   | Tconstr(p, _args, _abbrev) ->
-      if Path.same p Predef.path_int || Path.same p Predef.path_char then
-        Pintarray
-      else if Path.same p Predef.path_float then
+      if Path.same p Predef.path_float then
         Pfloatarray
       else if Path.same p Predef.path_string
            || Path.same p Predef.path_array
@@ -74,14 +76,10 @@ let array_element_kind env ty =
         Paddrarray
       else begin
         try
-          match Env.find_type p env with
-            {type_kind = Type_abstract} ->
+          match (Env.find_type p env).type_kind with
+          | Type_abstract ->
               Pgenarray
-          | {type_kind = Type_variant cstrs}
-            when List.for_all (fun c -> c.Types.cd_args = Types.Cstr_tuple [])
-                cstrs ->
-              Pintarray
-          | {type_kind = _} ->
+          | Type_record _ | Type_variant _ | Type_open ->
               Paddrarray
         with Not_found ->
           (* This can happen due to e.g. missing -I options,
