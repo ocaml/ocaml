@@ -1024,12 +1024,14 @@ and transl_exp0 e =
           | Tpoly(_,_) | Tfield(_,_,_,_) ->
               (* CR-someday mshinwell: Consider adding a new primitive that
                  expresses the construction of forward_tag blocks.  We need to
-                 use [Mutable] here to prevent unsound optimisation in Flambda,
+                 use [Popaque] here to prevent unsound optimisation in Flambda,
                  but the concept of a mutable block doesn't really match what is
                  going on here.  This value may subsequently turn into an
                  immediate... *)
-              Lprim(Pmakeblock(Obj.forward_tag, Mutable, None),
-                    [transl_exp e], e.exp_loc)
+              Lprim (Popaque,
+                [Lprim(Pmakeblock(Obj.forward_tag, Immutable, None),
+                      [transl_exp e], e.exp_loc)],
+                e.exp_loc)
           (* the following cannot be represented as float/forward/lazy:
              optimize *)
           | Tarrow(_,_,_,_) | Ttuple _ | Tpackage _ | Tobject(_,_) | Tnil
@@ -1051,8 +1053,10 @@ and transl_exp0 e =
                 || has_base_type e Predef.path_int64
               then transl_exp e
               else
-                Lprim(Pmakeblock(Obj.forward_tag, Mutable, None),
-                      [transl_exp e], e.exp_loc)
+                Lprim (Popaque,
+                  [Lprim(Pmakeblock(Obj.forward_tag, Immutable, None),
+                    [transl_exp e], e.exp_loc)],
+                  e.exp_loc)
           end
       (* other cases compile to a lazy block holding a function *)
       | _ ->
