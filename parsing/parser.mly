@@ -76,6 +76,11 @@ let ghsig d = Sig.mk ~loc:(symbol_gloc()) d
 let mkinfix arg1 name arg2 =
   mkexp(Pexp_apply(mkoperator name 2, [Nolabel, arg1; Nolabel, arg2]))
 
+let delimited_attr = (mknoloc "ocaml.delimited", PStr [])
+
+let delimited e =
+  {e with pexp_attributes = delimited_attr :: e.pexp_attributes}
+
 let neg_string f =
   if String.length f > 0 && f.[0] = '-'
   then String.sub f 1 (String.length f - 1)
@@ -1477,11 +1482,11 @@ simple_expr:
   | name_tag %prec prec_constant_constructor
       { mkexp(Pexp_variant($1, None)) }
   | LPAREN seq_expr RPAREN
-      { reloc_exp $2 }
+      { delimited (reloc_exp $2) }
   | LPAREN seq_expr error
       { unclosed "(" 1 ")" 3 }
   | BEGIN ext_attributes seq_expr END
-      { wrap_exp_attrs (reloc_exp $3) $2 (* check location *) }
+      { wrap_exp_attrs (delimited (reloc_exp $3)) $2 (* check location *) }
   | BEGIN ext_attributes END
       { mkexp_attrs (Pexp_construct (mkloc (Lident "()") (symbol_rloc ()),
                                None)) $2 }

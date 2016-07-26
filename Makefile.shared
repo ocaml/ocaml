@@ -24,7 +24,7 @@ include stdlib/StdlibModules
 
 CAMLC=$(CAMLRUN) boot/ocamlc -g -nostdlib -I boot -use-prims byterun/primitives
 CAMLOPT=$(CAMLRUN) ./ocamlopt -g -nostdlib -I stdlib -I otherlibs/dynlink
-COMPFLAGS=-strict-sequence -principal -absname -w +a-4-9-41-42-44-45-48 -warn-error A \
+COMPFLAGS=-strict-sequence -principal -absname -w +a-4-9-41-42-44-45-48-62 -warn-error A \
           -bin-annot -safe-string -strict-formats $(INCLUDES)
 LINKFLAGS=
 
@@ -309,4 +309,3 @@ partialclean::
 	rm -f driver/compdynlink.mlbyte
 	rm -f driver/compdynlink.mli
 	rm -f driver/compdynlink.mlopt
-

@@ -516,7 +516,7 @@ that are currently defined are ignored. The warnings are as follows.
 \end{options}
 Some warnings are described in more detail in section~\ref{s:comp-warnings}.
 
-The default setting is "-w +a-4-6-7-9-27-29-32..39-41..42-44-45-48-50".
+The default setting is "-w +a-4-6-7-9-27-29-32..39-41..42-44-45-48-50-60-62".
 It is displayed by "ocamlc -help".
 Note that warnings 5 and 10 are not always triggered, depending on
 the internals of the type checker.
