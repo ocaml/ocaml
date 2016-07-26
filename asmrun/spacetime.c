@@ -1011,6 +1011,13 @@ void caml_spacetime_automatic_save (void)
 
 #else
 
+CAMLprim value caml_spacetime_save_event (value v_time_opt,
+                                          value v_channel,
+                                          value v_event_name)
+{
+  return Val_unit;
+}
+
 CAMLprim value
 caml_spacetime_save_trie (value ignored)
 {
