@@ -262,6 +262,7 @@ let type_declaration s decl =
       type_loc = loc s decl.type_loc;
       type_attributes = attrs s decl.type_attributes;
       type_immediate = decl.type_immediate;
+      type_unboxed = decl.type_unboxed;
     }
   in
   cleanup_types ();

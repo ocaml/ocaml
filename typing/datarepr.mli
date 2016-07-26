@@ -34,3 +34,11 @@ exception Constr_not_found
 val find_constr_by_tag:
   constructor_tag -> constructor_declaration list ->
     constructor_declaration
+
+val constructor_existentials :
+    constructor_arguments -> type_expr option -> type_expr list * type_expr list
+(** Takes [cd_args] and [cd_res] from a [constructor_declaration] and
+    returns:
+    - the types of the constructor's arguments
+    - the existential variables introduced by the constructor
+ *)

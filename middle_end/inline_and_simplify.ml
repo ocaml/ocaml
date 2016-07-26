@@ -1008,8 +1008,7 @@ and simplify_named env r (tree : Flambda.named) : Flambda.named * R.t =
               | None | Some (_, Some _ ) ->
                 (* This [Pfield] is either not projecting from a symbol at all,
                    or it is the projection of a projection from a symbol. *)
-                let module Backend = (val (E.backend env) : Backend_intf.S) in
-                let approx' = Backend.really_import_approx approx in
+                let approx' = E.really_import_approx env approx in
                 tree, approx'
             in
             simplify_named_using_approx_and_env env r tree approx
@@ -1178,6 +1177,7 @@ and simplify env r (tree : Flambda.t) : Flambda.t * R.t =
             simplify env r handler
           | _ ->
             let vars, sb = Freshening.add_variables' (E.freshening env) vars in
+            let approx = R.approx r in
             let env =
               List.fold_left (fun env id ->
                   E.add env id (A.value_unknown Other))
@@ -1187,7 +1187,7 @@ and simplify env r (tree : Flambda.t) : Flambda.t * R.t =
             let handler, r = simplify env r handler in
             let r = R.exit_scope_catch r i in
             Static_catch (i, vars, body, handler),
-              ret r (A.value_unknown Other)
+              R.meet_approx r env approx
         end
     end
   | Try_with (body, id, handler) ->
@@ -1215,9 +1215,8 @@ and simplify env r (tree : Flambda.t) : Flambda.t * R.t =
         let ifso, r = simplify env r ifso in
         let ifso_approx = R.approx r in
         let ifnot, r = simplify env r ifnot in
-        let ifnot_approx = R.approx r in
         If_then_else (arg, ifso, ifnot),
-          ret r (A.meet ifso_approx ifnot_approx)
+          R.meet_approx r env ifso_approx
       end)
   | While (cond, body) ->
     let cond, r = simplify env r cond in
@@ -1296,7 +1295,8 @@ and simplify env r (tree : Flambda.t) : Flambda.t * R.t =
         let f (i, v) (acc, r) =
           let approx = R.approx r in
           let lam, r = simplify env r v in
-          ((i, lam)::acc, R.set_approx r (A.meet (R.approx r) approx))
+          (i, lam)::acc,
+            R.meet_approx r env approx
         in
         let r = R.set_approx r A.value_bottom in
         let consts, r = List.fold_right f sw.consts ([], r) in
@@ -1307,17 +1307,21 @@ and simplify env r (tree : Flambda.t) : Flambda.t * R.t =
           | Some l ->
             let approx = R.approx r in
             let l, r = simplify env r l in
-            Some l, R.set_approx r (A.meet (R.approx r) approx)
+            Some l,
+              R.meet_approx r env approx
         in
         let sw = { sw with failaction; consts; blocks; } in
         Switch (arg, sw), r
       end)
   | String_switch (arg, sw, def) ->
     simplify_free_variable env arg ~f:(fun env arg _arg_approx ->
+      let env = E.inside_branch env in
       let sw, r =
         List.fold_right (fun (str, lam) (sw, r) ->
+            let approx = R.approx r in
             let lam, r = simplify env r lam in
-            (str, lam)::sw, r)
+            (str, lam)::sw,
+              R.meet_approx r env approx)
           sw
           ([], r)
       in
@@ -1325,10 +1329,12 @@ and simplify env r (tree : Flambda.t) : Flambda.t * R.t =
         match def with
         | None -> def, r
         | Some def ->
+          let approx = R.approx r in
           let def, r = simplify env r def in
-          Some def, r
+          Some def,
+            R.meet_approx r env approx
       in
-      String_switch (arg, sw, def), ret r (A.value_unknown Other))
+      String_switch (arg, sw, def), r)
   | Proved_unreachable -> tree, ret r A.value_bottom
 
 and simplify_list env r l =

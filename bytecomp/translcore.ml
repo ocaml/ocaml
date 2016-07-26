@@ -836,6 +836,8 @@ and transl_exp0 e =
       end else begin match cstr.cstr_tag with
         Cstr_constant n ->
           Lconst(Const_pointer n)
+      | Cstr_unboxed ->
+          (match ll with [v] -> v | _ -> assert false)
       | Cstr_block n ->
           begin try
             Lconst(Const_block(n, List.map extract_constant ll))
@@ -868,19 +870,22 @@ and transl_exp0 e =
       transl_record e.exp_loc e.exp_env fields representation
         extended_expression
   | Texp_field(arg, _, lbl) ->
-      let access =
-        match lbl.lbl_repres with
-          Record_regular | Record_inlined _ -> Pfield lbl.lbl_pos
-        | Record_float -> Pfloatfield lbl.lbl_pos
-        | Record_extension -> Pfield (lbl.lbl_pos + 1)
-      in
-      Lprim(access, [transl_exp arg], e.exp_loc)
+      let targ = transl_exp arg in
+      begin match lbl.lbl_repres with
+          Record_regular | Record_inlined _ ->
+          Lprim (Pfield lbl.lbl_pos, [targ], e.exp_loc)
+        | Record_unboxed _ -> targ
+        | Record_float -> Lprim (Pfloatfield lbl.lbl_pos, [targ], e.exp_loc)
+        | Record_extension ->
+          Lprim (Pfield (lbl.lbl_pos + 1), [targ], e.exp_loc)
+      end
   | Texp_setfield(arg, _, lbl, newval) ->
       let access =
         match lbl.lbl_repres with
           Record_regular
         | Record_inlined _ ->
           Psetfield(lbl.lbl_pos, maybe_pointer newval, Assignment)
+        | Record_unboxed _ -> assert false
         | Record_float -> Psetfloatfield (lbl.lbl_pos, Assignment)
         | Record_extension ->
           Psetfield (lbl.lbl_pos + 1, maybe_pointer newval, Assignment)
@@ -1288,6 +1293,7 @@ and transl_record loc env fields repres opt_init_expr =
                let access =
                  match repres with
                    Record_regular | Record_inlined _ -> Pfield i
+                 | Record_unboxed _ -> assert false
                  | Record_extension -> Pfield (i + 1)
                  | Record_float -> Pfloatfield i in
                Lprim(access, [Lvar init_id], loc), field_kind
@@ -1308,6 +1314,7 @@ and transl_record loc env fields repres opt_init_expr =
         match repres with
         | Record_regular -> Lconst(Const_block(0, cl))
         | Record_inlined tag -> Lconst(Const_block(tag, cl))
+        | Record_unboxed _ -> Lconst(match cl with [v] -> v | _ -> assert false)
         | Record_float ->
             Lconst(Const_float_array(List.map extract_float cl))
         | Record_extension ->
@@ -1318,6 +1325,7 @@ and transl_record loc env fields repres opt_init_expr =
             Lprim(Pmakeblock(0, mut, Some shape), ll, loc)
         | Record_inlined tag ->
             Lprim(Pmakeblock(tag, mut, Some shape), ll, loc)
+        | Record_unboxed _ -> (match ll with [v] -> v | _ -> assert false)
         | Record_float ->
             Lprim(Pmakearray (Pfloatarray, mut), ll, loc)
         | Record_extension ->
@@ -1350,6 +1358,7 @@ and transl_record loc env fields repres opt_init_expr =
               Record_regular
             | Record_inlined _ ->
                 Psetfield(lbl.lbl_pos, maybe_pointer expr, Assignment)
+            | Record_unboxed _ -> assert false
             | Record_float -> Psetfloatfield (lbl.lbl_pos, Assignment)
             | Record_extension ->
                 Psetfield(lbl.lbl_pos + 1, maybe_pointer expr, Assignment)

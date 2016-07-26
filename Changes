@@ -14,6 +14,11 @@ OCaml 4.04.0:
 - GPR#508: Allow shortcut for extension on semicolons: ;%foo
   (Jeremie Dimino)
 
+- GPR#606: optimized representation for immutable records with a single
+  field, and concrete types with a single constructor with a single argument.
+  This is triggered with a [@@unboxed] attribute on the type definition.
+  (Damien Doligez)
+
 - PR#7233: Support GADT equations on non-local abstract types
   (Jacques Garrigue)
 
@@ -53,6 +58,11 @@ OCaml 4.04.0:
 - GPR#648: New -plugin option for ocamlc and ocamlopt, to dynamically extend
   the compilers at runtime.
   (Fabrice Le Fessant)
+
+- GPR#706: Add a settable Env.Persistent_signature.load function so
+  that cmi files can be loaded from other sources. This can be used to
+  create self-contained toplevels.
+  (Jérémie Dimino)
 
 ### Standard library:
 
@@ -108,6 +118,8 @@ OCaml 4.04.0:
 - GPR#602: Do not generate dummy code to force module linking
   (Pierre Chambart, reviewed by Jacques Garrigue)
 
+- GPR#707: Load cross module information during a meet
+  (Pierre Chambart, report by Leo White, review by Marc Shinwell)
 
 ### Tools:
 

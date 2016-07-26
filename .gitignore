@@ -265,6 +265,8 @@
 
 /testsuite/tests/runtime-errors/*.bytecode
 
+/testsuite/tests/self-contained-toplevel/cached_cmi.ml
+
 /testsuite/tests/tool-debugger/**/compiler-libs
 /testsuite/tests/tool-debugger/find-artifacts/out
 /testsuite/tests/tool-debugger/no_debug_event/out

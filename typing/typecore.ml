@@ -772,8 +772,8 @@ module Label = NameChoice (struct
   let unbound_name_error = Typetexp.unbound_label_error
   let in_env lbl =
     match lbl.lbl_repres with
-    | Record_regular | Record_float -> true
-    | Record_inlined _ | Record_extension -> false
+    | Record_regular | Record_float | Record_unboxed false -> true
+    | Record_unboxed true | Record_inlined _ | Record_extension -> false
 end)
 
 let disambiguate_label_by_ids keep closed ids labels =
@@ -2896,6 +2896,7 @@ and type_expect_ ?in_function ?(recarg=Rejected) env sexp ty_expected =
         type_loc = loc;
         type_attributes = [];
         type_immediate = false;
+        type_unboxed = { unboxed = false; default = false };
       }
       in
       Ident.set_current_time ty.level;

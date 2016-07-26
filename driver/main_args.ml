@@ -472,6 +472,16 @@ let mk_unbox_closures_factor f =
     Clflags.default_unbox_closures_factor
 ;;
 
+let mk_unboxed_types f =
+  "-unboxed-types", Arg.Unit f,
+  " unannotated unboxable types will be unboxed"
+;;
+
+let mk_no_unboxed_types f =
+  "-no-unboxed-types", Arg.Unit f,
+  " unannotated unboxable types will not be unboxed (default)"
+;;
+
 let mk_unsafe f =
   "-unsafe", Arg.Unit f,
   " Do not compile bounds checking on array and string access"
@@ -742,6 +752,8 @@ module type Common_options = sig
   val _no_strict_sequence : unit -> unit
   val _strict_formats : unit -> unit
   val _no_strict_formats : unit -> unit
+  val _unboxed_types : unit -> unit
+  val _no_unboxed_types : unit -> unit
   val _unsafe : unit -> unit
   val _unsafe_string : unit -> unit
   val _version : unit -> unit
@@ -991,6 +1003,8 @@ struct
     mk_strict_formats F._strict_formats;
     mk_no_strict_formats F._no_strict_formats;
     mk_thread F._thread;
+    mk_unboxed_types F._unboxed_types;
+    mk_no_unboxed_types F._no_unboxed_types;
     mk_unsafe F._unsafe;
     mk_unsafe_string F._unsafe_string;
     mk_use_runtime F._use_runtime;
@@ -1050,6 +1064,8 @@ struct
     mk_no_strict_sequence F._no_strict_sequence;
     mk_strict_formats F._strict_formats;
     mk_no_strict_formats F._no_strict_formats;
+    mk_unboxed_types F._unboxed_types;
+    mk_no_unboxed_types F._no_unboxed_types;
     mk_unsafe F._unsafe;
     mk_unsafe_string F._unsafe_string;
     mk_version F._version;
@@ -1154,6 +1170,8 @@ struct
     mk_unbox_closures F._unbox_closures;
     mk_unbox_closures_factor F._unbox_closures_factor;
     mk_inline_max_unroll F._inline_max_unroll;
+    mk_unboxed_types F._unboxed_types;
+    mk_no_unboxed_types F._no_unboxed_types;
     mk_unsafe F._unsafe;
     mk_unsafe_string F._unsafe_string;
     mk_v F._v;
@@ -1251,6 +1269,8 @@ module Make_opttop_options (F : Opttop_options) = struct
     mk_no_strict_formats F._no_strict_formats;
     mk_unbox_closures F._unbox_closures;
     mk_unbox_closures_factor F._unbox_closures_factor;
+    mk_unboxed_types F._unboxed_types;
+    mk_no_unboxed_types F._no_unboxed_types;
     mk_unsafe F._unsafe;
     mk_unsafe_string F._unsafe_string;
     mk_verbose F._verbose;
@@ -1321,6 +1341,8 @@ struct
     mk_strict_formats F._strict_formats;
     mk_no_strict_formats F._no_strict_formats;
     mk_thread F._thread;
+    mk_unboxed_types F._unboxed_types;
+    mk_no_unboxed_types F._no_unboxed_types;
     mk_unsafe_string F._unsafe_string;
     mk_v F._v;
     mk_verbose F._verbose;

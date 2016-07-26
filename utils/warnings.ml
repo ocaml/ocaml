@@ -14,10 +14,10 @@
 (**************************************************************************)
 
 (* When you change this, you need to update the documentation:
-   - man/ocamlc.m   in ocaml
-   - man/ocamlopt.m in ocaml
-   - manual/cmds/comp.etex   in the doc sources
-   - manual/cmds/native.etex in the doc sources
+   - man/ocamlc.m
+   - man/ocamlopt.m
+   - manual/manual/cmds/comp.etex
+   - manual/manual/cmds/native.etex
 *)
 
 type t =
@@ -81,6 +81,7 @@ type t =
   | No_cmx_file of string                   (* 58 *)
   | Assignment_to_non_mutable_value         (* 59 *)
   | Unused_module of string                 (* 60 *)
+  | Unboxable_type_in_prim_decl of string   (* 61 *)
 ;;
 
 (* If you remove a warning, leave a hole in the numbering.  NEVER change
@@ -150,6 +151,7 @@ let number = function
   | No_cmx_file _ -> 58
   | Assignment_to_non_mutable_value -> 59
   | Unused_module _ -> 60
+  | Unboxable_type_in_prim_decl _ -> 61
 ;;
 
 let last_warning_number = 60
@@ -475,6 +477,12 @@ let message = function
         in this source file.  Such assignments may generate incorrect code \n\
         when using Flambda."
   | Unused_module s -> "unused module " ^ s ^ "."
+  | Unboxable_type_in_prim_decl t ->
+      Printf.sprintf
+        "This primitive declaration uses type %s, which is unannotated and\n\
+         unboxable. The representation of such types may change in future\n\
+         versions. You should annotate the declaration of %s with [@@boxed]\n\
+         or [@@unboxed]." t t
 ;;
 
 let nerrors = ref 0;;

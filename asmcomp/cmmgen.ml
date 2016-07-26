@@ -708,6 +708,8 @@ let rec expr_size env = function
       RHS_floatblock (List.length args)
   | Uprim (Pduprecord ((Record_regular | Record_inlined _), sz), _, _) ->
       RHS_block sz
+  | Uprim (Pduprecord (Record_unboxed _, _), _, _) ->
+      assert false
   | Uprim (Pduprecord (Record_extension, sz), _, _) ->
       RHS_block (sz + 1)
   | Uprim (Pduprecord (Record_float, sz), _, _) ->
