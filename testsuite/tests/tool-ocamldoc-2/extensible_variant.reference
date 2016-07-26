@@ -1,0 +1,108 @@
+\documentclass[11pt]{article} 
+\usepackage[latin1]{inputenc} 
+\usepackage[T1]{fontenc} 
+\usepackage{textcomp}
+\usepackage{fullpage} 
+\usepackage{url} 
+\usepackage{ocamldoc}
+\begin{document}
+\tableofcontents
+\section{Module {\tt{Extensible\_variant}} : Testing display of extensible variant types.}
+\label{Extensible-underscorevariant}\index{Extensible-underscorevariant@\verb`Extensible_variant`}
+
+
+
+
+\ocamldocvspace{0.5cm}
+
+
+
+\label{TYPExtensible-underscorevariant.e}\begin{ocamldoccode}
+type e = ..
+\end{ocamldoccode}
+\index{e@\verb`e`}
+
+
+
+
+\begin{ocamldoccode}
+{\tt{module }}{\tt{M}}{\tt{ : }}\end{ocamldoccode}
+\label{Extensible-underscorevariant.M}\index{M@\verb`M`}
+
+\begin{ocamldocsigend}
+
+
+\begin{ocamldoccode}
+type e +=
+\end{ocamldoccode}
+\label{extension:Extensible-underscorevariant.M.A}\begin{ocamldoccode}
+  | A
+\end{ocamldoccode}
+\begin{ocamldoccomment}
+A doc
+
+
+\end{ocamldoccomment}
+\label{extension:Extensible-underscorevariant.M.B}\begin{ocamldoccode}
+  | B
+\end{ocamldoccode}
+\begin{ocamldoccomment}
+B doc
+
+
+\end{ocamldoccomment}
+\label{extension:Extensible-underscorevariant.M.C}\begin{ocamldoccode}
+  | C
+\end{ocamldoccode}
+\begin{ocamldoccomment}
+C doc
+
+
+\end{ocamldoccomment}
+\end{ocamldocsigend}
+
+
+
+
+
+
+\begin{ocamldoccode}
+{\tt{module type }}{\tt{MT}}{\tt{ = }}\end{ocamldoccode}
+\label{Extensible-underscorevariant.MT}\index{MT@\verb`MT`}
+
+\begin{ocamldocsigend}
+
+
+\begin{ocamldoccode}
+type e +=
+\end{ocamldoccode}
+\label{extension:Extensible-underscorevariant.MT.A}\begin{ocamldoccode}
+  | A
+\end{ocamldoccode}
+\begin{ocamldoccomment}
+A doc
+
+
+\end{ocamldoccomment}
+\label{extension:Extensible-underscorevariant.MT.B}\begin{ocamldoccode}
+  | B
+\end{ocamldoccode}
+\begin{ocamldoccomment}
+B doc
+
+
+\end{ocamldoccomment}
+\label{extension:Extensible-underscorevariant.MT.C}\begin{ocamldoccode}
+  | C
+\end{ocamldoccode}
+\begin{ocamldoccomment}
+C doc
+
+
+\end{ocamldoccomment}
+\end{ocamldocsigend}
+
+
+
+
+\end{document}

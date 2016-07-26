@@ -139,6 +139,9 @@ OCaml 4.04.0:
 - GPR#613: make ocamldoc use -open arguments
   (Florian Angeletti)
 
+- GPR#718: ocamldoc, fix order of extensible variant constructors
+  (Florian Angeletti)
+
 - Add the -no-version option to the toplevel
   (Sébastien Hinderer)
 
