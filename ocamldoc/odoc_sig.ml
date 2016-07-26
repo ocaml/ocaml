@@ -187,6 +187,90 @@ module Analyser =
 
     let merge_infos = Odoc_merge.merge_info_opt Odoc_types.all_merge_options
 
+    (** Module for extracting documentation comments for record from different
+        tree types *)
+    module Record = struct
+
+      (** A structure to abstract over the tree type *)
+      type ('a,'b,'c) projector = {
+        name:'a -> string;
+        inline_record: 'b -> 'c option;
+        inline_end: 'b -> int;
+        start:'a -> int;
+        end_: 'a -> int }
+
+    (** A function to extract documentation from a list of label declarations *)
+    let doc p pos_end ld =
+      let rec f = function
+        | [] -> []
+        | ld :: [] ->
+            let name = p.name ld in
+            let pos = p.end_ ld in
+            let (_,comment_opt) =  just_after_special pos pos_end in
+            [name, comment_opt]
+        | ld  :: ele2 :: q ->
+            let pos = p.end_ ld in
+            let pos2 = p.start ele2 in
+            let name = p.name ld in
+            let (_,comment_opt) = just_after_special pos pos2 in
+            (name, comment_opt) :: (f (ele2 :: q))
+      in
+      f ld
+
+    let inline_doc p cstr =
+      match p.inline_record cstr with
+      | None -> []
+      | Some r ->
+          doc p (p.inline_end cstr) r
+
+    (** The three tree types used in the rest of the source: *)
+
+    let parsetree =
+      let open Parsetree in
+      { name = (fun ld -> ld.pld_name.txt );
+        start = (fun ld -> Loc.ptyp_start ld.pld_type);
+        end_ =  (fun ld -> Loc.ptyp_end ld.pld_type);
+        inline_record = begin
+          fun c -> match c.pcd_args with
+            | Pcstr_tuple _ -> None
+            | Pcstr_record r -> Some r
+        end;
+        inline_end = (fun c -> Loc.end_ c.pcd_loc)
+      }
+
+    let types =
+      let open Types in
+      { name = (fun ld -> ld.ld_id.Ident.name );
+        start = (fun ld -> Loc.start ld.ld_loc);
+        end_ =  (fun ld -> Loc.start ld.ld_loc);
+        (* Beware, Loc.start is correct in the code above:
+           type_expr's do not hold location information, and ld.ld_loc
+           ends after the documentation comment, sow e use Loc.start as
+           the least problematic approximation for end_. *)
+        inline_record = begin
+          fun c -> match c.cd_args with
+            | Cstr_tuple _ -> None
+            | Cstr_record r -> Some r
+        end;
+        inline_end = (fun c -> Loc.end_ c.cd_loc)
+      }
+
+    let typedtree =
+      let open Typedtree in
+      { name = (fun ld -> ld.ld_id.Ident.name );
+        start = (fun ld -> Loc.start ld.ld_type.ctyp_loc);
+        end_ =  (fun ld -> Loc.end_ ld.ld_type.ctyp_loc);
+        inline_record = begin
+          fun c -> match c.cd_args with
+            | Cstr_tuple _ -> None
+            | Cstr_record r -> Some r
+        end;
+        inline_end = (fun c -> Loc.end_ c.cd_loc)
+      }
+
+
+    end
+
     let name_comment_from_type_decl pos_end pos_limit ty_decl =
       match ty_decl.Parsetree.ptype_kind with
       | Parsetree.Ptype_abstract ->
@@ -203,8 +287,8 @@ module Analyser =
                 assert false
 
               | (name, _atts, ct) :: [] ->
-                  let pos = Loc.ptyp_end ct in
-                  let (_,comment_opt) = just_after_special pos pos_end in
+                let pos = Loc.ptyp_end ct in
+                let (_,comment_opt) = just_after_special pos pos_end in
                 [name, comment_opt]
               | (name, _atts, ct) :: ((_name2, _atts2, ct2) as ele2) :: q ->
                 let pos = Loc.ptyp_end ct in
@@ -230,37 +314,22 @@ module Analyser =
               [] ->
                 (0, acc)
             | pcd :: [] ->
+                let acc = Record.(inline_doc parsetree) pcd @ acc in
                 let (len, comment_opt) =
                   just_after_special (Loc.pcd_end pcd) pos_limit in
-                (len, acc @ [ (pcd.pcd_name.txt, comment_opt) ])
+                (len, List.rev @@ (pcd.pcd_name.txt, comment_opt):: acc )
             | pcd :: (pcd2 :: _ as q) ->
-                (* TODO: support annotations on fields for inline records *)
+                let acc = Record.(inline_doc parsetree) pcd @ acc in
                 let pos_end_first = Loc.pcd_end pcd in
                 let pos_start_second = Loc.pcd_start pcd2 in
                 let (_,comment_opt) =
                   just_after_special pos_end_first pos_start_second in
-                f (acc @ [pcd.pcd_name.txt, comment_opt]) q
+                f ((pcd.pcd_name.txt, comment_opt)::acc) q
           in
           f [] cons_core_type_list_list
 
-      | Parsetree.Ptype_record name_mutable_type_list (* of (string * mutable_flag * core_type) list*) ->
-          let open Parsetree in
-          let rec f = function
-              [] ->
-                []
-            | {pld_name=name; pld_type=ct} :: [] ->
-                let pos = ct.Parsetree.ptyp_loc.Location.loc_end.Lexing.pos_cnum in
-                let s = get_string_of_file pos pos_end in
-                let (_,comment_opt) =  My_ir.just_after_special !file_name s in
-                [name.txt, comment_opt]
-            | {pld_name=name; pld_type=ct} :: ({pld_type=ct2} as ele2) :: q ->
-                let pos = ct.Parsetree.ptyp_loc.Location.loc_end.Lexing.pos_cnum in
-                let pos2 = ct2.Parsetree.ptyp_loc.Location.loc_start.Lexing.pos_cnum in
-                let s = get_string_of_file pos pos2 in
-                let (_,comment_opt) =  My_ir.just_after_special !file_name s in
-                (name.txt, comment_opt) :: (f (ele2 :: q))
-          in
-          (0, f name_mutable_type_list)
+      | Parsetree.Ptype_record label_declaration_list ->
+          (0, Record.(doc parsetree) pos_end label_declaration_list)
       | Parsetree.Ptype_open ->
           (0, [])
 
@@ -310,7 +379,8 @@ module Analyser =
             let vc_args =
               match cd_args with
               | Cstr_tuple l -> Cstr_tuple (List.map (Odoc_env.subst_type env) l)
-              | Cstr_record l -> Cstr_record (List.map (get_field env []) l)
+              | Cstr_record l ->
+                  Cstr_record (List.map (get_field env name_comment_list) l)
             in
             {
               vc_name = constructor_name ;
@@ -327,6 +397,21 @@ module Analyser =
       | Types.Type_open ->
           Odoc_type.Type_open
 
+
+    let get_cstr_args env pos_end =
+      let tuple ct = Odoc_env.subst_type env ct.Typedtree.ctyp_type in
+      let record comments
+          { Typedtree.ld_id; ld_mutable; ld_type; ld_loc; ld_attributes } =
+        get_field env comments @@
+        {Types.ld_id; ld_mutable; ld_type=ld_type.Typedtree.ctyp_type;
+         ld_loc; ld_attributes } in
+      let open Typedtree in
+      function
+      | Cstr_tuple l ->
+          Odoc_type.Cstr_tuple (List.map tuple l)
+      | Cstr_record l ->
+          let comments = Record.(doc typedtree) pos_end l in
+          Odoc_type.Cstr_record (List.map (record comments) l)
 
     let erased_names_of_constraints constraints acc =
       List.fold_right (fun constraint_ acc ->
@@ -682,8 +767,11 @@ module Analyser =
               let ext_loc_end =  Loc.end_ types_ext.Types.ext_loc in
               let xt_args =
                 match types_ext.ext_args with
-                | Cstr_tuple l -> Cstr_tuple (List.map (Odoc_env.subst_type new_env) l)
-                | Cstr_record l -> Cstr_record (List.map (get_field new_env []) l)
+                | Cstr_tuple l ->
+                    Cstr_tuple (List.map (Odoc_env.subst_type new_env) l)
+                | Cstr_record l ->
+                    let docs = Record.(doc types ext_loc_end) l in
+                    Cstr_record (List.map (get_field new_env docs) l)
               in
               let new_x =
                 {
@@ -725,7 +813,9 @@ module Analyser =
               let pos_end = Loc.end_ types_ext.ext_loc in
               match types_ext.ext_args with
               | Cstr_tuple l -> Cstr_tuple (List.map (Odoc_env.subst_type env) l)
-              | Cstr_record l -> Cstr_record (List.map (get_field env []) l)
+              | Cstr_record l ->
+                  let docs = Record.(doc types) pos_end l in
+                  Cstr_record (List.map (get_field env docs) l)
             in
             let e =
               {

@@ -14,11 +14,7 @@ module type E = sig
 
 end
 
-(* Note: inline record within structure are currently broken
 
 module E_bis= struct
   exception E of {lbl:int}
-
 end
-
-*)

@@ -286,6 +286,11 @@
 
 /testsuite/tests/tool-ocamldoc-2/ocamldoc.sty
 
+/testsuite/tests/tool-ocamldoc-html/*.html
+/testsuite/tests/tool-ocamldoc-html/style.css
+
+/testsuite/tests/tool-ocamldoc-man/*.3o
+
 /testsuite/tests/tool-ocamldoc-open/alias.odoc
 /testsuite/tests/tool-ocamldoc-open/inner.odoc
 /testsuite/tests/tool-ocamldoc-open/main.odoc

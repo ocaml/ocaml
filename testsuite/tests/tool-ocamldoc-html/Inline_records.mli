@@ -7,9 +7,6 @@
 (** A nice exception *)
 exception Simple
 
-(** A less simple exception *)
-exception Less of int
-
 (** An open sum type *)
 type ext = ..
 

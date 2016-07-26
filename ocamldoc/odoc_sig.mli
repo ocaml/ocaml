@@ -157,6 +157,13 @@ module Analyser :
           Odoc_env.env -> (string * Odoc_types.info option) list ->
             Types.type_kind -> Odoc_type.type_kind
 
+      (** This function converts a [Types.constructor_arguments] into a
+          [Odoc_type.constructor_args], by associating the comment found
+          in the parsetree of each inner record field, if any.*)
+      val get_cstr_args:
+        Odoc_env.env -> int -> Typedtree.constructor_arguments ->
+        Odoc_type.constructor_args
+
       (** This function merge two optional info structures. *)
       val merge_infos :
           Odoc_types.info option -> Odoc_types.info option ->
