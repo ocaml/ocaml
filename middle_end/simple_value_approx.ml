@@ -795,25 +795,30 @@ let check_approx_for_string t : string option =
   | Value_extern _ | Value_boxed_int _ | Value_symbol _ ->
       None
 
+type switch_branch_selection =
+  | Cannot_be_taken
+  | Can_be_taken
+  | Must_be_taken
+
 let potentially_taken_const_switch_branch t branch =
   match t.descr with
-  | (Value_unresolved _
-    | Value_unknown _
-    | Value_extern _
-    | Value_symbol _) ->
+  | Value_unresolved _
+  | Value_unknown _
+  | Value_extern _
+  | Value_symbol _ ->
     (* In theory symbol cannot contain integers but this shouldn't
        matter as this will always be an imported approximation *)
-    true
-
-  | (Value_constptr i | Value_int i) ->
-    i = branch
-  | Value_char c ->
-    Char.code c = branch
-
-  | ( Value_block _ | Value_float _ | Value_float_array _
-    | Value_string _ | Value_closure _ | Value_set_of_closures _
-    | Value_boxed_int _ | Value_bottom ) ->
-    false
+    Can_be_taken
+  | Value_constptr i | Value_int i when i = branch ->
+    Must_be_taken
+  | Value_char c when Char.code c = branch ->
+    Must_be_taken
+  | Value_constptr _ | Value_int _ | Value_char _ ->
+    Cannot_be_taken
+  | Value_block _ | Value_float _ | Value_float_array _
+  | Value_string _ | Value_closure _ | Value_set_of_closures _
+  | Value_boxed_int _ | Value_bottom ->
+    Cannot_be_taken
 
 let potentially_taken_block_switch_branch t tag =
   match t.descr with
@@ -821,28 +826,25 @@ let potentially_taken_block_switch_branch t tag =
     | Value_unknown _
     | Value_extern _
     | Value_symbol _) ->
-    true
-
+    Can_be_taken
   | (Value_constptr _ | Value_int _| Value_char _) ->
-    false
-
-  | Value_block (block_tag, _) ->
-    Tag.to_int block_tag = tag
-
-  | Value_float _ ->
-    tag = Obj.double_tag
-
-  | Value_float_array _ ->
-    tag = Obj.double_array_tag
-
-  | Value_string _ ->
-    tag = Obj.string_tag
-
-  | (Value_closure _ | Value_set_of_closures _) ->
-    tag = Obj.closure_tag || tag = Obj.infix_tag
-
-  | Value_boxed_int _ ->
-    tag = Obj.custom_tag
-
+    Cannot_be_taken
+  | Value_block (block_tag, _) when Tag.to_int block_tag = tag ->
+    Must_be_taken
+  | Value_float _ when tag = Obj.double_tag ->
+    Must_be_taken
+  | Value_float_array _ when tag = Obj.double_array_tag ->
+    Must_be_taken
+  | Value_string _ when tag = Obj.string_tag ->
+    Must_be_taken
+  | (Value_closure _ | Value_set_of_closures _)
+    when tag = Obj.closure_tag || tag = Obj.infix_tag ->
+    Can_be_taken
+  | Value_boxed_int _ when tag = Obj.custom_tag ->
+    Must_be_taken
+  | Value_block _ | Value_float _ | Value_set_of_closures _ | Value_closure _
+  | Value_string _ | Value_float_array _ | Value_boxed_int _ ->
+    Cannot_be_taken
   | Value_bottom ->
-    false
+    Cannot_be_taken
+
