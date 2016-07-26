@@ -2887,20 +2887,23 @@ let is_mutable p = find_in_pat have_mutable_field p
 *)
 
 let check_partial is_mutable is_lazy pat_act_list partial =
-  let mut =
-    List.exists (fun (pats, _) -> is_mutable pats) pat_act_list
-      &&
-    List.exists
-      (fun (pats, lam) -> is_guarded lam || is_lazy pats)
-      pat_act_list in
-  let partial = match partial with
-  | Partial -> Partial
-  | Total ->
-      if
-        mut
-      then Partial
-      else Total in
-  partial,mut
+  match pat_act_list with
+  | [] -> Partial,false (* Also partial, nothing mutable *)
+  | _::_ ->
+      let mut =
+        List.exists (fun (pats, _) -> is_mutable pats) pat_act_list
+          &&
+        List.exists
+          (fun (pats, lam) -> is_guarded lam || is_lazy pats)
+          pat_act_list in
+      let partial = match partial with
+      | Partial -> Partial
+      | Total ->
+          if
+            mut || (match pat_act_list with [] -> true | _::_ -> false)
+          then Partial
+          else Total in
+      partial,mut
 
 let check_partial_list =
   check_partial (List.exists is_mutable) (List.exists is_lazy)
