@@ -471,6 +471,17 @@ let simplify_lets lam =
   | Llet(Strict, kind, v,
          Lprim(Pmakeblock(0, Mutable, kind_ref) as prim, [linit], loc), lbody)
     when optimize && Config.flambda = false ->
+      (* This optimization, which turns non-escaping references into
+         mutable variables, is disabled by flambda as it is then done
+         separately as a more precise pass,
+         middle_end/ref_to_variables.ml, which benefits from being
+         applied after inlining.
+
+         According to Pierre Chambart, doing the transformation here
+         would make some further analyzes less precise, while
+         ref_to_variables carefully preserves analysis results; this
+         justifies disabling this one instead of combining both
+         passes. *)
       let slinit = simplif linit in
       let slbody = simplif lbody in
       begin try
@@ -681,11 +692,16 @@ let split_default_wrapper ?(create_wrapper_body = fun lam -> lam)
   with Exit ->
     [(fun_id, Lfunction{kind; params; body; attr; loc})]
 
+module Hooks = Misc.MakeHooks(struct
+    type t = lambda
+  end)
+
 (* The entry point:
    simplification + emission of tailcall annotations, if needed. *)
 
-let simplify_lambda lam =
+let simplify_lambda sourcefile lam =
   let res = simplify_lets (simplify_exits lam) in
+  let res = Hooks.apply_hooks { Misc.sourcefile } res in
   if !Clflags.annotations || Warnings.is_active Warnings.Expect_tailcall
     then emit_tail_infos true res;
   res

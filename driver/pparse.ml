@@ -207,7 +207,7 @@ let () =
       | _ -> None
     )
 
-let parse_file ~tool_name invariant_fun kind ppf sourcefile =
+let parse_file ~tool_name invariant_fun apply_hooks kind ppf sourcefile =
   Location.input_name := sourcefile;
   let inputfile = preprocess sourcefile in
   let ast =
@@ -218,9 +218,19 @@ let parse_file ~tool_name invariant_fun kind ppf sourcefile =
       raise exn
   in
   remove_preprocessed inputfile;
+  let ast = apply_hooks { Misc.sourcefile } ast in
   ast
 
+module ImplementationHooks = Misc.MakeHooks(struct
+    type t = Parsetree.structure
+  end)
+module InterfaceHooks = Misc.MakeHooks(struct
+    type t = Parsetree.signature
+  end)
+
 let parse_implementation ppf ~tool_name sourcefile =
-  parse_file ~tool_name Ast_invariants.structure Structure ppf sourcefile
+  parse_file ~tool_name Ast_invariants.structure
+    ImplementationHooks.apply_hooks Structure ppf sourcefile
 let parse_interface ppf ~tool_name sourcefile =
-  parse_file ~tool_name Ast_invariants.signature Signature ppf sourcefile
+  parse_file ~tool_name Ast_invariants.signature
+    InterfaceHooks.apply_hooks Signature ppf sourcefile

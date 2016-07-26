@@ -16,9 +16,6 @@
 
 (* Emission of Linux on Z 64-bit assembly code *)
 
-module StringSet =
-  Set.Make(struct type t = string let compare (x:t) y = compare x y end)
-
 open Misc
 open Cmm
 open Arch
@@ -67,9 +64,6 @@ let label_prefix = ".L"
 
 let emit_label lbl =
   emit_string label_prefix; emit_int lbl
-
-let emit_data_label lbl =
-  emit_string label_prefix; emit_string "d"; emit_int lbl
 
 (* Section switching *)
 
@@ -507,7 +501,7 @@ let emit_instr i =
         `	srag	{emit_reg i.res.(0)}, {emit_reg i.arg.(0)},{emit_int n}(%r0)\n`
     | Lop(Iintop_imm(Iand, n)) ->
         assert (i.arg.(0).loc = i.res.(0).loc);
-        `	nilf	{emit_reg i.res.(0)}, {emit_int (n land 0xFFFF_FFFF)}\n`
+        `	nilf	{emit_reg i.res.(0)}, {emit_int (n land (1 lsl 32 - 1)(*0xFFFF_FFFF*))}\n`
     | Lop(Iintop_imm(Ior, n)) ->
         assert (i.arg.(0).loc = i.res.(0).loc);
         `	oilf	{emit_reg i.res.(0)}, {emit_int n}\n`
@@ -696,8 +690,6 @@ let emit_item = function
       declare_global_data s
   | Cdefine_symbol s ->
       `{emit_symbol s}:\n`;
-  | Cdefine_label lbl ->
-      `{emit_data_label lbl}:\n`
   | Cint8 n ->
       `	.byte	{emit_int n}\n`
   | Cint16 n ->
@@ -712,8 +704,6 @@ let emit_item = function
       emit_float64_directive ".quad" (Int64.bits_of_float f)
   | Csymbol_address s ->
       `	.quad	{emit_symbol s}\n`
-  | Clabel_address lbl ->
-      `	.quad	{emit_data_label lbl}\n`
   | Cstring s ->
       emit_bytes_directive "	.byte	" s
   | Cskip n ->

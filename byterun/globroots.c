@@ -13,6 +13,8 @@
 /*                                                                        */
 /**************************************************************************/
 
+#define CAML_INTERNALS
+
 /* Registration of global memory roots */
 
 #include "caml/memory.h"

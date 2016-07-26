@@ -90,6 +90,7 @@ WITH_SPACETIME=false
 LIBUNWIND_AVAILABLE=false
 LIBUNWIND_LINK_FLAGS=
 PROFINFO_WIDTH=0
+SAFE_STRING=false
 
 ########## Configuration for the bytecode compiler
 

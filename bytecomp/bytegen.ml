@@ -150,6 +150,7 @@ let rec size_of_lambda = function
     when check_recordwith_updates id body ->
       begin match kind with
       | Record_regular | Record_inlined _ -> RHS_block size
+      | Record_unboxed _ -> assert false
       | Record_float -> RHS_floatblock size
       | Record_extension -> RHS_block (size + 1)
       end
@@ -163,6 +164,8 @@ let rec size_of_lambda = function
   | Lprim (Pmakearray (Pgenarray, _), _, _) -> assert false
   | Lprim (Pduprecord ((Record_regular | Record_inlined _), size), _, _) ->
       RHS_block size
+  | Lprim (Pduprecord (Record_unboxed _, _), _, _) ->
+      assert false
   | Lprim (Pduprecord (Record_extension, size), _, _) ->
       RHS_block (size + 1)
   | Lprim (Pduprecord (Record_float, size), _, _) -> RHS_floatblock size

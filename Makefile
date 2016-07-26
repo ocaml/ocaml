@@ -48,6 +48,9 @@ world.opt:
 	$(MAKE) coldstart
 	$(MAKE) opt.opt
 
+reconfigure:
+	./configure $(CONFIGURE_ARGS)
+
 # Hard bootstrap how-to:
 # (only necessary in some cases, for example if you remove some primitive)
 #
@@ -220,10 +223,10 @@ install:
 	  dllbigarray$(EXT_DLL) dllnums$(EXT_DLL) dllthreads$(EXT_DLL) \
 	  dllunix$(EXT_DLL) dllgraphics$(EXT_DLL) dllstr$(EXT_DLL)
 	cd byterun; $(MAKE) install
-	cp ocamlc $(INSTALL_BINDIR)/ocamlc$(EXE)
+	cp ocamlc $(INSTALL_BINDIR)/ocamlc.byte$(EXE)
 	cp ocaml $(INSTALL_BINDIR)/ocaml$(EXE)
 	cd stdlib; $(MAKE) install
-	cp lex/ocamllex $(INSTALL_BINDIR)/ocamllex$(EXE)
+	cp lex/ocamllex $(INSTALL_BINDIR)/ocamllex.byte$(EXE)
 	cp $(CAMLYACC)$(EXE) $(INSTALL_BINDIR)/ocamlyacc$(EXE)
 	cp utils/*.cmi utils/*.cmt utils/*.cmti \
 	   parsing/*.cmi parsing/*.cmt parsing/*.cmti \
@@ -332,9 +335,9 @@ compilerlibs/ocamloptcomp.cma: $(MIDDLE_END) $(ASMCOMP)
 partialclean::
 	rm -f compilerlibs/ocamloptcomp.cma
 
-ocamlopt: compilerlibs/ocamlcommon.cma compilerlibs/ocamloptcomp.cma $(OPTSTART)
+ocamlopt: compilerlibs/ocamlcommon.cma compilerlibs/ocamloptcomp.cma compilerlibs/ocamlbytecomp.cma $(OPTSTART)
 	$(CAMLC) $(LINKFLAGS) -o ocamlopt \
-	  compilerlibs/ocamlcommon.cma compilerlibs/ocamloptcomp.cma $(OPTSTART)
+	  compilerlibs/ocamlcommon.cma compilerlibs/ocamloptcomp.cma compilerlibs/ocamlbytecomp.cma $(OPTSTART)
 
 partialclean::
 	rm -f ocamlopt
@@ -381,7 +384,8 @@ partialclean::
 	rm -f compilerlibs/ocamlopttoplevel.cmxa
 
 ocamlnat: compilerlibs/ocamlcommon.cmxa compilerlibs/ocamloptcomp.cmxa \
-    otherlibs/dynlink/dynlink.cmxa compilerlibs/ocamlopttoplevel.cmxa \
+    compilerlibs/ocamlbytecomp.cmxa \
+    compilerlibs/ocamlopttoplevel.cmxa \
     $(OPTTOPLEVELSTART:.cmo=.cmx)
 	$(CAMLOPT) $(LINKFLAGS) -linkall -o $@ $^
 
@@ -430,6 +434,7 @@ utils/config.ml: utils/config.mlp config/Makefile
 	    -e 's|%%HOST%%|$(HOST)|' \
 	    -e 's|%%TARGET%%|$(TARGET)|' \
 	    -e 's|%%FLAMBDA%%|$(FLAMBDA)|' \
+	    -e 's|%%SAFE_STRING%%|$(SAFE_STRING)|' \
 	    utils/config.mlp > utils/config.ml
 
 partialclean::
@@ -487,10 +492,10 @@ compilerlibs/ocamloptcomp.cmxa: $(MIDDLE_END:.cmo=.cmx) $(ASMCOMP:.cmo=.cmx)
 partialclean::
 	rm -f compilerlibs/ocamloptcomp.cmxa compilerlibs/ocamloptcomp.a
 
-ocamlopt.opt: compilerlibs/ocamlcommon.cmxa compilerlibs/ocamloptcomp.cmxa \
+ocamlopt.opt: compilerlibs/ocamlcommon.cmxa compilerlibs/ocamloptcomp.cmxa compilerlibs/ocamlbytecomp.cmxa  \
               $(OPTSTART:.cmo=.cmx)
 	$(CAMLOPT) $(LINKFLAGS) -o ocamlopt.opt \
-	   compilerlibs/ocamlcommon.cmxa compilerlibs/ocamloptcomp.cmxa \
+	   compilerlibs/ocamlcommon.cmxa compilerlibs/ocamloptcomp.cmxa compilerlibs/ocamlbytecomp.cmxa  \
 	   $(OPTSTART:.cmo=.cmx)
 
 partialclean::
@@ -530,34 +535,6 @@ partialclean::
 beforedepend:: bytecomp/runtimedef.ml
 
 # Choose the right machine-dependent files
-
-ARCH_SPECIFIC = \
-  asmcomp/arch.ml asmcomp/proc.ml asmcomp/CSE.ml asmcomp/selection.ml \
-  asmcomp/scheduling.ml asmcomp/reload.ml asmcomp/scheduling.ml \
-  asmcomp/emit.ml
-
-partialclean::
-	rm -f $(ARCH_SPECIFIC)
-
-beforedepend:: $(ARCH_SPECIFIC)
-
-ARCH_OCAMLOPT:=$(ARCH)
-
-.PHONY: check_arch check_all_arches
-
-# This rule provides a quick way to check that machine-dependent
-# files compiles fine for a foreign architecture (passed as ARCH=xxx).
-
-check_arch:
-	@echo "========= CHECKING asmcomp/$(ARCH) =============="
-	@rm -f $(ARCH_SPECIFIC) $(ARCH_SPECIFIC:.ml=.cmo)
-	@$(MAKE) ARCH_OCAMLOPT=$(ARCH) compilerlibs/ocamloptcomp.cma > /dev/null
-	@rm -f $(ARCH_SPECIFIC) $(ARCH_SPECIFIC:.ml=.cmo)
-
-ARCHES=amd64 i386 arm arm64 power sparc s390x
-
-check_all_arches:
-	@for i in $(ARCHES); do $(MAKE) --no-print-directory check_arch ARCH=$$i; done
 
 asmcomp/arch.ml: asmcomp/$(ARCH_OCAMLOPT)/arch.ml
 	ln -s $(ARCH_OCAMLOPT)/arch.ml asmcomp/arch.ml
@@ -767,6 +744,10 @@ depend: beforedepend
 	 middle_end/base_types driver toplevel; \
 	 do $(CAMLDEP) $(DEPFLAGS) $$d/*.mli $$d/*.ml; \
 	 done) > .depend
+	$(CAMLDEP) $(DEPFLAGS) -native \
+		-impl driver/compdynlink.mlopt >> .depend
+	$(CAMLDEP) $(DEPFLAGS) -bytecode \
+		-impl driver/compdynlink.mlbyte >> .depend
 
 alldepend:: depend
 

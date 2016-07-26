@@ -115,9 +115,9 @@ module Env = struct
         Mutable_variable.Map.add mut_var approx t.approx_mutable;
     }
 
-  let really_import_approx t approx =
+  let really_import_approx t =
     let module Backend = (val (t.backend) : Backend_intf.S) in
-    Backend.really_import_approx approx
+    Backend.really_import_approx
 
   let really_import_approx_with_scope t (scope, approx) =
     scope, really_import_approx t approx
@@ -432,8 +432,6 @@ let initial_inlining_toplevel_threshold ~round : Inlining_cost.Threshold.t =
     (unscaled * Inlining_cost.scale_inline_threshold_by)
 
 module Result = struct
-  module Int = Numbers.Int
-
   type t =
     { approx : Simple_value_approx.t;
       used_static_exceptions : Static_exception.Set.t;
@@ -452,6 +450,13 @@ module Result = struct
 
   let approx t = t.approx
   let set_approx t approx = { t with approx }
+
+  let meet_approx t env approx =
+    let really_import_approx = Env.really_import_approx env in
+    let meet =
+      Simple_value_approx.meet ~really_import_approx t.approx approx
+    in
+    set_approx t meet
 
   let use_static_exception t i =
     { t with

@@ -13,6 +13,8 @@
 /*                                                                        */
 /**************************************************************************/
 
+#define CAML_INTERNALS
+
 #include "caml/alloc.h"
 #include "caml/backtrace.h"
 #include "caml/callback.h"
@@ -26,7 +28,7 @@
 #include "caml/roots.h"
 #include "caml/signals.h"
 #ifdef NATIVE_CODE
-#include "stack.h"
+#include "caml/stack.h"
 #else
 #include "caml/stacks.h"
 #endif

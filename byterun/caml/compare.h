@@ -16,6 +16,10 @@
 #ifndef CAML_COMPARE_H
 #define CAML_COMPARE_H
 
+#ifdef CAML_INTERNALS
+
 CAMLextern int caml_compare_unordered;
+
+#endif /* CAML_INTERNALS */
 
 #endif /* CAML_COMPARE_H */

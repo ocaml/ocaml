@@ -158,7 +158,8 @@ let rec typexp s ty =
                       | Some (p, tl) ->
                           Some (type_path s p, List.map (typexp s) tl)))
       | Tfield (m, k, t1, t2)
-        when s == identity && t1.level < generic_level && m = dummy_method ->
+        when s == identity && (repr t1).level < generic_level
+          && m = dummy_method ->
           (* not allowed to lower the level of the dummy method *)
           Tfield (m, k, t1, typexp s t2)
       | Tvariant row ->
@@ -261,6 +262,7 @@ let type_declaration s decl =
       type_loc = loc s decl.type_loc;
       type_attributes = attrs s decl.type_attributes;
       type_immediate = decl.type_immediate;
+      type_unboxed = decl.type_unboxed;
     }
   in
   cleanup_types ();

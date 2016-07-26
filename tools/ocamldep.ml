@@ -26,6 +26,7 @@ let load_path = ref ([] : (string * string array) list)
 let ml_synonyms = ref [".ml"]
 let mli_synonyms = ref [".mli"]
 let native_only = ref false
+let bytecode_only = ref false
 let error_occurred = ref false
 let raw_dependencies = ref false
 let sort_files = ref false
@@ -329,7 +330,8 @@ let print_ml_dependencies source_file extracted_deps =
       extracted_deps init_deps in
   if not !native_only then
     print_dependencies (byte_targets @ extra_targets) byt_deps;
-  print_dependencies (native_targets @ extra_targets) native_deps
+  if not !bytecode_only then
+    print_dependencies (native_targets @ extra_targets) native_deps
 
 let print_mli_dependencies source_file extracted_deps =
   let basename = Filename.chop_extension source_file in
@@ -571,6 +573,8 @@ let _ =
         " Print module dependencies in raw form (not suitable for make)";
      "-native", Arg.Set native_only,
         " Generate dependencies for native-code only (no .cmo files)";
+     "-bytecode", Arg.Set bytecode_only,
+        " Generate dependencies for bytecode-code only (no .cmx files)";
      "-one-line", Arg.Set one_line,
         " Output one line per file, regardless of the length";
      "-open", Arg.String (add_to_list Clflags.open_modules),

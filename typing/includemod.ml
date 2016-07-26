@@ -389,6 +389,7 @@ and signature_components old_env env cxt subst paired =
       (pos, Tcoerce_none) :: comps_rec rem
   | (Sig_module(id1, mty1, _), Sig_module(_id2, mty2, _), pos) :: rem ->
       let p1 = Pident id1 in
+      Env.mark_module_used env (Ident.name id1) mty1.md_loc;
       let cc =
         modtypes env (Module id1::cxt) subst
           (Mtype.strengthen (Env.add_functor_arg id1 env) mty1.md_type p1)

@@ -13,6 +13,8 @@
 /*                                                                        */
 /**************************************************************************/
 
+#define CAML_INTERNALS
+
 /* Some runtime initialization functions that are common to bytecode
    and native code. */
 

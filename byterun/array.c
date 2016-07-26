@@ -13,6 +13,8 @@
 /*                                                                        */
 /**************************************************************************/
 
+#define CAML_INTERNALS
+
 /* Operations on arrays */
 #include <string.h>
 #include "caml/alloc.h"

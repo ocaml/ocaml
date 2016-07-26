@@ -167,7 +167,10 @@ module Options = Main_args.Make_opttop_options (struct
   let _S = set keep_asm_file
   let _short_paths = clear real_paths
   let _stdin () = file_argument ""
+  let _unboxed_types = set unboxed_types
+  let _no_unboxed_types = clear unboxed_types
   let _unsafe = set fast
+  let _verbose = set verbose
   let _version () = print_version ()
   let _vnum () = print_version_num ()
   let _no_version = set noversion
@@ -199,6 +202,7 @@ module Options = Main_args.Make_opttop_options (struct
   let _safe_string = clear unsafe_string
   let _unsafe_string = set unsafe_string
   let _open s = open_modules := s :: !open_modules
+  let _plugin p = Compplugin.load p
 
   let anonymous = file_argument
 end);;

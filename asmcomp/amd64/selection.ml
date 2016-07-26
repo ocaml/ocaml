@@ -125,7 +125,9 @@ class selector = object (self)
 
 inherit Spacetime_profiling.instruction_selection as super
 
-method is_immediate n = n <= 0x7FFFFFFF && n >= -0x80000000
+method is_immediate n = n <= 0x7FFF_FFFF && n >= (-1-0x7FFF_FFFF)
+  (* -1-.... : hack so that this can be compiled on 32-bit
+     (cf 'make check_all_arches') *)
 
 method is_immediate_natint n = n <= 0x7FFFFFFFn && n >= -0x80000000n
 
@@ -141,7 +143,7 @@ method! is_simple_expr e =
 method select_addressing _chunk exp =
   let (a, d) = select_addr exp in
   (* PR#4625: displacement must be a signed 32-bit immediate *)
-  if d < -0x8000_0000 || d > 0x7FFF_FFFF
+  if not (self # is_immediate d)
   then (Iindexed 0, exp)
   else match a with
     | Asymbol s ->

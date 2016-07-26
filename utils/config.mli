@@ -148,3 +148,6 @@ val libunwind_available : bool
         (* Whether the libunwind library is available on the target *)
 val libunwind_link_flags : string
         (* Linker flags to use libunwind *)
+
+val safe_string: bool
+        (* Whether the compiler was configured with -safe-string *)

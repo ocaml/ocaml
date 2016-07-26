@@ -168,11 +168,6 @@ let emit_label lbl =
   | S_macosx | S_win64 -> "L" ^ string_of_int lbl
   | _ -> ".L" ^ string_of_int lbl
 
-let emit_data_label lbl =
-  match system with
-  | S_win64 -> "Ld" ^ string_of_int lbl
-  | _ -> ".Ld" ^ string_of_int lbl
-
 let label s = sym (emit_label s)
 
 let def_label s = D.label (emit_label s)
@@ -963,7 +958,6 @@ let fundecl fundecl =
 let emit_item = function
   | Cglobal_symbol s -> D.global (emit_symbol s)
   | Cdefine_symbol s -> add_def_symbol s; _label (emit_symbol s)
-  | Cdefine_label lbl -> _label (emit_data_label lbl)
   | Cint8 n -> D.byte (const n)
   | Cint16 n -> D.word (const n)
   | Cint32 n -> D.long (const_nat n)
@@ -971,7 +965,6 @@ let emit_item = function
   | Csingle f -> D.long  (Const (Int64.of_int32 (Int32.bits_of_float f)))
   | Cdouble f -> D.qword (Const (Int64.bits_of_float f))
   | Csymbol_address s -> add_used_symbol s; D.qword (ConstLabel (emit_symbol s))
-  | Clabel_address lbl -> D.qword (ConstLabel (emit_data_label lbl))
   | Cstring s -> D.bytes s
   | Cskip n -> if n > 0 then D.space n
   | Calign n -> D.align n

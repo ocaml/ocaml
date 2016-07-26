@@ -12,6 +12,8 @@
 /*                                                                        */
 /**************************************************************************/
 
+#define CAML_INTERNALS
+
 #include <stdio.h>
 #include <stdint.h>
 #include <stdlib.h>
@@ -30,9 +32,9 @@
 #include "caml/mlvalues.h"
 #include "caml/roots.h"
 #include "caml/signals.h"
+#include "caml/stack.h"
 #include "caml/sys.h"
 #include "spacetime.h"
-#include "stack.h"
 
 #include "../config/s.h"
 

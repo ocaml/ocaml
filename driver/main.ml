@@ -131,6 +131,7 @@ module Options = Main_args.Make_bytecomp_options (struct
   let _pack = set make_package
   let _pp s = preprocessor := Some s
   let _ppx s = first_ppx := s :: !first_ppx
+  let _plugin p = Compplugin.load p
   let _principal = set principal
   let _no_principal = unset principal
   let _rectypes = set recursive_types
@@ -144,6 +145,8 @@ module Options = Main_args.Make_bytecomp_options (struct
   let _no_strict_formats = unset strict_formats
   let _thread = set use_threads
   let _vmthread = set use_vmthreads
+  let _unboxed_types = set unboxed_types
+  let _no_unboxed_types = unset unboxed_types
   let _unsafe = set fast
   let _unsafe_string = set unsafe_string
   let _use_prims s = use_prims := s
@@ -199,14 +202,14 @@ let main () =
     if !make_archive then begin
       Compmisc.init_path false;
 
-      Bytelibrarian.create_archive ppf  (Compenv.get_objfiles ())
+      Bytelibrarian.create_archive ppf  (Compenv.get_objfiles ~with_ocamlparam:false)
                                    (extract_output !output_name);
       Warnings.check_fatal ();
     end
     else if !make_package then begin
       Compmisc.init_path false;
       let extracted_output = extract_output !output_name in
-      let revd = get_objfiles () in
+      let revd = get_objfiles ~with_ocamlparam:false in
       Bytepackager.package_files ppf (Compmisc.initial_env ())
         revd (extracted_output);
       Warnings.check_fatal ();
@@ -229,7 +232,7 @@ let main () =
           default_output !output_name
       in
       Compmisc.init_path false;
-      Bytelink.link ppf (get_objfiles ()) target;
+      Bytelink.link ppf (get_objfiles ~with_ocamlparam:true) target;
       Warnings.check_fatal ();
     end;
   with x ->

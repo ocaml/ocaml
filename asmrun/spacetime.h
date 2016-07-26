@@ -17,7 +17,7 @@
 
 #include "caml/io.h"
 #include "caml/misc.h"
-#include "stack.h"
+#include "caml/stack.h"
 
 /* Runtime support for Spacetime profiling.
  * This header file is not intended for the casual user.

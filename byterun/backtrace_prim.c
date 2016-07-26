@@ -13,6 +13,8 @@
 /*                                                                        */
 /**************************************************************************/
 
+#define CAML_INTERNALS
+
 /* Stack backtrace for uncaught exceptions */
 
 #include <fcntl.h>

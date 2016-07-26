@@ -328,6 +328,14 @@ Multiple levels of packing can be achieved by combining "-pack" with
 The resulting "P.cmx" object file has sub-modules "P.Q", "P.Q.A"
 and "P.B".
 
+\item["-plugin" \var{plugin}]
+Dynamically load the code of the given \var{plugin}
+(a ".cmo", ".cma" or ".cmxs" file) in the compiler. \var{plugin} must exist in
+the same kind of code as the compiler ("ocamlopt.byte" must load bytecode
+plugins, while "ocamlopt.opt" must load native code plugins), and
+extension adaptation is done automatically for ".cma" files (to ".cmxs" files
+if the compiler is compiled in native code).
+
 \item["-pp" \var{command}]
 Cause the compiler to call the given \var{command} as a preprocessor
 for each source file. The output of \var{command} is redirected to
@@ -400,6 +408,15 @@ invalid formats, as they will be rejected by future OCaml versions.
 Compile or link multithreaded programs, in combination with the
 system "threads" library described in chapter~\ref{c:threads}.
 
+\item["-unboxed-types"]
+When a type is unboxable (i.e. a record with a single argument or a
+concrete datatype with a single constructor of one argument) it will
+be unboxed unless annotated with "[@@ocaml.boxed]".
+
+\item["-no-unboxed-types"]
+When a type is unboxable  it will be boxed unless annotated with
+"[@@ocaml.unboxed]". This is the default.
+
 \item["-unsafe"]
 Turn bound checking off for array and string accesses (the "v.(i)" and
 "s.[i]" constructs). Programs compiled with "-unsafe" are therefore
@@ -470,7 +487,7 @@ that are currently defined are ignored. The warning are as follows.
 \input{warnings-help.tex}
 \end{options}
 
-The default setting is "-w +a-4-6-7-9-27-29-32..39-41..42-44-45".
+The default setting is "-w +a-4-6-7-9-27-29-32..39-41..42-44-45-48-50".
 It is displayed by "ocamlopt -help".
 Note that warnings 5 and 10 are not always triggered, depending on
 the internals of the type checker.
@@ -490,7 +507,7 @@ arguments to "-warn-error"
 in production code, because this can break your build when future versions
 of OCaml add some new warnings.
 
-The default setting is "-warn-error -a" (all warnings are non-fatal).
+The default setting is "-warn-error -a+31" (only warning 31 is fatal).
 
 \item["-warn-help"]
 Show the description of all available warning numbers.

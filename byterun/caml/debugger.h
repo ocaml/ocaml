@@ -18,6 +18,8 @@
 #ifndef CAML_DEBUGGER_H
 #define CAML_DEBUGGER_H
 
+#ifdef CAML_INTERNALS
+
 #include "misc.h"
 #include "mlvalues.h"
 
@@ -109,5 +111,7 @@ enum debugger_reply {
   REP_UNCAUGHT_EXC = 'u'
   /* Program exited due to a stray exception. */
 };
+
+#endif /* CAML_INTERNALS */
 
 #endif /* CAML_DEBUGGER_H */

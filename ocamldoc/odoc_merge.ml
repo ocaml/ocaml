@@ -16,8 +16,6 @@
 (** Merge of information from [.ml] and [.mli] for a module.*)
 
 open Odoc_types
-
-module Name = Odoc_name
 open Odoc_parameter
 open Odoc_value
 open Odoc_type

@@ -526,6 +526,15 @@ contents of the object files a.cmo, b.cmo and c.cmo.  These
 contents can be referenced as P.A, P.B and P.C in the remainder
 of the program.
 .TP
+.BI \-plugin \ plugin
+Dynamically load the code of the given
+.I plugin
+(a .cmo, .cma or .cmxs file) in the compiler. The plugin must exist in
+the same kind of code as the compiler (ocamlc.byte must load bytecode
+plugins, while ocamlc.opt must load native code plugins), and
+extension adaptation is done automatically for .cma files (to .cmxs files
+if the compiler is compiled in native code).
+.TP
 .BI \-pp \ command
 Cause the compiler to call the given
 .I command
@@ -592,6 +601,17 @@ Force the left-hand part of each sequence to have type unit.
 Compile or link multithreaded programs, in combination with the
 system "threads" library described in
 .IR The\ OCaml\ user's\ manual .
+.TP
+.B \-unboxed\-types
+When a type is unboxable (i.e. a record with a single argument or a
+concrete datatype with a single constructor of one argument) it will
+be unboxed unless annotated with
+.BR [@@ocaml.boxed] .
+.TP
+.B \-no-unboxed\-types
+When a type is unboxable  it will be boxed unless annotated with
+.BR [@@ocaml.unboxed] .
+This is the default.
 .TP
 .B \-unsafe
 Turn bound checking off for array and string accesses (the
@@ -882,6 +902,12 @@ mutually recursive types.
 59
 \ \ Assignment on non-mutable value.
 
+60
+\ \ Unused module declaration.
+
+61
+\ \ Unannotated unboxable type in primitive declaration.
+
 The letters stand for the following sets of warnings.  Any letter not
 mentioned here corresponds to the empty set.
 
@@ -935,7 +961,7 @@ mentioned here corresponds to the empty set.
 
 .IP
 The default setting is
-.BR \-w\ +a\-4\-6\-7\-9\-27\-29\-32..39\-41\-42\-44\-45\-48\-50 .
+.BR \-w\ +a\-4\-6\-7\-9\-27\-29\-32..39\-41\-42\-44\-45\-48\-50\-60 .
 Note that warnings
 .BR 5 \ and \ 10
 are not always triggered, depending on the internals of the type checker.
@@ -965,7 +991,7 @@ warnings or modify existing warnings.
 
 The default setting is
 .B \-warn\-error \-a+31
-(all warnings are non-fatal except 31).
+(only warning 31 is fatal).
 .TP
 .B \-warn\-help
 Show the description of all available warning numbers.

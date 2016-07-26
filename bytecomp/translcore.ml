@@ -836,6 +836,8 @@ and transl_exp0 e =
       end else begin match cstr.cstr_tag with
         Cstr_constant n ->
           Lconst(Const_pointer n)
+      | Cstr_unboxed ->
+          (match ll with [v] -> v | _ -> assert false)
       | Cstr_block n ->
           begin try
             Lconst(Const_block(n, List.map extract_constant ll))
@@ -864,26 +866,26 @@ and transl_exp0 e =
             Lprim(Pmakeblock(0, Immutable, None),
                   [Lconst(Const_base(Const_int tag)); lam], e.exp_loc)
       end
-  | Texp_record ((_, lbl1, _) :: _ as lbl_expr_list, opt_init_expr) ->
-      transl_record e.exp_loc e.exp_env
-        lbl1.lbl_all lbl1.lbl_repres lbl_expr_list
-        opt_init_expr
-  | Texp_record ([], _) ->
-      fatal_error "Translcore.transl_exp: bad Texp_record"
+  | Texp_record {fields; representation; extended_expression} ->
+      transl_record e.exp_loc e.exp_env fields representation
+        extended_expression
   | Texp_field(arg, _, lbl) ->
-      let access =
-        match lbl.lbl_repres with
-          Record_regular | Record_inlined _ -> Pfield lbl.lbl_pos
-        | Record_float -> Pfloatfield lbl.lbl_pos
-        | Record_extension -> Pfield (lbl.lbl_pos + 1)
-      in
-      Lprim(access, [transl_exp arg], e.exp_loc)
+      let targ = transl_exp arg in
+      begin match lbl.lbl_repres with
+          Record_regular | Record_inlined _ ->
+          Lprim (Pfield lbl.lbl_pos, [targ], e.exp_loc)
+        | Record_unboxed _ -> targ
+        | Record_float -> Lprim (Pfloatfield lbl.lbl_pos, [targ], e.exp_loc)
+        | Record_extension ->
+          Lprim (Pfield (lbl.lbl_pos + 1), [targ], e.exp_loc)
+      end
   | Texp_setfield(arg, _, lbl, newval) ->
       let access =
         match lbl.lbl_repres with
           Record_regular
         | Record_inlined _ ->
           Psetfield(lbl.lbl_pos, maybe_pointer newval, Assignment)
+        | Record_unboxed _ -> assert false
         | Record_float -> Psetfloatfield (lbl.lbl_pos, Assignment)
         | Record_extension ->
           Psetfield (lbl.lbl_pos + 1, maybe_pointer newval, Assignment)
@@ -1020,7 +1022,7 @@ and transl_exp0 e =
           Lprim(Pmakeblock(Obj.forward_tag, Immutable, None),
                 [transl_exp e], e.exp_loc)
       | Texp_ident(_, _, _) -> (* according to the type *)
-          begin match e.exp_type.desc with
+          begin match (Ctype.repr e.exp_type).desc with
           (* the following may represent a float/forward/lazy: need a
              forward_tag *)
           | Tvar _ | Tlink _ | Tsubst _ | Tunivar _
@@ -1262,8 +1264,8 @@ and transl_setinstvar loc self var expr =
   in
   Lprim(Parraysetu prim, [self; transl_normal_path var; transl_exp expr], loc)
 
-and transl_record loc env all_labels repres lbl_expr_list opt_init_expr =
-  let size = Array.length all_labels in
+and transl_record loc env fields repres opt_init_expr =
+  let size = Array.length fields in
   (* Determine if there are "enough" fields (only relevant if this is a
      functional-style record update *)
   let no_init = match opt_init_expr with None -> true | _ -> false in
@@ -1271,33 +1273,28 @@ and transl_record loc env all_labels repres lbl_expr_list opt_init_expr =
   then begin
     (* Allocate new record with given fields (and remaining fields
        taken from init_expr if any *)
-    let lv = Array.make (Array.length all_labels) (staticfail, Pgenval) in
     let init_id = Ident.create "init" in
-    begin match opt_init_expr with
-      None -> ()
-    | Some _ ->
-        for i = 0 to Array.length all_labels - 1 do
-          let access =
-            match all_labels.(i).lbl_repres with
-              Record_regular | Record_inlined _ -> Pfield i
-            | Record_extension -> Pfield (i + 1)
-            | Record_float -> Pfloatfield i in
-          let field_kind =
-            (* TODO recover the kind from the type of the original record *)
-            Pgenval
-          in
-          lv.(i) <- Lprim(access, [Lvar init_id], loc), field_kind
-        done
-    end;
-    List.iter
-      (fun (_, lbl, expr) ->
-         let kind = value_kind expr.exp_env expr.exp_type in
-         lv.(lbl.lbl_pos) <- transl_exp expr, kind)
-      lbl_expr_list;
+    let lv =
+      Array.mapi
+        (fun i (_, definition) ->
+           match definition with
+           | Kept typ ->
+               let field_kind = value_kind env typ in
+               let access =
+                 match repres with
+                   Record_regular | Record_inlined _ -> Pfield i
+                 | Record_unboxed _ -> assert false
+                 | Record_extension -> Pfield (i + 1)
+                 | Record_float -> Pfloatfield i in
+               Lprim(access, [Lvar init_id], loc), field_kind
+           | Overridden (_lid, expr) ->
+               let field_kind = value_kind expr.exp_env expr.exp_type in
+               transl_exp expr, field_kind)
+        fields
+    in
     let ll, shape = List.split (Array.to_list lv) in
     let mut =
-      if List.exists (fun lbl -> lbl.lbl_mut = Mutable)
-        (Array.to_list all_labels)
+      if Array.exists (fun (lbl, _) -> lbl.lbl_mut = Mutable) fields
       then Mutable
       else Immutable in
     let lam =
@@ -1307,6 +1304,7 @@ and transl_record loc env all_labels repres lbl_expr_list opt_init_expr =
         match repres with
         | Record_regular -> Lconst(Const_block(0, cl))
         | Record_inlined tag -> Lconst(Const_block(tag, cl))
+        | Record_unboxed _ -> Lconst(match cl with [v] -> v | _ -> assert false)
         | Record_float ->
             Lconst(Const_float_array(List.map extract_float cl))
         | Record_extension ->
@@ -1317,11 +1315,13 @@ and transl_record loc env all_labels repres lbl_expr_list opt_init_expr =
             Lprim(Pmakeblock(0, mut, Some shape), ll, loc)
         | Record_inlined tag ->
             Lprim(Pmakeblock(tag, mut, Some shape), ll, loc)
+        | Record_unboxed _ -> (match ll with [v] -> v | _ -> assert false)
         | Record_float ->
             Lprim(Pmakearray (Pfloatarray, mut), ll, loc)
         | Record_extension ->
             let path =
-              match all_labels.(0).lbl_res.desc with
+              let (label, _) = fields.(0) in
+              match label.lbl_res.desc with
               | Tconstr(p, _, _) -> p
               | _ -> assert false
             in
@@ -1339,23 +1339,28 @@ and transl_record loc env all_labels repres lbl_expr_list opt_init_expr =
     (* If you change anything here, you will likely have to change
        [check_recursive_recordwith] in this file. *)
     let copy_id = Ident.create "newrecord" in
-    let update_field (_, lbl, expr) cont =
-      let upd =
-        match lbl.lbl_repres with
-          Record_regular
-        | Record_inlined _ ->
-          Psetfield(lbl.lbl_pos, maybe_pointer expr, Assignment)
-        | Record_float -> Psetfloatfield (lbl.lbl_pos, Assignment)
-        | Record_extension ->
-          Psetfield(lbl.lbl_pos + 1, maybe_pointer expr, Assignment)
-      in
-      Lsequence(Lprim(upd, [Lvar copy_id; transl_exp expr], loc), cont) in
+    let update_field cont (lbl, definition) =
+      match definition with
+      | Kept _type -> cont
+      | Overridden (_lid, expr) ->
+          let upd =
+            match repres with
+              Record_regular
+            | Record_inlined _ ->
+                Psetfield(lbl.lbl_pos, maybe_pointer expr, Assignment)
+            | Record_unboxed _ -> assert false
+            | Record_float -> Psetfloatfield (lbl.lbl_pos, Assignment)
+            | Record_extension ->
+                Psetfield(lbl.lbl_pos + 1, maybe_pointer expr, Assignment)
+          in
+          Lsequence(Lprim(upd, [Lvar copy_id; transl_exp expr], loc), cont)
+    in
     begin match opt_init_expr with
       None -> assert false
     | Some init_expr ->
         Llet(Strict, Pgenval, copy_id,
              Lprim(Pduprecord (repres, size), [transl_exp init_expr], loc),
-             List.fold_right update_field lbl_expr_list (Lvar copy_id))
+             Array.fold_left update_field (Lvar copy_id) fields)
     end
   end
 

@@ -103,6 +103,8 @@ let record_rep ppf r =
   match r with
   | Record_regular -> fprintf ppf "regular"
   | Record_inlined i -> fprintf ppf "inlined(%i)" i
+  | Record_unboxed false -> fprintf ppf "unboxed"
+  | Record_unboxed true -> fprintf ppf "inlined(unboxed)"
   | Record_float -> fprintf ppf "float"
   | Record_extension -> fprintf ppf "ext"
 ;;

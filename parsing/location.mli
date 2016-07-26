@@ -112,11 +112,6 @@ val error: ?loc:t -> ?sub:error list -> ?if_highlight:string -> string -> error
 val errorf: ?loc:t -> ?sub:error list -> ?if_highlight:string
             -> ('a, Format.formatter, unit, error) format4 -> 'a
 
-val errorf_prefixed : ?loc:t -> ?sub:error list -> ?if_highlight:string
-                    -> ('a, Format.formatter, unit, error) format4 -> 'a
-  (* same as {!errorf}, but prints the error prefix "Error:" before yielding
-   * to the format string *)
-
 val raise_errorf: ?loc:t -> ?sub:error list -> ?if_highlight:string
             -> ('a, Format.formatter, unit, 'b) format4 -> 'a
 

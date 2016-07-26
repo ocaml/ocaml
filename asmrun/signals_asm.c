@@ -13,6 +13,8 @@
 /*                                                                        */
 /**************************************************************************/
 
+#define CAML_INTERNALS
+
 /* Signal handling, code specific to the native-code compiler */
 
 #if defined(TARGET_amd64) && defined (SYS_linux)
@@ -27,7 +29,7 @@
 #include "caml/signals.h"
 #include "caml/signals_machdep.h"
 #include "signals_osdep.h"
-#include "stack.h"
+#include "caml/stack.h"
 #include "spacetime.h"
 
 #ifdef HAS_STACK_OVERFLOW_DETECTION

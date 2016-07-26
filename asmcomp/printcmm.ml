@@ -194,7 +194,6 @@ let fundecl ppf f =
 
 let data_item ppf = function
   | Cdefine_symbol s -> fprintf ppf "\"%s\":" s
-  | Cdefine_label l -> fprintf ppf "L%i:" l
   | Cglobal_symbol s -> fprintf ppf "global \"%s\"" s
   | Cint8 n -> fprintf ppf "byte %i" n
   | Cint16 n -> fprintf ppf "int16 %i" n
@@ -203,7 +202,6 @@ let data_item ppf = function
   | Csingle f -> fprintf ppf "single %F" f
   | Cdouble f -> fprintf ppf "double %F" f
   | Csymbol_address s -> fprintf ppf "addr \"%s\"" s
-  | Clabel_address l -> fprintf ppf "addr L%i" l
   | Cstring s -> fprintf ppf "string \"%s\"" s
   | Cskip n -> fprintf ppf "skip %i" n
   | Calign n -> fprintf ppf "align %i" n

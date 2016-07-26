@@ -292,7 +292,7 @@ let call_linker file_list startup_file output_name =
   let libunwind =
     if not Config.spacetime then []
     else if not Config.libunwind_available then []
-    else Misc.Stdlib.String.split Config.libunwind_link_flags ~on:' '
+    else String.split_on_char ' ' Config.libunwind_link_flags
   in
   let files, c_lib =
     if (not !Clflags.output_c_object) || main_dll || main_obj_runtime then

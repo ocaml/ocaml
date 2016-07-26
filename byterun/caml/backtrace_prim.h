@@ -16,6 +16,8 @@
 #ifndef CAML_BACKTRACE_PRIM_H
 #define CAML_BACKTRACE_PRIM_H
 
+#ifdef CAML_INTERNALS
+
 #include "backtrace.h"
 
 /* Backtrace generation is split in [backtrace.c] and [backtrace_prim.c].
@@ -80,5 +82,7 @@ void caml_debuginfo_location(debuginfo dbg, /*out*/ struct caml_loc_info * li);
  * walks the stack but directly turns it into a [raw_backtrace] and is called
  * explicitly.
  */
+
+#endif /* CAML_INTERNALS */
 
 #endif /* CAML_BACKTRACE_PRIM_H */

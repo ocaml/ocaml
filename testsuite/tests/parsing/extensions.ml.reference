@@ -323,4 +323,4 @@
 ]
 
 File "extensions.ml", line 2, characters 3-6:
-Uninterpreted extension 'foo'.
+Error: Uninterpreted extension 'foo'.

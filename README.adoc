@@ -94,7 +94,7 @@ the conditions stated in file LICENSE.
 
 == Installation
 
-See the file INSTALL for installation instructions on machines running Unix,
+See the file link:INSTALL.adoc[] for installation instructions on machines running Unix,
 Linux, OS X and Cygwin.  For native Microsoft Windows, see
 link:README.win32.adoc[].
 
