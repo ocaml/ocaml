@@ -636,6 +636,7 @@ module Analyser =
               (env, [], None)
               tyext.Parsetree.ptyext_constructors
           in
+          let types_ext_list = List.rev types_ext_list in
           let ty_path, ty_params, priv =
             match last_ext with
               None -> assert false
