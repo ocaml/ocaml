@@ -534,6 +534,16 @@ module Heap_snapshot = struct
     | End -> None
     | (Total _) as totals -> Some totals
 
+  module Event = struct
+    type t = {
+      event_name : string;
+      time : float;
+    }
+
+    let event_name t = t.event_name
+    let timestamp t = t.time
+  end
+
   module Series = struct
     type t = {
       num_snapshots : int;
@@ -543,21 +553,37 @@ module Heap_snapshot = struct
       traces_by_thread : Trace.t array;
       finaliser_traces_by_thread : Trace.t array;
       snapshots : heap_snapshot array;
+      events : Event.t list;
     }
 
     let pathname_suffix_trace = "trace"
 
-    let rec read_snapshots chn acc =
-      let finished : bool = Marshal.from_channel chn in
-      if finished then Array.of_list (List.rev acc)
-      else begin
+    (* The order of these constructors must match the C code. *)
+    type what_comes_next =
+      | Snapshot
+      | Traces
+      | Event
+
+    (* Suppress compiler warning 37. *)
+    let _ : what_comes_next list = [Snapshot; Traces; Event;]
+
+    let rec read_snapshots_and_events chn snapshots events =
+      let next : what_comes_next = Marshal.from_channel chn in
+      match next with
+      | Snapshot ->
         let snapshot : heap_snapshot = Marshal.from_channel chn in
-        read_snapshots chn (snapshot :: acc)
-      end
+        read_snapshots_and_events chn (snapshot :: snapshots) events
+      | Event ->
+        let event_name : string = Marshal.from_channel chn in
+        let time : float = Marshal.from_channel chn in
+        let event = { Event. event_name; time; } in
+        read_snapshots_and_events chn snapshots (event :: events)
+      | Traces ->
+        (Array.of_list (List.rev snapshots)), List.rev events
 
     let read ~path =
       let chn = open_in path in
-      let snapshots = read_snapshots chn [] in
+      let snapshots, events = read_snapshots_and_events chn [] [] in
       let num_snapshots = Array.length snapshots in
       let time_of_writer_close : float = Marshal.from_channel chn in
       let frame_table = Frame_table.demarshal chn in
@@ -581,6 +607,7 @@ module Heap_snapshot = struct
         traces_by_thread;
         finaliser_traces_by_thread;
         snapshots;
+        events;
       }
 
     type trace_kind = Normal | Finaliser
@@ -599,5 +626,6 @@ module Heap_snapshot = struct
     let frame_table t = t.frame_table
     let shape_table t = t.shape_table
     let time_of_writer_close t = t.time_of_writer_close
+    let events t = t.events
   end
 end

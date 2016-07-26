@@ -100,7 +100,6 @@ module Trace : sig
   type uninstrumented_node
 
   module OCaml : sig
-
     module Allocation_point : sig
       (** A value of type [t] corresponds to an allocation point in OCaml
           code. *)
@@ -202,7 +201,6 @@ module Trace : sig
   end
 
   module Foreign : sig
-
     module Allocation_point : sig
       (** A value of type [t] corresponds to an allocation point in non-OCaml
           code. *)
@@ -294,7 +292,9 @@ module Heap_snapshot : sig
 
   end
 
-  (** The timestamp of a snapshot.  The units are as for [Sys.time]. *)
+  (** The timestamp of a snapshot.  The units are as for [Sys.time]
+      (unless custom timestamps are being provided, cf. the [Spacetime] module
+      in the standard library). *)
   val timestamp : t -> float
 
   val gc_stats : t -> Gc_stats.t
@@ -312,6 +312,13 @@ module Heap_snapshot : sig
   (** Total allocations across *all threads*. *)
   (* CR-someday mshinwell: change the relevant variables to be thread-local *)
   val total_allocations : t -> Total_allocation.t option
+
+  module Event : sig
+    type t
+
+    val event_name : t -> string
+    val timestamp : t -> float
+  end
 
   module Series : sig
     type t
@@ -332,5 +339,6 @@ module Heap_snapshot : sig
     val shape_table : t -> Shape_table.t
     val num_snapshots : t -> int
     val snapshot : t -> index:int -> heap_snapshot
+    val events : t -> Event.t list
   end
 end
