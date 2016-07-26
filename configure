@@ -127,8 +127,6 @@ while : ; do
         libunwind_lib_dir=$2; shift;;
     -libunwindinclude|--libunwindinclude)
         libunwind_include_dir=$2; shift;;
-    -libunwindlib|--libunwindlib)
-        libunwind_lib_dir=$2; shift;;
     -disable-libunwind|--disable-libunwind)
         disable_libunwind=true;;
     -host*|--host*)
@@ -1895,7 +1893,7 @@ echo "NATIVECCCOMPOPTS=$nativecccompopts" >> Makefile
 echo "NATIVECCPROFOPTS=$nativeccprofopts" >> Makefile
 echo "NATIVECCLINKOPTS=$nativecclinkopts" >> Makefile
 echo "NATIVECCRPATH=$nativeccrpath" >> Makefile
-echo "NATIVECCLIBS=$cclibs $nativecclibs $dllib" >> Makefile
+echo "NATIVECCLIBS=$cclibs $dllib" >> Makefile
 echo "ASM=$as" >> Makefile
 echo "ASPP=$aspp" >> Makefile
 echo "ASPPPROFFLAGS=$asppprofflags" >> Makefile
