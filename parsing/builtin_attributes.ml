@@ -101,6 +101,29 @@ let rec deprecated_of_str = function
   | _ -> None
 
 
+let rec check_nested_match e =
+  if List.for_all
+    (function
+      | ({txt="ocaml.delimited"; _}, _) -> false
+      | _ -> true
+    )
+    e.pexp_attributes
+  then match e.pexp_desc with
+    | Pexp_let (_, _, e)
+    | Pexp_letmodule (_, _, e)
+    | Pexp_letexception (_, e)
+    | Pexp_ifthenelse (_, e, None)
+      -> check_nested_match e
+    | Pexp_ifthenelse (_, e1, Some e2)
+    | Pexp_sequence (e1, e2) ->
+        check_nested_match e1; check_nested_match e2
+
+    | Pexp_match _
+    | Pexp_function _
+    | Pexp_try _ ->
+        Location.prerr_warning e.pexp_loc Warnings.Pattern_matching_should_be_delimited
+    | _ -> ()
+
 let emit_external_warnings =
   (* Note: this is run as a preliminary pass when type-checking an
      interface or implementation.  This allows to cover all kinds of
@@ -121,9 +144,12 @@ let emit_external_warnings =
                 pstr_loc}] ->
             Location.prerr_warning pstr_loc (Warnings.Preprocessor s)
         | _ -> ()
-      )
+      );
+     case = (fun this c ->
+              check_nested_match c.pc_rhs;
+              default_iterator.case this c
+      );
   }
-
 
 let warning_scope = ref []
 

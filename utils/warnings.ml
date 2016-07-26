@@ -82,6 +82,7 @@ type t =
   | Assignment_to_non_mutable_value         (* 59 *)
   | Unused_module of string                 (* 60 *)
   | Unboxable_type_in_prim_decl of string   (* 61 *)
+  | Pattern_matching_should_be_delimited    (* 62 *)
 ;;
 
 (* If you remove a warning, leave a hole in the numbering.  NEVER change
@@ -152,9 +153,10 @@ let number = function
   | Assignment_to_non_mutable_value -> 59
   | Unused_module _ -> 60
   | Unboxable_type_in_prim_decl _ -> 61
+  | Pattern_matching_should_be_delimited -> 62
 ;;
 
-let last_warning_number = 60
+let last_warning_number = 62
 ;;
 
 (* Must be the max number returned by the [number] function. *)
@@ -483,6 +485,9 @@ let message = function
          unboxable. The representation of such types may change in future\n\
          versions. You should annotate the declaration of %s with [@@boxed]\n\
          or [@@unboxed]." t t
+  | Pattern_matching_should_be_delimited ->
+      "This nested pattern matching should be delimited \
+       with begin...end or (...)."
 ;;
 
 let nerrors = ref 0;;
