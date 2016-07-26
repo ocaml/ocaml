@@ -86,7 +86,7 @@ INCLUDES_NODEP=	-I $(OCAMLSRCDIR)/stdlib \
 
 INCLUDES=$(INCLUDES_DEP) $(INCLUDES_NODEP)
 
-COMPFLAGS=$(INCLUDES) -absname -w +a-4-9-41-42-44-45-48 -warn-error A -safe-string -strict-sequence -strict-formats
+COMPFLAGS=$(INCLUDES) -absname -w +a-4-9-41-42-44-45-48-62 -warn-error A -safe-string -strict-sequence -strict-formats
 LINKFLAGS=$(INCLUDES) -nostdlib
 
 CMOFILES= odoc_config.cmo \

@@ -88,7 +88,7 @@ CAMLLEX=$(CAMLRUN) ../boot/ocamllex
 INCLUDES=-I ../utils -I ../parsing -I ../typing -I ../bytecomp -I ../asmcomp \
          -I ../middle_end -I ../middle_end/base_types -I ../driver \
          -I ../toplevel
-COMPFLAGS= -absname -w +a-4-9-41-42-44-45-48 -strict-sequence -warn-error A \
+COMPFLAGS= -absname -w +a-4-9-41-42-44-45-48-62 -strict-sequence -warn-error A \
  -safe-string -strict-formats $(INCLUDES)
 LINKFLAGS=$(INCLUDES)
 VPATH := $(filter-out -I,$(INCLUDES))
