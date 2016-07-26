@@ -879,7 +879,8 @@ All the macros described in this section are declared in the
 \begin{gcrule}
 A function that has parameters or local variables of type "value" must
 begin with a call to one of the "CAMLparam" macros and return with
-"CAMLreturn", "CAMLreturn0", or "CAMLreturnT".
+"CAMLreturn", "CAMLreturn0", or "CAMLreturnT".  In particular, CAMLlocal
+\emph{must} be bracketed by CAMLparam and CAMLreturn macros.
 \end{gcrule}
 
 There are six "CAMLparam" macros: "CAMLparam0" to "CAMLparam5", which
