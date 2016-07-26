@@ -18,6 +18,13 @@
 #include <string.h>
 #include <limits.h>
 #include <math.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <fcntl.h>
+#include "caml/config.h"
+#ifdef HAS_UNISTD
+#include <unistd.h>
+#endif
 
 #include "caml/alloc.h"
 #include "caml/backtrace_prim.h"
@@ -105,17 +112,32 @@ static void reinitialise_free_node_block(void)
 #define O_BINARY 0
 #endif
 
+#if defined (_WIN32) || defined (_WIN64)
+extern value val_process_id;
+#endif
+
+static char* automatic_snapshot_dir;
+
 static void open_snapshot_channel(void)
 {
   int fd;
-  char filename[256];
-  snprintf(filename, 256, "spacetime-%d", getpid());
-  filename[255] = '\0';
-  /* CR mshinwell: the filename must vary! - the current fix isn't good enough */
+  char filename[8192];
+  int pid;
+#if defined (_WIN32) || defined (_WIN64)
+  pid = Int_val(val_process_id);
+#else
+  pid = getpid();
+#endif
+  snprintf(filename, 8192, "%s/spacetime-%d", automatic_snapshot_dir, pid);
+  filename[8191] = '\0';
   fd = open(filename, O_WRONLY | O_CREAT | O_TRUNC | O_BINARY, 0666);
-  if (fd == -1) caml_sys_error(caml_copy_string(filename));
-  snapshot_channel = caml_open_descriptor_out(fd);
-  pid_when_snapshot_channel_opened = getpid();
+  if (fd == -1) {
+    automatic_snapshots = 0;
+  }
+  else {
+    snapshot_channel = caml_open_descriptor_out(fd);
+    pid_when_snapshot_channel_opened = getpid();
+  }
 }
 
 static void maybe_reopen_snapshot_channel(void)
@@ -133,8 +155,12 @@ static void maybe_reopen_snapshot_channel(void)
   }
 }
 
+extern void caml_spacetime_automatic_save(void);
+
 void caml_spacetime_initialize(void)
 {
+  /* Note that this is called very early (even prior to GC initialisation). */
+
   char *ap_interval;
 
   reinitialise_free_node_block();
@@ -147,12 +173,42 @@ void caml_spacetime_initialize(void)
     sscanf(ap_interval, "%u", &interval);
     if (interval != 0) {
       double time;
-      open_snapshot_channel();
-      snapshot_interval = interval / 1e3;
-      time = caml_sys_time_unboxed(Val_unit);
-      next_snapshot_time = time + snapshot_interval;
-      atexit(&caml_spacetime_automatic_save);
-      automatic_snapshots = 1;
+      char cwd[4096];
+      char* user_specified_automatic_snapshot_dir;
+      int dir_ok = 1;
+
+      user_specified_automatic_snapshot_dir =
+        getenv("OCAML_SPACETIME_SNAPSHOT_DIR");
+
+      if (user_specified_automatic_snapshot_dir == NULL) {
+#ifdef HAS_GETCWD
+        if (getcwd(cwd, sizeof(cwd)) == NULL) {
+          dir_ok = 0;
+        }
+#else
+        if (getwd(cwd) == NULL) {
+          dir_ok = 0;
+        }
+#endif
+        if (dir_ok) {
+          automatic_snapshot_dir = strdup(cwd);
+        }
+      }
+      else {
+        automatic_snapshot_dir =
+          strdup(user_specified_automatic_snapshot_dir);
+      }
+
+      if (dir_ok) {
+        automatic_snapshots = 1;
+        open_snapshot_channel();
+        if (automatic_snapshots) {
+          snapshot_interval = interval / 1e3;
+          time = caml_sys_time_unboxed(Val_unit);
+          next_snapshot_time = time + snapshot_interval;
+          atexit(&caml_spacetime_automatic_save);
+        }
+      }
     }
   }
 }
@@ -201,12 +257,42 @@ void caml_spacetime_register_thread(
   num_per_threads++;
 }
 
+CAMLprim value caml_spacetime_save_event (value v_time_opt,
+                                          value v_channel,
+                                          value v_event_name)
+{
+  struct channel* chan = Channel(v_channel);
+  value v_time;
+  double time_override = 0.0;
+  int use_time_override = 0;
+
+  if (Is_block(v_time_opt)) {
+    time_override = Double_field(Field(v_time_opt, 0), 0);
+    use_time_override = 1;
+  }
+  v_time = caml_spacetime_timestamp(time_override, use_time_override);
+
+  Lock(chan);
+  caml_output_val(chan, Val_long(2), Val_long(0));
+  caml_output_val(chan, v_event_name, Val_long(0));
+  caml_extern_allow_out_of_heap = 1;
+  caml_output_val(chan, v_time, Val_long(0));
+  caml_extern_allow_out_of_heap = 0;
+  Unlock(chan);
+
+  caml_stat_free(Hp_val(v_time));
+
+  return Val_unit;
+}
+
 void save_trie (struct channel *chan, double time_override,
                 int use_time_override)
 {
   value v_time, v_frames, v_shapes;
   int num_marshalled = 0;
   per_thread* thr = per_threads;
+
+  Lock(chan);
 
   caml_output_val(chan, Val_long(1), Val_long(0));
 
@@ -240,11 +326,13 @@ void save_trie (struct channel *chan, double time_override,
   }
   caml_extern_allow_out_of_heap = 0;
   Assert(num_marshalled == num_per_threads);
+
+  Unlock(chan);
 }
 
 CAMLprim value caml_spacetime_save_trie (value v_time_opt, value v_channel)
 {
-  struct channel * channel = Channel(v_channel);
+  struct channel* channel = Channel(v_channel);
   double time_override = 0.0;
   int use_time_override = 0;
 
@@ -253,9 +341,7 @@ CAMLprim value caml_spacetime_save_trie (value v_time_opt, value v_channel)
     use_time_override = 1;
   }
 
-  Lock(channel);
   save_trie(channel, time_override, use_time_override);
-  Unlock(channel);
 
   return Val_unit;
 }
@@ -896,21 +982,15 @@ uintnat caml_spacetime_my_profinfo (struct ext_table** cached_frames,
 
 void caml_spacetime_automatic_snapshot (void)
 {
-  /* Marshalling may trigger a thread switch, which might cause us to be
-     reentered from [caml_garbage_collection]. */
-  static int reentered = 0;
-
-  if (automatic_snapshots && !reentered) {
+  if (automatic_snapshots) {
     double start_time, end_time;
-    reentered = 1;
     start_time = caml_sys_time_unboxed(Val_unit);
     if (start_time >= next_snapshot_time) {
       maybe_reopen_snapshot_channel();
-      caml_spacetime_save_snapshot(snapshot_channel);
+      caml_spacetime_save_snapshot(snapshot_channel, 0.0, 0);
       end_time = caml_sys_time_unboxed(Val_unit);
       next_snapshot_time = end_time + snapshot_interval;
     }
-    reentered = 0;
   }
 }
 
@@ -919,12 +999,9 @@ void caml_spacetime_automatic_save (void)
   /* Called from [atexit]. */
 
   if (automatic_snapshots) {
-    /* The marshalling might trigger a thread switch, which in turn might
-       cause us to attempt to take a snapshot; to avoid this we disable
-       automatic snapshots. */
     automatic_snapshots = 0;
     maybe_reopen_snapshot_channel();
-    save_trie(snapshot_channel);
+    save_trie(snapshot_channel, 0.0, 0);
     caml_flush(snapshot_channel);
     caml_close_channel(snapshot_channel);
   }

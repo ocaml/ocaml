@@ -22,7 +22,6 @@
     see the Spacetime offline library in otherlibs/. *)
 
 module Series : sig
-
   (** Type representing a file that will hold a series of heap snapshots
       together with additional information required to interpret those
       snapshots. *)
@@ -31,6 +30,13 @@ module Series : sig
   (** [create ~path] creates a series file at [path]. *)
   val create : path:string -> t
 
+  (** [save_event] writes an event, which is an arbitrary string, into the
+      given series file.  This may be used for identifying particular points
+      during program execution when analysing the profile.
+      The optional [time] parameter is as for [Snapshot.take].
+  *)
+  val save_event : ?time:float -> t -> event_name:string -> unit
+
   (** [save_and_close series] writes information into [series] required for
       interpeting the snapshots that [series] contains and then closes the
       [series] file. This function must be called to produce a valid series
@@ -38,7 +44,6 @@ module Series : sig
       The optional [time] parameter is as for [Snapshot.take].
   *)
   val save_and_close : ?time:float -> t -> unit
-
 end
 
 module Snapshot : sig

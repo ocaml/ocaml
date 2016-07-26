@@ -23,6 +23,13 @@ module Series = struct
       closed = false;
     }
 
+  external save_event : ?time:float -> out_channel -> event_name:string -> unit
+    = "caml_spacetime_only_works_for_native_code"
+      "caml_spacetime_save_event"
+
+  let save_event ?time t ~event_name =
+    save_event ?time t.channel ~event_name
+
   external save_trie : ?time:float -> out_channel -> unit
     = "caml_spacetime_only_works_for_native_code"
       "caml_spacetime_save_trie"

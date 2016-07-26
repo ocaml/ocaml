@@ -282,6 +282,8 @@ void caml_spacetime_save_snapshot (struct channel *chan, double time_override,
   value v_total_allocations;
   snapshot* heap_snapshot;
 
+  Lock(chan);
+
   v_snapshot = take_snapshot(time_override, use_time_override);
 
   caml_output_val(chan, Val_long(0), Val_long(0));
@@ -289,6 +291,8 @@ void caml_spacetime_save_snapshot (struct channel *chan, double time_override,
   caml_extern_allow_out_of_heap = 1;
   caml_output_val(chan, v_snapshot, Val_long(0));
   caml_extern_allow_out_of_heap = 0;
+
+  Unlock(chan);
 
   heap_snapshot = (snapshot*) v_snapshot;
   caml_stat_free(Hp_val(heap_snapshot->time));
@@ -317,9 +321,7 @@ CAMLprim value caml_spacetime_take_snapshot(value v_time_opt, value v_channel)
     use_time_override = 1;
   }
 
-  Lock(channel);
   caml_spacetime_save_snapshot(channel, time_override, use_time_override);
-  Unlock(channel);
 
   return Val_unit;
 }

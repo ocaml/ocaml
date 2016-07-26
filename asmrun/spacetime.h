@@ -171,6 +171,7 @@ extern void caml_spacetime_save_snapshot (struct channel *chan,
                                           int use_time_override);
 extern value caml_spacetime_timestamp(double time_override,
                                       int use_time_override);
+extern void caml_spacetime_automatic_snapshot (void);
 
 /* For use in runtime functions that are executed from OCaml
    code, to save the overhead of using libunwind every time. */
