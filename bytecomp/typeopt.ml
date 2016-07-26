@@ -30,7 +30,7 @@ let scrape_ty env ty =
         | None -> ty
         | Some ty2 -> ty2
         end
-      | _ -> desc
+      | _ -> ty
       | exception Not_found -> ty
       end
   | _ -> ty

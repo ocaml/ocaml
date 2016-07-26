@@ -1032,8 +1032,6 @@ and transl_exp0 e =
                  [Lprim(Pmakeblock(Obj.forward_tag, Immutable, None),
                         [transl_exp e], e.exp_loc)],
                  e.exp_loc)
-            Lprim(Pmakeblock(Obj.forward_tag, Immutable, None),
-                [transl_exp e], e.exp_loc)
       (* other cases compile to a lazy block holding a function *)
       | _ ->
          let fn = Lfunction {kind = Curried; params = [Ident.create "param"];
