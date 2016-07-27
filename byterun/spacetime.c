@@ -28,3 +28,8 @@ uintnat caml_spacetime_my_profinfo (void)
 {
   return 0;
 }
+
+CAMLprim value caml_spacetime_enabled (value v_unit)
+{
+  return Val_false;  /* running in bytecode */
+}

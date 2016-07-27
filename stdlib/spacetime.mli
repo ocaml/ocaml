@@ -15,10 +15,11 @@
 (** Profiling of a program's space behaviour over time.
     Currently only supported on x86-64 platforms running 64-bit code.
 
-    This module may only be used when compiling to native code.  For the
-    functions in this module to operate the -spacetime option must have
-    been passed to the configure script for the compiler being used.  The
-    functions in this module are thread safe.
+    To use the functions in this module you must:
+    - configure the compiler with "-spacetime";
+    - compile to native code.
+    Without these conditions being satisfied the functions in this module
+    will have no effect.
 
     Instead of manually taking profiling heap snapshots with this module it is
     possible to use an automatic snapshot facility that writes profiling
@@ -40,6 +41,8 @@
 
     If using automatic snapshots the presence of the
     [save_event_for_automatic_snapshots] function, below, should be noted.
+
+    The functions in this module are thread safe.
 
     For functions to decode the information recorded by the profiler,
     see the Spacetime offline library in otherlibs/. *)

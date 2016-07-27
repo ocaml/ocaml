@@ -118,6 +118,26 @@ static void reinitialise_free_node_block(void)
 extern value val_process_id;
 #endif
 
+static uint32_t version_number = 0;
+static uint32_t magic_number_base = 0xace00ace;
+
+static void caml_spacetime_write_magic_number_internal(struct channel* chan)
+{
+  value magic_number =
+    Val_long(((uint64_t) magic_number_base)
+             | (((uint64_t) version_number) << 32));
+
+  Lock(chan);
+  caml_output_val(chan, magic_number, Val_long(0));
+  Unlock(chan);
+}
+
+CAMLprim value caml_spacetime_write_magic_number(value v_channel)
+{
+  caml_spacetime_write_magic_number_internal(Channel(v_channel));
+  return Val_unit;
+}
+
 static char* automatic_snapshot_dir;
 
 static void open_snapshot_channel(void)
@@ -139,6 +159,7 @@ static void open_snapshot_channel(void)
   else {
     snapshot_channel = caml_open_descriptor_out(fd);
     pid_when_snapshot_channel_opened = getpid();
+    caml_spacetime_write_magic_number_internal(snapshot_channel);
   }
 }
 
@@ -1029,7 +1050,19 @@ void caml_spacetime_automatic_save (void)
   }
 }
 
+CAMLprim value caml_spacetime_enabled (value v_unit)
+{
+  return Val_true;
+}
+
 #else
+
+/* Functions for when the compiler was not configured with "-spacetime". */
+
+CAMLprim value caml_spacetime_enabled (value v_unit)
+{
+  return Val_false;
+}
 
 CAMLprim value caml_spacetime_save_event (value v_time_opt,
                                           value v_channel,
@@ -1044,8 +1077,7 @@ CAMLprim value caml_spacetime_save_event_for_automatic_snapshots
   return Val_unit;
 }
 
-CAMLprim value
-caml_spacetime_save_trie (value ignored)
+CAMLprim value caml_spacetime_save_trie (value ignored)
 {
   return Val_unit;
 }

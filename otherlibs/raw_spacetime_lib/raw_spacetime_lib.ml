@@ -583,32 +583,44 @@ module Heap_snapshot = struct
 
     let read ~path =
       let chn = open_in path in
-      let snapshots, events = read_snapshots_and_events chn [] [] in
-      let num_snapshots = Array.length snapshots in
-      let time_of_writer_close : float = Marshal.from_channel chn in
-      let frame_table = Frame_table.demarshal chn in
-      let shape_table = Shape_table.demarshal chn in
-      let num_threads : int = Marshal.from_channel chn in
-      let traces_by_thread = Array.init num_threads (fun _ -> None) in
-      let finaliser_traces_by_thread =
-        Array.init num_threads (fun _ -> None)
-      in
-      for thread = 0 to num_threads - 1 do
-        let trace : Trace.t = Trace.unmarshal chn in
-        let finaliser_trace : Trace.t = Trace.unmarshal chn in
-        traces_by_thread.(thread) <- trace;
-        finaliser_traces_by_thread.(thread) <- finaliser_trace
-      done;
-      close_in chn;
-      { num_snapshots;
-        time_of_writer_close;
-        frame_table;
-        shape_table;
-        traces_by_thread;
-        finaliser_traces_by_thread;
-        snapshots;
-        events;
-      }
+      let magic_number : int = Marshal.from_channel chn in
+      let magic_number_base = magic_number land 0xffff_ffff in
+      let version_number = magic_number lsr 32 in
+      if magic_number_base <> 0xace00ace then begin
+        failwith "Raw_spacetime_lib: not a Spacetime profiling file"
+      end else begin
+        match version_number with
+        | 0 ->
+          let snapshots, events = read_snapshots_and_events chn [] [] in
+          let num_snapshots = Array.length snapshots in
+          let time_of_writer_close : float = Marshal.from_channel chn in
+          let frame_table = Frame_table.demarshal chn in
+          let shape_table = Shape_table.demarshal chn in
+          let num_threads : int = Marshal.from_channel chn in
+          let traces_by_thread = Array.init num_threads (fun _ -> None) in
+          let finaliser_traces_by_thread =
+            Array.init num_threads (fun _ -> None)
+          in
+          for thread = 0 to num_threads - 1 do
+            let trace : Trace.t = Trace.unmarshal chn in
+            let finaliser_trace : Trace.t = Trace.unmarshal chn in
+            traces_by_thread.(thread) <- trace;
+            finaliser_traces_by_thread.(thread) <- finaliser_trace
+          done;
+          close_in chn;
+          { num_snapshots;
+            time_of_writer_close;
+            frame_table;
+            shape_table;
+            traces_by_thread;
+            finaliser_traces_by_thread;
+            snapshots;
+            events;
+          }
+        | _ ->
+          failwith "Raw_spacetime_lib: unknown Spacetime profiling file \
+            version number"
+      end
 
     type trace_kind = Normal | Finaliser
 
