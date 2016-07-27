@@ -38,8 +38,8 @@
     starts.  This may be customised by setting the OCAML_SPACETIME_SNAPSHOT_DIR
     environment variable to the name of the desired directory.
 
-    If using automatic snapshots the presence of the [save_event_automatic]
-    function, below, should be noted.
+    If using automatic snapshots the presence of the
+    [save_event_for_automatic_snapshots] function, below, should be noted.
 
     For functions to decode the information recorded by the profiler,
     see the Spacetime offline library in otherlibs/. *)
