@@ -1201,7 +1201,7 @@ let rec tree_of_modtype ?(ellipsis=false) = function
       in
       Omty_functor (Ident.name param,
                     may_map (tree_of_modtype ~ellipsis:false) ty_arg, res)
-  | Mty_alias p ->
+  | Mty_alias(_, p) ->
       Omty_alias (tree_of_path p)
 
 and tree_of_signature sg =

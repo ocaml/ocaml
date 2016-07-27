@@ -69,7 +69,7 @@
 # - : int = 1
 #   module M'' : sig module N' : sig val x : int end end
 # - : int = 1
-# module M2 : sig module N = M'.N module N' = M'.N' end
+# module M2 : sig module N = M'.N module N' = N end
 # module M3 : sig module N' : sig val x : int end end
 # - : int = 1
 # module M3' : sig module N' : sig val x : int end end
@@ -394,6 +394,9 @@ module K : sig module E = B module N = E.O end
     module Q = M
   end
 # module R' : S
+#   module F : functor (X : sig  end) -> sig type t end
+#                         module M :
+  sig type a module Foo : sig module Bar : sig  end type b = a end end
 #           module M : sig val f : 'a -> 'a end
 module rec R : sig module M : sig val f : 'a -> 'a end end
 # - : int = 3

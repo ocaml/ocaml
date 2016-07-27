@@ -388,7 +388,11 @@ type module_type =
     Mty_ident of Path.t
   | Mty_signature of signature
   | Mty_functor of Ident.t * module_type option * module_type
-  | Mty_alias of Path.t
+  | Mty_alias of alias_presence * Path.t
+
+and alias_presence =
+  | Mta_present
+  | Mta_absent
 
 and signature = signature_item list
 
