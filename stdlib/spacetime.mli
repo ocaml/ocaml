@@ -84,5 +84,6 @@ module Snapshot : sig
   val take : ?time:float -> Series.t -> unit
 end
 
-(** Like [Series.save_event], but writes to the automatic snapshot file. *)
+(** Like [Series.save_event], but writes to the automatic snapshot file.
+    This function is a no-op if OCAML_SPACETIME_INTERVAL was not set. *)
 val save_event_for_automatic_snapshots : event_name:string -> unit
