@@ -251,6 +251,8 @@ OCaml 4.04.0:
 - GPR#713: Fix wrong code generation involving lazy values in Flambda mode
   (Mark Shinwell, review by Pierre Chambart and Alain Frisch)
 
+- GPR#721: Fix infinite loop in flambda due to [@@specialise] annotations
+
 ### Internal/compiler-libs changes:
 
 - PR#7200, GPR#539: Improve, fix, and add test for parsing/pprintast.ml
