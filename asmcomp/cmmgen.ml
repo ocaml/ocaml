@@ -1335,6 +1335,7 @@ let simplif_primitive_32bits = function
   | Pstring_load_64(_) -> Pccall (default_prim "caml_string_get64")
   | Pstring_set_64(_) -> Pccall (default_prim "caml_string_set64")
   | Pload_64 -> Pccall (default_prim "caml_load_int64")
+  | Pstore_64 -> Pccall (default_prim "caml_store_int64")
   | Pbigstring_load_64(_) -> Pccall (default_prim "caml_ba_uint8_get64")
   | Pbigstring_set_64(_) -> Pccall (default_prim "caml_ba_uint8_set64")
   | Pbbswap Pint64 -> Pccall (default_prim "caml_int64_bswap")
@@ -2278,6 +2279,25 @@ and transl_prim_2 env p arg1 arg2 dbg =
                                                [field_address ba 5 dbg], dbg))
                                           (Cconst_int 7) dbg) idx
                       (unaligned_load_64 ba_data idx dbg)))))
+
+  (* Pointer operations *)
+  | Pstore_8 ->
+     let unboxed_ptr = transl_unbox_int env Pnativeint arg1 in
+     return_unit(Cop(Cstore (Byte_unsigned, Assignment),
+                     [unboxed_ptr;
+                      untag_int(transl env arg2)]))
+  | Pstore_16 ->
+     let unboxed_ptr = transl_unbox_int env Pnativeint arg1 in
+     return_unit(unaligned_set_16 unboxed_ptr (Cconst_int 0)
+                   (untag_int (transl env arg2)))
+  | Pstore_32 ->
+     let unboxed_ptr = transl_unbox_int env Pnativeint arg1 in
+     return_unit(unaligned_set_32 unboxed_ptr (Cconst_int 0)
+                   (transl_unbox_int env Pint32 arg2))
+  | Pstore_64 ->
+     let unboxed_ptr = transl_unbox_int env Pnativeint arg1 in
+     return_unit(unaligned_set_64 unboxed_ptr (Cconst_int 0)
+                   (transl_unbox_int env Pint64 arg2))
 
   (* Array operations *)
   | Parrayrefu kind ->

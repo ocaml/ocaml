@@ -138,7 +138,11 @@ let for_primitive (prim : Lambda.primitive) =
   | Pbigarrayset _
   | Pbigstring_set_16 _
   | Pbigstring_set_32 _
-  | Pbigstring_set_64 _ ->
+  | Pbigstring_set_64 _
+  | Pstore_8
+  | Pstore_16
+  | Pstore_32
+  | Pstore_64 ->
       (* Whether or not some of these are "unsafe" is irrelevant; they always
          have an effect. *)
       Arbitrary_effects, No_coeffects

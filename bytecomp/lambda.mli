@@ -164,6 +164,10 @@ type primitive =
   | Pload_16
   | Pload_32
   | Pload_64
+  | Pstore_8
+  | Pstore_16
+  | Pstore_32
+  | Pstore_64
 
 and comparison =
     Ceq | Cneq | Clt | Cgt | Cle | Cge

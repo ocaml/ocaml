@@ -330,6 +330,10 @@ let primitive ppf = function
   | Pload_16 -> fprintf ppf "ptr.load_16"
   | Pload_32 -> fprintf ppf "ptr.load_32"
   | Pload_64 -> fprintf ppf "ptr.load_64"
+  | Pstore_8 -> fprintf ppf "ptr.store_8"
+  | Pstore_16 -> fprintf ppf "ptr.store_16"
+  | Pstore_32 -> fprintf ppf "ptr.store_32"
+  | Pstore_64 -> fprintf ppf "ptr.store_64"
 
 let name_of_primitive = function
   | Pidentity -> "Pidentity"
@@ -437,6 +441,10 @@ let name_of_primitive = function
   | Pload_16 -> "Pload_16"
   | Pload_32 -> "Pload_32"
   | Pload_64 -> "Pload_64"
+  | Pstore_8 -> "Pstore_8"
+  | Pstore_16 -> "Pstore_16"
+  | Pstore_32 -> "Pstore_32"
+  | Pstore_64 -> "Pstore_64"
 
 let function_attribute ppf { inline; specialise; is_a_functor; stub } =
   if is_a_functor then

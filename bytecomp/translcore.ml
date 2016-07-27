@@ -358,6 +358,10 @@ let primitives_table = create_hashtable 57 [
   "%load16", Pload_16;
   "%load32", Pload_32;
   "%load64", Pload_64;
+  "%store8", Pstore_8;
+  "%store16", Pstore_16;
+  "%store32", Pstore_32;
+  "%store64", Pstore_64;
 ]
 
 let find_primitive prim_name =

@@ -440,6 +440,10 @@ let comp_primitive p args =
   | Pload_16 -> Kccall("caml_load_int16", 1)
   | Pload_32 -> Kccall("caml_load_int32", 1)
   | Pload_64 -> Kccall("caml_load_int64", 1)
+  | Pstore_8 -> Kccall("caml_store_int8", 2)
+  | Pstore_16 -> Kccall("caml_store_int16", 2)
+  | Pstore_32 -> Kccall("caml_store_int32", 2)
+  | Pstore_64 -> Kccall("caml_store_int64", 2)
   | _ -> fatal_error "Bytegen.comp_primitive"
 
 let is_immed n = immed_min <= n && n <= immed_max
