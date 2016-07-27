@@ -202,7 +202,7 @@ module Options = Main_args.Make_opttop_options (struct
   let _safe_string = clear unsafe_string
   let _safe_syntax = set safe_syntax
   let _unsafe_string = set unsafe_string
-  let _unsafe_syntax = unset safe_syntax
+  let _unsafe_syntax = clear safe_syntax
   let _open s = open_modules := s :: !open_modules
   let _plugin p = Compplugin.load p
 
