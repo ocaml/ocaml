@@ -56,38 +56,43 @@ let maybe_pointer_type env ty =
 
 let maybe_pointer exp = maybe_pointer_type exp.exp_env exp.exp_type
 
-let classify ~for_lazy env ty =
+type classification =
+  | Int
+  | Float
+  | Lazy
+  | Addr  (* anything except a float or a lazy *)
+  | Any
+
+let classify env ty =
   let ty = scrape_ty env ty in
-  if maybe_pointer_type env ty = Immediate then Pintarray
+  if maybe_pointer_type env ty = Immediate then Int
   else match ty.desc with
   | Tvar _ | Tunivar _ ->
-      Pgenarray
-  | Tconstr(p, _args, _abbrev) ->
-      if Path.same p Predef.path_float then
-        Pfloatarray
+      Any
+  | Tconstr (p, _args, _abbrev) ->
+      if Path.same p Predef.path_float then Float
+      else if Path.same p Predef.path_lazy_t then Lazy
       else if Path.same p Predef.path_string
            || Path.same p Predef.path_bytes
-           || (Path.same p Predef.path_lazy_t && not for_lazy)
            || Path.same p Predef.path_array
            || Path.same p Predef.path_nativeint
            || Path.same p Predef.path_int32
-           || Path.same p Predef.path_int64 then
-        Paddrarray
+           || Path.same p Predef.path_int64 then Addr
       else begin
         try
           match (Env.find_type p env).type_kind with
           | Type_abstract ->
-              Pgenarray
+              Any
           | Type_record _ | Type_variant _ | Type_open ->
-              Paddrarray
+              Addr
         with Not_found ->
           (* This can happen due to e.g. missing -I options,
              causing some .cmi files to be unavailable.
              Maybe we should emit a warning. *)
-          Pgenarray
+          Any
       end
   | Tarrow _ | Ttuple _ | Tpackage _ | Tobject _ | Tnil | Tvariant _ ->
-      Paddrarray
+      Addr
   | Tlink _ | Tsubst _ | Tpoly _ | Tfield _ ->
       assert false
 
@@ -95,7 +100,13 @@ let array_type_kind env ty =
   match scrape env ty with
   | Tconstr(p, [elt_ty], _) | Tpoly({desc = Tconstr(p, [elt_ty], _)}, _)
     when Path.same p Predef.path_array ->
-      classify ~for_lazy:false  env elt_ty
+      begin match classify env elt_ty with
+      | Any -> Pgenarray
+      | Float -> Pfloatarray
+      | Addr | Lazy -> Paddrarray
+      | Int -> Pintarray
+      end
+
   | _ ->
       (* This can happen with e.g. Obj.field *)
       Pgenarray
@@ -158,6 +169,6 @@ let value_kind env ty =
 
 
 let lazy_val_requires_forward env ty =
-  match classify ~for_lazy:true env ty with
-  | Pintarray | Paddrarray -> false
-  | Pgenarray | Pfloatarray -> true
+  match classify env ty with
+  | Any | Float | Lazy -> true
+  | Addr | Int -> false
