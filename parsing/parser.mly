@@ -1366,16 +1366,22 @@ expr:
       { mkexp_attrs (Pexp_letexception($4, $6)) $3 }
   | LET OPEN override_flag ext_attributes mod_longident IN seq_expr
       { mkexp_attrs (Pexp_open($3, mkrhs $5 5, $7)) $4 }
-  | FUNCTION ext_attributes opt_bar match_cases
-      { mkexp_attrs (Pexp_function(List.rev $4)) $2 }
   | FUN ext_attributes labeled_simple_pattern fun_def
       { let (l,o,p) = $3 in
         mkexp_attrs (Pexp_fun(l, o, p, $4)) $2 }
   | FUN ext_attributes LPAREN TYPE lident_list RPAREN fun_def
       { mkexp_attrs (mk_newtypes $5 $7).pexp_desc $2 }
-  | MATCH ext_attributes seq_expr WITH opt_bar match_cases
+  | FUNCTION ext_attributes match_cases
+      { mkexp_attrs (Pexp_function(List.rev $3)) $2 }
+  | FUNCTION ext_attributes LBRACKET match_cases RBRACKET
+      { mkexp_attrs (Pexp_function(List.rev $4)) $2 }
+  | MATCH ext_attributes seq_expr WITH match_cases
+      { mkexp_attrs (Pexp_match($3, List.rev $5)) $2 }
+  | MATCH ext_attributes seq_expr WITH LBRACKET match_cases RBRACKET
       { mkexp_attrs (Pexp_match($3, List.rev $6)) $2 }
-  | TRY ext_attributes seq_expr WITH opt_bar match_cases
+  | TRY ext_attributes seq_expr WITH match_cases
+      { mkexp_attrs (Pexp_try($3, List.rev $5)) $2 }
+  | TRY ext_attributes seq_expr WITH LBRACKET match_cases RBRACKET
       { mkexp_attrs (Pexp_try($3, List.rev $6)) $2 }
   | TRY ext_attributes seq_expr WITH error
       { syntax_error() }
@@ -1659,9 +1665,11 @@ strict_binding:
       { mk_newtypes $3 $5 }
 ;
 match_cases:
-    match_case { [$1] }
+        match_case { [$1] }
+  | BAR match_case { [$2] }
   | match_cases BAR match_case { $3 :: $1 }
 ;
+
 match_case:
     pattern MINUSGREATER seq_expr
       { Exp.case $1 $3 }
