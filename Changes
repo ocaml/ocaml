@@ -121,6 +121,10 @@ OCaml 4.04.0:
 - GPR#707: Load cross module information during a meet
   (Pierre Chambart, report by Leo White, review by Marc Shinwell)
 
+- GPR#712: Small improvements to type-based optimizations for array
+  and lazy
+  (Alain Frisch, review by Pierre Chambart)
+
 ### Tools:
 
 - MPR#7189: toplevel #show, follow chains of module aliases
