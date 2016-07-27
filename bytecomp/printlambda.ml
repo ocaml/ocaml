@@ -326,6 +326,10 @@ let primitive ppf = function
   | Pbbswap(bi) -> print_boxed_integer "bswap" ppf bi
   | Pint_as_pointer -> fprintf ppf "int_as_pointer"
   | Popaque -> fprintf ppf "opaque"
+  | Pload_8 -> fprintf ppf "ptr.load_8"
+  | Pload_16 -> fprintf ppf "ptr.load_16"
+  | Pload_32 -> fprintf ppf "ptr.load_32"
+  | Pload_64 -> fprintf ppf "ptr.load_64"
 
 let name_of_primitive = function
   | Pidentity -> "Pidentity"
@@ -429,6 +433,10 @@ let name_of_primitive = function
   | Pbbswap _ -> "Pbbswap"
   | Pint_as_pointer -> "Pint_as_pointer"
   | Popaque -> "Popaque"
+  | Pload_8 -> "Pload_8"
+  | Pload_16 -> "Pload_16"
+  | Pload_32 -> "Pload_32"
+  | Pload_64 -> "Pload_64"
 
 let function_attribute ppf { inline; specialise; is_a_functor; stub } =
   if is_a_functor then

@@ -106,7 +106,11 @@ let for_primitive (prim : Lambda.primitive) =
   | Pbigarrayref (true, _, _, _)
   | Pbigstring_load_16 true
   | Pbigstring_load_32 true
-  | Pbigstring_load_64 true ->
+  | Pbigstring_load_64 true
+  | Pload_8
+  | Pload_16
+  | Pload_32
+  | Pload_64 ->
       No_effects, Has_coeffects
   | Parrayrefs _
   | Pstringrefs

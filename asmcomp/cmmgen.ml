@@ -1334,6 +1334,7 @@ let simplif_primitive_32bits = function
       Pccall (default_prim ("caml_ba_set_" ^ string_of_int n))
   | Pstring_load_64(_) -> Pccall (default_prim "caml_string_get64")
   | Pstring_set_64(_) -> Pccall (default_prim "caml_string_set64")
+  | Pload_64 -> Pccall (default_prim "caml_load_int64")
   | Pbigstring_load_64(_) -> Pccall (default_prim "caml_ba_uint8_get64")
   | Pbigstring_set_64(_) -> Pccall (default_prim "caml_ba_uint8_set64")
   | Pbbswap Pint64 -> Pccall (default_prim "caml_int64_bswap")
@@ -1586,6 +1587,8 @@ let rec is_unboxed_number ~strict env e =
         | Pbigstring_load_32(_) -> Boxed (Boxed_integer (Pint32, dbg), false)
         | Pbigstring_load_64(_) -> Boxed (Boxed_integer (Pint64, dbg), false)
         | Praise _ -> No_result
+        | Pload_32 -> Boxed(Boxed_integer (Pint32, dbg), false)
+        | Pload_64 -> Boxed(Boxed_integer (Pint64, dbg), false)
         | _ -> No_unboxing
       end
   | Ulet (_, _, _, _, e) | Uletrec (_, e) | Usequence (_, e) ->
@@ -1975,6 +1978,20 @@ and transl_prim_1 env p arg dbg =
   | Pint_as_pointer ->
      Cop(Caddi, [transl env arg; Cconst_int (-1)], dbg)
      (* always a pointer outside the heap *)
+  (* Pointer operations *)
+  | Pload_8 ->
+     tag_int (Cop(Cload Byte_unsigned,
+                  [transl_unbox_int env Pnativeint arg]))
+  | Pload_16 ->
+     let unboxed_arg = transl_unbox_int env Pnativeint arg in
+     tag_int (unaligned_load_16 unboxed_arg (Cconst_int 0))
+  | Pload_32 ->
+     let unboxed_arg = transl_unbox_int env Pnativeint arg in
+     box_int dbg Pint32 (unaligned_load_32 unboxed_arg (Cconst_int 0))
+  | Pload_64 ->
+     assert(size_int = 8);
+     let unboxed_arg = transl_unbox_int env Pnativeint arg in
+     box_int dbg Pint64 (unaligned_load_64 unboxed_arg (Cconst_int 0))
   (* Exceptions *)
   | Praise _ when not (!Clflags.debug) ->
       Cop(Craise Cmm.Raise_notrace, [transl env arg], dbg)

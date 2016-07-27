@@ -159,6 +159,11 @@ type primitive =
   | Pint_as_pointer
   (* Inhibition of optimisation *)
   | Popaque
+  (* Pointer operations *)
+  | Pload_8
+  | Pload_16
+  | Pload_32
+  | Pload_64
 
 and comparison =
     Ceq | Cneq | Clt | Cgt | Cle | Cge

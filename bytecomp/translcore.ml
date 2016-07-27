@@ -354,6 +354,10 @@ let primitives_table = create_hashtable 57 [
   "%bswap_native", Pbbswap(Pnativeint);
   "%int_as_pointer", Pint_as_pointer;
   "%opaque", Popaque;
+  "%load8", Pload_8;
+  "%load16", Pload_16;
+  "%load32", Pload_32;
+  "%load64", Pload_64;
 ]
 
 let find_primitive prim_name =
