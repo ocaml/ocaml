@@ -1031,7 +1031,7 @@ CAMLprim value caml_spacetime_save_event_for_automatic_snapshots
 {
   if (automatic_snapshots) {
     maybe_reopen_snapshot_channel();
-    caml_spacetime_save_event_internal (Val_unit, Channel(snapshot_channel),
+    caml_spacetime_save_event_internal (Val_unit, snapshot_channel,
                                         v_event_name);
   }
   return Val_unit;
