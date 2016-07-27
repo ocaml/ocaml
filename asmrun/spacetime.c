@@ -1059,6 +1059,11 @@ CAMLprim value caml_spacetime_enabled (value v_unit)
 
 /* Functions for when the compiler was not configured with "-spacetime". */
 
+CAMLprim value caml_spacetime_write_magic_number(value v_channel)
+{
+  return Val_unit;
+}
+
 CAMLprim value caml_spacetime_enabled (value v_unit)
 {
   return Val_false;
