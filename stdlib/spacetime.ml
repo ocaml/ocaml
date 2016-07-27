@@ -51,3 +51,7 @@ module Snapshot = struct
     Gc.minor ();
     take ?time channel
 end
+
+external save_event_for_automatic_snapshots : event_name:string -> unit
+    = "caml_spacetime_only_works_for_native_code"
+      "caml_spacetime_save_event_for_automatic_snapshots"

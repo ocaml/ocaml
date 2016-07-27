@@ -15,8 +15,31 @@
 (** Profiling of a program's space behaviour over time.
     Currently only supported on x86-64 platforms running 64-bit code.
 
-    This module may only be used when the -spacetime option was passed
-    to the configure script for the compiler being used.
+    This module may only be used when compiling to native code.  For the
+    functions in this module to operate the -spacetime option must have
+    been passed to the configure script for the compiler being used.  The
+    functions in this module are thread safe.
+
+    Instead of manually taking profiling heap snapshots with this module it is
+    possible to use an automatic snapshot facility that writes profiling
+    information at fixed intervals to a file. To enable this, all that needs to
+    be done is to build the relevant program using a compiler configured with
+    -spacetime; and set the environment variable OCAML_SPACETIME_INTERVAL to an
+    integer number of milliseconds giving the interval between profiling heap
+    snapshots. This interval should not be made excessively small relative to
+    the running time of the program. A typical interval to start with might be
+    1/100 of the running time of the program.
+
+    When using the automatic snapshot mode the profiling output is written
+    to a file called "spacetime-<pid>" where <pid> is the process ID of the
+    program.  (If the program forks and continues executing then multiple
+    files may be produced with different pid numbers.)  The profiling output
+    is by default written to the current working directory when the program
+    starts.  This may be customised by setting the OCAML_SPACETIME_SNAPSHOT_DIR
+    environment variable to the name of the desired directory.
+
+    If using automatic snapshots the presence of the [save_event_automatic]
+    function, below, should be noted.
 
     For functions to decode the information recorded by the profiler,
     see the Spacetime offline library in otherlibs/. *)
@@ -60,3 +83,6 @@ module Snapshot : sig
   *)
   val take : ?time:float -> Series.t -> unit
 end
+
+(** Like [Series.save_event], but writes to the automatic snapshot file. *)
+val save_event_for_automatic_snapshots : event_name:string -> unit

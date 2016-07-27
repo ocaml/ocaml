@@ -259,11 +259,10 @@ void caml_spacetime_register_thread(
   num_per_threads++;
 }
 
-CAMLprim value caml_spacetime_save_event (value v_time_opt,
-                                          value v_channel,
-                                          value v_event_name)
+static void caml_spacetime_save_event_internal (value v_time_opt,
+                                                struct channel* chan,
+                                                value v_event_name)
 {
-  struct channel* chan = Channel(v_channel);
   value v_time;
   double time_override = 0.0;
   int use_time_override = 0;
@@ -283,9 +282,19 @@ CAMLprim value caml_spacetime_save_event (value v_time_opt,
   Unlock(chan);
 
   caml_stat_free(Hp_val(v_time));
+}
+
+CAMLprim value caml_spacetime_save_event (value v_time_opt,
+                                          value v_channel,
+                                          value v_event_name)
+{
+  struct channel* chan = Channel(v_channel);
+
+  caml_spacetime_save_event_internal(v_time_opt, chan, v_event_name);
 
   return Val_unit;
 }
+
 
 void save_trie (struct channel *chan, double time_override,
                 int use_time_override)
@@ -996,6 +1005,15 @@ void caml_spacetime_automatic_snapshot (void)
   }
 }
 
+CAMLprim value caml_spacetime_save_event_for_automatic_snapshots
+  (value v_event_name)
+{
+  maybe_reopen_snapshot_channel();
+  caml_spacetime_save_event_internal (Val_unit, Channel(snapshot_channel),
+                                      v_event_name);
+  return Val_unit;
+}
+
 void caml_spacetime_automatic_save (void)
 {
   /* Called from [atexit]. */
@@ -1014,6 +1032,12 @@ void caml_spacetime_automatic_save (void)
 CAMLprim value caml_spacetime_save_event (value v_time_opt,
                                           value v_channel,
                                           value v_event_name)
+{
+  return Val_unit;
+}
+
+CAMLprim value caml_spacetime_save_event_for_automatic_snapshots
+  (value v_event_name)
 {
   return Val_unit;
 }
