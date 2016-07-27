@@ -1018,20 +1018,23 @@ and transl_exp0 e =
       | Texp_function(_, _, _)
       | Texp_construct (_, {cstr_arity = 0}, _)
         -> transl_exp e
-      | Texp_ident _
-        when not (Typeopt.lazy_val_requires_forward e.exp_env e.exp_type) ->
-          transl_exp e
-      | Texp_constant(Const_float _) | Texp_ident _ ->
+      | Texp_constant(Const_float _) ->
+          Lprim(Pmakeblock(Obj.forward_tag, Immutable, None),
+                [transl_exp e], e.exp_loc)
+      | Texp_ident _ ->
           (* CR-someday mshinwell: Consider adding a new primitive
              that expresses the construction of forward_tag blocks.
              We need to use [Popaque] here to prevent unsound
              optimisation in Flambda, but the concept of a mutable
              block doesn't really match what is going on here.  This
              value may subsequently turn into an immediate... *)
-          Lprim (Popaque,
-                 [Lprim(Pmakeblock(Obj.forward_tag, Immutable, None),
-                        [transl_exp e], e.exp_loc)],
-                 e.exp_loc)
+          if Typeopt.lazy_val_requires_forward e.exp_env e.exp_type
+          then
+            Lprim (Popaque,
+                   [Lprim(Pmakeblock(Obj.forward_tag, Immutable, None),
+                          [transl_exp e], e.exp_loc)],
+                   e.exp_loc)
+          else transl_exp e
       (* other cases compile to a lazy block holding a function *)
       | _ ->
          let fn = Lfunction {kind = Curried; params = [Ident.create "param"];
