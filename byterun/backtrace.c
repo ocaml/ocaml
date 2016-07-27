@@ -49,9 +49,11 @@ CAMLprim value caml_record_backtrace(value vflag)
     caml_backtrace_active = flag;
     caml_backtrace_pos = 0;
     caml_backtrace_last_exn = Val_unit;
-    /* Note: lazy initialization of caml_backtrace_buffer in
-       caml_stash_backtrace to simplify the interface with the thread
-       libraries */
+    /* Note: We do lazy initialization of caml_backtrace_buffer when
+       needed in order to simplify the interface with the thread
+       library (thread creation doesn't need to allocate
+       caml_backtrace_buffer). So we don't have to allocate it here.
+    */
   }
   return Val_unit;
 }
@@ -165,6 +167,41 @@ CAMLprim value caml_get_exception_raw_backtrace(value unit)
   }
 
   CAMLreturn(res);
+}
+
+/* Copy back a backtrace and exception to the global state.
+   This function should be used only with Printexc.raw_backtrace */
+/* noalloc (caml value): so no CAMLparam* CAMLreturn* */
+CAMLprim value caml_restore_raw_backtrace(value exn, value backtrace)
+{
+  intnat i;
+  mlsize_t bt_size;
+
+  caml_backtrace_last_exn = exn;
+
+  bt_size = Wosize_val(backtrace);
+  if(bt_size > BACKTRACE_BUFFER_SIZE){
+    bt_size = BACKTRACE_BUFFER_SIZE;
+  }
+
+  /* We don't allocate if the backtrace is empty (no -g or backtrace
+     not activated) */
+  if(bt_size == 0){
+    caml_backtrace_pos = 0;
+    return Val_unit;
+  }
+
+  /* Allocate if needed and copy the backtrace buffer */
+  if (caml_backtrace_buffer == NULL && caml_alloc_backtrace_buffer() == -1){
+    return Val_unit;
+  }
+
+  caml_backtrace_pos = bt_size;
+  for(i=0; i < caml_backtrace_pos; i++){
+    caml_backtrace_buffer[i] = Backtrace_slot_val(Field(backtrace, i));
+  }
+
+  return Val_unit;
 }
 
 #define Val_debuginfo(bslot) (Val_long((uintnat)(bslot)>>1))
