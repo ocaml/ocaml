@@ -938,6 +938,11 @@ OCaml 4.04.0 (4 Nov 2016):
 - GPR#590: Do not perform compaction if the real overhead is less than expected
   (Thomas Braibant)
 
+- PR#724: Add %-primitives for reading and writing 1, 2, 4 and 8 bytes
+  integers outside of the OCaml heap using raw pointers represented by
+  nativeint values
+  (Demi Obenour, Jérémie Dimino)
+
 ### Tools:
 
 - PR#7189: toplevel #show, follow chains of module aliases
