@@ -2522,7 +2522,7 @@ let rec transl_all_functions already_translated cont =
     else begin
       transl_all_functions
         (StringSet.add f.label already_translated)
-        (transl_function f :: cont)
+        ((f.dbg, transl_function f) :: cont)
     end
   with Queue.Empty ->
     cont, already_translated
@@ -2674,16 +2674,27 @@ let emit_all_constants cont =
   emit_constants cont constants
 
 let transl_all_functions_and_emit_all_constants cont =
-  let rec aux already_translated cont =
+  let rec aux already_translated cont translated_functions =
     if Compilenv.structured_constants () = [] &&
        Queue.is_empty functions
-    then cont
+    then cont, translated_functions
     else
-      let cont, already_translated = transl_all_functions already_translated cont in
+      let translated_functions, already_translated =
+        transl_all_functions already_translated translated_functions
+      in
       let cont = emit_all_constants cont in
-      aux already_translated cont
+      aux already_translated cont translated_functions
   in
-  aux StringSet.empty cont
+  let cont, translated_functions =
+    aux StringSet.empty cont []
+  in
+  let translated_functions =
+    (* Sort functions according to source position *)
+    List.map snd
+      (List.sort (fun (dbg1, _) (dbg2, _) ->
+           Debuginfo.compare dbg1 dbg2) translated_functions)
+  in
+  translated_functions @ cont
 
 (* Build the NULL terminated array of gc roots *)
 

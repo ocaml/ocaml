@@ -125,6 +125,9 @@ OCaml 4.04.0:
   and lazy
   (Alain Frisch, review by Pierre Chambart)
 
+- GPR#723 Sort emitted functions according to source location
+  (Pierre Chambart, review by Marc Shinwell)
+
 ### Tools:
 
 - MPR#7189: toplevel #show, follow chains of module aliases
