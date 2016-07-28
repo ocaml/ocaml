@@ -771,10 +771,10 @@ let emit_instr fallthrough i =
       stack_offset := !stack_offset - 16
   | Lraise k ->
       begin match k with
-      | Lambda.Raise_regular | Lambda.Raise_reraise ->
+      | Cmm.Raise_withtrace ->
           emit_call "caml_raise_exn";
           record_frame Reg.Set.empty true i.dbg
-      | Lambda.Raise_notrace ->
+      | Cmm.Raise_notrace ->
           I.mov r14 rsp;
           I.pop r14;
           I.ret ()

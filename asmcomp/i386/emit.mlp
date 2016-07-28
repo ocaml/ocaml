@@ -876,10 +876,10 @@ let emit_instr fallthrough i =
       stack_offset := !stack_offset - trap_frame_size
   | Lraise k  ->
       begin match k with
-      | Lambda.Raise_regular | Lambda.Raise_reraise ->
+      | Cmm.Raise_withtrace ->
           emit_call "caml_raise_exn";
           record_frame Reg.Set.empty true i.dbg
-      | Lambda.Raise_notrace ->
+      | Cmm.Raise_notrace ->
           I.mov (sym32 "caml_exception_pointer") esp;
           I.pop (sym32 "caml_exception_pointer");
           if trap_frame_size > 8 then

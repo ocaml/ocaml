@@ -792,10 +792,10 @@ let emit_instr i =
         stack_offset := !stack_offset - 8; 1
     | Lraise k ->
         begin match k with
-        | Lambda.Raise_regular | Lambda.Raise_reraise ->
+        | Cmm.Raise_withtrace ->
           `	{emit_call "caml_raise_exn"}\n`;
           `{record_frame Reg.Set.empty true i.dbg}\n`; 1
-        | Lambda.Raise_notrace ->
+        | Cmm.Raise_notrace ->
           `	mov	sp, trap_ptr\n`;
           `	pop	\{trap_ptr, pc}\n`; 2
         end

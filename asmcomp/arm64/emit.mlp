@@ -493,10 +493,9 @@ module BR = Branch_relaxation.Make (struct
     | Lpushtrap -> 3
     | Lpoptrap -> 1
     | Lraise k ->
-      begin match !Clflags.debug, k with
-      | true, (Lambda.Raise_regular | Lambda.Raise_reraise) -> 1
-      | false, _
-      | true, Lambda.Raise_notrace -> 4
+      begin match k with
+      | Cmm.Raise_withtrace -> 1
+      | Cmm.Raise_notrace -> 4
       end
 
   let relax_allocation ~num_words ~label_after_call_gc =
@@ -855,10 +854,10 @@ let emit_instr i =
         stack_offset := !stack_offset - 16
     | Lraise k ->
         begin match k with
-        | Lambda.Raise_regular | Lambda.Raise_reraise ->
+        | Cmm.Raise_withtrace ->
           `	bl	{emit_symbol "caml_raise_exn"}\n`;
           `{record_frame Reg.Set.empty true i.dbg}\n`
-        | Lambda.Raise_notrace ->
+        | Cmm.Raise_notrace ->
           `	mov	sp, {emit_reg reg_trap_ptr}\n`;
           `	ldr	{emit_reg reg_tmp1}, [sp, #8]\n`;
           `	ldr	{emit_reg reg_trap_ptr}, [sp], 16\n`;

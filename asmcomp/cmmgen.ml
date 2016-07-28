@@ -324,7 +324,7 @@ let raise_regular dbg exc =
   Csequence(
     Cop(Cstore (Thirtytwo_signed, Assignment),
         [(Cconst_symbol "caml_backtrace_pos"); Cconst_int 0]),
-      Cop(Craise (Raise_regular, dbg),[exc]))
+      Cop(Craise (Raise_withtrace, dbg),[exc]))
 
 let raise_symbol dbg symb =
   raise_regular dbg (Cconst_symbol symb)
@@ -1781,10 +1781,12 @@ and transl_prim_1 env p arg dbg =
      (* always a pointer outside the heap *)
   (* Exceptions *)
   | Praise _ when not (!Clflags.debug) ->
-      Cop(Craise (Raise_notrace, dbg), [transl env arg])
-  | Praise ((Raise_reraise|Raise_notrace) as k) ->
-      Cop(Craise (k, dbg), [transl env arg])
-  | Praise Raise_regular ->
+      Cop(Craise (Cmm.Raise_notrace, dbg), [transl env arg])
+  | Praise Lambda.Raise_notrace ->
+      Cop(Craise (Cmm.Raise_notrace, dbg), [transl env arg])
+  | Praise Lambda.Raise_reraise ->
+      Cop(Craise (Cmm.Raise_withtrace, dbg), [transl env arg])
+  | Praise Lambda.Raise_regular ->
       raise_regular dbg (transl env arg)
   (* Integer operations *)
   | Pnegint ->

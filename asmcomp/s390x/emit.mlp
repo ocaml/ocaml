@@ -613,11 +613,11 @@ let emit_instr i =
         stack_offset := !stack_offset - 16
     | Lraise k ->
         begin match k with
-        | Lambda.Raise_regular | Lambda.Raise_reraise ->
+        | Cmm.Raise_withtrace ->
           `	brasl	%r14, {emit_symbol "caml_raise_exn"}\n`;
           let lbl = record_frame Reg.Set.empty true i.dbg in
           `{emit_label lbl}:\n`
-        | Lambda.Raise_notrace ->
+        | Cmm.Raise_notrace ->
           `	lg	%r1, 0(%r13)\n`;
           `	lgr	%r15, %r13\n`;
           `	lg	%r13, {emit_int size_addr}(%r15)\n`;
