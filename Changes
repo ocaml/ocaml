@@ -197,6 +197,8 @@ OCaml 4.04.0:
 
 ### Bug fixes:
 
+- GPR#708 Allow more module aliases in strengthening (Leo White)
+
 * PR#6505: Missed Type-error leads to a segfault upon record access.
   (Jacques Garrigue, extra report by Stephen Dolan)
   Proper fix required a more restrictive approach to recursive types:
