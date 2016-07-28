@@ -309,8 +309,6 @@ caml_raise_exn:
         pop     r14                  ; Recover previous exception handler
         ret                          ; Branch to handler
 L110:
-        mov     caml_backtrace_pos, 0
-L111:
         mov     r12, rax             ; Save exception bucket in r12
         mov     rcx, rax             ; Arg 1: exception bucket
         mov     rdx, [rsp]           ; Arg 2: PC of raise
@@ -319,15 +317,6 @@ L111:
         sub     rsp, 32              ; Reserve 32 bytes on stack
         call    caml_stash_backtrace
         mov     rax, r12             ; Recover exception bucket
-        mov     rsp, r14             ; Cut stack
-        pop     r14                  ; Recover previous exception handler
-        ret                          ; Branch to handler
-
-        PUBLIC  caml_reraise_exn
-        ALIGN   16
-caml_reraise_exn:
-        test    caml_backtrace_active, 1
-        jne     L111
         mov     rsp, r14             ; Cut stack
         pop     r14                  ; Recover previous exception handler
         ret                          ; Branch to handler

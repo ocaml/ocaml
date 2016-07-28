@@ -86,6 +86,10 @@ val swap_comparison: comparison -> comparison
 type label = int
 val new_label: unit -> label
 
+type raise_kind =
+  | Raise_withtrace
+  | Raise_notrace
+
 type memory_chunk =
     Byte_unsigned
   | Byte_signed
@@ -115,7 +119,7 @@ and operation =
   | Caddf | Csubf | Cmulf | Cdivf
   | Cfloatofint | Cintoffloat
   | Ccmpf of comparison
-  | Craise of Lambda.raise_kind * Debuginfo.t
+  | Craise of raise_kind * Debuginfo.t
   | Ccheckbound of Debuginfo.t
 
 and expression =
