@@ -110,12 +110,13 @@ bits  63        (64-P) (63-P)        10 9     8 7   0
 #define Tag_hd(hd) ((tag_t) ((hd) & 0xFF))
 #ifndef WITH_SPACETIME
 #define Wosize_hd(hd) ((mlsize_t) ((hd) >> 10))
-#define Profinfo_hd(hd) ((uintnat) (hd & 0))
 #else
 #define Hd_no_profinfo(hd) ((hd) & ~(PROFINFO_MASK << PROFINFO_SHIFT))
 #define Wosize_hd(hd) ((mlsize_t) ((Hd_no_profinfo(hd)) >> 10))
-#define Profinfo_hd(hd) (((mlsize_t) ((hd) >> PROFINFO_SHIFT)) & PROFINFO_MASK)
 #endif
+/* [Profinfo_hd] is used when the compiler is not configured for Spacetime
+   (e.g. when decoding profiles). */
+#define Profinfo_hd(hd) (((mlsize_t) ((hd) >> PROFINFO_SHIFT)) & PROFINFO_MASK)
 
 #define Hd_val(val) (((header_t *) (val)) [-1])        /* Also an l-value. */
 #define Hd_op(op) (Hd_val (op))                        /* Also an l-value. */

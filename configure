@@ -1778,7 +1778,12 @@ fi
 
 # Spacetime profiling, including libunwind detection
 
-profinfo_width=0
+# The number of bits used for profiling information is configurable here.
+# The more bits used for profiling, the smaller will be Max_wosize.
+# Note that PROFINFO_WIDTH must still be defined even if not configuring
+# for Spacetime (see comment in byterun/caml/mlvalues.h on [Profinfo_hd]).
+profinfo_width=26
+echo "#define PROFINFO_WIDTH $profinfo_width" >> m.h
 if $with_spacetime; then
   case "$arch,$system" in
     amd64,*)
@@ -1792,10 +1797,6 @@ if $with_spacetime; then
   if $spacetime_supported; then
     echo "Spacetime profiling will be available."
     echo "#define WITH_SPACETIME" >> m.h
-    # The number of bits used for profiling information is configurable here.
-    # The more bits used for profiling, the smaller will be Max_wosize.
-    profinfo_width=26
-    echo "#define PROFINFO_WIDTH $profinfo_width" >> m.h
     if $disable_libunwind; then
       has_libunwind=no
       libunwind_available=false
