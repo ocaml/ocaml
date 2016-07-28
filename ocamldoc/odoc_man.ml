@@ -384,17 +384,15 @@ class man =
 
     (** Print groff string to display a [Types.type_expr list].*)
     method man_of_cstr_args ?par b m_name sep l =
-      let s =
         match l with
         | Cstr_tuple l ->
-            Odoc_str.string_of_type_list ?par sep l
+            let s = Odoc_str.string_of_type_list ?par sep l in
+            let s2 = Str.global_replace (Str.regexp "\n") "\n.B " s in
+            bs b "\n.B ";
+            bs b (self#relative_idents m_name s2);
+            bs b "\n"
         | Cstr_record l ->
-            Odoc_str.string_of_record l
-      in
-      let s2 = Str.global_replace (Str.regexp "\n") "\n.B " s in
-      bs b "\n.B ";
-      bs b (self#relative_idents m_name s2);
-      bs b "\n"
+            self#man_of_record m_name b l
 
     (** Print groff string to display the parameters of a type.*)
     method man_of_type_expr_param_list b m_name t =
@@ -537,17 +535,31 @@ class man =
       self#man_of_info b e.ex_info;
       bs b "\n.sp\n"
 
+
+    method field_comment b = function
+      | None -> ()
+      | Some t ->
+          bs b "  (* ";
+          self#man_of_info b (Some t);
+          bs b " *) "
+
+    (** Print groff string for a record type *)
+    method man_of_record father b l =
+          bs b "{";
+           List.iter (fun r ->
+             bs b (if r.rf_mutable then "\n\n.B mutable \n" else "\n ");
+             bs b (r.rf_name^" : ");
+             self#man_of_type_expr b father r.rf_type;
+             bs b ";";
+             self#field_comment b r.rf_text ;
+           ) l;
+          bs b "\n }\n"
+
+
     (** Print groff string for a type. *)
     method man_of_type b t =
       Odoc_info.reset_type_names () ;
       let father = Name.father t.ty_name in
-      let field_comment = function
-        | None -> ()
-        | Some t ->
-          bs b "  (* ";
-          self#man_of_info b (Some t);
-          bs b " *) "
-      in
       bs b ".I type ";
       self#man_of_type_expr_param_list b father t;
       (
@@ -569,7 +581,7 @@ class man =
             bs b (r.of_name^" : ");
             self#man_of_type_expr b father r.of_type;
             bs b ";";
-            field_comment r.of_text ;
+            self#field_comment b r.of_text ;
           ) l;
           bs b "\n >\n"
        | Some (Other typ) ->
@@ -631,15 +643,7 @@ class man =
       | Type_record l ->
           bs b "= ";
           if priv then bs b "private ";
-          bs b "{";
-           List.iter (fun r ->
-             bs b (if r.rf_mutable then "\n\n.B mutable \n" else "\n ");
-             bs b (r.rf_name^" : ");
-             self#man_of_type_expr b father r.rf_type;
-             bs b ";";
-             field_comment r.rf_text ;
-           ) l;
-          bs b "\n }\n"
+          self#man_of_record father b l
       | Type_open ->
           bs b "= ..";
           bs b "\n"
@@ -837,7 +841,7 @@ class man =
               bs b " * ";
               self#man_of_type_expr b modname ty)
             q
-       | Cstr_record _ -> bs b "{ ... }"
+       | Cstr_record r -> self#man_of_record c.vc_name b r
       );
       bs b "\n.sp\n";
       self#man_of_info b c.vc_text;

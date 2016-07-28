@@ -146,6 +146,9 @@ OCaml 4.04.0:
 - GPR#718: ocamldoc, fix order of extensible variant constructors
   (Florian Angeletti)
 
+- MPR#7290: ocamldoc, improved support for inline records
+  (Florian Angeletti)
+
 - Add the -no-version option to the toplevel
   (Sébastien Hinderer)
 

@@ -7,9 +7,9 @@
 \usepackage{ocamldoc}
 \begin{document}
 \tableofcontents
-\section{Module {\tt{Inline\_records}} : This test focuses on the printing of documentation for inline record
+\section{Module {\tt{Inline\_records\_bis}} : This test focuses on the printing of documentation for inline record
   within the latex generator.}
-\label{Inline-underscorerecords}\index{Inline-underscorerecords@\verb`Inline_records`}
+\label{Inline-underscorerecords-underscorebis}\index{Inline-underscorerecords-underscorebis@\verb`Inline_records_bis`}
 
 
 
@@ -45,7 +45,7 @@ A less simple exception
 
 
 
-\label{TYPInline-underscorerecords.ext}\begin{ocamldoccode}
+\label{TYPInline-underscorerecords-underscorebis.ext}\begin{ocamldoccode}
 type ext = ..
 \end{ocamldoccode}
 \index{ext@\verb`ext`}
@@ -58,7 +58,7 @@ An open sum type
 
 
 
-\label{TYPInline-underscorerecords.r}\begin{ocamldoccode}
+\label{TYPInline-underscorerecords-underscorebis.r}\begin{ocamldoccode}
 type r = 
 {\char123}  lbl : int ;
 \end{ocamldoccode}
@@ -88,7 +88,7 @@ A simple record type for reference
 
 
 
-\label{TYPInline-underscorerecords.t}\begin{ocamldoccode}
+\label{TYPInline-underscorerecords-underscorebis.t}\begin{ocamldoccode}
 type t =
   | A of {\char123}  lbl : int ;
 \end{ocamldoccode}
@@ -123,7 +123,7 @@ A sum type with one inline record
 
 
 
-\label{TYPInline-underscorerecords.s}\begin{ocamldoccode}
+\label{TYPInline-underscorerecords-underscorebis.s}\begin{ocamldoccode}
 type s =
   | B of {\char123}  a_label_for_B : int ;
 \end{ocamldoccode}
@@ -182,7 +182,7 @@ A sum type with two inline records
 
 
 
-\label{TYPInline-underscorerecords.any}\begin{ocamldoccode}
+\label{TYPInline-underscorerecords-underscorebis.any}\begin{ocamldoccode}
 type any =
   | D : {\char123}  any : {\textquotesingle}a ;
 \end{ocamldoccode}
@@ -231,7 +231,7 @@ Error field documentation {\tt{name:string}}
 \begin{ocamldoccode}
 type ext +=
 \end{ocamldoccode}
-\label{extension:Inline-underscorerecords.E}\begin{ocamldoccode}
+\label{extension:Inline-underscorerecords-underscorebis.E}\begin{ocamldoccode}
   | E of {\char123}  yet_another_field : unit ;
 \end{ocamldoccode}
 \begin{ocamldoccomment}
@@ -248,7 +248,7 @@ Constructor E documentation
 
 
 \end{ocamldoccomment}
-\label{extension:Inline-underscorerecords.F}\begin{ocamldoccode}
+\label{extension:Inline-underscorerecords-underscorebis.F}\begin{ocamldoccode}
   | F of {\char123}  even_more : int -> int ;
 \end{ocamldoccode}
 \begin{ocamldoccomment}
@@ -265,7 +265,7 @@ Constructor F documentation
 
 
 \end{ocamldoccomment}
-\label{extension:Inline-underscorerecords.G}\begin{ocamldoccode}
+\label{extension:Inline-underscorerecords-underscorebis.G}\begin{ocamldoccode}
   | G of {\char123}  last : int -> int ;
 \end{ocamldoccode}
 \begin{ocamldoccomment}
@@ -282,11 +282,10 @@ Constructor G documentation
 
 
 \end{ocamldoccomment}
-\begin{ocamldocdescription}
+
+
+
+
 Two new constructors for ext
-
-
-\end{ocamldocdescription}
-
 
 \end{document}

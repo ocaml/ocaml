@@ -19,3 +19,9 @@
 <[sig  end]>
 # Odoc_info.string_of_module_type ~complete: true :
 <[sig exception E of { lbl : int; } end]>
+#
+# module T04.E_bis:
+# Odoc_info.string_of_module_type:
+<[sig  end]>
+# Odoc_info.string_of_module_type ~complete: true :
+<[sig exception E of { lbl : int; } end]>
