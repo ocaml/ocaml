@@ -82,7 +82,7 @@ FLAMBDA=false
 WITH_SPACETIME=false
 LIBUNWIND_AVAILABLE=false
 LIBUNWIND_LINK_FLAGS=
-PROFINFO_WIDTH=0
+PROFINFO_WIDTH=26
 SAFE_STRING=false
 
 ########## Configuration for the bytecode compiler
