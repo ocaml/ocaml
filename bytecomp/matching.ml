@@ -141,8 +141,8 @@ let  rshift_num mut n {left=left ; right=right} =
 let ctx_rshift_num mut n ctx = List.map (rshift_num mut n) ctx
 
 (* Recombination of contexts (eg: (_,_)::p1::p2::rem ->  (p1,p2)::rem)
-  All mutable fields are replaced by '_', since side-effects in
-  guards can alter these fields *)
+   If mut is true, all information is cancelled,
+   (eg: (_,_)::p1::p2::rem -> _::rem) *)
 
 let top_erase mut ps =
   if mut then match ps with
@@ -151,7 +151,7 @@ let top_erase mut ps =
   else ps
 
 let combine mut {left=left ; right=right} = match left with
-| p::ps -> {left=ps ; right=top_erase mut (set_args_erase_mutable p right)}
+| p::ps -> {left=ps ; right=top_erase mut (set_args p right)}
 | _ -> assert false
 
 let ctx_combine mut ctx = List.map (combine mut) ctx
@@ -2818,8 +2818,7 @@ and compile_no_test divide up_ctx repr mut partial ctx to_match =
 (* The entry points *)
 
 (*
-   If there is a guard in a matching or a lazy pattern,
-   then set exhaustiveness info to Partial.
+   If there is a mutable pattern set exhaustiveness to partial
    (because of side effects, assume the worst).
 
    Notice that exhaustiveness information is trusted by the compiler,
@@ -2827,9 +2826,12 @@ and compile_no_test divide up_ctx repr mut partial ctx to_match =
    More specifically, for instance if match y with x::_ -> x is flagged
    total (as it happens during JoCaml compilation) then y cannot be []
    at runtime. As a consequence, the static Total exhaustiveness information
-   have to be downgraded to Partial, in the dubious cases where guards
-   or lazy pattern execute arbitrary code that may perform side effects
-   and change the subject values.
+   have to to be downgraded to Partial, in the dubious cases 
+   where side effects may change the subject values.
+   Notice that those sides effects can be performed at any moment
+   'a priori' (multithreading, guards, lazy patterns, signal handlers...).
+   So we sub-optimise in case of mutable patterns.
+
 LM:
    Lazy pattern was PR#5992, initial patch by lpw25.
    I have  generalized the patch, so as to also find mutable fields.
@@ -2854,16 +2856,7 @@ let find_in_pat pred =
   end in
   find_rec
 
-let is_lazy_pat = function
-  | Tpat_lazy _ -> true
-  | Tpat_alias _ | Tpat_variant _ | Tpat_record _
-  | Tpat_tuple _|Tpat_construct _ | Tpat_array _
-  | Tpat_or _ | Tpat_constant _ | Tpat_var _ | Tpat_any
-      -> false
-
-let is_lazy p = find_in_pat is_lazy_pat p
-
-let have_mutable_field p = match p with
+let is_mutable_pat p = match p with
 | Tpat_record (lps,_) ->
     List.exists
       (fun (_,lbl,_) ->
@@ -2871,13 +2864,14 @@ let have_mutable_field p = match p with
         | Mutable -> true
         | Immutable -> false)
       lps
+| Tpat_array _ -> true
 | Tpat_alias _ | Tpat_variant _ | Tpat_lazy _
-| Tpat_tuple _|Tpat_construct _ | Tpat_array _
+| Tpat_tuple _|Tpat_construct _
 | Tpat_or _
 | Tpat_constant _ | Tpat_var _ | Tpat_any
   -> false
 
-let is_mutable p = find_in_pat have_mutable_field p
+let is_mutable p = find_in_pat is_mutable_pat p
 
 (* Downgrade Total when
    1. Matching accesses some mutable fields;
@@ -2886,16 +2880,12 @@ let is_mutable p = find_in_pat have_mutable_field p
    Also notice that the above condition is returned as 2nd pair component
 *)
 
-let check_partial is_mutable is_lazy pat_act_list partial =
+let check_partial is_mutable pat_act_list partial =
   match pat_act_list with
   | [] -> Partial,false (* Also partial, nothing mutable *)
   | _::_ ->
       let mut =
-        List.exists (fun (pats, _) -> is_mutable pats) pat_act_list
-          &&
-        List.exists
-          (fun (pats, lam) -> is_guarded lam || is_lazy pats)
-          pat_act_list in
+        List.exists (fun (pats, _) -> is_mutable pats) pat_act_list in
       let partial = match partial with
       | Partial -> Partial
       | Total ->
@@ -2905,9 +2895,8 @@ let check_partial is_mutable is_lazy pat_act_list partial =
           else Total in
       partial,mut
 
-let check_partial_list =
-  check_partial (List.exists is_mutable) (List.exists is_lazy)
-let check_partial = check_partial is_mutable is_lazy
+let check_partial_list = check_partial (List.exists is_mutable)
+let check_partial = check_partial is_mutable
 
 (* have toplevel handler when appropriate *)
 
