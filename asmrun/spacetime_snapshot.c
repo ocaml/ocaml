@@ -405,7 +405,7 @@ value caml_spacetime_frame_table(void)
 
   value list = Val_long(0);  /* the empty list */
 
-  if(!caml_debug_info_available()) {
+  if (!caml_debug_info_available()) {
     return list;
   }
 
@@ -413,7 +413,7 @@ value caml_spacetime_frame_table(void)
     caml_init_frame_descriptors();
   }
 
-  for(uintnat i = 0; i <= caml_frame_descriptors_mask; i++) {
+  for (uintnat i = 0; i <= caml_frame_descriptors_mask; i++) {
     frame_descr* descr = caml_frame_descriptors[i];
     if (descr != NULL) {
       value location, return_address, pair, new_list_element, location_list;
