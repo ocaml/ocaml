@@ -65,10 +65,14 @@ end
 module Frame_table : sig
   (* CR-someday mshinwell: move to [Gc] if dependencies permit? *)
   (** A value of type [t] corresponds to the frame table of a running
-      OCaml program.  The table is indexed by return address. *)
+      OCaml program.  The table is indexed by program counter address
+      (typically, but not always when using Spacetime, return addresses). *)
   type t
 
-  val find_exn : Program_counter.OCaml.t -> t -> Printexc.Slot.t
+  (** Find the location, including any inlined frames, corresponding to the
+      given program counter address.  Raises [Not_found] if the location
+      could not be resolved. *)
+  val find_exn : Program_counter.OCaml.t -> t -> Printexc.Slot.t list
 end
 
 module Function_entry_point : sig

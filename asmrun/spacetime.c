@@ -158,7 +158,7 @@ static void open_snapshot_channel(void)
   }
   else {
     snapshot_channel = caml_open_descriptor_out(fd);
-    pid_when_snapshot_channel_opened = getpid();
+    pid_when_snapshot_channel_opened = pid;
     caml_spacetime_write_magic_number_internal(snapshot_channel);
   }
 }
@@ -172,7 +172,14 @@ static void maybe_reopen_snapshot_channel(void)
      process has a loop to manually close all fds and no Spacetime snapshot
      was written during that time) and then open a new one. */
 
-  if (getpid() != pid_when_snapshot_channel_opened) {
+  int pid;
+#if defined (_WIN32) || defined (_WIN64)
+  pid = Int_val(val_process_id);
+#else
+  pid = getpid();
+#endif
+
+  if (pid != pid_when_snapshot_channel_opened) {
     caml_close_channel(snapshot_channel);
     open_snapshot_channel();
   }

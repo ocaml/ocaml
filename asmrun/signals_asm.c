@@ -79,9 +79,9 @@ void caml_garbage_collection(void)
   }
 
 #ifdef WITH_SPACETIME
-    if (caml_young_ptr == caml_young_alloc_end) {
-      caml_spacetime_automatic_snapshot();
-    }
+  if (caml_young_ptr == caml_young_alloc_end) {
+    caml_spacetime_automatic_snapshot();
+  }
 #endif
 
   caml_process_pending_signals();

@@ -29,7 +29,10 @@
     integer number of milliseconds giving the interval between profiling heap
     snapshots. This interval should not be made excessively small relative to
     the running time of the program. A typical interval to start with might be
-    1/100 of the running time of the program.
+    1/100 of the running time of the program.  The program must exit "normally"
+    (i.e. by calling [exit], with whatever exit code, rather than being
+    abnormally terminated by a signal) so that the snapshot file is
+    correctly completed.
 
     When using the automatic snapshot mode the profiling output is written
     to a file called "spacetime-<pid>" where <pid> is the process ID of the

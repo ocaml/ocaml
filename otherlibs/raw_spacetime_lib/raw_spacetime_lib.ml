@@ -77,13 +77,14 @@ end
 module Int64_map = Map.Make (Int64)
 
 module Frame_table = struct
-  type raw = (Int64.t * Printexc.Slot.t) list
+  type raw = (Int64.t * (Printexc.Slot.t list)) list
 
-  type t = Printexc.Slot.t Int64_map.t
+  type t = Printexc.Slot.t list Int64_map.t
 
   let demarshal chn : t =
     let raw : raw = Marshal.from_channel chn in
-    List.fold_left (fun map (key, data) -> Int64_map.add key data map)
+    List.fold_left (fun map (pc, rev_location_list) ->
+        Int64_map.add pc (List.rev rev_location_list) map)
       Int64_map.empty
       raw
 
