@@ -783,3 +783,14 @@ let float_array_as_constant (t:value_float_array) : float list option =
         | Value_extern _ | Value_boxed_int _ | Value_symbol _)
         -> None)
       contents (Some [])
+
+let check_approx_for_string t : string option =
+  match t.descr with
+  | Value_string { contents } -> contents
+  | Value_float _
+  | Value_unresolved _
+  | Value_unknown _ | Value_float_array _
+  | Value_bottom | Value_block _ | Value_int _ | Value_char _
+  | Value_constptr _ | Value_set_of_closures _ | Value_closure _
+  | Value_extern _ | Value_boxed_int _ | Value_symbol _ ->
+      None
