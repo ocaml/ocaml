@@ -943,17 +943,12 @@ let emit_instr i =
         `	addi	1, 1, {emit_int trap_size}\n`;
         adjust_stack_offset (-trap_size)
     | Lraise k ->
-        begin match !Clflags.debug, k with
-        | true, Lambda.Raise_regular ->
+        begin match k with
+        | Lambda.Raise_regular | Lambda.Raise_reraise ->
             emit_call "caml_raise_exn";
             record_frame Reg.Set.empty true i.dbg;
             emit_call_nop()
-        | true, Lambda.Raise_reraise ->
-            emit_call "caml_reraise_exn";
-            record_frame Reg.Set.empty true i.dbg;
-            emit_call_nop()
-        | false, _
-        | true, Lambda.Raise_notrace ->
+        | Lambda.Raise_notrace ->
             `	{emit_string lg}	0, {emit_int trap_handler_offset}(29)\n`;
             `	mr	1, 29\n`;
             `	mtctr   0\n`;

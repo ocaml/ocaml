@@ -770,15 +770,11 @@ let emit_instr fallthrough i =
       cfi_adjust_cfa_offset (-8);
       stack_offset := !stack_offset - 16
   | Lraise k ->
-      begin match !Clflags.debug, k with
-      | true, Lambda.Raise_regular ->
+      begin match k with
+      | Lambda.Raise_regular | Lambda.Raise_reraise ->
           emit_call "caml_raise_exn";
           record_frame Reg.Set.empty true i.dbg
-      | true, Lambda.Raise_reraise ->
-          emit_call "caml_reraise_exn";
-          record_frame Reg.Set.empty true i.dbg
-      | false, _
-      | true, Lambda.Raise_notrace ->
+      | Lambda.Raise_notrace ->
           I.mov r14 rsp;
           I.pop r14;
           I.ret ()
@@ -904,7 +900,6 @@ let begin_assembly() =
     D.extrn "caml_alloc3" NEAR;
     D.extrn "caml_ml_array_bound_error" NEAR;
     D.extrn "caml_raise_exn" NEAR;
-    D.extrn "caml_reraise_exn" NEAR;
   end;
 
 

@@ -612,17 +612,12 @@ let emit_instr i =
         emit_stack_adjust (-16);
         stack_offset := !stack_offset - 16
     | Lraise k ->
-        begin match !Clflags.debug, k with
-        | true, Lambda.Raise_regular ->
+        begin match k with
+        | Lambda.Raise_regular | Lambda.Raise_reraise ->
           `	brasl	%r14, {emit_symbol "caml_raise_exn"}\n`;
           let lbl = record_frame Reg.Set.empty true i.dbg in
           `{emit_label lbl}:\n`
-        | true, Lambda.Raise_reraise ->
-          `	brasl	%r14, {emit_symbol "caml_reraise_exn"}\n`;
-          let lbl = record_frame Reg.Set.empty true i.dbg in
-          `{emit_label lbl}:\n`
-        | false, _
-        | true, Lambda.Raise_notrace ->
+        | Lambda.Raise_notrace ->
           `	lg	%r1, 0(%r13)\n`;
           `	lgr	%r15, %r13\n`;
           `	lg	%r13, {emit_int size_addr}(%r15)\n`;

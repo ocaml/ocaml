@@ -224,16 +224,7 @@ L111:
         pop     _caml_exception_pointer
         ret
 
-        PUBLIC  _caml_reraise_exn
-        ALIGN   4
-_caml_reraise_exn:
-        test    _caml_backtrace_active, 1
-        jne     L111
-        mov     esp, _caml_exception_pointer
-        pop     _caml_exception_pointer
-        ret
-
-                                ; Raise an exception from C
+; Raise an exception from C
 
         PUBLIC  _caml_raise_exception
         ALIGN  4
