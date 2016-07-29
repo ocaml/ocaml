@@ -281,14 +281,16 @@ and lambda_event_kind =
   | Lev_function
   | Lev_pseudo
 
+type symbol = string
+
 type module_map = {
-  map :  (int * Ident.t) list;
+  map :  (int * symbol * Ident.t) list;
   prims : (int * string) list;
-  methcache : int option;
+  methcache : (int * symbol) option;
   size : int;
 }
 
-val module_map : ?methcache:int ->
+val module_map_clambda : module_name:string ->
            (int * 'a) Ident.tbl ->
            (int * Typedtree.primitive_coercion) list -> int -> module_map
 

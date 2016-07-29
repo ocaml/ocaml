@@ -140,7 +140,7 @@ let transl_store_label_init glob modmap f arg =
     if !method_count = 0 then (modmap, expr) else
       ({ modmap with
         size = modmap.size+1;
-        methcache = Some modmap.size },
+        methcache = Some (modmap.size, "caml" ^ Ident.name glob) },
      Lsequence(
      Lprim(Psetfield(modmap.size, Pointer, Initialization),
            [Lprim(Pgetglobal glob, [], Location.none);
