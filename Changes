@@ -162,6 +162,9 @@ OCaml 4.04.0:
 - Add the -no-version option to the toplevel
   (Sébastien Hinderer)
 
+### Debugging and profiling:
+
+- GPR#585: Spacetime, a new memory profiler (Mark Shinwell, Leo White)
 
 ### Runtime system:
 
