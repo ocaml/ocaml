@@ -86,13 +86,15 @@ class virtual selector_generic : object
      above; overloading this is useful if Ispecific instructions need
      marking *)
 
-  (* The following method is the entry point and should not be overridden *)
+  (* The following method is the entry point and should not be overridden
+     (except by [Spacetime_profiling]). *)
   method emit_fundecl : Cmm.fundecl -> Mach.fundecl
 
   (* The following methods should not be overridden.  They cannot be
      declared "private" in the current implementation because they
      are not always applied to "self", but ideally they should be private. *)
   method extract : Mach.instruction
+  method extract_core : end_instr:Mach.instruction -> Mach.instruction
   method insert : Mach.instruction_desc -> Reg.t array -> Reg.t array -> unit
   method insert_debug : Mach.instruction_desc -> Debuginfo.t ->
                                         Reg.t array -> Reg.t array -> unit
@@ -105,6 +107,32 @@ class virtual selector_generic : object
   method emit_expr :
     (Ident.t, Reg.t array) Tbl.t -> Cmm.expression -> Reg.t array option
   method emit_tail : (Ident.t, Reg.t array) Tbl.t -> Cmm.expression -> unit
+
+  (* Only for the use of [Spacetime_profiling]. *)
+  method select_allocation : int -> Mach.operation
+  method select_allocation_args : (Ident.t, Reg.t array) Tbl.t -> Reg.t array
+  method select_checkbound : unit -> Mach.integer_operation
+  method select_checkbound_extra_args : unit -> Cmm.expression list
+  method emit_blockheader
+     : (Ident.t, Reg.t array) Tbl.t
+    -> nativeint
+    -> Debuginfo.t
+    -> Reg.t array option
+  method about_to_emit_call
+     : (Ident.t, Reg.t array) Tbl.t
+    -> Mach.instruction_desc
+    -> Reg.t array
+    -> Reg.t array option
+  method initial_env : unit -> (Ident.t, Reg.t array) Tbl.t
+  method insert_prologue
+     : Cmm.fundecl
+    -> loc_arg:Reg.t array
+    -> rarg:Reg.t array
+    -> spacetime_node_hole:(Ident.t * Reg.t array) option
+    -> env:(Ident.t, Reg.t array) Tbl.t
+    -> Mach.spacetime_shape option
+
+  val mutable instr_seq : Mach.instruction
 end
 
 val reset : unit -> unit

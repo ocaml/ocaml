@@ -114,6 +114,7 @@ let rec eliminate_const_block (const : Lambda.structured_constant)
       : Lambda.lambda =
   match const with
   | Const_block (tag, consts) ->
+    (* CR-soon mshinwell for lwhite: fix location *)
     Lprim (Pmakeblock (tag, Asttypes.Immutable, None),
       List.map eliminate_const_block consts, Location.none)
   | Const_base _

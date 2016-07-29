@@ -110,6 +110,10 @@ let system = "%%SYSTEM%%"
 let asm = "%%ASM%%"
 let asm_cfi_supported = %%ASM_CFI_SUPPORTED%%
 let with_frame_pointers = %%WITH_FRAME_POINTERS%%
+let spacetime = %%WITH_SPACETIME%%
+let libunwind_available = %%LIBUNWIND_AVAILABLE%%
+let libunwind_link_flags = "%%LIBUNWIND_LINK_FLAGS%%"
+let profinfo_width = %%PROFINFO_WIDTH%%
 
 let ext_obj = "%%EXT_OBJ%%"
 let ext_asm = "%%EXT_ASM%%"
@@ -158,6 +162,7 @@ let print_config oc =
   p "host" host;
   p "target" target;
   p_bool "flambda" flambda;
+  p_bool "spacetime" spacetime;
 
   (* print the magic number *)
   p "exec_magic_number" exec_magic_number;

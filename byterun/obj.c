@@ -28,6 +28,7 @@
 #include "caml/misc.h"
 #include "caml/mlvalues.h"
 #include "caml/prims.h"
+#include "spacetime.h"
 
 /* [size] is a value encoding a number of bytes */
 CAMLprim value caml_static_alloc(value size)
@@ -88,6 +89,7 @@ CAMLprim value caml_obj_block(value tag, value size)
   return res;
 }
 
+/* Spacetime profiling assumes that this function is only called from OCaml. */
 CAMLprim value caml_obj_dup(value arg)
 {
   CAMLparam1 (arg);
@@ -102,7 +104,9 @@ CAMLprim value caml_obj_dup(value arg)
     res = caml_alloc(sz, tg);
     memcpy(Bp_val(res), Bp_val(arg), sz * sizeof(value));
   } else if (sz <= Max_young_wosize) {
-    res = caml_alloc_small(sz, tg);
+    uintnat profinfo;
+    Get_my_profinfo_with_cached_backtrace(profinfo, sz);
+    res = caml_alloc_small_with_my_or_given_profinfo(sz, tg, profinfo);
     for (i = 0; i < sz; i++) Field(res, i) = Field(arg, i);
   } else {
     res = caml_alloc_shr(sz, tg);
@@ -157,7 +161,8 @@ CAMLprim value caml_obj_truncate (value v, value newsize)
      ref_table. */
   Field (v, new_wosize) =
     Make_header (Wosize_whsize (wosize-new_wosize), Abstract_tag, Caml_black);
-  Hd_val (v) = Make_header (new_wosize, tag, color);
+  Hd_val (v) =
+    Make_header_with_profinfo (new_wosize, tag, color, Profinfo_val(v));
   return Val_unit;
 }
 

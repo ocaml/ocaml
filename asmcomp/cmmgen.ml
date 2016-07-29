@@ -515,7 +515,14 @@ let set_field ptr n newval init =
   Cop(Cstore (Word_val, init), [field_address ptr n; newval])
 
 let header ptr =
-  Cop(Cload Word_int, [Cop(Cadda, [ptr; Cconst_int(-size_int)])])
+  if Config.spacetime then
+    let non_profinfo_mask = (1 lsl (64 - Config.profinfo_width)) - 1 in
+    Cop(Cand, [Cop (Cload Word_int,
+        [Cop(Cadda, [ptr; Cconst_int(-size_int)])]);
+      Cconst_int non_profinfo_mask;
+    ])
+  else
+    Cop(Cload Word_int, [Cop(Cadda, [ptr; Cconst_int(-size_int)])])
 
 let tag_offset =
   if big_endian then -1 else -size_int
@@ -3116,6 +3123,18 @@ let frame_table namelist =
   in
   Cdata(Cglobal_symbol "caml_frametable" ::
         Cdefine_symbol "caml_frametable" ::
+        List.map mksym namelist
+        @ [cint_zero])
+
+(* Generate the master table of Spacetime shapes *)
+
+let spacetime_shapes namelist =
+  let mksym name =
+    Csymbol_address (
+      Compilenv.make_symbol ~unitname:name (Some "spacetime_shapes"))
+  in
+  Cdata(Cglobal_symbol "caml_spacetime_shapes" ::
+        Cdefine_symbol "caml_spacetime_shapes" ::
         List.map mksym namelist
         @ [cint_zero])
 

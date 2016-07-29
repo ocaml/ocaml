@@ -25,7 +25,8 @@ type integer_operation =
     Iadd | Isub | Imul | Imulh | Idiv | Imod
   | Iand | Ior | Ixor | Ilsl | Ilsr | Iasr
   | Icomp of integer_comparison
-  | Icheckbound of { label_after_error : label option; }
+  | Icheckbound of { label_after_error : label option;
+        spacetime_index : int; }
 
 type test =
     Itruetest
@@ -43,7 +44,6 @@ type operation =
   | Iconst_int of nativeint
   | Iconst_float of int64
   | Iconst_symbol of string
-  | Iconst_blockheader of nativeint
   | Icall_ind of { label_after : label; }
   | Icall_imm of { func : string; label_after : label; }
   | Itailcall_ind of { label_after : label; }
@@ -52,7 +52,8 @@ type operation =
   | Istackoffset of int
   | Iload of Cmm.memory_chunk * Arch.addressing_mode
   | Istore of Cmm.memory_chunk * Arch.addressing_mode * bool
-  | Ialloc of { words : int; label_after_call_gc : label option; }
+  | Ialloc of { words : int; label_after_call_gc : label option;
+        spacetime_index : int; }
   | Iintop of integer_operation
   | Iintop_imm of integer_operation * int
   | Inegf | Iabsf | Iaddf | Isubf | Imulf | Idivf
@@ -79,12 +80,21 @@ and instruction_desc =
   | Itrywith of instruction * instruction
   | Iraise of Cmm.raise_kind
 
+type spacetime_part_of_shape =
+  | Direct_call_point of { callee : string; }
+  | Indirect_call_point
+  | Allocation_point
+
+type spacetime_shape = (spacetime_part_of_shape * Cmm.label) list
+
 type fundecl =
   { fun_name: string;
     fun_args: Reg.t array;
     fun_body: instruction;
     fun_fast: bool;
-    fun_dbg : Debuginfo.t }
+    fun_dbg : Debuginfo.t;
+    fun_spacetime_shape : spacetime_shape option;
+  }
 
 let rec dummy_instr =
   { desc = Iend;
@@ -134,3 +144,36 @@ let rec instr_iter f i =
       | Iraise _ -> ()
       | _ ->
           instr_iter f i.next
+
+let spacetime_node_hole_pointer_is_live_before insn =
+  match insn.desc with
+  | Iop op ->
+    begin match op with
+    | Icall_ind _ | Icall_imm _ | Itailcall_ind _ | Itailcall_imm _ -> true
+    | Iextcall { alloc; } -> alloc
+    | Ialloc _ ->
+      (* Allocations are special: the call to [caml_call_gc] requires some
+         instrumentation code immediately prior, but this is not inserted until
+         the emitter (since the call is not visible prior to that in any IR).
+         As such, none of the Mach / Linearize analyses will ever see that
+         we use the node hole pointer for these, and we do not need to say
+         that it is live at such points. *)
+      false
+    | Iintop op | Iintop_imm (op, _) ->
+      begin match op with
+      | Icheckbound _ 
+        (* [Icheckbound] doesn't need to return [true] for the same reason as
+           [Ialloc]. *)
+      | Iadd | Isub | Imul | Imulh | Idiv | Imod
+      | Iand | Ior | Ixor | Ilsl | Ilsr | Iasr
+      | Icomp _ -> false
+      end
+    | Ispecific specific_op ->
+      Arch.spacetime_node_hole_pointer_is_live_before specific_op
+    | Imove | Ispill | Ireload | Iconst_int _ | Iconst_float _
+    | Iconst_symbol _ | Istackoffset _ | Iload _ | Istore _
+    | Inegf | Iabsf | Iaddf | Isubf | Imulf | Idivf
+    | Ifloatofint | Iintoffloat -> false
+    end
+  | Iend | Ireturn | Iifthenelse _ | Iswitch _ | Iloop _ | Icatch _
+  | Iexit _ | Itrywith _ | Iraise _ -> false

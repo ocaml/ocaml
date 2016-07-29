@@ -443,7 +443,7 @@ module BR = Branch_relaxation.Make (struct
   let instr_size = function
     | Lend -> 0
     | Lop(Imove | Ispill | Ireload) -> 1
-    | Lop(Iconst_int n | Iconst_blockheader n) ->
+    | Lop(Iconst_int n) ->
       if is_native_immediate n then 1
       else if (let (_lo, hi) = native_low_high_s n in
                hi >= -0x8000 && hi <= 0x7FFF) then 2
@@ -529,7 +529,7 @@ let emit_instr i =
             | (_, _) ->
                 fatal_error "Emit: Imove"
         end
-    | Lop(Iconst_int n | Iconst_blockheader n) ->
+    | Lop(Iconst_int n) ->
         if is_native_immediate n then
           `	li	{emit_reg i.res.(0)}, {emit_nativeint n}\n`
         else begin

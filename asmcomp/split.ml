@@ -126,7 +126,7 @@ let rec rename i sub =
     Iend ->
       (i, sub)
   | Ireturn | Iop(Itailcall_ind _) | Iop(Itailcall_imm _) ->
-      (instr_cons i.desc (subst_regs i.arg sub) [||] i.next,
+      (instr_cons_debug i.desc (subst_regs i.arg sub) [||] i.dbg i.next,
        None)
   | Iop Ireload when i.res.(0).loc = Unknown ->
       begin match sub with
@@ -214,4 +214,6 @@ let fundecl f =
     fun_args = new_args;
     fun_body = new_body;
     fun_fast = f.fun_fast;
-    fun_dbg  = f.fun_dbg }
+    fun_dbg  = f.fun_dbg;
+    fun_spacetime_shape = f.fun_spacetime_shape;
+  }

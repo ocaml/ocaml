@@ -403,7 +403,9 @@ static value *expand_heap (mlsize_t request)
     Field (Val_hp (hp), 0) = (value) NULL;
   }else{
     Field (Val_hp (prev), 0) = (value) NULL;
-    if (remain == 1) Hd_hp (hp) = Make_header (0, 0, Caml_white);
+    if (remain == 1) {
+      Hd_hp (hp) = Make_header_allocated_here (0, 0, Caml_white);
+    }
   }
   Assert (Wosize_hp (mem) >= request);
   if (caml_add_to_heap ((char *) mem) != 0){
@@ -470,7 +472,7 @@ color_t caml_allocation_color (void *hp)
 }
 
 static inline value caml_alloc_shr_aux (mlsize_t wosize, tag_t tag,
-                                        int raise_oom)
+                                        int raise_oom, uintnat profinfo)
 {
   header_t *hp;
   value *new_block;
@@ -501,14 +503,16 @@ static inline value caml_alloc_shr_aux (mlsize_t wosize, tag_t tag,
   /* Inline expansion of caml_allocation_color. */
   if (caml_gc_phase == Phase_mark || caml_gc_phase == Phase_clean
       || (caml_gc_phase == Phase_sweep && (addr)hp >= (addr)caml_gc_sweep_hp)){
-    Hd_hp (hp) = Make_header (wosize, tag, Caml_black);
+    Hd_hp (hp) = Make_header_with_profinfo (wosize, tag, Caml_black, profinfo);
   }else{
     Assert (caml_gc_phase == Phase_idle
             || (caml_gc_phase == Phase_sweep
                 && (addr)hp < (addr)caml_gc_sweep_hp));
-    Hd_hp (hp) = Make_header (wosize, tag, Caml_white);
+    Hd_hp (hp) = Make_header_with_profinfo (wosize, tag, Caml_white, profinfo);
   }
-  Assert (Hd_hp (hp) == Make_header (wosize, tag, caml_allocation_color (hp)));
+  Assert (Hd_hp (hp)
+    == Make_header_with_profinfo (wosize, tag, caml_allocation_color (hp),
+                                  profinfo));
   caml_allocated_words += Whsize_wosize (wosize);
   if (caml_allocated_words > caml_minor_heap_wsz){
     CAML_INSTR_INT ("request_major/alloc_shr@", 1);
@@ -527,13 +531,35 @@ static inline value caml_alloc_shr_aux (mlsize_t wosize, tag_t tag,
 
 CAMLexport value caml_alloc_shr_no_raise (mlsize_t wosize, tag_t tag)
 {
-  return caml_alloc_shr_aux(wosize, tag, 0);
+  return caml_alloc_shr_aux(wosize, tag, 0, 0);
+}
+
+#if defined(NATIVE_CODE) && defined(WITH_SPACETIME)
+#include "spacetime.h"
+
+CAMLexport value caml_alloc_shr_with_profinfo (mlsize_t wosize, tag_t tag,
+                                               intnat profinfo)
+{
+  return caml_alloc_shr_aux(wosize, tag, 1, profinfo);
+}
+
+CAMLexport value caml_alloc_shr_preserving_profinfo (mlsize_t wosize,
+  tag_t tag, header_t old_header)
+{
+  return caml_alloc_shr_with_profinfo (wosize, tag, Profinfo_hd(old_header));
 }
 
 CAMLexport value caml_alloc_shr (mlsize_t wosize, tag_t tag)
 {
-  return caml_alloc_shr_aux(wosize, tag, 1);
+  return caml_alloc_shr_with_profinfo (wosize, tag,
+    caml_spacetime_my_profinfo (NULL, wosize));
 }
+#else
+CAMLexport value caml_alloc_shr (mlsize_t wosize, tag_t tag)
+{
+  return caml_alloc_shr_aux (wosize, tag, 1, 0);
+}
+#endif
 
 /* Dependent memory is all memory blocks allocated out of the heap
    that depend on the GC (and finalizers) for deallocation.

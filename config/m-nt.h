@@ -47,3 +47,5 @@
 #endif
 
 #undef NONSTANDARD_DIV_MOD
+
+#define PROFINFO_WIDTH 26

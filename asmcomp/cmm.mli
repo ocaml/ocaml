@@ -148,7 +148,8 @@ type fundecl =
     fun_args: (Ident.t * machtype) list;
     fun_body: expression;
     fun_fast: bool;
-    fun_dbg : Debuginfo.t; }
+    fun_dbg : Debuginfo.t;
+  }
 
 type data_item =
     Cdefine_symbol of string
@@ -167,3 +168,5 @@ type data_item =
 type phrase =
     Cfunction of fundecl
   | Cdata of data_item list
+
+val reset : unit -> unit

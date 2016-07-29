@@ -36,6 +36,16 @@ extern "C" {
 
 
 CAMLextern value caml_alloc_shr (mlsize_t wosize, tag_t);
+#if defined(NATIVE_CODE) && defined(WITH_SPACETIME)
+CAMLextern value caml_alloc_shr_with_profinfo (mlsize_t, tag_t, intnat);
+CAMLextern value caml_alloc_shr_preserving_profinfo (mlsize_t, tag_t,
+  header_t);
+#else
+#define caml_alloc_shr_with_profinfo(size, tag, profinfo) \
+  caml_alloc_shr(size, tag)
+#define caml_alloc_shr_preserving_profinfo(size, tag, header) \
+  caml_alloc_shr(size, tag)
+#endif
 CAMLextern value caml_alloc_shr_no_raise (mlsize_t wosize, tag_t);
 CAMLextern void caml_adjust_gc_speed (mlsize_t, mlsize_t);
 CAMLextern void caml_alloc_dependent_memory (mlsize_t bsz);
@@ -84,7 +94,8 @@ int caml_page_table_initialize(mlsize_t bytesize);
 #define DEBUG_clear(result, wosize)
 #endif
 
-#define Alloc_small(result, wosize, tag) do{    CAMLassert ((wosize) >= 1); \
+#define Alloc_small_with_profinfo(result, wosize, tag, profinfo) do {       \
+                                                CAMLassert ((wosize) >= 1); \
                                           CAMLassert ((tag_t) (tag) < 256); \
                                  CAMLassert ((wosize) <= Max_young_wosize); \
   caml_young_ptr -= Whsize_wosize (wosize);                                 \
@@ -96,10 +107,21 @@ int caml_page_table_initialize(mlsize_t bytesize);
     Restore_after_gc;                                                       \
     caml_young_ptr -= Whsize_wosize (wosize);                               \
   }                                                                         \
-  Hd_hp (caml_young_ptr) = Make_header ((wosize), (tag), Caml_black);       \
+  Hd_hp (caml_young_ptr) =                                                  \
+    Make_header_with_profinfo ((wosize), (tag), Caml_black, profinfo);      \
   (result) = Val_hp (caml_young_ptr);                                       \
   DEBUG_clear ((result), (wosize));                                         \
 }while(0)
+
+#if defined(NATIVE_CODE) && defined(SPACETIME)
+extern uintnat caml_spacetime_my_profinfo(struct ext_table**, uintnat);
+#define Alloc_small(result, wosize, tag) \
+  Alloc_small_with_profinfo(result, wosize, tag, \
+    caml_spacetime_my_profinfo(NULL, wosize))
+#else
+#define Alloc_small(result, wosize, tag) \
+  Alloc_small_with_profinfo(result, wosize, tag, (uintnat) 0)
+#endif
 
 /* Deprecated alias for [caml_modify] */
 

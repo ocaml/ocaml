@@ -35,7 +35,12 @@ let rec live i finally =
      before the instruction sequence.
      The instruction i is annotated by the set of registers live across
      the instruction. *)
-  let arg = i.arg in
+  let arg =
+    if Config.spacetime
+      && Mach.spacetime_node_hole_pointer_is_live_before i
+    then Array.append i.arg [| Proc.loc_spacetime_node_hole |]
+    else i.arg
+  in
   match i.desc with
     Iend ->
       i.live <- finally;
@@ -129,8 +134,13 @@ let reset () =
 
 let fundecl ppf f =
   let initially_live = live f.fun_body Reg.Set.empty in
-  (* Sanity check: only function parameters can be live at entrypoint *)
+  (* Sanity check: only function parameters (and the Spacetime node hole
+     register, if profiling) can be live at entrypoint *)
   let wrong_live = Reg.Set.diff initially_live (Reg.set_of_array f.fun_args) in
+  let wrong_live =
+    if not Config.spacetime then wrong_live
+    else Reg.Set.remove Proc.loc_spacetime_node_hole wrong_live
+  in
   if not (Reg.Set.is_empty wrong_live) then begin
     Format.fprintf ppf "%a@." Printmach.regset wrong_live;
     Misc.fatal_error "Liveness.fundecl"

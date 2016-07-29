@@ -22,6 +22,9 @@
 #include "caml/mlvalues.h"
 #include "caml/roots.h"
 #include "caml/signals.h"
+#if defined(NATIVE_CODE) && defined(WITH_SPACETIME)
+#include "../asmrun/spacetime.h"
+#endif
 
 struct final {
   value fun;
@@ -115,6 +118,9 @@ void caml_final_do_calls (void)
 {
   struct final f;
   value res;
+#if defined(NATIVE_CODE) && defined(WITH_SPACETIME)
+  void* saved_spacetime_trie_node_ptr;
+#endif
 
   if (running_finalisation_function) return;
   if (to_do_hd != NULL){
@@ -132,7 +138,17 @@ void caml_final_do_calls (void)
       -- to_do_hd->size;
       f = to_do_hd->item[to_do_hd->size];
       running_finalisation_function = 1;
+#if defined(NATIVE_CODE) && defined(WITH_SPACETIME)
+      /* We record the finaliser's execution separately.
+         (The code of [caml_callback_exn] will do the hard work of finding
+         the correct place in the trie.) */
+      saved_spacetime_trie_node_ptr = caml_spacetime_trie_node_ptr;
+      caml_spacetime_trie_node_ptr = caml_spacetime_finaliser_trie_root;
+#endif
       res = caml_callback_exn (f.fun, f.val + f.offset);
+#if defined(NATIVE_CODE) && defined(WITH_SPACETIME)
+      caml_spacetime_trie_node_ptr = saved_spacetime_trie_node_ptr;
+#endif
       running_finalisation_function = 0;
       if (Is_exception_result (res)) caml_raise (Extract_exception (res));
     }

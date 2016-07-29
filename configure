@@ -36,6 +36,10 @@ mathlib='-lm'
 dllib=''
 x11_include_dir=''
 x11_lib_dir=''
+libunwind_include_dir=''
+libunwind_lib_dir=''
+libunwind_available=false
+disable_libunwind=false
 graph_wanted=yes
 pthread_wanted=yes
 dl_defs=''
@@ -48,6 +52,7 @@ partialld="ld -r"
 with_debugger=ocamldebugger
 with_ocamldoc=ocamldoc
 with_frame_pointers=false
+with_spacetime=false
 no_naked_pointers=false
 native_compiler=true
 TOOLPREF=""
@@ -117,6 +122,16 @@ while : ; do
             manext=1;;
         esac
         shift;;
+    -libunwinddir|--libunwinddir)
+        libunwind_include_dir=$2/include;
+        libunwind_lib_dir=$2/lib;
+        shift;;
+    -libunwindlib|--libunwindlib)
+        libunwind_lib_dir=$2; shift;;
+    -libunwindinclude|--libunwindinclude)
+        libunwind_include_dir=$2; shift;;
+    -disable-libunwind|--disable-libunwind)
+        disable_libunwind=true;;
     -host*|--host*)
         host_type=$2; shift;;
     -target*|--target*)
@@ -164,6 +179,8 @@ while : ; do
         with_frame_pointers=true;;
     -no-naked-pointers|--no-naked-pointers)
         no_naked_pointers=true;;
+    -spacetime|--spacetime)
+        with_spacetime=true;;
     -no-cfi|--no-cfi)
         with_cfi=false;;
     -no-native-compiler|--no-native-compiler)
@@ -1104,6 +1121,13 @@ echo "GRAPHLIB=$graphlib" >> Makefile
 
 otherlibraries="$unixlib str num dynlink bigarray"
 
+# Spacetime profiling is only available for native code.
+
+case "$native_compiler" in
+    true) otherlibraries="$otherlibraries raw_spacetime_lib" ;;
+    *) ;;
+esac
+
 # For the Unix library
 
 has_sockets=no
@@ -1752,6 +1776,100 @@ else
     has_huge_pages=false
 fi
 
+# Spacetime profiling, including libunwind detection
+
+# The number of bits used for profiling information is configurable here.
+# The more bits used for profiling, the smaller will be Max_wosize.
+# Note that PROFINFO_WIDTH must still be defined even if not configuring
+# for Spacetime (see comment in byterun/caml/mlvalues.h on [Profinfo_hd]).
+profinfo_width=26
+echo "#define PROFINFO_WIDTH $profinfo_width" >> m.h
+if $with_spacetime; then
+  case "$arch,$system" in
+    amd64,*)
+      spacetime_supported=true
+      ;;
+    *)
+      spacetime_supported=false
+      ;;
+  esac
+  libunwind_warning=false
+  if $spacetime_supported; then
+    echo "Spacetime profiling will be available."
+    echo "#define WITH_SPACETIME" >> m.h
+    if $disable_libunwind; then
+      has_libunwind=no
+      libunwind_available=false
+      echo "libunwind support for Spacetime profiling was explicitly disabled."
+    else
+      # On Mac OS X, we always use the system libunwind.
+      if test "$libunwind_lib_dir" != ""; then
+        case "$arch,$system" in
+          amd64,macosx)
+            inf "[WARNING] -libunwind* options are ignored on Mac OS X"
+            libunwind_warning=true
+            libunwind_lib="-framework System"
+            libunwind_lib_temp="$libunwind_lib"
+            # We need unwinding information at runtime, but since we use
+            # -no_compact_unwind, we also need -keep_dwarf_unwind otherwise
+            # the OS X linker will chuck away the DWARF-like (.eh_frame)
+            # information.  (Older versions of OS X don't provide this.)
+            mkexe="$mkexe -Wl,-keep_dwarf_unwind"
+            mksharedlib="$mksharedlib -Wl,-keep_dwarf_unwind"
+            ;;
+          *)
+            libunwind_lib="-L$libunwind_lib_dir -lunwind -lunwind-x86_64"
+            libunwind_lib_temp="-Xl $libunwind_lib"
+            ;;
+        esac
+      else
+        case "$arch,$system" in
+          amd64,macosx)
+            libunwind_lib="-framework System"
+            libunwind_lib_temp="$libunwind_lib"
+            mkexe="$mkexe -Wl,-keep_dwarf_unwind"
+            mksharedlib="$mksharedlib -Wl,-keep_dwarf_unwind"
+            ;;
+          *)
+            libunwind_lib="-lunwind -lunwind-x86_64"
+            libunwind_lib_temp="$libunwind_lib"
+            ;;
+        esac
+      fi
+      if test "$libunwind_include_dir" != ""; then
+        case "$arch,$system" in
+          amd64,macosx)
+            if ! $libunwind_warning; then
+              inf "[WARNING] -libunwind* options are ignored on Mac OS X"
+            fi
+            libunwind_include=""
+            ;;
+          *)
+            libunwind_include="-I$libunwind_include_dir"
+            ;;
+        esac
+      else
+        libunwind_include=""
+      fi
+      if sh ./hasgot -i libunwind.h $libunwind_lib_temp $libunwind_include; \
+      then
+        echo "#define HAS_LIBUNWIND" >> s.h
+        has_libunwind=yes
+        libunwind_available=true
+        echo "libunwind support for Spacetime profiling will be available."
+      else
+        has_libunwind=no
+        libunwind_available=false
+        echo "libunwind support for Spacetime profiling will not be available."
+      fi
+    fi
+  else
+    echo "Spacetime profiling is not available on 32-bit platforms."
+    with_spacetime=false
+    libunwind_available=false
+    has_libunwind=no
+  fi
+fi
 
 if ! $shared_libraries_supported; then
   with_cplugins=false
@@ -1846,6 +1964,11 @@ echo "WITH_DEBUGGER=${with_debugger}" >>Makefile
 echo "WITH_OCAMLDOC=${with_ocamldoc}" >>Makefile
 echo "ASM_CFI_SUPPORTED=$asm_cfi_supported" >> Makefile
 echo "WITH_FRAME_POINTERS=$with_frame_pointers" >> Makefile
+echo "WITH_SPACETIME=$with_spacetime" >> Makefile
+echo "LIBUNWIND_AVAILABLE=$libunwind_available" >> Makefile
+echo "LIBUNWIND_INCLUDE_FLAGS=$libunwind_include" >> Makefile
+echo "LIBUNWIND_LINK_FLAGS=$libunwind_lib" >> Makefile
+echo "PROFINFO_WIDTH=$profinfo_width" >> Makefile
 echo "WITH_CPLUGINS=$with_cplugins" >> Makefile
 echo "WITH_FPIC=$with_fpic" >> Makefile
 echo "TARGET=$target" >> Makefile
@@ -1918,6 +2041,28 @@ else
   else
   inf "        naked pointers forbidden.. no"
   fi
+  if $with_spacetime; then
+    inf "        spacetime profiling....... yes"
+    inf "          ... with libunwind...... $has_libunwind"
+  else
+    inf "        spacetime profiling....... no"
+  fi
+  case "$arch,$system" in
+    amd64,macosx)
+      ;;
+    amd64,*)
+      if test "$has_libunwind" = "yes"; then
+        if test "$libunwind_include_dir" != ""; then
+          inf "        libunwind include dir..... $libunwind_include_dir"
+        fi
+        if test "$libunwind_lib_dir" != ""; then
+          inf "        libunwind library dir..... $libunwind_lib_dir"
+        fi
+      fi
+      ;;
+    *)
+      ;;
+  esac
   if $with_cplugins; then
   inf "        C plugins................. yes"
   else

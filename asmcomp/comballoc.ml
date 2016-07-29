@@ -37,7 +37,7 @@ let rec combine i allocstate =
         No_alloc ->
           let (newnext, newsz) =
             combine i.next (Pending_alloc(i.res.(0), sz)) in
-          (instr_cons_debug (Iop(Ialloc {words = newsz;
+          (instr_cons_debug (Iop(Ialloc {words = newsz; spacetime_index = 0;
               label_after_call_gc = None; }))
             i.arg i.res i.dbg newnext, 0)
       | Pending_alloc(reg, ofs) ->
@@ -49,7 +49,7 @@ let rec combine i allocstate =
           end else begin
             let (newnext, newsz) =
               combine i.next (Pending_alloc(i.res.(0), sz)) in
-            (instr_cons_debug (Iop(Ialloc { words = newsz;
+            (instr_cons_debug (Iop(Ialloc { words = newsz; spacetime_index = 0;
                 label_after_call_gc = None; }))
               i.arg i.res i.dbg newnext, ofs)
           end
@@ -92,4 +92,5 @@ and combine_restart i =
   let (newi, _) = combine i No_alloc in newi
 
 let fundecl f =
-  {f with fun_body = combine_restart f.fun_body}
+  if Config.spacetime then f
+  else {f with fun_body = combine_restart f.fun_body}

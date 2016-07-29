@@ -79,6 +79,10 @@ ASM_CFI_SUPPORTED=false
 UNIXLIB=win32unix
 GRAPHLIB=win32graph
 FLAMBDA=false
+WITH_SPACETIME=false
+LIBUNWIND_AVAILABLE=false
+LIBUNWIND_LINK_FLAGS=
+PROFINFO_WIDTH=26
 SAFE_STRING=false
 
 ########## Configuration for the bytecode compiler

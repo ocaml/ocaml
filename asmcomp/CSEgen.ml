@@ -221,8 +221,7 @@ class cse_generic = object (self)
 method class_of_operation op =
   match op with
   | Imove | Ispill | Ireload -> assert false   (* treated specially *)
-  | Iconst_int _ | Iconst_float _ | Iconst_symbol _
-  | Iconst_blockheader _ -> Op_pure
+  | Iconst_int _ | Iconst_float _ | Iconst_symbol _ -> Op_pure
   | Icall_ind _ | Icall_imm _ | Itailcall_ind _ | Itailcall_imm _
   | Iextcall _ -> assert false                 (* treated specially *)
   | Istackoffset _ -> Op_other
@@ -241,7 +240,7 @@ method class_of_operation op =
 
 method is_cheap_operation op =
   match op with
-  | Iconst_int _ | Iconst_blockheader _ -> true
+  | Iconst_int _ -> true
   | _ -> false
 
 (* Forget all equations involving memory loads.  Performed after a

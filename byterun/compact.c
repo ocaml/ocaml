@@ -48,10 +48,15 @@ extern void caml_shrink_heap (char *);              /* memory.c */
   XXX (see [caml_register_global_roots])
   XXX Should be able to fix it to only assume 2-byte alignment.
 */
-#define Make_ehd(s,t,c) (((s) << 10) | (t) << 2 | (c))
+#if defined(NATIVE_CODE) && defined(WITH_SPACETIME)
+#define Make_ehd(s,t,c,p) (((s) << 10) | (t) << 2 | (c) | ((p) << PROFINFO_SHIFT))
+#else
+#define Make_ehd(s,t,c,p) (((s) << 10) | (t) << 2 | (c))
+#endif
 #define Whsize_ehd(h) Whsize_hd (h)
 #define Wosize_ehd(h) Wosize_hd (h)
 #define Tag_ehd(h) (((h) >> 2) & 0xFF)
+#define Profinfo_ehd(hd) Profinfo_hd(hd)
 #define Ecolor(w) ((w) & 3)
 
 typedef uintnat word;
@@ -90,7 +95,7 @@ static void invert_pointer_at (word *p)
           Hd_val (q) = (header_t) ((word) p | 2);
           /* Change block header's tag to Infix_tag, and change its size
              to point to the infix list. */
-          *hp = Make_ehd (Wosize_bhsize (q - val), Infix_tag, 3);
+          *hp = Make_ehd (Wosize_bhsize (q - val), Infix_tag, 3, (uintnat) 0);
         }else{                            Assert (Tag_ehd (*hp) == Infix_tag);
           /* Point the last of this infix list to the current first infix
              list of the block. */
@@ -98,7 +103,7 @@ static void invert_pointer_at (word *p)
           /* Point the head of this infix list to the above. */
           Hd_val (q) = (header_t) ((word) p | 2);
           /* Change block header's size to point to this infix list. */
-          *hp = Make_ehd (Wosize_bhsize (q - val), Infix_tag, 3);
+          *hp = Make_ehd (Wosize_bhsize (q - val), Infix_tag, 3, (uintnat) 0);
         }
       }
       break;
@@ -170,10 +175,10 @@ static void do_compaction (void)
 
         if (Is_blue_hd (hd)){
           /* Free object.  Give it a string tag. */
-          Hd_hp (p) = Make_ehd (sz, String_tag, 3);
+          Hd_hp (p) = Make_ehd (sz, String_tag, 3, (uintnat) 0);
         }else{                                      Assert (Is_white_hd (hd));
           /* Live object.  Keep its tag. */
-          Hd_hp (p) = Make_ehd (sz, Tag_hd (hd), 3);
+          Hd_hp (p) = Make_ehd (sz, Tag_hd (hd), 3, Profinfo_hd (hd));
         }
         p += Whsize_wosize (sz);
       }
@@ -265,11 +270,13 @@ static void do_compaction (void)
           size_t sz;
           tag_t t;
           char *newadr;
+          uintnat profinfo;
           word *infixes = NULL;
 
           while (Ecolor (q) == 0) q = * (word *) q;
           sz = Whsize_ehd (q);
           t = Tag_ehd (q);
+          profinfo = Profinfo_ehd (q);
 
           if (t == Infix_tag){
             /* Get the original header of this block. */
@@ -287,7 +294,8 @@ static void do_compaction (void)
             * (word *) q = (word) Val_hp (newadr);
             q = next;
           }
-          *p = Make_header (Wosize_whsize (sz), t, Caml_white);
+          *p = Make_header_with_profinfo (Wosize_whsize (sz), t, Caml_white,
+            profinfo);
 
           if (infixes != NULL){
             /* Rebuild the infix headers and revert the infix pointers. */
@@ -301,6 +309,9 @@ static void do_compaction (void)
                 * (word *) q = (word) Val_hp ((word *) newadr + (infixes - p));
                 q = next;
               }                    Assert (Ecolor (q) == 1 || Ecolor (q) == 3);
+              /* No need to preserve any profinfo value on the [Infix_tag]
+                 headers; the Spacetime profiling heap snapshot code doesn't
+                 look at them. */
               *infixes = Make_header (infixes - p, Infix_tag, Caml_white);
               infixes = (word *) q;
             }

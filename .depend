@@ -891,9 +891,9 @@ asmcomp/compilenv.cmi : utils/timings.cmi middle_end/base_types/symbol.cmi \
     middle_end/base_types/compilation_unit.cmi asmcomp/cmx_format.cmi \
     middle_end/base_types/closure_id.cmi asmcomp/clambda.cmi
 asmcomp/deadcode.cmo : asmcomp/reg.cmi asmcomp/proc.cmi asmcomp/mach.cmi \
-    asmcomp/deadcode.cmi
+    utils/config.cmi asmcomp/deadcode.cmi
 asmcomp/deadcode.cmx : asmcomp/reg.cmx asmcomp/proc.cmx asmcomp/mach.cmx \
-    asmcomp/deadcode.cmi
+    utils/config.cmx asmcomp/deadcode.cmi
 asmcomp/deadcode.cmi : asmcomp/mach.cmi
 asmcomp/emit.cmo : asmcomp/x86_proc.cmi asmcomp/x86_masm.cmi \
     asmcomp/x86_gas.cmi asmcomp/x86_dsl.cmi asmcomp/x86_ast.cmi \
@@ -1007,18 +1007,18 @@ asmcomp/interf.cmx : asmcomp/reg.cmx asmcomp/proc.cmx asmcomp/mach.cmx \
     asmcomp/interf.cmi
 asmcomp/interf.cmi : asmcomp/mach.cmi
 asmcomp/linearize.cmo : asmcomp/reg.cmi asmcomp/proc.cmi utils/misc.cmi \
-    asmcomp/mach.cmi middle_end/debuginfo.cmi asmcomp/cmm.cmi \
-    asmcomp/linearize.cmi
+    asmcomp/mach.cmi middle_end/debuginfo.cmi utils/config.cmi \
+    asmcomp/cmm.cmi asmcomp/linearize.cmi
 asmcomp/linearize.cmx : asmcomp/reg.cmx asmcomp/proc.cmx utils/misc.cmx \
-    asmcomp/mach.cmx middle_end/debuginfo.cmx asmcomp/cmm.cmx \
-    asmcomp/linearize.cmi
+    asmcomp/mach.cmx middle_end/debuginfo.cmx utils/config.cmx \
+    asmcomp/cmm.cmx asmcomp/linearize.cmi
 asmcomp/linearize.cmi : asmcomp/reg.cmi asmcomp/mach.cmi \
     middle_end/debuginfo.cmi asmcomp/cmm.cmi
 asmcomp/liveness.cmo : asmcomp/reg.cmi asmcomp/proc.cmi \
-    asmcomp/printmach.cmi utils/misc.cmi asmcomp/mach.cmi \
+    asmcomp/printmach.cmi utils/misc.cmi asmcomp/mach.cmi utils/config.cmi \
     asmcomp/liveness.cmi
 asmcomp/liveness.cmx : asmcomp/reg.cmx asmcomp/proc.cmx \
-    asmcomp/printmach.cmx utils/misc.cmx asmcomp/mach.cmx \
+    asmcomp/printmach.cmx utils/misc.cmx asmcomp/mach.cmx utils/config.cmx \
     asmcomp/liveness.cmi
 asmcomp/liveness.cmi : asmcomp/mach.cmi
 asmcomp/mach.cmo : asmcomp/reg.cmi middle_end/debuginfo.cmi asmcomp/cmm.cmi \
@@ -1048,10 +1048,10 @@ asmcomp/printlinear.cmx : asmcomp/printmach.cmx asmcomp/printcmm.cmx \
 asmcomp/printlinear.cmi : asmcomp/linearize.cmi
 asmcomp/printmach.cmo : asmcomp/reg.cmi asmcomp/proc.cmi \
     asmcomp/printcmm.cmi asmcomp/mach.cmi middle_end/debuginfo.cmi \
-    asmcomp/cmm.cmi asmcomp/arch.cmo asmcomp/printmach.cmi
+    utils/config.cmi asmcomp/cmm.cmi asmcomp/arch.cmo asmcomp/printmach.cmi
 asmcomp/printmach.cmx : asmcomp/reg.cmx asmcomp/proc.cmx \
     asmcomp/printcmm.cmx asmcomp/mach.cmx middle_end/debuginfo.cmx \
-    asmcomp/cmm.cmx asmcomp/arch.cmx asmcomp/printmach.cmi
+    utils/config.cmx asmcomp/cmm.cmx asmcomp/arch.cmx asmcomp/printmach.cmi
 asmcomp/printmach.cmi : asmcomp/reg.cmi asmcomp/mach.cmi
 asmcomp/proc.cmo : asmcomp/x86_proc.cmi asmcomp/reg.cmi utils/misc.cmi \
     asmcomp/mach.cmi utils/config.cmi asmcomp/cmm.cmi asmcomp/arch.cmo \
@@ -1085,22 +1085,31 @@ asmcomp/scheduling.cmx : asmcomp/schedgen.cmx asmcomp/scheduling.cmi
 asmcomp/scheduling.cmi : asmcomp/linearize.cmi
 asmcomp/selectgen.cmo : utils/tbl.cmi bytecomp/simplif.cmi asmcomp/reg.cmi \
     asmcomp/proc.cmi utils/misc.cmi asmcomp/mach.cmi bytecomp/lambda.cmi \
-    typing/ident.cmi middle_end/debuginfo.cmi asmcomp/cmm.cmi \
-    asmcomp/arch.cmo asmcomp/selectgen.cmi
+    typing/ident.cmi middle_end/debuginfo.cmi utils/config.cmi \
+    asmcomp/cmm.cmi asmcomp/arch.cmo asmcomp/selectgen.cmi
 asmcomp/selectgen.cmx : utils/tbl.cmx bytecomp/simplif.cmx asmcomp/reg.cmx \
     asmcomp/proc.cmx utils/misc.cmx asmcomp/mach.cmx bytecomp/lambda.cmx \
-    typing/ident.cmx middle_end/debuginfo.cmx asmcomp/cmm.cmx \
-    asmcomp/arch.cmx asmcomp/selectgen.cmi
+    typing/ident.cmx middle_end/debuginfo.cmx utils/config.cmx \
+    asmcomp/cmm.cmx asmcomp/arch.cmx asmcomp/selectgen.cmi
 asmcomp/selectgen.cmi : utils/tbl.cmi asmcomp/reg.cmi asmcomp/mach.cmi \
     typing/ident.cmi middle_end/debuginfo.cmi asmcomp/cmm.cmi \
     asmcomp/arch.cmo
-asmcomp/selection.cmo : asmcomp/selectgen.cmi asmcomp/proc.cmi \
-    asmcomp/mach.cmi asmcomp/cmm.cmi utils/clflags.cmi asmcomp/arch.cmo \
-    asmcomp/selection.cmi
-asmcomp/selection.cmx : asmcomp/selectgen.cmx asmcomp/proc.cmx \
-    asmcomp/mach.cmx asmcomp/cmm.cmx utils/clflags.cmx asmcomp/arch.cmx \
-    asmcomp/selection.cmi
+asmcomp/selection.cmo : asmcomp/spacetime_profiling.cmi asmcomp/proc.cmi \
+    asmcomp/mach.cmi utils/config.cmi asmcomp/cmm.cmi utils/clflags.cmi \
+    asmcomp/arch.cmo asmcomp/selection.cmi
+asmcomp/selection.cmx : asmcomp/spacetime_profiling.cmx asmcomp/proc.cmx \
+    asmcomp/mach.cmx utils/config.cmx asmcomp/cmm.cmx utils/clflags.cmx \
+    asmcomp/arch.cmx asmcomp/selection.cmi
 asmcomp/selection.cmi : asmcomp/mach.cmi asmcomp/cmm.cmi
+asmcomp/spacetime_profiling.cmo : utils/tbl.cmi asmcomp/selectgen.cmi \
+    asmcomp/proc.cmi utils/misc.cmi asmcomp/mach.cmi bytecomp/lambda.cmi \
+    typing/ident.cmi middle_end/debuginfo.cmi utils/config.cmi \
+    asmcomp/cmm.cmi asmcomp/arch.cmo asmcomp/spacetime_profiling.cmi
+asmcomp/spacetime_profiling.cmx : utils/tbl.cmx asmcomp/selectgen.cmx \
+    asmcomp/proc.cmx utils/misc.cmx asmcomp/mach.cmx bytecomp/lambda.cmx \
+    typing/ident.cmx middle_end/debuginfo.cmx utils/config.cmx \
+    asmcomp/cmm.cmx asmcomp/arch.cmx asmcomp/spacetime_profiling.cmi
+asmcomp/spacetime_profiling.cmi : asmcomp/selectgen.cmi
 asmcomp/spill.cmo : asmcomp/reg.cmi asmcomp/proc.cmi utils/misc.cmi \
     asmcomp/mach.cmi asmcomp/spill.cmi
 asmcomp/spill.cmx : asmcomp/reg.cmx asmcomp/proc.cmx utils/misc.cmx \

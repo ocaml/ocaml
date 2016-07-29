@@ -22,7 +22,12 @@ open Mach
    and a set of registers live "before" instruction [i]. *)
 
 let rec deadcode i =
-  let arg = i.arg in
+  let arg =
+    if Config.spacetime
+      && Mach.spacetime_node_hole_pointer_is_live_before i
+    then Array.append i.arg [| Proc.loc_spacetime_node_hole |]
+    else i.arg
+  in
   match i.desc with
   | Iend | Ireturn | Iop(Itailcall_ind _) | Iop(Itailcall_imm _) | Iraise _ ->
       (i, Reg.add_set_array i.live arg)

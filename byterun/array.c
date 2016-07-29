@@ -23,6 +23,7 @@
 #include "caml/misc.h"
 #include "caml/mlvalues.h"
 #include "caml/signals.h"
+#include "spacetime.h"
 
 /* returns number of elements (either fields or floats) */
 CAMLexport mlsize_t caml_array_length(value array)
@@ -163,6 +164,7 @@ CAMLprim value caml_make_float_vect(value len)
 }
 
 /* [len] is a [value] representing number of words or floats */
+/* Spacetime profiling assumes that this function is only called from OCaml. */
 CAMLprim value caml_make_vect(value len, value init)
 {
   CAMLparam2 (len, init);
@@ -187,7 +189,9 @@ CAMLprim value caml_make_vect(value len, value init)
   } else {
     if (size > Max_wosize) caml_invalid_argument("Array.make");
     if (size <= Max_young_wosize) {
-      res = caml_alloc_small(size, 0);
+      uintnat profinfo;
+      Get_my_profinfo_with_cached_backtrace(profinfo, size);
+      res = caml_alloc_small_with_my_or_given_profinfo(size, 0, profinfo);
       for (i = 0; i < size; i++) Field(res, i) = init;
     }
     else if (Is_block(init) && Is_young(init)) {

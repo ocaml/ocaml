@@ -139,5 +139,15 @@ val print_config : out_channel -> unit;;
 val flambda : bool
         (* Whether the compiler was configured for flambda *)
 
+val spacetime : bool
+        (* Whether the compiler was configured for Spacetime profiling *)
+val profinfo_width : int
+        (* How many bits are to be used in values' headers for profiling
+           information *)
+val libunwind_available : bool
+        (* Whether the libunwind library is available on the target *)
+val libunwind_link_flags : string
+        (* Linker flags to use libunwind *)
+
 val safe_string: bool
         (* Whether the compiler was configured with -safe-string *)
