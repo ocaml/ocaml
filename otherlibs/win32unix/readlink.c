@@ -26,18 +26,22 @@ CAMLprim value unix_readlink(value opath)
   CAMLparam1(opath);
   CAMLlocal1(result);
   HANDLE h;
-  char* path = String_val(opath);
+  char* path;
   DWORD attributes;
+  caml_unix_check_path(opath, "readlink");
+  path = caml_strdup(String_val(opath));
 
   caml_enter_blocking_section();
   attributes = GetFileAttributes(path);
   caml_leave_blocking_section();
 
   if (attributes == INVALID_FILE_ATTRIBUTES) {
+    caml_stat_free(path);
     win32_maperr(GetLastError());
     uerror("readlink", opath);
   }
   else if (!(attributes & FILE_ATTRIBUTE_REPARSE_POINT)) {
+    caml_stat_free(path);
     errno = EINVAL;
     uerror("readlink", opath);
   }
@@ -51,6 +55,7 @@ CAMLprim value unix_readlink(value opath)
                         FILE_FLAG_BACKUP_SEMANTICS | FILE_FLAG_OPEN_REPARSE_POINT,
                         NULL)) == INVALID_HANDLE_VALUE) {
       caml_leave_blocking_section();
+      caml_stat_free(path);
       errno = ENOENT;
       uerror("readlink", opath);
     }
@@ -58,6 +63,8 @@ CAMLprim value unix_readlink(value opath)
       char buffer[16384];
       DWORD read;
       REPARSE_DATA_BUFFER* point;
+
+      caml_stat_free(path);
 
       if (DeviceIoControl(h, FSCTL_GET_REPARSE_POINT, NULL, 0, buffer, 16384, &read, NULL)) {
         caml_leave_blocking_section();

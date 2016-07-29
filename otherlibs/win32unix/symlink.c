@@ -29,11 +29,15 @@ typedef BOOLEAN (WINAPI *LPFN_CREATESYMBOLICLINK) (LPTSTR, LPTSTR, DWORD);
 static LPFN_CREATESYMBOLICLINK pCreateSymbolicLink = NULL;
 static int no_symlink = 0;
 
-CAMLprim value unix_symlink(value to_dir, value source, value dest)
+CAMLprim value unix_symlink(value to_dir, value osource, value odest)
 {
-  CAMLparam3(to_dir, source, dest);
+  CAMLparam3(to_dir, osource, odest);
   DWORD flags = (Bool_val(to_dir) ? SYMBOLIC_LINK_FLAG_DIRECTORY : 0);
   BOOLEAN result;
+  LPTSTR source;
+  LPTSTR dest;
+  caml_unix_check_path(osource, "symlink");
+  caml_unix_check_path(odest, "symlink");
 
 again:
   if (no_symlink) {
@@ -46,13 +50,20 @@ again:
     goto again;
   }
 
+  /* Copy source and dest outside the OCaml heap */
+  source = caml_strdup(String_val(osource));
+  dest = caml_strdup(String_val(odest));
+
   caml_enter_blocking_section();
-  result = pCreateSymbolicLink(String_val(dest), String_val(source), flags);
+  result = pCreateSymbolicLink(dest, source, flags);
   caml_leave_blocking_section();
+
+  caml_stat_free(source);
+  caml_stat_free(dest);
 
   if (!result) {
     win32_maperr(GetLastError());
-    uerror("symlink", dest);
+    uerror("symlink", odest);
   }
 
   CAMLreturn(Val_unit);
@@ -76,7 +87,7 @@ CAMLprim value unix_has_symlink(value unit)
 
       if (!GetTokenInformation(hProcess, TokenPrivileges, NULL, 0, &length)) {
         if (GetLastError() == ERROR_INSUFFICIENT_BUFFER) {
-          TOKEN_PRIVILEGES* privileges = (TOKEN_PRIVILEGES*)malloc(length);
+          TOKEN_PRIVILEGES* privileges = (TOKEN_PRIVILEGES*)caml_stat_alloc(length);
           if (GetTokenInformation(hProcess,
                                   TokenPrivileges,
                                   privileges,
@@ -91,7 +102,7 @@ CAMLprim value unix_has_symlink(value unit)
             }
           }
 
-          free(privileges);
+          caml_stat_free(privileges);
         }
       }
     }

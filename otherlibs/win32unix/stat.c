@@ -138,7 +138,8 @@ static int convert_time(FILETIME* time, __time64_t* result, __time64_t def)
   return 1;
 }
 
-static int do_stat(int do_lstat, int use_64, char* path, mlsize_t l, HANDLE fstat, __int64* st_ino, struct _stat64* res)
+/* path allocated outside the OCaml heap */
+static int safe_do_stat(int do_lstat, int use_64, char* path, mlsize_t l, HANDLE fstat, __int64* st_ino, struct _stat64* res)
 {
   BY_HANDLE_FILE_INFORMATION info;
   int i;
@@ -295,6 +296,16 @@ static int do_stat(int do_lstat, int use_64, char* path, mlsize_t l, HANDLE fsta
   return 1;
 }
 
+static int do_stat(int do_lstat, int use_64, char* opath, mlsize_t l, HANDLE fstat, __int64* st_ino, struct _stat64* res)
+{
+  char* path;
+  int ret;
+  path = caml_strdup(opath);
+  ret = safe_do_stat(do_lstat, use_64, path, l, fstat, st_ino, res);
+  caml_stat_free(path);
+  return ret;
+}
+
 CAMLprim value unix_stat(value path)
 {
   struct _stat64 buf;
@@ -323,6 +334,8 @@ CAMLprim value unix_lstat(value path)
 {
   struct _stat64 buf;
   __int64 st_ino;
+
+  caml_unix_check_path(path, "lstat");
   if (!do_stat(1, 0, String_val(path), caml_string_length(path), NULL, &st_ino, &buf)) {
     uerror("lstat", path);
   }
@@ -333,6 +346,8 @@ CAMLprim value unix_lstat_64(value path)
 {
   struct _stat64 buf;
   __int64 st_ino;
+
+  caml_unix_check_path(path, "lstat");
   if (!do_stat(1, 1, String_val(path), caml_string_length(path), NULL, &st_ino, &buf)) {
     uerror("lstat", path);
   }
