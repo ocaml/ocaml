@@ -409,3 +409,6 @@ val check_approx_for_float : t -> float option
 
 (** Returns the value if it can be proved to be a constant float array *)
 val float_array_as_constant : value_float_array -> float list option
+
+(** Returns the value if it can be proved to be a constant string *)
+val check_approx_for_string : t -> string option

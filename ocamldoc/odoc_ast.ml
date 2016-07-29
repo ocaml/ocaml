@@ -1302,10 +1302,7 @@ module Analyser =
                       match tt_ext.ext_kind with
                           Text_decl(args, ret_type) ->
                           let xt_args =
-                            match args with
-                            | Cstr_tuple l -> Cstr_tuple (List.map (fun ctyp -> Odoc_env.subst_type new_env ctyp.ctyp_type) l)
-                            | Cstr_record _ -> assert false
-                          in
+                            Sig.get_cstr_args new_env ext_loc_end args in
                             {
                               xt_name = complete_name;
                               xt_args;
@@ -1363,10 +1360,7 @@ module Analyser =
                 let loc_start = loc.Location.loc_start.Lexing.pos_cnum in
                 let loc_end =  loc.Location.loc_end.Lexing.pos_cnum in
                 let ex_args =
-                  match tt_args with
-                  | Cstr_tuple l -> Cstr_tuple (List.map (fun c -> Odoc_env.subst_type env c.ctyp_type) l)
-                  | Cstr_record _ -> assert false (* TODO *)
-                in
+                  Sig.get_cstr_args env loc_end tt_args in
                 {
                   ex_name = complete_name ;
                   ex_info = comment_opt ;

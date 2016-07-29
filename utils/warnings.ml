@@ -154,7 +154,7 @@ let number = function
   | Unboxable_type_in_prim_decl _ -> 61
 ;;
 
-let last_warning_number = 60
+let last_warning_number = 61
 ;;
 
 (* Must be the max number returned by the [number] function. *)

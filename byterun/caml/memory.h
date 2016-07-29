@@ -221,6 +221,7 @@ CAMLextern struct caml__roots_block *caml_local_roots;  /* defined in roots.c */
 #define CAMLxparam1(x) \
   struct caml__roots_block caml__roots_##x; \
   CAMLunused_start int caml__dummy_##x = ( \
+    (void) caml__frame, \
     (caml__roots_##x.next = caml_local_roots), \
     (caml_local_roots = &caml__roots_##x), \
     (caml__roots_##x.nitems = 1), \
@@ -232,6 +233,7 @@ CAMLextern struct caml__roots_block *caml_local_roots;  /* defined in roots.c */
 #define CAMLxparam2(x, y) \
   struct caml__roots_block caml__roots_##x; \
   CAMLunused_start int caml__dummy_##x = ( \
+    (void) caml__frame, \
     (caml__roots_##x.next = caml_local_roots), \
     (caml_local_roots = &caml__roots_##x), \
     (caml__roots_##x.nitems = 1), \
@@ -244,6 +246,7 @@ CAMLextern struct caml__roots_block *caml_local_roots;  /* defined in roots.c */
 #define CAMLxparam3(x, y, z) \
   struct caml__roots_block caml__roots_##x; \
   CAMLunused_start int caml__dummy_##x = ( \
+    (void) caml__frame, \
     (caml__roots_##x.next = caml_local_roots), \
     (caml_local_roots = &caml__roots_##x), \
     (caml__roots_##x.nitems = 1), \
@@ -257,6 +260,7 @@ CAMLextern struct caml__roots_block *caml_local_roots;  /* defined in roots.c */
 #define CAMLxparam4(x, y, z, t) \
   struct caml__roots_block caml__roots_##x; \
   CAMLunused_start int caml__dummy_##x = ( \
+    (void) caml__frame, \
     (caml__roots_##x.next = caml_local_roots), \
     (caml_local_roots = &caml__roots_##x), \
     (caml__roots_##x.nitems = 1), \
@@ -271,6 +275,7 @@ CAMLextern struct caml__roots_block *caml_local_roots;  /* defined in roots.c */
 #define CAMLxparam5(x, y, z, t, u) \
   struct caml__roots_block caml__roots_##x; \
   CAMLunused_start int caml__dummy_##x = ( \
+    (void) caml__frame, \
     (caml__roots_##x.next = caml_local_roots), \
     (caml_local_roots = &caml__roots_##x), \
     (caml__roots_##x.nitems = 1), \
@@ -286,6 +291,7 @@ CAMLextern struct caml__roots_block *caml_local_roots;  /* defined in roots.c */
 #define CAMLxparamN(x, size) \
   struct caml__roots_block caml__roots_##x; \
   CAMLunused_start int caml__dummy_##x = (     \
+    (void) caml__frame, \
     (caml__roots_##x.next = caml_local_roots), \
     (caml_local_roots = &caml__roots_##x), \
     (caml__roots_##x.nitems = (size)), \

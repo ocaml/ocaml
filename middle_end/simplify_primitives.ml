@@ -71,6 +71,8 @@ let primitive (p : Lambda.primitive) (args, approxs) expr dbg ~size_int
       expr, approx, C.Benefit.zero
   | Pintcomp Ceq when phys_equal approxs ->
     S.const_bool_expr expr true
+  | Pintcomp Cneq when phys_equal approxs ->
+    S.const_bool_expr expr false
     (* N.B. Having [not (phys_equal approxs)] would not on its own tell us
        anything about whether the two values concerned are unequal.  To judge
        that, it would be necessary to prove that the approximations are
@@ -124,7 +126,11 @@ let primitive (p : Lambda.primitive) (args, approxs) expr dbg ~size_int
       | Pasrint when shift_precond -> S.const_int_expr expr (x asr y)
       | Pintcomp cmp -> S.const_comparison_expr expr cmp x y
       | Pisout -> S.const_bool_expr expr (y > x || y < 0)
-      (* [Psequand] and [Psequor] have special simplification rules, above. *)
+      | _ -> expr, A.value_unknown Other, C.Benefit.zero
+      end
+    | [Value_char x; Value_char y] ->
+      begin match p with
+      | Pintcomp cmp -> S.const_comparison_expr expr cmp x y
       | _ -> expr, A.value_unknown Other, C.Benefit.zero
       end
     | [Value_constptr x] ->
@@ -196,7 +202,8 @@ let primitive (p : Lambda.primitive) (args, approxs) expr dbg ~size_int
        (Value_int x | Value_constptr x)] when x >= 0 && x < size ->
         begin match p with
         | Pstringrefu
-        | Pstringrefs -> S.const_char_expr expr s.[x]
+        | Pstringrefs ->
+          S.const_char_expr (Prim(Pstringrefu, args, dbg)) s.[x]
         | _ -> expr, A.value_unknown Other, C.Benefit.zero
         end
     | [Value_string { size; contents = None };

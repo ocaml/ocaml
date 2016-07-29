@@ -320,11 +320,19 @@ let validate d m p =
   ucompare2 twoszp md < 0 && ucompare2 md (add2 twoszp twop1) <= 0
 *)
 
+let raise_regular dbg exc =
+  Csequence(
+    Cop(Cstore (Thirtytwo_signed, Assignment),
+        [(Cconst_symbol "caml_backtrace_pos"); Cconst_int 0]),
+      Cop(Craise (Raise_withtrace, dbg),[exc]))
+
+let raise_symbol dbg symb =
+  raise_regular dbg (Cconst_symbol symb)
+
 let rec div_int c1 c2 dbg =
   match (c1, c2) with
     (c1, Cconst_int 0) ->
-      Csequence(c1, Cop(Craise (Raise_regular, dbg),
-                        [Cconst_symbol "caml_exn_Division_by_zero"]))
+      Csequence(c1, raise_symbol dbg "caml_exn_Division_by_zero")
   | (c1, Cconst_int 1) ->
       c1
   | (Cconst_int 0 as c1, c2) ->
@@ -367,14 +375,12 @@ let rec div_int c1 c2 dbg =
       bind "divisor" c2 (fun c2 ->
         Cifthenelse(c2,
                     Cop(Cdivi, [c1; c2]),
-                    Cop(Craise (Raise_regular, dbg),
-                        [Cconst_symbol "caml_exn_Division_by_zero"])))
+                    raise_symbol dbg "caml_exn_Division_by_zero"))
 
 let mod_int c1 c2 dbg =
   match (c1, c2) with
     (c1, Cconst_int 0) ->
-      Csequence(c1, Cop(Craise (Raise_regular, dbg),
-                        [Cconst_symbol "caml_exn_Division_by_zero"]))
+      Csequence(c1, raise_symbol dbg "caml_exn_Division_by_zero")
   | (c1, Cconst_int (1 | (-1))) ->
       Csequence(c1, Cconst_int 0)
   | (Cconst_int 0, c2) ->
@@ -406,8 +412,7 @@ let mod_int c1 c2 dbg =
       bind "divisor" c2 (fun c2 ->
         Cifthenelse(c2,
                     Cop(Cmodi, [c1; c2]),
-                    Cop(Craise (Raise_regular, dbg),
-                        [Cconst_symbol "caml_exn_Division_by_zero"])))
+                    raise_symbol dbg "caml_exn_Division_by_zero"))
 
 (* Division or modulo on boxed integers.  The overflow case min_int / -1
    can occur, in which case we force x / -1 = -x and x mod -1 = 0. (PR#5513). *)
@@ -1784,8 +1789,14 @@ and transl_prim_1 env p arg dbg =
      Cop(Caddi, [transl env arg; Cconst_int (-1)])
      (* always a pointer outside the heap *)
   (* Exceptions *)
-  | Praise k ->
-      Cop(Craise (k, dbg), [transl env arg])
+  | Praise _ when not (!Clflags.debug) ->
+      Cop(Craise (Cmm.Raise_notrace, dbg), [transl env arg])
+  | Praise Lambda.Raise_notrace ->
+      Cop(Craise (Cmm.Raise_notrace, dbg), [transl env arg])
+  | Praise Lambda.Raise_reraise ->
+      Cop(Craise (Cmm.Raise_withtrace, dbg), [transl env arg])
+  | Praise Lambda.Raise_regular ->
+      raise_regular dbg (transl env arg)
   (* Integer operations *)
   | Pnegint ->
       Cop(Csubi, [Cconst_int 2; transl env arg])
@@ -2529,7 +2540,7 @@ let rec transl_all_functions already_translated cont =
     else begin
       transl_all_functions
         (StringSet.add f.label already_translated)
-        (transl_function f :: cont)
+        ((f.dbg, transl_function f) :: cont)
     end
   with Queue.Empty ->
     cont, already_translated
@@ -2681,16 +2692,27 @@ let emit_all_constants cont =
   emit_constants cont constants
 
 let transl_all_functions_and_emit_all_constants cont =
-  let rec aux already_translated cont =
+  let rec aux already_translated cont translated_functions =
     if Compilenv.structured_constants () = [] &&
        Queue.is_empty functions
-    then cont
+    then cont, translated_functions
     else
-      let cont, already_translated = transl_all_functions already_translated cont in
+      let translated_functions, already_translated =
+        transl_all_functions already_translated translated_functions
+      in
       let cont = emit_all_constants cont in
-      aux already_translated cont
+      aux already_translated cont translated_functions
   in
-  aux StringSet.empty cont
+  let cont, translated_functions =
+    aux StringSet.empty cont []
+  in
+  let translated_functions =
+    (* Sort functions according to source position *)
+    List.map snd
+      (List.sort (fun (dbg1, _) (dbg2, _) ->
+           Debuginfo.compare dbg1 dbg2) translated_functions)
+  in
+  translated_functions @ cont
 
 (* Build the NULL terminated array of gc roots *)
 

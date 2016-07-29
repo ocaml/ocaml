@@ -33,10 +33,11 @@ default:
 	fi
 
 .PHONY: run
-run: *.mli
-	@for file in *.mli; do \
+run: *.ml *.mli
+	@for file in *.mli *.ml; do \
 	  printf " ... testing '$$file'"; \
 	  F="`basename $$file .mli`"; \
+	  F="`basename $$F .ml`"; \
 	  $(OCAMLDOC) $(DOCFLAGS) -hide-warnings -latex $ \
 	              -o $$F.result $$file; \
 	  $(DIFF) $$F.reference $$F.result >/dev/null \

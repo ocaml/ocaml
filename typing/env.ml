@@ -324,8 +324,8 @@ let check_modtype_inclusion =
           t -> module_type -> Path.t -> module_type -> unit)
 let strengthen =
   (* to be filled with Mtype.strengthen *)
-  ref ((fun _env _mty _path -> assert false) :
-         t -> module_type -> Path.t -> module_type)
+  ref ((fun ~aliasable:_ _env _mty _path -> assert false) :
+         aliasable:bool -> t -> module_type -> Path.t -> module_type)
 
 let md md_type =
   {md_type; md_attributes=[]; md_loc=Location.none}
@@ -725,7 +725,7 @@ let rec normalize_path lax env path =
     | _ -> path
   in
   try match find_module ~alias:true path env with
-    {md_type=Mty_alias path1} ->
+    {md_type=Mty_alias(_, path1)} ->
       let path' = normalize_path lax env path1 in
       if lax || !Clflags.transparent_modules then path' else
       let id = Path.head path in
@@ -1147,10 +1147,10 @@ let iter_env_cont = ref []
 
 let rec scrape_alias_for_visit env mty =
   match mty with
-  | Mty_alias (Pident id)
+  | Mty_alias(_, Pident id)
     when Ident.persistent id
       && not (Hashtbl.mem persistent_structures (Ident.name id)) -> false
-  | Mty_alias path -> (* PR#6600: find_module may raise Not_found *)
+  | Mty_alias(_, path) -> (* PR#6600: find_module may raise Not_found *)
       begin try scrape_alias_for_visit env (find_module path env).md_type
       with Not_found -> false
       end
@@ -1298,7 +1298,7 @@ let rec scrape_alias env ?path mty =
       with Not_found ->
         mty
       end
-  | Mty_alias path, _ ->
+  | Mty_alias(_, path), _ ->
       begin try
         scrape_alias env (find_module path env).md_type ~path
       with Not_found ->
@@ -1307,7 +1307,7 @@ let rec scrape_alias env ?path mty =
         mty
       end
   | mty, Some path ->
-      !strengthen env mty path
+      !strengthen ~aliasable:true env mty path
   | _ -> mty
 
 let scrape_alias env mty = scrape_alias env mty
