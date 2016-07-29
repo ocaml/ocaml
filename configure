@@ -62,7 +62,6 @@ safe_string=false
 max_testsuite_dir_retries=0
 with_cplugins=true
 with_fpic=false
-patch_flags=
 
 # Try to turn internationalization off, can cause config.guess to malfunction!
 unset LANG
@@ -1991,22 +1990,11 @@ fi
 echo "FLAMBDA=$flambda" >> Makefile
 echo "SAFE_STRING=$safe_string" >> Makefile
 echo "MAX_TESTSUITE_DIR_RETRIES=$max_testsuite_dir_retries" >> Makefile
-echo "PATCH_FLAGS=$patch_flags" >> Makefile
 
 
 rm -f tst hasgot.c
 rm -f ../m.h ../s.h ../Makefile
 mv m.h s.h Makefile ..
-
-# Apply any patches
-pwd
-cd ../..
-for i in `find patches -regex "patches/[a-z0-9+#/-]+\.patch" -printf "%f\n" | sed -e "s/\.patch$//" | sort` ; do
-  if [ ! -e patches/$i.patched ] ; then
-    echo "** Applying patches/$i.patch"
-    patch -p1 $patch_flags -Ni patches/$i.patch && touch patches/$i.patched && touch patches/$i.reverse
-  fi
-done
 
 # Print a summary
 

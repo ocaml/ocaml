@@ -216,10 +216,7 @@
 /parsing/parser.automaton
 /parsing/parser.conflicts
 
-/patches/*.reverse
 /patches/*.patched
-# Prevent patches being accidentally checked in!
-/patches/*.patch
 
 /stdlib/camlheader
 /stdlib/target_camlheader
