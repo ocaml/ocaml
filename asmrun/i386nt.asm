@@ -208,8 +208,6 @@ _caml_raise_exn:
         pop     _caml_exception_pointer
         ret
 L110:
-        mov     _caml_backtrace_pos, 0
-L111:
         mov     esi, eax                ; Save exception bucket in esi
         mov     edi, _caml_exception_pointer ; SP of handler
         mov     eax, [esp]              ; PC of raise
