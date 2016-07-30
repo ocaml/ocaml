@@ -223,7 +223,7 @@ let default_float_precision = -6
 
 (******************************************************************************)
                                (* Externals *)
-
+[@@@ocaml.warning "-62"]
 external format_float: string -> float -> string
   = "caml_format_float"
 external format_int: string -> int -> string
