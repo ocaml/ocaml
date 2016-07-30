@@ -18,6 +18,7 @@ type pers_flags =
   | Deprecated of string
   | Opaque
   | Unsafe_string
+  | Unsafe of string
 
 type cmi_infos = {
     cmi_name : string;

@@ -25,6 +25,7 @@
    ocaml.deprecated_mutable
    ocaml.immediate
    ocaml.boxed / ocaml.unboxed
+   ocaml.unsafe
 *)
 
 
@@ -32,6 +33,15 @@ val check_deprecated: Location.t -> Parsetree.attributes -> string -> unit
 val deprecated_of_attrs: Parsetree.attributes -> string option
 val deprecated_of_sig: Parsetree.signature -> string option
 val deprecated_of_str: Parsetree.structure -> string option
+
+val unsafe_of_attrs: Parsetree.attributes -> string option
+val unsafe_of_sig: Parsetree.signature -> string option
+val unsafe_of_str: Parsetree.structure -> string option
+
+val check_unsafe: Location.t -> Parsetree.attributes -> string -> unit
+
+(* Equivalent to check_deprecated and check_unsafe *)
+val check_attr: Location.t -> Parsetree.attributes -> string -> unit
 
 val check_deprecated_mutable:
     Location.t -> Parsetree.attributes -> string -> unit

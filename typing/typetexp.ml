@@ -130,7 +130,7 @@ let find_type env loc lid =
       env loc lid
   in
   let decl = Env.find_type path env in
-  Builtin_attributes.check_deprecated loc decl.type_attributes (Path.name path);
+  Builtin_attributes.check_attr loc decl.type_attributes (Path.name path);
   (path, decl)
 
 let find_constructor =
@@ -147,7 +147,7 @@ let find_class env loc lid =
   let (path, decl) as r =
     find_component Env.lookup_class (fun lid -> Unbound_class lid) env loc lid
   in
-  Builtin_attributes.check_deprecated loc decl.cty_attributes (Path.name path);
+  Builtin_attributes.check_attr loc decl.cty_attributes (Path.name path);
   r
 
 let find_value env loc lid =
@@ -155,7 +155,7 @@ let find_value env loc lid =
   let (path, decl) as r =
     find_component Env.lookup_value (fun lid -> Unbound_value lid) env loc lid
   in
-  Builtin_attributes.check_deprecated loc decl.val_attributes (Path.name path);
+  Builtin_attributes.check_attr loc decl.val_attributes (Path.name path);
   r
 
 let lookup_module ?(load=false) env loc lid =
@@ -173,7 +173,7 @@ let find_modtype env loc lid =
     find_component Env.lookup_modtype (fun lid -> Unbound_modtype lid)
       env loc lid
   in
-  Builtin_attributes.check_deprecated loc decl.mtd_attributes (Path.name path);
+  Builtin_attributes.check_attr loc decl.mtd_attributes (Path.name path);
   r
 
 let find_class_type env loc lid =
@@ -181,7 +181,7 @@ let find_class_type env loc lid =
     find_component Env.lookup_cltype (fun lid -> Unbound_cltype lid)
       env loc lid
   in
-  Builtin_attributes.check_deprecated loc decl.clty_attributes (Path.name path);
+  Builtin_attributes.check_attr loc decl.clty_attributes (Path.name path);
   r
 
 let unbound_constructor_error env lid =

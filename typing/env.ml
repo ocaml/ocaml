@@ -190,6 +190,7 @@ type t = {
 and module_components =
   {
     deprecated: string option;
+    unsafe:     string option;
     loc: Location.t;
     comps: (t * Subst.t * Path.t * Types.module_type, module_components_repr)
            EnvLazy.t;
@@ -308,8 +309,8 @@ let diff env1 env2 =
 (* Forward declarations *)
 
 let components_of_module' =
-  ref ((fun ~deprecated:_ ~loc:__env _sub _path _mty -> assert false) :
-         deprecated:string option -> loc:Location.t -> t -> Subst.t ->
+  ref ((fun ~deprecated:_ ~unsafe:_ ~loc:__env _sub _path _mty -> assert false) :
+         deprecated:string option -> unsafe:string option -> loc:Location.t -> t -> Subst.t ->
        Path.t -> module_type ->
        module_components)
 let components_of_module_maker' =
@@ -397,6 +398,7 @@ let save_pers_struct crc ps =
         | Rectypes -> ()
         | Deprecated _ -> ()
         | Unsafe_string -> ()
+        | Unsafe _ -> ()
         | Opaque -> add_imported_opaque modname)
     ps.ps_flags;
   Consistbl.set crc_units modname crc ps.ps_filename;
@@ -423,8 +425,12 @@ let acknowledge_pers_struct check modname
     List.fold_left (fun acc -> function Deprecated s -> Some s | _ -> acc) None
       flags
   in
+  let unsafe =
+    List.fold_left (fun acc -> function Unsafe s -> Some s | _ -> acc) None
+      flags
+  in
   let comps =
-      !components_of_module' ~deprecated ~loc:Location.none
+      !components_of_module' ~deprecated ~unsafe ~loc:Location.none
         empty Subst.identity
                              (Pident(Ident.create_persistent name))
                              (Mty_signature sign)
@@ -447,7 +453,7 @@ let acknowledge_pers_struct check modname
         | Unsafe_string ->
             if Config.safe_string then
               error (Depend_on_unsafe_string_unit (ps.ps_name, !current_unit));
-        | Deprecated _ -> ()
+        | Deprecated _ | Unsafe _ -> ()
         | Opaque -> add_imported_opaque modname)
     ps.ps_flags;
   if check then check_consistency ps;
@@ -822,6 +828,15 @@ let report_deprecated ?loc p deprecated =
                                 (Path.name p) txt))
   | _ -> ()
 
+let report_unsafe ?loc p unsafe =
+  match loc, unsafe with
+  | Some loc, Some txt ->
+      let txt = if txt = "" then "" else "\n" ^ txt in
+      Location.prerr_warning loc
+        (Warnings.Unsafe (Printf.sprintf "module %s%s"
+                                (Path.name p) txt))
+  | _ -> ()
+
 let mark_module_used env name loc =
   if not (is_implicit_coercion env) then
     try Hashtbl.find module_declarations (name, loc) ()
@@ -866,6 +881,7 @@ and lookup_module_descr ?loc lid env =
     Location.print comps.loc;
 *)
   report_deprecated ?loc p comps.deprecated;
+  report_unsafe     ?loc p comps.unsafe;
   res
 
 and lookup_module ~load ?loc lid env : Path.t =
@@ -884,6 +900,8 @@ and lookup_module ~load ?loc lid env : Path.t =
         end;
         report_deprecated ?loc p
           (Builtin_attributes.deprecated_of_attrs md_attributes);
+        report_unsafe ?loc p
+          (Builtin_attributes.unsafe_of_attrs md_attributes);
         p
       with Not_found ->
         if s = !current_unit then raise Not_found;
@@ -891,7 +909,8 @@ and lookup_module ~load ?loc lid env : Path.t =
         if !Clflags.transparent_modules && not load then check_pers_struct s
         else begin
           let ps = find_pers_struct s in
-          report_deprecated ?loc p ps.ps_comps.deprecated
+          report_deprecated ?loc p ps.ps_comps.deprecated;
+          report_unsafe     ?loc p ps.ps_comps.unsafe
         end;
         p
       end
@@ -903,6 +922,7 @@ and lookup_module ~load ?loc lid env : Path.t =
           let (comps, _) = Tbl.find s c.comp_components in
           let p = Pdot(p, s, pos) in
           report_deprecated ?loc p comps.deprecated;
+          report_unsafe     ?loc p comps.unsafe;
           p
       | Functor_comps _ ->
           raise Not_found
@@ -1412,9 +1432,10 @@ let add_to_tbl id decl tbl =
     try Tbl.find id tbl with Not_found -> [] in
   Tbl.add id (decl :: decls) tbl
 
-let rec components_of_module ~deprecated ~loc env sub path mty =
+let rec components_of_module ~deprecated ~unsafe ~loc env sub path mty =
   {
     deprecated;
+    unsafe;
     loc;
     comps = EnvLazy.create (env, sub, path, mty)
   }
@@ -1476,9 +1497,12 @@ and components_of_module_maker (env, sub, path, mty) =
             let deprecated =
               Builtin_attributes.deprecated_of_attrs md.md_attributes
             in
+	    let unsafe =
+	      Builtin_attributes.unsafe_of_attrs md.md_attributes
+	    in
             let comps =
-              components_of_module ~deprecated ~loc:md.md_loc !env sub path mty
-            in
+	      components_of_module ~deprecated ~unsafe ~loc:md.md_loc !env sub path mty
+	    in
             c.comp_components <-
               Tbl.add (Ident.name id) (comps, !pos) c.comp_components;
             env := store_module ~check:false None id (Pident id) md !env !env;
@@ -1648,12 +1672,13 @@ and store_module ~check slot id path md env renv =
       module_declarations;
 
   let deprecated = Builtin_attributes.deprecated_of_attrs md.md_attributes in
+  let unsafe = Builtin_attributes.unsafe_of_attrs md.md_attributes in
   { env with
     modules = EnvTbl.add slot (fun x -> `Module x) id (path, md)
         env.modules renv.modules;
     components =
       EnvTbl.add slot (fun x -> `Component x) id
-        (path, components_of_module ~deprecated ~loc:md.md_loc
+        (path, components_of_module ~deprecated ~unsafe ~loc:md.md_loc
            env Subst.identity path md.md_type)
         env.components renv.components;
     summary = Env_module(env.summary, id, md) }
@@ -1685,7 +1710,7 @@ let components_of_functor_appl f env p1 p2 =
     let p = Papply(p1, p2) in
     let sub = Subst.add_module f.fcomp_param p2 Subst.identity in
     let mty = Subst.modtype sub f.fcomp_res in
-    let comps = components_of_module ~deprecated:None ~loc:Location.none
+    let comps = components_of_module ~deprecated:None ~unsafe:None ~loc:Location.none
         (*???*)
         env Subst.identity p mty in
     Hashtbl.add f.fcomp_cache p2 comps;
@@ -1886,7 +1911,7 @@ let is_imported_opaque s =
 
 (* Save a signature to a file *)
 
-let save_signature_with_imports ~deprecated sg modname filename imports =
+let save_signature_with_imports ~deprecated ~unsafe sg modname filename imports =
   (*prerr_endline filename;
   List.iter (fun (name, crc) -> prerr_endline name) imports;*)
   Btype.cleanup_abbrev ();
@@ -1898,6 +1923,7 @@ let save_signature_with_imports ~deprecated sg modname filename imports =
       if !Clflags.opaque then [Cmi_format.Opaque] else [];
       (if !Clflags.unsafe_string then [Cmi_format.Unsafe_string] else []);
       (match deprecated with Some s -> [Deprecated s] | None -> []);
+      (match unsafe     with Some s -> [Unsafe     s] | None -> []);
     ]
   in
   let oc = open_out_bin filename in
@@ -1913,7 +1939,7 @@ let save_signature_with_imports ~deprecated sg modname filename imports =
     (* Enter signature in persistent table so that imported_unit()
        will also return its crc *)
     let comps =
-      components_of_module ~deprecated ~loc:Location.none
+      components_of_module ~deprecated ~unsafe ~loc:Location.none
         empty Subst.identity
         (Pident(Ident.create_persistent modname)) (Mty_signature sg) in
     let ps =
@@ -1931,8 +1957,8 @@ let save_signature_with_imports ~deprecated sg modname filename imports =
     remove_file filename;
     raise exn
 
-let save_signature ~deprecated sg modname filename =
-  save_signature_with_imports ~deprecated sg modname filename (imports())
+let save_signature ~deprecated ~unsafe sg modname filename =
+  save_signature_with_imports ~deprecated ~unsafe sg modname filename (imports())
 
 (* Folding on environments *)
 
