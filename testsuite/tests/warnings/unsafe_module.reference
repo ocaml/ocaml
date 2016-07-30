@@ -1,0 +1,4 @@
+File "unsafe_module.ml", line 8, characters 8-11:
+Warning 62: unsafe: module M
+File "unsafe_module.ml", line 9, characters 8-9:
+Warning 62: unsafe: module M
