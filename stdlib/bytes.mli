@@ -232,6 +232,22 @@ val rcontains_from : bytes -> int -> char -> bool
     Raise [Invalid_argument] if [stop < 0] or [stop+1] is not a valid
     position in [s]. *)
 
+val of_char : char -> bytes
+(** [of_char c] creates a byte sequence of length 1 containing the char [c] *)
+
+val split_at : int -> bytes -> (bytes * bytes)
+(** [split_at index s] returns a pair of the substring of [s] up to the index 
+    [i], and the substring from index [i] to the end of the string.
+
+    Raise [Invalid_argument] if [i] is not a valid position in [s]. *)
+
+val to_char_list : bytes -> char list
+(** [to_char_list s] returns a list of the characters in [s] *)
+
+val of_char_list : char list -> bytes
+(** [of_char_list c] returns a byte sequence comprised of the characters in [c] 
+    or an empty byte sequence if [c] is empty *)
+
 val uppercase : bytes -> bytes
   [@@ocaml.deprecated "Use Bytes.uppercase_ascii instead."]
 (** Return a copy of the argument, with all lowercase letters

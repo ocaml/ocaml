@@ -255,6 +255,26 @@ let rcontains_from s i c =
   else
     try ignore (rindex_rec s i c); true with Not_found -> false
 
+let of_char c = make 1 c
+
+let split_at i s =
+    if i < 0 || i >= length s then
+        invalid_arg "String.split_at / Bytes.split_at"
+    else
+        ((sub s 0 i), (sub s i ((length s) - i)))
+
+let rec to_char_list s =
+    match length s with
+    | 0 -> []
+    | 1 -> [(get s 0)]
+    | _ -> 
+        let (first, rest) = split_at 1 s in
+        (get first 0) :: to_char_list rest
+
+let rec of_char_list = function
+    | [] -> empty
+    | next::rest -> cat (of_char next) (of_char_list rest)
+
 
 type t = bytes
 
