@@ -288,8 +288,8 @@ installoptopt:
 	   $(BYTESTART:.cmo=.cmx) $(BYTESTART:.cmo=.o) \
 	   $(OPTSTART:.cmo=.cmx) $(OPTSTART:.cmo=.o) \
 	   $(INSTALL_COMPLIBDIR)
-	if test -f ocamlnat ; then \
-	  cp ocamlnat $(INSTALL_BINDIR)/ocamlnat$(EXE); \
+	if test -f ocamlnat$(EXE) ; then \
+	  cp ocamlnat$(EXE) $(INSTALL_BINDIR)/ocamlnat$(EXE); \
 	  cp toplevel/opttopdirs.cmi $(INSTALL_LIBDIR); \
 	  cp compilerlibs/ocamlopttoplevel.cmxa \
 	     compilerlibs/ocamlopttoplevel.a \
@@ -361,7 +361,7 @@ partialclean::
 	rm -f ocaml
 
 RUNTOP=./byterun/ocamlrun ./ocaml -nostdlib -I stdlib -noinit $(TOPFLAGS)
-NATRUNTOP=./ocamlnat -nostdlib -I stdlib -noinit $(TOPFLAGS)
+NATRUNTOP=./ocamlnat$(EXE) -nostdlib -I stdlib -noinit $(TOPFLAGS)
 
 runtop:
 	$(MAKE) runtime
