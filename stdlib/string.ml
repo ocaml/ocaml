@@ -113,6 +113,15 @@ let contains_from s i c =
 let rcontains_from s i c =
   B.rcontains_from (bos s) i c
 
+let of_char c = 
+  B.of_char c |> bts
+let split_at i s =
+  (B.split_at i (bos s)) |> (fun (a, b) -> ((bts a), (bts b)))
+let to_char_list s =
+  B.to_char_list (bos s)
+let of_char_list c =
+  B.of_char_list c |> bts
+
 let uppercase_ascii s =
   B.uppercase_ascii (bos s) |> bts
 let lowercase_ascii s =

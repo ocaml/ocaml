@@ -223,6 +223,22 @@ val rcontains_from : string -> int -> char -> bool
    Raise [Invalid_argument] if [stop < 0] or [stop+1] is not a valid
    position in [s]. *)
 
+val of_char : char -> string
+(** [of_char c] creates a string of length 1 containing the char [c] *)
+
+val split_at : int -> string -> (string * string)
+(** [split_at index s] returns a pair of the substring of [s] up to the index 
+    [i], and the substring from index [i] to the end of the string.
+
+    Raise [Invalid_argument] if [i] is not a valid position in [s]. *)
+
+val to_char_list : string -> char list
+(** [to_char_list s] returns a list of the characters in [s] *)
+
+val of_char_list : char list -> string
+(** [of_char_list c] returns a string comprised of the characters in [c] or an
+    empty byte sequence if [c] is empty *)
+
 val uppercase : string -> string
   [@@ocaml.deprecated "Use String.uppercase_ascii instead."]
 (** Return a copy of the argument, with all lowercase letters

@@ -36,3 +36,8 @@ let () =
     check_split ' ' (String.sub s 0 i)
   done
 ;;
+
+assert ((String.of_char 'a') = "a");;
+assert ((String.split_at 1 "test") = ("t", "est"));;
+assert ((String.to_char_list "test") = ['t';'e';'s';'t']);;
+assert ((String.of_char_list ['t';'e';'s';'t']) = "test");;
