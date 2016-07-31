@@ -266,7 +266,8 @@ OCaml 4.04.0:
 - GPR#672: Fix float_of_hex parser to correctly reject some invalid forms
   (Bogdan Tătăroiu, review by Thomas Braibant and Alain Frisch)
 
-- GPR#713: Fix wrong code generation involving lazy values in Flambda mode
+- GPR#713, PR#7301: Fix wrong code generation involving lazy values in Flambda
+  mode
   (Mark Shinwell, review by Pierre Chambart and Alain Frisch)
 
 - GPR#721: Fix infinite loop in flambda due to [@@specialise] annotations
