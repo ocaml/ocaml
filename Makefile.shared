@@ -323,13 +323,21 @@ compilerlibs/ocamlopttoplevel.cmxa: $(OPTTOPLEVEL:.cmo=.cmx)
 partialclean::
 	rm -f compilerlibs/ocamlopttoplevel.cmxa
 
-ocamlnat: compilerlibs/ocamlcommon.cmxa compilerlibs/ocamloptcomp.cmxa \
+# When the native toplevel executable has an extension (e.g. ".exe"),
+# provide a phony 'ocamlnat' synonym
+
+ifneq ($(EXE),)
+.PHONY: ocamlnat
+ocamlnat: ocamlnat$(EXE)
+endif
+
+ocamlnat$(EXE): compilerlibs/ocamlcommon.cmxa compilerlibs/ocamloptcomp.cmxa \
     compilerlibs/ocamlbytecomp.cmxa \
     compilerlibs/ocamlopttoplevel.cmxa \
     $(OPTTOPLEVELSTART:.cmo=.cmx)
 	$(CAMLOPT) $(LINKFLAGS) -linkall -o $@ $^
 
 partialclean::
-	rm -f ocamlnat
+	rm -f ocamlnat$(EXE)
 
 toplevel/opttoploop.cmx: otherlibs/dynlink/dynlink.cmxa
