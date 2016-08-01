@@ -794,3 +794,57 @@ let check_approx_for_string t : string option =
   | Value_constptr _ | Value_set_of_closures _ | Value_closure _
   | Value_extern _ | Value_boxed_int _ | Value_symbol _ ->
       None
+
+type switch_branch_selection =
+  | Cannot_be_taken
+  | Can_be_taken
+  | Must_be_taken
+
+let potentially_taken_const_switch_branch t branch =
+  match t.descr with
+  | Value_unresolved _
+  | Value_unknown _
+  | Value_extern _
+  | Value_symbol _ ->
+    (* In theory symbol cannot contain integers but this shouldn't
+       matter as this will always be an imported approximation *)
+    Can_be_taken
+  | Value_constptr i | Value_int i when i = branch ->
+    Must_be_taken
+  | Value_char c when Char.code c = branch ->
+    Must_be_taken
+  | Value_constptr _ | Value_int _ | Value_char _ ->
+    Cannot_be_taken
+  | Value_block _ | Value_float _ | Value_float_array _
+  | Value_string _ | Value_closure _ | Value_set_of_closures _
+  | Value_boxed_int _ | Value_bottom ->
+    Cannot_be_taken
+
+let potentially_taken_block_switch_branch t tag =
+  match t.descr with
+  | (Value_unresolved _
+    | Value_unknown _
+    | Value_extern _
+    | Value_symbol _) ->
+    Can_be_taken
+  | (Value_constptr _ | Value_int _| Value_char _) ->
+    Cannot_be_taken
+  | Value_block (block_tag, _) when Tag.to_int block_tag = tag ->
+    Must_be_taken
+  | Value_float _ when tag = Obj.double_tag ->
+    Must_be_taken
+  | Value_float_array _ when tag = Obj.double_array_tag ->
+    Must_be_taken
+  | Value_string _ when tag = Obj.string_tag ->
+    Must_be_taken
+  | (Value_closure _ | Value_set_of_closures _)
+    when tag = Obj.closure_tag || tag = Obj.infix_tag ->
+    Can_be_taken
+  | Value_boxed_int _ when tag = Obj.custom_tag ->
+    Must_be_taken
+  | Value_block _ | Value_float _ | Value_set_of_closures _ | Value_closure _
+  | Value_string _ | Value_float_array _ | Value_boxed_int _ ->
+    Cannot_be_taken
+  | Value_bottom ->
+    Cannot_be_taken
+

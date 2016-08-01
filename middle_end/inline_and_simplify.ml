@@ -187,6 +187,10 @@ let approx_for_allocated_const (const : Allocated_const.t) =
       A.value_immutable_float_array
         (Array.map A.value_float (Array.of_list a))
 
+type filtered_switch_branches =
+  | Must_be_taken of Flambda.t
+  | Can_be_taken of (int * Flambda.t) list
+
 (* Determine whether a given closure ID corresponds directly to a variable
    (bound to a closure) in the given environment.  This happens when the body
    of a [let rec]-bound function refers to another in the same set of closures.
@@ -1257,7 +1261,34 @@ and simplify env r (tree : Flambda.t) : Flambda.t * R.t =
        [Switch].  (This should also make the [Let] that binds [arg] redundant,
        meaning that it too can be eliminated.) *)
     simplify_free_variable env arg ~f:(fun env arg arg_approx ->
-      let get_failaction () : Flambda.t =
+      let rec filter_branches filter branches compatible_branches =
+        match branches with
+        | [] -> Can_be_taken compatible_branches
+        | (c, lam) as branch :: branches ->
+          match filter arg_approx c with
+          | A.Cannot_be_taken ->
+            filter_branches filter branches compatible_branches
+          | A.Can_be_taken ->
+            filter_branches filter branches (branch :: compatible_branches)
+          | A.Must_be_taken ->
+            Must_be_taken lam
+      in
+      let filtered_consts =
+        filter_branches A.potentially_taken_const_switch_branch sw.consts []
+      in
+      let filtered_blocks =
+        filter_branches A.potentially_taken_block_switch_branch sw.blocks []
+      in
+      begin match filtered_consts, filtered_blocks with
+      | Must_be_taken _, Must_be_taken _ ->
+        assert false
+      | Must_be_taken branch, _
+      | _, Must_be_taken branch ->
+        let lam, r = simplify env r branch in
+        lam, R.map_benefit r B.remove_branch
+      | Can_be_taken consts, Can_be_taken blocks ->
+        match consts, blocks, sw.failaction with
+        | [], [], None ->
         (* If the switch is applied to a statically-known value that does not
            match any case:
            * if there is a default action take that case;
@@ -1270,49 +1301,34 @@ and simplify env r (tree : Flambda.t) : Flambda.t * R.t =
                 match v with   <-- This match is unreachable
                 | Float f -> ...]
          *)
-        match sw.failaction with
-        | None -> Proved_unreachable
-        | Some f -> f
-      in
-      begin match arg_approx.descr with
-      | Value_int i
-      | Value_constptr i ->
-        let lam =
-          try List.assoc i sw.consts
-          with Not_found -> get_failaction ()
-        in
-        let lam, r = simplify env r lam in
-        lam, R.map_benefit r B.remove_branch
-      | Value_block (tag, _) ->
-        let tag = Tag.to_int tag in
-        let lam =
-          try List.assoc tag sw.blocks
-          with Not_found -> get_failaction ()
-        in
-        let lam, r = simplify env r lam in
-        lam, R.map_benefit r B.remove_branch
-      | _ ->
-        let env = E.inside_branch env in
-        let f (i, v) (acc, r) =
-          let approx = R.approx r in
-          let lam, r = simplify env r v in
-          (i, lam)::acc,
-            R.meet_approx r env approx
-        in
-        let r = R.set_approx r A.value_bottom in
-        let consts, r = List.fold_right f sw.consts ([], r) in
-        let blocks, r = List.fold_right f sw.blocks ([], r) in
-        let failaction, r =
-          match sw.failaction with
-          | None -> None, r
-          | Some l ->
+          Proved_unreachable, ret r A.value_bottom
+        | [_, branch], [], None
+        | [], [_, branch], None
+        | [], [], Some branch ->
+          let lam, r = simplify env r branch in
+          lam, R.map_benefit r B.remove_branch
+        | _ ->
+          let env = E.inside_branch env in
+          let f (i, v) (acc, r) =
             let approx = R.approx r in
-            let l, r = simplify env r l in
-            Some l,
+            let lam, r = simplify env r v in
+            (i, lam)::acc,
+            R.meet_approx r env approx
+          in
+          let r = R.set_approx r A.value_bottom in
+          let consts, r = List.fold_right f consts ([], r) in
+          let blocks, r = List.fold_right f blocks ([], r) in
+          let failaction, r =
+            match sw.failaction with
+            | None -> None, r
+            | Some l ->
+              let approx = R.approx r in
+              let l, r = simplify env r l in
+              Some l,
               R.meet_approx r env approx
-        in
-        let sw = { sw with failaction; consts; blocks; } in
-        Switch (arg, sw), r
+          in
+          let sw = { sw with failaction; consts; blocks; } in
+          Switch (arg, sw), r
       end)
   | String_switch (arg, sw, def) ->
     simplify_free_variable env arg ~f:(fun env arg arg_approx ->
