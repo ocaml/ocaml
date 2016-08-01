@@ -298,7 +298,7 @@ Warning 10: this expression should have type unit.
   unit -> object method private m : int method n : int method o : int end
 #   - : int * int = (1, 1)
 #   class c : unit -> object method m : int end
-#       val r : int ref = {contents = 0}
+#         val r : int ref = {contents = 0}
 # val id : < .. > -> int = <fun>
 # - : unit = ()
 # - : int = 1
