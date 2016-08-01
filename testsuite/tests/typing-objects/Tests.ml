@@ -304,6 +304,7 @@ let x = new d () in x#n, x#o;;
 class c () = object method virtual m : int method private m = 1 end;;
 
 (* Marshaling (cf. PR#5436) *)
+[@@@ocaml.warning "-62"]
 
 let r = ref 0;;
 let id o = Oo.id o - !r;;
