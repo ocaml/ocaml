@@ -195,7 +195,12 @@ let analyse_functions ~backend ~param_to_param
     | Some callee_arg ->
       match Variable.Map.find caller decls.funs with
       | exception Not_found ->
-        assert false
+        (* This case happens when there is a recursive call in a subfunction. *)
+        let new_relation =
+          used_variable caller_arg;
+          anything_to_param ~callee ~callee_arg !relation
+        in
+        relation := new_relation
       | { params } ->
         let new_relation =
           (* We only track dataflow for parameters of functions, not
@@ -214,9 +219,18 @@ let analyse_functions ~backend ~param_to_param
     | exception Not_found -> 0
     | func -> Flambda_utils.function_arity func
   in
-  let check_expr ~caller (expr : Flambda.t) =
+  let find_free_var ~free_vars var =
+    match Variable.Map.find var free_vars with
+    | exception Not_found -> var
+    | var' ->
+      assert (not (Variable.Map.mem var function_variable_alias));
+      var'
+  in
+  let rec check_expr ~caller ~free_vars (expr : Flambda.t) =
     match expr with
     | Apply { func; args } ->
+      let func = find_free_var ~free_vars func in
+      let args = List.map (find_free_var ~free_vars) args in
       used_variable func;
       let callee =
         match Variable.Map.find func function_variable_alias with
@@ -236,19 +250,45 @@ let analyse_functions ~backend ~param_to_param
           check_argument ~caller ~callee ~callee_pos ~caller_arg)
         args
     | _ -> ()
+  and check_named ~free_vars (named : Flambda.named) =
+    match named with
+    | Set_of_closures set_of_closures ->
+      let free_vars =
+        Variable.Map.fold (fun free_var (external_var : Flambda.specialised_to)
+              new_free_vars ->
+            let external_var = external_var.var in
+            match Variable.Map.find external_var free_vars with
+            | exception Not_found ->
+              (* We still need to add to the map in this case: [external_var]
+                 might be aliased to a function symbol
+                 (cf. [function_variable_alias]). *)
+              Variable.Map.add free_var external_var new_free_vars
+            | external_var ->
+              Variable.Map.add free_var external_var new_free_vars)
+          set_of_closures.free_vars
+          Variable.Map.empty
+      in
+      check_function_declarations ~decls:set_of_closures.function_decls
+        ~free_vars
+    | _ -> ()
+  and check_function_declarations ~(decls : Flambda.function_declarations)
+        ~free_vars =
+    Variable.Map.iter (fun caller (decl : Flambda.function_declaration) ->
+        Flambda_iterators.iter_toplevel (check_expr ~caller ~free_vars)
+          (check_named ~free_vars)
+          decl.body;
+        Variable.Set.iter (fun var ->
+            let var = find_free_var ~free_vars var in
+            escaping_function var;
+            used_variable var)
+          (* CR-soon mshinwell: we should avoid recomputing this, cache in
+            [function_declaration].  See also comment on
+            [only_via_symbols] in [Flambda_utils]. *)
+          (Flambda.free_variables ~ignore_uses_as_callee:()
+            ~ignore_uses_as_argument:() decl.body))
+      decls.funs
   in
-  Variable.Map.iter (fun caller (decl : Flambda.function_declaration) ->
-      Flambda_iterators.iter (check_expr ~caller)
-        (fun (_ : Flambda.named) -> ())
-        decl.body;
-      Variable.Set.iter
-        (fun var -> escaping_function var; used_variable var)
-        (* CR-soon mshinwell: we should avoid recomputing this, cache in
-           [function_declaration].  See also comment on
-           [only_via_symbols] in [Flambda_utils]. *)
-        (Flambda.free_variables ~ignore_uses_as_callee:()
-           ~ignore_uses_as_argument:() decl.body))
-    decls.funs;
+  check_function_declarations ~decls ~free_vars:Variable.Map.empty;
   Variable.Map.iter
     (fun func_var ({ params } : Flambda.function_declaration) ->
        List.iter
