@@ -1,3 +1,15 @@
+Next version (tbd)
+------------
+
+(Changes that can break existing programs are marked with a "*")
+
+### Build system:
+
+- GPR#729: Make sure ocamlnat is built with a $(EXE) extension, merge
+  rules between Unix and Windows Makefiles
+ (Sébastien Hinderer, review by Alain Frisch)
+
+
 OCaml 4.04.0:
 -------------
 
