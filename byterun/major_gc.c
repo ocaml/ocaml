@@ -471,7 +471,7 @@ static void mark_slice (intnat work)
           /* Subphase_mark_main is done.
              Mark finalised values. */
           gray_vals_cur = gray_vals_ptr;
-          caml_final_update ();
+          caml_final_update_mark_phase ();
           gray_vals_ptr = gray_vals_cur;
           if (gray_vals_ptr > gray_vals){
             v = *--gray_vals_ptr;
@@ -483,17 +483,18 @@ static void mark_slice (intnat work)
       }
         break;
       case Subphase_mark_final: {
+        /** The set of unreachable value will not change anymore for
+            this cycle. Start clean phase. */
+        caml_gc_phase = Phase_clean;
+        caml_final_update_clean_phase ();
         if (caml_ephe_list_head != (value) NULL){
           /* Initialise the clean phase. */
-          caml_gc_phase = Phase_clean;
           ephes_to_check = &caml_ephe_list_head;
-          work = 0;
         } else {
-          /* Initialise the sweep phase,
-           shortcut the unneeded clean phase. */
+          /* Initialise the sweep phase. */
           init_sweep_phase();
-          work = 0;
         }
+          work = 0;
       }
         break;
       default: Assert (0);

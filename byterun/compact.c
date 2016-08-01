@@ -28,6 +28,7 @@
 #include "caml/mlvalues.h"
 #include "caml/roots.h"
 #include "caml/weak.h"
+#include "caml/compact.h"
 
 extern uintnat caml_percent_free;                   /* major_gc.c */
 extern void caml_shrink_heap (char *);              /* memory.c */
@@ -115,7 +116,7 @@ static void invert_pointer_at (word *p)
   }
 }
 
-static void invert_root (value v, value *p)
+void invert_root (value v, value *p)
 {
   invert_pointer_at ((word *) p);
 }
@@ -195,7 +196,8 @@ static void do_compaction (void)
        data structures to find its roots.  Fortunately, it doesn't need
        the headers (see above). */
     caml_do_roots (invert_root, 1);
-    caml_final_do_weak_roots (invert_root);
+    /* The values to be finalised are not roots but should still be inverted */
+    caml_final_invert_finalisable_values ();
 
     ch = caml_heap_start;
     while (ch != NULL){

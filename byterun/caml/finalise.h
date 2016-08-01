@@ -20,13 +20,16 @@
 
 #include "roots.h"
 
-void caml_final_update (void);
+void caml_final_update_mark_phase (void);
+void caml_final_update_clean_phase (void);
 void caml_final_do_calls (void);
-void caml_final_do_strong_roots (scanning_action f);
-void caml_final_do_weak_roots (scanning_action f);
-void caml_final_do_young_roots (scanning_action f);
+void caml_final_do_roots (scanning_action f);
+void caml_final_invert_finalisable_values ();
+void caml_final_oldify_young_roots ();
 void caml_final_empty_young (void);
+void caml_final_update_minor_roots(void);
 value caml_final_register (value f, value v);
+void caml_final_invariant_check(void);
 
 #endif /* CAML_INTERNALS */
 

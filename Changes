@@ -135,6 +135,15 @@ OCaml 4.04.0:
 - GPR#723 Sort emitted functions according to source location
   (Pierre Chambart, review by Marc Shinwell)
 
+### Runtime system:
+
+- PR#7210, GPR#562: Allows to register finalisation function that are
+  called only when a value will never be reachable anymore. The
+  drawbacks compared to the existing one is that the finalisation
+  function is not called with the value as argument. These finalisers
+  are registered with `GC.finalise_last`
+  (François Bobot reviewed by Damien Doligez and Leo White)
+
 ### Tools:
 
 - MPR#7189: toplevel #show, follow chains of module aliases

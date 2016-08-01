@@ -303,6 +303,19 @@ val finalise : ('a -> unit) -> 'a -> unit
    heap-allocated and non-constant except when the length argument is [0].
 *)
 
+val finalise_last : (unit -> unit) -> 'a -> unit
+(** same as {!finalise} except the value is not given as argument. So
+    you can't use the given value for the computation of the
+    finalisation function. The benefit is that the function is called
+    after the value is unreachable for the last time instead of the
+    first time. So contrary to {!finalise} the value will never be
+    reachable again or used again. In particular every weak pointers
+    and ephemerons that contained this value as key or data is unset
+    before running the finalisation function. Moreover the
+    finalisation function attached with `GC.finalise` are always
+    called before the finalisation function attached with `GC.finalise_last`.
+*)
+
 val finalise_release : unit -> unit
 (** A finalisation function may call [finalise_release] to tell the
     GC that it can launch the next finalisation function without waiting

@@ -18,7 +18,10 @@
 /* Handling of finalised values. */
 
 #include "caml/callback.h"
+#include "caml/compact.h"
 #include "caml/fail.h"
+#include "caml/finalise.h"
+#include "caml/minor_gc.h"
 #include "caml/mlvalues.h"
 #include "caml/roots.h"
 #include "caml/signals.h"
@@ -32,12 +35,23 @@ struct final {
   int offset;
 };
 
-static struct final *final_table = NULL;
-static uintnat old = 0, young = 0, size = 0;
-/* [0..old) : finalisable set
-   [old..young) : recent set
+struct finalisable {
+  struct final *table;
+  uintnat old;
+  uintnat young;
+  uintnat size;
+};
+/* [0..old) : finalisable set, the values are in the major heap
+   [old..young) : recent set, the values could be in the minor heap
    [young..size) : free space
+
+   The element of the finalisable set are moved to the finalising set
+   below when the value are unreachable (for the first or last time).
+
 */
+
+static struct finalisable finalisable_first = {NULL,0,0,0};
+static struct finalisable finalisable_last = {NULL,0,0,0};
 
 struct to_do {
   struct to_do *next;
@@ -47,6 +61,13 @@ struct to_do {
 
 static struct to_do *to_do_hd = NULL;
 static struct to_do *to_do_tl = NULL;
+/*
+  to_do_hd: head of the list of finalisation functions that can be run.
+  to_do_tl: tail of the list of finalisation functions that can be run.
+
+  It is the finalising set.
+*/
+
 
 /* [size] is a number of elements for the [to_do.item] array */
 static void alloc_to_do (int size)
@@ -67,47 +88,79 @@ static void alloc_to_do (int size)
 }
 
 /* Find white finalisable values, move them to the finalising set, and
-   darken them.
+   darken them (if darken_value is true).
 */
-void caml_final_update (void)
+static void generic_final_update (struct finalisable * final, int darken_value)
 {
   uintnat i, j, k;
   uintnat todo_count = 0;
 
-  Assert (old <= young);
-  for (i = 0; i < old; i++){
-    Assert (Is_block (final_table[i].val));
-    Assert (Is_in_heap (final_table[i].val));
-    if (Is_white_val (final_table[i].val)) ++ todo_count;
+  Assert (final->old <= final->young);
+  for (i = 0; i < final->old; i++){
+    Assert (Is_block (final->table[i].val));
+    Assert (Is_in_heap (final->table[i].val));
+    if (Is_white_val (final->table[i].val)){
+      ++ todo_count;
+    }
   }
 
+  /** invariant:
+      - 0 <= j <= i /\ 0 <= k <= i /\ 0 <= k <= todo_count
+      - i : index in final_table, before i all the values are black
+      (alive or in the minor heap) or the finalizer have been copied
+      in to_do_tl.
+      - j : index in final_table, before j all the values are black
+      (alive or in the minor heap), next available slot.
+      - k : index in to_do_tl, next available slot.
+  */
   if (todo_count > 0){
     alloc_to_do (todo_count);
     j = k = 0;
-    for (i = 0; i < old; i++){
-      Assert (Is_block (final_table[i].val));
-      Assert (Is_in_heap (final_table[i].val));
-      Assert (Tag_val (final_table[i].val) != Forward_tag);
-      if (Is_white_val (final_table[i].val)){
-        to_do_tl->item[k++] = final_table[i];
+    for (i = 0; i < final->old; i++){
+      Assert (Is_block (final->table[i].val));
+      Assert (Is_in_heap (final->table[i].val));
+      Assert (Tag_val (final->table[i].val) != Forward_tag);
+      if(Is_white_val (final->table[i].val)){
+        /** dead */
+        to_do_tl->item[k] = final->table[i];
+        if(!darken_value){
+          /* The value is not darken so the finalisation function
+             is called with unit not with the value */
+          to_do_tl->item[k].val = Val_unit;
+          to_do_tl->item[k].offset = 0;
+        };
+        k++;
       }else{
-        final_table[j++] = final_table[i];
+        /** alive */
+        final->table[j++] = final->table[i];
       }
     }
-    CAMLassert (i == old);
-    old = j;
-    for(;i < young; i++){
-      final_table[j++] = final_table[i];
+    CAMLassert (i == final->old);
+    CAMLassert (k == todo_count);
+    final->old = j;
+    for(;i < final->young; i++){
+      final->table[j++] = final->table[i];
     }
-    young = j;
+    final->young = j;
     to_do_tl->size = k;
-    for (i = 0; i < k; i++){
-      /* Note that item may already be dark due to multiple entries in
-         the final table. */
-      caml_darken (to_do_tl->item[i].val, NULL);
+    if(darken_value){
+      for (i = 0; i < k; i++){
+        /* Note that item may already be dark due to multiple entries in
+           the final table. */
+        caml_darken (to_do_tl->item[i].val, NULL);
+      }
     }
   }
 }
+
+void caml_final_update_mark_phase (){
+  generic_final_update(&finalisable_first, /* darken_value */ 1);
+}
+
+void caml_final_update_clean_phase (){
+  generic_final_update(&finalisable_last, /* darken_value */ 0);
+}
+
 
 static int running_finalisation_function = 0;
 
@@ -162,15 +215,23 @@ void caml_final_do_calls (void)
 
 /* Call [*f] on the closures of the finalisable set and
    the closures and values of the finalising set.
-   This is called by the major GC through [caml_darken_all_roots].
+   This is called by the major GC [caml_darken_all_roots]
+   and by the compactor through [caml_do_roots]
 */
-void caml_final_do_strong_roots (scanning_action f)
+void caml_final_do_roots (scanning_action f)
 {
   uintnat i;
   struct to_do *todo;
 
-  Assert (old <= young);
-  for (i = 0; i < young; i++) Call_action (f, final_table[i].fun);
+  Assert (finalisable_first.old <= finalisable_first.young);
+  for (i = 0; i < finalisable_first.young; i++){
+    Call_action (f, finalisable_first.table[i].fun);
+  };
+
+  Assert (finalisable_last.old <= finalisable_last.young);
+  for (i = 0; i < finalisable_last.young; i++){
+    Call_action (f, finalisable_last.table[i].fun);
+  };
 
   for (todo = to_do_hd; todo != NULL; todo = todo->next){
     for (i = 0; i < todo->size; i++){
@@ -180,29 +241,122 @@ void caml_final_do_strong_roots (scanning_action f)
   }
 }
 
-/* Call [*f] on the values of the finalisable set.
-   This is called directly by the compactor.
+/* Call invert_root on the values of the finalisable set. This is called
+   directly by the compactor.
 */
-void caml_final_do_weak_roots (scanning_action f)
+void caml_final_invert_finalisable_values ()
 {
   uintnat i;
 
-  CAMLassert (old <= young);
-  for (i = 0; i < young; i++) Call_action (f, final_table[i].val);
+  CAMLassert (finalisable_first.old <= finalisable_first.young);
+  for (i = 0; i < finalisable_first.young; i++){
+    invert_root(finalisable_first.table[i].val,
+                &finalisable_first.table[i].val);
+  };
+
+  CAMLassert (finalisable_last.old <= finalisable_last.young);
+  for (i = 0; i < finalisable_last.young; i++){
+    invert_root(finalisable_last.table[i].val,
+                &finalisable_last.table[i].val);
+  };
 }
 
-/* Call [*f] on the closures and values of the recent set.
+/* Call [caml_oldify_one] on the closures and values of the recent set.
    This is called by the minor GC through [caml_oldify_local_roots].
 */
-void caml_final_do_young_roots (scanning_action f)
+void caml_final_oldify_young_roots ()
 {
   uintnat i;
 
-  Assert (old <= young);
-  for (i = old; i < young; i++){
-    Call_action (f, final_table[i].fun);
-    Call_action (f, final_table[i].val);
+  Assert (finalisable_first.old <= finalisable_first.young);
+  for (i = finalisable_first.old; i < finalisable_first.young; i++){
+    caml_oldify_one(finalisable_first.table[i].fun,
+                    &finalisable_first.table[i].fun);
+    caml_oldify_one(finalisable_first.table[i].val,
+                    &finalisable_first.table[i].val);
   }
+
+  Assert (finalisable_last.old <= finalisable_last.young);
+  for (i = finalisable_last.old; i < finalisable_last.young; i++){
+    caml_oldify_one(finalisable_last.table[i].fun,
+                    &finalisable_last.table[i].fun);
+  }
+
+}
+
+static void generic_final_minor_update (struct finalisable * final)
+{
+  uintnat i, j, k;
+  uintnat todo_count = 0;
+
+  Assert (final->old <= final->young);
+  for (i = final->old; i < final->young; i++){
+    Assert (Is_block (final->table[i].val));
+    Assert (Is_in_heap_or_young (final->table[i].val));
+    if (Is_young(final->table[i].val) && Hd_val(final->table[i].val) != 0){
+      ++ todo_count;
+    }
+  }
+
+  /** invariant:
+      - final->old <= j <= i /\ final->old <= k <= i /\ 0 <= k <= todo_count
+      - i : index in final_table, before i all the values are alive
+            or the finalizer have been copied in to_do_tl.
+      - j : index in final_table, before j all the values are alive,
+            next available slot.
+      - k : index in to_do_tl, next available slot.
+  */
+  if (todo_count > 0){
+    alloc_to_do (todo_count);
+    k = 0;
+    j = final->old;
+    for (i = final->old; i < final->young; i++){
+      Assert (Is_block (final->table[i].val));
+      Assert (Is_in_heap_or_young (final->table[i].val));
+      Assert (Tag_val (final->table[i].val) != Forward_tag);
+      if(Is_young(final->table[j].val) && Hd_val(final->table[i].val) != 0){
+        /** dead */
+        to_do_tl->item[k] = final->table[i];
+        /* The finalisation function is called with unit not with the value */
+        to_do_tl->item[k].val = Val_unit;
+        to_do_tl->item[k].offset = 0;
+        k++;
+      }else{
+        /** alive */
+        final->table[j++] = final->table[i];
+      }
+    }
+    CAMLassert (i == final->young);
+    CAMLassert (k == todo_count);
+    final->young = j;
+    to_do_tl->size = todo_count;
+  }
+
+  /** update the minor value to the copied major value */
+  for (i = final->old; i < final->young; i++){
+    Assert (Is_block (final->table[i].val));
+    Assert (Is_in_heap_or_young (final->table[i].val));
+    if (Is_young(final->table[i].val)) {
+      CAMLassert (Hd_val(final->table[i].val) == 0);
+      final->table[i].val = Field(final->table[i].val,0);
+    }
+  }
+
+  /** check invariant */
+  Assert (final->old <= final->young);
+  for (i = 0; i < final->young; i++){
+    CAMLassert( Is_in_heap(final->table[i].val) );
+  };
+
+}
+
+/* At the end of minor collection update the finalise_last roots in
+   minor heap when moved to major heap or moved them to the finalising
+   set when dead.
+*/
+void caml_final_update_minor_roots ()
+{
+  generic_final_minor_update(&finalisable_last);
 }
 
 /* Empty the recent set into the finalisable set.
@@ -211,11 +365,12 @@ void caml_final_do_young_roots (scanning_action f)
 */
 void caml_final_empty_young (void)
 {
-  old = young;
+  finalisable_first.old = finalisable_first.young;
+  finalisable_last.old = finalisable_last.young;
 }
 
 /* Put (f,v) in the recent set. */
-CAMLprim value caml_final_register (value f, value v)
+static void generic_final_register (struct finalisable *final, value f, value v)
 {
   if (!Is_block (v)
       || !Is_in_heap_or_young(v)
@@ -224,38 +379,65 @@ CAMLprim value caml_final_register (value f, value v)
       || Tag_val (v) == Forward_tag) {
     caml_invalid_argument ("Gc.finalise");
   }
-  Assert (old <= young);
+  Assert (final->old <= final->young);
 
-  if (young >= size){
-    if (final_table == NULL){
+  if (final->young >= final->size){
+    if (final->table == NULL){
       uintnat new_size = 30;
-      final_table = caml_stat_alloc (new_size * sizeof (struct final));
-      Assert (old == 0);
-      Assert (young == 0);
-      size = new_size;
+      final->table = caml_stat_alloc (new_size * sizeof (struct final));
+      Assert (final->old == 0);
+      Assert (final->young == 0);
+      final->size = new_size;
     }else{
-      uintnat new_size = size * 2;
-      final_table = caml_stat_resize (final_table,
+      uintnat new_size = final->size * 2;
+      final->table = caml_stat_resize (final->table,
                                       new_size * sizeof (struct final));
-      size = new_size;
+      final->size = new_size;
     }
   }
-  Assert (young < size);
-  final_table[young].fun = f;
+  Assert (final->young < final->size);
+  final->table[final->young].fun = f;
   if (Tag_val (v) == Infix_tag){
-    final_table[young].offset = Infix_offset_val (v);
-    final_table[young].val = v - Infix_offset_val (v);
+    final->table[final->young].offset = Infix_offset_val (v);
+    final->table[final->young].val = v - Infix_offset_val (v);
   }else{
-    final_table[young].offset = 0;
-    final_table[young].val = v;
+    final->table[final->young].offset = 0;
+    final->table[final->young].val = v;
   }
-  ++ young;
+  ++ final->young;
 
+}
+
+CAMLprim value caml_final_register (value f, value v){
+  generic_final_register(&finalisable_first, f, v);
   return Val_unit;
 }
+
+CAMLprim value caml_final_register_called_without_value (value f, value v){
+  generic_final_register(&finalisable_last, f, v);
+  return Val_unit;
+}
+
 
 CAMLprim value caml_final_release (value unit)
 {
   running_finalisation_function = 0;
   return Val_unit;
+}
+
+static void gen_final_invariant_check(struct finalisable *final){
+  uintnat i;
+
+  CAMLassert (final->old <= final->young);
+  for (i = 0; i < final->old; i++){
+    CAMLassert( Is_in_heap(final->table[i].val) );
+  };
+  for (i = final->old; i < final->young; i++){
+    CAMLassert( Is_in_heap_or_young(final->table[i].val) );
+  };
+}
+
+void caml_final_invariant_check(void){
+  gen_final_invariant_check(&finalisable_first);
+  gen_final_invariant_check(&finalisable_last);
 }

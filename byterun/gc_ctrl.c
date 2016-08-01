@@ -215,6 +215,10 @@ static value heap_stats (int returnstats)
     chunk = Chunk_next (chunk);
   }
 
+#ifdef DEBUG
+  caml_final_invariant_check();
+#endif
+
   Assert (heap_chunks == caml_stat_heap_chunks);
   Assert (live_words + free_words + fragments == caml_stat_heap_wsz);
 
