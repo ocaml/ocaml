@@ -482,7 +482,8 @@ let enter_orpat_variables loc env  p1_vs p2_vs =
   let rec unify_vars p1_vs p2_vs =
     let vars vs = List.map (fun (x,_t,_,_l,_a) -> x) vs in
     match p1_vs, p2_vs with
-      | (x1,t1,_,_l1,_a1)::rem1, (x2,t2,_,_l2,_a2)::rem2 when Ident.equal x1 x2 ->
+      | (x1,t1,_,_l1,_a1)::rem1, (x2,t2,_,_l2,_a2)::rem2
+        when Ident.equal x1 x2 ->
           if x1==x2 then
             unify_vars rem1 rem2
           else begin
@@ -2084,7 +2085,8 @@ and type_expect_ ?in_function ?(recarg=Rejected) env sexp ty_expected =
           loc_ghost = true }
       in
       let smatch =
-        Exp.match_ ~loc:sloc (Exp.ident ~loc (mknoloc (Longident.Lident "*opt*")))
+        Exp.match_ ~loc:sloc
+          (Exp.ident ~loc (mknoloc (Longident.Lident "*opt*")))
           scases
       in
       let pat = Pat.var ~loc:sloc (mknoloc "*opt*") in
@@ -2298,12 +2300,14 @@ and type_expect_ ?in_function ?(recarg=Rejected) env sexp ty_expected =
                       Overridden (lid, lbl_exp)
                   | exception Not_found ->
                       let present_indices =
-                        List.map (fun (_, lbl, _) -> lbl.lbl_pos) lbl_exp_list in
+                        List.map (fun (_, lbl, _) -> lbl.lbl_pos) lbl_exp_list
+                      in
                       let label_names = extract_label_names env ty_expected in
                       let rec missing_labels n = function
                           [] -> []
                         | lbl :: rem ->
-                            if List.mem n present_indices then missing_labels (n + 1) rem
+                            if List.mem n present_indices
+                            then missing_labels (n + 1) rem
                             else lbl :: missing_labels (n + 1) rem
                       in
                       let missing = missing_labels 0 label_names in

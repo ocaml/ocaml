@@ -507,7 +507,9 @@ let rec patch_guarded patch = function
 
 let rec transl_normal_path = function
     Pident id ->
-      if Ident.global id then Lprim(Pgetglobal id, [], Location.none) else Lvar id
+      if Ident.global id
+      then Lprim(Pgetglobal id, [], Location.none)
+      else Lvar id
   | Pdot(p, _s, pos) ->
       Lprim(Pfield pos, [transl_normal_path p], Location.none)
   | Papply _ ->

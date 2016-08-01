@@ -1,16 +1,16 @@
-(***********************************************************************)
-(*                                                                     *)
-(*                                OCaml                                *)
-(*                                                                     *)
-(*                 Jeremie Dimino, Jane Street Europe                  *)
-(*                                                                     *)
-(*  Copyright 2016 Jane Street Group LLC                               *)
-(*                                                                     *)
-(*  All rights reserved.  This file is distributed under the terms of  *)
-(*  the GNU Lesser General Public License version 2.1, with the        *)
-(*  special exception on linking described in the file LICENSE.        *)
-(*                                                                     *)
-(***********************************************************************)
+(**************************************************************************)
+(*                                                                        *)
+(*                                 OCaml                                  *)
+(*                                                                        *)
+(*                   Jeremie Dimino, Jane Street Europe                   *)
+(*                                                                        *)
+(*   Copyright 2016 Jane Street Group LLC                                 *)
+(*                                                                        *)
+(*   All rights reserved.  This file is distributed under the terms of    *)
+(*   the GNU Lesser General Public License version 2.1, with the          *)
+(*   special exception on linking described in the file LICENSE.          *)
+(*                                                                        *)
+(**************************************************************************)
 
 (* Execute a list of phrase from a .ml file and compare the result to the
    expected output, written inside [%%expect ...] nodes. At the end, create
@@ -137,7 +137,7 @@ module Compiler_messages = struct
       Format.fprintf ppf ", characters %d-%d" startchar endchar;
     Format.fprintf ppf ":@."
 
-  let rec error_reporter ppf ({loc; msg; sub; if_highlight=_} : Location.error) =
+  let rec error_reporter ppf ({loc; msg; sub; if_highlight=_} : Location.error)=
     print_loc ppf loc;
     Format.fprintf ppf "%a %s" Location.print_error_prefix () msg;
     List.iter sub ~f:(fun err ->
@@ -160,7 +160,9 @@ end
 
 let collect_formatters buf pps ~f =
   List.iter (fun pp -> Format.pp_print_flush pp ()) pps;
-  let save = List.map (fun pp -> Format.pp_get_formatter_out_functions pp ()) pps in
+  let save =
+    List.map (fun pp -> Format.pp_get_formatter_out_functions pp ()) pps
+  in
   let restore () =
     List.iter2
       (fun pp out_functions ->
@@ -172,7 +174,9 @@ let collect_formatters buf pps ~f =
   and out_flush = ignore
   and out_newline () = Buffer.add_char buf '\n'
   and out_spaces n = for i = 1 to n do Buffer.add_char buf ' ' done in
-  let out_functions = { Format.out_string; out_flush; out_newline; out_spaces } in
+  let out_functions =
+    { Format.out_string; out_flush; out_newline; out_spaces }
+  in
   List.iter
     (fun pp -> Format.pp_set_formatter_out_functions pp out_functions)
     pps;
@@ -182,8 +186,8 @@ let collect_formatters buf pps ~f =
 
 (* Invariant: ppf = Format.formatter_of_buffer buf *)
 let capture_everything buf ppf ~f =
-  collect_formatters buf [Format.std_formatter; Format.err_formatter] ~f:(fun () ->
-    Compiler_messages.capture ppf ~f)
+  collect_formatters buf [Format.std_formatter; Format.err_formatter]
+                     ~f:(fun () -> Compiler_messages.capture ppf ~f)
 
 let exec_phrase ppf phrase =
   if !Clflags.dump_parsetree then Printast. top_phrase ppf phrase;
@@ -230,7 +234,8 @@ let shift_lines delta phrases =
     | Parsetree.Ptop_def st ->
       Parsetree.Ptop_def (mapper.structure mapper st))
 
-let rec min_line_number : Parsetree.toplevel_phrase list -> int option = function
+let rec min_line_number : Parsetree.toplevel_phrase list -> int option =
+function
   | [] -> None
   | (Ptop_dir _  | Ptop_def []) :: l -> min_line_number l
   | Ptop_def (st :: _) :: _ -> Some st.pstr_loc.loc_start.pos_lnum

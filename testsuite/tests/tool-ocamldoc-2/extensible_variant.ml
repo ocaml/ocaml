@@ -6,7 +6,7 @@
 type e = ..
 
 module M = struct
-  type e += 
+  type e +=
   | A (** A doc *)
   | B (** B doc *)
   | C (** C doc *)

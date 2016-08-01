@@ -1476,7 +1476,9 @@ and components_of_module_maker (env, sub, path, mty) =
             let deprecated =
               Builtin_attributes.deprecated_of_attrs md.md_attributes
             in
-            let comps = components_of_module ~deprecated ~loc:md.md_loc !env sub path mty in
+            let comps =
+              components_of_module ~deprecated ~loc:md.md_loc !env sub path mty
+            in
             c.comp_components <-
               Tbl.add (Ident.name id) (comps, !pos) c.comp_components;
             env := store_module ~check:false None id (Pident id) md !env !env;
@@ -2080,7 +2082,8 @@ let report_error ppf = function
   | Depend_on_unsafe_string_unit(import, export) ->
       fprintf ppf
         "@[<hov>Unit %s imports from %s, compiled with -unsafe-string.@ %s@]"
-        export import "This compiler has been configured in strict -safe-string mode"
+        export import "This compiler has been configured in strict \
+                       -safe-string mode"
   | Missing_module(_, path1, path2) ->
       fprintf ppf "@[@[<hov>";
       if Path.same path1 path2 then

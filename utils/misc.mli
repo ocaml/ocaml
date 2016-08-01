@@ -292,8 +292,9 @@ val normalise_eol : string -> string
    on a channel which performs EOL transformations (i.e. Windows) *)
 
 val delete_eol_spaces : string -> string
-(** [delete_eol_spaces s] returns a fresh copy of [s] with any end of line spaces
-   removed. Intended to normalize the output of the toplevel for tests. *)
+(** [delete_eol_spaces s] returns a fresh copy of [s] with any end of
+   line spaces removed. Intended to normalize the output of the
+   toplevel for tests. *)
 
 
 
@@ -315,9 +316,8 @@ exception HookExnWrapper of
       hook_name: string;
       hook_info: hook_info;
     }
-    (** An exception raised by a hook will be wrapped into a [HookExnWrapper] constructor
-        by the hook machinery.
-    *)
+    (** An exception raised by a hook will be wrapped into a
+        [HookExnWrapper] constructor by the hook machinery.  *)
 
 
 val raise_direct_hook_exn: exn -> 'a

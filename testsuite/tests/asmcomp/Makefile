@@ -52,7 +52,8 @@ MLCASES=optargs staticalloc bind_tuples is_static register_typing \
   register_typing_switch
 ARGS_is_static=-I $(OTOPDIR)/byterun is_in_static_data.c
 MLCASES_FLAMBDA=is_static_flambda unrolling_flambda unrolling_flambda2
-ARGS_is_static_flambda=-I $(OTOPDIR)/byterun is_in_static_data.c is_static_flambda_dep.ml
+ARGS_is_static_flambda=\
+  -I $(OTOPDIR)/byterun is_in_static_data.c is_static_flambda_dep.ml
 
 CASES=fib tak quicksort quicksort2 soli \
       arith checkbound tagged-fib tagged-integr tagged-quicksort tagged-tak

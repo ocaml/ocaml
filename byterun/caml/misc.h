@@ -128,7 +128,7 @@ CAMLextern char * caml_strconcat(int n, ...); /* n args of const char * type */
   These calls can be either traced for security reasons, or changed to
   virtualize the program. */
 
-  
+
 #ifndef CAML_WITH_CPLUGINS
 
 #define CAML_SYS_EXIT(retcode) exit(retcode)
@@ -154,9 +154,9 @@ CAMLextern char * caml_strconcat(int n, ...); /* n args of const char * type */
 #define CAML_CPLUGINS_CHDIR 6
 #define CAML_CPLUGINS_GETENV 7
 #define CAML_CPLUGINS_SYSTEM 8
-#define CAML_CPLUGINS_READ_DIRECTORY 9  
+#define CAML_CPLUGINS_READ_DIRECTORY 9
 #define CAML_CPLUGINS_PRIMS_MAX 9
-  
+
 #define CAML_CPLUGINS_PRIMS_BITMAP  ((1 << CAML_CPLUGINS_PRIMS_MAX)-1)
 
 extern intnat (*caml_cplugins_prim)(int,intnat,intnat,intnat);

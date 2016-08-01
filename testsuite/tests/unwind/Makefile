@@ -13,9 +13,11 @@ default:
 	  LD="`echo $$LDFULL | grep -o \"ld64-[0-9]*\"`"; \
 	  LDVER="`echo $$LD | sed \"s/ld64-//\"`"; \
 	  if [[ -z "$$LD" ]]; then \
-	    echo " => skipped (unknown linker: pattern ld64-[0-9]* not found in 'ld -v' output)"; \
+	    echo " => skipped (unknown linker: pattern ld64-[0-9]* not found" \
+	    echo "    in 'ld -v' output)"; \
 	  elif [[ $$LDVER -lt 224 ]]; then \
-	   echo " => skipped (ld version is $$LDVER, only 224 or above supported)"; \
+	   echo " => skipped (ld version is $$LDVER, only 224 or above " \
+	   echo "    are supported)"; \
 	  else \
 	    $(MAKE) native_macosx_tests; \
 	  fi; \

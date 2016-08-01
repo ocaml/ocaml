@@ -466,7 +466,8 @@ let simplif_prim_pure fpc p (args, approxs) dbg =
         | Ostype_unix -> make_const_bool (Sys.os_type = "Unix")
         | Ostype_win32 -> make_const_bool (Sys.os_type = "Win32")
         | Ostype_cygwin -> make_const_bool (Sys.os_type = "Cygwin")
-        | Backend_type -> make_const_ptr 0 (* tag 0 is the same as Native here *)
+        | Backend_type ->
+            make_const_ptr 0 (* tag 0 is the same as Native here *)
       end
   (* Catch-all *)
   | _ ->
@@ -800,11 +801,11 @@ let rec close fenv cenv = function
             str (Uconst_string s)
         | Const_base (Const_string (s, _)) ->
               (* Strings (even literal ones) must be assumed to be mutable...
-                 except when OCaml has been
-                 configured with -safe-string.  Passing -safe-string at compilation time
-                 is not enough, since the unit could be linked with another one
-                 compiled without -safe-string, and that one could modify our
-                 string literal.  *)
+                 except when OCaml has been configured with
+                 -safe-string.  Passing -safe-string at compilation
+                 time is not enough, since the unit could be linked
+                 with another one compiled without -safe-string, and
+                 that one could modify our string literal.  *)
             str ~shared:Config.safe_string (Uconst_string s)
         | Const_base(Const_float x) -> str (Uconst_float (float_of_string x))
         | Const_base(Const_int32 x) -> str (Uconst_int32 x)
@@ -952,7 +953,7 @@ let rec close fenv cenv = function
       let dbg = Debuginfo.from_location loc in
       check_constant_result lam (Uprim(Pfield n, [ulam], dbg))
                             (field_approx n approx)
-  | Lprim(Psetfield(n, is_ptr, init), [Lprim(Pgetglobal id, [], _); lam], loc) ->
+  | Lprim(Psetfield(n, is_ptr, init), [Lprim(Pgetglobal id, [], _); lam], loc)->
       let (ulam, approx) = close fenv cenv lam in
       if approx <> Value_unknown then
         (!global_approx).(n) <- approx;

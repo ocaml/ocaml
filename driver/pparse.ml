@@ -163,7 +163,8 @@ let parse (type a) (kind : a ast_kind) lexbuf : a =
   | Structure -> Parse.implementation lexbuf
   | Signature -> Parse.interface lexbuf
 
-let file_aux ppf ~tool_name inputfile (type a) parse_fun invariant_fun (kind : a ast_kind) =
+let file_aux ppf ~tool_name inputfile (type a) parse_fun invariant_fun
+             (kind : a ast_kind) =
   let ast_magic = magic_of_kind kind in
   let (ic, is_ast_file) = open_and_check_magic inputfile ast_magic in
   let ast =

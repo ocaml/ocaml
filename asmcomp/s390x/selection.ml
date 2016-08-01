@@ -82,7 +82,8 @@ method! select_operation op args =
     (Cmulhi, _) -> (Iintop Imulh, args)
   (* The and, or and xor instructions have a different range of immediate
      operands than the other instructions *)
-  | (Cand, _) -> self#select_logical Iand (-1 lsl 32 (*0x1_0000_0000*)) (-1) args
+  | (Cand, _) ->
+      self#select_logical Iand (-1 lsl 32 (*0x1_0000_0000*)) (-1) args
   | (Cor, _) -> self#select_logical Ior 0 (1 lsl 32 - 1 (*0xFFFF_FFFF*)) args
   | (Cxor, _) -> self#select_logical Ixor  0 (1 lsl 32 - 1 (*0xFFFF_FFFF*)) args
   (* Recognize mult-add and mult-sub instructions *)

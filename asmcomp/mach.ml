@@ -161,7 +161,7 @@ let spacetime_node_hole_pointer_is_live_before insn =
       false
     | Iintop op | Iintop_imm (op, _) ->
       begin match op with
-      | Icheckbound _ 
+      | Icheckbound _
         (* [Icheckbound] doesn't need to return [true] for the same reason as
            [Ialloc]. *)
       | Iadd | Isub | Imul | Imulh | Idiv | Imod

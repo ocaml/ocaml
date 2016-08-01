@@ -484,8 +484,9 @@ and transl_structure loc fields cc rootpath final_env = function
           let body, size =
             transl_structure loc (id :: fields) cc rootpath final_env rem
           in
-          Llet(Strict, Pgenval, id, transl_extension_constructor item.str_env path ext,
-               body), size
+          Llet(Strict, Pgenval, id,
+               transl_extension_constructor item.str_env path ext, body),
+          size
       | Tstr_module mb ->
           let id = mb.mb_id in
           let body, size =
@@ -539,8 +540,9 @@ and transl_structure loc fields cc rootpath final_env = function
                 size
           in
           let body, size = rebind_idents 0 fields ids in
-          Llet(pure_module modl, Pgenval, mid, transl_module Tcoerce_none None modl,
-               body), size
+          Llet(pure_module modl, Pgenval, mid,
+               transl_module Tcoerce_none None modl, body),
+          size
 
       | Tstr_modtype _
       | Tstr_open _

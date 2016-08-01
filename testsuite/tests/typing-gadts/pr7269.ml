@@ -24,7 +24,7 @@ end = struct
   type t = T : [< `Conj of int | `Other of string] -> t
   let x = T (`Conj 42)
 end;;
-    
+
 let () = M.(match x with T (`Other msg) -> print_string msg);; (* warn *)
 [%%expect{|
 module M :
@@ -52,7 +52,7 @@ end = struct
       { ex : 'a . (([<`Conj of int | `Other of string] as 'a) -> unit) }
   let e { ex } = ex (`Conj 42 : [`Conj of int])
 end;;
-    
+
 let () = M.(e { ex = fun (`Other msg) -> print_string msg });; (* warn *)
 [%%expect{|
 module M :

@@ -50,7 +50,8 @@ extern void caml_shrink_heap (char *);              /* memory.c */
   XXX Should be able to fix it to only assume 2-byte alignment.
 */
 #if defined(NATIVE_CODE) && defined(WITH_SPACETIME)
-#define Make_ehd(s,t,c,p) (((s) << 10) | (t) << 2 | (c) | ((p) << PROFINFO_SHIFT))
+#define Make_ehd(s,t,c,p) \
+  (((s) << 10) | (t) << 2 | (c) | ((p) << PROFINFO_SHIFT))
 #else
 #define Make_ehd(s,t,c,p) (((s) << 10) | (t) << 2 | (c))
 #endif

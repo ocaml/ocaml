@@ -82,7 +82,8 @@ else
 export OCAML_FLEXLINK:=$(ROOTDIR)/boot/ocamlrun $(ROOTDIR)/flexdll/flexlink.exe
 endif
 
-CAMLC=$(CAMLRUN) ../boot/ocamlc -nostdlib -I ../boot -use-prims ../byterun/primitives -I ..
+CAMLC=$(CAMLRUN) ../boot/ocamlc -nostdlib -I ../boot \
+      -use-prims ../byterun/primitives -I ..
 CAMLOPT=$(CAMLRUN) ../ocamlopt -nostdlib -I ../stdlib
 CAMLLEX=$(CAMLRUN) ../boot/ocamllex
 INCLUDES=-I ../utils -I ../parsing -I ../typing -I ../bytecomp -I ../asmcomp \

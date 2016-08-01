@@ -340,11 +340,14 @@ CAMLprim value caml_obj_reachable_words(value v)
       for (i = 0; i < sz; i++) {
         value v2 = Field(v, i);
         if (Is_block(v2) && Is_in_heap_or_young(v2)) {
-          if (Tag_hd(Hd_val(v2)) == Infix_tag) v2 -= Infix_offset_hd(Hd_val(v2));
+          if (Tag_hd(Hd_val(v2)) == Infix_tag){
+            v2 -= Infix_offset_hd(Hd_val(v2));
+          }
           hd = Hd_val(v2);
           if (Color_hd(hd) != Caml_blue) {
             if (write_pos == ENTRIES_PER_QUEUE_CHUNK) {
-              struct queue_chunk *new_chunk = malloc(sizeof(struct queue_chunk));
+              struct queue_chunk *new_chunk =
+                malloc(sizeof(struct queue_chunk));
               if (new_chunk == NULL) {
                 size = (-1);
                 goto release;

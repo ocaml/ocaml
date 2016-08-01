@@ -1812,7 +1812,8 @@ and transl_prim_1 env p arg dbg =
         | Ostype_unix -> const_of_bool (Sys.os_type = "Unix")
         | Ostype_win32 -> const_of_bool (Sys.os_type = "Win32")
         | Ostype_cygwin -> const_of_bool (Sys.os_type = "Cygwin")
-        | Backend_type -> tag_int (Cconst_int 0) (* tag 0 is the same as Native here *)
+        | Backend_type ->
+            tag_int (Cconst_int 0) (* tag 0 is the same as Native here *)
       end
   | Poffsetint n ->
       if no_overflow_lsl n 1 then

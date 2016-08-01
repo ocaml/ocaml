@@ -1079,8 +1079,8 @@ CAMLprim value caml_ba_slice(value vb, value vind)
 
   #undef b
 }
-    
-/* Changing the layout of an array (memory is shared) */    
+
+/* Changing the layout of an array (memory is shared) */
 
 CAMLprim value caml_ba_change_layout(value vb, value vlayout)
 {
@@ -1099,7 +1099,7 @@ CAMLprim value caml_ba_change_layout(value vb, value vlayout)
     caml_ba_update_proxy(b, Caml_ba_array_val(res));
     CAMLreturn(res);
   } else {
-  /* otherwise, do nothing */  
+  /* otherwise, do nothing */
   CAMLreturn(vb);
   }
   #undef b

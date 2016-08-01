@@ -259,8 +259,9 @@ module Env : sig
   (** Print a human-readable version of the given environment. *)
   val print : Format.formatter -> t -> unit
 
-  (** The environment stores the call-site being inlined to produce precise location
-      information. This function sets the current call-site being inlined.  *)
+  (** The environment stores the call-site being inlined to produce
+      precise location information. This function sets the current
+      call-site being inlined.  *)
   val set_inline_debuginfo : t -> dbg:Debuginfo.t -> t
 
   (** Appends the locations of inlined call-sites to the [~dbg] argument *)

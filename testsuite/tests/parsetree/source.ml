@@ -7218,7 +7218,7 @@ let _ = function
     end
 
 let f (type t) () =
-  let exception F of t in (); 
+  let exception F of t in ();
   let exception G of t in ();
   let exception E of t in
   (fun x -> E x), (function E _ -> print_endline "OK" | _ -> print_endline "KO")

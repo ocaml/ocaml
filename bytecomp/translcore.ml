@@ -523,7 +523,8 @@ let check_recursive_lambda idlist lam =
     | _ -> false
 
   and check_recordwith_updates idlist id1 = function
-    | Lsequence (Lprim ((Psetfield _ | Psetfloatfield _), [Lvar id2; e1], _), cont)
+    | Lsequence (Lprim ((Psetfield _ | Psetfloatfield _), [Lvar id2; e1], _),
+                 cont)
         -> id2 = id1 && check idlist e1
            && check_recordwith_updates idlist id1 cont
     | Lvar id2 -> id2 = id1
@@ -1146,10 +1147,12 @@ and transl_apply ?(should_be_tailcall=false) ?(inlined = Default_inline)
         let body =
           match build_apply handle ((Lvar id_arg, optional)::args') l with
             Lfunction{kind = Curried; params = ids; body = lam; attr; loc} ->
-              Lfunction{kind = Curried; params = id_arg::ids; body = lam; attr; loc}
+              Lfunction{kind = Curried; params = id_arg::ids; body = lam; attr;
+                        loc}
           | Levent(Lfunction{kind = Curried; params = ids;
                              body = lam; attr; loc}, _) ->
-              Lfunction{kind = Curried; params = id_arg::ids; body = lam; attr; loc}
+              Lfunction{kind = Curried; params = id_arg::ids; body = lam; attr;
+                        loc}
           | lam ->
               Lfunction{kind = Curried; params = [id_arg]; body = lam;
                         attr = default_function_attribute; loc = loc}

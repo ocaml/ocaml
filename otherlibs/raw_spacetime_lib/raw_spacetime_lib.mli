@@ -254,8 +254,9 @@ module Trace : sig
   end
 
   module Node : sig
-    (** Either an OCaml or a foreign node; or an indication that this is a branch
-        of the graph corresponding to uninstrumented code. *)
+    (** Either an OCaml or a foreign node; or an indication that this
+        is a branch of the graph corresponding to uninstrumented
+        code. *)
     type t = node
 
     val compare : t -> t -> int

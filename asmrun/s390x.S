@@ -178,7 +178,7 @@ caml_raise_exception:
 .L112:
         lgfi      %r0, 0
         Storeglobal32(%r0, caml_backtrace_pos)
-	ldgr    %f15,%r2        /* preserve exn bucket in callee-save reg */
+        ldgr    %f15,%r2        /* preserve exn bucket in callee-save reg */
                                 /* arg1: exception bucket, already in r2 */
         Loadglobal(%r3, caml_last_return_address) /* arg2: PC of raise */
         Loadglobal(%r4, caml_bottom_of_stack)     /* arg3: SP of raise */
@@ -314,8 +314,8 @@ caml_callback3_exn:
         .globl  caml_ml_array_bound_error
         .type   caml_ml_array_bound_error, @function
 caml_ml_array_bound_error:
-	/* Save return address before decrementing SP, otherwise
-	   the frame descriptor for the call site is not correct */
+        /* Save return address before decrementing SP, otherwise
+           the frame descriptor for the call site is not correct */
         Storeglobal(%r15, caml_bottom_of_stack)
         lay     %r15, -160(%r15)    /* Reserve stack space for C call */
         larl    %r7, caml_array_bound_error

@@ -152,7 +152,8 @@ let primitive (p : Lambda.primitive) (args, approxs) expr dbg ~size_int
         | Ostype_unix -> S.const_bool_expr expr (Sys.os_type = "Unix")
         | Ostype_win32 -> S.const_bool_expr expr (Sys.os_type = "Win32")
         | Ostype_cygwin -> S.const_bool_expr expr (Sys.os_type = "Cygwin")
-        | Backend_type -> S.const_ptr_expr expr 0 (* tag 0 is the same as Native *)
+        | Backend_type ->
+          S.const_ptr_expr expr 0 (* tag 0 is the same as Native *)
         end
       | _ -> expr, A.value_unknown Other, C.Benefit.zero
       end

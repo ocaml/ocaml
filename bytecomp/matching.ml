@@ -1523,7 +1523,8 @@ let inline_lazy_force_cond arg loc =
               Lifthenelse(
                 (* ... if (tag == Obj.lazy_tag) then Lazy.force varg else ... *)
                 Lprim(Pintcomp Ceq,
-                      [Lvar tag; Lconst(Const_base(Const_int Obj.lazy_tag))], loc),
+                      [Lvar tag; Lconst(Const_base(Const_int Obj.lazy_tag))],
+                      loc),
                 Lapply{ap_should_be_tailcall=false;
                        ap_loc=loc;
                        ap_func=force_fun;
@@ -2422,7 +2423,8 @@ let call_switcher_variant_constr loc fail arg int_lambda_list =
        call_switcher
          fail (Lvar v) min_int max_int int_lambda_list)
 
-let combine_variant loc row arg partial ctx def (tag_lambda_list, total1, _pats) =
+let combine_variant loc row arg partial ctx def
+                    (tag_lambda_list, total1, _pats) =
   let row = Btype.row_repr row in
   let num_constr = ref 0 in
   if row.row_closed then

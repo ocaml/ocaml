@@ -1029,7 +1029,8 @@ and simplify_named env r (tree : Flambda.named) : Flambda.named * R.t =
             | Pfloatarray | Pgenarray -> ()
             | Paddrarray | Pintarray ->
               (* CR pchambart: Do a proper warning here *)
-              Misc.fatal_errorf "Assignment of a float to a specialised non-float array: %a"
+              Misc.fatal_errorf "Assignment of a float to a specialised \
+                                 non-float array: %a"
                 Flambda.print_named tree
             end;
             Lambda.Pfloatarray

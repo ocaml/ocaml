@@ -45,7 +45,8 @@
    for performance. Perhaps a macro or "static inline" would be
    more appropriate. */
 
-c_node* caml_spacetime_offline_c_node_of_stored_pointer_not_null(value node_stored)
+c_node* caml_spacetime_offline_c_node_of_stored_pointer_not_null
+          (value node_stored)
 {
   Assert(Is_c_node(node_stored));
   return (c_node*) Hp_val(node_stored);

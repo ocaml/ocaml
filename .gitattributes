@@ -33,7 +33,7 @@ README*                  ocaml-typo=missing-header
 /.merlin                 ocaml-typo=missing-header
 /Changes                 ocaml-typo=non-ascii,missing-header
 /INSTALL                 ocaml-typo=missing-header
-/LICENSE                 ocaml-typo=non-printing,missing-header
+/LICENSE                 ocaml-typo=long-line,very-long-line,missing-header
 /appveyor.yml            ocaml-typo=long-line,very-long-line
 
 
@@ -64,7 +64,7 @@ otherlibs/win32unix/readlink.c    ocaml-typo=long-line
 otherlibs/win32unix/stat.c        ocaml-typo=long-line
 otherlibs/win32unix/symlink.c     ocaml-typo=long-line
 
-stdlib/sharpbang    ocaml-typo=white-at-eol,missing-lf
+stdlib/hashbang     ocaml-typo=white-at-eol,missing-lf
 
 testsuite/tests/**                        ocaml-typo=missing-header
 testsuite/tests/lib-bigarray-2/bigarrf.f  ocaml-typo=missing-header,tab

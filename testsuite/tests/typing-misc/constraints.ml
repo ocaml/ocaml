@@ -66,7 +66,7 @@ module PR6505a = struct
   type 'o is_an_object = < .. > as 'o
   and ('k,'l) abs = 'l constraint 'k = 'l is_an_object
   let y : ('o, 'o) abs = object end
-end;; 
+end;;
 let _ = PR6505a.y#bang;; (* fails *)
 [%%expect{|
 module PR6505a :

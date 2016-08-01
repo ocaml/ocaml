@@ -30,7 +30,8 @@ let lfunction params body =
   if params = [] then body else
   match body with
   | Lfunction {kind = Curried; params = params'; body = body'; attr; loc} ->
-      Lfunction {kind = Curried; params = params @ params'; body = body'; attr; loc}
+      Lfunction {kind = Curried; params = params @ params'; body = body'; attr;
+                 loc}
   |  _ ->
       Lfunction {kind = Curried; params;
                  body;
@@ -814,7 +815,8 @@ let transl_class ids cl_id pub_meths cl vflag =
       (fun (_,path) -> List.mem (Path.head path) new_ids) inh_init
   in
   let inh_keys =
-    List.map (fun (_,p) -> Lprim(Pfield 1, [transl_normal_path p], Location.none))
+    List.map (fun (_,p) -> Lprim(Pfield 1, [transl_normal_path p],
+                                 Location.none))
       inh_paths
   in
   let lclass lam =

@@ -36,7 +36,9 @@ type ('a, 'b) t =
 
 and ('a, 'b) bucketlist =
     Empty
-  | Cons of { mutable key: 'a; mutable data: 'b; mutable next: ('a, 'b) bucketlist }
+  | Cons of { mutable key: 'a;
+              mutable data: 'b;
+              mutable next: ('a, 'b) bucketlist }
 
 (* The sign of initial_size encodes the fact that a traversal is
    ongoing or not.

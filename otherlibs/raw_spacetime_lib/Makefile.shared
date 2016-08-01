@@ -1,17 +1,16 @@
-#########################################################################
-#                                                                       #
-#                                 OCaml                                 #
-#                                                                       #
-#           Mark Shinwell and Leo White, Jane Street Europe             #
-#                                                                       #
-#   Copyright 2015--2016 Jane Street Group LLC                          #
-#                                                                       #
-#   Copyright 1999 Institut National de Recherche en Informatique et    #
-#   en Automatique.  All rights reserved.  This file is distributed     #
-#   under the terms of the GNU Library General Public License, with     #
-#   the special exception on linking described in file ../../LICENSE.   #
-#                                                                       #
-#########################################################################
+#**************************************************************************
+#*                                                                        *
+#*                                 OCaml                                  *
+#*                                                                        *
+#*           Mark Shinwell and Leo White, Jane Street Europe              *
+#*                                                                        *
+#*   Copyright 2015--2016 Jane Street Group LLC                           *
+#*                                                                        *
+#*   All rights reserved.  This file is distributed under the terms of    *
+#*   the GNU Lesser General Public License version 2.1, with the          *
+#*   special exception on linking described in the file LICENSE.          *
+#*                                                                        *
+#**************************************************************************
 
 # Makefile for Raw_spacetime_lib
 
@@ -48,7 +47,9 @@ install::
 
 installopt:
 	cp $(CAMLOBJS_NAT) $(LIBNAME).cmxa $(LIBNAME).$(A) $(INSTALL_LIBDIR)/
-	if test -f $(LIBNAME).cmxs; then cp $(LIBNAME).cmxs $(INSTALL_LIBDIR)/; fi
+	if test -f $(LIBNAME).cmxs; then \
+	  cp $(LIBNAME).cmxs $(INSTALL_LIBDIR)/; \
+	fi
 
 partialclean:
 	rm -f *.cm*

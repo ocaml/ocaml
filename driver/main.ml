@@ -202,7 +202,8 @@ let main () =
     if !make_archive then begin
       Compmisc.init_path false;
 
-      Bytelibrarian.create_archive ppf  (Compenv.get_objfiles ~with_ocamlparam:false)
+      Bytelibrarian.create_archive ppf
+                                   (Compenv.get_objfiles ~with_ocamlparam:false)
                                    (extract_output !output_name);
       Warnings.check_fatal ();
     end

@@ -280,7 +280,8 @@ let read_and_approximate inputfile =
     report_err exn;
     !Depend.free_structure_names
 
-let read_parse_and_extract parse_function extract_function def ast_kind source_file =
+let read_parse_and_extract parse_function extract_function def ast_kind
+                           source_file =
   Depend.free_structure_names := Depend.StringSet.empty;
   try
     let input_file = Pparse.preprocess source_file in

@@ -583,7 +583,7 @@ static struct cplugin_context cplugin_context;
 void caml_load_plugin(char *plugin)
 {
   void* dll_handle = NULL;
-  
+
   dll_handle = caml_dlopen(plugin, DLL_EXECUTABLE, DLL_NOT_GLOBAL);
   if( dll_handle != NULL ){
    void (* dll_init)(struct cplugin_context*) =
@@ -597,7 +597,7 @@ void caml_load_plugin(char *plugin)
   } else {
    fprintf(stderr, "Cannot load C plugin %s\nReason: %s\n",
           plugin, caml_dlerror());
-  } 
+  }
 }
 
 void caml_cplugins_load(char *env_variable)
@@ -635,4 +635,3 @@ void caml_cplugins_init(char * exe_name, char **argv)
 }
 
 #endif /* CAML_WITH_CPLUGINS */
-

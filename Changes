@@ -28,10 +28,10 @@ OCaml 4.04.0:
 
 ### Compiler user-interface and warnings:
 
-* PR#6475, GPR#464: interpret all command-line options before compiling any files,
-  changes (improves) the semantics of repeated -o options or -o combined with -c
-  see the super-detailed commit message at
-    https://github.com/ocaml/ocaml/commit/da56cf6dfdc13c09905c2e07f1d4849c8346eec8
+* PR#6475, GPR#464: interpret all command-line options before compiling any
+  files, changes (improves) the semantics of repeated -o options or -o
+  combined with -c see the super-detailed commit message at
+  https://github.com/ocaml/ocaml/commit/da56cf6dfdc13c09905c2e07f1d4849c8346eec8
   (whitequark)
 
 * GPR#591: Improve support for OCAMLPARAM: (i) do not use objects

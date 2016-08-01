@@ -76,7 +76,9 @@ and strengthen_sig ~aliasable env sg p pos =
   | (Sig_typext _ as sigelt) :: rem ->
       sigelt :: strengthen_sig ~aliasable env rem p (pos+1)
   | Sig_module(id, md, rs) :: rem ->
-      let str = strengthen_decl ~aliasable env md (Pdot(p, Ident.name id, pos)) in
+      let str =
+        strengthen_decl ~aliasable env md (Pdot(p, Ident.name id, pos))
+      in
       Sig_module(id, str, rs)
       :: strengthen_sig ~aliasable
         (Env.add_module_declaration ~check:false id md env) rem p (pos+1)

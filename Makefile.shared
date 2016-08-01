@@ -24,7 +24,8 @@ include stdlib/StdlibModules
 
 CAMLC=$(CAMLRUN) boot/ocamlc -g -nostdlib -I boot -use-prims byterun/primitives
 CAMLOPT=$(CAMLRUN) ./ocamlopt -g -nostdlib -I stdlib -I otherlibs/dynlink
-COMPFLAGS=-strict-sequence -principal -absname -w +a-4-9-41-42-44-45-48 -warn-error A \
+COMPFLAGS=-strict-sequence -principal -absname -w +a-4-9-41-42-44-45-48 \
+	  -warn-error A \
           -bin-annot -safe-string -strict-formats $(INCLUDES)
 LINKFLAGS=
 
@@ -272,13 +273,16 @@ ARCH_OCAMLOPT:=$(ARCH)
 check_arch:
 	@echo "========= CHECKING asmcomp/$(ARCH) =============="
 	@rm -f $(ARCH_SPECIFIC) asmcomp/*.cm*
-	@$(MAKEREC) ARCH_OCAMLOPT=$(ARCH) compilerlibs/ocamloptcomp.cma > /dev/null
+	@$(MAKEREC) ARCH_OCAMLOPT=$(ARCH) compilerlibs/ocamloptcomp.cma \
+	            >/dev/null
 	@rm -f $(ARCH_SPECIFIC) asmcomp/*.cm*
 
 ARCHES=amd64 i386 arm arm64 power sparc s390x
 
 check_all_arches:
-	@for i in $(ARCHES); do $(MAKEREC) --no-print-directory check_arch ARCH=$$i; done
+	@for i in $(ARCHES); do \
+	  $(MAKEREC) --no-print-directory check_arch ARCH=$$i; \
+	done
 
 # Compiler Plugins
 
@@ -305,9 +309,9 @@ driver/compdynlink.cmo: driver/compdynlink.mlbyte driver/compdynlink.cmi
 driver/compdynlink.cmx: driver/compdynlink.mlopt driver/compdynlink.cmi
 	$(CAMLOPT) $(COMPFLAGS) -c -impl $<
 
-beforedepend:: driver/compdynlink.mlbyte driver/compdynlink.mlopt driver/compdynlink.mli
+beforedepend:: driver/compdynlink.mlbyte driver/compdynlink.mlopt \
+               driver/compdynlink.mli
 partialclean::
 	rm -f driver/compdynlink.mlbyte
 	rm -f driver/compdynlink.mli
 	rm -f driver/compdynlink.mlopt
-

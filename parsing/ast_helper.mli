@@ -150,7 +150,8 @@ module Exp:
                   -> expression
     val letmodule: ?loc:loc -> ?attrs:attrs -> str -> module_expr -> expression
                    -> expression
-    val letexception: ?loc:loc -> ?attrs:attrs -> extension_constructor -> expression
+    val letexception:
+      ?loc:loc -> ?attrs:attrs -> extension_constructor -> expression
       -> expression
     val assert_: ?loc:loc -> ?attrs:attrs -> expression -> expression
     val lazy_: ?loc:loc -> ?attrs:attrs -> expression -> expression

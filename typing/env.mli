@@ -317,4 +317,3 @@ module Persistent_signature : sig
       it from memory, for instance to build a self-contained toplevel. *)
   val load : (unit_name:string -> t option) ref
 end
-
