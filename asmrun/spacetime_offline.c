@@ -38,6 +38,8 @@
 
 #include "../config/s.h"
 
+#ifdef ARCH_SIXTYFOUR
+
 /* CR-someday lwhite: The following two definitions are copied from spacetime.c
    because they are needed here, but must be inlined in spacetime.c
    for performance. Perhaps a macro or "static inline" would be
@@ -221,3 +223,5 @@ CAMLprim value caml_spacetime_c_node_allocation_count(value node)
   Assert(!Is_block(c_node->data.allocation.count));
   return c_node->data.allocation.count;
 }
+
+#endif
