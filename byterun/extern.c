@@ -547,15 +547,15 @@ static void extern_rec(value v)
     }
     default: {
       value field0;
-#if !(defined(NATIVE_CODE) && defined(WITH_SPACETIME))
-      header_t hd_erased = hd;
-#else
-      header_t hd_erased = Hd_no_profinfo(hd);
-#endif
       if (tag < 16 && sz < 8) {
         write(PREFIX_SMALL_BLOCK + tag + (sz << 4));
       } else {
 #ifdef ARCH_SIXTYFOUR
+#if !(defined(NATIVE_CODE) && defined(WITH_SPACETIME))
+        header_t hd_erased = hd;
+#else
+        header_t hd_erased = Hd_no_profinfo(hd);
+#endif
         if (sz > 0x3FFFFF && (extern_flags & COMPAT_32))
           extern_failwith("output_value: array cannot be read back on "
                           "32-bit platform");
