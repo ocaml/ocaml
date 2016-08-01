@@ -15,13 +15,13 @@
 #define CAML_INTERNALS
 
 #include <stdio.h>
-#include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
 #include <limits.h>
 #include <math.h>
 
 #include "caml/alloc.h"
+#include "caml/config.h"
 #include "caml/fail.h"
 #include "caml/gc.h"
 #include "caml/intext.h"
