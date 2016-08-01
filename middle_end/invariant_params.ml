@@ -137,7 +137,7 @@ let function_variable_alias
   in
   let fun_var_bindings = ref Variable.Map.empty in
   Variable.Map.iter (fun _ ( function_decl : Flambda.function_declaration ) ->
-      Flambda_iterators.iter_all_immutable_let_and_let_rec_bindings
+      Flambda_iterators.iter_all_toplevel_immutable_let_and_let_rec_bindings
         ~f:(fun var named ->
            (* CR-soon mshinwell: consider having the body passed to this
               function and using fv calculation instead of used_variables.
