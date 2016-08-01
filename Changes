@@ -132,6 +132,9 @@ OCaml 4.04.0:
   and lazy
   (Alain Frisch, review by Pierre Chambart)
 
+- GPR#714: Prevent warning 59 from triggering on Lazy of constants
+  (Pierre Chambart, review by Leo White)
+
 - GPR#723 Sort emitted functions according to source location
   (Pierre Chambart, review by Mark Shinwell)
 
