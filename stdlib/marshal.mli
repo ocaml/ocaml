@@ -52,6 +52,10 @@
    differently than binary channels, e.g. Windows.
  *)
 
+[@@@ocaml.unsafe {|
+  The module Marshal provides non-type-safe marshalling.
+|} ]
+
 type extern_flags =
     No_sharing                          (** Don't preserve sharing *)
   | Closures                            (** Send function closures *)
