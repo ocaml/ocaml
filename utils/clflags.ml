@@ -154,6 +154,7 @@ let runtime_variant = ref "";;      (* -runtime-variant *)
 let keep_docs = ref false              (* -keep-docs *)
 let keep_locs = ref false              (* -keep-locs *)
 let unsafe_string = ref (not Config.safe_string)    (* -safe-string / -unsafe-string *)
+let safe_syntax = ref false            (* -safe-syntax *)
 
 let classic_inlining = ref false       (* -Oclassic *)
 let inlining_report = ref false    (* -inlining-report *)

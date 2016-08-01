@@ -428,6 +428,10 @@ let mk_safe_string f =
   else " Make strings immutable"
 ;;
 
+let mk_safe_syntax f =
+  "-safe-syntax", Arg.Unit f, " Use safe syntax"
+;;
+
 let mk_shared f =
   "-shared", Arg.Unit f, " Produce a dynlinkable plugin"
 ;;
@@ -496,6 +500,10 @@ let mk_unsafe_string f =
     "-unsafe-string", Arg.Unit err, " (option not available)"
   else
     "-unsafe-string", Arg.Unit f, " Make strings mutable (default)"
+;;
+
+let mk_unsafe_syntax f =
+  "-unsafe-syntax", Arg.Unit f, " Use unsafe syntax (default)"
 ;;
 
 let mk_use_runtime f =
@@ -747,6 +755,7 @@ module type Common_options = sig
   val _rectypes : unit -> unit
   val _no_rectypes : unit -> unit
   val _safe_string : unit -> unit
+  val _safe_syntax : unit -> unit
   val _short_paths : unit -> unit
   val _strict_sequence : unit -> unit
   val _no_strict_sequence : unit -> unit
@@ -756,6 +765,7 @@ module type Common_options = sig
   val _no_unboxed_types : unit -> unit
   val _unsafe : unit -> unit
   val _unsafe_string : unit -> unit
+  val _unsafe_syntax : unit -> unit
   val _version : unit -> unit
   val _vnum : unit -> unit
   val _w : string -> unit
@@ -804,6 +814,7 @@ module type Compiler_options = sig
   val _rectypes : unit -> unit
   val _runtime_variant : string -> unit
   val _safe_string : unit -> unit
+  val _safe_syntax : unit -> unit
   val _short_paths : unit -> unit
   val _thread : unit -> unit
   val _v : unit -> unit
@@ -997,6 +1008,7 @@ struct
     mk_no_rectypes F._no_rectypes;
     mk_runtime_variant F._runtime_variant;
     mk_safe_string F._safe_string;
+    mk_safe_syntax F._safe_syntax;
     mk_short_paths F._short_paths;
     mk_strict_sequence F._strict_sequence;
     mk_no_strict_sequence F._no_strict_sequence;
@@ -1007,6 +1019,7 @@ struct
     mk_no_unboxed_types F._no_unboxed_types;
     mk_unsafe F._unsafe;
     mk_unsafe_string F._unsafe_string;
+    mk_unsafe_syntax F._unsafe_syntax;
     mk_use_runtime F._use_runtime;
     mk_use_runtime_2 F._use_runtime;
     mk_v F._v;
@@ -1058,6 +1071,7 @@ struct
     mk_rectypes F._rectypes;
     mk_no_rectypes F._no_rectypes;
     mk_safe_string F._safe_string;
+    mk_safe_syntax F._safe_syntax;
     mk_short_paths F._short_paths;
     mk_stdin F._stdin;
     mk_strict_sequence F._strict_sequence;
@@ -1068,6 +1082,7 @@ struct
     mk_no_unboxed_types F._no_unboxed_types;
     mk_unsafe F._unsafe;
     mk_unsafe_string F._unsafe_string;
+    mk_unsafe_syntax F._unsafe_syntax;
     mk_version F._version;
     mk__version F._version;
     mk_no_version F._no_version;
@@ -1160,6 +1175,7 @@ struct
     mk_runtime_variant F._runtime_variant;
     mk_S F._S;
     mk_safe_string F._safe_string;
+    mk_safe_syntax F._safe_syntax;
     mk_shared F._shared;
     mk_short_paths F._short_paths;
     mk_strict_sequence F._strict_sequence;
@@ -1174,6 +1190,7 @@ struct
     mk_no_unboxed_types F._no_unboxed_types;
     mk_unsafe F._unsafe;
     mk_unsafe_string F._unsafe_string;
+    mk_unsafe_syntax F._unsafe_syntax;
     mk_v F._v;
     mk_verbose F._verbose;
     mk_version F._version;
@@ -1261,6 +1278,7 @@ module Make_opttop_options (F : Opttop_options) = struct
     mk_remove_unused_arguments F._remove_unused_arguments;
     mk_S F._S;
     mk_safe_string F._safe_string;
+    mk_safe_syntax F._safe_syntax;
     mk_short_paths F._short_paths;
     mk_stdin F._stdin;
     mk_strict_sequence F._strict_sequence;
@@ -1273,6 +1291,7 @@ module Make_opttop_options (F : Opttop_options) = struct
     mk_no_unboxed_types F._no_unboxed_types;
     mk_unsafe F._unsafe;
     mk_unsafe_string F._unsafe_string;
+    mk_unsafe_syntax F._unsafe_syntax;
     mk_verbose F._verbose;
     mk_version F._version;
     mk__version F._version;
@@ -1335,6 +1354,7 @@ struct
     mk_rectypes F._rectypes;
     mk_no_rectypes F._no_rectypes;
     mk_safe_string F._safe_string;
+    mk_safe_syntax F._safe_syntax;
     mk_short_paths F._short_paths;
     mk_strict_sequence F._strict_sequence;
     mk_no_strict_sequence F._no_strict_sequence;
@@ -1344,6 +1364,7 @@ struct
     mk_unboxed_types F._unboxed_types;
     mk_no_unboxed_types F._no_unboxed_types;
     mk_unsafe_string F._unsafe_string;
+    mk_unsafe_syntax F._unsafe_syntax;
     mk_v F._v;
     mk_verbose F._verbose;
     mk_version F._version;

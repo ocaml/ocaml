@@ -200,7 +200,9 @@ module Options = Main_args.Make_opttop_options (struct
   let _dlinear = set dump_linear
   let _dstartup = set keep_startup_file
   let _safe_string = clear unsafe_string
+  let _safe_syntax = set safe_syntax
   let _unsafe_string = set unsafe_string
+  let _unsafe_syntax = clear safe_syntax
   let _open s = open_modules := s :: !open_modules
   let _plugin p = Compplugin.load p
 

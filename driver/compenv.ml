@@ -202,6 +202,7 @@ let read_one_param ppf position name v =
   | "principal" -> set "principal"  [ principal ] v
   | "rectypes" -> set "rectypes" [ recursive_types ] v
   | "safe-string" -> clear "safe-string" [ unsafe_string ] v
+  | "safe-syntax" -> set "safe-syntax" [ safe_syntax ] v
   | "strict-sequence" -> set "strict-sequence" [ strict_sequence ] v
   | "strict-formats" -> set "strict-formats" [ strict_formats ] v
   | "thread" -> set "thread" [ use_threads ] v
