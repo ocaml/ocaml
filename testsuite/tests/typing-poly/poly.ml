@@ -1426,6 +1426,7 @@ Error: This expression has type M.t but an expression was expected of type 'x
 |}];;
 
 (* PR#7285 *)
+[@@@ocaml.warning "-62"]
 type (+'a,-'b) foo = private int;;
 let f (x : int) : ('a,'a) foo = Obj.magic x;;
 let x = f 3;;

@@ -1,3 +1,5 @@
+[@@@ocaml.warning "-62"]
+
 module Exp =
   struct
 

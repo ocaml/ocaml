@@ -119,8 +119,40 @@ Error: This extension does not match the definition of type bar
 #     val y : exn * exn = (Foo (3, _), Bar (Some 5))
 #         type foo = ..
 #         type foo += Foo | Bar of int
-#   val extension_name : 'a -> string = <fun>
-# val extension_id : 'a -> int = <fun>
+#   Characters 24-42:
+  let extension_name e = Obj.extension_name (Obj.extension_constructor e);;
+                         ^^^^^^^^^^^^^^^^^^
+Warning 62: unsafe: module Obj
+
+  The module Obj provides operations on the internal representations
+  of values.  Most of those operations are unsafe.
+
+Characters 44-69:
+  let extension_name e = Obj.extension_name (Obj.extension_constructor e);;
+                                             ^^^^^^^^^^^^^^^^^^^^^^^^^
+Warning 62: unsafe: module Obj
+
+  The module Obj provides operations on the internal representations
+  of values.  Most of those operations are unsafe.
+
+val extension_name : 'a -> string = <fun>
+# Characters 21-37:
+  let extension_id e = Obj.extension_id (Obj.extension_constructor e);;
+                       ^^^^^^^^^^^^^^^^
+Warning 62: unsafe: module Obj
+
+  The module Obj provides operations on the internal representations
+  of values.  Most of those operations are unsafe.
+
+Characters 39-64:
+  let extension_id e = Obj.extension_id (Obj.extension_constructor e);;
+                                         ^^^^^^^^^^^^^^^^^^^^^^^^^
+Warning 62: unsafe: module Obj
+
+  The module Obj provides operations on the internal representations
+  of values.  Most of those operations are unsafe.
+
+val extension_id : 'a -> int = <fun>
 #     val n1 : string = "Foo"
 #     val n2 : string = "Bar"
 #     val t : bool = true
@@ -128,6 +160,22 @@ Error: This extension does not match the definition of type bar
 #         val is_foo : 'a -> bool = <fun>
 type foo += Foo
 #     val f : bool = false
-#     Exception: Invalid_argument "Obj.extension_constructor".
-#     Exception: Invalid_argument "Obj.extension_constructor".
+#     Characters 9-34:
+  let _ = Obj.extension_constructor 7 (* Invald_arg *)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^
+Warning 62: unsafe: module Obj
+
+  The module Obj provides operations on the internal representations
+  of values.  Most of those operations are unsafe.
+
+Exception: Invalid_argument "Obj.extension_constructor".
+#     Characters 9-34:
+  let _ = Obj.extension_constructor (object method m = 3 end) (* Invald_arg *)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^
+Warning 62: unsafe: module Obj
+
+  The module Obj provides operations on the internal representations
+  of values.  Most of those operations are unsafe.
+
+Exception: Invalid_argument "Obj.extension_constructor".
 # 

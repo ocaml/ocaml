@@ -1,3 +1,5 @@
+[@@@ocaml.warning "-62"]
+
 module B : sig
  type (_, _) t = Eq: ('a, 'a) t
  val f: 'a -> 'b -> ('a, 'b) t

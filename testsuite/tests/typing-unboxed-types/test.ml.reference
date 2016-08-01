@@ -1,10 +1,58 @@
 
 #       type t1 = A of string [@@unboxed]
-#       - : bool = true
+#       Characters 20-28:
+  Obj.repr x == Obj.repr (match x with A s -> s)
+  ^^^^^^^^
+Warning 62: unsafe: module Obj
+
+  The module Obj provides operations on the internal representations
+  of values.  Most of those operations are unsafe.
+
+Characters 34-42:
+  Obj.repr x == Obj.repr (match x with A s -> s)
+                ^^^^^^^^
+Warning 62: unsafe: module Obj
+
+  The module Obj provides operations on the internal representations
+  of values.  Most of those operations are unsafe.
+
+- : bool = true
 #     type t2 = { f : string; } [@@unboxed]
-#       - : bool = true
+#       Characters 26-34:
+  Obj.repr x == Obj.repr x.f
+  ^^^^^^^^
+Warning 62: unsafe: module Obj
+
+  The module Obj provides operations on the internal representations
+  of values.  Most of those operations are unsafe.
+
+Characters 40-48:
+  Obj.repr x == Obj.repr x.f
+                ^^^^^^^^
+Warning 62: unsafe: module Obj
+
+  The module Obj provides operations on the internal representations
+  of values.  Most of those operations are unsafe.
+
+- : bool = true
 #     type t3 = B of { g : string; } [@@unboxed]
-#       - : bool = true
+#       Characters 28-36:
+  Obj.repr x == Obj.repr (match x with B {g} -> g)
+  ^^^^^^^^
+Warning 62: unsafe: module Obj
+
+  The module Obj provides operations on the internal representations
+  of values.  Most of those operations are unsafe.
+
+Characters 42-50:
+  Obj.repr x == Obj.repr (match x with B {g} -> g)
+                ^^^^^^^^
+Warning 62: unsafe: module Obj
+
+  The module Obj provides operations on the internal representations
+  of values.  Most of those operations are unsafe.
+
+- : bool = true
 #     Characters 29-58:
   type t4 = C [@@ocaml.unboxed];;  (* no argument *)
   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
