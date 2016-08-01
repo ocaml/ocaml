@@ -79,7 +79,7 @@ OCaml 4.04.0:
 
 - PR#6820, GPR#560: Add Obj.reachable_words to compute the
   "transitive" heap size of a value
-  (Alain Frisch, review by Marc Shinwell and Damien Doligez)
+  (Alain Frisch, review by Mark Shinwell and Damien Doligez)
 
 - GPR#626: String.split_on_char
   (Alain Frisch)
@@ -113,7 +113,7 @@ OCaml 4.04.0:
   (Alain Frisch, Pierre Chambart)
 
 - GPR#580: Optimize immutable float records
-  (Pierre Chambart, review by Marc Shinwell)
+  (Pierre Chambart, review by Mark Shinwell)
 
 - GPR#602: Do not generate dummy code to force module linking
   (Pierre Chambart, reviewed by Jacques Garrigue)
@@ -123,7 +123,7 @@ OCaml 4.04.0:
   (Pierre Chambart)
 
 - GPR#707: Load cross module information during a meet
-  (Pierre Chambart, report by Leo White, review by Marc Shinwell)
+  (Pierre Chambart, report by Leo White, review by Mark Shinwell)
 
 - GPR#709: Share a few more equal switch branches
   (Pierre Chambart, review by Gabriel Scherer)
@@ -133,7 +133,7 @@ OCaml 4.04.0:
   (Alain Frisch, review by Pierre Chambart)
 
 - GPR#723 Sort emitted functions according to source location
-  (Pierre Chambart, review by Marc Shinwell)
+  (Pierre Chambart, review by Mark Shinwell)
 
 ### Runtime system:
 
