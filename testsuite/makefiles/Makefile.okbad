@@ -20,13 +20,16 @@ default: compile
 compile:
 	@for file in *.ml; do \
 	  printf " ... testing '$$file'"; \
+	  if [ `echo $$file | grep principal` ]; \
+	  then PRIN="-principal -w +18+19 -warn-error A"; \
+	  else PRIN=""; fi; \
 	  if [ `echo $$file | grep bad` ]; then \
-	    $(OCAMLC) -c -w a $$file 2>/dev/null \
+	    $(OCAMLC) -c -w a $$PRIN $$file 2>/dev/null \
             && echo " => failed" || echo " => passed"; \
 	  else \
 	    F="`basename $$file .ml`"; \
-	    test -f $$F.mli && $(OCAMLC) -c -w a $$F.mli; \
-	    $(OCAMLC) -c -w a $$file 2>/dev/null \
+	    test -f $$F.mli && $(OCAMLC) -c -w a $$PRIN $$F.mli; \
+	    $(OCAMLC) -c -w a $$PRIN $$file 2>/dev/null \
 	    && if [ -f $$F.reference ]; then \
 	         rm -f program.byte; \
 	         $(OCAMLC) $$F.cmo -o program.byte \
