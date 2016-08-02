@@ -328,6 +328,9 @@ OBJINFO=../compilerlibs/ocamlcommon.cma \
 
 $(call byte_and_opt,ocamlobjinfo,$(OBJINFO),objinfo_helper$(EXE))
 
+install::
+	cp objinfo_helper$(EXE) "$(INSTALL_LIBDIR)/objinfo_helper$(EXE)"
+
 # Scan object files for required primitives
 $(call byte_and_opt,primreq,config.cmo primreq.cmo,)
 
