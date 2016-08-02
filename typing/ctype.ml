@@ -4133,12 +4133,21 @@ exception Non_closed0
 let visited = ref TypeSet.empty
 
 let rec closed_schema_rec env ty =
-  let ty = expand_head env ty in
+  let ty = repr ty in
   if TypeSet.mem ty !visited then () else begin
     visited := TypeSet.add ty !visited;
     match ty.desc with
       Tvar _ when ty.level <> generic_level ->
         raise Non_closed0
+    | Tconstr _ ->
+        let old = !visited in
+        begin try iter_type_expr (closed_schema_rec env) ty
+        with Non_closed0 -> try
+          visited := old;
+          closed_schema_rec env (try_expand_head try_expand_safe env ty)
+        with Cannot_expand ->
+          raise Non_closed0
+        end
     | Tfield(_, kind, t1, t2) ->
         if field_kind_repr kind = Fpresent then
           closed_schema_rec env t1;

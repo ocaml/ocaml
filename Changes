@@ -275,6 +275,9 @@ OCaml 4.04.0:
 - PR#7285: Relaxed value restriction broken with principal
   (Jacques Garrigue, report by Leo White)
 
+- PR#7305: -principal causes loop in type checker when compiling
+  (Jacques Garrigue, report by Anil Madhavapeddy, analysis by Leo White)
+
 - PR#7165, GPR#494: uncaught exception on invalid lexer directive
   (Gabriel Scherer, report by KC Sivaramakrishnan using afl-fuzz)
 
