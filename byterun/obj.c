@@ -28,7 +28,7 @@
 #include "caml/misc.h"
 #include "caml/mlvalues.h"
 #include "caml/prims.h"
-#include "spacetime.h"
+#include "caml/spacetime.h"
 
 /* [size] is a value encoding a number of bytes */
 CAMLprim value caml_static_alloc(value size)

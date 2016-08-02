@@ -26,7 +26,7 @@
 #include "caml/roots.h"
 #include "caml/signals.h"
 #if defined(NATIVE_CODE) && defined(WITH_SPACETIME)
-#include "../asmrun/spacetime.h"
+#include "caml/spacetime.h"
 #endif
 
 struct final {
