@@ -174,6 +174,7 @@ case $configure in
   *) error "internal error";;
 esac
 
+$make -f $makefile coldstart
 $make -f $makefile core
 $make -f $makefile coreboot
 $make -f $makefile world
