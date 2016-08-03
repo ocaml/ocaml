@@ -42,6 +42,7 @@ module Env = struct
     closure_depth : int;
     inlining_stats_closure_stack : Inlining_stats.Closure_stack.t;
     inlined_debuginfo : Debuginfo.t;
+    in_tail_position : bool;
   }
 
   let create ~never_inline ~backend ~round =
@@ -65,6 +66,7 @@ module Env = struct
       inlining_stats_closure_stack =
         Inlining_stats.Closure_stack.create ();
       inlined_debuginfo = Debuginfo.none;
+      in_tail_position = true;
     }
 
   let backend t = t.backend
@@ -76,6 +78,7 @@ module Env = struct
       projections = Projection.Map.empty;
       freshening = Freshening.empty_preserving_activation_state env.freshening;
       inlined_debuginfo = Debuginfo.none;
+      in_tail_position = true;
     }
 
   let inlining_level_up env =
@@ -404,6 +407,9 @@ module Env = struct
 
   let add_inlined_debuginfo t ~dbg =
     Debuginfo.concat t.inlined_debuginfo dbg
+
+  let in_tail_position t = t.in_tail_position
+  let set_not_in_tail_position t = { t with in_tail_position = false; }
 end
 
 let initial_inlining_threshold ~round : Inlining_cost.Threshold.t =
@@ -563,7 +569,9 @@ let prepare_to_simplify_set_of_closures ~env
           Some ({ var; projection; } : Flambda.specialised_to))
   in
   let environment_before_cleaning = env in
-  (* [E.local] helps us to catch bugs whereby variables escape their scope. *)
+  (* [E.local] helps us to catch bugs whereby variables escape their scope.
+     It also notes down that we are once again in tail position.
+  *)
   let env = E.local env in
   let free_vars, function_decls, sb, freshening =
     Freshening.apply_function_decls_and_free_vars (E.freshening env) free_vars
