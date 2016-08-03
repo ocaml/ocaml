@@ -221,6 +221,7 @@ and pattern_desc =
   | Ppat_extension of extension
         (* [%id] *)
   | Ppat_open of Longident.t loc * pattern
+        (* M.(P) *)
 
 (* Value expressions *)
 
@@ -342,9 +343,9 @@ and expression_desc =
            (module ME : S) is represented as
            Pexp_constraint(Pexp_pack, Ptyp_package S) *)
   | Pexp_open of override_flag * Longident.t loc * expression
-        (* let open M in E
-           let! open M in E
-        *)
+        (* M.(E)
+           let open M in E
+           let! open M in E *)
   | Pexp_extension of extension
         (* [%id] *)
   | Pexp_unreachable
