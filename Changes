@@ -263,6 +263,9 @@ OCaml 4.04.0:
 - PR#7285: Relaxed value restriction broken with principal
   (Jacques Garrigue, report by Leo White)
 
+- PR#7297: -strict-sequence turns off Warning 21
+  (Jacques Garrigue, report by Valentin Gatien-Baron)
+
 - PR#7165, GPR#494: uncaught exception on invalid lexer directive
   (Gabriel Scherer, report by KC Sivaramakrishnan using afl-fuzz)
 
