@@ -672,10 +672,7 @@ and simplify_apply env r ~(apply : Flambda.apply) : Flambda.t * R.t =
     Flambda. func = lhs_of_application; args; kind = _; dbg;
     inline = inline_requested; specialise = specialise_requested;
   } = apply in
-  let dbg =
-    if E.in_tail_position env then dbg
-    else E.add_inlined_debuginfo env ~dbg
-  in
+  let dbg = E.add_inlined_debuginfo env ~dbg in
   simplify_free_variable env lhs_of_application
     ~f:(fun env lhs_of_application lhs_of_application_approx ->
       simplify_free_variables env args ~f:(fun env args args_approxs ->
