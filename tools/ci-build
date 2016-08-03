@@ -174,7 +174,11 @@ case $configure in
   *) error "internal error";;
 esac
 
-$make -f $makefile world.opt
+$make -f $makefile core
+$make -f $makefile coreboot
+$make -f $makefile world
+$make -f $makefile opt
+$make -f $makefile opt.opt
 $make -f $makefile install
 
 rm -rf "$instdir"
