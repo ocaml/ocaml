@@ -16,6 +16,8 @@
 #include <caml/mlvalues.h>
 #include <caml/intext.h>
 
+#define CAML_INTERNALS
+
 value marshal_to_block(value vbuf, value vlen, value v, value vflags)
 {
   return Val_long(output_value_to_block(v, vflags,
