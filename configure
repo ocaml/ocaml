@@ -698,7 +698,7 @@ if test $with_sharedlibs = "yes"; then
       mkmaindll="$flexlink -maindll"
       shared_libraries_supported=true;;
     *-*-linux-gnu|*-*-linux|*-*-freebsd[3-9]*|*-*-freebsd[1-9][0-9]*\
-    |*-*-openbsd*|*-*-netbsd*|*-*-gnu*|*-*-haiku*)
+    |*-*-openbsd*|*-*-netbsd*|*-*-dragonfly*|*-*-gnu*|*-*-haiku*)
       sharedcccompopts="-fPIC"
       mksharedlib="$bytecc -shared"
       bytecclinkopts="$bytecclinkopts -Wl,-E"
@@ -806,6 +806,7 @@ if test $with_sharedlibs = "yes"; then
     sparc*-*-linux*)              natdynlink=true;;
     i686-*-kfreebsd*)             natdynlink=true;;
     x86_64-*-kfreebsd*)           natdynlink=true;;
+    x86_64-*-dragonfly*)          natdynlink=true;;
     i[3456]86-*-freebsd*)         natdynlink=true;;
     x86_64-*-freebsd*)            natdynlink=true;;
     i[3456]86-*-openbsd*)         natdynlink=true;;
@@ -879,6 +880,7 @@ case "$target" in
   zaurus*-*-openbsd*)           arch=arm; system=bsd;;
   x86_64-*-linux*)              arch=amd64; system=linux;;
   x86_64-*-gnu*)                arch=amd64; system=gnu;;
+  x86_64-*-dragonfly*)          arch=amd64; system=dragonfly;;
   x86_64-*-freebsd*)            arch=amd64; system=freebsd;;
   x86_64-*-netbsd*)             arch=amd64; system=netbsd;;
   x86_64-*-openbsd*)            arch=amd64; system=openbsd;;
@@ -956,6 +958,8 @@ case "$arch,$system" in
                     *) aspp="${TOOLPREF}as -P";;
                   esac;;
   arm,freebsd)    as="${TOOLPREF}cc -c"
+                  aspp="${TOOLPREF}cc -c";;
+  *,dragonfly)    as="${TOOLPREF}as"
                   aspp="${TOOLPREF}cc -c";;
   *,freebsd)      as="${TOOLPREF}as"
                   aspp="${TOOLPREF}cc -c";;
@@ -1488,6 +1492,8 @@ if test "$pthread_wanted" = "yes"; then
   case "$target" in
     *-*-solaris*)  pthread_link="-lpthread -lposix4"
                    pthread_caml_link="-cclib -lpthread -cclib -lposix4";;
+    *-*-dragon*)   pthread_link="-pthread"
+                   pthread_caml_link="-cclib -pthread";;
     *-*-freebsd*)  pthread_link="-pthread"
                    pthread_caml_link="-cclib -pthread";;
     *-*-openbsd*)  pthread_link="-pthread"
@@ -1504,7 +1510,7 @@ if test "$pthread_wanted" = "yes"; then
     bytecccompopts="$bytecccompopts -D_REENTRANT"
     nativecccompopts="$nativecccompopts -D_REENTRANT"
     case "$target" in
-      *-*-freebsd*)
+      *-*-freebsd*|*-*-dragonfly*)
           bytecccompopts="$bytecccompopts -D_THREAD_SAFE"
           nativecccompopts="$nativecccompopts -D_THREAD_SAFE";;
       *-*-openbsd*)
@@ -1674,6 +1680,7 @@ if test "$x11_include" = "not found"; then
       else
         x11_libs="-L$dir"
         case "$target" in
+          *-*-freebsd*|*-*-dragonfly*) x11_link="-L$dir -lX11";;
           *-kfreebsd*-gnu) x11_link="-L$dir -lX11";;
           *-*-*bsd*) x11_link="-R$dir -L$dir -lX11";;
           *) x11_link="-L$dir -lX11";;
