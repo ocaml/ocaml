@@ -967,7 +967,7 @@ let transl_store_gen module_name ({ str_items = str }, restr) topl =
         subst_lambda !transl_store_subst (transl_exp expr)
     | str -> transl_store_structure module_id map prims str in
   transl_store_label_init module_id
-    (Lambda.module_map map prims size) f str
+    (Lambda.module_map_clambda ~module_name map prims size) f str
   (*size, transl_label_init (transl_store_structure module_id map prims str)*)
 
 let transl_store_phrases module_name str =
@@ -1155,6 +1155,9 @@ let transl_store_package component_names target_name coercion =
     match arg with
       [] -> lambda_unit
     | hd :: tl -> Lsequence(fn pos hd, make_sequence fn (pos + 1) tl) in
+  let module_map map size =
+    Lambda.module_map_clambda ~module_name:(Ident.name target_name) map [] size
+  in
   match coercion with
     Tcoerce_none ->
       let size, map = List.fold_left (fun (i,map) id ->
@@ -1164,7 +1167,7 @@ let transl_store_package component_names target_name coercion =
         in
         (i+1, map)
       ) (0, Ident.empty) component_names in
-      Lambda.module_map map [] size,
+      module_map map size,
        make_sequence
          (fun pos id ->
            Lprim(Psetfield(pos, Pointer, Initialization),
@@ -1185,7 +1188,7 @@ let transl_store_package component_names target_name coercion =
           Ident.add id (pos, cc) map
         ) Ident.empty id_pos_list
       in
-      (Lambda.module_map map [] size,
+      (module_map map size,
        Llet (Strict, Pgenval, blk,
              apply_coercion Location.none Strict coercion components,
              make_sequence

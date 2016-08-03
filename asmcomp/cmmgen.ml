@@ -3092,8 +3092,8 @@ let module_map modmap =
     match modmap with
     | None -> Printf.eprintf "   None (flambda)\n%!"
     | Some modmap ->
-      List.iter (fun (pos,id) ->
-        Printf.eprintf "   val  %3d -> %S\n" pos (Ident.name id)) modmap.map;
+      List.iter (fun (pos,symbol,id) ->
+        Printf.eprintf "   val  %s.(%3d) -> %S\n" symbol pos (Ident.name id)) modmap.map;
       List.iter (fun (pos, name) ->
         Printf.eprintf "   prim %3d -> %S\n" pos name
       ) modmap.prims;

@@ -264,20 +264,23 @@ and lambda_event_kind =
   | Lev_function
   | Lev_pseudo
 
+type symbol = string
+
 type module_map = {
-  map :  (int * Ident.t) list;
+  map :  (int * symbol * Ident.t) list;
   prims : (int * string) list;
-  methcache : int option;
+  methcache : (int * symbol) option;
   size : int;
 }
 
-let module_map ?methcache map prims size =
+let module_map_clambda ~module_name map prims size =
+  let symbol = "caml" ^ module_name in
   let map = Ident.fold_all (fun id (pos, _cc) list ->
-    (pos, id) :: list) map [] in
+    (pos, symbol, id) :: list) map [] in
   let prims = List.map (fun (pos, prim) ->
     pos, prim.Typedtree.pc_desc.Primitive.prim_name
   ) prims in
-  { map; prims; methcache; size }
+  { map; prims; methcache = None; size }
 
 type program =
   { module_ident : Ident.t;
