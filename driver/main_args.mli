@@ -64,6 +64,7 @@ module type Compiler_options = sig
   val _binannot : unit -> unit
   val _c : unit -> unit
   val _cc : string -> unit
+  val _c_impl : string -> unit
   val _cclib : string -> unit
   val _ccopt : string -> unit
   val _config : unit -> unit

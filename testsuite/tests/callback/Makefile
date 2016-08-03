@@ -29,7 +29,7 @@ default:
 
 .PHONY: common
 common:
-	@$(CC) -c callbackprim.c
+	@$(OCAMLC) -c-impl callbackprim.cc
 
 .PHONY: skip
 skip:
