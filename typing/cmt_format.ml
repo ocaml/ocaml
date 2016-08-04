@@ -182,7 +182,7 @@ let save_cmt filename modname binary_annots sourcefile initial_env sg =
             cmi_name = modname;
             cmi_sign = sg;
             cmi_flags = flags;
-            cmi_crcs = imports;
+            cmi_crcs = List.filter (fun (n, _) -> n <> modname) imports;
           } in
           Some (output_cmi filename oc cmi)
     in
