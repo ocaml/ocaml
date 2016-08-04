@@ -154,14 +154,15 @@ let emit_frames a =
     a.efa_data_label (label_debuginfos rs rdbg)
   in
   let emit_frame fd =
+    let fd_debuginfo = Debuginfo.filter_tail_calls fd.fd_debuginfo in
     a.efa_code_label fd.fd_lbl;
-    a.efa_16 (if Debuginfo.is_none fd.fd_debuginfo
+    a.efa_16 (if Debuginfo.is_none fd_debuginfo
               then fd.fd_frame_size
               else fd.fd_frame_size + 1);
     a.efa_16 (List.length fd.fd_live_offset);
     List.iter a.efa_16 fd.fd_live_offset;
     a.efa_align Arch.size_addr;
-    match List.rev fd.fd_debuginfo with
+    match List.rev fd_debuginfo with
     | [] -> ()
     | _ :: _ as rdbg -> emit_debuginfo_label fd.fd_raise rdbg
   in

@@ -21,6 +21,7 @@ type item = {
   dinfo_line: int;
   dinfo_char_start: int;
   dinfo_char_end: int;
+  dinfo_is_tail_call: bool;
 }
 
 type t = item list
@@ -52,6 +53,7 @@ let item_from_location loc =
       if loc.loc_end.pos_fname = loc.loc_start.pos_fname
       then loc.loc_end.pos_cnum - loc.loc_start.pos_bol
       else loc.loc_start.pos_cnum - loc.loc_start.pos_bol;
+    dinfo_is_tail_call = false;
   }
 
 let from_location loc =
@@ -72,6 +74,12 @@ let to_location = function
 let inline loc t =
   if loc == Location.none then t
   else (item_from_location loc) :: t
+
+let mark_as_tail_call t =
+  List.map (fun item -> { item with dinfo_is_tail_call = true; }) t
+
+let filter_tail_calls t =
+  List.filter (fun item -> not item.dinfo_is_tail_call) t
 
 let concat dbg1 dbg2 =
   dbg1 @ dbg2
