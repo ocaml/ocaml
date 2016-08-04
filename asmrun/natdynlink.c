@@ -29,6 +29,10 @@
 #include "spacetime.h"
 #endif
 
+#include "caml/hooks.h"
+
+CAMLexport void (*caml_natdynlink_hook)(void* handle, char* unit) = NULL;
+
 #include <stdio.h>
 #include <string.h>
 
@@ -119,6 +123,8 @@ CAMLprim value caml_natdynlink_run(void *handle, value symbol) {
     caml_ext_table_add(&caml_code_fragments_table, cf);
   }
 
+  if( caml_natdynlink_hook != NULL ) caml_natdynlink_hook(handle,unit);
+  
   entrypoint = optsym("__entry");
   if (NULL != entrypoint) result = caml_callback((value)(&entrypoint), 0);
   else result = Val_unit;
