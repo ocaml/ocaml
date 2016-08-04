@@ -70,7 +70,7 @@ link:parsing/location.mli[]:: +Location+ contains utilities related to locations
 
 === Useful Makefile targets
 
-Besides the targets listed in link:INSTALL.adoc for build and
+Besides the targets listed in link:INSTALL.adoc[] for build and
 installation, the following targets may be of use:
 
 +make runtop+ :: builds and runs the ocaml toplevel of the distribution
