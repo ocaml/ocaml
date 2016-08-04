@@ -57,7 +57,7 @@ EOF
           OCAML_NATIVE_TOOLS=true &&
         make all &&
         make install)
-    git clone git://github.com/ocaml/camlp4
+    git clone git://github.com/ocaml/camlp4 -b 4.04
     (cd camlp4 &&
      ./configure --bindir=$PREFIX/bin --libdir=$PREFIX/lib/ocaml \
        --pkgdir=$PREFIX/lib/ocaml && \
