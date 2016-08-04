@@ -1329,7 +1329,7 @@ let transl_extension_constructor env type_path type_params
         in
           args, ret_type, Text_decl(targs, tret_type)
     | Pext_rebind lid ->
-        let cdescr = Typetexp.find_constructor env sext.pext_loc lid.txt in
+        let cdescr = Typetexp.find_constructor env lid.loc lid.txt in
         let usage =
           if cdescr.cstr_private = Private || priv = Public
           then Env.Positive else Env.Privatize
@@ -1437,7 +1437,8 @@ let transl_type_extension check_open env loc styext =
   reset_type_variables();
   Ctype.begin_def();
   let (type_path, type_decl) =
-    Typetexp.find_type env loc styext.ptyext_path.txt
+    let lid = styext.ptyext_path in
+    Typetexp.find_type env lid.loc lid.txt
   in
   begin
     match type_decl.type_kind with

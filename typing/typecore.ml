@@ -560,14 +560,14 @@ let rec build_as_type env p =
   | Tpat_array _ | Tpat_lazy _ -> p.pat_type
 
 let build_or_pat env loc lid =
-  let path, decl = Typetexp.find_type env loc lid
+  let path, decl = Typetexp.find_type env lid.loc lid.txt
   in
   let tyl = List.map (fun _ -> newvar()) decl.type_params in
   let row0 =
     let ty = expand_head env (newty(Tconstr(path, tyl, ref Mnil))) in
     match ty.desc with
       Tvariant row when static_row row -> row
-    | _ -> raise(Error(loc, env, Not_a_variant_type lid))
+    | _ -> raise(Error(lid.loc, env, Not_a_variant_type lid.txt))
   in
   let pats, fields =
     List.fold_left
@@ -598,7 +598,7 @@ let build_or_pat env loc lid =
       pats
   in
   match pats with
-    [] -> raise(Error(loc, env, Not_a_variant_type lid))
+    [] -> raise(Error(lid.loc, env, Not_a_variant_type lid.txt))
   | pat :: pats ->
       let r =
         List.fold_left
@@ -1358,7 +1358,7 @@ let rec type_pat ~constrs ~labels ~no_existentials ~mode ~explode ~env
                   pat_extra = extra :: p.pat_extra}
         in k p)
   | Ppat_type lid ->
-      let (path, p,ty) = build_or_pat !env loc lid.txt in
+      let (path, p,ty) = build_or_pat !env loc lid in
       unify_pat_types loc !env ty expected_ty;
       k { p with pat_extra =
         (Tpat_type (path, lid), loc, sp.ppat_attributes) :: p.pat_extra }
@@ -1944,7 +1944,7 @@ and type_expect_ ?in_function ?(recarg=Rejected) env sexp ty_expected =
   match sexp.pexp_desc with
   | Pexp_ident lid ->
       begin
-        let (path, desc) = Typetexp.find_value env loc lid.txt in
+        let (path, desc) = Typetexp.find_value env lid.loc lid.txt in
         if !Clflags.annotations then begin
           let dloc = desc.Types.val_loc in
           let annot =
@@ -2683,7 +2683,7 @@ and type_expect_ ?in_function ?(recarg=Rejected) env sexp ty_expected =
                     Undefined_method (obj.exp_type, met, valid_methods)))
       end
   | Pexp_new cl ->
-      let (cl_path, cl_decl) = Typetexp.find_class env loc cl.txt in
+      let (cl_path, cl_decl) = Typetexp.find_class env cl.loc cl.txt in
       begin match cl_decl.cty_new with
           None ->
             raise(Error(loc, env, Virtual_class cl.txt))

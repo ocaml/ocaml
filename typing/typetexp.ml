@@ -340,7 +340,7 @@ let rec transl_type env policy styp =
     let ty = newty (Ttuple (List.map (fun ctyp -> ctyp.ctyp_type) ctys)) in
     ctyp (Ttyp_tuple ctys) ty
   | Ptyp_constr(lid, stl) ->
-      let (path, decl) = find_type env styp.ptyp_loc lid.txt in
+      let (path, decl) = find_type env lid.loc lid.txt in
       let stl =
         match stl with
         | [ {ptyp_desc=Ptyp_any} as t ] when decl.type_arity > 1 ->
@@ -408,7 +408,7 @@ let rec transl_type env policy styp =
           let decl = Env.find_type path env in
           (path, decl, false)
         with Not_found ->
-          ignore (find_class env styp.ptyp_loc lid.txt); assert false
+          ignore (find_class env lid.loc lid.txt); assert false
       in
       if List.length stl <> decl.type_arity then
         raise(Error(styp.ptyp_loc, env,
