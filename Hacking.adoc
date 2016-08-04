@@ -16,7 +16,7 @@ make -j world
 3. Try the newly built toplevel:
 +
 ----
-./boot/ocamlrun ./ocaml -nostdlib -I stdlib
+make runtop
 ----
 
 4. Hack frenetically.
@@ -68,9 +68,17 @@ link:parsing/location.mli[]:: +Location+ contains utilities related to locations
 
 == Annex
 
-=== Useful commands
+=== Useful Makefile targets
+
+Besides the targets listed in link:INSTALL.adoc for build and
+installation, the following targets may be of use:
+
++make runtop+ :: builds and runs the ocaml toplevel of the distribution
+                          (optionally uses `rlwrap` for readline+history support)
++make natruntop+:: builds and runs the native ocaml toplevel (experimental)
 
 +make partialclean+:: Clean the OCaml files but keep the compiled C files.
+
 +make depend+:: Regenerate the +.depend+ file. Should be used each time new dependencies are added between files.
 
 === Bootstrapping
