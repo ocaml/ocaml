@@ -113,7 +113,7 @@ module Output = struct
 
   let status s = match catch_warning s, catch_error s with
     | Some w, _ -> w
-    | _, Some e -> e
+    | None, Some e -> e
     | None, None -> Ok
 
   (** {2 Parsing caml_example options } *)
@@ -142,15 +142,15 @@ module Output = struct
   let expected s =
     match parse_warning s, parse_error s with
     | Some w, _ -> w
-    | _, Some e -> e
+    | None, Some e -> e
     | None, None -> raise (Parsing_error (Option,s))
 
   (** Parse the local (i.e. phrase-wide) expected status output *)
   let local_expected s =
     match parse_local_warning s, parse_error s, parse_ok s with
     | Some w, _, _ -> w
-    | _, Some e, _ -> e
-    | _, _, Some ok -> ok
+    | None, Some e, _ -> e
+    | None, None, Some ok -> ok
     | None, None, None -> raise (Parsing_error (Annotation,s))
 
 end
