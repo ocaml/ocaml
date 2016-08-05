@@ -45,7 +45,12 @@ module Output = struct
     | Warning of int
     | Error
 
-  type kind = Annotation | Option
+  type kind =
+    | Annotation (** Local annotation: [ [@@expect (*annotation*) ] ]*)
+    | Option (** Global environment option:
+                 [\begin{caml_example}[option[=value]]
+                 ...
+                 \end{caml_example}] *)
 
   (** Pretty printer for status *)
   let pp_status ppf = function
