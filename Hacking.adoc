@@ -57,14 +57,39 @@ The compiler code base can be intimidating at first sight. Here are a few pointe
 
 === The frontend -- link:parsing/[] and link:typing/[]
 
-link:parsing/parsetree.mli[] and link:parsing/asttypes.mli[]:: +Parsetree+ is an AST of the surface language of OCaml. It is well annotated with examples and is a mandatory read before any further exploration of the compiler.
+The frontend handles parsing and typing of the OCaml code. It also contains various utilies needed for the later phases of the compiler.
 
-link:parsing/location.mli[]:: +Location+ contains utilities related to locations and error handling.
+link:parsing/parsetree.mli[Parsetree] and link:parsing/asttypes.mli[Asttypes]:: +Parsetree+ is an AST of the surface language of OCaml. It is well annotated with examples and is a mandatory read before any further exploration of the compiler.
 
+link:parsing/location.mli[Location]:: This module contains utilities related to locations and error handling. In particular, it contains handler that are used for all the error reporting in the compiler.
+
+==== The typechecker -- link:typing/[]
+
+The code for the OCaml typechecker is complex. Modifying it will need a good understanding of the OCaml type system and type inference. Here is a reading list, by growing order of difficulty, that should help you understand the typechecker better:
+
+http://caml.inria.fr/pub/docs/u3-ocaml/index.html[Using, Understanding, and Unraveling the OCaml Language by Didier Rémy] :: provides (among other things) a formal description of parts of the core OCaml language, starting by a simple Core ML.
+
+http://okmij.org/ftp/ML/generalization.html[Efficient and Insightful Generalization by Oleg Kiselyov] :: describes the basis of the algorithm used by the OCaml type checker.
+
+After that, the best is probably to dive right in. There is no real "point of entry", but understanding of both the parsetree and the typedtree is probably necessary.
+
+The datastructures ::
++link:typing/types.mli[Types]+ and +link:typing/typedtree.mli[Typedtree]+ are the two main datastructures in the typechecker. They correspond to the surface language annotated with all the information needed for type checking and type inference. +link:typing/env.mli[Env]+ contains all the environments that are used in the typechecker. Each node in the typedtree is annotated with the local environment.
+
+Core utilities ::
++link:typing/btype.mli[Btype]+ and +link:typing/ctype.mli[Ctype]+ contains the various low level function needed for typing, in particular related to levels, unification and backtracking. +link:typing/mtype.mli[Mtype]+ contains utilities related to modules.
+
+Inference and checking::
+The +Type..+ modules are related to inference and typechecking, each for a different part of the language. +link:typing/typetexp.mli[Typetexp]+ for type expressions, +link:typing/typecore.mli[Typecore]+ for the core language, +link:typing/typecore.mli[Typemod]+ for modules, +link:typing/typedecl.mli[Typedecl]+ for type declarations and finally +link:typeclass.mli[Typeclass]+ for the object system.
+
+Subtyping::
+Handling of subtyping relations are separated in the +Include...+ modules. +link:typing/includecore.ml[Includecore]+ for the core language, +link:typing/includemod.mli[Includemod]+ for modules and finally +link:typing/includeclass.mli[Includeclass]+ for the object system.
 
 === The bytecode compiler -- link:bytecomp/[]
 
 === The native compiler -- link:middle_end/[] and link:asmcomp/[]
+
+=== The driver -- link:driver/[]
 
 == Annex
 
