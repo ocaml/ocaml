@@ -9,6 +9,7 @@ TRANSF=$(OCAMLRUN) ../../tools/transf
 TEXQUOTE=../../tools/texquote2
 FORMAT=../../tools/format-intf
 
+etex-files: $(FILES)
 all: $(FILES)
 
 clean::

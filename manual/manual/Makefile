@@ -92,6 +92,12 @@ text: files
 	         -I ../tutorials -I ../../styles -I ../texstuff \
 	         ../manual.inf -e macros.tex ../manual.tex
 
+etex-files: $(FILES)
+	cd refman; $(MAKE) etex-files RELEASEDIR=$(SRC)
+	cd library; $(MAKE) etex-files RELEASEDIR=$(SRC)
+	cd cmds; $(MAKE) etex-files RELEASEDIR=$(SRC)
+	cd tutorials; $(MAKE) etex-files RELEASEDIR=$(SRC)
+
 files: $(FILES)
 	cd refman; $(MAKE) all RELEASEDIR=$(SRC)
 	cd library; $(MAKE) all RELEASEDIR=$(SRC)

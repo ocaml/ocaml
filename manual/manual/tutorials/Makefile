@@ -8,6 +8,7 @@ TEXQUOTE=../../tools/texquote2
 
 ALLFILES=$(FILES)
 
+etex-files: $(ALLFILES)
 all: $(ALLFILES)
 
 clean:
