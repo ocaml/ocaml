@@ -51,10 +51,12 @@ let l = function
 
 open Printf
 
-external string_create: int -> string = "caml_create_string"
+external bytes_create: int -> bytes = "caml_create_bytes"
 external unsafe_chr: int -> char = "%identity"
-external string_unsafe_set : string -> int -> char -> unit
-                           = "%string_unsafe_set"
+external bytes_unsafe_set : bytes -> int -> char -> unit
+                           = "%bytes_unsafe_set"
+
+external unsafe_to_string : bytes -> string = "%bytes_to_string"
 
 (* The following function is roughly equivalent to Char.escaped,
    except that it is locale-independent. *)
@@ -67,17 +69,17 @@ let escaped = function
   | '\b' -> "\\b"
   | c ->
     if ((k c) <> "othr") && ((Char.code c) <= 191) then begin
-      let s = string_create 1 in
-      string_unsafe_set s 0 c;
-      s
+      let s = bytes_create 1 in
+      bytes_unsafe_set s 0 c;
+      unsafe_to_string s
     end else begin
       let n = Char.code c in
-      let s = string_create 4 in
-      string_unsafe_set s 0 '\\';
-      string_unsafe_set s 1 (unsafe_chr (48 + n / 100));
-      string_unsafe_set s 2 (unsafe_chr (48 + (n / 10) mod 10));
-      string_unsafe_set s 3 (unsafe_chr (48 + n mod 10));
-      s
+      let s = bytes_create 4 in
+      bytes_unsafe_set s 0 '\\';
+      bytes_unsafe_set s 1 (unsafe_chr (48 + n / 100));
+      bytes_unsafe_set s 2 (unsafe_chr (48 + (n / 10) mod 10));
+      bytes_unsafe_set s 3 (unsafe_chr (48 + n mod 10));
+      unsafe_to_string s
     end
 
 let _ =
