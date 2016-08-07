@@ -235,10 +235,8 @@ let primitives_table = create_hashtable 57 [
   "%bytes_length", Pbyteslength;
   "%bytes_safe_get", Pbytesrefs;
   "%bytes_safe_set", Pbytessets;
-  "%string_safe_set", Pbytessets; (* Temporary, will be removed in next bootstrapping*)
   "%bytes_unsafe_get", Pbytesrefu;
   "%bytes_unsafe_set", Pbytessetu;
-  "%string_unsafe_set", Pbytessetu; (* Temporary, will be removed in next bootstrapping*)
   "%array_length", Parraylength Pgenarray;
   "%array_safe_get", Parrayrefs Pgenarray;
   "%array_safe_set", Parraysets Pgenarray;
