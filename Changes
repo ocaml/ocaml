@@ -91,7 +91,7 @@ OCaml 4.04.0:
 
 - GPR#473: Provide `Sys.backend_type` so that user can write backend-specific
   code in some cases (for example,  code generator).
-  (Hongbo Zhang)
+  (Hongbo Zhang, review by Damien Doligez, Alain Frisch, and Hugo Heuzard)
 
 - PR#6820, GPR#560: Add Obj.reachable_words to compute the
   "transitive" heap size of a value
@@ -606,6 +606,11 @@ OCaml 4.03.0 (25 Apr 2016):
   (Nicolas Ojeda Bar, review by Gabriel Scherer)
 
 ### Runtime system:
+
+* GPR#442, caml_fill_string, and caml_create_string is deprecated 
+  and will be removed in the future, please use caml_fill_bytes 
+  and caml_create_bytes for migration 
+  (Hongbo Zhang)
 
 - PR#3612, PR#92: allow allocating custom block with finalizers
   in the minor heap.

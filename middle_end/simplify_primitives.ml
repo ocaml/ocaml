@@ -197,14 +197,16 @@ let primitive (p : Lambda.primitive) (args, approxs) expr dbg ~size_int
         ~size_int
     | [Value_block _] when p = Lambda.Pisint ->
       S.const_bool_expr expr false
-    | [Value_string { size }] when p = Lambda.Pstringlength ->
+    | [Value_string { size }] when (p = Lambda.Pstringlength || p = Lambda.Pbyteslength) ->
       S.const_int_expr expr size
     | [Value_string { size; contents = Some s };
        (Value_int x | Value_constptr x)] when x >= 0 && x < size ->
         begin match p with
         | Pstringrefu
-        | Pstringrefs ->
-          S.const_char_expr (Prim(Pstringrefu, args, dbg)) s.[x]
+        | Pstringrefs
+        | Pbytesrefu
+        | Pbytesrefs ->
+            S.const_char_expr (Prim(Pstringrefu, args, dbg)) s.[x] 
         | _ -> expr, A.value_unknown Other, C.Benefit.zero
         end
     | [Value_string { size; contents = None };
@@ -214,6 +216,14 @@ let primitive (p : Lambda.primitive) (args, approxs) expr dbg ~size_int
           A.value_unknown Other,
           (* we improved it, but there is no way to account for that: *)
           C.Benefit.zero
+    | [Value_string { size; contents = None };
+       (Value_int x | Value_constptr x)]
+      when x >= 0 && x < size && p = Lambda.Pbytesrefs ->
+        Flambda.Prim (Pbytesrefu, args, dbg),
+          A.value_unknown Other,
+          (* we improved it, but there is no way to account for that: *)
+          C.Benefit.zero
+
     | [Value_float_array { size; contents }] ->
         begin match p with
         | Parraylength _ -> S.const_int_expr expr size
