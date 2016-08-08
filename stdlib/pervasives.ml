@@ -186,12 +186,12 @@ external classify_float : (float [@unboxed]) -> fpclass =
 
 external string_length : string -> int = "%string_length"
 external bytes_length : bytes -> int = "%string_length"
-external bytes_create : int -> bytes = "caml_create_string"
+external bytes_create : int -> bytes = "caml_create_bytes"
 external string_blit : string -> int -> bytes -> int -> int -> unit
                      = "caml_blit_string" [@@noalloc]
 external bytes_blit : bytes -> int -> bytes -> int -> int -> unit
-                        = "caml_blit_string" [@@noalloc]
-external bytes_unsafe_to_string : bytes -> string = "%identity"
+                        = "caml_blit_bytes" [@@noalloc]
+external bytes_unsafe_to_string : bytes -> string = "%bytes_to_string"
 
 let ( ^ ) s1 s2 =
   let l1 = string_length s1 and l2 = string_length s2 in
@@ -317,7 +317,7 @@ let flush_all () =
   in iter (out_channels_list ())
 
 external unsafe_output : out_channel -> bytes -> int -> int -> unit
-                       = "caml_ml_output"
+                       = "caml_ml_output_bytes"
 external unsafe_output_string : out_channel -> string -> int -> int -> unit
                               = "caml_ml_output"
 

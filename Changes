@@ -597,6 +597,11 @@ OCaml 4.03.0 (25 Apr 2016):
 
 ### Runtime system:
 
+* GPR#442, caml_fill_string, and caml_create_string is deprecated 
+  and will be removed in the future, please use caml_fill_bytes 
+  and caml_create_bytes for migration 
+  (Hongbo Zhang, review by Damien Doligez, Alain Frisch, and Hugo Heuzard)
+
 - PR#3612, PR#92: allow allocating custom block with finalizers
   in the minor heap.
   (Pierre Chambart)
