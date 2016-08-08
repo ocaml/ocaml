@@ -541,7 +541,7 @@ let equal_boxed_int (type t1) (type t2)
    rewriting [Project_var] and [Project_closure] constructions
    in [Flambdainline.loop]
 *)
-let rec meet_descr d1 d2 = match d1, d2 with
+let rec meet_descr ~really_import_approx d1 d2 = match d1, d2 with
   | Value_int i, Value_int j when i = j ->
       d1
   | Value_constptr i, Value_constptr j when i = j ->
@@ -557,13 +557,20 @@ let rec meet_descr d1 d2 = match d1, d2 with
       d1
   | Value_block (tag1, a1), Value_block (tag2, a2)
     when tag1 = tag2 && Array.length a1 = Array.length a2 ->
-      Value_block (tag1, Array.mapi (fun i v -> meet v a2.(i)) a1)
+    let fields =
+      Array.mapi (fun i v -> meet ~really_import_approx v a2.(i)) a1
+    in
+    Value_block (tag1, fields)
   | _ -> Value_unknown Other
 
-and meet a1 a2 =
+and meet ~really_import_approx a1 a2 =
   match a1, a2 with
   | { descr = Value_bottom }, a
   | a, { descr = Value_bottom } -> a
+  | { descr = (Value_symbol _ | Value_extern _) }, _
+  | _, { descr = (Value_symbol _ | Value_extern _) } ->
+    meet ~really_import_approx
+      (really_import_approx a1) (really_import_approx a2)
   | _ ->
       let var =
         match a1.var, a2.var with
@@ -585,7 +592,7 @@ and meet a1 a2 =
               | _ -> None
             else None
       in
-      { descr = meet_descr a1.descr a2.descr;
+      { descr = meet_descr ~really_import_approx a1.descr a2.descr;
         var;
         symbol }
 
@@ -717,3 +724,56 @@ let check_approx_for_float t : float option =
   | Value_constptr _ | Value_set_of_closures _ | Value_closure _
   | Value_extern _ | Value_boxed_int _ | Value_symbol _ ->
       None
+
+type switch_branch_selection =
+  | Cannot_be_taken
+  | Can_be_taken
+  | Must_be_taken
+
+let potentially_taken_const_switch_branch t branch =
+  match t.descr with
+  | Value_unresolved _
+  | Value_unknown _
+  | Value_extern _
+  | Value_symbol _ ->
+    (* In theory symbol cannot contain integers but this shouldn't
+       matter as this will always be an imported approximation *)
+    Can_be_taken
+  | Value_constptr i | Value_int i when i = branch ->
+    Must_be_taken
+  | Value_char c when Char.code c = branch ->
+    Must_be_taken
+  | Value_constptr _ | Value_int _ | Value_char _ ->
+    Cannot_be_taken
+  | Value_block _ | Value_float _ | Value_float_array _
+  | Value_string _ | Value_closure _ | Value_set_of_closures _
+  | Value_boxed_int _ | Value_bottom ->
+    Cannot_be_taken
+
+let potentially_taken_block_switch_branch t tag =
+  match t.descr with
+  | (Value_unresolved _
+    | Value_unknown _
+    | Value_extern _
+    | Value_symbol _) ->
+    Can_be_taken
+  | (Value_constptr _ | Value_int _| Value_char _) ->
+    Cannot_be_taken
+  | Value_block (block_tag, _) when Tag.to_int block_tag = tag ->
+    Must_be_taken
+  | Value_float _ when tag = Obj.double_tag ->
+    Must_be_taken
+  | Value_float_array _ when tag = Obj.double_array_tag ->
+    Must_be_taken
+  | Value_string _ when tag = Obj.string_tag ->
+    Must_be_taken
+  | (Value_closure _ | Value_set_of_closures _)
+    when tag = Obj.closure_tag || tag = Obj.infix_tag ->
+    Can_be_taken
+  | Value_boxed_int _ when tag = Obj.custom_tag ->
+    Must_be_taken
+  | Value_block _ | Value_float _ | Value_set_of_closures _ | Value_closure _
+  | Value_string _ | Value_float_array _ | Value_boxed_int _ ->
+    Cannot_be_taken
+  | Value_bottom ->
+    Cannot_be_taken
