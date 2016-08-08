@@ -34,3 +34,7 @@ val instrument_closure:
         Env.t -> Longident.t -> formatter -> Types.type_expr ->
         codeptr -> Obj.t -> Obj.t -> Obj.t
 val print_trace: Obj.t -> Obj.t -> Obj.t
+
+val dir_trace : formatter -> Longident.t -> unit
+val dir_untrace : formatter -> Longident.t -> unit
+val dir_untrace_all : formatter -> unit -> unit

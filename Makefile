@@ -291,11 +291,12 @@ installoptopt:
 	   $(INSTALL_COMPLIBDIR)
 	if test -f ocamlnat$(EXE) ; then \
 	  cp ocamlnat$(EXE) $(INSTALL_BINDIR)/ocamlnat$(EXE); \
-	  cp toplevel/opttopdirs.cmi $(INSTALL_LIBDIR); \
-	  cp compilerlibs/ocamlopttoplevel.cmxa \
-	     compilerlibs/ocamlopttoplevel.a \
+	  cp compilerlibs/ocamltoplevel.cmxa \
+	     compilerlibs/ocamltoplevel.a \
+	     toplevel/*.cmx \
 	     $(OPTTOPLEVELSTART:.cmo=.cmx) $(OPTTOPLEVELSTART:.cmo=.o) \
 	     $(INSTALL_COMPLIBDIR); \
+	  cd $(INSTALL_COMPLIBDIR) && $(RANLIB) ocamltoplevel.a; \
 	fi
 	cd $(INSTALL_COMPLIBDIR) && $(RANLIB) ocamlcommon.a ocamlbytecomp.a \
 	   ocamloptcomp.a
@@ -349,6 +350,10 @@ partialclean::
 
 compilerlibs/ocamltoplevel.cma: $(TOPLEVEL)
 	$(CAMLC) -a -o $@ $(TOPLEVEL)
+
+compilerlibs/ocamltoplevel.cmxa: $(OPTTOPLEVEL:.cmo=.cmx)
+	$(CAMLOPT) -a -o $@ $(OPTTOPLEVEL:.cmo=.cmx)
+
 partialclean::
 	rm -f compilerlibs/ocamltoplevel.cma
 
@@ -362,6 +367,28 @@ ocaml: compilerlibs/ocamlcommon.cma compilerlibs/ocamlbytecomp.cma \
 
 partialclean::
 	rm -f ocaml
+
+toplevel/toploop.mlbyte: toplevel/toploop.mlp
+	sed -e '/^BEGIN_NATIVE$$/,/^END_NATIVE$$/ d' -e '/^BEGIN_BYTE$$/ d' \
+	    -e '/^END_BYTE$$/ d'  toplevel/toploop.mlp \
+		>toplevel/toploop.mlbyte
+
+toplevel/toploop.cmo: toplevel/toploop.mlbyte
+	$(CAMLC) $(COMPFLAGS) -c -impl $<
+
+toplevel/toploop.mlopt: toplevel/toploop.mlp
+	sed -e '/^BEGIN_BYTE$$/,/^END_BYTE$$/ d' -e '/^BEGIN_NATIVE$$/ d' \
+	    -e '/^END_NATIVE$$/ d' toplevel/toploop.mlp \
+		>toplevel/toploop.mlopt
+
+toplevel/toploop.cmx: toplevel/toploop.mlopt
+	$(CAMLOPT) $(COMPFLAGS) -c -impl $< -opaque
+# need -opaque here because .depend cannot include deps to toploop.cmx
+
+beforedepend:: toplevel/toploop.mlbyte toplevel/toploop.mlopt
+
+partialclean::
+	rm -f toplevel/toploop.mlbyte toplevel/toploop.mlopt
 
 RUNTOP=./byterun/ocamlrun ./ocaml -nostdlib -I stdlib -noinit $(TOPFLAGS)
 NATRUNTOP=./ocamlnat$(EXE) -nostdlib -I stdlib -noinit $(TOPFLAGS)
@@ -738,6 +765,10 @@ depend: beforedepend
 		-impl driver/compdynlink.mlopt >> .depend
 	$(CAMLDEP) $(DEPFLAGS) -bytecode \
 		-impl driver/compdynlink.mlbyte >> .depend
+	$(CAMLDEP) $(DEPFLAGS) -native \
+		-impl toplevel/toploop.mlopt >> .depend
+	$(CAMLDEP) $(DEPFLAGS) -bytecode \
+		-impl toplevel/toploop.mlbyte >> .depend
 
 alldepend:: depend
 
