@@ -15,34 +15,34 @@
 
 (* Module [Int63]: 63-bit integers *)
 
-type t
+type t = int63
 
-external neg : t -> t = "%int63_neg"
-external add : t -> t -> t = "%int63_add"
-external sub : t -> t -> t = "%int63_sub"
-external mul : t -> t -> t = "%int63_mul"
-external div : t -> t -> t = "%int63_div"
-external rem : t -> t -> t = "%int63_mod"
-external logand : t -> t -> t = "%int63_and"
-external logor : t -> t -> t = "%int63_or"
-external logxor : t -> t -> t = "%int63_xor"
-external shift_left : t -> int -> t = "%int63_lsl"
-external shift_right : t -> int -> t = "%int63_asr"
-external shift_right_logical : t -> int -> t = "%int63_lsr"
-external of_int : int -> t = "%int63_of_int"
-external to_int : t -> int = "%int63_to_int"
+external neg : int63 -> int63 = "%int63_neg"
+external add : int63 -> int63 -> int63 = "%int63_add"
+external sub : int63 -> int63 -> int63 = "%int63_sub"
+external mul : int63 -> int63 -> int63 = "%int63_mul"
+external div : int63 -> int63 -> int63 = "%int63_div"
+external rem : int63 -> int63 -> int63 = "%int63_mod"
+external logand : int63 -> int63 -> int63 = "%int63_and"
+external logor : int63 -> int63 -> int63 = "%int63_or"
+external logxor : int63 -> int63 -> int63 = "%int63_xor"
+external shift_left : int63 -> int -> int63 = "%int63_lsl"
+external shift_right : int63 -> int -> int63 = "%int63_asr"
+external shift_right_logical : int63 -> int -> int63 = "%int63_lsr"
+external of_int : int -> int63 = "%int63_of_int"
+external to_int : int63 -> int = "%int63_to_int"
 
-external of_int32 : int32 -> t = "%int63_of_int32"
-external to_int32 : t -> int32 = "%int63_to_int32"
-external of_int64 : int64 -> t = "%int63_of_int64"
-external to_int64 : t -> int64 = "%int63_to_int64"
-external of_nativeint : nativeint -> t = "%int63_of_nativeint"
-external to_nativeint : t -> nativeint = "%int63_to_nativeint"
+external of_int32 : int32 -> int63 = "%int63_of_int32"
+external to_int32 : int63 -> int32 = "%int63_to_int32"
+external of_int64 : int64 -> int63 = "%int63_of_int64"
+external to_int64 : int63 -> int64 = "%int63_to_int64"
+external of_nativeint : nativeint -> int63 = "%int63_of_nativeint"
+external to_nativeint : int63 -> nativeint = "%int63_to_nativeint"
 
-external format : string -> t -> string = "caml_int63_format"
+external format : string -> int63 -> string = "caml_int63_format"
 let to_string n = format "%d" n
 
-external of_string : string -> t = "caml_int63_of_string"
+external of_string : string -> int63 = "caml_int63_of_string"
 
 let zero = of_int 0
 let one = of_int 1
@@ -54,6 +54,5 @@ let lognot n = logxor n minus_one
 let max_int = of_string "0x3FFFFFFFFFFFFFFF"
 let min_int = of_string "0x4000000000000000"
 
-let compare (x: t) (y: t) = Pervasives.compare x y
-let equal (x: t) (y: t) = compare x y = 0
-
+let compare (x: int63) (y: int63) = Pervasives.compare x y
+let equal (x: int63) (y: int63) = compare x y = 0
