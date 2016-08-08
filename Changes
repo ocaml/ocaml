@@ -38,9 +38,6 @@ OCaml 4.04.0:
 - PR#7233: Support GADT equations on non-local abstract types
   (Jacques Garrigue)
 
-- GPR#548: empty documentation comments
-  (Florian Angeletti)
-
 
 ### Compiler user-interface and warnings:
 
@@ -177,6 +174,9 @@ OCaml 4.04.0:
 - GPR#598: Add a --strict option to ocamlyacc treat conflicts as errors
   (this option is now used for the compiler's parser)
   (Jeremy Yallop)
+
+- GPR#548: empty documentation comments
+  (Florian Angeletti)
 
 - GPR#613: make ocamldoc use -open arguments
   (Florian Angeletti)
