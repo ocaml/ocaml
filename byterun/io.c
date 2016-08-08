@@ -649,7 +649,7 @@ CAMLprim value caml_ml_output_partial(value vchannel, value buff, value start,
   CAMLreturn (Val_int(res));
 }
 
-CAMLprim value caml_ml_output(value vchannel, value buff, value start,
+CAMLprim value caml_ml_output_bytes(value vchannel, value buff, value start,
                               value length)
 {
   CAMLparam4 (vchannel, buff, start, length);
@@ -669,27 +669,10 @@ CAMLprim value caml_ml_output(value vchannel, value buff, value start,
   CAMLreturn (Val_unit);
 }
 
-/*
- * Same as [caml_ml_output] currently
- */
-CAMLprim value caml_ml_output_bytes(value vchannel, value buff, value start,
+CAMLprim value caml_ml_output(value vchannel, value buff, value start,
                               value length)
 {
-  CAMLparam4 (vchannel, buff, start, length);
-  struct channel * channel = Channel(vchannel);
-  intnat pos = Long_val(start);
-  intnat len = Long_val(length);
-
-  Lock(channel);
-    /* We cannot call caml_really_putblock here because buff may move
-       during caml_write_fd */
-    while (len > 0) {
-      int written = caml_putblock(channel, &Byte(buff, pos), len);
-      pos += written;
-      len -= written;
-    }
-  Unlock(channel);
-  CAMLreturn (Val_unit);
+  return caml_ml_output_bytes (vchannel, buff, start, length);
 }
 
 CAMLprim value caml_ml_seek_out(value vchannel, value pos)

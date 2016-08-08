@@ -197,7 +197,8 @@ let primitive (p : Lambda.primitive) (args, approxs) expr dbg ~size_int
         ~size_int
     | [Value_block _] when p = Lambda.Pisint ->
       S.const_bool_expr expr false
-    | [Value_string { size }] when (p = Lambda.Pstringlength || p = Lambda.Pbyteslength) ->
+    | [Value_string { size }]
+      when (p = Lambda.Pstringlength || p = Lambda.Pbyteslength) ->
       S.const_int_expr expr size
     | [Value_string { size; contents = Some s };
        (Value_int x | Value_constptr x)] when x >= 0 && x < size ->
@@ -206,7 +207,7 @@ let primitive (p : Lambda.primitive) (args, approxs) expr dbg ~size_int
         | Pstringrefs
         | Pbytesrefu
         | Pbytesrefs ->
-            S.const_char_expr (Prim(Pstringrefu, args, dbg)) s.[x] 
+          S.const_char_expr (Prim(Pstringrefu, args, dbg)) s.[x]
         | _ -> expr, A.value_unknown Other, C.Benefit.zero
         end
     | [Value_string { size; contents = None };

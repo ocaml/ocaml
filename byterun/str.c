@@ -55,7 +55,7 @@ CAMLexport int caml_string_is_c_safe (value s)
 }
 
 /**
- * [caml_create_string] is deprecated, 
+ * [caml_create_string] is deprecated,
  * use [caml_create_bytes] instead
  */
 CAMLprim value caml_create_string(value len)
@@ -90,7 +90,8 @@ CAMLprim value caml_bytes_get(value str, value index)
 {
   return caml_string_get(str, index);
 }
-CAMLprim value caml_string_set(value str, value index, value newval)
+
+CAMLprim value caml_bytes_set(value str, value index, value newval)
 {
   intnat idx = Long_val(index);
   if (idx < 0 || idx >= caml_string_length(str)) caml_array_bound_error();
@@ -98,7 +99,11 @@ CAMLprim value caml_string_set(value str, value index, value newval)
   return Val_unit;
 }
 
-CAMLprim value caml_bytes_set(value str, value index, value newval)
+/**
+ * [caml_string_set] is deprecated,
+ * use [caml_bytes_set] instead
+ */
+CAMLprim value caml_string_set(value str, value index, value newval)
 {
   return caml_string_set(str,index,newval);
 }
@@ -339,32 +344,31 @@ CAMLprim value caml_bytes_greaterequal(value s1, value s2)
   return caml_string_greaterequal(s1,s2);
 }
 
-CAMLprim value caml_blit_string(value s1, value ofs1, value s2, value ofs2,
-                                value n)
-{
-  memmove(&Byte(s2, Long_val(ofs2)), &Byte(s1, Long_val(ofs1)), Long_val(n));
-  return Val_unit;
-}
-
 CAMLprim value caml_blit_bytes(value s1, value ofs1, value s2, value ofs2,
                                 value n)
 {
   memmove(&Byte(s2, Long_val(ofs2)), &Byte(s1, Long_val(ofs1)), Long_val(n));
   return Val_unit;
 }
-/**
- * [caml_fill_string] is deprecated, use [caml_fill_bytes] instead
- */
-CAMLprim value caml_fill_string(value s, value offset, value len, value init)
+
+CAMLprim value caml_blit_string(value s1, value ofs1, value s2, value ofs2,
+                                value n)
 {
-  memset(&Byte(s, Long_val(offset)), Int_val(init), Long_val(len));
-  return Val_unit;
+  return caml_blit_bytes (s1, ofs1, s2, ofs2, n);
 }
 
 CAMLprim value caml_fill_bytes(value s, value offset, value len, value init)
 {
   memset(&Byte(s, Long_val(offset)), Int_val(init), Long_val(len));
   return Val_unit;
+}
+
+/**
+ * [caml_fill_string] is deprecated, use [caml_fill_bytes] instead
+ */
+CAMLprim value caml_fill_string(value s, value offset, value len, value init)
+{
+  return caml_fill_bytes (s, offset, len, init);
 }
 
 CAMLprim value caml_bitvect_test(value bv, value n)
