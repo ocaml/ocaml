@@ -102,7 +102,7 @@ let occurs_var var u =
 
 let prim_size prim args =
   match prim with
-    Pidentity -> 0
+    Pidentity | Pbytes_to_string | Pbytes_of_string -> 0
   | Pgetglobal _ -> 1
   | Psetglobal _ -> 1
   | Pmakeblock _ -> 5 + List.length args
@@ -121,7 +121,9 @@ let prim_size prim args =
   | Pccall p -> (if p.prim_alloc then 10 else 4) + List.length args
   | Praise _ -> 4
   | Pstringlength -> 5
-  | Pstringrefs | Pstringsets -> 6
+  | Pbyteslength -> 5
+  | Pstringrefs  -> 6
+  | Pbytesrefs | Pbytessets -> 6
   | Pmakearray _ -> 5 + List.length args
   | Parraylength kind -> if kind = Pgenarray then 6 else 2
   | Parrayrefu kind -> if kind = Pgenarray then 12 else 2
@@ -206,7 +208,7 @@ let rec is_pure_clambda = function
     Uvar _ -> true
   | Uconst _ -> true
   | Uprim((Psetglobal _ | Psetfield _ | Psetfloatfield _ | Pduprecord _ |
-           Pccall _ | Praise _ | Poffsetref _ | Pstringsetu | Pstringsets |
+           Pccall _ | Praise _ | Poffsetref _ |  Pbytessetu | Pbytessets |
            Parraysetu _ | Parraysets _ | Pbigarrayset _), _, _) -> false
   | Uprim(_, args, _) -> List.for_all is_pure_clambda args
   | _ -> false
@@ -443,10 +445,10 @@ let simplif_prim_pure fpc p (args, approxs) dbg =
     when n < List.length ul ->
       (List.nth ul n, field_approx n approx)
   (* Strings *)
-  | Pstringlength, _, [ Value_const(Uconst_ref(_, Some (Uconst_string s))) ] ->
+  | (Pstringlength | Pbyteslength), _, [ Value_const(Uconst_ref(_, Some (Uconst_string s))) ] ->
       make_const_int (String.length s)
   (* Identity *)
-  | Pidentity, [arg1], [app1] ->
+  | (Pidentity | Pbytes_to_string | Pbytes_of_string), [arg1], [app1] ->
       (arg1, app1)
   (* Kind test *)
   | Pisint, _, [a1] ->
@@ -682,9 +684,9 @@ let rec is_pure = function
     Lvar _ -> true
   | Lconst _ -> true
   | Lprim((Psetglobal _ | Psetfield _ | Psetfloatfield _ | Pduprecord _ |
-           Pccall _ | Praise _ | Poffsetref _ | Pstringsetu | Pstringsets |
-           Parraysetu _ | Parraysets _ | Pbigarrayset _), _, _) -> false
-  | Lprim(_, args, _) -> List.for_all is_pure args
+           Pccall _ | Praise _ | Poffsetref _  | Pbytessetu | Pbytessets |
+           Parraysetu _ | Parraysets _ | Pbigarrayset _), _,_) -> false
+  | Lprim(_, args,_) -> List.for_all is_pure args
   | Levent(lam, _ev) -> is_pure lam
   | _ -> false
 

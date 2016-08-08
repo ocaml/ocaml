@@ -1772,7 +1772,7 @@ and transl_ccall env prim args dbg =
 and transl_prim_1 env p arg dbg =
   match p with
   (* Generic operations *)
-    Pidentity | Popaque ->
+    Pidentity | Pbytes_to_string | Pbytes_of_string | Popaque ->
       transl env arg
   | Pignore ->
       return_unit(remove_unit (transl env arg))
@@ -1836,7 +1836,7 @@ and transl_prim_1 env p arg dbg =
   | Pabsfloat ->
       box_float dbg (Cop(Cabsf, [transl_unbox_float env arg]))
   (* String operations *)
-  | Pstringlength ->
+  | Pstringlength | Pbyteslength ->
       tag_int(string_length (transl env arg))
   (* Array operations *)
   | Parraylength kind ->
@@ -1980,10 +1980,10 @@ and transl_prim_2 env p arg1 arg2 dbg =
                   [transl_unbox_float env arg1; transl_unbox_float env arg2]))
 
   (* String operations *)
-  | Pstringrefu ->
+  | Pstringrefu | Pbytesrefu ->
       tag_int(Cop(Cload Byte_unsigned,
                   [add_int (transl env arg1) (untag_int(transl env arg2))]))
-  | Pstringrefs ->
+  | Pstringrefs | Pbytesrefs ->
       tag_int
         (bind "str" (transl env arg1) (fun str ->
           bind "index" (untag_int (transl env arg2)) (fun idx ->
@@ -2164,11 +2164,11 @@ and transl_prim_2 env p arg1 arg2 dbg =
 and transl_prim_3 env p arg1 arg2 arg3 dbg =
   match p with
   (* String operations *)
-    Pstringsetu ->
+  | Pbytessetu ->
       return_unit(Cop(Cstore (Byte_unsigned, Assignment),
                       [add_int (transl env arg1) (untag_int(transl env arg2));
                         untag_int(transl env arg3)]))
-  | Pstringsets ->
+  | Pbytessets ->
       return_unit
         (bind "str" (transl env arg1) (fun str ->
           bind "index" (untag_int (transl env arg2)) (fun idx ->

@@ -130,6 +130,8 @@ let block_shape ppf shape = match shape with
 
 let primitive ppf = function
   | Pidentity -> fprintf ppf "id"
+  | Pbytes_to_string -> fprintf ppf "bytes_to_string"
+  | Pbytes_of_string -> fprintf ppf "bytes_of_string"
   | Pignore -> fprintf ppf "ignore"
   | Prevapply -> fprintf ppf "revapply"
   | Pdirapply -> fprintf ppf "dirapply"
@@ -204,9 +206,13 @@ let primitive ppf = function
   | Pfloatcomp(Cge) -> fprintf ppf ">=."
   | Pstringlength -> fprintf ppf "string.length"
   | Pstringrefu -> fprintf ppf "string.unsafe_get"
-  | Pstringsetu -> fprintf ppf "string.unsafe_set"
   | Pstringrefs -> fprintf ppf "string.get"
-  | Pstringsets -> fprintf ppf "string.set"
+  | Pbyteslength -> fprintf ppf "bytes.length"
+  | Pbytesrefu -> fprintf ppf "bytes.unsafe_get"
+  | Pbytessetu -> fprintf ppf "bytes.unsafe_set"
+  | Pbytesrefs -> fprintf ppf "bytes.get"
+  | Pbytessets -> fprintf ppf "bytes.set"
+
   | Parraylength k -> fprintf ppf "array.length[%s]" (array_kind k)
   | Pmakearray (k, Mutable) -> fprintf ppf "makearray[%s]" (array_kind k)
   | Pmakearray (k, Immutable) -> fprintf ppf "makearray_imm[%s]" (array_kind k)
@@ -299,6 +305,8 @@ let primitive ppf = function
 
 let name_of_primitive = function
   | Pidentity -> "Pidentity"
+  | Pbytes_of_string -> "Pbytes_of_string"
+  | Pbytes_to_string -> "Pbytes_to_string"
   | Pignore -> "Pignore"
   | Prevapply -> "Prevapply"
   | Pdirapply -> "Pdirapply"
@@ -343,9 +351,12 @@ let name_of_primitive = function
   | Pfloatcomp _ -> "Pfloatcomp"
   | Pstringlength -> "Pstringlength"
   | Pstringrefu -> "Pstringrefu"
-  | Pstringsetu -> "Pstringsetu"
   | Pstringrefs -> "Pstringrefs"
-  | Pstringsets -> "Pstringsets"
+  | Pbyteslength -> "Pbyteslength"
+  | Pbytesrefu -> "Pbytesrefu"
+  | Pbytessetu -> "Pbytessetu"
+  | Pbytesrefs -> "Pbytesrefs"
+  | Pbytessets -> "Pbytessets"
   | Parraylength _ -> "Parraylength"
   | Pmakearray _ -> "Pmakearray"
   | Pduparray _ -> "Pduparray"

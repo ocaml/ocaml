@@ -649,7 +649,7 @@ CAMLprim value caml_ml_output_partial(value vchannel, value buff, value start,
   CAMLreturn (Val_int(res));
 }
 
-CAMLprim value caml_ml_output(value vchannel, value buff, value start,
+CAMLprim value caml_ml_output_bytes(value vchannel, value buff, value start,
                               value length)
 {
   CAMLparam4 (vchannel, buff, start, length);
@@ -667,6 +667,12 @@ CAMLprim value caml_ml_output(value vchannel, value buff, value start,
     }
   Unlock(channel);
   CAMLreturn (Val_unit);
+}
+
+CAMLprim value caml_ml_output(value vchannel, value buff, value start,
+                              value length)
+{
+  return caml_ml_output_bytes (vchannel, buff, start, length);
 }
 
 CAMLprim value caml_ml_seek_out(value vchannel, value pos)
