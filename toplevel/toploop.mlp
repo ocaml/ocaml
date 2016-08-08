@@ -397,8 +397,7 @@ let pr_item =
   Printtyp.print_items
     (fun env -> function
       | Sig_value(id, {val_kind = Val_reg; val_type}) ->
-          Some (outval_of_value env (getvalue (Translmod.toplevel_name id))
-                  val_type)
+          Some (outval_of_value env (toplevel_value id) val_type)
       | _ -> None
     )
 
