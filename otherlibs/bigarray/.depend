@@ -20,6 +20,6 @@ mmap_win32.o: mmap_win32.c bigarray.h ../../byterun/caml/config.h \
   ../../byterun/caml/misc.h ../../byterun/caml/alloc.h \
   ../../byterun/caml/custom.h ../../byterun/caml/fail.h \
   ../../byterun/caml/sys.h ../unix/unixsupport.h
-bigarray.cmi :
 bigarray.cmo : bigarray.cmi
 bigarray.cmx : bigarray.cmi
+bigarray.cmi :
