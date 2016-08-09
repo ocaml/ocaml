@@ -161,6 +161,7 @@ export LC_ALL=C
 $make -f $makefile distclean || :
 
 if $docheckout; then
+  git checkout boot/ocamlc boot/ocamllex boot/ocamldep
   git pull
 fi
 
