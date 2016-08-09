@@ -105,7 +105,7 @@ CAMLprim value caml_bytes_set(value str, value index, value newval)
  */
 CAMLprim value caml_string_set(value str, value index, value newval)
 {
-  return caml_string_set(str,index,newval);
+  return caml_bytes_set(str,index,newval);
 }
 
 
