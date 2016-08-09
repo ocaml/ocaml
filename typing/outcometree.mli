@@ -38,6 +38,7 @@ type out_value =
   | Oval_float of float
   | Oval_int of int
   | Oval_int32 of int32
+  | Oval_int63 of int63
   | Oval_int64 of int64
   | Oval_nativeint of nativeint
   | Oval_list of out_value list

@@ -88,6 +88,7 @@ let print_out_value ppf tree =
   and print_constr_param ppf = function
     | Oval_int i -> parenthesize_if_neg ppf "%i" i (i < 0)
     | Oval_int32 i -> parenthesize_if_neg ppf "%lil" i (i < 0l)
+    | Oval_int63 i -> parenthesize_if_neg ppf "%Lit" (Int63.to_int64 i) (i < Int63.zero)
     | Oval_int64 i -> parenthesize_if_neg ppf "%LiL" i (i < 0L)
     | Oval_nativeint i -> parenthesize_if_neg ppf "%nin" i (i < 0n)
     | Oval_float f -> parenthesize_if_neg ppf "%s" (float_repres f) (f < 0.0)
@@ -96,6 +97,7 @@ let print_out_value ppf tree =
     function
       Oval_int i -> fprintf ppf "%i" i
     | Oval_int32 i -> fprintf ppf "%lil" i
+    | Oval_int63 i -> fprintf ppf "%Lit" (Int63.to_int64 i)
     | Oval_int64 i -> fprintf ppf "%LiL" i
     | Oval_nativeint i -> fprintf ppf "%nin" i
     | Oval_float f -> pp_print_string ppf (float_repres f)
