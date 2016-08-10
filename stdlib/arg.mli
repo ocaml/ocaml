@@ -159,3 +159,16 @@ val current : int ref
     {!Arg.parse} uses the initial value of {!Arg.current} as the index of
     argument 0 (the program name) and starts parsing arguments
     at the next element. *)
+
+val expandargv : string array -> string array
+(** [Arg.expandargv argv] looks for arguments that begin with the character
+    @ and interpretes them as response files. The contents of the response
+    file are interpreted as additional command line options. Options in
+    repsonsefiles are separated by whitespace. A whitespace character may be
+    included in an option by surrounding the entier option in either single or
+    double quotes. Any character may be included by prefixing the character to
+    be included with a backslash. *)
+
+val writeargv : string array -> string -> unit
+(** [Arg.writeargv argv file] writes each member of argv in file handling
+    quoting compatible to [Arg.expandargv] separated by whitespaces *)

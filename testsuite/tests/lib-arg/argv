@@ -1,0 +1,2 @@
+test1 "white space" 'white space' "double\" quote" "new
+line" "tab	ulator" @argv2
