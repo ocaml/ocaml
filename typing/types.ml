@@ -158,12 +158,17 @@ and type_kind =
   | Type_variant of constructor_declaration list
   | Type_open
 
+and record_inline_kind = No_inline | Inlined | Extension
+
 and record_representation =
-    Record_regular                      (* All fields are boxed / tagged *)
-  | Record_float                        (* All fields are floats *)
+  (* The usual record representation as a heap block, with extra properties *)
+  | Record_regular of { size : int;
+                        inline : record_inline_kind;
+                        tag : int;
+                        has_unboxed_fields : bool
+                      }
+  | Record_float              (* All fields are floats *)
   | Record_unboxed of bool    (* Unboxed single-field record, inlined or not *)
-  | Record_inlined of int               (* Inlined record *)
-  | Record_extension                    (* Inlined record under extension *)
 
 and label_declaration =
   {
@@ -172,20 +177,31 @@ and label_declaration =
     ld_type: type_expr;
     ld_loc: Location.t;
     ld_attributes: Parsetree.attributes;
+    ld_unboxed : bool;                  (* Is this field inlined into the parent
+                                           record? *)
+    ld_size : int;                      (* Width of the label type *)
   }
+
+and constructor_tag =
+    Cstr_constant of int                (* Constant constructor (an int) *)
+  | Cstr_block of int                   (* Regular constructor (a block) *)
+  | Cstr_unboxed                        (* Constructor of an unboxed type *)
+  | Cstr_extension of Path.t * bool     (* Extension constructor
+                                           true if a constant false if a block*)
 
 and constructor_declaration =
   {
     cd_id: Ident.t;
     cd_args: constructor_arguments;
     cd_res: type_expr option;
+    cd_tag: constructor_tag;
     cd_loc: Location.t;
     cd_attributes: Parsetree.attributes;
   }
 
 and constructor_arguments =
   | Cstr_tuple of type_expr list
-  | Cstr_record of label_declaration list
+  | Cstr_record of label_declaration list * record_representation
 
 and unboxed_status =
   {
@@ -200,7 +216,9 @@ type extension_constructor =
       ext_ret_type: type_expr option;
       ext_private: private_flag;
       ext_loc: Location.t;
-      ext_attributes: Parsetree.attributes; }
+      ext_attributes: Parsetree.attributes;
+      ext_tag: constructor_tag;
+    }
 
 and type_transparence =
     Type_public      (* unrestricted expansion *)
@@ -310,13 +328,6 @@ type constructor_description =
     cstr_inlined: type_declaration option;
    }
 
-and constructor_tag =
-    Cstr_constant of int                (* Constant constructor (an int) *)
-  | Cstr_block of int                   (* Regular constructor (a block) *)
-  | Cstr_unboxed                        (* Constructor of an unboxed type *)
-  | Cstr_extension of Path.t * bool     (* Extension constructor
-                                           true if a constant false if a block*)
-
 type label_description =
   { lbl_name: string;                   (* Short name *)
     lbl_res: type_expr;                 (* Type of the result *)
@@ -328,4 +339,10 @@ type label_description =
     lbl_private: private_flag;          (* Read-only field? *)
     lbl_loc: Location.t;
     lbl_attributes: Parsetree.attributes;
+    lbl_unboxed : bool;                 (* Is this field inlined into the parent
+                                           record? *)
+    lbl_size: int;                      (* The size of a heap block required
+                                           to represent this field *)
+    lbl_offset : int;                   (* Position of the first field for this
+                                           label in the parent record *)
    }

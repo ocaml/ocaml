@@ -718,12 +718,12 @@ let rec expr_size env = function
       RHS_block (List.length args)
   | Uprim(Pmakearray(Pfloatarray, _), args, _) ->
       RHS_floatblock (List.length args)
-  | Uprim (Pduprecord ((Record_regular | Record_inlined _), sz), _, _) ->
-      RHS_block sz
+  | Uprim (Pduprecord (Record_regular { inline = Extension; _; }, sz), _, _) ->
+    RHS_block (sz + 1)
+  | Uprim (Pduprecord (Record_regular _, sz), _, _) ->
+    RHS_block sz
   | Uprim (Pduprecord (Record_unboxed _, _), _, _) ->
       assert false
-  | Uprim (Pduprecord (Record_extension, sz), _, _) ->
-      RHS_block (sz + 1)
   | Uprim (Pduprecord (Record_float, sz), _, _) ->
       RHS_floatblock sz
   | Uprim (Pccall { prim_name; _ }, closure::_, _)

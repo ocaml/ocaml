@@ -19,6 +19,7 @@ open Path
 open Types
 open Typedtree
 open Lambda
+open Misc
 
 let scrape_ty env ty =
   let ty = Ctype.expand_head_opt env (Ctype.correct_levels ty) in
@@ -172,3 +173,35 @@ let lazy_val_requires_forward env ty =
   match classify env ty with
   | Any | Float | Lazy -> true
   | Addr | Int -> false
+
+let project_fields_into_a_record ?(src_offset=0) ~src:src_expr size ~loc =
+  let src_expr_id = Ident.create "src_expr" in
+  let fields = list_init size (fun i ->
+    Lprim(Pfield (src_offset + i), [Lvar src_expr_id], loc))
+  in
+  let shape = Misc.list_init size (fun _ -> Pgenval) in
+  Llet(Strict, Pgenval, src_expr_id, src_expr,
+       Lprim(Pmakeblock(0, Asttypes.Immutable, Some shape), fields, loc))
+
+let pointwise_block_copy ?(dst_offset=0) ?(src_offset=0) ~dst_id
+      ~src:src_expr ~ptr size ~loc =
+  (* assert (size > 0); *)
+  let src_expr_id = Ident.create "src_expr" in
+  let copy_field i =
+    let get_field = Lprim(Pfield (src_offset + i), [Lvar src_expr_id], loc) in
+      Lprim(Psetfield(dst_offset + i, ptr, Assignment), (* TODO el: or initialisation? *)
+            [Lvar dst_id; get_field], loc)
+  in
+  let assignment_expr = ref (copy_field 0) in
+  for i = 1 to (size - 1) do
+    assignment_expr := Lsequence(!assignment_expr, copy_field i)
+  done;
+  Llet(Strict, Pgenval, src_expr_id, src_expr, !assignment_expr)
+
+let adjusted_offset lbl =
+  match lbl.lbl_repres with
+  | Record_regular { inline = Extension; _; } ->
+    lbl.lbl_offset + 1
+  | Record_regular _ ->
+    lbl.lbl_offset
+  | _ -> assert false

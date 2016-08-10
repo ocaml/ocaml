@@ -748,7 +748,7 @@ let filter_params tyl =
 
 let mark_loops_constructor_arguments = function
   | Cstr_tuple l -> List.iter mark_loops l
-  | Cstr_record l -> List.iter (fun l -> mark_loops l.ld_type) l
+  | Cstr_record (l, _) -> List.iter (fun l -> mark_loops l.ld_type) l
 
 let rec tree_of_type_decl id decl =
 
@@ -868,7 +868,7 @@ let rec tree_of_type_decl id decl =
 
 and tree_of_constructor_arguments = function
   | Cstr_tuple l -> tree_of_typlist false l
-  | Cstr_record l -> [ Otyp_record (List.map tree_of_label l) ]
+  | Cstr_record (l, _) -> [ Otyp_record (List.map tree_of_label l) ]
 
 and tree_of_constructor cd =
   let name = Ident.name cd.cd_id in
@@ -884,7 +884,9 @@ and tree_of_constructor cd =
       (name, args, Some ret)
 
 and tree_of_label l =
-  (Ident.name l.ld_id, l.ld_mutable = Mutable, tree_of_typexp false l.ld_type)
+  let unboxed = Builtin_attributes.has_unboxed l.ld_attributes in
+  (Ident.name l.ld_id, l.ld_mutable = Mutable, unboxed,
+   tree_of_typexp false l.ld_type)
 
 let tree_of_type_declaration id decl rs =
   Osig_type (tree_of_type_decl id decl, tree_of_rec rs)

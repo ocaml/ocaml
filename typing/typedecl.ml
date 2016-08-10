@@ -120,7 +120,7 @@ let rec get_unboxed_type_representation env ty fuel =
       match tydecl.type_kind with
       | Type_record ([{ld_type = ty2; _}], _)
       | Type_variant [{cd_args = Cstr_tuple [ty2]; _}]
-      | Type_variant [{cd_args = Cstr_record [{ld_type = ty2; _}]; _}]
+      | Type_variant [{cd_args = Cstr_record ([{ld_type = ty2; _}], _); _}]
       -> get_unboxed_type_representation env
            (Ctype.apply env tydecl.type_params ty2 args) (fuel - 1)
       | Type_abstract -> None
@@ -140,6 +140,26 @@ let is_float env ty =
   match get_unboxed_type_representation env ty with
     Some {desc = Tconstr(p, _, _); _} -> Path.same p Predef.path_float
   | _ -> false
+
+(* Determine if a type is a record type, and if so, provide its field declarations
+   and representation. *)
+
+type unboxable_type_info =
+  | Record of (Types.label_declaration list) * Types.record_representation
+  | Tuple
+  | Not_unboxable
+
+let get_unboxable_type_info env ty =
+  let ty = Ctype.repr (Ctype.expand_head_opt env ty) in
+  match ty.desc with
+  | Tconstr (p, _, _) -> begin
+    let tydecl = Env.find_type p env in
+    match tydecl.type_kind with
+    | Type_record (decls, repr) -> Record (decls, repr)
+    | _ -> Not_unboxable
+    end
+  | Ttuple _ -> Tuple
+  | _ -> Not_unboxable
 
 (* Determine if a type definition defines a fixed type. (PW) *)
 let is_fixed_type sd =
@@ -199,6 +219,21 @@ let make_params env params =
   in
     List.map make_param params
 
+(* Computes the required block space for a type if it were to be unboxed. *)
+let get_unboxed_type_size env ty =
+  let ty = Ctype.repr (Ctype.expand_head_opt env ty) in
+  match ty.desc with
+  | Tconstr (p, _, _) ->
+    let tydecl = Env.find_type p env in
+    begin match tydecl.type_kind with
+    | Type_record (_, Record_regular { size; _; }) -> size
+    | Type_record (decls, _) -> List.length decls
+    | _ -> 1
+    end
+  | Ttuple fields -> List.length fields
+  | _ -> 1
+;;
+
 let transl_labels env closed lbls =
   assert (lbls <> []);
   let all_labels = ref StringSet.empty in
@@ -221,40 +256,107 @@ let transl_labels env closed lbls =
       (fun ld ->
          let ty = ld.ld_type.ctyp_type in
          let ty = match ty.desc with Tpoly(t,[]) -> t | _ -> ty in
+         let unboxed = Builtin_attributes.has_unboxed ld.ld_attributes in
+         let size =
+           if unboxed then
+             get_unboxed_type_size env ty
+           else 1
+         in
          {Types.ld_id = ld.ld_id;
           ld_mutable = ld.ld_mutable;
           ld_type = ty;
           ld_loc = ld.ld_loc;
-          ld_attributes = ld.ld_attributes
+          ld_attributes = ld.ld_attributes;
+          ld_unboxed = unboxed;
+          ld_size = size;
          }
       )
       lbls in
   lbls, lbls'
 
-let transl_constructor_arguments env closed = function
+let check_suitable_for_unboxing env l =
+  if Builtin_attributes.has_unboxed l.Types.ld_attributes then
+    let unbox_info = get_unboxable_type_info env l.Types.ld_type in
+    match unbox_info with
+    | Not_unboxable ->
+      raise (Error (l.Types.ld_loc, Bad_unboxed_attribute
+               "it is not an unboxable type or it is recursive"))
+    | Record (decls, repr) ->
+      begin match repr with
+      | Record_unboxed _ ->
+        raise(Error (l.Types.ld_loc, Bad_unboxed_attribute
+                "it is already marked as unboxed in \
+                 its type declaration"))
+      | Record_float ->
+        raise(Error (l.Types.ld_loc, Bad_unboxed_attribute
+                "it has an optimised floating point representation"))
+      | Record_regular _ ->
+        if List.exists (fun decl -> decl.Types.ld_mutable = Mutable) decls
+        then
+          raise (Error (l.Types.ld_loc, Bad_unboxed_attribute
+                   "it has mutable fields"))
+        else true
+      end
+    | Tuple -> true
+  else false
+
+let transl_constructor_arguments env closed
+      const_idx nonconst_idx unboxed extension = function
   | Pcstr_tuple l ->
       let l = List.map (transl_simple_type env closed) l in
+      let tag =
+        if unboxed then Cstr_unboxed
+        else
+          match l with
+          | [] -> Cstr_constant const_idx
+          | _ -> Cstr_block nonconst_idx
+      in
       Types.Cstr_tuple (List.map (fun t -> t.ctyp_type) l),
-      Cstr_tuple l
+      Cstr_tuple l,
+      tag
   | Pcstr_record l ->
       let lbls, lbls' = transl_labels env closed l in
-      Types.Cstr_record lbls',
-      Cstr_record lbls
+      let rep, tag =
+        let has_unboxed_fields =
+          List.exists (check_suitable_for_unboxing env) lbls'
+        in
+        let size = List.fold_left (fun acc l -> acc + l.ld_size) 0 lbls' in
+        if unboxed then
+          Record_unboxed true, Cstr_unboxed
+        else
+          let inline, tag, cd_tag =
+            (* Keep tags = 0 for extension records *)
+            if extension then Extension, 0, (Cstr_block 0)
+            else
+              match l with
+              | [] -> Inlined, const_idx, Cstr_constant const_idx
+              | _ -> Inlined, nonconst_idx, Cstr_block nonconst_idx
+          in
+          Record_regular { size; inline; tag; has_unboxed_fields; },
+          cd_tag
+      in
+      Types.Cstr_record (lbls', rep),
+      Cstr_record lbls,
+      tag
 
-let make_constructor env type_path type_params sargs sret_type =
+(* TODO: this is starting to get confusing. Use named arguments. *)
+let make_constructor env type_path type_params
+      const_idx nonconst_idx unboxed extension sargs sret_type =
   match sret_type with
   | None ->
-      let args, targs =
-        transl_constructor_arguments env true sargs
+      let args, targs, cd_tag =
+        transl_constructor_arguments env true
+          const_idx nonconst_idx unboxed extension sargs
       in
-        targs, None, args, None
+        targs, None, args, None, cd_tag
   | Some sret_type ->
       (* if it's a generalized constructor we must first narrow and
          then widen so as to not introduce any new constraints *)
       let z = narrow () in
       reset_type_variables ();
-      let args, targs =
-        transl_constructor_arguments env false sargs
+      let args, targs, cd_tag =
+        transl_constructor_arguments env false
+          const_idx nonconst_idx unboxed extension sargs
       in
       let tret_type = transl_simple_type env false sret_type in
       let ret_type = tret_type.ctyp_type in
@@ -266,7 +368,7 @@ let make_constructor env type_path type_params sargs sret_type =
                             (ret_type, Ctype.newconstr type_path type_params)))
       end;
       widen z;
-      targs, Some tret_type, args, Some ret_type
+      targs, Some tret_type, args, Some ret_type, cd_tag
 
 (* Check that the argument to a GADT constructor is compatible with unboxing
    the type, given the existential variables introduced by this constructor. *)
@@ -319,6 +421,11 @@ let transl_declaration env sdecl id =
       raise(Error(sdecl.ptype_loc, Bad_unboxed_attribute
                     "its constructor has more than one argument"))
     | Ptype_variant [{pcd_args = Pcstr_record
+                        [{pld_mutable=Immutable; pld_attributes}]; _}]
+      when Builtin_attributes.has_unboxed pld_attributes ->
+      raise(Error(sdecl.ptype_loc, Bad_unboxed_attribute
+                  "it contains unboxed fields. Use [@@unboxed] instead"))
+    | Ptype_variant [{pcd_args = Pcstr_record
                         [{pld_mutable=Immutable; _}]; _}] -> ()
     | Ptype_variant [{pcd_args = Pcstr_record [{pld_mutable=Mutable; _}]; _}] ->
       raise(Error(sdecl.ptype_loc, Bad_unboxed_attribute "it is mutable"))
@@ -328,6 +435,10 @@ let transl_declaration env sdecl id =
     | Ptype_variant _ ->
       raise(Error(sdecl.ptype_loc, Bad_unboxed_attribute
                     "it has more than one constructor"))
+    | Ptype_record [{pld_mutable=Immutable; pld_attributes; _}]
+      when Builtin_attributes.has_unboxed pld_attributes ->
+      raise(Error(sdecl.ptype_loc, Bad_unboxed_attribute
+                  "it contains unboxed fields. Use [@@unboxed] instead"))
     | Ptype_record [{pld_mutable=Immutable; _}] -> ()
     | Ptype_record [{pld_mutable=Mutable; _}] ->
       raise(Error(sdecl.ptype_loc, Bad_unboxed_attribute
@@ -366,12 +477,19 @@ let transl_declaration env sdecl id =
             (List.filter (fun cd -> cd.pcd_args <> Pcstr_tuple []) scstrs)
            > (Config.max_tag + 1) then
           raise(Error(sdecl.ptype_loc, Too_many_constructors));
+        let const_idx = ref 0 in    (* Compute contructors' block tag *)
+        let nonconst_idx = ref 0 in
         let make_cstr scstr =
           let name = Ident.create scstr.pcd_name.txt in
-          let targs, tret_type, args, ret_type =
+          let targs, tret_type, args, ret_type, cd_tag =
             make_constructor env (Path.Pident id) params
-                             scstr.pcd_args scstr.pcd_res
+              !const_idx !nonconst_idx unbox false
+              scstr.pcd_args scstr.pcd_res
           in
+          begin match scstr.pcd_args with
+          | Pcstr_tuple [] -> incr const_idx
+          | _ -> incr nonconst_idx
+          end;
           if unbox then begin
             (* Cannot unbox a type when the argument can be both float and
                non-float because it interferes with the dynamic float array
@@ -399,21 +517,31 @@ let transl_declaration env sdecl id =
               cd_args = args;
               cd_res = ret_type;
               cd_loc = scstr.pcd_loc;
-              cd_attributes = scstr.pcd_attributes }
+              cd_attributes = scstr.pcd_attributes;
+              cd_tag; }
           in
             tcstr, cstr
         in
         let tcstrs, cstrs = List.split (List.map make_cstr scstrs) in
           Ttype_variant tcstrs, Type_variant cstrs
       | Ptype_record lbls ->
-          let lbls, lbls' = transl_labels env true lbls in
-          let rep =
-            if unbox then Record_unboxed false
-            else if List.for_all (fun l -> is_float env l.Types.ld_type) lbls'
-            then Record_float
-            else Record_regular
-          in
-          Ttype_record lbls, Type_record(lbls', rep)
+        let lbls, lbls' = transl_labels env true lbls in
+        let rep =
+          if unbox then Record_unboxed false
+          else if List.for_all (fun l -> is_float env l.Types.ld_type) lbls'
+          then Record_float
+          else
+            let has_unboxed_fields =
+              List.exists (check_suitable_for_unboxing env) lbls'
+            in
+            let size = List.fold_left (fun acc l -> acc + l.ld_size) 0 lbls' in
+            Record_regular { size;
+                             inline = No_inline;
+                             tag = 0;
+                             has_unboxed_fields;
+                           }
+        in
+        Ttype_record lbls, Type_record(lbls', rep)
       | Ptype_open -> Ttype_open, Type_open
       in
     let (tman, man) = match sdecl.ptype_manifest with
@@ -550,7 +678,7 @@ let check_constraints env sdecl (_, decl) =
                 (fun sty ty ->
                    check_constraints_rec env sty.ptyp_loc visited ty)
                 styl tyl
-          | Cstr_record tyl, Pcstr_record styl ->
+          | Cstr_record (tyl, _), Pcstr_record styl ->
               check_constraints_labels env visited tyl styl
           | _ -> assert false
           end;
@@ -944,7 +1072,7 @@ let constrained vars ty =
 
 let for_constr = function
   | Types.Cstr_tuple l -> add_false l
-  | Types.Cstr_record l ->
+  | Types.Cstr_record (l, _) ->
       List.map
         (fun {Types.ld_mutable; ld_type} -> (ld_mutable = Mutable, ld_type))
         l
@@ -1031,7 +1159,7 @@ let marked_as_immediate decl =
 let compute_immediacy env tdecl =
   match (tdecl.type_kind, tdecl.type_manifest) with
   | (Type_variant [{cd_args = Cstr_tuple [arg]; _}], _)
-    | (Type_variant [{cd_args = Cstr_record [{ld_type = arg; _}]; _}], _)
+    | (Type_variant [{cd_args = Cstr_record ([{ld_type = arg; _}], _); _}], _)
     | (Type_record ([{ld_type = arg; _}], _), _)
   when tdecl.type_unboxed.unboxed ->
     begin match get_unboxed_type_representation env arg with
@@ -1316,18 +1444,17 @@ let transl_type_decl env rec_flag sdecl_list =
   (final_decls, final_env)
 
 (* Translating type extensions *)
-
 let transl_extension_constructor env type_path type_params
                                  typext_params priv sext =
   let id = Ident.create sext.pext_name.txt in
-  let args, ret_type, kind =
+  let args, ret_type, kind, ext_tag =
     match sext.pext_kind with
       Pext_decl(sargs, sret_type) ->
-        let targs, tret_type, args, ret_type =
+        let targs, tret_type, args, ret_type, ext_tag =
           make_constructor env type_path typext_params
-            sargs sret_type
+            0 0 false true sargs sret_type
         in
-          args, ret_type, Text_decl(targs, tret_type)
+        args, ret_type, Text_decl(targs, tret_type), ext_tag
     | Pext_rebind lid ->
         let cdescr = Typetexp.find_constructor env lid.loc lid.txt in
         let usage =
@@ -1408,14 +1535,14 @@ let transl_extension_constructor env type_path type_params
               let decl = Ctype.instance_declaration decl in
               assert (List.length decl.type_params = List.length tl);
               List.iter2 (Ctype.unify env) decl.type_params tl;
-              let lbls =
+              let lbls, repr =
                 match decl.type_kind with
-                | Type_record (lbls, Record_extension) -> lbls
+                | Type_record (lbls, repr) -> lbls, repr
                 | _ -> assert false
               in
-              Types.Cstr_record lbls
+              Types.Cstr_record (lbls, repr)
         in
-        args, ret_type, Text_rebind(path, lid)
+        args, ret_type, Text_rebind(path, lid), cdescr.cstr_tag
   in
   let ext =
     { ext_type_path = type_path;
@@ -1424,7 +1551,9 @@ let transl_extension_constructor env type_path type_params
       ext_ret_type = ret_type;
       ext_private = priv;
       Types.ext_loc = sext.pext_loc;
-      Types.ext_attributes = sext.pext_attributes; }
+      Types.ext_attributes = sext.pext_attributes;
+      ext_tag;
+    }
   in
     { ext_id = id;
       ext_name = sext.pext_name;
@@ -1861,7 +1990,7 @@ let explain_unbound_single ppf tv ty =
 
 let tys_of_constr_args = function
   | Types.Cstr_tuple tl -> tl
-  | Types.Cstr_record lbls -> List.map (fun l -> l.Types.ld_type) lbls
+  | Types.Cstr_record (lbls, _) -> List.map (fun l -> l.Types.ld_type) lbls
 
 let report_error ppf = function
   | Repeated_parameter ->

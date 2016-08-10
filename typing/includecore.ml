@@ -126,7 +126,8 @@ type type_mismatch =
   | Field_arity of Ident.t
   | Field_names of int * Ident.t * Ident.t
   | Field_missing of bool * Ident.t
-  | Record_representation of bool   (* true means second one is unboxed float *)
+  | Record_representation of bool * Types.record_representation
+                                    (* true means second one is unboxed float *)
   | Unboxed_representation of bool  (* true means second one is unboxed *)
   | Immediate
 
@@ -151,10 +152,14 @@ let report_type_mismatch0 first second decl ppf err =
   | Field_missing (b, s) ->
       pr "The field %s is only present in %s %s"
         (Ident.name s) (if b then second else first) decl
-  | Record_representation b ->
+  | Record_representation (b, repr) ->
       pr "Their internal representations differ:@ %s %s %s"
         (if b then second else first) decl
-        "uses unboxed float representation"
+        (match repr with
+        | Record_float-> "uses unboxed float representation"
+        | Record_regular { has_unboxed_fields = true; _; } ->
+          "has explicitly unboxed fields"
+        | _ -> assert false)
   | Unboxed_representation b ->
       pr "Their internal representations differ:@ %s %s %s"
          (if b then second else first) decl
@@ -167,6 +172,19 @@ let report_type_mismatch first second decl ppf =
       if err = Manifest then () else
       Format.fprintf ppf "@ %a." (report_type_mismatch0 first second decl) err)
 
+let compare_record_representation rep1 rep2 =
+  if rep1 = rep2 then []
+  else
+    let second_unboxed, repr =
+      match rep1, rep2 with
+      | (Record_float | Record_regular { has_unboxed_fields = true; _; }), _ ->
+        false, rep1
+      | _, (Record_float | Record_regular { has_unboxed_fields = true; _; }) ->
+        true, rep2
+      | _, _ -> assert false
+    in
+    [Record_representation (second_unboxed, repr)]
+
 let rec compare_constructor_arguments env cstr params1 params2 arg1 arg2 =
   match arg1, arg2 with
   | Types.Cstr_tuple arg1, Types.Cstr_tuple arg2 ->
@@ -175,8 +193,10 @@ let rec compare_constructor_arguments env cstr params1 params2 arg1 arg2 =
           (fun ty1 ty2 -> Ctype.equal env true (ty1::params1) (ty2::params2))
           (arg1) (arg2)
       then [] else [Field_type cstr]
-  | Types.Cstr_record l1, Types.Cstr_record l2 ->
-      compare_records env params1 params2 0 l1 l2
+  | Types.Cstr_record (l1, r1), Types.Cstr_record (l2, r2) ->
+    let err = compare_records env params1 params2 0 l1 l2 in
+    if err <> [] then err
+    else compare_record_representation r1 r2
   | _ -> [Field_type cstr]
 
 and compare_variants env params1 params2 n cstrs1 cstrs2 =
@@ -270,8 +290,8 @@ let type_declarations ?(equality = false) env name decl1 id decl2 =
     | (Type_record(labels1,rep1), Type_record(labels2,rep2)) ->
         let err = compare_records env decl1.type_params decl2.type_params
             1 labels1 labels2 in
-        if err <> [] || rep1 = rep2 then err else
-        [Record_representation (rep2 = Record_float)]
+        if err <> [] then err
+        else compare_record_representation rep1 rep2
     | (Type_open, Type_open) -> []
     | (_, _) -> [Kind]
   in

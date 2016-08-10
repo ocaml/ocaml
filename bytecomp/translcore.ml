@@ -893,25 +893,35 @@ and transl_exp0 e =
   | Texp_field(arg, _, lbl) ->
       let targ = transl_exp arg in
       begin match lbl.lbl_repres with
-          Record_regular | Record_inlined _ ->
-          Lprim (Pfield lbl.lbl_pos, [targ], e.exp_loc)
-        | Record_unboxed _ -> targ
-        | Record_float -> Lprim (Pfloatfield lbl.lbl_pos, [targ], e.exp_loc)
-        | Record_extension ->
-          Lprim (Pfield (lbl.lbl_pos + 1), [targ], e.exp_loc)
+      | Record_regular _ ->
+        let pos = Typeopt.adjusted_offset lbl in
+        if not lbl.lbl_unboxed then
+          Lprim (Pfield pos, [targ], e.exp_loc)
+        else
+          Typeopt.project_fields_into_a_record
+            ~src:targ ~src_offset:pos lbl.lbl_size ~loc:e.exp_loc
+      | Record_unboxed _ -> targ
+      | Record_float -> Lprim (Pfloatfield lbl.lbl_pos, [targ], e.exp_loc)
       end
   | Texp_setfield(arg, _, lbl, newval) ->
-      let access =
-        match lbl.lbl_repres with
-          Record_regular
-        | Record_inlined _ ->
-          Psetfield(lbl.lbl_pos, maybe_pointer newval, Assignment)
-        | Record_unboxed _ -> assert false
-        | Record_float -> Psetfloatfield (lbl.lbl_pos, Assignment)
-        | Record_extension ->
-          Psetfield (lbl.lbl_pos + 1, maybe_pointer newval, Assignment)
-      in
+    let set_arg_field access =
       Lprim(access, [transl_exp arg; transl_exp newval], e.exp_loc)
+    in
+    let ptr = maybe_pointer newval in
+    begin match lbl.lbl_repres with
+    | Record_regular _ ->
+      let pos = Typeopt.adjusted_offset lbl in
+      if not lbl.lbl_unboxed then
+        set_arg_field (Psetfield (pos, ptr, Assignment))
+      else
+        let dst_id = Ident.create "assignment_arg" in
+        Llet(Strict, Pgenval, dst_id, transl_exp arg,
+             Typeopt.pointwise_block_copy ~dst_id ~dst_offset:pos
+               ~src:(transl_exp newval) ~ptr:(maybe_pointer newval)
+               lbl.lbl_size ~loc:e.exp_loc)
+    | Record_unboxed _ -> assert false
+    | Record_float -> set_arg_field (Psetfloatfield (lbl.lbl_pos, Assignment))
+    end
   | Texp_array expr_list ->
       let kind = array_kind e in
       let ll = transl_list expr_list in
@@ -1272,7 +1282,9 @@ and transl_setinstvar loc self var expr =
   Lprim(Parraysetu prim, [self; transl_normal_path var; transl_exp expr], loc)
 
 and transl_record loc env fields repres opt_init_expr =
-  let size = Array.length fields in
+  let size =
+    Array.fold_left (fun acc (def, _) -> acc + def.lbl_size) 0 fields
+  in
   (* Determine if there are "enough" fields (only relevant if this is a
      functional-style record update *)
   let no_init = match opt_init_expr with None -> true | _ -> false in
@@ -1283,23 +1295,33 @@ and transl_record loc env fields repres opt_init_expr =
     let init_id = Ident.create "init" in
     let lv =
       Array.mapi
-        (fun i (_, definition) ->
-           match definition with
+        (fun i (desc, def) ->
+           match def with
            | Kept typ ->
-               let field_kind = value_kind env typ in
-               let access =
-                 match repres with
-                   Record_regular | Record_inlined _ -> Pfield i
-                 | Record_unboxed _ -> assert false
-                 | Record_extension -> Pfield (i + 1)
-                 | Record_float -> Pfloatfield i in
-               Lprim(access, [Lvar init_id], loc), field_kind
+             let field_kind = value_kind env typ in
+             let access_init access = Lprim(access, [Lvar init_id], loc) in
+             let lam =
+               match repres with
+               | Record_regular _ ->
+                 (* TODO: The following code unnecessarily creates a new
+                    record. Flambda optimises it out, but in general
+                    we can avoid it by merging this creation code with the
+                    code below (that destructs the created record) *)
+                 let pos = Typeopt.adjusted_offset desc in
+                 if not desc.lbl_unboxed then access_init (Pfield pos)
+                 else Typeopt.project_fields_into_a_record
+                        ~src_offset:pos ~src:(Lvar init_id) desc.lbl_size ~loc
+               | Record_unboxed _ -> assert false
+               | Record_float -> access_init (Pfloatfield i)
+             in
+             lam, field_kind
            | Overridden (_lid, expr) ->
                let field_kind = value_kind expr.exp_env expr.exp_type in
                transl_exp expr, field_kind)
         fields
     in
     let ll, shape = List.split (Array.to_list lv) in
+    let descs = List.map fst (Array.to_list fields) in
     let mut =
       if Array.exists (fun (lbl, _) -> lbl.lbl_mut = Mutable) fields
       then Mutable
@@ -1307,33 +1329,81 @@ and transl_record loc env fields repres opt_init_expr =
     let lam =
       try
         if mut = Mutable then raise Not_constant;
-        let cl = List.map extract_constant ll in
+        let cl = List.fold_right2 (fun l desc cl ->
+          let c = extract_constant l in
+          match c with
+          | Const_block (0, cl') when desc.lbl_unboxed -> cl' @ cl
+          | _ -> c :: cl
+        ) ll descs []
+        in
         match repres with
-        | Record_regular -> Lconst(Const_block(0, cl))
-        | Record_inlined tag -> Lconst(Const_block(tag, cl))
+        | Record_regular { tag; inline; _; } ->
+          begin match inline with
+          | No_inline | Inlined -> Lconst(Const_block(tag, cl))
+          | Extension -> raise Not_constant
+          end
         | Record_unboxed _ -> Lconst(match cl with [v] -> v | _ -> assert false)
         | Record_float ->
             Lconst(Const_float_array(List.map extract_float cl))
-        | Record_extension ->
-            raise Not_constant
       with Not_constant ->
         match repres with
-          Record_regular ->
-            Lprim(Pmakeblock(0, mut, Some shape), ll, loc)
-        | Record_inlined tag ->
+        | Record_regular { tag; inline; has_unboxed_fields; _; } ->
+          let add_extension_slot_if_required ll shape =
+            match inline with
+            | Extension ->
+              let slot =
+                let path =
+                  let (label, _) = fields.(0) in
+                  match label.lbl_res.desc with
+                  | Tconstr(p, _, _) -> p
+                  | _ -> assert false
+                in
+                transl_path env path
+              in
+              slot :: ll, Pgenval :: shape
+            | No_inline | Inlined -> ll, shape
+          in
+          if not has_unboxed_fields then
+            (* Optimisation shortcut to avoid let-binding every field *)
+            let ll, shape = add_extension_slot_if_required ll shape in
             Lprim(Pmakeblock(tag, mut, Some shape), ll, loc)
+          else
+            let descs = List.map (fun desc ->
+              Ident.create ("field_" ^ desc.lbl_name), desc) descs
+            in
+            let record_expr =
+              let rec_field_init_exprs, rec_shape =
+                List.fold_right2
+                  (fun (field_id, desc) kind (init_exprs, shape) ->
+                     if not desc.lbl_unboxed then
+                       (Lvar field_id) :: init_exprs, kind :: shape
+                     else begin
+                       (* Inline every cell of an [@unboxed] field *)
+                       (* TODO: somewhat duplicated code here and in
+                          [project_fields_into_a_record] *)
+                       let field_accessors =
+                         list_init desc.lbl_size (fun i ->
+                           Lprim(Pfield i, [Lvar field_id], loc))
+                       in
+                       let kinds = list_init desc.lbl_size (fun _ -> Pgenval) in
+                       field_accessors @ init_exprs, kinds @ shape
+                     end
+                  ) descs shape ([], [])
+              in
+              let rec_field_init_exprs, rec_shape =
+                add_extension_slot_if_required
+                  rec_field_init_exprs rec_shape
+              in
+              Lprim(Pmakeblock(tag, mut, Some rec_shape),
+                    rec_field_init_exprs, loc)
+            in
+            (* Bind all fields to preserve the order of evaluation *)
+            List.fold_right2 (fun (field_id, _) field_expr in_expr ->
+              Llet(Strict, Pgenval, field_id, field_expr, in_expr))
+              descs ll record_expr
         | Record_unboxed _ -> (match ll with [v] -> v | _ -> assert false)
         | Record_float ->
             Lprim(Pmakearray (Pfloatarray, mut), ll, loc)
-        | Record_extension ->
-            let path =
-              let (label, _) = fields.(0) in
-              match label.lbl_res.desc with
-              | Tconstr(p, _, _) -> p
-              | _ -> assert false
-            in
-            let slot = transl_path env path in
-            Lprim(Pmakeblock(0, mut, Some (Pgenval :: shape)), slot :: ll, loc)
     in
     begin match opt_init_expr with
       None -> lam
@@ -1350,24 +1420,30 @@ and transl_record loc env fields repres opt_init_expr =
       match definition with
       | Kept _type -> cont
       | Overridden (_lid, expr) ->
-          let upd =
-            match repres with
-              Record_regular
-            | Record_inlined _ ->
-                Psetfield(lbl.lbl_pos, maybe_pointer expr, Assignment)
-            | Record_unboxed _ -> assert false
-            | Record_float -> Psetfloatfield (lbl.lbl_pos, Assignment)
-            | Record_extension ->
-                Psetfield(lbl.lbl_pos + 1, maybe_pointer expr, Assignment)
-          in
+        let assign_expr upd =
           Lsequence(Lprim(upd, [Lvar copy_id; transl_exp expr], loc), cont)
+        in
+        match repres with
+        | Record_regular _ ->
+          let pos = Typeopt.adjusted_offset lbl in
+          if not lbl.lbl_unboxed then
+            assign_expr (Psetfield (pos, maybe_pointer expr, Assignment))
+          else
+            Lsequence(
+              Typeopt.pointwise_block_copy
+                ~dst_id:copy_id ~dst_offset:pos
+                ~src:(transl_exp expr) ~ptr:(maybe_pointer expr)
+                lbl.lbl_size ~loc, cont)
+        | Record_unboxed _ -> assert false
+        | Record_float ->
+          assign_expr (Psetfloatfield (lbl.lbl_pos, Assignment))
     in
     begin match opt_init_expr with
       None -> assert false
     | Some init_expr ->
-        Llet(Strict, Pgenval, copy_id,
-             Lprim(Pduprecord (repres, size), [transl_exp init_expr], loc),
-             Array.fold_left update_field (Lvar copy_id) fields)
+      Llet(Strict, Pgenval, copy_id,
+           Lprim(Pduprecord (repres, size), [transl_exp init_expr], loc),
+           Array.fold_left update_field (Lvar copy_id) fields)
     end
   end
 

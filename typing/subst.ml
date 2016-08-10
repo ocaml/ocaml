@@ -220,19 +220,22 @@ let label_declaration s l =
     ld_type = typexp s l.ld_type;
     ld_loc = loc s l.ld_loc;
     ld_attributes = attrs s l.ld_attributes;
+    ld_unboxed = l.ld_unboxed;
+    ld_size = l.ld_size; (* TODO el: is that ok? *)
   }
 
 let constructor_arguments s = function
   | Cstr_tuple l ->
       Cstr_tuple (List.map (typexp s) l)
-  | Cstr_record l ->
-      Cstr_record (List.map (label_declaration s) l)
+  | Cstr_record (l, repr) ->
+      Cstr_record ((List.map (label_declaration s) l), repr)
 
 let constructor_declaration s c =
   {
     cd_id = c.cd_id;
     cd_args = constructor_arguments s c.cd_args;
     cd_res = may_map (typexp s) c.cd_res;
+    cd_tag = c.cd_tag;
     cd_loc = loc s c.cd_loc;
     cd_attributes = attrs s c.cd_attributes;
   }
@@ -340,7 +343,9 @@ let extension_constructor s ext =
       ext_ret_type = may_map (typexp s) ext.ext_ret_type;
       ext_private = ext.ext_private;
       ext_attributes = attrs s ext.ext_attributes;
-      ext_loc = if s.for_saving then Location.none else ext.ext_loc; }
+      ext_loc = if s.for_saving then Location.none else ext.ext_loc;
+      ext_tag = ext.ext_tag;
+    }
   in
     cleanup_types ();
     ext

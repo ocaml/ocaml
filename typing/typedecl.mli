@@ -62,7 +62,6 @@ val compute_variance_decls:
 (* for typeopt.ml *)
 val get_unboxed_type_representation: Env.t -> type_expr -> type_expr option
 
-
 type native_repr_kind = Unboxed | Untagged
 
 type error =

@@ -101,12 +101,17 @@ let print_bigarray name unsafe kind ppf layout =
 
 let record_rep ppf r =
   match r with
-  | Record_regular -> fprintf ppf "regular"
-  | Record_inlined i -> fprintf ppf "inlined(%i)" i
+  | Record_regular { size; tag; inline; has_unboxed_fields; } ->
+    fprintf ppf "%s%s(%i, size=%i)"
+      (match inline with
+       | No_inline -> "regular"
+       | Inlined -> "inlined"
+       | Extension -> "ext")
+      (if has_unboxed_fields then "_with_unboxed_fields" else "")
+      tag size
   | Record_unboxed false -> fprintf ppf "unboxed"
   | Record_unboxed true -> fprintf ppf "inlined(unboxed)"
   | Record_float -> fprintf ppf "float"
-  | Record_extension -> fprintf ppf "ext"
 ;;
 
 let string_of_loc_kind = function

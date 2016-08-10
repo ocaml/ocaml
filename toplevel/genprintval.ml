@@ -396,7 +396,7 @@ module Make(O : OBJ)(EVP : EVALPATH with type valu = O.t) = struct
                           tree_of_constr_with_args (tree_of_constr env path)
                             (Ident.name cd_id) false 0 depth obj
                             ty_args unbx
-                      | Cstr_record lbls ->
+                      | Cstr_record (lbls, _) ->
                           let r =
                             tree_of_record_fields depth
                               env path type_params ty_list
@@ -412,7 +412,7 @@ module Make(O : OBJ)(EVP : EVALPATH with type valu = O.t) = struct
                     | None ->
                         let pos =
                           match rep with
-                          | Record_extension -> 1
+                          | Record_regular { inline = Extension; _; } -> 1
                           | _ -> 0
                         in
                         let unbx =

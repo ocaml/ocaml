@@ -33,3 +33,15 @@ val value_kind : Env.t -> Types.type_expr -> Lambda.value_kind
 val lazy_val_requires_forward : Env.t -> Types.type_expr -> bool
   (** Whether a forward block is needed for a lazy thunk on a value, i.e.
       if the value can be represented as a float/forward/lazy *)
+
+(* Helper functions for accessing unboxed record fields correctly *)
+val project_fields_into_a_record :
+  ?src_offset:int -> src:Lambda.lambda -> int -> loc:Location.t -> Lambda.lambda
+val pointwise_block_copy :
+  ?dst_offset:int ->
+  ?src_offset:int ->
+  dst_id:Ident.t ->
+  src:Lambda.lambda ->
+  ptr:Lambda.immediate_or_pointer ->
+  int -> loc:Location.t -> Lambda.lambda
+val adjusted_offset : Types.label_description -> int

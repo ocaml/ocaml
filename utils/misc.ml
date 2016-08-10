@@ -73,6 +73,12 @@ let rec split_last = function
       let (lst, last) = split_last tl in
       (hd :: lst, last)
 
+let list_init : 'a. int -> (int -> 'a) -> 'a list =
+  fun n f ->
+    let l = ref [] in
+    for i = 0 to (n - 1) do l := (f i) :: !l done;
+    List.rev !l
+
 module Stdlib = struct
   module List = struct
     type 'a t = 'a list

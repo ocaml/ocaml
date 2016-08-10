@@ -53,7 +53,7 @@ let constructor_existentials cd_args cd_res =
   let tyl =
     match cd_args with
     | Cstr_tuple l -> l
-    | Cstr_record l -> List.map (fun l -> l.ld_type) l
+    | Cstr_record (l, _) -> List.map (fun l -> l.ld_type) l
   in
   let existentials =
     match cd_res with
@@ -65,11 +65,11 @@ let constructor_existentials cd_args cd_res =
   in
   (tyl, existentials)
 
-let constructor_args priv cd_args cd_res path rep =
+let constructor_args priv cd_args cd_res path =
   let tyl, existentials = constructor_existentials cd_args cd_res in
   match cd_args with
   | Cstr_tuple l -> existentials, l, None
-  | Cstr_record lbls ->
+  | Cstr_record (lbls, rep) ->
       let arg_vars_set = free_vars ~param:true (newgenty (Ttuple tyl)) in
       let type_params = TypeSet.elements arg_vars_set in
       let type_unboxed =
@@ -104,51 +104,36 @@ let constructor_descrs ty_path decl cstrs =
       if cd_args = Cstr_tuple [] then incr num_consts else incr num_nonconsts;
       if cd_res = None then incr num_normal)
     cstrs;
-  let rec describe_constructors idx_const idx_nonconst = function
-      [] -> []
-    | {cd_id; cd_args; cd_res; cd_loc; cd_attributes} :: rem ->
-        let ty_res =
-          match cd_res with
-          | Some ty_res' -> ty_res'
-          | None -> ty_res
-        in
-        let (tag, descr_rem) =
-          match cd_args with
-          | _ when decl.type_unboxed.unboxed ->
-            assert (rem = []);
-            (Cstr_unboxed, [])
-          | Cstr_tuple [] -> (Cstr_constant idx_const,
-                   describe_constructors (idx_const+1) idx_nonconst rem)
-          | _  -> (Cstr_block idx_nonconst,
-                   describe_constructors idx_const (idx_nonconst+1) rem) in
-        let cstr_name = Ident.name cd_id in
-        let existentials, cstr_args, cstr_inlined =
-          let representation =
-            if decl.type_unboxed.unboxed
-            then Record_unboxed true
-            else Record_inlined idx_nonconst
-          in
-          constructor_args decl.type_private cd_args cd_res
-            (Path.Pdot (ty_path, cstr_name, Path.nopos)) representation
-        in
-        let cstr =
-          { cstr_name;
-            cstr_res = ty_res;
-            cstr_existentials = existentials;
-            cstr_args;
-            cstr_arity = List.length cstr_args;
-            cstr_tag = tag;
-            cstr_consts = !num_consts;
-            cstr_nonconsts = !num_nonconsts;
-            cstr_normal = !num_normal;
-            cstr_private = decl.type_private;
-            cstr_generalized = cd_res <> None;
-            cstr_loc = cd_loc;
-            cstr_attributes = cd_attributes;
-            cstr_inlined;
-          } in
-        (cd_id, cstr) :: descr_rem in
-  describe_constructors 0 0 cstrs
+  let describe_constructors
+        {cd_id; cd_args; cd_res; cd_tag; cd_loc; cd_attributes} =
+    let ty_res =
+      match cd_res with
+      | Some ty_res' -> ty_res'
+      | None -> ty_res
+    in
+    let cstr_name = Ident.name cd_id in
+    let existentials, cstr_args, cstr_inlined =
+      constructor_args decl.type_private cd_args cd_res
+        (Path.Pdot (ty_path, cstr_name, Path.nopos))
+    in
+    let cstr =
+      { cstr_name;
+        cstr_res = ty_res;
+        cstr_existentials = existentials;
+        cstr_args;
+        cstr_arity = List.length cstr_args;
+        cstr_tag = cd_tag;
+        cstr_consts = !num_consts;
+        cstr_nonconsts = !num_nonconsts;
+        cstr_normal = !num_normal;
+        cstr_private = decl.type_private;
+        cstr_generalized = cd_res <> None;
+        cstr_loc = cd_loc;
+        cstr_attributes = cd_attributes;
+        cstr_inlined;
+      } in
+    (cd_id, cstr) in
+  List.map describe_constructors cstrs
 
 let extension_descr path_ext ext =
   let ty_res =
@@ -157,8 +142,7 @@ let extension_descr path_ext ext =
       | None -> newgenconstr ext.ext_type_path ext.ext_type_params
   in
   let existentials, cstr_args, cstr_inlined =
-    constructor_args ext.ext_private ext.ext_args ext.ext_ret_type
-      path_ext Record_extension
+    constructor_args ext.ext_private ext.ext_args ext.ext_ret_type path_ext
   in
     { cstr_name = Path.last path_ext;
       cstr_res = ty_res;
@@ -180,32 +164,43 @@ let none = {desc = Ttuple []; level = -1; id = -1}
                                         (* Clearly ill-formed type *)
 let dummy_label =
   { lbl_name = ""; lbl_res = none; lbl_arg = none; lbl_mut = Immutable;
-    lbl_pos = (-1); lbl_all = [||]; lbl_repres = Record_regular;
+    lbl_pos = (-1); lbl_all = [||];
+    lbl_repres = Record_regular { size = 1;
+                                  has_unboxed_fields = false;
+                                  inline = No_inline;
+                                  tag = 0;
+                                };
     lbl_private = Public;
     lbl_loc = Location.none;
     lbl_attributes = [];
+    lbl_unboxed = false;
+    lbl_size = 1;
+    lbl_offset = (-1);
   }
 
 let label_descrs ty_res lbls repres priv =
   let all_labels = Array.make (List.length lbls) dummy_label in
-  let rec describe_labels num = function
-      [] -> []
+  let rec describe_labels num offset = function
+    | [] -> []
     | l :: rest ->
-        let lbl =
-          { lbl_name = Ident.name l.ld_id;
-            lbl_res = ty_res;
-            lbl_arg = l.ld_type;
-            lbl_mut = l.ld_mutable;
-            lbl_pos = num;
-            lbl_all = all_labels;
-            lbl_repres = repres;
-            lbl_private = priv;
-            lbl_loc = l.ld_loc;
-            lbl_attributes = l.ld_attributes;
-          } in
-        all_labels.(num) <- lbl;
-        (l.ld_id, lbl) :: describe_labels (num+1) rest in
-  describe_labels 0 lbls
+      let lbl =
+        { lbl_name = Ident.name l.ld_id;
+          lbl_res = ty_res;
+          lbl_arg = l.ld_type;
+          lbl_mut = l.ld_mutable;
+          lbl_pos = num;
+          lbl_all = all_labels;
+          lbl_repres = repres;
+          lbl_private = priv;
+          lbl_loc = l.ld_loc;
+          lbl_attributes = l.ld_attributes;
+          lbl_unboxed = l.ld_unboxed;
+          lbl_size = l.ld_size;
+          lbl_offset = offset;
+        } in
+      all_labels.(num) <- lbl;
+      (l.ld_id, lbl) :: describe_labels (num+1) (offset + lbl.lbl_size) rest in
+  describe_labels 0 0 lbls
 
 exception Constr_not_found
 

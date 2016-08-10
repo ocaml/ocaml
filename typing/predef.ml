@@ -130,11 +130,12 @@ let decl_abstr =
 
 let decl_abstr_imm = {decl_abstr with type_immediate = true}
 
-let cstr id args =
+let cstr id args tag =
   {
     cd_id = id;
     cd_args = Cstr_tuple args;
     cd_res = None;
+    cd_tag = tag;
     cd_loc = Location.none;
     cd_attributes = [];
   }
@@ -149,11 +150,12 @@ and ident_some = ident_create "Some"
 let common_initial_env add_type add_extension empty_env =
   let decl_bool =
     {decl_abstr with
-     type_kind = Type_variant([cstr ident_false []; cstr ident_true []]);
+     type_kind = Type_variant([cstr ident_false [] (Cstr_constant 0);
+                               cstr ident_true  [] (Cstr_constant 1)]);
      type_immediate = true}
   and decl_unit =
     {decl_abstr with
-     type_kind = Type_variant([cstr ident_void []]);
+     type_kind = Type_variant([cstr ident_void [] (Cstr_constant 0)]);
      type_immediate = true}
   and decl_exn =
     {decl_abstr with
@@ -170,14 +172,16 @@ let common_initial_env add_type add_extension empty_env =
      type_params = [tvar];
      type_arity = 1;
      type_kind =
-     Type_variant([cstr ident_nil []; cstr ident_cons [tvar; type_list tvar]]);
+       Type_variant([cstr ident_nil [] (Cstr_constant 0);
+                     cstr ident_cons [tvar; type_list tvar] (Cstr_block 0)]);
      type_variance = [Variance.covariant]}
   and decl_option =
     let tvar = newgenvar() in
     {decl_abstr with
      type_params = [tvar];
      type_arity = 1;
-     type_kind = Type_variant([cstr ident_none []; cstr ident_some [tvar]]);
+     type_kind = Type_variant([cstr ident_none [] (Cstr_constant 0);
+                               cstr ident_some [tvar] (Cstr_block 0)]);
      type_variance = [Variance.covariant]}
   and decl_lazy_t =
     let tvar = newgenvar() in
@@ -197,7 +201,8 @@ let common_initial_env add_type add_extension empty_env =
         ext_loc = Location.none;
         ext_attributes = [{Asttypes.txt="ocaml.warn_on_literal_pattern";
                            loc=Location.none},
-                          Parsetree.PStr[]] }
+                          Parsetree.PStr[]];
+        ext_tag = (Cstr_block 0); } (* TODO: always a block, right? *)
   in
   add_extension ident_match_failure
                          [newgenty (Ttuple[type_string; type_int; type_int])] (

@@ -288,9 +288,9 @@ and print_typargs ppf =
       pp_print_char ppf ')';
       pp_close_box ppf ();
       pp_print_space ppf ()
-and print_out_label ppf (name, mut, arg) =
-  fprintf ppf "@[<2>%s%s :@ %a@];" (if mut then "mutable " else "") name
-    print_out_type arg
+and print_out_label ppf (name, mut, unboxed, arg) =
+  fprintf ppf "@[<2>%s%s :@ %a%s@];" (if mut then "mutable " else "") name
+    print_out_type arg (if unboxed then " [@unboxed]" else "")
 
 let out_type = ref print_out_type
 

@@ -560,7 +560,9 @@ let () =
            ext_ret_type = ret_type;
            ext_private = Asttypes.Public;
            Types.ext_loc = desc.cstr_loc;
-           Types.ext_attributes = desc.cstr_attributes; }
+           Types.ext_attributes = desc.cstr_attributes;
+           ext_tag = desc.cstr_tag;
+         }
        in
          [Sig_typext (id, ext, Text_exception)]
     )
