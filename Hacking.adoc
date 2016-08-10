@@ -1,6 +1,6 @@
 = Hacking the compiler 🐫
 
-Welcome! The purpose of this document is to gather various advices on how to get started in compiler hacking.
+Welcome! The purpose of this document is to gather various advice on how to get started in compiler hacking.
 
 === Tips and tools
 
@@ -44,11 +44,11 @@ In particular the tag http://caml.inria.fr/mantis/search.php?project_id=1&sticky
 
 link:stdlib/[]:: The standard library. Each file is mostly independent and should not need further knowledge.
 
-link:otherlibs/[]:: External libraries such as +unix+, +threads+, +dynlink+, +str+ and +bigarray+.
+link:otherlibs/[]:: External libraries such as `unix`, `threads`, `dynlink`, `str` and `bigarray`.
 
-link:lex/[]:: The +ocamllex+ lexer generator.
+link:lex/[]:: The `ocamllex` lexer generator.
 
-link:yacc/[]:: The +ocamlyacc+ parser generator. Please consider contributing to link:http://gallium.inria.fr/~fpottier/menhir/[menhir] instead.
+link:yacc/[]:: The `ocamlyacc` parser generator. Please consider contributing to link:http://gallium.inria.fr/~fpottier/menhir/[menhir] instead.
 
 
 == The compiler
@@ -57,33 +57,37 @@ The compiler code base can be intimidating at first sight. Here are a few pointe
 
 === The frontend -- link:parsing/[] and link:typing/[]
 
-The frontend handles parsing and typing of the OCaml code. It also contains various utilies needed for the later phases of the compiler.
+The frontend handles parsing and typing of the OCaml code. It also contains various utilities needed for the later phases of the compiler. Most modules are self contained and straightforward.
 
-link:parsing/parsetree.mli[Parsetree] and link:parsing/asttypes.mli[Asttypes]:: +Parsetree+ is an AST of the surface language of OCaml. It is well annotated with examples and is a mandatory read before any further exploration of the compiler.
+link:parsing/parsetree.mli[Parsetree] and link:parsing/asttypes.mli[Asttypes]:: Parsetree is an AST of the surface language of OCaml. It is well annotated with examples and is a mandatory read before any further exploration of the compiler.
 
 link:parsing/location.mli[Location]:: This module contains utilities related to locations and error handling. In particular, it contains handler that are used for all the error reporting in the compiler.
 
 ==== The typechecker -- link:typing/[]
 
-The code for the OCaml typechecker is complex. Modifying it will need a good understanding of the OCaml type system and type inference. Here is a reading list, by growing order of difficulty, that should help you understand the typechecker better:
+The implementation of the OCaml typechecker is complex. Modifying it will need a good understanding of the OCaml type system and type inference. Here is a reading list to ease your discovery of the typechecker:
 
-http://caml.inria.fr/pub/docs/u3-ocaml/index.html[Using, Understanding, and Unraveling the OCaml Language by Didier Rémy] :: provides (among other things) a formal description of parts of the core OCaml language, starting by a simple Core ML.
+http://caml.inria.fr/pub/docs/u3-ocaml/index.html[Using, Understanding, and Unraveling the OCaml Language by Didier Rémy] :: This book provides (among other things) a formal description of parts of the core OCaml language, starting by a simple Core ML.
 
-http://okmij.org/ftp/ML/generalization.html[Efficient and Insightful Generalization by Oleg Kiselyov] :: describes the basis of the algorithm used by the OCaml type checker.
+http://okmij.org/ftp/ML/generalization.html[Efficient and Insightful Generalization by Oleg Kiselyov] :: This article describes the basis of the algorithm used by the OCaml type checker.
 
-After that, the best is probably to dive right in. There is no real "point of entry", but understanding of both the parsetree and the typedtree is probably necessary.
+After that, the best is to dive right in. There is no real "entry point", but understanding of both the parsetree and the typedtree is necessary.
 
 The datastructures ::
-+link:typing/types.mli[Types]+ and +link:typing/typedtree.mli[Typedtree]+ are the two main datastructures in the typechecker. They correspond to the surface language annotated with all the information needed for type checking and type inference. +link:typing/env.mli[Env]+ contains all the environments that are used in the typechecker. Each node in the typedtree is annotated with the local environment.
+link:typing/types.mli[Types] and link:typing/typedtree.mli[Typedtree] are the two main datastructures in the typechecker. They correspond to the surface language annotated with all the information needed for type checking and type inference. link:typing/env.mli[Env] contains all the environments that are used in the typechecker. Each node in the typedtree is annotated with the local environment.
 
 Core utilities ::
-+link:typing/btype.mli[Btype]+ and +link:typing/ctype.mli[Ctype]+ contains the various low level function needed for typing, in particular related to levels, unification and backtracking. +link:typing/mtype.mli[Mtype]+ contains utilities related to modules.
+link:typing/btype.mli[Btype] and link:typing/ctype.mli[Ctype] contains the various low-level function needed for typing, in particular related to levels, unification and backtracking. link:typing/mtype.mli[Mtype] contains utilities related to modules.
 
 Inference and checking::
-The +Type..+ modules are related to inference and typechecking, each for a different part of the language. +link:typing/typetexp.mli[Typetexp]+ for type expressions, +link:typing/typecore.mli[Typecore]+ for the core language, +link:typing/typecore.mli[Typemod]+ for modules, +link:typing/typedecl.mli[Typedecl]+ for type declarations and finally +link:typeclass.mli[Typeclass]+ for the object system.
+The `Type..` modules are related to inference and typechecking, each for a different part of the language: link:typing/typetexp.mli[Typetexp] for type expressions, link:typing/typecore.mli[Typecore] for the core language, link:typing/typecore.mli[Typemod] for modules, link:typing/typedecl.mli[Typedecl] for type declarations and finally link:typeclass.mli[Typeclass] for the object system.
 
-Subtyping::
-Handling of subtyping relations are separated in the +Include...+ modules. +link:typing/includecore.ml[Includecore]+ for the core language, +link:typing/includemod.mli[Includemod]+ for modules and finally +link:typing/includeclass.mli[Includeclass]+ for the object system.
+Inclusion/Module subtyping::
+Handling of inclusion relations are separated in the `Include...` modules: link:typing/includecore.ml[Includecore] for the type and value declarations, link:typing/includemod.mli[Includemod] for modules and finally link:typing/includeclass.mli[Includeclass] for the object system.
+
+Note on dependencies between modules::
+Most of the modules presented above are inter-dependent with each other. Since OCaml prevents circular dependencies between files, the implementation uses forward declarations, implemented with references to functions that are filled later on. An example can be seen in link:typing/typecore.mli[Typecore.type_module], which is filled in  link:typing/typecore.mli[Typemod].
+
 
 === The bytecode compiler -- link:bytecomp/[]
 
@@ -98,13 +102,13 @@ Handling of subtyping relations are separated in the +Include...+ modules. +link
 Besides the targets listed in link:INSTALL.adoc[] for build and
 installation, the following targets may be of use:
 
-+make runtop+ :: builds and runs the ocaml toplevel of the distribution
+`make runtop` :: builds and runs the ocaml toplevel of the distribution
                           (optionally uses `rlwrap` for readline+history support)
-+make natruntop+:: builds and runs the native ocaml toplevel (experimental)
+`make natruntop`:: builds and runs the native ocaml toplevel (experimental)
 
-+make partialclean+:: Clean the OCaml files but keep the compiled C files.
+`make partialclean`:: Clean the OCaml files but keep the compiled C files.
 
-+make depend+:: Regenerate the +.depend+ file. Should be used each time new dependencies are added between files.
+`make depend`:: Regenerate the `.depend` file. Should be used each time new dependencies are added between files.
 
 === Bootstrapping
 
