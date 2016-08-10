@@ -162,6 +162,9 @@ OCaml 4.04.0:
 
 ### Tools:
 
+- MPR#7323: ocamllex -ml work with (-safe-string)
+  (Hongbo Zhang)
+  
 - MPR#7189: toplevel #show, follow chains of module aliases
   (Gabriel Scherer, report by Daniel Bünzli, review by Thomas Refis)
 
