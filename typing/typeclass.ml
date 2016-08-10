@@ -423,13 +423,13 @@ let rec class_type_field env self_type meths
       (mkctf (Tctf_inherit parent) :: fields,
        val_sig, concr_meths, inher)
 
-  | Pctf_val (lab, mut, virt, sty) ->
+  | Pctf_val ({txt=lab}, mut, virt, sty) ->
       let cty = transl_simple_type env false sty in
       let ty = cty.ctyp_type in
       (mkctf (Tctf_val (lab, mut, virt, cty)) :: fields,
       add_val lab (mut, virt, ty) val_sig, concr_meths, inher)
 
-  | Pctf_method (lab, priv, virt, sty)  ->
+  | Pctf_method ({txt=lab}, priv, virt, sty)  ->
       let cty =
         declare_method env meths self_type lab priv sty  ctf.pctf_loc in
       let concr_meths =
@@ -590,17 +590,17 @@ let rec class_field self_loc cl_num self_type meths vars
           cl_sig.csig_concr []
       in
       (* Super *)
-      let (val_env, met_env, par_env) =
+      let (val_env, met_env, par_env,super) =
         match super with
           None ->
-            (val_env, met_env, par_env)
-        | Some name ->
+            (val_env, met_env, par_env,None)
+        | Some {txt=name} ->
             let (_id, val_env, met_env, par_env) =
               enter_met_env ~check:(fun s -> Warnings.Unused_ancestor s)
                 sparent.pcl_loc name (Val_anc (inh_meths, cl_num)) self_type
                 val_env met_env par_env
             in
-            (val_env, met_env, par_env)
+            (val_env, met_env, par_env,Some name)
       in
       (val_env, met_env, par_env,
        lazy (mkcf (Tcf_inherit (ovf, parent, super, inh_vars, inh_meths)))

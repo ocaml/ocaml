@@ -282,15 +282,15 @@ module Analyser =
           | Ptyp_object (fields, _) ->
             let rec f = function
               | [] -> []
-              | ("",_,_) :: _ ->
+              | ({txt=""},_,_) :: _ ->
                 (* Fields with no name have been eliminated previously. *)
                 assert false
 
-              | (name, _atts, ct) :: [] ->
+              | ({txt=name}, _atts, ct) :: [] ->
                 let pos = Loc.ptyp_end ct in
                 let (_,comment_opt) = just_after_special pos pos_end in
                 [name, comment_opt]
-              | (name, _atts, ct) :: ((_name2, _atts2, ct2) as ele2) :: q ->
+              | ({txt=name}, _atts, ct) :: ((_name2, _atts2, ct2) as ele2) :: q ->
                 let pos = Loc.ptyp_end ct in
                 let pos2 = Loc.ptyp_start ct2 in
                 let (_,comment_opt) = just_after_special pos pos2 in
@@ -298,7 +298,7 @@ module Analyser =
             in
             let is_named_field field =
               match field with
-              | ("",_,_) -> false
+              | ({txt=""},_,_) -> false
               | _ -> true
             in
             (0, f @@ List.filter is_named_field fields)
@@ -525,7 +525,7 @@ module Analyser =
               let loc = item.Parsetree.pctf_loc in
               match item.Parsetree.pctf_desc with
 
-        | Parsetree.Pctf_val (name, mutable_flag, virtual_flag, _) ->
+        | Parsetree.Pctf_val ({txt=name}, mutable_flag, virtual_flag, _) ->
             (* of (string * mutable_flag * core_type option * Location.t)*)
             let (comment_opt, eles_comments) = get_comments_in_class last_pos
                 (Loc.start loc) in
@@ -563,7 +563,7 @@ module Analyser =
             let (inher_l, eles) = f (pos_end + maybe_more) q in
             (inher_l, eles_comments @ ((Class_attribute att) :: eles))
 
-        | Parsetree.Pctf_method (name, private_flag, virtual_flag, _) ->
+        | Parsetree.Pctf_method ({txt=name}, private_flag, virtual_flag, _) ->
             (* of (string * private_flag * virtual_flag * core_type) *)
             let (comment_opt, eles_comments) =
               get_comments_in_class last_pos (Loc.start  loc) in
