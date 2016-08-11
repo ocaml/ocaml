@@ -33,6 +33,39 @@ module Int = struct
     if n < 0 then Set.empty else Set.add n (zero_to_n (n-1))
 end
 
+module Int8 = struct
+  type t = int
+
+  let zero = 0
+  let one = 1
+
+  let of_int_exn i =
+    if i < -(1 lsl 8) || i > ((1 lsl 8) - 1) then
+      Misc.fatal_errorf "Int8.of_int_exn: %d is out of range" i
+    else
+      i
+
+  let to_int i = i
+end
+
+module Int16 = struct
+  type t = int
+
+  let of_int_exn i =
+    if i < -(1 lsl 16) || i > ((1 lsl 16) - 1) then
+      Misc.fatal_errorf "Int16.of_int_exn: %d is out of range" i
+    else
+      i
+
+  let of_int64_exn i =
+    if Int64.compare i 0xFFFFL >= 0 then
+      Misc.fatal_errorf "Int16.of_int64_exn: %Ld is out of range" i
+    else
+      Int64.to_int i
+
+  let to_int t = t
+end
+
 module Float = struct
   type t = float
 
