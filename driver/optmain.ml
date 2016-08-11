@@ -109,7 +109,7 @@ module Options = Main_args.Make_optcomp_options (struct
   let _binannot = set binary_annotations
   let _c = set compile_only
   let _cc s = c_compiler := Some s
-  let _cclib s = ccobjs := Misc.rev_split_words s @ !ccobjs
+  let _cclib s = schedule (fun () -> ccobjs := Misc.rev_split_words s @ !ccobjs)
   let _ccopt s = first_ccopts := s :: !first_ccopts
   let _clambda_checks () = clambda_checks := true
   let _compact = clear optimize_for_speed
