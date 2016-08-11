@@ -105,6 +105,37 @@ ifeq ($(ARCH),amd64)
 ARCH_SPECIFIC_ASMCOMP=$(INTEL_ASM)
 endif
 
+DWARF_LOW=\
+  supportlibs/dwarf_low/dwarf_format.cmo \
+  supportlibs/dwarf_low/dwarf_format_int.cmo \
+  supportlibs/dwarf_low/dwarf_value.cmo \
+  supportlibs/dwarf_low/dwarf_version.cmo \
+  supportlibs/dwarf_low/initial_length.cmo \
+  supportlibs/dwarf_low/child_determination.cmo \
+  supportlibs/dwarf_low/dwarf_tag.cmo \
+  supportlibs/dwarf_low/dwarf_operator.cmo \
+  supportlibs/dwarf_low/simple_location_expression.cmo \
+  supportlibs/dwarf_low/single_location_description.cmo \
+  supportlibs/dwarf_low/dwarf_attributes.cmo \
+  supportlibs/dwarf_low/encoding_attribute.cmo \
+  supportlibs/dwarf_low/dwarf_attribute_values.cmo \
+  supportlibs/dwarf_low/abbreviation_code.cmo \
+  supportlibs/dwarf_low/abbreviations_table_entry.cmo \
+  supportlibs/dwarf_low/abbreviations_table.cmo \
+  supportlibs/dwarf_low/debugging_information_entry.cmo \
+  supportlibs/dwarf_low/aranges_table.cmo \
+  supportlibs/dwarf_low/location_expression.cmo \
+  supportlibs/dwarf_low/location_list_entry.cmo \
+  supportlibs/dwarf_low/location_list.cmo \
+  supportlibs/dwarf_low/debug_info_section.cmo \
+  supportlibs/dwarf_low/debug_loc_table.cmo
+
+DWARF_HIGH=\
+  supportlibs/dwarf_high/proto_die.cmo \
+  supportlibs/dwarf_high/dwarf_attribute_helpers.cmo \
+  supportlibs/dwarf_high/assign_abbrevs.cmo \
+  supportlibs/dwarf_high/dwarf_world.cmo
+
 ASMCOMP=\
   $(ARCH_SPECIFIC_ASMCOMP) \
   asmcomp/arch.cmo \
@@ -134,6 +165,8 @@ ASMCOMP=\
   asmcomp/schedgen.cmo asmcomp/scheduling.cmo \
   asmcomp/branch_relaxation_intf.cmo \
   asmcomp/branch_relaxation.cmo \
+  $(DWARF_LOW) \
+  $(DWARF_HIGH) \
   asmcomp/emitaux.cmo asmcomp/emit.cmo asmcomp/asmgen.cmo \
   asmcomp/asmlink.cmo asmcomp/asmlibrarian.cmo asmcomp/asmpackager.cmo \
   driver/opterrors.cmo driver/optcompile.cmo
