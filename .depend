@@ -31,6 +31,9 @@ utils/strongly_connected_components.cmo : utils/numbers.cmi utils/misc.cmi \
 utils/strongly_connected_components.cmx : utils/numbers.cmx utils/misc.cmx \
     utils/identifiable.cmx utils/strongly_connected_components.cmi
 utils/strongly_connected_components.cmi : utils/identifiable.cmi
+utils/target_system.cmo : utils/misc.cmi utils/target_system.cmi
+utils/target_system.cmx : utils/misc.cmx utils/target_system.cmi
+utils/target_system.cmi :
 utils/tbl.cmo : utils/tbl.cmi
 utils/tbl.cmx : utils/tbl.cmi
 utils/tbl.cmi :
