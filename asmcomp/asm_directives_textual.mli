@@ -2,10 +2,9 @@
 (*                                                                        *)
 (*                                 OCaml                                  *)
 (*                                                                        *)
-(*             Xavier Leroy, projet Cristal, INRIA Rocquencourt           *)
+(*                  Mark Shinwell, Jane Street Europe                     *)
 (*                                                                        *)
-(*   Copyright 1996 Institut National de Recherche en Informatique et     *)
-(*     en Automatique.                                                    *)
+(*   Copyright 2016 Jane Street Group LLC                                 *)
 (*                                                                        *)
 (*   All rights reserved.  This file is distributed under the terms of    *)
 (*   the GNU Lesser General Public License version 2.1, with the          *)
@@ -13,11 +12,8 @@
 (*                                                                        *)
 (**************************************************************************)
 
-(* Generation of assembly code *)
+(** Implementation of [Asm_directives.S] for backends that use textual
+    emission of GAS assembly directives.
+*)
 
-val fundecl: Linearize.fundecl -> unit
-val data: Cmm.data_item list -> unit
-val begin_assembly: unit -> unit
-val end_assembly
-   : before_code_generation:((module Asm_directives.S) -> unit)
-  -> unit
+include Asm_directives.S

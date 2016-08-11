@@ -705,6 +705,24 @@ asmcomp/CSEgen.cmx : asmcomp/reg.cmx asmcomp/proc.cmx asmcomp/mach.cmx \
 asmcomp/CSEgen.cmi : asmcomp/mach.cmi
 asmcomp/arch.cmo : utils/clflags.cmi
 asmcomp/arch.cmx : utils/clflags.cmx
+asmcomp/asm_directives.cmo : middle_end/base_types/symbol.cmi \
+    utils/numbers.cmi asmcomp/linearize.cmi asmcomp/asm_directives.cmi
+asmcomp/asm_directives.cmx : middle_end/base_types/symbol.cmx \
+    utils/numbers.cmx asmcomp/linearize.cmx asmcomp/asm_directives.cmi
+asmcomp/asm_directives.cmi : middle_end/base_types/symbol.cmi \
+    utils/numbers.cmi asmcomp/linearize.cmi
+asmcomp/asm_directives_textual.cmo : asmcomp/asm_directives_textual.cmi
+asmcomp/asm_directives_textual.cmx : asmcomp/asm_directives_textual.cmi
+asmcomp/asm_directives_textual.cmi : asmcomp/asm_directives.cmi
+asmcomp/asm_directives_x86.cmo : asmcomp/x86_proc.cmi asmcomp/x86_dsl.cmi \
+    asmcomp/x86_ast.cmi middle_end/base_types/symbol.cmi utils/numbers.cmi \
+    middle_end/base_types/linkage_name.cmi asmcomp/linearize.cmi \
+    asmcomp/asm_directives.cmi asmcomp/asm_directives_x86.cmi
+asmcomp/asm_directives_x86.cmx : asmcomp/x86_proc.cmx asmcomp/x86_dsl.cmx \
+    asmcomp/x86_ast.cmi middle_end/base_types/symbol.cmx utils/numbers.cmx \
+    middle_end/base_types/linkage_name.cmx asmcomp/linearize.cmx \
+    asmcomp/asm_directives.cmx asmcomp/asm_directives_x86.cmi
+asmcomp/asm_directives_x86.cmi : asmcomp/asm_directives.cmi
 asmcomp/asmgen.cmo : asmcomp/un_anf.cmi bytecomp/translmod.cmi \
     utils/timings.cmi middle_end/base_types/symbol.cmi asmcomp/split.cmi \
     asmcomp/spill.cmi asmcomp/selection.cmi asmcomp/scheduling.cmi \

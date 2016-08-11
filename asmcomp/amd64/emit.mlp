@@ -973,6 +973,7 @@ let data l =
 
 let begin_assembly() =
   X86_proc.reset_asm_code ();
+  Asm_directives_x86.init ();
   reset_debug_info();                   (* PR#5603 *)
   reset_imp_table();
   float_constants := [];
@@ -1132,4 +1133,5 @@ let end_assembly() =
     else
       None
   in
+  before_code_generation (module Asm_directives_x86 : Asm_directives.S);
   X86_proc.generate_code asm
