@@ -1439,7 +1439,10 @@ OCaml 4.03.0 (25 Apr 2016):
 - PR#7135: only warn about ground coercions in -principal mode
   (Jacques Garrigue, report by Jeremy Yallop)
 
-- PR#7152: Typing equality involving non-generalizable type variable
+* PR#7152: Typing equality involving non-generalizable type variable
+  A side-effect of the fix is that, for deeply nested non generalizable
+  type variables, having an interface file may no longer be sufficient,
+  and you may have to add a local type annotation (cf PR#7313)
   (Jacques Garrigue, report by François Bobot)
 
 - PR#7160: Type synonym definitions can weaken gadt constructor types
