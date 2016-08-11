@@ -2055,6 +2055,170 @@ driver/pparse.cmx : utils/timings.cmx parsing/parsetree.cmi \
     utils/clflags.cmx utils/ccomp.cmx parsing/ast_mapper.cmx \
     parsing/ast_invariants.cmx driver/pparse.cmi
 driver/pparse.cmi : parsing/parsetree.cmi utils/misc.cmi
+supportlibs/dwarf_high/assign_abbrevs.cmo : \
+    supportlibs/dwarf_high/assign_abbrevs.cmi
+supportlibs/dwarf_high/assign_abbrevs.cmx : \
+    supportlibs/dwarf_high/assign_abbrevs.cmi
+supportlibs/dwarf_high/assign_abbrevs.cmi :
+supportlibs/dwarf_high/dwarf_attribute_helpers.cmo : utils/numbers.cmi \
+    middle_end/base_types/linkage_name.cmi \
+    supportlibs/dwarf_high/dwarf_attribute_helpers.cmi
+supportlibs/dwarf_high/dwarf_attribute_helpers.cmx : utils/numbers.cmx \
+    middle_end/base_types/linkage_name.cmx \
+    supportlibs/dwarf_high/dwarf_attribute_helpers.cmi
+supportlibs/dwarf_high/dwarf_attribute_helpers.cmi : \
+    middle_end/base_types/symbol.cmi middle_end/base_types/linkage_name.cmi \
+    asmcomp/linearize.cmi
+supportlibs/dwarf_high/dwarf_world.cmo : \
+    supportlibs/dwarf_high/dwarf_world.cmi
+supportlibs/dwarf_high/dwarf_world.cmx : \
+    supportlibs/dwarf_high/dwarf_world.cmi
+supportlibs/dwarf_high/dwarf_world.cmi : middle_end/base_types/symbol.cmi
+supportlibs/dwarf_high/proto_die.cmo : middle_end/base_types/symbol.cmi \
+    asmcomp/linearize.cmi supportlibs/dwarf_high/proto_die.cmi
+supportlibs/dwarf_high/proto_die.cmx : middle_end/base_types/symbol.cmx \
+    asmcomp/linearize.cmx supportlibs/dwarf_high/proto_die.cmi
+supportlibs/dwarf_high/proto_die.cmi : middle_end/base_types/symbol.cmi \
+    asmcomp/linearize.cmi
+supportlibs/dwarf_low/abbreviation_code.cmo : \
+    supportlibs/dwarf_low/abbreviation_code.cmi
+supportlibs/dwarf_low/abbreviation_code.cmx : \
+    supportlibs/dwarf_low/abbreviation_code.cmi
+supportlibs/dwarf_low/abbreviation_code.cmi :
+supportlibs/dwarf_low/abbreviations_table.cmo : \
+    supportlibs/dwarf_low/abbreviations_table.cmi
+supportlibs/dwarf_low/abbreviations_table.cmx : \
+    supportlibs/dwarf_low/abbreviations_table.cmi
+supportlibs/dwarf_low/abbreviations_table.cmi :
+supportlibs/dwarf_low/abbreviations_table_entry.cmo : \
+    supportlibs/dwarf_low/abbreviations_table_entry.cmi
+supportlibs/dwarf_low/abbreviations_table_entry.cmx : \
+    supportlibs/dwarf_low/abbreviations_table_entry.cmi
+supportlibs/dwarf_low/abbreviations_table_entry.cmi :
+supportlibs/dwarf_low/aranges_table.cmo : utils/numbers.cmi asmcomp/arch.cmo \
+    supportlibs/dwarf_low/aranges_table.cmi
+supportlibs/dwarf_low/aranges_table.cmx : utils/numbers.cmx asmcomp/arch.cmx \
+    supportlibs/dwarf_low/aranges_table.cmi
+supportlibs/dwarf_low/aranges_table.cmi : middle_end/base_types/symbol.cmi \
+    asmcomp/linearize.cmi
+supportlibs/dwarf_low/base_type_attribute_encoding.cmo : \
+    supportlibs/dwarf_low/base_type_attribute_encoding.cmi
+supportlibs/dwarf_low/base_type_attribute_encoding.cmx : \
+    supportlibs/dwarf_low/base_type_attribute_encoding.cmi
+supportlibs/dwarf_low/base_type_attribute_encoding.cmi :
+supportlibs/dwarf_low/child_determination.cmo : utils/numbers.cmi \
+    supportlibs/dwarf_low/child_determination.cmi
+supportlibs/dwarf_low/child_determination.cmx : utils/numbers.cmx \
+    supportlibs/dwarf_low/child_determination.cmi
+supportlibs/dwarf_low/child_determination.cmi :
+supportlibs/dwarf_low/debug_info_section.cmo : utils/numbers.cmi \
+    asmcomp/linearize.cmi asmcomp/arch.cmo \
+    supportlibs/dwarf_low/debug_info_section.cmi
+supportlibs/dwarf_low/debug_info_section.cmx : utils/numbers.cmx \
+    asmcomp/linearize.cmx asmcomp/arch.cmx \
+    supportlibs/dwarf_low/debug_info_section.cmi
+supportlibs/dwarf_low/debug_info_section.cmi : asmcomp/linearize.cmi
+supportlibs/dwarf_low/debug_loc_table.cmo : \
+    supportlibs/dwarf_low/debug_loc_table.cmi
+supportlibs/dwarf_low/debug_loc_table.cmx : \
+    supportlibs/dwarf_low/debug_loc_table.cmi
+supportlibs/dwarf_low/debug_loc_table.cmi :
+supportlibs/dwarf_low/debugging_information_entry.cmo : \
+    middle_end/base_types/symbol.cmi asmcomp/linearize.cmi \
+    supportlibs/dwarf_low/debugging_information_entry.cmi
+supportlibs/dwarf_low/debugging_information_entry.cmx : \
+    middle_end/base_types/symbol.cmx asmcomp/linearize.cmx \
+    supportlibs/dwarf_low/debugging_information_entry.cmi
+supportlibs/dwarf_low/debugging_information_entry.cmi : \
+    middle_end/base_types/symbol.cmi asmcomp/linearize.cmi
+supportlibs/dwarf_low/dwarf_attribute_values.cmo : \
+    supportlibs/dwarf_low/dwarf_attribute_values.cmi
+supportlibs/dwarf_low/dwarf_attribute_values.cmx : \
+    supportlibs/dwarf_low/dwarf_attribute_values.cmi
+supportlibs/dwarf_low/dwarf_attribute_values.cmi : \
+    middle_end/base_types/symbol.cmi utils/numbers.cmi asmcomp/linearize.cmi
+supportlibs/dwarf_low/dwarf_attributes.cmo : utils/identifiable.cmi \
+    supportlibs/dwarf_low/dwarf_attributes.cmi
+supportlibs/dwarf_low/dwarf_attributes.cmx : utils/identifiable.cmx \
+    supportlibs/dwarf_low/dwarf_attributes.cmi
+supportlibs/dwarf_low/dwarf_attributes.cmi : utils/identifiable.cmi
+supportlibs/dwarf_low/dwarf_emittable.cmi :
+supportlibs/dwarf_low/dwarf_format.cmo : \
+    supportlibs/dwarf_low/dwarf_format.cmi
+supportlibs/dwarf_low/dwarf_format.cmx : \
+    supportlibs/dwarf_low/dwarf_format.cmi
+supportlibs/dwarf_low/dwarf_format.cmi :
+supportlibs/dwarf_low/dwarf_format_int.cmo : \
+    supportlibs/dwarf_low/dwarf_format_int.cmi
+supportlibs/dwarf_low/dwarf_format_int.cmx : \
+    supportlibs/dwarf_low/dwarf_format_int.cmi
+supportlibs/dwarf_low/dwarf_format_int.cmi :
+supportlibs/dwarf_low/dwarf_operator.cmo : middle_end/base_types/symbol.cmi \
+    utils/numbers.cmi utils/misc.cmi asmcomp/arch.cmo \
+    supportlibs/dwarf_low/dwarf_operator.cmi
+supportlibs/dwarf_low/dwarf_operator.cmx : middle_end/base_types/symbol.cmx \
+    utils/numbers.cmx utils/misc.cmx asmcomp/arch.cmx \
+    supportlibs/dwarf_low/dwarf_operator.cmi
+supportlibs/dwarf_low/dwarf_operator.cmi : middle_end/base_types/symbol.cmi
+supportlibs/dwarf_low/dwarf_tag.cmo : utils/numbers.cmi \
+    supportlibs/dwarf_low/dwarf_tag.cmi
+supportlibs/dwarf_low/dwarf_tag.cmx : utils/numbers.cmx \
+    supportlibs/dwarf_low/dwarf_tag.cmi
+supportlibs/dwarf_low/dwarf_tag.cmi : utils/numbers.cmi
+supportlibs/dwarf_low/dwarf_value.cmo : middle_end/base_types/symbol.cmi \
+    utils/numbers.cmi asmcomp/linearize.cmi \
+    supportlibs/dwarf_low/dwarf_value.cmi
+supportlibs/dwarf_low/dwarf_value.cmx : middle_end/base_types/symbol.cmx \
+    utils/numbers.cmx asmcomp/linearize.cmx \
+    supportlibs/dwarf_low/dwarf_value.cmi
+supportlibs/dwarf_low/dwarf_value.cmi : middle_end/base_types/symbol.cmi \
+    utils/numbers.cmi asmcomp/linearize.cmi
+supportlibs/dwarf_low/dwarf_version.cmo : utils/numbers.cmi \
+    supportlibs/dwarf_low/dwarf_version.cmi
+supportlibs/dwarf_low/dwarf_version.cmx : utils/numbers.cmx \
+    supportlibs/dwarf_low/dwarf_version.cmi
+supportlibs/dwarf_low/dwarf_version.cmi :
+supportlibs/dwarf_low/encoding_attribute.cmo : utils/numbers.cmi \
+    supportlibs/dwarf_low/encoding_attribute.cmi
+supportlibs/dwarf_low/encoding_attribute.cmx : utils/numbers.cmx \
+    supportlibs/dwarf_low/encoding_attribute.cmi
+supportlibs/dwarf_low/encoding_attribute.cmi :
+supportlibs/dwarf_low/initial_length.cmo : utils/misc.cmi \
+    supportlibs/dwarf_low/initial_length.cmi
+supportlibs/dwarf_low/initial_length.cmx : utils/misc.cmx \
+    supportlibs/dwarf_low/initial_length.cmi
+supportlibs/dwarf_low/initial_length.cmi :
+supportlibs/dwarf_low/location_expression.cmo : \
+    supportlibs/dwarf_low/location_expression.cmi
+supportlibs/dwarf_low/location_expression.cmx : \
+    supportlibs/dwarf_low/location_expression.cmi
+supportlibs/dwarf_low/location_expression.cmi :
+supportlibs/dwarf_low/location_list.cmo : asmcomp/linearize.cmi \
+    supportlibs/dwarf_low/location_list.cmi
+supportlibs/dwarf_low/location_list.cmx : asmcomp/linearize.cmx \
+    supportlibs/dwarf_low/location_list.cmi
+supportlibs/dwarf_low/location_list.cmi : asmcomp/linearize.cmi
+supportlibs/dwarf_low/location_list_entry.cmo : \
+    middle_end/base_types/symbol.cmi utils/numbers.cmi asmcomp/linearize.cmi \
+    supportlibs/dwarf_low/location_list_entry.cmi
+supportlibs/dwarf_low/location_list_entry.cmx : \
+    middle_end/base_types/symbol.cmx utils/numbers.cmx asmcomp/linearize.cmx \
+    supportlibs/dwarf_low/location_list_entry.cmi
+supportlibs/dwarf_low/location_list_entry.cmi : \
+    middle_end/base_types/symbol.cmi asmcomp/linearize.cmi
+supportlibs/dwarf_low/simple_location_expression.cmo : \
+    middle_end/base_types/symbol.cmi asmcomp/arch.cmo \
+    supportlibs/dwarf_low/simple_location_expression.cmi
+supportlibs/dwarf_low/simple_location_expression.cmx : \
+    middle_end/base_types/symbol.cmx asmcomp/arch.cmx \
+    supportlibs/dwarf_low/simple_location_expression.cmi
+supportlibs/dwarf_low/simple_location_expression.cmi : \
+    middle_end/base_types/symbol.cmi
+supportlibs/dwarf_low/single_location_description.cmo : \
+    supportlibs/dwarf_low/single_location_description.cmi
+supportlibs/dwarf_low/single_location_description.cmx : \
+    supportlibs/dwarf_low/single_location_description.cmi
+supportlibs/dwarf_low/single_location_description.cmi :
 toplevel/expunge.cmo : bytecomp/symtable.cmi bytecomp/runtimedef.cmi \
     utils/misc.cmi typing/ident.cmi bytecomp/bytesections.cmi
 toplevel/expunge.cmx : bytecomp/symtable.cmx bytecomp/runtimedef.cmx \

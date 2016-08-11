@@ -711,12 +711,17 @@ partialclean::
 	rm -f middle_end/base_types/*.cm* middle_end/base_types/*.$(O) \
 	      middle_end/base_types/*.$(S)
 	rm -f driver/*.cm* driver/*.$(O) driver/*.$(S)
+	rm -f supportlibs/dwarf_low/*.cm* supportlibs/dwarf_low/*.$(O) \
+	      supportlibs/dwarf_low/*.$(S)
+	rm -f supportlibs/dwarf_high/*.cm* supportlibs/dwarf_high/*.$(O) \
+	      supportlibs/dwarf_high/*.$(S)
 	rm -f toplevel/*.cm* toplevel/*.$(O) toplevel/*.$(S)
 	rm -f tools/*.cm* tools/*.$(O) tools/*.$(S)
 
 depend: beforedepend
 	(for d in utils parsing typing bytecomp asmcomp middle_end \
-	 middle_end/base_types driver toplevel; \
+	 middle_end/base_types driver supportlibs/dwarf_low \
+	 supportlibs/dwarf_high toplevel; \
 	 do $(CAMLDEP) -slash $(DEPFLAGS) $$d/*.mli $$d/*.ml; \
 	 done) > .depend
 	$(CAMLDEP) -slash $(DEPFLAGS) -native \
