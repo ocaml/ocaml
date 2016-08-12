@@ -59,6 +59,7 @@ type spec =
                                    call the function with the symbol *)
   | Rest of (string -> unit)   (** Stop interpreting keywords and call the
                                    function with each remaining argument *)
+  | Expand of (string -> string array)
 (** The concrete type describing the behavior associated
    with a keyword. *)
 

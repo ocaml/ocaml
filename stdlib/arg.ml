@@ -36,6 +36,7 @@ type spec =
                                   call the function with the symbol. *)
   | Rest of (string -> unit)   (* Stop interpreting keywords and call the
                                   function with each remaining argument *)
+  | Expand of (string -> string array)
 
 exception Bad of string
 exception Help of string
@@ -122,7 +123,7 @@ let float_of_string_opt x =
   try Some (float_of_string x)
   with Failure _ -> None
 
-let parse_argv_dynamic ?(current=current) argv speclist anonfun errmsg =
+let rec parse_argv_dynamic ?(current=current) argv speclist anonfun errmsg =
   let l = Array.length argv in
   let b = Buffer.create 200 in
   let initpos = !current in
@@ -237,6 +238,12 @@ let parse_argv_dynamic ?(current=current) argv speclist anonfun errmsg =
               f argv.(!current + 1);
               consume_arg ();
             done;
+        | Expand f ->
+            let arg = get_arg () in
+            let newarg = f arg
+            and newcurr = ref 0 in
+            parse_argv_dynamic ~current:newcurr newarg speclist anonfun errmsg;
+            consume_arg ();
         in
         treat_action action
       with Bad m -> stop (Message m);
