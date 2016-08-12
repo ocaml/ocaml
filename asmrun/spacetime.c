@@ -22,6 +22,7 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
+#include <signal.h>
 #include "caml/config.h"
 #ifdef HAS_UNISTD
 #include <unistd.h>
@@ -187,6 +188,10 @@ static void maybe_reopen_snapshot_channel(void)
 
 extern void caml_spacetime_automatic_save(void);
 
+#ifndef SIGINT
+#define SIGINT -1
+#endif
+
 void caml_spacetime_initialize(void)
 {
   /* Note that this is called very early (even prior to GC initialisation). */
@@ -233,6 +238,8 @@ void caml_spacetime_initialize(void)
         automatic_snapshots = 1;
         open_snapshot_channel();
         if (automatic_snapshots) {
+          // Catch interrupt so that the profile can be completed
+          caml_set_signal_action(SIGINT, 2);
           snapshot_interval = interval / 1e3;
           time = caml_sys_time_unboxed(Val_unit);
           next_snapshot_time = time + snapshot_interval;
