@@ -73,9 +73,8 @@ val pred : t -> t
 val abs : t -> t
 (** Return the absolute value of its argument. *)
 
-val size : int
-(** The size in bits of a target native integer.  This is equal to [32]
-    on a 32-bit platform and to [64] on a 64-bit platform. *)
+val size : [`Thirtytwo | `Sixtyfour ]
+(** The size in bits of a target native integer. *)
 
 val max_int : t
 (** The greatest representable target integer,

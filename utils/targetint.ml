@@ -52,7 +52,11 @@ module type S = sig
   val equal: t -> t -> bool
 end
 
-let size = Sys.word_size
+let size =
+  match Sys.word_size with
+  | 32 -> `Thirtytwo
+  | 64 -> `Sixtyfour
+  | _ -> assert false
 (* Later, this will be set by the configure script
    in order to support cross-compilation. *)
 
@@ -85,6 +89,6 @@ end
 
 include (val
           (match size with
-           | 32 -> (module Int32)
-           | 64 -> (module Int64)
-           | _ -> assert false) : S)
+           | `Thirtytwo -> (module Int32)
+           | `Sixtyfour -> (module Int64)
+          ) : S)
