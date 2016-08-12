@@ -237,7 +237,7 @@ let main () =
        Optcompile.implementation ~backend,
        Optcompile.interface,
        ".cmx",
-       ".cma");
+       ".cmxa");
     readenv ppf Before_link;
     if
       List.length (List.filter (fun x -> !x)
