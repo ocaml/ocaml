@@ -8,6 +8,12 @@ Next version (tbd):
 - PR#7315, GPR#736: refine some error locations
   (Gabriel Scherer and Alain Frisch, report by Matej Košík)
 
+### Standard library:
+
+- GPR#760: Add a functions List.compare_lengths and
+  List.compare_length_with to avoid full list length computations
+  (Fabrice Le Fessant)
+
 ### Tools:
 
 - PR#7333: ocamldoc, use the first sentence of text file as
