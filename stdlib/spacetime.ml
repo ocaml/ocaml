@@ -28,10 +28,15 @@ module Series = struct
     = "caml_spacetime_only_works_for_native_code"
       "caml_spacetime_write_magic_number"
 
+  external channel_for_spacetime : out_channel -> unit
+    = "caml_channel_for_spacetime"
+
   let create ~path =
     if spacetime_enabled () then begin
+      let channel = open_out path in
+      channel_for_spacetime channel;
       let t =
-        { channel = open_out path;
+        { channel = channel;
           closed = false;
         }
       in

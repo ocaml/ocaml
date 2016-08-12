@@ -157,6 +157,7 @@ static void open_snapshot_channel(void)
   }
   else {
     snapshot_channel = caml_open_descriptor_out(fd);
+    snapshot_channel->flags |= CHANNEL_FLAG_BLOCKING_WRITE;
     pid_when_snapshot_channel_opened = pid;
     caml_spacetime_write_magic_number_internal(snapshot_channel);
   }
@@ -1064,6 +1065,13 @@ CAMLprim value caml_spacetime_enabled (value v_unit)
   return Val_true;
 }
 
+CAMLprim value caml_channel_for_spacetime (value v_channel)
+{
+  struct channel* channel = Channel(v_channel);
+  channel->flags |= CHANNEL_FLAG_BLOCKING_WRITE;
+  return Val_unit;
+}
+
 #else
 
 /* Functions for when the compiler was not configured with "-spacetime". */
@@ -1092,6 +1100,11 @@ CAMLprim value caml_spacetime_save_event_for_automatic_snapshots
 }
 
 CAMLprim value caml_spacetime_save_trie (value ignored)
+{
+  return Val_unit;
+}
+
+CAMLprim value caml_channel_for_spacetime (value v_channel)
 {
   return Val_unit;
 }
