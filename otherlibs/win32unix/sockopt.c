@@ -171,7 +171,7 @@ unix_setsockopt_aux(char * name,
                     value socket, value val)
 {
   union option_value optval;
-  socklen_param_type optsize;
+  socklen_param_type optsize = 0;
   double f;
 
   switch (ty) {

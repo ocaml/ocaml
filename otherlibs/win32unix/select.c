@@ -61,8 +61,6 @@ void handle_set_init (LPSELECTHANDLESET hds, LPHANDLE lpHdl, DWORD max)
 
 void handle_set_add (LPSELECTHANDLESET hds, HANDLE hdl)
 {
-  LPSELECTHANDLESET res;
-
   if (hds->nLast < hds->nMax)
   {
     hds->lpHdl[hds->nLast] = hdl;
@@ -188,7 +186,6 @@ LPSELECTDATA select_data_new (LPSELECTDATA lpSelectData, SELECTTYPE EType)
 {
   /* Allocate the data structure */
   LPSELECTDATA res;
-  DWORD        i;
 
   res = (LPSELECTDATA)caml_stat_alloc(sizeof(SELECTDATA));
 
@@ -215,8 +212,6 @@ LPSELECTDATA select_data_new (LPSELECTDATA lpSelectData, SELECTTYPE EType)
 /* Free select data */
 void select_data_free (LPSELECTDATA lpSelectData)
 {
-  DWORD i;
-
   DEBUG_PRINT("Freeing data of %x", lpSelectData);
 
   /* Free APC related data, if they exists */
@@ -329,7 +324,6 @@ void read_console_poll(HANDLE hStop, void *_data)
 
   DEBUG_PRINT("Waiting for data on console");
 
-  record;
   waitRes = 0;
   n = 0;
   lpSelectData = (LPSELECTDATA)_data;
@@ -914,6 +908,8 @@ static value find_handle(LPSELECTRESULT iterResult, value readfds,
     case SELECT_MODE_EXCEPT:
       list = exceptfds;
       break;
+    case SELECT_MODE_NONE:
+      break;
   };
 
   for(i=0; list != Val_unit && i < iterResult->lpOrigIdx; ++i )
@@ -1000,9 +996,6 @@ CAMLprim value unix_select(value readfds, value writefds, value exceptfds,
   /* Is there static select data */
   BOOL  hasStaticData = FALSE;
 
-  /* Wait return */
-  DWORD waitRet;
-
   /* Set of handle */
   SELECTHANDLESET hds;
   DWORD           hdsMax;
@@ -1070,7 +1063,6 @@ CAMLprim value unix_select(value readfds, value writefds, value exceptfds,
       iterSelectData = NULL;
       iterResult     = NULL;
       hasStaticData  = 0;
-      waitRet        = 0;
       readfds_len    = caml_list_length(readfds);
       writefds_len   = caml_list_length(writefds);
       exceptfds_len  = caml_list_length(exceptfds);
@@ -1277,6 +1269,8 @@ CAMLprim value unix_select(value readfds, value writefds, value exceptfds,
                     case SELECT_MODE_EXCEPT:
                       Store_field(l, 1, except_list);
                       except_list = l;
+                      break;
+                    case SELECT_MODE_NONE:
                       break;
                     }
                 }

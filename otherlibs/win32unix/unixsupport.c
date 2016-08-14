@@ -284,7 +284,6 @@ void unix_error(int errcode, char *cmdname, value cmdarg)
 {
   value res;
   value name = Val_unit, err = Val_unit, arg = Val_unit;
-  int errconstr;
 
   Begin_roots3 (name, err, arg);
     arg = cmdarg == Nothing ? copy_string("") : cmdarg;

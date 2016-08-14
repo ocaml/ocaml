@@ -35,7 +35,6 @@ static void caml_ba_sys_error(void);
 static __int64 caml_ba_set_file_pointer(HANDLE h, __int64 dist, DWORD mode)
 {
   LARGE_INTEGER i;
-  DWORD err;
 
   i.QuadPart = dist;
   i.LowPart = SetFilePointer(h, i.LowPart, &i.HighPart, mode);
@@ -51,8 +50,7 @@ CAMLprim value caml_ba_map_file(value vfd, value vkind, value vlayout,
   intnat num_dims, i;
   intnat dim[CAML_BA_MAX_NUM_DIMS];
   __int64 currpos, startpos, file_size, data_size;
-  uintnat array_size, page, delta;
-  char c;
+  uintnat array_size, delta;
   void * addr;
   LARGE_INTEGER li;
   SYSTEM_INFO sysinfo;

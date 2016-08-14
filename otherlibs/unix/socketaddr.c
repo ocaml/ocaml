@@ -107,7 +107,7 @@ void get_sockaddr(value mladr,
 value alloc_sockaddr(union sock_addr_union * adr /*in*/,
                      socklen_param_type adr_len, int close_on_error)
 {
-  value res;
+  value res = 0;
   switch(adr->s_gen.sa_family) {
 #ifndef _WIN32
   case AF_UNIX:

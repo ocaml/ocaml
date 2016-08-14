@@ -62,7 +62,6 @@ CAMLprim value win_outchannel_of_filedescr(value handle)
 {
   CAMLparam1(handle);
   CAMLlocal1(vchan);
-  int fd;
   struct channel * chan;
 
   chan = caml_open_descriptor_out(win_CRT_fd_of_filedescr(handle));

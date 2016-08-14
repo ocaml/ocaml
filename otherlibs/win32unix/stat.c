@@ -146,9 +146,7 @@ static int convert_time(FILETIME* time, __time64_t* result, __time64_t def)
 static int safe_do_stat(int do_lstat, int use_64, char* path, mlsize_t l, HANDLE fstat, __int64* st_ino, struct _stat64* res)
 {
   BY_HANDLE_FILE_INFORMATION info;
-  int i;
   char* ptr;
-  char c;
   HANDLE h;
   unsigned short mode;
   int is_symlink = 0;
@@ -198,7 +196,6 @@ static int safe_do_stat(int do_lstat, int use_64, char* path, mlsize_t l, HANDLE
        */
       char buffer[16384];
       DWORD read;
-      REPARSE_DATA_BUFFER* point;
 
       caml_enter_blocking_section();
       if (DeviceIoControl(h, FSCTL_GET_REPARSE_POINT, NULL, 0, buffer, 16384, &read, NULL)) {
@@ -360,7 +357,6 @@ CAMLprim value unix_lstat_64(value path)
 
 static value do_fstat(value handle, int use_64)
 {
-  int ret;
   struct _stat64 buf;
   __int64 st_ino;
   HANDLE h;

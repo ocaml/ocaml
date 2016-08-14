@@ -273,8 +273,6 @@ static volatile sighandler ctrl_handler_action = SIG_DFL;
 
 static BOOL WINAPI ctrl_handler(DWORD event)
 {
-  int saved_mode;
-
   /* Only ctrl-C and ctrl-Break are handled */
   if (event != CTRL_C_EVENT && event != CTRL_BREAK_EVENT) return FALSE;
   /* Default behavior is to exit, which we get by not handling the event */
@@ -345,7 +343,7 @@ static void expand_argument(char * arg)
 
 static void expand_pattern(char * pat)
 {
-  char * prefix, * p, * name;
+  char * prefix, * name;
   int handle;
   struct _finddata_t ffblk;
   size_t i;
@@ -611,8 +609,6 @@ void caml_install_invalid_parameter_handler()
 
 int caml_executable_name(char * name, int name_len)
 {
-  int retcode;
-
   int ret = GetModuleFileName(NULL, name, name_len);
   if (0 == ret || ret >= name_len) return -1;
   return 0;

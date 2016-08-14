@@ -26,7 +26,6 @@ CAMLprim value win_startup(unit)
      value unit;
 {
   WSADATA wsaData;
-  int i;
   HANDLE h;
 
   (void) WSAStartup(MAKEWORD(2, 0), &wsaData);
