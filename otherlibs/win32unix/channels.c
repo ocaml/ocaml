@@ -27,8 +27,10 @@ typedef int intptr_t;
 #define _INTPTR_T_DEFINED
 #endif
 
+#if !defined(__MINGW32__)
 extern intptr_t _get_osfhandle(int);
 extern int _open_osfhandle(intptr_t, int);
+#endif
 
 int win_CRT_fd_of_filedescr(value handle)
 {

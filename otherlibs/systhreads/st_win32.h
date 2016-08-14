@@ -15,7 +15,9 @@
 
 /* Win32 implementation of the "st" interface */
 
+#ifndef __MINGW32__
 #define _WIN32_WINNT 0x0400
+#endif
 #include <windows.h>
 #include <winerror.h>
 #include <stdio.h>

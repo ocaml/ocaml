@@ -17,7 +17,9 @@
 #include "unixsupport.h"
 #include <caml/io.h>
 
+#if !defined(__MINGW32__)
 extern int _close(int);
+#endif
 
 CAMLprim value unix_close(value fd)
 {

@@ -16,7 +16,9 @@
 #include <caml/mlvalues.h>
 #include "unixsupport.h"
 
+#if !defined(__MINGW32__)
 extern int _dup2(int, int);
+#endif
 
 CAMLprim value unix_dup2(value fd1, value fd2)
 {
