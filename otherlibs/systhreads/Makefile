@@ -17,11 +17,17 @@ include ../../config/Makefile
 CAMLRUN ?= ../../boot/ocamlrun
 CAMLYACC ?= ../../boot/ocamlyacc
 
+ifeq ($(TOOLCHAIN),mingw)
+INCLUDE_WINPATH=-I $(ROOTDIR)/otherlibs/win32unix
+else
+INCLUDE_WINPATH=
+endif
+
 ROOTDIR=../..
 CAMLC=$(CAMLRUN) $(ROOTDIR)/ocamlc -nostdlib \
-      -I $(ROOTDIR)/stdlib -I $(ROOTDIR)/otherlibs/unix
+      -I $(ROOTDIR)/stdlib -I $(ROOTDIR)/otherlibs/unix $(INCLUDE_WINPATH)
 CAMLOPT=$(CAMLRUN) $(ROOTDIR)/ocamlopt -nostdlib \
-        -I $(ROOTDIR)/stdlib -I $(ROOTDIR)/otherlibs/unix
+        -I $(ROOTDIR)/stdlib -I $(ROOTDIR)/otherlibs/unix $(INCLUDE_WINPATH)
 MKLIB=$(CAMLRUN) ../../tools/ocamlmklib
 COMPFLAGS=-w +33..39 -warn-error A -g -bin-annot -safe-string
 ifeq "$(FLAMBDA)" "true"
