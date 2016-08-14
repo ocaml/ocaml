@@ -59,11 +59,19 @@
 #if SIZEOF_LONGLONG == 8
 #define ARCH_INT64_TYPE long long
 #define ARCH_UINT64_TYPE unsigned long long
+#ifdef __MINGW32__
+#define ARCH_INT64_PRINTF_FORMAT "I64"
+#else
 #define ARCH_INT64_PRINTF_FORMAT "ll"
+#endif
 #elif SIZEOF_LONG == 8
 #define ARCH_INT64_TYPE long
 #define ARCH_UINT64_TYPE unsigned long
+#ifdef __MINGW32__
+#define ARCH_INT64_PRINTF_FORMAT "I64"
+#else
 #define ARCH_INT64_PRINTF_FORMAT "l"
+#endif
 #else
 #error "No 64-bit integer type available"
 #endif
