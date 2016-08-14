@@ -885,7 +885,7 @@ case "$target" in
   x86_64-*-netbsd*)             arch=amd64; system=netbsd;;
   x86_64-*-openbsd*)            arch=amd64; system=openbsd;;
   x86_64-*-darwin*)             arch=amd64; system=macosx;;
-  x86_64-*-mingw*)              arch=amd64; system=mingw;;
+  x86_64-*-mingw*)              arch=amd64; system=mingw64;;
   aarch64-*-linux*)             arch=arm64; system=linux;;
   x86_64-*-cygwin*)             arch=amd64; system=cygwin;;
 esac
@@ -1115,7 +1115,7 @@ fi
 # Configuration for the libraries
 
 case "$system" in
-  mingw) unix_or_win32="win32"; unixlib="win32unix"; graphlib="win32graph";;
+  mingw*) unix_or_win32="win32"; unixlib="win32unix"; graphlib="win32graph";;
   *) unix_or_win32="unix"; unixlib="unix"; graphlib="graph";;
 esac
 
