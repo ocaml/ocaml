@@ -1027,8 +1027,9 @@ let emit_spacetime_shapes () =
       begin match fundecl.fun_spacetime_shape with
       | None -> ()
       | Some shape ->
-        D.comment ("Shape for " ^ fundecl.fun_name ^ ":");
-        D.qword (ConstLabel (emit_symbol fundecl.fun_name));
+        let funsym = emit_symbol fundecl.fun_name in
+        D.comment ("Shape for " ^ funsym ^ ":");
+        D.qword (ConstLabel funsym);
         List.iter (fun (part_of_shape, label) ->
             let tag =
               match part_of_shape with
