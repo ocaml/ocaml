@@ -14,6 +14,10 @@
 (*                                                                        *)
 (**************************************************************************)
 
+type repr =
+  | Int32 of int32
+  | Int64 of int64
+
 module type S = sig
   type t
   val zero : t
@@ -50,13 +54,10 @@ module type S = sig
   val to_string : t -> string
   val compare: t -> t -> int
   val equal: t -> t -> bool
+  val repr: t -> repr
 end
 
-let size =
-  match Sys.word_size with
-  | 32 -> `Thirtytwo
-  | 64 -> `Sixtyfour
-  | _ -> assert false
+let size = Sys.word_size
 (* Later, this will be set by the configure script
    in order to support cross-compilation. *)
 
@@ -78,6 +79,7 @@ module Int32 = struct
   let to_int32 x = x
   let of_int64 = Int64.to_int32
   let to_int64 = Int64.of_int32
+  let repr x = Int32 x
 end
 
 module Int64 = struct
@@ -85,10 +87,12 @@ module Int64 = struct
   let of_int_exn = Int64.of_int
   let of_int64 x = x
   let to_int64 x = x
+  let repr x = Int64 x
 end
 
 include (val
           (match size with
-           | `Thirtytwo -> (module Int32)
-           | `Sixtyfour -> (module Int64)
+           | 32 -> (module Int32)
+           | 64 -> (module Int64)
+           | _ -> assert false
           ) : S)

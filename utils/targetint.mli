@@ -73,7 +73,7 @@ val pred : t -> t
 val abs : t -> t
 (** Return the absolute value of its argument. *)
 
-val size : [`Thirtytwo | `Sixtyfour ]
+val size : int
 (** The size in bits of a target native integer. *)
 
 val max_int : t
@@ -179,3 +179,10 @@ val compare: t -> t -> int
 
 val equal: t -> t -> bool
 (** The equal function for target ints. *)
+
+type repr =
+  | Int32 of int32
+  | Int64 of int64
+
+val repr : t -> repr
+(** The concrete representation of a native integer. *)
