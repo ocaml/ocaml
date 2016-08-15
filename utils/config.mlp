@@ -123,8 +123,13 @@ let ext_dll = "%%EXT_DLL%%"
 let host = "%%HOST%%"
 let target = "%%TARGET%%"
 
+let target_os_type =
+  match system with
+    | "mingw" | "mingw64" -> "Win32"
+    | _ -> Sys.os_type
+
 let default_executable_name =
-  match Sys.os_type with
+  match target_os_type with
     "Unix" -> "a.out"
   | "Win32" | "Cygwin" -> "camlprog.exe"
   | _ -> "camlprog"
@@ -156,7 +161,7 @@ let print_config oc =
   p "ext_asm" ext_asm;
   p "ext_lib" ext_lib;
   p "ext_dll" ext_dll;
-  p "os_type" Sys.os_type;
+  p "os_type" target_os_type;
   p "default_executable_name" default_executable_name;
   p_bool "systhread_supported" systhread_supported;
   p "host" host;
