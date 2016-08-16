@@ -41,6 +41,7 @@ STDLIB_MODULES=\
   genlex \
   hashtbl \
   int32 \
+  int63 \
   int64 \
   lazy \
   lexing \

@@ -82,6 +82,9 @@ hashtbl.cmi :
 int32.cmo : pervasives.cmi int32.cmi
 int32.cmx : pervasives.cmx int32.cmi
 int32.cmi :
+int63.cmo : pervasives.cmi int63.cmi
+int63.cmx : pervasives.cmx int63.cmi
+int63.cmi :
 int64.cmo : pervasives.cmi int64.cmi
 int64.cmx : pervasives.cmx int64.cmi
 int64.cmi :
@@ -246,6 +249,8 @@ hashtbl.p.cmx : sys.cmx string.cmx random.cmx obj.cmx lazy.cmx array.cmx \
     hashtbl.cmi
 int32.cmo : pervasives.cmi int32.cmi
 int32.p.cmx : pervasives.cmx int32.cmi
+int63.cmo : pervasives.cmi int63.cmi
+int63.p.cmx : pervasives.cmx int63.cmi
 int64.cmo : pervasives.cmi int64.cmi
 int64.p.cmx : pervasives.cmx int64.cmi
 lazy.cmo : obj.cmi camlinternalLazy.cmi lazy.cmi

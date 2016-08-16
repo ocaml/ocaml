@@ -35,7 +35,7 @@ CAMLDEP=$(CAMLRUN) ../tools/ocamldep
 OBJS=camlinternalFormatBasics.cmo pervasives.cmo $(OTHERS)
 OTHERS=list.cmo char.cmo bytes.cmo string.cmo sys.cmo \
   sort.cmo marshal.cmo obj.cmo array.cmo \
-  int32.cmo int64.cmo nativeint.cmo \
+  int32.cmo int63.cmo int64.cmo nativeint.cmo \
   lexing.cmo parsing.cmo \
   set.cmo map.cmo stack.cmo queue.cmo \
   camlinternalLazy.cmo lazy.cmo stream.cmo \
