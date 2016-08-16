@@ -1214,6 +1214,52 @@ let simplif_primitive_32bits = function
   | Pbigstring_load_64(_) -> Pccall (default_prim "caml_ba_uint8_get64")
   | Pbigstring_set_64(_) -> Pccall (default_prim "caml_ba_uint8_set64")
   | Pbbswap Pint64 -> Pccall (default_prim "caml_int64_bswap")
+  | Pnegint63 -> Pccall (default_prim "caml_int63_neg")
+  | Paddint63 -> Pccall (default_prim "caml_int63_add")
+  | Psubint63 -> Pccall (default_prim "caml_int63_sub")
+  | Pmulint63 -> Pccall (default_prim "caml_int63_mul")
+  | Pdivint63 -> Pccall (default_prim "caml_int63_div")
+  | Pmodint63 -> Pccall (default_prim "caml_int63_mod")
+  | Pandint63 -> Pccall (default_prim "caml_int63_and")
+  | Porint63  -> Pccall (default_prim "caml_int63_or")
+  | Pxorint63 -> Pccall (default_prim "caml_int63_xor")
+  | Plslint63 -> Pccall (default_prim "caml_int63_shift_left")
+  | Plsrint63 -> Pccall (default_prim "caml_int63_shift_right_unsigned")
+  | Pasrint63 -> Pccall (default_prim "caml_int63_shift_right")
+  | Pintcomp63 Lambda.Ceq -> Pccall (default_prim "caml_equal")
+  | Pintcomp63 Lambda.Cneq -> Pccall (default_prim "caml_notequal")
+  | Pintcomp63 Lambda.Clt -> Pccall (default_prim "caml_lessthan")
+  | Pintcomp63 Lambda.Cgt -> Pccall (default_prim "caml_greaterthan")
+  | Pintcomp63 Lambda.Cle -> Pccall (default_prim "caml_lessequal")
+  | Pintcomp63 Lambda.Cge -> Pccall (default_prim "caml_greaterequal")
+  | Pint63ofint -> Pccall (default_prim "caml_int63_of_int")
+  | Pintofint63 -> Pccall (default_prim "caml_int63_to_int")
+  | Pbintofint63 Pint32 -> Pccall (default_prim "caml_int63_to_int32")
+  | Pbintofint63 Pint64 -> Pccall (default_prim "caml_int63_to_int64")
+  | Pbintofint63 Pnativeint -> Pccall (default_prim "caml_int63_to_nativeint")
+  | Pint63ofbint Pint32 -> Pccall (default_prim "caml_int63_of_int32")
+  | Pint63ofbint Pint64 -> Pccall (default_prim "caml_int63_of_int64")
+  | Pint63ofbint Pnativeint -> Pccall (default_prim "caml_int63_of_nativeint")
+  | p -> p
+
+let simplif_primitive_64bits = function
+  | Pnegint63 -> Pnegint
+  | Paddint63 -> Paddint
+  | Psubint63 -> Psubint
+  | Pmulint63 -> Pmulint
+  | Pdivint63 -> Pdivint
+  | Pmodint63 -> Pmodint
+  | Pandint63 -> Pandint
+  | Porint63 -> Porint
+  | Pxorint63 -> Pxorint
+  | Plslint63 -> Plslint
+  | Plsrint63 -> Plsrint
+  | Pasrint63 -> Pasrint
+  | Pintcomp63 comp -> Pintcomp comp
+  | Pbintofint63 bi -> Pbintofint bi
+  | Pint63ofbint bi -> Pintofbint bi
+  | Pint63ofint -> Pidentity
+  | Pintofint63 -> Pidentity
   | p -> p
 
 let simplif_primitive p =
@@ -1229,7 +1275,7 @@ let simplif_primitive p =
   | Pbigarrayset(_unsafe, n, _kind, Pbigarray_unknown_layout) ->
       Pccall (default_prim ("caml_ba_set_" ^ string_of_int n))
   | p ->
-      if size_int = 8 then p else simplif_primitive_32bits p
+      if size_int = 8 then simplif_primitive_64bits p else simplif_primitive_32bits p
 
 (* Build switchers both for constants and blocks *)
 
@@ -1463,6 +1509,11 @@ let strmatch_compile =
         let transl_switch = transl_int_switch
       end) in
   S.compile
+
+let name_for_boxed_integer = function
+  | Pnativeint -> "nativeint"
+  | Pint32 -> "int32"
+  | Pint64 -> "int64"
 
 let rec transl env e =
   match e with
@@ -1872,10 +1923,7 @@ and transl_prim_1 env p arg dbg =
   | Pnegbint bi ->
       box_int dbg bi (Cop(Csubi, [Cconst_int 0; transl_unbox_int env bi arg]))
   | Pbbswap bi ->
-      let prim = match bi with
-        | Pnativeint -> "nativeint"
-        | Pint32 -> "int32"
-        | Pint64 -> "int64" in
+      let prim = name_for_boxed_integer bi in
       box_int dbg bi (Cop(Cextcall(Printf.sprintf "caml_%s_direct_bswap" prim,
                                typ_int, false, Debuginfo.none, None),
                       [transl_unbox_int env bi arg]))

@@ -66,6 +66,7 @@ static int parse_digit(char c)
 
 #define INT_ERRMSG "int_of_string"
 #define INT32_ERRMSG "Int32.of_string"
+#define INT63_ERRMSG "Int63.of_string"
 #define INT64_ERRMSG "Int64.of_string"
 #define INTNAT_ERRMSG "Nativeint.of_string"
 
@@ -354,6 +355,159 @@ CAMLprim value caml_int32_bits_of_float(value vd)
 CAMLprim value caml_int32_float_of_bits(value vi)
 {
   return caml_copy_double(caml_int32_float_of_bits_unboxed(Int32_val(vi)));
+}
+
+/* 63-bit integers */
+
+static int int63_cmp(value v1, value v2)
+{
+  int64_t i1 = Long_val(v1);
+  int64_t i2 = Long_val(v2);
+  return (i1 > i2) - (i1 < i2);
+}
+
+static intnat int63_hash(value v)
+{
+  int64_t x = Long_val(v);
+  uint32_t lo = (uint32_t) x, hi = (uint32_t) (x >> 32);
+  return hi ^ lo;
+}
+
+static void int63_serialize(value v, uintnat * bsize_32,
+                            uintnat * bsize_64)
+{
+  caml_serialize_int_8(Long_val(v));
+  *bsize_32 = *bsize_64 = 8;
+}
+
+static uintnat int63_deserialize(void * dst)
+{
+  // TODO: Modify for int63
+#ifndef ARCH_SIXTYFOUR
+  *((int64_t *) dst) = caml_deserialize_sint_8();
+#else
+  union { int32_t i[2]; int64_t j; } buffer;
+  buffer.j = caml_deserialize_sint_8();
+  ((int32_t *) dst)[0] = buffer.i[0];
+  ((int32_t *) dst)[1] = buffer.i[1];
+#endif
+  return 8;
+}
+
+CAMLexport struct custom_operations caml_int63_ops = {
+  "_k",
+  custom_finalize_default,
+  int63_cmp,
+  int63_hash,
+  int63_serialize,
+  int63_deserialize,
+  custom_compare_ext_default
+};
+
+CAMLprim value caml_int63_of_int(value v)
+{ return Val_int63(Long_val(v)); }
+
+CAMLprim value caml_int63_to_int(value v)
+{ return Val_long(Int63_val(v)); }
+
+CAMLprim value caml_int63_neg(value v)
+{ return Val_int63(- Int63_val(v)); }
+
+CAMLprim value caml_int63_add(value v1, value v2)
+{ return Val_int63(Int63_val(v1) + Int63_val(v2)); }
+
+CAMLprim value caml_int63_sub(value v1, value v2)
+{ return Val_int63(Int63_val(v1) - Int63_val(v2)); }
+
+CAMLprim value caml_int63_mul(value v1, value v2)
+{ return Val_int63(Int63_val(v1) * Int63_val(v2)); }
+
+CAMLprim value caml_int63_div(value v1, value v2)
+{ return Val_int63(Int63_val(v1) / Int63_val(v2)); }
+
+CAMLprim value caml_int63_mod(value v1, value v2)
+{ return Val_int63(Int63_val(v1) % Int63_val(v2)); }
+
+CAMLprim value caml_int63_and(value v1, value v2)
+{ return Val_int63(Int63_val(v1) & Int63_val(v2)); }
+
+CAMLprim value caml_int63_or(value v1, value v2)
+{ return Val_int63(Int63_val(v1) | Int63_val(v2)); }
+
+CAMLprim value caml_int63_xor(value v1, value v2)
+{ return Val_int63(Int63_val(v1) ^ Int63_val(v2)); }
+
+CAMLprim value caml_int63_shift_left(value v1, value v2)
+{ return Val_int63(Int63_val(v1) << Int_val(v2)); }
+
+CAMLprim value caml_int63_shift_right(value v1, value v2)
+{ return Val_int63(Int63_val(v1) >> Int_val(v2)); }
+
+CAMLprim value caml_int63_shift_right_unsigned(value v1, value v2)
+{ return Val_int63((uint64_t) ((0x7FFFFFFFFFFFFFFF & Int63_val(v1))) >>  Int_val(v2)); }
+
+CAMLprim value caml_int63_of_int32(value v)
+{ return Val_int63((int64_t) (Int32_val(v))); }
+
+CAMLprim value caml_int63_to_int32(value v)
+{ return caml_copy_int32((int32_t) (Int63_val(v))); }
+
+CAMLprim value caml_int63_of_int64(value v)
+{ return Val_int63((int64_t) (Int64_val(v))); }
+
+CAMLprim value caml_int63_to_int64(value v)
+{ return caml_copy_int64((int64_t) (Int63_val(v))); }
+
+CAMLprim value caml_int63_of_nativeint(value v)
+{ return Val_int63((int64_t) (Nativeint_val(v))); }
+
+CAMLprim value caml_int63_to_nativeint(value v)
+{ return caml_copy_nativeint((intnat) (Int63_val(v))); }
+
+CAMLprim value caml_int63_format(value fmt, value arg)
+{
+  char format_string[FORMAT_BUFFER_SIZE];
+
+  parse_format(fmt, ARCH_INT64_PRINTF_FORMAT, format_string);
+  return caml_alloc_sprintf(format_string, Int63_val(arg));
+}
+
+CAMLprim value caml_int63_of_string(value s)
+{
+  char * p;
+  uint64_t res, threshold;
+  int sign, base, signedness, d;
+
+  p = parse_sign_and_base(String_val(s), &base, &signedness, &sign);
+  threshold = (((uint64_t) -1) >> 1) / base;
+  d = parse_digit(*p);
+  if (d < 0 || d >= base) caml_failwith(INT63_ERRMSG);
+  res = d;
+  for (p++; /*nothing*/; p++) {
+    char c = *p;
+    if (c == '_') continue;
+    d = parse_digit(c);
+    if (d < 0 || d >= base) break;
+    /* Detect overflow in multiplication base * res */
+    if (res > threshold) caml_failwith(INT63_ERRMSG);
+    res = base * res + d;
+    /* Detect overflow in addition (base * res) + d */
+    if (res < (uint64_t) d) caml_failwith(INT63_ERRMSG);
+  }
+  if (p != String_val(s) + caml_string_length(s)){
+    caml_failwith(INT63_ERRMSG);
+  }
+  if (signedness) {
+    /* Signed representation expected, allow -2^62 to 2^62 - 1 only */
+    if (sign >= 0) {
+      if (res >= (uint64_t)1 << 62) caml_failwith(INT63_ERRMSG);
+    } else {
+      if (res >  (uint64_t)1 << 62) caml_failwith(INT63_ERRMSG);
+    }
+  }
+  if (sign < 0) res = - res;
+
+  return Val_int63(res);
 }
 
 /* 64-bit integers */

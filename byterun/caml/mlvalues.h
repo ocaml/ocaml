@@ -305,6 +305,16 @@ CAMLextern int64_t caml_Int64_val(value v);
 #define Int64_val(v) caml_Int64_val(v)
 #endif
 
+/* Int63.t representation varies depending on architecture. */
+
+#ifdef ARCH_SIXTYFOUR
+#define Int63_val(x) (Long_val(x))
+#define Val_int63(x) (Val_long(x))
+#else
+#define Int63_val(x) ((Int64_val(x)) >> 1)
+#define Val_int63(x) (caml_copy_int64( ((uint64_t) (((uint64_t)(x) << 1)) + 1)))
+#endif
+
 /* 3- Atoms are 0-tuples.  They are statically allocated once and for all. */
 
 CAMLextern header_t caml_atom_table[];

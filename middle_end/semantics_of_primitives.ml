@@ -84,7 +84,24 @@ let for_primitive (prim : Lambda.primitive) =
   | Plslbint _
   | Plsrbint _
   | Pasrbint _
-  | Pbintcomp _ -> No_effects, No_coeffects
+  | Pbintcomp _
+  | Pnegint63
+  | Paddint63
+  | Psubint63
+  | Pmulint63
+  | Pdivint63
+  | Pmodint63
+  | Pandint63
+  | Porint63
+  | Pxorint63
+  | Plslint63
+  | Plsrint63
+  | Pasrint63
+  | Pintcomp63 _
+  | Pint63ofint
+  | Pintofint63
+  | Pbintofint63 _
+  | Pint63ofbint _ -> No_effects, No_coeffects
   | Pbigarraydim _ ->
     No_effects, Has_coeffects  (* Some people resize bigarrays in place. *)
   | Pfield _

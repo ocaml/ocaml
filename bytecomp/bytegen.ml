@@ -396,6 +396,32 @@ let comp_primitive p args =
   | Pcvtbint(Pint64, Pint32) -> Kccall("caml_int64_to_int32", 1)
   | Pcvtbint(Pnativeint, Pint64) -> Kccall("caml_int64_of_nativeint", 1)
   | Pcvtbint(Pint64, Pnativeint) -> Kccall("caml_int64_to_nativeint", 1)
+  | Pint63ofint -> Kccall("caml_int63_of_int", 1)
+  | Pintofint63 -> Kccall("caml_int63_to_int", 1)
+  | Pint63ofbint Pint32 -> Kccall("caml_int63_of_int32", 1)
+  | Pint63ofbint Pint64 -> Kccall("caml_int63_of_int64", 1)
+  | Pint63ofbint Pnativeint -> Kccall("caml_int63_of_nativeint", 1)
+  | Pbintofint63 Pint32 -> Kccall("caml_int63_to_int32", 1)
+  | Pbintofint63 Pint64 -> Kccall("caml_int63_to_int64", 1)
+  | Pbintofint63 Pnativeint -> Kccall("caml_int63_to_nativeint", 1)
+  | Pnegint63 -> Kccall("caml_int63_neg", 1)
+  | Paddint63 -> Kccall("caml_int63_add", 2)
+  | Psubint63 -> Kccall("caml_int63_sub", 2)
+  | Pmulint63 -> Kccall("caml_int63_mul", 2)
+  | Pdivint63 -> Kccall("caml_int63_div", 2)
+  | Pmodint63 -> Kccall("caml_int63_mod", 2)
+  | Pandint63 -> Kccall("caml_int63_and", 2)
+  | Porint63 -> Kccall("caml_int63_or", 2)
+  | Pxorint63 -> Kccall("caml_int63_xor", 2)
+  | Plslint63 -> Kccall("caml_int63_shift_left", 2)
+  | Plsrint63 -> Kccall("caml_int63_shift_right_unsigned", 2)
+  | Pasrint63 -> Kccall("caml_int63_shift_right", 2)
+  | Pintcomp63 Ceq -> Kccall("caml_equal", 2)
+  | Pintcomp63 Cneq -> Kccall("caml_notequal", 2)
+  | Pintcomp63 Clt -> Kccall("caml_lessthan", 2)
+  | Pintcomp63 Cgt -> Kccall("caml_greaterthan", 2)
+  | Pintcomp63 Cle -> Kccall("caml_lessequal", 2)
+  | Pintcomp63 Cge -> Kccall("caml_greaterequal", 2)
   | Pnegbint bi -> comp_bint_primitive bi "neg" args
   | Paddbint bi -> comp_bint_primitive bi "add" args
   | Psubbint bi -> comp_bint_primitive bi "sub" args
@@ -426,7 +452,7 @@ let comp_primitive p args =
   | Pbswap16 -> Kccall("caml_bswap16", 1)
   | Pbbswap(bi) -> comp_bint_primitive bi "bswap" args
   | Pint_as_pointer -> Kccall("caml_int_as_pointer", 1)
-  | _ -> fatal_error "Bytegen.comp_primitive"
+  | _ -> fatal_error ("Bytegen.comp_primitive: unrecognized primitive " ^ Printlambda.name_of_primitive p)
 
 let is_immed n = immed_min <= n && n <= immed_max
 
