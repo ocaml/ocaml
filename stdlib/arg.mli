@@ -59,7 +59,9 @@ type spec =
                                    call the function with the symbol *)
   | Rest of (string -> unit)   (** Stop interpreting keywords and call the
                                    function with each remaining argument *)
-  | Expand of (string -> string array)
+  | Expand of (string -> string array) (** Call the function with a string
+                                           argument and recursively parse the
+                                           returned array *)
 (** The concrete type describing the behavior associated
    with a keyword. *)
 

@@ -81,7 +81,7 @@ let args2 = [|
 let error s = Printf.printf "error (%s)\n" s;;
 let check r v msg = if !r <> v then error msg;;
 
-let test argv =
+let test spec argv =
   current := 0;
   r_set := false;
   r_clear := true;
@@ -119,5 +119,22 @@ let test argv =
   check r_float 2.72 "Set_float";
 ;;
 
-test args1;;
-test args2;;
+let test_arg = test spec;;
+
+test_arg args1;;
+test_arg args2;;
+
+let f_expand r msg arg s =
+  if s <> r then error msg;
+  arg;
+;;
+
+let expand1 = Arg.[
+  "-expand", Expand (f_expand "expand_arg1" "Expand" args1), "Expand (1)";
+];;
+let expand2 = Arg.[
+  "-expand", Expand (f_expand "expand_arg2" "Expand" args2), "Expand (1)";
+];;
+
+test (expand1@spec) [|"prog";"-expand";"expand_arg1"|];;
+test (expand2@spec) [|"prog";"-expand";"expand_arg2"|];;
