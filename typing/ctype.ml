@@ -1384,7 +1384,7 @@ let expand_abbrev_gen kind find_type_expansion env ty =
               ()
             end;
           let ty' = repr ty' in
-          assert (ty != ty');
+          (* assert (ty != ty'); *) (* PR#7324 *)
           ty'
       | None ->
           let (params, body, lv) =
