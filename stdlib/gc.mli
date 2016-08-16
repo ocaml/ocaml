@@ -176,7 +176,9 @@ external minor_words : unit -> (float [@unboxed])
     started. This number is accurate in byte-code programs, but only an
     approximation in programs compiled to native code.
 
-    In native code this function does not allocate. *)
+    In native code this function does not allocate.
+
+    @since 4.04 *)
 
 external get : unit -> control = "caml_gc_get"
 (** Return the current values of the GC parameters in a [control] record. *)
@@ -314,6 +316,8 @@ val finalise_last : (unit -> unit) -> 'a -> unit
     before running the finalisation function. Moreover the
     finalisation function attached with `GC.finalise` are always
     called before the finalisation function attached with `GC.finalise_last`.
+
+    @since 4.04
 *)
 
 val finalise_release : unit -> unit
