@@ -1472,6 +1472,10 @@ OCaml 4.03.0 (25 Apr 2016):
 - PR#7234: Compatibility check wrong for abstract type constructors
   (Jacques Garrigue, report by Stephen Dolan)
 
+- PR#7324: OCaml 4.03.0 type checker dies with an assert failure when
+  given some cyclic recusive module expression
+  (Jacques Garrigue, report by jmcarthur)
+
 - GPR#205: Clear caml_backtrace_last_exn before registering as root
   (report and fix by Frederic Bour)
 
