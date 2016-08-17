@@ -359,51 +359,6 @@ CAMLprim value caml_int32_float_of_bits(value vi)
 
 /* 63-bit integers */
 
-static int int63_cmp(value v1, value v2)
-{
-  int64_t i1 = Long_val(v1);
-  int64_t i2 = Long_val(v2);
-  return (i1 > i2) - (i1 < i2);
-}
-
-static intnat int63_hash(value v)
-{
-  int64_t x = Long_val(v);
-  uint32_t lo = (uint32_t) x, hi = (uint32_t) (x >> 32);
-  return hi ^ lo;
-}
-
-static void int63_serialize(value v, uintnat * bsize_32,
-                            uintnat * bsize_64)
-{
-  caml_serialize_int_8(Long_val(v));
-  *bsize_32 = *bsize_64 = 8;
-}
-
-static uintnat int63_deserialize(void * dst)
-{
-  // TODO: Modify for int63
-#ifndef ARCH_SIXTYFOUR
-  *((int64_t *) dst) = caml_deserialize_sint_8();
-#else
-  union { int32_t i[2]; int64_t j; } buffer;
-  buffer.j = caml_deserialize_sint_8();
-  ((int32_t *) dst)[0] = buffer.i[0];
-  ((int32_t *) dst)[1] = buffer.i[1];
-#endif
-  return 8;
-}
-
-CAMLexport struct custom_operations caml_int63_ops = {
-  "_k",
-  custom_finalize_default,
-  int63_cmp,
-  int63_hash,
-  int63_serialize,
-  int63_deserialize,
-  custom_compare_ext_default
-};
-
 CAMLprim value caml_int63_of_int(value v)
 { return Val_int63(Long_val(v)); }
 
@@ -423,10 +378,20 @@ CAMLprim value caml_int63_mul(value v1, value v2)
 { return Val_int63(Int63_val(v1) * Int63_val(v2)); }
 
 CAMLprim value caml_int63_div(value v1, value v2)
-{ return Val_int63(Int63_val(v1) / Int63_val(v2)); }
+{
+  int64_t dividend = Int63_val(v1);
+  int64_t divisor = Int63_val(v2);
+  if (divisor == 0) caml_raise_zero_divide();
+  return Val_int63(dividend / divisor);
+}
 
 CAMLprim value caml_int63_mod(value v1, value v2)
-{ return Val_int63(Int63_val(v1) % Int63_val(v2)); }
+{
+  int64_t dividend = Int63_val(v1);
+  int64_t divisor = Int63_val(v2);
+  if (divisor == 0) caml_raise_zero_divide();
+  return Val_int63(dividend % divisor);
+}
 
 CAMLprim value caml_int63_and(value v1, value v2)
 { return Val_int63(Int63_val(v1) & Int63_val(v2)); }
@@ -444,7 +409,7 @@ CAMLprim value caml_int63_shift_right(value v1, value v2)
 { return Val_int63(Int63_val(v1) >> Int_val(v2)); }
 
 CAMLprim value caml_int63_shift_right_unsigned(value v1, value v2)
-{ return Val_int63((uint64_t) ((0x7FFFFFFFFFFFFFFF & Int63_val(v1))) >>  Int_val(v2)); }
+{ return Val_int63((uint64_t) ((0x7FFFFFFFFFFFFFFF & Int63_val(v1))) >> Int_val(v2)); }
 
 CAMLprim value caml_int63_of_int32(value v)
 { return Val_int63((int64_t) (Int32_val(v))); }

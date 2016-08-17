@@ -59,6 +59,18 @@ let test test_number answer correct_answer =
    printf " %d..." test_number
  end
 
+let test_expect_exception test_number f =
+  flush stdout;
+  flush stderr;
+  try
+    let _ = f () in
+    eprintf "*** Bad result (%s, test %d): expected exception, but no exception was raised\n"
+      !function_tested test_number;
+    flush stderr;
+    error_occurred := true
+  with
+    _ -> printf " %d..." test_number
+
 (***** Tests on 63 bit arithmetic *****)
 
 let testcomp_int63 (a : Int63.t) (b : Int63.t) =
@@ -179,6 +191,7 @@ struct
        10, 1234567, 12345678;
        11, 1234567, -12345678];
     test_int63 12 (div min_int (of_int (-1))) min_int;
+    test_expect_exception 13 (fun () -> div (of_int 1) (of_int 0));
 
     testing_function "mod";
     List.iter
@@ -195,6 +208,7 @@ struct
        10, 1234567, 12345678;
        11, 1234567, -12345678];
     test_int63 12 (rem min_int (of_int (-1))) (of_int 0);
+    test_expect_exception 13 (fun () -> rem (of_int 1) (of_int 0));
 
     testing_function "and";
     List.iter
