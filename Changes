@@ -14,6 +14,10 @@ Next version (tbd):
   rules between Unix and Windows Makefiles
  (Sébastien Hinderer, review by Alain Frisch)
 
+### Standard Library
+- GPR#770: Add 63-bit integer support to the standard library
+  (Mitchell Plamann, Jeremie Diminio, Leo White)
+
 OCaml 4.04.0:
 -------------
 
