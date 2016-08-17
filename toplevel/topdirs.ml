@@ -19,8 +19,6 @@ open Format
 open Misc
 open Longident
 open Types
-open Cmo_format
-open Trace
 open Toploop
 
 (* The standard output formatter *)
@@ -100,121 +98,8 @@ let _ = add_directive "cd" (Directive_string dir_cd)
       section = section_run;
       doc = "Change the current working directory.";
     }
-(* Load in-core a .cmo file *)
 
-exception Load_failed
-
-let check_consistency ppf filename cu =
-  try
-    List.iter
-      (fun (name, crco) ->
-       Env.add_import name;
-       match crco with
-         None -> ()
-       | Some crc->
-           Consistbl.check Env.crc_units name crc filename)
-      cu.cu_imports
-  with Consistbl.Inconsistency(name, user, auth) ->
-    fprintf ppf "@[<hv 0>The files %s@ and %s@ \
-                 disagree over interface %s@]@."
-            user auth name;
-    raise Load_failed
-
-let load_compunit ic filename ppf compunit =
-  check_consistency ppf filename compunit;
-  seek_in ic compunit.cu_pos;
-  let code_size = compunit.cu_codesize + 8 in
-  let code = Meta.static_alloc code_size in
-  unsafe_really_input ic code 0 compunit.cu_codesize;
-  Bytes.unsafe_set code compunit.cu_codesize (Char.chr Opcodes.opRETURN);
-  String.unsafe_blit "\000\000\000\001\000\000\000" 0
-                     code (compunit.cu_codesize + 1) 7;
-  let initial_symtable = Symtable.current_state() in
-  Symtable.patch_object code compunit.cu_reloc;
-  Symtable.update_global_table();
-  let events =
-    if compunit.cu_debug = 0 then [| |]
-    else begin
-      seek_in ic compunit.cu_debug;
-      [| input_value ic |]
-    end in
-  Meta.add_debug_info code code_size events;
-  begin try
-    may_trace := true;
-    ignore((Meta.reify_bytecode code code_size) ());
-    may_trace := false;
-  with exn ->
-    record_backtrace ();
-    may_trace := false;
-    Symtable.restore_state initial_symtable;
-    print_exception_outcome ppf exn;
-    raise Load_failed
-  end
-
-let rec load_file recursive ppf name =
-  let filename =
-    try Some (find_in_path !Config.load_path name) with Not_found -> None
-  in
-  match filename with
-  | None -> fprintf ppf "Cannot find file %s.@." name; false
-  | Some filename ->
-      let ic = open_in_bin filename in
-      try
-        let success = really_load_file recursive ppf name filename ic in
-        close_in ic;
-        success
-      with exn ->
-        close_in ic;
-        raise exn
-
-and really_load_file recursive ppf name filename ic =
-  let buffer = really_input_string ic (String.length Config.cmo_magic_number) in
-  try
-    if buffer = Config.cmo_magic_number then begin
-      let compunit_pos = input_binary_int ic in  (* Go to descriptor *)
-      seek_in ic compunit_pos;
-      let cu : compilation_unit = input_value ic in
-      if recursive then
-        List.iter
-          (function
-            | (Reloc_getglobal id, _)
-              when not (Symtable.is_global_defined id) ->
-                let file = Ident.name id ^ ".cmo" in
-                begin match try Some (Misc.find_in_path_uncap !Config.load_path
-                                        file)
-                      with Not_found -> None
-                with
-                | None -> ()
-                | Some file ->
-                    if not (load_file recursive ppf file) then raise Load_failed
-                end
-            | _ -> ()
-          )
-          cu.cu_reloc;
-      load_compunit ic filename ppf cu;
-      true
-    end else
-      if buffer = Config.cma_magic_number then begin
-        let toc_pos = input_binary_int ic in  (* Go to table of contents *)
-        seek_in ic toc_pos;
-        let lib = (input_value ic : library) in
-        List.iter
-          (fun dllib ->
-            let name = Dll.extract_dll_name dllib in
-            try Dll.open_dlls Dll.For_execution [name]
-            with Failure reason ->
-              fprintf ppf
-                "Cannot load required shared library %s.@.Reason: %s.@."
-                name reason;
-              raise Load_failed)
-          lib.lib_dllibs;
-        List.iter (load_compunit ic filename ppf) lib.lib_units;
-        true
-      end else begin
-        fprintf ppf "File %s is not a bytecode object file.@." name;
-        false
-      end
-  with Load_failed -> false
+let load_file = Toploop.load_file
 
 let dir_load ppf name = ignore (load_file false ppf name)
 
@@ -401,77 +286,6 @@ let _ = add_directive "remove_printer"
       doc = "Remove the named function from the table of toplevel printers.";
     }
 
-(* The trace *)
-
-external current_environment: unit -> Obj.t = "caml_get_current_environment"
-
-let tracing_function_ptr =
-  get_code_pointer
-    (Obj.repr (fun arg -> Trace.print_trace (current_environment()) arg))
-
-let dir_trace ppf lid =
-  try
-    let (path, desc) = Env.lookup_value lid !toplevel_env in
-    (* Check if this is a primitive *)
-    match desc.val_kind with
-    | Val_prim _ ->
-        fprintf ppf "%a is an external function and cannot be traced.@."
-        Printtyp.longident lid
-    | _ ->
-        let clos = eval_path !toplevel_env path in
-        (* Nothing to do if it's not a closure *)
-        if Obj.is_block clos
-        && (Obj.tag clos = Obj.closure_tag || Obj.tag clos = Obj.infix_tag)
-        && (match Ctype.(repr (expand_head !toplevel_env desc.val_type))
-            with {desc=Tarrow _} -> true | _ -> false)
-        then begin
-        match is_traced clos with
-        | Some opath ->
-            fprintf ppf "%a is already traced (under the name %a).@."
-            Printtyp.path path
-            Printtyp.path opath
-        | None ->
-            (* Instrument the old closure *)
-            traced_functions :=
-              { path = path;
-                closure = clos;
-                actual_code = get_code_pointer clos;
-                instrumented_fun =
-                  instrument_closure !toplevel_env lid ppf desc.val_type }
-              :: !traced_functions;
-            (* Redirect the code field of the closure to point
-               to the instrumentation function *)
-            set_code_pointer clos tracing_function_ptr;
-            fprintf ppf "%a is now traced.@." Printtyp.longident lid
-        end else fprintf ppf "%a is not a function.@." Printtyp.longident lid
-  with
-  | Not_found -> fprintf ppf "Unbound value %a.@." Printtyp.longident lid
-
-let dir_untrace ppf lid =
-  try
-    let (path, _desc) = Env.lookup_value lid !toplevel_env in
-    let rec remove = function
-    | [] ->
-        fprintf ppf "%a was not traced.@." Printtyp.longident lid;
-        []
-    | f :: rem ->
-        if Path.same f.path path then begin
-          set_code_pointer f.closure f.actual_code;
-          fprintf ppf "%a is no longer traced.@." Printtyp.longident lid;
-          rem
-        end else f :: remove rem in
-    traced_functions := remove !traced_functions
-  with
-  | Not_found -> fprintf ppf "Unbound value %a.@." Printtyp.longident lid
-
-let dir_untrace_all ppf () =
-  List.iter
-    (fun f ->
-      set_code_pointer f.closure f.actual_code;
-      fprintf ppf "%a is no longer traced.@." Printtyp.path f.path)
-    !traced_functions;
-  traced_functions := []
-
 let parse_warnings ppf iserr s =
   try Warnings.parse_options iserr s
   with Arg.Bad err -> fprintf ppf "%s.@." err
@@ -623,28 +437,6 @@ let () =
       section = section_env;
       doc = "Print the signatures of components \
              from any of the above categories.";
-    }
-
-let _ = add_directive "trace"
-    (Directive_ident (dir_trace std_out))
-    {
-      section = section_trace;
-      doc = "All calls to the function \
-          named function-name will be traced.";
-    }
-
-let _ = add_directive "untrace"
-    (Directive_ident (dir_untrace std_out))
-    {
-      section = section_trace;
-      doc = "Stop tracing the given function.";
-    }
-
-let _ = add_directive "untrace_all"
-    (Directive_none (dir_untrace_all std_out))
-    {
-      section = section_trace;
-      doc = "Stop tracing all functions traced so far.";
     }
 
 (* Control the printing of values *)

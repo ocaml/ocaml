@@ -25,9 +25,6 @@ val dir_load : formatter -> string -> unit
 val dir_use : formatter -> string -> unit
 val dir_install_printer : formatter -> Longident.t -> unit
 val dir_remove_printer : formatter -> Longident.t -> unit
-val dir_trace : formatter -> Longident.t -> unit
-val dir_untrace : formatter -> Longident.t -> unit
-val dir_untrace_all : formatter -> unit -> unit
 
 type 'a printer_type_new = Format.formatter -> 'a -> unit
 type 'a printer_type_old = 'a -> unit

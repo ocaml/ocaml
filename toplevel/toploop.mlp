@@ -15,6 +15,11 @@
 
 (* The interactive toplevel loop *)
 
+(* Note that this file is preprocessed, and sections BEGIN_BYTE to
+   END_BYTE are only included into the bytecode version, whereas sections
+   BEGIN_NATIVE to END_NATIVE are only included into the native version.
+ *)
+
 open Path
 open Format
 open Config
@@ -25,8 +30,56 @@ open Typedtree
 open Outcometree
 open Ast_helper
 
-type res = Ok of Obj.t | Err of string
+type directive_fun =
+   | Directive_none of (unit -> unit)
+   | Directive_string of (string -> unit)
+   | Directive_int of (int -> unit)
+   | Directive_ident of (Longident.t -> unit)
+   | Directive_bool of (bool -> unit)
+
+type directive_info = {
+  section: string;
+  doc: string;
+}
+
 type evaluation_outcome = Result of Obj.t | Exception of exn
+
+(* The table of toplevel value bindings and its accessors *)
+
+BEGIN_BYTE
+module StringMap = Map.Make(String)
+
+let toplevel_value_bindings : Obj.t StringMap.t ref = ref StringMap.empty
+
+let getvalue name =
+  try
+    StringMap.find name !toplevel_value_bindings
+  with Not_found ->
+    fatal_error (name ^ " unbound at toplevel")
+
+let setvalue name v =
+  toplevel_value_bindings := StringMap.add name v !toplevel_value_bindings
+
+let global_symbol id =
+  Symtable.get_global_value id
+
+let toplevel_value id =
+  let name = Translmod.toplevel_name id in
+  try
+    StringMap.find name !toplevel_value_bindings
+  with Not_found ->
+    raise (Symtable.Error(Symtable.Undefined_global name))
+
+let is_native = false
+END_BYTE
+
+BEGIN_NATIVE
+let getvalue _ = assert false
+let setvalue _ _ = assert false
+
+exception Load_error of string
+
+type res = Ok of Obj.t | Err of string
 
 let _dummy = (Ok (Obj.magic 0), Err "")
 
@@ -37,7 +90,7 @@ external ndl_loadsym: string -> Obj.t = "caml_natdynlink_loadsym"
 let global_symbol id =
   let sym = Compilenv.symbol_for_global id in
   try ndl_loadsym sym
-  with _ -> fatal_error ("Opttoploop.global_symbol " ^ (Ident.unique_name id))
+  with _ -> fatal_error ("Toploop.global_symbol " ^ (Ident.unique_name id))
 
 let need_symbol sym =
   try ignore (ndl_loadsym sym); false
@@ -51,18 +104,16 @@ let dll_run dll entry =
     | Result r ->
         match Obj.magic r with
           | Ok x -> Result x
-          | Err s -> fatal_error ("Opttoploop.dll_run " ^ s)
+          | Err s -> raise (Load_error ("Toploop.dll_run " ^ s))
 
-
-type directive_fun =
-   | Directive_none of (unit -> unit)
-   | Directive_string of (string -> unit)
-   | Directive_int of (int -> unit)
-   | Directive_ident of (Longident.t -> unit)
-   | Directive_bool of (bool -> unit)
-
-
-(* Return the value referred to by a path *)
+let () =
+  Location.register_error_of_exn
+    (function
+      | Load_error msg ->
+          Some(Location.error ("Error in loader: " ^ msg))
+      | _ ->
+          None
+    )
 
 let remembered = ref Ident.empty
 
@@ -76,9 +127,16 @@ let rec remember phrase_name i = function
       remember phrase_name (succ i) rest
   | _ :: rest -> remember phrase_name i rest
 
-let toplevel_value id =
+let remembered_toplevel_value id =
   try Ident.find_same id !remembered
   with _ -> Misc.fatal_error @@ "Unknown ident: " ^ Ident.unique_name id
+
+let toplevel_value id =
+  let glb, pos =
+    if Config.flambda
+    then remembered_toplevel_value id
+    else Translmod.nat_toplevel_name id in
+  (Obj.magic (global_symbol glb)).(pos)
 
 let close_phrase lam =
   let open Lambda in
@@ -92,17 +150,17 @@ let close_phrase lam =
     Llet(Strict, Pgenval, id, glob, l)
   ) (free_variables lam) lam
 
-let toplevel_value id =
-  let glob, pos =
-    if Config.flambda then toplevel_value id else Translmod.nat_toplevel_name id
-  in
-  (Obj.magic (global_symbol glob)).(pos)
+let is_native = true
+END_NATIVE
+
+(* Return the value referred to by a path *)
 
 let rec eval_path = function
   | Pident id ->
-      if Ident.persistent id || Ident.global id
-      then global_symbol id
-      else toplevel_value id
+      if Ident.persistent id || Ident.global id then
+        global_symbol id
+      else
+        toplevel_value id
   | Pdot(p, _s, pos) ->
       Obj.field (eval_path p) pos
   | Papply _ ->
@@ -116,7 +174,7 @@ let eval_path env path =
 module EvalPath = struct
   type valu = Obj.t
   exception Error
-  let eval_path env p = try eval_path env p with _ -> raise Error
+  let eval_path env p = try eval_path env p with Symtable.Error _ -> raise Error
   let same_value v1 v2 = (v1 == v2)
 end
 
@@ -185,9 +243,68 @@ let toplevel_startup_hook = ref (fun () -> ())
 
 (* Load in-core and execute a lambda term *)
 
-let phrase_seqid = ref 0
-let phrase_name = ref "TOP"
+let may_trace = ref false (* Global lock on tracing *)
 
+let backtrace = ref None
+
+let record_backtrace () =
+  if Printexc.backtrace_status ()
+  then backtrace := Some (Printexc.get_backtrace ())
+
+BEGIN_BYTE
+let load_lambda ppf lam =
+  if !Clflags.dump_rawlambda then fprintf ppf "%a@." Printlambda.lambda lam;
+  let slam = Simplif.simplify_lambda "//toplevel//" lam in
+  if !Clflags.dump_lambda then fprintf ppf "%a@." Printlambda.lambda slam;
+  let (init_code, fun_code) = Bytegen.compile_phrase slam in
+  if !Clflags.dump_instr then
+    fprintf ppf "%a%a@."
+    Printinstr.instrlist init_code
+    Printinstr.instrlist fun_code;
+  let (code, code_size, reloc, events) =
+    Emitcode.to_memory init_code fun_code
+  in
+  Meta.add_debug_info code code_size [| events |];
+  let can_free = (fun_code = []) in
+  let initial_symtable = Symtable.current_state() in
+  Symtable.patch_object code reloc;
+  Symtable.check_global_initialized reloc;
+  Symtable.update_global_table();
+  let initial_bindings = !toplevel_value_bindings in
+  try
+    may_trace := true;
+    let retval = (Meta.reify_bytecode code code_size) () in
+    may_trace := false;
+    if can_free then begin
+      Meta.remove_debug_info code;
+      Meta.static_release_bytecode code code_size;
+      Meta.static_free code;
+    end;
+    Result retval
+  with x ->
+    may_trace := false;
+    record_backtrace ();
+    if can_free then begin
+      Meta.remove_debug_info code;
+      Meta.static_release_bytecode code code_size;
+      Meta.static_free code;
+    end;
+    toplevel_value_bindings := initial_bindings; (* PR#6211 *)
+    Symtable.restore_state initial_symtable;
+    Exception x
+
+let transl_toplevel_phrase ppf oldenv sstr =
+  Typecore.reset_delayed_checks ();
+  let (str, sg, newenv) = Typemod.type_toplevel_phrase oldenv sstr in
+  if !Clflags.dump_typedtree then Printtyped.implementation ppf str;
+  let sg' = Typemod.simplify_signature sg in
+  ignore (Includemod.signatures oldenv sg sg');
+  Typecore.force_delayed_checks ();
+  let lam = Translmod.transl_toplevel_definition str in
+  (str, sg', newenv, lam)
+END_BYTE
+
+BEGIN_NATIVE
 (* CR-soon trefis for mshinwell: copy/pasted from Optmain. Should it be shared
    or?
    mshinwell: It should be shared, but after 4.03. *)
@@ -209,14 +326,14 @@ module Backend = struct
 end
 let backend = (module Backend : Backend_intf.S)
 
-let load_lambda ppf ~module_ident ~required_globals lam size =
+let load_lambda ppf (phrase_name, module_ident, lam, required_globals, size) =
   if !Clflags.dump_rawlambda then fprintf ppf "%a@." Printlambda.lambda lam;
   let slam = Simplif.simplify_lambda "//toplevel//" lam in
   if !Clflags.dump_lambda then fprintf ppf "%a@." Printlambda.lambda slam;
 
   let dll =
-    if !Clflags.keep_asm_file then !phrase_name ^ ext_dll
-    else Filename.temp_file ("caml" ^ !phrase_name) ext_dll
+    if !Clflags.keep_asm_file then phrase_name ^ ext_dll
+    else Filename.temp_file ("caml" ^ phrase_name) ext_dll
   in
   let fn = Filename.chop_extension dll in
   if not Config.flambda then
@@ -237,12 +354,42 @@ let load_lambda ppf ~module_ident ~required_globals lam size =
     if Filename.is_implicit dll
     then Filename.concat (Sys.getcwd ()) dll
     else dll in
-  let res = dll_run dll !phrase_name in
-  (try Sys.remove dll with Sys_error _ -> ());
+  let clean() =
+    try Sys.remove dll with Sys_error _ -> () in
   (* note: under windows, cannot remove a loaded dll
      (should remember the handles, close them in at_exit, and then remove
      files) *)
+  let res =
+    try dll_run dll phrase_name
+    with exn -> clean(); raise exn in
+  clean();
   res
+
+let phrase_seqid = ref 0
+
+let transl_toplevel_phrase ppf oldenv sstr =
+  incr phrase_seqid;
+  let phrase_name = Printf.sprintf "TOP%i" !phrase_seqid in
+  Compilenv.reset ~source_provenance:Timings.Toplevel
+    ?packname:None phrase_name;
+  Typecore.reset_delayed_checks ();
+  let (str, sg, newenv) = Typemod.type_structure oldenv sstr Location.none in
+  if !Clflags.dump_typedtree then Printtyped.implementation ppf str;
+  let sg' = Typemod.simplify_signature sg in
+  Typecore.force_delayed_checks ();
+  let module_ident, lam, required_globals, size =
+    if Config.flambda then
+      let { Lambda.module_ident; main_module_block_size = size;
+            required_globals; code = res } =
+        Translmod.transl_implementation_flambda phrase_name
+          (str, Tcoerce_none) in
+      remember module_ident 0 sg';
+      module_ident, close_phrase res, required_globals, size
+    else
+      let size, res = Translmod.transl_store_phrases phrase_name str in
+      Ident.create_persistent phrase_name, res, Ident.Set.empty, size in
+  (str, sg', newenv, (phrase_name, module_ident, lam, required_globals, size))
+END_NATIVE
 
 (* Print the outcome of an evaluation *)
 
@@ -266,12 +413,26 @@ let print_out_exception ppf exn outv =
 let print_exception_outcome ppf exn =
   if exn = Out_of_memory then Gc.full_major ();
   let outv = outval_of_value !toplevel_env (Obj.repr exn) Predef.type_exn in
-  print_out_exception ppf exn outv
+  print_out_exception ppf exn outv;
+  if Printexc.backtrace_status ()
+  then
+    match !backtrace with
+      | None -> ()
+      | Some b ->
+          print_string b;
+          backtrace := None
 
-(* The table of toplevel directives.
-   Filled by functions from module topdirs. *)
 
-let directive_table = (Hashtbl.create 13 : (string, directive_fun) Hashtbl.t)
+(* Inserting new toplevel directives *)
+
+let directive_table = (Hashtbl.create 23 : (string, directive_fun) Hashtbl.t)
+
+let directive_info_table =
+  (Hashtbl.create 23 : (string, directive_info) Hashtbl.t)
+
+let add_directive name dir_fun dir_info =
+  Hashtbl.add directive_table name dir_fun;
+  Hashtbl.add directive_info_table name dir_info
 
 (* Execute a toplevel phrase *)
 
@@ -279,74 +440,38 @@ let execute_phrase print_outcome ppf phr =
   match phr with
   | Ptop_def sstr ->
       let oldenv = !toplevel_env in
-      incr phrase_seqid;
-      phrase_name := Printf.sprintf "TOP%i" !phrase_seqid;
-      Compilenv.reset ~source_provenance:Timings.Toplevel
-        ?packname:None !phrase_name;
-      Typecore.reset_delayed_checks ();
-      let sstr, rewritten =
-        match sstr with
-        | [ { pstr_desc = Pstr_eval (e, attrs) ; pstr_loc = loc } ]
-        | [ { pstr_desc = Pstr_value (Asttypes.Nonrecursive,
-                                      [{ pvb_expr = e
-                                       ; pvb_pat = { ppat_desc = Ppat_any ; _ }
-                                       ; pvb_attributes = attrs
-                                       ; _ }])
-            ; pstr_loc = loc }
-          ] ->
-            let pat = Ast_helper.Pat.var (Location.mknoloc "_$") in
-            let vb = Ast_helper.Vb.mk ~loc ~attrs pat e in
-            [ Ast_helper.Str.value ~loc Asttypes.Nonrecursive [vb] ], true
-        | _ -> sstr, false
-      in
-      let (str, sg, newenv) = Typemod.type_toplevel_phrase oldenv sstr in
-      if !Clflags.dump_typedtree then Printtyped.implementation ppf str;
-      let sg' = Typemod.simplify_signature sg in
-      (* Why is this done? *)
-      ignore (Includemod.signatures oldenv sg sg');
-      Typecore.force_delayed_checks ();
-      let module_ident, res, required_globals, size =
-        if Config.flambda then
-          let { Lambda.module_ident; main_module_block_size = size;
-                required_globals; code = res } =
-            Translmod.transl_implementation_flambda !phrase_name
-              (str, Tcoerce_none)
-          in
-          remember module_ident 0 sg';
-          module_ident, close_phrase res, required_globals, size
-        else
-          let size, res = Translmod.transl_store_phrases !phrase_name str in
-          Ident.create_persistent !phrase_name, res, Ident.Set.empty, size
-      in
+      let str, sg, newenv, res = transl_toplevel_phrase ppf oldenv sstr in
+      (* NB. res has different type in byte/native cases! *)
       Warnings.check_fatal ();
       begin try
         toplevel_env := newenv;
-        let res = load_lambda ppf ~required_globals ~module_ident res size in
+        let res = load_lambda ppf res in
         let out_phr =
           match res with
-          | Result _ ->
-              if Config.flambda then
-                (* CR-someday trefis: *)
-                ()
-              else
-                Compilenv.record_global_approx_toplevel ();
+          | Result v ->
+BEGIN_NATIVE
+              Compilenv.record_global_approx_toplevel ();
+END_NATIVE
               if print_outcome then
                 Printtyp.wrap_printing_env oldenv (fun () ->
-                match str.str_items with
-                | [] -> Ophr_signature []
-                | _ ->
-                    if rewritten then
-                      match sg' with
-                      | [ Sig_value (id, vd) ] ->
-                          let outv =
-                            outval_of_value newenv (toplevel_value id)
-                              vd.val_type
-                          in
-                          let ty = Printtyp.tree_of_type_scheme vd.val_type in
-                          Ophr_eval (outv, ty)
-                      | _ -> assert false
-                    else
-                      Ophr_signature (pr_item newenv sg'))
+                  match str.str_items with
+                  | [ { str_desc =
+                          (Tstr_eval (exp, _)
+                          |Tstr_value
+                              (Asttypes.Nonrecursive,
+                               [{vb_pat = {pat_desc=Tpat_any};
+                                 vb_expr = exp}
+                               ]
+                              )
+                          )
+                      }
+                    ] ->
+                      let outv = outval_of_value newenv v exp.exp_type in
+                      let ty = Printtyp.tree_of_type_scheme exp.exp_type in
+                      Ophr_eval (outv, ty)
+
+                  | [] -> Ophr_signature []
+                  | _ -> Ophr_signature (pr_item newenv sg))
               else Ophr_signature []
           | Exception exn ->
               toplevel_env := oldenv;
@@ -357,6 +482,15 @@ let execute_phrase print_outcome ppf phr =
               Ophr_exception (exn, outv)
         in
         !print_out_phrase ppf out_phr;
+        if Printexc.backtrace_status ()
+        then begin
+          match !backtrace with
+            | None -> ()
+            | Some b ->
+                pp_print_string ppf b;
+                pp_print_flush ppf ();
+                backtrace := None;
+        end;
         begin match out_phr with
         | Ophr_eval (_, _) | Ophr_signature _ -> true
         | Ophr_exception _ -> false
@@ -371,7 +505,12 @@ let execute_phrase print_outcome ppf phr =
       in
       begin match d with
       | None ->
-          fprintf ppf "Unknown directive `%s'.@." dir_name;
+          fprintf ppf "Unknown directive `%s'." dir_name;
+          let directives =
+            Hashtbl.fold (fun dir _ acc -> dir::acc) directive_table [] in
+          Misc.did_you_mean ppf
+            (fun () -> Misc.spellcheck directives dir_name);
+          fprintf ppf "@.";
           false
       | Some d ->
           match d, dir_arg with
@@ -397,6 +536,12 @@ let execute_phrase print_outcome ppf phr =
                 dir_name;
               false
       end
+
+let execute_phrase print_outcome ppf phr =
+  try execute_phrase print_outcome ppf phr
+  with exn ->
+    Warnings.reset_fatal ();
+    raise exn
 
 (* Read and execute commands from a file, or from stdin if [name] is "". *)
 
@@ -431,6 +576,7 @@ let use_file ppf wrap_mod name =
       end
     in
     let lb = Lexing.from_channel ic in
+    Warnings.reset_fatal ();
     Location.init lb filename;
     (* Skip initial #! line if any *)
     Lexer.skip_hash_bang lb;
@@ -508,12 +654,39 @@ let refill_lexbuf buffer len =
    beginning of loop() so that user code linked in with ocamlmktop
    can call directives from Topdirs. *)
 
+BEGIN_BYTE
 let _ =
+  if !Sys.interactive then (* PR#6108 *)
+    invalid_arg "The ocamltoplevel.cma library from compiler-libs \
+                 cannot be loaded inside the OCaml toplevel";
+  Clflags.debug := true;
   Sys.interactive := true;
-  Compdynlink.init ();
-  Compmisc.init_path true;
+  let crc_intfs = Symtable.init_toplevel() in
+  Compmisc.init_path false;
+  List.iter
+    (fun (name, crco) ->
+      Env.add_import name;
+      match crco with
+        None -> ()
+      | Some crc->
+          Consistbl.set Env.crc_units name crc Sys.executable_name)
+    crc_intfs
+END_BYTE
+
+BEGIN_NATIVE
+let _ =
+  if !Sys.interactive then (* PR#6108 *)
+    invalid_arg "The ocamltoplevel.cmxa/cmxs library from compiler-libs \
+                 cannot be loaded inside the OCaml toplevel";
+  Clflags.debug := true;
+  Sys.interactive := true;
+  Dynlink.init ();
+  Compmisc.init_path (* native: *) true;
   Clflags.dlcode := true;
+  Printmach.print_live := !Clflags.dump_live;
   ()
+END_NATIVE
+
 
 let load_ocamlinit ppf =
   if !Clflags.noinit then ()
@@ -533,8 +706,10 @@ let set_paths () =
      but keep the directories that user code linked in with ocamlmktop
      may have added to load_path. *)
   load_path := !load_path @ [Filename.concat Config.standard_library "camlp4"];
-  load_path := "" :: (List.rev !Clflags.include_dirs @ !load_path);
-  ()
+  load_path := "" :: List.rev (!Compenv.last_include_dirs @
+                               !Clflags.include_dirs @
+                               !Compenv.first_include_dirs) @ !load_path;
+  Dll.add_path !load_path
 
 let initialize_toplevel_env () =
   toplevel_env := Compmisc.initial_env()
@@ -546,8 +721,12 @@ exception PPerror
 let loop ppf =
   Location.formatter_for_warnings := ppf;
   if not !Clflags.noversion then
-    fprintf ppf "        OCaml version %s - native toplevel@.@." Config.version;
-  initialize_toplevel_env ();
+    fprintf ppf "        OCaml version %s@.@." Config.version;
+  begin
+    try initialize_toplevel_env ()
+    with Env.Error _ | Typetexp.Error _ as exn ->
+      Location.report_exception ppf exn; exit 2
+  end;
   let lb = Lexing.from_function refill_lexbuf in
   Location.init lb "//toplevel//";
   Location.input_name := "//toplevel//";
@@ -559,12 +738,11 @@ let loop ppf =
     try
       Lexing.flush_input lb;
       Location.reset();
+      Warnings.reset_fatal ();
       first_line := true;
       let phr = try !parse_toplevel_phrase lb with Exit -> raise PPerror in
       let phr = preprocess_phrase ppf phr  in
       Env.reset_cache_toplevel ();
-      if !Clflags.dump_parsetree then Printast.top_phrase ppf phr;
-      if !Clflags.dump_source then Pprintast.top_phrase ppf phr;
       ignore(execute_phrase true ppf phr)
     with
     | End_of_file -> exit 0
@@ -583,19 +761,179 @@ let override_sys_argv args =
   Arg.current := 0
 
 let run_script ppf name args =
-  let len = Array.length args in
-  if Array.length Sys.argv < len then invalid_arg "Toploop.run_script";
-  Array.blit args 0 Sys.argv 0 len;
-  Obj.truncate (Obj.repr Sys.argv) len;
-  Arg.current := 0;
+  override_sys_argv args;
   Compmisc.init_path ~dir:(Filename.dirname name) true;
                    (* Note: would use [Filename.abspath] here, if we had it. *)
-  toplevel_env := Compmisc.initial_env();
+  begin
+    try toplevel_env := Compmisc.initial_env()
+    with Env.Error _ | Typetexp.Error _ as exn ->
+      Location.report_exception ppf exn; exit 2
+  end;
   Sys.interactive := false;
   let explicit_name =
     (* Prevent use_silently from searching in the path. *)
-    if Filename.is_implicit name
+    if name <> "" && Filename.is_implicit name
     then Filename.concat Filename.current_dir_name name
     else name
   in
   use_silently ppf explicit_name
+
+BEGIN_BYTE
+(* Load in-core a .cmo file *)
+
+open Cmo_format
+
+exception Load_failed
+
+let check_consistency ppf filename cu =
+  try
+    List.iter
+      (fun (name, crco) ->
+       Env.add_import name;
+       match crco with
+         None -> ()
+       | Some crc->
+           Consistbl.check Env.crc_units name crc filename)
+      cu.cu_imports
+  with Consistbl.Inconsistency(name, user, auth) ->
+    fprintf ppf "@[<hv 0>The files %s@ and %s@ \
+                 disagree over interface %s@]@."
+            user auth name;
+    raise Load_failed
+
+let load_compunit ic filename ppf compunit =
+  check_consistency ppf filename compunit;
+  seek_in ic compunit.cu_pos;
+  let code_size = compunit.cu_codesize + 8 in
+  let code = Meta.static_alloc code_size in
+  unsafe_really_input ic code 0 compunit.cu_codesize;
+  Bytes.unsafe_set code compunit.cu_codesize (Char.chr Opcodes.opRETURN);
+  String.unsafe_blit "\000\000\000\001\000\000\000" 0
+                     code (compunit.cu_codesize + 1) 7;
+  let initial_symtable = Symtable.current_state() in
+  Symtable.patch_object code compunit.cu_reloc;
+  Symtable.update_global_table();
+  let events =
+    if compunit.cu_debug = 0 then [| |]
+    else begin
+      seek_in ic compunit.cu_debug;
+      [| input_value ic |]
+    end in
+  Meta.add_debug_info code code_size events;
+  begin try
+    may_trace := true;
+    ignore((Meta.reify_bytecode code code_size) ());
+    may_trace := false;
+  with exn ->
+    record_backtrace ();
+    may_trace := false;
+    Symtable.restore_state initial_symtable;
+    print_exception_outcome ppf exn;
+    raise Load_failed
+  end
+
+let rec load_file recursive ppf name =
+  let filename =
+    try Some (find_in_path !Config.load_path name) with Not_found -> None
+  in
+  match filename with
+  | None -> fprintf ppf "Cannot find file %s.@." name; false
+  | Some filename ->
+      let ic = open_in_bin filename in
+      try
+        let success = really_load_file recursive ppf name filename ic in
+        close_in ic;
+        success
+      with exn ->
+        close_in ic;
+        raise exn
+
+and really_load_file recursive ppf name filename ic =
+  let buffer = really_input_string ic (String.length Config.cmo_magic_number) in
+  try
+    if buffer = Config.cmo_magic_number then begin
+      let compunit_pos = input_binary_int ic in  (* Go to descriptor *)
+      seek_in ic compunit_pos;
+      let cu : compilation_unit = input_value ic in
+      if recursive then
+        List.iter
+          (function
+            | (Reloc_getglobal id, _)
+              when not (Symtable.is_global_defined id) ->
+                let file = Ident.name id ^ ".cmo" in
+                begin match try Some (Misc.find_in_path_uncap !Config.load_path
+                                        file)
+                      with Not_found -> None
+                with
+                | None -> ()
+                | Some file ->
+                    if not (load_file recursive ppf file) then raise Load_failed
+                end
+            | _ -> ()
+          )
+          cu.cu_reloc;
+      load_compunit ic filename ppf cu;
+      true
+    end else
+      if buffer = Config.cma_magic_number then begin
+        let toc_pos = input_binary_int ic in  (* Go to table of contents *)
+        seek_in ic toc_pos;
+        let lib = (input_value ic : library) in
+        List.iter
+          (fun dllib ->
+            let name = Dll.extract_dll_name dllib in
+            try Dll.open_dlls Dll.For_execution [name]
+            with Failure reason ->
+              fprintf ppf
+                "Cannot load required shared library %s.@.Reason: %s.@."
+                name reason;
+              raise Load_failed)
+          lib.lib_dllibs;
+        List.iter (load_compunit ic filename ppf) lib.lib_units;
+        true
+      end else begin
+        fprintf ppf "File %s is not a bytecode object file.@." name;
+        false
+      end
+  with Load_failed -> false
+END_BYTE
+
+BEGIN_NATIVE
+let load_file recursive ppf name0 =
+  if recursive then failwith "Recursive loading not supported in native code";
+  let name =
+    try Some (find_in_path !Config.load_path name0)
+    with Not_found -> None in
+  match name with
+    | None -> fprintf ppf "File not found: %s@." name0; false
+    | Some name ->
+  let fn,tmp =
+    if Filename.check_suffix name ".cmx" || Filename.check_suffix name ".cmxa"
+    then
+      let cmxs = Filename.temp_file "caml" ".cmxs" in
+      let old_link_everything = !Clflags.link_everything in
+      Clflags.link_everything := true;
+      Asmlink.link_shared ppf [name] cmxs;
+      Clflags.link_everything := old_link_everything;
+      cmxs,true
+    else
+      name,false in
+
+  let success =
+    (* The Dynlink interface does not allow us to distinguish between
+       a Dynlink.Error exceptions raised in the loaded modules
+       or a genuine error during dynlink... *)
+    try Dynlink.loadfile fn; true
+    with
+      | Dynlink.Error err ->
+          fprintf ppf "Error while loading %s: %s.@."
+            name (Dynlink.error_message err);
+          false
+      | exn ->
+          print_exception_outcome ppf exn;
+          false
+  in
+  if tmp then (try Sys.remove fn with Sys_error _ -> ());
+  success
+END_NATIVE
+
