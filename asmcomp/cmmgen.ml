@@ -423,21 +423,21 @@ let is_different_from x = function
   | Cconst_natint n -> n <> Nativeint.of_int x
   | _ -> false
 
-let safe_divmod_bi mkop mkm1 c1 c2 bi dbg =
+let safe_divmod_bi mkop is_safe mkm1 c1 c2 bi dbg =
   bind "dividend" c1 (fun c1 ->
   bind "divisor" c2 (fun c2 ->
-    let c = mkop c1 c2 Lambda.Safe dbg in
+    let c = mkop c1 c2 is_safe dbg in
     if Arch.division_crashes_on_overflow
     && (size_int = 4 || bi <> Pint32)
     && not (is_different_from (-1) c2)
     then Cifthenelse(Cop(Ccmpi Cne, [c2; Cconst_int(-1)]), c, mkm1 c1)
     else c))
 
-let safe_div_bi =
-  safe_divmod_bi div_int (fun c1 -> Cop(Csubi, [Cconst_int 0; c1]))
+let safe_div_bi is_safe =
+  safe_divmod_bi div_int is_safe (fun c1 -> Cop(Csubi, [Cconst_int 0; c1]))
 
-let safe_mod_bi =
-  safe_divmod_bi mod_int (fun _ -> Cconst_int 0)
+let safe_mod_bi is_safe =
+  safe_divmod_bi mod_int is_safe (fun _ -> Cconst_int 0)
 
 (* Bool *)
 
@@ -1192,8 +1192,8 @@ let simplif_primitive_32bits = function
   | Paddbint Pint64 -> Pccall (default_prim "caml_int64_add")
   | Psubbint Pint64 -> Pccall (default_prim "caml_int64_sub")
   | Pmulbint Pint64 -> Pccall (default_prim "caml_int64_mul")
-  | Pdivbint Pint64 -> Pccall (default_prim "caml_int64_div")
-  | Pmodbint Pint64 -> Pccall (default_prim "caml_int64_mod")
+  | Pdivbint (Pint64, _) -> Pccall (default_prim "caml_int64_div")
+  | Pmodbint (Pint64, _) -> Pccall (default_prim "caml_int64_mod")
   | Pandbint Pint64 -> Pccall (default_prim "caml_int64_and")
   | Porbint Pint64 ->  Pccall (default_prim "caml_int64_or")
   | Pxorbint Pint64 -> Pccall (default_prim "caml_int64_xor")
@@ -1412,8 +1412,8 @@ let rec is_unboxed_number ~strict env e =
         | Paddbint bi
         | Psubbint bi
         | Pmulbint bi
-        | Pdivbint bi
-        | Pmodbint bi
+        | Pdivbint (bi, _)
+        | Pmodbint (bi, _)
         | Pandbint bi
         | Porbint bi
         | Pxorbint bi
@@ -2121,13 +2121,13 @@ and transl_prim_2 env p arg1 arg2 dbg =
       box_int dbg bi (Cop(Cmuli,
                       [transl_unbox_int env bi arg1;
                        transl_unbox_int env bi arg2]))
-  | Pdivbint bi ->
-      box_int dbg bi (safe_div_bi
+  | Pdivbint (bi, is_safe) ->
+      box_int dbg bi (safe_div_bi is_safe
                       (transl_unbox_int env bi arg1)
                       (transl_unbox_int env bi arg2)
                       bi dbg)
-  | Pmodbint bi ->
-      box_int dbg bi (safe_mod_bi
+  | Pmodbint (bi, is_safe) ->
+      box_int dbg bi (safe_mod_bi is_safe
                       (transl_unbox_int env bi arg1)
                       (transl_unbox_int env bi arg2)
                       bi dbg)

@@ -400,8 +400,8 @@ let comp_primitive p args =
   | Paddbint bi -> comp_bint_primitive bi "add" args
   | Psubbint bi -> comp_bint_primitive bi "sub" args
   | Pmulbint bi -> comp_bint_primitive bi "mul" args
-  | Pdivbint bi -> comp_bint_primitive bi "div" args
-  | Pmodbint bi -> comp_bint_primitive bi "mod" args
+  | Pdivbint (bi, _) -> comp_bint_primitive bi "div" args
+  | Pmodbint (bi, _) -> comp_bint_primitive bi "mod" args
   | Pandbint bi -> comp_bint_primitive bi "and" args
   | Porbint bi -> comp_bint_primitive bi "or" args
   | Pxorbint bi -> comp_bint_primitive bi "xor" args
