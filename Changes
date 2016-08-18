@@ -296,6 +296,9 @@ OCaml 4.04.0:
 - PR#7299: remove access to OCaml heap inside blocking section in win32unix
   (David Allsopp, report by Andreas Hauptmann)
 
+- PR#7300: remove access to OCaml heap inside blocking in Unix.sleep on Windows
+  (David Allsopp)
+
 ### Internal/compiler-libs changes:
 
 - PR#7200, GPR#539: Improve, fix, and add test for parsing/pprintast.ml
