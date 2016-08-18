@@ -385,7 +385,7 @@ is not inferred, and must be given explicitly.
 \ikwd{let\@\texttt{let}}
 \ikwd{open\@\texttt{open}}
 
-(Introduced in OCaml 3.12, extended to patterns in 4.03)
+(Introduced in OCaml 3.12, extended to patterns in 4.04)
 
 \begin{syntax}
 expr:
