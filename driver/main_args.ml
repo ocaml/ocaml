@@ -228,7 +228,7 @@ let mk_keep_docs f =
 ;;
 
 let mk_no_keep_docs f =
-  "-keep-docs", Arg.Unit f,
+  "-no-keep-docs", Arg.Unit f,
   " Do not keep documentation strings in .cmi files (default)"
 ;;
 
