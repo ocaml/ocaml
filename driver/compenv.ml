@@ -609,7 +609,7 @@ let process_deferred_actions env =
   let final_output_name = !output_name in
   (* Make sure the intermediate products don't clash with the final one
      when we're invoked like: ocamlopt -o foo bar.c baz.ml. *)
-  output_name := None;
+  if not !compile_only then output_name := None;
   begin
     match final_output_name with
     | None -> ()
