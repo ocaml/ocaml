@@ -495,7 +495,7 @@ let really_input_string ic len =
   really_input ic s 0 len;
   bytes_unsafe_to_string s
 
-external bytes_set : bytes -> int -> char -> unit = "%bytes_safe_set"
+external bytes_set : bytes -> int -> char -> unit = "%string_safe_set"
 
 let input_line ic =
   let buf = ref (bytes_create 128) in

@@ -24,7 +24,7 @@ external get : string -> int -> char = "%string_safe_get"
 
    Raise [Invalid_argument] if [n] not a valid index in [s]. *)
 
-external set : bytes -> int -> char -> unit = "%bytes_safe_set"
+external set : bytes -> int -> char -> unit = "%string_safe_set"
   [@@ocaml.deprecated "Use BytesLabels.set instead."]
 (** [String.set s n c] modifies byte sequence [s] in place,
    replacing the byte at index [n] with [c].
