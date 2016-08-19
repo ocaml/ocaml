@@ -194,6 +194,9 @@ OCaml 4.04.0:
   of Warning 52 (fragile constant pattern)
   (Gabriel Scherer, William, Adrien Nader, Jacques Garrigue)
 
+- #PR7265, GPR#769: Restore 4.02.3 behaviour of Unix.fstat, if the
+  file descriptor doesn't wrap a regular file (win32unix only)
+  (Andreas Hauptmann, review by David Allsopp)
 
 ### Build system:
 
