@@ -50,7 +50,7 @@ external get : bytes -> int -> char = "%bytes_safe_get"
 
     Raise [Invalid_argument] if [n] not a valid index in [s]. *)
 
-external set : bytes -> int -> char -> unit = "%bytes_safe_set"
+external set : bytes -> int -> char -> unit = "%string_safe_set"
 (** [set s n c] modifies [s] in place, replacing the byte at index [n]
     with [c].
 
