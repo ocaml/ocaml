@@ -35,10 +35,14 @@
 #define S_IFLNK (S_IFDIR | S_IFREG)
 #endif
 #ifndef S_IFIFO
-#define S_IFIFO 0
+#ifdef _S_IFIFO
+#define S_IFIFO _S_IFIFO
+#else
+#define S_IFIFO (S_IFREG | S_IFCHR)
+#endif
 #endif
 #ifndef S_IFSOCK
-#define S_IFSOCK 0
+#define S_IFSOCK (S_IFDIR | S_IFCHR)
 #endif
 #ifndef S_IFBLK
 #define S_IFBLK 0
@@ -375,7 +379,7 @@ static value do_fstat(value handle, int use_64)
     }
     break;
   case FILE_TYPE_CHAR:
-    buf.st_mode = _S_IFCHR;
+    buf.st_mode = S_IFCHR;
     break;
   case FILE_TYPE_PIPE:
     {
@@ -384,7 +388,7 @@ static value do_fstat(value handle, int use_64)
         buf.st_mode = S_IFSOCK;
       }
       else {
-        buf.st_mode = _S_IFIFO;
+        buf.st_mode = S_IFIFO;
       }
       if (PeekNamedPipe(h, NULL, 0, NULL, &n_avail, NULL)) {
         buf.st_size = n_avail;
