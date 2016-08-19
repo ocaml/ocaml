@@ -224,6 +224,112 @@ let untag_int = function
   | Cop(Cor, [c; Cconst_int 1]) -> Cop(Casr, [c; Cconst_int 1])
   | c -> Cop(Casr, [c; Cconst_int 1])
 
+let int_comp_with_constant cmp arg n =
+  let default = Cop(Ccmpi cmp, [arg; Cconst_int n]) in
+  match arg with
+  | Cop(Cor, [Cop(Clsr, [arg; Cconst_int shift]); Cconst_int mask])
+  | Cop(Cor, [Cconst_int mask; Cop(Clsr, [arg; Cconst_int shift])]) ->
+      (* Optimize the pattern:
+           ( (a >> shift) | mask )  <  n
+         into
+           ( a & ( !mask << shift ) ) < (n & !mask) << shift
+         when
+           A: n | mask = n
+           B: (n & !mask) << shift >> shift = (n & !mask)
+           C: sign ((n & !mask) << shift) = sign n
+
+         shift, mask and n being constants, the remaining operations are:
+            a & and_mask < n'
+         which is one less operation
+
+         =======
+
+         For all comparison operator (<)
+
+                              ( (a >> shift) | mask )  <  n
+
+         iff
+
+                              ( (a >> shift) | mask )  <  (n | mask)
+
+         iff
+
+                      ( (a >> shift) | mask ) - !mask  <  (n | mask) - !mask
+
+         iff see 1
+
+                      ( (a >> shift) | mask ) & !mask  <  (n | mask) & !mask
+
+         iff see 2
+
+                                 (a >> shift) & !mask  <  n & !mask
+
+         iff
+
+                     ((a >> shift) & !mask) * 2^shift  <  (n & !mask) * 2^shift
+
+         iff see 3
+
+                      ((a >> shift) & !mask) << shift  <  (n & !mask) << shift
+
+         iff
+
+           ((a >> shift) << shift) & (!mask << shift)  <  (n & !mask) << shift
+
+         iff see 4
+
+                                 a & (!mask << shift)  <  (n & !mask) << shift
+
+
+
+         1: For all m, (m | mask) & !mask = (m | mask) - !mask
+
+         2: For all m, (m | mask) & !mask = m & !mask
+
+         3:
+            The constraints B and C prevents overflow in n so
+            (n & !mask) << shift = (n & !mask) * 2^shift
+            ((a >> shift) & !mask) << shift cannot overflow
+
+         4: ((a >> shift) << shift) is a with the 'shift' least significative
+            bits set to 0.
+            (!mask << shift) has all the 'shift' least significative bits set
+            to 0. so
+            ((a >> shift) << shift) & (!mask << shift) = a & (!mask << shift)
+      *)
+
+      let n' = (n land (lnot mask)) lsl shift in
+      if Arch.size_int * 8 <= Sys.word_size && (* Prevents cross compilation
+                                                  overflow problems *)
+         n = n lor mask &&                    (* A *)
+         n' lsr shift = n land (lnot mask) && (* B *)
+         (n' > 0) = (n > 0) then              (* C *)
+        let and_mask = (lnot mask) lsl shift in
+        Cop(Ccmpi cmp, [Cop (Cand, [arg; Cconst_int and_mask]); Cconst_int n'])
+      else
+        default
+  | _ ->
+      default
+
+let int_comp cmp arg1 arg2 =
+  match arg1, arg2 with
+  | arg, Cconst_int n ->
+      int_comp_with_constant cmp arg n
+  | Cconst_int n, arg -> begin
+      let cmp =
+        (* Change the argument order *)
+        match cmp with
+        | Ceq | Cne -> cmp
+        | Clt -> Cgt
+        | Cle -> Cge
+        | Cgt -> Clt
+        | Cge -> Cle
+      in
+      int_comp_with_constant cmp arg n
+    end
+  | _ ->
+      Cop(Ccmpi cmp, [arg1; arg2])
+
 let if_then_else (cond, ifso, ifnot) =
   match cond with
   | Cconst_int 0 -> ifnot
@@ -1958,8 +2064,8 @@ and transl_prim_2 env p arg1 arg2 dbg =
       Cop(Cor, [asr_int (transl env arg1) (untag_int(transl env arg2));
                 Cconst_int 1])
   | Pintcomp cmp ->
-      tag_int(Cop(Ccmpi(transl_comparison cmp),
-                  [transl env arg1; transl env arg2]))
+      tag_int(int_comp (transl_comparison cmp)
+                (transl env arg1) (transl env arg2))
   | Pisout ->
       transl_isout (transl env arg1) (transl env arg2)
   (* Float operations *)
