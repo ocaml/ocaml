@@ -7245,3 +7245,12 @@ end and ['a] d () = object
   inherit ['a] c ()
 end;;
 *)
+
+(* PR#7329 Pattern open *)
+let _ =
+  let module M = struct type t = { x : int } end in
+  let f M.(x) = () in
+  let g M.{x} = () in
+  let h = function M.[] | M.[a] | M.(a::q) -> () in
+  let i = function M.[||] | M.[|x|]  -> true | _ -> false in
+  ()
