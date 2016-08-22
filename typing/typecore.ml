@@ -1004,8 +1004,10 @@ let rec type_pat ~constrs ~labels ~no_existentials ~mode ~explode ~env
           ~explode sp expected_ty k
       else k' Tpat_any
   | Ppat_var name ->
-      assert (constrs = None);
-      let id = enter_variable loc name expected_ty in
+      let id = (* PR#7330 *)
+        if name.txt = "*extension*" then Ident.create name.txt else
+        enter_variable loc name expected_ty
+      in
       rp k {
         pat_desc = Tpat_var (id, name);
         pat_loc = loc; pat_extra=[];
