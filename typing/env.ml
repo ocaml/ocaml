@@ -460,12 +460,20 @@ let read_pers_struct check modname filename =
   acknowledge_pers_struct check modname
     { Persistent_signature.filename; cmi }
 
+let can_load_cmis = ref true
+let without_cmis f x =
+  if !can_load_cmis then begin
+    can_load_cmis := false;
+    try let r = f x in can_load_cmis := true; r
+    with e -> can_load_cmis := true; raise e
+  end else f x
+
 let find_pers_struct check name =
   if name = "*predef*" then raise Not_found;
   match Hashtbl.find persistent_structures name with
   | Some ps -> ps
   | None -> raise Not_found
-  | exception Not_found ->
+  | exception Not_found when !can_load_cmis ->
       let ps =
         match !Persistent_signature.load ~unit_name:name with
         | Some ps -> ps
