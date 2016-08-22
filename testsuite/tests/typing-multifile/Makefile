@@ -19,7 +19,7 @@ GENERATED= a.ml b.ml c.ml
 default: pr7325
 
 pr7325:
-	@echo " ... testing pr7325 => \c"
+	@echo -e " ... testing pr7325 => \c"
 	@echo "type _ t = T" > a.ml
 	@echo "type 'a t = 'a A.t" > b.ml
 	@echo 'external f : unit -> unit B.t = "%identity"' > c.ml
