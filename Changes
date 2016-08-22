@@ -350,6 +350,9 @@ OCaml 4.04.0:
 - PR#7285: Relaxed value restriction broken with principal
   (Jacques Garrigue, report by Leo White)
 
+- PR#7330: Missing exhaustivity check for extensible variant
+  (Jacques Garrigue, report by Elarnon *)
+
 - PR#7165, GPR#494: uncaught exception on invalid lexer directive
   (Gabriel Scherer, report by KC Sivaramakrishnan using afl-fuzz)
 
