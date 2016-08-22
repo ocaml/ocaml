@@ -397,20 +397,30 @@ void caml_realloc_stack(asize_t required_space, value* saved_vals, int nsaved)
   CAMLreturn0;
 }
 
-void caml_init_main_stack()
+value caml_alloc_main_stack (uintnat init_size)
 {
-  value stack;
+  CAMLparam0();
+  CAMLlocal1(stack);
 
   /* Create a stack for the main program.
      The GC is not initialised yet, so we use caml_alloc_shr
      which cannot trigger it */
-  stack = caml_alloc_shr(Stack_size/sizeof(value), Stack_tag);
+  stack = caml_alloc_shr(init_size, Stack_tag);
   Stack_sp(stack) = 0;
   Stack_dirty_domain(stack) = 0;
   Stack_handle_value(stack) = Val_long(0);
   Stack_handle_exception(stack) = Val_long(0);
   Stack_handle_effect(stack) = Val_long(0);
   Stack_parent(stack) = Val_unit;
+
+  CAMLreturn(stack);
+}
+
+void caml_init_main_stack ()
+{
+  value stack;
+
+  stack = caml_alloc_main_stack (Stack_size/sizeof(value));
   load_stack(stack);
 }
 
@@ -463,9 +473,10 @@ void caml_save_stack_gc()
 
 void caml_restore_stack_gc()
 {
-  Assert(stack_is_saved);
-  Assert(Tag_val(caml_domain_state->current_stack) == Stack_tag);
-  load_stack(caml_domain_state->current_stack);
+  if (stack_is_saved) {
+    Assert(Tag_val(caml_domain_state->current_stack) == Stack_tag);
+    load_stack(caml_domain_state->current_stack);
+  }
   stack_is_saved = 0;
 }
 

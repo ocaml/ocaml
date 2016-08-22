@@ -56,6 +56,7 @@ struct caml_thread_descr {
 
 #define Ident(v) (((struct caml_thread_descr *)(v))->ident)
 #define Start_closure(v) (((struct caml_thread_descr *)(v))->start_closure)
+#define Start_closure_index ((offsetof(struct caml_thread_descr, start_closure))/sizeof(value))
 #define Terminated(v) (((struct caml_thread_descr *)(v))->terminated)
 
 /* The infos on threads (allocated via malloc()) */
@@ -193,7 +194,7 @@ static void caml_thread_leave_blocking_section(void)
   caml_local_roots = curr_thread->local_roots;
 #ifdef NATIVE_CODE
   caml_domain_state->system_sp = curr_thread->system_sp;
-  caml_domain_state->stack_high = curr_thread->stack_high;
+  caml_domain_state->system_stack_high = curr_thread->system_stack_high;
   caml_domain_state->system_exnptr_offset = curr_thread->system_exnptr_offset;
 #else
   caml_trap_sp_off = curr_thread->trap_sp_off;
@@ -212,9 +213,11 @@ static void caml_thread_leave_blocking_section(void)
 static caml_thread_t caml_thread_new_info(void)
 {
   caml_thread_t th;
+#ifndef NATIVE_CODE
   value stack;
+#endif
 
-  th = (caml_thread_t) malloc(sizeof(struct caml_thread_struct));
+  th = (caml_thread_t) caml_stat_alloc(sizeof(struct caml_thread_struct));
   if (th == NULL) return NULL;
   th->descr = Val_unit;         /* filled later */
   th->local_roots = NULL;
@@ -393,15 +396,17 @@ static ST_THREAD_FUNCTION caml_thread_start(void * arg)
   leave_blocking_section();
 #ifdef NATIVE_CODE
   /* Record top of stack (approximative) */
-  caml_domain_state->stack_high = &tos;
+  caml_domain_state->system_stack_high = &tos;
   /* Setup termination handler (for caml_thread_exit) */
   if (sigsetjmp(termination_buf.buf, 0) == 0) {
     th->exit_buf = &termination_buf;
 #endif
     /* Callback the closure */
     clos = Start_closure(th->descr);
-    caml_modify_field(Start_closure(th->descr), 0, Val_unit);
+    caml_modify_field(th->descr, Start_closure_index, Val_unit);
     callback_exn(clos, Val_unit);
+    /* Enter blocking section to release domain locks */
+    enter_blocking_section();
     caml_thread_stop();
 #ifdef NATIVE_CODE
   }
@@ -416,6 +421,7 @@ CAMLprim value caml_thread_new(value clos)          /* ML */
   CAMLlocal1(stack);
   caml_thread_t th;
   st_retcode err;
+  uintnat domain_id;
 
   /* Create a thread info block */
   th = caml_thread_new_info();
@@ -433,6 +439,7 @@ CAMLprim value caml_thread_new(value clos)          /* ML */
     (struct st_thread_info*)malloc(sizeof(struct st_thread_info));
   info->thread_info = th;
   info->domain_id = caml_domain_self()->id;
+  domain_id = info->domain_id;
   err = st_thread_create(NULL, caml_thread_start, (void *) info);
   if (err != 0) {
     /* Creation failed, remove thread info block from list of threads */
@@ -443,7 +450,7 @@ CAMLprim value caml_thread_new(value clos)          /* ML */
      Because of PR#4666, we start the tick thread late, only when we create
      the first additional thread in the current process*/
   if (! caml_tick_thread_running) {
-    err = st_thread_create(&caml_tick_thread_id, caml_thread_tick, NULL);
+    err = st_thread_create(&caml_tick_thread_id, caml_thread_tick, (void*)domain_id);
     st_check_error(err, "Thread.create");
     caml_tick_thread_running = 1;
   }

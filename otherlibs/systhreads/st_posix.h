@@ -324,7 +324,11 @@ static void * caml_thread_tick(void * arg)
 {
   struct timeval timeout;
   sigset_t mask;
+  uintnat domain_id;
 
+  /* Initialize domain_self thread local variable */
+  domain_id = (uintnat)arg;
+  caml_init_domain_self (domain_id);
   /* Block all signals so that we don't try to execute an OCaml signal handler*/
   sigfillset(&mask);
   pthread_sigmask(SIG_BLOCK, &mask, NULL);
