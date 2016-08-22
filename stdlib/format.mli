@@ -271,13 +271,13 @@ val set_ellipsis_text : string -> unit
 val get_ellipsis_text : unit -> string
 (** Return the text of the ellipsis. *)
 
-(** {6:tags Semantics Tags} *)
+(** {6:tags Semantic Tags} *)
 
 type tag = string
 
-(** {i Semantics tags} (or simply {e tags}) are used to decorate printed
+(** {i Semantic tags} (or simply {e tags}) are used to decorate printed
   entities for user's defined purposes, e.g. setting font and giving size
-  indications for a display device, or marking delimitation of semantics
+  indications for a display device, or marking delimitation of semantic
   entities (e.g. HTML or TeX elements or terminal escape sequences).
 
   By default, those tags do not influence line splitting calculation:
@@ -310,7 +310,7 @@ type tag = string
   corresponding to tag markers is considered as zero for line
   splitting). In addition, advanced users may take advantage of
   the specificity of tag markers to be precisely output when the
-  pretty printer has already decided where to splitt the lines, and
+  pretty printer has already decided where to split the lines, and
   precisely when the queue is flushed into the output device.
 
   In the spirit of HTML tags, the default tag marking functions
@@ -411,7 +411,7 @@ val get_formatter_out_functions : unit -> formatter_out_functions
   including line splitting and indentation functions. Useful to record the
   current setting and restore it afterwards. *)
 
-(** {6:tagsmeaning Changing the meaning of printing semantics tags} *)
+(** {6:tagsmeaning Changing the meaning of printing semantic tags} *)
 
 type formatter_tag_functions = {
   mark_open_tag : tag -> string;
