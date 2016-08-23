@@ -241,6 +241,9 @@ OCaml 4.04.0:
 - PR#7112: Aliased arguments ignored for equality of module types
   (Jacques Garrigue, report by Leo White)
 
+- PR#7134: compiler forcing aliases it shouldn't while reporting type errors
+  (Jacques Garrigue, report and suggestion by sliquister)
+
 - PR#7153: document that Unix.SOCK_SEQPACKET is not really usable.
 
 - PR#7257, GPR#583: revert a 4.03 change of behavior on (Unix.sleep 0.),

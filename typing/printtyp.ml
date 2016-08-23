@@ -323,6 +323,9 @@ let wrap_printing_env env f =
   set_printing_env env;
   try_finally f (fun () -> set_printing_env Env.empty)
 
+let wrap_printing_env env f =
+  Env.without_cmis (wrap_printing_env env) f
+
 let is_unambiguous path env =
   let l = Env.find_shadowed_types path env in
   List.exists (Path.same path) l || (* concrete paths are ok *)
