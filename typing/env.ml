@@ -462,11 +462,7 @@ let read_pers_struct check modname filename =
 
 let can_load_cmis = ref true
 let without_cmis f x =
-  if !can_load_cmis then begin
-    can_load_cmis := false;
-    try let r = f x in can_load_cmis := true; r
-    with e -> can_load_cmis := true; raise e
-  end else f x
+  Misc.(protect_refs [R (can_load_cmis, false)] (fun () -> f x))
 
 let find_pers_struct check name =
   if name = "*predef*" then raise Not_found;
