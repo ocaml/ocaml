@@ -606,7 +606,7 @@ OCaml 4.03.0 (25 Apr 2016):
 - GPR#772 %string_safe_set is treated the same as %bytes_safe_set,
   and %string_safe_set is only used to set bytes instead of string, it is
   strongly recommended to use `%bytes_safe_set`, `%string_safe_set`
-  maybe removed in the future.
+  may be removed in the future.
   (Hongbo Zhang)
 
 * GPR#442, caml_fill_string, and caml_create_string is deprecated 
