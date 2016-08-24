@@ -29,9 +29,3 @@ clean::
 
 bng.$(O): bng.h bng_digit.c \
        bng_amd64.c bng_ia32.c bng_ppc.c bng_sparc.c
-
-depend:
-	$(CC) -MM $(CFLAGS) *.c > .depend
-	$(CAMLRUN) ../../tools/ocamldep -slash *.mli *.ml >> .depend
-
-include .depend
