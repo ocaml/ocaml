@@ -1,3 +1,0 @@
-Fatal error: exception Not_found
-Raised at file "tailcall.ml", line 1, characters 11-26
-Called from file "tailcall.ml", line 10, characters 2-6

@@ -18,7 +18,8 @@ EXECNAME=program$(EXE)
 
 ABCDFILES=backtrace.ml
 OTHERFILES=backtrace2.ml backtrace3.ml raw_backtrace.ml \
-           backtrace_deprecated.ml backtrace_slots.ml tailcall.ml
+           backtrace_deprecated.ml backtrace_slots.ml \
+           tailcall1.ml tailcall2.ml
 INLININGFILES=inline_test.ml inline_traversal_test.ml
 OTHERFILESNOINLINING=pr6920_why_at.ml pr6920_why_swallow.ml
 OTHERFILESNOINLINING_NATIVE=backtraces_and_finalizers.ml
