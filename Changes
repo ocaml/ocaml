@@ -308,6 +308,10 @@ OCaml 4.04.0:
 - PR#7300: remove access to OCaml heap inside blocking in Unix.sleep on Windows
   (David Allsopp)
 
+- GPR#779: Building native runtime on Windows could fail when bootstrapping
+  FlexDLL if there was also a system-installed flexlink
+  (David Allsopp, report Michael Soegtrop)
+
 ### Internal/compiler-libs changes:
 
 - PR#7200, GPR#539: Improve, fix, and add test for parsing/pprintast.ml
