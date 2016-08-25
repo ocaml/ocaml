@@ -1192,8 +1192,8 @@ let simplif_primitive_32bits = function
   | Paddbint Pint64 -> Pccall (default_prim "caml_int64_add")
   | Psubbint Pint64 -> Pccall (default_prim "caml_int64_sub")
   | Pmulbint Pint64 -> Pccall (default_prim "caml_int64_mul")
-  | Pdivbint (Pint64, _) -> Pccall (default_prim "caml_int64_div")
-  | Pmodbint (Pint64, _) -> Pccall (default_prim "caml_int64_mod")
+  | Pdivbint {size=Pint64} -> Pccall (default_prim "caml_int64_div")
+  | Pmodbint {size=Pint64} -> Pccall (default_prim "caml_int64_mod")
   | Pandbint Pint64 -> Pccall (default_prim "caml_int64_and")
   | Porbint Pint64 ->  Pccall (default_prim "caml_int64_or")
   | Pxorbint Pint64 -> Pccall (default_prim "caml_int64_xor")
@@ -1412,8 +1412,8 @@ let rec is_unboxed_number ~strict env e =
         | Paddbint bi
         | Psubbint bi
         | Pmulbint bi
-        | Pdivbint (bi, _)
-        | Pmodbint (bi, _)
+        | Pdivbint {size=bi}
+        | Pmodbint {size=bi}
         | Pandbint bi
         | Porbint bi
         | Pxorbint bi
@@ -2121,12 +2121,12 @@ and transl_prim_2 env p arg1 arg2 dbg =
       box_int dbg bi (Cop(Cmuli,
                       [transl_unbox_int env bi arg1;
                        transl_unbox_int env bi arg2]))
-  | Pdivbint (bi, is_safe) ->
+  | Pdivbint { size = bi; is_safe } ->
       box_int dbg bi (safe_div_bi is_safe
                       (transl_unbox_int env bi arg1)
                       (transl_unbox_int env bi arg2)
                       bi dbg)
-  | Pmodbint (bi, is_safe) ->
+  | Pmodbint { size = bi; is_safe } ->
       box_int dbg bi (safe_mod_bi is_safe
                       (transl_unbox_int env bi arg1)
                       (transl_unbox_int env bi arg2)
