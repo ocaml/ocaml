@@ -1,4 +1,5 @@
 (* Tests for nested equations (bind abstract types from other modules) *)
+[@@@ocaml.warning "-62"]
 
 type _ t = Int : int t;;
 

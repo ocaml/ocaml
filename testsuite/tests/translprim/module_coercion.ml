@@ -1,3 +1,5 @@
+[@@@ocaml.warning "-62"]
+
 module M = struct
   external len : 'a array -> int = "%array_length"
   external safe_get : 'a array -> int -> 'a = "%array_safe_get"

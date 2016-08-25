@@ -12,6 +12,7 @@
 (*   special exception on linking described in the file LICENSE.          *)
 (*                                                                        *)
 (**************************************************************************)
+[@@@ocaml.warning "-62"]
 
 (* Disassembler for executable and .cmo object files *)
 

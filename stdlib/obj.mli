@@ -13,6 +13,12 @@
 (*                                                                        *)
 (**************************************************************************)
 
+[@@@ocaml.unsafe {|
+  The module Obj provides operations on the internal representations
+  of values.  Most of those operations are unsafe.
+|} ]
+
+
 (** Operations on internal representations of values.
 
    Not for the casual user.

@@ -1635,8 +1635,9 @@ let type_implementation sourcefile outputprefix modulename initial_env ast =
          case, the inferred signature contains only the last declaration. *)
       if not !Clflags.dont_write_files then begin
         let deprecated = Builtin_attributes.deprecated_of_str ast in
+        let unsafe     = Builtin_attributes.unsafe_of_str ast in
         let sg =
-          Env.save_signature ~deprecated
+          Env.save_signature ~deprecated ~unsafe
             simple_sg modulename (outputprefix ^ ".cmi")
         in
         Cmt_format.save_cmt  (outputprefix ^ ".cmt") modulename
@@ -1723,7 +1724,7 @@ let package_units initial_env objfiles cmifile modulename =
     (* Write packaged signature *)
     if not !Clflags.dont_write_files then begin
       let sg =
-        Env.save_signature_with_imports ~deprecated:None
+        Env.save_signature_with_imports ~deprecated:None ~unsafe:None
           sg modulename
           (prefix ^ ".cmi") imports
       in

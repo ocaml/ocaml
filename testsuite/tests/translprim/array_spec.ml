@@ -1,3 +1,5 @@
+[@@@ocaml.warning "-62"]
+
 external len : 'a array -> int = "%array_length"
 external safe_get : 'a array -> int -> 'a = "%array_safe_get"
 external unsafe_get : 'a array -> int -> 'a = "%array_unsafe_get"

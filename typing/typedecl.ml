@@ -1645,6 +1645,8 @@ let transl_value_decl env loc valdecl =
   | [] ->
       raise (Error(valdecl.pval_loc, Val_in_structure))
   | _ ->
+      let msg = Printf.sprintf "the signature for external %s cannot be checked" valdecl.pval_name.txt in
+      Location.prerr_warning loc (Warnings.Unsafe msg);
       let global_repr =
         match
           get_native_repr_attribute valdecl.pval_attributes ~global_repr:None

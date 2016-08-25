@@ -24,8 +24,8 @@
    between sizes and mere integers. *)
 type size
 
+[@@@ocaml.warning "-62"]
 external size_of_int : int -> size = "%identity"
-
 external int_of_size : size -> int = "%identity"
 
 

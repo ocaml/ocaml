@@ -56,6 +56,7 @@ Error: In this definition, a type variable cannot be deduced
 |}];;
 
 (* It is not OK to allow modules exported by other compilation units *)
+[@@@ocaml.warning "-62"]
 type (_,_) eq = Eq : ('a,'a) eq;;
 let eq = Obj.magic Eq;;
 (* pretend that Queue.t is not injective *)

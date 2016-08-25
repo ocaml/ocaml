@@ -22,7 +22,7 @@ LIBNAME=raw_spacetime_lib
 CAMLOBJS=raw_spacetime_lib.cmo
 
 CC=$(BYTECC)
-COMPFLAGS=-w +33..39 -warn-error A -bin-annot -g -safe-string $(EXTRACAMLFLAGS)
+COMPFLAGS=-w +33..39-62 -warn-error A -bin-annot -g -safe-string $(EXTRACAMLFLAGS)
 
 CMIFILES=$(CAMLOBJS:.cmo=.cmi)
 CAMLOBJS_NAT=$(CAMLOBJS:.cmo=.cmx)

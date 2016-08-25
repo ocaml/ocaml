@@ -29,7 +29,7 @@
    the [Marshal.from_*] functions is given as ['a], but this is
    misleading: the returned OCaml value does not possess type ['a]
    for all ['a]; it has one, unique type which cannot be determined
-   at compile-type.  The programmer should explicitly give the expected
+   at compile-time.  The programmer should explicitly give the expected
    type of the returned value, using the following syntax:
    - [(Marshal.from_channel chan : type)].
    Anything can happen at run-time if the object in the file does not
@@ -51,6 +51,10 @@
    cause unmarshaling errors on platforms where text channels behave
    differently than binary channels, e.g. Windows.
  *)
+
+[@@@ocaml.unsafe {|
+  The module Marshal provides non-type-safe marshalling.
+|} ]
 
 type extern_flags =
     No_sharing                          (** Don't preserve sharing *)

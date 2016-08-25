@@ -82,6 +82,7 @@ type t =
   | Assignment_to_non_mutable_value         (* 59 *)
   | Unused_module of string                 (* 60 *)
   | Unboxable_type_in_prim_decl of string   (* 61 *)
+  | Unsafe of string                        (* 62 *)
 ;;
 
 (* If you remove a warning, leave a hole in the numbering.  NEVER change
@@ -152,9 +153,10 @@ let number = function
   | Assignment_to_non_mutable_value -> 59
   | Unused_module _ -> 60
   | Unboxable_type_in_prim_decl _ -> 61
+  | Unsafe _ -> 62
 ;;
 
-let last_warning_number = 61
+let last_warning_number = 62
 ;;
 
 (* Must be the max number returned by the [number] function. *)
@@ -286,6 +288,7 @@ let message = function
              testsuite
        *)
        "deprecated: " ^ Misc.normalise_eol s
+  | Unsafe s -> "unsafe: " ^ Misc.normalise_eol s
   | Fragile_match "" ->
       "this pattern-matching is fragile."
   | Fragile_match s ->

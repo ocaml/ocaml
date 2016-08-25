@@ -20,7 +20,7 @@ CAMLYACC ?= ../../boot/ocamlyacc
 # Compilation options
 CAMLC=$(CAMLRUN) ../../ocamlc -I ../../stdlib -I ../win32unix
 CAMLOPT=$(CAMLRUN) ../../ocamlopt -I ../../stdlib -I ../win32unix
-COMPFLAGS=-w +33 -warn-error A -g
+COMPFLAGS=-w +33-62 -warn-error A -g
 ifeq "$(FLAMBDA)" "true"
 OPTCOMPFLAGS=-O3
 else

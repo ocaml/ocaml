@@ -583,6 +583,7 @@ let token_float ib = float_of_string (Scanning.token ib)
    since those modules are not available to [Scanf].
    However, we can bind and use the corresponding primitives that are
    available in the runtime. *)
+[@@@ocaml.warning "-62"]
 external nativeint_of_string : string -> nativeint
   = "caml_nativeint_of_string"
 

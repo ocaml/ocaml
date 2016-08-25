@@ -77,6 +77,7 @@ type t =
   | Assignment_to_non_mutable_value         (* 59 *)
   | Unused_module of string                 (* 60 *)
   | Unboxable_type_in_prim_decl of string   (* 61 *)
+  | Unsafe of string                        (* 62 *)
 ;;
 
 val parse_options : bool -> string -> unit;;

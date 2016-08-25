@@ -18,6 +18,7 @@ type pers_flags =
   | Deprecated of string
   | Opaque
   | Unsafe_string
+  | Unsafe of string
 
 type error =
     Not_an_interface of string

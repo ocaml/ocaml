@@ -69,6 +69,26 @@ let check_deprecated loc attrs s =
   | Some txt ->
       Location.prerr_warning loc (Warnings.Deprecated (s ^ "\n" ^ txt))
 
+let rec unsafe_of_attrs = function
+  | [] -> None
+  | ({txt = "ocaml.unsafe"|"unsafe"; _}, p) :: _ ->
+      begin match string_of_payload p with
+      | Some txt ->  Some txt
+      | None -> Some ""
+      end
+  | _ :: tl -> unsafe_of_attrs tl
+
+let check_unsafe loc attrs s =
+  match unsafe_of_attrs attrs with
+  | None -> ()
+  | Some "" -> Location.prerr_warning loc (Warnings.Unsafe s)
+  | Some txt ->
+      Location.prerr_warning loc (Warnings.Unsafe (s ^ "\n" ^ txt))
+
+let check_attr loc attrs s =
+  check_deprecated loc attrs s;
+  check_unsafe     loc attrs s
+
 let rec check_deprecated_mutable loc attrs s =
   match attrs with
   | [] -> ()
@@ -91,11 +111,27 @@ let rec deprecated_of_sig = function
       end
   | _ -> None
 
+let rec unsafe_of_sig = function
+  | {psig_desc = Psig_attribute a} :: tl ->
+      begin match unsafe_of_attrs [a] with
+      | None -> unsafe_of_sig tl
+      | Some _ as r -> r
+      end
+  | _ -> None
+
 
 let rec deprecated_of_str = function
   | {pstr_desc = Pstr_attribute a} :: tl ->
       begin match deprecated_of_attrs [a] with
       | None -> deprecated_of_str tl
+      | Some _ as r -> r
+      end
+  | _ -> None
+
+let rec unsafe_of_str = function
+  | {pstr_desc = Pstr_attribute a} :: tl ->
+      begin match unsafe_of_attrs [a] with
+      | None -> unsafe_of_str tl
       | Some _ as r -> r
       end
   | _ -> None

@@ -1,3 +1,5 @@
+[@@@ocaml.warning "-62"]
+
 external cmp : 'a -> 'a -> int = "%compare";;
 external eq : 'a -> 'a -> bool = "%equal";;
 external ne : 'a -> 'a -> bool = "%notequal";;

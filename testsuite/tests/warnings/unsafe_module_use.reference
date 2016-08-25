@@ -1,0 +1,14 @@
+File "unsafe_module_use.ml", line 1, characters 5-18:
+Warning 62: unsafe: module Unsafe_module
+
+  As you could guess, Unsafe_module is unsafe.
+  Please use something else!
+
+File "unsafe_module_use.ml", line 3, characters 9-12:
+Warning 62: unsafe: module Unsafe_module.M
+File "unsafe_module_use.ml", line 3, characters 9-12:
+Warning 62: unsafe: Unsafe_module.M.t
+File "unsafe_module_use.ml", line 5, characters 5-6:
+Warning 62: unsafe: module Unsafe_module.M
+File "unsafe_module_use.ml", line 6, characters 8-9:
+Warning 62: unsafe: Unsafe_module.M.x
