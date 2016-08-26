@@ -12,11 +12,11 @@ Next version (tbd):
 
 - GPR#729: Make sure ocamlnat is built with a $(EXE) extension, merge
   rules between Unix and Windows Makefiles
- (Sébastien Hinderer, review by Alain Frisch)
+  (Sébastien Hinderer, review by Alain Frisch)
 
 - GPR#762, GPR#764: Merge Unix and Windows Makefiles in yacc/ and
   debugger/
- (Sébastien Hinderer)
+  (Sébastien Hinderer)
 
 OCaml 4.04.0:
 -------------
