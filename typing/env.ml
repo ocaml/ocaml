@@ -1926,7 +1926,7 @@ let save_signature_with_imports ~deprecated sg modname filename imports =
         ps_flags = cmi.cmi_flags;
       } in
     save_pers_struct crc ps;
-    sg
+    cmi
   with exn ->
     close_out oc;
     remove_file filename;

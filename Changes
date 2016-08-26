@@ -18,6 +18,14 @@ Next version (tbd):
   debugger/
   (Sébastien Hinderer)
 
+### Internal/compiler-libs changes:
+
+- GPR#744, GPR#781: fix duplicate self-reference in imported cmi_crcs
+  list in .cmti files + avoid rebuilding cmi_info record when creating
+  .cmti files
+  (Alain Frisch, report by Daniel Bunzli, review by Jeremie Dimino)
+
+
 OCaml 4.04.0:
 -------------
 
