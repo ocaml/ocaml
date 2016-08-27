@@ -1891,10 +1891,20 @@ let check_recursive_expression env idlist expr =
         Use.guard (list expression env exprs)
       | Texp_variant (_, eo) ->
         Use.guard (option expression env eo)
-      | Texp_record (es, eo) ->
-          let field env (_, _, e) = expression env e in
+      | Texp_record { fields = es; extended_expression = eo;
+                      representation = rep } ->
+          let use = match rep with
+            | Record_float -> Use.inspect
+            | Record_unboxed _ -> (fun x -> x)
+            | Record_regular | Record_inlined _
+            | Record_extension -> Use.guard
+          in
+          let field env = function
+              _, Kept _ -> Use.empty
+            | _, Overridden (_, e) -> expression env e
+          in
           Use.join
-            (Use.guard (list field env es))
+            (use (array field env es))
             (option expression env eo)
       | Texp_ifthenelse (cond, ifso, ifnot) ->
           Use.(join (inspect (expression env cond))
@@ -1946,6 +1956,9 @@ let check_recursive_expression env idlist expr =
   and list : 'a. (Env.env -> 'a -> Use.t) -> Env.env -> 'a list -> Use.t =
     fun f env ->
       List.fold_left (fun typ item -> Use.join (f env item) typ) Use.empty
+  and array : 'a. (Env.env -> 'a -> Use.t) -> Env.env -> 'a array -> Use.t =
+    fun f env ->
+      Array.fold_left (fun typ item -> Use.join (f env item) typ) Use.empty
   and class_structure : Env.env -> Typedtree.class_structure -> Use.t =
     fun env cs -> Use.(inspect (list class_field env cs.cstr_fields))
   and class_field : Env.env -> Typedtree.class_field -> Use.t =
