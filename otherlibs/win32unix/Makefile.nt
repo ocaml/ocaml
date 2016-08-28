@@ -22,7 +22,7 @@ WIN_FILES = accept.c bind.c channels.c close.c \
   select.c sendrecv.c \
   shutdown.c sleep.c socket.c sockopt.c startup.c stat.c \
   symlink.c system.c times.c unixsupport.c windir.c winwait.c write.c \
-  winlist.c winworker.c windbug.c
+  winlist.c winworker.c windbug.c job.c
 
 # Files from the ../unix directory
 UNIX_FILES = access.c addrofstr.c chdir.c chmod.c cst2constr.c \
