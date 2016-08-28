@@ -230,11 +230,16 @@ let process_file sourcefile =
           with Odoc_text.Text_syntax (l, c, s) ->
             raise (Failure (Odoc_messages.text_parse_error l c s))
         in
+         let m_info =
+        (* use the first sentence of the text as a short description for
+           the whole file *)
+          let i_desc = Some (Odoc_misc.first_sentence_of_text txt) in
+          Some Odoc_types.{dummy_info with i_desc} in
         let m =
           {
             Odoc_module.m_name = mod_name ;
             Odoc_module.m_type = Types.Mty_signature [] ;
-            Odoc_module.m_info = None ;
+            Odoc_module.m_info;
             Odoc_module.m_is_interface = true ;
             Odoc_module.m_file = file ;
             Odoc_module.m_kind = Odoc_module.Module_struct
