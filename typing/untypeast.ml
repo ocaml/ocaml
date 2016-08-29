@@ -331,7 +331,7 @@ let exp_extra sub (extra, loc, attrs) sexp =
     | Texp_open (ovf, _path, lid, _) ->
         Pexp_open (ovf, map_loc sub lid, sexp)
     | Texp_poly cto -> Pexp_poly (sexp, map_opt (sub.typ sub) cto)
-    | Texp_newtype s -> Pexp_newtype (s, sexp)
+    | Texp_newtype s -> Pexp_newtype (mkloc s loc, sexp)
   in
   Exp.mk ~loc ~attrs desc
 
@@ -438,8 +438,8 @@ let expression sub exp =
           dir, sub.expr sub exp3)
     | Texp_send (exp, meth, _) ->
         Pexp_send (sub.expr sub exp, match meth with
-            Tmeth_name name -> name
-          | Tmeth_val id -> Ident.name id)
+            Tmeth_name name -> mkloc name loc
+          | Tmeth_val id -> mkloc (Ident.name id) loc)
     | Texp_new (_path, lid, _) -> Pexp_new (map_loc sub lid)
     | Texp_instvar (_, path, name) ->
       Pexp_ident ({loc = sub.location sub name.loc ; txt = lident_of_path path})
@@ -661,9 +661,9 @@ let class_type_field sub ctf =
   let desc = match ctf.ctf_desc with
       Tctf_inherit ct -> Pctf_inherit (sub.class_type sub ct)
     | Tctf_val (s, mut, virt, ct) ->
-        Pctf_val (s, mut, virt, sub.typ sub ct)
+        Pctf_val (mkloc s loc, mut, virt, sub.typ sub ct)
     | Tctf_method  (s, priv, virt, ct) ->
-        Pctf_method  (s, priv, virt, sub.typ sub ct)
+        Pctf_method  (mkloc s loc, priv, virt, sub.typ sub ct)
     | Tctf_constraint  (ct1, ct2) ->
         Pctf_constraint (sub.typ sub ct1, sub.typ sub ct2)
     | Tctf_attribute x -> Pctf_attribute x
@@ -684,14 +684,17 @@ let core_type sub ct =
           List.map (sub.typ sub) list)
     | Ttyp_object (list, o) ->
         Ptyp_object
-          (List.map (fun (s, a, t) -> (s, a, sub.typ sub t)) list, o)
+          (List.map (fun (s, a, t) ->
+               (mkloc s loc, a, sub.typ sub t)) list, o)
     | Ttyp_class (_path, lid, list) ->
         Ptyp_class (map_loc sub lid, List.map (sub.typ sub) list)
     | Ttyp_alias (ct, s) ->
         Ptyp_alias (sub.typ sub ct, s)
     | Ttyp_variant (list, bool, labels) ->
         Ptyp_variant (List.map (sub.row_field sub) list, bool, labels)
-    | Ttyp_poly (list, ct) -> Ptyp_poly (list, sub.typ sub ct)
+    | Ttyp_poly (list, ct) ->
+        let list = List.map (fun v -> mkloc v loc) list in
+        Ptyp_poly (list, sub.typ sub ct)
     | Ttyp_package pack -> Ptyp_package (sub.package_type sub pack)
   in
   Typ.mk ~loc ~attrs desc
@@ -723,7 +726,8 @@ let class_field sub cf =
   let attrs = sub.attributes sub cf.cf_attributes in
   let desc = match cf.cf_desc with
       Tcf_inherit (ovf, cl, super, _vals, _meths) ->
-        Pcf_inherit (ovf, sub.class_expr sub cl, super)
+        Pcf_inherit (ovf, sub.class_expr sub cl,
+                     map_opt (fun v -> mkloc v loc) super)
     | Tcf_constraint (cty, cty') ->
         Pcf_constraint (sub.typ sub cty, sub.typ sub cty')
     | Tcf_val (lab, mut, _, Tcfk_virtual cty, _) ->
