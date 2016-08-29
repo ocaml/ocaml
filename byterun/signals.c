@@ -362,8 +362,21 @@ CAMLprim value caml_install_signal_handler(value signal_number, value action)
     res = Val_int(1);
     break;
   case 2:                       /* was Signal_handle */
+    #if defined(NATIVE_CODE) && defined(WITH_SPACETIME)
+      if (caml_signal_handlers == 0) {
+        res = Val_int(0);
+      } else {
+        if (!Is_block(Field(caml_signal_handlers, sig))) {
+          res = Val_int(0);
+        } else {
+          res = caml_alloc_small (1, 0);
+          Field(res, 0) = Field(caml_signal_handlers, sig);
+        }
+      }
+    #else
     res = caml_alloc_small (1, 0);
     Field(res, 0) = Field(caml_signal_handlers, sig);
+    #endif
     break;
   default:                      /* error in caml_set_signal_action */
     caml_sys_error(NO_ARG);
