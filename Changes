@@ -18,6 +18,11 @@ Next version (tbd):
   debugger/
   (Sébastien Hinderer)
 
+### Other libraries:
+
+- GPR#787: Support the '0 dimension' case for bigarrays
+  (Laurent Mazare)
+
 OCaml 4.04.0:
 -------------
 

@@ -146,7 +146,7 @@ caml_ba_alloc(int flags, int num_dims, void * data, intnat * dim)
   struct caml_ba_array * b;
   intnat dimcopy[CAML_BA_MAX_NUM_DIMS];
 
-  Assert(num_dims >= 1 && num_dims <= CAML_BA_MAX_NUM_DIMS);
+  Assert(num_dims >= 0 && num_dims <= CAML_BA_MAX_NUM_DIMS);
   Assert((flags & CAML_BA_KIND_MASK) <= CAML_BA_CHAR);
   for (i = 0; i < num_dims; i++) dimcopy[i] = dim[i];
   size = 0;
@@ -202,7 +202,7 @@ CAMLprim value caml_ba_create(value vkind, value vlayout, value vdim)
   int i, flags;
 
   num_dims = Wosize_val(vdim);
-  if (num_dims < 1 || num_dims > CAML_BA_MAX_NUM_DIMS)
+  if (num_dims < 0 || num_dims > CAML_BA_MAX_NUM_DIMS)
     caml_invalid_argument("Bigarray.create: bad number of dimensions");
   for (i = 0; i < num_dims; i++) {
     dim[i] = Long_val(Field(vdim, i));
@@ -1050,7 +1050,7 @@ CAMLprim value caml_ba_slice(value vb, value vind)
 
   /* Check number of indices < number of dimensions of array */
   num_inds = Wosize_val(vind);
-  if (num_inds >= b->num_dims)
+  if (num_inds > b->num_dims)
     caml_invalid_argument("Bigarray.slice: too many indices");
   /* Compute offset and check bounds */
   if ((b->flags & CAML_BA_LAYOUT_MASK) == CAML_BA_C_LAYOUT) {
@@ -1299,7 +1299,7 @@ CAMLprim value caml_ba_reshape(value vb, value vdim)
   int i;
 
   num_dims = Wosize_val(vdim);
-  if (num_dims < 1 || num_dims > CAML_BA_MAX_NUM_DIMS)
+  if (num_dims < 0 || num_dims > CAML_BA_MAX_NUM_DIMS)
     caml_invalid_argument("Bigarray.reshape: bad number of dimensions");
   num_elts = 1;
   for (i = 0; i < num_dims; i++) {

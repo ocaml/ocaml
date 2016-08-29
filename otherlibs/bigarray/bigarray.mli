@@ -226,7 +226,7 @@ module Genarray :
   sig
   type ('a, 'b, 'c) t
   (** The type [Genarray.t] is the type of big arrays with variable
-     numbers of dimensions.  Any number of dimensions between 1 and 16
+     numbers of dimensions.  Any number of dimensions between 0 and 16
      is supported.
 
      The three type parameters to [Genarray.t] identify the array element
@@ -264,7 +264,7 @@ module Genarray :
      the initial values of array elements is unspecified.
 
      [Genarray.create] raises [Invalid_argument] if the number of dimensions
-     is not in the range 1 to 16 inclusive, or if one of the dimensions
+     is not in the range 0 to 16 inclusive, or if one of the dimensions
      is negative. *)
 
   external num_dims: ('a, 'b, 'c) t -> int = "caml_ba_num_dims"
