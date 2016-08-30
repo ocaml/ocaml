@@ -186,12 +186,12 @@ val get_unit_name: unit -> string
 val read_signature: string -> string -> signature
         (* Arguments: module name, file name. Results: signature. *)
 val save_signature:
-  deprecated:string option -> signature -> string -> string -> signature
+  deprecated:string option -> signature -> string -> string -> Cmi_format.cmi_infos
         (* Arguments: signature, module name, file name. *)
 val save_signature_with_imports:
   deprecated:string option ->
   signature -> string -> string -> (string * Digest.t option) list
-  -> signature
+  -> Cmi_format.cmi_infos
         (* Arguments: signature, module name, file name,
            imported units with their CRCs. *)
 
