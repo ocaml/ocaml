@@ -97,3 +97,23 @@ module type S = sig type 'a t end with type 'a t := unit
 Line _, characters 39-56:
 Error: Only type constructors with identical parameters can be substituted.
 |}]
+
+(* Issue where the typer expands an alias, which breaks the typing of the rest
+   of the signature, but no error is given to the user. *)
+module type S = sig
+  module M1 : sig type t = int end
+  module M2 = M1
+  module M3 : sig module M = M2 end
+  module F(X : sig module M = M1 end) : sig type t end
+  type t = F(M3).t
+end with type M2.t = int
+[%%expect {|
+module type S =
+  sig
+    module M1 : sig type t = int end
+    module M2 : sig type t = int end
+    module M3 : sig module M = M2 end
+    module F : functor (X : sig module M = M1 end) -> sig type t end
+    type t = F(M3).t
+  end
+|}]
