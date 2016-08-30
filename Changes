@@ -237,8 +237,11 @@ OCaml 4.04.0:
   mutually recursive types are seen as abstract types (i.e. non-contractive)
   when checking the well-foundedness of the recursion.
 
-* PR#6752: Extensible variant types and scope escaping
-  Revert to strict scope, see comments on Mantis.
+* PR#6752: Nominal types and scope escaping.
+  Revert to strict scope for non-generalizable type variables, cf. Mantis.
+  Note that this is actually stricter than the behavior before 4.03,
+  cf. PR#7313, meaning that you may sometimes need to add type annotations
+  to explicitly instantiate non-generalizable type variables.
   (Jacques Garrigue, following discussion with Jeremy Yallop,
    Nicolas Ojeda Bar and Alain Frisch)
 
