@@ -231,7 +231,9 @@ let primitives_table = create_hashtable 57 [
   "%gefloat", Pfloatcomp Cge;
   "%string_length", Pstringlength;
   "%string_safe_get", Pstringrefs;
+  "%string_safe_set", Pbytessets;
   "%string_unsafe_get", Pstringrefu;
+  "%string_unsafe_set", Pbytessetu;
   "%bytes_length", Pbyteslength;
   "%bytes_safe_get", Pbytesrefs;
   "%bytes_safe_set", Pbytessets;
