@@ -417,9 +417,11 @@ module Analyser =
       List.fold_right (fun constraint_ acc ->
         match constraint_ with
         | Parsetree.Pwith_type _ | Parsetree.Pwith_module _ -> acc
-        | Parsetree.Pwith_typesubst {Parsetree.ptype_name=s}
+        | Parsetree.Pwith_typesubst (s, _) ->
+           (* wrong *)
+           Name.Set.add (List.hd (Longident.flatten s.txt)) acc
         | Parsetree.Pwith_modsubst (s, _) ->
-          Name.Set.add s.txt acc)
+           Name.Set.add s.txt acc)
         constraints acc
 
     let filter_out_erased_items_from_signature erased signature =
@@ -1493,7 +1495,7 @@ module Analyser =
                raise (Failure "Parsetree.Pmty_functor _ but not Types.Mty_functor _")
           )
       | Parsetree.Pmty_with (module_type2, constraints) ->
-          (*of module_type * (Longident.t * with_constraint) list*)
+          (* of module_type * (Longident.t * with_constraint) list*)
           (
            let loc_start = Loc.end_ module_type2.Parsetree.pmty_loc in
            let loc_end = Loc.end_ module_type.Parsetree.pmty_loc in

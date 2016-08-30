@@ -34,8 +34,9 @@ type t
 val identity: t
 
 val add_type: Ident.t -> Path.t -> t -> t
+val add_type_path: Path.t -> Path.t -> t -> t
 val add_type_function:
-  Ident.t -> params:type_expr list -> body:type_expr -> t -> t
+  Path.t -> params:type_expr list -> body:type_expr -> t -> t
 val add_module: Ident.t -> Path.t -> t -> t
 val add_modtype: Ident.t -> module_type -> t -> t
 val for_saving: t -> t

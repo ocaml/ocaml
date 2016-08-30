@@ -29,6 +29,9 @@ type error =
   | Structure_expected of module_type
   | With_no_component of Longident.t
   | With_mismatch of Longident.t * Includemod.error list
+  | With_makes_applicative_functor_ill_typed of
+      Longident.t * Path.t * Includemod.error list
+  | With_changes_module_alias of Longident.t * Ident.t * Path.t
   | Repeated_name of string * string
   | Non_generalizable of type_expr
   | Non_generalizable_class of Ident.t * class_declaration
@@ -149,14 +152,117 @@ let make p n i =
   let open Variance in
   set May_pos p (set May_neg n (set May_weak n (set Inj i null)))
 
+let rec iter_path_apply p ~f =
+  match p with
+  | Pident _ -> ()
+  | Pdot (p, _, _) -> iter_path_apply p ~f
+  | Papply (p1, p2) ->
+     iter_path_apply p1 ~f;
+     iter_path_apply p2 ~f;
+     f p1 p2 (* after recursing, so we know both paths are well typed *)
+
+let path_is_prefix =
+  let rec list_is_prefix ~strict l ~prefix =
+    match l, prefix with
+    | [], [] -> not strict
+    | _ :: _, [] -> true
+    | [], _ :: _ -> false
+    | s1 :: t1, s2 :: t2 ->
+       String.equal s1 s2 && list_is_prefix ~strict t1 ~prefix:t2
+  in
+  fun ~strict path ~prefix ->
+    match Path.flatten path, Path.flatten prefix with
+    | `Contains_apply, _ | _, `Contains_apply -> false
+    | `Ok (ident1, l1), `Ok (ident2, l2) ->
+       Ident.same ident1 ident2
+       && list_is_prefix ~strict l1 ~prefix:l2
+
+let iterator_with_env env =
+  let env = ref env in
+  let super = Btype.type_iterators in
+  env, { super with
+    Btype.it_signature = (fun self sg ->
+      let env_before = !env in
+      List.iter (fun i -> env := Env.add_item i !env) sg;
+      super.Btype.it_signature self sg;
+      env := env_before
+    );
+    Btype.it_module_type = (fun self -> function
+    | Mty_functor (param, mty_arg, mty_body) ->
+      may (self.Btype.it_module_type self) mty_arg;
+      let env_before = !env in
+      env := Env.add_module ~arg:true param (Btype.default_mty mty_arg) !env;
+      self.Btype.it_module_type self mty_body;
+      env := env_before;
+    | mty ->
+      super.Btype.it_module_type self mty
+    )
+  }
+
+let retype_applicative_functor_type ~loc env funct arg =
+  let mty_functor = (Env.find_module funct env).md_type in
+  let mty_arg = (Env.find_module arg env).md_type in
+  let mty_param =
+    match Env.scrape_alias env mty_functor with
+    | Mty_functor (_, Some mty_param, _) -> mty_param
+    | _ -> assert false
+  in
+  let aliasable = not (Env.is_functor_arg arg env) in
+  ignore(Includemod.modtypes ~loc env
+           (Mtype.strengthen ~aliasable env mty_arg arg) mty_param)
+
+(* When doing a deep destructive substitution with type M.N.t := .., we change M
+   and M.N and so we have to check that uses of the modules other than just
+   extracting components from them still make sense. There are only two such
+   kinds of uses:
+   - applicative functor types: F(M).t might not be well typed anymore
+   - aliases: module A = M still makes sense but it doesn't mean the same thing
+     anymore, so it's forbidden until it's clear what we should do with it.
+   This function would be called with M.N.t and N.t to check for these uses. *)
+let check_usage_of_path_of_substituted_item path env signature ~loc ~lid =
+  let iterator =
+    let env, super = iterator_with_env env in
+    { super with
+      Btype.it_signature_item = (fun self -> function
+      | Sig_module (id, { md_type = Mty_alias (_, aliased_path); _ }, _)
+          when path_is_prefix ~strict:true path ~prefix:aliased_path ->
+         let e = With_changes_module_alias (lid.txt, id, aliased_path) in
+         raise(Error(loc, !env, e))
+      | sig_item ->
+         super.Btype.it_signature_item self sig_item
+      );
+      Btype.it_path = (fun referenced_path ->
+        iter_path_apply referenced_path ~f:(fun funct arg ->
+          if path_is_prefix ~strict:true path ~prefix:arg
+          then
+            let env = !env in
+            try retype_applicative_functor_type ~loc env funct arg
+            with Includemod.Error explanation ->
+              raise(Error(loc, env,
+                          With_makes_applicative_functor_ill_typed
+                            (lid.txt, referenced_path, explanation)))
+        )
+      );
+    }
+  in
+  iterator.Btype.it_signature iterator signature;
+  Btype.unmark_iterators.Btype.it_signature Btype.unmark_iterators signature
+
 let merge_constraint initial_env loc sg constr =
   let lid =
     match constr with
-    | Pwith_type (lid, _) | Pwith_module (lid, _) -> lid
-    | Pwith_typesubst {ptype_name=s} | Pwith_modsubst (s, _) ->
+    | Pwith_type (lid, _) | Pwith_module (lid, _)
+    | Pwith_typesubst (lid, _) -> lid
+    | Pwith_modsubst (s, _) ->
         {loc = s.loc; txt=Lident s.txt}
   in
+  let destructive_substitution =
+    match constr with
+    | Pwith_type _ | Pwith_module _ -> false
+    | Pwith_typesubst _ | Pwith_modsubst _ -> true
+  in
   let real_id = ref None in
+  let real_ids = ref [] in
   let rec merge env sg namelist row_id =
     match (sg, namelist, constr) with
       ([], _, _) ->
@@ -211,14 +317,14 @@ let merge_constraint initial_env loc sg constr =
     | (Sig_type(id, _, _) :: rem, [s], (Pwith_type _ | Pwith_typesubst _))
       when Ident.name id = s ^ "#row" ->
         merge env rem namelist (Some id)
-    | (Sig_type(id, decl, rs) :: rem, [s], Pwith_typesubst sdecl)
+    | (Sig_type(id, decl, rs) :: rem, [s], Pwith_typesubst (_, sdecl))
       when Ident.name id = s ->
         (* Check as for a normal with constraint, but discard definition *)
         let tdecl =
           Typedecl.transl_with_constraint initial_env id None decl sdecl in
         let newdecl = tdecl.typ_type in
         check_type_decl env sdecl.ptype_loc id row_id newdecl decl rs rem;
-        real_id := Some id;
+        real_ids := [Pident id];
         (Pident id, lid, Twith_typesubst tdecl),
         update_rec_next rs rem
     | (Sig_module(id, md, rs) :: rem, [s], Pwith_module (_, lid'))
@@ -235,14 +341,21 @@ let merge_constraint initial_env loc sg constr =
         let newmd = Mtype.strengthen_decl ~aliasable:false env md' path in
         ignore(Includemod.modtypes ~loc env newmd.md_type md.md_type);
         real_id := Some id;
+        real_ids := [Pident id];
         (Pident id, lid, Twith_modsubst (path, lid')),
         update_rec_next rs rem
     | (Sig_module(id, md, rs) :: rem, s :: namelist, _)
       when Ident.name id = s ->
         let ((path, _path_loc, tcstr), newsg) =
           merge env (extract_sig env loc md.md_type) namelist None in
-        (path_concat id path, lid, tcstr),
-        Sig_module(id, {md with md_type=Mty_signature newsg}, rs) :: rem
+        let path = path_concat id path in
+        real_ids := path :: !real_ids;
+        let item = Sig_module(id, {md with md_type=Mty_signature newsg}, rs) in
+        if destructive_substitution then
+          check_usage_of_path_of_substituted_item
+            path (Env.add_item item env) rem ~loc ~lid;
+        (path, lid, tcstr),
+        item :: rem
     | (item :: rem, _, _) ->
         let (cstr, items) = merge (Env.add_item item env) rem namelist row_id
         in
@@ -252,23 +365,28 @@ let merge_constraint initial_env loc sg constr =
     let names = Longident.flatten lid.txt in
     let (tcstr, sg) = merge initial_env sg names None in
     let sg =
-    match names, tcstr with
-    | [_], (_, _, Twith_typesubst tdecl) ->
-       let id = match !real_id with None -> assert false | Some id -> id in
+    match tcstr with
+    | (_, _, Twith_typesubst tdecl) ->
        let body =
          match tdecl.typ_type.type_manifest with
          | None -> assert false
          | Some x -> x
        in
        let params = tdecl.typ_type.type_params in
-       let sub = Subst.add_type_function id ~params ~body Subst.identity in
+       let sub =
+         List.fold_left
+           (fun s path -> Subst.add_type_function path ~params ~body s)
+           Subst.identity
+           !real_ids
+       in
        Subst.signature sub sg
-    | [_], (_, _, Twith_modsubst (path, _)) ->
+    | (_, _, Twith_modsubst (path, _)) ->
+       assert (List.length !real_ids = 1);
        let id = match !real_id with None -> assert false | Some id -> id in
        let sub = Subst.add_module id path Subst.identity in
        Subst.signature sub sg
     | _ ->
-          sg
+       sg
     in
     (tcstr, sg)
   with Includemod.Error explanation ->
@@ -1757,6 +1875,19 @@ let report_error ppf = function
              in the constrained signature:@]@ \
            %a@]"
         longident lid Includemod.report_error explanation
+  | With_makes_applicative_functor_ill_typed(lid, path, explanation) ->
+      fprintf ppf
+        "@[<v>\
+           @[This `with' constraint on %a makes the applicative functor @ \
+             type %s ill-typed in the constrained signature:@]@ \
+           %a@]"
+        longident lid (Path.name path) Includemod.report_error explanation
+  | With_changes_module_alias(lid, id, path) ->
+      fprintf ppf
+        "@[<v>\
+           @[This `with' constraint on %a changes %s, which is aliased @ \
+             in the constrained signature (as %s)@].@]"
+        longident lid (Path.name path) (Ident.name id)
   | Repeated_name(kind, name) ->
       fprintf ppf
         "@[Multiple definition of the %s name %s.@ \

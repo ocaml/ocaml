@@ -110,3 +110,72 @@ module type S =
     type t = F(M3).t
   end
 |}]
+
+(* Checking that the uses of M.t are rewritten regardless of how they
+   are named, but we don't rewrite other types by the same name. *)
+module type S = sig
+  module M : sig type t val x : t end
+  val y : M.t
+  module A : sig module M : sig type t val z : t -> M.t end end
+end with type M.t := float
+[%%expect {|
+module type S =
+  sig
+    module M : sig val x : float end
+    val y : float
+    module A : sig module M : sig type t val z : t -> float end end
+  end
+|}]
+
+(* And now some corner cases with aliases: *)
+
+module type S = sig
+  module M : sig type t end
+  module A = M
+end with type M.t := float
+[%%expect {|
+Line _, characters 16-89:
+Error: This `with' constraint on M.t changes M, which is aliased
+       in the constrained signature (as A).
+|}]
+
+(* And more corner cases with applicative functors: *)
+
+module type S = sig
+  module M : sig type t type u end
+  module F(X : sig type t end) : sig type t end
+  type t = F(M).t
+end
+[%%expect {|
+module type S =
+  sig
+    module M : sig type t type u end
+    module F : functor (X : sig type t end) -> sig type t end
+    type t = F(M).t
+  end
+|}]
+
+(* This particular substitution cannot be made to work *)
+module type S2 = S with type M.t := float
+[%%expect {|
+Line _, characters 17-41:
+Error: This `with' constraint on M.t makes the applicative functor
+       type F(M).t ill-typed in the constrained signature:
+       Modules do not match:
+         sig type u = M.u end
+       is not included in
+         sig type t end
+       The type `t' is required but not provided
+|}]
+
+(* However if the applicative functor doesn't care about the type
+   we're removing, the typer accepts the removal. *)
+module type S2 = S with type M.u := float
+[%%expect {|
+module type S2 =
+  sig
+    module M : sig type t end
+    module F : functor (X : sig type t end) -> sig type t end
+    type t = F(M).t
+  end
+|}]

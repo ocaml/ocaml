@@ -24,23 +24,27 @@ type type_replacement =
   | Path of Path.t
   | Type_function of { params : type_expr list; body : type_expr }
 
+module PathMap = Map.Make(Path)
+
 type t =
-  { types: (Ident.t, type_replacement) Tbl.t;
+  { types: type_replacement PathMap.t;
     modules: (Ident.t, Path.t) Tbl.t;
     modtypes: (Ident.t, module_type) Tbl.t;
     for_saving: bool;
   }
 
 let identity =
-  { types = Tbl.empty;
+  { types = PathMap.empty;
     modules = Tbl.empty;
     modtypes = Tbl.empty;
     for_saving = false;
   }
 
-let add_type id p s = { s with types = Tbl.add id (Path p) s.types }
+let add_type_path id p s = { s with types = PathMap.add id (Path p) s.types }
+let add_type id p s = add_type_path (Pident id) p s
+
 let add_type_function id ~params ~body s =
-  { s with types = Tbl.add id (Type_function { params; body }) s.types }
+  { s with types = PathMap.add id (Type_function { params; body }) s.types }
 
 let add_module id p s = { s with modules = Tbl.add id p s.modules }
 
@@ -92,17 +96,17 @@ let modtype_path s = function
   | Papply _ ->
       fatal_error "Subst.modtype_path"
 
-let type_path s = function
-  | Pident id as p ->
-     begin match Tbl.find id s.types with
-     | exception Not_found -> p
-     | Type_function _ -> assert false
-     | Path p -> p
-     end
-  | Pdot(p, n, pos) ->
-      Pdot(module_path s p, n, pos)
-  | Papply _ ->
-      fatal_error "Subst.type_path"
+let type_path s path =
+  match PathMap.find path s.types with
+  | Path p -> p
+  | Type_function _ -> assert false
+  | exception Not_found ->
+     match path with
+     | Pident _ -> path
+     | Pdot(p, n, pos) ->
+        Pdot(module_path s p, n, pos)
+     | Papply _ ->
+        fatal_error "Subst.type_path"
 
 let type_path s p =
   match Path.constructor_typath p with
@@ -171,14 +175,11 @@ let rec typexp s ty =
       else match desc with
       | Tconstr (p, args, _abbrev) ->
          let args = List.map (typexp s) args in
-         begin match p with
-         | Pdot _ | Papply _ -> Tconstr(type_path s p, args, ref Mnil)
-         | Pident id ->
-            match Tbl.find id s.types with
-            | exception Not_found -> Tconstr(type_path s p, args, ref Mnil)
-            | Path _ -> Tconstr(type_path s p, args, ref Mnil)
-            | Type_function { params; body } ->
-               (!ctype_apply_env_empty params body args).desc
+         begin match PathMap.find p s.types with
+         | exception Not_found -> Tconstr(type_path s p, args, ref Mnil)
+         | Path _ -> Tconstr(type_path s p, args, ref Mnil)
+         | Type_function { params; body } ->
+            (!ctype_apply_env_empty params body args).desc
          end
       | Tpackage(p, n, tl) ->
           Tpackage(modtype_path s p, n, List.map (typexp s) tl)
@@ -455,6 +456,9 @@ and modtype_declaration s decl  =
 let merge_tbls f m1 m2 =
   Tbl.fold (fun k d accu -> Tbl.add k (f d) accu) m1 m2
 
+let merge_path_maps f m1 m2 =
+  PathMap.fold (fun k d accu -> PathMap.add k (f d) accu) m1 m2
+
 let type_replacement s = function
   | Path p -> Path (type_path s p)
   | Type_function { params; body } ->
@@ -466,7 +470,7 @@ let type_replacement s = function
      apply (compose s1 s2) x = apply s2 (apply s1 x) *)
 
 let compose s1 s2 =
-  { types = merge_tbls (type_replacement s2) s1.types s2.types;
+  { types = merge_path_maps (type_replacement s2) s1.types s2.types;
     modules = merge_tbls (module_path s2) s1.modules s2.modules;
     modtypes = merge_tbls (modtype s2) s1.modtypes s2.modtypes;
     for_saving = s1.for_saving || s2.for_saving;

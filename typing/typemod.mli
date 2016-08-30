@@ -60,6 +60,9 @@ type error =
   | Structure_expected of module_type
   | With_no_component of Longident.t
   | With_mismatch of Longident.t * Includemod.error list
+  | With_makes_applicative_functor_ill_typed of
+      Longident.t * Path.t * Includemod.error list
+  | With_changes_module_alias of Longident.t * Ident.t * Path.t
   | Repeated_name of string * string
   | Non_generalizable of type_expr
   | Non_generalizable_class of Ident.t * class_declaration
