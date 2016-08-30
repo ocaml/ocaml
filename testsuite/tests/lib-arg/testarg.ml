@@ -119,5 +119,79 @@ let test argv =
   check r_float 2.72 "Set_float";
 ;;
 
+let check r v msg = if r <> v then error msg;;
+
+let test_expand argv eargv =
+  let argv = Arg.expandargv argv in
+  let size = Array.length argv
+  and esize = Array.length eargv in
+  let msg = Printf.sprintf "expandargv lenght %d %d" size esize in
+  check size esize msg;
+  let msg a b= Printf.sprintf "expandargv options: found:%s expected:%s" a b in
+  Array.iter2 (fun a b -> check a b (msg a b)) argv eargv;
+;;
+
 test args1;;
 test args2;;
+
+test_expand args1 args1;;
+test_expand args2 args2;;
+
+let args3 =
+  [|"prog";
+    "anon1";
+    "-u";
+    "-b=true";
+    "-s";
+    "anon2";
+    "-c";
+    "-str=foo";
+    "-sstr=bar";
+    "-i=19";
+    "-si=42";
+    "-f=3.14";
+    "-sf=2.72";
+    "anon3";
+    "-t"; "false"; "gee"; "1436";
+    "-sym=c";
+    "anon4";
+    "-rest"; "r1"; "r2";
+    "@non-exist";|]
+;;
+
+test_expand args3 args3;;
+
+let args4 =
+  [|"test1";
+    "white space";
+    "white space";
+    "double\" quote";
+    "new\nline";
+    "tab\tulator";
+    "testargv2";|];;
+
+test_expand [|"@argv"|] args4;;
+
+let safe_remove f =
+  try Sys.remove f with _ -> ();
+;;
+
+let test_writeargv argv f =
+  safe_remove f;
+  Arg.writeargv argv f;
+  test_expand [|"@"^f|] argv;
+  safe_remove f;
+;;
+
+let args5 =
+  [| "white space";
+     "new\nline";
+     "tab\tulator";
+     "vertical\012line feed"
+   |];;
+
+test_writeargv args1 "args1";;
+test_writeargv args2 "args2";;
+test_writeargv args3 "args3";;
+test_writeargv args4 "args4";;
+test_writeargv args5 "args5";;

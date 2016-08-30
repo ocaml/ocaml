@@ -315,3 +315,95 @@ let align ?(limit=max_int) speclist =
   let len = List.fold_left max_arg_len 0 completed in
   let len = min len limit in
   List.map (add_padding len) completed
+
+let buildargv file =
+  let ic = open_in file in
+  let buf = Buffer.create 32 in
+  let words = ref [] in
+  let stash inw =
+    if inw then begin
+      words:= Buffer.contents buf :: !words;
+      Buffer.clear buf
+    end in
+  let rec unquoted inw =
+    match input_char ic with
+    | exception End_of_file ->
+        stash inw
+    | ' ' | '\t' | '\r' | '\n' ->
+        stash inw; unquoted false
+    | '\\' ->
+        begin match input_char ic with
+        | exception End_of_file ->
+            unquoted inw
+        | c ->
+            Buffer.add_char buf c; unquoted true
+        end
+    | '\'' ->
+        singlequote (); unquoted true
+    | '\"' ->
+        doublequote ();unquoted true
+    | c ->
+        Buffer.add_char buf c; unquoted true
+  and singlequote () =
+    match input_char ic with
+    | exception End_of_file ->
+        ()
+    | '\'' ->
+        ()
+    | c ->
+        Buffer.add_char buf c; singlequote()
+    and doublequote () =
+      match input_char ic with
+    | exception End_of_file ->
+        ()
+    | '\"' ->
+        ()
+    | '\\' ->
+        begin match input_char ic with
+        | exception End_of_file ->
+            Buffer.add_char buf '\\'
+        | ('\\' | '\"') as c ->
+            Buffer.add_char buf c; doublequote()
+        | c ->
+            Buffer.add_char buf '\\'; Buffer.add_char buf c; doublequote()
+        end
+    | c ->
+        Buffer.add_char buf c; doublequote() in
+  unquoted false;
+  close_in ic;
+  List.rev !words
+
+let expandargv args =
+  let rec expand_arg seen arg  k =
+    if String.length arg < 1 || String.get arg 0 <> '@' then
+      arg::k
+    else begin
+      let filename = String.sub arg 1 ((String.length arg) - 1) in
+      if List.mem filename seen then
+        raise (Bad ("cycle in response files: " ^ filename));
+      if Sys.file_exists filename then
+        let words = buildargv filename in
+        expand_args (filename :: seen) words k
+      else
+        arg::k
+    end
+  and expand_args seen args k = match args with
+    | [] -> k
+    | a1 :: al -> expand_args seen al (expand_arg seen a1 k)
+  in
+  let args = Array.to_list args in
+  Array.of_list (List.rev (expand_args [] args []))
+
+let writeargv args file =
+  let quote arg =
+    let len = String.length arg in
+    let buf = Buffer.create len in
+    String.iter (fun c -> begin match c with
+    | ' ' | '\t' | '\r' | '\n' | '\\' | '\'' | '"' ->
+        Buffer.add_char buf '\\'
+    | _ -> () end;
+      Buffer.add_char buf c) arg;
+    Buffer.contents buf in
+  let oc = open_out file in
+  Array.iter (fun a -> fprintf oc "%s " (quote a)) args;
+  close_out oc
