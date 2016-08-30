@@ -226,7 +226,7 @@ compilerlibs/ocamlmiddleend.cma: $(MIDDLE_END)
 compilerlibs/ocamlmiddleend.cmxa: $(MIDDLE_END:%.cmo=%.cmx)
 	$(CAMLOPT) -a -o $@ $^
 partialclean::
-	rm -f compilerlibs/ocamlmiddleend.cma
+	rm -f compilerlibs/ocamlmiddleend.cma compilerlibs/ocamlmiddleend.cmxa compilerlibs/ocamlmiddleend.$(A)
 
 
 # Tools
