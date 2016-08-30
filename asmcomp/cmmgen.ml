@@ -236,7 +236,7 @@ let int_comp_with_constant cmp arg n =
          when
            A: n | mask = n
            B: (n & !mask) << shift >> shift = (n & !mask)
-           C: sign ((n & !mask) << shift) = sign n
+           C: shift > 0
 
          shift, mask and n being constants, the remaining operations are:
             a & and_mask < n'
@@ -244,50 +244,61 @@ let int_comp_with_constant cmp arg n =
 
          =======
 
-         For all comparison operator (<)
+         For all comparison operator (<signed), (<u) being the unsigned version
 
-                              ( (a >> shift) | mask )  <  n
+                              ( (a >> shift) | mask )  <signed  n
 
-         iff
+         iff see 0
 
-                              ( (a >> shift) | mask )  <  (n | mask)
+                              ( (a >> shift) | mask )  <u  n
 
-         iff
+         iff from A
 
-                      ( (a >> shift) | mask ) - !mask  <  (n | mask) - !mask
+                              ( (a >> shift) | mask )  <u  (n | mask)
+
+         iff see 0'
+
+                      ( (a >> shift) | mask ) - !mask  <u  (n | mask) - !mask
 
          iff see 1
 
-                      ( (a >> shift) | mask ) & !mask  <  (n | mask) & !mask
+                      ( (a >> shift) | mask ) & !mask  <u  (n | mask) & !mask
 
          iff see 2
 
-                                 (a >> shift) & !mask  <  n & !mask
+                                 (a >> shift) & !mask  <u  n & !mask
 
          iff
 
-                     ((a >> shift) & !mask) * 2^shift  <  (n & !mask) * 2^shift
+                     ((a >> shift) & !mask) * 2^shift  <u  (n & !mask) * 2^shift
 
          iff see 3
 
-                      ((a >> shift) & !mask) << shift  <  (n & !mask) << shift
+                      ((a >> shift) & !mask) << shift  <u  (n & !mask) << shift
 
          iff
 
-           ((a >> shift) << shift) & (!mask << shift)  <  (n & !mask) << shift
+           ((a >> shift) << shift) & (!mask << shift)  <u  (n & !mask) << shift
 
          iff see 4
 
-                                 a & (!mask << shift)  <  (n & !mask) << shift
+                                 a & (!mask << shift)  <u  (n & !mask) << shift
 
-
+         0: if mask is positive
+              n is positive from B and C
+              (a >> shift) | mask is positive from C
+            if mask is negative
+              n is negative from A
+              (a >> shift) | mask is negative
+            then in both cases switching to unsigned comparison does not change
+            the order
 
          1: For all m, (m | mask) & !mask = (m | mask) - !mask
 
          2: For all m, (m | mask) & !mask = m & !mask
 
          3:
-            The constraints B and C prevents overflow in n so
+            The constraints B prevents overflow in n so (on unsigned integers)
             (n & !mask) << shift = (n & !mask) * 2^shift
             ((a >> shift) & !mask) << shift cannot overflow
 
@@ -296,6 +307,28 @@ let int_comp_with_constant cmp arg n =
             (!mask << shift) has all the 'shift' least significative bits set
             to 0. so
             ((a >> shift) << shift) & (!mask << shift) = a & (!mask << shift)
+
+
+         Checked with some smt2 compatible solver (the 32bit version is also
+         unsatisfiable):
+
+         (set-logic QF_BV)
+
+         (declare-fun a () (_ BitVec 64))
+         (declare-fun shift () (_ BitVec 64))
+         (declare-fun mask () (_ BitVec 64))
+         (declare-fun n () (_ BitVec 64))
+
+         (assert (= (bvor n mask) n))
+         (assert (= (bvlshr (bvshl (bvand n (bvnot mask)) shift) shift) (bvand n (bvnot mask))))
+         (assert (not (= #x0000000000000000  shift)))
+
+         (assert (not (= (bvslt (bvor (bvlshr a shift) mask) n)
+                (bvult (bvand a (bvshl (bvnot mask) shift)) (bvshl (bvand n (bvnot mask)) shift))
+         )))
+
+         (check-sat)
+         (exit)
       *)
 
       let n' = (n land (lnot mask)) lsl shift in
@@ -303,9 +336,9 @@ let int_comp_with_constant cmp arg n =
                                                   overflow problems *)
          n = n lor mask &&                    (* A *)
          n' lsr shift = n land (lnot mask) && (* B *)
-         (n' > 0) = (n > 0) then              (* C *)
+         shift > 0 then                       (* C *)
         let and_mask = (lnot mask) lsl shift in
-        Cop(Ccmpi cmp, [Cop (Cand, [arg; Cconst_int and_mask]); Cconst_int n'])
+        Cop(Ccmpa cmp, [Cop (Cand, [arg; Cconst_int and_mask]); Cconst_int n'])
       else
         default
   | _ ->
@@ -316,16 +349,7 @@ let int_comp cmp arg1 arg2 =
   | arg, Cconst_int n ->
       int_comp_with_constant cmp arg n
   | Cconst_int n, arg -> begin
-      let cmp =
-        (* Change the argument order *)
-        match cmp with
-        | Ceq | Cne -> cmp
-        | Clt -> Cgt
-        | Cle -> Cge
-        | Cgt -> Clt
-        | Cge -> Cle
-      in
-      int_comp_with_constant cmp arg n
+      int_comp_with_constant (Cmm.swap_comparison cmp) arg n
     end
   | _ ->
       Cop(Ccmpi cmp, [arg1; arg2])
