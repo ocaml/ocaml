@@ -34,7 +34,7 @@ external set : bytes -> int -> char -> unit = "%string_safe_set"
 
    @deprecated This is a deprecated alias of {!BytesLabels.set}. *)
 
-external create : int -> bytes = "caml_create_bytes"
+external create : int -> bytes = "caml_create_string"
   [@@ocaml.deprecated "Use BytesLabels.create instead."]
 (** [String.create n] returns a fresh byte sequence of length [n].
    The sequence is uninitialized and contains arbitrary bytes.
@@ -243,11 +243,11 @@ val compare: t -> t -> int
 (* The following is for system use only. Do not call directly. *)
 
 external unsafe_get : string -> int -> char = "%string_unsafe_get"
-external unsafe_set : bytes -> int -> char -> unit = "%bytes_unsafe_set"
+external unsafe_set : bytes -> int -> char -> unit = "%string_unsafe_set"
   [@@ocaml.deprecated]
 external unsafe_blit :
   src:string -> src_pos:int -> dst:bytes -> dst_pos:int -> len:int ->
     unit = "caml_blit_string" [@@noalloc]
 external unsafe_fill :
-  bytes -> pos:int -> len:int -> char -> unit = "caml_fill_bytes" [@@noalloc]
+  bytes -> pos:int -> len:int -> char -> unit = "caml_fill_string" [@@noalloc]
   [@@ocaml.deprecated]
