@@ -2140,24 +2140,24 @@ toplevel/opttopmain.cmx : utils/warnings.cmx asmcomp/printmach.cmx \
 toplevel/opttopmain.cmi :
 toplevel/opttopstart.cmo : toplevel/opttopmain.cmi
 toplevel/opttopstart.cmx : toplevel/opttopmain.cmx
-toplevel/topdirs.cmo : utils/warnings.cmi typing/untypeast.cmi \
-    typing/typetexp.cmi typing/types.cmi toplevel/trace.cmi \
-    toplevel/toploop.cmi bytecomp/symtable.cmi typing/printtyp.cmi \
-    typing/predef.cmi typing/path.cmi parsing/parsetree.cmi \
-    bytecomp/opcodes.cmo utils/misc.cmi bytecomp/meta.cmi \
-    parsing/longident.cmi parsing/location.cmi typing/ident.cmi \
-    typing/env.cmi bytecomp/dll.cmi typing/ctype.cmi utils/consistbl.cmi \
-    utils/config.cmi bytecomp/cmo_format.cmi utils/clflags.cmi \
-    typing/btype.cmi parsing/asttypes.cmi toplevel/topdirs.cmi
-toplevel/topdirs.cmx : utils/warnings.cmx typing/untypeast.cmx \
-    typing/typetexp.cmx typing/types.cmx toplevel/trace.cmx \
-    toplevel/toploop.cmx bytecomp/symtable.cmx typing/printtyp.cmx \
-    typing/predef.cmx typing/path.cmx parsing/parsetree.cmi \
-    bytecomp/opcodes.cmx utils/misc.cmx bytecomp/meta.cmx \
-    parsing/longident.cmx parsing/location.cmx typing/ident.cmx \
-    typing/env.cmx bytecomp/dll.cmx typing/ctype.cmx utils/consistbl.cmx \
-    utils/config.cmx bytecomp/cmo_format.cmi utils/clflags.cmx \
-    typing/btype.cmx parsing/asttypes.cmi toplevel/topdirs.cmi
+toplevel/topdirs.cmo : utils/warnings.cmi typing/typetexp.cmi \
+    typing/types.cmi toplevel/trace.cmi toplevel/toploop.cmi \
+    bytecomp/symtable.cmi typing/printtyp.cmi typing/predef.cmi \
+    typing/path.cmi parsing/parsetree.cmi bytecomp/opcodes.cmo utils/misc.cmi \
+    bytecomp/meta.cmi parsing/longident.cmi parsing/location.cmi \
+    typing/ident.cmi typing/env.cmi bytecomp/dll.cmi typing/ctype.cmi \
+    utils/consistbl.cmi utils/config.cmi bytecomp/cmo_format.cmi \
+    utils/clflags.cmi typing/btype.cmi parsing/asttypes.cmi \
+    toplevel/topdirs.cmi
+toplevel/topdirs.cmx : utils/warnings.cmx typing/typetexp.cmx \
+    typing/types.cmx toplevel/trace.cmx toplevel/toploop.cmx \
+    bytecomp/symtable.cmx typing/printtyp.cmx typing/predef.cmx \
+    typing/path.cmx parsing/parsetree.cmi bytecomp/opcodes.cmx utils/misc.cmx \
+    bytecomp/meta.cmx parsing/longident.cmx parsing/location.cmx \
+    typing/ident.cmx typing/env.cmx bytecomp/dll.cmx typing/ctype.cmx \
+    utils/consistbl.cmx utils/config.cmx bytecomp/cmo_format.cmi \
+    utils/clflags.cmx typing/btype.cmx parsing/asttypes.cmi \
+    toplevel/topdirs.cmi
 toplevel/topdirs.cmi : parsing/longident.cmi
 toplevel/toploop.cmo : utils/warnings.cmi typing/typetexp.cmi \
     typing/types.cmi typing/typemod.cmi typing/typedtree.cmi \
