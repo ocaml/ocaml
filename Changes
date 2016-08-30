@@ -203,8 +203,9 @@ OCaml 4.04.0:
 
 ### Build system:
 
-- GPR#512: Installed `ocamlc`, `ocamlopt`, and `ocamllex` are now the
-  native-code versions of the tools, if those versions were built.
+* GPR#512, GPR#587: Installed `ocamlc`, `ocamlopt`, and `ocamllex` are
+  now the native-code versions of the tools, if those versions were
+  built.
   (Demi Obenour)
 
 - GPR#324: Compiler developers: Adding new primitives to the
@@ -616,9 +617,10 @@ OCaml 4.03.0 (25 Apr 2016):
 
 ### Runtime system:
 
-* GPR#442, caml_fill_string, and caml_create_string is deprecated 
-  and will be removed in the future, please use caml_fill_bytes 
-  and caml_create_bytes for migration 
+* GPR#596: make string/bytes distinguishable in the underlying
+  compiler implementation; caml_fill_string and caml_create_string are
+  deprecated and will be removed in the future, please use
+  caml_fill_bytes and caml_create_bytes for migration
   (Hongbo Zhang, review by Damien Doligez, Alain Frisch, and Hugo Heuzard)
 
 - PR#3612, PR#92: allow allocating custom block with finalizers
