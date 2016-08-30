@@ -13,4 +13,26 @@
 #*                                                                        *
 #**************************************************************************
 
-include Makefile
+LIBNAME=graphics
+COBJS=open.$(O) draw.$(O) events.$(O) dib.$(O)
+CAMLOBJS=graphics.cmo
+WIN32LIBS=$(call SYSLIB,kernel32) $(call SYSLIB,gdi32) $(call SYSLIB,user32)
+LINKOPTS=-cclib "\"$(WIN32LIBS)\""
+LDOPTS=-ldopt "$(WIN32LIBS)"
+
+include ../Makefile
+
+graphics.ml: ../graph/graphics.ml
+	cp ../graph/graphics.ml graphics.ml
+graphics.mli: ../graph/graphics.mli
+	cp ../graph/graphics.mli graphics.mli
+
+depend:
+
+graphics.cmo: graphics.cmi
+graphics.cmx: graphics.cmi
+draw.$(O): libgraph.h
+open.$(O): libgraph.h
+
+clean:: partialclean
+	rm -f graphics.ml graphics.mli
