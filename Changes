@@ -163,6 +163,10 @@ OCaml 4.04.0:
 - GPR#723 Sort emitted functions according to source location
   (Pierre Chambart, review by Mark Shinwell)
 
+- PR#7291, GPR#780: Handle specialisation of recursive function that does
+  not always preserve the arguments
+  (Pierre Chambart, Mark Shinwell, report by Simon Cruanes)
+
 ### Runtime system:
 
 - PR#7210, GPR#562: Allows to register finalisation function that are
