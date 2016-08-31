@@ -553,6 +553,13 @@ order of priority:
 default is the boxed representation.
 \end{itemize}
 
+Yet another optimization, enabled by the "[\@unboxed]" annotation, is the
+compact representation of nested records and tuples. If a record has a field,
+which is a tuple or a record itself, and it is marked as "[\@unboxed]", the
+compiler will optimize the memory representation of this field by `lifting'
+its contents (the contents of a block representing it minus the tag) into
+the parent record.
+
 \subsection{Arrays}
 
 Arrays of integers and pointers are represented like tuples,

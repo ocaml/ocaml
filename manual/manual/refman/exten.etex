@@ -1770,6 +1770,12 @@ Some attributes are understood by the type-checker:
   or an abstract type constructor applied to an existential type
   variable.
 \item
+  ``ocaml.unboxed'' or ``unboxed'' can also be applied to a record field
+  which is either a tuple or a record itself. In this case, the compiler
+  will optimize the memory representation of this field by 'inlining'
+  the block that represents it into the parent record. This effectively
+  eliminates an indirection required to access contents of the field.
+\item
    "ocaml.boxed" or "boxed" can be used on type definitions to mean
    the opposite of "ocaml.unboxed": keep the unoptimized
    representation of the type. When there is no annotation, the
