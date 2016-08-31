@@ -472,6 +472,16 @@ let _ =
                              Complex.i 1 1);
   test 12 true (test_blit_fill complex64 [Complex.zero; Complex.one; Complex.i]
                              Complex.i 1 1);
+  testing_function "slice";
+  let a = Array1.of_array int c_layout [| 5; 4; 3 |] in
+  test 1 (Array1.slice a 0) (Array0.of_value int c_layout 5);
+  test 2 (Array1.slice a 1) (Array0.of_value int c_layout 4);
+  test 3 (Array1.slice a 2) (Array0.of_value int c_layout 3);
+  let a = Array1.of_array int fortran_layout [| 5; 4; 3 |] in
+  test 6 (Array1.slice a 1) (Array0.of_value int fortran_layout 5);
+  test 7 (Array1.slice a 2) (Array0.of_value int fortran_layout 4);
+  test 8 (Array1.slice a 3) (Array0.of_value int fortran_layout 3);
+
 
 (* Bi-dimensional arrays *)
 
@@ -765,16 +775,16 @@ let _ =
   let a = Genarray.create int c_layout [|2;2;2;2;2|] in
   test 1 (Genarray.size_in_bytes a) (32 * (kind_size_in_bytes int));
 
-(* Genarray with 0 dimensions (scalar) *)
-  testing_function "------ Genarray 0 dimensions --------";
+(* Zero-dimensional arrays *)
+  testing_function "------ Array0 --------";
   testing_function "create/set/get";
   let test_setget kind vals =
     List.for_all (fun (v1, v2) ->
-      let ca = Genarray.create kind c_layout [||] in
-      let fa = Genarray.create kind fortran_layout [||] in
-      Genarray.set ca [||] v1;
-      Genarray.set fa [||] v1;
-      Genarray.get ca [||] = v2 && Genarray.get fa [||] = v2) vals in
+      let ca = Array0.create kind c_layout in
+      let fa = Array0.create kind fortran_layout in
+      Array0.set ca v1;
+      Array0.set fa v1;
+      Array0.get ca = v2 && Array0.get fa = v2) vals in
   test 1 true
     (test_setget int8_signed
                  [0, 0;
@@ -922,9 +932,9 @@ let _ =
   test 7 (Array2.slice_right d 3) (from_list_fortran int [3003;1004;2004;3004]);
   testing_function "reshape";
   let a = make_array2 int c_layout 0 1 1 (fun i -> i + 3) in
-  let b = reshape (genarray_of_array2 a) [||] in
-  let c = reshape b [|1|] in
-  test 8 (Genarray.get b [||]) 3;
+  let b = reshape_0 (genarray_of_array2 a) in
+  let c = reshape (genarray_of_array0 b) [|1|] in
+  test 8 (Array0.get b) 3;
   test 9 (Genarray.get c [|0|]) 3;
   test 10 (Genarray.get (Genarray.slice_left c [|0|]) [||]) 3;
 
