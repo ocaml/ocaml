@@ -207,6 +207,18 @@ external __POS_OF__ : 'a -> (string * int * int * int) * 'a = "%loc_POS"
 
 (** {6 Composition operators} *)
 
+(** Left-to-right function composition:
+
+    [f1 %> f2] is [fun x -> f2 (f1 x)].
+
+    [f1 %> f2 %> f3] is [fun x -> f3 (f2 (f1 x))].
+
+    [f1 %> f2 %> f3 %> f4] is [fun x -> f4 (f3 (f2 (f1 x)))]
+
+    etc.
+*)
+val ( %> ) : ('a -> 'b) -> ('b -> 'c) -> 'a -> 'c
+
 external ( |> ) : 'a -> ('a -> 'b) -> 'b = "%revapply"
 (** Reverse-application operator: [x |> f |> g] is exactly equivalent
  to [g (f (x))].
