@@ -13,6 +13,10 @@
 #*                                                                        *
 #**************************************************************************
 
+# Note: since this directory is Windows-specific, it may be good to make sure
+# its content can not be compiled under Unix.
+# This directory could even become a subdirectory of the unix directory.
+
 # Files in this directory
 WIN_FILES = accept.c bind.c channels.c close.c \
   close_on.c connect.c createprocess.c dup.c dup2.c errmsg.c \
