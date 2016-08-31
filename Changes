@@ -359,6 +359,10 @@ OCaml 4.04.0 (4 Nov 2016):
 - GPR#723 Sort emitted functions according to source location
   (Pierre Chambart, review by Mark Shinwell)
 
+- PR#7291, GPR#780: Handle specialisation of recursive function that does
+  not always preserve the arguments
+  (Pierre Chambart, Mark Shinwell, report by Simon Cruanes)
+
 - Lack of type normalization lead to missing simple compilation for "lazy x"
   (Alain Frisch)
 
