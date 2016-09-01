@@ -202,7 +202,8 @@ CAMLprim value caml_ba_create(value vkind, value vlayout, value vdim)
   int i, flags;
 
   num_dims = Wosize_val(vdim);
-  if (num_dims < 0 || num_dims > CAML_BA_MAX_NUM_DIMS)
+  /* here num_dims is unsigned (mlsize_t) so no need to check (num_dims >= 0) */
+  if (num_dims > CAML_BA_MAX_NUM_DIMS)
     caml_invalid_argument("Bigarray.create: bad number of dimensions");
   for (i = 0; i < num_dims; i++) {
     dim[i] = Long_val(Field(vdim, i));
@@ -1299,7 +1300,8 @@ CAMLprim value caml_ba_reshape(value vb, value vdim)
   int i;
 
   num_dims = Wosize_val(vdim);
-  if (num_dims < 0 || num_dims > CAML_BA_MAX_NUM_DIMS)
+  /* here num_dims is unsigned (mlsize_t) so no need to check (num_dims >= 0) */
+  if (num_dims > CAML_BA_MAX_NUM_DIMS)
     caml_invalid_argument("Bigarray.reshape: bad number of dimensions");
   num_elts = 1;
   for (i = 0; i < num_dims; i++) {
