@@ -1243,7 +1243,7 @@ let temp_abbrev loc env id arity =
        type_loc = loc;
        type_attributes = []; (* or keep attrs from the class decl? *)
        type_immediate = false;
-       type_unboxed = { unboxed = false; default = false };
+       type_unboxed = unboxed_false_default_false;
       }
       env
   in
@@ -1491,7 +1491,7 @@ let class_infos define_class kind
      type_loc = cl.pci_loc;
      type_attributes = []; (* or keep attrs from cl? *)
      type_immediate = false;
-     type_unboxed = { unboxed = false; default = false };
+     type_unboxed = unboxed_false_default_false;
     }
   in
   let (cl_params, cl_ty) =
@@ -1510,7 +1510,7 @@ let class_infos define_class kind
      type_loc = cl.pci_loc;
      type_attributes = []; (* or keep attrs from cl? *)
      type_immediate = false;
-     type_unboxed = { unboxed = false; default = false };
+     type_unboxed = unboxed_false_default_false;
     }
   in
   ((cl, id, clty, ty_id, cltydef, obj_id, obj_abbr, cl_id, cl_abbr, ci_params,
