@@ -18,7 +18,7 @@ clean:
 .SUFFIXES: .etex .tex
 
 .etex.tex:
-	@$(CAMLLATEX) -caml "TERM=norepeat $(OCAML)" -n 80 \
+	@$(CAMLLATEX) -caml "TERM=norepeat $(OCAML)" -n 80 -v false\
                        -o $*.caml_tex_error.tex $*.etex\
 	&& mv $*.caml_tex_error.tex $*.gen.tex\
 	&& $(TEXQUOTE) < $*.gen.tex > $*.texquote_error.tex\

@@ -12,6 +12,7 @@ let camlbunderline = "\\<"
 let camleunderline = "\\>"
 
 let camllight = ref "TERM=norepeat ocaml"
+let verbose = ref true
 let linelen = ref 72
 let outfile = ref ""
 let cut_at_blanks = ref false
@@ -21,7 +22,9 @@ let _ =
   Arg.parse ["-n", Arg.Int (fun n -> linelen := n), "line length";
              "-o", Arg.String (fun s -> outfile := s), "output";
              "-caml", Arg.String (fun s -> camllight := s), "toplevel";
-             "-w", Arg.Set cut_at_blanks, "cut at blanks"]
+             "-w", Arg.Set cut_at_blanks, "cut at blanks";
+             "-v", Arg.Bool (fun b -> verbose := b ), "output result on stderr"
+            ]
     (fun s -> files := s :: !files)
     "caml-tex2: "
 
@@ -66,28 +69,34 @@ module Output = struct
 
   (** {2 Exceptions } *)
   exception Parsing_error of kind * string
-  type unexpected_report = {source:string; expected:status; got:status}
+
+  type source = { file:string; lines:int * int; phrase:string; output:string }
+  type unexpected_report = {source:source; expected:status; got:status}
   exception Unexpected_status of unexpected_report
+
+  let print_source ppf {file; lines = (start, stop); phrase; output} =
+    Printf.fprintf ppf "%s, lines %d to %d:\n\"\n%s\n%s\n\"."
+      file start stop phrase output
 
   let print_unexpected {source; expected; got} =
     if expected = Ok then
       Printf.eprintf
-        "Error when evaluating a caml_example environment in %s:\n\
-         unexpected %a.\n\
+        "Error when evaluating a caml_example environment in %a\n\
+         Unexpected %a status.\n\
          If %a status was expected, add an [@@expect %a] annotation.\n"
-        source
+        print_source source
         pp_status got
         pp_a_status got
         pp_status got
     else
       Printf.eprintf
-        "Error when evaluating a guarded caml_example environment in %s:\n \
-         %a status was expected, got %a status.\n\
-         If %a states was in fact expected, change the status annotation to\
+        "Error when evaluating a guarded caml_example environment in %a\n\
+         Unexpected %a status, %a status was expected.\n\
+         If %a states was in fact expected, change the status annotation to \
          [@@expect %a].\n"
-        source
+        print_source source
+        pp_status got
         pp_a_status expected
-        pp_a_status got
         pp_a_status got
         pp_status got;
     flush stderr
@@ -182,7 +191,7 @@ let read_output () =
   in
   let output = Buffer.create 256 in
   while not (string_match ~!".*\"end_of_input\"$" !input 0) do
-    prerr_endline !input;
+    if !verbose then prerr_endline !input;
     Buffer.add_string output !input;
     Buffer.add_char output '\n';
     input := input_line caml_input;
@@ -198,6 +207,10 @@ let escape_specials s =
 let process_file file =
   prerr_endline ("Processing " ^ file);
   let ic = try open_in file with _ -> failwith "Cannot read input file" in
+  let phrase_start = ref 1 and phrase_stop = ref 1 in
+  let incr_phrase_start () =
+    incr phrase_start;
+    phrase_stop := !phrase_start in
   let oc =
     try if !outfile = "-" then
       stdout
@@ -209,6 +222,7 @@ let process_file file =
     with _ -> failwith "Cannot open output file" in
   try while true do
     let input = ref (input_line ic) in
+    incr_phrase_start();
     if string_match
         ~!"\\\\begin{caml_example\\(\\*?\\)}[ \t]*\\(\\[\\(.*\\)\\]\\)?[ \t]*$"
         !input 0
@@ -222,7 +236,7 @@ let process_file file =
       let read_phrase () =
         let phrase = Buffer.create 256 in
         let rec read () =
-          let input =  input_line ic in
+          let input = incr phrase_stop; input_line ic in
           if string_match ~!"\\\\end{caml_example\\*?}[ \t]*$"
               input 0
           then raise End_of_file;
@@ -231,7 +245,8 @@ let process_file file =
           if not stop then (
             Buffer.add_string phrase input; read ()
           )
-          else
+          else begin
+            decr phrase_stop;
             let last_input = matched_group 1 input in
             let expected =
               if string_match ~!{|\(.*\)\[@@expect \(.*\)\]|} last_input 0 then
@@ -241,7 +256,8 @@ let process_file file =
                 (Buffer.add_string phrase last_input; global_expected)
             in
             Buffer.add_string phrase ";;\n";
-            Buffer.contents phrase, expected in
+            Buffer.contents phrase, expected
+          end in
         read ()
       in
       try while true do
@@ -252,9 +268,16 @@ let process_file file =
         flush caml_output;
         let output, (b, e) = read_output () in
         let status = Output.status output in
-        if status <> expected then
+        if status <> expected then (
+          let source = Output.{
+              file;
+              lines = (!phrase_start, !phrase_stop);
+              phrase;
+              output
+            } in
           raise (Output.Unexpected_status
-                   {Output.got=status; expected; source=file} );
+                   {Output.got=status; expected; source} ) )
+        else ( incr phrase_stop; phrase_start := !phrase_stop );
         let phrase =
           if b < e then begin
             let start = String.sub phrase ~pos:0 ~len:b
@@ -278,7 +301,7 @@ let process_file file =
         flush oc;
         first := false
       done
-      with End_of_file -> output_string oc camlend
+      with End_of_file -> phrase_start:= !phrase_stop; output_string oc camlend
     end
     else if string_match ~!"\\\\begin{caml_eval}[ \t]*$" !input 0
     then begin
