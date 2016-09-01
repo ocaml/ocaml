@@ -34,8 +34,10 @@ Next version (tbd):
 
 ### Other libraries:
 
-- GPR#787: Support the '0 dimension' case for bigarrays
-  (Laurent Mazare)
+- MPR#7339, GPR#787: Support the '0 dimension' case for bigarrays
+  (see Bigarray documentation)
+  (Laurent Mazare,
+   review by Gabriel Scherer, Alain Frisch and Hezekiah M. Carty)
 
 OCaml 4.04.0:
 -------------
