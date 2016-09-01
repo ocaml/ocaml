@@ -1100,7 +1100,7 @@ let new_declaration newtype manifest =
     type_loc = Location.none;
     type_attributes = [];
     type_immediate = false;
-    type_unboxed = { unboxed = false; default = false };
+    type_unboxed = unboxed_false_default_false;
   }
 
 let instance_constructor ?in_pattern cstr =

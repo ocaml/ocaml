@@ -1163,7 +1163,7 @@ let dummy =
     type_newtype_level = None; type_loc = Location.none;
     type_attributes = [];
     type_immediate = false;
-    type_unboxed = { unboxed = false; default = false };
+    type_unboxed = unboxed_false_default_false;
   }
 
 let hide_rec_items = function
