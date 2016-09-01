@@ -71,6 +71,7 @@ type int_elt = Int_elt
 type nativeint_elt = Nativeint_elt
 type complex32_elt = Complex32_elt
 type complex64_elt = Complex64_elt
+type int_least31_elt = Int_least31_elt
 
 type ('a, 'b) kind =
     Float32 : (float, float32_elt) kind
@@ -86,6 +87,7 @@ type ('a, 'b) kind =
   | Complex32 : (Complex.t, complex32_elt) kind
   | Complex64 : (Complex.t, complex64_elt) kind
   | Char : (char, int8_unsigned_elt) kind (**)
+  | Int_least31 : (int, int_least31_elt) kind
 (** To each element kind is associated an OCaml type, which is
    the type of OCaml values that can be stored in the big array
    or read back from it.  This type is not necessarily the same
@@ -114,7 +116,7 @@ type ('a, 'b) kind =
     | Int16_signed -> 0 | Int16_unsigned -> 0
     | Int32 -> 0l | Int64 -> 0L
     | Int -> 0 | Nativeint -> 0n
-    | Char -> '\000'
+    | Char -> '\000' | Int_least31 -> 0
 ]}
 *)
 
@@ -162,13 +164,16 @@ val char : (char, int8_unsigned_elt) kind
    {!Complex.t}. Big arrays of
    integer kinds are accessed using the smallest OCaml integer
    type large enough to represent the array elements:
-   [int] for 8- and 16-bit integer bigarrays, as well as OCaml-integer
-   bigarrays; [int32] for 32-bit integer bigarrays; [int64]
+   [int] for 8-, 16- and least 31-bit integer bigarrays, as well as
+   OCaml-integer bigarrays; [int32] for 32-bit integer bigarrays; [int64]
    for 64-bit integer bigarrays; and [nativeint] for
    platform-native integer bigarrays.  Finally, big arrays of
    kind [int8_unsigned_elt] can also be accessed as arrays of
    characters instead of arrays of small integers, by using
    the kind value [char] instead of [int8_unsigned]. *)
+
+val int_least31 : (int, int_least31_elt) kind
+(** See {!Bigarray.char}. *)
 
 val kind_size_in_bytes : ('a, 'b) kind -> int
 (** [kind_size_in_bytes k] is the number of bytes used to store

@@ -173,6 +173,7 @@ and bigarray_kind =
   | Pbigarray_int32 | Pbigarray_int64
   | Pbigarray_caml_int | Pbigarray_native_int
   | Pbigarray_complex32 | Pbigarray_complex64
+  | Pbigarray_int_least31
 
 and bigarray_layout =
     Pbigarray_unknown_layout
