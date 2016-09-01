@@ -32,6 +32,10 @@ Next version (tbd):
   .cmti files
   (Alain Frisch, report by Daniel Bunzli, review by Jeremie Dimino)
 
+### Other libraries:
+
+- GPR#787: Support the '0 dimension' case for bigarrays
+  (Laurent Mazare)
 
 OCaml 4.04.0:
 -------------
