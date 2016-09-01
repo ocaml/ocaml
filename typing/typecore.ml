@@ -2913,7 +2913,7 @@ and type_expect_ ?in_function ?(recarg=Rejected) env sexp ty_expected =
         type_loc = loc;
         type_attributes = [];
         type_immediate = false;
-        type_unboxed = { unboxed = false; default = false };
+        type_unboxed = unboxed_false_default_false;
       }
       in
       Ident.set_current_time ty.level;

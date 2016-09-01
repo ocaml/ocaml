@@ -71,10 +71,10 @@ let get_unboxed_from_attributes sdecl =
   let boxed = Builtin_attributes.has_boxed sdecl.ptype_attributes in
   match boxed, unboxed, !Clflags.unboxed_types with
   | true, true, _ -> raise (Error(sdecl.ptype_loc, Boxed_and_unboxed))
-  | true, false, _ -> { unboxed = false; default = false }
-  | false, true, _ -> { unboxed = true; default = false }
-  | false, false, false -> { unboxed = false; default = true }
-  | false, false, true -> { unboxed = true; default = true }
+  | true, false, _ -> unboxed_false_default_false
+  | false, true, _ -> unboxed_true_default_false
+  | false, false, false -> unboxed_false_default_true
+  | false, false, true -> unboxed_true_default_true
 
 (* Enter all declared types in the environment as abstract types *)
 
@@ -93,7 +93,7 @@ let enter_type env sdecl id =
       type_loc = sdecl.ptype_loc;
       type_attributes = sdecl.ptype_attributes;
       type_immediate = false;
-      type_unboxed = { unboxed = false; default = false };
+      type_unboxed = unboxed_false_default_false;
     }
   in
   Env.add_type ~check:true id decl env
@@ -349,7 +349,7 @@ let transl_declaration env sdecl id =
       | Ptype_record [{pld_mutable = Immutable; _}] ->
     raw_status
     | _ -> (* The type is not unboxable, mark it as boxed *)
-      { unboxed = false; default = false }
+      unboxed_false_default_false
   in
   let unbox = unboxed_status.unboxed in
   let (tkind, kind) =
@@ -1735,7 +1735,7 @@ let transl_with_constraint env id row_path orig_decl sdecl =
     if arity_ok && man <> None then
       orig_decl.type_kind, orig_decl.type_unboxed
     else
-      Type_abstract, {unboxed = false; default = false}
+      Type_abstract, unboxed_false_default_false
   in
   let decl =
     { type_params = params;
@@ -1796,7 +1796,7 @@ let abstract_type_decl arity =
       type_loc = Location.none;
       type_attributes = [];
       type_immediate = false;
-      type_unboxed = { unboxed = false; default = false };
+      type_unboxed = unboxed_false_default_false;
      } in
   Ctype.end_def();
   generalize_decl decl;
