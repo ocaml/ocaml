@@ -71,7 +71,7 @@ ARGS_tagged-quicksort=-DSORT -DFUN=quicksort main.c
 ARGS_tagged-tak=-DUNIT_INT -DFUN=takmain main.c
 
 skips:
-	@for c in $(CASES) $(MLCASES); do \
+	@for c in $(CASES) $(MLCASES) $(MLCASES_FLAMBDA); do \
 	  echo " ... testing '$$c': => skipped"; \
 	done
 
@@ -84,7 +84,7 @@ one_ml_flambda:
 	   $(OCAMLOPT) $(ARGS_$(NAME)) -o $(NAME).exe $(NAME).ml && \
 	   ./$(NAME).exe && echo " => passed" || echo " => failed"; \
 	 else \
-	   echo "=> skipped"; \
+	   echo " => skipped"; \
 	 fi
 
 one:
