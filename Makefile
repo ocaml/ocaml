@@ -305,6 +305,11 @@ installoptopt:
 tests: opt.opt
 	cd testsuite; $(MAKE) clean && $(MAKE) all
 
+# Build the manual latex files from the etex source files
+# (see manual/README.md)
+manual-pregen: opt.opt
+	cd manual; $(MAKE) clean && $(MAKE) pregen-etex
+
 # The clean target
 
 clean:: partialclean

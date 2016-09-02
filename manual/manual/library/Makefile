@@ -49,6 +49,7 @@ CSLDIR=$(RELEASEDIR)
 
 VPATH=.:$(CSLDIR)/stdlib:$(CSLDIR)/parsing:$(CSLDIR)/otherlibs/unix:$(CSLDIR)/otherlibs/str:$(CSLDIR)/otherlibs/num:$(CSLDIR)/otherlibs/graph:$(CSLDIR)/otherlibs/threads:$(CSLDIR)/otherlibs/dynlink:$(CSLDIR)/otherlibs/bigarray
 
+etex-files: $(BLURB)
 all: libs
 	./check-stdlib-modules $(CSLDIR)
 
@@ -98,7 +99,10 @@ clean:
 .SUFFIXES: .tex .etex .mli
 
 .etex.tex: $(TEXQUOTE)
-	$(TEXQUOTE) < $*.etex > $*.tex
+	@$(TEXQUOTE) < $*.etex > $*.texquote_error.tex\
+	&& cp $*.texquote_error.tex $*.tex\
+	|| printf "Failure when generating %s\n" $*.tex
+
 
 .mli.tex: $(FORMAT)
 	$(FORMAT) $< > $*.tex < $<

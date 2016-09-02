@@ -81,9 +81,9 @@ chapters (or sometimes sections) are mapped to a distinct `.etex` file:
     - The runtime system (ocamlrun): `runtime.etex`
     - Native-code compilation (ocamlopt): `native.etex`
     - Lexer and parser generators (ocamllex, ocamlyacc): `lexyacc.etex`
-    - Dependency generator (ocamldep): `ocamldoc.etex`
+    - Dependency generator (ocamldep): `ocamldep.etex`
     - The browser/editor (ocamlbrowser): `browser.etex`
-    - The documentation generator (ocamldoc): `ocamdoc.etex`
+    - The documentation generator (ocamldoc): `ocamldoc.etex`
     - The debugger (ocamldebug): `debugger.etex`
     - Profiling (ocamlprof): `profil.etex`
     - The ocamlbuild compilation manager: `ocamlbuild.etex`
@@ -118,15 +118,39 @@ interpreter and then translates both the input code and the interpreter output
 to latex code, e.g.
 ```latex
 \begin{caml_example}
-let f x = x
+let f x = x;;
 \end{caml_example}
 ```
 Note that the toplevel output can be suppressed by using a `*` suffix:
 ```latex
 \begin{caml_example*}
-let f x = x
+let f x = x;;
 \end{caml_example*}
 ```
+By default, `caml_tex2` raises an error and stops if the output of one
+the `caml_example` environment contains an unexpected error or warning.
+If such an error or warning is, in fact, expected, it is necessary to
+indicate the expected output status to `caml_tex2` by adding either
+an option to the `caml_example` environment:
+```latex
+\begin{caml_example}[error]
+1 + 2. ;;
+\end{caml_example}
+ or for warning
+\begin{caml_example}[warning=8]
+let f None = None;;
+\end{caml_example}
+```
+or an annotation to the concerned phrase:
+
+```latex
+\begin{caml_example}
+1 + 2. [@@expect error] ;;
+let f None = None [@@expect warning 8];;
+3 + 4 [@@expect ok];;
+\end{caml_example}
+```
+
 The `caml_eval` environment is a companion environment to `caml_example`
 and can be used to evaluate OCaml expressions in the toplevel without
 printing anything:
@@ -148,8 +172,8 @@ environments, `texquote2` translates double quotes `"text"` to
 `\machine{escaped_text}`.
 
 ###BNF grammar notation
-The tool `tools/transf` provides support for BNF grammar notations and a special
-quotation for non-terminal. When transf is used, the environment `syntax` can
+The tool `tools/transf` provides support for BNF grammar notations and special
+quotes for non-terminal. When transf is used, the environment `syntax` can
 be used to describe grammars using BNF notation:
 ```latex
 \begin{syntax}
