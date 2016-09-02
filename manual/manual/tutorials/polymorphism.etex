@@ -59,14 +59,14 @@ let two = swap store 3;;
 After these three swaps the stored value is "3". Everything is fine up to
 now. We can then try to swap "2" with a more interesting value, for
 instance a function:
-\begin{caml_example}
+\begin{caml_example}[error]
 let error = swap store (fun x -> x);;
 \end{caml_example}
 At this point, the type checker rightfully complains that it is not
 possible to swap an integer and a function, and that an "int" should always
 be traded for another "int". Furthermore, the type checker prevents us to
 change manually the type of the value stored by "store":
-\begin{caml_example}
+\begin{caml_example}[error]
 store := Some (fun x -> x);;
 \end{caml_example}
 Indeed, looking at the type of store, we see that the weak type "'_a" has
@@ -306,7 +306,7 @@ Intuitively, a value of type "'a nested" is a list of list \dots of list of
 elements "a" with "k" nested list. We can then adapt the "maximal_depth"
 function defined on "regular_depth" into a "depth" function that computes this
 "k". As a first try, we may define
-\begin{caml_example}
+\begin{caml_example}[error]
 let rec depth = function
   | List _ -> 1
   | Nested n -> 1 + depth n;;
@@ -356,7 +356,7 @@ following type annotation is perfectly valid
 since "'a","'b" and "'c" denote type variables that may or may not be
 polymorphic. Whereas, it is an error to unify an explicitly polymorphic type
 with a non-polymorphic type:
-\begin{caml_example}
+\begin{caml_example}[error]
   let sum: 'a 'b 'c. 'a -> 'b -> 'c = fun x y -> x + y;;
 \end{caml_example}
 
@@ -433,7 +433,7 @@ However, the type of "average len" is less generic than the type of
 be the same:
 \begin{caml_example}
   average_len (List [2]) (List [[]]);;
-  average len (List [2]) (List [[]]);;
+  average len (List [2]) (List [[]])[@@expect error];;
 \end{caml_example}
 
 As previously with polymorphic recursion, the problem stems from the fact that
