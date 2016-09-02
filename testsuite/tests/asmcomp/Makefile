@@ -81,7 +81,7 @@ ARGS_even-odd-spill=-DINT_INT -DFUN=is_even main.c
 ARGS_pgcd=-DINT_INT -DFUN=pgcd_30030 main.c
 
 skips:
-	@for c in $(CASES) $(MLCASES); do \
+	@for c in $(CASES) $(MLCASES) $(MLCASES_FLAMBDA); do \
 	  echo " ... testing '$$c': => skipped"; \
 	done
 
@@ -94,7 +94,7 @@ one_ml_flambda:
 	   $(OCAMLOPT) $(ARGS_$(NAME)) -o $(NAME).exe $(NAME).ml && \
 	   ./$(NAME).exe && echo " => passed" || echo " => failed"; \
 	 else \
-	   echo "=> skipped"; \
+	   echo " => skipped"; \
 	 fi
 
 one:
