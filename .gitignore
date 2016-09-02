@@ -245,6 +245,9 @@
 
 /testsuite/tests/embedded/caml
 
+/testsuite/tests/float-unboxing/*.flambda
+/testsuite/tests/float-unboxing/float_inline.ml
+
 /testsuite/tests/lib-dynlink-bytecode/main
 /testsuite/tests/lib-dynlink-bytecode/static
 /testsuite/tests/lib-dynlink-bytecode/custom
