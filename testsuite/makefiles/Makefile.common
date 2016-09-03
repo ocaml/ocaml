@@ -23,6 +23,7 @@ defaultpromote:
 
 defaultclean:
 	@rm -f *.cmo *.cmi *.cmx *.cma *.cmxa *.cmxs *.$(O) *.$(SO) *.$(A) *.exe
+	@rm -f *.exe.manifest
 	@for dsym in *.dSYM; do \
 	  if [ -d $$dsym ]; then \
 	    rm -fr $$dsym; \
