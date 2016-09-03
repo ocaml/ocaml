@@ -379,7 +379,7 @@ and expression i ppf x =
       module_expr i ppf me;
       expression i ppf e;
   | Texp_letexception (cd, e) ->
-      line i ppf "Pexp_letexception\n";
+      line i ppf "Texp_letexception\n";
       extension_constructor i ppf cd;
       expression i ppf e;
   | Texp_assert (e) ->
