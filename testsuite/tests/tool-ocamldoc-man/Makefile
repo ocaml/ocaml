@@ -49,6 +49,6 @@ promote: defaultpromote
 
 .PHONY: clean
 clean: defaultclean
-	@rm -f *.result *.html *.tex *.log *.out *.sty *.toc *.css *.aux
+	@rm -f *.result *.html *.tex *.log *.out *.sty *.toc *.css *.aux *.3o
 
 include $(BASEDIR)/makefiles/Makefile.common
