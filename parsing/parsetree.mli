@@ -765,8 +765,8 @@ and with_constraint =
         (* with module X.Y = Z *)
   | Pwith_typesubst of Longident.t loc * type_declaration
         (* with type X.t := ..., same format as [Pwith_type] *)
-  | Pwith_modsubst of string loc * Longident.t loc
-        (* with module X := Z *)
+  | Pwith_modsubst of Longident.t loc * Longident.t loc
+        (* with module X.Y := Z *)
 
 (* Value expressions for the module language *)
 

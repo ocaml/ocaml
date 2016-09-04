@@ -252,16 +252,13 @@ let merge_constraint initial_env loc sg constr =
   let lid =
     match constr with
     | Pwith_type (lid, _) | Pwith_module (lid, _)
-    | Pwith_typesubst (lid, _) -> lid
-    | Pwith_modsubst (s, _) ->
-        {loc = s.loc; txt=Lident s.txt}
+    | Pwith_typesubst (lid, _) | Pwith_modsubst (lid, _) -> lid
   in
   let destructive_substitution =
     match constr with
     | Pwith_type _ | Pwith_module _ -> false
     | Pwith_typesubst _ | Pwith_modsubst _ -> true
   in
-  let real_id = ref None in
   let real_ids = ref [] in
   let rec merge env sg namelist row_id =
     match (sg, namelist, constr) with
@@ -340,7 +337,6 @@ let merge_constraint initial_env loc sg constr =
         let path, md' = Typetexp.find_module initial_env loc lid'.txt in
         let newmd = Mtype.strengthen_decl ~aliasable:false env md' path in
         ignore(Includemod.modtypes ~loc env newmd.md_type md.md_type);
-        real_id := Some id;
         real_ids := [Pident id];
         (Pident id, lid, Twith_modsubst (path, lid')),
         update_rec_next rs rem
@@ -380,10 +376,13 @@ let merge_constraint initial_env loc sg constr =
            !real_ids
        in
        Subst.signature sub sg
-    | (_, _, Twith_modsubst (path, _)) ->
-       assert (List.length !real_ids = 1);
-       let id = match !real_id with None -> assert false | Some id -> id in
-       let sub = Subst.add_module id path Subst.identity in
+    | (_, _, Twith_modsubst (real_path, _)) ->
+       let sub =
+         List.fold_left
+           (fun s path -> Subst.add_module_path path real_path s)
+           Subst.identity
+           !real_ids
+       in
        Subst.signature sub sg
     | _ ->
        sg

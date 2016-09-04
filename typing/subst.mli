@@ -38,6 +38,7 @@ val add_type_path: Path.t -> Path.t -> t -> t
 val add_type_function:
   Path.t -> params:type_expr list -> body:type_expr -> t -> t
 val add_module: Ident.t -> Path.t -> t -> t
+val add_module_path: Path.t -> Path.t -> t -> t
 val add_modtype: Ident.t -> module_type -> t -> t
 val for_saving: t -> t
 val reset_for_saving: unit -> unit

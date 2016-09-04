@@ -179,3 +179,39 @@ module type S2 =
     type t = F(M).t
   end
 |}]
+
+(* Deep destructive module substitution: *)
+
+module A = struct module P = struct type t let x = 1 end end
+module type S = sig
+  module M : sig
+    module N : sig
+      module P : sig
+        type t
+      end
+    end
+  end
+  type t = M.N.P.t
+end with module M.N := A
+[%%expect {|
+module A : sig module P : sig type t val x : int end end
+module type S = sig module M : sig  end type t = A.P.t end
+|}]
+
+(* Same as for types, not all substitutions are accepted *)
+
+module type S = sig
+  module M : sig
+    module N : sig
+      module P : sig
+        type t
+      end
+    end
+  end
+  module Alias = M
+end with module M.N := A
+[%%expect {|
+Line _, characters 16-159:
+Error: This `with' constraint on M.N changes M, which is aliased
+       in the constrained signature (as Alias).
+|}]

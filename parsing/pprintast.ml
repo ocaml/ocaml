@@ -955,8 +955,8 @@ and module_type ctxt f x =
                 (list (core_type ctxt) ~sep:"," ~first:"(" ~last:")")
                 ls longident_loc li
                 (type_declaration ctxt) td
-          | Pwith_modsubst (s, li2) ->
-              pp f "module %s :=@ %a" s.txt longident_loc li2 in
+          | Pwith_modsubst (li, li2) ->
+             pp f "module %a :=@ %a" longident_loc li longident_loc li2 in
         (match l with
          | [] -> pp f "@[<hov2>%a@]" (module_type ctxt) mt
          | _ -> pp f "@[<hov2>(%a@ with@ %a)@]"

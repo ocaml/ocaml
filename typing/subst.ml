@@ -28,14 +28,14 @@ module PathMap = Map.Make(Path)
 
 type t =
   { types: type_replacement PathMap.t;
-    modules: (Ident.t, Path.t) Tbl.t;
+    modules: Path.t PathMap.t;
     modtypes: (Ident.t, module_type) Tbl.t;
     for_saving: bool;
   }
 
 let identity =
   { types = PathMap.empty;
-    modules = Tbl.empty;
+    modules = PathMap.empty;
     modtypes = Tbl.empty;
     for_saving = false;
   }
@@ -46,7 +46,8 @@ let add_type id p s = add_type_path (Pident id) p s
 let add_type_function id ~params ~body s =
   { s with types = PathMap.add id (Type_function { params; body }) s.types }
 
-let add_module id p s = { s with modules = Tbl.add id p s.modules }
+let add_module_path id p s = { s with modules = PathMap.add id p s.modules }
+let add_module id p s = add_module_path (Pident id) p s
 
 let add_modtype id ty s = { s with modtypes = Tbl.add id ty s.modtypes }
 
@@ -76,13 +77,15 @@ let attrs s x =
     then remove_loc.Ast_mapper.attributes remove_loc x
     else x
 
-let rec module_path s = function
-    Pident id as p ->
-      begin try Tbl.find id s.modules with Not_found -> p end
-  | Pdot(p, n, pos) ->
-      Pdot(module_path s p, n, pos)
-  | Papply(p1, p2) ->
-      Papply(module_path s p1, module_path s p2)
+let rec module_path s path =
+  try PathMap.find path s.modules
+  with Not_found ->
+    match path with
+    | Pident _ -> path
+    | Pdot(p, n, pos) ->
+       Pdot(module_path s p, n, pos)
+    | Papply(p1, p2) ->
+       Papply(module_path s p1, module_path s p2)
 
 let modtype_path s = function
     Pident id as p ->
@@ -471,7 +474,7 @@ let type_replacement s = function
 
 let compose s1 s2 =
   { types = merge_path_maps (type_replacement s2) s1.types s2.types;
-    modules = merge_tbls (module_path s2) s1.modules s2.modules;
+    modules = merge_path_maps (module_path s2) s1.modules s2.modules;
     modtypes = merge_tbls (modtype s2) s1.modtypes s2.modtypes;
     for_saving = s1.for_saving || s2.for_saving;
   }

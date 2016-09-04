@@ -417,11 +417,9 @@ module Analyser =
       List.fold_right (fun constraint_ acc ->
         match constraint_ with
         | Parsetree.Pwith_type _ | Parsetree.Pwith_module _ -> acc
-        | Parsetree.Pwith_typesubst (s, _) ->
+        | Parsetree.Pwith_typesubst (s, _) | Parsetree.Pwith_modsubst (s, _) ->
            (* wrong *)
-           Name.Set.add (List.hd (Longident.flatten s.txt)) acc
-        | Parsetree.Pwith_modsubst (s, _) ->
-           Name.Set.add s.txt acc)
+           Name.Set.add (List.hd (Longident.flatten s.txt)) acc)
         constraints acc
 
     let filter_out_erased_items_from_signature erased signature =

@@ -726,10 +726,10 @@ and with_constraint i ppf x =
       line i ppf "Pwith_module %a = %a\n"
         fmt_longident_loc lid1
         fmt_longident_loc lid2;
-  | Pwith_modsubst (s, li) ->
+  | Pwith_modsubst (lid1, lid2) ->
       line i ppf "Pwith_modsubst %a = %a\n"
-        fmt_string_loc s
-        fmt_longident_loc li;
+        fmt_longident_loc lid1
+        fmt_longident_loc lid2;
 
 and module_expr i ppf x =
   line i ppf "module_expr %a\n" fmt_location x.pmod_loc;
