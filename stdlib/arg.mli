@@ -59,9 +59,12 @@ type spec =
                                    call the function with the symbol *)
   | Rest of (string -> unit)   (** Stop interpreting keywords and call the
                                    function with each remaining argument *)
-  | Expand of (string -> string array) (** Call the function with a string
-                                           argument and recursively parse the
-                                           returned array *)
+  | Expand of (string -> string array) (** If the remaining arguments to process
+                                           are of the form
+                                           [[-foo"; "arg"] @ rest] where "foo" is
+                                           registered as [Expand f], then the
+                                           arguments [f "arg" @ rest] are
+                                           processed *)
 (** The concrete type describing the behavior associated
    with a keyword. *)
 

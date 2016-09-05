@@ -36,9 +36,12 @@ type spec =
                                   call the function with the symbol. *)
   | Rest of (string -> unit)   (* Stop interpreting keywords and call the
                                   function with each remaining argument *)
-  | Expand of (string -> string array) (* Call the function with a string
-                                          argument and recursively parse the
-                                          returned array *)
+  | Expand of (string -> string array) (* If the remaining arguments to process
+                                          are of the form
+                                          [[-foo"; "arg"] @ rest] where "foo" is
+                                          registered as [Expand f], then the
+                                          arguments [f "arg" @ rest] are
+                                          processed *)
 
 exception Bad of string
 exception Help of string
@@ -242,9 +245,8 @@ let rec parse_argv_dynamic ?(current=current) argv speclist anonfun errmsg =
             done;
         | Expand f ->
             let arg = get_arg () in
-            let newarg = f arg
-            and newcurr = ref 0 in
-            parse_argv_dynamic ~current:newcurr newarg speclist anonfun errmsg;
+            let newarg = f arg in
+            parse_argv_dynamic ~current:current newarg speclist anonfun errmsg;
             consume_arg ();
         in
         treat_action action
