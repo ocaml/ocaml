@@ -1949,27 +1949,27 @@ middle_end/base_types/variable.cmi : utils/identifiable.cmi typing/ident.cmi \
     middle_end/base_types/compilation_unit.cmi
 driver/compdynlink.cmi :
 driver/compenv.cmo : utils/warnings.cmi utils/misc.cmi parsing/location.cmi \
-    utils/config.cmi utils/clflags.cmi driver/compenv.cmi
+    utils/config.cmi utils/clflags.cmi utils/ccomp.cmi driver/compenv.cmi
 driver/compenv.cmx : utils/warnings.cmx utils/misc.cmx parsing/location.cmx \
-    utils/config.cmx utils/clflags.cmx driver/compenv.cmi
+    utils/config.cmx utils/clflags.cmx utils/ccomp.cmx driver/compenv.cmi
 driver/compenv.cmi :
 driver/compile.cmo : utils/warnings.cmi typing/typemod.cmi \
     typing/typedtree.cmi typing/typecore.cmi bytecomp/translmod.cmi \
     utils/timings.cmi typing/stypes.cmi bytecomp/simplif.cmi \
     typing/printtyped.cmi typing/printtyp.cmi bytecomp/printlambda.cmi \
     bytecomp/printinstr.cmi parsing/printast.cmi parsing/pprintast.cmi \
-    driver/pparse.cmi utils/misc.cmi parsing/location.cmi bytecomp/lambda.cmi \
+    driver/pparse.cmi utils/misc.cmi bytecomp/lambda.cmi \
     typing/includemod.cmi typing/env.cmi bytecomp/emitcode.cmi \
-    driver/compmisc.cmi driver/compenv.cmi utils/clflags.cmi utils/ccomp.cmi \
+    driver/compmisc.cmi driver/compenv.cmi utils/clflags.cmi \
     bytecomp/bytegen.cmi parsing/builtin_attributes.cmi driver/compile.cmi
 driver/compile.cmx : utils/warnings.cmx typing/typemod.cmx \
     typing/typedtree.cmx typing/typecore.cmx bytecomp/translmod.cmx \
     utils/timings.cmx typing/stypes.cmx bytecomp/simplif.cmx \
     typing/printtyped.cmx typing/printtyp.cmx bytecomp/printlambda.cmx \
     bytecomp/printinstr.cmx parsing/printast.cmx parsing/pprintast.cmx \
-    driver/pparse.cmx utils/misc.cmx parsing/location.cmx bytecomp/lambda.cmx \
+    driver/pparse.cmx utils/misc.cmx bytecomp/lambda.cmx \
     typing/includemod.cmx typing/env.cmx bytecomp/emitcode.cmx \
-    driver/compmisc.cmx driver/compenv.cmx utils/clflags.cmx utils/ccomp.cmx \
+    driver/compmisc.cmx driver/compenv.cmx utils/clflags.cmx \
     bytecomp/bytegen.cmx parsing/builtin_attributes.cmx driver/compile.cmi
 driver/compile.cmi :
 driver/compmisc.cmo : typing/typemod.cmi utils/misc.cmi \
@@ -2015,8 +2015,7 @@ driver/optcompile.cmo : utils/warnings.cmi typing/typemod.cmi \
     utils/misc.cmi middle_end/middle_end.cmi bytecomp/lambda.cmi \
     typing/includemod.cmi typing/env.cmi utils/config.cmi driver/compmisc.cmi \
     asmcomp/compilenv.cmi driver/compenv.cmi utils/clflags.cmi \
-    utils/ccomp.cmi parsing/builtin_attributes.cmi asmcomp/asmgen.cmi \
-    driver/optcompile.cmi
+    parsing/builtin_attributes.cmi asmcomp/asmgen.cmi driver/optcompile.cmi
 driver/optcompile.cmx : utils/warnings.cmx typing/typemod.cmx \
     typing/typedtree.cmx typing/typecore.cmx bytecomp/translmod.cmx \
     utils/timings.cmx typing/stypes.cmx bytecomp/simplif.cmx \
@@ -2025,8 +2024,7 @@ driver/optcompile.cmx : utils/warnings.cmx typing/typemod.cmx \
     utils/misc.cmx middle_end/middle_end.cmx bytecomp/lambda.cmx \
     typing/includemod.cmx typing/env.cmx utils/config.cmx driver/compmisc.cmx \
     asmcomp/compilenv.cmx driver/compenv.cmx utils/clflags.cmx \
-    utils/ccomp.cmx parsing/builtin_attributes.cmx asmcomp/asmgen.cmx \
-    driver/optcompile.cmi
+    parsing/builtin_attributes.cmx asmcomp/asmgen.cmx driver/optcompile.cmi
 driver/optcompile.cmi : middle_end/backend_intf.cmi
 driver/opterrors.cmo : parsing/location.cmi driver/opterrors.cmi
 driver/opterrors.cmx : parsing/location.cmx driver/opterrors.cmi
