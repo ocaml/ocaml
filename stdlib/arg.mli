@@ -61,7 +61,7 @@ type spec =
                                    function with each remaining argument *)
   | Expand of (string -> string array) (** If the remaining arguments to process
                                            are of the form
-                                           [[-foo"; "arg"] @ rest] where "foo" is
+                                           [["-foo"; "arg"] @ rest] where "foo" is
                                            registered as [Expand f], then the
                                            arguments [f "arg" @ rest] are
                                            processed *)
