@@ -91,6 +91,7 @@ be called from C \\
 "Filename" & p.~\pageref{Filename} & operations on file names \\
 "Gc" & p.~\pageref{Gc} & memory management control and statistics \\
 "Printexc" & p.~\pageref{Printexc} & a catch-all exception handler \\
+"Spacetime" & p.~\pageref{Spacetime} & memory profiler \\
 "Sys" & p.~\pageref{Sys} & system interface \\
 \end{tabular}
 \end{latexonly}
@@ -131,7 +132,7 @@ be called from C \\
 \item \ahref{libref/Scanf.html}{Module \texttt{Scanf}: formatted input functions}
 \item \ahref{libref/Set.html}{Module \texttt{Set}: sets over ordered types}
 \item \ahref{libref/Sort.html}{Module \texttt{Sort}: deprecated}
-\item \ahref{libref/Spacetime.html}{Spacetime}
+\item \ahref{libref/Spacetime.html}{Module \texttt{Spacetime}: memory profiler}
 \item \ahref{libref/Stack.html}{Module \texttt{Stack}: last-in first-out stacks}
 \item \ahref{libref/StdLabels.html}{Module \texttt{StdLabels}: Include modules \texttt{Array}, \texttt{List} and \texttt{String} with labels}
 \item \ahref{libref/Stream.html}{Module \texttt{Stream}: streams and parsers}
