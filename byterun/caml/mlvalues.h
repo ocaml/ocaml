@@ -108,19 +108,19 @@ bits  63        (64-P) (63-P)        10 9     8 7   0
 #define PROFINFO_MASK ((1ull << PROFINFO_WIDTH) - 1ull)
 
 #define Tag_hd(hd) ((tag_t) ((hd) & 0xFF))
-#ifdef WITH_SPACETIME
+#ifdef WITH_PROFINFO
 #define Hd_no_profinfo(hd) ((hd) & ~(PROFINFO_MASK << PROFINFO_SHIFT))
 #define Wosize_hd(hd) ((mlsize_t) ((Hd_no_profinfo(hd)) >> 10))
 #else
 #define Wosize_hd(hd) ((mlsize_t) ((hd) >> 10))
-#endif /* SPACETIME */
-#ifdef ARCH_SIXTYFOUR
+#endif /* WITH_PROFINFO */
+#if defined(ARCH_SIXTYFOUR) && defined(WITH_PROFINFO)
 /* [Profinfo_hd] is used when the compiler is not configured for Spacetime
    (e.g. when decoding profiles). */
 #define Profinfo_hd(hd) (((mlsize_t) ((hd) >> PROFINFO_SHIFT)) & PROFINFO_MASK)
 #else
 #define Profinfo_hd(hd) ((hd) & 0)
-#endif /* ARCH_SIXTYFOUR */
+#endif /* ARCH_SIXTYFOUR && WITH_PROFINFO */
 
 #define Hd_val(val) (((header_t *) (val)) [-1])        /* Also an l-value. */
 #define Hd_op(op) (Hd_val (op))                        /* Also an l-value. */
@@ -136,14 +136,10 @@ bits  63        (64-P) (63-P)        10 9     8 7   0
 
 #define Num_tags (1 << 8)
 #ifdef ARCH_SIXTYFOUR
-#ifdef WITH_SPACETIME
 #define Max_wosize (((intnat)1 << (54-PROFINFO_WIDTH)) - 1)
 #else
-#define Max_wosize (((intnat)1 << 54) - 1)
-#endif
-#else
 #define Max_wosize ((1 << 22) - 1)
-#endif
+#endif /* ARCH_SIXTYFOUR */
 
 #define Wosize_val(val) (Wosize_hd (Hd_val (val)))
 #define Wosize_op(op) (Wosize_val (op))

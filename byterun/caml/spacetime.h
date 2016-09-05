@@ -15,6 +15,8 @@
 #ifndef CAML_SPACETIME_H
 #define CAML_SPACETIME_H
 
+#ifdef NATIVE_CODE
+
 #include "caml/io.h"
 #include "caml/misc.h"
 #include "caml/stack.h"
@@ -186,5 +188,13 @@ extern void caml_spacetime_automatic_snapshot (void);
 #define Get_my_profinfo_with_cached_backtrace(profinfo, size) \
   profinfo = (uintnat) 0;
 #endif
+
+#else
+
+#define Get_my_profinfo_with_cached_backtrace(profinfo, size)   \
+  profinfo = (uintnat) 0;
+
+#endif /* NATIVE_CODE */
+
 
 #endif

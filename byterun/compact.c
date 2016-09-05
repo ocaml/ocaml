@@ -49,7 +49,7 @@ extern void caml_shrink_heap (char *);              /* memory.c */
   XXX (see [caml_register_global_roots])
   XXX Should be able to fix it to only assume 2-byte alignment.
 */
-#if defined(NATIVE_CODE) && defined(WITH_SPACETIME)
+#ifdef WITH_PROFINFO
 #define Make_ehd(s,t,c,p) \
   (((s) << 10) | (t) << 2 | (c) | ((p) << PROFINFO_SHIFT))
 #else
@@ -273,14 +273,17 @@ static void do_compaction (void)
           size_t sz;
           tag_t t;
           char *newadr;
+#ifdef WITH_PROFINFO
           uintnat profinfo;
+#endif
           word *infixes = NULL;
 
           while (Ecolor (q) == 0) q = * (word *) q;
           sz = Whsize_ehd (q);
           t = Tag_ehd (q);
+#ifdef WITH_PROFINFO
           profinfo = Profinfo_ehd (q);
-
+#endif
           if (t == Infix_tag){
             /* Get the original header of this block. */
             infixes = p + sz;

@@ -434,10 +434,10 @@ static void extern_rec(value v)
       if (tag < 16) {
         write(PREFIX_SMALL_BLOCK + tag);
       } else {
-#if !(defined(NATIVE_CODE) && defined(WITH_SPACETIME))
-        writecode32(CODE_BLOCK32, hd);
-#else
+#ifdef WITH_PROFINFO
         writecode32(CODE_BLOCK32, Hd_no_profinfo(hd));
+#else
+        writecode32(CODE_BLOCK32, hd);
 #endif
       }
       goto next_item;
@@ -551,10 +551,10 @@ static void extern_rec(value v)
         write(PREFIX_SMALL_BLOCK + tag + (sz << 4));
       } else {
 #ifdef ARCH_SIXTYFOUR
-#if !(defined(NATIVE_CODE) && defined(WITH_SPACETIME))
-        header_t hd_erased = hd;
-#else
+#ifdef WITH_PROFINFO
         header_t hd_erased = Hd_no_profinfo(hd);
+#else
+        header_t hd_erased = hd;
 #endif
         if (sz > 0x3FFFFF && (extern_flags & COMPAT_32))
           extern_failwith("output_value: array cannot be read back on "

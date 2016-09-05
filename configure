@@ -53,6 +53,8 @@ with_debugger=ocamldebugger
 with_ocamldoc=ocamldoc
 with_frame_pointers=false
 with_spacetime=false
+with_profinfo=false
+profinfo_width=0
 no_naked_pointers=false
 native_compiler=true
 TOOLPREF=""
@@ -180,7 +182,17 @@ while : ; do
     -no-naked-pointers|--no-naked-pointers)
         no_naked_pointers=true;;
     -spacetime|--spacetime)
-        with_spacetime=true;;
+        with_spacetime=true;  with_profinfo=true; profinfo_width=26;;
+    -reserved-header-bits|--reserved-header-bits)
+        with_spacetime=false; with_profinfo=true; profinfo_width=$2;shift
+        case $profinfo_width in
+            0) with_profinfo=false;;
+            [0123456789]);;
+            1?|2?);;
+            3[012]);;
+            *) err "--reserved-header-bits argument must be less than 32"
+        esac
+        ;;
     -no-cfi|--no-cfi)
         with_cfi=false;;
     -no-native-compiler|--no-native-compiler)
@@ -1793,8 +1805,11 @@ fi
 # The more bits used for profiling, the smaller will be Max_wosize.
 # Note that PROFINFO_WIDTH must still be defined even if not configuring
 # for Spacetime (see comment in byterun/caml/mlvalues.h on [Profinfo_hd]).
-profinfo_width=26
 echo "#define PROFINFO_WIDTH $profinfo_width" >> m.h
+if $with_profinfo; then
+    echo "#define WITH_PROFINFO" >> m.h
+fi
+
 if $with_spacetime; then
   case "$arch,$system" in
     amd64,*)
@@ -1976,6 +1991,7 @@ echo "WITH_OCAMLDOC=${with_ocamldoc}" >>Makefile
 echo "ASM_CFI_SUPPORTED=$asm_cfi_supported" >> Makefile
 echo "WITH_FRAME_POINTERS=$with_frame_pointers" >> Makefile
 echo "WITH_SPACETIME=$with_spacetime" >> Makefile
+echo "WITH_PROFINFO=$with_profinfo" >> Makefile
 echo "LIBUNWIND_AVAILABLE=$libunwind_available" >> Makefile
 echo "LIBUNWIND_INCLUDE_FLAGS=$libunwind_include" >> Makefile
 echo "LIBUNWIND_LINK_FLAGS=$libunwind_lib" >> Makefile
@@ -2057,6 +2073,11 @@ else
     inf "          ... with libunwind...... $has_libunwind"
   else
     inf "        spacetime profiling....... no"
+  fi
+  if $with_profinfo; then
+    inf "        reserved bits in header... $profinfo_width"
+  else
+    inf "        reserved bits in header... no"
   fi
   case "$arch,$system" in
     amd64,macosx)

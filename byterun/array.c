@@ -23,7 +23,8 @@
 #include "caml/misc.h"
 #include "caml/mlvalues.h"
 #include "caml/signals.h"
-#include "spacetime.h"
+/* Why is caml/spacetime.h included conditionnally sometimes and not here ? */
+#include "caml/spacetime.h"
 
 /* returns number of elements (either fields or floats) */
 CAMLexport mlsize_t caml_array_length(value array)
