@@ -310,8 +310,12 @@ CAMLexport void caml_main(char **argv)
   exe_name = argv[0];
   fd = caml_attempt_open(&exe_name, &trail, 0);
 
-  /* Should we really do that at all?  The current executable is ocamlrun
-     itself, it's never a bytecode program. */
+  /* Little grasshopper wonders why we do that at all, since
+     "The current executable is ocamlrun itself, it's never a bytecode
+     program".  Little grasshopper "ocamlc -custom" in mind should keep.
+     With -custom, we have an executable that is ocamlrun itself
+     concatenated with the bytecode.  So, if the attempt with argv[0]
+     failed, it is worth trying again with executable_name. */
   if (fd < 0 && (proc_self_exe = caml_executable_name()) != NULL) {
     exe_name = proc_self_exe;
     fd = caml_attempt_open(&exe_name, &trail, 0);
