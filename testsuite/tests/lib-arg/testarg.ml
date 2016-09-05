@@ -129,11 +129,17 @@ let f_expand r msg arg s =
   arg;
 ;;
 
-let expand1 = Arg.[
-  "-expand", Expand (f_expand "expand_arg1" "Expand" args1), "Expand (1)";
+let expand1 =
+  let l = Array.length args1  - 1 in
+  let args = Array.sub args1 1 l in
+  Arg.[
+  "-expand", Expand (f_expand "expand_arg1" "Expand" args), "Expand (1)";
 ];;
-let expand2 = Arg.[
-  "-expand", Expand (f_expand "expand_arg2" "Expand" args2), "Expand (1)";
+let expand2 =
+  let l = Array.length args2  - 1 in
+  let args = Array.sub args2 1 l in
+  Arg.[
+  "-expand", Expand (f_expand "expand_arg2" "Expand" args), "Expand (1)";
 ];;
 
 test (expand1@spec) [|"prog";"-expand";"expand_arg1"|];;
