@@ -13,11 +13,4 @@
 #*                                                                        *
 #**************************************************************************
 
-# Common Makefile for otherlibs on the Win32/MinGW ports
-
 include Makefile
-
-# The Unix version now works fine under Windows
-
-# Note .. is the current directory (this makefile is included from
-# a subdirectory)
