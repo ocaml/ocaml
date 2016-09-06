@@ -193,4 +193,9 @@ Error: Signature mismatch:
 # type t25 += U of { o : point [@unboxed]; p : int; }
 # type t25 += V of { q : int; r : point [@unboxed]; }
 #                       - : unit = ()
+#     type t26 = private { s : int; t : int; }
+# Characters 13-31:
+  type t27 = { u : t26 [@unboxed] };;
+               ^^^^^^^^^^^^^^^^^^
+Error: This type cannot be unboxed because it is a private type.
 # 

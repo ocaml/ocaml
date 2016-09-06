@@ -147,17 +147,20 @@ let is_float env ty =
 type unboxable_type_info =
   | Record of (Types.label_declaration list) * Types.record_representation
   | Tuple
+  | Private_type
   | Not_unboxable
 
 let get_unboxable_type_info env ty =
   let ty = Ctype.repr (Ctype.expand_head_opt env ty) in
   match ty.desc with
-  | Tconstr (p, _, _) -> begin
+  | Tconstr (p, _, _) ->
     let tydecl = Env.find_type p env in
-    match tydecl.type_kind with
-    | Type_record (decls, repr) -> Record (decls, repr)
-    | _ -> Not_unboxable
-    end
+    if tydecl.type_private = Private then Private_type
+    else
+      begin match tydecl.type_kind with
+      | Type_record (decls, repr) -> Record (decls, repr)
+      | _ -> Not_unboxable
+      end
   | Ttuple _ -> Tuple
   | _ -> Not_unboxable
 
@@ -281,6 +284,9 @@ let check_suitable_for_unboxing env l =
     | Not_unboxable ->
       raise (Error (l.Types.ld_loc, Bad_unboxed_attribute
                "it is not an unboxable type or it is recursive"))
+    | Private_type ->
+      raise (Error (l.Types.ld_loc, Bad_unboxed_attribute
+               "it is a private type"))
     | Record (decls, repr) ->
       begin match repr with
       | Record_unboxed _ ->

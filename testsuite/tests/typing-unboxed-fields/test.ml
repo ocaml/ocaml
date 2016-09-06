@@ -249,3 +249,7 @@ assert (match_test r2);
 assert (Obj.size (Obj.repr r1) = 4);
 assert (Obj.size (Obj.repr r2) = 4);
 ;;
+
+(* Unboxing private types *)
+type t26 = private { s : int; t : int };;
+type t27 = { u : t26 [@unboxed] };;
