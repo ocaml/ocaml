@@ -138,7 +138,6 @@ void caml_main(char **argv)
   else
     exe_name = caml_search_exe_in_path(exe_name);
   caml_sys_init(exe_name, argv);
-  caml_stat_free(exe_name);
   if (sigsetjmp(caml_termination_jmpbuf.buf, 0)) {
     if (caml_termination_hook != NULL) caml_termination_hook(NULL);
     return;
