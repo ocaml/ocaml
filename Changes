@@ -11,6 +11,9 @@ Next version (tbd):
 
 ### Tools:
 
+- PR#7272: ocamldoc, missing line breaks in type_*.html files
+  (Florian Angeletti)
+
 - PR#7333: ocamldoc, use the first sentence of text file as
   a short description in overviews.
   (Florian Angeletti)
