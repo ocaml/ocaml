@@ -113,7 +113,7 @@ int caml_page_table_initialize(mlsize_t bytesize);
   DEBUG_clear ((result), (wosize));                                         \
 }while(0)
 
-#if defined(NATIVE_CODE) && defined(SPACETIME)
+#if defined(NATIVE_CODE) && defined(WITH_SPACETIME)
 extern uintnat caml_spacetime_my_profinfo(struct ext_table**, uintnat);
 #define Alloc_small(result, wosize, tag) \
   Alloc_small_with_profinfo(result, wosize, tag, \
