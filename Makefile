@@ -368,14 +368,15 @@ ocaml: compilerlibs/ocamlcommon.cma compilerlibs/ocamlbytecomp.cma \
 partialclean::
 	rm -f ocaml
 
-RUNTOP=./byterun/ocamlrun ./ocaml -nostdlib -I stdlib -noinit $(TOPFLAGS)
+RUNTOP=./byterun/ocamlrun ./ocaml -nostdlib -I stdlib -noinit $(TOPFLAGS) -I otherlibs/unix
 NATRUNTOP=./ocamlnat$(EXE) -nostdlib -I stdlib -noinit $(TOPFLAGS)
+EXTRAPATH=PATH=otherlibs/unix:"$(PATH)"
 
 runtop:
 	$(MAKE) runtime
 	$(MAKE) coreall
 	$(MAKE) ocaml
-	@rlwrap --help 2>/dev/null && rlwrap $(RUNTOP) || $(RUNTOP)
+	@rlwrap --help 2>/dev/null && $(EXTRAPATH) rlwrap $(RUNTOP) || $(EXTRAPATH) $(RUNTOP)
 
 natruntop:
 	$(MAKE) runtime

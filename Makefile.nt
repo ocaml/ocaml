@@ -122,7 +122,14 @@ coldstart:
 	cd stdlib ; cp $(LIBFILES) ../boot
 
 # Build the core system: the minimum needed to make depend and bootstrap
-core: runtime ocamlc ocamllex ocamlyacc ocamltools library
+core:
+	$(MAKEREC) runtime
+	$(MAKEREC) coreall
+
+# Recompile the core system using the bootstrap compiler
+coreall:
+	$(MAKEREC) ocamlc
+	$(MAKEREC) ocamllex ocamlyacc ocamltools library
 
 # Save the current bootstrap compiler
 MAXSAVED=boot/Saved/Saved.prev/Saved.prev/Saved.prev/Saved.prev/Saved.prev
@@ -361,6 +368,22 @@ ocaml: compilerlibs/ocamlcommon.cma compilerlibs/ocamlbytecomp.cma \
 
 partialclean::
 	rm -f ocaml
+
+RUNTOP=./byterun/ocamlrun ./ocaml -nostdlib -I stdlib -noinit $(TOPFLAGS) -I otherlibs/win32unix
+NATRUNTOP=./ocamlnat$(EXE) -nostdlib -I stdlib -noinit $(TOPFLAGS)
+EXTRAPATH=PATH=otherlibs/win32unix:"$(PATH)"
+
+runtop:
+	$(MAKEREC) core
+	$(MAKEREC) ocaml
+	@rlwrap --help 2>/dev/null && $(EXTRAPATH) rlwrap $(RUNTOP) || $(EXTRAPATH) $(RUNTOP)
+
+natruntop:
+	$(MAKEREC) runtime
+	$(MAKEREC) coreall
+	$(MAKEREC) opt.opt
+	$(MAKEREC) ocamlnat
+	@rlwrap --help 2>/dev/null && $(EXTRAPATH) rlwrap $(NATRUNTOP) || $(EXTRAPATH) $(NATRUNTOP)
 
 # Native dynlink
 
