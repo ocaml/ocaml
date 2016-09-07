@@ -399,9 +399,17 @@ let jumps_map f env =
 (* Pattern matching before any compilation *)
 
 type pattern_matching =
-  { mutable cases : (pattern list * lambda) list;
-    args : (lambda * (let_kind * bool)) list ;
-    default : (matrix * int) list}
+  { mutable cases : (pattern list * lambda) list;  (* matrix *)
+    args : (lambda * (let_kind * bool)) list ;     (* subject vector *)
+    default : (matrix * int) list} (* default matrices, with exit number *)
+
+(* NB: args hold some information
+    - let_kind describe the nature of the binding to be added.
+    - the boolean is true when the bound value can change (ie it is a mutable
+      argument or below it.
+   See for instance  make_record_matching below for information production,
+   compile_match for binding addition and boolean usage.
+ *)
 
 (* Pattern matching after application of both the or-pat rule and the
    mixture rule *)
@@ -2707,12 +2715,13 @@ let arg_to_var arg cls = match arg with
 
    Output: a lambda term, a jump summary {..., exit number -> context, .. }
 *)
+
 (*
   The "mut" argument is here to solve PR #7241. When mut is true
   all context information is cancelled while returning jump sumaries.
-  Cf. the "mut" argument of combine_ctx, and ctx_rshift.
-  Suboptimal...
+  Cf. the "mut" argument of ctx_combine, and ctx_rshift.
 *)
+
 let rec compile_match repr partial ctx m = match m with
 | { cases = []; args = [] } -> comp_exit ctx m
 | { cases = ([], action) :: rem } ->
