@@ -520,18 +520,25 @@ and substitute_let_moveable_array is_let_moveable env clams =
 (* We say that an expression is "moveable" iff it has neither effects nor
    coeffects.  (See semantics_of_primitives.mli.)
 *)
-type moveable = Fixed | Moveable | Moveable_not_into_loops
+type moveable = Fixed | Constant | Moveable | Moveable_not_into_loops
 
 let both_moveable a b =
   match a, b with
+  | Constant, Constant -> Constant
+  | Constant, Moveable
+  | Moveable, Constant
   | Moveable, Moveable -> Moveable
+  | Moveable_not_into_loops, Constant
   | Moveable_not_into_loops, Moveable
+  | Constant, Moveable_not_into_loops
   | Moveable, Moveable_not_into_loops
   | Moveable_not_into_loops, Moveable_not_into_loops -> Moveable_not_into_loops
+  | Constant, Fixed
   | Moveable, Fixed
   | Moveable_not_into_loops, Fixed
-  | Fixed, Moveable_not_into_loops
+  | Fixed, Constant
   | Fixed, Moveable
+  | Fixed, Moveable_not_into_loops
   | Fixed, Fixed -> Fixed
 
 let primitive_moveable (prim : Lambda.primitive)
@@ -559,7 +566,7 @@ let primitive_moveable (prim : Lambda.primitive)
     | Arbitrary_effects, No_coeffects
     | Arbitrary_effects, Has_coeffects -> Fixed
 
-type moveable_for_env = Moveable | Moveable_not_into_loops
+type moveable_for_env = Constant | Moveable | Moveable_not_into_loops
 
 (** Called when we are entering a loop or body of a function (which may be
     called multiple times).  The environment is rewritten such that
@@ -567,6 +574,7 @@ type moveable_for_env = Moveable | Moveable_not_into_loops
 let going_into_loop env =
   Ident.Map.filter_map env ~f:(fun _var ((moveable : moveable_for_env), def) ->
     match moveable with
+    | Constant -> Some (Constant, def)
     | Moveable -> Some (Moveable, def)
     | Moveable_not_into_loops -> None)
 
@@ -577,6 +585,7 @@ let rec un_anf_and_moveable ident_info env (clam : Clambda.ulambda)
   match clam with
   | Uvar id ->
     begin match Ident.Map.find id env with
+    | Constant, def -> def, Constant
     | Moveable, def -> def, Moveable
     | Moveable_not_into_loops, def -> def, Moveable_not_into_loops
     | exception Not_found ->
@@ -590,7 +599,7 @@ let rec un_anf_and_moveable ident_info env (clam : Clambda.ulambda)
     end
   | Uconst _ ->
     (* Constant closures are rewritten separately. *)
-    clam, Moveable
+    clam, Constant
   | Udirect_apply (label, args, dbg) ->
     let args = un_anf_list ident_info env args in
     Udirect_apply (label, args, dbg), Fixed
@@ -613,38 +622,43 @@ let rec un_anf_and_moveable ident_info env (clam : Clambda.ulambda)
       both_moveable moveable Moveable_not_into_loops
   | Uoffset (clam, n) ->
     let clam, moveable = un_anf_and_moveable ident_info env clam in
-    Uoffset (clam, n), moveable
+    Uoffset (clam, n), both_moveable Moveable moveable
   | Ulet (_let_kind, _value_kind, id, def, Uvar id') when Ident.same id id' ->
     un_anf_and_moveable ident_info env def
   | Ulet (let_kind, value_kind, id, def, body) ->
     let def, def_moveable = un_anf_and_moveable ident_info env def in
     let is_linear = Ident.Set.mem id ident_info.linear in
     let is_used = Ident.Set.mem id ident_info.used in
-    begin match def_moveable, is_linear, is_used with
-    | (Moveable | Moveable_not_into_loops), _, false ->
+    let is_assigned = Ident.Set.mem id ident_info.assigned in
+    begin match def_moveable, is_linear, is_used, is_assigned with
+    | (Constant | Moveable | Moveable_not_into_loops), _, false, _ ->
       (* A moveable expression that is never used may be eliminated. *)
       un_anf_and_moveable ident_info env body
-    | Moveable, true, true ->
-      (* A moveable expression bound to a linear [Ident.t] may replace the
-         single occurrence of the identifier. *)
-      let env =
-        let def_moveable : moveable_for_env =
-          match def_moveable with
-          | Moveable -> Moveable
-          | Moveable_not_into_loops -> Moveable_not_into_loops
-          | Fixed -> assert false
-        in
-        Ident.Map.add id (def_moveable, def) env
+    | Constant, _, true, false
+    (* A constant expression bound to an unassigned identifier can replace any
+         occurances of the identifier. *)
+    | Moveable, true, true, false  ->
+      (* A moveable expression bound to a linear unassigned [Ident.t]
+         may replace the single occurrence of the identifier. *)
+      let def_moveable =
+        match def_moveable with
+        | Moveable -> Moveable
+        | Constant -> Constant
+        | Moveable_not_into_loops -> Moveable_not_into_loops
+        | Fixed -> assert false
       in
+      let env = Ident.Map.add id (def_moveable, def) env in
       un_anf_and_moveable ident_info env body
-    | Moveable_not_into_loops, true, true
+    | Moveable_not_into_loops, true, true, false
         (* We can't delete the [let] binding in this case because we don't
            know whether the variable was substituted for its definition
            (in the case of its linear use not being inside a loop) or not.
            We could extend the code to cope with this case. *)
-    | (Moveable | Moveable_not_into_loops), false, true
+    | (Constant | Moveable | Moveable_not_into_loops), _, _, true
+        (* Constant or Moveable but assigned. *)
+    | (Moveable | Moveable_not_into_loops), false, _, _
         (* Moveable but not used linearly. *)
-    | Fixed, _, _ ->
+    | Fixed, _, _, _ ->
       let body, body_moveable = un_anf_and_moveable ident_info env body in
       Ulet (let_kind, value_kind, id, def, body),
       both_moveable def_moveable body_moveable
