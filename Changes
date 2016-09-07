@@ -14,6 +14,12 @@ Next version (tbd):
   rules between Unix and Windows Makefiles
  (Sébastien Hinderer, review by Alain Frisch)
 
+### Standard library:
+
+- GPR#778: Arg: added option Expand that allows to expand a string argument
+  to a string array of new arguments
+  (Bernhard Schommer)
+
 OCaml 4.04.0:
 -------------
 
@@ -607,9 +613,9 @@ OCaml 4.03.0 (25 Apr 2016):
 
 ### Runtime system:
 
-* GPR#442, caml_fill_string, and caml_create_string is deprecated 
-  and will be removed in the future, please use caml_fill_bytes 
-  and caml_create_bytes for migration 
+* GPR#442, caml_fill_string, and caml_create_string is deprecated
+  and will be removed in the future, please use caml_fill_bytes
+  and caml_create_bytes for migration
   (Hongbo Zhang, review by Damien Doligez, Alain Frisch, and Hugo Heuzard)
 
 - PR#3612, PR#92: allow allocating custom block with finalizers
