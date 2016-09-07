@@ -20,7 +20,7 @@ LD_PATH=$(TOPDIR)/otherlibs/$(UNIXLIBVAR)unix
 
 ifeq ($(OS),Windows_NT)
 ADD_BYTERUN_FLAGS="-I $(OTOPDIR)/otherlibs/win32unix"
-else
+endif
 
 include $(BASEDIR)/makefiles/Makefile.several
 include $(BASEDIR)/makefiles/Makefile.common
