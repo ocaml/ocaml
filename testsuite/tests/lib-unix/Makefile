@@ -15,14 +15,12 @@
 
 BASEDIR=../..
 LIBRARIES=unix
+ADD_COMPFLAGS=-I $(OTOPDIR)/otherlibs/$(UNIXLIBVAR)unix
+LD_PATH=$(TOPDIR)/otherlibs/$(UNIXLIBVAR)unix
+
 ifeq ($(OS),Windows_NT)
-ADD_COMPFLAGS=-I $(OTOPDIR)/otherlibs/win32unix
-LD_PATH=$(TOPDIR)/otherlibs/win32unix
 ADD_BYTERUN_FLAGS="-I $(OTOPDIR)/otherlibs/win32unix"
 else
-ADD_COMPFLAGS=-I $(OTOPDIR)/otherlibs/unix
-LD_PATH=$(TOPDIR)/otherlibs/unix
-endif
 
 include $(BASEDIR)/makefiles/Makefile.several
 include $(BASEDIR)/makefiles/Makefile.common
