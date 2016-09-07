@@ -23,7 +23,7 @@ O_FILES=$(F_FILES:=.o) $(C_FILES:=.o)
 
 CUSTOM_FLAG=`if [ -n "$(C_FILES)" ]; then echo '-custom'; fi`
 ADD_CFLAGS+=$(CUSTOM_FLAG)
-MYRUNTIME=`if [ -z "$(C_FILES)$(CUSTOM)" ]; then echo '$(OCAMLRUN)'; fi`
+MYRUNTIME=`if [ -z "$(C_FILES)$(CUSTOM)" ]; then echo '$(OCAMLRUN)'; echo '$(ADD_BYTERUN_FLAGS)'; fi`
 FORTRAN_LIB=`if [ -n "$(F_FILES)" ]; then echo $(FORTRAN_LIBRARY); fi`
 ADD_CFLAGS+=$(FORTRAN_LIB)
 ADD_OPTFLAGS+=$(FORTRAN_LIB)
@@ -119,7 +119,7 @@ run-file:
 	if [ -f $$F.runner ]; then \
 	  RUNTIME="$(RUNTIME)" sh $$F.runner; \
 	else \
-	  $(RUNTIME) ./program$(EXE) $(PROGRAM_ARGS) >$$F.result; \
+	  $(SET_LD_PATH) $(RUNTIME) ./program$(EXE) $(PROGRAM_ARGS) >$$F.result; \
 	fi \
 	&& \
 	if [ -f $$F.checker ]; then \
