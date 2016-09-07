@@ -82,6 +82,7 @@ type t =
   | Unused_module of string                 (* 60 *)
   | Unboxable_type_in_prim_decl of string   (* 61 *)
   | Constraint_on_gadt                      (* 62 *)
+  | Partial_match_extra                     (* 63 *)
 ;;
 
 val parse_options : bool -> string -> unit;;

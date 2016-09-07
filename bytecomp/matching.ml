@@ -2911,15 +2911,25 @@ let check_partial = check_partial is_mutable
 
 let start_ctx n = [{left=[] ; right = omegas n}]
 
-let check_total total lambda i handler_fun =
+let check_total warn loc total lambda i handler_fun =
   if jumps_is_empty total then
     lambda
   else begin
+    begin if
+      warn && Warnings.is_active Warnings.Partial_match_extra
+    then
+      Location.prerr_warning loc  Warnings.Partial_match_extra
+    end ;
     Lstaticcatch(lambda, (i,[]), handler_fun())
   end
 
-let compile_matching repr handler_fun arg pat_act_list partial =
-  let partial = check_partial pat_act_list partial in
+(* Warn for "extra" match failure *)
+let check_warn partial pat_act_list = match partial,pat_act_list with
+| Total,_::_ -> true
+| _,_ -> false
+
+let compile_matching loc repr handler_fun arg pat_act_list partial0 =
+  let partial = check_partial pat_act_list partial0 in
   match partial with
   | Partial ->
       let raise_num = next_raise_count () in
@@ -2929,7 +2939,8 @@ let compile_matching repr handler_fun arg pat_act_list partial =
           default = [[[omega]],raise_num]} in
       begin try
         let (lambda, total) = compile_match repr partial (start_ctx 1) pm in
-        check_total total lambda raise_num handler_fun
+        let warn = check_warn partial0 pat_act_list in
+        check_total warn loc total lambda raise_num handler_fun
       with
       | Unused -> assert false (* ; handler_fun() *)
       end
@@ -2954,16 +2965,16 @@ let partial_function loc () =
                Const_base(Const_int char)]))], loc)], loc)
 
 let for_function loc repr param pat_act_list partial =
-  compile_matching repr (partial_function loc) param pat_act_list partial
+  compile_matching loc repr (partial_function loc) param pat_act_list partial
 
 (* In the following two cases, exhaustiveness info is not available! *)
 let for_trywith param pat_act_list =
-  compile_matching None
+  compile_matching Location.none None
     (fun () -> Lprim(Praise Raise_reraise, [param], Location.none))
     param pat_act_list Partial
 
 let simple_for_let loc param pat body =
-  compile_matching None (partial_function loc) param [pat, body] Partial
+  compile_matching loc None (partial_function loc) param [pat, body] Partial
 
 
 (* Optimize binding of immediate tuples
@@ -3097,8 +3108,8 @@ let for_let loc param pat body =
 (* Handling of tupled functions and matchings *)
 
 (* Easy case since variables are available *)
-let for_tupled_function loc paraml pats_act_list partial =
-  let partial = check_partial_list pats_act_list partial in
+let for_tupled_function loc paraml pats_act_list partial0 =
+  let partial = check_partial_list pats_act_list partial0 in
   let raise_num = next_raise_count () in
   let omegas = [List.map (fun _ -> omega) paraml] in
   let pm =
@@ -3109,7 +3120,8 @@ let for_tupled_function loc paraml pats_act_list partial =
   try
     let (lambda, total) = compile_match None partial
         (start_ctx (List.length paraml)) pm in
-    check_total total lambda raise_num (partial_function loc)
+    let warn = check_warn partial0 pats_act_list in
+    check_total warn loc total lambda raise_num (partial_function loc)
   with
   | Unused -> partial_function loc ()
 
@@ -3177,9 +3189,9 @@ let compile_flattened repr partial ctx _ pmh = match pmh with
     compile_orhandlers false (compile_match repr partial) lam total ctx hs
 | PmVar _ -> assert false
 
-let do_for_multiple_match loc paraml pat_act_list partial =
+let do_for_multiple_match loc paraml pat_act_list partial0 =
   let repr = None in
-  let partial = check_partial pat_act_list partial in
+  let partial = check_partial pat_act_list partial0 in
   let raise_num,pm1 =
     match partial with
     | Partial ->
@@ -3215,7 +3227,8 @@ let do_for_multiple_match loc paraml pat_act_list partial =
       List.fold_right2 (bind Strict) idl paraml
         (match partial with
         | Partial ->
-            check_total total lam raise_num (partial_function loc)
+            let warn = check_warn  partial0 pat_act_list in
+            check_total warn loc total lam raise_num (partial_function loc)
         | Total ->
             assert (jumps_is_empty total) ;
             lam)
@@ -3223,7 +3236,8 @@ let do_for_multiple_match loc paraml pat_act_list partial =
       let (lambda, total) = compile_match None partial (start_ctx 1) pm1 in
       begin match partial with
       | Partial ->
-          check_total total lambda raise_num (partial_function loc)
+          let warn = check_warn partial0 pat_act_list in
+          check_total warn loc total lambda raise_num (partial_function loc)
       | Total ->
           assert (jumps_is_empty total) ;
           lambda

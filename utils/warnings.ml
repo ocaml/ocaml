@@ -89,6 +89,7 @@ type t =
   | Unused_module of string                 (* 60 *)
   | Unboxable_type_in_prim_decl of string   (* 61 *)
   | Constraint_on_gadt                      (* 62 *)
+  | Partial_match_extra                     (* 63 *)
 ;;
 
 (* If you remove a warning, leave a hole in the numbering.  NEVER change
@@ -160,9 +161,10 @@ let number = function
   | Unused_module _ -> 60
   | Unboxable_type_in_prim_decl _ -> 61
   | Constraint_on_gadt -> 62
+  | Partial_match_extra -> 63
 ;;
 
-let last_warning_number = 62
+let last_warning_number = 63
 ;;
 
 (* Must be the max number returned by the [number] function. *)
@@ -347,6 +349,8 @@ let message = function
   | Partial_match s ->
       "this pattern-matching is not exhaustive.\n\
        Here is an example of a case that is not matched:\n" ^ s
+  | Partial_match_extra ->
+      "this pattern-matching operates on mutable data and may not be exhaustive."
   | Non_closed_record_pattern s ->
       "the following labels are not bound in this record pattern:\n" ^ s ^
       "\nEither bind these labels explicitly or add '; _' to the pattern."
@@ -636,7 +640,8 @@ let descriptions =
    59, "Assignment to non-mutable value";
    60, "Unused module declaration";
    61, "Unboxable type in primitive declaration";
-   62, "Type constraint on GADT type declaration"
+   62, "Type constraint on GADT type declaration";
+   63, "Extra partial match, matching may fail when subject value is mutated";
   ]
 ;;
 
