@@ -236,8 +236,8 @@ let main () =
   let ppf = Format.err_formatter in
   try
     readenv ppf Before_args;
-    let spec = Arch.command_line_options @ Options.list in
-    Arg.parse_expand spec anonymous usage;
+    Clflags.add_arguments __LOC__ (Arch.command_line_options @ Options.list);
+    Clflags.parse_arguments anonymous usage;
     if !gprofile && not Config.profiling then
       fatal "Profiling with \"gprof\" is not supported on this platform.";
     begin try
@@ -250,7 +250,7 @@ let main () =
     with Arg.Bad msg ->
       begin
         prerr_endline msg;
-        Arg.usage spec usage;
+        Clflags.print_arguments usage;
         exit 2
       end
     end;
