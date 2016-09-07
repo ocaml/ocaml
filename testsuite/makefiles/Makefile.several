@@ -104,7 +104,7 @@ run-file:
 	if [ -f $$F.runner ]; then \
 	  RUNTIME="$(RUNTIME)" sh $$F.runner; \
 	else \
-	  $(SET_LD_PATH) $(RUNTIME) $(ADD_RUNFLAGS) ./program$(EXE) $(PROGRAM_ARGS) >$$F.result; \
+	  $(SET_LD_PATH) $(RUNTIME) ./program$(EXE) $(PROGRAM_ARGS) >$$F.result; \
 	fi \
 	&& \
 	if [ -f $$F.checker ]; then \
