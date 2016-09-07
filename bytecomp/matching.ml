@@ -24,7 +24,6 @@ open Parmatch
 open Printf
 open Printpat
 
-
 let dbg = false
 
 (*  See Peyton-Jones, ``The Implementation of functional programming
@@ -151,7 +150,7 @@ let top_erase mut ps =
   else ps
 
 let combine mut {left=left ; right=right} = match left with
-| p::ps -> {left=ps ; right=top_erase mut (set_args p right)}
+| p::ps -> {left=ps ; right=top_erase mut (set_args_erase_mutable p right)}
 | _ -> assert false
 
 let ctx_combine mut ctx = List.map (combine mut) ctx
@@ -2172,7 +2171,7 @@ let complete_pats_constrs = function
     to jump to in case of failure of elementary tests
 *)
 
-let mk_failaction_neg partial ctx def = match partial with
+let mk_failaction_neg _mut partial ctx def = match partial with
 | Partial ->
     begin match def with
     | (_,idef)::_ ->
@@ -2189,7 +2188,7 @@ let mk_failaction_neg partial ctx def = match partial with
 
 
 (* In line with the article and simpler than before *)
-let mk_failaction_pos partial seen ctx defs  =
+let mk_failaction_pos mut partial seen ctx defs  =
   if dbg then begin
     prerr_endline "**POS**" ;
     pretty_def defs ;
@@ -2216,8 +2215,8 @@ let mk_failaction_pos partial seen ctx defs  =
       | [] -> scan_def env to_test rem
       | _  -> scan_def ((List.map fst now,idef)::env) later rem in
 
-  let fail_pats = complete_pats_constrs seen in
-  if List.length fail_pats < 32 then begin
+  let fail_pats = if mut then [] else complete_pats_constrs seen in
+  if not mut && List.length fail_pats < 32 then begin
     let fail,jmps =
       scan_def
         []
@@ -2230,9 +2229,10 @@ let mk_failaction_pos partial seen ctx defs  =
       pretty_jumps jmps
     end ;
     None,fail,jmps
-  end else begin (* Too many non-matched constructors -> reduced information *)
+  end else begin
+  (* If mutable or too many non-matched constructors -> reduced information *)
     if dbg then eprintf "POS->NEG!!!\n%!" ;
-    let fail,jumps =  mk_failaction_neg partial ctx defs in
+    let fail,jumps =  mk_failaction_neg mut partial ctx defs in
     if dbg then
       eprintf "FAIL: %s\n"
         (match fail with
@@ -2241,10 +2241,10 @@ let mk_failaction_pos partial seen ctx defs  =
     fail,[],jumps
   end
 
-let combine_constant loc arg cst partial ctx def
+let combine_constant mut loc arg cst partial ctx def
     (const_lambda_list, total, _pats) =
   let fail, local_jumps =
-    mk_failaction_neg partial ctx def in
+    mk_failaction_neg mut partial ctx def in
   let lambda1 =
     match cst with
     | Const_int _ ->
@@ -2322,12 +2322,12 @@ let split_extension_cases tag_lambda_list =
   split_rec tag_lambda_list
 
 
-let combine_constructor loc arg ex_pat cstr partial ctx def
+let combine_constructor mut loc arg ex_pat cstr partial ctx def
     (tag_lambda_list, total1, pats) =
   if cstr.cstr_consts < 0 then begin
     (* Special cases for extensions *)
     let fail, local_jumps =
-      mk_failaction_neg partial ctx def in
+      mk_failaction_neg mut partial ctx def in
     let lambda1 =
       let consts, nonconsts = split_extension_cases tag_lambda_list in
       let default, consts, nonconsts =
@@ -2372,7 +2372,7 @@ let combine_constructor loc arg ex_pat cstr partial ctx def
     let fail_opt,fails,local_jumps =
       if sig_complete then None,[],jumps_empty
       else
-        mk_failaction_pos partial pats ctx def in
+        mk_failaction_pos mut partial pats ctx def in
 
     let tag_lambda_list = fails @ tag_lambda_list in
     let (consts, nonconsts) = split_cases tag_lambda_list in
@@ -2434,7 +2434,7 @@ let call_switcher_variant_constr loc fail arg int_lambda_list =
        call_switcher loc
          fail (Lvar v) min_int max_int int_lambda_list)
 
-let combine_variant loc row arg partial ctx def
+let combine_variant mut loc row arg partial ctx def
                     (tag_lambda_list, total1, _pats) =
   let row = Btype.row_repr row in
   let num_constr = ref 0 in
@@ -2457,7 +2457,7 @@ let combine_variant loc row arg partial ctx def
     then
       None, jumps_empty
     else
-      mk_failaction_neg partial ctx def in
+      mk_failaction_neg mut partial ctx def in
   let (consts, nonconsts) = split_cases tag_lambda_list in
   let lambda1 = match fail, one_action with
   | None, Some act -> act
@@ -2487,9 +2487,9 @@ let combine_variant loc row arg partial ctx def
   lambda1, jumps_union local_jumps total1
 
 
-let combine_array loc arg kind partial ctx def
+let combine_array mut loc arg kind partial ctx def
     (len_lambda_list, total1, _pats)  =
-  let fail, local_jumps = mk_failaction_neg partial  ctx def in
+  let fail, local_jumps = mk_failaction_neg mut partial  ctx def in
   let lambda1 =
     let newvar = Ident.create "len" in
     let switch =
@@ -2592,7 +2592,7 @@ let compile_test mut compile_fun partial divide combine ctx to_match =
   let c_div = compile_list mut compile_fun division in
   match c_div with
   | [],_,_ ->
-     begin match mk_failaction_neg partial ctx to_match.default with
+     begin match mk_failaction_neg mut partial ctx to_match.default with
      | None,_ -> raise Unused
      | Some l,total -> l,total
      end
@@ -2784,18 +2784,18 @@ and do_compile_matching repr mut partial ctx arg pmh = match pmh with
       compile_test mut
         (compile_match repr partial) partial
         divide_constant
-        (combine_constant pat.pat_loc arg cst partial)
+        (combine_constant mut pat.pat_loc arg cst partial)
         ctx pm
   | Tpat_construct (_, cstr, _) ->
       compile_test mut
         (compile_match repr partial) partial
         divide_constructor
-        (combine_constructor pat.pat_loc arg pat cstr partial)
+        (combine_constructor mut pat.pat_loc arg pat cstr partial)
         ctx pm
   | Tpat_array _ ->
       let kind = Typeopt.array_pattern_kind pat in
       compile_test mut (compile_match repr partial) partial
-        (divide_array kind) (combine_array pat.pat_loc arg kind partial)
+        (divide_array kind) (combine_array mut pat.pat_loc arg kind partial)
         ctx pm
   | Tpat_lazy _ ->
       compile_no_test
@@ -2804,7 +2804,7 @@ and do_compile_matching repr mut partial ctx arg pmh = match pmh with
   | Tpat_variant(_, _, row) ->
       compile_test mut (compile_match repr partial) partial
         (divide_variant !row)
-        (combine_variant pat.pat_loc !row arg partial)
+        (combine_variant mut pat.pat_loc !row arg partial)
         ctx pm
   | _ -> assert false
   end
