@@ -38,7 +38,6 @@ struct caml_remembered_set {
   struct caml_ref_table ref, fiber_ref;
   struct addrmap promotion, promotion_rev;
 };
-CAMLextern __thread struct caml_remembered_set caml_remembered_set;
 
 extern void caml_set_minor_heap_size (asize_t); /* size in bytes */
 extern void caml_empty_minor_heap (void);
