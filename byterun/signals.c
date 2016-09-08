@@ -71,7 +71,6 @@ void caml_record_signal(int signal_number)
   caml_interrupt_self();
 }
 
-
 /* Execute a signal handler immediately */
 
 static caml_root caml_signal_handlers;

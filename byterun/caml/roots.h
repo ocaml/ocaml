@@ -18,6 +18,7 @@
 #include "memory.h"
 
 typedef void (*scanning_action) (value, value *);
+CAMLexport void (*caml_scan_roots_hook)(scanning_action, struct domain*);
 
 void caml_do_local_roots(scanning_action, struct domain*);
 void caml_do_sampled_roots(scanning_action, struct domain*);

@@ -41,6 +41,7 @@ static intnat caml_globals_scanned = 0;
 #endif
 
 CAMLexport __thread struct caml__roots_block *caml_local_roots = NULL;
+CAMLexport void (*caml_scan_roots_hook)(scanning_action, struct domain*) = NULL;
 
 CAMLexport void caml_do_local_roots (scanning_action f, struct domain* domain)
 {
@@ -73,6 +74,8 @@ CAMLexport void caml_do_local_roots (scanning_action f, struct domain* domain)
       }
     }
   }
+  /* Hook */
+  if (caml_scan_roots_hook != NULL) (*caml_scan_roots_hook)(f, domain);
 }
 
 void caml_do_sampled_roots(scanning_action f, struct domain* domain)
@@ -119,10 +122,10 @@ void caml_do_sampled_roots(scanning_action f, struct domain* domain)
 
   /* treat the remembered sets as roots */
   struct caml_ref_entry* r;
-  for (r = domain->remembered_set->ref.base; r < domain->remembered_set->ref.ptr; r++) {
+  for (r = domain->state->remembered_set->ref.base; r < domain->state->remembered_set->ref.ptr; r++) {
     f(r->obj, 0);
   }
-  for (r = domain->remembered_set->fiber_ref.base; r < domain->remembered_set->fiber_ref.ptr; r++) {
+  for (r = domain->state->remembered_set->fiber_ref.base; r < domain->state->remembered_set->fiber_ref.ptr; r++) {
     f(r->obj, 0);
     caml_scan_stack(f, r->obj);
   }

@@ -28,6 +28,7 @@
 #endif
 
 #ifdef __GNUC__
+#undef INLINE
 #define INLINE inline
 #else
 #define INLINE
@@ -323,7 +324,11 @@ static void * caml_thread_tick(void * arg)
 {
   struct timeval timeout;
   sigset_t mask;
+  uintnat domain_id;
 
+  /* Initialize domain_self thread local variable */
+  domain_id = (uintnat)arg;
+  caml_init_domain_self (domain_id);
   /* Block all signals so that we don't try to execute an OCaml signal handler*/
   sigfillset(&mask);
   pthread_sigmask(SIG_BLOCK, &mask, NULL);
@@ -386,8 +391,8 @@ static value st_encode_sigset(sigset_t * set)
     for (i = 1; i < NSIG; i++)
       if (sigismember(set, i) > 0) {
         value newcons = alloc_small(2, 0);
-        Field(newcons, 0) = Val_int(caml_rev_convert_signal_number(i));
-        Field(newcons, 1) = res;
+        caml_modify_field(newcons, 0, Val_int(caml_rev_convert_signal_number(i)));
+        caml_modify_field(newcons, 1, res);
         res = newcons;
       }
   End_roots();

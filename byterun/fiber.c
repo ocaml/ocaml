@@ -26,7 +26,7 @@ static void dirty_stack(value stack)
            Stack_dirty_domain(stack) == caml_domain_self());
     if (Stack_dirty_domain(stack) == 0) {
       Stack_dirty_domain(stack) = caml_domain_self();
-      Ref_table_add(&caml_remembered_set.fiber_ref, stack, 0);
+      Ref_table_add(&caml_domain_state->remembered_set->fiber_ref, stack, 0);
     }
   }
 }
@@ -40,25 +40,10 @@ static value save_stack ()
   return old_stack;
 }
 
-void caml_save_stack_gc()
-{
-  Assert(!stack_is_saved);
-  save_stack();
-  stack_is_saved = 1;
-}
-
 static void load_stack (value stack) {
   caml_domain_state->stack_threshold = Stack_base(stack) + Stack_threshold / sizeof(value);
   caml_domain_state->stack_high = Stack_high(stack);
   caml_domain_state->current_stack = stack;
-}
-
-void caml_restore_stack_gc()
-{
-  Assert(stack_is_saved);
-  Assert(Tag_val(caml_domain_state->current_stack) == Stack_tag);
-  load_stack(caml_domain_state->current_stack);
-  stack_is_saved = 0;
 }
 
 extern void caml_fiber_exn_handler (value) Noreturn;
@@ -306,20 +291,6 @@ void caml_change_max_stack_size (uintnat new_max_size)
   Used by the GC to find roots on the stacks of running or runnable fibers.
 */
 
-void caml_save_stack_gc()
-{
-  Assert(!stack_is_saved);
-  save_stack();
-  stack_is_saved = 1;
-}
-
-void caml_restore_stack_gc()
-{
-  Assert(stack_is_saved);
-  load_stack(caml_domain_state->current_stack);
-  stack_is_saved = 0;
-}
-
 void caml_scan_stack(scanning_action f, value stack)
 {
   value *low, *high, *sp;
@@ -426,20 +397,30 @@ void caml_realloc_stack(asize_t required_space, value* saved_vals, int nsaved)
   CAMLreturn0;
 }
 
-void caml_init_main_stack()
+value caml_alloc_main_stack (uintnat init_size)
 {
-  value stack;
+  CAMLparam0();
+  CAMLlocal1(stack);
 
   /* Create a stack for the main program.
      The GC is not initialised yet, so we use caml_alloc_shr
      which cannot trigger it */
-  stack = caml_alloc_shr(Stack_size/sizeof(value), Stack_tag);
+  stack = caml_alloc_shr(init_size, Stack_tag);
   Stack_sp(stack) = 0;
   Stack_dirty_domain(stack) = 0;
   Stack_handle_value(stack) = Val_long(0);
   Stack_handle_exception(stack) = Val_long(0);
   Stack_handle_effect(stack) = Val_long(0);
   Stack_parent(stack) = Val_unit;
+
+  CAMLreturn(stack);
+}
+
+void caml_init_main_stack ()
+{
+  value stack;
+
+  stack = caml_alloc_main_stack (Stack_size/sizeof(value));
   load_stack(stack);
 }
 
@@ -483,6 +464,27 @@ CAMLprim value caml_clone_continuation (value cont)
   CAMLreturn(new_cont);
 }
 
+void caml_save_stack_gc()
+{
+  Assert(!stack_is_saved);
+  save_stack();
+  stack_is_saved = 1;
+}
+
+void caml_restore_stack_gc()
+{
+  if (stack_is_saved) {
+    Assert(Tag_val(caml_domain_state->current_stack) == Stack_tag);
+    load_stack(caml_domain_state->current_stack);
+  }
+  stack_is_saved = 0;
+}
+
+void caml_restore_stack()
+{
+  Assert(Tag_val(caml_domain_state->current_stack) == Stack_tag);
+  load_stack(caml_domain_state->current_stack);
+}
 
 #ifdef DEBUG
 uintnat stack_sp(value stk) {

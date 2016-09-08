@@ -36,7 +36,7 @@ libthreads.a: $(BYTECODE_C_OBJS)
 	$(MKLIB) -o threads $(BYTECODE_C_OBJS) $(PTHREAD_LINK)
 
 st_stubs_b.o: st_stubs.c st_posix.h
-	$(BYTECC) -I../../byterun $(BYTECCCOMPOPTS) $(SHAREDCCCOMPOPTS) \
+	$(BYTECC) -g -I../../byterun $(BYTECCCOMPOPTS) $(SHAREDCCCOMPOPTS) \
 	   -c st_stubs.c
 	mv st_stubs.o st_stubs_b.o
 
@@ -46,7 +46,7 @@ libthreadsnat.a: $(NATIVECODE_C_OBJS)
 	$(AR) rc libthreadsnat.a $(NATIVECODE_C_OBJS)
 
 st_stubs_n.o: st_stubs.c st_posix.h
-	$(NATIVECC) -I../../asmrun -I../../byterun $(NATIVECCCOMPOPTS) \
+	$(NATIVECC) -g -I../../asmrun -I../../byterun $(NATIVECCCOMPOPTS) \
 	            $(SHAREDCCCOMPOPTS) -DNATIVE_CODE -DTARGET_$(ARCH) \
 	            -DSYS_$(SYSTEM) -c st_stubs.c
 	mv st_stubs.o st_stubs_n.o
