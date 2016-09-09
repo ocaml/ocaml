@@ -30,7 +30,7 @@
 #include "caml/signals_machdep.h"
 #include "signals_osdep.h"
 #include "caml/stack.h"
-#include "spacetime.h"
+#include "caml/spacetime.h"
 
 #ifdef HAS_STACK_OVERFLOW_DETECTION
 #include <sys/time.h>

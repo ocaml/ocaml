@@ -15,6 +15,8 @@
 #ifndef CAML_SPACETIME_H
 #define CAML_SPACETIME_H
 
+#ifdef NATIVE_CODE
+
 #include "caml/io.h"
 #include "caml/misc.h"
 #include "caml/stack.h"
@@ -150,6 +152,7 @@ extern shape_table* caml_spacetime_dynamic_shape_tables;
 
 typedef struct ext_table* spacetime_unwind_info_cache;
 
+extern value caml_spacetime_trie_root;
 extern value* caml_spacetime_trie_node_ptr;
 extern value* caml_spacetime_finaliser_trie_root;
 
@@ -186,5 +189,13 @@ extern void caml_spacetime_automatic_snapshot (void);
 #define Get_my_profinfo_with_cached_backtrace(profinfo, size) \
   profinfo = (uintnat) 0;
 #endif
+
+#else
+
+#define Get_my_profinfo_with_cached_backtrace(profinfo, size)   \
+  profinfo = (uintnat) 0;
+
+#endif /* NATIVE_CODE */
+
 
 #endif

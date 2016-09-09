@@ -44,6 +44,7 @@ EOF
     # we need to redo (small parts of) world.opt afterwards
     make check_all_arches
     make world.opt
+    make manual-pregen
     mkdir external-packages
     cd external-packages
     git clone git://github.com/ocaml/ocamlbuild

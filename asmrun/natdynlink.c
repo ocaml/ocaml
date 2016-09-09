@@ -26,7 +26,7 @@
 #include "caml/fail.h"
 #include "caml/signals.h"
 #ifdef WITH_SPACETIME
-#include "spacetime.h"
+#include "caml/spacetime.h"
 #endif
 
 #include "caml/hooks.h"

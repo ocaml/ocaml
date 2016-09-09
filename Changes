@@ -8,11 +8,45 @@ Next version (tbd):
 - PR#7315, GPR#736: refine some error locations
   (Gabriel Scherer and Alain Frisch, report by Matej Košík)
 
+
+### Tools:
+
+- PR#7272: ocamldoc, missing line breaks in type_*.html files
+  (Florian Angeletti)
+
+- PR#7333: ocamldoc, use the first sentence of text file as
+  a short description in overviews.
+  (Florian Angeletti)
+
 ### Compiler distribution build system:
 
 - GPR#729: Make sure ocamlnat is built with a $(EXE) extension, merge
   rules between Unix and Windows Makefiles
- (Sébastien Hinderer, review by Alain Frisch)
+  (Sébastien Hinderer, review by Alain Frisch)
+
+- GPR#762, GPR#764: Merge Unix and Windows Makefiles in yacc/ and
+  debugger/
+  (Sébastien Hinderer)
+
+### Internal/compiler-libs changes:
+
+- GPR#744, GPR#781: fix duplicate self-reference in imported cmi_crcs
+  list in .cmti files + avoid rebuilding cmi_info record when creating
+  .cmti files
+  (Alain Frisch, report by Daniel Bunzli, review by Jeremie Dimino)
+
+### Other libraries:
+
+- MPR#7339, GPR#787: Support the '0 dimension' case for bigarrays
+  (see Bigarray documentation)
+  (Laurent Mazare,
+   review by Gabriel Scherer, Alain Frisch and Hezekiah M. Carty)
+
+### Manual and documentation:
+- GPR#693: fail on unexpected errors or warnings within caml_example
+  environment.
+  (Florian Angeletti)
+
 
 OCaml 4.04.0:
 -------------
@@ -161,6 +195,9 @@ OCaml 4.04.0:
   (François Bobot reviewed by Damien Doligez and Leo White)
 
 ### Tools:
+
+- MPR#7323, GPR#750: ensure "ocamllex -ml" works with -safe-string
+  (Hongbo Zhang)
 
 - MPR#7189: toplevel #show, follow chains of module aliases
   (Gabriel Scherer, report by Daniel Bünzli, review by Thomas Refis)
@@ -613,9 +650,9 @@ OCaml 4.03.0 (25 Apr 2016):
 
 ### Runtime system:
 
-* GPR#442, caml_fill_string, and caml_create_string is deprecated 
-  and will be removed in the future, please use caml_fill_bytes 
-  and caml_create_bytes for migration 
+* GPR#442, caml_fill_string, and caml_create_string is deprecated
+  and will be removed in the future, please use caml_fill_bytes
+  and caml_create_bytes for migration
   (Hongbo Zhang, review by Damien Doligez, Alain Frisch, and Hugo Heuzard)
 
 - PR#3612, PR#92: allow allocating custom block with finalizers

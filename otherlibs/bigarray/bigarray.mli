@@ -226,7 +226,7 @@ module Genarray :
   sig
   type ('a, 'b, 'c) t
   (** The type [Genarray.t] is the type of big arrays with variable
-     numbers of dimensions.  Any number of dimensions between 1 and 16
+     numbers of dimensions.  Any number of dimensions between 0 and 16
      is supported.
 
      The three type parameters to [Genarray.t] identify the array element
@@ -264,7 +264,7 @@ module Genarray :
      the initial values of array elements is unspecified.
 
      [Genarray.create] raises [Invalid_argument] if the number of dimensions
-     is not in the range 1 to 16 inclusive, or if one of the dimensions
+     is not in the range 0 to 16 inclusive, or if one of the dimensions
      is negative. *)
 
   external num_dims: ('a, 'b, 'c) t -> int = "caml_ba_num_dims"
@@ -483,6 +483,53 @@ module Genarray :
 
   end
 
+(** {6 Zero-dimensional arrays} *)
+
+(** Zero-dimensional arrays. The [Array0] structure provides operations
+   similar to those of {!Bigarray.Genarray}, but specialized to the case
+   of zero-dimensional arrays that only contain a single scalar value.
+   Statically knowing the number of dimensions of the array allows
+   faster operations, and more precise static type-checking. *)
+module Array0 : sig
+  type ('a, 'b, 'c) t
+  (** The type of zero-dimensional big arrays whose elements have
+     OCaml type ['a], representation kind ['b], and memory layout ['c]. *)
+
+  val create: ('a, 'b) kind -> 'c layout -> ('a, 'b, 'c) t
+  (** [Array0.create kind layout] returns a new bigarray of zero dimension.
+     [kind] and [layout] determine the array element kind and the array
+     layout as described for [Genarray.create]. *)
+
+  external kind: ('a, 'b, 'c) t -> ('a, 'b) kind = "caml_ba_kind"
+  (** Return the kind of the given big array. *)
+
+  external layout: ('a, 'b, 'c) t -> 'c layout = "caml_ba_layout"
+  (** Return the layout of the given big array. *)
+
+  val size_in_bytes : ('a, 'b, 'c) t -> int
+  (** [size_in_bytes a] is [a]'s {!kind_size_in_bytes}. *)
+
+  val get: ('a, 'b, 'c) t -> 'a
+  (** [Array0.get a] returns the only element in [a]. *)
+
+  val set: ('a, 'b, 'c) t -> 'a -> unit
+  (** [Array0.set a x v] stores the value [v] in [a]. *)
+
+  external blit: ('a, 'b, 'c) t -> ('a, 'b, 'c) t -> unit = "caml_ba_blit"
+  (** Copy the first big array to the second big array.
+     See [Genarray.blit] for more details. *)
+
+  external fill: ('a, 'b, 'c) t -> 'a -> unit = "caml_ba_fill"
+  (** Fill the given big array with the given value.
+     See [Genarray.fill] for more details. *)
+
+  val of_value: ('a, 'b) kind -> 'c layout -> 'a -> ('a, 'b, 'c) t
+  (** Build a zero-dimensional big array initialized from the
+     given value.  *)
+
+end
+
+
 (** {6 One-dimensional arrays} *)
 
 (** One-dimensional arrays. The [Array1] structure provides operations
@@ -538,6 +585,12 @@ module Array1 : sig
       = "caml_ba_sub"
   (** Extract a sub-array of the given one-dimensional big array.
      See [Genarray.sub_left] for more details. *)
+
+  val slice: ('a, 'b, 'c) t -> int -> ('a, 'b, 'c) Array0.t
+  (** Extract a scalar (zero-dimensional slice) of the given one-dimensional
+     big array.  The integer parameter is the index of the scalar to
+     extract.  See {!Bigarray.Genarray.slice_left} and
+     {!Bigarray.Genarray.slice_right} for more details. *)
 
   external blit: ('a, 'b, 'c) t -> ('a, 'b, 'c) t -> unit
       = "caml_ba_blit"
@@ -816,6 +869,11 @@ end
 
 (** {6 Coercions between generic big arrays and fixed-dimension big arrays} *)
 
+external genarray_of_array0 :
+  ('a, 'b, 'c) Array0.t -> ('a, 'b, 'c) Genarray.t = "%identity"
+(** Return the generic big array corresponding to the given zero-dimensional
+   big array. *)
+
 external genarray_of_array1 :
   ('a, 'b, 'c) Array1.t -> ('a, 'b, 'c) Genarray.t = "%identity"
 (** Return the generic big array corresponding to the given one-dimensional
@@ -830,6 +888,11 @@ external genarray_of_array3 :
   ('a, 'b, 'c) Array3.t -> ('a, 'b, 'c) Genarray.t = "%identity"
 (** Return the generic big array corresponding to the given three-dimensional
    big array. *)
+
+val array0_of_genarray : ('a, 'b, 'c) Genarray.t -> ('a, 'b, 'c) Array0.t
+(** Return the zero-dimensional big array corresponding to the given
+   generic big array.  Raise [Invalid_argument] if the generic big array
+   does not have exactly zero dimension. *)
 
 val array1_of_genarray : ('a, 'b, 'c) Genarray.t -> ('a, 'b, 'c) Array1.t
 (** Return the one-dimensional big array corresponding to the given
@@ -864,6 +927,10 @@ val reshape : ('a, 'b, 'c) Genarray.t -> int array -> ('a, 'b, 'c) Genarray.t
    elements as the original big array [b].  That is, the product
    of the dimensions of [b] must be equal to [i1 * ... * iN].
    Otherwise, [Invalid_argument] is raised. *)
+
+val reshape_0 : ('a, 'b, 'c) Genarray.t -> ('a, 'b, 'c) Array0.t
+(** Specialized version of {!Bigarray.reshape} for reshaping to
+   zero-dimensional arrays. *)
 
 val reshape_1 : ('a, 'b, 'c) Genarray.t -> int -> ('a, 'b, 'c) Array1.t
 (** Specialized version of {!Bigarray.reshape} for reshaping to

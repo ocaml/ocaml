@@ -514,28 +514,29 @@ let get_field ptr n =
 let set_field ptr n newval init =
   Cop(Cstore (Word_val, init), [field_address ptr n; newval])
 
-let header ptr =
-  if Config.spacetime then
-    let non_profinfo_mask = (1 lsl (64 - Config.profinfo_width)) - 1 in
-    Cop(Cand, [Cop (Cload Word_int,
-        [Cop(Cadda, [ptr; Cconst_int(-size_int)])]);
-      Cconst_int non_profinfo_mask;
-    ])
+let non_profinfo_mask = (1 lsl (64 - Config.profinfo_width)) - 1
+
+let get_header ptr =
+  Cop(Cload Word_int, [Cop(Cadda, [ptr; Cconst_int(-size_int)])])
+
+let get_header_without_profinfo ptr =
+  if Config.profinfo then
+    Cop(Cand, [get_header ptr; Cconst_int non_profinfo_mask])
   else
-    Cop(Cload Word_int, [Cop(Cadda, [ptr; Cconst_int(-size_int)])])
+    get_header ptr
 
 let tag_offset =
   if big_endian then -1 else -size_int
 
 let get_tag ptr =
   if Proc.word_addressed then           (* If byte loads are slow *)
-    Cop(Cand, [header ptr; Cconst_int 255])
+    Cop(Cand, [get_header ptr; Cconst_int 255])
   else                                  (* If byte loads are efficient *)
     Cop(Cload Byte_unsigned,
         [Cop(Cadda, [ptr; Cconst_int(tag_offset)])])
 
 let get_size ptr =
-  Cop(Clsr, [header ptr; Cconst_int 10])
+  Cop(Clsr, [get_header_without_profinfo ptr; Cconst_int 10])
 
 (* Array indexing *)
 
@@ -1840,21 +1841,22 @@ and transl_prim_1 env p arg dbg =
       tag_int(string_length (transl env arg))
   (* Array operations *)
   | Parraylength kind ->
+      let hdr = get_header_without_profinfo (transl env arg) in
       begin match kind with
         Pgenarray ->
           let len =
             if wordsize_shift = numfloat_shift then
-              Cop(Clsr, [header(transl env arg); Cconst_int wordsize_shift])
+              Cop(Clsr, [hdr; Cconst_int wordsize_shift])
             else
-              bind "header" (header(transl env arg)) (fun hdr ->
+              bind "header" hdr (fun hdr ->
                 Cifthenelse(is_addr_array_hdr hdr,
                             Cop(Clsr, [hdr; Cconst_int wordsize_shift]),
                             Cop(Clsr, [hdr; Cconst_int numfloat_shift]))) in
           Cop(Cor, [len; Cconst_int 1])
       | Paddrarray | Pintarray ->
-          Cop(Cor, [addr_array_length(header(transl env arg)); Cconst_int 1])
+          Cop(Cor, [addr_array_length hdr; Cconst_int 1])
       | Pfloatarray ->
-          Cop(Cor, [float_array_length(header(transl env arg)); Cconst_int 1])
+          Cop(Cor, [float_array_length hdr; Cconst_int 1])
       end
   (* Boolean operations *)
   | Pnot ->
@@ -2066,7 +2068,7 @@ and transl_prim_2 env p arg1 arg2 dbg =
       | Pgenarray ->
           bind "index" (transl env arg2) (fun idx ->
           bind "arr" (transl env arg1) (fun arr ->
-          bind "header" (header arr) (fun hdr ->
+          bind "header" (get_header_without_profinfo arr) (fun hdr ->
             if wordsize_shift = numfloat_shift then
               Csequence(make_checkbound dbg [addr_array_length hdr; idx],
                         Cifthenelse(is_addr_array_hdr hdr,
@@ -2081,19 +2083,22 @@ and transl_prim_2 env p arg1 arg2 dbg =
       | Paddrarray ->
           bind "index" (transl env arg2) (fun idx ->
           bind "arr" (transl env arg1) (fun arr ->
-            Csequence(make_checkbound dbg [addr_array_length(header arr); idx],
+            Csequence(make_checkbound dbg [
+              addr_array_length(get_header_without_profinfo arr); idx],
                       addr_array_ref arr idx)))
       | Pintarray ->
           bind "index" (transl env arg2) (fun idx ->
           bind "arr" (transl env arg1) (fun arr ->
-            Csequence(make_checkbound dbg [addr_array_length(header arr); idx],
+            Csequence(make_checkbound dbg [
+              addr_array_length(get_header_without_profinfo arr); idx],
                       int_array_ref arr idx)))
       | Pfloatarray ->
           box_float dbg (
             bind "index" (transl env arg2) (fun idx ->
             bind "arr" (transl env arg1) (fun arr ->
               Csequence(make_checkbound dbg
-                                        [float_array_length(header arr); idx],
+                          [float_array_length(get_header_without_profinfo arr);
+                           idx],
                         unboxed_float_array_ref arr idx))))
       end
 
@@ -2201,7 +2206,7 @@ and transl_prim_3 env p arg1 arg2 arg3 dbg =
           bind "newval" (transl env arg3) (fun newval ->
           bind "index" (transl env arg2) (fun idx ->
           bind "arr" (transl env arg1) (fun arr ->
-          bind "header" (header arr) (fun hdr ->
+          bind "header" (get_header_without_profinfo arr) (fun hdr ->
             if wordsize_shift = numfloat_shift then
               Csequence(make_checkbound dbg [addr_array_length hdr; idx],
                         Cifthenelse(is_addr_array_hdr hdr,
@@ -2219,19 +2224,22 @@ and transl_prim_3 env p arg1 arg2 arg3 dbg =
           bind "newval" (transl env arg3) (fun newval ->
           bind "index" (transl env arg2) (fun idx ->
           bind "arr" (transl env arg1) (fun arr ->
-            Csequence(make_checkbound dbg [addr_array_length(header arr); idx],
+            Csequence(make_checkbound dbg [
+              addr_array_length(get_header_without_profinfo arr); idx],
                       addr_array_set arr idx newval))))
       | Pintarray ->
           bind "newval" (transl env arg3) (fun newval ->
           bind "index" (transl env arg2) (fun idx ->
           bind "arr" (transl env arg1) (fun arr ->
-            Csequence(make_checkbound dbg [addr_array_length(header arr); idx],
+            Csequence(make_checkbound dbg [
+              addr_array_length(get_header_without_profinfo arr); idx],
                       int_array_set arr idx newval))))
       | Pfloatarray ->
           bind_load "newval" (transl_unbox_float env arg3) (fun newval ->
           bind "index" (transl env arg2) (fun idx ->
           bind "arr" (transl env arg1) (fun arr ->
-            Csequence(make_checkbound dbg [float_array_length(header arr);idx],
+            Csequence(make_checkbound dbg [
+              float_array_length(get_header_without_profinfo arr);idx],
                       float_array_set arr idx newval))))
       end)
 

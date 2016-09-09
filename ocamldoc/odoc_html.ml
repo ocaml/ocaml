@@ -1154,14 +1154,14 @@ class html =
     method constructor s = "<span class=\"constructor\">"^s^"</span>"
 
     (** Output the given ocaml code to the given file name. *)
-    method private output_code in_title file code =
+    method private output_code ?(with_pre=true) in_title file code =
       try
         let chanout = open_out file in
         let b = new_buf () in
         bs b "<html>";
         self#print_header b (self#inner_title in_title);
         bs b"<body>\n";
-        self#html_of_code b code;
+        self#html_of_code ~with_pre b code;
         bs b "</body></html>";
         Buffer.output_buffer chanout b;
         close_out chanout
@@ -1435,12 +1435,12 @@ class html =
     (** Generate a file containing the module type in the given file name. *)
     method output_module_type in_title file mtyp =
       let s = Odoc_info.remove_ending_newline (Odoc_info.string_of_module_type ~complete: true mtyp) in
-      self#output_code in_title file s
+      self#output_code ~with_pre:false in_title file s
 
     (** Generate a file containing the class type in the given file name. *)
     method output_class_type in_title file ctyp =
       let s = Odoc_info.remove_ending_newline (Odoc_info.string_of_class_type ~complete: true ctyp) in
-      self#output_code in_title file s
+      self#output_code ~with_pre:false in_title file s
 
     (** Print html code for a value. *)
     method html_of_value b v =
@@ -2560,7 +2560,10 @@ class html =
           );
         bs b "</h1>\n";
 
-        if not modu.m_text_only then self#html_of_module b ~with_link: false modu;
+        if not modu.m_text_only then
+          self#html_of_module b ~with_link: false modu
+        else
+          self#html_of_info ~indent:false b modu.m_info;
 
         (* parameters for functors *)
         self#html_of_module_parameter_list b
@@ -2597,7 +2600,7 @@ class html =
         match modu.m_code with
           None -> ()
         | Some code ->
-            self#output_code
+            self#output_code ~with_pre:false
               modu.m_name
               (Filename.concat !Global.target_dir code_file)
               code

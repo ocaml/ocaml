@@ -20,6 +20,12 @@ include ../config/Makefile
 CC=$(BYTECC)
 CFLAGS=-DNDEBUG $(BYTECCCOMPOPTS)
 
+ifeq "$(TOOLCHAIN)" "mingw"
+  CFLAGS += -DNO_UNIX
+else ifeq "$(TOOLCHAIN)" "msvc"
+  CFLAGS += -DNO_UNIX
+endif
+
 OBJS= closure.$(O) error.$(O) lalr.$(O) lr0.$(O) main.$(O) \
   mkpar.$(O) output.$(O) reader.$(O) \
   skeleton.$(O) symtab.$(O) verbose.$(O) warshall.$(O)
@@ -49,3 +55,9 @@ skeleton.$(O): defs.h
 symtab.$(O): defs.h
 verbose.$(O): defs.h
 warshall.$(O): defs.h
+
+# The following rule is similar to make's default one, except that it
+# also works for .obj files.
+
+%.$(O): %.c
+	$(CC) $(CFLAGS) -c $<

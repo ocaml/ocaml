@@ -9,6 +9,10 @@ TRANSF=$(OCAMLRUN) ../../tools/transf
 TEXQUOTE=../../tools/texquote2
 FORMAT=../../tools/format-intf
 
+WITH_TRANSF= ocamldoc.tex top.tex intf-c.tex flambda.tex lexyacc.tex debugger.tex
+
+etex-files: $(FILES)
+
 all: $(FILES)
 
 clean::
@@ -19,25 +23,16 @@ clean::
 .SUFFIXES: .tex .etex
 
 .etex.tex:
-	$(TEXQUOTE) < $*.etex > $*.tex
+	@$(TEXQUOTE) < $*.etex > $*.texquote_error.tex\
+	&& mv $*.texquote_error.tex $*.tex\
+	|| printf "Failure when generating %s\n" $*.tex
 
-ocamldoc.tex: ocamldoc.etex $(TRANSF)
-	$(TRANSF) < ocamldoc.etex | $(TEXQUOTE) > ocamldoc.tex
-
-top.tex: top.etex $(TRANSF)
-	$(TRANSF) < top.etex | $(TEXQUOTE) > top.tex
-
-intf-c.tex: intf-c.etex $(TRANSF)
-	$(TRANSF) < intf-c.etex | $(TEXQUOTE) > intf-c.tex
-
-flambda.tex: flambda.etex $(TRANSF)
-	$(TRANSF) < flambda.etex | $(TEXQUOTE) > flambda.tex
-
-lexyacc.tex: lexyacc.etex $(TRANSF)
-	$(TRANSF) < lexyacc.etex | $(TEXQUOTE) > lexyacc.tex
-
-debugger.tex: debugger.etex $(TRANSF)
-	$(TRANSF) < debugger.etex | $(TEXQUOTE) > debugger.tex
+$(WITH_TRANSF):%.tex:%.etex
+	@$(TRANSF) < $*.etex > $*.transf_error.tex \
+	&& mv $*.transf_error.tex $*.transf_gen.tex \
+	&& $(TEXQUOTE) < $*.transf_gen.tex > $*.texquote_error.tex \
+	&& mv $*.texquote_error.tex $*.tex \
+	|| printf "Failure when generating %s\n" $*.tex
 
 warnings-help.etex: ../warnings-help.etex
 	cp ../warnings-help.etex .
