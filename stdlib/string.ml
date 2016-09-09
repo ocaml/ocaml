@@ -63,9 +63,11 @@ let concat sep l =
       Bytes.unsafe_to_string r
 
 let iter f s =
-  B.iter f (bos s)
+  for i = 0 to length s - 1 do f (unsafe_get s i) done
+
 let iteri f s =
-  B.iteri f (bos s)
+  for i = 0 to length s - 1 do f i (unsafe_get s i) done
+
 let map f s =
   B.map f (bos s) |> bts
 let mapi f s =
@@ -98,20 +100,43 @@ let escaped s =
   else
     s
 
-let index s c =
-  B.index (bos s) c
-let rindex s c =
-  B.rindex (bos s) c
-let index_from s i c=
-  B.index_from (bos s) i c
+let rec index_rec s lim i c =
+  if i >= lim then raise Not_found else
+  if unsafe_get s i = c then i else index_rec s lim (i + 1) c
+
+let index s c = index_rec s (length s) 0 c
+
+let rec rindex_rec s i c =
+  if i < 0 then raise Not_found else
+  if unsafe_get s i = c then i else rindex_rec s (i - 1) c
+
+let rindex s c = rindex_rec s (length s - 1) c
+
+let index_from s i c =
+  let l = length s in
+  if i < 0 || i > l then invalid_arg "String.index_from / Bytes.index_from" else
+    index_rec s l i c
+
 let rindex_from s i c =
-  B.rindex_from (bos s) i c
-let contains s c =
-  B.contains (bos s) c
+  if i < -1 || i >= length s then
+    invalid_arg "String.rindex_from / Bytes.rindex_from"
+  else
+    rindex_rec s i c
+
 let contains_from s i c =
-  B.contains_from (bos s) i c
+  let l = length s in
+  if i < 0 || i > l then
+    invalid_arg "String.contains_from / Bytes.contains_from"
+  else
+    try ignore (index_rec s l i c); true with Not_found -> false
+
+let contains s c = contains_from s 0 c
+
 let rcontains_from s i c =
-  B.rcontains_from (bos s) i c
+  if i < 0 || i >= length s then
+    invalid_arg "String.rcontains_from / Bytes.rcontains_from"
+  else
+    try ignore (rindex_rec s i c); true with Not_found -> false
 
 let uppercase_ascii s =
   B.uppercase_ascii (bos s) |> bts
