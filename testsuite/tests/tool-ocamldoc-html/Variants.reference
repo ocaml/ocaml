@@ -16,7 +16,8 @@
 <h1>Module <a href="type_Variants.html">Variants</a></h1>
 
 <pre><span class="keyword">module</span> Variants: <code class="code"><span class="keyword">sig</span></code> <a href="Variants.html">..</a> <code class="code"><span class="keyword">end</span></code></pre><div class="info module top">
-This test is here to check the latex code generated for variants<br>
+<div class="info-desc">
+This test is here to check the latex code generated for variants</div>
 </div>
 <hr width="100%">
 
@@ -34,7 +35,8 @@ This test is here to check the latex code generated for variants<br>
 <td align="left" valign="top" >
 <code><span id="TYPEELTs.B"><span class="constructor">B</span></span></code></td>
 <td class="typefieldcomment" align="left" valign="top" ><code>(*</code></td><td class="typefieldcomment" align="left" valign="top" ><div class="info ">
-only B is documented here<br>
+<div class="info-desc">
+only B is documented here</div>
 </div>
 </td><td class="typefieldcomment" align="left" valign="bottom" ><code>*)</code></td>
 </tr>
@@ -55,7 +57,8 @@ only B is documented here<br>
 <td align="left" valign="top" >
 <code><span id="TYPEELTt.A"><span class="constructor">A</span></span></code></td>
 <td class="typefieldcomment" align="left" valign="top" ><code>(*</code></td><td class="typefieldcomment" align="left" valign="top" ><div class="info ">
-doc for A<br>
+<div class="info-desc">
+doc for A</div>
 </div>
 </td><td class="typefieldcomment" align="left" valign="bottom" ><code>*)</code></td>
 </tr>
@@ -65,7 +68,8 @@ doc for A<br>
 <td align="left" valign="top" >
 <code><span id="TYPEELTt.B"><span class="constructor">B</span></span></code></td>
 <td class="typefieldcomment" align="left" valign="top" ><code>(*</code></td><td class="typefieldcomment" align="left" valign="top" ><div class="info ">
-doc for B<br>
+<div class="info-desc">
+doc for B</div>
 </div>
 </td><td class="typefieldcomment" align="left" valign="bottom" ><code>*)</code></td>
 </tr></table>
@@ -79,7 +83,8 @@ doc for B<br>
 <td align="left" valign="top" >
 <code><span id="TYPEELTu.A"><span class="constructor">A</span></span></code></td>
 <td class="typefieldcomment" align="left" valign="top" ><code>(*</code></td><td class="typefieldcomment" align="left" valign="top" ><div class="info ">
-doc for A<br>
+<div class="info-desc">
+doc for A</div>
 </div>
 </td><td class="typefieldcomment" align="left" valign="bottom" ><code>*)</code></td>
 </tr>
@@ -89,13 +94,15 @@ doc for A<br>
 <td align="left" valign="top" >
 <code><span id="TYPEELTu.B"><span class="constructor">B</span></span> <span class="keyword">of</span> <code class="type">unit</code></code></td>
 <td class="typefieldcomment" align="left" valign="top" ><code>(*</code></td><td class="typefieldcomment" align="left" valign="top" ><div class="info ">
-doc for B<br>
+<div class="info-desc">
+doc for B</div>
 </div>
 </td><td class="typefieldcomment" align="left" valign="bottom" ><code>*)</code></td>
 </tr></table>
 
 <div class="info ">
-Some documentation for u<br>
+<div class="info-desc">
+Some documentation for u</div>
 </div>
 
 
@@ -115,7 +122,8 @@ Some documentation for u<br>
 }
 </code></td>
 <td class="typefieldcomment" align="left" valign="top" ><code>(*</code></td><td class="typefieldcomment" align="left" valign="top" ><div class="info ">
-doc for A<br>
+<div class="info-desc">
+doc for A</div>
 </div>
 </td><td class="typefieldcomment" align="left" valign="bottom" ><code>*)</code></td>
 </tr>
@@ -134,13 +142,15 @@ doc for A<br>
 }
 </code></td>
 <td class="typefieldcomment" align="left" valign="top" ><code>(*</code></td><td class="typefieldcomment" align="left" valign="top" ><div class="info ">
-doc for B<br>
+<div class="info-desc">
+doc for B</div>
 </div>
 </td><td class="typefieldcomment" align="left" valign="bottom" ><code>*)</code></td>
 </tr></table>
 
 <div class="info ">
-With records<br>
+<div class="info-desc">
+With records</div>
 </div>
 
 
@@ -151,7 +161,8 @@ With records<br>
 <td align="left" valign="top" >
 <code><span id="TYPEELTz.A"><span class="constructor">A</span></span> <span class="keyword">of</span> <code class="type">int</code></code></td>
 <td class="typefieldcomment" align="left" valign="top" ><code>(*</code></td><td class="typefieldcomment" align="left" valign="top" ><div class="info ">
-doc for A<br>
+<div class="info-desc">
+doc for A</div>
 </div>
 </td><td class="typefieldcomment" align="left" valign="bottom" ><code>*)</code></td>
 </tr>
@@ -161,13 +172,15 @@ doc for A<br>
 <td align="left" valign="top" >
 <code><span id="TYPEELTz.B"><span class="constructor">B</span></span> <span class="keyword">of</span> <code class="type">int</code></code></td>
 <td class="typefieldcomment" align="left" valign="top" ><code>(*</code></td><td class="typefieldcomment" align="left" valign="top" ><div class="info ">
-doc for B<br>
+<div class="info-desc">
+doc for B</div>
 </div>
 </td><td class="typefieldcomment" align="left" valign="bottom" ><code>*)</code></td>
 </tr></table>
 
 <div class="info ">
-With args<br>
+<div class="info-desc">
+With args</div>
 </div>
 
 
@@ -178,13 +191,15 @@ With args<br>
 <td align="left" valign="top" >
 <code><span id="TYPEELTa.A"><span class="constructor">A</span></span> <span class="keyword">:</span> <code class="type"><a href="Variants.html#TYPEa">a</a></code></code></td>
 <td class="typefieldcomment" align="left" valign="top" ><code>(*</code></td><td class="typefieldcomment" align="left" valign="top" ><div class="info ">
-doc for A<br>
+<div class="info-desc">
+doc for A</div>
 </div>
 </td><td class="typefieldcomment" align="left" valign="bottom" ><code>*)</code></td>
 </tr></table>
 
 <div class="info ">
-Gadt notation<br>
+<div class="info-desc">
+Gadt notation</div>
 </div>
 
 
@@ -195,13 +210,15 @@ Gadt notation<br>
 <td align="left" valign="top" >
 <code><span id="TYPEELTb.B"><span class="constructor">B</span></span></code></td>
 <td class="typefieldcomment" align="left" valign="top" ><code>(*</code></td><td class="typefieldcomment" align="left" valign="top" ><div class="info ">
-doc for B<br>
+<div class="info-desc">
+doc for B</div>
 </div>
 </td><td class="typefieldcomment" align="left" valign="bottom" ><code>*)</code></td>
 </tr></table>
 
 <div class="info ">
-Lonely constructor<br>
+<div class="info-desc">
+Lonely constructor</div>
 </div>
 
 

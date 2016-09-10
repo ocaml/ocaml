@@ -61,6 +61,10 @@ Working version
   no -title has been provided
   (Pierre Boutillier)
 
+* PR#7351: ocamldoc, use semantic tags rather than <br> tags in the html
+  backend
+  (Florian Angeletti, request and review by Daniel Bünzli )
+
 ### Compiler distribution build system
 
 - GPR#558: enable shared library and natdynlink support on more Linux
