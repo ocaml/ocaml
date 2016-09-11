@@ -65,6 +65,9 @@ Working version
   backend
   (Florian Angeletti, request and review by Daniel Bünzli )
 
+* PR#7352,PR#7353: ocamldoc, better paragraphs in html output
+  (Florian Angeletti, request by Daniel Bünzli)
+
 ### Compiler distribution build system
 
 - GPR#558: enable shared library and natdynlink support on more Linux
@@ -386,9 +389,6 @@ Next major version (4.05.0):
 
 - clarify ocamldoc text parsing error messages
   (Gabriel Scherer)
-- PR#7351: ocamldoc, use semantic tags rather than <br> tags in
-  the html backend
-  (Florian Angeletti, request and review by Daniel Bünzli )
 
 ### Compiler distribution build system:
 
@@ -455,7 +455,6 @@ Next major version (4.05.0):
   list in .cmti files + avoid rebuilding cmi_info record when creating
   .cmti files
   (Alain Frisch, report by Daniel Bünzli, review by Jérémie Dimino)
-  (Alain Frisch, report by Daniel Bünzli, review by Jeremie Dimino)
 
 - GPR#881: change `Outcometree.out_variant` to be more general.
   `Ovar_name of out_ident * out_type list` becomes `Ovar_type of out_type`.

@@ -4,7 +4,12 @@ type s = A | B (** only B is documented here *) | C
 
 type t =
   | A
-    (** doc for A *)
+    (** doc for A.
+        {[0]}
+        With three paragraphs.
+        {[1]}
+        To check styling
+    *)
   | B
   (** doc for B *)
 
