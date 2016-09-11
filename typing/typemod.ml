@@ -36,7 +36,6 @@ type error =
   | Implementation_is_required of string
   | Interface_not_compiled of string
   | Not_allowed_in_functor_body
-  | With_need_typeconstr
   | Not_a_packed_module of type_expr
   | Incomplete_packed_module of type_expr
   | Scoping_pack of Longident.t * type_expr
@@ -253,36 +252,21 @@ let merge_constraint initial_env loc sg constr =
     let names = Longident.flatten lid.txt in
     let (tcstr, sg) = merge initial_env sg names None in
     let sg =
-    match names, constr with
-      [_], Pwith_typesubst sdecl ->
-        let id =
-          match !real_id with None -> assert false | Some id -> id in
-        let lid =
-          try match sdecl.ptype_manifest with
-          | Some {ptyp_desc = Ptyp_constr (lid, stl)}
-            when List.length stl = List.length sdecl.ptype_params ->
-              List.iter2 (fun x (y, _) ->
-                match x, y with
-                  {ptyp_desc=Ptyp_var sx}, {ptyp_desc=Ptyp_var sy}
-                    when sx = sy -> ()
-                | _, _ -> raise Exit)
-                stl sdecl.ptype_params;
-              lid
-          | _ -> raise Exit
-          with Exit ->
-            raise(Error(sdecl.ptype_loc, initial_env, With_need_typeconstr))
-        in
-        let path =
-          try Env.lookup_type lid.txt initial_env with Not_found -> assert false
-        in
-        let sub = Subst.add_type id path Subst.identity in
-        Subst.signature sub sg
-    | [_], Pwith_modsubst (_, lid) ->
-        let id =
-          match !real_id with None -> assert false | Some id -> id in
-        let path = Typetexp.lookup_module initial_env loc lid.txt in
-        let sub = Subst.add_module id path Subst.identity in
-        Subst.signature sub sg
+    match names, tcstr with
+    | [_], (_, _, Twith_typesubst tdecl) ->
+       let id = match !real_id with None -> assert false | Some id -> id in
+       let body =
+         match tdecl.typ_type.type_manifest with
+         | None -> assert false
+         | Some x -> x
+       in
+       let params = tdecl.typ_type.type_params in
+       let sub = Subst.add_type_function id ~params ~body Subst.identity in
+       Subst.signature sub sg
+    | [_], (_, _, Twith_modsubst (path, _)) ->
+       let id = match !real_id with None -> assert false | Some id -> id in
+       let sub = Subst.add_module id path Subst.identity in
+       Subst.signature sub sg
     | _ ->
           sg
     in
@@ -1803,9 +1787,6 @@ let report_error ppf = function
       fprintf ppf
         "@[This expression creates fresh types.@ %s@]"
         "It is not allowed inside applicative functors."
-  | With_need_typeconstr ->
-      fprintf ppf
-        "Only type constructors with identical parameters can be substituted."
   | Not_a_packed_module ty ->
       fprintf ppf
         "This expression is not a packed module. It has type@ %a"

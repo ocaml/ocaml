@@ -20,17 +20,27 @@ open Path
 open Types
 open Btype
 
+type type_replacement =
+  | Path of Path.t
+  | Type_function of { params : type_expr list; body : type_expr }
+
 type t =
-  { types: (Ident.t, Path.t) Tbl.t;
+  { types: (Ident.t, type_replacement) Tbl.t;
     modules: (Ident.t, Path.t) Tbl.t;
     modtypes: (Ident.t, module_type) Tbl.t;
-    for_saving: bool }
+    for_saving: bool;
+  }
 
 let identity =
-  { types = Tbl.empty; modules = Tbl.empty; modtypes = Tbl.empty;
-    for_saving = false }
+  { types = Tbl.empty;
+    modules = Tbl.empty;
+    modtypes = Tbl.empty;
+    for_saving = false;
+  }
 
-let add_type id p s = { s with types = Tbl.add id p s.types }
+let add_type id p s = { s with types = Tbl.add id (Path p) s.types }
+let add_type_function id ~params ~body s =
+  { s with types = Tbl.add id (Type_function { params; body }) s.types }
 
 let add_module id p s = { s with modules = Tbl.add id p s.modules }
 
@@ -83,8 +93,12 @@ let modtype_path s = function
       fatal_error "Subst.modtype_path"
 
 let type_path s = function
-    Pident id as p ->
-      begin try Tbl.find id s.types with Not_found -> p end
+  | Pident id as p ->
+     begin match Tbl.find id s.types with
+     | exception Not_found -> p
+     | Type_function _ -> assert false
+     | Path p -> p
+     end
   | Pdot(p, n, pos) ->
       Pdot(module_path s p, n, pos)
   | Papply _ ->
@@ -113,6 +127,8 @@ let norm = function
   | Tvar None -> tvar_none
   | Tunivar None -> tunivar_none
   | d -> d
+
+let ctype_apply_env_empty = ref (fun _ -> assert false)
 
 (* Similar to [Ctype.nondep_type_rec]. *)
 let rec typexp s ty =
@@ -153,8 +169,17 @@ let rec typexp s ty =
             Tconstr(type_path s (Pdot(m,i',pos)), tl, ref Mnil)
         | _ -> assert false
       else match desc with
-      | Tconstr(p, tl, _abbrev) ->
-          Tconstr(type_path s p, List.map (typexp s) tl, ref Mnil)
+      | Tconstr (p, args, _abbrev) ->
+         let args = List.map (typexp s) args in
+         begin match p with
+         | Pdot _ | Papply _ -> Tconstr(type_path s p, args, ref Mnil)
+         | Pident id ->
+            match Tbl.find id s.types with
+            | exception Not_found -> Tconstr(type_path s p, args, ref Mnil)
+            | Path _ -> Tconstr(type_path s p, args, ref Mnil)
+            | Type_function { params; body } ->
+               (!ctype_apply_env_empty params body args).desc
+         end
       | Tpackage(p, n, tl) ->
           Tpackage(modtype_path s p, n, List.map (typexp s) tl)
       | Tobject (t1, name) ->
@@ -430,11 +455,19 @@ and modtype_declaration s decl  =
 let merge_tbls f m1 m2 =
   Tbl.fold (fun k d accu -> Tbl.add k (f d) accu) m1 m2
 
+let type_replacement s = function
+  | Path p -> Path (type_path s p)
+  | Type_function { params; body } ->
+     let params = List.map (typexp s) params in
+     let body = typexp s body in
+     Type_function { params; body }
+
 (* Composition of substitutions:
      apply (compose s1 s2) x = apply s2 (apply s1 x) *)
 
 let compose s1 s2 =
-  { types = merge_tbls (type_path s2) s1.types s2.types;
+  { types = merge_tbls (type_replacement s2) s1.types s2.types;
     modules = merge_tbls (module_path s2) s1.modules s2.modules;
     modtypes = merge_tbls (modtype s2) s1.modtypes s2.modtypes;
-    for_saving = s1.for_saving || s2.for_saving }
+    for_saving = s1.for_saving || s2.for_saving;
+  }

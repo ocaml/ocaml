@@ -67,16 +67,10 @@ module type S1 = S with type 'a t := 'a list
 module type S = sig type 'a t val map : ('a -> 'b) -> 'a t -> 'b t end
 module type S1 = sig val map : ('a -> 'b) -> 'a list -> 'b list end
 |}]
-module type S2 = sig
-  type 'a dict = (string * 'a) list
-  include S with type 'a t := 'a dict
-end
+module type S2 = S with type 'a t := (string * 'a) list
 [%%expect {|
 module type S2 =
-  sig
-    type 'a dict = (string * 'a) list
-    val map : ('a -> 'b) -> 'a dict -> 'b dict
-  end
+  sig val map : ('a -> 'b) -> (string * 'a) list -> (string * 'b) list end
 |}]
 
 
@@ -94,8 +88,7 @@ module type S' = sig val f : M.exp -> M.arg end
 
 module type S = sig type 'a t end with type 'a t := unit
 [%%expect {|
-Line _, characters 39-56:
-Error: Only type constructors with identical parameters can be substituted.
+module type S = sig  end
 |}]
 
 (* Issue where the typer expands an alias, which breaks the typing of the rest
