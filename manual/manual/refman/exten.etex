@@ -844,22 +844,23 @@ it to represent sets internally in a different way.
 \ikwd{type\@\texttt{type}}
 \label{s:signature-substitution}
 
-(Introduced in OCaml 3.12)
+(Introduced in OCaml 3.12, generalized in 4.06)
 
 \begin{syntax}
 mod-constraint:
           ...
         | 'type' [type-params] typeconstr-name ':=' typexpr
-        | 'module' module-name ':=' extended-module-path
+        | 'module' module-path ':=' extended-module-path
 \end{syntax}
 
-``Destructive'' substitution (@'with' ... ':=' ...@) behaves essentially like
+A ``destructive'' substitution (@'with' ... ':=' ...@) behaves essentially like
 normal signature constraints (@'with' ... '=' ...@), but it additionally removes
-the redefined type or module from the signature. There are a number of
-restrictions: one can only remove types and modules at the outermost
-level (not inside submodules), and in the case of @'with type'@ the
-definition must be another type constructor with the same type
-parameters.
+the redefined type or module from the signature.
+
+Prior to OCaml 4.06, there were a number of restrictions: one could only remove
+types and modules at the outermost level (not inside submodules), and in the
+case of @'with type'@ the definition had to be another type constructor with the
+same type parameters.
 
 A natural application of destructive substitution is merging two
 signatures sharing a type name.
