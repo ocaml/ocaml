@@ -48,7 +48,7 @@ extern caml_generated_constant
 
 /* Exception raising */
 
-extern void caml_raise_exception (value bucket) Noreturn;
+extern void caml_raise_exception (char* young_ptr, value bucket) Noreturn;
 
 void caml_raise(value v)
 {
@@ -75,7 +75,7 @@ void caml_raise(value v)
   }
 #undef PUSHED_AFTER
 
-  caml_raise_exception(v);
+  caml_raise_exception(caml_domain_state->young_ptr, v);
 }
 
 void caml_raise_constant(value tag)
