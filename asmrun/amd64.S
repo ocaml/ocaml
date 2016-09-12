@@ -99,7 +99,7 @@
 
 #define GET_DOMAIN_STATE(reg) \
 	movq	%r15, reg ; \
-	andq    $(0xffffffffffffffff << Minor_heap_align_bits), reg
+	andq  $(0xffffffffffffffff << Minor_heap_align_bits), reg
 
 /* CR mshinwell: We should optimize the case where there are multiple
    loads/stores in one go to the domain state block. */
@@ -792,10 +792,10 @@ CFI_ENDPROC
 
 FUNCTION(G(caml_raise_exception))
 CFI_STARTPROC
-        movq    C_ARG_1, %rax
+        movq    C_ARG_1, %r15                /* young_ptr */
+        movq    C_ARG_2, %rax
         LOAD_TL_VAR(caml_system_exnptr_offset, %r14)
         RESTORE_EXN_HANDLER_SYS             /* Cut stack */
-        LOAD_TL_VAR(caml_young_ptr, %r15)   /* Reload alloc ptr */
         ret
 CFI_ENDPROC
 
