@@ -95,10 +95,23 @@ run-all:
 	  && echo " => passed" || echo " => failed"; \
 	done
 
+# On Windows, nefarious software (specifically Windows Defender) can prevent
+# executable files being deleted while it scans them. Unfortunately, it does
+# this by allowing the delete system call (either via rm -f or cmd /c del) to
+# complete with success but the file can linger for seconds or even minutes
+# until it suddenly disappears. During this time, the file cannot be overwritten
+# but it can be renamed, hence the odd use of mktemp. Some tests compiled with
+# flambda seem to be consistently "interesting" to Windows Defender. Note that
+# the interference doesn't appear to affect the execution of the tests.
 .PHONY: run-file
 run-file:
 	@printf " $(DESC)"
-	@rm -f program program.exe
+	@test -e program.exe && { \
+	  T="`mktemp -p .`"; \
+	  mv -f program.exe "$$T"; \
+	  rm -f "$$T"; \
+	} || true
+	@rm -f program program$(EXE)
 	@$(COMP) $(COMPFLAGS) $(FILE) -o program$(EXE)
 	@F="`basename $(FILE) .ml`"; \
 	if [ -f $$F.runner ]; then \
