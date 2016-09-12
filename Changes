@@ -18,6 +18,10 @@ Next version (tbd):
   a short description in overviews.
   (Florian Angeletti)
 
+- PR#7350: ocamldoc, add viewport metadata to generated html
+  pages
+  (Florian Angeletti, request by Daniel Bünzli)
+
 ### Compiler distribution build system:
 
 - GPR#729: Make sure ocamlnat is built with a $(EXE) extension, merge

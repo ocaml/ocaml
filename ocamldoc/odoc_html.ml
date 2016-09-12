@@ -781,10 +781,14 @@ class html =
 
     val mutable doctype =
       "<!DOCTYPE HTML PUBLIC \"-//W3C//DTD HTML 4.01 Transitional//EN\">\n"
-    method character_encoding () =
-      Printf.sprintf
+    method character_encoding b =
+      bp b
         "<meta content=\"text/html; charset=%s\" http-equiv=\"Content-Type\">\n"
         !charset
+
+    method meta b =
+      self#character_encoding b;
+      bs b "<meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">\n"
 
     (** The default style options. *)
     val mutable default_style_options =
@@ -1023,7 +1027,7 @@ class html =
         in
         bs b "<head>\n";
         bs b style;
-        bs b (self#character_encoding ()) ;
+        self#meta b;
         bs b "<link rel=\"Start\" href=\"";
         bs b self#index;
         bs b "\">\n" ;
