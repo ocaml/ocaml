@@ -31,9 +31,9 @@ compile:
 	    test -f $$F.mli && $(OCAMLC) -c -w a $$PRIN $$F.mli; \
 	    $(OCAMLC) -c -w a $$PRIN $$file 2>/dev/null \
 	    && if [ -f $$F.reference ]; then \
-	         rm -f program.byte; \
-	         $(OCAMLC) $$F.cmo -o program.byte \
-	         && $(OCAMLRUN) program.byte >$$F.result \
+	         rm -f program.byte program.byte.exe; \
+	         $(OCAMLC) $$F.cmo -o program.byte$(EXE) \
+	         && $(OCAMLRUN) program.byte$(EXE) >$$F.result \
 	         && $(DIFF) $$F.reference $$F.result >/dev/null; \
 	       fi \
 	    && echo " => passed" || echo " => failed"; \
@@ -45,4 +45,4 @@ promote: defaultpromote
 
 .PHONY: clean
 clean: defaultclean
-	@rm -f program.byte *.cm* *.result
+	@rm -f program.byte program.byte.exe *.cm* *.result
