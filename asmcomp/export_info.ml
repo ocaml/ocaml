@@ -346,10 +346,13 @@ let print_offsets ppf (t : t) =
         Var_within_closure.print vid off) t.offset_fv;
   Format.fprintf ppf "@]@ "
 
+let print_functions ppf (t : t) =
+  Set_of_closures_id.Map.print Flambda.print_function_declarations ppf
+    t.sets_of_closures
+
 let print_all ppf ((t, root_symbols) : t * Symbol.t list) =
   let fprintf = Format.fprintf in
   fprintf ppf "approxs@ %a@.@."
     print_approx (t, root_symbols);
   fprintf ppf "functions@ %a@.@."
-    (Set_of_closures_id.Map.print Flambda.print_function_declarations)
-    t.sets_of_closures
+    print_functions t
