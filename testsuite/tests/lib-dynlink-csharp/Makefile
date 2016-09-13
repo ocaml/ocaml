@@ -14,7 +14,8 @@
 #**************************************************************************
 
 BASEDIR=../..
-CSC=csc
+CSC_COMMAND=csc
+CSC=$(CSC_COMMAND) $(CSC_FLAGS)
 
 COMPFLAGS=-I $(OTOPDIR)/otherlibs/bigarray -I $(OTOPDIR)/otherlibs/dynlink \
           -I $(OTOPDIR)/byterun
@@ -36,7 +37,7 @@ prepare:
 .PHONY: bytecode
 bytecode:
 	@printf " ... testing 'bytecode':"
-	@if ! $(SUPPORTS_SHARED_LIBRARIES) || ! which $(CSC) >/dev/null 2>&1; \
+	@if ! $(SUPPORTS_SHARED_LIBRARIES) || ! which $(CSC_COMMAND) >/dev/null 2>&1; \
 	then \
 	  echo " => skipped"; \
 	else \
@@ -50,7 +51,7 @@ bytecode:
 .PHONY: bytecode-dll
 bytecode-dll:
 	@printf " ... testing 'bytecode-dll':"
-	@if ! $(SUPPORTS_SHARED_LIBRARIES) || ! which $(CSC) > /dev/null 2>&1; \
+	@if ! $(SUPPORTS_SHARED_LIBRARIES) || ! which $(CSC_COMMAND) > /dev/null 2>&1; \
 	then \
 	  echo " => skipped"; \
 	else \
@@ -67,7 +68,7 @@ bytecode-dll:
 native:
 	@printf " ... testing 'native':"
 	@if ! $(SUPPORTS_SHARED_LIBRARIES) || $(BYTECODE_ONLY) \
-	    || ! which $(CSC) > /dev/null 2>&1; then \
+	    || ! which $(CSC_COMMAND) > /dev/null 2>&1; then \
 	  echo " => skipped"; \
 	else \
 	  $(OCAMLOPT) -output-obj -o main.dll dynlink.cmxa entry.c main.ml; \
@@ -81,7 +82,7 @@ native:
 native-dll:
 	@printf " ... testing 'native-dll':"
 	@if ! $(SUPPORTS_SHARED_LIBRARIES) || $(BYTECODE_ONLY) \
-	    || ! which $(CSC) > /dev/null 2>&1; then \
+	    || ! which $(CSC_COMMAND) > /dev/null 2>&1; then \
 	  echo " => skipped"; \
 	else \
 	  $(OCAMLOPT) -output-obj -o main_obj.$(O) dynlink.cmxa entry.c \
@@ -102,3 +103,9 @@ clean: defaultclean
 	@rm -f *.result *.exe *.dll *.so *.obj *.o
 
 include $(BASEDIR)/makefiles/Makefile.common
+
+ifeq ($(HOST),msvc)
+CSC_FLAGS=/platform:x86
+else
+CSC_FLAGS=
+endif
