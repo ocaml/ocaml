@@ -89,7 +89,7 @@ let test spec argv =
   r_int := 0;
   r_float := 0.0;
   accum := [];
-  Arg.parse_argv ~current argv spec f_anon "usage";
+  Arg.parse_and_expand_argv_dynamic ~current argv (ref spec) f_anon "usage";
   let result = List.rev !accum in
   let reference = [
       "anon(anon1)";
@@ -119,7 +119,7 @@ let test spec argv =
   check r_float 2.72 "Set_float";
 ;;
 
-let test_arg = test spec;;
+let test_arg args = test spec (ref args);;
 
 test_arg args1;;
 test_arg args2;;
@@ -129,18 +129,33 @@ let f_expand r msg arg s =
   arg;
 ;;
 
-let expand1 =
+let expand1,args1,expected1 =
   let l = Array.length args1  - 1 in
   let args = Array.sub args1 1 l in
-  Arg.[
-  "-expand", Expand (f_expand "expand_arg1" "Expand" args), "Expand (1)";
-];;
-let expand2 =
+  let args1 =  [|"prog";"-expand";"expand_arg1"|] in
+  Arg.["-expand", Expand (f_expand "expand_arg1" "Expand" args), "Expand (1)";],
+  args1,
+  Array.append  args1 args
+;;
+
+let expand2,args2,expected2 =
   let l = Array.length args2  - 1 in
   let args = Array.sub args2 1 l in
-  Arg.[
-  "-expand", Expand (f_expand "expand_arg2" "Expand" args), "Expand (1)";
-];;
+  let args2 = [|"prog";"-expand";"expand_arg2"|] in
+  Arg.["-expand", Expand (f_expand "expand_arg2" "Expand" args), "Expand (1)";],
+  args2,
+  Array.append args2 args
+;;
 
-test (expand1@spec) [|"prog";"-expand";"expand_arg1"|];;
-test (expand2@spec) [|"prog";"-expand";"expand_arg2"|];;
+let test_expand spec argv reference =
+  let result = ref argv in
+  test spec result;
+  let f x y =
+    if x <> y then
+      Printf.printf "%20s %c %-20s\n%!" x (if x = y then '=' else '#') y
+  in
+  Array.iter2 f !result reference;
+;;
+
+test_expand (expand1@spec) args1 expected1;;
+test_expand (expand2@spec) args2 expected2;;

@@ -128,8 +128,7 @@ let float_of_string_opt x =
   try Some (float_of_string x)
   with Failure _ -> None
 
-let parse_argv_dynamic ?(current=current) argv speclist anonfun errmsg =
-  let argv = ref argv in
+let parse_and_expand_argv_dynamic ?(current=current) argv speclist anonfun errmsg =
   let b = Buffer.create 200 in
   let initpos = !current in
   let stop error =
@@ -261,6 +260,9 @@ let parse_argv_dynamic ?(current=current) argv speclist anonfun errmsg =
       incr current;
     end;
   done
+
+let parse_argv_dynamic ?(current=current) argv speclist anonfun errmsg =
+  parse_and_expand_argv_dynamic ~current:current (ref argv) speclist anonfun errmsg
 
 
 let parse_argv ?(current=current) argv speclist anonfun errmsg =
