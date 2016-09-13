@@ -131,7 +131,11 @@ let print_cmx_infos (ui, crc) =
         (Linkage_name.create "__dummy__")
     in
     Compilation_unit.set_current cu;
-    Format.printf " %a\n" Export_info.print_all export
+    let root_symbols =
+      List.map (fun s -> Symbol.unsafe_create cu (Linkage_name.create ("caml"^s)))
+        ui.ui_defines
+    in
+    Format.printf " %a\n" Export_info.print_all (export, root_symbols)
   end;
   let pr_funs _ fns =
     List.iter (fun arity -> printf " %d" arity) fns in
