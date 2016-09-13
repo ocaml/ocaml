@@ -14,14 +14,6 @@ Next version (tbd):
 - PR#7272: ocamldoc, missing line breaks in type_*.html files
   (Florian Angeletti)
 
-- PR#7333: ocamldoc, use the first sentence of text file as
-  a short description in overviews.
-  (Florian Angeletti)
-
-- PR#7350: ocamldoc, add viewport metadata to generated html
-  pages
-  (Florian Angeletti, request by Daniel Bünzli)
-
 ### Compiler distribution build system:
 
 - GPR#729: Make sure ocamlnat is built with a $(EXE) extension, merge
@@ -227,6 +219,12 @@ OCaml 4.04.0:
 
 - MPR#7290: ocamldoc, improved support for inline records
   (Florian Angeletti)
+
+- PR#7272, GPR#798: ocamldoc, missing line breaks in type_*.html files
+  (Florian Angeletti)
+
+- PR#7350, GPR#806: ocamldoc, add viewport metadata to generated html pages
+  (Florian Angeletti, request by Daniel Bünzli)
 
 - Add the -no-version option to the toplevel
   (Sébastien Hinderer)
