@@ -8,10 +8,10 @@ Next version (tbd):
 - PR#7315, GPR#736: refine some error locations
   (Gabriel Scherer and Alain Frisch, report by Matej Košík)
 
-
 ### Tools:
 
-- PR#7272: ocamldoc, missing line breaks in type_*.html files
+- PR#7333: ocamldoc, use the first sentence of text file as
+  a short description in overviews.
   (Florian Angeletti)
 
 ### Compiler distribution build system:
