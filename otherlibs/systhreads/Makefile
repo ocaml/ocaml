@@ -81,15 +81,29 @@ $(LIBNAME).cmxa: $(THREADS_NCOBJS)
 # which itself will pass -lunix to the C linker.  It seems more
 # modular to me this way. -- Alain
 
+# The following lines produce two object files st_stubs_b.$(O) and
+# st_stubs_n.$(O) from the same source file st_stubs.c (it is compiled
+# twice, each time with different of options).
+# Since the source and object file have a different basename, the name of
+# the object file to produce must be given to the C compiler.
+# For gcc this is done with the -ofoo.$(O) option.
+# For msvc it's the /Fofoo.$(O) option.
+
+ifeq "$(TOOLCHAIN)" "msvc"
+  CCOUTPUT=/Fo
+else
+  CCOUTPUT=-o
+endif
+
 st_stubs_b.$(O): st_stubs.c $(HEADER)
-	$(BYTECC) -I$(ROOTDIR)/byterun $(BYTECCCOMPOPTS) $(SHAREDCCCOMPOPTS) -c $<
-	mv st_stubs.$(O) $@
+	$(BYTECC) -I$(ROOTDIR)/byterun $(BYTECCCOMPOPTS) $(SHAREDCCCOMPOPTS) \
+	  $(CCOUTPUT)$@ -c $<
 
 st_stubs_n.$(O): st_stubs.c $(HEADER)
-	$(NATIVECC) -I$(ROOTDIR)/asmrun -I$(ROOTDIR)/byterun $(NATIVECCCOMPOPTS) \
-	  $(SHAREDCCCOMPOPTS) -DNATIVE_CODE -DTARGET_$(ARCH) \
-	  -DMODEL_$(MODEL) -DSYS_$(SYSTEM) -c $<
-	mv st_stubs.$(O) $@
+	$(NATIVECC) -I$(ROOTDIR)/asmrun -I$(ROOTDIR)/byterun \
+	  $(NATIVECCCOMPOPTS) $(SHAREDCCCOMPOPTS) -DNATIVE_CODE \
+	  -DTARGET_$(ARCH) -DMODEL_$(MODEL) -DSYS_$(SYSTEM) \
+	  $(CCOUTPUT)$@ -c $<
 
 partialclean:
 	rm -f *.cm*
