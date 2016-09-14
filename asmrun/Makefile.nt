@@ -19,7 +19,7 @@ include Makefile.shared
 
 CC=$(NATIVECC)
 CFLAGS=-I../byterun -DNATIVE_CODE -DTARGET_$(ARCH) -DSYS_$(SYSTEM) \
-       $(NATIVECCCOMPOPTS)
+       $(NATIVECCCOMPOPTS) $(IFLEXDIR)
 
 ifeq ($(TOOLCHAIN),mingw)
 ASMOBJS=$(ARCH).o
