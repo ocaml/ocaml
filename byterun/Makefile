@@ -13,7 +13,7 @@
 #*                                                                        *
 #**************************************************************************
 
-include Makefile.common
+include Makefile.shared
 
 CFLAGS=-DCAML_NAME_SPACE $(BYTECCCOMPOPTS) $(IFLEXDIR)
 DFLAGS=-DCAML_NAME_SPACE -g -DDEBUG $(BYTECCCOMPOPTS) $(IFLEXDIR)
