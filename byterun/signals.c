@@ -160,6 +160,9 @@ void caml_execute_signal(int signal_number, int in_signal_handler)
     = caml_spacetime_finaliser_trie_root;
 #endif
 #if defined(NATIVE_CODE) && defined(WITH_SPACETIME)
+  /* Handled action may have no associated handler, which we interpret
+     as meaning the signal should be handled by a call to exit.  This is
+     is used to allow spacetime profiles to be completed on interrupt */
   if (caml_signal_handlers == 0) {
     res = caml_sys_exit(Val_int(2));
   } else {
@@ -363,6 +366,8 @@ CAMLprim value caml_install_signal_handler(value signal_number, value action)
     break;
   case 2:                       /* was Signal_handle */
     #if defined(NATIVE_CODE) && defined(WITH_SPACETIME)
+      /* Handled action may have no associated handler
+         which we treat as Signal_default */
       if (caml_signal_handlers == 0) {
         res = Val_int(0);
       } else {

@@ -238,7 +238,10 @@ void caml_spacetime_initialize(void)
         automatic_snapshots = 1;
         open_snapshot_channel();
         if (automatic_snapshots) {
-          // Catch interrupt so that the profile can be completed
+          /* Catch interrupt so that the profile can be completed.
+             We do this by marking the signal as handled without
+             specifying an actual handler. This causes the signal
+             to be handler by a call to exit. */
           caml_set_signal_action(SIGINT, 2);
           snapshot_interval = interval / 1e3;
           time = caml_sys_time_unboxed(Val_unit);
@@ -1072,7 +1075,7 @@ CAMLprim value caml_spacetime_enabled (value v_unit)
   return Val_true;
 }
 
-CAMLprim value caml_channel_for_spacetime (value v_channel)
+CAMLprim value caml_register_channel_for_spacetime (value v_channel)
 {
   struct channel* channel = Channel(v_channel);
   channel->flags |= CHANNEL_FLAG_BLOCKING_WRITE;
@@ -1111,7 +1114,7 @@ CAMLprim value caml_spacetime_save_trie (value ignored)
   return Val_unit;
 }
 
-CAMLprim value caml_channel_for_spacetime (value v_channel)
+CAMLprim value caml_register_channel_for_spacetime (value v_channel)
 {
   return Val_unit;
 }
