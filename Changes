@@ -43,6 +43,10 @@ Next version (tbd):
   environment.
   (Florian Angeletti)
 
+### Bug fixes:
+- GPR#805: check for integer overflow in String.concat and Bytes.concat
+  (Jeremy Yallop)
+
 
 OCaml 4.04.0:
 -------------

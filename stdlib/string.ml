@@ -44,23 +44,40 @@ let fill =
 let blit =
   B.blit_string
 
+exception Overflow
+let check_positive v = if v < 0 then raise Overflow else v
+
+let rec sum_lengths_aux seplen acc l = match l with
+  | [] ->
+    acc
+  | [x1] ->
+    check_positive (length x1 + acc)
+  | [x1; x2] ->
+    check_positive (length x1 + length x2 + seplen + acc)
+  | x1 :: x2 :: tl ->
+    sum_lengths_aux seplen
+      (check_positive (length x1 + length x2 + 2*seplen + acc))
+      tl
+let sum_lengths sep l = sum_lengths_aux (length sep) 0 l
+
 let concat sep l =
   match l with
   | [] -> ""
   | hd :: tl ->
-      let num = ref 0 and len = ref 0 in
-      List.iter (fun s -> incr num; len := !len + length s) l;
-      let r = B.create (!len + length sep * (!num - 1)) in
-      unsafe_blit hd 0 r 0 (length hd);
-      let pos = ref(length hd) in
-      List.iter
-        (fun s ->
-          unsafe_blit sep 0 r !pos (length sep);
-          pos := !pos + length sep;
-          unsafe_blit s 0 r !pos (length s);
-          pos := !pos + length s)
-        tl;
-      Bytes.unsafe_to_string r
+      match sum_lengths sep l with
+      | exception Overflow -> invalid_arg "String.concat"
+      | len -> 
+          let r = B.create len in
+          unsafe_blit hd 0 r 0 (length hd);
+          let pos = ref(length hd) in
+          List.iter
+            (fun s ->
+               unsafe_blit sep 0 r !pos (length sep);
+               pos := !pos + length sep;
+               unsafe_blit s 0 r !pos (length s);
+               pos := !pos + length s)
+            tl;
+          Bytes.unsafe_to_string r
 
 let iter f s =
   B.iter f (bos s)

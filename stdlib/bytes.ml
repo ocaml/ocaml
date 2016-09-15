@@ -97,13 +97,30 @@ let iter f a =
 let iteri f a =
   for i = 0 to length a - 1 do f i (unsafe_get a i) done
 
+exception Overflow
+let check_positive v = if v < 0 then raise Overflow else v
+
+let rec sum_lengths_aux seplen acc l = match l with
+  | [] ->
+    acc
+  | [x1] ->
+    check_positive (length x1 + acc)
+  | [x1; x2] ->
+    check_positive (length x1 + length x2 + seplen + acc)
+  | x1 :: x2 :: tl ->
+    sum_lengths_aux seplen
+      (check_positive (length x1 + length x2 + 2*seplen + acc))
+      tl
+let sum_lengths sep l = sum_lengths_aux (length sep) 0 l
+
 let concat sep l =
   match l with
     [] -> empty
   | hd :: tl ->
-      let num = ref 0 and len = ref 0 in
-      List.iter (fun s -> incr num; len := !len + length s) l;
-      let r = create (!len + length sep * (!num - 1)) in
+      match sum_lengths sep l with
+      | exception Overflow -> invalid_arg "Bytes.concat"
+      | len ->
+      let r = create len in
       unsafe_blit hd 0 r 0 (length hd);
       let pos = ref(length hd) in
       List.iter
