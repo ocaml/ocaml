@@ -2707,19 +2707,11 @@ let arg_to_var arg cls = match arg with
   The main compilation function.
    Input:
       repr=used for inserting debug events
-      mut= true <=> some field in pattern is mutable and there is are
-        guard or lazy patterns
       partial=exhaustiveness information from Parmatch
       ctx=a context
       m=a pattern matching
 
    Output: a lambda term, a jump summary {..., exit number -> context, .. }
-*)
-
-(*
-  The "mut" argument is here to solve PR #7241. When mut is true
-  all context information is cancelled while returning jump sumaries.
-  Cf. the "mut" argument of ctx_combine, and ctx_rshift.
 *)
 
 let rec compile_match repr partial ctx m = match m with
@@ -2840,10 +2832,8 @@ and compile_no_test divide up_ctx repr partial ctx to_match =
    Notice that those sides effects can be performed at any moment
    'a priori' (multithreading, guards, lazy patterns, signal handlers...).
    So we sub-optimise in case of mutable patterns.
-
 LM:
    Lazy pattern was PR#5992, initial patch by lpw25.
-   I have  generalized the patch, so as to also find mutable fields.
 *)
 
 let find_in_pat pred =
