@@ -81,7 +81,7 @@ let add_char b c =
   b.position <- pos + 1
 
 let add_substring b s offset len =
-  if offset < 0 || len < 0 || offset + len > String.length s
+  if offset < 0 || len < 0 || offset > String.length s - len
   then invalid_arg "Buffer.add_substring/add_subbytes";
   let new_position = b.position + len in
   if new_position > b.length then resize b len;
