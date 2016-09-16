@@ -43,6 +43,10 @@ Next version (tbd):
   environment.
   (Florian Angeletti)
 
+### Bugs
+
+ - GPR#814: fix the Buffer.add_substring bounds check to handle overflow
+   (Jeremy Yallop)
 
 OCaml 4.04.0:
 -------------
