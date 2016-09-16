@@ -50,7 +50,10 @@ Next version (tbd):
   (Xavier Leroy)
 
 - GPR#814: fix the Buffer.add_substring bounds check to handle overflow
-   (Jeremy Yallop)
+  (Jeremy Yallop)
+
+- GPR#805, GPR#815: fix check for oversized result in String/Bytes.concat
+  (Jeremy Yallop, Damien Doligez, Alain Frisch)
 
 
 OCaml 4.04.0:
