@@ -260,6 +260,9 @@ OCaml 4.04.0:
 
 - PR#7153: document that Unix.SOCK_SEQPACKET is not really usable.
 
+- PR#7165, GPR#494: uncaught exception on invalid lexer directive
+  (Gabriel Scherer, report by KC Sivaramakrishnan using afl-fuzz)
+
 - PR#7257, GPR#583: revert a 4.03 change of behavior on (Unix.sleep 0.),
   it now calls (nano)sleep for 0 seconds as in (< 4.03) versions.
   (Hannes Mehnert, review by Damien Doligez)
@@ -286,14 +289,17 @@ OCaml 4.04.0:
 - PR#7297: -strict-sequence turns off Warning 21
   (Jacques Garrigue, report by Valentin Gatien-Baron)
 
+- PR#7299: remove access to OCaml heap inside blocking section in win32unix
+  (David Allsopp, report by Andreas Hauptmann)
+
+- PR#7300: remove access to OCaml heap inside blocking in Unix.sleep on Windows
+  (David Allsopp)
+
 - PR#7305: -principal causes loop in type checker when compiling
   (Jacques Garrigue, report by Anil Madhavapeddy, analysis by Leo White)
 
 - PR#7330: Missing exhaustivity check for extensible variant
   (Jacques Garrigue, report by Elarnon *)
-
-- PR#7165, GPR#494: uncaught exception on invalid lexer directive
-  (Gabriel Scherer, report by KC Sivaramakrishnan using afl-fuzz)
 
 * GPR#533: Thread library: fixed [Thread.wait_signal] so that it
   converts back the signal number returned by [sigwait] to an
@@ -316,15 +322,12 @@ OCaml 4.04.0:
 
 - GPR#721: Fix infinite loop in flambda due to [@@specialise] annotations
 
-- PR#7299: remove access to OCaml heap inside blocking section in win32unix
-  (David Allsopp, report by Andreas Hauptmann)
-
-- PR#7300: remove access to OCaml heap inside blocking in Unix.sleep on Windows
-  (David Allsopp)
-
 - GPR#779: Building native runtime on Windows could fail when bootstrapping
   FlexDLL if there was also a system-installed flexlink
   (David Allsopp, report Michael Soegtrop)
+
+- GPR#814: fix the Buffer.add_substring bounds check to handle overflow
+  (Jeremy Yallop)
 
 ### Internal/compiler-libs changes:
 
