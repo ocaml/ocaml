@@ -12,8 +12,8 @@ arrayLabels.cmi :
 buffer.cmo : sys.cmi string.cmi bytes.cmi buffer.cmi
 buffer.cmx : sys.cmx string.cmx bytes.cmx buffer.cmi
 buffer.cmi :
-bytes.cmo : pervasives.cmi list.cmi char.cmi bytes.cmi
-bytes.cmx : pervasives.cmx list.cmx char.cmx bytes.cmi
+bytes.cmo : sys.cmi pervasives.cmi list.cmi char.cmi bytes.cmi
+bytes.cmx : sys.cmx pervasives.cmx list.cmx char.cmx bytes.cmi
 bytes.cmi :
 bytesLabels.cmo : bytes.cmi bytesLabels.cmi
 bytesLabels.cmx : bytes.cmx bytesLabels.cmi
@@ -194,8 +194,8 @@ arrayLabels.cmo : array.cmi arrayLabels.cmi
 arrayLabels.p.cmx : array.cmx arrayLabels.cmi
 buffer.cmo : sys.cmi string.cmi bytes.cmi buffer.cmi
 buffer.p.cmx : sys.cmx string.cmx bytes.cmx buffer.cmi
-bytes.cmo : pervasives.cmi list.cmi char.cmi bytes.cmi
-bytes.p.cmx : pervasives.cmx list.cmx char.cmx bytes.cmi
+bytes.cmo : sys.cmi pervasives.cmi list.cmi char.cmi bytes.cmi
+bytes.p.cmx : sys.cmx pervasives.cmx list.cmx char.cmx bytes.cmi
 bytesLabels.cmo : bytes.cmi bytesLabels.cmi
 bytesLabels.p.cmx : bytes.cmx bytesLabels.cmi
 callback.cmo : obj.cmi callback.cmi

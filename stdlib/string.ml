@@ -48,15 +48,23 @@ let concat sep l =
   match l with
   | [] -> ""
   | hd :: tl ->
-      let num = ref 0 and len = ref 0 in
-      List.iter (fun s -> incr num; len := !len + length s) l;
-      let r = B.create (!len + length sep * (!num - 1)) in
+      let len = ref (length hd) in
+      let sep_len = length sep in
+      List.iter
+        (fun s ->
+           let old_len = !len in
+           len := old_len + sep_len + length s;
+           if !len < old_len then invalid_arg "String.concat"  (* overflow *)
+        )
+        tl;
+      if !len > Sys.max_string_length then invalid_arg "String.concat";
+      let r = Bytes.create !len in
       unsafe_blit hd 0 r 0 (length hd);
       let pos = ref(length hd) in
       List.iter
         (fun s ->
-          unsafe_blit sep 0 r !pos (length sep);
-          pos := !pos + length sep;
+          unsafe_blit sep 0 r !pos sep_len;
+          pos := !pos + sep_len;
           unsafe_blit s 0 r !pos (length s);
           pos := !pos + length s)
         tl;
