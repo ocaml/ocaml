@@ -1314,6 +1314,22 @@ let subst env level priv abbrev ty params args body =
     current_level := old_level;
     raise exn
 
+let subst_path kind ty path' =
+  match ty with
+  | {desc = Tconstr (path, tl, abbrev)} ->
+    let tv = newvar2 ty.level in
+    let lookup_abbrev = proper_abbrevs path tl abbrev in
+    memorize_abbrev lookup_abbrev kind path ty tv;
+    let abbrev =
+      match !abbrev with
+      | Mcons _ -> ref (Mlink abbrev)
+      | abbrev  -> ref abbrev
+    in
+    let ty' = newty2 ty.level (Tconstr(path', tl, abbrev)) in
+    link_type tv ty';
+    ty'
+  | _ -> assert false
+
 (*
    Only the shape of the type matters, not whether is is generic or
    not. [generic_level] might be somewhat slower, but it ensures
@@ -1387,29 +1403,32 @@ let expand_abbrev_gen kind find_type_expansion env ty =
           (* assert (ty != ty'); *) (* PR#7324 *)
           ty'
       | None ->
-          let (params, body, lv) =
-            try find_type_expansion path env with Not_found ->
-              raise Cannot_expand
-          in
-          (* prerr_endline
-            ("add a "^string_of_kind kind^" expansion for "^Path.name path);*)
-          let ty' = subst env level kind abbrev (Some ty) params args body in
-          (* Hack to name the variant type *)
-          begin match repr ty' with
-            {desc=Tvariant row} as ty when static_row row ->
-              ty.desc <- Tvariant { row with row_name = Some (path, args) }
-          | _ -> ()
-          end;
-          (* For gadts, remember type as non exportable *)
-          (* The ambiguous level registered for ty' should be the highest *)
-          if !trace_gadt_instances then begin
-            match max lv (Env.gadt_instance_level env ty) with
-              None -> ()
-            | Some lv ->
-                if level < lv then raise (Unify [(ty, newvar2 level)]);
-                Env.add_gadt_instances env lv [ty; ty']
-          end;
-          ty'
+          match find_type_expansion path env with
+          | exception Not_found ->
+            (* another way to expand is to normalize the path itself *)
+            let path' = Env.normalize_path None env path in
+            if Path.same path path' then raise Cannot_expand
+            else subst_path kind ty path'
+          | (params, body, lv) ->
+            (* prerr_endline
+              ("add a "^string_of_kind kind^" expansion for "^Path.name path);*)
+            let ty' = subst env level kind abbrev (Some ty) params args body in
+            (* Hack to name the variant type *)
+            begin match repr ty' with
+              {desc=Tvariant row} as ty when static_row row ->
+                ty.desc <- Tvariant { row with row_name = Some (path, args) }
+            | _ -> ()
+            end;
+            (* For gadts, remember type as non exportable *)
+            (* The ambiguous level registered for ty' should be the highest *)
+            if !trace_gadt_instances then begin
+              match max lv (Env.gadt_instance_level env ty) with
+                None -> ()
+              | Some lv ->
+                  if level < lv then raise (Unify [(ty, newvar2 level)]);
+                  Env.add_gadt_instances env lv [ty; ty']
+            end;
+            ty'
       end
   | _ ->
       assert false
