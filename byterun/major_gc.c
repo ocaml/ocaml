@@ -49,7 +49,7 @@ uintnat caml_percent_free;
 uintnat caml_major_heap_increment;
 CAMLexport char *caml_heap_start;
 char *caml_gc_sweep_hp;
-int caml_gc_phase;        /* always Phase_mark, Pase_clean,
+int caml_gc_phase;        /* always Phase_mark, Phase_clean,
                              Phase_sweep, or Phase_idle */
 static value *gray_vals;
 static value *gray_vals_cur, *gray_vals_end;
@@ -102,7 +102,7 @@ int caml_gc_subphase;     /* Subphase_{mark_roots,mark_main,mark_final} */
 
  */
 static int ephe_list_pure;
-/** The ephemerons is pure if since the start of its iteration
+/** The ephemeron is pure if since the start of its iteration
     no value have been darken. */
 static value *ephes_checked_if_pure;
 static value *ephes_to_check;
@@ -218,7 +218,7 @@ static mlsize_t current_index = 0;
 static void init_sweep_phase(void)
 {
   /* Phase_clean is done. */
-  /* Initialise the sweep phase. */
+  /* Initialize the sweep phase. */
   caml_gc_sweep_hp = caml_heap_start;
   caml_fl_init_merge ();
   caml_gc_phase = Phase_sweep;
@@ -229,7 +229,7 @@ static void init_sweep_phase(void)
   if (caml_major_gc_hook) (*caml_major_gc_hook)();
 }
 
-/* auxillary function of mark_slice */
+/* auxiliary function of mark_slice */
 static inline value* mark_slice_darken(value *gray_vals_ptr, value v, int i,
                                        int in_ephemeron, int *slice_pointers)
 {
@@ -348,7 +348,7 @@ static value* mark_ephe_aux (value *gray_vals_ptr, intnat *work,
       ephes_to_check = &Field(v,CAML_EPHE_LINK_OFFSET);
       return gray_vals_ptr;
     }
-  } else {  /* a simily weak pointer or an already alive data */
+  } else {  /* a similar weak pointer or an already alive data */
     *work -= 1;
   }
 
@@ -462,7 +462,7 @@ static void mark_slice (intnat work)
       /* Continue to scan the list of ephe */
       gray_vals_ptr = mark_ephe_aux(gray_vals_ptr,&work,&slice_pointers);
     } else if (!ephe_list_pure){
-      /* We must scan again the list because some value have been darken */
+      /* We must scan again the list because some values have been darken */
       ephe_list_pure = 1;
       ephes_to_check = ephes_checked_if_pure;
     }else{
@@ -483,15 +483,15 @@ static void mark_slice (intnat work)
       }
         break;
       case Subphase_mark_final: {
-        /** The set of unreachable value will not change anymore for
+        /** The set of unreachable values will not change anymore for
             this cycle. Start clean phase. */
         caml_gc_phase = Phase_clean;
         caml_final_update_clean_phase ();
         if (caml_ephe_list_head != (value) NULL){
-          /* Initialise the clean phase. */
+          /* Initialize the clean phase. */
           ephes_to_check = &caml_ephe_list_head;
         } else {
-          /* Initialise the sweep phase. */
+          /* Initialize the sweep phase. */
           init_sweep_phase();
         }
           work = 0;
@@ -528,7 +528,7 @@ static void clean_slice (intnat work)
       }
     }else{ /* End of list reached */
       /* Phase_clean is done. */
-      /* Initialise the sweep phase. */
+      /* Initialize the sweep phase. */
       init_sweep_phase();
       work = 0;
     }

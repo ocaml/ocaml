@@ -625,7 +625,7 @@ let square_big_int bi =
   ignore (square_nat res 0 len_res (bi.abs_value) 0 len_bi);
   {sign = 1; abs_value = res}
 
-(* round off of the futur last digit (of the integer represented by the string
+(* round off of the future last digit (of the integer represented by the string
    argument of the function) that is now the previous one.
    if s contains an integer of the form (10^n)-1
     then s <- only 0 digits and the result_int is true
@@ -694,7 +694,7 @@ let shift_left_big_int bi n =
     { sign = bi.sign; abs_value = res }
   end
 
-(* Shift right by N bits (rounds toward zero) *)
+(* Shift right by N bits (rounds towards zero) *)
 
 let shift_right_towards_zero_big_int bi n =
   if n < 0 then invalid_arg "shift_right_towards_zero_big_int"
@@ -733,7 +733,7 @@ let two_power_m1_big_int n =
     { sign = 1; abs_value = res }
   end
 
-(* Shift right by N bits (rounds toward minus infinity) *)
+(* Shift right by N bits (rounds towards minus infinity) *)
 
 let shift_right_big_int bi n =
   if n < 0 then invalid_arg "shift_right_big_int"

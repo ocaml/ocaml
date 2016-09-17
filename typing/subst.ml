@@ -135,7 +135,7 @@ let rec typexp s ty =
       end
   | Tsubst ty ->
       ty
-(* cannot do it, since it would omit subsitution
+(* cannot do it, since it would omit substitution
   | Tvariant row when not (static_row row) ->
       ty
 *)

@@ -22,7 +22,7 @@ type constant =
   (* 3 3l 3L 3n
 
      Suffixes [g-z][G-Z] are accepted by the parser.
-     Suffixes except 'l', 'L' and 'n' are rejected by the typechecker
+     Suffixes except 'l', 'L' and 'n' are rejected by the type-checker
   *)
   | Pconst_char of char
   (* 'c' *)
@@ -34,7 +34,7 @@ type constant =
   (* 3.4 2e5 1.4e-4
 
      Suffixes [g-z][G-Z] are accepted by the parser.
-     Suffixes are rejected by the typechecker.
+     Suffixes are rejected by the type-checker.
   *)
 
 (** {2 Extension points} *)
@@ -51,7 +51,7 @@ and extension = string loc * payload
       (* [%id ARG]
          [%%id ARG]
 
-         Sub-language placeholder -- rejected by the typechecker.
+         Sub-language placeholder -- rejected by the type-checker.
       *)
 
 and attributes = attribute list
@@ -81,7 +81,7 @@ and core_type_desc =
   | Ptyp_arrow of arg_label * core_type * core_type
         (* T1 -> T2       Simple
            ~l:T1 -> T2    Labelled
-           ?l:T1 -> T2    Otional
+           ?l:T1 -> T2    Optional
          *)
   | Ptyp_tuple of core_type list
         (* T1 * ... * Tn

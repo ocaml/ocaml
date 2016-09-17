@@ -46,7 +46,7 @@ let merge_before_tags l =
 
 let version_separators = Str.regexp "[\\.\\+]";;
 
-(** Merge two Odoctypes.info struture, completing the information of
+(** Merge two Odoctypes.info structure, completing the information of
    the first one with the information in the second one.
    The merge treatment depends on a given merge_option list.
    @return the new info structure.*)
@@ -222,7 +222,7 @@ let merge_info_opt merge_options mli_opt ml_opt =
   | None, None -> None
   | Some i1, Some i2 -> Some (merge_info merge_options i1 i2)
 
-(** merge of two t_type, one for a .mli, another for the .ml.
+(** Merge of two t_type, one for a .mli, another for the .ml.
    The .mli type is completed with the information in the .ml type. *)
 let merge_types merge_options mli ml =
   mli.ty_info <- merge_info_opt merge_options mli.ty_info ml.ty_info;
@@ -298,7 +298,7 @@ let merge_types merge_options mli ml =
       else
         raise (Failure (Odoc_messages.different_types mli.ty_name))
 
-(** merge of two t_type_extension, one for a .mli, another for the .ml.
+(** Merge of two t_type_extension, one for a .mli, another for the .ml.
    The .mli type is completed with the information in the .ml type.
    Information for the extension constructors is merged separately
    by [merge_extension_constructor]. *)
@@ -307,7 +307,7 @@ let merge_type_extension merge_options mli ml =
   mli.te_loc <- { mli.te_loc with loc_impl = ml.te_loc.loc_impl } ;
   mli.te_code <- (match mli.te_code with None -> ml.te_code | _ -> mli.te_code)
 
-(** merge of two t_extension_constructor, one for a .mli, another for the .ml.
+(** Merge of two t_extension_constructor, one for a .mli, another for the .ml.
    The .mli type is completed with the information in the .ml type. *)
 let merge_extension_constructor merge_options mli ml =
   let new_desc =
@@ -355,7 +355,7 @@ let rec merge_param_info pi_mli pi_ml =
         Tuple (new_l, t_mli)
 
 (** Merge of the parameters of two functions/methods/classes, one for a .mli, another for a .ml.
-   The prameters in the .mli are completed by the name in the .ml.*)
+   The parameters in the .mli are completed by the name in the .ml. *)
 let rec merge_parameters param_mli param_ml =
   match (param_mli, param_ml) with
     ([], []) -> []
@@ -370,8 +370,8 @@ let merge_classes merge_options mli ml =
   mli.cl_loc <- { mli.cl_loc with loc_impl = ml.cl_loc.loc_impl } ;
   mli.cl_parameters <- merge_parameters mli.cl_parameters ml.cl_parameters;
 
-  (* we must reassociate comments in @param to the the corresponding
-     parameters because the associated comment of a parameter may have been changed y the merge.*)
+  (* we must reassociate comments in @param to the corresponding
+     parameters because the associated comment of a parameter may have been changed by the merge.*)
   Odoc_class.class_update_parameters_text mli;
 
   (* merge values *)
@@ -446,7 +446,7 @@ let merge_classes merge_options mli ml =
     )
     (Odoc_class.class_methods mli)
 
-(** merge of two t_class_type, one for a .mli, another for the .ml.
+(** Merge of two t_class_type, one for a .mli, another for the .ml.
    The .mli class is completed with the information in the .ml class. *)
 let merge_class_types merge_options mli ml =
   mli.clt_info <- merge_info_opt merge_options  mli.clt_info ml.clt_info;
@@ -500,7 +500,7 @@ let merge_class_types merge_options mli ml =
                                                       m.met_value.val_parameters
                                                       m2.met_value.val_parameters) ;
                      (* we must reassociate comments in @param to the the corresponding
-                        parameters because the associated comment of a parameter may have been changed y the merge.*)
+                        parameters because the associated comment of a parameter may have been changed by the merge.*)
                      Odoc_value.update_value_parameters_text m.met_value;
 
                      if !Odoc_global.keep_code then
@@ -524,7 +524,7 @@ let merge_class_types merge_options mli ml =
     (Odoc_class.class_type_methods mli)
 
 
-(** merge of two t_module_type, one for a .mli, another for the .ml.
+(** Merge of two t_module_type, one for a .mli, another for the .ml.
    The .mli module is completed with the information in the .ml module. *)
 let rec merge_module_types merge_options mli ml =
   mli.mt_info <- merge_info_opt merge_options mli.mt_info ml.mt_info;
@@ -672,7 +672,7 @@ let rec merge_module_types merge_options mli ml =
     )
     (Odoc_module.module_type_module_types mli);
 
-  (* A VOIR : merge included modules ? *)
+  (* TODO : merge included modules ? *)
 
   (* merge values *)
   List.iter
@@ -690,8 +690,8 @@ let rec merge_module_types merge_options mli ml =
                      v.val_parameters <- (merge_parameters
                                             v.val_parameters
                                             v2.val_parameters) ;
-                     (* we must reassociate comments in @param to the the corresponding
-                        parameters because the associated comment of a parameter may have been changed y the merge.*)
+                     (* we must reassociate comments in @param to the corresponding
+                        parameters because the associated comment of a parameter may have been changed by the merge.*)
                      Odoc_value.update_value_parameters_text v;
 
                      if !Odoc_global.keep_code then
@@ -770,7 +770,7 @@ let rec merge_module_types merge_options mli ml =
     )
     (Odoc_module.module_type_class_types mli)
 
-(** merge of two t_module, one for a .mli, another for the .ml.
+(** Merge of two t_module, one for a .mli, another for the .ml.
    The .mli module is completed with the information in the .ml module. *)
 and merge_modules merge_options mli ml =
   mli.m_info <- merge_info_opt merge_options mli.m_info ml.m_info;
@@ -947,7 +947,7 @@ and merge_modules merge_options mli ml =
     )
     (Odoc_module.module_module_types mli);
 
-  (* A VOIR : merge included modules ? *)
+  (* TODO : merge included modules ? *)
 
   (* merge values *)
   List.iter
@@ -963,8 +963,8 @@ and merge_modules merge_options mli ml =
                  v.val_parameters <- (merge_parameters
                                         v.val_parameters
                                         v2.val_parameters) ;
-                 (* we must reassociate comments in @param to the the corresponding
-                    parameters because the associated comment of a parameter may have been changed y the merge.*)
+                 (* we must reassociate comments in @param to the corresponding
+                    parameters because the associated comment of a parameter may have been changed by the merge.*)
                  Odoc_value.update_value_parameters_text v;
 
                  if !Odoc_global.keep_code then

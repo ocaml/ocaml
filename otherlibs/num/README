@@ -1,7 +1,7 @@
 The "libnum" library implements exact-precision arithmetic on
 big integers and on rationals.
 
-This library is derived from Valerie Menissie-Morain's implementation
+This library is derived from Valerie Menissier-Morain's implementation
 of rational arithmetic for Caml V3.1 (INRIA).  Xavier Leroy (INRIA)
 did the Caml Light port.  Victor Manuel Gulias Fernandez did the
 initial Caml Special Light port.  Pierre Weis did most of the

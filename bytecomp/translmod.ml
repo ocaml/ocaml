@@ -160,7 +160,7 @@ let compose_coercions c1 c2 =
   c3
 *)
 
-(* Record the primitive declarations occuring in the module compiled *)
+(* Record the primitive declarations occurring in the module compiled *)
 
 let primitive_declarations = ref ([] : Primitive.description list)
 let record_primitive = function

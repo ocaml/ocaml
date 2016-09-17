@@ -244,7 +244,7 @@ method is_cheap_operation op =
   | _ -> false
 
 (* Forget all equations involving memory loads.  Performed after a
-   non-initializing store *)
+   non-initializing store. *)
 
 method private kill_loads n =
   remove_load_numbering n
@@ -280,11 +280,11 @@ method private cse n i =
       (* For allocations, we must avoid extending the live range of a
          pseudoregister across the allocation if this pseudoreg
          is a derived heap pointer (a pointer into the heap that does
-         not point to the beginning of a Caml block).  PR#6484 is an
+         not point to the beginning of an OCaml block).  PR#6484 is an
          example of this situation.  Such pseudoregs have type [Addr].
          Pseudoregs with types other than [Addr] can be kept.
          Moreover, allocation can trigger the asynchronous execution
-         of arbitrary Caml code (finalizer, signal handler, context
+         of arbitrary OCaml code (finalizer, signal handler, context
          switch), which can contain non-initializing stores.
          Hence, all equations over loads must be removed. *)
        let n1 = kill_addr_regs (self#kill_loads n) in
@@ -308,7 +308,7 @@ method private cse n i =
                      an integer constant, don't bother. *)
                   let n3 = set_known_regs n1 i.res vres in
                   (* This is n1 above and not n2 because the move
-                     does not destroy any regs *)
+                     does not destroy any regs. *)
                   insert_move res i.res (self#cse n3 i.next)
               | _ ->
                   (* We already computed the operation but lost its

@@ -23,10 +23,10 @@
 
 ;; User modifiable variables
 
-;; Whether you want the output buffer to be diplayed when you send a phrase
+;; Whether you want the output buffer to be displayed when you send a phrase
 
 (defvar caml-display-when-eval t
-  "*If true, display the inferior caml buffer when evaluating expressions.")
+  "*If true, display the inferior OCaml buffer when evaluating expressions.")
 
 
 ;; End of User modifiable variables
@@ -99,7 +99,7 @@ be sent from another buffer in Caml mode.
         t))
 (add-hook 'inferior-caml-mode-hooks 'inferior-caml-mode-output-hook)
 
-;; To launch ocaml whenever needed
+;; To launch OCaml whenever needed
 
 (defun caml-run-process-if-needed (&optional cmd)
   (if (comint-check-proc inferior-caml-buffer-name) nil
@@ -190,7 +190,7 @@ Input and output via buffer `*inferior-caml*'."
     (if caml-display-when-eval
         (display-buffer inferior-caml-buffer-name t))))
 
-;; jump to errors produced by ocaml compiler
+;; jump to errors produced by OCaml compiler
 
 (defun inferior-caml-goto-error (start end)
   "Jump to the location of the last error as indicated by inferior toplevel."
@@ -205,12 +205,12 @@ Input and output via buffer `*inferior-caml*'."
     (goto-char loc)))
 
 
-;;; orgininal inf-caml.el ended here
+;;; original inf-caml.el ended here
 
 ;; as eval-phrase, but ignores errors.
 
 (defun inferior-caml-just-eval-phrase (arg &optional min max)
-  "Send the phrase containing the point to the CAML process.
+  "Send the phrase containing the point to the OCaml process.
 With prefix-arg send as many phrases as its numeric value,
 ignoring possible errors during evaluation.
 
@@ -226,15 +226,15 @@ should lies."
 
 (defvar caml-previous-output nil
   "tells the beginning of output in the shell-output buffer, so that the
-output can be retreived later, asynchronously.")
+output can be retrieved later, asynchronously.")
 
-;; enriched version of eval-phrase, to repport errors.
+;; enriched version of eval-phrase, to report errors.
 
 (defun inferior-caml-eval-phrase (arg &optional min max)
-  "Send the phrase containing the point to the CAML process.
+  "Send the phrase containing the point to the OCaml process.
 With prefix-arg send as many phrases as its numeric value,
-If an error occurs during evalutaion, stop at this phrase and
-repport the error.
+If an error occurs during evaluation, stop at this phrase and
+report the error.
 
 Return nil if noerror and position of error if any.
 
@@ -344,7 +344,7 @@ should lies."
         (setq c (+ c 1))))
     (caml-sit-for (or after 0) 1)))
 
-;; To insert the last output from caml at point
+;; To insert the last output from OCaml at point
 (defun caml-insert-last-output ()
   "Insert the result of the evaluation of previous phrase"
   (interactive)

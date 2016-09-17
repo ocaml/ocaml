@@ -94,7 +94,7 @@ module type S =
     - actions is an array of actions.
 
   All these arguments specify a switch construct and zyva
-  returns an action that performs the switch,
+  returns an action that performs the switch.
 *)
 module Make :
   functor (Arg : S) ->

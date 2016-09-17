@@ -22,7 +22,7 @@ open Arith_flags
    Conventions :
    - the denominator is always a positive number
    - the sign of n/0 is the sign of n
-These convention is automatically respected when a ratio is created with
+These conventions are automatically respected when a ratio is created with
 the create_ratio primitive
 *)
 

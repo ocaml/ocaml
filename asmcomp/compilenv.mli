@@ -94,10 +94,10 @@ val set_export_info: Export_info.t -> unit
         (* Record the informations of the unit being compiled
            flambda-only *)
 val approx_env: unit -> Export_info.t
-        (* Returns all the information loaded from extenal compilation units
+        (* Return all the information loaded from external compilation units
            flambda-only *)
 val approx_for_global: Compilation_unit.t -> Export_info.t
-        (* Loads the exported information declaring the compilation_unit
+        (* Load the exported information declaring the compilation_unit
            flambda-only *)
 
 val need_curry_fun: int -> unit
@@ -112,7 +112,7 @@ val closure_symbol : Closure_id.t -> Symbol.t
            closed (statically allocated)
            flambda-only *)
 val function_label : Closure_id.t -> string
-        (* linkage name of the code of a function
+        (* Linkage name of the code of a function
            flambda-only *)
 
 val new_structured_constant:

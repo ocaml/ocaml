@@ -82,13 +82,13 @@ CAMLprim value caml_weak_create (value len)
    Specificity of the cleaning phase (Phase_clean):
 
    The dead keys must be removed from the ephemerons and data removed
-   when one the keys is dead. Here we call it cleaning the ephemerons.
+   when one of the keys is dead. Here we call it cleaning the ephemerons.
    A specific phase of the GC is dedicated to this, Phase_clean. This
    phase is just after the mark phase, so the white values are dead
    values. It iterates the function caml_ephe_clean through all the
    ephemerons.
 
-   However the GC is incremental and ocaml code can run on the middle
+   However the GC is incremental and OCaml code can run in the middle
    of this cleaning phase. In order to respect the semantic of the
    ephemerons concerning dead values, the getter and setter must work
    as if the cleaning of all the ephemerons have been done at once.
@@ -98,8 +98,8 @@ CAMLprim value caml_weak_create (value len)
    - key setter: If we replace a dead key we need to set the data to
      caml_ephe_none and clean the ephemeron.
 
-     This two cases are dealt by a call to do_check_key_clean that
-     trigger the cleaning of the ephemerons when the accessed key is
+     Both cases are dealt by a call to do_check_key_clean that
+     triggers the cleaning of the ephemerons when the accessed key is
      dead. This test is fast.
 
      In the case of value getter and value setter, there is no fast
@@ -204,7 +204,7 @@ CAMLprim value caml_ephe_set_data (value ar, value el)
 {
                                                    Assert (Is_in_heap (ar));
   if (caml_gc_phase == Phase_clean){
-    /* During this phase since we don't know which ephemeron have been
+    /* During this phase since we don't know which ephemerons have been
        cleaned we always need to check it. */
     caml_ephe_clean(ar);
   };

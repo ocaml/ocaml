@@ -46,7 +46,7 @@ external make : int -> 'a -> 'a array = "caml_make_vect"
 
    Raise [Invalid_argument] if [n < 0] or [n > Sys.max_array_length].
    If the value of [x] is a floating-point number, then the maximum
-   size is only [Sys.max_array_length / 2].*)
+   size is only [Sys.max_array_length / 2]. *)
 
 external create : int -> 'a -> 'a array = "caml_make_vect"
   [@@ocaml.deprecated "Use ArrayLabels.make instead."]
@@ -60,7 +60,7 @@ val init : int -> f:(int -> 'a) -> 'a array
 
    Raise [Invalid_argument] if [n < 0] or [n > Sys.max_array_length].
    If the return type of [f] is [float], then the maximum
-   size is only [Sys.max_array_length / 2].*)
+   size is only [Sys.max_array_length / 2]. *)
 
 val make_matrix : dimx:int -> dimy:int -> 'a -> 'a array array
 (** [ArrayLabels.make_matrix dimx dimy e] returns a two-dimensional array

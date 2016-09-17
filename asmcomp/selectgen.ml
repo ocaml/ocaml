@@ -512,10 +512,10 @@ method emit_expr env exp =
       let r = self#regs_for typ_val in
       Some(self#insert_op (Iconst_symbol n) [||] r)
   | Cconst_pointer n ->
-      let r = self#regs_for typ_val in  (* integer as Caml value *)
+      let r = self#regs_for typ_val in  (* integer as OCaml value *)
       Some(self#insert_op (Iconst_int(Nativeint.of_int n)) [||] r)
   | Cconst_natpointer n ->
-      let r = self#regs_for typ_val in  (* integer as Caml value *)
+      let r = self#regs_for typ_val in  (* integer as OCaml value *)
       Some(self#insert_op (Iconst_int n) [||] r)
   | Cblockheader(n, dbg) ->
       self#emit_blockheader env n dbg

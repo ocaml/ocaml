@@ -263,7 +263,7 @@ and class_expr_desc =
                   (Ident.t * string loc * expression) list * class_expr
   | Tcl_constraint of
       class_expr * class_type option * string list * string list * Concr.t
-    (* Visible instance variables, methods and concretes methods *)
+    (* Visible instance variables, methods and concrete methods *)
 
 and class_structure =
   {
@@ -308,7 +308,7 @@ and module_expr =
 (** Annotations for [Tmod_constraint]. *)
 and module_type_constraint =
   | Tmodtype_implicit
-  (** The module type constraint has been synthesized during typecheking. *)
+  (** The module type constraint has been synthesized during typechecking. *)
   | Tmodtype_explicit of module_type
   (** The module type was in the source file. *)
 

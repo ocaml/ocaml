@@ -38,7 +38,7 @@
 (defvar caml-max-indent-priority 8
   "*Bounds priority of operators permitted to affect caml indentation.
 
-Priorities are assigned to `interesting' caml operators as follows:
+Priorities are assigned to `interesting' OCaml operators as follows:
 
         all keywords 0 to 7     8
         type, val, ... + 0      7
@@ -63,7 +63,7 @@ Priorities are assigned to `interesting' caml operators as follows:
 (make-variable-buffer-local 'caml-class-indent)
 
 (defvar caml-exception-indent 2
-  "*How many spaces to indent from a exception keyword in caml mode.")
+  "*How many spaces to indent from an exception keyword in caml mode.")
 (make-variable-buffer-local 'caml-exception-indent)
 
 (defvar caml-for-indent 2
@@ -79,7 +79,7 @@ Priorities are assigned to `interesting' caml operators as follows:
 (make-variable-buffer-local 'caml-function-indent)
 
 (defvar caml-if-indent  2
-  "*How many spaces to indent from a if keyword in caml mode.")
+  "*How many spaces to indent from an if keyword in caml mode.")
 (make-variable-buffer-local 'caml-if-indent)
 
 (defvar caml-if-else-indent 0
@@ -87,15 +87,15 @@ Priorities are assigned to `interesting' caml operators as follows:
 (make-variable-buffer-local 'caml-if-else-indent)
 
 (defvar caml-inherit-indent 2
-  "*How many spaces to indent from a inherit keyword in caml mode.")
+  "*How many spaces to indent from an inherit keyword in caml mode.")
 (make-variable-buffer-local 'caml-inherit-indent)
 
 (defvar caml-initializer-indent 2
-  "*How many spaces to indent from a initializer keyword in caml mode.")
+  "*How many spaces to indent from an initializer keyword in caml mode.")
 (make-variable-buffer-local 'caml-initializer-indent)
 
 (defvar caml-include-indent 2
-  "*How many spaces to indent from a include keyword in caml mode.")
+  "*How many spaces to indent from an include keyword in caml mode.")
 (make-variable-buffer-local 'caml-include-indent)
 
 (defvar caml-let-indent 2
@@ -119,11 +119,11 @@ Priorities are assigned to `interesting' caml operators as follows:
 (make-variable-buffer-local 'caml-module-indent)
 
 (defvar caml-object-indent 2
-  "*How many spaces to indent from a object keyword in caml mode.")
+  "*How many spaces to indent from an object keyword in caml mode.")
 (make-variable-buffer-local 'caml-object-indent)
 
 (defvar caml-of-indent 2
-  "*How many spaces to indent from a of keyword in caml mode.")
+  "*How many spaces to indent from an of keyword in caml mode.")
 (make-variable-buffer-local 'caml-of-indent)
 
 (defvar caml-parser-indent 4
@@ -241,7 +241,7 @@ Usually negative. nil is align on master.")
 (make-variable-buffer-local 'caml-|-extra-indent)
 
 (defvar caml-rb-extra-indent -2
-  "*Extra indent for caml lines statring with ].
+  "*Extra indent for caml lines starting with ].
 Usually negative. nil is align on master.")
 
 (defvar caml-rc-extra-indent -2
@@ -255,13 +255,13 @@ Usually negative. nil is align on master.")
 (defvar caml-electric-indent t
   "*Non-nil means electrically indent lines starting with |, ] or }.
 
-Many people find eletric keys irritating, so you can disable them if
+Many people find electric keys irritating, so you can disable them if
 you are one.")
 
 (defvar caml-electric-close-vector t
   "*Non-nil means electrically insert a | before a vector-closing ].
 
-Many people find eletric keys irritating, so you can disable them if
+Many people find electric keys irritating, so you can disable them if
 you are one. You should probably have this on, though, if you also
 have caml-electric-indent on, which see.")
 
@@ -609,10 +609,10 @@ have caml-electric-indent on, which see.")
 ;     (inferior-caml-eval-region (car bounds) (cdr bounds)))))
 
 (defun caml-eval-phrase (arg &optional min max)
-  "Send the phrase containing the point to the CAML process.
+  "Send the phrase containing the point to the OCaml process.
 With prefix-arg send as many phrases as its numeric value,
-If an error occurs during evalutaion, stop at this phrase and
-repport the error.
+If an error occurs during evaluation, stop at this phrase and
+report the error.
 
 Return nil if noerror and position of error if any.
 
@@ -731,7 +731,7 @@ are blanks."
 (defun caml-indent-command (&optional p)
   "Indent the current line in Caml mode.
 
-Compute new indentation based on caml syntax. If prefixed, indent
+Compute new indentation based on OCaml syntax. If prefixed, indent
 the line all the way to where point is."
 
   (interactive "*p")
@@ -974,7 +974,7 @@ whole string."
 (defconst caml-phrase-sep-keywords (concat ";;\\|" caml-phrase-start-keywords))
 
 (defun caml-find-phrase (&optional min-pos max-pos)
-  "Find the CAML phrase containing the point.
+  "Find the OCaml phrase containing the point.
 Return the position of the beginning of the phrase, and move point
 to the end.
 "
@@ -1063,7 +1063,7 @@ to the end.
     (if orig-function (funcall orig-function begin end))))
 
 (defun caml-in-literal-p ()
-  "Returns non-nil if point is inside a caml literal."
+  "Returns non-nil if point is inside an OCaml literal."
   (let* ((start-literal (concat "[\"" caml-quote-char "]"))
          (char-literal
           (concat "\\([^\\]\\|\\\\\\.\\|\\\\[0-9][0-9][0-9]\\)"
@@ -1123,10 +1123,10 @@ to the end.
     (= count 0)))
 
 (defun caml-in-comment-p ()
-  "Returns non-nil if point is inside a caml comment.
-Returns nil for the parenthesis openning a comment."
+  "Returns non-nil if point is inside an OCaml comment.
+Returns nil for the parenthesis opening a comment."
   ;;we look for comments differently than literals. there are two
-  ;;reasons for this. first, caml has nested comments and it is not so
+  ;;reasons for this. first, OCaml has nested comments and it is not so
   ;;clear that parse-partial-sexp supports them; second, if proper
   ;;style is used, literals are never split across lines, so we don't
   ;;have to worry about bogus phrase breaks inside literals, while we
@@ -1215,7 +1215,7 @@ Used to distinguish it from toplevel let construct.")
   "Association list used in caml mode for skipping back over nested blocks.")
 
 (defconst caml-kwop-regexps (make-vector 9 nil)
-  "Array of regexps representing caml keywords of different priorities.")
+  "Array of regexps representing OCaml keywords of different priorities.")
 
 (defun caml-in-shebang-line ()
   (save-excursion
@@ -1251,10 +1251,10 @@ Used to distinguish it from toplevel let construct.")
       (char-equal ?} (following-char))))
 
 (defun caml-find-kwop (kwop-regexp &optional min-pos)
-  "Look back for a caml keyword or operator matching KWOP-REGEXP.
+  "Look back for an OCaml keyword or operator matching KWOP-REGEXP.
 Second optional argument MIN-POS bounds the search.
 
-Ignore occurences inside literals. If found, return a list of two
+Ignore occurrences inside literals. If found, return a list of two
 values: the actual text of the keyword or operator, and a boolean
 indicating whether the keyword was one we looked for explicitly
 {non-nil}, or on the other hand one of the block-terminating
@@ -1516,7 +1516,7 @@ the line where the governing keyword occurs.")
   (caml-find-kwop-skipping-blocks 3))
 
 (defun caml-find-kwop-skipping-blocks (prio)
-  "Look back for a caml keyword matching caml-kwop-regexps [PRIO].
+  "Look back for an OCaml keyword matching caml-kwop-regexps [PRIO].
 
  Skip nested blocks."
 
@@ -1569,7 +1569,7 @@ the line where the governing keyword occurs.")
     kwop))
 
 (defun caml-compute-basic-indent (prio)
-  "Compute indent of current caml line, ignoring leading keywords.
+  "Compute indent of current OCaml line, ignoring leading keywords.
 
 Find the `governing node' for current line. Compute desired
 indentation based on the node and the indentation alists.
@@ -1625,7 +1625,7 @@ Does not preserve point."
    "\\<\\(and\\|do\\(ne\\|wnto\\)?\\|e\\(lse\\|nd\\)\\|in"
    "\\|t\\(hen\\|o\\)\\|with\\)\\>\\|[]|})]")
 
-  "Regexp matching caml keywords which need special indentation.")
+  "Regexp matching OCaml keywords which need special indentation.")
 
 (defconst caml-leading-kwops-alist
   '(("and" caml-and-extra-indent 2)
@@ -1643,7 +1643,7 @@ Does not preserve point."
     ("}" caml-rc-extra-indent 0)
     (")" caml-rp-extra-indent 0))
 
-  "Association list of special caml keyword indent values.
+  "Association list of special OCaml keyword indent values.
 
 Each member is of the form (KEYWORD EXTRA-INDENT PRIO) where
 EXTRA-INDENT is the variable holding extra indentation amount for
@@ -1677,7 +1677,7 @@ matching nodes to determine KEYWORD's final indentation.")
 
 
 (defun caml-split-string ()
-  "Called whenever a line is broken inside a caml string literal."
+  "Called whenever a line is broken inside an OCaml string literal."
   (insert-before-markers "\"^\"")
   (backward-char 1))
 
@@ -1721,7 +1721,7 @@ matching nodes to determine KEYWORD's final indentation.")
 
 Unfortunately there is a situation where this mechanism gets
 confused. It's when | is the first character of a |] sequence. This is
-a misfeature of caml syntax and cannot be fixed, however, as a
+a misfeature of OCaml syntax and cannot be fixed, however, as a
 workaround, the electric ] inserts | itself if the matching [ is
 followed by |."
 
@@ -1959,7 +1959,7 @@ with prefix arg, indent that many phrases starting with the current phrase."
   "Explore type annotations by mouse dragging." t)
 
 (autoload 'caml-help "caml-help"
-  "Show documentation for qualilifed OCaml identifier." t)
+  "Show documentation for qualified OCaml identifier." t)
 (autoload 'caml-complete "caml-help"
   "Does completion for documented qualified OCaml identifier." t)
 (autoload 'ocaml-open-module "caml-help"

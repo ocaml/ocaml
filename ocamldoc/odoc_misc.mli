@@ -64,7 +64,7 @@ val string_of_info : Odoc_types.info -> string
 val apply_opt : ('a -> 'b) -> 'a option -> 'b option
 
 (** Return a string representing a date given as a number of seconds
-   since 1970. The hour is optionnaly displayed. *)
+   since 1970. The hour is optionally displayed. *)
 val string_of_date : ?absolute:bool -> ?hour:bool -> float -> string
 
 (* Value returned by string_of_date for current time.
@@ -110,7 +110,7 @@ val remove_ending_newline : string -> string
 val search_string_backward : pat: string -> s: string -> int
 
 (** Take a type and remove the option top constructor. This is
-   useful when printing labels, we we then remove the top option contructor
+   useful when printing labels, we then remove the top option constructor
    for optional labels.*)
 val remove_option : Types.type_expr -> Types.type_expr
 

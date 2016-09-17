@@ -103,7 +103,7 @@ let set_breakpoints pos =
        set_breakpoint pos)
     pos
 
-(* Ensure the current version in installed in current checkpoint. *)
+(* Ensure the current version is installed in current checkpoint. *)
 let update_breakpoints () =
   if !debug_breakpoints then begin
     prerr_string "Updating breakpoints... ";

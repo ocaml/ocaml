@@ -83,7 +83,7 @@ val select :
   Unix.file_descr list -> Unix.file_descr list ->
   Unix.file_descr list -> float ->
     Unix.file_descr list * Unix.file_descr list * Unix.file_descr list
-(** Suspend the execution of the calling thead until input/output
+(** Suspend the execution of the calling thread until input/output
    becomes possible on the given Unix file descriptors.
    The arguments and results have the same meaning as for
    [Unix.select].

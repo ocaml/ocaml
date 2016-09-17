@@ -255,7 +255,7 @@ CAMLprim value caml_array_blit(value a1, value ofs1, value a2, value ofs2,
 
   if (Tag_val(a2) == Double_array_tag) {
     /* Arrays of floats.  The values being copied are floats, not
-       pointer, so we can do a direct copy.  memmove takes care of
+       pointers, so we can do a direct copy.  memmove takes care of
        potential overlap between the copied areas. */
     memmove((double *)a2 + Long_val(ofs2),
             (double *)a1 + Long_val(ofs1),

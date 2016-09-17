@@ -42,7 +42,7 @@
     (setq font-lock-variable-name-face 'DarkGoldenRod)
     (setq font-lock-type-face 'DarkOliveGreen)
     (setq font-lock-reference-face 'CadetBlue)))
-  ; extra faces for documention
+  ; extra faces for documentation
   (make-face 'Stop)
   (set-face-foreground 'Stop "White")
   (set-face-background 'Stop "Red")

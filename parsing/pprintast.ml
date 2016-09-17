@@ -191,7 +191,7 @@ let constant f = function
   | Pconst_float (i, Some m) -> paren (i.[0]='-') (fun f (i,m) ->
       pp f "%s%c" i m) f (i,m)
 
-(* trailing space*)
+(* trailing space *)
 let mutable_flag f = function
   | Immutable -> ()
   | Mutable -> pp f "mutable@;"
@@ -330,7 +330,7 @@ and core_type1 ctxt f x =
 (********************pattern********************)
 (* be cautious when use [pattern], [pattern1] is preferred *)
 and pattern ctxt f x =
-  let rec list_of_pattern acc = function (* only consider ((A|B)|C)*)
+  let rec list_of_pattern acc = function (* only consider ((A|B)|C) *)
     | {ppat_desc= Ppat_or (p1,p2);_} ->
         list_of_pattern  (p2::acc) p1
     | x -> x::acc
@@ -341,7 +341,7 @@ and pattern ctxt f x =
   end
   else match x.ppat_desc with
     | Ppat_alias (p, s) ->
-        pp f "@[<2>%a@;as@;%a@]" (pattern ctxt) p protect_ident s.txt (* RA*)
+        pp f "@[<2>%a@;as@;%a@]" (pattern ctxt) p protect_ident s.txt (* RA *)
     | Ppat_or _ -> (* *)
         pp f "@[<hov0>%a@]" (list ~sep:"@,|" (pattern ctxt))
           (list_of_pattern [] x)
@@ -399,7 +399,7 @@ and simple_pattern ctxt (f:Format.formatter) (x:pattern) : unit =
             pp f "@[<2>{@;%a;_}@]" (list longident_x_pattern ~sep:";@;") l
         end
     | Ppat_tuple l ->
-        pp f "@[<1>(%a)@]" (list  ~sep:"," (pattern1 ctxt))  l (* level1*)
+        pp f "@[<1>(%a)@]" (list  ~sep:"," (pattern1 ctxt))  l (* level1 *)
     | Ppat_constant (c) -> pp f "%a" constant c
     | Ppat_interval (c1, c2) -> pp f "%a..%a" constant c1 constant c2
     | Ppat_variant (l,None) ->  pp f "`%s" l
@@ -511,11 +511,11 @@ and expression ctxt f x =
 
     | Pexp_try (e, l) ->
         pp f "@[<0>@[<hv2>try@ %a@]@ @[<0>with%a@]@]"
-             (* "try@;@[<2>%a@]@\nwith@\n%a"*)
+             (* "try@;@[<2>%a@]@\nwith@\n%a" *)
           (expression reset_ctxt) e  (case_list ctxt) l
     | Pexp_let (rf, l, e) ->
         (* pp f "@[<2>let %a%a in@;<1 -2>%a@]"
-           (*no identation here, a new line*) *)
+           (*no indentation here, a new line*) *)
         (*   rec_flag rf *)
         pp f "@[<2>%a in@;<1 -2>%a@]"
           (bindings reset_ctxt) (rf,l)
@@ -562,7 +562,7 @@ and expression ctxt f x =
         end
 
     | Pexp_construct (li, Some eo)
-      when not (is_simple_construct (view_expr x))-> (* Not efficient FIXME*)
+      when not (is_simple_construct (view_expr x))-> (* Not efficient FIXME *)
         (match view_expr x with
          | `cons ls -> list (simple_expr ctxt) f ls ~sep:"@;::@;"
          | `normal ->
@@ -907,7 +907,7 @@ and module_type ctxt f x =
         pp f "(module %a)" longident_loc li;
     | Pmty_signature (s) ->
         pp f "@[<hv0>@[<hv2>sig@ %a@]@ end@]" (* "@[<hov>sig@ %a@ end@]" *)
-          (list (signature_item ctxt)) s (* FIXME wrong indentation*)
+          (list (signature_item ctxt)) s (* FIXME wrong indentation *)
     | Pmty_functor (_, None, mt2) ->
         pp f "@[<hov2>functor () ->@ %a@]" (module_type ctxt) mt2
     | Pmty_functor (s, Some mt1, mt2) ->
@@ -1084,7 +1084,7 @@ and binding ctxt f {pvb_pat=p; pvb_expr=x; _} =
   if x.pexp_attributes <> []
   then pp f "%a@;=@;%a" (pattern ctxt) p (expression ctxt) x
   else match (x.pexp_desc,p.ppat_desc) with
-    | ( _ , Ppat_constraint( p ,ty)) -> (* special case for the first*)
+    | ( _ , Ppat_constraint( p ,ty)) -> (* special case for the first *)
         begin match ty.ptyp_desc with
         | Ptyp_poly _ ->
             pp f "%a@;:@;%a@;=@;%a" (simple_pattern ctxt) p

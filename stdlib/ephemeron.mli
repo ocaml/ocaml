@@ -26,13 +26,13 @@
     associations would keep in memory the arguments and the result.
 
     Ephemerons can also be used for "adding" a field to an arbitrary
-    boxed ocaml value: you can attach an information to a value
+    boxed OCaml value: you can attach an information to a value
     created by an external library without memory leaks.
 
     Ephemerons hold some keys and one or no data. They are all boxed
-    ocaml values. The keys of an ephemeron have the same behavior
+    OCaml values. The keys of an ephemeron have the same behavior
     than weak pointers according to the garbage collector. In fact
-    ocaml weak pointers are implemented as ephemerons without data.
+    OCaml weak pointers are implemented as ephemerons without data.
 
     The keys and data of an ephemeron are said to be full if they
     point to a value, empty if the value have never been set, have
@@ -159,7 +159,7 @@ module K1 : sig
   *)
 
   val unset_data: ('k,'d) t -> unit
-  (** [Ephemeron.K1.unset_key eph el] sets the key of [eph] to be an
+  (** [Ephemeron.K1.unset_data eph el] sets the key of [eph] to be an
       empty key. The ephemeron starts behaving like a weak pointer.
   *)
 
@@ -214,7 +214,7 @@ module K2 : sig
   (** Same as {!Ephemeron.K1.get_key_copy} *)
 
   val set_key2: ('k1,'k2,'d) t -> 'k2 -> unit
-  (** Same as {!Ephemeron.K1.get_key} *)
+  (** Same as {!Ephemeron.K1.set_key} *)
 
   val unset_key2: ('k1,'k2,'d) t -> unit
   (** Same as {!Ephemeron.K1.unset_key} *)
@@ -353,10 +353,10 @@ module GenHashTable: sig
     (** [get_key cont] returns the keys if they are all alive *)
 
     val get_data: 'a container -> 'a option
-    (** [get_data cont] return the data if it is alive *)
+    (** [get_data cont] returns the data if it is alive *)
 
     val set_key_data: 'a container -> t -> 'a -> unit
-    (** [set_key_data cont] modify the key and data *)
+    (** [set_key_data cont] modifies the key and data *)
 
     val check_key: 'a container -> bool
     (** [check_key cont] checks if all the keys contained in the data

@@ -658,7 +658,7 @@ and enum top cases =
 (* Minimal density of switches *)
 let theta = ref 0.33333
 
-(* Minmal number of tests to make a switch *)
+(* Minimal number of tests to make a switch *)
 let switch_min = ref 3
 
 (* Particular case 0, 1, 2 *)
@@ -698,7 +698,7 @@ let dense {cases} i j =
    Adaptation of the correction to Bernstein
    ``Correction to `Producing Good Code for the Case Statement' ''
    S.K. Kannan and T.A. Proebsting
-   Software Practice and Exprience Vol. 24(2) 233 (Feb 1994)
+   Software Practice and Experience Vol. 24(2) 233 (Feb 1994)
 *)
 
 let comp_clusters s =

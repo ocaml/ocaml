@@ -31,13 +31,13 @@
 *)
 
 val zero : nativeint
-(** The native integer 0.*)
+(** The native integer 0. *)
 
 val one : nativeint
-(** The native integer 1.*)
+(** The native integer 1. *)
 
 val minus_one : nativeint
-(** The native integer -1.*)
+(** The native integer -1. *)
 
 external neg : nativeint -> nativeint = "%nativeint_neg"
 (** Unary negation. *)
@@ -85,7 +85,7 @@ val max_int : nativeint
    or 2{^63} - 1 on a 64-bit platform. *)
 
 val min_int : nativeint
-(** The greatest representable native integer,
+(** The smallest representable native integer,
    either -2{^31} on a 32-bit platform,
    or -2{^63} on a 64-bit platform. *)
 
@@ -99,7 +99,7 @@ external logxor : nativeint -> nativeint -> nativeint = "%nativeint_xor"
 (** Bitwise logical exclusive or. *)
 
 val lognot : nativeint -> nativeint
-(** Bitwise logical negation *)
+(** Bitwise logical negation. *)
 
 external shift_left : nativeint -> int -> nativeint = "%nativeint_lsl"
 (** [Nativeint.shift_left x y] shifts [x] to the left by [y] bits.
@@ -178,7 +178,7 @@ val compare: t -> t -> int
     {!Set.Make} and {!Map.Make}. *)
 
 val equal: t -> t -> bool
-(** The equal function for natives ints.
+(** The equal function for native ints.
     @since 4.03.0 *)
 
 (**/**)

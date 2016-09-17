@@ -314,7 +314,7 @@ In the latter case, the destination directory defaults to the
 Read the "common problems" and "machine-specific hints" section at the end of
 this file.
 
-Check the files `m.h` and `s.h` in `config/`. Wrong endian-ness or alignment
+Check the files `m.h` and `s.h` in `config/`. Wrong endianness or alignment
 constraints in `m.h` will immediately crash the bytecode interpreter.
 
 If you get a "segmentation violation" signal, check the limits on the stack size

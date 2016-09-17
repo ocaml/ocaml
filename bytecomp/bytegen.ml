@@ -667,7 +667,7 @@ let rec comp_expr env exp sz cont =
       comp_expr env (Lprim (Pccall prim_obj_dup, [arg], loc)) sz cont
   | Lprim (Pduparray _, _, _) ->
       Misc.fatal_error "Bytegen.comp_expr: Pduparray takes exactly one arg"
-(* Integer first for enabling futher optimization (cf. emitcode.ml)  *)
+(* Integer first for enabling further optimization (cf. emitcode.ml)  *)
   | Lprim (Pintcomp c, [arg ; (Lconst _ as k)], _) ->
       let p = Pintcomp (commute_comparison c)
       and args = [k ; arg] in
@@ -845,7 +845,7 @@ let rec comp_expr env exp sz cont =
           let c = comp_expr env lam sz cont in
           let ev = event Event_pseudo Event_other in
           add_event ev c
-      | Lev_after _ when is_tailcall cont -> (* don't destroy tail call opt *)
+      | Lev_after _ when is_tailcall cont -> (* don't destroy tailcall opt *)
           comp_expr env lam sz cont
       | Lev_after ty ->
           let info =

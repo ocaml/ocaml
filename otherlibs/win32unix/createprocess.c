@@ -48,7 +48,7 @@ value win_create_process_native(value cmd, value cmdline, value env,
   si.hStdOutput = Handle_val(fd2);
   si.hStdError = Handle_val(fd3);
   /* If we do not have a console window, then we must create one
-     before running the process (keep it hidden for apparence).
+     before running the process (keep it hidden for appearance).
      If we are starting a GUI application, the newly created
      console should not matter. */
   if (win_has_console())

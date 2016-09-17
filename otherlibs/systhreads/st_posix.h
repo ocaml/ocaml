@@ -116,7 +116,7 @@ static INLINE void st_tls_set(st_tlskey k, void * v)
 }
 
 /* The master lock.  This is a mutex that is held most of the time,
-   so we implement it in a slightly consoluted way to avoid
+   so we implement it in a slightly convoluted way to avoid
    all risks of busy-waiting.  Also, we count the number of waiting
    threads. */
 

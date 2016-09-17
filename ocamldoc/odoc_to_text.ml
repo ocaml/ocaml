@@ -33,7 +33,7 @@ class virtual info =
        Add a pair here to handle a tag.*)
     val mutable tag_functions = ([] : (string * (Odoc_info.text -> Odoc_info.text)) list)
 
-    (** @return [etxt] value for an authors list. *)
+    (** @return [text] value for an authors list. *)
     method text_of_author_list l =
       match l with
         [] ->
@@ -265,7 +265,7 @@ class virtual to_text =
     method text_of_class_type_param_expr_list module_name l =
       [ Code (self#normal_class_type_param_list module_name l) ]
 
-    (** @return [text] value to represent parameters of a class (with arraows).*)
+    (** @return [text] value to represent parameters of a class (with arrows).*)
     method text_of_class_params module_name c =
       Odoc_info.text_concat
         [Newline]

@@ -123,7 +123,7 @@ val int_size : int
     @since 4.03.0 *)
 
 val big_endian : bool
-(** Whether the machine currently executing the Caml program is big-endian.
+(** Whether the machine currently executing the OCaml program is big-endian.
     @since 4.00.0 *)
 
 val max_string_length : int

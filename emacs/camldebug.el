@@ -145,10 +145,10 @@ interpreted specially if present.  These are:
   %m    module name of current module.
   %d    directory of current source file.
   %c    number of current character position
-  %e    text of the caml variable surrounding point.
+  %e    text of the OCaml variable surrounding point.
 
   The `current' source file is the file of the current buffer (if
-we're in a caml buffer) or the source file current at the last break
+we're in an OCaml buffer) or the source file current at the last break
 or step (if we're in the camldebug buffer), and the `current' module
 name is the filename stripped of any *.ml* suffixes (this assumes the
 usual correspondence between module and file naming is observed).  The
@@ -718,7 +718,7 @@ Obeying it means displaying in another window the specified file and line."
 
 ;;; The camldebug-call function must do the right thing whether its
 ;;; invoking keystroke is from the camldebug buffer itself (via
-;;; major-mode binding) or a caml buffer.  In the former case, we want
+;;; major-mode binding) or an OCaml buffer.  In the former case, we want
 ;;; to supply data from camldebug-last-frame.  Here's how we do it:
 
 (defun camldebug-format-command (str)
@@ -754,10 +754,10 @@ These are:
   %m    module name of current module.
   %d    directory of current source file.
   %c    number of current character position
-  %e    text of the caml variable surrounding point.
+  %e    text of the OCaml variable surrounding point.
 
   The `current' source file is the file of the current buffer (if
-we're in a caml buffer) or the source file current at the last break
+we're in an OCaml buffer) or the source file current at the last break
 or step (if we're in the camldebug buffer), and the `current' module
 name is the filename stripped of any *.ml* suffixes (this assumes the
 usual correspondence between module and file naming is observed).  The

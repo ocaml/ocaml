@@ -210,7 +210,7 @@ rule main = parse
       else
         let s = Lexing.lexeme lexbuf in
         try
-          (* chech if the "{..." or html_title mark was used. *)
+          (* check if the "{..." or html_title mark was used. *)
           if s.[0] = '<' then
             let (n, l) = (2, (String.length s - 3)) in
             let s2 = String.sub s n l in

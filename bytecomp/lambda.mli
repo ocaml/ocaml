@@ -84,7 +84,7 @@ type primitive =
   | Paddfloat | Psubfloat | Pmulfloat | Pdivfloat
   | Pfloatcomp of comparison
   (* String operations *)
-  | Pstringlength | Pstringrefu  | Pstringrefs 
+  | Pstringlength | Pstringrefu  | Pstringrefs
   | Pbyteslength | Pbytesrefu | Pbytessetu | Pbytesrefs | Pbytessets
   (* Array operations *)
   | Pmakearray of array_kind * mutable_flag
@@ -147,7 +147,7 @@ type primitive =
   | Pbbswap of boxed_integer
   (* Integer to external pointer *)
   | Pint_as_pointer
-  (* Inhibition of optimisation *)
+  (* Inhibition of optimization *)
   | Popaque
 
 and comparison =
@@ -209,7 +209,7 @@ type let_kind = Strict | Alias | StrictOpt | Variable
     Strict: e may have side-effets; always evaluate e first
       (If e is a simple expression, e.g. a variable or constant,
        we may still substitute e'[x/e].)
-    Alias: e is pure, we can substitute e'[x/e] if x has 0 or 1 occurrences
+    Alias: e is pure, we can substitute e'[x/e] if x has 0 or 1 occurrence
       in e'
     StrictOpt: e does not have side-effects, but depend on the store;
       we can discard e if x does not appear in e'

@@ -374,7 +374,7 @@ val hash_param : int -> int -> 'a -> int
    with the same properties as for [hash]. The two extra integer
    parameters [meaningful] and [total] give more precise control over
    hashing. Hashing performs a breadth-first, left-to-right traversal
-   of the structure [x], stopping after [meaningful] meaningful nodes
+   of the structure [x], stopping after [meaningful] nodes
    were encountered, or [total] nodes (meaningful or not) were
    encountered.  If [total] as specified by the user exceeds a certain
    value, currently 256, then it is capped to that value.

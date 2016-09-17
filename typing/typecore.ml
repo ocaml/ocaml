@@ -962,7 +962,7 @@ let set_state s env =
   Ctype.set_levels s.levels;
   env := s.env
 
-(* type_pat does not generate local constraints inside or patterns *)
+(* type_pat does not generate local constraints inside or-patterns *)
 type type_pat_mode =
   | Normal
   | Splitting_or   (* splitting an or-pattern *)
@@ -1882,7 +1882,7 @@ let duplicate_ident_types caselist env =
     List.filter (fun {pc_lhs} -> contains_gadt env pc_lhs) caselist in
   let idents = all_idents_cases caselist in
   let upd desc = {desc with val_type = correct_levels desc.val_type} in
-  (* Be careful not the mark the original value as being used, and
+  (* Be careful not to mark the original value as being used, and
      to keep the same internal 'slot' to track unused opens. *)
   List.fold_left (fun env s -> Env.update_value s upd env) env idents
 
@@ -3788,7 +3788,7 @@ and type_cases ?in_function env ty_arg ty_res partial_flag loc caselist =
   in
 (*  if has_gadts then
     Format.printf "lev = %d@.%a@." lev Printtyp.raw_type_expr ty_res; *)
-  (* Do we need to propagate polymorphism *)
+  (* Do we need to propagate polymorphism ? *)
   let propagate =
     !Clflags.principal || do_init || (repr ty_arg).level = generic_level ||
     let rec is_var spat =

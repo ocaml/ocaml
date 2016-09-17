@@ -96,7 +96,7 @@ type raw_backtrace
     actually printed, which may be useful if you record more
     backtraces than you print.
 
-    Raw backtraces cannot be marshalled. If you need marshalling, you
+    Raw backtraces cannot be marshaled. If you need marshaling, you
     should use the array returned by the [backtrace_slots] function of
     the next section.
 
@@ -178,7 +178,7 @@ val backtrace_slots : raw_backtrace -> backtrace_slot array option
     recent function call, raise, or primitive [get_backtrace] call in
     the trace.
 
-    Some possible reasons for returning [None] are as follow:
+    Some possible reasons for returning [None] are as follows:
     - none of the slots in the trace come from modules compiled with
     debug information ([-g])
     - the program is a bytecode program that has not been linked with
@@ -250,9 +250,9 @@ end
 type raw_backtrace_slot
 (** This type allows direct access to raw backtrace slots, without any
     conversion in an OCaml-usable data-structure. Being
-    process-specific, they must absolutely not be marshalled, and are
-    unsafe to use for this reason (marshalling them may not fail, but
-    un-marshalling and using the result will result in
+    process-specific, they must absolutely not be marshaled, and are
+    unsafe to use for this reason (marshaling them may not fail, but
+    un-marshaling and using the result will result in
     undefined behavior).
 
     Elements of this type can still be compared and hashed: when two
@@ -271,7 +271,7 @@ val raw_backtrace_length : raw_backtrace -> int
 *)
 
 val get_raw_backtrace_slot : raw_backtrace -> int -> raw_backtrace_slot
-(** [get_slot bckt pos] returns the slot in position [pos] in the
+(** [get_raw_backtrace_slot bckt pos] returns the slot in position [pos] in the
     backtrace [bckt].
 
     @since 4.02
@@ -303,7 +303,7 @@ val exn_slot_id: exn -> int
 *)
 
 val exn_slot_name: exn -> string
-(** [Printexc.exn_slot_id exn] returns the internal name of the constructor
+(** [Printexc.exn_slot_name exn] returns the internal name of the constructor
     used to create the exception value [exn].
 
     @since 4.02.0

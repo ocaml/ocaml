@@ -97,9 +97,9 @@ static BOOL     MyRead            (int, LPSTR, DWORD);
 #define DIB_HEADER_MARKER   ((WORD) ('M' << 8) | 'B')
 /*--------------  MyRead Function Define ---------------------------*/
 
-// When we read in a DIB, we read it in in chunks.  We read half a segment
+// When we read in a DIB, we read it in chunks.  We read half a segment
 //  at a time.  This way we insure that we don't cross any segment
-//  boundries in _lread() during a read.  We don't read in a full segment
+//  boundaries in _lread() during a read.  We don't read in a full segment
 //  at a time, since _lread takes some "int" type parms instead of
 //  WORD type params (it'd work, but the compiler would give you warnings)...
 

@@ -483,7 +483,7 @@ let do_set_args erase_mutable q r = match q with
 let set_args q r = do_set_args false q r
 and set_args_erase_mutable q r = do_set_args true q r
 
-(* filter pss acording to pattern q *)
+(* filter pss according to pattern q *)
 let filter_one q pss =
   let rec filter_rec = function
       ({pat_desc = Tpat_alias(p,_,_)}::ps)::pss ->
@@ -500,7 +500,7 @@ let filter_one q pss =
 (*
   Filter pss in the ``extra case''. This applies :
   - According to an extra constructor (datatype case, non-complete signature).
-  - Acordinng to anything (all-variables case).
+  - According to anything (all-variables case).
 *)
 let filter_extra pss =
   let rec filter_rec = function
@@ -985,7 +985,7 @@ let rec satisfiables pss qs = match pss with
             if full_match false constrs then for_constrs () else
             match p.pat_desc with
               Tpat_construct _ ->
-                (* activate this code for checking non-gadt constructors *)
+                (* activate this code for checking non-GADT constructors *)
                 wild (build_other_constrs constrs p) @ for_constrs ()
             | _ ->
                 wild omega
@@ -1385,7 +1385,7 @@ let extract_columns pss qs = match pss with
   transpose rows
 
 (* Core function
-   The idea is to first look for or patterns (recursive case), then
+   The idea is to first look for or-patterns (recursive case), then
    check or-patterns argument usefulness (terminal case)
 *)
 
@@ -1427,7 +1427,7 @@ let rec every_satisfiables pss qs = match qs.active with
           q1.pat_loc.Location.loc_ghost &&
           q2.pat_loc.Location.loc_ghost
         then
-(* syntactically generated or-pats should not be expanded *)
+(* syntactically generated or-patterns should not be expanded *)
           every_satisfiables (push_no_or_column pss) (push_no_or qs)
         else
 (* this is a real or-pattern *)
@@ -1874,7 +1874,7 @@ let rec collect_paths_from_pat r p = match p.pat_desc with
 (*
   Actual fragile check
    1. Collect data types in the patterns of the match.
-   2. One exhautivity check per datatype, considering that
+   2. One exhaustivity check per datatype, considering that
       the type is extended.
 *)
 
@@ -1997,9 +1997,9 @@ let fluid pat =  irrefutable pat && inactive pat.pat_desc
 
 
 
-(********************************)
-(* Exported exhustiveness check *)
-(********************************)
+(*********************************)
+(* Exported exhaustiveness check *)
+(*********************************)
 
 (*
    Fragile check is performed when required and

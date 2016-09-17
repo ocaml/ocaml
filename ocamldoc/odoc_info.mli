@@ -93,7 +93,7 @@ type info = Odoc_types.info = {
     i_version : string option; (** The string in the \@version tag. *)
     i_sees : see list; (** The list of \@see tags. *)
     i_since : string option; (** The string in the \@since tag. *)
-    i_before : (string * text) list ; (** the version number and text in \@before tag *)
+    i_before : (string * text) list ; (** The version number and text in \@before tag *)
     i_deprecated : text option; (** The of the \@deprecated tag. *)
     i_params : param list; (** The list of parameter descriptions. *)
     i_raised_exceptions : raised_exception list; (** The list of raised exceptions. *)
@@ -121,7 +121,7 @@ module Name :
       (** [concat t1 t2] returns the concatenation of [t1] and [t2].*)
       val concat : t -> t -> t
 
-      (** Return the depth of the name, i.e. the numer of levels to the root.
+      (** Return the depth of the name, i.e. the number of levels to the root.
          Example : [depth "Toto.Tutu.name"] = [3]. *)
       val depth : t -> int
 
@@ -156,7 +156,7 @@ module Parameter :
 
     (** {3 Functions} *)
 
-    (** Acces to the name as a string. For tuples, parenthesis and commas are added. *)
+    (** Access to the name as a string. For tuples, parenthesis and commas are added. *)
     val complete_name : parameter -> string
 
     (** Access to the complete type. *)
@@ -232,7 +232,7 @@ module Exception :
           ex_name : Name.t ;
           mutable ex_info : info option ; (** Information found in the optional associated comment. *)
           ex_args : Odoc_type.constructor_args;
-          ex_ret : Types.type_expr option ; (** The the optional return type of the exception. *)
+          ex_ret : Types.type_expr option ; (** The optional return type of the exception. *)
           ex_alias : exception_alias option ; (** [None] when the exception is not a rebind. *)
           mutable ex_loc : location ;
           mutable ex_code : string option ;
@@ -283,7 +283,7 @@ module Type :
     }
 
     type type_manifest = Odoc_type.type_manifest =
-      | Other of Types.type_expr (** Type manifest directly taken from Typedtre. *)
+      | Other of Types.type_expr (** Type manifest directly taken from Typedtree. *)
       | Object_type of object_field list
 
     (** Representation of a type. *)
@@ -313,7 +313,7 @@ module Value :
           val_type : Types.type_expr ; (** Type of the value. *)
           val_recursive : bool ; (** [true] if the value is recursive. *)
           mutable val_parameters : Odoc_parameter.parameter list ; (** The parameters, if any. *)
-          mutable val_code : string option ; (** The code of the value, if we had the only the implementation file. *)
+          mutable val_code : string option ; (** The code of the value, if we only had the implementation file. *)
           mutable val_loc : location ;
         }
 
@@ -368,7 +368,7 @@ module Class :
           capp_name : Name.t ; (** The complete name of the applied class. *)
           mutable capp_class : t_class option;  (** The associated t_class if we found it. *)
           capp_params : Types.type_expr list; (** The type of expressions the class is applied to. *)
-          capp_params_code : string list ; (** The code of these exprssions. *)
+          capp_params_code : string list ; (** The code of these expressions. *)
         }
 
     and class_constr = Odoc_class.class_constr =
@@ -489,7 +489,7 @@ module Module :
         {
           im_name : Name.t ; (** Complete name of the included module. *)
           mutable im_module : mmt option ; (** The included module or module type, if we found it. *)
-          mutable im_info : Odoc_types.info option ; (** comment associated to the includ directive *)
+          mutable im_info : Odoc_types.info option ; (** Comment associated to the include directive *)
         }
 
     and module_alias = Odoc_module.module_alias =
@@ -678,7 +678,7 @@ module Module :
 val reset_type_names : unit -> unit
 
 (** [string_of_variance t (covariant, invariant)] returns ["+"] if
-   the given information means "covariant", ["-"] if the it means
+   the given information means "covariant", ["-"] if it means
    "contravariant", orelse [""], and always [""] if the given
    type is not an abstract type with no manifest (i.e. no need
    for the variance to be printed.*)
@@ -749,7 +749,7 @@ val string_of_attribute : Value.t_attribute -> string
 (** @return a string to describe the given method. *)
 val string_of_method : Value.t_method -> string
 
-(** {3 Miscelaneous functions} *)
+(** {3 Miscellaneous functions} *)
 
 (** Return the first sentence (until the first dot followed by a blank
    or the first blank line) of a text.
@@ -782,7 +782,7 @@ val get_titles_in_text : text -> (int * string option * text) list
 val create_index_lists : 'a list -> ('a -> string) -> 'a list list
 
 (** Take a type and remove the option top constructor. This is
-   useful when printing labels, we we then remove the top option contructor
+   useful when printing labels, we then remove the top option constructor
    for optional labels.*)
 val remove_option : Types.type_expr -> Types.type_expr
 
@@ -849,7 +849,7 @@ val info_string_of_info : info -> string
    and return an {!Odoc_info.info} structure. The content of the
    file must have the same syntax as the content of a special comment.
    The given module list is used for cross reference.
-   @raise Failure is the file could not be opened or there is a
+   @raise Failure if the file could not be opened or there is a
    syntax error.
 *)
 val info_of_comment_file : Module.t_module list -> string -> info
@@ -933,7 +933,7 @@ module Scan :
 
       (** Scan of a type extension *)
 
-        (** Overide this method to perform controls on the extension's type,
+        (** Override this method to perform controls on the extension's type,
             private and info. This method is called before scanning the
             extension's constructors.
             @return true if the extension's constructors must be scanned.*)
@@ -956,7 +956,7 @@ module Scan :
           @return true if the class elements must be scanned.*)
         method scan_class_pre : Class.t_class -> bool
 
-       (** This method scan the elements of the given class. *)
+       (** This method scans the elements of the given class. *)
         method scan_class_elements : Class.t_class -> unit
 
        (** Scan of a class. Should not be overridden. It calls [scan_class_pre]
@@ -1007,7 +1007,7 @@ module Scan :
            @return true if the module type elements must be scanned. *)
         method scan_module_type_pre : Module.t_module_type -> bool
 
-        (** This method scan the elements of the given module type. *)
+        (** This method scans the elements of the given module type. *)
         method scan_module_type_elements : Module.t_module_type -> unit
 
         (** Scan of a module type. Should not be overridden. It calls [scan_module_type_pre]
@@ -1024,7 +1024,7 @@ module Scan :
 (** Computation of dependencies. *)
 module Dep :
   sig
-    (** Modify the modules depencies of the given list of modules,
+    (** Modify the modules dependencies of the given list of modules,
        to get the minimum transitivity kernel. *)
     val kernel_deps_of_modules : Module.t_module list -> unit
 

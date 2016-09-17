@@ -151,7 +151,7 @@ val expand_head: Env.t -> type_expr -> type_expr
 val try_expand_once_opt: Env.t -> type_expr -> type_expr
 val expand_head_opt: Env.t -> type_expr -> type_expr
 (** The compiler's own version of [expand_head] necessary for type-based
-    optimisations. *)
+    optimizations. *)
 
 val full_expand: Env.t -> type_expr -> type_expr
 val extract_concrete_typedecl:

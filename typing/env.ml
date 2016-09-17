@@ -519,7 +519,7 @@ let find_pers_struct name =
 let check_pers_struct name =
   if not (Hashtbl.mem persistent_structures name) then begin
     (* PR#6843: record the weak dependency ([add_import]) regardless of
-       whether the check suceeds, to help make builds more
+       whether the check succeeds, to help make builds more
        deterministic. *)
     add_import name;
     if (Warnings.is_active (Warnings.No_cmi_file("", None))) then
@@ -779,9 +779,9 @@ let find_type_expansion path env =
        may_map snd decl.type_newtype_level)
 
 (* Find the manifest type information associated to a type, i.e.
-   the necessary information for the compiler's type-based optimisations.
+   the necessary information for the compiler's type-based optimizations.
    In particular, the manifest type associated to a private abstract type
-   is revealed for the sake of compiler's type-based optimisations. *)
+   is revealed for the sake of compiler's type-based optimizations. *)
 let find_type_expansion_opt path env =
   let decl = find_type path env in
   match decl.type_manifest with

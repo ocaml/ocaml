@@ -362,7 +362,7 @@ CAMLextern struct caml__roots_block *caml_local_roots;  /* defined in roots.c */
    It must contain all values in C local variables and function parameters
    at the time the minor GC is called.
    Usage:
-   After initialising your local variables to legal OCaml values, but before
+   After initializing your local variables to legal OCaml values, but before
    calling allocation functions, insert [Begin_roots_n(v1, ... vn)], where
    v1 ... vn are your variables of type [value] that you want to be updated
    across allocations.

@@ -36,9 +36,9 @@
    belong to the given type.
 
    Values of extensible variant types, for example exceptions (of
-   extensible type [exn]), returned by the unmarhsaller should not be
+   extensible type [exn]), returned by the unmarshaller should not be
    pattern-matched over through [match ... with] or [try ... with],
-   because unmarshalling does not preserve the information required for
+   because unmarshaling does not preserve the information required for
    matching their constructors. Structural equalities with other
    extensible variant values does not work either.  Most other uses such
    as Printexc.to_string, will still work as expected.
@@ -90,7 +90,7 @@ val to_channel : out_channel -> 'a -> extern_flags list -> unit
    digest of the code transmitted along with the code position.)
 
    The exact definition of which free variables are captured in a
-   closure is not specified and can very between bytecode and native
+   closure is not specified and can vary between bytecode and native
    code (and according to optimization flags).  In particular, a
    function value accessing a global reference may or may not include
    the reference in its closure.  If it does, unmarshaling the
@@ -142,7 +142,7 @@ val from_channel : in_channel -> 'a
    It raises [End_of_file] if the function has already reached the
    end of file when starting to read from the channel, and raises
    [Failure "input_value: truncated object"] if it reaches the end
-   of file later during the unmarshalling. *)
+   of file later during the unmarshaling. *)
 
 val from_bytes : bytes -> int -> 'a
 (** [Marshal.from_bytes buff ofs] unmarshals a structured value
