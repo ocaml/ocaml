@@ -1,4 +1,3 @@
-
 #   - : < x : int > ->
     < x : int > -> < x : int > -> < x : int > * < x : int > * < x : int >
 = <fun>
@@ -35,7 +34,7 @@ Error: This pattern cannot match self: it only matches values of type
     method f x = (x : bool c)
   end..
 Error: The abbreviation c is used with parameters bool c
-       wich are incompatible with constraints int c
+       which are incompatible with constraints int c
 #             class ['a, 'b] c :
   unit ->
   object
@@ -256,13 +255,13 @@ Error: Multiple definition of the type name t.
 #   Characters 10-39:
   fun x -> (x : int -> bool :> 'a -> 'a);;
            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Error: Type int -> bool is not a subtype of int -> int 
-       Type bool is not a subtype of int 
+Error: Type int -> bool is not a subtype of int -> int
+       Type bool is not a subtype of int
 # Characters 9-40:
   fun x -> (x : int -> bool :> int -> int);;
            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Error: Type int -> bool is not a subtype of int -> int 
-       Type bool is not a subtype of int 
+Error: Type int -> bool is not a subtype of int -> int
+       Type bool is not a subtype of int
 # - : <  > -> <  > = <fun>
 # - : < .. > -> <  > = <fun>
 #   val x : '_a list ref = {contents = []}
@@ -314,4 +313,4 @@ Error: This kind of recursive class expression is not allowed
   class a = let _ = new a in object end;;
             ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Error: This kind of recursive class expression is not allowed
-# 
+#
