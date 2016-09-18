@@ -149,8 +149,8 @@ let () =
 
 (* No string sharing PR#6322 *)
 let test x = match x with
-  | true -> "a"
-  | false -> "a"
+  | true -> Bytes.of_string "a"
+  | false -> Bytes.of_string "a"
 
 let () =
   let s1 = test true in

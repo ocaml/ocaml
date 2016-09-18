@@ -13,8 +13,8 @@ open Printf
 *)
 
 let serve_connection s =
-  let buf = String.make 1024 '>' in
-  let n = Unix.read s buf 2 (String.length buf - 2) in
+  let buf = Bytes.make 1024 '>' in
+  let n = Unix.read s buf 2 (Bytes.length buf - 2) in
   ignore (Unix.write s buf 0 (n + 2));
   Unix.close s
 
@@ -30,12 +30,12 @@ let timeout () =
   exit 2
 
 let reader s =
-  let buf = String.make 1024 ' ' in
-  let n = Unix.read s buf 0 (String.length buf) in
-  print_string (String.sub buf 0 n); flush stdout
+  let buf = Bytes.make 1024 ' ' in
+  let n = Unix.read s buf 0 (Bytes.length buf) in
+  print_bytes (Bytes.sub buf 0 n); flush stdout
 
 let writer s msg =
-  ignore (Unix.write s msg 0 (String.length msg));
+  ignore (Unix.write_substring s msg 0 (String.length msg));
   Unix.shutdown s Unix.SHUTDOWN_SEND
 
 let _ =

@@ -3,6 +3,13 @@
 SOURCES = a.ml b_bad.ml
 OBJECTS = $(SOURCES:%.ml=%.cmo)
 
+default:
+	@if $(SAFE_STRING) ; then \
+	  echo " ... testing 'b_bad.ml' => skipped" ; \
+	else \
+	  $(MAKE) all; \
+	fi
+
 all: a.cmo
 	@printf " ... testing 'b_bad.ml'"
 	@$(OCAMLC) -c -safe-string -warn-error +8 b_bad.ml 2> /dev/null \
