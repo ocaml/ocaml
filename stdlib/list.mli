@@ -29,6 +29,20 @@
 val length : 'a list -> int
 (** Return the length (number of elements) of the given list. *)
 
+val compare_lengths : 'a list -> 'b list -> int
+(** Compare the lengths of two lists. [compare_lengths l1 l2] is
+   equivalent to [compare (length l1) (length l2)], except that
+   the computation stops after itering on the shortest list.
+   @since 4.05.0
+ *)
+
+val compare_length_with : 'a list -> int -> int
+(** Compare the length of a list to an integer. [compare_length_with l n] is
+   equivalent to [compare (length l) n], except that
+   the computation stops after at most [n] iterations on the list.
+   @since 4.05.0
+*)
+
 val cons : 'a -> 'a list -> 'a list
 (** [cons x xs] is [x :: xs]
     @since 4.03.0

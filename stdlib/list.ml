@@ -430,3 +430,19 @@ let sort_uniq cmp l =
   in
   let len = length l in
   if len < 2 then l else sort len l
+
+let rec compare_lengths l1 l2 =
+  match l1, l2 with
+  | [], [] -> 0
+  | [], _ -> -1
+  | _, [] -> 1
+  | _ :: l1, _ :: l2 -> compare_lengths l1 l2
+;;
+
+let rec compare_length_with l n =
+  match l, n with
+  | [], 0 -> 0
+  | [], _ -> if n > 0 then -1 else 1
+  | _, 0 -> 1
+  | _ :: l, n -> compare_length_with l (n-1)
+;;
