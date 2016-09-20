@@ -4,6 +4,7 @@
 #include <string.h>
 #include "caml/alloc.h"
 #include "caml/domain.h"
+#include "caml/domain_state.h"
 #include "caml/platform.h"
 #include "caml/custom.h"
 #include "caml/major_gc.h"
@@ -174,6 +175,8 @@ static void create_domain(uintnat initial_minor_heap_size, int is_main) {
 
     caml_init_main_stack();
 
+    d->state.mark_stack = &caml_domain_state->mark_stack;
+    d->state.mark_stack_count = &caml_domain_state->mark_stack_count;
     d->state.local_roots = &caml_local_roots;
     d->state.state = caml_domain_state;
     d->state.vm_inited = 1;
