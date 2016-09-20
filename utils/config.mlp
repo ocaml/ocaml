@@ -163,6 +163,7 @@ let print_config oc =
   p "target" target;
   p_bool "flambda" flambda;
   p_bool "spacetime" spacetime;
+  p_bool "safe_string" safe_string;
 
   (* print the magic number *)
   p "exec_magic_number" exec_magic_number;
