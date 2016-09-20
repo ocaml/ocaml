@@ -2439,7 +2439,7 @@ class html =
 
         (* class inheritance *)
         self#generate_class_type_inheritance_info b clt;
-        (* an horizontal line *)
+        (* a horizontal line *)
         bs b "<hr width=\"100%\">\n";
         (* the various elements *)
         List.iter (self#html_of_class_element b)
