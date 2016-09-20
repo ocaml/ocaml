@@ -14,7 +14,7 @@ struct domain {
   struct caml__roots_block** local_roots;
   struct caml_domain_state* state;
   value** mark_stack;
-  int* mark_stack_count;
+  uintnat* mark_stack_count;
 };
 
 #define Caml_check_gc_interrupt() \
