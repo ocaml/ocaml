@@ -97,23 +97,35 @@ let iter f a =
 let iteri f a =
   for i = 0 to length a - 1 do f i (unsafe_get a i) done
 
-let concat sep l =
-  match l with
-    [] -> empty
+let rec sum_lengths acc seplen = function
+  | [] -> assert false
+  | hd :: [] ->
+      let new_acc = length hd + acc in
+      if new_acc < acc then invalid_arg "Bytes.concat" (* overflow *)
+      else new_acc
   | hd :: tl ->
-      let num = ref 0 and len = ref 0 in
-      List.iter (fun s -> incr num; len := !len + length s) l;
-      let r = create (!len + length sep * (!num - 1)) in
-      unsafe_blit hd 0 r 0 (length hd);
-      let pos = ref(length hd) in
-      List.iter
-        (fun s ->
-          unsafe_blit sep 0 r !pos (length sep);
-          pos := !pos + length sep;
-          unsafe_blit s 0 r !pos (length s);
-          pos := !pos + length s)
-        tl;
-      r
+      let new_acc = length hd + seplen + acc in
+      if new_acc < acc then invalid_arg "Bytes.concat" (* overflow *)
+      else sum_lengths new_acc seplen tl
+
+let rec unsafe_blits dst pos sep seplen = function
+  | [] -> assert false
+  | hd :: tl ->
+      let len_hd = length hd in
+      unsafe_blit hd 0 dst pos len_hd;
+      if tl == [] then dst
+      else begin
+        unsafe_blit sep 0 dst (pos + len_hd) seplen;
+        unsafe_blits dst (pos + len_hd + seplen) sep seplen tl
+      end
+
+let concat sep = function
+  | [] -> empty
+  | l ->
+      let seplen = length sep in
+      let len = sum_lengths 0 seplen l in
+      if len > Sys.max_string_length then invalid_arg "Bytes.concat";
+      unsafe_blits (create len) 0 sep seplen l
 
 let cat s1 s2 =
   let l1 = length s1 in
