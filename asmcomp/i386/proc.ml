@@ -107,7 +107,7 @@ let word_addressed = false
    These globals are denoted by Incoming and Outgoing stack locations
    with negative offsets, starting at -64.
    Unlike arguments passed on stack, arguments passed in globals
-   do not prevent tailcall elimination.  The caller stores arguments
+   do not prevent tail-call elimination.  The caller stores arguments
    in these globals immediately before the call, and the first thing the
    callee does is copy them to registers or stack locations.
    Neither GC nor thread context switches can occur between these two
