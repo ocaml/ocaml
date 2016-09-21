@@ -96,7 +96,7 @@ type raw_backtrace
     actually printed, which may be useful if you record more
     backtraces than you print.
 
-    Raw backtraces cannot be marshaled. If you need marshaling, you
+    Raw backtraces cannot be marshalled. If you need marshalling, you
     should use the array returned by the [backtrace_slots] function of
     the next section.
 
@@ -250,9 +250,9 @@ end
 type raw_backtrace_slot
 (** This type allows direct access to raw backtrace slots, without any
     conversion in an OCaml-usable data-structure. Being
-    process-specific, they must absolutely not be marshaled, and are
-    unsafe to use for this reason (marshaling them may not fail, but
-    un-marshaling and using the result will result in
+    process-specific, they must absolutely not be marshalled, and are
+    unsafe to use for this reason (marshalling them may not fail, but
+    unmarshalling and using the result will result in
     undefined behavior).
 
     Elements of this type can still be compared and hashed: when two
