@@ -256,13 +256,13 @@ Error: Multiple definition of the type name t.
 #   Characters 10-39:
   fun x -> (x : int -> bool :> 'a -> 'a);;
            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Error: Type int -> bool is not a subtype of int -> int
-       Type bool is not a subtype of int
+Error: Type int -> bool is not a subtype of int -> int 
+       Type bool is not a subtype of int 
 # Characters 9-40:
   fun x -> (x : int -> bool :> int -> int);;
            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Error: Type int -> bool is not a subtype of int -> int
-       Type bool is not a subtype of int
+Error: Type int -> bool is not a subtype of int -> int 
+       Type bool is not a subtype of int 
 # - : <  > -> <  > = <fun>
 # - : < .. > -> <  > = <fun>
 #   val x : '_a list ref = {contents = []}
@@ -314,4 +314,4 @@ Error: This kind of recursive class expression is not allowed
   class a = let _ = new a in object end;;
             ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Error: This kind of recursive class expression is not allowed
-#
+# 
