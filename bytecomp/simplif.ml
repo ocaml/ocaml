@@ -433,7 +433,7 @@ let simplify_lets lam =
   let subst = Hashtbl.create 83 in
 
 (* This (small) optimization is always legal, it may uncover some
-   tailcall later on. *)
+   tail call later on. *)
 
   let mklet str kind v e1 e2  = match e2 with
   | Lvar w when optimize && Ident.same v w -> e1
@@ -545,7 +545,7 @@ let simplify_lets lam =
   in
   simplif lam
 
-(* Tailcall info in annotation files *)
+(* Tail-call info in annotation files *)
 
 let is_tail_native_heuristic : (int -> bool) ref =
   ref (fun _ -> true)
@@ -637,7 +637,7 @@ and list_emit_tail_infos is_tail =
 
 (* Split a function with default parameters into a wrapper and an
    inner function.  The wrapper fills in missing optional parameters
-   with their default value and tailcalls the inner function.  The
+   with their default value and tail-calls the inner function.  The
    wrapper can then hopefully be inlined on most call sites to avoid
    the overhead associated with boxing an optional argument with a
    'Some' constructor, only to deconstruct it immediately in the
