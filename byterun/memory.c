@@ -17,7 +17,7 @@ static void shared_heap_write_barrier(value obj, int field, value val)
   if (Is_block(val)) {
     if (Is_young(val)) {
       /* Add to remembered set */
-      Ref_table_add(&caml_domain_state->remembered_set->ref, obj, field);
+      Ref_table_add(&CAML_DOMAIN_STATE->remembered_set->ref, obj, field);
     } else {
       /*
          FIXME: should have an is_marking check
@@ -140,8 +140,8 @@ CAMLexport value caml_alloc_shr (mlsize_t wosize, tag_t tag)
   if (v == NULL) {
     caml_raise_out_of_memory ();
   }
-  caml_domain_state->allocated_words += Whsize_wosize (wosize);
-  if (caml_domain_state->allocated_words > Wsize_bsize (caml_minor_heap_size)) {
+  CAML_DOMAIN_STATE->allocated_words += Whsize_wosize (wosize);
+  if (CAML_DOMAIN_STATE->allocated_words > Wsize_bsize (caml_minor_heap_size)) {
     caml_urge_major_slice();
   }
 
@@ -201,7 +201,7 @@ CAMLexport value caml_read_barrier(value obj, int field)
          the young copy of a promoted object. We should fault on the
          promoted version, instead of the young one */
       Assert(Is_promoted_hd(Hd_val(obj)));
-      req.obj = caml_addrmap_lookup(&caml_domain_state->remembered_set->promotion, obj);
+      req.obj = caml_addrmap_lookup(&CAML_DOMAIN_STATE->remembered_set->promotion, obj);
     }
     send_read_fault(&req);
     return req.ret;
@@ -235,7 +235,7 @@ static void handle_write_fault(struct domain* target, void* reqp) {
 static void promoted_write(value obj, int field, value val)
 {
   if (Is_young(obj)) {
-    value promoted = caml_addrmap_lookup(&caml_domain_state->remembered_set->promotion, obj);
+    value promoted = caml_addrmap_lookup(&CAML_DOMAIN_STATE->remembered_set->promotion, obj);
     Op_val(promoted)[field] = val;
     Op_val(obj)[field] = val;
     shared_heap_write_barrier(promoted, field, val);
@@ -286,7 +286,7 @@ static void handle_cas_fault(struct domain* target, void* reqp) {
 static int promoted_cas(value obj, int field, value oldval, value newval)
 {
   if (Is_young(obj)) {
-    value promoted = caml_addrmap_lookup(&caml_domain_state->remembered_set->promotion, obj);
+    value promoted = caml_addrmap_lookup(&CAML_DOMAIN_STATE->remembered_set->promotion, obj);
     int success = do_promoted_cas(obj, promoted, field, oldval, newval);
     if (success)
       shared_heap_write_barrier(promoted, field, newval);
@@ -365,7 +365,7 @@ CAMLprim value caml_bvar_take(value bv)
 {
   /* bvar operations need to operate on the promoted copy */
   if (Is_young(bv) && Is_promoted_hd(Hd_val(bv))) {
-    bv = caml_addrmap_lookup(&caml_domain_state->remembered_set->promotion, bv);
+    bv = caml_addrmap_lookup(&CAML_DOMAIN_STATE->remembered_set->promotion, bv);
   }
 
   intnat stat = caml_bvar_status(bv);
@@ -383,7 +383,7 @@ CAMLprim value caml_bvar_put(value bv, value v)
 {
   /* bvar operations need to operate on the promoted copy */
   if (Is_young(bv) && Is_promoted_hd(Hd_val(bv))) {
-    bv = caml_addrmap_lookup(&caml_domain_state->remembered_set->promotion, bv);
+    bv = caml_addrmap_lookup(&CAML_DOMAIN_STATE->remembered_set->promotion, bv);
   }
 
   intnat stat = caml_bvar_status(bv);
@@ -401,7 +401,7 @@ CAMLprim value caml_bvar_is_empty(value bv)
 {
   /* bvar operations need to operate on the promoted copy */
   if (Is_young(bv) && Is_promoted_hd(Hd_val(bv))) {
-    bv = caml_addrmap_lookup(&caml_domain_state->remembered_set->promotion, bv);
+    bv = caml_addrmap_lookup(&CAML_DOMAIN_STATE->remembered_set->promotion, bv);
   }
 
   return Val_int((Long_val(Op_val(bv)[1]) & BVAR_EMPTY) != 0);

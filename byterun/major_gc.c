@@ -23,8 +23,8 @@ static __thread uintnat stat_blocks_marked = 0;
 uintnat caml_percent_free = Percent_free_def;
 
 void caml_init_major_gc() {
-  caml_domain_state->mark_stack = caml_stat_alloc(MARK_STACK_SIZE * sizeof(value));
-  caml_domain_state->mark_stack_count = 0;
+  CAML_DOMAIN_STATE->mark_stack = caml_stat_alloc(MARK_STACK_SIZE * sizeof(value));
+  CAML_DOMAIN_STATE->mark_stack_count = 0;
 }
 
 static uintnat default_slice_budget() {
@@ -40,8 +40,8 @@ static uintnat default_slice_budget() {
      (still assuming steady state).
 
      Proportion of G consumed since the previous slice:
-                 PH = caml_domain_state->allocated_words / G
-                    = caml_domain_state->allocated_words * 3 * (100 + caml_percent_free)
+                 PH = CAML_DOMAIN_STATE->allocated_words / G
+                    = CAML_DOMAIN_STATE->allocated_words * 3 * (100 + caml_percent_free)
                       / (2 * caml_stat_heap_size * caml_percent_free)
      Proportion of extra-heap resources consumed since the previous slice:
                  PE = caml_extra_heap_resources
@@ -60,7 +60,7 @@ static uintnat default_slice_budget() {
   */
   uintnat heap_size = caml_heap_size(caml_domain_self()->shared_heap);
   double heap_words = (double)Wsize_bsize(heap_size);
-  double p = (double) caml_domain_state->allocated_words * 3.0 * (100 + caml_percent_free)
+  double p = (double) CAML_DOMAIN_STATE->allocated_words * 3.0 * (100 + caml_percent_free)
       / heap_words / caml_percent_free / 2.0;
 
   double total_work =
@@ -73,15 +73,15 @@ static uintnat default_slice_budget() {
 
 static void mark_stack_push(value v) {
   Assert(Is_block(v));
-  if (caml_domain_state->mark_stack_count >= MARK_STACK_SIZE)
+  if (CAML_DOMAIN_STATE->mark_stack_count >= MARK_STACK_SIZE)
     caml_fatal_error("mark stack overflow");
-  caml_domain_state->mark_stack[caml_domain_state->mark_stack_count++] = v;
+  CAML_DOMAIN_STATE->mark_stack[CAML_DOMAIN_STATE->mark_stack_count++] = v;
 }
 
 static int mark_stack_pop(value* ret) {
-  if (caml_domain_state->mark_stack_count == 0)
+  if (CAML_DOMAIN_STATE->mark_stack_count == 0)
     return 0;
-  *ret = caml_domain_state->mark_stack[--caml_domain_state->mark_stack_count];
+  *ret = CAML_DOMAIN_STATE->mark_stack[--CAML_DOMAIN_STATE->mark_stack_count];
   return 1;
 }
 
@@ -177,10 +177,10 @@ intnat caml_major_collection_slice(intnat howmuch)
   mark_work -= budget;
 
   caml_gc_log("Major slice: %lu alloc, %ld work, %ld sweep, %ld mark (%lu blocks)",
-              (unsigned long)caml_domain_state->allocated_words,
+              (unsigned long)CAML_DOMAIN_STATE->allocated_words,
               (long)computed_work, (long)sweep_work, (long)mark_work,
               (unsigned long)(stat_blocks_marked - blocks_marked_before));
-  caml_domain_state->allocated_words = 0;
+  CAML_DOMAIN_STATE->allocated_words = 0;
   caml_restore_stack_gc();
 
   if (budget > 0) {
@@ -197,7 +197,7 @@ void caml_finish_marking () {
   caml_do_local_roots(&caml_darken, caml_domain_self());
   caml_scan_global_roots(&caml_darken);
   caml_empty_mark_stack();
-  caml_domain_state->allocated_words = 0;
+  CAML_DOMAIN_STATE->allocated_words = 0;
   caml_restore_stack_gc();
 }
 

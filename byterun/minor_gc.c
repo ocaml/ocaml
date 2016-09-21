@@ -74,7 +74,7 @@ void caml_set_minor_heap_size (asize_t size)
 
   caml_reallocate_minor_heap(size);
 
-  reset_table (&caml_domain_state->remembered_set->ref);
+  reset_table (&CAML_DOMAIN_STATE->remembered_set->ref);
 }
 
 
@@ -222,7 +222,7 @@ static __thread uintnat stat_live_bytes = 0;
 static value alloc_shared(mlsize_t wosize, tag_t tag)
 {
   void* mem = caml_shared_try_alloc(caml_domain_self()->shared_heap, wosize, tag, 0 /* not promotion */);
-  caml_domain_state->allocated_words += Whsize_wosize(wosize);
+  CAML_DOMAIN_STATE->allocated_words += Whsize_wosize(wosize);
   if (mem == NULL) {
     caml_fatal_error("allocation failure during minor GC");
   }
@@ -245,7 +245,7 @@ static void caml_oldify_one (value v, value *p)
     hd = Hd_val (v);
     stat_live_bytes += Bhsize_hd(hd);
     if (Is_promoted_hd (hd)) {
-      *p = caml_addrmap_lookup(&caml_domain_state->remembered_set->promotion, v);
+      *p = caml_addrmap_lookup(&CAML_DOMAIN_STATE->remembered_set->promotion, v);
     } else if (hd == 0){         /* If already forwarded */
       *p = Op_val(v)[0];  /*  then forward pointer is first field. */
     }else{
@@ -363,8 +363,8 @@ static void caml_oldify_mopup (void)
 
 static void unpin_promoted_object(value local, value promoted)
 {
-  Assert (caml_addrmap_lookup(&caml_domain_state->remembered_set->promotion, local) == promoted);
-  Assert (caml_addrmap_lookup(&caml_domain_state->remembered_set->promotion_rev, promoted) == local);
+  Assert (caml_addrmap_lookup(&CAML_DOMAIN_STATE->remembered_set->promotion, local) == promoted);
+  Assert (caml_addrmap_lookup(&CAML_DOMAIN_STATE->remembered_set->promotion_rev, promoted) == local);
   caml_shared_unpin(promoted);
   caml_darken(promoted, 0);
 }
@@ -385,18 +385,18 @@ void caml_empty_minor_heap (void)
     caml_gc_log ("Minor collection starting");
     caml_do_local_roots(&caml_oldify_one, caml_domain_self());
 
-    for (r = caml_domain_state->remembered_set->ref.base; r < caml_domain_state->remembered_set->ref.ptr; r++){
+    for (r = CAML_DOMAIN_STATE->remembered_set->ref.base; r < CAML_DOMAIN_STATE->remembered_set->ref.ptr; r++){
       value x;
       caml_oldify_one (Op_val(r->obj)[r->field], &x);
     }
 
-    for (r = caml_domain_state->remembered_set->fiber_ref.base; r < caml_domain_state->remembered_set->fiber_ref.ptr; r++) {
+    for (r = CAML_DOMAIN_STATE->remembered_set->fiber_ref.base; r < CAML_DOMAIN_STATE->remembered_set->fiber_ref.ptr; r++) {
       caml_scan_dirty_stack(&caml_oldify_one, r->obj);
     }
 
     caml_oldify_mopup ();
 
-    for (r = caml_domain_state->remembered_set->ref.base; r < caml_domain_state->remembered_set->ref.ptr; r++){
+    for (r = CAML_DOMAIN_STATE->remembered_set->ref.base; r < CAML_DOMAIN_STATE->remembered_set->ref.ptr; r++){
       value v = Op_val(r->obj)[r->field];
       if (Is_block(v) && Is_young(v)) {
         Assert (Hp_val (v) >= CAML_DOMAIN_STATE->young_ptr);
@@ -404,7 +404,7 @@ void caml_empty_minor_heap (void)
         header_t hd = Hd_val(v);
         // FIXME: call oldify_one here?
         if (Is_promoted_hd(hd)) {
-          vnew = caml_addrmap_lookup(&caml_domain_state->remembered_set->promotion, v);
+          vnew = caml_addrmap_lookup(&CAML_DOMAIN_STATE->remembered_set->promotion, v);
         } else {
           int offset = 0;
           if (Tag_hd(hd) == Infix_tag) {
@@ -421,24 +421,24 @@ void caml_empty_minor_heap (void)
       }
     }
 
-    caml_addrmap_iter(&caml_domain_state->remembered_set->promotion, unpin_promoted_object);
+    caml_addrmap_iter(&CAML_DOMAIN_STATE->remembered_set->promotion, unpin_promoted_object);
 
     if (CAML_DOMAIN_STATE->young_ptr < CAML_DOMAIN_STATE->young_start)
       CAML_DOMAIN_STATE->young_ptr = CAML_DOMAIN_STATE->young_start;
     caml_stat_minor_words += Wsize_bsize (minor_allocated_bytes);
-    caml_domain_state->young_ptr = caml_domain_state->young_end;
-    clear_table (&caml_domain_state->remembered_set->ref);
-    caml_addrmap_clear(&caml_domain_state->remembered_set->promotion);
-    caml_addrmap_clear(&caml_domain_state->remembered_set->promotion_rev);
+    CAML_DOMAIN_STATE->young_ptr = CAML_DOMAIN_STATE->young_end;
+    clear_table (&CAML_DOMAIN_STATE->remembered_set->ref);
+    caml_addrmap_clear(&CAML_DOMAIN_STATE->remembered_set->promotion);
+    caml_addrmap_clear(&CAML_DOMAIN_STATE->remembered_set->promotion_rev);
     caml_gc_log ("Minor collection completed: %u of %u kb live, %u pointers rewritten",
                  (unsigned)stat_live_bytes/1024, (unsigned)minor_allocated_bytes/1024, rewritten);
   }
 
-  for (r = caml_domain_state->remembered_set->fiber_ref.base; r < caml_domain_state->remembered_set->fiber_ref.ptr; r++) {
+  for (r = CAML_DOMAIN_STATE->remembered_set->fiber_ref.base; r < CAML_DOMAIN_STATE->remembered_set->fiber_ref.ptr; r++) {
     caml_scan_dirty_stack(&caml_darken, r->obj);
     caml_clean_stack(r->obj);
   }
-  clear_table (&caml_domain_state->remembered_set->fiber_ref);
+  clear_table (&CAML_DOMAIN_STATE->remembered_set->fiber_ref);
 
   caml_restore_stack_gc();
 

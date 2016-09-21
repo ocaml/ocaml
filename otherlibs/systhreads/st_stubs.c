@@ -161,20 +161,20 @@ static void caml_thread_enter_blocking_section(void)
 {
   /* Save the stack-related global variables in the thread descriptor
      of the current thread */
-  curr_thread->current_stack = caml_domain_state->current_stack;
+  curr_thread->current_stack = CAML_DOMAIN_STATE->current_stack;
   curr_thread->local_roots = caml_local_roots;
 #ifdef NATIVE_CODE
-  curr_thread->system_sp = caml_domain_state->system_sp;
-  curr_thread->system_stack_high = caml_domain_state->system_stack_high;
-  curr_thread->system_exnptr_offset = caml_domain_state->system_exnptr_offset;
+  curr_thread->system_sp = CAML_DOMAIN_STATE->system_sp;
+  curr_thread->system_stack_high = CAML_DOMAIN_STATE->system_stack_high;
+  curr_thread->system_exnptr_offset = CAML_DOMAIN_STATE->system_exnptr_offset;
 #else
-  Stack_sp(caml_domain_state->current_stack) =
-    caml_extern_sp - caml_domain_state->stack_high;
+  Stack_sp(CAML_DOMAIN_STATE->current_stack) =
+    caml_extern_sp - CAML_DOMAIN_STATE->stack_high;
   curr_thread->trap_sp_off = caml_trap_sp_off;
   curr_thread->trap_barrier_off = caml_trap_barrier_off;
   curr_thread->external_raise = caml_external_raise;
 #endif
-  curr_thread->backtrace_pos = caml_domain_state->backtrace_pos;
+  curr_thread->backtrace_pos = CAML_DOMAIN_STATE->backtrace_pos;
   curr_thread->backtrace_buffer = backtrace_buffer;
   curr_thread->backtrace_last_exn = backtrace_last_exn;
   /* Tell other threads that the runtime is free */
@@ -189,19 +189,19 @@ static void caml_thread_leave_blocking_section(void)
      to the thread currently executing */
   curr_thread = st_tls_get(thread_descriptor_key);
   /* Restore the stack-related global variables */
-  caml_domain_state->current_stack = curr_thread->current_stack;
+  CAML_DOMAIN_STATE->current_stack = curr_thread->current_stack;
   caml_restore_stack();
   caml_local_roots = curr_thread->local_roots;
 #ifdef NATIVE_CODE
-  caml_domain_state->system_sp = curr_thread->system_sp;
-  caml_domain_state->system_stack_high = curr_thread->system_stack_high;
-  caml_domain_state->system_exnptr_offset = curr_thread->system_exnptr_offset;
+  CAML_DOMAIN_STATE->system_sp = curr_thread->system_sp;
+  CAML_DOMAIN_STATE->system_stack_high = curr_thread->system_stack_high;
+  CAML_DOMAIN_STATE->system_exnptr_offset = curr_thread->system_exnptr_offset;
 #else
   caml_trap_sp_off = curr_thread->trap_sp_off;
   caml_trap_barrier_off = curr_thread->trap_barrier_off;
   caml_external_raise = curr_thread->external_raise;
 #endif
-  caml_domain_state->backtrace_pos = curr_thread->backtrace_pos;
+  CAML_DOMAIN_STATE->backtrace_pos = curr_thread->backtrace_pos;
   backtrace_buffer = curr_thread->backtrace_buffer;
   backtrace_last_exn = curr_thread->backtrace_last_exn;
 }
@@ -396,7 +396,7 @@ static ST_THREAD_FUNCTION caml_thread_start(void * arg)
   leave_blocking_section();
 #ifdef NATIVE_CODE
   /* Record top of stack (approximative) */
-  caml_domain_state->system_stack_high = &tos;
+  CAML_DOMAIN_STATE->system_stack_high = &tos;
   /* Setup termination handler (for caml_thread_exit) */
   if (sigsetjmp(termination_buf.buf, 0) == 0) {
     th->exit_buf = &termination_buf;
@@ -544,7 +544,7 @@ CAMLprim value caml_thread_uncaught_exception(value exn)  /* ML */
   fprintf(stderr, "Thread %d killed on uncaught exception %s\n",
           Int_val(Ident(curr_thread->descr)), msg);
   free(msg);
-  if (caml_domain_state->backtrace_active) print_exception_backtrace();
+  if (CAML_DOMAIN_STATE->backtrace_active) print_exception_backtrace();
   fflush(stderr);
   return Val_unit;
 }

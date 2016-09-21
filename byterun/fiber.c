@@ -26,7 +26,7 @@ static void dirty_stack(value stack)
            Stack_dirty_domain(stack) == caml_domain_self());
     if (Stack_dirty_domain(stack) == 0) {
       Stack_dirty_domain(stack) = caml_domain_self();
-      Ref_table_add(&caml_domain_state->remembered_set->fiber_ref, stack, 0);
+      Ref_table_add(&CAML_DOMAIN_STATE->remembered_set->fiber_ref, stack, 0);
     }
   }
 }
@@ -474,16 +474,16 @@ void caml_save_stack_gc()
 void caml_restore_stack_gc()
 {
   if (stack_is_saved) {
-    Assert(Tag_val(caml_domain_state->current_stack) == Stack_tag);
-    load_stack(caml_domain_state->current_stack);
+    Assert(Tag_val(CAML_DOMAIN_STATE->current_stack) == Stack_tag);
+    load_stack(CAML_DOMAIN_STATE->current_stack);
   }
   stack_is_saved = 0;
 }
 
 void caml_restore_stack()
 {
-  Assert(Tag_val(caml_domain_state->current_stack) == Stack_tag);
-  load_stack(caml_domain_state->current_stack);
+  Assert(Tag_val(CAML_DOMAIN_STATE->current_stack) == Stack_tag);
+  load_stack(CAML_DOMAIN_STATE->current_stack);
 }
 
 #ifdef DEBUG
