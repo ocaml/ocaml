@@ -178,11 +178,11 @@ static void create_domain(uintnat initial_minor_heap_size, int is_main) {
       d->interrupt_word_address = young_limit;
       atomic_store_rel(young_limit, d->minor_heap_area);
     }
-    caml_domain_state->young_start = caml_domain_state->young_end =
-      caml_domain_state->young_ptr = 0;
-    caml_domain_state->remembered_set =
+    CAML_DOMAIN_STATE->young_start = CAML_DOMAIN_STATE->young_end =
+      CAML_DOMAIN_STATE->young_ptr = 0;
+    CAML_DOMAIN_STATE->remembered_set =
       caml_stat_alloc(sizeof(struct caml_remembered_set));
-    memset ((void*)caml_domain_state->remembered_set, 0,
+    memset ((void*)CAML_DOMAIN_STATE->remembered_set, 0,
             sizeof(struct caml_remembered_set));
 
     d->state.shared_heap = caml_init_shared_heap();
@@ -191,10 +191,10 @@ static void create_domain(uintnat initial_minor_heap_size, int is_main) {
 
     caml_init_main_stack();
 
-    d->state.mark_stack = &caml_domain_state->mark_stack;
-    d->state.mark_stack_count = &caml_domain_state->mark_stack_count;
+    d->state.mark_stack = &CAML_DOMAIN_STATE->mark_stack;
+    d->state.mark_stack_count = &CAML_DOMAIN_STATE->mark_stack_count;
     d->state.local_roots = &caml_local_roots;
-    d->state.state = caml_domain_state;
+    d->state.state = CAML_DOMAIN_STATE;
     d->state.vm_inited = 1;
   }
   caml_plat_unlock(&all_domains_lock);
@@ -253,7 +253,7 @@ void caml_init_domains(uintnat minor_size) {
 void caml_init_domain_self(int domain_id) {
   Assert (domain_id >= 0 && domain_id < Max_domains);
   domain_self = &all_domains[domain_id];
-  caml_domain_state = domain_self->state.state;
+  SET_CAML_DOMAIN_STATE(domain_self->state.state);
 }
 
 static void domain_terminate() {
