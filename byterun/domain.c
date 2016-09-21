@@ -59,7 +59,23 @@ static caml_plat_mutex all_domains_lock;
 static struct dom_internal all_domains[Max_domains];
 static uintnat minor_heaps_base;
 static __thread dom_internal* domain_self;
-CAMLexport __thread struct caml_domain_state* caml_domain_state;
+
+#ifdef __APPLE__
+  /* OSX has issues with dynamic loading + exported TLS.
+     This is slower but works */
+  CAMLexport pthread_key_t caml_domain_state_key;
+#else
+  CAMLexport __thread struct caml_domain_state* caml_domain_state;
+#endif
+
+/* Statically assert that each field of domain_state is one word long and at the right index */
+/* Dummy domain_state for testing */
+static struct caml_domain_state* dummy_domain_state;
+#define DOMAIN_STATE(idx, type, name) \
+    CAML_STATIC_ASSERT(sizeof(dummy_domain_state->name) == sizeof(void*) && \
+                     offsetof(struct caml_domain_state, name) == idx * sizeof(void*));
+#include "caml/domain_state.tbl"
+#undef DOMAIN_STATE
 
 static __thread char domains_locked[Max_domains];
 
@@ -103,7 +119,7 @@ asize_t caml_norm_minor_heap_size (intnat wsize)
 
 void caml_reallocate_minor_heap(asize_t size)
 {
-  Assert(caml_domain_state->young_ptr == caml_domain_state->young_end);
+  Assert(CAML_DOMAIN_STATE->young_ptr == CAML_DOMAIN_STATE->young_end);
 
   /* free old minor heap.
      instead of unmapping the heap, we decommit it, so there's
@@ -124,9 +140,9 @@ void caml_reallocate_minor_heap(asize_t size)
 #endif
 
   caml_minor_heap_size = size;
-  caml_domain_state->young_start = (char*)domain_self->minor_heap_area;
-  caml_domain_state->young_end = (char*)(domain_self->minor_heap_area + size);
-  caml_domain_state->young_ptr = caml_domain_state->young_end;
+  CAML_DOMAIN_STATE->young_start = (char*)domain_self->minor_heap_area;
+  CAML_DOMAIN_STATE->young_end = (char*)(domain_self->minor_heap_area + size);
+  CAML_DOMAIN_STATE->young_ptr = CAML_DOMAIN_STATE->young_end;
 }
 
 /* must be run on the domain's thread */
@@ -153,12 +169,12 @@ static void create_domain(uintnat initial_minor_heap_size, int is_main) {
     atomic_store_rel(&d->rpc_request, RPC_IDLE);
 
     domain_self = d;
-    caml_domain_state = (void*)(d->tls_area);
+    SET_CAML_DOMAIN_STATE((void*)(d->tls_area));
     caml_plat_lock(&d->roots_lock);
 
     if (!d->interrupt_word_address) {
       caml_mem_commit((void*)d->tls_area, (d->tls_area_end - d->tls_area));
-      atomic_uintnat* young_limit = (atomic_uintnat*)&caml_domain_state->young_limit;
+      atomic_uintnat* young_limit = (atomic_uintnat*)&CAML_DOMAIN_STATE->young_limit;
       d->interrupt_word_address = young_limit;
       atomic_store_rel(young_limit, d->minor_heap_area);
     }
@@ -404,7 +420,7 @@ void caml_handle_gc_interrupt() {
     }
   }
 
-  if (((uintnat)caml_domain_state->young_ptr - Bhsize_wosize(Max_young_wosize) <
+  if (((uintnat)CAML_DOMAIN_STATE->young_ptr - Bhsize_wosize(Max_young_wosize) <
        domain_self->minor_heap_area) ||
       caml_force_major_slice) {
     /* out of minor heap or collection forced */

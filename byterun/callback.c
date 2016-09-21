@@ -46,8 +46,8 @@ CAMLexport value caml_callbackN_exn(value closure, int narg, value args[])
   CAMLlocal1(parent_stack);
   int i;
   value res;
-  parent_stack = Stack_parent(caml_domain_state->current_stack);
-  Stack_parent(caml_domain_state->current_stack) = Val_unit;
+  parent_stack = Stack_parent(CAML_DOMAIN_STATE->current_stack);
+  Stack_parent(CAML_DOMAIN_STATE->current_stack) = Val_unit;
 
   Assert(narg + 4 <= 256);
   caml_extern_sp -= narg + 4;
@@ -66,8 +66,8 @@ CAMLexport value caml_callbackN_exn(value closure, int narg, value args[])
   res = caml_interprete(code, sizeof(code));
   if (Is_exception_result(res)) caml_extern_sp += narg + 4; /* PR#1228 */
 
-  Assert(Stack_parent(caml_domain_state->current_stack) == Val_unit);
-  Stack_parent(caml_domain_state->current_stack) = parent_stack;
+  Assert(Stack_parent(CAML_DOMAIN_STATE->current_stack) == Val_unit);
+  Stack_parent(CAML_DOMAIN_STATE->current_stack) = parent_stack;
   CAMLreturn (res);
 }
 
@@ -108,12 +108,12 @@ value caml_callback3_asm(char* young_ptr, value closure, value* args);
 
 CAMLexport value caml_callback_exn(value closure, value arg)
 {
-  return caml_callback_asm(caml_domain_state->young_ptr, closure, arg);
+  return caml_callback_asm(CAML_DOMAIN_STATE->young_ptr, closure, arg);
 }
 
 CAMLexport value caml_callback2_exn(value closure, value arg1, value arg2)
 {
-  return caml_callback2_asm(caml_domain_state->young_ptr, closure, arg1, arg2);
+  return caml_callback2_asm(CAML_DOMAIN_STATE->young_ptr, closure, arg1, arg2);
 }
 
 CAMLexport value caml_callback3_exn(value closure,
@@ -121,7 +121,7 @@ CAMLexport value caml_callback3_exn(value closure,
 {
   /* can only pass 4 args in registers on Windows, so we use an array */
   value args[] = {arg1, arg2, arg3};
-  return caml_callback3_asm(caml_domain_state->young_ptr, closure, args);
+  return caml_callback3_asm(CAML_DOMAIN_STATE->young_ptr, closure, args);
 }
 
 /* Native-code callbacks.  caml_callback[123]_exn are implemented in asm. */
