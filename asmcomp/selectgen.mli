@@ -69,7 +69,7 @@ class virtual selector_generic : object
 
   method mark_tailcall : unit
   (* informs the code emitter that the current function may end with
-     a tailcall; by default, does nothing *)
+     a tail call; by default, does nothing *)
 
   method mark_c_tailcall : unit
   (* informs the code emitter that the current function may call
