@@ -38,7 +38,7 @@
    Values of extensible variant types, for example exceptions (of
    extensible type [exn]), returned by the unmarshaller should not be
    pattern-matched over through [match ... with] or [try ... with],
-   because unmarshaling does not preserve the information required for
+   because unmarshalling does not preserve the information required for
    matching their constructors. Structural equalities with other
    extensible variant values does not work either.  Most other uses such
    as Printexc.to_string, will still work as expected.
@@ -142,7 +142,7 @@ val from_channel : in_channel -> 'a
    It raises [End_of_file] if the function has already reached the
    end of file when starting to read from the channel, and raises
    [Failure "input_value: truncated object"] if it reaches the end
-   of file later during the unmarshaling. *)
+   of file later during the unmarshalling. *)
 
 val from_bytes : bytes -> int -> 'a
 (** [Marshal.from_bytes buff ofs] unmarshals a structured value
