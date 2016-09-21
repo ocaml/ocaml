@@ -1,7 +1,11 @@
-#ifndef CAML_DOMAIN_STATE
-#define CAML_DOMAIN_STATE
+#ifndef CAML_DOMAIN_STATE_H
+#define CAML_DOMAIN_STATE_H
 
 #include <stddef.h>
+#ifdef __APPLE__
+#include <pthread.h>
+#endif
+
 #include "misc.h"
 
 struct caml_domain_state {
@@ -10,15 +14,19 @@ struct caml_domain_state {
 #undef DOMAIN_STATE
 };
 
-CAMLextern __thread struct caml_domain_state* caml_domain_state;
-
-/* Statically assert that each field of domain_state is one word long and at the right index */
-
-#define DOMAIN_STATE(idx, type, name) \
-  CAML_STATIC_ASSERT(sizeof(caml_domain_state->name) == sizeof(void*) && \
-                     offsetof(struct caml_domain_state, name) == idx * sizeof(void*));
-#include "domain_state.tbl"
-#undef DOMAIN_STATE
+#ifdef __APPLE__
+  CAMLextern pthread_key_t caml_domain_state_key;
+  #define CAML_INIT_DOMAIN_STATE (pthread_key_create(&caml_domain_state_key, NULL))
+  #define CAML_DOMAIN_STATE \
+      ((struct caml_domain_state*) pthread_getspecific(caml_domain_state_key))
+  #define SET_CAML_DOMAIN_STATE(x) \
+      (pthread_setspecific(caml_domain_state_key, x))
+#else
+  CAMLextern __thread struct caml_domain_state* caml_domain_state;
+  #define CAML_INIT_DOMAIN_STATE
+  #define CAML_DOMAIN_STATE caml_domain_state
+  #define SET_CAML_DOMAIN_STATE(x) (caml_domain_state = (x))
+#endif
 
 
 #endif

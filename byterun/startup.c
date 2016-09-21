@@ -29,6 +29,7 @@
 #include "caml/callback.h"
 #include "caml/custom.h"
 #include "caml/debugger.h"
+#include "caml/domain_state.h"
 #include "caml/dynlink.h"
 #include "caml/eventlog.h"
 #include "caml/exec.h"
@@ -230,6 +231,7 @@ CAMLexport void caml_main(char **argv)
   char * exe_name;
   static char proc_self_exe[256];
 
+  CAML_INIT_DOMAIN_STATE;
   caml_init_startup_params();
   /* Machine-dependent initialization of the floating-point hardware
      so that it behaves as much as possible as specified in IEEE */
@@ -335,6 +337,7 @@ CAMLexport void caml_startup_code(
   char * exe_name;
   static char proc_self_exe[256];
 
+  CAML_INIT_DOMAIN_STATE;
   caml_init_startup_params();
   caml_init_ieee_floats();
 #ifdef _MSC_VER

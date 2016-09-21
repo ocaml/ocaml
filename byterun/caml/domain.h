@@ -18,7 +18,7 @@ struct domain {
 };
 
 #define Caml_check_gc_interrupt() \
-  ((uintnat)caml_domain_state->young_ptr < caml_domain_state->young_limit)
+  ((uintnat)CAML_DOMAIN_STATE->young_ptr < CAML_DOMAIN_STATE->young_limit)
 
 asize_t caml_norm_minor_heap_size (intnat);
 void caml_reallocate_minor_heap(asize_t);

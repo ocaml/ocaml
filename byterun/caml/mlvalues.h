@@ -20,6 +20,12 @@
 #include "config.h"
 #include "misc.h"
 
+/* Needed here for domain_state */
+typedef intnat value;
+
+#include "domain_state.h"
+
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -55,7 +61,6 @@ extern "C" {
          This is for use only by the GC.
 */
 
-typedef intnat value;
 typedef uintnat header_t;
 typedef uintnat mlsize_t;
 typedef unsigned int tag_t;             /* Actually, an unsigned char */
@@ -166,11 +171,6 @@ bits  63    10 9     8 7   0
 #define Op_val(x) ((value *) (x))
 /* Fields are numbered from 0. */
 
-
-/* see domain.c */
-CAMLextern __thread struct caml_domain_state* caml_domain_state;
-
-
 /* All values which are not blocks in the current domain's minor heap
    differ from caml_domain_state in at least one of the bits set in
    Young_val_bitmask */
@@ -188,17 +188,17 @@ CAMLextern __thread struct caml_domain_state* caml_domain_state;
    Since the minor heap is allocated in one aligned block, this can be tested
    via bitmasking. */
 #define Is_young(val) \
-  ((((uintnat)(val) ^ (uintnat)caml_domain_state) & Young_val_bitmask) == 0)
+  ((((uintnat)(val) ^ (uintnat)CAML_DOMAIN_STATE) & Young_val_bitmask) == 0)
 
 /* Is_minor(val) is true iff val is a block in any domain's minor heap. */
 #define Is_minor(val) \
-  ((((uintnat)(val) ^ (uintnat)caml_domain_state) & Minor_val_bitmask) == 0)
+  ((((uintnat)(val) ^ (uintnat)CAML_DOMAIN_STATE) & Minor_val_bitmask) == 0)
 
 /* Is_foreign(val) is true iff val is a block in another domain's minor heap.
    Since all minor heaps lie in one aligned block, this can be tested via
    more bitmasking. */
 #define Is_foreign(val) \
-  (((((uintnat)(val) ^ (uintnat)caml_domain_state) - (1 << Minor_heap_align_bits)) & \
+  (((((uintnat)(val) ^ (uintnat)CAML_DOMAIN_STATE) - (1 << Minor_heap_align_bits)) & \
     Minor_val_bitmask) == 0)
 
 

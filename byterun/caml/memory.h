@@ -82,16 +82,16 @@ color_t caml_allocation_color (void *hp);
 #define Alloc_small(result, wosize, tag) do{    CAMLassert ((wosize) >= 1); \
                                           CAMLassert ((tag_t) (tag) < 256); \
                                  CAMLassert ((wosize) <= Max_young_wosize); \
-  caml_domain_state->young_ptr -= Bhsize_wosize (wosize);                   \
+  CAML_DOMAIN_STATE->young_ptr -= Bhsize_wosize (wosize);                   \
   if (Caml_check_gc_interrupt()){                                           \
-    caml_domain_state->young_ptr += Bhsize_wosize (wosize);                 \
+    CAML_DOMAIN_STATE->young_ptr += Bhsize_wosize (wosize);                 \
     Setup_for_gc;                                                           \
     caml_handle_gc_interrupt ();                                            \
     Restore_after_gc;                                                       \
-    caml_domain_state->young_ptr -= Bhsize_wosize (wosize);                 \
+    CAML_DOMAIN_STATE->young_ptr -= Bhsize_wosize (wosize);                 \
   }                                                                         \
-  Hd_hp (caml_domain_state->young_ptr) = Make_header ((wosize), (tag), 0);  \
-  (result) = Val_hp (caml_domain_state->young_ptr);                         \
+  Hd_hp (CAML_DOMAIN_STATE->young_ptr) = Make_header ((wosize), (tag), 0);  \
+  (result) = Val_hp (CAML_DOMAIN_STATE->young_ptr);                         \
   DEBUG_clear ((result), (wosize));                                         \
 }while(0)
 
