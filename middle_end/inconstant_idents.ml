@@ -86,11 +86,11 @@ module Inconstants (P:Param) (Backend:Backend_intf.S) = struct
   let imported_symbols = Flambda_utils.imported_symbols program
 
   (* Sets representing NC *)
-  let variables : state Variable.Tbl.t = Variable.Tbl.create 42
+  let variables : state Variable.Tbl.t = Variable.Tbl.create 10000
   let closures : state Set_of_closures_id.Tbl.t =
-    Set_of_closures_id.Tbl.create 42
-  let symbols : state Symbol.Tbl.t = Symbol.Tbl.create 42
-  let symbol_fields : state Symbol_field.Tbl.t = Symbol_field.Tbl.create 42
+    Set_of_closures_id.Tbl.create 10000
+  let symbols : state Symbol.Tbl.t = Symbol.Tbl.create 10000
+  let symbol_fields : state Symbol_field.Tbl.t = Symbol_field.Tbl.create 10000
 
   let mark_queue = Queue.create ()
 
