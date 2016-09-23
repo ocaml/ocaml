@@ -53,8 +53,8 @@ type primitive =
   | Pbytes_to_string
   | Pbytes_of_string
   | Pignore
-  | Prevapply of Location.t
-  | Pdirapply of Location.t
+  | Prevapply 
+  | Pdirapply 
   | Ploc of loc_kind
     (* Globals *)
   | Pgetglobal of Ident.t
@@ -218,9 +218,9 @@ type lambda =
   | Lfunction of function_kind * Ident.t list * lambda
   | Llet of let_kind * Ident.t * lambda * lambda
   | Lletrec of (Ident.t * lambda) list * lambda
-  | Lprim of primitive * lambda list
+  | Lprim of primitive * lambda list * Location.t 
   | Lswitch of lambda * lambda_switch
-  | Lstringswitch of lambda * (string * lambda) list * lambda option
+  | Lstringswitch of lambda * (string * lambda) list * lambda option * Location.t
   | Lstaticraise of int * lambda list
   | Lstaticcatch of lambda * (int * Ident.t list) * lambda
   | Ltrywith of lambda * Ident.t * lambda
@@ -292,15 +292,15 @@ let make_key e =
         let ex = tr_rec env ex in
         let y = make_key x in
         Llet (str,y,ex,tr_rec (Ident.add x (Lvar y) env) e)
-    | Lprim (p,es) ->
-        Lprim (p,tr_recs env es)
+    | Lprim (p,es,_) ->
+        Lprim (p,tr_recs env es, Location.none)
     | Lswitch (e,sw) ->
         Lswitch (tr_rec env e,tr_sw env sw)
-    | Lstringswitch (e,sw,d) ->
+    | Lstringswitch (e,sw,d,_) ->
         Lstringswitch
           (tr_rec env e,
            List.map (fun (s,e) -> s,tr_rec env e) sw,
-           tr_opt env d)
+           tr_opt env d, Location.none)
     | Lstaticraise (i,es) ->
         Lstaticraise (i,tr_recs env es)
     | Lstaticcatch (e1,xs,e2) ->
@@ -373,14 +373,14 @@ let iter f = function
   | Lletrec(decl, body) ->
       f body;
       List.iter (fun (id, exp) -> f exp) decl
-  | Lprim(p, args) ->
+  | Lprim(p, args, _loc) ->
       List.iter f args
   | Lswitch(arg, sw) ->
       f arg;
       List.iter (fun (key, case) -> f case) sw.sw_consts;
       List.iter (fun (key, case) -> f case) sw.sw_blocks;
       iter_opt f sw.sw_failaction
-  | Lstringswitch (arg,cases,default) ->
+  | Lstringswitch (arg,cases,default,_) ->
       f arg ;
       List.iter (fun (_,act) -> f act) cases ;
       iter_opt f default
@@ -481,9 +481,9 @@ let rec patch_guarded patch = function
 
 let rec transl_normal_path = function
     Pident id ->
-      if Ident.global id then Lprim(Pgetglobal id, []) else Lvar id
+      if Ident.global id then Lprim(Pgetglobal id, [], Location.none) else Lvar id
   | Pdot(p, s, pos) ->
-      Lprim(Pfield (pos, Fld_module s ), [transl_normal_path p])
+      Lprim(Pfield (pos, Fld_module s ), [transl_normal_path p],Location.none)
   | Papply(p1, p2) ->
       fatal_error "Lambda.transl_path"
 
@@ -515,15 +515,15 @@ let subst_lambda s lam =
   | Lfunction(kind, params, body) -> Lfunction(kind, params, subst body)
   | Llet(str, id, arg, body) -> Llet(str, id, subst arg, subst body)
   | Lletrec(decl, body) -> Lletrec(List.map subst_decl decl, subst body)
-  | Lprim(p, args) -> Lprim(p, List.map subst args)
+  | Lprim(p, args, loc) -> Lprim(p, List.map subst args, loc)
   | Lswitch(arg, sw) ->
       Lswitch(subst arg,
               {sw with sw_consts = List.map subst_case sw.sw_consts;
                        sw_blocks = List.map subst_case sw.sw_blocks;
                        sw_failaction = subst_opt  sw.sw_failaction; })
-  | Lstringswitch (arg,cases,default) ->
+  | Lstringswitch (arg,cases,default,loc) ->
       Lstringswitch
-        (subst arg,List.map subst_strcase cases,subst_opt default)
+        (subst arg,List.map subst_strcase cases,subst_opt default, loc)
   | Lstaticraise (i,args) ->  Lstaticraise (i, List.map subst args)
   | Lstaticcatch(e1, io, e2) -> Lstaticcatch(subst e1, io, subst e2)
   | Ltrywith(e1, exn, e2) -> Ltrywith(subst e1, exn, subst e2)

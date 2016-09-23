@@ -132,7 +132,7 @@ type rhs_kind =
 
 let rec check_recordwith_updates id e =
   match e with
-  | Lsequence (Lprim ((Psetfield _ | Psetfloatfield _), [Lvar id2; _]), cont)
+  | Lsequence (Lprim ((Psetfield _ | Psetfloatfield _), [Lvar id2; _], _), cont)
       -> id2 = id && check_recordwith_updates id cont
   | Lvar id2 -> id2 = id
   | _ -> false
@@ -141,7 +141,7 @@ let rec check_recordwith_updates id e =
 let rec size_of_lambda = function
   | Lfunction(kind, params, body) as funct ->
       RHS_block (1 + IdentSet.cardinal(free_variables funct))
-  | Llet (Strict, id, Lprim (Pduprecord (kind, size), _), body)
+  | Llet (Strict, id, Lprim (Pduprecord (kind, size), _, _), body)
     when check_recordwith_updates id body ->
       begin match kind with
       | Record_regular -> RHS_block size
@@ -149,13 +149,13 @@ let rec size_of_lambda = function
       end
   | Llet(str, id, arg, body) -> size_of_lambda body
   | Lletrec(bindings, body) -> size_of_lambda body
-  | Lprim(Pmakeblock(tag, _, mut), args) -> RHS_block (List.length args)
-  | Lprim (Pmakearray (Paddrarray|Pintarray), args) ->
+  | Lprim(Pmakeblock(tag, _, mut), args, _) -> RHS_block (List.length args)
+  | Lprim (Pmakearray (Paddrarray|Pintarray), args, _) ->
       RHS_block (List.length args)
-  | Lprim (Pmakearray Pfloatarray, args) -> RHS_floatblock (List.length args)
-  | Lprim (Pmakearray Pgenarray, args) -> assert false
-  | Lprim (Pduprecord (Record_regular, size), args) -> RHS_block size
-  | Lprim (Pduprecord (Record_float, size), args) -> RHS_floatblock size
+  | Lprim (Pmakearray Pfloatarray, args, _) -> RHS_floatblock (List.length args)
+  | Lprim (Pmakearray Pgenarray, args, _) -> assert false
+  | Lprim (Pduprecord (Record_regular, size), args, _) -> RHS_block size
+  | Lprim (Pduprecord (Record_float, size), args, _) -> RHS_floatblock size
   | Levent (lam, _) -> size_of_lambda lam
   | Lsequence (lam, lam') -> size_of_lambda lam'
   | _ -> RHS_nonrec
@@ -555,22 +555,22 @@ let rec comp_expr env exp sz cont =
         in
         comp_init env sz decl_size
       end
-  | Lprim((Pidentity | Pbytes_to_string | Pbytes_of_string ), [arg]) ->
+  | Lprim((Pidentity | Pbytes_to_string | Pbytes_of_string ), [arg], _) ->
       comp_expr env arg sz cont
-  | Lprim(Pignore, [arg]) ->
+  | Lprim(Pignore, [arg], _) ->
       comp_expr env arg sz (add_const_unit cont)
-  | Lprim(Pdirapply loc, [func;arg])
-  | Lprim(Prevapply loc, [arg;func]) ->
+  | Lprim(Pdirapply , [func;arg], loc)
+  | Lprim(Prevapply , [arg;func], loc) ->
       let exp = Lapply(func, [arg], loc) in
       comp_expr env exp sz cont
-  | Lprim(Pnot, [arg]) ->
+  | Lprim(Pnot, [arg], _) ->
       let newcont =
         match cont with
           Kbranchif lbl :: cont1 -> Kbranchifnot lbl :: cont1
         | Kbranchifnot lbl :: cont1 -> Kbranchif lbl :: cont1
         | _ -> Kboolnot :: cont in
       comp_expr env arg sz newcont
-  | Lprim(Psequand, [exp1; exp2]) ->
+  | Lprim(Psequand, [exp1; exp2], _) ->
       begin match cont with
         Kbranchifnot lbl :: _ ->
           comp_expr env exp1 sz (Kbranchifnot lbl ::
@@ -584,7 +584,7 @@ let rec comp_expr env exp sz cont =
           comp_expr env exp1 sz (Kstrictbranchifnot lbl ::
             comp_expr env exp2 sz cont1)
       end
-  | Lprim(Psequor, [exp1; exp2]) ->
+  | Lprim(Psequor, [exp1; exp2], _) ->
       begin match cont with
         Kbranchif lbl :: _ ->
           comp_expr env exp1 sz (Kbranchif lbl ::
@@ -598,21 +598,21 @@ let rec comp_expr env exp sz cont =
           comp_expr env exp1 sz (Kstrictbranchif lbl ::
             comp_expr env exp2 sz cont1)
       end
-  | Lprim(Praise k, [arg]) ->
+  | Lprim(Praise k, [arg], _) ->
       comp_expr env arg sz (Kraise k :: discard_dead_code cont)
-  | Lprim(Paddint, [arg; Lconst(Const_base(Const_int n))])
+  | Lprim(Paddint, [arg; Lconst(Const_base(Const_int n))], _)
     when is_immed n ->
       comp_expr env arg sz (Koffsetint n :: cont)
-  | Lprim(Psubint, [arg; Lconst(Const_base(Const_int n))])
+  | Lprim(Psubint, [arg; Lconst(Const_base(Const_int n))], _)
     when is_immed (-n) ->
       comp_expr env arg sz (Koffsetint (-n) :: cont)
-  | Lprim (Poffsetint n, [arg])
+  | Lprim (Poffsetint n, [arg], _)
     when not (is_immed n) ->
       comp_expr env arg sz
         (Kpush::
          Kconst (Const_base (Const_int n))::
          Kaddint::cont)
-  | Lprim(Pmakearray kind, args) ->
+  | Lprim(Pmakearray kind, args, _) ->
       begin match kind with
         Pintarray | Paddrarray ->
           comp_args env args sz (Kmakeblock(List.length args, 0) :: cont)
@@ -626,11 +626,11 @@ let rec comp_expr env exp sz cont =
                   Kccall("caml_make_array", 1) :: cont)
       end
 (* Integer first for enabling futher optimization (cf. emitcode.ml)  *)
-  | Lprim (Pintcomp c, [arg ; (Lconst _ as k)]) ->
+  | Lprim (Pintcomp c, [arg ; (Lconst _ as k)], _) ->
       let p = Pintcomp (commute_comparison c)
       and args = [k ; arg] in
       comp_args env args sz (comp_primitive p args :: cont)
-  | Lprim(p, args) ->
+  | Lprim(p, args, _) ->
       comp_args env args sz (comp_primitive p args :: cont)
   | Lstaticcatch (body, (i, vars) , handler) ->
       let nvars = List.length vars in
@@ -756,8 +756,8 @@ let rec comp_expr env exp sz cont =
         lbl_consts.(i) <- lbls.(act_consts.(i))
       done;
       comp_expr env arg sz (Kswitch(lbl_consts, lbl_blocks) :: !c)
-  | Lstringswitch (arg,sw,d) ->
-      comp_expr env (Matching.expand_stringswitch arg sw d) sz cont
+  | Lstringswitch (arg,sw,d,loc) ->
+      comp_expr env (Matching.expand_stringswitch loc arg sw d) sz cont
   | Lassign(id, expr) ->
       begin try
         let pos = Ident.find_same id env.ce_stack in

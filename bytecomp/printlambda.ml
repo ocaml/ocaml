@@ -99,8 +99,8 @@ let primitive ppf = function
   | Pbytes_to_string -> fprintf ppf "bytes_to_string"
   | Pbytes_of_string -> fprintf ppf "bytes_of_string"
   | Pignore -> fprintf ppf "ignore"
-  | Prevapply _ -> fprintf ppf "revapply"
-  | Pdirapply _ -> fprintf ppf "dirapply"
+  | Prevapply  -> fprintf ppf "revapply"
+  | Pdirapply  -> fprintf ppf "dirapply"
   | Ploc kind -> fprintf ppf "%s" (string_of_loc_kind kind)
   | Pgetglobal id -> fprintf ppf "global %a" Ident.print id
   | Psetglobal id -> fprintf ppf "setglobal %a" Ident.print id
@@ -366,13 +366,13 @@ let lambda use_env env ppf v  =
       fprintf ppf
         "@[<2>(let@ (@[<hv 1>%a@]" bindings (List.rev args);
       fprintf ppf ")@ %a)@]"  lam body
-  | Lprim(Pfield (n,_), [ Lprim(Pgetglobal id,[])]) when use_env ->
+  | Lprim(Pfield (n,_), [ Lprim(Pgetglobal id,[],_)],_) when use_env ->
       fprintf ppf "%s.%s/%d" id.name (get_string (id,n) env) n
 
-  | Lprim(Psetfield (n,_,_), [ Lprim(Pgetglobal id,[]) ;  e ]) when use_env  ->
+  | Lprim(Psetfield (n,_,_), [ Lprim(Pgetglobal id,[],_) ;  e ], _) when use_env  ->
       fprintf ppf "@[<2>(%s.%s/%d <- %a)@]" id.name (get_string (id,n) env) n
         lam e
-  | Lprim(prim, largs) ->
+  | Lprim(prim, largs,_) ->
       let lams ppf largs =
         List.iter (fun l -> fprintf ppf "@ %a" lam l) largs in
       fprintf ppf "@[<2>(%a%a)@]" primitive prim lams largs
@@ -399,7 +399,7 @@ let lambda use_env env ppf v  =
        "@[<1>(%s %a@ @[<v 0>%a@])@]"
        (match sw.sw_failaction with None -> "switch*" | _ -> "switch")
        lam larg switch sw
-  | Lstringswitch(arg, cases, default) ->
+  | Lstringswitch(arg, cases, default,_) ->
       let switch ppf cases =
         let spc = ref false in
         List.iter
@@ -503,10 +503,10 @@ let rec flat (acc : (left * lambda) list ) (lam : lambda) =
 let lambda_as_module env  ppf lam = 
   try
   match lam with
-  | Lprim(Psetglobal(id), [biglambda])  (* might be wrong in toplevel *) ->
+  | Lprim(Psetglobal(id), [biglambda],_)  (* might be wrong in toplevel *) ->
       
       begin match flat [] biglambda  with 
-      | (Nop, Lprim (Pmakeblock (_, _, _), toplevels)) :: rest ->
+      | (Nop, Lprim (Pmakeblock (_, _, _), toplevels,_)) :: rest ->
           (* let spc = ref false in *)
           List.iter
             (fun (left, l) ->

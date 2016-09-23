@@ -668,8 +668,8 @@ let rec is_pure = function
   | Lprim((Psetglobal _ | Psetfield _ | Psetfloatfield _ | Pduprecord _ |
            Pccall _ | Praise _ | Poffsetref _ | Pstringsetu | Pstringsets |
            Pbytessetu | Pbytessets |
-           Parraysetu _ | Parraysets _ | Pbigarrayset _), _) -> false
-  | Lprim(p, args) -> List.for_all is_pure args
+           Parraysetu _ | Parraysets _ | Pbigarrayset _), _,_) -> false
+  | Lprim(p, args,_) -> List.for_all is_pure args
   | Levent(lam, ev) -> is_pure lam
   | _ -> false
 
@@ -913,28 +913,28 @@ let rec close fenv cenv = function
         let (ubody, approx) = close fenv_body cenv body in
         (Uletrec(udefs, ubody), approx)
       end
-  | Lprim(Pdirapply loc,[funct;arg])
-  | Lprim(Prevapply loc,[arg;funct]) ->
+  | Lprim(Pdirapply ,[funct;arg], loc)
+  | Lprim(Prevapply ,[arg;funct], loc) ->
       close fenv cenv (Lapply(funct, [arg], loc))
-  | Lprim(Pgetglobal id, []) as lam ->
+  | Lprim(Pgetglobal id, [], _) as lam ->
       check_constant_result lam
                             (getglobal id)
                             (Compilenv.global_approx id)
-  | Lprim((Pfield (n, _) as field), [lam]) ->
+  | Lprim((Pfield (n, _) as field), [lam], _) ->
       let (ulam, approx) = close fenv cenv lam in
       check_constant_result lam (Uprim(field, [ulam], Debuginfo.none))
                             (field_approx n approx)
-  | Lprim(Psetfield(n, _,dbg_info), [Lprim(Pgetglobal id, []); lam]) ->
+  | Lprim(Psetfield(n, _,dbg_info), [Lprim(Pgetglobal id, [], _); lam], _) ->
       let (ulam, approx) = close fenv cenv lam in
       if approx <> Value_unknown then
         (!global_approx).(n) <- approx;
       (Uprim(Psetfield(n, false, dbg_info), [getglobal id; ulam], Debuginfo.none),
        Value_unknown)
-  | Lprim(Praise k, [Levent(arg, ev)]) ->
+  | Lprim(Praise k, [Levent(arg, ev)], _) ->
       let (ulam, approx) = close fenv cenv arg in
       (Uprim(Praise k, [ulam], Debuginfo.from_raise ev),
        Value_unknown)
-  | Lprim(p, args) ->
+  | Lprim(p, args, _) ->
       simplif_prim !Clflags.float_const_prop
                    p (close_list_approx fenv cenv args) Debuginfo.none
   | Lswitch(arg, sw) ->
@@ -967,7 +967,7 @@ let rec close fenv cenv = function
             Ucatch (i,[],ubody,uhandler),Value_unknown
           else fn fail
       end
-  | Lstringswitch(arg,sw,d) ->
+  | Lstringswitch(arg,sw,d,_) ->
       let uarg,_ = close fenv cenv arg in
       let usw =
         List.map

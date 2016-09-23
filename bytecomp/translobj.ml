@@ -56,9 +56,9 @@ let next_cache tag =
   (tag, [!method_cache; Lconst(Const_base(Const_int n))])
 
 let rec is_path = function
-    Lvar _ | Lprim (Pgetglobal _, []) | Lconst _ -> true
-  | Lprim (Pfield _, [lam]) -> is_path lam
-  | Lprim ((Parrayrefu _ | Parrayrefs _), [lam1; lam2]) ->
+    Lvar _ | Lprim (Pgetglobal _, [], _) | Lconst _ -> true
+  | Lprim (Pfield _, [lam], _) -> is_path lam
+  | Lprim ((Parrayrefu _ | Parrayrefs _), [lam1; lam2], _) ->
       is_path lam1 && is_path lam2
   | _ -> false
 
@@ -102,7 +102,7 @@ let transl_label_init expr =
   in
   let expr =
     List.fold_right
-      (fun id expr -> Lsequence(Lprim(Pgetglobal id, []), expr))
+      (fun id expr -> Lsequence(Lprim(Pgetglobal id, [], Location.none), expr))
       (Env.get_required_globals ()) expr
   in
   Env.reset_required_globals ();
@@ -110,15 +110,15 @@ let transl_label_init expr =
   expr
 
 let transl_store_label_init glob size f arg =
-  method_cache := Lprim(Pfield (size, Fld_na), [Lprim(Pgetglobal glob, [])]);
+  method_cache := Lprim(Pfield (size, Fld_na), [Lprim(Pgetglobal glob, [], Location.none)], Location.none);
   let expr = f arg in
   let (size, expr) =
     if !method_count = 0 then (size, expr) else
     (size+1,
      Lsequence(
      Lprim(Psetfield(size, false, Fld_set_na),
-           [Lprim(Pgetglobal glob, []);
-            Lprim (Pccall prim_makearray, [int !method_count; int 0])]),
+           [Lprim(Pgetglobal glob, [], Location.none);
+            Lprim (Pccall prim_makearray, [int !method_count; int 0], Location.none)], Location.none),
      expr))
   in
   (size, transl_label_init expr)
@@ -151,7 +151,7 @@ let oo_wrap env req f x =
         (fun lambda id ->
           Llet(StrictOpt, id,
                Lprim(Pmakeblock(0, Lambda.default_tag_info, Mutable),
-                     [lambda_unit; lambda_unit; lambda_unit]),
+                     [lambda_unit; lambda_unit; lambda_unit], Location.none),
                lambda))
         lambda !classes
     in
