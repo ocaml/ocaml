@@ -37,6 +37,9 @@ Next version (tbd):
   .cmti files
   (Alain Frisch, report by Daniel Bunzli, review by Jeremie Dimino)
 
+- GPR#823: provide a hook for line directives in the lexer
+  (Hendrik Tews)
+
 ### Other libraries:
 
 - MPR#7339, GPR#787: Support the '0 dimension' case for bigarrays

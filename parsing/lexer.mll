@@ -200,6 +200,10 @@ let get_label_name lexbuf =
   name
 ;;
 
+let line_directive_hook :
+      (Location.t -> string option -> int -> unit) option ref
+  = ref None
+
 (* Update the current location with file name and line number. *)
 
 let update_loc lexbuf file line absolute chars =
@@ -448,6 +452,10 @@ rule token = parse
            (* Documentation says that the line number should be
               positive, but we have never guarded against this and it
               might have useful hackish uses. *)
+            (match !line_directive_hook with
+             | None -> ()
+             | Some f -> f (Location.curr lexbuf) name line_num
+            );
             update_loc lexbuf name line_num true 0;
             token lexbuf
       }

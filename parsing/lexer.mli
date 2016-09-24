@@ -32,6 +32,13 @@ type error =
 
 exception Error of error * Location.t
 
+(** If set, called by the lexer for all line directives in the input,
+    providing the location of the line directive and the file name
+    and the line number in the line directive.
+ *)
+val line_directive_hook :
+  (Location.t -> string option -> int -> unit) option ref
+
 open Format
 
 val report_error: formatter -> error -> unit
