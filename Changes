@@ -11,6 +11,7 @@ OCaml 4.04.0:
 
 - GPR#301: local exception declarations "let exception ... in"
   (Alain Frisch)
+
 - GPR#508: Allow shortcut for extension on semicolons: ;%foo
   (Jeremie Dimino)
 
