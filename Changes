@@ -56,7 +56,10 @@ Next version (tbd):
   (Xavier Leroy)
 
 - GPR#814: fix the Buffer.add_substring bounds check to handle overflow
-   (Jeremy Yallop)
+  (Jeremy Yallop)
+
+- GPR#810: check for integer overflow in Array.concat
+  (Jeremy Yallop)
 
 
 OCaml 4.04.0:
