@@ -326,6 +326,9 @@ OCaml 4.04.0:
   FlexDLL if there was also a system-installed flexlink
   (David Allsopp, report Michael Soegtrop)
 
+- GPR#810: check for integer overflow in Array.concat
+  (Jeremy Yallop)
+
 - GPR#814: fix the Buffer.add_substring bounds check to handle overflow
   (Jeremy Yallop)
 
