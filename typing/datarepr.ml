@@ -21,7 +21,7 @@ open Types
 open Btype
 
 (* Simplified version of Ctype.free_vars *)
-let free_vars ?(param=false) ty =
+let free_vars ty =
   let ret = ref TypeSet.empty in
   let rec loop ty =
     let ty = repr ty in
@@ -33,11 +33,8 @@ let free_vars ?(param=false) ty =
       | Tvariant row ->
           let row = row_repr row in
           iter_row loop row;
-          if not (static_row row) then begin
-            match row.row_more.desc with
-            | Tvar _ when param -> ret := TypeSet.add ty !ret
-            | _ -> loop row.row_more
-          end
+          if not (static_row row) then
+            loop row.row_more
       (* XXX: What about Tobject ? *)
       | _ ->
           iter_type_expr loop ty
@@ -46,6 +43,38 @@ let free_vars ?(param=false) ty =
   loop ty;
   unmark_type ty;
   !ret
+
+let free_vars_params ty =
+  (* Return a list using a "stable" ordering which does not
+     depend on the internal ids on type variables
+     #7372
+  *)
+  let res = ref [] in
+  let add ty = if not (List.memq ty !res) then res := ty :: !res in
+  let rec loop ty =
+    let ty = repr ty in
+    if ty.level >= lowest_level then begin
+      ty.level <- pivot_level - ty.level;
+      match ty.desc with
+      | Tvar _ ->
+          add ty
+      | Tvariant row ->
+          let row = row_repr row in
+          iter_row loop row;
+          if not (static_row row) then begin
+            match row.row_more.desc with
+            | Tvar _ -> add ty (* #6716 *)
+            | _ -> loop row.row_more
+          end
+      | _ ->
+          iter_type_expr loop ty
+    end
+  in
+  loop ty;
+  unmark_type ty;
+  List.rev !res
+
+
 
 let newgenconstr path tyl = newgenty (Tconstr (path, tyl, ref Mnil))
 
@@ -70,8 +99,7 @@ let constructor_args priv cd_args cd_res path rep =
   match cd_args with
   | Cstr_tuple l -> existentials, l, None
   | Cstr_record lbls ->
-      let arg_vars_set = free_vars ~param:true (newgenty (Ttuple tyl)) in
-      let type_params = TypeSet.elements arg_vars_set in
+      let type_params = free_vars_params (newgenty (Ttuple tyl)) in
       let type_unboxed =
         match rep with
         | Record_unboxed _ -> { unboxed = true; default = false }
