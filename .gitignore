@@ -300,6 +300,10 @@
 /testsuite/tests/tool-lexyacc/grammar.mli
 /testsuite/tests/tool-lexyacc/grammar.ml
 
+/testsuite/tests/typing-multifile/a.ml
+/testsuite/tests/typing-multifile/b.ml
+/testsuite/tests/typing-multifile/c.ml
+
 /testsuite/tests/unboxed-primitive-args/main.ml
 /testsuite/tests/unboxed-primitive-args/stubs.c
 
