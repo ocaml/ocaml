@@ -208,6 +208,9 @@ OCaml 4.04.0:
   file descriptor doesn't wrap a regular file (win32unix only)
   (Andreas Hauptmann, review by David Allsopp)
 
+- PR#7288: flatten : Avoid confusion
+  (Damien Doligez, report by user 'tormen')
+
 ### Build system:
 
 * GPR#512, GPR#587: Installed `ocamlc`, `ocamlopt`, and `ocamllex` are
