@@ -1350,33 +1350,7 @@ let rec prefix_idents root pos sub = function
         prefix_idents root pos (Subst.add_type id p sub) rem in
       (p::pl, final_sub)
 
-let subst_signature sub sg =
-  List.map
-    (fun item ->
-      match item with
-      | Sig_value(id, decl) ->
-          Sig_value (id, Subst.value_description sub decl)
-      | Sig_type(id, decl, x) ->
-          Sig_type(id, Subst.type_declaration sub decl, x)
-      | Sig_typext(id, ext, es) ->
-          Sig_typext (id, Subst.extension_constructor sub ext, es)
-      | Sig_module(id, mty, x) ->
-          Sig_module(id, Subst.module_declaration sub mty,x)
-      | Sig_modtype(id, decl) ->
-          Sig_modtype(id, Subst.modtype_declaration sub decl)
-      | Sig_class(id, decl, x) ->
-          Sig_class(id, Subst.class_declaration sub decl, x)
-      | Sig_class_type(id, decl, x) ->
-          Sig_class_type(id, Subst.cltype_declaration sub decl, x)
-    )
-    sg
-
-
-let prefix_idents_and_subst root sub sg =
-  let (pl, sub) = prefix_idents root 0 sub sg in
-  pl, sub, lazy (subst_signature sub sg)
-
-let prefix_idents_and_subst root sub sg =
+let prefix_idents root sub sg =
   if sub = Subst.identity then
     let sgs =
       try
@@ -1389,11 +1363,11 @@ let prefix_idents_and_subst root sub sg =
     try
       List.assq sg !sgs
     with Not_found ->
-      let r = prefix_idents_and_subst root sub sg in
+      let r = prefix_idents root 0 sub sg in
       sgs := (sg, r) :: !sgs;
       r
   else
-    prefix_idents_and_subst root sub sg
+    prefix_idents root 0 sub sg
 
 (* Compute structure descriptions *)
 
@@ -1419,7 +1393,7 @@ and components_of_module_maker (env, sub, path, mty) =
           comp_modules = Tbl.empty; comp_modtypes = Tbl.empty;
           comp_components = Tbl.empty; comp_classes = Tbl.empty;
           comp_cltypes = Tbl.empty } in
-      let pl, sub, _ = prefix_idents_and_subst path sub sg in
+      let pl, sub = prefix_idents path sub sg in
       let env = ref env in
       let pos = ref 0 in
       List.iter2 (fun item path ->
