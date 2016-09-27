@@ -84,8 +84,12 @@ let extract_sig_open env loc mty =
 
 let type_open_ ?toplevel ovf env loc lid =
   let path = Typetexp.lookup_module ~load:true env lid.loc lid.txt in
-  (* TODO: handle same errors as in extract_sig_open *)
-  path, Env.open_signature ~loc ?toplevel ovf path env
+  match Env.open_signature ~loc ?toplevel ovf path env with
+  | Some env -> path, env
+  | None ->
+      let md = Env.find_module path env in
+      ignore (extract_sig_open env lid.loc md.md_type);
+      assert false
 
 let type_open ?toplevel env sod =
   let (path, newenv) =

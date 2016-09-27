@@ -1745,13 +1745,7 @@ let rec add_signature sg env =
 
 (* Open a signature path *)
 
-let open_signature slot root env0 =
-  let comps =
-    match get_components (find_module_descr root env0) with
-    | Structure_comps c -> c
-    | Functor_comps _ -> assert false
-  in
-
+let add_components slot root env0 comps =
   let add_l w comps env0 =
     Tbl.fold
       (fun name ->
@@ -1815,10 +1809,18 @@ let open_signature slot root env0 =
     modules;
   }
 
+let open_signature slot root env0 =
+  match get_components (find_module_descr root env0) with
+  | Functor_comps _ -> None
+  | Structure_comps comps -> Some (add_components slot root env0 comps)
+
+
 (* Open a signature from a file *)
 
 let open_pers_signature name env =
-  open_signature None (Pident(Ident.create_persistent name)) env
+  match open_signature None (Pident(Ident.create_persistent name)) env with
+  | Some env -> env
+  | None -> assert false (* a compilation unit cannot refer to a functor *)
 
 let open_signature ?(loc = Location.none) ?(toplevel = false) ovf root env =
   if not toplevel && ovf = Asttypes.Fresh && not loc.Location.loc_ghost

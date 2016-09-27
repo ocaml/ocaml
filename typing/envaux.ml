@@ -63,7 +63,10 @@ let rec env_from_summary sum subst =
       | Env_open(s, path) ->
           let env = env_from_summary s subst in
           let path' = Subst.module_path subst path in
-          Env.open_signature Asttypes.Override path' env
+          begin match Env.open_signature Asttypes.Override path' env with
+          | Some env -> env
+          | None -> assert false
+          end
       | Env_functor_arg(Env_module(s, id, desc), id') when Ident.same id id' ->
           Env.add_module_declaration ~check:false
             id (Subst.module_declaration subst desc)

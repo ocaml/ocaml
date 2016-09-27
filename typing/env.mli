@@ -153,11 +153,12 @@ val add_item: signature_item -> t -> t
 val add_signature: signature -> t -> t
 
 (* Insertion of all fields of a signature, relative to the given path.
-   Used to implement open. *)
-
+   Used to implement open. Returns None if the path refers to a functor,
+   not a structure. *)
 val open_signature:
     ?loc:Location.t -> ?toplevel:bool -> Asttypes.override_flag -> Path.t ->
-      t -> t
+      t -> t option
+
 val open_pers_signature: string -> t -> t
 
 (* Insertion by name *)
