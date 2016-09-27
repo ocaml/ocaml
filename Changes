@@ -340,6 +340,9 @@ OCaml 4.04.0:
 - PR#7165, GPR#494: uncaught exception on invalid lexer directive
   (Gabriel Scherer, report by KC Sivaramakrishnan using afl-fuzz)
 
+- PR#7369: Str.regexp raises "Invalid_argument: index out of bounds"
+  (Damien Doligez, report by John Whitington)
+
 * GPR#533: Thread library: fixed [Thread.wait_signal] so that it
   converts back the signal number returned by [sigwait] to an
   OS-independent number

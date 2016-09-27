@@ -248,7 +248,7 @@ let compile fold_case re =
     incr progpos in
   (* Reserve an instruction slot and return its position *)
   let emit_hole () =
-    let p = !progpos in incr progpos; p in
+    let p = !progpos in emit_instr op_CHAR 0; p in
   (* Fill a reserved instruction slot with a GOTO or PUSHBACK instruction *)
   let patch_instr pos opc dest =
     (!prog).(pos) <- (instr opc (displ dest pos)) in
