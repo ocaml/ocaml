@@ -145,6 +145,9 @@ OCaml 4.04.0:
   are registered with `GC.finalise_last`
   (François Bobot reviewed by Damien Doligez and Leo White)
 
+- GPR#590: Do not perform compaction if the real overhead is less than expected
+  (Thomas Braibant)
+
 ### Tools:
 
 - MPR#7323, GPR#750: ensure "ocamllex -ml" works with -safe-string

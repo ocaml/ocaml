@@ -527,6 +527,9 @@ void caml_compact_heap_maybe (void)
   caml_gc_message (0x200, "FL size at phase change = %"
                           ARCH_INTNAT_PRINTF_FORMAT "u words\n",
                    (uintnat) caml_fl_wsz_at_phase_change);
+  caml_gc_message (0x200, "FL current size = %"
+                          ARCH_INTNAT_PRINTF_FORMAT "u words\n",
+                   (uintnat) caml_fl_cur_wsz);                
   caml_gc_message (0x200, "Estimated overhead = %"
                           ARCH_INTNAT_PRINTF_FORMAT "u%%\n",
                    (uintnat) fp);
@@ -540,7 +543,10 @@ void caml_compact_heap_maybe (void)
     caml_gc_message (0x200, "Measured overhead: %"
                             ARCH_INTNAT_PRINTF_FORMAT "u%%\n",
                      (uintnat) fp);
-
-    caml_compact_heap ();
+    if (fp >= caml_percent_max)
+         caml_compact_heap ();
+    else 
+         caml_gc_message (0x200, "Automatic compaction aborted.\n", 0);
+         
   }
 }
