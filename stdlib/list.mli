@@ -89,8 +89,7 @@ val concat : 'a list list -> 'a list
    (length of the argument + length of the longest sub-list). *)
 
 val flatten : 'a list list -> 'a list
-(** Same as [concat].  Not tail-recursive
-   (length of the argument + length of the longest sub-list). *)
+(** An alias for [concat]. *)
 
 
 (** {6 Iterators} *)
