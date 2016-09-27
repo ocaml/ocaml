@@ -157,7 +157,7 @@ val add_signature: signature -> t -> t
 
 val open_signature:
     ?loc:Location.t -> ?toplevel:bool -> Asttypes.override_flag -> Path.t ->
-      signature -> t -> t
+      t -> t
 val open_pers_signature: string -> t -> t
 
 (* Insertion by name *)

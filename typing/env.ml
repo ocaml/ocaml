@@ -1777,43 +1777,81 @@ let rec add_signature sg env =
 
 (* Open a signature path *)
 
-let open_signature slot root sg env0 =
-  (* First build the paths and substitution *)
-  let (pl, _sub, sg) = prefix_idents_and_subst root Subst.identity sg in
-  let sg = Lazy.force sg in
+let open_signature slot root env0 =
+  let comps =
+    match get_components (find_module_descr root env0) with
+    | Structure_comps c -> c
+    | Functor_comps _ -> assert false
+  in
 
-  (* Then enter the components in the environment after substitution *)
-
-  let newenv =
-    List.fold_left2
-      (fun env item p ->
-        match item with
-          Sig_value(id, decl) ->
-            store_value slot (Ident.hide id) p decl env env0
-        | Sig_type(id, decl, _) ->
-            store_type ~check:false slot (Ident.hide id) p decl env env0
-        | Sig_typext(id, ext, _) ->
-            store_extension ~check:false slot (Ident.hide id) p ext env env0
-        | Sig_module(id, mty, _) ->
-            store_module ~check:false slot (Ident.hide id) p mty env env0
-        | Sig_modtype(id, decl) ->
-            store_modtype slot (Ident.hide id) p decl env env0
-        | Sig_class(id, decl, _) ->
-            store_class slot (Ident.hide id) p decl env env0
-        | Sig_class_type(id, decl, _) ->
-            store_cltype slot (Ident.hide id) p decl env env0
+  let add_l w comps env0 =
+    Tbl.fold
+      (fun name ->
+         List.fold_right
+           (fun (c, _) acc ->
+              EnvTbl.add slot w (Ident.hide (Ident.create name)) c acc env0
+           )
       )
-      env0 sg pl in
-  { newenv with summary = Env_open(env0.summary, root) }
+      comps env0
+  in
+  let add_map w comps env0 f =
+    Tbl.fold
+      (fun name (c, pos) acc ->
+         EnvTbl.add slot w (Ident.hide (Ident.create name))
+           (Pdot (root, name, pos), f c) acc env0
+      )
+      comps env0
+  in
+  let add w comps env0 = add_map w comps env0 (fun x -> x) in
+  let constrs =
+    add_l (fun x -> `Constructor x) comps.comp_constrs env0.constrs
+  in
+  let labels =
+    add_l (fun x -> `Label x) comps.comp_labels env0.labels
+  in
+  let values =
+    add (fun x -> `Value x) comps.comp_values env0.values
+  in
+  let types =
+    add (fun x -> `Type x) comps.comp_types env0.types
+  in
+  let modtypes =
+    add (fun x -> `Module_type x) comps.comp_modtypes env0.modtypes
+  in
+  let classes =
+    add (fun x -> `Class x) comps.comp_classes env0.classes
+  in
+  let cltypes =
+    add (fun x -> `Class_type x) comps.comp_cltypes env0.cltypes
+  in
+  let components =
+    add (fun x -> `Component x) comps.comp_components env0.components
+  in
+  let modules =
+    (* one should avoid this force, by allowing lazy in env as well *)
+    add_map (fun x -> `Module x) comps.comp_modules env0.modules
+      (fun data -> md (EnvLazy.force subst_modtype_maker data))
+  in
+
+  { env0 with
+    summary = Env_open(env0.summary, root);
+    constrs;
+    labels;
+    values;
+    types;
+    modtypes;
+    classes;
+    cltypes;
+    components;
+    modules;
+  }
 
 (* Open a signature from a file *)
 
 let open_pers_signature name env =
-  let ps = find_pers_struct name in
-  open_signature None (Pident(Ident.create_persistent name))
-    (Lazy.force ps.ps_sig) env
+  open_signature None (Pident(Ident.create_persistent name)) env
 
-let open_signature ?(loc = Location.none) ?(toplevel = false) ovf root sg env =
+let open_signature ?(loc = Location.none) ?(toplevel = false) ovf root env =
   if not toplevel && ovf = Asttypes.Fresh && not loc.Location.loc_ghost
      && (Warnings.is_active (Warnings.Unused_open "")
          || Warnings.is_active (Warnings.Open_shadow_identifier ("", ""))
@@ -1841,9 +1879,9 @@ let open_signature ?(loc = Location.none) ?(toplevel = false) ovf root sg env =
       end;
       used := true
     in
-    open_signature (Some slot) root sg env
+    open_signature (Some slot) root env
   end
-  else open_signature None root sg env
+  else open_signature None root env
 
 (* Read a signature from a file *)
 
