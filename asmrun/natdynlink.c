@@ -124,7 +124,7 @@ CAMLprim value caml_natdynlink_run(void *handle, value symbol) {
   }
 
   if( caml_natdynlink_hook != NULL ) caml_natdynlink_hook(handle,unit);
-  
+
   entrypoint = optsym("__entry");
   if (NULL != entrypoint) result = caml_callback((value)(&entrypoint), 0);
   else result = Val_unit;
