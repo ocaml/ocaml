@@ -214,6 +214,9 @@ OCaml 4.04.0:
 - PR#7288: flatten : Avoid confusion
   (Damien Doligez, report by user 'tormen')
 
+- PR#7355: Gc.finalise and lazy values
+  (Jeremy Yallop)
+
 ### Build system:
 
 * GPR#512, GPR#587: Installed `ocamlc`, `ocamlopt`, and `ocamllex` are
