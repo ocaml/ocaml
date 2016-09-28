@@ -55,6 +55,7 @@ let import_set_of_closures =
   in
   let aux set_of_closures_id =
     let ex_info = Compilenv.approx_env () in
+    let root_symbol = Compilenv.current_unit_symbol () in
     let function_declarations =
       try
         Set_of_closures_id.Map.find set_of_closures_id
@@ -63,7 +64,7 @@ let import_set_of_closures =
         Misc.fatal_errorf "[functions] does not map set of closures ID %a. \
             ex_info = %a"
           Set_of_closures_id.print set_of_closures_id
-          Export_info.print_all ex_info
+          Export_info.print_all (ex_info, [root_symbol])
     in
     import_function_declarations function_declarations
   in
