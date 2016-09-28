@@ -209,7 +209,7 @@ and structure_components = {
   mutable comp_types:
    (string, ((type_declaration * type_descriptions) * int)) Tbl.t;
   mutable comp_modules:
-   (string, ((Subst.t * Types.module_type,module_type) EnvLazy.t * int)) Tbl.t;
+   (string, ((Subst.t * module_declaration, module_declaration) EnvLazy.t * int)) Tbl.t;
   mutable comp_modtypes: (string, (modtype_declaration * int)) Tbl.t;
   mutable comp_components: (string, (module_components * int)) Tbl.t;
   mutable comp_classes: (string, (class_declaration * int)) Tbl.t;
@@ -257,7 +257,7 @@ let check_shadowing env = function
   | `Class None | `Class_type None | `Component None ->
       None
 
-let subst_modtype_maker (subst, mty) = Subst.modtype subst mty
+let subst_modtype_maker (subst, md) = {md with md_type = Subst.modtype subst md.md_type}
 
 let empty = {
   values = EnvTbl.empty; constrs = EnvTbl.empty;
@@ -688,7 +688,7 @@ let find_module ~alias path env =
       begin match get_components (find_module_descr p env) with
         Structure_comps c ->
           let (data, _pos) = Tbl.find s c.comp_modules in
-          md (EnvLazy.force subst_modtype_maker data)
+          EnvLazy.force subst_modtype_maker data
       | Functor_comps _ ->
           raise Not_found
       end
@@ -1436,15 +1436,15 @@ and components_of_module_maker (env, sub, path, mty) =
               add_to_tbl (Ident.name id) (descr, !pos) c.comp_constrs;
             incr pos
         | Sig_module(id, md, _) ->
-            let mty = md.md_type in
-            let mty' = EnvLazy.create (sub, mty) in
+            let md' = EnvLazy.create (sub, md) in
             c.comp_modules <-
-              Tbl.add (Ident.name id) (mty', !pos) c.comp_modules;
+              Tbl.add (Ident.name id) (md', !pos) c.comp_modules;
             let deprecated =
               Builtin_attributes.deprecated_of_attrs md.md_attributes
             in
             let comps =
-              components_of_module ~deprecated ~loc:md.md_loc !env sub path mty
+              components_of_module ~deprecated ~loc:md.md_loc !env sub path
+                md.md_type
             in
             c.comp_components <-
               Tbl.add (Ident.name id) (comps, !pos) c.comp_components;
@@ -1793,7 +1793,7 @@ let add_components slot root env0 comps =
   let modules =
     (* one should avoid this force, by allowing lazy in env as well *)
     add_map (fun x -> `Module x) comps.comp_modules env0.modules
-      (fun data -> md (EnvLazy.force subst_modtype_maker data))
+      (fun data -> EnvLazy.force subst_modtype_maker data)
   in
 
   { env0 with
@@ -1998,7 +1998,7 @@ let fold_modules f lid env acc =
             Tbl.fold
               (fun s (data, pos) acc ->
                 f s (Pdot (p, s, pos))
-                    (md (EnvLazy.force subst_modtype_maker data)) acc)
+                    (EnvLazy.force subst_modtype_maker data) acc)
               c.comp_modules
               acc
         | Functor_comps _ ->
