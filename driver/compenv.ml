@@ -627,7 +627,7 @@ let process_deferred_actions env =
               | ProcessImplementation _
               | ProcessInterface _
               | _ -> false) !deferred_actions) > 1 then
-            fatal "Options -c -o are incompatible with compiling multiple files";
+            fatal "Options -c -o are incompatible with compiling multiple files"
         end;
   end;
   if !make_archive && List.exists (function
