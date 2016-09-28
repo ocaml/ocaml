@@ -1220,6 +1220,9 @@ OCaml 4.03.0 (25 Apr 2016):
   given some cyclic recusive module expression
   (Jacques Garrigue, report by jmcarthur)
 
+- PR#7378: Manual major GC fails to compact the heap
+  (Krzysztof Pszeniczny)
+
 - GPR#205: Clear caml_backtrace_last_exn before registering as root
   (report and fix by Frederic Bour)
 
