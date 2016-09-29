@@ -1641,13 +1641,11 @@ let rec local_non_recursive_abbrev strict visited env p ty =
         if Path.same p p' then raise Occur;
         if is_contractive env p' then () else
         let visited = ty :: visited in
-        begin try
-          List.iter (local_non_recursive_abbrev true visited env p) args
-        with Occur -> try
+        begin try (* try expanding first, since [p] could be hidden *)
           local_non_recursive_abbrev strict visited env p
             (try_expand_head try_expand_once env ty)
         with Cannot_expand ->
-          raise Occur
+          List.iter (local_non_recursive_abbrev true visited env p) args
         end
     | _ ->
         if strict then (* PR#7374 *)
