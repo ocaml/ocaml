@@ -1632,7 +1632,8 @@ let occur_in env ty0 t =
 (* PR#6405: not needed since we allow recursion and work on normalized types *)
 (* PR#6992: we actually need it for contractiveness *)
 (* This is a simplified version of occur, only for the rectypes case *)
-let rec local_non_recursive_abbrev visited env p ty =
+let rec local_non_recursive_abbrev strict visited env p ty =
+  (*Format.eprintf "@[Check %s =@ %a@]@." (Path.name p) !Btype.print_raw ty;*)
   let ty = repr ty in
   if not (List.memq ty visited) then begin
     match ty.desc with
@@ -1641,18 +1642,20 @@ let rec local_non_recursive_abbrev visited env p ty =
         if is_contractive env p' then () else
         let visited = ty :: visited in
         begin try
-          List.iter (local_non_recursive_abbrev visited env p) args
+          List.iter (local_non_recursive_abbrev true visited env p) args
         with Occur -> try
-          local_non_recursive_abbrev visited env p
+          local_non_recursive_abbrev strict visited env p
             (try_expand_head try_expand_once env ty)
         with Cannot_expand ->
           raise Occur
         end
-    | _ -> ()
+    | _ ->
+        if strict then (* PR#7374 *)
+          iter_type_expr (local_non_recursive_abbrev true visited env p) ty
   end
 
 let local_non_recursive_abbrev env p ty =
-  try local_non_recursive_abbrev [] env p ty; true
+  try local_non_recursive_abbrev false [] env p ty; true
   with Occur -> false
 
 

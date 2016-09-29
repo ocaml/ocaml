@@ -305,6 +305,9 @@ OCaml 4.04.0:
 - PR#7330: Missing exhaustivity check for extensible variant
   (Jacques Garrigue, report by Elarnon *)
 
+- PR#7374: Contractiveness check unsound with constraints
+  (Jacques Garrigue, report by Leo White)
+
 - PR#7378: GADT constructors can be re-exposed with an incompatible type
   (Jacques Garrigue, report by Alain Frisch)
 
