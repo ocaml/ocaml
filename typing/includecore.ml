@@ -217,7 +217,8 @@ and compare_records env params1 params2 n labels1 labels2 =
       else if mut1 <> mut2 then [Field_mutable lab1] else
       if Ctype.equal env true (arg1::params1)
                               (arg2::params2)
-      then compare_records env (arg1::params1) (arg2::params2) (n+1) rem1 rem2
+      then (* add arguments to the parameters, cf. PR#7378 *)
+        compare_records env (arg1::params1) (arg2::params2) (n+1) rem1 rem2
       else [Field_type lab1]
 
 let type_declarations ?(equality = false) env name decl1 id decl2 =
