@@ -445,7 +445,9 @@ let simplif_prim_pure fpc p (args, approxs) dbg =
     when n < List.length ul ->
       (List.nth ul n, field_approx n approx)
   (* Strings *)
-  | (Pstringlength | Pbyteslength), _, [ Value_const(Uconst_ref(_, Some (Uconst_string s))) ] ->
+  | (Pstringlength | Pbyteslength),
+     _,
+     [ Value_const(Uconst_ref(_, Some (Uconst_string s))) ] ->
       make_const_int (String.length s)
   (* Identity *)
   | (Pidentity | Pbytes_to_string | Pbytes_of_string), [arg1], [app1] ->
