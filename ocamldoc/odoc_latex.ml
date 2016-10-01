@@ -30,6 +30,7 @@ open Module
 let separate_files = ref false
 
 let latex_titles = ref [
+  0, "section" ;
   1, "section" ;
   2, "subsection" ;
   3, "subsubsection" ;
@@ -1218,7 +1219,7 @@ class latex =
         let subtitle = match first_t with
           | [] -> []
           | t -> (Raw " : ") :: t in
-        [ Title (1, None, title @ subtitle ) ]
+        [ Title (0, None, title @ subtitle ) ]
       in
       self#latex_of_text fmt text;
       self#latex_for_module_label fmt m;

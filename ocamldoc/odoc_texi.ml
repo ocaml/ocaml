@@ -248,6 +248,7 @@ class text =
 
   (** Associations between a title number and texinfo code. *)
     val titles = [
+      0, "@chapter " ;
       1, "@chapter " ;
       2, "@section " ;
       3, "@subsection " ;
@@ -258,6 +259,7 @@ class text =
       "@unnumberedsubsubsec "
 
     val headings = [
+      0, "@majorheading " ;
       1, "@majorheading " ;
       2, "@heading " ;
       3, "@subheading " ;
