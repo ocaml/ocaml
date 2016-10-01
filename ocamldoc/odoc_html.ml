@@ -472,9 +472,9 @@ class virtual text =
       let label1 = self#create_title_label (n, label_opt, t) in
       let (tag_o, tag_c) =
         if n > 6 then
-          (Printf.sprintf "div class=\"h%d\"" n, "div")
+          (Printf.sprintf "div class=\"h%d\"" (n+1), "div")
         else
-          let t = Printf.sprintf "h%d" n in (t, t)
+          let t = Printf.sprintf "h%d" (n+1) in (t, t)
       in
       bs b "<";
       bp b "%s id=\"%s\"" tag_o (Naming.label_target label1);
@@ -874,42 +874,44 @@ class html =
 
         "h1 { font-size : 20pt ; text-align: center; }" ;
 
-        "h2 { font-size : 20pt ; border: 1px solid #000000; "^
+        "h2 { font-size : 20pt ; text-align: center; }" ;
+
+        "h3 { font-size : 20pt ; border: 1px solid #000000; "^
         "margin-top: 5px; margin-bottom: 2px;"^
         "text-align: center; background-color: #90BDFF ;"^
         "padding: 2px; }" ;
 
-        "h3 { font-size : 20pt ; border: 1px solid #000000; "^
+        "h4 { font-size : 20pt ; border: 1px solid #000000; "^
         "margin-top: 5px; margin-bottom: 2px;"^
         "text-align: center; background-color: #90DDFF ;"^
         "padding: 2px; }" ;
 
-        "h4 { font-size : 20pt ; border: 1px solid #000000; "^
+        "h5 { font-size : 20pt ; border: 1px solid #000000; "^
         "margin-top: 5px; margin-bottom: 2px;"^
         "text-align: center; background-color: #90EDFF ;"^
         "padding: 2px; }" ;
 
-        "h5 { font-size : 20pt ; border: 1px solid #000000; "^
+        "h6 { font-size : 20pt ; border: 1px solid #000000; "^
         "margin-top: 5px; margin-bottom: 2px;"^
         "text-align: center; background-color: #90FDFF ;"^
         "padding: 2px; }" ;
 
-        "h6 { font-size : 20pt ; border: 1px solid #000000; "^
+        "div.h7 { font-size : 20pt ; border: 1px solid #000000; "^
         "margin-top: 5px; margin-bottom: 2px;"^
         "text-align: center; background-color: #90BDFF ; "^
         "padding: 2px; }" ;
 
-        "div.h7 { font-size : 20pt ; border: 1px solid #000000; "^
+        "div.h8 { font-size : 20pt ; border: 1px solid #000000; "^
         "margin-top: 5px; margin-bottom: 2px;"^
         "text-align: center; background-color: #E0FFFF ; "^
         "padding: 2px; }" ;
 
-        "div.h8 { font-size : 20pt ; border: 1px solid #000000; "^
+        "div.h9 { font-size : 20pt ; border: 1px solid #000000; "^
         "margin-top: 5px; margin-bottom: 2px;"^
         "text-align: center; background-color: #F0FFFF ; "^
         "padding: 2px; }" ;
 
-        "div.h9 { font-size : 20pt ; border: 1px solid #000000; "^
+        "div.h10 { font-size : 20pt ; border: 1px solid #000000; "^
         "margin-top: 5px; margin-bottom: 2px;"^
         "text-align: center; background-color: #FFFFFF ; "^
         "padding: 2px; }" ;
@@ -2312,7 +2314,7 @@ class html =
       let text2 =
         match text with
         | (Odoc_info.Raw s) :: q ->
-            (Odoc_info.Title (2, None, [Odoc_info.Raw s])) :: q
+            (Odoc_info.Title (1, None, [Odoc_info.Raw s])) :: q
         | _ -> text
       in
       self#html_of_text ~with_p:true b text2
