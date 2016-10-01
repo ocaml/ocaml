@@ -182,7 +182,7 @@ val equal: t -> t -> bool
 
 (**/**)
 
-(** {6 Deprecated functions} *)
+(** {1 Deprecated functions} *)
 
 external format : string -> int32 -> string = "caml_int32_format"
 (** Do not use this deprecated function.  Instead,

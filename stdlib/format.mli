@@ -41,7 +41,7 @@
 
 *)
 
-(** {6 Introduction}
+(** {1 Introduction}
    For a gentle introduction to the basics of pretty-printing using
    [Format], read
    {{:http://caml.inria.fr/resources/doc/guides/format.en.html}
@@ -111,7 +111,7 @@ type formatter
 (** Abstract data corresponding to a pretty-printer (also called a
     formatter) and all its machinery. See also {!section:formatter}. *)
 
-(** {6:boxes Pretty-printing boxes} *)
+(** {1:boxes Pretty-printing boxes} *)
 
 (** The pretty-printing engine uses the concepts of pretty-printing box and
   break hint to drive indentation and line splitting behavior of the
@@ -211,7 +211,7 @@ val open_hovbox : int -> unit
   current indentation.
 *)
 
-(** {6 Formatting functions} *)
+(** {1 Formatting functions} *)
 
 val pp_print_string : formatter -> string -> unit
 val print_string : string -> unit
@@ -239,7 +239,7 @@ val pp_print_bool : formatter -> bool -> unit
 val print_bool : bool -> unit
 (** Print a boolean in the current pretty-printing box. *)
 
-(** {6:breaks Break hints} *)
+(** {1:breaks Break hints} *)
 
 (** A 'break hint' tells the pretty-printer to output some space or split the
   line whichever way is more appropriate to the current pretty-printing box
@@ -307,7 +307,7 @@ val print_if_newline : unit -> unit
   command.
 *)
 
-(** {6 Pretty-printing termination} *)
+(** {1 Pretty-printing termination} *)
 
 val pp_print_flush : formatter -> unit -> unit
 val print_flush : unit -> unit
@@ -349,7 +349,7 @@ val print_newline : unit -> unit
   box.
 *)
 
-(** {6 Margin} *)
+(** {1 Margin} *)
 
 val pp_set_margin : formatter -> int -> unit
 val set_margin : int -> unit
@@ -369,7 +369,7 @@ val pp_get_margin : formatter -> unit -> int
 val get_margin : unit -> int
 (** Returns the position of the right margin. *)
 
-(** {6 Maximum indentation limit} *)
+(** {1 Maximum indentation limit} *)
 
 val pp_set_max_indent : formatter -> int -> unit
 val set_max_indent : int -> unit
@@ -390,7 +390,7 @@ val pp_get_max_indent : formatter -> unit -> int
 val get_max_indent : unit -> int
 (** Return the maximum indentation limit (in characters). *)
 
-(** {6 Maximum formatting depth} *)
+(** {1 Maximum formatting depth} *)
 
 (** The maximum formatting depth is the maximum number of pretty-printing
   boxes simultaneously open.
@@ -422,7 +422,7 @@ val over_max_boxes : unit -> bool
   been opened.
 *)
 
-(** {6 Tabulation boxes} *)
+(** {1 Tabulation boxes} *)
 
 (**
 
@@ -488,7 +488,7 @@ val print_tbreak : int -> int -> unit
   the current indentation.
 *)
 
-(** {6 Ellipsis} *)
+(** {1 Ellipsis} *)
 
 val pp_set_ellipsis_text : formatter -> string -> unit
 val set_ellipsis_text : string -> unit
@@ -500,7 +500,7 @@ val pp_get_ellipsis_text : formatter -> unit -> string
 val get_ellipsis_text : unit -> string
 (** Return the text of the ellipsis. *)
 
-(** {6:tags Semantic tags} *)
+(** {1:tags Semantic tags} *)
 
 type tag = string
 
@@ -614,7 +614,7 @@ val pp_get_mark_tags : formatter -> unit -> bool
 val get_mark_tags : unit -> bool
 (** Return the current status of tag-marking operations. *)
 
-(** {6 Redirecting the standard formatter output} *)
+(** {1 Redirecting the standard formatter output} *)
 val pp_set_formatter_out_channel :
   formatter -> Pervasives.out_channel -> unit
 val set_formatter_out_channel : Pervasives.out_channel -> unit
@@ -650,7 +650,7 @@ val get_formatter_output_functions :
   unit -> (string -> int -> int -> unit) * (unit -> unit)
 (** Return the current output functions of the standard pretty-printer. *)
 
-(** {6:meaning Redefining formatter output} *)
+(** {1:meaning Redefining formatter output} *)
 
 (** The [Format] module is versatile enough to let you completely redefine
   the meaning of pretty-printing output: you may provide your own functions
@@ -658,7 +658,7 @@ val get_formatter_output_functions :
   all the characters that have to be printed!
 *)
 
-(** {7 Redefining output functions} *)
+(** {2 Redefining output functions} *)
 
 type formatter_out_functions = {
   out_string : string -> int -> int -> unit;
@@ -719,7 +719,7 @@ val get_formatter_out_functions : unit -> formatter_out_functions
   @since 4.01.0
 *)
 
-(** {6:tagsmeaning Redefining semantic tag operations} *)
+(** {1:tagsmeaning Redefining semantic tag operations} *)
 
 type formatter_tag_functions = {
   mark_open_tag : tag -> string;
@@ -761,7 +761,7 @@ val get_formatter_tag_functions : unit -> formatter_tag_functions
 (** Return the current semantic tag operation functions of the standard
   pretty-printer. *)
 
-(** {6:formatter Defining formatters}
+(** {1:formatter Defining formatters}
 
   Defining new formatters permits unrelated output of material in
   parallel on several output devices.
@@ -842,7 +842,7 @@ val formatter_of_out_functions :
   @since 4.06.0
 *)
 
-(** {7:symbolic Symbolic pretty-printing} *)
+(** {2:symbolic Symbolic pretty-printing} *)
 
 (**
   Symbolic pretty-printing is pretty-printing using a symbolic formatter,
@@ -927,7 +927,7 @@ val formatter_of_symbolic_output_buffer : symbolic_output_buffer -> formatter
   @since 4.06.0
 *)
 
-(** {6 Convenience formatting functions.} *)
+(** {1 Convenience formatting functions.} *)
 
 val pp_print_list:
   ?pp_sep:(formatter -> unit -> unit) ->
@@ -947,7 +947,7 @@ val pp_print_text : formatter -> string -> unit
   @since 4.02.0
 *)
 
-(** {6:fpp Formatted pretty-printing} *)
+(** {1:fpp Formatted pretty-printing} *)
 
 (**
   Module [Format] provides a complete set of [printf] like functions for
@@ -1101,7 +1101,7 @@ val kasprintf : (string -> 'a) -> ('b, formatter, unit, 'a) format4 -> 'b
   @since 4.03
 *)
 
-(** {6 Deprecated} *)
+(** {1 Deprecated} *)
 
 val bprintf : Buffer.t -> ('a, formatter, unit) format -> 'a
   [@@ocaml.deprecated]

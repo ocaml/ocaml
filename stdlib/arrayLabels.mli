@@ -211,7 +211,7 @@ val make_float: int -> float array
     {!Array.create_float}. *)
 
 
-(** {6 Sorting} *)
+(** {1 Sorting} *)
 
 
 val sort : cmp:('a -> 'a -> int) -> 'a array -> unit
@@ -258,7 +258,7 @@ val fast_sort : cmp:('a -> 'a -> int) -> 'a array -> unit
 
 (**/**)
 
-(** {6 Undocumented functions} *)
+(** {1 Undocumented functions} *)
 
 (* The following is for system use only. Do not call directly. *)
 

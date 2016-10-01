@@ -50,7 +50,7 @@ let () =
 
 open Parsetree
 
-(** {2 A generic Parsetree mapper} *)
+(** {1 A generic Parsetree mapper} *)
 
 type mapper = {
   attribute: mapper -> attribute -> attribute;
@@ -106,7 +106,7 @@ type mapper = {
 val default_mapper: mapper
 (** A default mapper, which implements a "deep identity" mapping. *)
 
-(** {2 Apply mappers to compilation units} *)
+(** {1 Apply mappers to compilation units} *)
 
 val tool_name: unit -> string
 (** Can be used within a ppx preprocessor to know which tool is
@@ -131,7 +131,7 @@ val run_main: (string list -> mapper) -> unit
     function implements proper error reporting for uncaught
     exceptions. *)
 
-(** {2 Registration API} *)
+(** {1 Registration API} *)
 
 val register_function: (string -> (string list -> mapper) -> unit) ref
 
@@ -153,7 +153,7 @@ val register: string -> (string list -> mapper) -> unit
     the ppx driver.  *)
 
 
-(** {2 Convenience functions to write mappers} *)
+(** {1 Convenience functions to write mappers} *)
 
 val map_opt: ('a -> 'b) -> 'a option -> 'b option
 
@@ -167,7 +167,7 @@ val attribute_of_warning: Location.t -> string -> attribute
     inserted in a generated Parsetree.  The compiler will be
     responsible for reporting the warning. *)
 
-(** {2 Helper functions to call external mappers} *)
+(** {1 Helper functions to call external mappers} *)
 
 val add_ppx_context_str:
     tool_name:string -> Parsetree.structure -> Parsetree.structure
@@ -190,7 +190,7 @@ val drop_ppx_context_sig:
     restore:bool -> Parsetree.signature -> Parsetree.signature
 (** Same as [drop_ppx_context_str], but for signatures. *)
 
-(** {2 Cookies} *)
+(** {1 Cookies} *)
 
 (** Cookies are used to pass information from a ppx processor to
     a further invocation of itself, when called from the OCaml

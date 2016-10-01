@@ -94,7 +94,7 @@ and t_class_type = {
   }
 
 
-(** {2 Functions} *)
+(** {1 Functions} *)
 
 (** Returns the text associated to the given parameter label
    in the given class, or None. *)

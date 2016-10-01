@@ -21,7 +21,7 @@ val init : unit -> unit
 (** Emit warnings for unattached and ambiguous docstrings *)
 val warn_bad_docstrings : unit -> unit
 
-(** {3 Docstrings} *)
+(** {2 Docstrings} *)
 
 (** Documentation comments *)
 type docstring
@@ -38,7 +38,7 @@ val docstring_body : docstring -> string
 (** Get the location of a docstring *)
 val docstring_loc : docstring -> Location.t
 
-(** {3 Set functions}
+(** {2 Set functions}
 
    These functions are used by the lexer to associate docstrings to
    the locations of tokens. *)
@@ -58,7 +58,7 @@ val set_pre_extra_docstrings : Lexing.position -> docstring list -> unit
 (** Docstrings immediately preceding the token which follows this one *)
 val set_post_extra_docstrings : Lexing.position -> docstring list -> unit
 
-(** {3 Items}
+(** {2 Items}
 
     The {!docs} type represents documentation attached to an item. *)
 
@@ -93,7 +93,7 @@ val mark_symbol_docs : unit -> unit
     two positions (for ambiguity warnings) *)
 val mark_rhs_docs : int -> int -> unit
 
-(** {3 Fields and constructors}
+(** {2 Fields and constructors}
 
     The {!info} type represents documentation attached to a field or
     constructor. *)
@@ -114,7 +114,7 @@ val symbol_info : unit -> info
 (** Fetch the field info following the symbol at a given position. *)
 val rhs_info : int -> info
 
-(** {3 Unattached comments}
+(** {2 Unattached comments}
 
     The {!text} type represents documentation which is not attached to
     anything. *)
@@ -137,7 +137,7 @@ val symbol_text_lazy : unit -> text Lazy.t
 val rhs_text : int -> text
 val rhs_text_lazy : int -> text Lazy.t
 
-(** {3 Extra text}
+(** {2 Extra text}
 
     There may be additional text attached to the delimiters of a block
     (e.g. [struct] and [end]). This is fetched by the following
