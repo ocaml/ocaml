@@ -242,33 +242,27 @@ end
 
 (** {1 Generation of Texinfo code} *)
 
+(** {2 Associations between a title number and texinfo code.} *)
+let titles_and_headings = ref [
+    0, ("@chapter ", "@majorheading ")  ;
+    1, ("@chapter ", "@majorheading ")  ;
+    2, ("@section ", "@heading ")  ;
+    3, ("@subsection ", "@subheading ") ;
+    4, ("@subsubsection ", "@subsubheading ")  ;
+  ]
+
+let title = fst
+let heading = snd
+
+let fallback_title =
+  "@unnumberedsubsubsec "
+
+let fallback_heading =
+  "@subsubheading "
+
 (** This class generates Texinfo code from text structures *)
 class text =
   object(self)
-
-
-  (** Associations between a title number and texinfo code. *)
-    val titles = [
-      0, "@chapter " ;
-      1, "@chapter " ;
-      2, "@section " ;
-      3, "@subsection " ;
-      4, "@subsubsection " ;
-    ]
-
-    val fallback_title =
-      "@unnumberedsubsubsec "
-
-    val headings = [
-      0, "@majorheading " ;
-      1, "@majorheading " ;
-      2, "@heading " ;
-      3, "@subheading " ;
-      4, "@subsubheading " ;
-    ]
-
-    val fallback_heading =
-      "@subsubheading "
 
     method escape =
       Texi.escape
@@ -353,7 +347,7 @@ class text =
         [ "@format" ; self#texi_of_text t ; "@end format" ; "" ]
     method texi_of_Title n t =
       let t_begin =
-        try List.assoc n titles
+        try title @@ List.assoc n !titles_and_headings
         with Not_found -> fallback_title in
       t_begin ^ (self#texi_of_text t) ^ "\n"
     method texi_of_Link s t =
@@ -380,7 +374,7 @@ class text =
 
     method heading n t =
       let f =
-        try List.assoc n headings
+        try heading @@ List.assoc n !titles_and_headings
         with Not_found -> fallback_heading
       in
       f ^ (self#texi_of_text t) ^ "\n"
