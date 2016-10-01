@@ -37,7 +37,7 @@ type constant =
      Suffixes are rejected by the typechecker.
   *)
 
-(** {2 Extension points} *)
+(** {1 Extension points} *)
 
 type attribute = string loc * payload
        (* [@id ARG]
@@ -62,7 +62,7 @@ and payload =
   | PTyp of core_type  (* : T *)
   | PPat of pattern * expression option  (* ? P  or  ? P when E *)
 
-(** {2 Core language} *)
+(** {1 Core language} *)
 
 (* Type expressions *)
 
@@ -481,7 +481,7 @@ and extension_constructor_kind =
          | C = D
        *)
 
-(** {2 Class language} *)
+(** {1 Class language} *)
 
 (* Type expressions for the class language *)
 
@@ -647,7 +647,7 @@ and class_field_kind =
 
 and class_declaration = class_expr class_infos
 
-(** {2 Module language} *)
+(** {1 Module language} *)
 
 (* Type expressions for the module language *)
 
@@ -858,7 +858,7 @@ and module_binding =
     }
 (* X = ME *)
 
-(** {2 Toplevel} *)
+(** {1 Toplevel} *)
 
 (* Toplevel phrases *)
 

@@ -19,7 +19,7 @@ type t
 (** The type of thread handles. *)
 
 
-(** {6 Thread creation and termination} *)
+(** {1 Thread creation and termination} *)
 
 val create : ('a -> 'b) -> 'a -> t
 (** [Thread.create funct arg] creates a new thread of control,
@@ -49,7 +49,7 @@ val kill : t -> unit
 (** Terminate prematurely the thread whose handle is given.
    This functionality is available only with bytecode-level threads. *)
 
-(** {6 Suspending threads} *)
+(** {1 Suspending threads} *)
 
 val delay : float -> unit
 (** [delay d] suspends the execution of the calling thread for
@@ -112,7 +112,7 @@ val yield : unit -> unit
 
 (**/**)
 
-(** {6 Synchronization primitives}
+(** {1 Synchronization primitives}
 
    The following primitives provide the basis for implementing
    synchronization functions between threads. Their direct use is

@@ -15,9 +15,9 @@
 
 (** Formatted input functions. *)
 
-(** {6 Introduction} *)
+(** {1 Introduction} *)
 
-(** {7 Functional input with format strings} *)
+(** {2 Functional input with format strings} *)
 
 (** The module {!Scanf} provides formatted input functions or {e scanners}.
 
@@ -48,7 +48,7 @@
     read in the input according to [fmt].
 *)
 
-(** {7 A simple example} *)
+(** {2 A simple example} *)
 
 (** As suggested above, the expression [bscanf ic "%d" f] reads a decimal
     integer [n] from the source of characters [ic] and returns [f n].
@@ -66,7 +66,7 @@
     keyboard, the result we get is [42].
 *)
 
-(** {7 Formatted input as a functional feature} *)
+(** {2 Formatted input as a functional feature} *)
 
 (** The OCaml scanning facility is reminiscent of the corresponding C feature.
     However, it is also largely different, simpler, and yet more powerful:
@@ -81,7 +81,7 @@
     facility is fully type-checked at compile time.
 *)
 
-(** {6 Formatted input channel} *)
+(** {1 Formatted input channel} *)
 
 module Scanning : sig
 
@@ -203,7 +203,7 @@ val stdib : in_channel
 
 end
 
-(** {6 Type of formatted input functions} *)
+(** {1 Type of formatted input functions} *)
 
 type ('a, 'b, 'c, 'd) scanner =
      ('a, Scanning.in_channel, 'b, 'c, 'a -> 'd, 'd) format6 -> 'c
@@ -235,7 +235,7 @@ exception Scan_failure of string
     [Scan_failure].
 *)
 
-(** {6 The general formatted input function} *)
+(** {1 The general formatted input function} *)
 
 val bscanf : Scanning.in_channel -> ('a, 'b, 'c, 'd) scanner
 
@@ -253,7 +253,7 @@ val bscanf : Scanning.in_channel -> ('a, 'b, 'c, 'd) scanner
     string.
 *)
 
-(** {6 Format string description} *)
+(** {1 Format string description} *)
 
 (** The format string is a character string which contains three types of
     objects:
@@ -265,7 +265,7 @@ val bscanf : Scanning.in_channel -> ('a, 'b, 'c, 'd) scanner
       (see scanning {!Scanf.indication}).
 *)
 
-(** {7:space The space character in format strings} *)
+(** {2:space The space character in format strings} *)
 
 (** As mentioned above, a plain character in the format string is just
     matched with the next character of the input; however, two characters are
@@ -285,7 +285,7 @@ val bscanf : Scanning.in_channel -> ('a, 'b, 'c, 'd) scanner
     [Price  =  1    $], or even [Price=1$].
 *)
 
-(** {7:conversion Conversion specifications in format strings} *)
+(** {2:conversion Conversion specifications in format strings} *)
 
 (** Conversion specifications consist in the [%] character, followed by
     an optional flag, an optional field width, and followed by one or
@@ -414,7 +414,7 @@ val bscanf : Scanning.in_channel -> ('a, 'b, 'c, 'd) scanner
     [ocamlyacc]-generated parsers.
 *)
 
-(** {7:indication Scanning indications in format strings} *)
+(** {2:indication Scanning indications in format strings} *)
 
 (** Scanning indications appear just after the string conversions [%s]
     and [%[ range ]] to delimit the end of the token. A scanning
@@ -443,7 +443,7 @@ val bscanf : Scanning.in_channel -> ('a, 'b, 'c, 'd) scanner
     characters).
 *)
 
-(** {7 Exceptions during scanning} *)
+(** {2 Exceptions during scanning} *)
 
 (** Scanners may raise the following exceptions when the input cannot be read
     according to the format string:
@@ -464,7 +464,7 @@ val bscanf : Scanning.in_channel -> ('a, 'b, 'c, 'd) scanner
     simply returns the characters read so far, or [""] if none were ever read.
 *)
 
-(** {6 Specialised formatted input functions} *)
+(** {1 Specialised formatted input functions} *)
 
 val sscanf : string -> ('a, 'b, 'c, 'd) scanner
 (** Same as {!Scanf.bscanf}, but reads from the given string. *)
@@ -490,7 +490,7 @@ val ksscanf :
 (** Same as {!Scanf.kscanf} but reads from the given string.
     @since 4.02.0 *)
 
-(** {6 Reading format strings from input} *)
+(** {1 Reading format strings from input} *)
 
 val bscanf_format :
   Scanning.in_channel -> ('a, 'b, 'c, 'd, 'e, 'f) format6 ->
@@ -535,7 +535,7 @@ val unescaped : string -> string
     @since 4.00.0
 *)
 
-(** {6 Deprecated} *)
+(** {1 Deprecated} *)
 
 val fscanf : Pervasives.in_channel -> ('a, 'b, 'c, 'd) scanner
   [@@ocaml.deprecated "Use Scanning.from_channel then Scanf.bscanf."]

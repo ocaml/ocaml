@@ -29,7 +29,7 @@ let info_section = ref "OCaml"
 
 let info_entry = ref []
 
-(** {2 Some small helper functions} *)
+(** {1 Some small helper functions} *)
 
 let puts_nl chan s =
   output_string chan s ;
@@ -240,11 +240,12 @@ end
 
 
 
-(** {2 Generation of Texinfo code} *)
+(** {1 Generation of Texinfo code} *)
 
 (** This class generates Texinfo code from text structures *)
 class text =
   object(self)
+
 
   (** Associations between a title number and texinfo code. *)
     val titles = [
@@ -283,7 +284,7 @@ class text =
         (List.map self#texi_of_text_element t)
 
 
-    (** {3 Conversion methods}
+    (** {2 Conversion methods}
        [texi_of_????] converts a [text_element] to a Texinfo string. *)
 
     (** Return the Texinfo code for the [text_element] in parameter. *)
@@ -401,7 +402,7 @@ class texi =
     inherit text
     inherit Odoc_to_text.to_text as to_text
 
-    (** {3 Small helper stuff.} *)
+    (** {2 Small helper stuff.} *)
 
     val maxdepth = 4
 
@@ -455,7 +456,7 @@ class texi =
             | Raw s -> Raw (Str.global_replace re rep s)
             | txt -> txt) t
 
-    (** {3 [text] values generation}
+    (** {2 [text] values generation}
        Generates [text] values out of description parts.
        Redefines some of methods of {! Odoc_to_text.to_text}. *)
 
@@ -567,7 +568,7 @@ class texi =
     method texi_of_info i =
       self#texi_of_text (self#text_of_info i)
 
-    (** {3 Conversion of [module_elements] into Texinfo strings}
+    (** {2 Conversion of [module_elements] into Texinfo strings}
        The following functions convert [module_elements] and their
        description to [text] values then to Texinfo strings using the
        functions above. *)
@@ -909,7 +910,7 @@ class texi =
           self#texi_of_text (Newline :: t @ [Newline])
       )
 
-    (** {3 Generating methods }
+    (** {2 Generating methods }
        These methods write Texinfo code to an [out_channel] *)
 
     (** Generate the Texinfo code for the given list of inherited classes.*)

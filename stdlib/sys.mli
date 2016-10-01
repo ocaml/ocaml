@@ -159,7 +159,7 @@ external runtime_parameters : unit -> string = "caml_runtime_parameters"
     @since 4.03.0 *)
 
 
-(** {6 Signal handling} *)
+(** {1 Signal handling} *)
 
 
 type signal_behavior =
@@ -185,7 +185,7 @@ val set_signal : int -> signal_behavior -> unit
 (** Same as {!Sys.signal} but return value is ignored. *)
 
 
-(** {7 Signal numbers for the standard POSIX signals.} *)
+(** {2 Signal numbers for the standard POSIX signals.} *)
 
 val sigabrt : int
 (** Abnormal termination *)
@@ -313,7 +313,7 @@ val runtime_warnings_enabled: unit -> bool
 
     @since 4.03.0 *)
 
-(** {6 Optimization} *)
+(** {1 Optimization} *)
 
 external opaque_identity : 'a -> 'a = "%opaque"
 (** For the purposes of optimization, [opaque_identity] behaves like an

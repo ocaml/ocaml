@@ -19,7 +19,7 @@
 *)
 
 
-(** {6 Generic interface} *)
+(** {1 Generic interface} *)
 
 
 type ('a, 'b) t
@@ -216,7 +216,7 @@ val stats : ('a, 'b) t -> statistics
    buckets by size.
    @since 4.00.0 *)
 
-(** {6 Functorial interface} *)
+(** {1 Functorial interface} *)
 
 (** The functorial interface allows the use of specific comparison
     and hash functions, either for performance/security concerns,
@@ -371,7 +371,7 @@ module MakeSeeded (H : SeededHashedType) : SeededS with type key = H.t
     @since 4.00.0 *)
 
 
-(** {6 The polymorphic hash functions} *)
+(** {1 The polymorphic hash functions} *)
 
 
 val hash : 'a -> int
