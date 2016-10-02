@@ -261,7 +261,7 @@ val rcontains_from : bytes -> int -> char -> bool
 
 val uppercase : bytes -> bytes
   [@@ocaml.deprecated "Use Bytes.uppercase_ascii instead."]
-(* Return a copy of the argument, with all lowercase letters
+(** Return a copy of the argument, with all lowercase letters
    translated to uppercase, including accented letters of the ISO
    Latin-1 (8859-1) character set.
    @deprecated Functions operating on Latin-1 character set are deprecated. *)
