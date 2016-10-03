@@ -271,8 +271,8 @@ module MakeMap(Map : MapArgument) = struct
           Texp_let (rec_flag,
                     map_bindings list,
                     map_expression exp)
-        | Texp_function (label, cases, partial) ->
-          Texp_function (label, map_cases cases, partial)
+        | Texp_function (label, param, cases, partial) ->
+          Texp_function (label, param, map_cases cases, partial)
         | Texp_apply (exp, list) ->
           Texp_apply (map_expression exp,
                       List.map (fun (label, expo) ->

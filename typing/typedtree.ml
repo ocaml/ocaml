@@ -77,7 +77,7 @@ and expression_desc =
     Texp_ident of Path.t * Longident.t loc * Types.value_description
   | Texp_constant of constant
   | Texp_let of rec_flag * value_binding list * expression
-  | Texp_function of arg_label * case list * partial
+  | Texp_function of arg_label * Ident.t * case list * partial
   | Texp_apply of expression * (arg_label * expression option) list
   | Texp_match of expression * case list * case list * partial
   | Texp_try of expression * case list

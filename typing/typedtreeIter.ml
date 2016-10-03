@@ -270,7 +270,7 @@ module MakeIterator(Iter : IteratorArgument) : sig
         | Texp_let (rec_flag, list, exp) ->
             iter_bindings rec_flag list;
             iter_expression exp
-        | Texp_function (_label, cases, _) ->
+        | Texp_function (_label, _param, cases, _) ->
             iter_cases cases
         | Texp_apply (exp, list) ->
             iter_expression exp;

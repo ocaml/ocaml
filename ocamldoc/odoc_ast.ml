@@ -331,7 +331,7 @@ module Analyser =
           in
          (* continue if the body is still a function *)
           match next_exp.exp_desc with
-            Texp_function (_, pat_exp_list, _) ->
+            Texp_function (_, _, pat_exp_list, _) ->
               p :: (tt_analyse_function_parameters env current_comment_opt pat_exp_list)
           | _ ->
               (* something else ; no more parameter *)
@@ -342,7 +342,7 @@ module Analyser =
      let tt_analyse_value env current_module_name comment_opt loc pat_exp rec_flag =
        let (pat, exp) = pat_exp in
        match (pat.pat_desc, exp.exp_desc) with
-         (Typedtree.Tpat_var (ident, _), Typedtree.Texp_function (_, pat_exp_list2, _partial)) ->
+         (Typedtree.Tpat_var (ident, _), Typedtree.Texp_function (_, _, pat_exp_list2, _partial)) ->
            (* a new function is defined *)
            let name_pre = Name.from_ident ident in
            let name = Name.parens_if_infix name_pre in
@@ -431,7 +431,7 @@ module Analyser =
     *)
     let rec tt_analyse_method_expression env current_method_name comment_opt ?(first=true) exp =
       match exp.Typedtree.exp_desc with
-        Typedtree.Texp_function (_, pat_exp_list, _) ->
+        Typedtree.Texp_function (_, _, pat_exp_list, _) ->
           (
            match pat_exp_list with
              [] ->
