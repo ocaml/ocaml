@@ -28,6 +28,7 @@ type t = {
   symbol_for_global' : (Ident.t -> Symbol.t);
   filename : string;
   mutable imported_symbols : Symbol.Set.t;
+  mutable declared_symbols : (Symbol.t * Flambda.constant_defining_value) list;
 }
 
 let add_default_argument_wrappers lam =
@@ -110,41 +111,63 @@ let tupled_function_call_stub original_params unboxed_version
     ~body ~stub:true ~dbg:Debuginfo.none ~inline:Default_inline
     ~specialise:Default_specialise ~is_a_functor:false
 
-let rec eliminate_const_block (const : Lambda.structured_constant)
-      : Lambda.lambda =
-  match const with
-  | Const_block (tag, consts) ->
-    (* CR-soon mshinwell for lwhite: fix location *)
-    Lprim (Pmakeblock (tag, Asttypes.Immutable, None),
-      List.map eliminate_const_block consts, Location.none)
-  | Const_base _
-  | Const_pointer _
-  | Const_immstring _
-  | Const_float_array _ -> Lconst const
+let register_const t (constant:Flambda.constant_defining_value) name
+      : Flambda.constant_defining_value_block_field * string =
+  let current_compilation_unit = Compilation_unit.get_current_exn () in
+  (* Create a variable to ensure uniqueness of the symbol *)
+  let var = Variable.create ~current_compilation_unit name in
+  let symbol =
+    Symbol.create current_compilation_unit
+      (Linkage_name.create (Variable.unique_name var))
+  in
+  t.declared_symbols <- (symbol, constant) :: t.declared_symbols;
+  Symbol symbol, name
 
-let rec close_const t env (const : Lambda.structured_constant)
-      : Flambda.named * string =
+let rec declare_const t (const : Lambda.structured_constant)
+      : Flambda.constant_defining_value_block_field * string =
   match const with
   | Const_base (Const_int c) -> Const (Int c), "int"
   | Const_base (Const_char c) -> Const (Char c), "char"
   | Const_base (Const_string (s, _)) ->
-    if Config.safe_string then Allocated_const (Immutable_string s), "immstring"
-    else Allocated_const (String s), "string"
+    let const, name =
+      if Config.safe_string then
+        Flambda.Allocated_const (Immutable_string s), "immstring"
+      else Flambda.Allocated_const (String s), "string"
+    in
+    register_const t const name
   | Const_base (Const_float c) ->
-    Allocated_const (Float (float_of_string c)), "float"
-  | Const_base (Const_int32 c) -> Allocated_const (Int32 c), "int32"
-  | Const_base (Const_int64 c) -> Allocated_const (Int64 c), "int64"
+    register_const t
+      (Allocated_const (Float (float_of_string c)))
+      "float"
+  | Const_base (Const_int32 c) ->
+    register_const t (Allocated_const (Int32 c)) "int32"
+  | Const_base (Const_int64 c) ->
+    register_const t (Allocated_const (Int64 c)) "int64"
   | Const_base (Const_nativeint c) ->
-    Allocated_const (Nativeint c), "nativeint"
+    register_const t (Allocated_const (Nativeint c)) "nativeint"
   | Const_pointer c -> Const (Const_pointer c), "pointer"
-  | Const_immstring c -> Allocated_const (Immutable_string c), "immstring"
+  | Const_immstring c ->
+    register_const t (Allocated_const (Immutable_string c)) "immstring"
   | Const_float_array c ->
-    Allocated_const (Immutable_float_array (List.map float_of_string c)),
+    register_const t
+      (Allocated_const (Immutable_float_array (List.map float_of_string c)))
       "float_array"
-  | Const_block _ ->
-    Expr (close t env (eliminate_const_block const)), "const_block"
+  | Const_block (tag, consts) ->
+    let const : Flambda.constant_defining_value =
+      Block (Tag.create_exn tag,
+             List.map (fun c -> fst (declare_const t c)) consts)
+    in
+    register_const t const "const_block"
 
-and close t env (lam : Lambda.lambda) : Flambda.t =
+let close_const t (const : Lambda.structured_constant)
+      : Flambda.named * string =
+  match declare_const t const with
+  | Const c, name ->
+    Const c, name
+  | Symbol s, name ->
+    Symbol s, name
+
+let rec close t env (lam : Lambda.lambda) : Flambda.t =
   match lam with
   | Lvar id ->
     begin match Env.find_var_exn env id with
@@ -157,7 +180,7 @@ and close t env (lam : Lambda.lambda) : Flambda.t =
           Ident.print id
     end
   | Lconst cst ->
-    let cst, name = close_const t env cst in
+    let cst, name = close_const t cst in
     name_expr cst ~name:("const_" ^ name)
   | Llet ((Strict | Alias | StrictOpt), _value_kind, id, defining_expr, body) ->
     (* TODO: keep value_kind in flambda *)
@@ -645,6 +668,7 @@ let lambda_to_flambda ~backend ~module_ident ~size ~filename lam
       symbol_for_global' = Backend.symbol_for_global';
       filename;
       imported_symbols = Symbol.Set.empty;
+      declared_symbols = [];
     }
   in
   let module_symbol = Backend.symbol_for_global' module_ident in
@@ -681,6 +705,13 @@ let lambda_to_flambda ~backend ~module_ident ~size ~filename lam
         Array.to_list fields,
         End module_symbol))
   in
+  let program_body =
+    List.fold_left
+      (fun program_body (symbol, constant) : Flambda.program_body ->
+         Let_symbol (symbol, constant, program_body))
+      module_initializer
+      t.declared_symbols
+  in
   { imported_symbols = t.imported_symbols;
-    program_body = module_initializer;
+    program_body;
   }
