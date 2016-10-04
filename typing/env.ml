@@ -259,7 +259,7 @@ module EnvTbl2 =
             begin try
               let (descr, pos) = Tbl.find name components in
               let res = Pdot (root, name, pos), descr in
-              begin match using with
+              if mark then begin match using with
               | None -> ()
               | Some f ->
                   begin try f name (Some (snd (find_name false name next), snd res))
