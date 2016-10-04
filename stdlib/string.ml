@@ -44,23 +44,28 @@ let fill =
 let blit =
   B.blit_string
 
-let concat sep l =
-  match l with
-  | [] -> ""
+let ensure_ge x y = if x >= y then x else invalid_arg "String.concat"
+
+let rec sum_lengths acc seplen = function
+  | [] -> acc
+  | hd :: [] -> length hd + acc
+  | hd :: tl -> sum_lengths (ensure_ge (length hd + seplen + acc) acc) seplen tl
+
+let rec unsafe_blits dst pos sep seplen = function
+    [] -> dst
+  | hd :: [] ->
+    unsafe_blit hd 0 dst pos (length hd); dst
   | hd :: tl ->
-      let num = ref 0 and len = ref 0 in
-      List.iter (fun s -> incr num; len := !len + length s) l;
-      let r = B.create (!len + length sep * (!num - 1)) in
-      unsafe_blit hd 0 r 0 (length hd);
-      let pos = ref(length hd) in
-      List.iter
-        (fun s ->
-          unsafe_blit sep 0 r !pos (length sep);
-          pos := !pos + length sep;
-          unsafe_blit s 0 r !pos (length s);
-          pos := !pos + length s)
-        tl;
-      Bytes.unsafe_to_string r
+    unsafe_blit hd 0 dst pos (length hd);
+    unsafe_blit sep 0 dst (pos + length hd) seplen;
+    unsafe_blits dst (pos + length hd + seplen) sep seplen tl
+
+let concat sep = function
+    [] -> ""
+  | l -> let seplen = length sep in bts @@
+          unsafe_blits 
+            (B.create (sum_lengths 0 seplen l))
+            0 sep seplen l
 
 let iter f s =
   B.iter f (bos s)
