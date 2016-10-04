@@ -188,10 +188,6 @@ static void maybe_reopen_snapshot_channel(void)
 
 extern void caml_spacetime_automatic_save(void);
 
-#ifndef SIGINT
-#define SIGINT -1
-#endif
-
 void caml_spacetime_initialize(void)
 {
   /* Note that this is called very early (even prior to GC initialisation). */
@@ -238,11 +234,13 @@ void caml_spacetime_initialize(void)
         automatic_snapshots = 1;
         open_snapshot_channel();
         if (automatic_snapshots) {
+#ifdef SIGINT
           /* Catch interrupt so that the profile can be completed.
              We do this by marking the signal as handled without
              specifying an actual handler. This causes the signal
              to be handled by a call to exit. */
           caml_set_signal_action(SIGINT, 2);
+#endif
           snapshot_interval = interval / 1e3;
           time = caml_sys_time_unboxed(Val_unit);
           next_snapshot_time = time + snapshot_interval;
