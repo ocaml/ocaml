@@ -861,7 +861,7 @@ class html =
         ".indextable {border: 1px #ddd solid; border-collapse: collapse}";
         ".indextable td, .indextable th {border: 1px #ddd solid; min-width: 80px}";
         ".indextable td.module {background-color: #eee ;  padding-left: 2px; padding-right: 2px}";
-        ".indextable td.module a {color: 4E6272; text-decoration: none; display: block; width: 100%}";
+        ".indextable td.module a {color: #4E6272; text-decoration: none; display: block; width: 100%}";
         ".indextable td.module a:hover {text-decoration: underline; background-color: transparent}";
         ".deprecated {color: #888; font-style: italic}" ;
 
