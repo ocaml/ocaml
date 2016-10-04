@@ -176,15 +176,13 @@ module EnvTbl =
 
     let nothing = fun () -> ()
 
-    let mk_callback rest name using desc =
-      match using with
+    let mk_callback rest name desc = function
       | None -> nothing
       | Some f ->
           (fun () ->
-             let shadow =
-               match rest with [] -> None | (hidden, _) :: _ -> Some (desc, hidden)
-             in
-             f name shadow
+             match rest with
+             | [] -> f name None
+             | (hidden, _) :: _ -> f name (Some (desc, hidden))
           )
 
     let rec find_all name tbl =
@@ -198,7 +196,7 @@ module EnvTbl =
           | exception Not_found -> rest
           | opened ->
               List.map
-                (fun desc -> desc, mk_callback rest name using desc)
+                (fun desc -> desc, mk_callback rest name desc using)
                 opened
               @ rest
 
