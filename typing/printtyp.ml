@@ -265,7 +265,8 @@ let rec normalize_type_path ?(cache=false) env p =
     | ty ->
         (p, Nth (index params ty))
   with
-    Not_found -> (p, Id)
+    Not_found ->
+      (Env.normalize_path None env p, Id)
 
 let penalty s =
   if s <> "" && s.[0] = '_' then
