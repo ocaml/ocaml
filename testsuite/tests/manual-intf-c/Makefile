@@ -9,8 +9,9 @@ LIBUNIX = -I $(BASEDIR)/../otherlibs/unix unix.cma
 
 .PHONY: default
 default: clean $(SOURCES) $(CSOURCES)
-	@printf " ... testing 'a complete example'"
+	@printf " ... testing prog"
 	@$(MAKE) prog > /dev/null && echo " => passed" || echo " => failed"
+	@printf " ... testing prog2"
 	@$(MAKE) prog2 >/dev/null 2>prog2.result || :
 	@$(DIFF) prog2.reference prog2.result >/dev/null \
 	&& echo " => passed" || echo " => failed"
@@ -25,7 +26,7 @@ prog2:  curses.cmo
 
 .PHONY: clean
 clean:
-	@rm -f *.cm* *.o *~ prog prog2 prog2.result
+	@rm -f *.cm* *.o *~ prog prog2
 
 BASEDIR=../..
 include $(BASEDIR)/makefiles/Makefile.common
