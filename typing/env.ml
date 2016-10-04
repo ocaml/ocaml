@@ -180,7 +180,7 @@ module EnvTbl =
       | None -> []
       | Some {using; next; components} ->
           let rest = find_all name next in
-          match Tbl.find name components with
+          match Tbl.find_str name components with
           | exception Not_found -> rest
           | opened ->
               List.map
@@ -257,7 +257,7 @@ module EnvTbl2 =
         begin match tbl.opened with
         | Some {using; root; next; components} ->
             begin try
-              let (descr, pos) = Tbl.find name components in
+              let (descr, pos) = Tbl.find_str name components in
               let res = Pdot (root, name, pos), descr in
               if mark then begin match using with
               | None -> ()
@@ -284,7 +284,7 @@ module EnvTbl2 =
         begin match tbl.opened with
         | Some {root; using; next; components} ->
             begin try
-              let (desc, pos) = Tbl.find name components in
+              let (desc, pos) = Tbl.find_str name components in
               let components = Tbl.add name (f desc, pos) components in
               {tbl with opened = Some {root; using; next; components}}
             with Not_found ->
@@ -303,7 +303,7 @@ module EnvTbl2 =
       | None -> []
       | Some {root; using = _; next; components} ->
           try
-            let (desc, pos) = Tbl.find name components in
+            let (desc, pos) = Tbl.find_str name components in
             (Pdot (root, name, pos), desc) :: find_all name next
           with Not_found ->
             find_all name next
@@ -762,7 +762,7 @@ let rec find_module_descr path env =
   | Pdot(p, s, _pos) ->
       begin match get_components (find_module_descr p env) with
         Structure_comps c ->
-          let (descr, _pos) = Tbl.find s c.comp_components in
+          let (descr, _pos) = Tbl.find_str s c.comp_components in
           descr
       | Functor_comps _ ->
          raise Not_found
@@ -782,7 +782,7 @@ let find proj1 proj2 path env =
   | Pdot(p, s, _pos) ->
       begin match get_components (find_module_descr p env) with
         Structure_comps c ->
-          let (data, _pos) = Tbl.find s (proj2 c) in data
+          let (data, _pos) = Tbl.find_str s (proj2 c) in data
       | Functor_comps _ ->
           raise Not_found
       end
@@ -840,7 +840,7 @@ let find_type_full path env =
       let exts =
         List.filter
           (function ({cstr_tag=Cstr_extension _}, _) -> true | _ -> false)
-          (try Tbl.find s comps.comp_constrs
+          (try Tbl.find_str s comps.comp_constrs
            with Not_found -> assert false)
       in
       match exts with
@@ -867,7 +867,7 @@ let find_module ~alias path env =
   | Pdot(p, s, _pos) ->
       begin match get_components (find_module_descr p env) with
         Structure_comps c ->
-          let (data, _pos) = Tbl.find s c.comp_modules in
+          let (data, _pos) = Tbl.find_str s c.comp_modules in
           EnvLazy.force subst_modtype_maker data
       | Functor_comps _ ->
           raise Not_found
@@ -1017,7 +1017,7 @@ let rec lookup_module_descr_aux ?loc lid env =
       let (p, descr) = lookup_module_descr ?loc l env in
       begin match get_components descr with
         Structure_comps c ->
-          let (descr, pos) = Tbl.find s c.comp_components in
+          let (descr, pos) = Tbl.find_str s c.comp_components in
           (Pdot(p, s, pos), descr)
       | Functor_comps _ ->
           raise Not_found
@@ -1076,8 +1076,8 @@ and lookup_module ~load ?loc lid env : Path.t =
       let (p, descr) = lookup_module_descr ?loc l env in
       begin match get_components descr with
         Structure_comps c ->
-          let (_data, pos) = Tbl.find s c.comp_modules in
-          let (comps, _) = Tbl.find s c.comp_components in
+          let (_data, pos) = Tbl.find_str s c.comp_modules in
+          let (comps, _) = Tbl.find_str s c.comp_components in
           mark_module_used env s comps.loc;
           let p = Pdot(p, s, pos) in
           report_deprecated ?loc p comps.deprecated;
@@ -1106,7 +1106,7 @@ let lookup proj1 proj2 ?loc lid env =
       let (p, desc) = lookup_module_descr ?loc l env in
       begin match get_components desc with
         Structure_comps c ->
-          let (data, pos) = Tbl.find s (proj2 c) in
+          let (data, pos) = Tbl.find_str s (proj2 c) in
           (Pdot(p, s, pos), data)
       | Functor_comps _ ->
           raise Not_found
@@ -1131,7 +1131,7 @@ let lookup_all_simple proj1 proj2 shadow ?loc lid env =
       begin match get_components desc with
         Structure_comps c ->
           let comps =
-            try Tbl.find s (proj2 c) with Not_found -> []
+            try Tbl.find_str s (proj2 c) with Not_found -> []
           in
           List.map
             (fun (data, _pos) -> (data, (fun () -> ())))
@@ -1380,7 +1380,7 @@ let find_all_comps proj s (p,mcomps) =
   match get_components mcomps with
     Functor_comps _ -> []
   | Structure_comps comps ->
-      try let (c,n) = Tbl.find s (proj comps) in [Pdot(p,s,n), c]
+      try let (c,n) = Tbl.find_str s (proj comps) in [Pdot(p,s,n), c]
       with Not_found -> []
 
 let rec find_shadowed_comps path env =
@@ -1546,7 +1546,7 @@ let prefix_idents root sub sg =
 
 let add_to_tbl id decl tbl =
   let decls =
-    try Tbl.find id tbl with Not_found -> [] in
+    try Tbl.find_str id tbl with Not_found -> [] in
   Tbl.add id (decl :: decls) tbl
 
 let rec components_of_module ~deprecated ~loc env sub path mty =
