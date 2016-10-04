@@ -407,18 +407,19 @@ and module_components_repr =
     Structure_comps of structure_components
   | Functor_comps of functor_components
 
+and 'a comp_tbl = (string, ('a * int)) Tbl.t
+
 and structure_components = {
-  mutable comp_values: (string, (value_description * int)) Tbl.t;
+  mutable comp_values: value_description comp_tbl;
   mutable comp_constrs: (string, constructor_description list) Tbl.t;
   mutable comp_labels: (string, label_description list) Tbl.t;
-  mutable comp_types:
-   (string, ((type_declaration * type_descriptions) * int)) Tbl.t;
+  mutable comp_types: (type_declaration * type_descriptions) comp_tbl;
   mutable comp_modules:
-   (string, ((Subst.t * module_declaration, module_declaration) EnvLazy.t * int)) Tbl.t;
-  mutable comp_modtypes: (string, (modtype_declaration * int)) Tbl.t;
-  mutable comp_components: (string, (module_components * int)) Tbl.t;
-  mutable comp_classes: (string, (class_declaration * int)) Tbl.t;
-  mutable comp_cltypes: (string, (class_type_declaration * int)) Tbl.t
+   (Subst.t * module_declaration, module_declaration) EnvLazy.t comp_tbl;
+  mutable comp_modtypes: modtype_declaration comp_tbl;
+  mutable comp_components: module_components comp_tbl;
+  mutable comp_classes: class_declaration comp_tbl;
+  mutable comp_cltypes: class_type_declaration comp_tbl;
 }
 
 and functor_components = {
