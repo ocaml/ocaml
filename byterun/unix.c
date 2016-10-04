@@ -82,8 +82,7 @@ int caml_write_fd(int fd, int flags, void * buf, int n)
   int retcode;
  again:
 #if defined(NATIVE_CODE) && defined(WITH_SPACETIME)
-  if ((flags & CHANNEL_FLAG_BLOCKING_WRITE)
-      == CHANNEL_FLAG_BLOCKING_WRITE) {
+  if (flags & CHANNEL_FLAG_BLOCKING_WRITE) {
     retcode = write(fd, buf, n);
   } else {
 #endif
