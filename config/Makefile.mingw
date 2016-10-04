@@ -100,6 +100,12 @@ BYTECC=$(TOOLPREF)gcc
 ### Additional compile-time options for $(BYTECC).  (For static linking.)
 BYTECCCOMPOPTS=-O -mms-bitfields -Wall -Wno-unused
 
+### Additional compile-time options for $(BYTECC).  (For debug version.)
+BYTECCDBGCOMPOPTS=-g
+
+### Flag to use to rename object files.  (for debug version.)
+NAME_OBJ_FLAG=-o
+
 ### Additional link-time options for $(BYTECC).  (For static linking.)
 BYTECCLINKOPTS=
 
