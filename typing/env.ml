@@ -136,7 +136,7 @@ module EnvTbl =
     }
 
     and 'a opened = {
-      components: (string, ('a * int) list) Tbl.t;
+      components: (string, 'a list) Tbl.t;
       (** Components from the opened module. We keep a list of
           bindings for each name, as in comp_labels and
           comp_constrs. *)
@@ -198,7 +198,7 @@ module EnvTbl =
           | exception Not_found -> rest
           | opened ->
               List.map
-                (fun (desc, _) -> desc, mk_callback rest name using desc)
+                (fun desc -> desc, mk_callback rest name using desc)
                 opened
               @ rest
 
@@ -208,7 +208,7 @@ module EnvTbl =
       | Some {using = _; next; components} ->
           acc
           |> Tbl.fold
-            (fun _name -> List.fold_right (fun (desc, _pos) -> f desc))
+            (fun _name -> List.fold_right (fun desc -> f desc))
             components
           |> fold_name f next
       | None ->
@@ -411,8 +411,8 @@ and module_components_repr =
 
 and structure_components = {
   mutable comp_values: (string, (value_description * int)) Tbl.t;
-  mutable comp_constrs: (string, (constructor_description * int) list) Tbl.t;
-  mutable comp_labels: (string, (label_description * int) list) Tbl.t;
+  mutable comp_constrs: (string, constructor_description list) Tbl.t;
+  mutable comp_labels: (string, label_description list) Tbl.t;
   mutable comp_types:
    (string, ((type_declaration * type_descriptions) * int)) Tbl.t;
   mutable comp_modules:
@@ -872,12 +872,12 @@ let find_type_full path env =
       in
       let exts =
         List.filter
-          (function ({cstr_tag=Cstr_extension _}, _) -> true | _ -> false)
+          (function {cstr_tag=Cstr_extension _} -> true | _ -> false)
           (try Tbl.find_str s comps.comp_constrs
            with Not_found -> assert false)
       in
       match exts with
-      | [(cstr, _)] -> type_of_cstr path cstr
+      | [cstr] -> type_of_cstr path cstr
       | _ -> assert false
 
 let find_type p env =
@@ -1167,7 +1167,7 @@ let lookup_all_simple proj1 proj2 shadow ?loc lid env =
             try Tbl.find_str s (proj2 c) with Not_found -> []
           in
           List.map
-            (fun (data, _pos) -> (data, (fun () -> ())))
+            (fun data -> (data, (fun () -> ())))
             comps
       | Functor_comps _ ->
           raise Not_found
@@ -1624,19 +1624,19 @@ and components_of_module_maker (env, sub, path, mty) =
             List.iter
               (fun descr ->
                 c.comp_constrs <-
-                  add_to_tbl descr.cstr_name (descr, nopos) c.comp_constrs)
+                  add_to_tbl descr.cstr_name descr c.comp_constrs)
               constructors;
             List.iter
               (fun descr ->
                 c.comp_labels <-
-                  add_to_tbl descr.lbl_name (descr, nopos) c.comp_labels)
+                  add_to_tbl descr.lbl_name descr c.comp_labels)
               labels;
             env := store_type_infos id decl !env
         | Sig_typext(id, ext, _) ->
             let ext' = Subst.extension_constructor sub ext in
             let descr = Datarepr.extension_descr path ext' in
             c.comp_constrs <-
-              add_to_tbl (Ident.name id) (descr, !pos) c.comp_constrs;
+              add_to_tbl (Ident.name id) descr c.comp_constrs;
             incr pos
         | Sig_module(id, md, _) ->
             let md' = EnvLazy.create (sub, md) in
@@ -2151,7 +2151,7 @@ let find_all_simple_list proj1 proj2 f lid env acc =
               (fun _s comps acc ->
                 match comps with
                   [] -> acc
-                | (data, _pos) :: _ ->
+                | data :: _ ->
                   f data acc)
               (proj2 c) acc
         | Functor_comps _ ->
