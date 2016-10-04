@@ -123,17 +123,31 @@ type summary =
 
 module EnvTbl =
   struct
-    (* For labels/constructors *)
+    (** This module is used to store labels and contructors in
+        environments.  We keep a representation of each nested "open"
+        and the set of local bindings between each of them. *)
 
     type 'a t = {
       current: 'a Ident.tbl;
+      (** Local bindings since the last open. *)
+
       opened: 'a opened option;
+      (** Symbolic representation of the last (innermost) open, if any. *)
     }
 
     and 'a opened = {
       components: (string, ('a * int) list) Tbl.t;
+      (** Components from the opened module. We keep a list of
+          bindings for each name, as in comp_labels and
+          comp_constrs. *)
+
       using: (string -> ('a * 'a) option -> unit) option;
+      (** A callback to be applied when a component is used from this
+          "open".  This is used to detect unused "opens".  The
+          arguments are used to detect shadowing. *)
+
       next: 'a t;
+      (** The table before opening the module. *)
     }
 
     let empty = { current = Ident.empty; opened = None }
@@ -212,17 +226,36 @@ module EnvTbl =
 
 module EnvTbl2 =
   struct
-    (* A table indexed by identifier, with an extra slot to record usage. *)
+    (** This module is used to store all kinds of components except
+        (labels and constructors) in environments.  We keep a
+        representation of each nested "open" and the set of local
+        bindings between each of them. *)
+
+
     type 'a t = {
       current: 'a Ident.tbl;
+      (** Local bindings since the last open *)
+
       opened: 'a opened option;
+      (** Symbolic representation of the last (innermost) open, if any. *)
     }
 
     and 'a opened = {
       root: Path.t;
+      (** The path of the opened module, to be prefixed in front of
+          its local names to produce a valid path in the current
+          environment. *)
+
       components: (string, 'a * int) Tbl.t;
+      (** Components from the opened module. *)
+
       using: (string -> ('a * 'a) option -> unit) option;
+      (** A callback to be applied when a component is used from this
+          "open".  This is used to detect unused "opens".  The
+          arguments are used to detect shadowing. *)
+
       next: 'a t;
+      (** The table before opening the module. *)
     }
 
     let empty = { current = Ident.empty; opened = None }
