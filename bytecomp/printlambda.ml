@@ -174,8 +174,10 @@ let primitive ppf = function
   | Paddint -> fprintf ppf "+"
   | Psubint -> fprintf ppf "-"
   | Pmulint -> fprintf ppf "*"
-  | Pdivint -> fprintf ppf "/"
-  | Pmodint -> fprintf ppf "mod"
+  | Pdivint Safe -> fprintf ppf "/"
+  | Pdivint Unsafe -> fprintf ppf "/u"
+  | Pmodint Safe -> fprintf ppf "mod"
+  | Pmodint Unsafe -> fprintf ppf "mod_unsafe"
   | Pandint -> fprintf ppf "and"
   | Porint -> fprintf ppf "or"
   | Pxorint -> fprintf ppf "xor"
@@ -243,8 +245,14 @@ let primitive ppf = function
   | Paddbint bi -> print_boxed_integer "add" ppf bi
   | Psubbint bi -> print_boxed_integer "sub" ppf bi
   | Pmulbint bi -> print_boxed_integer "mul" ppf bi
-  | Pdivbint bi -> print_boxed_integer "div" ppf bi
-  | Pmodbint bi -> print_boxed_integer "mod" ppf bi
+  | Pdivbint { size = bi; is_safe = Safe } ->
+      print_boxed_integer "div" ppf bi
+  | Pdivbint { size = bi; is_safe = Unsafe } ->
+      print_boxed_integer "div_unsafe" ppf bi
+  | Pmodbint { size = bi; is_safe = Safe } ->
+      print_boxed_integer "mod" ppf bi
+  | Pmodbint { size = bi; is_safe = Unsafe } ->
+      print_boxed_integer "mod_unsafe" ppf bi
   | Pandbint bi -> print_boxed_integer "and" ppf bi
   | Porbint bi -> print_boxed_integer "or" ppf bi
   | Pxorbint bi -> print_boxed_integer "xor" ppf bi
@@ -329,8 +337,8 @@ let name_of_primitive = function
   | Paddint -> "Paddint"
   | Psubint -> "Psubint"
   | Pmulint -> "Pmulint"
-  | Pdivint -> "Pdivint"
-  | Pmodint -> "Pmodint"
+  | Pdivint _ -> "Pdivint"
+  | Pmodint _ -> "Pmodint"
   | Pandint -> "Pandint"
   | Porint -> "Porint"
   | Pxorint -> "Pxorint"

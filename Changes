@@ -114,6 +114,10 @@ OCaml 4.04.0:
 - GPR#602: Do not generate dummy code to force module linking
   (Pierre Chambart, reviewed by Jacques Garrigue)
 
+- PR#7328, GPR#702: Do not eliminate boxed int divisions by zero and
+  avoid checking twice if divisor is zero with flambda.
+  (Pierre Chambart, report by Jeremy Yallop)
+
 - GPR#703: Optimize some constant string operations when the "-safe-string"
   configure time option is enabled.
   (Pierre Chambart)
