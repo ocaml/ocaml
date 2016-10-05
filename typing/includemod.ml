@@ -410,7 +410,7 @@ and signature_components old_env env cxt subst paired =
       let p1 = Pident id1 in
       let cc =
         modtypes env (Module id1::cxt) subst
-          (Mtype.strengthen ~aliasable:true env mty1.md_type p1) mty2.md_type
+          (Mtype.strengthen ~aliasable:false env mty1.md_type p1) mty2.md_type
       in
       (pos, cc) :: comps_rec rem
   | (Sig_modtype(id1, info1), Sig_modtype(id2, info2), pos) :: rem ->
