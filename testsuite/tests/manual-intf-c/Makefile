@@ -7,6 +7,13 @@ CSOURCES = curses_stubs.c
 CLIBS = -cclib "$(BYTECCLIBS)"
 LIBUNIX = -I $(BASEDIR)/../otherlibs/unix unix.cma
 
+# Disable this test until we figure out how to test for the availability
+# of curses.
+.PHONY: disable
+disable:
+	@printf " ... testing prog => skipped\n"
+	@printf " ... testing prog2 => skipped\n"
+
 .PHONY: default
 default: clean $(SOURCES) $(CSOURCES)
 	@printf " ... testing prog"
