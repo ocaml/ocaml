@@ -132,8 +132,8 @@ let scan_file obj_name tolink =
       seek_in ic compunit_pos;
       let compunit = (input_value ic : compilation_unit) in
       close_in ic;
-      List.iter remove_required compunit.cu_reloc;
       add_required compunit;
+      List.iter remove_required compunit.cu_reloc;
       Link_object(file_name, compunit) :: tolink
     end
     else if buffer = cma_magic_number then begin
@@ -151,8 +151,8 @@ let scan_file obj_name tolink =
             || !Clflags.link_everything
             || List.exists is_required compunit.cu_reloc
             then begin
-              List.iter remove_required compunit.cu_reloc;
               add_required compunit;
+              List.iter remove_required compunit.cu_reloc;
               compunit :: reqd
             end else
               reqd)
