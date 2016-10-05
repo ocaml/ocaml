@@ -132,7 +132,7 @@ module EnvTbl =
     let already_defined wrap s tbl x =
       wrap (try Some (fst (Ident.find_name s tbl), x) with Not_found -> None)
 
-    let add slot wrap id x tbl ref_tbl =
+    let add_open slot wrap id x tbl ref_tbl =
       let slot =
         match slot with
         | None -> nothing
@@ -143,6 +143,9 @@ module EnvTbl =
           )
       in
       Ident.add id (x, slot) tbl
+
+    let add id x tbl =
+      Ident.add id (x, nothing) tbl
 
     let find_same_not_using id tbl =
       fst (Ident.find_same id tbl)
@@ -206,7 +209,7 @@ and structure_components = {
   mutable comp_types:
    (string, ((type_declaration * type_descriptions) * int)) Tbl.t;
   mutable comp_modules:
-   (string, ((Subst.t * Types.module_type,module_type) EnvLazy.t * int)) Tbl.t;
+   (string, ((Subst.t * module_declaration, module_declaration) EnvLazy.t * int)) Tbl.t;
   mutable comp_modtypes: (string, (modtype_declaration * int)) Tbl.t;
   mutable comp_components: (string, (module_components * int)) Tbl.t;
   mutable comp_classes: (string, (class_declaration * int)) Tbl.t;
@@ -254,7 +257,7 @@ let check_shadowing env = function
   | `Class None | `Class_type None | `Component None ->
       None
 
-let subst_modtype_maker (subst, mty) = Subst.modtype subst mty
+let subst_modtype_maker (subst, md) = {md with md_type = Subst.modtype subst md.md_type}
 
 let empty = {
   values = EnvTbl.empty; constrs = EnvTbl.empty;
@@ -681,7 +684,7 @@ let find_module ~alias path env =
       begin match get_components (find_module_descr p env) with
         Structure_comps c ->
           let (data, _pos) = Tbl.find s c.comp_modules in
-          md (EnvLazy.force subst_modtype_maker data)
+          EnvLazy.force subst_modtype_maker data
       | Functor_comps _ ->
           raise Not_found
       end
@@ -1357,36 +1360,10 @@ let rec prefix_idents root pos sub = function
         prefix_idents root pos (Subst.add_type id p sub) rem in
       (p::pl, final_sub)
 
-let subst_signature sub sg =
-  List.map
-    (fun item ->
-      match item with
-      | Sig_value(id, decl) ->
-          Sig_value (id, Subst.value_description sub decl)
-      | Sig_type(id, decl, x) ->
-          Sig_type(id, Subst.type_declaration sub decl, x)
-      | Sig_typext(id, ext, es) ->
-          Sig_typext (id, Subst.extension_constructor sub ext, es)
-      | Sig_module(id, mty, x) ->
-          Sig_module(id, Subst.module_declaration sub mty,x)
-      | Sig_modtype(id, decl) ->
-          Sig_modtype(id, Subst.modtype_declaration sub decl)
-      | Sig_class(id, decl, x) ->
-          Sig_class(id, Subst.class_declaration sub decl, x)
-      | Sig_class_type(id, decl, x) ->
-          Sig_class_type(id, Subst.cltype_declaration sub decl, x)
-    )
-    sg
-
-
-let prefix_idents_and_subst root sub sg =
-  let (pl, sub) = prefix_idents root 0 sub sg in
-  pl, sub, lazy (subst_signature sub sg)
-
 let set_nongen_level sub path =
   Subst.set_nongen_level sub (Path.binding_time path - 1)
 
-let prefix_idents_and_subst root sub sg =
+let prefix_idents root sub sg =
   let sub = set_nongen_level sub root in
   if sub = set_nongen_level Subst.identity root then
     let sgs =
@@ -1400,11 +1377,11 @@ let prefix_idents_and_subst root sub sg =
     try
       List.assq sg !sgs
     with Not_found ->
-      let r = prefix_idents_and_subst root sub sg in
+      let r = prefix_idents root 0 sub sg in
       sgs := (sg, r) :: !sgs;
       r
   else
-    prefix_idents_and_subst root sub sg
+    prefix_idents root 0 sub sg
 
 (* Compute structure descriptions *)
 
@@ -1430,7 +1407,7 @@ and components_of_module_maker (env, sub, path, mty) =
           comp_modules = Tbl.empty; comp_modtypes = Tbl.empty;
           comp_components = Tbl.empty; comp_classes = Tbl.empty;
           comp_cltypes = Tbl.empty } in
-      let pl, sub, _ = prefix_idents_and_subst path sub sg in
+      let pl, sub = prefix_idents path sub sg in
       let env = ref env in
       let pos = ref 0 in
       List.iter2 (fun item path ->
@@ -1462,7 +1439,7 @@ and components_of_module_maker (env, sub, path, mty) =
                 c.comp_labels <-
                   add_to_tbl descr.lbl_name (descr, nopos) c.comp_labels)
               labels;
-            env := store_type_infos None id (Pident id) decl !env !env
+            env := store_type_infos id (Pident id) decl !env
         | Sig_typext(id, ext, _) ->
             let ext' = Subst.extension_constructor sub ext in
             let descr = Datarepr.extension_descr path ext' in
@@ -1470,25 +1447,25 @@ and components_of_module_maker (env, sub, path, mty) =
               add_to_tbl (Ident.name id) (descr, !pos) c.comp_constrs;
             incr pos
         | Sig_module(id, md, _) ->
-            let mty = md.md_type in
-            let mty' = EnvLazy.create (sub, mty) in
+            let md' = EnvLazy.create (sub, md) in
             c.comp_modules <-
-              Tbl.add (Ident.name id) (mty', !pos) c.comp_modules;
+              Tbl.add (Ident.name id) (md', !pos) c.comp_modules;
             let deprecated =
               Builtin_attributes.deprecated_of_attrs md.md_attributes
             in
             let comps =
-              components_of_module ~deprecated ~loc:md.md_loc !env sub path mty
+              components_of_module ~deprecated ~loc:md.md_loc !env sub path
+                md.md_type
             in
             c.comp_components <-
               Tbl.add (Ident.name id) (comps, !pos) c.comp_components;
-            env := store_module ~check:false None id (Pident id) md !env !env;
+            env := store_module ~check:false id (Pident id) md !env;
             incr pos
         | Sig_modtype(id, decl) ->
             let decl' = Subst.modtype_declaration sub decl in
             c.comp_modtypes <-
               Tbl.add (Ident.name id) (decl', nopos) c.comp_modtypes;
-            env := store_modtype None id (Pident id) decl !env !env
+            env := store_modtype id (Pident id) decl !env
         | Sig_class(id, decl, _) ->
             let decl' = Subst.class_declaration sub decl in
             c.comp_classes <-
@@ -1547,15 +1524,14 @@ and check_value_name name loc =
     done
 
 
-and store_value ?check slot id path decl env renv =
+and store_value ?check id path decl env =
   check_value_name (Ident.name id) decl.val_loc;
   may (fun f -> check_usage decl.val_loc id f value_declarations) check;
   { env with
-    values = EnvTbl.add slot (fun x -> `Value x) id (path, decl)
-        env.values renv.values;
+    values = EnvTbl.add id (path, decl) env.values;
     summary = Env_value(env.summary, id, decl) }
 
-and store_type ~check slot id path info env renv =
+and store_type ~check id path info env =
   let loc = info.type_loc in
   if check then
     check_usage loc id (fun s -> Warnings.Unused_type_declaration s)
@@ -1587,34 +1563,30 @@ and store_type ~check slot id path info env renv =
   { env with
     constrs =
       List.fold_right
-        (fun (id, descr) constrs ->
-           EnvTbl.add slot (fun x -> `Constructor x) id descr constrs
-             renv.constrs)
+        (fun (id, descr) constrs -> EnvTbl.add id descr constrs)
         constructors
         env.constrs;
     labels =
       List.fold_right
-        (fun (id, descr) labels ->
-           EnvTbl.add slot (fun x -> `Label x) id descr labels renv.labels)
+        (fun (id, descr) labels -> EnvTbl.add id descr labels)
         labels
         env.labels;
     types =
-      EnvTbl.add slot (fun x -> `Type x) id (path, (info, descrs)) env.types
-                       renv.types;
+      EnvTbl.add id (path, (info, descrs)) env.types;
     summary = Env_type(env.summary, id, info) }
 
-and store_type_infos slot id path info env renv =
+and store_type_infos id path info env =
   (* Simplified version of store_type that doesn't compute and store
      constructor and label infos, but simply record the arity and
      manifest-ness of the type.  Used in components_of_module to
      keep track of type abbreviations (e.g. type t = float) in the
      computation of label representations. *)
   { env with
-    types = EnvTbl.add slot (fun x -> `Type x) id (path, (info,([],[])))
-        env.types renv.types;
+    types = EnvTbl.add id (path, (info,([],[])))
+        env.types;
     summary = Env_type(env.summary, id, info) }
 
-and store_extension ~check slot id path ext env renv =
+and store_extension ~check id path ext env =
   let loc = ext.ext_loc in
   if check && not loc.Location.loc_ghost &&
     Warnings.is_active (Warnings.Unused_extension ("", false, false, false))
@@ -1637,12 +1609,12 @@ and store_extension ~check slot id path ext env renv =
     end;
   end;
   { env with
-    constrs = EnvTbl.add slot (fun x -> `Constructor x) id
+    constrs = EnvTbl.add id
                 (Datarepr.extension_descr path ext)
-                env.constrs renv.constrs;
+                env.constrs;
     summary = Env_extension(env.summary, id, ext) }
 
-and store_module ~check slot id path md env renv =
+and store_module ~check id path md env =
   let loc = md.md_loc in
   if check then
     check_usage loc id (fun s -> Warnings.Unused_module s)
@@ -1650,31 +1622,27 @@ and store_module ~check slot id path md env renv =
 
   let deprecated = Builtin_attributes.deprecated_of_attrs md.md_attributes in
   { env with
-    modules = EnvTbl.add slot (fun x -> `Module x) id (path, md)
-        env.modules renv.modules;
+    modules = EnvTbl.add id (path, md) env.modules;
     components =
-      EnvTbl.add slot (fun x -> `Component x) id
+      EnvTbl.add id
         (path, components_of_module ~deprecated ~loc:md.md_loc
            env Subst.identity path md.md_type)
-        env.components renv.components;
+        env.components;
     summary = Env_module(env.summary, id, md) }
 
-and store_modtype slot id path info env renv =
+and store_modtype id path info env =
   { env with
-    modtypes = EnvTbl.add slot (fun x -> `Module_type x) id (path, info)
-        env.modtypes renv.modtypes;
+    modtypes = EnvTbl.add id (path, info) env.modtypes;
     summary = Env_modtype(env.summary, id, info) }
 
-and store_class slot id path desc env renv =
+and store_class id path desc env =
   { env with
-    classes = EnvTbl.add slot (fun x -> `Class x) id (path, desc)
-        env.classes renv.classes;
+    classes = EnvTbl.add id (path, desc) env.classes;
     summary = Env_class(env.summary, id, desc) }
 
-and store_cltype slot id path desc env renv =
+and store_cltype id path desc env =
   { env with
-    cltypes = EnvTbl.add slot (fun x -> `Class_type x) id (path, desc)
-        env.cltypes renv.cltypes;
+    cltypes = EnvTbl.add id (path, desc) env.cltypes;
     summary = Env_cltype(env.summary, id, desc) }
 
 (* Compute the components of a functor application in a path. *)
@@ -1707,13 +1675,13 @@ let add_functor_arg id env =
    summary = Env_functor_arg (env.summary, id)}
 
 let add_value ?check id desc env =
-  store_value None ?check id (Pident id) desc env env
+  store_value ?check id (Pident id) desc env
 
 let add_type ~check id info env =
-  store_type ~check None id (Pident id) info env env
+  store_type ~check id (Pident id) info env
 
 and add_extension ~check id ext env =
-  store_extension ~check None id (Pident id) ext env env
+  store_extension ~check id (Pident id) ext env
 
 and add_module_declaration ?(arg=false) ~check id md env =
   let path =
@@ -1721,17 +1689,17 @@ and add_module_declaration ?(arg=false) ~check id md env =
       Mty_alias path -> normalize_path env path
     | _ ->*) Pident id
   in
-  let env = store_module ~check None id path md env env in
+  let env = store_module ~check id path md env in
   if arg then add_functor_arg id env else env
 
 and add_modtype id info env =
-  store_modtype None id (Pident id) info env env
+  store_modtype id (Pident id) info env
 
 and add_class id ty env =
-  store_class None id (Pident id) ty env env
+  store_class id (Pident id) ty env
 
 and add_cltype id ty env =
-  store_cltype None id (Pident id) ty env env
+  store_cltype id (Pident id) ty env
 
 let add_module ?arg id mty env =
   add_module_declaration ~check:false ?arg id (md mty) env
@@ -1752,7 +1720,7 @@ let add_local_constraint path info elv env =
 (* Insertion of bindings by name *)
 
 let enter store_fun name data env =
-  let id = Ident.create name in (id, store_fun None id (Pident id) data env env)
+  let id = Ident.create name in (id, store_fun id (Pident id) data env)
 
 let enter_value ?check = enter (store_value ?check)
 and enter_type = enter (store_type ~check:true)
@@ -1788,43 +1756,84 @@ let rec add_signature sg env =
 
 (* Open a signature path *)
 
-let open_signature slot root sg env0 =
-  (* First build the paths and substitution *)
-  let (pl, _sub, sg) = prefix_idents_and_subst root Subst.identity sg in
-  let sg = Lazy.force sg in
-
-  (* Then enter the components in the environment after substitution *)
-
-  let newenv =
-    List.fold_left2
-      (fun env item p ->
-        match item with
-          Sig_value(id, decl) ->
-            store_value slot (Ident.hide id) p decl env env0
-        | Sig_type(id, decl, _) ->
-            store_type ~check:false slot (Ident.hide id) p decl env env0
-        | Sig_typext(id, ext, _) ->
-            store_extension ~check:false slot (Ident.hide id) p ext env env0
-        | Sig_module(id, mty, _) ->
-            store_module ~check:false slot (Ident.hide id) p mty env env0
-        | Sig_modtype(id, decl) ->
-            store_modtype slot (Ident.hide id) p decl env env0
-        | Sig_class(id, decl, _) ->
-            store_class slot (Ident.hide id) p decl env env0
-        | Sig_class_type(id, decl, _) ->
-            store_cltype slot (Ident.hide id) p decl env env0
+let add_components slot root env0 comps =
+  let add_l w comps env0 =
+    Tbl.fold
+      (fun name ->
+         List.fold_right
+           (fun (c, _) acc ->
+              EnvTbl.add_open slot w
+                (Ident.hide (Ident.create name)) c acc env0
+           )
       )
-      env0 sg pl in
-  { newenv with summary = Env_open(env0.summary, root) }
+      comps env0
+  in
+  let add_map w comps env0 f =
+    Tbl.fold
+      (fun name (c, pos) acc ->
+         EnvTbl.add_open slot w (Ident.hide (Ident.create name))
+           (Pdot (root, name, pos), f c) acc env0
+      )
+      comps env0
+  in
+  let add w comps env0 = add_map w comps env0 (fun x -> x) in
+  let constrs =
+    add_l (fun x -> `Constructor x) comps.comp_constrs env0.constrs
+  in
+  let labels =
+    add_l (fun x -> `Label x) comps.comp_labels env0.labels
+  in
+  let values =
+    add (fun x -> `Value x) comps.comp_values env0.values
+  in
+  let types =
+    add (fun x -> `Type x) comps.comp_types env0.types
+  in
+  let modtypes =
+    add (fun x -> `Module_type x) comps.comp_modtypes env0.modtypes
+  in
+  let classes =
+    add (fun x -> `Class x) comps.comp_classes env0.classes
+  in
+  let cltypes =
+    add (fun x -> `Class_type x) comps.comp_cltypes env0.cltypes
+  in
+  let components =
+    add (fun x -> `Component x) comps.comp_components env0.components
+  in
+  let modules =
+    (* one should avoid this force, by allowing lazy in env as well *)
+    add_map (fun x -> `Module x) comps.comp_modules env0.modules
+      (fun data -> EnvLazy.force subst_modtype_maker data)
+  in
+
+  { env0 with
+    summary = Env_open(env0.summary, root);
+    constrs;
+    labels;
+    values;
+    types;
+    modtypes;
+    classes;
+    cltypes;
+    components;
+    modules;
+  }
+
+let open_signature slot root env0 =
+  match get_components (find_module_descr root env0) with
+  | Functor_comps _ -> None
+  | Structure_comps comps -> Some (add_components slot root env0 comps)
+
 
 (* Open a signature from a file *)
 
 let open_pers_signature name env =
-  let ps = find_pers_struct name in
-  open_signature None (Pident(Ident.create_persistent name))
-    (Lazy.force ps.ps_sig) env
+  match open_signature None (Pident(Ident.create_persistent name)) env with
+  | Some env -> env
+  | None -> assert false (* a compilation unit cannot refer to a functor *)
 
-let open_signature ?(loc = Location.none) ?(toplevel = false) ovf root sg env =
+let open_signature ?(loc = Location.none) ?(toplevel = false) ovf root env =
   if not toplevel && ovf = Asttypes.Fresh && not loc.Location.loc_ghost
      && (Warnings.is_active (Warnings.Unused_open "")
          || Warnings.is_active (Warnings.Open_shadow_identifier ("", ""))
@@ -1852,9 +1861,9 @@ let open_signature ?(loc = Location.none) ?(toplevel = false) ovf root sg env =
       end;
       used := true
     in
-    open_signature (Some slot) root sg env
+    open_signature (Some slot) root env
   end
-  else open_signature None root sg env
+  else open_signature None root env
 
 (* Read a signature from a file *)
 
@@ -2000,7 +2009,7 @@ let fold_modules f lid env acc =
             Tbl.fold
               (fun s (data, pos) acc ->
                 f s (Pdot (p, s, pos))
-                    (md (EnvLazy.force subst_modtype_maker data)) acc)
+                    (EnvLazy.force subst_modtype_maker data) acc)
               c.comp_modules
               acc
         | Functor_comps _ ->
