@@ -35,7 +35,15 @@ EOF
     ./configure --prefix $PREFIX -with-debug-runtime \
       -with-instrumented-runtime $CONFIG_ARG
     export PATH=$PREFIX/bin:$PATH
-    make world.opt
+
+    make world.opt -j3
+    # We use a parallel build here with the intent of detecting
+    # changes that break the parallel build -- usually it is because
+    # they forgot to include a "make depend".
+    # On the choice of -j3: travis CI machines have 2 available cores, see
+    #https://docs.travis-ci.com/user/ci-environment/#Virtualization-environments
+    # and there seems to be no reliable way to get this value programatically.
+
     make ocamlnat
     make install
     (cd testsuite && make all)
