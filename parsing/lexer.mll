@@ -233,7 +233,9 @@ let directive_parse token_with_comments lexbuf =
        let rec skip () = 
         match token_with_comments lexbuf  with
         | COMMENT _ -> skip ()
+#if undefined NO_DOCSTRINGS then
         | DOCSTRING _ -> skip ()
+#end
         | EOL -> skip ()
         | EOF -> raise (Error (Unterminated_if, Location.curr lexbuf)) 
         | t -> t 
@@ -608,8 +610,12 @@ let add_comment com =
   comment_list := com :: !comment_list
 
 let add_docstring_comment ds =
+#if undefined NO_DOCSTRINGS then
   let com = (Docstrings.docstring_body ds, Docstrings.docstring_loc ds) in
     add_comment com
+#else 
+  ()    
+#end
 
 let comments () = List.rev !comment_list
 
@@ -789,7 +795,12 @@ rule token = parse
         COMMENT (s, loc) }
   | "(**"
       { let s, loc = with_comment_buffer comment lexbuf in
-        DOCSTRING (Docstrings.docstring s loc) }
+#if undefined NO_DOCSTRINGS then
+        DOCSTRING (Docstrings.docstring s loc) 
+#else
+        COMMENT (s,loc)    
+#end
+}
   | "(**" ('*'+) as stars
       { let s, loc =
           with_comment_buffer
@@ -1077,6 +1088,7 @@ and skip_sharp_bang = parse
 
   type doc_state =
     | Initial  (* There have been no docstrings yet *)
+#if undefined NO_DOCSTRINGS then
     | After of docstring list
         (* There have been docstrings, none of which were
            preceeded by a blank line *)
@@ -1085,7 +1097,7 @@ and skip_sharp_bang = parse
            preceeded by a blank line *)
 
   and docstring = Docstrings.docstring
-
+#end
   let interpret_directive lexbuf cont look_ahead = 
     let if_then_else = !if_then_else in
     begin match token_with_comments lexbuf, if_then_else with 
@@ -1176,6 +1188,7 @@ and skip_sharp_bang = parse
 
   let token lexbuf =
     let post_pos = lexeme_end_p lexbuf in
+#if undefined NO_DOCSTRINGS then
     let attach lines docs pre_pos =
       let open Docstrings in
         match docs, lines with
@@ -1201,6 +1214,7 @@ and skip_sharp_bang = parse
               (List.rev_append f (List.rev b));
             set_pre_extra_docstrings pre_pos (List.rev a)
     in
+#end
     let rec loop lines docs lexbuf : Parser.token =
       match token_with_comments lexbuf with
       | COMMENT (s, loc) ->
@@ -1224,6 +1238,7 @@ and skip_sharp_bang = parse
           interpret_directive lexbuf 
             (fun lexbuf -> loop lines docs lexbuf)
             (fun token -> sharp_look_ahead := Some token; SHARP)
+#if undefined NO_DOCSTRINGS then
       | DOCSTRING doc ->
           add_docstring_comment doc;
           let docs' =
@@ -1236,8 +1251,11 @@ and skip_sharp_bang = parse
             | Before(a, f, b), BlankLine -> Before(a, b @ f, [doc])
           in
           loop NoLine docs' lexbuf
+#end
       | tok ->
+#if undefined NO_DOCSTRINGS then
           attach lines docs (lexeme_start_p lexbuf);
+#end
           tok
 
           
