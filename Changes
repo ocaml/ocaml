@@ -377,6 +377,9 @@ OCaml 4.04.0:
 - PR#7300: remove access to OCaml heap inside blocking in Unix.sleep on Windows
   (David Allsopp)
 
+- GPR#525: fix build on OpenIndiana
+  (Sergey Avseyev, review by Damien Doligez)
+
 ### Internal/compiler-libs changes:
 
 - PR#7200, GPR#539: Improve, fix, and add test for parsing/pprintast.ml

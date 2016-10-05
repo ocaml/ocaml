@@ -954,7 +954,7 @@ case "$arch,$system" in
   amd64,solaris)  as="${TOOLPREF}as --64"
                   aspp="${TOOLPREF}gcc -m64 -c";;
   i386,solaris)   as="${TOOLPREF}as"
-                  aspp="/usr/ccs/bin/${TOOLPREF}as -P";;
+                  aspp="${TOOLPREF}gcc -c";;
   power,elf)      if $arch64; then
                     as="${TOOLPREF}as -a64 -mppc64"
                     aspp="${TOOLPREF}gcc -m64 -c"
