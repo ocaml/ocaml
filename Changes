@@ -362,6 +362,9 @@ OCaml 4.04.0:
 
 - GPR#880: Fix [@@inline] with default parameters in flambda (Leo White)
 
+- GPR#525: fix build on OpenIndiana
+  (Sergey Avseyev, review by Damien Doligez)
+
 ### Internal/compiler-libs changes:
 
 - PR#7200, GPR#539: Improve, fix, and add test for parsing/pprintast.ml
