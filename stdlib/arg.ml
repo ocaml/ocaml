@@ -41,7 +41,8 @@ type spec =
                                           [["-foo"; "arg"] @ rest] where "foo" is
                                           registered as [Expand f], then the
                                           arguments [f "arg" @ rest] are
-                                          processed *)
+                                          processed. Only allowed in
+                                          [parse_and_expand_argv_dynamic]. *)
 
 exception Bad of string
 exception Help of string
@@ -128,7 +129,7 @@ let float_of_string_opt x =
   try Some (float_of_string x)
   with Failure _ -> None
 
-let parse_and_expand_argv_dynamic ?(current=current) argv speclist anonfun errmsg =
+let parse_and_expand_argv_dynamic_aux expand current argv speclist anonfun errmsg =
   let b = Buffer.create 200 in
   let initpos = !current in
   let stop error =
@@ -243,6 +244,8 @@ let parse_and_expand_argv_dynamic ?(current=current) argv speclist anonfun errms
               consume_arg ();
             done;
         | Expand f ->
+            if not expand then
+              raise (Stop (Message ("Expand is not allowed")));
             let arg = get_arg () in
             let newarg = f arg in
             consume_arg ();
@@ -261,8 +264,11 @@ let parse_and_expand_argv_dynamic ?(current=current) argv speclist anonfun errms
     end;
   done
 
+let parse_and_expand_argv_dynamic ?(current=current) argv speclist anonfun errmsg =
+  parse_and_expand_argv_dynamic_aux true current argv speclist anonfun errmsg
+
 let parse_argv_dynamic ?(current=current) argv speclist anonfun errmsg =
-  parse_and_expand_argv_dynamic ~current:current (ref argv) speclist anonfun errmsg
+  parse_and_expand_argv_dynamic_aux false current (ref argv) speclist anonfun errmsg
 
 
 let parse_argv ?(current=current) argv speclist anonfun errmsg =

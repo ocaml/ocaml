@@ -64,7 +64,8 @@ type spec =
                                            [["-foo"; "arg"] @ rest] where "foo" is
                                            registered as [Expand f], then the
                                            arguments [f "arg" @ rest] are
-                                           processed *)
+                                           processed. Only allowed in
+                                           [parse_and_expand_argv_dynamic]. *)
 (** The concrete type describing the behavior associated
    with a keyword. *)
 
