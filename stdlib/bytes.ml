@@ -15,6 +15,12 @@
 
 (* Byte sequence operations *)
 
+(* WARNING: Some functions in this file are duplicated in string.ml for
+   efficiency reasons. When you modify the one in this file you need to
+   modify its duplicate in string.ml.
+   These functions have a "duplicated" comment above their definition.
+*)
+
 external length : bytes -> int = "%bytes_length"
 external string_length : string -> int = "%string_length"
 external get : bytes -> int -> char = "%bytes_safe_get"
@@ -91,9 +97,11 @@ let blit_string s1 ofs1 s2 ofs2 len =
   then invalid_arg "String.blit / Bytes.blit_string"
   else unsafe_blit_string s1 ofs1 s2 ofs2 len
 
+(* duplicated in string.ml *)
 let iter f a =
   for i = 0 to length a - 1 do f(unsafe_get a i) done
 
+(* duplicated in string.ml *)
 let iteri f a =
   for i = 0 to length a - 1 do f i (unsafe_get a i) done
 
@@ -220,23 +228,29 @@ let apply1 f s =
 let capitalize_ascii s = apply1 Char.uppercase_ascii s
 let uncapitalize_ascii s = apply1 Char.lowercase_ascii s
 
+(* duplicated in string.ml *)
 let rec index_rec s lim i c =
   if i >= lim then raise Not_found else
   if unsafe_get s i = c then i else index_rec s lim (i + 1) c
 
+(* duplicated in string.ml *)
 let index s c = index_rec s (length s) 0 c
 
+(* duplicated in string.ml *)
 let index_from s i c =
   let l = length s in
   if i < 0 || i > l then invalid_arg "String.index_from / Bytes.index_from" else
   index_rec s l i c
 
+(* duplicated in string.ml *)
 let rec rindex_rec s i c =
   if i < 0 then raise Not_found else
   if unsafe_get s i = c then i else rindex_rec s (i - 1) c
 
+(* duplicated in string.ml *)
 let rindex s c = rindex_rec s (length s - 1) c
 
+(* duplicated in string.ml *)
 let rindex_from s i c =
   if i < -1 || i >= length s then
     invalid_arg "String.rindex_from / Bytes.rindex_from"
@@ -244,6 +258,7 @@ let rindex_from s i c =
     rindex_rec s i c
 
 
+(* duplicated in string.ml *)
 let contains_from s i c =
   let l = length s in
   if i < 0 || i > l then
@@ -252,8 +267,10 @@ let contains_from s i c =
     try ignore (index_rec s l i c); true with Not_found -> false
 
 
+(* duplicated in string.ml *)
 let contains s c = contains_from s 0 c
 
+(* duplicated in string.ml *)
 let rcontains_from s i c =
   if i < 0 || i >= length s then
     invalid_arg "String.rcontains_from / Bytes.rcontains_from"
