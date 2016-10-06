@@ -82,15 +82,22 @@ let () =
      we want to overwrite in some cases with the 
      same stdlib
   *)
+  let version = 
+#if undefined BS_MIN_LEX_DEPS then 
+    Config.version (* so that it can be overridden*)
+#else 
+    Sys.ocaml_version
+#end
+  in
   replace_directive_built_in_value "OCAML_VERSION" 
-    (Dir_string Config.version);
+    (Dir_string version);
   replace_directive_built_in_value "OCAML_PATCH"
     (Dir_string 
-       (match String.rindex Config.version '+' with 
+       (match String.rindex version '+' with 
        | exception Not_found -> ""
        | i -> 
-           String.sub Config.version (i + 1)
-             (String.length Config.version - i - 1)))
+           String.sub version (i + 1)
+             (String.length version - i - 1)))
   ;
   replace_directive_built_in_value "OS_TYPE" 
     (Dir_string Sys.os_type);
@@ -233,7 +240,7 @@ let directive_parse token_with_comments lexbuf =
        let rec skip () = 
         match token_with_comments lexbuf  with
         | COMMENT _ -> skip ()
-#if undefined NO_DOCSTRINGS then
+#if undefined BS_MIN_LEX_DEPS then
         | DOCSTRING _ -> skip ()
 #end
         | EOL -> skip ()
@@ -610,7 +617,7 @@ let add_comment com =
   comment_list := com :: !comment_list
 
 let add_docstring_comment ds =
-#if undefined NO_DOCSTRINGS then
+#if undefined BS_MIN_LEX_DEPS then
   let com = (Docstrings.docstring_body ds, Docstrings.docstring_loc ds) in
     add_comment com
 #else 
@@ -795,7 +802,7 @@ rule token = parse
         COMMENT (s, loc) }
   | "(**"
       { let s, loc = with_comment_buffer comment lexbuf in
-#if undefined NO_DOCSTRINGS then
+#if undefined BS_MIN_LEX_DEPS then
         DOCSTRING (Docstrings.docstring s loc) 
 #else
         COMMENT (s,loc)    
@@ -1088,7 +1095,7 @@ and skip_sharp_bang = parse
 
   type doc_state =
     | Initial  (* There have been no docstrings yet *)
-#if undefined NO_DOCSTRINGS then
+#if undefined BS_MIN_LEX_DEPS then
     | After of docstring list
         (* There have been docstrings, none of which were
            preceeded by a blank line *)
@@ -1188,7 +1195,7 @@ and skip_sharp_bang = parse
 
   let token lexbuf =
     let post_pos = lexeme_end_p lexbuf in
-#if undefined NO_DOCSTRINGS then
+#if undefined BS_MIN_LEX_DEPS then
     let attach lines docs pre_pos =
       let open Docstrings in
         match docs, lines with
@@ -1238,7 +1245,7 @@ and skip_sharp_bang = parse
           interpret_directive lexbuf 
             (fun lexbuf -> loop lines docs lexbuf)
             (fun token -> sharp_look_ahead := Some token; SHARP)
-#if undefined NO_DOCSTRINGS then
+#if undefined BS_MIN_LEX_DEPS then
       | DOCSTRING doc ->
           add_docstring_comment doc;
           let docs' =
@@ -1253,7 +1260,7 @@ and skip_sharp_bang = parse
           loop NoLine docs' lexbuf
 #end
       | tok ->
-#if undefined NO_DOCSTRINGS then
+#if undefined BS_MIN_LEX_DEPS then
           attach lines docs (lexeme_start_p lexbuf);
 #end
           tok
