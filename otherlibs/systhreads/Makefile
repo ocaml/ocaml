@@ -92,7 +92,7 @@ $(LIBNAME).cmxa: $(THREADS_NCOBJS)
 ifeq "$(TOOLCHAIN)" "msvc"
   CCOUTPUT=/Fo
 else
-  CCOUTPUT=-o
+  CCOUTPUT=-o 
 endif
 
 st_stubs_b.$(O): st_stubs.c $(HEADER)
