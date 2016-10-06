@@ -236,21 +236,6 @@ module R = struct
 end;;
 module R' : S = R;;
 
-module F (X : sig end) = struct type t end;;
-module M : sig
-  type a
-  module Foo : sig
-    module Bar : sig end
-    type b = a
-  end
-end = struct
-  module Foo = struct
-    module Bar = struct end
-    type b = F(Bar).t
-  end
-  type a = Foo.b
-end;;
-
 (* PR#6578 *)
 
 module M = struct let f x = x end

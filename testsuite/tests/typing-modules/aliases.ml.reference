@@ -394,9 +394,6 @@ module K : sig module E = B module N = E.O end
     module Q = M
   end
 # module R' : S
-#   module F : functor (X : sig  end) -> sig type t end
-#                         module M :
-  sig type a module Foo : sig module Bar : sig  end type b = a end end
 #           module M : sig val f : 'a -> 'a end
 module rec R : sig module M : sig val f : 'a -> 'a end end
 # - : int = 3
