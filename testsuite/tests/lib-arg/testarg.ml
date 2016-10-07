@@ -89,7 +89,7 @@ let test spec argv =
   r_int := 0;
   r_float := 0.0;
   accum := [];
-  Arg.parse_and_expand_argv_dynamic ~current argv (ref spec) f_anon "usage";
+  Arg.parse_and_expand_argv_dynamic current argv (ref spec) f_anon "usage";
   let result = List.rev !accum in
   let reference = [
       "anon(anon1)";

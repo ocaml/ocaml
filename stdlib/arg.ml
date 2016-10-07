@@ -129,7 +129,7 @@ let float_of_string_opt x =
   try Some (float_of_string x)
   with Failure _ -> None
 
-let parse_and_expand_argv_dynamic_aux expand current argv speclist anonfun errmsg =
+let parse_and_expand_argv_dynamic_aux allow_expand current argv speclist anonfun errmsg =
   let b = Buffer.create 200 in
   let initpos = !current in
   let stop error =
@@ -244,8 +244,8 @@ let parse_and_expand_argv_dynamic_aux expand current argv speclist anonfun errms
               consume_arg ();
             done;
         | Expand f ->
-            if not expand then
-              raise (Stop (Message ("Expand is not allowed")));
+            if not allow_expand then
+              raise (Invalid_argument "Arg.Expand is is only allowed with Arg.parse_and_expand_argv_dynamic");
             let arg = get_arg () in
             let newarg = f arg in
             consume_arg ();
@@ -264,7 +264,7 @@ let parse_and_expand_argv_dynamic_aux expand current argv speclist anonfun errms
     end;
   done
 
-let parse_and_expand_argv_dynamic ?(current=current) argv speclist anonfun errmsg =
+let parse_and_expand_argv_dynamic current argv speclist anonfun errmsg =
   parse_and_expand_argv_dynamic_aux true current argv speclist anonfun errmsg
 
 let parse_argv_dynamic ?(current=current) argv speclist anonfun errmsg =
