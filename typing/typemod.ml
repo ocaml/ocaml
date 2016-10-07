@@ -78,7 +78,7 @@ let extract_sig_open env loc mty =
     Mty_signature sg -> sg
   | Mty_alias(_, path) ->
       raise(Error(loc, env, Cannot_scrape_alias path))
-  | _ -> raise(Error(loc, env, Structure_expected mty))
+  | mty -> raise(Error(loc, env, Structure_expected mty))
 
 (* Compute the environment after opening a module *)
 
