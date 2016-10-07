@@ -26,12 +26,18 @@ let version = Sys.ocaml_version
 let standard_library_default = "%%LIBDIR%%"
 
 let standard_library =
+#if defined BS_NO_COMPILER_PATCH then
   try
     Sys.getenv "OCAMLLIB"
   with Not_found ->
   try
     Sys.getenv "CAMLLIB"
   with Not_found ->
+#else 
+  try 
+    Sys.getenv "BSLIB"
+  with Not_found -> 
+#end
     standard_library_default
 
 let standard_runtime = "%%BYTERUN%%"
