@@ -8,6 +8,9 @@ Next version (tbd):
 - PR#7315, GPR#736: refine some error locations
   (Gabriel Scherer and Alain Frisch, report by Matej Košík)
 
+- GPR#829: better error when opening a module aliased to a functor
+  (Alain Frisch)
+
 ### Standard library:
 
 - GPR#760: Add a functions List.compare_lengths and
