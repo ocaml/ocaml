@@ -190,10 +190,11 @@ let read_output () =
     else 0, 0
   in
   let output = Buffer.create 256 in
+  let first_line = ref true in
   while not (string_match ~!".*\"end_of_input\"$" !input 0) do
     if !verbose then prerr_endline !input;
+    if not !first_line then Buffer.add_char output '\n' else first_line:=false;
     Buffer.add_string output !input;
-    Buffer.add_char output '\n';
     input := input_line caml_input;
   done;
   Buffer.contents output, underline
@@ -255,7 +256,7 @@ let process_file file =
               else
                 (Buffer.add_string phrase last_input; global_expected)
             in
-            Buffer.add_string phrase ";;\n";
+            Buffer.add_string phrase ";;";
             Buffer.contents phrase, expected
           end in
         read ()
