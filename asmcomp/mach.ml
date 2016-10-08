@@ -37,6 +37,11 @@ type test =
   | Ioddtest
   | Ieventest
 
+type alloc_info = {
+    alloc_hd : int;
+    alloc_dbg : Debuginfo.t
+  }
+
 type operation =
     Imove
   | Ispill
@@ -52,8 +57,8 @@ type operation =
   | Istackoffset of int
   | Iload of Cmm.memory_chunk * Arch.addressing_mode
   | Istore of Cmm.memory_chunk * Arch.addressing_mode * bool
-  | Ialloc of { words : int; label_after_call_gc : label option;
-        spacetime_index : int; }
+  | Ialloc of { words : int; blocks : alloc_info list;
+                label_after_call_gc : label option; spacetime_index : int; }
   | Iintop of integer_operation
   | Iintop_imm of integer_operation * int
   | Inegf | Iabsf | Iaddf | Isubf | Imulf | Idivf

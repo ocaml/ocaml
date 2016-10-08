@@ -30,6 +30,7 @@
 #include "caml/misc.h"
 #include "caml/mlvalues.h"
 #include "caml/signals.h"
+#include "caml/memprof.h"
 
 int caml_huge_fallback_count = 0;
 /* Number of times that mmapping big pages fails and we fell back to small
@@ -472,13 +473,18 @@ color_t caml_allocation_color (void *hp)
 }
 
 static inline value caml_alloc_shr_aux (mlsize_t wosize, tag_t tag,
-                                        int raise_oom, uintnat profinfo)
+  enum caml_alloc_effect effect, uintnat profinfo)
 {
   header_t *hp;
   value *new_block;
 
+  // We temporarily change the tag of the newly allocated  block to
+  // Abstract_tag, because we may trigger the GC and we want to avoid
+  // scanning this uninitialized block.
+  tag_t tmp_tag = effect >= CAML_ALLOC_EFFECT_GC ? Abstract_tag : tag;
+
   if (wosize > Max_wosize) {
-    if (raise_oom)
+    if (effect >= CAML_ALLOC_EFFECT_RAISE_OOM)
       caml_raise_out_of_memory ();
     else
       return 0;
@@ -487,12 +493,10 @@ static inline value caml_alloc_shr_aux (mlsize_t wosize, tag_t tag,
   if (hp == NULL){
     new_block = expand_heap (wosize);
     if (new_block == NULL) {
-      if (!raise_oom)
-        return 0;
-      else if (caml_in_minor_collection)
-        caml_fatal_error ("Fatal error: out of memory.\n");
-      else
+      if (effect >= CAML_ALLOC_EFFECT_RAISE_OOM)
         caml_raise_out_of_memory ();
+      else
+        return 0;
     }
     caml_fl_add_blocks ((value) new_block);
     hp = caml_fl_allocate (wosize);
@@ -503,15 +507,17 @@ static inline value caml_alloc_shr_aux (mlsize_t wosize, tag_t tag,
   /* Inline expansion of caml_allocation_color. */
   if (caml_gc_phase == Phase_mark || caml_gc_phase == Phase_clean
       || (caml_gc_phase == Phase_sweep && (addr)hp >= (addr)caml_gc_sweep_hp)){
-    Hd_hp (hp) = Make_header_with_profinfo (wosize, tag, Caml_black, profinfo);
+    Hd_hp (hp) = Make_header_with_profinfo (wosize, tmp_tag,
+                                            Caml_black, profinfo);
   }else{
     Assert (caml_gc_phase == Phase_idle
             || (caml_gc_phase == Phase_sweep
                 && (addr)hp < (addr)caml_gc_sweep_hp));
-    Hd_hp (hp) = Make_header_with_profinfo (wosize, tag, Caml_white, profinfo);
+    Hd_hp (hp) = Make_header_with_profinfo (wosize, tmp_tag,
+                                            Caml_white, profinfo);
   }
   Assert (Hd_hp (hp)
-    == Make_header_with_profinfo (wosize, tag, caml_allocation_color (hp),
+    == Make_header_with_profinfo (wosize, tmp_tag, caml_allocation_color (hp),
                                   profinfo));
   caml_allocated_words += Whsize_wosize (wosize);
   if (caml_allocated_words > caml_minor_heap_wsz){
@@ -526,12 +532,27 @@ static inline value caml_alloc_shr_aux (mlsize_t wosize, tag_t tag,
     }
   }
 #endif
-  return Val_hp (hp);
+  if(effect >= CAML_ALLOC_EFFECT_GC) {
+#ifdef WITH_STATMEMPROF
+    value res = caml_memprof_track_alloc_shr(tag, Val_hp (hp));
+#else
+    value res = Val_hp (hp);
+#endif
+    res = caml_check_urgent_gc(res);
+    Tag_val(res) = tag;
+    return res;
+  } else {
+#ifdef WITH_STATMEMPROF
+    if(effect >= CAML_ALLOC_EFFECT_TRACK)
+      caml_memprof_postpone_track_alloc_shr(Val_hp (hp));
+#endif
+    return Val_hp (hp);
+  }
 }
 
 CAMLexport value caml_alloc_shr_no_raise (mlsize_t wosize, tag_t tag)
 {
-  return caml_alloc_shr_aux(wosize, tag, 0, 0);
+  return caml_alloc_shr_aux (wosize, tag, CAML_ALLOC_EFFECT_NONE, 0);
 }
 
 #ifdef WITH_PROFINFO
@@ -539,16 +560,10 @@ CAMLexport value caml_alloc_shr_no_raise (mlsize_t wosize, tag_t tag)
 /* Use this to debug problems with macros... */
 #define NO_PROFINFO 0xff
 
-CAMLexport value caml_alloc_shr_with_profinfo (mlsize_t wosize, tag_t tag,
-                                               intnat profinfo)
+CAMLexport value caml_alloc_shr_effect_with_profinfo (mlsize_t wosize,
+  tag_t tag, enum caml_alloc_effect effect, intnat profinfo)
 {
-  return caml_alloc_shr_aux(wosize, tag, 1, profinfo);
-}
-
-CAMLexport value caml_alloc_shr_preserving_profinfo (mlsize_t wosize,
-  tag_t tag, header_t old_header)
-{
-  return caml_alloc_shr_with_profinfo (wosize, tag, Profinfo_hd(old_header));
+  return caml_alloc_shr_aux (wosize, tag, effect, profinfo);
 }
 
 #else
@@ -558,15 +573,17 @@ CAMLexport value caml_alloc_shr_preserving_profinfo (mlsize_t wosize,
 #if defined(NATIVE_CODE) && defined(WITH_SPACETIME)
 #include "caml/spacetime.h"
 
-CAMLexport value caml_alloc_shr (mlsize_t wosize, tag_t tag)
+CAMLexport value caml_alloc_shr_effect (mlsize_t wosize, tag_t tag,
+                                        enum caml_alloc_effect effect)
 {
-  return caml_alloc_shr_with_profinfo (wosize, tag,
+  return caml_alloc_shr_aux (wosize, tag, effect,
     caml_spacetime_my_profinfo (NULL, wosize));
 }
 #else
-CAMLexport value caml_alloc_shr (mlsize_t wosize, tag_t tag)
+CAMLexport value caml_alloc_shr_effect (mlsize_t wosize, tag_t tag,
+                                        enum caml_alloc_effect effect)
 {
-  return caml_alloc_shr_aux (wosize, tag, 1, NO_PROFINFO);
+  return caml_alloc_shr_aux (wosize, tag, effect, NO_PROFINFO);
 }
 #endif
 

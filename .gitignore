@@ -81,6 +81,7 @@
 /asmrun/major_gc.c
 /asmrun/md5.c
 /asmrun/memory.c
+/asmrun/memprof.c
 /asmrun/meta.c
 /asmrun/minor_gc.c
 /asmrun/misc.c

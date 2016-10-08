@@ -46,6 +46,7 @@ OTHERS=list.cmo char.cmo bytes.cmo string.cmo sys.cmo \
   camlinternalOO.cmo oo.cmo camlinternalMod.cmo \
   genlex.cmo ephemeron.cmo \
   filename.cmo complex.cmo \
+  memprof.cmo \
   arrayLabels.cmo listLabels.cmo bytesLabels.cmo \
   stringLabels.cmo moreLabels.cmo stdLabels.cmo \
   spacetime.cmo

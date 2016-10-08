@@ -1,4 +1,56 @@
-= README =
+= README
+
+== OVERVIEW
+
+This is a patched version of the OCaml compiler and runtime. It
+provides a mechanism to statistically profile the heap.
+
+== INSTALLATION
+
+There is a opam switch packaging this patched version of OCaml:
+
+     $ opam switch install 4.03.0+statistical-memprof
+
+You may also compile this patched version just as the normal OCaml
+compiler.
+
+== QUICK TEST ON YOUR PROJECT
+
+1- Copy the memprofHelpers.ml file in your project
+
+2- Execute the following somewhere in your code:
+
+     MemprofHelpers.start 1E-4 20 100
+
+3- Execute your program. When you want a profile of the heap, just
+send it the SIGUSR1 signal.
+
+This will create a memory_profile file in the current directory,
+containing the current profile of the heap. The file contains, in the
+second column, the reverse call stacks at the allocation of the
+sampled blocks, and, on the first column, the number of corresponding
+samples. The row is masked if it corresponds to less than 100 samples.
+
+A bit more information about the parameters of this function:
+
+- 1st parameter (1E-4) : the sampling rate. Reasonnable values range
+  from 1E-6 to 1E-2. Lower means less precision but less
+  overhead. Higher means better precision (i.e., more samples) but
+  more runtime overhead.
+
+- 2nd parameter (20) : size of the callstack being dumped at each
+  sample.
+
+- 3rd parameter (100) : threshold below which nothing is printed in
+  the output file.
+
+== Tuning
+
+If you want more involved sampling schemes, you could
+patch/reimplement memprofHelpers.ml. Please refer to the documentation
+of the Memprof stdlib module (only in this patched version of OCaml).
+
+= ORIGINAL README FROM OCAML =
 
 == Overview
 

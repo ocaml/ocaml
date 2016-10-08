@@ -71,6 +71,15 @@ sp is a local copy of the global variable caml_extern_sp. */
   { sp -= 2; sp[0] = accu; sp[1] = env; caml_extern_sp = sp; }
 #define Restore_after_gc \
   { accu = sp[0]; env = sp[1]; sp += 2; }
+/* TODO : make sure that this is what we want. At least this saves
+   what needs to be saved and produces relevent backtraces, but is
+   there anything else we have to take care of ? */
+#define Setup_for_track_gc \
+  { sp -= 3; sp[0] = accu; sp[1] = env; \
+    sp[2] = (value) pc; caml_extern_sp = sp; }
+#define Restore_after_track_gc \
+  { sp = caml_extern_sp; accu = sp[0]; env = sp[1]; \
+    pc = (code_t) sp[2]; sp += 3; }
 #define Setup_for_c_call \
   { saved_pc = pc; *--sp = env; caml_extern_sp = sp; }
 #define Restore_after_c_call \
@@ -534,9 +543,10 @@ value caml_interprete(code_t prog, asize_t prog_size)
         for (i = 0; i < nvars; i++) Field(accu, i + 1) = sp[i];
       } else {
         /* PR#6385: must allocate in major heap */
-        /* caml_alloc_shr and caml_initialize never trigger a GC,
-           so no need to Setup_for_gc */
-        accu = caml_alloc_shr(1 + nvars, Closure_tag);
+        Setup_for_track_gc;
+        accu = caml_alloc_shr_effect(1 + nvars, Closure_tag,
+                                     CAML_ALLOC_EFFECT_GC);
+        Restore_after_track_gc;
         for (i = 0; i < nvars; i++) caml_initialize(&Field(accu, i + 1), sp[i]);
       }
       /* The code pointer is not in the heap, so no need to go through
@@ -560,9 +570,10 @@ value caml_interprete(code_t prog, asize_t prog_size)
         for (i = 0; i < nvars; i++, p++) *p = sp[i];
       } else {
         /* PR#6385: must allocate in major heap */
-        /* caml_alloc_shr and caml_initialize never trigger a GC,
-           so no need to Setup_for_gc */
-        accu = caml_alloc_shr(blksize, Closure_tag);
+        Setup_for_track_gc;
+        accu = caml_alloc_shr_effect(blksize, Closure_tag,
+                                     CAML_ALLOC_EFFECT_GC);
+        Restore_after_track_gc;
         p = &Field(accu, nfuncs * 2 - 1);
         for (i = 0; i < nvars; i++, p++) caml_initialize(p, sp[i]);
       }
@@ -654,7 +665,9 @@ value caml_interprete(code_t prog, asize_t prog_size)
         Field(block, 0) = accu;
         for (i = 1; i < wosize; i++) Field(block, i) = *sp++;
       } else {
-        block = caml_alloc_shr(wosize, tag);
+        Setup_for_track_gc;
+        block = caml_alloc_shr_effect(wosize, tag, CAML_ALLOC_EFFECT_GC);
+        Restore_after_track_gc;
         caml_initialize(&Field(block, 0), accu);
         for (i = 1; i < wosize; i++) caml_initialize(&Field(block, i), *sp++);
       }
@@ -697,7 +710,10 @@ value caml_interprete(code_t prog, asize_t prog_size)
       if (size <= Max_young_wosize / Double_wosize) {
         Alloc_small(block, size * Double_wosize, Double_array_tag);
       } else {
-        block = caml_alloc_shr(size * Double_wosize, Double_array_tag);
+        Setup_for_track_gc;
+        block = caml_alloc_shr_effect(size * Double_wosize, Double_array_tag,
+                                      CAML_ALLOC_EFFECT_GC);
+        Restore_after_track_gc;
       }
       Store_double_field(block, 0, Double_val(accu));
       for (i = 1; i < size; i++){

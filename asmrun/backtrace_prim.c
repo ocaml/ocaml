@@ -111,14 +111,13 @@ void caml_stash_backtrace(value exn, uintnat pc, char * sp, char * trapsp)
    (hopefully less often). Instead of using a bounded buffer as
    [caml_stash_backtrace], we first traverse the stack to compute the
    right size, then allocate space for the trace. */
-CAMLprim value caml_get_current_callstack(value max_frames_value)
-{
-  CAMLparam1(max_frames_value);
-  CAMLlocal1(trace);
 
-  /* we use `intnat` here because, were it only `int`, passing `max_int`
-     from the OCaml side would overflow on 64bits machines. */
-  intnat max_frames = Long_val(max_frames_value);
+/* we use `intnat` for max_frames because, were it only `int`, passing
+   `max_int` from the OCaml side would overflow on 64bits machines. */
+value caml_get_current_callstack_impl(intnat max_frames, int avoid_gc)
+{
+  CAMLparam0();
+  CAMLlocal1(trace);
   intnat trace_size;
 
   /* first compute the size of the trace */
@@ -144,7 +143,12 @@ CAMLprim value caml_get_current_callstack(value max_frames_value)
     }
   }
 
-  trace = caml_alloc((mlsize_t) trace_size, 0);
+  if(trace_size == 0) CAMLreturn(Atom (0));
+
+  if(avoid_gc)
+    trace = caml_alloc_shr_effect(trace_size, 0, CAML_ALLOC_EFFECT_TRACK);
+  else
+    trace = caml_alloc(trace_size, 0);
 
   /* then collect the trace */
   {
@@ -163,20 +167,31 @@ CAMLprim value caml_get_current_callstack(value max_frames_value)
 }
 
 
-debuginfo caml_debuginfo_extract(backtrace_slot slot)
+debuginfo caml_debuginfo_extract(value slot)
 {
   uintnat infoptr;
-  frame_descr * d = (frame_descr *)slot;
+  frame_descr * d;
+  intnat alloc_id;
+  if(Is_long(slot)) {
+    d = (frame_descr *)Backtrace_slot_val(slot);
+    alloc_id = 0;
+  } else {
+    d = (frame_descr *)Backtrace_slot_val(Field(slot, 0));
+    alloc_id = Long_val(Field(slot, 1));
+  }
 
   if ((d->frame_size & 1) == 0) {
     return NULL;
   }
+
   /* Recover debugging info */
   infoptr = ((uintnat) d +
              sizeof(char *) + sizeof(short) + sizeof(short) +
              sizeof(short) * d->num_live + sizeof(frame_descr *) - 1)
             & -sizeof(frame_descr *);
-  return *((debuginfo*)infoptr);
+  infoptr = *((uintnat*)infoptr) +
+    alloc_id * (2 * sizeof(uint32_t) + sizeof(uintnat) + sizeof(header_t));
+  return (debuginfo)infoptr;
 }
 
 debuginfo caml_debuginfo_next(debuginfo dbg)
@@ -205,9 +220,20 @@ void caml_debuginfo_location(debuginfo dbg, /*out*/ struct caml_loc_info * li)
     li->loc_is_inlined = 0;
     return;
   }
+
   /* Recover debugging info */
   info1 = ((uint32_t *)dbg)[0];
   info2 = ((uint32_t *)dbg)[1];
+
+  /* In case of a unannotated allocation, dbg can be non-NULL even
+     though info1 == info2 == 0 */
+  if (info1 == 0 && info2 == 0) {
+    li->loc_valid = 0;
+    li->loc_is_raise = 0;
+    li->loc_is_inlined = 0;
+    return;
+  }
+
   /* Format of the two info words:
        llllllllllllllllllll aaaaaaaa bbbbbbbbbb nnnnnnnnnnnnnnnnnnnnnnnn kk
                           44       36         26                       2  0

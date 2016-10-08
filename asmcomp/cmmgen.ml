@@ -24,7 +24,6 @@ open Lambda
 open Clambda
 open Cmm
 open Cmx_format
-
 (* Local binding of complex expressions *)
 
 let bind name arg fn =
@@ -661,7 +660,7 @@ let make_alloc_generic set_fn dbg tag wordsize args =
     | e1::el -> Csequence(set_fn (Cvar id) (Cconst_int idx) e1,
                           fill_fields (idx + 2) el) in
     Clet(id,
-         Cop(Cextcall("caml_alloc", typ_val, true, Debuginfo.none, None),
+         Cop(Cextcall("caml_alloc", typ_val, true, dbg, None),
                  [Cconst_int wordsize; Cconst_int tag]),
          fill_fields 1 args)
   end
@@ -1731,7 +1730,7 @@ let rec transl env e =
 and transl_make_array dbg env kind args =
   match kind with
   | Pgenarray ->
-      Cop(Cextcall("caml_make_array", typ_val, true, Debuginfo.none, None),
+      Cop(Cextcall("caml_make_array", typ_val, true, dbg, None),
           [make_alloc dbg 0 (List.map (transl env) args)])
   | Paddrarray | Pintarray ->
       make_alloc dbg 0 (List.map (transl env) args)

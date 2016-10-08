@@ -38,6 +38,7 @@ extern value caml_ephe_none;
 #define CAML_EPHE_DATA_OFFSET 1
 #define CAML_EPHE_FIRST_KEY 2
 
+extern value caml_ephe_set_key (value ar, value n, value el);
 
 /* In the header, in order to let major_gc.c
    and weak.c see the body of the function */

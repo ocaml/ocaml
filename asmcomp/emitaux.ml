@@ -105,12 +105,16 @@ let emit_float32_directive directive x =
 
 (* Record live pointers at call points *)
 
+type frame_debuginfo =
+  | Dbg_alloc of Mach.alloc_info list
+  | Dbg_other of Debuginfo.t
+
 type frame_descr =
   { fd_lbl: int;                        (* Return address *)
     fd_frame_size: int;                 (* Size of stack frame *)
     fd_live_offset: int list;           (* Offsets/regs of live addresses *)
     fd_raise: bool;                     (* Is frame for a raise? *)
-    fd_debuginfo: Debuginfo.t }         (* Location, if any *)
+    fd_debuginfo: frame_debuginfo }     (* Location, if any *)
 
 let frame_descriptors = ref([] : frame_descr list)
 
@@ -119,7 +123,7 @@ type emit_frame_actions =
     efa_data_label: int -> unit;
     efa_16: int -> unit;
     efa_32: int32 -> unit;
-    efa_word: int -> unit;
+    efa_word: nativeint -> unit;
     efa_align: int -> unit;
     efa_label_rel: int -> int32 -> unit;
     efa_def_label: int -> unit;
@@ -153,17 +157,42 @@ let emit_frames a =
   let emit_debuginfo_label rs rdbg =
     a.efa_data_label (label_debuginfos rs rdbg)
   in
+  let alloc_debuginfos = ref [] in
+  let label_alloc_debuginfos dbg =
+    let lbl = Cmm.new_label () in
+    let l =
+      List.map (fun { alloc_dbg = dbg; _ } as ai ->
+          match List.rev dbg with
+          | [] | _ :: [] -> (ai, None)
+          | _ :: ((_ :: _) as rdbg) -> (ai, Some (label_debuginfos false rdbg))
+        ) dbg
+    in
+    alloc_debuginfos := (lbl, l) :: !alloc_debuginfos;
+    lbl
+  in
+  let emit_alloc_debuginfo_label dbg =
+    a.efa_data_label (label_alloc_debuginfos dbg)
+  in
   let emit_frame fd =
     a.efa_code_label fd.fd_lbl;
-    a.efa_16 (if Debuginfo.is_none fd.fd_debuginfo
-              then fd.fd_frame_size
-              else fd.fd_frame_size + 1);
+    let not_dbg =
+      match fd.fd_debuginfo with
+      | Dbg_alloc { alloc_dbg; _ } -> false
+      | Dbg_other dbg -> Debuginfo.is_none dbg
+    in
+    a.efa_16 (if not_dbg then fd.fd_frame_size else fd.fd_frame_size + 1);
     a.efa_16 (List.length fd.fd_live_offset);
     List.iter a.efa_16 fd.fd_live_offset;
     a.efa_align Arch.size_addr;
-    match List.rev fd.fd_debuginfo with
-    | [] -> ()
-    | _ :: _ as rdbg -> emit_debuginfo_label fd.fd_raise rdbg
+    if not not_dbg then
+      match fd.fd_debuginfo with
+      | Dbg_alloc dbg ->
+         assert (not fd.fd_raise);
+         if Config.with_statmemprof then
+           emit_alloc_debuginfo_label dbg
+         else
+           emit_debuginfo_label false (List.rev (List.hd dbg).alloc_dbg)
+      | Dbg_other dbg -> emit_debuginfo_label fd.fd_raise (List.rev dbg)
   in
   let emit_filename name lbl =
     a.efa_def_label lbl;
@@ -180,23 +209,39 @@ let emit_frames a =
                 (add (shift_left (of_int char_end) 26)
                    (of_int kind))))
   in
+  let emit_debuginfo_no_lbl rs rdbg next =
+    match rdbg with
+    | [] -> a.efa_32 0l; a.efa_32 0l; a.efa_word 0n
+    | d :: _ ->
+       let d = List.hd rdbg in
+       let info = pack_info rs d in
+       a.efa_label_rel
+         (label_filename d.Debuginfo.dinfo_file)
+         (Int64.to_int32 info);
+       a.efa_32 (Int64.to_int32 (Int64.shift_right info 32));
+       begin match next with
+             | Some next -> a.efa_data_label next
+             | None -> a.efa_word 0n
+       end
+  in
   let emit_debuginfo (rs, rdbg) (lbl,next) =
-    let d = List.hd rdbg in
     a.efa_align Arch.size_addr;
     a.efa_def_label lbl;
-    let info = pack_info rs d in
-    a.efa_label_rel
-      (label_filename d.Debuginfo.dinfo_file)
-      (Int64.to_int32 info);
-    a.efa_32 (Int64.to_int32 (Int64.shift_right info 32));
-    begin match next with
-    | Some next -> a.efa_data_label next
-    | None -> a.efa_word 0
-    end
+    emit_debuginfo_no_lbl rs rdbg next
   in
-  a.efa_word (List.length !frame_descriptors);
+  let emit_alloc_debuginfo (lbl, dbg) =
+    a.efa_align Arch.size_addr;
+    a.efa_word (Nativeint.of_int (List.length dbg));
+    a.efa_def_label lbl;
+    List.iter (fun ({ alloc_hd; alloc_dbg }, next) ->
+        emit_debuginfo_no_lbl false (List.rev alloc_dbg) next;
+        emit_word alloc_hd)
+      dbg
+  in
+  a.efa_word (Nativeint.of_int (List.length !frame_descriptors));
   List.iter emit_frame !frame_descriptors;
   Hashtbl.iter emit_debuginfo debuginfos;
+  List.iter emit_alloc_debuginfo !alloc_debuginfos;
   Hashtbl.iter emit_filename filenames;
   frame_descriptors := []
 

@@ -268,21 +268,19 @@ code_t caml_next_frame_pointer(value ** sp, value ** trsp)
   return NULL;
 }
 
-/* Stores upto [max_frames_value] frames of the current call stack to
+/* Stores upto [size] frames of the current call stack to
    return to the user. This is used not in an exception-raising
    context, but only when the user requests to save the trace
    (hopefully less often). Instead of using a bounded buffer as
    [caml_stash_backtrace], we first traverse the stack to compute the
    right size, then allocate space for the trace. */
 
-CAMLprim value caml_get_current_callstack(value max_frames_value)
+/* we use `intnat` for max_frames because, were it only `int`, passing
+   `max_int` from the OCaml side would overflow on 64bits machines. */
+value caml_get_current_callstack_impl(intnat max_frames, int avoid_gc)
 {
-  CAMLparam1(max_frames_value);
+  CAMLparam0();
   CAMLlocal1(trace);
-
-  /* we use `intnat` here because, were it only `int`, passing `max_int`
-     from the OCaml side would overflow on 64bits machines. */
-  intnat max_frames = Long_val(max_frames_value);
   intnat trace_size;
 
   /* first compute the size of the trace */
@@ -296,7 +294,12 @@ CAMLprim value caml_get_current_callstack(value max_frames_value)
     }
   }
 
-  trace = caml_alloc(trace_size, 0);
+  if(trace_size == 0) CAMLreturn(Atom (0));
+
+  if(avoid_gc)
+    trace = caml_alloc_shr_effect(trace_size, 0, CAML_ALLOC_EFFECT_TRACK);
+  else
+    trace = caml_alloc(trace_size, 0);
 
   /* then collect the trace */
   {
@@ -440,9 +443,9 @@ void caml_debuginfo_location(debuginfo dbg,
   li->loc_endchr = event->ev_endchr;
 }
 
-debuginfo caml_debuginfo_extract(backtrace_slot slot)
+debuginfo caml_debuginfo_extract(value slot)
 {
-  return (debuginfo)slot;
+  return (debuginfo)Backtrace_slot_val(slot);
 }
 
 debuginfo caml_debuginfo_next(debuginfo dbg)

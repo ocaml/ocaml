@@ -248,7 +248,9 @@ let bound_error_call = ref 0
 let bound_error_label ?label dbg =
   if !Clflags.debug then begin
     let lbl_bound_error = new_label() in
-    let lbl_frame = record_frame_label ?label Reg.Set.empty false dbg in
+    let lbl_frame =
+      record_frame_label ?label Reg.Set.empty false (Dbg_other dbg)
+    in
     bound_error_sites :=
       { bd_lbl = lbl_bound_error; bd_frame = lbl_frame } :: !bound_error_sites;
     lbl_bound_error
@@ -524,11 +526,11 @@ let emit_instr fallthrough i =
       I.mov (immsym s) (reg i.res.(0))
   | Lop(Icall_ind { label_after; }) ->
       I.call (reg i.arg.(0));
-      record_frame i.live false i.dbg ~label:label_after
+      record_frame i.live false (Dbg_other i.dbg) ~label:label_after
   | Lop(Icall_imm { func; label_after; }) ->
       add_used_symbol func;
       emit_call func;
-      record_frame i.live false i.dbg ~label:label_after
+      record_frame i.live false (Dbg_other i.dbg) ~label:label_after
   | Lop(Itailcall_ind { label_after = _; }) ->
       output_epilogue begin fun () ->
         I.jmp (reg i.arg.(0))
@@ -554,7 +556,7 @@ let emit_instr fallthrough i =
                               (emit_symbol func))) eax
         end;
         emit_call "caml_c_call";
-        record_frame i.live false i.dbg ~label:label_after
+        record_frame i.live false (Dbg_other i.dbg) ~label:label_after
       end else begin
         if system <> S_macosx then
           emit_call func
@@ -611,7 +613,7 @@ let emit_instr fallthrough i =
             I.fstp (addressing addr REAL8 i 1)
           end
       end
-  | Lop(Ialloc { words = n; label_after_call_gc; }) ->
+  | Lop(Ialloc { words = n; blocks = dbg; label_after_call_gc; }) ->
       if !fastcode_flag then begin
         let lbl_redo = new_label() in
         def_label lbl_redo;
@@ -620,7 +622,7 @@ let emit_instr fallthrough i =
         I.mov eax (sym32 "caml_young_ptr");
         I.cmp (sym32 "caml_young_limit") eax;
         let lbl_call_gc = new_label() in
-        let lbl_frame = record_frame_label i.live false Debuginfo.none in
+        let lbl_frame = record_frame_label i.live false (Dbg_alloc dbg) in
         I.jb (label lbl_call_gc);
         I.lea (mem32 NONE 4 RAX) (reg i.res.(0));
         call_gc_sites :=
@@ -638,7 +640,7 @@ let emit_instr fallthrough i =
         end;
         let label =
           record_frame_label ?label:label_after_call_gc i.live false
-            Debuginfo.none
+            (Dbg_alloc dbg)
         in
         def_label label;
         I.lea (mem32 NONE 4 RAX) (reg i.res.(0))
@@ -878,7 +880,7 @@ let emit_instr fallthrough i =
       begin match k with
       | Cmm.Raise_withtrace ->
           emit_call "caml_raise_exn";
-          record_frame Reg.Set.empty true i.dbg
+          record_frame Reg.Set.empty true (Dbg_other i.dbg)
       | Cmm.Raise_notrace ->
           I.mov (sym32 "caml_exception_pointer") esp;
           I.pop (sym32 "caml_exception_pointer");
@@ -1060,7 +1062,7 @@ let end_assembly() =
       efa_data_label = (fun l -> D.long (ConstLabel (emit_label l)));
       efa_16 = (fun n -> D.word (const n));
       efa_32 = (fun n -> D.long (const_32 n));
-      efa_word = (fun n -> D.long (const n));
+      efa_word = (fun n -> D.long (const_nat n));
       efa_align = D.align;
       efa_label_rel = (fun lbl ofs ->
           D.long (ConstAdd (

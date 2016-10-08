@@ -30,6 +30,8 @@
 
 #define Setup_for_gc
 #define Restore_after_gc
+#define Setup_for_track_gc
+#define Restore_after_track_gc
 
 CAMLexport value caml_alloc (mlsize_t wosize, tag_t tag)
 {
@@ -46,11 +48,10 @@ CAMLexport value caml_alloc (mlsize_t wosize, tag_t tag)
       for (i = 0; i < wosize; i++) Field (result, i) = Val_unit;
     }
   }else{
-    result = caml_alloc_shr (wosize, tag);
+    result = caml_alloc_shr_effect (wosize, tag, CAML_ALLOC_EFFECT_GC);
     if (tag < No_scan_tag){
       for (i = 0; i < wosize; i++) Field (result, i) = Val_unit;
     }
-    result = caml_check_urgent_gc (result);
   }
   return result;
 }
@@ -78,7 +79,7 @@ CAMLexport value caml_alloc_small_with_my_or_given_profinfo (mlsize_t wosize,
     Assert (wosize > 0);
     Assert (wosize <= Max_young_wosize);
     Assert (tag < 256);
-    Alloc_small_with_profinfo (result, wosize, tag, profinfo);
+    Alloc_small_impl (result, wosize, tag, profinfo, 1);
     return result;
   }
 }
@@ -99,8 +100,7 @@ CAMLexport value caml_alloc_string (mlsize_t len)
   if (wosize <= Max_young_wosize) {
     Alloc_small (result, wosize, String_tag);
   }else{
-    result = caml_alloc_shr (wosize, String_tag);
-    result = caml_check_urgent_gc (result);
+    result = caml_alloc_shr_effect (wosize, String_tag, CAML_ALLOC_EFFECT_GC);
   }
   Field (result, wosize - 1) = 0;
   offset_index = Bsize_wsize (wosize) - 1;

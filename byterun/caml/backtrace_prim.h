@@ -51,7 +51,7 @@ typedef void * debuginfo;
 int caml_debug_info_available(void);
 
 /* Return debuginfo associated to a slot or NULL. */
-debuginfo caml_debuginfo_extract(backtrace_slot slot);
+debuginfo caml_debuginfo_extract(value slot);
 
 /* In case of an inlined call return next debuginfo or NULL otherwise. */
 debuginfo caml_debuginfo_next(debuginfo dbg);
@@ -66,6 +66,12 @@ void caml_debuginfo_location(debuginfo dbg, /*out*/ struct caml_loc_info * li);
 
    In particular, we do not need to use [caml_modify] when setting
    an array element with such a value.
+
+   WARNING : In the case the slot refers to an allocation, the
+   encoding of a slot as a value can actually be a pointer to a heap
+   allocated pair of the slot and the allocation identifier. Hence,
+   [Backtrace_slot_val] should only be used internally in the
+   implementation of [caml_debuginfo_extract].
  */
 #define Val_backtrace_slot(bslot) (Val_long(((uintnat)(bslot))>>1))
 #define Backtrace_slot_val(vslot) ((backtrace_slot)(Long_val(vslot) << 1))
@@ -78,10 +84,16 @@ void caml_debuginfo_location(debuginfo dbg, /*out*/ struct caml_loc_info * li);
  * It defines the [caml_stash_backtrace] function, which is called to quickly
  * fill the backtrace buffer by walking the stack when an exception is raised.
  *
- * It also defines the [caml_get_current_callstack] OCaml primitive, which also
+ * It also defines the [caml_get_current_callstack_impl] function, which also
  * walks the stack but directly turns it into a [raw_backtrace] and is called
  * explicitly.
+ *
+ * If avoid_gc is set to non-0, then the block is allocated using
+ * [alloc_shr], so that it is guaranteed to be in the major heap and
+ * that no call to the GC is made.
  */
+
+value caml_get_current_callstack_impl(intnat max_frames, int avoid_gc);
 
 #endif /* CAML_INTERNALS */
 

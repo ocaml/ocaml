@@ -26,6 +26,7 @@
 #include "gc.h"
 #include "major_gc.h"
 #include "minor_gc.h"
+#include "memprof.h"
 #endif /* CAML_INTERNALS */
 #include "misc.h"
 #include "mlvalues.h"
@@ -34,19 +35,40 @@
 extern "C" {
 #endif
 
+/* The function, [caml_alloc_shr_effect], that does an allocation in
+   the major heap, can be called in 4 modes, depending on the kind of
+   effects it is allowed to perform. */
+enum caml_alloc_effect {
+  CAML_ALLOC_EFFECT_NONE,       /* No effect. Returns 0 in case of OOM. */
+  CAML_ALLOC_EFFECT_RAISE_OOM,  /* As previously, but raises the OOM
+                                   Ocaml exception if necessary */
+  CAML_ALLOC_EFFECT_TRACK,      /* As previoulsy, and the allocation is
+                                   taken into account by memprof. */
+  CAML_ALLOC_EFFECT_GC          /* As previously, and the GC may
+                                   possibly get called. */
+};
 
-CAMLextern value caml_alloc_shr (mlsize_t wosize, tag_t);
+CAMLextern value caml_alloc_shr_effect (mlsize_t, tag_t,
+                                        enum caml_alloc_effect);
+
 #ifdef WITH_PROFINFO
-CAMLextern value caml_alloc_shr_with_profinfo (mlsize_t, tag_t, intnat);
-CAMLextern value caml_alloc_shr_preserving_profinfo (mlsize_t, tag_t,
-                                                     header_t);
+CAMLextern value caml_alloc_shr_effect_with_profinfo (mlsize_t, tag_t,
+  enum caml_alloc_effect, intnat);
 #else
-#define caml_alloc_shr_with_profinfo(size, tag, profinfo) \
-  caml_alloc_shr(size, tag)
-#define caml_alloc_shr_preserving_profinfo(size, tag, header) \
-  caml_alloc_shr(size, tag)
+#define caml_alloc_shr_effect_with_profinfo(size, tag, effect, profinfo) \
+  caml_alloc_shr_effect(size, tag, effect)
 #endif /* WITH_PROFINFO */
+
+/* [caml_alloc_shr] uses [CAML_ALLOC_EFFECT_TRACK], which is compatible
+   with historical behavior. */
+#define caml_alloc_shr(wosize, tag) \
+  caml_alloc_shr_effect(wosize, tag, CAML_ALLOC_EFFECT_TRACK)
+#define caml_alloc_shr_with_profinfo(wosize, tag, profinfo)             \
+  caml_alloc_shr_effect_with_profinfo(wosize, tag,                      \
+                                      CAML_ALLOC_EFFECT_TRACK, profinfo)
+
 CAMLextern value caml_alloc_shr_no_raise (mlsize_t wosize, tag_t);
+
 CAMLextern void caml_adjust_gc_speed (mlsize_t, mlsize_t);
 CAMLextern void caml_alloc_dependent_memory (mlsize_t bsz);
 CAMLextern void caml_free_dependent_memory (mlsize_t bsz);
@@ -94,18 +116,37 @@ int caml_page_table_initialize(mlsize_t bytesize);
 #define DEBUG_clear(result, wosize)
 #endif
 
-#define Alloc_small_with_profinfo(result, wosize, tag, profinfo) do {       \
+#ifdef WITH_STATMEMPROF
+#define ALLOC_SMALL_PRE_IF if (caml_young_ptr < caml_young_limit)
+#define ALLOC_SMALL_STATMEMPROF                                         \
+  if(caml_young_ptr < caml_memprof_young_limit){                        \
+    if(track) {                                                         \
+      Setup_for_track_gc;                                               \
+      caml_memprof_track_young((tag), wosize);                          \
+      Restore_after_track_gc;                                           \
+    } else                                                              \
+      caml_memprof_renew_minor_sample();                                \
+  }
+#else
+#define ALLOC_SMALL_PRE_IF
+#define ALLOC_SMALL_STATMEMPROF
+#endif
+
+#define Alloc_small_impl(result, wosize, tag, profinfo, track) do {     \
                                                 CAMLassert ((wosize) >= 1); \
                                           CAMLassert ((tag_t) (tag) < 256); \
                                  CAMLassert ((wosize) <= Max_young_wosize); \
   caml_young_ptr -= Whsize_wosize (wosize);                                 \
-  if (caml_young_ptr < caml_young_trigger){                                 \
-    caml_young_ptr += Whsize_wosize (wosize);                               \
-    CAML_INSTR_INT ("force_minor/alloc_small@", 1);                         \
-    Setup_for_gc;                                                           \
-    caml_gc_dispatch ();                                                    \
-    Restore_after_gc;                                                       \
-    caml_young_ptr -= Whsize_wosize (wosize);                               \
+  ALLOC_SMALL_PRE_IF {                                                      \
+    if (caml_young_ptr < caml_young_trigger){                               \
+      caml_young_ptr += Whsize_wosize (wosize);                             \
+      CAML_INSTR_INT ("force_minor/alloc_small@", 1);                       \
+      Setup_for_gc;                                                         \
+      caml_gc_dispatch ();                                                  \
+      Restore_after_gc;                                                     \
+      caml_young_ptr -= Whsize_wosize (wosize);                             \
+    }                                                                       \
+    ALLOC_SMALL_STATMEMPROF                                                 \
   }                                                                         \
   Hd_hp (caml_young_ptr) =                                                  \
     Make_header_with_profinfo ((wosize), (tag), Caml_black, profinfo);      \
@@ -115,12 +156,12 @@ int caml_page_table_initialize(mlsize_t bytesize);
 
 #if defined(NATIVE_CODE) && defined(WITH_SPACETIME)
 extern uintnat caml_spacetime_my_profinfo(struct ext_table**, uintnat);
-#define Alloc_small(result, wosize, tag) \
-  Alloc_small_with_profinfo(result, wosize, tag, \
-    caml_spacetime_my_profinfo(NULL, wosize))
+#define Alloc_small(result, wosize, tag)                \
+  Alloc_small_impl(result, wosize, tag,                 \
+    caml_spacetime_my_profinfo(NULL, wosize), 1)
 #else
 #define Alloc_small(result, wosize, tag) \
-  Alloc_small_with_profinfo(result, wosize, tag, (uintnat) 0)
+  Alloc_small_impl(result, wosize, tag, (uintnat) 0, 1)
 #endif
 
 /* Deprecated alias for [caml_modify] */

@@ -140,7 +140,7 @@ let record_frame_label ?label live raise_ dbg =
       fd_frame_size = frame_size();
       fd_live_offset = !live_offset;
       fd_raise = raise_;
-      fd_debuginfo = dbg } :: !frame_descriptors;
+      fd_debuginfo = Dbg_other dbg } :: !frame_descriptors;
   lbl
 
 let record_frame ?label live raise_ dbg =
@@ -498,7 +498,7 @@ module BR = Branch_relaxation.Make (struct
       | Cmm.Raise_notrace -> 4
       end
 
-  let relax_allocation ~num_words ~label_after_call_gc =
+  let relax_allocation ~num_words ~blocks ~label_after_call_gc =
     Lop (Ispecific (Ifar_alloc { words = num_words; label_after_call_gc; }))
 
   let relax_intop_checkbound ~label_after_error =
@@ -981,7 +981,7 @@ let end_assembly () =
                        `	.quad	{emit_label lbl}\n`);
       efa_16 = (fun n -> `	.short	{emit_int n}\n`);
       efa_32 = (fun n -> `	.long	{emit_int32 n}\n`);
-      efa_word = (fun n -> `	.quad	{emit_int n}\n`);
+      efa_word = (fun n -> `	.quad	{emit_nativeint n}\n`);
       efa_align = (fun n -> `	.align	{emit_int(Misc.log2 n)}\n`);
       efa_label_rel = (fun lbl ofs ->
                            `	.long	{emit_label lbl} - . + {emit_int32 ofs}\n`);

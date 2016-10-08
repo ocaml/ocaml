@@ -125,7 +125,8 @@ CAMLprim value caml_realloc_global(value size)
     requested_size = (requested_size + 0x100) & 0xFFFFFF00;
     caml_gc_message (0x08, "Growing global data to %lu entries\n",
                      requested_size);
-    new_global_data = caml_alloc_shr(requested_size, 0);
+    new_global_data = caml_alloc_shr_effect(requested_size, 0,
+                                            CAML_ALLOC_EFFECT_TRACK);
     for (i = 0; i < actual_size; i++)
       caml_initialize(&Field(new_global_data, i), Field(caml_global_data, i));
     for (i = actual_size; i < requested_size; i++){

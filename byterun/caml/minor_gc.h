@@ -25,7 +25,6 @@ CAMLextern value *caml_young_alloc_start, *caml_young_alloc_end;
 CAMLextern value *caml_young_ptr, *caml_young_limit;
 CAMLextern value *caml_young_trigger;
 extern asize_t caml_minor_heap_wsz;
-extern int caml_in_minor_collection;
 
 #define CAML_TABLE_STRUCT(t) { \
   t *base;                     \
@@ -56,6 +55,8 @@ struct caml_custom_elt {
 
 struct caml_custom_table CAML_TABLE_STRUCT(struct caml_custom_elt);
 CAMLextern struct caml_custom_table caml_custom_table;
+
+extern void caml_update_young_limit(void);
 
 extern void caml_set_minor_heap_size (asize_t); /* size in bytes */
 extern void caml_empty_minor_heap (void);

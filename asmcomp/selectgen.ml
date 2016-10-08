@@ -264,8 +264,8 @@ method mark_instr = function
 
 (* Default instruction selection for operators *)
 
-method select_allocation words =
-  Ialloc { words; spacetime_index = 0; label_after_call_gc = None; }
+method select_allocation blocks =
+  Ialloc { words = 0; blocks; spacetime_index = 0; label_after_call_gc = None; }
 method select_allocation_args _env = [| |]
 
 method select_checkbound () =
@@ -304,7 +304,9 @@ method select_operation op args =
         (Istore(chunk, addr, is_assign), [arg2; eloc])
         (* Inversion addr/datum in Istore *)
       end
-  | (Calloc _dbg, _) -> (self#select_allocation 0), args
+  | (Calloc _dbg, _) ->
+     let blocks = [{alloc_hd = Nativeint.zero; alloc_dbg = Debuginfo.none}] in
+     (self#select_allocation blocks, args)
   | (Caddi, _) -> self#select_arith_comm Iadd args
   | (Csubi, _) -> self#select_arith Isub args
   | (Cmuli, _) -> self#select_arith_comm Imul args
@@ -607,11 +609,16 @@ method emit_expr env exp =
                   loc_arg (Proc.loc_external_results rd) in
               self#insert_move_results loc_res rd stack_ofs;
               Some rd
-          | Ialloc { words = _; spacetime_index; label_after_call_gc; } ->
+          | Ialloc { spacetime_index; label_after_call_gc; _ } ->
               let rd = self#regs_for typ_val in
-              let size = size_expr env (Ctuple new_args) in
+              let words = size_expr env (Ctuple new_args) in
+              let alloc_hd = match new_args with
+                | Cblockheader (hd, _dbg) :: _ -> hd
+                | _ -> assert false
+              in
+              let blocks = [{ alloc_hd; alloc_dbg = dbg }]
               let op =
-                Ialloc { words = size; spacetime_index; label_after_call_gc; }
+                Ialloc { words; blocks; spacetime_index; label_after_call_gc; }
               in
               let args = self#select_allocation_args env in
               self#insert_debug (Iop op) dbg args rd;

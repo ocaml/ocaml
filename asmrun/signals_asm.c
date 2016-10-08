@@ -31,6 +31,8 @@
 #include "signals_osdep.h"
 #include "caml/stack.h"
 #include "caml/spacetime.h"
+#include "caml/memprof.h"
+
 
 #ifdef HAS_STACK_OVERFLOW_DETECTION
 #include <sys/time.h>
@@ -72,12 +74,19 @@ extern char caml_system__code_begin, caml_system__code_end;
 
 void caml_garbage_collection(void)
 {
-  caml_young_limit = caml_young_trigger;
-  if (caml_requested_major_slice || caml_requested_minor_gc ||
-      caml_young_ptr - caml_young_trigger < Max_young_whsize){
+  caml_update_young_limit();
+#ifdef WITH_STATMEMPROF
+  double memprof_exceeded_by = caml_memprof_call_gc_begin();
+#endif
+  int gc_triggered =
+    caml_requested_major_slice || caml_requested_minor_gc ||
+    caml_young_ptr - caml_young_trigger < Max_young_whsize;
+  if(gc_triggered)
     caml_gc_dispatch ();
-  }
 
+#ifdef WITH_STATMEMPROF
+  caml_memprof_handle_postponed();
+#endif
 #ifdef WITH_SPACETIME
   if (caml_young_ptr == caml_young_alloc_end) {
     caml_spacetime_automatic_snapshot();
@@ -85,6 +94,12 @@ void caml_garbage_collection(void)
 #endif
 
   caml_process_pending_signals();
+
+#ifdef WITH_STATMEMPROF
+  /* See comment above [caml_memprof_call_gc_begin] in memprof.c */
+  if(!gc_triggered)
+    caml_memprof_call_gc_end(memprof_exceeded_by);
+#endif
 }
 
 DECLARE_SIGNAL_HANDLER(handle_signal)

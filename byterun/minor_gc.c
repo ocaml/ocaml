@@ -75,8 +75,6 @@ CAMLexport struct caml_custom_table
 /* Table of custom blocks in the minor heap that contain finalizers
    or GC speed parameters. */
 
-int caml_in_minor_collection = 0;
-
 /* [sz] and [rsv] are numbers of entries */
 static void alloc_generic_table (struct generic_table *tbl, asize_t sz,
                                  asize_t rsv, asize_t element_size)
@@ -128,6 +126,16 @@ static void clear_table (struct generic_table *tbl)
     tbl->limit = tbl->threshold;
 }
 
+void caml_update_young_limit(void) {
+#ifdef WITH_STATMEMPROF
+  caml_young_limit =
+    caml_memprof_young_limit < caml_young_trigger ?
+    caml_young_trigger : caml_memprof_young_limit;
+#else
+  caml_young_limit = caml_young_trigger;
+#endif
+}
+
 void caml_set_minor_heap_size (asize_t bsz)
 {
   char *new_heap;
@@ -140,7 +148,7 @@ void caml_set_minor_heap_size (asize_t bsz)
     CAML_INSTR_INT ("force_minor/set_minor_heap_size@", 1);
     caml_requested_minor_gc = 0;
     caml_young_trigger = caml_young_alloc_mid;
-    caml_young_limit = caml_young_trigger;
+    caml_update_young_limit();
     caml_empty_minor_heap ();
   }
   CAMLassert (caml_young_ptr == caml_young_alloc_end);
@@ -160,16 +168,32 @@ void caml_set_minor_heap_size (asize_t bsz)
   caml_young_alloc_mid = caml_young_alloc_start + Wsize_bsize (bsz) / 2;
   caml_young_alloc_end = caml_young_end;
   caml_young_trigger = caml_young_alloc_start;
-  caml_young_limit = caml_young_trigger;
+  caml_update_young_limit();
   caml_young_ptr = caml_young_alloc_end;
   caml_minor_heap_wsz = Wsize_bsize (bsz);
 
   reset_table ((struct generic_table *) &caml_ref_table);
   reset_table ((struct generic_table *) &caml_ephe_ref_table);
   reset_table ((struct generic_table *) &caml_custom_table);
+
+#ifdef WITH_STATMEMPROF
+  caml_memprof_renew_minor_sample();
+#endif
 }
 
 static value oldify_todo_list = 0;
+
+static value alloc_shr_minor(mlsize_t wosize, tag_t tag, header_t hd) {
+#ifdef WITH_PROFINFO
+  value res = caml_alloc_shr_effect_with_profinfo (wosize, tag,
+                 CAML_ALLOC_EFFECT_NONE, Profinfo_hd(old_header));
+#else
+  value res = caml_alloc_shr_effect(wosize, tag, CAML_ALLOC_EFFECT_NONE);
+#endif
+  if(res == 0)
+    caml_fatal_error ("Fatal error: out of memory.\n");
+  return res;
+}
 
 /* Note that the tests on the tag depend on the fact that Infix_tag,
    Forward_tag, and No_scan_tag are contiguous. */
@@ -193,7 +217,7 @@ void caml_oldify_one (value v, value *p)
         value field0;
 
         sz = Wosize_hd (hd);
-        result = caml_alloc_shr_preserving_profinfo (sz, tag, hd);
+        result = alloc_shr_minor (sz, tag, hd);
         *p = result;
         field0 = Field (v, 0);
         Hd_val (v) = 0;            /* Set forward flag */
@@ -210,7 +234,7 @@ void caml_oldify_one (value v, value *p)
         }
       }else if (tag >= No_scan_tag){
         sz = Wosize_hd (hd);
-        result = caml_alloc_shr_preserving_profinfo (sz, tag, hd);
+        result = alloc_shr_minor (sz, tag, hd);
         for (i = 0; i < sz; i++) Field (result, i) = Field (v, i);
         Hd_val (v) = 0;            /* Set forward flag */
         Field (v, 0) = result;     /*  and forward pointer. */
@@ -239,7 +263,7 @@ void caml_oldify_one (value v, value *p)
         if (!vv || ft == Forward_tag || ft == Lazy_tag || ft == Double_tag){
           /* Do not short-circuit the pointer.  Copy as a normal block. */
           Assert (Wosize_hd (hd) == 1);
-          result = caml_alloc_shr_preserving_profinfo (1, Forward_tag, hd);
+          result = alloc_shr_minor (1, Forward_tag, hd);
           *p = result;
           Hd_val (v) = 0;             /* Set (GC) forward flag */
           Field (v, 0) = result;      /*  and forward pointer. */
@@ -340,7 +364,6 @@ void caml_empty_minor_heap (void)
     if (caml_minor_gc_begin_hook != NULL) (*caml_minor_gc_begin_hook) ();
     CAML_INSTR_SETUP (tmr, "minor");
     prev_alloc_words = caml_allocated_words;
-    caml_in_minor_collection = 1;
     caml_gc_message (0x02, "<", 0);
     caml_oldify_local_roots();
     CAML_INSTR_TIME (tmr, "minor/local_roots");
@@ -390,12 +413,14 @@ void caml_empty_minor_heap (void)
     clear_table ((struct generic_table *) &caml_ephe_ref_table);
     clear_table ((struct generic_table *) &caml_custom_table);
     caml_gc_message (0x02, ">", 0);
-    caml_in_minor_collection = 0;
     caml_final_empty_young ();
     CAML_INSTR_TIME (tmr, "minor/finalized");
     caml_stat_promoted_words += caml_allocated_words - prev_alloc_words;
     CAML_INSTR_INT ("minor/promoted#", caml_allocated_words - prev_alloc_words);
     ++ caml_stat_minor_collections;
+#ifdef WITH_STATMEMPROF
+    caml_memprof_renew_minor_sample();
+#endif
     if (caml_minor_gc_end_hook != NULL) (*caml_minor_gc_end_hook) ();
   }else{
     /* The minor heap is empty nothing to do. */
@@ -434,7 +459,7 @@ CAMLexport void caml_gc_dispatch (void)
     /* reset the pointers first because the end hooks might allocate */
     caml_requested_minor_gc = 0;
     caml_young_trigger = caml_young_alloc_mid;
-    caml_young_limit = caml_young_trigger;
+    caml_update_young_limit();
     caml_empty_minor_heap ();
     /* The minor heap is empty, we can start a major collection. */
     if (caml_gc_phase == Phase_idle) caml_major_collection_slice (-1);
@@ -448,7 +473,7 @@ CAMLexport void caml_gc_dispatch (void)
          repeat the minor collection. */
       caml_requested_minor_gc = 0;
       caml_young_trigger = caml_young_alloc_mid;
-      caml_young_limit = caml_young_trigger;
+      caml_update_young_limit();
       caml_empty_minor_heap ();
       /* The minor heap is empty, we can start a major collection. */
       if (caml_gc_phase == Phase_idle) caml_major_collection_slice (-1);
@@ -459,7 +484,7 @@ CAMLexport void caml_gc_dispatch (void)
     /* The minor heap is half-full, do a major GC slice. */
     caml_requested_major_slice = 0;
     caml_young_trigger = caml_young_alloc_start;
-    caml_young_limit = caml_young_trigger;
+    caml_update_young_limit();
     caml_major_collection_slice (-1);
     CAML_INSTR_TIME (tmr, "dispatch/major");
   }

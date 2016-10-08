@@ -118,7 +118,8 @@ CAMLexport void caml_print_exception_backtrace(void)
   }
 
   for (i = 0; i < caml_backtrace_pos; i++) {
-    for (dbg = caml_debuginfo_extract(caml_backtrace_buffer[i]);
+    for (dbg = caml_debuginfo_extract(
+                 Val_backtrace_slot(caml_backtrace_buffer[i]));
          dbg != NULL;
          dbg = caml_debuginfo_next(dbg))
     {
@@ -217,7 +218,7 @@ CAMLprim value caml_convert_raw_backtrace(value bt)
   for (i = 0, index = 0; i < Wosize_val(bt); ++i)
   {
     debuginfo dbg;
-    for (dbg = caml_debuginfo_extract(Backtrace_slot_val(Field(bt, i)));
+    for (dbg = caml_debuginfo_extract(Field(bt, i));
          dbg != NULL;
          dbg = caml_debuginfo_next(dbg))
       index++;
@@ -228,7 +229,7 @@ CAMLprim value caml_convert_raw_backtrace(value bt)
   for (i = 0, index = 0; i < Wosize_val(bt); ++i)
   {
     debuginfo dbg;
-    for (dbg = caml_debuginfo_extract(Backtrace_slot_val(Field(bt, i)));
+    for (dbg = caml_debuginfo_extract(Field(bt, i));
          dbg != NULL;
          dbg = caml_debuginfo_next(dbg))
     {
@@ -254,7 +255,7 @@ CAMLprim value caml_raw_backtrace_slot(value bt, value index)
   if (i >= Wosize_val(bt))
     caml_invalid_argument("Printexc.get_raw_backtrace_slot: "
                           "index out of bounds");
-  dbg = caml_debuginfo_extract(Backtrace_slot_val(Field(bt, i)));
+  dbg = caml_debuginfo_extract(Field(bt, i));
   return Val_debuginfo(dbg);
 }
 
@@ -300,8 +301,7 @@ CAMLprim value caml_get_exception_backtrace(value unit)
 
     arr = caml_alloc(Wosize_val(backtrace), 0);
     for (i = 0; i < Wosize_val(backtrace); i++) {
-      backtrace_slot slot = Backtrace_slot_val(Field(backtrace, i));
-      debuginfo dbg = caml_debuginfo_extract(slot);
+      debuginfo dbg = caml_debuginfo_extract(Field(backtrace, i));
       Store_field(arr, i, caml_convert_debuginfo(dbg));
     }
 
@@ -309,4 +309,8 @@ CAMLprim value caml_get_exception_backtrace(value unit)
   }
 
   CAMLreturn(res);
+}
+
+CAMLprim value caml_get_current_callstack(value max_frames_value) {
+  return caml_get_current_callstack_impl(Long_val(max_frames_value), 0);
 }

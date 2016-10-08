@@ -151,5 +151,9 @@ val libunwind_available : bool
 val libunwind_link_flags : string
         (* Linker flags to use libunwind *)
 
-val safe_string: bool
+val safe_string : bool
         (* Whether the compiler was configured with -safe-string *)
+
+val statmemprof : bool
+        (* Whether the compiler was configured with support for
+           statistical memory profiling. *)

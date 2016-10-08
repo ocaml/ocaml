@@ -109,7 +109,7 @@ CAMLprim value caml_obj_dup(value arg)
     res = caml_alloc_small_with_my_or_given_profinfo(sz, tg, profinfo);
     for (i = 0; i < sz; i++) Field(res, i) = Field(arg, i);
   } else {
-    res = caml_alloc_shr(sz, tg);
+    res = caml_alloc_shr_effect(sz, tg, CAML_ALLOC_EFFECT_GC);
     for (i = 0; i < sz; i++) caml_initialize(&Field(res, i), Field(arg, i));
   }
   CAMLreturn (res);
