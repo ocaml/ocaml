@@ -1652,6 +1652,7 @@ let rec local_non_recursive_abbrev strict visited env p ty =
         end
     | _ ->
         if strict then (* PR#7374 *)
+          let visited = ty :: visited in
           iter_type_expr (local_non_recursive_abbrev true visited env p) ty
   end
 
