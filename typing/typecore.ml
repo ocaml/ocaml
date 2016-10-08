@@ -3794,7 +3794,13 @@ and type_cases ?in_function env ty_arg ty_res partial_flag loc caselist =
       correct_levels ty_res, duplicate_ident_types caselist env
     else ty_res, env
   in
-  let do_init = has_gadts || List.length caselist > 1 in
+  let needs_exhaust_check =
+    match caselist with
+      [{pc_rhs = {pexp_desc = Pexp_unreachable}}] -> true
+    | [{pc_lhs = {ppat_desc = (Ppat_var _ | Ppat_any)}}] -> false
+    | _ -> true
+  in
+  let do_init = has_gadts || needs_exhaust_check in
   let lev, env =
     if do_init then begin
       (* raise level for existentials *)
