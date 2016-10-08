@@ -45,7 +45,7 @@ type test =
   | Ieventest
 
 type alloc_info = {
-    alloc_hd : Nativeint.t;
+    alloc_hd : nativeint;
     alloc_dbg : Debuginfo.t
   }
 

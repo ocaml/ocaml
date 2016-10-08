@@ -7,9 +7,6 @@
 #include "caml/callback.h"
 #include "caml/weak.h"
 #include "caml/signals.h"
-#ifdef NATIVE_CODE
-#include "stack.h"
-#endif
 
 #ifdef WITH_STATMEMPROF
 

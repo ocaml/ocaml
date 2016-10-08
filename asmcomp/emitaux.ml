@@ -13,6 +13,8 @@
 (*                                                                        *)
 (**************************************************************************)
 
+open Mach
+
 (* Common functions for emitting assembly code *)
 
 let output_channel = ref stdout
@@ -161,7 +163,7 @@ let emit_frames a =
   let label_alloc_debuginfos dbg =
     let lbl = Cmm.new_label () in
     let l =
-      List.map (fun { alloc_dbg = dbg; _ } as ai ->
+      List.map (fun ({ alloc_dbg = dbg; _ } as ai) ->
           match List.rev dbg with
           | [] | _ :: [] -> (ai, None)
           | _ :: ((_ :: _) as rdbg) -> (ai, Some (label_debuginfos false rdbg))
@@ -177,7 +179,8 @@ let emit_frames a =
     a.efa_code_label fd.fd_lbl;
     let not_dbg =
       match fd.fd_debuginfo with
-      | Dbg_alloc { alloc_dbg; _ } -> false
+      | Dbg_alloc dbg ->
+         not Config.statmemprof && Debuginfo.is_none (List.hd dbg).alloc_dbg
       | Dbg_other dbg -> Debuginfo.is_none dbg
     in
     a.efa_16 (if not_dbg then fd.fd_frame_size else fd.fd_frame_size + 1);
@@ -188,7 +191,7 @@ let emit_frames a =
       match fd.fd_debuginfo with
       | Dbg_alloc dbg ->
          assert (not fd.fd_raise);
-         if Config.with_statmemprof then
+         if Config.statmemprof then
            emit_alloc_debuginfo_label dbg
          else
            emit_debuginfo_label false (List.rev (List.hd dbg).alloc_dbg)
@@ -213,7 +216,6 @@ let emit_frames a =
     match rdbg with
     | [] -> a.efa_32 0l; a.efa_32 0l; a.efa_word 0n
     | d :: _ ->
-       let d = List.hd rdbg in
        let info = pack_info rs d in
        a.efa_label_rel
          (label_filename d.Debuginfo.dinfo_file)
@@ -235,7 +237,7 @@ let emit_frames a =
     a.efa_def_label lbl;
     List.iter (fun ({ alloc_hd; alloc_dbg }, next) ->
         emit_debuginfo_no_lbl false (List.rev alloc_dbg) next;
-        emit_word alloc_hd)
+        a.efa_word alloc_hd)
       dbg
   in
   a.efa_word (Nativeint.of_int (List.length !frame_descriptors));

@@ -616,7 +616,7 @@ method emit_expr env exp =
                 | Cblockheader (hd, _dbg) :: _ -> hd
                 | _ -> assert false
               in
-              let blocks = [{ alloc_hd; alloc_dbg = dbg }]
+              let blocks = [{ alloc_hd; alloc_dbg = dbg }] in
               let op =
                 Ialloc { words; blocks; spacetime_index; label_after_call_gc; }
               in

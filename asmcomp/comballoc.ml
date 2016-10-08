@@ -28,7 +28,7 @@ type allocation_state =
 
 let allocated_list_sz = function
     No_alloc -> ([], 0)
-  | Pending_alloc(_, lst, _) -> (lst, sz)
+  | Pending_alloc(_, lst, sz) -> (lst, sz)
 
 let rec combine i allocstate =
   match i.desc with
@@ -45,7 +45,7 @@ let rec combine i allocstate =
             i.arg i.res i.dbg newnext, ([], 0))
       | Pending_alloc(reg, lcur, ofs) ->
           if ofs + sz < Config.max_young_wosize * Arch.size_addr then begin
-            let (newnext, newlsz)) =
+            let (newnext, newlsz) =
               combine i.next (Pending_alloc(reg, l @ lcur, ofs + sz)) in
             (instr_cons (Iop(Iintop_imm(Iadd, ofs))) [| reg |] i.res newnext,
              newlsz)
