@@ -1,12 +1,32 @@
+/**************************************************************************/
+/*                                                                        */
+/*                                 OCaml                                  */
+/*                                                                        */
+/*             Jacques-Henri Joudan, projet Gallium, INRIA Paris          */
+/*                                                                        */
+/*   Copyright 2016 Institut National de Recherche en Informatique et     */
+/*     en Automatique.                                                    */
+/*                                                                        */
+/*   All rights reserved.  This file is distributed under the terms of    */
+/*   the GNU Lesser General Public License version 2.1, with the          */
+/*   special exception on linking described in the file LICENSE.          */
+/*                                                                        */
+/**************************************************************************/
+
+#define CAML_INTERNALS
+
 #include <math.h>
 #include <string.h>
 #include "caml/memprof.h"
-#include "caml/backtrace_prim.h"
 #include "caml/fail.h"
 #include "caml/alloc.h"
 #include "caml/callback.h"
-#include "caml/weak.h"
 #include "caml/signals.h"
+#include "caml/memory.h"
+#include "caml/minor_gc.h"
+#include "caml/backtrace_prim.h"
+#include "caml/weak.h"
+#include "caml/stack.h"
 
 #ifdef WITH_STATMEMPROF
 
@@ -105,7 +125,7 @@ static double mt_generate_uniform(void) {
 }
 
 static double mt_generate_exponential() {
-  Assert(lambda >= 0 && !isinf(lambda));
+  CAMLassert(lambda >= 0 && !isinf(lambda));
 
   if(suspended || lambda == 0)
     return INFINITY;
@@ -118,7 +138,7 @@ static double mt_generate_exponential() {
 /* Max returned value : 2^30-2. Assumes lambda >= 0. */
 static int32_t mt_generate_poisson(double len) {
   double cur_lambda = lambda * len;
-  Assert(cur_lambda >= 0 && !isinf(cur_lambda));
+  CAMLassert(cur_lambda >= 0 && !isinf(cur_lambda));
 
   if(suspended || cur_lambda == 0)
     return 0;
@@ -210,7 +230,7 @@ enum ml_alloc_kind {
 
 static value do_callback(tag_t tag, intnat wosize, int32_t occurences,
                          value callstack, enum ml_alloc_kind cb_kind) {
-  Assert(occurences > 0);
+  CAMLassert(occurences > 0);
   CAMLparam1(callstack);
   CAMLlocal1(sample_info);
 
@@ -249,7 +269,7 @@ void caml_memprof_renew_minor_sample(void) {
   if(exp < max  && (exp_int = (uintnat)exp) < max) {
     caml_memprof_young_limit = caml_young_ptr - exp_int;
     next_sample_round = exp - exp_int;
-    Assert(0 <= next_sample_round && next_sample_round < 1);
+    CAMLassert(0 <= next_sample_round && next_sample_round < 1);
   } else
     caml_memprof_young_limit = caml_young_alloc_start;
   caml_update_young_limit();
@@ -269,7 +289,7 @@ void caml_memprof_track_young(tag_t tag, uintnat wosize) {
   double rest =
     (caml_memprof_young_limit - caml_young_ptr) - next_sample_round;
 
-  Assert(rest > 0 && lambda > 0 && !suspended);
+  CAMLassert(rest > 0 && lambda > 0 && !suspended);
 
   int32_t occurences = mt_generate_poisson(rest) + 1;
 
@@ -304,7 +324,7 @@ value caml_memprof_track_alloc_shr(tag_t tag, value block) {
   CAMLparam1(block);
   CAMLlocal2(ephe, callstack);
 
-  Assert(Is_in_heap(block));
+  CAMLassert(Is_in_heap(block));
 
   int32_t occurences = mt_generate_poisson(Whsize_val(block));
 
@@ -339,7 +359,7 @@ struct postponed_block {
    call is performed later. */
 void caml_memprof_postpone_track_alloc_shr(value block) {
   int32_t occurences = mt_generate_poisson(Whsize_val(block));
-  Assert(Is_in_heap(block));
+  CAMLassert(Is_in_heap(block));
   if(occurences > 0) {
     struct postponed_block* pb =
       (struct postponed_block*)malloc(sizeof(struct postponed_block));
@@ -427,7 +447,7 @@ void caml_memprof_track_interned(header_t* block, header_t* blockend) {
 
     p0 = p;
     next_sample_p = p + (uintnat)next_sample;
-    Assert(next_sample_p <= blockend);
+    CAMLassert(next_sample_p <= blockend);
     while(p + Whsize_hp(p) <= next_sample_p)
       p += Whsize_hp(p);
 
@@ -458,11 +478,11 @@ void caml_memprof_track_interned(header_t* block, header_t* blockend) {
       }
       occurences = newoccurences;
     }
-    Assert (j < sz);
+    CAMLassert (j < sz);
 
     sampled[j] = Val_hp(p);
     double rest = (p + Whsize_hp(p) - p0) - next_sample;
-    Assert(rest > 0);
+    CAMLassert(rest > 0);
     occurences[j] = mt_generate_poisson(rest) + 1;
     j++;
 
@@ -552,11 +572,11 @@ void caml_memprof_call_gc_end(double exceeded_by) {
     CAMLreturn0;
 
   d = caml_next_frame_descriptor(&pc, &sp);
-  Assert(d != NULL);
+  CAMLassert(d != NULL);
   block_infos = (struct block_info*)
     caml_debuginfo_extract(Val_backtrace_slot((backtrace_slot) d));
 
-  num_blocks = ((uintnat*)block_info)[-1];
+  num_blocks = ((uintnat*)block_infos)[-1];
 
   tot_whsize = 0;
   for(i = 0; i < num_blocks; i++)
@@ -599,7 +619,7 @@ void caml_memprof_call_gc_end(double exceeded_by) {
       }
     }
 
-    Assert(offs == tot_whsize);
+    CAMLassert(offs == tot_whsize);
 
     caml_memprof_handle_postponed();
 

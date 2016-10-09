@@ -1,5 +1,25 @@
+/**************************************************************************/
+/*                                                                        */
+/*                                 OCaml                                  */
+/*                                                                        */
+/*             Jacques-Henri Joudan, projet Gallium, INRIA Paris          */
+/*                                                                        */
+/*   Copyright 2016 Institut National de Recherche en Informatique et     */
+/*     en Automatique.                                                    */
+/*                                                                        */
+/*   All rights reserved.  This file is distributed under the terms of    */
+/*   the GNU Lesser General Public License version 2.1, with the          */
+/*   special exception on linking described in the file LICENSE.          */
+/*                                                                        */
+/**************************************************************************/
+
 #ifndef CAML_MEMPROF_H
 #define CAML_MEMPROF_H
+
+#ifdef CAML_INTERNALS
+
+#include "config.h"
+#include "mlvalues.h"
 
 #ifdef WITH_STATMEMPROF
 
@@ -16,6 +36,8 @@ extern void caml_memprof_handle_postponed();
 #ifdef NATIVE_CODE
 extern void caml_memprof_call_gc_end(double exceeded_by);
 extern double caml_memprof_call_gc_begin(void);
+#endif
+
 #endif
 
 #endif

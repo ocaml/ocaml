@@ -118,18 +118,18 @@ int caml_page_table_initialize(mlsize_t bytesize);
 
 #ifdef WITH_STATMEMPROF
 #define ALLOC_SMALL_PRE_IF if (caml_young_ptr < caml_young_limit)
-#define ALLOC_SMALL_STATMEMPROF                                         \
+#define ALLOC_SMALL_STATMEMPROF(wosize, tag, track)                     \
   if(caml_young_ptr < caml_memprof_young_limit){                        \
     if(track) {                                                         \
       Setup_for_track_gc;                                               \
-      caml_memprof_track_young((tag), wosize);                          \
+      caml_memprof_track_young((tag), (wosize));                        \
       Restore_after_track_gc;                                           \
     } else                                                              \
       caml_memprof_renew_minor_sample();                                \
   }
 #else
 #define ALLOC_SMALL_PRE_IF
-#define ALLOC_SMALL_STATMEMPROF
+#define ALLOC_SMALL_STATMEMPROF(wosize, tag, track)
 #endif
 
 #define Alloc_small_impl(result, wosize, tag, profinfo, track) do {     \
@@ -146,7 +146,7 @@ int caml_page_table_initialize(mlsize_t bytesize);
       Restore_after_gc;                                                     \
       caml_young_ptr -= Whsize_wosize (wosize);                             \
     }                                                                       \
-    ALLOC_SMALL_STATMEMPROF                                                 \
+    ALLOC_SMALL_STATMEMPROF(wosize, tag, track)                             \
   }                                                                         \
   Hd_hp (caml_young_ptr) =                                                  \
     Make_header_with_profinfo ((wosize), (tag), Caml_black, profinfo);      \
