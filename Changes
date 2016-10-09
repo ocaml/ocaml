@@ -41,6 +41,10 @@ Next version (tbd):
   debugger/
   (Sébastien Hinderer)
 
+- GPR#827: install missing mli and cmti files, new make target
+  install-compiler-sources for installation of compiler-libs ml files
+  (Hendrik Tews)
+
 ### Internal/compiler-libs changes:
 
 - GPR#744, GPR#781: fix duplicate self-reference in imported cmi_crcs

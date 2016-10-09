@@ -89,7 +89,7 @@ extract_crc: dynlink.cma extract_crc.cmo
 INSTALL_LIBDIR=$(DESTDIR)$(LIBDIR)
 
 install:
-	cp dynlink.cmi dynlink.cma dynlink.mli "$(INSTALL_LIBDIR)"
+	cp dynlink.cmi dynlink.cmti dynlink.cma dynlink.mli "$(INSTALL_LIBDIR)"
 	cp extract_crc "$(INSTALL_LIBDIR)/extract_crc$(EXE)"
 
 installopt:

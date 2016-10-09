@@ -229,17 +229,19 @@ install:
 	cd stdlib; $(MAKE) install
 	cp lex/ocamllex $(INSTALL_BINDIR)/ocamllex.byte$(EXE)
 	cp $(CAMLYACC)$(EXE) $(INSTALL_BINDIR)/ocamlyacc$(EXE)
-	cp utils/*.cmi utils/*.cmt utils/*.cmti \
-	   parsing/*.cmi parsing/*.cmt parsing/*.cmti \
-	   typing/*.cmi typing/*.cmt typing/*.cmti \
-	   bytecomp/*.cmi bytecomp/*.cmt bytecomp/*.cmti \
-	   driver/*.cmi driver/*.cmt driver/*.cmti \
-	   toplevel/*.cmi toplevel/*.cmt toplevel/*.cmti $(INSTALL_COMPLIBDIR)
+	cp utils/*.cmi utils/*.cmt utils/*.cmti utils/*.mli \
+	   parsing/*.cmi parsing/*.cmt parsing/*.cmti parsing/*.mli \
+	   typing/*.cmi typing/*.cmt typing/*.cmti typing/*.mli \
+	   bytecomp/*.cmi bytecomp/*.cmt bytecomp/*.cmti bytecomp/*.mli \
+	   driver/*.cmi driver/*.cmt driver/*.cmti driver/*.mli \
+	   toplevel/*.cmi toplevel/*.cmt toplevel/*.cmti toplevel/*.mli \
+	   $(INSTALL_COMPLIBDIR)
 	cp compilerlibs/ocamlcommon.cma compilerlibs/ocamlbytecomp.cma \
 	   compilerlibs/ocamltoplevel.cma $(BYTESTART) $(TOPLEVELSTART) \
 	   $(INSTALL_COMPLIBDIR)
 	cp expunge $(INSTALL_LIBDIR)/expunge$(EXE)
-	cp toplevel/topdirs.cmi $(INSTALL_LIBDIR)
+	cp toplevel/topdirs.cmi toplevel/topdirs.cmt toplevel/topdirs.cmti \
+           toplevel/topdirs.mli $(INSTALL_LIBDIR)
 	cd tools; $(MAKE) install
 	-cd man; $(MAKE) install
 	for i in $(OTHERLIBRARIES); do \
@@ -260,10 +262,13 @@ installopt:
 	cp ocamlopt $(INSTALL_BINDIR)/ocamlopt.byte$(EXE)
 	cd stdlib; $(MAKE) installopt
 	cp middle_end/*.cmi middle_end/*.cmt middle_end/*.cmti \
+	    middle_end/*.mli \
 		$(INSTALL_COMPLIBDIR)
 	cp middle_end/base_types/*.cmi middle_end/base_types/*.cmt \
-		middle_end/base_types/*.cmti $(INSTALL_COMPLIBDIR)
-	cp asmcomp/*.cmi asmcomp/*.cmt asmcomp/*.cmti $(INSTALL_COMPLIBDIR)
+	    middle_end/base_types/*.cmti middle_end/base_types/*.mli \
+		$(INSTALL_COMPLIBDIR)
+	cp asmcomp/*.cmi asmcomp/*.cmt asmcomp/*.cmti asmcomp/*.mli \
+		$(INSTALL_COMPLIBDIR)
 	cp compilerlibs/ocamloptcomp.cma $(OPTSTART) $(INSTALL_COMPLIBDIR)
 	if test -n "$(WITH_OCAMLDOC)"; then (cd ocamldoc; $(MAKE) installopt); \
 		else :; fi
@@ -299,6 +304,12 @@ installoptopt:
 	fi
 	cd $(INSTALL_COMPLIBDIR) && $(RANLIB) ocamlcommon.a ocamlbytecomp.a \
 	   ocamloptcomp.a
+
+# Installation of the *.ml sources of compiler-libs
+install-compiler-sources:
+	cp utils/*.ml parsing/*.ml typing/*.ml bytecomp/*.ml driver/*.ml \
+	   toplevel/*.ml middle_end/*.ml middle_end/base_types/*.ml \
+	   asmcomp/*.ml $(INSTALL_COMPLIBDIR)
 
 # Run all tests
 

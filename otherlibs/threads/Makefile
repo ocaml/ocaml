@@ -107,6 +107,8 @@ clean: partialclean
 INSTALL_LIBDIR=$(DESTDIR)$(LIBDIR)
 INSTALL_STUBLIBDIR=$(DESTDIR)$(STUBLIBDIR)
 
+CMIFILES=thread.cmi mutex.cmi condition.cmi event.cmi threadUnix.cmi
+
 install:
 	if test -f dllvmthreads.so; then \
 	  cp dllvmthreads.so $(INSTALL_STUBLIBDIR)/.; \
@@ -114,10 +116,8 @@ install:
 	mkdir -p $(INSTALL_LIBDIR)/vmthreads
 	cp libvmthreads.a $(INSTALL_LIBDIR)/vmthreads/libvmthreads.a
 	cd $(INSTALL_LIBDIR)/vmthreads; $(RANLIB) libvmthreads.a
-	cp thread.cmi mutex.cmi condition.cmi event.cmi threadUnix.cmi \
+	cp $(CMIFILES) $(CMIFILES:.cmi=.mli) $(CMIFILES:.cmi=.cmti) \
 	   threads.cma stdlib.cma unix.cma $(INSTALL_LIBDIR)/vmthreads
-	cp thread.mli mutex.mli condition.mli event.mli threadUnix.mli \
-	   $(INSTALL_LIBDIR)/vmthreads
 
 installopt:
 
