@@ -90,6 +90,13 @@ module Stdlib : sig
     val fold : ('a -> 'b -> 'b) -> 'a t -> 'b -> 'b
     val value_default : ('a -> 'b) -> default:'b -> 'a t -> 'b
   end
+
+  module Array : sig
+    val exists2 : ('a -> 'b -> bool) -> 'a array -> 'b array -> bool
+    (* Same as [Array.exists], but for a two-argument predicate. Raise
+       Invalid_argument if the two arrays are determined to have
+       different lengths. *)
+  end
 end
 
 val find_in_path: string list -> string -> string
