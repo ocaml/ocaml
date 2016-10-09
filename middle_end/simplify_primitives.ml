@@ -37,6 +37,39 @@ let phys_equal (approxs:A.t list) =
     | Some (s1, Some f1), Some (s2, Some f2) -> Symbol.equal s1 s2 && f1 = f2
     | _ -> false
 
+let is_known_to_be_some_kind_of_int (arg:A.descr) =
+  match arg with
+  | Value_int _ | Value_char _ | Value_constptr _ -> true
+  | _ -> false
+
+let is_known_to_be_some_kind_of_block (arg:A.descr) =
+  match arg with
+  | Value_block _ | Value_float _ | Value_float_array _ | A.Value_boxed_int _
+  | Value_closure _ | Value_string _ -> true
+  | _ -> false
+
+let rec structurally_different (arg1:A.t) (arg2:A.t) =
+  match arg1.descr, arg2.descr with
+  | Value_block (tag1, fields1), Value_block (tag2, fields2) ->
+      not (Tag.equal tag1 tag2) ||
+      (Array.length fields1 <> Array.length fields2) ||
+      Misc.Stdlib.Array.exists2 structurally_different fields1 fields2
+  | descr1, descr2 ->
+      (* This is not very precise as this won't allow to distinguish
+         blocks from strings for instance. This can be improved if it
+         is deemed valuable. *)
+      (is_known_to_be_some_kind_of_int descr1
+       && is_known_to_be_some_kind_of_block descr2)
+      || (is_known_to_be_some_kind_of_block descr1
+          && is_known_to_be_some_kind_of_int descr2)
+
+let phys_different (approxs:A.t list) =
+  match approxs with
+  | [] | [_] | _ :: _ :: _ :: _ ->
+      Misc.fatal_error "wrong number of arguments for equality"
+  | [a1; a2] ->
+    structurally_different a1 a2
+
 let primitive (p : Lambda.primitive) (args, approxs) expr dbg ~size_int
       ~big_endian : Flambda.named * A.t * Inlining_cost.Benefit.t =
   let fpc = !Clflags.float_const_prop in
@@ -94,6 +127,12 @@ let primitive (p : Lambda.primitive) (args, approxs) expr dbg ~size_int
        inlined later, [a] and [b] could be shared and thus [c] and [d] could
        be too.  As such, any intermediate non-aliasing judgement would be
        invalid. *)
+  | Pintcomp Ceq when phys_different approxs ->
+    S.const_bool_expr expr false
+  | Pintcomp Cneq when phys_different approxs ->
+    S.const_bool_expr expr true
+    (* If two values are structurally different we are certain they can never
+       be shared*)
   | _ ->
     match A.descrs approxs with
     | [Value_int x] ->
