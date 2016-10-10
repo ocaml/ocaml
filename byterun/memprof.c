@@ -55,45 +55,6 @@ static int init = 0;
 
 /**** Statistical sampling ****/
 
-/* Taken from :
-   https://github.com/jhjourdan/SIMD-math-prims
-*/
-inline static float logapprox(float val) {
-  union { float f; int i; } valu;
-  float exp, addcst, x;
-  valu.f = val;
-  exp = valu.i >> 23;
-  addcst = val > 0 ? -89.970756366f : -(float)INFINITY;
-  valu.i = (valu.i & 0x7FFFFF) | 0x3F800000;
-  x = valu.f;
-
-  return
-    x * (3.529304993f + x * (-2.461222105f +
-      x * (1.130626167f + x * (-0.288739945f +
-        x * 3.110401639e-2f))))
-    + (addcst + 0.69314718055995f*exp);
-}
-
-inline static float expapprox(float val) {
-  union { int i; float f; } xu, xu2;
-  float val2, val3, val4, b;
-  int val4i;
-  val2 = 12102203.1615614f*val+1065353216.f;
-  val3 = val2 < 2139095040.f ? val2 : 2139095040.f;
-  val4 = val3 > 0.f ? val3 : 0.f;
-  val4i = (int) val4;
-  xu.i = val4i & 0x7F800000;
-  xu2.i = (val4i & 0x7FFFFF) | 0x3F800000;
-  b = xu2.f;
-
-  return
-    xu.f * (0.510397365625862338668154f + b *
-            (0.310670891004095530771135f + b *
-             (0.168143436463395944830000f + b *
-              (-2.88093587581985443087955e-3f + b *
-               1.3671023382430374383648148e-2f))));
-}
-
 static double mt_generate_uniform(void) {
   int i;
   uint32_t y;
@@ -130,7 +91,7 @@ static double mt_generate_exponential() {
   if(suspended || lambda == 0)
     return INFINITY;
 
-  double res = -logapprox(mt_generate_uniform()) * lambda_rec;
+  double res = -logf(mt_generate_uniform()) * lambda_rec;
   if(res < 0) return 0;
   return res;
 }
@@ -147,31 +108,37 @@ static int32_t mt_generate_poisson(double len) {
     double p;
     int32_t k;
     k = 0;
-    p = expapprox(cur_lambda);
+    p = expf(cur_lambda);
     do {
       k++;
       p *= mt_generate_uniform();
     } while(p > 1);
     return k-1;
   } else {
+    /* Algorithm taken from: */
+    /* The Computer Generation of Poisson Random Variables
+       A. C. Atkinson Journal of the Royal Statistical Society.
+       Series C (Applied Statistics) Vol. 28, No. 1 (1979), pp. 29-35
+       "Method PA" */
+
     double c, beta, alpha, k;
     c = 0.767 - 3.36/cur_lambda;
     beta = 1./sqrt((3./(M_PI*M_PI))*cur_lambda);
     alpha = beta*cur_lambda;
-    k = logapprox(c) - cur_lambda - logapprox(beta);
+    k = logf(c) - cur_lambda - logf(beta);
     while(1) {
       double u, x, n, v, y, y2;
       u = mt_generate_uniform();
-      x = (alpha - logapprox((1.0 - u)/u))/beta;
+      x = (alpha - logf((1.0 - u)/u))/beta;
       n = floor(x + 0.5);
       if(n < 0.)
         continue;
 
       v = mt_generate_uniform();
       y = alpha - beta*x;
-      y2 = 1. + expapprox(y);
+      y2 = 1. + expf(y);
 
-      if(y + logapprox(v/(y2*y2)) < k + n*logapprox(cur_lambda) - lgammaf(n+1))
+      if(y + logf(v/(y2*y2)) < k + n*logf(cur_lambda) - lgammaf(n+1))
         return n > ((1<<30)-2) ? ((1<<30)-2) : n;
     }
   }
