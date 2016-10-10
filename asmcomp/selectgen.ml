@@ -265,7 +265,8 @@ method mark_instr = function
 (* Default instruction selection for operators *)
 
 method select_allocation () =
-  Ialloc { words = 0; blocks = []; spacetime_index = 0; label_after_call_gc = None; }
+  Ialloc { words = 0; blocks = []; spacetime_index = 0;
+           label_after_call_gc = None; }
 method select_allocation_args _env = [| |]
 
 method select_checkbound () =

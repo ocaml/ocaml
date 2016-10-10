@@ -57,8 +57,8 @@ let add_sampleTree (s:sample_info) (t:sampleTree) : sampleTree =
     else
       let li = Printexc.get_raw_backtrace_slot s.callstack idx in
       let child =
-	try Hashtbl.find sth li
-	with Not_found -> STC ([], 0, Hashtbl.create 3)
+        try Hashtbl.find sth li
+        with Not_found -> STC ([], 0, Hashtbl.create 3)
       in
       Hashtbl.replace sth li (aux (idx+1) child);
       STC(sl, n+s.n_samples, sth)
@@ -71,8 +71,8 @@ type sortedSampleTree =
 let rec sort_sampleTree (t:sampleTree) : sortedSampleTree =
   let STC (sl, n, sth) = t in
   SSTC (sl, n,
-	List.sort (fun (_, SSTC (_, n1, _)) (_, SSTC (_, n2, _)) -> n2 - n1)
-	  (Hashtbl.fold (fun li st lst -> (li, sort_sampleTree st)::lst) sth []))
+        List.sort (fun (_, SSTC (_, n1, _)) (_, SSTC (_, n2, _)) -> n2 - n1)
+         (Hashtbl.fold (fun li st lst -> (li, sort_sampleTree st)::lst) sth []))
 
 let print chan min_samples (SSTC (_, n, tl)) =
   let rec aux indent =
@@ -81,19 +81,12 @@ let print chan min_samples (SSTC (_, n, tl)) =
         begin
           begin match Printexc.Slot.location (convert_raw_backtrace_slot li) with
                 | Some { filename; line_number; start_char; end_char } ->
-	           Printf.fprintf chan "%7d | %s%s:%d %d-%d" n indent filename line_number start_char end_char
+                   Printf.fprintf chan "%7d | %s%s:%d %d-%d" n indent
+                                  filename line_number start_char end_char
                 | None ->
-	           Printf.fprintf chan "%7d | %s?" n indent
+                   Printf.fprintf chan "%7d | %s?" n indent
           end;
           Printf.fprintf chan "\n";
-          (* (match sl with *)
-          (* | _ :: _ -> *)
-          (*    let mean = *)
-          (*      (List.fold_left (+.) 0. (List.rev_map (fun x -> float_of_int x.size *. float_of_int x.n_samples) sl)) /. *)
-          (*        (float_of_int n) *)
-          (*    in *)
-          (*     Printf.fprintf c " mean size=%f\n" mean *)
-          (* | [] -> Printf.printf "\n"); *)
           aux (indent^"  ") tl
         end)
   in
