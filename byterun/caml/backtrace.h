@@ -20,6 +20,7 @@
 
 #include "mlvalues.h"
 #include "exec.h"
+#include "stack.h"
 
 /* Runtime support for backtrace generation.
  *
@@ -62,7 +63,27 @@ CAMLextern int caml_backtrace_active;
  * doesn't matter for code outside [backtrace_prim.c], so it is just
  * exposed as a [backtrace_slot].
  */
-typedef void * backtrace_slot;
+#ifdef NATIVE_CODE
+typedef frame_descr* backtrace_slot;
+#else
+typedef code_t backtrace_slot;
+#endif
+
+CAMLextern void caml_store_backtrace_slot(backtrace_slot);
+CAMLextern void caml_finish_backtrace();
+
+
+/* [backtrace_count] is composed of two parts:
+ * the four smallest bits encode a cycle value:
+   0 means cycle of size 1 (direct recursion)
+   1 means cycle of size 2
+ * the remainding bits encode the number of repetitions
+ */
+
+typedef struct caml_backtrace_item {
+  backtrace_slot backtrace_descriptor;
+  uint32_t backtrace_count;
+} caml_backtrace_item;
 
 /* The [caml_backtrace_buffer] and [caml_backtrace_last_exn]
  * variables are valid only if [caml_backtrace_active != 0].
@@ -79,7 +100,7 @@ typedef void * backtrace_slot;
  * Its maximum size is determined by [BACKTRACE_BUFFER_SIZE] from
  * [backtrace_prim.h], but this shouldn't affect users.
  */
-CAMLextern backtrace_slot * caml_backtrace_buffer;
+CAMLextern caml_backtrace_item * caml_backtrace_buffer;
 CAMLextern int caml_backtrace_pos;
 
 /* [caml_backtrace_last_exn] stores the last exception value that was raised,

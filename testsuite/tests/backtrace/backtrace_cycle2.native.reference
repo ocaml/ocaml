@@ -1,0 +1,6 @@
+Fatal error: exception Not_found
+Raised at file "backtrace_cycle2.ml", line 3, characters 17-32
+Mutual recursion called 1000 times:
+  [1] Called from file "backtrace_cycle2.ml", line 7, characters 6-15
+  [2] Called from file "backtrace_cycle2.ml", line 4, characters 6-14
+Called from file "backtrace_cycle2.ml", line 11, characters 2-14

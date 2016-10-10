@@ -230,22 +230,18 @@ void caml_stash_backtrace(value exn, code_t pc, value * sp, int reraise)
 
   if (caml_backtrace_buffer == NULL) {
     Assert(caml_backtrace_pos == 0);
-    caml_backtrace_buffer = malloc(BACKTRACE_BUFFER_SIZE * sizeof(code_t));
+    caml_backtrace_buffer = malloc(BACKTRACE_BUFFER_SIZE * sizeof(caml_backtrace_item));
     if (caml_backtrace_buffer == NULL) return;
   }
 
-  if (caml_backtrace_pos >= BACKTRACE_BUFFER_SIZE) return;
   /* testing the code region is needed: PR#1554 */
-  if (find_debug_info(pc) != NULL)
-    caml_backtrace_buffer[caml_backtrace_pos++] = pc;
+  if (find_debug_info(pc) != NULL) caml_store_backtrace_slot( pc );
 
   /* Traverse the stack and put all values pointing into bytecode
      into the backtrace buffer. */
   for (/*nothing*/; sp < caml_trapsp; sp++) {
     code_t p = (code_t) *sp;
-    if (caml_backtrace_pos >= BACKTRACE_BUFFER_SIZE) break;
-    if (find_debug_info(p) != NULL)
-      caml_backtrace_buffer[caml_backtrace_pos++] = p;
+    if (find_debug_info(p) != NULL) caml_store_backtrace_slot(p);
   }
 }
 

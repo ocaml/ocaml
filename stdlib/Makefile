@@ -40,9 +40,9 @@ OTHERS=list.cmo char.cmo bytes.cmo string.cmo sys.cmo \
   set.cmo map.cmo stack.cmo queue.cmo \
   camlinternalLazy.cmo lazy.cmo stream.cmo \
   buffer.cmo camlinternalFormat.cmo printf.cmo \
-  arg.cmo printexc.cmo gc.cmo \
+  arg.cmo callback.cmo printexc.cmo gc.cmo \
   digest.cmo random.cmo hashtbl.cmo weak.cmo \
-  format.cmo uchar.cmo scanf.cmo callback.cmo \
+  format.cmo uchar.cmo scanf.cmo \
   camlinternalOO.cmo oo.cmo camlinternalMod.cmo \
   genlex.cmo ephemeron.cmo \
   filename.cmo complex.cmo \
