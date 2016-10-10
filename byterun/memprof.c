@@ -125,7 +125,7 @@ static int32_t mt_generate_poisson(double len) {
     c = 0.767 - 3.36/cur_lambda;
     beta = 1./sqrt((3./(M_PI*M_PI))*cur_lambda);
     alpha = beta*cur_lambda;
-    k = logf(c) - cur_lambda - logf(beta);
+    k = logf(c/beta) - cur_lambda;
     while(1) {
       double u, x, n, v, y, y2;
       u = mt_generate_uniform();
