@@ -264,8 +264,8 @@ method mark_instr = function
 
 (* Default instruction selection for operators *)
 
-method select_allocation blocks =
-  Ialloc { words = 0; blocks; spacetime_index = 0; label_after_call_gc = None; }
+method select_allocation () =
+  Ialloc { words = 0; blocks = []; spacetime_index = 0; label_after_call_gc = None; }
 method select_allocation_args _env = [| |]
 
 method select_checkbound () =
@@ -304,9 +304,7 @@ method select_operation op args =
         (Istore(chunk, addr, is_assign), [arg2; eloc])
         (* Inversion addr/datum in Istore *)
       end
-  | (Calloc _dbg, _) ->
-     let blocks = [{alloc_hd = Nativeint.zero; alloc_dbg = Debuginfo.none}] in
-     (self#select_allocation blocks, args)
+  | (Calloc _dbg, _) -> (self#select_allocation (), args)
   | (Caddi, _) -> self#select_arith_comm Iadd args
   | (Csubi, _) -> self#select_arith Isub args
   | (Cmuli, _) -> self#select_arith_comm Imul args
