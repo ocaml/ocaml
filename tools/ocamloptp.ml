@@ -172,6 +172,8 @@ module Options = Main_args.Make_optcomp_options (struct
   let _dtimings = option "-dtimings"
   let _opaque = option "-opaque"
 
+  let _expand_responsefile = Arg.read_arg
+  let _expand_responsefile0 = Arg.read_arg0
   let anonymous = process_file
 end);;
 
@@ -179,8 +181,8 @@ let add_profarg s =
   profargs := (Filename.quote s) :: "-m" :: !profargs
 ;;
 
-let optlist =
-    ("-P", Arg.String add_profarg,
+let optlist = ref
+    (("-P", Arg.String add_profarg,
            "[afilmt]  Profile constructs specified by argument (default fm):\n\
         \032     a  Everything\n\
         \032     f  Function calls and method calls\n\
@@ -188,9 +190,10 @@ let optlist =
         \032     l  while and for loops\n\
         \032     m  match ... with\n\
         \032     t  try ... with")
-    :: Options.list
+    :: Options.list)
 in
-Arg.parse optlist process_file usage;
+let argv = ref Sys.argv in
+Arg.parse_and_expand_argv_dynamic Arg.current argv optlist process_file usage;
 if !with_impl && !with_intf then begin
   fprintf stderr "ocamloptp cannot deal with both \"-impl\" and \"-intf\"\n";
   fprintf stderr "please compile interfaces and implementations separately\n";

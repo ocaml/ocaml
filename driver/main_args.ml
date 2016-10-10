@@ -724,6 +724,19 @@ let mk_no_strict_formats f =
   \      and instead fix invalid formats.)"
 ;;
 
+let mk_expand_responsefile f =
+  "-args", Arg.Expand f,
+  "<file> Read additional newline separated command line arguments \n\
+         from <file>"
+;;
+
+let mk_expand_responsefile0 f =
+  "-args0", Arg.Expand f,
+  "<file> Read additional NUL separated command line arguments from \n\
+         <file>"
+;;
+
+
 let mk__ f =
   "-", Arg.String f,
   "<file>  Treat <file> as a file name (even if it starts with `-')"
@@ -813,6 +826,9 @@ module type Compiler_options = sig
 
   val _nopervasives : unit -> unit
   val _dtimings : unit -> unit
+
+  val _expand_responsefile: string -> string array
+  val _expand_responsefile0: string -> string array
 end
 ;;
 
@@ -1030,6 +1046,9 @@ struct
     mk_dlambda F._dlambda;
     mk_dinstr F._dinstr;
     mk_dtimings F._dtimings;
+
+    mk_expand_responsefile F._expand_responsefile;
+    mk_expand_responsefile0 F._expand_responsefile0;
   ]
 end;;
 
@@ -1214,6 +1233,9 @@ struct
     mk_dstartup F._dstartup;
     mk_dtimings F._dtimings;
     mk_dump_pass F._dump_pass;
+
+    mk_expand_responsefile F._expand_responsefile;
+    mk_expand_responsefile0 F._expand_responsefile0;
   ]
 end;;
 
