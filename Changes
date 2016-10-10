@@ -68,6 +68,12 @@ Next version (tbd):
   (Jeremy Yallop,
    review by Damien Doligez, Alain Frisch, Daniel Bünzli, Fabrice Le Fessant)
 
+### Standard library:
+
+- GPR#778: Arg: added option Expand that allows to expand a string argument
+  to a string array of new arguments
+  (Bernhard Schommer)
+
 OCaml 4.04.0:
 -------------
 
