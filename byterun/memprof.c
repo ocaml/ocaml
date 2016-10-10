@@ -146,22 +146,6 @@ static int32_t mt_generate_poisson(double len) {
 
 /**** Interface with the OCaml code. ****/
 
-void set_lambda(double l) {
-  lambda = l;
-  lambda_rec = l == 0 ? INFINITY : 1/l;
-  caml_memprof_renew_minor_sample();
-}
-
-void suspend() {
-  suspended = 1;
-  caml_memprof_renew_minor_sample();
-}
-
-void unsuspend() {
-  suspended = 0;
-  caml_memprof_renew_minor_sample();
-}
-
 CAMLprim value caml_memprof_set(value v) {
   CAMLparam1(v);
   double l = Double_val(Field(v, 0));
@@ -170,7 +154,10 @@ CAMLprim value caml_memprof_set(value v) {
   if(sz < 0 || !(l >= 0.) || l > 1.)
     caml_failwith("caml_memprof_set");
 
-  set_lambda(l);
+  lambda = l;
+  lambda_rec = l == 0 ? INFINITY : 1/l;
+  caml_memprof_renew_minor_sample();
+
   callstack_size = sz;
   memprof_callback = Field(v, 2);
 
@@ -209,6 +196,16 @@ static value do_callback(tag_t tag, intnat wosize, int32_t occurences,
   Field(sample_info, 4) = callstack;
 
   CAMLreturn(caml_callback_exn(memprof_callback, sample_info));
+}
+
+void suspend() {
+  suspended = 1;
+  caml_memprof_renew_minor_sample();
+}
+
+void unsuspend() {
+  suspended = 0;
+  caml_memprof_renew_minor_sample();
 }
 
 /**** Sampling procedures ****/
