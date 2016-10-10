@@ -222,14 +222,14 @@ let load_lambda ppf ~module_ident ~required_globals lam size =
   if not Config.flambda then
     Asmgen.compile_implementation_clambda ~source_provenance:Timings.Toplevel
       ~toplevel:need_symbol fn ppf
-      { Lambda.code=lam ; main_module_block_size=size;
+      { Lambda.code=slam ; main_module_block_size=size;
         module_ident; required_globals }
   else
     Asmgen.compile_implementation_flambda ~source_provenance:Timings.Toplevel
       ~required_globals ~backend ~toplevel:need_symbol fn ppf
       (Middle_end.middle_end ppf
          ~source_provenance:Timings.Toplevel ~prefixname:"" ~backend ~size
-         ~module_ident ~module_initializer:lam ~filename:"toplevel");
+         ~module_ident ~module_initializer:slam ~filename:"toplevel");
   Asmlink.call_linker_shared [fn ^ ext_obj] dll;
   Sys.remove (fn ^ ext_obj);
 
