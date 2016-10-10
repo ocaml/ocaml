@@ -124,6 +124,32 @@ let test_arg args = test spec (ref args);;
 test_arg args1;;
 test_arg args2;;
 
+
+let safe_rm file =
+  try
+    Sys.remove file
+  with _ -> ()
+
+let test_rw argv =
+  safe_rm "test_rw";
+  safe_rm "test_rw0";
+  Arg.write_arg "test_rw" argv;
+  Arg.write_arg0 "test_rw0" argv;
+  let argv' = Arg.read_arg "test_rw" in
+  let argv0 = Arg.read_arg0 "test_rw0" in
+  let f x y =
+    if x <> y then
+      Printf.printf "%20s %c %-20s\n%!" x (if x = y then '=' else '#') y
+  in
+  Array.iter2 f argv argv';
+  Array.iter2 f argv argv0;
+  safe_rm "test_rw";
+  safe_rm "test_rw0";
+;;
+
+test_rw args1;;
+test_rw args2;;
+
 let f_expand r msg arg s =
   if s <> r then error msg;
   arg;

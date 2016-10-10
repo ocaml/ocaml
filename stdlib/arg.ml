@@ -336,3 +336,46 @@ let align ?(limit=max_int) speclist =
   let len = List.fold_left max_arg_len 0 completed in
   let len = min len limit in
   List.map (add_padding len) completed
+
+
+let read_aux sep file =
+  let ic = open_in_bin file in
+  let buf = Buffer.create 200 in
+  let words = ref [] in
+  let stash inw =
+    if inw then begin
+      words := Buffer.contents buf :: !words;
+      Buffer.clear buf;
+    end in
+  let rec read inw =
+    try
+      let c = input_char ic in
+      if c = sep then begin
+        stash inw; read true
+      end else begin
+        Buffer.add_char buf c; read true
+      end
+    with End_of_file ->
+      stash inw in
+  read false;
+  close_in ic;
+  Array.of_list (List.rev !words)
+
+let read_arg = read_aux '\n'
+
+let read_arg0 = read_aux '\x00'
+
+let write_aux sep file args =
+  let oc = open_out_bin file in
+  let first = ref true in
+  let sep () =
+    if !first then
+      first:=false
+    else
+      output_char oc sep in
+  Array.iter (fun s -> sep (); output_string oc s) args;
+  close_out oc
+
+let write_arg = write_aux '\n'
+
+let write_arg0 = write_aux '\x00'
