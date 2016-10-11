@@ -19,7 +19,8 @@ default: clean $(SOURCES) $(CSOURCES)
 	@printf " ... testing prog"
 	@$(MAKE) prog > /dev/null && echo " => passed" || echo " => failed"
 	@printf " ... testing prog2"
-	@$(MAKE) prog2 >/dev/null 2>prog2.result || :
+	@$(MAKE) prog2 REDIRECT=">prog2.result 2>&1" \
+	  >/dev/null 2>/dev/null || :
 	@$(DIFF) prog2.reference prog2.result >/dev/null \
 	&& echo " => passed" || echo " => failed"
 
@@ -29,7 +30,7 @@ prog:
 
 # Should fail
 prog2:  curses.cmo
-	$(OCAMLC) -custom -o prog2 $(LIBUNIX) prog.ml $(CSOURCES) $(CLIBS)
+	$(OCAMLC) -custom -o prog2 $(LIBUNIX) prog.ml $(CSOURCES) $(CLIBS) $(REDIRECT)
 
 .PHONY: clean
 clean:
