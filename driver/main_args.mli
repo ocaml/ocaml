@@ -101,8 +101,8 @@ module type Compiler_options = sig
   val _nopervasives : unit -> unit
   val _dtimings : unit -> unit
 
-  val _expand_responsefile: string -> string array
-  val _expand_responsefile0: string -> string array
+  val _args: string -> string array
+  val _args0: string -> string array
 end
 ;;
 

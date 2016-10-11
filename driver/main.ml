@@ -173,8 +173,8 @@ module Options = Main_args.Make_bytecomp_options (struct
   let _dinstr = set dump_instr
   let _dtimings = set print_timings
 
-  let _expand_responsefile = Arg.read_arg
-  let _expand_responsefile0 = Arg.read_arg0
+  let _args = Arg.read_arg
+  let _args0 = Arg.read_arg0
 
   let anonymous = anonymous
 end)

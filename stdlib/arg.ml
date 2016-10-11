@@ -337,43 +337,45 @@ let align ?(limit=max_int) speclist =
   let len = min len limit in
   List.map (add_padding len) completed
 
+let trim_cr s =
+  let len = String.length s in
+  if len > 0 && String.get s (len - 1) = '\r' then
+    String.sub s 0 (len - 1)
+  else
+    s
 
-let read_aux sep file =
+let read_aux trim sep file =
   let ic = open_in_bin file in
   let buf = Buffer.create 200 in
   let words = ref [] in
-  let stash inw =
-    if inw then begin
-      words := Buffer.contents buf :: !words;
-      Buffer.clear buf;
-    end in
-  let rec read inw =
+  let stash () =
+    let word =  (Buffer.contents buf) in
+    let word = if trim then trim_cr word else word in
+    words := word :: !words;
+    Buffer.clear buf
+  in
+  let rec read () =
     try
       let c = input_char ic in
       if c = sep then begin
-        stash inw; read true
+        stash (); read ()
       end else begin
-        Buffer.add_char buf c; read true
+        Buffer.add_char buf c; read ()
       end
     with End_of_file ->
-      stash inw in
-  read false;
+      if Buffer.length buf > 0 then
+        stash () in
+  read ();
   close_in ic;
   Array.of_list (List.rev !words)
 
-let read_arg = read_aux '\n'
+let read_arg = read_aux true '\n'
 
-let read_arg0 = read_aux '\x00'
+let read_arg0 = read_aux false '\x00'
 
 let write_aux sep file args =
   let oc = open_out_bin file in
-  let first = ref true in
-  let sep () =
-    if !first then
-      first:=false
-    else
-      output_char oc sep in
-  Array.iter (fun s -> sep (); output_string oc s) args;
+  Array.iter (fun s -> fprintf oc "%s%c" s sep) args;
   close_out oc
 
 let write_arg = write_aux '\n'

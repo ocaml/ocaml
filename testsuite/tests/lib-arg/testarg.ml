@@ -149,6 +149,8 @@ let test_rw argv =
 
 test_rw args1;;
 test_rw args2;;
+test_rw (Array.make 0 "");;
+test_rw [|"";""|];;
 
 let f_expand r msg arg s =
   if s <> r then error msg;
