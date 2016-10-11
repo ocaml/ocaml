@@ -978,6 +978,10 @@ a parameter declared by "CAMLlocal*" to ensure that a garbage
 collection triggered by the evaluation of the other arguments will not
 invalidate the first argument after it is computed.
 
+\paragraph{Use with CAMLlocalN:} Arrays of values declared using
+"CAMLlocalN" must not be written to using "Store_field".
+Use the normal C array syntax instead.
+
 \begin{gcrule} Global variables containing values must be registered
 with the garbage collector using the "caml_register_global_root" function.
 \end{gcrule}
