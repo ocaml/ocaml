@@ -252,10 +252,11 @@ void caml_memprof_track_young(tag_t tag, uintnat wosize) {
   uintnat whsize = Whsize_wosize(wosize);
   double rest =
     (caml_memprof_young_limit - caml_young_ptr) - next_sample_round;
+  int32_t occurences;
 
   CAMLassert(rest > 0 && lambda > 0 && !suspended);
 
-  int32_t occurences = mt_generate_poisson(rest) + 1;
+  occurences = mt_generate_poisson(rest) + 1;
 
   caml_young_ptr += whsize;
   //We should not allocate before this point
@@ -287,10 +288,11 @@ void caml_memprof_track_young(tag_t tag, uintnat wosize) {
 value caml_memprof_track_alloc_shr(tag_t tag, value block) {
   CAMLparam1(block);
   CAMLlocal2(ephe, callstack);
+  int32_t occurences;
 
   CAMLassert(Is_in_heap(block));
 
-  int32_t occurences = mt_generate_poisson(Whsize_val(block));
+  occurences = mt_generate_poisson(Whsize_val(block));
 
   caml_memprof_handle_postponed();
 
@@ -365,10 +367,10 @@ void caml_memprof_handle_postponed() {
   postponed_head = NULL;
 
 #define NEXT_P \
-  { caml_remove_generational_global_root(&p->callstack); \
-    caml_remove_generational_global_root(&p->block);     \
-    struct postponed_block* next = p->next;              \
-    free(p);                                             \
+  { struct postponed_block* next = p->next;                \
+    caml_remove_generational_global_root(&p->callstack);   \
+    caml_remove_generational_global_root(&p->block);       \
+    free(p);                                               \
     p = next; }
 
   suspend();
@@ -404,7 +406,7 @@ void caml_memprof_track_interned(header_t* block, header_t* blockend) {
      because insertion may trigger GC, and then blocks can escape
      from [block, blockend[ */
   while(1) {
-    double next_sample = mt_generate_exponential();
+    double next_sample = mt_generate_exponential(), rest;
     header_t *next_sample_p, *p0;
     if(next_sample >= blockend - p)
       break;
@@ -445,7 +447,7 @@ void caml_memprof_track_interned(header_t* block, header_t* blockend) {
     CAMLassert (j < sz);
 
     sampled[j] = Val_hp(p);
-    double rest = (p + Whsize_hp(p) - p0) - next_sample;
+    rest = (p + Whsize_hp(p) - p0) - next_sample;
     CAMLassert(rest > 0);
     occurences[j] = mt_generate_poisson(rest) + 1;
     j++;
@@ -587,6 +589,8 @@ void caml_memprof_call_gc_end(double exceeded_by) {
 
     caml_memprof_handle_postponed();
 
+    /* FIXME : this uses a variable length array, which is not
+       supported by MSVC. */
     CAMLlocalN(ephes, n_samples);
     suspend();
     callstack = capture_callstack(0);
