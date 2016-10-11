@@ -74,11 +74,16 @@ extern char caml_system__code_begin, caml_system__code_end;
 
 void caml_garbage_collection(void)
 {
+#ifdef WITH_STATMEMPROF
+  double memprof_exceeded_by;
+#endif
+  int gc_triggered;
+
   caml_update_young_limit();
 #ifdef WITH_STATMEMPROF
-  double memprof_exceeded_by = caml_memprof_call_gc_begin();
+  memprof_exceeded_by = caml_memprof_call_gc_begin();
 #endif
-  int gc_triggered =
+  gc_triggered =
     caml_requested_major_slice || caml_requested_minor_gc ||
     caml_young_ptr - caml_young_trigger < Max_young_whsize;
   if(gc_triggered)
