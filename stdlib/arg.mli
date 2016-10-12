@@ -139,6 +139,12 @@ val parse_and_expand_argv_dynamic : int ref -> string array ref ->
     See {!Arg.parse_argv_dynamic}.
 *)
 
+val parse_expand:
+  (key * spec * doc) list -> anon_fun -> usage_msg -> unit
+(** Same as {!Arg.parse}, except that the [Expand] arguments are allowed and
+    the {!current} reference is not updated.
+*)
+
 exception Help of string
 (** Raised by [Arg.parse_argv] when the user asks for help. *)
 
@@ -173,3 +179,19 @@ val current : int ref
     {!Arg.parse} uses the initial value of {!Arg.current} as the index of
     argument 0 (the program name) and starts parsing arguments
     at the next element. *)
+
+val read_arg: string -> string array
+(** [Arg.read_arg file] reads linefeed terminated command line arguments from
+    file [file]. *)
+
+val read_arg0: string -> string array
+(** Identical to {!Arg.read_arg} but assumes NUL terminated command line
+    arguments *)
+
+val write_arg: string -> string array -> unit
+(** [Arg.write_arg file args] writes the arguments [args] newline terminated
+    into the file [file]. If the any of the arguments in [args] contains a
+    newline use the function {!Args.write_arg0} instead *)
+
+val write_arg0: string -> string array -> unit
+(** Identical to {!Arg.write_arg} but uses NUL as terminator instead *)

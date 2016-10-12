@@ -281,6 +281,9 @@ module Options = Main_args.Make_optcomp_options (struct
   let _dtimings = set print_timings
   let _opaque = set opaque
 
+  let _args = Arg.read_arg
+  let _args0 = Arg.read_arg0
+
   let anonymous = anonymous
 end);;
 
@@ -289,7 +292,7 @@ let main () =
   let ppf = Format.err_formatter in
   try
     readenv ppf Before_args;
-    Arg.parse (Arch.command_line_options @ Options.list) anonymous usage;
+    Arg.parse_expand (Arch.command_line_options @ Options.list) anonymous usage;
     if !output_name <> None && !compile_only &&
           List.length !process_thunks > 1 then
       fatal "Options -c -o are incompatible with compiling multiple files";

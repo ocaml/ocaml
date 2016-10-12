@@ -172,6 +172,8 @@ module Options = Main_args.Make_optcomp_options (struct
   let _dtimings = option "-dtimings"
   let _opaque = option "-opaque"
 
+  let _args = Arg.read_arg
+  let _args0 = Arg.read_arg0
   let anonymous = process_file
 end);;
 
@@ -190,7 +192,7 @@ let optlist =
         \032     t  try ... with")
     :: Options.list
 in
-Arg.parse optlist process_file usage;
+Arg.parse_expand optlist process_file usage;
 if !with_impl && !with_intf then begin
   fprintf stderr "ocamloptp cannot deal with both \"-impl\" and \"-intf\"\n";
   fprintf stderr "please compile interfaces and implementations separately\n";
