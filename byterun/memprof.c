@@ -557,6 +557,7 @@ void caml_memprof_call_gc_end(double exceeded_by) {
       int32_t occurences;
     } *samples, *p;
     uintnat sz = 2, n_samples = 0;
+    value* ephes = NULL;
 
     samples = (struct smp*)malloc(sz*sizeof(struct smp));
     if(samples == NULL)
@@ -568,7 +569,7 @@ void caml_memprof_call_gc_end(double exceeded_by) {
       if(next_sample < 0) {
         if(n_samples >= sz) {
           sz *= 2;
-          p = (struct smp*)realloc(samples, sz*sizeof(struct smp));
+          p = (struct smp*)realloc(samples, sz * sizeof(struct smp));
           if(p == NULL) { free(samples); goto abort; }
           samples = p;
         }
@@ -587,11 +588,13 @@ void caml_memprof_call_gc_end(double exceeded_by) {
 
     CAMLassert(offs == tot_whsize);
 
+    ephes = (value*)malloc(n_samples * sizeof(value));
+    if(ephes == NULL) { free(samples); goto abort; }
+    for(i = 0; i < n_samples; i++) ephes[i] = Val_unit;
+    Begin_roots_block(ephes, n_samples);
+
     caml_memprof_handle_postponed();
 
-    /* FIXME : this uses a variable length array, which is not
-       supported by MSVC. */
-    CAMLlocalN(ephes, n_samples);
     suspend();
     callstack = capture_callstack(0);
     for(i = 0; i < n_samples; i++) {
@@ -641,6 +644,9 @@ void caml_memprof_call_gc_end(double exceeded_by) {
       Hd_val(v) = Make_header(samples[i].sz, Abstract_tag, Caml_black);
     }
 
+    End_roots();
+
+    free(ephes);
     free(samples);
   } else if(caml_requested_major_slice || caml_requested_minor_gc ||
             caml_young_ptr - tot_whsize < caml_young_trigger)
