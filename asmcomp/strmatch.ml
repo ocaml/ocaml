@@ -71,8 +71,10 @@ module Make(I:I) = struct
   let gen_size_id () = Ident.create "size"
 
   let mk_let_cell id str ind body =
+    let dbg = Debuginfo.none in
     let cell =
-      Cop(Cload Word_int,[Cop(Cadda,[str;Cconst_int(Arch.size_int*ind)])]) in
+      Cop(Cload Word_int,[Cop(Cadda,[str;Cconst_int(Arch.size_int*ind)], dbg)],
+        dbg) in
     Clet(id, cell, body)
 
   let mk_let_size id str body =
@@ -80,7 +82,10 @@ module Make(I:I) = struct
     Clet(id, size, body)
 
   let mk_cmp_gen cmp_op id nat ifso ifnot =
-    let test = Cop (Ccmpi cmp_op, [ Cvar id; Cconst_natpointer nat ]) in
+    let dbg = Debuginfo.none in
+    let test =
+      Cop (Ccmpi cmp_op, [ Cvar id; Cconst_natpointer nat ], dbg)
+    in
     Cifthenelse (test, ifso, ifnot)
 
   let mk_lt = mk_cmp_gen Clt
@@ -332,7 +337,7 @@ module Make(I:I) = struct
   In that latter case pattern len is string length-1 and is corrected.
  *)
 
-    let compile_by_size from_ind str default cases =
+    let compile_by_size dbg from_ind str default cases =
       let size_cases =
         List.map
           (fun (len,cases) ->
@@ -344,6 +349,7 @@ module Make(I:I) = struct
             (len,act))
           (by_size cases) in
       let id = gen_size_id () in
+      ignore dbg;
       let switch = I.transl_switch (Cvar id) 1 max_int size_cases default in
       mk_let_size id str switch
 
@@ -352,16 +358,16 @@ module Make(I:I) = struct
   either on size or on first cell, using the
   'least discriminant' heuristics.
  *)
-    let top_compile str default cases =
+    let top_compile debuginfo str default cases =
       let a_len = count_arities_length cases
       and a_fst = count_arities_first cases in
       if a_len <= a_fst then begin
         if dbg then pp_cases stderr "SIZE" cases ;
-        compile_by_size 0 str default cases
+        compile_by_size debuginfo 0 str default cases
       end else begin
         if dbg then pp_cases stderr "FIRST COL" cases ;
         let compile_size_rest str default cases =
-          compile_by_size 1 str default cases in
+          compile_by_size debuginfo 1 str default cases in
         match_oncell compile_size_rest str default 0 (by_cell cases)
       end
 
@@ -373,7 +379,7 @@ module Make(I:I) = struct
         let e =  next_raise_count () in
         Ccatch (e,[],k (Cexit (e,[])),arg)
 
-    let compile str default cases =
+    let compile dbg str default cases =
 (* We do not attempt to really optimise default=None *)
       let cases,default = match cases,default with
       | (_,e)::cases,None
@@ -383,6 +389,6 @@ module Make(I:I) = struct
         List.rev_map
           (fun (s,act) -> pat_of_string s,act)
           cases in
-      catch default (fun default -> top_compile str default cases)
+      catch default (fun default -> top_compile dbg str default cases)
 
   end

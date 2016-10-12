@@ -104,10 +104,10 @@ type memory_chunk =
   | Double_u                           (* word-aligned 64-bit float *)
 
 and operation =
-    Capply of machtype * Debuginfo.t
-  | Cextcall of string * machtype * bool * Debuginfo.t * label option
+    Capply of machtype
+  | Cextcall of string * machtype * bool * label option
   | Cload of memory_chunk
-  | Calloc of Debuginfo.t
+  | Calloc
   | Cstore of memory_chunk * Lambda.initialization_or_assignment
   | Caddi | Csubi | Cmuli | Cmulhi | Cdivi | Cmodi
   | Cand | Cor | Cxor | Clsl | Clsr | Casr
@@ -119,8 +119,8 @@ and operation =
   | Caddf | Csubf | Cmulf | Cdivf
   | Cfloatofint | Cintoffloat
   | Ccmpf of comparison
-  | Craise of raise_kind * Debuginfo.t
-  | Ccheckbound of Debuginfo.t
+  | Craise of raise_kind
+  | Ccheckbound
 
 and expression =
     Cconst_int of int
@@ -134,10 +134,10 @@ and expression =
   | Clet of Ident.t * expression * expression
   | Cassign of Ident.t * expression
   | Ctuple of expression list
-  | Cop of operation * expression list
+  | Cop of operation * expression list * Debuginfo.t
   | Csequence of expression * expression
   | Cifthenelse of expression * expression * expression
-  | Cswitch of expression * int array * expression array
+  | Cswitch of expression * int array * expression array * Debuginfo.t
   | Cloop of expression
   | Ccatch of int * Ident.t list * expression * expression
   | Cexit of int * expression list

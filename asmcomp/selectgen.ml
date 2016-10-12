@@ -26,15 +26,15 @@ type environment = (Ident.t, Reg.t array) Tbl.t
 (* Infer the type of the result of an operation *)
 
 let oper_result_type = function
-    Capply(ty, _) -> ty
-  | Cextcall(_s, ty, _alloc, _, _) -> ty
+    Capply ty -> ty
+  | Cextcall(_s, ty, _alloc, _) -> ty
   | Cload c ->
       begin match c with
       | Word_val -> typ_val
       | Single | Double | Double_u -> typ_float
       | _ -> typ_int
       end
-  | Calloc _ -> typ_val
+  | Calloc -> typ_val
   | Cstore (_c, _) -> typ_void
   | Caddi | Csubi | Cmuli | Cmulhi | Cdivi | Cmodi |
     Cand | Cor | Cxor | Clsl | Clsr | Casr |
@@ -45,7 +45,7 @@ let oper_result_type = function
   | Cfloatofint -> typ_float
   | Cintoffloat -> typ_int
   | Craise _ -> typ_void
-  | Ccheckbound _ -> typ_void
+  | Ccheckbound -> typ_void
 
 (* Infer the size in bytes of the result of a simple expression *)
 
@@ -69,7 +69,7 @@ let size_expr env exp =
         end
     | Ctuple el ->
         List.fold_right (fun e sz -> size localenv e + sz) el 0
-    | Cop(op, _) ->
+    | Cop(op, _, _) ->
         size_machtype(oper_result_type op)
     | Clet(id, arg, body) ->
         size (Tbl.add id (size localenv arg) localenv) body
@@ -169,15 +169,6 @@ let join_array rs =
       done;
       Some res
 
-(* Extract debug info contained in a C-- operation *)
-let debuginfo_op = function
-  | Capply(_, dbg) -> dbg
-  | Cextcall(_, _, _, dbg, _) -> dbg
-  | Craise (_, dbg) -> dbg
-  | Ccheckbound dbg -> dbg
-  | Calloc dbg -> dbg
-  | _ -> Debuginfo.none
-
 (* Registers for catch constructs *)
 let catch_regs = ref []
 
@@ -207,10 +198,10 @@ method is_simple_expr = function
   | Ctuple el -> List.for_all self#is_simple_expr el
   | Clet(_id, arg, body) -> self#is_simple_expr arg && self#is_simple_expr body
   | Csequence(e1, e2) -> self#is_simple_expr e1 && self#is_simple_expr e2
-  | Cop(op, args) ->
+  | Cop(op, args, _dbg) ->
       begin match op with
         (* The following may have side effects *)
-      | Capply _ | Cextcall _ | Calloc _ | Cstore _ | Craise _ -> false
+      | Capply _ | Cextcall _ | Calloc | Cstore _ | Craise _ -> false
         (* The remaining operations are simple if their args are *)
       | _ ->
           List.for_all self#is_simple_expr args
@@ -272,7 +263,7 @@ method select_checkbound () =
   Icheckbound { spacetime_index = 0; label_after_error = None; }
 method select_checkbound_extra_args () = []
 
-method select_operation op args =
+method select_operation op args _dbg =
   match (op, args) with
   | (Capply _, Cconst_symbol func :: rem) ->
     let label_after = Cmm.new_label () in
@@ -280,7 +271,7 @@ method select_operation op args =
   | (Capply _, _) ->
     let label_after = Cmm.new_label () in
     (Icall_ind { label_after; }, args)
-  | (Cextcall(func, _ty, alloc, _dbg, label_after), _) ->
+  | (Cextcall(func, _ty, alloc, label_after), _) ->
     let label_after =
       match label_after with
       | None -> Cmm.new_label ()
@@ -304,7 +295,7 @@ method select_operation op args =
         (Istore(chunk, addr, is_assign), [arg2; eloc])
         (* Inversion addr/datum in Istore *)
       end
-  | (Calloc _dbg, _) -> (self#select_allocation 0), args
+  | (Calloc, _) -> (self#select_allocation 0), args
   | (Caddi, _) -> self#select_arith_comm Iadd args
   | (Csubi, _) -> self#select_arith Isub args
   | (Cmuli, _) -> self#select_arith_comm Imul args
@@ -329,7 +320,7 @@ method select_operation op args =
   | (Cdivf, _) -> (Idivf, args)
   | (Cfloatofint, _) -> (Ifloatofint, args)
   | (Cintoffloat, _) -> (Iintoffloat, args)
-  | (Ccheckbound _, _) ->
+  | (Ccheckbound, _) ->
     let extra_args = self#select_checkbound_extra_args () in
     let op = self#select_checkbound () in
     self#select_arith op (args @ extra_args)
@@ -376,29 +367,29 @@ method private select_arith_comp cmp = function
 (* Instruction selection for conditionals *)
 
 method select_condition = function
-    Cop(Ccmpi cmp, [arg1; Cconst_int n]) when self#is_immediate n ->
+    Cop(Ccmpi cmp, [arg1; Cconst_int n], _) when self#is_immediate n ->
       (Iinttest_imm(Isigned cmp, n), arg1)
-  | Cop(Ccmpi cmp, [Cconst_int n; arg2]) when self#is_immediate n ->
+  | Cop(Ccmpi cmp, [Cconst_int n; arg2], _) when self#is_immediate n ->
       (Iinttest_imm(Isigned(swap_comparison cmp), n), arg2)
-  | Cop(Ccmpi cmp, [arg1; Cconst_pointer n]) when self#is_immediate n ->
+  | Cop(Ccmpi cmp, [arg1; Cconst_pointer n], _) when self#is_immediate n ->
       (Iinttest_imm(Isigned cmp, n), arg1)
-  | Cop(Ccmpi cmp, [Cconst_pointer n; arg2]) when self#is_immediate n ->
+  | Cop(Ccmpi cmp, [Cconst_pointer n; arg2], _) when self#is_immediate n ->
       (Iinttest_imm(Isigned(swap_comparison cmp), n), arg2)
-  | Cop(Ccmpi cmp, args) ->
+  | Cop(Ccmpi cmp, args, _) ->
       (Iinttest(Isigned cmp), Ctuple args)
-  | Cop(Ccmpa cmp, [arg1; Cconst_pointer n]) when self#is_immediate n ->
+  | Cop(Ccmpa cmp, [arg1; Cconst_pointer n], _) when self#is_immediate n ->
       (Iinttest_imm(Iunsigned cmp, n), arg1)
-  | Cop(Ccmpa cmp, [arg1; Cconst_int n]) when self#is_immediate n ->
+  | Cop(Ccmpa cmp, [arg1; Cconst_int n], _) when self#is_immediate n ->
       (Iinttest_imm(Iunsigned cmp, n), arg1)
-  | Cop(Ccmpa cmp, [Cconst_pointer n; arg2]) when self#is_immediate n ->
+  | Cop(Ccmpa cmp, [Cconst_pointer n; arg2], _) when self#is_immediate n ->
       (Iinttest_imm(Iunsigned(swap_comparison cmp), n), arg2)
-  | Cop(Ccmpa cmp, [Cconst_int n; arg2]) when self#is_immediate n ->
+  | Cop(Ccmpa cmp, [Cconst_int n; arg2], _) when self#is_immediate n ->
       (Iinttest_imm(Iunsigned(swap_comparison cmp), n), arg2)
-  | Cop(Ccmpa cmp, args) ->
+  | Cop(Ccmpa cmp, args, _) ->
       (Iinttest(Iunsigned cmp), Ctuple args)
-  | Cop(Ccmpf cmp, args) ->
+  | Cop(Ccmpf cmp, args, _) ->
       (Ifloattest(cmp, false), Ctuple args)
-  | Cop(Cand, [arg; Cconst_int 1]) ->
+  | Cop(Cand, [arg; Cconst_int 1], _) ->
       (Ioddtest, arg)
   | arg ->
       (Itruetest, arg)
@@ -548,7 +539,7 @@ method emit_expr env exp =
       | Some(simple_list, ext_env) ->
           Some(self#emit_tuple ext_env simple_list)
       end
-  | Cop(Craise (k, dbg), [arg]) ->
+  | Cop(Craise k, [arg], dbg) ->
       begin match self#emit_expr env arg with
         None -> None
       | Some r1 ->
@@ -557,15 +548,14 @@ method emit_expr env exp =
           self#insert_debug (Iraise k) dbg rd [||];
           None
       end
-  | Cop(Ccmpf _, _) ->
+  | Cop(Ccmpf _, _, _) ->
       self#emit_expr env (Cifthenelse(exp, Cconst_int 1, Cconst_int 0))
-  | Cop(op, args) ->
+  | Cop(op, args, dbg) ->
       begin match self#emit_parts_list env args with
         None -> None
       | Some(simple_args, env) ->
           let ty = oper_result_type op in
-          let (new_op, new_args) = self#select_operation op simple_args in
-          let dbg = debuginfo_op op in
+          let (new_op, new_args) = self#select_operation op simple_args dbg in
           match new_op with
             Icall_ind _ ->
               let r1 = self#emit_tuple env new_args in
@@ -639,7 +629,7 @@ method emit_expr env exp =
                       rarg [||];
           r
       end
-  | Cswitch(esel, index, ecases) ->
+  | Cswitch(esel, index, ecases, _dbg) ->
       begin match self#emit_expr env esel with
         None -> None
       | Some rsel ->
@@ -819,11 +809,11 @@ method emit_tail env exp =
         None -> ()
       | Some r1 -> self#emit_tail (self#bind_let env v r1) e2
       end
-  | Cop(Capply(ty, dbg) as op, args) ->
+  | Cop((Capply ty) as op, args, dbg) ->
       begin match self#emit_parts_list env args with
         None -> ()
       | Some(simple_args, env) ->
-          let (new_op, new_args) = self#select_operation op simple_args in
+          let (new_op, new_args) = self#select_operation op simple_args dbg in
           match new_op with
             Icall_ind { label_after; } ->
               let r1 = self#emit_tuple env new_args in
@@ -899,7 +889,7 @@ method emit_tail env exp =
                                          self#emit_tail_sequence env eelse))
                       rarg [||]
       end
-  | Cswitch(esel, index, ecases) ->
+  | Cswitch(esel, index, ecases, _dbg) ->
       begin match self#emit_expr env esel with
         None -> ()
       | Some rsel ->
