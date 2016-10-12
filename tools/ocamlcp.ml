@@ -135,7 +135,7 @@ let add_profarg s =
   profargs := (Filename.quote s) :: "-m" :: !profargs
 ;;
 
-let optlist = ref (
+let optlist =
     ("-P", Arg.String add_profarg,
            "[afilmt]  Profile constructs specified by argument (default fm):\n\
         \032     a  Everything\n\
@@ -145,10 +145,9 @@ let optlist = ref (
         \032     m  match ... with\n\
         \032     t  try ... with")
     :: ("-p", Arg.String add_profarg, "[afilmt]  Same as option -P")
-    :: Options.list)
+    :: Options.list
 in
-let argv = ref Sys.argv in
-Arg.parse_and_expand_argv_dynamic Arg.current argv optlist process_file usage;
+Arg.parse_expand optlist process_file usage;
 if !with_impl && !with_intf then begin
   fprintf stderr "ocamlcp cannot deal with both \"-impl\" and \"-intf\"\n";
   fprintf stderr "please compile interfaces and implementations separately\n";

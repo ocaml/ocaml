@@ -290,6 +290,16 @@ let parse_dynamic l f msg =
   | Bad msg -> eprintf "%s" msg; exit 2
   | Help msg -> printf "%s" msg; exit 0
 
+let parse_expand l f msg =
+  try
+    let argv = ref Sys.argv in
+    let spec = ref l in
+    let current = ref (!current) in
+    parse_and_expand_argv_dynamic current argv spec f msg
+  with
+  | Bad msg -> eprintf "%s" msg; exit 2
+  | Help msg -> printf "%s" msg; exit 0
+
 
 let second_word s =
   let len = String.length s in

@@ -139,6 +139,12 @@ val parse_and_expand_argv_dynamic : int ref -> string array ref ->
     See {!Arg.parse_argv_dynamic}.
 *)
 
+val parse_expand:
+  (key * spec * doc) list -> anon_fun -> usage_msg -> unit
+(** Same as {!Arg.parse}, except that the [Expand] arguments are allowed and
+    the {!current} reference is not updated.
+*)
+
 exception Help of string
 (** Raised by [Arg.parse_argv] when the user asks for help. *)
 

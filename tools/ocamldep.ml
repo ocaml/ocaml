@@ -546,7 +546,7 @@ let _ =
   Clflags.classic := false;
   add_to_list first_include_dirs Filename.current_dir_name;
   Compenv.readenv ppf Before_args;
-  Arg.parse [
+  Arg.parse_expand [
      "-absname", Arg.Set Location.absname,
         " Show absolute filenames in error messages";
      "-all", Arg.Set all_dependencies,
@@ -592,6 +592,12 @@ let _ =
          " Print version and exit";
      "-vnum", Arg.Unit print_version_num,
          " Print version number and exit";
+     "-args", Arg.Expand Arg.read_arg,
+         "<file> Read additional newline separated command line arguments \n\
+         \      from <file>";
+     "-args0", Arg.Expand Arg.read_arg0,
+         "<file> Read additional NUL separated command line arguments from \n\
+         \      <file>"
     ] file_dependencies usage;
   Compenv.readenv ppf Before_link;
   if !sort_files then sort_files_by_dependencies !files

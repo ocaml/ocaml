@@ -182,9 +182,7 @@ end)
 let main () =
   try
     readenv ppf Before_args;
-    let argv = ref Sys.argv in
-    let spec = ref Options.list in
-    Arg.parse_and_expand_argv_dynamic Arg.current argv spec anonymous usage;
+    Arg.parse_expand Options.list anonymous usage;
     if !output_name <> None && !compile_only &&
           List.length !process_thunks > 1 then
       fatal "Options -c -o are incompatible with compiling multiple files";
