@@ -12,8 +12,6 @@
 (*                                                                        *)
 (**************************************************************************)
 
-[@@@ocaml.warning "+a-4-9-30-40-41-42"]
-
 let node_num_header_words = 2 (* [Node_num_header_words] in the runtime. *)
 let index_within_node = ref node_num_header_words
 (* The [lazy]s are to ensure that we don't create [Ident.t]s at toplevel
@@ -251,8 +249,8 @@ class virtual instruction_selection = object (self)
     | None -> assert false
     | Some reg -> Some reg
 
-  method private instrument_indirect_call ~(env : Selectgen.environment)
-        ~callee ~is_tail ~label_after =
+  method private instrument_indirect_call ~env ~callee ~is_tail
+      ~label_after =
     (* [callee] is a pseudoregister, so we have to bind it in the environment
        and reference the variable to which it is bound. *)
     let callee_ident = Ident.create "callee" in
@@ -304,7 +302,7 @@ class virtual instruction_selection = object (self)
     in
     self#emit_expr env instrumentation
 
-  method private emit_prologue f ~node_hole ~(env : Selectgen.environment) =
+  method private emit_prologue f ~node_hole ~env =
     (* We don't need the prologue unless we inserted some instrumentation.
        This corresponds to adding the prologue if the function contains one
        or more call or allocation points. *)
@@ -356,7 +354,7 @@ class virtual instruction_selection = object (self)
       super#select_allocation words
     end
 
-  method! select_allocation_args (env : Selectgen.environment) =
+  method! select_allocation_args env
     if self#can_instrument () then begin
       let regs = Tbl.find (Lazy.force !spacetime_node_ident) env in
       match regs with
