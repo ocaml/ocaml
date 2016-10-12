@@ -7,12 +7,16 @@ provides a mechanism to statistically profile the heap.
 
 == INSTALLATION
 
-There is a opam switch packaging this patched version of OCaml:
+There is a opam switch packaging a port of this patch on OCaml
+4.03. You can use:
+
 
      $ opam switch install 4.03.0+statistical-memprof
 
-You may also compile this patched version just as the normal OCaml
-compiler.
+You may also compile this patched version. You have to activate the
+profiler with:
+
+     ./configure --statmemprof
 
 == QUICK TEST ON YOUR PROJECT
 
