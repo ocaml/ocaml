@@ -314,13 +314,19 @@ let dump_obj filename =
 
 let arg_list = [
   "-no-approx", Arg.Set no_approx, " Do not print module approximation information";
-  "-no-code", Arg.Set no_code, " Do not print code from exported flambda functions"
+  "-no-code", Arg.Set no_code, " Do not print code from exported flambda functions";
+  "-args", Arg.Expand Arg.read_arg,
+     "<file> Read additional newline separated command line arguments \n\
+     \      from <file>";
+  "-args0", Arg.Expand Arg.read_arg0,
+     "<file> Read additional NUL separated command line arguments from \n\
+     \      <file>";
 ]
 let arg_usage =
    Printf.sprintf "%s [OPTIONS] FILES : give information on files" Sys.argv.(0)
 
 let main() =
-  Arg.parse arg_list dump_obj arg_usage;
+  Arg.parse_expand arg_list dump_obj arg_usage;
   exit 0
 
 let _ = main ()
