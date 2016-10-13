@@ -1548,13 +1548,11 @@ let rec transl env e =
   | Uclosure(fundecls, clos_vars) ->
       let block_size =
         fundecls_size fundecls + List.length clos_vars in
-      let dbg = ref None in
       let rec transl_fundecls pos = function
           [] ->
             List.map (transl env) clos_vars
         | f :: rem ->
             Queue.add f functions;
-            if !dbg = None then dbg := Some f.dbg;
             let header =
               if pos = 0
               then alloc_closure_header block_size f.dbg
@@ -1570,8 +1568,7 @@ let rec transl env e =
               int_const f.arity ::
               Cconst_symbol f.label ::
               transl_fundecls (pos + 4) rem in
-      Cop(Calloc, transl_fundecls 0 fundecls,
-        match !dbg with None -> Debuginfo.none | Some dbg -> dbg)
+      Cop(Calloc, transl_fundecls 0 fundecls, Debuginfo.none)
   | Uoffset(arg, offset) ->
       (* produces a valid Caml value, pointing just after an infix header *)
       let ptr = transl env arg in
@@ -1804,15 +1801,17 @@ let rec transl env e =
                                 Cexit (raise_num,[]), Ctuple [])))))),
                  Ctuple []))))
   | Uassign(id, exp) ->
+      let dbg = Debuginfo.none in
       begin match is_unboxed_id id env with
       | None ->
           return_unit (Cassign(id, transl env exp))
       | Some (unboxed_id, bn) ->
           return_unit(Cassign(unboxed_id,
-            transl_unbox_number Debuginfo.none env bn exp))
+            transl_unbox_number dbg env bn exp))
       end
   | Uunreachable ->
-      Cop(Cload Word_int, [Cconst_int 0], Debuginfo.none)
+      let dbg = Debuginfo.none in
+      Cop(Cload Word_int, [Cconst_int 0], dbg)
 
 and transl_make_array dbg env kind args =
   match kind with
@@ -2467,9 +2466,9 @@ and transl_let env str kind id exp body =
        used in loops and we really want to avoid repeated boxing. *)
     match str, kind with
     | Mutable, Pfloatval ->
-        Boxed (Boxed_float Debuginfo.none, false)
+        Boxed (Boxed_float dbg, false)
     | Mutable, Pboxedintval bi ->
-        Boxed (Boxed_integer (bi, Debuginfo.none), false)
+        Boxed (Boxed_integer (bi, dbg), false)
     | _, (Pfloatval | Pboxedintval _) ->
         (* It would be safe to always unbox in this case, but
            we do it only if this indeed allows us to get rid of
@@ -2511,18 +2510,16 @@ and make_catch2 mk_body handler = match handler with
       (mk_body (Cexit (nfail,[])))
       handler
 
-and exit_if_true _dbg env cond nfail otherwise =
+and exit_if_true dbg env cond nfail otherwise =
   match cond with
   | Uconst (Uconst_ptr 0) -> otherwise
   | Uconst (Uconst_ptr 1) -> Cexit (nfail,[])
   | Uifthenelse (arg1, Uconst (Uconst_ptr 1), arg2)
   | Uprim(Psequor, [arg1; arg2], _) ->
-      let dbg = Debuginfo.none in
       exit_if_true dbg env arg1 nfail
         (exit_if_true dbg env arg2 nfail otherwise)
   | Uifthenelse (_, _, Uconst (Uconst_ptr 0))
   | Uprim(Psequand, _, _) ->
-      let dbg = Debuginfo.none in
       begin match otherwise with
       | Cexit (raise_num,[]) ->
           exit_if_false dbg env cond (Cexit (nfail,[])) raise_num
@@ -2533,10 +2530,9 @@ and exit_if_true _dbg env cond nfail otherwise =
             (exit_if_false dbg env cond (Cexit (nfail,[])) raise_num)
             otherwise
       end
-  | Uprim(Pnot, [arg], dbg) ->
+  | Uprim(Pnot, [arg], _) ->
       exit_if_false dbg env arg otherwise nfail
   | Uifthenelse (cond, ifso, ifnot) ->
-      let dbg = Debuginfo.none in
       make_catch2
         (fun shared ->
           if_then_else
@@ -2545,7 +2541,7 @@ and exit_if_true _dbg env cond nfail otherwise =
              exit_if_true dbg env ifnot nfail shared))
         otherwise
   | _ ->
-      if_then_else(test_bool Debuginfo.none (transl env cond),
+      if_then_else(test_bool dbg (transl env cond),
         Cexit (nfail, []), otherwise)
 
 and exit_if_false dbg env cond otherwise nfail =
@@ -2558,7 +2554,6 @@ and exit_if_false dbg env cond otherwise nfail =
         (exit_if_false dbg env arg2 otherwise nfail) nfail
   | Uifthenelse (_, Uconst (Uconst_ptr 1), _)
   | Uprim(Psequor, _, _) ->
-      let dbg = Debuginfo.none in
       begin match otherwise with
       | Cexit (raise_num,[]) ->
           exit_if_true dbg env cond raise_num (Cexit (nfail,[]))
@@ -2572,7 +2567,6 @@ and exit_if_false dbg env cond otherwise nfail =
   | Uprim(Pnot, [arg], _) ->
       exit_if_true dbg env arg nfail otherwise
   | Uifthenelse (cond, ifso, ifnot) ->
-      let dbg = Debuginfo.none in
       make_catch2
         (fun shared ->
           if_then_else
@@ -2581,7 +2575,7 @@ and exit_if_false dbg env cond otherwise nfail =
              exit_if_false dbg env ifnot shared nfail))
         otherwise
   | _ ->
-      if_then_else (test_bool Debuginfo.none (transl env cond), otherwise,
+      if_then_else (test_bool dbg (transl env cond), otherwise,
         Cexit (nfail, []))
 
 and transl_switch _dbg env arg index cases = match Array.length cases with
@@ -2622,12 +2616,13 @@ and transl_switch _dbg env arg index cases = match Array.length cases with
               (Array.of_list inters) store)
 
 and transl_letrec env bindings cont =
+  let dbg = Debuginfo.none in
   let bsz =
     List.map (fun (id, exp) -> (id, exp, expr_size Ident.empty exp))
       bindings
   in
   let op_alloc prim sz =
-    Cop(Cextcall(prim, typ_val, true, None), [int_const sz], Debuginfo.none) in
+    Cop(Cextcall(prim, typ_val, true, None), [int_const sz], dbg) in
   let rec init_blocks = function
     | [] -> fill_nonrec bsz
     | (id, _exp, RHS_block sz) :: rem ->
@@ -2649,7 +2644,7 @@ and transl_letrec env bindings cont =
     | (id, exp, (RHS_block _ | RHS_floatblock _)) :: rem ->
         let op =
           Cop(Cextcall("caml_update_dummy", typ_void, false, None),
-              [Cvar id; transl env exp], Debuginfo.none) in
+              [Cvar id; transl env exp], dbg) in
         Csequence(op, fill_blocks rem)
     | (_id, _exp, RHS_nonrec) :: rem ->
         fill_blocks rem

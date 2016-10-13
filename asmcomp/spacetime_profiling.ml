@@ -354,7 +354,7 @@ class virtual instruction_selection = object (self)
       super#select_allocation words
     end
 
-  method! select_allocation_args env
+  method! select_allocation_args env =
     if self#can_instrument () then begin
       let regs = Tbl.find (Lazy.force !spacetime_node_ident) env in
       match regs with
