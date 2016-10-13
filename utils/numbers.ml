@@ -40,7 +40,7 @@ module Int8 = struct
   let one = 1
 
   let of_int_exn i =
-    if i < -(1 lsl 8) || i > ((1 lsl 8) - 1) then
+    if i < -(1 lsl 7) || i > ((1 lsl 7) - 1) then
       Misc.fatal_errorf "Int8.of_int_exn: %d is out of range" i
     else
       i
@@ -52,13 +52,18 @@ module Int16 = struct
   type t = int
 
   let of_int_exn i =
-    if i < -(1 lsl 16) || i > ((1 lsl 16) - 1) then
+    if i < -(1 lsl 15) || i > ((1 lsl 15) - 1) then
       Misc.fatal_errorf "Int16.of_int_exn: %d is out of range" i
     else
       i
 
+  let lower_int64 = Int64.neg (Int64.shift_left Int64.one 15)
+  let upper_int64 = Int64.sub (Int64.shift_left Int64.one 15) Int64.one
+
   let of_int64_exn i =
-    if Int64.compare i 0xFFFFL >= 0 then
+    if Int64.compare i lower_int64 < 0
+        || Int64.compare i upper_int64 > 0
+    then
       Misc.fatal_errorf "Int16.of_int64_exn: %Ld is out of range" i
     else
       Int64.to_int i
