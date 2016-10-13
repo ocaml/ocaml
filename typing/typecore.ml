@@ -3046,9 +3046,9 @@ and type_function ?in_function loc attrs env ty_expected l caselist =
   if is_optional l && not_function ty_res then
     Location.prerr_warning (List.hd cases).c_lhs.pat_loc
       Warnings.Unerasable_optional_argument;
-  let ident = name_pattern "param" cases in
+  let param = name_pattern "param" cases in
   re {
-  exp_desc = Texp_function(l, ident, cases, partial);
+    exp_desc = Texp_function { arg_label = l; param; cases; partial; };
     exp_loc = loc; exp_extra = [];
     exp_type = instance env (newgenty (Tarrow(l, ty_arg, ty_res, Cok)));
     exp_attributes = attrs;
@@ -3447,9 +3447,10 @@ and type_argument ?recarg env sarg ty_expected' ty_expected =
               args @ [Nolabel, Some eta_var])}
         in
         let cases = [case eta_pat e] in
-        let ident = name_pattern "param" cases in
+        let param = name_pattern "param" cases in
         { texp with exp_type = ty_fun; exp_desc =
-          Texp_function(Nolabel, ident, cases, Total) }
+          Texp_function { arg_label = Nolabel; param; cases;
+            partial = Total; } }
       in
       Location.prerr_warning texp.exp_loc
         (Warnings.Eliminated_optional_arguments

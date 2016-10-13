@@ -574,10 +574,12 @@ type binding =
 let rec push_defaults loc bindings cases partial =
   match cases with
     [{c_lhs=pat; c_guard=None;
-      c_rhs={exp_desc = Texp_function(l, param, pl,partial)} as exp}] ->
-      let pl = push_defaults exp.exp_loc bindings pl partial in
+      c_rhs={exp_desc = Texp_function { arg_label; param; cases; partial; } }
+        as exp}] ->
+      let cases = push_defaults exp.exp_loc bindings cases partial in
       [{c_lhs=pat; c_guard=None;
-        c_rhs={exp with exp_desc = Texp_function(l, param, pl, partial)}}]
+        c_rhs={exp with exp_desc = Texp_function { arg_label; param; cases;
+          partial; }}}]
   | [{c_lhs=pat; c_guard=None;
       c_rhs={exp_attributes=[{txt="#default"},_];
              exp_desc = Texp_let
@@ -729,11 +731,11 @@ and transl_exp0 e =
       Lconst(Const_base cst)
   | Texp_let(rec_flag, pat_expr_list, body) ->
       transl_let rec_flag pat_expr_list (event_before body (transl_exp body))
-  | Texp_function (_, param, pat_expr_list, partial) ->
+  | Texp_function { arg_label = _; param; cases; partial; } ->
       let ((kind, params), body) =
         event_function e
           (function repr ->
-            let pl = push_defaults e.exp_loc [] pat_expr_list partial in
+            let pl = push_defaults e.exp_loc [] cases partial in
             transl_function e.exp_loc !Clflags.native_code repr partial
               param pl)
       in
@@ -1027,7 +1029,7 @@ and transl_exp0 e =
       | Texp_constant
           ( Const_int _ | Const_char _ | Const_string _
           | Const_int32 _ | Const_int64 _ | Const_nativeint _ )
-      | Texp_function(_, _, _, _)
+      | Texp_function _
       | Texp_construct (_, {cstr_arity = 0}, _)
         -> transl_exp e
       | Texp_constant(Const_float _) ->
@@ -1184,10 +1186,11 @@ and transl_apply ?(should_be_tailcall=false) ?(inlined = Default_inline)
 and transl_function loc untuplify_fn repr partial param cases =
   match cases with
     [{c_lhs=pat; c_guard=None;
-      c_rhs={exp_desc = Texp_function(_, param', pl,partial')} as exp}]
+      c_rhs={exp_desc = Texp_function { arg_label = _; param = param'; cases;
+        partial = partial'; }} as exp}]
     when Parmatch.fluid pat ->
       let ((_, params), body) =
-        transl_function exp.exp_loc false repr partial' param' pl in
+        transl_function exp.exp_loc false repr partial' param' cases in
       ((Curried, param :: params),
        Matching.for_function loc None (Lvar param) [pat, body] partial)
   | {c_lhs={pat_desc = Tpat_tuple pl}} :: _ when untuplify_fn ->
