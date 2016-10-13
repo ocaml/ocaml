@@ -114,7 +114,8 @@ DWARF_LOW=\
   supportlibs/dwarf_low/child_determination.cmo \
   supportlibs/dwarf_low/dwarf_tag.cmo \
   supportlibs/dwarf_low/dwarf_operator.cmo \
-  supportlibs/dwarf_low/simple_location_expression.cmo \
+  supportlibs/dwarf_low/simple_location_description.cmo \
+  supportlibs/dwarf_low/composite_location_description.cmo \
   supportlibs/dwarf_low/single_location_description.cmo \
   supportlibs/dwarf_low/dwarf_attributes.cmo \
   supportlibs/dwarf_low/encoding_attribute.cmo \
@@ -124,7 +125,6 @@ DWARF_LOW=\
   supportlibs/dwarf_low/abbreviations_table.cmo \
   supportlibs/dwarf_low/debugging_information_entry.cmo \
   supportlibs/dwarf_low/aranges_table.cmo \
-  supportlibs/dwarf_low/location_expression.cmo \
   supportlibs/dwarf_low/location_list_entry.cmo \
   supportlibs/dwarf_low/location_list.cmo \
   supportlibs/dwarf_low/debug_info_section.cmo \
