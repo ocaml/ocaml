@@ -60,6 +60,17 @@ let make_ident_info (clam : Clambda.ulambda) : ident_info =
   let t : int Ident.Tbl.t = Ident.Tbl.create 42 in
   let assigned_idents = ref Ident.Set.empty in
   let environment_idents = ref Ident.Set.empty in
+  let force_non_linear ulams =
+    List.iter (fun (ulam : Clambda.ulambda) ->
+        match ulam with
+        | Uvar id ->
+          begin match Ident.Tbl.find t id with
+          | n -> Ident.Tbl.replace t id (n + 1)
+          | exception Not_found -> Ident.Tbl.add t id 1
+          end
+        | _ -> ())
+      ulams
+  in
   let rec loop : Clambda.ulambda -> unit = function
     (* No underscores in the pattern match, to reduce the chance of failing
        to traverse some subexpression. *)
@@ -85,6 +96,11 @@ let make_ident_info (clam : Clambda.ulambda) : ident_info =
       List.iter loop args;
       ignore_debuginfo dbg
     | Uclosure (functions, captured_variables) ->
+      (* [Cmmgen] never pattern matches on the insides of a [Uclosure]'s
+         environment, so we don't need to substitute there.  The fewer
+         substitutions we do, the better: it gives a better debugging
+         experience. *)
+      force_non_linear captured_variables;
       List.iter loop captured_variables;
       List.iter (fun ({ Clambda. label; arity; params; body; dbg } as clos) ->
           (match closure_environment_ident clos with
