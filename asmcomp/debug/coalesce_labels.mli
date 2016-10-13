@@ -12,12 +12,15 @@
 (*                                                                        *)
 (**************************************************************************)
 
-(** Coalesce labels that point at the same source location.
-    This avoids generating DWARF information that appears to reference
-    different ranges of code but actually points at the same place.
-    In particular, generating duplicate lexical blocks at the same position
-    causes some of their local variables to become hidden in gdb.
-    This pass also produces tidier assembly output.
+(** Coalesce labels that point at the same source location.  This ensures
+    in particular that it is possible to detect whether the endpoints of
+    available ranges coincide by just checking their label names.  This
+    is not used in the compiler at present, but may be in the future if
+    support for generating DWARF lexical blocks is reinstated.  (Duplicate
+    lexical blocks at the same position causes variables to be hidden in
+    gdb.)
+    In the meantime, this pass also produces substantively tidier assembly
+    output and intermediate code.
 *)
 
 val fundecl
