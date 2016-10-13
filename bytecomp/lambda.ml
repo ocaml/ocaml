@@ -271,6 +271,7 @@ and lambda_event_kind =
   | Lev_after of Types.type_expr
   | Lev_function
   | Lev_pseudo
+  | Lev_module_definition of Path.t
 
 type program =
   { module_ident : Ident.t;

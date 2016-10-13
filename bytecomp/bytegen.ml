@@ -857,6 +857,8 @@ let rec comp_expr env exp sz cont =
           let ev = event (Event_after ty) info in
           let cont1 = add_event ev cont in
           comp_expr env lam sz cont1
+      | Lev_module_definition _ ->
+          comp_expr env lam sz cont
       end
   | Lifused (_, exp) ->
       comp_expr env exp sz cont
