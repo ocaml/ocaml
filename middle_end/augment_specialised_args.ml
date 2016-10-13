@@ -377,8 +377,11 @@ let check_invariants ~pass_name ~(set_of_closures : Flambda.set_of_closures)
         Variable.Map.iter (fun inner_var
                     (outer_var : Flambda.specialised_to) ->
               if Variable.Set.mem inner_var params then begin
+                let free_variables =
+                  Free_names.all_free_variables function_decl.free_names
+                in
                 assert (not (Variable.Set.mem outer_var.var
-                  function_decl.free_variables));
+                  free_variables));
                 match outer_var.projection with
                 | None -> ()
                 | Some projection ->
@@ -538,6 +541,7 @@ module Make (T : S) = struct
         ~inline:Default_inline
         ~specialise:Default_specialise
         ~is_a_functor:false
+        ~module_path:function_decl.module_path
     in
     new_fun_var, new_function_decl, rewritten_existing_specialised_args,
       benefit
@@ -619,6 +623,7 @@ module Make (T : S) = struct
           ~inline:function_decl.inline
           ~specialise:function_decl.specialise
           ~is_a_functor:function_decl.is_a_functor
+          ~module_path:function_decl.module_path
       in
       let funs, direct_call_surrogates =
         if for_one_function.make_direct_call_surrogates then

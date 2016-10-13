@@ -85,19 +85,22 @@ let lambda_smaller' lam ~than:threshold =
     | Send _ -> size := !size + 8
     | Proved_unreachable -> ()
     | Let { defining_expr; body; _ } ->
-      lambda_named_size defining_expr;
+      begin match defining_expr with
+      | Normal defining_expr -> lambda_named_size defining_expr
+      | Phantom _ -> ()
+      end;
       lambda_size body
     | Let_mutable { body } -> lambda_size body
-    | Let_rec (bindings, body) ->
-      List.iter (fun (_, lam) -> lambda_named_size lam) bindings;
+    | Let_rec { vars_and_defining_exprs = bindings; body; } ->
+      List.iter (fun (_, lam, _) -> lambda_named_size lam) bindings;
       lambda_size body
-    | Switch (_, sw) ->
+    | Switch (_, _, sw) ->
       let aux = function _::_::_ -> size := !size + 5 | _ -> () in
       aux sw.consts; aux sw.blocks;
       List.iter (fun (_, lam) -> lambda_size lam) sw.consts;
       List.iter (fun (_, lam) -> lambda_size lam) sw.blocks;
       Misc.Stdlib.Option.iter lambda_size sw.failaction
-    | String_switch (_, sw, def) ->
+    | String_switch (_, _, sw, def) ->
       List.iter (fun (_, lam) ->
           size := !size + 2;
           lambda_size lam)
@@ -106,7 +109,7 @@ let lambda_smaller' lam ~than:threshold =
     | Static_raise _ -> ()
     | Static_catch (_, _, body, handler) ->
       incr size; lambda_size body; lambda_size handler
-    | Try_with (body, _, handler) ->
+    | Try_with (body, _, _, handler) ->
       size := !size + 8; lambda_size body; lambda_size handler
     | If_then_else (_, ifso, ifnot) ->
       size := !size + 2;

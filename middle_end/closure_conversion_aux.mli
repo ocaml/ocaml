@@ -42,7 +42,11 @@ module Env : sig
   val find_global : t -> int -> Symbol.t
 
   val at_toplevel : t -> bool
+  (* XXX not_at_toplevel should take a function name  / etc *)
   val not_at_toplevel : t -> t
+
+  val entering_module_definition : t -> path:Path.t -> t
+  val current_module_path : t -> Path.t
 end
 
 (** Used to represent information about a set of function declarations

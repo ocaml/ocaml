@@ -35,6 +35,8 @@ let middle_end ppf ~source_provenance ~prefixname ~backend
     ~filename
     ~module_ident
     ~module_initializer =
+  let dummy = Ident.create "dummy" in
+  Flambda.ident_stamp_before_flambda := dummy.stamp;
   let pass_number = ref 0 in
   let round_number = ref 0 in
   let check flam =

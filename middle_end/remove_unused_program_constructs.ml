@@ -16,12 +16,24 @@
 
 [@@@ocaml.warning "+a-4-9-30-40-41-42"]
 
-let dependency (expr:Flambda.t) = Flambda.free_symbols expr
+let free_symbols () =
+  if (not !Clflags.debug)
+(* To be uncommented once [debug_can_increase_static_data] has been added
+    || (not !Clflags.debug_can_increase_static_data)
+*)
+  then
+    Free_names.free_symbols
+  else
+    Free_names.all_free_symbols
+
+let dependency (expr : Flambda.t) =
+  (free_symbols ()) (Flambda.free_names_expr expr)
 
 (* CR-soon pchambart: copied from lift_constant.  Needs remerging *)
 let constant_dependencies (const:Flambda.constant_defining_value) =
   let closure_dependencies (set_of_closures:Flambda.set_of_closures) =
-    Flambda.free_symbols_named (Set_of_closures set_of_closures)
+    (free_symbols ())
+      (Flambda.free_names_named (Set_of_closures set_of_closures))
   in
   match const with
   | Allocated_const _ -> Symbol.Set.empty
@@ -45,7 +57,7 @@ let let_rec_dep defs dep =
       dep l
   in
   let defs_deps =
-    List.map (fun (sym, def) -> sym, constant_dependencies def) defs
+    List.map (fun (sym, _, def) -> sym, constant_dependencies def) defs
   in
   let rec fixpoint dep =
     let new_dep = add_deps defs_deps dep in
@@ -57,21 +69,21 @@ let let_rec_dep defs dep =
 let rec loop (program : Flambda.program_body)
       : Flambda.program_body * Symbol.Set.t =
   match program with
-  | Let_symbol (sym, def, program) ->
+  | Let_symbol (sym, provenance, def, program) ->
     let program, dep = loop program in
     if Symbol.Set.mem sym dep then
-      Let_symbol (sym, def, program),
-      Symbol.Set.union dep (constant_dependencies def)
+      Let_symbol (sym, provenance, def, program),
+        Symbol.Set.union dep (constant_dependencies def)
     else
       program, dep
   | Let_rec_symbol (defs, program) ->
     let program, dep = loop program in
     let dep = let_rec_dep defs dep in
     let defs =
-      List.filter (fun (sym, _) -> Symbol.Set.mem sym dep) defs
+      List.filter (fun (sym, _, _) -> Symbol.Set.mem sym dep) defs
     in
     Let_rec_symbol (defs, program), dep
-  | Initialize_symbol (sym, tag, fields, program) ->
+  | Initialize_symbol (sym, provenance, tag, fields, program) ->
     let program, dep = loop program in
     if Symbol.Set.mem sym dep then
       let dep =
@@ -79,7 +91,7 @@ let rec loop (program : Flambda.program_body)
             Symbol.Set.union dep (dependency field))
           dep fields
       in
-      Initialize_symbol (sym, tag, fields, program), dep
+      Initialize_symbol (sym, provenance, tag, fields, program), dep
     else begin
       List.fold_left
         (fun (program, dep) field ->
@@ -102,7 +114,39 @@ let rec loop (program : Flambda.program_body)
     end
   | End symbol -> program, Symbol.Set.singleton symbol
 
+let remove_symbol_references_in_phantom_lets ~(program : Flambda.program)
+      ~symbols =
+  Flambda_iterators.map_phantom_of_program program
+    ~f:(fun (phantom : Flambda.defining_expr_of_phantom_let) ->
+      match phantom with
+      | Symbol symbol when Symbol.Set.mem symbol symbols -> Dead
+      | Symbol _
+      | Const _
+      | Var _
+      | Read_mutable _
+      | Read_symbol_field _
+      | Read_var_field _
+      | Block _
+      | Dead -> phantom)
+
 let remove_unused_program_constructs (program : Flambda.program) =
-  { program with
-    program_body = fst (loop program.program_body);
-  }
+  let program =
+    { program with Flambda.
+      program_body = fst (loop program.program_body);
+    }
+  in
+  if !Clflags.debug
+    (* && (not !Clflags.debug_can_increase_static_data) *)
+  then begin
+    (* In this case, we may have phantom lets referring to symbols that are
+       never referred to via normal lets.  These need to be marked as dead,
+       since we have now deleted the corresponding symbol definitions. *)
+    let symbols =
+      let free_names = Flambda.free_names_program program in
+      Symbol.Set.diff (Free_names.all_free_symbols free_names)
+        (Free_names.free_symbols free_names)
+    in
+    remove_symbol_references_in_phantom_lets ~program ~symbols
+  end else begin
+    program
+  end

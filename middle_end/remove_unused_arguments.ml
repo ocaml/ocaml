@@ -27,18 +27,22 @@ let remove_params unused (fun_decl: Flambda.function_declaration) =
   let unused_params, used_params =
     List.partition (fun v -> Variable.Set.mem v unused) fun_decl.params
   in
-  let unused_params = List.filter (fun v ->
-      Variable.Set.mem v fun_decl.free_variables) unused_params
+  let unused_params =
+    List.filter (fun var ->
+        Variable.Set.mem var
+          (Free_names.all_free_variables fun_decl.free_names))
+      unused_params
   in
   let body =
     List.fold_left (fun body var ->
-        Flambda.create_let var (Const (Const_pointer 0)) body)
+        Flambda.create_let var (Expr Proved_unreachable) body)
       fun_decl.body
       unused_params
   in
   Flambda.create_function_declaration ~params:used_params ~body
     ~stub:fun_decl.stub ~dbg:fun_decl.dbg ~inline:fun_decl.inline
     ~specialise:fun_decl.specialise ~is_a_functor:fun_decl.is_a_functor
+    ~module_path:fun_decl.module_path
 
 let make_stub unused var (fun_decl : Flambda.function_declaration)
     ~specialised_args ~additional_specialised_args =
@@ -92,6 +96,7 @@ let make_stub unused var (fun_decl : Flambda.function_declaration)
     Flambda.create_function_declaration ~params:(List.map snd args') ~body
       ~stub:true ~dbg:fun_decl.dbg ~inline:Default_inline
       ~specialise:Default_specialise ~is_a_functor:fun_decl.is_a_functor
+      ~module_path:fun_decl.module_path
   in
   function_decl, renamed, additional_specialised_args
 

@@ -72,11 +72,10 @@ let share_definition constant_to_symbol_tbl sharing_symbol_tbl
 let rec end_symbol (program : Flambda.program_body) =
   match program with
   | End symbol -> symbol
-  | Let_symbol (_, _, program)
+  | Let_symbol (_, _, _, program)
   | Let_rec_symbol (_, program)
-  | Initialize_symbol (_, _, _, program)
-  | Effect (_, program) ->
-    end_symbol program
+  | Initialize_symbol (_, _, _, _, program)
+  | Effect (_, program) -> end_symbol program
 
 let share_constants (program : Flambda.program) =
   let end_symbol = end_symbol program.program_body in
@@ -84,7 +83,7 @@ let share_constants (program : Flambda.program) =
   let constant_to_symbol_tbl = Constant_defining_value.Tbl.create 42 in
   let rec loop (program : Flambda.program_body) : Flambda.program_body =
     match program with
-    | Let_symbol (symbol,def,program) ->
+    | Let_symbol (symbol, provenance, def, program) ->
       begin match
         share_definition constant_to_symbol_tbl sharing_symbol_tbl symbol
           def end_symbol
@@ -92,17 +91,17 @@ let share_constants (program : Flambda.program) =
       | None ->
         loop program
       | Some def' ->
-        Let_symbol (symbol,def',loop program)
+        Let_symbol (symbol, provenance, def', loop program)
       end
-    | Let_rec_symbol (defs,program) ->
+    | Let_rec_symbol (defs, program) ->
       let defs =
-        List.map (fun (symbol, def) ->
+        List.map (fun (symbol, provenance, def) ->
             let def = update_constant_for_sharing sharing_symbol_tbl def in
-            symbol, def)
+            symbol, provenance, def)
           defs
       in
       Let_rec_symbol (defs, loop program)
-    | Initialize_symbol (symbol,tag,fields,program) ->
+    | Initialize_symbol (symbol, provenance, tag, fields, program) ->
       let fields =
         List.map (fun field ->
             Flambda_iterators.map_symbols
@@ -112,8 +111,8 @@ let share_constants (program : Flambda.program) =
               field)
           fields
       in
-      Initialize_symbol (symbol,tag,fields,loop program)
-    | Effect (expr,program) ->
+      Initialize_symbol (symbol, provenance, tag, fields, loop program)
+    | Effect (expr, program) ->
       let expr =
         Flambda_iterators.map_symbols
           ~f:(fun symbol ->

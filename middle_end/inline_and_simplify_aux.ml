@@ -679,7 +679,10 @@ let prepare_to_simplify_closure ~(function_decl : Flambda.function_declaration)
         | None -> env
         | Some projection ->
           let from = Projection.projecting_from projection in
-          if Variable.Set.mem from function_decl.free_variables then
+          let free_variables =
+            Free_names.free_variables function_decl.free_names
+          in
+          if Variable.Set.mem from free_variables then
             E.add_projection env ~projection ~bound_to:inner_var
           else
             env)

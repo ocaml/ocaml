@@ -99,15 +99,19 @@ val iter_all_immutable_let_and_let_rec_bindings
    : Flambda.t
   -> f:(Variable.t -> Flambda.named -> unit)
   -> unit
-
+(* CR mshinwell: these now miss "debug_only" lets *)
 val iter_all_toplevel_immutable_let_and_let_rec_bindings
    : Flambda.t
-  -> f:(Variable.t -> Flambda.named -> unit)
+  -> f:(Variable.t
+    -> Flambda.named
+    -> provenance:Flambda.let_provenance option
+    -> unit)
   -> unit
 
+(* CR mshinwell: wrong name?  Not really "toplevel" *)
 val iter_exprs_at_toplevel_of_program
    : Flambda.program
-  -> f:(Flambda.t -> unit)
+  -> f:(Flambda.t -> under_lifted_set_of_closures:bool -> unit)
   -> unit
 
 val iter_named_of_program
@@ -141,22 +145,16 @@ val map_named
   -> Flambda.t
   -> Flambda.t
 
+(** This function may rewrite the defining expression of a phantom let. *)
 val map_toplevel
    : (Flambda.t -> Flambda.t)
   -> (Flambda.named -> Flambda.named)
+  -> (Flambda.defining_expr_of_phantom_let
+    -> Flambda.defining_expr_of_phantom_let)
   -> Flambda.t
   -> Flambda.t
 
-val map_toplevel_expr
-   : (Flambda.t -> Flambda.t)
-  -> Flambda.t
-  -> Flambda.t
-
-val map_toplevel_named
-   : (Flambda.named -> Flambda.named)
-  -> Flambda.t
-  -> Flambda.t
-
+(** This function may rewrite the defining expression of a phantom let. *)
 val map_symbols
    : Flambda.t
   -> f:(Symbol.t -> Symbol.t)
@@ -167,12 +165,23 @@ val map_symbols_on_set_of_closures
   -> f:(Symbol.t -> Symbol.t)
   -> Flambda.set_of_closures
 
+(** This function may rewrite the defining expression of a phantom let. *)
+val map_toplevel_symbols_to_vars
+   : Flambda.t
+  -> f:(Symbol.t -> Variable.t option)
+  -> Flambda.t
+
 val map_toplevel_sets_of_closures
    : Flambda.t
   -> f:(Flambda.set_of_closures -> Flambda.set_of_closures)
   -> Flambda.t
 
 val map_apply
+   : Flambda.t
+  -> f:(Flambda.apply -> Flambda.apply)
+  -> Flambda.t
+
+val map_toplevel_apply
    : Flambda.t
   -> f:(Flambda.apply -> Flambda.apply)
   -> Flambda.t
@@ -212,9 +221,17 @@ val map_named_of_program
   -> f:(Variable.t -> Flambda.named -> Flambda.named)
   -> Flambda.program
 
+val map_phantom_of_program
+   : Flambda.program
+  -> f:(Flambda.defining_expr_of_phantom_let
+    -> Flambda.defining_expr_of_phantom_let)
+  -> Flambda.program
+
 val map_all_immutable_let_and_let_rec_bindings
    : Flambda.t
-  -> f:(Variable.t -> Flambda.named -> Flambda.named)
+  -> f:(Variable.t
+      -> Flambda.named
+      -> Flambda.named)
   -> Flambda.t
 
 val fold_function_decls_ignoring_stubs

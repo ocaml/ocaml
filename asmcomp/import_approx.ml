@@ -31,24 +31,22 @@ let import_set_of_closures =
         clos.funs Symbol.Map.empty
     in
     let sym_map = sym_to_fun_var_map clos in
-    let f_named (named : Flambda.named) =
-      match named with
-      | Symbol sym ->
-        begin try Flambda.Expr (Var (Symbol.Map.find sym sym_map)) with
-        | Not_found -> named
-        end
-      | named -> named
+    let sym_to_fun_var sym =
+      try Some (Symbol.Map.find sym sym_map)
+      with Not_found -> None
     in
     let funs =
       Variable.Map.map (fun (function_decl : Flambda.function_declaration) ->
           let body =
-            Flambda_iterators.map_toplevel_named f_named function_decl.body
+            Flambda_iterators.map_toplevel_symbols_to_vars function_decl.body
+              ~f:sym_to_fun_var
           in
           Flambda.create_function_declaration ~params:function_decl.params
             ~body ~stub:function_decl.stub ~dbg:function_decl.dbg
             ~inline:function_decl.inline
             ~specialise:function_decl.specialise
-            ~is_a_functor:function_decl.is_a_functor)
+            ~is_a_functor:function_decl.is_a_functor
+            ~module_path:function_decl.module_path)
         clos.funs
     in
     Flambda.update_function_declarations clos ~funs

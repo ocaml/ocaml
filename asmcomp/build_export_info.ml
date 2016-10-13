@@ -203,15 +203,17 @@ let descr_of_allocated_constant (c : Allocated_const.t) : Export_info.descr =
 let rec approx_of_expr (env : Env.t) (flam : Flambda.t) : Export_info.approx =
   match flam with
   | Var var -> Env.find_approx env var
-  | Let { var; defining_expr; body; _ } ->
+  | Let { var; defining_expr = Normal defining_expr; body; _ } ->
     let approx = descr_of_named env defining_expr in
     let env = Env.add_approx env var approx in
     approx_of_expr env body
+  | Let { defining_expr = Phantom _; body; _ } ->
+    approx_of_expr env body
   | Let_mutable { body } ->
     approx_of_expr env body
-  | Let_rec (defs, body) ->
+  | Let_rec { vars_and_defining_exprs = defs; body; _ } ->
     let env =
-      List.fold_left (fun env (var, defining_expr) ->
+      List.fold_left (fun env (var, defining_expr, _provenance) ->
           let approx = descr_of_named env defining_expr in
           Env.add_approx env var approx)
         env defs
@@ -443,13 +445,13 @@ let describe_constant_defining_value env export_id symbol
 let describe_program (env : Env.Global.t) (program : Flambda.program) =
   let rec loop env (program : Flambda.program_body) =
     match program with
-    | Let_symbol (symbol, constant_defining_value, program) ->
+    | Let_symbol (symbol, _provenance, constant_defining_value, program) ->
       let id, env = Env.Global.new_symbol env symbol in
       describe_constant_defining_value env id symbol constant_defining_value;
       loop env program
     | Let_rec_symbol (defs, program) ->
       let env, defs =
-        List.fold_left (fun (env, defs) (symbol, def) ->
+        List.fold_left (fun (env, defs) (symbol, _provenance, def) ->
             let id, env = Env.Global.new_symbol env symbol in
             env, ((id, symbol, def) :: defs))
           (env, []) defs
@@ -469,7 +471,7 @@ let describe_program (env : Env.Global.t) (program : Flambda.program) =
           describe_constant_defining_value env id symbol def)
         project_closures;
       loop env program
-    | Initialize_symbol (symbol, tag, fields, program) ->
+    | Initialize_symbol (symbol, _provenance, tag, fields, program) ->
       let id =
         let env =
           (* Assignments of variables to export IDs are local to each

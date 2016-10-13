@@ -51,6 +51,7 @@ let ignore_tag (_ : Tag.t) = ()
 let ignore_inline_attribute (_ : Lambda.inline_attribute) = ()
 let ignore_specialise_attribute (_ : Lambda.specialise_attribute) = ()
 let ignore_value_kind (_ : Lambda.value_kind) = ()
+let ignore_let_provenance_option (_ : Flambda.let_provenance option) = ()
 
 exception Binding_occurrence_not_from_current_compilation_unit of Variable.t
 exception Mutable_binding_occurrence_not_from_current_compilation_unit of
@@ -68,8 +69,8 @@ exception Function_decls_have_overlapping_parameters of Variable.Set.t
 exception Specialised_arg_that_is_not_a_parameter of Variable.t
 exception Projection_must_be_a_free_var of Projection.t
 exception Projection_must_be_a_specialised_arg of Projection.t
-exception Free_variables_set_is_lying of
-  Variable.t * Variable.Set.t * Variable.Set.t * Flambda.function_declaration
+exception Free_names_set_is_lying of
+  Variable.t * Free_names.t * Free_names.t * Flambda.function_declaration
 exception Set_of_closures_free_vars_map_has_wrong_range of Variable.Set.t
 exception Static_exception_not_caught of Static_exception.t
 exception Static_exception_caught_in_multiple_places of Static_exception.t
@@ -87,6 +88,10 @@ exception Unbound_closure_ids of Closure_id.Set.t
 exception Unbound_vars_within_closures of Var_within_closure.Set.t
 exception Move_to_a_closure_not_in_the_free_variables
   of Variable.t * Variable.Set.t
+exception Illegal_field_index of int
+(*
+exception Illegal_defining_expr_for_let_state of Flambda.named
+*)
 
 exception Flambda_invariants_failed
 
@@ -155,35 +160,65 @@ let variable_and_symbol_invariants (program : Flambda.program) =
   let rec loop env (flam : Flambda.t) =
     match flam with
     (* Expressions that can bind [Variable.t]s: *)
-    | Let { var; defining_expr; body; _ } ->
+    | Let { var; defining_expr = Normal defining_expr; body;
+        provenance; _ } ->
       loop_named env defining_expr;
-      loop (add_binding_occurrence env var) body
+      loop (add_binding_occurrence env var) body;
+      ignore_let_provenance_option provenance
+    | Let { var; defining_expr = Phantom phantom; body; provenance; _ } ->
+      ignore_let_provenance_option provenance;
+      begin match phantom with
+      | Const _ -> ()
+      | Symbol sym -> check_symbol_is_bound env sym
+      | Var var -> check_variable_is_bound env var
+      | Read_mutable mut_var -> check_mutable_variable_is_bound env mut_var
+      | Read_symbol_field (sym, field) ->
+        check_symbol_is_bound env sym;
+        if field < 0 then raise (Illegal_field_index field)
+      | Read_var_field (var, field) ->
+        check_variable_is_bound env var;
+        if field < 0 then raise (Illegal_field_index field)
+      | Block { tag = _; fields; } ->
+        List.iter (check_variable_is_bound env) fields
+      | Dead -> ()
+      end;
+      (* CR-soon mshinwell: this should distinguish normal and phantom
+         variables.  To do this we should add a proper type for the
+         environment, above.  Don't forget that the "Phantom Var" case may
+         name a normal _or_ a phantom variable. *)
+      loop (add_binding_occurrence env var) body;
     | Let_mutable { var = mut_var; initial_value = var;
-                    body; contents_kind } ->
+        body; contents_kind; provenance; } ->
       ignore_value_kind contents_kind;
       check_variable_is_bound env var;
+      ignore_let_provenance_option provenance;
       loop (add_mutable_binding_occurrence env mut_var) body
-    | Let_rec (defs, body) ->
+    | Let_rec { vars_and_defining_exprs = defs; body; } ->
       let env =
-        List.fold_left (fun env (var, def) ->
+        List.fold_left (fun env (var, def, provenance) ->
+            ignore_let_provenance_option provenance;
             will_traverse_named_expression_later def;
             add_binding_occurrence env var)
           env defs
       in
-      List.iter (fun (var, def) ->
+      List.iter (fun (var, def, provenance) ->
+        ignore_let_provenance_option provenance;
         already_added_bound_variable_to_env var;
         loop_named env def) defs;
       loop env body
-    | For { bound_var; from_value; to_value; direction; body; } ->
+    | For { bound_var; provenance; from_value; to_value; direction; body; } ->
       ignore_direction_flag direction;
+      ignore_let_provenance_option provenance;
       check_variable_is_bound env from_value;
       check_variable_is_bound env to_value;
       loop (add_binding_occurrence env bound_var) body
     | Static_catch (static_exn, vars, body, handler) ->
       ignore_static_exception static_exn;
       loop env body;
+      let vars = List.map (fun (var, _provenance) -> var) vars in
       loop (add_binding_occurrences env vars) handler
-    | Try_with (body, var, handler) ->
+    | Try_with (body, var, provenance, handler) ->
+      ignore_let_provenance_option provenance;
       loop env body;
       loop (add_binding_occurrence env var) handler
     (* Everything else: *)
@@ -208,7 +243,9 @@ let variable_and_symbol_invariants (program : Flambda.program) =
       check_variable_is_bound env cond;
       loop env ifso;
       loop env ifnot
-    | Switch (arg, { numconsts; consts; numblocks; blocks; failaction; }) ->
+    | Switch (dbg, arg,
+        { numconsts; consts; numblocks; blocks; failaction; }) ->
+      ignore_debuginfo dbg;
       check_variable_is_bound env arg;
       ignore_int_set numconsts;
       ignore_int_set numblocks;
@@ -217,7 +254,8 @@ let variable_and_symbol_invariants (program : Flambda.program) =
           loop env e)
         (consts @ blocks);
       Misc.may (loop env) failaction
-    | String_switch (arg, cases, e_opt) ->
+    | String_switch (dbg, arg, cases, e_opt) ->
+      ignore_debuginfo dbg;
       check_variable_is_bound env arg;
       List.iter (fun (label, case) ->
           ignore_string label;
@@ -284,8 +322,9 @@ let variable_and_symbol_invariants (program : Flambda.program) =
       let all_params, all_free_vars =
         Variable.Map.fold (fun fun_var function_decl acc ->
             let all_params, all_free_vars = acc in
-            (* CR-soon mshinwell: check function_decl.all_symbols *)
-            let { Flambda.params; body; free_variables; stub; dbg; _ } =
+            (* CR-soon mshinwell: check function_decl.all_symbols
+               mshinwell: we now do check "subset" on this *)
+            let { Flambda.params; body; free_names; stub; dbg; _ } =
               function_decl
             in
             assert (Variable.Set.mem fun_var functions_in_closure);
@@ -293,19 +332,21 @@ let variable_and_symbol_invariants (program : Flambda.program) =
             ignore_debuginfo dbg;
             (* Check that [free_variables], which is only present as an
                optimization, is not lying. *)
-            let free_variables' = Flambda.free_variables body in
-            if not (Variable.Set.subset free_variables' free_variables) then
-              raise (Free_variables_set_is_lying (fun_var,
-                free_variables, free_variables', function_decl));
-            (* Check that every variable free in the body of the function is
-               bound by either the set of closures or the parameter list. *)
+            let free_names' = Flambda.free_names_expr body in
+            if not (Free_names.subset free_names' free_names) then
+              raise (Free_names_set_is_lying (fun_var,
+                free_names, free_names', function_decl));
+            (* Check that every variable (normal or phantom) free in the body
+               of the function is bound by either the set of closures or the
+               parameter list. *)
             let acceptable_free_variables =
               Variable.Set.union
                 (Variable.Set.union variables_in_closure functions_in_closure)
                 (Variable.Set.of_list params)
             in
             let bad =
-              Variable.Set.diff free_variables acceptable_free_variables
+              Variable.Set.diff (Free_names.free_variables free_names)
+                acceptable_free_variables
             in
             if not (Variable.Set.is_empty bad) then begin
               raise (Vars_in_function_body_not_bound_by_closure_or_params
@@ -329,6 +370,13 @@ let variable_and_symbol_invariants (program : Flambda.program) =
             let body_env =
               let (var_env, _, sym_env) = env in
               let var_env =
+                (* CR mshinwell: may have been a pre-existing bug here *)
+                let free_variables =
+                  Variable.Set.union (Free_names.free_variables free_names)
+                    (Variable.Set.union variables_in_closure
+                      (Variable.Set.union functions_in_closure
+                        params))
+                in
                 Variable.Set.fold (fun var -> Variable.Set.add var)
                   free_variables var_env
               in
@@ -337,6 +385,7 @@ let variable_and_symbol_invariants (program : Flambda.program) =
               (var_env, mut_env, sym_env)
             in
             loop body_env body;
+            let free_variables = Free_names.free_variables free_names in
             all_params, Variable.Set.union free_variables all_free_vars)
           funs (Variable.Set.empty, Variable.Set.empty)
       in
@@ -423,19 +472,19 @@ let variable_and_symbol_invariants (program : Flambda.program) =
     match program with
     | Let_rec_symbol (defs, program) ->
       let env =
-        List.fold_left (fun env (symbol, _) ->
+        List.fold_left (fun env (symbol, _, _) ->
             add_binding_occurrence_of_symbol env symbol)
           env defs
       in
-      List.iter (fun (_, def) ->
+      List.iter (fun (_, _, def) ->
           loop_constant_defining_value env def)
         defs;
       loop_program_body env program
-    | Let_symbol (symbol, def, program) ->
+    | Let_symbol (symbol, _provenance, def, program) ->
       loop_constant_defining_value env def;
       let env = add_binding_occurrence_of_symbol env symbol in
       loop_program_body env program
-    | Initialize_symbol (symbol, _tag, fields, program) ->
+    | Initialize_symbol (symbol, _provenance, _tag, fields, program) ->
       List.iter (loop env) fields;
       let env = add_binding_occurrence_of_symbol env symbol in
       loop_program_body env program
@@ -662,13 +711,13 @@ let _every_move_within_set_of_closures_is_to_a_function_in_the_free_vars
         | _ -> ());
   Flambda_iterators.iter_on_set_of_closures_of_program program
     ~f:(fun ~constant:_ { Flambda.function_decls = { funs; _ }; _ } ->
-        Variable.Map.iter (fun fun_var { Flambda.free_variables; _ } ->
+        Variable.Map.iter (fun fun_var { Flambda.free_names; _ } ->
             match Closure_id.Map.find (Closure_id.wrap fun_var) !moves with
             | exception Not_found -> ()
             | moved_to ->
               let missing_dependencies =
                 Variable.Set.diff (Closure_id.unwrap_set moved_to)
-                  free_variables
+                  (Free_names.free_variables free_names)
               in
               if not (Variable.Set.is_empty missing_dependencies) then
                 raise (Move_to_a_closure_not_in_the_free_variables
@@ -691,11 +740,13 @@ let check_exn ?(kind=Normal) ?(cmxfile=false) (flam:Flambda.program) =
        miscompilations *)
     (* every_move_within_set_of_closures_is_to_a_function_in_the_free_vars
         flam; *)
-    Flambda_iterators.iter_exprs_at_toplevel_of_program flam ~f:(fun flam ->
-      primitive_invariants flam ~no_access_to_global_module_identifiers:cmxfile;
-      every_static_exception_is_caught flam;
-      every_static_exception_is_caught_at_a_single_position flam;
-      every_declared_closure_is_from_current_compilation_unit flam)
+    Flambda_iterators.iter_exprs_at_toplevel_of_program flam
+      ~f:(fun flam ~under_lifted_set_of_closures:_ ->
+        primitive_invariants flam
+          ~no_access_to_global_module_identifiers:cmxfile;
+        every_static_exception_is_caught flam;
+        every_static_exception_is_caught_at_a_single_position flam;
+        every_declared_closure_is_from_current_compilation_unit flam)
   with exn -> begin
   (* CR-someday split printing code into its own function *)
     begin match exn with
@@ -754,12 +805,12 @@ let check_exn ?(kind=Normal) ?(cmxfile=false) (flam:Flambda.program) =
           that is not a (inner) specialised argument variable of the set of \
           closures"
         Projection.print var
-    | Free_variables_set_is_lying (var, claimed, calculated, function_decl) ->
-      Format.eprintf ">> Function declaration whose [free_variables] set (%a) \
-          is not a superset of the result of [Flambda.free_variables] \
+    | Free_names_set_is_lying (var, claimed, calculated, function_decl) ->
+      Format.eprintf ">> Function declaration whose [free_names] set (%a) \
+          is not a superset of the result of [Flambda.free_names_expr] \
           applied to the body of the function (%a).  Declaration: %a"
-        Variable.Set.print claimed
-        Variable.Set.print calculated
+        Free_names.print claimed
+        Free_names.print calculated
         Flambda.print_function_declaration (var, function_decl)
     | Set_of_closures_free_vars_map_has_wrong_range vars ->
       Format.eprintf ">> [free_vars] map in set of closures has in its range \
@@ -818,6 +869,13 @@ let check_exn ?(kind=Normal) ?(cmxfile=false) (flam:Flambda.program) =
         to closures that are not parts of its free variables: %a"
           Variable.print start_from
           Variable.Set.print move_to
+    | Illegal_field_index field ->
+      Format.eprintf ">> Illegal field index %d" field
+(*
+    | Illegal_defining_expr_for_let_state named ->
+      Format.eprintf ">> Illegal defining expression %a for let_state"
+        Flambda.print_named named
+*)
     | exn -> raise exn
     end;
     Format.eprintf "\n@?";

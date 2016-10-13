@@ -97,8 +97,8 @@ let rec analyse_expr ~which_variables expr =
     | Assign { new_value; _ } ->
       check_free_variable new_value
     | If_then_else (var, _, _)
-    | Switch (var, _)
-    | String_switch (var, _, _) ->
+    | Switch (_, var, _)
+    | String_switch (_, var, _, _) ->
       check_free_variable var
     | Static_raise (_, args) ->
       List.iter check_free_variable args

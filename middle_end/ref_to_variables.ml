@@ -36,9 +36,15 @@ let variables_not_used_as_local_reference (tree:Flambda.t) =
     | Symbol _ |Const _ | Allocated_const _ | Read_mutable _
     | Read_symbol_field _ | Project_closure _
     | Move_within_set_of_closures _ | Project_var _ ->
-      set := Variable.Set.union !set (Flambda.free_variables_named flam)
+      let free_variables =
+        Free_names.free_variables (Flambda.free_names_named flam)
+      in
+      set := Variable.Set.union !set free_variables
     | Set_of_closures set_of_closures ->
-      set := Variable.Set.union !set (Flambda.free_variables_named flam);
+      let free_variables =
+        Free_names.free_variables (Flambda.free_names_named flam)
+      in
+      set := Variable.Set.union !set free_variables;
       Variable.Map.iter (fun _ (function_decl : Flambda.function_declaration) ->
           loop function_decl.body)
         set_of_closures.function_decls.funs
@@ -47,10 +53,13 @@ let variables_not_used_as_local_reference (tree:Flambda.t) =
   and loop (flam : Flambda.t) =
     match flam with
     | Let { defining_expr; body; _ } ->
-      loop_named defining_expr;
+      begin match defining_expr with
+      | Normal defining_expr -> loop_named defining_expr
+      | Phantom _ -> ()
+      end;
       loop body
-    | Let_rec (defs, body) ->
-      List.iter (fun (_var, named) -> loop_named named) defs;
+    | Let_rec { vars_and_defining_exprs = defs; body; _ } ->
+      List.iter (fun (_var, named, _provenance) -> loop_named named) defs;
       loop body
     | Var v ->
       set := Variable.Set.add v !set
@@ -61,19 +70,19 @@ let variables_not_used_as_local_reference (tree:Flambda.t) =
       set := Variable.Set.add cond !set;
       loop ifso;
       loop ifnot
-    | Switch (cond, { consts; blocks; failaction }) ->
+    | Switch (_, cond, { consts; blocks; failaction }) ->
       set := Variable.Set.add cond !set;
       List.iter (fun (_, branch) -> loop branch) consts;
       List.iter (fun (_, branch) -> loop branch) blocks;
       Misc.may loop failaction
-    | String_switch (cond, branches, default) ->
+    | String_switch (_, cond, branches, default) ->
       set := Variable.Set.add cond !set;
       List.iter (fun (_, branch) -> loop branch) branches;
       Misc.may loop default
     | Static_catch (_, _, body, handler) ->
       loop body;
       loop handler
-    | Try_with (body, _, handler) ->
+    | Try_with (body, _, _, handler) ->
       loop body;
       loop handler
     | While (cond, body) ->
@@ -86,7 +95,10 @@ let variables_not_used_as_local_reference (tree:Flambda.t) =
     | Static_raise (_, args) ->
       set := Variable.Set.union (Variable.Set.of_list args) !set
     | Proved_unreachable | Apply _ | Send _ | Assign _ ->
-      set := Variable.Set.union !set (Flambda.free_variables flam)
+      let free_variables =
+        Free_names.free_variables (Flambda.free_names_expr flam)
+      in
+      set := Variable.Set.union !set free_variables
   in
   loop tree;
   !set
@@ -96,7 +108,8 @@ let variables_containing_ref (flam:Flambda.t) =
   let aux (flam : Flambda.t) =
     match flam with
     | Let { var;
-            defining_expr = Prim(Pmakeblock(0, Asttypes.Mutable, _), l, _);
+            defining_expr = Normal (Prim(Pmakeblock(0, Asttypes.Mutable, _),
+              l, _));
           } ->
       map := Variable.Map.add var (List.length l) !map
     | _ -> ()
@@ -132,10 +145,13 @@ let eliminate_ref_of_expr flam =
     let aux (flam : Flambda.t) : Flambda.t =
       match flam with
       | Let { var;
-              defining_expr = Prim(Pmakeblock(0, Asttypes.Mutable, shape), l,_);
-              body }
+              defining_expr = Normal (Prim(Pmakeblock(0, Asttypes.Mutable,
+                shape), l, _));
+              body;
+              provenance; }
         when convertible_variable var ->
-        let shape = match shape with
+        let shape =
+          match shape with
           | None -> List.map (fun _ -> Lambda.Pgenval) l
           | Some shape -> shape
         in
@@ -145,14 +161,37 @@ let eliminate_ref_of_expr flam =
               | None -> assert false
               | Some (field_var, _) ->
                 field+1,
-                (Let_mutable { var = field_var;
-                               initial_value = init;
-                               body;
-                               contents_kind = kind } : Flambda.t))
+                (Let_mutable {
+                  var = field_var;
+                  initial_value = init;
+                  body;
+                  contents_kind = kind;
+                  provenance;
+                } : Flambda.t))
             (0,body) l shape in
         expr
-      | Let _ | Let_mutable _
-      | Assign _ | Var _ | Apply _
+      | Let let_expr ->
+        Flambda.map_defining_expr_of_let let_expr
+          ~f:(fun (expr : Flambda.defining_expr_of_let) ->
+            match expr with
+            | Normal _
+            | Phantom (Const _)
+            | Phantom (Symbol _)
+            | Phantom (Read_mutable _)
+            | Phantom (Read_symbol_field _)
+            | Phantom Dead -> expr
+              (* CR-soon mshinwell: maybe we can do better here?  Look at
+                 examples from bytes.ml *)
+            | Phantom (Var var) ->
+              if convertible_variable var then Phantom Dead
+              else expr
+            | Phantom (Read_var_field (var, _field)) ->
+              if convertible_variable var then Phantom Dead
+              else expr
+            | Phantom (Block { tag = _; fields; }) ->
+              if List.exists convertible_variable fields then Phantom Dead
+              else expr)
+      | Let_mutable _ | Assign _ | Var _ | Apply _
       | Let_rec _ | Switch _ | String_switch _
       | Static_raise _ | Static_catch _
       | Try_with _ | If_then_else _

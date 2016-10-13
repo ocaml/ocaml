@@ -147,6 +147,11 @@ let add_variables t defs =
       let id', t = add_variable t id in
       (id', data) :: defs, t) defs ([], t)
 
+let add_variables3 t defs =
+  List.fold_right (fun (id, data1, data2) (defs, t) ->
+      let id', t = add_variable t id in
+      (id', data1, data2) :: defs, t) defs ([], t)
+
 let add_variables' t ids =
   List.fold_right (fun id (ids, t) ->
       let id', t = add_variable t id in
@@ -214,19 +219,18 @@ let rewrite_recursive_calls_with_symbols t
       let funs =
         Variable.Map.map (fun (ffun : Flambda.function_declaration) ->
           let body =
-            Flambda_iterators.map_toplevel_named
-              (* CR-someday pchambart: This may be worth deep substituting
-                 below the closures, but that means that we need to take care
-                 of functions' free variables. *)
-              (function
-                | Symbol sym when Symbol.Map.mem sym closure_symbols ->
-                  Expr (Var (Symbol.Map.find sym closure_symbols))
-                | e -> e)
-              ffun.body
+            (* CR-someday pchambart: This may be worth deep substituting
+               below the closures, but that means that we need to take care
+               of functions' free variables. *)
+            Flambda_iterators.map_toplevel_symbols_to_vars ffun.body
+              ~f:(fun sym ->
+                try Some (Symbol.Map.find sym closure_symbols)
+                with Not_found -> None)
           in
           Flambda.create_function_declaration ~params:ffun.params
             ~body ~stub:ffun.stub ~dbg:ffun.dbg ~inline:ffun.inline
-            ~specialise:ffun.specialise ~is_a_functor:ffun.is_a_functor)
+            ~specialise:ffun.specialise ~is_a_functor:ffun.is_a_functor
+            ~module_path:ffun.module_path)
           function_declarations.funs
       in
       Flambda.update_function_declarations function_declarations ~funs
@@ -312,6 +316,7 @@ module Project_var = struct
             ~body ~stub:func_decl.stub ~dbg:func_decl.dbg
             ~inline:func_decl.inline ~specialise:func_decl.specialise
             ~is_a_functor:func_decl.is_a_functor
+            ~module_path:func_decl.module_path
         in
         function_decl, subst
       in

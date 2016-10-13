@@ -224,18 +224,20 @@ module Inconstants (P:Param) (Backend:Backend_intf.S) = struct
   *)
   let rec mark_loop ~toplevel (curr : dep list) (flam : Flambda.t) =
     match flam with
-    | Let { var; defining_expr = lam; body; _ } ->
+    | Let { var; defining_expr = Normal lam; body; _ } ->
       mark_named ~toplevel [Var var] lam;
       (* adds 'var in NC => curr in NC'
          This is not really necessary, but compiling this correctly is
          trickier than eliminating that earlier. *)
       mark_var var curr;
       mark_loop ~toplevel curr body
-    | Let_mutable { initial_value = var; body } ->
+    | Let { defining_expr = Phantom _; body; _ } ->
+      mark_loop ~toplevel curr body
+    | Let_mutable { initial_value = var; body; _ } ->
       mark_var var curr;
       mark_loop ~toplevel curr body
-    | Let_rec(defs, body) ->
-      List.iter (fun (var, def) ->
+    | Let_rec { vars_and_defining_exprs = defs; body; } ->
+      List.iter (fun (var, def, _provenance) ->
           mark_named ~toplevel [Var var] def;
           (* adds 'var in NC => curr in NC' same remark as let case *)
           mark_var var curr)
@@ -246,13 +248,13 @@ module Inconstants (P:Param) (Backend:Backend_intf.S) = struct
        bound variables as in NC also *)
     | Assign _ ->
       mark_curr curr
-    | Try_with (f1,id,f2) ->
+    | Try_with (f1, id, _provenance, f2) ->
       mark_curr [Var id];
       mark_curr curr;
       mark_loop ~toplevel [] f1;
       mark_loop ~toplevel [] f2
     | Static_catch (_,ids,f1,f2) ->
-      List.iter (fun id -> mark_curr [Var id]) ids;
+      List.iter (fun (id, _provenance) -> mark_curr [Var id]) ids;
       mark_curr curr;
       mark_loop ~toplevel [] f1;
       mark_loop ~toplevel [] f2
@@ -280,13 +282,13 @@ module Inconstants (P:Param) (Backend:Backend_intf.S) = struct
       mark_curr curr;
       mark_var func curr;
       mark_vars args curr;
-    | Switch (arg,sw) ->
+    | Switch (_, arg, sw) ->
       mark_curr curr;
       mark_var arg curr;
       List.iter (fun (_,l) -> mark_loop ~toplevel [] l) sw.consts;
       List.iter (fun (_,l) -> mark_loop ~toplevel [] l) sw.blocks;
       Misc.may (fun l -> mark_loop ~toplevel [] l) sw.failaction
-    | String_switch (arg,sw,def) ->
+    | String_switch (_, arg,sw,def) ->
       mark_curr curr;
       mark_var arg curr;
       List.iter (fun (_,l) -> mark_loop ~toplevel [] l) sw;
@@ -447,7 +449,7 @@ module Inconstants (P:Param) (Backend:Backend_intf.S) = struct
     let rec loop (program : Flambda.program_body) =
       match program with
       | End _ -> ()
-      | Initialize_symbol (symbol,_tag,fields,program) ->
+      | Initialize_symbol (symbol, _provenance, _tag, fields,program) ->
         List.iteri (fun i field ->
             mark_loop ~toplevel:true
               [Symbol symbol; Symbol_field (symbol,i)] field)
@@ -456,11 +458,13 @@ module Inconstants (P:Param) (Backend:Backend_intf.S) = struct
       | Effect (expr, program) ->
         mark_loop ~toplevel:true [] expr;
         loop program
-      | Let_symbol (_, def, program) ->
+      | Let_symbol (_, _provenance, def, program) ->
         mark_constant_defining_value def;
         loop program
       | Let_rec_symbol (defs, program) ->
-        List.iter (fun (_, def) -> mark_constant_defining_value def) defs;
+        List.iter (fun (_, _provenance, def) ->
+            mark_constant_defining_value def)
+          defs;
         loop program
     in
     loop program.program_body

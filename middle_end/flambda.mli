@@ -87,6 +87,11 @@ type specialised_to = {
       either the [free_vars] or the [specialised_args]. *)
 }
 
+type let_provenance = {
+  module_path : Path.t;
+  location : Debuginfo.t;
+}
+
 (** Flambda terms are partitioned in a pseudo-ANF manner; many terms are
     required to be [let]-bound.  This in particular ensures there is always
     a variable name for an expression that may be lifted out (for example
@@ -97,18 +102,19 @@ type t =
   | Var of Variable.t
   | Let of let_expr
   | Let_mutable of let_mutable
-  | Let_rec of (Variable.t * named) list * t
-  (** CR-someday lwhite: give Let_rec the same fields as Let. *)
+  | Let_rec of let_rec
+  (** XCR-someday lwhite: give Let_rec the same fields as Let. *)
   | Apply of apply
   | Send of send
   | Assign of assign
   | If_then_else of Variable.t * t * t
-  | Switch of Variable.t * switch
-  | String_switch of Variable.t * (string * t) list * t option
+  | Switch of Debuginfo.t * Variable.t * switch
+  | String_switch of Debuginfo.t * Variable.t * (string * t) list * t option
   (** Restrictions on [Lambda.Lstringswitch] also apply to [String_switch]. *)
   | Static_raise of Static_exception.t * Variable.t list
-  | Static_catch of Static_exception.t * Variable.t list * t * t
-  | Try_with of t * Variable.t * t
+  | Static_catch of Static_exception.t
+      * (Variable.t * let_provenance option) list * t * t
+  | Try_with of t * Variable.t * let_provenance option * t
   | While of t * t
   | For of for_loop
   | Proved_unreachable
@@ -120,6 +126,9 @@ and named =
   | Allocated_const of Allocated_const.t
   | Read_mutable of Mutable_variable.t
   | Read_symbol_field of Symbol.t * int
+  (* CR-someday mshinwell: Change [Read_symbol_field] to be able to
+     accept an "int * (int list)" as the path?  This would simplify
+     [Flambda_utils.substitute_read_symbol_field_for_variables]. *)
   (** During the lifting of [let] bindings to [program] constructions after
       closure conversion, we generate symbols and their corresponding
       definitions (which may or may not be constant), together with field
@@ -168,21 +177,67 @@ and named =
 
 and let_expr = private {
   var : Variable.t;
-  defining_expr : named;
+  defining_expr : defining_expr_of_let;
   body : t;
   (* CR-someday mshinwell: we could consider having these be keys into some
      kind of global cache, to reduce memory usage. *)
-  free_vars_of_defining_expr : Variable.Set.t;
-  (** A cache of the free variables in the defining expression of the [let]. *)
-  free_vars_of_body : Variable.Set.t;
-  (** A cache of the free variables of the body of the [let].  This is an
-      important optimization. *)
+  free_names_of_defining_expr : Free_names.t;
+  (** A cache of the free variables and symbols in the defining expression
+      of the [let]. *)
+  free_names_of_body : Free_names.t;
+  (** A cache of the free variables and symbols in the body of the [let].
+      This is an important optimization. *)
+  provenance : let_provenance option;
+  (** The module path at which the variable was defined in the source code,
+      if applicable, together with its location of definition.
+      This should be [None] for compiler-generated [Let]s that are not to
+      appear in the debugger. *)
 }
+
+and defining_expr_of_let =
+  | Normal of named
+  | Phantom of defining_expr_of_phantom_let
+    (** Used to identify [Let]s that will only be needed for emission of
+        debugging information.  [Let]s marked as [Phantom] behave as if the
+        defining expression was absent for the purposes of free / used
+        variable calculations, etc.  They never generate any code. *)
+
+(** This type exists to avoid having to consider how to deal with complicated
+    defining expressions on phantom lets.  Instead, the only thing that
+    ever needs to be done with one of these is variable or symbol
+    substitution (e.g. for freshening, or rewriting of variables to
+    symbols during lifting of a toplevel [Let] to [Initialize_symbol]). *)
+and defining_expr_of_phantom_let =
+  | Const of const
+  | Symbol of Symbol.t
+  | Var of Variable.t
+  | Read_mutable of Mutable_variable.t
+  | Read_symbol_field of Symbol.t * int
+  | Read_var_field of Variable.t * int
+  | Block of { tag : Tag.t; fields : Variable.t list; }
+  | Dead
+  (* CR mshinwell: Change [Inline_and_simplify] to track deleted phantom
+     let-bound variables, and then delete dead phantom lets; then remove
+     this case.  Also try to filter out phantom lets on compiler-generated
+     names, to reduce the number of them.  We don't want to lose information
+     though if possible (constants?)  Needs thought *)
+  (** "Dead" is used for phantom lets formed from let-expressions with
+      ineligible defining expressions.  Another option would be to remove
+      such phantom lets, but this might cause a subsequent one (having a
+      "Var" case) to reference an unbound variable. *)
 
 and let_mutable = {
   var : Mutable_variable.t;
   initial_value : Variable.t;
   contents_kind : Lambda.value_kind;
+  body : t;
+  provenance : let_provenance option;
+  (** As for [provenance] in the type [let_expr], above. *)
+}
+
+and let_rec = {
+  vars_and_defining_exprs : (Variable.t * named * let_provenance option) list;
+  (** [provenance] is as for [provenance] in the type [let_expr], above. *)
   body : t;
 }
 
@@ -221,6 +276,11 @@ and set_of_closures = private {
       variables in scope at the definition point of the [set_of_closures].
       The domain of this map is sometimes known as the "variables bound by
       the closure". *)
+  (* CR-soon mshinwell: add:
+    phantom_free_vars : specialised_to Variable.Map.t;
+    * Like [free_vars], but for free variables that have been removed from
+      the closure; the information is kept around for emission of debugging
+      information. *)
   specialised_args : specialised_to Variable.Map.t;
   (** Parameters whose corresponding arguments are known to always alias a
       particular value.  These are the only parameters that may, during
@@ -302,16 +362,13 @@ and function_declarations = private {
 and function_declaration = private {
   params : Variable.t list;
   body : t;
-  (* CR-soon mshinwell: inconsistent naming free_variables/free_vars here and
-     above *)
-  free_variables : Variable.Set.t;
-  (** All variables free in the *body* of the function.  For example, a
-      variable that is bound as one of the function's parameters will still
-      be included in this set.  This field is present as an optimization. *)
-  free_symbols : Symbol.Set.t;
-  (** All symbols that occur in the function's body.  (Symbols can never be
-      bound in a function's body; the only thing that binds symbols is the
-      [program] constructions below.) *)
+  free_names : Free_names.t;
+  (** All variables and symbols free in the *body* of the function.  For
+      example, a variable that is bound as one of the function's parameters
+      will still be included in this set.  This field is present as an
+      optimization.
+      (Symbols can never be bound in a function's body; the only thing that
+      binds symbols is the [program] constructions below.) *)
   stub : bool;
   (** A stub function is a generated function used to prepare arguments or
       return values to allow indirect calls to functions with a special calling
@@ -325,6 +382,8 @@ and function_declaration = private {
   (** Specialising requirements from the source code. *)
   is_a_functor : bool;
   (** Whether the function is known definitively to be a functor. *)
+  module_path : Path.t;
+  (** The module path under which the function is defined. *)
 }
 
 (** Equivalent to the similar type in [Lambda]. *)
@@ -339,6 +398,7 @@ and switch = {
 (** Equivalent to the similar type in [Lambda]. *)
 and for_loop = {
   bound_var : Variable.t;
+  provenance : let_provenance option;
   from_value : Variable.t;
   to_value : Variable.t;
   direction : Asttypes.direction_flag;
@@ -372,14 +432,36 @@ module Constant_defining_value :
 
 type expr = t
 
+type symbol_provenance = {
+  module_path : Path.t;
+  location : Debuginfo.t;
+  original_ident : Ident.t;
+}
+
 (** A "program" is the contents of one compilation unit.  It describes the
     various values that are assigned to symbols (and in some cases fields of
     such symbols) in the object file.  As such, it is closely related to
-    the compilation of toplevel modules. *)
+    the compilation of toplevel modules.
+
+    The "symbol_provenance" fields are used only for bindings that were
+    originally toplevel (in the sense that they were eligible for lifting
+    by [Lift_let_to_initialize_symbol]).  They are not used for bindings
+    that correspond to [Let]s lifted by [Lift_constants].  In those cases,
+    to preserve scoping information, the provenance information is stored
+    on the original let bindings (which are held in place by virtue of
+    their state transitioning to [Phantom]).
+
+    We handle the toplevel bindings differently in terms of provenance to
+    match up with the typical user's expectation that such values are somehow
+    global (and not accessed through closures).
+*)
 type program_body =
-  | Let_symbol of Symbol.t * constant_defining_value * program_body
+  | Let_symbol of Symbol.t * symbol_provenance option
+        * constant_defining_value * program_body
   (** Define the given symbol to have the given constant value. *)
-  | Let_rec_symbol of (Symbol.t * constant_defining_value) list * program_body
+  | Let_rec_symbol of
+      (Symbol.t * symbol_provenance option * constant_defining_value) list
+        * program_body
   (** As for [Let_symbol], but recursive.  This is needed to treat examples
       like this, where a constant set of closures is lifted to toplevel:
 
@@ -398,7 +480,8 @@ type program_body =
       approximation of the set of closures to be present in order to
       correctly simplify the [Project_closure] construction.  (See
       [Inline_and_simplify.simplify_project_closure] for that part.) *)
-  | Initialize_symbol of Symbol.t * Tag.t * t list * program_body
+  | Initialize_symbol of Symbol.t * symbol_provenance option
+        * Tag.t * t list * program_body
   (** Define the given symbol as a constant block of the given size and
       tag; but with a possibly non-constant initializer.  The initializer
       will be executed at most once (from the entry point of the compilation
@@ -416,63 +499,69 @@ type program = {
   program_body : program_body;
 }
 
-(** Compute the free variables of a term.  (This is O(1) for [Let]s).
-    If [ignore_uses_as_callee], all free variables inside [Apply] expressions
+(** Compute the free names of a term.  (This is O(1) for [Let]s).
+    If [ignore_uses_as_callee], all free names inside [Apply] expressions
     are ignored.  Likewise [ignore_uses_in_project_var] for [Project_var]
     expressions.
 *)
-val free_variables
+val free_names_expr
    : ?ignore_uses_as_callee:unit
   -> ?ignore_uses_as_argument:unit
   -> ?ignore_uses_in_project_var:unit
   -> t
-  -> Variable.Set.t
+  -> Free_names.t
 
-(** Compute the free variables of a named expression. *)
-val free_variables_named
+(** Compute the free names of a named expression. *)
+val free_names_named
    : ?ignore_uses_in_project_var:unit
   -> named
-  -> Variable.Set.t
+  -> Free_names.t
 
-(** Compute _all_ variables occurring inside an expression. *)
-val used_variables
-   : ?ignore_uses_as_callee:unit
-  -> ?ignore_uses_as_argument:unit
-  -> ?ignore_uses_in_project_var:unit
-  -> t
-  -> Variable.Set.t
-
-(** Compute _all_ variables occurring inside a named expression. *)
-val used_variables_named
-   : ?ignore_uses_in_project_var:unit
-  -> named
-  -> Variable.Set.t
-
-val free_symbols : expr -> Symbol.Set.t
-
-val free_symbols_named : named -> Symbol.Set.t
-
-val free_symbols_program : program -> Symbol.Set.t
+(** Compute the free names of a program. *)
+val free_names_program : program -> Free_names.t
 
 (** Used to avoid exceeding the stack limit when handling expressions with
     multiple consecutive nested [Let]-expressions.  This saves rewriting large
     simplification functions in CPS.  This function provides for the
-    rewriting or elimination of expressions during the fold. *)
+    rewriting or elimination of expressions during the fold.
+
+    This function preserves phantom lets but does not pass them to the
+    user-supplied functions.
+
+    If [filter_defining_expr] requests deletion of a let and we are
+    generating debugging information, the let will not be deleted, but
+    instead turned into a [Phantom].
+*)
 val fold_lets_option
    : t
   -> init:'a
-  -> for_defining_expr:('a -> Variable.t -> named -> 'a * Variable.t * named)
+  -> for_defining_expr:(
+      'a
+    -> Variable.t
+    -> defining_expr_of_let
+    -> let_provenance option
+    -> 'a * Variable.t * defining_expr_of_let * let_provenance option)
   -> for_last_body:('a -> t -> t * 'b)
   (* CR-someday mshinwell: consider making [filter_defining_expr]
      optional *)
-  -> filter_defining_expr:('b -> Variable.t -> named -> Variable.Set.t ->
-                           'b * Variable.t * named option)
+  -> filter_defining_expr:(
+      'b
+    -> Variable.t
+    -> defining_expr_of_let
+    -> Free_names.t
+    -> 'b * Variable.t * defining_expr_of_let)
+  (** To cause the let to be deleted (or turned into a phantom in debug
+      mode), [filter_defining_expr] should return [Phantom Dead] as the
+      new defining expression. *)
   -> t * 'b
 
 (** Like [fold_lets_option], but just a map. *)
 val map_lets
    : t
-  -> for_defining_expr:(Variable.t -> named -> named)
+  -> for_defining_expr:(
+      Variable.t
+    -> defining_expr_of_let
+    -> defining_expr_of_let)
   -> for_last_body:(t -> t)
   -> after_rebuild:(t -> t)
   -> t
@@ -480,26 +569,46 @@ val map_lets
 (** Like [map_lets], but just an iterator. *)
 val iter_lets
    : t
-  -> for_defining_expr:(Variable.t -> named -> unit)
+  -> for_defining_expr:(Variable.t -> defining_expr_of_let -> unit)
   -> for_last_body:(t -> unit)
   -> for_each_let:(t -> unit)
   -> unit
 
 (** Creates a [Let] expression.  (This computes the free variables of the
     defining expression and the body.) *)
-val create_let : Variable.t -> named -> t -> t
+val create_let
+   : ?provenance:let_provenance
+  -> Variable.t
+  -> named
+  -> t
+  -> t
+
+(** For use instead of [create_let] in the few cases where a phantom let
+    may need to be created. *)
+val create_let'
+   : ?provenance:let_provenance
+  -> Variable.t
+  -> defining_expr_of_let
+  -> t
+  -> t
 
 (** Apply the specified function [f] to the defining expression of the given
     [Let]-expression, returning a new [Let]. *)
-val map_defining_expr_of_let : let_expr -> f:(named -> named) -> t
+(* CR-soon mshinwell: This allocates a new [Let] needlessly in the case
+   that the defining expr doesn't change (even though it doesn't reallocate
+   the [let_expr]) *)
+val map_defining_expr_of_let
+    : let_expr
+  -> f:(defining_expr_of_let -> defining_expr_of_let)
+  -> t
 
 (** A module for the manipulation of terms where the recomputation of free
-    variable sets is to be kept to a minimum. *)
+    name sets is to be kept to a minimum. *)
 module With_free_variables : sig
   type 'a t
 
   (** O(1) time. *)
-  val of_defining_expr_of_let : let_expr -> named t
+  val of_defining_expr_of_let : let_expr -> defining_expr_of_let t
 
   (** O(1) time. *)
   val of_body_of_let : let_expr -> expr t
@@ -509,38 +618,41 @@ module With_free_variables : sig
       for [Let] is O(1)). *)
   val of_expr : expr -> expr t
 
-  val of_named : named -> named t
+  (* CR mshinwell: bad name *)
+  val of_named : defining_expr_of_let -> defining_expr_of_let t
 
   (** Takes the time required to calculate the free variables of the given
       [expr]. *)
   val create_let_reusing_defining_expr
-     : Variable.t
-    -> named t
+     : ?provenance:let_provenance
+    -> Variable.t
+    -> defining_expr_of_let t
     -> expr
     -> expr
 
   (** Takes the time required to calculate the free variables of the given
-      [named]. *)
+      [defining_expr_of_let]. *)
   val create_let_reusing_body
-     : Variable.t
-    -> named
+     : ?provenance:let_provenance
+    -> Variable.t
+    -> defining_expr_of_let
     -> expr t
     -> expr
 
   (** O(1) time. *)
   val create_let_reusing_both
      : Variable.t
-    -> named t
+    -> defining_expr_of_let t
     -> expr t
     -> expr
 
   (** The equivalent of the [Expr] constructor. *)
-  val expr : expr t -> named t
+  val expr : expr t -> defining_expr_of_let t
 
   val contents : 'a t -> 'a
 
   (** O(1) time. *)
-  val free_variables : _ t -> Variable.Set.t
+  val free_names : _ t -> Free_names.t
 end
 
 (** Create a function declaration.  This calculates the free variables and
@@ -553,6 +665,7 @@ val create_function_declaration
   -> inline:Lambda.inline_attribute
   -> specialise:Lambda.specialise_attribute
   -> is_a_functor:bool
+  -> module_path:Path.t
   -> function_declaration
 
 (** Create a set of function declarations given the individual declarations. *)
@@ -585,7 +698,10 @@ type maybe_named =
   | Is_named of named
 
 (** This function is designed for the internal use of [Flambda_iterators].
-    See that module for iterators to be used over Flambda terms. *)
+    See that module for iterators to be used over Flambda terms.
+    This function does not descend into the defining expressions of
+    phantom lets.
+*)
 val iter_general
    : toplevel:bool
   -> (t -> unit)
@@ -654,3 +770,6 @@ val compare_move_within_set_of_closures
   -> int
 
 val compare_project_closure : project_closure -> project_closure -> int
+
+(* CR mshinwell: fix this properly *)
+val ident_stamp_before_flambda : int ref

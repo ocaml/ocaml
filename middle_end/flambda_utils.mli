@@ -71,6 +71,7 @@ val make_closure_declaration
   -> body:Flambda.t
   -> params:Variable.t list
   -> stub:bool
+  -> module_path:Path.t
   -> Flambda.t
 
 val toplevel_substitution
@@ -87,17 +88,23 @@ val toplevel_substitution_named
     [Immutable] [Let] expressions the given [(var, expr)] pairs around the
     body. *)
 val bind
-   : bindings:(Variable.t * Flambda.named) list
+   : ?provenance:Flambda.let_provenance
+  -> bindings:(Variable.t * Flambda.named) list
   -> body:Flambda.t
+  -> unit
   -> Flambda.t
 
-val name_expr : Flambda.named -> name:string -> Flambda.t
+val name_expr
+   : ?provenance:Flambda.let_provenance
+  -> Flambda.named
+  -> name:string
+  -> Flambda.t
 
 val compare_const : Flambda.const -> Flambda.const -> int
 
 val initialize_symbols
    : Flambda.program
-  -> (Symbol.t * Tag.t * Flambda.t list) list
+  -> (Symbol.t * Flambda.symbol_provenance option * Tag.t * Flambda.t list) list
 
 val imported_symbols : Flambda.program -> Symbol.Set.t
 
@@ -214,3 +221,9 @@ val clean_projections
   -> Flambda.specialised_to Variable.Map.t
 
 val projection_to_named : Projection.t -> Flambda.named
+
+(** Turn a [named], intended to be the defining expression of a [Let],
+    into a phantom let defining expression. *)
+val phantomize_defining_expr
+   : Flambda.named
+  -> Flambda.defining_expr_of_phantom_let

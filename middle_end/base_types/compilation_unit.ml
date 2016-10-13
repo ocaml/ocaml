@@ -20,6 +20,7 @@ type t = {
   id : Ident.t;
   linkage_name : Linkage_name.t;
   hash : int;
+  is_startup : bool;
 }
 
 let string_for_printing t = Ident.name t.id
@@ -58,7 +59,7 @@ let create (id : Ident.t) linkage_name =
   if not (Ident.persistent id) then begin
     Misc.fatal_error "Compilation_unit.create with non-persistent Ident.t"
   end;
-  { id; linkage_name; hash = Hashtbl.hash id.name }
+  { id; linkage_name; hash = Hashtbl.hash id.name; is_startup = false; }
 
 let get_persistent_ident cu = cu.id
 let get_linkage_name cu = cu.linkage_name
@@ -71,3 +72,13 @@ let get_current_exn () =
   | Some current -> current
   | None -> Misc.fatal_error "Compilation_unit.get_current_exn"
 let get_current_id_exn () = get_persistent_ident (get_current_exn ())
+
+let startup =
+  lazy ({
+    id = Ident.create_persistent "*startup*";
+    linkage_name = Linkage_name.create "caml_startup";
+    hash = Hashtbl.hash "*startup*";
+    is_startup = true;
+  })
+
+let is_startup t = t.is_startup

@@ -140,6 +140,9 @@ let inline env r ~lhs_of_application
           let benefit = Inlining_cost.Benefit.zero in
           let benefit = Inlining_cost.Benefit.remove_call benefit in
           let benefit =
+            let free_variables =
+              Free_names.free_variables function_decl.free_names
+            in
             Variable.Set.fold (fun v acc ->
                 try
                   let t =
@@ -152,7 +155,7 @@ let inline env r ~lhs_of_application
                     else acc
                   | None -> acc
                 with Not_found -> acc)
-              function_decl.free_variables benefit
+              free_variables benefit
           in
           W.create_estimate
             ~original_size:Inlining_cost.direct_call_size

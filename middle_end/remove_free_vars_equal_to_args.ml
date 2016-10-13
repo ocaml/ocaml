@@ -56,6 +56,7 @@ let rewrite_one_function_decl ~(function_decl : Flambda.function_declaration)
       ~inline:function_decl.inline
       ~specialise:function_decl.specialise
       ~is_a_functor:function_decl.is_a_functor
+      ~module_path:function_decl.module_path
 
 let rewrite_one_set_of_closures (set_of_closures : Flambda.set_of_closures) =
   let back_free_vars =

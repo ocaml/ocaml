@@ -234,8 +234,11 @@ let create_value_set_of_closures
       Variable.Map.map (fun (function_decl : Flambda.function_declaration) ->
           let params = Variable.Set.of_list function_decl.params in
           let free_vars =
+            let free_variables =
+              Free_names.free_variables function_decl.free_names
+            in
             Variable.Set.diff
-              (Variable.Set.diff function_decl.free_variables params)
+              (Variable.Set.diff free_variables params)
               functions
           in
           let num_free_vars = Variable.Set.cardinal free_vars in
@@ -426,13 +429,17 @@ let join_summaries summary ~replaced_by_var_or_symbol =
 let simplify_using_env t ~is_present_in_env flam =
   let replaced_by_var_or_symbol, flam =
     match t.var with
-    | Some var when is_present_in_env var -> true, Flambda.Var var
+    | Some var when is_present_in_env var ->
+      let expr : Flambda.expr = Var var in
+      true, expr
     | _ ->
       match t.symbol with
-      | Some (sym, None) -> true,
-        U.name_expr (Symbol sym) ~name:"symbol"
+      | Some (sym, None) ->
+        let named : Flambda.named = Symbol sym in
+        true, U.name_expr named ~name:"symbol"
       | Some (sym, Some field) ->
-        true, U.name_expr (Read_symbol_field (sym, field)) ~name:"symbol_field"
+        let named : Flambda.named = Read_symbol_field (sym, field) in
+        true, U.name_expr named ~name:"symbol_field"
       | None -> false, flam
   in
   let const, summary, approx = simplify t flam in
@@ -442,12 +449,14 @@ let simplify_named_using_env t ~is_present_in_env named =
   let replaced_by_var_or_symbol, named =
     match t.var with
     | Some var when is_present_in_env var ->
-      true, Flambda.Expr (Var var)
+      let expr : Flambda.expr = Var var in
+      true, Flambda.Expr expr
     | _ ->
       match t.symbol with
-      | Some (sym, None) -> true, (Flambda.Symbol sym:Flambda.named)
+      | Some (sym, None) ->
+        true, (Flambda.Symbol sym : Flambda.named)
       | Some (sym, Some field) ->
-        true, Flambda.Read_symbol_field (sym, field)
+        true, (Flambda.Read_symbol_field (sym, field) : Flambda.named)
       | None -> false, named
   in
   let const, summary, approx = simplify_named t named in
@@ -848,3 +857,42 @@ let potentially_taken_block_switch_branch t tag =
   | Value_bottom ->
     Cannot_be_taken
 
+let phantomize t ~is_present_in_env : Flambda.defining_expr_of_phantom_let =
+  match t.var with
+  | Some var when is_present_in_env var -> Var var
+  | _ ->
+    match t.descr with
+    | Value_block (tag, fields) ->
+      let failed = ref false in
+      let fields =
+        Misc.Stdlib.List.filter_map (fun field ->
+            let var =
+              match field.var with
+              | None -> None
+              | Some var when is_present_in_env var -> Some var
+              | Some _ -> None
+            in
+            if var = None then failed := true;
+            var)
+          (Array.to_list fields)
+      in
+      if !failed then Dead else Block { tag; fields; }
+    | Value_int i -> Const (Int i)
+    | Value_char c -> Const (Char c)
+    | Value_constptr p -> Const (Const_pointer p)
+    | Value_float None -> Dead
+    (* CR-soon mshinwell: We should be able to make some of these other cases
+      work---in particular for allocated constants. *)
+    | Value_float (Some _) -> Dead
+    | Value_boxed_int _ -> Dead
+    (* CR-soon mshinwell: Fix these closure cases when we fix
+      [Flambda_utils.phantomize_defining_expr]. *)
+    | Value_set_of_closures _
+    | Value_closure _ -> Dead
+    | Value_string _ -> Dead
+    | Value_float_array _ -> Dead
+    | Value_unknown _ -> Dead
+    | Value_bottom -> Dead
+    | Value_extern _ -> Dead
+    | Value_symbol symbol -> Symbol symbol
+    | Value_unresolved _symbol -> Dead

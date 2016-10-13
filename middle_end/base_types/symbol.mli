@@ -28,6 +28,8 @@
 
 include Identifiable.S
 
+type symbol = t
+
 val create : Compilation_unit.t -> Linkage_name.t -> t
 (* Create the symbol without prefixing with the compilation unit.
    Used for predefined exceptions *)

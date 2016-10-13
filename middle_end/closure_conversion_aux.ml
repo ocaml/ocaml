@@ -25,6 +25,7 @@ module Env = struct
     static_exceptions : Static_exception.t Numbers.Int.Map.t;
     globals : Symbol.t Numbers.Int.Map.t;
     at_toplevel : bool;
+    module_path : Path.t option;
   }
 
   let empty = {
@@ -33,6 +34,7 @@ module Env = struct
     static_exceptions = Numbers.Int.Map.empty;
     globals = Numbers.Int.Map.empty;
     at_toplevel = true;
+    module_path = None;
   }
 
   let clear_local_bindings env =
@@ -80,6 +82,14 @@ module Env = struct
   let at_toplevel t = t.at_toplevel
 
   let not_at_toplevel t = { t with at_toplevel = false; }
+
+  let entering_module_definition t ~path =
+    { t with module_path = Some path; }
+
+  let current_module_path t : Path.t =
+    match t.module_path with
+    | None -> Pident (Compilation_unit.get_current_id_exn ())
+    | Some path -> path
 end
 
 let stub_hack_prim_name = "*stub*"
@@ -190,6 +200,6 @@ module Function_decls = struct
     in
     (* For free variables. *)
     IdentSet.fold (fun id env ->
-        Env.add_var env id (Variable.create (Ident.name id)))
+        Env.add_var env id (Variable.create_with_same_name_as_ident id))
       t.all_free_idents closure_env
 end

@@ -28,7 +28,12 @@
 
 include Identifiable.S
 
-val create : ?current_compilation_unit:Compilation_unit.t -> string -> t
+val create
+   : ?original_ident:Ident.t
+  -> ?current_compilation_unit:Compilation_unit.t
+  -> string
+  -> t
+
 val create_with_same_name_as_ident : Ident.t -> t
 
 val clambda_name : t -> string
@@ -42,7 +47,12 @@ val rename
 
 val in_compilation_unit : t -> Compilation_unit.t -> bool
 
+val base_name : t -> string
 val unique_name : t -> string
+
+(** Returns any identifier as found in the [Lambda] code that exactly
+    corresponds to the given variable. *)
+val original_ident : t -> Ident.t option
 
 val get_compilation_unit : t -> Compilation_unit.t
 

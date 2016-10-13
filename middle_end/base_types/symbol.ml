@@ -22,6 +22,8 @@ type t = {
   hash : int;
 }
 
+type symbol = t
+
 include Identifiable.Make (struct
   type nonrec t = t
 
@@ -43,19 +45,31 @@ include Identifiable.Make (struct
   let hash t = t.hash
 
   let print ppf t =
-    Compilation_unit.print ppf t.compilation_unit;
-    Format.pp_print_string ppf ".";
+    if not (Compilation_unit.is_startup t.compilation_unit) then begin
+      Compilation_unit.print ppf t.compilation_unit;
+      Format.pp_print_string ppf "."
+    end;
     Linkage_name.print ppf t.label
 end)
 
 let create compilation_unit label =
-  let unit_linkage_name =
-    Linkage_name.to_string
-      (Compilation_unit.get_linkage_name compilation_unit)
-  in
   let label =
-    Linkage_name.create
-      (unit_linkage_name ^ "__" ^ (Linkage_name.to_string label))
+    if Compilation_unit.is_startup compilation_unit then
+      (* CR-soon mshinwell: we should try to tidy this up.  One option might
+         be to rename "caml_curry" etc so they have the "caml_startup__"
+         prefix. *)
+      match Linkage_name.to_string label with
+      | "code_begin" | "code_end" ->
+        Linkage_name.create
+          ("caml_startup__" ^ (Linkage_name.to_string label))
+      | _ -> label
+    else
+      let unit_linkage_name =
+        Linkage_name.to_string
+          (Compilation_unit.get_linkage_name compilation_unit)
+      in
+      Linkage_name.create
+        (unit_linkage_name ^ "__" ^ (Linkage_name.to_string label))
   in
   let hash = Linkage_name.hash label in
   { compilation_unit; label; hash; }

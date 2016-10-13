@@ -159,6 +159,7 @@ MIDDLE_END=\
   middle_end/semantics_of_primitives.cmo \
   middle_end/allocated_const.cmo \
   middle_end/projection.cmo \
+  middle_end/free_names.cmo \
   middle_end/flambda.cmo \
   middle_end/flambda_iterators.cmo \
   middle_end/flambda_utils.cmo \

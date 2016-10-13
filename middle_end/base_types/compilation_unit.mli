@@ -31,3 +31,10 @@ val get_current_exn : unit -> t
 val get_current_id_exn : unit -> Ident.t
 
 val string_for_printing : t -> string
+
+(** The unique compilation unit corresponding to the startup file.
+    This can be used for constructing [Symbol.t]s for, e.g. "caml_program",
+    "caml_curry*", etc.
+*)
+val startup : t Lazy.t
+val is_startup : t -> bool

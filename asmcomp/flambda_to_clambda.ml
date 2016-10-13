@@ -233,24 +233,34 @@ let to_clambda_const env (const : Flambda.constant_defining_value_block_field)
 let rec to_clambda t env (flam : Flambda.t) : Clambda.ulambda =
   match flam with
   | Var var -> subst_var env var
-  | Let { var; defining_expr; body; _ } ->
+  | Let { var; defining_expr; body; provenance = _; _ } ->
     (* TODO: synthesize proper value_kind *)
     let id, env_body = Env.add_fresh_ident env var in
-    Ulet (Immutable, Pgenval, id, to_clambda_named t env var defining_expr,
-      to_clambda t env_body body)
-  | Let_mutable { var = mut_var; initial_value = var; body; contents_kind } ->
+    begin match defining_expr with
+    | Normal defining_expr ->
+      Ulet (Immutable, Pgenval, id,
+        to_clambda_named t env var defining_expr,
+        to_clambda t env_body body)
+    | Phantom _defining_expr ->
+        (* Lots of stuff goes in here *)
+        to_clambda t env_body body
+    end
+  | Let_mutable { var = mut_var; initial_value = var; body; contents_kind;
+        provenance = _; } ->
     let id, env_body = Env.add_fresh_mutable_ident env mut_var in
     let def = subst_var env var in
     Ulet (Mutable, contents_kind, id, def, to_clambda t env_body body)
-  | Let_rec (defs, body) ->
+  | Let_rec { vars_and_defining_exprs = defs; body; } ->
     let env, defs =
-      List.fold_right (fun (var, def) (env, defs) ->
+      List.fold_right (fun (var, def, provenance) (env, defs) ->
           let id, env = Env.add_fresh_ident env var in
-          env, (id, var, def) :: defs)
+          env, (id, var, def, provenance) :: defs)
         defs (env, [])
     in
     let defs =
-      List.map (fun (id, var, def) -> id, to_clambda_named t env var def) defs
+      List.map (fun (id, var, def, _provenance) ->
+          id, to_clambda_named t env var def)
+        defs
     in
     Uletrec (defs, to_clambda t env body)
   | Apply { func; args; kind = Direct direct_func; dbg = dbg } ->
@@ -266,7 +276,7 @@ let rec to_clambda t env (flam : Flambda.t) : Clambda.ulambda =
     let callee = subst_var env func in
     Ugeneric_apply (check_closure callee (Flambda.Expr (Var func)),
       subst_vars env args, dbg)
-  | Switch (arg, sw) ->
+  | Switch (dbg, arg, sw) ->
     let aux () : Clambda.ulambda =
       let const_index, const_actions =
         to_clambda_switch t env sw.consts sw.numconsts sw.failaction
@@ -298,11 +308,11 @@ let rec to_clambda t env (flam : Flambda.t) : Clambda.ulambda =
         }
       in
       let expr : Flambda.t =
-        Static_catch (exn, [], Switch (arg, sw), failaction)
+        Static_catch (exn, [], Switch (dbg, arg, sw), failaction)
       in
       to_clambda t env expr
     end
-  | String_switch (arg, sw, def) ->
+  | String_switch (_dbg, arg, sw, def) ->
     let arg = subst_var env arg in
     let sw = List.map (fun (s, e) -> s, to_clambda t env e) sw in
     let def = Misc.may_map (to_clambda t env) def in
@@ -312,14 +322,14 @@ let rec to_clambda t env (flam : Flambda.t) : Clambda.ulambda =
       List.map (subst_var env) args)
   | Static_catch (static_exn, vars, body, handler) ->
     let env_handler, ids =
-      List.fold_right (fun var (env, ids) ->
+      List.fold_right (fun (var, _provenance) (env, ids) ->
           let id, env = Env.add_fresh_ident env var in
           env, id :: ids)
         vars (env, [])
     in
     Ucatch (Static_exception.to_int static_exn, ids,
       to_clambda t env body, to_clambda t env_handler handler)
-  | Try_with (body, var, handler) ->
+  | Try_with (body, var, _provenance, handler) ->
     let id, env_handler = Env.add_fresh_ident env var in
     Utrywith (to_clambda t env body, id, to_clambda t env_handler handler)
   | If_then_else (arg, ifso, ifnot) ->
@@ -327,7 +337,7 @@ let rec to_clambda t env (flam : Flambda.t) : Clambda.ulambda =
       to_clambda t env ifnot)
   | While (cond, body) ->
     Uwhile (to_clambda t env cond, to_clambda t env body)
-  | For { bound_var; from_value; to_value; direction; body } ->
+  | For { bound_var; provenance = _; from_value; to_value; direction; body } ->
     let id, env_body = Env.add_fresh_ident env bound_var in
     Ufor (id, subst_var env from_value, subst_var env to_value,
       direction, to_clambda t env_body body)
@@ -601,7 +611,7 @@ let to_clambda_program t env constants (program : Flambda.program) =
   let rec loop env constants (program : Flambda.program_body)
         : Clambda.ulambda * Clambda.ustructured_constant Symbol.Map.t =
     match program with
-    | Let_symbol (symbol, alloc, program) ->
+    | Let_symbol (symbol, _provenance, alloc, program) ->
       (* Useful only for unboxing. Since floats and boxed integers will
          never be part of a Let_rec_symbol, handling only the Let_symbol
          is sufficient. *)
@@ -616,12 +626,12 @@ let to_clambda_program t env constants (program : Flambda.program) =
       loop env constants program
     | Let_rec_symbol (defs, program) ->
       let constants =
-        List.fold_left (fun constants (symbol, alloc) ->
+        List.fold_left (fun constants (symbol, _provenance, alloc) ->
             accumulate_structured_constants t env symbol alloc constants)
           constants defs
       in
       loop env constants program
-    | Initialize_symbol (symbol, _tag, fields, program) ->
+    | Initialize_symbol (symbol, _provenance, _tag, fields, program) ->
       (* The tag is ignored here: It is used separately to generate the
          preallocated block. Only the initialisation code is generated
          here. *)
@@ -664,7 +674,7 @@ let convert (program, exported) : result =
   in
   let t = { current_unit; imported_units; } in
   let preallocated_blocks =
-    List.map (fun (symbol, tag, fields) ->
+    List.map (fun (symbol, _provenance, tag, fields) ->
         { Clambda.
           symbol = Linkage_name.to_string (Symbol.label symbol);
           exported = true;
