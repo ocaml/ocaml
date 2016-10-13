@@ -23,6 +23,10 @@ open Misc
 open Config
 open Cmo_format
 
+(* Command line option to prevent printing approximation and function code *)
+let no_approx = ref false
+let no_code = ref false
+
 let input_stringlist ic len =
   let get_string_list sect len =
     let rec fold s e acc =
@@ -122,16 +126,33 @@ let print_cmx_infos (ui, crc) =
     ui.ui_name crc ui.ui_defines ui.ui_imports_cmi ui.ui_imports_cmx;
   begin match ui.ui_export_info with
   | Clambda approx ->
-    printf "Approximation:\n";
-    Format.fprintf Format.std_formatter "  %a@." Printclambda.approx approx
+    if not !no_approx then begin
+      printf "Clambda approximation:\n";
+      Format.fprintf Format.std_formatter "  %a@." Printclambda.approx approx
+    end else
+      Format.printf "Clambda unit@.";
   | Flambda export ->
-    printf "Flambda export information:\n";
-    let cu =
-      Compilation_unit.create (Ident.create_persistent ui.ui_name)
-        (Linkage_name.create "__dummy__")
-    in
-    Compilation_unit.set_current cu;
-    Format.printf " %a\n" Export_info.print_all export
+    if not !no_approx || not !no_code then
+      printf "Flambda export information:\n"
+    else
+      printf "Flambda unit\n";
+    if not !no_approx then begin
+      let cu =
+        Compilation_unit.create (Ident.create_persistent ui.ui_name)
+          (Linkage_name.create "__dummy__")
+      in
+      Compilation_unit.set_current cu;
+      let root_symbols =
+        List.map (fun s ->
+            Symbol.unsafe_create cu (Linkage_name.create ("caml"^s)))
+          ui.ui_defines
+      in
+      Format.printf "approximations@ %a@.@."
+        Export_info.print_approx (export, root_symbols)
+    end;
+    if not !no_code then
+      Format.printf "functions@ %a@.@."
+        Export_info.print_functions export
   end;
   let pr_funs _ fns =
     List.iter (fun arity -> printf " %d" arity) fns in
@@ -291,7 +312,10 @@ let dump_obj filename =
     end
   end
 
-let arg_list = []
+let arg_list = [
+  "-no-approx", Arg.Set no_approx, " Do not print module approximation information";
+  "-no-code", Arg.Set no_code, " Do not print code from exported flambda functions"
+]
 let arg_usage =
    Printf.sprintf "%s [OPTIONS] FILES : give information on files" Sys.argv.(0)
 

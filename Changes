@@ -8,6 +8,9 @@ Next version (tbd):
 - PR#7315, GPR#736: refine some error locations
   (Gabriel Scherer and Alain Frisch, report by Matej Košík)
 
+- GPR#829: better error when opening a module aliased to a functor
+  (Alain Frisch)
+
 ### Standard library:
 
 - GPR#760: Add a functions List.compare_lengths and
@@ -56,8 +59,20 @@ Next version (tbd):
   (Xavier Leroy)
 
 - GPR#814: fix the Buffer.add_substring bounds check to handle overflow
-   (Jeremy Yallop)
+  (Jeremy Yallop)
 
+- GPR#810: check for integer overflow in Array.concat
+  (Jeremy Yallop)
+
+- GPR#805, GPR#815, GPR#833: check for integer overflow in String.concat
+  (Jeremy Yallop,
+   review by Damien Doligez, Alain Frisch, Daniel Bünzli, Fabrice Le Fessant)
+
+### Standard library:
+
+- GPR#778: Arg: added option Expand that allows to expand a string argument
+  to a string array of new arguments
+  (Bernhard Schommer)
 
 OCaml 4.04.0:
 -------------
@@ -176,6 +191,10 @@ OCaml 4.04.0:
 - GPR#602: Do not generate dummy code to force module linking
   (Pierre Chambart, reviewed by Jacques Garrigue)
 
+- PR#7328, GPR#702: Do not eliminate boxed int divisions by zero and
+  avoid checking twice if divisor is zero with flambda.
+  (Pierre Chambart, report by Jeremy Yallop)
+
 - GPR#703: Optimize some constant string operations when the "-safe-string"
   configure time option is enabled.
   (Pierre Chambart)
@@ -204,6 +223,9 @@ OCaml 4.04.0:
   function is not called with the value as argument. These finalisers
   are registered with `GC.finalise_last`
   (François Bobot reviewed by Damien Doligez and Leo White)
+
+- GPR#590: Do not perform compaction if the real overhead is less than expected
+  (Thomas Braibant)
 
 ### Tools:
 
@@ -334,6 +356,9 @@ OCaml 4.04.0:
 - PR#7285: Relaxed value restriction broken with principal
   (Jacques Garrigue, report by Leo White)
 
+- PR#7330: Missing exhaustivity check for extensible variant
+  (Jacques Garrigue, report by Elarnon *)
+
 - PR#7165, GPR#494: uncaught exception on invalid lexer directive
   (Gabriel Scherer, report by KC Sivaramakrishnan using afl-fuzz)
 
@@ -363,6 +388,9 @@ OCaml 4.04.0:
 
 - PR#7300: remove access to OCaml heap inside blocking in Unix.sleep on Windows
   (David Allsopp)
+
+- GPR#525: fix build on OpenIndiana
+  (Sergey Avseyev, review by Damien Doligez)
 
 ### Internal/compiler-libs changes:
 

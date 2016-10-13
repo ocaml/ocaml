@@ -14,16 +14,6 @@
 (*                                                                        *)
 (**************************************************************************)
 
-(***********************************************************************)
-(**                                                                   **)
-(**               WARNING WARNING WARNING                             **)
-(**                                                                   **)
-(** When you change this file, you must make the parallel change      **)
-(** in config.mlbuild                                                 **)
-(**                                                                   **)
-(***********************************************************************)
-
-
 (* The main OCaml version string has moved to ../VERSION *)
 let version = Sys.ocaml_version
 

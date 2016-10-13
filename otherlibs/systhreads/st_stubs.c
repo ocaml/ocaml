@@ -36,7 +36,7 @@
 #include "threads.h"
 
 #if defined(NATIVE_CODE) && defined(WITH_SPACETIME)
-#include "../../asmrun/spacetime.h"
+#include "caml/spacetime.h"
 #endif
 
 /* Initial size of bytecode stack when a thread is created (4 Ko) */

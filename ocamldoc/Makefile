@@ -383,10 +383,10 @@ test_texi:
 	$(MKDIR) $@
 	$(OCAMLDOC_RUN) -texi -sort -d $@ $(INCLUDES) odoc*.ml odoc*.mli
 
-stdlib_man/Pervasives.3o: $(STDLIB_MLIS)
+stdlib_man/Pervasives.3o: $(OCAMLDOC) $(STDLIB_MLIS)
 	$(MKDIR) stdlib_man
 	$(OCAMLDOC_RUN) -man -d stdlib_man $(INCLUDES) \
-	-t "OCaml library" -man-mini $^
+	-t "OCaml library" -man-mini $(STDLIB_MLIS)
 
 stdlib_html/Pervasives.html: $(STDLIB_MLIS)
 	$(MKDIR) stdlib_html
@@ -423,6 +423,6 @@ depend:
 	$(OCAMLLEX) odoc_lexer.mll
 	$(OCAMLLEX) odoc_ocamlhtml.mll
 	$(OCAMLLEX) odoc_see_lexer.mll
-	$(OCAMLDEP) $(INCLUDES_DEP) *.mll *.mly *.ml *.mli > .depend
+	$(OCAMLDEP) $(INCLUDES_DEP) *.mll *.mly *.ml *.mli generators/*.ml > .depend
 
 include .depend
