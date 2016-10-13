@@ -15,7 +15,8 @@
 [@@@ocaml.warning "+a-4-9-30-40-41-42"]
 
 let emit ~compilation_unit_proto_die ~start_of_code_symbol
-      ~end_of_code_symbol ~debug_loc_table asm =
+      ~end_of_code_symbol ~compilation_unit_header_label
+      ~debug_loc_table asm =
   (* CR-soon mshinwell: the [compilation_unit_die] member of the record
      returned from [Assign_abbrevs.run] is now unused *)
   let assigned_abbrevs =
@@ -30,6 +31,7 @@ let emit ~compilation_unit_proto_die ~start_of_code_symbol
   let debug_info =
     Debug_info_section.create ~dies:assigned_abbrevs.dies
       ~debug_abbrev_label
+      ~compilation_unit_header_label
   in
   let aranges_table =
     Aranges_table.create ~start_of_code_symbol:start_of_code_symbol

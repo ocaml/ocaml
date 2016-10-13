@@ -24,7 +24,7 @@ let sort entries =
   List.sort Location_list_entry.compare_ascending_vma entries
 
 let create ~location_list_entries =
-  { name = Linearize.new_label ();
+  { name = Cmm.new_label ();
     entries = sort location_list_entries;
   }
 

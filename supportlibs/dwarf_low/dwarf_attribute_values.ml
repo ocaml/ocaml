@@ -19,7 +19,8 @@ module Value = struct
     | Dwarf_value of Dwarf_value.t
     (* CR mshinwell: hack to break circular dependency.  Think about this
        some more. *)
-    | Location_description of Single_location_description.t
+    | Single_location_description of Single_location_description.t
+    | Composite_location_description of Composite_location_description.t
 
   type _ t = internal_t
 
@@ -45,9 +46,16 @@ module Value = struct
   let offset_into_debug_info_from_symbol sym =
     Dwarf_value (V.Offset_into_debug_info_from_symbol sym)
   let offset_into_debug_loc lbl = Dwarf_value (V.Offset_into_debug_loc lbl)
-  let location_description sld = Location_description sld
+  let single_location_description sld = Single_location_description sld
+  let composite_location_description sld = Composite_location_description sld
   let encoding_attribute attr =
     Dwarf_value (Encoding_attribute.as_dwarf_value attr)
+
+  let symbol_32 sym =
+    Dwarf_value (V.Code_address_from_symbol sym)
+
+  let symbol_64 sym =
+    Dwarf_value (V.Code_address_from_symbol sym)
 end
 
 module Attribute_value = struct
@@ -67,17 +75,24 @@ module Attribute_value = struct
   let size ((_spec, value) : t) =
     match value with
     | Dwarf_value value -> Dwarf_value.size value
-    | Location_description loc_desc ->
+    | Single_location_description loc_desc ->
       let loc_desc_size = Single_location_description.size loc_desc in
+      Int64.add (uleb128_size loc_desc_size) loc_desc_size
+    | Composite_location_description loc_desc ->
+      let loc_desc_size = Composite_location_description.size loc_desc in
       Int64.add (uleb128_size loc_desc_size) loc_desc_size
 
   let emit ((_spec, value) : t) asm =
     match value with
     | Dwarf_value value -> Dwarf_value.emit value asm
-    | Location_description loc_desc ->
+    | Single_location_description loc_desc ->
       let module A = (val asm : Asm_directives.S) in
       A.uleb128 (Single_location_description.size loc_desc);
       Single_location_description.emit loc_desc asm
+    | Composite_location_description loc_desc ->
+      let module A = (val asm : Asm_directives.S) in
+      A.uleb128 (Composite_location_description.size loc_desc);
+      Composite_location_description.emit loc_desc asm
 
   let attribute_spec (spec, _value) = spec
 end

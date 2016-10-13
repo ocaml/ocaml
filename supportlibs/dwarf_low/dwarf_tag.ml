@@ -165,8 +165,9 @@ let child_determination t : Child_determination.t =
   match t with
   | Compile_unit
   | Lexical_block
-  | Subprogram -> Yes
-  | Array_type
+  | Subprogram
+  | Structure_type
+  | Array_type -> Yes
   | Class_type
   | Entry_point
   | Enumeration_type
@@ -177,7 +178,6 @@ let child_determination t : Child_determination.t =
   | Pointer_type
   | Reference_type
   | String_type
-  | Structure_type
   | Subroutine_type
   | Typedef
   | Union_type

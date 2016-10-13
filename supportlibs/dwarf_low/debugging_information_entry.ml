@@ -30,7 +30,7 @@ let create ~label ~name ~abbreviation_code ~attribute_values =
 
 let null =
   lazy (
-    { label = Linearize.new_label ();
+    { label = Cmm.new_label ();
       name = None;
       abbreviation_code = Abbreviation_code.null ();
       attribute_values = [];

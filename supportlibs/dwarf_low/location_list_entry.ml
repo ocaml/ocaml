@@ -20,23 +20,23 @@ module Location_list_entry = struct
     beginning_address_label : Linearize.label;
     ending_address_label : Linearize.label;
     ending_address_offset : int option;
-    expr : Location_expression.t;
+    expr : Single_location_description.t;
   }
 
   let create ~start_of_code_symbol
              ~first_address_when_in_scope
              ~first_address_when_not_in_scope
              ~first_address_when_not_in_scope_offset
-             ~location_expression =
+             ~single_location_description =
     { start_of_code_symbol;
       beginning_address_label = first_address_when_in_scope;
       ending_address_label = first_address_when_not_in_scope;
       ending_address_offset = first_address_when_not_in_scope_offset;
-      expr = location_expression;
+      expr = single_location_description;
     }
 
   let expr_size t =
-    let size = Location_expression.size t.expr in
+    let size = Single_location_description.size t.expr in
     (* CR-someday mshinwell: maybe this size should be unsigned? *)
     assert (Int64.compare size 0xFFFFL < 0);
     Numbers.Int16.of_int64_exn size
@@ -71,14 +71,14 @@ module Location_list_entry = struct
     let v3 = Dwarf_value.Int16 (expr_size t) in
     let (+) = Int64.add in
     Dwarf_value.size v1 + Dwarf_value.size v2 + Dwarf_value.size v3
-      + Location_expression.size t.expr
+      + Single_location_description.size t.expr
 
   let emit t asm =
     let module A = (val asm : Asm_directives.S) in
     Dwarf_value.emit (beginning_value t) asm;
     Dwarf_value.emit (ending_value t) asm;
     A.int16 (expr_size t);
-    Location_expression.emit t.expr asm
+    Single_location_description.emit t.expr asm
 end
 
 module Base_address_selection_entry = struct
@@ -109,13 +109,13 @@ let create_location_list_entry ~start_of_code_symbol
                                ~first_address_when_in_scope
                                ~first_address_when_not_in_scope
                                ~first_address_when_not_in_scope_offset
-                               ~location_expression =
+                               ~single_location_description =
   Location_list_entry (
     Location_list_entry.create ~start_of_code_symbol
       ~first_address_when_in_scope
       ~first_address_when_not_in_scope
       ~first_address_when_not_in_scope_offset
-      ~location_expression)
+      ~single_location_description)
 
 let create_base_address_selection_entry ~base_address_symbol =
   Base_address_selection_entry (

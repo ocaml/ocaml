@@ -25,12 +25,19 @@
 
 type t
 
+(** For creation of proto-DIEs in a group, with references between them. *)
+(* CR mshinwell: remove type equality *)
+type reference = Cmm.label
+val create_reference : unit -> reference
+
 (* It is an error for [parent] to be [None] unless the [tag] is that for
    a compilation unit (which is a top-level entity). *)
 val create
-   : parent:t option
+   : ?reference:reference
+  -> parent:t option
   -> tag:Dwarf_tag.t
   -> attribute_values:Dwarf_attribute_values.Attribute_value.t list
+  -> unit
   -> t
 
 val create_ignore

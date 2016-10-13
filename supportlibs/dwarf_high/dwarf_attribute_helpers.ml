@@ -65,7 +65,11 @@ let create_location ~location_list_label =
 
 let create_single_location_description loc_desc =
   let spec = AS.create A.Location F.Exprloc in
-  AV.create spec (V.location_description loc_desc)
+  AV.create spec (V.single_location_description loc_desc)
+
+let create_composite_location_description loc_desc =
+  let spec = AS.create A.Location F.Exprloc in
+  AV.create spec (V.composite_location_description loc_desc)
 
 let create_encoding ~encoding =
   let spec = AS.create A.Encoding F.Data1 in
@@ -80,10 +84,32 @@ let create_type ~proto_die = reference_proto_die A.Type proto_die
 let create_sibling ~proto_die = reference_proto_die A.Sibling proto_die
 let create_import ~proto_die = reference_proto_die A.Import proto_die
 
+let create_type_from_reference ~proto_die_reference:label =
+  let spec = AS.create A.Type F.Ref_addr in
+  AV.create spec (V.offset_into_debug_info label)
+
+(* CR-soon mshinwell: remove "_exn" prefix. *)
 let create_byte_size_exn ~byte_size =
-  let spec = AS.create A.Byte_size F.Data1 in
-  AV.create spec (V.int8 (Numbers.Int8.of_int_exn byte_size))
+  let spec = AS.create A.Byte_size F.Data8 in
+  AV.create spec (V.int64 (Int64.of_int byte_size))
+
+let create_bit_size bit_size =
+  let spec = AS.create A.Bit_size F.Data8 in
+  AV.create spec (V.int64 bit_size)
+
+let create_data_member_location ~byte_offset =
+  let spec = AS.create A.Data_member_location F.Data8 in
+  AV.create spec (V.int64 byte_offset)
 
 let create_linkage_name ~linkage_name =
   let spec = AS.create A.Linkage_name F.Strp in
   AV.create spec (V.indirect_string (Linkage_name.to_string linkage_name))
+
+let create_const_value_from_symbol ~symbol =
+  match Target_system.Address.word_size () with
+  | Target_system.Address.Four ->
+    let spec = AS.create A.Const_value F.Data4 in
+    AV.create spec (V.symbol_32 symbol)
+  | Target_system.Address.Eight ->
+    let spec = AS.create A.Const_value F.Data8 in
+    AV.create spec (V.symbol_64 symbol)

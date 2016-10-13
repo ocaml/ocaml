@@ -20,3 +20,6 @@ include Dwarf_emittable.S with type t := t
 val two : t
 val three : t
 val four : t
+val five : t
+
+val compare : t -> t -> int

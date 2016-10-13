@@ -17,11 +17,13 @@ module DIE = Debugging_information_entry
 type t = {
   dies : DIE.t list;
   debug_abbrev_label : Linearize.label;
+  compilation_unit_header_label : Linearize.label;
 }
 
-let create ~dies ~debug_abbrev_label =
+let create ~dies ~debug_abbrev_label ~compilation_unit_header_label =
   { dies;
     debug_abbrev_label;
+    compilation_unit_header_label;
   }
 
 let dwarf_version = Dwarf_version.four
@@ -55,6 +57,8 @@ let size t =
 let emit t asm =
   let size_without_first_word = size_without_first_word t in
   let initial_length = Initial_length.create size_without_first_word in
+  let module A = (val asm : Asm_directives.S) in
+  A.label_declaration ~label_name:t.compilation_unit_header_label;
   Initial_length.emit initial_length asm;
   Dwarf_version.emit dwarf_version asm;
   Dwarf_value.emit (debug_abbrev_offset t) asm;

@@ -20,12 +20,15 @@ module AV = Dwarf_attribute_values.Attribute_value
 module F = Dwarf_attributes.Form
 module V = Dwarf_attribute_values.Value
 
+type reference = Cmm.label
+let create_reference () = Cmm.new_label ()
+
 type t = {
   parent : t option;
   mutable children : t list;
   tag : Dwarf_tag.t;
   mutable attribute_values : AV.t list;
-  label : Linearize.label;
+  label : Cmm.label;
   (* for references between DIEs within a single unit *)
   (* CR-someday mshinwell: consider combining [label] and [name] into one
      "how to reference this DIE" value. *)
@@ -43,7 +46,7 @@ let reference_proto_die attribute proto_die =
 
 let create_sibling ~proto_die = reference_proto_die A.Sibling proto_die
 
-let create ~parent ~tag ~attribute_values =
+let create ?reference ~parent ~tag ~attribute_values () =
   begin match parent with
   | None ->
     if tag <> Dwarf_tag.Compile_unit then begin
@@ -74,12 +77,17 @@ let create ~parent ~tag ~attribute_values =
           (create_sibling ~proto_die:next_sibling_of_t)
             :: attribute_values
   in
+  let reference =
+    match reference with
+    | None -> Cmm.new_label ()
+    | Some reference -> reference
+  in
   let t =
     { parent;
       children = [];
       tag;
       attribute_values;
-      label = Linearize.new_label ();
+      label = reference;
       name = None;
       sort_priority = -1;
     }
@@ -91,7 +99,7 @@ let create ~parent ~tag ~attribute_values =
   t
 
 let create_ignore ~parent ~tag ~attribute_values =
-  let (_ : t) = create ~parent ~tag ~attribute_values in
+  let (_ : t) = create ~parent ~tag ~attribute_values () in
   ()
 
 let set_name t name = t.name <- Some name

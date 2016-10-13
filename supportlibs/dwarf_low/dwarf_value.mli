@@ -56,5 +56,6 @@ type t =
   | Offset_into_debug_line_from_symbol of Symbol.t
   | Offset_into_debug_loc of Linearize.label
   | Offset_into_debug_abbrev of Linearize.label
+  | Distance_between_labels_32bit of { upper : Cmm.label; lower : Cmm.label; }
 
 include Dwarf_emittable.S with type t := t
