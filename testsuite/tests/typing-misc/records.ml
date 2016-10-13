@@ -93,3 +93,20 @@ let f (x : Complex.t) = x.Complex.z;;
 Line _, characters 26-35:
 Error: Unbound record field Complex.z
 |}];;
+
+
+(* PR#6608 *)
+{ "reference" with contents = 0 }
+[%%expect{|
+Line _, characters 0-33:
+Warning 23: all the fields are explicitly listed in this record:
+the 'with' clause is useless.
+- : int ref = {contents = 0}
+|}];;
+{ true with contents = 0 }
+[%%expect{|
+Line _, characters 0-26:
+Warning 23: all the fields are explicitly listed in this record:
+the 'with' clause is useless.
+- : int ref = {contents = 0}
+|}];;
