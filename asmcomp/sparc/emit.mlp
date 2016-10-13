@@ -518,6 +518,7 @@ let rec emit_instr i dslot =
         `	add	%sp, 8, %sp\n`
     | Lop(Ispecific _) ->
 	assert false
+    | Lop (Iname_for_debugger _) -> ()
     | Lreloadretaddr ->
         let n = frame_size() in
         `	ld	[%sp + {emit_int(n - 4 + 96)}], %o7\n`

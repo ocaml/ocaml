@@ -708,6 +708,7 @@ partialclean::
 	rm -f typing/*.cm* typing/*.$(O) typing/*.$(S)
 	rm -f bytecomp/*.cm* bytecomp/*.$(O) bytecomp/*.$(S)
 	rm -f asmcomp/*.cm* asmcomp/*.$(O) asmcomp/*.$(S)
+	rm -f asmcomp/debug/*.cm* asmcomp/debug/*.$(O) asmcomp/debug/*.$(S)
 	rm -f middle_end/*.cm* middle_end/*.$(O) middle_end/*.$(S)
 	rm -f middle_end/base_types/*.cm* middle_end/base_types/*.$(O) \
 	      middle_end/base_types/*.$(S)
@@ -716,8 +717,8 @@ partialclean::
 	rm -f tools/*.cm* tools/*.$(O) tools/*.$(S)
 
 depend: beforedepend
-	(for d in utils parsing typing bytecomp asmcomp middle_end \
-	 middle_end/base_types driver toplevel; \
+	(for d in utils parsing typing bytecomp asmcomp asmcomp/debug \
+	 middle_end middle_end/base_types driver toplevel; \
 	 do $(CAMLDEP) -slash $(DEPFLAGS) $$d/*.mli $$d/*.ml; \
 	 done) > .depend
 	$(CAMLDEP) -slash $(DEPFLAGS) -native \
