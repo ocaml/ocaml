@@ -95,10 +95,10 @@ Error: Unbound record field Complex.z
 |}];;
 
 (* PR#6608 *)
-{ "reference" with contents = 0 }
+{ true with contents = 0 };;
 [%%expect{|
-Line _, characters 2-13:
-Error: This expression has type string but an expression was expected of type
+Line _, characters 2-6:
+Error: This expression has type bool but an expression was expected of type
          'a ref
 |}];;
 
