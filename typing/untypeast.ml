@@ -369,7 +369,7 @@ let expression sub exp =
           _ } ->
         Pexp_fun (arg_label, None, sub.pat sub p, sub.expr sub e)
     (* No label: it's a function. *)
-    | Texp_function { arg_label = Nolabel; cases; } ->
+    | Texp_function { arg_label = Nolabel; cases; _; } ->
         Pexp_function (sub.cases sub cases)
     (* Mix of both, we generate `fun ~label:$name$ -> match $name$ with ...` *)
     | Texp_function { arg_label = Labelled s | Optional s as label; cases;
