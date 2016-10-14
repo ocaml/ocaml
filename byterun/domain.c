@@ -193,7 +193,7 @@ static void create_domain(uintnat initial_minor_heap_size, int is_main) {
 
     d->state.mark_stack = &CAML_DOMAIN_STATE->mark_stack;
     d->state.mark_stack_count = &CAML_DOMAIN_STATE->mark_stack_count;
-    d->state.local_roots = &caml_local_roots;
+    d->state.local_roots = CAML_LOCAL_ROOTS;
     d->state.state = CAML_DOMAIN_STATE;
     d->state.vm_inited = 1;
   }

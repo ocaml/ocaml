@@ -62,16 +62,16 @@ void caml_raise(value v)
 #endif
   char* exception_pointer = CAML_DOMAIN_STATE->system_stack_high
                           - CAML_DOMAIN_STATE->system_exnptr_offset;
-  while (caml_local_roots != NULL &&
-         (char *) caml_local_roots PUSHED_AFTER exception_pointer) {
-    Assert(caml_local_roots != NULL);
-    struct caml__mutex_unwind* m = caml_local_roots->mutexes;
+  while (CAML_LOCAL_ROOTS != NULL &&
+         (char *) CAML_LOCAL_ROOTS PUSHED_AFTER exception_pointer) {
+    Assert(CAML_LOCAL_ROOTS != NULL);
+    struct caml__mutex_unwind* m = CAML_LOCAL_ROOTS->mutexes;
     while (m) {
       /* unlocked in reverse order of locking */
       caml_plat_unlock(m->mutex);
       m = m->next;
     }
-    caml_local_roots = caml_local_roots->next;
+    SET_CAML_LOCAL_ROOTS(CAML_LOCAL_ROOTS->next);
   }
 #undef PUSHED_AFTER
 
