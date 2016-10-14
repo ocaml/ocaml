@@ -297,10 +297,10 @@ and expression i ppf x =
       line i ppf "Texp_let %a\n" fmt_rec_flag rf;
       list i value_binding ppf l;
       expression i ppf e;
-  | Texp_function (p, l, _partial) ->
+  | Texp_function { arg_label = p; param = _; cases; partial = _; } ->
       line i ppf "Texp_function\n";
       arg_label i ppf p;
-      list i case ppf l;
+      list i case ppf cases;
   | Texp_apply (e, l) ->
       line i ppf "Texp_apply\n";
       expression i ppf e;
