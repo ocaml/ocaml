@@ -89,6 +89,7 @@ void caml_main(char **argv)
   char tos;
 
   CAML_INIT_DOMAIN_STATE;
+  CAML_INIT_LOCAL_ROOTS;
 
   caml_init_startup_params();
   caml_init_ieee_floats();

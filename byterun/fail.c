@@ -33,15 +33,15 @@ CAMLexport void caml_raise(value v)
 {
   caml_exn_bucket = v;
   if (caml_external_raise == NULL) caml_fatal_uncaught_exception(v);
-  while (caml_local_roots != caml_external_raise->local_roots) {
-    Assert(caml_local_roots != NULL);
-    struct caml__mutex_unwind* m = caml_local_roots->mutexes;
+  while (CAML_LOCAL_ROOTS != caml_external_raise->local_roots) {
+    Assert(CAML_LOCAL_ROOTS != NULL);
+    struct caml__mutex_unwind* m = CAML_LOCAL_ROOTS->mutexes;
     while (m) {
       /* unlocked in reverse order of locking */
       caml_plat_unlock(m->mutex);
       m = m->next;
     }
-    caml_local_roots = caml_local_roots->next;
+    SET_CAML_LOCAL_ROOTS(CAML_LOCAL_ROOTS->next);
   }
   siglongjmp(caml_external_raise->jmp->buf, 1);
 }

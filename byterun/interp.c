@@ -216,7 +216,7 @@ value caml_interprete(code_t prog, asize_t prog_size)
   intnat initial_trap_sp_off;
   volatile code_t saved_pc = NULL;
   struct longjmp_buffer raise_buf;
-  struct caml_exception_context exception_ctx = { &raise_buf, caml_local_roots };
+  struct caml_exception_context exception_ctx = { &raise_buf, CAML_LOCAL_ROOTS };
 #ifndef THREADED_CODE
   opcode_t curr_instr;
 #endif

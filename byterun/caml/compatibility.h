@@ -236,7 +236,7 @@
 #define format_caml_exception caml_format_exception /*SP*/
 
 /* **** roots.c */
-#define local_roots caml_local_roots
+#define local_roots CAML_LOCAL_ROOTS
 #define do_local_roots caml_do_local_roots
 
 /* **** signals.c */
