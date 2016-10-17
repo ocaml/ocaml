@@ -33,7 +33,9 @@ class virtual selector_generic : object
     (* Can be overridden to reflect special extcalls known to be pure *)
   method select_operation :
     Cmm.operation ->
-    Cmm.expression list -> Mach.operation * Cmm.expression list
+    Cmm.expression list ->
+    Debuginfo.t ->
+    Mach.operation * Cmm.expression list
     (* Can be overridden to deal with special arithmetic instructions *)
   method select_condition : Cmm.expression -> Mach.test * Cmm.expression
     (* Can be overridden to deal with special test instructions *)

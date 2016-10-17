@@ -20,14 +20,16 @@ let make_switch n selector caselist =
     List.iter (fun pos -> index.(pos) <- i) posl;
     actv.(i) <- e
   done;
-  Cswitch(selector, index, actv)
+  Cswitch(selector, index, actv, Debuginfo.none)
 
 let access_array base numelt size =
   match numelt with
     Cconst_int 0 -> base
-  | Cconst_int n -> Cop(Cadda, [base; Cconst_int(n * size)])
+  | Cconst_int n -> Cop(Cadda, [base; Cconst_int(n * size)], Debuginfo.none)
   | _ -> Cop(Cadda, [base;
-                     Cop(Clsl, [numelt; Cconst_int(Misc.log2 size)])])
+                     Cop(Clsl, [numelt; Cconst_int(Misc.log2 size)],
+                         Debuginfo.none)],
+             Debuginfo.none)
 
 %}
 
@@ -171,13 +173,13 @@ expr:
   | LPAREN LET letdef sequence RPAREN { make_letdef $3 $4 }
   | LPAREN ASSIGN IDENT expr RPAREN { Cassign(find_ident $3, $4) }
   | LPAREN APPLY expr exprlist machtype RPAREN
-                { Cop(Capply($5, Debuginfo.none), $3 :: List.rev $4) }
+                { Cop(Capply $5, $3 :: List.rev $4, Debuginfo.none) }
   | LPAREN EXTCALL STRING exprlist machtype RPAREN
-               {Cop(Cextcall($3, $5, false, Debuginfo.none, None), List.rev $4)}
-  | LPAREN SUBF expr RPAREN { Cop(Cnegf, [$3]) }
-  | LPAREN SUBF expr expr RPAREN { Cop(Csubf, [$3; $4]) }
-  | LPAREN unaryop expr RPAREN { Cop($2, [$3]) }
-  | LPAREN binaryop expr expr RPAREN { Cop($2, [$3; $4]) }
+               {Cop(Cextcall($3, $5, false, None), List.rev $4, Debuginfo.none)}
+  | LPAREN SUBF expr RPAREN { Cop(Cnegf, [$3], Debuginfo.none) }
+  | LPAREN SUBF expr expr RPAREN { Cop(Csubf, [$3; $4], Debuginfo.none) }
+  | LPAREN unaryop expr RPAREN { Cop($2, [$3], Debuginfo.none) }
+  | LPAREN binaryop expr expr RPAREN { Cop($2, [$3; $4], Debuginfo.none) }
   | LPAREN SEQ sequence RPAREN { $3 }
   | LPAREN IF expr expr expr RPAREN { Cifthenelse($3, $4, $5) }
   | LPAREN SWITCH INTCONST expr caselist RPAREN { make_switch $3 $4 $5 }
@@ -192,20 +194,23 @@ expr:
   | LPAREN TRY sequence WITH bind_ident sequence RPAREN
                 { unbind_ident $5; Ctrywith($3, $5, $6) }
   | LPAREN ADDRAREF expr expr RPAREN
-      { Cop(Cload Word_val, [access_array $3 $4 Arch.size_addr]) }
+      { Cop(Cload Word_val, [access_array $3 $4 Arch.size_addr],
+          Debuginfo.none) }
   | LPAREN INTAREF expr expr RPAREN
-      { Cop(Cload Word_int, [access_array $3 $4 Arch.size_int]) }
+      { Cop(Cload Word_int, [access_array $3 $4 Arch.size_int],
+          Debuginfo.none) }
   | LPAREN FLOATAREF expr expr RPAREN
-      { Cop(Cload Double_u, [access_array $3 $4 Arch.size_float]) }
+      { Cop(Cload Double_u, [access_array $3 $4 Arch.size_float],
+          Debuginfo.none) }
   | LPAREN ADDRASET expr expr expr RPAREN
       { Cop(Cstore (Word_val, Assignment),
-            [access_array $3 $4 Arch.size_addr; $5]) }
+            [access_array $3 $4 Arch.size_addr; $5], Debuginfo.none) }
   | LPAREN INTASET expr expr expr RPAREN
       { Cop(Cstore (Word_int, Assignment),
-            [access_array $3 $4 Arch.size_int; $5]) }
+            [access_array $3 $4 Arch.size_int; $5], Debuginfo.none) }
   | LPAREN FLOATASET expr expr expr RPAREN
       { Cop(Cstore (Double_u, Assignment),
-            [access_array $3 $4 Arch.size_float; $5]) }
+            [access_array $3 $4 Arch.size_float; $5], Debuginfo.none) }
 ;
 exprlist:
     exprlist expr               { $2 :: $1 }
@@ -238,10 +243,10 @@ chunk:
 ;
 unaryop:
     LOAD chunk                  { Cload $2 }
-  | ALLOC                       { Calloc Debuginfo.none }
+  | ALLOC                       { Calloc }
   | FLOATOFINT                  { Cfloatofint }
   | INTOFFLOAT                  { Cintoffloat }
-  | RAISE                       { Craise ($1, Debuginfo.none) }
+  | RAISE                       { Craise $1 }
   | ABSF                        { Cabsf }
 ;
 binaryop:
@@ -280,7 +285,7 @@ binaryop:
   | LEF                         { Ccmpf Cle }
   | GTF                         { Ccmpf Cgt }
   | GEF                         { Ccmpf Cge }
-  | CHECKBOUND                  { Ccheckbound Debuginfo.none }
+  | CHECKBOUND                  { Ccheckbound }
   | MULH                        { Cmulhi }
 ;
 sequence:
