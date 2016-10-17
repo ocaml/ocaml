@@ -15,103 +15,6 @@
 
 open X86_ast
 
-type system =
-  (* 32 bits and 64 bits *)
-  | S_macosx
-  | S_gnu
-  | S_cygwin
-
-  (* 32 bits only *)
-  | S_solaris
-  | S_win32
-  | S_linux_elf
-  | S_bsd_elf
-  | S_beos
-  | S_mingw
-
-  (* 64 bits only *)
-  | S_win64
-  | S_linux
-  | S_mingw64
-
-  | S_unknown
-
-
-let system = match Config.system with
-  | "macosx" -> S_macosx
-  | "solaris" -> S_solaris
-  | "win32" -> S_win32
-  | "linux_elf" -> S_linux_elf
-  | "bsd_elf" -> S_bsd_elf
-  | "beos" -> S_beos
-  | "gnu" -> S_gnu
-  | "cygwin" -> S_cygwin
-  | "mingw" -> S_mingw
-  | "mingw64" -> S_mingw64
-  | "win64" -> S_win64
-  | "linux" -> S_linux
-
-  | _ -> S_unknown
-
-let windows =
-  match system with
-  | S_mingw64 | S_cygwin | S_win64 -> true
-  | _ -> false
-
-let string_of_string_literal s =
-  let b = Buffer.create (String.length s + 2) in
-  let last_was_escape = ref false in
-  for i = 0 to String.length s - 1 do
-    let c = s.[i] in
-    if c >= '0' && c <= '9' then
-      if !last_was_escape
-      then Printf.bprintf b "\\%o" (Char.code c)
-      else Buffer.add_char b c
-    else if c >= ' ' && c <= '~' && c <> '"' (* '"' *) && c <> '\\' then begin
-      Buffer.add_char b c;
-      last_was_escape := false
-    end else begin
-      Printf.bprintf b "\\%o" (Char.code c);
-      last_was_escape := true
-    end
-  done;
-  Buffer.contents b
-
-let string_of_symbol prefix s =
-  let spec = ref false in
-  for i = 0 to String.length s - 1 do
-    match String.unsafe_get s i with
-    | 'A'..'Z' | 'a'..'z' | '0'..'9' | '_' -> ()
-    | _ -> spec := true;
-  done;
-  if not !spec then if prefix = "" then s else prefix ^ s
-  else
-    let b = Buffer.create (String.length s + 10) in
-    Buffer.add_string b prefix;
-    String.iter
-      (function
-        | ('A'..'Z' | 'a'..'z' | '0'..'9' | '_') as c -> Buffer.add_char b c
-        | c -> Printf.bprintf b "$%02x" (Char.code c)
-      )
-      s;
-    Buffer.contents b
-
-let buf_bytes_directive b directive s =
-  let pos = ref 0 in
-  for i = 0 to String.length s - 1 do
-    if !pos = 0
-    then begin
-      if i > 0 then Buffer.add_char b '\n';
-      Buffer.add_char b '\t';
-      Buffer.add_string b directive;
-      Buffer.add_char b '\t';
-    end
-    else Buffer.add_char b ',';
-    Printf.bprintf b "%d" (Char.code s.[i]);
-    incr pos;
-    if !pos >= 16 then begin pos := 0 end
-  done
-
 let string_of_reg64 = function
   | RAX -> "rax"
   | RBX -> "rbx"
@@ -227,12 +130,6 @@ let assembler_passes = ref ([] : (asm_program -> asm_program) list)
 let internal_assembler = ref None
 let register_internal_assembler f = internal_assembler := Some f
 
-(* Which asm conventions to use *)
-let masm =
-  match system with
-  | S_win32 | S_win64 -> true
-  | _ -> false
-
 (* Shall we use an external assembler command ?
    If [binary_content] contains some data, we can directly
    save it. Otherwise, we have to ask an external command.
@@ -240,7 +137,7 @@ let masm =
 let binary_content = ref None
 
 let compile infile outfile =
-  if masm then
+  if Target_system.masm then
     Ccomp.command (Config.asm ^
                    Filename.quote outfile ^ " " ^ Filename.quote infile ^
                    (if !Clflags.verbose then "" else ">NUL"))
@@ -255,7 +152,9 @@ let assemble_file infile outfile =
 
 let asm_code = ref []
 
-let directive dir = asm_code := dir :: !asm_code
+let directive dir =
+  asm_code := dir :: !asm_code
+
 let emit ins = directive (Ins ins)
 
 let reset_asm_code () = asm_code := []

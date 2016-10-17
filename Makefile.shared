@@ -42,7 +42,7 @@ OCAMLDOC_OPT=$(WITH_OCAMLDOC:=.opt)
 INCLUDES=-I utils -I parsing -I typing -I bytecomp -I middle_end \
         -I middle_end/base_types -I asmcomp -I driver -I toplevel
 
-UTILS=utils/config.cmo utils/misc.cmo \
+UTILS=utils/config.cmo utils/misc.cmo utils/target_system.cmo \
   utils/identifiable.cmo utils/numbers.cmo utils/arg_helper.cmo \
   utils/clflags.cmo utils/tbl.cmo utils/timings.cmo \
   utils/terminfo.cmo utils/ccomp.cmo utils/warnings.cmo \
@@ -97,16 +97,19 @@ INTEL_ASM=\
   asmcomp/x86_gas.cmo \
   asmcomp/x86_masm.cmo
 
+ARCH_SPECIFIC_ASMCOMP_EARLY=
 ARCH_SPECIFIC_ASMCOMP=
 ifeq ($(ARCH),i386)
+ARCH_SPECIFIC_ASMCOMP_EARLY=asmcomp/x86_proc.cmo
 ARCH_SPECIFIC_ASMCOMP=$(INTEL_ASM)
 endif
 ifeq ($(ARCH),amd64)
+ARCH_SPECIFIC_ASMCOMP_EARLY=asmcomp/x86_proc.cmo
 ARCH_SPECIFIC_ASMCOMP=$(INTEL_ASM)
 endif
 
 ASMCOMP=\
-  $(ARCH_SPECIFIC_ASMCOMP) \
+  $(ARCH_SPECIFIC_ASMCOMP_EARLY) \
   asmcomp/arch.cmo \
   asmcomp/cmm.cmo asmcomp/printcmm.cmo \
   asmcomp/reg.cmo asmcomp/mach.cmo asmcomp/proc.cmo \
@@ -134,8 +137,9 @@ ASMCOMP=\
   asmcomp/schedgen.cmo asmcomp/scheduling.cmo \
   asmcomp/branch_relaxation_intf.cmo \
   asmcomp/branch_relaxation.cmo \
+  asmcomp/asm_directives_intf.cmo \
   asmcomp/asm_directives.cmo \
-  asmcomp/asm_directives_x86.cmo \
+  $(ARCH_SPECIFIC_ASMCOMP) \
   asmcomp/emitaux.cmo asmcomp/emit.cmo asmcomp/asmgen.cmo \
   asmcomp/asmlink.cmo asmcomp/asmlibrarian.cmo asmcomp/asmpackager.cmo \
   driver/opterrors.cmo driver/optcompile.cmo

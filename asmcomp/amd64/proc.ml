@@ -105,6 +105,47 @@ let num_available_registers = [| 13; 16 |]
 
 let first_available_register = [| 0; 100 |]
 
+(** See "System V Application Binary Interface, AMD64 Architecture Processor
+    Supplement" (www.x86-64.org/documentation/abi.pdf) page 57, fig. 3.36. *)
+let int_dwarf_reg_numbers =
+  [| 0; 3; 5; 4; 1; 2; 8; 9; 12; 13; 10; 11; 6 |]
+
+let float_dwarf_reg_numbers =
+  [| 17; 18; 19; 20; 21; 22; 23; 24; 25; 26; 27; 28; 29; 30; 31; 32 |]
+
+let () =
+  assert (Array.length int_dwarf_reg_numbers = Array.length int_reg_name);
+  assert (Array.length float_dwarf_reg_numbers = Array.length float_reg_name)
+
+let dwarf_register_number reg =
+  let reg_number, dwarf_numbers =
+    match reg.loc with
+    | Unknown | Stack _ ->
+      Misc.fatal_errorf "Proc.dwarf_register_number: [Reg.t] does not \
+          have a [Reg] location: %s"
+        (Reg.name reg)
+    | Reg n ->
+      let num_hard_regs, dwarf_numbers =
+        match reg.typ with
+        | Val | Addr | Int ->
+          Array.length int_reg_name, int_dwarf_reg_numbers
+        | Float ->
+          Array.length float_reg_name, float_dwarf_reg_numbers
+      in
+      let offset = first_available_register.(register_class reg) in
+      let n = n - offset in
+      if n < 0 || n >= num_hard_regs then
+        Misc.fatal_errorf "Proc.dwarf_register_number: [Reg.t] is not \
+            assigned to a hard register: %s"
+          (Reg.name reg)
+      else
+        n, dwarf_numbers
+  in
+  assert (reg_number >= 0 && reg_number < Array.length dwarf_numbers);
+  dwarf_numbers.(reg_number)
+
+let stack_ptr_dwarf_register_number = 7
+
 let register_name r =
   if r < 100 then int_reg_name.(r) else float_reg_name.(r - 100)
 
@@ -327,6 +368,7 @@ let op_is_pure = function
   | Iintop(Icheckbound _) | Iintop_imm(Icheckbound _, _) -> false
   | Ispecific(Ilea _) -> true
   | Ispecific _ -> false
+  | Iname_for_debugger _ -> false
   | _ -> true
 
 (* Layout of the stack frame *)

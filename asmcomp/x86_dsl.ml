@@ -38,10 +38,11 @@ let sym s = Sym s
 
 let nat n = Imm (Int64.of_nativeint n)
 let int n = Imm (Int64.of_int n)
-
+(*
 let const_32 n = Const (Int64.of_int32 n)
 let const_nat n = Const (Int64.of_nativeint n)
 let const n = Const (Int64.of_int n)
+*)
 
 let al  = Reg8L RAX
 let ah  = Reg8H AH
@@ -77,32 +78,14 @@ let mem64_rip typ ?(ofs = 0) s =
   Mem64_RIP (typ, s, ofs)
 
 module D = struct
-  let section segment flags args = directive (Section (segment, flags, args))
-  let align n = directive (Align (false, n))
-  let byte n = directive (Byte n)
-  let bytes s = directive (Bytes s)
-  let cfi_adjust_cfa_offset n = directive (Cfi_adjust_cfa_offset n)
-  let cfi_endproc () = directive Cfi_endproc
-  let cfi_startproc () = directive Cfi_startproc
-  let comment s = directive (Comment s)
-  let data () = section [ ".data" ] None []
-  let extrn s ptr = directive (External (s, ptr))
-  let file ~file_num ~file_name = directive (File (file_num, file_name))
-  let global s = directive (Global s)
-  let indirect_symbol s = directive (Indirect_symbol s)
-  let label ?(typ = NONE) s = directive (NewLabel (s, typ))
-  let loc ~file_num ~line ~col = directive (Loc (file_num, line, col))
-  let long cst = directive (Long cst)
-  let mode386 () = directive Mode386
-  let model name = directive (Model name)
-  let private_extern s = directive (Private_extern s)
-  let qword cst = directive (Quad cst)
-  let setvar (x, y) = directive (Set (x, y))
-  let size name cst = directive (Size (name, cst))
-  let space n = directive (Space n)
-  let text () = section [ ".text" ] None []
-  let type_ name typ = directive (Type (name, typ))
-  let word cst = directive (Word cst)
+  let emit dir = directive (MASM_directive dir)
+
+  let extrn s ptr = emit (External (s, ptr))
+  let label ?(typ = NONE) s =
+    if Target_system.masm then emit (NewLabel (s, typ))
+    else Asm_directives.label_declaration' s
+  let mode386 () = emit Mode386
+  let model name = emit (Model name)
 end
 
 module I = struct
