@@ -901,6 +901,7 @@ and lookup_module ~load ?loc lid env : Path.t =
         Structure_comps c ->
           let (_data, pos) = Tbl.find s c.comp_modules in
           let (comps, _) = Tbl.find s c.comp_components in
+          mark_module_used env s comps.loc;
           let p = Pdot(p, s, pos) in
           report_deprecated ?loc p comps.deprecated;
           p
@@ -1925,7 +1926,7 @@ let save_signature_with_imports ~deprecated sg modname filename imports =
         ps_flags = cmi.cmi_flags;
       } in
     save_pers_struct crc ps;
-    sg
+    cmi
   with exn ->
     close_out oc;
     remove_file filename;

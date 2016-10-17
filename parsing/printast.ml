@@ -165,7 +165,7 @@ let rec core_type i ppf x =
       let i = i + 1 in
       List.iter
         (fun (s, attrs, t) ->
-          line i ppf "method %s\n" s;
+          line i ppf "method %s\n" s.txt;
           attributes i ppf attrs;
           core_type (i + 1) ppf t
         )
@@ -178,7 +178,7 @@ let rec core_type i ppf x =
       core_type i ppf ct;
   | Ptyp_poly (sl, ct) ->
       line i ppf "Ptyp_poly%a\n"
-        (fun ppf -> List.iter (fun x -> fprintf ppf " '%s" x)) sl;
+        (fun ppf -> List.iter (fun x -> fprintf ppf " '%s" x.txt)) sl;
       core_type i ppf ct;
   | Ptyp_package (s, l) ->
       line i ppf "Ptyp_package %a\n" fmt_longident_loc s;
@@ -331,7 +331,7 @@ and expression i ppf x =
       option i core_type ppf cto1;
       core_type i ppf cto2;
   | Pexp_send (e, s) ->
-      line i ppf "Pexp_send \"%s\"\n" s;
+      line i ppf "Pexp_send \"%s\"\n" s.txt;
       expression i ppf e;
   | Pexp_new (li) -> line i ppf "Pexp_new %a\n" fmt_longident_loc li;
   | Pexp_setinstvar (s, e) ->
@@ -362,7 +362,7 @@ and expression i ppf x =
       line i ppf "Pexp_object\n";
       class_structure i ppf s
   | Pexp_newtype (s, e) ->
-      line i ppf "Pexp_newtype \"%s\"\n" s;
+      line i ppf "Pexp_newtype \"%s\"\n" s.txt;
       expression i ppf e
   | Pexp_pack me ->
       line i ppf "Pexp_pack\n";
@@ -497,11 +497,11 @@ and class_type_field i ppf x =
       line i ppf "Pctf_inherit\n";
       class_type i ppf ct;
   | Pctf_val (s, mf, vf, ct) ->
-      line i ppf "Pctf_val \"%s\" %a %a\n" s fmt_mutable_flag mf
+      line i ppf "Pctf_val \"%s\" %a %a\n" s.txt fmt_mutable_flag mf
            fmt_virtual_flag vf;
       core_type (i+1) ppf ct;
   | Pctf_method (s, pf, vf, ct) ->
-      line i ppf "Pctf_method \"%s\" %a %a\n" s fmt_private_flag pf
+      line i ppf "Pctf_method \"%s\" %a %a\n" s.txt fmt_private_flag pf
            fmt_virtual_flag vf;
       core_type (i+1) ppf ct;
   | Pctf_constraint (ct1, ct2) ->
@@ -583,7 +583,7 @@ and class_field i ppf x =
   | Pcf_inherit (ovf, ce, so) ->
       line i ppf "Pcf_inherit %a\n" fmt_override_flag ovf;
       class_expr (i+1) ppf ce;
-      option (i+1) string ppf so;
+      option (i+1) string_loc ppf so;
   | Pcf_val (s, mf, k) ->
       line i ppf "Pcf_val %a\n" fmt_mutable_flag mf;
       line (i+1) ppf "%a\n" fmt_string_loc s;

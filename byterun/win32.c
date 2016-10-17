@@ -609,13 +609,22 @@ void caml_install_invalid_parameter_handler()
 
 /* Recover executable name  */
 
-int caml_executable_name(char * name, int name_len)
+char * caml_executable_name(void)
 {
-  int retcode;
-
-  int ret = GetModuleFileName(NULL, name, name_len);
-  if (0 == ret || ret >= name_len) return -1;
-  return 0;
+  char * name;
+  DWORD namelen, ret;
+  
+  namelen = 256;
+  while (1) {
+    name = caml_stat_alloc(namelen);
+    ret = GetModuleFileName(NULL, name, namelen);
+    if (ret == 0) { caml_stat_free(name); return NULL; }
+    if (ret < namelen) break;
+    caml_stat_free(name);
+    if (namelen >= 1024*1024) return NULL; /* avoid runaway and overflow */
+    namelen *= 2;
+  }
+  return name;
 }
 
 /* snprintf emulation */

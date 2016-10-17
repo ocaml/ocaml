@@ -13,25 +13,20 @@
 #*                                                                        *
 #**************************************************************************
 
-# Makefile for the "num" (exact rational arithmetic) library
+COBJS=startup_aux.$(O) startup.$(O) main.$(O) fail.$(O)		\
+  roots.$(O) signals.$(O) signals_asm.$(O) misc.$(O) freelist.$(O)	\
+  major_gc.$(O) minor_gc.$(O) memory.$(O) alloc.$(O) compare.$(O)	\
+  ints.$(O) floats.$(O) str.$(O) array.$(O) io.$(O) extern.$(O)		\
+  intern.$(O) hash.$(O) sys.$(O) parsing.$(O) gc_ctrl.$(O)		\
+  terminfo.$(O) md5.$(O) obj.$(O) lexing.$(O) $(UNIX_OR_WIN32).$(O)	\
+  printexc.$(O) callback.$(O) weak.$(O) compact.$(O) finalise.$(O)	\
+  custom.$(O) globroots.$(O) backtrace_prim.$(O) backtrace.$(O)		\
+  natdynlink.$(O) debugger.$(O) meta.$(O) dynlink.$(O)			\
+  clambda_checks.$(O) spacetime.$(O) spacetime_snapshot.$(O)		\
+  spacetime_offline.$(O)
 
-LIBNAME=nums
-EXTRACFLAGS=-DBNG_ARCH_$(BNG_ARCH) -DBNG_ASM_LEVEL=$(BNG_ASM_LEVEL)
-CAMLOBJS=int_misc.cmo nat.cmo big_int.cmo arith_flags.cmo \
-  ratio.cmo num.cmo arith_status.cmo
-CMIFILES=big_int.cmi nat.cmi num.cmi ratio.cmi arith_status.cmi
-COBJS=bng.$(O) nat_stubs.$(O)
-
-include ../Makefile
-
-clean::
-	rm -f *~
-
-bng.$(O): bng.h bng_digit.c \
-       bng_amd64.c bng_ia32.c bng_ppc.c bng_sparc.c
-
-depend:
-	$(CC) -MM $(CFLAGS) *.c > .depend
-	$(CAMLRUN) ../../tools/ocamldep -slash *.mli *.ml >> .depend
-
-include .depend
+LINKEDFILES=misc.c freelist.c major_gc.c minor_gc.c memory.c alloc.c array.c \
+  compare.c ints.c floats.c str.c io.c extern.c intern.c hash.c sys.c \
+  parsing.c gc_ctrl.c terminfo.c md5.c obj.c lexing.c printexc.c callback.c \
+  weak.c compact.c finalise.c meta.c custom.c main.c globroots.c \
+  $(UNIX_OR_WIN32).c dynlink.c signals.c debugger.c startup_aux.c backtrace.c

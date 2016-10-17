@@ -456,7 +456,7 @@ let pretty_precompiled_res first nexts =
 
 (* However, as shown by PR#6359 such sharing may hinders the
    lambda-code invariant that all bound idents are unique,
-   when switchs are compiled to test sequences.
+   when switches are compiled to test sequences.
    The definitive fix is the systematic introduction of exit/catch
    in case action sharing is present.
 *)
@@ -537,7 +537,7 @@ let up_ok_action act1 act2 =
   with
   | Exit -> false
 
-(* Nothing is kown about exception/extension patterns,
+(* Nothing is known about exception/extension patterns,
    because of potential rebind *)
 let rec exc_inside p = match p.pat_desc with
   | Tpat_construct (_,{cstr_tag=Cstr_extension _},_) -> true
@@ -571,11 +571,11 @@ let up_ok (ps,act_p) l =
 
 (*
    Simplify fonction normalize the first column of the match
-     - records are expanded so that they posses all fields
+     - records are expanded so that they possess all fields
      - aliases are removed and replaced by bindings in actions.
    However or-patterns are simplified differently,
      - aliases are not removed
-     - or patterns (_|p) are changed into _
+     - or-patterns (_|p) are changed into _
 *)
 
 exception Var of pattern
@@ -646,7 +646,7 @@ let simplify_cases args cls = match args with
 
 
 
-(* Once matchings are simplified one easily finds
+(* Once matchings are simplified one can easily find
    their nature *)
 
 let rec what_is_cases cases = match cases with
@@ -659,10 +659,10 @@ let rec what_is_cases cases = match cases with
 
 
 
-(* A few operation on default environments *)
+(* A few operations on default environments *)
 let as_matrix cases = get_mins le_pats (List.map (fun (ps,_) -> ps) cases)
 
-(* For extension matching, record no imformation in matrix *)
+(* For extension matching, record no information in matrix *)
 let as_matrix_omega cases =
   get_mins le_pats
     (List.map
@@ -853,7 +853,7 @@ let insert_or_append p ps act ors no =
               ors,(p::ps,act)::no
           else (* p # q, go on with append/insert *)
             attempt (cl::seen) rem
-        end else (* q is not a or-pat, go on with append/insert *)
+        end else (* q is not an or-pat, go on with append/insert *)
           attempt (cl::seen) rem
     | _  -> (* [] in fact *)
         (p::ps,act)::ors,no in (* success in appending *)
@@ -883,7 +883,7 @@ let rebuild_nexts arg nexts k =
     Splitting is first directed by or-patterns, then by
     tests (e.g. constructors)/variable transitions.
 
-    The approach is greedy, every split function attempt to
+    The approach is greedy, every split function attempts to
     raise rows as much as possible in the top matrix,
     then splitting applies again to the remaining rows.
 
@@ -938,7 +938,7 @@ let rec split_or argo cls args def =
 
   do_split [] [] [] cls
 
-(* Ultra-naive spliting, close to semantics, used for extension,
+(* Ultra-naive splitting, close to semantics, used for extension,
    as potential rebind prevents any kind of optimisation *)
 
 and split_naive cls args def k =
@@ -1058,7 +1058,7 @@ and split_constr cls args def k =
             end
         | [ps,_ as cl]
             when List.for_all group_var ps && yes <> [] ->
-       (* This enables an extra division in some frequent case :
+       (* This enables an extra division in some frequent cases :
           last row is made of variables only *)
               split_noex yes (cl::no) []
         | (p::_,_) as cl::rem ->
@@ -1228,15 +1228,15 @@ let divide_line make_ctx make get_args pat ctx pm =
    There is one set of functions per matching style
    (constants, constructors etc.)
 
-   - matcher function are arguments to make_default (for defaukt handlers)
+   - matcher functions are arguments to make_default (for default handlers)
    They may raise NoMatch or OrPat and perform the full
    matching (selection + arguments).
 
 
    - get_args and get_key are for the compiled matrices, note that
-   selection and geting arguments are separed.
+   selection and getting arguments are separated.
 
-   - make_ _matching combines the previous functions for produicing
+   - make_ _matching combines the previous functions for producing
    new  ``pattern_matching'' records.
 *)
 
@@ -1468,8 +1468,8 @@ let matcher_lazy p rem = match p.pat_desc with
 | _                   -> get_arg_lazy p rem
 
 (* Inlining the tag tests before calling the primitive that works on
-   lazy blocks. This is alse used in translcore.ml.
-   No call other than Obj.tag when the value has been forced before.
+   lazy blocks. This is also used in translcore.ml.
+   No other call than Obj.tag when the value has been forced before.
 *)
 
 let prim_obj_tag =
@@ -1841,7 +1841,7 @@ let share_actions_tree sw d =
   let hs,handle_shared = handle_shared () in
   let acts = Array.map handle_shared acts in
 
-(* Recontruct default and switch list *)
+(* Reconstruct default and switch list *)
   let d = match d with
   | None -> None
   | Some d -> Some (acts.(d)) in
@@ -2104,7 +2104,7 @@ let as_interval_nofail l =
   let inters = match l with
   | (i,act)::rem ->
       let act_index =
-        (* In case there is some hole and that a switch is emited,
+        (* In case there is some hole and that a switch is emitted,
            action 0 will be used as the action of unreacheable
            cases (cf. switch.ml, make_switch).
            Hence, this action will be shared *)
@@ -2218,7 +2218,7 @@ let mk_failaction_pos partial seen ctx defs  =
       pretty_jumps jmps
     end ;
     None,fail,jmps
-  end else begin (* Two many non-matched constructors -> reduced information *)
+  end else begin (* Too many non-matched constructors -> reduced information *)
     if dbg then eprintf "POS->NEG!!!\n%!" ;
     let fail,jumps =  mk_failaction_neg partial ctx defs in
     if dbg then
@@ -2247,8 +2247,8 @@ let combine_constant loc arg cst partial ctx def
             const_lambda_list in
         call_switcher fail arg 0 255 int_lambda_list
     | Const_string _ ->
-(* Note as the bytecode compiler may resort to dichotmic search,
-   the clauses of strinswitch  are sorted with duplicate removed.
+(* Note as the bytecode compiler may resort to dichotomic search,
+   the clauses of stringswitch  are sorted with duplicates removed.
    This partly applies to the native code compiler, which requires
    no duplicates *)
         let const_lambda_list = sort_lambda_list const_lambda_list in
@@ -2515,11 +2515,11 @@ let rec event_branch repr lam =
    This exception is raised when the compiler cannot produce code
    because control cannot reach the compiled clause,
 
-   Unused is raised initialy in compile_test.
+   Unused is raised initially in compile_test.
 
    compile_list (for compiling switch results) catch Unused
 
-   comp_match_handlers (for compililing splitted matches)
+   comp_match_handlers (for compiling splitted matches)
    may reraise Unused
 
 
@@ -2645,7 +2645,7 @@ let rec comp_match_handlers comp_fun partial ctx arg first_match next_matchs =
   | rem ->
       let rec c_rec body total_body = function
         | [] -> body, total_body
-        (* Hum, -1 meant never taken
+        (* Hum, -1 means never taken
         | (-1,pm)::rem -> c_rec body total_body rem *)
         | (i,pm)::rem ->
             let ctx_i,total_rem = jumps_extract i total_body in
@@ -2806,10 +2806,10 @@ and compile_no_test divide up_ctx repr partial ctx to_match =
 
    Notice that exhaustiveness information is trusted by the compiler,
    that is, a match flagged as Total should not fail at runtime.
-   More specifically, for instance if match y with x::_ -> x uis flagged
+   More specifically, for instance if match y with x::_ -> x is flagged
    total (as it happens during JoCaml compilation) then y cannot be []
    at runtime. As a consequence, the static Total exhaustiveness information
-   have to to be downgraded to Partial, in the dubious cases where guards
+   have to be downgraded to Partial, in the dubious cases where guards
    or lazy pattern execute arbitrary code that may perform side effects
    and change the subject values.
 LM:
@@ -2957,7 +2957,7 @@ let simple_for_let loc param pat body =
    didn't optimize situations where the rhs tuples are hidden under
    a more complex context.
 
-   The idea comes from Alain Frisch which suggested and implemented
+   The idea comes from Alain Frisch who suggested and implemented
    the following compilation method, based on Lassign:
 
      let x = dummy in let y = dummy in

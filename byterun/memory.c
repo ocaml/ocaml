@@ -534,8 +534,10 @@ CAMLexport value caml_alloc_shr_no_raise (mlsize_t wosize, tag_t tag)
   return caml_alloc_shr_aux(wosize, tag, 0, 0);
 }
 
-#if defined(NATIVE_CODE) && defined(WITH_SPACETIME)
-#include "spacetime.h"
+#ifdef WITH_PROFINFO
+
+/* Use this to debug problems with macros... */
+#define NO_PROFINFO 0xff
 
 CAMLexport value caml_alloc_shr_with_profinfo (mlsize_t wosize, tag_t tag,
                                                intnat profinfo)
@@ -549,6 +551,13 @@ CAMLexport value caml_alloc_shr_preserving_profinfo (mlsize_t wosize,
   return caml_alloc_shr_with_profinfo (wosize, tag, Profinfo_hd(old_header));
 }
 
+#else
+#define NO_PROFINFO 0
+#endif /* WITH_PROFINFO */
+
+#if defined(NATIVE_CODE) && defined(WITH_SPACETIME)
+#include "caml/spacetime.h"
+
 CAMLexport value caml_alloc_shr (mlsize_t wosize, tag_t tag)
 {
   return caml_alloc_shr_with_profinfo (wosize, tag,
@@ -557,7 +566,7 @@ CAMLexport value caml_alloc_shr (mlsize_t wosize, tag_t tag)
 #else
 CAMLexport value caml_alloc_shr (mlsize_t wosize, tag_t tag)
 {
-  return caml_alloc_shr_aux (wosize, tag, 1, 0);
+  return caml_alloc_shr_aux (wosize, tag, 1, NO_PROFINFO);
 }
 #endif
 

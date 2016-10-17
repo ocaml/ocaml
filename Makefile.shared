@@ -47,7 +47,8 @@ UTILS=utils/config.cmo utils/misc.cmo utils/target_system.cmo \
   utils/clflags.cmo utils/tbl.cmo utils/timings.cmo \
   utils/terminfo.cmo utils/ccomp.cmo utils/warnings.cmo \
   utils/consistbl.cmo \
-  utils/strongly_connected_components.cmo
+  utils/strongly_connected_components.cmo \
+  utils/targetint.cmo
 
 PARSING=parsing/location.cmo parsing/longident.cmo \
   parsing/docstrings.cmo parsing/ast_helper.cmo \
@@ -92,7 +93,6 @@ BYTECOMP=bytecomp/meta.cmo bytecomp/instruct.cmo bytecomp/bytegen.cmo \
   driver/errors.cmo driver/compile.cmo
 
 INTEL_ASM=\
-  asmcomp/x86_proc.cmo \
   asmcomp/x86_dsl.cmo \
   asmcomp/x86_gas.cmo \
   asmcomp/x86_masm.cmo

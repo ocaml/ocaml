@@ -23,7 +23,10 @@
 #include "caml/misc.h"
 #include "caml/mlvalues.h"
 #include "caml/signals.h"
-#include "spacetime.h"
+/* Why is caml/spacetime.h included conditionnally sometimes and not here ? */
+#include "caml/spacetime.h"
+
+static const mlsize_t mlsize_t_max = -1;
 
 /* returns number of elements (either fields or floats) */
 CAMLexport mlsize_t caml_array_length(value array)
@@ -313,6 +316,7 @@ static value caml_array_gather(intnat num_arrays,
   size = 0;
   isfloat = 0;
   for (i = 0; i < num_arrays; i++) {
+    if (mlsize_t_max - lengths[i] < size) caml_invalid_argument("Array.concat");
     size += lengths[i];
     if (Tag_val(arrays[i]) == Double_array_tag) isfloat = 1;
   }
@@ -322,8 +326,8 @@ static value caml_array_gather(intnat num_arrays,
   }
   else if (isfloat) {
     /* This is an array of floats.  We can use memcpy directly. */
+    if (size > Max_wosize/Double_wosize) caml_invalid_argument("Array.concat");
     wsize = size * Double_wosize;
-    if (wsize > Max_wosize) caml_invalid_argument("Array.concat");
     res = caml_alloc(wsize, Double_array_tag);
     for (i = 0, pos = 0; i < num_arrays; i++) {
       memcpy((double *)res + pos,

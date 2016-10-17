@@ -8,11 +8,79 @@ Next version (tbd):
 - PR#7315, GPR#736: refine some error locations
   (Gabriel Scherer and Alain Frisch, report by Matej Košík)
 
+- GPR#829: better error when opening a module aliased to a functor
+  (Alain Frisch)
+
+- MPR#7050, GPR#748 GPR#843: new `-arg/-arg0 <file>` parameters to provide
+  extra command-line arguments in a file -- see documentation.
+  User programs may implement similar options
+  using the new `Arg.Expand` constructor.
+  (Bernhard Schommer, review by Jérémie Dimino, Gabriel Scherer
+   and Damien Doligez, discussion with Alain Frisch and Xavier Leroy,
+   feature request from the Coq team)
+
+### Standard library:
+
+- GPR#760: Add a functions List.compare_lengths and
+  List.compare_length_with to avoid full list length computations
+  (Fabrice Le Fessant)
+
+### Tools:
+
+- PR#7333: ocamldoc, use the first sentence of text file as
+  a short description in overviews.
+  (Florian Angeletti)
+
 ### Compiler distribution build system:
 
 - GPR#729: Make sure ocamlnat is built with a $(EXE) extension, merge
   rules between Unix and Windows Makefiles
- (Sébastien Hinderer, review by Alain Frisch)
+  (Sébastien Hinderer, review by Alain Frisch)
+
+- GPR#762, GPR#764: Merge Unix and Windows Makefiles in yacc/ and
+  debugger/
+  (Sébastien Hinderer)
+
+### Internal/compiler-libs changes:
+
+- GPR#744, GPR#781: fix duplicate self-reference in imported cmi_crcs
+  list in .cmti files + avoid rebuilding cmi_info record when creating
+  .cmti files
+  (Alain Frisch, report by Daniel Bunzli, review by Jeremie Dimino)
+
+### Other libraries:
+
+- MPR#7339, GPR#787: Support the '0 dimension' case for bigarrays
+  (see Bigarray documentation)
+  (Laurent Mazare,
+   review by Gabriel Scherer, Alain Frisch and Hezekiah M. Carty)
+
+### Manual and documentation:
+
+- GPR#693: fail on unexpected errors or warnings within caml_example
+  environment.
+  (Florian Angeletti)
+
+### Bug fixes
+
+- GPR#795: remove 256-character limitation on Sys.executable_name
+  (Xavier Leroy)
+
+- GPR#814: fix the Buffer.add_substring bounds check to handle overflow
+  (Jeremy Yallop)
+
+- GPR#810: check for integer overflow in Array.concat
+  (Jeremy Yallop)
+
+- GPR#805, GPR#815, GPR#833: check for integer overflow in String.concat
+  (Jeremy Yallop,
+   review by Damien Doligez, Alain Frisch, Daniel Bünzli, Fabrice Le Fessant)
+
+### Standard library:
+
+- GPR#778: Arg: added option Expand that allows to expand a string argument
+  to a string array of new arguments
+  (Bernhard Schommer)
 
 OCaml 4.04.0:
 -------------
@@ -27,6 +95,7 @@ OCaml 4.04.0:
 
 - GPR#301: local exception declarations "let exception ... in"
   (Alain Frisch)
+
 - GPR#508: Allow shortcut for extension on semicolons: ;%foo
   (Jeremie Dimino)
 
@@ -37,7 +106,6 @@ OCaml 4.04.0:
 
 - PR#7233: Support GADT equations on non-local abstract types
   (Jacques Garrigue)
-
 
 ### Compiler user-interface and warnings:
 
@@ -131,6 +199,10 @@ OCaml 4.04.0:
 - GPR#602: Do not generate dummy code to force module linking
   (Pierre Chambart, reviewed by Jacques Garrigue)
 
+- PR#7328, GPR#702: Do not eliminate boxed int divisions by zero and
+  avoid checking twice if divisor is zero with flambda.
+  (Pierre Chambart, report by Jeremy Yallop)
+
 - GPR#703: Optimize some constant string operations when the "-safe-string"
   configure time option is enabled.
   (Pierre Chambart)
@@ -160,7 +232,13 @@ OCaml 4.04.0:
   are registered with `GC.finalise_last`
   (François Bobot reviewed by Damien Doligez and Leo White)
 
+- GPR#590: Do not perform compaction if the real overhead is less than expected
+  (Thomas Braibant)
+
 ### Tools:
+
+- MPR#7323, GPR#750: ensure "ocamllex -ml" works with -safe-string
+  (Hongbo Zhang)
 
 - MPR#7189: toplevel #show, follow chains of module aliases
   (Gabriel Scherer, report by Daniel Bünzli, review by Thomas Refis)
@@ -187,6 +265,12 @@ OCaml 4.04.0:
 - MPR#7290: ocamldoc, improved support for inline records
   (Florian Angeletti)
 
+- PR#7272, GPR#798: ocamldoc, missing line breaks in type_*.html files
+  (Florian Angeletti)
+
+- PR#7350, GPR#806: ocamldoc, add viewport metadata to generated html pages
+  (Florian Angeletti, request by Daniel Bünzli)
+
 - Add the -no-version option to the toplevel
   (Sébastien Hinderer)
 
@@ -200,7 +284,6 @@ OCaml 4.04.0:
   array of floats
   (Thomas Braibant)
 
-
 ### Manual and documentation:
 
 - PR#7243: warn users against using WinZip to unpack the source archive
@@ -210,6 +293,9 @@ OCaml 4.04.0:
   of Warning 52 (fragile constant pattern)
   (Gabriel Scherer, William, Adrien Nader, Jacques Garrigue)
 
+- #PR7265, GPR#769: Restore 4.02.3 behaviour of Unix.fstat, if the
+  file descriptor doesn't wrap a regular file (win32unix only)
+  (Andreas Hauptmann, review by David Allsopp)
 
 ### Build system:
 
@@ -234,7 +320,6 @@ OCaml 4.04.0:
   "-unsafe-string" is not allowed, thus giving stronger non-local
   guarantees about immutability of strings
   (Alain Frisch, review by Hezekiah M. Carty)
-
 
 ### Bug fixes:
 
@@ -279,6 +364,9 @@ OCaml 4.04.0:
 - PR#7285: Relaxed value restriction broken with principal
   (Jacques Garrigue, report by Leo White)
 
+- PR#7330: Missing exhaustivity check for extensible variant
+  (Jacques Garrigue, report by Elarnon *)
+
 - PR#7165, GPR#494: uncaught exception on invalid lexer directive
   (Gabriel Scherer, report by KC Sivaramakrishnan using afl-fuzz)
 
@@ -305,6 +393,12 @@ OCaml 4.04.0:
 
 - PR#7299: remove access to OCaml heap inside blocking section in win32unix
   (David Allsopp, report by Andreas Hauptmann)
+
+- PR#7300: remove access to OCaml heap inside blocking in Unix.sleep on Windows
+  (David Allsopp)
+
+- GPR#525: fix build on OpenIndiana
+  (Sergey Avseyev, review by Damien Doligez)
 
 ### Internal/compiler-libs changes:
 
@@ -607,9 +701,9 @@ OCaml 4.03.0 (25 Apr 2016):
 
 ### Runtime system:
 
-* GPR#442, caml_fill_string, and caml_create_string is deprecated 
-  and will be removed in the future, please use caml_fill_bytes 
-  and caml_create_bytes for migration 
+* GPR#442, caml_fill_string, and caml_create_string is deprecated
+  and will be removed in the future, please use caml_fill_bytes
+  and caml_create_bytes for migration
   (Hongbo Zhang, review by Damien Doligez, Alain Frisch, and Hugo Heuzard)
 
 - PR#3612, PR#92: allow allocating custom block with finalizers

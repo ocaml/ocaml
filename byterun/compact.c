@@ -49,7 +49,7 @@ extern void caml_shrink_heap (char *);              /* memory.c */
   XXX (see [caml_register_global_roots])
   XXX Should be able to fix it to only assume 2-byte alignment.
 */
-#if defined(NATIVE_CODE) && defined(WITH_SPACETIME)
+#ifdef WITH_PROFINFO
 #define Make_ehd(s,t,c,p) \
   (((s) << 10) | (t) << 2 | (c) | ((p) << PROFINFO_SHIFT))
 #else
@@ -273,14 +273,17 @@ static void do_compaction (void)
           size_t sz;
           tag_t t;
           char *newadr;
+#ifdef WITH_PROFINFO
           uintnat profinfo;
+#endif
           word *infixes = NULL;
 
           while (Ecolor (q) == 0) q = * (word *) q;
           sz = Whsize_ehd (q);
           t = Tag_ehd (q);
+#ifdef WITH_PROFINFO
           profinfo = Profinfo_ehd (q);
-
+#endif
           if (t == Infix_tag){
             /* Get the original header of this block. */
             infixes = p + sz;
@@ -527,6 +530,9 @@ void caml_compact_heap_maybe (void)
   caml_gc_message (0x200, "FL size at phase change = %"
                           ARCH_INTNAT_PRINTF_FORMAT "u words\n",
                    (uintnat) caml_fl_wsz_at_phase_change);
+  caml_gc_message (0x200, "FL current size = %"
+                          ARCH_INTNAT_PRINTF_FORMAT "u words\n",
+                   (uintnat) caml_fl_cur_wsz);                
   caml_gc_message (0x200, "Estimated overhead = %"
                           ARCH_INTNAT_PRINTF_FORMAT "u%%\n",
                    (uintnat) fp);
@@ -540,7 +546,10 @@ void caml_compact_heap_maybe (void)
     caml_gc_message (0x200, "Measured overhead: %"
                             ARCH_INTNAT_PRINTF_FORMAT "u%%\n",
                      (uintnat) fp);
-
-    caml_compact_heap ();
+    if (fp >= caml_percent_max)
+         caml_compact_heap ();
+    else 
+         caml_gc_message (0x200, "Automatic compaction aborted.\n", 0);
+         
   }
 }

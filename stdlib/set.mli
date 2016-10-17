@@ -127,7 +127,8 @@ module type S =
 
        If no element of [s] is changed by [f], [s] is returned
        unchanged. (If each output of [f] is physically equal to its
-       input, the returned set is physically equal to [s].) *)
+       input, the returned set is physically equal to [s].)
+       @since 4.04.0 *)
 
     val fold: (elt -> 'a -> 'a) -> t -> 'a -> 'a
     (** [fold f s a] computes [(f xN ... (f x2 (f x1 a))...)],

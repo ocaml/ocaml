@@ -13,7 +13,7 @@
 #*                                                                        *
 #**************************************************************************
 
-include Makefile.common
+include Makefile.shared
 
 CFLAGS=-DOCAML_STDLIB_DIR='"$(LIBDIR)"' $(IFLEXDIR)
 

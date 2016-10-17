@@ -41,7 +41,7 @@
 #include "caml/signals.h"
 #include "caml/stack.h"
 #include "caml/sys.h"
-#include "spacetime.h"
+#include "caml/spacetime.h"
 
 #ifdef WITH_SPACETIME
 
@@ -84,7 +84,7 @@ shape_table* caml_spacetime_dynamic_shape_tables = NULL;
 
 static uintnat caml_spacetime_profinfo = (uintnat) 0;
 
-static value caml_spacetime_trie_root = Val_unit;
+value caml_spacetime_trie_root = Val_unit;
 value* caml_spacetime_trie_node_ptr = &caml_spacetime_trie_root;
 
 static value caml_spacetime_finaliser_trie_root_main_thread = Val_unit;
@@ -327,8 +327,10 @@ void save_trie (struct channel *chan, double time_override,
                 int use_time_override)
 {
   value v_time, v_frames, v_shapes;
-  int num_marshalled = 0;
-  per_thread* thr = per_threads;
+  /* CR-someday mshinwell: The commented-out changes here are for multicore,
+     where we think we should have one trie per domain. */
+  /* int num_marshalled = 0;
+  per_thread* thr = per_threads; */
 
   Lock(chan);
 
@@ -344,7 +346,8 @@ void save_trie (struct channel *chan, double time_override,
   caml_output_val(chan, v_shapes, Val_long(0));
   caml_extern_allow_out_of_heap = 0;
 
-  caml_output_val(chan, Val_long(num_per_threads + 1), Val_long(0));
+  caml_output_val(chan, Val_long(1) /* Val_long(num_per_threads + 1) */,
+    Val_long(0));
 
   /* Marshal both the main and finaliser tries, for all threads that have
      been created, to an [out_channel].  This can be done by using the
@@ -355,15 +358,15 @@ void save_trie (struct channel *chan, double time_override,
   caml_output_val(chan, caml_spacetime_trie_root, Val_long(0));
   caml_output_val(chan,
     caml_spacetime_finaliser_trie_root_main_thread, Val_long(0));
-  while (thr != NULL) {
+  /* while (thr != NULL) {
     caml_output_val(chan, *(thr->trie_node_root), Val_long(0));
     caml_output_val(chan, *(thr->finaliser_trie_node_root),
       Val_long(0));
     thr = thr->next;
     num_marshalled++;
   }
+  Assert(num_marshalled == num_per_threads); */
   caml_extern_allow_out_of_heap = 0;
-  Assert(num_marshalled == num_per_threads);
 
   Unlock(chan);
 }

@@ -36,7 +36,7 @@
 #include "threads.h"
 
 #if defined(NATIVE_CODE) && defined(WITH_SPACETIME)
-#include "../../asmrun/spacetime.h"
+#include "caml/spacetime.h"
 #endif
 
 /* Initial size of bytecode stack when a thread is created (4 Ko) */
@@ -341,11 +341,15 @@ static caml_thread_t caml_thread_new_info(void)
   th->local_roots = NULL;
   th->exit_buf = NULL;
 #ifdef WITH_SPACETIME
+  /* CR-someday mshinwell: The commented-out changes here are for multicore,
+     where we think we should have one trie per domain. */
   th->internal_spacetime_trie_root = Val_unit;
-  th->spacetime_trie_node_ptr = &th->internal_spacetime_trie_root;
+  th->spacetime_trie_node_ptr =
+    &caml_spacetime_trie_root; /* &th->internal_spacetime_trie_root; */
   th->internal_spacetime_finaliser_trie_root = Val_unit;
   th->spacetime_finaliser_trie_root
-    = &th->internal_spacetime_finaliser_trie_root;
+    = caml_spacetime_finaliser_trie_root;
+    /* &th->internal_spacetime_finaliser_trie_root; */
   caml_spacetime_register_thread(
     th->spacetime_trie_node_ptr,
     th->spacetime_finaliser_trie_root);

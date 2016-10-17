@@ -78,7 +78,7 @@ let extract_sig_open env loc mty =
     Mty_signature sg -> sg
   | Mty_alias(_, path) ->
       raise(Error(loc, env, Cannot_scrape_alias path))
-  | _ -> raise(Error(loc, env, Structure_expected mty))
+  | mty -> raise(Error(loc, env, Structure_expected mty))
 
 (* Compute the environment after opening a module *)
 
@@ -1635,13 +1635,13 @@ let type_implementation sourcefile outputprefix modulename initial_env ast =
          case, the inferred signature contains only the last declaration. *)
       if not !Clflags.dont_write_files then begin
         let deprecated = Builtin_attributes.deprecated_of_str ast in
-        let sg =
+        let cmi =
           Env.save_signature ~deprecated
             simple_sg modulename (outputprefix ^ ".cmi")
         in
         Cmt_format.save_cmt  (outputprefix ^ ".cmt") modulename
           (Cmt_format.Implementation str)
-          (Some sourcefile) initial_env (Some sg);
+          (Some sourcefile) initial_env (Some cmi);
       end;
       (str, coercion)
     end
@@ -1722,13 +1722,13 @@ let package_units initial_env objfiles cmifile modulename =
         (Env.imports()) in
     (* Write packaged signature *)
     if not !Clflags.dont_write_files then begin
-      let sg =
+      let cmi =
         Env.save_signature_with_imports ~deprecated:None
           sg modulename
           (prefix ^ ".cmi") imports
       in
       Cmt_format.save_cmt (prefix ^ ".cmt")  modulename
-        (Cmt_format.Packed (sg, objfiles)) None initial_env (Some sg)
+        (Cmt_format.Packed (cmi.Cmi_format.cmi_sign, objfiles)) None initial_env (Some cmi)
     end;
     Tcoerce_none
   end

@@ -4,7 +4,7 @@
 #*                                                                        *
 #*            Xavier Leroy, projet Cristal, INRIA Rocquencourt            *
 #*                                                                        *
-#*   Copyright 1999 Institut National de Recherche en Informatique et     *
+#*   Copyright 2001 Institut National de Recherche en Informatique et     *
 #*     en Automatique.                                                    *
 #*                                                                        *
 #*   All rights reserved.  This file is distributed under the terms of    *
@@ -13,11 +13,26 @@
 #*                                                                        *
 #**************************************************************************
 
-LIBNAME=bigarray
-EXTRACFLAGS=-I../$(UNIXLIB) -DIN_OCAML_BIGARRAY -DCAML_NAME_SPACE
-EXTRACAMLFLAGS=-I ../$(UNIXLIB)
-COBJS=bigarray_stubs.$(O) mmap_$(UNIX_OR_WIN32).$(O)
-CAMLOBJS=bigarray.cmo
-HEADERS=bigarray.h
+LIBNAME=graphics
+COBJS=open.$(O) draw.$(O) events.$(O) dib.$(O)
+CAMLOBJS=graphics.cmo
+WIN32LIBS=$(call SYSLIB,kernel32) $(call SYSLIB,gdi32) $(call SYSLIB,user32)
+LINKOPTS=-cclib "\"$(WIN32LIBS)\""
+LDOPTS=-ldopt "$(WIN32LIBS)"
 
 include ../Makefile
+
+graphics.ml: ../graph/graphics.ml
+	cp ../graph/graphics.ml graphics.ml
+graphics.mli: ../graph/graphics.mli
+	cp ../graph/graphics.mli graphics.mli
+
+depend:
+
+graphics.cmo: graphics.cmi
+graphics.cmx: graphics.cmi
+draw.$(O): libgraph.h
+open.$(O): libgraph.h
+
+clean:: partialclean
+	rm -f graphics.ml graphics.mli

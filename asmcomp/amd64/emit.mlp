@@ -32,10 +32,6 @@ open X86_dsl
 
 module D = Asm_directives
 
-type fundecl_result = {
-  end_of_function_label : Linearize.label;
-}
-
 (* [Branch_relaxation] is not used in this file, but is required by
    emit.mlp files for certain other targets; the reference here ensures
    that when releases are being prepared the .depend files are correct
@@ -505,22 +501,6 @@ let emit_instr fallthrough i =
   emit_debug_info i.dbg;
   match i.desc with
   | Lend -> ()
-  | Lprologue ->
-    if fp then begin
-      I.push rbp;
-      cfi_adjust_cfa_offset 8;
-      I.mov rsp rbp;
-    end;
-    if !Clflags.gprofile then emit_profile();
-    if frame_required() then begin
-      let n = frame_size() - 8 - (if fp then 8 else 0) in
-      if n <> 0
-      then begin
-        I.sub (int n) rsp;
-        cfi_adjust_cfa_offset n;
-      end;
-    end;
-    def_label !tailrec_entry_point
   | Lop(Imove | Ispill | Ireload) ->
       let src = i.arg.(0) and dst = i.res.(0) in
       if src.loc <> dst.loc then
@@ -789,7 +769,6 @@ let emit_instr fallthrough i =
       I.sqrtsd (arg i 0) (res i 0)
   | Lop(Ispecific(Ifloatsqrtf addr)) ->
       I.sqrtsd (addressing addr REAL8 i 0) (res i 0)
-  | Lop (Iname_for_debugger _) -> ()
   | Lreloadretaddr ->
       ()
   | Lreturn ->
@@ -798,16 +777,6 @@ let emit_instr fallthrough i =
       end
   | Llabel lbl ->
       emit_Llabel fallthrough lbl
-  | Lcapture_stack_offset byte_offset_from_cfa ->
-      assert (!byte_offset_from_cfa = None);
-      assert (Array.length i.arg = 1);
-      let reg = i.arg.(0) in
-      begin match reg.loc with
-      | Unknown | Reg _ -> ()
-      | Stack loc ->
-        byte_offset_from_cfa :=
-          Some (frame_size () - (slot_offset loc (register_class reg)))
-      end
   | Lbranch lbl ->
       I.jmp (label lbl)
   | Lcondbranch(tst, lbl) ->
@@ -939,6 +908,21 @@ let fundecl fundecl =
   D.label_declaration' (emit_symbol fundecl.fun_name);
   emit_debug_info fundecl.fun_dbg;
   cfi_startproc ();
+  if fp then begin
+    I.push rbp;
+    cfi_adjust_cfa_offset 8;
+    I.mov rsp rbp;
+  end;
+  if !Clflags.gprofile then emit_profile();
+  if frame_required() then begin
+    let n = frame_size() - 8 - (if fp then 8 else 0) in
+    if n <> 0
+    then begin
+      I.sub (int n) rsp;
+      cfi_adjust_cfa_offset n;
+    end;
+  end;
+  def_label !tailrec_entry_point;
   emit_all true fundecl.fun_body;
   List.iter emit_call_gc !call_gc_sites;
   emit_call_bound_errors ();
@@ -1039,8 +1023,9 @@ let emit_spacetime_shapes () =
       begin match fundecl.fun_spacetime_shape with
       | None -> ()
       | Some shape ->
-        D.comment ("Shape for " ^ fundecl.fun_name ^ ":");
-        D.const64 (Label (emit_symbol fundecl.fun_name));
+        let funsym = emit_symbol fundecl.fun_name in
+        D.comment ("Shape for " ^ funsym ^ ":");
+        D.const64 (Label funsym);
         List.iter (fun (part_of_shape, label) ->
             let tag =
               match part_of_shape with
@@ -1063,7 +1048,7 @@ let emit_spacetime_shapes () =
   D.int64 0L;
   D.comment "End of Spacetime shapes."
 
-let end_assembly ~before_code_generation =
+let end_assembly () =
   if !float_constants <> [] then begin
     D.switch_to_section Eight_byte_literals;
     List.iter (fun (cst, lbl) -> emit_float_constant cst lbl) !float_constants
@@ -1132,5 +1117,4 @@ let end_assembly ~before_code_generation =
     else
       None
   in
-  before_code_generation (module Asm_directives : Asm_directives_intf.S);
   X86_proc.generate_code asm

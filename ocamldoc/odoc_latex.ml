@@ -1209,20 +1209,13 @@ class latex =
     method generate_for_top_module fmt m =
       let (first_t, rest_t) = self#first_and_rest_of_info m.m_info in
       let text =
-        if m.m_text_only then
-          [ Title (1, None, [Raw m.m_name]  @
-                   (match first_t with
-                     [] -> []
-                   | t -> (Raw " : ") :: t)
-                  ) ;
-          ]
-        else
-          [ Title (1, None,
-                   [ Raw (Odoc_messages.modul^" ") ; Code m.m_name ] @
-                   (match first_t with
-                     [] -> []
-                   | t -> (Raw " : ") :: t)) ;
-          ]
+        let title =
+          if m.m_text_only then [Raw m.m_name]
+          else [ Raw (Odoc_messages.modul^" ") ; Code m.m_name ] in
+        let subtitle = match first_t with
+          | [] -> []
+          | t -> (Raw " : ") :: t in
+        [ Title (1, None, title @ subtitle ) ]
       in
       self#latex_of_text fmt text;
       self#latex_for_module_label fmt m;
