@@ -57,12 +57,12 @@ let raise_kind fmt = function
   | Raise_withtrace -> Format.fprintf fmt "raise_withtrace"
   | Raise_notrace -> Format.fprintf fmt "raise_notrace"
 
-let operation = function
-  | Capply _ty -> "app"
+let operation d = function
+  | Capply _ty -> "app" ^ Debuginfo.to_string d
   | Cextcall(lbl, _ty, _alloc, _) ->
-      Printf.sprintf "extcall \"%s\"" lbl
+      Printf.sprintf "extcall \"%s\"%s" lbl (Debuginfo.to_string d)
   | Cload c -> Printf.sprintf "load %s" (chunk c)
-  | Calloc -> "alloc"
+  | Calloc -> "alloc" ^ Debuginfo.to_string d
   | Cstore (c, init) ->
     let init =
       match init with
@@ -95,8 +95,8 @@ let operation = function
   | Cfloatofint -> "floatofint"
   | Cintoffloat -> "intoffloat"
   | Ccmpf c -> Printf.sprintf "%sf" (comparison c)
-  | Craise k -> Format.asprintf "%a" raise_kind k
-  | Ccheckbound -> "checkbound"
+  | Craise k -> Format.asprintf "%a%s" raise_kind k (Debuginfo.to_string d)
+  | Ccheckbound -> "checkbound" ^ Debuginfo.to_string d
 
 let rec expr ppf = function
   | Cconst_int n -> fprintf ppf "%i" n
@@ -137,19 +137,19 @@ let rec expr ppf = function
         el in
       fprintf ppf "@[<1>[%a]@]" tuple el
   | Cop(op, el, dbg) ->
-      fprintf ppf "@[<2>(%s" (operation op);
+      fprintf ppf "@[<2>(%s" (operation dbg op);
       List.iter (fun e -> fprintf ppf "@ %a" expr e) el;
       begin match op with
       | Capply mty -> fprintf ppf "@ %a" machtype mty
       | Cextcall(_, mty, _, _) -> fprintf ppf "@ %a" machtype mty
       | _ -> ()
       end;
-      fprintf ppf ")<%s>@]" (Debuginfo.to_string dbg)
+      fprintf ppf ")@]"
   | Csequence(e1, e2) ->
       fprintf ppf "@[<2>(seq@ %a@ %a)@]" sequence e1 sequence e2
   | Cifthenelse(e1, e2, e3) ->
       fprintf ppf "@[<2>(if@ %a@ %a@ %a)@]" expr e1 expr e2 expr e3
-  | Cswitch(e1, index, cases, dbg) ->
+  | Cswitch(e1, index, cases, _dbg) ->
       let print_case i ppf =
         for j = 0 to Array.length index - 1 do
           if index.(j) = i then fprintf ppf "case %i:" j
@@ -158,8 +158,7 @@ let rec expr ppf = function
        for i = 0 to Array.length cases - 1 do
         fprintf ppf "@ @[<2>%t@ %a@]" (print_case i) sequence cases.(i)
        done in
-      fprintf ppf "@[<v 0>@[<2>(switch<%s>@ %a@ @]%t)@]"
-        (Debuginfo.to_string dbg) expr e1 print_cases
+      fprintf ppf "@[<v 0>@[<2>(switch@ %a@ @]%t)@]" expr e1 print_cases
   | Cloop e ->
       fprintf ppf "@[<2>(loop@ %a)@]" sequence e
   | Ccatch(i, ids, e1, e2) ->
