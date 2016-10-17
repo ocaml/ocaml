@@ -469,24 +469,6 @@ let emit_global_symbol s =
   D.global sym;
   D.define_symbol sym ~typ:NONE
 
-(* Emission of the profiling prelude *)
-
-let emit_profile () =
-  match Target_system.system with
-  | S_gnu | S_linux ->
-    (* mcount preserves rax, rcx, rdx, rsi, rdi, r8, r9 explicitly
-       and rbx, rbp, r12-r15 like all C functions.  This includes
-       all the registers used for argument passing, so we don't
-       need to preserve other regs.  We do need to initialize rbp
-       like mcount expects it, though. *)
-    I.push r10;
-    if not fp then I.mov rsp rbp;
-    (* No Spacetime instrumentation needed: [mcount] cannot call anything
-       OCaml-related. *)
-    emit_call "mcount";
-    I.pop r10
-  | _ -> ()
-
 (* Output the assembly code for an instruction *)
 
 (* Name of current function *)
@@ -879,6 +861,24 @@ let rec emit_all fallthrough i =
   | _ ->
       emit_instr fallthrough i;
       emit_all (Linearize.has_fallthrough i.desc) i.next
+
+(* Emission of the profiling prelude *)
+
+let emit_profile () =
+  match Target_system.system with
+  | S_gnu | S_linux ->
+    (* mcount preserves rax, rcx, rdx, rsi, rdi, r8, r9 explicitly
+       and rbx, rbp, r12-r15 like all C functions.  This includes
+       all the registers used for argument passing, so we don't
+       need to preserve other regs.  We do need to initialize rbp
+       like mcount expects it, though. *)
+    I.push r10;
+    if not fp then I.mov rsp rbp;
+    (* No Spacetime instrumentation needed: [mcount] cannot call anything
+       OCaml-related. *)
+    emit_call "mcount";
+    I.pop r10
+  | _ -> ()
 
 let all_functions = ref []
 
