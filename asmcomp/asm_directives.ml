@@ -341,18 +341,18 @@ let cfi_endproc () = emit Cfi_endproc
 let cfi_startproc () = emit Cfi_startproc
 let comment s = emit (Comment s)
 let direct_assignment var cst =
-  emit (Direct_assignment (var, lower_constant cst))
+  emit (Direct_assignment (string_of_symbol var, lower_constant cst))
 let file ~file_num ~file_name = emit (File { file_num; filename = file_name; })
-let global s = emit (Global s)
-let indirect_symbol s = emit (Indirect_symbol s)
+let global s = emit (Global (string_of_symbol s))
+let indirect_symbol s = emit (Indirect_symbol (string_of_symbol s))
 let loc ~file_num ~line ~col = emit (Loc { file_num; line; col; })
-let private_extern s = emit (Private_extern s)
+let private_extern s = emit (Private_extern (string_of_symbol s))
 let set x y = emit (Set (x, lower_constant y))
 let size name cst = emit (Size (name, (lower_constant cst)))
 let sleb128 i = emit (Sleb128 (Const i))
 let space ~bytes = emit (Space { bytes; })
 let string s = emit (Bytes s)
-let type_ name ~type_ = emit (Type (name, type_))
+let type_ name ~type_ = emit (Type (string_of_symbol name, type_))
 let uleb128 i = emit (Uleb128 (Const i))
 
 let const8 cst = emit (Const8 (lower_constant cst))
@@ -478,9 +478,11 @@ let define_symbol' symbol_name =
 let define_symbol sym =
   define_symbol' (Linkage_name.to_string (Symbol.label sym))
 
-let symbol sym =
-  let sym = Linkage_name.to_string (Symbol.label sym) in
+let symbol' sym =
   const64 (Symbol sym)
+
+let symbol sym =
+  symbol' (Linkage_name.to_string (Symbol.label sym))
 
 let symbol_plus_offset sym ~offset_in_bytes =
   let sym = Linkage_name.to_string (Symbol.label sym) in
@@ -612,8 +614,3 @@ let mark_stack_non_executable () =
   match TS.system with
   | S_linux -> section [".note.GNU-stack"] (Some "") [ "%progbits" ]
   | _ -> ()
-
-module For_x86_dsl_only = struct
-  let string_of_label = string_of_label
-  let string_of_symbol = string_of_symbol
-end

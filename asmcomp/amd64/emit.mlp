@@ -30,15 +30,28 @@ open Emitaux
 open X86_ast
 open X86_dsl
 
-module D = Asm_directives
+module DX = X86_dsl.D
+
+(* CR mshinwell for afrisch: Make sure all of the [typ] arguments to
+   [define_label] and [define_symbol] are correct. *)
+
+module D = struct
+  include Asm_directives
+  (* Make sure types for labels and symbols are always specified, for MASM. *)
+  let define_symbol ?typ _ : [ \`Use_x86_dsl_dot_d ] =
+    ignore typ; assert false
+  let define_label ?typ _ : [ \`Use_x86_dsl_dot_d ] =
+    ignore typ; assert false
+  let _ = ignore (define_symbol (), define_label ())
+end
+
+let label_operand lbl = X86_ast.Sym (D.string_of_label lbl)
 
 (* [Branch_relaxation] is not used in this file, but is required by
    emit.mlp files for certain other targets; the reference here ensures
    that when releases are being prepared the .depend files are correct
    for all targets. *)
 open! Branch_relaxation
-
-let _label s = X86_dsl.D.label ~typ:QWORD s
 
 (* Override proc.ml *)
 
@@ -120,7 +133,7 @@ let get_imp_symbol s =
 
 let emit_imp_table () =
   let f s imps =
-    _label (emit_symbol imps);
+    DX.define_symbol ~typ:QWORD imps;
     D.const64 (Symbol s)
   in
   D.switch_to_section Data;
@@ -131,7 +144,7 @@ let emit_imp_table () =
 
 let mem__imp s =
   let imp_s = get_imp_symbol s in
-  mem64_rip QWORD (emit_symbol imp_s)
+  mem64_rip QWORD (D.string_of_symbol imp_s)
 
 let rel_plt s =
   if Target_system.windows && !Clflags.dlcode then mem__imp s
@@ -141,7 +154,7 @@ let rel_plt s =
       | S_macosx | S_mingw64 | S_cygwin | S_win64 -> false
       | _ -> !Clflags.dlcode
     in
-    sym (if use_plt then emit_symbol s ^ "@PLT" else emit_symbol s)
+    sym (if use_plt then D.string_of_symbol s ^ "@PLT" else D.string_of_symbol s)
 
 let emit_call s = I.call (rel_plt s)
 
@@ -151,22 +164,16 @@ let load_symbol_addr s arg =
   if !Clflags.dlcode then
     if Target_system.windows then begin
       (* I.mov (mem__imp s) arg (\* mov __caml_imp_foo(%rip), ... *\) *)
-      I.mov (sym (emit_symbol s)) arg (* movabsq $foo, ... *)
-    end else I.mov (mem64_rip QWORD (emit_symbol s ^ "@GOTPCREL")) arg
+      I.mov (sym (D.string_of_symbol s)) arg (* movabsq $foo, ... *)
+    end else I.mov (mem64_rip QWORD (D.string_of_symbol s ^ "@GOTPCREL")) arg
   else if !Clflags.pic_code then
-    I.lea (mem64_rip NONE (emit_symbol s)) arg
+    I.lea (mem64_rip NONE (D.string_of_symbol s)) arg
   else
-    I.mov (sym (emit_symbol s)) arg
-
-(* Output a label *)
-
-let label label_name = sym (D.string_of_label label_name)
-
-let emit_label label_name = D.string_of_label label_name
+    I.mov (sym (D.string_of_symbol s)) arg
 
 let emit_Llabel fallthrough lbl =
   if not fallthrough && !fastcode_flag then D.align ~bytes:4;
-  D.label_declaration lbl
+  DX.define_label lbl ~typ:NONE
 
 (* Output a pseudo-register *)
 
@@ -216,7 +223,7 @@ let addressing addr typ i n =
   match addr with
   | Ibased(s, ofs) ->
       add_used_symbol s;
-      mem64_rip typ (emit_symbol s) ~ofs
+      mem64_rip typ (D.string_of_symbol s) ~ofs
   | Iindexed d ->
       mem64 typ d (arg64 i n)
   | Iindexed2 d ->
@@ -258,7 +265,7 @@ let record_frame_label ?label live raise_ dbg =
 
 let record_frame ?label live raise_ dbg =
   let lbl = record_frame_label ?label live raise_ dbg in
-  D.label_declaration lbl
+  DX.define_label lbl ~typ:NONE
 
 (* Spacetime instrumentation *)
 
@@ -286,7 +293,7 @@ type gc_call =
 let call_gc_sites = ref ([] : gc_call list)
 
 let emit_call_gc gc =
-  D.label_declaration gc.gc_lbl;
+  DX.define_label gc.gc_lbl ~typ:NONE;
   begin match gc.gc_spacetime with
   | None -> assert (not Config.spacetime)
   | Some (node_ptr, index) ->
@@ -294,8 +301,8 @@ let emit_call_gc gc =
     spacetime_before_uninstrumented_call ~node_ptr ~index
   end;
   emit_call "caml_call_gc";
-  D.label_declaration gc.gc_frame;
-  I.jmp (label gc.gc_return_lbl)
+  DX.define_label gc.gc_frame ~typ:NONE;
+  I.jmp (label_operand gc.gc_return_lbl)
 
 (* Record calls to caml_ml_array_bound_error.
    In -g mode, or when using Spacetime profiling, we maintain one call to
@@ -326,19 +333,19 @@ let bound_error_label ?label dbg ~spacetime =
   end
 
 let emit_call_bound_error bd =
-  D.label_declaration bd.bd_lbl;
+  DX.define_label bd.bd_lbl ~typ:NONE;
   begin match bd.bd_spacetime with
   | None -> ()
   | Some (node_ptr, index) ->
     spacetime_before_uninstrumented_call ~node_ptr ~index
   end;
   emit_call "caml_ml_array_bound_error";
-  D.label_declaration bd.bd_frame
+  DX.define_label bd.bd_frame ~typ:NONE
 
 let emit_call_bound_errors () =
   List.iter emit_call_bound_error !bound_error_sites;
   if !bound_error_call > 0 then begin
-    D.label_declaration !bound_error_call;
+    DX.define_label !bound_error_call ~typ:NONE;
     emit_call "caml_ml_array_bound_error"
   end
 
@@ -400,9 +407,9 @@ let emit_float_test cmp neg i lbl =
   | (Ceq, false) | (Cne, true) ->
       let next = new_label() in
       I.ucomisd (arg i 1) (arg i 0);
-      I.jp (label next);          (* skip if unordered *)
+      I.jp (label_operand next);  (* skip if unordered *)
       I.je lbl;                   (* branch taken if x=y *)
-      D.label_declaration next
+      DX.define_label next ~typ:NONE
   | (Cne, false) | (Ceq, true) ->
       I.ucomisd (arg i 1) (arg i 0);
       I.jp lbl;                   (* branch taken if unordered *)
@@ -456,15 +463,15 @@ let add_float_constant cst =
     lbl
 
 let emit_float_constant f lbl =
-  D.label_declaration lbl;
+  DX.define_label lbl ~typ:NONE;
   D.const64 (Const f)
 
-let emit_global_label s =
-  let lbl = Compilenv.make_symbol (Some s) in
-  add_def_symbol lbl;
-  let lbl = emit_symbol lbl in
-  D.global lbl;
-  _label lbl
+let emit_global_symbol s =
+  let sym = Compilenv.make_symbol (Some s) in
+  add_def_symbol sym;
+  let sym = D.string_of_symbol sym in
+  D.global sym;
+  DX.define_symbol sym ~typ:NONE
 
 (* Emission of the profiling prelude *)
 
@@ -518,7 +525,7 @@ let emit_instr fallthrough i =
           I.xorpd (res i 0) (res i 0)
       | _ ->
           let lbl = add_float_constant f in
-          I.movsd (mem64_rip NONE (emit_label lbl)) (res i 0)
+          I.movsd (mem64_rip NONE (D.string_of_label lbl)) (res i 0)
       end
   | Lop(Iconst_symbol s) ->
       add_used_symbol s;
@@ -540,7 +547,7 @@ let emit_instr fallthrough i =
   | Lop(Itailcall_imm { func; label_after; }) ->
       begin
         if func = !function_name then
-          I.jmp (label !tailrec_entry_point)
+          I.jmp (label_operand !tailrec_entry_point)
         else begin
           output_epilogue begin fun () ->
             add_used_symbol func;
@@ -625,7 +632,7 @@ let emit_instr fallthrough i =
   | Lop(Ialloc { words = n; label_after_call_gc; spacetime_index; }) ->
       if !fastcode_flag then begin
         let lbl_redo = new_label() in
-        D.label_declaration lbl_redo;
+        DX.define_label lbl_redo ~typ:NONE;
         I.sub (int n) r15;
         let spacetime_node_hole_ptr_is_in_rax =
           Config.spacetime && (i.arg.(0).loc = Reg 0)
@@ -644,7 +651,7 @@ let emit_instr fallthrough i =
             I.pop rax  (* this does not affect the flags *)
           end
         end else
-          I.cmp (mem64_rip QWORD (emit_symbol "caml_young_limit")) r15;
+          I.cmp (mem64_rip QWORD (D.string_of_symbol "caml_young_limit")) r15;
         let lbl_call_gc = new_label() in
         let dbg =
           if not Config.spacetime then Debuginfo.none
@@ -653,7 +660,7 @@ let emit_instr fallthrough i =
         let lbl_frame =
           record_frame_label ?label:label_after_call_gc i.live false dbg
         in
-        I.jb (label lbl_call_gc);
+        I.jb (label_operand lbl_call_gc);
         I.lea (mem64 NONE 8 R15) (res i 0);
         let gc_spacetime =
           if not Config.spacetime then None
@@ -681,7 +688,7 @@ let emit_instr fallthrough i =
           record_frame_label ?label:label_after_call_gc i.live false
             Debuginfo.none
         in
-        D.label_declaration label;
+        DX.define_label label ~typ:NONE;
         I.lea (mem64 NONE 8 R15) (res i 0)
       end
   | Lop(Iintop(Icomp cmp)) ->
@@ -699,7 +706,7 @@ let emit_instr fallthrough i =
       in
       let lbl = bound_error_label ?label:label_after_error i.dbg ~spacetime in
       I.cmp (arg i 1) (arg i 0);
-      I.jbe (label lbl)
+      I.jbe (label_operand lbl)
   | Lop(Iintop_imm(Icheckbound { label_after_error; spacetime_index; }, n)) ->
       let spacetime =
         if not Config.spacetime then None
@@ -707,7 +714,7 @@ let emit_instr fallthrough i =
       in
       let lbl = bound_error_label ?label:label_after_error i.dbg ~spacetime in
       I.cmp (int n) (arg i 0);
-      I.jbe (label lbl)
+      I.jbe (label_operand lbl)
   | Lop(Iintop(Idiv | Imod)) ->
       I.cqo ();
       I.idiv (arg i 1)
@@ -729,9 +736,9 @@ let emit_instr fallthrough i =
       (* We have i.arg.(0) = i.res.(0) *)
       instr_for_intop op (int n) (res i 0)
   | Lop(Inegf) ->
-      I.xorpd (mem64_rip OWORD (emit_symbol "caml_negf_mask")) (res i 0)
+      I.xorpd (mem64_rip OWORD (D.string_of_symbol "caml_negf_mask")) (res i 0)
   | Lop(Iabsf) ->
-      I.andpd (mem64_rip OWORD (emit_symbol "caml_absf_mask")) (res i 0)
+      I.andpd (mem64_rip OWORD (D.string_of_symbol "caml_absf_mask")) (res i 0)
   | Lop(Iaddf | Isubf | Imulf | Idivf as floatop) ->
       instr_for_floatop floatop (arg i 1) (res i 0)
   | Lop(Ifloatofint) ->
@@ -773,9 +780,9 @@ let emit_instr fallthrough i =
   | Llabel lbl ->
       emit_Llabel fallthrough lbl
   | Lbranch lbl ->
-      I.jmp (label lbl)
+      I.jmp (label_operand lbl)
   | Lcondbranch(tst, lbl) ->
-      let lbl = label lbl in
+      let lbl = label_operand lbl in
       begin match tst with
       | Itruetest ->
           output_test_zero i.arg.(0);
@@ -806,18 +813,19 @@ let emit_instr fallthrough i =
       I.cmp (int 1) (arg i 0);
       begin match lbl0 with
       | None -> ()
-      | Some lbl -> I.jb (label lbl)
+      | Some lbl -> I.jb (label_operand lbl)
       end;
       begin match lbl1 with
       | None -> ()
-      | Some lbl -> I.je (label lbl)
+      | Some lbl -> I.je (label_operand lbl)
       end;
       begin match lbl2 with
       | None -> ()
-      | Some lbl -> I.jg (label lbl)
+      | Some lbl -> I.jg (label_operand lbl)
       end
   | Lswitch jumptbl ->
-      let lbl = emit_label (new_label()) in
+      let lbl = new_label () in
+      let lbl' = D.string_of_label lbl in
       (* rax and rdx are clobbered by the Lswitch,
          meaning that no variable that is live across the Lswitch
          is assigned to rax or rdx.  However, the argument to Lswitch
@@ -828,7 +836,7 @@ let emit_instr fallthrough i =
         then (phys_reg 4 (*rdx*), phys_reg 0 (*rax*))
         else (phys_reg 0 (*rax*), phys_reg 4 (*rdx*)) in
 
-      I.lea (mem64_rip NONE lbl) (reg tmp1);
+      I.lea (mem64_rip NONE lbl') (reg tmp1);
       I.movsxd (mem64 DWORD 0 (arg64 i 0) ~scale:4 ~base:(reg64 tmp1))
                (reg tmp2);
       I.add (reg tmp2) (reg tmp1);
@@ -836,13 +844,13 @@ let emit_instr fallthrough i =
 
       D.switch_to_section Jump_tables;
       D.align ~bytes:4;
-      _label lbl;
+      DX.define_label lbl ~typ:NONE;
       for i = 0 to Array.length jumptbl - 1 do
-        D.const32 (Sub (Label (emit_label jumptbl.(i)), Label lbl))
+        D.const32 (Sub (Label jumptbl.(i), Label lbl))
       done;
       D.switch_to_section Text
   | Lsetuptrap lbl ->
-      I.call (label lbl)
+      I.call (label_operand lbl)
   | Lpushtrap ->
       cfi_adjust_cfa_offset 8;
       I.push r14;
@@ -896,11 +904,11 @@ let fundecl fundecl =
   | S_macosx
     when not !Clflags.output_c_object
       && is_generic_function fundecl.fun_name ->  (* PR#4690 *)
-    D.private_extern (emit_symbol fundecl.fun_name)
+    D.private_extern (D.string_of_symbol fundecl.fun_name)
   | _ ->
-    D.global (emit_symbol fundecl.fun_name)
+    D.global (D.string_of_symbol fundecl.fun_name)
   end;
-  D.symbol_declaration' fundecl.fun_name;
+  D.define_symbol' fundecl.fun_name;
   emit_debug_info fundecl.fun_dbg;
   cfi_startproc ();
   if fp then begin
@@ -917,12 +925,12 @@ let fundecl fundecl =
       cfi_adjust_cfa_offset n;
     end;
   end;
-  D.label_declaration !tailrec_entry_point;
+  DX.define_label !tailrec_entry_point ~typ:NONE;
   emit_all true fundecl.fun_body;
   List.iter emit_call_gc !call_gc_sites;
   emit_call_bound_errors ();
   let end_of_function_label = Cmm.new_label () in
-  _label (emit_label end_of_function_label);
+  DX.define_label end_of_function_label ~typ:NONE;
   if frame_required() then begin
     let n = frame_size() - 8 - (if fp then 8 else 0) in
     if n <> 0
@@ -933,24 +941,23 @@ let fundecl fundecl =
   cfi_endproc ();
   begin match Target_system.system with
   | S_gnu | S_linux ->
-      D.type_ (emit_symbol fundecl.fun_name) ~type_:"@function";
-      D.size (emit_symbol fundecl.fun_name)
-        (Sub (This, Label (emit_symbol fundecl.fun_name)))
+      D.type_ fundecl.fun_name ~type_:"@function";
+      D.size fundecl.fun_name (Sub (This, Symbol fundecl.fun_name))
   | _ -> ()
   end
 
 (* Emission of data *)
 
 let emit_item = function
-  | Cglobal_symbol s -> D.global (emit_symbol s)
-  | Cdefine_symbol s -> add_def_symbol s; _label (emit_symbol s)
+  | Cglobal_symbol s -> D.global s
+  | Cdefine_symbol s -> add_def_symbol s; D.define_symbol' s
   | Cint8 n -> D.int8 (Numbers.Int8.of_int_exn n)
   | Cint16 n -> D.int16 (Numbers.Int16.of_int_exn n)
   | Cint32 n -> D.int32 (Nativeint.to_int32 n)
   | Cint n -> D.int64 (Int64.of_nativeint n)
   | Csingle f -> D.int32 (Int32.bits_of_float f)
   | Cdouble f -> D.int64 (Int64.bits_of_float f)
-  | Csymbol_address s -> add_used_symbol s; D.const64 (Label (emit_symbol s))
+  | Csymbol_address s -> add_used_symbol s; D.symbol' s
   | Cstring s -> D.string s
   | Cskip bytes -> if bytes > 0 then D.space ~bytes
   | Calign bytes -> D.align ~bytes
@@ -990,20 +997,20 @@ let begin_assembly() =
     (* from amd64.S; could emit these constants on demand *)
     D.switch_to_section Sixteen_byte_literals;
     D.align ~bytes:16;
-    _label (emit_symbol "caml_negf_mask");
+    D.define_symbol' "caml_negf_mask";
     D.int64 0x8000000000000000L;
     D.int64 0L;
     D.align ~bytes:16;
-    _label (emit_symbol "caml_absf_mask");
+    D.define_symbol' "caml_absf_mask";
     D.int64 0x7FFFFFFFFFFFFFFFL;
     D.int64 0xFFFFFFFFFFFFFFFFL;
   end;
 
   D.switch_to_section Data;
-  emit_global_label "data_begin";
+  emit_global_symbol "data_begin";
 
   D.switch_to_section Text;
-  emit_global_label "code_begin";
+  emit_global_symbol "code_begin";
   begin match Target_system.system with
   | S_macosx -> I.nop () (* PR#4690 *)
   | _ -> ()
@@ -1012,15 +1019,15 @@ let begin_assembly() =
 let emit_spacetime_shapes () =
   D.switch_to_section Data;
   D.align ~bytes:8;
-  emit_global_label "spacetime_shapes";
+  emit_global_symbol "spacetime_shapes";
   List.iter (fun fundecl ->
       (* CR-someday mshinwell: some of this should be platform independent *)
       begin match fundecl.fun_spacetime_shape with
       | None -> ()
       | Some shape ->
-        let funsym = emit_symbol fundecl.fun_name in
+        let funsym = D.string_of_symbol fundecl.fun_name in
         D.comment ("Shape for " ^ funsym ^ ":");
-        D.const64 (Label funsym);
+        D.symbol' fundecl.fun_name;
         List.iter (fun (part_of_shape, label) ->
             let tag =
               match part_of_shape with
@@ -1029,10 +1036,9 @@ let emit_spacetime_shapes () =
               | Allocation_point -> 3
             in
             D.int64 (Int64.of_int tag);
-            D.const64 (Label (emit_label label));
+            D.label label;
             begin match part_of_shape with
-            | Direct_call_point { callee; } ->
-              D.const64 (Label (emit_symbol callee))
+            | Direct_call_point { callee; } -> D.symbol' callee;
             | Indirect_call_point -> ()
             | Allocation_point -> ()
             end)
@@ -1057,19 +1063,19 @@ let end_assembly () =
   | _ -> ()
   end;
 
-  emit_global_label "code_end";
+  emit_global_symbol "code_end";
 
   emit_imp_table();
 
   D.switch_to_section Data;
-  emit_global_label "data_end";
+  emit_global_symbol "data_end";
   D.int32 0l;
 
-  emit_global_label "frametable";
+  emit_global_symbol "frametable";
 
   emit_frames
-    { efa_code_label = (fun l -> D.const64 (Label (emit_label l)));
-      efa_data_label = (fun l -> D.const64 (Label (emit_label l)));
+    { efa_code_label = (fun l -> D.label l);
+      efa_data_label = (fun l -> D.label l);
       efa_16 = (fun n -> D.int16 (Numbers.Int16.of_int_exn n));
       efa_32 = (fun n -> D.int32 n);
       efa_word = (fun n -> D.int64 (Int64.of_int n));
@@ -1078,7 +1084,7 @@ let end_assembly () =
         (fun lbl ofs ->
           D.between_this_and_label_offset_32bit ~upper:lbl
             ~offset_upper:(Targetint.of_int32 ofs));
-      efa_def_label = (fun l -> _label (emit_label l));
+      efa_def_label = (fun l -> DX.define_label l ~typ:NONE);
       efa_string = (fun s -> D.string (s ^ "\000"))
     };
 
@@ -1095,7 +1101,7 @@ let end_assembly () =
     StringSet.iter
       (fun s ->
          if not (StringSet.mem s !symbols_defined) then
-           X86_dsl.D.extrn (emit_symbol s) NEAR)
+           X86_dsl.D.extrn (D.string_of_symbol s) NEAR)
       !symbols_used;
     symbols_used := StringSet.empty;
     symbols_defined := StringSet.empty;

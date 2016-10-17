@@ -156,6 +156,9 @@ module type S = sig
   (** Emit a machine-width reference to the given symbol. *)
   val symbol : Symbol.t -> unit
 
+  (** Like [symbol], but when not using the middle-end type. *)
+  val symbol' : string -> unit
+
   (** Define a symbol at the current output position. *)
   val define_symbol : Symbol.t -> unit
 

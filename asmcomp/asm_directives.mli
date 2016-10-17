@@ -72,8 +72,9 @@ val initialize : emit:(Directive.t -> unit) -> unit
 (** Reinitialize the emitter before compiling a different source file. *)
 val reset : unit -> unit
 
-(** For internal use only. *)
-module For_x86_dsl_only : sig
-  val string_of_symbol : string -> string
-  val string_of_label : Linearize.label -> string
-end
+(** The name mangling used for symbols.  This may be useful e.g. when
+    emitting an instruction referencing a symbol. *)
+val string_of_symbol : string -> string
+
+(** Like [string_of_symbol] but for labels. *)
+val string_of_label : Linearize.label -> string
