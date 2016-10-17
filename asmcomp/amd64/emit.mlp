@@ -148,7 +148,8 @@ let rel_plt s =
       | S_macosx | S_mingw64 | S_cygwin | S_win64 -> false
       | _ -> !Clflags.dlcode
     in
-    sym (if use_plt then D.string_of_symbol s ^ "@PLT" else D.string_of_symbol s)
+    sym
+      (if use_plt then D.string_of_symbol s ^ "@PLT" else D.string_of_symbol s)
 
 let emit_call s = I.call (rel_plt s)
 
@@ -898,9 +899,9 @@ let fundecl fundecl =
   | S_macosx
     when not !Clflags.output_c_object
       && is_generic_function fundecl.fun_name ->  (* PR#4690 *)
-    D.private_extern (D.string_of_symbol fundecl.fun_name)
+    D.private_extern fundecl.fun_name
   | _ ->
-    D.global (D.string_of_symbol fundecl.fun_name)
+    D.global fundecl.fun_name
   end;
   D.define_symbol' fundecl.fun_name;
   emit_debug_info fundecl.fun_dbg;
