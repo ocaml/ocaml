@@ -122,6 +122,10 @@ and operation =
   | Craise of raise_kind
   | Ccheckbound
 
+(** Not all cmm expressions currently have [Debuginfo.t] values attached to
+    them.  The ones that do are those that are likely to generate code that
+    can fairly robustly be mapped back to a source location.  In the future
+    it might be the case that more [Debuginfo.t] annotations are desirable. *)
 and expression =
     Cconst_int of int
   | Cconst_natint of nativeint
