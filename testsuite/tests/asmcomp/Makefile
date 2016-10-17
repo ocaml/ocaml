@@ -50,6 +50,7 @@ lexcmm.ml: lexcmm.mll
 
 MLCASES=optargs staticalloc bind_tuples is_static register_typing \
   register_typing_switch
+ARGS_optargs=-g
 ARGS_is_static=-I $(OTOPDIR)/byterun is_in_static_data.c
 MLCASES_FLAMBDA=is_static_flambda unrolling_flambda unrolling_flambda2
 ARGS_is_static_flambda=\
