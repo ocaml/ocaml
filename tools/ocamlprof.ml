@@ -490,7 +490,7 @@ let print_version_num () =
 let main () =
   try
     Warnings.parse_options false "a";
-    Arg.parse [
+    Arg.parse_expand [
        "-f", Arg.String (fun s -> dumpfile := s),
              "<file>     Use <file> as dump file (default ocamlprof.dump)";
        "-F", Arg.String (fun s -> special_id := s),
@@ -505,7 +505,13 @@ let main () =
                    "     Print version and exit";
        "-vnum", Arg.Unit print_version_num,
                 "        Print version number and exit";
-      ] process_anon_file usage;
+        "-args", Arg.Expand Arg.read_arg,
+                "<file> Read additional newline separated command line arguments \n\
+                \      from <file>";
+       "-args0", Arg.Expand Arg.read_arg0,
+               "<file> Read additional NUL separated command line arguments from \n\
+               \      <file>"
+    ] process_anon_file usage;
     exit 0
   with
   | Profiler msg ->

@@ -172,13 +172,17 @@ module Options = Main_args.Make_bytecomp_options (struct
   let _dlambda = set dump_lambda
   let _dinstr = set dump_instr
   let _dtimings = set print_timings
+
+  let _args = Arg.read_arg
+  let _args0 = Arg.read_arg0
+
   let anonymous = anonymous
 end)
 
 let main () =
   try
     readenv ppf Before_args;
-    Arg.parse Options.list anonymous usage;
+    Arg.parse_expand Options.list anonymous usage;
     if !output_name <> None && !compile_only &&
           List.length !process_thunks > 1 then
       fatal "Options -c -o are incompatible with compiling multiple files";

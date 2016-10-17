@@ -564,16 +564,6 @@ let extract_float = function
     Const_base(Const_float f) -> f
   | _ -> fatal_error "Translcore.extract_float"
 
-(* To find reasonable names for let-bound and lambda-bound idents *)
-
-let rec name_pattern default = function
-    [] -> Ident.create default
-  | {c_lhs=p; _} :: rem ->
-      match p.pat_desc with
-        Tpat_var (id, _) -> id
-      | Tpat_alias(_, id, _) -> id
-      | _ -> name_pattern default rem
-
 (* Push the default values under the functional abstractions *)
 (* Also push bindings of module patterns, since this sound *)
 
@@ -584,10 +574,12 @@ type binding =
 let rec push_defaults loc bindings cases partial =
   match cases with
     [{c_lhs=pat; c_guard=None;
-      c_rhs={exp_desc = Texp_function(l, pl,partial)} as exp}] ->
-      let pl = push_defaults exp.exp_loc bindings pl partial in
+      c_rhs={exp_desc = Texp_function { arg_label; param; cases; partial; } }
+        as exp}] ->
+      let cases = push_defaults exp.exp_loc bindings cases partial in
       [{c_lhs=pat; c_guard=None;
-        c_rhs={exp with exp_desc = Texp_function(l, pl, partial)}}]
+        c_rhs={exp with exp_desc = Texp_function { arg_label; param; cases;
+          partial; }}}]
   | [{c_lhs=pat; c_guard=None;
       c_rhs={exp_attributes=[{txt="#default"},_];
              exp_desc = Texp_let
@@ -615,7 +607,7 @@ let rec push_defaults loc bindings cases partial =
       in
       [{case with c_rhs=exp}]
   | {c_lhs=pat; c_rhs=exp; c_guard=_} :: _ when bindings <> [] ->
-      let param = name_pattern "param" cases in
+      let param = Typecore.name_pattern "param" cases in
       let name = Ident.name param in
       let exp =
         { exp with exp_loc = loc; exp_desc =
@@ -739,12 +731,13 @@ and transl_exp0 e =
       Lconst(Const_base cst)
   | Texp_let(rec_flag, pat_expr_list, body) ->
       transl_let rec_flag pat_expr_list (event_before body (transl_exp body))
-  | Texp_function (_, pat_expr_list, partial) ->
+  | Texp_function { arg_label = _; param; cases; partial; } ->
       let ((kind, params), body) =
         event_function e
           (function repr ->
-            let pl = push_defaults e.exp_loc [] pat_expr_list partial in
-            transl_function e.exp_loc !Clflags.native_code repr partial pl)
+            let pl = push_defaults e.exp_loc [] cases partial in
+            transl_function e.exp_loc !Clflags.native_code repr partial
+              param pl)
       in
       let attr = {
         default_function_attribute with
@@ -839,7 +832,7 @@ and transl_exp0 e =
   | Texp_match(arg, pat_expr_list, exn_pat_expr_list, partial) ->
     transl_match e arg pat_expr_list exn_pat_expr_list partial
   | Texp_try(body, pat_expr_list) ->
-      let id = name_pattern "exn" pat_expr_list in
+      let id = Typecore.name_pattern "exn" pat_expr_list in
       Ltrywith(transl_exp body, id,
                Matching.for_trywith (Lvar id) (transl_cases_try pat_expr_list))
   | Texp_tuple el ->
@@ -1036,7 +1029,7 @@ and transl_exp0 e =
       | Texp_constant
           ( Const_int _ | Const_char _ | Const_string _
           | Const_int32 _ | Const_int64 _ | Const_nativeint _ )
-      | Texp_function(_, _, _)
+      | Texp_function _
       | Texp_construct (_, {cstr_arity = 0}, _)
         -> transl_exp e
       | Texp_constant(Const_float _) ->
@@ -1190,14 +1183,14 @@ and transl_apply ?(should_be_tailcall=false) ?(inlined = Default_inline)
                                 sargs)
      : Lambda.lambda)
 
-and transl_function loc untuplify_fn repr partial cases =
+and transl_function loc untuplify_fn repr partial param cases =
   match cases with
     [{c_lhs=pat; c_guard=None;
-      c_rhs={exp_desc = Texp_function(_, pl,partial')} as exp}]
+      c_rhs={exp_desc = Texp_function { arg_label = _; param = param'; cases;
+        partial = partial'; }} as exp}]
     when Parmatch.fluid pat ->
-      let param = name_pattern "param" cases in
       let ((_, params), body) =
-        transl_function exp.exp_loc false repr partial' pl in
+        transl_function exp.exp_loc false repr partial' param' cases in
       ((Curried, param :: params),
        Matching.for_function loc None (Lvar param) [pat, body] partial)
   | {c_lhs={pat_desc = Tpat_tuple pl}} :: _ when untuplify_fn ->
@@ -1213,13 +1206,11 @@ and transl_function loc untuplify_fn repr partial cases =
          Matching.for_tupled_function loc params
            (transl_tupled_cases pats_expr_list) partial)
       with Matching.Cannot_flatten ->
-        let param = name_pattern "param" cases in
         ((Curried, [param]),
          Matching.for_function loc repr (Lvar param)
            (transl_cases cases) partial)
       end
   | _ ->
-      let param = name_pattern "param" cases in
       ((Curried, [param]),
        Matching.for_function loc repr (Lvar param)
          (transl_cases cases) partial)
@@ -1372,7 +1363,7 @@ and transl_record loc env fields repres opt_init_expr =
   end
 
 and transl_match e arg pat_expr_list exn_pat_expr_list partial =
-  let id = name_pattern "exn" exn_pat_expr_list
+  let id = Typecore.name_pattern "exn" exn_pat_expr_list
   and cases = transl_cases pat_expr_list
   and exn_cases = transl_cases_try exn_pat_expr_list in
   let static_catch body val_ids handler =
@@ -1387,14 +1378,14 @@ and transl_match e arg pat_expr_list exn_pat_expr_list partial =
   | {exp_desc = Texp_tuple argl}, [] ->
     Matching.for_multiple_match e.exp_loc (transl_list argl) cases partial
   | {exp_desc = Texp_tuple argl}, _ :: _ ->
-    let val_ids = List.map (fun _ -> name_pattern "val" []) argl in
+    let val_ids = List.map (fun _ -> Typecore.name_pattern "val" []) argl in
     let lvars = List.map (fun id -> Lvar id) val_ids in
     static_catch (transl_list argl) val_ids
       (Matching.for_multiple_match e.exp_loc lvars cases partial)
   | arg, [] ->
     Matching.for_function e.exp_loc None (transl_exp arg) cases partial
   | arg, _ :: _ ->
-    let val_id = name_pattern "val" pat_expr_list in
+    let val_id = Typecore.name_pattern "val" pat_expr_list in
     static_catch [transl_exp arg] [val_id]
       (Matching.for_function e.exp_loc None (Lvar val_id) cases partial)
 
