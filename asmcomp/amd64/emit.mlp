@@ -30,19 +30,13 @@ open Emitaux
 open X86_ast
 open X86_dsl
 
-module DX = X86_dsl.D
-
 (* CR mshinwell for afrisch: Make sure all of the [typ] arguments to
    [define_label] and [define_symbol] are correct. *)
 
 module D = struct
   include Asm_directives
-  (* Make sure types for labels and symbols are always specified, for MASM. *)
-  let define_symbol ?typ _ : [ \`Use_x86_dsl_dot_d ] =
-    ignore typ; assert false
-  let define_label ?typ _ : [ \`Use_x86_dsl_dot_d ] =
-    ignore typ; assert false
-  let _ = ignore (define_symbol (), define_label ())
+  let define_symbol = X86_dsl.D.define_symbol
+  let define_label = X86_dsl.D.define_label
 end
 
 let label_operand lbl = X86_ast.Sym (D.string_of_label lbl)
@@ -133,7 +127,7 @@ let get_imp_symbol s =
 
 let emit_imp_table () =
   let f s imps =
-    DX.define_symbol ~typ:QWORD imps;
+    D.define_symbol ~typ:QWORD imps;
     D.const64 (Symbol s)
   in
   D.switch_to_section Data;
@@ -173,7 +167,7 @@ let load_symbol_addr s arg =
 
 let emit_Llabel fallthrough lbl =
   if not fallthrough && !fastcode_flag then D.align ~bytes:4;
-  DX.define_label lbl ~typ:NONE
+  D.define_label lbl ~typ:NONE
 
 (* Output a pseudo-register *)
 
@@ -265,7 +259,7 @@ let record_frame_label ?label live raise_ dbg =
 
 let record_frame ?label live raise_ dbg =
   let lbl = record_frame_label ?label live raise_ dbg in
-  DX.define_label lbl ~typ:NONE
+  D.define_label lbl ~typ:NONE
 
 (* Spacetime instrumentation *)
 
@@ -293,7 +287,7 @@ type gc_call =
 let call_gc_sites = ref ([] : gc_call list)
 
 let emit_call_gc gc =
-  DX.define_label gc.gc_lbl ~typ:NONE;
+  D.define_label gc.gc_lbl ~typ:NONE;
   begin match gc.gc_spacetime with
   | None -> assert (not Config.spacetime)
   | Some (node_ptr, index) ->
@@ -301,7 +295,7 @@ let emit_call_gc gc =
     spacetime_before_uninstrumented_call ~node_ptr ~index
   end;
   emit_call "caml_call_gc";
-  DX.define_label gc.gc_frame ~typ:NONE;
+  D.define_label gc.gc_frame ~typ:NONE;
   I.jmp (label_operand gc.gc_return_lbl)
 
 (* Record calls to caml_ml_array_bound_error.
@@ -333,19 +327,19 @@ let bound_error_label ?label dbg ~spacetime =
   end
 
 let emit_call_bound_error bd =
-  DX.define_label bd.bd_lbl ~typ:NONE;
+  D.define_label bd.bd_lbl ~typ:NONE;
   begin match bd.bd_spacetime with
   | None -> ()
   | Some (node_ptr, index) ->
     spacetime_before_uninstrumented_call ~node_ptr ~index
   end;
   emit_call "caml_ml_array_bound_error";
-  DX.define_label bd.bd_frame ~typ:NONE
+  D.define_label bd.bd_frame ~typ:NONE
 
 let emit_call_bound_errors () =
   List.iter emit_call_bound_error !bound_error_sites;
   if !bound_error_call > 0 then begin
-    DX.define_label !bound_error_call ~typ:NONE;
+    D.define_label !bound_error_call ~typ:NONE;
     emit_call "caml_ml_array_bound_error"
   end
 
@@ -409,7 +403,7 @@ let emit_float_test cmp neg i lbl =
       I.ucomisd (arg i 1) (arg i 0);
       I.jp (label_operand next);  (* skip if unordered *)
       I.je lbl;                   (* branch taken if x=y *)
-      DX.define_label next ~typ:NONE
+      D.define_label next ~typ:NONE
   | (Cne, false) | (Ceq, true) ->
       I.ucomisd (arg i 1) (arg i 0);
       I.jp lbl;                   (* branch taken if unordered *)
@@ -463,7 +457,7 @@ let add_float_constant cst =
     lbl
 
 let emit_float_constant f lbl =
-  DX.define_label lbl ~typ:NONE;
+  D.define_label lbl ~typ:NONE;
   D.const64 (Const f)
 
 let emit_global_symbol s =
@@ -471,7 +465,7 @@ let emit_global_symbol s =
   add_def_symbol sym;
   let sym = D.string_of_symbol sym in
   D.global sym;
-  DX.define_symbol sym ~typ:NONE
+  D.define_symbol sym ~typ:NONE
 
 (* Emission of the profiling prelude *)
 
@@ -632,7 +626,7 @@ let emit_instr fallthrough i =
   | Lop(Ialloc { words = n; label_after_call_gc; spacetime_index; }) ->
       if !fastcode_flag then begin
         let lbl_redo = new_label() in
-        DX.define_label lbl_redo ~typ:NONE;
+        D.define_label lbl_redo ~typ:NONE;
         I.sub (int n) r15;
         let spacetime_node_hole_ptr_is_in_rax =
           Config.spacetime && (i.arg.(0).loc = Reg 0)
@@ -688,7 +682,7 @@ let emit_instr fallthrough i =
           record_frame_label ?label:label_after_call_gc i.live false
             Debuginfo.none
         in
-        DX.define_label label ~typ:NONE;
+        D.define_label label ~typ:NONE;
         I.lea (mem64 NONE 8 R15) (res i 0)
       end
   | Lop(Iintop(Icomp cmp)) ->
@@ -844,7 +838,7 @@ let emit_instr fallthrough i =
 
       D.switch_to_section Jump_tables;
       D.align ~bytes:4;
-      DX.define_label lbl ~typ:NONE;
+      D.define_label lbl ~typ:NONE;
       for i = 0 to Array.length jumptbl - 1 do
         D.const32 (Sub (Label jumptbl.(i), Label lbl))
       done;
@@ -925,12 +919,12 @@ let fundecl fundecl =
       cfi_adjust_cfa_offset n;
     end;
   end;
-  DX.define_label !tailrec_entry_point ~typ:NONE;
+  D.define_label !tailrec_entry_point ~typ:NONE;
   emit_all true fundecl.fun_body;
   List.iter emit_call_gc !call_gc_sites;
   emit_call_bound_errors ();
   let end_of_function_label = Cmm.new_label () in
-  DX.define_label end_of_function_label ~typ:NONE;
+  D.define_label end_of_function_label ~typ:NONE;
   if frame_required() then begin
     let n = frame_size() - 8 - (if fp then 8 else 0) in
     if n <> 0
@@ -1084,7 +1078,7 @@ let end_assembly () =
         (fun lbl ofs ->
           D.between_this_and_label_offset_32bit ~upper:lbl
             ~offset_upper:(Targetint.of_int32 ofs));
-      efa_def_label = (fun l -> DX.define_label l ~typ:NONE);
+      efa_def_label = (fun l -> D.define_label l ~typ:NONE);
       efa_string = (fun s -> D.string (s ^ "\000"))
     };
 
