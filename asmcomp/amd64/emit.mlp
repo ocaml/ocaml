@@ -40,6 +40,7 @@ module D = struct
 end
 
 let label_operand lbl = X86_ast.Sym (D.string_of_label lbl)
+let symbol_operand sym = X86_ast.Sym (D.string_of_symbol sym)
 
 (* [Branch_relaxation] is not used in this file, but is required by
    emit.mlp files for certain other targets; the reference here ensures
@@ -159,12 +160,12 @@ let load_symbol_addr s arg =
   if !Clflags.dlcode then
     if Target_system.windows then begin
       (* I.mov (mem__imp s) arg (\* mov __caml_imp_foo(%rip), ... *\) *)
-      I.mov (sym (D.string_of_symbol s)) arg (* movabsq $foo, ... *)
+      I.mov (symbol_operand s) arg (* movabsq $foo, ... *)
     end else I.mov (mem64_rip QWORD (D.string_of_symbol s ^ "@GOTPCREL")) arg
   else if !Clflags.pic_code then
     I.lea (mem64_rip NONE (D.string_of_symbol s)) arg
   else
-    I.mov (sym (D.string_of_symbol s)) arg
+    I.mov (symbol_operand s) arg
 
 let emit_Llabel fallthrough lbl =
   if not fallthrough && !fastcode_flag then D.align ~bytes:4;
