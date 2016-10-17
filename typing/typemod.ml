@@ -1613,7 +1613,11 @@ let type_implementation_more sourcefile outputprefix modulename initial_env ast 
   end else begin
     let sourceintf =
       Misc.chop_extension_if_any sourcefile ^ !Config.interface_suffix in
+#if undefined BS_NO_COMPILER_PATCH then 
+    if not !Clflags.assume_no_mli && Sys.file_exists sourceintf then begin
+#else
     if Sys.file_exists sourceintf then begin
+#end
       let intf_file =
         try
           find_in_path_uncap !Config.load_path (modulename ^ ".cmi")
@@ -1710,7 +1714,11 @@ let package_units initial_env objfiles cmifile modulename =
   (* See if explicit interface is provided *)
   let prefix = chop_extension_if_any cmifile in
   let mlifile = prefix ^ !Config.interface_suffix in
+#if undefined BS_NO_COMPILER_PATCH then
+  if not !Clflags.assume_no_mli && Sys.file_exists mlifile then begin 
+#else
   if Sys.file_exists mlifile then begin
+#end
     if not (Sys.file_exists cmifile) then begin
       raise(Error(Location.in_file mlifile, Env.empty,
                   Interface_not_compiled mlifile))

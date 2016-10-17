@@ -436,7 +436,12 @@ let _ =
   one_line := true;
 #end
   Clflags.classic := false;
+#if undefined BS_NO_COMPILER_PATCH then 
+  (if not !Clflags.no_implicit_current_dir then
+    add_to_list first_include_dirs Filename.current_dir_name);
+#else
   add_to_list first_include_dirs Filename.current_dir_name;
+#end
   Compenv.readenv ppf Before_args;
   Arg.parse [
      "-absname", Arg.Set Location.absname,

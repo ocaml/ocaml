@@ -27,8 +27,16 @@ open Typedtree
    then the directories specified with the -I option (in command-line order),
    then the standard library directory. *)
 let init_path () =
+#if undefined BS_NO_COMPILER_PATCH then 
+  load_path :=
+    (if !Clflags.no_implicit_current_dir then 
+      List.rev (Config.standard_library :: !Clflags.include_dirs)
+    else 
+      "" ::   List.rev (Config.standard_library :: !Clflags.include_dirs)) ; 
+#else
   load_path :=
     "" :: List.rev (Config.standard_library :: !Clflags.include_dirs);
+#end
   Env.reset_cache ()
 
 (** Return the initial environment in which compilation proceeds. *)

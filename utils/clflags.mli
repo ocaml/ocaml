@@ -97,3 +97,8 @@ val keep_docs : bool ref
 val keep_locs : bool ref
 val unsafe_string : bool ref
 val opaque : bool ref
+
+#if undefined  BS_NO_COMPILER_PATCH then 
+val no_implicit_current_dir : bool ref
+val assume_no_mli : bool ref 
+#end
