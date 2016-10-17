@@ -71,7 +71,10 @@ module D : sig
       (For generic directives, see [Asm_directives].) *)
 
   (** [typ] is only used for MASM. *)
-  val label: ?typ:data_type -> string -> unit
+  val define_label : ?typ:data_type -> Linearize.label -> unit
+
+  (** [typ] is only used for MASM. *)
+  val define_symbol : ?typ:data_type -> string -> unit
 
   (** The following are MASM-specific. *)
   val extrn: string -> data_type -> unit

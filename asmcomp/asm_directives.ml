@@ -27,8 +27,8 @@ module TS = Target_system
 type constant =
   | Const of int64
   | This
-  | Label of string
-  | Numeric_label of Linearize.label
+  | Label of Linearize.label
+  | Symbol of string
   | Add of constant * constant
   | Sub of constant * constant
 
@@ -93,7 +93,38 @@ let string_of_label label_name =
   | S_mingw64
   | S_unknown -> ".L" ^ string_of_int label_name
 
+let string_of_symbol s =
+  let prefix =
+    match TS.system with
+    | S_macosx -> "_"
+    | _ -> ""
+  in
+  let spec = ref false in
+  for i = 0 to String.length s - 1 do
+    match String.unsafe_get s i with
+    | 'A'..'Z' | 'a'..'z' | '0'..'9' | '_' -> ()
+    | _ -> spec := true;
+  done;
+  if not !spec then if prefix = "" then s else prefix ^ s
+  else
+    let b = Buffer.create (String.length s + 10) in
+    Buffer.add_string b prefix;
+    String.iter
+      (function
+        | ('A'..'Z' | 'a'..'z' | '0'..'9' | '_') as c -> Buffer.add_char b c
+        | c -> Printf.bprintf b "$%02x" (Char.code c)
+      )
+      s;
+    Buffer.contents b
+
 module Directive = struct
+  type constant =
+    | Const of int64
+    | This
+    | Named_thing of string
+    | Add of constant * constant
+    | Sub of constant * constant
+
   type t =
     | Align of { bytes : int; }
     | Bytes of string
@@ -158,14 +189,13 @@ module Directive = struct
     done
 
   let rec cst buf = function
-    | Label _ | Numeric_label _ | Const _ | This as c -> scst buf c
+    | Named_thing _ | Const _ | This as c -> scst buf c
     | Add (c1, c2) -> bprintf buf "%a + %a" scst c1 scst c2
     | Sub (c1, c2) -> bprintf buf "%a - %a" scst c1 scst c2
 
   and scst buf = function
     | This -> Buffer.add_string buf "."
-    | Label l -> Buffer.add_string buf l
-    | Numeric_label l -> Buffer.add_string buf (string_of_label l)
+    | Named_thing name -> Buffer.add_string buf name
     | Const n when n <= 0x7FFF_FFFFL && n >= -0x8000_0000L ->
       Buffer.add_string buf (Int64.to_string n)
     | Const n -> bprintf buf "0x%Lx" n
@@ -241,14 +271,13 @@ module Directive = struct
       end
 
   let rec cst buf = function
-    | Label _ | Numeric_label _ | Const _ | This as c -> scst buf c
+    | Named_thing _ | Const _ | This as c -> scst buf c
     | Add (c1, c2) -> bprintf buf "%a + %a" scst c1 scst c2
     | Sub (c1, c2) -> bprintf buf "%a - %a" scst c1 scst c2
 
   and scst buf = function
     | This -> Buffer.add_string buf "THIS BYTE"
-    | Label l -> Buffer.add_string buf l
-    | Numeric_label l -> Buffer.add_string buf (string_of_label l)
+    | Named_thing name -> Buffer.add_string buf name
     | Const n when n <= 0x7FFF_FFFFL && n >= -0x8000_0000L ->
         Buffer.add_string buf (Int64.to_string n)
     | Const n -> bprintf buf "0%LxH" n
@@ -289,6 +318,15 @@ module Directive = struct
     else print_gas b t
 end
 
+let rec lower_constant (cst : constant) : Directive.constant =
+  match cst with
+  | Const i -> Const i
+  | This -> This
+  | Label lbl -> Named_thing (string_of_label lbl)
+  | Symbol sym -> Named_thing (string_of_symbol sym)
+  | Add (cst1, cst2) -> Add (lower_constant cst1, lower_constant cst2)
+  | Sub (cst1, cst2) -> Sub (lower_constant cst1, lower_constant cst2)
+
 let emit_ref = ref None
 
 let emit (d : Directive.t) =
@@ -302,32 +340,30 @@ let cfi_adjust_cfa_offset ~bytes = emit (Cfi_adjust_cfa_offset bytes)
 let cfi_endproc () = emit Cfi_endproc
 let cfi_startproc () = emit Cfi_startproc
 let comment s = emit (Comment s)
-let direct_assignment var const = emit (Direct_assignment (var, const))
+let direct_assignment var cst =
+  emit (Direct_assignment (var, lower_constant cst))
 let file ~file_num ~file_name = emit (File { file_num; filename = file_name; })
 let global s = emit (Global s)
 let indirect_symbol s = emit (Indirect_symbol s)
 let loc ~file_num ~line ~col = emit (Loc { file_num; line; col; })
 let private_extern s = emit (Private_extern s)
-let set x y = emit (Set (x, y))
-let size name cst = emit (Size (name, cst))
-let sleb128 cst = emit (Sleb128 (Const cst))
+let set x y = emit (Set (x, lower_constant y))
+let size name cst = emit (Size (name, (lower_constant cst)))
+let sleb128 i = emit (Sleb128 (Const i))
 let space ~bytes = emit (Space { bytes; })
 let string s = emit (Bytes s)
 let type_ name ~type_ = emit (Type (name, type_))
-let uleb128 cst = emit (Uleb128 (Const cst))
+let uleb128 i = emit (Uleb128 (Const i))
 
-let const8 n = emit (Const8 n)
-let const16 cst = emit (Const16 cst)
-let const32 cst = emit (Const32 cst)
-let const64 cst = emit (Const64 cst)
+let const8 cst = emit (Const8 (lower_constant cst))
+let const16 cst = emit (Const16 (lower_constant cst))
+let const32 cst = emit (Const32 (lower_constant cst))
+let const64 cst = emit (Const64 (lower_constant cst))
 
-let label label_name =
-  const64 (Label (string_of_label label_name))
+let label label_name = const64 (Label label_name)
 
-let label_declaration' s = emit (NewLabel s)
-
-let label_declaration ~label_name =
-  label_declaration' (string_of_label label_name)
+let define_label label_name =
+  emit (NewLabel (string_of_label label_name))
 
 let sections_seen = ref []
 
@@ -404,7 +440,7 @@ let switch_to_section (section : section) =
   in
   emit (Section (section_name, middle_part, attrs));
   if first_occurrence then begin
-    label_declaration ~label_name:(label_for_section section)
+    define_label (label_for_section section)
   end
 
 let cached_strings = ref ([] : (string * Linearize.label) list)
@@ -436,40 +472,20 @@ let initialize ~emit =
       switch_to_section (Dwarf Debug_line)
     end
 
-let string_of_symbol prefix s =
-  let spec = ref false in
-  for i = 0 to String.length s - 1 do
-    match String.unsafe_get s i with
-    | 'A'..'Z' | 'a'..'z' | '0'..'9' | '_' -> ()
-    | _ -> spec := true;
-  done;
-  if not !spec then if prefix = "" then s else prefix ^ s
-  else
-    let b = Buffer.create (String.length s + 10) in
-    Buffer.add_string b prefix;
-    String.iter
-      (function
-        | ('A'..'Z' | 'a'..'z' | '0'..'9' | '_') as c -> Buffer.add_char b c
-        | c -> Printf.bprintf b "$%02x" (Char.code c)
-      )
-      s;
-    Buffer.contents b
+let define_symbol' symbol_name =
+  emit (NewLabel (string_of_symbol symbol_name))
 
-let symbol_prefix =
-  match TS.system with
-  | S_macosx -> "_"
-  | _ -> ""
-
-let escape_symbol s = string_of_symbol symbol_prefix s
+let define_symbol sym =
+  define_symbol' (Linkage_name.to_string (Symbol.label sym))
 
 let symbol sym =
   let sym = Linkage_name.to_string (Symbol.label sym) in
-  const64 (Label (escape_symbol sym))
+  const64 (Symbol sym)
 
 let symbol_plus_offset sym ~offset_in_bytes =
   let sym = Linkage_name.to_string (Symbol.label sym) in
   let offset_in_bytes = Targetint.to_int64 offset_in_bytes in
-  const64 (Add (Label (escape_symbol sym), Const offset_in_bytes))
+  const64 (Add (Symbol sym, Const offset_in_bytes))
 
 let new_temp_var () =
   let id = !temp_var_counter in
@@ -489,39 +505,34 @@ let force_relocatable expr =
   | S_macosx ->
     let temp = new_temp_var () in
     direct_assignment temp expr;
-    Label temp
+    Symbol temp  (* not really a symbol, but this is OK (same below) *)
   | _ ->
     expr
 
 let between_symbols ~upper ~lower =
   let upper = Linkage_name.to_string (Symbol.label upper) in
   let lower = Linkage_name.to_string (Symbol.label lower) in
-  let expr = Sub (Label (escape_symbol upper), Label (escape_symbol lower)) in
+  let expr = Sub (Symbol upper, Symbol lower) in
   const64 (force_relocatable expr)
 
 let between_labels_32bit ~upper ~lower =
-  let expr = Sub (Numeric_label upper, Numeric_label lower) in
+  let expr = Sub (Label upper, Label lower) in
   const32 (force_relocatable expr)
-
-let define_symbol sym =
-  let name = Linkage_name.to_string (Symbol.label sym) in
-  const64 (Label (escape_symbol name));
-  global name
 
 let between_symbol_and_label_offset ~upper ~lower ~offset_upper =
   let lower = Linkage_name.to_string (Symbol.label lower) in
   let offset_upper = Targetint.to_int64 offset_upper in
   let expr =
     Sub (
-      Add (Numeric_label upper, Const offset_upper),
-      Label (escape_symbol lower))
+      Add (Label upper, Const offset_upper),
+      Symbol lower)
   in
   const64 (force_relocatable expr)
 
 let between_this_and_label_offset_32bit ~upper ~offset_upper =
   let offset_upper = Targetint.to_int64 offset_upper in
   let expr =
-    Sub (Add (Numeric_label upper, Const offset_upper), This)
+    Sub (Add (Label upper, Const offset_upper), This)
   in
   const32 (force_relocatable expr)
 
@@ -533,7 +544,7 @@ let constant_with_width expr ~(width : width) =
   | Sixty_four -> const64 expr
 
 let offset_into_section_label ~section ~label:upper ~width =
-  let lower = string_of_label (label_for_section section) in
+  let lower = label_for_section section in
   let expr : constant =
     (* The meaning of a label reference depends on the assembler:
        - On Mac OS X, it appears to be the distance from the label back to
@@ -543,24 +554,24 @@ let offset_into_section_label ~section ~label:upper ~width =
     match TS.system with
     | S_macosx ->
       let temp = new_temp_var () in
-      direct_assignment temp (Sub (Numeric_label upper, Label lower));
-      Label temp
+      direct_assignment temp (Sub (Label upper, Label lower));
+      Symbol temp
     | _ ->
-      Numeric_label upper
+      Label upper
   in
   constant_with_width expr ~width
 
 let offset_into_section_symbol ~section ~symbol ~width =
-  let lower = string_of_label (label_for_section section) in
-  let upper = escape_symbol (Linkage_name.to_string (Symbol.label symbol)) in
+  let lower = label_for_section section in
+  let upper = Linkage_name.to_string (Symbol.label symbol) in
   let expr : constant =
     (* The same thing as for [offset_into_section_label] applies here. *)
     match TS.system with
     | S_macosx ->
       let temp = new_temp_var () in
-      direct_assignment temp (Sub (Label upper, Label lower));
-      Label temp
-    | _ -> Label upper
+      direct_assignment temp (Sub (Symbol upper, Label lower));
+      Symbol temp
+    | _ -> Symbol upper
   in
   constant_with_width expr ~width
 
@@ -591,7 +602,7 @@ let cache_string str =
 
 let emit_cached_strings () =
   List.iter (fun (str, label_name) ->
-      label_declaration ~label_name;
+      define_label label_name;
       string str;
       int8 Int8.zero)
     !cached_strings;
@@ -601,3 +612,8 @@ let mark_stack_non_executable () =
   match TS.system with
   | S_linux -> section [".note.GNU-stack"] (Some "") [ "%progbits" ]
   | _ -> ()
+
+module For_x86_dsl_only = struct
+  let string_of_label = string_of_label
+  let string_of_symbol = string_of_symbol
+end

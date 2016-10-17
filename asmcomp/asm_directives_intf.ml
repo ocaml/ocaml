@@ -24,8 +24,8 @@ module type S = sig
   type constant =
     | Const of int64
     | This
-    | Label of string
-    | Numeric_label of Linearize.label
+    | Label of Linearize.label
+    | Symbol of string
     | Add of constant * constant
     | Sub of constant * constant
 
@@ -159,11 +159,8 @@ module type S = sig
   (** Define a symbol at the current output position. *)
   val define_symbol : Symbol.t -> unit
 
-  (* CR-soon mshinwell: Try to tighten things up so there aren't any functions
-     that just use [string], and hide the escaping in this module. *)
-  (** Escape a symbol so it is suitable for those functions in this file
-      taking [string] arguments for symbols. *)
-  val escape_symbol : string -> string
+  (** Like [define_symbol], but when not using the middle-end type. *)
+  val define_symbol' : string -> unit
 
   (** Emit a machine-width reference to the address formed by adding the
       given byte offset to the address of the given symbol. *)
@@ -172,17 +169,11 @@ module type S = sig
     -> offset_in_bytes:Targetint.t
     -> unit
 
-  (** Encode a numeric label as a string. *)
-  val string_of_label : Linearize.label -> string
-
   (** Emit a machine-width reference to the given label. *)
   val label : Linearize.label -> unit
 
   (** Define a label at the current position in the current section. *)
-  val label_declaration : label_name:Linearize.label -> unit
-
-  (** Like [label_declaration], but using a textual name for the label. *)
-  val label_declaration' : string -> unit
+  val define_label : Linearize.label -> unit
 
   (** Emit an integer whose width is that of an address on the target
       machine. *)

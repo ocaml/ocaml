@@ -20,6 +20,14 @@
 include Asm_directives_intf.S
 
 module Directive : sig
+  type constant =
+    | Const of int64
+    | This
+    | Named_thing of string
+    (** [Named_thing] covers symbols, labels and variables. *)
+    | Add of constant * constant
+    | Sub of constant * constant
+
   (** Internal representation of directives.  Only needed if writing a custom
       assembler or printer instead of using [print], below. *)
   type t = private
@@ -63,3 +71,9 @@ val initialize : emit:(Directive.t -> unit) -> unit
 
 (** Reinitialize the emitter before compiling a different source file. *)
 val reset : unit -> unit
+
+(** For internal use only. *)
+module For_x86_dsl_only : sig
+  val string_of_symbol : string -> string
+  val string_of_label : Linearize.label -> string
+end

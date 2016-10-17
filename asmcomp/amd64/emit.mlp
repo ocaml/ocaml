@@ -97,10 +97,6 @@ let slot_offset loc cl =
       else !stack_offset + (num_stack_slots.(0) + n) * 8
   | Outgoing n -> n
 
-(* Symbols *)
-
-let emit_symbol s = D.escape_symbol s
-
 (* Record symbols used and defined - at the end generate extern for those
    used but not defined *)
 
@@ -125,7 +121,7 @@ let get_imp_symbol s =
 let emit_imp_table () =
   let f s imps =
     _label (emit_symbol imps);
-    D.const64 (Label (emit_symbol s))
+    D.const64 (Symbol s)
   in
   D.switch_to_section Data;
   D.comment "relocation table start";
@@ -165,13 +161,12 @@ let load_symbol_addr s arg =
 (* Output a label *)
 
 let label label_name = sym (D.string_of_label label_name)
-let def_label label_name = D.label_declaration ~label_name
 
 let emit_label label_name = D.string_of_label label_name
 
 let emit_Llabel fallthrough lbl =
   if not fallthrough && !fastcode_flag then D.align ~bytes:4;
-  def_label lbl
+  D.label_declaration lbl
 
 (* Output a pseudo-register *)
 
@@ -263,7 +258,7 @@ let record_frame_label ?label live raise_ dbg =
 
 let record_frame ?label live raise_ dbg =
   let lbl = record_frame_label ?label live raise_ dbg in
-  def_label lbl
+  D.label_declaration lbl
 
 (* Spacetime instrumentation *)
 
@@ -291,7 +286,7 @@ type gc_call =
 let call_gc_sites = ref ([] : gc_call list)
 
 let emit_call_gc gc =
-  def_label gc.gc_lbl;
+  D.label_declaration gc.gc_lbl;
   begin match gc.gc_spacetime with
   | None -> assert (not Config.spacetime)
   | Some (node_ptr, index) ->
@@ -299,7 +294,7 @@ let emit_call_gc gc =
     spacetime_before_uninstrumented_call ~node_ptr ~index
   end;
   emit_call "caml_call_gc";
-  def_label gc.gc_frame;
+  D.label_declaration gc.gc_frame;
   I.jmp (label gc.gc_return_lbl)
 
 (* Record calls to caml_ml_array_bound_error.
@@ -331,19 +326,19 @@ let bound_error_label ?label dbg ~spacetime =
   end
 
 let emit_call_bound_error bd =
-  def_label bd.bd_lbl;
+  D.label_declaration bd.bd_lbl;
   begin match bd.bd_spacetime with
   | None -> ()
   | Some (node_ptr, index) ->
     spacetime_before_uninstrumented_call ~node_ptr ~index
   end;
   emit_call "caml_ml_array_bound_error";
-  def_label bd.bd_frame
+  D.label_declaration bd.bd_frame
 
 let emit_call_bound_errors () =
   List.iter emit_call_bound_error !bound_error_sites;
   if !bound_error_call > 0 then begin
-    def_label !bound_error_call;
+    D.label_declaration !bound_error_call;
     emit_call "caml_ml_array_bound_error"
   end
 
@@ -407,7 +402,7 @@ let emit_float_test cmp neg i lbl =
       I.ucomisd (arg i 1) (arg i 0);
       I.jp (label next);          (* skip if unordered *)
       I.je lbl;                   (* branch taken if x=y *)
-      def_label next
+      D.label_declaration next
   | (Cne, false) | (Ceq, true) ->
       I.ucomisd (arg i 1) (arg i 0);
       I.jp lbl;                   (* branch taken if unordered *)
@@ -460,8 +455,8 @@ let add_float_constant cst =
     float_constants := (cst, lbl) :: !float_constants;
     lbl
 
-let emit_float_constant f label_name =
-  D.label_declaration ~label_name;
+let emit_float_constant f lbl =
+  D.label_declaration lbl;
   D.const64 (Const f)
 
 let emit_global_label s =
@@ -630,7 +625,7 @@ let emit_instr fallthrough i =
   | Lop(Ialloc { words = n; label_after_call_gc; spacetime_index; }) ->
       if !fastcode_flag then begin
         let lbl_redo = new_label() in
-        def_label lbl_redo;
+        D.label_declaration lbl_redo;
         I.sub (int n) r15;
         let spacetime_node_hole_ptr_is_in_rax =
           Config.spacetime && (i.arg.(0).loc = Reg 0)
@@ -686,7 +681,7 @@ let emit_instr fallthrough i =
           record_frame_label ?label:label_after_call_gc i.live false
             Debuginfo.none
         in
-        def_label label;
+        D.label_declaration label;
         I.lea (mem64 NONE 8 R15) (res i 0)
       end
   | Lop(Iintop(Icomp cmp)) ->
@@ -905,7 +900,7 @@ let fundecl fundecl =
   | _ ->
     D.global (emit_symbol fundecl.fun_name)
   end;
-  D.label_declaration' (emit_symbol fundecl.fun_name);
+  D.symbol_declaration' fundecl.fun_name;
   emit_debug_info fundecl.fun_dbg;
   cfi_startproc ();
   if fp then begin
@@ -922,7 +917,7 @@ let fundecl fundecl =
       cfi_adjust_cfa_offset n;
     end;
   end;
-  def_label !tailrec_entry_point;
+  D.label_declaration !tailrec_entry_point;
   emit_all true fundecl.fun_body;
   List.iter emit_call_gc !call_gc_sites;
   emit_call_bound_errors ();
