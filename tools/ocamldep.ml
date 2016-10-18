@@ -429,6 +429,10 @@ let print_version_num () =
   exit 0;
 ;;
 
+#if defined BS_OCAMLDEP then
+let output_prefix = ref None
+#end
+
 let _ =
 #if defined BS_OCAMLDEP then
   native_only := true;
@@ -444,6 +448,12 @@ let _ =
 #end
   Compenv.readenv ppf Before_args;
   Arg.parse [
+#if defined BS_OCAMLDEP then
+    "-bs-oprefix", Arg.String (fun x -> output_prefix := Some x),
+    " Set output prefix for -bs-MD (internal use)";
+    "-bs-MD", Arg.String (fun x -> Ast_extract.handle_depfile !output_prefix x),
+    " Generate dep file for ninja format";
+#end
      "-absname", Arg.Set Location.absname,
         " Show absolute filenames in error messages";
      "-all", Arg.Set all_dependencies,
