@@ -141,10 +141,6 @@ LIBCMXFILES= $(LIBCMOFILES:.cmo=.cmx)
 LIBCMIFILES= $(LIBCMOFILES:.cmo=.cmi)
 
 # Les cmo et cmx de la distrib OCAML
-OCAMLCMOFILES= \
-	$(OCAMLSRCDIR)/tools/depend.cmo
-
-OCAMLCMXFILES=$(OCAMLCMOFILES:.cmo=.cmx)
 
 
 STDLIB_MLIS=../stdlib/*.mli \
@@ -175,17 +171,17 @@ debug:
 $(OCAMLDOC): $(EXECMOFILES)
 	$(OCAMLC) -o $@ -linkall unix.cma str.cma dynlink.cma \
 	          $(OCAMLSRCDIR)/compilerlibs/ocamlcommon.cma \
-	          $(LINKFLAGS) $(OCAMLCMOFILES) $(EXECMOFILES)
+	          $(LINKFLAGS)  $(EXECMOFILES)
 $(OCAMLDOC_OPT): $(EXECMXFILES)
 	$(OCAMLOPT) -o $@ -linkall unix.cmxa str.cmxa dynlink.cmxa \
 	            $(OCAMLSRCDIR)/compilerlibs/ocamlcommon.cmxa \
-	            $(LINKFLAGS) $(OCAMLCMXFILES) $(EXECMXFILES)
+	            $(LINKFLAGS) $(EXECMXFILES)
 
 $(OCAMLDOC_LIBCMA): $(LIBCMOFILES)
-	$(OCAMLC) -a -o $@ $(LINKFLAGS) $(OCAMLSRCDIR)/tools/depend.cmo \
+	$(OCAMLC) -a -o $@ $(LINKFLAGS)  \
 	          $(LIBCMOFILES)
 $(OCAMLDOC_LIBCMXA): $(LIBCMXFILES)
-	$(OCAMLOPT) -a -o $@ $(LINKFLAGS) $(OCAMLSRCDIR)/tools/depend.cmx \
+	$(OCAMLOPT) -a -o $@ $(LINKFLAGS)  \
 	            $(LIBCMXFILES)
 
 manpages: stdlib_man/Pervasives.3o

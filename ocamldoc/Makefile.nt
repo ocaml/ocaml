@@ -161,7 +161,7 @@ $(OCAMLDOC_LIBCMA): $(LIBCMOFILES)
 	$(OCAMLC) -a -o $@ $(LINKFLAGS) $(OCAMLSRCDIR)/tools/depend.cmo \
 	          $(LIBCMOFILES)
 $(OCAMLDOC_LIBCMXA): $(LIBCMXFILES)
-	$(OCAMLOPT) -a -o $@ $(LINKFLAGS) $(OCAMLSRCDIR)/tools/depend.cmx \
+	$(OCAMLOPT) -a -o $@ $(LINKFLAGS)  \
 	            $(LIBCMXFILES)
 
 # Parsers and lexers dependencies :
