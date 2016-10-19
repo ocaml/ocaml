@@ -21,6 +21,26 @@ let usage = "Usage: ocaml <options> <object-files> [script-file [arguments]]\n\
 
 let preload_objects = ref []
 
+(* Position plus length of last expand argument *)
+let expand_offset: (int * int) option ref = ref None
+
+let current = ref (!Arg.current)
+
+let argv = ref Sys.argv
+
+let is_expanded pos =
+  match !expand_offset with
+  | None -> false
+  | Some (epos,len) ->
+      epos < pos && pos <= epos + len + 1
+
+let expand_position pos len =
+  let pos,len = match !expand_offset with
+    | Some (opos,olen) when opos <= pos || pos <= opos + olen ->
+        opos,(olen+len) (* Already expand option just increase len *)
+    | _ -> pos,len in
+  expand_offset := Some (pos,len)
+
 let prepare ppf =
   Toploop.set_paths ();
   try
@@ -43,10 +63,12 @@ let file_argument name =
   let ppf = Format.err_formatter in
   if Filename.check_suffix name ".cmo" || Filename.check_suffix name ".cma"
   then preload_objects := name :: !preload_objects
-  else
-    begin
-      let newargs = Array.sub Sys.argv !Arg.current
-                              (Array.length Sys.argv - !Arg.current)
+  else if is_expanded !current then begin
+    Format.fprintf ppf "Script file is not allowed in expanded option.\n%!";
+    exit 2
+  end else begin
+      let newargs = Array.sub !argv !current
+                              (Array.length !argv - !current)
       in
       Compenv.readenv ppf Before_link;
       if prepare ppf && Toploop.run_script ppf name newargs
@@ -63,6 +85,12 @@ let print_version_num () =
   Printf.printf "%s\n" Sys.ocaml_version;
   exit 0;
 ;;
+
+let wrap_expand f s =
+  let start = !current in
+  let arr = f s in
+  expand_position start (Array.length arr);
+  arr
 
 module Options = Main_args.Make_bytetop_options (struct
   let set r () = r := true
@@ -117,6 +145,9 @@ module Options = Main_args.Make_bytetop_options (struct
   let _dtimings = set print_timings
   let _dinstr = set dump_instr
 
+  let _args = wrap_expand Arg.read_arg
+  let _args0 = wrap_expand Arg.read_arg0
+
   let anonymous s = file_argument s
 end);;
 
@@ -124,7 +155,8 @@ end);;
 let main () =
   let ppf = Format.err_formatter in
   Compenv.readenv ppf Before_args;
-  Arg.parse Options.list file_argument usage;
+  let list = ref Options.list in
+  Arg.parse_and_expand_argv_dynamic current argv list file_argument usage;
   Compenv.readenv ppf Before_link;
   if not (prepare ppf) then exit 2;
   Toploop.loop Format.std_formatter

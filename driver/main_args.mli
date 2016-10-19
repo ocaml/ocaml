@@ -101,8 +101,6 @@ module type Compiler_options = sig
   val _nopervasives : unit -> unit
   val _dtimings : unit -> unit
 
-  val _args: string -> string array
-  val _args0: string -> string array
 end
 ;;
 
@@ -115,6 +113,9 @@ module type Toplevel_options = sig
   val _nopromptcont : unit -> unit
   val _plugin : string -> unit
   val _stdin : unit -> unit
+  val _args: string -> string array
+  val _args0: string -> string array
+
 end
 ;;
 
@@ -138,6 +139,8 @@ end;;
 module type Bytetop_options = sig
   include Toplevel_options
   val _dinstr : unit -> unit
+  val _args : string -> string array
+  val _args0 : string -> string array
 end;;
 
 module type Optcommon_options = sig

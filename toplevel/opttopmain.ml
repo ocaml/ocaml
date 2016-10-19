@@ -20,6 +20,26 @@ let usage =
 
 let preload_objects = ref []
 
+(* Position plus length of last expand argument *)
+let expand_offset: (int * int) option ref = ref None
+
+let current = ref (!Arg.current)
+
+let argv = ref Sys.argv
+
+let is_expanded pos =
+  match !expand_offset with
+  | None -> false
+  | Some (epos,len) ->
+      epos < pos && pos <= epos + len + 1
+
+let expand_position pos len =
+  let pos,len = match !expand_offset with
+    | Some (opos,olen) when opos <= pos || pos <= opos + olen ->
+        opos,(olen+len) (* Already expand option just increase len *)
+    | _ -> pos,len in
+  expand_offset := Some (pos,len)
+
 let prepare ppf =
   Opttoploop.set_paths ();
   try
@@ -40,9 +60,11 @@ let file_argument name =
     || Filename.check_suffix name ".cmx"
     || Filename.check_suffix name ".cmxa"
   then preload_objects := name :: !preload_objects
-  else
-    begin
-      let newargs = Array.sub Sys.argv !Arg.current
+  else if is_expanded !current then begin
+    Format.fprintf ppf "Script file is not allowed in expanded option.\n%!";
+    exit 2
+  end else begin
+    let newargs = Array.sub Sys.argv !Arg.current
                               (Array.length Sys.argv - !Arg.current)
       in
       if prepare ppf && Opttoploop.run_script ppf name newargs
@@ -59,6 +81,12 @@ let print_version_num () =
   Printf.printf "%s\n" Sys.ocaml_version;
   exit 0;
 ;;
+
+let wrap_expand f s =
+  let start = !current in
+  let arr = f s in
+  expand_position start (Array.length arr);
+  arr
 
 module Options = Main_args.Make_opttop_options (struct
   let set r () = r := true
@@ -203,6 +231,9 @@ module Options = Main_args.Make_opttop_options (struct
   let _unsafe_string = set unsafe_string
   let _open s = open_modules := s :: !open_modules
   let _plugin p = Compplugin.load p
+
+  let _args = wrap_expand Arg.read_arg
+  let _args0 = wrap_expand Arg.read_arg0
 
   let anonymous = file_argument
 end);;
