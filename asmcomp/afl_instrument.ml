@@ -54,8 +54,10 @@ and instrument = function
   | Ctuple es -> Ctuple (List.map instrument es)
   | Cop (op, es, dbg) -> Cop (op, List.map instrument es, dbg)
   | Csequence (e1, e2) -> Csequence (instrument e1, instrument e2)
-  | Ccatch (nfail, ids, e1, e2) ->
-     Ccatch (nfail, ids, instrument e1, instrument e2)
+  | Ccatch (isrec, cases, body) ->
+     Ccatch (isrec,
+             List.map (fun (nfail, ids, e) -> nfail, ids, instrument e) cases,
+             body)
   | Cexit (ex, args) -> Cexit (ex, List.map instrument args)
 
   (* these are base cases and have no logging *)
@@ -64,17 +66,14 @@ and instrument = function
   | Cblockheader _ | Cvar _ as c -> c
 
 let instrument_function c =
-  if !Clflags.afl_instrument then with_afl_logging c else c
+  with_afl_logging c
 
 let instrument_initialiser c =
-  if !Clflags.afl_instrument then
-    (* Each instrumented module calls caml_setup_afl at
-       initialisation, which is a no-op on the second and subsequent
-       calls *)
-    with_afl_logging (Csequence 
-                  (Cop (Cextcall ("caml_setup_afl", typ_int, 
-                                  false, None),
-                        [Cconst_int 0], Debuginfo.none),
-                   c))
-  else
-    c
+  (* Each instrumented module calls caml_setup_afl at
+     initialisation, which is a no-op on the second and subsequent
+     calls *)
+  with_afl_logging (Csequence
+                (Cop (Cextcall ("caml_setup_afl", typ_int,
+                                false, None),
+                      [Cconst_int 0], Debuginfo.none),
+                 c))

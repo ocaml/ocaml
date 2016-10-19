@@ -2665,10 +2665,14 @@ let transl_function f =
     else
       f.body
   in
+  let cmm_body =
+    if !Clflags.afl_instrument then
+      Afl_instrument.instrument_function (transl empty_env body)
+    else
+      transl empty_env body in
   Cfunction {fun_name = f.label;
              fun_args = List.map (fun id -> (id, typ_val)) f.params;
-             fun_body = Afl_instrument.instrument_function
-                          (transl empty_env body);
+             fun_body = cmm_body;
              fun_fast = !Clflags.optimize_for_speed;
              fun_dbg  = f.dbg; }
 
@@ -2907,7 +2911,10 @@ let emit_preallocated_blocks preallocated_blocks cont =
 
 let compunit (ulam, preallocated_blocks, constants) =
   let init_code =
-    Afl_instrument.instrument_initialiser (transl empty_env ulam) in
+    if !Clflags.afl_instrument then
+      Afl_instrument.instrument_initialiser (transl empty_env ulam)
+    else
+      transl empty_env ulam in
   let c1 = [Cfunction {fun_name = Compilenv.make_symbol (Some "entry");
                        fun_args = [];
                        fun_body = init_code; fun_fast = false;
