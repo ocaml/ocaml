@@ -314,6 +314,9 @@ OCaml 4.04.0:
 - PR#7378: GADT constructors can be re-exposed with an incompatible type
   (Jacques Garrigue, report by Alain Frisch)
 
+- PR#7389: Unsoundness in GADT exhaustiveness with existential variables
+  (Jacques Garrigue, report by Stephen Dolan)
+
 * GPR#533: Thread library: fixed [Thread.wait_signal] so that it
   converts back the signal number returned by [sigwait] to an
   OS-independent number
