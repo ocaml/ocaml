@@ -3918,25 +3918,28 @@ and type_cases ?in_function env ty_arg ty_res partial_flag loc caselist =
     let ty_res' = instance env ty_res in
     List.iter (fun c -> unify_exp env c.c_rhs ty_res') cases
   end;
+  let ty_arg_check =
+    if do_init then
+      (* Hack: use for_saving to copy variables too *)
+      Subst.type_expr (Subst.for_saving Subst.identity) ty_arg
+    else ty_arg
+  in
   let partial =
     if partial_flag then
-      check_partial ~lev env ty_arg loc cases
+      check_partial ~lev env ty_arg_check loc cases
     else
       Partial
   in
-  let unused_check ty_arg () =
+  let unused_check () =
     List.iter (fun (pat, (env, _)) -> check_absent_variant env pat)
       pat_env_list;
-    check_unused ~lev env (instance env ty_arg) cases ;
+    check_unused ~lev env (instance env ty_arg_check) cases ;
     Parmatch.check_ambiguous_bindings cases
   in
   if contains_polyvars || do_init then
-    let ty_arg_check =
-      (* Hack: use for_saving to copy variables too *)
-      Subst.type_expr (Subst.for_saving Subst.identity) ty_arg in
-    add_delayed_check (unused_check ty_arg_check)
+    add_delayed_check unused_check
   else
-    unused_check ty_arg ();
+    unused_check ();
   (* Check for unused cases, do not delay because of gadts *)
   if do_init then begin
     end_def ();
