@@ -64,8 +64,8 @@ let file_argument name =
     Format.fprintf ppf "Script file is not allowed in expanded option.\n%!";
     exit 2
   end else begin
-    let newargs = Array.sub Sys.argv !Arg.current
-                              (Array.length Sys.argv - !Arg.current)
+    let newargs = Array.sub !argv !Arg.current
+                              (Array.length !argv - !Arg.current)
       in
       if prepare ppf && Opttoploop.run_script ppf name newargs
       then exit 0
@@ -240,6 +240,7 @@ end);;
 
 let main () =
   native_code := true;
-  Arg.parse Options.list file_argument usage;
+  let list = ref Options.list in
+  Arg.parse_and_expand_argv_dynamic current argv list file_argument usage;
   if not (prepare Format.err_formatter) then exit 2;
   Opttoploop.loop Format.std_formatter
