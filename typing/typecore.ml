@@ -3797,10 +3797,15 @@ and type_cases ?in_function env ty_arg ty_res partial_flag loc caselist =
       correct_levels ty_res, duplicate_ident_types caselist env
     else ty_res, env
   in
+  let rec is_var spat =
+    match spat.ppat_desc with
+      Ppat_any | Ppat_var _ -> true
+    | Ppat_alias (spat, _) -> is_var spat
+    | _ -> false in
   let needs_exhaust_check =
     match caselist with
       [{pc_rhs = {pexp_desc = Pexp_unreachable}}] -> true
-    | [{pc_lhs = {ppat_desc = (Ppat_var _ | Ppat_any)}}] -> false
+    | [{pc_lhs}] when is_var pc_lhs -> false
     | _ -> true
   in
   let do_init = has_gadts || needs_exhaust_check in
@@ -3819,11 +3824,6 @@ and type_cases ?in_function env ty_arg ty_res partial_flag loc caselist =
   (* Do we need to propagate polymorphism *)
   let propagate =
     !Clflags.principal || do_init || (repr ty_arg).level = generic_level ||
-    let rec is_var spat =
-      match spat.ppat_desc with
-        Ppat_any | Ppat_var _ -> true
-      | Ppat_alias (spat, _) -> is_var spat
-      | _ -> false in
     match caselist with
       [{pc_lhs}] when is_var pc_lhs -> false
     | _ -> true in
