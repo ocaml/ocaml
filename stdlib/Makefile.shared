@@ -50,7 +50,8 @@ OTHERS=list.cmo char.cmo bytes.cmo string.cmo sys.cmo \
   stringLabels.cmo moreLabels.cmo stdLabels.cmo \
   spacetime.cmo
 
-all: stdlib.cma std_exit.cmo camlheader target_camlheader camlheader_ur
+all: stdlib.cma std_exit.cmo camlheader target_camlheader camlheader_ur \
+     ocaml_compiler_internal_params
 
 ifeq "$(RUNTIMED)" "runtimed"
 all: camlheaderd
@@ -64,7 +65,7 @@ INSTALL_LIBDIR=$(DESTDIR)$(LIBDIR)
 
 install::
 	cp stdlib.cma std_exit.cmo *.cmi *.cmt *.cmti *.mli *.ml \
-	  camlheader_ur \
+	  camlheader_ur ocaml_compiler_internal_params \
 	  "$(INSTALL_LIBDIR)"
 	cp target_camlheader "$(INSTALL_LIBDIR)/camlheader"
 
@@ -86,6 +87,12 @@ stdlib.cmxa: $(OBJS:.cmo=.cmx)
 
 sys.ml: sys.mlp ../VERSION
 	sed -e "s|%%VERSION%%|`sed -e 1q ../VERSION`|" sys.mlp >sys.ml
+
+# export via env rather than as a make variable,
+# to preserve newlines
+export DEFAULT_PARAMS
+ocaml_compiler_internal_params: ../config/Makefile
+	echo "$$DEFAULT_PARAMS" > $@
 
 clean::
 	rm -f sys.ml

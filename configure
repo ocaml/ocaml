@@ -64,6 +64,7 @@ safe_string=false
 max_testsuite_dir_retries=0
 with_cplugins=true
 with_fpic=false
+default_params=""
 
 # Try to turn internationalization off, can cause config.guess to malfunction!
 unset LANG
@@ -205,6 +206,11 @@ while : ; do
         with_fpic=true;;
     -safe-string|--safe-string)
         safe_string=true;;
+    -default-param)
+        NL='
+'
+        default_params="${default_params}${NL}*: $2"
+        shift;;
     *) if echo "$1" | grep -q -e '^--\?[a-zA-Z0-9-]\+='; then
          err "configure expects arguments of the form '-prefix /foo/bar'," \
              "not '-prefix=/foo/bar' (note the '=')."
@@ -2006,6 +2012,10 @@ fi
 echo "FLAMBDA=$flambda" >> Makefile
 echo "SAFE_STRING=$safe_string" >> Makefile
 echo "MAX_TESTSUITE_DIR_RETRIES=$max_testsuite_dir_retries" >> Makefile
+{
+  echo "define DEFAULT_PARAMS$default_params"
+  echo "endef"
+} >> Makefile
 
 
 rm -f tst hasgot.c
