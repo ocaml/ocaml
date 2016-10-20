@@ -42,11 +42,12 @@ let writer s msg =
   ignore (Unix.send s msg 0 (String.length msg) [])
 
 let _ =
-  let addr = Unix.ADDR_INET(Unix.inet_addr_loopback, 9876) in
+  let addr = Unix.ADDR_INET(Unix.inet_addr_loopback, 0) in
   let serv =
     Unix.socket (Unix.domain_of_sockaddr addr) Unix.SOCK_STREAM 0 in
   Unix.setsockopt serv Unix.SO_REUSEADDR true;
   Unix.bind serv addr;
+  let addr = Unix.getsockname serv in
   Unix.listen serv 5;
   ignore (Thread.create server serv);
   Thread.delay 0.2;
