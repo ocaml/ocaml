@@ -181,7 +181,7 @@ static void stack_init(struct intern_stack* s) {
 
   /* Set up GC roots */
   s->caml__roots_stack.next = CAML_LOCAL_ROOTS;
-  SET_CAML_LOCAL_ROOTS(&s->caml__roots_stack);
+  CAML_LOCAL_ROOTS = &s->caml__roots_stack;
   s->caml__roots_stack.mutexes = 0;
   s->caml__roots_stack.ntables = 1;
   s->caml__roots_stack.nitems = INTERN_STACK_INIT_SIZE * STACK_NFIELDS;

@@ -71,7 +71,7 @@ void caml_raise(value v)
       caml_plat_unlock(m->mutex);
       m = m->next;
     }
-    SET_CAML_LOCAL_ROOTS(CAML_LOCAL_ROOTS->next);
+    CAML_LOCAL_ROOTS = CAML_LOCAL_ROOTS->next;
   }
 #undef PUSHED_AFTER
 

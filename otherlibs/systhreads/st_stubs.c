@@ -162,7 +162,7 @@ static void caml_thread_enter_blocking_section(void)
   /* Save the stack-related global variables in the thread descriptor
      of the current thread */
   curr_thread->current_stack = CAML_DOMAIN_STATE->current_stack;
-  curr_thread->local_roots = caml_local_roots;
+  curr_thread->local_roots = CAML_LOCAL_ROOTS;
 #ifdef NATIVE_CODE
   curr_thread->system_sp = CAML_DOMAIN_STATE->system_sp;
   curr_thread->system_stack_high = CAML_DOMAIN_STATE->system_stack_high;
@@ -191,7 +191,7 @@ static void caml_thread_leave_blocking_section(void)
   /* Restore the stack-related global variables */
   CAML_DOMAIN_STATE->current_stack = curr_thread->current_stack;
   caml_restore_stack();
-  caml_local_roots = curr_thread->local_roots;
+  CAML_LOCAL_ROOTS = curr_thread->local_roots;
 #ifdef NATIVE_CODE
   CAML_DOMAIN_STATE->system_sp = curr_thread->system_sp;
   CAML_DOMAIN_STATE->system_stack_high = curr_thread->system_stack_high;

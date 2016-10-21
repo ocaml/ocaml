@@ -232,7 +232,6 @@ CAMLexport void caml_main(char **argv)
   static char proc_self_exe[256];
 
   CAML_INIT_DOMAIN_STATE;
-  CAML_INIT_LOCAL_ROOTS;
 
   caml_init_startup_params();
   /* Machine-dependent initialization of the floating-point hardware
@@ -340,7 +339,6 @@ CAMLexport void caml_startup_code(
   static char proc_self_exe[256];
 
   CAML_INIT_DOMAIN_STATE;
-  CAML_INIT_LOCAL_ROOTS;
 
   caml_init_startup_params();
   caml_init_ieee_floats();
