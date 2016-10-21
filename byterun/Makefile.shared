@@ -34,14 +34,14 @@ PRIMS=\
   signals.c str.c sys.c terminfo.c callback.c weak.c finalise.c stacks.c \
   dynlink.c backtrace_prim.c backtrace.c spacetime.c afl.c
 
-all:: ocamlrun$(EXE) ld.conf libcamlrun.$(A) all-$(RUNTIMED) primitives
+ifeq "$(RUNTIMED)" "true"
+RUNTIMEDTARGETS=ocamlrund$(EXE) libcamlrund.$(A)
+else
+RUNTIMEDTARGETS=
+endif
+
+all:: ocamlrun$(EXE) ld.conf libcamlrun.$(A) $(RUNTIMEDTARGETS) primitives
 .PHONY: all
-
-all-noruntimed:
-.PHONY: all-noruntimed
-
-all-runtimed: ocamlrund$(EXE) libcamlrund.$(A)
-.PHONY: all-runtimed
 
 ifeq "$(RUNTIMEI)" "true"
 all:: ocamlruni$(EXE) libcamlruni.$(A)
@@ -70,19 +70,15 @@ install::
 	cp ld.conf "$(INSTALL_LIBDIR)/ld.conf"
 .PHONY: install
 
-install:: install-$(RUNTIMED)
-
-install-noruntimed:
-.PHONY: install-noruntimed
-
+install::
+ifeq "$(RUNTIMED)" "true"
 # TODO: when cross-compiling, do not install ocamlrund
 # it doesn't hurt to install it, but it's useless and might be confusing
 # because it's an executable for the target machine, while we're installing
 # binaries for the host.
-install-runtimed:
 	cp ocamlrund$(EXE) "$(INSTALL_BINDIR)/ocamlrund$(EXE)"
 	cp libcamlrund.$(A) "$(INSTALL_LIBDIR)/libcamlrund.$(A)"
-.PHONY: install-runtimed
+endif
 
 ifeq "$(RUNTIMEI)" "true"
 install::

@@ -24,7 +24,9 @@ DOBJS=$(OBJS:.o=.d.o) instrtrace.d.o
 IOBJS=$(OBJS:.o=.i.o)
 PICOBJS=$(OBJS:.o=.pic.o)
 
-all:: all-$(SHARED)
+ifeq "$(SUPPORTS_SHARED_LIBRARIES)" "true"
+all:: libcamlrun_pic.a libcamlrun_shared.so
+endif
 
 ocamlrun$(EXE): libcamlrun.a prims.o
 	$(MKEXE) $(BYTECCLINKOPTS) -o ocamlrun$(EXE) \
@@ -49,12 +51,6 @@ libcamlruni.a: $(IOBJS)
 	$(ARCMD) rc $@ $^
 	$(RANLIB) $@
 
-all-noshared:
-.PHONY: all-noshared
-
-all-shared: libcamlrun_pic.a libcamlrun_shared.so
-.PHONY: all-shared
-
 libcamlrun_pic.a: $(PICOBJS)
 	$(ARCMD) rc libcamlrun_pic.a $(PICOBJS)
 	$(RANLIB) libcamlrun_pic.a
@@ -62,16 +58,12 @@ libcamlrun_pic.a: $(PICOBJS)
 libcamlrun_shared.so: $(PICOBJS)
 	$(MKDLL) -o libcamlrun_shared.so $(PICOBJS) $(BYTECCLIBS)
 
-install:: install-$(SHARED)
-
-install-noshared:
-.PHONY: install-noshared
-
-install-shared:
+install::
+ifeq "$(SUPPORTS_SHARED_LIBRARIES)" "true"
 	cp libcamlrun_shared.so "$(INSTALL_LIBDIR)/libcamlrun_shared.so"
 	cp libcamlrun_pic.a "$(INSTALL_LIBDIR)/libcamlrun_pic.a"
 	cd "$(INSTALL_LIBDIR)"; $(RANLIB) libcamlrun_pic.a
-.PHONY: install-shared
+endif
 
 clean::
 	rm -f libcamlrun_shared.so libcamlrun_pic.a
