@@ -41,7 +41,7 @@ CAMLexport void caml_raise(value v)
       caml_plat_unlock(m->mutex);
       m = m->next;
     }
-    SET_CAML_LOCAL_ROOTS(CAML_LOCAL_ROOTS->next);
+    CAML_LOCAL_ROOTS = CAML_LOCAL_ROOTS->next;
   }
   siglongjmp(caml_external_raise->jmp->buf, 1);
 }

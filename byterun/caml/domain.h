@@ -11,7 +11,6 @@ struct domain {
 
   struct dom_internal* internals;
   struct caml_heap_state* shared_heap;
-  struct caml__roots_block* local_roots; /* change to single pointer */
   struct caml_domain_state* state;
   value** mark_stack;
   uintnat* mark_stack_count;
