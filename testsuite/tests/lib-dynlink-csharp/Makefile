@@ -94,7 +94,7 @@ native-dll:
 	  $(OCAMLOPT) -output-obj -o main_obj.$(O) dynlink.cmxa entry.c \
 	              main.ml; \
 	  $(MKDLL) -maindll -o main.dll main_obj.$(O) entry.$(O) \
-	           $(CTOPDIR)/asmrun/libasmrun.lib -v; \
+		         $(CTOPDIR)/asmrun/libasmrun.lib $(NATIVECCLIBS); \
 	  $(CSC) /nologo /nowarn:1668 /out:main.exe main.cs; \
 	  ./main.exe > native-dll.result; \
 	  $(DIFF) native.reference native-dll.result >/dev/null \
