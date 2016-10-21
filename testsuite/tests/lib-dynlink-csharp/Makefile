@@ -108,6 +108,10 @@ clean: defaultclean
 
 include $(BASEDIR)/makefiles/Makefile.common
 
+ifneq ($(FLEXLINK_PREFIX),)
+MKDLL=$(WINTOPDIR)/boot/ocamlrun $(WINTOPDIR)/flexdll/flexlink.exe $(FLEXLINK_FLAGS)
+endif
+
 ifeq ($(HOST),msvc)
 CSC_FLAGS=/platform:x86
 else
