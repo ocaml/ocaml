@@ -204,9 +204,7 @@ let rev_split xys =
   in
   _rev_split [] [] xys
 
-let split xys =
-  let rxs,rys = rev_split xys in
-  rev rxs, rev rys
+let split xys = rev_split (rev xys)
 
 let rev_combine l1 l2 =
   let rec _rev_combine xys xs ys =
