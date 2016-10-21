@@ -116,7 +116,7 @@ struct caml__roots_block {
     { pthread_key_create(&caml_local_roots_key, NULL); \
       SET_CAML_LOCAL_ROOTS(NULL); }
 #else
-  CAMLextern __thread struct caml__roots_block *caml_local_roots = NULL;
+  CAMLextern __thread struct caml__roots_block *caml_local_roots;
   #define CAML_INIT_LOCAL_ROOTS
   #define CAML_LOCAL_ROOTS caml_local_roots
   #define SET_CAML_LOCAL_ROOTS(x) (caml_local_roots = (x))
