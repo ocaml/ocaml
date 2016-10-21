@@ -43,6 +43,7 @@ bytecode:
 	then \
 	  echo " => skipped"; \
 	else \
+	  rm -f main.exe main.dll; \
 	  $(OCAMLC) -output-obj -o main.dll dynlink.cma main.ml entry.c; \
 	  $(CSC) /nologo /nowarn:1668 /out:main.exe main.cs; \
 	  ./main.exe > bytecode.result; \
@@ -57,6 +58,7 @@ bytecode-dll:
 	then \
 	  echo " => skipped"; \
 	else \
+	  rm -f main.exe main_obj.$(O) main.dll; \
 	  $(OCAMLC) -output-obj -o main_obj.$(O) dynlink.cma entry.c main.ml; \
 	  $(MKDLL) -maindll -o main.dll main_obj.$(O) entry.$(O) \
 	           $(CTOPDIR)/byterun/libcamlrun.$(A)  $(BYTECCLIBS); \
@@ -73,6 +75,7 @@ native:
 	    || ! which $(CSC_COMMAND) > /dev/null 2>&1; then \
 	  echo " => skipped"; \
 	else \
+	  rm -f main.exe main.dll; \
 	  $(OCAMLOPT) -output-obj -o main.dll dynlink.cmxa entry.c main.ml; \
 	  $(CSC) /nologo /nowarn:1668 /out:main.exe main.cs; \
 	  ./main.exe > native.result; \
@@ -87,6 +90,7 @@ native-dll:
 	    || ! which $(CSC_COMMAND) > /dev/null 2>&1; then \
 	  echo " => skipped"; \
 	else \
+	  rm -f main.exe main_obj.$(O) main.dll; \
 	  $(OCAMLOPT) -output-obj -o main_obj.$(O) dynlink.cmxa entry.c \
 	              main.ml; \
 	  $(MKDLL) -maindll -o main.dll main_obj.$(O) entry.$(O) \
