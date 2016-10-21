@@ -251,19 +251,29 @@ val remove_assq : 'a -> ('a * 'b) list -> ('a * 'b) list
 
 (** {6 Lists of pairs} *)
 
+val rev_split : ('a * 'b) list -> 'a list * 'b list
+(** Transform a list of pairs into a pair of lists:
+   [split [(a1,b1); ...; (an,bn)]] is [([an; ...; a1], [bn; ...; b1])].
+ *)
 
 val split : ('a * 'b) list -> 'a list * 'b list
 (** Transform a list of pairs into a pair of lists:
    [split [(a1,b1); ...; (an,bn)]] is [([a1; ...; an], [b1; ...; bn])].
-   Not tail-recursive.
+*)
+
+val rev_combine : 'a list -> 'b list -> ('a * 'b) list
+(** Transform a pair of lists into a list of pairs:
+   [combine [a1; ...; an] [b1; ...; bn]] is
+   [[(an,bn); ...; (a1,b1)]].
+   Raise [Invalid_argument] if the two lists have different lengths.
 *)
 
 val combine : 'a list -> 'b list -> ('a * 'b) list
 (** Transform a pair of lists into a list of pairs:
    [combine [a1; ...; an] [b1; ...; bn]] is
    [[(a1,b1); ...; (an,bn)]].
-   Raise [Invalid_argument] if the two lists
-   have different lengths.  Not tail-recursive. *)
+   Raise [Invalid_argument] if the two lists have different lengths.
+*)
 
 
 (** {6 Sorting} *)

@@ -197,16 +197,28 @@ let partition p l =
   | x :: l -> if p x then part (x :: yes) no l else part yes (x :: no) l in
   part [] [] l
 
-let rec split = function
-    [] -> ([], [])
-  | (x,y)::l ->
-      let (rx, ry) = split l in (x::rx, y::ry)
+let rev_split xys =
+  let rec _rev_split xs ys = function
+    | [] -> xs,ys
+    | (x,y) :: xys -> _rev_split (x::xs) (y::ys) xys
+  in
+  _rev_split [] [] xys
 
-let rec combine l1 l2 =
-  match (l1, l2) with
-    ([], []) -> []
-  | (a1::l1, a2::l2) -> (a1, a2) :: combine l1 l2
-  | (_, _) -> invalid_arg "List.combine"
+let split xys =
+  let rxs,rys = rev_split xys in
+  rev rxs, rev rys
+
+let rev_combine l1 l2 =
+  let rec _rev_combine xys xs ys =
+    match xs,ys with
+    | [],[] -> xys
+    | x :: xs, y :: ys -> _rev_combine ((x,y) :: xys) xs ys
+    | _, _ -> invalid_arg "List.combine"
+  in
+  _rev_combine [] l1 l2
+
+let combine l1 l2 = rev_combine l1 l2 |> rev
+
 
 (** sorting *)
 
