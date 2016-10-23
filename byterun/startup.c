@@ -334,7 +334,6 @@ CAMLexport void caml_startup_code(
            char **argv)
 {
   value res;
-  char * cds_file;
   char * exe_name;
   static char proc_self_exe[256];
 
@@ -349,10 +348,7 @@ CAMLexport void caml_startup_code(
 #ifdef DEBUG
   caml_startup_params.verb_gc = 63;
 #endif
-  cds_file = getenv("CAML_DEBUG_FILE");
-  if (cds_file != NULL) {
-    caml_cds_file = caml_strdup(cds_file);
-  }
+  backtrace_cds_file_init();
   exe_name = argv[0];
   if (caml_executable_name(proc_self_exe, sizeof(proc_self_exe)) == 0)
     exe_name = proc_self_exe;
