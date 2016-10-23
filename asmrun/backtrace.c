@@ -25,8 +25,6 @@
 #include "stack.h"
 #include "frame_descriptors.h"
 
-CAMLexport __thread code_t * caml_backtrace_buffer = NULL;
-CAMLexport __thread caml_root caml_backtrace_last_exn;
 #define BACKTRACE_BUFFER_SIZE 1024
 
 /* In order to prevent the GC from walking through the debug information
@@ -115,10 +113,10 @@ void caml_stash_backtrace(value exn, uintnat pc, char * sp, char * trapsp)
     CAML_DOMAIN_STATE->backtrace_pos = 0;
     caml_modify_root(caml_backtrace_last_exn, exn);
   }
-  if (caml_backtrace_buffer == NULL) {
+  if (CAML_DOMAIN_STATE->caml_backtrace_buffer == NULL) {
     Assert(CAML_DOMAIN_STATE->backtrace_pos == 0);
-    caml_backtrace_buffer = malloc(BACKTRACE_BUFFER_SIZE * sizeof(code_t));
-    if (caml_backtrace_buffer == NULL) return;
+    CAML_DOMAIN_STATE->caml_backtrace_buffer = malloc(BACKTRACE_BUFFER_SIZE * sizeof(code_t));
+    if (CAML_DOMAIN_STATE->caml_backtrace_buffer == NULL) return;
   }
 
   /* iterate on each frame  */
@@ -127,7 +125,7 @@ void caml_stash_backtrace(value exn, uintnat pc, char * sp, char * trapsp)
     if (descr == NULL) return;
     /* store its descriptor in the backtrace buffer */
     if (CAML_DOMAIN_STATE->backtrace_pos >= BACKTRACE_BUFFER_SIZE) return;
-    caml_backtrace_buffer[CAML_DOMAIN_STATE->backtrace_pos++] = (code_t) descr;
+    CAML_DOMAIN_STATE->caml_backtrace_buffer[CAML_DOMAIN_STATE->backtrace_pos++] = (code_t) descr;
 
     /* Stop when we reach the current exception handler */
 #ifndef Stack_grows_upwards
@@ -295,7 +293,7 @@ void caml_print_exception_backtrace(void)
   struct caml_loc_info li;
 
   for (i = 0; i < CAML_DOMAIN_STATE->backtrace_pos; i++) {
-    extract_location_info((frame_descr *) (caml_backtrace_buffer[i]), &li);
+    extract_location_info((frame_descr *) (CAML_DOMAIN_STATE->caml_backtrace_buffer[i]), &li);
     print_location(&li, i);
   }
 }
@@ -338,7 +336,7 @@ CAMLprim value caml_get_exception_raw_backtrace(value unit)
      if the finalizer raises then catches an exception).  We choose to ignore
      any such finalizer backtraces and return the original one. */
 
-  if (caml_backtrace_buffer == NULL || CAML_DOMAIN_STATE->backtrace_pos == 0) {
+  if (CAML_DOMAIN_STATE->caml_backtrace_buffer == NULL || CAML_DOMAIN_STATE->backtrace_pos == 0) {
     res = caml_alloc(0, tag);
   }
   else {
@@ -352,7 +350,7 @@ CAMLprim value caml_get_exception_raw_backtrace(value unit)
       saved_backtrace_pos = BACKTRACE_BUFFER_SIZE;
     }
 
-    memcpy(saved_caml_backtrace_buffer, caml_backtrace_buffer,
+    memcpy(saved_caml_backtrace_buffer, CAML_DOMAIN_STATE->caml_backtrace_buffer,
            saved_backtrace_pos * sizeof(code_t));
 
     res = caml_alloc(saved_backtrace_pos, tag);

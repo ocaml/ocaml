@@ -22,6 +22,8 @@
 
 /* Needed here for domain_state */
 typedef intnat value;
+typedef int32 opcode_t;
+typedef opcode_t * code_t;
 
 #include "domain_state.h"
 
@@ -214,9 +216,6 @@ static inline value Field(value x, int i) {
 /* initialise a field of an object just allocated on the minor heap */
 #define Init_field(block, offset, val) (Op_val(block)[offset] = val)
 
-
-typedef int32 opcode_t;
-typedef opcode_t * code_t;
 
 /* NOTE: [Forward_tag] and [Infix_tag] must be just under
    [No_scan_tag], with [Infix_tag] the lower one.

@@ -390,9 +390,6 @@ struct caml__roots_block {
 
 #define End_roots() CAML_LOCAL_ROOTS = caml__roots_block.next; }
 
-
-typedef struct caml_root_private* caml_root;
-
 /* [caml_create_root] creates a new GC root, initialised to the given
    value.  The value stored in this root may only be read and written
    with [caml_read_root] and [caml_modify_root]. */

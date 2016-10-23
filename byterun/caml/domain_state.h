@@ -8,6 +8,8 @@
 
 #include "misc.h"
 
+typedef struct caml_root_private* caml_root;
+
 struct caml_domain_state {
 #define DOMAIN_STATE(idx, type, name) type name;
 #include "domain_state.tbl"
