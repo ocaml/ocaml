@@ -51,6 +51,8 @@ module type S =
     val split: key -> 'a t -> 'a t * 'a option * 'a t
     val find: key -> 'a t -> 'a
     val find_opt: key -> 'a t -> 'a option
+    val find_first: (key -> bool) -> 'a t -> key * 'a
+    val find_last: (key -> bool) -> 'a t -> key * 'a
     val map: ('a -> 'b) -> 'a t -> 'b t
     val mapi: (key -> 'a -> 'b) -> 'a t -> 'b t
   end
@@ -128,6 +130,42 @@ module Make(Ord: OrderedType) = struct
           let c = Ord.compare x v in
           if c = 0 then d
           else find x (if c < 0 then l else r)
+
+    let rec find_first_aux v0 d0 f = function
+        Empty ->
+          (v0, d0)
+      | Node(l, v, d, r, _) ->
+          if f v then
+            find_first_aux v d f l
+          else
+            find_first_aux v0 d0 f r
+
+    let rec find_first f = function
+        Empty ->
+          raise Not_found
+      | Node(l, v, d, r, _) ->
+          if f v then
+            find_first_aux v d f l
+          else
+            find_first f r
+
+    let rec find_last_aux v0 d0 f = function
+        Empty ->
+          (v0, d0)
+      | Node(l, v, d, r, _) ->
+          if f v then
+            find_last_aux v d f r
+          else
+            find_last_aux v0 d0 f l
+
+    let rec find_last f = function
+        Empty ->
+          raise Not_found
+      | Node(l, v, d, r, _) ->
+          if f v then
+            find_last_aux v d f r
+          else
+            find_last f l
 
     let rec find_opt x = function
         Empty ->

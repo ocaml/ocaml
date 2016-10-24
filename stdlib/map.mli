@@ -238,6 +238,16 @@ module type S =
         @since 4.05
     *)
 
+    val find_first: (key -> bool) -> 'a t -> key * 'a
+    (** [find_first f m], where [f] is a monotonically increasing function,
+       returns the binding of [m] with the lowest key [k] such that [f k],
+       or raises [Not_found] if no such key exists. *)
+
+    val find_last: (key -> bool) -> 'a t -> key * 'a
+    (** [find_last f m], where [f] is a monotonically decreasing function,
+       returns the binding of [m] with the highest key [k] such that [f k],
+       or raises [Not_found] if no such key exists. *)
+
     val map: ('a -> 'b) -> 'a t -> 'b t
     (** [map f m] returns a map with same domain as [m], where the
        associated value [a] of all bindings of [m] has been
