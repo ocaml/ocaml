@@ -47,6 +47,7 @@ module type S =
     val choose: 'a t -> (key * 'a)
     val split: key -> 'a t -> 'a t * 'a option * 'a t
     val find: key -> 'a t -> 'a
+    val find_ceil: key -> 'a t -> key * 'a
     val map: ('a -> 'b) -> 'a t -> 'b t
     val mapi: (key -> 'a -> 'b) -> 'a t -> 'b t
   end
@@ -124,6 +125,25 @@ module Make(Ord: OrderedType) = struct
           let c = Ord.compare x v in
           if c = 0 then d
           else find x (if c < 0 then l else r)
+
+    let rec get_ceil x = function
+        Empty -> None
+      | Node(l, v, d, r, _) ->
+          let c = Ord.compare x v in
+          if c = 0 then
+            Some (v, d)
+          else if c > 0 then
+            get_ceil x r
+          else match get_ceil x l with
+              None -> Some (v, d)
+            | r -> r
+
+      let find_ceil x m =
+        match get_ceil x m with
+          None ->
+            raise Not_found
+        | Some (v, d) ->
+            (v, d)
 
     let rec mem x = function
         Empty ->
