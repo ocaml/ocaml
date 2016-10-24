@@ -184,6 +184,8 @@ module Set : sig
       val split: elt -> t -> t * bool * t
       val find: elt -> t -> elt
       val find_opt: elt -> t -> elt option
+      val find_first: f:(elt -> bool) -> t -> elt
+      val find_last: f:(elt -> bool) -> t -> elt
       val of_list: elt list -> t
     end
   module Make : functor (Ord : OrderedType) -> S with type elt = Ord.t
