@@ -133,6 +133,7 @@ module Map : sig
       val choose: 'a t -> (key * 'a)
       val split: key -> 'a t -> 'a t * 'a option * 'a t
       val find : key -> 'a t -> 'a
+      val find_ceil : key -> 'a t -> key * 'a
       val map : f:('a -> 'b) -> 'a t -> 'b t
       val mapi : f:(key -> 'a -> 'b) -> 'a t -> 'b t
   end

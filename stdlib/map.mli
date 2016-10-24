@@ -212,6 +212,11 @@ module type S =
     (** [find x m] returns the current binding of [x] in [m],
        or raises [Not_found] if no such binding exists. *)
 
+    val find_ceil: key -> 'a t -> key * 'a
+    (** [find x m] returns the binding of [m] with the lowest
+       key [k] such that [k] is greater or equal to [x], or raises
+       [Not_found] if [x] is greater than all the keys in [m]. *)
+
     val map: ('a -> 'b) -> 'a t -> 'b t
     (** [map f m] returns a map with same domain as [m], where the
        associated value [a] of all bindings of [m] has been
