@@ -11,6 +11,9 @@ types. They also bind the value constructors and record fields
 associated with the definition.
 
 \ikwd{type\@\texttt{type}}
+\ikwd{and\@\texttt{and}}
+\ikwd{nonrec\@\texttt{nonrec}}
+\ikwd{of\@\texttt{of}}
 
 \begin{syntax}
 type-definition:
