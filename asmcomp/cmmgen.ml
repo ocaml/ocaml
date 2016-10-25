@@ -210,8 +210,8 @@ let force_tag_int i dbg =
   match i with
     Cconst_int n ->
       int_const n
-  | Cop(Casr, [c; Cconst_int n], dbg) when n > 0 ->
-      Cop(Cor, [asr_int c (Cconst_int (n - 1)) dbg; Cconst_int 1], dbg)
+  | Cop(Casr, [c; Cconst_int n], dbg') when n > 0 ->
+      Cop(Cor, [asr_int c (Cconst_int (n - 1)) dbg'; Cconst_int 1], dbg)
   | c ->
       Cop(Cor, [lsl_int c (Cconst_int 1) dbg; Cconst_int 1], dbg)
 
@@ -467,8 +467,8 @@ let rec unbox_float dbg cmm =
   | Cifthenelse(cond, e1, e2) ->
       Cifthenelse(cond, unbox_float dbg e1, unbox_float dbg e2)
   | Csequence(e1, e2) -> Csequence(e1, unbox_float dbg e2)
-  | Cswitch(e, tbl, el, dbg) ->
-    Cswitch(e, tbl, Array.map (unbox_float dbg) el, dbg)
+  | Cswitch(e, tbl, el, dbg') ->
+    Cswitch(e, tbl, Array.map (unbox_float dbg) el, dbg')
   | Ccatch(n, ids, e1, e2) ->
     Ccatch(n, ids, unbox_float dbg e1, unbox_float dbg e2)
   | Ctrywith(e1, id, e2) -> Ctrywith(unbox_float dbg e1, id, unbox_float dbg e2)
@@ -588,11 +588,11 @@ let array_indexing ?typ log2size ptr ofs dbg =
   | Cconst_int n ->
       let i = n asr 1 in
       if i = 0 then ptr else Cop(add, [ptr; Cconst_int(i lsl log2size)], dbg)
-  | Cop(Caddi, [Cop(Clsl, [c; Cconst_int 1], _); Cconst_int 1], _) ->
-      Cop(add, [ptr; lsl_const c log2size dbg], dbg)
-  | Cop(Caddi, [c; Cconst_int n], _) when log2size = 0 ->
+  | Cop(Caddi, [Cop(Clsl, [c; Cconst_int 1], _); Cconst_int 1], dbg') ->
+      Cop(add, [ptr; lsl_const c log2size dbg], dbg')
+  | Cop(Caddi, [c; Cconst_int n], dbg') when log2size = 0 ->
       Cop(add, [Cop(add, [ptr; untag_int c dbg], dbg); Cconst_int (n asr 1)],
-        dbg)
+        dbg')
   | Cop(Caddi, [c; Cconst_int n], _) ->
       Cop(add, [Cop(add, [ptr; lsl_const c (log2size - 1) dbg], dbg);
                     Cconst_int((n-1) lsl (log2size - 1))], dbg)
@@ -838,12 +838,12 @@ let split_int64_for_32bit_target arg dbg =
 
 let rec unbox_int bi arg dbg =
   match arg with
-    Cop(Calloc, [_hdr; _ops; Cop(Clsl, [contents; Cconst_int 32], dbg')], dbg)
+    Cop(Calloc, [_hdr; _ops; Cop(Clsl, [contents; Cconst_int 32], dbg')], _dbg)
     when bi = Pint32 && size_int = 8 && big_endian ->
       (* Force sign-extension of low 32 bits *)
       Cop(Casr, [Cop(Clsl, [contents; Cconst_int 32], dbg'); Cconst_int 32],
         dbg)
-  | Cop(Calloc, [_hdr; _ops; contents], dbg)
+  | Cop(Calloc, [_hdr; _ops; contents], _dbg)
     when bi = Pint32 && size_int = 8 && not big_endian ->
       (* Force sign-extension of low 32 bits *)
       Cop(Casr, [Cop(Clsl, [contents; Cconst_int 32], dbg); Cconst_int 32], dbg)
@@ -853,8 +853,8 @@ let rec unbox_int bi arg dbg =
   | Cifthenelse(cond, e1, e2) ->
       Cifthenelse(cond, unbox_int bi e1 dbg, unbox_int bi e2 dbg)
   | Csequence(e1, e2) -> Csequence(e1, unbox_int bi e2 dbg)
-  | Cswitch(e, tbl, el, dbg) ->
-      Cswitch(e, tbl, Array.map (fun e -> unbox_int bi e dbg) el, dbg)
+  | Cswitch(e, tbl, el, dbg') ->
+      Cswitch(e, tbl, Array.map (fun e -> unbox_int bi e dbg) el, dbg')
   | Ccatch(n, ids, e1, e2) ->
       Ccatch(n, ids, unbox_int bi e1 dbg, unbox_int bi e2 dbg)
   | Ctrywith(e1, id, e2) ->
@@ -2515,19 +2515,19 @@ and exit_if_true dbg env cond nfail otherwise =
   | Uconst (Uconst_ptr 0) -> otherwise
   | Uconst (Uconst_ptr 1) -> Cexit (nfail,[])
   | Uifthenelse (arg1, Uconst (Uconst_ptr 1), arg2)
-  | Uprim(Psequor, [arg1; arg2], _) ->
-      exit_if_true dbg env arg1 nfail
+  | Uprim(Psequor, [arg1; arg2], dbg') ->
+      exit_if_true dbg' env arg1 nfail
         (exit_if_true dbg env arg2 nfail otherwise)
   | Uifthenelse (_, _, Uconst (Uconst_ptr 0))
-  | Uprim(Psequand, _, _) ->
+  | Uprim(Psequand, _, dbg') ->
       begin match otherwise with
       | Cexit (raise_num,[]) ->
-          exit_if_false dbg env cond (Cexit (nfail,[])) raise_num
+          exit_if_false dbg' env cond (Cexit (nfail,[])) raise_num
       | _ ->
           let raise_num = next_raise_count () in
           make_catch
             raise_num
-            (exit_if_false dbg env cond (Cexit (nfail,[])) raise_num)
+            (exit_if_false dbg' env cond (Cexit (nfail,[])) raise_num)
             otherwise
       end
   | Uprim(Pnot, [arg], _) ->
