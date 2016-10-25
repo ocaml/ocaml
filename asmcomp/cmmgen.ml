@@ -2515,19 +2515,24 @@ and exit_if_true dbg env cond nfail otherwise =
   | Uconst (Uconst_ptr 0) -> otherwise
   | Uconst (Uconst_ptr 1) -> Cexit (nfail,[])
   | Uifthenelse (arg1, Uconst (Uconst_ptr 1), arg2)
-  | Uprim(Psequor, [arg1; arg2], dbg') ->
-      exit_if_true dbg' env arg1 nfail
+  | Uprim(Psequor, [arg1; arg2], _) ->
+      (* CR pchambart: Since Uifthenelse does not have a debuginfo, this
+         pattern cannot be written to propagate the Psequor operation
+         location. Should it do that ?
+         This also applies to the following pattern for Psequand and the
+         instances in exit_if_false *)
+      exit_if_true dbg env arg1 nfail
         (exit_if_true dbg env arg2 nfail otherwise)
   | Uifthenelse (_, _, Uconst (Uconst_ptr 0))
-  | Uprim(Psequand, _, dbg') ->
+  | Uprim(Psequand, _, _) ->
       begin match otherwise with
       | Cexit (raise_num,[]) ->
-          exit_if_false dbg' env cond (Cexit (nfail,[])) raise_num
+          exit_if_false dbg env cond (Cexit (nfail,[])) raise_num
       | _ ->
           let raise_num = next_raise_count () in
           make_catch
             raise_num
-            (exit_if_false dbg' env cond (Cexit (nfail,[])) raise_num)
+            (exit_if_false dbg env cond (Cexit (nfail,[])) raise_num)
             otherwise
       end
   | Uprim(Pnot, [arg], _) ->
