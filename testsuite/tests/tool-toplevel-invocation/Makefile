@@ -13,21 +13,23 @@
 #*                                                                        *
 #**************************************************************************
 
-
-
 BASEDIR=../..
 
 
-.PHONY: run
-run: *.txt
-	@for file in *_fail.txt; do \
-		printf " ...testing '$$file'";\
-		$(OCAML) -args $$file 2> /dev/null \
-		&& echo " => failed" || echo " => passed";\
+default:
+	@for file in *.txt; do \
+		$(OCAML) -args $$file > $$file.result 2>&1 || true; \
+	done
+	@for file in *.reference; do \
+	  printf " ... testing '$$file':"; \
+	  $(DIFF) $$file `basename $$file reference`result >/dev/null \
+          && echo " => passed" || echo " => failed"; \
 	done
 
-.PHONY: promote
+
 promote: defaultpromote
 
+clean: defaultclean
+	@rm -f *.result
 
 include $(BASEDIR)/makefiles/Makefile.common
