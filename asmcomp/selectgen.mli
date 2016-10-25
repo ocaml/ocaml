@@ -16,7 +16,11 @@
 (* Selection of pseudo-instructions, assignment of pseudo-registers,
    sequentialization. *)
 
-type environment = (Ident.t, Reg.t array) Tbl.t
+type environment
+
+val env_add : Ident.t -> Reg.t array -> environment -> environment
+
+val env_find : Ident.t -> environment -> Reg.t array
 
 val size_expr : environment -> Cmm.expression -> int
 
@@ -107,34 +111,35 @@ class virtual selector_generic : object
   method adjust_type : Reg.t -> Reg.t -> unit
   method adjust_types : Reg.t array -> Reg.t array -> unit
   method emit_expr :
-    (Ident.t, Reg.t array) Tbl.t -> Cmm.expression -> Reg.t array option
-  method emit_tail : (Ident.t, Reg.t array) Tbl.t -> Cmm.expression -> unit
+    environment -> Cmm.expression -> Reg.t array option
+  method emit_tail : environment -> Cmm.expression -> unit
 
   (* Only for the use of [Spacetime_profiling]. *)
   method select_allocation : int -> Mach.operation
-  method select_allocation_args : (Ident.t, Reg.t array) Tbl.t -> Reg.t array
+  method select_allocation_args : environment -> Reg.t array
   method select_checkbound : unit -> Mach.integer_operation
   method select_checkbound_extra_args : unit -> Cmm.expression list
   method emit_blockheader
-     : (Ident.t, Reg.t array) Tbl.t
+     : environment
     -> nativeint
     -> Debuginfo.t
     -> Reg.t array option
   method about_to_emit_call
-     : (Ident.t, Reg.t array) Tbl.t
+     : environment
     -> Mach.instruction_desc
     -> Reg.t array
     -> Reg.t array option
-  method initial_env : unit -> (Ident.t, Reg.t array) Tbl.t
+  method initial_env : unit -> environment
   method insert_prologue
      : Cmm.fundecl
     -> loc_arg:Reg.t array
     -> rarg:Reg.t array
     -> spacetime_node_hole:(Ident.t * Reg.t array) option
-    -> env:(Ident.t, Reg.t array) Tbl.t
+    -> env:environment
     -> Mach.spacetime_shape option
 
   val mutable instr_seq : Mach.instruction
+
 end
 
 val reset : unit -> unit
