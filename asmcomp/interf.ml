@@ -107,8 +107,10 @@ let build_graph fundecl =
         interf i.next
     | Iloop body ->
         interf body; interf i.next
-    | Icatch(_, body, handler) ->
-        interf body; interf handler; interf i.next
+    | Icatch(handlers, body) ->
+        interf body;
+        List.iter (fun (_, handler) -> interf handler) handlers;
+        interf i.next
     | Iexit _ ->
         ()
     | Itrywith(body, handler) ->
@@ -145,6 +147,7 @@ let build_graph fundecl =
       let r = arg.(i) in r.spill_cost <- r.spill_cost + cost
     done in
 
+  let recursive_handlers = Mach.recursive_handlers fundecl.fun_body in
   (* Compute preferences and spill costs *)
 
   let rec prefer weight i =
@@ -179,8 +182,19 @@ let build_graph fundecl =
         (* Avoid overflow of weight and spill_cost *)
         prefer (if weight < 1000 then 8 * weight else weight) body;
         prefer weight i.next
-    | Icatch(_, body, handler) ->
-        prefer weight body; prefer weight handler; prefer weight i.next
+    | Icatch(handlers, body) ->
+        prefer weight body;
+        List.iter (fun (nfail, handler) ->
+            let weight =
+              if Numbers.Int.Set.mem nfail recursive_handlers
+              then
+                (* Avoid overflow of weight and spill_cost *)
+                if weight < 1000 then 8 * weight else weight
+              else
+                (* TODO: reduce weight of non mandatory branches *)
+                weight in
+            prefer weight handler) handlers;
+        prefer weight i.next
     | Iexit _ ->
         ()
     | Itrywith(body, handler) ->

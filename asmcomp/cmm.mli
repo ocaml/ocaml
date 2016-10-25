@@ -143,7 +143,7 @@ and expression =
   | Cifthenelse of expression * expression * expression
   | Cswitch of expression * int array * expression array * Debuginfo.t
   | Cloop of expression
-  | Ccatch of int * Ident.t list * expression * expression
+  | Ccatch of (int * Ident.t list * expression) list * expression
   | Cexit of int * expression list
   | Ctrywith of expression * Ident.t * expression
 
@@ -172,5 +172,7 @@ type data_item =
 type phrase =
     Cfunction of fundecl
   | Cdata of data_item list
+
+val ccatch : int * Ident.t list * expression * expression -> expression
 
 val reset : unit -> unit

@@ -57,9 +57,8 @@ defaultclean:
 .mll.ml:
 	@$(OCAMLLEX) -q $< > /dev/null
 
-.cmm.o:
-	@$(OCAMLRUN) ./codegen $*.cmm > $*.s
-	@$(ASM) -o $*.o $*.s
+.cmm.s:
+	@$(OCAMLRUN) ./codegen -S $*.cmm
 
 .cmm.obj:
 	@$(OCAMLRUN) ./codegen $*.cmm \

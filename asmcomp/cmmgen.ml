@@ -460,6 +460,12 @@ let test_bool dbg cmm =
 
 let box_float dbg c = Cop(Calloc, [alloc_float_header dbg; c], dbg)
 
+let map_ccatch f handlers body =
+  let handlers = List.map
+      (fun (n, ids, handler) -> (n, ids, f handler))
+      handlers in
+  Ccatch(handlers, f body)
+
 let rec unbox_float dbg cmm =
   match cmm with
   | Cop(Calloc, [_header; c], _) -> c
@@ -469,8 +475,8 @@ let rec unbox_float dbg cmm =
   | Csequence(e1, e2) -> Csequence(e1, unbox_float dbg e2)
   | Cswitch(e, tbl, el, dbg) ->
     Cswitch(e, tbl, Array.map (unbox_float dbg) el, dbg)
-  | Ccatch(n, ids, e1, e2) ->
-    Ccatch(n, ids, unbox_float dbg e1, unbox_float dbg e2)
+  | Ccatch(handlers, body) ->
+    map_ccatch (unbox_float dbg) handlers body
   | Ctrywith(e1, id, e2) -> Ctrywith(unbox_float dbg e1, id, unbox_float dbg e2)
   | c -> Cop(Cload Double_u, [c], dbg)
 
@@ -496,8 +502,8 @@ let rec remove_unit = function
       Cifthenelse(cond, remove_unit ifso, remove_unit ifnot)
   | Cswitch(sel, index, cases, dbg) ->
       Cswitch(sel, index, Array.map remove_unit cases, dbg)
-  | Ccatch(io, ids, body, handler) ->
-      Ccatch(io, ids, remove_unit body, remove_unit handler)
+  | Ccatch(handlers, body) ->
+      map_ccatch remove_unit handlers body
   | Ctrywith(body, exn, handler) ->
       Ctrywith(remove_unit body, exn, remove_unit handler)
   | Clet(id, c1, c2) ->
@@ -855,8 +861,8 @@ let rec unbox_int bi arg dbg =
   | Csequence(e1, e2) -> Csequence(e1, unbox_int bi e2 dbg)
   | Cswitch(e, tbl, el, dbg) ->
       Cswitch(e, tbl, Array.map (fun e -> unbox_int bi e dbg) el, dbg)
-  | Ccatch(n, ids, e1, e2) ->
-      Ccatch(n, ids, unbox_int bi e1 dbg, unbox_int bi e2 dbg)
+  | Ccatch(handlers, body) ->
+      map_ccatch (fun e -> unbox_int bi e dbg) handlers body
   | Ctrywith(e1, id, e2) ->
       Ctrywith(unbox_int bi e1 dbg, id, unbox_int bi e2 dbg)
   | _ ->
@@ -1339,7 +1345,7 @@ struct
       | Cexit (j,_) ->
           if i=j then handler
           else body
-      | _ ->  Ccatch (i,[],body,handler))
+      | _ ->  ccatch (i,[],body,handler))
 
   let make_exit i = Cexit (i,[])
 
@@ -1721,7 +1727,7 @@ let rec transl env e =
   | Ucatch(nfail, [], body, handler) ->
       make_catch nfail (transl env body) (transl env handler)
   | Ucatch(nfail, ids, body, handler) ->
-      Ccatch(nfail, ids, transl env body, transl env handler)
+      ccatch(nfail, ids, transl env body, transl env handler)
   | Utrywith(body, exn, handler) ->
       Ctrywith(transl env body, exn, transl env handler)
   | Uifthenelse(Uprim(Pnot, [arg], _), ifso, ifnot) ->
@@ -1767,7 +1773,7 @@ let rec transl env e =
       let dbg = Debuginfo.none in
       let raise_num = next_raise_count () in
       return_unit
-        (Ccatch
+        (ccatch
            (raise_num, [],
             Cloop(exit_if_false dbg env cond
                     (remove_unit(transl env body)) raise_num),
@@ -1782,7 +1788,7 @@ let rec transl env e =
         (Clet
            (id, transl env low,
             bind_nonvar "bound" (transl env high) (fun high ->
-              Ccatch
+              ccatch
                 (raise_num, [],
                  Cifthenelse
                    (Cop(Ccmpi tst, [Cvar id; high], dbg),
@@ -2498,7 +2504,7 @@ and transl_let env str kind id exp body =
 
 and make_catch ncatch body handler = match body with
 | Cexit (nexit,[]) when nexit=ncatch -> handler
-| _ ->  Ccatch (ncatch, [], body, handler)
+| _ ->  ccatch (ncatch, [], body, handler)
 
 and make_catch2 mk_body handler = match handler with
 | Cexit (_,[])|Ctuple []|Cconst_int _|Cconst_pointer _ ->
@@ -2931,7 +2937,7 @@ let cache_public_method meths tag cache dbg =
   Clet (
   hi, Cop(Cload Word_int, [meths], dbg),
   Csequence(
-  Ccatch
+  ccatch
     (raise_num, [],
      Cloop
        (Clet(
