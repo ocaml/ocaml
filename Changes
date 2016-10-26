@@ -106,6 +106,8 @@ OCaml 4.04.0:
 - GPR#606: optimized representation for immutable records with a single
   field, and concrete types with a single constructor with a single argument.
   This is triggered with a [@@unboxed] attribute on the type definition.
+  Currently mutually recursive datatypes are not well supported, this
+  limitation should be lifted in the future (see MPR#7364).
   (Damien Doligez)
 
 - PR#7233: Support GADT equations on non-local abstract types
