@@ -56,8 +56,25 @@ struct caml_exception_context {
   struct caml__roots_block* local_roots;
 };
 
-CAMLextern __thread struct caml_exception_context * caml_external_raise;
-extern __thread value caml_exn_bucket;
+/* This TLS var is only available in the interpreter */
+#ifdef __APPLE__
+  CAMLextern struct caml_exception_context* get_caml_external_raise();
+  CAMLextern void set_caml_external_raise(struct caml_exception_context*);
+  CAMLextern value get_caml_exn_bucket();
+  CAMLextern void set_caml_exn_bucket(value);
+  #define Caml_external_raise get_caml_external_raise()
+  #define Set_caml_external_raise(x) set_caml_external_raise(x)
+  #define Caml_exn_bucket get_caml_exn_bucket()
+  #define Set_caml_exn_bucket(x) set_caml_exn_bucket(x)
+#else
+  CAMLextern __thread struct caml_exception_context * caml_external_raise;
+  extern __thread value caml_exn_bucket;
+  #define Caml_external_raise caml_external_raise
+  #define Set_caml_external_raise(x) (caml_external_raise = x)
+  #define Caml_exn_bucket caml_exn_bucket
+  #define Set_caml_exn_bucket(x) (caml_exn_bucket = x)
+#endif
+
 int caml_is_special_exception(value exn);
 
 /* </private> */

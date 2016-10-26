@@ -213,7 +213,7 @@ void caml_debugger_init(void)
   }
   open_connection();
   caml_debugger_in_use = 1;
-  caml_trap_barrier_off = 2; /* Bigger than default caml_trap_sp_off (1) */
+  Set_caml_trap_barrier_off(2); /* Bigger than default caml_trap_sp_off (1) */
 }
 
 static value getval(struct channel *chan)
@@ -261,7 +261,7 @@ void caml_debugger(enum event_kind event)
   if (dbg_socket == -1) return;  /* Not connected to a debugger. */
 
   /* Reset current frame */
-  frame = caml_extern_sp + 1;
+  frame = Caml_extern_sp + 1;
 
   /* Report the event to the debugger */
   switch(event) {
@@ -348,7 +348,7 @@ void caml_debugger(enum event_kind event)
 #endif
       break;
     case REQ_INITIAL_FRAME:
-      frame = caml_extern_sp + 1;
+      frame = Caml_extern_sp + 1;
       /* Fall through */
     case REQ_GET_FRAME:
       caml_putword(dbg_out, CAML_DOMAIN_STATE->stack_high - frame);
@@ -376,7 +376,7 @@ void caml_debugger(enum event_kind event)
       break;
     case REQ_SET_TRAP_BARRIER:
       i = caml_getword(dbg_in);
-      caml_trap_barrier_off = -i;
+      Set_caml_trap_barrier_off(-i);
       break;
     case REQ_GET_LOCAL:
       i = caml_getword(dbg_in);
@@ -394,7 +394,7 @@ void caml_debugger(enum event_kind event)
       caml_flush(dbg_out);
       break;
     case REQ_GET_ACCU:
-      putval(dbg_out, *caml_extern_sp);
+      putval(dbg_out, *Caml_extern_sp);
       caml_flush(dbg_out);
       break;
     case REQ_GET_HEADER:

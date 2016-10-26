@@ -50,8 +50,8 @@
 /* **** array.c */
 
 /* **** backtrace.c */
-#define backtrace_buffer (CAML_DOMAIN_STATE->caml_backtrace_buffer)
-#define backtrace_last_exn (CAML_DOMAIN_STATE->caml_backtrace_last_exn)
+/*#define backtrace_buffer (CAML_DOMAIN_STATE->caml_backtrace_buffer)
+  #define backtrace_last_exn (CAML_DOMAIN_STATE->caml_backtrace_last_exn)*/
 #define print_exception_backtrace caml_print_exception_backtrace
 
 /* **** callback.c */

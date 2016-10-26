@@ -48,10 +48,10 @@ CAMLprim value caml_record_backtrace(value vflag)
     CAML_DOMAIN_STATE->backtrace_active = flag;
     CAML_DOMAIN_STATE->backtrace_pos = 0;
     if (flag) {
-      caml_backtrace_last_exn = caml_create_root(Val_unit);
+      CAML_DOMAIN_STATE->backtrace_last_exn = caml_create_root(Val_unit);
     } else {
-      caml_delete_root(caml_backtrace_last_exn);
-      caml_backtrace_last_exn = NULL;
+      caml_delete_root(CAML_DOMAIN_STATE->backtrace_last_exn);
+      CAML_DOMAIN_STATE->backtrace_last_exn = NULL;
     }
   }
   return Val_unit;
@@ -109,9 +109,9 @@ frame_descr * caml_next_frame_descriptor(uintnat * pc, char ** sp)
 
 void caml_stash_backtrace(value exn, uintnat pc, char * sp, char * trapsp)
 {
-  if (exn != caml_read_root(caml_backtrace_last_exn)) {
+  if (exn != caml_read_root(CAML_DOMAIN_STATE->backtrace_last_exn)) {
     CAML_DOMAIN_STATE->backtrace_pos = 0;
-    caml_modify_root(caml_backtrace_last_exn, exn);
+    caml_modify_root(CAML_DOMAIN_STATE->backtrace_last_exn, exn);
   }
   if (CAML_DOMAIN_STATE->caml_backtrace_buffer == NULL) {
     Assert(CAML_DOMAIN_STATE->backtrace_pos == 0);
