@@ -69,6 +69,7 @@ ARGS_tagged-fib=-DINT_INT -DFUN=fib main.c
 ARGS_tagged-integr=-DINT_FLOAT -DFUN=test main.c
 ARGS_tagged-quicksort=-DSORT -DFUN=quicksort main.c
 ARGS_tagged-tak=-DUNIT_INT -DFUN=takmain main.c
+ARGS_staticalloc=-I $(OTOPDIR)/utils config.cmx
 
 skips:
 	@for c in $(CASES) $(MLCASES) $(MLCASES_FLAMBDA); do \

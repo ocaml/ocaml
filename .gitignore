@@ -242,6 +242,9 @@
 /testsuite/tests/asmcomp/*.s
 /testsuite/tests/asmcomp/*.out.manifest
 
+/testsuite/tests/basic/*.safe-string
+/testsuite/tests/basic/pr6322.ml
+
 /testsuite/tests/embedded/caml
 
 /testsuite/tests/float-unboxing/*.flambda

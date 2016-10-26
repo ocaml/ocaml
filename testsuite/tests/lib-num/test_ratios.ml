@@ -965,72 +965,72 @@ msd_ratio (create_ratio (big_int_of_int 0) (big_int_of_int 0))
 testing_function "round_futur_last_digit"
 ;;
 
-let s = "+123456" in
-test 1 eq (round_futur_last_digit s 1 (pred (String.length s)),
+let s = Bytes.of_string "+123456" in
+test 1 eq (round_futur_last_digit s 1 (pred (Bytes.length s)),
             false) &&
-test 2 eq_string (s, "+123466")
+test 2 eq_bytes (s, Bytes.of_string "+123466")
 ;;
 
-let s = "123456" in
-test 3 eq (round_futur_last_digit s 0 (String.length s), false) &&
-test 4 eq_string (s, "123466")
+let s = Bytes.of_string "123456" in
+test 3 eq (round_futur_last_digit s 0 (Bytes.length s), false) &&
+test 4 eq_bytes (s, Bytes.of_string "123466")
 ;;
 
-let s = "-123456" in
-test 5 eq (round_futur_last_digit s 1 (pred (String.length s)),
+let s = Bytes.of_string "-123456" in
+test 5 eq (round_futur_last_digit s 1 (pred (Bytes.length s)),
             false) &&
-test 6 eq_string (s, "-123466")
+test 6 eq_bytes (s, Bytes.of_string "-123466")
 ;;
 
-let s = "+123496" in
-test 7 eq (round_futur_last_digit s 1 (pred (String.length s)),
+let s = Bytes.of_string "+123496" in
+test 7 eq (round_futur_last_digit s 1 (pred (Bytes.length s)),
             false) &&
-test 8 eq_string (s, "+123506")
+test 8 eq_bytes (s, Bytes.of_string "+123506")
 ;;
 
-let s = "123496" in
-test 9 eq (round_futur_last_digit s 0 (String.length s), false) &&
-test 10 eq_string (s, "123506")
+let s = Bytes.of_string "123496" in
+test 9 eq (round_futur_last_digit s 0 (Bytes.length s), false) &&
+test 10 eq_bytes (s, Bytes.of_string "123506")
 ;;
 
-let s = "-123496" in
-test 11 eq (round_futur_last_digit s 1 (pred (String.length s)),
+let s = Bytes.of_string "-123496" in
+test 11 eq (round_futur_last_digit s 1 (pred (Bytes.length s)),
             false) &&
-test 12 eq_string (s, "-123506")
+test 12 eq_bytes (s, Bytes.of_string "-123506")
 ;;
 
-let s = "+996" in
-test 13 eq (round_futur_last_digit s 1 (pred (String.length s)),
+let s = Bytes.of_string "+996" in
+test 13 eq (round_futur_last_digit s 1 (pred (Bytes.length s)),
             true) &&
-test 14 eq_string (s, "+006")
+test 14 eq_bytes (s, Bytes.of_string "+006")
 ;;
 
-let s = "996" in
-test 15 eq (round_futur_last_digit s 0 (String.length s), true) &&
-test 16 eq_string (s, "006")
+let s = Bytes.of_string "996" in
+test 15 eq (round_futur_last_digit s 0 (Bytes.length s), true) &&
+test 16 eq_bytes (s, Bytes.of_string "006")
 ;;
 
-let s = "-996" in
-test 17 eq (round_futur_last_digit s 1 (pred (String.length s)),
+let s = Bytes.of_string "-996" in
+test 17 eq (round_futur_last_digit s 1 (pred (Bytes.length s)),
              true) &&
-test 18 eq_string (s, "-006")
+test 18 eq_bytes (s, Bytes.of_string "-006")
 ;;
 
-let s = "+6666666" in
-test 19 eq (round_futur_last_digit s 1 (pred (String.length s)),
+let s = Bytes.of_string "+6666666" in
+test 19 eq (round_futur_last_digit s 1 (pred (Bytes.length s)),
              false) &&
-test 20 eq_string (s, "+6666676")
+test 20 eq_bytes (s, Bytes.of_string "+6666676")
 ;;
 
-let s = "6666666" in
-test 21 eq (round_futur_last_digit s 0 (String.length s), false) &&
-test 22 eq_string (s, "6666676")
+let s = Bytes.of_string "6666666" in
+test 21 eq (round_futur_last_digit s 0 (Bytes.length s), false) &&
+test 22 eq_bytes (s, Bytes.of_string "6666676")
 ;;
 
-let s = "-6666666" in
-test 23 eq (round_futur_last_digit s 1 (pred (String.length s)),
+let s = Bytes.of_string "-6666666" in
+test 23 eq (round_futur_last_digit s 1 (pred (Bytes.length s)),
              false) &&
-test 24 eq_string (s, "-6666676")
+test 24 eq_bytes (s, Bytes.of_string "-6666676")
 ;;
 
 testing_function "approx_ratio_fix"
