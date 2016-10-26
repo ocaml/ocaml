@@ -423,6 +423,9 @@ OCaml 4.04.0:
   of PR#3963)
   (David Allsopp)
 
+- GPR#872: don't attach (**/**) comments to any particular node
+  (Thomas Refis, review by Leo White)
+
 ### Documentation:
 
 
