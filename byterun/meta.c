@@ -95,7 +95,7 @@ CAMLprim value caml_realloc_global(value size)
 
 CAMLprim value caml_get_current_environment(value unit)
 {
-  return *caml_extern_sp;
+  return *Caml_extern_sp;
 }
 
 CAMLprim value caml_invoke_traced_function(value codeptr, value env, value arg)
@@ -126,9 +126,9 @@ CAMLprim value caml_invoke_traced_function(value codeptr, value env, value arg)
   value * osp, * nsp;
   int i;
 
-  osp = caml_extern_sp;
-  caml_extern_sp -= 4;
-  nsp = caml_extern_sp;
+  osp = Caml_extern_sp;
+  Set_caml_extern_sp(Caml_extern_sp - 4);
+  nsp = Caml_extern_sp;
   for (i = 0; i < 6; i++) nsp[i] = osp[i];
   nsp[6] = codeptr;
   nsp[7] = env;

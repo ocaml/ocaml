@@ -193,9 +193,21 @@ void caml_update_gc_regs_slot (value* gc_regs)
 
 #else /* End NATIVE_CODE, begin BYTE_CODE */
 
-CAMLexport __thread value * caml_extern_sp;
-CAMLexport __thread intnat caml_trap_sp_off = 1;
-CAMLexport __thread intnat caml_trap_barrier_off;
+#ifdef __APPLE__
+  static __thread value * caml_extern_sp;
+  CAMLexport value * get_caml_extern_sp() { return caml_extern_sp; }
+  CAMLexport void set_caml_extern_sp(value* x) { caml_extern_sp = x; }
+  static __thread intnat caml_trap_sp_off = 1;
+  CAMLexport intnat get_caml_trap_sp_off() { return caml_trap_sp_off; }
+  CAMLexport void set_caml_trap_sp_off(intnat x) { caml_trap_sp_off = x; }
+  static __thread intnat caml_trap_barrier_off;
+  CAMLexport intnat get_caml_trap_barrier_off() { return caml_trap_barrier_off; }
+  CAMLexport void set_caml_trap_barrier_off(intnat x) { caml_trap_barrier_off = x; }
+#else
+  CAMLexport __thread value * caml_extern_sp;
+  CAMLexport __thread intnat caml_trap_sp_off = 1;
+  CAMLexport __thread intnat caml_trap_barrier_off;
+#endif
 
 caml_root caml_global_data;
 

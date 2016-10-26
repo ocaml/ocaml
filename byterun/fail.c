@@ -26,8 +26,17 @@
 #include "caml/signals.h"
 #include "caml/fiber.h"
 
-CAMLexport __thread struct caml_exception_context * caml_external_raise = NULL;
-__thread value caml_exn_bucket;
+#ifdef __APPLE__
+  static __thread struct caml_exception_context * caml_external_raise = NULL;
+  static __thread value caml_exn_bucket;
+  CAMLexport struct caml_exception_context* get_caml_external_raise() { return caml_external_raise; }
+  CAMLexport void set_caml_external_raise(struct caml_exception_context* x) { x = caml_external_raise; }
+  CAMLexport value get_caml_exn_bucket() { return caml_exn_bucket; }
+  CAMLexport void set_caml_exn_bucket(value x) { caml_exn_bucket = x; }
+#else
+  CAMLexport __thread struct caml_exception_context * caml_external_raise = NULL;
+  __thread value caml_exn_bucket;
+#endif
 
 CAMLexport void caml_raise(value v)
 {

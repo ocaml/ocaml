@@ -169,14 +169,14 @@ static void caml_thread_enter_blocking_section(void)
   curr_thread->system_exnptr_offset = CAML_DOMAIN_STATE->system_exnptr_offset;
 #else
   Stack_sp(CAML_DOMAIN_STATE->current_stack) =
-    caml_extern_sp - CAML_DOMAIN_STATE->stack_high;
-  curr_thread->trap_sp_off = caml_trap_sp_off;
-  curr_thread->trap_barrier_off = caml_trap_barrier_off;
+    Caml_extern_sp - CAML_DOMAIN_STATE->stack_high;
+  curr_thread->trap_sp_off = Caml_trap_sp_off;
+  curr_thread->trap_barrier_off = Caml_trap_barrier_off;
   curr_thread->external_raise = caml_external_raise;
 #endif
   curr_thread->backtrace_pos = CAML_DOMAIN_STATE->backtrace_pos;
-  curr_thread->backtrace_buffer = backtrace_buffer;
-  curr_thread->backtrace_last_exn = backtrace_last_exn;
+  curr_thread->backtrace_buffer = CAML_DOMAIN_STATE->backtrace_buffer;
+  curr_thread->backtrace_last_exn = CAML_DOMAIN_STATE->backtrace_last_exn;
   /* Tell other threads that the runtime is free */
   st_masterlock_release(&caml_master_lock);
 }
@@ -197,13 +197,13 @@ static void caml_thread_leave_blocking_section(void)
   CAML_DOMAIN_STATE->system_stack_high = curr_thread->system_stack_high;
   CAML_DOMAIN_STATE->system_exnptr_offset = curr_thread->system_exnptr_offset;
 #else
-  caml_trap_sp_off = curr_thread->trap_sp_off;
-  caml_trap_barrier_off = curr_thread->trap_barrier_off;
+  Set_caml_trap_sp_off(curr_thread->trap_sp_off);
+  Set_caml_trap_barrier_off(curr_thread->trap_barrier_off);
   caml_external_raise = curr_thread->external_raise;
 #endif
   CAML_DOMAIN_STATE->backtrace_pos = curr_thread->backtrace_pos;
-  backtrace_buffer = curr_thread->backtrace_buffer;
-  backtrace_last_exn = curr_thread->backtrace_last_exn;
+  CAML_DOMAIN_STATE->backtrace_buffer = curr_thread->backtrace_buffer;
+  CAML_DOMAIN_STATE->backtrace_last_exn = curr_thread->backtrace_last_exn;
 }
 
 /* Create and setup a new thread info block.

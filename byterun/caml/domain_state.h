@@ -10,6 +10,8 @@
 
 typedef struct caml_root_private* caml_root;
 
+/* This structure sits in the TLS area and is also accessed efficiently
+ * via native code, which is why the indeces are important */
 struct caml_domain_state {
 #define DOMAIN_STATE(idx, type, name) type name;
 #include "domain_state.tbl"
