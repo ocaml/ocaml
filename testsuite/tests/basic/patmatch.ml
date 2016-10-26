@@ -146,18 +146,6 @@ let () =
   let r = test Foo false in
   if r = 0 then printf "PR#5788=Ok\n"
 
-
-(* No string sharing PR#6322 *)
-let test x = match x with
-  | true -> "a"
-  | false -> "a"
-
-let () =
-  let s1 = test true in
-  let s2 = test false in
-  s1.[0] <- 'p';
-  if s1 <> s2 then printf "PR#6322=Ok\n%!"
-
 (* PR#6646 Avoid explosion of default cases when there are many constructors *)
 
 (* This took forever to compile *)
