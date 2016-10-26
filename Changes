@@ -377,6 +377,11 @@ OCaml 4.04.0:
   (Jeremy Yallop,
    review by Damien Doligez, Alain Frisch, Daniel Bünzli, Fabrice Le Fessant)
 
+- GPR#872: don't attach (**/**) comments to any particular node
+  (Thomas Refis, review by Leo White)
+
+### Documentation:
+
 
 OCaml 4.03.0 (25 Apr 2016):
 ---------------------------
