@@ -30,6 +30,8 @@ ADD_OPTFLAGS+=$(FORTRAN_LIB)
 
 C_INCLUDES+=-I $(CTOPDIR)/byterun -I$(CTOPDIR)/otherlibs/bigarray
 
+GENERATED_SOURCES=
+
 SKIP=false
 
 .PHONY: check
@@ -137,4 +139,4 @@ promote: defaultpromote
 
 .PHONY: clean
 clean: defaultclean
-	@rm -f *.result program program.exe
+	@rm -f *.result program program.exe $(GENERATED_SOURCES)
