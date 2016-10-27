@@ -138,6 +138,10 @@ OCaml 4.04.0:
   not always preserve the arguments
   (Pierre Chambart, Mark Shinwell, report by Simon Cruanes)
 
+- PR#7244, GPR#840: Ocamlopt + flambda requires a lot of memory
+  to compile large array literal expressions
+  (Pierre Chambart, review by Mark Shinwell)
+
 - Lack of type normalization lead to missing simple compilation for "lazy x"
   (Alain Frisch)
 
