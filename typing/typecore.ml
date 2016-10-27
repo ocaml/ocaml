@@ -3800,7 +3800,7 @@ and type_cases ?in_function env ty_arg ty_res partial_flag loc caselist =
   let rec is_var spat =
     match spat.ppat_desc with
       Ppat_any | Ppat_var _ -> true
-    | Ppat_alias (spat, _) -> is_var spat
+    | Ppat_alias (spat, _) | Ppat_constraint (spat, _) -> is_var spat
     | _ -> false in
   let needs_exhaust_check =
     match caselist with
