@@ -198,22 +198,22 @@ let partition p l =
   part [] [] l
 
 let rev_split xys =
-  let rec _rev_split xs ys = function
-    | [] -> xs,ys
-    | (x,y) :: xys -> _rev_split (x::xs) (y::ys) xys
+  let rec helper xs ys = function
+    | [] -> xs, ys
+    | (x, y) :: xys -> helper (x :: xs) (y :: ys) xys
   in
-  _rev_split [] [] xys
+  helper [] [] xys
 
 let split xys = rev_split (rev xys)
 
 let rev_combine l1 l2 =
-  let rec _rev_combine xys xs ys =
-    match xs,ys with
-    | [],[] -> xys
-    | x :: xs, y :: ys -> _rev_combine ((x,y) :: xys) xs ys
-    | _, _ -> invalid_arg "List.combine"
+  let rec helper xys xs ys =
+    match xs, ys with
+    | [], [] -> xys
+    | x :: xs, y :: ys -> helper ((x, y) :: xys) xs ys
+    | _, _ -> invalid_arg "List.rev_combine"
   in
-  _rev_combine [] l1 l2
+  helper [] l1 l2
 
 let combine l1 l2 = rev_combine l1 l2 |> rev
 
