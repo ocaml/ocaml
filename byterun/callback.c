@@ -50,7 +50,7 @@ CAMLexport value caml_callbackN_exn(value closure, int narg, value args[])
   Stack_parent(CAML_DOMAIN_STATE->current_stack) = Val_unit;
 
   Assert(narg + 4 <= 256);
-  CAML_DOMAIN_STATE->extern_sp = CAML_DOMAIN_STATE->extern_sp - narg + 4;
+  CAML_DOMAIN_STATE->extern_sp -= narg + 4;
   for (i = 0; i < narg; i++) CAML_DOMAIN_STATE->extern_sp[i] = args[i]; /* arguments */
 
   opcode_t code[7] = {

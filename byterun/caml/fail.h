@@ -56,9 +56,6 @@ struct caml_exception_context {
   struct caml__roots_block* local_roots;
 };
 
-#define Caml_external_raise (CAML_DOMAIN_STATE->external_raise)
-#define Caml_exn_bucket (CAML_DOMAIN_STATE->exn_bucket)
-
 int caml_is_special_exception(value exn);
 
 /* </private> */

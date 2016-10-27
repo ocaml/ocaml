@@ -233,6 +233,7 @@ CAMLexport void caml_main(char **argv)
 
   CAML_INIT_DOMAIN_STATE;
 
+  backtrace_cds_file_init();
   caml_init_startup_params();
   /* Machine-dependent initialization of the floating-point hardware
      so that it behaves as much as possible as specified in IEEE */
@@ -317,11 +318,11 @@ CAMLexport void caml_main(char **argv)
   if (Is_exception_result(res)) {
     CAML_DOMAIN_STATE->exn_bucket = Extract_exception(res);
     if (caml_debugger_in_use) {
-      CAML_DOMAIN_STATE->extern_sp = &Caml_exn_bucket; /* The debugger needs the
+      CAML_DOMAIN_STATE->extern_sp = &CAML_DOMAIN_STATE->exn_bucket; /* The debugger needs the
                                                exception value.*/
       caml_debugger(UNCAUGHT_EXC);
     }
-    caml_fatal_uncaught_exception(Caml_exn_bucket);
+    caml_fatal_uncaught_exception(CAML_DOMAIN_STATE->exn_bucket);
   }
 }
 
@@ -388,10 +389,10 @@ CAMLexport void caml_startup_code(
   if (Is_exception_result(res)) {
     CAML_DOMAIN_STATE->exn_bucket = Extract_exception(res);
     if (caml_debugger_in_use) {
-      CAML_DOMAIN_STATE->extern_sp = &Caml_exn_bucket; /* The debugger needs the
+      CAML_DOMAIN_STATE->extern_sp = &CAML_DOMAIN_STATE->exn_bucket; /* The debugger needs the
                                                exception value.*/
       caml_debugger(UNCAUGHT_EXC);
     }
-    caml_fatal_uncaught_exception(Caml_exn_bucket);
+    caml_fatal_uncaught_exception(CAML_DOMAIN_STATE->exn_bucket);
   }
 }

@@ -26,23 +26,11 @@
 #include "caml/signals.h"
 #include "caml/fiber.h"
 
-#ifdef __APPLE__
-  static __thread struct caml_exception_context * caml_external_raise = NULL;
-  static __thread value caml_exn_bucket;
-  CAMLexport struct caml_exception_context* get_caml_external_raise() { return caml_external_raise; }
-  CAMLexport void set_caml_external_raise(struct caml_exception_context* x) { x = caml_external_raise; }
-  CAMLexport value get_caml_exn_bucket() { return caml_exn_bucket; }
-  CAMLexport void set_caml_exn_bucket(value x) { caml_exn_bucket = x; }
-#else
-  CAMLexport __thread struct caml_exception_context * caml_external_raise = NULL;
-  __thread value caml_exn_bucket;
-#endif
-
 CAMLexport void caml_raise(value v)
 {
-  caml_exn_bucket = v;
-  if (caml_external_raise == NULL) caml_fatal_uncaught_exception(v);
-  while (CAML_LOCAL_ROOTS != caml_external_raise->local_roots) {
+  CAML_DOMAIN_STATE->exn_bucket = v;
+  if (CAML_DOMAIN_STATE->external_raise == NULL) caml_fatal_uncaught_exception(v);
+  while (CAML_LOCAL_ROOTS != CAML_DOMAIN_STATE->external_raise->local_roots) {
     Assert(CAML_LOCAL_ROOTS != NULL);
     struct caml__mutex_unwind* m = CAML_LOCAL_ROOTS->mutexes;
     while (m) {
@@ -52,7 +40,7 @@ CAMLexport void caml_raise(value v)
     }
     CAML_LOCAL_ROOTS = CAML_LOCAL_ROOTS->next;
   }
-  siglongjmp(caml_external_raise->jmp->buf, 1);
+  siglongjmp(CAML_DOMAIN_STATE->external_raise->jmp->buf, 1);
 }
 
 CAMLexport void caml_raise_constant(value tag)
