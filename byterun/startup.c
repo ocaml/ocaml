@@ -242,7 +242,6 @@ CAMLexport void caml_main(char **argv)
 #endif
   caml_init_custom_operations();
   caml_ext_table_init(&caml_shared_libs_path, 8);
-  CAML_DOMAIN_STATE->external_raise = NULL;
   /* Determine options and position of bytecode file */
   pos = 0;
 
@@ -282,6 +281,7 @@ CAMLexport void caml_main(char **argv)
   caml_read_section_descriptors(fd, &trail);
   /* Initialize the abstract machine */
   caml_init_gc ();
+  CAML_DOMAIN_STATE->external_raise = NULL;
   if (caml_startup_params.backtrace_enabled_init) caml_record_backtrace(Val_int(1));
   if (caml_startup_params.eventlog_enabled) caml_setup_eventlog();
   /* Initialize the interpreter */
@@ -352,12 +352,12 @@ CAMLexport void caml_startup_code(
   exe_name = argv[0];
   if (caml_executable_name(proc_self_exe, sizeof(proc_self_exe)) == 0)
     exe_name = proc_self_exe;
-  CAML_DOMAIN_STATE->external_raise = NULL;
   caml_startup_params.exe_name = exe_name;
   caml_startup_params.main_argv = argv;
   /* Initialize the abstract machine */
   caml_init_gc ();
   if (caml_startup_params.backtrace_enabled_init) caml_record_backtrace(Val_int(1));
+  CAML_DOMAIN_STATE->external_raise = NULL;
   /* Initialize the interpreter */
   caml_interprete(NULL, 0);
   /* Initialize the debugger, if needed */
