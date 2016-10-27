@@ -9,6 +9,7 @@ class virtual child2 =
     method private virtual parent: 'parent
   end
 
+(* Worked in 4.03 *)
 let _ =
   object(self)
     method previous = None
@@ -27,6 +28,7 @@ class virtual child2 :
 - : < child : child2; previous : child2 option > = <obj>
 |}]
 
+(* Worked in 4.03 *)
 let _ =
   object(self)
     method previous = None
@@ -40,3 +42,44 @@ let _ =
 - : < child : unit -> child2; previous : child2 option > = <obj>
 |}]
 
+(* Worked in 4.03 *)
+let _ =
+  object(self)
+    method previous = None
+    method child () =
+      object
+        inherit child1 self
+        inherit child2
+      end
+  end;;
+[%%expect{|
+Line _, characters 16-22:
+Error: The method parent has type
+         < child : unit -> 'a; previous : 'b option >
+       but is expected to have type < previous : < .. > option; .. >
+       Self type cannot escape its class
+|}, Principal{|
+Line _, characters 16-22:
+Error: The method parent has type < child : 'a -> 'b; previous : 'c option >
+       but is expected to have type < previous : < .. > option; .. >
+       Self type cannot escape its class
+|}]
+
+(* Didn't work in 4.03 *)
+let _ =
+  object(self)
+    method previous = None
+    method child =
+      let o =
+      object
+        inherit child1 self
+        inherit child2
+      end
+      in o
+  end;;
+[%%expect{|
+Line _, characters 16-22:
+Error: The method parent has type < child : 'a; previous : 'b option >
+       but is expected to have type < previous : < .. > option; .. >
+       Self type cannot escape its class
+|}]
