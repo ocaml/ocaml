@@ -14,6 +14,7 @@
 #ifndef CAML_COMPARE_H
 #define CAML_COMPARE_H
 
-CAMLextern __thread int caml_compare_unordered;
+/* In domain_state.tbl: __thread intnat compare_unordered; */
+/* Used by custom comparison to report unordered NaN-like cases. */
 
 #endif /* CAML_COMPARE_H */
