@@ -26,3 +26,17 @@ class virtual child2 :
   end
 - : < child : child2; previous : child2 option > = <obj>
 |}]
+
+let _ =
+  object(self)
+    method previous = None
+    method child (_ : unit) =
+      object
+        inherit child1 self
+        inherit child2
+      end
+  end;;
+[%%expect{|
+- : < child : unit -> child2; previous : child2 option > = <obj>
+|}]
+
