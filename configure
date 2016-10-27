@@ -369,8 +369,10 @@ case "$ccfamily" in
     wrn "This version of GCC is rather old.  Reducing optimization level."
     wrn "Consider using GCC version 4.2 or above."
     bytecccompopts="-std=gnu99 -O $gcc_warnings";;
-  gcc-*)
+  gcc-4-*)
     bytecccompopts="-std=gnu99 -O2 -fno-strict-aliasing -fwrapv $gcc_warnings";;
+  gcc-*)
+    bytecccompopts="-O2 -fno-strict-aliasing -fwrapv $gcc_warnings";;
   *)
     bytecccompopts="-O";;
 esac

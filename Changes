@@ -33,6 +33,9 @@ Next version (tbd):
 
 ### Compiler distribution build system:
 
+- PR#7377: remove -std=gnu99 for newer gcc versions
+  (Damien Doligez, report by ygrek)
+
 - GPR#729: Make sure ocamlnat is built with a $(EXE) extension, merge
   rules between Unix and Windows Makefiles
   (Sébastien Hinderer, review by Alain Frisch)
