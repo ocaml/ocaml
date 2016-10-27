@@ -3808,22 +3808,22 @@ and type_cases ?in_function env ty_arg ty_res partial_flag loc caselist =
     | [{pc_lhs}] when is_var pc_lhs -> false
     | _ -> true
   in
-  let do_init = has_gadts || needs_exhaust_check in
+  let init_env () =
+    (* raise level for existentials *)
+    begin_def ();
+    Ident.set_current_time (get_current_level ());
+    let lev = Ident.current_time () in
+    Ctype.init_def (lev+1000);                 (* up to 1000 existentials *)
+    (lev, Env.add_gadt_instance_level lev env)
+  in
   let lev, env =
-    if do_init then begin
-      (* raise level for existentials *)
-      begin_def ();
-      Ident.set_current_time (get_current_level ());
-      let lev = Ident.current_time () in
-      Ctype.init_def (lev+1000);                 (* up to 1000 existentials *)
-      (lev, Env.add_gadt_instance_level lev env)
-    end else (get_current_level (), env)
+    if has_gadts then init_env () else (get_current_level (), env)
   in
 (*  if has_gadts then
     Format.printf "lev = %d@.%a@." lev Printtyp.raw_type_expr ty_res; *)
   (* Do we need to propagate polymorphism *)
   let propagate =
-    !Clflags.principal || do_init || (repr ty_arg).level = generic_level ||
+    !Clflags.principal || has_gadts || (repr ty_arg).level = generic_level ||
     match caselist with
       [{pc_lhs}] when is_var pc_lhs -> false
     | _ -> true in
@@ -3918,6 +3918,9 @@ and type_cases ?in_function env ty_arg ty_res partial_flag loc caselist =
     let ty_res' = instance env ty_res in
     List.iter (fun c -> unify_exp env c.c_rhs ty_res') cases
   end;
+  let do_init = has_gadts || needs_exhaust_check in
+  let lev, env =
+    if do_init && not has_gadts then init_env () else lev, env in
   let ty_arg_check =
     if do_init then
       (* Hack: use for_saving to copy variables too *)

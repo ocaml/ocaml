@@ -53,16 +53,7 @@ let _ =
       end
   end;;
 [%%expect{|
-Line _, characters 16-22:
-Error: The method parent has type
-         < child : unit -> 'a; previous : 'b option >
-       but is expected to have type < previous : < .. > option; .. >
-       Self type cannot escape its class
-|}, Principal{|
-Line _, characters 16-22:
-Error: The method parent has type < child : 'a -> 'b; previous : 'c option >
-       but is expected to have type < previous : < .. > option; .. >
-       Self type cannot escape its class
+- : < child : unit -> child2; previous : child2 option > = <obj>
 |}]
 
 (* Didn't work in 4.03 *)
