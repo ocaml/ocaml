@@ -76,6 +76,12 @@ static struct caml_domain_state* dummy_domain_state;
                      offsetof(struct caml_domain_state, name) == idx * sizeof(void*));
 #include "caml/domain_state.tbl"
 #undef DOMAIN_STATE
+#ifndef NATIVE_CODE
+  #define BYTE_DOMAIN_STATE(type, name) \
+      CAML_STATIC_ASSERT(sizeof(dummy_domain_state->name) == sizeof(void*));
+  #include "caml/byte_domain_state.tbl"
+  #undef BYTE_DOMAIN_STATE
+#endif // BYTECODE
 
 static __thread char domains_locked[Max_domains];
 
@@ -195,6 +201,12 @@ static void create_domain(uintnat initial_minor_heap_size, int is_main) {
     d->state.mark_stack_count = &CAML_DOMAIN_STATE->mark_stack_count;
     d->state.state = CAML_DOMAIN_STATE;
     d->state.vm_inited = 1;
+
+    CAML_DOMAIN_STATE->backtrace_buffer = NULL;
+#ifndef NATIVE_CODE
+    CAML_DOMAIN_STATE->external_raise = NULL;
+    CAML_DOMAIN_STATE->trap_sp_off = 1;
+#endif
   }
   caml_plat_unlock(&all_domains_lock);
 }

@@ -193,31 +193,15 @@ void caml_update_gc_regs_slot (value* gc_regs)
 
 #else /* End NATIVE_CODE, begin BYTE_CODE */
 
-#ifdef __APPLE__
-  static __thread value * caml_extern_sp;
-  CAMLexport value * get_caml_extern_sp() { return caml_extern_sp; }
-  CAMLexport void set_caml_extern_sp(value* x) { caml_extern_sp = x; }
-  static __thread intnat caml_trap_sp_off = 1;
-  CAMLexport intnat get_caml_trap_sp_off() { return caml_trap_sp_off; }
-  CAMLexport void set_caml_trap_sp_off(intnat x) { caml_trap_sp_off = x; }
-  static __thread intnat caml_trap_barrier_off;
-  CAMLexport intnat get_caml_trap_barrier_off() { return caml_trap_barrier_off; }
-  CAMLexport void set_caml_trap_barrier_off(intnat x) { caml_trap_barrier_off = x; }
-#else
-  CAMLexport __thread value * caml_extern_sp;
-  CAMLexport __thread intnat caml_trap_sp_off = 1;
-  CAMLexport __thread intnat caml_trap_barrier_off;
-#endif
-
 caml_root caml_global_data;
 
 static value save_stack ()
 {
   value old_stack = CAML_DOMAIN_STATE->current_stack;
-  Stack_sp(old_stack) = caml_extern_sp - CAML_DOMAIN_STATE->stack_high;
+  Stack_sp(old_stack) = CAML_DOMAIN_STATE->extern_sp - CAML_DOMAIN_STATE->stack_high;
   Assert(CAML_DOMAIN_STATE->stack_threshold == Stack_base(old_stack) + Stack_threshold / sizeof(value));
   Assert(CAML_DOMAIN_STATE->stack_high == Stack_high(old_stack));
-  Assert(caml_extern_sp == CAML_DOMAIN_STATE->stack_high + Stack_sp(old_stack));
+  Assert(CAML_DOMAIN_STATE->extern_sp == CAML_DOMAIN_STATE->stack_high + Stack_sp(old_stack));
   dirty_stack(old_stack);
   return old_stack;
 }
@@ -227,7 +211,7 @@ static void load_stack(value newstack)
   Assert(Tag_val(newstack) == Stack_tag);
   CAML_DOMAIN_STATE->stack_threshold = Stack_base(newstack) + Stack_threshold / sizeof(value);
   CAML_DOMAIN_STATE->stack_high = Stack_high(newstack);
-  caml_extern_sp = CAML_DOMAIN_STATE->stack_high + Stack_sp(newstack);
+  CAML_DOMAIN_STATE->extern_sp = CAML_DOMAIN_STATE->stack_high + Stack_sp(newstack);
   CAML_DOMAIN_STATE->current_stack = newstack;
 }
 
@@ -279,14 +263,14 @@ value caml_find_performer(value stack)
 CAMLprim value caml_ensure_stack_capacity(value required_space)
 {
   asize_t req = Long_val(required_space);
-  if (caml_extern_sp - req < Stack_base(CAML_DOMAIN_STATE->current_stack))
+  if (CAML_DOMAIN_STATE->extern_sp - req < Stack_base(CAML_DOMAIN_STATE->current_stack))
     caml_realloc_stack(req, 0, 0);
   return Val_unit;
 }
 
 void caml_change_max_stack_size (uintnat new_max_size)
 {
-  asize_t size = CAML_DOMAIN_STATE->stack_high - caml_extern_sp
+  asize_t size = CAML_DOMAIN_STATE->stack_high - CAML_DOMAIN_STATE->extern_sp
                  + Stack_threshold / sizeof (value);
 
   if (new_max_size < size) new_max_size = size;

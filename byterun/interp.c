@@ -250,7 +250,7 @@ value caml_interprete(code_t prog, asize_t prog_size)
 #endif
   initial_trap_sp_off = CAML_DOMAIN_STATE->trap_sp_off;
   initial_stack_words = CAML_DOMAIN_STATE->stack_high - CAML_DOMAIN_STATE->extern_sp;
-  initial_external_raise = Caml_external_raise;
+  initial_external_raise = CAML_DOMAIN_STATE->external_raise;
   caml_callback_depth++;
   saved_pc = NULL;
 
