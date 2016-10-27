@@ -120,7 +120,7 @@ void caml_stash_backtrace(value exn, code_t pc, value * sp, int reraise)
     /* testing the code region is needed: PR#1554 */
     CAML_DOMAIN_STATE->backtrace_buffer[CAML_DOMAIN_STATE->backtrace_pos++] = pc;
   }
-  for (/*nothing*/; sp < CAML_DOMAIN_STATE->stack_high + Caml_trap_sp_off; sp++) {
+  for (/*nothing*/; sp < CAML_DOMAIN_STATE->stack_high + CAML_DOMAIN_STATE->trap_sp_off; sp++) {
     if (Is_long(*sp) && Pc_val(*sp) >= caml_start_code && Pc_val(*sp) < end_code) {
       if (CAML_DOMAIN_STATE->backtrace_pos >= BACKTRACE_BUFFER_SIZE) break;
       CAML_DOMAIN_STATE->backtrace_buffer[CAML_DOMAIN_STATE->backtrace_pos++] = Pc_val(*sp);
@@ -180,8 +180,8 @@ CAMLprim value caml_get_current_callstack(value max_frames_value) {
 
   /* first compute the size of the trace */
   {
-    value * sp = Caml_extern_sp;
-    intnat trap_spoff = Caml_trap_sp_off;
+    value * sp = CAML_DOMAIN_STATE->extern_sp;
+    intnat trap_spoff = CAML_DOMAIN_STATE->trap_sp_off;
 
     for (trace_size = 0; trace_size < max_frames; trace_size++) {
       code_t p = caml_next_frame_pointer(&sp, &trap_spoff);
@@ -193,8 +193,8 @@ CAMLprim value caml_get_current_callstack(value max_frames_value) {
 
   /* then collect the trace */
   {
-    value * sp = Caml_extern_sp;
-    intnat trap_spoff = Caml_trap_sp_off;
+    value * sp = CAML_DOMAIN_STATE->extern_sp;
+    intnat trap_spoff = CAML_DOMAIN_STATE->trap_sp_off;
     uintnat trace_pos;
 
     for (trace_pos = 0; trace_pos < trace_size; trace_pos++) {

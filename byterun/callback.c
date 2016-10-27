@@ -50,8 +50,8 @@ CAMLexport value caml_callbackN_exn(value closure, int narg, value args[])
   Stack_parent(CAML_DOMAIN_STATE->current_stack) = Val_unit;
 
   Assert(narg + 4 <= 256);
-  Set_caml_extern_sp(Caml_extern_sp - narg + 4);
-  for (i = 0; i < narg; i++) Caml_extern_sp[i] = args[i]; /* arguments */
+  CAML_DOMAIN_STATE->extern_sp = CAML_DOMAIN_STATE->extern_sp - narg + 4;
+  for (i = 0; i < narg; i++) CAML_DOMAIN_STATE->extern_sp[i] = args[i]; /* arguments */
 
   opcode_t code[7] = {
     callback_code[0], narg + 3,
@@ -59,12 +59,12 @@ CAMLexport value caml_callbackN_exn(value closure, int narg, value args[])
     callback_code[4], callback_code[5], callback_code[6]
   };
 
-  Caml_extern_sp[narg] = Val_pc (code + 4); /* return address */
-  Caml_extern_sp[narg + 1] = Val_unit;    /* environment */
-  Caml_extern_sp[narg + 2] = Val_long(0); /* extra args */
-  Caml_extern_sp[narg + 3] = closure;
+  CAML_DOMAIN_STATE->extern_sp[narg] = Val_pc (code + 4); /* return address */
+  CAML_DOMAIN_STATE->extern_sp[narg + 1] = Val_unit;    /* environment */
+  CAML_DOMAIN_STATE->extern_sp[narg + 2] = Val_long(0); /* extra args */
+  CAML_DOMAIN_STATE->extern_sp[narg + 3] = closure;
   res = caml_interprete(code, sizeof(code));
-  if (Is_exception_result(res)) Set_caml_extern_sp(Caml_extern_sp + narg + 4); /* PR#1228 */
+  if (Is_exception_result(res)) CAML_DOMAIN_STATE->extern_sp += narg + 4; /* PR#1228 */
 
   Assert(Stack_parent(CAML_DOMAIN_STATE->current_stack) == Val_unit);
   Stack_parent(CAML_DOMAIN_STATE->current_stack) = parent_stack;

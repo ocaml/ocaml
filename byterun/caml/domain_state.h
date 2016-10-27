@@ -15,6 +15,12 @@ typedef struct caml_root_private* caml_root;
 struct caml_domain_state {
 #define DOMAIN_STATE(idx, type, name) type name;
 #include "domain_state.tbl"
+#ifndef NATIVE_CODE
+  /* Bytecode TLS vars, not used for native code */
+  #define BYTE_DOMAIN_STATE(type, name) type name;
+  #include "byte_domain_state.tbl"
+  #undef BYTE_DOMAIN_STATE
+#endif
 #undef DOMAIN_STATE
 };
 
