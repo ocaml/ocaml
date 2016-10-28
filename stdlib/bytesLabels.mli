@@ -182,6 +182,27 @@ val mapi : f:(int -> char -> char) -> bytes -> bytes
     index (in increasing index order) and stores the resulting bytes
     in a new sequence that is returned as the result. *)
 
+val fold_left : f:('a -> char -> 'a) -> init:'a -> bytes -> 'a
+(** [fold_left f x s] computes
+    [f (... (f (f x (get s 0)) (get s 1)) ...) (get s (n-1))],
+    where [n] is the length of [s].
+    @since 4.13.0 *)
+
+val fold_right : f:(char -> 'a -> 'a) -> bytes -> init:'a -> 'a
+(** [fold_right f s x] computes
+    [f (get s 0) (f (get s 1) ( ... (f (get s (n-1)) x) ...))],
+    where [n] is the length of [s].
+    @since 4.13.0 *)
+
+val for_all : f:(char -> bool) -> bytes -> bool
+(** [for_all p s] checks if all characters in [s] satisfy the predicate [p].
+    @since 4.13.0 *)
+
+val exists : f:(char -> bool) -> bytes -> bool
+(** [exists p s] checks if at least one character of [s] satisfies the predicate
+    [p].
+    @since 4.13.0 *)
+
 val trim : bytes -> bytes
 (** Return a copy of the argument, without leading and trailing
     whitespace. The bytes regarded as whitespace are the ASCII
