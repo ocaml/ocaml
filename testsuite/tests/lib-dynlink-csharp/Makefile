@@ -30,7 +30,9 @@ all: prepare bytecode bytecode-dll native native-dll
 prepare:
 	@if $(SUPPORTS_SHARED_LIBRARIES); then \
 	   $(OCAMLC) -c plugin.ml && \
-	   $(OCAMLOPT) -o plugin.cmxs -shared plugin.ml; \
+	   if $(BYTECODE_ONLY) ; then : ; else \
+	     $(OCAMLOPT) -o plugin.cmxs -shared plugin.ml; \
+	   fi; \
 	 fi
 
 .PHONY: bytecode
