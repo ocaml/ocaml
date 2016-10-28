@@ -51,8 +51,9 @@ let add_default_argument_wrappers lam =
     | Llet (( Strict | Alias | StrictOpt), _k, id,
         Lfunction {kind; params; body = fbody; attr; loc}, body) ->
       begin match
-        Simplif.split_default_wrapper id kind params fbody attr loc
-          ~create_wrapper_body:stubify
+        Simplif.split_default_wrapper ~id ~kind ~params ~body:fbody
+          ~attr ~wrapper_attr:Lambda.default_function_attribute
+          ~loc ~create_wrapper_body:stubify ()
       with
       | [fun_id, def] -> Llet (Alias, Pgenval, fun_id, def, body)
       | [fun_id, def; inner_fun_id, def_inner] ->
@@ -67,8 +68,9 @@ let add_default_argument_wrappers lam =
             (List.map
                (function
                  | (id, Lambda.Lfunction {kind; params; body; attr; loc}) ->
-                   Simplif.split_default_wrapper id kind params body attr loc
-                     ~create_wrapper_body:stubify
+                   Simplif.split_default_wrapper ~id ~kind ~params ~body
+                     ~attr ~wrapper_attr:Lambda.default_function_attribute
+                     ~loc ~create_wrapper_body:stubify ()
                  | _ -> assert false)
                defs)
         in

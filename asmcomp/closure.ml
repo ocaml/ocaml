@@ -1085,7 +1085,8 @@ and close_functions fenv cenv fun_defs =
       (List.map
          (function
            | (id, Lfunction{kind; params; body; attr; loc}) ->
-               Simplif.split_default_wrapper id kind params body attr loc
+               Simplif.split_default_wrapper ~id ~kind ~params
+                 ~body ~attr ~wrapper_attr:attr ~loc ()
            | _ -> assert false
          )
          fun_defs)

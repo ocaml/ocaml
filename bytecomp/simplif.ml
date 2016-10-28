@@ -644,7 +644,7 @@ and list_emit_tail_infos is_tail =
    function's body. *)
 
 let split_default_wrapper ?(create_wrapper_body = fun lam -> lam)
-      fun_id kind params body attr loc =
+      ~id:fun_id ~kind ~params ~body ~attr ~wrapper_attr ~loc () =
   let rec aux map = function
     | Llet(Strict, k, id, (Lifthenelse(Lvar optparam, _, _) as def), rest) when
         Ident.name optparam = "*opt*" && List.mem optparam params
@@ -688,7 +688,7 @@ let split_default_wrapper ?(create_wrapper_body = fun lam -> lam)
   try
     let wrapper_body, inner = aux [] body in
     [(fun_id, Lfunction{kind; params; body = create_wrapper_body wrapper_body;
-       attr; loc}); inner]
+       attr = wrapper_attr; loc}); inner]
   with Exit ->
     [(fun_id, Lfunction{kind; params; body; attr; loc})]
 
