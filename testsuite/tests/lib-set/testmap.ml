@@ -106,7 +106,40 @@ let test x v s1 s2 =
      fun i ->
        if i < x then img i l = img i s1
        else if i > x then img i r = img i s1
-       else p = img i s1)
+       else p = img i s1);
+
+  checkbool "find_after1"
+    (try
+       let i, _ = M.find_after (fun _ _ -> true) x s1 in
+       not (M.exists (fun k _ -> k >= x && k < i) s1)
+     with Not_found ->
+       M.is_empty s1 || x > fst(M.max_binding s1)
+    );
+
+  checkbool "find_after2"
+    (try
+       let i, _ = M.find_after (fun k _ -> k > x) x s1 in
+       not (M.exists (fun k _ -> k > x && k < i) s1)
+     with Not_found ->
+       M.is_empty s1 || x >= fst(M.max_binding s1)
+    );
+
+  checkbool "find_before1"
+    (try
+       let i, _ = M.find_before (fun _ _ -> true) x s1 in
+       not (M.exists (fun k _ -> k <= x && k > i) s1)
+     with Not_found ->
+       M.is_empty s1 || x < fst(M.min_binding s1)
+    );
+
+  checkbool "find_before2"
+    (try
+       let i, _ = M.find_before (fun k _ -> k < x) x s1 in
+       not (M.exists (fun k _ -> k < x && k > i) s1)
+     with Not_found ->
+       M.is_empty s1 || x <= fst(M.min_binding s1)
+    )
+     
 
 let rkey() = Random.int 10
 

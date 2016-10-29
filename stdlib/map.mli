@@ -212,6 +212,24 @@ module type S =
     (** [find x m] returns the current binding of [x] in [m],
        or raises [Not_found] if no such binding exists. *)
 
+    val find_after : (key -> 'a -> bool) -> key -> 'a t -> key * 'a
+    (** [find_after f x m] calls [f] for bindings with keys greater than
+        or equal to [x] in the order of ascending keys, and returns the
+        first binding [(key,data)] for which [f key data] is true. If there
+        are no such bindings or if [f] never returns true, the function
+        will raise [Not_found].
+        @since 4.03.1
+     *)
+
+    val find_before : (key -> 'a -> bool) -> key -> 'a t -> key * 'a
+    (** [find_before f x m] calls [f] for bindings with keys less than
+        or equal to [x] in the order of descending keys, and returns the
+        first binding [(key,data)] for which [f key data] is true. If there
+        are no such bindings or if [f] never returns true, the function
+        will raise [Not_found].
+        @since 4.03.1
+     *)
+
     val map: ('a -> 'b) -> 'a t -> 'b t
     (** [map f m] returns a map with same domain as [m], where the
        associated value [a] of all bindings of [m] has been
@@ -222,7 +240,6 @@ module type S =
     val mapi: (key -> 'a -> 'b) -> 'a t -> 'b t
     (** Same as {!Map.S.map}, but the function receives as arguments both the
        key and the associated value for each binding of the map. *)
-
 
   end
 (** Output signature of the functor {!Map.Make}. *)
