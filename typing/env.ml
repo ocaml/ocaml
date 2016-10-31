@@ -218,10 +218,8 @@ module EnvTbl =
       | Some o -> local_keys o.next acc
       | None -> acc
 
-    let local_keys tbl = local_keys tbl []
-
     let diff_keys is_local tbl1 tbl2 =
-      let keys2 = local_keys tbl2 in
+      let keys2 = local_keys tbl2 [] in
       List.filter
         (fun id ->
            is_local (find_same id tbl2) &&
@@ -367,8 +365,6 @@ module EnvTbl2 =
       | Some o -> local_keys o.next acc
       | None -> acc
 
-    let local_keys tbl = local_keys tbl []
-
 
     let rec iter f tbl =
       Ident.iter (fun id desc -> f id (Pident id, desc)) tbl.current;
@@ -381,7 +377,7 @@ module EnvTbl2 =
       | None -> ()
 
     let diff_keys tbl1 tbl2 =
-      let keys2 = local_keys tbl2 in
+      let keys2 = local_keys tbl2 [] in
       List.filter
         (fun id ->
            try ignore (find_same id tbl1); false
