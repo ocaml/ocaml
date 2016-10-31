@@ -288,7 +288,8 @@ let ml_file_dependencies source_file =
         Depend.StringSet.fold (find_dependency ML)
           extracted_deps init_deps in
 #if undefined BS_OCAMLDEP then
-      print_dependencies (byte_targets @ extra_targets) byt_deps;
+     if not !native_only then 
+        print_dependencies (byte_targets @ extra_targets) byt_deps;
 #end
       print_dependencies (native_targets @ extra_targets) native_deps;
     end
