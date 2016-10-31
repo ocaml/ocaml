@@ -17,14 +17,16 @@ Spacetime only analyses the memory behaviour of a program with respect to
 the OCaml heap allocators and garbage collector.  It does not analyse
 allocation on the C heap.  Spacetime does not affect the memory behaviour
 of a program being profiled with the exception of any change caused by the
-overhead of profiling (see section\ \ref{runtime_overhead})---for example
+overhead of profiling (see section\ \ref{runtimeoverhead})---for example
 the program running slower might cause it to allocate less memory in total.
 
 Spacetime is currently only available for x86-64 targets and has only been
 tested on Unix-like systems.  It is expected that supported platforms will
 be extended in the future.
 
-\section{Building a program to be profiled}
+\section{How to use it}
+
+\subsection{Building}
 
 To use Spacetime it is necessary to use an OCaml compiler that was
 configured with the {\tt -spacetime} option.  It is not possible to select
@@ -46,12 +48,16 @@ built as normal (ensuring that all files are built with the Spacetime
 compiler).  For many uses it will not be necessary to change the
 code of the program to use the profiler.
 
-\section{Running a program to be profiled}
+Spacetime-configured compilers run slower and occupy more memory than their
+counterparts.  It is hoped this will be fixed in the future as part of
+improved cross compilation support.
+
+\subsection{Running}
 
 Programs built with Spacetime instrumentation have a dependency on
 the {\tt libunwind} library unless that was unavailable at configure time or
 the {\tt -disable-libunwind} option was specified
-(see section\ \ref{runtime_overhead}).
+(see section\ \ref{runtimeoverhead}).
 
 Setting the {\tt OCAML\_SPACETIME\_INTERVAL} environment variable to an
 integer representing a number of milliseconds before running a program built
@@ -69,14 +75,33 @@ the program was started.  One Spacetime file will be written for each
 process that was involved, indexed by process ID; there will normally only
 be one such.  The Spacetime files may be substantial.  The directory to which
 they are written may be overridden by setting
-the {\tt OCAML_SPACETIME_SNAPSHOT_DIR} environment variable before the
+the {\tt OCAML\_SPACETIME\_SNAPSHOT\_DIR} environment variable before the
 program is started.
 
-\section{Analysing Spacetime output files}
+Instead of using the automatic snapshot facility described above it is also
+possible to manually control Spacetime profiling.  (The environment variables
+{\tt OCAML\_SPACETIME\_INTERVAL} and {\tt OCAML\_SPACETIME\_SNAPSHOT\_DIR}
+are then not relevant.)  Full documentation as regards this method of profiling
+is provided in the standard library documentation for the
+{\tt Spacetime} module elsewhere in this manual.
 
+\subsection{Analysis}
 
+The compiler distribution does not itself provide the facility for analysing
+Spacetime output files; this is left to external tools.  (It does provide
+a library, {\tt Raw\_spacetime\_lib}, for authors of such tools.  That library
+provides facilities to read not only memory profiling information but also
+the full dynamic call graph of the profiled program which is written into
+Spacetime output files.)
 
-\section{Runtime overhead}\label{runtime_overhead}
+Tools and libraries will be provided in OPAM for analysis of Spacetime output
+files. The first tool will be {\tt prof.spacetime}; this provides interactive
+graphical and terminal-based visualisation of the results of profiling.
+A library {\tt Spacetime\_lib} will also be provided; this provides a
+programmatic interface for decoding profiling information at a higher level
+than that provided by {\tt Raw\_spacetime\_lib}.
+
+\section{Runtime overhead}\label{runtimeoverhead}
 
 The runtime overhead imposed by Spacetime varies considerably depending on
 the particular program being profiled.  The overhead may be as low as

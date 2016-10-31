@@ -89,6 +89,7 @@ chapters (or sometimes sections) are mapped to a distinct `.etex` file:
     - The ocamlbuild compilation manager: `ocamlbuild.etex`
     - Interfacing C with OCaml: `intf-c.etex`
     - Optimisation with Flambda: `flambda.etex`
+    - Memory profiling with Spacetime: `spacetime.etex`
 
 - Part IV, The OCaml library: 'libref'
  This parts contains an brief presentation of all libraries bundled with the
