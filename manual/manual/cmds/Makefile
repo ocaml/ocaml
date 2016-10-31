@@ -33,6 +33,9 @@ intf-c.tex: intf-c.etex $(TRANSF)
 flambda.tex: flambda.etex $(TRANSF)
 	$(TRANSF) < flambda.etex | $(TEXQUOTE) > flambda.tex
 
+spacetime.tex: spacetime.etex $(TRANSF)
+	$(TRANSF) < spacetime.etex | $(TEXQUOTE) > spacetime.tex
+
 lexyacc.tex: lexyacc.etex $(TRANSF)
 	$(TRANSF) < lexyacc.etex | $(TEXQUOTE) > lexyacc.tex
 
