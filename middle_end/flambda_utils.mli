@@ -229,3 +229,8 @@ val parameters_specialised_to_the_same_variable
    : function_decls:Flambda.function_declarations
   -> specialised_args:Flambda.specialised_to Variable.Map.t
   -> specialised_to_same_as list Variable.Map.t
+
+(** Remove all obvious aliases ("let x = y", transitively) to the variables
+    [to_variables] by substituting out uses and replacing defining expressions
+    of aliasing [Let]s with dummy values. *)
+val eliminate_aliases : Flambda.t -> to_variables:Variable.Set.t -> Flambda.t

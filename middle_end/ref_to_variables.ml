@@ -105,6 +105,11 @@ let variables_containing_ref (flam:Flambda.t) =
   !map
 
 let eliminate_ref_of_expr flam =
+  let variables_containing_ref = variables_containing_ref flam in
+  let flam =
+    Flambda_utils.eliminate_aliases flam
+      ~to_variables:(Variable.Map.keys variables_containing_ref)
+  in
   let variables_not_used_as_local_reference =
     variables_not_used_as_local_reference flam
   in
@@ -112,7 +117,7 @@ let eliminate_ref_of_expr flam =
     Variable.Map.filter
       (fun v _ ->
         not (Variable.Set.mem v variables_not_used_as_local_reference))
-      (variables_containing_ref flam)
+      variables_containing_ref
   in
   if Variable.Map.cardinal convertible_variables = 0 then flam
   else

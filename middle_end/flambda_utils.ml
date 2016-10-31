@@ -863,3 +863,31 @@ let parameters_specialised_to_the_same_variable
               (Variable.Map.find var specialised_arg_aliasing))
         params)
     function_decls.funs
+
+let eliminate_aliases flam ~to_variables =
+  if Variable.Set.cardinal to_variables < 1 then
+    flam
+  else
+    let subst = ref Variable.Map.empty in
+    let aux (expr : Flambda.expr) : Flambda.expr =
+      match expr with
+      | Let ({ var; defining_expr = Expr (Var var'); _ } as let_expr)
+          when Variable.Set.mem var' to_variables ->
+        subst := Variable.Map.add var var' !subst;
+        Flambda.map_defining_expr_of_let let_expr ~f:(fun _ ->
+          Const (Int 0))
+      | Let ({ var; defining_expr = Expr (Var var'); _ } as let_expr) ->
+        begin match Variable.Map.find var' !subst with
+        | exception Not_found -> expr
+        | var' ->
+          subst := Variable.Map.add var var' !subst;
+          Flambda.map_defining_expr_of_let let_expr ~f:(fun _ ->
+            Const (Int 0))
+        end
+      | Let _ | Let_mutable _ | Assign _ | Var _ | Apply _ | Let_rec _
+      | Switch _ | String_switch _ | Static_raise _ | Static_catch _
+      | Try_with _ | If_then_else _ | While _ | For _ | Send _
+      | Proved_unreachable -> expr
+    in
+    let flam = Flambda_iterators.map_toplevel_expr aux flam in
+    toplevel_substitution !subst flam
