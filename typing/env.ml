@@ -315,23 +315,29 @@ module EnvTbl2 =
 
     let find_name name tbl = find_name true name tbl
 
-    let rec update name f tbl =
+    let rec update name f tbl summary =
       try
         let (id, desc) = Ident.find_name name tbl.current in
-        {tbl with current = Ident.add id (f desc) tbl.current}
+        let new_desc = f desc in
+        {tbl with current = Ident.add id new_desc tbl.current},
+        Env_value (summary, id, new_desc)
       with Not_found ->
         begin match tbl.opened with
         | Some {root; using; next; components} ->
             begin try
               let (desc, pos) = Tbl.find_str name components in
-              let components = Tbl.add name (f desc, pos) components in
-              {tbl with opened = Some {root; using; next; components}}
+              let new_desc = f desc in
+              let components = Tbl.add name (new_desc, pos) components in
+              {tbl with opened = Some {root; using; next; components}},
+              summary (* ?? *)
             with Not_found ->
-              let next = update name f next in
-              {tbl with opened = Some {root; using; next; components}}
+              let next, summary = update name f next summary in
+              {tbl with opened = Some {root; using; next; components}},
+              summary
             end
         | None ->
-            tbl
+            tbl,
+            summary
         end
 
 
@@ -1199,8 +1205,8 @@ let lookup_cltype =
   lookup (fun env -> env.cltypes) (fun sc -> sc.comp_cltypes)
 
 let update_value s f env =
-  (* update summary?? *)
-  {env with values = EnvTbl2.update s f env.values}
+  let values, summary = EnvTbl2.update s f env.values env.summary in
+  {env with values; summary}
 
 let mark_value_used env name vd =
   if not (is_implicit_coercion env) then
