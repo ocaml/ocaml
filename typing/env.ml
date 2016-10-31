@@ -219,6 +219,16 @@ module EnvTbl =
       | None -> acc
 
     let local_keys tbl = local_keys tbl []
+
+    let diff_keys is_local tbl1 tbl2 =
+      let keys2 = local_keys tbl2 in
+      List.filter
+        (fun id ->
+           is_local (find_same id tbl2) &&
+           try ignore (find_same id tbl1); false
+           with Not_found -> true)
+        keys2
+
   end
 
 
@@ -370,6 +380,15 @@ module EnvTbl2 =
           iter f next
       | None -> ()
 
+    let diff_keys tbl1 tbl2 =
+      let keys2 = local_keys tbl2 in
+      List.filter
+        (fun id ->
+           try ignore (find_same id tbl1); false
+           with Not_found -> true)
+        keys2
+
+
   end
 
 type type_descriptions =
@@ -491,23 +510,6 @@ let implicit_coercion env =
 let is_in_signature env = env.flags land in_signature_flag <> 0
 let is_implicit_coercion env = env.flags land implicit_coercion_flag <> 0
 
-let diff_keys is_local tbl1 tbl2 =
-  let keys2 = EnvTbl.local_keys tbl2 in
-  List.filter
-    (fun id ->
-      is_local (EnvTbl.find_same id tbl2) &&
-      try ignore (EnvTbl.find_same id tbl1); false
-      with Not_found -> true)
-    keys2
-
-let diff_keys2 tbl1 tbl2 =
-  let keys2 = EnvTbl2.local_keys tbl2 in
-  List.filter
-    (fun id ->
-      try ignore (EnvTbl2.find_same id tbl1); false
-      with Not_found -> true)
-    keys2
-
 let is_ident = function
     Pident _ -> true
   | Pdot _ | Papply _ -> false
@@ -517,10 +519,10 @@ let is_local_ext = function
   | _ -> false
 
 let diff env1 env2 =
-  diff_keys2 env1.values env2.values @
-  diff_keys is_local_ext env1.constrs env2.constrs @
-  diff_keys2 env1.modules env2.modules @
-  diff_keys2 env1.classes env2.classes
+  EnvTbl2.diff_keys env1.values env2.values @
+  EnvTbl.diff_keys is_local_ext env1.constrs env2.constrs @
+  EnvTbl2.diff_keys env1.modules env2.modules @
+  EnvTbl2.diff_keys env1.classes env2.classes
 
 (* Forward declarations *)
 
