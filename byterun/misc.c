@@ -63,13 +63,13 @@ void caml_gc_message (int level, char *msg, uintnat arg)
 CAMLexport void caml_fatal_error (char *msg)
 {
   fprintf (stderr, "%s", msg);
-  abort();
+  exit(2);
 }
 
 CAMLexport void caml_fatal_error_arg (char *fmt, char *arg)
 {
   fprintf (stderr, fmt, arg);
-  abort();
+  exit(2);
 }
 
 CAMLexport void caml_fatal_error_arg2 (char *fmt1, char *arg1,
@@ -77,7 +77,7 @@ CAMLexport void caml_fatal_error_arg2 (char *fmt1, char *arg1,
 {
   fprintf (stderr, fmt1, arg1);
   fprintf (stderr, fmt2, arg2);
-  abort();
+  exit(2);
 }
 
 /* [size] and [modulo] are numbers of bytes */
