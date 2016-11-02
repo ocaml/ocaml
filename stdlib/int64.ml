@@ -56,6 +56,7 @@ let to_string n = format "%d" n
 external of_string : string -> int64 = "caml_int64_of_string"
 
 let of_string_opt s =
+  (* TODO: expose a non-raising primitive directly. *)
   try Some (of_string s)
   with Failure _ -> None
 
