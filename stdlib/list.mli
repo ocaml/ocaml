@@ -52,15 +52,35 @@ val hd : 'a list -> 'a
 (** Return the first element of the given list. Raise
    [Failure "hd"] if the list is empty. *)
 
+val hd_opt: 'a list -> 'a option
+(** Return the first element of the given list or [None]
+    if the list is empty.
+    @since 4.05
+*)
+
 val tl : 'a list -> 'a list
 (** Return the given list without its first element. Raise
-   [Failure "tl"] if the list is empty. *)
+    [Failure "tl"] if the list is empty. *)
 
-val nth : 'a list -> int -> 'a
+val tl_opt: 'a list -> 'a list option
+(** Return the given list without its first element or [None]
+    if the list is empty.
+    @since 4.05
+*)
+
+val nth: 'a list -> int -> 'a
 (** Return the [n]-th element of the given list.
    The first element (head of the list) is at position 0.
    Raise [Failure "nth"] if the list is too short.
    Raise [Invalid_argument "List.nth"] if [n] is negative. *)
+
+val nth_opt: 'a list -> int -> 'a option
+(** Return the [n]-th element of the given list.
+    The first element (head of the list) is at position 0.
+    Return [None] if the list is too short.
+    Raise [Invalid_argument "List.nth"] if [n] is negative.
+    @since 4.05
+*)
 
 val rev : 'a list -> 'a list
 (** List reversal. *)
@@ -200,7 +220,7 @@ val find : ('a -> bool) -> 'a list -> 'a
    Raise [Not_found] if there is no value that satisfies [p] in the
    list [l]. *)
 
-val find_opt : ('a -> bool) -> 'a list -> 'a option
+val find_opt: ('a -> bool) -> 'a list -> 'a option
 (** [find_opt p l] returns the first element of the list [l] that
     satisfies the predicate [p], or [None] if there is no value that
     satisfies [p] in the list [l].
@@ -233,7 +253,7 @@ val assoc : 'a -> ('a * 'b) list -> 'b
    Raise [Not_found] if there is no value associated with [a] in the
    list [l]. *)
 
-val assoc_opt : 'a -> ('a * 'b) list -> 'b option
+val assoc_opt: 'a -> ('a * 'b) list -> 'b option
 (** [assoc_opt a l] returns the value associated with key [a] in the list of
    pairs [l]. That is,
    [assoc_opt a [ ...; (a,b); ...] = b]

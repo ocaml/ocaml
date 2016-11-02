@@ -27,9 +27,17 @@ let hd = function
     [] -> failwith "hd"
   | a::_ -> a
 
+let hd_opt = function
+    [] -> None
+  | a::_ -> Some a
+
 let tl = function
     [] -> failwith "tl"
   | _::l -> l
+
+let tl_opt = function
+    [] -> None
+  | _::l -> Some l
 
 let nth l n =
   if n < 0 then invalid_arg "List.nth" else
@@ -37,6 +45,14 @@ let nth l n =
     match l with
     | [] -> failwith "nth"
     | a::l -> if n = 0 then a else nth_aux l (n-1)
+  in nth_aux l n
+
+let nth_opt l n =
+  if n < 0 then invalid_arg "List.nth" else
+  let rec nth_aux l n =
+    match l with
+    | [] -> None
+    | a::l -> if n = 0 then Some a else nth_aux l (n-1)
   in nth_aux l n
 
 let append = (@)

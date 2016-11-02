@@ -33,15 +33,35 @@ val hd : 'a list -> 'a
 (** Return the first element of the given list. Raise
    [Failure "hd"] if the list is empty. *)
 
+val hd_opt: 'a list -> 'a option
+(** Return the first element of the given list or [None]
+    if the list is empty.
+    @since 4.05
+*)
+
 val tl : 'a list -> 'a list
 (** Return the given list without its first element. Raise
    [Failure "tl"] if the list is empty. *)
+
+val tl_opt: 'a list -> 'a list option
+(** Return the given list without its first element or [None]
+    if the list is empty.
+    @since 4.05
+*)
 
 val nth : 'a list -> int -> 'a
 (** Return the [n]-th element of the given list.
    The first element (head of the list) is at position 0.
    Raise [Failure "nth"] if the list is too short.
    Raise [Invalid_argument "List.nth"] if [n] is negative. *)
+
+val nth_opt: 'a list -> int -> 'a option
+(** Return the [n]-th element of the given list.
+    The first element (head of the list) is at position 0.
+    Return [None] if the list is too short.
+    Raise [Invalid_argument "List.nth"] if [n] is negative.
+    @since 4.05
+*)
 
 val rev : 'a list -> 'a list
 (** List reversal. *)
