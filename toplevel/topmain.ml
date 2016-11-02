@@ -155,11 +155,13 @@ let main () =
   let ppf = Format.err_formatter in
   Compenv.readenv ppf Before_args;
   let list = ref Options.list in
-  try
-    Arg.parse_and_expand_argv_dynamic current argv list file_argument usage;
-  with
-  | Arg.Bad msg -> Printf.eprintf "%s" msg; exit 2
-  | Arg.Help msg -> Printf.printf "%s" msg; exit 0;
+  begin
+    try
+      Arg.parse_and_expand_argv_dynamic current argv list file_argument usage;
+    with
+    | Arg.Bad msg -> Printf.eprintf "%s" msg; exit 2
+    | Arg.Help msg -> Printf.printf "%s" msg; exit 0
+  end;
   Compenv.readenv ppf Before_link;
   if not (prepare ppf) then exit 2;
   Toploop.loop Format.std_formatter

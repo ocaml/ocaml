@@ -240,10 +240,12 @@ end);;
 let main () =
   native_code := true;
   let list = ref Options.list in
-  try
-    Arg.parse_and_expand_argv_dynamic current argv list file_argument usage
-  with
-  | Arg.Bad msg -> Printf.eprintf "%s" msg; exit 2
-  | Arg.Help msg -> Printf.printf "%s" msg; exit 0;
+  begin
+    try
+      Arg.parse_and_expand_argv_dynamic current argv list file_argument usage;
+    with
+    | Arg.Bad msg -> Format.fprintf Format.err_formatter "%s%!" msg; exit 2
+    | Arg.Help msg -> Format.fprintf Format.std_formatter "%s%!" msg; exit 0
+  end;
   if not (prepare Format.err_formatter) then exit 2;
   Opttoploop.loop Format.std_formatter
