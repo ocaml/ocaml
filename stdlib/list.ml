@@ -27,17 +27,9 @@ let hd = function
     [] -> failwith "hd"
   | a::_ -> a
 
-let hd_opt = function
-    [] -> None
-  | a::_ -> Some a
-
 let tl = function
     [] -> failwith "tl"
   | _::l -> l
-
-let tl_opt = function
-    [] -> None
-  | _::l -> Some l
 
 let nth l n =
   if n < 0 then invalid_arg "List.nth" else
