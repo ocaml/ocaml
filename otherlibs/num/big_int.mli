@@ -141,6 +141,16 @@ val big_int_of_string : string -> big_int
         (** Convert a string to a big integer, in decimal.
            The string consists of an optional [-] or [+] sign,
            followed by one or several decimal digits. *)
+(* TODO: document error condition. *)
+
+val big_int_of_string_opt: string -> big_int option
+(** Convert a string to a big integer, in decimal.
+    The string consists of an optional [-] or [+] sign,
+    followed by one or several decimal digits. Other the function
+    returns [None].
+    @since 4.05
+*)
+
 
 (** {6 Conversions to and from other numerical types} *)
 

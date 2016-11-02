@@ -472,6 +472,9 @@ let sys_big_int_of_string s ofs len =
 let big_int_of_string s =
   sys_big_int_of_string s 0 (String.length s)
 
+let big_int_of_string_opt s =
+  try Some (big_int_of_string s) with Failure _ -> None
+
 let power_base_nat base nat off len =
   if base = 0 then nat_of_int 0 else
   if is_zero_nat nat off len || base = 1 then nat_of_int 1 else
