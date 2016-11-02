@@ -78,6 +78,8 @@ let rec env_from_summary sum subst =
               Env.add_local_type (Subst.type_path subst path)
                 (Subst.type_declaration subst info))
             map (env_from_summary s subst)
+      | Env_copy_types (s, sl) ->
+          Env.copy_types sl (env_from_summary s subst)
     in
       Hashtbl.add env_cache (sum, subst) env;
       env

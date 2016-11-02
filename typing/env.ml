@@ -120,6 +120,7 @@ type summary =
   | Env_open of summary * Path.t
   | Env_functor_arg of summary * Ident.t
   | Env_constraints of summary * type_declaration PathMap.t
+  | Env_copy_types of summary * string list
 
 module EnvTbl =
   struct
@@ -315,12 +316,11 @@ module EnvTbl2 =
 
     let find_name name tbl = find_name true name tbl
 
-    let rec update name f tbl summary =
+    let rec update name f tbl =
       try
         let (id, desc) = Ident.find_name name tbl.current in
         let new_desc = f desc in
-        {tbl with current = Ident.add id new_desc tbl.current},
-        Env_value (summary, id, new_desc)
+        {tbl with current = Ident.add id new_desc tbl.current}
       with Not_found ->
         begin match tbl.opened with
         | Some {root; using; next; components} ->
@@ -328,16 +328,13 @@ module EnvTbl2 =
               let (desc, pos) = Tbl.find_str name components in
               let new_desc = f desc in
               let components = Tbl.add name (new_desc, pos) components in
-              {tbl with opened = Some {root; using; next; components}},
-              summary (* ?? *)
+              {tbl with opened = Some {root; using; next; components}}
             with Not_found ->
-              let next, summary = update name f next summary in
-              {tbl with opened = Some {root; using; next; components}},
-              summary
+              let next = update name f next in
+              {tbl with opened = Some {root; using; next; components}}
             end
         | None ->
-            tbl,
-            summary
+            tbl
         end
 
 
@@ -1204,9 +1201,10 @@ let lookup_class =
 let lookup_cltype =
   lookup (fun env -> env.cltypes) (fun sc -> sc.comp_cltypes)
 
-let update_value s f env =
-  let values, summary = EnvTbl2.update s f env.values env.summary in
-  {env with values; summary}
+let copy_types l env =
+  let f desc = {desc with val_type = Subst.type_expr Subst.identity desc.val_type} in
+  let values = List.fold_left (fun env s -> EnvTbl2.update s f env) env.values l in
+  {env with values; summary = Env_copy_types (env.summary, l)}
 
 let mark_value_used env name vd =
   if not (is_implicit_coercion env) then

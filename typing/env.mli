@@ -32,6 +32,7 @@ type summary =
   | Env_open of summary * Path.t
   | Env_functor_arg of summary * Ident.t
   | Env_constraints of summary * type_declaration PathMap.t
+  | Env_copy_types of summary * string list
 
 type t
 
@@ -123,8 +124,7 @@ val lookup_class:
 val lookup_cltype:
   ?loc:Location.t -> Longident.t -> t -> Path.t * class_type_declaration
 
-val update_value:
-  string -> (value_description -> value_description) -> t -> t
+val copy_types: string list -> t -> t
   (* Used only in Typecore.duplicate_ident_types. *)
 
 exception Recmodule
