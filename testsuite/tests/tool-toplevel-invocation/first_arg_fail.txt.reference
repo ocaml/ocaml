@@ -1,1 +1,73 @@
-Script file is not allowed in expanded option.
+/home/schommer/workdir/ocaml/testsuite/../ocaml: Script file is not allowed in expanded option.
+Usage: ocaml <options> <object-files> [script-file [arguments]]
+options are:
+  -absname  Show absolute filenames in error messages
+  -I <dir>  Add <dir> to the list of include directories
+  -init <file>  Load <file> instead of default init file
+  -labels  Use commuting label mode
+  -alias-deps  Do record dependencies for module aliases
+  -no-alias-deps  Do not record dependencies for module aliases
+  -app-funct  Activate applicative functors
+  -no-app-funct  Deactivate applicative functors
+  -noassert  Do not compile assertion checks
+  -noinit  Do not load any init file
+  -nolabels  Ignore non-optional labels in types
+  -noprompt  Suppress all prompts
+  -nopromptcont  Suppress prompts for continuation lines of multi-line inputs
+  -nostdlib  Do not add default directory to the list of include directories
+  -open <module>  Opens the module <module> before typing
+  -ppx <command>  Pipe abstract syntax trees through preprocessor <command>
+  -plugin <plugin>  Load dynamic plugin <plugin>
+  -principal  Check principality of type inference
+  -no-principal  Do not check principality of type inference (default)
+  -rectypes  Allow arbitrary recursive types
+  -no-rectypes  Do not allow arbitrary recursive types (default)
+  -safe-string  Make strings immutable
+  -short-paths  Shorten paths in types
+  -stdin  Read script from standard input
+  -strict-sequence  Left-hand part of a sequence must have type unit
+  -no-strict-sequence  Left-hand part of a sequence need not have type unit (default)
+  -strict-formats  Reject invalid formats accepted by legacy implementations
+     (Warning: Invalid formats may behave differently from
+      previous OCaml versions, and will become always-rejected
+      in future OCaml versions. You should always use this flag
+      to detect invalid formats so you can fix them.)
+  -no-strict-formats  Accept invalid formats accepted by legacy implementations (default)
+     (Warning: Invalid formats may behave differently from
+      previous OCaml versions, and will become always-rejected
+      in future OCaml versions. You should never use this flag
+      and instead fix invalid formats.)
+  -unboxed-types  unannotated unboxable types will be unboxed
+  -no-unboxed-types  unannotated unboxable types will not be unboxed (default)
+  -unsafe  Do not compile bounds checking on array and string access
+  -unsafe-string  Make strings mutable (default)
+  -version  Print version and exit
+  --version  Print version and exit
+  -no-version  Do not print version at startup
+  -vnum  Print version number and exit
+  -w <list>  Enable or disable warnings according to <list>:
+        +<spec>   enable warnings in <spec>
+        -<spec>   disable warnings in <spec>
+        @<spec>   enable warnings in <spec> and treat them as errors
+     <spec> can be:
+        <num>             a single warning number
+        <num1>..<num2>    a range of consecutive warning numbers
+        <letter>          a predefined set
+     default setting is "+a-4-6-7-9-27-29-32..39-41..42-44-45-48-50-60"
+  -warn-error <list>  Enable or disable error status for warnings according
+     to <list>.  See option -w for the syntax of <list>.
+     Default setting is "-a+31"
+  -warn-help  Show description of warning numbers
+  - <file>  Treat <file> as a file name (even if it starts with `-')
+  -dsource  (undocumented)
+  -dparsetree  (undocumented)
+  -dtypedtree  (undocumented)
+  -drawlambda  (undocumented)
+  -dlambda  (undocumented)
+  -dinstr  (undocumented)
+  -args <file> Read additional newline separated command line arguments 
+      from <file>
+  -args0 <file> Read additional NUL separated command line arguments from 
+      <file>
+  -help  Display this list of options
+  --help  Display this list of options

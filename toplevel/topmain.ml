@@ -64,8 +64,7 @@ let file_argument name =
   if Filename.check_suffix name ".cmo" || Filename.check_suffix name ".cma"
   then preload_objects := name :: !preload_objects
   else if is_expanded !current then begin
-    Format.fprintf ppf "Script file is not allowed in expanded option.\n%!";
-    exit 2
+    raise (Arg.Bad "Script file is not allowed in expanded option")
   end else begin
       let newargs = Array.sub !argv !current
                               (Array.length !argv - !current)
@@ -156,7 +155,11 @@ let main () =
   let ppf = Format.err_formatter in
   Compenv.readenv ppf Before_args;
   let list = ref Options.list in
-  Arg.parse_and_expand_argv_dynamic current argv list file_argument usage;
+  try
+    Arg.parse_and_expand_argv_dynamic current argv list file_argument usage;
+  with
+  | Arg.Bad msg -> Printf.eprintf "%s" msg; exit 2
+  | Arg.Help msg -> Printf.printf "%s" msg; exit 0;
   Compenv.readenv ppf Before_link;
   if not (prepare ppf) then exit 2;
   Toploop.loop Format.std_formatter

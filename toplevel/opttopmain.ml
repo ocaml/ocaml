@@ -61,8 +61,7 @@ let file_argument name =
     || Filename.check_suffix name ".cmxa"
   then preload_objects := name :: !preload_objects
   else if is_expanded !current then begin
-    Format.fprintf ppf "Script file is not allowed in expanded option.\n%!";
-    exit 2
+    raise (Arg.Bad "Script file is not allowed in expanded option")
   end else begin
     let newargs = Array.sub !argv !Arg.current
                               (Array.length !argv - !Arg.current)
@@ -241,6 +240,10 @@ end);;
 let main () =
   native_code := true;
   let list = ref Options.list in
-  Arg.parse_and_expand_argv_dynamic current argv list file_argument usage;
+  try
+    Arg.parse_and_expand_argv_dynamic current argv list file_argument usage
+  with
+  | Arg.Bad msg -> Printf.eprintf "%s" msg; exit 2
+  | Arg.Help msg -> Printf.printf "%s" msg; exit 0;
   if not (prepare Format.err_formatter) then exit 2;
   Opttoploop.loop Format.std_formatter
