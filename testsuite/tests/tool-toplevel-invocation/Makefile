@@ -18,7 +18,9 @@ BASEDIR=../..
 
 default:
 	@for file in *.txt; do \
-		$(OCAML) -args $$file > $$file.result 2>&1 || true; \
+	 TERM=dumb $(OCAML) -args $$file < test.ml 2>&1 \
+	    | grep -v '^        OCaml version' \
+	    | grep -v ' Script file is not allowed in expanded option.'  > $$file.result; \
 	done
 	@for file in *.reference; do \
 	  printf " ... testing '$$file':"; \

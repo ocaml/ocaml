@@ -1,3 +1,1 @@
-
-let _ =
-  Printf.printf "Test succeds\n";;
+printf "Test succeds\n";;
