@@ -1,1 +1,1 @@
-printf "Test succeds\n";;
+printf "Test succeeds\n";;

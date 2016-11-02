@@ -1,3 +1,4 @@
+ Script file is not allowed in expanded option.
 Usage: ocaml <options> <object-files> [script-file [arguments]]
 options are:
   -absname  Show absolute filenames in error messages
