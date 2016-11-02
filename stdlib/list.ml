@@ -158,9 +158,17 @@ let rec assoc x = function
     [] -> raise Not_found
   | (a,b)::l -> if compare a x = 0 then b else assoc x l
 
+let rec assoc_opt x = function
+    [] -> None
+  | (a,b)::l -> if compare a x = 0 then Some b else assoc_opt x l
+
 let rec assq x = function
     [] -> raise Not_found
   | (a,b)::l -> if a == x then b else assq x l
+
+let rec assq_opt x = function
+    [] -> None
+  | (a,b)::l -> if a == x then Some b else assq_opt x l
 
 let rec mem_assoc x = function
   | [] -> false
@@ -182,6 +190,10 @@ let rec remove_assq x = function
 let rec find p = function
   | [] -> raise Not_found
   | x :: l -> if p x then x else find p l
+
+let rec find_opt p = function
+  | [] -> None
+  | x :: l -> if p x then Some x else find_opt p l
 
 let find_all p =
   let rec find accu = function

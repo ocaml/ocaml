@@ -60,6 +60,12 @@ external getenv : string -> string = "caml_sys_getenv"
 (** Return the value associated to a variable in the process
    environment. Raise [Not_found] if the variable is unbound. *)
 
+val getenv_opt: string -> string option
+(** Return the value associated to a variable in the process
+    environment or [None] if the variable is unbound.
+    @since 4.05
+*)
+
 external command : string -> int = "caml_sys_system_command"
 (** Execute the given shell command and return its exit code. *)
 

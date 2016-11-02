@@ -43,10 +43,14 @@ module type S =
     val cardinal: 'a t -> int
     val bindings: 'a t -> (key * 'a) list
     val min_binding: 'a t -> (key * 'a)
+    val min_binding_opt: 'a t -> (key * 'a) option
     val max_binding: 'a t -> (key * 'a)
+    val max_binding_opt: 'a t -> (key * 'a) option
     val choose: 'a t -> (key * 'a)
+    val choose_opt: 'a t -> (key * 'a) option
     val split: key -> 'a t -> 'a t * 'a option * 'a t
     val find: key -> 'a t -> 'a
+    val find_opt: key -> 'a t -> 'a option
     val map: ('a -> 'b) -> 'a t -> 'b t
     val mapi: (key -> 'a -> 'b) -> 'a t -> 'b t
   end
@@ -125,6 +129,14 @@ module Make(Ord: OrderedType) = struct
           if c = 0 then d
           else find x (if c < 0 then l else r)
 
+    let rec find_opt x = function
+        Empty ->
+          None
+      | Node(l, v, d, r, _) ->
+          let c = Ord.compare x v in
+          if c = 0 then Some d
+          else find_opt x (if c < 0 then l else r)
+
     let rec mem x = function
         Empty ->
           false
@@ -137,10 +149,20 @@ module Make(Ord: OrderedType) = struct
       | Node(Empty, x, d, _, _) -> (x, d)
       | Node(l, _, _, _, _) -> min_binding l
 
+    let rec min_binding_opt = function
+        Empty -> None
+      | Node(Empty, x, d, _, _) -> Some (x, d)
+      | Node(l, _, _, _, _) -> min_binding_opt l
+
     let rec max_binding = function
         Empty -> raise Not_found
       | Node(_, x, d, Empty, _) -> (x, d)
       | Node(_, _, _, r, _) -> max_binding r
+
+    let rec max_binding_opt = function
+        Empty -> None
+      | Node(_, x, d, Empty, _) -> Some (x, d)
+      | Node(_, _, _, r, _) -> max_binding_opt r
 
     let rec remove_min_binding = function
         Empty -> invalid_arg "Map.remove_min_elt"
@@ -355,5 +377,7 @@ module Make(Ord: OrderedType) = struct
       bindings_aux [] s
 
     let choose = min_binding
+
+    let choose_opt = min_binding_opt
 
 end

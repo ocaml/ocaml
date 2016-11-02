@@ -63,7 +63,7 @@ let rec unsafe_blits dst pos sep seplen = function
 let concat sep = function
     [] -> ""
   | l -> let seplen = length sep in bts @@
-          unsafe_blits 
+          unsafe_blits
             (B.create (sum_lengths 0 seplen l))
             0 sep seplen l
 
@@ -105,12 +105,20 @@ let escaped s =
 
 let index s c =
   B.index (bos s) c
+let index_opt s c =
+  B.index_opt (bos s) c
 let rindex s c =
   B.rindex (bos s) c
+let rindex_opt s c =
+  B.rindex_opt (bos s) c
 let index_from s i c=
   B.index_from (bos s) i c
+let index_from_opt s i c=
+  B.index_from_opt (bos s) i c
 let rindex_from s i c =
   B.rindex_from (bos s) i c
+let rindex_from_opt s i c =
+  B.rindex_from_opt (bos s) i c
 let contains s c =
   B.contains (bos s) c
 let contains_from s i c =

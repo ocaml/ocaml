@@ -200,6 +200,12 @@ val find : ('a -> bool) -> 'a list -> 'a
    Raise [Not_found] if there is no value that satisfies [p] in the
    list [l]. *)
 
+val find_opt : ('a -> bool) -> 'a list -> 'a option
+(** [find_opt p l] returns the first element of the list [l] that
+    satisfies the predicate [p], or [None] if there is no value that
+    satisfies [p] in the list [l].
+    @since 4.05 *)
+
 val filter : ('a -> bool) -> 'a list -> 'a list
 (** [filter p l] returns all the elements of the list [l]
    that satisfy the predicate [p].  The order of the elements
@@ -227,9 +233,23 @@ val assoc : 'a -> ('a * 'b) list -> 'b
    Raise [Not_found] if there is no value associated with [a] in the
    list [l]. *)
 
+val assoc_opt : 'a -> ('a * 'b) list -> 'b option
+(** [assoc_opt a l] returns the value associated with key [a] in the list of
+   pairs [l]. That is,
+   [assoc_opt a [ ...; (a,b); ...] = b]
+   if [(a,b)] is the leftmost binding of [a] in list [l].
+   Returns [None] if there is no value associated with [a] in the
+   list [l].
+   @since 4.05 *)
+
 val assq : 'a -> ('a * 'b) list -> 'b
 (** Same as {!List.assoc}, but uses physical equality instead of structural
    equality to compare keys. *)
+
+val assq_opt : 'a -> ('a * 'b) list -> 'b option
+(** Same as {!List.assoc_opt}, but uses physical equality instead of structural
+    equality to compare keys.
+    @since 4.05 *)
 
 val mem_assoc : 'a -> ('a * 'b) list -> bool
 (** Same as {!List.assoc}, but simply return true if a binding exists,
