@@ -161,6 +161,13 @@ val int_of_big_int : big_int -> int
            Raises [Failure "int_of_big_int"] if the big integer
            is not representable as a small integer. *)
 
+val int_of_big_int_opt: big_int -> int option
+(** Convert a big integer to a small integer (type [int]).  Return
+    [None] if the big integer is not representable as a small
+    integer.
+    @since 4.05
+*)
+
 val big_int_of_int32 : int32 -> big_int
 (** Convert a 32-bit integer to a big integer. *)
 
@@ -175,15 +182,34 @@ val int32_of_big_int : big_int -> int32
             Raises [Failure] if the big integer is outside the
             range \[-2{^31}, 2{^31}-1\]. *)
 
+val int32_of_big_int_opt: big_int -> int32 option
+(** Convert a big integer to a 32-bit integer.  Return [None] if the
+    big integer is outside the range \[-2{^31}, 2{^31}-1\].
+    @since 4.05
+*)
+
 val nativeint_of_big_int : big_int -> nativeint
         (** Convert a big integer to a native integer.
             Raises [Failure] if the big integer is outside the
             range [[Nativeint.min_int, Nativeint.max_int]]. *)
 
+val nativeint_of_big_int_opt: big_int -> nativeint option
+(** Convert a big integer to a native integer. Return [None] if the
+    big integer is outside the range [[Nativeint.min_int,
+    Nativeint.max_int]];
+    @since 4.05
+*)
+
 val int64_of_big_int : big_int -> int64
         (** Convert a big integer to a 64-bit integer.
             Raises [Failure] if the big integer is outside the
             range \[-2{^63}, 2{^63}-1\]. *)
+
+val int64_of_big_int_opt: big_int -> int64 option
+(** Convert a big integer to a 64-bit integer. Return [None] if the
+    big integer is outside the range \[-2{^63}, 2{^63}-1\].
+    @since 4.05
+*)
 
 val float_of_big_int : big_int -> float
         (** Returns a floating-point number approximating the
