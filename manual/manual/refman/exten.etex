@@ -105,6 +105,8 @@ An expression @@e@@ is said to be {\em immediately linked to} the variable
 
 \section{Lazy patterns} \label{s:lazypat}
 
+\ikwd{lazy\@\texttt{lazy}}
+
 (Introduced in Objective Caml 3.11)
 
 \begin{syntax}
@@ -131,7 +133,7 @@ standard library (
 
 \section{Recursive modules} \label{s-recursive-modules}
 \ikwd{module\@\texttt{module}}
-\ikwd{rec\@\texttt{rec}}
+\ikwd{and\@\texttt{and}}
 
 (Introduced in Objective Caml 3.07)
 
@@ -435,6 +437,7 @@ For example, @module-path'.['expr']'@ is equivalent to
 equivalent to @module-path'.([|' pattern '|])'@.
 
 \section{Record and object notations}
+\ikwd{with\@\texttt{with}}
 
 (Introduced in OCaml 3.12, object copy notation added in Ocaml 4.03)
 
@@ -597,7 +600,7 @@ section~\ref{s-first-class-modules}) and generalized algebraic datatypes
 \begin{syntax}
 let-binding:
        ...
-     | value-name ":" "type" {{ typeconstr-name }} "." typexpr "=" expr
+     | value-name ':' 'type' {{ typeconstr-name }} '.' typexpr '=' expr
 ;
 class-field:
           ...
@@ -632,6 +635,7 @@ section~\ref{s:explicit-overriding}.
 \ikwd{module\@\texttt{module}}
 \ikwd{val\@\texttt{val}}
 \ikwd{with\@\texttt{with}}
+\ikwd{and\@\texttt{and}}
 
 (Introduced in OCaml 3.12; pattern syntax and package type inference
 introduced in 4.00; structural comparison of package types introduced in 4.02.;
@@ -857,6 +861,7 @@ polymorphic recursion.
 
 \ikwd{module\@\texttt{module}}
 \ikwd{type\@\texttt{type}}
+\ikwd{of\@\texttt{of}}
 \ikwd{include\@\texttt{include}}
 
 (Introduced in OCaml 3.12)
@@ -1475,6 +1480,8 @@ The short expressions are translated into calls to functions of the
 The last two entries are valid for any $n > 3$.
 
 \section{Attributes}\label{s:attributes}
+
+\ikwd{when\@\texttt{when}}
 
 (Introduced in OCaml 4.02,
 infix notations for constructs other than expressions added in 4.03)

@@ -9,6 +9,7 @@ specify the general shape and type properties of modules.
 \ikwd{end\@\texttt{end}}
 \ikwd{functor\@\texttt{functor}}
 \ikwd{with\@\texttt{with}}
+\ikwd{and\@\texttt{and}}
 \ikwd{val\@\texttt{val}}
 \ikwd{external\@\texttt{external}}
 \ikwd{type\@\texttt{type}}
