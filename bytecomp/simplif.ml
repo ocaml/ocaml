@@ -470,18 +470,7 @@ let simplify_lets lam =
       simplif l2
   | Llet(Strict, kind, v,
          Lprim(Pmakeblock(0, Mutable, kind_ref) as prim, [linit], loc), lbody)
-    when optimize && Config.flambda = false ->
-      (* This optimization, which turns non-escaping references into
-         mutable variables, is disabled by flambda as it is then done
-         separately as a more precise pass,
-         middle_end/ref_to_variables.ml, which benefits from being
-         applied after inlining.
-
-         According to Pierre Chambart, doing the transformation here
-         would make some further analyzes less precise, while
-         ref_to_variables carefully preserves analysis results; this
-         justifies disabling this one instead of combining both
-         passes. *)
+    when optimize ->
       let slinit = simplif linit in
       let slbody = simplif lbody in
       begin try
