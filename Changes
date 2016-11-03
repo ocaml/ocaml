@@ -388,6 +388,9 @@ OCaml 4.04.0:
 
 ### Documentation:
 
+- PR#7007, PR#7311: document the existence of OCAMLPARAM and
+  ocaml_compiler_internal_params
+  (Damien Doligez, reports by Wim Lewis and Gabriel Scherer)
 
 OCaml 4.03.0 (25 Apr 2016):
 ---------------------------
