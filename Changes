@@ -360,6 +360,8 @@ OCaml 4.04.0:
 - GPR#814: fix the Buffer.add_substring bounds check to handle overflow
   (Jeremy Yallop)
 
+- GPR#880: Fix [@@inline] with default parameters in flambda (Leo White)
+
 ### Internal/compiler-libs changes:
 
 - PR#7200, GPR#539: Improve, fix, and add test for parsing/pprintast.ml
