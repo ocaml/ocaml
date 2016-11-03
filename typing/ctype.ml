@@ -1657,7 +1657,10 @@ let rec local_non_recursive_abbrev strict visited env p ty =
   end
 
 let local_non_recursive_abbrev env p ty =
-  try local_non_recursive_abbrev false [] env p ty; true
+  try (* PR#7397: need to check trace_gadt_instances *)
+    wrap_trace_gadt_instances env
+      (local_non_recursive_abbrev false [] env p) ty;
+    true
   with Occur -> false
 
 
