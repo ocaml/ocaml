@@ -136,7 +136,7 @@ interactively.
  Read additional newline separated command line arguments from \var{filename}.
 
 \item["-args0" \var{filename}]
- Read additional NUL separated command line arguments from \var{filename}.
+ Read additional null character separated command line arguments from \var{filename}.
 
 \item["-bin-annot"]
 Dump detailed information about the compilation (types, bindings,

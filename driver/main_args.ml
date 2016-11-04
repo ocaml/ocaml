@@ -726,14 +726,14 @@ let mk_no_strict_formats f =
 
 let mk_args f =
   "-args", Arg.Expand f,
-  "<file> Read additional newline separated command line arguments \n\
+  "<file> Read additional newline separated command line arguments\n\
   \      from <file>"
 ;;
 
 let mk_args0 f =
   "-args0", Arg.Expand f,
-  "<file> Read additional NUL separated command line arguments from \n\
-  \      <file>"
+  "<file> Read additional null character separated command line arguments\n\
+          from <file>"
 ;;
 
 
