@@ -25,7 +25,6 @@ OCaml 4.04.0:
   limitation should be lifted in the future (see MPR#7364).
   (Damien Doligez)
 
-
 ### Compiler user-interface and warnings:
 
 * PR#6475, GPR#464: interpret all command-line options before compiling any
@@ -42,7 +41,7 @@ OCaml 4.04.0:
   Remove the `Location.errorf_prefixed` function which is no longer relevant
   (Simon Cruanes, Jérémie Dimino)
 
-- PR#7169, clarify the wording of Warning 8
+- PR#7169, GPR#501: clarify the wording of Warning 8
   (Non-exhaustivity warning for pattern matching)
   (Florian Angeletti, review and report by Gabriel Scherer)
 
@@ -66,16 +65,16 @@ OCaml 4.04.0:
 
 ### Standard library:
 
+- GPR#473: Provide `Sys.backend_type` so that user can write backend-specific
+  code in some cases (for example,  code generator).
+  (Hongbo Zhang)
+
 - PR#6279, GPR#553: implement Set.map
   (Gabriel Scherer)
 
 - PR#6820, GPR#560: Add Obj.reachable_words to compute the
   "transitive" heap size of a value
   (Alain Frisch, review by Mark Shinwell and Damien Doligez)
-
-- GPR#473: Provide `Sys.backend_type` so that user can write backend-specific
-  code in some cases (for example,  code generator).
-  (Hongbo Zhang)
 
 - GPR#589: Add a non-allocating function to recover the number of
   allocated minor words.
@@ -103,6 +102,14 @@ OCaml 4.04.0:
 
 - PR#7023, GPR#336: Better unboxing strategy
   (Alain Frisch, Pierre Chambart)
+
+- PR#7244, GPR#840: Ocamlopt + flambda requires a lot of memory
+  to compile large array literal expressions
+  (Pierre Chambart, review by Mark Shinwell)
+
+- PR#7291, GPR#780: Handle specialisation of recursive function that does
+  not always preserve the arguments
+  (Pierre Chambart, Mark Shinwell, report by Simon Cruanes)
 
 - GPR#427: Obj.is_block is now an inlined OCaml function instead of a
   C external.  This should be faster.
@@ -136,14 +143,6 @@ OCaml 4.04.0:
   (Pierre Chambart, review by Leo White)
 
 - GPR#723 Sort emitted functions according to source location
-  (Pierre Chambart, review by Mark Shinwell)
-
-- PR#7291, GPR#780: Handle specialisation of recursive function that does
-  not always preserve the arguments
-  (Pierre Chambart, Mark Shinwell, report by Simon Cruanes)
-
-- PR#7244, GPR#840: Ocamlopt + flambda requires a lot of memory
-  to compile large array literal expressions
   (Pierre Chambart, review by Mark Shinwell)
 
 - Lack of type normalization lead to missing simple compilation for "lazy x"
@@ -187,6 +186,9 @@ OCaml 4.04.0:
 - GPR#548: empty documentation comments
   (Florian Angeletti)
 
+- GPR#575: Add the -no-version option to the toplevel
+  (Sébastien Hinderer)
+
 - GPR#598: Add a --strict option to ocamlyacc treat conflicts as errors
   (this option is now used for the compiler's parser)
   (Jeremy Yallop)
@@ -196,9 +198,6 @@ OCaml 4.04.0:
 
 - GPR#718: ocamldoc, fix order of extensible variant constructors
   (Florian Angeletti)
-
-- Add the -no-version option to the toplevel
-  (Sébastien Hinderer)
 
 ### Debugging and profiling:
 
@@ -211,6 +210,10 @@ OCaml 4.04.0:
   (Thomas Braibant)
 
 ### Manual and documentation:
+
+- PR#7007, PR#7311: document the existence of OCAMLPARAM and
+  ocaml_compiler_internal_params
+  (Damien Doligez, reports by Wim Lewis and Gabriel Scherer)
 
 - PR#7243: warn users against using WinZip to unpack the source archive
   (Damien Doligez, report by Shayne Fletcher)
@@ -358,6 +361,10 @@ OCaml 4.04.0:
   FlexDLL if there was also a system-installed flexlink
   (David Allsopp, report Michael Soegtrop)
 
+- GPR#805, GPR#815, GPR#833: check for integer overflow in String.concat
+  (Jeremy Yallop,
+   review by Damien Doligez, Alain Frisch, Daniel Bünzli, Fabrice Le Fessant)
+
 - GPR#810: check for integer overflow in Array.concat
   (Jeremy Yallop)
 
@@ -388,18 +395,8 @@ OCaml 4.04.0:
 - GPR#679: delay registration of docstring after the mapper is applied
   (Hugo Heuzard, review by Leo White)
 
-- GPR#805, GPR#815, GPR#833: check for integer overflow in String.concat
-  (Jeremy Yallop,
-   review by Damien Doligez, Alain Frisch, Daniel Bünzli, Fabrice Le Fessant)
-
 - GPR#872: don't attach (**/**) comments to any particular node
   (Thomas Refis, review by Leo White)
-
-### Documentation:
-
-- PR#7007, PR#7311: document the existence of OCAMLPARAM and
-  ocaml_compiler_internal_params
-  (Damien Doligez, reports by Wim Lewis and Gabriel Scherer)
 
 OCaml 4.03.0 (25 Apr 2016):
 ---------------------------
