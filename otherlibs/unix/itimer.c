@@ -38,7 +38,7 @@ static void unix_set_timeval(struct timeval * tv, double d)
 static value unix_convert_itimer(struct itimerval *tp)
 {
 #define Get_timeval(tv) (double) tv.tv_sec + (double) tv.tv_usec / 1e6
-  value res = alloc_small(Double_wosize * 2, Double_array_tag);
+  value res = caml_alloc_small(Double_wosize * 2, Double_array_tag);
   Store_double_field(res, 0, Get_timeval(tp->it_interval));
   Store_double_field(res, 1, Get_timeval(tp->it_value));
   return res;

@@ -304,15 +304,15 @@ static void st_check_error(int retcode, char * msg)
   value str;
 
   if (retcode == 0) return;
-  if (retcode == ENOMEM) raise_out_of_memory();
+  if (retcode == ENOMEM) caml_raise_out_of_memory();
   err = strerror(retcode);
   msglen = strlen(msg);
   errlen = strlen(err);
-  str = alloc_string(msglen + 2 + errlen);
+  str = caml_alloc_string(msglen + 2 + errlen);
   memmove (&Byte(str, 0), msg, msglen);
   memmove (&Byte(str, msglen), ": ", 2);
   memmove (&Byte(str, msglen + 2), err, errlen);
-  raise_sys_error(str);
+  caml_raise_sys_error(str);
 }
 
 /* Variable used to stop the "tick" thread */
@@ -383,7 +383,7 @@ static value st_encode_sigset(sigset_t * set)
   Begin_root(res)
     for (i = 1; i < NSIG; i++)
       if (sigismember(set, i) > 0) {
-        value newcons = alloc_small(2, 0);
+        value newcons = caml_alloc_small(2, 0);
         Field(newcons, 0) = Val_int(caml_rev_convert_signal_number(i));
         Field(newcons, 1) = res;
         res = newcons;
@@ -402,9 +402,9 @@ value caml_thread_sigmask(value cmd, value sigs) /* ML */
 
   how = sigmask_cmd[Int_val(cmd)];
   st_decode_sigset(sigs, &set);
-  enter_blocking_section();
+  caml_enter_blocking_section();
   retcode = pthread_sigmask(how, &set, &oldset);
-  leave_blocking_section();
+  caml_leave_blocking_section();
   st_check_error(retcode, "Thread.sigmask");
   return st_encode_sigset(&oldset);
 }
@@ -416,9 +416,9 @@ value caml_wait_signal(value sigs) /* ML */
   int retcode, signo;
 
   st_decode_sigset(sigs, &set);
-  enter_blocking_section();
+  caml_enter_blocking_section();
   retcode = sigwait(&set, &signo);
-  leave_blocking_section();
+  caml_leave_blocking_section();
   st_check_error(retcode, "Thread.wait_signal");
   return Val_int(caml_rev_convert_signal_number(signo));
 #else

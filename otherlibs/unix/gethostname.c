@@ -32,7 +32,7 @@ CAMLprim value unix_gethostname(value unit)
   char name[MAXHOSTNAMELEN];
   gethostname(name, MAXHOSTNAMELEN);
   name[MAXHOSTNAMELEN-1] = 0;
-  return copy_string(name);
+  return caml_copy_string(name);
 }
 
 #else

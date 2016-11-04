@@ -38,7 +38,7 @@ static struct custom_operations image_ops = {
 
 value caml_gr_new_image(int w, int h)
 {
-  value res = alloc_custom(&image_ops, sizeof(struct grimage),
+  value res = caml_alloc_custom(&image_ops, sizeof(struct grimage),
                            w * h, Max_image_mem);
   Width_im(res) = w;
   Height_im(res) = h;

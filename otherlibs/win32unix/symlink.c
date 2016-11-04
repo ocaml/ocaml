@@ -41,7 +41,7 @@ CAMLprim value unix_symlink(value to_dir, value osource, value odest)
 
 again:
   if (no_symlink) {
-    invalid_argument("symlink not available");
+    caml_invalid_argument("symlink not available");
   }
 
   if (!pCreateSymbolicLink) {

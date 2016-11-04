@@ -49,7 +49,7 @@ static value encode_sigset(sigset_t * set)
   Begin_root(res)
     for (i = 1; i < NSIG; i++)
       if (sigismember(set, i) > 0) {
-        value newcons = alloc_small(2, 0);
+        value newcons = caml_alloc_small(2, 0);
         Field(newcons, 0) = Val_int(caml_rev_convert_signal_number(i));
         Field(newcons, 1) = res;
         res = newcons;
@@ -68,9 +68,9 @@ CAMLprim value unix_sigprocmask(value vaction, value vset)
 
   how = sigprocmask_cmd[Int_val(vaction)];
   decode_sigset(vset, &set);
-  enter_blocking_section();
+  caml_enter_blocking_section();
   retcode = sigprocmask(how, &set, &oldset);
-  leave_blocking_section();
+  caml_leave_blocking_section();
   if (retcode == -1) uerror("sigprocmask", Nothing);
   return encode_sigset(&oldset);
 }
@@ -87,9 +87,9 @@ CAMLprim value unix_sigsuspend(value vset)
   sigset_t set;
   int retcode;
   decode_sigset(vset, &set);
-  enter_blocking_section();
+  caml_enter_blocking_section();
   retcode = sigsuspend(&set);
-  leave_blocking_section();
+  caml_leave_blocking_section();
   if (retcode == -1 && errno != EINTR) uerror("sigsuspend", Nothing);
   return Val_unit;
 }

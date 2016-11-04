@@ -24,7 +24,7 @@
 static value alloc_tm(struct tm *tm)
 {
   value res;
-  res = alloc_small(9, 0);
+  res = caml_alloc_small(9, 0);
   Field(res,0) = Val_int(tm->tm_sec);
   Field(res,1) = Val_int(tm->tm_min);
   Field(res,2) = Val_int(tm->tm_hour);
@@ -79,8 +79,8 @@ CAMLprim value unix_mktime(value t)
     clock = mktime(&tm);
     if (clock == (time_t) -1) unix_error(ERANGE, "mktime", Nothing);
     tmval = alloc_tm(&tm);
-    clkval = copy_double((double) clock);
-    res = alloc_small(2, 0);
+    clkval = caml_copy_double((double) clock);
+    res = caml_alloc_small(2, 0);
     Field(res, 0) = clkval;
     Field(res, 1) = tmval;
   End_roots ();

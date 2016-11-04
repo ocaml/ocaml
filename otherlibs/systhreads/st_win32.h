@@ -365,7 +365,7 @@ static void st_check_error(DWORD retcode, char * msg)
   value str;
 
   if (retcode == 0) return;
-  if (retcode == ERROR_NOT_ENOUGH_MEMORY) raise_out_of_memory();
+  if (retcode == ERROR_NOT_ENOUGH_MEMORY) caml_raise_out_of_memory();
   if (! FormatMessage(FORMAT_MESSAGE_FROM_SYSTEM|FORMAT_MESSAGE_IGNORE_INSERTS,
                       NULL,
                       retcode,
@@ -377,11 +377,11 @@ static void st_check_error(DWORD retcode, char * msg)
   }
   msglen = strlen(msg);
   errlen = strlen(err);
-  str = alloc_string(msglen + 2 + errlen);
+  str = caml_alloc_string(msglen + 2 + errlen);
   memmove (&Byte(str, 0), msg, msglen);
   memmove (&Byte(str, msglen), ": ", 2);
   memmove (&Byte(str, msglen + 2), err, errlen);
-  raise_sys_error(str);
+  caml_raise_sys_error(str);
 }
 
 /* Variable used to stop the "tick" thread */
@@ -412,12 +412,12 @@ static DWORD st_atfork(void (*fn)(void))
 
 value caml_thread_sigmask(value cmd, value sigs) /* ML */
 {
-  invalid_argument("Thread.sigmask not implemented");
+  caml_invalid_argument("Thread.sigmask not implemented");
   return Val_int(0);            /* not reached */
 }
 
 value caml_wait_signal(value sigs) /* ML */
 {
-  invalid_argument("Thread.wait_signal not implemented");
+  caml_invalid_argument("Thread.wait_signal not implemented");
   return Val_int(0);            /* not reached */
 }
