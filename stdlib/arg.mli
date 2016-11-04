@@ -181,17 +181,18 @@ val current : int ref
     at the next element. *)
 
 val read_arg: string -> string array
-(** [Arg.read_arg file] reads linefeed terminated command line arguments from
+(** [Arg.read_arg file] reads newline-terminated command line arguments from
     file [file]. *)
 
 val read_arg0: string -> string array
-(** Identical to {!Arg.read_arg} but assumes NUL terminated command line
-    arguments *)
+(** Identical to {!Arg.read_arg} but assumes null character terminated command line
+    arguments. *)
 
 val write_arg: string -> string array -> unit
-(** [Arg.write_arg file args] writes the arguments [args] newline terminated
+(** [Arg.write_arg file args] writes the arguments [args] newline-terminated
     into the file [file]. If the any of the arguments in [args] contains a
-    newline use the function {!Args.write_arg0} instead *)
+    newline, use {!Arg.write_arg0} instead. *)
 
 val write_arg0: string -> string array -> unit
-(** Identical to {!Arg.write_arg} but uses NUL as terminator instead *)
+(** Identical to {!Arg.write_arg} but uses the null character for terminator
+    instead of newline. *)

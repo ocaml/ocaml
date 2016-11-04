@@ -132,6 +132,12 @@ The \var{src}".annot" file can be used with the emacs commands given in
 "emacs/caml-types.el" to display types and other annotations
 interactively.
 
+\item["-args" \var{filename}]
+ Read additional newline-terminated command line arguments from \var{filename}.
+
+\item["-args0" \var{filename}]
+ Read additional null character terminated command line arguments from \var{filename}.
+
 \item["-bin-annot"]
 Dump detailed information about the compilation (types, bindings,
 tail-calls, etc) in binary format. The information for file \var{src}".ml"
