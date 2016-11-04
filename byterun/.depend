@@ -221,7 +221,7 @@ unix.o: unix.c caml/config.h caml/../../config/m.h caml/../../config/s.h \
   caml/compatibility.h caml/fail.h caml/misc.h caml/mlvalues.h \
   caml/memory.h caml/gc.h caml/major_gc.h caml/freelist.h \
   caml/minor_gc.h caml/address_class.h caml/osdeps.h caml/signals.h \
-  caml/sys.h
+  caml/sys.h caml/io.h
 weak.o: weak.c caml/alloc.h caml/compatibility.h caml/misc.h \
   caml/config.h caml/../../config/m.h caml/../../config/s.h \
   caml/mlvalues.h caml/fail.h caml/major_gc.h caml/freelist.h \
@@ -454,7 +454,7 @@ unix.d.o: unix.c caml/config.h caml/../../config/m.h caml/../../config/s.h \
   caml/compatibility.h caml/fail.h caml/misc.h caml/mlvalues.h \
   caml/memory.h caml/gc.h caml/major_gc.h caml/freelist.h \
   caml/minor_gc.h caml/address_class.h caml/osdeps.h caml/signals.h \
-  caml/sys.h
+  caml/sys.h caml/io.h
 weak.d.o: weak.c caml/alloc.h caml/compatibility.h caml/misc.h \
   caml/config.h caml/../../config/m.h caml/../../config/s.h \
   caml/mlvalues.h caml/fail.h caml/major_gc.h caml/freelist.h \
@@ -683,7 +683,7 @@ unix.i.o: unix.c caml/config.h caml/../../config/m.h caml/../../config/s.h \
   caml/compatibility.h caml/fail.h caml/misc.h caml/mlvalues.h \
   caml/memory.h caml/gc.h caml/major_gc.h caml/freelist.h \
   caml/minor_gc.h caml/address_class.h caml/osdeps.h caml/signals.h \
-  caml/sys.h
+  caml/sys.h caml/io.h
 weak.i.o: weak.c caml/alloc.h caml/compatibility.h caml/misc.h \
   caml/config.h caml/../../config/m.h caml/../../config/s.h \
   caml/mlvalues.h caml/fail.h caml/major_gc.h caml/freelist.h \
@@ -912,7 +912,7 @@ unix.pic.o: unix.c caml/config.h caml/../../config/m.h caml/../../config/s.h \
   caml/compatibility.h caml/fail.h caml/misc.h caml/mlvalues.h \
   caml/memory.h caml/gc.h caml/major_gc.h caml/freelist.h \
   caml/minor_gc.h caml/address_class.h caml/osdeps.h caml/signals.h \
-  caml/sys.h
+  caml/sys.h caml/io.h
 weak.pic.o: weak.c caml/alloc.h caml/compatibility.h caml/misc.h \
   caml/config.h caml/../../config/m.h caml/../../config/s.h \
   caml/mlvalues.h caml/fail.h caml/major_gc.h caml/freelist.h \
