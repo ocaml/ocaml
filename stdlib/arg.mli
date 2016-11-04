@@ -186,12 +186,12 @@ val read_arg: string -> string array
 
 val read_arg0: string -> string array
 (** Identical to {!Arg.read_arg} but assumes NUL terminated command line
-    arguments *)
+    arguments. *)
 
 val write_arg: string -> string array -> unit
 (** [Arg.write_arg file args] writes the arguments [args] newline terminated
     into the file [file]. If the any of the arguments in [args] contains a
-    newline use the function {!Args.write_arg0} instead *)
+    newline use the function {!Arg.write_arg0} instead. *)
 
 val write_arg0: string -> string array -> unit
-(** Identical to {!Arg.write_arg} but uses NUL as terminator instead *)
+(** Identical to {!Arg.write_arg} but uses NUL as terminator instead. *)
