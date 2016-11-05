@@ -70,6 +70,14 @@ The \var{src}".annot" file can be used with the emacs commands given in
 interactively.
 }%notop
 
+\notop{
+\item["-args" \var{filename}]
+ Read additional newline-terminated command line arguments from \var{filename}.
+
+\item["-args0" \var{filename}]
+ Read additional null character terminated command line arguments from \var{filename}.
+}%notop
+
 \notop{\item["-bin-annot"]
 Dump detailed information about the compilation (types, bindings,
 tail-calls, etc) in binary format. The information for file \var{src}".ml"
@@ -107,6 +115,19 @@ Pass the given option to the C compiler and linker.
 \nat{For} instance,
 "-ccopt -L"\var{dir} causes the C linker to search for C libraries in
 directory \var{dir}. \comp{(See the "-custom" option.)}
+
+\notop{%
+\item["-color" \var{mode}]
+Enable or disable colors in compiler messages (especially warnings and errors).
+The following modes are supported:
+\begin{description}
+  \item["auto"] use heuristics to enable colors only if the output supports them (an ANSI-compatible tty terminal);
+  \item["always"] enable colors unconditionally;
+  \item["never"] disable color output.
+\end{description}
+The default setting is 'auto', and the current heuristic
+checks that the "TERM" environment variable exists and is
+not empty or "dumb", and that 'isatty(stderr)' holds.
 }%notop
 
 \comp{%
@@ -454,6 +475,17 @@ contents can be referenced as "P.A", "P.B" and "P.C" in the remainder
 of the program.
 }%comp
 
+
+\notop{%
+\item["-plugin" \var{plugin}]
+Dynamically load the code of the given \var{plugin}
+(a ".cmo", ".cma" or ".cmxs" file) in the compiler. \var{plugin} must exist in
+the same kind of code as the compiler ({\machine \ocamlx.byte} must load bytecode
+plugins, while {\machine \ocamlx.opt} must load native code plugins), and
+extension adaptation is done automatically for ".cma" files (to ".cmxs" files
+if the compiler is compiled in native code).
+}%notop
+
 \notop{%
 \item["-pp" \var{command}]
 Cause the compiler to call the given \var{command} as a preprocessor
@@ -547,25 +579,29 @@ Compile or link multithreaded programs, in combination with the
 system "threads" library described in chapter~\ref{c:threads}.
 }%notop
 
-\item["-unsafe"]
-\top{%
-See the corresponding option for "ocamlc", chapter~\ref{c:camlc}.
-Turn bound checking off on array and string accesses (the "v.(i)" and
-"s.[i]" constructs). Programs compiled with "-unsafe" are therefore
-slightly faster, but unsafe: anything can happen if the program
-accesses an array or string outside of its bounds.
-}%top
 \notop{%
+\item["-unboxed-types"]
+When a type is unboxable (i.e. a record with a single argument or a
+concrete datatype with a single constructor of one argument) it will
+be unboxed unless annotated with "[@@ocaml.boxed]".
+}%notop
+
+\notop{%
+\item["-no-unboxed-types"]
+When a type is unboxable  it will be boxed unless annotated with
+"[@@ocaml.unboxed]". This is the default.
+}%notop
+
+\item["-unsafe"]
 Turn bound checking off for array and string accesses (the "v.(i)" and
 "s.[i]" constructs). Programs compiled with "-unsafe" are therefore
 \comp{slightly} faster, but unsafe: anything can happen if the program
-accesses an array or string outside of its bounds.%
-\nat{%
+accesses an array or string outside of its bounds.
+\notop{%
 Additionally, turn off the check for zero divisor in integer division
  and modulus operations. With "-unsafe", an integer division
 (or modulus) by zero can halt the program or continue with an
 unspecified result instead of raising a "Division_by_zero" exception.
-}%nat
 }%notop
 
 \item["-unsafe-string"]
@@ -610,6 +646,9 @@ Print version string and exit.
 
 \item["-vnum"]
 Print short version number and exit.
+
+\item["-no-version"]
+Do not print the version banner at startup.
 }%top
 
 \item["-w" \var{warning-list}]
