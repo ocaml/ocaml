@@ -188,7 +188,7 @@ Generate an object file (\qcmo\nat{ and ".o"/".obj" files})
 that can later be included
 as a sub-module (with the given access path) of a compilation unit
 constructed with "-pack".  For instance,
-"\ocamlx -for-pack P -c A.ml"
+{\machine\ocamlx\ -for-pack\ P\ -c\ A.ml}
 will generate {\machine a.\cmo}\nat{ and "a.o" files} that can
 later be used with {\machine \ocamlx\ -pack\ -o\ P\cmo\ a\cmo}.
 Note: you can still pack a module that was compiled without
@@ -654,9 +654,6 @@ Do not print the version banner at startup.
 }%top
 
 \item["-w" \var{warning-list}]
-Enable or disable warnings according to the argument \var{warning-list}.
-\top{See section~\ref{s:comp-options} for the syntax of the argument.}
-\notop{%
 Enable, disable, or mark as fatal the warnings specified by the argument
 \var{warning-list}.
 Each warning can be {\em enabled} or {\em disabled}, and each warning
@@ -702,12 +699,10 @@ The default setting is "-w +a-4-6-7-9-27-29-32..39-41..42-44-45-48-50".
 It is displayed by {\machine\ocamlx\ -help}.
 Note that warnings 5 and 10 are not always triggered, depending on
 the internals of the type checker.
-}%notop
+
 
 \item["-warn-error" \var{warning-list}]
-Mark as fatal the warnings enabled by the argument \var{warning-list}.
-\top{See section~\ref{s:comp-options} for the syntax of the argument.}
-\notop{%
+Mark as fatal the warnings specified in the argument \var{warning-list}.
 The compiler will stop with an error when one of these warnings is
 emitted. The \var{warning-list} has the same meaning as for
 the "-w" option: a "+" sign (or an uppercase letter) marks the
