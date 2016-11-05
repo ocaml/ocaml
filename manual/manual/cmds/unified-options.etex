@@ -45,8 +45,8 @@
 \begin{options}
 \notop{%
 \item["-a"]
-Build a library(\qcma\nat{ and ".a"/".lib"} file\nat{s})
-with the object files (\qcmo\nat{ and ".o"/".obj" files} files)
+Build a library(\nat{".cmxa" and ".a"/".lib" files}\comp{".cma" file})
+with the object files (\nat{".cmx" and ".o"/".obj" files}\comp{ ".cmo" files})
 given on the command line, instead of linking them into an executable file.
 The name of the library must be set with the "-o" option.
 
@@ -111,10 +111,11 @@ This causes the given C library to be linked with the program.
 \notop{%
 \item["-ccopt" \var{option}]
 Pass the given option to the C compiler and linker.
-\comp{When linking in ``custom runtime'' mode, for}%
-\nat{For} instance,
+\comp{When linking in ``custom runtime'' mode, for instance}%
+\nat{For instance,}%
 "-ccopt -L"\var{dir} causes the C linker to search for C libraries in
-directory \var{dir}. \comp{(See the "-custom" option.)}
+directory \var{dir}.\comp{(See the "-custom" option.)}
+}%notop
 
 \notop{%
 \item["-color" \var{mode}]
@@ -218,15 +219,15 @@ and edit that file to remove all declarations of unexported names.
 
 \item["-I" \var{directory}]
 Add the given directory to the list of directories searched for
-\notop{%
-compiled interface files (".cmi"), compiled object code files
-(\qcmo), \nat{and }libraries (\qcma)
-\comp{, and C libraries specified with "-cclib -lxxx"}.}%notop
+\nat{compiled interface files (".cmi"), compiled object code files (".cmx"),
+and libraries (".cmxa").}
+\comp{compiled interface files (".cmi"), compiled object code files ".cmo",
+libraries (".cma") and C libraries specified with "-cclib -lxxx".}
 \top{source and compiled files.}
 By default, the current directory is searched first, then the standard
 library directory. Directories added with "-I" are searched after the
 current directory, in the order in which they were given on the command line,
-but before the standard library directory.\notop{ See also option "-nostdlib"}.
+but before the standard library directory. See also option "-nostdlib".
 
 If the given directory starts with "+", it is taken relative to the
 standard library directory.  For instance, "-I +labltk" adds the
@@ -393,8 +394,9 @@ were added at the top of each file.
 
 \notop{%
 \item["-output-obj"]
-Cause the linker to produce a C object file instead of \comp{a bytecode}
-\nat{an} executable file. This is useful to wrap OCaml code as a C library,
+Cause the linker to produce a C object file instead of
+\comp{a bytecode executable file}\nat{an executable file}.
+This is useful to wrap OCaml code as a C library,
 callable from any C program. See chapter~\ref{c:intf-c},
 section~\ref{s:embedded-code}. The name of the output object file
 must be set with the "-o" option.
@@ -625,8 +627,8 @@ standard library directory, then exit.
 \item["-verbose"]
 Print all external commands before they are executed,
 \nat{in particular invocations of the assembler, C compiler, and linker.}
-\comp{in particular invocations of the C compiler and linker
-in "-custom" mode.  Useful to debug C library problems.}
+\comp{in particular invocations of the C compiler and linker in "-custom" mode.}
+Useful to debug C library problems.
 
 \comp{%
 \item["-vmthread"]
