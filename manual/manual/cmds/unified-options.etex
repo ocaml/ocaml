@@ -698,8 +698,8 @@ that are currently defined are ignored. The warnings are as follows.
 \input{warnings-help.tex}
 \end{options}
 
-The default setting is "-w +a-4-6-7-9-27-29-32..39-41..42-44-45".
-It is displayed by "ocaml\nat{opt}\comp{c} -help".
+The default setting is "-w +a-4-6-7-9-27-29-32..39-41..42-44-45-48-50".
+It is displayed by {\machine\ocamlx\ -help}.
 Note that warnings 5 and 10 are not always triggered, depending on
 the internals of the type checker.
 }%notop
@@ -721,8 +721,7 @@ arguments to "-warn-error"
 in production code, because this can break your build when future versions
 of OCaml add some new warnings.
 
-The default setting is "-warn-error -a" (all warnings are non-fatal).
-}%notop
+The default setting is "-warn-error -a+31" (only warning 31 is fatal).
 
 \item["-warn-help"]
 Show the description of all available warning numbers.
