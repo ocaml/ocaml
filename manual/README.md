@@ -90,6 +90,12 @@ chapters (or sometimes sections) are mapped to a distinct `.etex` file:
     - Interfacing C with OCaml: `intf-c.etex`
     - Optimisation with Flambda: `flambda.etex`
 
+Note that ocamlc,ocamlopt and the toplevel options overlap a lot.
+Consequently, these options are described together in the file
+`unified-options.etex` and then included from `comp.etex`, `native.etex`,
+and `top.etex`. If you need to update this list of options, the top comment
+of `unified-options.etex` contains the relevant information.
+
 - Part IV, The OCaml library: 'libref'
  This parts contains an brief presentation of all libraries bundled with the
  compilers and the api documentation generated for these libraries.

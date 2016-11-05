@@ -131,6 +131,7 @@ be called from C \\
 \item \ahref{libref/Scanf.html}{Module \texttt{Scanf}: formatted input functions}
 \item \ahref{libref/Set.html}{Module \texttt{Set}: sets over ordered types}
 \item \ahref{libref/Sort.html}{(deprecated)}
+\item \ahref{libref/Spacetime.html}{Spacetime}
 \item \ahref{libref/Stack.html}{Module \texttt{Stack}: last-in first-out stacks}
 \item \ahref{libref/StdLabels.html}{Module \texttt{StdLabels}: Include modules \texttt{Array}, \texttt{List} and \texttt{String} with labels}
 \item \ahref{libref/Stream.html}{Module \texttt{Stream}: streams and parsers}
@@ -173,6 +174,7 @@ be called from C \\
 \input{Scanf.tex}
 \input{Set.tex}
 \input{Sort.tex}
+\input{Spacetime.tex}
 \input{Stack.tex}
 \input{StdLabels.tex}
 \input{Stream.tex}
