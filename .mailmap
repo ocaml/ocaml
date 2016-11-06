@@ -32,8 +32,8 @@ Jérémie Dimino <jdimino@janestreet.com>
 #
 #   Preferred Name <email> nickname <contribution-email>
 # or
-#   Preferred Name <nickname@mantis.com>
-#   Preferred Name <nickname>@github.com
+#   Preferred Name <nickname@mantis>
+#   Preferred Name <nickname@github>
 # to indicate a preference associated to a Mantis account.
 
 Florian Angeletti <octa@polychoron.fr> octachron <octa@polychoron.fr>
@@ -68,6 +68,8 @@ Reed Wilson <omion>
 David Scott <djs55>
 Martin Neuhäußer <sawfish@mantis>
 Goswin von Brederlow <mrvn>
+Thomas Leonard <talex@mantis>
+Thomas Leonard <talex5@github>
 
 # These contributors prefer to be referred to pseudonymously
 <whitequark@mantis> <whitequark@mantis>
