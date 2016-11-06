@@ -72,13 +72,11 @@ interactively.
 
 \item["-args" \var{filename}]
 Read additional newline-terminated command line arguments from \var{filename}.
-\top{Read additional newline-terminated command line arguments from \var{filename}.
-It is not possible to pass a \var{scriptfile} via file to the toplevel.
+\top{It is not possible to pass a \var{scriptfile} via file to the toplevel.
 }%top
 \item["-args0" \var{filename}]
  Read additional null character terminated command line arguments from \var{filename}.
-\top{Read additional newline-terminated command line arguments from \var{filename}.
-It is not possible to pass a \var{scriptfile} via file to the toplevel.
+\top{It is not possible to pass a \var{scriptfile} via file to the toplevel.
 }%top
 
 
