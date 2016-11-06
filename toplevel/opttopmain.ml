@@ -35,7 +35,7 @@ let is_expanded pos =
 
 let expand_position pos len =
   let pos,len = match !expand_offset with
-    | Some (opos,olen) when opos <= pos || pos <= opos + olen ->
+    | Some (opos,olen) when opos < pos && pos < opos + olen + 1 ->
         opos,(olen+len) (* Already expand option just increase len *)
     | _ -> pos,len in
   expand_offset := Some (pos,len)
@@ -61,7 +61,8 @@ let file_argument name =
     || Filename.check_suffix name ".cmxa"
   then preload_objects := name :: !preload_objects
   else if is_expanded !current then begin
-    raise (Arg.Bad "Script file is not allowed in expanded option")
+    Printf.eprintf "Script file is not allowed in expand option";
+    exit 2
   end else begin
     let newargs = Array.sub !argv !Arg.current
                               (Array.length !argv - !Arg.current)
