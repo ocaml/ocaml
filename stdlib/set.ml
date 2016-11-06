@@ -375,6 +375,15 @@ module Make(Ord: OrderedType) =
           if c = 0 then v
           else find x (if c < 0 then l else r)
 
+    let try_join l v r =
+      (* [join l v r] can only be called when (elements of l < v <
+         elements of r); use [try_join l v r] when this property may
+         not hold, but you hope it does hold in the common case *)
+      if (l = Empty || Ord.compare (max_elt l) v < 0)
+      && (r = Empty || Ord.compare v (min_elt r) < 0)
+      then join l v r
+      else union l (add v r)
+
     let rec map f = function
       | Empty -> Empty
       | Node (l, v, r, _) as t ->
@@ -383,12 +392,7 @@ module Make(Ord: OrderedType) =
          let v' = f v in
          let r' = map f r in
          if l == l' && v == v' && r == r' then t
-         else begin
-             if (l' = Empty || Ord.compare (max_elt l') v < 0)
-                && (r' = Empty || Ord.compare v (min_elt r') < 0)
-             then join l' v' r'
-             else union l' (add v' r')
-         end
+         else try_join l' v' r'
 
     let of_sorted_list l =
       let rec sub n l =
