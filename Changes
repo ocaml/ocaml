@@ -25,6 +25,9 @@ Next version (4.05.0):
   List.compare_length_with to avoid full list length computations
   (Fabrice Le Fessant)
 
+- GPR#885: Option-returning variants of stdlib functions
+  (Alain Frisch, review by David Allsopp and Bart Jacobs)
+
 ### Tools:
 
 - PR#7333: ocamldoc, use the first sentence of text file as

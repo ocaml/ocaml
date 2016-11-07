@@ -31,6 +31,7 @@ module Hashtbl : sig
   val copy : ('a, 'b) t -> ('a, 'b) t
   val add : ('a, 'b) t -> key:'a -> data:'b -> unit
   val find : ('a, 'b) t -> 'a -> 'b
+  val find_opt : ('a, 'b) t -> 'a -> 'b option
   val find_all : ('a, 'b) t -> 'a -> 'b list
   val mem : ('a, 'b) t -> 'a -> bool
   val remove : ('a, 'b) t -> 'a -> unit
@@ -58,6 +59,7 @@ module Hashtbl : sig
       val add : 'a t -> key:key -> data:'a -> unit
       val remove : 'a t -> key -> unit
       val find : 'a t -> key -> 'a
+      val find_opt: 'a t -> key -> 'a option
       val find_all : 'a t -> key -> 'a list
       val replace : 'a t -> key:key -> data:'a -> unit
       val mem : 'a t -> key -> bool
@@ -81,6 +83,7 @@ module Hashtbl : sig
       val add : 'a t -> key:key -> data:'a -> unit
       val remove : 'a t -> key -> unit
       val find : 'a t -> key -> 'a
+      val find_opt : 'a t -> key -> 'a option
       val find_all : 'a t -> key -> 'a list
       val replace : 'a t -> key:key -> data:'a -> unit
       val mem : 'a t -> key -> bool
@@ -129,10 +132,14 @@ module Map : sig
       val cardinal: 'a t -> int
       val bindings: 'a t -> (key * 'a) list
       val min_binding: 'a t -> (key * 'a)
+      val min_binding_opt: 'a t -> (key * 'a) option
       val max_binding: 'a t -> (key * 'a)
+      val max_binding_opt: 'a t -> (key * 'a) option
       val choose: 'a t -> (key * 'a)
+      val choose_opt: 'a t -> (key * 'a) option
       val split: key -> 'a t -> 'a t * 'a option * 'a t
       val find : key -> 'a t -> 'a
+      val find_opt: key -> 'a t -> 'a option
       val map : f:('a -> 'b) -> 'a t -> 'b t
       val mapi : f:(key -> 'a -> 'b) -> 'a t -> 'b t
   end
@@ -167,10 +174,14 @@ module Set : sig
       val cardinal : t -> int
       val elements : t -> elt list
       val min_elt : t -> elt
+      val min_elt_opt: t -> elt option
       val max_elt : t -> elt
+      val max_elt_opt: t -> elt option
       val choose : t -> elt
+      val choose_opt: t -> elt option
       val split: elt -> t -> t * bool * t
       val find: elt -> t -> elt
+      val find_opt: elt -> t -> elt option
       val of_list: elt list -> t
     end
   module Make : functor (Ord : OrderedType) -> S with type elt = Ord.t

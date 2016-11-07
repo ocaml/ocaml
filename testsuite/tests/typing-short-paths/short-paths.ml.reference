@@ -38,10 +38,14 @@
             val cardinal : 'a t -> key
             val bindings : 'a t -> (key * 'a) list
             val min_binding : 'a t -> key * 'a
+            val min_binding_opt : 'a t -> (key * 'a) option
             val max_binding : 'a t -> key * 'a
+            val max_binding_opt : 'a t -> (key * 'a) option
             val choose : 'a t -> key * 'a
+            val choose_opt : 'a t -> (key * 'a) option
             val split : key -> 'a t -> 'a t * 'a option * 'a t
             val find : key -> 'a t -> 'a
+            val find_opt : key -> 'a t -> 'a option
             val map : ('a -> 'b) -> 'a t -> 'b t
             val mapi : (key -> 'a -> 'b) -> 'a t -> 'b t
           end

@@ -47,10 +47,14 @@ module type S =
     val cardinal: t -> int
     val elements: t -> elt list
     val min_elt: t -> elt
+    val min_elt_opt: t -> elt option
     val max_elt: t -> elt
+    val max_elt_opt: t -> elt option
     val choose: t -> elt
+    val choose_opt: t -> elt option
     val split: elt -> t -> t * bool * t
     val find: elt -> t -> elt
+    val find_opt: elt -> t -> elt option
     val of_list: elt list -> t
   end
 
@@ -163,10 +167,20 @@ module Make(Ord: OrderedType) =
       | Node(Empty, v, _, _) -> v
       | Node(l, _, _, _) -> min_elt l
 
+    let rec min_elt_opt = function
+        Empty -> None
+      | Node(Empty, v, _, _) -> Some v
+      | Node(l, _, _, _) -> min_elt_opt l
+
     let rec max_elt = function
         Empty -> raise Not_found
       | Node(_, v, Empty, _) -> v
       | Node(_, _, r, _) -> max_elt r
+
+    let rec max_elt_opt = function
+        Empty -> None
+      | Node(_, v, Empty, _) -> Some v
+      | Node(_, _, r, _) -> max_elt_opt r
 
     (* Remove the smallest element of the given set *)
 
@@ -368,12 +382,21 @@ module Make(Ord: OrderedType) =
 
     let choose = min_elt
 
+    let choose_opt = min_elt_opt
+
     let rec find x = function
         Empty -> raise Not_found
       | Node(l, v, r, _) ->
           let c = Ord.compare x v in
           if c = 0 then v
           else find x (if c < 0 then l else r)
+
+    let rec find_opt x = function
+        Empty -> None
+      | Node(l, v, r, _) ->
+          let c = Ord.compare x v in
+          if c = 0 then Some v
+          else find_opt x (if c < 0 then l else r)
 
     let rec map f = function
       | Empty -> Empty

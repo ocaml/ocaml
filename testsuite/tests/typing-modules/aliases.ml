@@ -297,10 +297,14 @@ module StringSet :
     val cardinal : t -> int
     val elements : t -> elt list
     val min_elt : t -> elt
+    val min_elt_opt : t -> elt option
     val max_elt : t -> elt
+    val max_elt_opt : t -> elt option
     val choose : t -> elt
+    val choose_opt : t -> elt option
     val split : elt -> t -> t * bool * t
     val find : elt -> t -> elt
+    val find_opt : elt -> t -> elt option
     val of_list : elt list -> t
   end
 module SSet :
@@ -329,10 +333,14 @@ module SSet :
     val cardinal : t -> int
     val elements : t -> elt list
     val min_elt : t -> elt
+    val min_elt_opt : t -> elt option
     val max_elt : t -> elt
+    val max_elt_opt : t -> elt option
     val choose : t -> elt
+    val choose_opt : t -> elt option
     val split : elt -> t -> t * bool * t
     val find : elt -> t -> elt
+    val find_opt : elt -> t -> elt option
     val of_list : elt list -> t
   end
 val f : StringSet.t -> SSet.t = <fun>
@@ -393,10 +401,14 @@ module A :
         val cardinal : t -> int
         val elements : t -> elt list
         val min_elt : t -> elt
+        val min_elt_opt : t -> elt option
         val max_elt : t -> elt
+        val max_elt_opt : t -> elt option
         val choose : t -> elt
+        val choose_opt : t -> elt option
         val split : elt -> t -> t * bool * t
         val find : elt -> t -> elt
+        val find_opt : elt -> t -> elt option
         val of_list : elt list -> t
       end
     val empty : S.t
@@ -497,10 +509,14 @@ module SInt :
     val cardinal : t -> int
     val elements : t -> elt list
     val min_elt : t -> elt
+    val min_elt_opt : t -> elt option
     val max_elt : t -> elt
+    val max_elt_opt : t -> elt option
     val choose : t -> elt
+    val choose_opt : t -> elt option
     val split : elt -> t -> t * bool * t
     val find : elt -> t -> elt
+    val find_opt : elt -> t -> elt option
     val of_list : elt list -> t
   end
 type (_, _) eq = Eq : ('a, 'a) eq

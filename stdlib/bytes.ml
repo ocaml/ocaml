@@ -116,7 +116,7 @@ let rec unsafe_blits dst pos sep seplen = function
 let concat sep = function
     [] -> empty
   | l -> let seplen = length sep in
-          unsafe_blits 
+          unsafe_blits
             (create (sum_lengths 0 seplen l))
             0 sep seplen l
 
@@ -226,10 +226,21 @@ let rec index_rec s lim i c =
 
 let index s c = index_rec s (length s) 0 c
 
+let rec index_rec_opt s lim i c =
+  if i >= lim then None else
+  if unsafe_get s i = c then Some i else index_rec_opt s lim (i + 1) c
+
+let index_opt s c = index_rec_opt s (length s) 0 c
+
 let index_from s i c =
   let l = length s in
   if i < 0 || i > l then invalid_arg "String.index_from / Bytes.index_from" else
   index_rec s l i c
+
+let index_from_opt s i c =
+  let l = length s in
+  if i < 0 || i > l then invalid_arg "String.index_from_opt / Bytes.index_from_opt" else
+  index_rec_opt s l i c
 
 let rec rindex_rec s i c =
   if i < 0 then raise Not_found else
@@ -242,6 +253,18 @@ let rindex_from s i c =
     invalid_arg "String.rindex_from / Bytes.rindex_from"
   else
     rindex_rec s i c
+
+let rec rindex_rec_opt s i c =
+  if i < 0 then None else
+  if unsafe_get s i = c then Some i else rindex_rec_opt s (i - 1) c
+
+let rindex_opt s c = rindex_rec_opt s (length s - 1) c
+
+let rindex_from_opt s i c =
+  if i < -1 || i >= length s then
+    invalid_arg "String.rindex_from_opt / Bytes.rindex_from_opt"
+  else
+    rindex_rec_opt s i c
 
 
 let contains_from s i c =

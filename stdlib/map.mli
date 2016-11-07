@@ -184,10 +184,23 @@ module type S =
         @since 3.12.0
      *)
 
+    val min_binding_opt: 'a t -> (key * 'a) option
+    (** Return the smallest binding of the given map
+       (with respect to the [Ord.compare] ordering), or [None]
+       if the map is empty.
+        @since 4.05
+     *)
+
     val max_binding: 'a t -> (key * 'a)
     (** Same as {!Map.S.min_binding}, but returns the largest binding
         of the given map.
         @since 3.12.0
+     *)
+
+    val max_binding_opt: 'a t -> (key * 'a) option
+    (** Same as {!Map.S.min_binding_opt}, but returns the largest binding
+        of the given map.
+        @since 4.05
      *)
 
     val choose: 'a t -> (key * 'a)
@@ -195,6 +208,13 @@ module type S =
        the map is empty. Which binding is chosen is unspecified,
        but equal bindings will be chosen for equal maps.
         @since 3.12.0
+     *)
+
+    val choose_opt: 'a t -> (key * 'a) option
+    (** Return one binding of the given map, or [None] if
+       the map is empty. Which binding is chosen is unspecified,
+       but equal bindings will be chosen for equal maps.
+        @since 4.05
      *)
 
     val split: key -> 'a t -> 'a t * 'a option * 'a t
@@ -211,6 +231,12 @@ module type S =
     val find: key -> 'a t -> 'a
     (** [find x m] returns the current binding of [x] in [m],
        or raises [Not_found] if no such binding exists. *)
+
+    val find_opt: key -> 'a t -> 'a option
+    (** [find_opt x m] returns the current binding of [x] in [m],
+       or raises [Not_found] if no such binding exists.
+        @since 4.05
+    *)
 
     val map: ('a -> 'b) -> 'a t -> 'b t
     (** [map f m] returns a map with same domain as [m], where the
