@@ -1,5 +1,5 @@
-Next version (tbd):
--------------------
+Next version (4.05.0):
+----------------------
 
 (Changes that can break existing programs are marked with a "*")
 
@@ -89,8 +89,8 @@ Next version (tbd):
   to a string array of new arguments
   (Bernhard Schommer)
 
-OCaml 4.04.0:
--------------
+OCaml 4.04.0 (4 Nov 2016):
+--------------------------
 
 (Changes that can break existing programs are marked with a "*")
 
