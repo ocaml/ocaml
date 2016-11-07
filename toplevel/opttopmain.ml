@@ -20,25 +20,25 @@ let usage =
 
 let preload_objects = ref []
 
-(* Position plus length of last expand argument *)
-let expand_offset: (int * int) option ref = ref None
+(* Position of the current last expanded argument *)
+let last_expand_pos: int option ref = ref None
 
 let current = ref (!Arg.current)
 
 let argv = ref Sys.argv
 
+(* Test whether the option is part of a responsefile *)
 let is_expanded pos =
-  match !expand_offset with
+  match !last_expand_pos with
   | None -> false
-  | Some (epos,len) ->
-      epos < pos && pos <= epos + len + 1
+  | Some epos ->  pos <= epos
 
 let expand_position pos len =
-  let pos,len = match !expand_offset with
-    | Some (opos,olen) when opos < pos && pos < opos + olen + 1 ->
-        opos,(olen+len) (* Already expand option just increase len *)
-    | _ -> pos,len in
-  expand_offset := Some (pos,len)
+  let pos = match !last_expand_pos with
+    | Some opos when pos < opos ->
+        opos+len (* Already expand option just shift the position *)
+    | _ -> pos + len + 1 in (* New last position *)
+  last_expand_pos := Some pos
 
 let prepare ppf =
   Opttoploop.set_paths ();
@@ -61,6 +61,10 @@ let file_argument name =
     || Filename.check_suffix name ".cmxa"
   then preload_objects := name :: !preload_objects
   else if is_expanded !current then begin
+    (* Script files are not allowed in expand options because otherwise the
+       check in override arguments may fail since the new argv can be larger
+       than the original argv.
+    *)
     Printf.eprintf "Script file is not allowed in expand option";
     exit 2
   end else begin
