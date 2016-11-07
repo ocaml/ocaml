@@ -493,24 +493,24 @@ bytecomp/bytegen.cmx : typing/types.cmx bytecomp/switch.cmx typing/subst.cmx \
     utils/config.cmx parsing/asttypes.cmi bytecomp/bytegen.cmi
 bytecomp/bytegen.cmi : bytecomp/lambda.cmi bytecomp/instruct.cmi
 bytecomp/bytelibrarian.cmo : utils/misc.cmi parsing/location.cmi \
-    utils/config.cmi bytecomp/cmo_format.cmi utils/clflags.cmi \
-    bytecomp/bytelink.cmi bytecomp/bytelibrarian.cmi
+    bytecomp/emitcode.cmi utils/config.cmi bytecomp/cmo_format.cmi \
+    utils/clflags.cmi bytecomp/bytelink.cmi bytecomp/bytelibrarian.cmi
 bytecomp/bytelibrarian.cmx : utils/misc.cmx parsing/location.cmx \
-    utils/config.cmx bytecomp/cmo_format.cmi utils/clflags.cmx \
-    bytecomp/bytelink.cmx bytecomp/bytelibrarian.cmi
+    bytecomp/emitcode.cmx utils/config.cmx bytecomp/cmo_format.cmi \
+    utils/clflags.cmx bytecomp/bytelink.cmx bytecomp/bytelibrarian.cmi
 bytecomp/bytelibrarian.cmi :
 bytecomp/bytelink.cmo : utils/warnings.cmi bytecomp/symtable.cmi \
     bytecomp/opcodes.cmo utils/misc.cmi parsing/location.cmi \
     bytecomp/lambda.cmi bytecomp/instruct.cmi typing/ident.cmi \
-    bytecomp/dll.cmi utils/consistbl.cmi utils/config.cmi \
-    bytecomp/cmo_format.cmi utils/clflags.cmi utils/ccomp.cmi \
-    bytecomp/bytesections.cmi bytecomp/bytelink.cmi
+    bytecomp/emitcode.cmi bytecomp/dll.cmi utils/consistbl.cmi \
+    utils/config.cmi bytecomp/cmo_format.cmi utils/clflags.cmi \
+    utils/ccomp.cmi bytecomp/bytesections.cmi bytecomp/bytelink.cmi
 bytecomp/bytelink.cmx : utils/warnings.cmx bytecomp/symtable.cmx \
     bytecomp/opcodes.cmx utils/misc.cmx parsing/location.cmx \
     bytecomp/lambda.cmx bytecomp/instruct.cmx typing/ident.cmx \
-    bytecomp/dll.cmx utils/consistbl.cmx utils/config.cmx \
-    bytecomp/cmo_format.cmi utils/clflags.cmx utils/ccomp.cmx \
-    bytecomp/bytesections.cmx bytecomp/bytelink.cmi
+    bytecomp/emitcode.cmx bytecomp/dll.cmx utils/consistbl.cmx \
+    utils/config.cmx bytecomp/cmo_format.cmi utils/clflags.cmx \
+    utils/ccomp.cmx bytecomp/bytesections.cmx bytecomp/bytelink.cmi
 bytecomp/bytelink.cmi : bytecomp/symtable.cmi bytecomp/cmo_format.cmi
 bytecomp/bytepackager.cmo : typing/typemod.cmi bytecomp/translmod.cmi \
     typing/subst.cmi bytecomp/printlambda.cmi typing/path.cmi utils/misc.cmi \
@@ -1963,11 +1963,13 @@ middle_end/base_types/var_within_closure.cmx : \
     middle_end/base_types/var_within_closure.cmi
 middle_end/base_types/var_within_closure.cmi : \
     middle_end/base_types/closure_element.cmi
-middle_end/base_types/variable.cmo : utils/misc.cmi utils/identifiable.cmi \
-    typing/ident.cmi middle_end/base_types/compilation_unit.cmi \
+middle_end/base_types/variable.cmo : t.cmo utils/misc.cmi \
+    utils/identifiable.cmi typing/ident.cmi \
+    middle_end/base_types/compilation_unit.cmi \
     middle_end/base_types/variable.cmi
-middle_end/base_types/variable.cmx : utils/misc.cmx utils/identifiable.cmx \
-    typing/ident.cmx middle_end/base_types/compilation_unit.cmx \
+middle_end/base_types/variable.cmx : t.cmx utils/misc.cmx \
+    utils/identifiable.cmx typing/ident.cmx \
+    middle_end/base_types/compilation_unit.cmx \
     middle_end/base_types/variable.cmi
 middle_end/base_types/variable.cmi : utils/identifiable.cmi typing/ident.cmi \
     middle_end/base_types/compilation_unit.cmi
