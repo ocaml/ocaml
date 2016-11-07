@@ -103,7 +103,9 @@ let create_archive ppf file_list lib_name =
         lib_ccopts = !Clflags.all_ccopts @ !lib_ccopts;
         lib_dllibs = !Clflags.dllibs @ !lib_dllibs } in
     let pos_toc = pos_out outchan in
-    output_value outchan toc;
+    Emitcode.marshal_to_channel_with_possibly_32bit_compat
+      ~filename:lib_name ~kind:"bytecode library"
+      outchan toc;
     seek_out outchan ofs_pos_toc;
     output_binary_int outchan pos_toc;
     close_out outchan
