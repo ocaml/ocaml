@@ -1,3 +1,11 @@
+Next version (4.04.1):
+----------------------
+
+### Standard library:
+
+- PR#7403, GPR#894: fix a bug in Set.map as introduced in 4.04.0
+  (Gabriel Scherer, report by Thomas Leonard)
+
 OCaml 4.04.0 (4 Nov 2016):
 --------------------------
 
