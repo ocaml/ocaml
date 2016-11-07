@@ -841,6 +841,8 @@ module type Toplevel_options = sig
   val _nopromptcont : unit -> unit
   val _plugin : string -> unit
   val _stdin : unit -> unit
+  val _args : string -> string array
+  val _args0 : string -> string array
 end
 ;;
 
@@ -864,6 +866,7 @@ end;;
 module type Bytetop_options = sig
   include Toplevel_options
   val _dinstr : unit -> unit
+
 end;;
 
 module type Optcommon_options = sig
@@ -1102,6 +1105,9 @@ struct
     mk_drawlambda F._drawlambda;
     mk_dlambda F._dlambda;
     mk_dinstr F._dinstr;
+
+    mk_args F._args;
+    mk_args0 F._args0;
   ]
 end;;
 

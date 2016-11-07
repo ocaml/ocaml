@@ -70,13 +70,15 @@ The \var{src}".annot" file can be used with the emacs commands given in
 interactively.
 }%notop
 
-\notop{
 \item["-args" \var{filename}]
- Read additional newline-terminated command line arguments from \var{filename}.
-
+Read additional newline-terminated command line arguments from \var{filename}.
+\top{It is not possible to pass a \var{scriptfile} via file to the toplevel.
+}%top
 \item["-args0" \var{filename}]
  Read additional null character terminated command line arguments from \var{filename}.
-}%notop
+\top{It is not possible to pass a \var{scriptfile} via file to the toplevel.
+}%top
+
 
 \notop{\item["-bin-annot"]
 Dump detailed information about the compilation (types, bindings,

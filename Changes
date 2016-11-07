@@ -11,8 +11,8 @@ Next version (4.05.0):
 - GPR#829: better error when opening a module aliased to a functor
   (Alain Frisch)
 
-- MPR#7050, GPR#748 GPR#843: new `-args/-args0 <file>` parameters to provide
-  extra command-line arguments in a file -- see documentation.
+- MPR#7050, GPR#748 GPR#843 GPR#864: new `-args/-args0 <file>` parameters to
+  provide extra command-line arguments in a file -- see documentation.
   User programs may implement similar options using the new `Expand`
   constructor of the `Arg` module.
   (Bernhard Schommer, review by Jérémie Dimino, Gabriel Scherer
