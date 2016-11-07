@@ -20,25 +20,22 @@ let usage =
 
 let preload_objects = ref []
 
-(* Position of the current last expanded argument *)
-let last_expand_pos: int option ref = ref None
+(* Position of the first non expanded argument *)
+let first_nonexpanded_pos = ref 0
 
 let current = ref (!Arg.current)
 
 let argv = ref Sys.argv
 
 (* Test whether the option is part of a responsefile *)
-let is_expanded pos =
-  match !last_expand_pos with
-  | None -> false
-  | Some epos ->  pos <= epos
+let is_expanded pos = pos < !first_nonexpanded_pos
 
 let expand_position pos len =
-  let pos = match !last_expand_pos with
-    | Some opos when pos < opos ->
-        opos+len (* Already expand option just shift the position *)
-    | _ -> pos + len + 1 in (* New last position *)
-  last_expand_pos := Some pos
+  if pos < !first_nonexpanded_pos then
+    first_nonexpanded_pos := !first_nonexpanded_pos + len (* Shift the position *)
+  else
+    first_nonexpanded_pos :=  pos + len + 2 (* New last position *)
+
 
 let prepare ppf =
   Opttoploop.set_paths ();

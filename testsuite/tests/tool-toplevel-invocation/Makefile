@@ -19,8 +19,7 @@ BASEDIR=../..
 default:
 	@for file in *.txt; do \
 	 TERM=dumb $(OCAML) -args $$file < test.ml 2>&1 \
-	    | grep -v '^        OCaml version' \
-	    | sed 's/^.*\( Script file.*\)/\1/g'  > $$file.result; \
+			| grep -v '^        OCaml version' > $$file.result; \
 	done
 	@for file in *.reference; do \
 	  printf " ... testing '$$file':"; \
