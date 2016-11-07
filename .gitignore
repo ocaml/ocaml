@@ -224,6 +224,7 @@
 /stdlib/labelled-*
 /stdlib/caml
 /stdlib/sys.ml
+/stdlib/ocaml_compiler_internal_params
 
 /testsuite/**/*.result
 /testsuite/**/*.opt_result
