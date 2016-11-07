@@ -95,7 +95,7 @@ OCaml 4.04.0:
   slower
   (Alain Frisch)
 
-* PR#6217, GPR#538: Optimize performance of record update:
+- PR#6217, GPR#538: Optimize performance of record update:
   no more performance cliff when { foo with t1 = ..; t2 = ...; ... }
   hits 6 updated fields
   (Olivier Nicole, review by Thomas Braibant and Pierre Chambart)
