@@ -18,7 +18,7 @@ include ../config/Makefile
 include Makefile.shared
 
 CC=$(NATIVECC)
-FLAGS=-I../byterun -DCAML_NAME_SPACE -DNATIVE_CODE \
+FLAGS=-I../byterun -DNATIVE_CODE \
       -DTARGET_$(ARCH) -DMODEL_$(MODEL) -DSYS_$(SYSTEM) $(IFLEXDIR) \
       $(LIBUNWIND_INCLUDE_FLAGS)
 #CFLAGS=$(FLAGS) -g -O0

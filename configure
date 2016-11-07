@@ -399,6 +399,8 @@ case "$ccfamily" in
     bytecccompopts="-O";;
 esac
 
+byteccprivatecompopts="-DCAML_NAME_SPACE $byteccprivatecompopts"
+
 # Adjust according to target
 
 case "$bytecc,$target" in

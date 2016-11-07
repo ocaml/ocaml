@@ -94,7 +94,7 @@ SAFE_STRING=false
 BYTECC=cl -nologo -D_CRT_SECURE_NO_DEPRECATE -O2 -Gy- -MD
 
 ### Additional compile-time options for $(BYTECC).  (For static linking.)
-BYTECCCOMPOPTS=
+BYTECCCOMPOPTS=-DCAML_NAME_SPACE
 
 ### Additional compile-time options for $(BYTECC).  (For debug version.)
 BYTECCDBGCOMPOPTS=-DDEBUG -Zi -W3 -Wp64
@@ -171,7 +171,7 @@ SYSTEM=win64
 NATIVECC=cl -nologo -O2 -Gy- -MD
 
 ### Additional compile-time options for $(NATIVECC).
-NATIVECCCOMPOPTS=
+NATIVECCCOMPOPTS=-DCAML_NAME_SPACE
 
 ### Additional link-time options for $(NATIVECC)
 NATIVECCLINKOPTS=
