@@ -64,7 +64,9 @@ let file_argument name =
        check in override arguments may fail since the new argv can be larger
        than the original argv.
     *)
-    Printf.eprintf "Script file is not allowed in expand option";
+    Printf.eprintf "For implementation reasons, the toplevel does not support\
+   \ having script files (here %S) inside expanded arguments passed through the\
+   \ -args{,0} command-line option.\n" name;
     exit 2
   end else begin
       let newargs = Array.sub !argv !current
