@@ -76,7 +76,7 @@ html: files
 	         -I ../tutorials -I ../../styles -I ../texstuff manual.hva \
 	         -e macros.tex ../manual.tex ; \
 	${HACHA} -tocter manual.html ; \
-
+	cat ../manual.css >> manual.css
 
 info: files
 	cd infoman; rm -f ocaml.info*; \
