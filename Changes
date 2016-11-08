@@ -95,6 +95,12 @@ OCaml 4.04.0 (4 Nov 2016):
   (Alain Frisch, request by Edgar Aroutiounian, review by Daniel Bunzli
   and Damien Doligez)
 
+- GPR#674: support unknown Sys.os_type in Filename, defaulting to Unix
+  (Filename would previously fail at initialization time for
+   Sys.os_type values other than "Unix", "Win32" and "Cygwin";
+   mirage-os uses "xen")
+  (Anil Madhavapeddy)
+
 ### Code generation and optimizations:
 
 - PR#4747, GPR#328: Optimize Hashtbl by using in-place updates of its
