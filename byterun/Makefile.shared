@@ -104,9 +104,15 @@ endif
 # Warning: we use "sort | uniq" instead of "sort -u" because in the MSVC
 # port, the "sort" program in the path is Microsoft's and not cygwin's
 
+# Warning: POSIX sort is locale dependent, that's why we set LC_ALL explicitly.
+# Sort is unstable for "is_directory" and "isatty"
+# see http://pubs.opengroup.org/onlinepubs/9699919799/utilities/sort.html:
+# "using sort to process pathnames, it is recommended that LC_ALL .. set to C"
+
+
 primitives : $(PRIMS)
 	sed -n -e "s/CAMLprim value \([a-z0-9_][a-z0-9_]*\).*/\1/p" $(PRIMS) \
-	  | sort | uniq > primitives
+	  | LC_ALL=C sort | uniq > primitives
 
 prims.c : primitives
 	(echo '#define CAML_INTERNALS'; \

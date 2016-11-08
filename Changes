@@ -51,6 +51,10 @@ Next version (4.05.0):
   install-compiler-sources for installation of compiler-libs ml files
   (Hendrik Tews)
 
+- GPR#898: fix locale-dependence of primitive list order,
+  detected through reproducible-builds.org.
+  (Hannes Mehnert, review by Gabriel Scherer and Ximin Luo)
+
 ### Internal/compiler-libs changes:
 
 - GPR#744, GPR#781: fix duplicate self-reference in imported cmi_crcs
