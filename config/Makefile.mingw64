@@ -68,7 +68,7 @@ X11_INCLUDES=
 X11_LINK=
 BYTECCRPATH=
 SUPPORTS_SHARED_LIBRARIES=true
-SHAREDCCCOMPOPTS=-O
+SHAREDCCCOMPOPTS=
 MKSHAREDLIBRPATH=
 NATIVECCPROFOPTS=
 NATIVECCRPATH=
@@ -98,10 +98,10 @@ SAFE_STRING=false
 ########## Configuration for the bytecode compiler
 
 ### Which C compiler to use for the bytecode interpreter.
-BYTECC=$(TOOLPREF)gcc
+BYTECC=$(TOOLPREF)gcc -O -mms-bitfields
 
 ### Additional compile-time options for $(BYTECC).  (For static linking.)
-BYTECCCOMPOPTS=-O -mms-bitfields -Wall -Wno-unused
+BYTECCCOMPOPTS=-Wall -Wno-unused
 
 ### Additional link-time options for $(BYTECC).  (For static linking.)
 BYTECCLINKOPTS=
@@ -168,7 +168,7 @@ SYSTEM=mingw64
 NATIVECC=$(BYTECC)
 
 ### Additional compile-time options for $(NATIVECC).
-NATIVECCCOMPOPTS=-O -mms-bitfields -Wall -Wno-unused
+NATIVECCCOMPOPTS=-Wall -Wno-unused
 
 ### Additional link-time options for $(NATIVECC)
 NATIVECCLINKOPTS=
