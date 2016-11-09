@@ -141,7 +141,9 @@ module Map : sig
       val find : key -> 'a t -> 'a
       val find_opt: key -> 'a t -> 'a option
       val find_first : f:(key -> bool) -> 'a t -> key * 'a
+      val find_first_opt : f:(key -> bool) -> 'a t -> (key * 'a) option
       val find_last : f:(key -> bool) -> 'a t -> key * 'a
+      val find_last_opt : f:(key -> bool) -> 'a t -> (key * 'a) option
       val map : f:('a -> 'b) -> 'a t -> 'b t
       val mapi : f:(key -> 'a -> 'b) -> 'a t -> 'b t
   end
