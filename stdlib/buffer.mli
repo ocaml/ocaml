@@ -131,3 +131,8 @@ val add_channel : t -> in_channel -> int -> unit
 val output_buffer : out_channel -> t -> unit
 (** [output_buffer oc b] writes the current contents of buffer [b]
    on the output channel [oc]. *)
+
+val truncate : t -> int -> unit
+(** [truncate b len] truncates the length of [b] to
+  Note: it does not change the size of the underlying buffer.
+  Raise [Invalid_argument] if [len < 0] or [len > b.position]. *)
