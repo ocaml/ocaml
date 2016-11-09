@@ -27,9 +27,6 @@ typedef int intptr_t;
 #define _INTPTR_T_DEFINED
 #endif
 
-extern intptr_t _get_osfhandle(int);
-extern int _open_osfhandle(intptr_t, int);
-
 int win_CRT_fd_of_filedescr(value handle)
 {
   if (CRT_fd_val(handle) != NO_CRT_FD) {
