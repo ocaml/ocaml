@@ -224,10 +224,20 @@ module type S =
        returns the lowest element [e] of [s] such that [f e],
        or raises [Not_found] if no such element exists. *)
 
+    val find_first_opt: (elt -> bool) -> t -> elt option
+    (** [find_first_opt f s], where [f] is a monotonically increasing function,
+       returns an option containing the lowest element [e] of [s] such that
+       [f e], or [None] if no such element exists. *)
+
     val find_last: (elt -> bool) -> t -> elt
     (** [find_last f s], where [f] is a monotonically decreasing function,
        returns the highest element [e] of [s] such that [f e],
        or raises [Not_found] if no such element exists. *)
+
+    val find_last_opt: (elt -> bool) -> t -> elt option
+    (** [find_last_opt f s], where [f] is a monotonically decreasing function,
+       returns an option containing the highest element [e] of [s] such that
+       [f e], or [None] if no such element exists. *)
 
     val of_list: elt list -> t
     (** [of_list l] creates a set from a list of elements.

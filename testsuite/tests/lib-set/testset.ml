@@ -127,6 +127,19 @@ let test x s1 s2 =
       else
         e = S.min_elt r);
 
+  checkbool "find_first_opt"
+    (let (l, p, r) = S.split x s1 in
+    if not p && S.is_empty r then
+      match S.find_first_opt (fun k -> k >= x) s1 with
+        None -> true
+      | _ -> false
+    else
+      let Some e = S.find_first_opt (fun k -> k >= x) s1 in
+      if p then
+        e = x
+      else
+        e = S.min_elt r);
+
   checkbool "find_last"
     (let (l, p, r) = S.split x s1 in
     if not p && S.is_empty l then
@@ -137,6 +150,19 @@ let test x s1 s2 =
         true
     else
       let e = S.find_last (fun k -> k <= x) s1 in
+      if p then
+        e = x
+      else
+        e = S.max_elt l);
+
+  checkbool "find_last_opt"
+    (let (l, p, r) = S.split x s1 in
+    if not p && S.is_empty l then
+      match S.find_last_opt (fun k -> k <= x) s1 with
+        None -> true
+      | _ -> false
+    else
+      let Some e = S.find_last_opt (fun k -> k <= x) s1 in
       if p then
         e = x
       else

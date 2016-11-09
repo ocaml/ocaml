@@ -187,7 +187,9 @@ module Set : sig
       val find: elt -> t -> elt
       val find_opt: elt -> t -> elt option
       val find_first: f:(elt -> bool) -> t -> elt
+      val find_first_opt: f:(elt -> bool) -> t -> elt option
       val find_last: f:(elt -> bool) -> t -> elt
+      val find_last_opt: f:(elt -> bool) -> t -> elt option
       val of_list: elt list -> t
     end
   module Make : functor (Ord : OrderedType) -> S with type elt = Ord.t

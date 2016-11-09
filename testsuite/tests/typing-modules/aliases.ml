@@ -306,7 +306,9 @@ module StringSet :
     val find : elt -> t -> elt
     val find_opt : elt -> t -> elt option
     val find_first : (elt -> bool) -> t -> elt
+    val find_first_opt : (elt -> bool) -> t -> elt option
     val find_last : (elt -> bool) -> t -> elt
+    val find_last_opt : (elt -> bool) -> t -> elt option
     val of_list : elt list -> t
   end
 module SSet :
@@ -344,7 +346,9 @@ module SSet :
     val find : elt -> t -> elt
     val find_opt : elt -> t -> elt option
     val find_first : (elt -> bool) -> t -> elt
+    val find_first_opt : (elt -> bool) -> t -> elt option
     val find_last : (elt -> bool) -> t -> elt
+    val find_last_opt : (elt -> bool) -> t -> elt option
     val of_list : elt list -> t
   end
 val f : StringSet.t -> SSet.t = <fun>
@@ -414,7 +418,9 @@ module A :
         val find : elt -> t -> elt
         val find_opt : elt -> t -> elt option
         val find_first : (elt -> bool) -> t -> elt
+        val find_first_opt : (elt -> bool) -> t -> elt option
         val find_last : (elt -> bool) -> t -> elt
+        val find_last_opt : (elt -> bool) -> t -> elt option
         val of_list : elt list -> t
       end
     val empty : S.t
@@ -524,7 +530,9 @@ module SInt :
     val find : elt -> t -> elt
     val find_opt : elt -> t -> elt option
     val find_first : (elt -> bool) -> t -> elt
+    val find_first_opt : (elt -> bool) -> t -> elt option
     val find_last : (elt -> bool) -> t -> elt
+    val find_last_opt : (elt -> bool) -> t -> elt option
     val of_list : elt list -> t
   end
 type (_, _) eq = Eq : ('a, 'a) eq
