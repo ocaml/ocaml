@@ -44,6 +44,12 @@ Next version (4.05.0):
 - GPR#885: Option-returning variants of stdlib functions
   (Alain Frisch, review by David Allsopp and Bart Jacobs)
 
+- GPR#869: Add find_first, find_first_opt, find_last, find_last_opt to
+  maps and sets.  Find the first or last binding or element
+  satisfying a monotonic predicate.
+  (Gabriel de Perthuis, with contributions from Alain Frisch, review by
+  Hezekiah M. Carty and Simon Cruanes, initial report by Gerd Stolpmann)
+
 ### Other libraries:
 
 - MPR#7339, GPR#787: Support the '0 dimension' case for bigarrays
