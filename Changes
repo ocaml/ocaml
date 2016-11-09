@@ -6,6 +6,11 @@ Next version (4.04.1):
 - PR#7403, GPR#894: fix a bug in Set.map as introduced in 4.04.0
   (Gabriel Scherer, report by Thomas Leonard)
 
+### Bug fixes
+
+- PR#7405, GPR#903: s390x: Fix address of caml_raise_exn in native dynlink modules
+  (Richard Jones, review by Xavier Leroy)
+
 OCaml 4.04.0 (4 Nov 2016):
 --------------------------
 
