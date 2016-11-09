@@ -18,7 +18,6 @@
 
 \def\caml{
     \bgroup
-    \flushleft
     \parindent 0pt
     \parskip 0pt
     \let\do\@makeother\dospecials
@@ -38,6 +37,18 @@
 }
 
 \def\endcaml{
-  \endflushleft
-  \egroup\noindent
+  \egroup
+  \addvspace{\medskipamount}
 }
+
+% Caml-example related command
+\def\camlexample{\begin{flushleft}}
+\def\endcamlexample{\end{flushleft}}
+\def\camlinput{}
+\def\endcamlinput{}
+\def\camloutput{}
+\def\endcamloutput{}
+\def\camlerror{}
+\def\endcamlerror{}
+\def\camlwarn{}
+\def\endcamlwarn{}
