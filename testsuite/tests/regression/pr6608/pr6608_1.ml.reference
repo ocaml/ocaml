@@ -1,0 +1,7 @@
+
+# Characters 1-3:
+  {"" with contents=1};;
+   ^^
+Error: This expression has type string but an expression was expected of type
+         'a ref
+# 
