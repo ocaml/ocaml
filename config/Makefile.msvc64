@@ -102,9 +102,6 @@ BYTECCDBGCOMPOPTS=-DDEBUG -Zi -W3 -Wp64
 ### Additional link-time options for $(BYTECC).  (For static linking.)
 BYTECCLINKOPTS=
 
-### Additional compile-time options for $(BYTECC).  (For building a DLL.)
-DLLCCCOMPOPTS=-O2 -Gy- -MD
-
 ### Libraries needed
 #EXTRALIBS=bufferoverflowu.lib  # for the old PSDK compiler only
 EXTRALIBS=

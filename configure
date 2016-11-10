@@ -333,7 +333,6 @@ mkexe="\$(BYTECC)"
 mkexedebugflag="-g"
 bytecccompopts=""
 bytecclinkopts=""
-dllccompopts=""
 ostype="Unix"
 exe=""
 iflexdir=""
@@ -432,7 +431,6 @@ case "$bytecc,$target" in
       *) err "unknown cygwin variant";;
     esac
     bytecccompopts="$bytecccompopts -U_WIN32"
-    dllccompopts="-U_WIN32 -DCAML_DLL"
     if test $with_sharedlibs = yes; then
       flexlink="flexlink -chain $flavor -merge-manifest -stack 16777216"
       flexdir=`$flexlink -where | tr -d '\015'`
@@ -1963,7 +1961,6 @@ echo "SYSTHREAD_SUPPORT=$systhread_support" >> Makefile
 echo "PARTIALLD=$partialld" >> Makefile
 echo "PACKLD=\$(PARTIALLD) \$(NATIVECCLINKOPTS) -o " \
   | sed -e 's/ $/\\ /' >> Makefile
-echo "DLLCCCOMPOPTS=$dllccompopts" >> Makefile
 echo "IFLEXDIR=$iflexdir" >> Makefile
 echo "O=o" >> Makefile
 echo "A=a" >> Makefile
