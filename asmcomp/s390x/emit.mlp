@@ -53,10 +53,10 @@ let emit_symbol s = Emitaux.emit_symbol '.' s
 (* Output function call *)
 
 let emit_call s =
-   if !pic_code then
-    `	brasl	%r14, {emit_symbol s}@PLT\n`
-   else
-    `	brasl	%r14, {emit_symbol s}\n`
+  if !pic_code then
+   `	brasl	%r14, {emit_symbol s}@PLT\n`
+  else
+   `	brasl	%r14, {emit_symbol s}\n`
 
 (* Output a label *)
 
@@ -83,7 +83,13 @@ let emit_reg r =
 
 (* Special registers *)
 
-let reg_f15 = phys_reg 115
+let check_phys_reg reg_idx name =
+  let reg = phys_reg reg_idx in
+  assert (register_name reg_idx = name);
+  reg
+
+let reg_f15 = check_phys_reg 115 "%f15"
+let reg_r7 = check_phys_reg 5 "%r7"
 
 (* Output a stack reference *)
 
@@ -93,6 +99,14 @@ let emit_stack r =
       let ofs = slot_offset s (register_class r) in `{emit_int ofs}(%r15)`
   | _ -> fatal_error "Emit.emit_stack"
 
+
+(* Output a load of the address of a global symbol *)
+
+let emit_load_symbol_addr reg s =
+  if !pic_code then
+  `	lgrl	{emit_reg reg}, {emit_symbol s}@GOTENT\n`
+  else
+  `	larl	{emit_reg reg}, {emit_symbol s}\n`
 
 (* Output a load or store operation *)
 
@@ -316,20 +330,14 @@ let emit_instr i =
         `	larl	%r1, {emit_label lbl}\n`;
         `	ld	{emit_reg i.res.(0)}, 0(%r1)\n`
      | Lop(Iconst_symbol s) ->
-        if !pic_code then
-        `	lgrl	{emit_reg i.res.(0)}, {emit_symbol s}@GOTENT\n`
-        else
-        `	larl	{emit_reg i.res.(0)}, {emit_symbol s}\n`;
+        emit_load_symbol_addr i.res.(0) s
     | Lop(Icall_ind { label_after; }) ->
         `	basr	%r14, {emit_reg i.arg.(0)}\n`;
         let lbl = record_frame i.live false i.dbg ~label:label_after in
          `{emit_label lbl}:\n`
 
     | Lop(Icall_imm { func; label_after; }) ->
-        if !pic_code then
-        `	brasl	%r14, {emit_symbol func}@PLT\n`
-        else
-        `	brasl	%r14, {emit_symbol func}\n`;
+        emit_call func;
         let lbl = record_frame i.live false i.dbg ~label:label_after in
          `{emit_label lbl}:\n`;
     | Lop(Itailcall_ind { label_after = _; }) ->
@@ -353,22 +361,13 @@ let emit_instr i =
         end
 
      | Lop(Iextcall { func; alloc; label_after; }) ->
-        if alloc then begin
-          if !pic_code then begin
-          `	lgrl	%r7, {emit_symbol func}@GOTENT\n`;
-          `	brasl	%r14, {emit_symbol "caml_c_call"}@PLT\n`
-          end else begin
-          `	larl	%r7, {emit_symbol func}\n`;
-          `	brasl	%r14, {emit_symbol "caml_c_call"}\n`
-          end;
+        if not alloc then emit_call func
+        else begin
+          emit_load_symbol_addr reg_r7 func;
+          emit_call "caml_c_call";
           let lbl = record_frame i.live false i.dbg ~label:label_after in
            `{emit_label lbl}:\n`;
-        end else begin
-          if !pic_code then
-          `	brasl	%r14, {emit_symbol func}@PLT\n`
-          else
-          `	brasl	%r14, {emit_symbol func}\n`
-       end
+        end
 
      | Lop(Istackoffset n) ->
         emit_stack_adjust n;
