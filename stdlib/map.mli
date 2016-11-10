@@ -242,6 +242,12 @@ module type S =
     (** [find_first f m], where [f] is a monotonically increasing function,
        returns the binding of [m] with the lowest key [k] such that [f k],
        or raises [Not_found] if no such key exists.
+
+       For example, [find_first (fun k -> Ord.compare k x >= 0) m] will return
+       the first binding [k, v] of [m] where [Ord.compare k x >= 0]
+       (intuitively: [k >= x]), or raise [Not_found] if [x] is greater than any
+       element of [m].
+
         @since 4.05
        *)
 

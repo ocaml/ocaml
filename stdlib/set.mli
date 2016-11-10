@@ -223,6 +223,12 @@ module type S =
     (** [find_first f s], where [f] is a monotonically increasing function,
        returns the lowest element [e] of [s] such that [f e],
        or raises [Not_found] if no such element exists.
+
+       For example, [find_first (fun e -> Ord.compare e x >= 0) s] will return
+       the first element [e] of [s] where [Ord.compare e x >= 0] (intuitively:
+       [e >= x]), or raise [Not_found] if [x] is greater than any element of
+       [s].
+
         @since 4.05
        *)
 
