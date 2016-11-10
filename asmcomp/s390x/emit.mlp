@@ -54,9 +54,9 @@ let emit_symbol s = Emitaux.emit_symbol '.' s
 
 let emit_call s =
    if !pic_code then
-    `brasl	%r14, {emit_symbol s}@PLT`
+    `	brasl	%r14, {emit_symbol s}@PLT\n`
    else
-    `brasl	%r14, {emit_symbol s}`
+    `	brasl	%r14, {emit_symbol s}\n`
 
 (* Output a label *)
 
@@ -179,7 +179,7 @@ type gc_call =
 let call_gc_sites = ref ([] : gc_call list)
 
 let emit_call_gc gc =
-  `{emit_label gc.gc_lbl}:	{emit_call "caml_call_gc"}\n`;
+  `{emit_label gc.gc_lbl}:`; emit_call "caml_call_gc";
   `{emit_label gc.gc_frame_lbl}:	brcl	15, {emit_label gc.gc_return_lbl}\n`
 
 (* Record calls to caml_ml_array_bound_error, emitted out of line. *)
@@ -204,13 +204,14 @@ let bound_error_label ?label dbg =
  end
 
 let emit_call_bound_error bd =
-  `{emit_label bd.bd_lbl}:	{emit_call "caml_ml_array_bound_error"}\n`;
+  `{emit_label bd.bd_lbl}:`; emit_call "caml_ml_array_bound_error";
   `{emit_label bd.bd_frame}:\n`
 
 let emit_call_bound_errors () =
   List.iter emit_call_bound_error !bound_error_sites;
-  if !bound_error_call > 0 then
-    `{emit_label !bound_error_call}:	{emit_call "caml_ml_array_bound_error"}\n`
+  if !bound_error_call > 0 then begin
+    `{emit_label !bound_error_call}:`; emit_call "caml_ml_array_bound_error";
+  end
 
 (* Record floating-point and large integer literals *)
 
@@ -607,7 +608,7 @@ let emit_instr i =
     | Lraise k ->
         begin match k with
         | Cmm.Raise_withtrace ->
-          `	{emit_call "caml_raise_exn"}\n`;
+          emit_call "caml_raise_exn";
           let lbl = record_frame Reg.Set.empty true i.dbg in
           `{emit_label lbl}:\n`
         | Cmm.Raise_notrace ->
