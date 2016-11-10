@@ -464,7 +464,13 @@ module LargeFile :
 
 
 val unlink : string -> unit
-(** Removes the named file. *)
+(** Removes the named file.
+
+    If the named file is a directory, raises:
+      * [EPERM] on POSIX compliant system, or
+      * [EISDIR] on Linux >= 2.1.132, or
+      * [EACCESS] on Windows.
+*)
 
 val rename : string -> string -> unit
 (** [rename old new] changes the name of a file from [old] to [new]. *)
