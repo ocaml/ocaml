@@ -162,7 +162,7 @@ let emit_set_comp cmp res =
 
 (* Record live pointers at call points *)
 
-let record_frame ?label live raise_ dbg =
+let record_frame_label ?label live raise_ dbg =
   let lbl =
     match label with
     | None -> new_label()
@@ -182,6 +182,10 @@ let record_frame ?label live raise_ dbg =
   record_frame_descr ~label:lbl ~frame_size:(frame_size())
     ~live_offset:!live_offset ~raise_frame:raise_ dbg;
   lbl
+
+let record_frame ?label live raise_ dbg =
+  let lbl = record_frame_label ?label live raise_ dbg in
+  `{emit_label lbl}:`
 
 (* Record calls to caml_call_gc, emitted out of line. *)
 
@@ -208,7 +212,7 @@ let bound_error_call = ref 0
 let bound_error_label ?label dbg =
   if !Clflags.debug then begin
     let lbl_bound_error = new_label() in
-    let lbl_frame = record_frame ?label Reg.Set.empty false dbg in
+    let lbl_frame = record_frame_label ?label Reg.Set.empty false dbg in
     bound_error_sites :=
      { bd_lbl = lbl_bound_error; bd_frame = lbl_frame } :: !bound_error_sites;
    lbl_bound_error
@@ -333,13 +337,11 @@ let emit_instr i =
         emit_load_symbol_addr i.res.(0) s
     | Lop(Icall_ind { label_after; }) ->
         `	basr	%r14, {emit_reg i.arg.(0)}\n`;
-        let lbl = record_frame i.live false i.dbg ~label:label_after in
-         `{emit_label lbl}:\n`
+        `{record_frame i.live false i.dbg ~label:label_after}\n`
 
     | Lop(Icall_imm { func; label_after; }) ->
         emit_call func;
-        let lbl = record_frame i.live false i.dbg ~label:label_after in
-         `{emit_label lbl}:\n`;
+        `{record_frame i.live false i.dbg ~label:label_after}\n`
     | Lop(Itailcall_ind { label_after = _; }) ->
         let n = frame_size() in
         if !contains_calls then
@@ -365,8 +367,7 @@ let emit_instr i =
         else begin
           emit_load_symbol_addr reg_r7 func;
           emit_call "caml_c_call";
-          let lbl = record_frame i.live false i.dbg ~label:label_after in
-           `{emit_label lbl}:\n`;
+          `{record_frame i.live false i.dbg ~label:label_after}\n`
         end
 
      | Lop(Istackoffset n) ->
@@ -407,7 +408,7 @@ let emit_instr i =
         let lbl_redo = new_label() in
         let lbl_call_gc = new_label() in
         let lbl_frame =
-          record_frame i.live false i.dbg ?label:label_after_call_gc
+          record_frame_label i.live false i.dbg ?label:label_after_call_gc
         in
         call_gc_sites :=
           { gc_lbl = lbl_call_gc;
@@ -608,8 +609,7 @@ let emit_instr i =
         begin match k with
         | Cmm.Raise_withtrace ->
           emit_call "caml_raise_exn";
-          let lbl = record_frame Reg.Set.empty true i.dbg in
-          `{emit_label lbl}:\n`
+          `{record_frame Reg.Set.empty true i.dbg}\n`
         | Cmm.Raise_notrace ->
           `	lg	%r1, 0(%r13)\n`;
           `	lgr	%r15, %r13\n`;
