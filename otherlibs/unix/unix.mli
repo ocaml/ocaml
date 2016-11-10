@@ -467,9 +467,10 @@ val unlink : string -> unit
 (** Removes the named file.
 
     If the named file is a directory, raises:
-      * [EPERM] on POSIX compliant system, or
-      * [EISDIR] on Linux >= 2.1.132, or
-      * [EACCESS] on Windows.
+    {ul
+    {- [EPERM] on POSIX compliant system}
+    {- [EISDIR] on Linux >= 2.1.132}
+    {- [EACCESS] on Windows}}
 *)
 
 val rename : string -> string -> unit
