@@ -2330,16 +2330,16 @@ and type_expect_ ?in_function ?(recarg=Rejected) env sexp ty_expected =
         | Some exp ->
             let ty_exp = instance env exp.exp_type in
             let unify_kept lbl =
+              let _, ty_arg1, ty_res1 = instance_label false lbl in
+              unify_exp_types exp.exp_loc env ty_exp ty_res1;
               match matching_label lbl with
               | lid, _lbl, lbl_exp ->
+                  (* do not connect result types for overridden labels *)
                   Overridden (lid, lbl_exp)
               | exception Not_found -> begin
-                (* do not connect overridden labels *)
-                  let _, ty_arg1, ty_res1 = instance_label false lbl
-                  and _, ty_arg2, ty_res2 = instance_label false lbl in
+                  let _, ty_arg2, ty_res2 = instance_label false lbl in
                   unify env ty_arg1 ty_arg2;
                   unify env (instance env ty_expected) ty_res2;
-                  unify_exp_types exp.exp_loc env ty_exp ty_res1;
                   Kept ty_arg1
                 end
             in

@@ -5,6 +5,10 @@ Next version (4.05.0):
 
 ### Compiler user-interface and warnings:
 
+- PR#6608, GPR#901: unify record types when overriding all fields
+  (Tadeu Zagallo and Gabriel Scherer, report by Jeremy Yallop,
+  review by David Allsopp, Jacques Garrigue)
+
 - PR#7315, GPR#736: refine some error locations
   (Gabriel Scherer and Alain Frisch, report by Matej Košík)
 
