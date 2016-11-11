@@ -81,6 +81,9 @@ Next version (4.05.0):
 
 ### Bug fixes
 
+- PR#7405, GPR#903: s390x: Fix address of caml_raise_exn in native dynlink modules
+  (Richard Jones, review by Xavier Leroy)
+
 - GPR#795: remove 256-character limitation on Sys.executable_name
   (Xavier Leroy)
 

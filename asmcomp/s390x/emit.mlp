@@ -611,7 +611,7 @@ let emit_instr i =
     | Lraise k ->
         begin match k with
         | Cmm.Raise_withtrace ->
-          `	brasl	%r14, {emit_symbol "caml_raise_exn"}\n`;
+          `	{emit_call "caml_raise_exn"}\n`;
           let lbl = record_frame Reg.Set.empty true i.dbg in
           `{emit_label lbl}:\n`
         | Cmm.Raise_notrace ->
