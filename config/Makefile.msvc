@@ -100,9 +100,6 @@ BYTECCCOMPOPTS=-O2 -Gy- -MD
 ### Additional link-time options for $(BYTECC).  (For static linking.)
 BYTECCLINKOPTS=
 
-### Additional compile-time options for $(BYTECC).  (For building a DLL.)
-DLLCCCOMPOPTS=-O2 -Gy- -MD
-
 ### Libraries needed
 BYTECCLIBS=advapi32.lib ws2_32.lib
 NATIVECCLIBS=advapi32.lib ws2_32.lib
