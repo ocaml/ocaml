@@ -133,6 +133,6 @@ val output_buffer : out_channel -> t -> unit
    on the output channel [oc]. *)
 
 val truncate : t -> int -> unit
-(** [truncate b len] truncates the length of [b] to
-  Note: it does not change the size of the underlying buffer.
+(** [truncate b len] truncates the length of [b] to [len]
+  Note: the intenal byte sequence is not shortenend.
   Raise [Invalid_argument] if [len < 0] or [len > b.position]. *)
