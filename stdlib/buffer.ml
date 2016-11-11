@@ -190,7 +190,7 @@ let add_substitute b f s =
   subst ' ' 0
 
 let truncate b len =
-    if len < 0 || len > b.position then
-        invalid_arg "Buffer.truncate"
+    if len < 0 || len > length b then
+      invalid_arg "Buffer.truncate"
     else
-        b.position <- len
+      b.position <- len
