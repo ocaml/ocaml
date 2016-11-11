@@ -308,7 +308,7 @@ let diff env1 env2 =
 (* Forward declarations *)
 
 let components_of_module' =
-  ref ((fun ~deprecated:_ ~loc:__env _sub _path _mty -> assert false) :
+  ref ((fun ~deprecated:_ ~loc:_ _env _sub _path _mty -> assert false) :
          deprecated:string option -> loc:Location.t -> t -> Subst.t ->
        Path.t -> module_type ->
        module_components)
