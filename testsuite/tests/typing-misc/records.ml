@@ -93,3 +93,20 @@ let f (x : Complex.t) = x.Complex.z;;
 Line _, characters 26-35:
 Error: Unbound record field Complex.z
 |}];;
+
+(* PR#6608 *)
+{ "reference" with contents = 0 }
+[%%expect{|
+Line _, characters 2-13:
+Error: This expression has type string but an expression was expected of type
+         'a ref
+|}];;
+
+type ('a, 'b) t = { fst : 'a; snd : 'b };;
+let with_fst r fst = { r with fst };;
+with_fst { fst=""; snd="" } 2;;
+[%%expect{|
+type ('a, 'b) t = { fst : 'a; snd : 'b; }
+val with_fst : ('a, 'b) t -> 'c -> ('c, 'b) t = <fun>
+- : (int, string) t = {fst = 2; snd = ""}
+|}];;
