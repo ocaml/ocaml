@@ -18,7 +18,7 @@ PREFIX=~/local
 BuildAndTest () {
   case $XARCH in
   i386)
-  echo<<EOF
+  cat<<EOF
 ------------------------------------------------------------------------
 This test builds the OCaml compiler distribution with your pull request,
 runs its testsuite, and then tries to install some important OCaml software
@@ -80,7 +80,7 @@ EOF
 }
 
 CheckChangesModified () {
-  echo<<EOF
+  cat<<EOF
 ------------------------------------------------------------------------
 This test checks that the Changes file has been modified by the pull
 request. Most contributions should come with a message in the Changes
@@ -98,7 +98,7 @@ EOF
 }
 
 CheckTestsuiteModified () {
-  echo<<EOF
+  cat<<EOF
 ------------------------------------------------------------------------
 This test checks that the OCaml testsuite has been modified by the
 pull request. Any new feature should come with tests, bugs should come
