@@ -701,6 +701,9 @@ Next minor version (4.04.1):
 
 ### Tools:
 
+- PR#7411: ocamldoc, avoid nested <pre> tags in module description.
+  (Florian Angeletti, report by user 'kosik')
+
 - PR#7488: ocamldoc, wrong Latex output for variant types
   with constructors without arguments.
   (Florian Angeletti, report by Xavier Leroy)
