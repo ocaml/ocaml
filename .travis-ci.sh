@@ -80,8 +80,8 @@ EOF
 }
 
 CheckChangesModified () {
-  echo<<EOF
-------------------------------------------------------------------------
+  echo \
+"------------------------------------------------------------------------
 This test checks that the Changes file has been modified by the pull
 request. Most contributions should come with a message in the Changes
 file, as described in our contributor documentation:
@@ -90,16 +90,15 @@ file, as described in our contributor documentation:
 
 Some very minor changes (typo fixes for example) may not need
 a Changes entry, in which case it is acceptable for this test to fail.
-------------------------------------------------------------------------
-EOF
+------------------------------------------------------------------------";
   # check that Changes has been modified
   git diff $TRAVIS_COMMIT_RANGE --name-only --exit-code Changes > /dev/null \
   && exit 1 || echo pass
 }
 
 CheckTestsuiteModified () {
-  echo<<EOF
-------------------------------------------------------------------------
+  echo \
+"------------------------------------------------------------------------
 This test checks that the OCaml testsuite has been modified by the
 pull request. Any new feature should come with tests, bugs should come
 with regression tests, and generally any change in behavior that can
@@ -114,8 +113,7 @@ which case it is acceptable for this test to fail.
 
 Note: the heuristic used by this test is extremely fragile; passing it
 does *not* imply that your change is appropriately tested.
-------------------------------------------------------------------------
-EOF
+------------------------------------------------------------------------";
   # check that at least a file in testsuite/ has been modified
   git diff $TRAVIS_COMMIT_RANGE --name-only --exit-code testsuite > /dev/null \
   && exit 1 || echo pass
