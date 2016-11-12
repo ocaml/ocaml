@@ -3,19 +3,24 @@ Next version (4.05.0):
 
 (Changes that can break existing programs are marked with a "*")
 
-### Compiler user-interface and warnings:
+### Language features:
+
+### Code generation and optimizations:
+
+### Runtime system:
+
+### Type system:
 
 - PR#6608, GPR#901: unify record types when overriding all fields
   (Tadeu Zagallo and Gabriel Scherer, report by Jeremy Yallop,
   review by David Allsopp, Jacques Garrigue)
 
+### Compiler user-interface and warnings:
+
 - PR#7315, GPR#736: refine some error locations
   (Gabriel Scherer and Alain Frisch, report by Matej Košík)
 
-- GPR#829: better error when opening a module aliased to a functor
-  (Alain Frisch)
-
-- MPR#7050, GPR#748 GPR#843 GPR#864: new `-args/-args0 <file>` parameters to
+- PR#7050, GPR#748 GPR#843 GPR#864: new `-args/-args0 <file>` parameters to
   provide extra command-line arguments in a file -- see documentation.
   User programs may implement similar options using the new `Expand`
   constructor of the `Arg` module.
@@ -23,14 +28,28 @@ Next version (4.05.0):
    and Damien Doligez, discussion with Alain Frisch and Xavier Leroy,
    feature request from the Coq team)
 
+- GPR#829: better error when opening a module aliased to a functor
+  (Alain Frisch)
+
 ### Standard library:
 
 - GPR#760: Add a functions List.compare_lengths and
   List.compare_length_with to avoid full list length computations
   (Fabrice Le Fessant)
 
+- GPR#778: Arg: added option Expand that allows to expand a string
+  argument to a string array of new arguments
+  (Bernhard Schommer)
+
 - GPR#885: Option-returning variants of stdlib functions
   (Alain Frisch, review by David Allsopp and Bart Jacobs)
+
+### Other libraries:
+
+- MPR#7339, GPR#787: Support the '0 dimension' case for bigarrays
+  (see Bigarray documentation)
+  (Laurent Mazare,
+   review by Gabriel Scherer, Alain Frisch and Hezekiah M. Carty)
 
 ### Tools:
 
@@ -42,6 +61,10 @@ Next version (4.05.0):
 
 - PR#7377: remove -std=gnu99 for newer gcc versions
   (Damien Doligez, report by ygrek)
+
+- GPR#693: fail on unexpected errors or warnings within caml_example
+  environment.
+  (Florian Angeletti)
 
 - GPR#729: Make sure ocamlnat is built with a $(EXE) extension, merge
   rules between Unix and Windows Makefiles
@@ -66,19 +89,6 @@ Next version (4.05.0):
   .cmti files
   (Alain Frisch, report by Daniel Bunzli, review by Jeremie Dimino)
 
-### Other libraries:
-
-- MPR#7339, GPR#787: Support the '0 dimension' case for bigarrays
-  (see Bigarray documentation)
-  (Laurent Mazare,
-   review by Gabriel Scherer, Alain Frisch and Hezekiah M. Carty)
-
-### Manual and documentation:
-
-- GPR#693: fail on unexpected errors or warnings within caml_example
-  environment.
-  (Florian Angeletti)
-
 ### Bug fixes
 
 - GPR#795: remove 256-character limitation on Sys.executable_name
@@ -93,12 +103,6 @@ Next version (4.05.0):
 - GPR#805, GPR#815, GPR#833: check for integer overflow in String.concat
   (Jeremy Yallop,
    review by Damien Doligez, Alain Frisch, Daniel Bünzli, Fabrice Le Fessant)
-
-### Standard library:
-
-- GPR#778: Arg: added option Expand that allows to expand a string argument
-  to a string array of new arguments
-  (Bernhard Schommer)
 
 Next minor version (4.04.1):
 ----------------------------
@@ -271,6 +275,10 @@ OCaml 4.04.0 (4 Nov 2016):
 
 ### Runtime system:
 
+- PR#7203, GPR#534: Add a new primitive caml_alloc_float_array to allocate an
+  array of floats
+  (Thomas Braibant)
+
 - PR#7210, GPR#562: Allows to register finalisation function that are
   called only when a value will never be reachable anymore. The
   drawbacks compared to the existing one is that the finalisation
@@ -324,12 +332,6 @@ OCaml 4.04.0 (4 Nov 2016):
 
 - GPR#585: Spacetime, a new memory profiler (Mark Shinwell, Leo White)
 
-### Runtime system:
-
-- PR#7203, GPR#534: Add a new primitive caml_alloc_float_array to allocate an
-  array of floats
-  (Thomas Braibant)
-
 ### Manual and documentation:
 
 - PR#7007, PR#7311: document the existence of OCAMLPARAM and
@@ -356,7 +358,7 @@ OCaml 4.04.0 (4 Nov 2016):
 - GPR#841: Document that [Store_field] must not be used to populate
   arrays of values declared using [CAMLlocalN] (Mark Shinwell)
 
-### Build system:
+### Compiler distribution build system:
 
 - GPR#324: Compiler developers: Adding new primitives to the
   standard runtime doesn't require anymore to run `make bootstrap`
