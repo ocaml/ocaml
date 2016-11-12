@@ -106,6 +106,10 @@ module type MapT =
     val split : key -> 'a t -> 'a t * 'a option * 'a t
     val find : key -> 'a t -> 'a
     val find_opt : key -> 'a t -> 'a option
+    val find_first : (key -> bool) -> 'a t -> key * 'a
+    val find_first_opt : (key -> bool) -> 'a t -> (key * 'a) option
+    val find_last : (key -> bool) -> 'a t -> key * 'a
+    val find_last_opt : (key -> bool) -> 'a t -> (key * 'a) option
     val map : ('a -> 'b) -> 'a t -> 'b t
     val mapi : (key -> 'a -> 'b) -> 'a t -> 'b t
     type data
@@ -148,6 +152,10 @@ module SSMap :
     val split : key -> 'a t -> 'a t * 'a option * 'a t
     val find : key -> 'a t -> 'a
     val find_opt : key -> 'a t -> 'a option
+    val find_first : (key -> bool) -> 'a t -> key * 'a
+    val find_first_opt : (key -> bool) -> 'a t -> (key * 'a) option
+    val find_last : (key -> bool) -> 'a t -> key * 'a
+    val find_last_opt : (key -> bool) -> 'a t -> (key * 'a) option
     val map : ('a -> 'b) -> 'a t -> 'b t
     val mapi : (key -> 'a -> 'b) -> 'a t -> 'b t
     type data = string

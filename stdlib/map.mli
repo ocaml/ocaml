@@ -238,6 +238,40 @@ module type S =
         @since 4.05
     *)
 
+    val find_first: (key -> bool) -> 'a t -> key * 'a
+    (** [find_first f m], where [f] is a monotonically increasing function,
+       returns the binding of [m] with the lowest key [k] such that [f k],
+       or raises [Not_found] if no such key exists.
+
+       For example, [find_first (fun k -> Ord.compare k x >= 0) m] will return
+       the first binding [k, v] of [m] where [Ord.compare k x >= 0]
+       (intuitively: [k >= x]), or raise [Not_found] if [x] is greater than any
+       element of [m].
+
+        @since 4.05
+       *)
+
+    val find_first_opt: (key -> bool) -> 'a t -> (key * 'a) option
+    (** [find_first_opt f m], where [f] is a monotonically increasing function,
+       returns an option containing the binding of [m] with the lowest key [k]
+       such that [f k], or [None] if no such key exists.
+        @since 4.05
+       *)
+
+    val find_last: (key -> bool) -> 'a t -> key * 'a
+    (** [find_last f m], where [f] is a monotonically decreasing function,
+       returns the binding of [m] with the highest key [k] such that [f k],
+       or raises [Not_found] if no such key exists.
+        @since 4.05
+       *)
+
+    val find_last_opt: (key -> bool) -> 'a t -> (key * 'a) option
+    (** [find_last_opt f m], where [f] is a monotonically decreasing function,
+       returns an option containing the binding of [m] with the highest key [k]
+       such that [f k], or [None] if no such key exists.
+        @since 4.05
+       *)
+
     val map: ('a -> 'b) -> 'a t -> 'b t
     (** [map f m] returns a map with same domain as [m], where the
        associated value [a] of all bindings of [m] has been
