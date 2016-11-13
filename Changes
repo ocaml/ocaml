@@ -11,6 +11,10 @@ Next version (4.04.1):
 - PR#7405, GPR#903: s390x: Fix address of caml_raise_exn in native dynlink modules
   (Richard Jones, review by Xavier Leroy)
 
+- GPR#912: Fix segfault in Unix.create_process on Windows caused by wrong header
+  configuration.
+  (David Allsopp)
+
 OCaml 4.04.0 (4 Nov 2016):
 --------------------------
 
