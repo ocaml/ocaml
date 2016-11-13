@@ -89,12 +89,21 @@ file, as described in our contributor documentation:
   https://github.com/ocaml/ocaml/blob/trunk/CONTRIBUTING.md#changelog
 
 Some very minor changes (typo fixes for example) may not need
-a Changes entry, in which case it is acceptable for this test to fail.
+a Changes entry. In this case, you may explicitly disable this test by
+adding the code word "No change entry needed" (on a single line) to
+a commit message of the PR.
 ------------------------------------------------------------------------
 EOF
   # check that Changes has been modified
   git diff $TRAVIS_COMMIT_RANGE --name-only --exit-code Changes > /dev/null \
-  && exit 1 || echo pass
+  && CheckNoChangesMessage || echo pass
+}
+
+CheckNoChangesMessage () {
+  if test -z "$(git log --grep="[Nn]o [Cc]hange.* needed" --max-count=1 $TRAVIS_COMMIT_RANGE)"
+  then exit 1
+  else echo pass
+  fi
 }
 
 CheckTestsuiteModified () {
