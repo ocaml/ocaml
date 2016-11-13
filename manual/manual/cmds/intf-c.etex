@@ -1639,13 +1639,16 @@ including "dynlink" plugins.
 "malloc". Inside C primitives, it is advised to use "caml_stat_*" functions
 from "memory.h" for managing static (that is, non-moving) blocks of heap
 memory, as all the blocks allocated with these functions are automatically
-freed by "caml_shutdown".
+freed by "caml_shutdown". For ensuring compatibility with legacy C stubs that
+have used "caml_stat_*" incorrectly, this behaviour is only enabled if the
+runtime is started with a specialized "caml_startup_pooled" function.
 \end{itemize}
 
 As a shared library may have several clients simultaneously, it is made for
-convenience that "caml_startup" may be called several times, given that each
-such call is paired with a corresponding call to "caml_shutdown". The runtime
-will be unloaded once there are no outstanding calls to "caml_startup".
+convenience that "caml_startup" (and "caml_startup_pooled") may be called
+multiple times, given that each such call is paired with a corresponding call
+to "caml_shutdown" (in a nested fashion). The runtime will be unloaded once
+there are no outstanding calls to "caml_startup".
 
 Once a runtime is unloaded, it cannot be started up again without reloading the
 shared library and reinitializing its static data. Therefore, at the moment, the
