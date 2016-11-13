@@ -105,6 +105,16 @@ value caml_startup_common(char **argv, int pooling)
   char * exe_name, * proc_self_exe;
   char tos;
 
+  /* Determine options */
+#ifdef DEBUG
+  caml_verb_gc = 0x3F;
+#endif
+  caml_parse_ocamlrunparam();
+#ifdef DEBUG
+  caml_gc_message (-1, "### OCaml runtime: debug mode ###\n", 0);
+#endif
+  if (caml_cleanup_on_exit)
+    pooling = 1;
   if (!caml_startup_aux(pooling))
     return Val_unit;
 
@@ -118,13 +128,6 @@ value caml_startup_common(char **argv, int pooling)
 #endif
   caml_init_custom_operations();
   caml_top_of_stack = &tos;
-#ifdef DEBUG
-  caml_verb_gc = 0x3F;
-#endif
-  caml_parse_ocamlrunparam();
-#ifdef DEBUG
-  caml_gc_message (-1, "### OCaml runtime: debug mode ###\n", 0);
-#endif
   caml_init_gc (caml_init_minor_heap_wsz, caml_init_heap_wsz,
                 caml_init_heap_chunk_sz, caml_init_percent_free,
                 caml_init_max_percent_free, caml_init_major_window);

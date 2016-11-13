@@ -60,6 +60,7 @@ uintnat caml_init_max_stack_wsz = Max_stack_def;
 uintnat caml_init_major_window = Major_window_def;
 extern int caml_parser_trace;
 uintnat caml_trace_level = 0;
+uintnat caml_cleanup_on_exit = 0;
 
 
 static void scanmult (char *opt, uintnat *var)
@@ -88,6 +89,7 @@ void caml_parse_ocamlrunparam(void)
       switch (*opt++){
       case 'a': scanmult (opt, &p); caml_set_allocation_policy (p); break;
       case 'b': scanmult (opt, &p); caml_record_backtrace(Val_bool (p)); break;
+      case 'c': scanmult (opt, &p); caml_cleanup_on_exit = p; break;
       case 'h': scanmult (opt, &caml_init_heap_wsz); break;
       case 'H': scanmult (opt, &caml_use_huge_pages); break;
       case 'i': scanmult (opt, &caml_init_heap_chunk_sz); break;

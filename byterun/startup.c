@@ -286,7 +286,15 @@ CAMLexport void caml_main(char **argv)
 
   caml_ensure_spacetime_dot_o_is_included++;
 
-  if (!caml_startup_aux(/* pooling */ 0))
+  /* Determine options */
+#ifdef DEBUG
+  caml_verb_gc = 0x3F;
+#endif
+  caml_parse_ocamlrunparam();
+#ifdef DEBUG
+  caml_gc_message (-1, "### OCaml runtime: debug mode ###\n", 0);
+#endif
+  if (!caml_startup_aux(/* pooling */ caml_cleanup_on_exit))
     return;
 
   /* Machine-dependent initialization of the floating-point hardware
@@ -298,15 +306,8 @@ CAMLexport void caml_main(char **argv)
   caml_init_custom_operations();
   caml_ext_table_init(&caml_shared_libs_path, 8);
   caml_external_raise = NULL;
-  /* Determine options and position of bytecode file */
-#ifdef DEBUG
-  caml_verb_gc = 0x3F;
-#endif
-  caml_parse_ocamlrunparam();
-#ifdef DEBUG
-  caml_gc_message (-1, "### OCaml runtime: debug mode ###\n", 0);
-#endif
 
+  /* Determine position of bytecode file */
   pos = 0;
 
   /* First, try argv[0] (when ocamlrun is called by a bytecode program) */
@@ -409,6 +410,16 @@ CAMLexport value caml_startup_code_exn(
   char * cds_file;
   char * exe_name;
 
+  /* Determine options */
+#ifdef DEBUG
+  caml_verb_gc = 0x3F;
+#endif
+  caml_parse_ocamlrunparam();
+#ifdef DEBUG
+  caml_gc_message (-1, "### OCaml runtime: debug mode ###\n", 0);
+#endif
+  if (caml_cleanup_on_exit)
+    pooling = 1;
   if (!caml_startup_aux(pooling))
     return Val_unit;
 
@@ -417,14 +428,10 @@ CAMLexport value caml_startup_code_exn(
   caml_install_invalid_parameter_handler();
 #endif
   caml_init_custom_operations();
-#ifdef DEBUG
-  caml_verb_gc = 63;
-#endif
   cds_file = getenv("CAML_DEBUG_FILE");
   if (cds_file != NULL) {
     caml_cds_file = caml_stat_strdup(cds_file);
   }
-  caml_parse_ocamlrunparam();
   exe_name = caml_executable_name();
   if (exe_name == NULL) exe_name = caml_search_exe_in_path(argv[0]);
   caml_external_raise = NULL;

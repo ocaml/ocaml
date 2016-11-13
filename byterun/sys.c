@@ -58,6 +58,8 @@
 #include "caml/stacks.h"
 #include "caml/sys.h"
 #include "caml/version.h"
+#include "caml/callback.h"
+#include "caml/startup_aux.h"
 
 static char * error_message(void)
 {
@@ -144,6 +146,8 @@ CAMLprim value caml_sys_exit(value retcode_v)
   caml_debugger(PROGRAM_EXIT);
 #endif
   CAML_INSTR_ATEXIT ();
+  if (caml_cleanup_on_exit)
+    caml_shutdown();
   CAML_SYS_EXIT(retcode);
   return Val_unit;
 }
