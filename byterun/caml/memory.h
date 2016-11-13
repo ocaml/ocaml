@@ -78,11 +78,19 @@ typedef void* caml_stat_block;
 
 /* The pool must be initialized with a call to [caml_stat_create_pool]
    before it is possible to use any of the [caml_stat_*] functions below.
+
+   If the pool is not initialized, [caml_stat_*] functions will still work in
+   backward compatibility mode, becoming thin wrappers around [malloc] family
+   of functions. In this case, calling [caml_stat_destroy_pool] will not free
+   the claimed heap memory, resulting in leaks.
 */
 CAMLextern void caml_stat_create_pool(void);
 
 /* [caml_stat_destroy_pool] frees all the heap memory claimed by the pool.
-   None of the [caml_stat_*] functions below can be used after that.
+
+   Once the pool is destroyed, [caml_stat_*] functions will continue to work
+   in backward compatibility mode, becoming thin wrappers around [malloc]
+   family of functions.
 */
 CAMLextern void caml_stat_destroy_pool(void);
 

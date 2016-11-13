@@ -100,12 +100,12 @@ extern void caml_install_invalid_parameter_handler();
 
 #endif
 
-value caml_startup_exn(char **argv)
+value caml_startup_common(char **argv, int pooling)
 {
   char * exe_name, * proc_self_exe;
   char tos;
 
-  if (!caml_startup_aux())
+  if (!caml_startup_aux(pooling))
     return Val_unit;
 
 #ifdef WITH_SPACETIME
@@ -147,16 +147,31 @@ value caml_startup_exn(char **argv)
   return caml_start_program();
 }
 
+value caml_startup_exn(char **argv)
+{
+  return caml_startup_common(argv, /* pooling */ 0);
+}
+
 void caml_startup(char **argv)
 {
   value res = caml_startup_exn(argv);
-
-  if (Is_exception_result(res)) {
+  if (Is_exception_result(res))
     caml_fatal_uncaught_exception(Extract_exception(res));
-  }
 }
 
 void caml_main(char **argv)
 {
   caml_startup(argv);
+}
+
+value caml_startup_pooled_exn(char **argv)
+{
+  return caml_startup_common(argv, /* pooling */ 1);
+}
+
+void caml_startup_pooled(char **argv)
+{
+  value res = caml_startup_pooled_exn(argv);
+  if (Is_exception_result(res))
+    caml_fatal_uncaught_exception(Extract_exception(res));
 }

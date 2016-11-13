@@ -736,12 +736,17 @@ static struct pool_block *pool = NULL;
 /* Returns a pointer to the block header, given a pointer to "data" */
 static struct pool_block* get_pool_block(caml_stat_block b)
 {
-  if (b == NULL) return NULL;
-  struct pool_block *pb = (struct pool_block*)(((char*)b) - SIZEOF_POOL_BLOCK);
+  if (b == NULL)
+    return NULL;
+
+  else {
+    struct pool_block *pb =
+      (struct pool_block*)(((char*)b) - SIZEOF_POOL_BLOCK);
 #ifdef DEBUG
-  Assert(pb->magic == Debug_pool_magic);
+    Assert(pb->magic == Debug_pool_magic);
 #endif
-  return pb;
+    return pb;
+  }
 }
 
 CAMLexport void caml_stat_create_pool(void)
@@ -767,6 +772,7 @@ CAMLexport void caml_stat_destroy_pool(void)
       free(pool);
       pool = next;
     }
+    pool = NULL;
   }
 }
 
@@ -811,20 +817,25 @@ CAMLexport void* caml_stat_alloc_aligned(asize_t sz, int modulo,
 /* [sz] is a number of bytes */
 CAMLexport caml_stat_block caml_stat_alloc_noexc(asize_t sz)
 {
-  struct pool_block *pb = malloc(sz + SIZEOF_POOL_BLOCK);
-  if (pb == NULL) return NULL;
+  /* Backward compatibility mode */
+  if (pool == NULL)
+    return malloc(sz);
+  else {
+    struct pool_block *pb = malloc(sz + SIZEOF_POOL_BLOCK);
+    if (pb == NULL) return NULL;
 #ifdef DEBUG
-  memset(&(pb->data), Debug_uninit_stat, sz);
-  pb->magic = Debug_pool_magic;
+    memset(&(pb->data), Debug_uninit_stat, sz);
+    pb->magic = Debug_pool_magic;
 #endif
 
-  /* Linking the block into the ring */
-  pb->next = pool->next;
-  pb->prev = pool;
-  pool->next->prev = pb;
-  pool->next = pb;
+    /* Linking the block into the ring */
+    pb->next = pool->next;
+    pb->prev = pool;
+    pool->next->prev = pb;
+    pool->next = pb;
 
-  return &(pb->data);
+    return &(pb->data);
+  }
 }
 
 /* [sz] is a number of bytes */
@@ -839,28 +850,38 @@ CAMLexport caml_stat_block caml_stat_alloc(asize_t sz)
 
 CAMLexport void caml_stat_free(caml_stat_block b)
 {
-  struct pool_block *pb = get_pool_block(b);
-  if (pb == NULL) return;
+  /* Backward compatibility mode */
+  if (pool == NULL)
+    free(b);
+  else {
+    struct pool_block *pb = get_pool_block(b);
+    if (pb == NULL) return;
 
-  /* Unlinking the block from the ring */
-  pb->prev->next = pb->next;
-  pb->next->prev = pb->prev;
+    /* Unlinking the block from the ring */
+    pb->prev->next = pb->next;
+    pb->next->prev = pb->prev;
 
-  free(pb);
+    free(pb);
+  }
 }
 
 /* [sz] is a number of bytes */
 CAMLexport caml_stat_block caml_stat_resize_noexc(caml_stat_block b, asize_t sz)
 {
-  struct pool_block *pb = get_pool_block(b);
-  struct pool_block *pb_new = realloc(pb, sz + SIZEOF_POOL_BLOCK);
-  if (pb_new == NULL) return NULL;
+  /* Backward compatibility mode */
+  if (pool == NULL)
+    return realloc(b, sz);
+  else {
+    struct pool_block *pb = get_pool_block(b);
+    struct pool_block *pb_new = realloc(pb, sz + SIZEOF_POOL_BLOCK);
+    if (pb_new == NULL) return NULL;
 
-  /* Relinking the new block into the ring in place of the old one */
-  pb_new->prev->next = pb_new;
-  pb_new->next->prev = pb_new;
+    /* Relinking the new block into the ring in place of the old one */
+    pb_new->prev->next = pb_new;
+    pb_new->next->prev = pb_new;
 
-  return &(pb_new->data);
+    return &(pb_new->data);
+  }
 }
 
 /* [sz] is a number of bytes */
@@ -877,10 +898,12 @@ CAMLexport caml_stat_block caml_stat_calloc_noexc(asize_t num, asize_t sz)
 {
   /* todo: an overflow check is desirable here */
   sz *= num;
-  caml_stat_block result = caml_stat_alloc_noexc(sz);
-  if (result != NULL)
-    memset(result, 0, sz);
-  return result;
+  {
+    caml_stat_block result = caml_stat_alloc_noexc(sz);
+    if (result != NULL)
+      memset(result, 0, sz);
+    return result;
+  }
 }
 
 CAMLexport caml_stat_string caml_stat_strdup_noexc(const char *s)

@@ -286,7 +286,7 @@ CAMLexport void caml_main(char **argv)
 
   caml_ensure_spacetime_dot_o_is_included++;
 
-  if (!caml_startup_aux())
+  if (!caml_startup_aux(/* pooling */ 0))
     return;
 
   /* Machine-dependent initialization of the floating-point hardware
@@ -403,12 +403,13 @@ CAMLexport value caml_startup_code_exn(
            code_t code, asize_t code_size,
            char *data, asize_t data_size,
            char *section_table, asize_t section_table_size,
+           int pooling,
            char **argv)
 {
   char * cds_file;
   char * exe_name;
 
-  if (!caml_startup_aux())
+  if (!caml_startup_aux(pooling))
     return Val_unit;
 
   caml_init_ieee_floats();
@@ -473,13 +474,14 @@ CAMLexport void caml_startup_code(
            code_t code, asize_t code_size,
            char *data, asize_t data_size,
            char *section_table, asize_t section_table_size,
+           int pooling,
            char **argv)
 {
   value res;
 
   res = caml_startup_code_exn(code, code_size, data, data_size,
                               section_table, section_table_size,
-                              argv);
+                              pooling, argv);
   if (Is_exception_result(res)) {
     caml_exn_bucket = Extract_exception(res);
     if (caml_debugger_in_use) {
