@@ -58,7 +58,7 @@ promote: defaultpromote
 
 clean: defaultclean
 	@rm -f *.result
-	@rm -f test.native
+	@rm -f test.native test.byte
 
 BASEDIR=../..
 include $(BASEDIR)/makefiles/Makefile.common

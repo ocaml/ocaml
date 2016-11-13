@@ -1434,3 +1434,16 @@ type (+'a, -'b) foo = private int
 val f : int -> ('a, 'a) foo = <fun>
 val x : ('_a, '_a) foo = 3
 |}]
+
+(* PR#7395 *)
+type u
+type 'a t = u;;
+let c (f : u -> u) =
+ object
+   method apply: 'a. 'a t -> 'a t = fun x -> f x
+ end;;
+[%%expect{|
+type u
+type 'a t = u
+val c : (u -> u) -> < apply : 'a. 'a t -> 'a t > = <fun>
+|}]

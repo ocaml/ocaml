@@ -101,14 +101,6 @@ exclusive.
 % compilers and toplevel
 \input{unified-options.tex}
 
-\noindent
-On native Windows, the following environment variable is also consulted:
-
-\begin{options}
-\item["OCAML_FLEXLINK"]  Alternative executable to use instead of the
-configured value. Primarily used for bootstrapping.
-\end{options}
-
 \paragraph{Options for the IA32 architecture}
 The IA32 code generator (Intel Pentium, AMD Athlon) supports the
 following additional option:
@@ -142,6 +134,26 @@ The Sparc code generator supports the following additional options:
 \end{options}
 The default is to generate code for SPARC version 7, which runs on all
 SPARC processors.
+
+\paragraph{Contextual control of command-line options}
+
+The compiler command line can be modified ``from the outside''
+with the following mechanisms. These are experimental
+and subject to change. They should be used only for experimental and
+development work, not in released packages.
+
+\begin{options}
+\item["OCAMLPARAM" \rm(environment variable)]
+Arguments that will be inserted before or after the arguments from the
+command line.
+\item["ocaml_compiler_internal_params" \rm(file in the stdlib directory)]
+A mapping of file names to lists of arguments that
+will be added to the command line (and "OCAMLPARAM") arguments.
+\item["OCAML_FLEXLINK" \rm(environment variable)]
+Alternative executable to use on native
+Windows for "flexlink" instead of the
+configured value. Primarily used for bootstrapping.
+\end{options}
 
 \section{Common errors}
 

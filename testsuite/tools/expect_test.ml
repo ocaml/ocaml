@@ -12,13 +12,14 @@
 (*                                                                        *)
 (**************************************************************************)
 
-(* Execute a list of phrase from a .ml file and compare the result to the
+(* Execute a list of phrases from a .ml file and compare the result to the
    expected output, written inside [%%expect ...] nodes. At the end, create
    a .corrected file containing the corrected expectations. The test is
-   successul if there is no differences between the two files.
+   successful if there is no differences between the two files.
 
    An [%%expect] node always contains both the expected outcome with and
-   without -principal. When the two differ the expection is written as follow:
+   without -principal. When the two differ the expectation is written as
+   follows:
 
    {[
      [%%expect {|
@@ -314,7 +315,7 @@ let output_corrected oc ~file_contents correction =
   | s  -> Printf.fprintf oc "\n[%%%%expect{|%s|}]\n" s
 
 let write_corrected ~file ~file_contents correction =
-  let oc = open_out_bin file in
+  let oc = open_out file in
   output_corrected oc ~file_contents correction;
   close_out oc
 
@@ -323,7 +324,7 @@ let process_expect_file fname =
   let file_contents =
     let ic = open_in_bin fname in
     match really_input_string ic (in_channel_length ic) with
-    | s           -> close_in ic; s
+    | s           -> close_in ic; Misc.normalise_eol s
     | exception e -> close_in ic; raise e
   in
   let correction = eval_expect_file fname ~file_contents in

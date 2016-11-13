@@ -73,6 +73,7 @@ module type S = sig
     val data : 'a t -> 'a list
     val of_set : (key -> 'a) -> Set.t -> 'a t
     val transpose_keys_and_data : key t -> key t
+    val transpose_keys_and_data_set : key t -> Set.t t
     val print :
       (Format.formatter -> 'a -> unit) -> Format.formatter -> 'a t -> unit
   end

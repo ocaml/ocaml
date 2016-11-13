@@ -978,6 +978,10 @@ a parameter declared by "CAMLlocal*" to ensure that a garbage
 collection triggered by the evaluation of the other arguments will not
 invalidate the first argument after it is computed.
 
+\paragraph{Use with CAMLlocalN:} Arrays of values declared using
+"CAMLlocalN" must not be written to using "Store_field".
+Use the normal C array syntax instead.
+
 \begin{gcrule} Global variables containing values must be registered
 with the garbage collector using the "caml_register_global_root" function.
 \end{gcrule}
@@ -1171,7 +1175,7 @@ can be made available to OCaml programs. First of all, here is
 the interface "curses.mli" that declares the "curses" primitives and
 data types:
 \begin{verbatim}
-(* File curses.mli -- declaration of primitives and data types *)
+(* File curses.ml -- declaration of primitives and data types *)
 type window                   (* The type "window" remains abstract *)
 external initscr: unit -> window = "caml_curses_initscr"
 external endwin: unit -> unit = "caml_curses_endwin"
@@ -1187,7 +1191,7 @@ external mvwaddstr: window -> int -> int -> string -> unit
 \end{verbatim}
 To compile this interface:
 \begin{verbatim}
-        ocamlc -c curses.mli
+        ocamlc -c curses.ml
 \end{verbatim}
 
 To implement these functions, we just have to provide the stub code;
@@ -1316,7 +1320,7 @@ let small_window = newwin 10 5 20 10 in
 \end{verbatim}
 To compile and link this program, run:
 \begin{verbatim}
-       ocamlc -custom -o prog unix.cma prog.ml curses_stubs.o -cclib -lcurses
+       ocamlc -custom -o prog unix.cma curses.cmo prog.ml curses_stubs.o -cclib -lcurses
 \end{verbatim}
 (On some machines, you may need to put
 "-cclib -lcurses -cclib -ltermcap" or "-cclib -ltermcap"
