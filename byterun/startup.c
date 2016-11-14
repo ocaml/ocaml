@@ -460,7 +460,6 @@ CAMLexport void caml_startup_code(
   caml_section_table_size = section_table_size;
   /* Initialize system libraries */
   caml_sys_init(exe_name, argv);
-  caml_stat_free(exe_name);
   /* Execute the program */
   caml_debugger(PROGRAM_START);
   res = caml_interprete(caml_start_code, caml_code_size);
