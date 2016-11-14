@@ -319,7 +319,6 @@ CAMLexport void caml_main(char **argv)
   if (fd < 0 && (proc_self_exe = caml_executable_name()) != NULL) {
     exe_name = proc_self_exe;
     fd = caml_attempt_open(&exe_name, &trail, 0);
-    caml_stat_free(proc_self_exe);
   }
 
   if (fd < 0) {
