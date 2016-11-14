@@ -73,6 +73,8 @@ module Typ :
     val extension: ?loc:loc -> ?attrs:attrs -> extension -> core_type
 
     val force_poly: core_type -> core_type
+
+    val varify_constructors: str list -> core_type -> core_type
   end
 
 (** Patterns *)
