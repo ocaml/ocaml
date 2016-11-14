@@ -94,6 +94,8 @@ Next version (4.05.0):
   list in .cmti files + avoid rebuilding cmi_info record when creating
   .cmti files
   (Alain Frisch, report by Daniel Bunzli, review by Jeremie Dimino)
+- GPR#915: fix -dsource (pprintast.ml) bugs
+  (Runhang Li, review by Alain Frisch)
 
 ### Bug fixes
 
