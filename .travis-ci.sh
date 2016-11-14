@@ -132,8 +132,14 @@ EOF
 
 case $CI_KIND in
 build) BuildAndTest;;
-changes) CheckChangesModified;;
-tests) CheckTestsuiteModified;;
+changes)
+    case $TRAVIS_EVENT_TYPE in
+        pull_request) CheckChangesModified;;
+    esac;;
+tests)
+    case $TRAVIS_EVENT_TYPE in
+        pull_request) CheckTestsuiteModified;;
+    esac;;
 *) echo unknown CI kind
    exit 1
    ;;
