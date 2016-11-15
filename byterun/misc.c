@@ -17,11 +17,11 @@
 #include <execinfo.h>
 #include <stdlib.h>
 
-#include "config.h"
-#include "misc.h"
-#include "memory.h"
-#include "domain.h"
-#include "startup.h"
+#include "caml/config.h"
+#include "caml/misc.h"
+#include "caml/memory.h"
+#include "caml/domain.h"
+#include "caml/startup.h"
 
 #if defined(DEBUG) || defined(NATIVE_CODE)
 
@@ -38,7 +38,7 @@ void print_trace (void)
   caml_gc_log ("Obtained %zd stack frames.", size);
 
   for (i = 0; i < size; i++)
-     caml_gc_log ("%s", strings[i]);
+    caml_gc_log ("%s", strings[i]);
 
   free (strings);
 }

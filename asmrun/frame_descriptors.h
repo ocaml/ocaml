@@ -1,8 +1,8 @@
 #ifndef CAML_FRAME_DESCRIPTORS_H
 #define CAML_FRAME_DESCRIPTORS_H
 
-#include "mlvalues.h"
-#include "roots.h"
+#include "caml/mlvalues.h"
+#include "caml/roots.h"
 
 #define Hash_retaddr(addr, mask)                          \
   (((uintnat)(addr) >> 3) & (mask))

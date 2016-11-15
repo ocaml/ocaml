@@ -371,10 +371,10 @@ CAMLextern value caml_atom(tag_t);
 #define Val_emptylist Val_int(0)
 #define Tag_cons 0
 
+CAMLextern value caml_set_oo_id(value obj);
+
 #ifdef __cplusplus
 }
 #endif
-
-CAMLextern value caml_set_oo_id(value obj);
 
 #endif /* CAML_MLVALUES_H */

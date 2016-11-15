@@ -17,8 +17,8 @@
 /* <include ../config/m.h> */
 /* <include ../config/s.h> */
 /* <private> */
-#include "../config/m.h"
-#include "../config/s.h"
+#include "../../config/m.h"
+#include "../../config/s.h"
 /* </private> */
 
 #ifndef CAML_NAME_SPACE
@@ -189,5 +189,8 @@ typedef uint64 uintnat;
    collection.
  */
 #define Percent_to_promote_with_GC 10
+
+/* Maximum number of domains */
+#define Max_domains (1 << Minor_heap_sel_bits)
 
 #endif /* CAML_CONFIG_H */

@@ -14,11 +14,11 @@
 /* Operations on arrays */
 
 #include <string.h>
-#include "alloc.h"
-#include "fail.h"
-#include "memory.h"
-#include "misc.h"
-#include "mlvalues.h"
+#include "caml/alloc.h"
+#include "caml/fail.h"
+#include "caml/memory.h"
+#include "caml/misc.h"
+#include "caml/mlvalues.h"
 
 CAMLexport mlsize_t caml_array_length(value array)
 {

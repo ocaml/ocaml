@@ -19,7 +19,7 @@
 /* Linux/BSD with ELF binaries and Solaris do not prefix identifiers with _.
    Linux/BSD with a.out binaries and NextStep do. */
 
-#if defined(SYS_solaris)
+#if (defined(SYS_solaris) && !defined(__GNUC__))
 #define CONCAT(a,b) a/**/b
 #else
 #define CONCAT(a,b) a##b

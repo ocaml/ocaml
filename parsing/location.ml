@@ -72,6 +72,22 @@ let status = ref Terminfo.Uninitialised
 
 let num_loc_lines = ref 0 (* number of lines already printed after input *)
 
+let print_updating_num_loc_lines ppf f arg =
+  let open Format in
+  let out_functions = pp_get_formatter_out_functions ppf () in
+  let out_string str start len =
+    let rec count i c =
+      if i = start + len then c
+      else if String.get str i = '\n' then count (succ i) (succ c)
+      else count (succ i) c in
+    num_loc_lines := !num_loc_lines + count start 0 ;
+    out_functions.out_string str start len in
+  pp_set_formatter_out_functions ppf
+    { out_functions with out_string } ;
+  f ppf arg ;
+  pp_print_flush ppf ();
+  pp_set_formatter_out_functions ppf out_functions
+
 (* Highlight the locations using standout mode. *)
 
 let highlight_terminfo ppf num_lines lb locs =
@@ -261,20 +277,21 @@ let print_error ppf loc =
 
 let print_error_cur_file ppf = print_error ppf (in_file !input_name);;
 
-let print_warning loc ppf w =
+let default_warning_printer loc ppf w =
   if Warnings.is_active w then begin
-    let printw ppf w =
-      let n = Warnings.print ppf w in
-      num_loc_lines := !num_loc_lines + n
-    in
     print ppf loc;
-    fprintf ppf "Warning %a@." printw w;
-    pp_print_flush ppf ();
-    incr num_loc_lines;
+    fprintf ppf "Warning %a@." Warnings.print w
   end
 ;;
 
-let prerr_warning loc w = print_warning loc err_formatter w;;
+let warning_printer = ref default_warning_printer ;;
+
+let print_warning loc ppf w =
+  print_updating_num_loc_lines ppf (!warning_printer loc) w
+;;
+
+let formatter_for_warnings = ref err_formatter;;
+let prerr_warning loc w = print_warning loc !formatter_for_warnings w;;
 
 let echo_eof () =
   print_newline ();
@@ -317,7 +334,7 @@ let error_of_exn exn =
   in
   loop !error_of_exn
 
-let rec report_error ppf ({loc; msg; sub; if_highlight} as err) =
+let rec default_error_reporter ppf ({loc; msg; sub; if_highlight} as err) =
   let highlighted =
     if if_highlight <> "" then
       let rec collect_locs locs {loc; sub; if_highlight; _} =
@@ -333,9 +350,15 @@ let rec report_error ppf ({loc; msg; sub; if_highlight} as err) =
   else begin
     print ppf loc;
     Format.pp_print_string ppf msg;
-    List.iter (fun err -> Format.fprintf ppf "@\n@[<2>%a@]" report_error err)
+    List.iter (fun err -> Format.fprintf ppf "@\n@[<2>%a@]" default_error_reporter err)
               sub
   end
+
+let error_reporter = ref default_error_reporter
+
+let report_error ppf err =
+  print_updating_num_loc_lines ppf !error_reporter err
+;;
 
 let error_of_printer loc print x =
   let buf = Buffer.create 64 in

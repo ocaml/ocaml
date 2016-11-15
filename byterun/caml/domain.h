@@ -12,11 +12,10 @@ struct domain {
 
   struct dom_internal* internals;
   struct caml_heap_state* shared_heap;
-  struct caml_remembered_set* remembered_set;
   struct caml__roots_block** local_roots;
   struct caml_domain_state* state;
   value** mark_stack;
-  int* mark_stack_count;
+  uintnat* mark_stack_count;
 };
 
 #define Caml_check_gc_interrupt() \
@@ -37,7 +36,11 @@ void caml_interrupt_self(void);
 CAMLextern void caml_enter_blocking_section(void);
 CAMLextern void caml_leave_blocking_section(void);
 
+CAMLextern void (*caml_enter_blocking_section_hook)(void);
+CAMLextern void (*caml_leave_blocking_section_hook)(void);
+
 void caml_init_domains(uintnat minor_heap_size);
+void caml_init_domain_self(int);
 
 
 struct domain* caml_domain_self();

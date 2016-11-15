@@ -11,15 +11,15 @@
 #########################################################################
 
 include ../config/Makefile
+CAMLRUN ?= ../boot/ocamlrun
+CAMLYACC ?= ../boot/ocamlyacc
 
-ROOTDIR=..
-CAMLC=$(ROOTDIR)/boot/ocamlrun $(ROOTDIR)/ocamlc -nostdlib -I $(ROOTDIR)/stdlib
+CAMLC=$(CAMLRUN) ../ocamlc -nostdlib -I ../stdlib
 COMPFLAGS=-warn-error A -safe-string $(INCLUDES)
 LINKFLAGS=-linkall -I $(UNIXDIR)
-CAMLYACC=../boot/ocamlyacc
 YACCFLAGS=
-CAMLLEX=../boot/ocamlrun ../boot/ocamllex
-CAMLDEP=../boot/ocamlrun ../tools/ocamldep
+CAMLLEX=$(CAMLRUN) ../boot/ocamllex
+CAMLDEP=$(CAMLRUN) ../tools/ocamldep
 DEPFLAGS=$(INCLUDES)
 
 INSTALL_BINDIR=$(DESTDIR)$(BINDIR)
@@ -32,7 +32,7 @@ OTHEROBJS=\
   $(UNIXDIR)/unix.cma \
   ../utils/misc.cmo ../utils/config.cmo ../utils/tbl.cmo \
   ../utils/clflags.cmo ../utils/consistbl.cmo ../utils/warnings.cmo \
-  ../parsing/location.cmo ../parsing/longident.cmo \
+  ../parsing/location.cmo ../parsing/longident.cmo ../parsing/docstrings.cmo \
   ../parsing/ast_helper.cmo ../parsing/ast_mapper.cmo \
   ../typing/ident.cmo ../typing/path.cmo ../typing/types.cmo \
   ../typing/btype.cmo ../typing/primitive.cmo ../typing/typedtree.cmo \

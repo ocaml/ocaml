@@ -20,6 +20,18 @@
     (require 'caml-emacs)))
 
 
+(defvar caml-types-build-dirs '("_build" "_obuild")
+  "List of possible compilation directories created by build systems.
+It is expected that the files under `caml-types-build-dir' preserve
+the paths relative to the parent directory of `caml-types-build-dir'.")
+(make-variable-buffer-local 'caml-types-build-dir)
+
+(defvar caml-annot-dir nil
+  "A directory, generally relative to the file location, containing the
+.annot file.  Intended to be set as a local variable in the .ml file.
+See \"Specifying File Variables\" in the Emacs info manual.")
+(make-variable-buffer-local 'caml-annot-dir)
+(put 'caml-annot-dir 'safe-local-variable #'stringp)
 
 (defvar caml-types-location-re nil "Regexp to parse *.annot files.
 
@@ -349,21 +361,36 @@ See `caml-types-location-re' for annotation file format.
 (defun caml-types-parent-dir (d) (file-name-directory (directory-file-name d)))
 
 (defun caml-types-locate-type-file (target-path)
- (let ((sibling (concat (file-name-sans-extension target-path) ".annot")))
-   (if (file-exists-p sibling)
-       sibling
-     (let ((project-dir (file-name-directory sibling))
-           type-path)
-       (while (not (file-exists-p
-                    (setq type-path
-                          (expand-file-name
-                           (file-relative-name sibling project-dir)
-                           (expand-file-name "_build" project-dir)))))
-         (if (equal project-dir (caml-types-parent-dir project-dir))
-             (error (concat "No annotation file. "
-                            "You should compile with option \"-annot\".")))
-         (setq project-dir (caml-types-parent-dir project-dir)))
-       type-path))))
+  "Given the path to an OCaml file, this function tries to locate
+and return the corresponding .annot file."
+  (let ((sibling (concat (file-name-sans-extension target-path) ".annot")))
+    (if (file-exists-p sibling)
+        sibling
+      (let* ((dir (file-name-directory sibling)))
+        (if caml-annot-dir
+            ;; Use the relative path set by the user
+            (let* ((annot-dir (expand-file-name caml-annot-dir dir))
+                   (fname (file-name-nondirectory sibling))
+                   (path-fname (expand-file-name fname annot-dir)))
+              (if (file-exists-p path-fname)
+                  path-fname
+                (error (concat "No annotation file in " caml-annot-dir
+                               ". Compile with option \"-annot\"."))))
+          ;; Else, try to get the .annot from one of build dirs.
+          (let* ((is-build (regexp-opt caml-types-build-dirs))
+                 (project-dir (locate-dominating-file
+                               dir
+                               (lambda(d) (directory-files d nil is-build))))
+                 (annot
+                  (if project-dir
+                      (locate-file
+                       (file-relative-name sibling project-dir)
+                       (mapcar (lambda(d) (expand-file-name d project-dir))
+                               caml-types-build-dirs)))))
+            (if annot
+                annot
+              (error (concat "No annotation file. Compile with option "
+                             "\"-annot\" or set `caml-annot-dir'.")))))))))
 
 (defun caml-types-date< (date1 date2)
   (or (< (car date1) (car date2))

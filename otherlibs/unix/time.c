@@ -12,8 +12,8 @@
 /***********************************************************************/
 
 #include <time.h>
-#include <mlvalues.h>
-#include <alloc.h>
+#include <caml/mlvalues.h>
+#include <caml/alloc.h>
 #include "unixsupport.h"
 
 CAMLprim value unix_time(value unit)

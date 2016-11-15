@@ -13,20 +13,20 @@
 # The main Makefile
 
 include config/Makefile
+CAMLRUN ?= boot/ocamlrun
+CAMLYACC ?= boot/ocamlyacc
 include stdlib/StdlibModules
 
-CAMLC=boot/ocamlrun boot/ocamlc -nostdlib -I boot
-CAMLOPT=boot/ocamlrun ./ocamlopt -nostdlib -I stdlib -I otherlibs/dynlink
-COMPFLAGS=-strict-sequence -w +33..39+48 -warn-error A -bin-annot \
+CAMLC=$(CAMLRUN) boot/ocamlc -nostdlib -I boot
+CAMLOPT=$(CAMLRUN) ./ocamlopt -nostdlib -I stdlib -I otherlibs/dynlink
+COMPFLAGS=-strict-sequence -w +33..39+48+50 -warn-error A -bin-annot \
           -safe-string $(INCLUDES)
 LINKFLAGS=
 
-CAMLYACC=boot/ocamlyacc
 YACCFLAGS=-v
-CAMLLEX=boot/ocamlrun boot/ocamllex
-CAMLDEP=boot/ocamlrun tools/ocamldep
+CAMLLEX=$(CAMLRUN) boot/ocamllex
+CAMLDEP=$(CAMLRUN) tools/ocamldep
 DEPFLAGS=$(INCLUDES)
-CAMLRUN=byterun/ocamlrun
 SHELL=/bin/sh
 MKDIR=mkdir -p
 
@@ -43,7 +43,7 @@ UTILS=utils/misc.cmo utils/tbl.cmo utils/config.cmo \
   utils/consistbl.cmo utils/domainstate.cmo
 
 PARSING=parsing/location.cmo parsing/longident.cmo \
-  parsing/ast_helper.cmo \
+  parsing/docstrings.cmo parsing/ast_helper.cmo \
   parsing/syntaxerr.cmo parsing/parser.cmo \
   parsing/lexer.cmo parsing/parse.cmo parsing/printast.cmo \
   parsing/pprintast.cmo \
@@ -94,6 +94,8 @@ ASMCOMP=asmcomp/arch.cmo asmcomp/debuginfo.cmo \
   asmcomp/deadcode.cmo \
   asmcomp/printlinear.cmo asmcomp/linearize.cmo \
   asmcomp/schedgen.cmo asmcomp/scheduling.cmo \
+  asmcomp/branch_relaxation_intf.cmo \
+  asmcomp/branch_relaxation.cmo \
   asmcomp/emitaux.cmo asmcomp/emit.cmo asmcomp/asmgen.cmo \
   asmcomp/asmlink.cmo asmcomp/asmlibrarian.cmo asmcomp/asmpackager.cmo \
   driver/opterrors.cmo driver/optcompile.cmo
@@ -192,7 +194,7 @@ coldstart:
 	if test -f boot/libcamlrun.a; then :; else \
 	  ln -s ../byterun/libcamlrun.a boot/libcamlrun.a; fi
 	if test -d stdlib/caml; then :; else \
-	  ln -s ../byterun stdlib/caml; fi
+	  ln -s ../byterun/caml stdlib/caml; fi
 
 # Build the core system: the minimum needed to make depend and bootstrap
 core:
@@ -317,7 +319,7 @@ install:
 	cp ocaml $(INSTALL_BINDIR)/ocaml$(EXE)
 	cd stdlib; $(MAKE) install
 	cp lex/ocamllex $(INSTALL_BINDIR)/ocamllex$(EXE)
-	cp yacc/ocamlyacc$(EXE) $(INSTALL_BINDIR)/ocamlyacc$(EXE)
+	cp $(CAMLYACC)$(EXE) $(INSTALL_BINDIR)/ocamlyacc$(EXE)
 	cp utils/*.cmi parsing/*.cmi typing/*.cmi bytecomp/*.cmi driver/*.cmi \
 	   toplevel/*.cmi $(INSTALL_COMPLIBDIR)
 	cp compilerlibs/ocamlcommon.cma compilerlibs/ocamlbytecomp.cma \
@@ -470,11 +472,11 @@ utils/config.ml: utils/config.mlp config/Makefile
 	    -e 's|%%TARGET%%|$(TARGET)|' \
 	    utils/config.mlp > utils/config.ml
 
-utils/domainstate.ml: utils/domainstate.ml.c byterun/domain_state.tbl
-	$(CPP) -I byterun utils/domainstate.ml.c > utils/domainstate.ml
+utils/domainstate.ml: utils/domainstate.ml.c byterun/caml/domain_state.tbl
+	$(CPP) -I byterun/caml utils/domainstate.ml.c > utils/domainstate.ml
 
-utils/domainstate.mli: utils/domainstate.ml byterun/domain_state.tbl
-	$(CPP) -I byterun utils/domainstate.mli.c > utils/domainstate.mli
+utils/domainstate.mli: utils/domainstate.ml byterun/caml/domain_state.tbl
+	$(CPP) -I byterun/caml utils/domainstate.mli.c > utils/domainstate.mli
 
 partialclean::
 	rm -f utils/config.ml utils/domainstate.ml utils/domainstate.mli
@@ -544,8 +546,8 @@ $(COMMON:.cmo=.cmx) $(BYTECOMP:.cmo=.cmx) $(ASMCOMP:.cmo=.cmx): ocamlopt
 
 # The numeric opcodes
 
-bytecomp/opcodes.ml: byterun/instruct.h
-	sed -n -e '/^enum/p' -e 's/,//g' -e '/^  /p' byterun/instruct.h | \
+bytecomp/opcodes.ml: byterun/caml/instruct.h
+	sed -n -e '/^enum/p' -e 's/,//g' -e '/^  /p' byterun/caml/instruct.h | \
 	awk -f tools/make-opcodes > bytecomp/opcodes.ml
 
 partialclean::
@@ -558,9 +560,9 @@ beforedepend:: bytecomp/opcodes.ml
 byterun/primitives:
 	cd byterun; $(MAKE) primitives
 
-bytecomp/runtimedef.ml: byterun/primitives byterun/fail.h
+bytecomp/runtimedef.ml: byterun/primitives byterun/caml/fail.h
 	(echo 'let builtin_exceptions = [|'; \
-	 sed -n -e 's|.*/\* \("[A-Za-z_]*"\) \*/$$|  \1;|p' byterun/fail.h | \
+	 sed -n -e 's|.*/\* \("[A-Za-z_]*"\) \*/$$|  \1;|p' byterun/caml/fail.h | \
 	 sed -e '$$s/;$$//'; \
 	 echo '|]'; \
 	 echo 'let builtin_primitives = [|'; \
@@ -634,8 +636,7 @@ partialclean::
 beforedepend:: asmcomp/emit.ml
 
 tools/cvt_emit: tools/cvt_emit.mll
-	cd tools; \
-	$(MAKE) CAMLC="../$(CAMLRUN) ../boot/ocamlc -I ../stdlib" cvt_emit
+	cd tools && $(MAKE) cvt_emit
 
 # The "expunge" utility
 
@@ -683,7 +684,7 @@ library: ocamlc
 	cd stdlib; $(MAKE) all
 
 library-cross:
-	cd stdlib; $(MAKE) RUNTIME=../byterun/ocamlrun all
+	cd stdlib; $(MAKE) CAMLRUN=../byterun/ocamlrun all
 
 libraryopt:
 	cd stdlib; $(MAKE) allopt
@@ -757,7 +758,7 @@ alldepend::
 
 otherlibraries: ocamltools
 	for i in $(OTHERLIBRARIES); do \
-	  (cd otherlibs/$$i; $(MAKE) RUNTIME=$(RUNTIME) all) || exit $$?; \
+	  (cd otherlibs/$$i; $(MAKE) all) || exit $$?; \
 	done
 
 otherlibrariesopt:
@@ -804,9 +805,8 @@ alldepend::
 # Check that the stack limit is reasonable.
 
 checkstack:
-	@if $(BYTECC) $(BYTECCCOMPOPTS) $(BYTECCLINKOPTS) \
-	              -o tools/checkstack tools/checkstack.c; \
-	  then tools/checkstack; \
+	@if $(MKEXE) -o tools/checkstack$(EXE) tools/checkstack.c; \
+	  then tools/checkstack$(EXE); \
 	  else :; \
 	fi
 	@rm -f tools/checkstack

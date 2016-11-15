@@ -193,7 +193,7 @@ let _ =
   printf "-- Random integers, narrow range\n%!";
   TI2.test (random_integers 100_000 1_000);
   let d =
-    try file_data "/usr/share/dict/words" with Sys_error _ -> string_data in
+    try file_data "../../LICENSE" with Sys_error _ -> string_data in
   printf "-- Strings, generic interface\n%!";
   TS1.test d;
   printf "-- Strings, functorial interface\n%!";

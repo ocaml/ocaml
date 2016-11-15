@@ -1,15 +1,15 @@
 #include <string.h>
 #include <unistd.h>
-#include "fiber.h"
-#include "gc_ctrl.h"
-#include "instruct.h"
-#include "fail.h"
-#include "alloc.h"
-#include "platform.h"
-#include "fix_code.h"
-#include "minor_gc.h"
-#include "shared_heap.h"
-#include "memory.h"
+#include "caml/fiber.h"
+#include "caml/gc_ctrl.h"
+#include "caml/instruct.h"
+#include "caml/fail.h"
+#include "caml/alloc.h"
+#include "caml/platform.h"
+#include "caml/fix_code.h"
+#include "caml/minor_gc.h"
+#include "caml/shared_heap.h"
+#include "caml/memory.h"
 #ifdef NATIVE_CODE
 #include "stack.h"
 #include "frame_descriptors.h"
@@ -28,7 +28,7 @@ static void dirty_stack(value stack)
            Stack_dirty_domain(stack) == caml_domain_self());
     if (Stack_dirty_domain(stack) == 0) {
       Stack_dirty_domain(stack) = caml_domain_self();
-      Ref_table_add(&caml_remembered_set.fiber_ref, (value*)stack);
+      Ref_table_add(&caml_domain_state->remembered_set->fiber_ref, (value*)stack);
     }
   }
 }
@@ -48,7 +48,8 @@ static void load_stack (value stack) {
   caml_domain_state->stack_threshold = Stack_base(stack) + Stack_threshold / sizeof(value);
   caml_domain_state->stack_high = Stack_high(stack);
   caml_domain_state->current_stack = stack;
-  caml_scan_stack (forward_pointer, stack);
+  if (caml_domain_state->promoted_in_current_cycle)
+    caml_scan_stack (forward_pointer, stack);
 }
 
 extern void caml_fiber_exn_handler (value) Noreturn;
@@ -434,20 +435,30 @@ void caml_realloc_stack(asize_t required_space, value* saved_vals, int nsaved)
   CAMLreturn0;
 }
 
-void caml_init_main_stack()
+value caml_alloc_main_stack (uintnat init_size)
 {
-  value stack;
+  CAMLparam0();
+  CAMLlocal1(stack);
 
   /* Create a stack for the main program.
      The GC is not initialised yet, so we use caml_alloc_shr
      which cannot trigger it */
-  stack = caml_alloc_shr(Stack_size/sizeof(value), Stack_tag);
+  stack = caml_alloc_shr(init_size, Stack_tag);
   Stack_sp(stack) = 0;
   Stack_dirty_domain(stack) = 0;
   Stack_handle_value(stack) = Val_long(0);
   Stack_handle_exception(stack) = Val_long(0);
   Stack_handle_effect(stack) = Val_long(0);
   Stack_parent(stack) = Val_unit;
+
+  CAMLreturn(stack);
+}
+
+void caml_init_main_stack ()
+{
+  value stack;
+
+  stack = caml_alloc_main_stack (Stack_size/sizeof(value));
   load_stack(stack);
 }
 
@@ -489,6 +500,12 @@ CAMLprim value caml_clone_continuation (value cont)
   } while (source != Val_unit);
 
   CAMLreturn(new_cont);
+}
+
+void caml_restore_stack()
+{
+  Assert(Tag_val(caml_domain_state->current_stack) == Stack_tag);
+  load_stack(caml_domain_state->current_stack);
 }
 
 #ifdef DEBUG

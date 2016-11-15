@@ -13,10 +13,10 @@
 
 /* For testing global root registration */
 
-#include "mlvalues.h"
-#include "memory.h"
-#include "alloc.h"
-#include "gc.h"
+#include "caml/mlvalues.h"
+#include "caml/memory.h"
+#include "caml/alloc.h"
+#include "caml/gc.h"
 
 struct block { value header; value v; };
 

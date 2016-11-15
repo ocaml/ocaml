@@ -42,7 +42,7 @@ let lib_ccobjs = ref []
 let lib_ccopts = ref []
 let lib_dllibs = ref []
 
-let add_ccobjs l =
+let add_ccobjs origin l =
   if not !Clflags.no_auto_link then begin
     if
       String.length !Clflags.use_runtime = 0
@@ -50,7 +50,8 @@ let add_ccobjs l =
     then begin
       if l.lib_custom then Clflags.custom_runtime := true;
       lib_ccobjs := l.lib_ccobjs @ !lib_ccobjs;
-      lib_ccopts := l.lib_ccopts @ !lib_ccopts;
+      let replace_origin = Misc.replace_substring ~before:"$CAMLORIGIN" ~after:origin in
+      lib_ccopts := List.map replace_origin l.lib_ccopts @ !lib_ccopts;
     end;
     lib_dllibs := l.lib_dllibs @ !lib_dllibs
   end
@@ -132,7 +133,7 @@ let scan_file obj_name tolink =
       seek_in ic pos_toc;
       let toc = (input_value ic : library) in
       close_in ic;
-      add_ccobjs toc;
+      add_ccobjs (Filename.dirname file_name) toc;
       let required =
         List.fold_right
           (fun compunit reqd ->
@@ -196,7 +197,7 @@ let clear_crc_interfaces () =
 
 (* Record compilation events *)
 
-let debug_info = ref ([] : (int * LongString.t) list)
+let debug_info = ref ([] : (int * Instruct.debug_event list * string list) list)
 
 (* Link in a compilation unit *)
 
@@ -207,8 +208,14 @@ let link_compunit ppf output_fun currpos_fun inchan file_name compunit =
   Symtable.ls_patch_object code_block compunit.cu_reloc;
   if !Clflags.debug && compunit.cu_debug > 0 then begin
     seek_in inchan compunit.cu_debug;
-    let buffer = LongString.input_bytes inchan compunit.cu_debugsize in
-    debug_info := (currpos_fun(), buffer) :: !debug_info
+    let debug_event_list : Instruct.debug_event list = input_value inchan in
+    let debug_dirs : string list = input_value inchan in
+    let file_path = Filename.dirname (Location.absolute_path file_name) in
+    let debug_dirs =
+      if List.mem file_path debug_dirs
+      then debug_dirs
+      else file_path :: debug_dirs in
+    debug_info := (currpos_fun(), debug_event_list, debug_dirs) :: !debug_info
   end;
   Array.iter output_fun code_block;
   if !Clflags.link_everything then
@@ -263,9 +270,10 @@ let link_file ppf output_fun currpos_fun = function
 let output_debug_info oc =
   output_binary_int oc (List.length !debug_info);
   List.iter
-    (fun (ofs, evl) ->
+    (fun (ofs, evl, debug_dirs) ->
       output_binary_int oc ofs;
-      Array.iter (output_bytes oc) evl)
+      output_value oc evl;
+      output_value oc debug_dirs)
     !debug_info;
   debug_info := []
 
@@ -309,7 +317,7 @@ let link_bytecode ppf tolink exec_name standalone =
     Bytesections.init_record outchan;
     (* The path to the bytecode interpreter (in use_runtime mode) *)
     if String.length !Clflags.use_runtime > 0 then begin
-      output_string outchan (make_absolute !Clflags.use_runtime);
+      output_string outchan ("#!" ^ (make_absolute !Clflags.use_runtime));
       output_char outchan '\n';
       Bytesections.record outchan "RNTM"
     end;
@@ -572,8 +580,15 @@ let link ppf objfiles output_name =
       raise x
   end else begin
     let basename = Filename.chop_extension output_name in
-    let c_file = basename ^ ".c"
-    and obj_file = basename ^ Config.ext_obj in
+    let c_file =
+      if !Clflags.output_complete_object
+      then Filename.temp_file "camlobj" ".c"
+      else basename ^ ".c"
+    and obj_file =
+      if !Clflags.output_complete_object
+      then Filename.temp_file "camlobj" Config.ext_obj
+      else basename ^ Config.ext_obj
+    in
     if Sys.file_exists c_file then raise(Error(File_exists c_file));
     let temps = ref [] in
     try
@@ -581,13 +596,19 @@ let link ppf objfiles output_name =
       if not (Filename.check_suffix output_name ".c") then begin
         temps := c_file :: !temps;
         if Ccomp.compile_file c_file <> 0 then raise(Error Custom_runtime);
-        if not (Filename.check_suffix output_name Config.ext_obj) then begin
+        if not (Filename.check_suffix output_name Config.ext_obj) ||
+           !Clflags.output_complete_object then begin
           temps := obj_file :: !temps;
+          let mode, c_libs =
+            if Filename.check_suffix output_name Config.ext_obj
+            then Ccomp.Partial, ""
+            else Ccomp.MainDll, Config.bytecomp_c_libraries
+          in
           if not (
             let runtime_lib = "-lcamlrun" ^ !Clflags.runtime_variant in
-            Ccomp.call_linker Ccomp.MainDll output_name
+            Ccomp.call_linker mode output_name
               ([obj_file] @ List.rev !Clflags.ccobjs @ [runtime_lib])
-              Config.bytecomp_c_libraries
+              c_libs
            ) then raise (Error Custom_runtime);
         end
       end;

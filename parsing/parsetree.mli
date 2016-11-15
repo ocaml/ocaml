@@ -36,7 +36,7 @@ and attributes = attribute list
 and payload =
   | PStr of structure
   | PTyp of core_type  (* : T *)
-  | PPat of pattern * expression option  (* : P  or  : P when E *)
+  | PPat of pattern * expression option  (* ? P  or  ? P when E *)
 
 (** {2 Core language} *)
 

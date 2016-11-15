@@ -13,8 +13,8 @@
 
 #include <errno.h>
 #include <string.h>
-#include <mlvalues.h>
-#include <alloc.h>
+#include <caml/mlvalues.h>
+#include <caml/alloc.h>
 
 extern int error_table[];
 

@@ -13,14 +13,14 @@
 
 /* $Id$ */
 
-#include "alloc.h"
-#include "config.h"
-#include "custom.h"
-#include "intext.h"
-#include "fail.h"
-#include "hash.h"
-#include "memory.h"
-#include "mlvalues.h"
+#include "caml/alloc.h"
+#include "caml/config.h"
+#include "caml/custom.h"
+#include "caml/intext.h"
+#include "caml/fail.h"
+#include "caml/hash.h"
+#include "caml/memory.h"
+#include "caml/mlvalues.h"
 
 #include "bng.h"
 #include "nat.h"

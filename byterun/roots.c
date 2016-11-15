@@ -13,18 +13,18 @@
 
 /* To walk the memory roots for garbage collection */
 
-#include "finalise.h"
-#include "globroots.h"
-#include "major_gc.h"
-#include "memory.h"
-#include "minor_gc.h"
-#include "misc.h"
-#include "mlvalues.h"
-#include "roots.h"
-#include "fiber.h"
-#include "major_gc.h"
-#include "shared_heap.h"
-#include "fiber.h"
+#include "caml/finalise.h"
+#include "caml/globroots.h"
+#include "caml/major_gc.h"
+#include "caml/memory.h"
+#include "caml/minor_gc.h"
+#include "caml/misc.h"
+#include "caml/mlvalues.h"
+#include "caml/roots.h"
+#include "caml/fiber.h"
+#include "caml/major_gc.h"
+#include "caml/shared_heap.h"
+#include "caml/fiber.h"
 
 #ifdef NATIVE_CODE
 #include "stack.h"
@@ -41,6 +41,7 @@ static intnat caml_globals_scanned = 0;
 #endif
 
 CAMLexport __thread struct caml__roots_block *caml_local_roots = NULL;
+CAMLexport void (*caml_scan_roots_hook)(scanning_action, struct domain*) = NULL;
 
 CAMLexport void caml_do_local_roots (scanning_action f, struct domain* domain)
 {
@@ -73,4 +74,6 @@ CAMLexport void caml_do_local_roots (scanning_action f, struct domain* domain)
       }
     }
   }
+  /* Hook */
+  if (caml_scan_roots_hook != NULL) (*caml_scan_roots_hook)(f, domain);
 }

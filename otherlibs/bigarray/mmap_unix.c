@@ -18,12 +18,12 @@
 #include <stddef.h>
 #include <string.h>
 #include "bigarray.h"
-#include "custom.h"
-#include "fail.h"
-#include "io.h"
-#include "mlvalues.h"
-#include "sys.h"
-#include "signals.h"
+#include "caml/custom.h"
+#include "caml/fail.h"
+#include "caml/io.h"
+#include "caml/mlvalues.h"
+#include "caml/sys.h"
+#include "caml/signals.h"
 
 extern int caml_ba_element_size[];  /* from bigarray_stubs.c */
 

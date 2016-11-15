@@ -141,16 +141,16 @@ struct caml__mutex_unwind {
 
 #define With_mutex(mutex)                               \
   Assert(caml_local_roots);                             \
-  caml_plat_mutex* caml__mutex = (mutex);                    \
+  caml_plat_mutex* caml__mutex = (mutex);               \
   int caml__mutex_go = 1;                               \
   struct caml__mutex_unwind caml__locked_mutex =        \
     { caml__mutex, caml_local_roots->mutexes };         \
   caml_local_roots->mutexes = &caml__locked_mutex;      \
   for (caml_enter_blocking_section(),                   \
-         caml_plat_lock(caml__mutex),                  \
+         caml_plat_lock(caml__mutex),                   \
          caml_leave_blocking_section();                 \
        caml__mutex_go;                                  \
-       caml_plat_unlock(caml__mutex),                  \
+       caml_plat_unlock(caml__mutex),                   \
          caml__mutex_go = 0,                            \
          caml_local_roots->mutexes =                    \
          caml_local_roots->mutexes->next)

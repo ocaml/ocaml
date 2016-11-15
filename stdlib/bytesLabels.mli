@@ -11,7 +11,9 @@
 (*                                                                     *)
 (***********************************************************************)
 
-(** Byte sequence operations. *)
+(** Byte sequence operations.
+    @since 4.02.0
+ *)
 
 external length : bytes -> int = "%string_length"
 (** Return the length (number of bytes) of the argument. *)

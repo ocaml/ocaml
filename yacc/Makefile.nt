@@ -29,9 +29,7 @@ version.h : ../VERSION
 clean:
 	rm -f *.$(O) ocamlyacc.exe *~ version.h
 
-.SUFFIXES: .c .$(O)
-
-.c.$(O):
+%.$(O): %.c
 	$(BYTECC) -DNDEBUG -DNO_UNIX $(BYTECCCOMPOPTS) -c $<
 
 depend:

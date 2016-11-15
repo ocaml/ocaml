@@ -14,8 +14,8 @@
 #include <stdio.h>
 #include <errno.h>
 #include <string.h>
-#include <mlvalues.h>
-#include <alloc.h>
+#include <caml/mlvalues.h>
+#include <caml/alloc.h>
 #include "unixsupport.h"
 
 extern int error_table[];
