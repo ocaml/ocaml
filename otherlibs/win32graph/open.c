@@ -260,7 +260,7 @@ static DWORD WINAPI gr_open_graph_internal(value arg)
 
 CAMLprim value caml_gr_open_graph(value arg)
 {
-  long tid;
+  DWORD tid;
   if (gr_initialized) return Val_unit;
   open_graph_event = CreateEvent(NULL, FALSE, FALSE, NULL);
   threadHandle =
