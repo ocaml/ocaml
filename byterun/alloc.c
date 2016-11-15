@@ -17,13 +17,13 @@
 */
 
 #include <string.h>
-#include "alloc.h"
-#include "custom.h"
-#include "major_gc.h"
-#include "memory.h"
-#include "mlvalues.h"
-#include "fiber.h"
-#include "domain.h"
+#include "caml/alloc.h"
+#include "caml/custom.h"
+#include "caml/major_gc.h"
+#include "caml/memory.h"
+#include "caml/mlvalues.h"
+#include "caml/fiber.h"
+#include "caml/domain.h"
 
 #define Setup_for_gc
 #define Restore_after_gc
@@ -176,3 +176,7 @@ CAMLprim value caml_update_dummy(value dummy, value newval)
   }
   return Val_unit;
 }
+
+
+
+

@@ -42,9 +42,9 @@
 
 
 #include <windows.h>
-#include <memory.h>
+#include <caml/memory.h>
 #include <string.h>
-#include <io.h>
+#include <caml/io.h>
 #include <stdio.h>
    // Size of window extra bytes (we store a handle to a PALINFO structure).
 

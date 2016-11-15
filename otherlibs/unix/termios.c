@@ -11,9 +11,9 @@
 /*                                                                     */
 /***********************************************************************/
 
-#include <mlvalues.h>
-#include <alloc.h>
-#include <fail.h>
+#include <caml/mlvalues.h>
+#include <caml/alloc.h>
+#include <caml/fail.h>
 #include "unixsupport.h"
 
 #ifdef HAS_TERMIOS
@@ -90,17 +90,22 @@ static long terminal_io_descr[] = {
 #undef cflags
 #undef lflags
 
-struct speedtable_entry ;
-
 static struct {
   speed_t speed;
   int baud;
 } speedtable[] = {
+
+  /* standard speeds */
+  {B0,       0},
   {B50,      50},
   {B75,      75},
   {B110,     110},
   {B134,     134},
   {B150,     150},
+#ifdef B200
+  /* Shouldn't need to be ifdef'd but I'm not sure it's available everywhere. */
+  {B200,     200},
+#endif
   {B300,     300},
   {B600,     600},
   {B1200,    1200},
@@ -110,6 +115,8 @@ static struct {
   {B9600,    9600},
   {B19200,   19200},
   {B38400,   38400},
+
+  /* usual extensions */
 #ifdef B57600
   {B57600,   57600},
 #endif
@@ -119,7 +126,66 @@ static struct {
 #ifdef B230400
   {B230400,  230400},
 #endif
-  {B0,       0}
+
+  /* Linux extensions */
+#ifdef B460800
+  {B460800,  460800},
+#endif
+#ifdef B500000
+  {B500000,  500000},
+#endif
+#ifdef B576000
+  {B576000,  576000},
+#endif
+#ifdef B921600
+  {B921600,  921600},
+#endif
+#ifdef B1000000
+  {B1000000, 1000000},
+#endif
+#ifdef B1152000
+  {B1152000, 1152000},
+#endif
+#ifdef B1500000
+  {B1500000, 1500000},
+#endif
+#ifdef B2000000
+  {B2000000, 2000000},
+#endif
+#ifdef B2500000
+  {B2500000, 2500000},
+#endif
+#ifdef B3000000
+  {B3000000, 3000000},
+#endif
+#ifdef B3500000
+  {B3500000, 3500000},
+#endif
+#ifdef B4000000
+  {B4000000, 4000000},
+#endif
+
+  /* MacOS extensions */
+#ifdef B7200
+  {B7200,    7200},
+#endif
+#ifdef B14400
+  {B14400,   14400},
+#endif
+#ifdef B28800
+  {B28800,   28800},
+#endif
+#ifdef B76800
+  {B76800,   76800},
+#endif
+
+  /* Cygwin extensions (in addition to the Linux ones) */
+#ifdef B128000
+  {B128000,  128000},
+#endif
+#ifdef B256000
+  {B256000,  256000},
+#endif
 };
 
 #define NSPEEDS (sizeof(speedtable) / sizeof(speedtable[0]))

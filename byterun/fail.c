@@ -15,16 +15,16 @@
 
 #include <stdio.h>
 #include <stdlib.h>
-#include "alloc.h"
-#include "fail.h"
-#include "io.h"
-#include "gc.h"
-#include "memory.h"
-#include "misc.h"
-#include "mlvalues.h"
-#include "printexc.h"
-#include "signals.h"
-#include "fiber.h"
+#include "caml/alloc.h"
+#include "caml/fail.h"
+#include "caml/io.h"
+#include "caml/gc.h"
+#include "caml/memory.h"
+#include "caml/misc.h"
+#include "caml/mlvalues.h"
+#include "caml/printexc.h"
+#include "caml/signals.h"
+#include "caml/fiber.h"
 
 CAMLexport __thread struct caml_exception_context * caml_external_raise = NULL;
 __thread value caml_exn_bucket;
@@ -89,7 +89,7 @@ CAMLexport void caml_raise_with_string(value tag, char const *msg)
 /* PR#5115: Failure and Invalid_argument can be triggered by
    input_value while reading the initial value of [caml_global_data]. */
 
-static value get_exception(int exn, const char* exn_name) 
+static value get_exception(int exn, const char* exn_name)
 {
   if (caml_global_data == 0 || !Is_block(caml_read_root(caml_global_data))) {
     fprintf(stderr, "Fatal error %s during initialisation\n", exn_name);

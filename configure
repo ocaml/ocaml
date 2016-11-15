@@ -16,6 +16,7 @@
 configure_options="$*"
 prefix=/usr/local
 bindir=''
+target_bindir=''
 libdir=''
 mandir=''
 manext=1
@@ -77,17 +78,13 @@ wrn() {
 }
 
 err() {
-  printf "[ERROR!]%b\n" "$*" 1>&3
+  printf "[ERROR!] %b\n" "$*" 1>&3
   exit 2
 }
 
 exec 3>&1
 
 # Parse command-line arguments
-
-if echo "$configure_options" | grep -q -e '--\?[a-zA-Z0-9-]\+='; then
-  err "Arguments to this script look like '-prefix /foo/bar', not '-prefix=/foo/bar' (note the '=')."
-fi
 
 while : ; do
   case "$1" in
@@ -96,6 +93,8 @@ while : ; do
         prefix=$2; shift;;
     -bindir|--bindir)
         bindir=$2; shift;;
+    -target-bindir|--target-bindir)
+        target_bindir="$2"; shift;;
     -libdir|--libdir)
         libdir=$2; shift;;
     -mandir|--mandir)
@@ -155,7 +154,12 @@ while : ; do
         no_naked_pointers=true;;
     -no-cfi|--no-cfi)
         with_cfi=false;;
-    *) err "Unknown option \"$1\".";;
+    *) if echo "$1" | grep -q -e '^--\?[a-zA-Z0-9-]\+='; then
+         err "configure expects arguments of the form '-prefix /foo/bar'," \
+             "not '-prefix=/foo/bar' (note the '=')."
+       else
+         err "Unknown option \"$1\"."
+       fi;;
   esac
   shift
 done
@@ -236,17 +240,23 @@ else
 fi
 inf "Configuring for target $target ..."
 
+if [ x"$host" = x"$target" ]; then
+  cross_compiler=false
+else
+  cross_compiler=true
+fi
+
 # Do we have gcc?
 
 if test -z "$ccoption"; then
   if sh ./searchpath "${TOOLPREF}gcc"; then
     cc="${TOOLPREF}gcc"
   else
-    if test x"$host" = x"$target"; then
-      cc="cc"
-    else
+    if $cross_compiler; then
       err "No cross-compiler found for ${target}.\n" \
           "It should be named ${TOOLPREF}gcc and be in the PATH."
+    else
+      cc="cc"
     fi
   fi
 else
@@ -375,10 +385,15 @@ case "$bytecc,$target" in
   *,powerpc-*-aix*)
     bytecccompopts="-D_XOPEN_SOURCE=500";;
   *gcc*,*-*-cygwin*)
+    case $target in
+      i686-*) flavor=cygwin;;
+      x86_64-*) flavor=cygwin64;;
+      *) err "unknown cygwin variant";;
+    esac
     bytecccompopts="-fno-defer-pop $gcc_warnings -U_WIN32"
     dllccompopts="-U_WIN32 -DCAML_DLL"
     if test $with_sharedlibs = yes; then
-      flexlink="flexlink -chain cygwin -merge-manifest -stack 16777216"
+      flexlink="flexlink -chain $flavor -merge-manifest -stack 16777216"
       flexdir=`$flexlink -where | dos2unix`
       if test -z "$flexdir"; then
         wrn "flexlink not found: native shared libraries won't be available."
@@ -443,7 +458,7 @@ case $? in
   1) err "The C compiler $cc is not ANSI-compliant.\n" \
          "You need an ANSI C compiler to build OCaml.";;
   *)
-     if test x"$host" != x"$target"; then
+     if $cross_compiler; then
        wrn "Unable to compile the test program.\n" \
            "This failure is expected for cross-compilation:\n" \
            "we will assume the C compiler is ANSI-compliant."
@@ -461,29 +476,43 @@ if test x"$cpp_output" != x"ok"; then
     err "C preprocessor not working: got '$cpp_output', expected 'ok'"
 fi
 
-# Determine which ocamlrun executable to use; for cross-compilation, a native
-# "ocamlrun" executable must be available on the system.
-if test x"$target" != x"$host"; then
+# For cross-compilation, we need a host-based ocamlrun and ocamlyacc,
+# and the user must specify the target BINDIR
+if $cross_compiler; then
   if ! sh ./searchpath ocamlrun; then
     err "Cross-compilation requires an ocaml runtime environment\n" \
         "(the ocamlrun binary). Moreover, its version must be the same\n" \
         "as the one you're trying to build (`cut -f1 -d+ < ../../VERSION`)."
   else
-    ocaml_system_version=`ocamlrun -version | sed 's/[^0-9]*\([0-9.]\+\).*/\1/'`
-    ocaml_source_version=`sed -n '1 s/\([0-9\.]\+\).*/\1/ p' < ../../VERSION`
+    ocaml_system_version=`ocamlrun -version | sed 's/[^0-9]*\([0-9.]*\).*/\1/'`
+    ocaml_source_version=`sed -n '1 s/\([0-9\.]*\).*/\1/ p' < ../../VERSION`
     if test x"$ocaml_system_version" != x"$ocaml_source_version"; then
       err "While you have an ocaml runtime environment, its version\n" \
           "($ocaml_system_version) doesn't match the version of these sources\n" \
           "($ocaml_source_version)."
     else
-      CAMLRUN="ocamlrun"
+      echo "CAMLRUN=`./searchpath -p ocamlrun`" >> Makefile
     fi
   fi
-else
-  CAMLRUN=`cd ../.. && pwd`/boot/ocamlrun
-fi
 
-echo "CAMLRUN=$CAMLRUN" >> Makefile
+  if ! sh ./searchpath ocamlyacc; then
+    err "Cross-compilation requires an ocamlyacc binary."
+  else
+    ocamlyacc 2>/dev/null
+    if test "$?" -ne 1; then
+      err "While you have an ocamlyacc binary, it cannot be executed successfully."
+    else
+      echo "CAMLYACC=`./searchpath -p ocamlyacc`" >> Makefile
+    fi
+  fi
+
+  if [ -z "$target_bindir" ]; then
+    err "Cross-compilation requires -target-bindir."
+  else
+    echo "TARGET_BINDIR=$target_bindir" >> Makefile
+  fi
+fi # cross-compiler
+
 
 # Check the sizes of data types
 # OCaml needs a 32 or 64 bit architecture, a 32-bit integer type and
@@ -935,6 +964,8 @@ case "$arch,$system" in
     case "$nativecc" in gcc*) ;; *) cc_profile='-xpg';; esac;;
   amd64,linux) profiling='prof';;
   amd64,openbsd) profiling='prof';;
+  amd64,freebsd) profiling='prof';;
+  amd64,netbsd) profiling='prof';;
   amd64,gnu) profiling='prof';;
   arm,linux*) profiling='prof';;
   power,elf) profiling='prof';;
@@ -976,7 +1007,8 @@ if (SHELL=/bin/sh; export SHELL; (./sharpbang || ./sharpbang2) >/dev/null); then
           "under Cygwin"
       echo "SHARPBANGSCRIPTS=false" >> Makefile;;
     *-*-mingw*)
-      inf "We won't use it, though, because it's on the target platform it would be used and windows doesn't support it."
+      inf "We won't use it, though, because it's on the target platform " \
+          "it would be used and windows doesn't support it."
       echo "SHARPBANGSCRIPTS=false" >> Makefile;;
     *)
       echo "SHARPBANGSCRIPTS=true" >> Makefile;;
@@ -1307,6 +1339,15 @@ if sh ./hasgot pwrite; then
   echo "#define HAS_PWRITE" >> s.h
 fi
 
+nanosecond_stat=none
+for i in 1 2 3; do
+  if sh ./trycompile -DHAS_NANOSECOND_STAT=$i nanosecond_stat.c; then nanosecond_stat=$i; break; fi
+done
+if test $nanosecond_stat != "none"; then
+  inf "stat() supports nanosecond precision."
+  echo "#define HAS_NANOSECOND_STAT $nanosecond_stat" >> s.h
+fi
+
 nargs=none
 for i in 5 6; do
   if sh ./trycompile -DNUM_ARGS=${i} gethostbyname.c; then nargs=$i; break; fi
@@ -1394,8 +1435,8 @@ if true; then
   esac
   if sh ./hasgot -i pthread.h $pthread_link pthread_self; then
     inf "POSIX threads library supported."
-#    systhread_support=true
-#    otherlibraries="$otherlibraries systhreads"
+    systhread_support=true
+    otherlibraries="$otherlibraries systhreads"
     bytecccompopts="$bytecccompopts -D_REENTRANT"
     nativecccompopts="$nativecccompopts -D_REENTRANT"
     case "$target" in
@@ -1654,6 +1695,12 @@ if $no_naked_pointers; then
   echo "#define NO_NAKED_POINTERS" >> m.h
 fi
 
+# Add Unix-style optimization flag
+bytecccompopts="-O $bytecccompopts"
+dllcccompopts="-O $dllcccompopts"
+nativecccompopts="-O $nativecccompopts"
+sharedcccompopts="-O $sharedcccompopts"
+
 # Final twiddling of compiler options to work around known bugs
 
 nativeccprofopts="$nativecccompopts"
@@ -1683,8 +1730,8 @@ SYSLIB=-l\$(1)
 #ml let syslib x = "-l"^x;;
 
 ### How to build a static library
-MKLIB=ar rc \$(1) \$(2); ranlib \$(1)
-#ml let mklib out files opts = Printf.sprintf "ar rc %s %s %s; ranlib %s" out opts files out;;
+MKLIB=${TOOLPREF}ar rc \$(1) \$(2); ${TOOLPREF}ranlib \$(1)
+#ml let mklib out files opts = Printf.sprintf "${TOOLPREF}ar rc %s %s %s; ${TOOLPREF}ranlib %s" out opts files out;;
 EOF
 echo "ARCH=$arch" >> Makefile
 echo "MODEL=$model" >> Makefile
@@ -1725,6 +1772,11 @@ echo "MKEXEDEBUGFLAG=$mkexedebugflag" >> Makefile
 echo "MKDLL=$mksharedlib" >> Makefile
 echo "MKMAINDLL=$mkmaindll" >> Makefile
 echo "RUNTIMED=${debugruntime}" >>Makefile
+if $shared_libraries_supported; then
+  echo "SHARED=shared" >>Makefile
+else
+  echo "SHARED=noshared" >>Makefile
+fi
 echo "WITH_DEBUGGER=${with_debugger}" >>Makefile
 echo "WITH_OCAMLDOC=${with_ocamldoc}" >>Makefile
 echo "WITH_OCAMLBUILD=${with_ocamlbuild}" >>Makefile

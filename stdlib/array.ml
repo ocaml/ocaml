@@ -29,6 +29,10 @@ external make_float: int -> float array = "caml_make_float_vect"
 
 let init l f =
   if l = 0 then [||] else
+  if l < 0 then invalid_arg "Array.init"
+  (* See #6575. We could also check for maximum array size, but this depends
+     on whether we create a float array or a regular one... *)
+  else
    let res = create l (f 0) in
    for i = 1 to pred l do
      unsafe_set res i (f i)

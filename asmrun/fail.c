@@ -15,17 +15,17 @@
 
 #include <stdio.h>
 #include <signal.h>
-#include "alloc.h"
-#include "fail.h"
-#include "io.h"
-#include "gc.h"
-#include "memory.h"
-#include "mlvalues.h"
-#include "printexc.h"
-#include "signals.h"
+#include "caml/alloc.h"
+#include "caml/fail.h"
+#include "caml/io.h"
+#include "caml/gc.h"
+#include "caml/memory.h"
+#include "caml/mlvalues.h"
+#include "caml/printexc.h"
+#include "caml/signals.h"
 #include "stack.h"
-#include "roots.h"
-#include "callback.h"
+#include "caml/roots.h"
+#include "caml/callback.h"
 
 /* The globals holding predefined exceptions */
 
@@ -48,7 +48,7 @@ extern caml_generated_constant
 
 /* Exception raising */
 
-extern void caml_raise_exception (value bucket) Noreturn;
+extern void caml_raise_exception (char* young_ptr, value bucket) Noreturn;
 
 void caml_raise(value v)
 {
@@ -75,7 +75,7 @@ void caml_raise(value v)
   }
 #undef PUSHED_AFTER
 
-  caml_raise_exception(v);
+  caml_raise_exception(caml_domain_state->young_ptr, v);
 }
 
 void caml_raise_constant(value tag)

@@ -12,13 +12,13 @@
 /***********************************************************************/
 
 #include <string.h>
-#include "alloc.h"
-#include "fail.h"
-#include "md5.h"
-#include "memory.h"
-#include "mlvalues.h"
-#include "io.h"
-#include "reverse.h"
+#include "caml/alloc.h"
+#include "caml/fail.h"
+#include "caml/md5.h"
+#include "caml/memory.h"
+#include "caml/mlvalues.h"
+#include "caml/io.h"
+#include "caml/reverse.h"
 
 /* MD5 message digest */
 

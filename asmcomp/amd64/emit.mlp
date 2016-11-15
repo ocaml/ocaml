@@ -20,6 +20,12 @@ open Mach
 open Linearize
 open Emitaux
 
+(* [Branch_relaxation] is not used in this file, but is required by
+   emit.mlp files for certain other targets; the reference here ensures
+   that when releases are being prepared the .depend files are correct
+   for all targets. *)
+open! Branch_relaxation
+
 let macosx = (Config.system = "macosx")
 let mingw64 = (Config.system = "mingw64")
 let cygwin = (Config.system = "cygwin")

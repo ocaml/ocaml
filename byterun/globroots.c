@@ -13,14 +13,14 @@
 
 /* Registration of global memory roots */
 
-#include "memory.h"
-#include "misc.h"
-#include "mlvalues.h"
-#include "roots.h"
-#include "globroots.h"
-#include "callback.h"
-#include "platform.h"
-#include "alloc.h"
+#include "caml/memory.h"
+#include "caml/misc.h"
+#include "caml/mlvalues.h"
+#include "caml/roots.h"
+#include "caml/globroots.h"
+#include "caml/callback.h"
+#include "caml/platform.h"
+#include "caml/alloc.h"
 #ifdef NATIVE_CODE
 #include "stack.h"
 #endif

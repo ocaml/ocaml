@@ -14,9 +14,9 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include <fail.h>
-#include <memory.h>
-#include <mlvalues.h>
+#include <caml/fail.h>
+#include <caml/memory.h>
+#include <caml/mlvalues.h>
 
 #include "unixsupport.h"
 

@@ -14,7 +14,6 @@
 #ifndef CAML_MINOR_GC_H
 #define CAML_MINOR_GC_H
 
-
 #include "misc.h"
 #include "addrmap.h"
 
@@ -33,7 +32,6 @@ struct caml_ref_table {
 struct caml_remembered_set {
   struct caml_ref_table major_ref, minor_ref, fiber_ref;
 };
-CAMLextern __thread struct caml_remembered_set caml_remembered_set;
 
 extern void caml_set_minor_heap_size (asize_t); /* size in bytes */
 extern void caml_empty_minor_heap (void);

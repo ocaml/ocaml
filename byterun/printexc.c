@@ -16,13 +16,13 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include "backtrace.h"
-#include "callback.h"
-#include "debugger.h"
-#include "fail.h"
-#include "misc.h"
-#include "mlvalues.h"
-#include "printexc.h"
+#include "caml/backtrace.h"
+#include "caml/callback.h"
+#include "caml/debugger.h"
+#include "caml/fail.h"
+#include "caml/misc.h"
+#include "caml/mlvalues.h"
+#include "caml/printexc.h"
 
 struct stringbuf {
   char * ptr;

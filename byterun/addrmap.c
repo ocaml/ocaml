@@ -1,6 +1,6 @@
-#include "config.h"
-#include "memory.h"
-#include "addrmap.h"
+#include "caml/config.h"
+#include "caml/memory.h"
+#include "caml/addrmap.h"
 
 #define Is_power_of_2(x) (((x) & ((x) - 1)) == 0)
 

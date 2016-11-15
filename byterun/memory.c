@@ -1,14 +1,14 @@
 #include <string.h>
 #include <stdlib.h>
 #include <stdio.h>
-#include "misc.h"
-#include "fail.h"
-#include "memory.h"
-#include "shared_heap.h"
-#include "domain.h"
-#include "addrmap.h"
-#include "roots.h"
-#include "alloc.h"
+#include "caml/misc.h"
+#include "caml/fail.h"
+#include "caml/memory.h"
+#include "caml/shared_heap.h"
+#include "caml/domain.h"
+#include "caml/addrmap.h"
+#include "caml/roots.h"
+#include "caml/alloc.h"
 
 static void write_barrier(value obj, int field, value val)
 {
@@ -22,13 +22,12 @@ static void write_barrier(value obj, int field, value val)
     if (!Is_young(obj)) {
       if (Is_young(val)) {
         /* Add to remembered set */
-        Ref_table_add(&caml_remembered_set.major_ref, Op_val(obj) + field);
+        Ref_table_add(&caml_domain_state->remembered_set->major_ref, Op_val(obj) + field);
       } else {
         caml_darken(val, 0);
       }
     } else if (Is_young(val) && val < obj) {
       /* Both obj and val are young and val is more recent than obj. */
-
       old_val = Op_val(obj)[field];
       /* If old_val is also young, and younger than obj, then it must be the
        * case that `Op_val(obj)+field` is already in minor_ref. We can safely
@@ -36,7 +35,7 @@ static void write_barrier(value obj, int field, value val)
       if (Is_block(old_val) && Is_young(old_val) && old_val < obj)
         return;
 
-      Ref_table_add(&caml_remembered_set.minor_ref, Op_val(obj) + field);
+      Ref_table_add(&caml_domain_state->remembered_set->minor_ref, Op_val(obj) + field);
     }
   }
 }
@@ -139,8 +138,8 @@ CAMLexport value caml_alloc_shr (mlsize_t wosize, tag_t tag)
   if (v == NULL) {
     caml_raise_out_of_memory ();
   }
-  caml_allocated_words += Whsize_wosize (wosize);
-  if (caml_allocated_words > Wsize_bsize (caml_minor_heap_size)) {
+  caml_domain_state->allocated_words += Whsize_wosize (wosize);
+  if (caml_domain_state->allocated_words > Wsize_bsize (caml_minor_heap_size)) {
     caml_urge_major_slice();
   }
 

@@ -31,9 +31,9 @@ common:
 run-byte: common
 	@printf " ... testing 'bytecode':"
 	@$(OCAMLC) $(COMPFLAGS) -c tcallback.ml
-	@$(OCAMLC) $(COMPFLAGS) -o ./program -custom unix.cma \
+	@$(OCAMLC) $(COMPFLAGS) -o ./program$(EXE) -custom unix.cma \
 	           callbackprim.$(O) tcallback.cmo
-	@./program >bytecode.result
+	@./program$(EXE) >bytecode.result
 	@$(DIFF) reference bytecode.result \
 	&& echo " => passed" || echo " => failed"
 
@@ -42,9 +42,9 @@ run-opt: common
 	@if $(BYTECODE_ONLY); then : ; else \
 	  printf " ... testing 'native':"; \
 	  $(OCAMLOPT) $(COMPFLAGS) -c tcallback.ml; \
-	  $(OCAMLOPT) $(COMPFLAGS) -o ./program unix.cmxa callbackprim.$(O) \
-	              tcallback.cmx; \
-	  ./program >native.result; \
+	  $(OCAMLOPT) $(COMPFLAGS) -o ./program$(EXE) unix.cmxa \
+	              callbackprim.$(O) tcallback.cmx; \
+	  ./program$(EXE) >native.result; \
 	  $(DIFF) reference native.result \
 	  && echo " => passed" || echo " => failed"; \
 	fi
@@ -54,6 +54,6 @@ promote: defaultpromote
 
 .PHONY: clean
 clean: defaultclean
-	@rm -f *.result ./program
+	@rm -f *.result ./program$(EXE)
 
 include $(BASEDIR)/makefiles/Makefile.common

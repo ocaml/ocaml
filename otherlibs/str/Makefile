@@ -27,7 +27,7 @@ str.cmo: str.cmi
 str.cmx: str.cmi
 
 depend:
-	gcc -MM $(CFLAGS) *.c > .depend
-	../../boot/ocamlrun ../../tools/ocamldep *.mli *.ml >> .depend
+	$(CC) -MM $(CFLAGS) *.c > .depend
+	$(CAMLRUN) ../../tools/ocamldep *.mli *.ml >> .depend
 
 include .depend

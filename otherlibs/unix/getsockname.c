@@ -11,8 +11,8 @@
 /*                                                                     */
 /***********************************************************************/
 
-#include <fail.h>
-#include <mlvalues.h>
+#include <caml/fail.h>
+#include <caml/mlvalues.h>
 #include "unixsupport.h"
 
 #ifdef HAS_SOCKETS

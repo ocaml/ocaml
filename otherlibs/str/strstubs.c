@@ -13,10 +13,10 @@
 
 #include <string.h>
 #include <ctype.h>
-#include <mlvalues.h>
-#include <alloc.h>
-#include <memory.h>
-#include <fail.h>
+#include <caml/mlvalues.h>
+#include <caml/alloc.h>
+#include <caml/memory.h>
+#include <caml/fail.h>
 
 /* The backtracking NFA interpreter */
 

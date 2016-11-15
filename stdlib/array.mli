@@ -154,7 +154,8 @@ val fold_right : ('b -> 'a -> 'a) -> 'b array -> 'a -> 'a
 
 external make_float: int -> float array = "caml_make_float_vect"
 (** [Array.make_float n] returns a fresh float array of length [n],
-    with uninitialized data. *)
+    with uninitialized data.
+    @since 4.02 *)
 
 (** {6 Sorting} *)
 

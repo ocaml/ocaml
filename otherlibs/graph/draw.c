@@ -12,7 +12,7 @@
 /***********************************************************************/
 
 #include "libgraph.h"
-#include <alloc.h>
+#include <caml/alloc.h>
 
 value caml_gr_plot(value vx, value vy)
 {

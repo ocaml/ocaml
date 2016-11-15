@@ -11,17 +11,17 @@
 /*                                                                     */
 /***********************************************************************/
 
-#include "misc.h"
-#include "mlvalues.h"
-#include "memory.h"
+#include "caml/misc.h"
+#include "caml/mlvalues.h"
+#include "caml/memory.h"
 #include "stack.h"
-#include "callback.h"
-#include "alloc.h"
-#include "intext.h"
-#include "osdeps.h"
-#include "fail.h"
+#include "caml/callback.h"
+#include "caml/alloc.h"
+#include "caml/intext.h"
+#include "caml/osdeps.h"
+#include "caml/fail.h"
 #include "frame_descriptors.h"
-#include "globroots.h"
+#include "caml/globroots.h"
 
 #include <stdio.h>
 #include <string.h>
@@ -60,10 +60,15 @@ CAMLprim value caml_natdynlink_open(value filename, value global)
   CAMLlocal3 (res, handle, header);
   void *sym;
   void *dlhandle;
+  char *p;
 
   /* TODO: dlclose in case of error... */
 
+  p = caml_strdup(String_val(filename));
+  caml_enter_blocking_section();
   dlhandle = caml_dlopen(String_val(filename), 1, Int_val(global));
+  caml_leave_blocking_section();
+  caml_stat_free(p);
 
   if (NULL == dlhandle)
     caml_failwith(caml_dlerror());
@@ -124,10 +129,15 @@ CAMLprim value caml_natdynlink_run_toplevel(value filename, value symbol)
   CAMLparam2 (filename, symbol);
   CAMLlocal3 (res, v, handle_v);
   void *handle;
+  char *p;
 
   /* TODO: dlclose in case of error... */
 
-  handle = caml_dlopen(String_val(filename), 1, 1);
+  p = caml_strdup(String_val(filename));
+  caml_enter_blocking_section();
+  handle = caml_dlopen(p, 1, 1);
+  caml_leave_blocking_section();
+  caml_stat_free(p);
 
   if (NULL == handle) {
     res = caml_alloc(1,1);

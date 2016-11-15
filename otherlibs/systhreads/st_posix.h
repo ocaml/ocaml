@@ -28,6 +28,7 @@
 #endif
 
 #ifdef __GNUC__
+#undef INLINE
 #define INLINE inline
 #else
 #define INLINE
@@ -80,7 +81,12 @@ static void st_thread_exit(void)
 
 static void st_thread_kill(st_thread_id thr)
 {
+#if !defined(__ANDROID__)
+  /* pthread_cancel is unsafe, as it does not allow the thread an opportunity
+     to free shared resources such as mutexes. Thus, it is not implemented
+     in Android's libc. */
   pthread_cancel(thr);
+#endif
 }
 
 /* Scheduling hints */
@@ -318,12 +324,18 @@ static void * caml_thread_tick(void * arg)
 {
   struct timeval timeout;
   sigset_t mask;
+  uintnat domain_id;
 
+  /* Initialize domain_self thread local variable */
+  domain_id = (uintnat)arg;
+  caml_init_domain_self (domain_id);
   /* Block all signals so that we don't try to execute an OCaml signal handler*/
   sigfillset(&mask);
   pthread_sigmask(SIG_BLOCK, &mask, NULL);
+#if !defined(__ANDROID__)
   /* Allow async cancellation */
   pthread_setcanceltype(PTHREAD_CANCEL_ASYNCHRONOUS, NULL);
+#endif
   while(1) {
     /* select() seems to be the most efficient way to suspend the
        thread for sub-second intervals */
@@ -339,6 +351,15 @@ static void * caml_thread_tick(void * arg)
 }
 
 /* "At fork" processing */
+
+#if defined(__ANDROID__)
+/* Android's libc does not include declaration of pthread_atfork;
+   however, it implements it since API level 10 (Gingerbread).
+   The reason for the omission is that Android (GUI) applications
+   are not supposed to fork at all, however this workaround is still
+   included in case OCaml is used for an Android CLI utility. */
+int pthread_atfork(void (*prepare)(void), void (*parent)(void), void (*child)(void));
+#endif
 
 static int st_atfork(void (*fn)(void))
 {
@@ -370,8 +391,8 @@ static value st_encode_sigset(sigset_t * set)
     for (i = 1; i < NSIG; i++)
       if (sigismember(set, i) > 0) {
         value newcons = alloc_small(2, 0);
-        Field(newcons, 0) = Val_int(caml_rev_convert_signal_number(i));
-        Field(newcons, 1) = res;
+        caml_modify_field(newcons, 0, Val_int(caml_rev_convert_signal_number(i)));
+        caml_modify_field(newcons, 1, res);
         res = newcons;
       }
   End_roots();

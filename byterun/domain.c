@@ -1,20 +1,23 @@
 #include <stdio.h>
 #include <unistd.h>
 #include <pthread.h>
-#include "domain.h"
-#include "platform.h"
-#include "custom.h"
-#include "major_gc.h"
-#include "shared_heap.h"
-#include "memory.h"
-#include "fail.h"
-#include "globroots.h"
-#include "signals.h"
-#include "alloc.h"
-#include "startup.h"
-#include "fiber.h"
-#include "callback.h"
-#include "minor_gc.h"
+#include <string.h>
+#include "caml/alloc.h"
+#include "caml/domain.h"
+#include "caml/domain_state.h"
+#include "caml/platform.h"
+#include "caml/custom.h"
+#include "caml/major_gc.h"
+#include "caml/shared_heap.h"
+#include "caml/memory.h"
+#include "caml/fail.h"
+#include "caml/globroots.h"
+#include "caml/signals.h"
+#include "caml/alloc.h"
+#include "caml/startup.h"
+#include "caml/fiber.h"
+#include "caml/callback.h"
+#include "caml/minor_gc.h"
 
 /* Since we support both heavyweight OS threads and lightweight
    userspace threads, the word "thread" is ambiguous. This file deals
@@ -32,7 +35,6 @@ struct dom_internal {
   domain_rpc_handler rpc_handler;
   void* rpc_data;
   atomic_uintnat* rpc_completion_signal;
-
 
   caml_plat_mutex roots_lock;
 
@@ -53,14 +55,10 @@ enum { RPC_IDLE = 0,
        RPC_REQUEST_INITIALISING = 1,
        RPC_REQUEST_SENT = 2 };
 
-#define Max_domains (1 << Minor_heap_sel_bits)
-
-
 static caml_plat_mutex all_domains_lock;
 static struct dom_internal all_domains[Max_domains];
 static uintnat minor_heaps_base;
 static __thread dom_internal* domain_self;
-
 CAMLexport __thread struct caml_domain_state* caml_domain_state;
 
 static __thread char domains_locked[Max_domains];
@@ -166,6 +164,10 @@ static void create_domain(uintnat initial_minor_heap_size, int is_main) {
     }
     caml_domain_state->young_start = caml_domain_state->young_end =
       caml_domain_state->young_ptr = 0;
+    caml_domain_state->remembered_set =
+      caml_stat_alloc(sizeof(struct caml_remembered_set));
+    memset ((void*)caml_domain_state->remembered_set, 0,
+            sizeof(struct caml_remembered_set));
 
     d->state.shared_heap = caml_init_shared_heap();
     caml_init_major_gc();
@@ -173,11 +175,10 @@ static void create_domain(uintnat initial_minor_heap_size, int is_main) {
 
     caml_init_main_stack();
 
-    d->state.remembered_set = &caml_remembered_set;
+    d->state.mark_stack = &caml_domain_state->mark_stack;
+    d->state.mark_stack_count = &caml_domain_state->mark_stack_count;
     d->state.local_roots = &caml_local_roots;
     d->state.state = caml_domain_state;
-    d->state.mark_stack = &caml_mark_stack;
-    d->state.mark_stack_count = &caml_mark_stack_count;
     d->state.vm_inited = 1;
   }
   caml_plat_unlock(&all_domains_lock);
@@ -233,6 +234,11 @@ void caml_init_domains(uintnat minor_size) {
   caml_init_signal_handling();
 }
 
+void caml_init_domain_self(int domain_id) {
+  Assert (domain_id >= 0 && domain_id < Max_domains);
+  domain_self = &all_domains[domain_id];
+  caml_domain_state = domain_self->state.state;
+}
 
 static void domain_terminate() {
   caml_gc_log("Domain terminating");
@@ -408,8 +414,25 @@ void caml_handle_gc_interrupt() {
   }
 }
 
+static void caml_enter_blocking_section_default(void)
+{
+  return;
+}
+
+static void caml_leave_blocking_section_default(void)
+{
+  return;
+}
+
+
+CAMLexport void (*caml_enter_blocking_section_hook)(void) =
+   caml_enter_blocking_section_default;
+CAMLexport void (*caml_leave_blocking_section_hook)(void) =
+   caml_leave_blocking_section_default;
+
 CAMLexport void caml_leave_blocking_section() {
   caml_plat_lock(&domain_self->roots_lock);
+  caml_leave_blocking_section_hook();
   caml_restore_stack_gc();
   caml_process_pending_signals();
 }
@@ -417,6 +440,7 @@ CAMLexport void caml_leave_blocking_section() {
 CAMLexport void caml_enter_blocking_section() {
   caml_process_pending_signals();
   caml_save_stack_gc();
+  caml_enter_blocking_section_hook();
   caml_plat_unlock(&domain_self->roots_lock);
 }
 
