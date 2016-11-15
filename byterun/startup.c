@@ -319,7 +319,6 @@ CAMLexport void caml_main(char **argv)
   if (fd < 0 && (proc_self_exe = caml_executable_name()) != NULL) {
     exe_name = proc_self_exe;
     fd = caml_attempt_open(&exe_name, &trail, 0);
-    caml_stat_free(proc_self_exe);
   }
 
   if (fd < 0) {
@@ -460,7 +459,6 @@ CAMLexport void caml_startup_code(
   caml_section_table_size = section_table_size;
   /* Initialize system libraries */
   caml_sys_init(exe_name, argv);
-  caml_stat_free(exe_name);
   /* Execute the program */
   caml_debugger(PROGRAM_START);
   res = caml_interprete(caml_start_code, caml_code_size);
