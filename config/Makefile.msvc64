@@ -63,7 +63,7 @@ X11_INCLUDES=
 X11_LINK=
 BYTECCRPATH=
 SUPPORTS_SHARED_LIBRARIES=true
-SHAREDCCCOMPOPTS=-Ox
+SHAREDCCCOMPOPTS=
 NATIVECCPROFOPTS=
 NATIVECCRPATH=
 ASM=ml64 -nologo -Cp -c -Fo
@@ -91,10 +91,10 @@ SAFE_STRING=false
 ########## Configuration for the bytecode compiler
 
 ### Which C compiler to use for the bytecode interpreter.
-BYTECC=cl -nologo -D_CRT_SECURE_NO_DEPRECATE
+BYTECC=cl -nologo -D_CRT_SECURE_NO_DEPRECATE -O2 -Gy- -MD
 
 ### Additional compile-time options for $(BYTECC).  (For static linking.)
-BYTECCCOMPOPTS=-O2 -Gy- -MD
+BYTECCCOMPOPTS=
 
 ### Additional compile-time options for $(BYTECC).  (For debug version.)
 BYTECCDBGCOMPOPTS=-DDEBUG -Zi -W3 -Wp64
@@ -168,10 +168,10 @@ MODEL=default
 SYSTEM=win64
 
 ### Which C compiler to use for the native-code compiler.
-NATIVECC=cl -nologo
+NATIVECC=cl -nologo -O2 -Gy- -MD
 
 ### Additional compile-time options for $(NATIVECC).
-NATIVECCCOMPOPTS=-O2 -Gy- -MD
+NATIVECCCOMPOPTS=
 
 ### Additional link-time options for $(NATIVECC)
 NATIVECCLINKOPTS=

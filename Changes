@@ -31,6 +31,10 @@ Next version (4.05.0):
 - GPR#829: better error when opening a module aliased to a functor
   (Alain Frisch)
 
+- GPR#911: ocamlc/ocamlopt do not pass warnings-related options to C
+  compiler when called to compile third-party C source files
+  (Sébastien Hinderer)
+
 ### Standard library:
 
 - GPR#760: Add a functions List.compare_lengths and

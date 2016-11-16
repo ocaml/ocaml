@@ -328,10 +328,29 @@ esac
 
 # Configure the bytecode compiler
 
+# The BYTECC make variable defines which compiler and options to use
+# to compile C code intended to be used by OCaml bytecode programs.
+# It is used inside OCaml's build system, and also when ocamlc is
+# called on a third-party C source file and no -cc command-line option
+# has been specified.
+
+# The BYTECCCOMPOPTS make variable contains options to pass to the C
+# compiler but only when compiling C files that belong to the OCaml
+# distribution.
+# In other words, when ocamlc is called to compile a third-party C
+# source file, it will _not_ pass these options to the C compiler.
+
+# The SHAREDCCCOMPOPTS make variable contains options to use to compile C
+# source files so that the resulting object files can then be integrated
+# into shared libraries. It is passed to BYTECC for both C source files
+# in the OCaml distribution and third-party C source files compiled
+# with ocamlc.
+
 bytecc="$cc"
 mkexe="\$(BYTECC)"
 mkexedebugflag="-g"
 bytecccompopts=""
+byteccprivatecompopts=""
 bytecclinkopts=""
 ostype="Unix"
 exe=""
@@ -357,7 +376,8 @@ esac
 
 case "$ccfamily" in
   clang-*)
-    bytecccompopts="-O2 -fno-strict-aliasing -fwrapv $gcc_warnings";;
+    bytecccompopts="-O2 -fno-strict-aliasing -fwrapv";
+    byteccprivatecompopts="$gcc_warnings";;
   gcc-[012]-*)
     # Some versions known to miscompile OCaml, e,g, 2.7.2.1, some 2.96.
     # Plus: C99 support unknown.
@@ -367,11 +387,14 @@ case "$ccfamily" in
     # Known problems with -fwrapv fixed in 4.2 only.
     wrn "This version of GCC is rather old.  Reducing optimization level."
     wrn "Consider using GCC version 4.2 or above."
-    bytecccompopts="-std=gnu99 -O $gcc_warnings";;
+    bytecccompopts="-std=gnu99 -O";
+    byteccprivatecompopts="$gcc_warnings";;
   gcc-4-*)
-    bytecccompopts="-std=gnu99 -O2 -fno-strict-aliasing -fwrapv $gcc_warnings";;
+    bytecccompopts="-std=gnu99 -O2 -fno-strict-aliasing -fwrapv";
+    byteccprivatecompopts="$gcc_warnings";;
   gcc-*)
-    bytecccompopts="-O2 -fno-strict-aliasing -fwrapv $gcc_warnings";;
+    bytecccompopts="-O2 -fno-strict-aliasing -fwrapv";
+    byteccprivatecompopts="$gcc_warnings";;
   *)
     bytecccompopts="-O";;
 esac
@@ -487,7 +510,7 @@ export cc cclibs verbose
 
 # Check C compiler.
 
-cc="$bytecc $bytecccompopts $bytecclinkopts" sh ./runtest ansi.c
+cc="$bytecc $bytecccompopts $byteccprivatecompopts $bytecclinkopts" sh ./runtest ansi.c
 case $? in
   0) inf "The C compiler is ISO C99 compliant." ;;
   1) wrn "The C compiler is ANSI / ISO C90 compliant, but not ISO C99" \
@@ -843,6 +866,18 @@ fi
 
 # Configure the native-code compiler
 
+# The NATIVECC make variable defines which compiler and options to use
+# to compile C code intended to be used by OCaml native programs.
+# It is used inside OCaml's build system, and also when ocamlopt is
+# called on a third-party C source file and no -cc command-line
+# option has been specified.
+
+# The NATIVECCCOMPOPTS make variable contains options to pass to the C
+# compiler, but only when compiling C files that belong to the OCaml
+# distribution.
+# In other words, when ocamlopt is called to compile a third-party C
+# source file, it will _not_ pass these options to the C compiler.
+
 arch=none
 model=default
 system=unknown
@@ -925,6 +960,7 @@ else
 fi
 
 nativecccompopts="$bytecccompopts"
+nativeccprivatecompopts=byteccprivatecompopts
 nativeccprofopts=''
 nativecclinkopts=''
 # FIXME the naming of nativecclinkopts is broken: these are options for
@@ -1920,8 +1956,8 @@ fi
 
 cclibs="$cclibs $mathlib"
 
-echo "BYTECC=$bytecc" >> Makefile
-echo "BYTECCCOMPOPTS=$bytecccompopts" >> Makefile
+echo "BYTECC=$bytecc $bytecccompopts" >> Makefile
+echo "BYTECCCOMPOPTS=$byteccprivatecompopts" >> Makefile
 echo "BYTECCLINKOPTS=$bytecclinkopts" >> Makefile
 echo "BYTECCLIBS=$cclibs $dllib $curseslibs $pthread_link \
                  $instrumented_runtime_libs" >> Makefile
@@ -1944,8 +1980,8 @@ EOF
 echo "ARCH=$arch" >> Makefile
 echo "MODEL=$model" >> Makefile
 echo "SYSTEM=$system" >> Makefile
-echo "NATIVECC=$nativecc" >> Makefile
-echo "NATIVECCCOMPOPTS=$nativecccompopts" >> Makefile
+echo "NATIVECC=$nativecc $nativecccompopts" >> Makefile
+echo "NATIVECCCOMPOPTS=$nativeprivatecccompopts" >> Makefile
 echo "NATIVECCPROFOPTS=$nativeccprofopts" >> Makefile
 echo "NATIVECCLINKOPTS=$nativecclinkopts" >> Makefile
 echo "NATIVECCRPATH=$nativeccrpath" >> Makefile
