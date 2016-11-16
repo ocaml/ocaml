@@ -202,20 +202,6 @@ CAMLexport value caml_read_barrier(value obj, int field)
   }
 }
 
-struct write_fault_req {
-  value obj;
-  int field;
-  value val;
-};
-
-struct cas_fault_req {
-  value obj;
-  int field;
-  value oldval;
-  value newval;
-  int success;
-};
-
 CAMLprim value caml_bvar_create(value v)
 {
   CAMLparam1(v);
@@ -294,8 +280,7 @@ CAMLprim value caml_bvar_put(value bv, value v)
   if (!(stat & BVAR_EMPTY)) caml_invalid_argument("Put to a full bvar");
   CAMLassert(stat == (caml_domain_self()->id | BVAR_EMPTY));
 
-  write_barrier(bv, 0, v);
-  Op_val(bv)[0] = v;
+  caml_modify_field(bv, 0, v);
   Op_val(bv)[1] = Val_long(caml_domain_self()->id);
 
   return Val_unit;

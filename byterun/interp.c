@@ -687,11 +687,7 @@ value caml_interprete(code_t prog, asize_t prog_size)
         Init_field(block, 0, accu);
         for (i = 1; i < wosize; i++) Init_field(block, i, *sp++);
       } else {
-        /* XXX KC: Is setup/restore needed? See comment in caml_alloc_shr in
-         * CLOSURE and CLOSUREREC. */
-        Setup_for_gc;
         block = caml_alloc_shr(wosize, tag);
-        Restore_after_gc;
         caml_initialize_field(block, 0, accu);
         for (i = 1; i < wosize; i++) caml_initialize_field(block, i, *sp++);
       }

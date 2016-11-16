@@ -156,7 +156,6 @@ void caml_gc_log (char *, ...)
 
 #endif /* DEBUG */
 
-
 #ifndef CAML_AVOID_CONFLICTS
 #define Assert CAMLassert
 #endif

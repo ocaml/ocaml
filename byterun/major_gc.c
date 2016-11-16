@@ -124,7 +124,7 @@ static intnat mark(value initial, intnat budget) {
     } else if (Tag_hd (hd_v) < No_scan_tag) {
       int i;
       for (i = 0; i < Wosize_hd(hd_v); i++) {
-        value child = FieldImm(v, i);
+        value child = Op_val(v)[i];
         // caml_gc_log ("mark: v=%p i=%u child=%p",(value*)v,i,(value*)child);
         if (Is_markable(child)) {
           child = mark_normalise(child);

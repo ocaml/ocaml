@@ -197,7 +197,6 @@ static void oldify_one (value v, value *p, int promote_stack)
       }
     }
   } else {
-    /* XXX KC: Does this operation race with other domain's oldifying operation */
     *p = v;
   }
 }
@@ -483,9 +482,6 @@ void caml_empty_minor_heap_domain (struct domain* domain)
         if (__sync_bool_compare_and_swap (*r,v,vnew)) ++rewritten;
         caml_darken(vnew,0);
       }
-      //XXX KC: Could I move the darkening into the conditional above as
-      //caml_darken(vnew,0)?
-      //caml_darken (**r,*r);
     }
 
     clear_table (&remembered_set->major_ref);
