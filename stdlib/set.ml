@@ -55,6 +55,10 @@ module type S =
     val split: elt -> t -> t * bool * t
     val find: elt -> t -> elt
     val find_opt: elt -> t -> elt option
+    val find_first: (elt -> bool) -> t -> elt
+    val find_first_opt: (elt -> bool) -> t -> elt option
+    val find_last: (elt -> bool) -> t -> elt
+    val find_last_opt: (elt -> bool) -> t -> elt option
     val of_list: elt list -> t
   end
 
@@ -390,6 +394,78 @@ module Make(Ord: OrderedType) =
           let c = Ord.compare x v in
           if c = 0 then v
           else find x (if c < 0 then l else r)
+
+    let rec find_first_aux v0 f = function
+        Empty ->
+          v0
+      | Node(l, v, r, _) ->
+          if f v then
+            find_first_aux v f l
+          else
+            find_first_aux v0 f r
+
+    let rec find_first f = function
+        Empty ->
+          raise Not_found
+      | Node(l, v, r, _) ->
+          if f v then
+            find_first_aux v f l
+          else
+            find_first f r
+
+    let rec find_first_opt_aux v0 f = function
+        Empty ->
+          Some v0
+      | Node(l, v, r, _) ->
+          if f v then
+            find_first_opt_aux v f l
+          else
+            find_first_opt_aux v0 f r
+
+    let rec find_first_opt f = function
+        Empty ->
+          None
+      | Node(l, v, r, _) ->
+          if f v then
+            find_first_opt_aux v f l
+          else
+            find_first_opt f r
+
+    let rec find_last_aux v0 f = function
+        Empty ->
+          v0
+      | Node(l, v, r, _) ->
+          if f v then
+            find_last_aux v f r
+          else
+            find_last_aux v0 f l
+
+    let rec find_last f = function
+        Empty ->
+          raise Not_found
+      | Node(l, v, r, _) ->
+          if f v then
+            find_last_aux v f r
+          else
+            find_last f l
+
+    let rec find_last_opt_aux v0 f = function
+        Empty ->
+          Some v0
+      | Node(l, v, r, _) ->
+          if f v then
+            find_last_opt_aux v f r
+          else
+            find_last_opt_aux v0 f l
+
+    let rec find_last_opt f = function
+        Empty ->
+          None
+      | Node(l, v, r, _) ->
+          if f v then
+            find_last_opt_aux v f r
+          else
+            find_last_opt f l
 
     let rec find_opt x = function
         Empty -> None

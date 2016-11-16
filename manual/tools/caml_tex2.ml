@@ -4,12 +4,32 @@ open StdLabels
 open Printf
 open Str
 
-let camlbegin = "\\caml\n"
-let camlend = "\\endcaml\n"
-let camlin = "\\\\?\\1"
-let camlout = "\\\\:\\1"
+let camlbegin = "\\caml"
+let camlend = "\\endcaml"
+let camlin = {|\\?\1|}
+let camlout = {|\\:\1|}
 let camlbunderline = "\\<"
 let camleunderline = "\\>"
+
+let start newline out s =
+  Printf.fprintf out "%s%s" camlbegin s;
+  if newline then Printf.fprintf out "\n"
+
+let stop newline out s =
+  Printf.fprintf out "%s%s" camlend s;
+  if newline then Printf.fprintf out "\n"
+
+let code_env ?(newline=true) env out s =
+  Printf.fprintf out "%a%s\n%a"
+    (start false) env s (stop newline) env
+
+let main = "example"
+let input_env = "input"
+let ok_output ="output"
+let error ="error"
+let warning ="warn"
+let phrase_env = ""
+
 
 let camllight = ref "TERM=norepeat ocaml"
 let verbose = ref true
@@ -66,6 +86,12 @@ module Output = struct
     | Error -> Printf.fprintf ppf "an error"
     | Ok -> Printf.fprintf ppf "an ok"
     | Warning n -> Printf.fprintf ppf "a warning %d" n
+
+  (** {2 Related latex environment } *)
+  let env = function
+    | Error -> error
+    | Warning _ -> warning
+    | Ok -> ok_output
 
   (** {2 Exceptions } *)
   exception Parsing_error of kind * string
@@ -190,10 +216,11 @@ let read_output () =
     else 0, 0
   in
   let output = Buffer.create 256 in
+  let first_line = ref true in
   while not (string_match ~!".*\"end_of_input\"$" !input 0) do
     if !verbose then prerr_endline !input;
+    if not !first_line then Buffer.add_char output '\n' else first_line:=false;
     Buffer.add_string output !input;
-    Buffer.add_char output '\n';
     input := input_line caml_input;
   done;
   Buffer.contents output, underline
@@ -231,7 +258,7 @@ let process_file file =
       let global_expected = try Output.expected @@ matched_group 3 !input
             with Not_found -> Output.Ok
       in
-      output_string oc camlbegin;
+      start true oc main;
       let first = ref true in
       let read_phrase () =
         let phrase = Buffer.create 256 in
@@ -255,7 +282,7 @@ let process_file file =
               else
                 (Buffer.add_string phrase last_input; global_expected)
             in
-            Buffer.add_string phrase ";;\n";
+            Buffer.add_string phrase ";;";
             Buffer.contents phrase, expected
           end in
         read ()
@@ -293,15 +320,17 @@ let process_file file =
             escape_specials phrase in
         (* Special characters may also appear in output strings -Didier *)
         let output = escape_specials output in
-        let phrase = global_replace ~!"^\\(.\\)" camlin phrase
-        and output = global_replace ~!"^\\(.\\)" camlout output in
-        if not !first then output_string oc "\\;\n";
-        fprintf oc "%s\n" phrase;
-        if not omit_answer then fprintf oc "%s" output;
+        let phrase = global_replace ~!{|^\(.\)|} camlin phrase
+        and output = global_replace ~!{|^\(.\)|} camlout output in
+        start false oc phrase_env;
+        code_env ~newline:omit_answer input_env oc phrase;
+        if not omit_answer then
+          code_env ~newline:false (Output.env status) oc output;
+        stop true oc phrase_env;
         flush oc;
         first := false
       done
-      with End_of_file -> phrase_start:= !phrase_stop; output_string oc camlend
+      with End_of_file -> phrase_start:= !phrase_stop; stop true oc main
     end
     else if string_match ~!"\\\\begin{caml_eval}[ \t]*$" !input 0
     then begin
