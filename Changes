@@ -330,6 +330,14 @@ OCaml 4.04.0 (4 Nov 2016):
   are registered with `GC.finalise_last`
   (François Bobot reviewed by Damien Doligez and Leo White)
 
+- GPR#247: In previous OCaml versions, inlining caused stack frames to
+  disappear from stacktraces. This made debugging harder in presence of
+  optimizations, and flambda was going to make this worse. The debugging
+  information produced by the compiler now enables the reconstruction of the
+  original backtrace. Use `Printexc.get_raw_backtrace_next_slot` to traverse
+  the list of inlined stack frames.
+  (Frédéric Bour, review by Mark Shinwell and Xavier Leroy)
+
 - GPR#590: Do not perform compaction if the real overhead is less than expected
   (Thomas Braibant)
 
