@@ -184,7 +184,7 @@ let merge_constraint initial_env loc sg constr =
             type_newtype_level = None;
             type_attributes = [];
             type_immediate = false;
-            type_unboxed = { unboxed = false; default = false };
+            type_unboxed = unboxed_false_default_false;
           }
         and id_row = Ident.create (s^"#row") in
         let initial_env =

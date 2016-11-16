@@ -10,24 +10,24 @@ scheduler.o: scheduler.c ../../byterun/caml/alloc.h \
   ../../byterun/caml/address_class.h ../../byterun/caml/printexc.h \
   ../../byterun/caml/roots.h ../../byterun/caml/signals.h \
   ../../byterun/caml/stacks.h ../../byterun/caml/sys.h
-condition.cmi : mutex.cmi
-event.cmi :
-mutex.cmi :
-thread.cmi : unix.cmo
-threadUnix.cmi : unix.cmo
 condition.cmo : thread.cmi mutex.cmi condition.cmi
 condition.cmx : thread.cmx mutex.cmx condition.cmi
+condition.cmi : mutex.cmi
 event.cmo : mutex.cmi condition.cmi event.cmi
 event.cmx : mutex.cmx condition.cmx event.cmi
+event.cmi :
 marshal.cmo :
 marshal.cmx :
 mutex.cmo : thread.cmi mutex.cmi
 mutex.cmx : thread.cmx mutex.cmi
+mutex.cmi :
 pervasives.cmo : unix.cmo
 pervasives.cmx : unix.cmx
 thread.cmo : unix.cmo thread.cmi
 thread.cmx : unix.cmx thread.cmi
+thread.cmi : unix.cmo
 threadUnix.cmo : unix.cmo thread.cmi threadUnix.cmi
 threadUnix.cmx : unix.cmx thread.cmx threadUnix.cmi
+threadUnix.cmi : unix.cmo
 unix.cmo :
 unix.cmx :

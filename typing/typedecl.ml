@@ -71,10 +71,10 @@ let get_unboxed_from_attributes sdecl =
   let boxed = Builtin_attributes.has_boxed sdecl.ptype_attributes in
   match boxed, unboxed, !Clflags.unboxed_types with
   | true, true, _ -> raise (Error(sdecl.ptype_loc, Boxed_and_unboxed))
-  | true, false, _ -> { unboxed = false; default = false }
-  | false, true, _ -> { unboxed = true; default = false }
-  | false, false, false -> { unboxed = false; default = true }
-  | false, false, true -> { unboxed = true; default = true }
+  | true, false, _ -> unboxed_false_default_false
+  | false, true, _ -> unboxed_true_default_false
+  | false, false, false -> unboxed_false_default_true
+  | false, false, true -> unboxed_true_default_true
 
 (* Enter all declared types in the environment as abstract types *)
 
@@ -93,7 +93,7 @@ let enter_type env sdecl id =
       type_loc = sdecl.ptype_loc;
       type_attributes = sdecl.ptype_attributes;
       type_immediate = false;
-      type_unboxed = { unboxed = false; default = false };
+      type_unboxed = unboxed_false_default_false;
     }
   in
   Env.add_type ~check:true id decl env
@@ -115,20 +115,21 @@ let rec get_unboxed_type_representation env ty fuel =
   let ty = Ctype.repr (Ctype.expand_head_opt env ty) in
   match ty.desc with
   | Tconstr (p, args, _) ->
-    let tydecl = Env.find_type p env in
-    if tydecl.type_unboxed.unboxed then begin
-      match tydecl.type_kind with
-      | Type_record ([{ld_type = ty2; _}], _)
-      | Type_variant [{cd_args = Cstr_tuple [ty2]; _}]
-      | Type_variant [{cd_args = Cstr_record [{ld_type = ty2; _}]; _}]
-      -> get_unboxed_type_representation env
-           (Ctype.apply env tydecl.type_params ty2 args) (fuel - 1)
-      | Type_abstract -> None
+    begin match Env.find_type p env with
+    | exception Not_found -> Some ty
+    | {type_unboxed = {unboxed = false}} -> Some ty
+    | {type_params; type_kind =
+         Type_record ([{ld_type = ty2; _}], _)
+       | Type_variant [{cd_args = Cstr_tuple [ty2]; _}]
+       | Type_variant [{cd_args = Cstr_record [{ld_type = ty2; _}]; _}]}
+
+         -> get_unboxed_type_representation env
+             (Ctype.apply env type_params ty2 args) (fuel - 1)
+    | {type_kind=Type_abstract} -> None
           (* This case can occur when checking a recursive unboxed type
              declaration. *)
-      | _ -> assert false (* only the above can be unboxed *)
-    end else
-      Some ty
+    | _ -> assert false (* only the above can be unboxed *)
+    end
   | _ -> Some ty
 
 let get_unboxed_type_representation env ty =
@@ -347,7 +348,7 @@ let transl_declaration env sdecl id =
       | Ptype_record [{pld_mutable = Immutable; _}] ->
     raw_status
     | _ -> (* The type is not unboxable, mark it as boxed *)
-      { unboxed = false; default = false }
+      unboxed_false_default_false
   in
   let unbox = unboxed_status.unboxed in
   let (tkind, kind) =
@@ -1625,13 +1626,14 @@ let rec parse_native_repr_attributes env core_type ty ~global_repr =
 
 let check_unboxable env loc ty =
   let ty = Ctype.repr (Ctype.expand_head_opt env ty) in
-  match ty.desc with
+  try match ty.desc with
   | Tconstr (p, _, _) ->
     let tydecl = Env.find_type p env in
     if tydecl.type_unboxed.unboxed then
       Location.prerr_warning loc
         (Warnings.Unboxable_type_in_prim_decl (Path.name p))
   | _ -> ()
+  with Not_found -> ()
 
 (* Translate a value declaration *)
 let transl_value_decl env loc valdecl =
@@ -1732,7 +1734,7 @@ let transl_with_constraint env id row_path orig_decl sdecl =
     if arity_ok && man <> None then
       orig_decl.type_kind, orig_decl.type_unboxed
     else
-      Type_abstract, {unboxed = false; default = false}
+      Type_abstract, unboxed_false_default_false
   in
   let decl =
     { type_params = params;
@@ -1793,7 +1795,7 @@ let abstract_type_decl arity =
       type_loc = Location.none;
       type_attributes = [];
       type_immediate = false;
-      type_unboxed = { unboxed = false; default = false };
+      type_unboxed = unboxed_false_default_false;
      } in
   Ctype.end_def();
   generalize_decl decl;

@@ -11,18 +11,18 @@ st_stubs.o: st_stubs.c ../../byterun/caml/alloc.h \
   ../../byterun/caml/printexc.h ../../byterun/caml/roots.h \
   ../../byterun/caml/signals.h ../../byterun/caml/stacks.h \
   ../../byterun/caml/sys.h threads.h st_posix.h
-condition.cmi : mutex.cmi
-event.cmi :
-mutex.cmi :
-thread.cmi :
-threadUnix.cmi :
 condition.cmo : mutex.cmi condition.cmi
 condition.cmx : mutex.cmx condition.cmi
+condition.cmi : mutex.cmi
 event.cmo : mutex.cmi condition.cmi event.cmi
 event.cmx : mutex.cmx condition.cmx event.cmi
+event.cmi :
 mutex.cmo : mutex.cmi
 mutex.cmx : mutex.cmi
+mutex.cmi :
 thread.cmo : thread.cmi
 thread.cmx : thread.cmi
+thread.cmi :
 threadUnix.cmo : thread.cmi threadUnix.cmi
 threadUnix.cmx : thread.cmx threadUnix.cmi
+threadUnix.cmi :

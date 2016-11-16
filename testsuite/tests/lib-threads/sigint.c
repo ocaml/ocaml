@@ -15,14 +15,14 @@ int main(int argc, char** argv)
   hProcess = OpenProcess(SYNCHRONIZE, FALSE, pid);
 
   if (!hProcess) {
-    printf("Process %ul not found!\n", pid);
+    printf("Process %lu not found!\n", pid);
     return 1;
   }
 
   FreeConsole();
 
   if (!AttachConsole(pid)) {
-    printf("Failed to attach to console of Process %ul\n", pid);
+    printf("Failed to attach to console of Process %lu\n", pid);
     CloseHandle(hProcess);
     return 1;
   }

@@ -66,7 +66,9 @@ https://github.com/alainfrisch/flexdll. A binary distribution is available;
 instructions on how to build FlexDLL from sources, including how to bootstrap
 FlexDLL and OCaml are given <<seflexdll,later in this document>>.  Unless you
 bootstrap FlexDLL, you will need to ensure that the directory to which you
-install FlexDLL is included in your `PATH` environment variable.
+install FlexDLL is included in your `PATH` environment variable. Note: if you
+use Visual Studio 2015, the binary distribution of FlexDLL will not work and
+you must build it from sources.
 
 The base bytecode system (ocamlc, ocaml, ocamllex, ocamlyacc, ...) of all three
 ports runs without any additional tools.
@@ -299,8 +301,8 @@ may need to be careful to ensure that `ocamlopt` picks up the correct `flexlink`
 in your `PATH`.
 
 You must place the FlexDLL sources for Version 0.35 or later in the directory
-`flexdll/` at the top-level directory of the directory of the OCaml
-distribution.  This can be done in one of three ways:
+`flexdll/` at the top-level directory of the OCaml distribution.  This can be
+done in one of three ways:
 
  * Extracting the sources from a tarball from
    https://github.com/alainfrisch/flexdll/releases

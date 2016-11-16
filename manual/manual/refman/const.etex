@@ -2,6 +2,11 @@
 \pdfsection{Constants}
 %HEVEA\cutname{const.html}
 
+\ikwd{false\@\texttt{false}}
+\ikwd{true\@\texttt{true}}
+\ikwd{begin\@\texttt{begin}}
+\ikwd{end\@\texttt{end}}
+
 \begin{syntax}
 constant:
     integer-literal

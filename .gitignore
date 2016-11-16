@@ -242,7 +242,13 @@
 /testsuite/tests/asmcomp/*.s
 /testsuite/tests/asmcomp/*.out.manifest
 
+/testsuite/tests/basic/*.safe-string
+/testsuite/tests/basic/pr6322.ml
+
 /testsuite/tests/embedded/caml
+
+/testsuite/tests/float-unboxing/*.flambda
+/testsuite/tests/float-unboxing/float_inline.ml
 
 /testsuite/tests/lib-dynlink-bytecode/main
 /testsuite/tests/lib-dynlink-bytecode/static
@@ -299,6 +305,10 @@
 /testsuite/tests/tool-lexyacc/scanner.ml
 /testsuite/tests/tool-lexyacc/grammar.mli
 /testsuite/tests/tool-lexyacc/grammar.ml
+
+/testsuite/tests/typing-multifile/a.ml
+/testsuite/tests/typing-multifile/b.ml
+/testsuite/tests/typing-multifile/c.ml
 
 /testsuite/tests/unboxed-primitive-args/main.ml
 /testsuite/tests/unboxed-primitive-args/stubs.c
