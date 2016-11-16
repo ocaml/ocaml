@@ -1015,7 +1015,14 @@ case "$arch,$system" in
                   aspp="${TOOLPREF}cc -c";;
   amd64,*|arm,*|arm64,*|i386,*|power,bsd*|sparc,*)
                   as="${TOOLPREF}as"
-                  aspp="${TOOLPREF}gcc -c";;
+                  case "$ccfamily" in
+                      clang-*)
+                          aspp="${TOOLPREF}clang -c"
+                          ;;
+                      *)
+                          aspp="${TOOLPREF}gcc -c"
+                          ;;
+                  esac;;
 esac
 
 if test -n "$asoption"; then as="$asoption"; fi
