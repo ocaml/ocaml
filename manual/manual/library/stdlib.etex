@@ -130,7 +130,7 @@ be called from C \\
 \item \ahref{libref/Random.html}{Module \texttt{Random}: pseudo-random number generator (PRNG)}
 \item \ahref{libref/Scanf.html}{Module \texttt{Scanf}: formatted input functions}
 \item \ahref{libref/Set.html}{Module \texttt{Set}: sets over ordered types}
-\item \ahref{libref/Sort.html}{(deprecated)}
+\item \ahref{libref/Sort.html}{Module \texttt{Sort}: deprecated}
 \item \ahref{libref/Spacetime.html}{Spacetime}
 \item \ahref{libref/Stack.html}{Module \texttt{Stack}: last-in first-out stacks}
 \item \ahref{libref/StdLabels.html}{Module \texttt{StdLabels}: Include modules \texttt{Array}, \texttt{List} and \texttt{String} with labels}
