@@ -1,0 +1,3 @@
+Test Buffer truncate: negative passed
+Test Buffer truncate: large passed
+Test Buffer truncate: in-range passed
