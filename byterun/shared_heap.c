@@ -33,9 +33,8 @@ static header_t With_status_hd(header_t hd, status s) {
   return (hd & ~(3 << 8)) | s;
 }
 
-int is_garbage (value parent) {
-  header_t hd = Hd_val(parent);
-  return Has_status_hd(hd, global.GARBAGE);
+int is_garbage(value v) {
+  return Has_status_hd(Hd_val(v), global.GARBAGE);
 }
 
 typedef struct pool {
@@ -250,27 +249,6 @@ value* caml_shared_try_alloc(struct caml_heap_state* local, mlsize_t wosize, tag
   }
 #endif
   return p;
-}
-
-struct domain* caml_owner_of_shared_block(value v) {
-  Assert (Is_block(v) && !Is_minor(v));
-  mlsize_t whsize = Whsize_wosize(Wosize_val(v));
-  Assert (whsize > 0); /* not an atom */
-  if (whsize <= SIZECLASS_MAX) {
-    /* FIXME: ORD: if we see the object, we must see the owner */
-    pool* p = (pool*)((uintnat)v &~(POOL_WSIZE * sizeof(value) - 1));
-    return p->owner;
-  } else {
-    large_alloc* a = (large_alloc*)(Hp_val(v) - LARGE_ALLOC_HEADER_SZ);
-    return a->owner;
-  }
-}
-
-void caml_shared_unpin(value v) {
-  Assert (Is_block(v) && !Is_minor(v));
-  Assert (caml_owner_of_shared_block(v) == caml_domain_self());
-  Assert (Has_status_hd(Hd_val(v), NOT_MARKABLE));
-  Hd_val(v) = With_status_hd(Hd_val(v), global.UNMARKED);
 }
 
 /* Sweeping */

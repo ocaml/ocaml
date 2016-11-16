@@ -1,5 +1,6 @@
 #include <string.h>
 #include <unistd.h>
+#include "caml/misc.h"
 #include "caml/fiber.h"
 #include "caml/gc_ctrl.h"
 #include "caml/instruct.h"
