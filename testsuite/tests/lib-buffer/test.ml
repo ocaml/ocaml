@@ -1,6 +1,7 @@
 open Printf
 ;;
 
+(* Set up*)
 let n = 10
 ;;
 
@@ -16,8 +17,10 @@ let () =
 assert (Buffer.length buf = n)
 ;;
 
+(* Helpers *)
+
 let output result str =
-  print_string ("Test Buffer " ^ str ^ " " ^ result ^ "\n")
+  print_string ("Buffer " ^ str ^ " " ^ result ^ "\n")
 ;;
 
 let passed = output "passed"
@@ -26,31 +29,58 @@ let passed = output "passed"
 let failed = output "failed"
 ;;
 
-let truncate_neg = 
+(* Tests *)
+let () = print_string "Standard Library: Module Buffer\n"
+;;
+
+let truncate_neg : unit = 
+  let msg =  "truncate: negative" in
   try 
     Buffer.truncate buf (-1);
-    failed "truncate: negative"
+    failed msg
   with
-    Invalid_argument "Buffer.truncate" -> passed "truncate: negative"
+    Invalid_argument "Buffer.truncate" ->
+      passed msg
 ;;
 
-let truncate_large =
+let truncate_large : unit =
+  let msg = "truncate: large" in
   try
     Buffer.truncate buf (n+1);
-    failed "truncate: large"
+    failed msg
   with
-    Invalid_argument "Buffer.truncate" -> passed "truncate: large"
+    Invalid_argument "Buffer.truncate" ->
+      passed msg
 ;;
 
-let truncate_correct =
-  let n' = n - 1 in
+let truncate_correct : unit =
+  let n' = n - 1 
+  and msg =  "truncate: in-range" in
   try
     Buffer.truncate buf n';
     if Buffer.length buf = n' then
-      passed "truncate: in-range"
+      passed msg
     else
-      failed "truncate: in-range"
+      failed msg
   with
-    Invalid_argument "Buffer.truncate" -> failed "truncate: in-range"
+    Invalid_argument "Buffer.truncate" ->
+      failed msg
 ;;
 
+let reset_non_zero : unit =
+  let msg = "reset: non-zero" in
+  Buffer.reset buf;
+  if Buffer.length buf = 0 then
+    passed msg
+  else
+    failed msg
+;;
+
+let reset_zero : unit =
+  let msg = "reset: zero" in
+  Buffer.reset buf;
+  if Buffer.length buf = 0 then
+    passed msg
+  else
+    failed msg
+;;

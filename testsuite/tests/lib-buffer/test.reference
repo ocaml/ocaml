@@ -1,3 +1,6 @@
-Test Buffer truncate: negative passed
-Test Buffer truncate: large passed
-Test Buffer truncate: in-range passed
+Standard Library: Module Buffer
+Buffer truncate: negative passed
+Buffer truncate: large passed
+Buffer truncate: in-range passed
+Buffer reset: non-zero passed
+Buffer reset: zero passed
