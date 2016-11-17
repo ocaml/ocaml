@@ -60,11 +60,7 @@ CAMLexport value caml_copy_double(double d)
 {
   value res;
 
-#define Setup_for_gc
-#define Restore_after_gc
-  Alloc_small(res, Double_wosize, Double_tag);
-#undef Setup_for_gc
-#undef Restore_after_gc
+  Alloc_small(res, Double_wosize, Double_tag, { caml_handle_gc_interrupt(); });
   Store_double_val(res, d);
   return res;
 }

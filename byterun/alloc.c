@@ -25,9 +25,6 @@
 #include "caml/fiber.h"
 #include "caml/domain.h"
 
-#define Setup_for_gc
-#define Restore_after_gc
-
 CAMLexport value caml_alloc (mlsize_t wosize, tag_t tag)
 {
   value result;
@@ -38,7 +35,7 @@ CAMLexport value caml_alloc (mlsize_t wosize, tag_t tag)
   if (wosize == 0){
     result = Atom (tag);
   }else if (wosize <= Max_young_wosize){
-    Alloc_small (result, wosize, tag);
+    Alloc_small (result, wosize, tag, { caml_handle_gc_interrupt(); });
     if (tag < No_scan_tag){
       for (i = 0; i < wosize; i++) Init_field (result, i, Val_unit);
     }
@@ -60,7 +57,7 @@ CAMLexport value caml_alloc_small (mlsize_t wosize, tag_t tag)
   Assert (wosize > 0);
   Assert (wosize <= Max_young_wosize);
   Assert (tag < 256);
-  Alloc_small (result, wosize, tag);
+  Alloc_small (result, wosize, tag, { caml_handle_gc_interrupt(); });
   return result;
 }
 
