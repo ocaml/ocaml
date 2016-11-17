@@ -126,6 +126,7 @@ static intnat mark(value initial, intnat budget) {
       for (i = 0; i < Wosize_hd(hd_v); i++) {
         value child = Op_val(v)[i];
         // caml_gc_log ("mark: v=%p i=%u child=%p",(value*)v,i,(value*)child);
+        Assert(!Is_debug_tag(child));
         if (Is_markable(child)) {
           child = mark_normalise(child);
           if (caml_mark_object(child)) {
