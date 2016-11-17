@@ -76,6 +76,8 @@ CAMLexport value caml_read_root(caml_root root)
 {
   value v = (value)root;
   Assert(root);
+  Assert(Hd_val(root));
+  Assert(Field(v,1) == Val_int(0) || Field(v,1) == Val_int(1));
   return Field(v, 0);
 }
 

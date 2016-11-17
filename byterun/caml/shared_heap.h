@@ -22,8 +22,15 @@ intnat caml_sweep(struct caml_heap_state*, intnat);
 /* must be called during STW */
 void caml_cycle_heap_stw(void);
 
-/* must be called on each domain 
+/* must be called on each domain
    (after caml_cycle_heap_stw) */
 void caml_cycle_heap(struct caml_heap_state*);
+
+#ifdef DEBUG
+
+/* [is_garbage(v)] returns true if [v] is a garbage value */
+int is_garbage (value);
+
+#endif
 
 #endif /* CAML_SHARED_HEAP_H */

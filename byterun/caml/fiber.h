@@ -33,6 +33,8 @@ extern caml_root caml_global_data;
 value caml_alloc_main_stack (uintnat init_size);
 void caml_init_main_stack();
 void caml_scan_dirty_stack(scanning_action, value stack);
+void caml_scan_dirty_stack_domain(scanning_action f, value stack,
+                                  struct domain* domain);
 void caml_scan_stack(scanning_action, value stack);
 void caml_save_stack_gc();
 void caml_restore_stack_gc();

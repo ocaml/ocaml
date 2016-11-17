@@ -762,7 +762,7 @@ let rec add_debug_info ev u =
 
 let prim_promote =
   Pccall { Primitive.prim_name = "caml_obj_promote_to"; prim_arity = 2;
-           prim_alloc = false; prim_native_name = "";
+           prim_alloc = true; prim_native_name = "";
            prim_native_float = false }
 
 (* Uncurry an expression and explicitate closures.

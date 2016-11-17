@@ -3,6 +3,7 @@
 
 #include "mlvalues.h"
 #include "domain_state.h"
+#include "memory.h"
 
 struct domain {
   int id;
