@@ -26,6 +26,21 @@ extern "C" {
 #endif
 
 CAMLextern value caml_alloc (mlsize_t, tag_t);
+CAMLextern value caml_alloc_N(mlsize_t, tag_t, ...);
+CAMLextern value caml_alloc_1(tag_t, value);
+CAMLextern value caml_alloc_2(tag_t, value, value);
+CAMLextern value caml_alloc_3(tag_t, value, value, value);
+CAMLextern value caml_alloc_4(tag_t, value, value, value, value);
+CAMLextern value caml_alloc_5(tag_t, value, value, value, value,
+                              value);
+CAMLextern value caml_alloc_6(tag_t, value, value, value, value,
+                              value, value);
+CAMLextern value caml_alloc_7(tag_t, value, value, value, value,
+                              value, value, value);
+CAMLextern value caml_alloc_8(tag_t, value, value, value, value,
+                              value, value, value, value);
+CAMLextern value caml_alloc_9(tag_t, value, value, value, value,
+                              value, value, value, value, value);
 CAMLextern value caml_alloc_small (mlsize_t, tag_t);
 CAMLextern value caml_alloc_tuple (mlsize_t);
 CAMLextern value caml_alloc_string (mlsize_t);  /* size in bytes */
