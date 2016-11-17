@@ -88,7 +88,7 @@ static int mark_stack_pop(value* ret) {
 #ifdef DEBUG
 #define Is_markable(v) (Is_block(v) && !Is_minor(v) && v != Debug_free_major)
 #else
-#define Is_markable(v) (Is_block(v) && !Is_minor(v) && v != 0)
+#define Is_markable(v) (Is_block(v) && !Is_minor(v))
 #endif
 
 
