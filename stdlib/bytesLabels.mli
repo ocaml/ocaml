@@ -154,15 +154,16 @@ val rindex_opt: bytes -> char -> int option
 
 val index_from : bytes -> int -> char -> int
 (** [index_from s i c] returns the index of the first occurrence of
-    byte [c] in [s] after position [i].  [Bytes.index s c] is
+    byte [c] in [s] starting from position [i].  [Bytes.index s c] is
     equivalent to [Bytes.index_from s 0 c].
 
     Raise [Invalid_argument] if [i] is not a valid position in [s].
-    Raise [Not_found] if [c] does not occur in [s] after position [i]. *)
+    Raise [Not_found] if [c] does not occur in [s] starting from position [i]. *)
 
 val index_from_opt: bytes -> int -> char -> int option
 (** [index_from _opts i c] returns the index of the first occurrence of
-    byte [c] in [s] after position [i] or [None] if [c] does not occur in [s] after position [i].
+    byte [c] in [s] starting from position [i]
+    or [None] if [c] does not occur in [s] starting from position [i].
     [Bytes.index_opt s c] is equivalent to [Bytes.index_from_opt s 0 c].
 
     Raise [Invalid_argument] if [i] is not a valid position in [s].
@@ -173,7 +174,7 @@ val rindex_from : bytes -> int -> char -> int
     byte [c] in [s] before position [i+1].  [rindex s c] is equivalent
     to [rindex_from s (Bytes.length s - 1) c].
 
-    Raise [Invalid_argument] if [i+1] is not a valid position in [s].
+    Raise [Invalid_argument] if [i] is not a valid position in [s].
     Raise [Not_found] if [c] does not occur in [s] before position [i+1]. *)
 
 val rindex_from_opt: bytes -> int -> char -> int option
@@ -182,7 +183,7 @@ val rindex_from_opt: bytes -> int -> char -> int option
     occur in [s] before position [i+1].  [rindex_opt s c] is equivalent to
     [rindex_from s (Bytes.length s - 1) c].
 
-    Raise [Invalid_argument] if [i+1] is not a valid position in [s].
+    Raise [Invalid_argument] if [i] is not a valid position in [s].
     @since 4.05 *)
 
 val contains : bytes -> char -> bool
