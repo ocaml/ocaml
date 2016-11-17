@@ -481,7 +481,7 @@ let get_field base n =
   Cop(Cload Word, [field_address base n])
 
 let get_mut_field base n =
-  Cop(Cextcall("caml_read_barrier", typ_addr, false, Debuginfo.none),
+  Cop(Cextcall("caml_read_barrier", typ_addr, true, Debuginfo.none),
       [base; n])
 
 let set_addr_field base n newval =
@@ -496,7 +496,7 @@ let set_float_field base n newval =
 
 let init_field base n newval =
   let promoted = Cop (Cextcall("caml_obj_promote_to", typ_addr,
-                               false, Debuginfo.none),
+                               true, Debuginfo.none),
                       [newval; base]) in
   set_addr_field base n promoted
 

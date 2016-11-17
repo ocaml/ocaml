@@ -72,7 +72,7 @@ extern caml_timing_hook caml_finalise_begin_hook, caml_finalise_end_hook;
 
 /* Assertions */
 
-#if defined(DEBUG) || defined(NATIVE_CODE)
+#if defined(DEBUG)
 #define CAMLassert(x) \
   ((x) ? (void) 0 : caml_failed_assert ( #x , __FILE__, __LINE__))
 CAMLextern int caml_failed_assert (char *, char *, int);
@@ -155,7 +155,6 @@ void caml_gc_log (char *, ...)
 #define Debug_uninit_stat    0xD7
 
 #endif /* DEBUG */
-
 
 #ifndef CAML_AVOID_CONFLICTS
 #define Assert CAMLassert

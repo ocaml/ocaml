@@ -14,6 +14,9 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdarg.h>
+#include <execinfo.h>
+#include <stdlib.h>
+
 #include "caml/config.h"
 #include "caml/misc.h"
 #include "caml/memory.h"
@@ -22,10 +25,30 @@
 
 #if defined(DEBUG) || defined(NATIVE_CODE)
 
+void print_trace (void)
+{
+  void *array[10];
+  size_t size;
+  char **strings;
+  size_t i;
+
+  size = backtrace (array, 10);
+  strings = backtrace_symbols (array, size);
+
+  caml_gc_log ("Obtained %zd stack frames.", size);
+
+  for (i = 0; i < size; i++)
+    caml_gc_log ("%s", strings[i]);
+
+  free (strings);
+}
+
 int caml_failed_assert (char * expr, char * file, int line)
 {
-  fprintf (stderr, "file %s; line %d ### Assertion failed: %s\n",
-           file, line, expr);
+  struct domain* self = caml_domain_self ();
+  fprintf (stderr, "[%02d] file %s; line %d ### Assertion failed: %s\n",
+           self ? self->id : -1, file, line, expr);
+  print_trace ();
   fflush (stderr);
   abort();
   return 1; /* not reached */
@@ -45,6 +68,7 @@ void caml_gc_log (char *msg, ...)
     sprintf(fmtbuf, "[%02d] %s\n", self ? self->id : -1, msg);
     vfprintf(stderr, fmtbuf, args);
   }
+  fflush(stderr);
 
   va_end (args);
 }

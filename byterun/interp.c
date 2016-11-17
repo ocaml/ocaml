@@ -286,6 +286,7 @@ value caml_interprete(code_t prog, asize_t prog_size)
 
     Assert(!Is_foreign(accu));
     Assert(!Is_foreign(env));
+
     caml_bcodcount++;
     if (caml_icount-- == 0) caml_stop_here ();
     if (caml_startup_params.trace_flag>1) printf("\n##%ld\n", caml_bcodcount);
@@ -686,9 +687,7 @@ value caml_interprete(code_t prog, asize_t prog_size)
         Init_field(block, 0, accu);
         for (i = 1; i < wosize; i++) Init_field(block, i, *sp++);
       } else {
-        Setup_for_gc;
         block = caml_alloc_shr(wosize, tag);
-        Restore_after_gc;
         caml_initialize_field(block, 0, accu);
         for (i = 1; i < wosize; i++) caml_initialize_field(block, i, *sp++);
       }
@@ -757,15 +756,31 @@ value caml_interprete(code_t prog, asize_t prog_size)
     Instruct(GETFIELD):
       accu = FieldImm(accu, *pc); pc++; Next;
     Instruct(GETMUTABLEFIELD0):
-      accu = Field(accu, 0); Next;
+      Setup_for_c_call;
+      accu = Field(accu, 0);
+      Restore_after_c_call;
+      Next;
     Instruct(GETMUTABLEFIELD1):
-      accu = Field(accu, 1); Next;
+      Setup_for_c_call;
+      accu = Field(accu, 1);
+      Restore_after_c_call;
+      Next;
     Instruct(GETMUTABLEFIELD2):
-      accu = Field(accu, 2); Next;
+      Setup_for_c_call;
+      accu = Field(accu, 2);
+      Restore_after_c_call;
+      Next;
     Instruct(GETMUTABLEFIELD3):
-      accu = Field(accu, 3); Next;
+      Setup_for_c_call;
+      accu = Field(accu, 3);
+      Restore_after_c_call;
+      Next;
     Instruct(GETMUTABLEFIELD):
-      accu = Field(accu, *pc); pc++; Next;
+      Setup_for_c_call;
+      accu = Field(accu, *pc);
+      Restore_after_c_call;
+      pc++;
+      Next;
     Instruct(GETFLOATFIELD): {
       double d = Double_field(accu, *pc);
       Alloc_small(accu, Double_wosize, Double_tag);
@@ -1072,27 +1087,11 @@ value caml_interprete(code_t prog, asize_t prog_size)
     Instruct(ASRINT):
       accu = (value)((((intnat) accu - 1) >> Long_val(*sp++)) | 1); Next;
 
-    Instruct(EQ): {
-      if (Is_long (accu) || Is_long(*sp)) {
-        accu = Val_int((intnat) accu == (intnat) *sp++);
-        Next;
-      }
-      if (Is_promoted_hd(Hd_val(accu)) && Is_young(accu)) {
-        accu = caml_addrmap_lookup(&caml_domain_state->remembered_set->promotion, accu);
-      }
-      value v2 = *(value*)sp;
-      if (Is_promoted_hd(Hd_val(v2)) && Is_young(v2)) {
-        v2 = caml_addrmap_lookup(&caml_domain_state->remembered_set->promotion, v2);
-      }
-      accu = Val_int((intnat) accu == (intnat) v2);
-      sp++;
-      Next;
-    }
-
 #define Integer_comparison(typ,opname,tst) \
     Instruct(opname): \
       accu = Val_int((typ) accu tst (typ) *sp++); Next;
 
+    Integer_comparison(intnat,EQ, ==)
     Integer_comparison(intnat,NEQ, !=)
     Integer_comparison(intnat,LTINT, <)
     Integer_comparison(intnat,LEINT, <=)

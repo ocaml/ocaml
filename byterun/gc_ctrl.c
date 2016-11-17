@@ -461,9 +461,8 @@ uintnat caml_normalize_heap_increment (uintnat i)
 
 void caml_init_gc ()
 {
-  uintnat
-major_heap_size =
-    Bsize_wsize (caml_normalize_heap_increment (caml_startup_params.heap_size_init));
+/*  uintnat major_heap_size =
+      Bsize_wsize (caml_normalize_heap_increment (caml_startup_params.heap_size_init)); */
 
   caml_max_stack_size = caml_startup_params.max_stack_init;
   caml_fiber_wsz = caml_startup_params.fiber_wsz_init;

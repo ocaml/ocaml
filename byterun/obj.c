@@ -110,7 +110,7 @@ CAMLprim value caml_obj_compare_and_swap (value v, value f, value oldv, value ne
 /* caml_promote_to(obj, upto) promotes obj to be as least as shared as upto */
 CAMLprim value caml_obj_promote_to (value obj, value upto)
 {
-  if (Is_block(upto) && Is_minor(upto) && !Is_promoted_hd(Hd_val(upto))) {
+  if (Is_block(upto) && Is_minor(upto)) {
     /* upto is local, obj is already as shared as upto is */
     return obj;
   } else {

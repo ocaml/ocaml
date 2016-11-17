@@ -284,6 +284,7 @@ CAMLprim value caml_domain_spawn(value callback)
   int err;
 
   caml_plat_event_init(&p.ev);
+
   p.callback = caml_promote(&domain_self->state, callback);
 
   err = pthread_create(&th, 0, domain_thread_func, (void*)&p);
@@ -447,6 +448,9 @@ CAMLexport void caml_enter_blocking_section() {
 static atomic_uintnat heaps_marked;
 static atomic_uintnat domain_accounted_for[Max_domains];
 
+extern void caml_empty_minor_heap_domain (struct domain*);
+extern void caml_finish_marking_domain (struct domain*);
+
 static void stw_phase () {
   int i;
   int my_heaps = 0;
@@ -495,8 +499,8 @@ static void stw_phase () {
       /* GC some inactive domain that we locked */
       caml_gc_log("GCing inactive domain [%02d]", d->state.id);
       while (caml_sweep(d->state.shared_heap, 10) <= 0);
-      caml_do_sampled_roots(&caml_darken, &d->state);
-      caml_empty_mark_stack();
+      caml_empty_minor_heap_domain(&d->state);
+      caml_finish_marking_domain(&d->state);
     }
   }
 
