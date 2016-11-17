@@ -37,6 +37,9 @@ Next version (4.05.0):
 
 ### Standard library:
 
+- PR#6975, GPR#902: Truncate function added to stdlib Buffer module
+  (Dhruv Makwana, review by Alain Frisch and Gabriel Scherer)
+
 - GPR#760: Add a functions List.compare_lengths and
   List.compare_length_with to avoid full list length computations
   (Fabrice Le Fessant)
