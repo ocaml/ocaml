@@ -37,6 +37,9 @@ Next version (4.05.0):
 
 ### Standard library:
 
+- PR#6975, GPR#902: Truncate function added to stdlib Buffer module
+  (Dhruv Makwana, review by Alain Frisch and Gabriel Scherer)
+
 - GPR#760: Add a functions List.compare_lengths and
   List.compare_length_with to avoid full list length computations
   (Fabrice Le Fessant)
@@ -53,9 +56,6 @@ Next version (4.05.0):
   satisfying a monotonic predicate.
   (Gabriel de Perthuis, with contributions from Alain Frisch, review by
   Hezekiah M. Carty and Simon Cruanes, initial report by Gerd Stolpmann)
-
-- MPR#6975: Truncate function added to stdlib Buffer module
-  (Dhruv Makwana, review by Alain Frisch and Gabriel Scherer)
 
 ### Other libraries:
 
