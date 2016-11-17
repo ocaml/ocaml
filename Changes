@@ -57,6 +57,13 @@ Next version (4.05.0):
   (Gabriel de Perthuis, with contributions from Alain Frisch, review by
   Hezekiah M. Carty and Simon Cruanes, initial report by Gerd Stolpmann)
 
+### Manual and documentation:
+
+- add a HACKING.adoc file to contain various tips and tricks for
+  people hacking on the repository. See also CONTRIBUTING.md for
+  advice on sending contributions upstream.
+  (Gabriel Scherer and Gabriel Radanne, inspired by John Whitington)
+
 ### Other libraries:
 
 - MPR#7339, GPR#787: Support the '0 dimension' case for bigarrays
