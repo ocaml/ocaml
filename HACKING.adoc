@@ -61,3 +61,38 @@ https://github.com/gasche/opam-compiler-conf[`opam-compiler-conf`] can
 be used to easily build opam switches out of a git branch of the
 compiler distribution. This lets you easily install and test opam
 packages from an under-modification compiler version.
+
+== INRIA's Continuous Integration (CI)
+
+INRIA provides a Jenkins continuous integration service that OCaml
+uses, see link:https://ci.inria.fr/ocaml/[]. It provides a wider
+architecture support (MSVC and MingW, a zsystems s390x machine, and
+various MacOS versions) than the Travis/AppVeyor testing on github,
+but only runs on commits to the trunk or release branch, not on every
+PR.
+
+You do not need to be an INRIA employee to open account on this travis
+service; anyone can create an account there to access build logs,
+enable email notifications, and manually restart builds. If you would
+like to do this but have trouble doing it, you may contact Damien
+Doligez or Gabriel Scherer.
+
+== Running INRIA's CI on a github Pull Request (PR)
+
+If you have suspicions that a PR may fail on exotic architectures
+(it touches the build system or the backend code generator,
+for example) and would like to get wider testing than github's CI
+provides, it is possible to manually start INRIA's CI on arbitrary git
+branches by pushing to a `precheck` branch of the main repository.
+
+This is done by pushing to a specific github repository that the CI
+watches, namely
+link:https://github.com/ocaml/precheck[ocaml/precheck]. You thus need
+to have write/push/commit access to this repository to perform this operation.
+
+Just checkout the commit/branch you want to test, then run
+
+ git push --force git@github.com:ocaml/precheck.git HEAD:trunk
+
+(This is the syntax to push the current `HEAD` state into the `trunk`
+reference on the specified remote.)
