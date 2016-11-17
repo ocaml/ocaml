@@ -46,9 +46,9 @@ CAMLprim value unix_lockf(value fd, value cmd, value span)
     break;
   case 1: /* F_LOCK */
     l.l_type = F_WRLCK;
-    enter_blocking_section();
+    caml_enter_blocking_section();
     ret = fcntl(fildes, F_SETLKW, &l);
-    leave_blocking_section();
+    caml_leave_blocking_section();
     break;
   case 2: /* F_TLOCK */
     l.l_type = F_WRLCK;
@@ -68,9 +68,9 @@ CAMLprim value unix_lockf(value fd, value cmd, value span)
     break;
   case 4: /* F_RLOCK */
     l.l_type = F_RDLCK;
-    enter_blocking_section();
+    caml_enter_blocking_section();
     ret = fcntl(fildes, F_SETLKW, &l);
-    leave_blocking_section();
+    caml_leave_blocking_section();
     break;
   case 5: /* F_TRLOCK */
     l.l_type = F_RDLCK;

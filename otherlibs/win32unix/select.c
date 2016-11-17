@@ -922,7 +922,7 @@ static value find_handle(LPSELECTRESULT iterResult, value readfds,
   }
 
   if (list == Val_unit)
-    failwith ("select.c: original file handle not found");
+    caml_failwith ("select.c: original file handle not found");
 
   result = Field(list, 0);
 
@@ -963,7 +963,7 @@ static value fdset_to_fdlist(value fdlist, fd_set *fdset)
     for (/*nothing*/; fdlist != Val_int(0); fdlist = Field(fdlist, 1)) {
       value s = Field(fdlist, 0);
       if (FD_ISSET(Socket_val(s), fdset)) {
-        value newres = alloc_small(2, 0);
+        value newres = caml_alloc_small(2, 0);
         Field(newres, 0) = s;
         Field(newres, 1) = res;
         res = newres;
@@ -1031,9 +1031,9 @@ CAMLprim value unix_select(value readfds, value writefds, value exceptfds,
       && exceptfds == Val_int(0)) {
     DEBUG_PRINT("nothing to do");
     if ( tm > 0.0 ) {
-      enter_blocking_section();
+      caml_enter_blocking_section();
       Sleep( (int)(tm * 1000));
-      leave_blocking_section();
+      caml_leave_blocking_section();
     }
     read_list = write_list = except_list = Val_int(0);
   } else {
@@ -1048,12 +1048,12 @@ CAMLprim value unix_select(value readfds, value writefds, value exceptfds,
         tv.tv_usec = (int) (1e6 * (tm - (int) tm));
         tvp = &tv;
       }
-      enter_blocking_section();
+      caml_enter_blocking_section();
       if (select(FD_SETSIZE, &read, &write, &except, tvp) == -1) {
         err = WSAGetLastError();
         DEBUG_PRINT("Error %ld occurred", err);
       }
-      leave_blocking_section();
+      caml_leave_blocking_section();
       if (err) {
         DEBUG_PRINT("Error %ld occurred", err);
         win32_maperr(err);
@@ -1189,7 +1189,7 @@ CAMLprim value unix_select(value readfds, value writefds, value exceptfds,
       DEBUG_PRINT("Need to watch %d workers", nEventsCount);
 
       /* Processing select itself */
-      enter_blocking_section();
+      caml_enter_blocking_section();
       /* There are worker started, waiting to be monitored */
       if (nEventsCount > 0)
         {
@@ -1244,7 +1244,7 @@ CAMLprim value unix_select(value readfds, value writefds, value exceptfds,
         {
           Sleep(milliseconds);
         }
-      leave_blocking_section();
+      caml_leave_blocking_section();
 
       DEBUG_PRINT("Error status: %d (0 is ok)", err);
       /* Build results */
@@ -1261,7 +1261,7 @@ CAMLprim value unix_select(value readfds, value writefds, value exceptfds,
               for (i = 0; i < iterSelectData->nResultsCount; i++)
                 {
                   iterResult = &(iterSelectData->aResults[i]);
-                  l = alloc_small(2, 0);
+                  l = caml_alloc_small(2, 0);
                   Store_field(l, 0, find_handle(iterResult, readfds, writefds,
                                                 exceptfds));
                   switch (iterResult->EMode)
@@ -1315,7 +1315,7 @@ CAMLprim value unix_select(value readfds, value writefds, value exceptfds,
   }
 
   DEBUG_PRINT("Build final result");
-  res = alloc_small(3, 0);
+  res = caml_alloc_small(3, 0);
   Store_field(res, 0, read_list);
   Store_field(res, 1, write_list);
   Store_field(res, 2, except_list);

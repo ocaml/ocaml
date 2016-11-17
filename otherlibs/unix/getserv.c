@@ -35,10 +35,10 @@ static value alloc_service_entry(struct servent *entry)
   value name = Val_unit, aliases = Val_unit, proto = Val_unit;
 
   Begin_roots3 (name, aliases, proto);
-    name = copy_string(entry->s_name);
-    aliases = copy_string_array((const char**)entry->s_aliases);
-    proto = copy_string(entry->s_proto);
-    res = alloc_small(4, 0);
+    name = caml_copy_string(entry->s_name);
+    aliases = caml_copy_string_array((const char**)entry->s_aliases);
+    proto = caml_copy_string(entry->s_proto);
+    res = caml_alloc_small(4, 0);
     Field(res,0) = name;
     Field(res,1) = aliases;
     Field(res,2) = Val_int(ntohs(entry->s_port));
@@ -51,18 +51,18 @@ CAMLprim value unix_getservbyname(value name, value proto)
 {
   struct servent * entry;
   if (! (caml_string_is_c_safe(name) && caml_string_is_c_safe(proto)))
-    raise_not_found();
+    caml_raise_not_found();
   entry = getservbyname(String_val(name), String_val(proto));
-  if (entry == (struct servent *) NULL) raise_not_found();
+  if (entry == (struct servent *) NULL) caml_raise_not_found();
   return alloc_service_entry(entry);
 }
 
 CAMLprim value unix_getservbyport(value port, value proto)
 {
   struct servent * entry;
-  if (! caml_string_is_c_safe(proto)) raise_not_found();
+  if (! caml_string_is_c_safe(proto)) caml_raise_not_found();
   entry = getservbyport(htons(Int_val(port)), String_val(proto));
-  if (entry == (struct servent *) NULL) raise_not_found();
+  if (entry == (struct servent *) NULL) caml_raise_not_found();
   return alloc_service_entry(entry);
 }
 

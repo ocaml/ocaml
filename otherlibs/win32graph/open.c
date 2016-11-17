@@ -359,11 +359,11 @@ void gr_fail(char *fmt, char *arg)
   if (graphic_failure_exn == NULL) {
     graphic_failure_exn = caml_named_value("Graphics.Graphic_failure");
     if (graphic_failure_exn == NULL)
-      invalid_argument("Exception Graphics.Graphic_failure not initialized, "
+      caml_invalid_argument("Exception Graphics.Graphic_failure not initialized, "
                        "must link graphics.cma");
   }
   sprintf(buffer, fmt, arg);
-  raise_with_string(*graphic_failure_exn, buffer);
+  caml_raise_with_string(*graphic_failure_exn, buffer);
 }
 
 void gr_check_open(void)

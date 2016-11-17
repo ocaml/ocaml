@@ -101,7 +101,7 @@ SAFE_STRING=false
 BYTECC=$(TOOLPREF)gcc -O -mms-bitfields
 
 ### Additional compile-time options for $(BYTECC).  (For static linking.)
-BYTECCCOMPOPTS=-Wall -Wno-unused
+BYTECCCOMPOPTS=-DCAML_NAME_SPACE -Wall -Wno-unused
 
 ### Additional link-time options for $(BYTECC).  (For static linking.)
 BYTECCLINKOPTS=
@@ -168,7 +168,7 @@ SYSTEM=mingw
 NATIVECC=$(BYTECC)
 
 ### Additional compile-time options for $(NATIVECC).
-NATIVECCCOMPOPTS=-Wall -Wno-unused
+NATIVECCCOMPOPTS=-DCAML_NAME_SPACE -Wall -Wno-unused
 
 ### Additional link-time options for $(NATIVECC)
 NATIVECCLINKOPTS=

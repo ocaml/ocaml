@@ -24,7 +24,7 @@
 
 CAMLprim value unix_inet_addr_of_string(value s)
 {
-  if (! caml_string_is_c_safe(s)) failwith("inet_addr_of_string");
+  if (! caml_string_is_c_safe(s)) caml_failwith("inet_addr_of_string");
 #if defined(HAS_IPV6)
 #ifdef _WIN32
  {
@@ -37,7 +37,7 @@ CAMLprim value unix_inet_addr_of_string(value s)
   hints.ai_family = AF_UNSPEC;
   hints.ai_flags = AI_NUMERICHOST;
   retcode = getaddrinfo(String_val(s), NULL, &hints, &res);
-  if (retcode != 0) failwith("inet_addr_of_string");
+  if (retcode != 0) caml_failwith("inet_addr_of_string");
   switch (res->ai_addr->sa_family) {
   case AF_INET:
     {
@@ -54,7 +54,7 @@ CAMLprim value unix_inet_addr_of_string(value s)
   default:
     {
       freeaddrinfo(res);
-      failwith("inet_addr_of_string");
+      caml_failwith("inet_addr_of_string");
     }
   }
   freeaddrinfo(res);
@@ -69,21 +69,21 @@ CAMLprim value unix_inet_addr_of_string(value s)
   else if (inet_pton(AF_INET6, String_val(s), &address6) > 0)
     return alloc_inet6_addr(&address6);
   else
-    failwith("inet_addr_of_string");
+    caml_failwith("inet_addr_of_string");
  }
 #endif
 #elif defined(HAS_INET_ATON)
  {
   struct in_addr address;
   if (inet_aton(String_val(s), &address) == 0)
-    failwith("inet_addr_of_string");
+    caml_failwith("inet_addr_of_string");
   return alloc_inet_addr(&address);
  }
 #else
  {
   struct in_addr address;
   address.s_addr = inet_addr(String_val(s));
-  if (address.s_addr == (uint32_t) -1) failwith("inet_addr_of_string");
+  if (address.s_addr == (uint32_t) -1) caml_failwith("inet_addr_of_string");
   return alloc_inet_addr(&address);
  }
 #endif

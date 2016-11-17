@@ -65,16 +65,16 @@ CAMLprim value unix_open(value path, value flags, value perm)
   char * p;
 
   caml_unix_check_path(path, "open");
-  cv_flags = convert_flag_list(flags, open_flag_table);
+  cv_flags = caml_convert_flag_list(flags, open_flag_table);
   p = caml_strdup(String_val(path));
   /* open on a named FIFO can block (PR#1533) */
-  enter_blocking_section();
+  caml_enter_blocking_section();
   fd = open(p, cv_flags, Int_val(perm));
-  leave_blocking_section();
-  stat_free(p);
+  caml_leave_blocking_section();
+  caml_stat_free(p);
   if (fd == -1) uerror("open", path);
 #if defined(NEED_CLOEXEC_EMULATION) && defined(FD_CLOEXEC)
-  if (convert_flag_list(flags, open_cloexec_table) != 0) {
+  if (caml_convert_flag_list(flags, open_cloexec_table) != 0) {
     int flags = fcntl(fd, F_GETFD, 0);
     if (flags == -1 ||
         fcntl(fd, F_SETFD, flags | FD_CLOEXEC) == -1)

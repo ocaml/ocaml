@@ -303,7 +303,7 @@ CAMLprim value unix_tcgetattr(value fd)
 
   if (tcgetattr(Int_val(fd), &terminal_status) == -1)
     uerror("tcgetattr", Nothing);
-  res = alloc_tuple(NFIELDS);
+  res = caml_alloc_tuple(NFIELDS);
   encode_terminal_status(&Field(res, 0));
   return res;
 }

@@ -31,9 +31,9 @@ static value alloc_proto_entry(struct protoent *entry)
   value name = Val_unit, aliases = Val_unit;
 
   Begin_roots2 (name, aliases);
-    name = copy_string(entry->p_name);
-    aliases = copy_string_array((const char**)entry->p_aliases);
-    res = alloc_small(3, 0);
+    name = caml_copy_string(entry->p_name);
+    aliases = caml_copy_string_array((const char**)entry->p_aliases);
+    res = caml_alloc_small(3, 0);
     Field(res,0) = name;
     Field(res,1) = aliases;
     Field(res,2) = Val_int(entry->p_proto);
@@ -44,9 +44,9 @@ static value alloc_proto_entry(struct protoent *entry)
 CAMLprim value unix_getprotobyname(value name)
 {
   struct protoent * entry;
-  if (! caml_string_is_c_safe(name)) raise_not_found();
+  if (! caml_string_is_c_safe(name)) caml_raise_not_found();
   entry = getprotobyname(String_val(name));
-  if (entry == (struct protoent *) NULL) raise_not_found();
+  if (entry == (struct protoent *) NULL) caml_raise_not_found();
   return alloc_proto_entry(entry);
 }
 
@@ -54,7 +54,7 @@ CAMLprim value unix_getprotobynumber(value proto)
 {
   struct protoent * entry;
   entry = getprotobynumber(Int_val(proto));
-  if (entry == (struct protoent *) NULL) raise_not_found();
+  if (entry == (struct protoent *) NULL) caml_raise_not_found();
   return alloc_proto_entry(entry);
 }
 
