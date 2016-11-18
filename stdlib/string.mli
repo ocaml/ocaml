@@ -201,16 +201,16 @@ val rindex_opt: string -> char -> int option
 
 val index_from : string -> int -> char -> int
 (** [String.index_from s i c] returns the index of the
-   first occurrence of character [c] in string [s] starting from position [i].
+    first occurrence of character [c] in string [s] at or after position [i].
    [String.index s c] is equivalent to [String.index_from s 0 c].
 
    Raise [Invalid_argument] if [i] is not a valid position in [s].
-   Raise [Not_found] if [c] does not occur in [s] starting from position [i]. *)
+   Raise [Not_found] if [c] does not occur in [s] at or after position [i]. *)
 
 val index_from_opt: string -> int -> char -> int option
 (** [String.index_from_opt s i c] returns the index of the
-    first occurrence of character [c] in string [s] starting from position [i]
-    or [None] if [c] does not occur in [s] starting from position [i].
+    first occurrence of character [c] in string [s] at or after position [i]
+    or [None] if [c] does not occur in [s] at or after position [i].
 
     [String.index_opt s c] is equivalent to [String.index_from_opt s 0 c].
     Raise [Invalid_argument] if [i] is not a valid position in [s].
@@ -220,17 +220,17 @@ val index_from_opt: string -> int -> char -> int option
 
 val rindex_from : string -> int -> char -> int
 (** [String.rindex_from s i c] returns the index of the
-   last occurrence of character [c] in string [s] before position [i+1].
+   last occurrence of character [c] in string [s] at or before position [i].
    [String.rindex s c] is equivalent to
    [String.rindex_from s (String.length s - 1) c].
 
    Raise [Invalid_argument] if [i] is not a valid position in [s].
-   Raise [Not_found] if [c] does not occur in [s] before position [i+1]. *)
+   Raise [Not_found] if [c] does not occur in [s] at or before position [i]. *)
 
 val rindex_from_opt: string -> int -> char -> int option
 (** [String.rindex_from_opt s i c] returns the index of the
-   last occurrence of character [c] in string [s] before position [i+1]
-   or [None] if [c] does not occur in [s] before position [i+1].
+   last occurrence of character [c] in string [s] at or before position [i]
+   or [None] if [c] does not occur in [s] at or before position [i].
 
    [String.rindex_opt s c] is equivalent to
    [String.rindex_from_opt s (String.length s - 1) c].
