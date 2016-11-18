@@ -1,9 +1,151 @@
+= Hacking the compiler 🐫
+
 This document is a work-in-progress attempt to provide useful
 information for people willing to inspect or modify the compiler
 distribution's codebase. Feel free to improve it by sending change
 proposals for it.
 
-== Contents
+=== Your first compiler modification
+
+0. Create a new git branch to store your changes.
++
+----
+git checkout -b my-modification
+----
+
+1. Install https://github.com/gasche/opam-compiler-conf[opam-compiler-conf].
+
+2. Consult link:INSTALL.adoc[] for build instructions. Here is the gist of it:
++
+----
+opam compiler-conf configure
+make world.opt
+----
+
+3. Try the newly built compiler binaries `ocamlc`, `ocamlopt` or their
+`.opt` version. To try the toplevel, use:
++
+----
+make runtop
+----
+
+4. Hack frenetically and keep rebuilding.
+
+5. Run the testsuite from time to time.
++
+----
+make tests
+----
+
+5. Install in a new opam switch to try things out:
++
+----
+opam compiler-conf install
+----
+
+6. You did it, Well done! Consult link:CONTRIBUTING.md[] to send your contribution upstream.
+
+See our <<Development tips and tricks>> for various helpful details.
+
+=== What to do
+
+There is always a lot of potential tasks, both for old and
+newcomers. Here are various potential projects:
+
+* http://caml.inria.fr/mantis/view_all_bug_page.php[The OCaml
+  bugtracker] contains reported bugs and feature requests. Some
+  changes that should be accessible to newcomers are marked with the
+  tag
+  http://caml.inria.fr/mantis/search.php?project_id=1&sticky_issues=1&sortby=last_updated&dir=DESC&highlight_changed=24&hide_status_id=90&tag_string=junior_job[junior_job].
+
+* The
+  https://github.com/ocamllabs/compiler-hacking/wiki/Things-to-work-on[OCaml
+  Labs compiler-hacking wiki] contains various ideas of changes to
+  propose, some easy, some requiring sensibly more work.
+
+* Documentation improvements are always most appreciated, either in
+  the various mli files or in the official manual
+  (See link:manual/README.md[]). If you invest effort in understanding
+  a part of the codebase, submitting a pull request that adds
+  clarifying comment can be an excellent contribution to help future
+  you and your peers.
+
+* The https://github.com/ocaml/ocaml[github project] contains a lot of
+  pull requests, many of them being in dire need of a review -- we
+  have more people willing to contribute changes than to review
+  someone else's change. Picking one of them, trying to understand the
+  code (looking at the code around it) and asking questions about what
+  you don't understand or what feels odd is super-useful. It helps the
+  contribution process, and it is also an excellent way to get to know
+  various parts of the compiler from the angle of a specific aspect or
+  feature.
+
+  Again, reviewing small or medium-sized pull requests is accessible
+  to anyone with OCaml programming experience, and helps maintainers
+  and other contributors. If you also submit pull requets yourself,
+  a good discipline to follow is to review at least as many pull
+  requests as you submit.
+
+== Structure of the compiler
+
+The compiler code base can be intimidating at first sight. Here are a few pointers to get started.
+
+=== Compilation pipeline
+
+==== The driver -- link:driver/[]
+
+==== The frontend -- link:parsing/[] and link:typing/[]
+
+The frontend handles parsing and typing of the OCaml code. It also contains various utilities needed for the later phases of the compiler. Most modules are self contained and straightforward.
+
+link:parsing/parsetree.mli[Parsetree] and link:parsing/asttypes.mli[Asttypes]:: Parsetree is an AST of the surface language of OCaml. It is well annotated with examples and is a mandatory read before any further exploration of the compiler.
+
+link:parsing/location.mli[Location]:: This module contains utilities related to locations and error handling. In particular, it contains handler that are used for all the error reporting in the compiler.
+
+==== The typechecker -- link:typing/[]
+
+The implementation of the OCaml typechecker is complex. Modifying it will need a good understanding of the OCaml type system and type inference. Here is a reading list to ease your discovery of the typechecker:
+
+http://caml.inria.fr/pub/docs/u3-ocaml/index.html[Using, Understanding, and Unraveling the OCaml Language by Didier Rémy] :: This book provides (among other things) a formal description of parts of the core OCaml language, starting by a simple Core ML.
+
+http://okmij.org/ftp/ML/generalization.html[Efficient and Insightful Generalization by Oleg Kiselyov] :: This article describes the basis of the algorithm used by the OCaml type checker.
+
+After that, the best is to dive right in. There is no real "entry point", but understanding of both the parsetree and the typedtree is necessary.
+
+The datastructures ::
+link:typing/types.mli[Types] and link:typing/typedtree.mli[Typedtree] are the two main datastructures in the typechecker. They correspond to the surface language annotated with all the information needed for type checking and type inference. link:typing/env.mli[Env] contains all the environments that are used in the typechecker. Each node in the typedtree is annotated with the local environment.
+
+Core utilities ::
+link:typing/btype.mli[Btype] and link:typing/ctype.mli[Ctype] contains the various low-level function needed for typing, in particular related to levels, unification and backtracking. link:typing/mtype.mli[Mtype] contains utilities related to modules.
+
+Inference and checking::
+The `Type..` modules are related to inference and typechecking, each for a different part of the language: link:typing/typetexp.mli[Typetexp] for type expressions, link:typing/typecore.mli[Typecore] for the core language, link:typing/typecore.mli[Typemod] for modules, link:typing/typedecl.mli[Typedecl] for type declarations and finally link:typeclass.mli[Typeclass] for the object system.
+
+Inclusion/Module subtyping::
+Handling of inclusion relations are separated in the `Include...` modules: link:typing/includecore.ml[Includecore] for the type and value declarations, link:typing/includemod.mli[Includemod] for modules and finally link:typing/includeclass.mli[Includeclass] for the object system.
+
+Note on dependencies between modules::
+Most of the modules presented above are inter-dependent with each other. Since OCaml prevents circular dependencies between files, the implementation uses forward declarations, implemented with references to functions that are filled later on. An example can be seen in link:typing/typecore.mli[Typecore.type_module], which is filled in  link:typing/typecore.mli[Typemod].
+
+==== The bytecode compiler -- link:bytecomp/[]
+
+==== The native compiler -- link:middle_end/[] and link:asmcomp/[]
+
+=== Runtime system
+
+=== Libraries
+
+link:stdlib/[]:: The standard library. Each file is mostly independent and should not need further knowledge.
+
+link:otherlibs/[]:: External libraries such as `unix`, `threads`, `dynlink`, `str` and `bigarray`.
+
+=== Tools
+
+link:lex/[]:: The `ocamllex` lexer generator.
+
+link:yacc/[]:: The `ocamlyacc` parser generator. Please consider contributing to link:http://gallium.inria.fr/~fpottier/menhir/[menhir] instead.
+
+=== Complete file listing
 
   Changes::               what's new with each release
   configure::             configure script
@@ -45,16 +187,9 @@ proposals for it.
   utils/::                utility libraries
   yacc/::                 parser generator
 
-== Useful Makefile targets
+== Development tips and tricks
 
-Besides the targets listed in link:INSTALL.adoc for build and
-installation, the following targets may be of use:
-
-  make runtop::           builds and runs the ocaml toplevel of the distribution
-                          (optionally uses `rlwrap` for readline+history support)
-  make natruntop::        builds and runs the native ocaml toplevel (experimental)
-
-== opam compiler script
+=== opam compiler script
 
 The separately-distributed script
 https://github.com/gasche/opam-compiler-conf[`opam-compiler-conf`] can
@@ -62,7 +197,29 @@ be used to easily build opam switches out of a git branch of the
 compiler distribution. This lets you easily install and test opam
 packages from an under-modification compiler version.
 
-== INRIA's Continuous Integration (CI)
+=== Useful Makefile targets
+
+Besides the targets listed in link:INSTALL.adoc[] for build and
+installation, the following targets may be of use:
+
+`make runtop` :: builds and runs the ocaml toplevel of the distribution
+                          (optionally uses `rlwrap` for readline+history support)
+`make natruntop`:: builds and runs the native ocaml toplevel (experimental)
+
+`make partialclean`:: Clean the OCaml files but keep the compiled C files.
+
+`make depend`:: Regenerate the `.depend` file. Should be used each time new dependencies are added between files.
+
+=== Bootstrapping
+
+The OCaml compiler is bootstrapped. This means that a previous version of the OCaml compiler (along with various tools and a compiled version of the standard library) is included in the repository under the link:boot/[] directory.
+Details can be found in link:INSTALL.adoc#bootstrap[INSTALL.adoc].
+
+=== Continuous integration
+
+==== Github's CI: Travis and AppVeyor
+
+==== INRIA's Continuous Integration (CI)
 
 INRIA provides a Jenkins continuous integration service that OCaml
 uses, see link:https://ci.inria.fr/ocaml/[]. It provides a wider
@@ -77,7 +234,7 @@ enable email notifications, and manually restart builds. If you would
 like to do this but have trouble doing it, you may contact Damien
 Doligez or Gabriel Scherer.
 
-== Running INRIA's CI on a github Pull Request (PR)
+==== Running INRIA's CI on a github Pull Request (PR)
 
 If you have suspicions that a PR may fail on exotic architectures
 (it touches the build system or the backend code generator,
