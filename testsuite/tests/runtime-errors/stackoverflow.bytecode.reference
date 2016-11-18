@@ -2,3 +2,4 @@ x = 20000
 x = 10000
 x = 0
 Stack overflow caught
+sum(1..100000) = 5000050000
