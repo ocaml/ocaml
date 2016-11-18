@@ -1,4 +1,4 @@
-= Installing OCaml on a Unix(-like) machine =
+= Installing OCaml from sources on a Unix(-like) machine =
 
 == PREREQUISITES
 

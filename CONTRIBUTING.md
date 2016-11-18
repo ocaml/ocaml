@@ -7,9 +7,17 @@ OCaml distribution. These are just guidelines, not rules, use your
 best judgment and feel free to propose changes to this document itself
 in a pull request.
 
+This document assumes that you already have a patch against the
+compiler distribution sources that you wish to submit to the OCaml
+maintainers upstream. If you are looking for a document on how to
+build the compiler distribution from sources and install it, see
+[INSTALL.adoc](INSTALL.adoc) instead. If you are looking for
+a document on how to hack on the compiler distribution sources, see
+[HACKING.adoc](HACKING.adoc) instead.
+
 ## Contribution
 
-Adding or modifying code is far from the only way to contribute to the
+Modifying its sources is far from the only way to contribute to the
 OCaml distribution. Bug reports (in particular when they come with
 a reproducible example), simple typos or clarifications in the
 documentation also help, and help evaluating and integrating existing
@@ -18,8 +26,8 @@ forums, or asking the good questions that highlight deficiencies in
 existing documentations, also help. We currently have more
 contributors willing to propose changes than contributors willing to
 review other people's changes, so more eyes on the existing change
-requests is a good way to increase the integration bandwidth of external
-contributions.
+requests is a good way to increase the integration bandwidth of
+external contributions.
 
 There are also many valuable ways to contribute to the wider OCaml
 ecosystem that do not involve changes to the OCaml distribution.
@@ -152,7 +160,7 @@ of the OCaml distribution.
 
 ### Changelog
 
-Any user-visible change should have a Changelog entry:
+Any user-visible change should have a `Changes` entry:
 
 - in the right section (named sections if major feature, generic
   "Bug fixes" and "Feature requests" otherwise)
