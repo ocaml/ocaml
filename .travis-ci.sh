@@ -18,10 +18,17 @@
 #esac
 
 case $XARCH in
-x86_64|i386)
+i386)
   ./configure
   make world
+	make -C testsuite one DIR=tests/effects
   ;;
+x86_64)
+	./configure
+	make world
+	make world.opt
+	make -C testsuite one DIR=tests/effects
+	;;
 *)
   echo unknown arch
   exit 1
