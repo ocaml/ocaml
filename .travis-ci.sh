@@ -21,7 +21,6 @@ case $XARCH in
 i386)
   ./configure
   make world
-	make -C testsuite one DIR=tests/effects
   ;;
 x86_64)
 	./configure
