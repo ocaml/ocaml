@@ -7,6 +7,9 @@ Next version (4.05.0):
 
 ### Code generation and optimizations:
 
+- GPR#632: Simplify no-op matches on integers to the identity function.
+  (Stefan Muenzel, tests by Pierre Chambart)
+
 ### Runtime system:
 
 ### Type system:
