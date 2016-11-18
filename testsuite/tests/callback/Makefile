@@ -23,30 +23,33 @@ default:
 	              $(SET_LD_PATH) $(MAKE) run-opt;; \
 	esac
 
-.PHONY: common
-common:
-	@$(CC) -c callbackprim.c
 
 .PHONY: run-byte
-run-byte: common
-	@printf " ... testing 'bytecode':"
-	@$(OCAMLC) $(COMPFLAGS) -c tcallback.ml
-	@$(OCAMLC) $(COMPFLAGS) -o ./program$(EXE) -custom unix.cma \
-	           callbackprim.$(O) tcallback.cmo
-	@./program$(EXE) >bytecode.result
-	@$(DIFF) reference bytecode.result \
-	&& echo " => passed" || echo " => failed"
+run-byte: 
+	@echo " ... testing 'bytecode':"
+	@for f in *.ml; do \
+	  F=`basename $$f .ml`; \
+		$(CC) -c $$F.c; \
+		$(OCAMLC) $(COMPFLAGS) -c $$F.mli; \
+		$(OCAMLC) $(COMPFLAGS) -c $$F.ml; \
+		$(OCAMLC) $(COMPFLAGS) -o ./$$F.byte$(EXE) -custom unix.cma $$F.$(O) $$F.cmo; \
+		./$$F.byte$(EXE) > $$F.byte.result; \
+		$(DIFF) $$F.reference $$F.byte.result && echo " => passed" || echo " => failed"; \
+	done
 
 .PHONY: run-opt
-run-opt: common
+run-opt: 
 	@if $(BYTECODE_ONLY); then : ; else \
-	  printf " ... testing 'native':"; \
-	  $(OCAMLOPT) $(COMPFLAGS) -c tcallback.ml; \
-	  $(OCAMLOPT) $(COMPFLAGS) -o ./program$(EXE) unix.cmxa \
-	              callbackprim.$(O) tcallback.cmx; \
-	  ./program$(EXE) >native.result; \
-	  $(DIFF) reference native.result \
-	  && echo " => passed" || echo " => failed"; \
+		echo " ... testing 'nativecode':"; \
+		for f in *.ml; do \
+			F=`basename $$f .ml`; \
+			$(CC) -c $$F.c; \
+			mv $$F.$(O) $$F.c.$(O); \
+			$(OCAMLOPT) $(COMPFLAGS) -c $$F.mli; \
+			$(OCAMLOPT) $(COMPFLAGS) -o ./$$F.native$(EXE) unix.cmxa $$F.c.$(O) $$F.ml; \
+			./$$F.native$(EXE) > $$F.native.result; \
+			$(DIFF) $$F.reference $$F.native.result && echo " => passed" || echo " => failed"; \
+		done; \
 	fi
 
 .PHONY: promote
@@ -54,6 +57,6 @@ promote: defaultpromote
 
 .PHONY: clean
 clean: defaultclean
-	@rm -f *.result ./program$(EXE)
+	@rm -f *.result *.byte$(EXE) *.native$(EXE)
 
 include $(BASEDIR)/makefiles/Makefile.common

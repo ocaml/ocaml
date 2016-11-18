@@ -25,3 +25,10 @@ let _ =
     ignore(f 0)
   with Stack_overflow ->
     print_string "Stack overflow caught"; print_newline()
+
+let rec sum n = if n = 0 then 0 else n + sum (n-1)
+
+let _ = 
+  print_string "sum(1..100000) = ";
+  print_int (sum 100000);
+  print_newline()
