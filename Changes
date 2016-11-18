@@ -72,6 +72,9 @@ Next version (4.05.0):
 
 ### Compiler distribution build system:
 
+- GPR#927: improve the detection of hashbang support in the configure script
+  (Armaël Guéneau)
+
 - PR#7377: remove -std=gnu99 for newer gcc versions
   (Damien Doligez, report by ygrek)
 
