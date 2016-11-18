@@ -13,6 +13,8 @@
 /*                                                                        */
 /**************************************************************************/
 
+#define CAML_INTERNALS
+
 /* Operations on arrays */
 #include <string.h>
 #include "caml/alloc.h"
@@ -21,6 +23,10 @@
 #include "caml/misc.h"
 #include "caml/mlvalues.h"
 #include "caml/signals.h"
+/* Why is caml/spacetime.h included conditionnally sometimes and not here ? */
+#include "caml/spacetime.h"
+
+static const mlsize_t mlsize_t_max = -1;
 
 /* returns number of elements (either fields or floats) */
 CAMLexport mlsize_t caml_array_length(value array)
@@ -161,6 +167,7 @@ CAMLprim value caml_make_float_vect(value len)
 }
 
 /* [len] is a [value] representing number of words or floats */
+/* Spacetime profiling assumes that this function is only called from OCaml. */
 CAMLprim value caml_make_vect(value len, value init)
 {
   CAMLparam2 (len, init);
@@ -185,7 +192,9 @@ CAMLprim value caml_make_vect(value len, value init)
   } else {
     if (size > Max_wosize) caml_invalid_argument("Array.make");
     if (size <= Max_young_wosize) {
-      res = caml_alloc_small(size, 0);
+      uintnat profinfo;
+      Get_my_profinfo_with_cached_backtrace(profinfo, size);
+      res = caml_alloc_small_with_my_or_given_profinfo(size, 0, profinfo);
       for (i = 0; i < size; i++) Field(res, i) = init;
     }
     else if (Is_block(init) && Is_young(init)) {
@@ -307,6 +316,7 @@ static value caml_array_gather(intnat num_arrays,
   size = 0;
   isfloat = 0;
   for (i = 0; i < num_arrays; i++) {
+    if (mlsize_t_max - lengths[i] < size) caml_invalid_argument("Array.concat");
     size += lengths[i];
     if (Tag_val(arrays[i]) == Double_array_tag) isfloat = 1;
   }
@@ -316,8 +326,8 @@ static value caml_array_gather(intnat num_arrays,
   }
   else if (isfloat) {
     /* This is an array of floats.  We can use memcpy directly. */
+    if (size > Max_wosize/Double_wosize) caml_invalid_argument("Array.concat");
     wsize = size * Double_wosize;
-    if (wsize > Max_wosize) caml_invalid_argument("Array.concat");
     res = caml_alloc(wsize, Double_array_tag);
     for (i = 0, pos = 0; i < num_arrays; i++) {
       memcpy((double *)res + pos,

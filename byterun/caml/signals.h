@@ -26,18 +26,13 @@
 extern "C" {
 #endif
 
-/* <private> */
+#ifdef CAML_INTERNALS
 CAMLextern intnat volatile caml_signals_are_pending;
 CAMLextern intnat volatile caml_pending_signals[];
 CAMLextern int volatile caml_something_to_do;
 extern int volatile caml_requested_major_slice;
 extern int volatile caml_requested_minor_gc;
-/* </private> */
 
-CAMLextern void caml_enter_blocking_section (void);
-CAMLextern void caml_leave_blocking_section (void);
-
-/* <private> */
 void caml_request_major_slice (void);
 void caml_request_minor_gc (void);
 CAMLextern int caml_convert_signal_number (int);
@@ -52,7 +47,10 @@ CAMLextern void (*caml_enter_blocking_section_hook)(void);
 CAMLextern void (*caml_leave_blocking_section_hook)(void);
 CAMLextern int (*caml_try_leave_blocking_section_hook)(void);
 CAMLextern void (* volatile caml_async_action_hook)(void);
-/* </private> */
+#endif /* CAML_INTERNALS */
+
+CAMLextern void caml_enter_blocking_section (void);
+CAMLextern void caml_leave_blocking_section (void);
 
 #ifdef __cplusplus
 }

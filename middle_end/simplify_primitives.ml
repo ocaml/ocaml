@@ -71,6 +71,8 @@ let primitive (p : Lambda.primitive) (args, approxs) expr dbg ~size_int
       expr, approx, C.Benefit.zero
   | Pintcomp Ceq when phys_equal approxs ->
     S.const_bool_expr expr true
+  | Pintcomp Cneq when phys_equal approxs ->
+    S.const_bool_expr expr false
     (* N.B. Having [not (phys_equal approxs)] would not on its own tell us
        anything about whether the two values concerned are unequal.  To judge
        that, it would be necessary to prove that the approximations are
@@ -114,8 +116,8 @@ let primitive (p : Lambda.primitive) (args, approxs) expr dbg ~size_int
       | Paddint -> S.const_int_expr expr (x + y)
       | Psubint -> S.const_int_expr expr (x - y)
       | Pmulint -> S.const_int_expr expr (x * y)
-      | Pdivint when y <> 0 -> S.const_int_expr expr (x / y)
-      | Pmodint when y <> 0 -> S.const_int_expr expr (x mod y)
+      | Pdivint _ when y <> 0 -> S.const_int_expr expr (x / y)
+      | Pmodint _ when y <> 0 -> S.const_int_expr expr (x mod y)
       | Pandint -> S.const_int_expr expr (x land y)
       | Porint -> S.const_int_expr expr (x lor y)
       | Pxorint -> S.const_int_expr expr (x lxor y)
@@ -124,7 +126,11 @@ let primitive (p : Lambda.primitive) (args, approxs) expr dbg ~size_int
       | Pasrint when shift_precond -> S.const_int_expr expr (x asr y)
       | Pintcomp cmp -> S.const_comparison_expr expr cmp x y
       | Pisout -> S.const_bool_expr expr (y > x || y < 0)
-      (* [Psequand] and [Psequor] have special simplification rules, above. *)
+      | _ -> expr, A.value_unknown Other, C.Benefit.zero
+      end
+    | [Value_char x; Value_char y] ->
+      begin match p with
+      | Pintcomp cmp -> S.const_comparison_expr expr cmp x y
       | _ -> expr, A.value_unknown Other, C.Benefit.zero
       end
     | [Value_constptr x] ->
@@ -146,7 +152,8 @@ let primitive (p : Lambda.primitive) (args, approxs) expr dbg ~size_int
         | Ostype_unix -> S.const_bool_expr expr (Sys.os_type = "Unix")
         | Ostype_win32 -> S.const_bool_expr expr (Sys.os_type = "Win32")
         | Ostype_cygwin -> S.const_bool_expr expr (Sys.os_type = "Cygwin")
-        | Backend_type -> S.const_ptr_expr expr 0 (* tag 0 is the same as Native *)
+        | Backend_type ->
+          S.const_ptr_expr expr 0 (* tag 0 is the same as Native *)
         end
       | _ -> expr, A.value_unknown Other, C.Benefit.zero
       end
@@ -190,13 +197,17 @@ let primitive (p : Lambda.primitive) (args, approxs) expr dbg ~size_int
         ~size_int
     | [Value_block _] when p = Lambda.Pisint ->
       S.const_bool_expr expr false
-    | [Value_string { size }] when p = Lambda.Pstringlength ->
+    | [Value_string { size }]
+      when (p = Lambda.Pstringlength || p = Lambda.Pbyteslength) ->
       S.const_int_expr expr size
     | [Value_string { size; contents = Some s };
        (Value_int x | Value_constptr x)] when x >= 0 && x < size ->
         begin match p with
         | Pstringrefu
-        | Pstringrefs -> S.const_char_expr expr s.[x]
+        | Pstringrefs
+        | Pbytesrefu
+        | Pbytesrefs ->
+          S.const_char_expr (Prim(Pstringrefu, args, dbg)) s.[x]
         | _ -> expr, A.value_unknown Other, C.Benefit.zero
         end
     | [Value_string { size; contents = None };
@@ -206,6 +217,14 @@ let primitive (p : Lambda.primitive) (args, approxs) expr dbg ~size_int
           A.value_unknown Other,
           (* we improved it, but there is no way to account for that: *)
           C.Benefit.zero
+    | [Value_string { size; contents = None };
+       (Value_int x | Value_constptr x)]
+      when x >= 0 && x < size && p = Lambda.Pbytesrefs ->
+        Flambda.Prim (Pbytesrefu, args, dbg),
+          A.value_unknown Other,
+          (* we improved it, but there is no way to account for that: *)
+          C.Benefit.zero
+
     | [Value_float_array { size; contents }] ->
         begin match p with
         | Parraylength _ -> S.const_int_expr expr size

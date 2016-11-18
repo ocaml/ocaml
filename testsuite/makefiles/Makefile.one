@@ -74,7 +74,8 @@ run:
 	 fi \
 	&& if $(BYTECODE_ONLY); then : ; else \
 	     printf " ocamlopt"; \
-	     FLAMBDA=$(FLAMBDA) ./program.native$(EXE) $(EXEC_ARGS) > $(MAIN_MODULE).result \
+	     FLAMBDA=$(FLAMBDA) ./program.native$(EXE) $(EXEC_ARGS) \
+	                             > $(MAIN_MODULE).result \
 	     && $(DIFF) $(MAIN_MODULE).reference $(MAIN_MODULE).result \
 	                >/dev/null; \
 	   fi \

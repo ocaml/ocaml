@@ -90,15 +90,6 @@ module Stdlib : sig
     val fold : ('a -> 'b -> 'b) -> 'a t -> 'b -> 'b
     val value_default : ('a -> 'b) -> default:'b -> 'a t -> 'b
   end
-
-  module String : sig
-    type t = string
-
-    val split : t -> on:char -> t list
-    (** Splits the given string at every occurrence of the given separator.
-        Does not return empty substrings when the separator is repeated or
-        present at the start or end of the string. *)
-  end
 end
 
 val find_in_path: string list -> string -> string
@@ -154,10 +145,6 @@ module Int_literal_converter : sig
   val int64 : string -> int64
   val nativeint : string -> nativeint
 end
-
-val chop_extension_if_any: string -> string
-        (* Like Filename.chop_extension but returns the initial file
-           name if it has no extension *)
 
 val chop_extensions: string -> string
         (* Return the given file name without its extensions. The extensions
@@ -239,13 +226,6 @@ val did_you_mean : Format.formatter -> (unit -> string list) -> unit
     the failure even if producing the hint is slow.
 *)
 
-val split : string -> char -> string list
-(** [String.split string char] splits the string [string] at every char
-    [char], and returns the list of sub-strings between the chars.
-    [String.concat (String.make 1 c) (String.split s c)] is the identity.
-    @since 4.01
- *)
-
 val cut_at : string -> char -> string * string
 (** [String.cut_at s c] returns a pair containing the sub-string before
    the first occurrence of [c] in [s], and the sub-string after the
@@ -312,5 +292,42 @@ val normalise_eol : string -> string
    on a channel which performs EOL transformations (i.e. Windows) *)
 
 val delete_eol_spaces : string -> string
-(** [delete_eol_spaces s] returns a fresh copy of [s] with any end of line spaces
-   removed. Intended to normalize the output of the toplevel for tests. *)
+(** [delete_eol_spaces s] returns a fresh copy of [s] with any end of
+   line spaces removed. Intended to normalize the output of the
+   toplevel for tests. *)
+
+
+
+(** {2 Hook machinery} *)
+
+(* Hooks machinery:
+   [add_hook name f] will register a function that will be called on the
+    argument of a later call to [apply_hooks]. Hooks are applied in the
+    lexicographical order of their names.
+*)
+
+type hook_info = {
+  sourcefile : string;
+}
+
+exception HookExnWrapper of
+    {
+      error: exn;
+      hook_name: string;
+      hook_info: hook_info;
+    }
+    (** An exception raised by a hook will be wrapped into a
+        [HookExnWrapper] constructor by the hook machinery.  *)
+
+
+val raise_direct_hook_exn: exn -> 'a
+  (** A hook can use [raise_unwrapped_hook_exn] to raise an exception that will
+      not be wrapped into a [HookExnWrapper]. *)
+
+module type HookSig = sig
+  type t
+  val add_hook : string -> (hook_info -> t -> t) -> unit
+  val apply_hooks : hook_info -> t -> t
+end
+
+module MakeHooks : functor (M : sig type t end) -> HookSig with type t = M.t

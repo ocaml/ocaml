@@ -192,6 +192,12 @@ These files reside in the "caml/" subdirectory of the OCaml
 standard library directory, which is returned by the command
 "ocamlc -where" (usually "/usr/local/lib/ocaml" or "/usr/lib/ocaml").
 
+By default, header files in the "caml/" subdirectory give only access
+to the public interface of the OCaml runtime. It is possible to define
+the macro "CAML_INTERNALS" to get access to a lower-level interface,
+but this lower-level interface is more likely to change and break
+programs that use it.
+
 {\bf Note:} It is recommended to define the macro "CAML_NAME_SPACE"
 before including these header files. If you do not define it, the
 header files will also define short names (without the "caml_" prefix)
@@ -516,6 +522,7 @@ This section describes how OCaml data types are encoded in the
 \end{tableau}
 
 \subsection{Tuples and records}
+\label{ss:tuples-and-records}
 
 Tuples are represented by pointers to blocks, with tag~0.
 
@@ -528,6 +535,23 @@ to the second label goes in field~1, and so on.
 As an optimization, records whose fields all have static type "float"
 are represented as arrays of floating-point numbers, with tag
 "Double_array_tag". (See the section below on arrays.)
+
+As another optimization, unboxable record types are represented
+specially; unboxable record types are the immutable record types that
+have only one field. An unboxable type will be represented in one of
+two ways: boxed or unboxed. Boxed record types are represented as
+described above (by a block with tag 0 or "Double_array_tag"). An
+unboxed record type is represented directly by the value of its field
+(i.e. there is no block to represent the record itself).
+
+The representation is chosen according to the following, in decreasing
+order of priority:
+\begin{itemize}
+\item An attribute ("[\@\@boxed]" or "[\@\@unboxed]") on the type declaration.
+\item A compiler option ("-unboxed-types" or "-no-unboxed-types").
+\item The default representation. In the present version of OCaml, the
+default is the boxed representation.
+\end{itemize}
 
 \subsection{Arrays}
 
@@ -576,6 +600,14 @@ type t =
   | D of bool     (* Second non-constant constructor -> block with tag 1 *)
   | E of t * t    (* Third non-constant constructor -> block with tag 2 *)
 \end{verbatim}
+
+
+As an optimization, unboxable concrete data types are represented
+specially; a concrete data type is unboxable if it has exactly one
+constructor and this constructor has exactly one argument. Unboxable
+concrete data types are represented in the same ways as unboxable
+record types: see the description in
+section~\ref{ss:tuples-and-records}.
 
 \subsection{Objects}
 
@@ -694,6 +726,13 @@ in the "int32" \var{v}.
 in the "int64" \var{v}.
 \item "Nativeint_val("\var{v}")" returns the long integer contained
 in the "nativeint" \var{v}.
+\item "caml_field_unboxed("\var{v}")" returns the value of the field
+of a value \var{v} of any unboxed type (record or concrete data type).
+\item "caml_field_boxed("\var{v}")" returns the value of the field
+of a value \var{v} of any boxed type (record or concrete data type).
+\item "caml_field_unboxable("\var{v}")" calls either
+"caml_field_unboxed" or "caml_field_boxed" according to the default
+representation of unboxable types in the current version of OCaml.
 \end{itemize}
 The expressions "Field("\var{v}", "\var{n}")",
 "Byte("\var{v}", "\var{n}")" and
@@ -748,7 +787,16 @@ an array of floating-point numbers.)
 \item
 "caml_copy_string_array("\var{p}")" allocates an array of strings or byte
 sequences, copied from the pointer to a string array \var{p}
-(a \verb"char **").  \var{p} must be NULL-terminated.
+(a "char **").  \var{p} must be NULL-terminated.
+\item "caml_alloc_float_array("\var{n}")" allocates an array of floating point
+  numbers of size \var{n}. The array initially contains uninitialized values.
+\item "caml_alloc_unboxed("\var{v}")" returns the value (of any unboxed
+type) whose field is the value \var{v}.
+\item "caml_alloc_boxed("\var{v}")" allocates and returns a value  (of
+any boxed type) whose field is the value \var{v}.
+\item "caml_alloc_unboxable("\var{v}")" calls either
+"caml_alloc_unboxed" or "caml_alloc_boxed" according to the default
+representation of unboxable types in the current version of OCaml.
 \end{itemize}
 
 \subsubsection{Low-level interface}
@@ -831,7 +879,8 @@ All the macros described in this section are declared in the
 \begin{gcrule}
 A function that has parameters or local variables of type "value" must
 begin with a call to one of the "CAMLparam" macros and return with
-"CAMLreturn", "CAMLreturn0", or "CAMLreturnT".
+"CAMLreturn", "CAMLreturn0", or "CAMLreturnT". In particular, "CAMLlocal"
+and "CAMLxparam" can only be called \emph{after} "CAMLparam".
 \end{gcrule}
 
 There are six "CAMLparam" macros: "CAMLparam0" to "CAMLparam5", which

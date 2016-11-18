@@ -266,7 +266,7 @@ val equal_boxed_int : 'a boxed_int -> 'a -> 'b boxed_int -> 'b -> bool
 
 (* CR-soon mshinwell for pchambart: Add comment describing semantics.  (Maybe
    we should move the comment from the .ml file into here.) *)
-val meet : t -> t -> t
+val meet : really_import_approx:(t -> t) -> t -> t -> t
 
 (** An approximation is "known" iff it is not [Value_unknown]. *)
 val known : t -> bool
@@ -409,3 +409,15 @@ val check_approx_for_float : t -> float option
 
 (** Returns the value if it can be proved to be a constant float array *)
 val float_array_as_constant : value_float_array -> float list option
+
+(** Returns the value if it can be proved to be a constant string *)
+val check_approx_for_string : t -> string option
+
+type switch_branch_selection =
+  | Cannot_be_taken
+  | Can_be_taken
+  | Must_be_taken
+
+(** Check that the branch is compatible with the approximation *)
+val potentially_taken_const_switch_branch : t -> int -> switch_branch_selection
+val potentially_taken_block_switch_branch : t -> int -> switch_branch_selection

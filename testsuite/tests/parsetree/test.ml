@@ -72,7 +72,7 @@ let test parse_fun pprint print map filename =
             let cmd = Printf.sprintf "diff -u %s %s"
                 (Filename.quote f1) (Filename.quote f2) in
             let _ret = Sys.command cmd in
-            print_endline "====================================================="
+            print_endline"====================================================="
           end
 
 let test parse_fun pprint print map filename =

@@ -456,6 +456,15 @@ See
 .IR "The OCaml user's manual" ,
 chapter "Native-code compilation" for more details.
 .TP
+.BI \-plugin \ plugin
+Dynamically load the code of the given
+.I plugin
+(a .cmo, .cma or .cmxs file) in the compiler. The plugin must exist in
+the same kind of code as the compiler (ocamlopt.byte must load bytecode
+plugins, while ocamlopt.opt must load native code plugins), and
+extension adaptation is done automatically for .cma files (to .cmxs files
+if the compiler is compiled in native code).
+.TP
 .BI \-pp \ command
 Cause the compiler to call the given
 .I command
@@ -539,6 +548,17 @@ Compile or link multithreaded programs, in combination with the
 system threads library described in
 .IR "The OCaml user's manual" .
 .TP
+.B \-unboxed\-types
+When a type is unboxable (i.e. a record with a single argument or a
+concrete datatype with a single constructor of one argument) it will
+be unboxed unless annotated with
+.BR [@@ocaml.boxed] .
+.TP
+.B \-no-unboxed\-types
+When a type is unboxable  it will be boxed unless annotated with
+.BR [@@ocaml.unboxed] .
+This is the default.
+.TP
 .B \-unsafe
 Turn bound checking off for array and string accesses (the
 .BR v.(i) and s.[i]
@@ -606,8 +626,8 @@ compiling your program with later versions of OCaml when they add new
 warnings or modify existing warnings.
 
 The default setting is
-.B \-warn\-error \-a
-(all warnings are non-fatal).
+.B \-warn\-error \-a+31
+(only warning 31 is fatal).
 .TP
 .B \-warn\-help
 Show the description of all available warning numbers.

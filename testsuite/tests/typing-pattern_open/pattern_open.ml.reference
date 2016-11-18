@@ -41,7 +41,7 @@ module M : sig type c = C type t = { x : c box; } end
       end
     val print : unit -> unit
   end
-#                                   Right function print
+#                                         Right function print
 Right function print
 val eval : 't Exterior.Gadt.t -> 't = <fun>
 #               module Existential :

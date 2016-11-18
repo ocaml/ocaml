@@ -116,7 +116,7 @@ include Identifiable.Make (struct
     | Project_closure _, _ -> -1
     | _, Project_closure _ -> 1
     | Move_within_set_of_closures _, _ -> -1
-    | _, Move_within_set_of_closures _ -> -1
+    | _, Move_within_set_of_closures _ -> 1
 
   let equal t1 t2 =
     (compare t1 t2) = 0

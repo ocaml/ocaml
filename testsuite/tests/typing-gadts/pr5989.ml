@@ -23,7 +23,7 @@ type (_, _) t = Any : ('a, 'b) t | Eq : ('a, 'a) t
 module M : sig type s = private [> `A ] val eq : (s, [ `A | `B ]) t end
 Line _, characters 39-64:
 Warning 8: this pattern-matching is not exhaustive.
-Here is an example of a value that is not matched:
+Here is an example of a case that is not matched:
 Eq
 val f : (M.s, [ `A | `B ]) t -> string = <fun>
 Exception: Match_failure ("", 16, 39).
@@ -51,7 +51,7 @@ module N :
   end
 Line _, characters 49-74:
 Warning 8: this pattern-matching is not exhaustive.
-Here is an example of a value that is not matched:
+Here is an example of a case that is not matched:
 Eq
 val f : (N.s, < a : int; b : bool >) t -> string = <fun>
 |}];;

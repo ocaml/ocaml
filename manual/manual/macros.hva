@@ -5,20 +5,35 @@
 \newstyle{a:link}{color:\link@color;text-decoration:underline;}
 \newstyle{a:visited}{color:\visited@color;text-decoration:underline;}
 \newstyle{a:hover}{color:black;text-decoration:none;background-color:\hover@color}
+\externalcsstrue % needed due to hevea partial css handling
 %%%
 \newcommand{\input@color}{\htmlcolor{006000}}
 \newcommand{\output@color}{\maroon}
 \newcommand{\machine}{\tt}
 \newenvironment{machineenv}{\begin{alltt}}{\end{alltt}}
-\newcommand{\firstline}{\black\#\input@color\ }
+\newcommand{\firstline}{\ }
 \newcommand{\nextline}{\ \ }
 \newcommand{\@zyva}{\firstline\renewcommand{\?}{\nextline}}
 \newenvironment{camlunder}{\@style{U}}{}
 \newcommand{\caml}{\begin{alltt}\renewcommand{\;}{}\renewcommand{\\}{\char92}\def\<{\begin{camlunder}}\def\>{\end{camlunder}}\activebracefalse}
 \let\?=\@zyva
-\newcommand{\endcaml}{\activebracetrue\end{alltt}}
-\renewcommand{\:}{\renewcommand{\?}{\@zyva}\output@color}
+\newcommand{\endcaml}{\activebracetrue\end{alltt}
+}
+\renewcommand{\:}{\renewcommand{\?}{\@zyva}}
 \newcommand{\var}[1]{\textit{#1}}
+
+% Caml-example environment
+\newcommand{\camlexample}{\@open{div}{class="caml-example"}
+}
+\newcommand{\endcamlexample}{\@close{div}}
+\newcommand{\camlinput}{\@open{div}{class="caml-input"}}
+\newcommand{\endcamlinput}{\@close{div}}
+\newcommand{\camloutput}{\@open{div}{class="caml-output ok"}}
+\newcommand{\endcamloutput}{\@close{div}}
+\newcommand{\camlerror}{\@open{div}{class="caml-output error"}}
+\newcommand{\endcamlerror}{\@close{div}}
+\newcommand{\camlwarn}{\@open{div}{class="caml-output warn"}}
+\newcommand{\endcamlwarn}{\@close{div}}
 
 \newenvironment{library}{}{}
 \newcounter{page}

@@ -13,12 +13,16 @@
 /*                                                                        */
 /**************************************************************************/
 
+#define CAML_INTERNALS
+
 /* Handling of blocks of bytecode (endianness switch, threading). */
 
 #include "caml/config.h"
 
 #ifdef HAS_UNISTD
 #include <unistd.h>
+#else
+#include <io.h>
 #endif
 
 #include "caml/debugger.h"

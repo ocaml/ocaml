@@ -362,12 +362,12 @@ let specialise env r ~lhs_of_application
        - has useful approximations for some invariant parameters. *)
     if !Clflags.classic_inlining then
       Don't_try_it S.Not_specialised.Classic_mode
+    else if self_call then
+      Don't_try_it S.Not_specialised.Self_call
     else if always_specialise && not (Lazy.force has_no_useful_approxes) then
       Try_it
     else if never_specialise then
       Don't_try_it S.Not_specialised.Annotation
-    else if self_call then
-      Don't_try_it S.Not_specialised.Self_call
     else if remaining_inlining_threshold = T.Never_inline then
       let threshold =
         match inlining_threshold with
@@ -543,7 +543,7 @@ let for_call_site ~env ~r ~(function_decls : Flambda.function_declarations)
     let env = E.unset_never_inline_inside_closures env in
     let env =
       E.note_entering_call env
-        ~closure_id:closure_id_being_applied ~debuginfo:dbg
+        ~closure_id:closure_id_being_applied ~dbg:dbg
     in
     let max_level =
       Clflags.Int_arg_helper.get ~key:(E.round env) !Clflags.inline_max_depth

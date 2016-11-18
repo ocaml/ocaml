@@ -13,6 +13,8 @@
 /*                                                                        */
 /**************************************************************************/
 
+#define CAML_INTERNALS
+
 /* Dynamic loading of C primitives. */
 
 #include <stddef.h>

@@ -44,7 +44,7 @@
     full keys are alive and if the ephemeron is alive. When one of the
     keys is not considered alive anymore by the GC, the data is
     emptied from the ephemeron. The data could be alive for another
-    reason and in that case the GC will free it, but the ephemeron
+    reason and in that case the GC will not free it, but the ephemeron
     will not hold the data anymore.
 
     The ephemerons complicate the notion of liveness of values, because

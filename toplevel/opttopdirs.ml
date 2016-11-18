@@ -81,11 +81,11 @@ let load_file ppf name0 =
       (* The Dynlink interface does not allow us to distinguish between
           a Dynlink.Error exceptions raised in the loaded modules
           or a genuine error during dynlink... *)
-      try Dynlink.loadfile fn; true
+      try Compdynlink.loadfile fn; true
       with
-      | Dynlink.Error err ->
+      | Compdynlink.Error err ->
         fprintf ppf "Error while loading %s: %s.@."
-          name (Dynlink.error_message err);
+          name (Compdynlink.error_message err);
         false
       | exn ->
         print_exception_outcome ppf exn;
@@ -113,7 +113,7 @@ type 'a printer_type_old = 'a -> unit
 let match_printer_type ppf desc typename =
   let printer_type =
     try
-      Env.lookup_type (Ldot(Lident "Topdirs", typename)) !toplevel_env
+      Env.lookup_type (Ldot(Lident "Opttopdirs", typename)) !toplevel_env
     with Not_found ->
       fprintf ppf "Cannot find type Topdirs.%s.@." typename;
       raise Exit in

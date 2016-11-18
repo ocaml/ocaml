@@ -54,7 +54,7 @@ static value fdset_to_fdlist(value fdlist, fd_set *fdset)
     for (l = fdlist; l != Val_int(0); l = Field(l, 1)) {
       int fd = Int_val(Field(l, 0));
       if (FD_ISSET(fd, fdset)) {
-        value newres = alloc_small(2, 0);
+        value newres = caml_alloc_small(2, 0);
         Field(newres, 0) = Val_int(fd);
         Field(newres, 1) = res;
         res = newres;
@@ -90,14 +90,14 @@ CAMLprim value unix_select(value readfds, value writefds, value exceptfds,
       tv.tv_usec = (int) (1e6 * (tm - tv.tv_sec));
       tvp = &tv;
     }
-    enter_blocking_section();
+    caml_enter_blocking_section();
     retcode = select(maxfd + 1, &read, &write, &except, tvp);
-    leave_blocking_section();
+    caml_leave_blocking_section();
     if (retcode == -1) uerror("select", Nothing);
     readfds = fdset_to_fdlist(readfds, &read);
     writefds = fdset_to_fdlist(writefds, &write);
     exceptfds = fdset_to_fdlist(exceptfds, &except);
-    res = alloc_small(3, 0);
+    res = caml_alloc_small(3, 0);
     Field(res, 0) = readfds;
     Field(res, 1) = writefds;
     Field(res, 2) = exceptfds;

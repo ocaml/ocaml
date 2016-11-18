@@ -42,21 +42,21 @@
    @since 4.02.0
  *)
 
-external length : bytes -> int = "%string_length"
+external length : bytes -> int = "%bytes_length"
 (** Return the length (number of bytes) of the argument. *)
 
-external get : bytes -> int -> char = "%string_safe_get"
+external get : bytes -> int -> char = "%bytes_safe_get"
 (** [get s n] returns the byte at index [n] in argument [s].
 
     Raise [Invalid_argument] if [n] not a valid index in [s]. *)
 
-external set : bytes -> int -> char -> unit = "%string_safe_set"
+external set : bytes -> int -> char -> unit = "%bytes_safe_set"
 (** [set s n c] modifies [s] in place, replacing the byte at index [n]
     with [c].
 
     Raise [Invalid_argument] if [n] is not a valid index in [s]. *)
 
-external create : int -> bytes = "caml_create_string"
+external create : int -> bytes = "caml_create_bytes"
 (** [create n] returns a new byte sequence of length [n]. The
     sequence is uninitialized and contains arbitrary bytes.
 
@@ -193,11 +193,21 @@ val index : bytes -> char -> int
 
     Raise [Not_found] if [c] does not occur in [s]. *)
 
+val index_opt: bytes -> char -> int option
+(** [index_opt s c] returns the index of the first occurrence of byte [c]
+    in [s] or [None] if [c] does not occur in [s].
+    @since 4.05 *)
+
 val rindex : bytes -> char -> int
 (** [rindex s c] returns the index of the last occurrence of byte [c]
     in [s].
 
     Raise [Not_found] if [c] does not occur in [s]. *)
+
+val rindex_opt: bytes -> char -> int option
+(** [rindex_opt s c] returns the index of the last occurrence of byte [c]
+    in [s] or [None] if [c] does not occur in [s].
+    @since 4.05 *)
 
 val index_from : bytes -> int -> char -> int
 (** [index_from s i c] returns the index of the first occurrence of
@@ -207,6 +217,14 @@ val index_from : bytes -> int -> char -> int
     Raise [Invalid_argument] if [i] is not a valid position in [s].
     Raise [Not_found] if [c] does not occur in [s] after position [i]. *)
 
+val index_from_opt: bytes -> int -> char -> int option
+(** [index_from _opts i c] returns the index of the first occurrence of
+    byte [c] in [s] after position [i] or [None] if [c] does not occur in [s] after position [i].
+    [Bytes.index_opt s c] is equivalent to [Bytes.index_from_opt s 0 c].
+
+    Raise [Invalid_argument] if [i] is not a valid position in [s].
+    @since 4.05 *)
+
 val rindex_from : bytes -> int -> char -> int
 (** [rindex_from s i c] returns the index of the last occurrence of
     byte [c] in [s] before position [i+1].  [rindex s c] is equivalent
@@ -214,6 +232,15 @@ val rindex_from : bytes -> int -> char -> int
 
     Raise [Invalid_argument] if [i+1] is not a valid position in [s].
     Raise [Not_found] if [c] does not occur in [s] before position [i+1]. *)
+
+val rindex_from_opt: bytes -> int -> char -> int option
+(** [rindex_from_opt s i c] returns the index of the last occurrence
+    of byte [c] in [s] before position [i+1] or [None] if [c] does not
+    occur in [s] before position [i+1].  [rindex_opt s c] is equivalent to
+    [rindex_from s (Bytes.length s - 1) c].
+
+    Raise [Invalid_argument] if [i+1] is not a valid position in [s].
+    @since 4.05 *)
 
 val contains : bytes -> char -> bool
 (** [contains s c] tests if byte [c] appears in [s]. *)
@@ -424,10 +451,10 @@ let s = Bytes.of_string "hello"
 
 (* The following is for system use only. Do not call directly. *)
 
-external unsafe_get : bytes -> int -> char = "%string_unsafe_get"
-external unsafe_set : bytes -> int -> char -> unit = "%string_unsafe_set"
+external unsafe_get : bytes -> int -> char = "%bytes_unsafe_get"
+external unsafe_set : bytes -> int -> char -> unit = "%bytes_unsafe_set"
 external unsafe_blit :
   bytes -> int -> bytes -> int -> int -> unit
-  = "caml_blit_string" [@@noalloc]
+  = "caml_blit_bytes" [@@noalloc]
 external unsafe_fill :
-  bytes -> int -> int -> char -> unit = "caml_fill_string" [@@noalloc]
+  bytes -> int -> int -> char -> unit = "caml_fill_bytes" [@@noalloc]

@@ -1,3 +1,5 @@
+(* Adding a type annotation is sufficient to make typing go through *)
+
 module Common0 =
  struct
    type msg = Msg
@@ -7,7 +9,7 @@ module Common0 =
    let old = !handle_msg in
    handle_msg := f old
 
-   let q : _ Queue.t = Queue.create ()
+   let q : msg Queue.t = Queue.create ()
    let add msg = Queue.add msg q
    let handle_queue_messages () = Queue.iter !handle_msg q
  end
@@ -23,7 +25,7 @@ module Common =
    let old = !handle_msg in
    handle_msg := f old
 
-   let q : _ Queue.t = Queue.create ()
+   let q : msg Queue.t = Queue.create ()
    let add msg = Queue.add msg q
    let handle_queue_messages () = Queue.iter !handle_msg q
  end

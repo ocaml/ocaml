@@ -83,6 +83,15 @@ type comparison =
 val negate_comparison: comparison -> comparison
 val swap_comparison: comparison -> comparison
 
+type label = int
+val new_label: unit -> label
+
+type raise_kind =
+  | Raise_withtrace
+  | Raise_notrace
+
+type rec_flag = Nonrecursive | Recursive
+
 type memory_chunk =
     Byte_unsigned
   | Byte_signed
@@ -96,9 +105,9 @@ type memory_chunk =
   | Double                             (* 64-bit-aligned 64-bit float *)
   | Double_u                           (* word-aligned 64-bit float *)
 
-type operation =
-    Capply of machtype * Debuginfo.t
-  | Cextcall of string * machtype * bool * Debuginfo.t
+and operation =
+    Capply of machtype
+  | Cextcall of string * machtype * bool * label option
   | Cload of memory_chunk
   | Calloc
   | Cstore of memory_chunk * Lambda.initialization_or_assignment
@@ -112,27 +121,31 @@ type operation =
   | Caddf | Csubf | Cmulf | Cdivf
   | Cfloatofint | Cintoffloat
   | Ccmpf of comparison
-  | Craise of Lambda.raise_kind * Debuginfo.t
-  | Ccheckbound of Debuginfo.t
+  | Craise of raise_kind
+  | Ccheckbound
 
-type expression =
+(** Not all cmm expressions currently have [Debuginfo.t] values attached to
+    them.  The ones that do are those that are likely to generate code that
+    can fairly robustly be mapped back to a source location.  In the future
+    it might be the case that more [Debuginfo.t] annotations are desirable. *)
+and expression =
     Cconst_int of int
   | Cconst_natint of nativeint
   | Cconst_float of float
   | Cconst_symbol of string
   | Cconst_pointer of int
   | Cconst_natpointer of nativeint
-  | Cconst_blockheader of nativeint
+  | Cblockheader of nativeint * Debuginfo.t
   | Cvar of Ident.t
   | Clet of Ident.t * expression * expression
   | Cassign of Ident.t * expression
   | Ctuple of expression list
-  | Cop of operation * expression list
+  | Cop of operation * expression list * Debuginfo.t
   | Csequence of expression * expression
   | Cifthenelse of expression * expression * expression
-  | Cswitch of expression * int array * expression array
+  | Cswitch of expression * int array * expression array * Debuginfo.t
   | Cloop of expression
-  | Ccatch of int * Ident.t list * expression * expression
+  | Ccatch of rec_flag * (int * Ident.t list * expression) list * expression
   | Cexit of int * expression list
   | Ctrywith of expression * Ident.t * expression
 
@@ -141,11 +154,11 @@ type fundecl =
     fun_args: (Ident.t * machtype) list;
     fun_body: expression;
     fun_fast: bool;
-    fun_dbg : Debuginfo.t; }
+    fun_dbg : Debuginfo.t;
+  }
 
 type data_item =
     Cdefine_symbol of string
-  | Cdefine_label of int
   | Cglobal_symbol of string
   | Cint8 of int
   | Cint16 of int
@@ -154,7 +167,6 @@ type data_item =
   | Csingle of float
   | Cdouble of float
   | Csymbol_address of string
-  | Clabel_address of int
   | Cstring of string
   | Cskip of int
   | Calign of int
@@ -162,3 +174,7 @@ type data_item =
 type phrase =
     Cfunction of fundecl
   | Cdata of data_item list
+
+val ccatch : int * Ident.t list * expression * expression -> expression
+
+val reset : unit -> unit

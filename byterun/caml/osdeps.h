@@ -18,6 +18,8 @@
 #ifndef CAML_OSDEPS_H
 #define CAML_OSDEPS_H
 
+#ifdef CAML_INTERNALS
+
 #include "misc.h"
 
 /* Read at most [n] bytes from file descriptor [fd] into buffer [buf].
@@ -80,7 +82,10 @@ extern char * caml_dlerror(void);
 extern int caml_read_directory(char * dirname, struct ext_table * contents);
 
 /* Recover executable name if possible (/proc/sef/exe under Linux,
-   GetModuleFileName under Windows). */
-extern int caml_executable_name(char * name, int name_len);
+   GetModuleFileName under Windows).  Return NULL on error,
+   string allocated with [caml_stat_alloc] on success. */
+extern char * caml_executable_name(void);
+
+#endif /* CAML_INTERNALS */
 
 #endif /* CAML_OSDEPS_H */

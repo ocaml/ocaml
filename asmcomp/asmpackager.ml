@@ -82,7 +82,7 @@ let make_package_object ppf members targetobj targetname coercion
       ~backend =
   let objtemp =
     if !Clflags.keep_asm_file
-    then chop_extension_if_any targetobj ^ ".pack" ^ Config.ext_obj
+    then Filename.remove_extension targetobj ^ ".pack" ^ Config.ext_obj
     else
       (* Put the full name of the module in the temporary file name
          to avoid collisions with MSVC's link /lib in case of successive
@@ -97,7 +97,7 @@ let make_package_object ppf members targetobj targetname coercion
       members in
   let module_ident = Ident.create_persistent targetname in
   let source_provenance = Timings.Pack targetname in
-  let prefixname = chop_extension_if_any objtemp in
+  let prefixname = Filename.remove_extension objtemp in
   if Config.flambda then begin
     let size, lam = Translmod.transl_package_flambda components coercion in
     let flam =
@@ -111,17 +111,18 @@ let make_package_object ppf members targetobj targetname coercion
         ~module_initializer:lam
     in
     Asmgen.compile_implementation_flambda ~source_provenance
-      prefixname ~backend ppf flam;
+      prefixname ~backend ~required_globals:Ident.Set.empty ppf flam;
   end else begin
     let main_module_block_size, code =
       Translmod.transl_store_package
         components (Ident.create_persistent targetname) coercion in
     Asmgen.compile_implementation_clambda ~source_provenance
-      prefixname ppf { Lambda.code; main_module_block_size; }
+      prefixname ppf { Lambda.code; main_module_block_size;
+                       module_ident; required_globals = Ident.Set.empty }
   end;
   let objfiles =
     List.map
-      (fun m -> chop_extension_if_any m.pm_file ^ Config.ext_obj)
+      (fun m -> Filename.remove_extension m.pm_file ^ Config.ext_obj)
       (List.filter (fun m -> m.pm_kind <> PM_intf) members) in
   let ok =
     Ccomp.call_linker Ccomp.Partial targetobj (objtemp :: objfiles) ""
@@ -241,7 +242,7 @@ let package_files ppf initial_env files targetcmx ~backend =
       files in
   let prefix = chop_extensions targetcmx in
   let targetcmi = prefix ^ ".cmi" in
-  let targetobj = chop_extension_if_any targetcmx ^ Config.ext_obj in
+  let targetobj = Filename.remove_extension targetcmx ^ Config.ext_obj in
   let targetname = String.capitalize_ascii(Filename.basename prefix) in
   (* Set the name of the current "input" *)
   Location.input_name := targetcmx;

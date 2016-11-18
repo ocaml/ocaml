@@ -13,6 +13,8 @@
 /*                                                                        */
 /**************************************************************************/
 
+#define CAML_INTERNALS
+
 /* 1. Allocation functions doing the same work as the macros in the
       case where [Setup_for_gc] and [Restore_after_gc] are no-ops.
    2. Convenience functions related to allocation.
@@ -62,6 +64,23 @@ CAMLexport value caml_alloc_small (mlsize_t wosize, tag_t tag)
   Assert (tag < 256);
   Alloc_small (result, wosize, tag);
   return result;
+}
+
+CAMLexport value caml_alloc_small_with_my_or_given_profinfo (mlsize_t wosize,
+  tag_t tag, uintnat profinfo)
+{
+  if (profinfo == 0) {
+    return caml_alloc_small(wosize, tag);
+  }
+  else {
+    value result;
+
+    Assert (wosize > 0);
+    Assert (wosize <= Max_young_wosize);
+    Assert (tag < 256);
+    Alloc_small_with_profinfo (result, wosize, tag, profinfo);
+    return result;
+  }
 }
 
 /* [n] is a number of words (fields) */
@@ -133,6 +152,23 @@ CAMLexport value caml_alloc_array(value (*funct)(char const *),
     CAMLreturn (result);
   }
 }
+
+/* [len] is a number of floats */
+CAMLprim value caml_alloc_float_array(mlsize_t len)
+{
+  mlsize_t wosize = len * Double_wosize;
+  value result;
+  if (wosize == 0)
+    return Atom(0);
+  else if (wosize <= Max_young_wosize){
+    Alloc_small (result, wosize, Double_array_tag);
+  }else {
+    result = caml_alloc_shr (wosize, Double_array_tag);
+    result = caml_check_urgent_gc (result);
+  }
+  return result;
+}
+
 
 CAMLexport value caml_copy_string_array(char const ** arr)
 {

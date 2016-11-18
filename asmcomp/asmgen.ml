@@ -233,7 +233,7 @@ let lambda_gen_implementation ?toplevel ~source_provenance ppf
   end_gen_implementation ?toplevel ~source_provenance ppf clambda_and_constants
 
 let compile_implementation_gen ?toplevel ~source_provenance prefixname
-    ppf gen_implementation program =
+    ~required_globals ppf gen_implementation program =
   let asmfile =
     if !keep_asm_file || !Emitaux.binary_backend_available
     then prefixname ^ ext_asm
@@ -241,17 +241,19 @@ let compile_implementation_gen ?toplevel ~source_provenance prefixname
   in
   compile_unit ~source_provenance prefixname asmfile !keep_asm_file
       (prefixname ^ ext_obj) (fun () ->
+        Ident.Set.iter Compilenv.require_global required_globals;
         gen_implementation ?toplevel ~source_provenance ppf program)
 
 let compile_implementation_clambda ?toplevel ~source_provenance prefixname
     ppf (program:Lambda.program) =
   compile_implementation_gen ?toplevel ~source_provenance prefixname
+    ~required_globals:program.Lambda.required_globals
     ppf lambda_gen_implementation program
 
 let compile_implementation_flambda ?toplevel ~source_provenance prefixname
-    ~backend ppf (program:Flambda.program) =
+    ~required_globals ~backend ppf (program:Flambda.program) =
   compile_implementation_gen ?toplevel ~source_provenance prefixname
-    ppf (flambda_gen_implementation ~backend) program
+    ~required_globals ppf (flambda_gen_implementation ~backend) program
 
 (* Error report *)
 

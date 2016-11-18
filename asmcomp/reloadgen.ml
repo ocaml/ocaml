@@ -83,13 +83,13 @@ method private reload i =
        However, something needs to be done for the function pointer in
        indirect calls. *)
     Iend | Ireturn | Iop(Itailcall_imm _) | Iraise _ -> i
-  | Iop(Itailcall_ind) ->
+  | Iop(Itailcall_ind _) ->
       let newarg = self#makereg1 i.arg in
       insert_moves i.arg newarg
         {i with arg = newarg}
   | Iop(Icall_imm _ | Iextcall _) ->
       {i with next = self#reload i.next}
-  | Iop(Icall_ind) ->
+  | Iop(Icall_ind _) ->
       let newarg = self#makereg1 i.arg in
       insert_moves i.arg newarg
         {i with arg = newarg; next = self#reload i.next}
@@ -112,9 +112,12 @@ method private reload i =
           (self#reload i.next))
   | Iloop body ->
       instr_cons (Iloop(self#reload body)) [||] [||] (self#reload i.next)
-  | Icatch(nfail, body, handler) ->
+  | Icatch(rec_flag, handlers, body) ->
+      let new_handlers = List.map
+          (fun (nfail, handler) -> nfail, self#reload handler)
+          handlers in
       instr_cons
-        (Icatch(nfail, self#reload body, self#reload handler)) [||] [||]
+        (Icatch(rec_flag, new_handlers, self#reload body)) [||] [||]
         (self#reload i.next)
   | Iexit i ->
       instr_cons (Iexit i) [||] [||] dummy_instr
@@ -127,7 +130,6 @@ method fundecl f =
   let new_body = self#reload f.fun_body in
   ({fun_name = f.fun_name; fun_args = f.fun_args;
     fun_body = new_body; fun_fast = f.fun_fast;
-    fun_dbg  = f.fun_dbg},
+    fun_dbg  = f.fun_dbg; fun_spacetime_shape = f.fun_spacetime_shape},
    redo_regalloc)
-
 end

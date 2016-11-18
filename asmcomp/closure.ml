@@ -50,9 +50,9 @@ let rec build_closure_env env_param pos = function
    and no longer in Cmmgen so that approximations stored in .cmx files
    contain the right names if the -for-pack option is active. *)
 
-let getglobal id =
+let getglobal dbg id =
   Uprim(Pgetglobal (Ident.create_persistent (Compilenv.symbol_for_global id)),
-        [], Debuginfo.none)
+        [], dbg)
 
 (* Check if a variable occurs in a [clambda] term. *)
 
@@ -102,7 +102,7 @@ let occurs_var var u =
 
 let prim_size prim args =
   match prim with
-    Pidentity -> 0
+    Pidentity | Pbytes_to_string | Pbytes_of_string -> 0
   | Pgetglobal _ -> 1
   | Psetglobal _ -> 1
   | Pmakeblock _ -> 5 + List.length args
@@ -121,7 +121,9 @@ let prim_size prim args =
   | Pccall p -> (if p.prim_alloc then 10 else 4) + List.length args
   | Praise _ -> 4
   | Pstringlength -> 5
-  | Pstringrefs | Pstringsets -> 6
+  | Pbyteslength -> 5
+  | Pstringrefs  -> 6
+  | Pbytesrefs | Pbytessets -> 6
   | Pmakearray _ -> 5 + List.length args
   | Parraylength kind -> if kind = Pgenarray then 6 else 2
   | Parrayrefu kind -> if kind = Pgenarray then 12 else 2
@@ -206,7 +208,7 @@ let rec is_pure_clambda = function
     Uvar _ -> true
   | Uconst _ -> true
   | Uprim((Psetglobal _ | Psetfield _ | Psetfloatfield _ | Pduprecord _ |
-           Pccall _ | Praise _ | Poffsetref _ | Pstringsetu | Pstringsets |
+           Pccall _ | Praise _ | Poffsetref _ |  Pbytessetu | Pbytessets |
            Parraysetu _ | Parraysets _ | Pbigarrayset _), _, _) -> false
   | Uprim(_, args, _) -> List.for_all is_pure_clambda args
   | _ -> false
@@ -263,8 +265,8 @@ let simplif_arith_prim_pure fpc p (args, approxs) dbg =
       | Paddint -> make_const_int (n1 + n2)
       | Psubint -> make_const_int (n1 - n2)
       | Pmulint -> make_const_int (n1 * n2)
-      | Pdivint when n2 <> 0 -> make_const_int (n1 / n2)
-      | Pmodint when n2 <> 0 -> make_const_int (n1 mod n2)
+      | Pdivint _ when n2 <> 0 -> make_const_int (n1 / n2)
+      | Pmodint _ when n2 <> 0 -> make_const_int (n1 mod n2)
       | Pandint -> make_const_int (n1 land n2)
       | Porint -> make_const_int (n1 lor n2)
       | Pxorint -> make_const_int (n1 lxor n2)
@@ -312,9 +314,9 @@ let simplif_arith_prim_pure fpc p (args, approxs) dbg =
       | Paddbint Pnativeint -> make_const_natint (Nativeint.add n1 n2)
       | Psubbint Pnativeint -> make_const_natint (Nativeint.sub n1 n2)
       | Pmulbint Pnativeint -> make_const_natint (Nativeint.mul n1 n2)
-      | Pdivbint Pnativeint when n2 <> 0n ->
+      | Pdivbint {size=Pnativeint} when n2 <> 0n ->
           make_const_natint (Nativeint.div n1 n2)
-      | Pmodbint Pnativeint when n2 <> 0n ->
+      | Pmodbint {size=Pnativeint} when n2 <> 0n ->
           make_const_natint (Nativeint.rem n1 n2)
       | Pandbint Pnativeint -> make_const_natint (Nativeint.logand n1 n2)
       | Porbint Pnativeint ->  make_const_natint (Nativeint.logor n1 n2)
@@ -350,8 +352,10 @@ let simplif_arith_prim_pure fpc p (args, approxs) dbg =
       | Paddbint Pint32 -> make_const_int32 (Int32.add n1 n2)
       | Psubbint Pint32 -> make_const_int32 (Int32.sub n1 n2)
       | Pmulbint Pint32 -> make_const_int32 (Int32.mul n1 n2)
-      | Pdivbint Pint32 when n2 <> 0l -> make_const_int32 (Int32.div n1 n2)
-      | Pmodbint Pint32 when n2 <> 0l -> make_const_int32 (Int32.rem n1 n2)
+      | Pdivbint {size=Pint32} when n2 <> 0l ->
+          make_const_int32 (Int32.div n1 n2)
+      | Pmodbint {size=Pint32} when n2 <> 0l ->
+          make_const_int32 (Int32.rem n1 n2)
       | Pandbint Pint32 -> make_const_int32 (Int32.logand n1 n2)
       | Porbint Pint32 -> make_const_int32 (Int32.logor n1 n2)
       | Pxorbint Pint32 -> make_const_int32 (Int32.logxor n1 n2)
@@ -386,8 +390,10 @@ let simplif_arith_prim_pure fpc p (args, approxs) dbg =
       | Paddbint Pint64 -> make_const_int64 (Int64.add n1 n2)
       | Psubbint Pint64 -> make_const_int64 (Int64.sub n1 n2)
       | Pmulbint Pint64 -> make_const_int64 (Int64.mul n1 n2)
-      | Pdivbint Pint64 when n2 <> 0L -> make_const_int64 (Int64.div n1 n2)
-      | Pmodbint Pint64 when n2 <> 0L -> make_const_int64 (Int64.rem n1 n2)
+      | Pdivbint {size=Pint64} when n2 <> 0L ->
+          make_const_int64 (Int64.div n1 n2)
+      | Pmodbint {size=Pint64} when n2 <> 0L ->
+          make_const_int64 (Int64.rem n1 n2)
       | Pandbint Pint64 -> make_const_int64 (Int64.logand n1 n2)
       | Porbint Pint64 -> make_const_int64 (Int64.logor n1 n2)
       | Pxorbint Pint64 -> make_const_int64 (Int64.logxor n1 n2)
@@ -443,10 +449,10 @@ let simplif_prim_pure fpc p (args, approxs) dbg =
     when n < List.length ul ->
       (List.nth ul n, field_approx n approx)
   (* Strings *)
-  | Pstringlength, _, [ Value_const(Uconst_ref(_, Some (Uconst_string s))) ] ->
+  | (Pstringlength | Pbyteslength), _, [ Value_const(Uconst_ref(_, Some (Uconst_string s))) ] ->
       make_const_int (String.length s)
   (* Identity *)
-  | Pidentity, [arg1], [app1] ->
+  | (Pidentity | Pbytes_to_string | Pbytes_of_string), [arg1], [app1] ->
       (arg1, app1)
   (* Kind test *)
   | Pisint, _, [a1] ->
@@ -466,7 +472,8 @@ let simplif_prim_pure fpc p (args, approxs) dbg =
         | Ostype_unix -> make_const_bool (Sys.os_type = "Unix")
         | Ostype_win32 -> make_const_bool (Sys.os_type = "Win32")
         | Ostype_cygwin -> make_const_bool (Sys.os_type = "Cygwin")
-        | Backend_type -> make_const_ptr 0 (* tag 0 is the same as Native here *)
+        | Backend_type ->
+            make_const_ptr 0 (* tag 0 is the same as Native here *)
       end
   (* Catch-all *)
   | _ ->
@@ -681,15 +688,16 @@ let rec is_pure = function
     Lvar _ -> true
   | Lconst _ -> true
   | Lprim((Psetglobal _ | Psetfield _ | Psetfloatfield _ | Pduprecord _ |
-           Pccall _ | Praise _ | Poffsetref _ | Pstringsetu | Pstringsets |
-           Parraysetu _ | Parraysets _ | Pbigarrayset _), _) -> false
-  | Lprim(_, args) -> List.for_all is_pure args
+           Pccall _ | Praise _ | Poffsetref _  | Pbytessetu | Pbytessets |
+           Parraysetu _ | Parraysets _ | Pbigarrayset _), _,_) -> false
+  | Lprim(_, args,_) -> List.for_all is_pure args
   | Levent(lam, _ev) -> is_pure lam
   | _ -> false
 
 let warning_if_forced_inline ~loc ~attribute warning =
   if attribute = Always_inline then
-    Location.prerr_warning loc (Warnings.Inlining_impossible warning)
+    Location.prerr_warning loc
+      (Warnings.Inlining_impossible warning)
 
 (* Generate a direct application *)
 
@@ -699,9 +707,10 @@ let direct_apply fundesc funct ufunct uargs ~loc ~attribute =
   let app =
     match fundesc.fun_inline, attribute with
     | _, Never_inline | None, _ ->
+      let dbg = Debuginfo.from_location loc in
         warning_if_forced_inline ~loc ~attribute
           "Function information unavailable";
-        Udirect_apply(fundesc.fun_label, app_args, Debuginfo.none)
+        Udirect_apply(fundesc.fun_label, app_args, dbg)
     | Some(params, body), _  ->
         bind_params loc fundesc.fun_float_const_prop params app_args body
   in
@@ -755,37 +764,6 @@ let global_approx = ref([||] : value_approximation array)
 let function_nesting_depth = ref 0
 let excessive_function_nesting_depth = 5
 
-(* Decorate clambda term with debug information *)
-
-let rec add_debug_info ev u =
-  let put_dinfo dinfo ev =
-    if Debuginfo.is_none dinfo then
-      Debuginfo.from_call ev
-    else dinfo
-  in
-  match ev.lev_kind with
-  | Lev_after _ ->
-      begin match u with
-      | Udirect_apply(lbl, args, dinfo) ->
-          Udirect_apply(lbl, args, put_dinfo dinfo ev)
-      | Ugeneric_apply(Udirect_apply(lbl, args1, dinfo1),
-                       args2, dinfo2) ->
-          Ugeneric_apply(Udirect_apply(lbl, args1, put_dinfo dinfo1 ev),
-                         args2, put_dinfo dinfo2 ev)
-      | Ugeneric_apply(fn, args, dinfo) ->
-          Ugeneric_apply(fn, args, put_dinfo dinfo ev)
-      | Uprim(Praise k, args, dinfo) ->
-          Uprim(Praise k, args, put_dinfo dinfo ev)
-      | Uprim(p, args, dinfo) ->
-          Uprim(p, args, put_dinfo dinfo ev)
-      | Usend(kind, u1, u2, args, dinfo) ->
-          Usend(kind, u1, u2, args, put_dinfo dinfo ev)
-      | Usequence(u1, u2) ->
-          Usequence(u1, add_debug_info ev u2)
-      | _ -> u
-      end
-  | _ -> u
-
 (* Uncurry an expression and explicitate closures.
    Also return the approximation of the expression.
    The approximation environment [fenv] maps idents to approximations.
@@ -828,9 +806,13 @@ let rec close fenv cenv = function
         | Const_immstring s ->
             str (Uconst_string s)
         | Const_base (Const_string (s, _)) ->
-              (* strings (even literal ones) are mutable! *)
-              (* of course, the empty string is really immutable *)
-            str ~shared:false(*(String.length s = 0)*) (Uconst_string s)
+              (* Strings (even literal ones) must be assumed to be mutable...
+                 except when OCaml has been configured with
+                 -safe-string.  Passing -safe-string at compilation
+                 time is not enough, since the unit could be linked
+                 with another one compiled without -safe-string, and
+                 that one could modify our string literal.  *)
+            str ~shared:Config.safe_string (Uconst_string s)
         | Const_base(Const_float x) -> str (Uconst_float (float_of_string x))
         | Const_base(Const_int32 x) -> str (Uconst_int32 x)
         | Const_base(Const_int64 x) -> str (Uconst_int64 x)
@@ -886,6 +868,7 @@ let rec close fenv cenv = function
                              ap_args=internal_args;
                              ap_inlined=Default_inline;
                              ap_specialised=Default_specialise};
+               loc;
                attr = default_function_attribute})
         in
         let new_fun = iter first_args new_fun in
@@ -895,19 +878,22 @@ let rec close fenv cenv = function
       | ((ufunct, Value_closure(fundesc, _approx_res)), uargs)
         when fundesc.fun_arity > 0 && nargs > fundesc.fun_arity ->
           let (first_args, rem_args) = split_list fundesc.fun_arity uargs in
+          let dbg = Debuginfo.from_location loc in
           warning_if_forced_inline ~loc ~attribute "Over-application";
           (Ugeneric_apply(direct_apply ~loc ~attribute
                             fundesc funct ufunct first_args,
-                          rem_args, Debuginfo.none),
+                          rem_args, dbg),
            Value_unknown)
       | ((ufunct, _), uargs) ->
+          let dbg = Debuginfo.from_location loc in
           warning_if_forced_inline ~loc ~attribute "Unknown function";
-          (Ugeneric_apply(ufunct, uargs, Debuginfo.none), Value_unknown)
+          (Ugeneric_apply(ufunct, uargs, dbg), Value_unknown)
       end
-  | Lsend(kind, met, obj, args, _) ->
+  | Lsend(kind, met, obj, args, loc) ->
       let (umet, _) = close fenv cenv met in
       let (uobj, _) = close fenv cenv obj in
-      (Usend(kind, umet, uobj, close_list fenv cenv args, Debuginfo.none),
+      let dbg = Debuginfo.from_location loc in
+      (Usend(kind, umet, uobj, close_list fenv cenv args, dbg),
        Value_unknown)
   | Llet(str, kind, id, lam, body) ->
       let (ulam, alam) = close_named fenv cenv id lam in
@@ -955,35 +941,40 @@ let rec close fenv cenv = function
         let (ubody, approx) = close fenv_body cenv body in
         (Uletrec(udefs, ubody), approx)
       end
-  | Lprim(Pdirapply loc,[funct;arg])
-  | Lprim(Prevapply loc,[arg;funct]) ->
+  | Lprim(Pdirapply,[funct;arg], loc)
+  | Lprim(Prevapply,[arg;funct], loc) ->
       close fenv cenv (Lapply{ap_should_be_tailcall=false;
                               ap_loc=loc;
                               ap_func=funct;
                               ap_args=[arg];
                               ap_inlined=Default_inline;
                               ap_specialised=Default_specialise})
-  | Lprim(Pgetglobal id, []) as lam ->
+  | Lprim(Pgetglobal id, [], loc) as lam ->
+      let dbg = Debuginfo.from_location loc in
       check_constant_result lam
-                            (getglobal id)
+                            (getglobal dbg id)
                             (Compilenv.global_approx id)
-  | Lprim(Pfield n, [lam]) ->
+  | Lprim(Pfield n, [lam], loc) ->
       let (ulam, approx) = close fenv cenv lam in
-      check_constant_result lam (Uprim(Pfield n, [ulam], Debuginfo.none))
+      let dbg = Debuginfo.from_location loc in
+      check_constant_result lam (Uprim(Pfield n, [ulam], dbg))
                             (field_approx n approx)
-  | Lprim(Psetfield(n, is_ptr, init), [Lprim(Pgetglobal id, []); lam]) ->
+  | Lprim(Psetfield(n, is_ptr, init), [Lprim(Pgetglobal id, [], _); lam], loc)->
       let (ulam, approx) = close fenv cenv lam in
       if approx <> Value_unknown then
         (!global_approx).(n) <- approx;
-      (Uprim(Psetfield(n, is_ptr, init), [getglobal id; ulam], Debuginfo.none),
+      let dbg = Debuginfo.from_location loc in
+      (Uprim(Psetfield(n, is_ptr, init), [getglobal dbg id; ulam], dbg),
        Value_unknown)
-  | Lprim(Praise k, [Levent(arg, ev)]) ->
+  | Lprim(Praise k, [arg], loc) ->
       let (ulam, _approx) = close fenv cenv arg in
-      (Uprim(Praise k, [ulam], Debuginfo.from_raise ev),
+      let dbg = Debuginfo.from_location loc in
+      (Uprim(Praise k, [ulam], dbg),
        Value_unknown)
-  | Lprim(p, args) ->
+  | Lprim(p, args, loc) ->
+      let dbg = Debuginfo.from_location loc in
       simplif_prim !Clflags.float_const_prop
-                   p (close_list_approx fenv cenv args) Debuginfo.none
+                   p (close_list_approx fenv cenv args) dbg
   | Lswitch(arg, sw) ->
       let fn fail =
         let (uarg, _) = close fenv cenv arg in
@@ -1014,7 +1005,7 @@ let rec close fenv cenv = function
             Ucatch (i,[],ubody,uhandler),Value_unknown
           else fn fail
       end
-  | Lstringswitch(arg,sw,d) ->
+  | Lstringswitch(arg,sw,d,_) ->
       let uarg,_ = close fenv cenv arg in
       let usw =
         List.map
@@ -1064,9 +1055,8 @@ let rec close fenv cenv = function
   | Lassign(id, lam) ->
       let (ulam, _) = close fenv cenv lam in
       (Uassign(id, ulam), Value_unknown)
-  | Levent(lam, ev) ->
-      let (ulam, approx) = close fenv cenv lam in
-      (add_debug_info ev ulam, approx)
+  | Levent(lam, _) ->
+      close fenv cenv lam
   | Lifused _ ->
       assert false
 
@@ -1096,8 +1086,8 @@ and close_functions fenv cenv fun_defs =
     List.flatten
       (List.map
          (function
-           | (id, Lfunction{kind; params; body; attr}) ->
-               Simplif.split_default_wrapper id kind params body attr
+           | (id, Lfunction{kind; params; body; attr; loc}) ->
+               Simplif.split_default_wrapper id kind params body attr loc
            | _ -> assert false
          )
          fun_defs)
@@ -1120,7 +1110,7 @@ and close_functions fenv cenv fun_defs =
   let uncurried_defs =
     List.map
       (function
-          (id, Lfunction{kind; params; body}) ->
+          (id, Lfunction{kind; params; body; loc}) ->
             let label = Compilenv.make_symbol (Some (Ident.unique_name id)) in
             let arity = List.length params in
             let fundesc =
@@ -1129,20 +1119,21 @@ and close_functions fenv cenv fun_defs =
                fun_closed = initially_closed;
                fun_inline = None;
                fun_float_const_prop = !Clflags.float_const_prop } in
-            (id, params, body, fundesc)
+            let dbg = Debuginfo.from_location loc in
+            (id, params, body, fundesc, dbg)
         | (_, _) -> fatal_error "Closure.close_functions")
       fun_defs in
   (* Build an approximate fenv for compiling the functions *)
   let fenv_rec =
     List.fold_right
-      (fun (id, _params, _body, fundesc) fenv ->
+      (fun (id, _params, _body, fundesc, _dbg) fenv ->
         Tbl.add id (Value_closure(fundesc, Value_unknown)) fenv)
       uncurried_defs fenv in
   (* Determine the offsets of each function's closure in the shared block *)
   let env_pos = ref (-1) in
   let clos_offsets =
     List.map
-      (fun (_id, _params, _body, fundesc) ->
+      (fun (_id, _params, _body, fundesc, _dbg) ->
         let pos = !env_pos + 1 in
         env_pos := !env_pos + 1 + (if fundesc.fun_arity <> 1 then 3 else 2);
         pos)
@@ -1152,16 +1143,13 @@ and close_functions fenv cenv fun_defs =
      does not use its environment parameter is invalidated. *)
   let useless_env = ref initially_closed in
   (* Translate each function definition *)
-  let clos_fundef (id, params, body, fundesc) env_pos =
-    let dbg = match body with
-      | Levent (_,({lev_kind=Lev_function} as ev)) -> Debuginfo.from_call ev
-      | _ -> Debuginfo.none in
+  let clos_fundef (id, params, body, fundesc, dbg) env_pos =
     let env_param = Ident.create "env" in
     let cenv_fv =
       build_closure_env env_param (fv_pos - env_pos) fv in
     let cenv_body =
       List.fold_right2
-        (fun (id, _params, _body, _fundesc) pos env ->
+        (fun (id, _params, _body, _fundesc, _dbg) pos env ->
           Tbl.add id (Uoffset(Uvar env_param, pos - env_pos)) env)
         uncurried_defs clos_offsets cenv_fv in
     let (ubody, approx) = close fenv_rec cenv_body body in
@@ -1211,7 +1199,7 @@ and close_functions fenv cenv fun_defs =
          recompile *)
         Compilenv.backtrack snap; (* PR#6337 *)
         List.iter
-          (fun (_id, _params, _body, fundesc) ->
+          (fun (_id, _params, _body, fundesc, _dbg) ->
              fundesc.fun_closed <- false;
              fundesc.fun_inline <- None;
           )

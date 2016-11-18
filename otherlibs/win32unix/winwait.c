@@ -25,10 +25,10 @@ static value alloc_process_status(HANDLE pid, int status)
 {
   value res, st;
 
-  st = alloc(1, 0);
+  st = caml_alloc(1, 0);
   Field(st, 0) = Val_int(status);
   Begin_root (st);
-    res = alloc_small(2, 0);
+    res = caml_alloc_small(2, 0);
     Field(res, 0) = Val_long((intnat) pid);
     Field(res, 1) = st;
   End_roots();
@@ -46,12 +46,12 @@ CAMLprim value win_waitpid(value vflags, value vpid_req)
   HANDLE pid_req = (HANDLE) Long_val(vpid_req);
   DWORD err = 0;
 
-  flags = convert_flag_list(vflags, wait_flag_table);
+  flags = caml_convert_flag_list(vflags, wait_flag_table);
   if ((flags & CAML_WNOHANG) == 0) {
-    enter_blocking_section();
+    caml_enter_blocking_section();
     retcode = WaitForSingleObject(pid_req, INFINITE);
     if (retcode == WAIT_FAILED) err = GetLastError();
-    leave_blocking_section();
+    caml_leave_blocking_section();
     if (err) {
       win32_maperr(err);
       uerror("waitpid", Nothing);

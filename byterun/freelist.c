@@ -13,6 +13,8 @@
 /*                                                                        */
 /**************************************************************************/
 
+#define CAML_INTERNALS
+
 #define FREELIST_DEBUG 0
 #if FREELIST_DEBUG
 #include <stdio.h>
@@ -587,7 +589,8 @@ void caml_make_free_blocks (value *p, mlsize_t size, int do_merge, int color)
     }else{
       sz = size;
     }
-    *(header_t *)p = Make_header (Wosize_whsize (sz), 0, color);
+    *(header_t *)p =
+      Make_header (Wosize_whsize (sz), 0, color);
     if (do_merge) caml_fl_merge_block (Val_hp (p));
     size -= sz;
     p += sz;

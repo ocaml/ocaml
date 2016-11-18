@@ -810,7 +810,8 @@ type t = { f : 'a 'b. ('b -> (#ct as 'a) -> 'b) -> 'b; }
 type t = u and u = t;;
 [%%expect {|
 Line _, characters 0-10:
-Error: The type abbreviation t is cyclic
+Error: The definition of t contains a cycle:
+       u
 |}];;
 
 (* PR#1731 *)
@@ -912,19 +913,19 @@ type t = A | B
 - : [< `A | `B ] * t -> int = <fun>
 Line _, characters 0-41:
 Warning 8: this pattern-matching is not exhaustive.
-Here is an example of a value that is not matched:
+Here is an example of a case that is not matched:
 (`AnyExtraTag, `AnyExtraTag)
 - : [> `A | `B ] * [> `A | `B ] -> int = <fun>
 Line _, characters 0-29:
 Warning 8: this pattern-matching is not exhaustive.
-Here is an example of a value that is not matched:
+Here is an example of a case that is not matched:
 (_, 0)
 Line _, characters 21-24:
 Warning 11: this match case is unused.
 - : [< `B ] * int -> int = <fun>
 Line _, characters 0-29:
 Warning 8: this pattern-matching is not exhaustive.
-Here is an example of a value that is not matched:
+Here is an example of a case that is not matched:
 (0, _)
 Line _, characters 21-24:
 Warning 11: this match case is unused.
@@ -936,11 +937,8 @@ type ('a, 'b) a = 'a -> unit constraint 'a = [> `B of ('a, 'b) b as 'b]
 and  ('a, 'b) b = 'b -> unit constraint 'b = [> `A of ('a, 'b) a as 'a];;
 [%%expect {|
 Line _, characters 0-71:
-Error: Constraints are not satisfied in this type.
-       Type
-       ([> `B of 'a ], 'a) b as 'a
-       should be an instance of
-       (('b, [> `A of 'b ] as 'c) a as 'b, 'c) b
+Error: The definition of a contains a cycle:
+       [> `B of ('a, 'b) b as 'b ] as 'a
 |}];;
 
 (* PR#1917: expanding may change original in Ctype.unify2 *)
@@ -1426,3 +1424,13 @@ Line _, characters 19-22:
 Error: This expression has type M.t but an expression was expected of type 'x
        The type constructor M.t would escape its scope
 |}];;
+
+(* PR#7285 *)
+type (+'a,-'b) foo = private int;;
+let f (x : int) : ('a,'a) foo = Obj.magic x;;
+let x = f 3;;
+[%%expect{|
+type (+'a, -'b) foo = private int
+val f : int -> ('a, 'a) foo = <fun>
+val x : ('_a, '_a) foo = 3
+|}]

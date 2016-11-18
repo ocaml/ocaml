@@ -13,6 +13,8 @@
 /*                                                                        */
 /**************************************************************************/
 
+#define CAML_INTERNALS
+
 /* The interface of this file is in "caml/mlvalues.h" and "caml/alloc.h" */
 
 #include <math.h>
@@ -241,6 +243,7 @@ static int caml_float_of_hex(const char * s, double * res)
     }
     }
   }
+  if (n_bits == 0) return -1;
   /* Convert mantissa to FP.  We use a signed conversion because we can
      (m has 60 bits at most) and because it is faster
      on several architectures. */

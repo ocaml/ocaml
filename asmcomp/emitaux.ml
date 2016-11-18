@@ -15,8 +15,6 @@
 
 (* Common functions for emitting assembly code *)
 
-open Debuginfo
-
 let output_channel = ref stdout
 
 let emit_string s = output_string !output_channel s
@@ -111,12 +109,14 @@ type frame_descr =
   { fd_lbl: int;                        (* Return address *)
     fd_frame_size: int;                 (* Size of stack frame *)
     fd_live_offset: int list;           (* Offsets/regs of live addresses *)
+    fd_raise: bool;                     (* Is frame for a raise? *)
     fd_debuginfo: Debuginfo.t }         (* Location, if any *)
 
 let frame_descriptors = ref([] : frame_descr list)
 
 type emit_frame_actions =
-  { efa_label: int -> unit;
+  { efa_code_label: int -> unit;
+    efa_data_label: int -> unit;
     efa_16: int -> unit;
     efa_32: int32 -> unit;
     efa_word: int -> unit;
@@ -131,66 +131,66 @@ let emit_frames a =
     try
       Hashtbl.find filenames name
     with Not_found ->
-      let lbl = Linearize.new_label () in
+      let lbl = Cmm.new_label () in
       Hashtbl.add filenames name lbl;
       lbl
   in
   let debuginfos = Hashtbl.create 7 in
-  let rec label_debuginfos key =
+  let rec label_debuginfos rs rdbg =
+    let key = (rs, rdbg) in
     try fst (Hashtbl.find debuginfos key)
     with Not_found ->
-      let lbl = Linearize.new_label () in
-      let next = match key with
-        | _d, (d' :: ds') -> Some (label_debuginfos (d',ds'))
-        | _d, [] -> None
+      let lbl = Cmm.new_label () in
+      let next =
+        match rdbg with
+        | [] -> assert false
+        | _ :: [] -> None
+        | _ :: ((_ :: _) as rdbg') -> Some (label_debuginfos false rdbg')
       in
       Hashtbl.add debuginfos key (lbl, next);
       lbl
   in
-  let emit_debuginfo_label d =
-    a.efa_label (label_debuginfos (Debuginfo.unroll_inline_chain d))
+  let emit_debuginfo_label rs rdbg =
+    a.efa_data_label (label_debuginfos rs rdbg)
   in
   let emit_frame fd =
-    a.efa_label fd.fd_lbl;
+    a.efa_code_label fd.fd_lbl;
     a.efa_16 (if Debuginfo.is_none fd.fd_debuginfo
               then fd.fd_frame_size
               else fd.fd_frame_size + 1);
     a.efa_16 (List.length fd.fd_live_offset);
     List.iter a.efa_16 fd.fd_live_offset;
     a.efa_align Arch.size_addr;
-    if not (Debuginfo.is_none fd.fd_debuginfo) then
-      emit_debuginfo_label fd.fd_debuginfo
+    match List.rev fd.fd_debuginfo with
+    | [] -> ()
+    | _ :: _ as rdbg -> emit_debuginfo_label fd.fd_raise rdbg
   in
   let emit_filename name lbl =
     a.efa_def_label lbl;
     a.efa_string name;
     a.efa_align Arch.size_addr
   in
-  let pack_info d =
-    let line = min 0xFFFFF d.dinfo_line
-    and char_start = min 0xFF d.dinfo_char_start
-    and char_end = min 0x3FF d.dinfo_char_end
-    and kind = match d.dinfo_kind with
-      | Dinfo_call  -> 0
-      | Dinfo_raise -> 1
-      | Dinfo_inline _ ->
-          assert false (* Should disappear after unrolling inline chain *)
-    in
+  let pack_info fd_raise d =
+    let line = min 0xFFFFF d.Debuginfo.dinfo_line
+    and char_start = min 0xFF d.Debuginfo.dinfo_char_start
+    and char_end = min 0x3FF d.Debuginfo.dinfo_char_end
+    and kind = if fd_raise then 1 else 0 in
     Int64.(add (shift_left (of_int line) 44)
              (add (shift_left (of_int char_start) 36)
                 (add (shift_left (of_int char_end) 26)
                    (of_int kind))))
   in
-  let emit_debuginfo (d,_) (lbl,next) =
+  let emit_debuginfo (rs, rdbg) (lbl,next) =
+    let d = List.hd rdbg in
     a.efa_align Arch.size_addr;
     a.efa_def_label lbl;
-    let info = pack_info d in
+    let info = pack_info rs d in
     a.efa_label_rel
-      (label_filename d.dinfo_file)
+      (label_filename d.Debuginfo.dinfo_file)
       (Int64.to_int32 info);
     a.efa_32 (Int64.to_int32 (Int64.shift_right info 32));
     begin match next with
-    | Some next -> a.efa_label next
+    | Some next -> a.efa_data_label next
     | None -> a.efa_word 0
     end
   in
@@ -257,25 +257,24 @@ let reset_debug_info () =
 (* We only diplay .file if the file has not been seen before. We
    display .loc for every instruction. *)
 let emit_debug_info_gen dbg file_emitter loc_emitter =
-  let dbg, _ = Debuginfo.unroll_inline_chain dbg in
   if is_cfi_enabled () &&
-    (!Clflags.debug || Config.with_frame_pointers)
-     && dbg.Debuginfo.dinfo_line > 0 (* PR#6243 *)
-  then begin
-    let { Debuginfo.
-          dinfo_line = line;
-          dinfo_char_start = col;
-          dinfo_file = file_name;
-        } = dbg in
-    let file_num =
-      try List.assoc file_name !file_pos_nums
-      with Not_found ->
-        let file_num = !file_pos_num_cnt in
-        incr file_pos_num_cnt;
-        file_emitter ~file_num ~file_name;
-        file_pos_nums := (file_name,file_num) :: !file_pos_nums;
-        file_num in
-    loc_emitter ~file_num ~line ~col;
+    (!Clflags.debug || Config.with_frame_pointers) then begin
+    match List.rev dbg with
+    | [] -> ()
+    | { Debuginfo.dinfo_line = line;
+        dinfo_char_start = col;
+        dinfo_file = file_name; } :: _ ->
+      if line > 0 then begin (* PR#6243 *)
+        let file_num =
+          try List.assoc file_name !file_pos_nums
+          with Not_found ->
+            let file_num = !file_pos_num_cnt in
+            incr file_pos_num_cnt;
+            file_emitter ~file_num ~file_name;
+            file_pos_nums := (file_name,file_num) :: !file_pos_nums;
+            file_num in
+        loc_emitter ~file_num ~line ~col;
+      end
   end
 
 let emit_debug_info dbg =

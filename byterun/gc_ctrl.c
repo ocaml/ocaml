@@ -13,6 +13,8 @@
 /*                                                                        */
 /**************************************************************************/
 
+#define CAML_INTERNALS
+
 #include "caml/alloc.h"
 #include "caml/backtrace.h"
 #include "caml/compact.h"
@@ -29,7 +31,7 @@
 #include "caml/mlvalues.h"
 #include "caml/signals.h"
 #ifdef NATIVE_CODE
-#include "stack.h"
+#include "caml/stack.h"
 #else
 #include "caml/stacks.h"
 #endif
@@ -212,6 +214,10 @@ static value heap_stats (int returnstats)
     }                             Assert (cur_hp == (header_t *) chunk_end);
     chunk = Chunk_next (chunk);
   }
+
+#ifdef DEBUG
+  caml_final_invariant_check();
+#endif
 
   Assert (heap_chunks == caml_stat_heap_chunks);
   Assert (live_words + free_words + fragments == caml_stat_heap_wsz);

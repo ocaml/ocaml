@@ -126,8 +126,9 @@
 /debugger/parser.ml
 /debugger/parser.mli
 /debugger/ocamldebug
-/debugger/dynlink.ml
-/debugger/dynlink.mli
+/driver/compdynlink.mlopt
+/driver/compdynlink.mlbyte
+/driver/compdynlink.mli
 
 /emacs/ocamltags
 /emacs/*.elc
@@ -264,6 +265,8 @@
 
 /testsuite/tests/runtime-errors/*.bytecode
 
+/testsuite/tests/self-contained-toplevel/cached_cmi.ml
+
 /testsuite/tests/tool-debugger/**/compiler-libs
 /testsuite/tests/tool-debugger/find-artifacts/out
 /testsuite/tests/tool-debugger/no_debug_event/out
@@ -282,6 +285,16 @@
 /testsuite/tests/tool-ocamldoc/*.css
 
 /testsuite/tests/tool-ocamldoc-2/ocamldoc.sty
+
+/testsuite/tests/tool-ocamldoc-html/*.html
+/testsuite/tests/tool-ocamldoc-html/style.css
+
+/testsuite/tests/tool-ocamldoc-man/*.3o
+
+/testsuite/tests/tool-ocamldoc-open/alias.odoc
+/testsuite/tests/tool-ocamldoc-open/inner.odoc
+/testsuite/tests/tool-ocamldoc-open/main.odoc
+/testsuite/tests/tool-ocamldoc-open/ocamldoc.sty
 
 /testsuite/tests/tool-lexyacc/scanner.ml
 /testsuite/tests/tool-lexyacc/grammar.mli

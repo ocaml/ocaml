@@ -95,8 +95,9 @@ let rec same (l1 : Flambda.t) (l2 : Flambda.t) =
     Variable.equal var1 var2 && same_named defining_expr1 defining_expr2
       && same body1 body2
   | Let _, _ | _, Let _ -> false
-  | Let_mutable { var = mv1; initial_value = v1; contents_kind = ck1; body = b1 },
-    Let_mutable { var = mv2; initial_value = v2; contents_kind = ck2; body = b2 } ->
+  | Let_mutable {var = mv1; initial_value = v1; contents_kind = ck1; body = b1},
+    Let_mutable {var = mv2; initial_value = v2; contents_kind = ck2; body = b2}
+    ->
     Mutable_variable.equal mv1 mv2
       && Variable.equal v1 v2
       && ck1 = ck2

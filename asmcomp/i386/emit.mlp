@@ -116,9 +116,6 @@ let label_prefix =
 let emit_label lbl =
   Printf.sprintf "%s%d" label_prefix lbl
 
-let emit_data_label lbl =
-  Printf.sprintf "%sd%d" label_prefix lbl
-
 let label s = sym (emit_label s)
 
 let def_label s = D.label (emit_label s)
@@ -193,8 +190,12 @@ let addressing addr typ i n =
 
 (* Record live pointers at call points *)
 
-let record_frame_label live dbg =
-  let lbl = new_label() in
+let record_frame_label ?label live raise_ dbg =
+  let lbl =
+    match label with
+    | None -> new_label()
+    | Some label -> label
+  in
   let live_offset = ref [] in
   Reg.Set.iter
     (function
@@ -210,11 +211,12 @@ let record_frame_label live dbg =
     { fd_lbl = lbl;
       fd_frame_size = frame_size();
       fd_live_offset = !live_offset;
+      fd_raise = raise_;
       fd_debuginfo = dbg } :: !frame_descriptors;
   lbl
 
-let record_frame live dbg =
-  let lbl = record_frame_label live dbg in
+let record_frame ?label live raise_ dbg =
+  let lbl = record_frame_label ?label live raise_ dbg in
   def_label lbl
 
 (* Record calls to the GC -- we've moved them out of the way *)
@@ -243,10 +245,10 @@ type bound_error_call =
 let bound_error_sites = ref ([] : bound_error_call list)
 let bound_error_call = ref 0
 
-let bound_error_label dbg =
+let bound_error_label ?label dbg =
   if !Clflags.debug then begin
     let lbl_bound_error = new_label() in
-    let lbl_frame = record_frame_label Reg.Set.empty dbg in
+    let lbl_frame = record_frame_label ?label Reg.Set.empty false dbg in
     bound_error_sites :=
       { bd_lbl = lbl_bound_error; bd_frame = lbl_frame } :: !bound_error_sites;
     lbl_bound_error
@@ -496,7 +498,7 @@ let emit_instr fallthrough i =
         else
           I.mov (reg src) (reg dst)
       end
-  | Lop(Iconst_int n | Iconst_blockheader n) ->
+  | Lop(Iconst_int n) ->
       if n = 0n then begin
         match i.res.(0).loc with
         | Reg _ -> I.xor (reg i.res.(0)) (reg i.res.(0))
@@ -520,46 +522,46 @@ let emit_instr fallthrough i =
   | Lop(Iconst_symbol s) ->
       add_used_symbol s;
       I.mov (immsym s) (reg i.res.(0))
-  | Lop(Icall_ind) ->
+  | Lop(Icall_ind { label_after; }) ->
       I.call (reg i.arg.(0));
-      record_frame i.live i.dbg
-  | Lop(Icall_imm s) ->
-      add_used_symbol s;
-      emit_call s;
-      record_frame i.live i.dbg
-  | Lop(Itailcall_ind) ->
+      record_frame i.live false i.dbg ~label:label_after
+  | Lop(Icall_imm { func; label_after; }) ->
+      add_used_symbol func;
+      emit_call func;
+      record_frame i.live false i.dbg ~label:label_after
+  | Lop(Itailcall_ind { label_after = _; }) ->
       output_epilogue begin fun () ->
         I.jmp (reg i.arg.(0))
       end
-  | Lop(Itailcall_imm s) ->
-      if s = !function_name then
+  | Lop(Itailcall_imm { func; label_after = _; }) ->
+      if func = !function_name then
         I.jmp (label !tailrec_entry_point)
       else begin
         output_epilogue begin fun () ->
-          add_used_symbol s;
-          I.jmp (immsym s)
+          add_used_symbol func;
+          I.jmp (immsym func)
         end
       end
-  | Lop(Iextcall(s, alloc)) ->
-      add_used_symbol s;
+  | Lop(Iextcall { func; alloc; label_after; }) ->
+      add_used_symbol func;
       if alloc then begin
         if system <> S_macosx then
-          I.mov (immsym s) eax
+          I.mov (immsym func) eax
         else begin
           external_symbols_indirect :=
-            StringSet.add s !external_symbols_indirect;
+            StringSet.add func !external_symbols_indirect;
           I.mov (mem_sym DWORD (Printf.sprintf "L%s$non_lazy_ptr"
-                              (emit_symbol s))) eax
+                              (emit_symbol func))) eax
         end;
         emit_call "caml_c_call";
-        record_frame i.live i.dbg
+        record_frame i.live false i.dbg ~label:label_after
       end else begin
         if system <> S_macosx then
-          emit_call s
+          emit_call func
         else begin
           external_symbols_direct :=
-            StringSet.add s !external_symbols_direct;
-          I.call (sym (Printf.sprintf "L%s$stub" (emit_symbol s)))
+            StringSet.add func !external_symbols_direct;
+          I.call (sym (Printf.sprintf "L%s$stub" (emit_symbol func)))
         end
       end
   | Lop(Istackoffset n) ->
@@ -609,7 +611,7 @@ let emit_instr fallthrough i =
             I.fstp (addressing addr REAL8 i 1)
           end
       end
-  | Lop(Ialloc n) ->
+  | Lop(Ialloc { words = n; label_after_call_gc; }) ->
       if !fastcode_flag then begin
         let lbl_redo = new_label() in
         def_label lbl_redo;
@@ -618,7 +620,7 @@ let emit_instr fallthrough i =
         I.mov eax (sym32 "caml_young_ptr");
         I.cmp (sym32 "caml_young_limit") eax;
         let lbl_call_gc = new_label() in
-        let lbl_frame = record_frame_label i.live Debuginfo.none in
+        let lbl_frame = record_frame_label i.live false Debuginfo.none in
         I.jb (label lbl_call_gc);
         I.lea (mem32 NONE 4 RAX) (reg i.res.(0));
         call_gc_sites :=
@@ -634,7 +636,11 @@ let emit_instr fallthrough i =
             I.mov (int n) eax;
             emit_call "caml_allocN"
         end;
-        record_frame i.live Debuginfo.none;
+        let label =
+          record_frame_label ?label:label_after_call_gc i.live false
+            Debuginfo.none
+        in
+        def_label label;
         I.lea (mem32 NONE 4 RAX) (reg i.res.(0))
       end
   | Lop(Iintop(Icomp cmp)) ->
@@ -645,12 +651,12 @@ let emit_instr fallthrough i =
       I.cmp (int n) (reg i.arg.(0));
       I.set (cond cmp) al;
       I.movzx al (reg i.res.(0))
-  | Lop(Iintop Icheckbound) ->
-      let lbl = bound_error_label i.dbg in
+  | Lop(Iintop (Icheckbound { label_after_error; } )) ->
+      let lbl = bound_error_label ?label:label_after_error i.dbg in
       I.cmp (reg i.arg.(1)) (reg i.arg.(0));
       I.jbe (label lbl)
-  | Lop(Iintop_imm(Icheckbound, n)) ->
-      let lbl = bound_error_label i.dbg in
+  | Lop(Iintop_imm(Icheckbound { label_after_error; }, n)) ->
+      let lbl = bound_error_label ?label:label_after_error i.dbg in
       I.cmp (int n) (reg i.arg.(0));
       I.jbe (label lbl)
   | Lop(Iintop(Idiv | Imod)) ->
@@ -869,15 +875,11 @@ let emit_instr fallthrough i =
       cfi_adjust_cfa_offset (-trap_frame_size);
       stack_offset := !stack_offset - trap_frame_size
   | Lraise k  ->
-      begin match !Clflags.debug, k with
-      | true, Lambda.Raise_regular ->
+      begin match k with
+      | Cmm.Raise_withtrace ->
           emit_call "caml_raise_exn";
-          record_frame Reg.Set.empty i.dbg
-      | true, Lambda.Raise_reraise ->
-          emit_call "caml_reraise_exn";
-          record_frame Reg.Set.empty i.dbg
-      | false, _
-      | true, Lambda.Raise_notrace ->
+          record_frame Reg.Set.empty true i.dbg
+      | Cmm.Raise_notrace ->
           I.mov (sym32 "caml_exception_pointer") esp;
           I.pop (sym32 "caml_exception_pointer");
           if trap_frame_size > 8 then
@@ -989,7 +991,6 @@ let fundecl fundecl =
 let emit_item = function
   | Cglobal_symbol s -> D.global (emit_symbol s)
   | Cdefine_symbol s -> add_def_symbol s; _label (emit_symbol s)
-  | Cdefine_label lbl -> _label (emit_data_label lbl)
   | Cint8 n -> D.byte (const n)
   | Cint16 n -> D.word (const n)
   | Cint32 n -> D.long (const_nat n)
@@ -997,7 +998,6 @@ let emit_item = function
   | Csingle f -> D.long (Const (Int64.of_int32 (Int32.bits_of_float f)))
   | Cdouble f -> emit_float64_split_directive (Int64.bits_of_float f)
   | Csymbol_address s -> add_used_symbol s; D.long (ConstLabel (emit_symbol s))
-  | Clabel_address lbl -> D.long (ConstLabel (emit_data_label lbl))
   | Cstring s -> D.bytes s
   | Cskip n -> if n > 0 then D.space n
   | Calign n -> D.align n
@@ -1027,7 +1027,6 @@ let begin_assembly() =
     D.extrn "_caml_alloc3" PROC;
     D.extrn "_caml_ml_array_bound_error" PROC;
     D.extrn "_caml_raise_exn" PROC;
-    D.extrn "_caml_reraise_exn" PROC;
   end;
 
   D.data ();
@@ -1057,7 +1056,8 @@ let end_assembly() =
   emit_global_label "frametable";
 
   emit_frames
-    { efa_label = (fun l -> D.long (ConstLabel (emit_label l)));
+    { efa_code_label = (fun l -> D.long (ConstLabel (emit_label l)));
+      efa_data_label = (fun l -> D.long (ConstLabel (emit_label l)));
       efa_16 = (fun n -> D.word (const n));
       efa_32 = (fun n -> D.long (const_32 n));
       efa_word = (fun n -> D.long (const n));

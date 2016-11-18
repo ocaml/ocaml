@@ -39,6 +39,14 @@ let nth l n =
     | a::l -> if n = 0 then a else nth_aux l (n-1)
   in nth_aux l n
 
+let nth_opt l n =
+  if n < 0 then invalid_arg "List.nth" else
+  let rec nth_aux l n =
+    match l with
+    | [] -> None
+    | a::l -> if n = 0 then Some a else nth_aux l (n-1)
+  in nth_aux l n
+
 let append = (@)
 
 let rec rev_append l1 l2 =
@@ -158,9 +166,17 @@ let rec assoc x = function
     [] -> raise Not_found
   | (a,b)::l -> if compare a x = 0 then b else assoc x l
 
+let rec assoc_opt x = function
+    [] -> None
+  | (a,b)::l -> if compare a x = 0 then Some b else assoc_opt x l
+
 let rec assq x = function
     [] -> raise Not_found
   | (a,b)::l -> if a == x then b else assq x l
+
+let rec assq_opt x = function
+    [] -> None
+  | (a,b)::l -> if a == x then Some b else assq_opt x l
 
 let rec mem_assoc x = function
   | [] -> false
@@ -182,6 +198,10 @@ let rec remove_assq x = function
 let rec find p = function
   | [] -> raise Not_found
   | x :: l -> if p x then x else find p l
+
+let rec find_opt p = function
+  | [] -> None
+  | x :: l -> if p x then Some x else find_opt p l
 
 let find_all p =
   let rec find accu = function
@@ -430,3 +450,19 @@ let sort_uniq cmp l =
   in
   let len = length l in
   if len < 2 then l else sort len l
+
+let rec compare_lengths l1 l2 =
+  match l1, l2 with
+  | [], [] -> 0
+  | [], _ -> -1
+  | _, [] -> 1
+  | _ :: l1, _ :: l2 -> compare_lengths l1 l2
+;;
+
+let rec compare_length_with l n =
+  match l, n with
+  | [], 0 -> 0
+  | [], _ -> if n > 0 then -1 else 1
+  | _, 0 -> 1
+  | _ :: l, n -> compare_length_with l (n-1)
+;;

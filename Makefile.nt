@@ -115,7 +115,10 @@ coldstart:
 	cp byterun/ocamlrun.exe boot/ocamlrun.exe
 	cd yacc ; $(MAKEREC) $(BOOT_FLEXLINK_CMD) all
 	cp yacc/ocamlyacc.exe boot/ocamlyacc.exe
-	cd stdlib ; $(MAKEREC) $(BOOT_FLEXLINK_CMD) COMPILER="../boot/ocamlc -use-prims ../byterun/primitives" all
+	cd stdlib ; \
+	  $(MAKEREC) $(BOOT_FLEXLINK_CMD) \
+	             COMPILER="../boot/ocamlc -use-prims ../byterun/primitives"\
+	             all
 	cd stdlib ; cp $(LIBFILES) ../boot
 
 # Build the core system: the minimum needed to make depend and bootstrap
@@ -332,9 +335,11 @@ compilerlibs/ocamloptcomp.cma: $(MIDDLE_END) $(ASMCOMP)
 partialclean::
 	rm -f compilerlibs/ocamloptcomp.cma
 
-ocamlopt: compilerlibs/ocamlcommon.cma compilerlibs/ocamloptcomp.cma $(OPTSTART)
+ocamlopt: compilerlibs/ocamlcommon.cma compilerlibs/ocamloptcomp.cma \
+          compilerlibs/ocamlbytecomp.cma $(OPTSTART)
 	$(CAMLC) $(LINKFLAGS) -o ocamlopt \
-          compilerlibs/ocamlcommon.cma compilerlibs/ocamloptcomp.cma $(OPTSTART)
+          compilerlibs/ocamlcommon.cma compilerlibs/ocamloptcomp.cma \
+	  compilerlibs/ocamlbytecomp.cma $(OPTSTART)
 
 partialclean::
 	rm -f ocamlopt
@@ -357,17 +362,10 @@ ocaml: compilerlibs/ocamlcommon.cma compilerlibs/ocamlbytecomp.cma \
 partialclean::
 	rm -f ocaml
 
-# The native toplevel
-
-ocamlnat: ocamlopt otherlibs/dynlink/dynlink.cmxa $(NATTOPOBJS:.cmo=.cmx)
-	$(CAMLOPT) $(LINKFLAGS) otherlibs/dynlink/dynlink.cmxa -o ocamlnat \
-	           $(NATTOPOBJS:.cmo=.cmx) -linkall
-
-toplevel/opttoploop.cmx: otherlibs/dynlink/dynlink.cmxa
+# Native dynlink
 
 otherlibs/dynlink/dynlink.cmxa: otherlibs/dynlink/natdynlink.ml
 	cd otherlibs/dynlink && $(MAKEREC) allopt
-
 
 # The configuration file
 
@@ -376,8 +374,8 @@ utils/config.ml: utils/config.mlp config/Makefile
 	sed -e "s|%%LIBDIR%%|$(LIBDIR)|" \
 	    -e "s|%%BYTERUN%%|ocamlrun|" \
 	    -e 's|%%CCOMPTYPE%%|$(CCOMPTYPE)|' \
-	    -e "s|%%BYTECC%%|$(BYTECC) $(BYTECCCOMPOPTS)|" \
-	    -e "s|%%NATIVECC%%|$(NATIVECC) $(NATIVECCCOMPOPTS)|" \
+	    -e "s|%%BYTECC%%|$(BYTECC)|" \
+	    -e "s|%%NATIVECC%%|$(NATIVECC)|" \
 	    -e "s|%%PARTIALLD%%|$(PARTIALLD)|" \
 	    -e "s|%%PACKLD%%|$(PACKLD)|" \
 	    -e "s|%%BYTECCLIBS%%|$(BYTECCLIBS)|" \
@@ -397,6 +395,11 @@ utils/config.ml: utils/config.mlp config/Makefile
 	    -e 's|%%ASM%%|$(ASM)|' \
 	    -e 's|%%ASM_CFI_SUPPORTED%%|false|' \
 	    -e 's|%%WITH_FRAME_POINTERS%%|false|' \
+	    -e 's|%%WITH_PROFINFO%%|$(WITH_PROFINFO)|' \
+	    -e 's|%%WITH_SPACETIME%%|$(WITH_SPACETIME)|' \
+	    -e 's|%%PROFINFO_WIDTH%%|$(PROFINFO_WIDTH)|' \
+	    -e 's|%%LIBUNWIND_AVAILABLE%%|false|' \
+	    -e 's|%%LIBUNWIND_LINK_FLAGS%%||' \
 	    -e 's|%%MKDLL%%|$(MKDLL)|' \
 	    -e 's|%%MKEXE%%|$(MKEXE)|' \
 	    -e 's|%%MKMAINDLL%%|$(MKMAINDLL)|' \
@@ -404,6 +407,7 @@ utils/config.ml: utils/config.mlp config/Makefile
 	    -e 's|%%HOST%%|$(HOST)|' \
 	    -e 's|%%TARGET%%|$(TARGET)|' \
 	    -e 's|%%FLAMBDA%%|$(FLAMBDA)|' \
+	    -e 's|%%SAFE_STRING%%|$(SAFE_STRING)|' \
 	    -e 's|%%FLEXLINK_FLAGS%%|$(FLEXLINK_FLAGS)|' \
 	    utils/config.mlp > utils/config.ml
 
@@ -463,10 +467,12 @@ partialclean::
 	rm -f compilerlibs/ocamloptcomp.cmxa compilerlibs/ocamloptcomp.$(A)
 
 ocamlopt.opt: compilerlibs/ocamlcommon.cmxa compilerlibs/ocamloptcomp.cmxa \
+              compilerlibs/ocamlbytecomp.cmxa \
               $(OPTSTART:.cmo=.cmx)
 	$(CAMLOPT) $(LINKFLAGS) -o ocamlopt.opt \
-           compilerlibs/ocamlcommon.cmxa compilerlibs/ocamloptcomp.cmxa \
-           $(OPTSTART:.cmo=.cmx)
+          compilerlibs/ocamlcommon.cmxa compilerlibs/ocamloptcomp.cmxa \
+	  compilerlibs/ocamlbytecomp.cmxa \
+          $(OPTSTART:.cmo=.cmx)
 
 partialclean::
 	rm -f ocamlopt.opt
@@ -714,6 +720,10 @@ depend: beforedepend
 	 middle_end/base_types driver toplevel; \
 	 do $(CAMLDEP) -slash $(DEPFLAGS) $$d/*.mli $$d/*.ml; \
 	 done) > .depend
+	$(CAMLDEP) -slash $(DEPFLAGS) -native \
+		-impl driver/compdynlink.mlopt >> .depend
+	$(CAMLDEP) -slash $(DEPFLAGS) -bytecode \
+		-impl driver/compdynlink.mlbyte >> .depend
 
 alldepend:: depend
 

@@ -27,8 +27,8 @@
 
 CAMLprim value unix_putenv(value name, value val)
 {
-  mlsize_t namelen = string_length(name);
-  mlsize_t vallen = string_length(val);
+  mlsize_t namelen = caml_string_length(name);
+  mlsize_t vallen = caml_string_length(val);
   char * s;
 
   if (! (caml_string_is_c_safe(name) && caml_string_is_c_safe(val)))

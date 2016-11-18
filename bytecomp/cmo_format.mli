@@ -32,6 +32,9 @@ type compilation_unit =
     cu_reloc: (reloc_info * int) list;  (* Relocation information *)
     cu_imports:
       (string * Digest.t option) list; (* Names and CRC of intfs imported *)
+    cu_required_globals: Ident.t list; (* Compilation units whose initialization
+                                          side effects must occur before this
+                                          one. *)
     cu_primitives: string list;         (* Primitives declared inside *)
     mutable cu_force_link: bool;        (* Must be linked even if unref'ed *)
     mutable cu_debug: int;              (* Position of debugging info, or 0 *)

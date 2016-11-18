@@ -95,11 +95,18 @@ let is_required (rel, _pos) =
       IdentSet.mem id !missing_globals
   | _ -> false
 
-let add_required (rel, _pos) =
-  match rel with
-    Reloc_getglobal id ->
-      missing_globals := IdentSet.add id !missing_globals
-  | _ -> ()
+let add_required compunit =
+  let add_required_by_reloc (rel, _pos) =
+    match rel with
+      Reloc_getglobal id ->
+        missing_globals := IdentSet.add id !missing_globals
+    | _ -> ()
+  in
+  let add_required_for_effects id =
+    missing_globals := IdentSet.add id !missing_globals
+  in
+  List.iter add_required_by_reloc compunit.cu_reloc;
+  List.iter add_required_for_effects compunit.cu_required_globals
 
 let remove_required (rel, _pos) =
   match rel with
@@ -124,7 +131,7 @@ let scan_file obj_name tolink =
       seek_in ic compunit_pos;
       let compunit = (input_value ic : compilation_unit) in
       close_in ic;
-      List.iter add_required compunit.cu_reloc;
+      add_required compunit;
       Link_object(file_name, compunit) :: tolink
     end
     else if buffer = cma_magic_number then begin
@@ -143,7 +150,7 @@ let scan_file obj_name tolink =
             || List.exists is_required compunit.cu_reloc
             then begin
               List.iter remove_required compunit.cu_reloc;
-              List.iter add_required compunit.cu_reloc;
+              add_required compunit;
               compunit :: reqd
             end else
               reqd)

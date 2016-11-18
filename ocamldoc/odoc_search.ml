@@ -15,7 +15,6 @@
 
 (** Research of elements through modules. *)
 
-module Name = Odoc_name
 open Odoc_value
 open Odoc_type
 open Odoc_extension

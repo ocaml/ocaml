@@ -43,6 +43,14 @@ val nth : 'a list -> int -> 'a
    Raise [Failure "nth"] if the list is too short.
    Raise [Invalid_argument "List.nth"] if [n] is negative. *)
 
+val nth_opt: 'a list -> int -> 'a option
+(** Return the [n]-th element of the given list.
+    The first element (head of the list) is at position 0.
+    Return [None] if the list is too short.
+    Raise [Invalid_argument "List.nth"] if [n] is negative.
+    @since 4.05
+*)
+
 val rev : 'a list -> 'a list
 (** List reversal. *)
 
@@ -184,6 +192,13 @@ val find : f:('a -> bool) -> 'a list -> 'a
    Raise [Not_found] if there is no value that satisfies [p] in the
    list [l]. *)
 
+val find_opt: f:('a -> bool) -> 'a list -> 'a option
+(** [find p l] returns the first element of the list [l]
+   that satisfies the predicate [p].
+   Returns [None] if there is no value that satisfies [p] in the
+   list [l].
+   @since 4.05 *)
+
 val filter : f:('a -> bool) -> 'a list -> 'a list
 (** [filter p l] returns all the elements of the list [l]
    that satisfy the predicate [p].  The order of the elements
@@ -211,8 +226,22 @@ val assoc : 'a -> ('a * 'b) list -> 'b
    Raise [Not_found] if there is no value associated with [a] in the
    list [l]. *)
 
+val assoc_opt: 'a -> ('a * 'b) list -> 'b option
+(** [assoc_opt a l] returns the value associated with key [a] in the list of
+    pairs [l]. That is,
+    [assoc a [ ...; (a,b); ...] = b]
+    if [(a,b)] is the leftmost binding of [a] in list [l].
+    Returns [None] if there is no value associated with [a] in the
+    list [l].
+    @since 4.05
+*)
+
 val assq : 'a -> ('a * 'b) list -> 'b
 (** Same as {!ListLabels.assoc}, but uses physical equality instead of
+   structural equality to compare keys. *)
+
+val assq_opt: 'a -> ('a * 'b) list -> 'b option
+(** Same as {!ListLabels.assoc_opt}, but uses physical equality instead of
    structural equality to compare keys. *)
 
 val mem_assoc : 'a -> map:('a * 'b) list -> bool

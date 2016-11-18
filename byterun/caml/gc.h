@@ -46,6 +46,27 @@
                     + (tag_t) (tag)))                                         \
       )
 
+#ifdef WITH_PROFINFO
+#define Make_header_with_profinfo(wosize, tag, color, profinfo)               \
+      (Make_header(wosize, tag, color)                                        \
+        | ((((intnat) profinfo) & PROFINFO_MASK) << PROFINFO_SHIFT)           \
+      )
+#else
+#define Make_header_with_profinfo(wosize, tag, color, profinfo) \
+  Make_header(wosize, tag, color)
+#endif
+
+#ifdef WITH_SPACETIME
+struct ext_table;
+extern uintnat caml_spacetime_my_profinfo(struct ext_table**, uintnat);
+#define Make_header_allocated_here(wosize, tag, color)                        \
+      (Make_header_with_profinfo(wosize, tag, color,                          \
+        caml_spacetime_my_profinfo(NULL, wosize))                             \
+      )
+#else
+#define Make_header_allocated_here Make_header
+#endif
+
 #define Is_white_val(val) (Color_val(val) == Caml_white)
 #define Is_gray_val(val) (Color_val(val) == Caml_gray)
 #define Is_blue_val(val) (Color_val(val) == Caml_blue)

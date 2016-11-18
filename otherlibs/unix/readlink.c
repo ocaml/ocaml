@@ -46,12 +46,12 @@ CAMLprim value unix_readlink(value path)
   caml_stat_free(p);
   if (len == -1) uerror("readlink", path);
   buffer[len] = '\0';
-  CAMLreturn(copy_string(buffer));
+  CAMLreturn(caml_copy_string(buffer));
 }
 
 #else
 
 CAMLprim value unix_readlink(value path)
-{ invalid_argument("readlink not implemented"); }
+{ caml_invalid_argument("readlink not implemented"); }
 
 #endif

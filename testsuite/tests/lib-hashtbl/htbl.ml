@@ -106,6 +106,7 @@ module HofM (M: Map.S) : Hashtbl.S with type key = M.key =
     let add = Hashtbl.add
     let remove = Hashtbl.remove
     let find = Hashtbl.find
+    let find_opt = Hashtbl.find_opt
     let find_all = Hashtbl.find_all
     let replace = Hashtbl.replace
     let mem = Hashtbl.mem

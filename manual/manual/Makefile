@@ -76,7 +76,7 @@ html: files
 	         -I ../tutorials -I ../../styles -I ../texstuff manual.hva \
 	         -e macros.tex ../manual.tex ; \
 	${HACHA} -tocter manual.html ; \
-
+	cat ../manual.css >> manual.css
 
 info: files
 	cd infoman; rm -f ocaml.info*; \
@@ -91,6 +91,12 @@ text: files
 	${HEVEA} ${TEXT} -I .. -I ../refman -I ../library -I ../cmds \
 	         -I ../tutorials -I ../../styles -I ../texstuff \
 	         ../manual.inf -e macros.tex ../manual.tex
+
+etex-files: $(FILES)
+	cd refman; $(MAKE) etex-files RELEASEDIR=$(SRC)
+	cd library; $(MAKE) etex-files RELEASEDIR=$(SRC)
+	cd cmds; $(MAKE) etex-files RELEASEDIR=$(SRC)
+	cd tutorials; $(MAKE) etex-files RELEASEDIR=$(SRC)
 
 files: $(FILES)
 	cd refman; $(MAKE) all RELEASEDIR=$(SRC)

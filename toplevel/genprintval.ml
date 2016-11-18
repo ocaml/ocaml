@@ -365,9 +365,11 @@ module Make(O : OBJ)(EVP : EVALPATH with type valu = O.t) = struct
                     tree_of_val depth obj
                       (try Ctype.apply env decl.type_params body ty_list with
                          Ctype.Cannot_apply -> abstract_type)
-                | {type_kind = Type_variant constr_list} ->
+                | {type_kind = Type_variant constr_list; type_unboxed} ->
+                    let unbx = type_unboxed.unboxed in
                     let tag =
-                      if O.is_block obj
+                      if unbx then Cstr_unboxed
+                      else if O.is_block obj
                       then Cstr_block(O.tag obj)
                       else Cstr_constant(O.obj obj) in
                     let {cd_id;cd_args;cd_res} =
@@ -393,12 +395,12 @@ module Make(O : OBJ)(EVP : EVALPATH with type valu = O.t) = struct
                           in
                           tree_of_constr_with_args (tree_of_constr env path)
                             (Ident.name cd_id) false 0 depth obj
-                            ty_args
+                            ty_args unbx
                       | Cstr_record lbls ->
                           let r =
                             tree_of_record_fields depth
                               env path type_params ty_list
-                              lbls 0 obj
+                              lbls 0 obj unbx
                           in
                           Oval_constr(tree_of_constr env path
                                         (Ident.name cd_id),
@@ -413,9 +415,12 @@ module Make(O : OBJ)(EVP : EVALPATH with type valu = O.t) = struct
                           | Record_extension -> 1
                           | _ -> 0
                         in
+                        let unbx =
+                          match rep with Record_unboxed _ -> true | _ -> false
+                        in
                         tree_of_record_fields depth
                           env path decl.type_params ty_list
-                          lbl_list pos obj
+                          lbl_list pos obj unbx
                     end
                 | {type_kind = Type_open} ->
                     tree_of_extension path depth obj
@@ -464,7 +469,7 @@ module Make(O : OBJ)(EVP : EVALPATH with type valu = O.t) = struct
         end
 
       and tree_of_record_fields depth env path type_params ty_list
-          lbl_list pos obj =
+          lbl_list pos obj unboxed =
         let rec tree_of_fields pos = function
           | [] -> []
           | {ld_id; ld_type} :: remainder ->
@@ -481,8 +486,9 @@ module Make(O : OBJ)(EVP : EVALPATH with type valu = O.t) = struct
                 if pos = 0 then tree_of_label env path name
                 else Oide_ident name
               and v =
-                nest tree_of_val (depth - 1) (O.field obj pos)
-                  ty_arg
+                if unboxed
+                then tree_of_val (depth - 1) obj ty_arg
+                else nest tree_of_val (depth - 1) (O.field obj pos) ty_arg
               in
               (lid, v) :: tree_of_fields (pos + 1) remainder
         in
@@ -497,10 +503,10 @@ module Make(O : OBJ)(EVP : EVALPATH with type valu = O.t) = struct
       tree_list start ty_list
 
       and tree_of_constr_with_args
-             tree_of_cstr cstr_name inlined start depth obj ty_args =
+             tree_of_cstr cstr_name inlined start depth obj ty_args unboxed =
         let lid = tree_of_cstr cstr_name in
         let args =
-          if inlined then
+          if inlined || unboxed then
             match ty_args with
             | [ty] -> [ tree_of_val (depth - 1) obj ty ]
             | _ -> assert false
@@ -533,7 +539,7 @@ module Make(O : OBJ)(EVP : EVALPATH with type valu = O.t) = struct
         tree_of_constr_with_args
            (fun x -> Oide_ident x) name (cstr.cstr_inlined <> None)
            1 depth bucket
-           cstr.cstr_args
+           cstr.cstr_args false
       with Not_found | EVP.Error ->
         match check_depth depth bucket ty with
           Some x -> x

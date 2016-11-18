@@ -49,7 +49,7 @@ let free_vars ?(param=false) ty =
 
 let newgenconstr path tyl = newgenty (Tconstr (path, tyl, ref Mnil))
 
-let constructor_args cd_args cd_res path rep =
+let constructor_existentials cd_args cd_res =
   let tyl =
     match cd_args with
     | Cstr_tuple l -> l
@@ -63,23 +63,33 @@ let constructor_args cd_args cd_res path rep =
         let res_vars = free_vars type_ret in
         TypeSet.elements (TypeSet.diff arg_vars_set res_vars)
   in
+  (tyl, existentials)
+
+let constructor_args priv cd_args cd_res path rep =
+  let tyl, existentials = constructor_existentials cd_args cd_res in
   match cd_args with
   | Cstr_tuple l -> existentials, l, None
   | Cstr_record lbls ->
       let arg_vars_set = free_vars ~param:true (newgenty (Ttuple tyl)) in
       let type_params = TypeSet.elements arg_vars_set in
+      let type_unboxed =
+        match rep with
+        | Record_unboxed _ -> { unboxed = true; default = false }
+        | _ -> { unboxed = false; default = false }
+      in
       let tdecl =
         {
           type_params;
           type_arity = List.length type_params;
           type_kind = Type_record (lbls, rep);
-          type_private = Public;
+          type_private = priv;
           type_manifest = None;
           type_variance = List.map (fun _ -> Variance.full) type_params;
           type_newtype_level = None;
           type_loc = Location.none;
           type_attributes = [];
           type_immediate = false;
+          type_unboxed;
         }
       in
       existentials,
@@ -104,16 +114,22 @@ let constructor_descrs ty_path decl cstrs =
         in
         let (tag, descr_rem) =
           match cd_args with
-            Cstr_tuple [] -> (Cstr_constant idx_const,
+          | _ when decl.type_unboxed.unboxed ->
+            assert (rem = []);
+            (Cstr_unboxed, [])
+          | Cstr_tuple [] -> (Cstr_constant idx_const,
                    describe_constructors (idx_const+1) idx_nonconst rem)
           | _  -> (Cstr_block idx_nonconst,
                    describe_constructors idx_const (idx_nonconst+1) rem) in
-
         let cstr_name = Ident.name cd_id in
         let existentials, cstr_args, cstr_inlined =
-          constructor_args cd_args cd_res
-            (Path.Pdot (ty_path, cstr_name, Path.nopos))
-            (Record_inlined idx_nonconst)
+          let representation =
+            if decl.type_unboxed.unboxed
+            then Record_unboxed true
+            else Record_inlined idx_nonconst
+          in
+          constructor_args decl.type_private cd_args cd_res
+            (Path.Pdot (ty_path, cstr_name, Path.nopos)) representation
         in
         let cstr =
           { cstr_name;
@@ -141,7 +157,7 @@ let extension_descr path_ext ext =
       | None -> newgenconstr ext.ext_type_path ext.ext_type_params
   in
   let existentials, cstr_args, cstr_inlined =
-    constructor_args ext.ext_args ext.ext_ret_type
+    constructor_args ext.ext_private ext.ext_args ext.ext_ret_type
       path_ext Record_extension
   in
     { cstr_name = Path.last path_ext;
@@ -201,7 +217,7 @@ let rec find_constr tag num_const num_nonconst = function
       then c
       else find_constr tag (num_const + 1) num_nonconst rem
   | c :: rem ->
-      if tag = Cstr_block num_nonconst
+      if tag = Cstr_block num_nonconst || tag = Cstr_unboxed
       then c
       else find_constr tag num_const (num_nonconst + 1) rem
 

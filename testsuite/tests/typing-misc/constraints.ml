@@ -1,26 +1,27 @@
 type 'a t = [`A of 'a t t] as 'a;; (* fails *)
 [%%expect{|
-Line _, characters 12-32:
-Error: Constraints are not satisfied in this type.
-       Type
-       [ `A of 'a ] t t as 'a
-       should be an instance of
-       ([ `A of 'b t t ] as 'b) t
+Line _, characters 0-32:
+Error: The definition of t contains a cycle:
+       'a t t as 'a
 |}, Principal{|
-type 'a t = [ `A of 'b t t ] as 'b constraint 'a = [ `A of 'a t t ]
+Line _, characters 0-32:
+Error: The definition of t contains a cycle:
+       [ `A of 'a t t ] as 'a
 |}];;
 type 'a t = [`A of 'a t t];; (* fails *)
 [%%expect{|
 Line _, characters 0-26:
 Error: In the definition of t, type 'a t t should be 'a t
 |}];;
-type 'a t = [`A of 'a t t] constraint 'a = 'a t;;
+type 'a t = [`A of 'a t t] constraint 'a = 'a t;; (* fails since 4.04 *)
 [%%expect{|
-type 'a t = [ `A of 'a t t ] constraint 'a = 'a t
+Line _, characters 0-47:
+Error: The type abbreviation t is cyclic
 |}];;
-type 'a t = [`A of 'a t] constraint 'a = 'a t;;
+type 'a t = [`A of 'a t] constraint 'a = 'a t;; (* fails since 4.04 *)
 [%%expect{|
-type 'a t = [ `A of 'a t ] constraint 'a = 'a t
+Line _, characters 0-45:
+Error: The type abbreviation t is cyclic
 |}];;
 type 'a t = [`A of 'a] as 'a;;
 [%%expect{|
@@ -30,12 +31,13 @@ type 'a t = [ `A of 'b ] as 'b constraint 'a = [ `A of 'a ]
 |}];;
 type 'a v = [`A of u v] constraint 'a = t and t = u and u = t;; (* fails *)
 [%%expect{|
-Line _, characters 42-51:
-Error: The type abbreviation t is cyclic
+Line _, characters 0-41:
+Error: The definition of v contains a cycle:
+       t
 |}];;
 
 type 'a t = 'a;;
-let f (x : 'a t as 'a) = ();; (* fails *)
+let f (x : 'a t as 'a) = ();; (* ok *)
 [%%expect{|
 type 'a t = 'a
 val f : 'a -> unit = <fun>
@@ -58,21 +60,13 @@ end
 Line _, characters 2-44:
 Error: The definition of abs contains a cycle:
        'a is_an_object as 'a
-|}, Principal{|
-module type PR6505 =
-  sig
-    type 'o is_an_object = 'o constraint 'o = < .. >
-    and 'a abs constraint 'a = 'a is_an_object
-    val abs : ('a is_an_object as 'a) is_an_object -> 'a abs
-    val unabs : ('a is_an_object as 'a) abs -> 'a
-  end
 |}];;
 
 module PR6505a = struct
   type 'o is_an_object = < .. > as 'o
   and ('k,'l) abs = 'l constraint 'k = 'l is_an_object
   let y : ('o, 'o) abs = object end
-end;; 
+end;;
 let _ = PR6505a.y#bang;; (* fails *)
 [%%expect{|
 module PR6505a :
@@ -112,7 +106,7 @@ module PR6505b :
   end
 Line _, characters 23-57:
 Warning 8: this pattern-matching is not exhaustive.
-Here is an example of a value that is not matched:
+Here is an example of a case that is not matched:
 `Foo _
 Exception: Match_failure ("", 6, 23).
 |}]

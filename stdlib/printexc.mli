@@ -285,7 +285,8 @@ val convert_raw_backtrace_slot : raw_backtrace_slot -> backtrace_slot
 *)
 
 
-val get_raw_backtrace_next_slot : raw_backtrace_slot -> raw_backtrace_slot option
+val get_raw_backtrace_next_slot :
+    raw_backtrace_slot -> raw_backtrace_slot option
 (** [get_raw_backtrace_next_slot slot] returns the next slot inlined, if any.
 
     @since 4.04.0

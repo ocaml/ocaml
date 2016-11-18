@@ -161,6 +161,7 @@ export LC_ALL=C
 $make -f $makefile distclean || :
 
 if $docheckout; then
+  git checkout boot/ocamlc boot/ocamllex boot/ocamldep
   git pull
 fi
 
@@ -174,7 +175,12 @@ case $configure in
   *) error "internal error";;
 esac
 
-$make -f $makefile world.opt
+$make -f $makefile coldstart
+$make -f $makefile core
+$make -f $makefile coreboot
+$make -f $makefile world
+$make -f $makefile opt
+$make -f $makefile opt.opt
 $make -f $makefile install
 
 rm -rf "$instdir"

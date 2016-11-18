@@ -3,8 +3,8 @@ let pp fmt = Printf.printf fmt
 type 'a box = B of 'a
 (* Basic tests *)
 module M = struct
-	type c = C
-	type t = {x : c box }
+  type c = C
+  type t = {x : c box }
 end
 ;;
 module N = struct
@@ -83,7 +83,8 @@ let rec eval: type t. t Exterior.Gadt.t -> t = function
   | Exterior.Gadt.( Int n ) -> n
 let () =
   let print () = pp "Right function print\n" in
-  let choose (type a):a Exterior.Gadt.t * a Exterior.Gadt.t -> a -> a = fun (a,b) c ->
+  let choose (type a):a Exterior.Gadt.t * a Exterior.Gadt.t -> a -> a =
+  fun (a,b) c ->
   match a, b, c with
   | Exterior.( Gadt.( Bool Boolean.{b} ), Gadt.Bool _ , _ ) -> print(); true
   | Exterior.(Gadt.Bool Gadt.Boolean.{b}), _ , true -> print(); true
@@ -92,7 +93,9 @@ let () =
   | Exterior.( Gadt.(Int n, Gadt.Int k, l) ) -> print(); k+n+l
   | Exterior.Gadt.( Eq (a,b) ), _,  true -> print(); true
   | Exterior.(Gadt.( Eq (a,b), _ ,  false )) -> print(); eval a = eval b in
-  let _ = choose Exterior.Gadt.(Bool Boolean.{b=true}, Bool Boolean.{b=false}) false in
+  let _ =
+    choose Exterior.Gadt.(Bool Boolean.{b=true}, Bool Boolean.{b=false}) false
+  in
   print ()
 ;;
 (* existential type *)
@@ -103,8 +106,8 @@ end
 let rec print: Existential.printable -> unit  = function
   | Existential.( E(x, print) ) -> print x
 ;;
-(* Test that constructors and variables introduced in scope inside M.(..) are not
-propagated outside of M.(..) *)
+(* Test that constructors and variables introduced in scope inside
+M.(..) are not propagated outside of M.(..) *)
 module S = struct
 type 'a t = Sep : unit t
 type ex = Ex: 'a * 'a -> ex

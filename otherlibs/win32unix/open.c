@@ -42,11 +42,11 @@ CAMLprim value unix_open(value path, value flags, value perm)
   HANDLE h;
 
   caml_unix_check_path(path, "open");
-  fileaccess = convert_flag_list(flags, open_access_flags);
+  fileaccess = caml_convert_flag_list(flags, open_access_flags);
   sharemode = FILE_SHARE_READ | FILE_SHARE_WRITE
-              | convert_flag_list(flags, open_share_flags);
+              | caml_convert_flag_list(flags, open_share_flags);
 
-  createflags = convert_flag_list(flags, open_create_flags);
+  createflags = caml_convert_flag_list(flags, open_create_flags);
   if ((createflags & (O_CREAT | O_EXCL)) == (O_CREAT | O_EXCL))
     filecreate = CREATE_NEW;
   else if ((createflags & (O_CREAT | O_TRUNC)) == (O_CREAT | O_TRUNC))
@@ -63,7 +63,7 @@ CAMLprim value unix_open(value path, value flags, value perm)
   else
     fileattrib = FILE_ATTRIBUTE_NORMAL;
 
-  cloexec = convert_flag_list(flags, open_cloexec_flags);
+  cloexec = caml_convert_flag_list(flags, open_cloexec_flags);
   attr.nLength = sizeof(attr);
   attr.lpSecurityDescriptor = NULL;
   attr.bInheritHandle = cloexec ? FALSE : TRUE;

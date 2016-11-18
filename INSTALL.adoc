@@ -54,6 +54,8 @@ The `configure` script accepts the following options:
 
 `-no-curses`::
         Do not use the curses library.
+        The only use for this is to highlight errors in the toplevel using
+        'standout' mode, e.g. underline, rather than with '^' on a newline.
 
 `-host <hosttype>`::                (default: determined automatically)
         The type of the host machine, in GNU's "configuration name" format

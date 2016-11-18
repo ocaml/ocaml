@@ -13,6 +13,8 @@
 /*                                                                        */
 /**************************************************************************/
 
+#define CAML_INTERNALS
+
 /* Buffered input/output. */
 
 #include <errno.h>
@@ -110,7 +112,7 @@ static void unlink_channel(struct channel *channel)
 
 CAMLexport void caml_close_channel(struct channel *channel)
 {
-  close(channel->fd);
+  CAML_SYS_CLOSE(channel->fd);
   if (channel->refcount > 0) return;
   if (caml_channel_mutex_free != NULL) (*caml_channel_mutex_free)(channel);
   unlink_channel(channel);
@@ -186,10 +188,10 @@ CAMLexport void caml_putword(struct channel *channel, uint32_t w)
 {
   if (! caml_channel_binary_mode(channel))
     caml_failwith("output_binary_int: not a binary channel");
-  putch(channel, w >> 24);
-  putch(channel, w >> 16);
-  putch(channel, w >> 8);
-  putch(channel, w);
+  caml_putch(channel, w >> 24);
+  caml_putch(channel, w >> 16);
+  caml_putch(channel, w >> 8);
+  caml_putch(channel, w);
 }
 
 CAMLexport int caml_putblock(struct channel *channel, char *p, intnat len)
@@ -276,7 +278,7 @@ CAMLexport uint32_t caml_getword(struct channel *channel)
     caml_failwith("input_binary_int: not a binary channel");
   res = 0;
   for(i = 0; i < 4; i++) {
-    res = (res << 8) + getch(channel);
+    res = (res << 8) + caml_getch(channel);
   }
   return res;
 }
@@ -307,16 +309,18 @@ CAMLexport int caml_getblock(struct channel *channel, char *p, intnat len)
   }
 }
 
-CAMLexport int caml_really_getblock(struct channel *chan, char *p, intnat n)
+/* Returns the number of bytes read. */
+CAMLexport intnat caml_really_getblock(struct channel *chan, char *p, intnat n)
 {
+  intnat k = n;
   int r;
-  while (n > 0) {
-    r = caml_getblock(chan, p, n);
+  while (k > 0) {
+    r = caml_getblock(chan, p, k);
     if (r == 0) break;
     p += r;
-    n -= r;
+    k -= r;
   }
-  return (n == 0);
+  return n - k;
 }
 
 CAMLexport void caml_seek_in(struct channel *channel, file_offset dest)
@@ -530,7 +534,7 @@ CAMLprim value caml_ml_close_channel(value vchannel)
 
   if (do_syscall) {
     caml_enter_blocking_section();
-    result = close(fd);
+    result = CAML_SYS_CLOSE(fd);
     caml_leave_blocking_section();
   }
 
@@ -616,7 +620,7 @@ CAMLprim value caml_ml_output_char(value vchannel, value ch)
   struct channel * channel = Channel(vchannel);
 
   Lock(channel);
-  putch(channel, Long_val(ch));
+  caml_putch(channel, Long_val(ch));
   Unlock(channel);
   CAMLreturn (Val_unit);
 }
@@ -645,7 +649,7 @@ CAMLprim value caml_ml_output_partial(value vchannel, value buff, value start,
   CAMLreturn (Val_int(res));
 }
 
-CAMLprim value caml_ml_output(value vchannel, value buff, value start,
+CAMLprim value caml_ml_output_bytes(value vchannel, value buff, value start,
                               value length)
 {
   CAMLparam4 (vchannel, buff, start, length);
@@ -663,6 +667,12 @@ CAMLprim value caml_ml_output(value vchannel, value buff, value start,
     }
   Unlock(channel);
   CAMLreturn (Val_unit);
+}
+
+CAMLprim value caml_ml_output(value vchannel, value buff, value start,
+                              value length)
+{
+  return caml_ml_output_bytes (vchannel, buff, start, length);
 }
 
 CAMLprim value caml_ml_seek_out(value vchannel, value pos)
@@ -706,7 +716,7 @@ CAMLprim value caml_ml_input_char(value vchannel)
   unsigned char c;
 
   Lock(channel);
-  c = getch(channel);
+  c = caml_getch(channel);
   Unlock(channel);
   CAMLreturn (Val_long(c));
 }

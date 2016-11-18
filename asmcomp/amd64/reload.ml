@@ -24,8 +24,7 @@ open Mach
    Operation                    Res     Arg1    Arg2
      Imove                      R       S
                              or S       R
-     Iconst_int         ]       S if 32-bit signed, R otherwise
-     Iconst_blockheader ]
+     Iconst_int                 S if 32-bit signed, R otherwise
      Iconst_float               R
      Iconst_symbol (not PIC)    S
      Iconst_symbol (PIC)        R
@@ -66,7 +65,7 @@ inherit Reloadgen.reload_generic as super
 
 method! reload_operation op arg res =
   match op with
-  | Iintop(Iadd|Isub|Iand|Ior|Ixor|Icomp _|Icheckbound) ->
+  | Iintop(Iadd|Isub|Iand|Ior|Ixor|Icomp _|Icheckbound _) ->
       (* One of the two arguments can reside in the stack, but not both *)
       if stackp arg.(0) && stackp arg.(1)
       then ([|arg.(0); self#makereg arg.(1)|], res)
@@ -90,7 +89,7 @@ method! reload_operation op arg res =
   | Ifloatofint | Iintoffloat ->
       (* Result must be in register, but argument can be on stack *)
       (arg, (if stackp res.(0) then [| self#makereg res.(0) |] else res))
-  | Iconst_int n | Iconst_blockheader n ->
+  | Iconst_int n ->
       if n <= 0x7FFFFFFFn && n >= -0x80000000n
       then (arg, res)
       else super#reload_operation op arg res

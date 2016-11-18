@@ -13,6 +13,8 @@
 /*                                                                        */
 /**************************************************************************/
 
+#define CAML_INTERNALS
+
 #include <caml/mlvalues.h>
 #include "unixsupport.h"
 #include <windows.h>
@@ -34,7 +36,7 @@ value win_create_process_native(value cmd, value cmdline, value env,
     unix_error(EINVAL, "create_process", cmdline);
   /* [env] is checked for null bytes at construction time, see unix.ml */
 
-  exefile = search_exe_in_path(String_val(cmd));
+  exefile = caml_search_exe_in_path(String_val(cmd));
   if (env != Val_int(0)) {
     envp = String_val(Field(env, 0));
   } else {

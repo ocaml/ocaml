@@ -86,6 +86,7 @@ module Options = Main_args.Make_bytecomp_options (struct
   let _output_obj = option "-output-obj"
   let _output_complete_obj = option "-output-complete-obj"
   let _pack = option "-pack"
+  let _plugin = option_with_arg "-plugin"
   let _pp _s = incompatible "-pp"
   let _ppx _s = incompatible "-ppx"
   let _principal = option "-principal"
@@ -101,6 +102,8 @@ module Options = Main_args.Make_bytecomp_options (struct
   let _no_strict_formats = option "-no-strict-formats"
   let _thread () = option "-thread" ()
   let _vmthread () = option "-vmthread" ()
+  let _unboxed_types = option "-unboxed-types"
+  let _no_unboxed_types = option "-no-unboxed-types"
   let _unsafe = option "-unsafe"
   let _unsafe_string = option "-unsafe-string"
   let _use_prims s = option_with_arg "-use-prims" s
@@ -123,6 +126,8 @@ module Options = Main_args.Make_bytecomp_options (struct
   let _dflambda = option "-dflambda"
   let _dinstr = option "-dinstr"
   let _dtimings = option "-dtimings"
+  let _args = Arg.read_arg
+  let _args0 = Arg.read_arg0
   let anonymous = process_file
 end);;
 
@@ -142,7 +147,7 @@ let optlist =
     :: ("-p", Arg.String add_profarg, "[afilmt]  Same as option -P")
     :: Options.list
 in
-Arg.parse optlist process_file usage;
+Arg.parse_expand optlist process_file usage;
 if !with_impl && !with_intf then begin
   fprintf stderr "ocamlcp cannot deal with both \"-impl\" and \"-intf\"\n";
   fprintf stderr "please compile interfaces and implementations separately\n";

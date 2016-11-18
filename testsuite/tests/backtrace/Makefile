@@ -25,7 +25,7 @@ OTHERFILESNOINLINING_NATIVE=backtraces_and_finalizers.ml
 
 # Keep only filenames, lines and character ranges
 LOCATIONFILTER=grep -oE \
-							 '[a-zA-Z_]+\.ml(:[0-9]+)?|(line|characters) [0-9-]+'
+               '[a-zA-Z_]+\.ml(:[0-9]+)?|(line|characters) [0-9-]+'
 
 default:
 	@$(MAKE) byte
@@ -42,7 +42,7 @@ byte:
 	    (OCAMLRUNPARAM=$$OCAMLRUNPARAM,b=1 \
               $(OCAMLRUN) $(EXECNAME) $$arg || true) \
 	         >$$F.$$arg.byte.result 2>&1; \
-	    $(DIFF) $$F.$$arg.reference $$F.$$arg.byte.result >/dev/null \
+	    $(DIFF) $$F.$$arg.byte.reference $$F.$$arg.byte.result >/dev/null \
 	    && echo " => passed" || echo " => failed"; \
 	  done; \
 	done
@@ -54,7 +54,7 @@ byte:
 	  (OCAMLRUNPARAM=$$OCAMLRUNPARAM,b=1 \
             $(OCAMLRUN) $(EXECNAME) $$arg || true) \
 	       >$$F.byte.result 2>&1; \
-	  $(DIFF) $$F.reference $$F.byte.result >/dev/null \
+	  $(DIFF) $$F.byte.reference $$F.byte.result >/dev/null \
 	  && echo " => passed" || echo " => failed"; \
 	done;
 	@for file in $(INLININGFILES); \
@@ -64,9 +64,9 @@ byte:
 	  printf " ... testing '$$file' with ocamlc:"; \
 	  F="`basename $$file .ml`"; \
 	  (OCAMLRUNPARAM=$$OCAMLRUNPARAM,b=1 \
-    	$(OCAMLRUN) $(EXECNAME) $$arg 2>&1 || true) \
+	  $(OCAMLRUN) $(EXECNAME) $$arg 2>&1 || true) \
 			| $(LOCATIONFILTER) >$$F.byte.result 2>&1; \
-	  $(DIFF) $$F.reference $$F.byte.result >/dev/null \
+	  $(DIFF) $$F.byte.reference $$F.byte.result >/dev/null \
 	  && echo " => passed" || echo " => failed"; \
 	done
 
@@ -94,7 +94,8 @@ native:
 	    (OCAMLRUNPARAM=$$OCAMLRUNPARAM,b=1 \
               ./$(EXECNAME) $$arg || true) \
 	         >$$F.$$arg.native.result 2>&1; \
-	    $(DIFF) $$F.$$arg.reference $$F.$$arg.native.result >/dev/null \
+	    $(DIFF) $$F.$$arg.native.reference $$F.$$arg.native.result \
+	            >/dev/null \
 	    && echo " => passed" || echo " => failed"; \
 	  done; \
 	done
@@ -106,7 +107,7 @@ native:
 	  (OCAMLRUNPARAM=$$OCAMLRUNPARAM,b=1 \
             ./$(EXECNAME) $$arg || true) \
 	       >$$F.native.result 2>&1; \
-	  $(DIFF) $$F.reference $$F.native.result >/dev/null \
+	  $(DIFF) $$F.native.reference $$F.native.result >/dev/null \
 	  && echo " => passed" || echo " => failed"; \
 	done;
 	@for file in $(OTHERFILESNOINLINING) $(OTHERFILESNOINLINING_NATIVE); \
@@ -118,7 +119,7 @@ native:
 	  (OCAMLRUNPARAM=$$OCAMLRUNPARAM,b=1 \
             ./$(EXECNAME) $$arg || true) \
 	       >$$F.native.result 2>&1; \
-	  $(DIFF) $$F.reference $$F.native.result >/dev/null \
+	  $(DIFF) $$F.native.reference $$F.native.result >/dev/null \
 	  && echo " => passed" || echo " => failed"; \
 	done;
 	@for file in $(INLININGFILES); \
@@ -128,18 +129,18 @@ native:
 	  printf " ... testing '$$file' with ocamlopt:"; \
 	  F="`basename $$file .ml`"; \
 	  (OCAMLRUNPARAM=$$OCAMLRUNPARAM,b=1 \
-    	./$(EXECNAME) $$arg 2>&1 || true) \
+	  ./$(EXECNAME) $$arg 2>&1 || true) \
 		 	| $(LOCATIONFILTER) >$$F.native.result; \
-	  $(DIFF) $$F.reference $$F.native.result >/dev/null \
+	  $(DIFF) $$F.native.reference $$F.native.result >/dev/null \
 	  && echo " => passed" || echo " => failed"; \
 	  rm -f program program.exe; \
 	  $(OCAMLOPT) -g -o $(EXECNAME) -O3 $$file; \
 	  printf " ... testing '$$file' with ocamlopt -O3:"; \
 	  F="`basename $$file .ml`"; \
 	  (OCAMLRUNPARAM=$$OCAMLRUNPARAM,b=1 \
-    	./$(EXECNAME) $$arg 2>&1 || true) \
+	  ./$(EXECNAME) $$arg 2>&1 || true) \
 		 	| $(LOCATIONFILTER) >$$F.O3.result; \
-	  $(DIFF) $$F.reference $$F.O3.result >/dev/null \
+	  $(DIFF) $$F.native.reference $$F.O3.result >/dev/null \
 	  && echo " => passed" || echo " => failed"; \
 	done
 

@@ -132,6 +132,7 @@ let phys_reg n =
 
 let rax = phys_reg 0
 let rdx = phys_reg 4
+let r13 = phys_reg 9
 let rbp = phys_reg 12
 let rxmm15 = phys_reg 115
 
@@ -175,12 +176,20 @@ let incoming ofs = Incoming ofs
 let outgoing ofs = Outgoing ofs
 let not_supported _ofs = fatal_error "Proc.loc_results: cannot call"
 
+let max_int_args_in_regs () =
+  if Config.spacetime then 9 else 10
+
 let loc_arguments arg =
-  calling_conventions 0 9 100 109 outgoing arg
+  calling_conventions 0 ((max_int_args_in_regs ()) - 1) 100 109 outgoing arg
 let loc_parameters arg =
-  let (loc, _ofs) = calling_conventions 0 9 100 109 incoming arg in loc
+  let (loc, _ofs) =
+    calling_conventions 0 ((max_int_args_in_regs ()) - 1) 100 109 incoming arg
+  in
+  loc
 let loc_results res =
   let (loc, _ofs) = calling_conventions 0 0 100 100 not_supported res in loc
+
+let loc_spacetime_node_hole = r13
 
 (* C calling conventions under Unix:
      first integer args in rdi, rsi, rdx, rcx, r8, r9
@@ -263,13 +272,20 @@ let destroyed_at_c_call =
        108;109;110;111;112;113;114;115])
 
 let destroyed_at_oper = function
-    Iop(Icall_ind | Icall_imm _ | Iextcall(_, true)) -> all_phys_regs
-  | Iop(Iextcall(_, false)) -> destroyed_at_c_call
+    Iop(Icall_ind _ | Icall_imm _ | Iextcall { alloc = true; }) ->
+    all_phys_regs
+  | Iop(Iextcall { alloc = false; }) -> destroyed_at_c_call
   | Iop(Iintop(Idiv | Imod)) | Iop(Iintop_imm((Idiv | Imod), _))
         -> [| rax; rdx |]
   | Iop(Istore(Single, _, _)) -> [| rxmm15 |]
+  | Iop(Ialloc _) when Config.spacetime
+        -> [| rax; loc_spacetime_node_hole |]
   | Iop(Ialloc _ | Iintop(Imulh | Icomp _) | Iintop_imm((Icomp _), _))
         -> [| rax |]
+  | Iop (Iintop (Icheckbound _)) when Config.spacetime ->
+      [| loc_spacetime_node_hole |]
+  | Iop (Iintop_imm(Icheckbound _, _)) when Config.spacetime ->
+      [| loc_spacetime_node_hole |]
   | Iswitch(_, _) -> [| rax; rdx |]
   | _ ->
     if fp then
@@ -285,11 +301,11 @@ let destroyed_at_raise = all_phys_regs
 
 
 let safe_register_pressure = function
-    Iextcall(_,_) -> if win64 then if fp then 7 else 8 else 0
+    Iextcall _ -> if win64 then if fp then 7 else 8 else 0
   | _ -> if fp then 10 else 11
 
 let max_register_pressure = function
-    Iextcall(_, _) ->
+    Iextcall _ ->
       if win64 then
         if fp then [| 7; 10 |]  else [| 8; 10 |]
         else
@@ -306,9 +322,9 @@ let max_register_pressure = function
    registers). *)
 
 let op_is_pure = function
-  | Icall_ind | Icall_imm _ | Itailcall_ind | Itailcall_imm _
+  | Icall_ind _ | Icall_imm _ | Itailcall_ind _ | Itailcall_imm _
   | Iextcall _ | Istackoffset _ | Istore _ | Ialloc _
-  | Iintop(Icheckbound) | Iintop_imm(Icheckbound, _) -> false
+  | Iintop(Icheckbound _) | Iintop_imm(Icheckbound _, _) -> false
   | Ispecific(Ilea _) -> true
   | Ispecific _ -> false
   | _ -> true

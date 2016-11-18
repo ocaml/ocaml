@@ -95,9 +95,6 @@ module TagMap =
 module IdSet =
   Set.Make (struct type t = ident let compare = id_compare end)
 
-module IdMap =
-  Map.Make (struct type t =  ident let compare = id_compare end)
-
 (*********************)
 (* Variable cleaning *)
 (*********************)

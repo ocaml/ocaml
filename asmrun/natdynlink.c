@@ -13,16 +13,25 @@
 /*                                                                        */
 /**************************************************************************/
 
+#define CAML_INTERNALS
+
 #include "caml/misc.h"
 #include "caml/mlvalues.h"
 #include "caml/memory.h"
-#include "stack.h"
+#include "caml/stack.h"
 #include "caml/callback.h"
 #include "caml/alloc.h"
 #include "caml/intext.h"
 #include "caml/osdeps.h"
 #include "caml/fail.h"
 #include "caml/signals.h"
+#ifdef WITH_SPACETIME
+#include "caml/spacetime.h"
+#endif
+
+#include "caml/hooks.h"
+
+CAMLexport void (*caml_natdynlink_hook)(void* handle, char* unit) = NULL;
 
 #include <stdio.h>
 #include <string.h>
@@ -35,8 +44,6 @@ static void *getsym(void *handle, char *module, char *name){
   caml_stat_free(fullname);
   return sym;
 }
-
-extern char caml_globals_map[];
 
 CAMLprim value caml_natdynlink_getmap(value unit)
 {
@@ -92,6 +99,11 @@ CAMLprim value caml_natdynlink_run(void *handle, value symbol) {
   sym = optsym("__frametable");
   if (NULL != sym) caml_register_frametable(sym);
 
+#ifdef WITH_SPACETIME
+  sym = optsym("__spacetime_shapes");
+  if (NULL != sym) caml_spacetime_register_shapes(sym);
+#endif
+
   sym = optsym("__gc_roots");
   if (NULL != sym) caml_register_dyn_global(sym);
 
@@ -111,6 +123,8 @@ CAMLprim value caml_natdynlink_run(void *handle, value symbol) {
     caml_ext_table_add(&caml_code_fragments_table, cf);
   }
 
+  if( caml_natdynlink_hook != NULL ) caml_natdynlink_hook(handle,unit);
+  
   entrypoint = optsym("__entry");
   if (NULL != entrypoint) result = caml_callback((value)(&entrypoint), 0);
   else result = Val_unit;

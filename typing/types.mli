@@ -295,6 +295,7 @@ type type_declaration =
     type_loc: Location.t;
     type_attributes: Parsetree.attributes;
     type_immediate: bool; (* true iff type should not be a pointer *)
+    type_unboxed: unboxed_status;
   }
 
 and type_kind =
@@ -306,6 +307,7 @@ and type_kind =
 and record_representation =
     Record_regular                      (* All fields are boxed / tagged *)
   | Record_float                        (* All fields are floats *)
+  | Record_unboxed of bool    (* Unboxed single-field record, inlined or not *)
   | Record_inlined of int               (* Inlined record *)
   | Record_extension                    (* Inlined record under extension *)
 
@@ -330,6 +332,12 @@ and constructor_declaration =
 and constructor_arguments =
   | Cstr_tuple of type_expr list
   | Cstr_record of label_declaration list
+
+and unboxed_status =
+  {
+    unboxed: bool;
+    default: bool; (* True for unannotated unboxable types. *)
+  }
 
 type extension_constructor =
     {
@@ -388,7 +396,11 @@ type module_type =
     Mty_ident of Path.t
   | Mty_signature of signature
   | Mty_functor of Ident.t * module_type option * module_type
-  | Mty_alias of Path.t
+  | Mty_alias of alias_presence * Path.t
+
+and alias_presence =
+  | Mta_present
+  | Mta_absent
 
 and signature = signature_item list
 
@@ -449,6 +461,7 @@ type constructor_description =
 and constructor_tag =
     Cstr_constant of int                (* Constant constructor (an int) *)
   | Cstr_block of int                   (* Regular constructor (a block) *)
+  | Cstr_unboxed                        (* Constructor of an unboxed type *)
   | Cstr_extension of Path.t * bool     (* Extension constructor
                                            true if a constant false if a block*)
 

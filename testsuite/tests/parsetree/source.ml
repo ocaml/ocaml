@@ -7218,7 +7218,7 @@ let _ = function
     end
 
 let f (type t) () =
-  let exception F of t in (); 
+  let exception F of t in ();
   let exception G of t in ();
   let exception E of t in
   (fun x -> E x), (function E _ -> print_endline "OK" | _ -> print_endline "KO")
@@ -7245,3 +7245,12 @@ end and ['a] d () = object
   inherit ['a] c ()
 end;;
 *)
+
+(* PR#7329 Pattern open *)
+let _ =
+  let module M = struct type t = { x : int } end in
+  let f M.(x) = () in
+  let g M.{x} = () in
+  let h = function M.[] | M.[a] | M.(a::q) -> () in
+  let i = function M.[||] | M.[|x|]  -> true | _ -> false in
+  ()

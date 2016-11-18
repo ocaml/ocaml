@@ -126,7 +126,8 @@ type type_mismatch =
   | Field_arity of Ident.t
   | Field_names of int * Ident.t * Ident.t
   | Field_missing of bool * Ident.t
-  | Record_representation of bool
+  | Record_representation of bool   (* true means second one is unboxed float *)
+  | Unboxed_representation of bool  (* true means second one is unboxed *)
   | Immediate
 
 let report_type_mismatch0 first second decl ppf err =
@@ -154,6 +155,10 @@ let report_type_mismatch0 first second decl ppf err =
       pr "Their internal representations differ:@ %s %s %s"
         (if b then second else first) decl
         "uses unboxed float representation"
+  | Unboxed_representation b ->
+      pr "Their internal representations differ:@ %s %s %s"
+         (if b then second else first) decl
+         "uses unboxed representation"
   | Immediate -> pr "%s is not an immediate type" first
 
 let report_type_mismatch first second decl ppf =
@@ -234,6 +239,15 @@ let type_declarations ?(equality = false) env name decl1 id decl2 =
           if Ctype.equal env false [ty1] [ty2] then []
           else [Manifest]
         else [Constraint]
+  in
+  if err <> [] then err else
+  let err =
+    match (decl2.type_kind, decl1.type_unboxed.unboxed,
+           decl2.type_unboxed.unboxed) with
+    | Type_abstract, _, _ -> []
+    | _, true, false -> [Unboxed_representation false]
+    | _, false, true -> [Unboxed_representation true]
+    | _ -> []
   in
   if err <> [] then err else
   let err = match (decl1.type_kind, decl2.type_kind) with

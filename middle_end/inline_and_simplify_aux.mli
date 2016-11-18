@@ -39,6 +39,11 @@ module Env : sig
       compiler backend being used for compilation. *)
   val backend : t -> (module Backend_intf.S)
 
+  (** Obtain the really_import_approx function from the backend module. *)
+  val really_import_approx
+     : t
+    -> (Simple_value_approx.t -> Simple_value_approx.t)
+
   (** Which simplification round we are currently in. *)
   val round : t -> int
 
@@ -208,7 +213,7 @@ module Env : sig
   val note_entering_closure
      : t
     -> closure_id:Closure_id.t
-    -> debuginfo:Debuginfo.t
+    -> dbg:Debuginfo.t
     -> t
 
    (** If collecting inlining statistics, record that the inliner is about to
@@ -218,7 +223,7 @@ module Env : sig
   val note_entering_call
      : t
     -> closure_id:Closure_id.t
-    -> debuginfo:Debuginfo.t
+    -> dbg:Debuginfo.t
     -> t
 
    (** If collecting inlining statistics, record that the inliner is about to
@@ -239,7 +244,7 @@ module Env : sig
      : t
     -> closure_id:Closure_id.t
     -> inline_inside:bool
-    -> debuginfo:Debuginfo.t
+    -> dbg:Debuginfo.t
     -> f:(t -> 'a)
     -> 'a
 
@@ -254,12 +259,10 @@ module Env : sig
   (** Print a human-readable version of the given environment. *)
   val print : Format.formatter -> t -> unit
 
-  (** The environment maintains a list of sites that got inlined to produce
-      precise location information.
-
-      When inlining a call-site, call this function to concatenate the
-      call-site location to the existing list of sites. *)
-  val inline_debuginfo : t -> dbg:Debuginfo.t -> t
+  (** The environment stores the call-site being inlined to produce
+      precise location information. This function sets the current
+      call-site being inlined.  *)
+  val set_inline_debuginfo : t -> dbg:Debuginfo.t -> t
 
   (** Appends the locations of inlined call-sites to the [~dbg] argument *)
   val add_inlined_debuginfo : t -> dbg:Debuginfo.t -> Debuginfo.t
@@ -281,6 +284,12 @@ module Result : sig
       simplified.  Typically used just before returning from a case of the
       simplification algorithm. *)
   val set_approx : t -> Simple_value_approx.t -> t
+
+  (** Set the approximation of the subexpression to the meet of the
+      current return aprroximation and the provided one. Typically
+      used just before returning from a branch case of the
+      simplification algorithm. *)
+  val meet_approx : t -> Env.t -> Simple_value_approx.t -> t
 
   (** All static exceptions for which [use_staticfail] has been called on
       the given result structure. *)

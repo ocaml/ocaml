@@ -40,7 +40,7 @@ method! class_of_operation op =
 
 method! is_cheap_operation op =
   match op with
-  | Iconst_int _ | Iconst_blockheader _ -> true
+  | Iconst_int _ -> true
   | Iconst_symbol _ -> true
   | _ -> false
 

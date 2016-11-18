@@ -19,4 +19,3 @@ Line _, characters 0-108:
 Error: This class should be virtual.
        The following methods are undefined : bar
 |}];;
-

@@ -49,4 +49,4 @@
 ]
 
 File "pr6865.ml", line 1, characters 4-7:
-Uninterpreted extension 'foo'.
+Error: Uninterpreted extension 'foo'.

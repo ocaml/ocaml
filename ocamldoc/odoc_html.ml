@@ -106,6 +106,10 @@ module Naming =
     let recfield_target t f = target mark_type_elt
       (Printf.sprintf "%s.%s" (Name.simple t.ty_name) f.rf_name)
 
+    (** Return the link target for the given inline record field. *)
+    let inline_recfield_target t c f = target mark_type_elt
+      (Printf.sprintf "%s.%s.%s" t c f.rf_name)
+
     (** Return the link target for the given object field. *)
     let objfield_target t f = target mark_type_elt
       (Printf.sprintf "%s.%s" (Name.simple t.ty_name) f.of_name)
@@ -777,10 +781,14 @@ class html =
 
     val mutable doctype =
       "<!DOCTYPE HTML PUBLIC \"-//W3C//DTD HTML 4.01 Transitional//EN\">\n"
-    method character_encoding () =
-      Printf.sprintf
+    method character_encoding b =
+      bp b
         "<meta content=\"text/html; charset=%s\" http-equiv=\"Content-Type\">\n"
         !charset
+
+    method meta b =
+      self#character_encoding b;
+      bs b "<meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">\n"
 
     (** The default style options. *)
     val mutable default_style_options =
@@ -853,7 +861,7 @@ class html =
         ".indextable {border: 1px #ddd solid; border-collapse: collapse}";
         ".indextable td, .indextable th {border: 1px #ddd solid; min-width: 80px}";
         ".indextable td.module {background-color: #eee ;  padding-left: 2px; padding-right: 2px}";
-        ".indextable td.module a {color: 4E6272; text-decoration: none; display: block; width: 100%}";
+        ".indextable td.module a {color: #4E6272; text-decoration: none; display: block; width: 100%}";
         ".indextable td.module a:hover {text-decoration: underline; background-color: transparent}";
         ".deprecated {color: #888; font-style: italic}" ;
 
@@ -1019,7 +1027,7 @@ class html =
         in
         bs b "<head>\n";
         bs b style;
-        bs b (self#character_encoding ()) ;
+        self#meta b;
         bs b "<link rel=\"Start\" href=\"";
         bs b self#index;
         bs b "\">\n" ;
@@ -1150,14 +1158,14 @@ class html =
     method constructor s = "<span class=\"constructor\">"^s^"</span>"
 
     (** Output the given ocaml code to the given file name. *)
-    method private output_code in_title file code =
+    method private output_code ?(with_pre=true) in_title file code =
       try
         let chanout = open_out file in
         let b = new_buf () in
         bs b "<html>";
         self#print_header b (self#inner_title in_title);
         bs b"<body>\n";
-        self#html_of_code b code;
+        self#html_of_code ~with_pre b code;
         bs b "</body></html>";
         Buffer.output_buffer chanout b;
         close_out chanout
@@ -1225,21 +1233,23 @@ class html =
       bs b "</code>"
 
     (** Print html code to display a [Types.type_expr list]. *)
-    method html_of_cstr_args ?par b m_name sep l =
+    method html_of_cstr_args ?par b m_name c_name sep l =
       print_DEBUG "html#html_of_cstr_args";
-      let s =
-        match l with
-        | Cstr_tuple l ->
-            Odoc_info.string_of_type_list ?par sep l
-        | Cstr_record l ->
-            Odoc_info.string_of_record l
-      in
-      print_DEBUG "html#html_of_cstr_args: 1";
-      let s2 = newline_to_indented_br s in
-      print_DEBUG "html#html_of_cstr_args: 2";
-      bs b "<code class=\"type\">";
-      bs b (self#create_fully_qualified_idents_links m_name s2);
-      bs b "</code>"
+      match l with
+      | Cstr_tuple l ->
+          print_DEBUG "html#html_of_cstr_args: 1";
+          let s = Odoc_info.string_of_type_list ?par sep l in
+          let s2 = newline_to_indented_br s in
+          print_DEBUG "html#html_of_cstr_args: 2";
+          bs b "<code class=\"type\">";
+          bs b (self#create_fully_qualified_idents_links m_name s2);
+          bs b "</code>"
+      | Cstr_record l ->
+          print_DEBUG "html#html_of_cstr_args: 1 bis";
+          bs b "<code>";
+          self#html_of_record ~father:m_name ~close_env: "</code>"
+            (Naming.inline_recfield_target m_name c_name)
+            b l
 
     (** Print html code to display a [Types.type_expr list] as type parameters
        of a class of class type. *)
@@ -1429,12 +1439,12 @@ class html =
     (** Generate a file containing the module type in the given file name. *)
     method output_module_type in_title file mtyp =
       let s = Odoc_info.remove_ending_newline (Odoc_info.string_of_module_type ~complete: true mtyp) in
-      self#output_code in_title file s
+      self#output_code ~with_pre:false in_title file s
 
     (** Generate a file containing the class type in the given file name. *)
     method output_class_type in_title file ctyp =
       let s = Odoc_info.remove_ending_newline (Odoc_info.string_of_class_type ~complete: true ctyp) in
-      self#output_code in_title file s
+      self#output_code ~with_pre:false in_title file s
 
     (** Print html code for a value. *)
     method html_of_value b v =
@@ -1481,6 +1491,7 @@ class html =
       bs b "<table class=\"typetable\">\n";
       let print_one x =
         let father = Name.father x.xt_name in
+        let cname = Name.simple x.xt_name in
         bs b "<tr>\n<td align=\"left\" valign=\"top\" >\n";
         bs b "<code>";
         bs b (self#keyword "|");
@@ -1488,19 +1499,19 @@ class html =
         bs b "<code>";
         bp b "<span id=\"%s\">%s</span>"
           (Naming.extension_target x)
-          (Name.simple x.xt_name);
+          cname;
         (
           match x.xt_args, x.xt_ret with
               Cstr_tuple [], None -> ()
             | l,None ->
                 bs b (" " ^ (self#keyword "of") ^ " ");
-                self#html_of_cstr_args ~par: false b father " * " l;
+                self#html_of_cstr_args ~par: false b father cname " * " l;
             | Cstr_tuple [],Some r ->
                 bs b (" " ^ (self#keyword ":") ^ " ");
                 self#html_of_type_expr b father r;
             | l,Some r ->
                 bs b (" " ^ (self#keyword ":") ^ " ");
-                self#html_of_cstr_args ~par: false b father " * " l;
+                self#html_of_cstr_args ~par: false b father cname " * " l;
                 bs b (" " ^ (self#keyword "->") ^ " ");
                 self#html_of_type_expr b father r;
         );
@@ -1543,29 +1554,31 @@ class html =
 
     (** Print html code for an exception. *)
     method html_of_exception b e =
+      let cname = Name.simple e.ex_name in
       Odoc_info.reset_type_names ();
       bs b "\n<pre>";
       bp b "<span id=\"%s\">" (Naming.exception_target e);
       bs b (self#keyword "exception");
       bs b " ";
-      bs b (Name.simple e.ex_name);
+      bs b cname;
       bs b "</span>";
       (
+        let father = Name.father e.ex_name in
         match e.ex_args, e.ex_ret with
           Cstr_tuple [], None -> ()
         | _,None ->
             bs b (" "^(self#keyword "of")^" ");
             self#html_of_cstr_args
-                   ~par: false b (Name.father e.ex_name) " * " e.ex_args
+                   ~par:false b father cname " * " e.ex_args
         | Cstr_tuple [],Some r ->
             bs b (" " ^ (self#keyword ":") ^ " ");
-            self#html_of_type_expr b (Name.father e.ex_name) r;
+            self#html_of_type_expr b father r;
         | l,Some r ->
             bs b (" " ^ (self#keyword ":") ^ " ");
             self#html_of_cstr_args
-                   ~par: false b (Name.father e.ex_name) " * " l;
+                   ~par:false b father cname " * " l;
             bs b (" " ^ (self#keyword "->") ^ " ");
-            self#html_of_type_expr b (Name.father e.ex_name) r;
+            self#html_of_type_expr b father r;
       );
       (
        match e.ex_alias with
@@ -1581,6 +1594,38 @@ class html =
       );
       bs b "</pre>\n";
       self#html_of_info b e.ex_info
+
+    method html_of_record ~father ~close_env gen_name  b l =
+      bs b "{";
+      bs b close_env;
+      bs b "<table class=\"typetable\">\n" ;
+      let print_one r =
+        bs b "<tr>\n<td align=\"left\" valign=\"top\" >\n";
+        bs b "<code>&nbsp;&nbsp;</code>";
+        bs b "</td>\n<td align=\"left\" valign=\"top\" >\n";
+        bs b "<code>";
+        if r.rf_mutable then bs b (self#keyword "mutable&nbsp;") ;
+        bp b "<span id=\"%s\">%s</span>&nbsp;: " (gen_name r) r.rf_name;
+        self#html_of_type_expr b father r.rf_type;
+        bs b ";</code></td>\n";
+        (
+          match r.rf_text with
+            None -> ()
+          | Some t ->
+              bs b "<td class=\"typefieldcomment\" align=\"left\" valign=\"top\" >";
+              bs b "<code>";
+              bs b "(*";
+              bs b "</code></td>";
+              bs b "<td class=\"typefieldcomment\" align=\"left\" valign=\"top\" >";
+              self#html_of_info b (Some t);
+              bs b "</td><td class=\"typefieldcomment\" align=\"left\" valign=\"bottom\" >";
+              bs b "<code>*)</code></td>";
+        );
+        bs b "\n</tr>"
+      in
+      print_concat b "\n" print_one l;
+      bs b "</table>\n}\n"
+
 
     (** Print html code for a type. *)
     method html_of_type b t =
@@ -1675,13 +1720,13 @@ class html =
                Cstr_tuple [], None -> ()
              | l,None ->
                  bs b (" " ^ (self#keyword "of") ^ " ");
-                 self#html_of_cstr_args ~par: false b father " * " l;
+                 self#html_of_cstr_args ~par:false b father constr.vc_name " * " l;
              | Cstr_tuple [],Some r ->
                  bs b (" " ^ (self#keyword ":") ^ " ");
                  self#html_of_type_expr b father r;
              | l,Some r ->
                  bs b (" " ^ (self#keyword ":") ^ " ");
-                 self#html_of_cstr_args ~par: false b father " * " l;
+                 self#html_of_cstr_args ~par: false b father constr.vc_name " * " l;
                  bs b (" " ^ (self#keyword "->") ^ " ");
                  self#html_of_type_expr b father r;
             );
@@ -1710,42 +1755,10 @@ class html =
       | Type_record l ->
           bs b "= ";
           if priv then bs b "private " ;
-          bs b "{";
-          bs b
-            (
-             match t.ty_manifest with
-               None -> "</code></pre>"
-             | Some _ -> "</pre>"
-            );
-          bs b "<table class=\"typetable\">\n" ;
-          let print_one r =
-            bs b "<tr>\n<td align=\"left\" valign=\"top\" >\n";
-            bs b "<code>&nbsp;&nbsp;</code>";
-            bs b "</td>\n<td align=\"left\" valign=\"top\" >\n";
-            bs b "<code>";
-            if r.rf_mutable then bs b (self#keyword "mutable&nbsp;") ;
-            bp b "<span id=\"%s\">%s</span>&nbsp;: "
-              (Naming.recfield_target t r)
-              r.rf_name;
-            self#html_of_type_expr b father r.rf_type;
-            bs b ";</code></td>\n";
-            (
-             match r.rf_text with
-               None -> ()
-             | Some t ->
-                 bs b "<td class=\"typefieldcomment\" align=\"left\" valign=\"top\" >";
-                 bs b "<code>";
-                 bs b "(*";
-                 bs b "</code></td>";
-                 bs b "<td class=\"typefieldcomment\" align=\"left\" valign=\"top\" >";
-                 self#html_of_info b (Some t);
-                 bs b "</td><td class=\"typefieldcomment\" align=\"left\" valign=\"bottom\" >";
-                 bs b "<code>*)</code></td>";
-            );
-            bs b "\n</tr>"
-          in
-          print_concat b "\n" print_one l;
-          bs b "</table>\n}\n"
+          let close_env = match t.ty_manifest with
+              None -> "</code></pre>"
+            | Some _ -> "</pre>" in
+          self#html_of_record ~father ~close_env (Naming.recfield_target t) b l
       | Type_open ->
           bs b "= ..";
           bs b "</pre>"
@@ -2551,7 +2564,10 @@ class html =
           );
         bs b "</h1>\n";
 
-        if not modu.m_text_only then self#html_of_module b ~with_link: false modu;
+        if not modu.m_text_only then
+          self#html_of_module b ~with_link: false modu
+        else
+          self#html_of_info ~indent:false b modu.m_info;
 
         (* parameters for functors *)
         self#html_of_module_parameter_list b
@@ -2588,7 +2604,7 @@ class html =
         match modu.m_code with
           None -> ()
         | Some code ->
-            self#output_code
+            self#output_code ~with_pre:false
               modu.m_name
               (Filename.concat !Global.target_dir code_file)
               code

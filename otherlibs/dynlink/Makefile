@@ -26,7 +26,8 @@ OCAMLC    = $(CAMLRUN) $(ROOTDIR)/ocamlc -nostdlib -I $(ROOTDIR)/stdlib
 OCAMLOPT  = $(CAMLRUN) $(ROOTDIR)/ocamlopt -nostdlib -I $(ROOTDIR)/stdlib
 
 INCLUDES=-I ../../utils -I ../../typing -I ../../bytecomp -I ../../asmcomp
-COMPFLAGS=$(INCLUDES) -absname -w +a-4-9-41-42-44-45-48 -bin-annot -g -I ../../stdlib -warn-error A \
+COMPFLAGS=$(INCLUDES) -absname -w +a-4-9-41-42-44-45-48 -bin-annot -g \
+   -I ../../stdlib -warn-error A \
    -safe-string -strict-sequence -strict-formats
 ifeq "$(FLAMBDA)" "true"
 OPTCOMPFLAGS=-O3
@@ -88,7 +89,7 @@ extract_crc: dynlink.cma extract_crc.cmo
 INSTALL_LIBDIR=$(DESTDIR)$(LIBDIR)
 
 install:
-	cp dynlink.cmi dynlink.cma dynlink.mli "$(INSTALL_LIBDIR)"
+	cp dynlink.cmi dynlink.cmti dynlink.cma dynlink.mli "$(INSTALL_LIBDIR)"
 	cp extract_crc "$(INSTALL_LIBDIR)/extract_crc$(EXE)"
 
 installopt:

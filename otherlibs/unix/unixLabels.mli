@@ -1040,7 +1040,7 @@ val sendto :
 (** Send data over an unconnected socket. *)
 
 val sendto_substring :
-  file_descr -> bug:string -> pos:int -> len:int -> mode:msg_flag list
+  file_descr -> buf:string -> pos:int -> len:int -> mode:msg_flag list
   -> sockaddr -> int
 (** Same as [sendto], but take the data from a string instead of a
     byte sequence. *)

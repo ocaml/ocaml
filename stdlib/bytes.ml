@@ -15,20 +15,20 @@
 
 (* Byte sequence operations *)
 
-external length : bytes -> int = "%string_length"
+external length : bytes -> int = "%bytes_length"
 external string_length : string -> int = "%string_length"
-external get : bytes -> int -> char = "%string_safe_get"
-external set : bytes -> int -> char -> unit = "%string_safe_set"
-external create : int -> bytes = "caml_create_string"
-external unsafe_get : bytes -> int -> char = "%string_unsafe_get"
-external unsafe_set : bytes -> int -> char -> unit = "%string_unsafe_set"
+external get : bytes -> int -> char = "%bytes_safe_get"
+external set : bytes -> int -> char -> unit = "%bytes_safe_set"
+external create : int -> bytes = "caml_create_bytes"
+external unsafe_get : bytes -> int -> char = "%bytes_unsafe_get"
+external unsafe_set : bytes -> int -> char -> unit = "%bytes_unsafe_set"
 external unsafe_fill : bytes -> int -> int -> char -> unit
-                     = "caml_fill_string" [@@noalloc]
-external unsafe_to_string : bytes -> string = "%identity"
-external unsafe_of_string : string -> bytes = "%identity"
+                     = "caml_fill_bytes" [@@noalloc]
+external unsafe_to_string : bytes -> string = "%bytes_to_string"
+external unsafe_of_string : string -> bytes = "%bytes_of_string"
 
 external unsafe_blit : bytes -> int -> bytes -> int -> int -> unit
-                     = "caml_blit_string" [@@noalloc]
+                     = "caml_blit_bytes" [@@noalloc]
 external unsafe_blit_string : string -> int -> bytes -> int -> int -> unit
                      = "caml_blit_string" [@@noalloc]
 
@@ -97,23 +97,28 @@ let iter f a =
 let iteri f a =
   for i = 0 to length a - 1 do f i (unsafe_get a i) done
 
-let concat sep l =
-  match l with
-    [] -> empty
+let ensure_ge x y = if x >= y then x else invalid_arg "Bytes.concat"
+
+let rec sum_lengths acc seplen = function
+  | [] -> acc
+  | hd :: [] -> length hd + acc
+  | hd :: tl -> sum_lengths (ensure_ge (length hd + seplen + acc) acc) seplen tl
+
+let rec unsafe_blits dst pos sep seplen = function
+    [] -> dst
+  | hd :: [] ->
+    unsafe_blit hd 0 dst pos (length hd); dst
   | hd :: tl ->
-      let num = ref 0 and len = ref 0 in
-      List.iter (fun s -> incr num; len := !len + length s) l;
-      let r = create (!len + length sep * (!num - 1)) in
-      unsafe_blit hd 0 r 0 (length hd);
-      let pos = ref(length hd) in
-      List.iter
-        (fun s ->
-          unsafe_blit sep 0 r !pos (length sep);
-          pos := !pos + length sep;
-          unsafe_blit s 0 r !pos (length s);
-          pos := !pos + length s)
-        tl;
-      r
+    unsafe_blit hd 0 dst pos (length hd);
+    unsafe_blit sep 0 dst (pos + length hd) seplen;
+    unsafe_blits dst (pos + length hd + seplen) sep seplen tl
+
+let concat sep = function
+    [] -> empty
+  | l -> let seplen = length sep in
+          unsafe_blits
+            (create (sum_lengths 0 seplen l))
+            0 sep seplen l
 
 let cat s1 s2 =
   let l1 = length s1 in
@@ -221,10 +226,21 @@ let rec index_rec s lim i c =
 
 let index s c = index_rec s (length s) 0 c
 
+let rec index_rec_opt s lim i c =
+  if i >= lim then None else
+  if unsafe_get s i = c then Some i else index_rec_opt s lim (i + 1) c
+
+let index_opt s c = index_rec_opt s (length s) 0 c
+
 let index_from s i c =
   let l = length s in
   if i < 0 || i > l then invalid_arg "String.index_from / Bytes.index_from" else
   index_rec s l i c
+
+let index_from_opt s i c =
+  let l = length s in
+  if i < 0 || i > l then invalid_arg "String.index_from_opt / Bytes.index_from_opt" else
+  index_rec_opt s l i c
 
 let rec rindex_rec s i c =
   if i < 0 then raise Not_found else
@@ -237,6 +253,18 @@ let rindex_from s i c =
     invalid_arg "String.rindex_from / Bytes.rindex_from"
   else
     rindex_rec s i c
+
+let rec rindex_rec_opt s i c =
+  if i < 0 then None else
+  if unsafe_get s i = c then Some i else rindex_rec_opt s (i - 1) c
+
+let rindex_opt s c = rindex_rec_opt s (length s - 1) c
+
+let rindex_from_opt s i c =
+  if i < -1 || i >= length s then
+    invalid_arg "String.rindex_from_opt / Bytes.rindex_from_opt"
+  else
+    rindex_rec_opt s i c
 
 
 let contains_from s i c =
@@ -259,7 +287,7 @@ let rcontains_from s i c =
 type t = bytes
 
 let compare (x: t) (y: t) = Pervasives.compare x y
-external equal : t -> t -> bool = "caml_string_equal"
+external equal : t -> t -> bool = "caml_bytes_equal"
 
 (* Deprecated functions implemented via other deprecated functions *)
 [@@@ocaml.warning "-3"]

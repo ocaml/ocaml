@@ -13,6 +13,8 @@
 /*                                                                        */
 /**************************************************************************/
 
+#define CAML_INTERNALS
+
 #include <string.h>
 #include "caml/custom.h"
 #include "caml/config.h"
@@ -37,7 +39,7 @@
        this interval.
    [caml_young_alloc_start]...[caml_young_alloc_end]
        The allocation arena: newly-allocated blocks are carved from
-       this interval.
+       this interval, starting at [caml_young_alloc_end].
    [caml_young_alloc_mid] is the mid-point of this interval.
    [caml_young_ptr], [caml_young_trigger], [caml_young_limit]
        These pointers are all inside the allocation arena.
@@ -191,7 +193,7 @@ void caml_oldify_one (value v, value *p)
         value field0;
 
         sz = Wosize_hd (hd);
-        result = caml_alloc_shr (sz, tag);
+        result = caml_alloc_shr_preserving_profinfo (sz, tag, hd);
         *p = result;
         field0 = Field (v, 0);
         Hd_val (v) = 0;            /* Set forward flag */
@@ -208,7 +210,7 @@ void caml_oldify_one (value v, value *p)
         }
       }else if (tag >= No_scan_tag){
         sz = Wosize_hd (hd);
-        result = caml_alloc_shr (sz, tag);
+        result = caml_alloc_shr_preserving_profinfo (sz, tag, hd);
         for (i = 0; i < sz; i++) Field (result, i) = Field (v, i);
         Hd_val (v) = 0;            /* Set forward flag */
         Field (v, 0) = result;     /*  and forward pointer. */
@@ -237,7 +239,7 @@ void caml_oldify_one (value v, value *p)
         if (!vv || ft == Forward_tag || ft == Lazy_tag || ft == Double_tag){
           /* Do not short-circuit the pointer.  Copy as a normal block. */
           Assert (Wosize_hd (hd) == 1);
-          result = caml_alloc_shr (1, Forward_tag);
+          result = caml_alloc_shr_preserving_profinfo (1, Forward_tag, hd);
           *p = result;
           Hd_val (v) = 0;             /* Set (GC) forward flag */
           Field (v, 0) = result;      /*  and forward pointer. */
@@ -365,6 +367,8 @@ void caml_empty_minor_heap (void)
         }
       }
     }
+    /* Update the OCaml finalise_last values */
+    caml_final_update_minor_roots();
     /* Run custom block finalisation of dead minor values */
     for (elt = caml_custom_table.base; elt < caml_custom_table.ptr; elt++){
       value v = elt->block;
@@ -394,6 +398,7 @@ void caml_empty_minor_heap (void)
     ++ caml_stat_minor_collections;
     if (caml_minor_gc_end_hook != NULL) (*caml_minor_gc_end_hook) ();
   }else{
+    /* The minor heap is empty nothing to do. */
     caml_final_empty_young ();
   }
 #ifdef DEBUG

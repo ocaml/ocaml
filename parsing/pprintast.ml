@@ -217,6 +217,7 @@ let private_flag f = function
 
 let constant_string f s = pp f "%S" s
 let tyvar f str = pp f "'%s" str
+let tyvar_loc f str = pp f "'%s" str.txt
 let string_quot f x = pp f "`%s" x
 
 (* c ['a,'b] *)
@@ -251,7 +252,7 @@ and core_type ctxt f x =
                   | [] -> ()
                   | _ ->
                       pp f "%a@;.@;"
-                        (list tyvar ~sep:"@;")  l)
+                        (list tyvar_loc ~sep:"@;")  l)
                l)
           sl (core_type ctxt) ct
     | _ -> pp f "@[<2>%a@]" (core_type1 ctxt) x
@@ -299,7 +300,7 @@ and core_type1 ctxt f x =
                    (list string_quot) xs) low
     | Ptyp_object (l, o) ->
         let core_field_type f (s, attrs, ct) =
-          pp f "@[<hov2>%s: %a@ %a@ @]" s
+          pp f "@[<hov2>%s: %a@ %a@ @]" s.txt
             (core_type ctxt) ct (attributes ctxt) attrs (* Cf #7200 *)
         in
         let field_var f = function
@@ -409,6 +410,14 @@ and simple_pattern ctxt (f:Format.formatter) (x:pattern) : unit =
     | Ppat_exception p ->
         pp f "@[<2>exception@;%a@]" (pattern1 ctxt) p
     | Ppat_extension e -> extension ctxt f e
+    | Ppat_open (lid, p) ->
+        let with_paren =
+        match p.ppat_desc with
+        | Ppat_array _ | Ppat_record _
+        | Ppat_construct (({txt=Lident ("()"|"[]");_}), _) -> false
+        | _ -> true in
+        pp f "@[<2>%a.%a @]" longident_loc lid
+          (paren with_paren @@ pattern1 ctxt) p
     | _ -> paren true (pattern ctxt) f x
 
 and label_exp ctxt f (l,opt,p) =
@@ -501,10 +510,12 @@ and expression ctxt f x =
           (expression reset_ctxt) e (case_list ctxt) l
 
     | Pexp_try (e, l) ->
-        pp f "@[<0>@[<hv2>try@ %a@]@ @[<0>with%a@]@]" (* "try@;@[<2>%a@]@\nwith@\n%a"*)
+        pp f "@[<0>@[<hv2>try@ %a@]@ @[<0>with%a@]@]"
+             (* "try@;@[<2>%a@]@\nwith@\n%a"*)
           (expression reset_ctxt) e  (case_list ctxt) l
     | Pexp_let (rf, l, e) ->
-        (* pp f "@[<2>let %a%a in@;<1 -2>%a@]" (\*no identation here, a new line*\) *)
+        (* pp f "@[<2>let %a%a in@;<1 -2>%a@]"
+           (*no identation here, a new line*) *)
         (*   rec_flag rf *)
         pp f "@[<2>%a in@;<1 -2>%a@]"
           (bindings reset_ctxt) (rf,l)
@@ -626,7 +637,7 @@ and expression2 ctxt f x =
   else match x.pexp_desc with
     | Pexp_field (e, li) ->
         pp f "@[<hov2>%a.%a@]" (simple_expr ctxt) e longident_loc li
-    | Pexp_send (e, s) -> pp f "@[<hov2>%a#%s@]" (simple_expr ctxt) e s
+    | Pexp_send (e, s) -> pp f "@[<hov2>%a#%s@]" (simple_expr ctxt) e s.txt
 
     | _ -> simple_expr ctxt f x
 
@@ -651,7 +662,7 @@ and simple_expr ctxt f x =
     | Pexp_pack me ->
         pp f "(module@;%a)" (module_expr ctxt) me
     | Pexp_newtype (lid, e) ->
-        pp f "fun@;(type@;%s)@;->@;%a" lid (expression ctxt) e
+        pp f "fun@;(type@;%s)@;->@;%a" lid.txt (expression ctxt) e
     | Pexp_tuple l ->
         pp f "@[<hov2>(%a)@]" (list (simple_expr ctxt) ~sep:",@;") l
     | Pexp_constraint (e, ct) ->
@@ -727,11 +738,11 @@ and class_signature ctxt f { pcsig_self = ct; pcsig_fields = l ;_} =
           (item_attributes ctxt) x.pctf_attributes
     | Pctf_val (s, mf, vf, ct) ->
         pp f "@[<2>val @ %a%a%s@ :@ %a@]%a"
-          mutable_flag mf virtual_flag vf s (core_type ctxt) ct
+          mutable_flag mf virtual_flag vf s.txt (core_type ctxt) ct
           (item_attributes ctxt) x.pctf_attributes
     | Pctf_method (s, pf, vf, ct) ->
         pp f "@[<2>method %a %a%s :@;%a@]%a"
-          private_flag pf virtual_flag vf s (core_type ctxt) ct
+          private_flag pf virtual_flag vf s.txt (core_type ctxt) ct
           (item_attributes ctxt) x.pctf_attributes
     | Pctf_constraint (ct1, ct2) ->
         pp f "@[<2>constraint@ %a@ =@ %a@]%a"
@@ -794,7 +805,7 @@ and class_field ctxt f x =
         (class_expr ctxt) ce
         (fun f so -> match so with
            | None -> ();
-           | Some (s) -> pp f "@ as %s" s ) so
+           | Some (s) -> pp f "@ as %s" s.txt ) so
         (item_attributes ctxt) x.pcf_attributes
   | Pcf_val (s, mf, Cfk_concrete (ovf, e)) ->
       pp f "@[<2>val%s %a%s =@;%a@]%a" (override ovf)
@@ -1067,7 +1078,7 @@ and binding ctxt f {pvb_pat=p; pvb_expr=x; _} =
             pp f "%a@ %a"
               (label_exp ctxt) (label,eo,p) pp_print_pexp_function e
       | Pexp_newtype (str,e) ->
-          pp f "(type@ %s)@ %a" str pp_print_pexp_function e
+          pp f "(type@ %s)@ %a" str.txt pp_print_pexp_function e
       | _ -> pp f "=@;%a" (expression ctxt) x
   in
   if x.pexp_attributes <> []
@@ -1112,7 +1123,8 @@ and structure_item ctxt f x =
         (item_attributes ctxt) attrs
   | Pstr_type (_, []) -> assert false
   | Pstr_type (rf, l)  -> type_def_list ctxt f (rf, l)
-  | Pstr_value (rf, l) -> (* pp f "@[<hov2>let %a%a@]"  rec_flag rf bindings l *)
+  | Pstr_value (rf, l) ->
+      (* pp f "@[<hov2>let %a%a@]"  rec_flag rf bindings l *)
       pp f "@[<2>%a@]" (bindings ctxt) (rf,l)
   | Pstr_typext te -> type_extension ctxt f te
   | Pstr_exception ed -> exception_declaration ctxt f ed

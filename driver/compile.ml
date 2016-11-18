@@ -32,9 +32,10 @@ let interface ppf sourcefile outputprefix =
   Env.set_unit_name modulename;
   let initial_env = Compmisc.initial_env () in
   let ast = Pparse.parse_interface ~tool_name ppf sourcefile in
+
   if !Clflags.dump_parsetree then fprintf ppf "%a@." Printast.interface ast;
   if !Clflags.dump_source then fprintf ppf "%a@." Pprintast.signature ast;
-  let tsg = Typemod.type_interface initial_env ast in
+  let tsg = Typemod.type_interface sourcefile initial_env ast in
   if !Clflags.dump_typedtree then fprintf ppf "%a@." Printtyped.interface tsg;
   let sg = tsg.sig_type in
   if !Clflags.print_types then
@@ -75,29 +76,30 @@ let implementation ppf sourcefile outputprefix =
           (Typemod.type_implementation sourcefile outputprefix modulename env)
       ++ print_if ppf Clflags.dump_typedtree
         Printtyped.implementation_with_coercion
-    in
+   in
     if !Clflags.print_types then begin
       Warnings.check_fatal ();
       Stypes.dump (Some (outputprefix ^ ".annot"))
     end else begin
-      let bytecode =
+      let bytecode, required_globals =
         (typedtree, coercion)
         ++ Timings.(time (Transl sourcefile))
             (Translmod.transl_implementation modulename)
-        ++ print_if ppf Clflags.dump_rawlambda Printlambda.lambda
         ++ Timings.(accumulate_time (Generate sourcefile))
-            (fun lambda ->
-              Simplif.simplify_lambda lambda
+            (fun { Lambda.code = lambda; required_globals } ->
+              print_if ppf Clflags.dump_rawlambda Printlambda.lambda lambda
+              ++ Simplif.simplify_lambda sourcefile
               ++ print_if ppf Clflags.dump_lambda Printlambda.lambda
               ++ Bytegen.compile_implementation modulename
-              ++ print_if ppf Clflags.dump_instr Printinstr.instrlist)
+              ++ print_if ppf Clflags.dump_instr Printinstr.instrlist
+              ++ fun bytecode -> bytecode, required_globals)
       in
       let objfile = outputprefix ^ ".cmo" in
       let oc = open_out_bin objfile in
       try
         bytecode
         ++ Timings.(accumulate_time (Generate sourcefile))
-            (Emitcode.to_file oc modulename objfile);
+            (Emitcode.to_file oc modulename objfile ~required_globals);
         Warnings.check_fatal ();
         close_out oc;
         Stypes.dump (Some (outputprefix ^ ".annot"))

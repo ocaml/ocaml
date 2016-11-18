@@ -137,6 +137,13 @@ let get_type_path ty tenv =
 open Format
 ;;
 
+let pretty_record_elision_mark ppf = function
+  | [] -> () (* should not happen, empty record pattern *)
+  | (_, lbl, _) :: q ->
+      (* we assume that there is no label repetitions here *)
+      if Array.length lbl.lbl_all > 1 + List.length q then
+        fprintf ppf ";@ _@ "
+
 let is_cons = function
 | {cstr_name = "::"} -> true
 | _ -> false
@@ -166,7 +173,7 @@ let rec pretty_val ppf v =
     | [] ->
   match v.pat_desc with
   | Tpat_any -> fprintf ppf "_"
-  | Tpat_var (x,_) -> Ident.print ppf x
+  | Tpat_var (x,_) -> fprintf ppf "%s" (Ident.name x)
   | Tpat_constant c -> fprintf ppf "%s" (pretty_const c)
   | Tpat_tuple vs ->
       fprintf ppf "@[(%a)@]" (pretty_vals ",") vs
@@ -187,12 +194,13 @@ let rec pretty_val ppf v =
   | Tpat_variant (l, Some w, _) ->
       fprintf ppf "@[<2>`%s@ %a@]" l pretty_arg w
   | Tpat_record (lvs,_) ->
-      fprintf ppf "@[{%a}@]"
-        pretty_lvals
-        (List.filter
-           (function
-             | (_,_,{pat_desc=Tpat_any}) -> false (* do not show lbl=_ *)
-             | _ -> true) lvs)
+      let filtered_lvs = List.filter
+          (function
+            | (_,_,{pat_desc=Tpat_any}) -> false (* do not show lbl=_ *)
+            | _ -> true) lvs in
+      fprintf ppf "@[{%a%a}@]"
+        pretty_lvals filtered_lvs
+        pretty_record_elision_mark filtered_lvs
   | Tpat_array vs ->
       fprintf ppf "@[[| %a |]@]" (pretty_vals " ;") vs
   | Tpat_lazy v ->
@@ -773,10 +781,10 @@ let build_other_constant proj make first next p env =
 *)
 
 let build_other ext env = match env with
-| ({pat_desc = Tpat_construct (lid,
-      ({cstr_tag=Cstr_extension _} as c),_)},_) :: _ ->
-    let c = {c with cstr_name = "*extension*"} in
-      make_pat (Tpat_construct(lid, c, [])) Ctype.none Env.empty
+| ({pat_desc = Tpat_construct (lid, {cstr_tag=Cstr_extension _},_)},_) :: _ ->
+        (* let c = {c with cstr_name = "*extension*"} in *) (* PR#7330 *)
+        make_pat (Tpat_var (Ident.create "*extension*",
+                            {lid with txt="*extension*"})) Ctype.none Env.empty
 | ({pat_desc = Tpat_construct _} as p,_) :: _ ->
     begin match ext with
     | Some ext when Path.same ext (get_type_path p.pat_type p.pat_env) ->
@@ -1689,6 +1697,8 @@ module Conv = struct
       match pat.pat_desc with
         Tpat_or (pa,pb,_) ->
           mkpat (Ppat_or (loop pa, loop pb))
+      | Tpat_var (_, ({txt="*extension*"} as nm)) -> (* PR#7330 *)
+          mkpat (Ppat_var nm)
       | Tpat_any
       | Tpat_var _ ->
           mkpat Ppat_any
@@ -1735,7 +1745,7 @@ end
 let contains_extension pat =
   let r = ref false in
   let rec loop = function
-      {pat_desc=Tpat_construct(_, {cstr_name="*extension*"}, _)} ->
+      {pat_desc=Tpat_var (_, {txt="*extension*"})} ->
         r := true
     | p -> Typedtree.iter_pattern_desc loop p.pat_desc
   in loop pat; !r
@@ -1770,9 +1780,14 @@ let do_check_partial ?pred exhaust loc casel pss = match pss with
         let v =
           match pred with
           | Some pred ->
-              if false then Some u else
               let (pattern,constrs,labels) = Conv.conv u in
-              pred constrs labels pattern
+              let u' = pred constrs labels pattern in
+              (* pretty_pat u;
+              begin match u' with
+                None -> prerr_endline ": impossible"
+              | Some _ -> prerr_endline ": possible"
+              end; *)
+              u'
           | None -> Some u
         in
         begin match v with
@@ -1840,7 +1855,8 @@ let extendable_path path =
     Path.same path Predef.path_option)
 
 let rec collect_paths_from_pat r p = match p.pat_desc with
-| Tpat_construct(_, {cstr_tag=(Cstr_constant _|Cstr_block _)},ps) ->
+| Tpat_construct(_, {cstr_tag=(Cstr_constant _|Cstr_block _|Cstr_unboxed)},ps)
+  ->
     let path =  get_type_path p.pat_type p.pat_env in
     List.fold_left
       collect_paths_from_pat

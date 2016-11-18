@@ -35,10 +35,14 @@
 #define S_IFLNK (S_IFDIR | S_IFREG)
 #endif
 #ifndef S_IFIFO
-#define S_IFIFO 0
+#ifdef _S_IFIFO
+#define S_IFIFO _S_IFIFO
+#else
+#define S_IFIFO (S_IFREG | S_IFCHR)
+#endif
 #endif
 #ifndef S_IFSOCK
-#define S_IFSOCK 0
+#define S_IFSOCK (S_IFDIR | S_IFCHR)
 #endif
 #ifndef S_IFBLK
 #define S_IFBLK 0
@@ -64,10 +68,10 @@ static value stat_aux(int use_64, __int64 st_ino, struct _stat64 *buf)
   Store_field (v, 6, Val_int (buf->st_gid));
   Store_field (v, 7, Val_int (buf->st_rdev));
   Store_field (v, 8,
-               use_64 ? copy_int64(buf->st_size) : Val_int (buf->st_size));
-  Store_field (v, 9, copy_double((double) buf->st_atime));
-  Store_field (v, 10, copy_double((double) buf->st_mtime));
-  Store_field (v, 11, copy_double((double) buf->st_ctime));
+               use_64 ? caml_copy_int64(buf->st_size) : Val_int (buf->st_size));
+  Store_field (v, 9, caml_copy_double((double) buf->st_atime));
+  Store_field (v, 10, caml_copy_double((double) buf->st_mtime));
+  Store_field (v, 11, caml_copy_double((double) buf->st_ctime));
   CAMLreturn (v);
 }
 
@@ -138,7 +142,8 @@ static int convert_time(FILETIME* time, __time64_t* result, __time64_t def)
   return 1;
 }
 
-static int do_stat(int do_lstat, int use_64, char* path, mlsize_t l, HANDLE fstat, __int64* st_ino, struct _stat64* res)
+/* path allocated outside the OCaml heap */
+static int safe_do_stat(int do_lstat, int use_64, char* path, mlsize_t l, HANDLE fstat, __int64* st_ino, struct _stat64* res)
 {
   BY_HANDLE_FILE_INFORMATION info;
   int i;
@@ -295,6 +300,16 @@ static int do_stat(int do_lstat, int use_64, char* path, mlsize_t l, HANDLE fsta
   return 1;
 }
 
+static int do_stat(int do_lstat, int use_64, char* opath, mlsize_t l, HANDLE fstat, __int64* st_ino, struct _stat64* res)
+{
+  char* path;
+  int ret;
+  path = caml_strdup(opath);
+  ret = safe_do_stat(do_lstat, use_64, path, l, fstat, st_ino, res);
+  caml_stat_free(path);
+  return ret;
+}
+
 CAMLprim value unix_stat(value path)
 {
   struct _stat64 buf;
@@ -323,6 +338,8 @@ CAMLprim value unix_lstat(value path)
 {
   struct _stat64 buf;
   __int64 st_ino;
+
+  caml_unix_check_path(path, "lstat");
   if (!do_stat(1, 0, String_val(path), caml_string_length(path), NULL, &st_ino, &buf)) {
     uerror("lstat", path);
   }
@@ -333,30 +350,66 @@ CAMLprim value unix_lstat_64(value path)
 {
   struct _stat64 buf;
   __int64 st_ino;
+
+  caml_unix_check_path(path, "lstat");
   if (!do_stat(1, 1, String_val(path), caml_string_length(path), NULL, &st_ino, &buf)) {
     uerror("lstat", path);
   }
   return stat_aux(1, st_ino, &buf);
 }
 
-CAMLprim value unix_fstat(value handle)
+static value do_fstat(value handle, int use_64)
 {
   int ret;
   struct _stat64 buf;
   __int64 st_ino;
-  if (!do_stat(0, 0, NULL, 0, Handle_val(handle), &st_ino, &buf)) {
+  HANDLE h;
+  DWORD ft;
+
+  st_ino = 0;
+  memset(&buf, 0, sizeof buf);
+  buf.st_nlink = 1;
+
+  h = Handle_val(handle);
+  ft = GetFileType(h) & ~FILE_TYPE_REMOTE;
+  switch(ft) {
+  case FILE_TYPE_DISK:
+    if (!safe_do_stat(0, use_64, NULL, 0, Handle_val(handle), &st_ino, &buf)) {
+      uerror("fstat", Nothing);
+    }
+    break;
+  case FILE_TYPE_CHAR:
+    buf.st_mode = S_IFCHR;
+    break;
+  case FILE_TYPE_PIPE:
+    {
+      DWORD n_avail;
+      if (Descr_kind_val(handle) == KIND_SOCKET) {
+        buf.st_mode = S_IFSOCK;
+      }
+      else {
+        buf.st_mode = S_IFIFO;
+      }
+      if (PeekNamedPipe(h, NULL, 0, NULL, &n_avail, NULL)) {
+        buf.st_size = n_avail;
+      }
+    }
+    break;
+  case FILE_TYPE_UNKNOWN:
+    unix_error(EBADF, "fstat", Nothing);
+  default:
+    win32_maperr(GetLastError());
     uerror("fstat", Nothing);
   }
-  return stat_aux(0, st_ino, &buf);
+  return stat_aux(use_64, st_ino, &buf);
+}
+
+CAMLprim value unix_fstat(value handle)
+{
+  return do_fstat(handle, 0);
 }
 
 CAMLprim value unix_fstat_64(value handle)
 {
-  int ret;
-  struct _stat64 buf;
-  __int64 st_ino;
-  if (!do_stat(0, 1, NULL, 0, Handle_val(handle), &st_ino, &buf)) {
-    uerror("fstat", Nothing);
-  }
-  return stat_aux(1, st_ino, &buf);
+  return do_fstat(handle, 1);
 }

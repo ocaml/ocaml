@@ -81,7 +81,7 @@ let add_char b c =
   b.position <- pos + 1
 
 let add_substring b s offset len =
-  if offset < 0 || len < 0 || offset + len > String.length s
+  if offset < 0 || len < 0 || offset > String.length s - len
   then invalid_arg "Buffer.add_substring/add_subbytes";
   let new_position = b.position + len in
   if new_position > b.length then resize b len;
@@ -188,3 +188,9 @@ let add_substitute b f s =
     end else
     if previous = '\\' then add_char b previous in
   subst ' ' 0
+
+let truncate b len =
+    if len < 0 || len > length b then
+      invalid_arg "Buffer.truncate"
+    else
+      b.position <- len

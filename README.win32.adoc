@@ -62,7 +62,7 @@ that a particular build is using the correct installation of `flexlink`.
 
 [[bmflex]]
 In addition to Cygwin, FlexDLL must also be installed, which is available from
-http://alain.frisch.fr/flexdll.html. A binary distribution is available;
+https://github.com/alainfrisch/flexdll. A binary distribution is available;
 instructions on how to build FlexDLL from sources, including how to bootstrap
 FlexDLL and OCaml are given <<seflexdll,later in this document>>.  Unless you
 bootstrap FlexDLL, you will need to ensure that the directory to which you
@@ -303,7 +303,7 @@ You must place the FlexDLL sources for Version 0.35 or later in the directory
 distribution.  This can be done in one of three ways:
 
  * Extracting the sources from a tarball from
-   http://alain.frisch.fr/flexdll.html#download
+   https://github.com/alainfrisch/flexdll/releases
  * Cloning the git repository by running:
 +
   git clone https://github.com/alainfrisch/flexdll.git

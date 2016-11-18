@@ -15,7 +15,6 @@
 
 (** Cross referencing. *)
 
-module Name = Odoc_name
 open Odoc_module
 open Odoc_class
 open Odoc_extension

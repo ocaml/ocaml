@@ -19,13 +19,14 @@
 open Typedtree
 open Lambda
 
-val transl_implementation: string -> structure * module_coercion -> lambda
+val transl_implementation:
+      string -> structure * module_coercion -> Lambda.program
 val transl_store_phrases: string -> structure -> int * lambda
 val transl_store_implementation:
       string -> structure * module_coercion -> Lambda.program
 
 val transl_implementation_flambda:
-  string -> structure * module_coercion -> (Ident.t * int) * lambda
+  string -> structure * module_coercion -> Lambda.program
 
 val transl_toplevel_definition: structure -> lambda
 val transl_package:

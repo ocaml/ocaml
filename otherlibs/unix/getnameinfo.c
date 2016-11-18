@@ -44,16 +44,16 @@ CAMLprim value unix_getnameinfo(value vaddr, value vopts)
   int opts, retcode;
 
   get_sockaddr(vaddr, &addr, &addr_len);
-  opts = convert_flag_list(vopts, getnameinfo_flag_table);
-  enter_blocking_section();
+  opts = caml_convert_flag_list(vopts, getnameinfo_flag_table);
+  caml_enter_blocking_section();
   retcode =
     getnameinfo((const struct sockaddr *) &addr.s_gen, addr_len,
                 host, sizeof(host), serv, sizeof(serv), opts);
-  leave_blocking_section();
-  if (retcode != 0) raise_not_found(); /* TODO: detailed error reporting? */
-  vhost = copy_string(host);
-  vserv = copy_string(serv);
-  vres = alloc_small(2, 0);
+  caml_leave_blocking_section();
+  if (retcode != 0) caml_raise_not_found(); /* TODO: detailed error reporting? */
+  vhost = caml_copy_string(host);
+  vserv = caml_copy_string(serv);
+  vres = caml_alloc_small(2, 0);
   Field(vres, 0) = vhost;
   Field(vres, 1) = vserv;
   CAMLreturn(vres);

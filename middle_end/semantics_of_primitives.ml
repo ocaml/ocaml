@@ -21,7 +21,7 @@ type coeffects = No_coeffects | Has_coeffects
 
 let for_primitive (prim : Lambda.primitive) =
   match prim with
-  | Pignore | Pidentity -> No_effects, No_coeffects
+  | Pignore | Pidentity | Pbytes_to_string | Pbytes_of_string -> No_effects, No_coeffects
   | Pmakeblock _
   | Pmakearray (_, Mutable) -> Only_generative_effects, No_coeffects
   | Pmakearray (_, Immutable) -> No_effects, No_coeffects
@@ -49,9 +49,16 @@ let for_primitive (prim : Lambda.primitive) =
   | Plsrint
   | Pasrint
   | Pintcomp _ -> No_effects, No_coeffects
-  | Pdivint
-  | Pmodint ->
+  | Pdivbint { is_safe = Unsafe }
+  | Pmodbint { is_safe = Unsafe }
+  | Pdivint Unsafe
+  | Pmodint Unsafe ->
     No_effects, No_coeffects  (* Will not raise [Division_by_zero]. *)
+  | Pdivbint { is_safe = Safe }
+  | Pmodbint { is_safe = Safe }
+  | Pdivint Safe
+  | Pmodint Safe ->
+    Arbitrary_effects, No_coeffects
   | Poffsetint _ -> No_effects, No_coeffects
   | Poffsetref _ -> Arbitrary_effects, Has_coeffects
   | Pintoffloat
@@ -63,7 +70,7 @@ let for_primitive (prim : Lambda.primitive) =
   | Pmulfloat
   | Pdivfloat
   | Pfloatcomp _ -> No_effects, No_coeffects
-  | Pstringlength
+  | Pstringlength | Pbyteslength
   | Parraylength _ ->
     No_effects, Has_coeffects  (* That old chestnut: [Obj.truncate]. *)
   | Pisint
@@ -76,8 +83,6 @@ let for_primitive (prim : Lambda.primitive) =
   | Paddbint _
   | Psubbint _
   | Pmulbint _
-  | Pdivbint _
-  | Pmodbint _
   | Pandbint _
   | Porbint _
   | Pxorbint _
@@ -92,6 +97,7 @@ let for_primitive (prim : Lambda.primitive) =
   | Pgetglobal _
   | Parrayrefu _
   | Pstringrefu
+  | Pbytesrefu
   | Pstring_load_16 true
   | Pstring_load_32 true
   | Pstring_load_64 true
@@ -102,6 +108,7 @@ let for_primitive (prim : Lambda.primitive) =
     No_effects, Has_coeffects
   | Parrayrefs _
   | Pstringrefs
+  | Pbytesrefs
   | Pstring_load_16 false
   | Pstring_load_32 false
   | Pstring_load_64 false
@@ -116,8 +123,8 @@ let for_primitive (prim : Lambda.primitive) =
   | Psetglobal _
   | Parraysetu _
   | Parraysets _
-  | Pstringsetu
-  | Pstringsets
+  | Pbytessetu
+  | Pbytessets
   | Pstring_set_16 _
   | Pstring_set_32 _
   | Pstring_set_64 _
@@ -136,8 +143,8 @@ let for_primitive (prim : Lambda.primitive) =
   | Pcoerce _ -> No_effects, No_coeffects
   | Ploc _ ->
     Misc.fatal_error "[Ploc] should have been eliminated by [Translcore]"
-  | Prevapply _
-  | Pdirapply _
+  | Prevapply
+  | Pdirapply
   | Psequand
   | Psequor ->
     Misc.fatal_errorf "The primitive %a should have been eliminated by the \

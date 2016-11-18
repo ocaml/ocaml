@@ -13,6 +13,8 @@
 /*                                                                        */
 /**************************************************************************/
 
+#define CAML_INTERNALS
+
 #include <signal.h>
 #include "libgraph.h"
 #include <caml/alloc.h>
@@ -144,7 +146,7 @@ void caml_gr_handle_event(XEvent * event)
 static value caml_gr_wait_allocate_result(int mouse_x, int mouse_y, int button,
                                      int keypressed, int key)
 {
-  value res = alloc_small(5, 0);
+  value res = caml_alloc_small(5, 0);
   Field(res, 0) = Val_int(mouse_x);
   Field(res, 1) = Val_int(mouse_y == -1 ? -1 : Wcvt(mouse_y));
   Field(res, 2) = Val_bool(button);
@@ -235,9 +237,9 @@ static value caml_gr_wait_event_blocking(long mask)
       /* No event available: block on input socket until one is */
       FD_ZERO(&readfds);
       FD_SET(ConnectionNumber(caml_gr_display), &readfds);
-      enter_blocking_section();
+      caml_enter_blocking_section();
       select(FD_SETSIZE, &readfds, NULL, NULL, NULL);
-      leave_blocking_section();
+      caml_leave_blocking_section();
       caml_gr_check_open(); /* in case another thread closed the display */
     }
   }

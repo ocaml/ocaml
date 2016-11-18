@@ -49,9 +49,9 @@ method oper_issue_cycles = function
   | Iconst_symbol _ -> 2
   | Ialloc _ -> 6
   | Iintop(Icomp _) -> 4
-  | Iintop(Icheckbound) -> 2
+  | Iintop(Icheckbound _) -> 2
   | Iintop_imm(Icomp _, _) -> 4
-  | Iintop_imm(Icheckbound, _) -> 2
+  | Iintop_imm(Icheckbound _, _) -> 2
   | Inegf -> 2
   | Iabsf -> 2
   | Ifloatofint -> 6

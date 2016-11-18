@@ -77,7 +77,8 @@ and expression_desc =
     Texp_ident of Path.t * Longident.t loc * Types.value_description
   | Texp_constant of constant
   | Texp_let of rec_flag * value_binding list * expression
-  | Texp_function of arg_label * case list * partial
+  | Texp_function of { arg_label : arg_label; param : Ident.t;
+      cases : case list; partial : partial; }
   | Texp_apply of expression * (arg_label * expression option) list
   | Texp_match of expression * case list * case list * partial
   | Texp_try of expression * case list
@@ -85,9 +86,11 @@ and expression_desc =
   | Texp_construct of
       Longident.t loc * constructor_description * expression list
   | Texp_variant of label * expression option
-  | Texp_record of
-      (Longident.t loc * label_description * expression) list *
-        expression option
+  | Texp_record of {
+      fields : ( Types.label_description * record_label_definition ) array;
+      representation : Types.record_representation;
+      extended_expression : expression option;
+    }
   | Texp_field of expression * Longident.t loc * label_description
   | Texp_setfield of
       expression * Longident.t loc * label_description * expression
@@ -122,6 +125,10 @@ and case =
      c_guard: expression option;
      c_rhs: expression;
     }
+
+and record_label_definition =
+  | Kept of Types.type_expr
+  | Overridden of Longident.t loc * expression
 
 (* Value expressions for the class language *)
 
