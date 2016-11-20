@@ -456,7 +456,8 @@ rule token = parse
             let pos = lexbuf.lex_start_p in
             lexbuf.lex_start_p <- { pos with
               pos_lnum = pos.pos_lnum + 1;
-              pos_bol = pos.pos_cnum;
+              pos_bol = pos.pos_cnum + 1;
+              pos_cnum = pos.pos_cnum + 1;
             };
             update_loc lexbuf None 1 false 0;
         end;
