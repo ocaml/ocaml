@@ -438,12 +438,15 @@ LBL(103):
         CFI_ADJUST(8)
         RECORD_STACK_FRAME(8)
 #ifdef WITH_FRAME_POINTERS
-        /* Do we need 16-byte alignment here ? */
+        /* ensure 16 byte alignment by subq + enter using 16-bytes, PR#7417 */
+        subq    $8, %rsp; CFI_ADJUST (8)
         ENTER_FUNCTION
 #endif
         call    LBL(caml_call_gc)
 #ifdef WITH_FRAME_POINTERS
+        /* ensure 16 byte alignment by leave + addq using 16-bytes PR#7417 */
         LEAVE_FUNCTION
+        addq    $8, %rsp; CFI_ADJUST (-8)
 #endif
         popq    %rax; CFI_ADJUST(-8)       /* recover desired size */
         jmp     LBL(caml_allocN)
