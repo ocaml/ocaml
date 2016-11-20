@@ -35,6 +35,11 @@ be mentioned in the 4.06 section below instead of here.)
 
 ### Bug fixes
 
+* PR#6604, GPR#931: Only allow directives with filename and at the beginning of
+  the line
+  (Tadeu Zagallo, report by Roberto Di Cosmo,
+   review by Hongbo Zhang, David Allsopp, Gabriel Scherer, Xavier Leroy)
+
 Release branch for 4.06:
 ------------------------
 
