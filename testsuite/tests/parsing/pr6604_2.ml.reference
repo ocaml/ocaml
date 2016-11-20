@@ -1,0 +1,2 @@
+File "pr6604_2.ml", line 1, characters 1-16:
+Error: Invalid lexer directive "#1 \"pr6604.ml\"": directives are only allowed at the beginning of the line
