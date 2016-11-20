@@ -11,6 +11,10 @@ Next version (4.04.1):
 - PR#7405, GPR#903: s390x: Fix address of caml_raise_exn in native dynlink modules
   (Richard Jones, review by Xavier Leroy)
 
+- MPR#7417, GPR#930: ensure 16 byte stack alignment inside caml_allocN on x86-64
+  for ocaml build with WITH_FRAME_POINTERS defined
+  (Christoph Cullmann)
+
 - GPR#912: Fix segfault in Unix.create_process on Windows caused by wrong header
   configuration.
   (David Allsopp)
