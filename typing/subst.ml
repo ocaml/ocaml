@@ -24,12 +24,11 @@ type t =
   { types: (Ident.t, Path.t) Tbl.t;
     modules: (Ident.t, Path.t) Tbl.t;
     modtypes: (Ident.t, module_type) Tbl.t;
-    for_saving: bool;
-    nongen_level: int }
+    for_saving: bool }
 
 let identity =
   { types = Tbl.empty; modules = Tbl.empty; modtypes = Tbl.empty;
-    for_saving = false; nongen_level = generic_level }
+    for_saving = false }
 
 let add_type id p s = { s with types = Tbl.add id p s.types }
 
@@ -38,8 +37,6 @@ let add_module id p s = { s with modules = Tbl.add id p s.modules }
 let add_modtype id ty s = { s with modtypes = Tbl.add id ty s.modtypes }
 
 let for_saving s = { s with for_saving = true }
-
-let set_nongen_level s lev = { s with nongen_level = lev }
 
 let loc s x =
   if s.for_saving && not !Clflags.keep_locs then Location.none else x
@@ -128,11 +125,7 @@ let rec typexp s ty =
           else newty2 ty.level desc
         in
         save_desc ty desc; ty.desc <- Tsubst ty'; ty'
-      else begin (* when adding a module to the environment *)
-        if ty.level < generic_level then
-          ty.level <- min ty.level s.nongen_level;
-        ty
-      end
+      else ty
   | Tsubst ty ->
       ty
 (* cannot do it, since it would omit subsitution
@@ -436,5 +429,4 @@ let compose s1 s2 =
   { types = merge_tbls (type_path s2) s1.types s2.types;
     modules = merge_tbls (module_path s2) s1.modules s2.modules;
     modtypes = merge_tbls (modtype s2) s1.modtypes s2.modtypes;
-    for_saving = s1.for_saving || s2.for_saving;
-    nongen_level = min s1.nongen_level s2.nongen_level }
+    for_saving = s1.for_saving || s2.for_saving }

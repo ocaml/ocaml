@@ -544,6 +544,8 @@ let rec tree_of_typexp sch ty =
   let pr_typ () =
     match ty.desc with
     | Tvar _ ->
+        (*let lev =
+          if is_non_gen sch ty then "/" ^ string_of_int ty.level else "" in*)
         Otyp_var (is_non_gen sch ty, name_of_type ty)
     | Tarrow(l, ty1, ty2, _) ->
         let pr_arrow l ty1 ty2 =

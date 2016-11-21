@@ -1291,6 +1291,8 @@ and type_structure ?(toplevel = false) funct_body anchor env sstr scope =
             md_loc = pmb_loc;
           }
         in
+        (*prerr_endline (Ident.unique_toplevel_name id);*)
+        Mtype.lower_nongen (Ident.binding_time id - 1) md.md_type;
         let newenv = Env.enter_module_declaration id md env in
         Tstr_module {mb_id=id; mb_name=name; mb_expr=modl;
                      mb_attributes=attrs;  mb_loc=pmb_loc;
