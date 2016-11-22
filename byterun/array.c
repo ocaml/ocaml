@@ -49,11 +49,7 @@ CAMLprim value caml_array_get_float(value array, value index)
   if (idx < 0 || idx >= Wosize_val(array) / Double_wosize)
     caml_array_bound_error();
   d = Double_field(array, idx);
-#define Setup_for_gc
-#define Restore_after_gc
-  Alloc_small(res, Double_wosize, Double_tag);
-#undef Setup_for_gc
-#undef Restore_after_gc
+  Alloc_small(res, Double_wosize, Double_tag, { caml_handle_gc_interrupt(); });
   Store_double_val(res, d);
   return res;
 }
@@ -97,11 +93,7 @@ CAMLprim value caml_array_unsafe_get_float(value array, value index)
   value res;
 
   d = Double_field(array, Long_val(index));
-#define Setup_for_gc
-#define Restore_after_gc
-  Alloc_small(res, Double_wosize, Double_tag);
-#undef Setup_for_gc
-#undef Restore_after_gc
+  Alloc_small(res, Double_wosize, Double_tag, { caml_handle_gc_interrupt(); });
   Store_double_val(res, d);
   return res;
 }
@@ -142,11 +134,7 @@ CAMLprim value caml_make_float_vect(value len)
   if (wosize == 0)
     return Atom(0);
   else if (wosize <= Max_young_wosize){
-#define Setup_for_gc
-#define Restore_after_gc
-    Alloc_small (result, wosize, Double_array_tag);
-#undef Setup_for_gc
-#undef Restore_after_gc
+    Alloc_small (result, wosize, Double_array_tag, { caml_handle_gc_interrupt(); });
   }else if (wosize > Max_wosize)
     caml_invalid_argument("Array.make_float");
   else {

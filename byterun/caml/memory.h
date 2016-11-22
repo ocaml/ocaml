@@ -79,19 +79,18 @@ color_t caml_allocation_color (void *hp);
 #define DEBUG_clear(result, wosize)
 #endif
 
-#define Alloc_small(result, wosize, tag) do{    CAMLassert ((wosize) >= 1); \
+#define Alloc_small(result, wosize, tag, GC) do{CAMLassert ((wosize) >= 1); \
                                           CAMLassert ((tag_t) (tag) < 256); \
                                  CAMLassert ((wosize) <= Max_young_wosize); \
-  caml_domain_state->young_ptr -= Bhsize_wosize (wosize);                   \
-  if (Caml_check_gc_interrupt()){                                           \
-    caml_domain_state->young_ptr += Bhsize_wosize (wosize);                 \
-    Setup_for_gc;                                                           \
-    caml_handle_gc_interrupt ();                                            \
-    Restore_after_gc;                                                       \
-    caml_domain_state->young_ptr -= Bhsize_wosize (wosize);                 \
+  struct caml_domain_state* dom_st = caml_domain_state;                     \
+  dom_st->young_ptr -= Bhsize_wosize (wosize);                              \
+  if (Caml_check_gc_interrupt(dom_st)){                                     \
+    dom_st->young_ptr += Bhsize_wosize (wosize);                            \
+    { GC }                                                                  \
+    dom_st->young_ptr -= Bhsize_wosize (wosize);                            \
   }                                                                         \
-  Hd_hp (caml_domain_state->young_ptr) = Make_header ((wosize), (tag), 0);  \
-  (result) = Val_hp (caml_domain_state->young_ptr);                         \
+  Hd_hp (dom_st->young_ptr) = Make_header ((wosize), (tag), 0);             \
+  (result) = Val_hp (dom_st->young_ptr);                                    \
   DEBUG_clear ((result), (wosize));                                         \
 }while(0)
 

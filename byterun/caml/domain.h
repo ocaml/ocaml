@@ -18,9 +18,13 @@ struct domain {
   uintnat* mark_stack_count;
 };
 
-#define Caml_check_gc_interrupt() \
-  ((uintnat)caml_domain_state->young_ptr < caml_domain_state->young_limit)
-
+#ifdef __GNUC__
+  #define Caml_check_gc_interrupt(dom_st) \
+    __builtin_expect(((uintnat)(dom_st)->young_ptr < (dom_st)->young_limit), 0)
+#else
+  #define Caml_check_gc_interrupt(dom_st) \
+    ((uintnat)(dom_st)->young_ptr < (dom_st)->young_limit)
+#endif
 asize_t caml_norm_minor_heap_size (intnat);
 void caml_reallocate_minor_heap(asize_t);
 
