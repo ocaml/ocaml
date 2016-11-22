@@ -69,6 +69,8 @@ sp is a local copy of the global variable caml_extern_sp. */
   { sp -= 2; sp[0] = accu; sp[1] = env; caml_extern_sp = sp; }
 #define Restore_after_gc \
   { sp = caml_extern_sp; accu = sp[0]; env = sp[1]; sp += 2; }
+#define Enter_gc \
+  { Setup_for_gc; caml_handle_gc_interrupt(); Restore_after_gc; }
 #define Setup_for_c_call \
   { saved_pc = pc; *--sp = env; caml_extern_sp = sp; }
 #define Restore_after_c_call \
@@ -542,7 +544,7 @@ value caml_interprete(code_t prog, asize_t prog_size)
       } else {
         mlsize_t num_args, i;
         num_args = 1 + extra_args; /* arg1 + extra args */
-        Alloc_small(accu, num_args + 2, Closure_tag);
+        Alloc_small(accu, num_args + 2, Closure_tag, Enter_gc);
         Init_field(accu, 1, env);
         for (i = 0; i < num_args; i++) Init_field(accu, i + 2, sp[i]);
         Init_field(accu, 0, Val_bytecode(pc - 3)); /* Point to the preceding RESTART instr. */
@@ -561,7 +563,7 @@ value caml_interprete(code_t prog, asize_t prog_size)
       if (nvars > 0) *--sp = accu;
       if (nvars < Max_young_wosize) {
         /* nvars + 1 <= Max_young_wosize, can allocate in minor heap */
-        Alloc_small(accu, 1 + nvars, Closure_tag);
+        Alloc_small(accu, 1 + nvars, Closure_tag, Enter_gc);
         for (i = 0; i < nvars; i++) Init_field(accu, i + 1, sp[i]);
       } else {
         /* PR#6385: must allocate in major heap */
@@ -587,7 +589,7 @@ value caml_interprete(code_t prog, asize_t prog_size)
       int blksize = var_offset + nvars;
       if (nvars > 0) *--sp = accu;
       if (blksize <= Max_young_wosize) {
-        Alloc_small(accu, blksize, Closure_tag);
+        Alloc_small(accu, blksize, Closure_tag, Enter_gc);
         for (i = 0; i < nvars; i++) {
           Init_field(accu, var_offset + i, sp[i]);
         }
@@ -683,7 +685,7 @@ value caml_interprete(code_t prog, asize_t prog_size)
       mlsize_t i;
       value block;
       if (wosize <= Max_young_wosize) {
-        Alloc_small(block, wosize, tag);
+        Alloc_small(block, wosize, tag, Enter_gc);
         Init_field(block, 0, accu);
         for (i = 1; i < wosize; i++) Init_field(block, i, *sp++);
       } else {
@@ -697,7 +699,7 @@ value caml_interprete(code_t prog, asize_t prog_size)
     Instruct(MAKEBLOCK1): {
       tag_t tag = *pc++;
       value block;
-      Alloc_small(block, 1, tag);
+      Alloc_small(block, 1, tag, Enter_gc);
       Init_field(block, 0, accu);
       accu = block;
       Next;
@@ -705,7 +707,7 @@ value caml_interprete(code_t prog, asize_t prog_size)
     Instruct(MAKEBLOCK2): {
       tag_t tag = *pc++;
       value block;
-      Alloc_small(block, 2, tag);
+      Alloc_small(block, 2, tag, Enter_gc);
       Init_field(block, 0, accu);
       Init_field(block, 1, sp[0]);
       sp += 1;
@@ -715,7 +717,7 @@ value caml_interprete(code_t prog, asize_t prog_size)
     Instruct(MAKEBLOCK3): {
       tag_t tag = *pc++;
       value block;
-      Alloc_small(block, 3, tag);
+      Alloc_small(block, 3, tag, Enter_gc);
       Init_field(block, 0, accu);
       Init_field(block, 1, sp[0]);
       Init_field(block, 2, sp[1]);
@@ -728,7 +730,7 @@ value caml_interprete(code_t prog, asize_t prog_size)
       mlsize_t i;
       value block;
       if (size <= Max_young_wosize / Double_wosize) {
-        Alloc_small(block, size * Double_wosize, Double_array_tag);
+        Alloc_small(block, size * Double_wosize, Double_array_tag, Enter_gc);
       } else {
         Setup_for_gc;
         block = caml_alloc_shr(size * Double_wosize, Double_array_tag);
@@ -783,7 +785,7 @@ value caml_interprete(code_t prog, asize_t prog_size)
       Next;
     Instruct(GETFLOATFIELD): {
       double d = Double_field(accu, *pc);
-      Alloc_small(accu, Double_wosize, Double_tag);
+      Alloc_small(accu, Double_wosize, Double_tag, Enter_gc);
       Store_double_val(accu, d);
       pc++;
       Next;
@@ -888,7 +890,7 @@ value caml_interprete(code_t prog, asize_t prog_size)
       Next;
 
     Instruct(POPTRAP):
-      if (Caml_check_gc_interrupt()) {
+      if (Caml_check_gc_interrupt(caml_domain_state)) {
         /* We must check here so that if a signal is pending and its
            handler triggers an exception, the exception is trapped
            by the current try...with, not the enclosing one. */
@@ -966,7 +968,7 @@ value caml_interprete(code_t prog, asize_t prog_size)
 /* Signal handling */
 
     Instruct(CHECK_SIGNALS):    /* accu not preserved */
-      if (Caml_check_gc_interrupt()) goto process_signal;
+      if (Caml_check_gc_interrupt(caml_domain_state)) goto process_signal;
       Next;
 
     process_signal:

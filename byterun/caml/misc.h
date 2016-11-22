@@ -126,8 +126,12 @@ void caml_gc_log (char *, ...)
 #define Debug_tag(x) (0xD700D7D7D700D6D7ul \
                       | ((uintnat) (x) << 16) \
                       | ((uintnat) (x) << 48))
+#define Is_debug_tag(x) \
+  (((x) & 0xD700D7D7D700D6D7ul) == 0xD700D7D7D700D6D7ul)
 #else
 #define Debug_tag(x) (0xD700D6D7ul | ((uintnat) (x) << 16))
+#define Is_debug_tag(x) \
+  (((x) & 0xD700D6D7ul) == 0xD700D6D7ul)
 #endif /* ARCH_SIXTYFOUR */
 
 /*
