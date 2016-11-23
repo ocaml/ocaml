@@ -5,7 +5,7 @@ typechecker:
 
 http://caml.inria.fr/pub/docs/u3-ocaml/index.html[Using, Understanding, and Unraveling the OCaml Language by Didier Rémy] ::
 This book provides (among other things) a formal description of parts
-of the core OCaml language, starting by a simple Core ML.
+of the core OCaml language, starting with a simple Core ML.
 
 http://okmij.org/ftp/ML/generalization.html[Efficient and Insightful Generalization by Oleg Kiselyov] ::
 This article describes the basis of the type inference algorithm used
@@ -13,45 +13,46 @@ by the OCaml type checker. It is a recommended read if you want to
 understand the type-checker codebase, in particular its handling of
 polymorphism/generalization.
 
-After that, the best is to dive right in. There is no real "entry
-point", but understanding of both the parsetree and the typedtree is
-necessary.
+After that, it is best to dive right in. There is no real "entry
+point", but an understanding of both the parsetree and the typedtree
+is necessary.
 
 The datastructures ::
-link:typing/types.mli[Types] and link:typing/typedtree.mli[Typedtree]
+link:types.mli[Types] and link:typedtree.mli[Typedtree]
 are the two main datastructures in the typechecker. They correspond to
-the surface language annotated with all the information needed for
-type checking and type inference. link:typing/env.mli[Env] contains
-all the environments that are used in the typechecker. Each node in
-the typedtree is annotated with the local environment.
+the source code annotated with all the information needed for type
+checking and type inference. link:env.mli[Env] contains all the
+environments that are used in the typechecker. Each node in the
+typedtree is annotated with the local environment in which it was
+type-checked.
 
 Core utilities ::
-link:typing/btype.mli[Btype] and link:typing/ctype.mli[Ctype] contain
+link:btype.mli[Btype] and link:ctype.mli[Ctype] contain
 the various low-level function needed for typing, in particular
 related to levels, unification and
-backtracking. link:typing/mtype.mli[Mtype] contains utilities related
+backtracking. link:mtype.mli[Mtype] contains utilities related
 to modules.
 
 Inference and checking::
 The `Type..` modules are related to inference and typechecking, each
 for a different part of the language:
-link:typing/typetexp.mli[Typetexp] for type expressions,
-link:typing/typecore.mli[Typecore] for the core language,
-link:typing/typecore.mli[Typemod] for modules,
-link:typing/typedecl.mli[Typedecl] for type declarations and finally
+link:typetexp.mli[Typetexp] for type expressions,
+link:typecore.mli[Typecore] for the core language,
+link:typemod.mli[Typemod] for modules,
+link:typedecl.mli[Typedecl] for type declarations and finally
 link:typeclass.mli[Typeclass] for the object system.
 
 Inclusion/Module subtyping::
 Handling of inclusion relations are separated in the `Include...`
-modules: link:typing/includecore.ml[Includecore] for the type and
-value declarations, link:typing/includemod.mli[Includemod] for modules
-and finally link:typing/includeclass.mli[Includeclass] for the object
+modules: link:includecore.ml[Includecore] for the type and
+value declarations, link:includemod.mli[Includemod] for modules
+and finally link:includeclass.mli[Includeclass] for the object
 system.
 
-Note on dependencies between modules::
-Most of the modules presented above are inter-dependent with each
-other. Since OCaml prevents circular dependencies between files, the
+Dependencies between modules::
+Most of the modules presented above are inter-dependent. Since OCaml
+does not permit circular dependencies between files, the
 implementation uses forward declarations, implemented with references
 to functions that are filled later on. An example can be seen in
-link:typing/typecore.mli[Typecore.type_module], which is filled in
-link:typing/typecore.mli[Typemod].
+link:typecore.ml[Typecore.type_module], which is filled in
+link:typemod.ml[Typemod].

@@ -10,18 +10,16 @@ official distribution, please see link:CONTRIBUTING.md[].
 
 === Your first compiler modification
 
-0. Create a new git branch to store your changes.
+1. Create a new git branch to store your changes.
 +
 ----
 git checkout -b my-modification
 ----
 
-1. Install https://github.com/gasche/opam-compiler-conf[opam-compiler-conf].
-
 2. Consult link:INSTALL.adoc[] for build instructions. Here is the gist of it:
 +
 ----
-opam compiler-conf configure
+./configure
 make world.opt
 ----
 
@@ -48,7 +46,9 @@ opam compiler-conf install
 
 6. You did it, Well done! Consult link:CONTRIBUTING.md[] to send your contribution upstream.
 
-See our <<Development tips and tricks>> for various helpful details.
+See our <<Development tips and tricks>> for various helpful details,
+for example on how to automatically <<opam compiler script,create an
+opam switch>> from a compiler branch.
 
 === What to do
 
@@ -64,14 +64,14 @@ newcomers. Here are various potential projects:
 * The
   https://github.com/ocamllabs/compiler-hacking/wiki/Things-to-work-on[OCaml
   Labs compiler-hacking wiki] contains various ideas of changes to
-  propose, some easy, some requiring sensibly more work.
+  propose, some easy, some requiring a fair amount of work.
 
-* Documentation improvements are always most appreciated, either in
-  the various mli files or in the official manual
+* Documentation improvements are always much appreciated, either in
+  the various `.mli` files or in the official manual
   (See link:manual/README.md[]). If you invest effort in understanding
   a part of the codebase, submitting a pull request that adds
-  clarifying comment can be an excellent contribution to help future
-  you and your peers.
+  clarifying comments can be an excellent contribution to help you,
+  next time, and other code readers.
 
 * The https://github.com/ocaml/ocaml[github project] contains a lot of
   pull requests, many of them being in dire need of a review -- we
@@ -82,16 +82,15 @@ newcomers. Here are various potential projects:
   contribution process, and it is also an excellent way to get to know
   various parts of the compiler from the angle of a specific aspect or
   feature.
-
-   Again, reviewing small or medium-sized pull requests is accessible
-  to anyone with OCaml programming experience, and helps maintainers
-  and other contributors. If you also submit pull requets yourself,
-  a good discipline to follow is to review at least as many pull
-  requests as you submit.
++
+Again, reviewing small or medium-sized pull requests is accessible to
+anyone with OCaml programming experience, and helps maintainers and
+other contributors. If you also submit pull requests yourself, a good
+discipline is to review at least as many pull requests as you submit.
 
 == Structure of the compiler
 
-The compiler code base can be intimidating at first sight. Here are
+The compiler codebase can be intimidating at first sight. Here are
 a few pointers to get started.
 
 === Compilation pipeline
@@ -99,10 +98,9 @@ a few pointers to get started.
 ==== The driver -- link:driver/[]
 
 The driver contains the "main" function of the compilers that drive
-compilation. It is in charge of parsing the command-line arguments,
-and then composing the compiler passes according to the invoked
-command-line, by calling functions from the various parts of the
-compiler described below.
+compilation. It parses the command-line arguments and composes the
+required compiler passes by calling functions from the various parts
+of the compiler described below.
 
 ==== Parsing -- link:parsing/[]
 
@@ -116,7 +114,7 @@ link:driver/pparse.mli[].
 
 ==== Typing -- link:typing/[]
 
-Type-checks syntactic AST and produces a typed representation
+Type-checks the AST and produces a typed representation of the program
 (link:parsing/typedtree.mli[] has some helpful comments). See
 link:typing/HACKING.adoc[].
 
@@ -128,7 +126,8 @@ link:typing/HACKING.adoc[].
 
 === Libraries
 
-link:stdlib/[]:: The standard library. Each file is mostly independent and should not need further knowledge.
+link:stdlib/[]:: The standard library. Each file is largely
+independent and should not need further knowledge.
 
 link:otherlibs/[]:: External libraries such as `unix`, `threads`,
 `dynlink`, `str` and `bigarray`.
@@ -149,15 +148,15 @@ has excellent documentation.
   Changes::               what's new with each release
   configure::             configure script
   CONTRIBUTING.md::       how to contribute to OCaml
-  HACKING.adoc::          tips for people modifying the code
+  HACKING.adoc::          this file
   INSTALL.adoc::          instructions for installation
   LICENSE::               license and copyright notice
   Makefile::              main Makefile
-  Makefile.nt::           MS Windows Makefile
+  Makefile.nt::           Windows Makefile
   Makefile.shared::       common Makefile
   Makefile.tools::        used by manual/ and testsuite/ Makefiles
-  README.adoc::           this file
-  README.win32.adoc::     info on the MS Windows ports of OCaml
+  README.adoc::           general information on the compiler distribution
+  README.win32.adoc::     general information on the Windows ports of OCaml
   VERSION::               version string
   asmcomp/::              native-code compiler and linker
   asmrun/::               native-code runtime library
@@ -165,18 +164,18 @@ has excellent documentation.
   bytecomp/::             bytecode compiler and linker
   byterun/::              bytecode interpreter and runtime system
   compilerlibs/::         the OCaml compiler as a library
-  config/::               autoconfiguration stuff
+  config/::               configuration files
   debugger/::             source-level replay debugger
   driver/::               driver code for the compilers
   emacs/::                editing mode and debugger interface for GNU Emacs
   experimental/::         experiments not built by default
-  flexdll/::              empty (see README.win32.adoc)
+  flexdll/::              git submodule (see link:README.win32.adoc[])
   lex/::                  lexer generator
   man/::                  man pages
   manual/::               system to generate the manual
   middle_end/::           the flambda optimisation phase
   ocamldoc/::             documentation generator
-  otherlibs/::            several external libraries
+  otherlibs/::            several additional libraries
   parsing/::              syntax analysis
   stdlib/::               standard library
   testsuite/::            tests
@@ -211,8 +210,13 @@ installation, the following targets may be of use:
 
 === Bootstrapping
 
-The OCaml compiler is bootstrapped. This means that a previous version of the OCaml compiler (along with various tools and a compiled version of the standard library) is included in the repository under the link:boot/[] directory.
-Details can be found in link:INSTALL.adoc#bootstrap[INSTALL.adoc].
+The OCaml compiler is bootstrapped. This means that
+previously-compiled bytecode versions of the compiler, dependency
+generator and lexer are included in the repository under the
+link:boot/[] directory. These bytecode images are used once the
+bytecode runtime (which is written in C) has been built to compile the
+standard library and then to build a fresh compiler. Details can be
+found in link:INSTALL.adoc#bootstrap[INSTALL.adoc].
 
 === Continuous integration
 
@@ -222,15 +226,15 @@ Details can be found in link:INSTALL.adoc#bootstrap[INSTALL.adoc].
 
 INRIA provides a Jenkins continuous integration service that OCaml
 uses, see link:https://ci.inria.fr/ocaml/[]. It provides a wider
-architecture support (MSVC and MingW, a zsystems s390x machine, and
+architecture support (MSVC and MinGW, a zsystems s390x machine, and
 various MacOS versions) than the Travis/AppVeyor testing on github,
-but only runs on commits to the trunk or release branch, not on every
+but only runs on commits to the trunk or release branches, not on every
 PR.
 
-You do not need to be an INRIA employee to open account on this travis
-service; anyone can create an account there to access build logs,
-enable email notifications, and manually restart builds. If you would
-like to do this but have trouble doing it, you may contact Damien
+You do not need to be an INRIA employee to open an account on this
+jenkins service; anyone can create an account there to access build
+logs, enable email notifications, and manually restart builds. If you
+would like to do this but have trouble doing it, please contact Damien
 Doligez or Gabriel Scherer.
 
 ==== Running INRIA's CI on a github Pull Request (PR)

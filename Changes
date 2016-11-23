@@ -62,7 +62,8 @@ Next version (4.05.0):
 - add a HACKING.adoc file to contain various tips and tricks for
   people hacking on the repository. See also CONTRIBUTING.md for
   advice on sending contributions upstream.
-  (Gabriel Scherer and Gabriel Radanne, inspired by John Whitington)
+  (Gabriel Scherer and Gabriel Radanne, review by David Allsopp,
+  inspired by John Whitington)
 
 ### Other libraries:
 

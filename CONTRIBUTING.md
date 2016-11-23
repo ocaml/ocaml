@@ -7,13 +7,11 @@ OCaml distribution. These are just guidelines, not rules, use your
 best judgment and feel free to propose changes to this document itself
 in a pull request.
 
-This document assumes that you already have a patch against the
-compiler distribution sources that you wish to submit to the OCaml
-maintainers upstream. If you are looking for a document on how to
-build the compiler distribution from sources and install it, see
-[INSTALL.adoc](INSTALL.adoc) instead. If you are looking for
-a document on how to hack on the compiler distribution sources, see
-[HACKING.adoc](HACKING.adoc) instead.
+This document assumes that you have a patch against the sources of the
+compiler distribution, that you wish to submit to the OCaml
+maintainers upstream. See [INSTALL.adoc](INSTALL.adoc) for details on
+how to build the compiler distribution from sources. See
+[HACKING.adoc](HACKING.adoc) for details on how to modify the sources.
 
 ## Contribution
 
