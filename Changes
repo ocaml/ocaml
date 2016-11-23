@@ -35,6 +35,12 @@ Next version (4.05.0):
   compiler when called to compile third-party C source files
   (Sébastien Hinderer)
 
+* GPR#933: ocamlopt -p now reports an error on platforms that do not
+  support profiling with gprof; dummy profiling libraries are no longer
+  installed on such platforms.
+  This can be tested with ocamlopt -config
+  (Sébastien Hinderer)
+
 ### Standard library:
 
 - PR#6975, GPR#902: Truncate function added to stdlib Buffer module

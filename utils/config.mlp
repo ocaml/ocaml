@@ -57,6 +57,7 @@ let mkdll, mkexe, mkmaindll =
   else
     "%%MKDLL%%", "%%MKEXE%%", "%%MKMAINDLL%%"
 
+let profiling = %%PROFILING%%
 let flambda = %%FLAMBDA%%
 let safe_string = %%SAFE_STRING%%
 
@@ -152,6 +153,7 @@ let print_config oc =
   p_bool "systhread_supported" systhread_supported;
   p "host" host;
   p "target" target;
+  p_bool "profiling" profiling;
   p_bool "flambda" flambda;
   p_bool "spacetime" spacetime;
 
