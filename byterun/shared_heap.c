@@ -41,6 +41,7 @@ typedef struct pool {
   struct pool* next;
   value* next_obj;
   struct domain* owner;
+  sizeclass sz;
 } pool;
 
 typedef struct large_alloc {
@@ -185,6 +186,7 @@ static pool* pool_find(struct caml_heap_state* local, sizeclass sz) {
   r->next = 0;
   r->owner = local->owner;
   r->next_obj = 0;
+  r->sz = sz;
   mlsize_t wh = wsize_sizeclass[sz];
   value* p = (value*)((char*)r + POOL_HEADER_SZ);
   value* end = (value*)((char*)r + Bsize_wsize(POOL_WSIZE));
@@ -249,6 +251,17 @@ value* caml_shared_try_alloc(struct caml_heap_state* local, mlsize_t wosize, tag
   }
 #endif
   return p;
+}
+
+struct pool* caml_pool_of_shared_block(value v)
+{
+  Assert (Is_block(v) && !Is_minor(v));
+  mlsize_t whsize = Whsize_wosize(Wosize_val(v));
+  if (whsize > 0 && whsize <= SIZECLASS_MAX) {
+    return (pool*)((uintnat)v &~(POOL_WSIZE * sizeof(value) - 1));
+  } else {
+    return 0;
+  }
 }
 
 /* Sweeping */
@@ -359,6 +372,21 @@ int caml_mark_object(value p) {
     return 0;
   }
 }
+
+void caml_redarken_pool(struct pool* r, scanning_action f) {
+  mlsize_t wh = wsize_sizeclass[r->sz];
+  value* p = (value*)((char*)r + POOL_HEADER_SZ);
+  value* end = (value*)((char*)r + Bsize_wsize(POOL_WSIZE));
+
+  while (p + wh <= end) {
+    header_t hd = p[0];
+    if (hd != 0 && Has_status_hd(hd, global.MARKED)) {
+      f(Val_hp(p), 0);
+    }
+    p += wh;
+  }
+}
+
 
 const header_t atoms[256] = {
 #define A(i) Make_header(0, i, NOT_MARKABLE)
