@@ -104,6 +104,10 @@ Next version (4.05.0):
   detected through reproducible-builds.org.
   (Hannes Mehnert, review by Gabriel Scherer and Ximin Luo)
 
+- GPR#932: install ocaml{c,lex}->ocaml{c,lex}.byte symlink correctly
+  when the opt target is built but opt.opt target is not.
+  (whitequark)
+
 ### Internal/compiler-libs changes:
 
 - GPR#744, GPR#781: fix duplicate self-reference in imported cmi_crcs
