@@ -136,9 +136,6 @@ val target : string
 
 val print_config : out_channel -> unit;;
 
-val profiling : bool
-        (* Whether profiling with gprof is supported on this platform *)
-
 val flambda : bool
         (* Whether the compiler was configured for flambda *)
 

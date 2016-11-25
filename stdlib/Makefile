@@ -61,14 +61,8 @@ ifeq "$(RUNTIMEI)" "true"
 all: camlheaderi
 endif
 
-ifeq "$(PROFILING)" "true"
-PROFILINGTARGET = prof
-else
-PROFILINGTARGET = noprof
-endif
-
 .PHONY: allopt
-allopt: stdlib.cmxa std_exit.cmx allopt-$(PROFILINGTARGET)
+allopt: stdlib.cmxa std_exit.cmx allopt-$(PROFILING)
 
 .PHONY: allopt-noprof
 allopt-noprof:
@@ -97,7 +91,7 @@ install::
 endif
 
 .PHONY: installopt
-installopt: installopt-default installopt-$(PROFILINGTARGET)
+installopt: installopt-default installopt-$(PROFILING)
 
 .PHONY: installopt-default
 installopt-default:
@@ -106,6 +100,10 @@ installopt-default:
 
 .PHONY: installopt-noprof
 installopt-noprof:
+	ln -sf stdlib.cmxa "$(INSTALL_LIBDIR)/stdlib.p.cmxa"
+	ln -sf stdlib.$(A) "$(INSTALL_LIBDIR)/stdlib.p.$(A)"
+	ln -sf std_exit.cmx "$(INSTALL_LIBDIR)/std_exit.p.cmx"
+	ln -sf std_exit.$(O) "$(INSTALL_LIBDIR)/std_exit.p.$(O)"
 
 .PHONY: installopt-prof
 installopt-prof:

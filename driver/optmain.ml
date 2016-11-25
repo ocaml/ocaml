@@ -293,8 +293,6 @@ let main () =
   try
     readenv ppf Before_args;
     Arg.parse_expand (Arch.command_line_options @ Options.list) anonymous usage;
-    if !gprofile && not profiling then
-      fatal "Profiling with \"gprof\" is not supported on this platform.";
     if !output_name <> None && !compile_only &&
           List.length !process_thunks > 1 then
       fatal "Options -c -o are incompatible with compiling multiple files";
