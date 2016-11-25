@@ -496,10 +496,6 @@ void caml_signal_thread(void * lpParam)
  * call caml_fatal_uncaught_exception which terminates the program
  * quickly.
  *
- * NB: The PAGE_GUARD protection is only available on WinNT, not
- * Win9x. There is an equivalent mechanism on Win9x with
- * PAGE_NOACCESS.
- *
  * Currently, does not work under Win64.
  */
 
@@ -507,16 +503,10 @@ static uintnat win32_alt_stack[0x80];
 
 static void caml_reset_stack (void *faulting_address)
 {
-  OSVERSIONINFO osi;
   SYSTEM_INFO si;
   DWORD page_size;
   MEMORY_BASIC_INFORMATION mbi;
   DWORD oldprot;
-
-  /* get the os version (Win9x or WinNT ?) */
-  osi.dwOSVersionInfoSize = sizeof osi;
-  if (! GetVersionEx (&osi))
-    goto failed;
 
   /* get the system's page size. */
   GetSystemInfo (&si);
@@ -526,17 +516,8 @@ static void caml_reset_stack (void *faulting_address)
   if (! VirtualQuery (faulting_address, &mbi, sizeof mbi))
     goto failed;
 
-  /* restore the PAGE_GUARD protection on this page */
-  switch (osi.dwPlatformId) {
-  case VER_PLATFORM_WIN32_NT:
-    VirtualProtect (mbi.BaseAddress, page_size,
-                    mbi.Protect | PAGE_GUARD, &oldprot);
-    break;
-  case VER_PLATFORM_WIN32_WINDOWS:
-    VirtualProtect (mbi.BaseAddress, page_size,
-                    PAGE_NOACCESS, &oldprot);
-    break;
-  }
+  VirtualProtect (mbi.BaseAddress, page_size,
+                  mbi.Protect | PAGE_GUARD, &oldprot);
 
  failed:
   caml_raise_stack_overflow();
