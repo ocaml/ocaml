@@ -526,7 +526,7 @@ static void caml_reset_stack (void *faulting_address)
 CAMLextern int caml_is_in_code(void *);
 
 static LONG CALLBACK
-    caml_UnhandledExceptionFilter (EXCEPTION_POINTERS* exn_info)
+    caml_stack_overflow_VEH (EXCEPTION_POINTERS* exn_info)
 {
   DWORD code   = exn_info->ExceptionRecord->ExceptionCode;
   CONTEXT *ctx = exn_info->ContextRecord;
@@ -555,7 +555,7 @@ static LONG CALLBACK
 
 void caml_win32_overflow_detection()
 {
-  SetUnhandledExceptionFilter (caml_UnhandledExceptionFilter);
+  AddVectoredExceptionHandler(1, caml_stack_overflow_VEH);
 }
 
 #endif
