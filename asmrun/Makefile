@@ -117,7 +117,7 @@ endif
 ifeq "$(SHARED)" "shared"
 install::
 	cp libasmrun_pic.a $(INSTALL_LIBDIR)/libasmrun_pic.a
-	cd $(INSTALL_LIBDIR); $(RANLIB) libasmrunp.a
+	cd $(INSTALL_LIBDIR); $(RANLIB) libasmrun_pic.a
 	cp libasmrun_shared.so $(INSTALL_LIBDIR)/libasmrun_shared.so
 endif
 
