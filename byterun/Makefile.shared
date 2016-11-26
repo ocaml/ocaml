@@ -140,7 +140,7 @@ caml/jumptbl.h : caml/instruct.h
 	       -e '/^}/q' caml/instruct.h > caml/jumptbl.h
 
 caml/version.h : ../VERSION ../tools/make-version-header.sh
-	../tools/make-version-header.sh ../VERSION > caml/version.h
+	sh ../tools/make-version-header.sh ../VERSION > caml/version.h
 
 clean ::
 	rm -f ocamlrun$(EXE) ocamlrund$(EXE) *.$(O) *.$(A) *.$(SO)
