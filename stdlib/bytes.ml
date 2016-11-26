@@ -72,8 +72,16 @@ let sub s ofs len =
 
 let sub_string b ofs len = unsafe_to_string (sub b ofs len)
 
+(* addition with an overflow check *)
+let (++) a b =
+  let c = a + b in
+  match a < 0, b < 0, c < 0 with
+  | true , true , false
+  | false, false, true  -> invalid_arg "Bytes.extend" (* overflow *)
+  | _ -> c
+
 let extend s left right =
-  let len = length s + left + right in
+  let len = length s ++ left ++ right in
   let r = create len in
   let (srcoff, dstoff) = if left < 0 then -left, 0 else 0, left in
   let cpylen = min (length s - srcoff) (len - dstoff) in
