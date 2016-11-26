@@ -84,6 +84,9 @@ Next version (4.05.0):
   a short description in overviews.
   (Florian Angeletti)
 
+- clarify ocamldoc text parsing error messages
+  (Gabriel Scherer)
+
 ### Compiler distribution build system:
 
 - GPR#927: improve the detection of hashbang support in the configure script
