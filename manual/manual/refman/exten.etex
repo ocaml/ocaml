@@ -1829,7 +1829,9 @@ end
 \section{Extension nodes}\label{s:extension-nodes}
 
 (Introduced in OCaml 4.02,
-infix notations for constructs other than expressions added in 4.03)
+infix notations for constructs other than expressions added in 4.03,
+infix notation (e1 ;\%ext e2) added in 4.04.
+)
 
 Extension nodes are generic placeholders in the syntax tree. They are
 rejected by the type-checker and are intended to be ``expanded'' by external
@@ -1897,6 +1899,7 @@ Examples:
 \begin{verbatim}
 let%foo x = 2 in x + 1     === [%foo let x = 2 in x + 1]
 begin%foo ... end          === [%foo begin ... end]
+x ;%foo 2                  === [%foo x; 2]
 module%foo M = ..          === [%%foo module M = ... ]
 val%foo x : t              === [%%foo: val x : t]
 \end{verbatim}
