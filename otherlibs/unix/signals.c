@@ -97,12 +97,12 @@ CAMLprim value unix_sigsuspend(value vset)
 #else
 
 CAMLprim value unix_sigprocmask(value vaction, value vset)
-{ invalid_argument("Unix.sigprocmask not available"); }
+{ caml_invalid_argument("Unix.sigprocmask not available"); }
 
 CAMLprim value unix_sigpending(value unit)
-{ invalid_argument("Unix.sigpending not available"); }
+{ caml_invalid_argument("Unix.sigpending not available"); }
 
 CAMLprim value unix_sigsuspend(value vset)
-{ invalid_argument("Unix.sigsuspend not available"); }
+{ caml_invalid_argument("Unix.sigsuspend not available"); }
 
 #endif

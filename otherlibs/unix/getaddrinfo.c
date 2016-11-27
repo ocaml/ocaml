@@ -130,6 +130,6 @@ CAMLprim value unix_getaddrinfo(value vnode, value vserv, value vopts)
 #else
 
 CAMLprim value unix_getaddrinfo(value vnode, value vserv, value vopts)
-{ invalid_argument("getaddrinfo not implemented"); }
+{ caml_invalid_argument("getaddrinfo not implemented"); }
 
 #endif
