@@ -1066,7 +1066,7 @@ echo "#define OCAML_STDLIB_DIR \"$libdir\"" >> s.h
 
 # Do #! scripts work?
 
-if ((./hashbang || ./hashbang2 || ./hashbang3 || printf "#!%s\nexit 1\n" `command -v cat` > hashbang; ./hashbang) >/dev/null); then
+if (printf "#!%s\nexit 1\n" `command -v cat` > hashbang4; chmod +x hashbang4; (./hashbang || ./hashbang2 || ./hashbang3 || ./hashbang4) >/dev/null); then
   inf "#! appears to work in shell scripts."
   case "$target" in
     *-*-sunos*|*-*-unicos*)
