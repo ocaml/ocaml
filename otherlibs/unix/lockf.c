@@ -110,7 +110,7 @@ CAMLprim value unix_lockf(value fd, value cmd, value span)
 #else
 
 CAMLprim value unix_lockf(value fd, value cmd, value span)
-{ invalid_argument("lockf not implemented"); }
+{ caml_invalid_argument("lockf not implemented"); }
 
 #endif
 #endif

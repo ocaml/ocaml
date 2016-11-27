@@ -69,6 +69,6 @@ CAMLprim value unix_string_of_inet_addr(value a)
 #else
 
 CAMLprim value unix_string_of_inet_addr(value a)
-{ invalid_argument("string_of_inet_addr not implemented"); }
+{ caml_invalid_argument("string_of_inet_addr not implemented"); }
 
 #endif

@@ -128,21 +128,21 @@ CAMLprim value unix_sendto(value *argv, int argc)
 
 CAMLprim value unix_recv(value sock, value buff, value ofs, value len,
                          value flags)
-{ invalid_argument("recv not implemented"); }
+{ caml_invalid_argument("recv not implemented"); }
 
 CAMLprim value unix_recvfrom(value sock, value buff, value ofs, value len,
                              value flags)
-{ invalid_argument("recvfrom not implemented"); }
+{ caml_invalid_argument("recvfrom not implemented"); }
 
 CAMLprim value unix_send(value sock, value buff, value ofs, value len,
                          value flags)
-{ invalid_argument("send not implemented"); }
+{ caml_invalid_argument("send not implemented"); }
 
 CAMLprim value unix_sendto_native(value sock, value buff, value ofs, value len,
                                   value flags, value dest)
-{ invalid_argument("sendto not implemented"); }
+{ caml_invalid_argument("sendto not implemented"); }
 
 CAMLprim value unix_sendto(value *argv, int argc)
-{ invalid_argument("sendto not implemented"); }
+{ caml_invalid_argument("sendto not implemented"); }
 
 #endif

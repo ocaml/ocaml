@@ -90,6 +90,6 @@ CAMLprim value unix_utimes(value path, value atime, value mtime)
 #else
 
 CAMLprim value unix_utimes(value path, value atime, value mtime)
-{ invalid_argument("utimes not implemented"); }
+{ caml_invalid_argument("utimes not implemented"); }
 
 #endif

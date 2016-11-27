@@ -90,6 +90,6 @@ CAMLprim value unix_mktime(value t)
 #else
 
 CAMLprim value unix_mktime(value t)
-{ invalid_argument("mktime not implemented"); }
+{ caml_invalid_argument("mktime not implemented"); }
 
 #endif

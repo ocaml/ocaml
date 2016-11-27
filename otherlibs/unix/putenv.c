@@ -48,6 +48,6 @@ CAMLprim value unix_putenv(value name, value val)
 #else
 
 CAMLprim value unix_putenv(value name, value val)
-{ invalid_argument("putenv not implemented"); }
+{ caml_invalid_argument("putenv not implemented"); }
 
 #endif

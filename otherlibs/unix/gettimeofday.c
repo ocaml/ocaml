@@ -33,6 +33,6 @@ CAMLprim value unix_gettimeofday(value unit)
 #else
 
 CAMLprim value unix_gettimeofday(value unit)
-{ invalid_argument("gettimeofday not implemented"); }
+{ caml_invalid_argument("gettimeofday not implemented"); }
 
 #endif
