@@ -2176,15 +2176,19 @@ CAMLprim stub_gethostbyname(value vname)
   CAMLparam1 (vname);
   CAMLlocal1 (vres);
   struct hostent * h;
+  char * name;
 
   /* Copy the string argument to a C string, allocated outside the
      OCaml heap. */
-  name = stat_alloc(caml_string_length(vname) + 1);
-  name = caml_strdup (String_val(vname));
+  name = caml_stat_alloc(caml_string_length(vname) + 1);
+  name = caml_strdup(String_val(vname));
   /* Release the OCaml run-time system */
   caml_release_runtime_system();
   /* Resolve the name */
   h = gethostbyname(name);
+  /* Free the copy of the string, which we might as well do before
+     acquiring the runtime system to benefit from parallelism. */
+  caml_stat_free(name);
   /* Re-acquire the OCaml run-time system */
   caml_acquire_runtime_system();
   /* Encode the relevant fields of h as the OCaml value vres */
