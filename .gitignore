@@ -121,6 +121,7 @@
 /config/m.h
 /config/s.h
 /config/Makefile
+/config/auto-aux/hashbang4
 
 /debugger/lexer.ml
 /debugger/parser.ml
