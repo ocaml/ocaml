@@ -144,6 +144,10 @@ Next version (4.05.0):
   (Jeremy Yallop,
    review by Damien Doligez, Alain Frisch, Daniel Bünzli, Fabrice Le Fessant)
 
+- MPR#7417, GPR#930: ensure 16 byte stack alignment inside caml_allocN on x86-64
+  for ocaml build with WITH_FRAME_POINTERS defined
+  (Christoph Cullmann)
+
 Next minor version (4.04.1):
 ----------------------------
 
