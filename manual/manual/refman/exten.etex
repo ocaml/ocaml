@@ -1434,7 +1434,7 @@ GADT pattern-matching may also add type equations to non-local
 abstract types. The behaviour is the same as with local abstract
 types. Reusing the above "eq" type, one can write:
 \begin{verbatim}
-        module M : sig type t val x : t val e : (x,int) eq end = struct
+        module M : sig type t val x : t val e : (t,int) eq end = struct
           type t = int
           let x = 33
           let e = Eq
