@@ -114,7 +114,6 @@ static void oldify_one (value v, value *p, int promote_stack)
  tail_call:
   if (Is_block (v) && young_ptr <= Hp_val(v) && Hp_val(v) < young_end) {
     hd = Hd_val (v);
-    stat_live_bytes += Bhsize_hd(hd);
 
     if (hd == 0){         /* If already forwarded */
       *p = Op_val(v)[0];  /*  then forward pointer is first field. */
@@ -131,6 +130,7 @@ static void oldify_one (value v, value *p, int promote_stack)
           Ref_table_add(&remembered_set->major_ref, p);
         } else {
           sz = Wosize_hd (hd);
+          stat_live_bytes += Bhsize_hd(hd);
           result = alloc_shared (sz, tag);
           // caml_gc_log ("promoting object %p (referred from %p) tag=%d size=%lu to %p", (value*)v, p, tag, sz, (value*)result);
           *p = result;
@@ -158,6 +158,7 @@ static void oldify_one (value v, value *p, int promote_stack)
         }
       } else if (tag >= No_scan_tag) {
         sz = Wosize_hd (hd);
+        stat_live_bytes += Bhsize_hd(hd);
         result = alloc_shared(sz, tag);
         for (i = 0; i < sz; i++) Op_val (result)[i] = Op_val(v)[i];
         Hd_val (v) = 0;            /* Set forward flag */
@@ -181,6 +182,7 @@ static void oldify_one (value v, value *p, int promote_stack)
         if (ft == Forward_tag || ft == Lazy_tag || ft == Double_tag) {
           /* Do not short-circuit the pointer.  Copy as a normal block. */
           Assert (Wosize_hd (hd) == 1);
+          stat_live_bytes += Bhsize_hd(hd);
           result = alloc_shared (1, Forward_tag);
           // caml_gc_log ("promoting object %p (referred from %p) tag=%d size=%lu to %p",
           //             (value*)v, p, tag, (value)1, (value*)result);
@@ -490,8 +492,10 @@ void caml_empty_minor_heap_domain (struct domain* domain)
     domain_state->young_ptr = domain_state->young_end;
     caml_stat_minor_words += Wsize_bsize (minor_allocated_bytes);
 
-    caml_gc_log ("Minor collection of domain %d completed: %u of %u kb live, %u pointers rewritten",
-                 domain->id, (unsigned)stat_live_bytes/1024, (unsigned)minor_allocated_bytes/1024, rewritten);
+    caml_gc_log ("Minor collection of domain %d completed: %2.0f%% of %u KB live, %u pointers rewritten",
+                 domain->id,
+                 100.0 * (double)stat_live_bytes / (double)minor_allocated_bytes,
+                 (unsigned)(minor_allocated_bytes + 512)/1024, rewritten);
   }
   else {
     caml_gc_log ("Minor collection of domain %d: skipping", domain->id);
