@@ -1,10 +1,6 @@
 \chapter{Language extensions} \label{c:extensions}
 \pdfchapter{Language extensions}
 %HEVEA\cutname{extn.html}
-%%%%%%%%%%%%%%%%%%%%%%%%%%
-% Specific macros:
-\newcommand{\tq}{\textquotesingle}
-%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 This chapter describes language extensions and convenience features
 that are implemented in OCaml, but not described in the
