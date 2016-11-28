@@ -931,7 +931,7 @@ parameters.
 
 A natural application of destructive substitution is merging two
 signatures sharing a type name.
-\begin{verbatim}
+\begin{caml_example*}
         module type Printable = sig
           type t
           val print : Format.formatter -> t -> unit
@@ -943,31 +943,27 @@ signatures sharing a type name.
         module type PrintableComparable = sig
           include Printable
           include Comparable with type t := t
-        end
-\end{verbatim}
+        end;;
+\end{caml_example*}
 
 One can also use this to completely remove a field:
-\caml
-\?module type S = Comparable with type t := int;;
-\:module type S = sig val compare : int -> int -> int end
-\endcaml
+\begin{caml_example}
+module type S = Comparable with type t := int;;
+\end{caml_example}
 or to rename one:
-\caml
-\?module type S = sig
-\?  type u
-\?  include Comparable with type t := u
-\?end;;
-\:module type S = sig type u val compare : u -> u -> int end
-\endcaml
+\begin{caml_example}
+module type S = sig
+  type u
+  include Comparable with type t := u
+end;;
+\end{caml_example}
 
 Note that you can also remove manifest types, by substituting with the
 same type.
-\caml
-\?module type ComparableInt = Comparable with type t = int ;;
-\:module type ComparableInt = sig type t = int val compare : t -> t -> int end
-\?module type CompareInt = ComparableInt with type t := int ;;
-\:module type CompareInt = sig val compare : int -> int -> int end
-\endcaml
+\begin{caml_example}
+module type ComparableInt = Comparable with type t = int ;;
+module type CompareInt = ComparableInt with type t := int ;;
+\end{caml_example}
 
 \section{Type-level module aliases}
 \ikwd{module\@\texttt{module}}
@@ -1903,16 +1899,15 @@ Some extension nodes are understood by the compiler itself:
     constructor slot.
 \end{itemize}
 
-\begin{verbatim}
+\begin{caml_example*}
 type t = ..
 type t += X of int | Y of string
 let x = [%extension_constructor X]
-let y = [%extension_constructor Y]
-\end{verbatim}
-\caml
-\? x <> y;;
-\:- : bool = true
-\endcaml
+let y = [%extension_constructor Y];;
+\end{caml_example*}
+\begin{caml_example}
+ x <> y;;
+\end{caml_example}
 
 \section{Quoted strings}\label{s:quoted-strings}
 
