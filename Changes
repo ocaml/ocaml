@@ -7,6 +7,10 @@ Next version (4.05.0):
 
 ### Code generation and optimizations:
 
+- GPR#504: Instrumentation support for fuzzing with afl-fuzz.
+  (Stephen Dolan, review by Alain Frisch, Pierre Chambart, Mark
+  Shinwell, Gabriel Scherer and Damien Doligez)
+
 ### Runtime system:
 
 ### Type system:
