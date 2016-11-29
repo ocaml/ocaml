@@ -65,6 +65,11 @@ Next version (4.05.0):
 
 ### Manual and documentation:
 
+- GPR#939: activate the caml_example environment in the language
+  extensions section of the manual. Convert some existing code
+  examples to this format.
+  (Florian Angeletti)
+
 - add a HACKING.adoc file to contain various tips and tricks for
   people hacking on the repository. See also CONTRIBUTING.md for
   advice on sending contributions upstream.
