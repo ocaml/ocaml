@@ -57,7 +57,7 @@ and instrument = function
   | Ccatch (isrec, cases, body) ->
      Ccatch (isrec,
              List.map (fun (nfail, ids, e) -> nfail, ids, instrument e) cases,
-             body)
+             instrument body)
   | Cexit (ex, args) -> Cexit (ex, List.map instrument args)
 
   (* these are base cases and have no logging *)
