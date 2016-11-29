@@ -238,6 +238,12 @@ DECLARE_SIGNAL_HANDLER(segv_handler)
     Caml_state->exception_pointer == (char *) CONTEXT_EXCEPTION_POINTER;
     Caml_state->young_ptr = (value *) CONTEXT_YOUNG_PTR;
 #endif
+#if defined(CONTEXT_FRAME_POINTER)
+    Caml_state->last_return_address =
+              *(((uintnat *) CONTEXT_FRAME_POINTER) + 1);
+    Caml_state->bottom_of_stack     =
+      (char *) (((uintnat *) CONTEXT_FRAME_POINTER) + 2);
+#endif
     caml_raise_stack_overflow();
 #endif
   } else {

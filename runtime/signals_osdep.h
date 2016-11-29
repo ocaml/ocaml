@@ -32,6 +32,9 @@
   #define CONTEXT_SP (context->uc_mcontext.gregs[REG_RSP])
   #define CONTEXT_YOUNG_PTR (context->uc_mcontext.gregs[REG_R15])
   #define CONTEXT_FAULTING_ADDRESS ((char *)context->uc_mcontext.gregs[REG_CR2])
+  #if defined(WITH_FRAME_POINTERS)
+  #define CONTEXT_FRAME_POINTER (context->uc_mcontext.gregs[REG_RBP])
+  #endif
 
 /****************** AMD64, MacOSX */
 

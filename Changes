@@ -7,6 +7,10 @@ Working version
 
 ### Runtime system:
 
+- #7206: improve Stack overflow backtrace when OCaml is built
+  with --enable-frame-pointers
+  (Olivier Andrieu)
+
 ### Code generation and optimizations:
 
 ### Standard library:
