@@ -101,6 +101,19 @@ Working version
 - Resurrect tabulation boxes in module Format. Rewrite/extend documentation
   of tabulation boxes.
 
+* GPR#943: Fixed the divergence of the Pervasives module between the stdlib
+  and threads implementations.  In rare circumstances this can change the
+  behavior of existing applications: the implementation of Pervasives.close_out
+  used when compiling with thread support was inconsistent with the manual.
+  It will now not suppress exceptions escaping Pervasives.flush anymore.
+  Developers who want the old behavior should use Pervasives.close_out_noerr
+  instead.  The stdlib implementation, used by applications not compiled
+  with thread support, will now only suppress Sys_error exceptions in
+  Pervasives.flush_all.  This should allow exceedingly unlikely assertion
+  exceptions to escape, which could help reveal bugs in the standard library.
+  (Markus Mottl, review by Hezekiah M. Carty, Jeremie Dimino, Damien Doligez,
+  Alain Frisch, Xavier Leroy, Gabriel Scherer and Mark Shinwell)
+
 ### Compiler user-interface and warnings:
 
 - GPR#896: "-compat-32" is now taken into account when building .cmo/.cma
