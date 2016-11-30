@@ -567,11 +567,13 @@ value caml_interprete(code_t prog, asize_t prog_size)
         for (i = 0; i < nvars; i++) Init_field(accu, i + 1, sp[i]);
       } else {
         /* PR#6385: must allocate in major heap */
-        /* caml_alloc_shr and caml_initialize never trigger a GC,
-           so no need to Setup_for_gc */
         accu = caml_alloc_shr(1 + nvars, Closure_tag);
-        for (i = 0; i < nvars; i++)
-          caml_initialize_field(accu, i + 1, sp[i]);
+        for (i = 0; i < nvars; i++) {
+          value v = sp[i];
+          Setup_for_c_call;
+          caml_initialize_field(accu, i + 1, v);
+          Restore_after_c_call;
+        }
       }
       /* The code pointer is not in the heap, so no need to go through
          caml_initialize. */
@@ -595,11 +597,13 @@ value caml_interprete(code_t prog, asize_t prog_size)
         }
       } else {
         /* PR#6385: must allocate in major heap */
-        /* caml_alloc_shr and caml_initialize never trigger a GC,
-           so no need to Setup_for_gc */
         accu = caml_alloc_shr(blksize, Closure_tag);
-        for (i = 0; i < nvars; i++)
-          caml_initialize_field(accu, var_offset + i,sp[i]);
+        for (i = 0; i < nvars; i++) {
+          value v = sp[i];
+          Setup_for_c_call;
+          caml_initialize_field(accu, var_offset + i, v);
+          Restore_after_c_call;
+        }
       }
       sp += nvars;
       /* The code pointers and infix headers are not in the heap,
@@ -690,8 +694,15 @@ value caml_interprete(code_t prog, asize_t prog_size)
         for (i = 1; i < wosize; i++) Init_field(block, i, *sp++);
       } else {
         block = caml_alloc_shr(wosize, tag);
+        Setup_for_c_call;
         caml_initialize_field(block, 0, accu);
-        for (i = 1; i < wosize; i++) caml_initialize_field(block, i, *sp++);
+        Restore_after_c_call;
+        for (i = 1; i < wosize; i++) {
+          value v = *sp++;
+          Setup_for_c_call;
+          caml_initialize_field(block, i, v);
+          Restore_after_c_call;
+        }
       }
       accu = block;
       Next;
