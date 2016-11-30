@@ -962,7 +962,7 @@ else
 fi
 
 nativecccompopts="$bytecccompopts"
-nativeccprivatecompopts=byteccprivatecompopts
+nativeccprivatecompopts="$byteccprivatecompopts"
 nativeccprofopts=''
 nativecclinkopts=''
 # FIXME the naming of nativecclinkopts is broken: these are options for
@@ -1990,7 +1990,7 @@ echo "ARCH=$arch" >> Makefile
 echo "MODEL=$model" >> Makefile
 echo "SYSTEM=$system" >> Makefile
 echo "NATIVECC=$nativecc $nativecccompopts" >> Makefile
-echo "NATIVECCCOMPOPTS=$nativeprivatecccompopts" >> Makefile
+echo "NATIVECCCOMPOPTS=$nativeccprivatecompopts" >> Makefile
 echo "NATIVECCPROFOPTS=$nativeccprofopts" >> Makefile
 echo "NATIVECCLINKOPTS=$nativecclinkopts" >> Makefile
 echo "NATIVECCRPATH=$nativeccrpath" >> Makefile
