@@ -143,6 +143,16 @@ CAMLexport value caml_alloc_shr (mlsize_t wosize, tag_t tag)
     caml_urge_major_slice();
   }
 
+  if (tag < No_scan_tag) {
+    for (mlsize_t i = 0; i < wosize; i++) {
+      value init_val = Val_unit;
+      #ifdef DEBUG
+      init_val = Debug_uninit_major;
+      #endif
+      Op_hp(v)[i] = init_val;
+    }
+  }
+
   return Val_hp(v);
 }
 

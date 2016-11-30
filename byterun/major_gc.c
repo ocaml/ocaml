@@ -145,7 +145,7 @@ static intnat mark(value initial, intnat budget) {
         // caml_gc_log ("mark: v=%p i=%u child=%p",(value*)v,i,(value*)child);
         /* FIXME: this is wrong, as Debug_tag(N) is a valid value.
            However, it's a useful debugging aid for now */
-        Assert(!Is_debug_tag(child));
+        Assert(!Is_debug_tag(child) || child == Debug_uninit_major || child == Debug_uninit_minor);
         if (Is_markable(child)) {
           child = mark_normalise(child);
           if (caml_mark_object(child)) {
