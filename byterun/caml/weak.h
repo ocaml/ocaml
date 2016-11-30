@@ -20,9 +20,33 @@
 
 #include "mlvalues.h"
 
-extern value caml_ephe_list_head;
 extern value caml_ephe_none;
 
+/* These are getter functions for weak arrays and ephemerons. These
+   functions can call the GC. They return [caml_ephe_none] if the cell
+   is empty.
+
+   [caml_ephe_none] is not a valid value. Therefore, the result of
+   these functions has to be compared to [caml_ephe_none] immediately
+   after the call and before any allocation. If the result is
+   [caml_ephe_none], it should be erased from any variable accessible
+   from the GC.
+*/
+value caml_weak_get_c(value ar, mlsize_t offset);
+value caml_ephe_get_key_c(value ar, mlsize_t offset);
+value caml_ephe_get_data_c (value ar);
+
+/* These are setter functions for weak arrays and ephemerons. */
+void caml_weak_set_c(value ar, mlsize_t offset, value el);
+void caml_ephe_set_key_c(value ar, mlsize_t offset, value el);
+void caml_ephe_set_data_c (value ar, value el);
+void caml_weak_unset_c(value ar, mlsize_t offset);
+void caml_ephe_unset_key_c (value ar, mlsize_t offset);
+void caml_ephe_unset_data_c (value ar);
+
+/* <private> */
+
+extern value caml_ephe_list_head;
 
 /** The first field 0:  weak list;
        second field 1:  data;
@@ -85,5 +109,7 @@ static inline void caml_ephe_clean (value v){
       }
   }
 }
+
+/* </private> */
 
 #endif /* CAML_WEAK_H */

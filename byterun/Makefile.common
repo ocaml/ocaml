@@ -38,7 +38,7 @@ PUBLIC_INCLUDES=\
   address_class.h alloc.h callback.h config.h custom.h fail.h gc.h \
   hash.h intext.h \
   memory.h misc.h mlvalues.h printexc.h signals.h compatibility.h \
-  version.h
+  version.h weak.h
 
 
 all:: ocamlrun$(EXE) ld.conf libcamlrun.$(A) all-$(RUNTIMED)

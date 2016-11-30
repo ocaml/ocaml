@@ -153,17 +153,34 @@ static void do_set (value ar, mlsize_t offset, value v)
   }
 }
 
+void caml_ephe_set_key_c(value ar, mlsize_t offset, value el)
+{
+                                                   Assert (Is_in_heap (ar));
+  do_check_key_clean(ar,offset);
+  do_set (ar, offset, el);
+}
+
+void caml_weak_set_c(value ar, mlsize_t offset, value el) {
+  caml_ephe_set_key_c(ar, offset, el);
+}
+
 CAMLprim value caml_ephe_set_key (value ar, value n, value el)
 {
   mlsize_t offset = Long_val (n) + 2;
-                                                   Assert (Is_in_heap (ar));
   if (offset < 2 || offset >= Wosize_val (ar)){
     caml_invalid_argument ("Weak.set");
   }
-  do_check_key_clean(ar,offset);
-  do_set (ar, offset, el);
+  caml_ephe_set_key_c(ar, offset, el);
   return Val_unit;
 }
+
+void caml_ephe_unset_key_c (value ar, mlsize_t offset)
+{
+                                                   Assert (Is_in_heap (ar));
+  do_check_key_clean(ar,offset);
+  Field (ar, offset) = caml_ephe_none;
+}
+
 
 CAMLprim value caml_ephe_unset_key (value ar, value n)
 {
@@ -172,8 +189,7 @@ CAMLprim value caml_ephe_unset_key (value ar, value n)
   if (offset < 2 || offset >= Wosize_val (ar)){
     caml_invalid_argument ("Weak.set");
   }
-  do_check_key_clean(ar,offset);
-  Field (ar, offset) = caml_ephe_none;
+  caml_ephe_unset_key_c (ar, offset);
   return Val_unit;
 }
 
@@ -198,7 +214,7 @@ CAMLprim value caml_weak_set (value ar, value n, value el){
   return caml_ephe_set_key_option(ar,n,el);
 }
 
-CAMLprim value caml_ephe_set_data (value ar, value el)
+void caml_ephe_set_data_c (value ar, value el)
 {
                                                    Assert (Is_in_heap (ar));
   if (caml_gc_phase == Phase_clean){
@@ -207,68 +223,93 @@ CAMLprim value caml_ephe_set_data (value ar, value el)
     caml_ephe_clean(ar);
   };
   do_set (ar, 1, el);
+}
+
+CAMLprim value caml_ephe_set_data (value ar, value el)
+{
+  caml_ephe_set_data_c(ar, el);
   return Val_unit;
+}
+
+void caml_ephe_unset_data_c (value ar)
+{
+                                                   Assert (Is_in_heap (ar));
+  Field (ar, CAML_EPHE_DATA_OFFSET) = caml_ephe_none;
 }
 
 CAMLprim value caml_ephe_unset_data (value ar)
 {
-                                                   Assert (Is_in_heap (ar));
-  Field (ar, CAML_EPHE_DATA_OFFSET) = caml_ephe_none;
+  caml_ephe_unset_data(ar);
   return Val_unit;
 }
 
+static value optionalize(value x) {
+  CAMLparam1(x);
+  CAMLlocal1(res);
+  if(x == caml_ephe_none) {
+    res = None_val;
+  } else {
+    res = caml_alloc_small (1, Some_tag);
+    Field (res, 0) = x;
+  }
+  CAMLreturn(res);
+}
 
-#define Setup_for_gc
-#define Restore_after_gc
+value caml_ephe_get_key_c(value ar, mlsize_t offset) {
+  CAMLparam1(ar);
+  CAMLlocal1 (res);
+                                                   Assert (Is_in_heap (ar));
+  offset += 2;
+  if (is_ephe_key_none(ar, offset)){
+    res = caml_ephe_none;
+  }else{
+    res = Field (ar, offset);
+    if (caml_gc_phase == Phase_mark && Must_be_Marked_during_mark(res)){
+      caml_darken (res, NULL);
+    }
+  }
+  CAMLreturn (res);
+}
+
+value caml_weak_get_c(value ar, mlsize_t offset) {
+  return caml_ephe_get_key_c(ar, offset);
+}
 
 CAMLprim value caml_ephe_get_key (value ar, value n)
 {
   CAMLparam2 (ar, n);
-  mlsize_t offset = Long_val (n) + 2;
-  CAMLlocal2 (res, elt);
+  mlsize_t offset = Long_val(n);
                                                    Assert (Is_in_heap (ar));
-  if (offset < 2 || offset >= Wosize_val (ar)){
+  if (offset < 0 || offset + 2 >= Wosize_val (ar)){
     caml_invalid_argument ("Weak.get_key");
   }
-  if (is_ephe_key_none(ar, offset)){
-    res = None_val;
-  }else{
-    elt = Field (ar, offset);
-    if (caml_gc_phase == Phase_mark && Must_be_Marked_during_mark(elt)){
-      caml_darken (elt, NULL);
-    }
-    res = caml_alloc_small (1, Some_tag);
-    Field (res, 0) = elt;
-  }
-  CAMLreturn (res);
+  CAMLreturn (optionalize(caml_ephe_get_key_c(ar, offset)));
 }
 
 CAMLprim value caml_weak_get (value ar, value n){
   return caml_ephe_get_key(ar, n);
 }
 
-CAMLprim value caml_ephe_get_data (value ar)
+value caml_ephe_get_data_c (value ar)
 {
   CAMLparam1 (ar);
   mlsize_t offset = 1;
-  CAMLlocal2 (res, elt);
+  CAMLlocal1 (res);
                                                    Assert (Is_in_heap (ar));
-  elt = Field (ar, offset);
+  res = Field (ar, offset);
   if(caml_gc_phase == Phase_clean) caml_ephe_clean(ar);
-  if (elt == caml_ephe_none){
-    res = None_val;
-  }else{
-    if (caml_gc_phase == Phase_mark && Must_be_Marked_during_mark(elt)){
-      caml_darken (elt, NULL);
-    }
-    res = caml_alloc_small (1, Some_tag);
-    Field (res, 0) = elt;
+  if (res != caml_ephe_none &&
+      caml_gc_phase == Phase_mark && Must_be_Marked_during_mark(res)){
+      caml_darken (res, NULL);
   }
   CAMLreturn (res);
 }
 
-#undef Setup_for_gc
-#undef Restore_after_gc
+CAMLprim value caml_ephe_get_data (value ar)
+{
+  CAMLparam1 (ar);
+  CAMLreturn (optionalize(caml_ephe_get_data_c(ar)));
+}
 
 CAMLprim value caml_ephe_get_key_copy (value ar, value n)
 {
