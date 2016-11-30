@@ -104,7 +104,9 @@ CAMLprim value caml_obj_add_offset (value v, value offset)
 
 CAMLprim value caml_obj_compare_and_swap (value v, value f, value oldv, value newv)
 {
-  return Val_int(caml_atomic_cas_field(v, Int_val(f), oldv, newv));
+  int res = caml_atomic_cas_field(v, Int_val(f), oldv, newv);
+  caml_check_urgent_gc(Val_unit);
+  return Val_int(res);
 }
 
 /* caml_promote_to(obj, upto) promotes obj to be as least as shared as upto */
