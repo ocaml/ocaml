@@ -187,6 +187,10 @@ Next version (4.05.0):
 
 ### Bug fixes
 
+- PR#5115: protect all byterun/fail.c functions against
+  uninitialized caml_global_data (only changes the bytecode behavior)
+  (Gabriel Scherer, review by Xavier Leroy)
+
 - PR#7216, GPR#949: don't require double parens in Functor((val x))
   (Jacques Garrigue, review by Valentin Gatien-Baron)
 
