@@ -17,6 +17,15 @@ Next version (4.05.0):
 
 ### Runtime system:
 
+- PR#7423, GPR#946: expose new exception-raising functions
+  `void caml_{failwith,invalid_argument}_value(value msg)`
+  in addition to
+  `void caml_{failwith,invalid_argument}(char const *msg)`.
+  The previous functions would not free their message argument, so
+  were inconvient for dynamically-allocated messages; the messages
+  passed to the new functions are handled by the garbage collector.
+  (Gabriel Scherer, review by Mark Shinwell, request by Immanuel Litzroth)
+
 ### Type system:
 
 - PR#6608, GPR#901: unify record types when overriding all fields

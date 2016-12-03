@@ -118,6 +118,14 @@ CAMLexport void caml_failwith (char const *msg)
   caml_raise_with_string(caml_get_failwith_tag(msg), msg);
 }
 
+CAMLexport void caml_failwith_value (value msg)
+{
+  CAMLparam1(msg);
+  value tag = caml_get_failwith_tag(String_val(msg));
+  caml_raise_with_arg(tag, msg);
+  CAMLnoreturn;
+}
+
 static inline value caml_get_invalid_argument_tag (char const *msg)
 {
   check_global_data_param("Invalid_argument", msg);
@@ -127,6 +135,14 @@ static inline value caml_get_invalid_argument_tag (char const *msg)
 CAMLexport void caml_invalid_argument (char const *msg)
 {
   caml_raise_with_string(caml_get_invalid_argument_tag(msg), msg);
+}
+
+CAMLexport void caml_invalid_argument_value (value msg)
+{
+  CAMLparam1(msg);
+  value tag = caml_get_invalid_argument_tag(String_val(msg));
+  caml_raise_with_arg(tag, msg);
+  CAMLnoreturn;
 }
 
 CAMLexport void caml_array_bound_error(void)
