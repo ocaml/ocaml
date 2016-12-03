@@ -169,19 +169,19 @@ has excellent documentation.
   driver/::               driver code for the compilers
   emacs/::                editing mode and debugger interface for GNU Emacs
   experimental/::         experiments not built by default
-  flexdll/::              git submodule (see link:README.win32.adoc[])
+  flexdll/::              git submodule -- see link:README.win32.adoc[]
   lex/::                  lexer generator
   man/::                  man pages
   manual/::               system to generate the manual
   middle_end/::           the flambda optimisation phase
   ocamldoc/::             documentation generator
   otherlibs/::            several additional libraries
-  parsing/::              syntax analysis
+  parsing/::              syntax analysis -- see link:parsing/HACKING.adoc[]
   stdlib/::               standard library
-  testsuite/::            tests
+  testsuite/::            tests -- see link:testsuite/HACKING.adoc[]
   tools/::                various utilities
   toplevel/::             interactive system
-  typing/::               typechecking
+  typing/::               typechecking -- see link:typing/HACKING.adoc[]
   utils/::                utility libraries
   yacc/::                 parser generator
 
@@ -207,6 +207,8 @@ installation, the following targets may be of use:
 `make partialclean`:: Clean the OCaml files but keep the compiled C files.
 
 `make depend`:: Regenerate the `.depend` file. Should be used each time new dependencies are added between files.
+
+`make -C testsuite parallel`:: see link:testsuite/HACKING.adoc[]
 
 === Bootstrapping
 

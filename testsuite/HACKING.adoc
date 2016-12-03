@@ -1,0 +1,11 @@
+== Running the testsuite
+
+== Creating a new test
+
+== Useful Makefile targets
+
+`make parallel`:: runs the tests in parallel using the link:https://www.gnu.org/software/parallel/[GNU parallel] tool: tests run twice as fast with no difference in output order.
+
+`make all-foo`, `make parallel-foo`:: runs only the tests in the directories whose name starts with `foo`: `parallel-typing`, `all-lib`, etc.
+
+`make one DIR=tests/foo`:: runs only the tests in the directory `tests/foo`. This is often equivalent to `cd tests/foo && make`, but sometimes the latter breaks the test makefile if it contains fragile relative filesystem paths. Such errors should be fixed if you find them, but `make one DIR=...` is the more reliable option as it runs exactly as `make all` which is heavily tested.
