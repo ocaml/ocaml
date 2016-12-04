@@ -105,6 +105,7 @@ type error =
     if_highlight: string; (* alternative message if locations are highlighted *)
   }
 
+exception Already_displayed_error
 exception Error of error
 
 val error: ?loc:t -> ?sub:error list -> ?if_highlight:string -> string -> error
@@ -119,7 +120,7 @@ val error_of_printer: t -> (formatter -> 'a -> unit) -> 'a -> error
 
 val error_of_printer_file: (formatter -> 'a -> unit) -> 'a -> error
 
-val error_of_exn: exn -> error option
+val error_of_exn: exn -> [ `Ok of error | `Already_displayed ] option
 
 val register_error_of_exn: (exn -> error option) -> unit
 (** Each compiler module which defines a custom type of exception
