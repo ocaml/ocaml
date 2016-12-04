@@ -439,45 +439,18 @@ rule token = parse
         lexbuf.lex_curr_p <- { curpos with pos_cnum = curpos.pos_cnum - 1 };
         STAR
       }
-  | newline as newline? (("#" [' ' '\t']* (['0'-'9']+ as num) [' ' '\t']*
-        ("\"" ([^ '\010' '\013' '\"' ] * as name) "\"")) as directive)
-        [^ '\010' '\013'] * newline
-      {
-        begin match newline with
-        | None ->
-            if lexbuf.lex_start_pos <> 0 then
-              let loc = Location.curr lexbuf in
-              let explanation = "directives are only allowed at the beginning of the line" in
-              let error = Invalid_directive (directive, Some explanation) in
-              raise (Error (error, loc))
-        | _ ->
-           (* Adjust the position after the newline in case we need to report
-              an error below *)
-            let pos = lexbuf.lex_start_p in
-            lexbuf.lex_start_p <- { pos with
-              pos_lnum = pos.pos_lnum + 1;
-              pos_bol = pos.pos_cnum + 1;
-              pos_cnum = pos.pos_cnum + 1;
-            };
-            update_loc lexbuf None 1 false 0;
-        end;
-        match int_of_string num with
-        | exception _ ->
-            (* PR#7165 *)
-            let loc = Location.curr lexbuf in
-            let explanation = "line number out of range" in
-            let error = Invalid_directive (directive, Some explanation) in
-            raise (Error (error, loc))
-        | line_num ->
-           (* Put the newline back so we can match another directive *)
-            lexbuf.lex_curr_pos <- lexbuf.lex_curr_pos - 1;
-           (* Documentation says that the line number should be
-              positive, but we have never guarded against this and it
-              might have useful hackish uses. *)
-            update_loc lexbuf (Some name) (line_num - 1) true 0;
-            token lexbuf
+  | "#"
+      { if lexbuf.lex_start_pos <> 0 then
+          HASH
+        else
+          try directive lexbuf
+          with Failure(_) -> HASH
       }
-  | "#"  { HASH }
+  | newline "#"
+      { update_loc lexbuf None 1 false 1;
+        try directive lexbuf
+        with Failure(_) -> HASH
+      }
   | "&"  { AMPERSAND }
   | "&&" { AMPERAMPER }
   | "`"  { BACKQUOTE }
@@ -549,6 +522,25 @@ rule token = parse
                      Location.curr lexbuf))
       }
 
+and directive = parse
+  | ([' ' '\t']* (['0'-'9']+ as num) [' ' '\t']*
+        ("\"" ([^ '\010' '\013' '\"' ] * as name) "\"") as directive)
+        [^ '\010' '\013'] *
+      {
+        match int_of_string num with
+        | exception _ ->
+            (* PR#7165 *)
+            let loc = Location.curr lexbuf in
+            let explanation = "line number out of range" in
+            let error = Invalid_directive ("#" ^ directive, Some explanation) in
+            raise (Error (error, loc))
+        | line_num ->
+           (* Documentation says that the line number should be
+              positive, but we have never guarded against this and it
+              might have useful hackish uses. *)
+            update_loc lexbuf (Some name) (line_num - 1) true 0;
+            token lexbuf
+      }
 and comment = parse
     "(*"
       { comment_start_loc := (Location.curr lexbuf) :: !comment_start_loc;
