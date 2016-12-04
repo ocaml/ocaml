@@ -1820,7 +1820,7 @@ fi
 
 if test "$with_frame_pointers" = "true"; then
   case "$target,$cc" in
-    x86_64-*-linux*,gcc*)
+    x86_64-*-linux*,gcc*|x86_64-*-linux*,clang*)
        nativecccompopts="$nativecccompopts -g  -fno-omit-frame-pointer"
        bytecccompopts="$bytecccompopts -g  -fno-omit-frame-pointer"
        nativecclinkopts="$nativecclinkopts -g"

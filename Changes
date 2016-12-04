@@ -94,6 +94,9 @@ Next version (4.05.0):
 
 ### Compiler distribution build system:
 
+- GPR#887: allow -with-frame-pointers if clang is used as compiler on Linux
+  (Bernhard Schommer)
+
 - GPR#919: use clang as preprocessor assembler if clang is used as compiler
   (Bernhard Schommer)
 
