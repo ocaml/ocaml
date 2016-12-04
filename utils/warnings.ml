@@ -488,11 +488,8 @@ let message = function
 let nerrors = ref 0;;
 
 let print ppf w =
-  let msg = message w in
-  let num = number w in
-  Format.fprintf ppf "%d: %s" num msg;
-  Format.pp_print_flush ppf ();
-  if (!current).error.(num) then incr nerrors
+  Format.fprintf ppf "%d: %s@?" (number w) (message w);
+  if is_error w then incr nerrors
 ;;
 
 exception Errors of int;;

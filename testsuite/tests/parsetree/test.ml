@@ -7,15 +7,7 @@ let diff =
   | _ -> "diff -u"
 
 let report_err exn =
-  match exn with
-    | Sys_error msg ->
-        Format.printf "@[I/O error:@ %s@]@." msg
-    | x ->
-        match Location.error_of_exn x with
-        | Some err ->
-            Format.printf "@[%a@]@."
-              Location.report_error err
-        | None -> raise x
+  Location.report_exception Format.std_formatter exn
 
 let remove_locs =
   let open Ast_mapper in

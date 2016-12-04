@@ -272,20 +272,22 @@ let print_loc ppf loc =
   end
 ;;
 
-let print ppf loc =
+let default_printer ppf loc =
   setup_colors ();
   if loc.loc_start.pos_fname = "//toplevel//"
   && highlight_locations ppf [loc] then ()
   else fprintf ppf "@{<loc>%a@}%s@." print_loc loc msg_colon
 ;;
 
+let printer = ref default_printer
+let print ppf loc = !printer ppf loc
+
 let error_prefix = "Error"
 let warning_prefix = "Warning"
 
-let print_error_prefix ppf () =
+let print_error_prefix ppf =
   setup_colors ();
   fprintf ppf "@{<error>%s@}:" error_prefix;
-  ()
 ;;
 
 let print_compact ppf loc =
@@ -301,7 +303,7 @@ let print_compact ppf loc =
 
 let print_error ppf loc =
   print ppf loc;
-  print_error_prefix ppf ()
+  print_error_prefix ppf
 ;;
 
 let print_error_cur_file ppf () = print_error ppf (in_file !input_name);;
@@ -401,7 +403,7 @@ let rec default_error_reporter ppf ({loc; msg; sub; if_highlight} as err) =
   if highlighted then
     Format.pp_print_string ppf if_highlight
   else begin
-    fprintf ppf "%a%a %s" print loc print_error_prefix () msg;
+    fprintf ppf "%a%t %s" print loc print_error_prefix msg;
     List.iter (Format.fprintf ppf "@\n@[<2>%a@]" default_error_reporter) sub
   end
 
