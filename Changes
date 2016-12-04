@@ -94,6 +94,9 @@ Next version (4.05.0):
 
 ### Compiler distribution build system:
 
+- GPR#919: use clang as preprocessor assembler if clang is used as compiler
+  (Bernhard Schommer)
+
 - GPR#927: improve the detection of hashbang support in the configure script
   (Armaël Guéneau)
 
