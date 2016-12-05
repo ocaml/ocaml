@@ -3,6 +3,8 @@ Search for /the quick brown fox/
   ....
 Search for /the quick brown fox/ (case-insensitive)
   .....
+Search for /the quick brown fox/ (case-ascii-insensitive)
+  .....
 Search for /a*abc?xyz+pqrrrabbb*xyyyyy?pq?q?q?q?q?q?AB*zz/
   ....................................
 Search for /^abc\(abc\)?zz/
@@ -30,6 +32,8 @@ Search for /^\(\(b*\|ba\)\(b*\|ba\)?\)?bc/
 Search for /[^a]/
   ..
 Search for /[^a]/ (case-insensitive)
+  ..
+Search for /[^a]/ (case-ascii-insensitive)
   ..
 Search for /^[]abcde]/
   .........

@@ -27,6 +27,26 @@ let first_chars s n = String.sub s 0 n
 
 let last_chars s n = String.sub s (String.length s - n) n
 
+type fold_case =
+  | Latin1
+  | Ascii
+  | None_fold
+
+let string_lowercase fc s = match fc with
+| Latin1 -> String.lowercase s[@ocaml.warning "-3"]
+| Ascii -> String.lowercase_ascii s
+| None_fold -> s
+
+let char_lowercase fc s = match fc with
+| Latin1 -> Char.lowercase s[@ocaml.warning "-3"]
+| Ascii -> Char.lowercase_ascii s
+| None_fold -> s
+
+let char_uppercase fc s = match fc with
+| Latin1 -> Char.uppercase s[@ocaml.warning "-3"]
+| Ascii -> Char.uppercase_ascii s
+| None_fold -> s
+
 (** Representation of character sets **)
 
 module Charset =
@@ -93,9 +113,9 @@ module Charset =
       iter (fun c -> Bytes.set r (Char.code c) '\001') s;
       r
 
-    let fold_case s =
+    let fold_case fc s =
       (let r = make_empty() in
-       iter (fun c -> add r (Char.lowercase c); add r (Char.uppercase c)) s;
+       iter (fun c -> add r (char_lowercase fc c); add r (char_uppercase fc c)) s;
        r)[@ocaml.warnerror "-3"]
 
   end
@@ -211,14 +231,14 @@ let charclass_of_regexp fold_case re =
     | Char c -> (Charset.singleton c, false)
     | CharClass(cl, compl) -> (cl, compl)
     | _ -> assert false in
-  let cl2 = if fold_case then Charset.fold_case cl1 else cl1 in
+  let cl2 = Charset.fold_case fold_case cl1 in
   Bytes.to_string (if compl then Charset.complement cl2 else cl2)
 
 (* The case fold table: maps characters to their lowercase equivalent *)
 
-let fold_case_table =
+let fold_case_table fc =
   (let t = Bytes.create 256 in
-   for i = 0 to 255 do Bytes.set t i (Char.lowercase(Char.chr i)) done;
+   for i = 0 to 255 do Bytes.set t i (char_lowercase fc (Char.chr i)) done;
    Bytes.to_string t)[@ocaml.warnerror "-3"]
 
 module StringMap =
@@ -274,20 +294,20 @@ let compile fold_case re =
   (* Main recursive compilation function *)
   let rec emit_code = function
     Char c ->
-      if fold_case then
-        emit_instr op_CHARNORM (Char.code (Char.lowercase c))
-          [@ocaml.warnerror "-3"]
-      else
-        emit_instr op_CHAR (Char.code c)
+      let norm = begin match fold_case with
+      | None_fold -> op_CHAR
+      | _ -> op_CHARNORM
+      end in
+        emit_instr norm (Char.code (char_lowercase fold_case c))
   | String s ->
       begin match String.length s with
         0 -> ()
       | 1 ->
-        if fold_case then
-          emit_instr op_CHARNORM (Char.code (Char.lowercase s.[0]))
-            [@ocaml.warnerror "-3"]
-        else
-          emit_instr op_CHAR (Char.code s.[0])
+          let norm = begin match fold_case with
+          | None_fold -> op_CHAR
+          | _ -> op_CHARNORM
+          end in
+          emit_instr norm (Char.code (char_lowercase fold_case s.[0]))
       | _ ->
         try
           (* null characters are not accepted by the STRING* instructions;
@@ -297,14 +317,14 @@ let compile fold_case re =
           emit_instr op_CHAR 0;
           emit_code (String (string_after s (i+1)))
         with Not_found ->
-          if fold_case then
-            emit_instr op_STRINGNORM (cpool_index (String.lowercase s))
-              [@ocaml.warnerror "-3"]
-          else
-            emit_instr op_STRING (cpool_index s)
+          let norm = begin match fold_case with
+          | None_fold -> op_STRING
+          | _ -> op_STRINGNORM
+          end in
+          emit_instr norm (cpool_index (string_lowercase fold_case s))
       end
   | CharClass(cl, compl) ->
-      let cl1 = if fold_case then Charset.fold_case cl else cl in
+      let cl1 =  Charset.fold_case fold_case cl in
       let cl2 = if compl then Charset.complement cl1 else cl1 in
       emit_instr op_CHARCLASS (cpool_index (Bytes.to_string cl2))
   | Seq rl ->
@@ -414,15 +434,13 @@ let compile fold_case re =
       emit_seq_code rl
 
   and disjoint_modulo_case c1 c2 =
-    if fold_case
-    then Charset.disjoint (Charset.fold_case c1) (Charset.fold_case c2)
-    else Charset.disjoint c1 c2
+    Charset.disjoint (Charset.fold_case fold_case c1) (Charset.fold_case fold_case c2)
   in
 
   emit_code re;
   emit_instr op_ACCEPT 0;
   let start = first re in
-  let start' = if fold_case then Charset.fold_case start else start in
+  let start' = Charset.fold_case fold_case start in
   let start_pos =
     if start = Charset.full
     then -1
@@ -431,7 +449,7 @@ let compile fold_case re =
   StringMap.iter (fun str idx -> constantpool.(idx) <- str) !cpool;
   { prog = Array.sub !prog 0 !progpos;
     cpool = constantpool;
-    normtable = if fold_case then fold_case_table else "";
+    normtable = fold_case_table fold_case;
     numgroups = !numgroups;
     numregisters = !numregs;
     startchars = start_pos }
@@ -559,9 +577,12 @@ let parse s =
 
 (** Parsing and compilation *)
 
-let regexp e = compile false (parse e)
+let regexp e = compile None_fold (parse e)
 
-let regexp_case_fold e = compile true (parse e)
+let regexp_case_fold e = compile Latin1 (parse e)
+
+let regexp_case_ascii_fold e = compile Ascii (parse e)
+
 
 let quote s =
   let len = String.length s in
@@ -579,9 +600,11 @@ let quote s =
   done;
   Bytes.sub_string buf 0 !pos
 
-let regexp_string s = compile false (String s)
+let regexp_string s = compile None_fold (String s)
 
-let regexp_string_case_fold s = compile true (String s)
+let regexp_string_case_fold s = compile Latin1 (String s)
+
+let regexp_string_case_ascii_fold s = compile Ascii (String s)
 
 (** Matching functions **)
 

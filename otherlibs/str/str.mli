@@ -67,9 +67,17 @@ val regexp : string -> regexp
 *)
 
 val regexp_case_fold : string -> regexp
+  [@@ocaml.deprecated "Use Str.regexp_case_ascii_fold instead."]
 (** Same as [regexp], but the compiled expression will match text
-    in a case-insensitive way: uppercase and lowercase letters will
-    be considered equivalent. *)
+    in a case-insensitive way: uppercase and lowercase letters, including
+    accented letters of the ISO Latin-1 (8859-1) character set, will be
+    considered equivalent.
+    @deprecated Functions operating on Latin-1 character set are deprecated. *)
+
+val regexp_case_ascii_fold : string -> regexp
+(** Same as [regexp_case_fold], but the compiled expression will match text
+    in a case-insensitive way: uppercase and lowercase letters, using the
+    US-ASCII character set, will be considered equivalent. *)
 
 val quote : string -> string
 (** [Str.quote s] returns a regexp string that matches exactly
@@ -80,8 +88,16 @@ val regexp_string : string -> regexp
    that matches exactly [s] and nothing else.*)
 
 val regexp_string_case_fold : string -> regexp
+  [@@ocaml.deprecated "Use Str.regexp_case_ascii_fold instead."]
 (** [Str.regexp_string_case_fold] is similar to {!Str.regexp_string},
-   but the regexp matches in a case-insensitive way. *)
+   but the regexp matches in a case-insensitive way, including
+   accented letters of the ISO Latin-1 (8859-1) character set.
+   @deprecated Functions operating on Latin-1 character set are deprecated. *)
+
+val regexp_string_case_ascii_fold : string -> regexp
+(** [Str.regexp_string_case_fold] is similar to {!Str.regexp_string},
+   but the regexp matches in a case-insensitive way, using the US-ASCII
+   character set. *)
 
 
 (** {6 String matching and searching} *)

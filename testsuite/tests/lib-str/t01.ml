@@ -85,6 +85,20 @@ let automated_test() =
   test_search_forward r n "The slow white snail"
     [||];
 
+  start_test "Search for /the quick brown fox/ (case-ascii-insensitive)";
+  let r = Str.regexp_case_ascii_fold "the quick brown fox" in
+  let n = 0 in
+  test_search_forward r n "the quick brown fox"
+    [|"the quick brown fox"|];
+  test_search_forward r n "What do you know about the quick brown fox?"
+    [|"the quick brown fox"|];
+  test_search_forward r n "The quick brown FOX"
+    [|"The quick brown FOX"|];
+  test_search_forward r n "What do you know about THE QUICK BROWN FOX?"
+    [|"THE QUICK BROWN FOX"|];
+  test_search_forward r n "The slow white snail"
+    [||];
+
   start_test "Search for /a*abc?xyz+pqrrrabbb*xyyyyy?pq?q?q?q?q?q?AB*zz/";
   let r = Str.regexp "a*abc?xyz+pqrrrabbb*xyyyyy?pq?q?q?q?q?q?AB*zz" in
   let n = 0 in
@@ -300,6 +314,13 @@ let automated_test() =
   let n = 0 in
   test_search_forward r n "athing" [|"t"|];
   test_search_forward r n "Athing" [|"t"|];
+
+  start_test "Search for /[^a]/ (case-ascii-insensitive)";
+  let r = Str.regexp_case_ascii_fold "[^a]" in
+  let n = 0 in
+  test_search_forward r n "athing" [|"t"|];
+  test_search_forward r n "Athing" [|"t"|];
+
 
   start_test "Search for /^[]abcde]/";
   let r = Str.regexp "^[]abcde]" in
