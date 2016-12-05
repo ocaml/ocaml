@@ -765,13 +765,20 @@ module_expr:
             (fun acc (n, t) -> mkmod(Pmod_functor(n, t, acc)))
             $5 $3
         in wrap_mod_attrs modexp $2 }
-  | module_expr LPAREN module_expr RPAREN
-      { mkmod(Pmod_apply($1, $3)) }
+  | module_expr paren_module_expr
+      { mkmod(Pmod_apply($1, $2)) }
   | module_expr LPAREN RPAREN
       { mkmod(Pmod_apply($1, mkmod (Pmod_structure []))) }
-  | module_expr LPAREN module_expr error
-      { unclosed "(" 2 ")" 4 }
-  | LPAREN module_expr COLON module_type RPAREN
+  | paren_module_expr
+      { $1 }
+  | module_expr attribute
+      { Mod.attr $1 $2 }
+  | extension
+      { mkmod(Pmod_extension $1) }
+;
+
+paren_module_expr:
+    LPAREN module_expr COLON module_type RPAREN
       { mkmod(Pmod_constraint($2, $4)) }
   | LPAREN module_expr COLON module_type error
       { unclosed "(" 1 ")" 5 }
@@ -801,10 +808,6 @@ module_expr:
       { unclosed "(" 1 ")" 6 }
   | LPAREN VAL attributes expr error
       { unclosed "(" 1 ")" 5 }
-  | module_expr attribute
-      { Mod.attr $1 $2 }
-  | extension
-      { mkmod(Pmod_extension $1) }
 ;
 
 structure:
