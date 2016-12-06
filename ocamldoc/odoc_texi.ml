@@ -141,7 +141,7 @@ let indices_names = [
 (** Module for generating various Texinfo things (menus, xrefs, ...) *)
 module Texi =
 struct
-  (** Associations of strings to subsitute in Texinfo code. *)
+  (** Associations of strings to substitute in Texinfo code. *)
   let subst_strings = [
     (Str.regexp "@", "@@") ;
     (Str.regexp "{", "@{") ;
@@ -176,11 +176,11 @@ struct
       (fun acc (p, r) -> Str.global_replace p r acc)
       s subst_strings
 
-  (** Removes dots (no good for a node name). *)
+  (** Remove dots (no good for a node name). *)
   let fix_nodename s =
     Str.global_replace (Str.regexp "\\.") "/" (escape s)
 
-  (** Generates a Texinfo menu. *)
+  (** Generate a Texinfo menu. *)
   let generate_menu chan subpart_list =
     if subpart_list <> []
     then begin
@@ -567,7 +567,7 @@ class texi =
 
     (** {3 Conversion of [module_elements] into Texinfo strings}
        The following functions convert [module_elements] and their
-       description to [text] values then to Texinfo strings using the
+       descriptions to [text] values then to Texinfo strings using the
        functions above. *)
 
     method text_el_of_type_expr m_name typ =
@@ -1132,7 +1132,7 @@ class texi =
      with Aliased_node -> ()
 
 
-    (** Writes the header of the TeXinfo document. *)
+    (** Write the header of the TeXinfo document. *)
     method generate_texi_header chan texi_filename m_list =
       let title = match !Global.title with
       | None -> ""
@@ -1218,7 +1218,7 @@ class texi =
          else [] ))
 
 
-    (** Writes the trailer of the TeXinfo document. *)
+    (** Write the trailer of the TeXinfo document. *)
     method generate_texi_trailer chan =
       nl chan ;
       if !Global.with_index

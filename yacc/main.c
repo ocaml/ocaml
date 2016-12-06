@@ -73,7 +73,7 @@ FILE *output_file;      /*  y.tab.c                                         */
 FILE *text_file;        /*  a temp file, used to save text until all        */
                         /*  symbols have been defined                       */
 FILE *union_file;       /*  a temp file, used to save the union             */
-                        /*  definition until all symbol have been           */
+                        /*  definition until all symbols have been          */
                         /*  defined                                         */
 FILE *verbose_file;     /*  y.output                                        */
 FILE *interface_file;

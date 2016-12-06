@@ -219,13 +219,13 @@ module Analyser =
     (** The name of the analysed file. *)
     let file_name = Sig.file_name
 
-    (** This function takes two indexes (start and end) and return the string
+    (** This function takes two indexes (start and end) and returns the string
        corresponding to the indexes in the file global variable. The function
        prepare_file must have been called to fill the file global variable.*)
     let get_string_of_file = Sig.get_string_of_file
 
-    (** This function loads the given file in the file global variable.
-       and sets file_name.*)
+    (** This function loads the given file in the file global variable
+       and sets file_name. *)
     let prepare_file = Sig.prepare_file
 
     (** The function used to get the comments in a class. *)
@@ -677,7 +677,7 @@ module Analyser =
       in
       iter [] [] last_pos (p_cls.Parsetree.pcstr_fields)
 
-    (** Analysis of a [Parsetree.class_expr] and a [Typedtree.class_expr] to get a a couple (class parameters, class kind). *)
+    (** Analysis of a [Parsetree.class_expr] and a [Typedtree.class_expr] to get a couple (class parameters, class kind). *)
     let rec analyse_class_kind env current_class_name comment_opt last_pos p_class_expr tt_class_exp table =
       match (p_class_expr.Parsetree.pcl_desc, tt_class_exp.Typedtree.cl_desc) with
         (Parsetree.Pcl_constr (lid, _), tt_class_exp_desc ) ->
@@ -1021,7 +1021,7 @@ module Analyser =
 
     (** Analysis of a parse tree structure with a typed tree, to return module elements.*)
     let rec analyse_structure env current_module_name last_pos pos_limit parsetree typedtree =
-      print_DEBUG "Odoc_ast:analyse_struture";
+      print_DEBUG "Odoc_ast:analyse_structure";
       let (table, table_values) = Typedtree_search.tables typedtree.str_items in
       let rec iter env last_pos = function
           [] ->
@@ -1063,7 +1063,7 @@ module Analyser =
    (** Analysis of a parse tree structure item to obtain a new environment and a list of elements.*)
    and analyse_structure_item env current_module_name loc pos_limit comment_opt parsetree_item_desc _typedtree
         table table_values =
-      print_DEBUG "Odoc_ast:analyse_struture_item";
+      print_DEBUG "Odoc_ast:analyse_structure_item";
       match parsetree_item_desc with
         Parsetree.Pstr_eval _ ->
           (* don't care *)

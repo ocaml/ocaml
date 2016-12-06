@@ -82,7 +82,7 @@ val select :
   Unix.file_descr list -> Unix.file_descr list -> Unix.file_descr list ->
     float ->
     Unix.file_descr list * Unix.file_descr list * Unix.file_descr list
-(** Suspend the execution of the calling thead until input/output
+(** Suspend the execution of the calling thread until input/output
    becomes possible on the given Unix file descriptors.
    The arguments and results have the same meaning as for
    {!Unix.select}. *)
@@ -125,7 +125,7 @@ val critical_section : bool ref
    (the timer interrupt that transfers control from thread to thread),
    causing the current thread to run uninterrupted until
    [critical_section] is reset to [false] or the current thread
-   explicitely relinquishes control using [sleep], [delay],
+   explicitly relinquishes control using [sleep], [delay],
    [wait_inchan] or [wait_descr]. *)
 
 val sleep : unit -> unit

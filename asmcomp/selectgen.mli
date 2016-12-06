@@ -75,13 +75,13 @@ class virtual selector_generic : object
 
   method mark_tailcall : unit
   (* informs the code emitter that the current function may end with
-     a tail-call; by default, does nothing *)
+     a tail call; by default, does nothing *)
 
   method mark_c_tailcall : unit
   (* informs the code emitter that the current function may call
      a C function that never returns; by default, does nothing.
 
-     It is unecessary to save the stack pointer in this situation
+     It is unnecessary to save the stack pointer in this situation
      (which is the main purpose of tracking leaf functions) but some
      architectures still need to ensure that the stack is properly
      aligned when the C function is called. This is achieved by

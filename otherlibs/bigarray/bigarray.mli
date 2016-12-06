@@ -49,7 +49,7 @@
    ({!Bigarray.int16_signed_elt} or {!Bigarray.int16_unsigned_elt}),
 - OCaml integers (signed, 31 bits on 32-bit architectures,
    63 bits on 64-bit architectures) ({!Bigarray.int_elt}),
-- 32-bit signed integer ({!Bigarray.int32_elt}),
+- 32-bit signed integers ({!Bigarray.int32_elt}),
 - 64-bit signed integers ({!Bigarray.int64_elt}),
 - platform-native signed integers (32 bits on 32-bit architectures,
    64 bits on 64-bit architectures) ({!Bigarray.nativeint_elt}).

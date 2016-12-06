@@ -332,7 +332,7 @@ let rhs_post_extra_text pos =
   get_post_extra_text (Parsing.rhs_end_pos pos)
 
 
-(* (Re)Initialise all comment state *)
+(* (Re)Initialize all comment state *)
 
 let init () =
   docstrings := [];

@@ -934,7 +934,7 @@ let default_pp_mark_close_tag s = "</" ^ s ^ ">"
 let default_pp_print_open_tag = ignore
 let default_pp_print_close_tag = ignore
 
-(* Bulding a formatter given its basic output functions.
+(* Building a formatter given its basic output functions.
    Other fields get reasonable default values. *)
 let pp_make_formatter f g h i =
   (* The initial state of the formatter contains a dummy box. *)
@@ -1012,7 +1012,7 @@ and str_formatter = formatter_of_buffer stdbuf
 
 
 (* [flush_buffer_formatter buf ppf] flushes formatter [ppf],
-   then return the contents of buffer [buff] thst is reset.
+   then returns the contents of buffer [buf] that is reset.
    Formatter [ppf] is supposed to print to buffer [buf], otherwise this
    function is not really useful. *)
 let flush_buffer_formatter buf ppf =
@@ -1316,7 +1316,7 @@ let get_all_formatter_output_functions =
    Define a formatter of your own writing to the buffer,
    as in
    let ppf = formatter_of_buffer b
-   then use {!fprintf ppf} as useual. *)
+   then use {!fprintf ppf} as usual. *)
 let bprintf b (Format (fmt, _) : ('a, formatter, unit) format) =
   let k ppf acc = output_acc ppf acc; pp_flush_queue ppf false in
   make_printf k (formatter_of_buffer b) End_of_acc fmt

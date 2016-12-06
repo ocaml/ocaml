@@ -565,7 +565,7 @@ let extract_float = function
   | _ -> fatal_error "Translcore.extract_float"
 
 (* Push the default values under the functional abstractions *)
-(* Also push bindings of module patterns, since this sound *)
+(* Also push bindings of module patterns, since this is sound *)
 
 type binding =
   | Bind_value of value_binding list

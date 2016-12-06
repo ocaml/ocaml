@@ -201,7 +201,7 @@ let get_and_remove_specialised_attribute e =
   let specialised = parse_specialise_attribute attr in
   specialised, { e with exp_attributes }
 
-(* It also remove the attribute from the expression, like
+(* It also removes the attribute from the expression, like
    get_inlined_attribute *)
 let get_tailcall_attribute e =
   let is_tailcall_attribute = function

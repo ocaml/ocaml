@@ -460,7 +460,7 @@ class virtual info =
     (** The method used to get LaTeX code from a [text]. *)
     method virtual latex_of_text : Format.formatter -> Odoc_info.text -> unit
 
-    (** The method used to get a [text] from an optionel info structure. *)
+    (** The method used to get a [text] from an optional info structure. *)
     method virtual text_of_info : ?block: bool -> Odoc_info.info option -> Odoc_info.text
 
     (** Print LaTeX code for a description, except for the [i_params] field. *)
@@ -1073,7 +1073,7 @@ class latex =
       in
       self#latex_of_text fmt t;
       self#latex_of_class_parameter_list fmt father c;
-      (* avoid a big gap if the kind is a consrt *)
+      (* avoid a big gap if the kind is a constr *)
       (
        match c.cl_kind with
          Class.Class_constr _ ->
@@ -1265,7 +1265,7 @@ class latex =
       )
 
 
-    (** Generate the LaTeX style file, if it does not exists. *)
+    (** Generate the LaTeX style file, if it does not exist. *)
     method generate_style_file =
       try
         let dir = Filename.dirname !Global.out_file in

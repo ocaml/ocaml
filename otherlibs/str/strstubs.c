@@ -61,7 +61,7 @@ enum {
   ENDGROUP,   /* record the end of a group */
   REFGROUP,   /* match a previously matched group */
   ACCEPT,     /* report success */
-  SIMPLEOPT,  /* match a character class 0 or 1 times */
+  SIMPLEOPT,  /* match a character class 0 or 1 time */
   SIMPLESTAR, /* match a character class 0, 1 or several times */
   SIMPLEPLUS, /* match a character class 1 or several times */
   GOTO,       /* unconditional branch */
@@ -150,7 +150,7 @@ static value re_alloc_groups(value re, unsigned char * starttxt,
 }
 
 /* The bytecode interpreter for the NFA.
-   Return Caml array of matched groups on success, 0 on failure. */
+   Return OCaml array of matched groups on success, 0 on failure. */
 
 static value re_match(value re,
                       unsigned char * starttxt,

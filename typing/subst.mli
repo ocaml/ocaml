@@ -21,7 +21,7 @@ type t
 
 (*
    Substitutions are used to translate a type from one context to
-   another.  This requires substituing paths for identifiers, and
+   another.  This requires substituting paths for identifiers, and
    possibly also lowering the level of non-generic variables so that
    it be inferior to the maximum level of the new context.
 

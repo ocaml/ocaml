@@ -54,8 +54,8 @@ extern uintnat caml_fl_wsz_at_phase_change;
    the start of this subphase and created during it are marked. */
 #define Subphase_mark_final 12
 /* Subphase_mark_final: At the start of this subphase register which
-   value with an ocaml finalizer are not marked, the associated
-   finalizer will be run later. So we mark now these value as alive,
+   value with an OCaml finalizer are not marked, the associated
+   finalizer will be run later. So we mark now these values as alive,
    since they must be available for their finalizer.
   */
 

@@ -66,7 +66,7 @@ let add_edge ancestor son delay =
 let add_edge_after son ancestor = add_edge ancestor son 0
 
 (* Add edges from all instructions that define a pseudoregister [arg] being used
-   as argument to node [node] (RAW dependencies *)
+   as argument to node [node] (RAW dependencies). *)
 
 let add_RAW_dependencies node arg =
   try
@@ -114,7 +114,7 @@ let rec longest_path critical_outputs node =
       [] ->
         node.length <-
           if is_critical critical_outputs node.instr.res
-          || node.instr.desc = Lreloadretaddr (* alway critical *)
+          || node.instr.desc = Lreloadretaddr (* always critical *)
           then node.delay
           else 0
     | sons ->
@@ -157,7 +157,7 @@ method oper_in_basic_block = function
   | Ialloc _ -> false
   | _ -> true
 
-(* Determine whether an instruction ends a basic block or not *)
+(* Determine whether an instruction ends a basic block or not. *)
 
 (* PR#2719: it is generally incorrect to schedule checkbound instructions
    within a try ... with Invalid_argument _ -> ...
@@ -212,7 +212,7 @@ method virtual oper_latency : Mach.operation -> int
 
 method reload_retaddr_latency = self#oper_latency some_load
 
-(* Estimate the delay needed to evaluate an instruction *)
+(* Estimate the delay needed to evaluate an instruction. *)
 
 method private instr_latency instr =
   match instr.desc with
@@ -337,7 +337,7 @@ method private reschedule ready_queue date cont =
         (* Remove node from queue *)
         let new_queue = ref (remove_instr node ready_queue) in
         (* Update the start date and number of ancestors emitted of
-           all descendents of this node. Enter those that become ready
+           all descendants of this node. Enter those that become ready
            in the queue. *)
         let issue_cycles = self#instr_issue_cycles node.instr in
         List.iter

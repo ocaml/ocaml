@@ -134,7 +134,7 @@ let simplify_exits lam =
       end
   | Lstaticraise (i,ls) -> incr_exit i ; List.iter count ls
   | Lstaticcatch (l1,(i,[]),Lstaticraise (j,[])) ->
-      (* i will be replaced by j in l1, so each occurence of i in l1
+      (* i will be replaced by j in l1, so each occurrence of i in l1
          increases j's ref count *)
       count l1 ;
       let ic = count_exit i in
@@ -309,7 +309,7 @@ let beta_reduce params body args =
 
 let simplify_lets lam =
 
-  (* Disable optimisations for bytecode compilation with -g flag *)
+  (* Disable optimizations for bytecode compilation with -g flag *)
   let optimize = !Clflags.native_code || not !Clflags.debug in
 
   (* First pass: count the occurrences of all let-bound identifiers *)
@@ -432,7 +432,7 @@ let simplify_lets lam =
 
   let subst = Hashtbl.create 83 in
 
-(* This (small)  optimisation is always legal, it may uncover some
+(* This (small) optimization is always legal, it may uncover some
    tail call later on. *)
 
   let mklet str kind v e1 e2  = match e2 with
@@ -545,7 +545,7 @@ let simplify_lets lam =
   in
   simplif lam
 
-(* Tail call info in annotation files *)
+(* Tail-call info in annotation files *)
 
 let is_tail_native_heuristic : (int -> bool) ref =
   ref (fun _ -> true)

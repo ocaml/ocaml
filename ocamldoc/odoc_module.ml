@@ -40,7 +40,7 @@ and mmt =
 and included_module = {
     im_name : Name.t ; (** the name of the included module *)
     mutable im_module : mmt option ; (** the included module or module type *)
-    mutable im_info : Odoc_types.info option ; (** comment associated to the includ directive *)
+    mutable im_info : Odoc_types.info option ; (** comment associated to the include directive *)
   }
 
 and module_alias = {
@@ -237,7 +237,7 @@ let rec module_elements ?(trans=true) m =
           []
     | Module_functor (_, k)
     | Module_apply (k, _) ->
-        print_DEBUG "Odoc_module.module_element: Module_functor ou Module_apply";
+        print_DEBUG "Odoc_module.module_element: Module_functor or Module_apply";
         iter_kind k
     | Module_with (tk,_) ->
         print_DEBUG "Odoc_module.module_element: Module_with";
@@ -429,7 +429,7 @@ and module_parameters ?(trans=true) m =
   in
   iter m.m_kind
 
-(** access to all submodules and sudmobules of submodules ... of the given module.
+(** Access to all submodules and submodules of submodules ... of the given module.
   @param trans indicates if, for aliased modules, we must perform a transitive search.*)
 let rec module_all_submodules ?(trans=true) m =
   let l = module_modules ~trans m in
@@ -438,7 +438,7 @@ let rec module_all_submodules ?(trans=true) m =
     l
     l
 
-(** The module type is a functor if is defined as a functor or if it is an alias for a functor. *)
+(** The module type is a functor if it is defined as a functor or if it is an alias for a functor. *)
 let rec module_type_is_functor mt =
   let rec iter k =
     match k with
@@ -457,7 +457,7 @@ let rec module_type_is_functor mt =
   in
   iter mt.mt_kind
 
-(** The module is a functor if is defined as a functor or if it is an alias for a functor. *)
+(** The module is a functor if it is defined as a functor or if it is an alias for a functor. *)
 let module_is_functor m =
   let rec iter = function
       Module_functor _ -> true

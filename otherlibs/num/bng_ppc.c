@@ -39,8 +39,8 @@
       : "r" (arg1), "r" (arg2), "r" (arg3), "1" (carryaccu))
 
 /* The "subtract" instructions interpret carry differently than what we
-   need: the processor carry bit CA is 1 if no carry occured,
-   0 if a carry occured.  In other terms, CA = !carry.
+   need: the processor carry bit CA is 1 if no carry occurred,
+   0 if a carry occurred.  In other terms, CA = !carry.
    Thus, subfe rd,ra,rb computes rd = ra - rb - !CA
          subfe rd,rd,rd sets rd = - !CA
          subfe rd,rd,rd; neg rd, rd sets rd = !CA and recovers "our" carry. */

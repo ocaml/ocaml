@@ -224,7 +224,7 @@ val class_type_exists : Odoc_module.t_module list -> Str.regexp -> bool
    in the given module list.*)
 val extension_exists : Odoc_module.t_module list -> Str.regexp -> bool
 
-(** Return [true] if a exception with the given complete name (regexp) exists
+(** Return [true] if an exception with the given complete name (regexp) exists
    in the given module list.*)
 val exception_exists : Odoc_module.t_module list -> Str.regexp -> bool
 

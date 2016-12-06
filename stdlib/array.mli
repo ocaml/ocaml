@@ -69,7 +69,7 @@ val init : int -> (int -> 'a) -> 'a array
 
    Raise [Invalid_argument] if [n < 0] or [n > Sys.max_array_length].
    If the return type of [f] is [float], then the maximum
-   size is only [Sys.max_array_length / 2].*)
+   size is only [Sys.max_array_length / 2]. *)
 
 val make_matrix : int -> int -> 'a -> 'a array array
 (** [Array.make_matrix dimx dimy e] returns a two-dimensional array

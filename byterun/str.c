@@ -393,14 +393,14 @@ CAMLexport value caml_alloc_sprintf(const char * format, ...)
      excluding the terminating '\0'. */
   n = vsnprintf(buf, sizeof(buf), format, args);
   va_end(args);
-  /* Allocate a Caml string with length "n" as computed by vsnprintf. */
+  /* Allocate an OCaml string with length "n" as computed by vsnprintf. */
   res = caml_alloc_string(n);
   if (n < sizeof(buf)) {
     /* All output characters were written to buf, including the
        terminating '\0'.  Just copy them to the result. */
     memcpy(String_val(res), buf, n);
   } else {
-    /* Re-do the formatting, outputting directly in the Caml string.
+    /* Re-do the formatting, outputting directly in the OCaml string.
        Note that caml_alloc_string left room for a '\0' at position n,
        so the size passed to vsnprintf is n+1. */
     va_start(args, format);
@@ -422,7 +422,7 @@ CAMLexport value caml_alloc_sprintf(const char * format, ...)
   if (n >= 0 && n <= sizeof(buf)) {
     /* All output characters were written to buf.
        "n" is the actual length of the output.
-       Copy the characters to a Caml string of length n. */
+       Copy the characters to an OCaml string of length n. */
     res = caml_alloc_string(n);
     memcpy(String_val(res), buf, n);
   } else {
@@ -431,7 +431,7 @@ CAMLexport value caml_alloc_sprintf(const char * format, ...)
     n = _vscprintf(format, args);
     va_end(args);
     res = caml_alloc_string(n);
-    /* Re-do the formatting, outputting directly in the Caml string.
+    /* Re-do the formatting, outputting directly in the OCaml string.
        Note that caml_alloc_string left room for a '\0' at position n,
        so the size passed to _vsnprintf is n+1. */
     va_start(args, format);

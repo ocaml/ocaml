@@ -1576,7 +1576,7 @@ let rec transl env e =
               transl_fundecls (pos + 4) rem in
       Cop(Calloc, transl_fundecls 0 fundecls, Debuginfo.none)
   | Uoffset(arg, offset) ->
-      (* produces a valid Caml value, pointing just after an infix header *)
+      (* produces a valid OCaml value, pointing just after an infix header *)
       let ptr = transl env arg in
       if offset = 0
       then ptr

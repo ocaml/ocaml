@@ -205,7 +205,7 @@ let gcd_nat nat1 off1 len1 nat2 off2 len2 =
 
 (* Integer square root using newton method (nearest integer by default) *)
 
-(* Theorem: the sequence x_{n+1} = ( x_n + a/x_n )/2 converges toward
+(* Theorem: the sequence x_{n+1} = ( x_n + a/x_n )/2 converges towards
    the integer square root (by default) of a for any starting value x_0
    strictly greater than the square root of a except if a + 1 is a
    perfect square. In this situation, the sequence alternates between

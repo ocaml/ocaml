@@ -152,7 +152,7 @@ and class_expr_desc =
                   (Ident.t * string loc * expression) list * class_expr
   | Tcl_constraint of
       class_expr * class_type option * string list * string list * Concr.t
-    (* Visible instance variables, methods and concretes methods *)
+    (* Visible instance variables, methods and concrete methods *)
 
 and class_structure =
   {

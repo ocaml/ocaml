@@ -367,7 +367,7 @@ static void intern_rec(value *dest)
         if (intern_obj_table != NULL) intern_obj_table[obj_counter++] = v;
         *intern_dest = Make_header_allocated_here(size, tag, intern_color);
         intern_dest += 1 + size;
-        /* For objects, we need to freshen the oid */
+        /* For objects, we need to freshen the OID */
         if (tag == Object_tag) {
           Assert(size >= 2);
           /* Request to read rest of the elements of the block */

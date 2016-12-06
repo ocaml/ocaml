@@ -33,7 +33,7 @@ let word_addressed = false
     0                   temporary, null register for some operations (volatile)
     1                   temporary (volatile)
     2 - 5               function arguments and results (volatile)
-    6                   function arguments and results (persevered by C)
+    6                   function arguments and results (preserved by C)
     7 - 9               general purpose, preserved by C
     10                  allocation limit (preserved by C)
     11                  allocation pointer (preserved by C)
@@ -140,7 +140,7 @@ let loc_results res =
   let (loc, _ofs) = calling_conventions 0 4 100 103 not_supported 0 res in loc
 
 (*   C calling conventions under SVR4:
-     use GPR 2-6 and FPR 0,2,4,6 just like ML calling conventions.
+     Use GPR 2-6 and FPR 0,2,4,6 just like ML calling conventions.
      Using a float register does not affect the int registers.
      Always reserve 160 bytes at bottom of stack, plus whatever is needed
      to hold the overflow arguments. *)

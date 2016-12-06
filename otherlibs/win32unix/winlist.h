@@ -49,7 +49,7 @@ LPLIST list_next (LPLIST);
 /* Get number of element */
 int list_length (LPLIST);
 
-/* Concat two list. */
+/* Concat two lists */
 LPLIST list_concat (LPLIST, LPLIST);
 
 #endif /* _WINLIST_H */

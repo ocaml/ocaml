@@ -13,6 +13,6 @@
 (*                                                                        *)
 (**************************************************************************)
 
-(* Module [StringLabels]: labelled String module *)
+(* Module [StringLabels]: labeled String module *)
 
 include String

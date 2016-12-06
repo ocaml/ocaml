@@ -42,7 +42,7 @@ let word_addressed = false
    Floating-point register map (VFPv{2,3}):
     d0 - d7               general purpose (not preserved)
     d8 - d15              general purpose (preserved)
-    d16 - d31             generat purpose (not preserved), VFPv3 only
+    d16 - d31             general purpose (not preserved), VFPv3 only
 *)
 
 let int_reg_name =

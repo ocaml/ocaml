@@ -238,7 +238,7 @@ static bngdigit bng_generic_mult_sub_digit
     bngdigit bd = *b;
     /* ph:pl = double-digit product of b's current digit and d */
     BngMult(ph, pl, bd, d);
-    /* current digit of a -= pl + out.  Accumulate carrys in ph. */
+    /* current digit of a -= pl + out.  Accumulate carries in ph. */
     BngSub3(*a, ph, *a, pl, out);
     /* prepare out for next iteration */
     out = ph;

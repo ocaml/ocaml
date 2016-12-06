@@ -114,7 +114,7 @@ and operation =
   | Caddi | Csubi | Cmuli | Cmulhi | Cdivi | Cmodi
   | Cand | Cor | Cxor | Clsl | Clsr | Casr
   | Ccmpi of comparison
-  | Caddv (* pointer addition that produces a [Val] (well-formed Caml value) *)
+  | Caddv (* pointer addition that produces a [Val] (well-formed OCaml value) *)
   | Cadda (* pointer addition that produces a [Addr] (derived heap pointer) *)
   | Ccmpa of comparison
   | Cnegf | Cabsf

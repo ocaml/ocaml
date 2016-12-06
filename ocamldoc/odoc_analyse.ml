@@ -66,7 +66,7 @@ let preprocess sourcefile =
     exit 2
 
 (** Analysis of an implementation file. Returns (Some typedtree) if
-   no error occured, else None and an error message is printed.*)
+   no error occurred, else None and an error message is printed.*)
 
 let tool_name = "ocamldoc"
 
@@ -109,7 +109,7 @@ let process_implementation_file sourcefile =
           raise e
 
 (** Analysis of an interface file. Returns (Some signature) if
-   no error occured, else None and an error message is printed.*)
+   no error occurred, else None and an error message is printed.*)
 let process_interface_file sourcefile =
   init_path ();
   let prefixname = Filename.chop_extension sourcefile in

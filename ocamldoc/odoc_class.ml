@@ -43,7 +43,7 @@ and class_apply = {
 
 and class_constr = {
     cco_name : Name.t ; (** The complete name of the applied class *)
-    mutable cco_class : cct option;  (** The associated class ot class type if we found it *)
+    mutable cco_class : cct option;  (** The associated class of class type if we found it *)
     cco_type_parameters : Types.type_expr list; (** The type parameters of the class, if needed *)
   }
 
@@ -55,7 +55,7 @@ and class_kind =
   | Class_constr of class_constr (** a class used to give the type of the defined class,
                                     instead of a structure, used in interface only.
                                     For example, it will be used with the name "M1.M2....tutu"
-                                    when the class to is defined like this :
+                                    when the class toto is defined like this :
                                     class toto : int -> tutu *)
   | Class_constraint of class_kind * class_type_kind
         (** A class definition with a constraint. *)
@@ -117,7 +117,7 @@ let rec class_elements ?(trans=true) cl =
     | Class_constraint (c_kind, _ct_kind) ->
         iter_kind c_kind
       (* FIXME : use c_kind or ct_kind ?
-         For now, as ct_kind is not analyzed,
+         For now, as ct_kind is not analysed,
          we search inside c_kind
          class_type_elements ~trans: trans
          { clt_name = "" ; clt_info = None ;
@@ -192,7 +192,7 @@ let class_comments ?(trans=true) cl =
     (class_elements ~trans cl)
 
 
-(** Update the parameters text of a t_class, according to the cl_info field. *)
+(** Updates the parameters text of a t_class, according to the cl_info field. *)
 let class_update_parameters_text cl =
   let f p =
     Odoc_parameter.update_parameter_text (class_parameter_text_by_name cl) p

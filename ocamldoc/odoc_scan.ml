@@ -50,7 +50,7 @@ class scanner =
 
   (** Scan of a type extension *)
 
-    (** Overide this method to perform controls on the extension's type,
+    (** Override this method to perform controls on the extension's type,
         private and info. This method is called before scanning the
         extensions's constructors.
         @return true if the extension's constructors must be scanned.*)
@@ -77,7 +77,7 @@ class scanner =
     method scan_class_pre (_ : Odoc_class.t_class) = true
 
     (** This method scan the elements of the given class.
-       A VOIR : scan des classes heritees.*)
+       TODO : scan of inherited classes. *)
     method scan_class_elements c =
       List.iter
         (fun ele ->
@@ -103,7 +103,7 @@ class scanner =
     method scan_class_type_pre (_ : Odoc_class.t_class_type) = true
 
     (** This method scan the elements of the given class type.
-       A VOIR : scan des classes heritees.*)
+       TODO : scan of inherited classes. *)
     method scan_class_type_elements ct =
       List.iter
         (fun ele ->

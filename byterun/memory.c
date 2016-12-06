@@ -574,7 +574,7 @@ CAMLexport value caml_alloc_shr (mlsize_t wosize, tag_t tag)
    that depend on the GC (and finalizers) for deallocation.
    For the GC to take dependent memory into account when computing
    its automatic speed setting,
-   you must call [caml_alloc_dependent_memory] when you alloate some
+   you must call [caml_alloc_dependent_memory] when you allocate some
    dependent memory, and [caml_free_dependent_memory] when you
    free it.  In both cases, you pass as argument the size (in bytes)
    of the block being allocated or freed.

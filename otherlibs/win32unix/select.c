@@ -630,7 +630,7 @@ LPSELECTDATA socket_poll_add (LPSELECTDATA lpSelectData,
   candidate = NULL;
   aQueries = NULL;
 
-  /* Polling socket can be done mulitple handle at the same time. You just
+  /* Polling socket can be done multiple handle at the same time. You just
      need one worker to use it. Try to find if there is already a worker
      handling this kind of request.
      Only one event can be associated with a given socket which means
@@ -931,7 +931,7 @@ static value find_handle(LPSELECTRESULT iterResult, value readfds,
 
 #define MAX(a, b) ((a) > (b) ? (a) : (b))
 
-/* Convert fdlist to an fd_set if all the handles in fdlist are
+/* Convert fdlist to a fd_set if all the handles in fdlist are
  * sockets and return 1.  Returns 0 if a non-socket value is
  * encountered, or if there are more than FD_SETSIZE sockets.
  */

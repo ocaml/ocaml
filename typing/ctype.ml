@@ -26,7 +26,7 @@ open Btype
    If one wants to manipulate a type after type inference (for
    instance, during code generation or in the debugger), one must
    first make sure that the type levels are correct, using the
-   function [correct_levels]. Then, this type can be correctely
+   function [correct_levels]. Then, this type can be correctly
    manipulated by [apply], [expand_head] and [moregeneral].
 *)
 
@@ -1194,7 +1194,7 @@ let instance_class params cty =
   cleanup_types ();
   (params', cty')
 
-(**** Instanciation for types with free universal variables ****)
+(**** Instantiation for types with free universal variables ****)
 
 let rec diff_list l1 l2 =
   if l1 == l2 then [] else
@@ -1332,10 +1332,10 @@ let apply env params body args =
                               (****************************)
 
 (*
-   If the environnement has changed, memorized expansions might not
+   If the environment has changed, memorized expansions might not
    be correct anymore, and so we flush the cache. This is safe but
    quite pessimistic: it would be enough to flush the cache when a
-   type or module definition is overridden in the environnement.
+   type or module definition is overridden in the environment.
 *)
 let previous_env = ref Env.empty
 (*let string_of_kind = function Public -> "public" | Private -> "private"*)
@@ -1400,7 +1400,7 @@ let expand_abbrev_gen kind find_type_expansion env ty =
               ty.desc <- Tvariant { row with row_name = Some (path, args) }
           | _ -> ()
           end;
-          (* For gadts, remember type as non exportable *)
+          (* For GADTs, remember type as non exportable *)
           (* The ambiguous level registered for ty' should be the highest *)
           if !trace_gadt_instances then begin
             match max lv (Env.gadt_instance_level env ty) with
@@ -1487,7 +1487,7 @@ let rec extract_concrete_typedecl env ty =
   | _ -> raise Not_found
 
 (* Implementing function [expand_head_opt], the compiler's own version of
-   [expand_head] used for type-based optimisations.
+   [expand_head] used for type-based optimizations.
    [expand_head_opt] uses [Env.find_type_expansion_opt] to access the
    manifest type information of private abstract data types which is
    normally hidden to the type-checker out of the implementation module of
@@ -1682,8 +1682,8 @@ let rec unify_univar t1 t2 = function
       end
   | [] -> raise (Unify [])
 
-(* Test the occurence of free univars in a type *)
-(* that's way too expansive. Must do some kind of cacheing *)
+(* Test the occurrence of free univars in a type *)
+(* that's way too expensive. Must do some kind of cacheing *)
 let occur_univar env ty =
   let visited = ref TypeMap.empty in
   let rec occur_rec bound ty =
@@ -1845,10 +1845,10 @@ let deep_occur t0 ty =
       to the other. When unifying an abbreviated type with a
       non-abbreviated type, the non-abbreviated type is made a link to
       the other one. When unifying to abbreviated types, these two
-      types are kept distincts, but they are made to (temporally)
+      types are kept distincts, but they are made to (temporarily)
       expand to the same type.
    2. Abbreviations with at least one parameter are systematically
-      expanded. The overhead does not seem to high, and that way
+      expanded. The overhead does not seem too high, and that way
       abbreviations where some parameters does not appear in the
       expansion, such as ['a t = int], are correctly handled. In
       particular, for this example, unifying ['a t] with ['b t] keeps
@@ -2257,7 +2257,7 @@ let unify_package env unify_list lv1 p1 n1 tl1 lv2 p2 n2 tl2 =
   && !package_subtype env p2 n2 tl2 p1 n1 tl1 then () else raise Not_found
 
 
-(* force unification in Reither when one side has as non-conjunctive type *)
+(* force unification in Reither when one side has a non-conjunctive type *)
 let rigid_variants = ref false
 
 (* drop not force unification in Reither, even in fixed case
@@ -3076,10 +3076,10 @@ let moregen inst_nongen type_pairs env patt subj =
   moregen inst_nongen type_pairs env patt subj
 
 (*
-   Non-generic variable can be instanciated only if [inst_nongen] is
+   Non-generic variable can be instantiated only if [inst_nongen] is
    true. So, [inst_nongen] should be set to false if the subject might
    contain non-generic variables (and we do not want them to be
-   instanciated).
+   instantiated).
    Usually, the subject is given by the user, and the pattern
    is unimportant.  So, no need to propagate abbreviations.
 *)
@@ -3628,7 +3628,7 @@ let match_class_declarations env patt_params patt_type subj_params subj_type =
         equal_clty false type_pairs subst env
           (Cty_signature sign1) (Cty_signature sign2);
         (* Use moregeneral for class parameters, need to recheck everything to
-           keeps relationships (PR#4824) *)
+           keep relationships (PR#4824) *)
         let clty_params =
           List.fold_right (fun ty cty -> Cty_arrow (Labelled "*",ty,cty)) in
         match_class_types ~trace:false env
@@ -3742,7 +3742,7 @@ let rec build_subtype env visited loops posi level t =
             | _ -> raise Not_found
           in
           (* Fix PR4505: do not set ty to Tvar when it appears in tl1,
-             as this occurence might break the occur check.
+             as this occurrence might break the occur check.
              XXX not clear whether this correct anyway... *)
           if List.exists (deep_occur ty) tl1 then raise Not_found;
           ty.desc <- Tvar None;
@@ -4010,7 +4010,7 @@ and subtype_fields env trace ty1 ty2 cstrs =
   in
   List.fold_left
     (fun cstrs (_, _k1, t1, _k2, t2) ->
-      (* Theses fields are always present *)
+      (* These fields are always present *)
       subtype_rec env ((t1, t2)::trace) t1 t2 cstrs)
     cstrs pairs
 

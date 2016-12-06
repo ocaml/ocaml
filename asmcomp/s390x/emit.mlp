@@ -236,7 +236,7 @@ let name_for_int_comparison_imm = function
     Isigned cmp -> ("cgfi", branch_for_comparison cmp)
   | Iunsigned cmp -> ("clgfi", branch_for_comparison cmp)
 
-(* bit 0 = eq, bit 1 = lt, bit 2 = gt, bit 3 = unordered*)
+(* bit 0 = eq, bit 1 = lt, bit 2 = gt, bit 3 = unordered *)
 let branch_for_float_comparison cmp neg =
    match cmp with
      Ceq -> if neg then 7  else 8
@@ -523,7 +523,7 @@ let emit_instr i =
     | Lop(Ifloatofint) ->
           `	cdgbr	{emit_reg i.res.(0)}, {emit_reg i.arg.(0)}\n`
     | Lop(Iintoffloat) ->
-        (* rounding method #5 = round toward 0 *)
+        (* rounding method #5 = round towards 0 *)
         `	cgdbr	{emit_reg i.res.(0)}, 5, {emit_reg i.arg.(0)}\n`
     | Lop(Ispecific sop) ->
         assert (i.arg.(2).loc = i.res.(0).loc);

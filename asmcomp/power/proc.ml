@@ -197,7 +197,7 @@ let loc_results res =
   ensure_single_regs loc
 
 (* C calling conventions for ELF32:
-     use GPR 3-10 and FPR 1-8 just like ML calling conventions.
+     Use GPR 3-10 and FPR 1-8 just like ML calling conventions.
      Using a float register does not affect the int registers.
      Always reserve 8 bytes at bottom of stack, plus whatever is needed
      to hold the overflow arguments.

@@ -124,11 +124,11 @@ CAMLprim value unix_lockf(value fd, value cmd, value span)
       err = GetLastError();
     break;
   case 3: /* F_TEST - check whether a write lock can be obtained */
-    /*  I'm doing this by aquiring an immediate write
+    /*  I'm doing this by acquiring an immediate write
      * lock and then releasing it. It is not clear that
      * this behavior matches anything in particular, but
      * it is not clear the nature of the lock test performed
-     * by ocaml (unix) currently. */
+     * by OCaml (unix) currently. */
     if (LockFileEx(h, LOCKFILE_FAIL_IMMEDIATELY | LOCKFILE_EXCLUSIVE_LOCK, 0,
                    lock_len.LowPart, lock_len.HighPart, &overlap)) {
       UnlockFileEx(h, 0, lock_len.LowPart, lock_len.HighPart, &overlap);

@@ -170,7 +170,7 @@ val force_newline : unit -> unit
 (** Forces a new line in the current box.
   Not the normal way of pretty-printing, since the new line does not reset
   the current line count.
-  You should prefer using break hints within a vertcal box. *)
+  You should prefer using break hints within a vertical box. *)
 
 val print_if_newline : unit -> unit
 (** Executes the next formatting command if the preceding line

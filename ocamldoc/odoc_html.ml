@@ -60,10 +60,10 @@ module Naming =
     (** The prefix for methods marks. *)
     let mark_method = "METHOD"
 
-    (** The prefix for code files.. *)
+    (** The prefix for code files. *)
     let code_prefix = "code_"
 
-    (** The prefix for type files.. *)
+    (** The prefix for type files. *)
     let type_prefix = "type_"
 
     (** Return the two html files names for the given module or class name.*)
@@ -1157,7 +1157,7 @@ class html =
     (** Return html code with the given string in the constructor style. *)
     method constructor s = "<span class=\"constructor\">"^s^"</span>"
 
-    (** Output the given ocaml code to the given file name. *)
+    (** Output the given OCaml code to the given file name. *)
     method private output_code ?(with_pre=true) in_title file code =
       try
         let chanout = open_out file in
@@ -2489,7 +2489,7 @@ class html =
         self#html_of_module_parameter_list b
           (Name.father mt.mt_name)
           (Module.module_type_parameters mt);
-        (* a horizontal line *)
+        (* an horizontal line *)
         bs b "<hr width=\"100%\">\n";
         (* module elements *)
         List.iter
@@ -2773,7 +2773,7 @@ class html =
           (fun acc t -> StringSet.add t.ty_name acc)
           known_types_names
           types ;
-      (* Get the names of all class and class types. *)
+      (* Get the names of all classes and class types. *)
       let classes = Odoc_info.Search.classes module_list in
       let class_types = Odoc_info.Search.class_types module_list in
       known_classes_names <-

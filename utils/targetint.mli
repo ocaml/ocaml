@@ -82,7 +82,7 @@ val max_int : t
     or 2{^63} - 1 on a 64-bit platform. *)
 
 val min_int : t
-(** The greatest representable target integer,
+(** The smallest representable target integer,
    either -2{^31} on a 32-bit platform,
    or -2{^63} on a 64-bit platform. *)
 
@@ -96,7 +96,7 @@ val logxor : t -> t -> t
 (** Bitwise logical exclusive or. *)
 
 val lognot : t -> t
-(** Bitwise logical negation *)
+(** Bitwise logical negation. *)
 
 val shift_left : t -> int -> t
 (** [Targetint.shift_left x y] shifts [x] to the left by [y] bits.

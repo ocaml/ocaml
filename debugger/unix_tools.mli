@@ -21,7 +21,7 @@ open Unix
 (* Convert a socket name into a socket address. *)
 val convert_address : string -> socket_domain * sockaddr
 
-(* Report an unix error. *)
+(* Report a Unix error. *)
 val report_error : exn -> unit
 
 (* Find program `name' in `PATH'. *)

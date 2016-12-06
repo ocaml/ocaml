@@ -40,7 +40,7 @@ let convert_address address =
       "Win32" -> failwith "Unix sockets not supported"
     | _ -> (PF_UNIX, ADDR_UNIX address)
 
-(*** Report a unix error. ***)
+(*** Report a Unix error. ***)
 let report_error = function
   | Unix_error (err, fun_name, arg) ->
      prerr_string "Unix error: '";

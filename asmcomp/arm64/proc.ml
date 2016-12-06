@@ -43,7 +43,7 @@ let word_addressed = false
    Floating-point register map:
     d0 - d7               general purpose (caller-save)
     d8 - d15              general purpose (callee-save)
-    d16 - d31             generat purpose (caller-save)
+    d16 - d31             general purpose (caller-save)
 *)
 
 let int_reg_name =

@@ -239,7 +239,7 @@ let load_lambda ppf ~module_ident ~required_globals lam size =
     else dll in
   let res = dll_run dll !phrase_name in
   (try Sys.remove dll with Sys_error _ -> ());
-  (* note: under windows, cannot remove a loaded dll
+  (* note: under Windows, cannot remove a loaded dll
      (should remember the handles, close them in at_exit, and then remove
      files) *)
   res
