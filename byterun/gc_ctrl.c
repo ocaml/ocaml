@@ -328,7 +328,18 @@ CAMLprim value caml_gc_counters(value v)
 
 CAMLprim value caml_gc_get(value v)
 {
-  return Val_unit;
+  CAMLparam0 ();   /* v is ignored */
+  CAMLlocal1 (res);
+
+  res = caml_alloc_tuple (7);
+#ifndef NATIVE_CODE
+  Store_field (res, 5, Val_long (caml_max_stack_size));                 /* l */
+#else
+  Store_field (res, 5, Val_long (0));
+#endif
+
+  CAMLreturn (res);
+
 #if 0
   CAMLparam0 ();   /* v is ignored */
   CAMLlocal1 (res);
