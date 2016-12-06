@@ -61,6 +61,7 @@ TOOLPREF=""
 with_cfi=true
 flambda=false
 safe_string=false
+afl_instrument=false
 max_testsuite_dir_retries=0
 with_cplugins=true
 with_fpic=false
@@ -205,6 +206,8 @@ while : ; do
         with_fpic=true;;
     -safe-string|--safe-string)
         safe_string=true;;
+    -afl-instrument)
+        afl_instrument=true;;
     *) if echo "$1" | grep -q -e '^--\?[a-zA-Z0-9-]\+='; then
          err "configure expects arguments of the form '-prefix /foo/bar'," \
              "not '-prefix=/foo/bar' (note the '=')."
@@ -2049,6 +2052,7 @@ if [ "$ostype" = Cygwin ]; then
 fi
 echo "FLAMBDA=$flambda" >> Makefile
 echo "SAFE_STRING=$safe_string" >> Makefile
+echo "AFL_INSTRUMENT=$afl_instrument" >> Makefile
 echo "MAX_TESTSUITE_DIR_RETRIES=$max_testsuite_dir_retries" >> Makefile
 
 
@@ -2164,6 +2168,11 @@ else
   inf "        safe strings ............. yes"
   else
   inf "        safe strings ............. no"
+  fi
+  if test "$afl_instrument" = "true"; then
+  inf "        afl-fuzz always enabled .. yes"
+  else
+  inf "        afl-fuzz always enabled .. no"
   fi
 fi
 

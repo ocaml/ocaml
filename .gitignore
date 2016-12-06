@@ -58,6 +58,7 @@
 /asmrun/*.p.c
 /asmrun/*.d.c
 /asmrun/alloc.c
+/asmrun/afl.c
 /asmrun/array.c
 /asmrun/backtrace.c
 /asmrun/callback.c

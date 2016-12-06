@@ -191,6 +191,9 @@ let read_one_param ppf position name v =
   | "g" -> set "g" [ Clflags.debug ] v
   | "p" -> set "p" [ Clflags.gprofile ] v
   | "bin-annot" -> set "bin-annot" [ Clflags.binary_annotations ] v
+  | "afl-instrument" -> set "afl-instrument" [ Clflags.afl_instrument ] v
+  | "afl-inst-ratio" ->
+      int_setter ppf "afl-inst-ratio" afl_inst_ratio v
   | "annot" -> set "annot" [ Clflags.annotations ] v
   | "absname" -> set "absname" [ Location.absname ] v
   | "compat-32" -> set "compat-32" [ bytecode_compatible_32 ] v
