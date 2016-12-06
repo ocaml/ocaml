@@ -13,6 +13,7 @@ CAMLprim value caml_setup_afl (value unit)
 
 #include <unistd.h>
 #include <sys/types.h>
+#include <signal.h>
 #include <sys/shm.h>
 #include <sys/wait.h>
 #include <stdio.h>
