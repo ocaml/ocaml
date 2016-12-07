@@ -93,6 +93,10 @@ Next version (4.05.0):
   a short description in overviews.
   (Florian Angeletti)
 
+- GPR#848: ocamldoc, escape link targets in HTML output
+  (Etienne Millon, review by Gabriel Scherer, Florian Angeletti and
+  Daniel Bünzli)
+
 - clarify ocamldoc text parsing error messages
   (Gabriel Scherer)
 
