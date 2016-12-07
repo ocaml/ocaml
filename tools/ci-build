@@ -148,7 +148,7 @@ while [ $# -gt 0 ]; do
     -conf) confoptions="$confoptions `quote1 "$2"`"; shift;;
     -patch1) patch -f -p1 <"$2"; shift;;
     -newmakefiles) makefile=Makefile;;
-    -no-native) make_native=false
+    -no-native) make_native=false;;
     *) error "unknown option $1";;
   esac
   shift
