@@ -118,6 +118,11 @@ CAMLprim value caml_obj_promote_to (value obj, value upto)
   }
 }
 
+CAMLprim value caml_obj_is_shared (value obj)
+{
+  return Val_int(Is_long(obj) || !Is_minor(obj));
+}
+
 /* The following functions are used in stdlib/lazy.ml.
    They are not written in OCaml because they must be atomic with respect
    to the GC.
