@@ -49,7 +49,7 @@ val compare_length_with : 'a list -> len:int -> int
 
 val cons : 'a -> 'a list -> 'a list
 (** [cons x xs] is [x :: xs]
-    @since 4.03.0
+    @since 4.05.0
 *)
 
 val tl : 'a list -> 'a list
@@ -261,7 +261,8 @@ val assq : 'a -> ('a * 'b) list -> 'b
 
 val assq_opt: 'a -> ('a * 'b) list -> 'b option
 (** Same as {!List.assoc_opt}, but uses physical equality instead of
-   structural equality to compare keys. *)
+   structural equality to compare keys.
+   @since 4.05.0 *)
 
 val mem_assoc : 'a -> map:('a * 'b) list -> bool
 (** Same as {!List.assoc}, but simply return true if a binding exists,
@@ -332,7 +333,7 @@ val fast_sort : cmp:('a -> 'a -> int) -> 'a list -> 'a list
 
 val sort_uniq : cmp:('a -> 'a -> int) -> 'a list -> 'a list
 (** Same as {!List.sort}, but also remove duplicates.
-    @since 4.02.0 *)
+    @since 4.03.0 *)
 
 val merge : cmp:('a -> 'a -> int) -> 'a list -> 'a list -> 'a list
 (** Merge two lists:

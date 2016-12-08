@@ -173,13 +173,19 @@ val num_of_string_opt: string -> num option
 
 val int_of_num : num -> int
 val int_of_num_opt: num -> int option
+(** @since 4.05.0 *)
+
 val num_of_int : int -> num
 val nat_of_num : num -> nat
 val nat_of_num_opt: num -> nat option
+(** @since 4.05.0 *)
+
 val num_of_nat : nat -> num
 val num_of_big_int : big_int -> num
 val big_int_of_num : num -> big_int
 val big_int_of_num_opt: num -> big_int option
+(** @since 4.05.0 *)
+
 val ratio_of_num : num -> ratio
 val num_of_ratio : ratio -> num
 val float_of_num : num -> float

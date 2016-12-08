@@ -453,7 +453,8 @@ Unix.map_file raises Unix_error."]
    similar to those of {!Bigarray.Genarray}, but specialized to the case
    of zero-dimensional arrays that only contain a single scalar value.
    Statically knowing the number of dimensions of the array allows
-   faster operations, and more precise static type-checking. *)
+   faster operations, and more precise static type-checking.
+   @since 4.05.0 *)
 module Array0 : sig
   type ('a, 'b, 'c) t
   (** The type of zero-dimensional big arrays whose elements have
@@ -554,7 +555,8 @@ module Array1 : sig
   (** Extract a scalar (zero-dimensional slice) of the given one-dimensional
      big array.  The integer parameter is the index of the scalar to
      extract.  See {!Bigarray.Genarray.slice_left} and
-     {!Bigarray.Genarray.slice_right} for more details. *)
+     {!Bigarray.Genarray.slice_right} for more details.
+     @since 4.05.0 *)
 
   external blit: ('a, 'b, 'c) t -> ('a, 'b, 'c) t -> unit
       = "caml_ba_blit"
@@ -842,7 +844,7 @@ end
 external genarray_of_array0 :
   ('a, 'b, 'c) Array0.t -> ('a, 'b, 'c) Genarray.t = "%identity"
 (** Return the generic big array corresponding to the given zero-dimensional
-   big array. *)
+   big array. @since 4.05.0 *)
 
 external genarray_of_array1 :
   ('a, 'b, 'c) Array1.t -> ('a, 'b, 'c) Genarray.t = "%identity"
@@ -862,7 +864,8 @@ external genarray_of_array3 :
 val array0_of_genarray : ('a, 'b, 'c) Genarray.t -> ('a, 'b, 'c) Array0.t
 (** Return the zero-dimensional big array corresponding to the given
    generic big array.  Raise [Invalid_argument] if the generic big array
-   does not have exactly zero dimension. *)
+   does not have exactly zero dimension.
+   @since 4.05.0 *)
 
 val array1_of_genarray : ('a, 'b, 'c) Genarray.t -> ('a, 'b, 'c) Array1.t
 (** Return the one-dimensional big array corresponding to the given
@@ -900,7 +903,8 @@ val reshape : ('a, 'b, 'c) Genarray.t -> int array -> ('a, 'b, 'c) Genarray.t
 
 val reshape_0 : ('a, 'b, 'c) Genarray.t -> ('a, 'b, 'c) Array0.t
 (** Specialized version of {!Bigarray.reshape} for reshaping to
-   zero-dimensional arrays. *)
+   zero-dimensional arrays.
+   @since 4.05.0 *)
 
 val reshape_1 : ('a, 'b, 'c) Genarray.t -> int -> ('a, 'b, 'c) Array1.t
 (** Specialized version of {!Bigarray.reshape} for reshaping to
