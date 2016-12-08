@@ -139,6 +139,11 @@ Next version (4.05.0):
   that extend non-terminal symbols in the language reference section.
   (Florian Angeletti, review by Gabriel Scherer)
 
+- GPR#916: new tool lintapidiff, use it to update the manual with
+  @since annotations for API changes introduced between 4.00-4.05.
+  (Edwin Török, review by Gabriel Scherer, discussion with Alain Frisch,
+   David Allsopp, Sébastien Hinderer, Damien Doligez and Xavier Leroy)
+
 - GPR#939: activate the caml_example environment in the language
   extensions section of the manual. Convert some existing code
   examples to this format.

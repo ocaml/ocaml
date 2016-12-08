@@ -1081,6 +1081,20 @@ checkstack:
 	rm -f tools/checkstack$(EXE)
 endif
 
+# Lint @since and @deprecated annotations
+
+.PHONY: lintapidiff
+lintapidiff:
+	$(MAKE) -C tools lintapidiff.opt
+	git ls-files -- 'otherlibs/*/*.mli' 'stdlib/*.mli' |\
+	    grep -Ev internal\|obj\|spacetime\|stdLabels\|moreLabels |\
+	    tools/lintapidiff.opt $(shell git tag|grep '^[0-9]*.[0-9]*.[0-9]*$$'|grep -v '^[12].')
+
+# Make clean in the test suite
+
+clean::
+	cd testsuite; $(MAKE) clean
+
 # Make MacOS X package
 ifeq "$(UNIX_OR_WIN32)" "unix"
 .PHONY: package-macosx
