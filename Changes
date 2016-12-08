@@ -11,6 +11,9 @@ Next version (4.05.0):
   (Stephen Dolan, review by Alain Frisch, Pierre Chambart, Mark
   Shinwell, Gabriel Scherer and Damien Doligez)
 
+- MPR#6594, GPR#955: Don't use "Istore_symbol" instruction
+  selection pattern on Win64 systems to avoid assembler errors.
+
 ### Runtime system:
 
 ### Type system:
