@@ -1090,16 +1090,15 @@ and close_functions fenv cenv fun_defs =
          (function
            | (id, Lfunction{kind; params; body; attr; loc}) ->
                Simplif.split_default_wrapper ~id ~kind ~params
-                 ~body ~attr ~wrapper_attr:attr ~loc ()
+                 ~body ~attr ~loc
            | _ -> assert false
          )
          fun_defs)
   in
-  let inline_attribute = match fun_defs with
-    | [_, Lfunction{attr = { inline }}] -> inline
-    | _ -> Default_inline (* recursive functions can't be inlined *)
+  let inline_attribute, stub = match fun_defs with
+    | [_, Lfunction{attr = { inline; stub }}] -> inline, stub
+    | _ -> Default_inline, false (* recursive functions can't be inlined *)
   in
-
   (* Update and check nesting depth *)
   incr function_nesting_depth;
   let initially_closed =
@@ -1187,7 +1186,7 @@ and close_functions fenv cenv fun_defs =
       | Never_inline -> min_int
       | Unroll _ -> assert false
     in
-    if lambda_smaller ubody threshold
+    if stub || lambda_smaller ubody threshold
     then fundesc.fun_inline <- Some(fun_params, ubody);
 
     (f, (id, env_pos, Value_closure(fundesc, approx))) in

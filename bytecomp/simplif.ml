@@ -632,8 +632,7 @@ and list_emit_tail_infos is_tail =
    'Some' constructor, only to deconstruct it immediately in the
    function's body. *)
 
-let split_default_wrapper ?(create_wrapper_body = fun lam -> lam)
-      ~id:fun_id ~kind ~params ~body ~attr ~wrapper_attr ~loc () =
+let split_default_wrapper ~id:fun_id ~kind ~params ~body ~attr ~loc =
   let rec aux map = function
     | Llet(Strict, k, id, (Lifthenelse(Lvar optparam, _, _) as def), rest) when
         Ident.name optparam = "*opt*" && List.mem optparam params
@@ -675,9 +674,9 @@ let split_default_wrapper ?(create_wrapper_body = fun lam -> lam)
         (wrapper_body, (inner_id, inner_fun))
   in
   try
-    let wrapper_body, inner = aux [] body in
-    [(fun_id, Lfunction{kind; params; body = create_wrapper_body wrapper_body;
-       attr = wrapper_attr; loc}); inner]
+    let body, inner = aux [] body in
+    let attr = default_stub_attribute in
+    [(fun_id, Lfunction{kind; params; body; attr; loc}); inner]
   with Exit ->
     [(fun_id, Lfunction{kind; params; body; attr; loc})]
 
