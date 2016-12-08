@@ -114,6 +114,12 @@ OCaml 4.04.0 (4 Nov 2016):
    mirage-os uses "xen")
   (Anil Madhavapeddy)
 
+### Other libraries
+
+- MPR#4834, GPR#592: Add a Biggarray.Genarray.change_layout function
+  to switch bigarrays between C and fortran layouts.
+  (Guillaume Hennequin, review by Florian Angeletti)
+
 ### Code generation and optimizations:
 
 - PR#4747, GPR#328: Optimize Hashtbl by using in-place updates of its
