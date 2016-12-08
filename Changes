@@ -11,6 +11,10 @@ Next version (4.05.0):
   (Stephen Dolan, review by Alain Frisch, Pierre Chambart, Mark
   Shinwell, Gabriel Scherer and Damien Doligez)
 
+- MPR#7201, GPR#954: Correct wrong optimisation of "0 / <expr>"
+  and "0 mod <expr>" in the case when <expr> was a non-constant
+  evaluating to zero (Mark Shinwell)
+
 ### Runtime system:
 
 ### Type system:
