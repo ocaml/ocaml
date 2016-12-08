@@ -338,6 +338,21 @@ install::
 # Scan object files for required primitives
 $(call byte_and_opt,primreq,config.cmo primreq.cmo,)
 
+LINTAPIDIFF=../compilerlibs/ocamlcommon.cmxa \
+        ../compilerlibs/ocamlbytecomp.cmxa \
+        ../compilerlibs/ocamlmiddleend.cmxa \
+        ../asmcomp/printclambda.cmx \
+        ../asmcomp/export_info.cmx \
+	../otherlibs/str/str.cmxa \
+	lintapidiff.cmx
+
+lintapidiff.opt: INCLUDES+= -I ../otherlibs/str
+lintapidiff.opt: $(LINTAPIDIFF)
+	$(CAMLOPT) $(LINKFLAGS) -I .. -o $@ $(LINTAPIDIFF)
+clean::
+	rm -f -- lintapidiff.opt lintapidiff.cm? lintapidiff.o
+
+
 clean::
 	rm -f "objinfo_helper$(EXE)" "objinfo_helper$(EXE).manifest"
 
