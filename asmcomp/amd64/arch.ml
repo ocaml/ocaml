@@ -131,3 +131,8 @@ let print_specific_operation printreg op ppf arg =
                    (Array.sub arg 1 (Array.length arg - 1))
   | Ibswap i ->
       fprintf ppf "bswap_%i %a" i printreg arg.(0)
+
+let win64 =
+  match Config.system with
+  | "win64" | "mingw64" | "cygwin" -> true
+  | _                   -> false

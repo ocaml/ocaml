@@ -170,7 +170,7 @@ method! select_store is_assign addr exp =
       (Ispecific(Istore_int(Nativeint.of_int n, addr, is_assign)), Ctuple [])
   | Cconst_natpointer n when self#is_immediate_natint n ->
       (Ispecific(Istore_int(n, addr, is_assign)), Ctuple [])
-  | Cconst_symbol s when not (!Clflags.pic_code || !Clflags.dlcode) ->
+  | Cconst_symbol s when not (!Clflags.pic_code || !Clflags.dlcode || win64) ->
       (Ispecific(Istore_symbol(s, addr, is_assign)), Ctuple [])
   | _ ->
       super#select_store is_assign addr exp
