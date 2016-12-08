@@ -135,4 +135,5 @@ val output_buffer : out_channel -> t -> unit
 val truncate : t -> int -> unit
 (** [truncate b len] truncates the length of [b] to [len]
   Note: the internal byte sequence is not shortened.
-  Raise [Invalid_argument] if [len < 0] or [len > length b]. *)
+  Raise [Invalid_argument] if [len < 0] or [len > length b].
+  @since 4.05.0 *)

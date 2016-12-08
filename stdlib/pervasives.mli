@@ -743,7 +743,8 @@ val read_float_opt: unit -> float option
 (** Flush standard output, then read one line from standard input
     and convert it to a floating-point number.
     Returns [None] if the line read is not a valid
-    representation of a floating-point number. *)
+    representation of a floating-point number.
+    @since 4.05.0 *)
 
 
 (** {7 General output functions} *)
@@ -1032,6 +1033,7 @@ external decr : int ref -> unit = "%decr"
 
 (** {6 Result type} *)
 
+(** @since 4.03.0 *)
 type ('a,'b) result = Ok of 'a | Error of 'b
 
 (** {6 Operations on format strings} *)

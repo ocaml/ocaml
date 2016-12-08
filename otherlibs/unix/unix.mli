@@ -301,11 +301,13 @@ val single_write : file_descr -> bytes -> int -> int -> int
 
 val write_substring : file_descr -> string -> int -> int -> int
 (** Same as [write], but take the data from a string instead of a byte
-    sequence. *)
+    sequence.
+    @since 4.02.0 *)
 
 val single_write_substring : file_descr -> string -> int -> int -> int
 (** Same as [single_write], but take the data from a string instead of
-    a byte sequence. *)
+    a byte sequence.
+    @since 4.02.0 *)
 
 (** {6 Interfacing with the standard input/output library} *)
 
@@ -513,7 +515,8 @@ val map_file :
   file is shrunk.
 
   [Invalid_argument] or [Failure] may be raised in cases where argument
-  validation fails. *)
+  validation fails.
+  @since 4.05.0 *)
 
 (** {6 Operations on file names} *)
 
@@ -822,7 +825,8 @@ val has_symlink : unit -> bool
 (** Returns [true] if the user is able to create symbolic links. On Windows,
    this indicates that the user not only has the SeCreateSymbolicLinkPrivilege
    but is also running elevated, if necessary. On other platforms, this is
-   simply indicates that the symlink system call is available. *)
+   simply indicates that the symlink system call is available.
+   @since 4.03.0 *)
 
 val readlink : string -> string
 (** Read the contents of a symbolic link. *)
@@ -1278,7 +1282,8 @@ val send : file_descr -> bytes -> int -> int -> msg_flag list -> int
 
 val send_substring : file_descr -> string -> int -> int -> msg_flag list -> int
 (** Same as [send], but take the data from a string instead of a byte
-    sequence. *)
+    sequence.
+    @since 4.02.0 *)
 
 val sendto :
   file_descr -> bytes -> int -> int -> msg_flag list -> sockaddr -> int
@@ -1287,7 +1292,8 @@ val sendto :
 val sendto_substring :
   file_descr -> string -> int -> int -> msg_flag list -> sockaddr -> int
 (** Same as [sendto], but take the data from a string instead of a
-    byte sequence. *)
+    byte sequence.
+    @since 4.02.0 *)
 
 
 (** {6 Socket options} *)

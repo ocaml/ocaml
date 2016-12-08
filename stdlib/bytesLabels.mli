@@ -84,7 +84,8 @@ val extend : bytes -> left:int -> right:int -> bytes
     the corresponding side of [s].
 
     Raise [Invalid_argument] if the result length is negative or
-    longer than {!Sys.max_string_length} bytes. *)
+    longer than {!Sys.max_string_length} bytes.
+    @since 4.05.0 *)
 
 val fill : bytes -> pos:int -> len:int -> char -> unit
 (** [fill s start len c] modifies [s] in place, replacing [len]
@@ -115,7 +116,8 @@ val blit_string :
 
     Raise [Invalid_argument] if [srcoff] and [len] do not
     designate a valid range of [src], or if [dstoff] and [len]
-    do not designate a valid range of [dst]. *)
+    do not designate a valid range of [dst].
+    @since 4.05.0 *)
 
 val concat : sep:bytes -> bytes list -> bytes
 (** [concat sep sl] concatenates the list of byte sequences [sl],
@@ -127,7 +129,8 @@ val cat : bytes -> bytes -> bytes
      as new byte sequence.
 
     Raise [Invalid_argument] if the result is longer than
-    {!Sys.max_string_length} bytes. *)
+    {!Sys.max_string_length} bytes.
+    @since 4.05.0 *)
 
 val iter : f:(char -> unit) -> bytes -> unit
 (** [iter f s] applies function [f] in turn to all the bytes of [s].
@@ -259,22 +262,22 @@ val uncapitalize : bytes -> bytes
 val uppercase_ascii : bytes -> bytes
 (** Return a copy of the argument, with all lowercase letters
    translated to uppercase, using the US-ASCII character set.
-   @since 4.03.0 *)
+   @since 4.05.0 *)
 
 val lowercase_ascii : bytes -> bytes
 (** Return a copy of the argument, with all uppercase letters
    translated to lowercase, using the US-ASCII character set.
-   @since 4.03.0 *)
+   @since 4.05.0 *)
 
 val capitalize_ascii : bytes -> bytes
 (** Return a copy of the argument, with the first character set to uppercase,
    using the US-ASCII character set.
-   @since 4.03.0 *)
+   @since 4.05.0 *)
 
 val uncapitalize_ascii : bytes -> bytes
 (** Return a copy of the argument, with the first character set to lowercase,
    using the US-ASCII character set.
-   @since 4.03.0 *)
+   @since 4.05.0 *)
 
 type t = bytes
 (** An alias for the type of byte sequences. *)
@@ -287,7 +290,7 @@ val compare: t -> t -> int
 
 val equal: t -> t -> bool
 (** The equality function for byte sequences.
-    @since 4.03.0 *)
+    @since 4.05.0 *)
 
 (**/**)
 
