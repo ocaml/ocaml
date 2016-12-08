@@ -169,7 +169,8 @@ Any user-visible change should have a `Changes` entry:
   (several numbers separated by commas can be used)
 
 - maintaining the order: each section lists Mantis PRs first in ascending
-  numerical order, followed by Github PRs
+  numerical order, followed by Github PRs in ascending numerical order,
+  followed by changes that are not related to a PR.
 
 - with a concise readable description of the change (possibly taken
   from a commit message, but it should make sense to end-users
