@@ -45,6 +45,9 @@ Next version (4.05.0):
   This can be tested with ocamlopt -config
   (Sébastien Hinderer)
 
+- PR#7137, GPR#960: "-open" command line flag now accepts a module path 
+  (not a module name) (Arseniy Alekseyev and Leo White)
+
 ### Standard library:
 
 - PR#6975, GPR#902: Truncate function added to stdlib Buffer module
@@ -99,9 +102,6 @@ Next version (4.05.0):
 
 - clarify ocamldoc text parsing error messages
   (Gabriel Scherer)
-
-- Make "-open" command line flag accept a module path (not a module name)
-  (Arseniy Alekseyev and Leo White)
 
 ### Compiler distribution build system:
 
