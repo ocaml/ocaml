@@ -1302,6 +1302,34 @@ let transl_isout h arg dbg = tag_int (Cop(Ccmpa Clt, [h ; arg], dbg)) dbg
 
 (* Build an actual switch (ie jump table) *)
 
+let make_switch arg cases actions dbg =
+  let is_const = function
+    | Cconst_int n
+    | Cconst_pointer n -> (n land 1) = 1
+    | Cconst_natint _
+    | Cconst_float _
+    | Cconst_symbol _ -> true
+    | _ -> false in
+  if Array.for_all is_const actions then
+    let const c =
+      let sym = Compilenv.new_structured_constant ~shared:true c in
+      Uconst_ref(sym, Some c) in
+    let to_uconst = function
+      | Cconst_int n -> Uconst_int (n lsr 1)
+      | Cconst_pointer n -> Uconst_ptr (n lsr 1)
+      | Cconst_symbol s -> Uconst_ref (s, None)
+      | Cconst_natint n -> const (Uconst_nativeint n)
+      | Cconst_float f -> const (Uconst_float f)
+      | _ -> assert false in
+    let const_actions = Array.map to_uconst actions in
+    let table = Compilenv.new_structured_constant ~shared:true
+      (Uconst_block (0,
+        Array.to_list (Array.map (fun act ->
+          const_actions.(act)) cases))) in
+    addr_array_ref (Cconst_symbol table) (tag_int arg dbg) dbg
+  else
+    Cswitch (arg,cases,actions,dbg)
+
 module SArgBlocks =
 struct
   type primitive = operation
@@ -1323,7 +1351,7 @@ struct
   let make_isin h arg = Cop (Ccmpa Cge, [h ; arg], Debuginfo.none)
   let make_if cond ifso ifnot = Cifthenelse (cond, ifso, ifnot)
   let make_switch arg cases actions =
-    Cswitch (arg,cases,actions,Debuginfo.none)
+    make_switch arg cases actions Debuginfo.none
   let bind arg body = bind "switcher" arg body
 
   let make_catch handler = match handler with
@@ -1695,11 +1723,11 @@ let rec transl env e =
       (* As in the bytecode interpreter, only matching against constants
          can be checked *)
       if Array.length s.us_index_blocks = 0 then
-        Cswitch
-          (untag_int (transl env arg) dbg,
-           s.us_index_consts,
-           Array.map (transl env) s.us_actions_consts,
-           dbg)
+        make_switch
+          (untag_int (transl env arg) dbg)
+          s.us_index_consts
+          (Array.map (transl env) s.us_actions_consts)
+          dbg
       else if Array.length s.us_index_consts = 0 then
         transl_switch dbg env (get_tag (transl env arg) dbg)
           s.us_index_blocks s.us_actions_blocks
