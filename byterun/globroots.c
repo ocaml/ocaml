@@ -39,14 +39,8 @@
    heap will be detected using the normal inter-generational pointer
    mechanism. */
 
-static caml_plat_mutex roots_mutex;
+static caml_plat_mutex roots_mutex = CAML_PLAT_MUTEX_INITIALIZER;
 static value roots_all = Val_unit;
-
-
-void caml_init_global_roots()
-{
-  caml_plat_mutex_init(&roots_mutex);
-}
 
 CAMLexport caml_root caml_create_root(value init)
 {
