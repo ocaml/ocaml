@@ -92,6 +92,9 @@ void (*caml_termination_hook)(void *) = NULL;
 extern value caml_start_program (void);
 extern void caml_init_ieee_floats (void);
 extern void caml_init_signals (void);
+#ifdef _WIN32
+extern void caml_win32_overflow_detection (void);
+#endif
 
 #if defined(_MSC_VER) && __STDC_SECURE_LIB__ >= 200411L
 
@@ -133,6 +136,9 @@ value caml_startup_common(char **argv, int pooling)
                 caml_init_max_percent_free, caml_init_major_window);
   init_static();
   caml_init_signals();
+#ifdef _WIN32
+  caml_win32_overflow_detection();
+#endif
   caml_init_backtrace();
   caml_debugger_init (); /* force debugger.o stub to be linked */
   exe_name = argv[0];

@@ -587,7 +587,7 @@ static LONG CALLBACK
 }
 #endif /* _WIN64 */
 
-void caml_win32_overflow_detection()
+void caml_win32_overflow_detection(void)
 {
   AddVectoredExceptionHandler(1, caml_stack_overflow_VEH);
 }
