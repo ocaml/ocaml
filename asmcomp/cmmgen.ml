@@ -156,8 +156,7 @@ and mult_power2 c n dbg = lsl_int c (Cconst_int (Misc.log2 n)) dbg
 
 let rec mul_int c1 c2 dbg =
   match (c1, c2) with
-  | (_, Cconst_int 0) | (Cconst_int 0, _) ->
-      Cconst_int 0
+  | (c, Cconst_int 0) | (Cconst_int 0, c) -> Csequence (c, Cconst_int 0)
   | (c, Cconst_int 1) | (Cconst_int 1, c) ->
       c
   | (c, Cconst_int(-1)) | (Cconst_int(-1), c) ->

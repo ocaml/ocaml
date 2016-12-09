@@ -166,6 +166,10 @@ Next version (4.05.0):
   (Jeremy Yallop,
    review by Damien Doligez, Alain Frisch, Daniel Bünzli, Fabrice Le Fessant)
 
+- GPR#956 Keep possibly-effectful expressions when optimizing multiplication
+  by zero.
+  (Jeremy Yallop)
+
 Next minor version (4.04.1):
 ----------------------------
 
