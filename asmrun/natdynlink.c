@@ -25,6 +25,7 @@
 
 #include <stdio.h>
 #include <string.h>
+#include <limits.h>
 
 #define Handle_val(v) (*((void **) (v)))
 static value Val_handle(void* handle) {
@@ -46,7 +47,7 @@ extern char caml_globals_map[];
 
 CAMLprim value caml_natdynlink_getmap(value unit)
 {
-  return caml_input_value_from_malloc(caml_globals_map, 0);
+  return caml_input_value_from_block(caml_globals_map, INT_MAX);
 }
 
 CAMLprim value caml_natdynlink_globals_inited(value unit)
@@ -78,7 +79,7 @@ CAMLprim value caml_natdynlink_open(value filename, value global)
     caml_failwith("not an OCaml plugin");
 
   handle = Val_handle(dlhandle);
-  header = caml_input_value_from_malloc(sym, 0);
+  header = caml_input_value_from_block(sym, INT_MAX);
 
   res = caml_alloc_tuple(2);
   Init_field(res, 0, handle);
