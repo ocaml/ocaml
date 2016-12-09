@@ -100,6 +100,9 @@ Next version (4.05.0):
 - clarify ocamldoc text parsing error messages
   (Gabriel Scherer)
 
+- Make "-open" command line flag accept a module path (not a module name)
+  (Arseniy Alekseyev and Leo White)
+
 ### Compiler distribution build system:
 
 - GPR#887: allow -with-frame-pointers if clang is used as compiler on Linux
