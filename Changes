@@ -163,7 +163,7 @@ Next version (4.05.0):
   (Jeremy Yallop,
    review by Damien Doligez, Alain Frisch, Daniel Bünzli, Fabrice Le Fessant)
 
-- PR#7427, GPR#958: Don't delete let bodies in Cmmgen (Mark Shinwell)
+- PR#7427, GPR#959: Don't delete let bodies in Cmmgen (Mark Shinwell)
 
 Next minor version (4.04.1):
 ----------------------------
