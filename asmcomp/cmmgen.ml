@@ -338,8 +338,6 @@ let rec div_int c1 c2 is_safe dbg =
       Csequence(c1, raise_symbol dbg "caml_exn_Division_by_zero")
   | (c1, Cconst_int 1) ->
       c1
-  | (Cconst_int 0 as c1, c2) ->
-      Csequence(c2, c1)
   | (Cconst_int n1, Cconst_int n2) ->
       Cconst_int (n1 / n2)
   | (c1, Cconst_int n) when n <> min_int ->
@@ -386,8 +384,6 @@ let mod_int c1 c2 is_safe dbg =
       Csequence(c1, raise_symbol dbg "caml_exn_Division_by_zero")
   | (c1, Cconst_int (1 | (-1))) ->
       Csequence(c1, Cconst_int 0)
-  | (Cconst_int 0, c2) ->
-      Csequence(c2, Cconst_int 0)
   | (Cconst_int n1, Cconst_int n2) ->
       Cconst_int (n1 mod n2)
   | (c1, (Cconst_int n as c2)) when n <> min_int ->
