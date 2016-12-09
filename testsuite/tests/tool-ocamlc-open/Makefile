@@ -9,7 +9,7 @@ clean:
 a.cmo: A.ml
 	$(OCAMLC) -c -o $@ $<
 
-b.cmo: B.ml
+b.cmo: B.ml a.cmo
 	$(OCAMLC) -c -open A.M -o $@ $<
 
 BASEDIR=../..
