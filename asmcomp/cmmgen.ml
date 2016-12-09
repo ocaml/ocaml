@@ -2486,12 +2486,10 @@ and transl_let env str kind id exp body =
         No_unboxing
   in
   match unboxing with
-  | No_unboxing | Boxed (_, true) ->
+  | No_unboxing | Boxed (_, true) | No_result ->
+      (* N.B. [body] must still be traversed even if [exp] will never return:
+         there may be constant closures inside that need lifting out. *)
       Clet(id, transl env exp, transl env body)
-  | No_result ->
-      (* the let-bound expression never returns a value, we can ignore
-         the body *)
-      transl env exp
   | Boxed (boxed_number, _false) ->
       let unboxed_id = Ident.create (Ident.name id) in
       Clet(unboxed_id, transl_unbox_number dbg env boxed_number exp,

@@ -170,6 +170,8 @@ Next version (4.05.0):
   (Jeremy Yallop,
    review by Damien Doligez, Alain Frisch, Daniel Bünzli, Fabrice Le Fessant)
 
+- PR#7427, GPR#959: Don't delete let bodies in Cmmgen (Mark Shinwell)
+
 - GPR#956 Keep possibly-effectful expressions when optimizing multiplication
   by zero.
   (Jeremy Yallop)
