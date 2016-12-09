@@ -11,6 +11,10 @@ Next version (4.05.0):
   (Stephen Dolan, review by Alain Frisch, Pierre Chambart, Mark
   Shinwell, Gabriel Scherer and Damien Doligez)
 
+- MPR#7201, GPR#954: Correct wrong optimisation of "0 / <expr>"
+  and "0 mod <expr>" in the case when <expr> was a non-constant
+  evaluating to zero (Mark Shinwell)
+
 ### Runtime system:
 
 ### Type system:
@@ -44,6 +48,9 @@ Next version (4.05.0):
   installed on such platforms.
   This can be tested with ocamlopt -config
   (Sébastien Hinderer)
+
+- PR#7137, GPR#960: "-open" command line flag now accepts a module path 
+  (not a module name) (Arseniy Alekseyev and Leo White)
 
 ### Standard library:
 
@@ -167,6 +174,12 @@ Next version (4.05.0):
   This is more robust and in particular avoids assembly failures on Win64.
   (Mark Shinwell, review by Xavier Leroy, testing by David Allsopp and
    Olivier Andrieu)
+
+- GPR#956 Keep possibly-effectful expressions when optimizing multiplication
+  by zero.
+  (Jeremy Yallop)
+
+- PR#7427, GPR#959: Don't delete let bodies in Cmmgen (Mark Shinwell)
 
 Next minor version (4.04.1):
 ----------------------------

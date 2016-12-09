@@ -293,7 +293,7 @@ let read_parse_and_extract parse_function extract_function def ast_kind
       let bound_vars =
         List.fold_left
           (fun bv modname ->
-            Depend.open_module bv (Longident.Lident modname))
+            Depend.open_module bv (Longident.parse modname))
           !module_map ((* PR#7248 *) List.rev !Clflags.open_modules)
       in
       let r = extract_function bound_vars ast in

@@ -156,8 +156,7 @@ and mult_power2 c n dbg = lsl_int c (Cconst_int (Misc.log2 n)) dbg
 
 let rec mul_int c1 c2 dbg =
   match (c1, c2) with
-  | (_, Cconst_int 0) | (Cconst_int 0, _) ->
-      Cconst_int 0
+  | (c, Cconst_int 0) | (Cconst_int 0, c) -> Csequence (c, Cconst_int 0)
   | (c, Cconst_int 1) | (Cconst_int 1, c) ->
       c
   | (c, Cconst_int(-1)) | (Cconst_int(-1), c) ->
@@ -339,8 +338,6 @@ let rec div_int c1 c2 is_safe dbg =
       Csequence(c1, raise_symbol dbg "caml_exn_Division_by_zero")
   | (c1, Cconst_int 1) ->
       c1
-  | (Cconst_int 0 as c1, c2) ->
-      Csequence(c2, c1)
   | (Cconst_int n1, Cconst_int n2) ->
       Cconst_int (n1 / n2)
   | (c1, Cconst_int n) when n <> min_int ->
@@ -387,8 +384,6 @@ let mod_int c1 c2 is_safe dbg =
       Csequence(c1, raise_symbol dbg "caml_exn_Division_by_zero")
   | (c1, Cconst_int (1 | (-1))) ->
       Csequence(c1, Cconst_int 0)
-  | (Cconst_int 0, c2) ->
-      Csequence(c2, Cconst_int 0)
   | (Cconst_int n1, Cconst_int n2) ->
       Cconst_int (n1 mod n2)
   | (c1, (Cconst_int n as c2)) when n <> min_int ->
@@ -2491,12 +2486,10 @@ and transl_let env str kind id exp body =
         No_unboxing
   in
   match unboxing with
-  | No_unboxing | Boxed (_, true) ->
+  | No_unboxing | Boxed (_, true) | No_result ->
+      (* N.B. [body] must still be traversed even if [exp] will never return:
+         there may be constant closures inside that need lifting out. *)
       Clet(id, transl env exp, transl env body)
-  | No_result ->
-      (* the let-bound expression never returns a value, we can ignore
-         the body *)
-      transl env exp
   | Boxed (boxed_number, _false) ->
       let unboxed_id = Ident.create (Ident.name id) in
       Clet(unboxed_id, transl_unbox_number dbg env boxed_number exp,
