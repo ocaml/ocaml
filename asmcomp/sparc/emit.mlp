@@ -178,6 +178,7 @@ let record_frame ?label live =
           Misc.fatal_error ("bad GC root " ^ Reg.name r)
       | _ -> ())
     live;
+  live_offset := List.sort_uniq (-) !live_offset;
   frame_descriptors :=
     { fd_lbl = lbl;
       fd_frame_size = frame_size();
