@@ -36,7 +36,6 @@ type specific_operation =
     Ilea of addressing_mode             (* "lea" gives scaled adds *)
   | Istore_int of nativeint * addressing_mode * bool
                                         (* Store an integer constant *)
-  | Istore_symbol of string * addressing_mode * bool (* Store a symbol *)
   | Ioffset_loc of int * addressing_mode (* Add a constant to a location *)
   | Ifloatarithmem of float_operation * addressing_mode
                                        (* Float arith operation with memory *)
@@ -108,10 +107,6 @@ let print_specific_operation printreg op ppf arg =
   | Istore_int(n, addr, is_assign) ->
       fprintf ppf "[%a] := %nd %s"
          (print_addressing printreg addr) arg n
-         (if is_assign then "(assign)" else "(init)")
-  | Istore_symbol(lbl, addr, is_assign) ->
-      fprintf ppf "[%a] := \"%s\" %s"
-         (print_addressing printreg addr) arg lbl
          (if is_assign then "(assign)" else "(init)")
   | Ioffset_loc(n, addr) ->
       fprintf ppf "[%a] +:= %i" (print_addressing printreg addr) arg n

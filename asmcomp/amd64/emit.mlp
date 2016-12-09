@@ -731,10 +731,6 @@ let emit_instr fallthrough i =
       I.lea (addressing addr NONE i 0) (res i 0)
   | Lop(Ispecific(Istore_int(n, addr, _))) ->
       I.mov (nat n) (addressing addr QWORD i 0)
-  | Lop(Ispecific(Istore_symbol(s, addr, _))) ->
-      assert (not !Clflags.pic_code && not !Clflags.dlcode);
-      add_used_symbol s;
-      load_symbol_addr s (addressing addr QWORD i 0)
   | Lop(Ispecific(Ioffset_loc(n, addr))) ->
       I.add (int n) (addressing addr QWORD i 0)
   | Lop(Ispecific(Ifloatarithmem(op, addr))) ->
