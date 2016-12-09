@@ -12,3 +12,11 @@ module M = F (Offset)
 
 let () = M.test (Offset.M.Set.singleton "42")
 let v = Pr6726.Test.v
+
+(* PR#7427 *)
+
+let () =
+  try
+    let module M = Pr7427.F () in
+    failwith "Test failed"
+  with Assert_failure _ -> ()
