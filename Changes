@@ -163,6 +163,9 @@ Next version (4.05.0):
   (Jeremy Yallop,
    review by Damien Doligez, Alain Frisch, Daniel Bünzli, Fabrice Le Fessant)
 
+- GPR#961: Incorrect stack size reported in the presence of threads
+  (Mark Shinwell, report by Ben Millwood)
+
 Next minor version (4.04.1):
 ----------------------------
 
