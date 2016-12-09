@@ -7,7 +7,6 @@
 
 struct domain {
   int id;
-  int is_main;
   int vm_inited;
 
   struct dom_internal* internals;

@@ -59,7 +59,10 @@ typedef struct large_alloc {
 struct {
   caml_plat_mutex lock;
   pool* free;
-} pool_freelist;
+} pool_freelist = {
+  CAML_PLAT_MUTEX_INITIALIZER,
+  NULL
+};
 
 
 /* readable and writable only by the current thread */
@@ -85,9 +88,6 @@ struct caml_heap_state {
 struct caml_heap_state* caml_init_shared_heap() {
   int i;
   struct caml_heap_state* heap;
-  if (caml_domain_self()->is_main) {
-    caml_plat_mutex_init(&pool_freelist.lock);
-  }
 
   heap = caml_stat_alloc(sizeof(struct caml_heap_state));
   heap->free_pools = 0;

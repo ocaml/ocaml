@@ -55,7 +55,7 @@ enum { RPC_IDLE = 0,
        RPC_REQUEST_INITIALISING = 1,
        RPC_REQUEST_SENT = 2 };
 
-static caml_plat_mutex all_domains_lock;
+static caml_plat_mutex all_domains_lock = CAML_PLAT_MUTEX_INITIALIZER;
 static struct dom_internal all_domains[Max_domains];
 static uintnat minor_heaps_base;
 static __thread dom_internal* domain_self;
@@ -130,7 +130,7 @@ void caml_reallocate_minor_heap(asize_t size)
 }
 
 /* must be run on the domain's thread */
-static void create_domain(uintnat initial_minor_heap_size, int is_main) {
+static void create_domain(uintnat initial_minor_heap_size) {
   int i;
   dom_internal* d = 0;
   Assert (domain_self == 0);
@@ -146,7 +146,6 @@ static void create_domain(uintnat initial_minor_heap_size, int is_main) {
 
   if (d) {
     d->running = 1;
-    d->state.is_main = is_main;
     d->state.vm_inited = 0;
     d->state.internals = d;
     /* FIXME: shutdown RPC? */
@@ -204,8 +203,6 @@ void caml_init_domains(uintnat minor_size) {
 
   minor_heaps_base = (uintnat) heaps_base;
 
-  caml_plat_mutex_init(&all_domains_lock);
-
   for (i = 0; i < Max_domains; i++) {
     struct dom_internal* dom = &all_domains[i];
     uintnat domain_minor_heap_base;
@@ -227,10 +224,9 @@ void caml_init_domains(uintnat minor_size) {
   }
 
 
-  create_domain(minor_size, 1);
+  create_domain(minor_size);
   if (!domain_self) caml_fatal_error("Failed to create main domain");
 
-  caml_init_global_roots();
   caml_init_signal_handling();
 }
 
@@ -261,7 +257,7 @@ static void* domain_thread_func(void* v) {
   struct domain_startup_params* p = v;
 
   callback = p->callback;
-  create_domain(caml_startup_params.minor_heap_init, 0);
+  create_domain(caml_startup_params.minor_heap_init);
   p->newdom = domain_self;
   caml_plat_event_trigger(&p->ev);
 

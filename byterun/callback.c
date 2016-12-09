@@ -201,10 +201,9 @@ struct named_value {
 #define Named_value_size 13
 
 static struct named_value * named_value_table[Named_value_size] = { NULL, };
-static caml_plat_mutex named_value_lock;
+static caml_plat_mutex named_value_lock = CAML_PLAT_MUTEX_INITIALIZER;
 
 void caml_init_callbacks() {
-  caml_plat_mutex_init(&named_value_lock);
   init_callback_code();
 }
 

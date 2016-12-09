@@ -270,7 +270,7 @@ void caml_finish_marking_domain (struct domain* domain) {
 static struct pool** pools_to_rescan;
 static int pools_to_rescan_count;
 static int pools_to_rescan_len;
-static caml_plat_mutex pools_to_rescan_lock;
+static caml_plat_mutex pools_to_rescan_lock = CAML_PLAT_MUTEX_INITIALIZER;
 
 static struct pool* find_pool_to_rescan()
 {
@@ -437,5 +437,4 @@ static void mark_stack_prune ()
 void caml_init_major_gc() {
   caml_domain_state->mark_stack = caml_stat_alloc(MARK_STACK_SIZE * sizeof(value));
   caml_domain_state->mark_stack_count = 0;
-  caml_plat_mutex_init(&pools_to_rescan_lock);
 }
