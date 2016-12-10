@@ -254,7 +254,7 @@ install:
 	   cd $(INSTALL_BINDIR); \
 	   ln -sf ocamlc.byte$(EXE) ocamlc$(EXE); \
 	   ln -sf ocamllex.byte$(EXE) ocamllex$(EXE); \
-	   fi
+	fi
 
 # Installation of the native-code compiler
 installopt:
@@ -275,7 +275,11 @@ installopt:
 	for i in $(OTHERLIBRARIES); \
 	  do (cd otherlibs/$$i; $(MAKE) installopt) || exit $$?; done
 	if test -f ocamlopt.opt ; then $(MAKE) installoptopt; else \
-	   cd $(INSTALL_BINDIR); ln -sf ocamlopt.byte$(EXE) ocamlopt$(EXE); fi
+	   cd $(INSTALL_BINDIR); \
+	   ln -sf ocamlc.byte$(EXE) ocamlc$(EXE); \
+	   ln -sf ocamlopt.byte$(EXE) ocamlopt$(EXE); \
+	   ln -sf ocamllex.byte$(EXE) ocamllex$(EXE); \
+	fi
 	cd tools; $(MAKE) installopt
 
 installoptopt:
@@ -438,7 +442,9 @@ utils/config.ml: utils/config.mlp config/Makefile
 	    -e 's|%%HOST%%|$(HOST)|' \
 	    -e 's|%%TARGET%%|$(TARGET)|' \
 	    -e 's|%%FLAMBDA%%|$(FLAMBDA)|' \
+	    -e 's|%%PROFILING%%|$(PROFILING)|' \
 	    -e 's|%%SAFE_STRING%%|$(SAFE_STRING)|' \
+	    -e 's|%%AFL_INSTRUMENT%%|$(AFL_INSTRUMENT)|' \
 	    utils/config.mlp > utils/config.ml
 
 partialclean::

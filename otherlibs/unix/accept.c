@@ -49,6 +49,6 @@ CAMLprim value unix_accept(value sock)
 #else
 
 CAMLprim value unix_accept(value sock)
-{ invalid_argument("accept not implemented"); }
+{ caml_invalid_argument("accept not implemented"); }
 
 #endif

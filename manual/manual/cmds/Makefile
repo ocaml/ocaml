@@ -1,6 +1,7 @@
 FILES=comp.tex top.tex runtime.tex native.tex lexyacc.tex intf-c.tex \
   depend.tex profil.tex debugger.tex browser.tex ocamldoc.tex \
-  warnings-help.tex ocamlbuild.tex flambda.tex unified-options.tex
+  warnings-help.tex ocamlbuild.tex flambda.tex afl-fuzz.tex \
+  unified-options.tex
 
 TOPDIR=../../..
 include $(TOPDIR)/Makefile.tools
@@ -9,7 +10,8 @@ TRANSF=$(OCAMLRUN) ../../tools/transf
 TEXQUOTE=../../tools/texquote2
 FORMAT=../../tools/format-intf
 
-WITH_TRANSF= ocamldoc.tex top.tex intf-c.tex flambda.tex lexyacc.tex debugger.tex
+WITH_TRANSF= ocamldoc.tex top.tex intf-c.tex flambda.tex afl-fuzz.tex\
+  lexyacc.tex debugger.tex
 
 etex-files: $(FILES)
 

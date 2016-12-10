@@ -50,7 +50,7 @@ CAMLprim value unix_gethostname(value unit)
 #else
 
 CAMLprim value unix_gethostname(value unit)
-{ invalid_argument("gethostname not implemented"); }
+{ caml_invalid_argument("gethostname not implemented"); }
 
 #endif
 #endif

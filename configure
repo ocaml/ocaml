@@ -61,6 +61,7 @@ TOOLPREF=""
 with_cfi=true
 flambda=false
 safe_string=false
+afl_instrument=false
 max_testsuite_dir_retries=0
 with_cplugins=true
 with_fpic=false
@@ -205,6 +206,8 @@ while : ; do
         with_fpic=true;;
     -safe-string|--safe-string)
         safe_string=true;;
+    -afl-instrument)
+        afl_instrument=true;;
     *) if echo "$1" | grep -q -e '^--\?[a-zA-Z0-9-]\+='; then
          err "configure expects arguments of the form '-prefix /foo/bar'," \
              "not '-prefix=/foo/bar' (note the '=')."
@@ -962,7 +965,7 @@ else
 fi
 
 nativecccompopts="$bytecccompopts"
-nativeccprivatecompopts=byteccprivatecompopts
+nativeccprivatecompopts="$byteccprivatecompopts"
 nativeccprofopts=''
 nativecclinkopts=''
 # FIXME the naming of nativecclinkopts is broken: these are options for
@@ -1015,7 +1018,14 @@ case "$arch,$system" in
                   aspp="${TOOLPREF}cc -c";;
   amd64,*|arm,*|arm64,*|i386,*|power,bsd*|sparc,*)
                   as="${TOOLPREF}as"
-                  aspp="${TOOLPREF}gcc -c";;
+                  case "$ccfamily" in
+                      clang-*)
+                          aspp="${TOOLPREF}clang -c"
+                          ;;
+                      *)
+                          aspp="${TOOLPREF}gcc -c"
+                          ;;
+                  esac;;
 esac
 
 if test -n "$asoption"; then as="$asoption"; fi
@@ -1023,25 +1033,25 @@ if test -n "$asppoption"; then aspp="$asppoption"; fi
 
 cc_profile='-pg'
 case "$arch,$system" in
-  i386,linux_elf) profiling='prof';;
-  i386,gnu) profiling='prof';;
-  i386,bsd_elf) profiling='prof';;
-  amd64,macosx) profiling='prof';;
-  i386,macosx) profiling='prof';;
-  sparc,bsd) profiling='prof';;
+  i386,linux_elf) profiling='true';;
+  i386,gnu) profiling='true';;
+  i386,bsd_elf) profiling='true';;
+  amd64,macosx) profiling='true';;
+  i386,macosx) profiling='true';;
+  sparc,bsd) profiling='true';;
   sparc,solaris)
-    profiling='prof'
+    profiling='true'
     case "$nativecc" in gcc*) ;; *) cc_profile='-xpg';; esac;;
-  amd64,linux) profiling='prof';;
-  amd64,openbsd) profiling='prof';;
-  amd64,freebsd) profiling='prof';;
-  amd64,netbsd) profiling='prof';;
-  arm,netbsd) profiling='prof';;
-  amd64,gnu) profiling='prof';;
-  arm,linux*) profiling='prof';;
-  power,elf) profiling='prof';;
-  power,bsd*) profiling='prof';;
-  *) profiling='noprof';;
+  amd64,linux) profiling='true';;
+  amd64,openbsd) profiling='true';;
+  amd64,freebsd) profiling='true';;
+  amd64,netbsd) profiling='true';;
+  arm,netbsd) profiling='true';;
+  amd64,gnu) profiling='true';;
+  arm,linux*) profiling='true';;
+  power,elf) profiling='true';;
+  power,bsd*) profiling='true';;
+  *) profiling='false';;
 esac
 
 # Where is ranlib?
@@ -1813,7 +1823,7 @@ fi
 
 if test "$with_frame_pointers" = "true"; then
   case "$target,$cc" in
-    x86_64-*-linux*,gcc*)
+    x86_64-*-linux*,gcc*|x86_64-*-linux*,clang*)
        nativecccompopts="$nativecccompopts -g  -fno-omit-frame-pointer"
        bytecccompopts="$bytecccompopts -g  -fno-omit-frame-pointer"
        nativecclinkopts="$nativecclinkopts -g"
@@ -1983,7 +1993,7 @@ echo "ARCH=$arch" >> Makefile
 echo "MODEL=$model" >> Makefile
 echo "SYSTEM=$system" >> Makefile
 echo "NATIVECC=$nativecc $nativecccompopts" >> Makefile
-echo "NATIVECCCOMPOPTS=$nativeprivatecccompopts" >> Makefile
+echo "NATIVECCCOMPOPTS=$nativeccprivatecompopts" >> Makefile
 echo "NATIVECCPROFOPTS=$nativeccprofopts" >> Makefile
 echo "NATIVECCLINKOPTS=$nativecclinkopts" >> Makefile
 echo "NATIVECCRPATH=$nativeccrpath" >> Makefile
@@ -2042,6 +2052,7 @@ if [ "$ostype" = Cygwin ]; then
 fi
 echo "FLAMBDA=$flambda" >> Makefile
 echo "SAFE_STRING=$safe_string" >> Makefile
+echo "AFL_INSTRUMENT=$afl_instrument" >> Makefile
 echo "MAX_TESTSUITE_DIR_RETRIES=$max_testsuite_dir_retries" >> Makefile
 
 
@@ -2143,7 +2154,7 @@ else
   inf "        compile with -fPIC........ no"
   fi
   inf "        native dynlink ........... $natdynlink"
-  if test "$profiling" = "prof"; then
+  if $profiling; then
   inf "        profiling with gprof ..... supported"
   else
   inf "        profiling with gprof ..... not supported"
@@ -2157,6 +2168,11 @@ else
   inf "        safe strings ............. yes"
   else
   inf "        safe strings ............. no"
+  fi
+  if test "$afl_instrument" = "true"; then
+  inf "        afl-fuzz always enabled .. yes"
+  else
+  inf "        afl-fuzz always enabled .. no"
   fi
 fi
 

@@ -156,8 +156,7 @@ and mult_power2 c n dbg = lsl_int c (Cconst_int (Misc.log2 n)) dbg
 
 let rec mul_int c1 c2 dbg =
   match (c1, c2) with
-  | (_, Cconst_int 0) | (Cconst_int 0, _) ->
-      Cconst_int 0
+  | (c, Cconst_int 0) | (Cconst_int 0, c) -> Csequence (c, Cconst_int 0)
   | (c, Cconst_int 1) | (Cconst_int 1, c) ->
       c
   | (c, Cconst_int(-1)) | (Cconst_int(-1), c) ->
@@ -339,8 +338,6 @@ let rec div_int c1 c2 is_safe dbg =
       Csequence(c1, raise_symbol dbg "caml_exn_Division_by_zero")
   | (c1, Cconst_int 1) ->
       c1
-  | (Cconst_int 0 as c1, c2) ->
-      Csequence(c2, c1)
   | (Cconst_int n1, Cconst_int n2) ->
       Cconst_int (n1 / n2)
   | (c1, Cconst_int n) when n <> min_int ->
@@ -387,8 +384,6 @@ let mod_int c1 c2 is_safe dbg =
       Csequence(c1, raise_symbol dbg "caml_exn_Division_by_zero")
   | (c1, Cconst_int (1 | (-1))) ->
       Csequence(c1, Cconst_int 0)
-  | (Cconst_int 0, c2) ->
-      Csequence(c2, Cconst_int 0)
   | (Cconst_int n1, Cconst_int n2) ->
       Cconst_int (n1 mod n2)
   | (c1, (Cconst_int n as c2)) when n <> min_int ->
@@ -1307,6 +1302,34 @@ let transl_isout h arg dbg = tag_int (Cop(Ccmpa Clt, [h ; arg], dbg)) dbg
 
 (* Build an actual switch (ie jump table) *)
 
+let make_switch arg cases actions dbg =
+  let is_const = function
+    | Cconst_int n
+    | Cconst_pointer n -> (n land 1) = 1
+    | Cconst_natint _
+    | Cconst_float _
+    | Cconst_symbol _ -> true
+    | _ -> false in
+  if Array.for_all is_const actions then
+    let const c =
+      let sym = Compilenv.new_structured_constant ~shared:true c in
+      Uconst_ref(sym, Some c) in
+    let to_uconst = function
+      | Cconst_int n -> Uconst_int (n lsr 1)
+      | Cconst_pointer n -> Uconst_ptr (n lsr 1)
+      | Cconst_symbol s -> Uconst_ref (s, None)
+      | Cconst_natint n -> const (Uconst_nativeint n)
+      | Cconst_float f -> const (Uconst_float f)
+      | _ -> assert false in
+    let const_actions = Array.map to_uconst actions in
+    let table = Compilenv.new_structured_constant ~shared:true
+      (Uconst_block (0,
+        Array.to_list (Array.map (fun act ->
+          const_actions.(act)) cases))) in
+    addr_array_ref (Cconst_symbol table) (tag_int arg dbg) dbg
+  else
+    Cswitch (arg,cases,actions,dbg)
+
 module SArgBlocks =
 struct
   type primitive = operation
@@ -1328,7 +1351,7 @@ struct
   let make_isin h arg = Cop (Ccmpa Cge, [h ; arg], Debuginfo.none)
   let make_if cond ifso ifnot = Cifthenelse (cond, ifso, ifnot)
   let make_switch arg cases actions =
-    Cswitch (arg,cases,actions,Debuginfo.none)
+    make_switch arg cases actions Debuginfo.none
   let bind arg body = bind "switcher" arg body
 
   let make_catch handler = match handler with
@@ -1700,11 +1723,11 @@ let rec transl env e =
       (* As in the bytecode interpreter, only matching against constants
          can be checked *)
       if Array.length s.us_index_blocks = 0 then
-        Cswitch
-          (untag_int (transl env arg) dbg,
-           s.us_index_consts,
-           Array.map (transl env) s.us_actions_consts,
-           dbg)
+        make_switch
+          (untag_int (transl env arg) dbg)
+          s.us_index_consts
+          (Array.map (transl env) s.us_actions_consts)
+          dbg
       else if Array.length s.us_index_consts = 0 then
         transl_switch dbg env (get_tag (transl env arg) dbg)
           s.us_index_blocks s.us_actions_blocks
@@ -2491,12 +2514,10 @@ and transl_let env str kind id exp body =
         No_unboxing
   in
   match unboxing with
-  | No_unboxing | Boxed (_, true) ->
+  | No_unboxing | Boxed (_, true) | No_result ->
+      (* N.B. [body] must still be traversed even if [exp] will never return:
+         there may be constant closures inside that need lifting out. *)
       Clet(id, transl env exp, transl env body)
-  | No_result ->
-      (* the let-bound expression never returns a value, we can ignore
-         the body *)
-      transl env exp
   | Boxed (boxed_number, _false) ->
       let unboxed_id = Ident.create (Ident.name id) in
       Clet(unboxed_id, transl_unbox_number dbg env boxed_number exp,
@@ -2665,9 +2686,14 @@ let transl_function f =
     else
       f.body
   in
+  let cmm_body =
+    if !Clflags.afl_instrument then
+      Afl_instrument.instrument_function (transl empty_env body)
+    else
+      transl empty_env body in
   Cfunction {fun_name = f.label;
              fun_args = List.map (fun id -> (id, typ_val)) f.params;
-             fun_body = transl empty_env body;
+             fun_body = cmm_body;
              fun_fast = !Clflags.optimize_for_speed;
              fun_dbg  = f.dbg; }
 
@@ -2905,7 +2931,11 @@ let emit_preallocated_blocks preallocated_blocks cont =
 (* Translate a compilation unit *)
 
 let compunit (ulam, preallocated_blocks, constants) =
-  let init_code = transl empty_env ulam in
+  let init_code =
+    if !Clflags.afl_instrument then
+      Afl_instrument.instrument_initialiser (transl empty_env ulam)
+    else
+      transl empty_env ulam in
   let c1 = [Cfunction {fun_name = Compilenv.make_symbol (Some "entry");
                        fun_args = [];
                        fun_body = init_code; fun_fast = false;

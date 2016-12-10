@@ -333,7 +333,7 @@ CAMLprim value unix_tcsendbreak(value fd, value delay)
 
 #if defined(__ANDROID__)
 CAMLprim value unix_tcdrain(value fd)
-{ invalid_argument("tcdrain not implemented"); }
+{ caml_invalid_argument("tcdrain not implemented"); }
 #else
 CAMLprim value unix_tcdrain(value fd)
 {
@@ -367,21 +367,21 @@ CAMLprim value unix_tcflow(value fd, value action)
 #else
 
 CAMLprim value unix_tcgetattr(value fd)
-{ invalid_argument("tcgetattr not implemented"); }
+{ caml_invalid_argument("tcgetattr not implemented"); }
 
 CAMLprim value unix_tcsetattr(value fd, value when, value arg)
-{ invalid_argument("tcsetattr not implemented"); }
+{ caml_invalid_argument("tcsetattr not implemented"); }
 
 CAMLprim value unix_tcsendbreak(value fd, value delay)
-{ invalid_argument("tcsendbreak not implemented"); }
+{ caml_invalid_argument("tcsendbreak not implemented"); }
 
 CAMLprim value unix_tcdrain(value fd)
-{ invalid_argument("tcdrain not implemented"); }
+{ caml_invalid_argument("tcdrain not implemented"); }
 
 CAMLprim value unix_tcflush(value fd, value queue)
-{ invalid_argument("tcflush not implemented"); }
+{ caml_invalid_argument("tcflush not implemented"); }
 
 CAMLprim value unix_tcflow(value fd, value action)
-{ invalid_argument("tcflow not implemented"); }
+{ caml_invalid_argument("tcflow not implemented"); }
 
 #endif

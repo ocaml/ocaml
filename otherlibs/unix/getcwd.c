@@ -52,7 +52,7 @@ CAMLprim value unix_getcwd(value unit)
 #else
 
 CAMLprim value unix_getcwd(value unit)
-{ invalid_argument("getcwd not implemented"); }
+{ caml_invalid_argument("getcwd not implemented"); }
 
 #endif
 #endif

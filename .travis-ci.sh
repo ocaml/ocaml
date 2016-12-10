@@ -91,7 +91,8 @@ file, as described in our contributor documentation:
 Some very minor changes (typo fixes for example) may not need
 a Changes entry. In this case, you may explicitly disable this test by
 adding the code word "No change entry needed" (on a single line) to
-a commit message of the PR.
+a commit message of the PR, or using the "no-change-entry-needed" label
+on the github pull request.
 ------------------------------------------------------------------------
 EOF
   # check that Changes has been modified
@@ -100,9 +101,12 @@ EOF
 }
 
 CheckNoChangesMessage () {
-  if test -z "$(git log --grep="[Nn]o [Cc]hange.* needed" --max-count=1 $TRAVIS_COMMIT_RANGE)"
-  then exit 1
-  else echo pass
+  if test -n "$(git log --grep="[Nn]o [Cc]hange.* needed" --max-count=1 $TRAVIS_COMMIT_RANGE)"
+  then echo pass
+  elif test -n "$(curl https://api.github.com/repos/$TRAVIS_REPO_SLUG/issues/$TRAVIS_PULL_REQUEST/labels \
+       | grep 'no-change-entry-needed')"
+  then echo pass
+  else exit 1
   fi
 }
 

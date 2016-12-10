@@ -73,6 +73,7 @@ and as a
 % \input emacs.tex
 \input{intf-c.tex}
 \input{flambda.tex}
+\input{afl-fuzz.tex}
 
 \part{The OCaml library}
 \label{p:library}

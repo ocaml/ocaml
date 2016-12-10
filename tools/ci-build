@@ -26,6 +26,7 @@
 #    -conf configure-option  add configure-option to configure cmd line
 #    -patch1 file-name       apply patch with -p1
 #    -newmakefiles           do not use Makefile.nt even for Windows
+#    -no-native              do not build "opt" and "opt.opt"
 
 error () {
   echo "$1" >&2
@@ -139,14 +140,15 @@ cd "$workdir"
 
 #########################################################################
 # parse optional command-line arguments (has to be done after the "cd")
-# Configure options are not allowed to have spaces or special characters
-# for the moment. We'll fix that when needed.
+
 confoptions=""
+make_native=true
 while [ $# -gt 0 ]; do
   case $1 in
     -conf) confoptions="$confoptions `quote1 "$2"`"; shift;;
     -patch1) patch -f -p1 <"$2"; shift;;
     -newmakefiles) makefile=Makefile;;
+    -no-native) make_native=false;;
     *) error "unknown option $1";;
   esac
   shift
@@ -179,8 +181,10 @@ $make -f $makefile coldstart
 $make -f $makefile core
 $make -f $makefile coreboot
 $make -f $makefile world
-$make -f $makefile opt
-$make -f $makefile opt.opt
+if $make_native; then
+  $make -f $makefile opt
+  $make -f $makefile opt.opt
+fi
 $make -f $makefile install
 
 rm -rf "$instdir"

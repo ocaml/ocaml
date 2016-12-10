@@ -39,6 +39,6 @@ CAMLprim value unix_connect(value socket, value address)
 #else
 
 CAMLprim value unix_connect(value socket, value address)
-{ invalid_argument("connect not implemented"); }
+{ caml_invalid_argument("connect not implemented"); }
 
 #endif

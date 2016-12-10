@@ -118,7 +118,7 @@ module Output = struct
       Printf.eprintf
         "Error when evaluating a guarded caml_example environment in %a\n\
          Unexpected %a status, %a status was expected.\n\
-         If %a states was in fact expected, change the status annotation to \
+         If %a status was in fact expected, change the status annotation to \
          [@@expect %a].\n"
         print_source source
         pp_status got
@@ -231,6 +231,8 @@ let escape_specials s =
   let s3 = global_replace ~!"`" "\\\\textasciigrave\\\\-" s2 in
   s3
 
+exception Missing_double_semicolon of string * int
+
 let process_file file =
   prerr_endline ("Processing " ^ file);
   let ic = try open_in file with _ -> failwith "Cannot read input file" in
@@ -266,7 +268,12 @@ let process_file file =
           let input = incr phrase_stop; input_line ic in
           if string_match ~!"\\\\end{caml_example\\*?}[ \t]*$"
               input 0
-          then raise End_of_file;
+          then begin
+            if !phrase_stop = 1 + !phrase_start then
+              raise End_of_file
+            else
+              raise @@ Missing_double_semicolon (file,!phrase_stop)
+          end;
           if Buffer.length phrase > 0 then Buffer.add_char phrase '\n';
           let stop = string_match ~!"\\(.*\\)[ \t]*;;[ \t]*$" input 0 in
           if not stop then (
@@ -350,12 +357,18 @@ let process_file file =
       flush oc
     end
   done with
-  |  End_of_file -> close_in ic; close_out oc
+  | End_of_file -> close_in ic; close_out oc
   | Output.Unexpected_status r ->
           ( Output.print_unexpected r; close_in ic; close_out oc; exit 1 )
   | Output.Parsing_error (k,s) ->
       ( Output.print_parsing_error k s;
         close_in ic; close_out oc; exit 1 )
+  | Missing_double_semicolon (file, line_number) ->
+      ( Format.eprintf "Error when evaluating a caml_example environment in \
+                        %s:\nmissing \";;\" at line %d\n" file (line_number-2);
+        close_in ic; close_out oc;
+        exit 1
+      )
 
 let _ =
   if !outfile <> "-" && !outfile <> "" then begin

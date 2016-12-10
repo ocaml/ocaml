@@ -5,7 +5,12 @@
 \newstyle{a:link}{color:\link@color;text-decoration:underline;}
 \newstyle{a:visited}{color:\visited@color;text-decoration:underline;}
 \newstyle{a:hover}{color:black;text-decoration:none;background-color:\hover@color}
-\externalcsstrue % needed due to hevea partial css handling
+
+\newstyle{div.caml-output}{color:maroon;}
+\newstyle{div.caml-input::before}{content:"\#"; color:black;}
+\newstyle{div.caml-input}{color:\#006000;}
+\newstyle{div.caml-example pre}{margin:2ex 0px;}
+
 %%%
 \newcommand{\input@color}{\htmlcolor{006000}}
 \newcommand{\output@color}{\maroon}

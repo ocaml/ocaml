@@ -68,8 +68,8 @@ CAMLprim value unix_getitimer(value which)
 #else
 
 CAMLprim value unix_setitimer(value which, value newval)
-{ invalid_argument("setitimer not implemented"); }
+{ caml_invalid_argument("setitimer not implemented"); }
 CAMLprim value unix_getitimer(value which)
-{ invalid_argument("getitimer not implemented"); }
+{ caml_invalid_argument("getitimer not implemented"); }
 
 #endif

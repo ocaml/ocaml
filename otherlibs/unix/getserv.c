@@ -69,9 +69,9 @@ CAMLprim value unix_getservbyport(value port, value proto)
 #else
 
 CAMLprim value unix_getservbyport(value port, value proto)
-{ invalid_argument("getservbyport not implemented"); }
+{ caml_invalid_argument("getservbyport not implemented"); }
 
 CAMLprim value unix_getservbyname(value name, value proto)
-{ invalid_argument("getservbyname not implemented"); }
+{ caml_invalid_argument("getservbyname not implemented"); }
 
 #endif

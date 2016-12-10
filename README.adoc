@@ -43,47 +43,6 @@ OCaml is almost upwards compatible with Caml Special Light, except for a few
 additional reserved keywords that have forced some renaming of standard
 library functions.
 
-== Contents
-
-  Changes::               what's new with each release
-  configure::             configure script
-  CONTRIBUTING.md::       how to contribute to OCaml
-  INSTALL.adoc::          instructions for installation
-  LICENSE::               license and copyright notice
-  Makefile::              main Makefile
-  Makefile.nt::           MS Windows Makefile
-  Makefile.shared::       common Makefile
-  Makefile.tools::        used by manual/ and testsuite/ Makefiles
-  README.adoc::           this file
-  README.win32.adoc::     info on the MS Windows ports of OCaml
-  VERSION::               version string
-  asmcomp/::              native-code compiler and linker
-  asmrun/::               native-code runtime library
-  boot/::                 bootstrap compiler
-  bytecomp/::             bytecode compiler and linker
-  byterun/::              bytecode interpreter and runtime system
-  compilerlibs/::         the OCaml compiler as a library
-  config/::               autoconfiguration stuff
-  debugger/::             source-level replay debugger
-  driver/::               driver code for the compilers
-  emacs/::                editing mode and debugger interface for GNU Emacs
-  experimental/::         experiments not built by default
-  flexdll/::              empty (see README.win32.adoc)
-  lex/::                  lexer generator
-  man/::                  man pages
-  manual/::               system to generate the manual
-  middle_end/::           the flambda optimisation phase
-  ocamldoc/::             documentation generator
-  otherlibs/::            several external libraries
-  parsing/::              syntax analysis
-  stdlib/::               standard library
-  testsuite/::            tests
-  tools/::                various utilities
-  toplevel/::             interactive system
-  typing/::               typechecking
-  utils/::                utility libraries
-  yacc/::                 parser generator
-
 == Copyright
 
 All files marked "Copyright INRIA" in this distribution are copyright 1996,
@@ -94,9 +53,9 @@ the conditions stated in file LICENSE.
 
 == Installation
 
-See the file link:INSTALL.adoc[] for installation instructions on machines running Unix,
-Linux, OS X and Cygwin.  For native Microsoft Windows, see
-link:README.win32.adoc[].
+See the file link:INSTALL.adoc[] for installation instructions on
+machines running Unix, Linux, OS X and Cygwin.  For native Microsoft
+Windows, see link:README.win32.adoc[].
 
 == Documentation
 
@@ -154,4 +113,5 @@ using (machine type, etc).
 
 You can also contact the implementors directly at mailto:caml@inria.fr[].
 
-For information on contributing to OCaml, see the file CONTRIBUTING.md.
+For information on contributing to OCaml, see link:HACKING.md[] and
+link:CONTRIBUTING.md[].

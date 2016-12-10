@@ -1,6 +1,0 @@
-
-/* Addition to the hevea generated css file */
-div.caml-output {color:maroon;}
-div.caml-input::before{ content:"#"; color:black;}
-div.caml-input {color:#006000;}
-div.caml-example pre {margin:2ex 0px;}

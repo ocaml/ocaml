@@ -59,8 +59,15 @@ extern int win_CRT_fd_of_filedescr(value handle);
 
 extern void win32_maperr(DWORD errcode);
 extern value unix_error_of_code (int errcode);
-extern void unix_error (int errcode, char * cmdname, value arg);
-extern void uerror (char * cmdname, value arg);
+
+CAMLnoreturn_start
+extern void unix_error (int errcode, char * cmdname, value arg)
+CAMLnoreturn_end;
+
+CAMLnoreturn_start
+extern void uerror (char * cmdname, value arg)
+CAMLnoreturn_end;
+
 extern void caml_unix_check_path(value path, char * cmdname);
 extern value unix_freeze_buffer (value);
 extern char ** cstringvect(value arg, char * cmdname);

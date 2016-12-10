@@ -7,6 +7,14 @@ Next version (4.05.0):
 
 ### Code generation and optimizations:
 
+- GPR#504: Instrumentation support for fuzzing with afl-fuzz.
+  (Stephen Dolan, review by Alain Frisch, Pierre Chambart, Mark
+  Shinwell, Gabriel Scherer and Damien Doligez)
+
+- MPR#7201, GPR#954: Correct wrong optimisation of "0 / <expr>"
+  and "0 mod <expr>" in the case when <expr> was a non-constant
+  evaluating to zero (Mark Shinwell)
+
 ### Runtime system:
 
 ### Type system:
@@ -35,6 +43,15 @@ Next version (4.05.0):
   compiler when called to compile third-party C source files
   (Sébastien Hinderer)
 
+* GPR#933: ocamlopt -p now reports an error on platforms that do not
+  support profiling with gprof; dummy profiling libraries are no longer
+  installed on such platforms.
+  This can be tested with ocamlopt -config
+  (Sébastien Hinderer)
+
+- PR#7137, GPR#960: "-open" command line flag now accepts a module path 
+  (not a module name) (Arseniy Alekseyev and Leo White)
+
 ### Standard library:
 
 - PR#6975, GPR#902: Truncate function added to stdlib Buffer module
@@ -57,6 +74,19 @@ Next version (4.05.0):
   (Gabriel de Perthuis, with contributions from Alain Frisch, review by
   Hezekiah M. Carty and Simon Cruanes, initial report by Gerd Stolpmann)
 
+### Manual and documentation:
+
+- GPR#939: activate the caml_example environment in the language
+  extensions section of the manual. Convert some existing code
+  examples to this format.
+  (Florian Angeletti)
+
+- add a HACKING.adoc file to contain various tips and tricks for
+  people hacking on the repository. See also CONTRIBUTING.md for
+  advice on sending contributions upstream.
+  (Gabriel Scherer and Gabriel Radanne, review by David Allsopp,
+  inspired by John Whitington)
+
 ### Other libraries:
 
 - MPR#7339, GPR#787: Support the '0 dimension' case for bigarrays
@@ -70,7 +100,20 @@ Next version (4.05.0):
   a short description in overviews.
   (Florian Angeletti)
 
+- GPR#848: ocamldoc, escape link targets in HTML output
+  (Etienne Millon, review by Gabriel Scherer, Florian Angeletti and
+  Daniel Bünzli)
+
+- clarify ocamldoc text parsing error messages
+  (Gabriel Scherer)
+
 ### Compiler distribution build system:
+
+- GPR#887: allow -with-frame-pointers if clang is used as compiler on Linux
+  (Bernhard Schommer)
+
+- GPR#919: use clang as preprocessor assembler if clang is used as compiler
+  (Bernhard Schommer)
 
 - GPR#927: improve the detection of hashbang support in the configure script
   (Armaël Guéneau)
@@ -97,6 +140,10 @@ Next version (4.05.0):
 - GPR#898: fix locale-dependence of primitive list order,
   detected through reproducible-builds.org.
   (Hannes Mehnert, review by Gabriel Scherer and Ximin Luo)
+
+- GPR#932: install ocaml{c,lex}->ocaml{c,lex}.byte symlink correctly
+  when the opt target is built but opt.opt target is not.
+  (whitequark)
 
 ### Internal/compiler-libs changes:
 
@@ -129,6 +176,12 @@ Next version (4.05.0):
   (Jeremy Yallop,
    review by Damien Doligez, Alain Frisch, Daniel Bünzli, Fabrice Le Fessant)
 
+- PR#7427, GPR#959: Don't delete let bodies in Cmmgen (Mark Shinwell)
+
+- GPR#956 Keep possibly-effectful expressions when optimizing multiplication
+  by zero.
+  (Jeremy Yallop)
+
 Next minor version (4.04.1):
 ----------------------------
 
@@ -141,6 +194,10 @@ Next minor version (4.04.1):
 
 - PR#7405, GPR#903: s390x: Fix address of caml_raise_exn in native dynlink modules
   (Richard Jones, review by Xavier Leroy)
+
+- MPR#7417, GPR#930: ensure 16 byte stack alignment inside caml_allocN on x86-64
+  for ocaml build with WITH_FRAME_POINTERS defined
+  (Christoph Cullmann)
 
 - GPR#912: Fix segfault in Unix.create_process on Windows caused by wrong header
   configuration.
@@ -315,6 +372,14 @@ OCaml 4.04.0 (4 Nov 2016):
   are registered with `GC.finalise_last`
   (François Bobot reviewed by Damien Doligez and Leo White)
 
+- GPR#247: In previous OCaml versions, inlining caused stack frames to
+  disappear from stacktraces. This made debugging harder in presence of
+  optimizations, and flambda was going to make this worse. The debugging
+  information produced by the compiler now enables the reconstruction of the
+  original backtrace. Use `Printexc.get_raw_backtrace_next_slot` to traverse
+  the list of inlined stack frames.
+  (Frédéric Bour, review by Mark Shinwell and Xavier Leroy)
+
 - GPR#590: Do not perform compaction if the real overhead is less than expected
   (Thomas Braibant)
 
@@ -488,6 +553,9 @@ OCaml 4.04.0 (4 Nov 2016):
 
 - GPR#525: fix build on OpenIndiana
   (Sergey Avseyev, review by Damien Doligez)
+
+- PR#7369: Str.regexp raises "Invalid_argument: index out of bounds"
+  (Damien Doligez, report by John Whitington)
 
 * GPR#533: Thread library: fixed [Thread.wait_signal] so that it
   converts back the signal number returned by [sigwait] to an

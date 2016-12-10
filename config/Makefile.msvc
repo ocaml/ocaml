@@ -69,7 +69,7 @@ NATIVECCRPATH=
 ASM=ml -nologo -coff -Cp -c -Fo
 ASPP=
 ASPPPROFFLAGS=
-PROFILING=noprof
+PROFILING=false
 DYNLINKOPTS=
 CC_PROFILE=
 SYSTHREAD_SUPPORT=true
@@ -88,6 +88,7 @@ LIBUNWIND_AVAILABLE=false
 LIBUNWIND_LINK_FLAGS=
 PROFINFO_WIDTH=26
 SAFE_STRING=false
+AFL_INSTRUMENT=false
 
 ########## Configuration for the bytecode compiler
 
@@ -198,7 +199,7 @@ MAKECMD=$(MAKE)
 OTOPDIR=$(WINTOPDIR)
 CTOPDIR=$(WINTOPDIR)
 CYGPATH=cygpath -m
-DIFF=diff -q --strip-trailing-cr
+DIFF=/usr/bin/diff -q --strip-trailing-cr
 FIND=/usr/bin/find
 SORT=/usr/bin/sort
 SET_LD_PATH=PATH="$(PATH):$(LD_PATH)"

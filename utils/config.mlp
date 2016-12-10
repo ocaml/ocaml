@@ -57,8 +57,11 @@ let mkdll, mkexe, mkmaindll =
   else
     "%%MKDLL%%", "%%MKEXE%%", "%%MKMAINDLL%%"
 
+let profiling = %%PROFILING%%
 let flambda = %%FLAMBDA%%
 let safe_string = %%SAFE_STRING%%
+
+let afl_instrument = %%AFL_INSTRUMENT%%
 
 let exec_magic_number = "Caml1999X011"
 and cmi_magic_number = "Caml1999I021"
@@ -152,6 +155,7 @@ let print_config oc =
   p_bool "systhread_supported" systhread_supported;
   p "host" host;
   p "target" target;
+  p_bool "profiling" profiling;
   p_bool "flambda" flambda;
   p_bool "spacetime" spacetime;
 

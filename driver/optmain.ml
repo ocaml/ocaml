@@ -105,6 +105,8 @@ module Options = Main_args.Make_optcomp_options (struct
 
   let _a = set make_archive
   let _absname = set Location.absname
+  let _afl_instrument = set afl_instrument
+  let _afl_inst_ratio n = afl_inst_ratio := n
   let _annot = set annotations
   let _binannot = set binary_annotations
   let _c = set compile_only
@@ -293,6 +295,8 @@ let main () =
   try
     readenv ppf Before_args;
     Arg.parse_expand (Arch.command_line_options @ Options.list) anonymous usage;
+    if !gprofile && not profiling then
+      fatal "Profiling with \"gprof\" is not supported on this platform.";
     if !output_name <> None && !compile_only &&
           List.length !process_thunks > 1 then
       fatal "Options -c -o are incompatible with compiling multiple files";

@@ -44,6 +44,6 @@ CAMLprim value unix_getgroups(value unit)
 #else
 
 CAMLprim value unix_getgroups(value unit)
-{ invalid_argument("getgroups not implemented"); }
+{ caml_invalid_argument("getgroups not implemented"); }
 
 #endif

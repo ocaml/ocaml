@@ -1,10 +1,6 @@
 \chapter{Language extensions} \label{c:extensions}
 \pdfchapter{Language extensions}
 %HEVEA\cutname{extn.html}
-%%%%%%%%%%%%%%%%%%%%%%%%%%
-% Specific macros:
-\newcommand{\tq}{\textquotesingle}
-%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 This chapter describes language extensions and convenience features
 that are implemented in OCaml, but not described in the
@@ -531,12 +527,10 @@ Note that "'b" is not explicitly polymorphic here, and it will
 actually be unified with "int".
 
 The other application is to ensure that some definition is sufficiently
-polymorphic.
-\caml
-\?let id : \tq\-a. \tq\-a -> \tq\-a = \<fun x -> x+1\> ;;
-\:Error: This definition has type int -> int which is less general than
-\:         \tq\-a. \tq\-a -> \tq\-a
-\endcaml
+polymorphic:
+\begin{caml_example}[error]
+let id: 'a. 'a -> 'a = fun x -> x + 1;;
+\end{caml_example}
 
 \section{Locally abstract types}
 \ikwd{type\@\texttt{type}}
@@ -933,7 +927,7 @@ parameters.
 
 A natural application of destructive substitution is merging two
 signatures sharing a type name.
-\begin{verbatim}
+\begin{caml_example*}
         module type Printable = sig
           type t
           val print : Format.formatter -> t -> unit
@@ -945,31 +939,27 @@ signatures sharing a type name.
         module type PrintableComparable = sig
           include Printable
           include Comparable with type t := t
-        end
-\end{verbatim}
+        end;;
+\end{caml_example*}
 
 One can also use this to completely remove a field:
-\caml
-\?module type S = Comparable with type t := int;;
-\:module type S = sig val compare : int -> int -> int end
-\endcaml
+\begin{caml_example}
+module type S = Comparable with type t := int;;
+\end{caml_example}
 or to rename one:
-\caml
-\?module type S = sig
-\?  type u
-\?  include Comparable with type t := u
-\?end;;
-\:module type S = sig type u val compare : u -> u -> int end
-\endcaml
+\begin{caml_example}
+module type S = sig
+  type u
+  include Comparable with type t := u
+end;;
+\end{caml_example}
 
 Note that you can also remove manifest types, by substituting with the
 same type.
-\caml
-\?module type ComparableInt = Comparable with type t = int ;;
-\:module type ComparableInt = sig type t = int val compare : t -> t -> int end
-\?module type CompareInt = ComparableInt with type t := int ;;
-\:module type CompareInt = sig val compare : int -> int -> int end
-\endcaml
+\begin{caml_example}
+module type ComparableInt = Comparable with type t = int ;;
+module type CompareInt = ComparableInt with type t := int ;;
+\end{caml_example}
 
 \section{Type-level module aliases}
 \ikwd{module\@\texttt{module}}
@@ -1000,9 +990,12 @@ There are several restrictions on @module-path@:
 
 Such specifications are also inferred. Namely, when @P@ is a path
 satisfying the above constraints,
-\caml
-\?module N = P
-\endcaml
+\begin{caml_eval}
+module P = struct end
+\end{caml_eval}
+\begin{caml_example*}
+module N = P;;
+\end{caml_example*}
 has type
 \caml
 \:module N = P
@@ -1386,41 +1379,29 @@ compiler generates these names according to the following nomenclature:
 \item First, types whose name starts with a "$" are existentials.
 \item "$Constr_'a" denotes an existential type introduced for the type
 variable "'a" of the GADT constructor "Constr":
-\caml
-\?   type any = Any : \tq\-name -> any
-\?   let escape (Any x) = \<x\>;;
-\: Error: This expression has type $Any_\tq\-name
-\:        but an expression was expected of type \tq\-a
-\:        The type constructor $Any_\tq\-name would escape its scope
-\endcaml
-\item "$Constr" denotes an existential type introduced for an anonymous
+\begin{caml_example}[error]
+type any = Any : 'name -> any
+let escape (Any x) = x;;
+\end{caml_example}
+\item "$Constr" denotes an existential type introduced for an anonymous %$
 type variable in the GADT constructor "Constr":
-\caml
-\? type any = Any : _ -> any
-\? let escape (Any x) = \<x\>;;
-\: Error: This expression has type $Any but an expression was expected of type
-\:        \tq\-a
-\:        The type constructor $Any would escape its scope
-\endcaml
-\item "$'a" if the existential variable was unified with the type
+\begin{caml_example}[error]
+type any = Any : _ -> any
+let escape (Any x) = x;;
+\end{caml_example}
+\item "$'a" if the existential variable was unified with the type %$
 variable "'a" during typing:
-\caml
-\? type (\tq\-arg,\tq\-result,\tq\-aux) fn =
-\?  | Fun: (\tq\-a ->\tq\-b) -> (\tq\-a,\tq\-b,unit) fn
-\?  | Mem1: (\tq\-a ->\tq\-b) * \tq\-a * \tq\-b -> (\tq\-a, \tq\-b, \tq\-a * \tq\-b) fn
+\begin{caml_example}[error]
+type ('arg,'result,'aux) fn =
+  | Fun: ('a ->'b) -> ('a,'b,unit) fn
+  | Mem1: ('a ->'b) * 'a * 'b -> ('a, 'b, 'a * 'b) fn
 
-\? let apply: (\tq\-arg,\tq\-result, _ ) fn -> \tq\-arg -> \tq\-result = fun f x ->
-\?  match f with
-\?  | Fun f -> f x
-\?  | \<Mem1 (f,y,fy)\> -> if x = y then fy else f x;;
-
-\: Error: This pattern matches values of type
-\:         ($\tq\-arg, $\tq\-result, $\tq\-arg * $\tq\-result) fn
-\:        but a pattern was expected which matches values of type
-\:         ($\tq\-arg, $\tq\-result, unit) fn
-\:        Type $\tq\-arg * $\tq\-result is not compatible with type unit
-\endcaml
-\item "$n" (n a number) is an internally generated existential
+ let apply: ('arg,'result, _ ) fn -> 'arg -> 'result = fun f x ->
+  match f with
+  | Fun f -> f x
+  | Mem1 (f,y,fy) -> if x = y then fy else f x;;
+\end{caml_example}
+\item "$n" (n a number) is an internally generated existential %$
 which could not be named using one of the previous schemes.
 \end{itemize}
 
@@ -1434,7 +1415,7 @@ GADT pattern-matching may also add type equations to non-local
 abstract types. The behaviour is the same as with local abstract
 types. Reusing the above "eq" type, one can write:
 \begin{verbatim}
-        module M : sig type t val x : t val e : (x,int) eq end = struct
+        module M : sig type t val x : t val e : (t,int) eq end = struct
           type t = int
           let x = 33
           let e = Eq
@@ -1914,16 +1895,15 @@ Some extension nodes are understood by the compiler itself:
     constructor slot.
 \end{itemize}
 
-\begin{verbatim}
+\begin{caml_example*}
 type t = ..
 type t += X of int | Y of string
 let x = [%extension_constructor X]
-let y = [%extension_constructor Y]
-\end{verbatim}
-\caml
-\? x <> y;;
-\:- : bool = true
-\endcaml
+let y = [%extension_constructor Y];;
+\end{caml_example*}
+\begin{caml_example}
+ x <> y;;
+\end{caml_example}
 
 \section{Quoted strings}\label{s:quoted-strings}
 

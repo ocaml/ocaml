@@ -36,7 +36,13 @@ IOBJS=$(COBJS:.o=.i.o) $(ASMOBJS)
 POBJS=$(COBJS:.o=.p.o) $(ASMOBJS:.o=.p.o)
 PICOBJS=$(COBJS:.o=.pic.o) $(ASMOBJS:.o=.pic.o)
 
-all: libasmrun.a all-$(RUNTIMED) all-$(PROFILING) all-$(SHARED)
+ifeq "$(PROFILING)" "true"
+PROFILINGTARGET = prof
+else
+PROFILINGTARGET = noprof
+endif
+
+all: libasmrun.a all-$(RUNTIMED) all-$(PROFILINGTARGET) all-$(SHARED)
 
 ifeq "$(RUNTIMEI)" "true"
 all: libasmruni.a
@@ -103,20 +109,15 @@ install::
 	cd $(INSTALL_LIBDIR); $(RANLIB) libasmruni.a
 endif
 
-ifeq "$(PROFILING)" "prof"
+ifeq "$(PROFILING)" "true"
 install::
 	cp libasmrunp.a $(INSTALL_LIBDIR)/libasmrunp.a
-	cd $(INSTALL_LIBDIR); $(RANLIB) libasmrunp.a
-else
-install::
-	rm -f $(INSTALL_LIBDIR)/libasmrunp.a
-	ln -s libasmrun.a $(INSTALL_LIBDIR)/libasmrunp.a
 endif
 
 ifeq "$(SHARED)" "shared"
 install::
 	cp libasmrun_pic.a $(INSTALL_LIBDIR)/libasmrun_pic.a
-	cd $(INSTALL_LIBDIR); $(RANLIB) libasmrunp.a
+	cd $(INSTALL_LIBDIR); $(RANLIB) libasmrun_pic.a
 	cp libasmrun_shared.so $(INSTALL_LIBDIR)/libasmrun_shared.so
 endif
 
