@@ -132,7 +132,8 @@ let rec get_unboxed_type_representation env ty fuel =
   | _ -> Some ty
 
 let get_unboxed_type_representation env ty =
-  get_unboxed_type_representation env ty 100000
+  (* Do not give too much fuel: PR#7424 *)
+  get_unboxed_type_representation env ty 100
 ;;
 
 (* Determine if a type's values are represented by floats at run-time. *)

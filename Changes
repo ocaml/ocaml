@@ -113,6 +113,9 @@ Next version (4.05.0):
 - PR#7421: Soundness bug with GADTs and lazy
   (Jacques Garrigue, report by Leo White)
 
+- PR#7424: Typechecker diverges on unboxed type declaration
+  (Jacques Garrigue, report by Stephen Dolan)
+
 - GPR#795: remove 256-character limitation on Sys.executable_name
   (Xavier Leroy)
 
