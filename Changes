@@ -273,16 +273,16 @@ OCaml 4.04.0 (4 Nov 2016):
 
 ### Standard library:
 
-- GPR#473: Provide `Sys.backend_type` so that user can write backend-specific
-  code in some cases (for example,  code generator).
-  (Hongbo Zhang)
-
 - PR#6279, GPR#553: implement Set.map
   (Gabriel Scherer)
 
 - PR#6820, GPR#560: Add Obj.reachable_words to compute the
   "transitive" heap size of a value
   (Alain Frisch, review by Mark Shinwell and Damien Doligez)
+
+- GPR#473: Provide `Sys.backend_type` so that user can write backend-specific
+  code in some cases (for example,  code generator).
+  (Hongbo Zhang)
 
 - GPR#589: Add a non-allocating function to recover the number of
   allocated minor words.
@@ -357,14 +357,6 @@ OCaml 4.04.0 (4 Nov 2016):
   (Pierre Chambart, review by Leo White)
 
 - GPR#723 Sort emitted functions according to source location
-  (Pierre Chambart, review by Mark Shinwell)
-
-- PR#7291, GPR#780: Handle specialisation of recursive function that does
-  not always preserve the arguments
-  (Pierre Chambart, Mark Shinwell, report by Simon Cruanes)
-
-- PR#7244, GPR#840: Ocamlopt + flambda requires a lot of memory
-  to compile large array literal expressions
   (Pierre Chambart, review by Mark Shinwell)
 
 - Lack of type normalization lead to missing simple compilation for "lazy x"
@@ -553,6 +545,9 @@ OCaml 4.04.0 (4 Nov 2016):
 - PR#7330: Missing exhaustivity check for extensible variant
   (Jacques Garrigue, report by Elarnon *)
 
+- PR#7369: Str.regexp raises "Invalid_argument: index out of bounds"
+  (Damien Doligez, report by John Whitington)
+
 - PR#7374: Contractiveness check unsound with constraints
   (Jacques Garrigue, report by Leo White)
 
@@ -564,9 +559,6 @@ OCaml 4.04.0 (4 Nov 2016):
 
 - GPR#525: fix build on OpenIndiana
   (Sergey Avseyev, review by Damien Doligez)
-
-- PR#7369: Str.regexp raises "Invalid_argument: index out of bounds"
-  (Damien Doligez, report by John Whitington)
 
 * GPR#533: Thread library: fixed [Thread.wait_signal] so that it
   converts back the signal number returned by [sigwait] to an
@@ -908,9 +900,10 @@ OCaml 4.03.0 (25 Apr 2016):
 
 ### Runtime system:
 
-* GPR#442, caml_fill_string, and caml_create_string is deprecated
-  and will be removed in the future, please use caml_fill_bytes
-  and caml_create_bytes for migration
+* GPR#596: make string/bytes distinguishable in the underlying
+  compiler implementation; caml_fill_string and caml_create_string are
+  deprecated and will be removed in the future, please use
+  caml_fill_bytes and caml_create_bytes for migration
   (Hongbo Zhang, review by Damien Doligez, Alain Frisch, and Hugo Heuzard)
 
 - PR#3612, PR#92: allow allocating custom block with finalizers
