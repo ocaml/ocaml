@@ -42,3 +42,4 @@ val enrich_typedecl: Env.t -> Path.t -> type_declaration -> type_declaration
 val type_paths: Env.t -> Path.t -> module_type -> Path.t list
 val contains_type: Env.t -> module_type -> bool
 val remove_aliases: Env.t -> module_type -> module_type
+val lower_nongen: int -> module_type -> unit
