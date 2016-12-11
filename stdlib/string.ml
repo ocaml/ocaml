@@ -122,14 +122,24 @@ let rec index_rec s lim i c =
 let index s c = index_rec s (length s) 0 c
 
 (* duplicated in bytes.ml *)
-let index_opt s c =
-  B.index_opt (bos s) c
+let rec index_rec_opt s lim i c =
+  if i >= lim then None else
+  if unsafe_get s i = c then Some i else index_rec_opt s lim (i + 1) c
+
+(* duplicated in bytes.ml *)
+let index_opt s c = index_rec_opt s (length s) 0 c
 
 (* duplicated in bytes.ml *)
 let index_from s i c =
   let l = length s in
   if i < 0 || i > l then invalid_arg "String.index_from / Bytes.index_from" else
     index_rec s l i c
+
+(* duplicated in bytes.ml *)
+let index_from_opt s i c =
+  let l = length s in
+  if i < 0 || i > l then invalid_arg "String.index_from_opt / Bytes.index_from_opt" else
+  index_rec_opt s l i c
 
 (* duplicated in bytes.ml *)
 let rec rindex_rec s i c =
@@ -140,14 +150,6 @@ let rec rindex_rec s i c =
 let rindex s c = rindex_rec s (length s - 1) c
 
 (* duplicated in bytes.ml *)
-let rindex_opt s c =
-  B.rindex_opt (bos s) c
-
-(* duplicated in bytes.ml *)
-let index_from_opt s i c=
-  B.index_from_opt (bos s) i c
-
-(* duplicated in bytes.ml *)
 let rindex_from s i c =
   if i < -1 || i >= length s then
     invalid_arg "String.rindex_from / Bytes.rindex_from"
@@ -155,8 +157,19 @@ let rindex_from s i c =
     rindex_rec s i c
 
 (* duplicated in bytes.ml *)
+let rec rindex_rec_opt s i c =
+  if i < 0 then None else
+  if unsafe_get s i = c then Some i else rindex_rec_opt s (i - 1) c
+
+(* duplicated in bytes.ml *)
+let rindex_opt s c = rindex_rec_opt s (length s - 1) c
+
+(* duplicated in bytes.ml *)
 let rindex_from_opt s i c =
-  B.rindex_from_opt (bos s) i c
+  if i < -1 || i >= length s then
+    invalid_arg "String.rindex_from_opt / Bytes.rindex_from_opt"
+  else
+    rindex_rec_opt s i c
 
 (* duplicated in bytes.ml *)
 let contains_from s i c =
