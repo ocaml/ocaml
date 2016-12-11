@@ -177,6 +177,8 @@ let min_float =
 let epsilon_float =
   float_of_bits 0x3C_B0_00_00_00_00_00_00L
 
+let pi = 0x3.243f6a8885a308d313198a2e037073
+
 type fpclass =
     FP_normal
   | FP_subnormal

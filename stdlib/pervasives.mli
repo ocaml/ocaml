@@ -510,6 +510,9 @@ val epsilon_float : float
 (** The difference between [1.0] and the smallest exactly representable
     floating-point number greater than [1.0]. *)
 
+val pi : float
+(** The constant pi. *)
+
 type fpclass =
     FP_normal           (** Normal number, none of the below *)
   | FP_subnormal        (** Number very close to 0.0, has reduced precision *)
