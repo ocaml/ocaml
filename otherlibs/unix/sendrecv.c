@@ -69,9 +69,9 @@ CAMLprim value unix_recvfrom(value sock, value buff, value ofs, value len,
     if (ret == -1) uerror("recvfrom", Nothing);
     memmove (&Byte(buff, Long_val(ofs)), iobuf, ret);
     adr = alloc_sockaddr(&addr, addr_len, -1);
-    res = alloc_small(2, 0);
-    Init_field(res, 0, Val_int(ret));
-    Init_field(res, 1, adr);
+    res = caml_alloc_2(0,
+      Val_int(ret),
+      adr);
   End_roots();
   return res;
 }

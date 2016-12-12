@@ -28,11 +28,8 @@ static value alloc_group_entry(struct group *entry)
     name = copy_string(entry->gr_name);
     pass = copy_string(entry->gr_passwd);
     mem = copy_string_array((const char**)entry->gr_mem);
-    res = alloc_small(4, 0);
-    Init_field(res, 0, name);
-    Init_field(res, 1, pass);
-    Init_field(res, 2, Val_int(entry->gr_gid));
-    Init_field(res, 3, mem);
+    res = caml_alloc_4(0, name, pass,
+                       Val_int(entry->gr_gid), mem);
   End_roots();
   return res;
 }

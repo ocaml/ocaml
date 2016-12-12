@@ -25,7 +25,6 @@
 CAMLprim value unix_accept(value sock)
 {
   int retcode;
-  value res;
   value a;
   union sock_addr_union addr;
   socklen_param_type addr_len;
@@ -36,12 +35,7 @@ CAMLprim value unix_accept(value sock)
   leave_blocking_section();
   if (retcode == -1) uerror("accept", Nothing);
   a = alloc_sockaddr(&addr, addr_len, retcode);
-  Begin_root (a);
-    res = alloc_small(2, 0);
-    Init_field(res, 0, Val_int(retcode));
-    Init_field(res, 1, a);
-  End_roots();
-  return res;
+  return caml_alloc_2(0, Val_int(retcode), a);
 }
 
 #else

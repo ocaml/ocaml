@@ -168,7 +168,7 @@ CAMLprim value caml_make_vect(value len, value init)
     if (size > Max_wosize) caml_invalid_argument("Array.make");
     if (size < Max_young_wosize) {
       res = caml_alloc_small(size, 0);
-      for (i = 0; i < size; i++) Init_field(res, i, init);
+      for (i = 0; i < size; i++) caml_initialize_field(res, i, init);
     }
     else {
       /* make sure init is not young, to avoid creating
