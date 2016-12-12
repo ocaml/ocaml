@@ -84,7 +84,7 @@ CAMLprim value caml_obj_dup(value arg)
     memcpy(Bp_val(res), Bp_val(arg), sz * sizeof(value));
   } else if (sz <= Max_young_wosize) {
     res = caml_alloc_small(sz, tg);
-    for (i = 0; i < sz; i++) Init_field(res, i, Field(arg, i));
+    for (i = 0; i < sz; i++) caml_initialize_field(res, i, Field(arg, i));
   } else {
     res = caml_alloc_shr(sz, tg);
     for (i = 0; i < sz; i++) caml_initialize_field(res, i, Field(arg, i));
@@ -145,7 +145,7 @@ CAMLprim value caml_lazy_make_forward (value v)
   CAMLlocal1 (res);
 
   res = caml_alloc_small (1, Forward_tag);
-  Init_field (res, 0, v);
+  caml_initialize_field (res, 0, v);
   CAMLreturn (res);
 }
 

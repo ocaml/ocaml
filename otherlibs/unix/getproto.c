@@ -31,10 +31,8 @@ static value alloc_proto_entry(struct protoent *entry)
   Begin_roots2 (name, aliases);
     name = copy_string(entry->p_name);
     aliases = copy_string_array((const char**)entry->p_aliases);
-    res = alloc_small(3, 0);
-    Init_field(res, 0, name);
-    Init_field(res, 1, aliases);
-    Init_field(res, 2, Val_int(entry->p_proto));
+    res = caml_alloc_3(0, name, aliases,
+                       Val_int(entry->p_proto));
   End_roots();
   return res;
 }

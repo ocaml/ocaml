@@ -42,7 +42,8 @@ static char *standend = NULL;
 
 CAMLprim value caml_terminfo_setup (value vchan)
 {
-  value result;
+  CAMLparam1(vchan);
+  CAMLlocal1(result);
   static char buffer[1024];
   char *term;
 
@@ -67,8 +68,8 @@ CAMLprim value caml_terminfo_setup (value vchan)
     return Bad_term;
   }
   result = caml_alloc_small (1, Good_term_tag);
-  Init_field (result, 0, Val_int (num_lines));
-  return result;
+  caml_initialize_field (result, 0, Val_int (num_lines));
+  CAMLreturn (result);
 }
 
 static int terminfo_putc (int c)

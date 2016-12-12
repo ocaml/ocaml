@@ -12,6 +12,7 @@
 /***********************************************************************/
 
 #include <caml/mlvalues.h>
+#include <caml/memory.h>
 #include <caml/alloc.h>
 #include <caml/fail.h>
 
@@ -35,7 +36,7 @@ CAMLprim value unix_getgroups(value unit)
   if (n == -1) uerror("getgroups", Nothing);
   res = alloc_tuple(n);
   for (i = 0; i < n; i++)
-    Init_field(res, i, Val_int(gidset[i]));
+    caml_initialize_field(res, i, Val_int(gidset[i]));
   return res;
 }
 

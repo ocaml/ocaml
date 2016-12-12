@@ -43,7 +43,7 @@ CAMLexport value caml_alloc (mlsize_t wosize, tag_t tag)
         #ifdef DEBUG
           init_val = Debug_uninit_minor;
         #endif
-        Init_field (result, i, init_val);
+        Op_val(result)[i] = init_val;
       }
     }
   }else{

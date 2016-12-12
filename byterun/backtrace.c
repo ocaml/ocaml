@@ -438,14 +438,14 @@ CAMLprim value caml_convert_raw_backtrace_slot(value backtrace_slot) {
   if (li.loc_valid) {
     fname = caml_copy_string(li.loc_filename);
     p = caml_alloc_small(5, 0);
-    Init_field(p, 0, Val_bool(li.loc_is_raise));
-    Init_field(p, 1, fname);
-    Init_field(p, 2, Val_int(li.loc_lnum));
-    Init_field(p, 3, Val_int(li.loc_startchr));
-    Init_field(p, 4, Val_int(li.loc_endchr));
+    caml_initialize_field(p, 0, Val_bool(li.loc_is_raise));
+    caml_initialize_field(p, 1, fname);
+    caml_initialize_field(p, 2, Val_int(li.loc_lnum));
+    caml_initialize_field(p, 3, Val_int(li.loc_startchr));
+    caml_initialize_field(p, 4, Val_int(li.loc_endchr));
   } else {
     p = caml_alloc_small(1, 1);
-    Init_field(p, 0, Val_bool(li.loc_is_raise));
+    caml_initialize_field(p, 0, Val_bool(li.loc_is_raise));
   }
   CAMLreturn(p);
 }
@@ -461,7 +461,7 @@ CAMLprim value caml_get_exception_raw_backtrace(value unit)
   if(caml_backtrace_buffer != NULL) {
     intnat i;
     for(i = 0; i < caml_domain_state->backtrace_pos; i++)
-      Init_field(res, i, Val_Codet(caml_backtrace_buffer[i]));
+      caml_initialize_field(res, i, Val_Codet(caml_backtrace_buffer[i]));
   }
 
   CAMLreturn(res);
@@ -499,7 +499,7 @@ CAMLprim value caml_get_exception_backtrace(value unit)
               caml_modify_field(arr, i, slot);
           }
       }
-      res = caml_alloc_small(1, 0); Init_field(res, 0, arr); /* Some */
+      res = caml_alloc_small(1, 0); caml_initialize_field(res, 0, arr); /* Some */
   }
   CAMLreturn(res);
 }

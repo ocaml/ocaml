@@ -157,7 +157,8 @@ CAMLexport value caml_alloc_shr (mlsize_t wosize, tag_t tag)
   }
 
   if (tag < No_scan_tag) {
-    for (mlsize_t i = 0; i < wosize; i++) {
+    mlsize_t i;
+    for (i = 0; i < wosize; i++) {
       value init_val = Val_unit;
       #ifdef DEBUG
       init_val = Debug_uninit_major;
@@ -227,13 +228,7 @@ CAMLexport value caml_read_barrier(value obj, int field)
 
 CAMLprim value caml_bvar_create(value v)
 {
-  CAMLparam1(v);
-
-  value bv = caml_alloc_small(2, 0);
-  Init_field(bv, 0, v);
-  Init_field(bv, 1, Val_long(caml_domain_self()->id));
-
-  CAMLreturn (bv);
+  return caml_alloc_2(0, v, Val_long(caml_domain_self()->id));
 }
 
 struct bvar_transfer_req {
