@@ -44,7 +44,8 @@ install:
   # Make sure the Cygwin path comes before the Git one (otherwise
   # cygpath behaves crazily), but after the MSVC one.
   - set Path=C:\cygwin\bin;%Path%
-  - '"%CYG_ROOT%\setup-x86.exe" -qnNdO -R "%CYG_ROOT%" -s "%CYG_MIRROR%" -l "%CYG_CACHE%" -P diffutils -P dos2unix -P gcc-core -P make -P ncurses >NUL'
+  - '%CYG_ROOT%\bin\bash -lc "cygcheck -dc cygwin"'
+  - '"%CYG_ROOT%\setup-x86.exe" -qgnNdO -R "%CYG_ROOT%" -s "%CYG_MIRROR%" -l "%CYG_CACHE%" -P diffutils -P dos2unix -P gcc-core -P make -P ncurses >NUL'
   - '%CYG_ROOT%\bin\bash -lc "cygcheck -dc cygwin"'
   - call "C:\Program Files\Microsoft SDKs\Windows\v7.1\Bin\SetEnv.cmd" /x64
   - set Path=%OCAMLROOT%\bin;%OCAMLROOT%\bin\flexdll;%Path%
