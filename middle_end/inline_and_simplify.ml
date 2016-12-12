@@ -989,6 +989,7 @@ and simplify_named env r (tree : Flambda.named) : Flambda.named * R.t =
       begin match prim, args, args_approxs with
       | Pgetglobal _, _, _ ->
         Misc.fatal_error "Pgetglobal is forbidden in Inline_and_simplify"
+      (* CR-someday mshinwell: Optimise [Pfield_computed]. *)
       | Pfield field_index, [arg], [arg_approx] ->
         let projection : Projection.t = Field (field_index, arg) in
         begin match E.find_projection env ~projection with

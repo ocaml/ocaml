@@ -182,6 +182,10 @@ Next version (4.05.0):
   by zero.
   (Jeremy Yallop)
 
+- GPR#965, PR#7426: Fix fatal error during object compilation (also
+  introduces new [Pfield_computed] and [Psetfield_computed] primitives)
+  (Mark Shinwell)
+
 Next minor version (4.04.1):
 ----------------------------
 
