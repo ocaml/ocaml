@@ -188,4 +188,5 @@ Error: The native code version of the primitive is mandatory when attributes [@u
   external t : float -> float = "t" [@@unboxed];;
   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Error: The native code version of the primitive is mandatory when attributes [@untagged] or [@unboxed] are present
+#     type 'a b = B of 'a b b [@@unboxed]
 # 

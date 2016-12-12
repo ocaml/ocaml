@@ -1,16 +1,14 @@
-SOURCES = A.ml B.ml
-OBJECTS = $(SOURCES:%.ml=Lib%.cmo)
-NOBJECTS = $(OBJECTS:%.cmo=%.cmx)
-
-byte: b.cmo
-clean:
-	rm b.cmo a.cmo
-
-a.cmo: A.ml
-	$(OCAMLC) -c -o $@ $<
-
-b.cmo: B.ml a.cmo
-	$(OCAMLC) -c -open A.M -o $@ $<
-
 BASEDIR=../..
+
+compile:
+	@printf " ... testing 'foo.ml'"
+	@$(OCAMLC) -c a.ml
+	@$(OCAMLC) -open A.M -c b.ml \
+	&& echo " => passed" || echo " => failed"
+
+promote:
+
+clean:
+	@rm -f a.cmi a.cmo b.cmi b.cmo
+
 include $(BASEDIR)/makefiles/Makefile.common
