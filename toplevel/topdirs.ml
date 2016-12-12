@@ -401,6 +401,57 @@ let _ = add_directive "remove_printer"
       doc = "Remove the named function from the table of toplevel printers.";
     }
 
+(* PPX-related stuff *)
+
+(* Installing mapper specified by indent if it exists and type is appropriate *)
+let install_ppx_mapper ppf (lid: Longident.t) =
+  try
+    let (path, desc) = Env.lookup_value lid !toplevel_env in
+
+    let mapper_type = Env.lookup_type (Ldot(Lident "Ast_mapper", "mapper")) !toplevel_env in
+    Ctype.begin_def();
+    Ctype.unify !toplevel_env
+      (Ctype.newconstr mapper_type [])
+      (Ctype.instance_def desc.val_type);
+    Ctype.end_def();
+
+    let mapper = eval_path !toplevel_env path in
+    Pparse.add_in_process_ppx lid (Obj.obj mapper)
+  with
+  | Ctype.Unify _ ->
+      fprintf ppf "Type of the value should be 'Ast_mapper.mapper'. Nothing added.\n%!"
+  | Not_found -> fprintf ppf "Identifier is unbound in the current environment.\n%!"
+
+let _ = add_directive "ppx"
+    (Directive_string(fun path -> Pparse.add_external_ppx ~path))
+    {
+      section = section_options;
+      doc = "After parsing, pipe the abstract \
+          syntax tree through the preprocessor command.";
+    }
+
+let _ = add_directive "in_process_ppx"
+    (Directive_ident(install_ppx_mapper std_out))
+    {
+      section = section_options;
+      doc = "After parsing, pipe the abstract \
+          syntax tree to specified PPX mapper.";
+    }
+
+let _ = add_directive "remove_in_process_ppx"
+    (Directive_ident Pparse.remove_in_process_ppx)
+    {
+      section = section_options;
+      doc = "Forget specified in-process PPX preprocessor";
+    }
+
+let _ = add_directive "clear_in_process_ppxs"
+    (Directive_none Pparse.clear_in_process_ppxs)
+    {
+      section = section_options;
+      doc = "Forget all added in process PPX preprocessors";
+    }
+
 (* The trace *)
 
 external current_environment: unit -> Obj.t = "caml_get_current_environment"
@@ -665,6 +716,27 @@ let _ = add_directive "print_length"
 
 (* Set various compiler flags *)
 
+let _ = add_directive "dump_parsetree"
+    (Directive_bool(fun b -> Clflags.dump_parsetree := b))
+    {
+      section = section_options;
+      doc = "Choose whether to dump parsed tree.";
+    }
+
+let _ = add_directive "dump_typedtree"
+    (Directive_bool(fun b -> Clflags.dump_typedtree := b))
+    {
+      section = section_options;
+      doc = "Choose whether to dump typed tree.";
+    }
+
+let _ = add_directive "dump_source"
+    (Directive_bool(fun b -> Clflags.dump_source := b))
+    {
+      section = section_options;
+      doc = "Choose whether to dump source after preprocessing.";
+    }
+
 let _ = add_directive "labels"
     (Directive_bool(fun b -> Clflags.classic := not b))
     {
@@ -684,14 +756,6 @@ let _ = add_directive "rectypes"
     {
       section = section_options;
       doc = "Allow arbitrary recursive types during type-checking.";
-    }
-
-let _ = add_directive "ppx"
-    (Directive_string(fun s -> Clflags.all_ppx := s :: !Clflags.all_ppx))
-    {
-      section = section_options;
-      doc = "After parsing, pipe the abstract \
-          syntax tree through the preprocessor command.";
     }
 
 let _ = add_directive "warnings"

@@ -112,31 +112,75 @@ let rewrite kind ppxs ast =
   let fn = List.fold_left (apply_rewriter kind) fn (List.rev ppxs) in
   read_ast kind fn
 
-let apply_rewriters_str ?(restore = true) ~tool_name ast =
-  match !Clflags.all_ppx with
-  | [] -> ast
-  | ppxs ->
-      ast
-      |> Ast_mapper.add_ppx_context_str ~tool_name
-      |> rewrite Structure ppxs
-      |> Ast_mapper.drop_ppx_context_str ~restore
+type rewriter_kind =
+  | External of string
+  | InProcess of Longident.t * Ast_mapper.mapper
 
-let apply_rewriters_sig ?(restore = true) ~tool_name ast =
-  match !Clflags.all_ppx with
-  | [] -> ast
-  | ppxs ->
-      ast
-      |> Ast_mapper.add_ppx_context_sig ~tool_name
-      |> rewrite Signature ppxs
-      |> Ast_mapper.drop_ppx_context_sig ~restore
+let installed_ppxs = ref []
+
+let remove_in_process_ppx lid =
+  installed_ppxs :=
+    List.filter (function InProcess (l,_) when l=lid -> false | _ -> true) !installed_ppxs
+
+let clear_ppx () = installed_ppxs := []
+
+let clear_in_process_ppxs () =
+  installed_ppxs := List.filter (function External _ -> true | _ -> false) !installed_ppxs
+
+let add_external_ppx ~path =
+  installed_ppxs := (External path) :: !installed_ppxs
+
+let add_in_process_ppx ident mapper =
+  installed_ppxs := (InProcess (ident, mapper)) :: !installed_ppxs
+
+let apply_rewriters_main ?(restore = true) ~tool_name kind ast =
+  let add_ctx_kind (type a) ~tool_name : a ast_kind -> a -> a = function
+    | Structure -> Ast_mapper.add_ppx_context_str ~tool_name
+    | Signature -> Ast_mapper.add_ppx_context_sig ~tool_name
+  in
+  let drop_ctx_kind (type a) ~restore : a ast_kind -> a -> a = function
+    | Structure -> Ast_mapper.drop_ppx_context_str ~restore
+    | Signature -> Ast_mapper.drop_ppx_context_sig ~restore
+  in
+
+  let make_mapper (type a) mapper : a ast_kind -> a -> a = function
+    | Structure -> mapper.Ast_mapper.structure mapper
+    | Signature -> mapper.Ast_mapper.signature mapper
+  in
+  let apply_externals kind ast = function
+    | [] -> ast
+    | pps ->
+        ast
+        |> add_ctx_kind ~tool_name kind
+        |> rewrite kind pps
+        |> drop_ctx_kind ~restore kind
+  in
+
+  let rec helper collected ast pps =
+    match pps with
+    | External path :: tl -> helper (path::collected) ast tl
+    | [] -> apply_externals kind ast collected
+    | (InProcess (_,mapper)) :: tl ->
+        let ast = apply_externals kind ast collected in
+        let old_tool_name = Ast_mapper.tool_name () in
+        Ast_mapper.set_tool_name tool_name;
+        let ast = make_mapper mapper kind ast in
+        Ast_mapper.set_tool_name old_tool_name;
+        helper [] ast tl
+  in
+  helper [] ast (List.rev !installed_ppxs)
+
+(* This two functions seems not to be used in the codebase *)
+let apply_rewriters_sig ?(restore = true) = apply_rewriters_main ~restore Signature
+let apply_rewriters_str ?(restore = true) = apply_rewriters_main ~restore Structure
 
 let apply_rewriters ?restore ~tool_name
     (type a) (kind : a ast_kind) (ast : a) : a =
   match kind with
   | Structure ->
-      apply_rewriters_str ?restore ~tool_name ast
+      apply_rewriters_main ?restore ~tool_name Structure ast
   | Signature ->
-      apply_rewriters_sig ?restore ~tool_name ast
+      apply_rewriters_main ?restore ~tool_name Signature ast
 
 (* Parse a file or get a dumped syntax tree from it *)
 
