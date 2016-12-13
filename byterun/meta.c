@@ -47,16 +47,13 @@ CAMLprim value caml_get_section_table(value unit)
 
 CAMLprim value caml_reify_bytecode(value prog, value len)
 {
-  value clos;
 #ifdef ARCH_BIG_ENDIAN
   caml_fixup_endianness((code_t) prog, (asize_t) Long_val(len));
 #endif
 #ifdef THREADED_CODE
   caml_thread_code((code_t) prog, (asize_t) Long_val(len));
 #endif
-  clos = caml_alloc_small (1, Closure_tag);
-  Init_field(clos, 0, Val_bytecode(prog));
-  return clos;
+  return caml_alloc_1(Closure_tag, Val_bytecode(prog));
 }
 
 CAMLprim value caml_register_code_fragment(value prog, value len, value digest)
@@ -72,9 +69,10 @@ CAMLprim value caml_register_code_fragment(value prog, value len, value digest)
 
 CAMLprim value caml_realloc_global(value size)
 {
+  CAMLparam1(size);
+  CAMLlocal2(old_global_data, new_global_data);
   mlsize_t requested_size, actual_size, i;
-  value old_global_data = caml_read_root(caml_global_data);
-  value new_global_data;
+  old_global_data = caml_read_root(caml_global_data);
 
   requested_size = Long_val(size);
   actual_size = Wosize_val(old_global_data);
@@ -90,7 +88,7 @@ CAMLprim value caml_realloc_global(value size)
     }
     caml_modify_root(caml_global_data, new_global_data);
   }
-  return Val_unit;
+  CAMLreturn (Val_unit);
 }
 
 CAMLprim value caml_get_current_environment(value unit)

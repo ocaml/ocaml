@@ -84,7 +84,7 @@ CAMLprim value caml_obj_dup(value arg)
     memcpy(Bp_val(res), Bp_val(arg), sz * sizeof(value));
   } else if (sz <= Max_young_wosize) {
     res = caml_alloc_small(sz, tg);
-    for (i = 0; i < sz; i++) Init_field(res, i, Field(arg, i));
+    for (i = 0; i < sz; i++) caml_initialize_field(res, i, Field(arg, i));
   } else {
     res = caml_alloc_shr(sz, tg);
     for (i = 0; i < sz; i++) caml_initialize_field(res, i, Field(arg, i));
@@ -104,7 +104,9 @@ CAMLprim value caml_obj_add_offset (value v, value offset)
 
 CAMLprim value caml_obj_compare_and_swap (value v, value f, value oldv, value newv)
 {
-  return Val_int(caml_atomic_cas_field(v, Int_val(f), oldv, newv));
+  int res = caml_atomic_cas_field(v, Int_val(f), oldv, newv);
+  caml_check_urgent_gc(Val_unit);
+  return Val_int(res);
 }
 
 /* caml_promote_to(obj, upto) promotes obj to be as least as shared as upto */
@@ -143,7 +145,7 @@ CAMLprim value caml_lazy_make_forward (value v)
   CAMLlocal1 (res);
 
   res = caml_alloc_small (1, Forward_tag);
-  Init_field (res, 0, v);
+  caml_initialize_field (res, 0, v);
   CAMLreturn (res);
 }
 

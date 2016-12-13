@@ -38,13 +38,16 @@ CAMLexport value caml_alloc (mlsize_t wosize, tag_t tag)
   }else if (wosize <= Max_young_wosize){
     Alloc_small (result, wosize, tag, { caml_handle_gc_interrupt(); });
     if (tag < No_scan_tag){
-      for (i = 0; i < wosize; i++) Init_field (result, i, Val_unit);
+      for (i = 0; i < wosize; i++) {
+        value init_val = Val_unit;
+        #ifdef DEBUG
+          init_val = Debug_uninit_minor;
+        #endif
+        Op_val(result)[i] = init_val;
+      }
     }
   }else{
     result = caml_alloc_shr (wosize, tag);
-    if (tag < No_scan_tag){
-      for (i = 0; i < wosize; i++) Op_val(result)[i] = Val_unit;
-    }
     if (tag == Stack_tag) Stack_sp(result) = 0;
     result = caml_check_urgent_gc (result);
   }
@@ -155,13 +158,7 @@ CAMLexport value caml_alloc_N (mlsize_t wosize, tag_t tag, ...)
 
 CAMLexport value caml_alloc_small (mlsize_t wosize, tag_t tag)
 {
-  value result;
-
-  Assert (wosize > 0);
-  Assert (wosize <= Max_young_wosize);
-  Assert (tag < 256);
-  Alloc_small (result, wosize, tag, { caml_handle_gc_interrupt(); });
-  return result;
+  return caml_alloc(wosize, tag);
 }
 
 CAMLexport value caml_alloc_tuple(mlsize_t n)

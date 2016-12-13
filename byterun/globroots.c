@@ -45,7 +45,8 @@ static value roots_all = Val_unit;
 CAMLexport caml_root caml_create_root(value init)
 {
   CAMLparam1(init);
-  value v = caml_alloc_shr(3, 0);
+  CAMLlocal1(v);
+  v = caml_alloc_shr(3, 0);
   caml_initialize_field(v, 0, init);
   caml_initialize_field(v, 1, Val_int(1));
 
