@@ -634,7 +634,8 @@ section~\ref{s:explicit-overriding}.
 \ikwd{with\@\texttt{with}}
 
 (Introduced in OCaml 3.12; pattern syntax and package type inference
-introduced in 4.00; structural comparison of package types introduced in 4.02.)
+introduced in 4.00; structural comparison of package types introduced in 4.02.;
+fewer parens required starting from 4.05)
 
 \begin{syntax}
 typexpr:
@@ -678,6 +679,8 @@ evaluates the core language expression @expr@ to a value, which must
 have type @'module' package-type@, and extracts the module that was
 encapsulated in this value. Again @package-type@ can be omitted if the
 type of @expr@ is known.
+If the module expression is already parenthesized, like the arguments
+of functors are, no additional parens are needed: "Map.Make(val key)".
 
 The pattern @'(' 'module' module-name ':' package-type ')'@ matches a
 package with type @package-type@ and binds it to @module-name@.
