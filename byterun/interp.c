@@ -109,8 +109,24 @@ sp is a local copy of the global variable caml_extern_sp. */
   goto dispatch_instr
 #endif
 
+
 /* Initialising fields of objects just allocated with Alloc_small */
 #define Init_field(o, i, x) Op_val(o)[i] = (x)
+
+/* Inlined read barrier for interpreter loop.
+   Does 'accu = accu[i]' */
+#define Accu_field(i) do {                    \
+    int idx = (i);                            \
+    value field_contents = Op_val(accu)[idx]; \
+    if (Is_foreign(field_contents)) {         \
+      Setup_for_gc;                           \
+      value r = caml_read_barrier(accu, idx); \
+      Restore_after_gc;                       \
+      accu = r;                               \
+    } else {                                  \
+      accu = field_contents;                  \
+    }                                         \
+  } while (0)
 
 /* Register optimization.
    Some compilers underestimate the use of the local variables representing
@@ -533,8 +549,8 @@ value caml_interprete(code_t prog, asize_t prog_size)
       int num_args = Wosize_val(env) - 2;
       int i;
       sp -= num_args;
-      for (i = 0; i < num_args; i++) sp[i] = Field(env, i + 2);
-      env = Field(env, 1);
+      for (i = 0; i < num_args; i++) sp[i] = Field_imm(env, i + 2);
+      env = Field_imm(env, 1);
       extra_args += num_args;
       Next;
     }
@@ -611,7 +627,7 @@ value caml_interprete(code_t prog, asize_t prog_size)
       sp += nvars;
       /* The code pointers and infix headers are not in the heap,
          so no need to go through caml_initialize. */
-      caml_initialize_field(accu, 0, Val_bytecode(pc + pc[0]));
+      Init_field(accu, 0, Val_bytecode(pc + pc[0]));
       *--sp = accu;
       field = 1;
       for (i = 1; i < nfuncs; i++) {
@@ -650,7 +666,7 @@ value caml_interprete(code_t prog, asize_t prog_size)
       *--sp = accu;
       /* Fallthrough */
     Instruct(GETGLOBAL):
-      accu = Field(caml_read_root(caml_global_data), *pc);
+      accu = Field_imm(caml_read_root(caml_global_data), *pc);
       pc++;
       Next;
 
@@ -658,9 +674,9 @@ value caml_interprete(code_t prog, asize_t prog_size)
       *--sp = accu;
       /* Fallthrough */
     Instruct(GETGLOBALFIELD): {
-      accu = Field(caml_read_root(caml_global_data), *pc);
+      accu = Field_imm(caml_read_root(caml_global_data), *pc);
       pc++;
-      accu = Field(accu, *pc);
+      Accu_field(*pc);
       pc++;
       Next;
     }
@@ -772,31 +788,15 @@ value caml_interprete(code_t prog, asize_t prog_size)
     Instruct(GETFIELD):
       accu = Field_imm(accu, *pc); pc++; Next;
     Instruct(GETMUTABLEFIELD0):
-      Setup_for_c_call;
-      accu = Field(accu, 0);
-      Restore_after_c_call;
-      Next;
+      Accu_field(0); Next;
     Instruct(GETMUTABLEFIELD1):
-      Setup_for_c_call;
-      accu = Field(accu, 1);
-      Restore_after_c_call;
-      Next;
+      Accu_field(1); Next;
     Instruct(GETMUTABLEFIELD2):
-      Setup_for_c_call;
-      accu = Field(accu, 2);
-      Restore_after_c_call;
-      Next;
+      Accu_field(2); Next;
     Instruct(GETMUTABLEFIELD3):
-      Setup_for_c_call;
-      accu = Field(accu, 3);
-      Restore_after_c_call;
-      Next;
+      Accu_field(3); Next;
     Instruct(GETMUTABLEFIELD):
-      Setup_for_c_call;
-      accu = Field(accu, *pc);
-      Restore_after_c_call;
-      pc++;
-      Next;
+      Accu_field(*pc); pc++; Next;
     Instruct(GETFLOATFIELD): {
       double d = Double_field(accu, *pc);
       Alloc_small(accu, Double_wosize, Double_tag, Enter_gc);
@@ -842,7 +842,7 @@ value caml_interprete(code_t prog, asize_t prog_size)
       Next;
     }
     Instruct(GETVECTITEM):
-      accu = Field(accu, Long_val(sp[0]));
+      Accu_field(Long_val(sp[0]));
       sp += 1;
       Next;
     Instruct(SETVECTITEM):
@@ -1138,10 +1138,9 @@ value caml_interprete(code_t prog, asize_t prog_size)
       pc++;
       Next;
     Instruct(OFFSETREF): {
-        value v = Field(accu, 0);
-        Assert(!Is_block(v));
-        v += *pc << 1;
-        Op_val(accu)[0] = v; /* ?? */
+        long n = Long_field(accu, 0);
+        n += *pc;
+        caml_modify_field(accu, 0, Val_long(n));
       }
       accu = Val_unit;
       pc++;
@@ -1152,21 +1151,19 @@ value caml_interprete(code_t prog, asize_t prog_size)
 
 /* Object-oriented operations */
 
-#define Lookup(obj, lab) Field (Field (obj, 0), Int_val(lab))
-
       /* please don't forget to keep below code in sync with the
          functions caml_cache_public_method and
          caml_cache_public_method2 in obj.c */
 
     Instruct(GETMETHOD):
-      accu = Lookup(sp[0], accu);
+      accu = Field_imm (Field_imm(sp[0], 0), Int_val(accu));
       Next;
 
 #define CAML_METHOD_CACHE
 #ifdef CAML_METHOD_CACHE
     Instruct(GETPUBMET): {
       /* accu == object, pc[0] == tag, pc[1] == cache */
-      value meths = Field (accu, 0);
+      value meths = Field_imm (accu, 0);
       value ofs;
 #ifdef CAML_TEST_CACHE
       static int calls = 0, hits = 0;
@@ -1178,7 +1175,7 @@ value caml_interprete(code_t prog, asize_t prog_size)
 #endif
       *--sp = accu;
       accu = Val_int(*pc++);
-      ofs = *pc & Field(meths,1);
+      ofs = *pc & Field_imm(meths,1);
       if (*(value*)(((char*)(Op_val(meths)+3)) + ofs) == accu) {
 #ifdef CAML_TEST_CACHE
         hits++;
@@ -1187,14 +1184,14 @@ value caml_interprete(code_t prog, asize_t prog_size)
       }
       else
       {
-        int li = 3, hi = Field(meths,0), mi;
+        int li = 3, hi = Field_imm(meths,0), mi;
         while (li < hi) {
           mi = ((li+hi) >> 1) | 1;
-          if (accu < Field(meths,mi)) hi = mi-2;
+          if (accu < Field_imm(meths,mi)) hi = mi-2;
           else li = mi;
         }
         *pc = (li-3)*sizeof(value);
-        accu = Field (meths, li-1);
+        accu = Field_imm (meths, li-1);
       }
       pc++;
       Next;
@@ -1208,14 +1205,14 @@ value caml_interprete(code_t prog, asize_t prog_size)
 #endif
     Instruct(GETDYNMET): {
       /* accu == tag, sp[0] == object, *pc == cache */
-      value meths = Field (sp[0], 0);
-      int li = 3, hi = Field(meths,0), mi;
+      value meths = Field_imm (sp[0], 0);
+      int li = 3, hi = Field_imm (meths,0), mi;
       while (li < hi) {
         mi = ((li+hi) >> 1) | 1;
-        if (accu < Field(meths,mi)) hi = mi-2;
+        if (accu < Field_imm (meths,mi)) hi = mi-2;
         else li = mi;
       }
-      accu = Field (meths, li-1);
+      accu = Field_imm (meths, li-1);
       Next;
     }
 
@@ -1286,7 +1283,7 @@ do_resume:
       value heff = Stack_handle_effect(caml_domain_state->current_stack);
 
       if (parent_stack == Val_long(0)) {
-        accu = Field(caml_read_root(caml_global_data), UNHANDLED_EXN);
+        accu = Field_imm(caml_read_root(caml_global_data), UNHANDLED_EXN);
         goto raise_exception;
       }
 
@@ -1325,7 +1322,7 @@ do_resume:
       if (parent == Val_long(0)) {
         accu = performer;
         resume_fn = caml_read_root(raise_unhandled);
-        resume_arg = Field(caml_read_root(caml_global_data), UNHANDLED_EXN);
+        resume_arg = Field_imm(caml_read_root(caml_global_data), UNHANDLED_EXN);
         goto do_resume;
       }
 

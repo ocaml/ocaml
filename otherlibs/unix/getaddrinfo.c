@@ -77,18 +77,18 @@ CAMLprim value unix_getaddrinfo(value vnode, value vserv, value vopts)
   /* Parse options, set hints */
   memset(&hints, 0, sizeof(hints));
   hints.ai_family = PF_UNSPEC;
-  for (/*nothing*/; Is_block(vopts); vopts = Field(vopts, 1)) {
-    v = Field(vopts, 0);
+  for (/*nothing*/; Is_block(vopts); vopts = Field_imm(vopts, 1)) {
+    v = Field_imm(vopts, 0);
     if (Is_block(v))
       switch (Tag_val(v)) {
       case 0:                   /* AI_FAMILY of socket_domain */
-        hints.ai_family = socket_domain_table[Int_val(Field(v, 0))];
+        hints.ai_family = socket_domain_table[Int_val(Field_imm(v, 0))];
         break;
       case 1:                   /* AI_SOCKTYPE of socket_type */
-        hints.ai_socktype = socket_type_table[Int_val(Field(v, 0))];
+        hints.ai_socktype = socket_type_table[Int_val(Field_imm(v, 0))];
         break;
       case 2:                   /* AI_PROTOCOL of int */
-        hints.ai_protocol = Int_val(Field(v, 0));
+        hints.ai_protocol = Int_val(Field_imm(v, 0));
         break;
       }
     else

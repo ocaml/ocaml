@@ -21,16 +21,10 @@
 
 static value alloc_process_status(HANDLE pid, int status)
 {
-  value res, st;
+  value st;
 
-  st = alloc(1, 0);
-  Field(st, 0) = Val_int(status);
-  Begin_root (st);
-    res = alloc_small(2, 0);
-    Field(res, 0) = Val_long((intnat) pid);
-    Field(res, 1) = st;
-  End_roots();
-  return res;
+  st = caml_alloc_1(0, Val_int(status));
+  return caml_alloc_2(0, Val_long((intnat) pid), st);
 }
 
 enum { CAML_WNOHANG = 1, CAML_WUNTRACED = 2 };

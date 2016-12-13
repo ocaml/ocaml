@@ -25,7 +25,7 @@ CAMLprim value unix_error_message(value err)
   int errnum;
   char buffer[512];
 
-  errnum = Is_block(err) ? Int_val(Field(err, 0)) : error_table[Int_val(err)];
+  errnum = Is_block(err) ? Int_field(err, 0) : error_table[Int_val(err)];
   if (errnum > 0)
     return copy_string(strerror(errnum));
   if (FormatMessage(FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,

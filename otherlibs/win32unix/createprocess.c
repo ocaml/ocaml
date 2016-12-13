@@ -28,7 +28,7 @@ value win_create_process_native(value cmd, value cmdline, value env,
 
   exefile = search_exe_in_path(String_val(cmd));
   if (env != Val_int(0)) {
-    envp = String_val(Field(env, 0));
+    envp = String_val(Field_imm(env, 0));
   } else {
     envp = NULL;
   }
