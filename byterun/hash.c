@@ -180,13 +180,14 @@ CAMLexport uint32 caml_hash_mix_string(uint32 h, value s)
 
 CAMLprim value caml_hash(value count, value limit, value seed, value obj)
 {
-  value queue[HASH_QUEUE_SIZE]; /* Queue of values to examine */
+  CAMLparam4(count, limit, seed, obj);
+  CAMLlocalN(queue, HASH_QUEUE_SIZE); /* Queue of values to examine */
   intnat rd;                    /* Position of first value in queue */
   intnat wr;                    /* One past position of last value in queue */
   intnat sz;                    /* Max number of values to put in queue */
   intnat num;                   /* Max number of meaningful values to see */
   uint32 h;                     /* Rolling hash */
-  value v;
+  CAMLlocal1(v);
   mlsize_t i, len;
 
   sz = Long_val(limit);
@@ -266,7 +267,7 @@ CAMLprim value caml_hash(value count, value limit, value seed, value obj)
         /* Copy fields into queue, not exceeding the total size [sz] */
         for (i = 0, len = Wosize_val(v); i < len; i++) {
           if (wr >= sz) break;
-          queue[wr++] = Field(v, i);
+          caml_read_field(v, i, &queue[wr++]);
         }
         break;
       }
@@ -276,7 +277,7 @@ CAMLprim value caml_hash(value count, value limit, value seed, value obj)
   FINAL_MIX(h);
   /* Fold result to the range [0, 2^30-1] so that it is a nonnegative
      OCaml integer both on 32 and 64-bit platforms. */
-  return Val_int(h & 0x3FFFFFFFU);
+  CAMLreturn (Val_int(h & 0x3FFFFFFFU));
 }
 
 CAMLprim value caml_hash_univ_param(value count, value limit, value obj)

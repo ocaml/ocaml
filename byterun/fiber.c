@@ -482,7 +482,7 @@ CAMLprim value caml_clone_continuation (value cont)
     caml_invalid_argument ("continuation already taken");
 
   prev_target = Val_unit;
-  source = Field (cont, 0);
+  caml_read_field(cont, 0, &source);
 
   do {
     Assert (Is_block (source) && Tag_val(source) == Stack_tag);

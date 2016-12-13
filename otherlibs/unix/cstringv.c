@@ -17,12 +17,17 @@
 
 char ** cstringvect(value arg)
 {
+  CAMLparam1 (arg);
+  CAMLlocal1 (x);
   char ** res;
   mlsize_t size, i;
 
   size = Wosize_val(arg);
   res = (char **) caml_stat_alloc((size + 1) * sizeof(char *));
-  for (i = 0; i < size; i++) res[i] = String_val(Field(arg, i));
+  for (i = 0; i < size; i++) {
+    caml_read_field(arg, i, &x);
+    res[i] = String_val(x);
+  }
   res[size] = NULL;
-  return res;
+  CAMLreturnT (char**, res);
 }

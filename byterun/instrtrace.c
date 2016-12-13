@@ -149,7 +149,7 @@ caml_trace_value_file (value v, code_t prog, int proglen, FILE * f)
         };
         if (i > 0)
           putc (' ', f);
-        fprintf (f, "%#lx", Field (v, i));
+        fprintf (f, "%#lx", Op_val (v)[i]);
       };
       if (s > 0)
         putc (')', f);

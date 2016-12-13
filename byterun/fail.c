@@ -99,7 +99,7 @@ static value get_exception(int exn, const char* exn_name)
     fprintf(stderr, "Fatal error %s during domain creation\n", exn_name);
     exit(2);
   }
-  return Field(caml_read_root(caml_global_data), exn);
+  return Field_imm(caml_read_root(caml_global_data), exn);
 }
 
 #define GET_EXCEPTION(exn) get_exception(exn, #exn)

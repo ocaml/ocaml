@@ -65,15 +65,15 @@ CAMLprim value unix_mktime(value t)
   value tmval = Val_unit, clkval = Val_unit;
 
   Begin_roots2(tmval, clkval);
-    tm.tm_sec = Int_val(Field(t, 0));
-    tm.tm_min = Int_val(Field(t, 1));
-    tm.tm_hour = Int_val(Field(t, 2));
-    tm.tm_mday = Int_val(Field(t, 3));
-    tm.tm_mon = Int_val(Field(t, 4));
-    tm.tm_year = Int_val(Field(t, 5));
-    tm.tm_wday = Int_val(Field(t, 6));
-    tm.tm_yday = Int_val(Field(t, 7));
-    tm.tm_isdst = -1; /* tm.tm_isdst = Bool_val(Field(t, 8)); */
+    tm.tm_sec = Int_field(t, 0);
+    tm.tm_min = Int_field(t, 1);
+    tm.tm_hour = Int_field(t, 2);
+    tm.tm_mday = Int_field(t, 3);
+    tm.tm_mon = Int_field(t, 4);
+    tm.tm_year = Int_field(t, 5);
+    tm.tm_wday = Int_field(t, 6);
+    tm.tm_yday = Int_field(t, 7);
+    tm.tm_isdst = -1; /* tm.tm_isdst = Bool_val(Field_imm(t, 8)); */
     clock = mktime(&tm);
     if (clock == (time_t) -1) unix_error(ERANGE, "mktime", Nothing);
     tmval = alloc_tm(&tm);

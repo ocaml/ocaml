@@ -253,7 +253,7 @@ static void decode_terminal_status(value v, int field)
     case Bool:
       { int * dst = (int *) (*pc++);
         int msk = *pc++;
-        if (Bool_val(Field(v, field)))
+        if (Bool_field(v, field))
           *dst |= msk;
         else
           *dst &= ~msk;
@@ -263,7 +263,7 @@ static void decode_terminal_status(value v, int field)
         int ofs = *pc++;
         int num = *pc++;
         int msk = *pc++;
-        i = Int_val(Field(v, field)) - ofs;
+        i = Int_field(v, field) - ofs;
         if (i >= 0 && i < num) {
           *dst = (*dst & ~msk) | pc[i];
         } else {
@@ -273,7 +273,7 @@ static void decode_terminal_status(value v, int field)
         break; }
     case Speed:
       { int which = *pc++;
-        int baud = Int_val(Field(v, field));
+        int baud = Int_field(v, field);
         int res = 0;
         for (i = 0; i < NSPEEDS; i++) {
           if (baud == speedtable[i].baud) {
@@ -292,7 +292,7 @@ static void decode_terminal_status(value v, int field)
         break; }
     case Char:
       { int which = *pc++;
-        terminal_status.c_cc[which] = Int_val(Field(v, field));
+        terminal_status.c_cc[which] = Int_field(v, field);
         break; }
     }
   }

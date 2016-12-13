@@ -200,7 +200,7 @@ CAMLprim value caml_ba_create(value vkind, value vlayout, value vdim)
   if (num_dims < 1 || num_dims > CAML_BA_MAX_NUM_DIMS)
     caml_invalid_argument("Bigarray.create: bad number of dimensions");
   for (i = 0; i < num_dims; i++) {
-    dim[i] = Long_val(Field(vdim, i));
+    dim[i] = Long_field(vdim, i);
     if (dim[i] < 0)
       caml_invalid_argument("Bigarray.create: negative dimension");
   }
@@ -1050,14 +1050,14 @@ CAMLprim value caml_ba_slice(value vb, value vind)
   /* Compute offset and check bounds */
   if ((b->flags & CAML_BA_LAYOUT_MASK) == CAML_BA_C_LAYOUT) {
     /* We slice from the left */
-    for (i = 0; i < num_inds; i++) index[i] = Long_val(Field(vind, i));
+    for (i = 0; i < num_inds; i++) index[i] = Long_field(vind, i);
     for (/*nothing*/; i < b->num_dims; i++) index[i] = 0;
     offset = caml_ba_offset(b, index);
     sub_dims = b->dim + num_inds;
   } else {
     /* We slice from the right */
     for (i = 0; i < num_inds; i++)
-      index[b->num_dims - num_inds + i] = Long_val(Field(vind, i));
+      index[b->num_dims - num_inds + i] = Long_field(vind, i);
     for (i = 0; i < b->num_dims - num_inds; i++) index[i] = 1;
     offset = caml_ba_offset(b, index);
     sub_dims = b->dim;
@@ -1240,7 +1240,7 @@ CAMLprim value caml_ba_reshape(value vb, value vdim)
     caml_invalid_argument("Bigarray.reshape: bad number of dimensions");
   num_elts = 1;
   for (i = 0; i < num_dims; i++) {
-    dim[i] = Long_val(Field(vdim, i));
+    dim[i] = Long_field(vdim, i);
     if (dim[i] < 0)
       caml_invalid_argument("Bigarray.reshape: negative dimension");
     num_elts *= dim[i];

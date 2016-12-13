@@ -28,6 +28,7 @@ CAMLexport value caml_alloc_custom(const struct custom_operations * ops,
   value result;
 
   wosize = 1 + (size + sizeof(value) - 1) / sizeof(value);
+  /* FIXME: what about custom finalizers on the minor heap? */
   if (ops->finalize == NULL && wosize <= Max_young_wosize) {
     result = caml_alloc_small(wosize, Custom_tag);
     Custom_ops_val(result) = ops;

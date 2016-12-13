@@ -13,8 +13,8 @@
 
 include Makefile.common
 
-CFLAGS=-DCAML_NAME_SPACE $(BYTECCCOMPOPTS) $(IFLEXDIR)
-DFLAGS=-DCAML_NAME_SPACE -g -DDEBUG $(BYTECCCOMPOPTS) $(IFLEXDIR) -Werror-implicit-function-declaration
+CFLAGS=-DCAML_NAME_SPACE $(BYTECCCOMPOPTS) $(IFLEXDIR) -ggdb
+DFLAGS=-DCAML_NAME_SPACE -ggdb -DDEBUG $(BYTECCCOMPOPTS) $(IFLEXDIR) -Werror-implicit-function-declaration
 
 OBJS=$(COMMONOBJS) $(UNIX_OR_WIN32).o main.o
 DOBJS=$(OBJS:.o=.d.o) instrtrace.d.o

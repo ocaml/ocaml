@@ -110,7 +110,7 @@ CAMLprim value caml_ba_map_file(value vfd, value vkind, value vlayout,
   if (num_dims < 1 || num_dims > CAML_BA_MAX_NUM_DIMS)
     caml_invalid_argument("Bigarray.mmap: bad number of dimensions");
   for (i = 0; i < num_dims; i++) {
-    dim[i] = Long_val(Field(vdim, i));
+    dim[i] = Long_field(vdim, i);
     if (dim[i] == -1 && i == major_dim) continue;
     if (dim[i] < 0)
       caml_invalid_argument("Bigarray.create: negative dimension");

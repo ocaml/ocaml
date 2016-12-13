@@ -345,7 +345,7 @@ static value intern_rec(mlsize_t whsize, mlsize_t num_objects)
     case OFreshOID:
       /* Refresh the object ID */
       /* but do not do it for predefined exception slots */
-      if (Int_val(Field(dest, 1)) >= 0)
+      if (Int_field(dest, 1) >= 0)
         caml_set_oo_id(dest);
       /* Pop item and iterate */
       stack_pop(&S);
