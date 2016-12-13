@@ -388,6 +388,32 @@ command line.}
 }%notop
 
 \notop{%
+\item["-opaque"]
+When the native compiler compiles a module, by default it produces
+a ".cmx" file containing information for cross-module optimization. It
+also expects ".cmx" files to be present for the dependencies of the
+currently compiled module, and uses them for optimization. Since OCaml
+4.03, the compiler will emit a warning if it is unable to locate the
+".cmx" file of one of those dependencies.
+
+The "-opaque" option, available since 4.04, disables cross-module
+optimization information for a module. When producing a compiled
+interface (".cmi"), using "-opaque" marks the module as opaque;
+subsequent compilations that depend on this module will not warn about
+absence of ".cmx" file. When the native compiler produces an object
+file (".o"), using "-opaque" disables generation of cross-module
+optimization information.
+
+Using this option may degrade the quality of generated code, but it
+reduces the necessary recompilation. With the native compiler, when
+the implementation of a module changes, all the modules that depend on
+it need to be recompiled -- because the cross-module information may
+have changed. If the module was compiled with "-opaque", no such
+recompilation needs to occur. This option can thus be interesting, for
+example, to get faster edit-compile-test feedback loops.
+}%notop
+
+\notop{%
 \item["-open" \var{Module}]
 Opens the given module before processing the interface or
 implementation files. If several "-open" options are given,
