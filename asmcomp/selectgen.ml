@@ -219,8 +219,9 @@ method is_simple_expr = function
   | Csequence(e1, e2) -> self#is_simple_expr e1 && self#is_simple_expr e2
   | Cop(op, args, _dbg) ->
       begin match op with
-        (* The following may have side effects *)
-      | Capply _ | Cextcall _ | Calloc | Cstore _ | Craise _ -> false
+        (* The following may have effects or coeffects *)
+      | Capply _ | Cextcall _ | Calloc | Cload _ | Cstore _ | Craise _
+      | Ccheckbound -> false
         (* The remaining operations are simple if their args are *)
       | _ ->
           List.for_all self#is_simple_expr args

@@ -185,6 +185,10 @@ Next version (4.05.0):
   by zero.
   (Jeremy Yallop)
 
+- PR#7346, GPR#966: One example of evaluation order in the native code
+  compiler not matching the bytecode compiler
+  (Mark Shinwell)
+
 Next minor version (4.04.1):
 ----------------------------
 
