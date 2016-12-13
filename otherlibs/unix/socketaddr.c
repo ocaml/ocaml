@@ -105,19 +105,16 @@ value alloc_sockaddr(union sock_addr_union * adr /*in*/,
 #ifndef _WIN32
   case AF_UNIX:
     { value n = copy_string(adr->s_unix.sun_path);
-      Begin_root (n);
-        res = alloc_small(1, 0);
-        Init_field(res, 0, n);
-      End_roots();
+      res = caml_alloc_1(0, n);
       break;
     }
 #endif
   case AF_INET:
     { value a = alloc_inet_addr(&adr->s_inet.sin_addr);
       Begin_root (a);
-        res = alloc_small(2, 1);
-        Init_field(res, 0, a);
-        Init_field(res, 1, Val_int(ntohs(adr->s_inet.sin_port)));
+        res = caml_alloc_2(1,
+          a,
+          Val_int(ntohs(adr->s_inet.sin_port)));
       End_roots();
       break;
     }
@@ -125,9 +122,9 @@ value alloc_sockaddr(union sock_addr_union * adr /*in*/,
   case AF_INET6:
     { value a = alloc_inet6_addr(&adr->s_inet6.sin6_addr);
       Begin_root (a);
-        res = alloc_small(2, 1);
-        Init_field(res, 0, a);
-        Init_field(res, 1, Val_int(ntohs(adr->s_inet6.sin6_port)));
+        res = caml_alloc_2(1,
+          a,
+          Val_int(ntohs(adr->s_inet6.sin6_port)));
       End_roots();
       break;
     }

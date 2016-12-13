@@ -359,11 +359,11 @@ static value re_alloc_groups(value re, value str)
   for (i = 0; i < n; i++) {
     group = &(re_group[i]);
     if (group->start == NULL || group->end == NULL) {
-      Init_field(res, i * 2, Val_int(-1));
-      Init_field(res, i * 2 + 1, Val_int(-1));
+      caml_initialize_field(res, i * 2, Val_int(-1));
+      caml_initialize_field(res, i * 2 + 1, Val_int(-1));
     } else {
-      Init_field(res, i * 2, Val_long(group->start - starttxt));
-      Init_field(res, i * 2 + 1, Val_long(group->end - starttxt));
+      caml_initialize_field(res, i * 2, Val_long(group->start - starttxt));
+      caml_initialize_field(res, i * 2 + 1, Val_long(group->end - starttxt));
     }
   }
   CAMLreturn(res);

@@ -54,9 +54,22 @@ CAMLexport void caml_modify_field (value obj, int field, value val)
 
 CAMLexport void caml_initialize_field (value obj, int field, value val)
 {
-  /* FIXME: there are more efficient implementations of this */
-  Op_val(obj)[field] = Val_long(0);
-  caml_modify_field(obj, field, val);
+  Assert(Is_block(obj));
+  Assert(!Is_foreign(obj));
+  Assert(0 <= field && field < Wosize_val(obj));
+#ifdef DEBUG
+  /* caml_initialize_field can only be used on just-allocated objects */
+  if (Is_young(obj)) Assert(Op_val(obj)[field] == Debug_uninit_minor);
+  else Assert(Op_val(obj)[field] == Debug_uninit_major);
+#endif
+
+  if (!Is_young(obj) && Is_young(val)) {
+    Begin_root(obj);
+    val = caml_promote(caml_domain_self(), val);
+    End_roots();
+  }
+  write_barrier(obj, field, val);
+  Op_val(obj)[field] = val;
 }
 
 CAMLexport int caml_atomic_cas_field (value obj, int field, value oldval, value newval)
@@ -143,6 +156,17 @@ CAMLexport value caml_alloc_shr (mlsize_t wosize, tag_t tag)
     caml_urge_major_slice();
   }
 
+  if (tag < No_scan_tag) {
+    mlsize_t i;
+    for (i = 0; i < wosize; i++) {
+      value init_val = Val_unit;
+      #ifdef DEBUG
+      init_val = Debug_uninit_major;
+      #endif
+      Op_hp(v)[i] = init_val;
+    }
+  }
+
   return Val_hp(v);
 }
 
@@ -204,13 +228,7 @@ CAMLexport value caml_read_barrier(value obj, int field)
 
 CAMLprim value caml_bvar_create(value v)
 {
-  CAMLparam1(v);
-
-  value bv = caml_alloc_small(2, 0);
-  Init_field(bv, 0, v);
-  Init_field(bv, 1, Val_long(caml_domain_self()->id));
-
-  CAMLreturn (bv);
+  return caml_alloc_2(0, v, Val_long(caml_domain_self()->id));
 }
 
 struct bvar_transfer_req {

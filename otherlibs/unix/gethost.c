@@ -71,18 +71,16 @@ static value alloc_host_entry(struct hostent *entry)
     addr_list = alloc_array(alloc_one_addr, (const char**)entry->h_addr_list);
 #else
     adr = alloc_one_addr(entry->h_addr);
-    addr_list = alloc_small(1, 0);
-    Init_field(addr_list, 0, adr);
+    addr_list = caml_alloc_1(0, adr);
 #endif
-    res = alloc_small(4, 0);
-    Init_field(res, 0, name);
-    Init_field(res, 1, aliases);
+    int addrtype;
     switch (entry->h_addrtype) {
-    case PF_UNIX:          Init_field(res, 2, Val_int(0)); break;
-    case PF_INET:          Init_field(res, 2, Val_int(1)); break;
-    default: /*PF_INET6 */ Init_field(res, 2, Val_int(2)); break;
+    case PF_UNIX:          addrtype = 0; break;
+    case PF_INET:          addrtype = 1; break;
+    default: /*PF_INET6 */ addrtype = 2; break;
     }
-    Init_field(res, 3, addr_list);
+    res = caml_alloc_4(0, name, aliases,
+                       Val_int(addrtype), addr_list);
   End_roots();
   return res;
 }

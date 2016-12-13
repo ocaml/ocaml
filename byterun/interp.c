@@ -109,6 +109,9 @@ sp is a local copy of the global variable caml_extern_sp. */
   goto dispatch_instr
 #endif
 
+/* Initialising fields of objects just allocated with Alloc_small */
+#define Init_field(o, i, x) Op_val(o)[i] = (x)
+
 /* Register optimization.
    Some compilers underestimate the use of the local variables representing
    the abstract machine registers, and don't put them in hardware registers,
@@ -238,9 +241,8 @@ value caml_interprete(code_t prog, asize_t prog_size)
                      sizeof(raise_unhandled_code));
 #endif
     value raise_unhandled_closure =
-      caml_alloc_small(1, Closure_tag);
-    Init_field(raise_unhandled_closure, 0,
-               Val_bytecode(raise_unhandled_code));
+      caml_alloc_1(Closure_tag,
+                   Val_bytecode(raise_unhandled_code));
     raise_unhandled = caml_create_root(raise_unhandled_closure);
     caml_global_data = caml_create_root(Val_unit);
     caml_init_callbacks();
@@ -362,28 +364,28 @@ value caml_interprete(code_t prog, asize_t prog_size)
 /* Access in heap-allocated environment */
 
     Instruct(ENVACC1):
-      accu = FieldImm(env, 1); Next;
+      accu = Field_imm(env, 1); Next;
     Instruct(ENVACC2):
-      accu = FieldImm(env, 2); Next;
+      accu = Field_imm(env, 2); Next;
     Instruct(ENVACC3):
-      accu = FieldImm(env, 3); Next;
+      accu = Field_imm(env, 3); Next;
     Instruct(ENVACC4):
-      accu = FieldImm(env, 4); Next;
+      accu = Field_imm(env, 4); Next;
 
     Instruct(PUSHENVACC1):
-      *--sp = accu; accu = FieldImm(env, 1); Next;
+      *--sp = accu; accu = Field_imm(env, 1); Next;
     Instruct(PUSHENVACC2):
-      *--sp = accu; accu = FieldImm(env, 2); Next;
+      *--sp = accu; accu = Field_imm(env, 2); Next;
     Instruct(PUSHENVACC3):
-      *--sp = accu; accu = FieldImm(env, 3); Next;
+      *--sp = accu; accu = Field_imm(env, 3); Next;
     Instruct(PUSHENVACC4):
-      *--sp = accu; accu = FieldImm(env, 4); Next;
+      *--sp = accu; accu = Field_imm(env, 4); Next;
 
     Instruct(PUSHENVACC):
       *--sp = accu;
       /* Fallthrough */
     Instruct(ENVACC):
-      accu = FieldImm(env, *pc++);
+      accu = Field_imm(env, *pc++);
       Next;
 
 /* Function application */
@@ -564,18 +566,21 @@ value caml_interprete(code_t prog, asize_t prog_size)
       if (nvars < Max_young_wosize) {
         /* nvars + 1 <= Max_young_wosize, can allocate in minor heap */
         Alloc_small(accu, 1 + nvars, Closure_tag, Enter_gc);
+        Init_field(accu, 0, Val_bytecode(pc + *pc));
         for (i = 0; i < nvars; i++) Init_field(accu, i + 1, sp[i]);
       } else {
         /* PR#6385: must allocate in major heap */
-        /* caml_alloc_shr and caml_initialize never trigger a GC,
-           so no need to Setup_for_gc */
         accu = caml_alloc_shr(1 + nvars, Closure_tag);
-        for (i = 0; i < nvars; i++)
-          caml_initialize_field(accu, i + 1, sp[i]);
+        Setup_for_c_call;
+        caml_initialize_field(accu, 0, Val_bytecode(pc + *pc));
+        Restore_after_c_call;
+        for (i = 0; i < nvars; i++) {
+          value v = sp[i];
+          Setup_for_c_call;
+          caml_initialize_field(accu, i + 1, v);
+          Restore_after_c_call;
+        }
       }
-      /* The code pointer is not in the heap, so no need to go through
-         caml_initialize. */
-      Init_field(accu, 0, Val_bytecode(pc + *pc));
       pc++;
       sp += nvars;
       Next;
@@ -595,16 +600,18 @@ value caml_interprete(code_t prog, asize_t prog_size)
         }
       } else {
         /* PR#6385: must allocate in major heap */
-        /* caml_alloc_shr and caml_initialize never trigger a GC,
-           so no need to Setup_for_gc */
         accu = caml_alloc_shr(blksize, Closure_tag);
-        for (i = 0; i < nvars; i++)
-          caml_initialize_field(accu, var_offset + i,sp[i]);
+        for (i = 0; i < nvars; i++) {
+          value v = sp[i];
+          Setup_for_c_call;
+          caml_initialize_field(accu, var_offset + i, v);
+          Restore_after_c_call;
+        }
       }
       sp += nvars;
       /* The code pointers and infix headers are not in the heap,
          so no need to go through caml_initialize. */
-      Init_field(accu, 0, Val_bytecode(pc + pc[0]));
+      caml_initialize_field(accu, 0, Val_bytecode(pc + pc[0]));
       *--sp = accu;
       field = 1;
       for (i = 1; i < nfuncs; i++) {
@@ -690,8 +697,15 @@ value caml_interprete(code_t prog, asize_t prog_size)
         for (i = 1; i < wosize; i++) Init_field(block, i, *sp++);
       } else {
         block = caml_alloc_shr(wosize, tag);
+        Setup_for_c_call;
         caml_initialize_field(block, 0, accu);
-        for (i = 1; i < wosize; i++) caml_initialize_field(block, i, *sp++);
+        Restore_after_c_call;
+        for (i = 1; i < wosize; i++) {
+          value v = *sp++;
+          Setup_for_c_call;
+          caml_initialize_field(block, i, v);
+          Restore_after_c_call;
+        }
       }
       accu = block;
       Next;
@@ -748,15 +762,15 @@ value caml_interprete(code_t prog, asize_t prog_size)
 /* Access to components of blocks */
 
     Instruct(GETFIELD0):
-      accu = FieldImm(accu, 0); Next;
+      accu = Field_imm(accu, 0); Next;
     Instruct(GETFIELD1):
-      accu = FieldImm(accu, 1); Next;
+      accu = Field_imm(accu, 1); Next;
     Instruct(GETFIELD2):
-      accu = FieldImm(accu, 2); Next;
+      accu = Field_imm(accu, 2); Next;
     Instruct(GETFIELD3):
-      accu = FieldImm(accu, 3); Next;
+      accu = Field_imm(accu, 3); Next;
     Instruct(GETFIELD):
-      accu = FieldImm(accu, *pc); pc++; Next;
+      accu = Field_imm(accu, *pc); pc++; Next;
     Instruct(GETMUTABLEFIELD0):
       Setup_for_c_call;
       accu = Field(accu, 0);
