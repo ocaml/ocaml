@@ -16,11 +16,15 @@
 
 (* Dynamic loading of .cmx files *)
 
+open Cmx_format
+
 type handle
 
-external ndl_open: string -> bool -> handle * bytes = "caml_natdynlink_open"
+type globals_map = (string * Digest.t * Digest.t * string list) list
+
+external ndl_open: string -> bool -> handle * dynheader = "caml_natdynlink_open"
 external ndl_run: handle -> string -> unit = "caml_natdynlink_run"
-external ndl_getmap: unit -> bytes = "caml_natdynlink_getmap"
+external ndl_getmap: unit -> globals_map = "caml_natdynlink_getmap"
 external ndl_globals_inited: unit -> int = "caml_natdynlink_globals_inited"
 
 type linking_error =
@@ -41,8 +45,6 @@ type error =
 
 exception Error of error
 
-open Cmx_format
-
 (* Copied from config.ml to avoid dependencies *)
 let cmxs_magic_number = "Caml2007D002"
 
@@ -54,11 +56,10 @@ let read_file filename priv =
   let dll = dll_filename filename in
   if not (Sys.file_exists dll) then raise (Error (File_not_found dll));
 
-  let (handle,data) as res = ndl_open dll (not priv) in
-  if Obj.tag (Obj.repr res) = Obj.string_tag
-  then raise (Error (Cannot_open_dll (Obj.magic res)));
+  let (handle,header) = try
+      ndl_open dll (not priv)
+    with Failure s -> raise (Error (Cannot_open_dll s)) in
 
-  let header : dynheader = Marshal.from_bytes data 0 in
   if header.dynu_magic <> cmxs_magic_number
   then raise(Error(Not_a_bytecode_file dll));
   (dll, handle, header.dynu_units)
@@ -90,8 +91,7 @@ let allow_extension = ref true
 let inited = ref false
 
 let default_available_units () =
-  let map : (string*Digest.t*Digest.t*string list) list =
-    Marshal.from_bytes (ndl_getmap ()) 0 in
+  let map  = ndl_getmap () in
   let exe = Sys.executable_name in
   let rank = ref 0 in
   global_state :=
