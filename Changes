@@ -185,6 +185,9 @@ Next version (4.05.0):
   by zero.
   (Jeremy Yallop)
 
+- GPR#967, PR#6536: Fix Closure so that overapplication evaluation order
+  matches the bytecode compiler and Flambda.
+
 Next minor version (4.04.1):
 ----------------------------
 
