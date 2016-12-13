@@ -387,6 +387,7 @@ utils/config.ml: utils/config.mlp config/Makefile
 	    -e "s|%%ARCH%%|$(ARCH)|" \
 	    -e "s|%%MODEL%%|$(MODEL)|" \
 	    -e "s|%%SYSTEM%%|$(SYSTEM)|" \
+	    -e "s|%%EXT_EXE%%|$(EXE)|" \
 	    -e "s|%%EXT_OBJ%%|.$(O)|" \
 	    -e "s|%%EXT_ASM%%|.$(S)|" \
 	    -e "s|%%EXT_LIB%%|.$(A)|" \

@@ -36,6 +36,10 @@ Next version (4.05.0):
    and Damien Doligez, discussion with Alain Frisch and Xavier Leroy,
    feature request from the Coq team)
 
+- PR#7172, GPR#970: add extra (ocamlc -config) options
+  int_size, word_size, ext_exe
+  (Gabriel Scherer, request by Daniel Buenzli)
+
 - GPR#829: better error when opening a module aliased to a functor
   (Alain Frisch)
 

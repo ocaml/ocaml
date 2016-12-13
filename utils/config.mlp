@@ -109,6 +109,7 @@ let libunwind_link_flags = "%%LIBUNWIND_LINK_FLAGS%%"
 let profinfo = %%WITH_PROFINFO%%
 let profinfo_width = %%PROFINFO_WIDTH%%
 
+let ext_exe = "%%EXT_EXE%%"
 let ext_obj = "%%EXT_OBJ%%"
 let ext_asm = "%%EXT_ASM%%"
 let ext_lib = "%%EXT_LIB%%"
@@ -127,6 +128,7 @@ let systhread_supported = %%SYSTHREAD_SUPPORT%%;;
 
 let print_config oc =
   let p name valu = Printf.fprintf oc "%s: %s\n" name valu in
+  let p_int name valu = Printf.fprintf oc "%s: %d\n" name valu in
   let p_bool name valu = Printf.fprintf oc "%s: %B\n" name valu in
   p "version" version;
   p "standard_library_default" standard_library_default;
@@ -142,10 +144,13 @@ let print_config oc =
   p "cc_profile" cc_profile;
   p "architecture" architecture;
   p "model" model;
+  p_int "int_size" Sys.int_size;
+  p_int "word_size" Sys.word_size;
   p "system" system;
   p "asm" asm;
   p_bool "asm_cfi_supported" asm_cfi_supported;
   p_bool "with_frame_pointers" with_frame_pointers;
+  p "ext_exe" ext_exe;
   p "ext_obj" ext_obj;
   p "ext_asm" ext_asm;
   p "ext_lib" ext_lib;
