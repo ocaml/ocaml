@@ -24,8 +24,9 @@
 
 CAMLprim value unix_accept(value sock)
 {
+  CAMLparam1(sock);
+  CAMLlocal1(a);
   int retcode;
-  value a;
   union sock_addr_union addr;
   socklen_param_type addr_len;
 
@@ -35,7 +36,7 @@ CAMLprim value unix_accept(value sock)
   leave_blocking_section();
   if (retcode == -1) uerror("accept", Nothing);
   a = alloc_sockaddr(&addr, addr_len, retcode);
-  return caml_alloc_2(0, Val_int(retcode), a);
+  CAMLreturn (caml_alloc_2(0, Val_int(retcode), a));
 }
 
 #else
