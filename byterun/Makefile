@@ -60,8 +60,8 @@ libcamlrun_shared.so: $(PICOBJS)
 
 install::
 ifeq "$(SUPPORTS_SHARED_LIBRARIES)" "true"
-	cp libcamlrun_shared.so "$(INSTALL_LIBDIR)/libcamlrun_shared.so"
-	cp libcamlrun_pic.a "$(INSTALL_LIBDIR)/libcamlrun_pic.a"
+	cp libcamlrun_shared.so "$(INSTALL_LIBDIR)"
+	cp libcamlrun_pic.a "$(INSTALL_LIBDIR)"
 endif
 
 clean::
