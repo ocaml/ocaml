@@ -39,8 +39,8 @@ else
 RUNTIMEDTARGETS=
 endif
 
-all:: ocamlrun$(EXE) ld.conf libcamlrun.$(A) $(RUNTIMEDTARGETS) primitives
 .PHONY: all
+all:: ocamlrun$(EXE) ld.conf libcamlrun.$(A) $(RUNTIMEDTARGETS) primitives
 
 ifeq "$(RUNTIMEI)" "true"
 all:: ocamlruni$(EXE) libcamlruni.$(A)
@@ -56,6 +56,7 @@ INSTALL_BINDIR=$(DESTDIR)$(BINDIR)
 INSTALL_LIBDIR=$(DESTDIR)$(LIBDIR)
 
 
+.PHONY: install
 install::
 	cp $(CAMLRUN)$(EXE) "$(INSTALL_BINDIR)/ocamlrun$(EXE)"
 	cp libcamlrun.$(A) "$(INSTALL_LIBDIR)/libcamlrun.$(A)"
@@ -67,7 +68,6 @@ install::
 	      > "$(INSTALL_LIBDIR)/$$i"; \
 	done
 	cp ld.conf "$(INSTALL_LIBDIR)/ld.conf"
-.PHONY: install
 
 install::
 ifeq "$(RUNTIMED)" "true"
@@ -137,8 +137,8 @@ caml/jumptbl.h : caml/instruct.h
 caml/version.h : ../VERSION ../tools/make-version-header.sh
 	sh ../tools/make-version-header.sh ../VERSION > caml/version.h
 
+.PHONY: clean
 clean ::
 	rm -f ocamlrun$(EXE) ocamlrund$(EXE) *.$(O) *.$(A) *.$(SO)
 	rm -f primitives prims.c caml/opnames.h caml/jumptbl.h ld.conf
 	rm -f caml/version.h
-.PHONY: clean
