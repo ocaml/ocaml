@@ -37,7 +37,7 @@ CAMLexport void (*caml_natdynlink_hook)(void* handle, char* unit) = NULL;
 #include <string.h>
 #include <limits.h>
 
-#define Handle_val(v) (*((void **) (v)))
+#define Handle_val(v) (*((void **) Data_abstract_val(v)))
 static value Val_handle(void* handle) {
   value res = caml_alloc_small(1, Abstract_tag);
   Handle_val(res) = handle;
