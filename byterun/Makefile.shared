@@ -14,6 +14,10 @@
 #**************************************************************************
 
 include ../config/Makefile
+
+INSTALL_BINDIR=$(DESTDIR)$(BINDIR)
+INSTALL_LIBDIR=$(DESTDIR)$(LIBDIR)
+
 CAMLRUN ?= ../boot/ocamlrun
 
 CC=$(BYTECC)
@@ -49,12 +53,6 @@ endif
 ld.conf: ../config/Makefile
 	echo "$(STUBLIBDIR)" > $@
 	echo "$(LIBDIR)" >> $@
-
-# Installation
-
-INSTALL_BINDIR=$(DESTDIR)$(BINDIR)
-INSTALL_LIBDIR=$(DESTDIR)$(LIBDIR)
-
 
 .PHONY: install
 install::
