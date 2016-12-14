@@ -347,7 +347,7 @@ partialclean::
 # The toplevel
 
 compilerlibs/ocamltoplevel.cma: $(TOPLEVEL)
-  $(CAMLC) -a -opaque -o $@ $(TOPLEVEL)
+	$(CAMLC) -a -opaque -o $@ $(TOPLEVEL)
 partialclean::
 	rm -f compilerlibs/ocamltoplevel.cma
 
