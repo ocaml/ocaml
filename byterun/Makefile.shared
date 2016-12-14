@@ -15,7 +15,6 @@
 
 include ../config/Makefile
 CAMLRUN ?= ../boot/ocamlrun
-CAMLYACC ?= ../boot/ocamlyacc
 
 CC=$(BYTECC)
 
