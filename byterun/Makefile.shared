@@ -65,10 +65,6 @@ install::
 
 install::
 ifeq "$(RUNTIMED)" "true"
-# TODO: when cross-compiling, do not install ocamlrund
-# it doesn't hurt to install it, but it's useless and might be confusing
-# because it's an executable for the target machine, while we're installing
-# binaries for the host.
 	cp ocamlrund$(EXE) "$(INSTALL_BINDIR)"
 	cp libcamlrund.$(A) "$(INSTALL_LIBDIR)"
 endif
