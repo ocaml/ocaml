@@ -62,7 +62,6 @@ install::
 ifeq "$(SUPPORTS_SHARED_LIBRARIES)" "true"
 	cp libcamlrun_shared.so "$(INSTALL_LIBDIR)/libcamlrun_shared.so"
 	cp libcamlrun_pic.a "$(INSTALL_LIBDIR)/libcamlrun_pic.a"
-	cd "$(INSTALL_LIBDIR)"; $(RANLIB) libcamlrun_pic.a
 endif
 
 clean::

@@ -58,7 +58,6 @@ ld.conf: ../config/Makefile
 install::
 	cp $(CAMLRUN)$(EXE) "$(INSTALL_BINDIR)/ocamlrun$(EXE)"
 	cp libcamlrun.$(A) "$(INSTALL_LIBDIR)/libcamlrun.$(A)"
-	cd "$(INSTALL_LIBDIR)"; $(RANLIB) libcamlrun.$(A)
 	if test -d "$(INSTALL_LIBDIR)/caml"; then : ; \
 	  else mkdir "$(INSTALL_LIBDIR)/caml"; fi
 	for i in caml/*.h; do \
