@@ -96,6 +96,9 @@ Next version (4.05.0):
 
 ### Tools:
 
+- PR#5163: ocamlobjinfo, dump globals defined by bytecode executables
+  (Stéphane Glondu)
+
 - PR#7333: ocamldoc, use the first sentence of text file as
   a short description in overviews.
   (Florian Angeletti)

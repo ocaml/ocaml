@@ -119,6 +119,12 @@ let print_general_infos name crc defines cmi cmx =
   printf "Implementations imported:\n";
   List.iter print_name_crc cmx
 
+let print_global_table table =
+  printf "Globals defined:\n";
+  Tbl.iter
+    (fun id _ -> print_line (Ident.name id))
+    table.num_tbl
+
 open Cmx_format
 
 let print_cmx_infos (ui, crc) =
@@ -222,6 +228,8 @@ let dump_byte ic =
                  "Primitives used"
                  print_line
                  (input_stringlist ic len)
+           | "SYMB" ->
+               print_global_table (input_value ic)
            | _ -> ()
        with _ -> ()
     )
