@@ -18,8 +18,6 @@ include ../config/Makefile
 INSTALL_BINDIR=$(DESTDIR)$(BINDIR)
 INSTALL_LIBDIR=$(DESTDIR)$(LIBDIR)
 
-CAMLRUN ?= ../boot/ocamlrun
-
 CC=$(BYTECC)
 
 COMMONOBJS=\
@@ -56,7 +54,7 @@ ld.conf: ../config/Makefile
 
 .PHONY: install
 install::
-	cp $(CAMLRUN)$(EXE) "$(INSTALL_BINDIR)/ocamlrun$(EXE)"
+	cp ocamlrun$(EXE) "$(INSTALL_BINDIR)/ocamlrun$(EXE)"
 	cp libcamlrun.$(A) "$(INSTALL_LIBDIR)/libcamlrun.$(A)"
 	if test -d "$(INSTALL_LIBDIR)/caml"; then : ; \
 	  else mkdir "$(INSTALL_LIBDIR)/caml"; fi
