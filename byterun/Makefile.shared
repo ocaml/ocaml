@@ -18,6 +18,23 @@ include ../config/Makefile
 INSTALL_BINDIR=$(DESTDIR)$(BINDIR)
 INSTALL_LIBDIR=$(DESTDIR)$(LIBDIR)
 
+# The PROGRAMS (resp. LIBRARIES) variable list the files to build and
+# install as programs in $(INSTALL_BINDIR) (resp. libraries in
+# $(INSTALL_LIBDIR))
+
+PROGRAMS = ocamlrun$(EXE)
+LIBRARIES = ld.conf libcamlrun.$(A)
+
+ifeq "$(RUNTIMED)" "true"
+PROGRAMS += ocamlrund$(EXE)
+LIBRARIES += libcamlrund.$(A)
+endif
+
+ifeq "$(RUNTIMEI)" "true"
+PROGRAMS += ocamlruni$(EXE)
+LIBRARIES += libcamlruni.$(A)
+endif
+
 CC=$(BYTECC)
 
 COMMONOBJS=\
@@ -35,18 +52,8 @@ PRIMS=\
   signals.c str.c sys.c terminfo.c callback.c weak.c finalise.c stacks.c \
   dynlink.c backtrace_prim.c backtrace.c spacetime.c afl.c
 
-ifeq "$(RUNTIMED)" "true"
-RUNTIMEDTARGETS=ocamlrund$(EXE) libcamlrund.$(A)
-else
-RUNTIMEDTARGETS=
-endif
-
 .PHONY: all
-all:: ocamlrun$(EXE) ld.conf libcamlrun.$(A) $(RUNTIMEDTARGETS) primitives
-
-ifeq "$(RUNTIMEI)" "true"
-all:: ocamlruni$(EXE) libcamlruni.$(A)
-endif
+all:: $(LIBRARIES) $(PROGRAMS)
 
 ld.conf: ../config/Makefile
 	echo "$(STUBLIBDIR)" > $@
@@ -54,26 +61,13 @@ ld.conf: ../config/Makefile
 
 .PHONY: install
 install::
-	cp ocamlrun$(EXE) "$(INSTALL_BINDIR)"
-	cp libcamlrun.$(A) "$(INSTALL_LIBDIR)"
+	cp $(PROGRAMS) "$(INSTALL_BINDIR)"
+	cp $(LIBRARIES) "$(INSTALL_LIBDIR)"
 	mkdir -p "$(INSTALL_LIBDIR)/caml"
 	for i in caml/*.h; do \
 	  sed -f ../tools/cleanup-header $$i \
 	      > "$(INSTALL_LIBDIR)/$$i"; \
 	done
-	cp ld.conf "$(INSTALL_LIBDIR)"
-
-install::
-ifeq "$(RUNTIMED)" "true"
-	cp ocamlrund$(EXE) "$(INSTALL_BINDIR)"
-	cp libcamlrund.$(A) "$(INSTALL_LIBDIR)"
-endif
-
-ifeq "$(RUNTIMEI)" "true"
-install::
-	cp ocamlruni$(EXE) "$(INSTALL_BINDIR)"
-	cp libcamlruni.$(A) "$(INSTALL_LIBDIR)"
-endif
 
 # If primitives contain duplicated lines (e.g. because the code is defined
 # like
@@ -129,6 +123,6 @@ caml/version.h : ../VERSION ../tools/make-version-header.sh
 
 .PHONY: clean
 clean ::
-	rm -f ocamlrun$(EXE) ocamlrund$(EXE) *.$(O) *.$(A) *.$(SO)
-	rm -f primitives prims.c caml/opnames.h caml/jumptbl.h ld.conf
+	rm -f $(LIBRARIES) $(PROGRAMS) *.$(O) *.$(A) *.$(SO)
+	rm -f primitives prims.c caml/opnames.h caml/jumptbl.h
 	rm -f caml/version.h
