@@ -47,8 +47,8 @@ all:: ocamlruni$(EXE) libcamlruni.$(A)
 endif
 
 ld.conf: ../config/Makefile
-	echo "$(STUBLIBDIR)" > ld.conf
-	echo "$(LIBDIR)" >> ld.conf
+	echo "$(STUBLIBDIR)" > $@
+	echo "$(LIBDIR)" >> $@
 
 # Installation
 
