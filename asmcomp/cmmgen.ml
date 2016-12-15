@@ -2417,14 +2417,14 @@ let compunit size ulam =
 (*
 CAMLprim value caml_cache_public_method (value meths, value tag, value *cache)
 {
-  int li = 3, hi = Field(meths,0), mi;
+  int li = 3, hi = Field_imm(meths,0), mi;
   while (li < hi) { // no need to check the 1st time
     mi = ((li+hi) >> 1) | 1;
-    if (tag < Field(meths,mi)) hi = mi-2;
+    if (tag < Field_imm(meths,mi)) hi = mi-2;
     else li = mi;
   }
   *cache = (li-3)*sizeof(value)+1;
-  return Field (meths, li-1);
+  return Field_imm (meths, li-1);
 }
 *)
 

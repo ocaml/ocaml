@@ -238,7 +238,7 @@ unix_setsockopt_aux(char * name,
     optsize = sizeof(optval.lg);
     optval.lg.l_onoff = Is_block (val);
     if (optval.lg.l_onoff)
-      optval.lg.l_linger = Int_val (Field (val, 0));
+      optval.lg.l_linger = Int_field (val, 0);
     break;
   case TYPE_TIMEVAL:
     f = Double_val(val);

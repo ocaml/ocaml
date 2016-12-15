@@ -112,7 +112,8 @@ static char * token_name(char * names, int number)
 
 static void print_token(struct parser_tables *tables, int state, value tok)
 {
-  value v;
+  CAMLparam1 (tok);
+  CAMLlocal1 (v);
 
   if (Is_long(tok)) {
     fprintf(stderr, "State %d: read token %s\n",
@@ -120,7 +121,7 @@ static void print_token(struct parser_tables *tables, int state, value tok)
   } else {
     fprintf(stderr, "State %d: read token %s(",
             state, token_name(tables->names_block, Tag_val(tok)));
-    v = Field(tok, 0);
+    caml_read_field(tok, 0, &v);
     if (Is_long(v))
       fprintf(stderr, "%" ARCH_INTNAT_PRINTF_FORMAT "d", Long_val(v));
     else if (Tag_val(v) == String_tag)
@@ -131,6 +132,7 @@ static void print_token(struct parser_tables *tables, int state, value tok)
       fprintf(stderr, "_");
     fprintf(stderr, ")\n");
   }
+  CAMLreturn0;
 }
 
 /* The pushdown automata */
@@ -161,12 +163,12 @@ CAMLprim value caml_parse_engine(struct parser_tables *tables,
   case TOKEN_READ:
     RESTORE;
     if (Is_block(arg)) {
-      env->curr_char = Field(tables->transl_block, Tag_val(arg));
+      env->curr_char = Val_int(Int_field(tables->transl_block, Tag_val(arg)));
       caml_modify_field((value)env,
                         offsetof(struct parser_env, lval) / sizeof(value),
                         Field(arg, 0));
     } else {
-      env->curr_char = Field(tables->transl_const, Int_val(arg));
+      env->curr_char = Val_int(Int_field(tables->transl_const, Int_val(arg)));
       caml_modify_field((value)env,
                         offsetof(struct parser_env, lval) / sizeof(value),
                         Val_long(0));
@@ -195,7 +197,7 @@ CAMLprim value caml_parse_engine(struct parser_tables *tables,
     if (errflag < 3) {
       errflag = 3;
       while (1) {
-        state1 = Int_val(Field(env->s_stack, sp));
+        state1 = Int_field(env->s_stack, sp);
         n1 = Short(tables->sindex, state1);
         n2 = n1 + ERRCODE;
         if (n1 != 0 && n2 >= 0 && n2 <= Int_val(tables->tablesize) &&
@@ -255,7 +257,7 @@ CAMLprim value caml_parse_engine(struct parser_tables *tables,
     env->rule_len = Val_int(m);
     sp = sp - m + 1;
     m = Short(tables->lhs, n);
-    state1 = Int_val(Field(env->s_stack, sp - 1));
+    state1 = Int_field(env->s_stack, sp - 1);
     n1 = Short(tables->gindex, m);
     n2 = n1 + state1;
     if (n1 != 0 && n2 >= 0 && n2 <= Int_val(tables->tablesize) &&

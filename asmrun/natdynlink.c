@@ -29,7 +29,7 @@
 
 #define Handle_val(v) (*((void **) (v)))
 static value Val_handle(void* handle) {
-  value res = caml_alloc_small(1, Abstract_tag);
+  value res = caml_alloc(1, Abstract_tag);
   Handle_val(res) = handle;
   return res;
 }

@@ -72,7 +72,7 @@ CAMLprim value caml_obj_block(value tag, value size)
 CAMLprim value caml_obj_dup(value arg)
 {
   CAMLparam1 (arg);
-  CAMLlocal1 (res);
+  CAMLlocal2 (res, x);
   mlsize_t sz, i;
   tag_t tg;
 
@@ -82,13 +82,14 @@ CAMLprim value caml_obj_dup(value arg)
   if (tg >= No_scan_tag) {
     res = caml_alloc(sz, tg);
     memcpy(Bp_val(res), Bp_val(arg), sz * sizeof(value));
-  } else if (sz <= Max_young_wosize) {
-    res = caml_alloc_small(sz, tg);
-    for (i = 0; i < sz; i++) caml_initialize_field(res, i, Field(arg, i));
   } else {
-    res = caml_alloc_shr(sz, tg);
-    for (i = 0; i < sz; i++) caml_initialize_field(res, i, Field(arg, i));
+    res = caml_alloc(sz, tg);
+    for (i = 0; i < sz; i++) {
+      caml_read_field(arg, i, &x);
+      caml_initialize_field(res, i, x);
+    }
   }
+
   CAMLreturn (res);
 }
 
@@ -155,15 +156,15 @@ CAMLprim value caml_lazy_make_forward (value v)
 
 CAMLprim value caml_get_public_method (value obj, value tag)
 {
-  value meths = Field (obj, 0);
-  int li = 3, hi = Field(meths,0), mi;
+  value meths = Field_imm(obj, 0);
+  int li = 3, hi = Field_imm(meths,0), mi;
   while (li < hi) {
     mi = ((li+hi) >> 1) | 1;
-    if (tag < Field(meths,mi)) hi = mi-2;
+    if (tag < Field_imm(meths,mi)) hi = mi-2;
     else li = mi;
   }
   /* return 0 if tag is not there */
-  return (tag == Field(meths,li) ? Field (meths, li-1) : 0);
+  return (tag == Field_imm(meths,li) ? Field_imm (meths, li-1) : 0);
 }
 
 /* Allocate OO ids in chunks, to avoid contention */

@@ -102,8 +102,7 @@ void caml_raise_with_args(value tag, int nargs, value args[])
   CAMLlocal1 (bucket);
   int i;
 
-  Assert(1 + nargs <= Max_young_wosize);
-  bucket = caml_alloc_small (1 + nargs, 0);
+  bucket = caml_alloc (1 + nargs, 0);
   caml_initialize_field(bucket, 0, tag);
   for (i = 0; i < nargs; i++) caml_initialize_field(bucket, 1 + i, args[i]);
   caml_raise(bucket);

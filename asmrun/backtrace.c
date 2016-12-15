@@ -385,7 +385,7 @@ CAMLprim value caml_get_exception_backtrace(value unit)
 
   arr = caml_alloc(Wosize_val(backtrace), 0);
   for (i = 0; i < Wosize_val(backtrace); i++) {
-    Store_field(arr, i, caml_convert_raw_backtrace_slot(Field(backtrace, i)));
+    Store_field(arr, i, caml_convert_raw_backtrace_slot(Field_imm(backtrace, i)));
   }
 
   res = caml_alloc_small(1, 0); caml_initialize_field(res, 0, arr); /* Some */
