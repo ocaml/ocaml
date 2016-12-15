@@ -36,10 +36,10 @@
     (store float "res_integr" ( *f (load float s) (load float h)))
     "res_integr"))
 
-("low": skip 8)
-("hi": skip 8)
+("_low": skip 8)
+("_hi": skip 8)
 
-(function "test" (n: int)
-  (store float "low" 0.0)
-  (store float "hi" 1.0)
-  (load float (app "integr" "square" "low" "hi" n val)))
+(function "_test" (n: int)
+  (store float "_low" 0.0)
+  (store float "_hi" 1.0)
+  (load float (app "integr" "square" "_low" "_hi" n val)))

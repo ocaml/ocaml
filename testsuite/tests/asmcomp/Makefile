@@ -76,7 +76,7 @@ ARGS_integr=-DINT_FLOAT -DFUN=test main.c
 ARGS_arith=mainarith.c
 ARGS_checkbound=-DCHECKBOUND main.c
 ARGS_tagged-fib=-DINT_INT -DFUN=fib main.c
-ARGS_tagged-integr=-DINT_FLOAT -DFUN=test main.c
+ARGS_tagged-integr=-DINT_FLOAT -DFUN=_test main.c
 ARGS_tagged-quicksort=-DSORT -DFUN=quicksort main.c
 ARGS_tagged-tak=-DUNIT_INT -DFUN=takmain main.c
 ARGS_staticalloc=-I $(OTOPDIR)/utils config.cmx
@@ -114,16 +114,11 @@ clean: defaultclean
 
 include $(BASEDIR)/makefiles/Makefile.common
 
-ifeq "$(CCOMPTYPE)-$(ARCH)" "msvc-amd64"
-# these tests are not ported to MSVC64 yet
-SKIP=true
-else
-SKIP=false
-endif
-
 ifeq "$(WITH_SPACETIME)" "true"
 # These tests have not been ported for Spacetime
 SKIP=true
+else
+SKIP=false
 endif
 
 ifeq ($(CCOMPTYPE),msvc)
@@ -150,6 +145,10 @@ tests: $(CASES:=.$(O))
 promote:
 
 arch: $(ARCH).$(O)
+
+amd64.obj: amd64nt.asm
+	@set -o pipefail ; \
+	$(ASM) $@ $^ | tail -n +2
 
 i386.obj: i386nt.asm
 	@set -o pipefail ; \
