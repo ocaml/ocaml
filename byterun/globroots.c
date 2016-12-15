@@ -70,10 +70,12 @@ CAMLexport void caml_delete_root(caml_root root)
 CAMLexport value caml_read_root(caml_root root)
 {
   value v = (value)root;
+  value x;
   Assert(root);
   Assert(Hd_val(root));
-  Assert(Field(v,1) == Val_int(0) || Field(v,1) == Val_int(1));
-  return Field(v, 0);
+  Assert(Int_field(v,1) == 0 || Int_field(v,1) == 1);
+  caml_read_field(v, 0, &x);
+  return x;
 }
 
 CAMLexport void caml_modify_root(caml_root root, value newv)
@@ -104,8 +106,9 @@ void caml_cleanup_deleted_roots()
 
   r = roots_all;
   while (Is_block(r)) {
-    value next = Field(r, 2);
-    if (Field(r, 1) == Val_int(0)) {
+    Assert(!Is_foreign(Op_val(r)[2]));
+    value next = Op_val(r)[2];
+    if (Int_field(r, 1) == 0) {
       /* root was deleted, remove from list */
       if (first) {
         roots_all = next;

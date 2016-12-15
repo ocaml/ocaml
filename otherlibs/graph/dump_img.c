@@ -18,39 +18,46 @@
 
 value caml_gr_dump_image(value image)
 {
+  CAMLparam1 (image);
+  CAMLlocal2 (m, row);
   int width, height, i, j;
   XImage * idata, * imask;
-  value m = Val_unit;
 
-  Begin_roots2(image, m);
-    caml_gr_check_open();
-    width = Width_im(image);
-    height = Height_im(image);
-    m = alloc(height, 0);
-    for (i = 0; i < height; i++) {
-      value v = alloc(width, 0);
-      caml_modify_field(m, i, v);
+  caml_gr_check_open();
+  width = Width_im(image);
+  height = Height_im(image);
+  m = alloc(height, 0);
+  for (i = 0; i < height; i++) {
+    value v = alloc(width, 0);
+    caml_modify_field(m, i, v);
+  }
+
+  idata =
+    XGetImage(caml_gr_display, Data_im(image), 0, 0, width, height, (-1),
+              ZPixmap);
+  for (i = 0; i < height; i++) {
+    for (j = 0; j < width; j++) {
+      caml_read_field(m, i, &row);
+      caml_modify_field(row, j,
+        Val_int(caml_gr_rgb_pixel(XGetPixel(idata, j, i))));
     }
+  }
+  XDestroyImage(idata);
 
-    idata =
-      XGetImage(caml_gr_display, Data_im(image), 0, 0, width, height, (-1),
+  if (Mask_im(image) != None) {
+    imask =
+      XGetImage(caml_gr_display, Mask_im(image), 0, 0, width, height, 1,
                 ZPixmap);
-    for (i = 0; i < height; i++)
-      for (j = 0; j < width; j++)
-        caml_modify_field(Field(m, i), j,
-          Val_int(caml_gr_rgb_pixel(XGetPixel(idata, j, i))));
-    XDestroyImage(idata);
-
-    if (Mask_im(image) != None) {
-      imask =
-        XGetImage(caml_gr_display, Mask_im(image), 0, 0, width, height, 1,
-                  ZPixmap);
-      for (i = 0; i < height; i++)
-        for (j = 0; j < width; j++)
-          if (XGetPixel(imask, j, i) == 0)
-            caml_modify_field(Field(m, i), j, Val_int(Transparent));
-      XDestroyImage(imask);
+    for (i = 0; i < height; i++) {
+      for (j = 0; j < width; j++) {
+        if (XGetPixel(imask, j, i) == 0) {
+          caml_read_field(m, i, &row);
+          caml_modify_field(row, j, Val_int(Transparent));
+        }
+      }
     }
-  End_roots();
-  return m;
+    XDestroyImage(imask);
+  }
+
+  CAMLreturn (m);
 }

@@ -257,7 +257,7 @@ value caml_gr_wait_event(value eventlist) /* ML */
   mask = 0;
   poll = False;
   while (eventlist != Val_int(0)) {
-    switch (Int_val(Field(eventlist, 0))) {
+    switch (Int_field(eventlist, 0)) {
     case 0:                     /* Button_down */
       mask |= ButtonPressMask | OwnerGrabButtonMask; break;
     case 1:                     /* Button_up */
@@ -269,7 +269,7 @@ value caml_gr_wait_event(value eventlist) /* ML */
     case 4:                     /* Poll */
       poll = True; break;
     }
-    eventlist = Field(eventlist, 1);
+    eventlist = Field_imm(eventlist, 1);
   }
   if (poll)
     return caml_gr_wait_event_poll();

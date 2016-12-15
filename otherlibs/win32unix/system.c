@@ -36,7 +36,6 @@ CAMLprim value win_system(cmd)
   leave_blocking_section();
   caml_stat_free(buf);
   if (ret == -1) uerror("system", Nothing);
-  st = alloc_small(1, 0); /* Tag 0: Exited */
-  Field(st, 0) = Val_int(ret);
+  st = caml_alloc_1(0, Val_int(ret)); /* Tag 0: Exited */
   return st;
 }

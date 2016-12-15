@@ -9,6 +9,7 @@
 #include "caml/addrmap.h"
 #include "caml/roots.h"
 #include "caml/alloc.h"
+#include "caml/fiber.h"
 
 static void write_barrier(value obj, int field, value val)
 {
@@ -107,6 +108,8 @@ CAMLexport void caml_set_fields (value obj, value v)
 
 CAMLexport void caml_blit_fields (value src, int srcoff, value dst, int dstoff, int n)
 {
+  CAMLparam2(src, dst);
+  CAMLlocal1(x);
   int i;
   Assert(Is_block(src));
   Assert(Is_block(dst));
@@ -127,7 +130,8 @@ CAMLexport void caml_blit_fields (value src, int srcoff, value dst, int dstoff, 
       }
     } else {
       for (i = n; i > 0; i--) {
-        caml_modify_field(dst, dstoff + i - 1, Field(src, srcoff + i - 1));
+        caml_read_field(src, srcoff + i - 1, &x);
+        caml_modify_field(dst, dstoff + i - 1, x);
       }
     }
   } else {
@@ -135,14 +139,17 @@ CAMLexport void caml_blit_fields (value src, int srcoff, value dst, int dstoff, 
     if (Is_young(dst)) {
       /* see comment above */
       for (i = 0; i < n; i++) {
-        Op_val(dst)[dstoff + i] = Field(src, srcoff + i);
+        caml_read_field(src, srcoff + i, &x);
+        Op_val(dst)[dstoff + i] = x;
       }
     } else {
       for (i = 0; i < n; i++) {
-        caml_modify_field(dst, dstoff + i, Field(src, srcoff + i));
+        caml_read_field(src, srcoff + i, &x);
+        caml_modify_field(dst, dstoff + i, x);
       }
     }
   }
+  CAMLreturn0;
 }
 
 CAMLexport value caml_alloc_shr (mlsize_t wosize, tag_t tag)
@@ -166,6 +173,8 @@ CAMLexport value caml_alloc_shr (mlsize_t wosize, tag_t tag)
       Op_hp(v)[i] = init_val;
     }
   }
+
+  if (tag == Stack_tag) Stack_sp(Val_hp(v)) = 0;
 
   return Val_hp(v);
 }

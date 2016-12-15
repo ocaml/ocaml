@@ -129,7 +129,7 @@ static void run_mem(char *pc, value mem, value curr_pos) {
       Store_field(mem,dst,curr_pos);
     } else {
       /*      fprintf(stderr,"[%hhu] <- [%hhu]\n",dst,src) ; */
-      Store_field(mem,dst,Field(mem, src));
+      Store_field(mem,dst,Val_long(Long_field(mem, src)));
     }
   }
 }
@@ -147,7 +147,7 @@ static void run_tag(char *pc, value mem) {
       Store_field(mem,dst,Val_int(-1));
     } else {
       /*      fprintf(stderr,"[%hhu] <- [%hhu]\n",dst,src) ; */
-      Store_field(mem,dst, Field(mem, src));
+      Store_field(mem,dst, Val_long(Long_field(mem, src)));
     }
   }
 }

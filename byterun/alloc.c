@@ -46,11 +46,13 @@ CAMLexport value caml_alloc (mlsize_t wosize, tag_t tag)
         Op_val(result)[i] = init_val;
       }
     }
+
+    if (tag == Stack_tag) Stack_sp(result) = 0;
   }else{
     result = caml_alloc_shr (wosize, tag);
-    if (tag == Stack_tag) Stack_sp(result) = 0;
-    result = caml_check_urgent_gc (result);
+    result = caml_check_urgent_gc(result);
   }
+
   return result;
 }
 
@@ -226,8 +228,8 @@ CAMLexport int caml_convert_flag_list(value list, const int *flags)
   int res;
   res = 0;
   while (list != Val_int(0)) {
-    res |= flags[Int_val(Field(list, 0))];
-    list = Field(list, 1);
+    res |= flags[Int_field(list, 0)];
+    list = Field_imm(list, 1);
   }
   return res;
 }
@@ -252,6 +254,8 @@ CAMLprim value caml_alloc_dummy_float (value size)
 
 CAMLprim value caml_update_dummy(value dummy, value newval)
 {
+  CAMLparam2(dummy, newval);
+  CAMLlocal1(x);
   mlsize_t size, i;
   tag_t tag;
 
@@ -268,10 +272,11 @@ CAMLprim value caml_update_dummy(value dummy, value newval)
     }
   }else{
     for (i = 0; i < size; i++){
-      caml_modify_field (dummy, i, Field(newval, i));
+      caml_read_field(newval, i, &x);
+      caml_modify_field (dummy, i, x);
     }
   }
-  return Val_unit;
+  CAMLreturn (Val_unit);
 }
 
 
