@@ -62,9 +62,7 @@ defaultclean:
 	@$(OCAMLRUN) ./codegen -S $*.cmm
 
 .cmm.obj:
-	@$(OCAMLRUN) ./codegen $*.cmm \
-	| grep -v "_caml_\(young_ptr\|young_limit\|extra_params\
-	\|allocN\|raise_exn\|reraise_exn\)" > $*.s
+	@$(OCAMLRUN) ./codegen $*.cmm > $*.s
 	@set -o pipefail ; \
 	$(ASM) $*.obj $*.s | tail -n +2
 
