@@ -105,7 +105,7 @@ CAMLexport char * caml_format_exception(value exn)
   *buf.ptr = 0;              /* Terminate string */
   i = buf.ptr - buf.data + 1;
   res = malloc(i);
-  if (res == NULL) return NULL;
+  if (res == NULL) CAMLreturnT (char*, NULL);
   memmove(res, buf.data, i);
   CAMLreturnT (char*, res);
 }
