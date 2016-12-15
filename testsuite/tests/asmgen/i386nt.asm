@@ -47,19 +47,25 @@ _caml_c_call:
         PUBLIC  _caml_alloc1
         PUBLIC  _caml_alloc2
         PUBLIC  _caml_alloc3
+        PUBLIC  _caml_allocN
+        PUBLIC  _caml_extra_params
+        PUBLIC  _caml_raise_exn
 _caml_call_gc:
 _caml_alloc:
 _caml_alloc1:
 _caml_alloc2:
 _caml_alloc3:
+_caml_allocN:
+_caml_extra_params:
+_caml_raise_exn:
         int     3
 
         .DATA
         PUBLIC  _caml_exception_pointer
 _caml_exception_pointer dword 0
-        PUBLIC  _young_ptr
-_young_ptr      dword 0
-        PUBLIC  _young_limit
-_young_limit    dword 0
+        PUBLIC  _caml_young_ptr
+_caml_young_ptr      dword 0
+        PUBLIC  _caml_young_limit
+_caml_young_limit    dword 0
 
         END
