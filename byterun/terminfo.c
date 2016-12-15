@@ -50,8 +50,10 @@ CAMLprim value caml_terminfo_setup (value vchan)
   chan = Channel (vchan);
 
   term = getenv ("TERM");
-  if (term == NULL) return Bad_term;
-  if (tgetent(buffer, term) != 1) return Bad_term;
+  if (term == NULL)
+    CAMLreturn (Bad_term);
+  if (tgetent(buffer, term) != 1)
+    CAMLreturn (Bad_term);
 
   num_lines = tgetnum ("li");
   up = tgetstr ("up", &area_p);
@@ -65,7 +67,7 @@ CAMLprim value caml_terminfo_setup (value vchan)
   Assert (area_p <= area + 1024);
   if (num_lines == -1 || up == NULL || down == NULL
       || standout == NULL || standend == NULL){
-    return Bad_term;
+    CAMLreturn (Bad_term);
   }
   result = caml_alloc_small (1, Good_term_tag);
   caml_initialize_field (result, 0, Val_int (num_lines));
