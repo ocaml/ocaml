@@ -102,6 +102,11 @@ Next version (4.05.0):
   it previously raised an EPIPE error, it now returns 0 like other OSes
   (Jonathan Protzenko)
 
+### Bytecode debugger (ocamldebug):
+
+- GPR#977: Catch Out_of_range in "list" command
+  (Yunxing Dai)
+
 ### Tools:
 
 - PR#5163: ocamlobjinfo, dump globals defined by bytecode executables
