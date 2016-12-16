@@ -16,9 +16,6 @@
 #ifndef CAML_MLVALUES_H
 #define CAML_MLVALUES_H
 
-#ifndef CAML_NAME_SPACE
-#include "compatibility.h"
-#endif
 #include "config.h"
 #include "misc.h"
 
@@ -186,7 +183,24 @@ bits  63        (64-P) (63-P)        10 9     8 7   0
 /* Pointer to the first field. */
 #define Op_val(x) ((value *) (x))
 /* Fields are numbered from 0. */
+#if CAML_API_VERSION < 405
 #define Field(x, i) (((value *)(x)) [i])           /* Also an l-value. */
+#endif
+
+static inline void caml_read_field (value obj, mlsize_t f, value* ret)
+{
+  *ret = Op_val(obj)[f];
+}
+
+static inline value Field_imm (value obj, mlsize_t f)
+{
+  return Op_val(obj)[f];
+}
+
+#define Int_field(x, i) Int_val(Op_val(x)[i])
+#define Long_field(x, i) Long_val(Op_val(x)[i])
+#define Bool_field(x, i) Bool_val(Op_val(x)[i])
+
 
 typedef int32_t opcode_t;
 typedef opcode_t * code_t;
@@ -214,8 +228,8 @@ typedef opcode_t * code_t;
 
 /* Another special case: objects */
 #define Object_tag 248
-#define Class_val(val) Field((val), 0)
-#define Oid_val(val) Long_val(Field((val), 1))
+#define Class_val(val) Field_imm((val), 0)
+#define Oid_val(val) Long_val(Field_imm((val), 1))
 CAMLextern value caml_get_public_method (value obj, value tag);
 /* Called as:
    caml_callback(caml_get_public_method(obj, caml_hash_variant(name)), obj) */
@@ -288,7 +302,7 @@ CAMLextern int caml_is_double_array (value);   /* 0 is false, 1 is true */
    the GC; therefore, they must not contain any [value].
    See [custom.h] for operations on method suites. */
 #define Custom_tag 255
-#define Data_custom_val(v) ((void *) &Field((v), 1))
+#define Data_custom_val(v) ((void *) &Op_val(v)[1])
 struct custom_operations;       /* defined in [custom.h] */
 
 /* Int32.t, Int64.t and Nativeint.t are represented as custom blocks. */

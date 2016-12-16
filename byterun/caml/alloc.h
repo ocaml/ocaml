@@ -17,17 +17,29 @@
 #define CAML_ALLOC_H
 
 
-#ifndef CAML_NAME_SPACE
-#include "compatibility.h"
-#endif
 #include "misc.h"
 #include "mlvalues.h"
+#include "memory.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
 CAMLextern value caml_alloc (mlsize_t wosize, tag_t);
+CAMLextern value caml_alloc_1(tag_t, value);
+CAMLextern value caml_alloc_2(tag_t, value, value);
+CAMLextern value caml_alloc_3(tag_t, value, value, value);
+CAMLextern value caml_alloc_4(tag_t, value, value, value, value);
+CAMLextern value caml_alloc_5(tag_t, value, value, value, value,
+                              value);
+CAMLextern value caml_alloc_6(tag_t, value, value, value, value,
+                              value, value);
+CAMLextern value caml_alloc_7(tag_t, value, value, value, value,
+                              value, value, value);
+CAMLextern value caml_alloc_8(tag_t, value, value, value, value,
+                              value, value, value, value);
+CAMLextern value caml_alloc_9(tag_t, value, value, value, value,
+                              value, value, value, value, value);
 CAMLextern value caml_alloc_small (mlsize_t wosize, tag_t);
 CAMLextern value caml_alloc_tuple (mlsize_t wosize);
 CAMLextern value caml_alloc_float_array (mlsize_t len);
@@ -58,12 +70,15 @@ CAMLextern int caml_convert_flag_list (value, int *);
 /* Convenience functions to deal with unboxable types. */
 static inline value caml_alloc_unboxed (value arg) { return arg; }
 static inline value caml_alloc_boxed (value arg) {
-  value result = caml_alloc_small (1, 0);
-  Field (result, 0) = arg;
-  return result;
+  return caml_alloc_1(0, arg);
 }
 static inline value caml_field_unboxed (value arg) { return arg; }
-static inline value caml_field_boxed (value arg) { return Field (arg, 0); }
+static inline value caml_field_boxed (value arg) {
+  CAMLparam1(arg);
+  CAMLlocal1(v);
+  caml_read_field(arg, 0, &v);
+  CAMLreturn (v);
+}
 
 /* Unannotated unboxable types are boxed by default. (may change in the
    future) */

@@ -289,3 +289,43 @@ void caml_scan_global_young_roots(scanning_action f)
   }
   caml_empty_global_roots(&caml_global_roots_young);
 }
+
+/* New GC roots API (see memory.h) */
+
+struct caml_root_private {
+  value val;
+};
+
+/* It would be better if caml_roots used the generational API,
+   but they can't if they are to support the caml_named_value call,
+   which raw value pointers */
+
+CAMLexport caml_root caml_create_root(value v)
+{
+  caml_root r = caml_stat_alloc(sizeof(struct caml_root_private));
+  r->val = v;
+  caml_register_global_root(&r->val);
+  return r;
+}
+
+CAMLexport void caml_delete_root(caml_root r)
+{
+  caml_remove_global_root(&r->val);
+  caml_stat_free(r);
+}
+
+CAMLexport value caml_read_root(caml_root r)
+{
+  return r->val;
+}
+
+CAMLexport void caml_modify_root(caml_root r, value v)
+{
+  r->val = v;
+}
+
+/* used only for backward compatibility with caml_named_value in callback.c */
+CAMLexport value* caml__root_as_ptr(caml_root r)
+{
+  return &r->val;
+}

@@ -18,11 +18,19 @@
 #ifndef CAML_COMPATIBILITY_H
 #define CAML_COMPATIBILITY_H
 
+#ifndef CAML_API_VERSION
+#define CAML_API_VERSION 100
+#endif
+
+#if CAML_API_VERSION >= 400 && !defined(CAML_NAME_SPACE)
+#define CAML_NAME_SPACE
+#endif
+
+#ifndef CAML_NAME_SPACE
+
 /* internal global variables renamed between 4.02.1 and 4.03.0 */
 #define caml_stat_top_heap_size Bsize_wsize(caml_stat_top_heap_wsz)
 #define caml_stat_heap_size Bsize_wsize(caml_stat_heap_wsz)
-
-#ifndef CAML_NAME_SPACE
 
 /*
    #define --> CAMLextern  (defined with CAMLexport or CAMLprim)

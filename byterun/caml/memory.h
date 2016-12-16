@@ -18,9 +18,6 @@
 #ifndef CAML_MEMORY_H
 #define CAML_MEMORY_H
 
-#ifndef CAML_NAME_SPACE
-#include "compatibility.h"
-#endif
 #include "config.h"
 #ifdef CAML_INTERNALS
 #include "gc.h"
@@ -50,8 +47,12 @@ CAMLextern value caml_alloc_shr_no_raise (mlsize_t wosize, tag_t);
 CAMLextern void caml_adjust_gc_speed (mlsize_t, mlsize_t);
 CAMLextern void caml_alloc_dependent_memory (mlsize_t bsz);
 CAMLextern void caml_free_dependent_memory (mlsize_t bsz);
+#if CAML_API_VERSION < 405
 CAMLextern void caml_modify (value *, value);
 CAMLextern void caml_initialize (value *, value);
+#endif
+CAMLextern void caml_modify_field (value, mlsize_t, value);
+CAMLextern void caml_initialize_field (value, mlsize_t, value);
 CAMLextern value caml_check_urgent_gc (value);
 CAMLextern int caml_init_alloc_for_heap (void);
 CAMLextern char *caml_alloc_for_heap (asize_t request);   /* Size in bytes. */
@@ -192,7 +193,7 @@ int caml_page_table_initialize(mlsize_t bytesize);
 #define DEBUG_clear(result, wosize) do{ \
   uintnat caml__DEBUG_i; \
   for (caml__DEBUG_i = 0; caml__DEBUG_i < (wosize); ++ caml__DEBUG_i){ \
-    Field ((result), caml__DEBUG_i) = Debug_uninit_minor; \
+    Op_val (result)[caml__DEBUG_i] = Debug_uninit_minor; \
   } \
 }while(0)
 #else
@@ -228,9 +229,10 @@ extern uintnat caml_spacetime_my_profinfo(struct ext_table**, uintnat);
   Alloc_small_with_profinfo(result, wosize, tag, (uintnat) 0)
 #endif
 
+#if CAML_API_VERSION < 400
 /* Deprecated alias for [caml_modify] */
-
 #define Modify(fp,val) caml_modify((fp), (val))
+#endif
 
 #endif /* CAML_INTERNALS */
 
@@ -453,12 +455,9 @@ CAMLextern struct caml__roots_block *caml_local_roots;  /* defined in roots.c */
 
 
 /* convenience macro */
-#define Store_field(block, offset, val) do{ \
-  mlsize_t caml__temp_offset = (offset); \
-  value caml__temp_val = (val); \
-  caml_modify (&Field ((block), caml__temp_offset), caml__temp_val); \
-}while(0)
+#define Store_field caml_modify_field
 
+#if CAML_API_VERSION < 400
 /*
    NOTE: [Begin_roots] and [End_roots] are superseded by [CAMLparam]*,
    [CAMLxparam]*, [CAMLlocal]*, [CAMLreturn].
@@ -541,6 +540,10 @@ CAMLextern struct caml__roots_block *caml_local_roots;  /* defined in roots.c */
 
 #define End_roots() caml_local_roots = caml__roots_block.next; }
 
+#endif /* CAML_API_VERSION < 400 */
+
+
+#if CAML_API_VERSION < 405
 
 /* [caml_register_global_root] registers a global C variable as a memory root
    for the duration of the program, or until [caml_remove_global_root] is
@@ -581,6 +584,31 @@ CAMLextern void caml_remove_generational_global_root (value *);
    previously registered with [caml_register_generational_global_root]. */
 
 CAMLextern void caml_modify_generational_global_root(value *r, value newval);
+
+#endif /* CAML_API_VERSION < 405 */
+
+
+typedef struct caml_root_private* caml_root;
+
+/* [caml_create_root] creates a new GC root, initialised to the given
+   value.  The value stored in this root is read and written using
+   [caml_read_root] and [caml_modify_root]. */
+
+CAMLextern caml_root caml_create_root (value);
+
+/* [caml_delete_root] deletes a root created by [caml_create_root] */
+
+CAMLextern void caml_delete_root (caml_root);
+
+/* [caml_read_root] loads the value stored in a root */
+
+CAMLextern value caml_read_root (caml_root);
+
+/* [caml_modify_root] stores a new value in a root */
+
+CAMLextern void caml_modify_root (caml_root, value);
+
+
 
 #ifdef __cplusplus
 }

@@ -640,6 +640,11 @@ CAMLexport CAMLweakdef void caml_initialize (value *fp, value val)
   }
 }
 
+CAMLexport CAMLweakdef void caml_initialize_field (value obj, mlsize_t f, value val)
+{
+  caml_initialize(&Field(obj, f), val);
+}
+
 /* You must use [caml_modify] to change a field of an existing shared block,
    unless you are sure the value being overwritten is not a shared block and
    the value being written is not a young block. */
@@ -689,6 +694,10 @@ CAMLexport CAMLweakdef void caml_modify (value *fp, value val)
   }
 }
 
+CAMLexport CAMLweakdef void caml_modify_field (value obj, mlsize_t f, value val)
+{
+  caml_modify(&Field(obj, f), val);
+}
 
 /* Global memory pool.
 

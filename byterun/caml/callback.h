@@ -18,10 +18,8 @@
 #ifndef CAML_CALLBACK_H
 #define CAML_CALLBACK_H
 
-#ifndef CAML_NAME_SPACE
-#include "compatibility.h"
-#endif
 #include "mlvalues.h"
+#include "memory.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -43,9 +41,13 @@ CAMLextern value caml_callbackN_exn (value closure, int narg, value args[]);
 #define Is_exception_result(v) (((v) & 3) == 2)
 #define Extract_exception(v) ((v) & ~3)
 
+#if CAML_API_VERSION < 405
 CAMLextern value * caml_named_value (char const * name);
-typedef void (*caml_named_action) (value*, char *);
-CAMLextern void caml_iterate_named_values(caml_named_action f);
+#endif
+
+CAMLextern caml_root caml_named_root (char const * name);
+typedef void (*caml_named_action) (caml_root, char *);
+CAMLextern void caml_iterate_named_roots(caml_named_action f);
 
 CAMLextern void caml_main (char ** argv);
 CAMLextern void caml_startup (char ** argv);

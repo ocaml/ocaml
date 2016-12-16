@@ -200,7 +200,7 @@ CAMLexport value caml_callbackN (value closure, int narg, value args[])
 /* Naming of OCaml values */
 
 struct named_value {
-  value val;
+  caml_root val;
   struct named_value * next;
   char name[1];
 };
@@ -225,38 +225,46 @@ CAMLprim value caml_register_named_value(value vname, value val)
 
   for (nv = named_value_table[h]; nv != NULL; nv = nv->next) {
     if (strcmp(name, nv->name) == 0) {
-      nv->val = val;
+      caml_modify_root(nv->val, val);
       return Val_unit;
     }
   }
   nv = (struct named_value *)
           caml_stat_alloc(sizeof(struct named_value) + namelen);
   memcpy(nv->name, name, namelen + 1);
-  nv->val = val;
+  nv->val = caml_create_root(val);
   nv->next = named_value_table[h];
   named_value_table[h] = nv;
-  caml_register_global_root(&nv->val);
   return Val_unit;
 }
 
-CAMLexport value * caml_named_value(char const *name)
+
+
+CAMLexport caml_root caml_named_root(char const *name)
 {
   struct named_value * nv;
   for (nv = named_value_table[hash_value_name(name)];
        nv != NULL;
        nv = nv->next) {
-    if (strcmp(name, nv->name) == 0) return &nv->val;
+    if (strcmp(name, nv->name) == 0) return nv->val;
   }
   return NULL;
 }
 
-CAMLexport void caml_iterate_named_values(caml_named_action f)
+
+CAMLexport value* caml_named_value(char const* name)
+{
+  extern value* caml__root_as_ptr(caml_root r);
+  return caml__root_as_ptr(caml_named_root(name));
+}
+
+CAMLexport void caml_iterate_named_roots(caml_named_action f)
 {
   int i;
   for(i = 0; i < Named_value_size; i++){
     struct named_value * nv;
     for (nv = named_value_table[i]; nv != NULL; nv = nv->next) {
-      f( &nv->val, nv->name );
+      f( nv->val, nv->name );
     }
   }
 }

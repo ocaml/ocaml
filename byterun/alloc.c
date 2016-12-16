@@ -85,6 +85,84 @@ CAMLexport value caml_alloc_small_with_my_or_given_profinfo (mlsize_t wosize,
   }
 }
 
+static inline value alloc_fixed(mlsize_t wosize, tag_t tag, value* vals)
+{
+  value result;
+  mlsize_t i;
+#undef Setup_for_gc
+#define Setup_for_gc CAMLparamN(vals, wosize)
+#undef Restore_after_gc
+#define Restore_after_gc CAMLdrop
+  Alloc_small (result, wosize, tag);
+#undef Setup_for_gc
+#define Setup_for_gc
+#undef Restore_after_gc
+#define Restore_after_gc
+  for (i = 0; i < wosize; i++) {
+    Field(result, i) = vals[i];
+  }
+  return result;
+}
+
+CAMLexport value caml_alloc_1 (tag_t tag, value a)
+{
+  value v[1] = {a};
+  return alloc_fixed(1, tag, v);
+}
+
+CAMLexport value caml_alloc_2 (tag_t tag, value a, value b)
+{
+  value v[2] = {a, b};
+  return alloc_fixed(2, tag, v);
+}
+
+CAMLexport value caml_alloc_3 (tag_t tag, value a, value b, value c)
+{
+  value v[3] = {a, b, c};
+  return alloc_fixed(3, tag, v);
+}
+
+CAMLexport value caml_alloc_4 (tag_t tag, value a, value b, value c, value d)
+{
+  value v[4] = {a, b, c, d};
+  return alloc_fixed(4, tag, v);
+}
+
+CAMLexport value caml_alloc_5 (tag_t tag, value a, value b, value c, value d,
+                               value e)
+{
+  value v[5] = {a, b, c, d, e};
+  return alloc_fixed(5, tag, v);
+}
+
+CAMLexport value caml_alloc_6 (tag_t tag, value a, value b, value c, value d,
+                               value e, value f)
+{
+  value v[6] = {a, b, c, d, e, f};
+  return alloc_fixed(6, tag, v);
+}
+
+CAMLexport value caml_alloc_7 (tag_t tag, value a, value b, value c, value d,
+                               value e, value f, value g)
+{
+  value v[7] = {a, b, c, d, e, f, g};
+  return alloc_fixed(7, tag, v);
+}
+
+CAMLexport value caml_alloc_8 (tag_t tag, value a, value b, value c, value d,
+                               value e, value f, value g, value h)
+{
+  value v[8] = {a, b, c, d, e, f, g, h};
+  return alloc_fixed(8, tag, v);
+}
+
+CAMLexport value caml_alloc_9 (tag_t tag, value a, value b, value c, value d,
+                               value e, value f, value g, value h, value i)
+{
+  value v[9] = {a, b, c, d, e, f, g, h, i};
+  return alloc_fixed(9, tag, v);
+}
+
 /* [n] is a number of words (fields) */
 CAMLexport value caml_alloc_tuple(mlsize_t n)
 {
