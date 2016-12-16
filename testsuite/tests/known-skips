@@ -1,0 +1,29 @@
+# "This is a temporary hack" -- DRA 16-Dec-2016
+# Lines beginning # are comments (no preceding whitespace)
+# Lines can be tagged with comma-separated predicates listed in a {} block.
+# If *any* predicate in the list matches then the line is accepted.
+# Available predicates:
+#   win32     => building a native Windows system (UNIX_OR_WIN32=win32)
+#   system-*  => building a specific SYSTEM
+#   !system-* => NOT building a specific SYSTEM
+#   arch-*    => building a specific ARCH
+#   bytecode  => testing bytecode only (BYTECODE_ONLY=true)
+#   !fortran  => no FORTRAN compiler is available (FORTRAN_COMPILER=)
+#   !csharp   => no C# compiler is available
+#   !unix     => unix library not built (includes native Windows)
+#   !flambda  => flambda not enabled (FLAMBDA=false)
+{win32}tests/lib-threads/signal.ml
+{win32}tests/lib-threads/signal2.ml
+{win32,system-bsd_elf}tests/lib-systhreads
+{!system-macosx,bytecode}tests/unwind
+{system-win64}tests/asmcomp
+{win32,arch-arm,arch-power,system-cygwin,arch-s390x}tests/runtime-errors/stackoverflow.native
+{!fortran}tests/lib-bigarray-2
+{!unix}tests/callback
+tests/manual-intf-c
+{!flambda}tests/asmcomp/unrolling_flambda2
+{!flambda}tests/asmcomp/unrolling_flambda
+{!flambda}tests/asmcomp/static_float_array_flambda_opaque
+{!flambda}tests/asmcomp/static_float_array_flambda
+{!flambda}tests/asmcomp/is_static_flambda
+{!csharp}tests/lib-dynlink-csharp

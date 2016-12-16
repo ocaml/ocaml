@@ -18,7 +18,10 @@ NO_PRINT=`$(MAKE) empty --no-print-directory >/dev/null 2>&1 \
 	  && echo --no-print-directory`
 
 FIND=find
+DIFF=diff -q
 include ../config/Makefile
+# Borrowed from ../Makefile.tools
+BYTECODE_ONLY=[ "$(ARCH)" = "none" -o "$(ASM)" = "none" ]
 
 .PHONY: default
 default:
@@ -182,6 +185,22 @@ clean:
 	  (cd `dirname $$file` && $(MAKE) BASEDIR=$(BASEDIR) clean); \
 	done
 
+# In order to make this grep expression readable, spaces end up being introduced
+# so a small make-hoop is jumped through to remove spaces from it when it's
+# used.
+SKIP_LOGIC=[{,]( \
+  system-$(SYSTEM)|arch-$(ARCH) \
+  $(if $(filter win32,$(UNIX_OR_WIN32)),|win32) \
+  $(if $(filter unix,$(OTHERLIBRARIES)),,|!unix) \
+  $(if $(FORTRAN_COMPILER),,|!fortran) \
+  $(if $(filter true,$(BYTECODE_ONLY)),|bytecode) \
+  $(if $(filter false,$(FLAMBDA)),|!flambda) \
+  $(if $(shell which csc.exe 2>/dev/null),,|!csharp) \
+  |!system-[^,}]*) \
+  [,}]
+EMPTY=
+SPACE=$(EMPTY) $(EMPTY)
+
 RAN_ALL=0
 .PHONY: report
 report:
@@ -200,6 +219,28 @@ report:
              echo "$$ACTUAL tests considered, but only expected $$EXPECTED" ; \
              echo "The tests/total-tests file probably wants updating!" ; \
              RESULT=1 ; \
+           else \
+             grep -v "^#" tests/known-skips \
+               | sed -e "s/\([{,]\)!system-$(SYSTEM)/\1/" \
+               | grep -E "^[^{]|$(subst $(SPACE),,$(SKIP_LOGIC))" \
+               | sed -e "s/^{[^}]*}//" \
+               | sort | uniq > known-skips ; \
+             sed -e "1,/^List of skipped/d" \
+                 -e "/^$$/,$$$$d" \
+                 -e "s/^ *//" report \
+               | sort > actual-skips ; \
+             if ! $(DIFF) known-skips actual-skips > /dev/null ; then \
+               echo "The skipped tests do not match expectations for this" ; \
+               echo "platform. It's possible that tests/known-skips simply" ; \
+               echo "requires updating. Details:" ; \
+               $(firstword $(DIFF)) known-skips actual-skips \
+                 | grep "^[<>]" \
+                 | sort -r \
+                 | sed -e "s/^< \(.*\)/Expect to skip \1/" \
+                       -e "s/^> \(.*\)/Unexpectedly skipped \1/" ; \
+               RESULT=1 ; \
+             fi ; \
+             rm known-skips actual-skips ; \
            fi ; \
            rm report ; \
            exit $$RESULT ; \
