@@ -46,7 +46,7 @@ all: lib tools
 	  $(MAKE) $(NO_PRINT) exec-one DIR=$$dir; \
 	done 2>&1 | tee _log
 	@$(MAKE) $(NO_PRINT) retries
-	@$(MAKE) report
+	@$(MAKE) RAN_ALL=1 report
 
 .PHONY: all-%
 all-%: lib tools
@@ -95,7 +95,11 @@ parallel-%: lib tools
 	     "$(MAKE) $(NO_PRINT) exec-one DIR={} 2>&1" \
 	 | tee _log
 	@$(MAKE) $(NO_PRINT) retries
-	@$(MAKE) report
+	@if [ '$*' = '*' ] ; then \
+           $(MAKE) RAN_ALL=1 report ; \
+         else \
+           $(MAKE) report ; \
+         fi
 
 .PHONY: parallel
 parallel: parallel-*
@@ -178,10 +182,28 @@ clean:
 	  (cd `dirname $$file` && $(MAKE) BASEDIR=$(BASEDIR) clean); \
 	done
 
+RAN_ALL=0
 .PHONY: report
 report:
 	@if [ ! -f _log ]; then echo "No '_log' file."; exit 1; fi
 	@awk -f makefiles/summarize.awk <_log
+	@if [ $(RAN_ALL) -eq 1 ] ; then \
+           awk -f makefiles/summarize.awk <_log > report ; \
+	   EXPECTED=`cat tests/total-tests | tr -d '\r'` ; \
+           ACTUAL=`fgrep "tests considered" report | sed -e "s/[^0-9]*//g"` ; \
+           RESULT=0 ; \
+           if [ $$EXPECTED -gt $$ACTUAL ] ; then \
+             echo "$$ACTUAL tests considered where $$EXPECTED were expected" ; \
+             echo "There may be a fault in the testsuite" ; \
+             RESULT=1 ; \
+           elif [ $$EXPECTED -lt $$ACTUAL ] ; then \
+             echo "$$ACTUAL tests considered, but only expected $$EXPECTED" ; \
+             echo "The tests/total-tests file probably wants updating!" ; \
+             RESULT=1 ; \
+           fi ; \
+           rm report ; \
+           exit $$RESULT ; \
+         fi
 
 retry-list:
 	@while read LINE; do \
