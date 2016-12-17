@@ -135,12 +135,8 @@ let record_frame_label ?label live raise_ dbg =
           Misc.fatal_error ("bad GC root " ^ Reg.name r)
       | _ -> ())
     live;
-  frame_descriptors :=
-    { fd_lbl = lbl;
-      fd_frame_size = frame_size();
-      fd_live_offset = !live_offset;
-      fd_raise = raise_;
-      fd_debuginfo = dbg } :: !frame_descriptors;
+  record_frame_descr ~label:lbl ~frame_size:(frame_size())
+    ~live_offset:!live_offset ~raise_frame:raise_ dbg;
   lbl
 
 let record_frame ?label live raise_ dbg =
