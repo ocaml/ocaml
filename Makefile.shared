@@ -283,9 +283,11 @@ check_arch:
 ARCHES=amd64 i386 arm arm64 power sparc s390x
 
 check_all_arches:
-	@for i in $(ARCHES); do \
-	  $(MAKEREC) --no-print-directory check_arch ARCH=$$i; \
-	done
+	@STATUS=0; \
+	 for i in $(ARCHES); do \
+	   $(MAKEREC) --no-print-directory check_arch ARCH=$$i || STATUS=1; \
+	 done; \
+	 exit $$STATUS
 
 # Compiler Plugins
 
