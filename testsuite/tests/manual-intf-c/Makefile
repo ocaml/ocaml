@@ -11,14 +11,14 @@ LIBUNIX = -I $(BASEDIR)/../otherlibs/unix unix.cma
 # of curses.
 .PHONY: disable
 disable:
-	@printf " ... testing prog => skipped\n"
-	@printf " ... testing prog2 => skipped\n"
+	@printf " ... testing 'prog' => skipped\n"
+	@printf " ... testing 'prog2' => skipped\n"
 
 .PHONY: default
 default: clean $(SOURCES) $(CSOURCES)
-	@printf " ... testing prog"
+	@printf " ... testing 'prog'"
 	@$(MAKE) prog > /dev/null && echo " => passed" || echo " => failed"
-	@printf " ... testing prog2"
+	@printf " ... testing 'prog2'"
 	@$(MAKE) prog2 REDIRECT=">prog2.result 2>&1" \
 	  >/dev/null 2>/dev/null || :
 	@$(DIFF) prog2.reference prog2.result >/dev/null \

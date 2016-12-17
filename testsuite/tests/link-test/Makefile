@@ -17,13 +17,13 @@
 default:
 	@$(MAKE) byte
 	@if $(BYTECODE_ONLY) ; then \
-	  echo " ... testing native 'test.reference': => skipped"; \
+	  echo " ... testing 'test.native': => skipped"; \
 	else \
 	  $(MAKE) native; \
 	fi
 
 native:
-	@printf " ... testing native 'test.reference':"
+	@printf " ... testing 'test.native':"
 	@$(OCAMLOPT) -c submodule.ml
 	@$(OCAMLOPT) -c aliases.ml
 	@$(OCAMLOPT) -c external.mli external.ml
@@ -39,7 +39,7 @@ native:
 	    && echo " => passed" || echo " => failed"
 
 byte:
-	@printf " ... testing byte 'test.reference':"
+	@printf " ... testing 'test.byte':"
 	@$(OCAMLC) -c submodule.ml
 	@$(OCAMLC) -c aliases.ml
 	@$(OCAMLC) -c external.mli external.ml
