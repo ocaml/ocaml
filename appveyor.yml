@@ -37,7 +37,7 @@ install:
   - mkdir "%OCAMLROOT%"
   - mkdir "%OCAMLROOT%/bin"
   - mkdir "%OCAMLROOT%/bin/flexdll"
-  - appveyor DownloadFile "http://alain.frisch.fr/flexdll/flexdll-bin-0.34.zip" -FileName "flexdll.zip"
+  - appveyor DownloadFile "http://alain.frisch.fr/flexdll/flexdll-bin-0.35.zip" -FileName "flexdll.zip"
   - cinst 7zip.commandline
   - 7za x -y flexdll.zip
   - for %%F in (*.c *.h *.exe *.o *.obj) do copy %%F "%OCAMLROOT%\bin\flexdll"
