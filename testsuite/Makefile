@@ -141,6 +141,10 @@ exec-one:
 	  done; \
 	else \
 	  echo "Running tests from '$$DIR' ..."; \
+          if [ ! -f $(DIR)/count ] ; then \
+            echo "$(DIR)/count must contain the total number of tests"; \
+            exit 1; \
+          fi; \
 	  cd $(DIR) && \
 	  $(MAKE) TERM=dumb BASEDIR=$(BASEDIR) || echo '=> unexpected error'; \
 	fi
@@ -208,7 +212,20 @@ report:
 	@awk -f makefiles/summarize.awk <_log
 	@if [ $(RAN_ALL) -eq 1 ] ; then \
            awk -f makefiles/summarize.awk <_log > report ; \
-	   EXPECTED=`cat tests/total-tests | tr -d '\r'` ; \
+           EXPECTED=0 ; \
+           for dir in tests/*; do \
+             if [ -d $$dir ] ; then \
+               if [ ! -f $$dir/Makefile ] ; then \
+                 for subdir in $$dir/*; do \
+                   read N < $$subdir/count; \
+                   EXPECTED=$$((EXPECTED+N)); \
+                 done \
+               else \
+                 read N < $$dir/count; \
+                 EXPECTED=$$((EXPECTED+N)); \
+               fi \
+             fi \
+           done; \
            ACTUAL=`fgrep "tests considered" report | sed -e "s/[^0-9]*//g"` ; \
            RESULT=0 ; \
            if [ $$EXPECTED -gt $$ACTUAL ] ; then \
