@@ -177,6 +177,9 @@ Next version (4.05.0):
 - PR#7424: Typechecker diverges on unboxed type declaration
   (Jacques Garrigue, report by Stephen Dolan)
 
+- PR#7432: Linking modules compiled with -labels and -nolabels is not safe
+  (Jacques Garrigue, Report by Jeremy Yallop)
+
 - GPR#795: remove 256-character limitation on Sys.executable_name
   (Xavier Leroy)
 
