@@ -19,6 +19,10 @@ Next version (4.04.1):
   configuration.
   (David Allsopp)
 
+- GPR#980: add dynlink options to ocamlbytecomp.cmxa to allow ocamlopt.opt
+  to load plugins. See http://github.com/OCamlPro/ocamlc-plugins for examples.
+  (Fabrice Le Fessant)
+
 OCaml 4.04.0 (4 Nov 2016):
 --------------------------
 
