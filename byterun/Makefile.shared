@@ -37,6 +37,26 @@ endif
 
 CC=$(BYTECC)
 
+ifdef BOOTSTRAPPING_FLEXLINK
+CFLAGS=-DBOOTSTRAPPING_FLEXLINK
+else
+CFLAGS=
+endif
+
+# On Windows, OCAML_STDLIB_DIR needs to be defined dynamically
+
+ifeq "$(UNIX_OR_WIN32)" "win32"
+CFLAGS += -DOCAML_STDLIB_DIR='"$(LIBDIR)"'
+endif
+
+CFLAGS += $(IFLEXDIR) $(BYTECCCOMPOPTS)
+
+DFLAGS=$(CFLAGS) -DDEBUG
+
+ifneq "$(CCOMPTYPE)" "msvc"
+DFLAGS += -g
+endif
+
 COMMONOBJS=\
   interp.o misc.o stacks.o fix_code.o startup_aux.o startup.o \
   freelist.o major_gc.o minor_gc.o memory.o alloc.o roots.o globroots.o \
