@@ -65,9 +65,6 @@ endif
 clean::
 	rm -f libcamlrun_shared.so libcamlrun_pic.a
 
-%.d.o: %.c
-	$(CC) -c $(DFLAGS) $< -o $@
-
 %.i.o: %.c
 	$(CC) -c $(IFLAGS) -o $@ $<
 

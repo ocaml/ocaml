@@ -57,6 +57,13 @@ ifneq "$(CCOMPTYPE)" "msvc"
 DFLAGS += -g
 endif
 
+ifeq "$(CCOMPTYPE)" "msvc"
+OUTPUTOBJ=-Fo
+else
+OUTPUTOBJ=-o
+endif
+DBGO=d.$(O)
+
 COMMONOBJS=\
   interp.o misc.o stacks.o fix_code.o startup_aux.o startup.o \
   freelist.o major_gc.o minor_gc.o memory.o alloc.o roots.o globroots.o \
@@ -146,3 +153,10 @@ clean ::
 	rm -f $(LIBRARIES) $(PROGRAMS) *.$(O) *.$(A) *.$(SO)
 	rm -f primitives prims.c caml/opnames.h caml/jumptbl.h
 	rm -f caml/version.h
+
+%.$(O): %.c
+	$(CC) $(CFLAGS) -c $<
+
+%.$(DBGO): %.c
+	$(CC) $(DFLAGS) -c $(OUTPUTOBJ)$@ $<
+
