@@ -100,8 +100,10 @@ ifeq "$(PROFILING)" "true"
 TARGETS += libasmrunp.$(A)
 endif
 
+ifeq "$(UNIX_OR_WIN32)" "unix"
 ifeq "$(SUPPORTS_SHARED_LIBRARIES)" "true"
 TARGETS += libasmrun_pic.$(A) libasmrun_shared.$(SO)
+endif
 endif
 
 .PHONY: all
