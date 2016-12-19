@@ -21,9 +21,6 @@ else
 MAKE_OCAMLRUN=$(MKEXE) -o $(1) $(2)
 endif
 
-OBJS=$(COMMONOBJS:.o=.$(O)) win32.$(O) main.$(O)
-DOBJS=$(OBJS:.$(O)=.$(DBGO)) instrtrace.$(DBGO)
-
 ocamlrun$(EXE): libcamlrun.$(A) prims.$(O)
 	$(call MAKE_OCAMLRUN,ocamlrun$(EXE),prims.$(O) libcamlrun.$(A) \
 	         $(call SYSLIB,ws2_32) $(EXTRALIBS))
@@ -31,12 +28,6 @@ ocamlrun$(EXE): libcamlrun.$(A) prims.$(O)
 ocamlrund$(EXE): libcamlrund.$(A) prims.$(O) main.$(O)
 	$(MKEXE) -o ocamlrund$(EXE) prims.$(O) \
 	         $(call SYSLIB,ws2_32) $(EXTRALIBS) libcamlrund.$(A)
-
-libcamlrun.$(A): $(OBJS)
-	$(call MKLIB,libcamlrun.$(A),$(OBJS))
-
-libcamlrund.$(A): $(DOBJS)
-	$(call MKLIB,libcamlrund.$(A),$(DOBJS))
 
 .depend.nt: .depend
 	rm -f .depend.win32

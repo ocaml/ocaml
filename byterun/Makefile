@@ -17,11 +17,6 @@ include Makefile.shared
 
 IFLAGS=$(CFLAGS) -DCAML_INSTR
 
-OBJS=$(COMMONOBJS) $(UNIX_OR_WIN32).o main.o
-DOBJS=$(OBJS:.o=.d.o) instrtrace.d.o
-IOBJS=$(OBJS:.o=.i.o)
-PICOBJS=$(OBJS:.o=.pic.o)
-
 ifeq "$(SUPPORTS_SHARED_LIBRARIES)" "true"
 all:: libcamlrun_pic.a libcamlrun_shared.so
 endif
@@ -36,25 +31,6 @@ ocamlrund$(EXE): libcamlrund.a prims.o
 
 ocamlruni$(EXE): prims.o libcamlruni.a
 	$(MKEXE) $(BYTECCLINKOPTS) -o $@ $^ $(BYTECCLIBS)
-
-libcamlrun.a: $(OBJS)
-	$(ARCMD) rc libcamlrun.a $(OBJS)
-	$(RANLIB) libcamlrun.a
-
-libcamlrund.a: $(DOBJS)
-	$(ARCMD) rc libcamlrund.a $(DOBJS)
-	$(RANLIB) libcamlrund.a
-
-libcamlruni.a: $(IOBJS)
-	$(ARCMD) rc $@ $^
-	$(RANLIB) $@
-
-libcamlrun_pic.a: $(PICOBJS)
-	$(ARCMD) rc libcamlrun_pic.a $(PICOBJS)
-	$(RANLIB) libcamlrun_pic.a
-
-libcamlrun_shared.so: $(PICOBJS)
-	$(MKDLL) -o libcamlrun_shared.so $(PICOBJS) $(BYTECCLIBS)
 
 install::
 ifeq "$(SUPPORTS_SHARED_LIBRARIES)" "true"

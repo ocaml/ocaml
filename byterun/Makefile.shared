@@ -64,20 +64,25 @@ OUTPUTOBJ=-o
 endif
 DBGO=d.$(O)
 
-COMMONOBJS=\
-  interp.o misc.o stacks.o fix_code.o startup_aux.o startup.o \
-  freelist.o major_gc.o minor_gc.o memory.o alloc.o roots.o globroots.o \
-  fail.o signals.o signals_byt.o printexc.o backtrace_prim.o backtrace.o \
-  compare.o ints.o floats.o str.o array.o io.o extern.o intern.o \
-  hash.o sys.o meta.o parsing.o gc_ctrl.o terminfo.o md5.o obj.o \
-  lexing.o callback.o debugger.o weak.o compact.o finalise.o custom.o \
-  dynlink.o spacetime.o afl.o
+COMMONOBJS=$(addsuffix .$(O), \
+  interp misc stacks fix_code startup_aux startup \
+  freelist major_gc minor_gc memory alloc roots globroots \
+  fail signals signals_byt printexc backtrace_prim backtrace \
+  compare ints floats str array io extern intern \
+  hash sys meta parsing gc_ctrl terminfo md5 obj \
+  lexing callback debugger weak compact finalise custom \
+  dynlink spacetime afl)
 
 PRIMS=\
   alloc.c array.c compare.c extern.c floats.c gc_ctrl.c hash.c \
   intern.c interp.c ints.c io.c lexing.c md5.c meta.c obj.c parsing.c \
   signals.c str.c sys.c terminfo.c callback.c weak.c finalise.c stacks.c \
   dynlink.c backtrace_prim.c backtrace.c spacetime.c afl.c
+
+OBJS=$(COMMONOBJS) $(UNIX_OR_WIN32).$(O) main.$(O)
+DOBJS=$(OBJS:.$(O)=.$(DBGO)) instrtrace.$(DBGO)
+IOBJS=$(OBJS:.$(O)=.i.$(O))
+PICOBJS=$(OBJS:.$(O)=.pic.$(O))
 
 .PHONY: all
 all:: $(LIBRARIES) $(PROGRAMS)
@@ -153,6 +158,21 @@ clean ::
 	rm -f $(LIBRARIES) $(PROGRAMS) *.$(O) *.$(A) *.$(SO)
 	rm -f primitives prims.c caml/opnames.h caml/jumptbl.h
 	rm -f caml/version.h
+
+libcamlrun.$(A): $(OBJS)
+	$(call MKLIB,$@, $^)
+
+libcamlrund.$(A): $(DOBJS)
+	$(call MKLIB,$@, $^)
+
+libcamlruni.$(A): $(IOBJS)
+	$(call MKLIB,$@, $^)
+
+libcamlrun_pic.$(A): $(PICOBJS)
+	$(call MKLIB,$@, $^)
+
+libcamlrun_shared.$(SO): $(PICOBJS)
+	$(MKDLL) -o $@ $^ $(BYTECCLIBS)
 
 %.$(O): %.c
 	$(CC) $(CFLAGS) -c $<
