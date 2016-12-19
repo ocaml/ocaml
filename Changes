@@ -201,6 +201,9 @@ Next version (4.05.0):
   by zero.
   (Jeremy Yallop)
 
+- GPR#934: check for integer overflow in Bytes.extend
+  (Jeremy Yallop, review by Gabriel Scherer)
+
 Next minor version (4.04.1):
 ----------------------------
 
