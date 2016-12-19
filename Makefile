@@ -475,7 +475,7 @@ partialclean::
 # The bytecode compiler compiled with the native-code compiler
 
 compilerlibs/ocamlbytecomp.cmxa: $(BYTECOMP:.cmo=.cmx)
-	$(CAMLOPT) -a -o $@ $(BYTECOMP:.cmo=.cmx)
+	$(CAMLOPT) -a -ccopt "$(NATDYNLINKOPTS)" -o $@ $(BYTECOMP:.cmo=.cmx)
 partialclean::
 	rm -f compilerlibs/ocamlbytecomp.cmxa compilerlibs/ocamlbytecomp.a
 
