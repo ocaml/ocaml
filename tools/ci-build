@@ -42,6 +42,10 @@ quote1 () {
 set -x
 
 #########################################################################
+# Save the current directory (on cygwin, /etc/profile changes it)
+jenkinsdir="$(pwd)"
+
+#########################################################################
 # "Parse" mandatory command-line arguments.
 
 arch="$1"
@@ -86,7 +90,7 @@ makefile=Makefile
 configure=unix
 
 case "$branch" in
-  .) workdir=.
+  .) workdir="$jenkinsdir"
      docheckout=false
      ;;
   *) workdir="$HOME/jenkins-workspace/$branch"
