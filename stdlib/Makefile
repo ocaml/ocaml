@@ -53,7 +53,7 @@ OTHERS=list.cmo char.cmo bytes.cmo string.cmo sys.cmo \
 .PHONY: all
 all: stdlib.cma std_exit.cmo camlheader target_camlheader camlheader_ur
 
-ifeq "$(RUNTIMED)" "runtimed"
+ifeq "$(RUNTIMED)" "true"
 all: camlheaderd
 endif
 
@@ -86,7 +86,7 @@ install::
 	  "$(INSTALL_LIBDIR)"
 	cp target_camlheader "$(INSTALL_LIBDIR)/camlheader"
 
-ifeq "$(RUNTIMED)" "runtimed"
+ifeq "$(RUNTIMED)" "true"
 install::
 	cp target_camlheaderd $(INSTALL_LIBDIR)
 endif

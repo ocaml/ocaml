@@ -45,7 +45,7 @@ pthread_wanted=yes
 dl_defs=''
 verbose=no
 with_curses=yes
-debugruntime=noruntimed
+debugruntime=false
 with_instrumented_runtime=false
 with_sharedlibs=yes
 partialld="ld -r"
@@ -169,7 +169,7 @@ while : ; do
     -verbose|--verbose)
         verbose=yes;;
     -with-debug-runtime|--with-debug-runtime)
-        debugruntime=runtimed;;
+        debugruntime=true;;
     -with-instrumented-runtime|--with-instrumented-runtime)
         with_instrumented_runtime=true;;
     -no-debugger|--no-debugger)
@@ -2027,11 +2027,6 @@ echo "MKEXEDEBUGFLAG=$mkexedebugflag" >> Makefile
 echo "MKDLL=$mksharedlib" >> Makefile
 echo "MKMAINDLL=$mkmaindll" >> Makefile
 echo "RUNTIMED=${debugruntime}" >>Makefile
-if $shared_libraries_supported; then
-  echo "SHARED=shared" >>Makefile
-else
-  echo "SHARED=noshared" >>Makefile
-fi
 echo "RUNTIMEI=${with_instrumented_runtime}" >>Makefile
 echo "WITH_DEBUGGER=${with_debugger}" >>Makefile
 echo "WITH_OCAMLDOC=${with_ocamldoc}" >>Makefile
@@ -2182,7 +2177,7 @@ else
   inf "Source-level replay debugger: not supported"
 fi
 
-if test "$debugruntime" = "runtimed"; then
+if $debugruntime; then
   inf "Debug runtime will be compiled and installed"
 fi
 

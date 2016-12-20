@@ -95,6 +95,7 @@
 /asmrun/terminfo.c
 /asmrun/unix.c
 /asmrun/weak.c
+/asmrun/win32.c
 
 /boot/Saved
 /boot/ocamlrun
