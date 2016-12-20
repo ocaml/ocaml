@@ -15,17 +15,6 @@
 
 include Makefile.shared
 
-ifdef BOOTSTRAPPING_FLEXLINK
-MAKE_OCAMLRUN=$(MKEXE_BOOT)
-else
-MAKE_OCAMLRUN=$(MKEXE) -o $(1) $(2)
-endif
-
-LIBS = $(call SYSLIB,ws2_32) $(EXTRALIBS)
-
-ocamlrun$(EXE): prims.$(O) libcamlrun.$(A)
-	$(call MAKE_OCAMLRUN,$@,$^ $(LIBS))
-
 .depend.nt: .depend
 	rm -f .depend.win32
 	echo "win32.o: win32.c caml/fail.h caml/compatibility.h \\"\

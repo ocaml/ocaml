@@ -21,11 +21,6 @@ ifeq "$(SUPPORTS_SHARED_LIBRARIES)" "true"
 all:: libcamlrun_pic.a libcamlrun_shared.so
 endif
 
-LIBS = $(BYTECCLIBS)
-
-ocamlrun$(EXE): prims.$(O) libcamlrun.$(A)
-	$(MKEXE) $(BYTECCLINKOPTS) -o $@ $^ $(LIBS)
-
 ocamlruni$(EXE): prims.$(O) libcamlruni.$(A)
 	$(MKEXE) $(BYTECCLINKOPTS) -o $@ $^ $(LIBS)
 
