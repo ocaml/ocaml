@@ -162,6 +162,9 @@ clean ::
 libcamlrun.$(A): $(OBJS)
 	$(call MKLIB,$@, $^)
 
+ocamlrund$(EXE): prims.$(O) libcamlrund.$(A)
+	$(MKEXE) $(MKEXEDEBUGFLAG) $(BYTECCLINKOPTS) -o $@ $^ $(LIBS)
+
 libcamlrund.$(A): $(DOBJS)
 	$(call MKLIB,$@, $^)
 

@@ -26,9 +26,6 @@ LIBS = $(BYTECCLIBS)
 ocamlrun$(EXE): prims.$(O) libcamlrun.$(A)
 	$(MKEXE) $(BYTECCLINKOPTS) -o $@ $^ $(LIBS)
 
-ocamlrund$(EXE): prims.$(O) libcamlrund.$(A)
-	$(MKEXE) $(MKEXEDEBUGFLAG) $(BYTECCLINKOPTS) -o $@ $^ $(LIBS)
-
 ocamlruni$(EXE): prims.$(O) libcamlruni.$(A)
 	$(MKEXE) $(BYTECCLINKOPTS) -o $@ $^ $(LIBS)
 
