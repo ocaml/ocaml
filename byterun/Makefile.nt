@@ -21,11 +21,13 @@ else
 MAKE_OCAMLRUN=$(MKEXE) -o $(1) $(2)
 endif
 
+LIBS = $(call SYSLIB,ws2_32) $(EXTRALIBS)
+
 ocamlrun$(EXE): prims.$(O) libcamlrun.$(A)
-	$(call MAKE_OCAMLRUN,$@,$^ $(call SYSLIB,ws2_32) $(EXTRALIBS))
+	$(call MAKE_OCAMLRUN,$@,$^ $(LIBS))
 
 ocamlrund$(EXE): prims.$(O) libcamlrund.$(A)
-	$(MKEXE) -o $@ $^ $(call SYSLIB,ws2_32) $(EXTRALIBS)
+	$(MKEXE) -o $@ $^ $(LIBS)
 
 .depend.nt: .depend
 	rm -f .depend.win32
