@@ -2177,7 +2177,7 @@ else
   inf "Source-level replay debugger: not supported"
 fi
 
-if test $debugruntime; then
+if $debugruntime; then
   inf "Debug runtime will be compiled and installed"
 fi
 
