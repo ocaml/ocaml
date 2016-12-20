@@ -35,6 +35,12 @@ PROGRAMS += ocamlruni$(EXE)
 LIBRARIES += libcamlruni.$(A)
 endif
 
+ifeq "$(UNIX_OR_WIN32)" "unix"
+ifeq "$(SUPPORTS_SHARED_LIBRARIES)" "true"
+LIBRARIES += libcamlrun_pic.$(A) libcamlrun_shared.$(SO)
+endif
+endif
+
 CC=$(BYTECC)
 
 ifdef BOOTSTRAPPING_FLEXLINK
@@ -52,6 +58,8 @@ endif
 CFLAGS += $(IFLEXDIR) $(BYTECCCOMPOPTS)
 
 DFLAGS=$(CFLAGS) -DDEBUG
+IFLAGS=$(CFLAGS) -DCAML_INSTR
+PICFLAGS=$(CFLAGS) $(SHAREDCCCOMPOPTS)
 
 ifneq "$(CCOMPTYPE)" "msvc"
 DFLAGS += -g
@@ -85,14 +93,14 @@ IOBJS=$(OBJS:.$(O)=.i.$(O))
 PICOBJS=$(OBJS:.$(O)=.pic.$(O))
 
 .PHONY: all
-all:: $(LIBRARIES) $(PROGRAMS)
+all: $(LIBRARIES) $(PROGRAMS)
 
 ld.conf: ../config/Makefile
 	echo "$(STUBLIBDIR)" > $@
 	echo "$(LIBDIR)" >> $@
 
 .PHONY: install
-install::
+install:
 	cp $(PROGRAMS) "$(INSTALL_BINDIR)"
 	cp $(LIBRARIES) "$(INSTALL_LIBDIR)"
 	mkdir -p "$(INSTALL_LIBDIR)/caml"
@@ -154,7 +162,7 @@ caml/version.h : ../VERSION ../tools/make-version-header.sh
 	sh ../tools/make-version-header.sh ../VERSION > caml/version.h
 
 .PHONY: clean
-clean ::
+clean:
 	rm -f $(LIBRARIES) $(PROGRAMS) *.$(O) *.$(A) *.$(SO)
 	rm -f primitives prims.c caml/opnames.h caml/jumptbl.h
 	rm -f caml/version.h
@@ -183,6 +191,9 @@ ocamlrund$(EXE): prims.$(O) libcamlrund.$(A)
 libcamlrund.$(A): $(DOBJS)
 	$(call MKLIB,$@, $^)
 
+ocamlruni$(EXE): prims.$(O) libcamlruni.$(A)
+	$(MKEXE) $(BYTECCLINKOPTS) -o $@ $^ $(LIBS)
+
 libcamlruni.$(A): $(IOBJS)
 	$(call MKLIB,$@, $^)
 
@@ -197,6 +208,12 @@ libcamlrun_shared.$(SO): $(PICOBJS)
 
 %.$(DBGO): %.c
 	$(CC) $(DFLAGS) -c $(OUTPUTOBJ)$@ $<
+
+%.i.$(O): %.c
+	$(CC) $(IFLAGS) -c $(OUTPUTOBJ)$@ $<
+
+%.pic.$(O): %.c
+	$(CC) $(PICFLAGS) -c $(OUTPUTOBJ)$@ $<
 
 ifneq "$(TOOLCHAIN)" "msvc"
 .PHONY: depend

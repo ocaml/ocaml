@@ -14,27 +14,3 @@
 #**************************************************************************
 
 include Makefile.shared
-
-IFLAGS=$(CFLAGS) -DCAML_INSTR
-
-ifeq "$(SUPPORTS_SHARED_LIBRARIES)" "true"
-all:: libcamlrun_pic.a libcamlrun_shared.so
-endif
-
-ocamlruni$(EXE): prims.$(O) libcamlruni.$(A)
-	$(MKEXE) $(BYTECCLINKOPTS) -o $@ $^ $(LIBS)
-
-install::
-ifeq "$(SUPPORTS_SHARED_LIBRARIES)" "true"
-	cp libcamlrun_shared.so "$(INSTALL_LIBDIR)"
-	cp libcamlrun_pic.a "$(INSTALL_LIBDIR)"
-endif
-
-clean::
-	rm -f libcamlrun_shared.so libcamlrun_pic.a
-
-%.i.o: %.c
-	$(CC) -c $(IFLAGS) -o $@ $<
-
-%.pic.o: %.c
-	$(CC) -c $(CFLAGS) $(SHAREDCCCOMPOPTS) $< -o $@
