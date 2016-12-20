@@ -21,15 +21,13 @@ ifeq "$(SUPPORTS_SHARED_LIBRARIES)" "true"
 all:: libcamlrun_pic.a libcamlrun_shared.so
 endif
 
-ocamlrun$(EXE): libcamlrun.a prims.o
-	$(MKEXE) $(BYTECCLINKOPTS) -o ocamlrun$(EXE) \
-		  prims.o libcamlrun.a $(BYTECCLIBS)
+ocamlrun$(EXE): prims.$(O) libcamlrun.$(A)
+	$(MKEXE) $(BYTECCLINKOPTS) -o $@ $^ $(BYTECCLIBS)
 
-ocamlrund$(EXE): libcamlrund.a prims.o
-	$(MKEXE) $(MKEXEDEBUGFLAG) $(BYTECCLINKOPTS) -o ocamlrund$(EXE) \
-		  prims.o libcamlrund.a $(BYTECCLIBS)
+ocamlrund$(EXE): prims.$(O) libcamlrund.$(A)
+	$(MKEXE) $(MKEXEDEBUGFLAG) $(BYTECCLINKOPTS) -o $@ $^ $(BYTECCLIBS)
 
-ocamlruni$(EXE): prims.o libcamlruni.a
+ocamlruni$(EXE): prims.$(O) libcamlruni.$(A)
 	$(MKEXE) $(BYTECCLINKOPTS) -o $@ $^ $(BYTECCLIBS)
 
 install::
