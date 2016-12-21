@@ -407,7 +407,7 @@ utils/config.ml: utils/config.mlp config/Makefile
 	    -e "s|%%EXT_ASM%%|.$(S)|" \
 	    -e "s|%%EXT_LIB%%|.$(A)|" \
 	    -e "s|%%EXT_DLL%%|.dll|" \
-	    -e "s|%%SYSTHREAD_SUPPORT%%|true|" \
+	    -e "s|%%SYSTHREAD_SUPPORT%%|$(SYSTHREAD_SUPPORT)|" \
 	    -e 's|%%ASM%%|$(ASM)|' \
 	    -e 's|%%ASM_CFI_SUPPORTED%%|false|' \
 	    -e 's|%%WITH_FRAME_POINTERS%%|false|' \
