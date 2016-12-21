@@ -404,7 +404,6 @@ utils/config.ml: utils/config.mlp config/Makefile
 	    -e 's|%%CCOMPTYPE%%|$(CCOMPTYPE)|' \
 	    -e 's|%%BYTECODE_C_COMPILER%%|$(BYTECODE_C_COMPILER)|' \
 	    -e 's|%%NATIVE_C_COMPILER%%|$(NATIVE_C_COMPILER)|' \
-	    -e '/c_compiler =/s| -Werror||' \
 	    -e 's|%%PACKLD%%|$(PACKLD)|' \
 	    -e 's|%%BYTECCLIBS%%|$(BYTECCLIBS)|' \
 	    -e 's|%%NATIVECCLIBS%%|$(NATIVECCLIBS)|' \
