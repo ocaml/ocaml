@@ -653,7 +653,7 @@ let is_simple_argument = function
 
 let no_effects = function
   | Uclosure _ -> true
-  | u -> is_simple_argument u
+  | u -> is_pure_clambda u
 
 let rec bind_params_rec loc fpc subst params args body =
   match (params, args) with

@@ -15,6 +15,10 @@ Next version (4.05.0):
   and "0 mod <expr>" in the case when <expr> was a non-constant
   evaluating to zero (Mark Shinwell)
 
+- Eliminate more useless pure computations when inlining functions
+  that ignore some of their arguments
+  (Alain Frisch)
+
 ### Runtime system:
 
 - PR#7423, GPR#946: expose new exception-raising functions
