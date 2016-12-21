@@ -22,6 +22,9 @@ PREFIX=C:/ocamlms
 ### Where to install the binaries.
 BINDIR=$(PREFIX)/bin
 
+### Standard runtime system
+BYTERUN=ocamlrun
+
 ### Where to install the standard library
 LIBDIR=$(PREFIX)/lib
 

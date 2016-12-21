@@ -262,6 +262,9 @@ case "$bindir" in
       bindir="$prefix/bin";;
    *) echo "BINDIR=$bindir" >> Makefile;;
 esac
+
+echo 'BYTERUN=$(BINDIR)/ocamlrun' >> Makefile
+
 case "$libdir" in
   "") echo 'LIBDIR=$(PREFIX)/lib/ocaml' >> Makefile
       libdir="$prefix/lib/ocaml";;
