@@ -409,17 +409,17 @@ utils/config.ml: utils/config.mlp config/Makefile
 	    -e "s|%%EXT_DLL%%|.dll|" \
 	    -e "s|%%SYSTHREAD_SUPPORT%%|$(SYSTHREAD_SUPPORT)|" \
 	    -e 's|%%ASM%%|$(ASM)|' \
-	    -e 's|%%ASM_CFI_SUPPORTED%%|false|' \
-	    -e 's|%%WITH_FRAME_POINTERS%%|false|' \
+	    -e 's|%%ASM_CFI_SUPPORTED%%|$(ASM_CFI_SUPPORTED)|' \
+	    -e 's|%%WITH_FRAME_POINTERS%%|$(WITH_FRAME_POINTERS)|' \
 	    -e 's|%%WITH_PROFINFO%%|$(WITH_PROFINFO)|' \
 	    -e 's|%%WITH_SPACETIME%%|$(WITH_SPACETIME)|' \
 	    -e 's|%%PROFINFO_WIDTH%%|$(PROFINFO_WIDTH)|' \
-	    -e 's|%%LIBUNWIND_AVAILABLE%%|false|' \
-	    -e 's|%%LIBUNWIND_LINK_FLAGS%%||' \
+	    -e 's|%%LIBUNWIND_AVAILABLE%%|$(LIBUNWIND_AVAILABLE)|' \
+	    -e 's|%%LIBUNWIND_LINK_FLAGS%%|$(LIBUNWIND_LINK_FLAGS)|' \
 	    -e 's|%%MKDLL%%|$(MKDLL)|' \
 	    -e 's|%%MKEXE%%|$(MKEXE)|' \
 	    -e 's|%%MKMAINDLL%%|$(MKMAINDLL)|' \
-	    -e 's|%%CC_PROFILE%%||' \
+	    -e 's|%%CC_PROFILE%%|$(CC_PROFILE)|' \
 	    -e 's|%%HOST%%|$(HOST)|' \
 	    -e 's|%%TARGET%%|$(TARGET)|' \
 	    -e 's|%%PROFILING%%|$(PROFILING)|' \
