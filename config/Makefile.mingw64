@@ -104,6 +104,7 @@ AFL_INSTRUMENT=false
 
 ### Which C compiler to use for the bytecode interpreter.
 BYTECC=$(TOOLPREF)gcc -O -mms-bitfields
+BYTECODE_C_COMPILER=$(BYTECC)
 
 ### Additional compile-time options for $(BYTECC).  (For static linking.)
 BYTECCCOMPOPTS=-DCAML_NAME_SPACE -Wall -Wno-unused
@@ -178,6 +179,7 @@ SYSTEM=mingw64
 
 ### Which C compiler to use for the native-code compiler.
 NATIVECC=$(BYTECC)
+NATIVE_C_COMPILER=$(NATIVECC)
 
 ### Additional compile-time options for $(NATIVECC).
 NATIVECCCOMPOPTS=-DCAML_NAME_SPACE -Wall -Wno-unused

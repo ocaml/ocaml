@@ -389,8 +389,8 @@ utils/config.ml: utils/config.mlp config/Makefile
 	sed -e "s|%%LIBDIR%%|$(LIBDIR)|" \
 	    -e "s|%%BYTERUN%%|$(BYTERUN)|" \
 	    -e 's|%%CCOMPTYPE%%|$(CCOMPTYPE)|' \
-	    -e "s|%%BYTECC%%|$(BYTECC)|" \
-	    -e "s|%%NATIVECC%%|$(NATIVECC)|" \
+	    -e "s|%%BYTECODE_C_COMPILER%%|$(BYTECODE_C_COMPILER)|" \
+	    -e "s|%%NATIVE_C_COMPILER%%|$(NATIVE_C_COMPILER)|" \
 	    -e "s|%%PARTIALLD%%|$(PARTIALLD)|" \
 	    -e "s|%%PACKLD%%|$(PACKLD)|" \
 	    -e "s|%%BYTECCLIBS%%|$(BYTECCLIBS)|" \

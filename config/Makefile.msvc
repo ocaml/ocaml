@@ -98,6 +98,7 @@ AFL_INSTRUMENT=false
 
 ### Which C compiler to use for the bytecode interpreter.
 BYTECC=cl -nologo -D_CRT_SECURE_NO_DEPRECATE -O2 -Gy- -MD
+BYTECODE_C_COMPILER=$(BYTECC)
 
 ### Additional compile-time options for $(BYTECC).  (For static linking.)
 BYTECCCOMPOPTS=-DCAML_NAME_SPACE
@@ -176,7 +177,7 @@ SYSTEM=win32
 
 ### Which C compiler to use for the native-code compiler.
 NATIVECC=cl -nologo -D_CRT_SECURE_NO_DEPRECATE -O2 -Gy- -MD
-
+NATIVE_C_COMPILER=$(NATIVECC)
 ### Additional compile-time options for $(NATIVECC).
 NATIVECCCOMPOPTS=-DCAML_NAME_SPACE
 

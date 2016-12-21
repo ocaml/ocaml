@@ -336,9 +336,11 @@ esac
 
 # The BYTECC make variable defines which compiler and options to use
 # to compile C code intended to be used by OCaml bytecode programs.
-# It is used inside OCaml's build system, and also when ocamlc is
-# called on a third-party C source file and no -cc command-line option
-# has been specified.
+# It is used inside OCaml's build system.
+
+# The BYTECODE_C_COMPILER make variable says how the C compiler should be
+# invoked to process a third-party C source file passed to ocamlc
+# when no -cc command-line option has been specified.
 
 # The BYTECCCOMPOPTS make variable contains options to pass to the C
 # compiler but only when compiling C files that belong to the OCaml
@@ -865,9 +867,11 @@ fi
 
 # The NATIVECC make variable defines which compiler and options to use
 # to compile C code intended to be used by OCaml native programs.
-# It is used inside OCaml's build system, and also when ocamlopt is
-# called on a third-party C source file and no -cc command-line
-# option has been specified.
+# It is used inside OCaml's build system.
+
+# The NATIVE_C_COMPILER make variable says how the C compiler should be
+# invoked to process a third-party C source file passed to ocamlopt
+# when no -cc command-line option has been specified.
 
 # The NATIVECCCOMPOPTS make variable contains options to pass to the C
 # compiler, but only when compiling C files that belong to the OCaml
@@ -1979,6 +1983,8 @@ fi
 cclibs="$cclibs $mathlib"
 
 echo "BYTECC=$bytecc $bytecccompopts" >> Makefile
+echo "BYTECODE_C_COMPILER=$bytecc $bytecccompopts $sharedcccompopts" \
+  >> Makefile
 echo "BYTECCCOMPOPTS=$byteccprivatecompopts" >> Makefile
 echo "BYTECCLINKOPTS=$bytecclinkopts" >> Makefile
 echo "BYTECCLIBS=$cclibs $dllib $curseslibs $pthread_link \
@@ -2003,6 +2009,7 @@ echo "ARCH=$arch" >> Makefile
 echo "MODEL=$model" >> Makefile
 echo "SYSTEM=$system" >> Makefile
 echo "NATIVECC=$nativecc $nativecccompopts" >> Makefile
+echo "NATIVE_C_COMPILER=$nativecc $nativecccompopts" >> Makefile
 echo "NATIVECCCOMPOPTS=$nativeccprivatecompopts" >> Makefile
 echo "NATIVECCPROFOPTS=$nativeccprofopts" >> Makefile
 echo "NATIVECCLINKOPTS=$nativecclinkopts" >> Makefile

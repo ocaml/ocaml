@@ -401,9 +401,9 @@ utils/config.ml: utils/config.mlp config/Makefile
 	@rm -f utils/config.ml
 	sed -e 's|%%LIBDIR%%|$(LIBDIR)|' \
 	    -e 's|%%BYTERUN%%|$(BYTERUN)|' \
-	    -e 's|%%CCOMPTYPE%%|cc|' \
-	    -e 's|%%BYTECC%%|$(BYTECC) $(SHAREDCCCOMPOPTS)|' \
-	    -e 's|%%NATIVECC%%|$(NATIVECC)|' \
+	    -e 's|%%CCOMPTYPE%%|$(CCOMPTYPE)|' \
+	    -e 's|%%BYTECODE_C_COMPILER%%|$(BYTECODE_C_COMPILER)|' \
+	    -e 's|%%NATIVE_C_COMPILER%%|$(NATIVE_C_COMPILER)|' \
 	    -e '/c_compiler =/s| -Werror||' \
 	    -e 's|%%PACKLD%%|$(PACKLD)|' \
 	    -e 's|%%BYTECCLIBS%%|$(BYTECCLIBS)|' \
