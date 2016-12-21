@@ -49,16 +49,16 @@ flexdll/Makefile:
 
 # Bootstrapping FlexDLL - leaves a bytecode image of flexlink.exe in flexdll/
 flexdll: flexdll/Makefile
-	cd byterun && $(MAKEREC) BOOTSTRAPPING_FLEXLINK=yes ocamlrun$(EXE)
+	cd byterun && $(MAKE) BOOTSTRAPPING_FLEXLINK=yes ocamlrun$(EXE)
 	cp byterun/ocamlrun.exe boot/ocamlrun.exe
-	cd stdlib && $(MAKEREC) COMPILER=../boot/ocamlc stdlib.cma std_exit.cmo
+	cd stdlib && $(MAKE) COMPILER=../boot/ocamlc stdlib.cma std_exit.cmo
 	cd stdlib && cp stdlib.cma std_exit.cmo *.cmi ../boot
 	cd flexdll && \
 	 $(MAKECMD) MSVC_DETECT=0 TOOLCHAIN=$(TOOLCHAIN) TOOLPREF=$(TOOLPREF) \
 	            CHAINS=$(FLEXDLL_CHAIN) NATDYNLINK=false \
 	            OCAMLOPT="../boot/ocamlrun ../boot/ocamlc -I ../boot" \
 	            flexlink.exe support
-	cd byterun && $(MAKEREC) clean
+	cd byterun && $(MAKE) clean
 	$(MAKEREC) partialclean
 
 flexlink.opt:
@@ -111,12 +111,12 @@ LIBFILES=stdlib.cma std_exit.cmo *.cmi camlheader
 
 # Start up the system from the distribution compiler
 coldstart:
-	cd byterun ; $(MAKEREC) $(BOOT_FLEXLINK_CMD) all
+	cd byterun ; $(MAKE) $(BOOT_FLEXLINK_CMD) all
 	cp byterun/ocamlrun.exe boot/ocamlrun.exe
-	cd yacc ; $(MAKEREC) $(BOOT_FLEXLINK_CMD) all
+	cd yacc ; $(MAKE) $(BOOT_FLEXLINK_CMD) all
 	cp yacc/ocamlyacc.exe boot/ocamlyacc.exe
 	cd stdlib ; \
-	  $(MAKEREC) $(BOOT_FLEXLINK_CMD) \
+	  $(MAKE) $(BOOT_FLEXLINK_CMD) \
 	             COMPILER="../boot/ocamlc -use-prims ../byterun/primitives"\
 	             all
 	cd stdlib ; cp $(LIBFILES) ../boot
@@ -211,11 +211,11 @@ install:
 	mkdir -p "$(INSTALL_STUBLIBDIR)"
 	mkdir -p "$(INSTALL_COMPLIBDIR)"
 	cp VERSION "$(INSTALL_LIBDIR)/"
-	cd byterun ; $(MAKEREC) install
+	cd byterun ; $(MAKE) install
 	cp ocamlc "$(INSTALL_BINDIR)/ocamlc.exe"
 	cp ocaml "$(INSTALL_BINDIR)/ocaml.exe"
 	cp ocamlc "$(INSTALL_BINDIR)/ocamlc.byte.exe"
-	cd stdlib ; $(MAKEREC) install
+	cd stdlib ; $(MAKE) install
 	cp lex/ocamllex "$(INSTALL_BINDIR)/ocamllex.exe"
 	cp yacc/ocamlyacc.exe "$(INSTALL_BINDIR)/ocamlyacc.exe"
 	cp lex/ocamllex "$(INSTALL_BINDIR)/ocamllex.byte.exe"
@@ -230,15 +230,15 @@ install:
 	   "$(INSTALL_COMPLIBDIR)"
 	cp expunge "$(INSTALL_LIBDIR)/expunge.exe"
 	cp toplevel/topdirs.cmi "$(INSTALL_LIBDIR)"
-	cd tools ; $(MAKEREC) install
+	cd tools ; $(MAKE) install
 	for i in $(OTHERLIBRARIES); do \
-	  $(MAKEREC) -C otherlibs/$$i install || exit $$?; \
+	  $(MAKE) -C otherlibs/$$i install || exit $$?; \
 	done
 	if test -n "$(WITH_OCAMLDOC)"; then \
-	  (cd ocamldoc; $(MAKEREC) install); \
+	  (cd ocamldoc; $(MAKE) install); \
 	fi
 	if test -n "$(WITH_DEBUGGER)"; then \
-	  (cd debugger; $(MAKEREC) install); \
+	  (cd debugger; $(MAKE) install); \
 	fi
 	if test -n "$(FLEXDLL_SUBMODULE_PRESENT)"; then \
 	  $(MAKEREC) install-flexdll; \
@@ -262,10 +262,10 @@ install-flexdll:
 
 # Installation of the native-code compiler
 installopt:
-	cd asmrun && $(MAKEREC) install
+	cd asmrun && $(MAKE) install
 	cp ocamlopt "$(INSTALL_BINDIR)/ocamlopt.exe"
 	cp ocamlopt "$(INSTALL_BINDIR)/ocamlopt.byte.exe"
-	cd stdlib && $(MAKEREC) installopt
+	cd stdlib && $(MAKE) installopt
 	cp middle_end/*.cmi middle_end/*.cmt middle_end/*.cmti \
 		"$(INSTALL_COMPLIBDIR)"
 	cp middle_end/base_types/*.cmi middle_end/base_types/*.cmt \
@@ -273,13 +273,13 @@ installopt:
 	cp asmcomp/*.cmi asmcomp/*.cmt asmcomp/*.cmti "$(INSTALL_COMPLIBDIR)"
 	cp compilerlibs/ocamloptcomp.cma $(OPTSTART) "$(INSTALL_COMPLIBDIR)"
 	if test -n "$(WITH_OCAMLDOC)"; then \
-	  (cd ocamldoc && $(MAKEREC) installopt); \
+	  (cd ocamldoc && $(MAKE) installopt); \
 	fi
 	for i in $(OTHERLIBRARIES); do \
-	  $(MAKEREC) -C otherlibs/$$i installopt || exit $$?; \
+	  $(MAKE) -C otherlibs/$$i installopt || exit $$?; \
 	done
 	if test -f ocamlopt.opt ; then $(MAKEREC) installoptopt; fi
-	cd tools; $(MAKEREC) installopt
+	cd tools; $(MAKE) installopt
 	if test -f ocamlopt.opt -a -f flexdll/flexlink.opt ; then \
 	  cp -f flexdll/flexlink.opt $(INSTALL_BINDIR)/flexlink.exe ; \
 	fi
@@ -384,7 +384,7 @@ natruntop:
 # Native dynlink
 
 otherlibs/dynlink/dynlink.cmxa: otherlibs/dynlink/natdynlink.ml
-	cd otherlibs/dynlink && $(MAKEREC) allopt
+	cd otherlibs/dynlink && $(MAKE) allopt
 
 # The configuration file
 
@@ -505,7 +505,7 @@ $(ASMCOMP:.cmo=.cmx): ocamlopt
 # The predefined exceptions and primitives
 
 byterun/primitives:
-	cd byterun ; $(MAKEREC) primitives
+	cd byterun ; $(MAKE) primitives
 
 bytecomp/runtimedef.ml: byterun/primitives byterun/caml/fail.h
 	(echo 'let builtin_exceptions = [|'; \
@@ -582,7 +582,7 @@ partialclean::
 beforedepend:: asmcomp/emit.ml
 
 tools/cvt_emit: tools/cvt_emit.mll
-	cd tools ; $(MAKEREC) cvt_emit
+	cd tools ; $(MAKE) cvt_emit
 
 # The "expunge" utility
 
@@ -599,101 +599,101 @@ partialclean::
 runtime: makeruntime stdlib/libcamlrun.$(A)
 
 makeruntime:
-	cd byterun ; $(MAKEREC) $(BOOT_FLEXLINK_CMD) all
+	cd byterun ; $(MAKE) $(BOOT_FLEXLINK_CMD) all
 stdlib/libcamlrun.$(A): byterun/libcamlrun.$(A)
 	cp byterun/libcamlrun.$(A) stdlib/libcamlrun.$(A)
 clean::
-	cd byterun ; $(MAKEREC) clean
+	cd byterun ; $(MAKE) clean
 	rm -f stdlib/libcamlrun.$(A)
 alldepend::
-	cd byterun ; $(MAKEREC) depend
+	cd byterun ; $(MAKE) depend
 
 # The runtime system for the native-code compiler
 
 runtimeopt: makeruntimeopt stdlib/libasmrun.$(A)
 
 makeruntimeopt:
-	cd asmrun ; $(MAKEREC) $(BOOT_FLEXLINK_CMD) all
+	cd asmrun ; $(MAKE) $(BOOT_FLEXLINK_CMD) all
 stdlib/libasmrun.$(A): asmrun/libasmrun.$(A)
 	cp asmrun/libasmrun.$(A) stdlib/libasmrun.$(A)
 clean::
-	cd asmrun ; $(MAKEREC) clean
+	cd asmrun ; $(MAKE) clean
 	rm -f stdlib/libasmrun.$(A)
 alldepend::
-	cd asmrun ; $(MAKEREC) depend
+	cd asmrun ; $(MAKE) depend
 
 # The library
 
 library:
-	cd stdlib && $(MAKEREC) $(BOOT_FLEXLINK_CMD) all
+	cd stdlib && $(MAKE) $(BOOT_FLEXLINK_CMD) all
 library-cross:
 	cd stdlib \
-	&& $(MAKEREC) $(BOOT_FLEXLINK_CMD) CAMLRUN=../byterun/ocamlrun all
+	&& $(MAKE) $(BOOT_FLEXLINK_CMD) CAMLRUN=../byterun/ocamlrun all
 libraryopt:
-	cd stdlib && $(MAKEREC) $(BOOT_FLEXLINK_CMD) allopt
+	cd stdlib && $(MAKE) $(BOOT_FLEXLINK_CMD) allopt
 partialclean::
-	cd stdlib && $(MAKEREC) clean
+	cd stdlib && $(MAKE) clean
 alldepend::
-	cd stdlib && $(MAKEREC) depend
+	cd stdlib && $(MAKE) depend
 
 # The lexer and parser generators
 
 ocamllex:
-	cd lex ; $(MAKEREC) all
+	cd lex ; $(MAKE) all
 ocamllex.opt:
-	cd lex ; $(MAKEREC) allopt
+	cd lex ; $(MAKE) allopt
 partialclean::
-	cd lex ; $(MAKEREC) clean
+	cd lex ; $(MAKE) clean
 alldepend::
-	cd lex ; $(MAKEREC) depend
+	cd lex ; $(MAKE) depend
 
 ocamlyacc:
-	cd yacc ; $(MAKEREC) $(BOOT_FLEXLINK_CMD) all
+	cd yacc ; $(MAKE) $(BOOT_FLEXLINK_CMD) all
 clean::
-	cd yacc ; $(MAKEREC) clean
+	cd yacc ; $(MAKE) clean
 
 # OCamldoc
 
 ocamldoc:
-	cd ocamldoc ; $(MAKEREC) all
+	cd ocamldoc ; $(MAKE) all
 ocamldoc.opt:
-	cd ocamldoc ; $(MAKEREC) opt.opt
+	cd ocamldoc ; $(MAKE) opt.opt
 partialclean::
-	cd ocamldoc ; $(MAKEREC) clean
+	cd ocamldoc ; $(MAKE) clean
 alldepend::
-	cd ocamldoc ; $(MAKEREC) depend
+	cd ocamldoc ; $(MAKE) depend
 
 # The extra libraries
 
 otherlibraries:
 	for i in $(OTHERLIBRARIES); do \
-	  $(MAKEREC) -C otherlibs/$$i all || exit $$?; \
+	  $(MAKE) -C otherlibs/$$i all || exit $$?; \
 	done
 otherlibrariesopt:
 	for i in $(OTHERLIBRARIES); \
-	  do $(MAKEREC) -C otherlibs/$$i allopt || exit $$?; \
+	  do $(MAKE) -C otherlibs/$$i allopt || exit $$?; \
 	done
 partialclean::
 	for i in $(OTHERLIBRARIES); \
-	  do $(MAKEREC) -C otherlibs/$$i partialclean || exit $$?; \
+	  do $(MAKE) -C otherlibs/$$i partialclean || exit $$?; \
 	done
 clean::
 	for i in $(OTHERLIBRARIES); do \
-	  $(MAKEREC) -C otherlibs/$$i clean || exit $$?; \
+	  $(MAKE) -C otherlibs/$$i clean || exit $$?; \
 	done
 alldepend::
 	for i in $(OTHERLIBRARIES); do \
-	  $(MAKEREC) -C otherlibs/$$i depend || exit $$?; \
+	  $(MAKE) -C otherlibs/$$i depend || exit $$?; \
 	done
 
 # The replay debugger
 
 ocamldebugger: ocamlc ocamlyacc ocamllex
-	cd debugger; $(MAKEREC) all
+	cd debugger; $(MAKE) all
 partialclean::
-	cd debugger; $(MAKEREC) clean
+	cd debugger; $(MAKE) clean
 alldepend::
-	cd debugger; $(MAKEREC) depend
+	cd debugger; $(MAKE) depend
 
 # Make clean in the test suite
 

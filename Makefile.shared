@@ -235,21 +235,21 @@ partialclean::
 ocamltools: ocamlc ocamlyacc ocamllex asmcomp/cmx_format.cmi \
             asmcomp/printclambda.cmo compilerlibs/ocamlmiddleend.cma \
             asmcomp/export_info.cmo
-	+cd tools ; $(MAKEREC) all
+	+cd tools ; $(MAKE) all
 
 ocamltoolsopt: ocamlopt
-	+cd tools; $(MAKEREC) opt
+	+cd tools; $(MAKE) opt
 
 ocamltoolsopt.opt: ocamlc.opt ocamlyacc ocamllex.opt asmcomp/cmx_format.cmi \
                    asmcomp/printclambda.cmx compilerlibs/ocamlmiddleend.cmxa \
                    asmcomp/export_info.cmx
-	+cd tools; $(MAKEREC) opt.opt
+	+cd tools; $(MAKE) opt.opt
 
 partialclean::
-	+cd tools; $(MAKEREC) clean
+	+cd tools; $(MAKE) clean
 
 alldepend::
-	+cd tools; $(MAKEREC) depend
+	+cd tools; $(MAKE) depend
 
 #config/Makefile: configure
 #	./configure $(CONFIGURE_ARGS)
