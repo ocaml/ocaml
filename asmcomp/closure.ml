@@ -209,7 +209,7 @@ let rec is_pure_clambda = function
   | Uconst _ -> true
   | Uprim((Psetglobal _ | Psetfield _ | Psetfloatfield _ | Pduprecord _ |
            Pccall _ | Praise _ | Poffsetref _ |  Pbytessetu | Pbytessets |
-           Pdivint _ | (* can raise Divisioon_by_zero *)
+           Pdivint _ | (* can raise Division_by_zero *)
            Parraysetu _ | Parraysets _ | Pbigarrayset _), _, _) -> false
   | Uprim(_, args, _) -> List.for_all is_pure_clambda args
   | _ -> false
