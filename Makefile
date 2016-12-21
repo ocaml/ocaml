@@ -20,15 +20,6 @@ include Makefile.shared
 
 MKDIR=mkdir -p
 
-# For users who don't read the INSTALL file
-defaultentry:
-	@echo "Please refer to the installation instructions in file INSTALL."
-	@echo "If you've just unpacked the distribution, something like"
-	@echo "	./configure"
-	@echo "	make world.opt"
-	@echo "	make install"
-	@echo "should work.  But see the file INSTALL for more details."
-
 # Recompile the system using the bootstrap compiler
 all:
 	$(MAKE) runtime
@@ -774,7 +765,7 @@ distclean:
 .PHONY: all backup bootstrap checkstack clean
 .PHONY: partialclean beforedepend alldepend cleanboot coldstart
 .PHONY: compare core coreall
-.PHONY: coreboot defaultentry depend distclean install installopt
+.PHONY: coreboot depend distclean install installopt
 .PHONY: library library-cross libraryopt
 .PHONY: ocamldebugger ocamldoc
 .PHONY: ocamldoc.opt ocamllex ocamllex.opt ocamltools ocamltoolsopt

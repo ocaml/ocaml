@@ -13,11 +13,24 @@
 #*                                                                        *
 #**************************************************************************
 
-# For users who don't read the INSTALL file
-defaultentry:
-
 # The main Makefile, fragments shared between Makefile and Makefile.nt
+
 include config/Makefile
+
+# For users who don't read the INSTALL file
+.PHONY: defaultentry
+defaultentry:
+ifeq "$(UNIX_OR_WIN32)" "unix"
+	@echo "Please refer to the installation instructions in file INSTALL."
+	@echo "If you've just unpacked the distribution, something like"
+	@echo "	./configure"
+	@echo "	make world.opt"
+	@echo "	make install"
+	@echo "should work.  But see the file INSTALL for more details."
+else
+	@echo "Please refer to the instructions in file README.win32.adoc."
+endif
+
 CAMLRUN ?= boot/ocamlrun
 CAMLYACC ?= boot/ocamlyacc
 include stdlib/StdlibModules

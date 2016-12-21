@@ -17,10 +17,6 @@
 
 include Makefile.shared
 
-# For users who don't read the INSTALL file
-defaultentry:
-	@echo "Please refer to the instructions in file README.win32.adoc."
-
 FLEXDLL_SUBMODULE_PRESENT:=$(wildcard flexdll/Makefile)
 ifeq "$(FLEXDLL_SUBMODULE_PRESENT)" ""
   BOOT_FLEXLINK_CMD=
@@ -753,7 +749,7 @@ distclean:
 .PHONY: all backup bootstrap checkstack clean
 .PHONY: partialclean beforedepend alldepend cleanboot coldstart
 .PHONY: compare core coreall
-.PHONY: coreboot defaultentry depend distclean install installopt
+.PHONY: coreboot depend distclean install installopt
 .PHONY: library library-cross libraryopt
 .PHONY: ocamldebugger ocamldoc
 .PHONY: ocamldoc.opt ocamllex ocamllex.opt ocamltools ocamltoolsopt
