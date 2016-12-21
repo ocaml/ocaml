@@ -159,6 +159,10 @@ Next version (4.05.0):
   .cmti files
   (Alain Frisch, report by Daniel Bunzli, review by Jeremie Dimino)
 
+- GPR#832, MPR#7357: Improve compilation time for toplevel
+  include(struct ... end : sig ... end)
+  (Alain Frisch, report by Hongbo Zhang, review by Jacques Garrigue)
+
 ### Bug fixes
 
 - PR#7216, GPR#949: don't require double parens in Functor((val x))
