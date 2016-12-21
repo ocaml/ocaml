@@ -165,6 +165,10 @@ Next version (4.05.0):
 - GPR#915: fix -dsource (pprintast.ml) bugs
   (Runhang Li, review by Alain Frisch)
 
+- GPR#832, MPR#7357: Improve compilation time for toplevel
+  include(struct ... end : sig ... end)
+  (Alain Frisch, report by Hongbo Zhang, review by Jacques Garrigue)
+
 ### Bug fixes
 
 - PR#7216, GPR#949: don't require double parens in Functor((val x))
