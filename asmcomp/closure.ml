@@ -201,17 +201,100 @@ let lambda_smaller lam threshold =
   with Exit ->
     false
 
+let is_pure_prim = function
+  (* Obvious side-effects *)
+  | Psetglobal _ | Psetfield _ | Psetfloatfield _ | Pduprecord _
+  | Poffsetref _ | Pbytessetu | Pbytessets
+  | Parraysetu _ | Parraysets _ | Pbigarrayset _
+  | Pccall _ | Praise _
+  | Prevapply
+  | Pdirapply
+  | Plazyforce
+  | Pstring_set_16 _
+  | Pstring_set_32 _
+  | Pstring_set_64 _
+  | Pbigstring_set_16 _
+  | Pbigstring_set_32 _
+  | Pbigstring_set_64 _
+
+  (* can raise Division by zero *)
+  |  Pdivint _  | Pmodint _
+  | Pdivbint _
+  | Pmodbint _
+
+  (* can raise Out of bound *)
+  | Parrayrefs _
+  | Pstringrefs
+  | Pbytesrefs
+  | Pbigarrayref _
+  | Pstring_load_16 _
+  | Pstring_load_32 _
+  | Pstring_load_64 _
+  | Pbigstring_load_16 _
+  | Pbigstring_load_32 _
+  | Pbigstring_load_64 _
+
+    -> false
+
+  (* Pure primitives *)
+  | Pidentity
+  | Pbytes_to_string
+  | Pbytes_of_string
+  | Pignore
+  | Ploc _
+  | Pgetglobal _
+  | Pmakeblock _
+  | Pfield _
+  | Pfloatfield _
+  | Psequand | Psequor | Pnot
+  | Pnegint | Paddint | Psubint | Pmulint
+  | Pandint | Porint | Pxorint
+  | Plslint | Plsrint | Pasrint
+  | Pintcomp _
+  | Poffsetint _
+  | Pintoffloat | Pfloatofint
+  | Pnegfloat | Pabsfloat
+  | Paddfloat | Psubfloat | Pmulfloat | Pdivfloat
+  | Pfloatcomp _
+  | Pstringrefu
+  | Parrayrefu _
+  | Pstringlength
+  | Pbyteslength | Pbytesrefu
+  | Pmakearray _
+  | Pduparray _
+  | Parraylength _
+  | Pisint
+  | Pisout
+  | Pbittest
+  | Pbintofint _
+  | Pintofbint _
+  | Pcvtbint _
+  | Pnegbint _
+  | Paddbint _
+  | Psubbint _
+  | Pmulbint _
+  | Pandbint _
+  | Porbint _
+  | Pxorbint _
+  | Plslbint _
+  | Plsrbint _
+  | Pasrbint _
+  | Pbintcomp _
+  | Pbigarraydim _
+  | Pctconst _
+  | Pbswap16
+  | Pbbswap _
+  | Pint_as_pointer
+  | Popaque ->
+      true
+
 (* Check if a clambda term is ``pure'',
    that is without side-effects *and* not containing function definitions *)
 
 let rec is_pure_clambda = function
     Uvar _ -> true
   | Uconst _ -> true
-  | Uprim((Psetglobal _ | Psetfield _ | Psetfloatfield _ | Pduprecord _ |
-           Pccall _ | Praise _ | Poffsetref _ |  Pbytessetu | Pbytessets |
-           Pdivint _ | (* can raise Division_by_zero *)
-           Parraysetu _ | Parraysets _ | Pbigarrayset _), _, _) -> false
-  | Uprim(_, args, _) -> List.for_all is_pure_clambda args
+  | Uprim(p, args, _) -> is_pure_prim p && List.for_all is_pure_clambda args
   | _ -> false
 
 (* Simplify primitive operations on known arguments *)
@@ -449,6 +532,7 @@ let simplif_prim_pure fpc p (args, approxs) dbg =
   | Pfield n, [ Uprim(Pmakeblock _, ul, _) ], [approx]
     when n < List.length ul ->
       (List.nth ul n, field_approx n approx)
+
   (* Strings *)
   | (Pstringlength | Pbyteslength),
      _,
@@ -690,11 +774,8 @@ let bind_params loc fpc params args body =
 let rec is_pure = function
     Lvar _ -> true
   | Lconst _ -> true
-  | Lprim((Psetglobal _ | Psetfield _ | Psetfloatfield _ | Pduprecord _ |
-           Pccall _ | Praise _ | Poffsetref _  | Pbytessetu | Pbytessets |
-           Parraysetu _ | Parraysets _ | Pbigarrayset _), _,_) -> false
-  | Lprim(_, args,_) -> List.for_all is_pure args
-  | Levent(lam, _ev) -> is_pure lam
+  | Lprim(p, args,_) -> is_pure_prim p && List.for_all is_pure args
+  | Levent(lam, _ev) -> is_pure lam (* can this happen in native code? *)
   | _ -> false
 
 let warning_if_forced_inline ~loc ~attribute warning =
