@@ -142,14 +142,17 @@ let for_primitive (prim : Lambda.primitive) =
   | Pint_as_pointer -> No_effects, No_coeffects
   | Popaque -> Arbitrary_effects, Has_coeffects
   | Ploc _ ->
-    Misc.fatal_error "[Ploc] should have been eliminated by [Translcore]"
+      (* Removed by [Translcore]. *)
+      No_effects, No_coeffects
   | Prevapply
-  | Pdirapply
+  | Pdirapply ->
+      (* Removed by [Simplif], but there is no reason to prevent using
+         the current analysis function before/during Simplif. *)
+      Arbitrary_effects, Has_coeffects
   | Psequand
   | Psequor ->
-    Misc.fatal_errorf "The primitive %a should have been eliminated by the \
-        [Closure_conversion] pass."
-      Printlambda.primitive prim
+      (* Removed by [Closure_conversion] in the flambda pipeline. *)
+      No_effects, No_coeffects
 
 type return_type =
   | Float
