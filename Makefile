@@ -399,43 +399,43 @@ otherlibs/dynlink/dynlink.cmxa: otherlibs/dynlink/natdynlink.ml
 
 utils/config.ml: utils/config.mlp config/Makefile
 	@rm -f utils/config.ml
-	sed -e 's|%%LIBDIR%%|$(LIBDIR)|' \
-	    -e 's|%%BYTERUN%%|$(BYTERUN)|' \
-	    -e 's|%%CCOMPTYPE%%|$(CCOMPTYPE)|' \
-	    -e 's|%%BYTECODE_C_COMPILER%%|$(BYTECODE_C_COMPILER)|' \
-	    -e 's|%%NATIVE_C_COMPILER%%|$(NATIVE_C_COMPILER)|' \
-	    -e 's|%%PACKLD%%|$(PACKLD)|' \
-	    -e 's|%%BYTECCLIBS%%|$(BYTECCLIBS)|' \
-	    -e 's|%%NATIVECCLIBS%%|$(NATIVECCLIBS)|' \
-	    -e 's|%%RANLIBCMD%%|$(RANLIBCMD)|' \
-	    -e 's|%%ARCMD%%|$(ARCMD)|' \
-	    -e 's|%%CC_PROFILE%%|$(CC_PROFILE)|' \
+	sed -e 's|%%AFL_INSTRUMENT%%|$(AFL_INSTRUMENT)|' \
 	    -e 's|%%ARCH%%|$(ARCH)|' \
-	    -e 's|%%MODEL%%|$(MODEL)|' \
-	    -e 's|%%SYSTEM%%|$(SYSTEM)|' \
-	    -e 's|%%EXT_EXE%%|$(EXE)|' \
-	    -e 's|%%EXT_OBJ%%|.o|' \
-	    -e 's|%%EXT_ASM%%|.s|' \
-	    -e 's|%%EXT_LIB%%|.a|' \
-	    -e 's|%%EXT_DLL%%|$(EXT_DLL)|' \
-	    -e 's|%%SYSTHREAD_SUPPORT%%|$(SYSTHREAD_SUPPORT)|' \
+	    -e 's|%%ARCMD%%|$(ARCMD)|' \
 	    -e 's|%%ASM%%|$(ASM)|' \
 	    -e 's|%%ASM_CFI_SUPPORTED%%|$(ASM_CFI_SUPPORTED)|' \
-	    -e 's|%%WITH_FRAME_POINTERS%%|$(WITH_FRAME_POINTERS)|' \
-	    -e 's|%%WITH_PROFINFO%%|$(WITH_PROFINFO)|' \
-	    -e 's|%%WITH_SPACETIME%%|$(WITH_SPACETIME)|' \
-	    -e 's|%%PROFINFO_WIDTH%%|$(PROFINFO_WIDTH)|' \
+	    -e 's|%%BYTECCLIBS%%|$(BYTECCLIBS)|' \
+	    -e 's|%%BYTECODE_C_COMPILER%%|$(BYTECODE_C_COMPILER)|' \
+	    -e 's|%%BYTERUN%%|$(BYTERUN)|' \
+	    -e 's|%%CCOMPTYPE%%|$(CCOMPTYPE)|' \
+	    -e 's|%%CC_PROFILE%%|$(CC_PROFILE)|' \
+	    -e 's|%%EXT_ASM%%|.s|' \
+	    -e 's|%%EXT_DLL%%|$(EXT_DLL)|' \
+	    -e 's|%%EXT_EXE%%|$(EXE)|' \
+	    -e 's|%%EXT_LIB%%|.a|' \
+	    -e 's|%%EXT_OBJ%%|.o|' \
+	    -e 's|%%FLAMBDA%%|$(FLAMBDA)|' \
+	    -e 's|%%HOST%%|$(HOST)|' \
+	    -e 's|%%LIBDIR%%|$(LIBDIR)|' \
 	    -e 's|%%LIBUNWIND_AVAILABLE%%|$(LIBUNWIND_AVAILABLE)|' \
 	    -e 's|%%LIBUNWIND_LINK_FLAGS%%|$(LIBUNWIND_LINK_FLAGS)|' \
 	    -e 's|%%MKDLL%%|$(MKDLL)|' \
 	    -e 's|%%MKEXE%%|$(MKEXE)|' \
 	    -e 's|%%MKMAINDLL%%|$(MKMAINDLL)|' \
-	    -e 's|%%HOST%%|$(HOST)|' \
-	    -e 's|%%TARGET%%|$(TARGET)|' \
-	    -e 's|%%FLAMBDA%%|$(FLAMBDA)|' \
+	    -e 's|%%MODEL%%|$(MODEL)|' \
+	    -e 's|%%NATIVECCLIBS%%|$(NATIVECCLIBS)|' \
+	    -e 's|%%NATIVE_C_COMPILER%%|$(NATIVE_C_COMPILER)|' \
+	    -e 's|%%PACKLD%%|$(PACKLD)|' \
 	    -e 's|%%PROFILING%%|$(PROFILING)|' \
+	    -e 's|%%PROFINFO_WIDTH%%|$(PROFINFO_WIDTH)|' \
+	    -e 's|%%RANLIBCMD%%|$(RANLIBCMD)|' \
 	    -e 's|%%SAFE_STRING%%|$(SAFE_STRING)|' \
-	    -e 's|%%AFL_INSTRUMENT%%|$(AFL_INSTRUMENT)|' \
+	    -e 's|%%SYSTEM%%|$(SYSTEM)|' \
+	    -e 's|%%SYSTHREAD_SUPPORT%%|$(SYSTHREAD_SUPPORT)|' \
+	    -e 's|%%TARGET%%|$(TARGET)|' \
+	    -e 's|%%WITH_FRAME_POINTERS%%|$(WITH_FRAME_POINTERS)|' \
+	    -e 's|%%WITH_PROFINFO%%|$(WITH_PROFINFO)|' \
+	    -e 's|%%WITH_SPACETIME%%|$(WITH_SPACETIME)|' \
 	    utils/config.mlp > utils/config.ml
 
 partialclean::
