@@ -3,6 +3,13 @@ let test_raises_invalid_argument f x =
     (Testing.test_raises_exc_p (function Invalid_argument _ -> true | _ -> false)
          f x)
 
+let check b offset s =
+  let rec loop i =
+    i = String.length s ||
+    Bytes.get b (i + offset) = String.get s i && loop (i+1)
+  in
+  loop 0
+
 let () =
   let abcde = Bytes.of_string "abcde" in
   let open Bytes in
@@ -27,8 +34,7 @@ let () =
     *)
     Testing.test
       (let r = extend abcde 0 0 in
-       length r = 5
-       && r.[0] = 'a' && r.[1] = 'b' && r.[2] = 'c' && r.[3] = 'd' && r.[4] = 'e'
+       length r = 5 && check r 0 "abcde"
        && r != abcde);
 
     (*
@@ -37,7 +43,7 @@ let () =
     *)
     Testing.test
       (let r = extend abcde 2 (-2) in
-       length r = 5 && r.[2] = 'a' && r.[3] = 'b' && r.[4] = 'c');
+       length r = 5 && check r 2 "abc");
 
     (*
       abcde
@@ -45,7 +51,7 @@ let () =
     *)
     Testing.test
       (let r = extend abcde (-1) (-1) in
-       length r = 3 && r.[0] = 'b' && r.[1] = 'c' && r.[2] = 'd');
+       length r = 3 && check r 0 "bcd");
 
     (*
       abcde
@@ -53,7 +59,7 @@ let () =
     *)
     Testing.test
       (let r = extend abcde (-3) 2 in
-       length r = 4 && r.[0] = 'd' && r.[1] = 'e');
+       length r = 4 && check r 0 "de");
 
     (*
       abcde
@@ -61,7 +67,7 @@ let () =
     *)
     Testing.test
       (let r = extend abcde 0 (-2) in
-       length r = 3 && r.[0] = 'a' && r.[1] = 'b' && r.[2] = 'c');
+       length r = 3 && check r 0 "abc");
 
     (*
       abcde
@@ -69,7 +75,7 @@ let () =
     *)
     Testing.test
       (let r = extend abcde (-2) 0 in
-       length r = 3 && r.[0] = 'c' && r.[1] = 'd' && r.[2] = 'e');
+       length r = 3 && check r 0 "cde");
 
     (*
       abcde
@@ -78,7 +84,7 @@ let () =
     Testing.test
       (let r = extend abcde 0 2 in
        length r = 7
-       && r.[0] = 'a' && r.[1] = 'b' && r.[2] = 'c' && r.[3] = 'd' && r.[4] = 'e');
+       && check r 0 "abcde");
 
     (*
         abcde
@@ -87,7 +93,7 @@ let () =
     Testing.test
       (let r = extend abcde 2 0 in
        length r = 7
-       && r.[2] = 'a' && r.[3] = 'b' && r.[4] = 'c' && r.[5] = 'd' && r.[6] = 'e');
+       && check r 2 "abcde");
 
     (*
        abcde
@@ -96,7 +102,7 @@ let () =
     Testing.test
       (let r = extend abcde 1 1 in
        length r = 7
-       && r.[1] = 'a' && r.[2] = 'b' && r.[3] = 'c' && r.[4] = 'd' && r.[5] = 'e');
+       && check r 1 "abcde");
 
     (* length + left + right < 0 *)
     test_raises_invalid_argument
