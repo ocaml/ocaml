@@ -77,6 +77,7 @@ exception Access_to_global_module_identifier of Lambda.primitive
 exception Pidentity_should_not_occur
 exception Pdirapply_should_be_expanded
 exception Prevapply_should_be_expanded
+exception Ploc_should_be_expanded
 exception Sequential_logical_operator_primitives_must_be_expanded of
   Lambda.primitive
 exception Var_within_closure_bound_multiple_times of Var_within_closure.t
@@ -468,6 +469,7 @@ let primitive_invariants flam ~no_access_to_global_module_identifiers =
         | Pidentity -> raise Pidentity_should_not_occur
         | Pdirapply -> raise Pdirapply_should_be_expanded
         | Prevapply -> raise Prevapply_should_be_expanded
+        | Ploc _ -> raise Ploc_should_be_expanded
         | _ -> ()
         end
       | _ -> ())
@@ -813,6 +815,9 @@ let check_exn ?(kind=Normal) ?(cmxfile=false) (flam:Flambda.program) =
     | Prevapply_should_be_expanded ->
       Format.eprintf ">> The Prevapply primitive should never occur in an \
         Flambda expression (see closure_conversion.ml); use Apply instead"
+    | Ploc_should_be_expanded ->
+      Format.eprintf ">> The Ploc primitive should never occur in an \
+        Flambda expression (see translcore.ml); use Apply instead"
     | Move_to_a_closure_not_in_the_free_variables (start_from, move_to) ->
       Format.eprintf ">> A Move_within_set_of_closures from the closure %a \
         to closures that are not parts of its free variables: %a"
