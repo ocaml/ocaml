@@ -201,92 +201,11 @@ let lambda_smaller lam threshold =
   with Exit ->
     false
 
-let is_pure_prim = function
-  (* Obvious side-effects *)
-  | Psetglobal _ | Psetfield _ | Psetfloatfield _ | Pduprecord _
-  | Poffsetref _ | Pbytessetu | Pbytessets
-  | Parraysetu _ | Parraysets _ | Pbigarrayset _
-  | Pccall _ | Praise _
-  | Prevapply
-  | Pdirapply
-  | Plazyforce
-  | Pstring_set_16 _
-  | Pstring_set_32 _
-  | Pstring_set_64 _
-  | Pbigstring_set_16 _
-  | Pbigstring_set_32 _
-  | Pbigstring_set_64 _
-
-  (* can raise Division by zero *)
-  |  Pdivint _  | Pmodint _
-  | Pdivbint _
-  | Pmodbint _
-
-  (* can raise Out of bound *)
-  | Parrayrefs _
-  | Pstringrefs
-  | Pbytesrefs
-  | Pbigarrayref _
-  | Pstring_load_16 _
-  | Pstring_load_32 _
-  | Pstring_load_64 _
-  | Pbigstring_load_16 _
-  | Pbigstring_load_32 _
-  | Pbigstring_load_64 _
-
-    -> false
-
-  (* Pure primitives *)
-  | Pidentity
-  | Pbytes_to_string
-  | Pbytes_of_string
-  | Pignore
-  | Ploc _
-  | Pgetglobal _
-  | Pmakeblock _
-  | Pfield _
-  | Pfloatfield _
-  | Psequand | Psequor | Pnot
-  | Pnegint | Paddint | Psubint | Pmulint
-  | Pandint | Porint | Pxorint
-  | Plslint | Plsrint | Pasrint
-  | Pintcomp _
-  | Poffsetint _
-  | Pintoffloat | Pfloatofint
-  | Pnegfloat | Pabsfloat
-  | Paddfloat | Psubfloat | Pmulfloat | Pdivfloat
-  | Pfloatcomp _
-  | Pstringrefu
-  | Parrayrefu _
-  | Pstringlength
-  | Pbyteslength | Pbytesrefu
-  | Pmakearray _
-  | Pduparray _
-  | Parraylength _
-  | Pisint
-  | Pisout
-  | Pbittest
-  | Pbintofint _
-  | Pintofbint _
-  | Pcvtbint _
-  | Pnegbint _
-  | Paddbint _
-  | Psubbint _
-  | Pmulbint _
-  | Pandbint _
-  | Porbint _
-  | Pxorbint _
-  | Plslbint _
-  | Plsrbint _
-  | Pasrbint _
-  | Pbintcomp _
-  | Pbigarraydim _
-  | Pctconst _
-  | Pbswap16
-  | Pbbswap _
-  | Pint_as_pointer
-  | Popaque ->
-      true
+let is_pure_prim p =
+  let open Semantics_of_primitives in
+  match Semantics_of_primitives.for_primitive p with
+  | (No_effects | Only_generative_effects), _ -> true
+  | Arbitrary_effects, _ -> false
 
 (* Check if a clambda term is ``pure'',
    that is without side-effects *and* not containing function definitions *)
