@@ -53,7 +53,7 @@ Next version (4.05.0):
   This can be tested with ocamlopt -config
   (Sébastien Hinderer)
 
-- PR#7137, GPR#960: "-open" command line flag now accepts a module path 
+- PR#7137, GPR#960: "-open" command line flag now accepts a module path
   (not a module name) (Arseniy Alekseyev and Leo White)
 
 ### Standard library:
@@ -101,6 +101,9 @@ Next version (4.05.0):
 * PR#7342, GPR#797: fix Unix.read on pipes with no data left on Windows
   it previously raised an EPIPE error, it now returns 0 like other OSes
   (Jonathan Protzenko)
+
+### Debugger:
+- GPR#977: Catch Out_of_range in "list" command (Yunxing)
 
 ### Tools:
 
