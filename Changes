@@ -161,6 +161,9 @@ Next version (4.05.0):
   when the opt target is built but opt.opt target is not.
   (whitequark)
 
+- GPR#935: allow build in Android's termux
+  (ygrek, review by Gabriel Scherer)
+
 ### Internal/compiler-libs changes:
 
 - GPR#744, GPR#781: fix duplicate self-reference in imported cmi_crcs
