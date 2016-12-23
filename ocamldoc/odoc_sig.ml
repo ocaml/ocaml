@@ -1619,21 +1619,7 @@ module Analyser =
 
     let analyse_signature source_file input_file
         (ast : Parsetree.signature) (signat : Types.signature) =
-      let complete_source_file =
-        try
-          let curdir = Sys.getcwd () in
-          let (dirname, basename) = (Filename.dirname source_file, Filename.basename source_file) in
-          Sys.chdir dirname ;
-          let complete = Filename.concat (Sys.getcwd ()) basename in
-          Sys.chdir curdir ;
-          complete
-        with
-          Sys_error s ->
-            prerr_endline s ;
-            incr Odoc_global.errors ;
-            source_file
-      in
-      prepare_file complete_source_file input_file;
+      prepare_file source_file input_file;
       (* We create the t_module for this file. *)
       let mod_name = String.capitalize_ascii
           (Filename.basename (try Filename.chop_extension source_file with _ -> source_file))
