@@ -36,7 +36,7 @@ Next version (4.04.1):
 
 - GPR#980: add dynlink options to ocamlbytecomp.cmxa to allow ocamlopt.opt
   to load plugins. See http://github.com/OCamlPro/ocamlc-plugins for examples.
-  (Fabrice Le Fessant)
+  (Fabrice Le Fessant, review by David Allsopp)
 
 - GPR#992: caml-types.el: Fix missing format argument, so that it can show kind
   of call at point correctly.
