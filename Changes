@@ -216,6 +216,10 @@ Next version (4.05.0):
 - GPR#934: check for integer overflow in Bytes.extend
   (Jeremy Yallop, review by Gabriel Scherer)
 
+- GPR#987: alloc_sockaddr: don't assume a null terminator. It is not inserted
+  on macOS by system calls that fill in a struct sockaddr (e.g. getsockname).
+  (Anton Bachin)
+
 Next minor version (4.04.1):
 ----------------------------
 
