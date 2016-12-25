@@ -111,14 +111,14 @@ value alloc_sockaddr(union sock_addr_union * adr /*in*/,
   switch(adr->s_gen.sa_family) {
 #ifndef _WIN32
   case AF_UNIX:
-    { char * path;
-      value n;
-      /* PR#7039: harden against unnamed sockets */
-      if (adr_len > (char *)&(adr->s_unix.sun_path) - (char *)&(adr->s_unix))
-        path = adr->s_unix.sun_path;
-      else
-        path = "";
-      n = caml_copy_string(path);
+    { value n;
+      /* Based on recommendation in section BUGS of Linux unix(7). See
+         http://man7.org/linux/man-pages/man7/unix.7.html */
+      mlsize_t path_length =
+        strnlen(adr->s_unix.sun_path,
+                adr_len - offsetof(struct sockaddr_un, sun_path));
+      n = caml_alloc_string(path_length);
+      memmove(String_val(n), adr->s_unix.sun_path, path_length);
       Begin_root (n);
         res = caml_alloc_small(1, 0);
         Field(res,0) = n;
