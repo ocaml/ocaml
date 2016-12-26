@@ -409,11 +409,11 @@ utils/config.ml: utils/config.mlp config/Makefile
 	    -e 's|%%BYTERUN%%|$(BYTERUN)|' \
 	    -e 's|%%CCOMPTYPE%%|$(CCOMPTYPE)|' \
 	    -e 's|%%CC_PROFILE%%|$(CC_PROFILE)|' \
-	    -e 's|%%EXT_ASM%%|.s|' \
+	    -e 's|%%EXT_ASM%%|$(EXT_ASM)|' \
 	    -e 's|%%EXT_DLL%%|$(EXT_DLL)|' \
 	    -e 's|%%EXT_EXE%%|$(EXE)|' \
-	    -e 's|%%EXT_LIB%%|.a|' \
-	    -e 's|%%EXT_OBJ%%|.o|' \
+	    -e 's|%%EXT_LIB%%|$(EXT_LIB)|' \
+	    -e 's|%%EXT_OBJ%%|$(EXT_OBJ)|' \
 	    -e 's|%%FLAMBDA%%|$(FLAMBDA)|' \
 	    -e 's|%%HOST%%|$(HOST)|' \
 	    -e 's|%%LIBDIR%%|$(LIBDIR)|' \
