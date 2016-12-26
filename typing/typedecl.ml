@@ -78,7 +78,13 @@ let get_unboxed_from_attributes sdecl =
 
 (* Enter all declared types in the environment as abstract types *)
 
-let enter_type env sdecl id =
+let enter_type rec_flag env sdecl id =
+  let needed =
+    match rec_flag with
+    | Asttypes.Nonrecursive -> Btype.is_row_name (Ident.name id)
+    | Asttypes.Recursive -> true
+  in
+  if not needed then env else
   let decl =
     { type_params =
         List.map (fun _ -> Btype.newgenvar ()) sdecl.ptype_params;
@@ -1205,10 +1211,7 @@ let transl_type_decl env rec_flag sdecl_list =
   Ctype.begin_def();
   (* Enter types. *)
   let temp_env =
-    match rec_flag with
-    | Asttypes.Nonrecursive -> env
-    | Asttypes.Recursive -> List.fold_left2 enter_type env sdecl_list id_list
-  in
+    List.fold_left2 (enter_type rec_flag) env sdecl_list id_list in
   (* Translate each declaration. *)
   let current_slot = ref None in
   let warn_unused = Warnings.is_active (Warnings.Unused_type_declaration "") in
