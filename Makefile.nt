@@ -236,11 +236,6 @@ installoptopt:
            $(OPTSTART:.cmo=.cmx) $(OPTSTART:.cmo=.$(O)) \
            "$(INSTALL_COMPLIBDIR)"
 
-# Run all tests
-
-tests: opt.opt
-	cd testsuite && $(MAKE) clean && $(MAKE) all
-
 # The clean target
 
 clean:: partialclean

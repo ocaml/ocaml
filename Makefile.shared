@@ -356,6 +356,12 @@ flexlink.opt:
 	mv flexlink.exe flexlink.opt && \
 	mv flexlink flexlink.exe
 
+# Run all tests
+
+.PHONY: tests
+tests: opt.opt
+	cd testsuite; $(MAKE) clean && $(MAKE) all
+
 # The middle end (whose .cma library is currently only used for linking
 # the "ocamlobjinfo" program, since we cannot depend on the whole native code
 # compiler for "make world" and the list of dependencies for

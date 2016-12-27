@@ -293,11 +293,6 @@ install-compiler-sources:
 	   toplevel/*.ml middle_end/*.ml middle_end/base_types/*.ml \
 	   asmcomp/*.ml $(INSTALL_COMPLIBDIR)
 
-# Run all tests
-
-tests: opt.opt
-	cd testsuite; $(MAKE) clean && $(MAKE) all
-
 # Build the manual latex files from the etex source files
 # (see manual/README.md)
 manual-pregen: opt.opt
