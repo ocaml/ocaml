@@ -72,22 +72,21 @@ OUTPUTOBJ=-o
 endif
 DBGO=d.$(O)
 
-COMMONOBJS=$(addsuffix .$(O), \
-  interp misc stacks fix_code startup_aux startup \
-  freelist major_gc minor_gc memory alloc roots globroots \
-  fail signals signals_byt printexc backtrace_prim backtrace \
-  compare ints floats str array io extern intern \
-  hash sys meta parsing gc_ctrl terminfo md5 obj \
-  lexing callback debugger weak compact finalise custom \
-  dynlink spacetime afl)
-
 PRIMS=\
   alloc.c array.c compare.c extern.c floats.c gc_ctrl.c hash.c \
   intern.c interp.c ints.c io.c lexing.c md5.c meta.c obj.c parsing.c \
   signals.c str.c sys.c terminfo.c callback.c weak.c finalise.c stacks.c \
   dynlink.c backtrace_prim.c backtrace.c spacetime.c afl.c
 
-OBJS=$(COMMONOBJS) $(UNIX_OR_WIN32).$(O) main.$(O)
+OBJS=$(addsuffix .$(O), \
+  interp misc stacks fix_code startup_aux startup \
+  freelist major_gc minor_gc memory alloc roots globroots \
+  fail signals signals_byt printexc backtrace_prim backtrace \
+  compare ints floats str array io extern intern \
+  hash sys meta parsing gc_ctrl terminfo md5 obj \
+  lexing callback debugger weak compact finalise custom \
+  dynlink spacetime afl $(UNIX_OR_WIN32) main)
+
 DOBJS=$(OBJS:.$(O)=.$(DBGO)) instrtrace.$(DBGO)
 IOBJS=$(OBJS:.$(O)=.i.$(O))
 PICOBJS=$(OBJS:.$(O)=.pic.$(O))
