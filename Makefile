@@ -415,6 +415,7 @@ utils/config.ml: utils/config.mlp config/Makefile
 	    -e 's|%%EXT_LIB%%|$(EXT_LIB)|' \
 	    -e 's|%%EXT_OBJ%%|$(EXT_OBJ)|' \
 	    -e 's|%%FLAMBDA%%|$(FLAMBDA)|' \
+	    -e 's|%%FLEXLINK_FLAGS%%|$(FLEXLINK_FLAGS)|' \
 	    -e 's|%%HOST%%|$(HOST)|' \
 	    -e 's|%%LIBDIR%%|$(LIBDIR)|' \
 	    -e 's|%%LIBUNWIND_AVAILABLE%%|$(LIBUNWIND_AVAILABLE)|' \
