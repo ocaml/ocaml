@@ -31,6 +31,8 @@ else
 	@echo "Please refer to the instructions in file README.win32.adoc."
 endif
 
+MKDIR=mkdir -p
+
 CAMLRUN ?= boot/ocamlrun
 CAMLYACC ?= boot/ocamlyacc
 include stdlib/StdlibModules
@@ -227,6 +229,29 @@ TOPLEVELSTART=toplevel/topstart.cmo
 OPTTOPLEVELSTART=toplevel/opttopstart.cmo
 
 PERVASIVES=$(STDLIB_MODULES) outcometree topdirs toploop
+
+LIBFILES=stdlib.cma std_exit.cmo *.cmi camlheader
+
+MAXSAVED=boot/Saved/Saved.prev/Saved.prev/Saved.prev/Saved.prev/Saved.prev
+
+COMPLIBDIR=$(LIBDIR)/compiler-libs
+
+INSTALL_BINDIR=$(DESTDIR)$(BINDIR)
+INSTALL_LIBDIR=$(DESTDIR)$(LIBDIR)
+INSTALL_COMPLIBDIR=$(DESTDIR)$(COMPLIBDIR)
+INSTALL_STUBLIBDIR=$(DESTDIR)$(STUBLIBDIR)
+INSTALL_MANDIR=$(DESTDIR)$(MANDIR)
+
+RUNTOP=./byterun/ocamlrun ./ocaml \
+  -nostdlib -I stdlib \
+  -noinit $(TOPFLAGS) \
+  -I otherlibs/$(UNIXLIB)
+NATRUNTOP=./ocamlnat$(EXE) -nostdlib -I stdlib -noinit $(TOPFLAGS)
+ifeq "UNIX_OR_WIN32" "unix"
+EXTRAPATH=
+else
+EXTRAPATH = PATH="otherlibs/win32unix:$(PATH)"
+endif
 
 # The configuration file
 

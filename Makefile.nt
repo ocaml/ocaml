@@ -103,8 +103,6 @@ bootstrap:
 	$(MAKEREC) all
 	$(MAKEREC) compare
 
-LIBFILES=stdlib.cma std_exit.cmo *.cmi camlheader
-
 # Start up the system from the distribution compiler
 coldstart:
 	cd byterun ; $(MAKE) $(BOOT_FLEXLINK_CMD) all
@@ -128,7 +126,6 @@ coreall:
 	$(MAKEREC) ocamllex ocamlyacc ocamltools library
 
 # Save the current bootstrap compiler
-MAXSAVED=boot/Saved/Saved.prev/Saved.prev/Saved.prev/Saved.prev/Saved.prev
 backup:
 	mkdir -p boot/Saved
 	if test -d $(MAXSAVED); then rm -r $(MAXSAVED); fi
@@ -192,14 +189,6 @@ opt.opt: core opt-core ocamlc.opt all ocamlopt.opt ocamllex.opt \
 world.opt: coldstart opt.opt
 
 # Installation
-
-COMPLIBDIR=$(LIBDIR)/compiler-libs
-
-INSTALL_BINDIR=$(DESTDIR)$(BINDIR)
-INSTALL_LIBDIR=$(DESTDIR)$(LIBDIR)
-INSTALL_COMPLIBDIR=$(DESTDIR)$(COMPLIBDIR)
-INSTALL_STUBLIBDIR=$(DESTDIR)$(STUBLIBDIR)
-INSTALL_MANDIR=$(DESTDIR)$(MANDIR)
 
 install:
 	mkdir -p "$(INSTALL_BINDIR)"
@@ -360,10 +349,6 @@ ocaml: compilerlibs/ocamlcommon.cma compilerlibs/ocamlbytecomp.cma \
 
 partialclean::
 	rm -f ocaml
-
-RUNTOP=./byterun/ocamlrun ./ocaml -nostdlib -I stdlib -noinit $(TOPFLAGS) -I otherlibs/win32unix
-NATRUNTOP=./ocamlnat$(EXE) -nostdlib -I stdlib -noinit $(TOPFLAGS)
-EXTRAPATH=PATH=otherlibs/win32unix:"$(PATH)"
 
 runtop:
 	$(MAKEREC) core

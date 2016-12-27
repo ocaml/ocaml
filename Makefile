@@ -18,8 +18,6 @@
 MAKEREC=$(MAKE)
 include Makefile.shared
 
-MKDIR=mkdir -p
-
 # Recompile the system using the bootstrap compiler
 all:
 	$(MAKE) runtime
@@ -80,8 +78,6 @@ bootstrap:
 	$(MAKE) all
 	$(MAKE) compare
 
-LIBFILES=stdlib.cma std_exit.cmo *.cmi camlheader
-
 # Start up the system from the distribution compiler
 coldstart:
 	cd byterun; $(MAKE) all
@@ -107,7 +103,6 @@ coreall:
 	$(MAKE) ocamllex ocamlyacc ocamltools library
 
 # Save the current bootstrap compiler
-MAXSAVED=boot/Saved/Saved.prev/Saved.prev/Saved.prev/Saved.prev/Saved.prev
 backup:
 	if test -d boot/Saved; then : ; else mkdir boot/Saved; fi
 	if test -d $(MAXSAVED); then rm -r $(MAXSAVED); else : ; fi
@@ -189,14 +184,6 @@ base.opt:
 	$(MAKE) otherlibrariesopt
 
 # Installation
-
-COMPLIBDIR=$(LIBDIR)/compiler-libs
-
-INSTALL_BINDIR=$(DESTDIR)$(BINDIR)
-INSTALL_LIBDIR=$(DESTDIR)$(LIBDIR)
-INSTALL_COMPLIBDIR=$(DESTDIR)$(COMPLIBDIR)
-INSTALL_STUBLIBDIR=$(DESTDIR)$(STUBLIBDIR)
-INSTALL_MANDIR=$(DESTDIR)$(MANDIR)
 
 install:
 	if test -d $(INSTALL_BINDIR); then : ; \
@@ -373,9 +360,6 @@ ocaml: compilerlibs/ocamlcommon.cma compilerlibs/ocamlbytecomp.cma \
 
 partialclean::
 	rm -f ocaml
-
-RUNTOP=./byterun/ocamlrun ./ocaml -nostdlib -I stdlib -noinit $(TOPFLAGS) -I otherlibs/unix
-NATRUNTOP=./ocamlnat$(EXE) -nostdlib -I stdlib -noinit $(TOPFLAGS)
 
 runtop:
 	$(MAKE) runtime
