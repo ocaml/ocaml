@@ -176,7 +176,9 @@ external minor_words : unit -> (float [@unboxed])
     started. This number is accurate in byte-code programs, but only an
     approximation in programs compiled to native code.
 
-    In native code this function does not allocate. *)
+    In native code this function does not allocate.
+
+    @since 4.04 *)
 
 external get : unit -> control = "caml_gc_get"
 (** Return the current values of the GC parameters in a [control] record. *)
@@ -293,9 +295,14 @@ val finalise : ('a -> unit) -> 'a -> unit
    Some constant values can be heap-allocated but never deallocated
    during the lifetime of the program, for example a list of integer
    constants; this is also implementation-dependent.
-   Note that values of types [float] and ['a lazy] (for any ['a]) are
-   sometimes allocated and sometimes not, so finalising them is unsafe,
-   and [finalise] will also raise [Invalid_argument] for them.
+   Note that values of types [float] are sometimes allocated and
+   sometimes not, so finalising them is unsafe, and [finalise] will
+   also raise [Invalid_argument] for them. Values of type ['a Lazy.t]
+   (for any ['a]) are like [float] in this respect, except that the
+   compiler sometimes optimizes them in a way that prevents [finalise]
+   from detecting them. In this case, it will not raise
+   [Invalid_argument], but you should still avoid calling [finalise]
+   on lazy values.
 
 
    The results of calling {!String.make}, {!Bytes.make}, {!Bytes.create},
@@ -309,11 +316,13 @@ val finalise_last : (unit -> unit) -> 'a -> unit
     finalisation function. The benefit is that the function is called
     after the value is unreachable for the last time instead of the
     first time. So contrary to {!finalise} the value will never be
-    reachable again or used again. In particular every weak pointers
-    and ephemerons that contained this value as key or data is unset
+    reachable again or used again. In particular every weak pointer
+    and ephemeron that contained this value as key or data is unset
     before running the finalisation function. Moreover the
     finalisation function attached with `GC.finalise` are always
     called before the finalisation function attached with `GC.finalise_last`.
+
+    @since 4.04
 *)
 
 val finalise_release : unit -> unit

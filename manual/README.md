@@ -89,6 +89,7 @@ chapters (or sometimes sections) are mapped to a distinct `.etex` file:
     - The ocamlbuild compilation manager: `ocamlbuild.etex`
     - Interfacing C with OCaml: `intf-c.etex`
     - Optimisation with Flambda: `flambda.etex`
+    - Memory profiling with Spacetime: `spacetime.etex`
     - Fuzzing with afl-fuzz: `afl-fuzz.etex`
 
 Note that ocamlc,ocamlopt and the toplevel options overlap a lot.

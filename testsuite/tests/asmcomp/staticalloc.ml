@@ -13,7 +13,7 @@ let () =
   let g () = (a, fst b) in
   assert (g () == ((1,2), (1,2)));
   assert (fst (pair a a) == (1, 2));
-  assert (snd b != ["x"; "y"]);  (* mutable "constant", cannot be shared *)
+  assert (snd b != ["x"; "y"] || Config.safe_string);  (* mutable "constant", cannot be shared *)
   let x2 = Gc.allocated_bytes () in
   assert(x1 -. x0 = x2 -. x1)
      (* check that we did not allocated anything between x1 and x2 *)

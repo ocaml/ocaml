@@ -33,7 +33,7 @@ alias.odoc: inner.cmi alias.ml
 
 main.odoc: alias.cmi main.ml
 	@$(OCAMLDOC) $(DOCFLAGS) -hide-warnings \
-        -open Alias -open Aliased_inner -dump main.odoc main.ml
+        -open Alias.Container -open Aliased_inner -dump main.odoc main.ml
 
 alias.cmi:inner.cmi
 

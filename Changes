@@ -36,6 +36,10 @@ Next version (4.05.0):
    and Damien Doligez, discussion with Alain Frisch and Xavier Leroy,
    feature request from the Coq team)
 
+- PR#7172, GPR#970: add extra (ocamlc -config) options
+  int_size, word_size, ext_exe
+  (Gabriel Scherer, request by Daniel Buenzli)
+
 - GPR#829: better error when opening a module aliased to a functor
   (Alain Frisch)
 
@@ -94,7 +98,19 @@ Next version (4.05.0):
   (Laurent Mazare,
    review by Gabriel Scherer, Alain Frisch and Hezekiah M. Carty)
 
+* PR#7342, GPR#797: fix Unix.read on pipes with no data left on Windows
+  it previously raised an EPIPE error, it now returns 0 like other OSes
+  (Jonathan Protzenko)
+
+### Bytecode debugger (ocamldebug):
+
+- GPR#977: Catch Out_of_range in "list" command
+  (Yunxing Dai)
+
 ### Tools:
+
+- PR#5163: ocamlobjinfo, dump globals defined by bytecode executables
+  (Stéphane Glondu)
 
 - PR#7333: ocamldoc, use the first sentence of text file as
   a short description in overviews.
@@ -103,6 +119,10 @@ Next version (4.05.0):
 - GPR#848: ocamldoc, escape link targets in HTML output
   (Etienne Millon, review by Gabriel Scherer, Florian Angeletti and
   Daniel Bünzli)
+
+- GPR#986: ocamldoc, use relative paths in error message
+  to solve ocamlbuild+doc usability issue (ocaml/ocamlbuild#79)
+  (Gabriel Scherer, review by Florian Angeletti, discussion with Daniel Bünzli)
 
 - clarify ocamldoc text parsing error messages
   (Gabriel Scherer)
@@ -145,16 +165,28 @@ Next version (4.05.0):
   when the opt target is built but opt.opt target is not.
   (whitequark)
 
+- GPR#935: allow build in Android's termux
+  (ygrek, review by Gabriel Scherer)
+
 ### Internal/compiler-libs changes:
 
 - GPR#744, GPR#781: fix duplicate self-reference in imported cmi_crcs
   list in .cmti files + avoid rebuilding cmi_info record when creating
   .cmti files
   (Alain Frisch, report by Daniel Bunzli, review by Jeremie Dimino)
+- GPR#915: fix -dsource (pprintast.ml) bugs
+  (Runhang Li, review by Alain Frisch)
+
+- GPR#832, MPR#7357: Improve compilation time for toplevel
+  include(struct ... end : sig ... end)
+  (Alain Frisch, report by Hongbo Zhang, review by Jacques Garrigue)
 
 ### Bug fixes
 
-- PR#7414/GPR#929: Soundness bug with non-generalized type variable and functors
+- PR#7216, GPR#949: don't require double parens in Functor((val x))
+  (Jacques Garrigue, review by Valentin Gatien-Baron)
+
+- PR#7414, GPR#929: Soundness bug with non-generalized type variable and functor
   (Jacques Garrigue, report by Leo White)
 
 - PR#7421: Soundness bug with GADTs and lazy
@@ -162,6 +194,12 @@ Next version (4.05.0):
 
 - PR#7424: Typechecker diverges on unboxed type declaration
   (Jacques Garrigue, report by Stephen Dolan)
+
+- PR#7432: Linking modules compiled with -labels and -nolabels is not safe
+  (Jacques Garrigue, report by Jeremy Yallop)
+
+- PR#7437: typing assert failure with nonrec priv
+  (Jacques Garrigue, report by Anil Madhavapeddy)
 
 - GPR#795: remove 256-character limitation on Sys.executable_name
   (Xavier Leroy)
@@ -176,6 +214,9 @@ Next version (4.05.0):
   (Jeremy Yallop,
    review by Damien Doligez, Alain Frisch, Daniel Bünzli, Fabrice Le Fessant)
 
+- GPR#934: check for integer overflow in Bytes.extend
+  (Jeremy Yallop, review by Gabriel Scherer)
+
 - MPR#6594, GPR#955: Remove "Istore_symbol" specific operation on x86-64.
   This is more robust and in particular avoids assembly failures on Win64.
   (Mark Shinwell, review by Xavier Leroy, testing by David Allsopp and
@@ -186,6 +227,10 @@ Next version (4.05.0):
   (Jeremy Yallop)
 
 - PR#7427, GPR#959: Don't delete let bodies in Cmmgen (Mark Shinwell)
+
+- GPR#987: alloc_sockaddr: don't assume a null terminator. It is not inserted
+  on macOS by system calls that fill in a struct sockaddr (e.g. getsockname).
+  (Anton Bachin)
 
 Next minor version (4.04.1):
 ----------------------------
@@ -207,6 +252,10 @@ Next minor version (4.04.1):
 - GPR#912: Fix segfault in Unix.create_process on Windows caused by wrong header
   configuration.
   (David Allsopp)
+
+- GPR#980: add dynlink options to ocamlbytecomp.cmxa to allow ocamlopt.opt
+  to load plugins. See http://github.com/OCamlPro/ocamlc-plugins for examples.
+  (Fabrice Le Fessant, review by David Allsopp)
 
 OCaml 4.04.0 (4 Nov 2016):
 --------------------------
@@ -275,16 +324,16 @@ OCaml 4.04.0 (4 Nov 2016):
 
 ### Standard library:
 
-- GPR#473: Provide `Sys.backend_type` so that user can write backend-specific
-  code in some cases (for example,  code generator).
-  (Hongbo Zhang)
-
 - PR#6279, GPR#553: implement Set.map
   (Gabriel Scherer)
 
 - PR#6820, GPR#560: Add Obj.reachable_words to compute the
   "transitive" heap size of a value
   (Alain Frisch, review by Mark Shinwell and Damien Doligez)
+
+- GPR#473: Provide `Sys.backend_type` so that user can write backend-specific
+  code in some cases (for example,  code generator).
+  (Hongbo Zhang)
 
 - GPR#589: Add a non-allocating function to recover the number of
   allocated minor words.
@@ -303,6 +352,12 @@ OCaml 4.04.0 (4 Nov 2016):
    mirage-os uses "xen")
   (Anil Madhavapeddy)
 
+### Other libraries
+
+- MPR#4834, GPR#592: Add a Biggarray.Genarray.change_layout function
+  to switch bigarrays between C and fortran layouts.
+  (Guillaume Hennequin, review by Florian Angeletti)
+
 ### Code generation and optimizations:
 
 - PR#4747, GPR#328: Optimize Hashtbl by using in-place updates of its
@@ -311,7 +366,7 @@ OCaml 4.04.0 (4 Nov 2016):
   slower
   (Alain Frisch)
 
-* PR#6217, GPR#538: Optimize performance of record update:
+- PR#6217, GPR#538: Optimize performance of record update:
   no more performance cliff when { foo with t1 = ..; t2 = ...; ... }
   hits 6 updated fields
   (Olivier Nicole, review by Thomas Braibant and Pierre Chambart)
@@ -547,6 +602,9 @@ OCaml 4.04.0 (4 Nov 2016):
 - PR#7330: Missing exhaustivity check for extensible variant
   (Jacques Garrigue, report by Elarnon *)
 
+- PR#7369: Str.regexp raises "Invalid_argument: index out of bounds"
+  (Damien Doligez, report by John Whitington)
+
 - PR#7374: Contractiveness check unsound with constraints
   (Jacques Garrigue, report by Leo White)
 
@@ -558,9 +616,6 @@ OCaml 4.04.0 (4 Nov 2016):
 
 - GPR#525: fix build on OpenIndiana
   (Sergey Avseyev, review by Damien Doligez)
-
-- PR#7369: Str.regexp raises "Invalid_argument: index out of bounds"
-  (Damien Doligez, report by John Whitington)
 
 * GPR#533: Thread library: fixed [Thread.wait_signal] so that it
   converts back the signal number returned by [sigwait] to an
@@ -902,9 +957,10 @@ OCaml 4.03.0 (25 Apr 2016):
 
 ### Runtime system:
 
-* GPR#442, caml_fill_string, and caml_create_string is deprecated
-  and will be removed in the future, please use caml_fill_bytes
-  and caml_create_bytes for migration
+* GPR#596: make string/bytes distinguishable in the underlying
+  compiler implementation; caml_fill_string and caml_create_string are
+  deprecated and will be removed in the future, please use
+  caml_fill_bytes and caml_create_bytes for migration
   (Hongbo Zhang, review by Damien Doligez, Alain Frisch, and Hugo Heuzard)
 
 - PR#3612, PR#92: allow allocating custom block with finalizers
@@ -1441,7 +1497,10 @@ OCaml 4.03.0 (25 Apr 2016):
 - PR#7135: only warn about ground coercions in -principal mode
   (Jacques Garrigue, report by Jeremy Yallop)
 
-- PR#7152: Typing equality involving non-generalizable type variable
+* PR#7152: Typing equality involving non-generalizable type variable
+  A side-effect of the fix is that, for deeply nested non generalizable
+  type variables, having an interface file may no longer be sufficient,
+  and you may have to add a local type annotation (cf PR#7313)
   (Jacques Garrigue, report by François Bobot)
 
 - PR#7160: Type synonym definitions can weaken gadt constructor types
@@ -1470,6 +1529,13 @@ OCaml 4.03.0 (25 Apr 2016):
 
 - PR#7234: Compatibility check wrong for abstract type constructors
   (Jacques Garrigue, report by Stephen Dolan)
+
+- PR#7324: OCaml 4.03.0 type checker dies with an assert failure when
+  given some cyclic recusive module expression
+  (Jacques Garrigue, report by jmcarthur)
+
+- PR#7368: Manual major GC fails to compact the heap
+  (Krzysztof Pszeniczny)
 
 - GPR#205: Clear caml_backtrace_last_exn before registering as root
   (report and fix by Frederic Bour)

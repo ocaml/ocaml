@@ -23,12 +23,14 @@ O_FILES=$(F_FILES:=.o) $(C_FILES:=.o)
 
 CUSTOM_FLAG=`if [ -n "$(C_FILES)" ]; then echo '-custom'; fi`
 ADD_CFLAGS+=$(CUSTOM_FLAG)
-MYRUNTIME=`if [ -z "$(C_FILES)$(CUSTOM)" ]; then echo '$(OCAMLRUN)'; fi`
+MYRUNTIME=`if [ -z "$(C_FILES)$(CUSTOM)" ]; then echo '$(OCAMLRUN)'; echo '$(ADD_BYTERUN_FLAGS)'; fi`
 FORTRAN_LIB=`if [ -n "$(F_FILES)" ]; then echo $(FORTRAN_LIBRARY); fi`
 ADD_CFLAGS+=$(FORTRAN_LIB)
 ADD_OPTFLAGS+=$(FORTRAN_LIB)
 
 C_INCLUDES+=-I $(CTOPDIR)/byterun -I$(CTOPDIR)/otherlibs/bigarray
+
+GENERATED_SOURCES=
 
 SKIP=false
 
@@ -95,16 +97,29 @@ run-all:
 	  && echo " => passed" || echo " => failed"; \
 	done
 
+# On Windows, nefarious software (specifically Windows Defender) can prevent
+# executable files being deleted while it scans them. Unfortunately, it does
+# this by allowing the delete system call (either via rm -f or cmd /c del) to
+# complete with success but the file can linger for seconds or even minutes
+# until it suddenly disappears. During this time, the file cannot be overwritten
+# but it can be renamed, hence the odd use of mktemp. Some tests compiled with
+# flambda seem to be consistently "interesting" to Windows Defender. Note that
+# the interference doesn't appear to affect the execution of the tests.
 .PHONY: run-file
 run-file:
 	@printf " $(DESC)"
-	@rm -f program program.exe
+	@test -e program.exe && { \
+	  T="`mktemp -p .`"; \
+	  mv -f program.exe "$$T"; \
+	  rm -f "$$T"; \
+	} || true
+	@rm -f program program$(EXE)
 	@$(COMP) $(COMPFLAGS) $(FILE) -o program$(EXE)
 	@F="`basename $(FILE) .ml`"; \
 	if [ -f $$F.runner ]; then \
 	  RUNTIME="$(RUNTIME)" sh $$F.runner; \
 	else \
-	  $(RUNTIME) ./program$(EXE) $(PROGRAM_ARGS) >$$F.result; \
+	  $(SET_LD_PATH) $(RUNTIME) ./program$(EXE) $(PROGRAM_ARGS) >$$F.result; \
 	fi \
 	&& \
 	if [ -f $$F.checker ]; then \
@@ -124,4 +139,4 @@ promote: defaultpromote
 
 .PHONY: clean
 clean: defaultclean
-	@rm -f *.result program program.exe
+	@rm -f *.result program program.exe $(GENERATED_SOURCES)

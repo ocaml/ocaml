@@ -63,7 +63,7 @@ let print_if ppf flag printer arg =
 let (++) x f = f x
 let (+++) (x, y) f = (x, f y)
 
-let implementation ppf sourcefile outputprefix ~backend =
+let implementation ~backend ppf sourcefile outputprefix =
   let source_provenance = Timings.File sourcefile in
   Compmisc.init_path true;
   let modulename = module_of_filename ppf sourcefile outputprefix in
@@ -138,6 +138,3 @@ let implementation ppf sourcefile outputprefix ~backend =
     remove_file objfile;
     remove_file cmxfile;
     raise x
-
-let c_file name =
-  if Ccomp.compile_file name <> 0 then exit 2
