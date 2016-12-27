@@ -2023,9 +2023,7 @@ echo "DYNLINKOPTS=$dllib" >> Makefile
 echo "OTHERLIBRARIES=$otherlibraries" >> Makefile
 echo "CC_PROFILE=$cc_profile" >> Makefile
 echo "SYSTHREAD_SUPPORT=$systhread_support" >> Makefile
-echo "PARTIALLD=$partialld" >> Makefile
-echo "PACKLD=\$(PARTIALLD) \$(NATIVECCLINKOPTS) -o " \
-  | sed -e 's/ $/\\ /' >> Makefile
+echo "PACKLD=$partialld $nativecclinkopts -o\\ " >> Makefile
 echo "IFLEXDIR=$iflexdir" >> Makefile
 echo "O=o" >> Makefile
 echo "A=a" >> Makefile

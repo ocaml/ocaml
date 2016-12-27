@@ -414,7 +414,6 @@ utils/config.ml: utils/config.mlp config/Makefile
 	    -e 's|%%NATIVECCLIBS%%|$(NATIVECCLIBS)|' \
 	    -e 's|%%NATIVE_C_COMPILER%%|$(NATIVE_C_COMPILER)|' \
 	    -e 's|%%PACKLD%%|$(PACKLD)|' \
-	    -e 's|%%PARTIALLD%%|$(PARTIALLD)|' \
 	    -e 's|%%PROFILING%%|$(PROFILING)|' \
 	    -e 's|%%PROFINFO_WIDTH%%|$(PROFINFO_WIDTH)|' \
 	    -e 's|%%RANLIBCMD%%|$(RANLIBCMD)|' \
