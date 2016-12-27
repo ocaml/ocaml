@@ -18,7 +18,6 @@
 MAKEREC=$(MAKE)
 include Makefile.shared
 
-SHELL=/bin/sh
 MKDIR=mkdir -p
 
 # For users who don't read the INSTALL file
@@ -383,7 +382,7 @@ ocaml: compilerlibs/ocamlcommon.cma compilerlibs/ocamlbytecomp.cma \
 partialclean::
 	rm -f ocaml
 
-RUNTOP=./byterun/ocamlrun ./ocaml -nostdlib -I stdlib -noinit $(TOPFLAGS)
+RUNTOP=./byterun/ocamlrun ./ocaml -nostdlib -I stdlib -noinit $(TOPFLAGS) -I otherlibs/unix
 NATRUNTOP=./ocamlnat$(EXE) -nostdlib -I stdlib -noinit $(TOPFLAGS)
 
 runtop:
@@ -423,6 +422,7 @@ utils/config.ml: utils/config.mlp config/Makefile
 	    -e 's|%%ARCH%%|$(ARCH)|' \
 	    -e 's|%%MODEL%%|$(MODEL)|' \
 	    -e 's|%%SYSTEM%%|$(SYSTEM)|' \
+	    -e 's|%%EXT_EXE%%|$(EXE)|' \
 	    -e 's|%%EXT_OBJ%%|.o|' \
 	    -e 's|%%EXT_ASM%%|.s|' \
 	    -e 's|%%EXT_LIB%%|.a|' \
@@ -482,7 +482,7 @@ partialclean::
 # The bytecode compiler compiled with the native-code compiler
 
 compilerlibs/ocamlbytecomp.cmxa: $(BYTECOMP:.cmo=.cmx)
-	$(CAMLOPT) -a -o $@ $(BYTECOMP:.cmo=.cmx)
+	$(CAMLOPT) -a -ccopt "$(NATDYNLINKOPTS)" -o $@ $(BYTECOMP:.cmo=.cmx)
 partialclean::
 	rm -f compilerlibs/ocamlbytecomp.cmxa compilerlibs/ocamlbytecomp.a
 

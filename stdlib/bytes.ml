@@ -15,6 +15,12 @@
 
 (* Byte sequence operations *)
 
+(* WARNING: Some functions in this file are duplicated in string.ml for
+   efficiency reasons. When you modify the one in this file you need to
+   modify its duplicate in string.ml.
+   These functions have a "duplicated" comment above their definition.
+*)
+
 external length : bytes -> int = "%bytes_length"
 external string_length : string -> int = "%string_length"
 external get : bytes -> int -> char = "%bytes_safe_get"
@@ -66,8 +72,16 @@ let sub s ofs len =
 
 let sub_string b ofs len = unsafe_to_string (sub b ofs len)
 
+(* addition with an overflow check *)
+let (++) a b =
+  let c = a + b in
+  match a < 0, b < 0, c < 0 with
+  | true , true , false
+  | false, false, true  -> invalid_arg "Bytes.extend" (* overflow *)
+  | _ -> c
+
 let extend s left right =
-  let len = length s + left + right in
+  let len = length s ++ left ++ right in
   let r = create len in
   let (srcoff, dstoff) = if left < 0 then -left, 0 else 0, left in
   let cpylen = min (length s - srcoff) (len - dstoff) in
@@ -91,9 +105,11 @@ let blit_string s1 ofs1 s2 ofs2 len =
   then invalid_arg "String.blit / Bytes.blit_string"
   else unsafe_blit_string s1 ofs1 s2 ofs2 len
 
+(* duplicated in string.ml *)
 let iter f a =
   for i = 0 to length a - 1 do f(unsafe_get a i) done
 
+(* duplicated in string.ml *)
 let iteri f a =
   for i = 0 to length a - 1 do f i (unsafe_get a i) done
 
@@ -220,46 +236,58 @@ let apply1 f s =
 let capitalize_ascii s = apply1 Char.uppercase_ascii s
 let uncapitalize_ascii s = apply1 Char.lowercase_ascii s
 
+(* duplicated in string.ml *)
 let rec index_rec s lim i c =
   if i >= lim then raise Not_found else
   if unsafe_get s i = c then i else index_rec s lim (i + 1) c
 
+(* duplicated in string.ml *)
 let index s c = index_rec s (length s) 0 c
 
+(* duplicated in string.ml *)
 let rec index_rec_opt s lim i c =
   if i >= lim then None else
   if unsafe_get s i = c then Some i else index_rec_opt s lim (i + 1) c
 
+(* duplicated in string.ml *)
 let index_opt s c = index_rec_opt s (length s) 0 c
 
+(* duplicated in string.ml *)
 let index_from s i c =
   let l = length s in
   if i < 0 || i > l then invalid_arg "String.index_from / Bytes.index_from" else
   index_rec s l i c
 
+(* duplicated in string.ml *)
 let index_from_opt s i c =
   let l = length s in
   if i < 0 || i > l then invalid_arg "String.index_from_opt / Bytes.index_from_opt" else
   index_rec_opt s l i c
 
+(* duplicated in string.ml *)
 let rec rindex_rec s i c =
   if i < 0 then raise Not_found else
   if unsafe_get s i = c then i else rindex_rec s (i - 1) c
 
+(* duplicated in string.ml *)
 let rindex s c = rindex_rec s (length s - 1) c
 
+(* duplicated in string.ml *)
 let rindex_from s i c =
   if i < -1 || i >= length s then
     invalid_arg "String.rindex_from / Bytes.rindex_from"
   else
     rindex_rec s i c
 
+(* duplicated in string.ml *)
 let rec rindex_rec_opt s i c =
   if i < 0 then None else
   if unsafe_get s i = c then Some i else rindex_rec_opt s (i - 1) c
 
+(* duplicated in string.ml *)
 let rindex_opt s c = rindex_rec_opt s (length s - 1) c
 
+(* duplicated in string.ml *)
 let rindex_from_opt s i c =
   if i < -1 || i >= length s then
     invalid_arg "String.rindex_from_opt / Bytes.rindex_from_opt"
@@ -267,6 +295,7 @@ let rindex_from_opt s i c =
     rindex_rec_opt s i c
 
 
+(* duplicated in string.ml *)
 let contains_from s i c =
   let l = length s in
   if i < 0 || i > l then
@@ -275,8 +304,10 @@ let contains_from s i c =
     try ignore (index_rec s l i c); true with Not_found -> false
 
 
+(* duplicated in string.ml *)
 let contains s c = contains_from s 0 c
 
+(* duplicated in string.ml *)
 let rcontains_from s i c =
   if i < 0 || i >= length s then
     invalid_arg "String.rcontains_from / Bytes.rcontains_from"

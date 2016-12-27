@@ -682,7 +682,12 @@ let make_alloc_generic set_fn dbg tag wordsize args =
   end
 
 let make_alloc dbg tag args =
-  make_alloc_generic addr_array_set dbg tag (List.length args) args
+  let addr_array_init arr ofs newval dbg =
+    Cop(Cextcall("caml_initialize", typ_void, false, None),
+        [array_indexing log2_size_addr arr ofs dbg; newval], dbg)
+  in
+  make_alloc_generic addr_array_init dbg tag (List.length args) args
+
 let make_float_alloc dbg tag args =
   make_alloc_generic float_array_set dbg tag
                      (List.length args * size_float / size_addr) args
@@ -2018,8 +2023,14 @@ and transl_prim_2 env p arg1 arg2 dbg =
                         [field_address (transl env arg1) n dbg;
                          transl env arg2],
                         dbg))
+      | Heap_initialization, Pointer ->
+        return_unit(Cop(Cextcall("caml_initialize", typ_void, false, None),
+                        [field_address (transl env arg1) n dbg;
+                         transl env arg2],
+                        dbg))
       | Assignment, Immediate
-      | Initialization, (Immediate | Pointer) ->
+      | Heap_initialization, Immediate
+      | Root_initialization, (Immediate | Pointer) ->
         return_unit(set_field (transl env arg1) n (transl env arg2) init dbg)
       end
   | Psetfloatfield (n, init) ->

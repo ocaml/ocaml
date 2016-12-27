@@ -128,6 +128,7 @@ denotes either an object or polymorphic variant type, the row variable
 of @typexpr@ is captured by @"'" ident@, and quantified upon.
 
 \subsubsection*{Polymorphic variant types}
+\ikwd{of\@\texttt{of}}
 
 \begin{syntax}
 polymorphic-variant-type:
@@ -142,11 +143,11 @@ tag-spec-first:
       | [ typexpr ] '|' tag-spec
 ;
 tag-spec:
-        '`'tag-name [ "of" typexpr ]
+        '`'tag-name [ 'of' typexpr ]
       | typexpr
 ;
 tag-spec-full:
-        '`'tag-name [ "of" ['&'] typexpr { '&' typexpr } ]
+        '`'tag-name [ 'of' ['&'] typexpr { '&' typexpr } ]
       | typexpr
 \end{syntax}
 

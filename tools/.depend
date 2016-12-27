@@ -30,13 +30,15 @@ eqparsetree.cmo : ../parsing/parsetree.cmi ../parsing/longident.cmi \
     ../parsing/location.cmi ../parsing/asttypes.cmi
 eqparsetree.cmx : ../parsing/parsetree.cmi ../parsing/longident.cmx \
     ../parsing/location.cmx ../parsing/asttypes.cmi
-objinfo.cmo : ../asmcomp/printclambda.cmi ../utils/misc.cmi \
+objinfo.cmo : ../middle_end/base_types/symbol.cmi \
+    ../asmcomp/printclambda.cmi ../utils/misc.cmi \
     ../middle_end/base_types/linkage_name.cmi ../typing/ident.cmi \
     ../asmcomp/export_info.cmi ../utils/config.cmi \
     ../middle_end/base_types/compilation_unit.cmi ../asmcomp/cmx_format.cmi \
     ../typing/cmt_format.cmi ../bytecomp/cmo_format.cmi \
     ../typing/cmi_format.cmi ../bytecomp/bytesections.cmi
-objinfo.cmx : ../asmcomp/printclambda.cmx ../utils/misc.cmx \
+objinfo.cmx : ../middle_end/base_types/symbol.cmx \
+    ../asmcomp/printclambda.cmx ../utils/misc.cmx \
     ../middle_end/base_types/linkage_name.cmx ../typing/ident.cmx \
     ../asmcomp/export_info.cmx ../utils/config.cmx \
     ../middle_end/base_types/compilation_unit.cmx ../asmcomp/cmx_format.cmi \

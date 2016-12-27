@@ -27,7 +27,11 @@ let test test_number answer correct_answer =
 
 (* One-dimensional arrays *)
 
-let _ =
+(* flambda can cause some of these values not to be reclaimed by the Gc, which
+ * can undermine the use of Gc.full_major for the Windows ports. All the tests
+ * are wrapped in a non-inlineable function to prevent this behaviour.
+ *)
+let tests () =
   testing_function "------ Array1 --------";
   testing_function "create/set/get";
   let test_setget kind vals =
@@ -1028,10 +1032,12 @@ let _ =
   Sys.remove mapped_file;
 
   ()
+  [@@inline never]
 
 (********* End of test *********)
 
 let _ =
+  tests ();
   print_newline();
   if !error_occurred then begin
     prerr_endline "************* TEST FAILED ****************"; exit 2

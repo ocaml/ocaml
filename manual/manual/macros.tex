@@ -207,9 +207,9 @@
 
 \def\printindex#1#2{\@restonecoltrue\if@twocolumn\@restonecolfalse\fi
   \columnseprule \z@ \columnsep 35pt
-  \newpage \twocolumn[{\Large\bf #2 \vskip4ex}]
+  \newpage \phantomsection \twocolumn[{\Large\bf #2 \vskip4ex}]
   \markright{\uppercase{#2}}
-  \addcontentsline{toc}{section}{#2}
+  \addcontentsline{toc}{chapter}{#2}
   \pdfsection{#2}
   \@input{#1.ind}}
 
