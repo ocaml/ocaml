@@ -253,6 +253,18 @@ else
 EXTRAPATH = PATH="otherlibs/win32unix:$(PATH)"
 endif
 
+BOOT_FLEXLINK_CMD=
+
+ifeq "$(UNIX_OR_WIN32)" "win32"
+FLEXDLL_SUBMODULE_PRESENT := $(wildcard flexdll/Makefile)
+ifeq "$(FLEXDLL_SUBMODULE_PRESENT)" ""
+  BOOT_FLEXLINK_CMD=
+else
+  BOOT_FLEXLINK_CMD = FLEXLINK_CMD="../boot/ocamlrun ../flexdll/flexlink.exe"
+  CAMLOPT := OCAML_FLEXLINK="boot/ocamlrun flexdll/flexlink.exe" $(CAMLOPT)
+endif
+endif
+
 # The configuration file
 
 utils/config.ml: utils/config.mlp config/Makefile
