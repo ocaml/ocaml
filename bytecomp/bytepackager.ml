@@ -208,12 +208,22 @@ let package_object_files ppf files targetfile targetname coercion =
   let members =
     map_left_right read_member_info files in
   let required_globals =
-    List.fold_left (fun required_globals -> function
+    List.fold_right (fun compunit required_globals -> match compunit with
         | { pm_kind = PM_intf } ->
             required_globals
-        | { pm_kind = PM_impl { cu_required_globals } } ->
+        | { pm_kind = PM_impl { cu_required_globals; cu_reloc } } ->
+            let remove_required (rel, _pos) required_globals =
+              match rel with
+                Reloc_setglobal id ->
+                  Ident.Set.remove id required_globals
+              | _ ->
+                  required_globals
+            in
+            let required_globals =
+              List.fold_right remove_required cu_reloc required_globals
+            in
             List.fold_right Ident.Set.add cu_required_globals required_globals)
-      Ident.Set.empty members
+      members Ident.Set.empty
   in
   let unit_names =
     List.map (fun m -> m.pm_name) members in

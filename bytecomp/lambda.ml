@@ -39,8 +39,9 @@ type immediate_or_pointer =
   | Pointer
 
 type initialization_or_assignment =
-  | Initialization
   | Assignment
+  | Heap_initialization
+  | Root_initialization
 
 type is_safe =
   | Safe
@@ -86,7 +87,7 @@ type primitive =
   | Paddfloat | Psubfloat | Pmulfloat | Pdivfloat
   | Pfloatcomp of comparison
   (* String operations *)
-  | Pstringlength | Pstringrefu  | Pstringrefs 
+  | Pstringlength | Pstringrefu  | Pstringrefs
   | Pbyteslength | Pbytesrefu | Pbytessetu | Pbytesrefs | Pbytessets
   (* Array operations *)
   | Pmakearray of array_kind * mutable_flag

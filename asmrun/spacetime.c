@@ -22,6 +22,7 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
+#include <signal.h>
 #include "caml/config.h"
 #ifdef HAS_UNISTD
 #include <unistd.h>
@@ -157,6 +158,7 @@ static void open_snapshot_channel(void)
   }
   else {
     snapshot_channel = caml_open_descriptor_out(fd);
+    snapshot_channel->flags |= CHANNEL_FLAG_BLOCKING_WRITE;
     pid_when_snapshot_channel_opened = pid;
     caml_spacetime_write_magic_number_internal(snapshot_channel);
   }
@@ -232,6 +234,13 @@ void caml_spacetime_initialize(void)
         automatic_snapshots = 1;
         open_snapshot_channel();
         if (automatic_snapshots) {
+#ifdef SIGINT
+          /* Catch interrupt so that the profile can be completed.
+             We do this by marking the signal as handled without
+             specifying an actual handler. This causes the signal
+             to be handled by a call to exit. */
+          caml_set_signal_action(SIGINT, 2);
+#endif
           snapshot_interval = interval / 1e3;
           time = caml_sys_time_unboxed(Val_unit);
           next_snapshot_time = time + snapshot_interval;
@@ -414,10 +423,12 @@ value caml_spacetime_stored_pointer_of_c_node(c_node* c_node)
   return node;
 }
 
+#ifdef HAS_LIBUNWIND
 static int pc_inside_c_node_matches(c_node* node, void* pc)
 {
   return Decode_c_node_pc(node->pc) == pc;
 }
+#endif
 
 static value allocate_uninitialized_ocaml_node(int size_including_header)
 {
@@ -1064,6 +1075,13 @@ CAMLprim value caml_spacetime_enabled (value v_unit)
   return Val_true;
 }
 
+CAMLprim value caml_register_channel_for_spacetime (value v_channel)
+{
+  struct channel* channel = Channel(v_channel);
+  channel->flags |= CHANNEL_FLAG_BLOCKING_WRITE;
+  return Val_unit;
+}
+
 #else
 
 /* Functions for when the compiler was not configured with "-spacetime". */
@@ -1092,6 +1110,11 @@ CAMLprim value caml_spacetime_save_event_for_automatic_snapshots
 }
 
 CAMLprim value caml_spacetime_save_trie (value ignored)
+{
+  return Val_unit;
+}
+
+CAMLprim value caml_register_channel_for_spacetime (value v_channel)
 {
   return Val_unit;
 }

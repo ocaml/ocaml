@@ -10,6 +10,7 @@ for the specifications expressed in module types.
 \ikwd{end\@\texttt{end}}
 \ikwd{functor\@\texttt{functor}}
 \ikwd{let\@\texttt{let}}
+\ikwd{and\@\texttt{and}}
 \ikwd{external\@\texttt{external}}
 \ikwd{type\@\texttt{type}}
 \ikwd{exception\@\texttt{exception}}

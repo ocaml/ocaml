@@ -839,3 +839,27 @@ let projection_to_named (projection : Projection.t) : Flambda.named =
   | Move_within_set_of_closures move -> Move_within_set_of_closures move
   | Field (field_index, var) ->
     Prim (Pfield field_index, [var], Debuginfo.none)
+
+type specialised_to_same_as =
+  | Not_specialised
+  | Specialised_and_aliased_to of Variable.Set.t
+
+let parameters_specialised_to_the_same_variable
+      ~(function_decls : Flambda.function_declarations)
+      ~(specialised_args : Flambda.specialised_to Variable.Map.t) =
+  let specialised_arg_aliasing =
+    (* For each external variable involved in a specialisation, which
+       internal variable(s) it maps to via that specialisation. *)
+    Variable.Map.transpose_keys_and_data_set
+      (Variable.Map.map (fun ({ var; _ } : Flambda.specialised_to) -> var)
+        specialised_args)
+  in
+  Variable.Map.map (fun ({ params; _ } : Flambda.function_declaration) ->
+      List.map (fun param ->
+          match Variable.Map.find param specialised_args with
+          | exception Not_found -> Not_specialised
+          | { var; _ } ->
+            Specialised_and_aliased_to
+              (Variable.Map.find var specialised_arg_aliasing))
+        params)
+    function_decls.funs

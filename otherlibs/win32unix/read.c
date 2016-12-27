@@ -45,8 +45,15 @@ CAMLprim value unix_read(value fd, value buf, value ofs, value vlen)
       caml_leave_blocking_section();
     }
     if (err) {
-      win32_maperr(err);
-      uerror("read", Nothing);
+      if (err == ERROR_BROKEN_PIPE) {
+        // The write handle for an anonymous pipe has been closed. We match the
+        // Unix behavior, and treat this as a zero-read instead of a Unix_error.
+        err = 0;
+        numread = 0;
+      } else {
+        win32_maperr(err);
+        uerror("read", Nothing);
+      }
     }
     memmove (&Byte(buf, Long_val(ofs)), iobuf, numread);
   End_roots();

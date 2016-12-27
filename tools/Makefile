@@ -342,7 +342,7 @@ install::
 $(call byte_and_opt,primreq,config.cmo primreq.cmo,)
 
 clean::
-	rm -f "objinfo_helper$(EXE)"
+	rm -f "objinfo_helper$(EXE)" "objinfo_helper$(EXE).manifest"
 
 
 # Copy a bytecode executable, stripping debug info

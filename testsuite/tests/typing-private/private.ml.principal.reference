@@ -122,4 +122,6 @@ Error: Type declarations do not match:
          type 'a t
        Their constraints differ.
 # type 'a t = private 'a constraint 'a = < x : int; .. >
-# 
+#     type t = [ `Closed ]
+# type nonrec t = private [> t ]
+#   

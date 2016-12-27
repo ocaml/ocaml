@@ -74,8 +74,8 @@ let constructor_args priv cd_args cd_res path rep =
       let type_params = TypeSet.elements arg_vars_set in
       let type_unboxed =
         match rep with
-        | Record_unboxed _ -> { unboxed = true; default = false }
-        | _ -> { unboxed = false; default = false }
+        | Record_unboxed _ -> unboxed_true_default_false
+        | _ -> unboxed_false_default_false
       in
       let tdecl =
         {
