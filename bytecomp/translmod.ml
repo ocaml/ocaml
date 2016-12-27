@@ -925,7 +925,7 @@ let transl_store_structure glob map prims str =
     try
       let (pos, cc) = Ident.find_same id map in
       let init_val = apply_coercion loc Alias cc (Lvar id) in
-      Lprim(Psetfield(pos, Pointer, Initialization),
+      Lprim(Psetfield(pos, Pointer, Root_initialization),
             [Lprim(Pgetglobal glob, [], loc); init_val],
             loc)
     with Not_found ->
@@ -953,7 +953,7 @@ let transl_store_structure glob map prims str =
     List.fold_right (add_ident may_coerce) idlist subst
 
   and store_primitive (pos, prim) cont =
-    Lsequence(Lprim(Psetfield(pos, Pointer, Initialization),
+    Lsequence(Lprim(Psetfield(pos, Pointer, Root_initialization),
                     [Lprim(Pgetglobal glob, [], Location.none);
                      transl_primitive Location.none
                        prim.pc_desc prim.pc_env prim.pc_type None],
@@ -1209,7 +1209,7 @@ let transl_store_package component_names target_name coercion =
       (List.length component_names,
        make_sequence
          (fun pos id ->
-           Lprim(Psetfield(pos, Pointer, Initialization),
+           Lprim(Psetfield(pos, Pointer, Root_initialization),
                  [Lprim(Pgetglobal target_name, [], Location.none);
                   get_component id],
                  Location.none))
@@ -1226,7 +1226,7 @@ let transl_store_package component_names target_name coercion =
              apply_coercion Location.none Strict coercion components,
              make_sequence
                (fun pos _id ->
-                 Lprim(Psetfield(pos, Pointer, Initialization),
+                 Lprim(Psetfield(pos, Pointer, Root_initialization),
                        [Lprim(Pgetglobal target_name, [], Location.none);
                         Lprim(Pfield pos, [Lvar blk], Location.none)],
                        Location.none))

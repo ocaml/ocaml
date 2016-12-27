@@ -207,16 +207,16 @@ clean::
 .SUFFIXES: .mli .ml .cmi .cmo .cmx .p.cmx
 
 .mli.cmi:
-	$(CAMLC) $(COMPFLAGS) `./Compflags $@` -c $<
+	$(CAMLC) $(COMPFLAGS) `sh ./Compflags $@` -c $<
 
 .ml.cmo:
-	$(CAMLC) $(COMPFLAGS) `./Compflags $@` -c $<
+	$(CAMLC) $(COMPFLAGS) `sh ./Compflags $@` -c $<
 
 .ml.cmx:
-	$(CAMLOPT) $(COMPFLAGS) $(OPTCOMPFLAGS) `./Compflags $@` -c $<
+	$(CAMLOPT) $(COMPFLAGS) $(OPTCOMPFLAGS) `sh ./Compflags $@` -c $<
 
 .ml.p.cmx:
-	$(CAMLOPT) $(COMPFLAGS) $(OPTCOMPFLAGS) `./Compflags $@` \
+	$(CAMLOPT) $(COMPFLAGS) $(OPTCOMPFLAGS) `sh ./Compflags $@` \
 	           -p -c -o $*.p.cmx $<
 
 # Dependencies on the compiler

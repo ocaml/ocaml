@@ -51,7 +51,7 @@ VPATH=.:$(CSLDIR)/stdlib:$(CSLDIR)/parsing:$(CSLDIR)/otherlibs/unix:$(CSLDIR)/ot
 
 etex-files: $(BLURB)
 all: libs
-	./check-stdlib-modules $(CSLDIR)
+	sh ./check-stdlib-modules $(CSLDIR)
 
 libs: $(FILES)
 

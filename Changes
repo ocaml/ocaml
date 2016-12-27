@@ -102,6 +102,11 @@ Next version (4.05.0):
   it previously raised an EPIPE error, it now returns 0 like other OSes
   (Jonathan Protzenko)
 
+### Bytecode debugger (ocamldebug):
+
+- GPR#977: Catch Out_of_range in "list" command
+  (Yunxing Dai)
+
 ### Tools:
 
 - PR#5163: ocamlobjinfo, dump globals defined by bytecode executables
@@ -114,6 +119,10 @@ Next version (4.05.0):
 - GPR#848: ocamldoc, escape link targets in HTML output
   (Etienne Millon, review by Gabriel Scherer, Florian Angeletti and
   Daniel Bünzli)
+
+- GPR#986: ocamldoc, use relative paths in error message
+  to solve ocamlbuild+doc usability issue (ocaml/ocamlbuild#79)
+  (Gabriel Scherer, review by Florian Angeletti, discussion with Daniel Bünzli)
 
 - clarify ocamldoc text parsing error messages
   (Gabriel Scherer)
@@ -156,6 +165,9 @@ Next version (4.05.0):
   when the opt target is built but opt.opt target is not.
   (whitequark)
 
+- GPR#935: allow build in Android's termux
+  (ygrek, review by Gabriel Scherer)
+
 - GPR#984: Fix compilation of compiler distribution when Spacetime
   enabled
   (Mark Shinwell)
@@ -178,7 +190,7 @@ Next version (4.05.0):
 - PR#7216, GPR#949: don't require double parens in Functor((val x))
   (Jacques Garrigue, review by Valentin Gatien-Baron)
 
-- PR#7414, GPR#929: Soundness bug with non-generalized type variable and functors
+- PR#7414, GPR#929: Soundness bug with non-generalized type variable and functor
   (Jacques Garrigue, report by Leo White)
 
 - PR#7421: Soundness bug with GADTs and lazy
@@ -188,7 +200,10 @@ Next version (4.05.0):
   (Jacques Garrigue, report by Stephen Dolan)
 
 - PR#7432: Linking modules compiled with -labels and -nolabels is not safe
-  (Jacques Garrigue, Report by Jeremy Yallop)
+  (Jacques Garrigue, report by Jeremy Yallop)
+
+- PR#7437: typing assert failure with nonrec priv
+  (Jacques Garrigue, report by Anil Madhavapeddy)
 
 - GPR#795: remove 256-character limitation on Sys.executable_name
   (Xavier Leroy)
@@ -212,6 +227,10 @@ Next version (4.05.0):
 - GPR#934: check for integer overflow in Bytes.extend
   (Jeremy Yallop, review by Gabriel Scherer)
 
+- GPR#987: alloc_sockaddr: don't assume a null terminator. It is not inserted
+  on macOS by system calls that fill in a struct sockaddr (e.g. getsockname).
+  (Anton Bachin)
+
 Next minor version (4.04.1):
 ----------------------------
 
@@ -232,6 +251,10 @@ Next minor version (4.04.1):
 - GPR#912: Fix segfault in Unix.create_process on Windows caused by wrong header
   configuration.
   (David Allsopp)
+
+- GPR#980: add dynlink options to ocamlbytecomp.cmxa to allow ocamlopt.opt
+  to load plugins. See http://github.com/OCamlPro/ocamlc-plugins for examples.
+  (Fabrice Le Fessant, review by David Allsopp)
 
 OCaml 4.04.0 (4 Nov 2016):
 --------------------------
