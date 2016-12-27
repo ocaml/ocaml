@@ -168,6 +168,10 @@ Next version (4.05.0):
 - GPR#935: allow build in Android's termux
   (ygrek, review by Gabriel Scherer)
 
+- GPR#984: Fix compilation of compiler distribution when Spacetime
+  enabled
+  (Mark Shinwell)
+
 ### Internal/compiler-libs changes:
 
 - GPR#744, GPR#781: fix duplicate self-reference in imported cmi_crcs
