@@ -105,18 +105,18 @@ method! regs_for tyv =
 method is_immediate n =
   is_immediate (Int32.of_int n)
 
-method! is_simple_expr = function
+method! is_simple_expr ~treat_loads_as_effectful = function
   (* inlined floating-point ops are simple if their arguments are *)
   | Cop(Cextcall("sqrt", _, _, _), args, _) when !fpu >= VFPv2 ->
-      List.for_all self#is_simple_expr args
+      List.for_all (self#is_simple_expr ~treat_loads_as_effectful) args
   (* inlined byte-swap ops are simple if their arguments are *)
   | Cop(Cextcall("caml_bswap16_direct", _, _, _), args, _)
     when !arch >= ARMv6T2 ->
-      List.for_all self#is_simple_expr args
+      List.for_all (self#is_simple_expr ~treat_loads_as_effectful) args
   | Cop(Cextcall("caml_int32_direct_bswap",_,_,_), args, _)
     when !arch >= ARMv6 ->
-      List.for_all self#is_simple_expr args
-  | e -> super#is_simple_expr e
+      List.for_all (self#is_simple_expr ~treat_loads_as_effectful) args
+  | e -> super#is_simple_expr e ~treat_loads_as_effectful
 
 method select_addressing chunk = function
   | Cop((Cadda | Caddv), [arg; Cconst_int n], _)

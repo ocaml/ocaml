@@ -205,7 +205,7 @@ class virtual selector_generic = object (self)
    first, then the block is allocated, then the simple arguments are
    evaluated and stored. *)
 
-method is_simple_expr = function
+method is_simple_expr ~treat_loads_as_effectful = function
     Cconst_int _ -> true
   | Cconst_natint _ -> true
   | Cconst_float _ -> true
@@ -214,17 +214,22 @@ method is_simple_expr = function
   | Cconst_natpointer _ -> true
   | Cblockheader _ -> true
   | Cvar _ -> true
-  | Ctuple el -> List.for_all self#is_simple_expr el
-  | Clet(_id, arg, body) -> self#is_simple_expr arg && self#is_simple_expr body
-  | Csequence(e1, e2) -> self#is_simple_expr e1 && self#is_simple_expr e2
+  | Ctuple el -> List.for_all (self#is_simple_expr ~treat_loads_as_effectful) el
+  | Clet(_id, arg, body) ->
+    self#is_simple_expr ~treat_loads_as_effectful arg
+      && self#is_simple_expr ~treat_loads_as_effectful body
+  | Csequence(e1, e2) ->
+    self#is_simple_expr ~treat_loads_as_effectful e1
+      && self#is_simple_expr ~treat_loads_as_effectful e2
   | Cop(op, args, _dbg) ->
       begin match op with
         (* The following may have effects or coeffects *)
-      | Capply _ | Cextcall _ | Calloc | Cload _ | Cstore _ | Craise _
+      | Capply _ | Cextcall _ | Calloc | Cstore _ | Craise _
       | Ccheckbound -> false
+      | Cload _ when treat_loads_as_effectful -> false
         (* The remaining operations are simple if their args are *)
       | _ ->
-          List.for_all self#is_simple_expr args
+          List.for_all (self#is_simple_expr ~treat_loads_as_effectful) args
       end
   | _ -> false
 
@@ -753,8 +758,8 @@ method private bind_let (env:environment) v r1 =
     env_add v rv env
   end
 
-method private emit_parts (env:environment) exp =
-  if self#is_simple_expr exp then
+method private emit_parts (env:environment) ~treat_loads_as_effectful exp =
+  if self#is_simple_expr exp ~treat_loads_as_effectful then
     Some (exp, env)
   else begin
     match self#emit_expr env exp with
@@ -777,18 +782,28 @@ method private emit_parts (env:environment) exp =
         end
   end
 
-method private emit_parts_list (env:environment) exp_list : (_ * environment) option =
+method private emit_parts_list_core (env:environment) ~treat_loads_as_effectful
+      exp_list : (_ * environment) option =
   match exp_list with
     [] -> Some ([], env)
   | exp :: rem ->
       (* This ensures right-to-left evaluation, consistent with the
          bytecode compiler *)
-      match self#emit_parts_list env rem with
+      match self#emit_parts_list_core env ~treat_loads_as_effectful rem with
         None -> None
       | Some(new_rem, new_env) ->
-          match self#emit_parts new_env exp with
+          match self#emit_parts new_env ~treat_loads_as_effectful exp with
             None -> None
           | Some(new_exp, fin_env) -> Some(new_exp :: new_rem, fin_env)
+
+method private emit_parts_list (env:environment) exp_list =
+  let contains_effects =
+    List.exists (fun exp ->
+        not (self#is_simple_expr exp ~treat_loads_as_effectful:false))
+      exp_list
+  in
+  self#emit_parts_list_core env ~treat_loads_as_effectful:contains_effects
+    exp_list
 
 method private emit_tuple_not_flattened env exp_list =
   let rec emit_list = function

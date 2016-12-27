@@ -159,14 +159,14 @@ inherit Selectgen.selector_generic as super
 
 method is_immediate (_n : int) = true
 
-method! is_simple_expr e =
+method! is_simple_expr ~treat_loads_as_effectful e =
   match e with
   | Cop(Cextcall(fn, _, _, _), args, _)
     when !fast_math && List.mem fn inline_float_ops ->
       (* inlined float ops are simple if their arguments are *)
-      List.for_all self#is_simple_expr args
+      List.for_all (self#is_simple_expr ~treat_loads_as_effectful) args
   | _ ->
-      super#is_simple_expr e
+      super#is_simple_expr ~treat_loads_as_effectful e
 
 method select_addressing _chunk exp =
   match select_addr exp with
