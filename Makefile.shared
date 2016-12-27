@@ -231,7 +231,6 @@ PERVASIVES=$(STDLIB_MODULES) outcometree topdirs toploop
 # The configuration file
 
 utils/config.ml: utils/config.mlp config/Makefile
-	@rm -f utils/config.ml
 	sed -e 's|%%AFL_INSTRUMENT%%|$(AFL_INSTRUMENT)|' \
 	    -e 's|%%ARCH%%|$(ARCH)|' \
 	    -e 's|%%ARCMD%%|$(ARCMD)|' \
@@ -270,7 +269,7 @@ utils/config.ml: utils/config.mlp config/Makefile
 	    -e 's|%%WITH_FRAME_POINTERS%%|$(WITH_FRAME_POINTERS)|' \
 	    -e 's|%%WITH_PROFINFO%%|$(WITH_PROFINFO)|' \
 	    -e 's|%%WITH_SPACETIME%%|$(WITH_SPACETIME)|' \
-	    utils/config.mlp > utils/config.ml
+	    $< > $@
 
 partialclean::
 	rm -f utils/config.ml
