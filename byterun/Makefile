@@ -72,6 +72,18 @@ OUTPUTOBJ=-o
 endif
 DBGO=d.$(O)
 
+ifeq "$(UNIX_OR_WIN32)" "win32"
+LIBS = $(call SYSLIB,ws2_32) $(EXTRALIBS)
+ifdef BOOTSTRAPPING_FLEXLINK
+MAKE_OCAMLRUN=$(MKEXE_BOOT)
+else
+MAKE_OCAMLRUN = $(MKEXE) -o $(1) $(2)
+endif
+else
+LIBS = $(BYTECCLIBS)
+MAKE_OCAMLRUN = $(MKEXE) $(BYTECCLINKOPTS) -o $(1) $(2)
+endif
+
 PRIMS=\
   alloc.c array.c compare.c extern.c floats.c gc_ctrl.c hash.c \
   intern.c interp.c ints.c io.c lexing.c md5.c meta.c obj.c parsing.c \
@@ -165,18 +177,6 @@ clean:
 	rm -f $(LIBRARIES) $(PROGRAMS) *.$(O) *.$(A) *.$(SO)
 	rm -f primitives prims.c caml/opnames.h caml/jumptbl.h
 	rm -f caml/version.h
-
-ifeq "$(UNIX_OR_WIN32)" "win32"
-LIBS = $(call SYSLIB,ws2_32) $(EXTRALIBS)
-ifdef BOOTSTRAPPING_FLEXLINK
-MAKE_OCAMLRUN=$(MKEXE_BOOT)
-else
-MAKE_OCAMLRUN = $(MKEXE) -o $(1) $(2)
-endif
-else
-LIBS = $(BYTECCLIBS)
-MAKE_OCAMLRUN = $(MKEXE) $(BYTECCLINKOPTS) -o $(1) $(2)
-endif
 
 ocamlrun$(EXE): prims.$(O) libcamlrun.$(A)
 	$(call MAKE_OCAMLRUN,$@,$^ $(LIBS))
