@@ -214,14 +214,19 @@ Next version (4.05.0):
   (Jeremy Yallop,
    review by Damien Doligez, Alain Frisch, Daniel Bünzli, Fabrice Le Fessant)
 
-- PR#7427, GPR#959: Don't delete let bodies in Cmmgen (Mark Shinwell)
+- GPR#934: check for integer overflow in Bytes.extend
+  (Jeremy Yallop, review by Gabriel Scherer)
+
+- MPR#6594, GPR#955: Remove "Istore_symbol" specific operation on x86-64.
+  This is more robust and in particular avoids assembly failures on Win64.
+  (Mark Shinwell, review by Xavier Leroy, testing by David Allsopp and
+   Olivier Andrieu)
 
 - GPR#956 Keep possibly-effectful expressions when optimizing multiplication
   by zero.
   (Jeremy Yallop)
 
-- GPR#934: check for integer overflow in Bytes.extend
-  (Jeremy Yallop, review by Gabriel Scherer)
+- PR#7427, GPR#959: Don't delete let bodies in Cmmgen (Mark Shinwell)
 
 - GPR#987: alloc_sockaddr: don't assume a null terminator. It is not inserted
   on macOS by system calls that fill in a struct sockaddr (e.g. getsockname).
