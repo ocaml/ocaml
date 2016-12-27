@@ -39,8 +39,9 @@ type immediate_or_pointer =
   | Pointer
 
 type initialization_or_assignment =
-  | Initialization
   | Assignment
+  | Heap_initialization
+  | Root_initialization
 
 type is_safe =
   | Safe
