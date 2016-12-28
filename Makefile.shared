@@ -356,6 +356,13 @@ flexlink.opt:
 	mv flexlink.exe flexlink.opt && \
 	mv flexlink flexlink.exe
 
+# Installation of the *.ml sources of compiler-libs
+.PHONY: install-compiler-sources
+install-compiler-sources:
+	cp utils/*.ml parsing/*.ml typing/*.ml bytecomp/*.ml driver/*.ml \
+	   toplevel/*.ml middle_end/*.ml middle_end/base_types/*.ml \
+	   asmcomp/*.ml $(INSTALL_COMPLIBDIR)
+
 # Run all tests
 
 .PHONY: tests

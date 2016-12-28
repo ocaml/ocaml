@@ -287,12 +287,6 @@ installoptopt:
 	cd $(INSTALL_COMPLIBDIR) && $(RANLIB) ocamlcommon.a ocamlbytecomp.a \
 	   ocamloptcomp.a
 
-# Installation of the *.ml sources of compiler-libs
-install-compiler-sources:
-	cp utils/*.ml parsing/*.ml typing/*.ml bytecomp/*.ml driver/*.ml \
-	   toplevel/*.ml middle_end/*.ml middle_end/base_types/*.ml \
-	   asmcomp/*.ml $(INSTALL_COMPLIBDIR)
-
 # Build the manual latex files from the etex source files
 # (see manual/README.md)
 manual-pregen: opt.opt
