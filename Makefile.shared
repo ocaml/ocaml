@@ -361,6 +361,34 @@ flexlink.opt:
 	mv flexlink.exe flexlink.opt && \
 	mv flexlink flexlink.exe
 
+.PHONY: installoptopt
+installoptopt:
+	cp ocamlc.opt "$(INSTALL_BINDIR)/ocamlc.opt$(EXE)"
+	cp ocamlopt.opt "$(INSTALL_BINDIR)/ocamlopt.opt$(EXE)"
+	cp lex/ocamllex.opt "$(INSTALL_BINDIR)/ocamllex.opt$(EXE)"
+	cd "$(INSTALL_BINDIR)"; \
+	   $(LN) ocamlc.opt$(EXE) ocamlc$(EXE); \
+	   $(LN) ocamlopt.opt$(EXE) ocamlopt$(EXE); \
+	   $(LN) ocamllex.opt$(EXE) ocamllex$(EXE)
+	cp utils/*.cmx parsing/*.cmx typing/*.cmx bytecomp/*.cmx \
+	   driver/*.cmx asmcomp/*.cmx "$(INSTALL_COMPLIBDIR)"
+	cp compilerlibs/ocamlcommon.cmxa compilerlibs/ocamlcommon.$(A) \
+	   compilerlibs/ocamlbytecomp.cmxa compilerlibs/ocamlbytecomp.$(A) \
+	   compilerlibs/ocamloptcomp.cmxa compilerlibs/ocamloptcomp.$(A) \
+	   $(BYTESTART:.cmo=.cmx) $(BYTESTART:.cmo=.$(O)) \
+	   $(OPTSTART:.cmo=.cmx) $(OPTSTART:.cmo=.$(O)) \
+	   "$(INSTALL_COMPLIBDIR)"
+	if test -f ocamlnat$(EXE) ; then \
+	  cp ocamlnat$(EXE) "$(INSTALL_BINDIR)/ocamlnat$(EXE)"; \
+	  cp toplevel/opttopdirs.cmi "$(INSTALL_LIBDIR)"; \
+	  cp compilerlibs/ocamlopttoplevel.cmxa \
+	     compilerlibs/ocamlopttoplevel.$(A) \
+	     $(OPTTOPLEVELSTART:.cmo=.cmx) $(OPTTOPLEVELSTART:.cmo=.$(O)) \
+	     "$(INSTALL_COMPLIBDIR)"; \
+	fi
+	cd "$(INSTALL_COMPLIBDIR)" && \
+	   $(RANLIB) ocamlcommon.$(A) ocamlbytecomp.$(A) ocamloptcomp.$(A)
+
 # Installation of the *.ml sources of compiler-libs
 .PHONY: install-compiler-sources
 install-compiler-sources:
