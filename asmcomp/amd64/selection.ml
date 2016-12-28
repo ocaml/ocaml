@@ -131,14 +131,14 @@ method is_immediate n = n <= 0x7FFF_FFFF && n >= (-1-0x7FFF_FFFF)
 
 method is_immediate_natint n = n <= 0x7FFFFFFFn && n >= -0x80000000n
 
-method! is_simple_expr ~treat_loads_as_effectful e =
+method! effects_of e =
   match e with
   | Cop(Cextcall (fn, _, _, _), args, _)
     when List.mem fn inline_ops ->
-      (* inlined ops are simple if their arguments are *)
-      List.for_all (self#is_simple_expr ~treat_loads_as_effectful) args
+      (* inlined ops' purity depends only on that of their arguments *)
+      Selectgen.Effect_and_coeffect.join_list_map args self#effects_of
   | _ ->
-      super#is_simple_expr ~treat_loads_as_effectful e
+      super#effects_of e
 
 method select_addressing _chunk exp =
   let (a, d) = select_addr exp in

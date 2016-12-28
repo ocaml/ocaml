@@ -194,44 +194,103 @@ let join_array rs =
 (* Name of function being compiled *)
 let current_function_name = ref ""
 
+module Effect = struct
+  type t =
+    | None
+    | Raise
+    | Arbitrary
+
+  let join t1 t2 =
+    match t1, t2 with
+    | None, t2 -> t2
+    | t1, None -> t1
+    | Raise, Raise -> Raise
+    | Arbitrary, _ | _, Arbitrary -> Arbitrary
+end
+
+module Coeffect = struct
+  type t =
+    | None
+    | Read_mutable
+
+  let join t1 t2 =
+    match t1, t2 with
+    | None, None -> None
+    | None, Read_mutable | Read_mutable, None
+    | Read_mutable, Read_mutable -> Read_mutable
+end
+
+module Effect_and_coeffect : sig
+  type t
+
+  val none : t
+  val arbitrary : t
+
+  val effect : t -> Effect.t
+  val coeffect : t -> Coeffect.t
+
+  val effect_only : Effect.t -> t
+  val coeffect_only : Coeffect.t -> t
+
+  val join : t -> t -> t
+  val join_list_map : 'a list -> ('a -> t) -> t
+end = struct
+  type t = Effect.t * Coeffect.t
+
+  let none = Effect.None, Coeffect.None
+  let arbitrary = Effect.Arbitrary, Coeffect.Read_mutable
+
+  let effect (e, _ce) = e
+  let coeffect (_e, ce) = ce
+
+  let effect_only e = e, Coeffect.None
+  let coeffect_only ce = Effect.None, ce
+
+  let join (e1, ce1) (e2, ce2) =
+    Effect.join e1 e2, Coeffect.join ce1 ce2
+
+  let join_list_map ts f =
+    match ts with
+    | [] -> none
+    | t::ts -> List.fold_left (fun acc t -> join acc (f t)) (f t) ts
+end
+
 (* The default instruction selection class *)
 
 class virtual selector_generic = object (self)
 
-(* Says if an expression is "simple". A "simple" expression has no
-   side-effects and its execution can be delayed until its value
-   is really needed. In the case of e.g. an [alloc] instruction,
-   the non-simple arguments are computed in right-to-left order
-   first, then the block is allocated, then the simple arguments are
-   evaluated and stored. *)
+(* Analyses the effects and coeffects of an expression.  This is used across
+   a whole list of expressions with a view to determining which expressions
+   may have their evaluation deferred.
 
-method is_simple_expr ~treat_loads_as_effectful = function
-    Cconst_int _ -> true
-  | Cconst_natint _ -> true
-  | Cconst_float _ -> true
-  | Cconst_symbol _ -> true
-  | Cconst_pointer _ -> true
-  | Cconst_natpointer _ -> true
-  | Cblockheader _ -> true
-  | Cvar _ -> true
-  | Ctuple el -> List.for_all (self#is_simple_expr ~treat_loads_as_effectful) el
+   In the case of e.g. an [alloc] instruction, the (co)effectful arguments
+   are computed in right-to-left order first, then the block is allocated,
+   then the non-(co)effectful arguments are evaluated and stored. *)
+method effects_of exp =
+  let module EC = Effect_and_coeffect in
+  match exp with
+  | Cconst_int _
+  | Cconst_natint _
+  | Cconst_float _
+  | Cconst_symbol _
+  | Cconst_pointer _
+  | Cconst_natpointer _
+  | Cblockheader _
+  | Cvar _ -> EC.none
+  | Ctuple el -> EC.join_list_map el self#effects_of
   | Clet(_id, arg, body) ->
-    self#is_simple_expr ~treat_loads_as_effectful arg
-      && self#is_simple_expr ~treat_loads_as_effectful body
+    EC.join (self#effects_of arg) (self#effects_of body)
   | Csequence(e1, e2) ->
-    self#is_simple_expr ~treat_loads_as_effectful e1
-      && self#is_simple_expr ~treat_loads_as_effectful e2
+    EC.join (self#effects_of e1) (self#effects_of e2)
   | Cop(op, args, _dbg) ->
       begin match op with
-        (* The following may have effects or coeffects *)
-      | Capply _ | Cextcall _ | Calloc | Cstore _ | Craise _
-      | Ccheckbound -> false
-      | Cload _ when treat_loads_as_effectful -> false
-        (* The remaining operations are simple if their args are *)
-      | _ ->
-          List.for_all (self#is_simple_expr ~treat_loads_as_effectful) args
+      | Capply _ | Cextcall _ | Calloc -> EC.arbitrary
+      | Cstore _ -> EC.effect_only Effect.Arbitrary
+      | Craise _ | Ccheckbound -> EC.effect_only Effect.Raise
+      | Cload _ -> EC.coeffect_only Coeffect.Read_mutable
+      | _ -> EC.join_list_map args (self#effects_of)
       end
-  | _ -> false
+  | _ -> EC.arbitrary
 
 (* Says whether an integer constant is a suitable immediate argument *)
 
@@ -758,8 +817,30 @@ method private bind_let (env:environment) v r1 =
     env_add v rv env
   end
 
-method private emit_parts (env:environment) ~treat_loads_as_effectful exp =
-  if self#is_simple_expr exp ~treat_loads_as_effectful then
+method private emit_parts (env:environment) ~overall_effects exp =
+  let module EC = Effect_and_coeffect in
+  let may_defer_evaluation =
+    let ec = self#effects_of exp in
+    match EC.effect ec with
+    | Effect.Raise | Effect.Arbitrary ->
+      (* Preserve the ordering of observable side effects. *)
+      false
+    | Effect.None ->
+      match EC.coeffect ec with
+      | Coeffect.None ->
+        (* Pure expressions may be moved. *)
+        true
+      | Coeffect.Read_mutable ->
+        (* Read-mutable expressions may only be moved if the worst (in the
+           sense of the ordering in [Effect.t]) effect that happens during the
+           evaluation of the whole expression list is raising an exception.
+           This in particular prevents loads being re-ordered with respect
+           to stores. *)
+        match EC.effect overall_effects with
+        | Effect.None | Effect.Raise -> true
+        | Effect.Arbitrary -> false
+  in
+  if may_defer_evaluation then
     Some (exp, env)
   else begin
     match self#emit_expr env exp with
@@ -782,28 +863,33 @@ method private emit_parts (env:environment) ~treat_loads_as_effectful exp =
         end
   end
 
-method private emit_parts_list_core (env:environment) ~treat_loads_as_effectful
+method private emit_parts_list_core (env:environment) ~overall_effects
       exp_list : (_ * environment) option =
   match exp_list with
     [] -> Some ([], env)
   | exp :: rem ->
       (* This ensures right-to-left evaluation, consistent with the
          bytecode compiler *)
-      match self#emit_parts_list_core env ~treat_loads_as_effectful rem with
+      match self#emit_parts_list_core env ~overall_effects rem with
         None -> None
       | Some(new_rem, new_env) ->
-          match self#emit_parts new_env ~treat_loads_as_effectful exp with
+          match self#emit_parts new_env ~overall_effects exp with
             None -> None
           | Some(new_exp, fin_env) -> Some(new_exp :: new_rem, fin_env)
 
 method private emit_parts_list (env:environment) exp_list =
-  let contains_effects =
-    List.exists (fun exp ->
-        not (self#is_simple_expr exp ~treat_loads_as_effectful:false))
-      exp_list
+  (* Note: Flambda (specifically the [Un_anf] pass) relies on the backend
+     respecting right-to-left evaluation order at all times. *)
+  let overall_effects =
+    Effect_and_coeffect.join_list_map exp_list self#effects_of
   in
-  self#emit_parts_list_core env ~treat_loads_as_effectful:contains_effects
-    exp_list
+(*
+if contains_effects then begin
+  Format.eprintf "%s: list contains effects:@;%a\n%!" !current_function_name
+    (Format.pp_print_list Printcmm.expression) exp_list
+end;
+*)
+  self#emit_parts_list_core env ~overall_effects exp_list
 
 method private emit_tuple_not_flattened env exp_list =
   let rec emit_list = function

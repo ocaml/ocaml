@@ -94,11 +94,11 @@ method is_immediate n =
   n land 0xFFF = n || n land 0xFFF_000 = n
   || mn land 0xFFF = mn || mn land 0xFFF_000 = mn
 
-method! is_simple_expr ~treat_loads_as_effectful = function
+method! is_simple_expr = function
   (* inlined floating-point ops are simple if their arguments are *)
   | Cop(Cextcall (fn, _, _, _), args, _) when List.mem fn inline_ops ->
-      List.for_all (self#is_simple_expr ~treat_loads_as_effectful) args
-  | e -> super#is_simple_expr ~treat_loads_as_effectful e
+      List.for_all self#is_simple_expr args
+  | e -> super#is_simple_expr e
 
 method select_addressing chunk = function
   | Cop((Caddv | Cadda), [Cconst_symbol s; Cconst_int n], _)
