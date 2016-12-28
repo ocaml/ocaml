@@ -236,27 +236,27 @@ install:
 # Installation of the native-code compiler
 installopt:
 	cd asmrun; $(MAKE) install
-	cp ocamlopt $(INSTALL_BINDIR)/ocamlopt.byte$(EXE)
+	cp ocamlopt "$(INSTALL_BINDIR)/ocamlopt.byte$(EXE)"
 	cd stdlib; $(MAKE) installopt
 	cp middle_end/*.cmi middle_end/*.cmt middle_end/*.cmti \
 	    middle_end/*.mli \
-		$(INSTALL_COMPLIBDIR)
+		"$(INSTALL_COMPLIBDIR)"
 	cp middle_end/base_types/*.cmi middle_end/base_types/*.cmt \
 	    middle_end/base_types/*.cmti middle_end/base_types/*.mli \
-		$(INSTALL_COMPLIBDIR)
+		"$(INSTALL_COMPLIBDIR)"
 	cp asmcomp/*.cmi asmcomp/*.cmt asmcomp/*.cmti asmcomp/*.mli \
-		$(INSTALL_COMPLIBDIR)
-	cp compilerlibs/ocamloptcomp.cma $(OPTSTART) $(INSTALL_COMPLIBDIR)
+		"$(INSTALL_COMPLIBDIR)"
+	cp compilerlibs/ocamloptcomp.cma $(OPTSTART) "$(INSTALL_COMPLIBDIR)"
 	if test -n "$(WITH_OCAMLDOC)"; then (cd ocamldoc; $(MAKE) installopt); \
 		else :; fi
 	for i in $(OTHERLIBRARIES); do \
 	  (cd otherlibs/$$i; $(MAKE) installopt) || exit $$?; \
 	done
 	if test -f ocamlopt.opt ; then $(MAKE) installoptopt; else \
-	   cd $(INSTALL_BINDIR); \
-	   ln -sf ocamlc.byte$(EXE) ocamlc$(EXE); \
-	   ln -sf ocamlopt.byte$(EXE) ocamlopt$(EXE); \
-	   ln -sf ocamllex.byte$(EXE) ocamllex$(EXE); \
+	   cd "$(INSTALL_BINDIR)"; \
+	   $(LN) ocamlc.byte$(EXE) ocamlc$(EXE); \
+	   $(LN) ocamlopt.byte$(EXE) ocamlopt$(EXE); \
+	   $(LN) ocamllex.byte$(EXE) ocamllex$(EXE); \
 	fi
 	cd tools; $(MAKE) installopt
 
