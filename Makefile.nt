@@ -244,6 +244,8 @@ installoptopt:
 	     $(OPTTOPLEVELSTART:.cmo=.cmx) $(OPTTOPLEVELSTART:.cmo=.$(O)) \
 	     "$(INSTALL_COMPLIBDIR)"; \
 	fi
+	cd "$(INSTALL_COMPLIBDIR)" && \
+	   $(RANLIB) ocamlcommon.$(A) ocamlbytecomp.$(A) ocamloptcomp.$(A)
 
 # The clean target
 
