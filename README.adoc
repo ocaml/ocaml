@@ -113,5 +113,5 @@ using (machine type, etc).
 
 You can also contact the implementors directly at mailto:caml@inria.fr[].
 
-For information on contributing to OCaml, see link:HACKING.md[] and
+For information on contributing to OCaml, see link:HACKING.adoc[] and
 link:CONTRIBUTING.md[].

@@ -737,15 +737,6 @@ if test $with_sharedlibs = "yes"; then
       mksharedlib="$flexlink"
       mkmaindll="$flexlink -maindll"
       shared_libraries_supported=true;;
-    *-*-linux-gnu|*-*-linux|*-*-freebsd[3-9]*|*-*-freebsd[1-9][0-9]*\
-    |*-*-openbsd*|*-*-netbsd*|*-*-dragonfly*|*-*-gnu*|*-*-haiku*)
-      sharedcccompopts="-fPIC"
-      mksharedlib="$bytecc -shared"
-      bytecclinkopts="$bytecclinkopts -Wl,-E"
-      byteccrpath="-Wl,-rpath,"
-      mksharedlibrpath="-Wl,-rpath,"
-      natdynlinkopts="-Wl,-E"
-      shared_libraries_supported=true;;
     alpha*-*-osf*)
       case "$bytecc" in
         *gcc*)
@@ -805,17 +796,14 @@ if test $with_sharedlibs = "yes"; then
       bytecccompopts="$dl_defs $bytecccompopts"
       dl_needs_underscore=false
       shared_libraries_supported=true;;
-    m88k-*-openbsd*)
-      shared_libraries_supported=false;;
-    vax-*-openbsd*)
-      shared_libraries_supported=false;;
-    *-*-openbsd*)
+    *-*-linux-gnu|*-*-linux|*-*-freebsd[3-9]*|*-*-freebsd[1-9][0-9]*\
+    |*-*-openbsd*|*-*-netbsd*|*-*-dragonfly*|*-*-gnu*|*-*-haiku*)
       sharedcccompopts="-fPIC"
       mksharedlib="$bytecc -shared"
       bytecclinkopts="$bytecclinkopts -Wl,-E"
-      natdynlinkopts="-Wl,-E"
       byteccrpath="-Wl,-rpath,"
       mksharedlibrpath="-Wl,-rpath,"
+      natdynlinkopts="-Wl,-E"
       shared_libraries_supported=true;;
   esac
 fi
