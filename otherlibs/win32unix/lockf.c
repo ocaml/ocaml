@@ -63,11 +63,11 @@ CAMLprim value unix_lockf(value fd, value cmd, value span)
 
   version.dwOSVersionInfoSize = sizeof(OSVERSIONINFO);
   if(GetVersionEx(&version) == 0) {
-    invalid_argument("lockf only supported on WIN32_NT platforms:"
+    caml_invalid_argument("lockf only supported on WIN32_NT platforms:"
                      " could not determine current platform.");
   }
   if(version.dwPlatformId != VER_PLATFORM_WIN32_NT) {
-    invalid_argument("lockf only supported on WIN32_NT platforms");
+    caml_invalid_argument("lockf only supported on WIN32_NT platforms");
   }
 
   h = Handle_val(fd);
@@ -112,11 +112,11 @@ CAMLprim value unix_lockf(value fd, value cmd, value span)
       err = GetLastError();
     break;
   case 1: /* F_LOCK - blocking write lock */
-    enter_blocking_section();
+    caml_enter_blocking_section();
     if (! LockFileEx(h, LOCKFILE_EXCLUSIVE_LOCK, 0,
                      lock_len.LowPart, lock_len.HighPart, &overlap))
       err = GetLastError();
-    leave_blocking_section();
+    caml_leave_blocking_section();
     break;
   case 2: /* F_TLOCK - non-blocking write lock */
     if (! LockFileEx(h, LOCKFILE_FAIL_IMMEDIATELY | LOCKFILE_EXCLUSIVE_LOCK, 0,
@@ -137,11 +137,11 @@ CAMLprim value unix_lockf(value fd, value cmd, value span)
     }
     break;
   case 4: /* F_RLOCK - blocking read lock */
-    enter_blocking_section();
+    caml_enter_blocking_section();
     if (! LockFileEx(h, 0, 0,
                      lock_len.LowPart, lock_len.HighPart, &overlap))
       err = GetLastError();
-    leave_blocking_section();
+    caml_leave_blocking_section();
     break;
   case 5: /* F_TRLOCK - non-blocking read lock */
     if (! LockFileEx(h, LOCKFILE_FAIL_IMMEDIATELY, 0,

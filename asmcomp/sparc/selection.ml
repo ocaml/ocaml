@@ -29,19 +29,20 @@ method is_immediate n = (n <= 4095) && (n >= -4096)
 method select_addressing _chunk = function
     Cconst_symbol s ->
       (Ibased(s, 0), Ctuple [])
-  | Cop((Caddv | Cadda), [Cconst_symbol s; Cconst_int n]) ->
+  | Cop((Caddv | Cadda), [Cconst_symbol s; Cconst_int n], _) ->
       (Ibased(s, n), Ctuple [])
-  | Cop((Caddv | Cadda), [arg; Cconst_int n]) ->
+  | Cop((Caddv | Cadda), [arg; Cconst_int n], _) ->
       (Iindexed n, arg)
-  | Cop((Caddv | Cadda as op), [arg1; Cop(Caddi, [arg2; Cconst_int n])]) ->
-      (Iindexed n, Cop(op, [arg1; arg2]))
+  | Cop((Caddv | Cadda as op),
+        [arg1; Cop(Caddi, [arg2; Cconst_int n], _)], dbg) ->
+      (Iindexed n, Cop(op, [arg1; arg2], dbg))
   | arg ->
       (Iindexed 0, arg)
 
 method private iextcall (func, alloc) =
   Iextcall { func; alloc; label_after = Cmm.new_label (); }
 
-method! select_operation op args =
+method! select_operation op args dbg =
   match (op, args) with
   (* For SPARC V7 multiplication, division and modulus are turned into
      calls to C library routines.
@@ -54,7 +55,7 @@ method! select_operation op args =
   | (Cmodi, _) ->
       (self#iextcall(".rem", false), args)
   | _ ->
-      super#select_operation op args
+      super#select_operation op args dbg
 
 (* Override insert_move_args to deal correctly with floating-point
    arguments being passed into pairs of integer registers. *)

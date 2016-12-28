@@ -289,6 +289,22 @@ val get_raw_backtrace_next_slot :
     raw_backtrace_slot -> raw_backtrace_slot option
 (** [get_raw_backtrace_next_slot slot] returns the next slot inlined, if any.
 
+    Sample code to iterate over all frames (inlined and non-inlined):
+    {[
+      (* Iterate over inlined frames *)
+      let rec iter_raw_backtrace_slot f slot =
+        f slot;
+        match get_raw_backtrace_next_slot slot with
+        | None -> ()
+        | Some slot' -> iter_raw_backtrace_slot f slot'
+
+      (* Iterate over stack frames *)
+      let iter_raw_backtrace f bt =
+        for i = 0 to raw_backtrace_length bt - 1 do
+          iter_raw_backtrace_slot f (get_raw_backtrace_slot bt i)
+        done
+    ]}
+
     @since 4.04.0
 *)
 

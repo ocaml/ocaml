@@ -336,6 +336,9 @@ let int_of_big_int bi =
     if eq_big_int bi monster_big_int then monster_int
     else failwith "int_of_big_int";;
 
+let int_of_big_int_opt bi =
+  try Some (int_of_big_int bi) with Failure _ -> None
+
 let big_int_of_nativeint i =
   if i = 0n then
     zero_big_int
@@ -359,6 +362,9 @@ let nativeint_of_big_int bi =
     then Nativeint.neg i
     else failwith "nativeint_of_big_int"
 
+let nativeint_of_big_int_opt bi =
+  try Some (nativeint_of_big_int bi) with Failure _ -> None
+
 let big_int_of_int32 i = big_int_of_nativeint (Nativeint.of_int32 i)
 
 let int32_of_big_int bi =
@@ -366,6 +372,9 @@ let int32_of_big_int bi =
   if i <= 0x7FFF_FFFFn && i >= -0x8000_0000n
   then Nativeint.to_int32 i
   else failwith "int32_of_big_int"
+
+let int32_of_big_int_opt bi =
+  try Some (int32_of_big_int bi) with Failure _ -> None
 
 let big_int_of_int64 i =
   if Sys.word_size = 64 then
@@ -405,6 +414,9 @@ let int64_of_big_int bi =
       then Int64.neg i
       else failwith "int64_of_big_int"
   end
+
+let int64_of_big_int_opt bi =
+  try Some (int64_of_big_int bi) with Failure _ -> None
 
 (* Coercion with nat type *)
 let nat_of_big_int bi =
@@ -459,6 +471,9 @@ let sys_big_int_of_string s ofs len =
 
 let big_int_of_string s =
   sys_big_int_of_string s 0 (String.length s)
+
+let big_int_of_string_opt s =
+  try Some (big_int_of_string s) with Failure _ -> None
 
 let power_base_nat base nat off len =
   if base = 0 then nat_of_int 0 else

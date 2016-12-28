@@ -97,7 +97,7 @@ INCLUDES=-I ../utils -I ../parsing -I ../typing -I ../bytecomp -I ../asmcomp \
          -I ../middle_end -I ../middle_end/base_types -I ../driver \
          -I ../toplevel
 COMPFLAGS= -absname -w +a-4-9-41-42-44-45-48 -strict-sequence -warn-error A \
- -safe-string -strict-formats $(INCLUDES)
+ -safe-string -strict-formats -bin-annot $(INCLUDES)
 LINKFLAGS=$(INCLUDES)
 VPATH := $(filter-out -I,$(INCLUDES))
 
@@ -147,7 +147,7 @@ $(call byte_and_opt,ocamloptp,$(ocamlcp_cmos) ocamloptp.cmo,)
 opt:: profiling.cmx
 
 install::
-	cp -- profiling.cmi profiling.cmo "$(INSTALL_LIBDIR)"
+	cp -- profiling.cmi profiling.cmo profiling.cmt profiling.cmti "$(INSTALL_LIBDIR)"
 
 installopt::
 	cp -- profiling.cmx profiling.$(O) "$(INSTALL_LIBDIR)"
@@ -342,7 +342,7 @@ install::
 $(call byte_and_opt,primreq,config.cmo primreq.cmo,)
 
 clean::
-	rm -f "objinfo_helper$(EXE)"
+	rm -f "objinfo_helper$(EXE)" "objinfo_helper$(EXE).manifest"
 
 
 # Copy a bytecode executable, stripping debug info

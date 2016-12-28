@@ -26,22 +26,22 @@ COMMONOBJS=\
   compare.o ints.o floats.o str.o array.o io.o extern.o intern.o \
   hash.o sys.o meta.o parsing.o gc_ctrl.o terminfo.o md5.o obj.o \
   lexing.o callback.o debugger.o weak.o compact.o finalise.o custom.o \
-  dynlink.o spacetime.o
+  dynlink.o spacetime.o afl.o
 
 PRIMS=\
   alloc.c array.c compare.c extern.c floats.c gc_ctrl.c hash.c \
   intern.c interp.c ints.c io.c lexing.c md5.c meta.c obj.c parsing.c \
   signals.c str.c sys.c terminfo.c callback.c weak.c finalise.c stacks.c \
-  dynlink.c backtrace_prim.c backtrace.c spacetime.c
+  dynlink.c backtrace_prim.c backtrace.c spacetime.c afl.c
 
-all:: ocamlrun$(EXE) ld.conf libcamlrun.$(A) all-$(RUNTIMED) primitives
+ifeq "$(RUNTIMED)" "true"
+RUNTIMEDTARGETS=ocamlrund$(EXE) libcamlrund.$(A)
+else
+RUNTIMEDTARGETS=
+endif
+
+all:: ocamlrun$(EXE) ld.conf libcamlrun.$(A) $(RUNTIMEDTARGETS) primitives
 .PHONY: all
-
-all-noruntimed:
-.PHONY: all-noruntimed
-
-all-runtimed: ocamlrund$(EXE) libcamlrund.$(A)
-.PHONY: all-runtimed
 
 ifeq "$(RUNTIMEI)" "true"
 all:: ocamlruni$(EXE) libcamlruni.$(A)
@@ -70,19 +70,15 @@ install::
 	cp ld.conf "$(INSTALL_LIBDIR)/ld.conf"
 .PHONY: install
 
-install:: install-$(RUNTIMED)
-
-install-noruntimed:
-.PHONY: install-noruntimed
-
+install::
+ifeq "$(RUNTIMED)" "true"
 # TODO: when cross-compiling, do not install ocamlrund
 # it doesn't hurt to install it, but it's useless and might be confusing
 # because it's an executable for the target machine, while we're installing
 # binaries for the host.
-install-runtimed:
 	cp ocamlrund$(EXE) "$(INSTALL_BINDIR)/ocamlrund$(EXE)"
 	cp libcamlrund.$(A) "$(INSTALL_LIBDIR)/libcamlrund.$(A)"
-.PHONY: install-runtimed
+endif
 
 ifeq "$(RUNTIMEI)" "true"
 install::
@@ -104,9 +100,15 @@ endif
 # Warning: we use "sort | uniq" instead of "sort -u" because in the MSVC
 # port, the "sort" program in the path is Microsoft's and not cygwin's
 
+# Warning: POSIX sort is locale dependent, that's why we set LC_ALL explicitly.
+# Sort is unstable for "is_directory" and "isatty"
+# see http://pubs.opengroup.org/onlinepubs/9699919799/utilities/sort.html:
+# "using sort to process pathnames, it is recommended that LC_ALL .. set to C"
+
+
 primitives : $(PRIMS)
 	sed -n -e "s/CAMLprim value \([a-z0-9_][a-z0-9_]*\).*/\1/p" $(PRIMS) \
-	  | sort | uniq > primitives
+	  | LC_ALL=C sort | uniq > primitives
 
 prims.c : primitives
 	(echo '#define CAML_INTERNALS'; \
@@ -134,7 +136,7 @@ caml/jumptbl.h : caml/instruct.h
 	       -e '/^}/q' caml/instruct.h > caml/jumptbl.h
 
 caml/version.h : ../VERSION ../tools/make-version-header.sh
-	../tools/make-version-header.sh ../VERSION > caml/version.h
+	sh ../tools/make-version-header.sh ../VERSION > caml/version.h
 
 clean ::
 	rm -f ocamlrun$(EXE) ocamlrund$(EXE) *.$(O) *.$(A) *.$(SO)

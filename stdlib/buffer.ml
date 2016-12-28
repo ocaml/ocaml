@@ -188,3 +188,9 @@ let add_substitute b f s =
     end else
     if previous = '\\' then add_char b previous in
   subst ' ' 0
+
+let truncate b len =
+    if len < 0 || len > length b then
+      invalid_arg "Buffer.truncate"
+    else
+      b.position <- len

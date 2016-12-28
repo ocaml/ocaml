@@ -96,11 +96,22 @@ let raw_list pr ppf = function
       fprintf ppf "@[<1>[%a%t]@]" pr a
         (fun ppf -> List.iter (fun x -> fprintf ppf ";@,%a" pr x) l)
 
+let kind_vars = ref []
+let kind_count = ref 0
+
 let rec safe_kind_repr v = function
     Fvar {contents=Some k}  ->
       if List.memq k v then "Fvar loop" else
       safe_kind_repr (k::v) k
-  | Fvar _ -> "Fvar None"
+  | Fvar r ->
+      let vid =
+        try List.assq r !kind_vars
+        with Not_found ->
+          let c = incr kind_count; !kind_count in
+          kind_vars := (r,c) :: !kind_vars;
+          c
+      in
+      Printf.sprintf "Fvar {None}@%d" vid
   | Fpresent -> "Fpresent"
   | Fabsent -> "Fabsent"
 
@@ -200,9 +211,9 @@ and raw_field ppf = function
   | Rabsent -> fprintf ppf "Rabsent"
 
 let raw_type_expr ppf t =
-  visited := [];
+  visited := []; kind_vars := []; kind_count := 0;
   raw_type ppf t;
-  visited := []
+  visited := []; kind_vars := []
 
 let () = Btype.print_raw := raw_type_expr
 
@@ -265,7 +276,8 @@ let rec normalize_type_path ?(cache=false) env p =
     | ty ->
         (p, Nth (index params ty))
   with
-    Not_found -> (p, Id)
+    Not_found ->
+      (Env.normalize_path None env p, Id)
 
 let penalty s =
   if s <> "" && s.[0] = '_' then
@@ -322,6 +334,9 @@ let set_printing_env env =
 let wrap_printing_env env f =
   set_printing_env env;
   try_finally f (fun () -> set_printing_env Env.empty)
+
+let wrap_printing_env env f =
+  Env.without_cmis (wrap_printing_env env) f
 
 let is_unambiguous path env =
   let l = Env.find_shadowed_types path env in
@@ -544,6 +559,8 @@ let rec tree_of_typexp sch ty =
   let pr_typ () =
     match ty.desc with
     | Tvar _ ->
+        (*let lev =
+          if is_non_gen sch ty then "/" ^ string_of_int ty.level else "" in*)
         Otyp_var (is_non_gen sch ty, name_of_type ty)
     | Tarrow(l, ty1, ty2, _) ->
         let pr_arrow l ty1 ty2 =
@@ -1158,7 +1175,7 @@ let dummy =
     type_newtype_level = None; type_loc = Location.none;
     type_attributes = [];
     type_immediate = false;
-    type_unboxed = { unboxed = false; default = false };
+    type_unboxed = unboxed_false_default_false;
   }
 
 let hide_rec_items = function

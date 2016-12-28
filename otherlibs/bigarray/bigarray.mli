@@ -295,7 +295,10 @@ module Genarray :
       the same dimensions as [a]). No copying of elements is involved: the
       new array and the original array share the same storage space.
       The dimensions are reversed, such that [get v [| a; b |]] in
-      C layout becomes [get v [| b+1; a+1 |]] in Fortran layout. *)
+      C layout becomes [get v [| b+1; a+1 |]] in Fortran layout.
+
+      @since 4.04.0
+  *)
 
   val size_in_bytes : ('a, 'b, 'c) t -> int
   (** [size_in_bytes a] is the number of elements in [a] multiplied

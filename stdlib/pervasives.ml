@@ -159,7 +159,9 @@ external float : int -> float = "%floatofint"
 external float_of_int : int -> float = "%floatofint"
 external truncate : float -> int = "%intoffloat"
 external int_of_float : float -> int = "%intoffloat"
-external float_of_bits : int64 -> float = "caml_int64_float_of_bits"
+external float_of_bits : int64 -> float
+  = "caml_int64_float_of_bits" "caml_int64_float_of_bits_unboxed"
+  [@@unboxed] [@@noalloc]
 let infinity =
   float_of_bits 0x7F_F0_00_00_00_00_00_00L
 let neg_infinity =
@@ -241,10 +243,22 @@ let bool_of_string = function
   | "false" -> false
   | _ -> invalid_arg "bool_of_string"
 
+let bool_of_string_opt = function
+  | "true" -> Some true
+  | "false" -> Some false
+  | _ -> None
+
 let string_of_int n =
   format_int "%d" n
 
 external int_of_string : string -> int = "caml_int_of_string"
+
+let int_of_string_opt s =
+  (* TODO: provide this directly as a non-raising primitive. *)
+  try Some (int_of_string s)
+  with Failure _ -> None
+
+
 external string_get : string -> int -> char = "%string_safe_get"
 
 let valid_float_lexem s =
@@ -261,6 +275,11 @@ let valid_float_lexem s =
 let string_of_float f = valid_float_lexem (format_float "%.12g" f)
 
 external float_of_string : string -> float = "caml_float_of_string"
+
+let float_of_string_opt s =
+  (* TODO: provide this directly as a non-raising primitive. *)
+  try Some (float_of_string s)
+  with Failure _ -> None
 
 (* List operations -- more in module List *)
 
@@ -468,7 +487,9 @@ let prerr_newline () = output_char stderr '\n'; flush stderr
 
 let read_line () = flush stdout; input_line stdin
 let read_int () = int_of_string(read_line())
+let read_int_opt () = int_of_string_opt(read_line())
 let read_float () = float_of_string(read_line())
+let read_float_opt () = float_of_string_opt(read_line())
 
 (* Operations on large files *)
 

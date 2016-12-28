@@ -205,6 +205,31 @@ module GenHashTable = struct
       (* TODO inline 3 iterations *)
       find_rec key hkey (h.data.(key_index h hkey))
 
+    let rec find_rec_opt key hkey = function
+      | Empty ->
+          None
+      | Cons(hk, c, rest) when hkey = hk  ->
+          begin match H.equal c key with
+          | ETrue ->
+              begin match H.get_data c with
+              | None ->
+                  (* This case is not impossible because the gc can run between
+                      H.equal and H.get_data *)
+                  find_rec_opt key hkey rest
+              | Some _ as d -> d
+              end
+          | EFalse -> find_rec_opt key hkey rest
+          | EDead ->
+              find_rec_opt key hkey rest
+          end
+      | Cons(_, _, rest) ->
+          find_rec_opt key hkey rest
+
+    let find_opt h key =
+      let hkey = H.hash h.seed key in
+      (* TODO inline 3 iterations *)
+      find_rec_opt key hkey (h.data.(key_index h hkey))
+
     let find_all h key =
       let hkey = H.hash h.seed key in
       let rec find_in_bucket = function

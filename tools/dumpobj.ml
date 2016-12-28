@@ -26,6 +26,7 @@ open Cmo_format
 open Printf
 
 let print_locations = ref true
+let print_reloc_info = ref false
 
 (* Read signed and unsigned integers *)
 
@@ -497,6 +498,8 @@ let dump_obj ic =
   seek_in ic cu_pos;
   let cu = (input_value ic : compilation_unit) in
   reloc := cu.cu_reloc;
+  if !print_reloc_info then
+    List.iter print_reloc cu.cu_reloc;
   if cu.cu_debug > 0 then begin
     seek_in ic cu.cu_debug;
     let evl = (input_value ic : debug_event list) in
@@ -543,6 +546,13 @@ let dump_exe ic =
 
 let arg_list = [
   "-noloc", Arg.Clear print_locations, " : don't print source information";
+  "-reloc", Arg.Set print_reloc_info, " : print relocation information";
+  "-args", Arg.Expand Arg.read_arg,
+     "<file> Read additional newline separated command line arguments \n\
+     \      from <file>";
+  "-args0", Arg.Expand Arg.read_arg0,
+     "<file> Read additional NUL separated command line arguments from \n\
+     \      <file>";
 ]
 let arg_usage =
   Printf.sprintf "%s [OPTIONS] FILES : dump content of bytecode files"
@@ -564,7 +574,7 @@ let arg_fun filename =
   printf "## end of ocaml dump of %S\n%!" filename
 
 let main() =
-  Arg.parse arg_list arg_fun arg_usage;
+  Arg.parse_expand arg_list arg_fun arg_usage;
     exit 0
 
 let _ = main ()

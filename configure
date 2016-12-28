@@ -45,7 +45,7 @@ pthread_wanted=yes
 dl_defs=''
 verbose=no
 with_curses=yes
-debugruntime=noruntimed
+debugruntime=false
 with_instrumented_runtime=false
 with_sharedlibs=yes
 partialld="ld -r"
@@ -61,6 +61,7 @@ TOOLPREF=""
 with_cfi=true
 flambda=false
 safe_string=false
+afl_instrument=false
 max_testsuite_dir_retries=0
 with_cplugins=true
 with_fpic=false
@@ -168,7 +169,7 @@ while : ; do
     -verbose|--verbose)
         verbose=yes;;
     -with-debug-runtime|--with-debug-runtime)
-        debugruntime=runtimed;;
+        debugruntime=true;;
     -with-instrumented-runtime|--with-instrumented-runtime)
         with_instrumented_runtime=true;;
     -no-debugger|--no-debugger)
@@ -205,6 +206,8 @@ while : ; do
         with_fpic=true;;
     -safe-string|--safe-string)
         safe_string=true;;
+    -afl-instrument)
+        afl_instrument=true;;
     *) if echo "$1" | grep -q -e '^--\?[a-zA-Z0-9-]\+='; then
          err "configure expects arguments of the form '-prefix /foo/bar'," \
              "not '-prefix=/foo/bar' (note the '=')."
@@ -275,11 +278,11 @@ echo "MANEXT=$manext" >> Makefile
 # Determine the system type
 
 if test "$host_type" = "unknown"; then
-  if host_type=`../gnu/config.guess`; then :; else
+  if host_type=`sh ../gnu/config.guess`; then :; else
     err "Cannot guess host type. You must specify one with the -host option."
   fi
 fi
-if host=`../gnu/config.sub $host_type`; then :; else
+if host=`sh ../gnu/config.sub $host_type`; then :; else
   err "Please specify the correct host type with the -host option"
 fi
 inf "Configuring for host $host ..."
@@ -328,12 +331,30 @@ esac
 
 # Configure the bytecode compiler
 
+# The BYTECC make variable defines which compiler and options to use
+# to compile C code intended to be used by OCaml bytecode programs.
+# It is used inside OCaml's build system, and also when ocamlc is
+# called on a third-party C source file and no -cc command-line option
+# has been specified.
+
+# The BYTECCCOMPOPTS make variable contains options to pass to the C
+# compiler but only when compiling C files that belong to the OCaml
+# distribution.
+# In other words, when ocamlc is called to compile a third-party C
+# source file, it will _not_ pass these options to the C compiler.
+
+# The SHAREDCCCOMPOPTS make variable contains options to use to compile C
+# source files so that the resulting object files can then be integrated
+# into shared libraries. It is passed to BYTECC for both C source files
+# in the OCaml distribution and third-party C source files compiled
+# with ocamlc.
+
 bytecc="$cc"
 mkexe="\$(BYTECC)"
 mkexedebugflag="-g"
 bytecccompopts=""
+byteccprivatecompopts=""
 bytecclinkopts=""
-dllccompopts=""
 ostype="Unix"
 exe=""
 iflexdir=""
@@ -358,7 +379,8 @@ esac
 
 case "$ccfamily" in
   clang-*)
-    bytecccompopts="-O2 -fno-strict-aliasing -fwrapv $gcc_warnings";;
+    bytecccompopts="-O2 -fno-strict-aliasing -fwrapv";
+    byteccprivatecompopts="$gcc_warnings";;
   gcc-[012]-*)
     # Some versions known to miscompile OCaml, e,g, 2.7.2.1, some 2.96.
     # Plus: C99 support unknown.
@@ -368,12 +390,19 @@ case "$ccfamily" in
     # Known problems with -fwrapv fixed in 4.2 only.
     wrn "This version of GCC is rather old.  Reducing optimization level."
     wrn "Consider using GCC version 4.2 or above."
-    bytecccompopts="-std=gnu99 -O $gcc_warnings";;
+    bytecccompopts="-std=gnu99 -O";
+    byteccprivatecompopts="$gcc_warnings";;
+  gcc-4-*)
+    bytecccompopts="-std=gnu99 -O2 -fno-strict-aliasing -fwrapv";
+    byteccprivatecompopts="$gcc_warnings";;
   gcc-*)
-    bytecccompopts="-std=gnu99 -O2 -fno-strict-aliasing -fwrapv $gcc_warnings";;
+    bytecccompopts="-O2 -fno-strict-aliasing -fwrapv";
+    byteccprivatecompopts="$gcc_warnings";;
   *)
     bytecccompopts="-O";;
 esac
+
+byteccprivatecompopts="-DCAML_NAME_SPACE $byteccprivatecompopts"
 
 # Adjust according to target
 
@@ -430,7 +459,6 @@ case "$bytecc,$target" in
       *) err "unknown cygwin variant";;
     esac
     bytecccompopts="$bytecccompopts -U_WIN32"
-    dllccompopts="-U_WIN32 -DCAML_DLL"
     if test $with_sharedlibs = yes; then
       flexlink="flexlink -chain $flavor -merge-manifest -stack 16777216"
       flexdir=`$flexlink -where | tr -d '\015'`
@@ -487,7 +515,7 @@ export cc cclibs verbose
 
 # Check C compiler.
 
-cc="$bytecc $bytecccompopts $bytecclinkopts" sh ./runtest ansi.c
+cc="$bytecc $bytecccompopts $byteccprivatecompopts $bytecclinkopts" sh ./runtest ansi.c
 case $? in
   0) inf "The C compiler is ISO C99 compliant." ;;
   1) wrn "The C compiler is ANSI / ISO C90 compliant, but not ISO C99" \
@@ -843,6 +871,18 @@ fi
 
 # Configure the native-code compiler
 
+# The NATIVECC make variable defines which compiler and options to use
+# to compile C code intended to be used by OCaml native programs.
+# It is used inside OCaml's build system, and also when ocamlopt is
+# called on a third-party C source file and no -cc command-line
+# option has been specified.
+
+# The NATIVECCCOMPOPTS make variable contains options to pass to the C
+# compiler, but only when compiling C files that belong to the OCaml
+# distribution.
+# In other words, when ocamlopt is called to compile a third-party C
+# source file, it will _not_ pass these options to the C compiler.
+
 arch=none
 model=default
 system=unknown
@@ -925,6 +965,7 @@ else
 fi
 
 nativecccompopts="$bytecccompopts"
+nativeccprivatecompopts="$byteccprivatecompopts"
 nativeccprofopts=''
 nativecclinkopts=''
 # FIXME the naming of nativecclinkopts is broken: these are options for
@@ -977,7 +1018,14 @@ case "$arch,$system" in
                   aspp="${TOOLPREF}cc -c";;
   amd64,*|arm,*|arm64,*|i386,*|power,bsd*|sparc,*)
                   as="${TOOLPREF}as"
-                  aspp="${TOOLPREF}gcc -c";;
+                  case "$ccfamily" in
+                      clang-*)
+                          aspp="${TOOLPREF}clang -c"
+                          ;;
+                      *)
+                          aspp="${TOOLPREF}gcc -c"
+                          ;;
+                  esac;;
 esac
 
 if test -n "$asoption"; then as="$asoption"; fi
@@ -985,25 +1033,25 @@ if test -n "$asppoption"; then aspp="$asppoption"; fi
 
 cc_profile='-pg'
 case "$arch,$system" in
-  i386,linux_elf) profiling='prof';;
-  i386,gnu) profiling='prof';;
-  i386,bsd_elf) profiling='prof';;
-  amd64,macosx) profiling='prof';;
-  i386,macosx) profiling='prof';;
-  sparc,bsd) profiling='prof';;
+  i386,linux_elf) profiling='true';;
+  i386,gnu) profiling='true';;
+  i386,bsd_elf) profiling='true';;
+  amd64,macosx) profiling='true';;
+  i386,macosx) profiling='true';;
+  sparc,bsd) profiling='true';;
   sparc,solaris)
-    profiling='prof'
+    profiling='true'
     case "$nativecc" in gcc*) ;; *) cc_profile='-xpg';; esac;;
-  amd64,linux) profiling='prof';;
-  amd64,openbsd) profiling='prof';;
-  amd64,freebsd) profiling='prof';;
-  amd64,netbsd) profiling='prof';;
-  arm,netbsd) profiling='prof';;
-  amd64,gnu) profiling='prof';;
-  arm,linux*) profiling='prof';;
-  power,elf) profiling='prof';;
-  power,bsd*) profiling='prof';;
-  *) profiling='noprof';;
+  amd64,linux) profiling='true';;
+  amd64,openbsd) profiling='true';;
+  amd64,freebsd) profiling='true';;
+  amd64,netbsd) profiling='true';;
+  arm,netbsd) profiling='true';;
+  amd64,gnu) profiling='true';;
+  arm,linux*) profiling='true';;
+  power,elf) profiling='true';;
+  power,bsd*) profiling='true';;
+  *) profiling='false';;
 esac
 
 # Where is ranlib?
@@ -1028,7 +1076,10 @@ echo "#define OCAML_STDLIB_DIR \"$libdir\"" >> s.h
 
 # Do #! scripts work?
 
-if (SHELL=/bin/sh; export SHELL; (./hashbang || ./hashbang2) >/dev/null); then
+printf "#!%s\nexit 1\n" `command -v cat` > hashbang4
+chmod +x hashbang4
+
+if ( (./hashbang || ./hashbang2 || ./hashbang3 || ./hashbang4) >/dev/null); then
   inf "#! appears to work in shell scripts."
   case "$target" in
     *-*-sunos*|*-*-unicos*)
@@ -1775,7 +1826,7 @@ fi
 
 if test "$with_frame_pointers" = "true"; then
   case "$target,$cc" in
-    x86_64-*-linux*,gcc*)
+    x86_64-*-linux*,gcc*|x86_64-*-linux*,clang*)
        nativecccompopts="$nativecccompopts -g  -fno-omit-frame-pointer"
        bytecccompopts="$bytecccompopts -g  -fno-omit-frame-pointer"
        nativecclinkopts="$nativecclinkopts -g"
@@ -1920,8 +1971,8 @@ fi
 
 cclibs="$cclibs $mathlib"
 
-echo "BYTECC=$bytecc" >> Makefile
-echo "BYTECCCOMPOPTS=$bytecccompopts" >> Makefile
+echo "BYTECC=$bytecc $bytecccompopts" >> Makefile
+echo "BYTECCCOMPOPTS=$byteccprivatecompopts" >> Makefile
 echo "BYTECCLINKOPTS=$bytecclinkopts" >> Makefile
 echo "BYTECCLIBS=$cclibs $dllib $curseslibs $pthread_link \
                  $instrumented_runtime_libs" >> Makefile
@@ -1944,8 +1995,8 @@ EOF
 echo "ARCH=$arch" >> Makefile
 echo "MODEL=$model" >> Makefile
 echo "SYSTEM=$system" >> Makefile
-echo "NATIVECC=$nativecc" >> Makefile
-echo "NATIVECCCOMPOPTS=$nativecccompopts" >> Makefile
+echo "NATIVECC=$nativecc $nativecccompopts" >> Makefile
+echo "NATIVECCCOMPOPTS=$nativeccprivatecompopts" >> Makefile
 echo "NATIVECCPROFOPTS=$nativeccprofopts" >> Makefile
 echo "NATIVECCLINKOPTS=$nativecclinkopts" >> Makefile
 echo "NATIVECCRPATH=$nativeccrpath" >> Makefile
@@ -1961,7 +2012,6 @@ echo "SYSTHREAD_SUPPORT=$systhread_support" >> Makefile
 echo "PARTIALLD=$partialld" >> Makefile
 echo "PACKLD=\$(PARTIALLD) \$(NATIVECCLINKOPTS) -o " \
   | sed -e 's/ $/\\ /' >> Makefile
-echo "DLLCCCOMPOPTS=$dllccompopts" >> Makefile
 echo "IFLEXDIR=$iflexdir" >> Makefile
 echo "O=o" >> Makefile
 echo "A=a" >> Makefile
@@ -1980,11 +2030,6 @@ echo "MKEXEDEBUGFLAG=$mkexedebugflag" >> Makefile
 echo "MKDLL=$mksharedlib" >> Makefile
 echo "MKMAINDLL=$mkmaindll" >> Makefile
 echo "RUNTIMED=${debugruntime}" >>Makefile
-if $shared_libraries_supported; then
-  echo "SHARED=shared" >>Makefile
-else
-  echo "SHARED=noshared" >>Makefile
-fi
 echo "RUNTIMEI=${with_instrumented_runtime}" >>Makefile
 echo "WITH_DEBUGGER=${with_debugger}" >>Makefile
 echo "WITH_OCAMLDOC=${with_ocamldoc}" >>Makefile
@@ -2005,6 +2050,7 @@ if [ "$ostype" = Cygwin ]; then
 fi
 echo "FLAMBDA=$flambda" >> Makefile
 echo "SAFE_STRING=$safe_string" >> Makefile
+echo "AFL_INSTRUMENT=$afl_instrument" >> Makefile
 echo "MAX_TESTSUITE_DIR_RETRIES=$max_testsuite_dir_retries" >> Makefile
 
 
@@ -2106,7 +2152,7 @@ else
   inf "        compile with -fPIC........ no"
   fi
   inf "        native dynlink ........... $natdynlink"
-  if test "$profiling" = "prof"; then
+  if $profiling; then
   inf "        profiling with gprof ..... supported"
   else
   inf "        profiling with gprof ..... not supported"
@@ -2121,6 +2167,11 @@ else
   else
   inf "        safe strings ............. no"
   fi
+  if test "$afl_instrument" = "true"; then
+  inf "        afl-fuzz always enabled .. yes"
+  else
+  inf "        afl-fuzz always enabled .. no"
+  fi
 fi
 
 if test "$with_debugger" = "ocamldebugger"; then
@@ -2129,7 +2180,7 @@ else
   inf "Source-level replay debugger: not supported"
 fi
 
-if test "$debugruntime" = "runtimed"; then
+if $debugruntime; then
   inf "Debug runtime will be compiled and installed"
 fi
 

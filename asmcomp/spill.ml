@@ -219,16 +219,41 @@ let rec reload i before =
       let (new_next, finally) = reload i.next Reg.Set.empty in
       (instr_cons (Iloop(!final_body)) i.arg i.res new_next,
        finally)
-  | Icatch(nfail, body, handler) ->
-      let new_set = ref Reg.Set.empty in
-      reload_at_exit := (nfail, new_set) :: !reload_at_exit ;
+  | Icatch(rec_flag, handlers, body) ->
+      let new_sets = List.map
+          (fun (nfail, _) -> nfail, ref Reg.Set.empty) handlers in
+      let previous_reload_at_exit = !reload_at_exit in
+      reload_at_exit := new_sets @ !reload_at_exit ;
       let (new_body, after_body) = reload body before in
-      let at_exit = !new_set in
-      reload_at_exit := List.tl !reload_at_exit ;
-      let (new_handler, after_handler) = reload handler at_exit in
-      let (new_next, finally) =
-        reload i.next (Reg.Set.union after_body after_handler) in
-      (instr_cons (Icatch(nfail, new_body, new_handler)) i.arg i.res new_next,
+      let rec fixpoint () =
+        let at_exits = List.map (fun (nfail, set) -> (nfail, !set)) new_sets in
+        let res =
+          List.map2 (fun (nfail', handler) (nfail, at_exit) ->
+              assert(nfail = nfail');
+              reload handler at_exit) handlers at_exits in
+        match rec_flag with
+        | Cmm.Nonrecursive ->
+            res
+        | Cmm.Recursive ->
+            let equal = List.for_all2 (fun (nfail', at_exit) (nfail, new_set) ->
+                assert(nfail = nfail');
+                Reg.Set.equal at_exit !new_set)
+                at_exits new_sets in
+            if equal
+            then res
+            else fixpoint ()
+      in
+      let res = fixpoint () in
+      reload_at_exit := previous_reload_at_exit;
+      let union = List.fold_left
+          (fun acc (_, after_handler) -> Reg.Set.union acc after_handler)
+          after_body res in
+      let (new_next, finally) = reload i.next union in
+      let new_handlers = List.map2
+          (fun (nfail, _) (new_handler, _) -> nfail, new_handler)
+          handlers res in
+      (instr_cons
+         (Icatch(rec_flag, new_handlers, new_body)) i.arg i.res new_next,
        finally)
   | Iexit nfail ->
       let set = find_reload_at_exit nfail in
@@ -264,11 +289,15 @@ let rec reload i before =
    NB ter: is it the same thing for catch bodies ?
 *)
 
+(* CR mshinwell for pchambart: Try to test the new algorithms for dealing
+   with Icatch. *)
 
 let spill_at_exit = ref []
 let find_spill_at_exit k =
   try
-    List.assoc k !spill_at_exit
+    let used, set = List.assoc k !spill_at_exit in
+    used := true;
+    set
   with
   | Not_found -> Misc.fatal_error "Spill.find_spill_at_exit"
 
@@ -311,7 +340,7 @@ let rec spill i finally =
       let (new_ifso, before_ifso) = spill ifso at_join in
       let (new_ifnot, before_ifnot) = spill ifnot at_join in
       if
-        !inside_loop || !inside_arm
+        !inside_loop || !inside_arm || !inside_catch
       then
         (instr_cons (Iifthenelse(test, new_ifso, new_ifnot))
                      i.arg i.res new_next,
@@ -365,16 +394,46 @@ let rec spill i finally =
       inside_loop := saved_inside_loop;
       (instr_cons (Iloop(!final_body)) i.arg i.res new_next,
        !at_head)
-  | Icatch(nfail, body, handler) ->
+  | Icatch(rec_flag, handlers, body) ->
       let (new_next, at_join) = spill i.next finally in
-      let (new_handler, at_exit) = spill handler at_join in
       let saved_inside_catch = !inside_catch in
       inside_catch := true ;
-      spill_at_exit := (nfail, at_exit) :: !spill_at_exit ;
-      let (new_body, before) = spill body at_join in
-      spill_at_exit := List.tl !spill_at_exit;
+      let previous_spill_at_exit = !spill_at_exit in
+      let spill_at_exit_add at_exits = List.map2
+          (fun (nfail,_) at_exit -> nfail, (ref false, at_exit))
+          handlers at_exits
+      in
+      let rec fixpoint at_exits =
+        let spill_at_exit_add = spill_at_exit_add at_exits in
+        spill_at_exit := spill_at_exit_add @ !spill_at_exit;
+        let res =
+          List.map (fun (_, handler) -> spill handler at_join) handlers
+        in
+        spill_at_exit := previous_spill_at_exit;
+        match rec_flag with
+        | Cmm.Nonrecursive ->
+            res
+        | Cmm.Recursive ->
+            let equal =
+              List.for_all2
+                (fun (_new_handler, new_at_exit) (_, (used, at_exit)) ->
+                   Reg.Set.equal at_exit new_at_exit || not !used)
+                res spill_at_exit_add in
+            if equal
+            then res
+            else fixpoint (List.map snd res)
+      in
+      let res = fixpoint (List.map (fun _ -> Reg.Set.empty) handlers) in
       inside_catch := saved_inside_catch ;
-      (instr_cons (Icatch(nfail, new_body, new_handler)) i.arg i.res new_next,
+      let spill_at_exit_add = spill_at_exit_add (List.map snd res) in
+      spill_at_exit := spill_at_exit_add @ !spill_at_exit;
+      let (new_body, before) = spill body at_join in
+      spill_at_exit := previous_spill_at_exit;
+      let new_handlers = List.map2
+          (fun (nfail, _) (handler, _) -> nfail, handler)
+          handlers res in
+      (instr_cons (Icatch(rec_flag, new_handlers, new_body))
+         i.arg i.res new_next,
        before)
   | Iexit nfail ->
       (i, find_spill_at_exit nfail)

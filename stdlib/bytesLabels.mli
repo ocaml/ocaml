@@ -136,11 +136,21 @@ val index : bytes -> char -> int
 
     Raise [Not_found] if [c] does not occur in [s]. *)
 
+val index_opt: bytes -> char -> int option
+(** [index_opt s c] returns the index of the first occurrence of byte [c]
+    in [s] or [None] if [c] does not occur in [s].
+    @since 4.05 *)
+
 val rindex : bytes -> char -> int
 (** [rindex s c] returns the index of the last occurrence of byte [c]
     in [s].
 
     Raise [Not_found] if [c] does not occur in [s]. *)
+
+val rindex_opt: bytes -> char -> int option
+(** [rindex_opt s c] returns the index of the last occurrence of byte [c]
+    in [s] or [None] if [c] does not occur in [s].
+    @since 4.05 *)
 
 val index_from : bytes -> int -> char -> int
 (** [index_from s i c] returns the index of the first occurrence of
@@ -150,6 +160,14 @@ val index_from : bytes -> int -> char -> int
     Raise [Invalid_argument] if [i] is not a valid position in [s].
     Raise [Not_found] if [c] does not occur in [s] after position [i]. *)
 
+val index_from_opt: bytes -> int -> char -> int option
+(** [index_from _opts i c] returns the index of the first occurrence of
+    byte [c] in [s] after position [i] or [None] if [c] does not occur in [s] after position [i].
+    [Bytes.index_opt s c] is equivalent to [Bytes.index_from_opt s 0 c].
+
+    Raise [Invalid_argument] if [i] is not a valid position in [s].
+    @since 4.05 *)
+
 val rindex_from : bytes -> int -> char -> int
 (** [rindex_from s i c] returns the index of the last occurrence of
     byte [c] in [s] before position [i+1].  [rindex s c] is equivalent
@@ -157,6 +175,15 @@ val rindex_from : bytes -> int -> char -> int
 
     Raise [Invalid_argument] if [i+1] is not a valid position in [s].
     Raise [Not_found] if [c] does not occur in [s] before position [i+1]. *)
+
+val rindex_from_opt: bytes -> int -> char -> int option
+(** [rindex_from_opt s i c] returns the index of the last occurrence
+    of byte [c] in [s] before position [i+1] or [None] if [c] does not
+    occur in [s] before position [i+1].  [rindex_opt s c] is equivalent to
+    [rindex_from s (Bytes.length s - 1) c].
+
+    Raise [Invalid_argument] if [i+1] is not a valid position in [s].
+    @since 4.05 *)
 
 val contains : bytes -> char -> bool
 (** [contains s c] tests if byte [c] appears in [s]. *)

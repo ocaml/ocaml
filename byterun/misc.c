@@ -37,7 +37,7 @@ int caml_failed_assert (char * expr, char * file, int line)
   fprintf (stderr, "file %s; line %d ### Assertion failed: %s\n",
            file, line, expr);
   fflush (stderr);
-  exit (100);
+  abort();
 }
 
 void caml_set_fields (value v, unsigned long start, unsigned long filler)

@@ -34,15 +34,15 @@ CAMLprim value win_findfirst(value name)
     if (h == INVALID_HANDLE_VALUE) {
       DWORD err = GetLastError();
       if (err == ERROR_NO_MORE_FILES)
-        raise_end_of_file();
+        caml_raise_end_of_file();
       else {
         win32_maperr(err);
         uerror("opendir", Nothing);
       }
     }
-    valname = copy_string(fileinfo.cFileName);
+    valname = caml_copy_string(fileinfo.cFileName);
     valh = win_alloc_handle(h);
-    v = alloc_small(2, 0);
+    v = caml_alloc_small(2, 0);
     Field(v,0) = valname;
     Field(v,1) = valh;
   End_roots();
@@ -58,13 +58,13 @@ CAMLprim value win_findnext(value valh)
   if (!retcode) {
     DWORD err = GetLastError();
     if (err == ERROR_NO_MORE_FILES)
-      raise_end_of_file();
+      caml_raise_end_of_file();
     else {
       win32_maperr(err);
       uerror("readdir", Nothing);
     }
   }
-  return copy_string(fileinfo.cFileName);
+  return caml_copy_string(fileinfo.cFileName);
 }
 
 CAMLprim value win_findclose(value valh)

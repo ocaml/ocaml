@@ -20,6 +20,12 @@ include $(ROOTDIR)/config/Makefile
 CAMLRUN ?= $(ROOTDIR)/boot/ocamlrun
 CAMLYACC ?= $(ROOTDIR)/boot/ocamlyacc
 
+ifeq "$(wildcard $(ROOTDIR)/flexdll/Makefile)" ""
+export OCAML_FLEXLINK:=
+else
+export OCAML_FLEXLINK:=$(ROOTDIR)/boot/ocamlrun $(ROOTDIR)/flexdll/flexlink.exe
+endif
+
 LIBS = -nostdlib -I $(ROOTDIR)/stdlib -I $(ROOTDIR)/otherlibs/$(UNIXLIB)
 
 CAMLC=$(CAMLRUN) $(ROOTDIR)/ocamlc $(LIBS)
@@ -92,7 +98,7 @@ $(LIBNAME).cmxa: $(THREADS_NCOBJS)
 ifeq "$(TOOLCHAIN)" "msvc"
   CCOUTPUT=/Fo
 else
-  CCOUTPUT=-o
+  CCOUTPUT=-o 
 endif
 
 st_stubs_b.$(O): st_stubs.c $(HEADER)
@@ -109,7 +115,7 @@ partialclean:
 	rm -f *.cm*
 
 clean: partialclean
-	rm -f *.$(A) *.$(O)
+	rm -f dllthreads*$(EXT_DLL) *.$(A) *.$(O)
 
 INSTALL_LIBDIR=$(DESTDIR)$(LIBDIR)
 THREADS_LIBDIR=$(INSTALL_LIBDIR)/$(LIBNAME)
@@ -119,7 +125,7 @@ install:
 	cp libthreads.$(A) "$(INSTALL_LIBDIR)"
 	cd "$(INSTALL_LIBDIR)"; $(RANLIB) libthreads.$(A)
 	mkdir -p "$(THREADS_LIBDIR)"
-	cp $(CMIFILES) threads.cma "$(THREADS_LIBDIR)"
+	cp $(CMIFILES) $(CMIFILES:.cmi=.cmti) threads.cma "$(THREADS_LIBDIR)"
 	cp $(MLIFILES) "$(INSTALL_LIBDIR)"
 	cp threads.h "$(INSTALL_LIBDIR)/caml"
 
