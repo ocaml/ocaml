@@ -236,6 +236,14 @@ installoptopt:
 	   $(BYTESTART:.cmo=.cmx) $(BYTESTART:.cmo=.$(O)) \
 	   $(OPTSTART:.cmo=.cmx) $(OPTSTART:.cmo=.$(O)) \
 	   "$(INSTALL_COMPLIBDIR)"
+	if test -f ocamlnat$(EXE) ; then \
+	  cp ocamlnat$(EXE) "$(INSTALL_BINDIR)/ocamlnat$(EXE)"; \
+	  cp toplevel/opttopdirs.cmi "$(INSTALL_LIBDIR)"; \
+	  cp compilerlibs/ocamlopttoplevel.cmxa \
+	     compilerlibs/ocamlopttoplevel.$(A) \
+	     $(OPTTOPLEVELSTART:.cmo=.cmx) $(OPTTOPLEVELSTART:.cmo=.$(O)) \
+	     "$(INSTALL_COMPLIBDIR)"; \
+	fi
 
 # The clean target
 
