@@ -261,30 +261,30 @@ installopt:
 	cd tools; $(MAKE) installopt
 
 installoptopt:
-	cp ocamlc.opt $(INSTALL_BINDIR)/ocamlc.opt$(EXE)
-	cp ocamlopt.opt $(INSTALL_BINDIR)/ocamlopt.opt$(EXE)
-	cp lex/ocamllex.opt $(INSTALL_BINDIR)/ocamllex.opt$(EXE)
-	cd $(INSTALL_BINDIR); \
+	cp ocamlc.opt "$(INSTALL_BINDIR)/ocamlc.opt$(EXE)"
+	cp ocamlopt.opt "$(INSTALL_BINDIR)/ocamlopt.opt$(EXE)"
+	cp lex/ocamllex.opt "$(INSTALL_BINDIR)/ocamllex.opt$(EXE)"
+	cd "$(INSTALL_BINDIR)"; \
 	   $(LN) ocamlc.opt$(EXE) ocamlc$(EXE); \
 	   $(LN) ocamlopt.opt$(EXE) ocamlopt$(EXE); \
 	   $(LN) ocamllex.opt$(EXE) ocamllex$(EXE)
 	cp utils/*.cmx parsing/*.cmx typing/*.cmx bytecomp/*.cmx \
-	   driver/*.cmx asmcomp/*.cmx $(INSTALL_COMPLIBDIR)
+           driver/*.cmx asmcomp/*.cmx "$(INSTALL_COMPLIBDIR)"
 	cp compilerlibs/ocamlcommon.cmxa compilerlibs/ocamlcommon.a \
 	   compilerlibs/ocamlbytecomp.cmxa compilerlibs/ocamlbytecomp.a \
 	   compilerlibs/ocamloptcomp.cmxa compilerlibs/ocamloptcomp.a \
 	   $(BYTESTART:.cmo=.cmx) $(BYTESTART:.cmo=.o) \
 	   $(OPTSTART:.cmo=.cmx) $(OPTSTART:.cmo=.o) \
-	   $(INSTALL_COMPLIBDIR)
+	   "$(INSTALL_COMPLIBDIR)"
 	if test -f ocamlnat$(EXE) ; then \
-	  cp ocamlnat$(EXE) $(INSTALL_BINDIR)/ocamlnat$(EXE); \
-	  cp toplevel/opttopdirs.cmi $(INSTALL_LIBDIR); \
+	  cp ocamlnat$(EXE) "$(INSTALL_BINDIR)/ocamlnat$(EXE)"; \
+	  cp toplevel/opttopdirs.cmi "$(INSTALL_LIBDIR)"; \
 	  cp compilerlibs/ocamlopttoplevel.cmxa \
 	     compilerlibs/ocamlopttoplevel.a \
 	     $(OPTTOPLEVELSTART:.cmo=.cmx) $(OPTTOPLEVELSTART:.cmo=.o) \
-	     $(INSTALL_COMPLIBDIR); \
+	     "$(INSTALL_COMPLIBDIR)"; \
 	fi
-	cd $(INSTALL_COMPLIBDIR) && $(RANLIB) ocamlcommon.a ocamlbytecomp.a \
+	cd "$(INSTALL_COMPLIBDIR)" && $(RANLIB) ocamlcommon.a ocamlbytecomp.a \
 	   ocamloptcomp.a
 
 # Build the manual latex files from the etex source files
