@@ -583,8 +583,10 @@ let rec lam ppf = function
        | Lev_after _  -> "after"
        | Lev_function -> "funct-body"
        | Lev_pseudo -> "pseudo"
-       | Lev_module_definition path ->
-         Printf.sprintf "path(%s)" (Path.name path)
+       | Lev_module_definition (Module_or_functor path) ->
+         Printf.sprintf "under-module-path(%s)" (Path.name path)
+       | Lev_module_definition (Local_module ident) ->
+         Format.asprintf "in-local-module(%a)" Ident.print ident
       in
       fprintf ppf "@[<2>(%s %s(%i)%s:%i-%i@ %a)@]" kind
               ev.lev_loc.Location.loc_start.Lexing.pos_fname

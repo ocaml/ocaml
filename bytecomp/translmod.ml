@@ -312,8 +312,8 @@ let compile_recmodule compile_rhs bindings cont =
   eval_rec_bindings
     (reorder_rec_bindings
        (List.map
-          (fun {mb_id=id; mb_expr=modl; _} ->
-            (id, modl.mod_loc, init_shape modl, compile_rhs id modl))
+          (fun {mb_id=id; mb_expr=modl; mb_loc=loc; _} ->
+            (id, modl.mod_loc, init_shape modl, compile_rhs id modl loc))
           bindings))
     cont
 
@@ -508,7 +508,7 @@ and transl_structure loc fields cc rootpath final_env = function
             in
             Levent (module_body, {
               lev_loc = mb.mb_loc;
-              lev_kind = Lev_module_definition path;
+              lev_kind = Lev_module_definition (Module_or_functor path);
               lev_repr = None;
               lev_env = Env.summary Env.empty;
             })
@@ -525,8 +525,22 @@ and transl_structure loc fields cc rootpath final_env = function
           in
           let lam =
             compile_recmodule
-              (fun id modl ->
-                 transl_module Tcoerce_none (field_path rootpath id) modl)
+              (fun id modl loc ->
+                 let rootpath_inside_module = field_path rootpath id in
+                 let module_body =
+                   transl_module Tcoerce_none rootpath_inside_module modl
+                 in
+                 let path =
+                   match rootpath_inside_module with
+                   | Some path -> path
+                   | None -> Pident id
+                 in
+                 Levent (module_body, {
+                   lev_loc = loc;
+                   lev_kind = Lev_module_definition (Module_or_functor path);
+                   lev_repr = None;
+                   lev_env = Env.summary Env.empty;
+                 }))
               bindings
               body
           in
@@ -863,7 +877,7 @@ let transl_store_structure glob map prims str =
         | Tstr_recmodule bindings ->
             let ids = List.map (fun mb -> mb.mb_id) bindings in
             compile_recmodule
-              (fun id modl ->
+              (fun id modl _loc ->
                  subst_lambda subst
                    (transl_module Tcoerce_none
                       (field_path rootpath id) modl))
@@ -1130,7 +1144,7 @@ let transl_toplevel_item item =
   | Tstr_recmodule bindings ->
       let idents = List.map (fun mb -> mb.mb_id) bindings in
       compile_recmodule
-        (fun id modl -> transl_module Tcoerce_none (Some(Pident id)) modl)
+        (fun id modl _loc -> transl_module Tcoerce_none (Some(Pident id)) modl)
         bindings
         (make_sequence toploop_setvalue_id idents)
   | Tstr_class cl_list ->

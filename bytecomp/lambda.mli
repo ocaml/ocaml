@@ -286,12 +286,16 @@ and lambda_event =
     lev_repr: int ref option;
     lev_env: Env.summary }
 
+and lambda_lev_module_definition =
+  | Module_or_functor of Path.t
+  | Local_module of Ident.t
+
 and lambda_event_kind =
     Lev_before
   | Lev_after of Types.type_expr
   | Lev_function
   | Lev_pseudo
-  | Lev_module_definition of Path.t
+  | Lev_module_definition of lambda_lev_module_definition
 
 type program =
   { module_ident : Ident.t;
