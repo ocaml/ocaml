@@ -235,9 +235,9 @@ install:
 
 # Installation of the native-code compiler
 installopt:
-	cd asmrun; $(MAKE) install
+	$(MAKE) -C asmrun install
 	cp ocamlopt "$(INSTALL_BINDIR)/ocamlopt.byte$(EXE)"
-	cd stdlib; $(MAKE) installopt
+	$(MAKE) -C stdlib installopt
 	cp middle_end/*.cmi middle_end/*.cmt middle_end/*.cmti \
 	    middle_end/*.mli \
 		"$(INSTALL_COMPLIBDIR)"
@@ -247,18 +247,17 @@ installopt:
 	cp asmcomp/*.cmi asmcomp/*.cmt asmcomp/*.cmti asmcomp/*.mli \
 		"$(INSTALL_COMPLIBDIR)"
 	cp compilerlibs/ocamloptcomp.cma $(OPTSTART) "$(INSTALL_COMPLIBDIR)"
-	if test -n "$(WITH_OCAMLDOC)"; then (cd ocamldoc; $(MAKE) installopt); \
+	if test -n "$(WITH_OCAMLDOC)"; then ($(MAKE) -C ocamldoc installopt); \
 		else :; fi
-	for i in $(OTHERLIBRARIES); do \
-	  (cd otherlibs/$$i; $(MAKE) installopt) || exit $$?; \
-	done
+	for i in $(OTHERLIBRARIES); \
+	  do ($(MAKE) -C otherlibs/$$i installopt) || exit $$?; done
 	if test -f ocamlopt.opt ; then $(MAKE) installoptopt; else \
 	   cd "$(INSTALL_BINDIR)"; \
 	   $(LN) ocamlc.byte$(EXE) ocamlc$(EXE); \
 	   $(LN) ocamlopt.byte$(EXE) ocamlopt$(EXE); \
 	   $(LN) ocamllex.byte$(EXE) ocamllex$(EXE); \
 	fi
-	cd tools; $(MAKE) installopt
+	$(MAKE) -C tools installopt
 
 # Build the manual latex files from the etex source files
 # (see manual/README.md)

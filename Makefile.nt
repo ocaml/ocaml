@@ -198,10 +198,10 @@ install-flexdll:
 
 # Installation of the native-code compiler
 installopt:
-	cd asmrun && $(MAKE) install
+	$(MAKE) -C asmrun install
 	cp ocamlopt "$(INSTALL_BINDIR)/ocamlopt$(EXE)"
 	cp ocamlopt "$(INSTALL_BINDIR)/ocamlopt.byte$(EXE)"
-	cd stdlib && $(MAKE) installopt
+	$(MAKE) -C stdlib installopt
 	cp middle_end/*.cmi middle_end/*.cmt middle_end/*.cmti \
 		"$(INSTALL_COMPLIBDIR)"
 	cp middle_end/base_types/*.cmi middle_end/base_types/*.cmt \
@@ -209,13 +209,13 @@ installopt:
 	cp asmcomp/*.cmi asmcomp/*.cmt asmcomp/*.cmti "$(INSTALL_COMPLIBDIR)"
 	cp compilerlibs/ocamloptcomp.cma $(OPTSTART) "$(INSTALL_COMPLIBDIR)"
 	if test -n "$(WITH_OCAMLDOC)"; then \
-	  (cd ocamldoc && $(MAKE) installopt); \
+	  ($(MAKE) -C ocamldoc installopt); \
 	fi
 	for i in $(OTHERLIBRARIES); do \
 	  $(MAKE) -C otherlibs/$$i installopt || exit $$?; \
 	done
-	if test -f ocamlopt.opt ; then $(MAKEREC) installoptopt; fi
-	cd tools; $(MAKE) installopt
+	if test -f ocamlopt.opt ; then $(MAKE) installoptopt; fi
+	$(MAKE) -C tools installopt
 	if test -f ocamlopt.opt -a -f flexdll/flexlink.opt ; then \
 	  cp -f flexdll/flexlink.opt "$(INSTALL_BINDIR)/flexlink$(EXE)" ; \
 	fi
