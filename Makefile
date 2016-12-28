@@ -270,22 +270,22 @@ installoptopt:
 	   $(LN) ocamllex.opt$(EXE) ocamllex$(EXE)
 	cp utils/*.cmx parsing/*.cmx typing/*.cmx bytecomp/*.cmx \
            driver/*.cmx asmcomp/*.cmx "$(INSTALL_COMPLIBDIR)"
-	cp compilerlibs/ocamlcommon.cmxa compilerlibs/ocamlcommon.a \
-	   compilerlibs/ocamlbytecomp.cmxa compilerlibs/ocamlbytecomp.a \
-	   compilerlibs/ocamloptcomp.cmxa compilerlibs/ocamloptcomp.a \
-	   $(BYTESTART:.cmo=.cmx) $(BYTESTART:.cmo=.o) \
-	   $(OPTSTART:.cmo=.cmx) $(OPTSTART:.cmo=.o) \
+	cp compilerlibs/ocamlcommon.cmxa compilerlibs/ocamlcommon.$(A) \
+	   compilerlibs/ocamlbytecomp.cmxa compilerlibs/ocamlbytecomp.$(A) \
+	   compilerlibs/ocamloptcomp.cmxa compilerlibs/ocamloptcomp.$(A) \
+	   $(BYTESTART:.cmo=.cmx) $(BYTESTART:.cmo=.$(O)) \
+	   $(OPTSTART:.cmo=.cmx) $(OPTSTART:.cmo=.$(O)) \
 	   "$(INSTALL_COMPLIBDIR)"
 	if test -f ocamlnat$(EXE) ; then \
 	  cp ocamlnat$(EXE) "$(INSTALL_BINDIR)/ocamlnat$(EXE)"; \
 	  cp toplevel/opttopdirs.cmi "$(INSTALL_LIBDIR)"; \
 	  cp compilerlibs/ocamlopttoplevel.cmxa \
-	     compilerlibs/ocamlopttoplevel.a \
-	     $(OPTTOPLEVELSTART:.cmo=.cmx) $(OPTTOPLEVELSTART:.cmo=.o) \
+	     compilerlibs/ocamlopttoplevel.$(A) \
+	     $(OPTTOPLEVELSTART:.cmo=.cmx) $(OPTTOPLEVELSTART:.cmo=.$(O)) \
 	     "$(INSTALL_COMPLIBDIR)"; \
 	fi
-	cd "$(INSTALL_COMPLIBDIR)" && $(RANLIB) ocamlcommon.a ocamlbytecomp.a \
-	   ocamloptcomp.a
+	cd "$(INSTALL_COMPLIBDIR)" && \
+	   $(RANLIB) ocamlcommon.$(A) ocamlbytecomp.$(A) ocamloptcomp.$(A)
 
 # Build the manual latex files from the etex source files
 # (see manual/README.md)
