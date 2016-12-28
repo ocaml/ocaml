@@ -205,6 +205,9 @@ Next version (4.05.0):
 - PR#7437: typing assert failure with nonrec priv
   (Jacques Garrigue, report by Anil Madhavapeddy)
 
+- PR#7443, GPR#990: spurious unused open warning with local open in patterns
+  (Florian Angeletti, report by Gabriel Scherer)
+
 - GPR#795: remove 256-character limitation on Sys.executable_name
   (Xavier Leroy)
 
