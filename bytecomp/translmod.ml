@@ -504,11 +504,7 @@ and transl_structure loc fields cc rootpath final_env = function
             let path =
               match rootpath_inside_module with
               | Some path -> path
-              (* CR mshinwell: work out what this should say *)
-              | None ->
-                match rootpath with
-                | Some path -> path
-                | None -> Pident (Ident.create_persistent "Unknown")
+              | None -> Pident id
             in
             Levent (module_body, {
               lev_loc = mb.mb_loc;
