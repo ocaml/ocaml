@@ -199,7 +199,6 @@ install-flexdll:
 # Installation of the native-code compiler
 installopt:
 	$(MAKE) -C asmrun install
-	cp ocamlopt "$(INSTALL_BINDIR)/ocamlopt$(EXE)"
 	cp ocamlopt "$(INSTALL_BINDIR)/ocamlopt.byte$(EXE)"
 	$(MAKE) -C stdlib installopt
 	cp middle_end/*.cmi middle_end/*.cmt middle_end/*.cmti \
@@ -214,7 +213,10 @@ installopt:
 	for i in $(OTHERLIBRARIES); do \
 	  $(MAKE) -C otherlibs/$$i installopt || exit $$?; \
 	done
-	if test -f ocamlopt.opt ; then $(MAKE) installoptopt; fi
+	if test -f ocamlopt.opt ; then $(MAKE) installoptopt; else \
+	   cd "$(INSTALL_BINDIR)"; \
+	   $(LN) ocamlopt.byte$(EXE) ocamlopt$(EXE); \
+	fi
 	$(MAKE) -C tools installopt
 	if test -f ocamlopt.opt -a -f flexdll/flexlink.opt ; then \
 	  cp -f flexdll/flexlink.opt "$(INSTALL_BINDIR)/flexlink$(EXE)" ; \
