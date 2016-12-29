@@ -211,7 +211,7 @@ installopt:
 		"$(INSTALL_COMPLIBDIR)"
 	cp compilerlibs/ocamloptcomp.cma $(OPTSTART) "$(INSTALL_COMPLIBDIR)"
 	if test -n "$(WITH_OCAMLDOC)"; then \
-	  ($(MAKE) -C ocamldoc installopt); \
+	  $(MAKE) -C ocamldoc installopt; \
 	fi
 	for i in $(OTHERLIBRARIES); do \
 	  $(MAKE) -C otherlibs/$$i installopt || exit $$?; \

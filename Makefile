@@ -247,10 +247,12 @@ installopt:
 	cp asmcomp/*.cmi asmcomp/*.cmt asmcomp/*.cmti asmcomp/*.mli \
 		"$(INSTALL_COMPLIBDIR)"
 	cp compilerlibs/ocamloptcomp.cma $(OPTSTART) "$(INSTALL_COMPLIBDIR)"
-	if test -n "$(WITH_OCAMLDOC)"; then ($(MAKE) -C ocamldoc installopt); \
-		else :; fi
-	for i in $(OTHERLIBRARIES); \
-	  do ($(MAKE) -C otherlibs/$$i installopt) || exit $$?; done
+	if test -n "$(WITH_OCAMLDOC)"; then \
+	  $(MAKE) -C ocamldoc installopt; \
+	fi
+	for i in $(OTHERLIBRARIES); do \
+	  $(MAKE) -C otherlibs/$$i installopt || exit $$?; \
+	done
 	if test -f ocamlopt.opt ; then $(MAKE) installoptopt; else \
 	   cd "$(INSTALL_BINDIR)"; \
 	   $(LN) ocamlc.byte$(EXE) ocamlc$(EXE); \
