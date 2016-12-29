@@ -206,9 +206,7 @@ INSTALL_STUBLIBDIR=$(DESTDIR)$(STUBLIBDIR)
 INSTALL_MANDIR=$(DESTDIR)$(MANDIR)
 INSTALL_DISTRIB=$(DESTDIR)$(PREFIX)
 
-install: installbyt installopt
-
-installbyt:
+install:
 	mkdir -p "$(INSTALL_BINDIR)"
 	mkdir -p "$(INSTALL_LIBDIR)"
 	mkdir -p "$(INSTALL_STUBLIBDIR)"
@@ -252,6 +250,11 @@ installbyt:
 	   cp README.win32.adoc "$(INSTALL_DISTRIB)/Readme.windows.txt"; \
 	   cp LICENSE "$(INSTALL_DISTRIB)/License.txt"; \
 	   cp Changes "$(INSTALL_DISTRIB)/Changes.txt"; \
+	fi
+	if test -f ocamlopt; then $(MAKEREC) installopt; else \
+	   cd "$(INSTALL_BINDIR)"; \
+	   cp ocamlc.byte$(EXE) ocamlc$(EXE); \
+	   cp ocamllex.byte$(EXE) ocamllex$(EXE); \
 	fi
 
 install-flexdll:

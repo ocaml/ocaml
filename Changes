@@ -181,6 +181,10 @@ Next version (4.05.0):
   enabled
   (Mark Shinwell)
 
+- GPR#991: On Windows, fix installation when native compiler is not
+  built
+  (Sébastien Hinderer, review by David Allsopp)
+
 - GPR#803: new ocamllex-based tool to extract bytecode compiler
   opcode information from C headers.
   (Nicolas Ojeda Bar)
