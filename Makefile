@@ -516,17 +516,6 @@ partialclean::
 $(COMMON:.cmo=.cmx) $(BYTECOMP:.cmo=.cmx) $(MIDDLE_END:.cmo=.cmx) \
 $(ASMCOMP:.cmo=.cmx): ocamlopt
 
-# The numeric opcodes
-
-bytecomp/opcodes.ml: byterun/caml/instruct.h
-	sed -n -e '/^enum/p' -e 's/,//g' -e '/^  /p' byterun/caml/instruct.h | \
-	awk -f tools/make-opcodes > bytecomp/opcodes.ml
-
-partialclean::
-	rm -f bytecomp/opcodes.ml
-
-beforedepend:: bytecomp/opcodes.ml
-
 # The predefined exceptions and primitives
 
 byterun/primitives:
