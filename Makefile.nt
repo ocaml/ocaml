@@ -142,11 +142,11 @@ world.opt: coldstart opt.opt
 # Installation
 
 install:
-	mkdir -p "$(INSTALL_BINDIR)"
-	mkdir -p "$(INSTALL_LIBDIR)"
-	mkdir -p "$(INSTALL_STUBLIBDIR)"
-	mkdir -p "$(INSTALL_COMPLIBDIR)"
-	cp VERSION "$(INSTALL_LIBDIR)/"
+	$(MKDIR) "$(INSTALL_BINDIR)"
+	$(MKDIR) "$(INSTALL_LIBDIR)"
+	$(MKDIR) "$(INSTALL_STUBLIBDIR)"
+	$(MKDIR) "$(INSTALL_COMPLIBDIR)"
+	cp VERSION "$(INSTALL_LIBDIR)"
 	cd byterun ; $(MAKE) install
 	cp ocamlc "$(INSTALL_BINDIR)/ocamlc.exe"
 	cp ocaml "$(INSTALL_BINDIR)/ocaml.exe"
