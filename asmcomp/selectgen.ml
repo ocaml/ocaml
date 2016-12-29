@@ -269,28 +269,29 @@ class virtual selector_generic = object (self)
 method effects_of exp =
   let module EC = Effect_and_coeffect in
   match exp with
-  | Cconst_int _
-  | Cconst_natint _
-  | Cconst_float _
-  | Cconst_symbol _
-  | Cconst_pointer _
-  | Cconst_natpointer _
-  | Cblockheader _
-  | Cvar _ -> EC.none
+  | Cconst_int _ | Cconst_natint _ | Cconst_float _ | Cconst_symbol _
+  | Cconst_pointer _ | Cconst_natpointer _ | Cblockheader _ | Cvar _ -> EC.none
   | Ctuple el -> EC.join_list_map el self#effects_of
-  | Clet(_id, arg, body) ->
+  | Clet (_id, arg, body) ->
     EC.join (self#effects_of arg) (self#effects_of body)
   | Csequence(e1, e2) ->
     EC.join (self#effects_of e1) (self#effects_of e2)
-  | Cop(op, args, _dbg) ->
-      begin match op with
+  | Cop (op, args, _dbg) ->
+    let from_op =
+      match op with
       | Capply _ | Cextcall _ | Calloc -> EC.arbitrary
       | Cstore _ -> EC.effect_only Effect.Arbitrary
       | Craise _ | Ccheckbound -> EC.effect_only Effect.Raise
       | Cload _ -> EC.coeffect_only Coeffect.Read_mutable
-      | _ -> EC.join_list_map args (self#effects_of)
-      end
-  | _ -> EC.arbitrary
+      | Caddi | Csubi | Cmuli | Cmulhi | Cdivi | Cmodi | Cand | Cor | Cxor
+      | Clsl | Clsr | Casr | Ccmpi _ | Caddv | Cadda | Ccmpa _ | Cnegf | Cabsf
+      | Caddf | Csubf | Cmulf | Cdivf | Cfloatofint | Cintoffloat | Ccmpf _ ->
+        EC.none
+    in
+    EC.join from_op (EC.join_list_map args self#effects_of)
+  | Cassign _ | Cifthenelse _ | Cswitch _ | Cloop _ | Ccatch _ | Cexit _
+  | Ctrywith _ ->
+    EC.arbitrary
 
 (* Says whether an integer constant is a suitable immediate argument *)
 
@@ -823,7 +824,7 @@ method private emit_parts (env:environment) ~overall_effects exp =
     let ec = self#effects_of exp in
     match EC.effect ec with
     | Effect.Raise | Effect.Arbitrary ->
-      (* Preserve the ordering of observable side effects. *)
+      (* Preserve the ordering of effectful expressions. *)
       false
     | Effect.None ->
       match EC.coeffect ec with
