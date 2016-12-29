@@ -186,17 +186,12 @@ base.opt:
 # Installation
 
 install:
-	if test -d $(INSTALL_BINDIR); then : ; \
-	  else $(MKDIR) $(INSTALL_BINDIR); fi
-	if test -d $(INSTALL_LIBDIR); then : ; \
-	  else $(MKDIR) $(INSTALL_LIBDIR); fi
-	if test -d $(INSTALL_STUBLIBDIR); then : ; \
-	  else $(MKDIR) $(INSTALL_STUBLIBDIR); fi
-	if test -d $(INSTALL_COMPLIBDIR); then : ; \
-	  else $(MKDIR) $(INSTALL_COMPLIBDIR); fi
-	if test -d $(INSTALL_MANDIR)/man$(MANEXT); then : ; \
-	  else $(MKDIR) $(INSTALL_MANDIR)/man$(MANEXT); fi
-	cp VERSION $(INSTALL_LIBDIR)/
+	$(MKDIR) "$(INSTALL_BINDIR)"
+	$(MKDIR) "$(INSTALL_LIBDIR)"
+	$(MKDIR) "$(INSTALL_STUBLIBDIR)"
+	$(MKDIR) "$(INSTALL_COMPLIBDIR)"
+	$(MKDIR) "$(INSTALL_MANDIR)/man$(MANEXT)"
+	cp VERSION "$(INSTALL_LIBDIR)"
 	cd $(INSTALL_LIBDIR); rm -f \
 	  dllbigarray$(EXT_DLL) dllnums$(EXT_DLL) dllthreads$(EXT_DLL) \
 	  dllunix$(EXT_DLL) dllgraphics$(EXT_DLL) dllstr$(EXT_DLL)
