@@ -53,7 +53,7 @@ Next version (4.05.0):
   This can be tested with ocamlopt -config
   (Sébastien Hinderer)
 
-- PR#7137, GPR#960: "-open" command line flag now accepts a module path 
+- PR#7137, GPR#960: "-open" command line flag now accepts a module path
   (not a module name) (Arseniy Alekseyev and Leo White)
 
 ### Standard library:
@@ -171,6 +171,10 @@ Next version (4.05.0):
 - GPR#984: Fix compilation of compiler distribution when Spacetime
   enabled
   (Mark Shinwell)
+
+- GPR#803: new ocamllex-based tool to extract bytecode compiler
+  opcode information from C headers.
+  (Nicolas Ojeda Bar)
 
 ### Internal/compiler-libs changes:
 
