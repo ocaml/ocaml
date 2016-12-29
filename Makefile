@@ -233,37 +233,6 @@ install:
 	   ln -sf ocamllex.byte$(EXE) ocamllex$(EXE); \
 	fi
 
-# Installation of the native-code compiler
-installopt:
-	$(MAKE) -C asmrun install
-	cp ocamlopt "$(INSTALL_BINDIR)/ocamlopt.byte$(EXE)"
-	$(MAKE) -C stdlib installopt
-	cp middle_end/*.cmi middle_end/*.cmt middle_end/*.cmti \
-	    middle_end/*.mli \
-		"$(INSTALL_COMPLIBDIR)"
-	cp middle_end/base_types/*.cmi middle_end/base_types/*.cmt \
-	    middle_end/base_types/*.cmti middle_end/base_types/*.mli \
-		"$(INSTALL_COMPLIBDIR)"
-	cp asmcomp/*.cmi asmcomp/*.cmt asmcomp/*.cmti asmcomp/*.mli \
-		"$(INSTALL_COMPLIBDIR)"
-	cp compilerlibs/ocamloptcomp.cma $(OPTSTART) "$(INSTALL_COMPLIBDIR)"
-	if test -n "$(WITH_OCAMLDOC)"; then \
-	  $(MAKE) -C ocamldoc installopt; \
-	fi
-	for i in $(OTHERLIBRARIES); do \
-	  $(MAKE) -C otherlibs/$$i installopt || exit $$?; \
-	done
-	if test -f ocamlopt.opt ; then $(MAKE) installoptopt; else \
-	   cd "$(INSTALL_BINDIR)"; \
-	   $(LN) ocamlc.byte$(EXE) ocamlc$(EXE); \
-	   $(LN) ocamlopt.byte$(EXE) ocamlopt$(EXE); \
-	   $(LN) ocamllex.byte$(EXE) ocamllex$(EXE); \
-	fi
-	$(MAKE) -C tools installopt
-	if test -f ocamlopt.opt -a -f flexdll/flexlink.opt ; then \
-	  cp -f flexdll/flexlink.opt "$(INSTALL_BINDIR)/flexlink$(EXE)" ; \
-	fi
-
 # Build the manual latex files from the etex source files
 # (see manual/README.md)
 manual-pregen: opt.opt
@@ -666,7 +635,7 @@ distclean:
 .PHONY: all backup bootstrap checkstack clean
 .PHONY: partialclean beforedepend alldepend cleanboot coldstart
 .PHONY: compare core coreall
-.PHONY: coreboot depend distclean install installopt
+.PHONY: coreboot depend distclean install
 .PHONY: library library-cross libraryopt
 .PHONY: ocamldebugger ocamldoc
 .PHONY: ocamldoc.opt ocamllex ocamllex.opt ocamltools ocamltoolsopt
