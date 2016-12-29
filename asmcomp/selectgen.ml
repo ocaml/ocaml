@@ -198,6 +198,7 @@ module Effect = struct
   type t =
     | None
     | Raise
+    | Store of Cmm.Memory_chunk.Set.t
     | Arbitrary
 
   let join t1 t2 =
@@ -205,19 +206,24 @@ module Effect = struct
     | None, t2 -> t2
     | t1, None -> t1
     | Raise, Raise -> Raise
+    | Raise, Store kinds | Store kinds, Raise -> Store kinds
+    | Store kinds1, Store kinds2 ->
+      Store (Cmm.Memory_chunk.Set.union kinds1 kinds2)
     | Arbitrary, _ | _, Arbitrary -> Arbitrary
 end
 
 module Coeffect = struct
   type t =
     | None
-    | Read_mutable
+    | Read_mutable of Cmm.Memory_chunk.Set.t
 
   let join t1 t2 =
     match t1, t2 with
     | None, None -> None
-    | None, Read_mutable | Read_mutable, None
-    | Read_mutable, Read_mutable -> Read_mutable
+    | None, Read_mutable kinds | Read_mutable kinds, None ->
+      Read_mutable kinds
+    | Read_mutable kinds1, Read_mutable kinds2 ->
+      Read_mutable (Cmm.Memory_chunk.Set.union kinds1 kinds2)
 end
 
 module Effect_and_coeffect : sig
@@ -238,7 +244,9 @@ end = struct
   type t = Effect.t * Coeffect.t
 
   let none = Effect.None, Coeffect.None
-  let arbitrary = Effect.Arbitrary, Coeffect.Read_mutable
+  let arbitrary =
+    Effect.Arbitrary,
+      Coeffect.Read_mutable (Cmm.Memory_chunk.Set.of_list Cmm.Memory_chunk.all)
 
   let effect (e, _ce) = e
   let coeffect (_e, ce) = ce
@@ -280,9 +288,12 @@ method effects_of exp =
     let from_op =
       match op with
       | Capply _ | Cextcall _ | Calloc -> EC.arbitrary
-      | Cstore _ -> EC.effect_only Effect.Arbitrary
+      | Cstore (kind, _init_or_assign) ->
+        EC.effect_only (Effect.Store (Cmm.Memory_chunk.Set.singleton kind))
       | Craise _ | Ccheckbound -> EC.effect_only Effect.Raise
-      | Cload _ -> EC.coeffect_only Coeffect.Read_mutable
+      | Cload kind ->
+        EC.coeffect_only (Coeffect.Read_mutable (
+          Cmm.Memory_chunk.Set.singleton kind))
       | Caddi | Csubi | Cmuli | Cmulhi | Cdivi | Cmodi | Cand | Cor | Cxor
       | Clsl | Clsr | Casr | Ccmpi _ | Caddv | Cadda | Ccmpa _ | Cnegf | Cabsf
       | Caddf | Csubf | Cmulf | Cdivf | Cfloatofint | Cintoffloat | Ccmpf _ ->
@@ -290,8 +301,7 @@ method effects_of exp =
     in
     EC.join from_op (EC.join_list_map args self#effects_of)
   | Cassign _ | Cifthenelse _ | Cswitch _ | Cloop _ | Ccatch _ | Cexit _
-  | Ctrywith _ ->
-    EC.arbitrary
+  | Ctrywith _ -> EC.arbitrary
 
 (* Says whether an integer constant is a suitable immediate argument *)
 
@@ -823,7 +833,7 @@ method private emit_parts (env:environment) ~overall_effects exp =
   let may_defer_evaluation =
     let ec = self#effects_of exp in
     match EC.effect ec with
-    | Effect.Raise | Effect.Arbitrary ->
+    | Effect.Raise | Effect.Store _ | Effect.Arbitrary ->
       (* Preserve the ordering of effectful expressions. *)
       false
     | Effect.None ->
@@ -831,14 +841,21 @@ method private emit_parts (env:environment) ~overall_effects exp =
       | Coeffect.None ->
         (* Pure expressions may be moved. *)
         true
-      | Coeffect.Read_mutable ->
+      | Coeffect.Read_mutable kinds_loaded ->
         (* Read-mutable expressions may only be moved if the worst (in the
            sense of the ordering in [Effect.t]) effect that happens during the
-           evaluation of the whole expression list is raising an exception.
+           evaluation of the whole expression list is:
+           - raising an exception; or
+           - some number of stores to mutable blocks, on the condition that
+             the kinds of memory chunk loaded by the read-mutable expression
+             are disjoint from the kinds of memory chunk stored.
            This in particular prevents loads being re-ordered with respect
-           to stores. *)
+           to stores that might alias. *)
         match EC.effect overall_effects with
         | Effect.None | Effect.Raise -> true
+        | Effect.Store kinds_stored ->
+          let module S = Cmm.Memory_chunk.Set in
+          S.is_empty (S.inter kinds_stored kinds_loaded)
         | Effect.Arbitrary -> false
   in
   if may_defer_evaluation then

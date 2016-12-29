@@ -105,7 +105,15 @@ type memory_chunk =
   | Double                             (* 64-bit-aligned 64-bit float *)
   | Double_u                           (* word-aligned 64-bit float *)
 
-and operation =
+module Memory_chunk : sig
+  type t = memory_chunk
+
+  module Set : Set.S with type elt = memory_chunk
+
+  val all : t list
+end
+
+type operation =
     Capply of machtype
   | Cextcall of string * machtype * bool * label option
   | Cload of memory_chunk

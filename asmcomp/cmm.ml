@@ -132,7 +132,31 @@ type memory_chunk =
   | Double
   | Double_u
 
-and operation =
+module Memory_chunk = struct
+  module T = struct
+    type t = memory_chunk
+    let compare = Pervasives.compare
+  end
+
+  include T
+  module Set = Set.Make (T)
+
+  let all = [
+    Byte_unsigned;
+    Byte_signed;
+    Sixteen_unsigned;
+    Sixteen_signed;
+    Thirtytwo_unsigned;
+    Thirtytwo_signed;
+    Word_int;
+    Word_val;
+    Single;
+    Double;
+    Double_u;
+  ]
+end
+
+type operation =
     Capply of machtype
   | Cextcall of string * machtype * bool * label option
     (** If specified, the given label will be placed immediately after the
