@@ -167,6 +167,10 @@ install:
 	cp expunge "$(INSTALL_LIBDIR)/expunge$(EXE)"
 	cp toplevel/topdirs.cmi "$(INSTALL_LIBDIR)"
 	$(MAKE) -C tools install
+ifeq "$(UNIX_OR_WIN32)" "unix" # Install manual pages only on Unix
+	$(MKDIR) "$(INSTALL_MANDIR)/man$(MANEXT)"
+	-$(MAKE) -C man install
+endif
 	for i in $(OTHERLIBRARIES); do \
 	  $(MAKE) -C otherlibs/$$i install || exit $$?; \
 	done
