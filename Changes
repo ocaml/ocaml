@@ -240,6 +240,10 @@ Next version (4.05.0):
 
 - PR#7427, GPR#959: Don't delete let bodies in Cmmgen (Mark Shinwell)
 
+- GPR#967, PR#6136: Fix Closure so that overapplication evaluation order
+  matches the bytecode compiler and Flambda.
+  (Mark Shinwell, report by Jeremy Yallop, review by Frédéric Bour)
+
 - GPR#987: alloc_sockaddr: don't assume a null terminator. It is not inserted
   on macOS by system calls that fill in a struct sockaddr (e.g. getsockname).
   (Anton Bachin)
