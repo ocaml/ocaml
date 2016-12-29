@@ -191,9 +191,6 @@ install:
 	$(MKDIR) "$(INSTALL_STUBLIBDIR)"
 	$(MKDIR) "$(INSTALL_COMPLIBDIR)"
 	cp VERSION "$(INSTALL_LIBDIR)"
-	cd $(INSTALL_LIBDIR); rm -f \
-	  dllbigarray$(EXT_DLL) dllnums$(EXT_DLL) dllthreads$(EXT_DLL) \
-	  dllunix$(EXT_DLL) dllgraphics$(EXT_DLL) dllstr$(EXT_DLL)
 	cd byterun; $(MAKE) install
 	cp ocamlc $(INSTALL_BINDIR)/ocamlc.byte$(EXE)
 	cp ocaml $(INSTALL_BINDIR)/ocaml$(EXE)
