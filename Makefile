@@ -224,6 +224,11 @@ endif
 	if test -n "$(WITH_DEBUGGER)"; then \
 	  $(MAKE) -C debugger install; \
 	fi
+ifeq "$(UNIX_OR_WIN32)" "win32"
+	if test -n "$(FLEXDLL_SUBMODULE_PRESENT)"; then \
+	  $(MAKE) install-flexdll; \
+	fi
+endif
 	cp config/Makefile "$(INSTALL_LIBDIR)/Makefile.config"
 	if test -f ocamlopt; then $(MAKE) installopt; else \
 	   cd "$(INSTALL_BINDIR)"; \
