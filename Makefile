@@ -190,7 +190,6 @@ install:
 	$(MKDIR) "$(INSTALL_LIBDIR)"
 	$(MKDIR) "$(INSTALL_STUBLIBDIR)"
 	$(MKDIR) "$(INSTALL_COMPLIBDIR)"
-	$(MKDIR) "$(INSTALL_MANDIR)/man$(MANEXT)"
 	cp VERSION "$(INSTALL_LIBDIR)"
 	cd $(INSTALL_LIBDIR); rm -f \
 	  dllbigarray$(EXT_DLL) dllnums$(EXT_DLL) dllthreads$(EXT_DLL) \
@@ -215,7 +214,10 @@ install:
 	cp toplevel/topdirs.cmi toplevel/topdirs.cmt toplevel/topdirs.cmti \
 	   toplevel/topdirs.mli $(INSTALL_LIBDIR)
 	cd tools; $(MAKE) install
+ifeq "$(UNIX_OR_WIN32)" "unix" # Install manual pages only on Unix
+	$(MKDIR) "$(INSTALL_MANDIR)/man$(MANEXT)"
 	-cd man; $(MAKE) install
+endif
 	for i in $(OTHERLIBRARIES); do \
 	  (cd otherlibs/$$i; $(MAKE) install) || exit $$?; \
 	done
