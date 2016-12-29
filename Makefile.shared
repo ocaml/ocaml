@@ -346,3 +346,16 @@ partialclean::
 	rm -f ocamlnat$(EXE)
 
 toplevel/opttoploop.cmx: otherlibs/dynlink/dynlink.cmxa
+
+# The numeric opcodes
+
+bytecomp/opcodes.ml: byterun/caml/instruct.h tools/make_opcodes
+	$(CAMLRUN) tools/make_opcodes -opcodes < $< > $@
+
+tools/make_opcodes: tools/make_opcodes.mll
+	cd tools && $(MAKE) make_opcodes
+
+partialclean::
+	rm -f bytecomp/opcodes.ml
+
+beforedepend:: bytecomp/opcodes.ml
