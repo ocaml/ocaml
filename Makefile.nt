@@ -147,14 +147,14 @@ install:
 	$(MKDIR) "$(INSTALL_STUBLIBDIR)"
 	$(MKDIR) "$(INSTALL_COMPLIBDIR)"
 	cp VERSION "$(INSTALL_LIBDIR)"
-	cd byterun ; $(MAKE) install
-	cp ocamlc "$(INSTALL_BINDIR)/ocamlc.exe"
-	cp ocaml "$(INSTALL_BINDIR)/ocaml.exe"
-	cp ocamlc "$(INSTALL_BINDIR)/ocamlc.byte.exe"
-	cd stdlib ; $(MAKE) install
-	cp lex/ocamllex "$(INSTALL_BINDIR)/ocamllex.exe"
-	cp yacc/ocamlyacc.exe "$(INSTALL_BINDIR)/ocamlyacc.exe"
-	cp lex/ocamllex "$(INSTALL_BINDIR)/ocamllex.byte.exe"
+	$(MAKE) -C byterun install
+	cp ocamlc "$(INSTALL_BINDIR)/ocamlc$(EXE)"
+	cp ocaml "$(INSTALL_BINDIR)/ocaml$(EXE)"
+	cp ocamlc "$(INSTALL_BINDIR)/ocamlc.byte$(EXE)"
+	$(MAKE) -C stdlib install
+	cp lex/ocamllex "$(INSTALL_BINDIR)/ocamllex$(EXE)"
+	cp yacc/ocamlyacc$(EXE) "$(INSTALL_BINDIR)/ocamlyacc$(EXE)"
+	cp lex/ocamllex "$(INSTALL_BINDIR)/ocamllex.byte$(EXE)"
 	cp utils/*.cmi utils/*.cmt utils/*.cmti \
 	   parsing/*.cmi parsing/*.cmt parsing/*.cmti \
 	   typing/*.cmi typing/*.cmt typing/*.cmti \
@@ -164,26 +164,26 @@ install:
 	cp compilerlibs/ocamlcommon.cma compilerlibs/ocamlbytecomp.cma \
 	   compilerlibs/ocamltoplevel.cma $(BYTESTART) $(TOPLEVELSTART) \
 	   "$(INSTALL_COMPLIBDIR)"
-	cp expunge "$(INSTALL_LIBDIR)/expunge.exe"
+	cp expunge "$(INSTALL_LIBDIR)/expunge$(EXE)"
 	cp toplevel/topdirs.cmi "$(INSTALL_LIBDIR)"
-	cd tools ; $(MAKE) install
+	$(MAKE) -C tools install
 	for i in $(OTHERLIBRARIES); do \
 	  $(MAKE) -C otherlibs/$$i install || exit $$?; \
 	done
 	if test -n "$(WITH_OCAMLDOC)"; then \
-	  (cd ocamldoc; $(MAKE) install); \
+	  $(MAKE) -C ocamldoc install; \
 	fi
 	if test -n "$(WITH_DEBUGGER)"; then \
-	  (cd debugger; $(MAKE) install); \
+	  $(MAKE) -C debugger install; \
 	fi
 	if test -n "$(FLEXDLL_SUBMODULE_PRESENT)"; then \
-	  $(MAKEREC) install-flexdll; \
+	  $(MAKE) install-flexdll; \
 	fi
 	cp config/Makefile "$(INSTALL_LIBDIR)/Makefile.config"
-	if test -f ocamlopt; then $(MAKEREC) installopt; else \
+	if test -f ocamlopt; then $(MAKE) installopt; else \
 	   cd "$(INSTALL_BINDIR)"; \
-	   cp ocamlc.byte$(EXE) ocamlc$(EXE); \
-	   cp ocamllex.byte$(EXE) ocamllex$(EXE); \
+	   $(LN) ocamlc.byte$(EXE) ocamlc$(EXE); \
+	   $(LN) ocamllex.byte$(EXE) ocamllex$(EXE); \
 	fi
 
 # The clean target
