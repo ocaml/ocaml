@@ -260,6 +260,9 @@ installopt:
 	   $(LN) ocamllex.byte$(EXE) ocamllex$(EXE); \
 	fi
 	$(MAKE) -C tools installopt
+	if test -f ocamlopt.opt -a -f flexdll/flexlink.opt ; then \
+	  cp -f flexdll/flexlink.opt "$(INSTALL_BINDIR)/flexlink$(EXE)" ; \
+	fi
 
 # Build the manual latex files from the etex source files
 # (see manual/README.md)
