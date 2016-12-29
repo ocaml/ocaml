@@ -202,10 +202,13 @@ installopt:
 	cp ocamlopt "$(INSTALL_BINDIR)/ocamlopt.byte$(EXE)"
 	$(MAKE) -C stdlib installopt
 	cp middle_end/*.cmi middle_end/*.cmt middle_end/*.cmti \
+	    middle_end/*.mli \
 		"$(INSTALL_COMPLIBDIR)"
 	cp middle_end/base_types/*.cmi middle_end/base_types/*.cmt \
-		middle_end/base_types/*.cmti "$(INSTALL_COMPLIBDIR)"
-	cp asmcomp/*.cmi asmcomp/*.cmt asmcomp/*.cmti "$(INSTALL_COMPLIBDIR)"
+	    middle_end/base_types/*.cmti middle_end/base_types/*.mli \
+		"$(INSTALL_COMPLIBDIR)"
+	cp asmcomp/*.cmi asmcomp/*.cmt asmcomp/*.cmti asmcomp/*.mli \
+		"$(INSTALL_COMPLIBDIR)"
 	cp compilerlibs/ocamloptcomp.cma $(OPTSTART) "$(INSTALL_COMPLIBDIR)"
 	if test -n "$(WITH_OCAMLDOC)"; then \
 	  ($(MAKE) -C ocamldoc installopt); \
