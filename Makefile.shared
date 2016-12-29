@@ -361,6 +361,17 @@ flexlink.opt:
 	mv flexlink.exe flexlink.opt && \
 	mv flexlink flexlink.exe
 
+.PHONY: install-flexdll
+install-flexdll:
+# The $(if ...) installs the correct .manifest file for MSVC and MSVC64
+# (GNU make doesn't have ifeq as a function, hence slightly convoluted use of
+#  filter-out)
+	cp flexdll/flexlink$(EXE) \
+	   $(if $(filter-out mingw,$(TOOLCHAIN)),\
+	     flexdll/default$(filter-out _i386,_$(ARCH)).manifest) \
+	   "$(INSTALL_BINDIR)"
+	cp flexdll/flexdll_*.$(O) "$(INSTALL_LIBDIR)"
+
 # Installation of the native-code compiler
 .PHONY: installopt
 installopt:
