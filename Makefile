@@ -191,40 +191,44 @@ install:
 	$(MKDIR) "$(INSTALL_STUBLIBDIR)"
 	$(MKDIR) "$(INSTALL_COMPLIBDIR)"
 	cp VERSION "$(INSTALL_LIBDIR)"
-	cd byterun; $(MAKE) install
-	cp ocamlc $(INSTALL_BINDIR)/ocamlc.byte$(EXE)
-	cp ocaml $(INSTALL_BINDIR)/ocaml$(EXE)
-	cd stdlib; $(MAKE) install
-	cp lex/ocamllex $(INSTALL_BINDIR)/ocamllex.byte$(EXE)
-	cp $(CAMLYACC)$(EXE) $(INSTALL_BINDIR)/ocamlyacc$(EXE)
+	$(MAKE) -C byterun install
+	cp ocamlc "$(INSTALL_BINDIR)/ocamlc.byte$(EXE)"
+	cp ocaml "$(INSTALL_BINDIR)/ocaml$(EXE)"
+	$(MAKE) -C stdlib install
+	cp lex/ocamllex "$(INSTALL_BINDIR)/ocamllex.byte$(EXE)"
+	cp $(CAMLYACC)$(EXE) "$(INSTALL_BINDIR)/ocamlyacc$(EXE)"
 	cp utils/*.cmi utils/*.cmt utils/*.cmti utils/*.mli \
 	   parsing/*.cmi parsing/*.cmt parsing/*.cmti parsing/*.mli \
 	   typing/*.cmi typing/*.cmt typing/*.cmti typing/*.mli \
 	   bytecomp/*.cmi bytecomp/*.cmt bytecomp/*.cmti bytecomp/*.mli \
 	   driver/*.cmi driver/*.cmt driver/*.cmti driver/*.mli \
 	   toplevel/*.cmi toplevel/*.cmt toplevel/*.cmti toplevel/*.mli \
-	   $(INSTALL_COMPLIBDIR)
+	   "$(INSTALL_COMPLIBDIR)"
 	cp compilerlibs/ocamlcommon.cma compilerlibs/ocamlbytecomp.cma \
 	   compilerlibs/ocamltoplevel.cma $(BYTESTART) $(TOPLEVELSTART) \
-	   $(INSTALL_COMPLIBDIR)
-	cp expunge $(INSTALL_LIBDIR)/expunge$(EXE)
+	   "$(INSTALL_COMPLIBDIR)"
+	cp expunge "$(INSTALL_LIBDIR)/expunge$(EXE)"
 	cp toplevel/topdirs.cmi toplevel/topdirs.cmt toplevel/topdirs.cmti \
-	   toplevel/topdirs.mli $(INSTALL_LIBDIR)
-	cd tools; $(MAKE) install
+           toplevel/topdirs.mli "$(INSTALL_LIBDIR)"
+	$(MAKE) -C tools install
 ifeq "$(UNIX_OR_WIN32)" "unix" # Install manual pages only on Unix
 	$(MKDIR) "$(INSTALL_MANDIR)/man$(MANEXT)"
-	-cd man; $(MAKE) install
+	-$(MAKE) -C man install
 endif
 	for i in $(OTHERLIBRARIES); do \
-	  (cd otherlibs/$$i; $(MAKE) install) || exit $$?; \
+	  $(MAKE) -C otherlibs/$$i install || exit $$?; \
 	done
-	if test -n "$(WITH_OCAMLDOC)"; then (cd ocamldoc; $(MAKE) install); fi
-	if test -n "$(WITH_DEBUGGER)"; then (cd debugger; $(MAKE) install); fi
-	cp config/Makefile $(INSTALL_LIBDIR)/Makefile.config
+	if test -n "$(WITH_OCAMLDOC)"; then \
+	  $(MAKE) -C ocamldoc install; \
+	fi
+	if test -n "$(WITH_DEBUGGER)"; then \
+	  $(MAKE) -C debugger install; \
+	fi
+	cp config/Makefile "$(INSTALL_LIBDIR)/Makefile.config"
 	if test -f ocamlopt; then $(MAKE) installopt; else \
-	   cd $(INSTALL_BINDIR); \
-	   ln -sf ocamlc.byte$(EXE) ocamlc$(EXE); \
-	   ln -sf ocamllex.byte$(EXE) ocamllex$(EXE); \
+	   cd "$(INSTALL_BINDIR)"; \
+	   $(LN) ocamlc.byte$(EXE) ocamlc$(EXE); \
+	   $(LN) ocamllex.byte$(EXE) ocamllex$(EXE); \
 	fi
 
 # Build the manual latex files from the etex source files
