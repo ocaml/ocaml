@@ -333,6 +333,7 @@ CAMLextern __thread struct caml__roots_block *caml_local_roots;  /* defined in r
   struct caml__roots_block caml__roots_block; \
   caml__roots_block.next = caml_local_roots; \
   caml_local_roots = &caml__roots_block; \
+  caml__roots_block.mutexes = 0; \
   caml__roots_block.nitems = 1; \
   caml__roots_block.ntables = 1; \
   caml__roots_block.tables[0] = &(r0);
@@ -341,6 +342,7 @@ CAMLextern __thread struct caml__roots_block *caml_local_roots;  /* defined in r
   struct caml__roots_block caml__roots_block; \
   caml__roots_block.next = caml_local_roots; \
   caml_local_roots = &caml__roots_block; \
+  caml__roots_block.mutexes = 0; \
   caml__roots_block.nitems = 1; \
   caml__roots_block.ntables = 2; \
   caml__roots_block.tables[0] = &(r0); \
@@ -350,6 +352,7 @@ CAMLextern __thread struct caml__roots_block *caml_local_roots;  /* defined in r
   struct caml__roots_block caml__roots_block; \
   caml__roots_block.next = caml_local_roots; \
   caml_local_roots = &caml__roots_block; \
+  caml__roots_block.mutexes = 0; \
   caml__roots_block.nitems = 1; \
   caml__roots_block.ntables = 3; \
   caml__roots_block.tables[0] = &(r0); \
@@ -360,6 +363,7 @@ CAMLextern __thread struct caml__roots_block *caml_local_roots;  /* defined in r
   struct caml__roots_block caml__roots_block; \
   caml__roots_block.next = caml_local_roots; \
   caml_local_roots = &caml__roots_block; \
+  caml__roots_block.mutexes = 0; \
   caml__roots_block.nitems = 1; \
   caml__roots_block.ntables = 4; \
   caml__roots_block.tables[0] = &(r0); \
@@ -371,6 +375,7 @@ CAMLextern __thread struct caml__roots_block *caml_local_roots;  /* defined in r
   struct caml__roots_block caml__roots_block; \
   caml__roots_block.next = caml_local_roots; \
   caml_local_roots = &caml__roots_block; \
+  caml__roots_block.mutexes = 0; \
   caml__roots_block.nitems = 1; \
   caml__roots_block.ntables = 5; \
   caml__roots_block.tables[0] = &(r0); \
@@ -383,6 +388,7 @@ CAMLextern __thread struct caml__roots_block *caml_local_roots;  /* defined in r
   struct caml__roots_block caml__roots_block; \
   caml__roots_block.next = caml_local_roots; \
   caml_local_roots = &caml__roots_block; \
+  caml__roots_block.mutexes = 0; \
   caml__roots_block.nitems = (size); \
   caml__roots_block.ntables = 1; \
   caml__roots_block.tables[0] = (table);
