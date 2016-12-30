@@ -882,7 +882,12 @@ method private emit_parts_list (env:environment) exp_list =
   (* Note: Flambda (specifically the [Un_anf] pass) relies on the backend
      respecting right-to-left evaluation order at all times. *)
   let overall_effects =
-    Effect_and_coeffect.join_list_map exp_list self#effects_of
+    match exp_list with
+    | [] | [_] ->
+      (* When there is only one expression, avoid unnecessary let-bindings. *)
+      Effect_and_coeffect.none
+    | _::_ ->
+      Effect_and_coeffect.join_list_map exp_list self#effects_of
   in
 (*
 if contains_effects then begin
