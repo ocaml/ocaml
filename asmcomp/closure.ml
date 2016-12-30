@@ -1176,6 +1176,7 @@ and close_functions fenv cenv fun_defs =
         params = fun_params;
         body   = ubody;
         dbg;
+        env = Some env_param;
       }
     in
     (* give more chance of function with default parameters (i.e.

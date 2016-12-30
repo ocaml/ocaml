@@ -69,7 +69,8 @@ let oper_result_type = function
   | Craise _ -> typ_void
   | Ccheckbound -> typ_void
 
-(* Infer the size in bytes of the result of a simple expression *)
+(* Infer the size in bytes of the result of an expression whose evaluation
+   may be deferred (cf. [emit_parts]). *)
 
 let size_expr (env:environment) exp =
   let rec size localenv = function
@@ -98,7 +99,7 @@ let size_expr (env:environment) exp =
     | Csequence(_e1, e2) ->
         size localenv e2
     | _ ->
-        fatal_error "Selection.size_expr"
+        fatal_errorf "Selection.size_expr: %a" Printcmm.expression exp
   in size Tbl.empty exp
 
 (* Swap the two arguments of an integer comparison *)
@@ -194,6 +195,9 @@ let join_array rs =
 (* Name of function being compiled *)
 let current_function_name = ref ""
 
+(* Environment parameter for the function being compiled, if any. *)
+let current_function_env_param = ref None
+
 module Effect = struct
   type t =
     | None
@@ -206,6 +210,10 @@ module Effect = struct
     | t1, None -> t1
     | Raise, Raise -> Raise
     | Arbitrary, _ | _, Arbitrary -> Arbitrary
+
+  let pure = function
+    | None -> true
+    | Raise | Arbitrary -> false
 end
 
 module Coeffect = struct
@@ -218,6 +226,10 @@ module Coeffect = struct
     | None, None -> None
     | None, Read_mutable | Read_mutable, None
     | Read_mutable, Read_mutable -> Read_mutable
+
+  let copure = function
+    | None -> true
+    | Read_mutable -> false
 end
 
 module Effect_and_coeffect : sig
@@ -229,10 +241,13 @@ module Effect_and_coeffect : sig
   val effect : t -> Effect.t
   val coeffect : t -> Coeffect.t
 
+  val pure_and_copure : t -> bool
+
   val effect_only : Effect.t -> t
   val coeffect_only : Coeffect.t -> t
 
   val join : t -> t -> t
+  val join_list : t list -> t
   val join_list_map : 'a list -> ('a -> t) -> t
 end = struct
   type t = Effect.t * Coeffect.t
@@ -243,16 +258,20 @@ end = struct
   let effect (e, _ce) = e
   let coeffect (_e, ce) = ce
 
+  let pure_and_copure (e, ce) = Effect.pure e && Coeffect.copure ce
+
   let effect_only e = e, Coeffect.None
   let coeffect_only ce = Effect.None, ce
 
   let join (e1, ce1) (e2, ce2) =
     Effect.join e1 e2, Coeffect.join ce1 ce2
 
-  let join_list_map ts f =
-    match ts with
+  let join_list_map xs f =
+    match xs with
     | [] -> none
-    | t::ts -> List.fold_left (fun acc t -> join acc (f t)) (f t) ts
+    | x::xs -> List.fold_left (fun acc x -> join acc (f x)) (f x) xs
+
+  let join_list ts = join_list_map ts (fun t -> t)
 end
 
 (* The default instruction selection class *)
@@ -284,7 +303,20 @@ method effects_of exp =
       | Capply _ | Cextcall _ | Calloc -> EC.arbitrary
       | Cstore _ -> EC.effect_only Effect.Arbitrary
       | Craise _ | Ccheckbound -> EC.effect_only Effect.Raise
-      | Cload _ -> EC.coeffect_only Coeffect.Read_mutable
+      | Cload _ ->
+        (* Loads from the current function's closure are a common case.
+           Such loads are always from immutable blocks. *)
+        let is_from_closure =
+          match !current_function_env_param with
+          | None -> false
+          | Some env_param ->
+            match args with
+            | [Cop (Cadda, [Cvar ident; Cconst_int _], _)] ->
+              Ident.same ident env_param
+            | _ -> false
+        in
+        if is_from_closure then EC.none
+        else EC.coeffect_only Coeffect.Read_mutable
       | Caddi | Csubi | Cmuli | Cmulhi | Cdivi | Cmodi | Cand | Cor | Cxor
       | Clsl | Clsr | Casr | Ccmpi _ | Caddv | Cadda | Ccmpa _ | Cnegf | Cabsf
       | Caddf | Csubf | Cmulf | Cdivf | Cfloatofint | Cintoffloat | Ccmpf _ ->
@@ -294,6 +326,28 @@ method effects_of exp =
   | Cassign _ | Cifthenelse _ | Cswitch _ | Cloop _ | Ccatch _ | Cexit _
   | Ctrywith _ ->
     EC.arbitrary
+
+method private is_simple_expr = function
+    Cconst_int _ -> true
+  | Cconst_natint _ -> true
+  | Cconst_float _ -> true
+  | Cconst_symbol _ -> true
+  | Cconst_pointer _ -> true
+  | Cconst_natpointer _ -> true
+  | Cblockheader _ -> true
+  | Cvar _ -> true
+  | Ctuple el -> List.for_all self#is_simple_expr el
+  | Clet(_id, arg, body) -> self#is_simple_expr arg && self#is_simple_expr body
+  | Csequence(e1, e2) -> self#is_simple_expr e1 && self#is_simple_expr e2
+  | Cop(op, args, _dbg) ->
+      begin match op with
+        (* The following may have side effects *)
+      | Capply _ | Cextcall _ | Calloc | Cstore _ | Craise _ -> false
+        (* The remaining operations are simple if their args are *)
+      | _ ->
+          List.for_all self#is_simple_expr args
+      end
+  | _ -> false
 
 (* Says whether an integer constant is a suitable immediate argument *)
 
@@ -826,8 +880,12 @@ method private emit_parts (env:environment) ~overall_effects exp =
     let ec = self#effects_of exp in
     match EC.effect ec with
     | Effect.Raise | Effect.Arbitrary ->
-      (* Preserve the ordering of effectful expressions. *)
-      false
+      (* Preserve the ordering of effectful expressions by evaluating them
+         early (in the correct order) and assigning their results to
+         temporaries.  However avoid using temporaries iff there is exactly
+         one (co)effectful expression in the list (see comment in
+         [emit_parts_list], below). *)
+      EC.pure_and_copure (fst overall_effects)
     | Effect.None ->
       match EC.coeffect ec with
       | Coeffect.None ->
@@ -839,13 +897,25 @@ method private emit_parts (env:environment) ~overall_effects exp =
            evaluation of the whole expression list is raising an exception.
            This in particular prevents loads being re-ordered with respect
            to stores. *)
-        match EC.effect overall_effects with
+        match EC.effect (fst overall_effects) with
         | Effect.None | Effect.Raise -> true
         | Effect.Arbitrary -> false
   in
-  if may_defer_evaluation then
+  (* Due to limitations in [size_expr], above, not all expressions whose
+     evaluation we are willing to defer may be deferred. *)
+  if may_defer_evaluation && self#is_simple_expr exp then
     Some (exp, env)
   else begin
+(*
+    if self#is_simple_expr exp then begin
+      Format.eprintf "%s: was simple but now deferred:@;%a@;\n\
+          Exp list (length %d):@;%a@;\n%!"
+        !current_function_name
+        Printcmm.expression exp
+        (List.length (snd overall_effects))
+        (Format.pp_print_list Printcmm.expression) (snd overall_effects)
+    end;
+*)
     match self#emit_expr env exp with
       None -> None
     | Some r ->
@@ -884,12 +954,23 @@ method private emit_parts_list (env:environment) exp_list =
   (* Note: Flambda (specifically the [Un_anf] pass) relies on the backend
      respecting right-to-left evaluation order at all times. *)
   let overall_effects =
-    match exp_list with
-    | [] | [_] ->
-      (* When there is only one expression, avoid unnecessary temporaries. *)
+    let overall_effects = List.map self#effects_of exp_list in
+    let num_with_effects_or_coeffects =
+      List.fold_left (fun num_with_effects_or_coeffects effect ->
+          if not (Effect_and_coeffect.pure_and_copure effect) then
+            num_with_effects_or_coeffects + 1
+          else
+            num_with_effects_or_coeffects)
+        0
+        overall_effects
+    in
+    (* When there is only one expression that has effects or coeffects,
+       don't use temporaries for the results of any of the expressions.
+       (This, when the expression list has length 2, is a common case.) *)
+    if num_with_effects_or_coeffects <= 1 then
       Effect_and_coeffect.none
-    | _::_ ->
-      Effect_and_coeffect.join_list_map exp_list self#effects_of
+    else
+      Effect_and_coeffect.join_list overall_effects
   in
 (*
 if contains_effects then begin
@@ -897,7 +978,7 @@ if contains_effects then begin
     (Format.pp_print_list Printcmm.expression) exp_list
 end;
 *)
-  self#emit_parts_list_core env ~overall_effects exp_list
+  self#emit_parts_list_core env ~overall_effects:(overall_effects, exp_list) exp_list
 
 method private emit_tuple_not_flattened env exp_list =
   let rec emit_list = function
@@ -1117,6 +1198,7 @@ method initial_env () = env_empty
 method emit_fundecl f =
   Proc.contains_calls := false;
   current_function_name := f.Cmm.fun_name;
+  current_function_env_param := f.Cmm.fun_env;
   let rargs =
     List.map
       (fun (id, ty) -> let r = self#regs_for ty in name_regs id r; r)

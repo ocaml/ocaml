@@ -155,6 +155,7 @@ type fundecl =
     fun_body: expression;
     fun_fast: bool;
     fun_dbg : Debuginfo.t;
+    fun_env : Ident.t option;
   }
 
 type data_item =

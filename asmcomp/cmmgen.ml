@@ -2706,7 +2706,8 @@ let transl_function f =
              fun_args = List.map (fun id -> (id, typ_val)) f.params;
              fun_body = cmm_body;
              fun_fast = !Clflags.optimize_for_speed;
-             fun_dbg  = f.dbg; }
+             fun_dbg  = f.dbg;
+             fun_env = f.env; }
 
 (* Translate all function definitions *)
 
@@ -2950,7 +2951,8 @@ let compunit (ulam, preallocated_blocks, constants) =
   let c1 = [Cfunction {fun_name = Compilenv.make_symbol (Some "entry");
                        fun_args = [];
                        fun_body = init_code; fun_fast = false;
-                       fun_dbg  = Debuginfo.none }] in
+                       fun_dbg  = Debuginfo.none;
+                       fun_env = None; }] in
   let c2 = emit_constants c1 constants in
   let c3 = transl_all_functions_and_emit_all_constants c2 in
   emit_preallocated_blocks preallocated_blocks c3
@@ -3088,7 +3090,8 @@ let send_function arity =
     fun_args = fun_args;
     fun_body = body;
     fun_fast = true;
-    fun_dbg  = Debuginfo.none }
+    fun_dbg  = Debuginfo.none;
+    fun_env = None; }
 
 let apply_function arity =
   let (args, clos, body) = apply_function_body arity in
@@ -3100,6 +3103,7 @@ let apply_function arity =
     fun_body = body;
     fun_fast = true;
     fun_dbg  = Debuginfo.none;
+    fun_env = None;
    }
 
 (* Generate tuplifying functions:
@@ -3124,6 +3128,7 @@ let tuplify_function arity =
           dbg);
     fun_fast = true;
     fun_dbg  = Debuginfo.none;
+    fun_env = None;
    }
 
 (* Generate currying functions:
@@ -3185,7 +3190,8 @@ let final_curry_function arity =
     fun_args = [last_arg, typ_val; last_clos, typ_val];
     fun_body = curry_fun [] last_clos (arity-1);
     fun_fast = true;
-    fun_dbg  = Debuginfo.none }
+    fun_dbg  = Debuginfo.none;
+    fun_env = None; }
 
 let rec intermediate_curry_functions arity num =
   let dbg = Debuginfo.none in
@@ -3214,7 +3220,8 @@ let rec intermediate_curry_functions arity num =
                  int_const 1; Cvar arg; Cvar clos],
                 dbg);
       fun_fast = true;
-      fun_dbg  = Debuginfo.none }
+      fun_dbg  = Debuginfo.none;
+      fun_env = None; }
     ::
       (if arity <= max_arity_optimized && arity - num > 2 then
           let rec iter i =
@@ -3242,7 +3249,8 @@ let rec intermediate_curry_functions arity num =
                fun_body = iter (num+1)
                   (List.map (fun (arg,_) -> Cvar arg) direct_args) clos;
                fun_fast = true;
-               fun_dbg = Debuginfo.none }
+               fun_dbg = Debuginfo.none;
+               fun_env = None; }
           in
           cf :: intermediate_curry_functions arity (num+1)
        else
@@ -3305,7 +3313,8 @@ let entry_point namelist =
              fun_args = [];
              fun_body = body;
              fun_fast = false;
-             fun_dbg  = Debuginfo.none }
+             fun_dbg  = Debuginfo.none;
+             fun_env = None; }
 
 (* Generate the table of globals *)
 
