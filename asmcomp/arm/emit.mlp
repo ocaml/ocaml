@@ -843,6 +843,10 @@ let fundecl fundecl =
   bound_error_sites := [];
   `	.text\n`;
   `	.align	2\n`;
+  Emitaux.emit_block_header_for_closure
+    ~word_directive:".long"
+    ~comment_char:'@'
+    ~function_entry_points_are_doubleword_aligned:false;
   `	.globl	{emit_symbol fundecl.fun_name}\n`;
   if !arch > ARMv6 && !thumb then
     `	.thumb\n`

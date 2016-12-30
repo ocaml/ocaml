@@ -888,6 +888,10 @@ let fundecl fundecl =
   bound_error_sites := [];
   `	.text\n`;
   `	.align	3\n`;
+  Emitaux.emit_block_header_for_closure
+    ~word_directive:".quad"
+    ~comment_char:'@'
+    ~function_entry_points_are_doubleword_aligned:true;
   `	.globl	{emit_symbol fundecl.fun_name}\n`;
   `	.type	{emit_symbol fundecl.fun_name}, %function\n`;
   `{emit_symbol fundecl.fun_name}:\n`;

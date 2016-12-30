@@ -991,6 +991,10 @@ let fundecl fundecl =
   call_gc_label := 0;
   float_literals := [];
   jumptables := []; jumptables_lbl := -1;
++  Emitaux.emit_block_header_for_closure
++    ~word_directive:(if ppc64 then ".quad" else ".long")
++    ~comment_char:'#'
++    ~function_entry_points_are_doubleword_aligned:false;
   begin match abi with
   | ELF32 ->
     emit_string code_space;

@@ -685,6 +685,10 @@ let fundecl fundecl =
   float_constants := [];
   `	.text\n`;
   `	.align	4\n`;
+  Emitaux.emit_block_header_for_closure
+    ~word_directive:".word"
+    ~comment_char:'!'
+    ~function_entry_points_are_doubleword_aligned:false;
   `	.global	{emit_symbol fundecl.fun_name}\n`;
   if Config.system = "solaris" then
     `	.type	{emit_symbol fundecl.fun_name},#function\n`;

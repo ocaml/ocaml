@@ -38,6 +38,12 @@ val emit_debug_info_gen :
   (file_num:int -> file_name:string -> unit) ->
   (file_num:int -> line:int -> col:int -> unit) -> unit
 
+val emit_block_header_for_closure
+   : word_directive:string
+  -> comment_char:char
+  -> function_entry_points_are_doubleword_aligned:bool
+  -> unit
+
 val record_frame_descr :
   label:int ->              (* Return address *)
   frame_size:int ->         (* Size of stack frame *)

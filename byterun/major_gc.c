@@ -33,12 +33,6 @@
 #include "caml/signals.h"
 #include "caml/weak.h"
 
-#if defined (NATIVE_CODE) && defined (NO_NAKED_POINTERS)
-#define NATIVE_CODE_AND_NO_NAKED_POINTERS
-#else
-#undef NATIVE_CODE_AND_NO_NAKED_POINTERS
-#endif
-
 #ifdef _MSC_VER
 static inline double fmin(double a, double b) {
   return (a < b) ? a : b;
@@ -238,15 +232,11 @@ static inline value* mark_slice_darken(value *gray_vals_ptr, value v, int i,
 
   child = Field (v, i);
 
+  /* Damien made a comment about the next part */
 #ifdef NATIVE_CODE_AND_NO_NAKED_POINTERS
   if (Is_block (child)
         && ! Is_young (child)
-        && Wosize_val (child) > 0  /* Atoms never need to be marked. */
-        /* Closure blocks contain code pointers at offsets that cannot
-           be reliably determined, so we always use the page table when
-           marking such values. */
-        && (!(Tag_val (v) == Closure_tag || Tag_val (v) == Infix_tag) ||
-            Is_in_heap (child))) {
+        && Wosize_val (child) > 0) {
 #else
   if (Is_block (child) && Is_in_heap (child)) {
 #endif
@@ -256,7 +246,7 @@ static inline value* mark_slice_darken(value *gray_vals_ptr, value v, int i,
       value f = Forward_val (child);
       if ((in_ephemeron && Is_long(f)) ||
           (Is_block (f)
-           && (!Is_in_value_area(f) || Tag_val (f) == Forward_tag
+           && (!Nnp_or_is_in_value_area(f) || Tag_val (f) == Forward_tag
                || Tag_val (f) == Lazy_tag || Tag_val (f) == Double_tag))){
         /* Do not short-circuit the pointer. */
       }else{
@@ -306,7 +296,7 @@ static value* mark_ephe_aux (value *gray_vals_ptr, intnat *work,
   Assert(Tag_val (v) == Abstract_tag);
   data = Field(v,CAML_EPHE_DATA_OFFSET);
   if ( data != caml_ephe_none &&
-       Is_block (data) && Is_in_heap (data) && Is_white_val (data)){
+       Is_block (data) && Nnp_or_is_in_heap (data) && Is_white_val (data)){
 
     int alive_data = 1;
 
@@ -319,7 +309,7 @@ static value* mark_ephe_aux (value *gray_vals_ptr, intnat *work,
       key = Field (v, i);
     ephemeron_again:
       if (key != caml_ephe_none &&
-          Is_block (key) && Is_in_heap (key)){
+          Is_block (key) && Nnp_or_is_in_heap (key)){
         if (Tag_val (key) == Forward_tag){
           value f = Forward_val (key);
           if (Is_long (f) ||

@@ -76,4 +76,14 @@ extern uintnat caml_spacetime_my_profinfo(struct ext_table**, uintnat);
 #define Colornum_hd(hd) ((color_t) (((hd) >> 8) & 3))
 #define Coloredhd_hd(hd,colnum) (((hd) & ~Caml_black) | ((colnum) << 8))
 
+#if defined (NATIVE_CODE) && defined (NO_NAKED_POINTERS)
+#define NATIVE_CODE_AND_NO_NAKED_POINTERS
+#define Nnp_or_is_in_value_area(p) 1
+#define Nnp_or_is_in_heap(p) 1
+#else
+#undef NATIVE_CODE_AND_NO_NAKED_POINTERS
+#define Nnp_or_is_in_value_area(p) Is_in_value_area(p)
+#define Nnp_or_is_in_heap(p) Is_in_heap(p)
+#endif
+
 #endif /* CAML_GC_H */

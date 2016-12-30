@@ -950,6 +950,10 @@ let fundecl fundecl =
   D.text ();
   add_def_symbol fundecl.fun_name;
   D.align (if system = S_win32 then 4 else 16);
+  Emitaux.emit_block_header_for_closure ~word_directive:".quad"
+    ~comment_char:'#'
+    (* CR mshinwell: this next "true" might be wrong for win32? *)
+    ~function_entry_points_are_doubleword_aligned:true;
   if system = S_macosx
   && not !Clflags.output_c_object
   && is_generic_function fundecl.fun_name

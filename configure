@@ -2023,6 +2023,7 @@ echo "WITH_DEBUGGER=${with_debugger}" >>Makefile
 echo "WITH_OCAMLDOC=${with_ocamldoc}" >>Makefile
 echo "ASM_CFI_SUPPORTED=$asm_cfi_supported" >> Makefile
 echo "WITH_FRAME_POINTERS=$with_frame_pointers" >> Makefile
+echo "NO_NAKED_POINTERS=$no_naked_pointers" >> Makefile
 echo "WITH_SPACETIME=$with_spacetime" >> Makefile
 echo "WITH_PROFINFO=$with_profinfo" >> Makefile
 echo "LIBUNWIND_AVAILABLE=$libunwind_available" >> Makefile

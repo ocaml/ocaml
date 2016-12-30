@@ -103,6 +103,7 @@ let system = "%%SYSTEM%%"
 let asm = "%%ASM%%"
 let asm_cfi_supported = %%ASM_CFI_SUPPORTED%%
 let with_frame_pointers = %%WITH_FRAME_POINTERS%%
+let no_naked_pointers = %%NO_NAKED_POINTERS%%
 let spacetime = %%WITH_SPACETIME%%
 let libunwind_available = %%LIBUNWIND_AVAILABLE%%
 let libunwind_link_flags = "%%LIBUNWIND_LINK_FLAGS%%"

@@ -111,6 +111,8 @@ val asm_cfi_supported: bool
         (* Whether assembler understands CFI directives *)
 val with_frame_pointers : bool
         (* Whether assembler should maintain frame pointers *)
+val no_naked_pointers : bool
+        (* Whether no-naked-pointers mode is enabled *)
 
 val ext_obj: string
         (* Extension for object files, e.g. [.o] under Unix. *)
