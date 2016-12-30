@@ -1,6 +1,7 @@
 /* Runtime support for afl-fuzz */
 
-#ifdef _WIN32
+/* Android's libc does not implement System V shared memory. */
+#if defined(_WIN32) || defined(__ANDROID__)
 
 #include "caml/mlvalues.h"
 
