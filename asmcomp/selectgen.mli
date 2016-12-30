@@ -28,14 +28,13 @@ module Effect : sig
   type t =
     | None
     | Raise
-    | Store of Cmm.Memory_chunk.Set.t
     | Arbitrary
 end
 
 module Coeffect : sig
   type t =
     | None
-    | Read_mutable of Cmm.Memory_chunk.Set.t
+    | Read_mutable
 end
 
 module Effect_and_coeffect : sig
