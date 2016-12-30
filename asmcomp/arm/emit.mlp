@@ -798,26 +798,44 @@ let emit_instr i =
 
 (* Emission of an instruction sequence *)
 
+(* It may be necessary to emit a constant pool before emitting
+   the next instruction. Consider the degenerate case where a single literal
+   is followed by a jump table longer than 4KB; we have to emit
+   the constant pool before the jump table or it will be too late. *)
+let emit_or_defer_instr i =
+  match i.desc with
+  | Lswitch jumptbl -> 2 + Array.length jumptbl, Some i
+  | _ -> emit_instr i, None
+
 let rec emit_all ninstr i =
   if i.desc = Lend then () else begin
-    let n = emit_instr i in
+    let n, deferred = emit_instr_before_pool i in
     let ninstr' = ninstr + n in
     (* fldd can address up to +/-1KB, ldr can address up to +/-4KB *)
     let limit = (if !fpu >= VFPv2 && !float_literals <> []
                  then 127
                  else 511) in
     let limit = limit - !num_literals in
-    if ninstr' >= limit - 64 && not(has_fallthrough i.desc) then begin
+    let fallthrough =
+      match deferred with
+      | Some _ -> true
+      | None -> has_fallthrough i.desc
+    in
+    if ninstr' >= limit - 64 && not(fallthrough) then begin
       emit_literals();
+      begin match deferred with Some i -> emit_instr i | None -> ();
       emit_all 0 i.next
     end else if !num_literals != 0 && ninstr' >= limit then begin
       let lbl = new_label() in
       `	b	{emit_label lbl}\n`;
       emit_literals();
       `{emit_label lbl}:\n`;
+      begin match deferred with Some i -> emit_instr i | None -> ();
       emit_all 0 i.next
-    end else
+    end else begin
+      begin match deferred with Some i -> emit_instr i | None -> ();
       emit_all ninstr' i.next
+    end
   end
 
 (* Emission of the profiling prelude *)
