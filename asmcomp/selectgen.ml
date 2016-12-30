@@ -263,9 +263,11 @@ class virtual selector_generic = object (self)
    a whole list of expressions with a view to determining which expressions
    may have their evaluation deferred.
 
-   In the case of e.g. an [alloc] instruction, the (co)effectful arguments
-   are computed in right-to-left order first, then the block is allocated,
-   then the non-(co)effectful arguments are evaluated and stored. *)
+   In the case of e.g. an [alloc] instruction, the arguments whose evaluation
+   cannot be deferred (cf. [emit_parts, below) are computed in right-to-left
+   order first with their results going into temporaries, then the block is
+   allocated, then the remaining arguments are evaluated before being
+   combined with the temporaries. *)
 method effects_of exp =
   let module EC = Effect_and_coeffect in
   match exp with
@@ -884,7 +886,7 @@ method private emit_parts_list (env:environment) exp_list =
   let overall_effects =
     match exp_list with
     | [] | [_] ->
-      (* When there is only one expression, avoid unnecessary let-bindings. *)
+      (* When there is only one expression, avoid unnecessary temporaries. *)
       Effect_and_coeffect.none
     | _::_ ->
       Effect_and_coeffect.join_list_map exp_list self#effects_of
