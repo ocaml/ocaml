@@ -23,6 +23,10 @@ Next version (4.04.1):
   to load plugins. See http://github.com/OCamlPro/ocamlc-plugins for examples.
   (Fabrice Le Fessant)
 
+- GPR#992: caml-types.el: Fix missing format argument, so that it can show kind
+  of call at point correctly.
+  (Chunhui He)
+
 OCaml 4.04.0 (4 Nov 2016):
 --------------------------
 
