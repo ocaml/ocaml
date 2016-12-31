@@ -1750,6 +1750,9 @@ struct
       
     val unguarded : t -> Ident.t list
     (** The list of identifiers that are used in an unguarded context *)
+
+    val dependent : t -> Ident.t list
+    (** The list of all used identifiers *)
   end =
   struct
     (** A "t" maps each rec-bound variable to an access status *)
@@ -1787,13 +1790,16 @@ struct
   
     let empty = Ident.empty
 
-    let unguarded t =
+    let list_matching p t =
       let r = ref [] in
-      Ident.iter (fun id -> function
-            Unguarded | Dereferenced -> r := id :: !r
-          | _ -> ())
-        t;
+      Ident.iter (fun id v -> if p v then r := id :: !r) t;
       !r
+    
+    let unguarded =
+      list_matching (function Unguarded | Dereferenced -> true | _ -> false)
+
+    let dependent =
+      list_matching (function _ -> true)
   end
 
   module Env =
@@ -1856,41 +1862,40 @@ struct
   let scrape env ty =
     (Ctype.repr (Ctype.expand_head_opt env (Ctype.correct_levels ty))).desc
 
-let array_element_kind env ty =
-  match scrape env ty with
-  | Tvar _ | Tunivar _ ->
-      `Pgenarray
-  | Tconstr(p, _, _) ->
-      if Path.same p Predef.path_int || Path.same p Predef.path_char then
-        `Pintarray
-      else if Path.same p Predef.path_float then
-        `Pfloatarray
-      else if Path.same p Predef.path_string
-           || Path.same p Predef.path_array
-           || Path.same p Predef.path_nativeint
-           || Path.same p Predef.path_int32
-           || Path.same p Predef.path_int64 then
+  let array_element_kind env ty =
+    match scrape env ty with
+    | Tvar _ | Tunivar _ ->
+        `Pgenarray
+    | Tconstr(p, _, _) ->
+        if Path.same p Predef.path_int || Path.same p Predef.path_char then
+          `Pintarray
+        else if Path.same p Predef.path_float then
+          `Pfloatarray
+        else if Path.same p Predef.path_string
+             || Path.same p Predef.path_array
+             || Path.same p Predef.path_nativeint
+             || Path.same p Predef.path_int32
+             || Path.same p Predef.path_int64 then
+          `Paddrarray
+        else begin
+          try
+            match Env'.find_type p env with
+              {type_kind = Type_abstract} ->
+                `Pgenarray
+            | {type_kind = Type_variant cstrs}
+              when List.for_all (fun c -> c.Types.cd_args = Types.Cstr_tuple [])
+                  cstrs ->
+                `Pintarray
+            | {type_kind = _} ->
+                `Paddrarray
+          with Not_found ->
+            (* This can happen due to e.g. missing -I options,
+               causing some .cmi files to be unavailable.
+               Maybe we should emit a warning. *)
+            `Pgenarray
+        end
+    | _ ->
         `Paddrarray
-      else begin
-        try
-          match Env'.find_type p env with
-            {type_kind = Type_abstract} ->
-              `Pgenarray
-          | {type_kind = Type_variant cstrs}
-            when List.for_all (fun c -> c.Types.cd_args = Types.Cstr_tuple [])
-                cstrs ->
-              `Pintarray
-          | {type_kind = _} ->
-              `Paddrarray
-        with Not_found ->
-          (* This can happen due to e.g. missing -I options,
-             causing some .cmi files to be unavailable.
-             Maybe we should emit a warning. *)
-          `Pgenarray
-      end
-  | _ ->
-      `Paddrarray
-
 
   let array_type_kind env ty =
     match scrape env ty with
@@ -1906,7 +1911,43 @@ let array_element_kind env ty =
   let has_concrete_element_type : Typedtree.expression -> bool =
     fun e -> array_kind e <> `Pgenarray
 
-    
+  type sd = Static | Dynamic
+
+  let rec classify_expression : Typedtree.expression -> sd =
+    fun exp -> match exp.exp_desc with 
+      | Texp_let (_, _, e)
+      | Texp_letmodule (_, _, _, e)
+      | Texp_sequence (_, e)
+      | Texp_letexception (_, e) -> classify_expression e
+      | Texp_ident _
+      | Texp_for _
+      | Texp_constant _
+      | Texp_new _
+      | Texp_instvar _
+      | Texp_tuple _
+      | Texp_array _
+      | Texp_construct _
+      | Texp_variant _
+      | Texp_record _
+      | Texp_setfield _
+      | Texp_while _
+      | Texp_setinstvar _
+      | Texp_pack _
+      | Texp_object _
+      | Texp_function _
+      | Texp_lazy _
+      | Texp_unreachable
+      | Texp_extension_constructor _ -> Static
+      | Texp_apply ({exp_desc = Texp_ident (_, _, vd)}, _)
+        when is_ref vd -> Static
+      | Texp_apply _
+      | Texp_match _
+      | Texp_ifthenelse _
+      | Texp_send _
+      | Texp_field _
+      | Texp_assert _
+      | Texp_try _
+      | Texp_override _ -> Dynamic
 
   let rec expression : Env.env -> Typedtree.expression -> Use.t =
     fun env exp -> match exp.exp_desc with
@@ -2224,10 +2265,15 @@ let array_element_kind env ty =
 
   let check_recursive_expression env idlist expr =
     let ty = expression (build_unguarded_env idlist) expr in
-    match Use.unguarded ty with
-      [] -> ()
-    | _ :: _ -> raise(Error(expr.exp_loc, env, Illegal_letrec_expr))
-
+    match Use.unguarded ty, Use.dependent ty, classify_expression expr with
+    | _ :: _, _, _ (* The expression inspects rec-bound variables *)
+    | _, _ :: _, Dynamic -> (* The expression depends on rec-bound variables 
+                               and its size is unknown *)
+        raise(Error(expr.exp_loc, env, Illegal_letrec_expr))
+    | [], _, Static (* The expression has known size *)
+    | [], [], Dynamic -> (* The expression has unknown size,
+                            but does not depend on rec-bound variables *)
+        ()
   let check_class_expr env idlist ce =
     let rec class_expr : Env.env -> Typedtree.class_expr -> Use.t =
       fun env ce -> match ce.cl_desc with
