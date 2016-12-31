@@ -147,8 +147,10 @@ and value_set_of_closures = private {
   size : int option Variable.Map.t lazy_t;
   (** For functions that are very likely to be inlined, the size of the
       function's body. *)
+  specialised_args : Variable.t Variable.Map.t;
+  (** Any freshening that has been applied to [function_decls]. *)
   specialised_args : Flambda.specialised_to Variable.Map.t;
-  (* Any freshening that has been applied to [function_decls]. *)
+  (** Any freshening that has been applied to [function_decls]. *)
   freshening : Freshening.Project_var.t;
   direct_call_surrogates : Closure_id.t Closure_id.Map.t;
 }

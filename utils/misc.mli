@@ -19,7 +19,7 @@ val fatal_error: string -> 'a
 val fatal_errorf: ('a, Format.formatter, unit, 'b) format4 -> 'a
 exception Fatal_error
 
-val try_finally : (unit -> 'a) -> (unit -> unit) -> 'a;;
+val try_finally : (unit -> 'a) -> (unit -> unit) -> 'a
 
 val map_end: ('a -> 'b) -> 'a list -> 'b list -> 'b list
         (* [map_end f l t] is [map f l @ t], just more efficient. *)
@@ -130,7 +130,7 @@ val no_overflow_add: int -> int -> bool
         (* [no_overflow_add n1 n2] returns [true] if the computation of
            [n1 + n2] does not overflow. *)
 val no_overflow_sub: int -> int -> bool
-        (* [no_overflow_add n1 n2] returns [true] if the computation of
+        (* [no_overflow_sub n1 n2] returns [true] if the computation of
            [n1 - n2] does not overflow. *)
 val no_overflow_mul: int -> int -> bool
         (* [no_overflow_mul n1 n2] returns [true] if the computation of
@@ -160,8 +160,8 @@ val search_substring: string -> string -> int -> int
            does not occur. *)
 
 val replace_substring: before:string -> after:string -> string -> string
-        (* [search_substring ~before ~after str] replaces all
-           occurences of [before] with [after] in [str] and returns
+        (* [replace_substring ~before ~after str] replaces all
+           occurrences of [before] with [after] in [str] and returns
            the resulting string. *)
 
 val rev_split_words: string -> string list
@@ -169,7 +169,7 @@ val rev_split_words: string -> string list
            the list of words in reverse order. *)
 
 val get_ref: 'a list ref -> 'a list
-        (* [get_ref lr] returns the content of the list reference [lr] and reset
+        (* [get_ref lr] returns the content of the list reference [lr] and resets
            its content to the empty list. *)
 
 
@@ -254,7 +254,6 @@ module Color : sig
     | Magenta
     | Cyan
     | White
-  ;;
 
   type style =
     | FG of color (* foreground *)

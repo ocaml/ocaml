@@ -16,7 +16,7 @@
 
 [@@@ocaml.warning "+a-4-9-30-40-41-42"]
 
-(* Translate Lambda code to Flambda code and then optimize it. *)
+(** Translate Lambda code to Flambda code and then optimize it. *)
 
 val middle_end
    : Format.formatter

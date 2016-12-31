@@ -18,7 +18,7 @@
 
 include Identifiable.S
 
-(* The [Ident.t] must be persistent.  This function raises an exception
+(** The [Ident.t] must be persistent.  This function raises an exception
    if that is not the case. *)
 val create : Ident.t -> Linkage_name.t -> t
 
