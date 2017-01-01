@@ -204,7 +204,6 @@ INSTALL_LIBDIR=$(DESTDIR)$(LIBDIR)
 INSTALL_COMPLIBDIR=$(DESTDIR)$(COMPLIBDIR)
 INSTALL_STUBLIBDIR=$(DESTDIR)$(STUBLIBDIR)
 INSTALL_MANDIR=$(DESTDIR)$(MANDIR)
-INSTALL_DISTRIB=$(DESTDIR)$(PREFIX)
 
 install:
 	mkdir -p "$(INSTALL_BINDIR)"
@@ -245,12 +244,6 @@ install:
 	  $(MAKEREC) install-flexdll; \
 	fi
 	cp config/Makefile "$(INSTALL_LIBDIR)/Makefile.config"
-	if test -n "$(INSTALL_DISTRIB)"; then \
-	   cp README.adoc "$(INSTALL_DISTRIB)/Readme.general.txt"; \
-	   cp README.win32.adoc "$(INSTALL_DISTRIB)/Readme.windows.txt"; \
-	   cp LICENSE "$(INSTALL_DISTRIB)/License.txt"; \
-	   cp Changes "$(INSTALL_DISTRIB)/Changes.txt"; \
-	fi
 	if test -f ocamlopt; then $(MAKEREC) installopt; else \
 	   cd "$(INSTALL_BINDIR)"; \
 	   cp ocamlc.byte$(EXE) ocamlc$(EXE); \
