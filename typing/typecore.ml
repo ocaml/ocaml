@@ -2001,8 +2001,12 @@ struct
         (* This is counted as a use, because constructing a generic array
            involves inspecting the elements (PR#6939). *)
         Use.inspect (list expression env exprs)
-      | Texp_construct (_, _, exprs) ->
-        Use.guard (list expression env exprs)
+      | Texp_construct (_, desc, exprs) ->
+        let use = match desc.cstr_tag with
+          | Cstr_unboxed -> (fun x -> x)
+          | Cstr_constant _ | Cstr_block _ | Cstr_extension _ -> Use.guard
+        in
+        use (list expression env exprs)
       | Texp_variant (_, eo) ->
         Use.guard (option expression env eo)
       | Texp_record { fields = es; extended_expression = eo;
