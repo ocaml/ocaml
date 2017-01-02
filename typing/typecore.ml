@@ -1917,6 +1917,8 @@ let check_recursive_expression env idlist expr =
         Use.(inspect (expression env e))
       | Texp_setinstvar (_,_,_,e) ->
           Use.(inspect (expression env e))
+      | Texp_letexception (_, e) ->
+          expression env e
       | Texp_assert e ->
           Use.inspect (expression env e)
       | Texp_pack m ->
