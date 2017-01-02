@@ -1952,6 +1952,8 @@ let array_element_kind env ty =
                 (inspect (list arg env args)))
       | Texp_tuple exprs ->
         Use.guard (list expression env exprs)
+      | Texp_array exprs when array_kind exp = `Pfloatarray ->
+        Use.inspect (list expression env exprs)
       | Texp_array exprs when has_concrete_element_type exp ->
         Use.guard (list expression env exprs)
       | Texp_array exprs ->
