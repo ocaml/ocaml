@@ -1845,6 +1845,14 @@ struct
       Env.empty
       idlist
 
+  let is_ref : Types.value_description -> bool = function
+    | { Types.val_kind =
+          Types.Val_prim { Primitive.prim_name = "%makemutable";
+                           prim_arity = 1 } } ->
+          true
+    | _ -> false
+
+
   let rec expression : Env.env -> Typedtree.expression -> Use.t =
     fun env exp -> match exp.exp_desc with
       | Texp_ident (pth, _, _) ->
@@ -1879,6 +1887,9 @@ struct
           Use.inspect (path env pth)
       | Texp_instvar _ ->
         Use.empty
+      | Texp_apply ({exp_desc = Texp_ident (_, _, vd)}, [_, Some arg])
+        when is_ref vd ->
+          Use.guard (expression env arg)
       | Texp_apply (e, args) ->
         let arg env (_, eo) = option expression env eo in
         Use.(join
