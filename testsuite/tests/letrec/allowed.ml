@@ -67,3 +67,7 @@ let rec x = { x with contents = 3 };;
 let rec x = let y = (x; ()) in y;;
 
 let rec x = [|y|] and y = 0;;
+
+(* Recursively constructing arrays of known non-float type is permitted *)
+let rec deep_cycle : [`Tuple of [`Shared of 'a] array] as 'a
+  = `Tuple [| `Shared deep_cycle |];;
