@@ -205,6 +205,10 @@ Next version (4.05.0):
 - GPR#908: refactor PIC-handling in the s390x backend
   (Gabriel Scherer)
 
+- GPR#881: change `Outcometree.out_variant` to be more general.
+  `Out_name of out_ident * out_type list` becomes `Out_type of out_type`.
+  (Valentin Gatien-Baron)
+
 ### Bug fixes
 
 - PR#5115: protect all byterun/fail.c functions against
@@ -246,7 +250,7 @@ Next version (4.05.0):
   (Jeremy Yallop)
 
 - GPR#881: short-paths did not apply to some polymorphic variants
-  (Valentin Gatien-Baron, review by Leo White and Gabriel Scherer)
+  (Valentin Gatien-Baron, review by Leo White)
 
 - GPR#934: check for integer overflow in Bytes.extend
   (Jeremy Yallop, review by Gabriel Scherer)
