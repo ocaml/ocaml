@@ -235,15 +235,18 @@ Next version (4.05.0):
 - GPR#795: remove 256-character limitation on Sys.executable_name
   (Xavier Leroy)
 
-- GPR#814: fix the Buffer.add_substring bounds check to handle overflow
-  (Jeremy Yallop)
+- GPR#805, GPR#815, GPR#833: check for integer overflow in String.concat
+  (Jeremy Yallop,
+   review by Damien Doligez, Alain Frisch, Daniel Bünzli, Fabrice Le Fessant)
 
 - GPR#810: check for integer overflow in Array.concat
   (Jeremy Yallop)
 
-- GPR#805, GPR#815, GPR#833: check for integer overflow in String.concat
-  (Jeremy Yallop,
-   review by Damien Doligez, Alain Frisch, Daniel Bünzli, Fabrice Le Fessant)
+- GPR#814: fix the Buffer.add_substring bounds check to handle overflow
+  (Jeremy Yallop)
+
+- GPR#881: short-paths did not apply to some polymorphic variants
+  (Valentin Gatien-Baron, review by Leo White and Gabriel Scherer)
 
 - GPR#934: check for integer overflow in Bytes.extend
   (Jeremy Yallop, review by Gabriel Scherer)
