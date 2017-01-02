@@ -206,7 +206,7 @@ Next version (4.05.0):
   (Gabriel Scherer)
 
 - GPR#881: change `Outcometree.out_variant` to be more general.
-  `Out_name of out_ident * out_type list` becomes `Out_type of out_type`.
+  `Ovar_name of out_ident * out_type list` becomes `Ovar_type of out_type`.
   (Valentin Gatien-Baron)
 
 ### Bug fixes
