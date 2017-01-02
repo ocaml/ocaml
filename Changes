@@ -87,6 +87,15 @@ Next version (4.05.0):
   (Gabriel de Perthuis, with contributions from Alain Frisch, review by
   Hezekiah M. Carty and Simon Cruanes, initial report by Gerd Stolpmann)
 
+
+### Debugging and profiling:
+
+- GPR#378: Add [Printexc.raise_with_backtrace] raise an exception using
+  an explicit backtrace
+  (François Bobot, review by Gabriel Scherer, Xavier Leroy, Damien Doligez,
+   Frédéric Bour)
+
+
 ### Manual and documentation:
 
 - GPR#939: activate the caml_example environment in the language
