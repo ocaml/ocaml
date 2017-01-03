@@ -183,59 +183,6 @@ base.opt:
 	$(MAKE) ocamlopt.opt
 	$(MAKE) otherlibrariesopt
 
-# Installation
-
-install:
-	$(MKDIR) "$(INSTALL_BINDIR)"
-	$(MKDIR) "$(INSTALL_LIBDIR)"
-	$(MKDIR) "$(INSTALL_STUBLIBDIR)"
-	$(MKDIR) "$(INSTALL_COMPLIBDIR)"
-	cp VERSION "$(INSTALL_LIBDIR)"
-	$(MAKE) -C byterun install
-	cp ocaml "$(INSTALL_BINDIR)/ocaml$(EXE)"
-	cp ocamlc "$(INSTALL_BINDIR)/ocamlc.byte$(EXE)"
-	$(MAKE) -C stdlib install
-	cp lex/ocamllex "$(INSTALL_BINDIR)/ocamllex.byte$(EXE)"
-	cp utils/*.cmi utils/*.cmt utils/*.cmti utils/*.mli \
-	   parsing/*.cmi parsing/*.cmt parsing/*.cmti parsing/*.mli \
-	   typing/*.cmi typing/*.cmt typing/*.cmti typing/*.mli \
-	   bytecomp/*.cmi bytecomp/*.cmt bytecomp/*.cmti bytecomp/*.mli \
-	   driver/*.cmi driver/*.cmt driver/*.cmti driver/*.mli \
-	   toplevel/*.cmi toplevel/*.cmt toplevel/*.cmti toplevel/*.mli \
-	   "$(INSTALL_COMPLIBDIR)"
-	cp compilerlibs/ocamlcommon.cma compilerlibs/ocamlbytecomp.cma \
-	   compilerlibs/ocamltoplevel.cma $(BYTESTART) $(TOPLEVELSTART) \
-	   "$(INSTALL_COMPLIBDIR)"
-	cp expunge "$(INSTALL_LIBDIR)/expunge$(EXE)"
-	cp toplevel/topdirs.cmi toplevel/topdirs.cmt toplevel/topdirs.cmti \
-           toplevel/topdirs.mli "$(INSTALL_LIBDIR)"
-	$(MAKE) -C tools install
-ifeq "$(UNIX_OR_WIN32)" "unix" # Install manual pages only on Unix
-	$(MKDIR) "$(INSTALL_MANDIR)/man$(MANEXT)"
-	-$(MAKE) -C man install
-endif
-	for i in $(OTHERLIBRARIES); do \
-	  $(MAKE) -C otherlibs/$$i install || exit $$?; \
-	done
-	if test -n "$(WITH_OCAMLDOC)"; then \
-	  $(MAKE) -C ocamldoc install; \
-	fi
-	if test -n "$(WITH_DEBUGGER)"; then \
-	  $(MAKE) -C debugger install; \
-	fi
-ifeq "$(UNIX_OR_WIN32)" "win32"
-	if test -n "$(FLEXDLL_SUBMODULE_PRESENT)"; then \
-	  $(MAKE) install-flexdll; \
-	fi
-endif
-	cp config/Makefile "$(INSTALL_LIBDIR)/Makefile.config"
-	if test -f ocamlopt; then $(MAKE) installopt; else \
-	   cd "$(INSTALL_BINDIR)"; \
-	   $(LN) ocamlc.byte$(EXE) ocamlc$(EXE); \
-	   $(LN) ocamllex.byte$(EXE) ocamllex$(EXE); \
-	   $(LN) ocamlyacc.byte$(EXE) ocamlyacc$(EXE); \
-	fi
-
 # Build the manual latex files from the etex source files
 # (see manual/README.md)
 manual-pregen: opt.opt
@@ -638,7 +585,7 @@ distclean:
 .PHONY: all backup bootstrap checkstack clean
 .PHONY: partialclean beforedepend alldepend cleanboot coldstart
 .PHONY: compare core coreall
-.PHONY: coreboot depend distclean install
+.PHONY: coreboot depend distclean
 .PHONY: library library-cross libraryopt
 .PHONY: ocamldebugger ocamldoc
 .PHONY: ocamldoc.opt ocamllex ocamllex.opt ocamltools ocamltoolsopt
