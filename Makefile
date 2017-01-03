@@ -196,11 +196,6 @@ natruntop:
 	$(MAKE) ocamlnat
 	@rlwrap --help 2>/dev/null && rlwrap $(NATRUNTOP) || $(NATRUNTOP)
 
-# Native dynlink
-
-otherlibs/dynlink/dynlink.cmxa: otherlibs/dynlink/natdynlink.ml
-	cd otherlibs/dynlink && $(MAKE) allopt
-
 # The parser
 
 parsing/parser.mli parsing/parser.ml: parsing/parser.mly

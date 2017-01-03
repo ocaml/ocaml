@@ -567,6 +567,11 @@ ocaml: expunge ocaml.tmp
 partialclean::
 	rm -f ocaml
 
+# Native dynlink
+
+otherlibs/dynlink/dynlink.cmxa: otherlibs/dynlink/natdynlink.ml
+	cd otherlibs/dynlink && $(MAKE) allopt
+
 # The middle end (whose .cma library is currently only used for linking
 # the "ocamlobjinfo" program, since we cannot depend on the whole native code
 # compiler for "make world" and the list of dependencies for
