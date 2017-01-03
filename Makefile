@@ -192,8 +192,8 @@ install:
 	$(MKDIR) "$(INSTALL_COMPLIBDIR)"
 	cp VERSION "$(INSTALL_LIBDIR)"
 	$(MAKE) -C byterun install
-	cp ocamlc "$(INSTALL_BINDIR)/ocamlc.byte$(EXE)"
 	cp ocaml "$(INSTALL_BINDIR)/ocaml$(EXE)"
+	cp ocamlc "$(INSTALL_BINDIR)/ocamlc.byte$(EXE)"
 	$(MAKE) -C stdlib install
 	cp lex/ocamllex "$(INSTALL_BINDIR)/ocamllex.byte$(EXE)"
 	cp $(CAMLYACC)$(EXE) "$(INSTALL_BINDIR)/ocamlyacc$(EXE)"
