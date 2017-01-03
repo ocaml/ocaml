@@ -183,60 +183,6 @@ base.opt:
 	$(MAKE) ocamlopt.opt
 	$(MAKE) otherlibrariesopt
 
-# Shared parts of the system
-
-compilerlibs/ocamlcommon.cma: $(COMMON)
-	$(CAMLC) -a -linkall -o $@ $(COMMON)
-partialclean::
-	rm -f compilerlibs/ocamlcommon.cma
-
-# The bytecode compiler
-
-compilerlibs/ocamlbytecomp.cma: $(BYTECOMP)
-	$(CAMLC) -a -o $@ $(BYTECOMP)
-partialclean::
-	rm -f compilerlibs/ocamlbytecomp.cma
-
-ocamlc: compilerlibs/ocamlcommon.cma compilerlibs/ocamlbytecomp.cma $(BYTESTART)
-	$(CAMLC) $(LINKFLAGS) -compat-32 -o ocamlc \
-	   compilerlibs/ocamlcommon.cma compilerlibs/ocamlbytecomp.cma \
-	   $(BYTESTART)
-
-# The native-code compiler
-
-compilerlibs/ocamloptcomp.cma: $(MIDDLE_END) $(ASMCOMP)
-	$(CAMLC) -a -o $@ $(MIDDLE_END) $(ASMCOMP)
-
-partialclean::
-	rm -f compilerlibs/ocamloptcomp.cma
-
-ocamlopt: compilerlibs/ocamlcommon.cma compilerlibs/ocamloptcomp.cma \
-          compilerlibs/ocamlbytecomp.cma $(OPTSTART)
-	$(CAMLC) $(LINKFLAGS) -o ocamlopt \
-	  compilerlibs/ocamlcommon.cma compilerlibs/ocamloptcomp.cma \
-	  compilerlibs/ocamlbytecomp.cma $(OPTSTART)
-
-partialclean::
-	rm -f ocamlopt
-
-# The toplevel
-
-compilerlibs/ocamltoplevel.cma: $(TOPLEVEL)
-	$(CAMLC) -a -o $@ $(TOPLEVEL)
-partialclean::
-	rm -f compilerlibs/ocamltoplevel.cma
-
-ocaml: compilerlibs/ocamlcommon.cma compilerlibs/ocamlbytecomp.cma \
-       compilerlibs/ocamltoplevel.cma $(TOPLEVELSTART) expunge
-	$(CAMLC) $(LINKFLAGS) -linkall -o ocaml.tmp \
-	  compilerlibs/ocamlcommon.cma compilerlibs/ocamlbytecomp.cma \
-	  compilerlibs/ocamltoplevel.cma $(TOPLEVELSTART)
-	- $(CAMLRUN) ./expunge ocaml.tmp ocaml $(PERVASIVES)
-	rm -f ocaml.tmp
-
-partialclean::
-	rm -f ocaml
-
 runtop:
 	$(MAKE) runtime
 	$(MAKE) coreall

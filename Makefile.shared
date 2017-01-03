@@ -510,6 +510,63 @@ manual-pregen: opt.opt
 .PHONY: clean
 clean:: partialclean
 
+# Shared parts of the system
+
+compilerlibs/ocamlcommon.cma: $(COMMON)
+	$(CAMLC) -a -linkall -o $@ $^
+partialclean::
+	rm -f compilerlibs/ocamlcommon.cma
+
+# The bytecode compiler
+
+compilerlibs/ocamlbytecomp.cma: $(BYTECOMP)
+	$(CAMLC) -a -o $@ $^
+partialclean::
+	rm -f compilerlibs/ocamlbytecomp.cma
+
+ocamlc: compilerlibs/ocamlcommon.cma compilerlibs/ocamlbytecomp.cma $(BYTESTART)
+	$(CAMLC) $(LINKFLAGS) -compat-32 -o $@ $^
+
+partialclean::
+	rm -rf ocamlc
+
+# The native-code compiler
+
+compilerlibs/ocamloptcomp.cma: $(MIDDLE_END) $(ASMCOMP)
+	$(CAMLC) -a -o $@ $^
+
+partialclean::
+	rm -f compilerlibs/ocamloptcomp.cma
+
+ocamlopt: compilerlibs/ocamlcommon.cma compilerlibs/ocamloptcomp.cma \
+          compilerlibs/ocamlbytecomp.cma $(OPTSTART)
+	$(CAMLC) $(LINKFLAGS) -o $@ $^
+
+partialclean::
+	rm -f ocamlopt
+
+# The toplevel
+
+compilerlibs/ocamltoplevel.cma: $(TOPLEVEL)
+	$(CAMLC) -a -o $@ $^
+partialclean::
+	rm -f compilerlibs/ocamltoplevel.cma
+
+ocaml_dependencies := \
+  compilerlibs/ocamlcommon.cma \
+  compilerlibs/ocamlbytecomp.cma \
+  compilerlibs/ocamltoplevel.cma $(TOPLEVELSTART)
+
+.INTERMEDIATE: ocaml.tmp
+ocaml.tmp: $(ocaml_dependencies)
+	$(CAMLC) $(LINKFLAGS) -linkall -o $@ $^
+
+ocaml: expunge ocaml.tmp
+	- $(CAMLRUN) $^ $@ $(PERVASIVES)
+
+partialclean::
+	rm -f ocaml
+
 # The middle end (whose .cma library is currently only used for linking
 # the "ocamlobjinfo" program, since we cannot depend on the whole native code
 # compiler for "make world" and the list of dependencies for
