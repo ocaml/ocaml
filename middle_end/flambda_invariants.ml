@@ -811,10 +811,10 @@ let check_exn ?(kind=Normal) ?(cmxfile=false) (flam:Flambda.program) =
         Flambda expression (see closure_conversion.ml)"
     | Pdirapply_should_be_expanded ->
       Format.eprintf ">> The Pdirapply primitive should never occur in an \
-        Flambda expression (see closure_conversion.ml); use Apply instead"
+        Flambda expression (see simplif.ml); use Apply instead"
     | Prevapply_should_be_expanded ->
       Format.eprintf ">> The Prevapply primitive should never occur in an \
-        Flambda expression (see closure_conversion.ml); use Apply instead"
+        Flambda expression (see simplif.ml); use Apply instead"
     | Ploc_should_be_expanded ->
       Format.eprintf ">> The Ploc primitive should never occur in an \
         Flambda expression (see translcore.ml); use Apply instead"
