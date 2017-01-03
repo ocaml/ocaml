@@ -183,10 +183,6 @@ base.opt:
 	$(MAKE) ocamlopt.opt
 	$(MAKE) otherlibrariesopt
 
-# The clean target
-
-clean:: partialclean
-
 # Shared parts of the system
 
 compilerlibs/ocamlcommon.cma: $(COMMON)
@@ -577,7 +573,7 @@ distclean:
 	rm -f ocaml ocamlc
 	rm -f testsuite/_log
 
-.PHONY: all backup bootstrap checkstack clean
+.PHONY: all backup bootstrap checkstack
 .PHONY: partialclean beforedepend alldepend cleanboot coldstart
 .PHONY: compare core coreall
 .PHONY: coreboot depend distclean

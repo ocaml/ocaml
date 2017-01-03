@@ -139,10 +139,6 @@ opt.opt: core opt-core ocamlc.opt all ocamlopt.opt ocamllex.opt \
 # Complete build using fast compilers
 world.opt: coldstart opt.opt
 
-# The clean target
-
-clean:: partialclean
-
 # The compiler
 
 compilerlibs/ocamlcommon.cma: $(COMMON)
