@@ -163,7 +163,8 @@ install:
 	   compilerlibs/ocamltoplevel.cma $(BYTESTART) $(TOPLEVELSTART) \
 	   "$(INSTALL_COMPLIBDIR)"
 	cp expunge "$(INSTALL_LIBDIR)/expunge$(EXE)"
-	cp toplevel/topdirs.cmi "$(INSTALL_LIBDIR)"
+	cp toplevel/topdirs.cmi toplevel/topdirs.cmt toplevel/topdirs.cmti \
+           toplevel/topdirs.mli "$(INSTALL_LIBDIR)"
 	$(MAKE) -C tools install
 ifeq "$(UNIX_OR_WIN32)" "unix" # Install manual pages only on Unix
 	$(MKDIR) "$(INSTALL_MANDIR)/man$(MANEXT)"
