@@ -196,26 +196,6 @@ natruntop:
 	$(MAKE) ocamlnat
 	@rlwrap --help 2>/dev/null && rlwrap $(NATRUNTOP) || $(NATRUNTOP)
 
-# The parser
-
-parsing/parser.mli parsing/parser.ml: parsing/parser.mly
-	$(CAMLYACC) $(YACCFLAGS) parsing/parser.mly
-
-partialclean::
-	rm -f parsing/parser.mli parsing/parser.ml parsing/parser.output
-
-beforedepend:: parsing/parser.mli parsing/parser.ml
-
-# The lexer
-
-parsing/lexer.ml: parsing/lexer.mll
-	$(CAMLLEX) parsing/lexer.mll
-
-partialclean::
-	rm -f parsing/lexer.ml
-
-beforedepend:: parsing/lexer.ml
-
 # Shared parts of the system compiled with the native-code compiler
 
 compilerlibs/ocamlcommon.cmxa: $(COMMON:.cmo=.cmx)
