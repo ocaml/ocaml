@@ -141,7 +141,11 @@ let unbox_minor_words () =
 
 let ignore_useless_args () =
   let f x _y = int_of_float (cos x) in
-  let rec g a n x = if n = 0 then a else g (a + f x (x +. 1.)) (n - 1) x in
+  let rec g a n x =
+    if n = 0
+    then a
+    else g (a + (f [@inlined always]) x (x +. 1.)) (n - 1) x
+  in
   ignore (g 0 10 5.)
 
 let () =

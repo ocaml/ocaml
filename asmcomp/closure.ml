@@ -451,7 +451,6 @@ let simplif_prim_pure fpc p (args, approxs) dbg =
   | Pfield n, [ Uprim(Pmakeblock _, ul, _) ], [approx]
     when n < List.length ul ->
       (List.nth ul n, field_approx n approx)
-
   (* Strings *)
   | (Pstringlength | Pbyteslength),
      _,
@@ -694,7 +693,7 @@ let rec is_pure = function
     Lvar _ -> true
   | Lconst _ -> true
   | Lprim(p, args,_) -> is_pure_prim p && List.for_all is_pure args
-  | Levent(lam, _ev) -> is_pure lam (* can this happen in native code? *)
+  | Levent(lam, _ev) -> is_pure lam
   | _ -> false
 
 let warning_if_forced_inline ~loc ~attribute warning =
