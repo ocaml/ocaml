@@ -22,19 +22,19 @@ type coeffects = No_coeffects | Has_coeffects
 let for_primitive (prim : Lambda.primitive) =
   match prim with
   | Pignore | Pidentity | Pbytes_to_string | Pbytes_of_string ->
-    No_effects, No_coeffects
+      No_effects, No_coeffects
   | Pmakeblock _
   | Pmakearray (_, Mutable) -> Only_generative_effects, No_coeffects
   | Pmakearray (_, Immutable) -> No_effects, No_coeffects
   | Pduparray (_, Immutable) ->
-    No_effects, No_coeffects  (* Pduparray (_, Immutable) is allowed only on
-                                 immutable arrays. *)
+      No_effects, No_coeffects  (* Pduparray (_, Immutable) is allowed only on
+                                   immutable arrays. *)
   | Pduparray (_, Mutable) | Pduprecord _ ->
-    Only_generative_effects, Has_coeffects
+      Only_generative_effects, Has_coeffects
   | Pccall { prim_name =
-      ( "caml_format_float" | "caml_format_int" | "caml_int32_format"
-      | "caml_nativeint_format" | "caml_int64_format" ) } ->
-    No_effects, No_coeffects
+               ( "caml_format_float" | "caml_format_int" | "caml_int32_format"
+               | "caml_nativeint_format" | "caml_int64_format" ) } ->
+      No_effects, No_coeffects
   | Plazyforce
   | Pccall _ -> Arbitrary_effects, Has_coeffects
   | Praise _ -> Arbitrary_effects, No_coeffects
@@ -54,12 +54,12 @@ let for_primitive (prim : Lambda.primitive) =
   | Pmodbint { is_safe = Unsafe }
   | Pdivint Unsafe
   | Pmodint Unsafe ->
-    No_effects, No_coeffects  (* Will not raise [Division_by_zero]. *)
+      No_effects, No_coeffects  (* Will not raise [Division_by_zero]. *)
   | Pdivbint { is_safe = Safe }
   | Pmodbint { is_safe = Safe }
   | Pdivint Safe
   | Pmodint Safe ->
-    Arbitrary_effects, No_coeffects
+      Arbitrary_effects, No_coeffects
   | Poffsetint _ -> No_effects, No_coeffects
   | Poffsetref _ -> Arbitrary_effects, Has_coeffects
   | Pintoffloat
@@ -73,7 +73,7 @@ let for_primitive (prim : Lambda.primitive) =
   | Pfloatcomp _ -> No_effects, No_coeffects
   | Pstringlength | Pbyteslength
   | Parraylength _ ->
-    No_effects, Has_coeffects  (* That old chestnut: [Obj.truncate]. *)
+      No_effects, Has_coeffects  (* That old chestnut: [Obj.truncate]. *)
   | Pisint
   | Pisout
   | Pbittest
@@ -92,7 +92,7 @@ let for_primitive (prim : Lambda.primitive) =
   | Pasrbint _
   | Pbintcomp _ -> No_effects, No_coeffects
   | Pbigarraydim _ ->
-    No_effects, Has_coeffects  (* Some people resize bigarrays in place. *)
+      No_effects, Has_coeffects  (* Some people resize bigarrays in place. *)
   | Pfield _
   | Pfloatfield _
   | Pgetglobal _
@@ -106,7 +106,7 @@ let for_primitive (prim : Lambda.primitive) =
   | Pbigstring_load_16 true
   | Pbigstring_load_32 true
   | Pbigstring_load_64 true ->
-    No_effects, Has_coeffects
+      No_effects, Has_coeffects
   | Parrayrefs _
   | Pstringrefs
   | Pbytesrefs
@@ -117,8 +117,8 @@ let for_primitive (prim : Lambda.primitive) =
   | Pbigstring_load_16 false
   | Pbigstring_load_32 false
   | Pbigstring_load_64 false ->
-    (* May trigger a bounds check exception. *)
-    Arbitrary_effects, Has_coeffects
+      (* May trigger a bounds check exception. *)
+      Arbitrary_effects, Has_coeffects
   | Psetfield _
   | Psetfloatfield _
   | Psetglobal _
@@ -133,9 +133,9 @@ let for_primitive (prim : Lambda.primitive) =
   | Pbigstring_set_16 _
   | Pbigstring_set_32 _
   | Pbigstring_set_64 _ ->
-    (* Whether or not some of these are "unsafe" is irrelevant; they always
-       have an effect. *)
-    Arbitrary_effects, No_coeffects
+      (* Whether or not some of these are "unsafe" is irrelevant; they always
+         have an effect. *)
+      Arbitrary_effects, No_coeffects
   | Pctconst _ -> No_effects, No_coeffects
   | Pbswap16
   | Pbbswap _ -> No_effects, No_coeffects
@@ -170,6 +170,6 @@ let return_type_of_primitive (prim:Lambda.primitive) =
   | Pfloatfield _
   | Parrayrefu Pfloatarray
   | Parrayrefs Pfloatarray ->
-    Float
+      Float
   | _ ->
-    Other
+      Other
