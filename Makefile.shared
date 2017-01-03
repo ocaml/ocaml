@@ -500,6 +500,12 @@ install-compiler-sources:
 tests: opt.opt
 	cd testsuite; $(MAKE) clean && $(MAKE) all
 
+# Build the manual latex files from the etex source files
+# (see manual/README.md)
+.PHONY: manual-pregen
+manual-pregen: opt.opt
+	cd manual; $(MAKE) clean && $(MAKE) pregen-etex
+
 # The middle end (whose .cma library is currently only used for linking
 # the "ocamlobjinfo" program, since we cannot depend on the whole native code
 # compiler for "make world" and the list of dependencies for
