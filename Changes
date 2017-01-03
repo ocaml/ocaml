@@ -87,6 +87,11 @@ Next version (4.05.0):
   (Gabriel de Perthuis, with contributions from Alain Frisch, review by
   Hezekiah M. Carty and Simon Cruanes, initial report by Gerd Stolpmann)
 
+- Add missing functions to ArrayLabels, BytesLabels, ListLabels,
+  MoreLabels, StringLabels so they are compatible with non-labeled
+  counterparts.
+  (Roma Sokolov)
+
 ### Manual and documentation:
 
 - GPR#939: activate the caml_example environment in the language
