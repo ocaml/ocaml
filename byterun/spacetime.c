@@ -33,3 +33,8 @@ CAMLprim value caml_spacetime_enabled (value v_unit)
 {
   return Val_false;  /* running in bytecode */
 }
+
+CAMLprim value caml_register_channel_for_spacetime (value v_channel)
+{
+  return Val_unit;
+}

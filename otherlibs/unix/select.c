@@ -109,6 +109,6 @@ CAMLprim value unix_select(value readfds, value writefds, value exceptfds,
 
 CAMLprim value unix_select(value readfds, value writefds, value exceptfds,
                            value timeout)
-{ invalid_argument("select not implemented"); }
+{ caml_invalid_argument("select not implemented"); }
 
 #endif

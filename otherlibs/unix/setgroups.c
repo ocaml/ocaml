@@ -48,6 +48,6 @@ CAMLprim value unix_setgroups(value groups)
 #else
 
 CAMLprim value unix_setgroups(value groups)
-{ invalid_argument("setgroups not implemented"); }
+{ caml_invalid_argument("setgroups not implemented"); }
 
 #endif

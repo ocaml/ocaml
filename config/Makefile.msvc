@@ -69,14 +69,14 @@ NATIVECCRPATH=
 ASM=ml -nologo -coff -Cp -c -Fo
 ASPP=
 ASPPPROFFLAGS=
-PROFILING=noprof
+PROFILING=false
 DYNLINKOPTS=
 CC_PROFILE=
 SYSTHREAD_SUPPORT=true
 EXTRALIBS=
 CMXS=cmxs
 NATDYNLINK=true
-RUNTIMED=noruntimed
+RUNTIMED=false
 ASM_CFI_SUPPORTED=false
 UNIX_OR_WIN32=win32
 UNIXLIB=win32unix
@@ -88,6 +88,7 @@ LIBUNWIND_AVAILABLE=false
 LIBUNWIND_LINK_FLAGS=
 PROFINFO_WIDTH=26
 SAFE_STRING=false
+AFL_INSTRUMENT=false
 
 ########## Configuration for the bytecode compiler
 
@@ -96,6 +97,12 @@ BYTECC=cl -nologo -D_CRT_SECURE_NO_DEPRECATE -O2 -Gy- -MD
 
 ### Additional compile-time options for $(BYTECC).  (For static linking.)
 BYTECCCOMPOPTS=-DCAML_NAME_SPACE
+
+### Additional compile-time options for $(BYTECC).  (For debug version.)
+BYTECCDBGCOMPOPTS=-Zi
+
+### Flag to use to rename object files.  (for debug version.)
+NAME_OBJ_FLAG=-Fo
 
 ### Additional link-time options for $(BYTECC).  (For static linking.)
 BYTECCLINKOPTS=
@@ -125,6 +132,7 @@ endif
 # or OCAML_FLEXLINK overriding will not work (see utils/config.mlp)
 MKDLL=$(FLEXLINK)
 MKEXE=$(FLEXLINK) -exe
+MKEXEDEBUGFLAG=
 MKMAINDLL=$(FLEXLINK) -maindll
 
 ### Native command to build ocamlrun.exe without flexlink
@@ -198,7 +206,7 @@ MAKECMD=$(MAKE)
 OTOPDIR=$(WINTOPDIR)
 CTOPDIR=$(WINTOPDIR)
 CYGPATH=cygpath -m
-DIFF=diff -q --strip-trailing-cr
+DIFF=/usr/bin/diff -q --strip-trailing-cr
 FIND=/usr/bin/find
 SORT=/usr/bin/sort
 SET_LD_PATH=PATH="$(PATH):$(LD_PATH)"

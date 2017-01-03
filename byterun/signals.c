@@ -139,6 +139,7 @@ static value caml_signal_handlers = 0;
 void caml_execute_signal(int signal_number, int in_signal_handler)
 {
   value res;
+  value handler;
 #if defined(NATIVE_CODE) && defined(WITH_SPACETIME)
   void* saved_spacetime_trie_node_ptr;
 #endif
@@ -158,10 +159,26 @@ void caml_execute_signal(int signal_number, int in_signal_handler)
   caml_spacetime_trie_node_ptr
     = caml_spacetime_finaliser_trie_root;
 #endif
-  res = caml_callback_exn(
-           Field(caml_signal_handlers, signal_number),
-           Val_int(caml_rev_convert_signal_number(signal_number)));
 #if defined(NATIVE_CODE) && defined(WITH_SPACETIME)
+  /* Handled action may have no associated handler, which we interpret
+     as meaning the signal should be handled by a call to exit.  This is
+     is used to allow spacetime profiles to be completed on interrupt */
+  if (caml_signal_handlers == 0) {
+    res = caml_sys_exit(Val_int(2));
+  } else {
+    handler = Field(caml_signal_handlers, signal_number);
+    if (!Is_block(handler)) {
+      res = caml_sys_exit(Val_int(2));
+    } else {
+#else
+  handler = Field(caml_signal_handlers, signal_number);
+#endif
+    res = caml_callback_exn(
+             handler,
+             Val_int(caml_rev_convert_signal_number(signal_number)));
+#if defined(NATIVE_CODE) && defined(WITH_SPACETIME)
+    }
+  }
   caml_spacetime_trie_node_ptr = saved_spacetime_trie_node_ptr;
 #endif
 #ifdef POSIX_SIGNALS
@@ -348,8 +365,23 @@ CAMLprim value caml_install_signal_handler(value signal_number, value action)
     res = Val_int(1);
     break;
   case 2:                       /* was Signal_handle */
+    #if defined(NATIVE_CODE) && defined(WITH_SPACETIME)
+      /* Handled action may have no associated handler
+         which we treat as Signal_default */
+      if (caml_signal_handlers == 0) {
+        res = Val_int(0);
+      } else {
+        if (!Is_block(Field(caml_signal_handlers, sig))) {
+          res = Val_int(0);
+        } else {
+          res = caml_alloc_small (1, 0);
+          Field(res, 0) = Field(caml_signal_handlers, sig);
+        }
+      }
+    #else
     res = caml_alloc_small (1, 0);
     Field(res, 0) = Field(caml_signal_handlers, sig);
+    #endif
     break;
   default:                      /* error in caml_set_signal_action */
     caml_sys_error(NO_ARG);

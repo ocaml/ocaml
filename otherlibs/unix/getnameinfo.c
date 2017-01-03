@@ -62,6 +62,6 @@ CAMLprim value unix_getnameinfo(value vaddr, value vopts)
 #else
 
 CAMLprim value unix_getnameinfo(value vaddr, value vopts)
-{ invalid_argument("getnameinfo not implemented"); }
+{ caml_invalid_argument("getnameinfo not implemented"); }
 
 #endif

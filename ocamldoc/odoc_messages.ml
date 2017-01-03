@@ -250,7 +250,9 @@ let errors_occured n = (string_of_int n)^" error(s) encountered"
 let parse_error = "Parse error"
 let text_parse_error l c s =
   let lines = Str.split (Str.regexp_string "\n") s in
-  (List.nth lines l) ^ "\n" ^ (String.make c ' ') ^ "^"
+  "Error parsing text:\n"
+  ^ (List.nth lines l) ^ "\n"
+  ^ (String.make c ' ') ^ "^"
 
 let file_not_found_in_paths paths name =
   Printf.sprintf "No file %s found in the load paths: \n%s"

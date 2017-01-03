@@ -18,7 +18,6 @@
 MAKEREC=$(MAKE)
 include Makefile.shared
 
-SHELL=/bin/sh
 MKDIR=mkdir -p
 
 # For users who don't read the INSTALL file
@@ -254,7 +253,7 @@ install:
 	   cd $(INSTALL_BINDIR); \
 	   ln -sf ocamlc.byte$(EXE) ocamlc$(EXE); \
 	   ln -sf ocamllex.byte$(EXE) ocamllex$(EXE); \
-	   fi
+	fi
 
 # Installation of the native-code compiler
 installopt:
@@ -275,7 +274,11 @@ installopt:
 	for i in $(OTHERLIBRARIES); \
 	  do (cd otherlibs/$$i; $(MAKE) installopt) || exit $$?; done
 	if test -f ocamlopt.opt ; then $(MAKE) installoptopt; else \
-	   cd $(INSTALL_BINDIR); ln -sf ocamlopt.byte$(EXE) ocamlopt$(EXE); fi
+	   cd $(INSTALL_BINDIR); \
+	   ln -sf ocamlc.byte$(EXE) ocamlc$(EXE); \
+	   ln -sf ocamlopt.byte$(EXE) ocamlopt$(EXE); \
+	   ln -sf ocamllex.byte$(EXE) ocamllex$(EXE); \
+	fi
 	cd tools; $(MAKE) installopt
 
 installoptopt:
@@ -379,7 +382,7 @@ ocaml: compilerlibs/ocamlcommon.cma compilerlibs/ocamlbytecomp.cma \
 partialclean::
 	rm -f ocaml
 
-RUNTOP=./byterun/ocamlrun ./ocaml -nostdlib -I stdlib -noinit $(TOPFLAGS)
+RUNTOP=./byterun/ocamlrun ./ocaml -nostdlib -I stdlib -noinit $(TOPFLAGS) -I otherlibs/unix
 NATRUNTOP=./ocamlnat$(EXE) -nostdlib -I stdlib -noinit $(TOPFLAGS)
 
 runtop:
@@ -419,6 +422,7 @@ utils/config.ml: utils/config.mlp config/Makefile
 	    -e 's|%%ARCH%%|$(ARCH)|' \
 	    -e 's|%%MODEL%%|$(MODEL)|' \
 	    -e 's|%%SYSTEM%%|$(SYSTEM)|' \
+	    -e 's|%%EXT_EXE%%|$(EXE)|' \
 	    -e 's|%%EXT_OBJ%%|.o|' \
 	    -e 's|%%EXT_ASM%%|.s|' \
 	    -e 's|%%EXT_LIB%%|.a|' \
@@ -438,7 +442,9 @@ utils/config.ml: utils/config.mlp config/Makefile
 	    -e 's|%%HOST%%|$(HOST)|' \
 	    -e 's|%%TARGET%%|$(TARGET)|' \
 	    -e 's|%%FLAMBDA%%|$(FLAMBDA)|' \
+	    -e 's|%%PROFILING%%|$(PROFILING)|' \
 	    -e 's|%%SAFE_STRING%%|$(SAFE_STRING)|' \
+	    -e 's|%%AFL_INSTRUMENT%%|$(AFL_INSTRUMENT)|' \
 	    utils/config.mlp > utils/config.ml
 
 partialclean::
@@ -476,7 +482,7 @@ partialclean::
 # The bytecode compiler compiled with the native-code compiler
 
 compilerlibs/ocamlbytecomp.cmxa: $(BYTECOMP:.cmo=.cmx)
-	$(CAMLOPT) -a -o $@ $(BYTECOMP:.cmo=.cmx)
+	$(CAMLOPT) -a -ccopt "$(NATDYNLINKOPTS)" -o $@ $(BYTECOMP:.cmo=.cmx)
 partialclean::
 	rm -f compilerlibs/ocamlbytecomp.cmxa compilerlibs/ocamlbytecomp.a
 
@@ -509,17 +515,6 @@ partialclean::
 
 $(COMMON:.cmo=.cmx) $(BYTECOMP:.cmo=.cmx) $(MIDDLE_END:.cmo=.cmx) \
 $(ASMCOMP:.cmo=.cmx): ocamlopt
-
-# The numeric opcodes
-
-bytecomp/opcodes.ml: byterun/caml/instruct.h
-	sed -n -e '/^enum/p' -e 's/,//g' -e '/^  /p' byterun/caml/instruct.h | \
-	awk -f tools/make-opcodes > bytecomp/opcodes.ml
-
-partialclean::
-	rm -f bytecomp/opcodes.ml
-
-beforedepend:: bytecomp/opcodes.ml
 
 # The predefined exceptions and primitives
 

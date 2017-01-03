@@ -70,9 +70,9 @@ CAMLprim value unix_clear_close_on_exec(value fd)
 #else
 
 CAMLprim value unix_set_close_on_exec(value fd)
-{ invalid_argument("set_close_on_exec not implemented"); }
+{ caml_invalid_argument("set_close_on_exec not implemented"); }
 
 CAMLprim value unix_clear_close_on_exec(value fd)
-{ invalid_argument("clear_close_on_exec not implemented"); }
+{ caml_invalid_argument("clear_close_on_exec not implemented"); }
 
 #endif

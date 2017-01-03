@@ -193,6 +193,8 @@ val inline_max_depth : Int_arg_helper.parsed ref
 val remove_unused_arguments : bool ref
 val dump_flambda_verbose : bool ref
 val classic_inlining : bool ref
+val afl_instrument : bool ref
+val afl_inst_ratio : int ref
 
 val all_passes : string list ref
 val dumped_pass : string -> bool

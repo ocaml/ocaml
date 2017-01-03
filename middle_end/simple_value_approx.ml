@@ -847,4 +847,3 @@ let potentially_taken_block_switch_branch t tag =
     Cannot_be_taken
   | Value_bottom ->
     Cannot_be_taken
-

@@ -41,6 +41,6 @@ CAMLprim value unix_socketpair(value domain, value type, value proto)
 #else
 
 CAMLprim value unix_socketpair(value domain, value type, value proto)
-{ invalid_argument("socketpair not implemented"); }
+{ caml_invalid_argument("socketpair not implemented"); }
 
 #endif

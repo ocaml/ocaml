@@ -171,9 +171,9 @@ let rec compare_constructor_arguments env cstr params1 params2 arg1 arg2 =
   match arg1, arg2 with
   | Types.Cstr_tuple arg1, Types.Cstr_tuple arg2 ->
       if List.length arg1 <> List.length arg2 then [Field_arity cstr]
-      else if Misc.for_all2
-          (fun ty1 ty2 -> Ctype.equal env true (ty1::params1) (ty2::params2))
-          (arg1) (arg2)
+      else if
+        (* Ctype.equal must be called on all arguments at once, cf. PR#7378 *)
+        Ctype.equal env true (params1 @ arg1) (params2 @ arg2)
       then [] else [Field_type cstr]
   | Types.Cstr_record l1, Types.Cstr_record l2 ->
       compare_records env params1 params2 0 l1 l2
@@ -217,7 +217,8 @@ and compare_records env params1 params2 n labels1 labels2 =
       else if mut1 <> mut2 then [Field_mutable lab1] else
       if Ctype.equal env true (arg1::params1)
                               (arg2::params2)
-      then compare_records env params1 params2 (n+1) rem1 rem2
+      then (* add arguments to the parameters, cf. PR#7378 *)
+        compare_records env (arg1::params1) (arg2::params2) (n+1) rem1 rem2
       else [Field_type lab1]
 
 let type_declarations ?(equality = false) env name decl1 id decl2 =

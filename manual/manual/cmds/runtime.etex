@@ -147,6 +147,7 @@ The following environment variables are also consulted:
         \item[256 (= 0x100)] Startup messages (loading the bytecode
            executable file, resolving shared libraries).
         \item[512 (= 0x200)] Computation of compaction-triggering condition.
+        \item[1024 (= 0x400)] Output GC statistics at program exit.
   \end{options}
   \end{options}
   The multiplier is "k", "M", or "G", for multiplication by $2^{10}$,

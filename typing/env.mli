@@ -53,6 +53,9 @@ val run_iter_cont: iter_cont list -> (Path.t * iter_cont) list
 val same_types: t -> t -> bool
 val used_persistent: unit -> Concr.t
 val find_shadowed_types: Path.t -> t -> Path.t list
+val without_cmis: ('a -> 'b) -> 'a -> 'b
+        (* [without_cmis f arg] applies [f] to [arg], but does not
+           allow opening cmis during its execution *)
 
 (* Lookup by paths *)
 

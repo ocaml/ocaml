@@ -26,10 +26,7 @@ let fp = Config.with_frame_pointers
 
 (* Which ABI to use *)
 
-let win64 =
-  match Config.system with
-  | "win64" | "mingw64" | "cygwin" -> true
-  | _                   -> false
+let win64 = Arch.win64
 
 (* Registers available for register allocation *)
 

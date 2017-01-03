@@ -63,3 +63,9 @@ type library =
      ...
      object code for last library member
      library descriptor *)
+
+(* Tables for numbering objects *)
+
+type 'a numtable =
+  { num_cnt: int;               (* The next number *)
+    num_tbl: ('a, int) Tbl.t }  (* The table of already numbered objects *)

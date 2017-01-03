@@ -176,9 +176,9 @@ CAMLprim value unix_gethostbyname(value name)
 #else
 
 CAMLprim value unix_gethostbyaddr(value name)
-{ invalid_argument("gethostbyaddr not implemented"); }
+{ caml_invalid_argument("gethostbyaddr not implemented"); }
 
 CAMLprim value unix_gethostbyname(value name)
-{ invalid_argument("gethostbyname not implemented"); }
+{ caml_invalid_argument("gethostbyname not implemented"); }
 
 #endif

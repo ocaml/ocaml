@@ -256,12 +256,8 @@ let record_frame_label ?label live raise_ dbg =
       | _ -> ()
     )
     live;
-  frame_descriptors :=
-    { fd_lbl = lbl;
-      fd_frame_size = frame_size();
-      fd_live_offset = !live_offset;
-      fd_raise = raise_;
-      fd_debuginfo = dbg } :: !frame_descriptors;
+  record_frame_descr ~label:lbl ~frame_size:(frame_size())
+    ~live_offset:!live_offset ~raise_frame:raise_ dbg;
   lbl
 
 let record_frame ?label live raise_ dbg =
@@ -731,10 +727,6 @@ let emit_instr fallthrough i =
       I.lea (addressing addr NONE i 0) (res i 0)
   | Lop(Ispecific(Istore_int(n, addr, _))) ->
       I.mov (nat n) (addressing addr QWORD i 0)
-  | Lop(Ispecific(Istore_symbol(s, addr, _))) ->
-      assert (not !Clflags.pic_code && not !Clflags.dlcode);
-      add_used_symbol s;
-      load_symbol_addr s (addressing addr QWORD i 0)
   | Lop(Ispecific(Ioffset_loc(n, addr))) ->
       I.add (int n) (addressing addr QWORD i 0)
   | Lop(Ispecific(Ifloatarithmem(op, addr))) ->
@@ -992,7 +984,7 @@ let begin_assembly() =
   end;
 
 
-  if !Clflags.dlcode then begin
+  if !Clflags.dlcode || Arch.win64 then begin
     (* from amd64.S; could emit these constants on demand *)
     begin match system with
     | S_macosx -> D.section ["__TEXT";"__literal16"] None ["16byte_literals"]

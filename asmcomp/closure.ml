@@ -109,8 +109,8 @@ let prim_size prim args =
   | Pfield _ -> 1
   | Psetfield(_f, isptr, init) ->
     begin match init with
-    | Initialization -> 1  (* never causes a write barrier hit *)
-    | Assignment ->
+    | Root_initialization -> 1  (* never causes a write barrier hit *)
+    | Assignment | Heap_initialization ->
       match isptr with
       | Pointer -> 4
       | Immediate -> 1
@@ -449,7 +449,9 @@ let simplif_prim_pure fpc p (args, approxs) dbg =
     when n < List.length ul ->
       (List.nth ul n, field_approx n approx)
   (* Strings *)
-  | (Pstringlength | Pbyteslength), _, [ Value_const(Uconst_ref(_, Some (Uconst_string s))) ] ->
+  | (Pstringlength | Pbyteslength),
+     _,
+     [ Value_const(Uconst_ref(_, Some (Uconst_string s))) ] ->
       make_const_int (String.length s)
   (* Identity *)
   | (Pidentity | Pbytes_to_string | Pbytes_of_string), [arg1], [app1] ->
@@ -877,13 +879,24 @@ let rec close fenv cenv = function
 
       | ((ufunct, Value_closure(fundesc, _approx_res)), uargs)
         when fundesc.fun_arity > 0 && nargs > fundesc.fun_arity ->
-          let (first_args, rem_args) = split_list fundesc.fun_arity uargs in
+          let args = List.map (fun arg -> Ident.create "arg", arg) uargs in
+          let (first_args, rem_args) = split_list fundesc.fun_arity args in
+          let first_args = List.map (fun (id, _) -> Uvar id) first_args in
+          let rem_args = List.map (fun (id, _) -> Uvar id) rem_args in
           let dbg = Debuginfo.from_location loc in
           warning_if_forced_inline ~loc ~attribute "Over-application";
-          (Ugeneric_apply(direct_apply ~loc ~attribute
-                            fundesc funct ufunct first_args,
-                          rem_args, dbg),
-           Value_unknown)
+          let body =
+            Ugeneric_apply(direct_apply ~loc ~attribute
+                              fundesc funct ufunct first_args,
+                           rem_args, dbg)
+          in
+          let result =
+            List.fold_left (fun body (id, defining_expr) ->
+                Ulet (Immutable, Pgenval, id, defining_expr, body))
+              body
+              args
+          in
+          result, Value_unknown
       | ((ufunct, _), uargs) ->
           let dbg = Debuginfo.from_location loc in
           warning_if_forced_inline ~loc ~attribute "Unknown function";
@@ -1087,7 +1100,8 @@ and close_functions fenv cenv fun_defs =
       (List.map
          (function
            | (id, Lfunction{kind; params; body; attr; loc}) ->
-               Simplif.split_default_wrapper id kind params body attr loc
+               Simplif.split_default_wrapper ~id ~kind ~params
+                 ~body ~attr ~wrapper_attr:attr ~loc ()
            | _ -> assert false
          )
          fun_defs)

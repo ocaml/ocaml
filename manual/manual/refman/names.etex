@@ -23,10 +23,14 @@ identifier is in lowercase (written @lowercase-ident@ below) or in
 uppercase (written @capitalized-ident@).  Underscore is considered a
 lowercase letter for this purpose.
 
-\ikwd{false\@\texttt{false}}
-\ikwd{true\@\texttt{true}}
-
 \subsubsection*{Naming objects}
+\ikwd{mod\@\texttt{mod}}
+\ikwd{land\@\texttt{land}}
+\ikwd{lor\@\texttt{lor}}
+\ikwd{lxor\@\texttt{lxor}}
+\ikwd{lsl\@\texttt{lsl}}
+\ikwd{lsr\@\texttt{lsr}}
+\ikwd{asr\@\texttt{asr}}
 
 \begin{syntax}
 value-name:

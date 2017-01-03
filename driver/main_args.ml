@@ -736,6 +736,15 @@ let mk_args0 f =
           from <file>"
 ;;
 
+let mk_afl_instrument f =
+  "-afl-instrument", Arg.Unit f, "Enable instrumentation for afl-fuzz"
+;;
+
+let mk_afl_inst_ratio f =
+  "-afl-inst-ratio", Arg.Int f,
+  "Configure percentage of branches instrumented\n\
+  \     (advanced, see afl-fuzz docs for AFL_INST_RATIO)"
+;;
 
 let mk__ f =
   "-", Arg.String f,
@@ -928,6 +937,8 @@ module type Optcomp_options = sig
   val _pp : string -> unit
   val _S : unit -> unit
   val _shared : unit -> unit
+  val _afl_instrument : unit -> unit
+  val _afl_inst_ratio : int -> unit
 end;;
 
 module type Opttop_options = sig
@@ -1116,6 +1127,8 @@ struct
   let list = [
     mk_a F._a;
     mk_absname F._absname;
+    mk_afl_instrument F._afl_instrument;
+    mk_afl_inst_ratio F._afl_inst_ratio;
     mk_annot F._annot;
     mk_binannot F._binannot;
     mk_inline_branch_factor F._inline_branch_factor;

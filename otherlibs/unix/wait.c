@@ -99,6 +99,6 @@ CAMLprim value unix_waitpid(value flags, value pid_req)
 #else
 
 CAMLprim value unix_waitpid(value flags, value pid_req)
-{ invalid_argument("waitpid not implemented"); }
+{ caml_invalid_argument("waitpid not implemented"); }
 
 #endif

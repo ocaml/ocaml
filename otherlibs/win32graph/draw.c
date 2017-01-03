@@ -304,15 +304,6 @@ static value gr_draw_or_fill_arc(value vx, value vy, value vrx, value vry,
         return Val_unit;
 }
 
-CAMLprim value caml_gr_show_bitmap(value filename,int x,int y)
-{
-        AfficheBitmap(filename,grwindow.gcBitmap,x,Wcvt(y));
-        AfficheBitmap(filename,grwindow.gc,x,Wcvt(y));
-        return Val_unit;
-}
-
-
-
 CAMLprim value caml_gr_get_mousex(value unit)
 {
         POINT pt;
