@@ -152,12 +152,13 @@ install:
 	cp ocamlc "$(INSTALL_BINDIR)/ocamlc.byte$(EXE)"
 	$(MAKE) -C stdlib install
 	cp lex/ocamllex "$(INSTALL_BINDIR)/ocamllex.byte$(EXE)"
-	cp utils/*.cmi utils/*.cmt utils/*.cmti \
-	   parsing/*.cmi parsing/*.cmt parsing/*.cmti \
-	   typing/*.cmi typing/*.cmt typing/*.cmti \
-	   bytecomp/*.cmi bytecomp/*.cmt bytecomp/*.cmti \
-	   driver/*.cmi driver/*.cmt driver/*.cmti \
-	   toplevel/*.cmi toplevel/*.cmt toplevel/*.cmti "$(INSTALL_COMPLIBDIR)"
+	cp utils/*.cmi utils/*.cmt utils/*.cmti utils/*.mli \
+	   parsing/*.cmi parsing/*.cmt parsing/*.cmti parsing/*.mli \
+	   typing/*.cmi typing/*.cmt typing/*.cmti typing/*.mli \
+	   bytecomp/*.cmi bytecomp/*.cmt bytecomp/*.cmti bytecomp/*.mli \
+	   driver/*.cmi driver/*.cmt driver/*.cmti driver/*.mli \
+	   toplevel/*.cmi toplevel/*.cmt toplevel/*.cmti toplevel/*.mli \
+	   "$(INSTALL_COMPLIBDIR)"
 	cp compilerlibs/ocamlcommon.cma compilerlibs/ocamlbytecomp.cma \
 	   compilerlibs/ocamltoplevel.cma $(BYTESTART) $(TOPLEVELSTART) \
 	   "$(INSTALL_COMPLIBDIR)"
