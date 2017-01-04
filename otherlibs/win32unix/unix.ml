@@ -930,7 +930,8 @@ let open_process_full cmd env =
   let errchan = in_channel_of_descr err_read in
   begin
     try
-      open_proc cmd (Some env) (Process_full(inchan, outchan, errchan))
+      open_proc cmd (Some (make_process_env env))
+               (Process_full(inchan, outchan, errchan))
                 out_read in_write err_write
     with e ->
       close out_read; close out_write;
