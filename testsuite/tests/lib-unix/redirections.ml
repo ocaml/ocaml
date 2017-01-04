@@ -71,7 +71,10 @@ let test_open_process_full () =
     out Unix.stdout "!!! reflector exited with an error\n"
 
 let _ =
-  Unix.close Unix.stdin;   (* just to make things more difficult *)
+  (* The following 'close' makes things more difficult.
+     Under Unix it works fine, but under Win32 create_process 
+     gives an error if one of the standard handles is closed. *)
+  (* Unix.close Unix.stdin; *)
   out Unix.stdout "** create_process\n";
   test_createprocess();
   out Unix.stdout "** open_process_in\n";
