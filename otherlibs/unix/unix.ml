@@ -957,7 +957,6 @@ let open_process_out cmd =
     try
       open_proc cmd None (Process_out outchan) out_read stdout stderr
     with e ->
-    close out_read;
     close_out outchan;
     close out_read;
     raise e
