@@ -58,16 +58,11 @@ EOF
           OCAML_NATIVE_TOOLS=true &&
         make all &&
         make install)
-    # Following GPR#881, camlp4 checking is temporarily disabled
-    # waiting for ocaml/camlp4#118 to be merged.
-    if false
-    then
     git clone git://github.com/ocaml/camlp4
     (cd camlp4 &&
      ./configure --bindir=$PREFIX/bin --libdir=$PREFIX/lib/ocaml \
        --pkgdir=$PREFIX/lib/ocaml && \
       make && make install)
-    fi
     # git clone git://github.com/ocaml/opam
     # (cd opam && ./configure --prefix $PREFIX &&\
     #   make lib-ext && make && make install)
