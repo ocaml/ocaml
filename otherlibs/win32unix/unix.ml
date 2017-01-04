@@ -870,46 +870,77 @@ let open_proc cmd optenv proc input output error =
   Hashtbl.add popen_processes proc pid
 
 let open_process_in cmd =
-  let (in_read, in_write) = pipe() in
-  set_close_on_exec in_read;
+  let (in_read, in_write) = pipe ~cloexec:true () in
   let inchan = in_channel_of_descr in_read in
-  open_proc cmd None (Process_in inchan) stdin in_write stderr;
+  begin
+    try
+      open_proc cmd None (Process_in inchan) stdin in_write stderr
+    with e ->
+      close_in inchan;
+      close in_write;
+      raise e
+  end;
   close in_write;
   inchan
 
 let open_process_out cmd =
-  let (out_read, out_write) = pipe() in
-  set_close_on_exec out_write;
+  let (out_read, out_write) = pipe ~cloexec:true () in
   let outchan = out_channel_of_descr out_write in
-  open_proc cmd None (Process_out outchan) out_read stdout stderr;
+  begin
+    try
+      open_proc cmd None (Process_out outchan) out_read stdout stderr
+    with e ->
+    close_out outchan;
+    close out_read;
+    raise e
+  end;
   close out_read;
   outchan
 
 let open_process cmd =
-  let (in_read, in_write) = pipe() in
-  let (out_read, out_write) = pipe() in
-  set_close_on_exec in_read;
-  set_close_on_exec out_write;
+  let (in_read, in_write) = pipe ~cloexec:true () in
+  let (out_read, out_write) =
+    try pipe ~cloexec:true ()
+    with e -> close in_read; close in_write; raise e in
   let inchan = in_channel_of_descr in_read in
   let outchan = out_channel_of_descr out_write in
-  open_proc cmd None (Process(inchan, outchan)) out_read in_write stderr;
-  close out_read; close in_write;
+  begin
+    try
+      open_proc cmd None (Process(inchan, outchan)) out_read in_write stderr
+    with e ->
+      close out_read; close out_write;
+      close in_read; close in_write;
+      raise e
+  end;
+  close out_read;
+  close in_write;
   (inchan, outchan)
 
 let open_process_full cmd env =
-  let (in_read, in_write) = pipe() in
-  let (out_read, out_write) = pipe() in
-  let (err_read, err_write) = pipe() in
-  set_close_on_exec in_read;
-  set_close_on_exec out_write;
-  set_close_on_exec err_read;
+  let (in_read, in_write) = pipe ~cloexec:true () in
+  let (out_read, out_write) =
+    try pipe ~cloexec:true ()
+    with e -> close in_read; close in_write; raise e in
+  let (err_read, err_write) =
+    try pipe ~cloexec:true ()
+    with e -> close in_read; close in_write;
+              close out_read; close out_write; raise e in
   let inchan = in_channel_of_descr in_read in
   let outchan = out_channel_of_descr out_write in
   let errchan = in_channel_of_descr err_read in
-  open_proc cmd (Some(make_process_env env))
-                (Process_full(inchan, outchan, errchan))
-                out_read in_write err_write;
-  close out_read; close in_write; close err_write;
+  begin
+    try
+      open_proc cmd (Some env) (Process_full(inchan, outchan, errchan))
+                out_read in_write err_write
+    with e ->
+      close out_read; close out_write;
+      close in_read; close in_write;
+      close err_read; close err_write; 
+      raise e
+  end;
+  close out_read;
+  close in_write;
+  close err_write;
   (inchan, outchan, errchan)
 
 let find_proc_id fun_name proc =
@@ -952,10 +983,9 @@ external select :
 
 let open_connection sockaddr =
   let sock =
-    socket (domain_of_sockaddr sockaddr) SOCK_STREAM 0 in
+    socket ~cloexec:true (domain_of_sockaddr sockaddr) SOCK_STREAM 0 in
   try
     connect sock sockaddr;
-    set_close_on_exec sock;
     (in_channel_of_descr sock, out_channel_of_descr sock)
   with exn ->
     close sock; raise exn
