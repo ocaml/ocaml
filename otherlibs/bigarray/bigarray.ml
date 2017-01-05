@@ -101,7 +101,11 @@ module Genarray = struct
                      bool -> int array -> int64 -> ('a, 'b, 'c) t
      = "caml_ba_map_file_bytecode" "caml_ba_map_file"
   let () = Unix.map_file_impl := { Unix.map_file_impl = map_internal }
-  let map_file = Unix.map_file
+  let map_file fd ?pos kind layout shared dims =
+    try
+      Unix.map_file fd ?pos kind layout shared dims
+    with Unix.Unix_error (error, _, _) ->
+      raise (Sys_error (Unix.error_message error))
 end
 
 module Array0 = struct

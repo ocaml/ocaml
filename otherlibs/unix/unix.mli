@@ -508,9 +508,8 @@ val map_file :
   or a SIGBUS signal may be raised. This happens, for instance, if the
   file is shrunk.
 
-  This function raises [Sys_error] in the case of any errors from the
-  underlying system calls.  [Invalid_argument] or [Failure] may be
-  raised in cases where argument validation fails. *)
+  [Invalid_argument] or [Failure] may be raised in cases where argument
+  validation fails. *)
 
 (** {6 Operations on file names} *)
 
