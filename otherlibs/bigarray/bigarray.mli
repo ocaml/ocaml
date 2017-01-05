@@ -59,20 +59,23 @@
    of abstract types for technical injectivity reasons).
 *)
 
-type float32_elt = Float32_elt
-type float64_elt = Float64_elt
-type int8_signed_elt = Int8_signed_elt
-type int8_unsigned_elt = Int8_unsigned_elt
-type int16_signed_elt = Int16_signed_elt
-type int16_unsigned_elt = Int16_unsigned_elt
-type int32_elt = Int32_elt
-type int64_elt = Int64_elt
-type int_elt = Int_elt
-type nativeint_elt = Nativeint_elt
-type complex32_elt = Complex32_elt
-type complex64_elt = Complex64_elt
+type float32_elt = CamlinternalBigarray.float32_elt = Float32_elt
+type float64_elt = CamlinternalBigarray.float64_elt = Float64_elt
+type int8_signed_elt = CamlinternalBigarray.int8_signed_elt = Int8_signed_elt
+type int8_unsigned_elt = CamlinternalBigarray.int8_unsigned_elt =
+    Int8_unsigned_elt
+type int16_signed_elt = CamlinternalBigarray.int16_signed_elt =
+    Int16_signed_elt
+type int16_unsigned_elt = CamlinternalBigarray.int16_unsigned_elt =
+    Int16_unsigned_elt
+type int32_elt = CamlinternalBigarray.int32_elt = Int32_elt
+type int64_elt = CamlinternalBigarray.int64_elt = Int64_elt
+type int_elt = CamlinternalBigarray.int_elt = Int_elt
+type nativeint_elt = CamlinternalBigarray.nativeint_elt = Nativeint_elt
+type complex32_elt = CamlinternalBigarray.complex32_elt = Complex32_elt
+type complex64_elt = CamlinternalBigarray.complex64_elt = Complex64_elt
 
-type ('a, 'b) kind =
+type ('a, 'b) kind = ('a, 'b) CamlinternalBigarray.kind =
     Float32 : (float, float32_elt) kind
   | Float64 : (float, float64_elt) kind
   | Int8_signed : (int, int8_signed_elt) kind
@@ -178,10 +181,11 @@ val kind_size_in_bytes : ('a, 'b) kind -> int
 
 (** {6 Array layouts} *)
 
-type c_layout = C_layout_typ (**)
+type c_layout = CamlinternalBigarray.c_layout = C_layout_typ (**)
 (** See {!Bigarray.fortran_layout}.*)
 
-type fortran_layout = Fortran_layout_typ (**)
+type fortran_layout = CamlinternalBigarray.fortran_layout =
+    Fortran_layout_typ (**)
 (** To facilitate interoperability with existing C and Fortran code,
    this library supports two different memory layouts for big arrays,
    one compatible with the C conventions,
@@ -212,7 +216,7 @@ type fortran_layout = Fortran_layout_typ (**)
    re-exported as values below for backward-compatibility reasons.
 *)
 
-type 'a layout =
+type 'a layout = 'a CamlinternalBigarray.layout =
     C_layout: c_layout layout
   | Fortran_layout: fortran_layout layout
 
@@ -224,7 +228,7 @@ val fortran_layout : fortran_layout layout
 
 module Genarray :
   sig
-  type ('a, 'b, 'c) t
+  type ('a, 'b, 'c) t = ('a, 'b, 'c) CamlinternalBigarray.genarray
   (** The type [Genarray.t] is the type of big arrays with variable
      numbers of dimensions.  Any number of dimensions between 0 and 16
      is supported.
