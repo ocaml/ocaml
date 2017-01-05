@@ -50,7 +50,7 @@ let env_empty = {
 let oper_result_type = function
     Capply ty -> ty
   | Cextcall(_s, ty, _alloc, _) -> ty
-  | Cload c ->
+  | Cload (c, _) ->
       begin match c with
       | Word_val -> typ_val
       | Single | Double | Double_u -> typ_float
@@ -300,9 +300,12 @@ method effects_of exp =
       | Capply _ | Cextcall _ | Calloc -> EC.arbitrary
       | Cstore _ -> EC.effect_only Effect.Arbitrary
       | Craise _ | Ccheckbound -> EC.effect_only Effect.Raise
-      | Cload _ ->
+      | Cload (_, Asttypes.Immutable) -> EC.none
+      | Cload (_, Asttypes.Mutable) ->
         (* Loads from the current function's closure are a common case.
-           Such loads are always from immutable blocks. *)
+           Such loads are always from immutable blocks, even though for the
+           moment there is insufficient information propagated from the
+           middle-end for them to be marked [Immutable]. *)
         let is_from_closure =
           match !current_function_env_param with
           | None -> false
@@ -416,7 +419,7 @@ method select_operation op args _dbg =
       | Some label_after -> label_after
     in
     Iextcall { func; alloc; label_after; }, args
-  | (Cload chunk, [arg]) ->
+  | (Cload (chunk, _mut), [arg]) ->
       let (addr, eloc) = self#select_addressing chunk arg in
       (Iload(chunk, addr), [eloc])
   | (Cstore (chunk, init), [arg1; arg2]) ->
