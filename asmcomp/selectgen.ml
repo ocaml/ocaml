@@ -910,16 +910,6 @@ method private emit_parts (env:environment) ~effects_after exp =
   if may_defer_evaluation && self#is_simple_expr exp then
     Some (exp, env)
   else begin
-(*
-    if self#is_simple_expr exp then begin
-      Format.eprintf "%s: was simple but now deferred:@;%a@;\n\
-          Exp list (length %d):@;%a@;\n%!"
-        !current_function_name
-        Printcmm.expression exp
-        (List.length (snd overall_effects))
-        (Format.pp_print_list Printcmm.expression) (snd overall_effects)
-    end;
-*)
     match self#emit_expr env exp with
       None -> None
     | Some r ->
