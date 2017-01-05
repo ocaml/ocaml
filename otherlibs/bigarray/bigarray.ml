@@ -100,8 +100,8 @@ module Genarray = struct
   external map_internal: Unix.file_descr -> ('a, 'b) kind -> 'c layout ->
                      bool -> int array -> int64 -> ('a, 'b, 'c) t
      = "caml_ba_map_file_bytecode" "caml_ba_map_file"
-  let map_file fd ?(pos = 0L) kind layout shared dims =
-    map_internal fd kind layout shared dims pos
+  let () = Unix.map_file_impl := { Unix.map_file_impl = map_internal }
+  let map_file = Unix.map_file
 end
 
 module Array0 = struct
