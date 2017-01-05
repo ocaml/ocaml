@@ -247,7 +247,6 @@ module Effect_and_coeffect : sig
   val coeffect_only : Coeffect.t -> t
 
   val join : t -> t -> t
-  val join_list : t list -> t
   val join_list_map : 'a list -> ('a -> t) -> t
 end = struct
   type t = Effect.t * Coeffect.t
@@ -270,8 +269,6 @@ end = struct
     match xs with
     | [] -> none
     | x::xs -> List.fold_left (fun acc x -> join acc (f x)) (f x) xs
-
-  let join_list ts = join_list_map ts (fun t -> t)
 end
 
 (* The default instruction selection class *)
@@ -874,30 +871,37 @@ method private bind_let (env:environment) v r1 =
     env_add v rv env
   end
 
-method private emit_parts (env:environment) ~overall_effects exp =
+(* The following two functions, [emit_parts] and [emit_parts_list], force
+   right-to-left evaluation order as required by the Flambda [Un_anf] pass
+   (and to be consistent with the bytecode compiler). *)
+
+method private emit_parts (env:environment) ~effects_after exp =
   let module EC = Effect_and_coeffect in
   let may_defer_evaluation =
     let ec = self#effects_of exp in
     match EC.effect ec with
-    | Effect.Raise | Effect.Arbitrary ->
+    | Effect.Arbitrary | Effect.Raise ->
       (* Preserve the ordering of effectful expressions by evaluating them
          early (in the correct order) and assigning their results to
-         temporaries.  However avoid using temporaries iff there is exactly
-         one (co)effectful expression in the list (see comment in
-         [emit_parts_list], below). *)
-      EC.pure_and_copure (fst overall_effects)
+         temporaries.  We can avoid this in just one case: if we know that
+         every [exp'] in the original expression list (cf. [emit_parts_list])
+         to be evaluated after [exp] cannot possibly affect the result of
+         [exp] or depend on the result of [exp], then [exp] may be deferred.
+         (Checking purity here is not enough: we need to check copurity too
+         to avoid e.g. moving mutable reads earlier than the raising of
+         an exception.) *)
+      EC.pure_and_copure effects_after
     | Effect.None ->
       match EC.coeffect ec with
       | Coeffect.None ->
         (* Pure expressions may be moved. *)
         true
       | Coeffect.Read_mutable ->
-        (* Read-mutable expressions may only be moved if the worst (in the
-           sense of the ordering in [Effect.t]) effect that happens during the
-           evaluation of the whole expression list is raising an exception.
-           This in particular prevents loads being re-ordered with respect
-           to stores. *)
-        match EC.effect (fst overall_effects) with
+        (* Read-mutable expressions may only be deferred if evaluation of
+           every [exp'] (for [exp'] as in the comment above) has no effects
+           "worse" (in the sense of the ordering in [Effect.t]) than raising
+           an exception. *)
+        match EC.effect effects_after with
         | Effect.None | Effect.Raise -> true
         | Effect.Arbitrary -> false
   in
@@ -936,49 +940,27 @@ method private emit_parts (env:environment) ~overall_effects exp =
         end
   end
 
-method private emit_parts_list_core (env:environment) ~overall_effects
-      exp_list : (_ * environment) option =
-  match exp_list with
-    [] -> Some ([], env)
-  | exp :: rem ->
-      (* This ensures right-to-left evaluation, consistent with the
-         bytecode compiler *)
-      match self#emit_parts_list_core env ~overall_effects rem with
-        None -> None
-      | Some(new_rem, new_env) ->
-          match self#emit_parts new_env ~overall_effects exp with
-            None -> None
-          | Some(new_exp, fin_env) -> Some(new_exp :: new_rem, fin_env)
-
 method private emit_parts_list (env:environment) exp_list =
-  (* Note: Flambda (specifically the [Un_anf] pass) relies on the backend
-     respecting right-to-left evaluation order at all times. *)
-  let overall_effects =
-    let overall_effects = List.map self#effects_of exp_list in
-    let num_with_effects_or_coeffects =
-      List.fold_left (fun num_with_effects_or_coeffects effect ->
-          if not (Effect_and_coeffect.pure_and_copure effect) then
-            num_with_effects_or_coeffects + 1
-          else
-            num_with_effects_or_coeffects)
-        0
-        overall_effects
-    in
-    (* When there is only one expression that has effects or coeffects,
-       don't use temporaries for the results of any of the expressions.
-       (This, when the expression list has length 2, is a common case.) *)
-    if num_with_effects_or_coeffects <= 1 then
-      Effect_and_coeffect.none
-    else
-      Effect_and_coeffect.join_list overall_effects
+  let module EC = Effect_and_coeffect in
+  let exp_list_right_to_left, _effect =
+    (* Annotate each expression with the (co)effects that happen after it
+       when the original expression list is evaluated from right to left.
+       The resulting expression list has the rightmost expression first. *)
+    List.fold_left (fun (exp_list, effects_after) exp ->
+        let exp_effect = self#effects_of exp in
+        (exp, effects_after)::exp_list, EC.join exp_effect effects_after)
+      ([], EC.none)
+      exp_list
   in
-(*
-if contains_effects then begin
-  Format.eprintf "%s: list contains effects:@;%a\n%!" !current_function_name
-    (Format.pp_print_list Printcmm.expression) exp_list
-end;
-*)
-  self#emit_parts_list_core env ~overall_effects:(overall_effects, exp_list) exp_list
+  List.fold_left (fun results_and_env (exp, effects_after) ->
+      match results_and_env with
+      | None -> None
+      | Some (result, env) ->
+          match self#emit_parts env exp ~effects_after with
+          | None -> None
+          | Some (exp_result, env) -> Some (exp_result :: result, env))
+    (Some ([], env))
+    exp_list_right_to_left
 
 method private emit_tuple_not_flattened env exp_list =
   let rec emit_list = function
