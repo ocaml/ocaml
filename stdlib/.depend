@@ -21,6 +21,8 @@ bytesLabels.cmi :
 callback.cmo : obj.cmi callback.cmi
 callback.cmx : obj.cmx callback.cmi
 callback.cmi :
+camlinternalBigarray.cmo : complex.cmi
+camlinternalBigarray.cmx : complex.cmx
 camlinternalFormat.cmo : sys.cmi string.cmi char.cmi \
     camlinternalFormatBasics.cmi bytes.cmi buffer.cmi camlinternalFormat.cmi
 camlinternalFormat.cmx : sys.cmx string.cmx char.cmx \
@@ -200,6 +202,8 @@ bytesLabels.cmo : bytes.cmi bytesLabels.cmi
 bytesLabels.p.cmx : bytes.cmx bytesLabels.cmi
 callback.cmo : obj.cmi callback.cmi
 callback.p.cmx : obj.cmx callback.cmi
+camlinternalBigarray.cmo : complex.cmi
+camlinternalBigarray.p.cmx : complex.cmx
 camlinternalFormat.cmo : sys.cmi string.cmi char.cmi \
     camlinternalFormatBasics.cmi bytes.cmi buffer.cmi camlinternalFormat.cmi
 camlinternalFormat.p.cmx : sys.cmx string.cmx char.cmx \
