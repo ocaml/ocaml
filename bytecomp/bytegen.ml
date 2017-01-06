@@ -673,6 +673,8 @@ let rec comp_expr env exp sz cont =
       let p = Pintcomp (commute_comparison c)
       and args = [k ; arg] in
       comp_args env args sz (comp_primitive p args :: cont)
+  | Lprim (Pcoerce _, [arg], _) ->
+      comp_expr env arg sz cont
   | Lprim(p, args, _) ->
       comp_args env args sz (comp_primitive p args :: cont)
   | Lstaticcatch (body, (i, vars) , handler) ->

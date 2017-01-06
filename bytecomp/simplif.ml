@@ -503,10 +503,34 @@ let simplify_lets lam =
       and new_consts =  List.map (fun (n, e) -> (n, simplif e)) sw.sw_consts
       and new_blocks =  List.map (fun (n, e) -> (n, simplif e)) sw.sw_blocks
       and new_fail = Misc.may_map simplif sw.sw_failaction in
-      Lswitch
-        (new_l,
-         {sw with sw_consts = new_consts ; sw_blocks = new_blocks;
-                  sw_failaction = new_fail})
+      let elimination_kind =
+        if sw.sw_numblocks = 0
+        && sw.sw_failaction = None
+        then
+          List.fold_left
+            (fun acc (ipat, result) ->
+               match acc, ipat, result with
+               | (`None | `Pointer), ipat, Lconst (Const_pointer ires) when ipat = ires ->
+                 `Pointer
+               | (`None | `Int), ipat, Lconst (Const_base (Const_int ires)) when ipat = ires ->
+                 `Int
+               | _ -> `Don't_eliminate
+            )
+            `None
+            new_consts
+        else `Don't_eliminate
+      in
+      begin match elimination_kind with
+      | `Don't_eliminate | `None ->
+         Lswitch
+           (new_l,
+            {sw with sw_consts = new_consts ; sw_blocks = new_blocks;
+                     sw_failaction = new_fail})
+      | `Pointer ->
+        Lprim (Pcoerce Coerce_to_pointer,[new_l],Location.none)
+      | `Int ->
+        Lprim (Pcoerce Coerce_to_int,[new_l],Location.none)
+      end
   | Lstringswitch (l,sw,d,loc) ->
       Lstringswitch
         (simplif l,List.map (fun (s,l) -> s,simplif l) sw,

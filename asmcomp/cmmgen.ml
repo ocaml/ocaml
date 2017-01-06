@@ -2010,6 +2010,17 @@ and transl_prim_1 env p arg dbg =
                    [untag_int (transl env arg) dbg],
                    dbg))
               dbg
+  | Pcoerce coerce_to ->
+    begin match arg with
+    | Uconst (Uconst_int i | Uconst_ptr i) ->
+      let value =
+        match coerce_to with
+        | Coerce_to_int -> Uconst_int i
+        | Coerce_to_pointer -> Uconst_ptr i
+      in
+      transl_constant value
+    | _ -> transl env arg
+    end
   | prim ->
       fatal_errorf "Cmmgen.transl_prim_1: %a" Printlambda.primitive prim
 

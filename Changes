@@ -11,6 +11,9 @@ Next version (4.05.0):
   (Stephen Dolan, review by Alain Frisch, Pierre Chambart, Mark
   Shinwell, Gabriel Scherer and Damien Doligez)
 
+- GPR#632: Simplify no-op matches on integers to the identity function.
+  (Stefan Muenzel, tests by Pierre Chambart)
+
 - MPR#7201, GPR#954: Correct wrong optimisation of "0 / <expr>"
   and "0 mod <expr>" in the case when <expr> was a non-constant
   evaluating to zero (Mark Shinwell)
