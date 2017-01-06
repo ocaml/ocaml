@@ -484,6 +484,18 @@ module Genarray :
      underlying system calls.  [Invalid_argument] or [Failure] may be
      raised in cases where argument validation fails. *)
 
+  val free: ('a, 'b, 'c) t -> unit
+  (** Free the memory used by this array, setting all dimensions to
+      zero to prevent further use.
+
+      This is useful to ensure that memory-mapped files are closed promptly,
+      without waiting for the garbage collector. Otherwise, mapping a large
+      number of files may hit operating system limits on the number of open
+      files.
+
+      If e.g. [sub_left] is used to create multiple bigarrays backed
+      by the same memory block, [free] must be called on all of them
+      before the memory is actually released. *)
   end
 
 (** {6 Zero-dimensional arrays} *)
@@ -624,6 +636,10 @@ module Array1 : sig
       Use with caution and only when the program logic guarantees that
       the access is within bounds. *)
 
+  val free: ('a, 'b, 'c) t -> unit
+  (** Free the array immediately, without waiting for the garbage collector.
+      See [Genarray.free] for details. *)
+
 end
 
 
@@ -733,6 +749,10 @@ module Array2 :
                      = "%caml_ba_unsafe_set_2"
   (** Like {!Bigarray.Array2.set}, but bounds checking is not always
       performed. *)
+
+  val free: ('a, 'b, 'c) t -> unit
+  (** free the array immediately, without waiting for the garbage collector.
+      see [genarray.free] for details. *)
 
 end
 
@@ -867,6 +887,10 @@ module Array3 :
                      = "%caml_ba_unsafe_set_3"
   (** Like {!Bigarray.Array3.set}, but bounds checking is not always
       performed. *)
+
+  val free: ('a, 'b, 'c) t -> unit
+  (** Free the array immediately, without waiting for the garbage collector.
+      See [Genarray.free] for details. *)
 
 end
 

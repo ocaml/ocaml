@@ -135,6 +135,7 @@ module Genarray = struct
      = "caml_ba_map_file_bytecode" "caml_ba_map_file"
   let map_file fd ?(pos = 0L) kind layout shared dims =
     map_internal fd kind layout shared dims pos
+  external free: ('a, 'b, 'c) t -> unit = "caml_ba_free"
 end
 
 module Array0 = struct
@@ -191,6 +192,7 @@ module Array1 = struct
     ba
   let map_file fd ?pos kind layout shared dim =
     Genarray.map_file fd ?pos kind layout shared [|dim|]
+  let free = Genarray.free
 end
 
 module Array2 = struct
@@ -240,6 +242,7 @@ module Array2 = struct
     ba
   let map_file fd ?pos kind layout shared dim1 dim2 =
     Genarray.map_file fd ?pos kind layout shared [|dim1;dim2|]
+  let free = Genarray.free
 end
 
 module Array3 = struct
@@ -299,6 +302,7 @@ module Array3 = struct
     ba
   let map_file fd ?pos kind layout shared dim1 dim2 dim3 =
     Genarray.map_file fd ?pos kind layout shared [|dim1;dim2;dim3|]
+  let free = Genarray.free
 end
 
 external genarray_of_array0: ('a, 'b, 'c) Array0.t -> ('a, 'b, 'c) Genarray.t

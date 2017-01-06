@@ -697,6 +697,23 @@ static void caml_ba_finalize(value v)
   }
 }
 
+CAMLprim void caml_ba_free(value v)
+{
+  struct caml_ba_array * b = Caml_ba_array_val(v);
+  int i;
+
+  /* Free data if we're the last user, or decr ref count if not */
+  caml_ba_finalize(v);
+
+  /* Prevent later GC or free from doing anything more */
+  b->flags = (b->flags & ~CAML_BA_MANAGED_MASK) | CAML_BA_EXTERNAL;
+  /* Disallow all access via this bigarray */
+  for (i = 0; i < b->num_dims; i++) b->dim[i] = Long_val(0);
+  /* Tidy up (and let C users know that the data is gone). */
+  b->data = NULL;
+  b->proxy = NULL;
+}
+
 /* Comparison of two big arrays */
 
 static int caml_ba_compare(value v1, value v2)
