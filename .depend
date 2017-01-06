@@ -1134,11 +1134,11 @@ asmcomp/strmatch.cmx : bytecomp/lambda.cmx typing/ident.cmx \
     middle_end/debuginfo.cmx asmcomp/cmm.cmx asmcomp/arch.cmx \
     asmcomp/strmatch.cmi
 asmcomp/strmatch.cmi : middle_end/debuginfo.cmi asmcomp/cmm.cmi
-asmcomp/un_anf.cmo : middle_end/semantics_of_primitives.cmi \
+asmcomp/un_anf.cmo : bytecomp/semantics_of_primitives.cmi \
     asmcomp/printclambda.cmi utils/misc.cmi bytecomp/lambda.cmi \
     typing/ident.cmi middle_end/debuginfo.cmi utils/clflags.cmi \
     asmcomp/clambda.cmi parsing/asttypes.cmi asmcomp/un_anf.cmi
-asmcomp/un_anf.cmx : middle_end/semantics_of_primitives.cmx \
+asmcomp/un_anf.cmx : bytecomp/semantics_of_primitives.cmx \
     asmcomp/printclambda.cmx utils/misc.cmx bytecomp/lambda.cmx \
     typing/ident.cmx middle_end/debuginfo.cmx utils/clflags.cmx \
     asmcomp/clambda.cmx parsing/asttypes.cmi asmcomp/un_anf.cmi
@@ -1251,10 +1251,10 @@ middle_end/closure_conversion_aux.cmi : middle_end/base_types/variable.cmi \
 middle_end/debuginfo.cmo : parsing/location.cmi middle_end/debuginfo.cmi
 middle_end/debuginfo.cmx : parsing/location.cmx middle_end/debuginfo.cmi
 middle_end/debuginfo.cmi : parsing/location.cmi
-middle_end/effect_analysis.cmo : middle_end/semantics_of_primitives.cmi \
+middle_end/effect_analysis.cmo : bytecomp/semantics_of_primitives.cmi \
     utils/misc.cmi bytecomp/lambda.cmi middle_end/flambda.cmi \
     middle_end/effect_analysis.cmi
-middle_end/effect_analysis.cmx : middle_end/semantics_of_primitives.cmx \
+middle_end/effect_analysis.cmx : bytecomp/semantics_of_primitives.cmx \
     utils/misc.cmx bytecomp/lambda.cmx middle_end/flambda.cmx \
     middle_end/effect_analysis.cmi
 middle_end/effect_analysis.cmi : middle_end/flambda.cmi
@@ -1733,11 +1733,11 @@ middle_end/remove_unused_program_constructs.cmx : \
     middle_end/effect_analysis.cmx \
     middle_end/remove_unused_program_constructs.cmi
 middle_end/remove_unused_program_constructs.cmi : middle_end/flambda.cmi
-middle_end/semantics_of_primitives.cmo : bytecomp/printlambda.cmi \
-    utils/misc.cmi bytecomp/lambda.cmi middle_end/semantics_of_primitives.cmi
-middle_end/semantics_of_primitives.cmx : bytecomp/printlambda.cmx \
-    utils/misc.cmx bytecomp/lambda.cmx middle_end/semantics_of_primitives.cmi
-middle_end/semantics_of_primitives.cmi : bytecomp/lambda.cmi
+bytecomp/semantics_of_primitives.cmo : bytecomp/printlambda.cmi \
+    utils/misc.cmi bytecomp/lambda.cmi bytecomp/semantics_of_primitives.cmi
+bytecomp/semantics_of_primitives.cmx : bytecomp/printlambda.cmx \
+    utils/misc.cmx bytecomp/lambda.cmx bytecomp/semantics_of_primitives.cmi
+bytecomp/semantics_of_primitives.cmi : bytecomp/lambda.cmi
 middle_end/share_constants.cmo : middle_end/base_types/symbol.cmi \
     middle_end/flambda_iterators.cmi middle_end/flambda.cmi \
     middle_end/share_constants.cmi
@@ -1790,14 +1790,14 @@ middle_end/simplify_common.cmi : middle_end/simple_value_approx.cmi \
 middle_end/simplify_primitives.cmo : middle_end/base_types/tag.cmi \
     middle_end/base_types/symbol.cmi middle_end/simplify_common.cmi \
     middle_end/simplify_boxed_integer_ops.cmi \
-    middle_end/simple_value_approx.cmi middle_end/semantics_of_primitives.cmi \
+    middle_end/simple_value_approx.cmi bytecomp/semantics_of_primitives.cmi \
     utils/misc.cmi bytecomp/lambda.cmi middle_end/inlining_cost.cmi \
     middle_end/flambda.cmi utils/clflags.cmi parsing/asttypes.cmi \
     middle_end/simplify_primitives.cmi
 middle_end/simplify_primitives.cmx : middle_end/base_types/tag.cmx \
     middle_end/base_types/symbol.cmx middle_end/simplify_common.cmx \
     middle_end/simplify_boxed_integer_ops.cmx \
-    middle_end/simple_value_approx.cmx middle_end/semantics_of_primitives.cmx \
+    middle_end/simple_value_approx.cmx bytecomp/semantics_of_primitives.cmx \
     utils/misc.cmx bytecomp/lambda.cmx middle_end/inlining_cost.cmx \
     middle_end/flambda.cmx utils/clflags.cmx parsing/asttypes.cmi \
     middle_end/simplify_primitives.cmi
