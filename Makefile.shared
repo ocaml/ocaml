@@ -49,6 +49,18 @@ COMPFLAGS=-strict-sequence -principal -absname -w +a-4-9-41-42-44-45-48 \
           -bin-annot -safe-string -strict-formats $(INCLUDES)
 LINKFLAGS=
 
+ifeq "$(strip $(NATDYNLINKOPTS))" ""
+OCAML_NATDYNLINKOPTS=
+else
+OCAML_NATDYNLINKOPTS = -ccopt "$(NATDYNLINKOPTS)"
+endif
+
+ifeq "$(strip $(BYTECCLINKOPTS))" ""
+OCAML_BYTECCLINKOPTS=
+else
+OCAML_BYTECCLINKOPTS = -ccopt "$(BYTECCLINKOPTS)"
+endif
+
 YACCFLAGS=-v --strict
 CAMLLEX=$(CAMLRUN) boot/ocamllex
 CAMLDEP=$(CAMLRUN) tools/ocamldep
@@ -591,6 +603,46 @@ partialclean::
 	rm -f parsing/lexer.ml
 
 beforedepend:: parsing/lexer.ml
+
+# Shared parts of the system compiled with the native-code compiler
+
+compilerlibs/ocamlcommon.cmxa: $(COMMON:.cmo=.cmx)
+	$(CAMLOPT) -a -linkall -o $@ $^
+partialclean::
+	rm -f compilerlibs/ocamlcommon.cmxa compilerlibs/ocamlcommon.$(A)
+
+# The bytecode compiler compiled with the native-code compiler
+
+compilerlibs/ocamlbytecomp.cmxa: $(BYTECOMP:.cmo=.cmx)
+	$(CAMLOPT) -a $(OCAML_NATDYNLINKOPTS) -o $@ $^
+partialclean::
+	rm -f compilerlibs/ocamlbytecomp.cmxa compilerlibs/ocamlbytecomp.$(A)
+
+ocamlc.opt: compilerlibs/ocamlcommon.cmxa compilerlibs/ocamlbytecomp.cmxa \
+            $(BYTESTART:.cmo=.cmx)
+	$(CAMLOPT) $(LINKFLAGS) $(OCAML_BYTECCLINKOPTS) -o $@ \
+	  $^ -cclib "$(BYTECCLIBS)"
+
+partialclean::
+	rm -f ocamlc.opt
+
+# The native-code compiler compiled with itself
+
+compilerlibs/ocamloptcomp.cmxa: $(MIDDLE_END:.cmo=.cmx) $(ASMCOMP:.cmo=.cmx)
+	$(CAMLOPT) -a -o $@ $^
+partialclean::
+	rm -f compilerlibs/ocamloptcomp.cmxa compilerlibs/ocamloptcomp.$(A)
+
+ocamlopt.opt: compilerlibs/ocamlcommon.cmxa compilerlibs/ocamloptcomp.cmxa \
+              compilerlibs/ocamlbytecomp.cmxa  \
+              $(OPTSTART:.cmo=.cmx)
+	$(CAMLOPT) $(LINKFLAGS) -o $@ $^
+
+partialclean::
+	rm -f ocamlopt.opt
+
+$(COMMON:.cmo=.cmx) $(BYTECOMP:.cmo=.cmx) $(MIDDLE_END:.cmo=.cmx) \
+$(ASMCOMP:.cmo=.cmx): ocamlopt
 
 # The middle end (whose .cma library is currently only used for linking
 # the "ocamlobjinfo" program, since we cannot depend on the whole native code

@@ -196,50 +196,6 @@ natruntop:
 	$(MAKE) ocamlnat
 	@rlwrap --help 2>/dev/null && rlwrap $(NATRUNTOP) || $(NATRUNTOP)
 
-# Shared parts of the system compiled with the native-code compiler
-
-compilerlibs/ocamlcommon.cmxa: $(COMMON:.cmo=.cmx)
-	$(CAMLOPT) -a -linkall -o $@ $(COMMON:.cmo=.cmx)
-partialclean::
-	rm -f compilerlibs/ocamlcommon.cmxa compilerlibs/ocamlcommon.a
-
-# The bytecode compiler compiled with the native-code compiler
-
-compilerlibs/ocamlbytecomp.cmxa: $(BYTECOMP:.cmo=.cmx)
-	$(CAMLOPT) -a -ccopt "$(NATDYNLINKOPTS)" -o $@ $(BYTECOMP:.cmo=.cmx)
-partialclean::
-	rm -f compilerlibs/ocamlbytecomp.cmxa compilerlibs/ocamlbytecomp.a
-
-ocamlc.opt: compilerlibs/ocamlcommon.cmxa compilerlibs/ocamlbytecomp.cmxa \
-            $(BYTESTART:.cmo=.cmx)
-	$(CAMLOPT) $(LINKFLAGS) -ccopt "$(BYTECCLINKOPTS)" -o ocamlc.opt \
-	  compilerlibs/ocamlcommon.cmxa compilerlibs/ocamlbytecomp.cmxa \
-	  $(BYTESTART:.cmo=.cmx) -cclib "$(BYTECCLIBS)"
-
-partialclean::
-	rm -f ocamlc.opt
-
-# The native-code compiler compiled with itself
-
-compilerlibs/ocamloptcomp.cmxa: $(MIDDLE_END:.cmo=.cmx) $(ASMCOMP:.cmo=.cmx)
-	$(CAMLOPT) -a -o $@ $(MIDDLE_END:.cmo=.cmx) $(ASMCOMP:.cmo=.cmx)
-partialclean::
-	rm -f compilerlibs/ocamloptcomp.cmxa compilerlibs/ocamloptcomp.a
-
-ocamlopt.opt: compilerlibs/ocamlcommon.cmxa compilerlibs/ocamloptcomp.cmxa \
-              compilerlibs/ocamlbytecomp.cmxa \
-              $(OPTSTART:.cmo=.cmx)
-	$(CAMLOPT) $(LINKFLAGS) -o ocamlopt.opt \
-	   compilerlibs/ocamlcommon.cmxa compilerlibs/ocamloptcomp.cmxa \
-	   compilerlibs/ocamlbytecomp.cmxa \
-	   $(OPTSTART:.cmo=.cmx)
-
-partialclean::
-	rm -f ocamlopt.opt
-
-$(COMMON:.cmo=.cmx) $(BYTECOMP:.cmo=.cmx) $(MIDDLE_END:.cmo=.cmx) \
-$(ASMCOMP:.cmo=.cmx): ocamlopt
-
 # The predefined exceptions and primitives
 
 byterun/primitives:
