@@ -2117,7 +2117,7 @@ struct
                 (inspect (modexp env f))
                 (inspect (modexp env p)))
       | Tmod_constraint (m, _, _, _) ->
-          modexp env m
+        Use.inspect (modexp env m)
       | Tmod_unpack (e, _) ->
           expression env e
   and path : Env.env -> Path.t -> Use.t =
