@@ -98,6 +98,15 @@ let size_expr (env:environment) exp =
         size (Tbl.add id (size localenv arg) localenv) body
     | Csequence(_e1, e2) ->
         size localenv e2
+    | Cifthenelse (_cond, ifso, ifnot) ->
+        let size_ifso = size localenv ifso in
+        let size_ifnot = size localenv ifnot in
+        if size_ifso <> size_ifnot then begin
+          fatal_errorf "Selection.size_expr: Cifthenelse size mismatch \
+              (ifso %d, ifnot %d)"
+            size_ifso size_ifnot
+        end;
+        size_ifso
     | _ ->
         fatal_errorf "Selection.size_expr: %a" Printcmm.expression exp
   in size Tbl.empty exp
@@ -292,8 +301,11 @@ method effects_of exp =
   | Ctuple el -> EC.join_list_map el self#effects_of
   | Clet (_id, arg, body) ->
     EC.join (self#effects_of arg) (self#effects_of body)
-  | Csequence(e1, e2) ->
+  | Csequence (e1, e2) ->
     EC.join (self#effects_of e1) (self#effects_of e2)
+  | Cifthenelse (cond, ifso, ifnot) ->
+    EC.join (self#effects_of cond)
+      (EC.join (self#effects_of ifso) (self#effects_of ifnot))
   | Cop (op, args, _dbg) ->
     let from_op =
       match op with
@@ -323,8 +335,7 @@ method effects_of exp =
         EC.none
     in
     EC.join from_op (EC.join_list_map args self#effects_of)
-  | Cassign _ | Cifthenelse _ | Cswitch _ | Cloop _ | Ccatch _ | Cexit _
-  | Ctrywith _ ->
+  | Cassign _ | Cswitch _ | Cloop _ | Ccatch _ | Cexit _ | Ctrywith _ ->
     EC.arbitrary
 
 method private is_simple_expr = function
