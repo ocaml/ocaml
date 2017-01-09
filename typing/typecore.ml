@@ -2002,11 +2002,16 @@ struct
            involves inspecting the elements (PR#6939). *)
         Use.inspect (list expression env exprs)
       | Texp_construct (_, desc, exprs) ->
+        let access_constructor =
+          match desc.cstr_tag with
+          | Cstr_extension (pth, _) -> Use.inspect (path env pth)
+          | _ -> Use.empty
+        in
         let use = match desc.cstr_tag with
           | Cstr_unboxed -> (fun x -> x)
           | Cstr_constant _ | Cstr_block _ | Cstr_extension _ -> Use.guard
         in
-        use (list expression env exprs)
+        Use.join access_constructor (use (list expression env exprs))
       | Texp_variant (_, eo) ->
         Use.guard (option expression env eo)
       | Texp_record { fields = es; extended_expression = eo;
