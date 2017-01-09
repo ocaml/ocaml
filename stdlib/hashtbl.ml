@@ -403,7 +403,7 @@ module type S =
   sig
     type key
     type 'a t
-    val create : int -> 'a t
+    val create: int -> 'a t
     val clear : 'a t -> unit
     val reset : 'a t -> unit
     val copy : 'a t -> 'a t

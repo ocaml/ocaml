@@ -140,11 +140,13 @@ val truncate : t -> int -> unit
 (** {6 Iterators} *)
 
 val to_iter : t -> char Iter.t
-(** Iterate on the buffer, in increasing order
+(** Iterate on the buffer, in increasing order.
+    Modification of the buffer during iteration is undefined behavior.
     @since NEXT_RELEASE *)
 
 val to_iteri : t -> (int * char) Iter.t
-(** Iterate on the buffer, in increasing order, yielding indices along chars
+(** Iterate on the buffer, in increasing order, yielding indices along chars.
+    Modification of the buffer during iteration is undefined behavior.
     @since NEXT_RELEASE *)
 
 val add_iter : t -> char Iter.t -> unit
