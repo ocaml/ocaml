@@ -1614,7 +1614,8 @@ let type_implementation_more sourcefile outputprefix modulename initial_env ast 
     let sourceintf =
       Misc.chop_extension_if_any sourcefile ^ !Config.interface_suffix in
 #if undefined BS_NO_COMPILER_PATCH then 
-    if not !Clflags.assume_no_mli && Sys.file_exists sourceintf then begin
+    let mli_status = !Clflags.assume_no_mli in 
+    if (mli_status = Clflags.Mli_na && Sys.file_exists sourceintf) || (mli_status = Clflags.Mli_exists) then begin
 #else
     if Sys.file_exists sourceintf then begin
 #end
@@ -1715,7 +1716,8 @@ let package_units initial_env objfiles cmifile modulename =
   let prefix = chop_extension_if_any cmifile in
   let mlifile = prefix ^ !Config.interface_suffix in
 #if undefined BS_NO_COMPILER_PATCH then
-  if not !Clflags.assume_no_mli && Sys.file_exists mlifile then begin 
+  let mli_status = !Clflags.assume_no_mli in 
+  if (mli_status = Clflags.Mli_na && Sys.file_exists mlifile) || (mli_status = Clflags.Mli_exists) then begin
 #else
   if Sys.file_exists mlifile then begin
 #end
