@@ -72,7 +72,9 @@ let oper_result_type = function
 (* Infer the size in bytes of the result of an expression whose evaluation
    may be deferred (cf. [emit_parts]). *)
 
-let size_expr (env:environment) exp =
+exception Size_expr
+
+let size_expr_exn (env:environment) exp =
   let rec size localenv = function
       Cconst_int _ | Cconst_natint _ -> Arch.size_int
     | Cconst_symbol _ | Cconst_pointer _ | Cconst_natpointer _ ->
@@ -101,15 +103,27 @@ let size_expr (env:environment) exp =
     | Cifthenelse (_cond, ifso, ifnot) ->
         let size_ifso = size localenv ifso in
         let size_ifnot = size localenv ifnot in
-        if size_ifso <> size_ifnot then begin
+        let ok =
+          size_ifso = size_ifnot
+            || size_ifso = 0
+            || size_ifnot = 0
+        in
+        if not ok then begin
           fatal_errorf "Selection.size_expr: Cifthenelse size mismatch \
               (ifso %d, ifnot %d)"
             size_ifso size_ifnot
         end;
-        size_ifso
+        max size_ifso size_ifnot
     | _ ->
-        fatal_errorf "Selection.size_expr: %a" Printcmm.expression exp
-  in size Tbl.empty exp
+        raise Size_expr
+  in
+  size Tbl.empty exp
+
+let size_expr env exp =
+  try size_expr_exn env exp
+  with Size_expr ->
+    fatal_errorf "Selection.size_expr: cannot measure %a"
+      Printcmm.expression exp
 
 (* Swap the two arguments of an integer comparison *)
 
@@ -286,10 +300,13 @@ class virtual selector_generic = object (self)
 
 (* Analyses the effects and coeffects of an expression.  This is used across
    a whole list of expressions with a view to determining which expressions
-   may have their evaluation deferred.
+   may have their evaluation deferred.  The result of this function, modulo
+   target-specific judgements if the [effects_of] method is overridden, is a
+   property of the Cmm language rather than anything particular about the
+   instruction selection algorithm in this file.
 
-   In the case of e.g. an [alloc] instruction, the arguments whose evaluation
-   cannot be deferred (cf. [emit_parts, below) are computed in right-to-left
+   In the case of e.g. an OCaml function call, the arguments whose evaluation
+   cannot be deferred (cf. [emit_parts], below) are computed in right-to-left
    order first with their results going into temporaries, then the block is
    allocated, then the remaining arguments are evaluated before being
    combined with the temporaries. *)
@@ -309,7 +326,8 @@ method effects_of exp =
   | Cop (op, args, _dbg) ->
     let from_op =
       match op with
-      | Capply _ | Cextcall _ | Calloc -> EC.arbitrary
+      | Capply _ | Cextcall _ -> EC.arbitrary
+      | Calloc -> EC.none
       | Cstore _ -> EC.effect_only Effect.Arbitrary
       | Craise _ | Ccheckbound -> EC.effect_only Effect.Raise
       | Cload (_, Asttypes.Immutable) -> EC.none
@@ -338,27 +356,32 @@ method effects_of exp =
   | Cassign _ | Cswitch _ | Cloop _ | Ccatch _ | Cexit _ | Ctrywith _ ->
     EC.arbitrary
 
-method private is_simple_expr = function
-    Cconst_int _ -> true
-  | Cconst_natint _ -> true
-  | Cconst_float _ -> true
-  | Cconst_symbol _ -> true
-  | Cconst_pointer _ -> true
-  | Cconst_natpointer _ -> true
-  | Cblockheader _ -> true
-  | Cvar _ -> true
-  | Ctuple el -> List.for_all self#is_simple_expr el
-  | Clet(_id, arg, body) -> self#is_simple_expr arg && self#is_simple_expr body
-  | Csequence(e1, e2) -> self#is_simple_expr e1 && self#is_simple_expr e2
-  | Cop(op, args, _dbg) ->
-      begin match op with
-        (* The following may have side effects *)
-      | Capply _ | Cextcall _ | Calloc | Cstore _ | Craise _ -> false
-        (* The remaining operations are simple if their args are *)
-      | _ ->
-          List.for_all self#is_simple_expr args
-      end
-  | _ -> false
+(* A syntactic criterion used in addition to judgements about (co)effects as
+   to whether the evaluation of a given expression may be deferred by
+   [emit_parts].  This criterion is a property of the instruction selection
+   algorithm in this file rather than a property of the Cmm language.
+
+   The criterion is used to enforce one particular restriction at the
+   moment: [Calloc] instructions may not be deferred.  This is to ensure
+   that it is not possible to interperse some expression that might trigger
+   a GC between the [Ialloc] instruction that creates the block and the
+   instructions that fill it up.
+*)
+method private cannot_defer = function
+  | Cconst_int _ | Cconst_natint _ | Cconst_float _ | Cconst_symbol _
+  | Cconst_pointer _ | Cconst_natpointer _ | Cblockheader _ | Cvar _ -> false
+  | Ctuple el -> List.exists self#cannot_defer el
+  | Clet (_id, arg, body) -> self#cannot_defer arg || self#cannot_defer body
+  | Csequence (e1, e2) -> self#cannot_defer e1 || self#cannot_defer e2
+  | Cifthenelse (cond, e1, e2) ->
+    self#cannot_defer cond || self#cannot_defer e1 || self#cannot_defer e2
+  | Cop (op, args, _dbg) ->
+    begin match op with
+    | Calloc -> true
+    | _ -> List.exists self#cannot_defer args
+    end
+  | Cassign _ | Cswitch _ | Cloop _ | Ccatch _ | Cexit _ | Ctrywith _ ->
+    true
 
 (* Says whether an integer constant is a suitable immediate argument *)
 
@@ -884,6 +907,29 @@ method private bind_let (env:environment) v r1 =
     self#insert_moves r1 rv;
     env_add v rv env
   end
+(*
+method private is_simple_expr = function
+    Cconst_int _ -> true
+  | Cconst_natint _ -> true
+  | Cconst_float _ -> true
+  | Cconst_symbol _ -> true
+  | Cconst_pointer _ -> true
+  | Cconst_natpointer _ -> true
+  | Cblockheader _ -> true
+  | Cvar _ -> true
+  | Ctuple el -> List.for_all self#is_simple_expr el
+  | Clet(_id, arg, body) -> self#is_simple_expr arg && self#is_simple_expr body
+  | Csequence(e1, e2) -> self#is_simple_expr e1 && self#is_simple_expr e2
+  | Cop(op, args, _dbg) ->
+      begin match op with
+        (* The following may have side effects *)
+      | Capply _ | Cextcall _ | Calloc | Cstore _ | Craise _ -> false
+        (* The remaining operations are simple if their args are *)
+      | _ ->
+          List.for_all self#is_simple_expr args
+      end
+  | _ -> false
+*)
 
 (* The following two functions, [emit_parts] and [emit_parts_list], force
    right-to-left evaluation order as required by the Flambda [Un_anf] pass
@@ -894,7 +940,7 @@ method private emit_parts (env:environment) ~effects_after exp =
   let may_defer_evaluation =
     let ec = self#effects_of exp in
     match EC.effect ec with
-    | Effect.Arbitrary | Effect.Raise ->
+    | Effect.Arbitrary (*| Effect.Raise*) ->
       (* Preserve the ordering of effectful expressions by evaluating them
          early (in the correct order) and assigning their results to
          temporaries.  We can avoid this in just one case: if we know that
@@ -904,6 +950,8 @@ method private emit_parts (env:environment) ~effects_after exp =
          (Checking purity here is not enough: we need to check copurity too
          to avoid e.g. moving mutable reads earlier than the raising of
          an exception.) *)
+      false
+    | Effect.Raise ->
       EC.pure_and_copure effects_after
     | Effect.None ->
       match EC.coeffect ec with
@@ -919,27 +967,39 @@ method private emit_parts (env:environment) ~effects_after exp =
         | Effect.None | Effect.Raise -> true
         | Effect.Arbitrary -> false
   in
-  (* Due to limitations in [size_expr], above, not all expressions whose
-     evaluation we are willing to defer may be deferred. *)
-  if may_defer_evaluation && self#is_simple_expr exp then
-    Some (exp, env)
+  (* Even though some expressions may look like they can be deferred from
+     the (co)effect analysis, it may be forbidden to move them.  (See
+     [cannot_defer], above.) *)
+(*
+  let can_measure =
+    match size_expr_exn env exp with
+    | exception Size_expr -> false
+    | _size -> true
+  in
+let different_order =
+  may_defer_evaluation <> (self#is_simple_expr exp)
+in
+*)
+  let different_order = false in
+  if may_defer_evaluation && not (self#cannot_defer exp) then
+    Some (exp, env), different_order
   else begin
     match self#emit_expr env exp with
-      None -> None
+      None -> None, different_order
     | Some r ->
         if Array.length r = 0 then
-          Some (Ctuple [], env)
+          Some (Ctuple [], env), different_order
         else begin
           (* The normal case *)
           let id = Ident.create "bind" in
           if all_regs_anonymous r then
             (* r is an anonymous, unshared register; use it directly *)
-            Some (Cvar id, env_add id r env)
+            Some (Cvar id, env_add id r env), different_order
           else begin
             (* Introduce a fresh temp to hold the result *)
             let tmp = Reg.createv_like r in
             self#insert_moves r tmp;
-            Some (Cvar id, env_add id tmp env)
+            Some (Cvar id, env_add id tmp env), different_order
           end
         end
   end
@@ -956,15 +1016,42 @@ method private emit_parts_list (env:environment) exp_list =
       ([], EC.none)
       exp_list
   in
+let different_order = ref false in
+let result =
   List.fold_left (fun results_and_env (exp, effects_after) ->
       match results_and_env with
       | None -> None
       | Some (result, env) ->
-          match self#emit_parts env exp ~effects_after with
+          let r, cd = self#emit_parts env exp ~effects_after in
+          different_order := !different_order || cd;
+          match r with
           | None -> None
           | Some (exp_result, env) -> Some (exp_result :: result, env))
     (Some ([], env))
     exp_list_right_to_left
+in
+if !different_order then begin
+  let result' =
+    match result with
+    | None -> []
+    | Some (r, _) -> r
+  in
+  let nothing_happened = ref true in
+  List.iter2 (fun old_exp new_exp ->
+      if not (old_exp == new_exp) then nothing_happened := false)
+    exp_list result';
+  if not !nothing_happened then begin
+    Format.eprintf "%d expressions:\n@;%a\n@;Result:\n@;%a\n%!"
+      (List.length exp_list)
+      (Format.pp_print_list ~pp_sep:(fun ppf () -> Format.fprintf ppf ", ")
+        Printcmm.expression)
+      exp_list
+      (Format.pp_print_list ~pp_sep:(fun ppf () -> Format.fprintf ppf ", ")
+        Printcmm.expression)
+      result'
+  end
+end;
+result
 
 method private emit_tuple_not_flattened env exp_list =
   let rec emit_list = function
