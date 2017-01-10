@@ -32,9 +32,9 @@ end
 module Not_inlined : sig
   type t =
     | Classic_mode
-    | Function_obviously_too_large of int
+    | Above_threshold of int
     | Annotation
-    | Unspecialised
+    | No_useful_approximations
     | Unrolling_depth_exceeded
     | Self_call
     | Without_subfunctions of
@@ -57,7 +57,7 @@ end
 module Not_specialised : sig
   type t =
     | Classic_mode
-    | Function_obviously_too_large of int
+    | Above_threshold of int
     | Annotation
     | Not_recursive
     | Not_closed
