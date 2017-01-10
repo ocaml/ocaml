@@ -26,6 +26,9 @@ Next version (4.05.0):
   passed to the new functions are handled by the garbage collector.
   (Gabriel Scherer, review by Mark Shinwell, request by Immanuel Litzroth)
 
+- GPR#891: Use -fno-builtin-memcmp when building runtime with gcc.
+  (Leo White)
+
 ### Type system:
 
 - PR#6608, GPR#901: unify record types when overriding all fields
