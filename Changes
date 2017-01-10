@@ -78,6 +78,9 @@ Next version (4.05.0):
   argument to a string array of new arguments
   (Bernhard Schommer)
 
+- GPR#849: Exposed Spacetime.enabled value
+  (Leo White)
+
 - GPR#885: Option-returning variants of stdlib functions
   (Alain Frisch, review by David Allsopp and Bart Jacobs)
 
