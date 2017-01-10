@@ -19,7 +19,7 @@ CSC=$(CSC_COMMAND) $(CSC_FLAGS)
 
 COMPFLAGS=-I $(OTOPDIR)/otherlibs/bigarray -I $(OTOPDIR)/otherlibs/dynlink \
           -I $(OTOPDIR)/byterun
-LD_PATH=$(TOPDIR)/otherlibs/bigarray:$(TOPDIR)/otherlibs/dynlink
+LD_PATH=$(TOPDIR)/otherlibs/win32unix:$(TOPDIR)/otherlibs/bigarray:$(TOPDIR)/otherlibs/dynlink
 
 default:
 	@$(SET_LD_PATH) $(MAKE) all
