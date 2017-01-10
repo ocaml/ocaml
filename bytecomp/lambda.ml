@@ -214,6 +214,7 @@ type function_attribute = {
   inline : inline_attribute;
   specialise : specialise_attribute;
   is_a_functor: bool;
+  stub: bool;
 }
 
 type lambda =
@@ -287,7 +288,11 @@ let default_function_attribute = {
   inline = Default_inline;
   specialise = Default_specialise;
   is_a_functor = false;
+  stub = false;
 }
+
+let default_stub_attribute =
+  { default_function_attribute with stub = true }
 
 (* Build sharing keys *)
 (*
