@@ -13,6 +13,7 @@
 /*                                                                        */
 /**************************************************************************/
 
+#define CAML_API_VERSION 405
 #include <string.h>
 #include <caml/mlvalues.h>
 #include <caml/alloc.h>
@@ -46,13 +47,13 @@ static value convert_addrinfo(struct addrinfo * a)
   memcpy(&sa.s_gen, a->ai_addr, len);
   vaddr = alloc_sockaddr(&sa, len, -1);
   vcanonname = caml_copy_string(a->ai_canonname == NULL ? "" : a->ai_canonname);
-  vres = caml_alloc_small(5, 0);
-  Field(vres, 0) = cst_to_constr(a->ai_family, socket_domain_table, 3, 0);
-  Field(vres, 1) = cst_to_constr(a->ai_socktype, socket_type_table, 4, 0);
-  Field(vres, 2) = Val_int(a->ai_protocol);
-  Field(vres, 3) = vaddr;
-  Field(vres, 4) = vcanonname;
-  CAMLreturn(vres);
+  vres = caml_alloc_5(0,
+    cst_to_constr(a->ai_family, socket_domain_table, 3, 0),
+    cst_to_constr(a->ai_socktype, socket_type_table, 4, 0),
+    Val_int(a->ai_protocol),
+    vaddr,
+    vcanonname);
+  CAMLreturn (vres);
 }
 
 CAMLprim value unix_getaddrinfo(value vnode, value vserv, value vopts)
@@ -82,18 +83,18 @@ CAMLprim value unix_getaddrinfo(value vnode, value vserv, value vopts)
   /* Parse options, set hints */
   memset(&hints, 0, sizeof(hints));
   hints.ai_family = PF_UNSPEC;
-  for (/*nothing*/; Is_block(vopts); vopts = Field(vopts, 1)) {
-    v = Field(vopts, 0);
+  for (/*nothing*/; Is_block(vopts); vopts = Field_imm(vopts, 1)) {
+    v = Field_imm(vopts, 0);
     if (Is_block(v))
       switch (Tag_val(v)) {
       case 0:                   /* AI_FAMILY of socket_domain */
-        hints.ai_family = socket_domain_table[Int_val(Field(v, 0))];
+        hints.ai_family = socket_domain_table[Int_val(Field_imm(v, 0))];
         break;
       case 1:                   /* AI_SOCKTYPE of socket_type */
-        hints.ai_socktype = socket_type_table[Int_val(Field(v, 0))];
+        hints.ai_socktype = socket_type_table[Int_val(Field_imm(v, 0))];
         break;
       case 2:                   /* AI_PROTOCOL of int */
-        hints.ai_protocol = Int_val(Field(v, 0));
+        hints.ai_protocol = Int_val(Field_imm(v, 0));
         break;
       }
     else
@@ -117,10 +118,7 @@ CAMLprim value unix_getaddrinfo(value vnode, value vserv, value vopts)
   if (retcode == 0) {
     for (r = res; r != NULL; r = r->ai_next) {
       e = convert_addrinfo(r);
-      v = caml_alloc_small(2, 0);
-      Field(v, 0) = e;
-      Field(v, 1) = vres;
-      vres = v;
+      vres = caml_alloc_2(0, e, vres);
     }
     freeaddrinfo(res);
   }
