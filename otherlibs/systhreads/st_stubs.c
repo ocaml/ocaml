@@ -451,10 +451,10 @@ static void caml_thread_reinitialize(void)
 
 /* Initialize the thread machinery */
 
-CAMLprim value caml_thread_initialize(value unit)   /* ML */
+static void st_thread_initialize(void)
 {
   /* Protect against repeated initialization (PR#1325) */
-  if (curr_thread != NULL) return Val_unit;
+  if (curr_thread != NULL) return;
   /* OS-specific initialization */
   st_initialize();
   /* Initialize and acquire the master lock */
@@ -495,6 +495,12 @@ CAMLprim value caml_thread_initialize(value unit)   /* ML */
   /* Set up fork() to reinitialize the thread machinery in the child
      (PR#4577) */
   st_atfork(caml_thread_reinitialize);
+}
+
+
+CAMLprim value caml_thread_initialize(value unit)   /* ML */
+{
+  st_thread_initialize();
   return Val_unit;
 }
 
@@ -604,6 +610,8 @@ CAMLexport int caml_c_thread_register(void)
   caml_thread_t th;
   st_retcode err;
 
+  /* Initialize thread */
+  st_thread_initialize();
   /* Already registered? */
   if (st_tls_get(thread_descriptor_key) != NULL) return 0;
   /* Create a thread info block */
