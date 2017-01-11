@@ -160,7 +160,7 @@ module Map : sig
       val mapi : f:(key -> 'a -> 'b) -> 'a t -> 'b t
       val to_seq : 'a t -> (key * 'a) Seq.t
       val to_seq_at : key -> 'a t -> (key * 'a) Seq.t
-      val add_seq : 'a t -> (key * 'a) Seq.t -> 'a t
+      val add_seq : (key * 'a) Seq.t -> 'a t -> 'a t
       val of_seq : (key * 'a) Seq.t -> 'a t
   end
   module Make : functor (Ord : OrderedType) -> S
@@ -211,7 +211,7 @@ module Set : sig
       val of_list: elt list -> t
       val to_seq_at : elt -> t -> elt Seq.t
       val to_seq : t -> elt Seq.t
-      val add_seq : t -> elt Seq.t -> t
+      val add_seq : elt Seq.t -> t -> t
       val of_seq : elt Seq.t -> t
     end
   module Make : functor (Ord : OrderedType) -> S

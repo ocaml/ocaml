@@ -317,7 +317,7 @@ module type S =
         in ascending order, from key [k] or above.
         @since NEXT_RELEASE *)
 
-    val add_seq : 'a t -> (key * 'a) Seq.t -> 'a t
+    val add_seq : (key * 'a) Seq.t -> 'a t -> 'a t
     (** Add the given bindings to the map, in order.
         @since NEXT_RELEASE *)
 

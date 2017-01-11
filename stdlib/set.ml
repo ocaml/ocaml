@@ -62,7 +62,7 @@ module type S =
     val of_list: elt list -> t
     val to_seq_at : elt -> t -> elt Seq.t
     val to_seq : t -> elt Seq.t
-    val add_seq : t -> elt Seq.t -> t
+    val add_seq : elt Seq.t -> t -> t
     val of_seq : elt Seq.t -> t
   end
 
@@ -528,10 +528,10 @@ module Make(Ord: OrderedType) =
       | [x0; x1; x2; x3; x4] -> add x4 (add x3 (add x2 (add x1 (singleton x0))))
       | _ -> of_sorted_list (List.sort_uniq Ord.compare l)
 
-    let add_seq m i =
+    let add_seq i m =
       Seq.fold_left (fun s x -> add x s) m i
 
-    let of_seq i = add_seq empty i
+    let of_seq i = add_seq i empty
 
     let rec seq_of_enum_ c () = match c with
       | End -> Seq.Nil

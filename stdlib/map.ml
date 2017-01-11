@@ -60,7 +60,7 @@ module type S =
     val mapi: (key -> 'a -> 'b) -> 'a t -> 'b t
     val to_seq : 'a t -> (key * 'a) Seq.t
     val to_seq_at : key -> 'a t -> (key * 'a) Seq.t
-    val add_seq : 'a t -> (key * 'a) Seq.t -> 'a t
+    val add_seq : (key * 'a) Seq.t -> 'a t -> 'a t
     val of_seq : (key * 'a) Seq.t -> 'a t
   end
 
@@ -481,10 +481,10 @@ module Make(Ord: OrderedType) = struct
 
     let choose_opt = min_binding_opt
 
-    let add_seq m i =
+    let add_seq i m =
       Seq.fold_left (fun m (k,v) -> add k v m) m i
 
-    let of_seq i = add_seq empty i
+    let of_seq i = add_seq i empty
 
     let rec seq_of_enum_ c () = match c with
       | End -> Seq.Nil

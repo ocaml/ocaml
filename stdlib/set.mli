@@ -270,7 +270,7 @@ module type S =
     (** Iterate on the whole set, in ascending order
         @since NEXT_RELEASE *)
 
-    val add_seq : t -> elt Seq.t -> t
+    val add_seq : elt Seq.t -> t -> t
     (** Add the given elements to the set, in order.
         @since NEXT_RELEASE *)
 
