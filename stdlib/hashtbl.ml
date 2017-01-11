@@ -354,7 +354,7 @@ let stats h =
     max_bucket_length = mbl;
     bucket_histogram = histo }
 
-(** {6 Seq.tors} *)
+(** {6 Seq.iterators} *)
 
 let to_seq tbl =
   (* state: index * next bucket to traverse *)

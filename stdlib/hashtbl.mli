@@ -216,7 +216,7 @@ val stats : ('a, 'b) t -> statistics
    buckets by size.
    @since 4.00.0 *)
 
-(** {6 Seq constructors} *)
+(** {6 Seq iterators} *)
 
 val to_seq : ('a,'b) t -> ('a * 'b) Seq.t
 (** Seq.te on the whole table, in unspecified order.
