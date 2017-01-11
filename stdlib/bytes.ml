@@ -353,7 +353,9 @@ let of_seq i =
   let buf = ref (make 256 '\000') in
   let resize () =
     (* resize *)
-    let new_buf = make (2 * length !buf) '\000' in
+    let new_len = min (2 * length !buf) Sys.max_string_length in
+    if length !buf = new_len then failwith "Bytes.of_seq: cannot grow bytes";
+    let new_buf = make new_len '\000' in
     blit !buf 0 new_buf 0 !n;
     buf := new_buf
   in
