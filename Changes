@@ -3,39 +3,6 @@ Next version (4.05.0):
 
 (Changes that can break existing programs are marked with a "*")
 
-### Language features:
-
-### Code generation and optimizations:
-
-- PR#7201, GPR#954: Correct wrong optimisation of "0 / <expr>"
-  and "0 mod <expr>" in the case when <expr> was a non-constant
-  evaluating to zero
-  (Mark Shinwell)
-
-- GPR#504: Instrumentation support for fuzzing with afl-fuzz.
-  (Stephen Dolan, review by Alain Frisch, Pierre Chambart, Mark
-   Shinwell, Gabriel Scherer and Damien Doligez)
-
-### Runtime system:
-
-- PR#7423, GPR#946: expose new exception-raising functions
-  `void caml_{failwith,invalid_argument}_value(value msg)`
-  in addition to
-  `void caml_{failwith,invalid_argument}(char const *msg)`.
-  The previous functions would not free their message argument, so
-  were inconvient for dynamically-allocated messages; the messages
-  passed to the new functions are handled by the garbage collector.
-  (Gabriel Scherer, review by Mark Shinwell, request by Immanuel Litzroth)
-
-- GPR#891: Use -fno-builtin-memcmp when building runtime with gcc.
-  (Leo White)
-
-### Type system:
-
-- PR#6608, GPR#901: unify record types when overriding all fields
-  (Tadeu Zagallo and Gabriel Scherer, report by Jeremy Yallop,
-   review by David Allsopp, Jacques Garrigue)
-
 ### Compiler user-interface and warnings:
 
 - PR#7050, GPR#748, GPR#843, GPR#864: new `-args/-args0 <file>` parameters to
@@ -79,6 +46,37 @@ Next version (4.05.0):
   the "always link" flag on all units of the given library.
   (Xavier Leroy)
 
+### Code generation and optimizations:
+
+- PR#7201, GPR#954: Correct wrong optimisation of "0 / <expr>"
+  and "0 mod <expr>" in the case when <expr> was a non-constant
+  evaluating to zero
+  (Mark Shinwell)
+
+- GPR#504: Instrumentation support for fuzzing with afl-fuzz.
+  (Stephen Dolan, review by Alain Frisch, Pierre Chambart, Mark
+   Shinwell, Gabriel Scherer and Damien Doligez)
+
+### Type system:
+
+- PR#6608, GPR#901: unify record types when overriding all fields
+  (Tadeu Zagallo and Gabriel Scherer, report by Jeremy Yallop,
+   review by David Allsopp, Jacques Garrigue)
+
+### Runtime system:
+
+- PR#7423, GPR#946: expose new exception-raising functions
+  `void caml_{failwith,invalid_argument}_value(value msg)`
+  in addition to
+  `void caml_{failwith,invalid_argument}(char const *msg)`.
+  The previous functions would not free their message argument, so
+  were inconvient for dynamically-allocated messages; the messages
+  passed to the new functions are handled by the garbage collector.
+  (Gabriel Scherer, review by Mark Shinwell, request by Immanuel Litzroth)
+
+- GPR#891: Use -fno-builtin-memcmp when building runtime with gcc.
+  (Leo White)
+
 ### Standard library:
 
 - PR#6975, GPR#902: Truncate function added to stdlib Buffer module
@@ -111,19 +109,6 @@ Next version (4.05.0):
 
 - GPR#999: Arg, do not repeat thrice usage_msg when reporting an error
   (Florian Angeletti, review by Gabriel Scherer)
-
-### Manual and documentation:
-
-- GPR#925: add a HACKING.adoc file to contain various tips and tricks for
-  people hacking on the repository. See also CONTRIBUTING.md for
-  advice on sending contributions upstream.
-  (Gabriel Scherer and Gabriel Radanne, review by David Allsopp,
-   inspired by John Whitington)
-
-- GPR#939: activate the caml_example environment in the language
-  extensions section of the manual. Convert some existing code
-  examples to this format.
-  (Florian Angeletti)
 
 ### Other libraries:
 
@@ -171,6 +156,19 @@ Next version (4.05.0):
 
 - clarify ocamldoc text parsing error messages
   (Gabriel Scherer)
+
+### Manual and documentation:
+
+- GPR#925: add a HACKING.adoc file to contain various tips and tricks for
+  people hacking on the repository. See also CONTRIBUTING.md for
+  advice on sending contributions upstream.
+  (Gabriel Scherer and Gabriel Radanne, review by David Allsopp,
+   inspired by John Whitington)
+
+- GPR#939: activate the caml_example environment in the language
+  extensions section of the manual. Convert some existing code
+  examples to this format.
+  (Florian Angeletti)
 
 ### Compiler distribution build system:
 
@@ -416,41 +414,6 @@ OCaml 4.04.0 (4 Nov 2016):
   create self-contained toplevels.
   (Jérémie Dimino)
 
-### Standard library:
-
-- PR#6279, GPR#553: implement Set.map
-  (Gabriel Scherer)
-
-- PR#6820, GPR#560: Add Obj.reachable_words to compute the
-  "transitive" heap size of a value
-  (Alain Frisch, review by Mark Shinwell and Damien Doligez)
-
-- GPR#473: Provide `Sys.backend_type` so that user can write backend-specific
-  code in some cases (for example,  code generator).
-  (Hongbo Zhang)
-
-- GPR#589: Add a non-allocating function to recover the number of
-  allocated minor words.
-  (Pierre Chambart, review by Damien Doligez and Gabriel Scherer)
-
-- GPR#626: String.split_on_char
-  (Alain Frisch)
-
-- GPR#669: Filename.extension and Filename.remove_extension
-  (Alain Frisch, request by Edgar Aroutiounian, review by Daniel Bunzli
-   and Damien Doligez)
-
-- GPR#674: support unknown Sys.os_type in Filename, defaulting to Unix
-  (Filename would previously fail at initialization time for Sys.os_type values
-  other than "Unix", "Win32" and "Cygwin"; mirage-os uses "xen")
-  (Anil Madhavapeddy)
-
-### Other libraries:
-
-- PR#4834, GPR#592: Add a Biggarray.Genarray.change_layout function
-  to switch bigarrays between C and fortran layouts.
-  (Guillaume Hennequin, review by Florian Angeletti)
-
 ### Code generation and optimizations:
 
 - PR#4747, GPR#328: Optimize Hashtbl by using in-place updates of its
@@ -536,6 +499,46 @@ OCaml 4.04.0 (4 Nov 2016):
 - GPR#590: Do not perform compaction if the real overhead is less than expected
   (Thomas Braibant)
 
+### Standard library:
+
+- PR#6279, GPR#553: implement Set.map
+  (Gabriel Scherer)
+
+- PR#6820, GPR#560: Add Obj.reachable_words to compute the
+  "transitive" heap size of a value
+  (Alain Frisch, review by Mark Shinwell and Damien Doligez)
+
+- GPR#473: Provide `Sys.backend_type` so that user can write backend-specific
+  code in some cases (for example,  code generator).
+  (Hongbo Zhang)
+
+- GPR#589: Add a non-allocating function to recover the number of
+  allocated minor words.
+  (Pierre Chambart, review by Damien Doligez and Gabriel Scherer)
+
+- GPR#626: String.split_on_char
+  (Alain Frisch)
+
+- GPR#669: Filename.extension and Filename.remove_extension
+  (Alain Frisch, request by Edgar Aroutiounian, review by Daniel Bunzli
+   and Damien Doligez)
+
+- GPR#674: support unknown Sys.os_type in Filename, defaulting to Unix
+  (Filename would previously fail at initialization time for Sys.os_type values
+  other than "Unix", "Win32" and "Cygwin"; mirage-os uses "xen")
+  (Anil Madhavapeddy)
+
+### Other libraries:
+
+- PR#4834, GPR#592: Add a Biggarray.Genarray.change_layout function
+  to switch bigarrays between C and fortran layouts.
+  (Guillaume Hennequin, review by Florian Angeletti)
+
+### Toplevel, debugger and profiler:
+
+- GPR#585: Spacetime, a new memory profiler
+  (Mark Shinwell, Leo White)
+
 ### Tools:
 
 - PR#7189: toplevel #show, follow chains of module aliases
@@ -574,11 +577,6 @@ OCaml 4.04.0 (4 Nov 2016):
 
 - GPR#718: ocamldoc, fix order of extensible variant constructors
   (Florian Angeletti)
-
-### Toplevel, debugger and profiler:
-
-- GPR#585: Spacetime, a new memory profiler
-  (Mark Shinwell, Leo White)
 
 ### Manual and documentation:
 
@@ -631,6 +629,28 @@ OCaml 4.04.0 (4 Nov 2016):
   "-unsafe-string" is not allowed, thus giving stronger non-local
   guarantees about immutability of strings
   (Alain Frisch, review by Hezekiah M. Carty)
+
+### Internal/compiler-libs changes:
+
+- PR#7200, GPR#539: Improve, fix, and add test for parsing/pprintast.ml
+  (Runhang Li, David Sheets, Alain Frisch)
+
+- GPR#351: make driver/pparse.ml functions type-safe
+  (Gabriel Scherer, Dmitrii Kosarev, review by Jérémie Dimino)
+
+- GPR#516: Improve Texp_record constructor representation, and
+  propagate updated record type information
+  (Pierre Chambart, review by Alain Frisch)
+
+- GPR#678: Graphics.close_graph crashes 64-bit Windows ports (re-implementation
+  of PR#3963)
+  (David Allsopp)
+
+- GPR#679: delay registration of docstring after the mapper is applied
+  (Hugo Heuzard, review by Leo White)
+
+- GPR#872: don't attach (**/**) comments to any particular node
+  (Thomas Refis, review by Leo White)
 
 ### Bug fixes:
 
@@ -754,28 +774,6 @@ OCaml 4.04.0 (4 Nov 2016):
 
 - GPR#880: Fix [@@inline] with default parameters in flambda
   (Leo White)
-
-### Internal/compiler-libs changes:
-
-- PR#7200, GPR#539: Improve, fix, and add test for parsing/pprintast.ml
-  (Runhang Li, David Sheets, Alain Frisch)
-
-- GPR#351: make driver/pparse.ml functions type-safe
-  (Gabriel Scherer, Dmitrii Kosarev, review by Jérémie Dimino)
-
-- GPR#516: Improve Texp_record constructor representation, and
-  propagate updated record type information
-  (Pierre Chambart, review by Alain Frisch)
-
-- GPR#678: Graphics.close_graph crashes 64-bit Windows ports (re-implementation
-  of PR#3963)
-  (David Allsopp)
-
-- GPR#679: delay registration of docstring after the mapper is applied
-  (Hugo Heuzard, review by Leo White)
-
-- GPR#872: don't attach (**/**) comments to any particular node
-  (Thomas Refis, review by Leo White)
 
 OCaml 4.03.0 (25 Apr 2016):
 ---------------------------
@@ -1054,6 +1052,20 @@ OCaml 4.03.0 (25 Apr 2016):
   `match .. with exception e -> raise e`
   (Nicolas Ojeda Bar, review by Gabriel Scherer)
 
+### Type system:
+
+- PR#5545: Type annotations on methods cannot control the choice of abbreviation
+  (Jacques Garrigue)
+
+* PR#6465: allow incremental weakening of module aliases.
+  This is done by adding equations to submodules when expanding aliases.
+  In theory this may be incompatible is some corner cases defining a module
+  type through inference, but no breakage known on published code.
+  (Jacques Garrigue)
+
+- PR#6593: Functor application in tests/basic-modules fails after commit 15405
+  (Jacques Garrigue)
+
 ### Runtime system:
 
 - PR#3612, GPR#92: allow allocating custom block with finalizers
@@ -1231,55 +1243,6 @@ OCaml 4.03.0 (25 Apr 2016):
 - GPR#356: Add [Format.kasprintf]
   (Jérémie Dimino, Mark Shinwell)
 
-### Type system:
-
-- PR#5545: Type annotations on methods cannot control the choice of abbreviation
-  (Jacques Garrigue)
-
-* PR#6465: allow incremental weakening of module aliases.
-  This is done by adding equations to submodules when expanding aliases.
-  In theory this may be incompatible is some corner cases defining a module
-  type through inference, but no breakage known on published code.
-  (Jacques Garrigue)
-
-- PR#6593: Functor application in tests/basic-modules fails after commit 15405
-  (Jacques Garrigue)
-
-### Toplevel, debugger and profiler:
-
-- PR#6113: Add descriptions to directives, and display them via #help
-  (Nick Giannarakis, Berke Durak, Francis Southern and Gabriel Scherer)
-
-- PR#6396: Warnings-as-errors not properly flushed in the toplevel
-  (Alain Frisch)
-
-- PR#6401: use proper error reporting for toplevel environment initialization:
-  no more Env.Error(_) at start time
-  (Gabriel Scherer, Alain Frisch)
-
-- PR#6468: toplevel now supports backtraces if invoked with OCAMLRUNPARAM=b
-  (whitequark and Jake Donham,
-   review by Gabriel Scherer and Jacques-Henri Jourdan)
-
-- PR#6906: wrong error location for unmatched paren with #use in toplevel
-  (Damien Doligez, report by Kenichi Asai)
-
-- PR#6935, GPR#298: crash in debugger when load_printer is given a directory
-  (Junsong Li, review by Gabriel Scherer)
-
-- PR#7081: report preprocessor warnings in the toplevel
-  (Valentin Gatien-Baron, review by Jérémie Dimino)
-
-- PR#7098: Loss of ppx context in toplevel after an exception
-  (Alain Frisch, report by whitequark)
-
-- PR#7101: The toplevel does not close in_channel for libraries specified on
-  its command line
-  (Alain Frisch)
-
-- PR#7119: the toplevel does not respect [@@@warning]
-  (Alain Frisch, report by Gabriel Radanne)
-
 ### Other libraries:
 
 - PR#4023, GPR#68: add Unix.sleepf (sleep with sub-second resolution)
@@ -1330,6 +1293,41 @@ OCaml 4.03.0 (25 Apr 2016):
   now causes an error.
   (Xavier Leroy)
 
+### Toplevel, debugger and profiler:
+
+- PR#6113: Add descriptions to directives, and display them via #help
+  (Nick Giannarakis, Berke Durak, Francis Southern and Gabriel Scherer)
+
+- PR#6396: Warnings-as-errors not properly flushed in the toplevel
+  (Alain Frisch)
+
+- PR#6401: use proper error reporting for toplevel environment initialization:
+  no more Env.Error(_) at start time
+  (Gabriel Scherer, Alain Frisch)
+
+- PR#6468: toplevel now supports backtraces if invoked with OCAMLRUNPARAM=b
+  (whitequark and Jake Donham,
+   review by Gabriel Scherer and Jacques-Henri Jourdan)
+
+- PR#6906: wrong error location for unmatched paren with #use in toplevel
+  (Damien Doligez, report by Kenichi Asai)
+
+- PR#6935, GPR#298: crash in debugger when load_printer is given a directory
+  (Junsong Li, review by Gabriel Scherer)
+
+- PR#7081: report preprocessor warnings in the toplevel
+  (Valentin Gatien-Baron, review by Jérémie Dimino)
+
+- PR#7098: Loss of ppx context in toplevel after an exception
+  (Alain Frisch, report by whitequark)
+
+- PR#7101: The toplevel does not close in_channel for libraries specified on
+  its command line
+  (Alain Frisch)
+
+- PR#7119: the toplevel does not respect [@@@warning]
+  (Alain Frisch, report by Gabriel Radanne)
+
 ### Tools:
 
 - GPR#286: add support for module aliases
@@ -1363,6 +1361,11 @@ OCaml 4.03.0 (25 Apr 2016):
   subdirectory of the main OCaml source repository. Contributions to
   the manual are warmly welcome.
   (François Bobot, review by Florian Angeletti)
+
+### Compiler distribution build system:
+
+- GPR#388: FlexDLL added as a Git submodule and bootstrappable with the compiler
+  (David Allsopp)
 
 ### Bug fixes:
 
@@ -1815,11 +1818,6 @@ OCaml 4.03.0 (25 Apr 2016):
   (Mark Shinwell, debugging & test case by Arseniy Alekseyev and Leo White,
    code review by Xavier Leroy)
 
-### Compiler distribution build system:
-
-- GPR#388: FlexDLL added as a Git submodule and bootstrappable with the compiler
-  (David Allsopp)
-
 OCaml 4.02.3 (27 Jul 2015):
 ---------------------------
 
@@ -1888,6 +1886,27 @@ OCaml 4.02.2 (17 Jun 2015):
 - GPR#159: Better locations for structure/signature items
   (Leo White)
 
+### Runtime system:
+
+- PR#6078: Release the runtime system when calling caml_dlopen
+  (Jérémie Dimino)
+
+- PR#6675: GC hooks
+  (Damien Doligez and Roshan James)
+
+### Standard library:
+
+- PR#6834: Add Obj.{first,last}_non_constant_constructor_tag
+  (Mark Shinwell, request by Gabriel Scherer)
+
+### Other libraries:
+
+- PR#6285: Add support for nanosecond precision in Unix.stat()
+  (Jérémie Dimino, report by user 'gfxmonk')
+
+- PR#6781: Add higher baud rates to Unix termios
+  (Damien Doligez, report by Berke Durak)
+
 ### Toplevel, debugger and profiler:
 
 - PR#5958: generalized polymorphic #install_printer
@@ -1919,27 +1938,6 @@ OCaml 4.02.2 (17 Jun 2015):
 
 - PR#6774: new menhir-specific flags "only_tokens" and "external_tokens(Foo)"
   (François Pottier)
-
-### Standard library:
-
-- PR#6834: Add Obj.{first,last}_non_constant_constructor_tag
-  (Mark Shinwell, request by Gabriel Scherer)
-
-### Other libraries:
-
-- PR#6285: Add support for nanosecond precision in Unix.stat()
-  (Jérémie Dimino, report by user 'gfxmonk')
-
-- PR#6781: Add higher baud rates to Unix termios
-  (Damien Doligez, report by Berke Durak)
-
-### Runtime system:
-
-- PR#6078: Release the runtime system when calling caml_dlopen
-  (Jérémie Dimino)
-
-- PR#6675: GC hooks
-  (Damien Doligez and Roshan James)
 
 ### Compiler distribution build system:
 
@@ -2325,48 +2323,6 @@ OCaml 4.02.0 (29 Aug 2014):
   sequences (type bytes). Activated by command-line option -safe-string.
   (Damien Doligez)
 
-### Compiler distribution build system:
-
-- Use -bin-annot when building.
-
-- Use GNU make instead of portable makefiles.
-
-- Updated build instructions for 32-bit Mac OS X on Intel hardware.
-
-### Shedding weight:
-
-* Removed Camlp4 from the distribution, now available as third-party software.
-
-* Removed Labltk from the distribution, now available as a third-party library.
-
-### Type system:
-
-* PR#6235: Keep typing of pattern cases independent in principal mode
-  (i.e. information from previous cases is no longer used when typing
-  patterns; cf. 'PR#6235' in testsuite/test/typing-warnings/records.ml)
-  (Jacques Garrigue)
-
-- PR#6331: Slight change in the criterion to distinguish private
-  abbreviations and private row types: create a private abbreviation for
-  closed objects and fixed polymorphic variants.
-  (Jacques Garrigue)
-
-* PR#6333: Compare first class module types structurally rather than
-  nominally. Value subtyping allows module subtyping as long as the internal
-  representation is unchanged.
-  (Jacques Garrigue)
-
-- Allow opening a first-class module or applying a generative functor
-  in the body of a generative functor. Allow it also in the body of
-  an applicative functor if no types are created
-  (Jacques Garrigue, suggestion by Leo White)
-
-* Module aliases are now typed in a specific way, which remembers their
-  identity. Compiled interfaces become smaller, but may depend on the
-  original modules. This also changes the signature inferred by
-  "module type of".
-  (Jacques Garrigue, feedback from Leo White, Mark Shinwell and Nick Chapman)
-
 ### Compilers:
 
 * PR#5779: better sharing of structured constants
@@ -2425,10 +2381,33 @@ OCaml 4.02.0 (29 Aug 2014):
   the input file name up to the first ".")
   (Leo White, Mark Shinwell and Nick Chapman)
 
-### Toplevel, debugger and profiler:
+### Type system:
 
-- PR#5377: New "#show_*" directives
-  (ygrek, Jacques Garrigue and Alain Frisch)
+* PR#6235: Keep typing of pattern cases independent in principal mode
+  (i.e. information from previous cases is no longer used when typing
+  patterns; cf. 'PR#6235' in testsuite/test/typing-warnings/records.ml)
+  (Jacques Garrigue)
+
+- PR#6331: Slight change in the criterion to distinguish private
+  abbreviations and private row types: create a private abbreviation for
+  closed objects and fixed polymorphic variants.
+  (Jacques Garrigue)
+
+* PR#6333: Compare first class module types structurally rather than
+  nominally. Value subtyping allows module subtyping as long as the internal
+  representation is unchanged.
+  (Jacques Garrigue)
+
+- Allow opening a first-class module or applying a generative functor
+  in the body of a generative functor. Allow it also in the body of
+  an applicative functor if no types are created
+  (Jacques Garrigue, suggestion by Leo White)
+
+* Module aliases are now typed in a specific way, which remembers their
+  identity. Compiled interfaces become smaller, but may depend on the
+  original modules. This also changes the signature inferred by
+  "module type of".
+  (Jacques Garrigue, feedback from Leo White, Mark Shinwell and Nick Chapman)
 
 ### Runtime system:
 
@@ -2492,6 +2471,17 @@ OCaml 4.02.0 (29 Aug 2014):
 - Trigger warning 3 for all values marked as deprecated in the documentation.
   (Damien Doligez)
 
+### Shedding weight:
+
+* Removed Camlp4 from the distribution, now available as third-party software.
+
+* Removed Labltk from the distribution, now available as a third-party library.
+
+### Toplevel, debugger and profiler:
+
+- PR#5377: New "#show_*" directives
+  (ygrek, Jacques Garrigue and Alain Frisch)
+
 ### Tools:
 
 - PR#6257: handle full doc comments for variant constructors and
@@ -2506,6 +2496,14 @@ OCaml 4.02.0 (29 Aug 2014):
 
 - PR#6425: fix generation of man pages
   (Maxence Guesdon, report by Anil Madhavapeddy)
+
+### Compiler distribution build system:
+
+- Use -bin-annot when building.
+
+- Use GNU make instead of portable makefiles.
+
+- Updated build instructions for 32-bit Mac OS X on Intel hardware.
 
 ### Bug fixes:
 
@@ -2806,22 +2804,6 @@ OCaml 4.01.0 (12 Sep 2013):
 
 (Changes that can break existing programs are marked with a "*")
 
-### Type system:
-
-- PR#5759: use well-disciplined type information propagation to
-  disambiguate label and constructor names
-  (Jacques Garrigue, Alain Frisch and Leo White)
-
-* PR#6035: Reject multiple declarations of the same method or instance variable
-  in an object
-  (Alain Frisch)
-
-* Propagate type information towards pattern-matching, even in the presence of
-  polymorphic variants (discarding only information about possibly-present
-  constructors). As a result, matching against absent constructors is no longer
-  allowed for exact and fixed polymorphic variant types.
-  (Jacques Garrigue)
-
 ### Compilers:
 
 - PR#5571: incorrect ordinal number in error message
@@ -2877,6 +2859,32 @@ OCaml 4.01.0 (12 Sep 2013):
 - Experimental OCAMLPARAM for ocamlc and ocamlopt
   (Fabrice Le Fessant)
 
+### Type system:
+
+- PR#5759: use well-disciplined type information propagation to
+  disambiguate label and constructor names
+  (Jacques Garrigue, Alain Frisch and Leo White)
+
+* PR#6035: Reject multiple declarations of the same method or instance variable
+  in an object
+  (Alain Frisch)
+
+* Propagate type information towards pattern-matching, even in the presence of
+  polymorphic variants (discarding only information about possibly-present
+  constructors). As a result, matching against absent constructors is no longer
+  allowed for exact and fixed polymorphic variant types.
+  (Jacques Garrigue)
+
+### Runtime system:
+
+* PR#6019: more efficient implementation of caml_modify() and caml_initialize().
+  The new implementations are less lenient than the old ones: now,
+  the destination pointer of caml_modify() must point within the minor or
+  major heaps, and the destination pointer of caml_initialize() must
+  point within the major heap.
+  (Xavier Leroy, from an experiment by Brian Nigito, with feedback from
+   Yaron Minsky and Gerd Stolpmann)
+
 ### Standard library:
 
 - PR#5899: expose a way to inspect the current call stack,
@@ -2902,15 +2910,23 @@ OCaml 4.01.0 (12 Sep 2013):
 
 - Labltk: updated to Tcl/Tk 8.6.
 
-### Runtime system:
+### Tools:
 
-* PR#6019: more efficient implementation of caml_modify() and caml_initialize().
-  The new implementations are less lenient than the old ones: now,
-  the destination pointer of caml_modify() must point within the minor or
-  major heaps, and the destination pointer of caml_initialize() must
-  point within the major heap.
-  (Xavier Leroy, from an experiment by Brian Nigito, with feedback from
-   Yaron Minsky and Gerd Stolpmann)
+- PR#5884: Misc minor fixes and cleanup for emacs mode
+  (Stefan Monnier)
+
+- PR#6030: Improve performance of -annot
+  (Guillaume Melquiond, Alain Frisch)
+
+- OCamlbuild now features a bin_annot tag to generate .cmt files.
+  (Jonathan Protzenko)
+
+- OCamlbuild now features a strict_sequence tag to trigger the
+  strict-sequence option.
+  (Jonathan Protzenko)
+
+- OCamlbuild now picks the non-core tools like ocamlfind and menhir from PATH
+  (Wojciech Meyer)
 
 ### Internals:
 
@@ -3404,24 +3420,6 @@ OCaml 4.01.0 (12 Sep 2013):
 - ocamlbuild tag 'no_alias_deps'
   (Daniel Bünzli)
 
-### Tools:
-
-- PR#5884: Misc minor fixes and cleanup for emacs mode
-  (Stefan Monnier)
-
-- PR#6030: Improve performance of -annot
-  (Guillaume Melquiond, Alain Frisch)
-
-- OCamlbuild now features a bin_annot tag to generate .cmt files.
-  (Jonathan Protzenko)
-
-- OCamlbuild now features a strict_sequence tag to trigger the
-  strict-sequence option.
-  (Jonathan Protzenko)
-
-- OCamlbuild now picks the non-core tools like ocamlfind and menhir from PATH
-  (Wojciech Meyer)
-
 OCaml 4.00.1 (5 Oct 2012):
 --------------------------
 
@@ -3533,26 +3531,6 @@ OCaml 4.00.0 (26 Jul 2012):
 
 - New tool: ocamloptp, the equivalent of ocamlcp for the native-code compiler.
 
-### Tools:
-
-- PR#5419: error message in french
-
-* PR#5507: Use Location.t structures for locations.
-
-- PR#5522: allow refering to record fields and variant constructors
-
-- PR#5535: no cross ref to class after dump+load
-
-- PR#5544: improve HTML output (less formatting in html code)
-
-- PR#5645: ocamldoc doesn't handle module/type substitution in signatures
-
-* Use first class modules for custom generators, to be able to
-  load various plugins incrementally adding features to the current
-  generator
-
-- fix: do not keep code when not told to keep code.
-
 ### Standard library:
 
 - Added float functions "hypot" and "copysign" (PR#3806, PR#4752, PR#5246)
@@ -3595,6 +3573,42 @@ OCaml 4.00.0 (26 Jul 2012):
 - Set and Map: more efficient implementation of "filter" and "partition"
 
 - String: new function "map" (PR#3888)
+
+### Shedding weight:
+
+* Removed the obsolete native-code generators for Alpha, HPPA, IA64 and MIPS.
+
+* The "DBM" library (interface with Unix DBM key-value stores) is no
+  longer part of this distribution.  It now lives its own life at
+  https://forge.ocamlcore.org/projects/camldbm/
+
+* The "OCamlWin" toplevel user interface for MS Windows is no longer
+  part of this distribution.  It now lives its own life at
+  https://forge.ocamlcore.org/projects/ocamltopwin/
+
+### Tools:
+
+- PR#5419: error message in french
+
+* PR#5507: Use Location.t structures for locations.
+
+- PR#5522: allow refering to record fields and variant constructors
+
+- PR#5535: no cross ref to class after dump+load
+
+- PR#5544: improve HTML output (less formatting in html code)
+
+- PR#5645: ocamldoc doesn't handle module/type substitution in signatures
+
+* Use first class modules for custom generators, to be able to
+  load various plugins incrementally adding features to the current
+  generator
+
+- fix: do not keep code when not told to keep code.
+
+### Compiler distribution build system:
+
+- Copy VERSION file to library directory when installing.
 
 ### Installation procedure:
 
@@ -4005,22 +4019,6 @@ OCaml 4.00.0 (26 Jul 2012):
   for debuggee
 
 - configure: add -no-camlp4 option
-
-### Shedding weight:
-
-* Removed the obsolete native-code generators for Alpha, HPPA, IA64 and MIPS.
-
-* The "DBM" library (interface with Unix DBM key-value stores) is no
-  longer part of this distribution.  It now lives its own life at
-  https://forge.ocamlcore.org/projects/camldbm/
-
-* The "OCamlWin" toplevel user interface for MS Windows is no longer
-  part of this distribution.  It now lives its own life at
-  https://forge.ocamlcore.org/projects/ocamltopwin/
-
-### Compiler distribution build system:
-
-- Copy VERSION file to library directory when installing.
 
 OCaml 3.12.1 (4 Jul 2011):
 --------------------------
