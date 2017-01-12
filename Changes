@@ -248,7 +248,7 @@ Next version (4.05.0):
 - GPR#673: distinguish initialization of block fields from mutation in lambda.
   (Frédéric Bour, review by Xavier Leroy, Stephen Dolan and Mark Shinwell)
 
-### Bug fixes
+### Bug fixes:
 
 - PR#5115: protect all byterun/fail.c functions against
   uninitialized caml_global_data (only changes the bytecode behavior)
@@ -326,7 +326,7 @@ Next minor version (4.04.1):
 - PR#7403, GPR#894: fix a bug in Set.map as introduced in 4.04.0
   (Gabriel Scherer, report by Thomas Leonard)
 
-### Bug fixes
+### Bug fixes:
 
 - PR#7405, GPR#903: s390x: Fix address of caml_raise_exn in native dynlink modules
   (Richard Jones, review by Xavier Leroy)
@@ -447,7 +447,7 @@ OCaml 4.04.0 (4 Nov 2016):
    mirage-os uses "xen")
   (Anil Madhavapeddy)
 
-### Other libraries
+### Other libraries:
 
 - PR#4834, GPR#592: Add a Biggarray.Genarray.change_layout function
   to switch bigarrays between C and fortran layouts.
@@ -1825,7 +1825,7 @@ OCaml 4.03.0 (25 Apr 2016):
 OCaml 4.02.3 (27 Jul 2015):
 ---------------------------
 
-Bug fixes:
+### Bug fixes:
 - PR#6908: Top-level custom printing for GADTs: interface change in 4.02.2
   (Grégoire Henry, report by Jeremy Yallop)
 - PR#6919: corrupted final_table
@@ -1835,7 +1835,7 @@ Bug fixes:
 - PR#6930: Aliased result type of GADT constructor results in assertion failure
   (Jacques Garrigue)
 
-Feature wishes:
+### Feature wishes:
 - PR#6691: install .cmt[i] files for stdlib and compiler-libs
   (David Sheets, request by Gabriel Radanne)
 - GPR#37: New primitive: caml_alloc_dummy_function
@@ -1846,7 +1846,7 @@ OCaml 4.02.2 (17 Jun 2015):
 
 (Changes that can break existing programs are marked with a "*")
 
-Language features:
+### Language features:
 - PR#6583: add a new class of binary operators with the same syntactic
   precedence as method calls; these operators start with # followed
   by a non-empty sequence of operator symbols (for instance #+, #!?).
@@ -1859,7 +1859,7 @@ Language features:
 * PR#6612, GPR#152: change the precedence of attributes in type declarations
   (Jérémie Dimino)
 
-Compilers:
+### Compilers:
 - PR#6600: make -short-paths faster by building the printing map
   incrementally
   (Jacques Garrigue)
@@ -1875,11 +1875,11 @@ Compilers:
 - GPR#159: Better locations for structure/signature items
   (Leo White)
 
-Toplevel and debugger:
+### Toplevel and debugger:
 - PR#5958: generalized polymorphic #install_printer
   (Pierre Chambart and Grégoire Henry)
 
-OCamlbuild:
+### OCamlbuild:
 - PR#6237: explicit "infer" tag to control or disable menhir --infer
   (Hugo Heuzard)
 - PR#6625: pass -linkpkg to files built with -output-obj.
@@ -1898,7 +1898,7 @@ OCamlbuild:
 - PR#6774: new menhir-specific flags "only_tokens" and "external_tokens(Foo)"
   (François Pottier)
 
-Libraries:
+### Libraries:
 - PR#6285: Add support for nanosecond precision in Unix.stat()
   (Jérémie Dimino, report by user 'gfxmonk')
 - PR#6781: Add higher baud rates to Unix termios
@@ -1906,23 +1906,23 @@ Libraries:
 - PR#6834: Add Obj.{first,last}_non_constant_constructor_tag
   (Mark Shinwell, request by Gabriel Scherer)
 
-Runtime:
+### Runtime:
 - PR#6078: Release the runtime system when calling caml_dlopen
   (Jérémie Dimino)
 - PR#6675: GC hooks
   (Damien Doligez and Roshan James)
 
-Build system:
+### Build system:
 - PR#5418: (from comments) generate dependencies with $(CC) instead of gcc
   (Damien Doligez and Michael Grünewald)
 - PR#6266: Cross compilation for iOs, Android etc
   (whitequark, review by Damien Doligez and Mark Shinwell)
 
-Installation procedure:
+### Installation procedure:
 - Update instructions for x86-64 PIC mode and POWER architecture builds
   (Mark Shinwell)
 
-Bug fixes:
+### Bug fixes:
 - PR#5271: Location.prerr_warning is hard-coded to use Format.err_formatter
   (Damien Doligez, report by Rolf Rolles)
 - PR#5395: OCamlbuild mishandles relative symlinks and include paths
@@ -2068,7 +2068,7 @@ Bug fixes:
 - Misplaced assertion in major_gc.c for no-naked-pointers mode
   (Stephen Dolan, Mark Shinwell)
 
-Feature wishes:
+### Feature wishes:
 - PR#6452, GPR#140: add internal suport for custom printing formats
   (Jérémie Dimino)
 - PR#6641: add -g, -ocamlcflags, -ocamloptflags options to ocamlmklib
@@ -2089,11 +2089,11 @@ OCaml 4.02.1 (14 Oct 2014):
 
 (Changes that can break existing programs are marked with a "*")
 
-Standard library:
+### Standard library:
 * Add optional argument ?limit to Arg.align.
   (Maxence Guesdon)
 
-Bug Fixes:
+### Bug Fixes:
 - PR#4099: Bug in Makefile.nt: won't stop on error
   (George Necula)
 - PR#6181: Improve MSVC build
@@ -2162,7 +2162,7 @@ OCaml 4.02.0 (29 Aug 2014):
 
 (Changes that can break existing programs are marked with a "*")
 
-Language features:
+### Language features:
 - Attributes and extension nodes
   (Alain Frisch)
 - PR#5905: Generative functors
@@ -2179,16 +2179,16 @@ Language features:
 - PR#5584: Extensible open datatypes
   (Leo White)
 
-Build system for the OCaml distribution:
+### Build system for the OCaml distribution:
 - Use -bin-annot when building.
 - Use GNU make instead of portable makefiles.
 - Updated build instructions for 32-bit Mac OS X on Intel hardware.
 
-Shedding weight:
+### Shedding weight:
 * Removed Camlp4 from the distribution, now available as third-party software.
 * Removed Labltk from the distribution, now available as a third-party library.
 
-Type system:
+### Type system:
 * PR#6235: Keep typing of pattern cases independent in principal mode
   (i.e. information from previous cases is no longer used when typing
   patterns; cf. 'PR#6235' in testsuite/test/typing-warnings/records.ml)
@@ -2211,7 +2211,7 @@ Type system:
   representation is unchanged.
   (Jacques Garrigue)
 
-Compilers:
+### Compilers:
 - More aggressive constant propagation, including float and
   int32/int64/nativeint arithmetic.  Constant propagation for floats
   can be turned off with option -no-float-const-prop, for codes that
@@ -2253,11 +2253,11 @@ Compilers:
 - PR#6389: ocamlopt -opaque option for incremental native compilation
   (Pierre Chambart, Gabriel Scherer)
 
-Toplevel interactive system:
+### Toplevel interactive system:
 - PR#5377: New "#show_*" directives
   (ygrek, Jacques Garrigue and Alain Frisch)
 
-Runtime system:
+### Runtime system:
 - New configure option "-no-naked-pointers" to improve performance by
   avoiding page table tests during block darkening and the marking phase
   of the major GC.  In this mode, all out-of-heap pointers must point at
@@ -2285,7 +2285,7 @@ Runtime system:
   64-bit integer type.
   (Xavier Leroy)
 
-Standard library:
+### Standard library:
 * Add new modules Bytes and BytesLabels for mutable byte sequences.
   (Damien Doligez)
 - PR#4986: add List.sort_uniq and Set.of_list
@@ -2303,7 +2303,7 @@ Standard library:
 - Trigger warning 3 for all values marked as deprecated in the documentation.
   (Damien Doligez)
 
-OCamldoc:
+### OCamldoc:
 - PR#6257: handle full doc comments for variant constructors and
   record fields
   (Maxence Guesdon, request by ygrek)
@@ -2314,7 +2314,7 @@ OCamldoc:
 - PR#6425: fix generation of man pages
   (Maxence Guesdon, report by Anil Madhavapeddy)
 
-Bug fixes:
+### Bug fixes:
 - PR#2719: wrong scheduling of bound checks within a
   try...with Invalid_argument -> _ ...
   (Xavier Leroy)
@@ -2444,7 +2444,7 @@ Bug fixes:
 - sometimes wrong stack alignment at out-of-bounds array access
   (Gabriel Scherer and Xavier Leroy, report by Pierre Chambart)
 
-Features wishes:
+### Features wishes:
 - PR#4243: make the Makefiles parallelizable
   (Grégoire Henry and Damien Doligez)
 - PR#4323: have "of_string" in Num and Big_int work with binary and
@@ -2520,10 +2520,10 @@ OCaml 4.01.0 (12 Sep 2013):
 
 (Changes that can break existing programs are marked with a "*")
 
-Other libraries:
+### Other libraries:
 - Labltk: updated to Tcl/Tk 8.6.
 
-Type system:
+### Type system:
 - PR#5759: use well-disciplined type information propagation to
   disambiguate label and constructor names
   (Jacques Garrigue, Alain Frisch and Leo White)
@@ -2536,7 +2536,7 @@ Type system:
   in an object
   (Alain Frisch)
 
-Compilers:
+### Compilers:
 - PR#5861: raise an error when multiple private keywords are used in type
   declarations
   (Hongbo Zhang)
@@ -2577,7 +2577,7 @@ Compilers:
 - PR#6073: add signature to Tstr_include
   (patch by Leo White)
 
-Standard library:
+### Standard library:
 - PR#5899: expose a way to inspect the current call stack,
   Printexc.get_callstack
   (Gabriel Scherer, Jacques-Henri Jourdan, Alain Frisch)
@@ -2590,12 +2590,12 @@ Standard library:
   compatible with Format.fprintf (unlike Format.sprintf)
   (Pierre Weis)
 
-Other libraries:
+### Other libraries:
 - PR#5568: add O_CLOEXEC flag to Unix.openfile, so that the returned
   file descriptor is created in close-on-exec mode
   (Xavier Leroy)
 
-Runtime system:
+### Runtime system:
 * PR#6019: more efficient implementation of caml_modify() and caml_initialize().
   The new implementations are less lenient than the old ones: now,
   the destination pointer of caml_modify() must point within the minor or
@@ -2604,14 +2604,14 @@ Runtime system:
   (Xavier Leroy, from an experiment by Brian Nigito, with feedback
   from Yaron Minsky and Gerd Stolpmann)
 
-Internals:
+### Internals:
 - Moved debugger/envaux.ml to typing/envaux.ml to publish env_of_only_summary
   as part of compilerlibs, to be used on bin-annot files.
   (Fabrice Le Fessant)
 - The test suite can now be run without installing OCaml first.
   (Damien Doligez)
 
-Bug fixes:
+### Bug fixes:
 - PR#3236: Document the fact that queues are not thread-safe
   (Damien Doligez)
 - PR#3468: (part 1) Sys_error documentation
@@ -2891,7 +2891,7 @@ Bug fixes:
 - PR#6210: Camlp4 location error
   (Hongbo Zhang, report by Jun Furuse)
 
-Feature wishes:
+### Feature wishes:
 - PR#5181: Merge common floating point constants in ocamlopt
   (Benedikt Meurer)
 - PR#5243: improve the ocamlbuild API documentation in signatures.mli
@@ -2937,7 +2937,7 @@ Feature wishes:
 - ocamlbuild tag 'no_alias_deps'
   (Daniel Bünzli)
 
-Tools:
+### Tools:
 - OCamlbuild now features a bin_annot tag to generate .cmt files.
   (Jonathan Protzenko)
 - OCamlbuild now features a strict_sequence tag to trigger the
@@ -2954,7 +2954,7 @@ Tools:
 OCaml 4.00.1 (5 Oct 2012):
 --------------------------
 
-Bug fixes:
+### Bug fixes:
 - PR#4019: better documentation of Str.matched_string
 - PR#5111: ocamldoc, heading tags inside spans tags is illegal in html
 - PR#5278: better error message when typing "make"
@@ -2988,7 +2988,7 @@ OCaml 4.00.0 (26 Jul 2012):
 
 - The official name of the language is now OCaml.
 
-Language features:
+### Language features:
 - Added Generalized Algebraic Data Types (GADTs) to the language.
   See chapter "Language extensions" of the reference manual for documentation.
 - It is now possible to omit type annotations when packing and unpacking
@@ -2997,7 +2997,7 @@ Language features:
 - New (module M) and (module M : S) syntax in patterns, for immediate
   unpacking of a first-class module.
 
-Compilers:
+### Compilers:
 - PR#5205, PR#5288: Revised simplification of let-alias
 - Better reporting of compiler version mismatch in .cmi files
 * Warning 28 is now enabled by default.
@@ -3009,7 +3009,7 @@ Compilers:
 * New meaning for warning 7: it is now triggered when a method is overridden
   with the "method" keyword.  Use "method!" to avoid the warning.
 
-Native-code compiler:
+### Native-code compiler:
 - PR#5287: Optimized handling of partially-applied functions
 - PR#5345, PR#5360: Small improvements in code generated for array bounds
   checks.
@@ -3024,7 +3024,7 @@ Native-code compiler:
   the gdb debugger. Currently supported for x86 32-bits and 64-bits only.
 - New tool: ocamloptp, the equivalent of ocamlcp for the native-code compiler.
 
-OCamldoc:
+### OCamldoc:
 - PR#5645: ocamldoc doesn't handle module/type substitution in signatures
 - PR#5544: improve HTML output (less formatting in html code)
 - PR#5522: allow refering to record fields and variant constructors
@@ -3036,7 +3036,7 @@ OCamldoc:
 * PR#5507: Use Location.t structures for locations.
 - fix: do not keep code when not told to keep code.
 
-Standard library:
+### Standard library:
 - Added float functions "hypot" and "copysign" (PR#3806, PR#4752, PR#5246)
 * Arg: options with empty doc strings are no longer included in the usage string
   (PR#5437)
@@ -3067,7 +3067,7 @@ Standard library:
 - Set and Map: more efficient implementation of "filter" and "partition"
 - String: new function "map" (PR#3888)
 
-Installation procedure:
+### Installation procedure:
 - Compiler internals are now installed in `ocamlc -where`/compiler-libs.
   The files available there include the .cmi interfaces for all compiler
   modules, plus the following libraries:
@@ -3085,7 +3085,7 @@ Installation procedure:
   a debug version of the runtime system, and a compiler option
   (-runtime-variant) to select the debug runtime.
 
-Bug Fixes:
+### Bug Fixes:
 
 - PR#1643: functions of the Lazy module whose named started with 'lazy_' have
   been deprecated, and new ones without the prefix added
@@ -3235,7 +3235,7 @@ Bug Fixes:
 - problem with forall and method (reported on caml-list on 2011-07-26)
 - crash when using OCAMLRUNPARAM=a=X with invalid X (reported in private)
 
-Feature wishes:
+### Feature wishes:
 - PR#352: new option "-stdin" to make ocaml read stdin as a script
 - PR#1164: better error message when mixing -a and .cmxa
 - PR#1284: documentation: remove restriction on mixed streams
@@ -3294,7 +3294,7 @@ Feature wishes:
   for debuggee
 - configure: add -no-camlp4 option
 
-Shedding weight:
+### Shedding weight:
 * Removed the obsolete native-code generators for Alpha, HPPA, IA64 and MIPS.
 * The "DBM" library (interface with Unix DBM key-value stores) is no
   longer part of this distribution.  It now lives its own life at
@@ -3303,7 +3303,7 @@ Shedding weight:
   part of this distribution.  It now lives its own life at
   https://forge.ocamlcore.org/projects/ocamltopwin/
 
-Other changes:
+### Other changes:
 - Copy VERSION file to library directory when installing.
 
 
