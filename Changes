@@ -15,6 +15,10 @@ Next version (4.04.1):
   for ocaml build with WITH_FRAME_POINTERS defined
   (Christoph Cullmann)
 
+- PR#7457: a case of double free in the systhreads library (POSIX implementation
+)
+  (Xavier Leroy, report by Chet Murthy)
+
 - PR#7460, GPR#1011: catch uncaught exception when unknown files are passed
   as argument (regression in 4.04.0)
   (Bernhard Schommer, review by Florian Angeletti and Gabriel Scherer,
