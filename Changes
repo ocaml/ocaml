@@ -13,7 +13,8 @@ Next version (4.05.0):
 
 - PR#7201, GPR#954: Correct wrong optimisation of "0 / <expr>"
   and "0 mod <expr>" in the case when <expr> was a non-constant
-  evaluating to zero (Mark Shinwell)
+  evaluating to zero
+  (Mark Shinwell)
 
 ### Runtime system:
 
@@ -65,8 +66,9 @@ Next version (4.05.0):
   This can be tested with ocamlopt -config
   (Sébastien Hinderer)
 
-- PR#7137, GPR#960: "-open" command line flag now accepts a module path
-  (not a module name) (Arseniy Alekseyev and Leo White)
+- PR#7137, GPR#960: "-open" command line flag now accepts a module path (not a
+  module name)
+  (Arseniy Alekseyev and Leo White)
 
 - GPR#1009: "ocamlc -c -linkall" and "ocamlopt -c -linkall" can now be used
   to set the "always link" flag on individual compilation units.  This
@@ -300,7 +302,8 @@ Next version (4.05.0):
   by zero.
   (Jeremy Yallop)
 
-- PR#7427, GPR#959: Don't delete let bodies in Cmmgen (Mark Shinwell)
+- PR#7427, GPR#959: Don't delete let bodies in Cmmgen
+  (Mark Shinwell)
 
 - GPR#967, PR#6136: Fix Closure so that overapplication evaluation order
   matches the bytecode compiler and Flambda.
@@ -575,7 +578,8 @@ OCaml 4.04.0 (4 Nov 2016):
 
 ### Debugging and profiling:
 
-- GPR#585: Spacetime, a new memory profiler (Mark Shinwell, Leo White)
+- GPR#585: Spacetime, a new memory profiler
+  (Mark Shinwell, Leo White)
 
 ### Manual and documentation:
 
@@ -601,7 +605,8 @@ OCaml 4.04.0 (4 Nov 2016):
   (Jeremy Yallop)
 
 - GPR#841: Document that [Store_field] must not be used to populate
-  arrays of values declared using [CAMLlocalN] (Mark Shinwell)
+  arrays of values declared using [CAMLlocalN]
+  (Mark Shinwell)
 
 ### Compiler distribution build system:
 
@@ -631,10 +636,10 @@ OCaml 4.04.0 (4 Nov 2016):
 ### Bug fixes:
 
 * PR#6505: Missed Type-error leads to a segfault upon record access.
-  (Jacques Garrigue, extra report by Stephen Dolan)
   Proper fix required a more restrictive approach to recursive types:
   mutually recursive types are seen as abstract types (i.e. non-contractive)
   when checking the well-foundedness of the recursion.
+  (Jacques Garrigue, extra report by Stephen Dolan)
 
 * PR#6752: Nominal types and scope escaping.
   Revert to strict scope for non-generalizable type variables, cf. Mantis.
@@ -651,6 +656,7 @@ OCaml 4.04.0 (4 Nov 2016):
   (Jacques Garrigue, report and suggestion by sliquister)
 
 - PR#7153: document that Unix.SOCK_SEQPACKET is not really usable.
+  (Xavier Leroy)
 
 - PR#7165, GPR#494: uncaught exception on invalid lexer directive
   (Gabriel Scherer, report by KC Sivaramakrishnan using afl-fuzz)
@@ -723,17 +729,19 @@ OCaml 4.04.0 (4 Nov 2016):
 - GPR#700: Fix maximum weak bucket size
   (Nicolas Ojeda Bar, review by François Bobot)
 
-- GPR#708 Allow more module aliases in strengthening (Leo White)
+- GPR#708: Allow more module aliases in strengthening
+  (Leo White)
 
 - GPR#713, PR#7301: Fix wrong code generation involving lazy values in Flambda
   mode
   (Mark Shinwell, review by Pierre Chambart and Alain Frisch)
 
 - GPR#721: Fix infinite loop in flambda due to [@@specialise] annotations
+  (Leo White, review by Pierre Chambart)
 
 - GPR#779: Building native runtime on Windows could fail when bootstrapping
   FlexDLL if there was also a system-installed flexlink
-  (David Allsopp, report Michael Soegtrop)
+  (David Allsopp, report by Michael Soegtrop)
 
 - GPR#805, GPR#815, GPR#833: check for integer overflow in String.concat
   (Jeremy Yallop,
@@ -745,7 +753,8 @@ OCaml 4.04.0 (4 Nov 2016):
 - GPR#814: fix the Buffer.add_substring bounds check to handle overflow
   (Jeremy Yallop)
 
-- GPR#880: Fix [@@inline] with default parameters in flambda (Leo White)
+- GPR#880: Fix [@@inline] with default parameters in flambda
+  (Leo White)
 
 ### Internal/compiler-libs changes:
 
@@ -1020,7 +1029,8 @@ OCaml 4.03.0 (25 Apr 2016):
   (Leo White)
 
 - GPR#388: OCAML_FLEXLINK environment variable allows overriding flexlink
-  command (David Allsopp)
+  command
+  (David Allsopp)
 
 - GPR#392: put all parsetree invariants in a new module Ast_invariants
   (Jérémie Dimino)
@@ -1685,6 +1695,7 @@ OCaml 4.03.0 (25 Apr 2016):
   (Sergei Lebedev)
 
 - PR#4714: List.cons
+  (Gabriel Scherer)
 
 - PR#5418 (comments) : generate dependencies with $(CC) instead of gcc
   (Damien Doligez, report by Michael Grünewald)
@@ -2021,6 +2032,7 @@ Bug fixes:
 - PR#6841: Changing compilation unit name with -o breaks ocamldebug
   (Jacques Garrigue, report by Jordan Walke)
 - PR#6842: export Typemod.modtype_of_package
+  (Jacques Garrigue, request by Jun Furuse)
 - PR#6843: record weak dependencies even when the .cmi is missing
   (Leo White, Gabriel Scherer)
 - PR#6849: Inverted pattern unification error
@@ -2037,8 +2049,9 @@ Bug fixes:
   that are also exception constructors
   (Jacques Garrigue, report by Romain Beauxis)
 - PR#6878: AArch64 backend generates invalid asm: conditional branch
-  out of range (Mark Shinwell, report by Richard Jones, testing by Richard
-  Jones and Xavier Leroy, code review by Xavier Leroy and Thomas Refis)
+  out of range
+  (Mark Shinwell, report by Richard Jones, testing by Richard Jones and
+   Xavier Leroy, code review by Xavier Leroy and Thomas Refis)
 - PR#6879: Wrong optimization of 1 mod n
   (Mark Shinwell, report by Jean-Christophe Filliâtre)
 - PR#6884: The __CYGWIN32__ #define should be replaced with __CYGWIN__
@@ -2079,6 +2092,7 @@ OCaml 4.02.1 (14 Oct 2014):
 
 Standard library:
 * Add optional argument ?limit to Arg.align.
+  (Maxence Guesdon)
 
 Bug Fixes:
 - PR#4099: Bug in Makefile.nt: won't stop on error
@@ -2110,7 +2124,7 @@ Bug Fixes:
 - PR#6553: Missing command line options for ocamldoc
   (Maxence Guesdon)
 - PR#6554: fix race condition when retrieving backtraces
-  (Jérémie Dimino, Mark Shinwell).
+  (Jérémie Dimino, Mark Shinwell)
 - PR#6557: String.sub throws Invalid_argument("Bytes.sub")
   (Damien Doligez, report by Oliver Bandel)
 - PR#6562: Fix ocamldebug module source lookup
@@ -2303,7 +2317,8 @@ OCamldoc:
 
 Bug fixes:
 - PR#2719: wrong scheduling of bound checks within a
-  try...with Invalid_argument -> _ ...  (Xavier Leroy)
+  try...with Invalid_argument -> _ ...
+  (Xavier Leroy)
 - PR#4719: Sys.executable_name wrong if executable name contains dots (Windows)
   (Alain Frisch, report by Bart Jacobs)
 - PR#5406 ocamlbuild: "tag 'package' does not expect a parameter"
@@ -2416,12 +2431,15 @@ Bug fixes:
 - PR#6505: Missed Type-error leads to a segfault upon record access
   (Jacques Garrigue, Jeremy Yallop, report by Christoph Höger)
 - PR#6507: crash on AArch64 resulting from incorrect setting of
-  [caml_bottom_of_stack].  (Richard Jones, Mark Shinwell)
+  [caml_bottom_of_stack].
+  (Richard Jones, Mark Shinwell)
 - PR#6509: add -linkall flag to ocamlcommon.cma
   (Frédéric Bour)
 - PR#6513: Fatal error Ctype.Unify(_) in functor type
+  (Jacques Garrigue)
 - PR#6523: failure upon character bigarray access, and unnecessary change
-  in comparison ordering (Jeremy Yallop, Mark Shinwell)
+  in comparison ordering
+  (Jeremy Yallop, Mark Shinwell)
 - bound-checking bug in caml_string_{get,set}{16,32,64}
   (Pierre Chambart and Gabriel Scherer, report by Nicolas Trangez)
 - sometimes wrong stack alignment at out-of-bounds array access
