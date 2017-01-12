@@ -11,7 +11,7 @@ Next version (4.05.0):
   (Stephen Dolan, review by Alain Frisch, Pierre Chambart, Mark
   Shinwell, Gabriel Scherer and Damien Doligez)
 
-- MPR#7201, GPR#954: Correct wrong optimisation of "0 / <expr>"
+- PR#7201, GPR#954: Correct wrong optimisation of "0 / <expr>"
   and "0 mod <expr>" in the case when <expr> was a non-constant
   evaluating to zero (Mark Shinwell)
 
@@ -125,7 +125,7 @@ Next version (4.05.0):
 
 ### Other libraries:
 
-- MPR#7339, GPR#787: Support the '0 dimension' case for bigarrays
+- PR#7339, GPR#787: Support the '0 dimension' case for bigarrays
   (see Bigarray documentation)
   (Laurent Mazare,
    review by Gabriel Scherer, Alain Frisch and Hezekiah M. Carty)
@@ -231,7 +231,7 @@ Next version (4.05.0):
 - GPR#915: fix -dsource (pprintast.ml) bugs
   (Runhang Li, review by Alain Frisch)
 
-- GPR#832, MPR#7357: Improve compilation time for toplevel
+- GPR#832, PR#7357: Improve compilation time for toplevel
   include(struct ... end : sig ... end)
   (Alain Frisch, report by Hongbo Zhang, review by Jacques Garrigue)
 
@@ -288,7 +288,7 @@ Next version (4.05.0):
 - GPR#934: check for integer overflow in Bytes.extend
   (Jeremy Yallop, review by Gabriel Scherer)
 
-- MPR#6594, GPR#955: Remove "Istore_symbol" specific operation on x86-64.
+- PR#6594, GPR#955: Remove "Istore_symbol" specific operation on x86-64.
   This is more robust and in particular avoids assembly failures on Win64.
   (Mark Shinwell, review by Xavier Leroy, testing by David Allsopp and
    Olivier Andrieu)
@@ -324,7 +324,7 @@ Next minor version (4.04.1):
 - PR#7405, GPR#903: s390x: Fix address of caml_raise_exn in native dynlink modules
   (Richard Jones, review by Xavier Leroy)
 
-- MPR#7417, GPR#930: ensure 16 byte stack alignment inside caml_allocN on x86-64
+- PR#7417, GPR#930: ensure 16 byte stack alignment inside caml_allocN on x86-64
   for ocaml build with WITH_FRAME_POINTERS defined
   (Christoph Cullmann)
 
@@ -369,7 +369,7 @@ OCaml 4.04.0 (4 Nov 2016):
   field, and concrete types with a single constructor with a single argument.
   This is triggered with a [@@unboxed] attribute on the type definition.
   Currently mutually recursive datatypes are not well supported, this
-  limitation should be lifted in the future (see MPR#7364).
+  limitation should be lifted in the future (see PR#7364).
   (Damien Doligez)
 
 ### Compiler user-interface and warnings:
@@ -442,7 +442,7 @@ OCaml 4.04.0 (4 Nov 2016):
 
 ### Other libraries
 
-- MPR#4834, GPR#592: Add a Biggarray.Genarray.change_layout function
+- PR#4834, GPR#592: Add a Biggarray.Genarray.change_layout function
   to switch bigarrays between C and fortran layouts.
   (Guillaume Hennequin, review by Florian Angeletti)
 
