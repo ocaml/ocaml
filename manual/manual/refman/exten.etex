@@ -2167,7 +2167,7 @@ type t =
 let v = Point {width = 10; x = 0.; y = 0.}
 
 let scale l = function
-  | Point p -> Point {p with x = l * p.x; y = l * p.y}
+  | Point p -> Point {p with x = l *. p.x; y = l *. p.y}
   | ....
 
 let print = function
