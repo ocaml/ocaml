@@ -51,6 +51,7 @@ struct domain* caml_domain_self();
 typedef void (*domain_rpc_handler)(struct domain*, void*);
 
 struct domain* caml_random_domain();
+int caml_domain_alone();
 
 struct domain* caml_owner_of_young_block(value);
 

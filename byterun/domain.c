@@ -328,6 +328,16 @@ struct domain* caml_random_domain()
   return &d->state;
 }
 
+int caml_domain_alone()
+{
+  caml_plat_lock(&all_domains_lock);
+  int len = 0;
+  for (int i = 0; i < Max_domains; i++)
+    if (all_domains[i].running) len++;
+  caml_plat_unlock(&all_domains_lock);
+  return len == 1;
+}
+
 struct domain* caml_owner_of_young_block(value v) {
   Assert(Is_minor(v));
   int heap_id = ((uintnat)v - minor_heaps_base) /
