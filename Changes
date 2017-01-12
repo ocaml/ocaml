@@ -41,7 +41,7 @@ Next version (4.05.0):
 - PR#7315, GPR#736: refine some error locations
   (Gabriel Scherer and Alain Frisch, report by Matej Košík)
 
-- PR#7050, GPR#748 GPR#843 GPR#864: new `-args/-args0 <file>` parameters to
+- PR#7050, GPR#748, GPR#843, GPR#864: new `-args/-args0 <file>` parameters to
   provide extra command-line arguments in a file -- see documentation.
   User programs may implement similar options using the new `Expand`
   constructor of the `Arg` module.
@@ -104,7 +104,7 @@ Next version (4.05.0):
   (Gabriel de Perthuis, with contributions from Alain Frisch, review by
   Hezekiah M. Carty and Simon Cruanes, initial report by Gerd Stolpmann)
 
-- Add missing functions to ArrayLabels, BytesLabels, ListLabels,
+- GPR#875: Add missing functions to ArrayLabels, BytesLabels, ListLabels,
   MoreLabels, StringLabels so they are compatible with non-labeled
   counterparts.
   (Roma Sokolov)
@@ -119,7 +119,7 @@ Next version (4.05.0):
   examples to this format.
   (Florian Angeletti)
 
-- add a HACKING.adoc file to contain various tips and tricks for
+- GPR#925: add a HACKING.adoc file to contain various tips and tricks for
   people hacking on the repository. See also CONTRIBUTING.md for
   advice on sending contributions upstream.
   (Gabriel Scherer and Gabriel Radanne, review by David Allsopp,
@@ -230,10 +230,11 @@ Next version (4.05.0):
   list in .cmti files + avoid rebuilding cmi_info record when creating
   .cmti files
   (Alain Frisch, report by Daniel Bunzli, review by Jeremie Dimino)
+
 - GPR#915: fix -dsource (pprintast.ml) bugs
   (Runhang Li, review by Alain Frisch)
 
-- GPR#832, PR#7357: Improve compilation time for toplevel
+- PR#7357, GPR#832: Improve compilation time for toplevel
   include(struct ... end : sig ... end)
   (Alain Frisch, report by Hongbo Zhang, review by Jacques Garrigue)
 
@@ -298,14 +299,14 @@ Next version (4.05.0):
   (Mark Shinwell, review by Xavier Leroy, testing by David Allsopp and
    Olivier Andrieu)
 
-- GPR#956 Keep possibly-effectful expressions when optimizing multiplication
+- GPR#956: Keep possibly-effectful expressions when optimizing multiplication
   by zero.
   (Jeremy Yallop)
 
 - PR#7427, GPR#959: Don't delete let bodies in Cmmgen
   (Mark Shinwell)
 
-- GPR#967, PR#6136: Fix Closure so that overapplication evaluation order
+- PR#6136, GPR#967: Fix Closure so that overapplication evaluation order
   matches the bytecode compiler and Flambda.
   (Mark Shinwell, report by Jeremy Yallop, review by Frédéric Bour)
 
@@ -507,7 +508,7 @@ OCaml 4.04.0 (4 Nov 2016):
 - GPR#714: Prevent warning 59 from triggering on Lazy of constants
   (Pierre Chambart, review by Leo White)
 
-- GPR#723 Sort emitted functions according to source location
+- GPR#723: Sort emitted functions according to source location
   (Pierre Chambart, review by Mark Shinwell)
 
 - Lack of type normalization lead to missing simple compilation for "lazy x"
@@ -594,7 +595,7 @@ OCaml 4.04.0 (4 Nov 2016):
   of Warning 52 (fragile constant pattern)
   (Gabriel Scherer, William, Adrien Nader, Jacques Garrigue)
 
-- #PR7265, GPR#769: Restore 4.02.3 behaviour of Unix.fstat, if the
+- PR#7265, GPR#769: Restore 4.02.3 behaviour of Unix.fstat, if the
   file descriptor doesn't wrap a regular file (win32unix only)
   (Andreas Hauptmann, review by David Allsopp)
 
@@ -732,7 +733,7 @@ OCaml 4.04.0 (4 Nov 2016):
 - GPR#708: Allow more module aliases in strengthening
   (Leo White)
 
-- GPR#713, PR#7301: Fix wrong code generation involving lazy values in Flambda
+- PR#7301, GPR#713: Fix wrong code generation involving lazy values in Flambda
   mode
   (Mark Shinwell, review by Pierre Chambart and Alain Frisch)
 
@@ -788,11 +789,10 @@ OCaml 4.03.0 (25 Apr 2016):
 - PR#5528: inline records for constructor arguments
   (Alain Frisch)
 
-- PR#6220, PR#6403, PR#6437, PR#6801:
-  Improved redundancy and exhaustiveness checks for GADTs.
-  Namely, the redundancy checker now checks whether the uncovered pattern
-  of the pattern is actually inhabited, exploding at most one wild card.
-  This is also done for exhaustiveness when there is only one case.
+- PR#6220, PR#6403, PR#6437, PR#6801: Improved redundancy and exhaustiveness
+  checks for GADTs. Namely, the redundancy checker now checks whether the
+  uncovered pattern of the pattern is actually inhabited, exploding at most one
+  wild card. This is also done for exhaustiveness when there is only one case.
   Additionally, one can now write unreachable cases, of the form
   "pat -> .", which are treated by the redundancy check.
   (Jacques Garrigue)
@@ -871,7 +871,7 @@ OCaml 4.03.0 (25 Apr 2016):
   idents containing double underscores as to idents starting with an underscore
   (Thomas Refis, Leo White)
 
-- PR#6681 GPR#326: signature items are now accepted as payloads for
+- PR#6681, GPR#326: signature items are now accepted as payloads for
   extension and attributes, using the syntax [%foo: SIG ] or [@foo: SIG ].
   Examples: "[%%client: val foo : int]" or "val%client foo : int".
   (Alain Frisch and Gabriel Radanne)
@@ -993,7 +993,7 @@ OCaml 4.03.0 (25 Apr 2016):
 - GPR#132: Flambda: new intermediate language and "middle-end" optimizers
   (Pierre Chambart, Mark Shinwell, Leo White)
 
-- GPR#212, PR#7226, GPR#542: emit column position in gas assembly `.loc`
+- PR#7226, GPR#212, GPR#542: emit column position in gas assembly `.loc`
   (Frédéric Bour, Anton Bachin)
 
 - GPR#207: Colors in compiler messages (warnings, errors)
@@ -1064,7 +1064,7 @@ OCaml 4.03.0 (25 Apr 2016):
   caml_fill_bytes and caml_create_bytes for migration
   (Hongbo Zhang, review by Damien Doligez, Alain Frisch, and Hugo Heuzard)
 
-- PR#3612, PR#92: allow allocating custom block with finalizers
+- PR#3612, GPR#92: allow allocating custom block with finalizers
   in the minor heap.
   (Pierre Chambart)
 
@@ -1290,7 +1290,7 @@ OCaml 4.03.0 (25 Apr 2016):
   now causes an error.
   (Xavier Leroy)
 
-- PR#4023 and GPR#68: add Unix.sleepf (sleep with sub-second resolution)
+- PR#4023, GPR#68: add Unix.sleepf (sleep with sub-second resolution)
   (Evgenii Lepikhin and Xavier Leroy)
 
 * Protect Unix.sleep against interruptions by handled signals.
@@ -1497,7 +1497,7 @@ OCaml 4.03.0 (25 Apr 2016):
 - PR#6944: let module X = Path in … is not typed as a module alias
   (Jacques Garrigue, report by Frédéric Bour)
 
-- PR#6945 and GPR#227: protect Sys and Unix functions against string
+- PR#6945, GPR#227: protect Sys and Unix functions against string
     arguments containing the null character '\000'
   (Simon Cruanes and Xavier Leroy, report by Daniel Bünzli)
 
@@ -1566,7 +1566,7 @@ OCaml 4.03.0 (25 Apr 2016):
 - PR#7039: Unix.getsockname returns garbage for unnamed PF_UNIX sockets
   (Xavier Leroy)
 
-- PR#7042 and GPR#295: CSE optimization confuses the FP literals +0.0 and -0.0
+- PR#7042, GPR#295: CSE optimization confuses the FP literals +0.0 and -0.0
   (Xavier Leroy)
 
 - PR#7075: Fix repetitions in ocamldoc generated documentation
@@ -1697,7 +1697,7 @@ OCaml 4.03.0 (25 Apr 2016):
 - PR#4714: List.cons
   (Gabriel Scherer)
 
-- PR#5418 (comments) : generate dependencies with $(CC) instead of gcc
+- PR#5418: (from comments) generate dependencies with $(CC) instead of gcc
   (Damien Doligez, report by Michael Grünewald)
 
 - PR#6167: OCAMLPARAM support for disabling PIC generation ("pic=0")
@@ -1913,7 +1913,7 @@ Runtime:
   (Damien Doligez and Roshan James)
 
 Build system:
-- PR#5418 (comments) : generate dependencies with $(CC) instead of gcc
+- PR#5418: (from comments) generate dependencies with $(CC) instead of gcc
   (Damien Doligez and Michael Grünewald)
 - PR#6266: Cross compilation for iOs, Android etc
   (whitequark, review by Damien Doligez and Mark Shinwell)
@@ -1972,12 +1972,12 @@ Bug fixes:
   (Mickael Delahaye and Damien Doligez)
 - PR#6680: Missing parentheses in warning about polymorphic variant value
   (Jacques Garrigue and Gabriel Scherer, report by Philippe Veber)
-- PR#6686: Bug in [subst_boxed_number]
+- PR#6686, PR#6770: Bug in [subst_boxed_number]
   (Jérémie Dimino, Mark Shinwell)
 - PR#6690: Uncaught exception (Not_found) with (wrong) wildcard or unification
   type variable in place of a local abstract type
   (Jacques Garrigue, report by Mikhail Mandrykin)
-- PR#6693 (part two): Incorrect relocation types in x86-64 runtime system
+- PR#6693: (part two) Incorrect relocation types in x86-64 runtime system
   (whitequark, review by Jacques-Henri Jourdan, Xavier Leroy and Mark Shinwell)
 - PR#6717: Pprintast does not print let-pattern attributes
   (Gabriel Scherer, report by whitequark)
@@ -1997,7 +1997,6 @@ Bug fixes:
   (Jacques Garrigue, report by David Sheets)
 - PR#6768: Typechecker overflow the stack on cyclic type
   (Jacques Garrigue, report by user 'darktenaibre')
-- PR#6770: (duplicate of PR#6686)
 - PR#6772: asmrun/signals_asm.c doesn't compile on NetBSD/i386
   (Kenji Tokudome)
 - PR#6775: Digest.file leaks file descriptor on error
@@ -2166,7 +2165,7 @@ OCaml 4.02.0 (29 Aug 2014):
 Language features:
 - Attributes and extension nodes
   (Alain Frisch)
-- Generative functors (PR#5905)
+- PR#5905: Generative functors
   (Jacques Garrigue)
 * Module aliases
   (Jacques Garrigue)
@@ -2321,7 +2320,7 @@ Bug fixes:
   (Xavier Leroy)
 - PR#4719: Sys.executable_name wrong if executable name contains dots (Windows)
   (Alain Frisch, report by Bart Jacobs)
-- PR#5406 ocamlbuild: "tag 'package' does not expect a parameter"
+- PR#5406: ocamlbuild: "tag 'package' does not expect a parameter"
   (Gabriel Scherer)
 - PR#5598, PR#6165: Alterations to handling of \013 in source files
   breaking other tools
@@ -2465,7 +2464,7 @@ Features wishes:
   (Gabriel Scherer)
 - PR#5899: a programmer-friendly access to backtrace information
   (Jacques-Henri Jourdan and Gabriel Scherer)
-- PR#6000 comment 9644: add a warning for non-principal coercions to format
+- PR#6000: (comment 9644) add a warning for non-principal coercions to format
   (Jacques Garrigue, report by Damien Doligez)
 - PR#6054: add support for M.[ foo ], M.[| foo |] etc.
   (Kaustuv Chaudhuri)
@@ -2999,7 +2998,7 @@ Language features:
   unpacking of a first-class module.
 
 Compilers:
-- Revised simplification of let-alias (PR#5205, PR#5288)
+- PR#5205, PR#5288: Revised simplification of let-alias
 - Better reporting of compiler version mismatch in .cmi files
 * Warning 28 is now enabled by default.
 - New option -absname to use absolute paths in error messages
@@ -3011,27 +3010,26 @@ Compilers:
   with the "method" keyword.  Use "method!" to avoid the warning.
 
 Native-code compiler:
-- Optimized handling of partially-applied functions (PR#5287)
-- Small improvements in code generated for array bounds checks (PR#5345,
-  PR#5360).
-* New ARM backend (PR#5433):
+- PR#5287: Optimized handling of partially-applied functions
+- PR#5345, PR#5360: Small improvements in code generated for array bounds
+  checks.
+* PR#5433: New ARM backend:
     . Supports both Linux/EABI (armel) and Linux/EABI+VFPv3 (armhf).
     . Added support for the Thumb-2 instruction set with average code size
       savings of 28%.
     . Added support for position-independent code, natdynlink, profiling and
       exception backtraces.
-- Generation of CFI information, and filename/line number debugging (with -g)
-  annotations, enabling in particular precise stack backtraces with
+- PR#5487: Generation of CFI information, and filename/line number debugging
+  (with -g) annotations, enabling in particular precise stack backtraces with
   the gdb debugger. Currently supported for x86 32-bits and 64-bits only.
-  (PR#5487)
 - New tool: ocamloptp, the equivalent of ocamlcp for the native-code compiler.
 
 OCamldoc:
 - PR#5645: ocamldoc doesn't handle module/type substitution in signatures
 - PR#5544: improve HTML output (less formatting in html code)
 - PR#5522: allow refering to record fields and variant constructors
-- fix PR#5419 (error message in french)
-- fix PR#5535 (no cross ref to class after dump+load)
+- PR#5419: error message in french
+- PR#5535: no cross ref to class after dump+load
 * Use first class modules for custom generators, to be able to
   load various plugins incrementally adding features to the current
   generator
@@ -3272,7 +3270,7 @@ Feature wishes:
 - PR#5434: implement Unix.times in win32unix (partially)
 - PR#5438: new warnings for unused declarations
 - PR#5439: upgrade config.guess and config.sub
-- PR#5445 and others: better printing of types with user-provided names
+- PR#5445: (and others) better printing of types with user-provided names
 - PR#5454: Digest.compare is missing and md5 doc update
 - PR#5455: .emacs instructions, add lines to recognize ocaml scripts
 - PR#5456: pa_macro: replace __LOCATION__ after macro expansion; add LOCATION_OF
