@@ -147,7 +147,7 @@ Next version (4.05.0):
   first step towards moving Bigarray to the stdlib
   (Jeremie Dimino)
 
-### Bytecode debugger (ocamldebug):
+### Toplevel, debugger and profiler:
 
 - GPR#977: Catch Out_of_range in "list" command
   (Yunxing Dai)
@@ -578,7 +578,7 @@ OCaml 4.04.0 (4 Nov 2016):
 - GPR#718: ocamldoc, fix order of extensible variant constructors
   (Florian Angeletti)
 
-### Debugging and profiling:
+### Toplevel, debugger and profiler:
 
 - GPR#585: Spacetime, a new memory profiler
   (Mark Shinwell, Leo White)
@@ -1248,7 +1248,7 @@ OCaml 4.03.0 (25 Apr 2016):
 - PR#6593: Functor application in tests/basic-modules fails after commit 15405
   (Jacques Garrigue)
 
-### Toplevel and debugger:
+### Toplevel, debugger and profiler:
 
 - PR#6113: Add descriptions to directives, and display them via #help
   (Nick Giannarakis, Berke Durak, Francis Southern and Gabriel Scherer)
@@ -1333,12 +1333,12 @@ OCaml 4.03.0 (25 Apr 2016):
   now causes an error.
   (Xavier Leroy)
 
-### OCamldep:
+### Tools:
 
 - GPR#286: add support for module aliases
   (Jacques Garrigue)
 
-### Manual:
+### Manual and documentation:
 
 - PR#6601: replace strcpy with caml_strdup in sample code
   (Christopher Zimmermann)
@@ -1690,7 +1690,7 @@ OCaml 4.03.0 (25 Apr 2016):
   variant and arrow types
   (Thomas Refis)
 
-### Features wishes:
+### Feature wishes:
 
 - PR#4518, GPR#29: change location format for reporting errors in ocamldoc
   (Sergei Lebedev)
@@ -1818,7 +1818,7 @@ OCaml 4.03.0 (25 Apr 2016):
   (Mark Shinwell, debugging & test case by Arseniy Alekseyev and Leo White,
    code review by Xavier Leroy)
 
-### Build system:
+### Compiler distribution build system:
 
 - GPR#388: FlexDLL added as a Git submodule and bootstrappable with the compiler
   (David Allsopp)
@@ -1891,12 +1891,12 @@ OCaml 4.02.2 (17 Jun 2015):
 - GPR#159: Better locations for structure/signature items
   (Leo White)
 
-### Toplevel and debugger:
+### Toplevel, debugger and profiler:
 
 - PR#5958: generalized polymorphic #install_printer
   (Pierre Chambart and Grégoire Henry)
 
-### OCamlbuild:
+### Tools:
 
 - PR#6237: explicit "infer" tag to control or disable menhir --infer
   (Hugo Heuzard)
@@ -1923,7 +1923,12 @@ OCaml 4.02.2 (17 Jun 2015):
 - PR#6774: new menhir-specific flags "only_tokens" and "external_tokens(Foo)"
   (François Pottier)
 
-### Libraries:
+### Standard library:
+
+- PR#6834: Add Obj.{first,last}_non_constant_constructor_tag
+  (Mark Shinwell, request by Gabriel Scherer)
+
+### Other libraries:
 
 - PR#6285: Add support for nanosecond precision in Unix.stat()
   (Jérémie Dimino, report by user 'gfxmonk')
@@ -1931,10 +1936,7 @@ OCaml 4.02.2 (17 Jun 2015):
 - PR#6781: Add higher baud rates to Unix termios
   (Damien Doligez, report by Berke Durak)
 
-- PR#6834: Add Obj.{first,last}_non_constant_constructor_tag
-  (Mark Shinwell, request by Gabriel Scherer)
-
-### Runtime:
+### Runtime system:
 
 - PR#6078: Release the runtime system when calling caml_dlopen
   (Jérémie Dimino)
@@ -1942,7 +1944,7 @@ OCaml 4.02.2 (17 Jun 2015):
 - PR#6675: GC hooks
   (Damien Doligez and Roshan James)
 
-### Build system:
+### Compiler distribution build system:
 
 - PR#5418: (from comments) generate dependencies with $(CC) instead of gcc
   (Damien Doligez and Michael Grünewald)
@@ -2202,7 +2204,7 @@ OCaml 4.02.1 (14 Oct 2014):
 * Add optional argument ?limit to Arg.align.
   (Maxence Guesdon)
 
-### Bug Fixes:
+### Bug fixes:
 
 - PR#4099: Bug in Makefile.nt: won't stop on error
   (George Necula)
@@ -2326,7 +2328,7 @@ OCaml 4.02.0 (29 Aug 2014):
   sequences (type bytes). Activated by command-line option -safe-string.
   (Damien Doligez)
 
-### Build system for the OCaml distribution:
+### Compiler distribution build system:
 
 - Use -bin-annot when building.
 
@@ -2426,7 +2428,7 @@ OCaml 4.02.0 (29 Aug 2014):
   the input file name up to the first ".")
   (Leo White, Mark Shinwell and Nick Chapman)
 
-### Toplevel interactive system:
+### Toplevel, debugger and profiler:
 
 - PR#5377: New "#show_*" directives
   (ygrek, Jacques Garrigue and Alain Frisch)
@@ -2493,7 +2495,7 @@ OCaml 4.02.0 (29 Aug 2014):
 - Trigger warning 3 for all values marked as deprecated in the documentation.
   (Damien Doligez)
 
-### OCamldoc:
+### Tools:
 
 - PR#6257: handle full doc comments for variant constructors and
   record fields
@@ -2697,7 +2699,7 @@ OCaml 4.02.0 (29 Aug 2014):
 - sometimes wrong stack alignment at out-of-bounds array access
   (Gabriel Scherer and Xavier Leroy, report by Pierre Chambart)
 
-### Features wishes:
+### Feature wishes:
 
 - PR#4243: make the Makefiles parallelizable
   (Grégoire Henry and Damien Doligez)
@@ -2807,10 +2809,6 @@ OCaml 4.01.0 (12 Sep 2013):
 
 (Changes that can break existing programs are marked with a "*")
 
-### Other libraries:
-
-- Labltk: updated to Tcl/Tk 8.6.
-
 ### Type system:
 
 - PR#5759: use well-disciplined type information propagation to
@@ -2904,6 +2902,8 @@ OCaml 4.01.0 (12 Sep 2013):
 - PR#5568: add O_CLOEXEC flag to Unix.openfile, so that the returned
   file descriptor is created in close-on-exec mode
   (Xavier Leroy)
+
+- Labltk: updated to Tcl/Tk 8.6.
 
 ### Runtime system:
 
@@ -3536,7 +3536,7 @@ OCaml 4.00.0 (26 Jul 2012):
 
 - New tool: ocamloptp, the equivalent of ocamlcp for the native-code compiler.
 
-### OCamldoc:
+### Tools:
 
 - PR#5419: error message in french
 
@@ -3621,7 +3621,7 @@ OCaml 4.00.0 (26 Jul 2012):
   a debug version of the runtime system, and a compiler option
   (-runtime-variant) to select the debug runtime.
 
-### Bug Fixes:
+### Bug fixes:
 
 - PR#1643: functions of the Lazy module whose named started with 'lazy_' have
   been deprecated, and new ones without the prefix added
@@ -4021,7 +4021,7 @@ OCaml 4.00.0 (26 Jul 2012):
   part of this distribution.  It now lives its own life at
   https://forge.ocamlcore.org/projects/ocamltopwin/
 
-### Other changes:
+### Compiler distribution build system:
 
 - Copy VERSION file to library directory when installing.
 
