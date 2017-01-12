@@ -38,7 +38,7 @@ OCAMLLEX  = $(OCAMLRUN) $(ROOTDIR)/boot/ocamllex
 # If they are not, then the preprocessor logic (including the
 # remove_DEBUG script and the debug target) could be removed.
 # If they are, it may be better to be able to enable them at run-time
-# rather than compile-time, e.g. through a -debug command-line option. 
+# rather than compile-time, e.g. through a -debug command-line option.
 # In the following line, "sh" is useful under Windows. Without it,
 # the ./remove_DEBUG command would be executed by cmd.exe which would not
 # know how to handle it.
@@ -179,12 +179,21 @@ LIBCMOFILES = $(CMOFILES)
 LIBCMXFILES = $(LIBCMOFILES:.cmo=.cmx)
 LIBCMIFILES = $(LIBCMOFILES:.cmo=.cmi)
 
+P :=
+include ../stdlib/StdlibModules
+
+STDLIB_MODULES := pervasives $(filter-out stdlib,$(STDLIB_MODULES))
+PARSING_MLIS := $(wildcard ../parsing/*.mli)
+
 STDLIB_MLIS=\
-  ../stdlib/*.mli \
-  ../parsing/*.mli \
-  ../otherlibs/$(UNIXLIB)/unix.mli \
-  ../otherlibs/str/str.mli \
-  ../otherlibs/bigarray/bigarray.mli
+  $(STDLIB_MODULES:%=stdlib_non_prefixed/%.mli) \
+  $(PARSING_MLIS:../parsing/%.mli=stdlib_non_prefixed/%.mli) \
+  stdlib_non_prefixed/warnings.mli \
+  stdlib_non_prefixed/unix.mli \
+  stdlib_non_prefixed/str.mli \
+  stdlib_non_prefixed/bigarray.mli
+
+STDLIB_CMIS=$(STDLIB_MLIS:%.mli=%.cmi)
 
 .PHONY: all
 all: lib exe generators manpages
@@ -235,10 +244,10 @@ $(OCAMLDOC_LIBCMXA): $(LIBCMXFILES)
 	$(OCAMLOPT) -a -o $@ $(LINKFLAGS) $^
 
 .PHONY: manpages
-manpages: stdlib_man/Pervasives.3o
+manpages: stdlib_man/Stdlib.3o
 
 .PHONY: html_doc
-html_doc: stdlib_html/Pervasives.html
+html_doc: stdlib_html/Stdlib.html
 
 .PHONY: dot
 dot: ocamldoc.dot
@@ -339,7 +348,7 @@ test:
 test_stdlib:
 	$(MKDIR) $@
 	$(OCAMLDOC_RUN) -html -colorize-code -sort -d $@ $(INCLUDES) -dump $@/stdlib.odoc -keep-code \
-	../stdlib/pervasives.ml ../stdlib/*.mli \
+	../stdlib/*.mli \
 	../otherlibs/$(UNIXLIB)/unix.mli \
 	../otherlibs/str/str.mli
 
@@ -382,24 +391,101 @@ test_texi:
 	$(MKDIR) $@
 	$(OCAMLDOC_RUN) -texi -sort -d $@ $(INCLUDES) odoc*.ml odoc*.mli
 
-stdlib_man/Pervasives.3o: $(OCAMLDOC) $(STDLIB_MLIS)
+stdlib_man/Stdlib.3o: $(OCAMLDOC) $(STDLIB_MLIS) $(STDLIB_CMIS)
 	$(MKDIR) stdlib_man
-	$(OCAMLDOC_RUN) -man -d stdlib_man $(INCLUDES) \
-	-t "OCaml library" -man-mini $(STDLIB_MLIS)
+	$(OCAMLDOC_RUN) -man -d stdlib_man -nostdlib -I stdlib_non_prefixed \
+	-t "OCaml library" -man-mini $(STDLIB_MLIS) \
+	-initially-opened-module Pervasives
 
-stdlib_html/Pervasives.html: $(STDLIB_MLIS)
+stdlib_html/Stdlib.html: $(OCAMLDOC) $(STDLIB_MLIS) $(STDLIB_CMIS)
 	$(MKDIR) stdlib_html
-	$(OCAMLDOC_RUN) -d stdlib_html -html $(INCLUDES) \
-	-t "OCaml library" $^
+	$(OCAMLDOC_RUN) -d stdlib_html -html -nostdlib -I stdlib_non_prefixed \
+	-t "OCaml library" $(STDLIB_MLIS) \
+	-initially-opened-module Pervasives
 
 .PHONY: autotest_stdlib
 autotest_stdlib:
 	$(MKDIR) $@
 	$(OCAMLDOC_RUN) -g autotest/odoc_test.cmo\
 	$(INCLUDES) -keep-code \
-	../stdlib/pervasives.ml ../stdlib/*.mli \
+	../stdlib/*.mli \
 	../otherlibs/$(UNIXLIB)/unix.mli \
 	../otherlibs/str/str.mli
+
+# stdlib non-prefixed :
+#######################
+
+OCAMLC_SNP = $(OCAMLRUN) $(ROOTDIR)/ocamlc -nostdlib -nopervasives -I stdlib_non_prefixed
+
+stdlib_non_prefixed/%.mli: ../stdlib/%.mli
+	cp $< $@
+
+stdlib_non_prefixed/camlinternalBigarray.mli: ../stdlib/camlinternalBigarray.ml
+	cp $< $@
+
+stdlib_non_prefixed/%.mli: ../parsing/%.mli
+	cp $< $@
+
+stdlib_non_prefixed/%.mli: ../utils/%.mli
+	cp $< $@
+
+stdlib_non_prefixed/%.mli: ../otherlibs/$(UNIXLIB)/%.mli
+	cp $< $@
+
+stdlib_non_prefixed/%.mli: ../otherlibs/str/%.mli
+	cp $< $@
+
+stdlib_non_prefixed/%.mli: ../otherlibs/bigarray/%.mli
+	cp $< $@
+
+stdlib_non_prefixed/pervasives.mli: ../stdlib/stdlib.mli stdlib_non_prefixed/extract_pervasives.awk
+	awk -f stdlib_non_prefixed/extract_pervasives.awk $< > $@
+
+stdlib_non_prefixed/pervasives.cmi: stdlib_non_prefixed/pervasives.mli
+	$(OCAMLC_SNP) -c $<
+
+stdlib_non_prefixed/camlinternalFormatBasics.cmi: stdlib_non_prefixed/camlinternalFormatBasics.mli
+	$(OCAMLC_SNP) -c $<
+
+stdlib_non_prefixed/%.cmi: stdlib_non_prefixed/%.mli stdlib_non_prefixed/pervasives.cmi
+	$(OCAMLC_SNP) -c -open Pervasives $<
+
+# odoc rules :
+##############
+
+.PHONY: odoc
+odoc:
+	rm -rf odoc
+	$(MKDIR) odoc
+	# .cmti --> .odoc
+	for fn in ../stdlib/stdlib*.cmti; do \
+	  odoc compile $(INCLUDES) --package stdlib ../stdlib/$$fn; \
+	done
+	for lib in str bigarray num; do \
+	  odoc compile $(INCLUDES) --package $$lib ../otherlibs/$$lib/$$lib.cmti; \
+	done
+	odoc compile $(INCLUDES) --package unix ../otherlibs/$(UNIXLIB)/unix.cmti
+	for fn in ../parsing/*.cmti; do \
+	  odoc compile $(INCLUDES) --package parsing ../parsing/$$fn; \
+	done
+	# .odoc --> .html
+	odoc html $(INCLUDES) --output-dir odoc ../stdlib/stdlib.odoc
+	for lib in str bigarray num $(UNIXLIB); do \
+	  odoc html $(INCLUDES) --output-dir odoc ../otherlibs/$$lib/$$lib.odoc; \
+	done
+	for fn in ../parsing/*.odoc; do \
+	  odoc html $(INCLUDES) --output-dir odoc $$fn; \
+	done
+	for d in odoc/*; do \
+	  lib=`basename $$d`; \
+	  cd $$d; \
+	  echo -e The $$lib 'library.\n\nModules\n:{!modules:' * '}' > ../../index.mld; \
+	  cd ../..; \
+	  odoc html $(INCLUDES) --output-dir odoc --index-for=$$lib index.mld; \
+	  rm -f index.mld; \
+	done
+	cp odoc_index.html odoc/index.html
+	odoc css -o odoc
 
 # backup, clean and depend :
 ############################
@@ -413,6 +499,7 @@ clean:
 	rm -f odoc_parser.ml odoc_parser.mli odoc_text_parser.ml odoc_text_parser.mli
 	rm -rf stdlib_man
 	rm -f generators/*.cm[taiox] generators/*.$(A) generators/*.$(O) generators/*.cmx[as]
+	rm -f stdlib_non_prefixed/*.mli stdlib_non_prefixed/*.cmi
 
 .PHONY: depend
 depend:
@@ -424,5 +511,6 @@ depend:
 	$(OCAMLLEX) odoc_see_lexer.mll
 	$(OCAMLDEP) $(INCLUDES_DEP) *.mll *.mly *.ml *.mli > .depend
 	$(OCAMLDEP) $(INCLUDES_DEP) -shared generators/*.ml >> .depend
+	$(OCAMLDEP) -I stdlib_non_prefixed stdlib_non_prefixed/*.mli >> .depend
 
 include .depend

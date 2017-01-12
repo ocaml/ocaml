@@ -32,6 +32,7 @@
 *.out.dSYM
 *.swp
 _ocamltest
+*.odoc
 
 # local to root directory
 
@@ -157,6 +158,7 @@ _ocamltest
 
 /ocamldoc/ocamldoc
 /ocamldoc/ocamldoc.opt
+/ocamldoc/odoc
 /ocamldoc/odoc_crc.ml
 /ocamldoc/odoc_lexer.ml
 /ocamldoc/odoc_ocamlhtml.ml
@@ -167,6 +169,7 @@ _ocamltest
 /ocamldoc/odoc_text_parser.ml
 /ocamldoc/odoc_text_parser.mli
 /ocamldoc/stdlib_man
+/ocamldoc/stdlib_non_prefixed/*.mli
 /ocamldoc/stdlib_html
 /ocamldoc/*.output
 /ocamldoc/test_stdlib
@@ -182,7 +185,7 @@ _ocamltest
 
 /otherlibs/dynlink/extract_crc
 /otherlibs/threads/marshal.mli
-/otherlibs/threads/pervasives.mli
+/otherlibs/threads/stdlib.mli
 /otherlibs/threads/unix.mli
 /otherlibs/win32graph/graphics.ml
 /otherlibs/win32graph/graphics.mli

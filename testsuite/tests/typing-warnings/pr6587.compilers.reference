@@ -6,11 +6,11 @@ Characters 49-85:
     end
 Error: Signature mismatch:
        Modules do not match:
-         sig val f : fpclass -> Pervasives.fpclass end
+         sig val f : fpclass -> Stdlib.fpclass end
        is not included in
          sig val f : fpclass -> fpclass end
        Values do not match:
-         val f : fpclass -> Pervasives.fpclass
+         val f : fpclass -> Stdlib.fpclass
        is not included in
          val f : fpclass -> fpclass
 

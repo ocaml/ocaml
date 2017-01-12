@@ -33,22 +33,25 @@ CAML_OBJS=thread.cmo mutex.cmo condition.cmo event.cmo threadUnix.cmo
 
 LIB=../../stdlib
 
-LIB_OBJS=$(LIB)/camlinternalFormatBasics.cmo pervasives.cmo		\
-  $(LIB)/array.cmo $(LIB)/list.cmo $(LIB)/char.cmo $(LIB)/bytes.cmo	\
-  $(LIB)/string.cmo $(LIB)/sys.cmo $(LIB)/sort.cmo marshal.cmo		\
-  $(LIB)/obj.cmo $(LIB)/int32.cmo $(LIB)/int64.cmo			\
-  $(LIB)/nativeint.cmo $(LIB)/lexing.cmo $(LIB)/parsing.cmo		\
-  $(LIB)/set.cmo $(LIB)/map.cmo $(LIB)/stack.cmo $(LIB)/queue.cmo	\
-  $(LIB)/camlinternalLazy.cmo $(LIB)/lazy.cmo $(LIB)/stream.cmo		\
-  $(LIB)/buffer.cmo $(LIB)/camlinternalFormat.cmo $(LIB)/printf.cmo	\
-  $(LIB)/arg.cmo $(LIB)/printexc.cmo $(LIB)/gc.cmo $(LIB)/digest.cmo	\
-  $(LIB)/random.cmo $(LIB)/hashtbl.cmo $(LIB)/format.cmo		\
-  $(LIB)/scanf.cmo $(LIB)/callback.cmo $(LIB)/camlinternalOO.cmo	\
-  $(LIB)/oo.cmo $(LIB)/camlinternalMod.cmo $(LIB)/genlex.cmo		\
-  $(LIB)/weak.cmo $(LIB)/ephemeron.cmo $(LIB)/filename.cmo		\
-  $(LIB)/complex.cmo $(LIB)/arrayLabels.cmo $(LIB)/listLabels.cmo	\
-  $(LIB)/bytesLabels.cmo $(LIB)/stringLabels.cmo			\
-  $(LIB)/moreLabels.cmo $(LIB)/stdLabels.cmo
+# Object file prefix
+P=stdlib__
+
+LIB_OBJS=$(LIB)/camlinternalFormatBasics.cmo stdlib.cmo					\
+  $(LIB)/$(P)array.cmo $(LIB)/$(P)list.cmo $(LIB)/$(P)char.cmo $(LIB)/$(P)bytes.cmo	\
+  $(LIB)/$(P)string.cmo $(LIB)/$(P)sys.cmo $(LIB)/$(P)sort.cmo marshal.cmo		\
+  $(LIB)/$(P)obj.cmo $(LIB)/$(P)int32.cmo $(LIB)/$(P)int64.cmo				\
+  $(LIB)/$(P)nativeint.cmo $(LIB)/$(P)lexing.cmo $(LIB)/$(P)parsing.cmo			\
+  $(LIB)/$(P)set.cmo $(LIB)/$(P)map.cmo $(LIB)/$(P)stack.cmo $(LIB)/$(P)queue.cmo	\
+  $(LIB)/camlinternalLazy.cmo $(LIB)/$(P)lazy.cmo $(LIB)/$(P)stream.cmo			\
+  $(LIB)/$(P)buffer.cmo $(LIB)/camlinternalFormat.cmo $(LIB)/$(P)printf.cmo		\
+  $(LIB)/$(P)arg.cmo $(LIB)/$(P)printexc.cmo $(LIB)/$(P)gc.cmo $(LIB)/$(P)digest.cmo	\
+  $(LIB)/$(P)random.cmo $(LIB)/$(P)hashtbl.cmo $(LIB)/$(P)format.cmo			\
+  $(LIB)/$(P)scanf.cmo $(LIB)/$(P)callback.cmo $(LIB)/camlinternalOO.cmo		\
+  $(LIB)/$(P)oo.cmo $(LIB)/camlinternalMod.cmo $(LIB)/$(P)genlex.cmo			\
+  $(LIB)/$(P)weak.cmo $(LIB)/$(P)ephemeron.cmo $(LIB)/$(P)filename.cmo			\
+  $(LIB)/$(P)complex.cmo $(LIB)/$(P)arrayLabels.cmo $(LIB)/$(P)listLabels.cmo		\
+  $(LIB)/$(P)bytesLabels.cmo $(LIB)/$(P)stringLabels.cmo				\
+  $(LIB)/$(P)moreLabels.cmo $(LIB)/$(P)stdLabels.cmo
 
 UNIXLIB=../unix
 
@@ -70,23 +73,24 @@ stdlib.cma: $(LIB_OBJS)
 unix.cma: $(UNIXLIB_OBJS)
 	$(MKLIB) -ocamlc '$(CAMLC)' -o unix -linkall $(UNIXLIB_OBJS)
 
-pervasives.cmo: pervasives.mli pervasives.cmi pervasives.ml
-	$(CAMLC) ${COMPFLAGS} -nopervasives -c pervasives.ml
+stdlib.cmo: stdlib.mli stdlib.cmi stdlib.ml
+	$(CAMLC) ${COMPFLAGS} -nopervasives \
+	  -pp "awk -f $(LIB)/expand_module_aliases.awk" -o $@ -c stdlib.ml
 
-pervasives.mli: $(LIB)/pervasives.mli
-	ln -s $(LIB)/pervasives.mli pervasives.mli
+stdlib.mli: $(LIB)/stdlib.mli
+	ln -s $(LIB)/stdlib.mli stdlib.mli
 
-pervasives.cmi: $(LIB)/pervasives.cmi
-	ln -s $(LIB)/pervasives.cmi pervasives.cmi
+stdlib.cmi: $(LIB)/stdlib.cmi
+	ln -s $(LIB)/stdlib.cmi stdlib.cmi
 
-marshal.cmo: marshal.mli marshal.cmi marshal.ml
-	$(CAMLC) ${COMPFLAGS} -c marshal.ml
+$(P)marshal.cmo: marshal.mli $(P)marshal.cmi marshal.ml
+	$(CAMLC) ${COMPFLAGS} -o$@ -c marshal.ml
 
 marshal.mli: $(LIB)/marshal.mli
 	ln -s $(LIB)/marshal.mli marshal.mli
 
-marshal.cmi: $(LIB)/marshal.cmi
-	ln -s $(LIB)/marshal.cmi marshal.cmi
+$(P)marshal.cmi: $(LIB)/$(P)marshal.cmi
+	ln -s $(LIB)/$(P)marshal.cmi $(P)marshal.cmi
 
 unix.mli: $(UNIXLIB)/unix.mli
 	ln -s -f $(UNIXLIB)/unix.mli unix.mli
@@ -102,7 +106,7 @@ partialclean:
 
 clean: partialclean
 	rm -f libvmthreads.a dllvmthreads.so *.o
-	rm -f pervasives.mli marshal.mli unix.mli
+	rm -f stdlib.mli marshal.mli unix.mli
 
 INSTALL_LIBDIR=$(DESTDIR)$(LIBDIR)
 INSTALL_STUBLIBDIR=$(DESTDIR)$(STUBLIBDIR)

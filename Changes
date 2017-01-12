@@ -1257,6 +1257,11 @@ OCaml 4.05.0 (13 Jul 2017):
   (François Bobot, review by Gabriel Scherer, Xavier Leroy, Damien Doligez,
    Frédéric Bour)
 
+* GPR#1010: change the compilation scheme of the stdlib. Now x.ml in
+  compiles to stdlib__x.cm* and we add a Stdlib alias module that is
+  opened by default to get back the short names.
+  (Jeremie Dimino, review by Gabriel Radanne)
+
 ### Manual and documentation:
 
 - MPR#6597, GPR#1030: add forward references to language extensions

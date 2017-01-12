@@ -45,12 +45,17 @@ let init_path ?(dir="") native =
 
 let initial_env () =
   Ident.reinit();
+  let initially_opened_module =
+    if !Clflags.nopervasives then
+      None
+    else
+      Some "Stdlib"
+  in
   Typemod.initial_env
     ~loc:(Location.in_file "command line")
     ~safe_string:(Config.safe_string || not !Clflags.unsafe_string)
-    ~open_pervasives:(not !Clflags.nopervasives)
+    ~initially_opened_module
     ~open_implicit_modules:(!implicit_modules @ List.rev !Clflags.open_modules)
-
 
 let read_color_env ppf =
   try

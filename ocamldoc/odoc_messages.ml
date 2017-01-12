@@ -238,6 +238,8 @@ let merge_options =
        merge_all ]
   )
 
+let initially_opened_module = "<module> Name of the module that is initially opened"
+
 let help = " Display this list of options"
 
 
