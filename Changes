@@ -122,6 +122,9 @@ Next version (4.05.0):
   it previously raised an EPIPE error, it now returns 0 like other OSes
   (Jonathan Protzenko)
 
+- PR#7457: a case of double free in the systhreads library (POSIX implementation)
+  (Xavier Leroy, report by Chet Murthy)
+
 - GPR#997: Deprecate Bigarray.*.map_file and add Unix.map_file as a
   first step towards moving Bigarray to the stdlib
   (Jeremie Dimino)
