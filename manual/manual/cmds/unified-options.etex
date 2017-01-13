@@ -288,7 +288,9 @@ Force all modules contained in libraries to be linked in. If this
 flag is not given, unreferenced modules are not linked in. When
 building a library (option "-a"), setting the "-linkall" option forces all
 subsequent links of programs involving that library to link all the
-modules contained in the library.
+modules contained in the library.  When compiling a module (option
+"-c"), setting the "-linkall" option ensures that this module will
+always be linked if it is put in a library and this library is linked.
 }%notop
 
 \comp{%
