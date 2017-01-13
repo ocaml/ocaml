@@ -129,12 +129,20 @@ let main () =
   try
     readenv ppf Before_args;
     Arg.parse_expand Options.list anonymous usage;
-    Compenv.process_deferred_actions
-      (ppf,
-       Compile.implementation,
-       Compile.interface,
-       ".cmo",
-       ".cma");
+    begin try
+      Compenv.process_deferred_actions
+        (ppf,
+         Compile.implementation,
+         Compile.interface,
+         ".cmo",
+         ".cma");
+    with Arg.Bad msg ->
+      begin
+        prerr_endline msg;
+        Arg.usage Options.list usage;
+        exit 2
+      end
+    end;
     readenv ppf Before_link;
     if
       List.length (List.filter (fun x -> !x)
