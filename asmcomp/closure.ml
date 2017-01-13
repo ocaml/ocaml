@@ -1108,7 +1108,7 @@ and close_functions fenv cenv fun_defs =
   in
   let inline_attribute = match fun_defs with
     | [_, Lfunction{attr = { inline; }}] -> inline
-    | _ -> Default_inline, false (* recursive functions can't be inlined *)
+    | _ -> Default_inline (* recursive functions can't be inlined *)
   in
   (* Update and check nesting depth *)
   incr function_nesting_depth;
