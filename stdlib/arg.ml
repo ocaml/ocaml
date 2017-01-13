@@ -130,14 +130,13 @@ let float_of_string_opt x =
   with Failure _ -> None
 
 let parse_and_expand_argv_dynamic_aux allow_expand current argv speclist anonfun errmsg =
-  let b = Buffer.create 200 in
   let initpos = !current in
   let convert_error error =
     (* convert an internal error to a Bad/Help exception
        *or* add the program name as a prefix and the usage message as a suffix
        to an user-raised Bad exception.
     *)
-    let () = Buffer.clear b in
+    let b = Buffer.create 200 in
     let progname = if initpos < (Array.length !argv) then !argv.(initpos) else "(?)" in
     begin match error with
       | Unknown "-help" -> ()

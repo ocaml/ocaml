@@ -6,8 +6,8 @@ let usage= "Arg module testing"
 let test total i (spec,anon,argv) =
   let argv = Array.of_list ("testerror" :: argv) in
   try Arg.parse_argv ~current:(ref 0) argv spec anon usage with
-  | Arg.Bad s-> Printf.printf "(%d/%d) Bad:%s\n" (i+1) total s
-  | Arg.Help s -> Printf.printf "(%d/%d) Help:%s\n" (i+1) total s
+  | Arg.Bad s-> Printf.printf "(%d/%d) Bad:\n%s\n" (i+1) total s
+  | Arg.Help s -> Printf.printf "(%d/%d) Help:\n%s\n" (i+1) total s
 
 
 let tests = [
