@@ -242,23 +242,20 @@ CAMLprim value caml_register_named_value(value vname, value val)
   return Val_unit;
 }
 
-CAMLexport value caml_get_named_value(char const *name, int* found_res)
+CAMLexport caml_root caml_named_root(char const *name)
 {
   struct named_value * nv;
-  int found = 0;
-  value ret = Val_unit;
+  caml_root ret = NULL;
   caml_plat_lock(&named_value_lock);
   for (nv = named_value_table[hash_value_name(name)];
        nv != NULL;
        nv = nv->next) {
     if (strcmp(name, nv->name) == 0){
-      ret = caml_read_root(nv->val);
-      found = 1;
+      ret = nv->val;
       break;
     }
   }
   caml_plat_unlock(&named_value_lock);
 
-  if (found_res) *found_res = found;
   return ret;
 }
