@@ -360,28 +360,28 @@ method effects_of exp =
    to whether the evaluation of a given expression may be deferred by
    [emit_parts].  This criterion is a property of the instruction selection
    algorithm in this file rather than a property of the Cmm language.
-
-   The criterion is used to enforce one particular restriction at the
-   moment: [Calloc] instructions may not be deferred.  This is to ensure
-   that it is not possible to interperse some expression that might trigger
-   a GC between the [Ialloc] instruction that creates the block and the
-   instructions that fill it up.
 *)
-method private cannot_defer = function
-  | Cconst_int _ | Cconst_natint _ | Cconst_float _ | Cconst_symbol _
-  | Cconst_pointer _ | Cconst_natpointer _ | Cblockheader _ | Cvar _ -> false
-  | Ctuple el -> List.exists self#cannot_defer el
-  | Clet (_id, arg, body) -> self#cannot_defer arg || self#cannot_defer body
-  | Csequence (e1, e2) -> self#cannot_defer e1 || self#cannot_defer e2
-  | Cifthenelse (cond, e1, e2) ->
-    self#cannot_defer cond || self#cannot_defer e1 || self#cannot_defer e2
-  | Cop (op, args, _dbg) ->
-    begin match op with
-    | Calloc -> true
-    | _ -> List.exists self#cannot_defer args
-    end
-  | Cassign _ | Cswitch _ | Cloop _ | Ccatch _ | Cexit _ | Ctrywith _ ->
-    true
+method private is_simple_expr = function
+    Cconst_int _ -> true
+  | Cconst_natint _ -> true
+  | Cconst_float _ -> true
+  | Cconst_symbol _ -> true
+  | Cconst_pointer _ -> true
+  | Cconst_natpointer _ -> true
+  | Cblockheader _ -> true
+  | Cvar _ -> true
+  | Ctuple el -> List.for_all self#is_simple_expr el
+  | Clet(_id, arg, body) -> self#is_simple_expr arg && self#is_simple_expr body
+  | Csequence(e1, e2) -> self#is_simple_expr e1 && self#is_simple_expr e2
+  | Cop(op, args, _dbg) ->
+      begin match op with
+        (* The following may have side effects *)
+      | Capply _ | Cextcall _ | Calloc | Cstore _ | Craise _ -> false
+        (* The remaining operations are simple if their args are *)
+      | _ ->
+          List.for_all self#is_simple_expr args
+      end
+  | _ -> false
 
 (* Says whether an integer constant is a suitable immediate argument *)
 
@@ -960,7 +960,7 @@ method private emit_parts (env:environment) ~effects_after exp =
   (* Even though some expressions may look like they can be deferred from
      the (co)effect analysis, it may be forbidden to move them.  (See
      [cannot_defer], above.) *)
-  if may_defer_evaluation && not (self#cannot_defer exp) then
+  if may_defer_evaluation && self#is_simple_expr exp then
     Some (exp, env)
   else begin
     match self#emit_expr env exp with
