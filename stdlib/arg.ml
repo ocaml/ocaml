@@ -158,33 +158,33 @@ let parse_and_expand_argv_dynamic_aux allow_expand current argv speclist anonfun
   in
   incr current;
   while !current < (Array.length !argv) do
-    let s = !argv.(!current) in
-    if String.length s >= 1 && s.[0] = '-' then begin
-      let action, follow =
-        try assoc3 s !speclist, None
-        with Not_found ->
+    begin try
+      let s = !argv.(!current) in
+      if String.length s >= 1 && s.[0] = '-' then begin
+        let action, follow =
+          try assoc3 s !speclist, None
+          with Not_found ->
           try
             let keyword, arg = split s in
             assoc3 keyword !speclist, Some arg
-          with Not_found -> raise (convert_error (Unknown s))
-      in
-      let no_arg () =
-        match follow with
-        | None -> ()
-        | Some arg -> raise (Stop (Wrong (s, arg, "no argument"))) in
-      let get_arg () =
-        match follow with
-        | None ->
-          if !current + 1 < (Array.length !argv) then !argv.(!current + 1)
-          else raise (Stop (Missing s))
-        | Some arg -> arg
-      in
-      let consume_arg () =
-        match follow with
-        | None -> incr current
-        | Some _ -> ()
-      in
-      begin try
+          with Not_found -> raise (Stop (Unknown s))
+        in
+        let no_arg () =
+          match follow with
+          | None -> ()
+          | Some arg -> raise (Stop (Wrong (s, arg, "no argument"))) in
+        let get_arg () =
+          match follow with
+          | None ->
+              if !current + 1 < (Array.length !argv) then !argv.(!current + 1)
+              else raise (Stop (Missing s))
+          | Some arg -> arg
+        in
+        let consume_arg () =
+          match follow with
+          | None -> incr current
+          | Some _ -> ()
+        in
         let rec treat_action = function
         | Unit f -> f ();
         | Bool f ->
@@ -257,15 +257,12 @@ let parse_and_expand_argv_dynamic_aux allow_expand current argv speclist anonfun
             and after = Array.sub !argv (!current + 1) ((Array.length !argv) - !current - 1) in
             argv:= Array.concat [before;newarg;after];
         in
-        treat_action action
-      with Bad m -> raise (convert_error (Message m));
+        treat_action action end
+      else anonfun s
+    with | Bad m -> raise (convert_error (Message m));
          | Stop e -> raise (convert_error e);
-      end;
-      incr current;
-    end else begin
-      (try anonfun s with Bad m -> raise (convert_error (Message m)));
-      incr current;
     end;
+    incr current
   done
 
 let parse_and_expand_argv_dynamic current argv speclist anonfun errmsg =
