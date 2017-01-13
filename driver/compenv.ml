@@ -586,7 +586,7 @@ let process_action
       else if not !native_code && Filename.check_suffix name Config.ext_dll then
         dllibs := name :: !dllibs
       else
-        raise(Arg.Bad("don't know what to do with " ^ name))
+        fatal ("don't know what to do with " ^ name)
 
 
 let action_of_file name =
