@@ -17,6 +17,7 @@ BASEDIR=../..
 
 INCLUDES=\
   -I $(OTOPDIR)/utils \
+  -I $(OTOPDIR)/parsing \
   -I $(OTOPDIR)/typing \
   -I $(OTOPDIR)/bytecomp \
   -I $(OTOPDIR)/asmcomp

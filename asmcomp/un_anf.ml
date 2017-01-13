@@ -35,6 +35,7 @@ let ignore_function_label (_ : Clambda.function_label) = ()
 let ignore_debuginfo (_ : Debuginfo.t) = ()
 let ignore_int (_ : int) = ()
 let ignore_ident (_ : Ident.t) = ()
+let ignore_ident_option (_ : Ident.t option) = ()
 let ignore_primitive (_ : Lambda.primitive) = ()
 let ignore_string (_ : string) = ()
 let ignore_int_array (_ : int array) = ()
@@ -86,7 +87,8 @@ let make_ident_info (clam : Clambda.ulambda) : ident_info =
       ignore_debuginfo dbg
     | Uclosure (functions, captured_variables) ->
       List.iter loop captured_variables;
-      List.iter (fun ({ Clambda. label; arity; params; body; dbg } as clos) ->
+      List.iter (fun (
+        { Clambda. label; arity; params; body; dbg; env; } as clos) ->
           (match closure_environment_ident clos with
            | None -> ()
            | Some env_var ->
@@ -96,7 +98,8 @@ let make_ident_info (clam : Clambda.ulambda) : ident_info =
           ignore_int arity;
           ignore_ident_list params;
           loop body;
-          ignore_debuginfo dbg)
+          ignore_debuginfo dbg;
+          ignore_ident_option env)
         functions
     | Uoffset (expr, offset) ->
       loop expr;
@@ -254,14 +257,15 @@ let let_bound_vars_that_can_be_moved ident_info (clam : Clambda.ulambda) =
     | Uclosure (functions, captured_variables) ->
       ignore_ulambda_list captured_variables;
       (* Start a new let stack for speed. *)
-      List.iter (fun { Clambda. label; arity; params; body; dbg; } ->
+      List.iter (fun { Clambda. label; arity; params; body; dbg; env; } ->
           ignore_function_label label;
           ignore_int arity;
           ignore_ident_list params;
           let_stack := [];
           loop body;
           let_stack := [];
-          ignore_debuginfo dbg)
+          ignore_debuginfo dbg;
+          ignore_ident_option env)
         functions
     | Uoffset (expr, offset) ->
       (* [expr] should usually be a variable. *)
