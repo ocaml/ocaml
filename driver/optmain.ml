@@ -236,15 +236,24 @@ let main () =
   let ppf = Format.err_formatter in
   try
     readenv ppf Before_args;
-    Arg.parse_expand (Arch.command_line_options @ Options.list) anonymous usage;
+    let spec = Arch.command_line_options @ Options.list in
+    Arg.parse_expand spec anonymous usage;
     if !gprofile && not Config.profiling then
       fatal "Profiling with \"gprof\" is not supported on this platform.";
-    Compenv.process_deferred_actions
-      (ppf,
-       Optcompile.implementation ~backend,
-       Optcompile.interface,
-       ".cmx",
-       ".cmxa");
+    begin try
+      Compenv.process_deferred_actions
+        (ppf,
+         Optcompile.implementation ~backend,
+         Optcompile.interface,
+         ".cmx",
+         ".cmxa");
+    with Arg.Bad msg ->
+      begin
+        prerr_endline msg;
+        Arg.usage spec usage;
+        exit 2
+      end
+    end;
     readenv ppf Before_link;
     if
       List.length (List.filter (fun x -> !x)

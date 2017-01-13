@@ -313,6 +313,11 @@ Next minor version (4.04.1):
   for ocaml build with WITH_FRAME_POINTERS defined
   (Christoph Cullmann)
 
+- PR#7460, GPR#1011: catch uncaught exception when unknown files are passed
+  as argument (regression in 4.04.0)
+  (Bernhard Schommer, review by Florian Angeletti and Gabriel Scherer,
+   report by Stephen Dolan)
+
 - GPR#912: Fix segfault in Unix.create_process on Windows caused by wrong header
   configuration.
   (David Allsopp)
