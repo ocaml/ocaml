@@ -81,139 +81,150 @@
      nativeint_ge =
        (function x y (Nativeint.>= x y))
      eta_gen_cmp =
-       (function prim prim (caml_compare prim prim))
+       (function prim prim stub (caml_compare prim prim))
      eta_int_cmp =
-       (function prim prim (caml_int_compare prim prim))
+       (function prim prim stub
+         (caml_int_compare prim prim))
      eta_bool_cmp =
-       (function prim prim (caml_int_compare prim prim))
+       (function prim prim stub
+         (caml_int_compare prim prim))
      eta_intlike_cmp =
-       (function prim prim (caml_int_compare prim prim))
+       (function prim prim stub
+         (caml_int_compare prim prim))
      eta_float_cmp =
-       (function prim prim
+       (function prim prim stub
          (caml_float_compare prim prim))
      eta_string_cmp =
-       (function prim prim
+       (function prim prim stub
          (caml_string_compare prim prim))
      eta_int32_cmp =
-       (function prim prim
+       (function prim prim stub
          (caml_int32_compare prim prim))
      eta_int64_cmp =
-       (function prim prim
+       (function prim prim stub
          (caml_int64_compare prim prim))
      eta_nativeint_cmp =
-       (function prim prim
+       (function prim prim stub
          (caml_nativeint_compare prim prim))
      eta_gen_eq =
-       (function prim prim (caml_equal prim prim))
+       (function prim prim stub (caml_equal prim prim))
      eta_int_eq =
-       (function prim prim (== prim prim))
+       (function prim prim stub (== prim prim))
      eta_bool_eq =
-       (function prim prim (== prim prim))
+       (function prim prim stub (== prim prim))
      eta_intlike_eq =
-       (function prim prim (== prim prim))
+       (function prim prim stub (== prim prim))
      eta_float_eq =
-       (function prim prim (==. prim prim))
+       (function prim prim stub (==. prim prim))
      eta_string_eq =
-       (function prim prim (caml_string_equal prim prim))
+       (function prim prim stub
+         (caml_string_equal prim prim))
      eta_int32_eq =
-       (function prim prim (Int32.== prim prim))
+       (function prim prim stub (Int32.== prim prim))
      eta_int64_eq =
-       (function prim prim (Int64.== prim prim))
+       (function prim prim stub (Int64.== prim prim))
      eta_nativeint_eq =
-       (function prim prim (Nativeint.== prim prim))
+       (function prim prim stub (Nativeint.== prim prim))
      eta_gen_ne =
-       (function prim prim (caml_notequal prim prim))
+       (function prim prim stub
+         (caml_notequal prim prim))
      eta_int_ne =
-       (function prim prim (!= prim prim))
+       (function prim prim stub (!= prim prim))
      eta_bool_ne =
-       (function prim prim (!= prim prim))
+       (function prim prim stub (!= prim prim))
      eta_intlike_ne =
-       (function prim prim (!= prim prim))
+       (function prim prim stub (!= prim prim))
      eta_float_ne =
-       (function prim prim (!=. prim prim))
+       (function prim prim stub (!=. prim prim))
      eta_string_ne =
-       (function prim prim
+       (function prim prim stub
          (caml_string_notequal prim prim))
      eta_int32_ne =
-       (function prim prim (Int32.!= prim prim))
+       (function prim prim stub (Int32.!= prim prim))
      eta_int64_ne =
-       (function prim prim (Int64.!= prim prim))
+       (function prim prim stub (Int64.!= prim prim))
      eta_nativeint_ne =
-       (function prim prim (Nativeint.!= prim prim))
+       (function prim prim stub (Nativeint.!= prim prim))
      eta_gen_lt =
-       (function prim prim (caml_lessthan prim prim))
-     eta_int_lt = (function prim prim (< prim prim))
+       (function prim prim stub
+         (caml_lessthan prim prim))
+     eta_int_lt =
+       (function prim prim stub (< prim prim))
      eta_bool_lt =
-       (function prim prim (< prim prim))
+       (function prim prim stub (< prim prim))
      eta_intlike_lt =
-       (function prim prim (< prim prim))
+       (function prim prim stub (< prim prim))
      eta_float_lt =
-       (function prim prim (<. prim prim))
+       (function prim prim stub (<. prim prim))
      eta_string_lt =
-       (function prim prim
+       (function prim prim stub
          (caml_string_lessthan prim prim))
      eta_int32_lt =
-       (function prim prim (Int32.< prim prim))
+       (function prim prim stub (Int32.< prim prim))
      eta_int64_lt =
-       (function prim prim (Int64.< prim prim))
+       (function prim prim stub (Int64.< prim prim))
      eta_nativeint_lt =
-       (function prim prim (Nativeint.< prim prim))
+       (function prim prim stub (Nativeint.< prim prim))
      eta_gen_gt =
-       (function prim prim (caml_greaterthan prim prim))
-     eta_int_gt = (function prim prim (> prim prim))
+       (function prim prim stub
+         (caml_greaterthan prim prim))
+     eta_int_gt =
+       (function prim prim stub (> prim prim))
      eta_bool_gt =
-       (function prim prim (> prim prim))
+       (function prim prim stub (> prim prim))
      eta_intlike_gt =
-       (function prim prim (> prim prim))
+       (function prim prim stub (> prim prim))
      eta_float_gt =
-       (function prim prim (>. prim prim))
+       (function prim prim stub (>. prim prim))
      eta_string_gt =
-       (function prim prim
+       (function prim prim stub
          (caml_string_greaterthan prim prim))
      eta_int32_gt =
-       (function prim prim (Int32.> prim prim))
+       (function prim prim stub (Int32.> prim prim))
      eta_int64_gt =
-       (function prim prim (Int64.> prim prim))
+       (function prim prim stub (Int64.> prim prim))
      eta_nativeint_gt =
-       (function prim prim (Nativeint.> prim prim))
+       (function prim prim stub (Nativeint.> prim prim))
      eta_gen_le =
-       (function prim prim (caml_lessequal prim prim))
+       (function prim prim stub
+         (caml_lessequal prim prim))
      eta_int_le =
-       (function prim prim (<= prim prim))
+       (function prim prim stub (<= prim prim))
      eta_bool_le =
-       (function prim prim (<= prim prim))
+       (function prim prim stub (<= prim prim))
      eta_intlike_le =
-       (function prim prim (<= prim prim))
+       (function prim prim stub (<= prim prim))
      eta_float_le =
-       (function prim prim (<=. prim prim))
+       (function prim prim stub (<=. prim prim))
      eta_string_le =
-       (function prim prim
+       (function prim prim stub
          (caml_string_lessequal prim prim))
      eta_int32_le =
-       (function prim prim (Int32.<= prim prim))
+       (function prim prim stub (Int32.<= prim prim))
      eta_int64_le =
-       (function prim prim (Int64.<= prim prim))
+       (function prim prim stub (Int64.<= prim prim))
      eta_nativeint_le =
-       (function prim prim (Nativeint.<= prim prim))
+       (function prim prim stub (Nativeint.<= prim prim))
      eta_gen_ge =
-       (function prim prim (caml_greaterequal prim prim))
+       (function prim prim stub
+         (caml_greaterequal prim prim))
      eta_int_ge =
-       (function prim prim (>= prim prim))
+       (function prim prim stub (>= prim prim))
      eta_bool_ge =
-       (function prim prim (>= prim prim))
+       (function prim prim stub (>= prim prim))
      eta_intlike_ge =
-       (function prim prim (>= prim prim))
+       (function prim prim stub (>= prim prim))
      eta_float_ge =
-       (function prim prim (>=. prim prim))
+       (function prim prim stub (>=. prim prim))
      eta_string_ge =
-       (function prim prim
+       (function prim prim stub
          (caml_string_greaterequal prim prim))
      eta_int32_ge =
-       (function prim prim (Int32.>= prim prim))
+       (function prim prim stub (Int32.>= prim prim))
      eta_int64_ge =
-       (function prim prim (Int64.>= prim prim))
+       (function prim prim stub (Int64.>= prim prim))
      eta_nativeint_ge =
-       (function prim prim (Nativeint.>= prim prim))
+       (function prim prim stub (Nativeint.>= prim prim))
      int_vec = [0: [0: 1 1] [0: [0: 1 2] [0: [0: 2 1] 0a]]]
      bool_vec = [0: [0: 0a 0a] [0: [0: 0a 1a] [0: [0: 1a 0a] 0a]]]
      intlike_vec = [0: [0: 0a 0a] [0: [0: 0a 1a] [0: [0: 1a 0a] 0a]]]

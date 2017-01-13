@@ -259,7 +259,10 @@ static int caml_thread_try_leave_blocking_section(void)
 static void caml_io_mutex_free(struct channel *chan)
 {
   st_mutex mutex = chan->mutex;
-  if (mutex != NULL) st_mutex_destroy(mutex);
+  if (mutex != NULL) {
+    st_mutex_destroy(mutex);
+    chan->mutex = NULL;
+  }
 }
 
 static void caml_io_mutex_lock(struct channel *chan)

@@ -75,6 +75,7 @@ TYPING=typing/ident.cmo typing/path.cmo \
   typing/typemod.cmo
 
 COMP=bytecomp/lambda.cmo bytecomp/printlambda.cmo \
+  bytecomp/semantics_of_primitives.cmo \
   bytecomp/typeopt.cmo bytecomp/switch.cmo bytecomp/matching.cmo \
   bytecomp/translobj.cmo bytecomp/translattribute.cmo \
   bytecomp/translcore.cmo \
@@ -157,7 +158,6 @@ MIDDLE_END=\
   middle_end/base_types/export_id.cmo \
   middle_end/base_types/symbol.cmo \
   middle_end/pass_wrapper.cmo \
-  middle_end/semantics_of_primitives.cmo \
   middle_end/allocated_const.cmo \
   middle_end/projection.cmo \
   middle_end/flambda.cmo \

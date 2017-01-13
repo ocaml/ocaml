@@ -393,7 +393,8 @@ case "$ccfamily" in
     bytecccompopts="-std=gnu99 -O";
     byteccprivatecompopts="$gcc_warnings";;
   gcc-4-*)
-    bytecccompopts="-std=gnu99 -O2 -fno-strict-aliasing -fwrapv";
+    bytecccompopts="-std=gnu99 -O2 -fno-strict-aliasing -fwrapv \
+-fno-builtin-memcmp";
     byteccprivatecompopts="$gcc_warnings";;
   gcc-*)
     bytecccompopts="-O2 -fno-strict-aliasing -fwrapv";

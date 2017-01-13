@@ -201,16 +201,19 @@ let lambda_smaller lam threshold =
   with Exit ->
     false
 
+let is_pure_prim p =
+  let open Semantics_of_primitives in
+  match Semantics_of_primitives.for_primitive p with
+  | (No_effects | Only_generative_effects), _ -> true
+  | Arbitrary_effects, _ -> false
+
 (* Check if a clambda term is ``pure'',
    that is without side-effects *and* not containing function definitions *)
 
 let rec is_pure_clambda = function
     Uvar _ -> true
   | Uconst _ -> true
-  | Uprim((Psetglobal _ | Psetfield _ | Psetfloatfield _ | Pduprecord _ |
-           Pccall _ | Praise _ | Poffsetref _ |  Pbytessetu | Pbytessets |
-           Parraysetu _ | Parraysets _ | Pbigarrayset _), _, _) -> false
-  | Uprim(_, args, _) -> List.for_all is_pure_clambda args
+  | Uprim(p, args, _) -> is_pure_prim p && List.for_all is_pure_clambda args
   | _ -> false
 
 (* Simplify primitive operations on known arguments *)
@@ -653,7 +656,7 @@ let is_simple_argument = function
 
 let no_effects = function
   | Uclosure _ -> true
-  | u -> is_simple_argument u
+  | u -> is_pure_clambda u
 
 let rec bind_params_rec loc fpc subst params args body =
   match (params, args) with
@@ -689,10 +692,7 @@ let bind_params loc fpc params args body =
 let rec is_pure = function
     Lvar _ -> true
   | Lconst _ -> true
-  | Lprim((Psetglobal _ | Psetfield _ | Psetfloatfield _ | Pduprecord _ |
-           Pccall _ | Praise _ | Poffsetref _  | Pbytessetu | Pbytessets |
-           Parraysetu _ | Parraysets _ | Pbigarrayset _), _,_) -> false
-  | Lprim(_, args,_) -> List.for_all is_pure args
+  | Lprim(p, args,_) -> is_pure_prim p && List.for_all is_pure args
   | Levent(lam, _ev) -> is_pure lam
   | _ -> false
 
@@ -1101,16 +1101,15 @@ and close_functions fenv cenv fun_defs =
          (function
            | (id, Lfunction{kind; params; body; attr; loc}) ->
                Simplif.split_default_wrapper ~id ~kind ~params
-                 ~body ~attr ~wrapper_attr:attr ~loc ()
+                 ~body ~attr ~loc
            | _ -> assert false
          )
          fun_defs)
   in
-  let inline_attribute = match fun_defs with
-    | [_, Lfunction{attr = { inline }}] -> inline
-    | _ -> Default_inline (* recursive functions can't be inlined *)
+  let inline_attribute, stub = match fun_defs with
+    | [_, Lfunction{attr = { inline; stub }}] -> inline, stub
+    | _ -> Default_inline, false (* recursive functions can't be inlined *)
   in
-
   (* Update and check nesting depth *)
   incr function_nesting_depth;
   let initially_closed =
@@ -1199,7 +1198,7 @@ and close_functions fenv cenv fun_defs =
       | Never_inline -> min_int
       | Unroll _ -> assert false
     in
-    if lambda_smaller ubody threshold
+    if stub || lambda_smaller ubody threshold
     then fundesc.fun_inline <- Some(fun_params, ubody);
 
     (f, (id, env_pos, Value_closure(fundesc, approx))) in

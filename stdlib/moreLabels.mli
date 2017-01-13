@@ -44,6 +44,7 @@ module Hashtbl : sig
         ('a, 'b) t -> init:'c -> 'c
   val length : ('a, 'b) t -> int
   val randomize : unit -> unit
+  val is_randomized : unit -> bool
   type statistics = Hashtbl.statistics
   val stats : ('a, 'b) t -> statistics
   module type HashedType = Hashtbl.HashedType

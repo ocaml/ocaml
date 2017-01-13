@@ -32,17 +32,6 @@ type t = {
 }
 
 let add_default_argument_wrappers lam =
-  (* CR-someday mshinwell: Temporary hack to mark default argument wrappers
-     as stubs.  Other possibilities:
-     1. Change Lambda.inline_attribute to add another ("stub") case;
-     2. Add a "stub" field to the Lfunction record. *)
-  let stubify body : Lambda.lambda =
-    let stub_prim =
-      Primitive.simple ~name:Closure_conversion_aux.stub_hack_prim_name
-        ~arity:1 ~alloc:false
-    in
-    Lprim (Pccall stub_prim, [body], Location.none)
-  in
   let defs_are_all_functions (defs : (_ * Lambda.lambda) list) =
     List.for_all (function (_, Lambda.Lfunction _) -> true | _ -> false) defs
   in
@@ -51,9 +40,8 @@ let add_default_argument_wrappers lam =
     | Llet (( Strict | Alias | StrictOpt), _k, id,
         Lfunction {kind; params; body = fbody; attr; loc}, body) ->
       begin match
-        Simplif.split_default_wrapper ~id ~kind ~params ~body:fbody
-          ~attr ~wrapper_attr:Lambda.default_function_attribute
-          ~loc ~create_wrapper_body:stubify ()
+        Simplif.split_default_wrapper ~id ~kind ~params
+          ~body:fbody ~attr ~loc
       with
       | [fun_id, def] -> Llet (Alias, Pgenval, fun_id, def, body)
       | [fun_id, def; inner_fun_id, def_inner] ->
@@ -69,8 +57,7 @@ let add_default_argument_wrappers lam =
                (function
                  | (id, Lambda.Lfunction {kind; params; body; attr; loc}) ->
                    Simplif.split_default_wrapper ~id ~kind ~params ~body
-                     ~attr ~wrapper_attr:Lambda.default_function_attribute
-                     ~loc ~create_wrapper_body:stubify ()
+                     ~attr ~loc
                  | _ -> assert false)
                defs)
         in
@@ -218,8 +205,7 @@ let rec close t env (lam : Lambda.lambda) : Flambda.t =
     let set_of_closures =
       let decl =
         Function_decl.create ~let_rec_ident:None ~closure_bound_var ~kind
-          ~params ~body ~inline:attr.inline ~specialise:attr.specialise
-          ~is_a_functor:attr.is_a_functor ~loc
+          ~params ~body ~attr ~loc
       in
       close_functions t env (Function_decls.create [decl])
     in
@@ -266,8 +252,7 @@ let rec close t env (lam : Lambda.lambda) : Flambda.t =
             let function_declaration =
               Function_decl.create ~let_rec_ident:(Some let_rec_ident)
                 ~closure_bound_var ~kind ~params ~body
-                ~inline:attr.inline ~specialise:attr.specialise
-                ~is_a_functor:attr.is_a_functor ~loc
+                ~attr ~loc
             in
             Some function_declaration
           | _ -> None)
@@ -577,11 +562,7 @@ and close_functions t external_env function_declarations : Flambda.named =
        argument with a default value, make sure it always gets inlined.
        CR-someday pchambart: eta-expansion wrapper for a primitive are
        not marked as stub but certainly should *)
-    let stub, body =
-      match Function_decl.primitive_wrapper decl with
-      | None -> false, body
-      | Some wrapper_body -> true, wrapper_body
-    in
+    let stub = Function_decl.stub decl in
     let params = List.map (Env.find_var closure_env) params in
     let closure_bound_var = Function_decl.closure_bound_var decl in
     let body = close t closure_env body in
@@ -641,8 +622,7 @@ and close_let_bound_expression t ?let_rec_ident let_bound_var env
     let closure_bound_var = Variable.rename let_bound_var in
     let decl =
       Function_decl.create ~let_rec_ident ~closure_bound_var ~kind ~params
-        ~body ~inline:attr.inline ~specialise:attr.specialise
-        ~is_a_functor:attr.is_a_functor ~loc
+        ~body ~attr ~loc
     in
     let set_of_closures_var =
       Variable.rename let_bound_var ~append:"_set_of_closures"

@@ -107,16 +107,42 @@ static void check_global_data_param(char const *exception_name, char const *msg)
   }
 }
 
-CAMLexport void caml_failwith (char const *msg)
+static inline value caml_get_failwith_tag (char const *msg)
 {
   check_global_data_param("Failure", msg);
-  caml_raise_with_string(Field(caml_global_data, FAILURE_EXN), msg);
+  return Field(caml_global_data, FAILURE_EXN);
+}
+
+CAMLexport void caml_failwith (char const *msg)
+{
+  caml_raise_with_string(caml_get_failwith_tag(msg), msg);
+}
+
+CAMLexport void caml_failwith_value (value msg)
+{
+  CAMLparam1(msg);
+  value tag = caml_get_failwith_tag(String_val(msg));
+  caml_raise_with_arg(tag, msg);
+  CAMLnoreturn;
+}
+
+static inline value caml_get_invalid_argument_tag (char const *msg)
+{
+  check_global_data_param("Invalid_argument", msg);
+  return Field(caml_global_data, INVALID_EXN);
 }
 
 CAMLexport void caml_invalid_argument (char const *msg)
 {
-  check_global_data_param("Invalid_argument", msg);
-  caml_raise_with_string(Field(caml_global_data, INVALID_EXN), msg);
+  caml_raise_with_string(caml_get_invalid_argument_tag(msg), msg);
+}
+
+CAMLexport void caml_invalid_argument_value (value msg)
+{
+  CAMLparam1(msg);
+  value tag = caml_get_invalid_argument_tag(String_val(msg));
+  caml_raise_with_arg(tag, msg);
+  CAMLnoreturn;
 }
 
 CAMLexport void caml_array_bound_error(void)

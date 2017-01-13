@@ -221,7 +221,7 @@ See `caml-types-location-re' for annotation file format."
               (right (caml-types-get-pos target-buf (elt node 1)))
               (kind (cdr (assoc "call" (elt node 2)))))
           (move-overlay caml-types-expr-ovl left right target-buf)
-          (caml-types-feedback kind)))))
+          (caml-types-feedback kind "%s call")))))
     (if (and (= arg 4)
              (not (window-live-p (get-buffer-window caml-types-buffer))))
         (display-buffer caml-types-buffer))
