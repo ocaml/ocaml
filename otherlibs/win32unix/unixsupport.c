@@ -224,7 +224,7 @@ int error_table[] = {
   EHOSTUNREACH, ELOOP, EOVERFLOW /*, EUNKNOWNERR */
 };
 
-static value * unix_error_exn = NULL;
+static caml_root unix_error_exn = NULL;
 
 value unix_error_of_code (int errcode)
 {
@@ -252,14 +252,13 @@ void unix_error(int errcode, char *cmdname, value cmdarg)
     name = copy_string(cmdname);
     err = unix_error_of_code (errcode);
     if (unix_error_exn == NULL) {
-      int unix_error_found;
-      unix_error_exn = caml_get_named_value("Unix.Unix_error", &unix_error_found);
-      if (!unix_error_found)
+      unix_error_exn = caml_named_root("Unix.Unix_error");
+      if (!unix_error_exn)
         invalid_argument("Exception Unix.Unix_error not initialized,"
                          " please link unix.cma");
     }
     res = caml_alloc_4(0,
-      *unix_error_exn,
+      caml_read_root(unix_error_exn),
       err,
       name,
       arg);

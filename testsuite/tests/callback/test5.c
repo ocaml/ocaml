@@ -12,17 +12,16 @@ value caml_to_c_native (value a1, value a2, value a3, value a4, value a5,
 
   printf ("[C] Enter caml_to_c\n");
 
-  static value c_to_caml_closure = NULL;
-  static int found = 0;
-  if (!found)
-    c_to_caml_closure = caml_get_named_value("c_to_caml", &found);
+  static caml_root c_to_caml_closure = NULL;
+  if (!c_to_caml_closure)
+    c_to_caml_closure = caml_named_root("c_to_caml");
 
   l = Long_val (a1) + Long_val (a2) + Long_val (a3) + Long_val (a4)
     + Long_val (a5) + Long_val (a6) + Long_val (a7) + Long_val (a8)
     + Long_val (a9) + Long_val (a10) + Long_val (a11);
 
   printf ("[C] Call c_to_caml\n");
-  caml_callback(c_to_caml_closure, Val_long(l));
+  caml_callback(caml_read_root(c_to_caml_closure), Val_long(l));
   printf ("[C] Return from c_to_caml\n");
 
   printf ("[C] Leave caml_to_c\n");

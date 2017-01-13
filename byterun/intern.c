@@ -484,11 +484,10 @@ static value intern_rec(mlsize_t whsize, mlsize_t num_objects)
             if (codeptr != NULL) {
               v = (value) codeptr;
             } else {
-              int found_placeholder;
-              value function_placeholder =
-                caml_get_named_value ("Debugger.function_placeholder", &found_placeholder);
-              if (found_placeholder) {
-                v = function_placeholder;
+              caml_root function_placeholder =
+                caml_named_root ("Debugger.function_placeholder");
+              if (function_placeholder) {
+                v = caml_read_root(function_placeholder);
               } else {
                 intern_cleanup(&S);
                 intern_bad_code_pointer(digest);
