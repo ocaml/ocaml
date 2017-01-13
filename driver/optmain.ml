@@ -231,13 +231,22 @@ let main () =
   let ppf = Format.err_formatter in
   try
     readenv ppf Before_args;
-    Arg.parse (Arch.command_line_options @ Options.list) anonymous usage;
-    Compenv.process_deferred_actions
-      (ppf,
-       Optcompile.implementation ~backend,
-       Optcompile.interface,
-       ".cmx",
-       ".cmxa");
+    let spec = Arch.command_line_options @ Options.list in
+    Arg.parse spec anonymous usage;
+    begin try
+      Compenv.process_deferred_actions
+        (ppf,
+         Optcompile.implementation ~backend,
+         Optcompile.interface,
+         ".cmx",
+         ".cmxa");
+    with Arg.Bad msg ->
+      begin
+        prerr_endline msg;
+        Arg.usage spec usage;
+        exit 2
+      end
+    end;
     readenv ppf Before_link;
     if
       List.length (List.filter (fun x -> !x)
