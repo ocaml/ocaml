@@ -151,17 +151,6 @@ natruntop:
 	$(MAKEREC) ocamlnat
 	@rlwrap --help 2>/dev/null && $(EXTRAPATH) rlwrap $(NATRUNTOP) || $(EXTRAPATH) $(NATRUNTOP)
 
-# OCamldoc
-
-ocamldoc:
-	cd ocamldoc ; $(MAKE) all
-ocamldoc.opt:
-	cd ocamldoc ; $(MAKE) opt.opt
-partialclean::
-	cd ocamldoc ; $(MAKE) clean
-alldepend::
-	cd ocamldoc ; $(MAKE) depend
-
 # The extra libraries
 
 otherlibraries:
@@ -253,8 +242,8 @@ distclean:
 .PHONY: partialclean beforedepend alldepend cleanboot coldstart
 .PHONY: compare core coreall
 .PHONY: coreboot depend distclean
-.PHONY: ocamldebugger ocamldoc
-.PHONY: ocamldoc.opt ocamltools ocamltoolsopt
+.PHONY: ocamldebugger
+.PHONY: ocamltools ocamltoolsopt
 .PHONY: ocamltoolsopt.opt opt-core opt opt.opt otherlibraries
 .PHONY: otherlibrariesopt promote promote-cross
 .PHONY: restore world world.opt

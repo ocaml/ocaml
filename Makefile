@@ -196,26 +196,6 @@ natruntop:
 	$(MAKE) ocamlnat
 	@rlwrap --help 2>/dev/null && rlwrap $(NATRUNTOP) || $(NATRUNTOP)
 
-# OCamldoc
-
-ocamldoc: ocamlc ocamlyacc ocamllex otherlibraries
-	cd ocamldoc && $(MAKE) all
-
-ocamldoc.opt: ocamlc.opt ocamlyacc ocamllex
-	cd ocamldoc && $(MAKE) opt.opt
-
-# Documentation
-
-html_doc: ocamldoc
-	make -C ocamldoc html_doc
-	@echo "documentation is in ./ocamldoc/stdlib_html/"
-
-partialclean::
-	cd ocamldoc && $(MAKE) clean
-
-alldepend::
-	cd ocamldoc && $(MAKE) depend
-
 # The extra libraries
 
 otherlibraries: ocamltools
@@ -327,8 +307,8 @@ distclean:
 .PHONY: partialclean beforedepend alldepend cleanboot coldstart
 .PHONY: compare core coreall
 .PHONY: coreboot depend distclean
-.PHONY: ocamldebugger ocamldoc
-.PHONY: ocamldoc.opt ocamltools ocamltoolsopt
+.PHONY: ocamldebugger
+.PHONY: ocamltools ocamltoolsopt
 .PHONY: ocamltoolsopt.opt opt-core opt opt.opt otherlibraries
 .PHONY: otherlibrariesopt package-macosx promote promote-cross
 .PHONY: restore world world.opt
