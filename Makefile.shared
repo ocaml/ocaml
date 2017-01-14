@@ -125,6 +125,10 @@ BYTECOMP=bytecomp/meta.cmo bytecomp/instruct.cmo bytecomp/bytegen.cmo \
   driver/compdynlink.cmo driver/compplugin.cmo \
   driver/errors.cmo driver/compile.cmo
 
+ARCH_SPECIFIC =\
+  asmcomp/arch.ml asmcomp/proc.ml asmcomp/CSE.ml asmcomp/selection.ml \
+  asmcomp/scheduling.ml asmcomp/reload.ml
+
 INTEL_ASM=\
   asmcomp/x86_proc.cmo \
   asmcomp/x86_dsl.cmo \
@@ -663,6 +667,21 @@ partialclean::
 
 beforedepend:: bytecomp/runtimedef.ml
 
+# Preprocess the code emitters
+
+asmcomp/emit.ml: asmcomp/$(ARCH)/emit.mlp tools/cvt_emit
+	echo \# 1 \"$(ARCH)/emit.mlp\" > $@
+	$(CAMLRUN) tools/cvt_emit < $< >> $@ \
+	|| { rm -f $@; exit 2; }
+
+partialclean::
+	rm -f asmcomp/emit.ml
+
+beforedepend:: asmcomp/emit.ml
+
+tools/cvt_emit: tools/cvt_emit.mll
+	$(MAKE) -C tools cvt_emit
+
 # The middle end (whose .cma library is currently only used for linking
 # the "ocamlobjinfo" program, since we cannot depend on the whole native code
 # compiler for "make world" and the list of dependencies for
@@ -703,10 +722,6 @@ alldepend::
 
 ## Test compilation of backend-specific parts
 
-ARCH_SPECIFIC = \
-  asmcomp/arch.ml asmcomp/proc.ml asmcomp/CSE.ml asmcomp/selection.ml \
-  asmcomp/scheduling.ml asmcomp/reload.ml asmcomp/emit.ml
-
 partialclean::
 	rm -f $(ARCH_SPECIFIC)
 
@@ -719,10 +734,10 @@ beforedepend:: $(ARCH_SPECIFIC)
 
 check_arch:
 	@echo "========= CHECKING asmcomp/$(ARCH) =============="
-	@rm -f $(ARCH_SPECIFIC) asmcomp/*.cm*
+	@rm -f $(ARCH_SPECIFIC) asmcomp/emit.ml asmcomp/*.cm*
 	@$(MAKEREC) compilerlibs/ocamloptcomp.cma \
 	            >/dev/null
-	@rm -f $(ARCH_SPECIFIC) asmcomp/*.cm*
+	@rm -f $(ARCH_SPECIFIC) asmcomp/emit.ml asmcomp/*.cm*
 
 ARCHES=amd64 i386 arm arm64 power sparc s390x
 

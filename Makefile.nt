@@ -201,19 +201,6 @@ partialclean::
 
 beforedepend:: asmcomp/scheduling.ml
 
-# Preprocess the code emitters
-
-asmcomp/emit.ml: asmcomp/$(ARCH)/emit.mlp tools/cvt_emit
-	$(CAMLRUN) tools/cvt_emit < asmcomp/$(ARCH)/emit.mlp > asmcomp/emit.ml
-
-partialclean::
-	rm -f asmcomp/emit.ml
-
-beforedepend:: asmcomp/emit.ml
-
-tools/cvt_emit: tools/cvt_emit.mll
-	cd tools ; $(MAKE) cvt_emit
-
 # The "expunge" utility
 
 expunge: compilerlibs/ocamlcommon.cma compilerlibs/ocamlbytecomp.cma \

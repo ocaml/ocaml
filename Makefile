@@ -216,17 +216,6 @@ asmcomp/reload.ml: asmcomp/$(ARCH)/reload.ml
 asmcomp/scheduling.ml: asmcomp/$(ARCH)/scheduling.ml
 	ln -s $(ARCH)/scheduling.ml asmcomp/scheduling.ml
 
-# Preprocess the code emitters
-
-asmcomp/emit.ml: asmcomp/$(ARCH)/emit.mlp tools/cvt_emit
-	echo \# 1 \"$(ARCH)/emit.mlp\" > asmcomp/emit.ml
-	$(CAMLRUN) tools/cvt_emit <asmcomp/$(ARCH)/emit.mlp \
-	                          >>asmcomp/emit.ml \
-	|| { rm -f asmcomp/emit.ml; exit 2; }
-
-tools/cvt_emit: tools/cvt_emit.mll
-	cd tools && $(MAKE) cvt_emit
-
 # The "expunge" utility
 
 expunge: compilerlibs/ocamlcommon.cma compilerlibs/ocamlbytecomp.cma \
