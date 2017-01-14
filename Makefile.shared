@@ -855,6 +855,17 @@ partialclean::
 alldepend::
 	$(MAKE) -C debugger depend
 
+# Check that the stack limit is reasonable.
+ifeq "$(UNIX_OR_WIN32)" "unix"
+.PHONY: checkstack
+checkstack:
+	if $(MKEXE) -o tools/checkstack$(EXE) tools/checkstack.c; \
+	  then tools/checkstack$(EXE); \
+	  else :; \
+	fi
+	rm -f tools/checkstack$(EXE)
+endif
+
 # The middle end (whose .cma library is currently only used for linking
 # the "ocamlobjinfo" program, since we cannot depend on the whole native code
 # compiler for "make world" and the list of dependencies for

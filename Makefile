@@ -196,15 +196,6 @@ natruntop:
 	$(MAKE) ocamlnat
 	@rlwrap --help 2>/dev/null && rlwrap $(NATRUNTOP) || $(NATRUNTOP)
 
-# Check that the stack limit is reasonable.
-
-checkstack:
-	@if $(MKEXE) -o tools/checkstack$(EXE) tools/checkstack.c; \
-	  then tools/checkstack$(EXE); \
-	  else :; \
-	fi
-	@rm -f tools/checkstack
-
 # Make MacOS X package
 
 package-macosx:
@@ -260,7 +251,7 @@ distclean:
 	rm -f ocaml ocamlc
 	rm -f testsuite/_log
 
-.PHONY: all backup bootstrap checkstack
+.PHONY: all backup bootstrap
 .PHONY: partialclean beforedepend alldepend cleanboot coldstart
 .PHONY: compare core coreall
 .PHONY: coreboot depend distclean
