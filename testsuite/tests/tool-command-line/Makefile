@@ -17,8 +17,10 @@ BASEDIR=../..
 
 
 default:
-	@$(OCAMLOPT) unknown-file > unknown-file.opt.result 2>&1 || true;
-	@$(OCAMLC) unknown-file > unknown-file.byte.result 2>&1 || true
+	@$(OCAMLOPT) unknown-file  2>&1 | grep "don't know what to do with unknown-file"\
+	> unknown-file.opt.result || true
+	@$(OCAMLC) unknown-file 2>&1 | grep "don't know what to do with unknown-file" \
+	> unknown-file.byte.result  || true
 	@for file in *.opt.reference; do \
 	  printf " ... testing '$$file':"; \
 	  $(DIFF) $$file `basename $$file reference`result >/dev/null \

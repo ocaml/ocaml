@@ -588,7 +588,6 @@ let process_action
       else
         raise(Arg.Bad("don't know what to do with " ^ name))
 
-
 let action_of_file name =
   if Filename.check_suffix name ".ml"
   || Filename.check_suffix name ".mlt" then
