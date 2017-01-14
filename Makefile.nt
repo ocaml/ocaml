@@ -156,50 +156,20 @@ natruntop:
 asmcomp/arch.ml: asmcomp/$(ARCH)/arch.ml
 	cp asmcomp/$(ARCH)/arch.ml asmcomp/arch.ml
 
-partialclean::
-	rm -f asmcomp/arch.ml
-
-beforedepend:: asmcomp/arch.ml
-
 asmcomp/proc.ml: asmcomp/$(ARCH)/proc.ml
 	cp asmcomp/$(ARCH)/proc.ml asmcomp/proc.ml
-
-partialclean::
-	rm -f asmcomp/proc.ml
-
-beforedepend:: asmcomp/proc.ml
 
 asmcomp/selection.ml: asmcomp/$(ARCH)/selection.ml
 	cp asmcomp/$(ARCH)/selection.ml asmcomp/selection.ml
 
-partialclean::
-	rm -f asmcomp/selection.ml
-
-beforedepend:: asmcomp/selection.ml
-
 asmcomp/CSE.ml: asmcomp/$(ARCH)/CSE.ml
 	cp asmcomp/$(ARCH)/CSE.ml asmcomp/CSE.ml
-
-partialclean::
-	rm -f asmcomp/CSE.ml
-
-beforedepend:: asmcomp/CSE.ml
 
 asmcomp/reload.ml: asmcomp/$(ARCH)/reload.ml
 	cp asmcomp/$(ARCH)/reload.ml asmcomp/reload.ml
 
-partialclean::
-	rm -f asmcomp/reload.ml
-
-beforedepend:: asmcomp/reload.ml
-
 asmcomp/scheduling.ml: asmcomp/$(ARCH)/scheduling.ml
 	cp asmcomp/$(ARCH)/scheduling.ml asmcomp/scheduling.ml
-
-partialclean::
-	rm -f asmcomp/scheduling.ml
-
-beforedepend:: asmcomp/scheduling.ml
 
 # The "expunge" utility
 
