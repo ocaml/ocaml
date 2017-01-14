@@ -151,26 +151,6 @@ natruntop:
 	$(MAKEREC) ocamlnat
 	@rlwrap --help 2>/dev/null && $(EXTRAPATH) rlwrap $(NATRUNTOP) || $(EXTRAPATH) $(NATRUNTOP)
 
-# Choose the right machine-dependent files
-
-asmcomp/arch.ml: asmcomp/$(ARCH)/arch.ml
-	cp asmcomp/$(ARCH)/arch.ml asmcomp/arch.ml
-
-asmcomp/proc.ml: asmcomp/$(ARCH)/proc.ml
-	cp asmcomp/$(ARCH)/proc.ml asmcomp/proc.ml
-
-asmcomp/selection.ml: asmcomp/$(ARCH)/selection.ml
-	cp asmcomp/$(ARCH)/selection.ml asmcomp/selection.ml
-
-asmcomp/CSE.ml: asmcomp/$(ARCH)/CSE.ml
-	cp asmcomp/$(ARCH)/CSE.ml asmcomp/CSE.ml
-
-asmcomp/reload.ml: asmcomp/$(ARCH)/reload.ml
-	cp asmcomp/$(ARCH)/reload.ml asmcomp/reload.ml
-
-asmcomp/scheduling.ml: asmcomp/$(ARCH)/scheduling.ml
-	cp asmcomp/$(ARCH)/scheduling.ml asmcomp/scheduling.ml
-
 # The "expunge" utility
 
 expunge: compilerlibs/ocamlcommon.cma compilerlibs/ocamlbytecomp.cma \
