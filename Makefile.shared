@@ -713,8 +713,6 @@ partialclean::
 
 beforedepend:: $(ARCH_SPECIFIC)
 
-ARCH_OCAMLOPT:=$(ARCH)
-
 .PHONY: check_arch check_all_arches
 
 # This rule provides a quick way to check that machine-dependent
@@ -723,7 +721,7 @@ ARCH_OCAMLOPT:=$(ARCH)
 check_arch:
 	@echo "========= CHECKING asmcomp/$(ARCH) =============="
 	@rm -f $(ARCH_SPECIFIC) asmcomp/*.cm*
-	@$(MAKEREC) ARCH_OCAMLOPT=$(ARCH) compilerlibs/ocamloptcomp.cma \
+	@$(MAKEREC) compilerlibs/ocamloptcomp.cma \
 	            >/dev/null
 	@rm -f $(ARCH_SPECIFIC) asmcomp/*.cm*
 
