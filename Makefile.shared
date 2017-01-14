@@ -743,6 +743,26 @@ clean::
 alldepend::
 	$(MAKE) -C asmrun depend
 
+# The standard library
+
+.PHONY: library
+library: ocamlc
+	$(MAKE) -C stdlib $(BOOT_FLEXLINK_CMD) all
+
+.PHONY: library-cross
+library-cross:
+	$(MAKE) -C stdlib $(BOOT_FLEXLINK_CMD) CAMLRUN=../byterun/ocamlrun all
+
+.PHONY: libraryopt
+libraryopt:
+	$(MAKE) -C stdlib $(BOOT_FLEXLINK_CMD) allopt
+
+partialclean::
+	$(MAKE) -C stdlib clean
+
+alldepend::
+	$(MAKE) -C stdlib depend
+
 # The middle end (whose .cma library is currently only used for linking
 # the "ocamlobjinfo" program, since we cannot depend on the whole native code
 # compiler for "make world" and the list of dependencies for

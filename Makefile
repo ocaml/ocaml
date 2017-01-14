@@ -196,23 +196,6 @@ natruntop:
 	$(MAKE) ocamlnat
 	@rlwrap --help 2>/dev/null && rlwrap $(NATRUNTOP) || $(NATRUNTOP)
 
-# The library
-
-library: ocamlc
-	cd stdlib; $(MAKE) all
-
-library-cross:
-	cd stdlib; $(MAKE) CAMLRUN=../byterun/ocamlrun all
-
-libraryopt:
-	cd stdlib; $(MAKE) allopt
-
-partialclean::
-	cd stdlib; $(MAKE) clean
-
-alldepend::
-	cd stdlib; $(MAKE) depend
-
 # The lexer and parser generators
 
 ocamllex: ocamlyacc ocamlc
@@ -364,7 +347,6 @@ distclean:
 .PHONY: partialclean beforedepend alldepend cleanboot coldstart
 .PHONY: compare core coreall
 .PHONY: coreboot depend distclean
-.PHONY: library library-cross libraryopt
 .PHONY: ocamldebugger ocamldoc
 .PHONY: ocamldoc.opt ocamllex ocamllex.opt ocamltools ocamltoolsopt
 .PHONY: ocamltoolsopt.opt ocamlyacc opt-core opt opt.opt otherlibraries
