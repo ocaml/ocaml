@@ -763,6 +763,29 @@ partialclean::
 alldepend::
 	$(MAKE) -C stdlib depend
 
+# The lexer and parser generators
+
+.PHONY: ocamllex
+ocamllex: ocamlyacc ocamlc
+	$(MAKE) -C lex all
+
+.PHONY: ocamllex.opt
+ocamllex.opt: ocamlopt
+	$(MAKE) -C lex allopt
+
+partialclean::
+	$(MAKE) -C lex clean
+
+alldepend::
+	$(MAKE) -C lex depend
+
+.PHONY: ocamlyacc
+ocamlyacc:
+	$(MAKE) -C yacc $(BOOT_FLEXLINK_CMD) all
+
+clean::
+	$(MAKE) -C yacc clean
+
 # The middle end (whose .cma library is currently only used for linking
 # the "ocamlobjinfo" program, since we cannot depend on the whole native code
 # compiler for "make world" and the list of dependencies for

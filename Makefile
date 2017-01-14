@@ -196,26 +196,6 @@ natruntop:
 	$(MAKE) ocamlnat
 	@rlwrap --help 2>/dev/null && rlwrap $(NATRUNTOP) || $(NATRUNTOP)
 
-# The lexer and parser generators
-
-ocamllex: ocamlyacc ocamlc
-	cd lex; $(MAKE) all
-
-ocamllex.opt: ocamlopt
-	cd lex; $(MAKE) allopt
-
-partialclean::
-	cd lex; $(MAKE) clean
-
-alldepend::
-	cd lex; $(MAKE) depend
-
-ocamlyacc:
-	cd yacc; $(MAKE) all
-
-clean::
-	cd yacc; $(MAKE) clean
-
 # OCamldoc
 
 ocamldoc: ocamlc ocamlyacc ocamllex otherlibraries
@@ -348,8 +328,8 @@ distclean:
 .PHONY: compare core coreall
 .PHONY: coreboot depend distclean
 .PHONY: ocamldebugger ocamldoc
-.PHONY: ocamldoc.opt ocamllex ocamllex.opt ocamltools ocamltoolsopt
-.PHONY: ocamltoolsopt.opt ocamlyacc opt-core opt opt.opt otherlibraries
+.PHONY: ocamldoc.opt ocamltools ocamltoolsopt
+.PHONY: ocamltoolsopt.opt opt-core opt opt.opt otherlibraries
 .PHONY: otherlibrariesopt package-macosx promote promote-cross
 .PHONY: restore world world.opt
 
