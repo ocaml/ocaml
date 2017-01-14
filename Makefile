@@ -196,33 +196,6 @@ natruntop:
 	$(MAKE) ocamlnat
 	@rlwrap --help 2>/dev/null && rlwrap $(NATRUNTOP) || $(NATRUNTOP)
 
-# The extra libraries
-
-otherlibraries: ocamltools
-	for i in $(OTHERLIBRARIES); do \
-	  (cd otherlibs/$$i; $(MAKE) all) || exit $$?; \
-	done
-
-otherlibrariesopt:
-	for i in $(OTHERLIBRARIES); do \
-	  (cd otherlibs/$$i; $(MAKE) allopt) || exit $$?; \
-	done
-
-partialclean::
-	for i in $(OTHERLIBRARIES); do \
-	  (cd otherlibs/$$i && $(MAKE) partialclean); \
-	done
-
-clean::
-	for i in $(OTHERLIBRARIES); do \
-	  (cd otherlibs/$$i && $(MAKE) clean); \
-	done
-
-alldepend::
-	for i in $(OTHERLIBRARIES); do \
-	  (cd otherlibs/$$i; $(MAKE) depend); \
-	done
-
 # The replay debugger
 
 ocamldebugger: ocamlc ocamlyacc ocamllex otherlibraries
@@ -309,8 +282,8 @@ distclean:
 .PHONY: coreboot depend distclean
 .PHONY: ocamldebugger
 .PHONY: ocamltools ocamltoolsopt
-.PHONY: ocamltoolsopt.opt opt-core opt opt.opt otherlibraries
-.PHONY: otherlibrariesopt package-macosx promote promote-cross
+.PHONY: ocamltoolsopt.opt opt-core opt opt.opt
+.PHONY: package-macosx promote promote-cross
 .PHONY: restore world world.opt
 
 include .depend
