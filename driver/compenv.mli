@@ -74,6 +74,5 @@ val process_deferred_actions :
   (Format.formatter -> string -> string -> unit) * (* compile implementation *)
   (Format.formatter -> string -> string -> unit) * (* compile interface *)
   string * (* ocaml module extension *)
-  string * (* ocaml library extension *)
-  string -> (* usage string for error message*)
+  string -> (* ocaml library extension *)
   unit

@@ -240,14 +240,16 @@ let main () =
     Arg.parse_expand spec anonymous usage;
     if !gprofile && not Config.profiling then
       fatal "Profiling with \"gprof\" is not supported on this platform.";
-    let usage = Arg.usage_string spec usage in
-    Compenv.process_deferred_actions
-      (ppf,
-       Optcompile.implementation ~backend,
-       Optcompile.interface,
-       ".cmx",
-       ".cmxa",
-       usage);
+    try
+      Compenv.process_deferred_actions
+        (ppf,
+         Optcompile.implementation ~backend,
+         Optcompile.interface,
+         ".cmx",
+         ".cmxa");
+    with Arg.Bad msg ->
+      prerr_endline msg;
+      Arg.usage spec usage;
     readenv ppf Before_link;
     if
       List.length (List.filter (fun x -> !x)

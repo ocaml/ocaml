@@ -553,7 +553,7 @@ let c_object_of_filename name =
   Filename.chop_suffix (Filename.basename name) ".c" ^ Config.ext_obj
 
 let process_action
-    (ppf, implementation, interface, ocaml_mod_ext, ocaml_lib_ext, usage) action =
+    (ppf, implementation, interface, ocaml_mod_ext, ocaml_lib_ext) action =
   match action with
   | ProcessImplementation name ->
       readenv ppf (Before_compile name);
@@ -585,10 +585,9 @@ let process_action
         ccobjs := name :: !ccobjs
       else if not !native_code && Filename.check_suffix name Config.ext_dll then
         dllibs := name :: !dllibs
-      else begin
-        prerr_endline ("don't know what to do with " ^ name);
-        prerr_string usage
-      end
+      else
+        raise(Arg.Bad("don't know what to do with " ^ name))
+
 
 let action_of_file name =
   if Filename.check_suffix name ".ml"
