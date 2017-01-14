@@ -196,25 +196,6 @@ natruntop:
 	$(MAKE) ocamlnat
 	@rlwrap --help 2>/dev/null && rlwrap $(NATRUNTOP) || $(NATRUNTOP)
 
-# The predefined exceptions and primitives
-
-byterun/primitives:
-	cd byterun; $(MAKE) primitives
-
-bytecomp/runtimedef.ml: byterun/primitives byterun/caml/fail.h
-	(echo 'let builtin_exceptions = [|'; \
-	 sed -n -e 's|.*/\* \("[A-Za-z_]*"\) \*/$$|  \1;|p' \
-	     byterun/caml/fail.h; \
-	 echo '|]'; \
-	 echo 'let builtin_primitives = [|'; \
-	 sed -e 's/.*/  "&";/' byterun/primitives; \
-	 echo '|]') > bytecomp/runtimedef.ml
-
-partialclean::
-	rm -f bytecomp/runtimedef.ml
-
-beforedepend:: bytecomp/runtimedef.ml
-
 # Choose the right machine-dependent files
 
 asmcomp/arch.ml: asmcomp/$(ARCH_OCAMLOPT)/arch.ml
