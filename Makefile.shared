@@ -705,8 +705,7 @@ alldepend::
 
 ARCH_SPECIFIC = \
   asmcomp/arch.ml asmcomp/proc.ml asmcomp/CSE.ml asmcomp/selection.ml \
-  asmcomp/scheduling.ml asmcomp/reload.ml asmcomp/scheduling.ml \
-  asmcomp/emit.ml
+  asmcomp/scheduling.ml asmcomp/reload.ml asmcomp/emit.ml
 
 partialclean::
 	rm -f $(ARCH_SPECIFIC)
