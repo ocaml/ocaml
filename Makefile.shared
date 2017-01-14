@@ -516,6 +516,11 @@ install-compiler-sources:
 tests: opt.opt
 	cd testsuite; $(MAKE) clean && $(MAKE) all
 
+# Make clean in the test suite
+
+clean::
+	$(MAKE) -C testsuite clean
+
 # Build the manual latex files from the etex source files
 # (see manual/README.md)
 .PHONY: manual-pregen

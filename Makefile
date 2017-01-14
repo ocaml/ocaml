@@ -205,11 +205,6 @@ checkstack:
 	fi
 	@rm -f tools/checkstack
 
-# Make clean in the test suite
-
-clean::
-	cd testsuite; $(MAKE) clean
-
 # Make MacOS X package
 
 package-macosx:

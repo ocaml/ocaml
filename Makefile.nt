@@ -151,11 +151,6 @@ natruntop:
 	$(MAKEREC) ocamlnat
 	@rlwrap --help 2>/dev/null && $(EXTRAPATH) rlwrap $(NATRUNTOP) || $(EXTRAPATH) $(NATRUNTOP)
 
-# Make clean in the test suite
-
-clean::
-	cd testsuite; $(MAKE) clean
-
 # Default rules
 
 .SUFFIXES: .ml .mli .cmo .cmi .cmx
