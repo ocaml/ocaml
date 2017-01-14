@@ -196,54 +196,10 @@ natruntop:
 	$(MAKE) ocamlnat
 	@rlwrap --help 2>/dev/null && rlwrap $(NATRUNTOP) || $(NATRUNTOP)
 
-# Default rules
-
-.SUFFIXES: .ml .mli .cmo .cmi .cmx
-
-.ml.cmo:
-	$(CAMLC) $(COMPFLAGS) -c $<
-
-.mli.cmi:
-	$(CAMLC) $(COMPFLAGS) -c $<
-
-.ml.cmx:
-	$(CAMLOPT) $(COMPFLAGS) -c $<
-
-partialclean::
-	for d in \
-	  utils parsing typing bytecomp asmcomp middle_end \
-	  middle_end/base_types driver toplevel tools; \
-	do \
-	  rm -f $$d/*.cm[ioxt] $$d/*.cmti $$d/*.annot $$d/*.[so] $$d/*~; \
-	done
-	rm -f *~
-
-depend: beforedepend
-	(for d in utils parsing typing bytecomp asmcomp middle_end \
-	          middle_end/base_types driver toplevel; \
-	 do \
-	   $(CAMLDEP) $(DEPFLAGS) $$d/*.mli $$d/*.ml; \
-	 done) > .depend
-	$(CAMLDEP) $(DEPFLAGS) -native \
-		-impl driver/compdynlink.mlopt >> .depend
-	$(CAMLDEP) $(DEPFLAGS) -bytecode \
-		-impl driver/compdynlink.mlbyte >> .depend
-
-alldepend:: depend
-
-distclean:
-	$(MAKE) clean
-	rm -f boot/ocamlrun boot/ocamlrun.exe boot/camlheader boot/ocamlyacc \
-	      boot/*.cm* boot/libcamlrun.a
-	rm -f config/Makefile config/m.h config/s.h
-	rm -f tools/*.bak
-	rm -f ocaml ocamlc
-	rm -f testsuite/_log
-
 .PHONY: all backup bootstrap
-.PHONY: partialclean beforedepend alldepend cleanboot coldstart
+.PHONY: cleanboot coldstart
 .PHONY: compare core coreall
-.PHONY: coreboot depend distclean
+.PHONY: coreboot
 .PHONY: ocamltools ocamltoolsopt
 .PHONY: ocamltoolsopt.opt opt-core opt opt.opt
 .PHONY: promote promote-cross

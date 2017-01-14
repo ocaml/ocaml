@@ -151,60 +151,10 @@ natruntop:
 	$(MAKEREC) ocamlnat
 	@rlwrap --help 2>/dev/null && $(EXTRAPATH) rlwrap $(NATRUNTOP) || $(EXTRAPATH) $(NATRUNTOP)
 
-# Default rules
-
-.SUFFIXES: .ml .mli .cmo .cmi .cmx
-
-.ml.cmo:
-	$(CAMLC) $(COMPFLAGS) -c $<
-
-.mli.cmi:
-	$(CAMLC) $(COMPFLAGS) -c $<
-
-.ml.cmx:
-	$(CAMLOPT) $(COMPFLAGS) -c $<
-
-partialclean::
-	rm -f utils/*.cm* utils/*.$(O) utils/*.$(S)
-	rm -f parsing/*.cm* parsing/*.$(O) parsing/*.$(S)
-	rm -f typing/*.cm* typing/*.$(O) typing/*.$(S)
-	rm -f bytecomp/*.cm* bytecomp/*.$(O) bytecomp/*.$(S)
-	rm -f asmcomp/*.cm* asmcomp/*.$(O) asmcomp/*.$(S)
-	rm -f middle_end/*.cm* middle_end/*.$(O) middle_end/*.$(S)
-	rm -f middle_end/base_types/*.cm* middle_end/base_types/*.$(O) \
-	      middle_end/base_types/*.$(S)
-	rm -f driver/*.cm* driver/*.$(O) driver/*.$(S)
-	rm -f toplevel/*.cm* toplevel/*.$(O) toplevel/*.$(S)
-	rm -f tools/*.cm* tools/*.$(O) tools/*.$(S)
-
-depend: beforedepend
-	(for d in utils parsing typing bytecomp asmcomp middle_end \
-	 middle_end/base_types driver toplevel; \
-	 do $(CAMLDEP) -slash $(DEPFLAGS) $$d/*.mli $$d/*.ml; \
-	 done) > .depend
-	$(CAMLDEP) -slash $(DEPFLAGS) -native \
-		-impl driver/compdynlink.mlopt >> .depend
-	$(CAMLDEP) -slash $(DEPFLAGS) -bytecode \
-		-impl driver/compdynlink.mlbyte >> .depend
-
-alldepend:: depend
-
-distclean:
-	$(MAKEREC) clean
-	rm -f asmrun/.depend.nt byterun/.depend.nt \
-	            otherlibs/bigarray/.depend.nt  \
-		    otherlibs/str/.depend.nt
-	rm -f boot/ocamlrun boot/ocamlrun.exe boot/camlheader boot/ocamlyacc \
-	      boot/*.cm* boot/libcamlrun.a
-	rm -f config/Makefile config/m.h config/s.h
-	rm -f tools/*.bak
-	rm -f ocaml ocamlc
-	rm -f testsuite/_log
-
-.PHONY: all backup bootstrap clean
-.PHONY: partialclean beforedepend alldepend cleanboot coldstart
+.PHONY: all backup bootstrap
+.PHONY: cleanboot coldstart
 .PHONY: compare core coreall
-.PHONY: coreboot depend distclean
+.PHONY: coreboot
 .PHONY: ocamltools ocamltoolsopt
 .PHONY: ocamltoolsopt.opt opt-core opt opt.opt
 .PHONY: promote promote-cross

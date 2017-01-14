@@ -329,9 +329,11 @@ utils/config.ml: utils/config.mlp config/Makefile
 	    -e 's|%%WITH_SPACETIME%%|$(WITH_SPACETIME)|' \
 	    $< > $@
 
+.PHONY: partialclean
 partialclean::
 	rm -f utils/config.ml
 
+.PHONY: beforedepend
 beforedepend:: utils/config.ml
 
 # FlexDLL sources missing error messages
@@ -729,6 +731,8 @@ stdlib/libcamlrun.$(A): byterun/libcamlrun.$(A)
 clean::
 	$(MAKE) -C byterun clean
 	rm -f stdlib/libcamlrun.$(A)
+
+.PHONY: alldepend
 alldepend::
 	$(MAKE) -C byterun depend
 
@@ -1015,3 +1019,48 @@ partialclean::
 	rm -f bytecomp/opcodes.ml
 
 beforedepend:: bytecomp/opcodes.ml
+
+# Default rules
+
+.SUFFIXES: .ml .mli .cmo .cmi .cmx
+
+.ml.cmo:
+	$(CAMLC) $(COMPFLAGS) -c $<
+
+.mli.cmi:
+	$(CAMLC) $(COMPFLAGS) -c $<
+
+.ml.cmx:
+	$(CAMLOPT) $(COMPFLAGS) -c $<
+
+partialclean::
+	for d in utils parsing typing bytecomp asmcomp middle_end \
+	         middle_end/base_types driver toplevel tools; do \
+	  rm -f $$d/*.cm[ioxt] $$d/*.cmti $$d/*.annot $$d/*.$(S) \
+	    $$d/*.$(O) $$d/*.$(SO) $d/*~; \
+	done
+	rm -f *~
+
+.PHONY: depend
+depend: beforedepend
+	(for d in utils parsing typing bytecomp asmcomp middle_end \
+	 middle_end/base_types driver toplevel; \
+	 do $(CAMLDEP) -slash $(DEPFLAGS) $$d/*.mli $$d/*.ml; \
+	 done) > .depend
+	$(CAMLDEP) -slash $(DEPFLAGS) -native \
+		-impl driver/compdynlink.mlopt >> .depend
+	$(CAMLDEP) -slash $(DEPFLAGS) -bytecode \
+		-impl driver/compdynlink.mlbyte >> .depend
+
+alldepend:: depend
+
+distclean: clean
+	rm -f asmrun/.depend.nt byterun/.depend.nt \
+	            otherlibs/bigarray/.depend.nt  \
+		    otherlibs/str/.depend.nt
+	rm -f boot/ocamlrun boot/ocamlrun$(EXE) boot/camlheader \
+	      boot/ocamlyacc boot/*.cm* boot/libcamlrun.$(A)
+	rm -f config/Makefile config/m.h config/s.h
+	rm -f tools/*.bak
+	rm -f ocaml ocamlc
+	rm -f testsuite/_log
