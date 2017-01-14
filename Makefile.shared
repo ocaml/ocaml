@@ -838,6 +838,18 @@ alldepend::
 	  ($(MAKE) -C otherlibs/$$i depend); \
 	done
 
+# The replay debugger
+
+.PHONY: ocamldebugger
+ocamldebugger: ocamlc ocamlyacc ocamllex otherlibraries
+	$(MAKE) -C debugger all
+
+partialclean::
+	$(MAKE) -C debugger clean
+
+alldepend::
+	$(MAKE) -C debugger depend
+
 # The middle end (whose .cma library is currently only used for linking
 # the "ocamlobjinfo" program, since we cannot depend on the whole native code
 # compiler for "make world" and the list of dependencies for

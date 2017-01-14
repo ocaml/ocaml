@@ -196,17 +196,6 @@ natruntop:
 	$(MAKE) ocamlnat
 	@rlwrap --help 2>/dev/null && rlwrap $(NATRUNTOP) || $(NATRUNTOP)
 
-# The replay debugger
-
-ocamldebugger: ocamlc ocamlyacc ocamllex otherlibraries
-	cd debugger; $(MAKE) all
-
-partialclean::
-	cd debugger; $(MAKE) clean
-
-alldepend::
-	cd debugger; $(MAKE) depend
-
 # Check that the stack limit is reasonable.
 
 checkstack:
@@ -280,7 +269,6 @@ distclean:
 .PHONY: partialclean beforedepend alldepend cleanboot coldstart
 .PHONY: compare core coreall
 .PHONY: coreboot depend distclean
-.PHONY: ocamldebugger
 .PHONY: ocamltools ocamltoolsopt
 .PHONY: ocamltoolsopt.opt opt-core opt opt.opt
 .PHONY: package-macosx promote promote-cross

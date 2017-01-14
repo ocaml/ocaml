@@ -151,15 +151,6 @@ natruntop:
 	$(MAKEREC) ocamlnat
 	@rlwrap --help 2>/dev/null && $(EXTRAPATH) rlwrap $(NATRUNTOP) || $(EXTRAPATH) $(NATRUNTOP)
 
-# The replay debugger
-
-ocamldebugger: ocamlc ocamlyacc ocamllex
-	cd debugger; $(MAKE) all
-partialclean::
-	cd debugger; $(MAKE) clean
-alldepend::
-	cd debugger; $(MAKE) depend
-
 # Make clean in the test suite
 
 clean::
@@ -219,7 +210,6 @@ distclean:
 .PHONY: partialclean beforedepend alldepend cleanboot coldstart
 .PHONY: compare core coreall
 .PHONY: coreboot depend distclean
-.PHONY: ocamldebugger
 .PHONY: ocamltools ocamltoolsopt
 .PHONY: ocamltoolsopt.opt opt-core opt opt.opt
 .PHONY: promote promote-cross
