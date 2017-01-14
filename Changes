@@ -39,7 +39,8 @@ Next version (4.05.0):
 
 - PR#7460, GPR#1011: catch exception thrown when unknown files are passed
   as argument.
-  (Bernhard Schommer)
+  (Bernhard Schommer with contributions from Florian Angeletti and review
+   by Gabriel Scherer)
 
 - PR#7315, GPR#736: refine some error locations
   (Gabriel Scherer and Alain Frisch, report by Matej Košík)
