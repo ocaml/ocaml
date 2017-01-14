@@ -17,15 +17,18 @@ BASEDIR=../..
 
 
 default:
-	@for file in *.txt; do \
-	 	$(OCAMLOPT) $$file > $$file.result 2>&1 || true; \
-	done
-	@for file in *.reference; do \
+	@$(OCAMLOPT) unknown-file > unknown-file.opt.result 2>&1 || true;
+	@$(OCAMLC) unknown-file > unknown-file.byte.result 2>&1 || true
+	@for file in *.opt.reference; do \
 	  printf " ... testing '$$file':"; \
 	  $(DIFF) $$file `basename $$file reference`result >/dev/null \
           && echo " => passed" || echo " => failed"; \
 	done
-
+	@for file in *.byte.reference; do \
+	  printf " ... testing '$$file':"; \
+	  $(DIFF) $$file `basename $$file reference`result >/dev/null \
+          && echo " => passed" || echo " => failed"; \
+	done
 
 promote: defaultpromote
 

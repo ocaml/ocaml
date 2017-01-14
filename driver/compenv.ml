@@ -586,7 +586,7 @@ let process_action
       else if not !native_code && Filename.check_suffix name Config.ext_dll then
         dllibs := name :: !dllibs
       else
-        fatal ("Error: " ^ name ^ " file format not recognized")
+        raise(Arg.Bad("don't know what to do with " ^ name))
 
 
 let action_of_file name =
@@ -636,3 +636,4 @@ let process_deferred_actions env =
     fatal "Option -a cannot be used with .cmxa input files.";
   List.iter (process_action env) (List.rev !deferred_actions);
   output_name := final_output_name;
+  
