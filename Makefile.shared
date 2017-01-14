@@ -336,6 +336,18 @@ partialclean::
 .PHONY: beforedepend
 beforedepend:: utils/config.ml
 
+# Start up the system from the distribution compiler
+.PHONY: coldstart
+coldstart:
+	$(MAKE) -C byterun $(BOOT_FLEXLINK_CMD) all
+	cp byterun/ocamlrun$(EXE) boot/ocamlrun$(EXE)
+	$(MAKE) -C yacc $(BOOT_FLEXLINK_CMD) all
+	cp yacc/ocamlyacc$(EXE) boot/ocamlyacc$(EXE)
+	$(MAKE) -C stdlib $(BOOT_FLEXLINK_CMD) \
+	  COMPILER="../boot/ocamlc -use-prims ../byterun/primitives" all
+	cd stdlib; cp $(LIBFILES) ../boot
+	cd boot; $(LN) ../byterun/libcamlrun.$(A) .
+
 # FlexDLL sources missing error messages
 # Different git mechanism displayed depending on whether this source tree came
 # from a git clone or a source tarball.

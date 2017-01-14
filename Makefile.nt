@@ -54,18 +54,6 @@ bootstrap:
 	$(MAKEREC) all
 	$(MAKEREC) compare
 
-# Start up the system from the distribution compiler
-coldstart:
-	cd byterun ; $(MAKE) $(BOOT_FLEXLINK_CMD) all
-	cp byterun/ocamlrun.exe boot/ocamlrun.exe
-	cd yacc ; $(MAKE) $(BOOT_FLEXLINK_CMD) all
-	cp yacc/ocamlyacc.exe boot/ocamlyacc.exe
-	cd stdlib ; \
-	  $(MAKE) $(BOOT_FLEXLINK_CMD) \
-	             COMPILER="../boot/ocamlc -use-prims ../byterun/primitives"\
-	             all
-	cd stdlib ; cp $(LIBFILES) ../boot
-
 # Build the core system: the minimum needed to make depend and bootstrap
 core:
 	$(MAKEREC) runtime
@@ -152,7 +140,7 @@ natruntop:
 	@rlwrap --help 2>/dev/null && $(EXTRAPATH) rlwrap $(NATRUNTOP) || $(EXTRAPATH) $(NATRUNTOP)
 
 .PHONY: all backup bootstrap
-.PHONY: cleanboot coldstart
+.PHONY: cleanboot
 .PHONY: compare core coreall
 .PHONY: coreboot
 .PHONY: ocamltools ocamltoolsopt
