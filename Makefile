@@ -196,17 +196,6 @@ natruntop:
 	$(MAKE) ocamlnat
 	@rlwrap --help 2>/dev/null && rlwrap $(NATRUNTOP) || $(NATRUNTOP)
 
-# Make MacOS X package
-
-package-macosx:
-	sudo rm -rf package-macosx/root
-	$(MAKE) PREFIX="`pwd`"/package-macosx/root install
-	tools/make-package-macosx
-	sudo rm -rf package-macosx/root
-
-clean::
-	rm -rf package-macosx/*.pkg package-macosx/*.dmg
-
 # Default rules
 
 .SUFFIXES: .ml .mli .cmo .cmi .cmx
@@ -257,7 +246,7 @@ distclean:
 .PHONY: coreboot depend distclean
 .PHONY: ocamltools ocamltoolsopt
 .PHONY: ocamltoolsopt.opt opt-core opt opt.opt
-.PHONY: package-macosx promote promote-cross
+.PHONY: promote promote-cross
 .PHONY: restore world world.opt
 
 include .depend

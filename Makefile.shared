@@ -866,6 +866,19 @@ checkstack:
 	rm -f tools/checkstack$(EXE)
 endif
 
+# Make MacOS X package
+ifeq "$(UNIX_OR_WIN32)" "unix"
+.PHONY: package-macosx
+package-macosx:
+	sudo rm -rf package-macosx/root
+	$(MAKE) PREFIX="`pwd`"/package-macosx/root install
+	tools/make-package-macosx
+	sudo rm -rf package-macosx/root
+
+clean::
+	rm -rf package-macosx/*.pkg package-macosx/*.dmg
+endif
+
 # The middle end (whose .cma library is currently only used for linking
 # the "ocamlobjinfo" program, since we cannot depend on the whole native code
 # compiler for "make world" and the list of dependencies for
