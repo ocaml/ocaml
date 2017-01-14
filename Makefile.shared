@@ -889,34 +889,34 @@ endif
 # asmcomp/export_info.cmo is long).
 
 compilerlibs/ocamlmiddleend.cma: $(MIDDLE_END)
-	$(CAMLC) -a -o $@ $(MIDDLE_END)
+	$(CAMLC) -a -o $@ $^
 compilerlibs/ocamlmiddleend.cmxa: $(MIDDLE_END:%.cmo=%.cmx)
 	$(CAMLOPT) -a -o $@ $^
 partialclean::
-	rm -f compilerlibs/ocamlmiddleend.cma compilerlibs/ocamlmiddleend.cmxa \
+	rm -f compilerlibs/ocamlmiddleend.cma \
+	      compilerlibs/ocamlmiddleend.cmxa \
 	      compilerlibs/ocamlmiddleend.$(A)
-
 
 # Tools
 
 ocamltools: ocamlc ocamlyacc ocamllex asmcomp/cmx_format.cmi \
             asmcomp/printclambda.cmo compilerlibs/ocamlmiddleend.cma \
             asmcomp/export_info.cmo
-	+cd tools ; $(MAKE) all
+	$(MAKE) -C tools all
 
 ocamltoolsopt: ocamlopt
-	+cd tools; $(MAKE) opt
+	$(MAKE) -C tools opt
 
 ocamltoolsopt.opt: ocamlc.opt ocamlyacc ocamllex.opt asmcomp/cmx_format.cmi \
                    asmcomp/printclambda.cmx compilerlibs/ocamlmiddleend.cmxa \
                    asmcomp/export_info.cmx
-	+cd tools; $(MAKE) opt.opt
+	$(MAKE) -C tools opt.opt
 
 partialclean::
-	+cd tools; $(MAKE) clean
+	$(MAKE) -C tools clean
 
 alldepend::
-	+cd tools; $(MAKE) depend
+	$(MAKE) -C tools depend
 
 #config/Makefile: configure
 #	./configure $(CONFIGURE_ARGS)
@@ -984,7 +984,7 @@ partialclean::
 # The native toplevel
 
 compilerlibs/ocamlopttoplevel.cmxa: $(OPTTOPLEVEL:.cmo=.cmx)
-	$(CAMLOPT) -a -o $@ $(OPTTOPLEVEL:.cmo=.cmx)
+	$(CAMLOPT) -a -o $@ $^
 partialclean::
 	rm -f compilerlibs/ocamlopttoplevel.cmxa
 
@@ -1013,7 +1013,7 @@ bytecomp/opcodes.ml: byterun/caml/instruct.h tools/make_opcodes
 	$(CAMLRUN) tools/make_opcodes -opcodes < $< > $@
 
 tools/make_opcodes: tools/make_opcodes.mll
-	cd tools && $(MAKE) make_opcodes
+	$(MAKE) -C tools make_opcodes
 
 partialclean::
 	rm -f bytecomp/opcodes.ml
