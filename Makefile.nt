@@ -151,34 +151,6 @@ natruntop:
 	$(MAKEREC) ocamlnat
 	@rlwrap --help 2>/dev/null && $(EXTRAPATH) rlwrap $(NATRUNTOP) || $(EXTRAPATH) $(NATRUNTOP)
 
-# The runtime system for the bytecode compiler
-
-runtime: makeruntime stdlib/libcamlrun.$(A)
-
-makeruntime:
-	cd byterun ; $(MAKE) $(BOOT_FLEXLINK_CMD) all
-stdlib/libcamlrun.$(A): byterun/libcamlrun.$(A)
-	cp byterun/libcamlrun.$(A) stdlib/libcamlrun.$(A)
-clean::
-	cd byterun ; $(MAKE) clean
-	rm -f stdlib/libcamlrun.$(A)
-alldepend::
-	cd byterun ; $(MAKE) depend
-
-# The runtime system for the native-code compiler
-
-runtimeopt: makeruntimeopt stdlib/libasmrun.$(A)
-
-makeruntimeopt:
-	cd asmrun ; $(MAKE) $(BOOT_FLEXLINK_CMD) all
-stdlib/libasmrun.$(A): asmrun/libasmrun.$(A)
-	cp asmrun/libasmrun.$(A) stdlib/libasmrun.$(A)
-clean::
-	cd asmrun ; $(MAKE) clean
-	rm -f stdlib/libasmrun.$(A)
-alldepend::
-	cd asmrun ; $(MAKE) depend
-
 # The library
 
 library:
@@ -316,6 +288,6 @@ distclean:
 .PHONY: ocamldoc.opt ocamllex ocamllex.opt ocamltools ocamltoolsopt
 .PHONY: ocamltoolsopt.opt ocamlyacc opt-core opt opt.opt otherlibraries
 .PHONY: otherlibrariesopt promote promote-cross
-.PHONY: restore runtime runtimeopt makeruntimeopt world world.opt
+.PHONY: restore world world.opt
 
 include .depend

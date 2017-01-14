@@ -711,6 +711,38 @@ expunge: compilerlibs/ocamlcommon.cma compilerlibs/ocamlbytecomp.cma \
 partialclean::
 	rm -f expunge
 
+# The runtime system for the bytecode compiler
+
+.PHONY: runtime
+runtime: makeruntime stdlib/libcamlrun.$(A)
+
+.PHONY: makeruntime
+makeruntime:
+	$(MAKE) -C byterun $(BOOT_FLEXLINK_CMD) all
+stdlib/libcamlrun.$(A): byterun/libcamlrun.$(A)
+	cd stdlib; $(LN) ../byterun/libcamlrun.$(A) .
+clean::
+	$(MAKE) -C byterun clean
+	rm -f stdlib/libcamlrun.$(A)
+alldepend::
+	$(MAKE) -C byterun depend
+
+# The runtime system for the native-code compiler
+
+.PHONY: runtimeopt
+runtimeopt: makeruntimeopt stdlib/libasmrun.$(A)
+
+.PHONY: makeruntimeopt
+makeruntimeopt:
+	$(MAKE) -C asmrun $(BOOT_FLEXLINK_CMD) all
+stdlib/libasmrun.$(A): asmrun/libasmrun.$(A)
+	cp $< $@
+clean::
+	$(MAKE) -C asmrun clean
+	rm -f stdlib/libasmrun.$(A)
+alldepend::
+	$(MAKE) -C asmrun depend
+
 # The middle end (whose .cma library is currently only used for linking
 # the "ocamlobjinfo" program, since we cannot depend on the whole native code
 # compiler for "make world" and the list of dependencies for

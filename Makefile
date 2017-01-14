@@ -196,36 +196,6 @@ natruntop:
 	$(MAKE) ocamlnat
 	@rlwrap --help 2>/dev/null && rlwrap $(NATRUNTOP) || $(NATRUNTOP)
 
-# The runtime system for the bytecode compiler
-
-runtime:
-	cd byterun; $(MAKE) all
-	if test -f stdlib/libcamlrun.a; then :; else \
-	  ln -s ../byterun/libcamlrun.a stdlib/libcamlrun.a; fi
-
-clean::
-	cd byterun; $(MAKE) clean
-	rm -f stdlib/libcamlrun.a
-	rm -f stdlib/caml
-
-alldepend::
-	cd byterun; $(MAKE) depend
-
-# The runtime system for the native-code compiler
-
-runtimeopt: makeruntimeopt
-	cp asmrun/libasmrun.a stdlib/libasmrun.a
-
-makeruntimeopt:
-	cd asmrun; $(MAKE) all
-
-clean::
-	cd asmrun; $(MAKE) clean
-	rm -f stdlib/libasmrun.a
-
-alldepend::
-	cd asmrun; $(MAKE) depend
-
 # The library
 
 library: ocamlc
@@ -399,6 +369,6 @@ distclean:
 .PHONY: ocamldoc.opt ocamllex ocamllex.opt ocamltools ocamltoolsopt
 .PHONY: ocamltoolsopt.opt ocamlyacc opt-core opt opt.opt otherlibraries
 .PHONY: otherlibrariesopt package-macosx promote promote-cross
-.PHONY: restore runtime runtimeopt makeruntimeopt world world.opt
+.PHONY: restore world world.opt
 
 include .depend
