@@ -196,16 +196,6 @@ natruntop:
 	$(MAKE) ocamlnat
 	@rlwrap --help 2>/dev/null && rlwrap $(NATRUNTOP) || $(NATRUNTOP)
 
-# The "expunge" utility
-
-expunge: compilerlibs/ocamlcommon.cma compilerlibs/ocamlbytecomp.cma \
-         toplevel/expunge.cmo
-	$(CAMLC) $(LINKFLAGS) -o expunge compilerlibs/ocamlcommon.cma \
-	         compilerlibs/ocamlbytecomp.cma toplevel/expunge.cmo
-
-partialclean::
-	rm -f expunge
-
 # The runtime system for the bytecode compiler
 
 runtime:
