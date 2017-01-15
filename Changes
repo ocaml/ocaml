@@ -98,6 +98,9 @@ Next version (4.05.0):
   counterparts.
   (Roma Sokolov)
 
+- GPR#999: Arg, do not repeat thrice usage_msg when reporting an error
+  (Florian Angeletti, review by Gabriel Scherer)
+
 ### Manual and documentation:
 
 - GPR#939: activate the caml_example environment in the language
