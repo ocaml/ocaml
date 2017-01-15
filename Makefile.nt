@@ -54,24 +54,6 @@ bootstrap:
 	$(MAKEREC) all
 	$(MAKEREC) compare
 
-# Promote the newly compiled system to the rank of cross compiler
-# (Runs on the old runtime, produces code for the new runtime)
-promote-cross:
-	$(CAMLRUN) tools/stripdebug ocamlc boot/ocamlc
-	$(CAMLRUN) tools/stripdebug lex/ocamllex boot/ocamllex
-	cp yacc/ocamlyacc.exe boot/ocamlyacc.exe
-	$(CAMLRUN) tools/stripdebug tools/ocamldep boot/ocamldep
-	cd stdlib ; cp $(LIBFILES) ../boot
-
-# Promote the newly compiled system to the rank of bootstrap compiler
-# (Runs on the new runtime, produces code for the new runtime)
-promote: promote-cross
-	cp byterun/ocamlrun.exe boot/ocamlrun.exe
-
-# Remove old bootstrap compilers
-cleanboot:
-	rm -rf boot/Saved/Saved.prev/*
-
 # Compile the native-code compiler
 opt-core:
 	$(MAKEREC) runtimeopt
@@ -104,11 +86,9 @@ natruntop:
 	@rlwrap --help 2>/dev/null && $(EXTRAPATH) rlwrap $(NATRUNTOP) || $(EXTRAPATH) $(NATRUNTOP)
 
 .PHONY: all bootstrap
-.PHONY: cleanboot
 .PHONY: coreboot
 .PHONY: ocamltools ocamltoolsopt
 .PHONY: ocamltoolsopt.opt opt-core opt opt.opt
-.PHONY: promote promote-cross
 .PHONY: world world.opt
 
 include .depend

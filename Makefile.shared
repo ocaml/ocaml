@@ -391,6 +391,27 @@ compare:
 	else echo "Fixpoint not reached, try one more bootstrapping cycle."; \
 	fi
 
+# Promote the newly compiled system to the rank of cross compiler
+# (Runs on the old runtime, produces code for the new runtime)
+.PHONY: promote-cross
+promote-cross:
+	$(CAMLRUN) tools/stripdebug ocamlc boot/ocamlc
+	$(CAMLRUN) tools/stripdebug lex/ocamllex boot/ocamllex
+	cp yacc/ocamlyacc$(EXE) boot/ocamlyacc$(EXE)
+	$(CAMLRUN) tools/stripdebug tools/ocamldep boot/ocamldep
+	cd stdlib; cp $(LIBFILES) ../boot
+
+# Promote the newly compiled system to the rank of bootstrap compiler
+# (Runs on the new runtime, produces code for the new runtime)
+.PHONY: promote
+promote: promote-cross
+	cp byterun/ocamlrun$(EXE) boot/ocamlrun$(EXE)
+
+# Remove old bootstrap compilers
+.PHONY: cleanboot
+cleanboot:
+	rm -rf boot/Saved/Saved.prev/*
+
 # FlexDLL sources missing error messages
 # Different git mechanism displayed depending on whether this source tree came
 # from a git clone or a source tarball.
