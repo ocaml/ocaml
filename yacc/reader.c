@@ -60,6 +60,26 @@ static unsigned char caml_ident_body[32] =
 
 void start_rule (register bucket *bp, int s_lineno);
 
+static char *buffer;
+static size_t length;
+static size_t capacity;
+static void push_stack(char x) {
+   if (length - 1 >= capacity) {
+      buffer = realloc(buffer, capacity = 3*length/2 + 100);
+      if (!buffer) no_space();
+   }
+   buffer[++length] = x;
+   buffer[0] = '\1';
+}
+
+static void pop_stack(char x) {
+   if (!buffer || buffer[length--] != x) {
+      char newx = x == '(' ? ')' : x == '{' ? '}' : x;
+      fprintf(stderr, "Mismatched parentheses or braces: '%c'\n", newx);
+      syntax_error(lineno, line, cptr - 1);
+   }
+}
+
 void cachec(int c)
 {
     assert(cinc >= 0);
@@ -232,8 +252,6 @@ static void process_comment(FILE *const f) {
             putc(c, f);
             if (c == '*' && *cptr == ')')
             {
-                putc(')', f);
-                ++cptr;
                 FREE(c_line);
                 return;
             }
@@ -1172,6 +1190,7 @@ void add_symbol(void)
 
 void copy_action(void)
 {
+    push_stack('{');
     register int c;
     register int i, n;
     int depth;
@@ -1248,6 +1267,7 @@ loop:
     if (c == '}' && depth == 1) {
       fprintf(f, ")\n# 0\n              ");
       cptr++;
+      pop_stack('{');
       tagres = plhs[nrules]->tag;
       if (tagres)
         fprintf(f, " : %s))\n", tagres);
@@ -1273,22 +1293,30 @@ loop:
         process_open_curly_bracket(f);
         /* Even if there is a raw string, we deliberately keep the
          * closing '}' in the buffer */
+        push_stack('{');
         ++depth;
         goto loop;
 
     case '}':
         --depth;
+        pop_stack('{');
         goto loop;
 
     case '"':
         process_quoted_string('"', f);
         goto loop;
+
     case '\'':
         process_apostrophe(f);
         goto loop;
 
     case '(':
         process_comment(f);
+        push_stack('(');
+        goto loop;
+
+    case ')':
+        pop_stack('(');
         goto loop;
 
     default:
