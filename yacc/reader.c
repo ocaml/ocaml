@@ -64,19 +64,23 @@ static char *buffer;
 static size_t length;
 static size_t capacity;
 static void push_stack(char x) {
-   if (length - 1 >= capacity) {
-      buffer = realloc(buffer, capacity = 3*length/2 + 100);
-      if (!buffer) no_space();
-   }
-   buffer[++length] = x;
-   buffer[0] = '\1';
+    if (length - 1 >= capacity) {
+        buffer = realloc(buffer, capacity = 3*length/2 + 100);
+        if (!buffer) no_space();
+    }
+    buffer[++length] = x;
+    buffer[0] = '\1';
 }
 
 static void pop_stack(char x) {
-   if (!buffer || buffer[length--] != x) {
-      char newx = x == '(' ? ')' : x == '{' ? '}' : x;
-      fprintf(stderr, "Mismatched parentheses or braces: '%c'\n", newx);
-      syntax_error(lineno, line, cptr - 1);
+    if (!buffer || buffer[length--] != x) {
+        switch (x) {
+            case '{': x = '}'; break;
+            case '(': x = ')'; break;
+            default: break;
+        }
+        fprintf(stderr, "Mismatched parentheses or braces: '%c'\n", x);
+                syntax_error(lineno, line, cptr - 1);
    }
 }
 
@@ -236,35 +240,6 @@ void process_apostrophe(FILE *const f)
     }
 }
 
-static void process_comment(FILE *const f) {
-    char c = *cptr;
-    if (c == '*')
-    {
-        int c_lineno = lineno;
-        char *c_line = dup_line();
-        char *c_cptr = c_line + (cptr - line - 1);
-
-        putc('*', f);
-        ++cptr;
-        for (;;)
-        {
-            c = *cptr++;
-            putc(c, f);
-            if (c == '*' && *cptr == ')')
-            {
-                FREE(c_line);
-                return;
-            }
-            if (c == '\n')
-            {
-                get_line();
-                if (line == 0)
-                    unterminated_comment(c_lineno, c_line, c_cptr);
-            }
-        }
-    }
-}
-
 static void process_open_curly_bracket(FILE *f) {
     if (In_bitmap(caml_ident_start, *cptr) || *cptr == '|')
     {
@@ -325,6 +300,58 @@ static void process_open_curly_bracket(FILE *f) {
         }
     }
     return;
+}
+
+static void process_comment(FILE *const f) {
+    char c = *cptr;
+    unsigned depth = 1;
+    if (c == '*')
+    {
+        int c_lineno = lineno;
+        char *c_line = dup_line();
+        char *c_cptr = c_line + (cptr - line - 1);
+
+        putc('*', f);
+        ++cptr;
+        for (;;)
+        {
+            c = *cptr++;
+            putc(c, f);
+
+            switch (c)
+            {
+            case '*':
+                if (*cptr == ')')
+                {
+                    depth--;
+                    if (depth == 0) {
+                        FREE(c_line);
+                        return;
+                    }
+                }
+                continue;
+            case '\n':
+                get_line();
+                if (line == 0)
+                    unterminated_comment(c_lineno, c_line, c_cptr);
+                continue;
+            case '(':
+                if (*cptr == '*') ++depth;
+                continue;
+            case '\'':
+                process_apostrophe(f);
+                continue;
+            case '"':
+                process_quoted_string(c, f);
+                continue;
+            case '{':
+                process_open_curly_bracket(f);
+                continue;
+            default:
+                continue;
+            }
+        }
+    }
 }
 
 char *substring (char *str, int start, int len)
@@ -1311,8 +1338,8 @@ loop:
         goto loop;
 
     case '(':
-        process_comment(f);
         push_stack('(');
+        process_comment(f);
         goto loop;
 
     case ')':
