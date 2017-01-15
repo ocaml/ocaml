@@ -310,10 +310,6 @@ keyword(void)
             return (NONASSOC);
         if (strcmp(cache, "start") == 0)
             return (START);
-        if (strcmp(cache, "union") == 0)
-            return (UNION);
-        if (strcmp(cache, "ident") == 0)
-            return (IDENT);
     }
     else
     {
@@ -335,36 +331,6 @@ keyword(void)
     /*NOTREACHED*/
     return 0;
 }
-
-
-void copy_ident(void)
-{
-    register int c;
-    register FILE *f = output_file;
-
-    c = nextc();
-    if (c == EOF) unexpected_EOF();
-    if (c != '"') syntax_error(lineno, line, cptr);
-    ++outline;
-    fprintf(f, "#ident \"");
-    for (;;)
-    {
-        c = *++cptr;
-        if (c == '\n')
-        {
-            fprintf(f, "\"\n");
-            return;
-        }
-        putc(c, f);
-        if (c == '"')
-        {
-            putc('\n', f);
-            ++cptr;
-            return;
-        }
-    }
-}
-
 
 void copy_text(void)
 {
@@ -500,127 +466,6 @@ loop:
         goto loop;
     }
 }
-
-
-void copy_union(void)
-{
-    register int c;
-    int quote;
-    int depth;
-    int u_lineno = lineno;
-    char *u_line = dup_line();
-    char *u_cptr = u_line + (cptr - line - 6);
-
-    if (unionized) over_unionized(cptr - 6);
-    unionized = 1;
-
-    if (!lflag)
-        fprintf(text_file, line_format, lineno, input_file_name);
-
-    fprintf(text_file, "typedef union");
-    if (dflag) fprintf(union_file, "typedef union");
-
-    depth = 1;
-    cptr++;
-
-loop:
-    c = *cptr++;
-    putc(c, text_file);
-    if (dflag) putc(c, union_file);
-    switch (c)
-    {
-    case '\n':
-        get_line();
-        if (line == 0) unterminated_union(u_lineno, u_line, u_cptr);
-        goto loop;
-
-    case '{':
-        ++depth;
-        goto loop;
-
-    case '}':
-        --depth;
-        if (c == '}' && depth == 0) {
-          fprintf(text_file, " YYSTYPE;\n");
-          FREE(u_line);
-          return;
-        }
-        goto loop;
-
-    case '\'':
-    case '"':
-        {
-            int s_lineno = lineno;
-            char *s_line = dup_line();
-            char *s_cptr = s_line + (cptr - line - 1);
-
-            quote = c;
-            for (;;)
-            {
-                c = *cptr++;
-                putc(c, text_file);
-                if (dflag) putc(c, union_file);
-                if (c == quote)
-                {
-                    FREE(s_line);
-                    goto loop;
-                }
-                if (c == '\n')
-                    unterminated_string(s_lineno, s_line, s_cptr);
-                if (c == '\\')
-                {
-                    c = *cptr++;
-                    putc(c, text_file);
-                    if (dflag) putc(c, union_file);
-                    if (c == '\n')
-                    {
-                        get_line();
-                        if (line == 0)
-                            unterminated_string(s_lineno, s_line, s_cptr);
-                    }
-                }
-            }
-        }
-
-    case '(':
-        c = *cptr;
-        if (c == '*')
-        {
-            int c_lineno = lineno;
-            char *c_line = dup_line();
-            char *c_cptr = c_line + (cptr - line - 1);
-
-            putc('*', text_file);
-            if (dflag) putc('*', union_file);
-            ++cptr;
-            for (;;)
-            {
-                c = *cptr++;
-                putc(c, text_file);
-                if (dflag) putc(c, union_file);
-                if (c == '*' && *cptr == ')')
-                {
-                    putc(')', text_file);
-                    if (dflag) putc(')', union_file);
-                    ++cptr;
-                    FREE(c_line);
-                    goto loop;
-                }
-                if (c == '\n')
-                {
-                    get_line();
-                    if (line == 0)
-                        unterminated_comment(c_lineno, c_line, c_cptr);
-                }
-            }
-        }
-        goto loop;
-
-    default:
-        goto loop;
-    }
-}
-
 
 int
 hexval(int c)
@@ -1005,16 +850,8 @@ void read_declarations(void)
         case MARK:
             return;
 
-        case IDENT:
-            copy_ident();
-            break;
-
         case TEXT:
             copy_text();
-            break;
-
-        case UNION:
-            copy_union();
             break;
 
         case TOKEN:
