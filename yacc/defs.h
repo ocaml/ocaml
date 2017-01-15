@@ -85,8 +85,6 @@
 #define TEXT 5
 #define TYPE 6
 #define START 7
-#define UNION 8
-#define IDENT 9
 
 /*  symbol classes  */
 
