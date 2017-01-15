@@ -17,17 +17,8 @@
 
 include Makefile.shared
 
-# The compilation of ocaml will fail if the runtime has changed.
-# Never mind, just do make bootstrap to reach fixpoint again.
-
 # Compile everything the first time
 world: coldstart all
-
-# Do a complete bootstrapping cycle
-bootstrap:
-	$(MAKEREC) coreboot
-	$(MAKEREC) all
-	$(MAKEREC) compare
 
 # Compile the native-code compiler
 opt-core:
@@ -60,7 +51,6 @@ natruntop:
 	$(MAKEREC) ocamlnat
 	@rlwrap --help 2>/dev/null && $(EXTRAPATH) rlwrap $(NATRUNTOP) || $(EXTRAPATH) $(NATRUNTOP)
 
-.PHONY: bootstrap
 .PHONY: opt-core opt opt.opt
 .PHONY: world world.opt
 

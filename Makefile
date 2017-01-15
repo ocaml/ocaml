@@ -41,14 +41,6 @@ reconfigure:
 # make clean runtime coreall
 # make coreboot [new system -- now in a stable state]
 
-# Bootstrap and rebuild the whole system.
-# The compilation of ocaml will fail if the runtime has changed.
-# Never mind, just do make bootstrap to reach fixpoint again.
-bootstrap:
-	$(MAKE) coreboot
-	$(MAKE) all
-	$(MAKE) compare
-
 # Compile the native-code compiler
 opt-core:
 	$(MAKE) runtimeopt
@@ -98,7 +90,6 @@ natruntop:
 	$(MAKE) ocamlnat
 	@rlwrap --help 2>/dev/null && rlwrap $(NATRUNTOP) || $(NATRUNTOP)
 
-.PHONY: bootstrap
 .PHONY: opt-core opt opt.opt
 .PHONY: world world.opt
 
