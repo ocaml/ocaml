@@ -54,16 +54,6 @@ bootstrap:
 	$(MAKEREC) all
 	$(MAKEREC) compare
 
-# Build the core system: the minimum needed to make depend and bootstrap
-core:
-	$(MAKEREC) runtime
-	$(MAKEREC) coreall
-
-# Recompile the core system using the bootstrap compiler
-coreall:
-	$(MAKEREC) ocamlc
-	$(MAKEREC) ocamllex ocamlyacc ocamltools library
-
 # Save the current bootstrap compiler
 backup:
 	mkdir -p boot/Saved
@@ -141,7 +131,7 @@ natruntop:
 
 .PHONY: all backup bootstrap
 .PHONY: cleanboot
-.PHONY: compare core coreall
+.PHONY: compare
 .PHONY: coreboot
 .PHONY: ocamltools ocamltoolsopt
 .PHONY: ocamltoolsopt.opt opt-core opt opt.opt

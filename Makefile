@@ -78,16 +78,6 @@ bootstrap:
 	$(MAKE) all
 	$(MAKE) compare
 
-# Build the core system: the minimum needed to make depend and bootstrap
-core:
-	$(MAKE) coldstart
-	$(MAKE) coreall
-
-# Recompile the core system using the bootstrap compiler
-coreall:
-	$(MAKE) ocamlc
-	$(MAKE) ocamllex ocamlyacc ocamltools library
-
 # Save the current bootstrap compiler
 backup:
 	if test -d boot/Saved; then : ; else mkdir boot/Saved; fi
@@ -184,7 +174,7 @@ natruntop:
 
 .PHONY: all backup bootstrap
 .PHONY: cleanboot
-.PHONY: compare core coreall
+.PHONY: compare
 .PHONY: coreboot
 .PHONY: ocamltools ocamltoolsopt
 .PHONY: ocamltoolsopt.opt opt-core opt opt.opt
