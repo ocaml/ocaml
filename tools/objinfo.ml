@@ -190,8 +190,10 @@ let dump_byte ic =
 
 let read_dyn_header filename ic =
   let tempfile = Filename.temp_file "objinfo" ".out" in
-  let helper = Filename.concat Config.standard_library "objinfo_helper" in
   try
+    let helper =
+      Misc.expand_directory Config.standard_library "+objinfo_helper"
+    in
     try_finally
       (fun () ->
         let rc = Sys.command (sprintf "%s %s > %s"

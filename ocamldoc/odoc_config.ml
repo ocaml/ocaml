@@ -11,7 +11,7 @@
 (***********************************************************************)
 
 let custom_generators_path =
-  Filename.concat Config.standard_library
-    (Filename.concat "ocamldoc" "custom")
+  let ocamldoc = Misc.expand_directory Config.standard_library "+ocamldoc" in
+  Filename.concat ocamldoc "custom"
 
 let print_warnings = ref true

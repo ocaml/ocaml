@@ -97,7 +97,7 @@ let rec eval_path = function
   libray, so we load it beforehand as it cannot be found in the search path. *)
 let () =
   let compiler_libs =
-    Filename.concat Config.standard_library "compiler-libs" in
+    Misc.expand_directory Config.standard_library "+compiler-lib" in
   let topdirs =
     Filename.concat compiler_libs "topdirs.cmi" in
   ignore (Env.read_signature "Topdirs" topdirs)

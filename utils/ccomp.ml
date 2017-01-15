@@ -61,7 +61,7 @@ let compile_file name =
        (if !Clflags.debug then "-g" else "")
        (String.concat " " (List.rev !Clflags.all_ccopts))
        (quote_prefixed "-I" (List.rev !Clflags.include_dirs))
-       (Clflags.std_include_flag "-I")
+       (String.concat " " (Clflags.std_include_flag "-I"))
        (Filename.quote name))
 
 let create_archive archive file_list =

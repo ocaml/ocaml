@@ -15,8 +15,8 @@
 val version: string
         (* The current version number of the system *)
 
-val standard_library: string
-        (* The directory containing the standard libraries *)
+val standard_library: string list
+        (* The directories containing the standard libraries *)
 val standard_runtime: string
         (* The full path to the standard bytecode interpreter ocamlrun *)
 val ccomp_type: string
