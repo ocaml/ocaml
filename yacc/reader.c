@@ -1282,13 +1282,13 @@ loop:
             goto loop;
         }
     }
-    if (isalpha(c) || c == '_' || c == '$')
+    if (isalpha(c) || c == '_' || c == '$' || In_bitmap(caml_ident_start, c))
     {
         do
         {
             putc(c, f);
             c = *++cptr;
-        } while (isalnum(c) || c == '_' || c == '$');
+        } while (isalnum(c) || c == '_' || c == '$' || c == '\'' || In_bitmap(caml_ident_body, c));
         goto loop;
     }
     if (c == '}' && depth == 1) {
