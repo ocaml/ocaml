@@ -364,6 +364,33 @@ else # Windows, to be fixed!
 endif
 	$(MAKE) coreall
 
+# Save the current bootstrap compiler
+.PHONY: backup
+backup:
+	$(MKDIR) boot/Saved
+	if test -d $(MAXSAVED); then rm -r $(MAXSAVED); fi
+	mv boot/Saved boot/Saved.prev
+	mkdir boot/Saved
+	mv boot/Saved.prev boot/Saved/Saved.prev
+	cp boot/ocamlrun$(EXE) boot/Saved
+	cd boot; mv ocamlc ocamllex ocamlyacc$(EXE) ocamldep Saved
+	cd boot; cp $(LIBFILES) Saved
+
+# Restore the saved bootstrap compiler if a problem arises
+.PHONY: restore
+restore:
+	cd boot; mv Saved/* .; rmdir Saved; mv Saved.prev Saved
+
+# Check if fixpoint reached
+.PHONY: compare
+compare:
+	@if $(CAMLRUN) tools/cmpbyt boot/ocamlc ocamlc \
+         && $(CAMLRUN) tools/cmpbyt boot/ocamllex lex/ocamllex \
+         && $(CAMLRUN) tools/cmpbyt boot/ocamldep tools/ocamldep; \
+	then echo "Fixpoint reached, bootstrap succeeded."; \
+	else echo "Fixpoint not reached, try one more bootstrapping cycle."; \
+	fi
+
 # FlexDLL sources missing error messages
 # Different git mechanism displayed depending on whether this source tree came
 # from a git clone or a source tarball.

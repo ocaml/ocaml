@@ -78,18 +78,6 @@ bootstrap:
 	$(MAKE) all
 	$(MAKE) compare
 
-# Save the current bootstrap compiler
-backup:
-	if test -d boot/Saved; then : ; else mkdir boot/Saved; fi
-	if test -d $(MAXSAVED); then rm -r $(MAXSAVED); else : ; fi
-	mv boot/Saved boot/Saved.prev
-	mkdir boot/Saved
-	mv boot/Saved.prev boot/Saved/Saved.prev
-	cp boot/ocamlrun$(EXE) boot/Saved
-	mv boot/ocamlc boot/ocamllex boot/ocamlyacc$(EXE) boot/ocamldep \
-	   boot/Saved
-	cd boot; cp $(LIBFILES) Saved
-
 # Promote the newly compiled system to the rank of cross compiler
 # (Runs on the old runtime, produces code for the new runtime)
 promote-cross:
@@ -103,21 +91,6 @@ promote-cross:
 # (Runs on the new runtime, produces code for the new runtime)
 promote: promote-cross
 	cp byterun/ocamlrun$(EXE) boot/ocamlrun$(EXE)
-
-# Restore the saved bootstrap compiler if a problem arises
-restore:
-	mv boot/Saved/* boot
-	rmdir boot/Saved
-	mv boot/Saved.prev boot/Saved
-
-# Check if fixpoint reached
-compare:
-	@if $(CAMLRUN) tools/cmpbyt boot/ocamlc ocamlc \
-	 && $(CAMLRUN) tools/cmpbyt boot/ocamllex lex/ocamllex \
-	 && $(CAMLRUN) tools/cmpbyt boot/ocamldep tools/ocamldep; \
-	then echo "Fixpoint reached, bootstrap succeeded."; \
-	else echo "Fixpoint not reached, try one more bootstrapping cycle."; \
-	fi
 
 # Remove old bootstrap compilers
 cleanboot:
@@ -172,13 +145,12 @@ natruntop:
 	$(MAKE) ocamlnat
 	@rlwrap --help 2>/dev/null && rlwrap $(NATRUNTOP) || $(NATRUNTOP)
 
-.PHONY: all backup bootstrap
+.PHONY: all bootstrap
 .PHONY: cleanboot
-.PHONY: compare
 .PHONY: coreboot
 .PHONY: ocamltools ocamltoolsopt
 .PHONY: ocamltoolsopt.opt opt-core opt opt.opt
 .PHONY: promote promote-cross
-.PHONY: restore world world.opt
+.PHONY: world world.opt
 
 include .depend
