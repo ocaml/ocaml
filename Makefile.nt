@@ -27,27 +27,6 @@ all: runtime ocamlc ocamllex ocamlyacc ocamltools library ocaml \
 # Compile everything the first time
 world: coldstart all
 
-# Core bootstrapping cycle
-coreboot:
-# Save the original bootstrap compiler
-	$(MAKEREC) backup
-# Promote the new compiler but keep the old runtime
-# This compiler runs on boot/ocamlrun and produces bytecode for
-# byterun/ocamlrun
-	$(MAKEREC) promote-cross
-# Rebuild ocamlc and ocamllex (run on byterun/ocamlrun)
-	$(MAKEREC) partialclean
-	$(MAKEREC) ocamlc ocamllex ocamltools
-# Rebuild the library (using byterun/ocamlrun ./ocamlc)
-	$(MAKEREC) library-cross
-# Promote the new compiler and the new runtime
-	$(MAKEREC) promote
-# Rebuild the core system
-	$(MAKEREC) partialclean
-	$(MAKEREC) core
-# Check if fixpoint reached
-	$(MAKEREC) compare
-
 # Do a complete bootstrapping cycle
 bootstrap:
 	$(MAKEREC) coreboot
@@ -86,7 +65,6 @@ natruntop:
 	@rlwrap --help 2>/dev/null && $(EXTRAPATH) rlwrap $(NATRUNTOP) || $(EXTRAPATH) $(NATRUNTOP)
 
 .PHONY: all bootstrap
-.PHONY: coreboot
 .PHONY: opt-core opt opt.opt
 .PHONY: world world.opt
 

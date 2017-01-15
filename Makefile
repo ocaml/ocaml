@@ -49,27 +49,6 @@ reconfigure:
 # make clean runtime coreall
 # make coreboot [new system -- now in a stable state]
 
-# Core bootstrapping cycle
-coreboot:
-# Save the original bootstrap compiler
-	$(MAKE) backup
-# Promote the new compiler but keep the old runtime
-# This compiler runs on boot/ocamlrun and produces bytecode for
-# byterun/ocamlrun
-	$(MAKE) promote-cross
-# Rebuild ocamlc and ocamllex (run on byterun/ocamlrun)
-	$(MAKE) partialclean
-	$(MAKE) ocamlc ocamllex ocamltools
-# Rebuild the library (using byterun/ocamlrun ./ocamlc)
-	$(MAKE) library-cross
-# Promote the new compiler and the new runtime
-	$(MAKE) CAMLRUN=byterun/ocamlrun promote
-# Rebuild the core system
-	$(MAKE) partialclean
-	$(MAKE) core
-# Check if fixpoint reached
-	$(MAKE) compare
-
 # Bootstrap and rebuild the whole system.
 # The compilation of ocaml will fail if the runtime has changed.
 # Never mind, just do make bootstrap to reach fixpoint again.
@@ -128,7 +107,6 @@ natruntop:
 	@rlwrap --help 2>/dev/null && rlwrap $(NATRUNTOP) || $(NATRUNTOP)
 
 .PHONY: all bootstrap
-.PHONY: coreboot
 .PHONY: opt-core opt opt.opt
 .PHONY: world world.opt
 
