@@ -18,14 +18,6 @@
 MAKEREC=$(MAKE)
 include Makefile.shared
 
-# Recompile the system using the bootstrap compiler
-all:
-	$(MAKE) runtime
-	$(MAKE) coreall
-	$(MAKE) ocaml
-	$(MAKE) otherlibraries $(WITH_DEBUGGER) \
-	  $(WITH_OCAMLDOC)
-
 # Compile everything the first time
 world:
 	$(MAKE) coldstart
@@ -106,7 +98,7 @@ natruntop:
 	$(MAKE) ocamlnat
 	@rlwrap --help 2>/dev/null && rlwrap $(NATRUNTOP) || $(NATRUNTOP)
 
-.PHONY: all bootstrap
+.PHONY: bootstrap
 .PHONY: opt-core opt opt.opt
 .PHONY: world world.opt
 

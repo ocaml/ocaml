@@ -17,10 +17,6 @@
 
 include Makefile.shared
 
-# Recompile the system using the bootstrap compiler
-all: runtime ocamlc ocamllex ocamlyacc ocamltools library ocaml \
-  otherlibraries $(WITH_DEBUGGER) $(WITH_OCAMLDOC)
-
 # The compilation of ocaml will fail if the runtime has changed.
 # Never mind, just do make bootstrap to reach fixpoint again.
 
@@ -64,7 +60,7 @@ natruntop:
 	$(MAKEREC) ocamlnat
 	@rlwrap --help 2>/dev/null && $(EXTRAPATH) rlwrap $(NATRUNTOP) || $(EXTRAPATH) $(NATRUNTOP)
 
-.PHONY: all bootstrap
+.PHONY: bootstrap
 .PHONY: opt-core opt opt.opt
 .PHONY: world world.opt
 
