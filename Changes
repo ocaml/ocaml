@@ -68,6 +68,12 @@ Next version (4.05.0):
 - PR#7137, GPR#960: "-open" command line flag now accepts a module path
   (not a module name) (Arseniy Alekseyev and Leo White)
 
+- GPR#1009: "ocamlc -c -linkall" and "ocamlopt -c -linkall" can now be used
+  to set the "always link" flag on individual compilation units.  This
+  controls linking with finer granularity than "-a -linkall", which sets
+  the "always link" flag on all units of the given library.
+  (Xavier Leroy)
+
 ### Standard library:
 
 - PR#6975, GPR#902: Truncate function added to stdlib Buffer module
