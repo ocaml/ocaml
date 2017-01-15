@@ -93,7 +93,7 @@ Next version (4.05.0):
   (Roma Sokolov)
 
 - GPR#999: Arg, do not repeat thrice usage_msg when reporting an error
-  (Florian Angeletti)
+  (Florian Angeletti, review by Gabriel Scherer)
 
 ### Manual and documentation:
 
