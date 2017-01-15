@@ -975,14 +975,17 @@ partialclean::
 
 # Tools
 
+.PHONY: ocamltools
 ocamltools: ocamlc ocamlyacc ocamllex asmcomp/cmx_format.cmi \
             asmcomp/printclambda.cmo compilerlibs/ocamlmiddleend.cma \
             asmcomp/export_info.cmo
 	$(MAKE) -C tools all
 
+.PHONY: ocamltoolsopt
 ocamltoolsopt: ocamlopt
 	$(MAKE) -C tools opt
 
+.PHONY: ocamltoolsopt.opt
 ocamltoolsopt.opt: ocamlc.opt ocamlyacc ocamllex.opt asmcomp/cmx_format.cmi \
                    asmcomp/printclambda.cmx compilerlibs/ocamlmiddleend.cmxa \
                    asmcomp/export_info.cmx

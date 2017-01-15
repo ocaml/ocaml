@@ -87,8 +87,7 @@ natruntop:
 
 .PHONY: all bootstrap
 .PHONY: coreboot
-.PHONY: ocamltools ocamltoolsopt
-.PHONY: ocamltoolsopt.opt opt-core opt opt.opt
+.PHONY: opt-core opt opt.opt
 .PHONY: world world.opt
 
 include .depend
