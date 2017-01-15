@@ -166,7 +166,7 @@ void skip_comment(void)
     }
 }
 
-void process_quoted_string(char c, FILE *const f)
+static void process_quoted_string(char c, FILE *const f)
 {
     int s_lineno = lineno;
     char *s_line = dup_line();
@@ -245,6 +245,68 @@ static void process_comment(FILE *const f) {
             }
         }
     }
+}
+
+static void process_open_curly_bracket(FILE *f) {
+    if (In_bitmap(caml_ident_start, *cptr) || *cptr == '|')
+    {
+        char *newcptr = cptr;
+        size_t size = 0;
+        char *buf;
+        while(In_bitmap(caml_ident_body, *newcptr)) { newcptr++; }
+        if (*newcptr == '|')
+        { /* Raw string */
+            int s_lineno;
+            char *s_line;
+            char *s_cptr;
+
+            size = newcptr - cptr;
+            buf = MALLOC(size + 2);
+            if (!buf) no_space();
+            memcpy(buf, cptr, size);
+            buf[size] = '}';
+            buf[size + 1] = '\0';
+            fwrite(cptr, 1, size + 1, f);
+            cptr = newcptr + 1;
+            s_lineno = lineno;
+            s_line = dup_line();
+            s_cptr = s_line + (cptr - line - 1);
+
+            for (;;)
+            {
+                char c = *cptr++;
+                putc(c, f);
+                if (c == '|')
+                {
+                    int match = 1;
+                    size_t i;
+                    for (i = 0; i <= size; ++i) {
+                        if (cptr[i] != buf[i]) {
+                            newcptr--;
+                            match = 0;
+                            break;
+                        }
+                    }
+                    if (match) {
+                        FREE(s_line);
+                        FREE(buf);
+                        fwrite(cptr, 1, size, f);
+                        cptr += size;
+                        return;
+                    }
+                }
+                if (c == '\n')
+                {
+                    get_line();
+                    if (line == 0)
+                        unterminated_string(s_lineno, s_line, s_cptr);
+                }
+            }
+            FREE(buf);
+            return;
+        }
+    }
+    return;
 }
 
 char *substring (char *str, int start, int len)
@@ -473,6 +535,10 @@ loop:
         }
         /* fall through */
 
+    case '{':
+        putc(c, f);
+        process_open_curly_bracket(f);
+        goto loop;
     default:
         putc(c, f);
         need_newline = 1;
@@ -1204,6 +1270,9 @@ loop:
         unterminated_action(a_lineno, a_line, a_cptr);
 
     case '{':
+        process_open_curly_bracket(f);
+        /* Even if there is a raw string, we deliberately keep the
+         * closing '}' in the buffer */
         ++depth;
         goto loop;
 
@@ -1212,7 +1281,7 @@ loop:
         goto loop;
 
     case '"':
-        process_quoted_string(c, f);
+        process_quoted_string('"', f);
         goto loop;
     case '\'':
         process_apostrophe(f);
