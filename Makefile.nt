@@ -17,9 +17,6 @@
 
 include Makefile.shared
 
-# Compile everything the first time
-world: coldstart all
-
 # Compile the native-code compiler
 opt-core:
 	$(MAKEREC) runtimeopt
@@ -47,6 +44,6 @@ natruntop:
 	@rlwrap --help 2>/dev/null && $(EXTRAPATH) rlwrap $(NATRUNTOP) || $(EXTRAPATH) $(NATRUNTOP)
 
 .PHONY: opt-core opt opt.opt
-.PHONY: world world.opt
+.PHONY: world.opt
 
 include .depend

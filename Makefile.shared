@@ -449,6 +449,12 @@ bootstrap: coreboot
 	$(MAKE) all
 	$(MAKE) compare
 
+# Compile everything the first time
+
+.PHONY: world
+world: coldstart
+	$(MAKE) all
+
 # FlexDLL sources missing error messages
 # Different git mechanism displayed depending on whether this source tree came
 # from a git clone or a source tarball.

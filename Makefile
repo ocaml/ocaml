@@ -18,11 +18,6 @@
 MAKEREC=$(MAKE)
 include Makefile.shared
 
-# Compile everything the first time
-world:
-	$(MAKE) coldstart
-	$(MAKE) all
-
 # Compile also native code compiler and libraries, fast
 world.opt:
 	$(MAKE) coldstart
@@ -85,6 +80,6 @@ natruntop:
 	@rlwrap --help 2>/dev/null && rlwrap $(NATRUNTOP) || $(NATRUNTOP)
 
 .PHONY: opt-core opt opt.opt
-.PHONY: world world.opt
+.PHONY: world.opt
 
 include .depend
