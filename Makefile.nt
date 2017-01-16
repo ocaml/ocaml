@@ -39,11 +39,6 @@ opt.opt: core opt-core ocamlc.opt all ocamlopt.opt ocamllex.opt \
 # Complete build using fast compilers
 world.opt: coldstart opt.opt
 
-runtop:
-	$(MAKEREC) core
-	$(MAKEREC) ocaml
-	@rlwrap --help 2>/dev/null && $(EXTRAPATH) rlwrap $(RUNTOP) || $(EXTRAPATH) $(RUNTOP)
-
 natruntop:
 	$(MAKEREC) runtime
 	$(MAKEREC) coreall

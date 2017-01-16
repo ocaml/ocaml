@@ -703,6 +703,19 @@ ocaml: expunge ocaml.tmp
 partialclean::
 	rm -f ocaml
 
+.PHONY: runtop
+runtop:
+ifeq "$(UNIX_OR_WIN32)" "unix"
+	$(MAKE) runtime
+	$(MAKE) coreall
+	$(MAKE) ocaml
+else
+	$(MAKE) core
+	$(MAKE) ocaml
+endif
+	@rlwrap --help 2>/dev/null && $(EXTRAPATH) rlwrap $(RUNTOP) ||\
+	  $(EXTRAPATH) $(RUNTOP)
+
 # Native dynlink
 
 otherlibs/dynlink/dynlink.cmxa: otherlibs/dynlink/natdynlink.ml

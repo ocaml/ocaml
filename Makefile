@@ -77,12 +77,6 @@ base.opt:
 	$(MAKE) ocamlopt.opt
 	$(MAKE) otherlibrariesopt
 
-runtop:
-	$(MAKE) runtime
-	$(MAKE) coreall
-	$(MAKE) ocaml
-	@rlwrap --help 2>/dev/null && rlwrap $(RUNTOP) || $(RUNTOP)
-
 natruntop:
 	$(MAKE) runtime
 	$(MAKE) coreall
