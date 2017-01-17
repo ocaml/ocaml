@@ -141,6 +141,9 @@ Next version (4.05.0):
   first step towards moving Bigarray to the stdlib
   (Jeremie Dimino)
 
+- GPR#996: correctly update caml_top_of_stack in systhreads
+  (Fabrice Le Fessant)
+
 ### Bytecode debugger (ocamldebug):
 
 - GPR#977: Catch Out_of_range in "list" command
