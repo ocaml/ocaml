@@ -74,6 +74,9 @@ Next version (4.05.0):
   the "always link" flag on all units of the given library.
   (Xavier Leroy)
 
+- GPR#796: allow compiler plugins to declare their own arguments.
+  (Fabrice Le Fessant)
+
 ### Standard library:
 
 - PR#6975, GPR#902: Truncate function added to stdlib Buffer module
