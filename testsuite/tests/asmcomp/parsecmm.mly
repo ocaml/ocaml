@@ -153,7 +153,7 @@ fundecl:
     LPAREN FUNCTION STRING LPAREN params RPAREN sequence RPAREN
       { List.iter (fun (id, ty) -> unbind_ident id) $5;
         {fun_name = $3; fun_args = $5; fun_body = $7; fun_fast = true;
-         fun_dbg = Debuginfo.none} }
+         fun_dbg = Debuginfo.none; fun_env = None;} }
 ;
 params:
     oneparam params     { $1 :: $2 }
@@ -207,11 +207,11 @@ expr:
   | LPAREN TRY sequence WITH bind_ident sequence RPAREN
                 { unbind_ident $5; Ctrywith($3, $5, $6) }
   | LPAREN ADDRAREF expr expr RPAREN
-      { Cop(Cload Word_val, [access_array $3 $4 Arch.size_addr]) }
+      { Cop(Cload (Word_val, Asttypes.Mutable), [access_array $3 $4 Arch.size_addr]) }
   | LPAREN INTAREF expr expr RPAREN
-      { Cop(Cload Word_int, [access_array $3 $4 Arch.size_int]) }
+      { Cop(Cload (Word_int, Asttypes.Mutable), [access_array $3 $4 Arch.size_int]) }
   | LPAREN FLOATAREF expr expr RPAREN
-      { Cop(Cload Double_u, [access_array $3 $4 Arch.size_float]) }
+      { Cop(Cload (Double_u, Asttypes.Mutable), [access_array $3 $4 Arch.size_float]) }
   | LPAREN ADDRASET expr expr expr RPAREN
       { Cop(Cstore (Word_val, Assignment),
             [access_array $3 $4 Arch.size_addr; $5]) }
@@ -252,7 +252,7 @@ chunk:
 
 ;
 unaryop:
-    LOAD chunk                  { Cload $2 }
+    LOAD chunk                  { Cload ($2, Asttypes.Mutable) }
   | ALLOC                       { Calloc }
   | FLOATOFINT                  { Cfloatofint }
   | INTOFFLOAT                  { Cintoffloat }

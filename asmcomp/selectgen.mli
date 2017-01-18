@@ -20,6 +20,36 @@ type environment = (Ident.t, Reg.t array) Tbl.t
 
 val size_expr : environment -> Cmm.expression -> int
 
+module Effect : sig
+  type t =
+    | None
+    | Raise
+    | Arbitrary
+end
+
+module Coeffect : sig
+  type t =
+    | None
+    | Read_mutable
+    | Arbitrary
+end
+
+module Effect_and_coeffect : sig
+  type t
+
+  val none : t
+  val arbitrary : t
+
+  val effect : t -> Effect.t
+  val coeffect : t -> Coeffect.t
+
+  val effect_only : Effect.t -> t
+  val coeffect_only : Coeffect.t -> t
+
+  val join : t -> t -> t
+  val join_list_map : 'a list -> ('a -> t) -> t
+end
+
 class virtual selector_generic : object
   (* The following methods must or can be overridden by the processor
      description *)
@@ -30,6 +60,7 @@ class virtual selector_generic : object
     Cmm.memory_chunk -> Cmm.expression -> Arch.addressing_mode * Cmm.expression
     (* Must be defined to select addressing modes *)
   method is_simple_expr: Cmm.expression -> bool
+  method effects_of : Cmm.expression -> Effect_and_coeffect.t
     (* Can be overridden to reflect special extcalls known to be pure *)
   method select_operation :
     Cmm.operation ->

@@ -99,7 +99,7 @@ type memory_chunk =
 type operation =
     Capply of machtype * Debuginfo.t
   | Cextcall of string * machtype * bool * Debuginfo.t
-  | Cload of memory_chunk
+  | Cload of memory_chunk * Asttypes.mutable_flag
   | Calloc
   | Cstore of memory_chunk * Lambda.initialization_or_assignment
   | Caddi | Csubi | Cmuli | Cmulhi | Cdivi | Cmodi
@@ -141,7 +141,9 @@ type fundecl =
     fun_args: (Ident.t * machtype) list;
     fun_body: expression;
     fun_fast: bool;
-    fun_dbg : Debuginfo.t; }
+    fun_dbg : Debuginfo.t;
+    fun_env : Ident.t option;
+  }
 
 type data_item =
     Cdefine_symbol of string

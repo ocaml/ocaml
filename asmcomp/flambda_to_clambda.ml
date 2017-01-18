@@ -538,6 +538,7 @@ and to_clambda_set_of_closures t env
       params = params @ [env_var];
       body = to_clambda t env_body function_decl.body;
       dbg = function_decl.dbg;
+      env = Some env_var;
     }
   in
   let funs = List.map to_clambda_function all_functions in
@@ -577,6 +578,7 @@ and to_clambda_closed_set_of_closures t env symbol
       params;
       body = to_clambda t env_body function_decl.body;
       dbg = function_decl.dbg;
+      env = None;
     }
   in
   let ufunct = List.map to_clambda_function functions in
