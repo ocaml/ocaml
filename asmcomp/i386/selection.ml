@@ -168,6 +168,15 @@ method! is_simple_expr e =
   | _ ->
       super#is_simple_expr e
 
+method! effects_of e =
+  match e with
+  | Cop(Cextcall(fn, _, _, _, _), args)
+    when !fast_math && List.mem fn inline_float_ops ->
+      (* inlined float ops are simple if their arguments are *)
+      Selectgen.Effect_and_coeffect.join_list_map args self#effects_of
+  | _ ->
+      super#effects_of e
+
 method select_addressing chunk exp =
   match select_addr exp with
     (Asymbol s, d) ->
