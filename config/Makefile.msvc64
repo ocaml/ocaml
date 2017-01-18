@@ -75,7 +75,7 @@ CC_PROFILE=
 SYSTHREAD_SUPPORT=true
 CMXS=cmxs
 NATDYNLINK=true
-RUNTIMED=noruntimed
+RUNTIMED=false
 ASM_CFI_SUPPORTED=false
 UNIX_OR_WIN32=win32
 UNIXLIB=win32unix
@@ -98,7 +98,10 @@ BYTECC=cl -nologo -D_CRT_SECURE_NO_DEPRECATE -O2 -Gy- -MD
 BYTECCCOMPOPTS=-DCAML_NAME_SPACE
 
 ### Additional compile-time options for $(BYTECC).  (For debug version.)
-BYTECCDBGCOMPOPTS=-DDEBUG -Zi -W3 -Wp64
+BYTECCDBGCOMPOPTS=-Zi
+
+### Flag to use to rename object files.  (for debug version.)
+NAME_OBJ_FLAG=-Fo
 
 ### Additional link-time options for $(BYTECC).  (For static linking.)
 BYTECCLINKOPTS=
@@ -130,6 +133,7 @@ endif
 # or OCAML_FLEXLINK overriding will not work (see utils/config.mlp)
 MKDLL=$(FLEXLINK)
 MKEXE=$(FLEXLINK) -exe
+MKEXEDEBUGFLAG=
 MKMAINDLL=$(FLEXLINK) -maindll
 
 ### Native command to build ocamlrun.exe without flexlink

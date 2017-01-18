@@ -81,25 +81,68 @@ CAMLexport void caml_raise_with_string(value tag, char const *msg)
   CAMLnoreturn;
 }
 
-/* PR#5115: Failure and Invalid_argument can be triggered by
-   input_value while reading the initial value of [caml_global_data]. */
+/* PR#5115: Built-in exceptions can be triggered by input_value
+   while reading the initial value of [caml_global_data].
+
+   We check against this issue here in byterun/fail.c instead of
+   byterun/intern.c. Having the check here means that these calls will
+   be slightly slower for all bytecode programs (not just the calls
+   coming from intern). Because intern.c is shared between byterun/
+   and asmrun/, putting checks there would slow do input_value for
+   natively-compiled programs that do not need these checks.
+*/
+static void check_global_data(char const *exception_name)
+{
+  if (caml_global_data == 0) {
+    fprintf(stderr, "Fatal error: exception %s\n", exception_name);
+    exit(2);
+  }
+}
+
+static void check_global_data_param(char const *exception_name, char const *msg)
+{
+  if (caml_global_data == 0) {
+    fprintf(stderr, "Fatal error: exception %s(\"%s\")\n", exception_name, msg);
+    exit(2);
+  }
+}
+
+static inline value caml_get_failwith_tag (char const *msg)
+{
+  check_global_data_param("Failure", msg);
+  return Field(caml_global_data, FAILURE_EXN);
+}
 
 CAMLexport void caml_failwith (char const *msg)
 {
-  if (caml_global_data == 0) {
-    fprintf(stderr, "Fatal error: exception Failure(\"%s\")\n", msg);
-    exit(2);
-  }
-  caml_raise_with_string(Field(caml_global_data, FAILURE_EXN), msg);
+  caml_raise_with_string(caml_get_failwith_tag(msg), msg);
+}
+
+CAMLexport void caml_failwith_value (value msg)
+{
+  CAMLparam1(msg);
+  value tag = caml_get_failwith_tag(String_val(msg));
+  caml_raise_with_arg(tag, msg);
+  CAMLnoreturn;
+}
+
+static inline value caml_get_invalid_argument_tag (char const *msg)
+{
+  check_global_data_param("Invalid_argument", msg);
+  return Field(caml_global_data, INVALID_EXN);
 }
 
 CAMLexport void caml_invalid_argument (char const *msg)
 {
-  if (caml_global_data == 0) {
-    fprintf(stderr, "Fatal error: exception Invalid_argument(\"%s\")\n", msg);
-    exit(2);
-  }
-  caml_raise_with_string(Field(caml_global_data, INVALID_EXN), msg);
+  caml_raise_with_string(caml_get_invalid_argument_tag(msg), msg);
+}
+
+CAMLexport void caml_invalid_argument_value (value msg)
+{
+  CAMLparam1(msg);
+  value tag = caml_get_invalid_argument_tag(String_val(msg));
+  caml_raise_with_arg(tag, msg);
+  CAMLnoreturn;
 }
 
 CAMLexport void caml_array_bound_error(void)
@@ -109,40 +152,52 @@ CAMLexport void caml_array_bound_error(void)
 
 CAMLexport void caml_raise_out_of_memory(void)
 {
+  check_global_data("Out_of_memory");
   caml_raise_constant(Field(caml_global_data, OUT_OF_MEMORY_EXN));
 }
 
 CAMLexport void caml_raise_stack_overflow(void)
 {
+  check_global_data("Stack_overflow");
   caml_raise_constant(Field(caml_global_data, STACK_OVERFLOW_EXN));
 }
 
 CAMLexport void caml_raise_sys_error(value msg)
 {
+  check_global_data_param("Sys_error", String_val(msg));
   caml_raise_with_arg(Field(caml_global_data, SYS_ERROR_EXN), msg);
 }
 
 CAMLexport void caml_raise_end_of_file(void)
 {
+  check_global_data("End_of_file");
   caml_raise_constant(Field(caml_global_data, END_OF_FILE_EXN));
 }
 
 CAMLexport void caml_raise_zero_divide(void)
 {
+  check_global_data("Division_by_zero");
   caml_raise_constant(Field(caml_global_data, ZERO_DIVIDE_EXN));
 }
 
 CAMLexport void caml_raise_not_found(void)
 {
+  check_global_data("Not_found");
   caml_raise_constant(Field(caml_global_data, NOT_FOUND_EXN));
 }
 
 CAMLexport void caml_raise_sys_blocked_io(void)
 {
+  check_global_data("Sys_blocked_io");
   caml_raise_constant(Field(caml_global_data, SYS_BLOCKED_IO));
 }
 
 int caml_is_special_exception(value exn) {
+  /* this function is only used in caml_format_exception to produce
+     a more readable textual representation of some exceptions. It is
+     better to fall back to the general, less readable representation
+     than to abort with a fatal error as above. */
+  if (caml_global_data == 0) return 0;
   return exn == Field(caml_global_data, MATCH_FAILURE_EXN)
     || exn == Field(caml_global_data, ASSERT_FAILURE_EXN)
     || exn == Field(caml_global_data, UNDEFINED_RECURSIVE_MODULE_EXN);

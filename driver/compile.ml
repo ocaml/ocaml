@@ -111,7 +111,3 @@ let implementation ppf sourcefile outputprefix =
   with x ->
     Stypes.dump (Some (outputprefix ^ ".annot"));
     raise x
-
-let c_file name =
-  Location.input_name := name;
-  if Ccomp.compile_file name <> 0 then exit 2

@@ -50,6 +50,10 @@
     For functions to decode the information recorded by the profiler,
     see the Spacetime offline library in otherlibs/. *)
 
+(** [enabled] is [true] if the compiler is configured with spacetime and [false]
+    otherwise *)
+val enabled : bool
+
 module Series : sig
   (** Type representing a file that will hold a series of heap snapshots
       together with additional information required to interpret those

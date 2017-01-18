@@ -480,7 +480,7 @@ static void test_and_compact (void)
   caml_gc_message (0x200, "Estimated overhead (lower bound) = %"
                           ARCH_INTNAT_PRINTF_FORMAT "u%%\n",
                    (uintnat) fp);
-  if (fp >= caml_percent_max && caml_stat_heap_chunks > 1){
+  if (fp >= caml_percent_max){
     caml_gc_message (0x200, "Automatic compaction triggered.\n", 0);
     caml_compact_heap ();
   }

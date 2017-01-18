@@ -13,67 +13,13 @@
 (*                                                                        *)
 (**************************************************************************)
 
-open Config
 open Clflags
 open Compenv
-
-let process_interface_file ppf name =
-  let opref = output_prefix name in
-  Compile.interface ppf name opref;
-  if !make_package then objfiles := (opref ^ ".cmi") :: !objfiles
-
-let process_implementation_file ppf name =
-  let opref = output_prefix name in
-  Compile.implementation ppf name opref;
-  objfiles := (opref ^ ".cmo") :: !objfiles
-
-let process_file ppf name =
-  if Filename.check_suffix name ".ml"
-  || Filename.check_suffix name ".mlt" then
-    process_implementation_file ppf name
-  else if Filename.check_suffix name !Config.interface_suffix then
-    process_interface_file ppf name
-  else if Filename.check_suffix name ".cmo"
-       || Filename.check_suffix name ".cma" then
-    objfiles := name :: !objfiles
-  else if Filename.check_suffix name ".cmi" && !make_package then
-    objfiles := name :: !objfiles
-  else if Filename.check_suffix name ext_obj
-       || Filename.check_suffix name ext_lib then
-    ccobjs := name :: !ccobjs
-  else if Filename.check_suffix name ext_dll then
-    dllibs := name :: !dllibs
-  else if Filename.check_suffix name ".c" then begin
-    Compile.c_file name;
-    ccobjs := (Filename.chop_suffix (Filename.basename name) ".c" ^ ext_obj)
-              :: !ccobjs
-  end
-  else
-    raise(Arg.Bad("don't know what to do with " ^ name))
 
 let usage = "Usage: ocamlc <options> <files>\nOptions are:"
 
 (* Error messages to standard error formatter *)
 let ppf = Format.err_formatter
-
-let process_thunks = ref []
-let schedule fn =
-  process_thunks := fn :: !process_thunks
-
-let anonymous filename =
-  schedule (fun () ->
-    readenv ppf (Before_compile filename);
-    process_file ppf filename)
-
-let impl filename =
-  schedule (fun () ->
-    readenv ppf (Before_compile filename);
-    process_implementation_file ppf filename)
-
-let intf filename =
-  schedule (fun () ->
-    readenv ppf (Before_compile filename);
-    process_interface_file ppf filename)
 
 let show_config () =
   Config.print_config stdout;
@@ -89,13 +35,13 @@ module Options = Main_args.Make_bytecomp_options (struct
   let _binannot = set binary_annotations
   let _c = set compile_only
   let _cc s = c_compiler := Some s
-  let _cclib s = schedule (fun () -> ccobjs := Misc.rev_split_words s @ !ccobjs)
+  let _cclib s = Compenv.defer (ProcessObjects (Misc.rev_split_words s))
   let _ccopt s = first_ccopts := s :: !first_ccopts
   let _compat_32 = set bytecode_compatible_32
   let _config = show_config
   let _custom = set custom_runtime
   let _no_check_prims = set no_check_prims
-  let _dllib s = schedule (fun () -> dllibs := Misc.rev_split_words s @ !dllibs)
+  let _dllib s = defer (ProcessDLLs (Misc.rev_split_words s))
   let _dllpath s = dllpaths := !dllpaths @ [s]
   let _for_pack s = for_package := Some s
   let _g = set debug
@@ -180,19 +126,24 @@ module Options = Main_args.Make_bytecomp_options (struct
 end)
 
 let main () =
+  Clflags.add_arguments __LOC__ Options.list;
   try
     readenv ppf Before_args;
-    Arg.parse_expand Options.list anonymous usage;
-    if !output_name <> None && !compile_only &&
-          List.length !process_thunks > 1 then
-      fatal "Options -c -o are incompatible with compiling multiple files";
-    let final_output_name = !output_name in
-    if !output_name <> None && not !compile_only then
-      (* We're invoked like: ocamlc -o foo bar.c baz.ml.
-         Make sure the intermediate products don't clash with the final one. *)
-      output_name := None;
-    List.iter (fun f -> f ()) (List.rev !process_thunks);
-    output_name := final_output_name;
+    Clflags.parse_arguments anonymous usage;
+    begin try
+      Compenv.process_deferred_actions
+        (ppf,
+         Compile.implementation,
+         Compile.interface,
+         ".cmo",
+         ".cma");
+    with Arg.Bad msg ->
+      begin
+        prerr_endline msg;
+        Clflags.print_arguments usage;
+        exit 2
+      end
+    end;
     readenv ppf Before_link;
     if
       List.length (List.filter (fun x -> !x)

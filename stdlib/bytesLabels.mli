@@ -76,6 +76,16 @@ val sub : bytes -> pos:int -> len:int -> bytes
 val sub_string : bytes -> int -> int -> string
 (** Same as [sub] but return a string instead of a byte sequence. *)
 
+val extend : bytes -> left:int -> right:int -> bytes
+(** [extend s left right] returns a new byte sequence that contains
+    the bytes of [s], with [left] uninitialized bytes prepended and
+    [right] uninitialized bytes appended to it. If [left] or [right]
+    is negative, then bytes are removed (instead of appended) from
+    the corresponding side of [s].
+
+    Raise [Invalid_argument] if the result length is negative or
+    longer than {!Sys.max_string_length} bytes. *)
+
 val fill : bytes -> pos:int -> len:int -> char -> unit
 (** [fill s start len c] modifies [s] in place, replacing [len]
     characters with [c], starting at [start].
@@ -96,10 +106,28 @@ val blit :
     designate a valid range of [src], or if [dstoff] and [len]
     do not designate a valid range of [dst]. *)
 
+val blit_string :
+  src:string -> src_pos:int -> dst:bytes -> dst_pos:int -> len:int
+  -> unit
+(** [blit src srcoff dst dstoff len] copies [len] bytes from string
+    [src], starting at index [srcoff], to byte sequence [dst],
+    starting at index [dstoff].
+
+    Raise [Invalid_argument] if [srcoff] and [len] do not
+    designate a valid range of [src], or if [dstoff] and [len]
+    do not designate a valid range of [dst]. *)
+
 val concat : sep:bytes -> bytes list -> bytes
 (** [concat sep sl] concatenates the list of byte sequences [sl],
     inserting the separator byte sequence [sep] between each, and
     returns the result as a new byte sequence. *)
+
+val cat : bytes -> bytes -> bytes
+(** [cat s1 s2] concatenates [s1] and [s2] and returns the result
+     as new byte sequence.
+
+    Raise [Invalid_argument] if the result is longer than
+    {!Sys.max_string_length} bytes. *)
 
 val iter : f:(char -> unit) -> bytes -> unit
 (** [iter f s] applies function [f] in turn to all the bytes of [s].
@@ -203,22 +231,50 @@ val rcontains_from : bytes -> int -> char -> bool
     position in [s]. *)
 
 val uppercase : bytes -> bytes
+  [@@ocaml.deprecated "Use Bytes.uppercase_ascii instead."]
 (** Return a copy of the argument, with all lowercase letters
-    translated to uppercase, including accented letters of the ISO
-    Latin-1 (8859-1) character set. *)
+   translated to uppercase, including accented letters of the ISO
+   Latin-1 (8859-1) character set.
+   @deprecated Functions operating on Latin-1 character set are deprecated. *)
 
 val lowercase : bytes -> bytes
+  [@@ocaml.deprecated "Use Bytes.lowercase_ascii instead."]
 (** Return a copy of the argument, with all uppercase letters
-    translated to lowercase, including accented letters of the ISO
-    Latin-1 (8859-1) character set. *)
+   translated to lowercase, including accented letters of the ISO
+   Latin-1 (8859-1) character set.
+   @deprecated Functions operating on Latin-1 character set are deprecated. *)
 
 val capitalize : bytes -> bytes
-(** Return a copy of the argument, with the first byte set to
-    uppercase. *)
+  [@@ocaml.deprecated "Use Bytes.capitalize_ascii instead."]
+(** Return a copy of the argument, with the first character set to uppercase,
+   using the ISO Latin-1 (8859-1) character set..
+   @deprecated Functions operating on Latin-1 character set are deprecated. *)
 
 val uncapitalize : bytes -> bytes
-(** Return a copy of the argument, with the first byte set to
-    lowercase. *)
+  [@@ocaml.deprecated "Use Bytes.uncapitalize_ascii instead."]
+(** Return a copy of the argument, with the first character set to lowercase,
+   using the ISO Latin-1 (8859-1) character set..
+   @deprecated Functions operating on Latin-1 character set are deprecated. *)
+
+val uppercase_ascii : bytes -> bytes
+(** Return a copy of the argument, with all lowercase letters
+   translated to uppercase, using the US-ASCII character set.
+   @since 4.03.0 *)
+
+val lowercase_ascii : bytes -> bytes
+(** Return a copy of the argument, with all uppercase letters
+   translated to lowercase, using the US-ASCII character set.
+   @since 4.03.0 *)
+
+val capitalize_ascii : bytes -> bytes
+(** Return a copy of the argument, with the first character set to uppercase,
+   using the US-ASCII character set.
+   @since 4.03.0 *)
+
+val uncapitalize_ascii : bytes -> bytes
+(** Return a copy of the argument, with the first character set to lowercase,
+   using the US-ASCII character set.
+   @since 4.03.0 *)
 
 type t = bytes
 (** An alias for the type of byte sequences. *)
@@ -228,6 +284,10 @@ val compare: t -> t -> int
     specification as {!Pervasives.compare}.  Along with the type [t],
     this function [compare] allows the module [Bytes] to be passed as
     argument to the functors {!Set.Make} and {!Map.Make}. *)
+
+val equal: t -> t -> bool
+(** The equality function for byte sequences.
+    @since 4.03.0 *)
 
 (**/**)
 

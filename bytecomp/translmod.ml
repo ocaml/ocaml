@@ -368,7 +368,8 @@ let rec transl_module cc rootpath mexp =
                   Lfunction{kind = Curried; params = [param];
                             attr = { inline = inline_attribute;
                                      specialise = Default_specialise;
-                                     is_a_functor = true };
+                                     is_a_functor = true;
+                                     stub = false; };
                             loc = loc;
                             body = transl_module Tcoerce_none bodypath body}
               | Tcoerce_functor(ccarg, ccres) ->
@@ -376,7 +377,8 @@ let rec transl_module cc rootpath mexp =
                   Lfunction{kind = Curried; params = [param'];
                             attr = { inline = inline_attribute;
                                      specialise = Default_specialise;
-                                     is_a_functor = true };
+                                     is_a_functor = true;
+                                     stub = false; };
                             loc = loc;
                             body = Llet(Alias, Pgenval, param,
                                         apply_coercion loc Alias ccarg
@@ -665,6 +667,10 @@ let rec more_idents = function
     | Tstr_open _ -> more_idents rem
     | Tstr_class _ -> more_idents rem
     | Tstr_class_type _ -> more_idents rem
+    | Tstr_include{incl_mod={mod_desc =
+                             Tmod_constraint ({mod_desc = Tmod_structure str},
+                                              _, _, _)}} ->
+        all_idents str.str_items @ more_idents rem
     | Tstr_include _ -> more_idents rem
     | Tstr_module {mb_expr={mod_desc = Tmod_structure str}}
     | Tstr_module{mb_expr={mod_desc =
@@ -694,8 +700,14 @@ and all_idents = function
     | Tstr_class cl_list ->
       List.map (fun (ci, _) -> ci.ci_id_class) cl_list @ all_idents rem
     | Tstr_class_type _ -> all_idents rem
+
+    | Tstr_include{incl_type; incl_mod={mod_desc =
+                             Tmod_constraint ({mod_desc = Tmod_structure str},
+                                              _, _, _)}} ->
+        bound_value_identifiers incl_type @ all_idents str.str_items @ all_idents rem
     | Tstr_include incl ->
       bound_value_identifiers incl.incl_type @ all_idents rem
+
     | Tstr_module {mb_id;mb_expr={mod_desc = Tmod_structure str}}
     | Tstr_module{mb_id;
                   mb_expr={mod_desc =
@@ -725,6 +737,15 @@ let nat_toplevel_name id =
     | _ -> raise Not_found
   with Not_found ->
     fatal_error("Translmod.nat_toplevel_name: " ^ Ident.unique_name id)
+
+let field_of_str loc str =
+  let ids = Array.of_list (defined_idents str.str_items) in
+  fun (pos, cc) ->
+    match cc with
+    | Tcoerce_primitive { pc_loc; pc_desc; pc_env; pc_type; } ->
+        transl_primitive pc_loc pc_desc pc_env pc_type None
+    | _ -> apply_coercion loc Strict cc (Lvar ids.(pos))
+
 
 let transl_store_structure glob map prims str =
   let rec transl_store rootpath subst = function
@@ -802,13 +823,7 @@ let transl_store_structure glob map prims str =
             in
             (* Careful: see next case *)
             let subst = !transl_store_subst in
-            let ids = Array.of_list (defined_idents str.str_items) in
-            let field (pos, cc) =
-              match cc with
-              | Tcoerce_primitive { pc_loc; pc_desc; pc_env; pc_type; } ->
-                  transl_primitive pc_loc pc_desc pc_env pc_type None
-              | _ -> apply_coercion loc Strict cc (Lvar ids.(pos))
-            in
+            let field = field_of_str loc str in
             Lsequence(lam,
                       Llet(Strict, Pgenval, id,
                            subst_lambda subst
@@ -850,6 +865,43 @@ let transl_store_structure glob map prims str =
             in
             Lsequence(subst_lambda subst lam,
                       transl_store rootpath (add_idents false ids subst) rem)
+
+        | Tstr_include{
+            incl_loc=loc;
+            incl_mod= {
+              mod_desc = Tmod_constraint (
+                  ({mod_desc = Tmod_structure str} as mexp), _, _,
+                  (Tcoerce_structure (map, _)))};
+            incl_attributes;
+            incl_type;
+          } ->
+            List.iter (Translattribute.check_attribute_on_module mexp)
+              incl_attributes;
+            (* Shouldn't we use mod_attributes instead of incl_attributes?
+               Same question for the Tstr_module cases above, btw. *)
+            let lam =
+              transl_store None subst str.str_items
+                (* It is tempting to pass rootpath instead of None
+                   in order to give a more precise name to exceptions
+                   in the included structured, but this would introduce
+                   a difference of behavior compared to bytecode. *)
+            in
+            let subst = !transl_store_subst in
+            let field = field_of_str loc str in
+            let ids0 = bound_value_identifiers incl_type in
+            let rec loop ids args =
+              match ids, args with
+              | [], [] ->
+                  transl_store rootpath (add_idents true ids0 subst) rem
+              | id :: ids, arg :: args ->
+                  Llet(Alias, Pgenval, id, subst_lambda subst (field arg),
+                       Lsequence(store_ident loc id,
+                                 loop ids args))
+              | _ -> assert false
+            in
+            Lsequence(lam, loop ids0 map)
+
+
         | Tstr_include incl ->
             let ids = bound_value_identifiers incl.incl_type in
             let modl = incl.incl_mod in
@@ -875,7 +927,7 @@ let transl_store_structure glob map prims str =
     try
       let (pos, cc) = Ident.find_same id map in
       let init_val = apply_coercion loc Alias cc (Lvar id) in
-      Lprim(Psetfield(pos, Pointer, Initialization),
+      Lprim(Psetfield(pos, Pointer, Root_initialization),
             [Lprim(Pgetglobal glob, [], loc); init_val],
             loc)
     with Not_found ->
@@ -903,7 +955,7 @@ let transl_store_structure glob map prims str =
     List.fold_right (add_ident may_coerce) idlist subst
 
   and store_primitive (pos, prim) cont =
-    Lsequence(Lprim(Psetfield(pos, Pointer, Initialization),
+    Lsequence(Lprim(Psetfield(pos, Pointer, Root_initialization),
                     [Lprim(Pgetglobal glob, [], Location.none);
                      transl_primitive Location.none
                        prim.pc_desc prim.pc_env prim.pc_type None],
@@ -1159,7 +1211,7 @@ let transl_store_package component_names target_name coercion =
       (List.length component_names,
        make_sequence
          (fun pos id ->
-           Lprim(Psetfield(pos, Pointer, Initialization),
+           Lprim(Psetfield(pos, Pointer, Root_initialization),
                  [Lprim(Pgetglobal target_name, [], Location.none);
                   get_component id],
                  Location.none))
@@ -1176,7 +1228,7 @@ let transl_store_package component_names target_name coercion =
              apply_coercion Location.none Strict coercion components,
              make_sequence
                (fun pos _id ->
-                 Lprim(Psetfield(pos, Pointer, Initialization),
+                 Lprim(Psetfield(pos, Pointer, Root_initialization),
                        [Lprim(Pgetglobal target_name, [], Location.none);
                         Lprim(Pfield pos, [Lvar blk], Location.none)],
                        Location.none))

@@ -125,7 +125,7 @@ let decl_abstr =
    type_newtype_level = None;
    type_attributes = [];
    type_immediate = false;
-   type_unboxed = { unboxed = false; default = false };
+   type_unboxed = unboxed_false_default_false;
   }
 
 let decl_abstr_imm = {decl_abstr with type_immediate = true}

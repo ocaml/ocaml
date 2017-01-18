@@ -45,7 +45,7 @@ pthread_wanted=yes
 dl_defs=''
 verbose=no
 with_curses=yes
-debugruntime=noruntimed
+debugruntime=false
 with_instrumented_runtime=false
 with_sharedlibs=yes
 partialld="ld -r"
@@ -169,7 +169,7 @@ while : ; do
     -verbose|--verbose)
         verbose=yes;;
     -with-debug-runtime|--with-debug-runtime)
-        debugruntime=runtimed;;
+        debugruntime=true;;
     -with-instrumented-runtime|--with-instrumented-runtime)
         with_instrumented_runtime=true;;
     -no-debugger|--no-debugger)
@@ -278,11 +278,11 @@ echo "MANEXT=$manext" >> Makefile
 # Determine the system type
 
 if test "$host_type" = "unknown"; then
-  if host_type=`../gnu/config.guess`; then :; else
+  if host_type=`sh ../gnu/config.guess`; then :; else
     err "Cannot guess host type. You must specify one with the -host option."
   fi
 fi
-if host=`../gnu/config.sub $host_type`; then :; else
+if host=`sh ../gnu/config.sub $host_type`; then :; else
   err "Please specify the correct host type with the -host option"
 fi
 inf "Configuring for host $host ..."
@@ -393,7 +393,8 @@ case "$ccfamily" in
     bytecccompopts="-std=gnu99 -O";
     byteccprivatecompopts="$gcc_warnings";;
   gcc-4-*)
-    bytecccompopts="-std=gnu99 -O2 -fno-strict-aliasing -fwrapv";
+    bytecccompopts="-std=gnu99 -O2 -fno-strict-aliasing -fwrapv \
+-fno-builtin-memcmp";
     byteccprivatecompopts="$gcc_warnings";;
   gcc-*)
     bytecccompopts="-O2 -fno-strict-aliasing -fwrapv";
@@ -737,15 +738,6 @@ if test $with_sharedlibs = "yes"; then
       mksharedlib="$flexlink"
       mkmaindll="$flexlink -maindll"
       shared_libraries_supported=true;;
-    *-*-linux-gnu|*-*-linux|*-*-freebsd[3-9]*|*-*-freebsd[1-9][0-9]*\
-    |*-*-openbsd*|*-*-netbsd*|*-*-dragonfly*|*-*-gnu*|*-*-haiku*)
-      sharedcccompopts="-fPIC"
-      mksharedlib="$bytecc -shared"
-      bytecclinkopts="$bytecclinkopts -Wl,-E"
-      byteccrpath="-Wl,-rpath,"
-      mksharedlibrpath="-Wl,-rpath,"
-      natdynlinkopts="-Wl,-E"
-      shared_libraries_supported=true;;
     alpha*-*-osf*)
       case "$bytecc" in
         *gcc*)
@@ -805,17 +797,14 @@ if test $with_sharedlibs = "yes"; then
       bytecccompopts="$dl_defs $bytecccompopts"
       dl_needs_underscore=false
       shared_libraries_supported=true;;
-    m88k-*-openbsd*)
-      shared_libraries_supported=false;;
-    vax-*-openbsd*)
-      shared_libraries_supported=false;;
-    *-*-openbsd*)
+    *-*-linux-gnu|*-*-linux|*-*-freebsd[3-9]*|*-*-freebsd[1-9][0-9]*\
+    |*-*-openbsd*|*-*-netbsd*|*-*-dragonfly*|*-*-gnu*|*-*-haiku*)
       sharedcccompopts="-fPIC"
       mksharedlib="$bytecc -shared"
       bytecclinkopts="$bytecclinkopts -Wl,-E"
-      natdynlinkopts="-Wl,-E"
       byteccrpath="-Wl,-rpath,"
       mksharedlibrpath="-Wl,-rpath,"
+      natdynlinkopts="-Wl,-E"
       shared_libraries_supported=true;;
   esac
 fi
@@ -1076,7 +1065,10 @@ echo "#define OCAML_STDLIB_DIR \"$libdir\"" >> s.h
 
 # Do #! scripts work?
 
-if (SHELL=/bin/sh; export SHELL; (./hashbang || ./hashbang2 || ./hashbang3) >/dev/null); then
+printf "#!%s\nexit 1\n" `command -v cat` > hashbang4
+chmod +x hashbang4
+
+if ( (./hashbang || ./hashbang2 || ./hashbang3 || ./hashbang4) >/dev/null); then
   inf "#! appears to work in shell scripts."
   case "$target" in
     *-*-sunos*|*-*-unicos*)
@@ -2027,11 +2019,6 @@ echo "MKEXEDEBUGFLAG=$mkexedebugflag" >> Makefile
 echo "MKDLL=$mksharedlib" >> Makefile
 echo "MKMAINDLL=$mkmaindll" >> Makefile
 echo "RUNTIMED=${debugruntime}" >>Makefile
-if $shared_libraries_supported; then
-  echo "SHARED=shared" >>Makefile
-else
-  echo "SHARED=noshared" >>Makefile
-fi
 echo "RUNTIMEI=${with_instrumented_runtime}" >>Makefile
 echo "WITH_DEBUGGER=${with_debugger}" >>Makefile
 echo "WITH_OCAMLDOC=${with_ocamldoc}" >>Makefile
@@ -2182,7 +2169,7 @@ else
   inf "Source-level replay debugger: not supported"
 fi
 
-if test "$debugruntime" = "runtimed"; then
+if $debugruntime; then
   inf "Debug runtime will be compiled and installed"
 fi
 

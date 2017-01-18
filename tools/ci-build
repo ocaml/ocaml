@@ -20,12 +20,12 @@
 # arguments:
 # 1. architecture: bsd, macos, linux, cygwin, mingw, mingw64, msvc, msvc64
 # 2. directory in which to build (trunk, 4.02, etc)
-#    for windows, this is relative to $HOME/jenkins-workspace
-#    for bsd, macos, linux, this is ignored and the build is always in .
+#    If this is "." then build in the Jenkins-checked out directory
+#    Otherwise, go to $HOME/jenkins-workspace/<dir> and check out a
+#    fresh copy of the branch, then build there.
 # 3. options:
 #    -conf configure-option  add configure-option to configure cmd line
 #    -patch1 file-name       apply patch with -p1
-#    -newmakefiles           do not use Makefile.nt even for Windows
 #    -no-native              do not build "opt" and "opt.opt"
 
 error () {
@@ -40,6 +40,10 @@ quote1 () {
 #########################################################################
 # be verbose
 set -x
+
+#########################################################################
+# Save the current directory (on cygwin, /etc/profile changes it)
+jenkinsdir="$(pwd)"
 
 #########################################################################
 # "Parse" mandatory command-line arguments.
@@ -82,50 +86,40 @@ set -ex
 # default values
 make=make
 instdir="$HOME/ocaml-tmp-install"
-docheckout=false
 makefile=Makefile
 configure=unix
 
+case "$branch" in
+  .) workdir="$jenkinsdir"
+     docheckout=false
+     ;;
+  *) workdir="$HOME/jenkins-workspace/$branch"
+     docheckout=true
+     ;;
+esac
+
 case "$arch" in
-  bsd)
-    make=gmake
-    workdir=.
-  ;;
-  macos)
-    workdir=.
-  ;;
-  linux)
-    workdir=.
-  ;;
-  cygwin)
-    workdir="$HOME/jenkins-workspace/$branch"
-    docheckout=true
-  ;;
+  bsd) make=gmake ;;
+  macos) ;;
+  linux) ;;
+  cygwin) ;;
   mingw)
     instdir=/cygdrive/c/ocamlmgw
-    workdir="$HOME/jenkins-workspace/$branch"
-    docheckout=true
     makefile=Makefile.nt
     configure=nt
   ;;
   mingw64)
     instdir=/cygdrive/c/ocamlmgw64
-    workdir="$HOME/jenkins-workspace/$branch"
-    docheckout=true
     makefile=Makefile.nt
     configure=nt
   ;;
   msvc)
     instdir=/cygdrive/c/ocamlms
-    workdir="$HOME/jenkins-workspace/$branch"
-    docheckout=true
     makefile=Makefile.nt
     configure=nt
   ;;
   msvc64)
     instdir=/cygdrive/c/ocamlms64
-    workdir="$HOME/jenkins-workspace/$branch"
-    docheckout=true
     makefile=Makefile.nt
     configure=nt
   ;;
@@ -138,6 +132,9 @@ esac
 pwd
 cd "$workdir"
 
+# If Makefile.nt is absent, assume the new makefile system.
+if ! [ -f $makefile ]; then makefile=Makefile; fi
+
 #########################################################################
 # parse optional command-line arguments (has to be done after the "cd")
 
@@ -147,7 +144,6 @@ while [ $# -gt 0 ]; do
   case $1 in
     -conf) confoptions="$confoptions `quote1 "$2"`"; shift;;
     -patch1) patch -f -p1 <"$2"; shift;;
-    -newmakefiles) makefile=Makefile;;
     -no-native) make_native=false;;
     *) error "unknown option $1";;
   esac
@@ -163,8 +159,8 @@ export LC_ALL=C
 $make -f $makefile distclean || :
 
 if $docheckout; then
-  git checkout boot/ocamlc boot/ocamllex boot/ocamldep
-  git pull
+  git fetch origin
+  git reset --hard FETCH_HEAD
 fi
 
 case $configure in

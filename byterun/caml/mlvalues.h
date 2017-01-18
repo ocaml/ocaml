@@ -248,6 +248,7 @@ CAMLextern value caml_hash_variant(char const * tag);
    this tag cannot be mistaken for pointers (see caml_obj_truncate).
 */
 #define Abstract_tag 251
+#define Data_abstract_val(v) ((void*) Op_val(v))
 
 /* Strings. */
 #define String_tag 252

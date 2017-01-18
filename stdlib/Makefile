@@ -48,12 +48,12 @@ OTHERS=list.cmo char.cmo bytes.cmo string.cmo sys.cmo \
   filename.cmo complex.cmo \
   arrayLabels.cmo listLabels.cmo bytesLabels.cmo \
   stringLabels.cmo moreLabels.cmo stdLabels.cmo \
-  spacetime.cmo
+  spacetime.cmo camlinternalBigarray.cmo
 
 .PHONY: all
 all: stdlib.cma std_exit.cmo camlheader target_camlheader camlheader_ur
 
-ifeq "$(RUNTIMED)" "runtimed"
+ifeq "$(RUNTIMED)" "true"
 all: camlheaderd
 endif
 
@@ -86,7 +86,7 @@ install::
 	  "$(INSTALL_LIBDIR)"
 	cp target_camlheader "$(INSTALL_LIBDIR)/camlheader"
 
-ifeq "$(RUNTIMED)" "runtimed"
+ifeq "$(RUNTIMED)" "true"
 install::
 	cp target_camlheaderd $(INSTALL_LIBDIR)
 endif
@@ -207,16 +207,16 @@ clean::
 .SUFFIXES: .mli .ml .cmi .cmo .cmx .p.cmx
 
 .mli.cmi:
-	$(CAMLC) $(COMPFLAGS) `./Compflags $@` -c $<
+	$(CAMLC) $(COMPFLAGS) `sh ./Compflags $@` -c $<
 
 .ml.cmo:
-	$(CAMLC) $(COMPFLAGS) `./Compflags $@` -c $<
+	$(CAMLC) $(COMPFLAGS) `sh ./Compflags $@` -c $<
 
 .ml.cmx:
-	$(CAMLOPT) $(COMPFLAGS) $(OPTCOMPFLAGS) `./Compflags $@` -c $<
+	$(CAMLOPT) $(COMPFLAGS) $(OPTCOMPFLAGS) `sh ./Compflags $@` -c $<
 
 .ml.p.cmx:
-	$(CAMLOPT) $(COMPFLAGS) $(OPTCOMPFLAGS) `./Compflags $@` \
+	$(CAMLOPT) $(COMPFLAGS) $(OPTCOMPFLAGS) `sh ./Compflags $@` \
 	           -p -c -o $*.p.cmx $<
 
 # Dependencies on the compiler

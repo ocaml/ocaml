@@ -169,6 +169,7 @@ static void caml_thread_scan_roots(scanning_action action)
 static inline void caml_thread_save_runtime_state(void)
 {
 #ifdef NATIVE_CODE
+  curr_thread->top_of_stack = caml_top_of_stack;
   curr_thread->bottom_of_stack = caml_bottom_of_stack;
   curr_thread->last_retaddr = caml_last_return_address;
   curr_thread->gc_regs = caml_gc_regs;
@@ -197,6 +198,7 @@ static inline void caml_thread_save_runtime_state(void)
 static inline void caml_thread_restore_runtime_state(void)
 {
 #ifdef NATIVE_CODE
+  caml_top_of_stack = curr_thread->top_of_stack;
   caml_bottom_of_stack= curr_thread->bottom_of_stack;
   caml_last_return_address = curr_thread->last_retaddr;
   caml_gc_regs = curr_thread->gc_regs;
@@ -259,7 +261,10 @@ static int caml_thread_try_leave_blocking_section(void)
 static void caml_io_mutex_free(struct channel *chan)
 {
   st_mutex mutex = chan->mutex;
-  if (mutex != NULL) st_mutex_destroy(mutex);
+  if (mutex != NULL) {
+    st_mutex_destroy(mutex);
+    chan->mutex = NULL;
+  }
 }
 
 static void caml_io_mutex_lock(struct channel *chan)
@@ -313,7 +318,9 @@ static uintnat caml_thread_stack_usage(void)
        th != curr_thread;
        th = th->next) {
 #ifdef NATIVE_CODE
-    sz += (value *) th->top_of_stack - (value *) th->bottom_of_stack;
+  if(th->top_of_stack != NULL && th->bottom_of_stack != NULL &&
+     th->top_of_stack > th->bottom_of_stack)
+       sz += (value *) th->top_of_stack - (value *) th->bottom_of_stack;
 #else
     sz += th->stack_high - th->sp;
 #endif

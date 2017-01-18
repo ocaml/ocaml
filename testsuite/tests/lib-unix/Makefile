@@ -1,10 +1,10 @@
 #**************************************************************************
 #*                                                                        *
-#*                                 OCaml                                  *
+#*                                OCaml                                   *
 #*                                                                        *
-#*            Xavier Leroy, projet Cristal, INRIA Rocquencourt            *
+#*                 Xavier Clerc, SED, INRIA Rocquencourt                  *
 #*                                                                        *
-#*   Copyright 1995 Institut National de Recherche en Informatique et     *
+#*   Copyright 2010 Institut National de Recherche en Informatique et     *
 #*     en Automatique.                                                    *
 #*                                                                        *
 #*   All rights reserved.  This file is distributed under the terms of    *
@@ -13,5 +13,15 @@
 #*                                                                        *
 #**************************************************************************
 
-$1=="enum" {n=0; next; }
-           {for (i = 1; i <= NF; i++) {printf("let op%s = %d\n", $i, n++);}}
+BASEDIR=../..
+LIBRARIES=unix bigarray
+ADD_COMPFLAGS=-I $(OTOPDIR)/otherlibs/$(UNIXLIBVAR)unix \
+              -I $(OTOPDIR)/otherlibs/bigarray
+LD_PATH=$(TOPDIR)/otherlibs/$(UNIXLIBVAR)unix:$(TOPDIR)/otherlibs/bigarray
+
+ifeq ($(OS),Windows_NT)
+ADD_BYTERUN_FLAGS="-I $(OTOPDIR)/otherlibs/win32unix"
+endif
+
+include $(BASEDIR)/makefiles/Makefile.several
+include $(BASEDIR)/makefiles/Makefile.common

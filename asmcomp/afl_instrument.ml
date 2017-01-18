@@ -1,3 +1,17 @@
+(**************************************************************************)
+(*                                                                        *)
+(*                                 OCaml                                  *)
+(*                                                                        *)
+(*                 Stephen Dolan, University of Cambridge                 *)
+(*                                                                        *)
+(*   Copyright 2016 Stephen Dolan.                                        *)
+(*                                                                        *)
+(*   All rights reserved.  This file is distributed under the terms of    *)
+(*   the GNU Lesser General Public License version 2.1, with the          *)
+(*   special exception on linking described in the file LICENSE.          *)
+(*                                                                        *)
+(**************************************************************************)
+
 (* Insert instrumentation for afl-fuzz *)
 
 open Lambda
@@ -72,8 +86,9 @@ let instrument_initialiser c =
   (* Each instrumented module calls caml_setup_afl at
      initialisation, which is a no-op on the second and subsequent
      calls *)
-  with_afl_logging (Csequence
-                (Cop (Cextcall ("caml_setup_afl", typ_int,
-                                false, None),
-                      [Cconst_int 0], Debuginfo.none),
-                 c))
+  with_afl_logging
+    (Csequence
+       (Cop (Cextcall ("caml_setup_afl", typ_int, false, None),
+             [Cconst_int 0],
+             Debuginfo.none),
+        c))

@@ -115,7 +115,7 @@ partialclean:
 	rm -f *.cm*
 
 clean: partialclean
-	rm -f *.$(A) *.$(O)
+	rm -f dllthreads*$(EXT_DLL) *.$(A) *.$(O)
 
 INSTALL_LIBDIR=$(DESTDIR)$(LIBDIR)
 THREADS_LIBDIR=$(INSTALL_LIBDIR)/$(LIBNAME)

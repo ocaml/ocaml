@@ -128,6 +128,10 @@ let rec typexp s ty =
       else ty
   | Tsubst ty ->
       ty
+  | Tfield (m, k, _t1, _t2) when not s.for_saving && m = dummy_method
+      && field_kind_repr k <> Fabsent && (repr ty).level < generic_level ->
+      (* do not copy the type of self when it is not generalized *)
+      ty
 (* cannot do it, since it would omit subsitution
   | Tvariant row when not (static_row row) ->
       ty
@@ -150,11 +154,6 @@ let rec typexp s ty =
                         None -> None
                       | Some (p, tl) ->
                           Some (type_path s p, List.map (typexp s) tl)))
-      | Tfield (m, k, t1, t2)
-        when s == identity && (repr t1).level < generic_level
-          && m = dummy_method ->
-          (* not allowed to lower the level of the dummy method *)
-          Tfield (m, k, t1, typexp s t2)
       | Tvariant row ->
           let row = row_repr row in
           let more = repr row.row_more in
