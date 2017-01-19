@@ -165,7 +165,8 @@ let primitive ppf = function
       in
       let init =
         match init with
-        | Initialization -> "(init)"
+        | Heap_initialization -> "(heap-init)"
+        | Root_initialization -> "(root-init)"
         | Assignment -> ""
       in
       fprintf ppf "setfield_%s%s_computed" instr init

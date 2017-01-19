@@ -2322,12 +2322,13 @@ and transl_prim_3 env p arg1 arg2 arg3 dbg =
   (* Heap operations *)
   | Psetfield_computed(ptr, init) ->
       begin match init, ptr with
-      | Assignment, Pointer ->
+      | (Assignment | Heap_initialization), Pointer ->
         return_unit (
           addr_array_set (transl env arg1) (transl env arg2) (transl env arg3)
             dbg)
       | Assignment, Immediate
-      | Initialization, (Immediate | Pointer) ->
+      | Heap_initialization, Immediate
+      | Root_initialization, (Immediate | Pointer) ->
         return_unit (
           int_array_set (transl env arg1) (transl env arg2) (transl env arg3)
             dbg)
