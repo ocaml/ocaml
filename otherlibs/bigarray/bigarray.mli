@@ -462,7 +462,7 @@ module Array0 : sig
   val create: ('a, 'b) kind -> 'c layout -> ('a, 'b, 'c) t
   (** [Array0.create kind layout] returns a new bigarray of zero dimension.
      [kind] and [layout] determine the array element kind and the array
-     layout as described for [Genarray.create]. *)
+     layout as described for {!Genarray.create}. *)
 
   external kind: ('a, 'b, 'c) t -> ('a, 'b) kind = "caml_ba_kind"
   (** Return the kind of the given big array. *)
