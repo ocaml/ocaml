@@ -21,6 +21,7 @@
 #include <stdio.h>
 #include "caml/backtrace.h"
 #include "caml/memory.h"
+#include "caml/io.h"
 #include "caml/startup_aux.h"
 
 
