@@ -39,7 +39,7 @@ let export_infos_table =
 
 let imported_sets_of_closures_table =
   (Set_of_closures_id.Tbl.create 10
-   : Flambda.function_declarations Set_of_closures_id.Tbl.t)
+   : Flambda.function_declarations option Set_of_closures_id.Tbl.t)
 
 let sourcefile = ref None
 
