@@ -263,6 +263,12 @@ val finalise_release : unit -> unit;;
     GC that it can launch the next finalisation function without waiting
     for the current one to return. *)
 
+external promote_to : 'a -> 'b -> 'a = "caml_obj_promote_to"
+(** [promote_to a b] will promote [a] to become at least as shared as [b].
+    This can improve performance: doing [promote_to msg queue] before
+    adding [msg] to the shared queue [queue] will ensure that no fault
+    occurs if another domain accesses [msg] via [queue] *)
+
 type alarm
 (** An alarm is a piece of data that calls a user function at the end of
    each major GC cycle.  The following functions are provided to create

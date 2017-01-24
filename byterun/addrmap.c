@@ -3,8 +3,7 @@
 #include "caml/addrmap.h"
 
 #define Is_power_of_2(x) (((x) & ((x) - 1)) == 0)
-
-static const value INVALID_KEY = (value)0;
+#define MAX_CHAIN 100
 
 static uintnat pos_initial(struct addrmap* t, value key)
 {
@@ -21,6 +20,21 @@ static uintnat pos_next(struct addrmap* t, uintnat pos)
   return (pos + 1) & (t->size - 1);
 }
 
+int caml_addrmap_contains(struct addrmap* t, value key)
+{
+  Assert(Is_block(key));
+  if (!t->entries) return 0;
+
+  uintnat pos, i;
+  for (i = 0, pos = pos_initial(t, key);
+       i < MAX_CHAIN;
+       i++, pos = pos_next(t, pos)) {
+    if (t->entries[pos].key == ADDRMAP_INVALID_KEY) break;
+    if (t->entries[pos].key == key) return 1;
+  }
+  return 0;
+}
+
 value caml_addrmap_lookup(struct addrmap* t, value key)
 {
   Assert(Is_block(key));
@@ -28,7 +42,7 @@ value caml_addrmap_lookup(struct addrmap* t, value key)
 
   uintnat pos;
   for (pos = pos_initial(t, key); ; pos = pos_next(t, pos)) {
-    Assert(t->entries[pos].key != INVALID_KEY);
+    Assert(t->entries[pos].key != ADDRMAP_INVALID_KEY);
     if (t->entries[pos].key == key)
       return t->entries[pos].value;
   }
@@ -41,7 +55,7 @@ static void addrmap_alloc(struct addrmap* t, uintnat sz)
   t->entries = caml_stat_alloc(sizeof(struct addrmap_entry) * sz);
   t->size = sz;
   for (i = 0; i < sz; i++) {
-    t->entries[i].key = INVALID_KEY;
+    t->entries[i].key = ADDRMAP_INVALID_KEY;
     t->entries[i].value = ADDRMAP_NOT_PRESENT;
   }
 }
@@ -54,8 +68,6 @@ void caml_addrmap_clear(struct addrmap* t) {
 
 
 
-#define MAX_CHAIN 100
-
 value* caml_addrmap_insert_pos(struct addrmap* t, value key) {
   uintnat i, pos;
   Assert(Is_block(key));
@@ -66,7 +78,7 @@ value* caml_addrmap_insert_pos(struct addrmap* t, value key) {
   for (i = 0, pos = pos_initial(t, key);
        i < MAX_CHAIN;
        i++,   pos = pos_next(t, pos)) {
-    if (t->entries[pos].key == INVALID_KEY) {
+    if (t->entries[pos].key == ADDRMAP_INVALID_KEY) {
       t->entries[pos].key = key;
     }
     if (t->entries[pos].key == key) {
@@ -78,7 +90,7 @@ value* caml_addrmap_insert_pos(struct addrmap* t, value key) {
   uintnat old_size = t->size;
   addrmap_alloc(t, old_size * 2);
   for (i = 0; i < old_size; i++) {
-    if (old_table[i].key != INVALID_KEY) {
+    if (old_table[i].key != ADDRMAP_INVALID_KEY) {
       value* p = caml_addrmap_insert_pos(t, old_table[i].key);
       Assert(*p == ADDRMAP_NOT_PRESENT);
       *p = old_table[i].value;
@@ -95,11 +107,11 @@ void caml_addrmap_insert(struct addrmap* t, value k, value v) {
 }
 
 void caml_addrmap_iter(struct addrmap* t, void (*f)(value, value)) {
-  int i;
-  if (!t->entries) return;
-
-  for (i = 0; i < t->size; i++) {
-    if (t->entries[i].key != INVALID_KEY)
-      f(t->entries[i].key, t->entries[i].value);
+  addrmap_iterator i;
+  for (i = caml_addrmap_iterator(t);
+       caml_addrmap_iter_ok(t, i);
+       i = caml_addrmap_next(t, i)) {
+    f(caml_addrmap_iter_key(t, i),
+      caml_addrmap_iter_value(t, i));
   }
 }

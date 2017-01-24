@@ -2,6 +2,9 @@
 #define CAML_PLAT_THREADS_H
 /* Platform-specific concurrency and memory primitives */
 
+#ifdef __linux__
+#define _GNU_SOURCE /* for PTHREAD_ERRORCHECK_MUTEX_INITIALIZER_NP */
+#endif
 #include <pthread.h>
 #include "mlvalues.h"
 #include "memory.h"
@@ -98,7 +101,6 @@ INLINE uintnat atomic_load_wait_nonzero(atomic_uintnat* p) {
 
 
 
-
 /* Atomic read-modify-write instructions, with full fences */
 
 #if defined(__GNUC__)
@@ -128,11 +130,12 @@ INLINE void atomic_cas_strong(atomic_uintnat* p, uintnat vold, uintnat vnew) {
 
 
 typedef pthread_mutex_t caml_plat_mutex;
-#define caml_plat_mutex_init(m) pthread_mutex_init(m,0)
-#define caml_plat_lock pthread_mutex_lock
-#define caml_plat_try_lock(l) (pthread_mutex_trylock(l) == 0)
-#define caml_plat_unlock pthread_mutex_unlock
-#define caml_plat_mutex_free pthread_mutex_destroy
+#define CAML_PLAT_MUTEX_INITIALIZER PTHREAD_MUTEX_INITIALIZER
+void caml_plat_mutex_init(caml_plat_mutex*);
+void caml_plat_lock(caml_plat_mutex*);
+int caml_plat_try_lock(caml_plat_mutex*);
+void caml_plat_unlock(caml_plat_mutex*);
+void caml_plat_mutex_free(caml_plat_mutex*);
 
 struct caml__mutex_unwind {
   caml_plat_mutex* mutex;
@@ -183,7 +186,7 @@ typedef struct shared_stack {
   struct shared_stack_node first;
 } shared_stack;
 
-#define SHARED_STACK_INIT { PTHREAD_MUTEX_INITIALIZER, { 0 } }
+#define SHARED_STACK_INIT { CAML_PLAT_MUTEX_INITIALIZER, { 0 } }
 
 INLINE void shared_stack_init(shared_stack* stk) {
   stk->first.next = 0;

@@ -481,7 +481,7 @@ let get_field base n =
   Cop(Cload Word, [field_address base n])
 
 let get_mut_field base n =
-  Cop(Cextcall("caml_read_barrier", typ_addr, false, Debuginfo.none),
+  Cop(Cextcall("caml_read_barrier", typ_addr, true, Debuginfo.none),
       [base; n])
 
 let set_addr_field base n newval =
@@ -496,7 +496,7 @@ let set_float_field base n newval =
 
 let init_field base n newval =
   let promoted = Cop (Cextcall("caml_obj_promote_to", typ_addr,
-                               false, Debuginfo.none),
+                               true, Debuginfo.none),
                       [newval; base]) in
   set_addr_field base n promoted
 
@@ -2417,14 +2417,14 @@ let compunit size ulam =
 (*
 CAMLprim value caml_cache_public_method (value meths, value tag, value *cache)
 {
-  int li = 3, hi = Field(meths,0), mi;
+  int li = 3, hi = Field_imm(meths,0), mi;
   while (li < hi) { // no need to check the 1st time
     mi = ((li+hi) >> 1) | 1;
-    if (tag < Field(meths,mi)) hi = mi-2;
+    if (tag < Field_imm(meths,mi)) hi = mi-2;
     else li = mi;
   }
   *cache = (li-3)*sizeof(value)+1;
-  return Field (meths, li-1);
+  return Field_imm (meths, li-1);
 }
 *)
 

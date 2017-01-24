@@ -19,12 +19,12 @@
 
 int fib(int n)
 {
-  value fib_closure = caml_get_named_value("fib", 0);
+  value fib_closure = caml_read_root(caml_named_root("fib"));
   return Int_val(callback(fib_closure, Val_int(n)));
 }
 
 char * format_result(int n)
 {
-  value format_result_closure = caml_get_named_value("format_result", 0);
+  value format_result_closure = caml_read_root(caml_named_root("format_result"));
   return strdup(String_val(callback(format_result_closure, Val_int(n))));
 }

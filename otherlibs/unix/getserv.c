@@ -36,11 +36,11 @@ static value alloc_service_entry(struct servent *entry)
     name = copy_string(entry->s_name);
     aliases = copy_string_array((const char**)entry->s_aliases);
     proto = copy_string(entry->s_proto);
-    res = alloc_small(4, 0);
-    Init_field(res, 0, name);
-    Init_field(res, 1, aliases);
-    Init_field(res, 2, Val_int(ntohs(entry->s_port)));
-    Init_field(res, 3, proto);
+    res = caml_alloc_4(0,
+      name,
+      aliases,
+      Val_int(ntohs(entry->s_port)),
+      proto);
   End_roots();
   return res;
 }

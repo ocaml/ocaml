@@ -13,6 +13,7 @@
 
 #include "libgraph.h"
 #include <caml/alloc.h>
+#include <caml/memory.h>
 
 XFontStruct * caml_gr_font = NULL;
 
@@ -72,13 +73,14 @@ value caml_gr_draw_string(value str)
 
 value caml_gr_text_size(value str)
 {
+  CAMLparam1(str);
+  CAMLlocal1(res);
   int width;
-  value res;
   caml_gr_check_open();
   if (caml_gr_font == NULL) caml_gr_get_font(DEFAULT_FONT);
   width = XTextWidth(caml_gr_font, String_val(str), string_length(str));
   res = alloc_small(2, 0);
-  Init_field(res, 0, Val_int(width));
-  Init_field(res, 1, Val_int(caml_gr_font->ascent + caml_gr_font->descent));
-  return res;
+  caml_initialize_field(res, 0, Val_int(width));
+  caml_initialize_field(res, 1, Val_int(caml_gr_font->ascent + caml_gr_font->descent));
+  CAMLreturn (res);
 }

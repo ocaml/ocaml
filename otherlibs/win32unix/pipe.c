@@ -36,9 +36,7 @@ CAMLprim value unix_pipe(value unit)
   Begin_roots2(readfd, writefd)
     readfd = win_alloc_handle(readh);
     writefd = win_alloc_handle(writeh);
-    res = alloc_small(2, 0);
-    Field(res, 0) = readfd;
-    Field(res, 1) = writefd;
+    res = caml_alloc_2(0, readfd, writefd);
   End_roots();
   return res;
 }

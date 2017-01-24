@@ -224,7 +224,7 @@ int error_table[] = {
   EHOSTUNREACH, ELOOP, EOVERFLOW /*, EUNKNOWNERR */
 };
 
-static value * unix_error_exn = NULL;
+static caml_root unix_error_exn = NULL;
 
 value unix_error_of_code (int errcode)
 {
@@ -234,8 +234,7 @@ value unix_error_of_code (int errcode)
   errconstr =
       cst_to_constr(errcode, error_table, sizeof(error_table)/sizeof(int), -1);
   if (errconstr == Val_int(-1)) {
-    err = alloc_small(1, 0);
-    Field(err, 0) = Val_int(errcode);
+    err = caml_alloc_1(0, Val_int(errcode));
   } else {
     err = errconstr;
   }
@@ -253,17 +252,16 @@ void unix_error(int errcode, char *cmdname, value cmdarg)
     name = copy_string(cmdname);
     err = unix_error_of_code (errcode);
     if (unix_error_exn == NULL) {
-      int unix_error_found;
-      unix_error_exn = caml_get_named_value("Unix.Unix_error", &unix_error_found);
-      if (!unix_error_found)
+      unix_error_exn = caml_named_root("Unix.Unix_error");
+      if (!unix_error_exn)
         invalid_argument("Exception Unix.Unix_error not initialized,"
                          " please link unix.cma");
     }
-    res = alloc_small(4, 0);
-    Field(res, 0) = *unix_error_exn;
-    Field(res, 1) = err;
-    Field(res, 2) = name;
-    Field(res, 3) = arg;
+    res = caml_alloc_4(0,
+      caml_read_root(unix_error_exn),
+      err,
+      name,
+      arg);
   End_roots();
   mlraise(res);
 }

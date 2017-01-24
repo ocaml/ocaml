@@ -28,6 +28,7 @@
 /* </private> */
 #include "misc.h"
 #include "mlvalues.h"
+#include "alloc.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -58,7 +59,6 @@ color_t caml_allocation_color (void *hp);
 
 /* <private> */
 
-
 /* FIXME */
 /* There are two GC bits in the object header, with the following
    possible values:
@@ -79,19 +79,18 @@ color_t caml_allocation_color (void *hp);
 #define DEBUG_clear(result, wosize)
 #endif
 
-#define Alloc_small(result, wosize, tag) do{    CAMLassert ((wosize) >= 1); \
+#define Alloc_small(result, wosize, tag, GC) do{CAMLassert ((wosize) >= 1); \
                                           CAMLassert ((tag_t) (tag) < 256); \
                                  CAMLassert ((wosize) <= Max_young_wosize); \
-  CAML_DOMAIN_STATE->young_ptr -= Bhsize_wosize (wosize);                   \
-  if (Caml_check_gc_interrupt()){                                           \
-    CAML_DOMAIN_STATE->young_ptr += Bhsize_wosize (wosize);                 \
-    Setup_for_gc;                                                           \
-    caml_handle_gc_interrupt ();                                            \
-    Restore_after_gc;                                                       \
-    CAML_DOMAIN_STATE->young_ptr -= Bhsize_wosize (wosize);                 \
+  struct caml_domain_state* dom_st = CAML_DOMAIN_STATE;                     \
+  dom_st->young_ptr -= Bhsize_wosize (wosize);                              \
+  if (Caml_check_gc_interrupt(dom_st)){                                     \
+    dom_st->young_ptr += Bhsize_wosize (wosize);                            \
+    { GC }                                                                  \
+    dom_st->young_ptr -= Bhsize_wosize (wosize);                            \
   }                                                                         \
-  Hd_hp (CAML_DOMAIN_STATE->young_ptr) = Make_header ((wosize), (tag), 0);  \
-  (result) = Val_hp (CAML_DOMAIN_STATE->young_ptr);                         \
+  Hd_hp (dom_st->young_ptr) = Make_header ((wosize), (tag), 0);             \
+  (result) = Val_hp (dom_st->young_ptr);                                    \
   DEBUG_clear ((result), (wosize));                                         \
 }while(0)
 
@@ -332,16 +331,20 @@ struct caml__roots_block {
 
 #define Begin_roots1(r0) { \
   struct caml__roots_block caml__roots_block; \
-  caml__roots_block.next = CAML_LOCAL_ROOTS; \
-  CAML_LOCAL_ROOTS = &caml__roots_block; \
+  struct caml_domain_state* caml_domain_state = CAML_DOMAIN_STATE; \
+  caml__roots_block.next = caml_domain_state->local_roots; \
+  caml_domain_state->local_roots = &caml__roots_block; \
+  caml__roots_block.mutexes = 0; \
   caml__roots_block.nitems = 1; \
   caml__roots_block.ntables = 1; \
   caml__roots_block.tables[0] = &(r0);
 
 #define Begin_roots2(r0, r1) { \
   struct caml__roots_block caml__roots_block; \
-  caml__roots_block.next = CAML_LOCAL_ROOTS; \
-  CAML_LOCAL_ROOTS = &caml__roots_block; \
+  struct caml_domain_state* caml_domain_state = CAML_DOMAIN_STATE; \
+  caml__roots_block.next = caml_domain_state->local_roots; \
+  caml_domain_state->local_roots = &caml__roots_block; \
+  caml__roots_block.mutexes = 0; \
   caml__roots_block.nitems = 1; \
   caml__roots_block.ntables = 2; \
   caml__roots_block.tables[0] = &(r0); \
@@ -349,8 +352,10 @@ struct caml__roots_block {
 
 #define Begin_roots3(r0, r1, r2) { \
   struct caml__roots_block caml__roots_block; \
-  caml__roots_block.next = CAML_LOCAL_ROOTS; \
-  CAML_LOCAL_ROOTS = &caml__roots_block; \
+  struct caml_domain_state* caml_domain_state = CAML_DOMAIN_STATE; \
+  caml__roots_block.next = caml_domain_state->local_roots; \
+  caml_domain_state->local_roots = &caml__roots_block; \
+  caml__roots_block.mutexes = 0; \
   caml__roots_block.nitems = 1; \
   caml__roots_block.ntables = 3; \
   caml__roots_block.tables[0] = &(r0); \
@@ -359,8 +364,10 @@ struct caml__roots_block {
 
 #define Begin_roots4(r0, r1, r2, r3) { \
   struct caml__roots_block caml__roots_block; \
-  caml__roots_block.next = CAML_LOCAL_ROOTS; \
-  CAML_LOCAL_ROOTS = &caml__roots_block; \
+  struct caml_domain_state* caml_domain_state = CAML_DOMAIN_STATE; \
+  caml__roots_block.next = caml_domain_state->local_roots; \
+  caml_domain_state->local_roots = &caml__roots_block; \
+  caml__roots_block.mutexes = 0; \
   caml__roots_block.nitems = 1; \
   caml__roots_block.ntables = 4; \
   caml__roots_block.tables[0] = &(r0); \
@@ -370,8 +377,10 @@ struct caml__roots_block {
 
 #define Begin_roots5(r0, r1, r2, r3, r4) { \
   struct caml__roots_block caml__roots_block; \
-  caml__roots_block.next = CAML_LOCAL_ROOTS; \
-  CAML_LOCAL_ROOTS = &caml__roots_block; \
+  struct caml_domain_state* caml_domain_state = CAML_DOMAIN_STATE; \
+  caml__roots_block.next = caml_domain_state->local_roots; \
+  caml_domain_state->local_roots = &caml__roots_block; \
+  caml__roots_block.mutexes = 0; \
   caml__roots_block.nitems = 1; \
   caml__roots_block.ntables = 5; \
   caml__roots_block.tables[0] = &(r0); \
@@ -382,8 +391,10 @@ struct caml__roots_block {
 
 #define Begin_roots_block(table, size) { \
   struct caml__roots_block caml__roots_block; \
-  caml__roots_block.next = CAML_LOCAL_ROOTS; \
-  CAML_LOCAL_ROOTS = &caml__roots_block; \
+  struct caml_domain_state* caml_domain_state = CAML_DOMAIN_STATE; \
+  caml__roots_block.next = caml_domain_state->local_roots; \
+  caml_domain_state->local_roots = &caml__roots_block; \
+  caml__roots_block.mutexes = 0; \
   caml__roots_block.nitems = (size); \
   caml__roots_block.ntables = 1; \
   caml__roots_block.tables[0] = (table);

@@ -96,10 +96,10 @@ caml_trace_value_file (value v, code_t prog, int proglen, FILE * f)
   fprintf (f, "%#lx", v);
   if (!v)
     return;
-  if (prog && v % sizeof (int) == 0
-           && (code_t) v >= prog
-           && (code_t) v < (code_t) ((char *) prog + proglen))
-    fprintf (f, "=code@%ld", (code_t) v - prog);
+  if (prog && (v & 1) && ((value)(Pc_val(v))) % sizeof (int) == 0
+           && Pc_val(v) >= prog
+           && Pc_val(v) < (code_t) ((char *) prog + proglen))
+    fprintf (f, "=code@%ld", Pc_val(v) - prog);
   else if (Is_long (v))
     fprintf (f, "=long%" ARCH_INTNAT_PRINTF_FORMAT "d", Long_val (v));
   else if (caml_on_current_stack((value*)v))
@@ -149,7 +149,7 @@ caml_trace_value_file (value v, code_t prog, int proglen, FILE * f)
         };
         if (i > 0)
           putc (' ', f);
-        fprintf (f, "%#lx", Field (v, i));
+        fprintf (f, "%#lx", Op_val (v)[i]);
       };
       if (s > 0)
         putc (')', f);

@@ -53,73 +53,6 @@ extern uintnat caml_allocation_policy;    /*        see freelist.c */
 
 #define Next(hp) ((hp) + Bhsize_hp (hp))
 
-#ifdef DEBUG
-
-#if 0
-/* Check that [v]'s header looks good.  [v] must be a block in the heap. */
-static void check_head (value v)
-{
-  Assert (Is_block (v));
-  Assert (Is_in_heap (v));
-
-  Assert (Wosize_val (v) != 0);
-  Assert (Color_hd (Hd_val (v)) != Caml_blue);
-  Assert (Is_in_heap (v));
-  if (Tag_val (v) == Infix_tag){
-    int offset = Wsize_bsize (Infix_offset_val (v));
-    value trueval = Val_op (&Field (v, -offset));
-    Assert (Tag_val (trueval) == Closure_tag);
-    Assert (Wosize_val (trueval) > offset);
-    Assert (Is_in_heap (&Field (trueval, Wosize_val (trueval) - 1)));
-  }else{
-    Assert (Is_in_heap (&Field (v, Wosize_val (v) - 1)));
-  }
-  if (Tag_val (v) ==  Double_tag){
-    Assert (Wosize_val (v) == Double_wosize);
-  }else if (Tag_val (v) == Double_array_tag){
-    Assert (Wosize_val (v) % Double_wosize == 0);
-  }
-}
-
-static void check_block (char *hp)
-{
-  mlsize_t i;
-  value v = Val_hp (hp);
-  value f;
-
-  check_head (v);
-  switch (Tag_hp (hp)){
-  case Abstract_tag: break;
-  case String_tag:
-    break;
-  case Double_tag:
-    Assert (Wosize_val (v) == Double_wosize);
-    break;
-  case Double_array_tag:
-    Assert (Wosize_val (v) % Double_wosize == 0);
-    break;
-  case Custom_tag:
-    Assert (!Is_in_heap (Custom_ops_val (v)));
-    break;
-
-  case Infix_tag:
-    Assert (0);
-    break;
-
-  default:
-    Assert (Tag_hp (hp) < No_scan_tag);
-    for (i = 0; i < Wosize_hp (hp); i++){
-      f = Field (v, i);
-      if (Is_block (f) && Is_in_heap (f)){
-        check_head (f);
-        Assert (Color_val (f) != Caml_blue);
-      }
-    }
-  }
-}
-#endif
-#endif /* DEBUG */
-
 /* Check the heap structure (if compiled in debug mode) and
    gather statistics; return the stats if [returnstats] is true,
    otherwise return [Val_unit].
@@ -328,7 +261,18 @@ CAMLprim value caml_gc_counters(value v)
 
 CAMLprim value caml_gc_get(value v)
 {
-  return Val_unit;
+  CAMLparam0 ();   /* v is ignored */
+  CAMLlocal1 (res);
+
+  res = caml_alloc_tuple (7);
+#ifndef NATIVE_CODE
+  Store_field (res, 5, Val_long (caml_max_stack_size));                 /* l */
+#else
+  Store_field (res, 5, Val_long (0));
+#endif
+
+  CAMLreturn (res);
+
 #if 0
   CAMLparam0 ();   /* v is ignored */
   CAMLlocal1 (res);
@@ -370,25 +314,25 @@ CAMLprim value caml_gc_set(value v)
   asize_t newminsize;
   uintnat oldpolicy;
 
-  caml_startup_params.verb_gc = Long_val (Field (v, 3));
+  caml_startup_params.verb_gc = Long_field (v, 3);
 
 #ifndef NATIVE_CODE
-  caml_change_max_stack_size (Long_val (Field (v, 5)));
+  caml_change_max_stack_size (Long_field (v, 5));
 #endif
 
-  newpf = norm_pfree (Long_val (Field (v, 2)));
+  newpf = norm_pfree (Long_field (v, 2));
   if (newpf != caml_percent_free){
     caml_percent_free = newpf;
     caml_gc_message (0x20, "New space overhead: %d%%\n", caml_percent_free);
   }
 
-  newpm = norm_pmax (Long_val (Field (v, 4)));
+  newpm = norm_pmax (Long_field (v, 4));
   if (newpm != caml_percent_max){
     caml_percent_max = newpm;
     caml_gc_message (0x20, "New max overhead: %d%%\n", caml_percent_max);
   }
 
-  newheapincr = Long_val (Field (v, 1));
+  newheapincr = Long_field (v, 1);
   if (newheapincr != caml_major_heap_increment){
     caml_major_heap_increment = newheapincr;
     if (newheapincr > 1000){
@@ -400,7 +344,7 @@ CAMLprim value caml_gc_set(value v)
     }
   }
   oldpolicy = caml_allocation_policy;
-  caml_set_allocation_policy (Long_val (Field (v, 6)));
+  caml_set_allocation_policy (Long_field (v, 6));
   if (oldpolicy != caml_allocation_policy){
     caml_gc_message (0x20, "New allocation policy: %d\n",
                      caml_allocation_policy);
@@ -408,7 +352,7 @@ CAMLprim value caml_gc_set(value v)
 
     /* Minor heap size comes last because it will trigger a minor collection
        (thus invalidating [v]) and it can raise [Out_of_memory]. */
-  newminsize = caml_norm_minor_heap_size (Long_val (Field (v, 0)));
+  newminsize = caml_norm_minor_heap_size (Long_field (v, 0));
   if (newminsize != caml_minor_heap_size){
     caml_gc_message (0x20, "New minor heap size: %luk bytes\n",
                      newminsize/1024);
@@ -461,9 +405,8 @@ uintnat caml_normalize_heap_increment (uintnat i)
 
 void caml_init_gc ()
 {
-  uintnat
-major_heap_size =
-    Bsize_wsize (caml_normalize_heap_increment (caml_startup_params.heap_size_init));
+/*  uintnat major_heap_size =
+      Bsize_wsize (caml_normalize_heap_increment (caml_startup_params.heap_size_init)); */
 
   caml_max_stack_size = caml_startup_params.max_stack_init;
   caml_fiber_wsz = caml_startup_params.fiber_wsz_init;

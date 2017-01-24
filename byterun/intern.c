@@ -210,7 +210,7 @@ static void stack_realloc(struct intern_stack* s, value save) {
   }
 
   intern_stack_item* new_vals = caml_stat_alloc(new_len * STACK_NFIELDS * sizeof(value));
-  
+
   for (i = 0; i < s->sp; i++) {
     STACK_VAL(new_vals, i) = STACK_VAL(s->curr_vals, i);
     STACK_FIELD(new_vals, i) = STACK_FIELD(s->curr_vals, i);
@@ -226,7 +226,7 @@ static void stack_realloc(struct intern_stack* s, value save) {
   }
 
   if (s->curr_vals != s->first_vals) caml_stat_free(s->curr_vals);
-  
+
   /* register GC root */
   s->curr_vals = new_vals;
   s->len = new_len;
@@ -333,7 +333,7 @@ static value intern_rec(mlsize_t whsize, mlsize_t num_objects)
 
   /* The un-marshaler loop, the recursion is unrolled */
   while (!stack_is_empty(&S)) {
-    
+
     /* Interpret next item on the stack */
     dest = stack_curr_val(&S);
     curr_field = stack_curr_field(&S);
@@ -345,7 +345,7 @@ static value intern_rec(mlsize_t whsize, mlsize_t num_objects)
     case OFreshOID:
       /* Refresh the object ID */
       /* but do not do it for predefined exception slots */
-      if (Int_val(Field(dest, 1)) >= 0)
+      if (Int_field(dest, 1) >= 0)
         caml_set_oo_id(dest);
       /* Pop item and iterate */
       stack_pop(&S);
@@ -484,11 +484,10 @@ static value intern_rec(mlsize_t whsize, mlsize_t num_objects)
             if (codeptr != NULL) {
               v = (value) codeptr;
             } else {
-              int found_placeholder;
-              value function_placeholder =
-                caml_get_named_value ("Debugger.function_placeholder", &found_placeholder);
-              if (found_placeholder) {
-                v = function_placeholder;
+              caml_root function_placeholder =
+                caml_named_root ("Debugger.function_placeholder");
+              if (function_placeholder) {
+                v = caml_read_root(function_placeholder);
               } else {
                 intern_cleanup(&S);
                 intern_bad_code_pointer(digest);
@@ -575,7 +574,7 @@ value caml_input_val(struct channel *chan)
   /* Fill it in */
   res = intern_rec(whsize, num_objects);
   /* Free everything */
-  /* !! 
+  /* !!
   caml_stat_free(intern_input);
   */
   res = caml_check_urgent_gc(res);

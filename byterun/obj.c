@@ -72,7 +72,7 @@ CAMLprim value caml_obj_block(value tag, value size)
 CAMLprim value caml_obj_dup(value arg)
 {
   CAMLparam1 (arg);
-  CAMLlocal1 (res);
+  CAMLlocal2 (res, x);
   mlsize_t sz, i;
   tag_t tg;
 
@@ -82,13 +82,14 @@ CAMLprim value caml_obj_dup(value arg)
   if (tg >= No_scan_tag) {
     res = caml_alloc(sz, tg);
     memcpy(Bp_val(res), Bp_val(arg), sz * sizeof(value));
-  } else if (sz <= Max_young_wosize) {
-    res = caml_alloc_small(sz, tg);
-    for (i = 0; i < sz; i++) Init_field(res, i, Field(arg, i));
   } else {
-    res = caml_alloc_shr(sz, tg);
-    for (i = 0; i < sz; i++) caml_initialize_field(res, i, Field(arg, i));
+    res = caml_alloc(sz, tg);
+    for (i = 0; i < sz; i++) {
+      caml_read_field(arg, i, &x);
+      caml_initialize_field(res, i, x);
+    }
   }
+
   CAMLreturn (res);
 }
 
@@ -104,18 +105,25 @@ CAMLprim value caml_obj_add_offset (value v, value offset)
 
 CAMLprim value caml_obj_compare_and_swap (value v, value f, value oldv, value newv)
 {
-  return Val_int(caml_atomic_cas_field(v, Int_val(f), oldv, newv));
+  int res = caml_atomic_cas_field(v, Int_val(f), oldv, newv);
+  caml_check_urgent_gc(Val_unit);
+  return Val_int(res);
 }
 
 /* caml_promote_to(obj, upto) promotes obj to be as least as shared as upto */
 CAMLprim value caml_obj_promote_to (value obj, value upto)
 {
-  if (Is_block(upto) && Is_minor(upto) && !Is_promoted_hd(Hd_val(upto))) {
+  if (Is_block(upto) && Is_minor(upto)) {
     /* upto is local, obj is already as shared as upto is */
     return obj;
   } else {
     return caml_promote(caml_domain_self(), obj);
   }
+}
+
+CAMLprim value caml_obj_is_shared (value obj)
+{
+  return Val_int(Is_long(obj) || !Is_minor(obj));
 }
 
 /* The following functions are used in stdlib/lazy.ml.
@@ -138,7 +146,7 @@ CAMLprim value caml_lazy_make_forward (value v)
   CAMLlocal1 (res);
 
   res = caml_alloc_small (1, Forward_tag);
-  Init_field (res, 0, v);
+  caml_initialize_field (res, 0, v);
   CAMLreturn (res);
 }
 
@@ -148,15 +156,15 @@ CAMLprim value caml_lazy_make_forward (value v)
 
 CAMLprim value caml_get_public_method (value obj, value tag)
 {
-  value meths = Field (obj, 0);
-  int li = 3, hi = Field(meths,0), mi;
+  value meths = Field_imm(obj, 0);
+  int li = 3, hi = Field_imm(meths,0), mi;
   while (li < hi) {
     mi = ((li+hi) >> 1) | 1;
-    if (tag < Field(meths,mi)) hi = mi-2;
+    if (tag < Field_imm(meths,mi)) hi = mi-2;
     else li = mi;
   }
   /* return 0 if tag is not there */
-  return (tag == Field(meths,li) ? Field (meths, li-1) : 0);
+  return (tag == Field_imm(meths,li) ? Field_imm (meths, li-1) : 0);
 }
 
 /* Allocate OO ids in chunks, to avoid contention */

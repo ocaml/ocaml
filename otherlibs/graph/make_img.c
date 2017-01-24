@@ -17,22 +17,25 @@
 
 value caml_gr_make_image(value m)
 {
+  CAMLparam1 (m);
+  CAMLlocal2 (im, line);
   int width, height;
-  value im;
   Bool has_transp;
   XImage * idata, * imask;
   char * bdata, * bmask;
   int i, j, rgb;
-  value line;
   GC gc;
 
   caml_gr_check_open();
   height = Wosize_val(m);
   if (height == 0) return caml_gr_new_image(0, 0);
-  width = Wosize_val(Field(m, 0));
-  for (i = 1; i < height; i++)
-    if (Wosize_val(Field(m, i)) != width)
+  caml_read_field(m, 0, &line);
+  width = Wosize_val(line);
+  for (i = 1; i < height; i++) {
+    caml_read_field(m, i, &line);
+    if (Wosize_val(line) != width)
       caml_gr_fail("make_image: lines of different lengths", NULL);
+  }
 
   /* Build an XImage for the data part of the image */
   idata =
@@ -47,9 +50,9 @@ value caml_gr_make_image(value m)
   has_transp = False;
 
   for (i = 0; i < height; i++) {
-    line = Field(m, i);
+    caml_read_field(m, i, &line);
     for (j = 0; j < width; j++) {
-      rgb = Int_val(Field(line, j));
+      rgb = Int_field(line, j);
       if (rgb == Transparent) { has_transp = True; rgb = 0; }
       XPutPixel(idata, j, i, caml_gr_pixel_rgb(rgb));
     }
@@ -67,9 +70,9 @@ value caml_gr_make_image(value m)
     imask->data = bmask;
 
     for (i = 0; i < height; i++) {
-      line = Field(m, i);
+      caml_read_field(m, i, &line);
       for (j = 0; j < width; j++) {
-        rgb = Int_val(Field(line, j));
+        rgb = Int_field(line, j);
         XPutPixel(imask, j, i, rgb != Transparent);
       }
     }
@@ -93,5 +96,5 @@ value caml_gr_make_image(value m)
     XFreeGC(caml_gr_display, gc);
   }
   XFlush(caml_gr_display);
-  return im;
+  CAMLreturn (im);
 }

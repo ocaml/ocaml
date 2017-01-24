@@ -3,10 +3,10 @@
 
 #include "mlvalues.h"
 #include "domain_state.h"
+#include "memory.h"
 
 struct domain {
   int id;
-  int is_main;
   int vm_inited;
 
   struct dom_internal* internals;
@@ -16,8 +16,13 @@ struct domain {
   uintnat* mark_stack_count;
 };
 
-#define Caml_check_gc_interrupt() \
-  ((uintnat)CAML_DOMAIN_STATE->young_ptr < CAML_DOMAIN_STATE->young_limit)
+#ifdef __GNUC__
+  #define Caml_check_gc_interrupt(dom_st) \
+    __builtin_expect(((uintnat)(dom_st)->young_ptr < (dom_st)->young_limit), 0)
+#else
+  #define Caml_check_gc_interrupt(dom_st) \
+    ((uintnat)(dom_st)->young_ptr < (dom_st)->young_limit)
+#endif
 
 asize_t caml_norm_minor_heap_size (intnat);
 void caml_reallocate_minor_heap(asize_t);
@@ -46,6 +51,7 @@ struct domain* caml_domain_self();
 typedef void (*domain_rpc_handler)(struct domain*, void*);
 
 struct domain* caml_random_domain();
+int caml_domain_alone();
 
 struct domain* caml_owner_of_young_block(value);
 

@@ -473,10 +473,7 @@ try_again:
             w = inter_fdlist_set(th->writefds, &writefds, &retcode);
             e = inter_fdlist_set(th->exceptfds, &exceptfds, &retcode);
             if (r != NO_FDS || w != NO_FDS || e != NO_FDS) {
-              value retval = alloc_small(3, TAG_RESUMED_SELECT);
-              Field(retval, 0) = r;
-              Field(retval, 1) = w;
-              Field(retval, 2) = e;
+              value retval = caml_alloc_3(TAG_RESUMED_SELECT, r, w, e);
               Assign(th->retval, retval);
               th->status = RUNNABLE;
               if (run_thread == NULL) run_thread = th; /* Found one. */

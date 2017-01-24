@@ -365,15 +365,14 @@ value caml_gr_sigio_handler(void)
 void caml_gr_fail(char *fmt, char *arg)
 {
   char buffer[1024];
-  value graphic_failure_exn;
-  int graphic_failure_found;
+  caml_root graphic_failure_exn;
 
-  graphic_failure_exn = caml_get_named_value("Graphics.Graphic_failure", &graphic_failure_found);
-  if (!graphic_failure_found)
+  graphic_failure_exn = caml_named_root("Graphics.Graphic_failure");
+  if (!graphic_failure_exn)
     invalid_argument("Exception Graphics.Graphic_failure not initialized,"
                      " must link graphics.cma");
   sprintf(buffer, fmt, arg);
-  raise_with_string(graphic_failure_exn, buffer);
+  raise_with_string(caml_read_root(graphic_failure_exn), buffer);
 }
 
 void caml_gr_check_open(void)

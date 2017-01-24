@@ -1213,9 +1213,15 @@ and transl_handler e body val_caselist exn_caselist eff_caselist =
         Llet(StrictOpt, cont, Lprim (prim_bvar_create, [Lvar raw_cont]),
           Matching.for_handler (Lvar param) (Lvar raw_cont) eff_cases))
   in
+  let is_pure = function
+    | Lconst _ -> true
+    | Lvar _ -> true
+    | Lfunction _ -> true
+    | _ -> false
+  in
   let (body_fun, arg) =
     match transl_exp body with
-    | Lapply (fn, [arg], _) ->
+    | Lapply (fn, [arg], _) when is_pure fn && is_pure arg ->
        (fn, arg)
     | body ->
        let param = Ident.create "param" in

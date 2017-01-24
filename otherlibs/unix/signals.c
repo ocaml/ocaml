@@ -31,9 +31,9 @@ static void decode_sigset(value vset, sigset_t * set)
 {
   sigemptyset(set);
   while (vset != Val_int(0)) {
-    int sig = caml_convert_signal_number(Int_val(Field(vset, 0)));
+    int sig = caml_convert_signal_number(Int_field(vset, 0));
     sigaddset(set, sig);
-    vset = Field(vset, 1);
+    vset = Field_imm(vset, 1);
   }
 }
 
@@ -45,9 +45,9 @@ static value encode_sigset(sigset_t * set)
   Begin_root(res)
     for (i = 1; i < NSIG; i++)
       if (sigismember(set, i) > 0) {
-        value newcons = alloc_small(2, 0);
-        Init_field(newcons, 0, Val_int(caml_rev_convert_signal_number(i)));
-        Init_field(newcons, 1, res);
+        value newcons = caml_alloc_2(0,
+          Val_int(caml_rev_convert_signal_number(i)),
+          res);
         res = newcons;
       }
   End_roots();

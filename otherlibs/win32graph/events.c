@@ -110,13 +110,12 @@ static value caml_gr_wait_allocate_result(int mouse_x, int mouse_y,
                                           int button,
                                           int keypressed, int key)
 {
-  value res = alloc_small(5, 0);
-  Field(res, 0) = Val_int(mouse_x);
-  Field(res, 1) = Val_int(grwindow.height - 1 - mouse_y);
-  Field(res, 2) = Val_bool(button);
-  Field(res, 3) = Val_bool(keypressed);
-  Field(res, 4) = Val_int(key & 0xFF);
-  return res;
+  return caml_alloc_5(0,
+    Val_int(mouse_x),
+    Val_int(grwindow.height - 1 - mouse_y),
+    Val_bool(button),
+    Val_bool(keypressed),
+    Val_int(key & 0xFF));
 }
 
 static value caml_gr_wait_event_poll(void)
@@ -177,7 +176,7 @@ CAMLprim value caml_gr_wait_event(value eventlist) /* ML */
   mask = 0;
   poll = 0;
   while (eventlist != Val_int(0)) {
-    switch (Int_val(Field(eventlist, 0))) {
+    switch (Int_field(eventlist, 0)) {
     case 0:                     /* Button_down */
       mask |= EVENT_BUTTON_DOWN; break;
     case 1:                     /* Button_up */
@@ -189,7 +188,7 @@ CAMLprim value caml_gr_wait_event(value eventlist) /* ML */
     case 4:                     /* Poll */
       poll = 1; break;
     }
-    eventlist = Field(eventlist, 1);
+    eventlist = Field_imm(eventlist, 1);
   }
   if (poll)
     return caml_gr_wait_event_poll();

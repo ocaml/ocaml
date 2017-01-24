@@ -35,6 +35,8 @@ value caml_gr_fill_rect(value vx, value vy, value vw, value vh)
 
 value caml_gr_fill_poly(value array)
 {
+  CAMLparam1 (array);
+  CAMLlocal1 (coord);
   XPoint * points;
   int npoints, i;
 
@@ -42,8 +44,9 @@ value caml_gr_fill_poly(value array)
   npoints = Wosize_val(array);
   points = (XPoint *) caml_stat_alloc(npoints * sizeof(XPoint));
   for (i = 0; i < npoints; i++) {
-    points[i].x = Int_val(Field(Field(array, i), 0));
-    points[i].y = Bcvt(Int_val(Field(Field(array, i), 1)));
+    caml_read_field(array, i, &coord);
+    points[i].x = Int_field(coord, 0);
+    points[i].y = Bcvt(Int_field(coord, 1));
   }
   if(caml_gr_remember_modeflag)
     XFillPolygon(caml_gr_display, caml_gr_bstore.win, caml_gr_bstore.gc, points,
@@ -56,7 +59,7 @@ value caml_gr_fill_poly(value array)
     XFlush(caml_gr_display);
   }
   stat_free((char *) points);
-  return Val_unit;
+  CAMLreturn (Val_unit);
 }
 
 value caml_gr_fill_arc_nat(value vx, value vy, value vrx, value vry, value va1,

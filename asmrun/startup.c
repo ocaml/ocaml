@@ -31,6 +31,7 @@
 #include "stack.h"
 #include "caml/sys.h"
 #include "caml/params.h"
+#include "caml/fiber.h"
 #ifdef HAS_UI
 #include "caml/ui.h"
 #endif
