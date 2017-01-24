@@ -158,7 +158,7 @@ let import_symbol sym =
     match Symbol.Map.find sym symbol_id_map with
     | approx -> A.augment_with_symbol (import_ex approx) sym
     | exception Not_found ->
-      A.value_unresolved sym
+      A.value_unresolved (Symbol sym)
 
 (* Note for code reviewers: Observe that [really_import] iterates until
    the approximation description is fully resolved (or a necessary .cmx
