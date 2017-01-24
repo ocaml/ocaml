@@ -293,7 +293,7 @@ let print_approx ppf ((t,root_symbols) : t * Symbol.t list) =
   and print_fields ppf fields =
     Array.iter (fun approx -> fprintf ppf "%a@ " print_approx approx) fields
   and print_set_of_closures ppf
-      { set_of_closures_id; bound_vars; aliased_symbol } =
+      { set_of_closures_id; bound_vars; aliased_symbol; results } =
     if Set_of_closures_id.Set.mem set_of_closures_id !printed_set_of_closures
     then fprintf ppf "%a" Set_of_closures_id.print set_of_closures_id
     else begin
@@ -304,10 +304,11 @@ let print_approx ppf ((t,root_symbols) : t * Symbol.t list) =
         | Some symbol ->
           Format.fprintf ppf "@ (alias: %a)" Symbol.print symbol
       in
-      fprintf ppf "{%a: %a%a}"
+      fprintf ppf "{%a: %a%a => %a}"
         Set_of_closures_id.print set_of_closures_id
         print_binding bound_vars
         print_alias aliased_symbol
+        (Closure_id.Map.print print_approx) results
     end
   and print_binding ppf bound_vars =
     Var_within_closure.Map.iter (fun clos_id approx ->
