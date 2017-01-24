@@ -68,6 +68,15 @@ Next version (4.05.0):
 - PR#7137, GPR#960: "-open" command line flag now accepts a module path
   (not a module name) (Arseniy Alekseyev and Leo White)
 
+- GPR#1009: "ocamlc -c -linkall" and "ocamlopt -c -linkall" can now be used
+  to set the "always link" flag on individual compilation units.  This
+  controls linking with finer granularity than "-a -linkall", which sets
+  the "always link" flag on all units of the given library.
+  (Xavier Leroy)
+
+- GPR#796: allow compiler plugins to declare their own arguments.
+  (Fabrice Le Fessant)
+
 ### Standard library:
 
 - PR#6975, GPR#902: Truncate function added to stdlib Buffer module
@@ -97,6 +106,9 @@ Next version (4.05.0):
   MoreLabels, StringLabels so they are compatible with non-labeled
   counterparts.
   (Roma Sokolov)
+
+- GPR#999: Arg, do not repeat thrice usage_msg when reporting an error
+  (Florian Angeletti, review by Gabriel Scherer)
 
 ### Manual and documentation:
 
@@ -128,6 +140,9 @@ Next version (4.05.0):
 - GPR#997: Deprecate Bigarray.*.map_file and add Unix.map_file as a
   first step towards moving Bigarray to the stdlib
   (Jeremie Dimino)
+
+- GPR#996: correctly update caml_top_of_stack in systhreads
+  (Fabrice Le Fessant)
 
 ### Bytecode debugger (ocamldebug):
 
@@ -312,6 +327,11 @@ Next minor version (4.04.1):
 - MPR#7417, GPR#930: ensure 16 byte stack alignment inside caml_allocN on x86-64
   for ocaml build with WITH_FRAME_POINTERS defined
   (Christoph Cullmann)
+
+- PR#7460, GPR#1011: catch uncaught exception when unknown files are passed
+  as argument (regression in 4.04.0)
+  (Bernhard Schommer, review by Florian Angeletti and Gabriel Scherer,
+   report by Stephen Dolan)
 
 - GPR#912: Fix segfault in Unix.create_process on Windows caused by wrong header
   configuration.

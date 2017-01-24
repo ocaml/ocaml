@@ -462,7 +462,7 @@ module Array0 : sig
   val create: ('a, 'b) kind -> 'c layout -> ('a, 'b, 'c) t
   (** [Array0.create kind layout] returns a new bigarray of zero dimension.
      [kind] and [layout] determine the array element kind and the array
-     layout as described for [Genarray.create]. *)
+     layout as described for {!Genarray.create}. *)
 
   external kind: ('a, 'b, 'c) t -> ('a, 'b) kind = "caml_ba_kind"
   (** Return the kind of the given big array. *)
@@ -481,11 +481,11 @@ module Array0 : sig
 
   external blit: ('a, 'b, 'c) t -> ('a, 'b, 'c) t -> unit = "caml_ba_blit"
   (** Copy the first big array to the second big array.
-     See [Genarray.blit] for more details. *)
+     See {!Genarray.blit} for more details. *)
 
   external fill: ('a, 'b, 'c) t -> 'a -> unit = "caml_ba_fill"
   (** Fill the given big array with the given value.
-     See [Genarray.fill] for more details. *)
+     See {!Genarray.fill} for more details. *)
 
   val of_value: ('a, 'b) kind -> 'c layout -> 'a -> ('a, 'b, 'c) t
   (** Build a zero-dimensional big array initialized from the
@@ -499,7 +499,7 @@ end
 (** One-dimensional arrays. The [Array1] structure provides operations
    similar to those of
    {!Bigarray.Genarray}, but specialized to the case of one-dimensional arrays.
-   (The [Array2] and [Array3] structures below provide operations
+   (The {!Array2} and {!Array3} structures below provide operations
    specialized for two- and three-dimensional arrays.)
    Statically knowing the number of dimensions of the array allows
    faster operations, and more precise static type-checking. *)
@@ -512,7 +512,7 @@ module Array1 : sig
   (** [Array1.create kind layout dim] returns a new bigarray of
      one dimension, whose size is [dim].  [kind] and [layout]
      determine the array element kind and the array layout
-     as described for [Genarray.create]. *)
+     as described for {!Genarray.create}. *)
 
   external dim: ('a, 'b, 'c) t -> int = "%caml_ba_dim_1"
   (** Return the size (dimension) of the given one-dimensional
@@ -548,7 +548,7 @@ module Array1 : sig
   external sub: ('a, 'b, 'c) t -> int -> int -> ('a, 'b, 'c) t
       = "caml_ba_sub"
   (** Extract a sub-array of the given one-dimensional big array.
-     See [Genarray.sub_left] for more details. *)
+     See {!Genarray.sub_left} for more details. *)
 
   val slice: ('a, 'b, 'c) t -> int -> ('a, 'b, 'c) Array0.t
   (** Extract a scalar (zero-dimensional slice) of the given one-dimensional
@@ -559,11 +559,11 @@ module Array1 : sig
   external blit: ('a, 'b, 'c) t -> ('a, 'b, 'c) t -> unit
       = "caml_ba_blit"
   (** Copy the first big array to the second big array.
-     See [Genarray.blit] for more details. *)
+     See {!Genarray.blit} for more details. *)
 
   external fill: ('a, 'b, 'c) t -> 'a -> unit = "caml_ba_fill"
   (** Fill the given big array with the given value.
-     See [Genarray.fill] for more details. *)
+     See {!Genarray.fill} for more details. *)
 
   val of_array: ('a, 'b) kind -> 'c layout -> 'a array -> ('a, 'b, 'c) t
   (** Build a one-dimensional big array initialized from the

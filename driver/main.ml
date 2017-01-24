@@ -126,15 +126,24 @@ module Options = Main_args.Make_bytecomp_options (struct
 end)
 
 let main () =
+  Clflags.add_arguments __LOC__ Options.list;
   try
     readenv ppf Before_args;
-    Arg.parse_expand Options.list anonymous usage;
-    Compenv.process_deferred_actions
-      (ppf,
-       Compile.implementation,
-       Compile.interface,
-       ".cmo",
-       ".cma");
+    Clflags.parse_arguments anonymous usage;
+    begin try
+      Compenv.process_deferred_actions
+        (ppf,
+         Compile.implementation,
+         Compile.interface,
+         ".cmo",
+         ".cma");
+    with Arg.Bad msg ->
+      begin
+        prerr_endline msg;
+        Clflags.print_arguments usage;
+        exit 2
+      end
+    end;
     readenv ppf Before_link;
     if
       List.length (List.filter (fun x -> !x)

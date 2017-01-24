@@ -425,6 +425,12 @@ setting the
 .B \-linkall
 option forces all subsequent links of programs involving that library
 to link all the modules contained in the library.
+When compiling a module (option
+.BR \-c ),
+setting the
+.B \-linkall
+option ensures that this module will
+always be linked if it is put in a library and this library is linked.
 .TP
 .B \-make\-runtime
 Build a custom runtime system (in the file specified by option
