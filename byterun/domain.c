@@ -330,9 +330,9 @@ struct domain* caml_random_domain()
 
 int caml_domain_alone()
 {
+  int len=0, i;
   caml_plat_lock(&all_domains_lock);
-  int len = 0;
-  for (int i = 0; i < Max_domains; i++)
+  for (i = 0; i < Max_domains; i++)
     if (all_domains[i].running) len++;
   caml_plat_unlock(&all_domains_lock);
   return len == 1;
