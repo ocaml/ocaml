@@ -54,6 +54,8 @@ let import_set_of_closures =
     Flambda.update_function_declarations clos ~funs
   in
   let aux set_of_closures_id =
+    ignore (Compilenv.approx_for_global
+      (Set_of_closures_id.get_compilation_unit set_of_closures_id));
     let ex_info = Compilenv.approx_env () in
     let function_declarations =
       try
