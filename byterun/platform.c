@@ -1,7 +1,57 @@
+#define _GNU_SOURCE /* for PTHREAD_MUTEX_ERRORCHECK_NP */
 #include <sys/mman.h>
+#include <string.h>
 #include <unistd.h>
+#include <errno.h>
 #include "caml/platform.h"
 #include "caml/fail.h"
+
+/* Mutexes */
+static void check_err(char* action, int err)
+{
+  if (err) {
+    caml_fatal_error_arg2("Fatal error during %s", action, ": %s\n", strerror(err));
+  }
+}
+
+void caml_plat_mutex_init(caml_plat_mutex* m)
+{
+#ifdef __linux__
+  pthread_mutexattr_t ma;
+  pthread_mutexattr_init(&ma);
+  pthread_mutexattr_settype(&ma, PTHREAD_MUTEX_ERRORCHECK_NP);
+  check_err("mutex_init", pthread_mutex_init(m, &ma));
+#else
+  check_err("mutex_init", pthread_mutex_init(m, 0));
+#endif
+}
+
+void caml_plat_lock(caml_plat_mutex* m)
+{
+  check_err("lock", pthread_mutex_lock(m));
+}
+
+int caml_plat_try_lock(caml_plat_mutex* m)
+{
+  int r = pthread_mutex_trylock(m);
+  if (r == EBUSY) {
+    return 0;
+  } else {
+    check_err("try_lock", r);
+    return 1;
+  }
+}
+
+void caml_plat_unlock(caml_plat_mutex* m)
+{
+  check_err("unlock", pthread_mutex_unlock(m));
+}
+
+void caml_plat_mutex_free(caml_plat_mutex* m)
+{
+  check_err("mutex_free", pthread_mutex_destroy(m));
+}
+
 
 /* One-shot events */
 

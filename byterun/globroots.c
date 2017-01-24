@@ -39,19 +39,14 @@
    heap will be detected using the normal inter-generational pointer
    mechanism. */
 
-static caml_plat_mutex roots_mutex;
+static caml_plat_mutex roots_mutex = CAML_PLAT_MUTEX_INITIALIZER;
 static value roots_all = Val_unit;
-
-
-void caml_init_global_roots()
-{
-  caml_plat_mutex_init(&roots_mutex);
-}
 
 CAMLexport caml_root caml_create_root(value init)
 {
   CAMLparam1(init);
-  value v = caml_alloc_shr(3, 0);
+  CAMLlocal1(v);
+  v = caml_alloc_shr(3, 0);
   caml_initialize_field(v, 0, init);
   caml_initialize_field(v, 1, Val_int(1));
 
@@ -75,8 +70,12 @@ CAMLexport void caml_delete_root(caml_root root)
 CAMLexport value caml_read_root(caml_root root)
 {
   value v = (value)root;
+  value x;
   Assert(root);
-  return Field(v, 0);
+  Assert(Hd_val(root));
+  Assert(Int_field(v,1) == 0 || Int_field(v,1) == 1);
+  caml_read_field(v, 0, &x);
+  return x;
 }
 
 CAMLexport void caml_modify_root(caml_root root, value newv)
@@ -107,8 +106,9 @@ void caml_cleanup_deleted_roots()
 
   r = roots_all;
   while (Is_block(r)) {
-    value next = Field(r, 2);
-    if (Field(r, 1) == Val_int(0)) {
+    Assert(!Is_foreign(Op_val(r)[2]));
+    value next = Op_val(r)[2];
+    if (Int_field(r, 1) == 0) {
       /* root was deleted, remove from list */
       if (first) {
         roots_all = next;

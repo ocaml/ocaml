@@ -201,9 +201,7 @@ unix_getsockopt_aux(char * name,
     if (optval.lg.l_onoff == 0) {
       return Val_int(0);        /* None */
     } else {
-      value res = alloc_small(1, 0); /* Some */
-      Init_field(res, 0, Val_int(optval.lg.l_linger));
-      return res;
+      return caml_alloc_1(0, Val_int(optval.lg.l_linger)); /* Some */
     }
   case TYPE_TIMEVAL:
     return copy_double((double) optval.tv.tv_sec
@@ -212,13 +210,9 @@ unix_getsockopt_aux(char * name,
     if (optval.i == 0) {
       return Val_int(0);        /* None */
     } else {
-      value err, res;
+      value err;
       err = unix_error_of_code(optval.i);
-      Begin_root(err);
-        res = alloc_small(1, 0); /* Some */
-        Init_field(res, 0, err);
-      End_roots();
-      return res;
+      return caml_alloc_1(0, err); /* Some */
     }
   default:
     unix_error(EINVAL, name, Nothing);
@@ -244,7 +238,7 @@ unix_setsockopt_aux(char * name,
     optsize = sizeof(optval.lg);
     optval.lg.l_onoff = Is_block (val);
     if (optval.lg.l_onoff)
-      optval.lg.l_linger = Int_val (Field (val, 0));
+      optval.lg.l_linger = Int_field (val, 0);
     break;
   case TYPE_TIMEVAL:
     f = Double_val(val);

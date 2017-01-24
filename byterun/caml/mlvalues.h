@@ -206,16 +206,24 @@ bits  63    10 9     8 7   0
 
 CAMLextern value caml_read_barrier(value, int);
 static inline value Field(value x, int i) {
+  Assert (Hd_val(x));
   value v = (((value*)x))[i];
   //if (Is_young(v)) Assert(young_ptr < (char*)v);
   return Is_foreign(v) ? caml_read_barrier(x, i) : v;
-  }
-  #define FieldImm(x, i) (((value *)(x)) [i] + 0)
-  //#define Field(x, i) (((value *)(x)) [i] + 0)
+}
 
-/* initialise a field of an object just allocated on the minor heap */
-#define Init_field(block, offset, val) (Op_val(block)[offset] = val)
+static inline void caml_read_field(value x, int i, value* ret) {
+  Assert (Hd_val(x));
+  value v = Op_val(x)[i];
+  //if (Is_young(v)) Assert(young_ptr < (char*)v);
+  *ret = Is_foreign(v) ? caml_read_barrier(x, i) : v;
+}
 
+#define Field_imm(x, i) (Op_val(x)[i] + 0)
+
+#define Int_field(x, i) Int_val(Op_val(x)[i])
+#define Long_field(x, i) Long_val(Op_val(x)[i])
+#define Bool_field(x, i) Bool_val(Op_val(x)[i])
 
 /* NOTE: [Forward_tag] and [Infix_tag] must be just under
    [No_scan_tag], with [Infix_tag] the lower one.
@@ -227,7 +235,7 @@ static inline value Field(value x, int i) {
 /* Forward_tag: forwarding pointer that the GC may silently shortcut.
    See stdlib/lazy.ml. */
 #define Forward_tag 250
-#define Forward_val(v) Field(v, 0)
+#define Forward_val(v) Field_imm(v, 0) /* FIXME: not immutable once shortcutting is implemented */
 
 /* If tag == Infix_tag : an infix header inside a closure */
 /* Infix_tag must be odd so that the infix header is scanned as an integer */
@@ -240,8 +248,8 @@ static inline value Field(value x, int i) {
 
 /* Another special case: objects */
 #define Object_tag 248
-#define Class_val(val) Field((val), 0)
-#define Oid_val(val) Long_val(Field((val), 1))
+#define Class_val(val) Field_imm((val), 0)
+#define Oid_val(val) Long_field((val), 1)
 CAMLextern value caml_get_public_method (value obj, value tag);
 /* Called as:
    caml_callback(caml_get_public_method(obj, caml_hash_variant(name)), obj) */
@@ -259,7 +267,7 @@ CAMLextern value caml_get_public_method (value obj, value tag);
 #define Closure_tag 247
 #define Bytecode_val(val) (Pc_val(val))
 #define Val_bytecode(code) (Val_pc(code))
-#define Code_val(val) Bytecode_val(Field((val), 0))
+#define Code_val(val) Bytecode_val(Field_imm((val), 0))
 
 /* This tag is used (with Forward_tag) to implement lazy values.
    See major_gc.c and stdlib/lazy.ml. */

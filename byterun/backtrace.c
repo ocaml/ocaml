@@ -272,9 +272,9 @@ static void read_debug_info()
     evl = caml_input_val(chan);
     caml_input_val(chan); // Skip the list of absolute directory names
     /* Relocate events in event list */
-    for (l = evl; l != Val_int(0); l = Field(l, 1)) {
-      value ev = Field(l, 0);
-      Store_field(ev, EV_POS, Val_long(Long_val(Field(ev, EV_POS)) + orig));
+    for (l = evl; l != Val_int(0); l = Field_imm(l, 1)) {
+      value ev = Field_imm(l, 0);
+      Store_field(ev, EV_POS, Val_long(Long_field(ev, EV_POS) + orig));
       n_events++;
     }
     /* Record event list */
@@ -290,16 +290,16 @@ static void read_debug_info()
 
   j = 0;
   for (i = 0; i < num_events; i++) {
-    for (l = Field(events_heap, i); l != Val_int(0); l = Field(l, 1)) {
+    for (l = Field_imm(events_heap, i); l != Val_int(0); l = Field_imm(l, 1)) {
       uintnat fnsz;
-      value ev = Field(l, 0);
+      value ev = Field_imm(l, 0);
 
       events[j].ev_pc =
-        (code_t)((char*)caml_start_code + Long_val(Field(ev, EV_POS)));
+        (code_t)((char*)caml_start_code + Long_val(Field_imm(ev, EV_POS)));
 
-      ev_start = Field (Field (ev, EV_LOC), LOC_START);
+      ev_start = Field_imm(Field_imm(ev, EV_LOC), LOC_START);
 
-      fnsz = caml_string_length(Field (ev_start, POS_FNAME))+1;
+      fnsz = caml_string_length(Field_imm(ev_start, POS_FNAME))+1;
       events[j].ev_filename = (char*)malloc(fnsz);
       if(events[j].ev_filename == NULL) {
         for(j--; j >= 0; j--)
@@ -309,16 +309,16 @@ static void read_debug_info()
         read_debug_info_error = "out of memory";
         CAMLreturn0;
       }
-      memcpy(events[j].ev_filename, String_val (Field (ev_start, POS_FNAME)),
+      memcpy(events[j].ev_filename, String_val (Field_imm(ev_start, POS_FNAME)),
              fnsz);
 
-      events[j].ev_lnum = Int_val (Field (ev_start, POS_LNUM));
+      events[j].ev_lnum = Int_val (Field_imm(ev_start, POS_LNUM));
       events[j].ev_startchr =
-        Int_val (Field (ev_start, POS_CNUM))
-        - Int_val (Field (ev_start, POS_BOL));
+        Int_val (Field_imm(ev_start, POS_CNUM))
+        - Int_val (Field_imm(ev_start, POS_BOL));
       events[j].ev_endchr =
-        Int_val (Field (Field (Field (ev, EV_LOC), LOC_END), POS_CNUM))
-        - Int_val (Field (ev_start, POS_BOL));
+        Int_val (Field_imm(Field_imm(Field_imm(ev, EV_LOC), LOC_END), POS_CNUM))
+        - Int_val (Field_imm(ev_start, POS_BOL));
 
       j++;
     }
@@ -447,14 +447,14 @@ CAMLprim value caml_convert_raw_backtrace_slot(value backtrace_slot) {
   if (li.loc_valid) {
     fname = caml_copy_string(li.loc_filename);
     p = caml_alloc_small(5, 0);
-    Init_field(p, 0, Val_bool(li.loc_is_raise));
-    Init_field(p, 1, fname);
-    Init_field(p, 2, Val_int(li.loc_lnum));
-    Init_field(p, 3, Val_int(li.loc_startchr));
-    Init_field(p, 4, Val_int(li.loc_endchr));
+    caml_initialize_field(p, 0, Val_bool(li.loc_is_raise));
+    caml_initialize_field(p, 1, fname);
+    caml_initialize_field(p, 2, Val_int(li.loc_lnum));
+    caml_initialize_field(p, 3, Val_int(li.loc_startchr));
+    caml_initialize_field(p, 4, Val_int(li.loc_endchr));
   } else {
     p = caml_alloc_small(1, 1);
-    Init_field(p, 0, Val_bool(li.loc_is_raise));
+    caml_initialize_field(p, 0, Val_bool(li.loc_is_raise));
   }
   CAMLreturn(p);
 }
@@ -470,7 +470,7 @@ CAMLprim value caml_get_exception_raw_backtrace(value unit)
   if(CAML_DOMAIN_STATE->backtrace_buffer != NULL) {
     intnat i;
     for(i = 0; i < CAML_DOMAIN_STATE->backtrace_pos; i++)
-      Init_field(res, i, Val_Codet(CAML_DOMAIN_STATE->backtrace_buffer[i]));
+      caml_initialize_field(res, i, Val_Codet(CAML_DOMAIN_STATE->backtrace_buffer[i]));
   }
 
   CAMLreturn(res);
@@ -508,7 +508,7 @@ CAMLprim value caml_get_exception_backtrace(value unit)
               caml_modify_field(arr, i, slot);
           }
       }
-      res = caml_alloc_small(1, 0); Init_field(res, 0, arr); /* Some */
+      res = caml_alloc_small(1, 0); caml_initialize_field(res, 0, arr); /* Some */
   }
   CAMLreturn(res);
 }

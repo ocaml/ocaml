@@ -70,12 +70,12 @@ enum {
 };
 
 /* Accessors in a compiled regexp */
-#define Prog(re) Field(re, 0)
-#define Cpool(re) Field(re, 1)
-#define Normtable(re) Field(re, 2)
-#define Numgroups(re) Int_val(Field(re, 3))
-#define Numregisters(re) Int_val(Field(re, 4))
-#define Startchars(re) Int_val(Field(re, 5))
+#define Prog(re) Field_imm(re, 0)
+#define Cpool(re) Field_imm(re, 1)
+#define Normtable(re) Field_imm(re, 2)
+#define Numgroups(re) Int_val(Field_imm(re, 3))
+#define Numregisters(re) Int_val(Field_imm(re, 4))
+#define Startchars(re) Int_val(Field_imm(re, 5))
 
 /* Record positions of matched groups */
 #define NUM_GROUPS 32
@@ -359,11 +359,11 @@ static value re_alloc_groups(value re, value str)
   for (i = 0; i < n; i++) {
     group = &(re_group[i]);
     if (group->start == NULL || group->end == NULL) {
-      Init_field(res, i * 2, Val_int(-1));
-      Init_field(res, i * 2 + 1, Val_int(-1));
+      caml_initialize_field(res, i * 2, Val_int(-1));
+      caml_initialize_field(res, i * 2 + 1, Val_int(-1));
     } else {
-      Init_field(res, i * 2, Val_long(group->start - starttxt));
-      Init_field(res, i * 2 + 1, Val_long(group->end - starttxt));
+      caml_initialize_field(res, i * 2, Val_long(group->start - starttxt));
+      caml_initialize_field(res, i * 2 + 1, Val_long(group->end - starttxt));
     }
   }
   CAMLreturn(res);
@@ -488,8 +488,8 @@ CAMLprim value re_replacement_text(value repl, value groups, value orig)
         c -= '0';
         if (c*2 >= Wosize_val(groups))
           failwith("Str.replace: reference to unmatched group");
-        start = Long_val(Field(groups, c*2));
-        end = Long_val(Field(groups, c*2 + 1));
+        start = Long_field(groups, c*2);
+        end = Long_field(groups, c*2 + 1);
         if (start == (mlsize_t) -1)
           failwith("Str.replace: reference to unmatched group");
         len += end - start;
@@ -515,8 +515,8 @@ CAMLprim value re_replacement_text(value repl, value groups, value orig)
       case '0': case '1': case '2': case '3': case '4':
       case '5': case '6': case '7': case '8': case '9':
         c -= '0';
-        start = Long_val(Field(groups, c*2));
-        end = Long_val(Field(groups, c*2 + 1));
+        start = Long_field(groups, c*2);
+        end = Long_field(groups, c*2 + 1);
         len = end - start;
         memmove (q, &Byte(orig, start), len);
         q += len;

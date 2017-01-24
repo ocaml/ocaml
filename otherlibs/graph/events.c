@@ -15,6 +15,7 @@
 #include "libgraph.h"
 #include <caml/alloc.h>
 #include <caml/signals.h>
+#include <caml/memory.h>
 #include <sys/types.h>
 #include <sys/time.h>
 #ifdef HAS_SYS_SELECT_H
@@ -142,13 +143,15 @@ void caml_gr_handle_event(XEvent * event)
 static value caml_gr_wait_allocate_result(int mouse_x, int mouse_y, int button,
                                      int keypressed, int key)
 {
-  value res = alloc_small(5, 0);
-  Init_field(res, 0, Val_int(mouse_x));
-  Init_field(res, 1, Val_int(mouse_y == -1 ? -1 : Wcvt(mouse_y)));
-  Init_field(res, 2, Val_bool(button));
-  Init_field(res, 3, Val_bool(keypressed));
-  Init_field(res, 4, Val_int(key & 0xFF));
-  return res;
+  CAMLparam0();
+  CAMLlocal1(res);
+  res = alloc_small(5, 0);
+  caml_initialize_field(res, 0, Val_int(mouse_x));
+  caml_initialize_field(res, 1, Val_int(mouse_y == -1 ? -1 : Wcvt(mouse_y)));
+  caml_initialize_field(res, 2, Val_bool(button));
+  caml_initialize_field(res, 3, Val_bool(keypressed));
+  caml_initialize_field(res, 4, Val_int(key & 0xFF));
+  CAMLreturn (res);
 }
 
 static value caml_gr_wait_event_poll(void)
@@ -254,7 +257,7 @@ value caml_gr_wait_event(value eventlist) /* ML */
   mask = 0;
   poll = False;
   while (eventlist != Val_int(0)) {
-    switch (Int_val(Field(eventlist, 0))) {
+    switch (Int_field(eventlist, 0)) {
     case 0:                     /* Button_down */
       mask |= ButtonPressMask | OwnerGrabButtonMask; break;
     case 1:                     /* Button_up */
@@ -266,7 +269,7 @@ value caml_gr_wait_event(value eventlist) /* ML */
     case 4:                     /* Poll */
       poll = True; break;
     }
-    eventlist = Field(eventlist, 1);
+    eventlist = Field_imm(eventlist, 1);
   }
   if (poll)
     return caml_gr_wait_event_poll();

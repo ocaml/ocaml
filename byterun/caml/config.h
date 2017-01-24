@@ -183,6 +183,14 @@ typedef uint64 uintnat;
  */
 #define Max_percent_free_def 500
 
+/* Default setting for promoting with minor GC: 10%.
+   If the portion of the minor heap to be scanned during a promotion is greater
+   than 10%, then we promote the object by performing a local garbage
+   collection.
+ */
+#define Percent_to_promote_with_GC 10
+
+/* Maximum number of domains */
 #define Max_domains (1 << Minor_heap_sel_bits)
 
 #endif /* CAML_CONFIG_H */

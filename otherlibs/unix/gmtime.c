@@ -22,16 +22,16 @@
 static value alloc_tm(struct tm *tm)
 {
   value res;
-  res = alloc_small(9, 0);
-  Init_field(res, 0, Val_int(tm->tm_sec));
-  Init_field(res, 1, Val_int(tm->tm_min));
-  Init_field(res, 2, Val_int(tm->tm_hour));
-  Init_field(res, 3, Val_int(tm->tm_mday));
-  Init_field(res, 4, Val_int(tm->tm_mon));
-  Init_field(res, 5, Val_int(tm->tm_year));
-  Init_field(res, 6, Val_int(tm->tm_wday));
-  Init_field(res, 7, Val_int(tm->tm_yday));
-  Init_field(res, 8, tm->tm_isdst ? Val_true : Val_false);
+  res = caml_alloc_9(0,
+    Val_int(tm->tm_sec),
+    Val_int(tm->tm_min),
+    Val_int(tm->tm_hour),
+    Val_int(tm->tm_mday),
+    Val_int(tm->tm_mon),
+    Val_int(tm->tm_year),
+    Val_int(tm->tm_wday),
+    Val_int(tm->tm_yday),
+    tm->tm_isdst ? Val_true : Val_false);
   return res;
 }
 
@@ -65,22 +65,20 @@ CAMLprim value unix_mktime(value t)
   value tmval = Val_unit, clkval = Val_unit;
 
   Begin_roots2(tmval, clkval);
-    tm.tm_sec = Int_val(Field(t, 0));
-    tm.tm_min = Int_val(Field(t, 1));
-    tm.tm_hour = Int_val(Field(t, 2));
-    tm.tm_mday = Int_val(Field(t, 3));
-    tm.tm_mon = Int_val(Field(t, 4));
-    tm.tm_year = Int_val(Field(t, 5));
-    tm.tm_wday = Int_val(Field(t, 6));
-    tm.tm_yday = Int_val(Field(t, 7));
-    tm.tm_isdst = -1; /* tm.tm_isdst = Bool_val(Field(t, 8)); */
+    tm.tm_sec = Int_field(t, 0);
+    tm.tm_min = Int_field(t, 1);
+    tm.tm_hour = Int_field(t, 2);
+    tm.tm_mday = Int_field(t, 3);
+    tm.tm_mon = Int_field(t, 4);
+    tm.tm_year = Int_field(t, 5);
+    tm.tm_wday = Int_field(t, 6);
+    tm.tm_yday = Int_field(t, 7);
+    tm.tm_isdst = -1; /* tm.tm_isdst = Bool_val(Field_imm(t, 8)); */
     clock = mktime(&tm);
     if (clock == (time_t) -1) unix_error(ERANGE, "mktime", Nothing);
     tmval = alloc_tm(&tm);
     clkval = copy_double((double) clock);
-    res = alloc_small(2, 0);
-    Init_field(res, 0, clkval);
-    Init_field(res, 1, tmval);
+    res = caml_alloc_2(0, clkval, tmval);
   End_roots ();
   return res;
 }

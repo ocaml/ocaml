@@ -39,13 +39,21 @@ CAMLprim value caml_weak_create (value len)
 
 CAMLprim value caml_weak_set (value ar, value n, value el)
 {
-  caml_modify_field(ar, n, el);
-  return Val_unit;
+  CAMLparam3(ar, n, el);
+  int idx = Int_val(n);
+  if (idx < 0 || idx >= Wosize_val(ar)) caml_array_bound_error();
+  caml_modify_field(ar, idx, el);
+  CAMLreturn (Val_unit);
 }
 
 CAMLprim value caml_weak_get (value ar, value n)
 {
-  return Field(ar, n);
+  CAMLparam2(ar, n);
+  CAMLlocal1(x);
+  int idx = Int_val(n);
+  if (idx < 0 || idx >= Wosize_val(ar)) caml_array_bound_error();
+  caml_read_field(ar, idx, &x);
+  CAMLreturn (x);
 }
 
 CAMLprim value caml_weak_get_copy (value ar, value n)

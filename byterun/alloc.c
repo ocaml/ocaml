@@ -17,6 +17,7 @@
 */
 
 #include <string.h>
+#include <stdarg.h>
 #include "caml/alloc.h"
 #include "caml/custom.h"
 #include "caml/major_gc.h"
@@ -24,9 +25,6 @@
 #include "caml/mlvalues.h"
 #include "caml/fiber.h"
 #include "caml/domain.h"
-
-#define Setup_for_gc
-#define Restore_after_gc
 
 CAMLexport value caml_alloc (mlsize_t wosize, tag_t tag)
 {
@@ -38,30 +36,131 @@ CAMLexport value caml_alloc (mlsize_t wosize, tag_t tag)
   if (wosize == 0){
     result = Atom (tag);
   }else if (wosize <= Max_young_wosize){
-    Alloc_small (result, wosize, tag);
+    Alloc_small (result, wosize, tag, { caml_handle_gc_interrupt(); });
     if (tag < No_scan_tag){
-      for (i = 0; i < wosize; i++) Init_field (result, i, Val_unit);
+      for (i = 0; i < wosize; i++) {
+        value init_val = Val_unit;
+        #ifdef DEBUG
+          init_val = Debug_uninit_minor;
+        #endif
+        Op_val(result)[i] = init_val;
+      }
     }
+
+    if (tag == Stack_tag) Stack_sp(result) = 0;
   }else{
     result = caml_alloc_shr (wosize, tag);
-    if (tag < No_scan_tag){
-      for (i = 0; i < wosize; i++) Op_val(result)[i] = Val_unit;
-    }
-    if (tag == Stack_tag) Stack_sp(result) = 0;
-    result = caml_check_urgent_gc (result);
+    result = caml_check_urgent_gc(result);
   }
+
   return result;
 }
 
+static inline void enter_gc_preserving_vals(mlsize_t wosize, value* vals)
+{
+  CAMLparam0();
+  /* Copy the values to be preserved to a different array.
+     The original vals array never escapes, generating better code in
+     the fast path. */
+  CAMLlocalN(vals_copy, wosize);
+  mlsize_t i;
+  for (i = 0; i < wosize; i++) vals_copy[i] = vals[i];
+  caml_handle_gc_interrupt();
+  for (i = 0; i < wosize; i++) vals[i] = vals_copy[i];
+  CAMLreturn0;
+}
+
+static inline value do_alloc_small(mlsize_t wosize, tag_t tag, value* vals)
+{
+  value v;
+  mlsize_t i;
+  Assert (tag < 256);
+  Alloc_small(v, wosize, tag,
+      { enter_gc_preserving_vals(wosize, vals); });
+  for (i = 0; i < wosize; i++) {
+    Op_val(v)[i] = vals[i];
+  }
+  return v;
+}
+
+
+CAMLexport value caml_alloc_1 (tag_t tag, value a)
+{
+  value v[1] = {a};
+  return do_alloc_small(1, tag, v);
+}
+
+CAMLexport value caml_alloc_2 (tag_t tag, value a, value b)
+{
+  value v[2] = {a, b};
+  return do_alloc_small(2, tag, v);
+}
+
+CAMLexport value caml_alloc_3 (tag_t tag, value a, value b, value c)
+{
+  value v[3] = {a, b, c};
+  return do_alloc_small(3, tag, v);
+}
+
+CAMLexport value caml_alloc_4 (tag_t tag, value a, value b, value c, value d)
+{
+  value v[4] = {a, b, c, d};
+  return do_alloc_small(4, tag, v);
+}
+
+CAMLexport value caml_alloc_5 (tag_t tag, value a, value b, value c, value d,
+                               value e)
+{
+  value v[5] = {a, b, c, d, e};
+  return do_alloc_small(5, tag, v);
+}
+
+CAMLexport value caml_alloc_6 (tag_t tag, value a, value b, value c, value d,
+                               value e, value f)
+{
+  value v[6] = {a, b, c, d, e, f};
+  return do_alloc_small(6, tag, v);
+}
+
+CAMLexport value caml_alloc_7 (tag_t tag, value a, value b, value c, value d,
+                               value e, value f, value g)
+{
+  value v[7] = {a, b, c, d, e, f, g};
+  return do_alloc_small(7, tag, v);
+}
+
+CAMLexport value caml_alloc_8 (tag_t tag, value a, value b, value c, value d,
+                               value e, value f, value g, value h)
+{
+  value v[8] = {a, b, c, d, e, f, g, h};
+  return do_alloc_small(8, tag, v);
+}
+
+CAMLexport value caml_alloc_9 (tag_t tag, value a, value b, value c, value d,
+                               value e, value f, value g, value h, value i)
+{
+  value v[9] = {a, b, c, d, e, f, g, h, i};
+  return do_alloc_small(9, tag, v);
+}
+
+CAMLexport value caml_alloc_N (mlsize_t wosize, tag_t tag, ...)
+{
+  va_list args;
+  mlsize_t i;
+  value vals[wosize];
+  value ret;
+  va_start(args, tag);
+  for (i = 0; i < wosize; i++)
+    vals[i] = va_arg(args, value);
+  ret = do_alloc_small(wosize, tag, vals);
+  va_end(args);
+  return ret;
+}
+
+
 CAMLexport value caml_alloc_small (mlsize_t wosize, tag_t tag)
 {
-  value result;
-
-  Assert (wosize > 0);
-  Assert (wosize <= Max_young_wosize);
-  Assert (tag < 256);
-  Alloc_small (result, wosize, tag);
-  return result;
+  return caml_alloc(wosize, tag);
 }
 
 CAMLexport value caml_alloc_tuple(mlsize_t n)
@@ -129,8 +228,8 @@ CAMLexport int caml_convert_flag_list(value list, const int *flags)
   int res;
   res = 0;
   while (list != Val_int(0)) {
-    res |= flags[Int_val(Field(list, 0))];
-    list = Field(list, 1);
+    res |= flags[Int_field(list, 0)];
+    list = Field_imm(list, 1);
   }
   return res;
 }
@@ -155,6 +254,8 @@ CAMLprim value caml_alloc_dummy_float (value size)
 
 CAMLprim value caml_update_dummy(value dummy, value newval)
 {
+  CAMLparam2(dummy, newval);
+  CAMLlocal1(x);
   mlsize_t size, i;
   tag_t tag;
 
@@ -171,10 +272,11 @@ CAMLprim value caml_update_dummy(value dummy, value newval)
     }
   }else{
     for (i = 0; i < size; i++){
-      caml_modify_field (dummy, i, Field(newval, i));
+      caml_read_field(newval, i, &x);
+      caml_modify_field (dummy, i, x);
     }
   }
-  return Val_unit;
+  CAMLreturn (Val_unit);
 }
 
 

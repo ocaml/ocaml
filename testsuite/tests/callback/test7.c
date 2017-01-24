@@ -7,13 +7,13 @@ value caml_to_c (value unit) {
   CAMLparam1 (unit);
   printf ("[C] Enter caml_to_c\n");
 
-  static value c_to_caml_closure;
-  static int found = 0;
-  if (!found)
-    c_to_caml_closure = caml_get_named_value("c_to_caml", &found);
+  static caml_root c_to_caml_closure = NULL;
+
+  if (!c_to_caml_closure)
+    c_to_caml_closure = caml_named_root("c_to_caml");
 
   printf ("[C] Call c_to_caml\n");
-  caml_callback(c_to_caml_closure, Val_unit);
+  caml_callback(caml_read_root(c_to_caml_closure), Val_unit);
   printf ("[C] Return from c_to_caml\n");
 
   printf ("[C] Leave caml_to_c\n");

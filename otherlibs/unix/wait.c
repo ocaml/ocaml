@@ -37,26 +37,21 @@
 
 static value alloc_process_status(int pid, int status)
 {
-  value st, res;
+  value st;
 
   if (WIFEXITED(status)) {
-    st = alloc_small(1, TAG_WEXITED);
-    Init_field(st, 0, Val_int(WEXITSTATUS(status)));
+    st = caml_alloc_1(TAG_WEXITED,
+                      Val_int(WEXITSTATUS(status)));
   }
   else if (WIFSTOPPED(status)) {
-    st = alloc_small(1, TAG_WSTOPPED);
-    Init_field(st, 0, Val_int(caml_rev_convert_signal_number(WSTOPSIG(status))));
+    st = caml_alloc_1(TAG_WSTOPPED,
+                      Val_int(caml_rev_convert_signal_number(WSTOPSIG(status))));
   }
   else {
-    st = alloc_small(1, TAG_WSIGNALED);
-    Init_field(st, 0, Val_int(caml_rev_convert_signal_number(WTERMSIG(status))));
+    st = caml_alloc_1(TAG_WSIGNALED,
+                      Val_int(caml_rev_convert_signal_number(WTERMSIG(status))));
   }
-  Begin_root (st);
-    res = alloc_small(2, 0);
-    Init_field(res, 0, Val_int(pid));
-    Init_field(res, 1, st);
-  End_roots();
-  return res;
+  return caml_alloc_2(0, Val_int(pid), st);
 }
 
 CAMLprim value unix_wait(value unit)

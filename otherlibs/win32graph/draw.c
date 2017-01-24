@@ -371,22 +371,22 @@ CAMLprim value caml_gr_draw_string(value str)
 CAMLprim value caml_gr_text_size(value str)
 {
         SIZE extent;
-        value res;
 
         mlsize_t len = string_length(str);
         if (len > 32767) len = 32767;
 
         GetTextExtentPoint(grwindow.gc,String_val(str), len,&extent);
 
-        res = alloc_tuple(2);
-        Field(res, 0) = Val_long(extent.cx);
-        Field(res, 1) = Val_long(extent.cy);
-
-        return res;
+        return caml_alloc_2(0,
+                            Val_long(extent.cx),
+                            Val_long(extent.cy));
 }
 
 CAMLprim value caml_gr_fill_poly(value vect)
 {
+        CAMLparam1 (vect):
+        CAMLlocal1 (coord);
+
         int n_points, i;
         POINT   *p,*poly;
         n_points = Wosize_val(vect);
@@ -397,8 +397,9 @@ CAMLprim value caml_gr_fill_poly(value vect)
 
         p = poly;
         for( i = 0; i < n_points; i++ ){
-                p->x = Int_val(Field(Field(vect,i),0));
-                p->y = Wcvt(Int_val(Field(Field(vect,i),1)));
+                caml_read_field(vect, i, &coord);
+                p->x = Int_field(coord, 0);
+                p->y = Wcvt(Int_field(coord, 1));
                 p++;
         }
         if (grremember_mode) {
@@ -411,7 +412,7 @@ CAMLprim value caml_gr_fill_poly(value vect)
         }
         free(poly);
 
-        return Val_unit;
+        CAMLreturn (Val_unit);
 }
 
 CAMLprim value caml_gr_fill_arc(value *argv, int argc)
@@ -537,28 +538,30 @@ CAMLprim value caml_gr_draw_image(value i, value x, value y)
 
 CAMLprim value caml_gr_make_image(value matrix)
 {
+        CAMLparam1 (matrix);
+        CAMLlocal2 (img, row);
         int width, height,has_transp,i,j;
-        value img;
         HBITMAP oldBmp;
         height = Wosize_val(matrix);
         if (height == 0) {
                 width = 0;
         }
         else {
-                width = Wosize_val(Field(matrix, 0));
+                caml_read_field(matrix, 0, &row);
+                width = Wosize_val(row);
                 for (i = 1; i < height; i++) {
-                        if (width != (int) Wosize_val(Field(matrix, i)))
+                        caml_read_field(matrix, i, &row);
+                        if (width != (int) Wosize_val(row))
                                 gr_fail("make_image: non-rectangular matrix",0);
                 }
         }
-        Begin_roots1(matrix)
-                img = caml_gr_create_image(Val_int(width), Val_int(height));
-        End_roots();
+        img = caml_gr_create_image(Val_int(width), Val_int(height));
         has_transp = 0;
         oldBmp = SelectObject(grwindow.tempDC,Data(img));
         for (i = 0; i < height; i++) {
                 for (j = 0; j < width; j++) {
-                        int col = Long_val (Field (Field (matrix, i), j));
+                        caml_read_field(matrix, i, &row);
+                        int col = Long_field (row, j);
                         if (col == -1){
                                 has_transp = 1;
                                 SetPixel(grwindow.tempDC,j, i, 0);
@@ -579,18 +582,20 @@ CAMLprim value caml_gr_make_image(value matrix)
                 oldBmp = SelectObject(grwindow.tempDC,Mask(img));
                 for (i = 0; i < height; i++) {
                         for (j = 0; j < width; j++) {
-                                int col = Long_val (Field (Field (matrix, i), j));
+                                caml_read_field (matrix, i, &row);
+                                int col = Long_field (row, j);
                                 SetPixel(grwindow.tempDC,j, i, col == -1 ? 0xFFFFFF : 0);
                         }
                 }
                 SelectObject(grwindow.tempDC,oldBmp);
         }
-        return img;
+        CAMLreturn (img);
 }
 
 static value alloc_int_vect(mlsize_t size)
 {
-        value res;
+        CAMLparam0 ();
+        CAMLlocal1 (res);
         mlsize_t i;
 
         if (size == 0) return Atom(0);
@@ -601,25 +606,24 @@ static value alloc_int_vect(mlsize_t size)
                 res = alloc_shr(size, 0);
         }
         for (i = 0; i < size; i++) {
-                Field(res, i) = Val_long(0);
+                caml_initialize_field(res, i, Val_long(0));
         }
-        return res;
+        CAMLreturn (res);
 }
 
 CAMLprim value caml_gr_dump_image (value img)
 {
+        CAMLparam1 (img);
+        CAMLlocal2 (row, matrix);
         int height = Height(img);
         int width = Width(img);
-        value matrix = Val_unit;
         int i, j;
         HBITMAP oldBmp;
 
-        Begin_roots2(img, matrix)
-                matrix = alloc_int_vect (height);
+        matrix = alloc_int_vect (height);
         for (i = 0; i < height; i++) {
-                modify (&Field (matrix, i), alloc_int_vect (width));
+                caml_modify_field(matrix, i, alloc_int_vect (width));
         }
-        End_roots();
 
         oldBmp = SelectObject(grwindow.tempDC,Data(img));
         for (i = 0; i < height; i++) {
@@ -628,8 +632,9 @@ CAMLprim value caml_gr_dump_image (value img)
                         int blue = (col >> 16) & 0xFF;
                         int green = (col >> 8) & 0xFF;
                         int red = col & 0xFF;
-                        Field(Field(matrix, i), j) = Val_long((red << 16) +
-                                        (green << 8) + blue);
+                        caml_read_field(matrix, i, &row);
+                        caml_modify_field(row, j, Val_long((red << 16) +
+                                                           (green << 8) + blue));
                 }
         }
         SelectObject(grwindow.tempDC,oldBmp);
@@ -637,12 +642,14 @@ CAMLprim value caml_gr_dump_image (value img)
                 oldBmp = SelectObject(grwindow.tempDC,Mask(img));
                 for (i = 0; i < height; i++) {
                         for (j = 0; j < width; j++) {
-                                if (GetPixel(grwindow.tempDC,j, i) != 0)
-                                        Field(Field(matrix, i), j) =
-                                                Val_long(-1);
+                                if (GetPixel(grwindow.tempDC,j, i) != 0) {
+                                    caml_read_field(matrix, i, &row);
+                                    caml_modify_field(row, j, 
+                                                Val_long(-1));
+                                }
                         }
                 }
                 SelectObject(grwindow.tempDC,oldBmp);
         }
-        return matrix;
+        CAMLreturn (matrix);
 }

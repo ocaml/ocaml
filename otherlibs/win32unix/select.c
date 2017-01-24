@@ -862,7 +862,7 @@ static DWORD caml_list_length (value lst)
   CAMLparam1 (lst);
   CAMLlocal1 (l);
 
-  for (res = 0, l = lst; l != Val_int(0); l = Field(l, 1), res++)
+  for (res = 0, l = lst; l != Val_int(0); l = Field_imm(l, 1), res++)
   { }
 
   CAMLreturnT(DWORD, res);
@@ -889,13 +889,13 @@ static value find_handle(LPSELECTRESULT iterResult, value readfds, value writefd
 
   for(i=0; list != Val_unit && i < iterResult->lpOrigIdx; ++i )
   {
-    list = Field(list, 1);
+    list = Field_imm(list, 1);
   }
 
   if (list == Val_unit)
     failwith ("select.c: original file handle not found");
 
-  result = Field(list, 0);
+  result = Field_imm(list, 0);
 
   CAMLreturn( result );
 }
@@ -909,8 +909,8 @@ static int fdlist_to_fdset(value fdlist, fd_set *fdset)
 {
   value l, c;
   FD_ZERO(fdset);
-  for (l = fdlist; l != Val_int(0); l = Field(l, 1)) {
-    c = Field(l, 0);
+  for (l = fdlist; l != Val_int(0); l = Field_imm(l, 1)) {
+    c = Field_imm(l, 0);
     if (Descr_kind_val(c) == KIND_SOCKET) {
       FD_SET(Socket_val(c), fdset);
     } else {
@@ -925,13 +925,10 @@ static value fdset_to_fdlist(value fdlist, fd_set *fdset)
 {
   value res = Val_int(0);
   Begin_roots2(fdlist, res)
-    for (/*nothing*/; fdlist != Val_int(0); fdlist = Field(fdlist, 1)) {
-      value s = Field(fdlist, 0);
+    for (/*nothing*/; fdlist != Val_int(0); fdlist = Field_imm(fdlist, 1)) {
+      value s = Field_imm(fdlist, 0);
       if (FD_ISSET(Socket_val(s), fdset)) {
-        value newres = alloc_small(2, 0);
-        Field(newres, 0) = s;
-        Field(newres, 1) = res;
-        res = newres;
+        res = caml_alloc_2(0, s, res);
       }
     }
   End_roots();
@@ -1053,9 +1050,9 @@ CAMLprim value unix_select(value readfds, value writefds, value exceptfds, value
       DEBUG_PRINT("Dispatch read fd");
       handle_set_init(&hds, hdsData, hdsMax);
       i=0;
-      for (l = readfds; l != Val_int(0); l = Field(l, 1))
+      for (l = readfds; l != Val_int(0); l = Field_imm(l, 1))
         {
-          fd = Field(l, 0);
+          fd = Field_imm(l, 0);
           if (!handle_set_mem(&hds, Handle_val(fd)))
             {
               handle_set_add(&hds, Handle_val(fd));
@@ -1071,9 +1068,9 @@ CAMLprim value unix_select(value readfds, value writefds, value exceptfds, value
       DEBUG_PRINT("Dispatch write fd");
       handle_set_init(&hds, hdsData, hdsMax);
       i=0;
-      for (l = writefds; l != Val_int(0); l = Field(l, 1))
+      for (l = writefds; l != Val_int(0); l = Field_imm(l, 1))
         {
-          fd = Field(l, 0);
+          fd = Field_imm(l, 0);
           if (!handle_set_mem(&hds, Handle_val(fd)))
             {
               handle_set_add(&hds, Handle_val(fd));
@@ -1089,9 +1086,9 @@ CAMLprim value unix_select(value readfds, value writefds, value exceptfds, value
       DEBUG_PRINT("Dispatch exceptional fd");
       handle_set_init(&hds, hdsData, hdsMax);
       i=0;
-      for (l = exceptfds; l != Val_int(0); l = Field(l, 1))
+      for (l = exceptfds; l != Val_int(0); l = Field_imm(l, 1))
         {
-          fd = Field(l, 0);
+          fd = Field_imm(l, 0);
           if (!handle_set_mem(&hds, Handle_val(fd)))
             {
               handle_set_add(&hds, Handle_val(fd));
@@ -1210,7 +1207,7 @@ CAMLprim value unix_select(value readfds, value writefds, value exceptfds, value
               for (i = 0; i < iterSelectData->nResultsCount; i++)
                 {
                   iterResult = &(iterSelectData->aResults[i]);
-                  l = alloc_small(2, 0);
+                  l = caml_alloc(2, 0);
                   Store_field(l, 0, find_handle(iterResult, readfds, writefds, exceptfds));
                   switch (iterResult->EMode)
                     {
@@ -1263,10 +1260,10 @@ CAMLprim value unix_select(value readfds, value writefds, value exceptfds, value
   }
 
   DEBUG_PRINT("Build final result");
-  res = alloc_small(3, 0);
-  Store_field(res, 0, read_list);
-  Store_field(res, 1, write_list);
-  Store_field(res, 2, except_list);
+  res = caml_alloc_3(0,
+    read_list,
+    write_list,
+    except_list);
 
   DEBUG_PRINT("out select");
 

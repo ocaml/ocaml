@@ -679,7 +679,7 @@ LBL(caml_start_program):
      * ENTER_FUNCTION and such. */
         PUSH_TL_VAR(caml_system_exnptr_offset)
         PUSH_TL_VAR(caml_system_sp)
-    /* Save the reference to parent stack on C stack and reset it in 
+    /* Save the reference to parent stack on C stack and reset it in
      * the OCaml stack */
         LOAD_TL_VAR(caml_current_stack, %r13)
         pushq   Stack_parent(%r13)
@@ -770,7 +770,7 @@ LBL(115):
 CFI_ENDPROC
 
 /******************************************************************************/
-/* Exceptions
+/* Exceptions */
 /******************************************************************************/
 
 /* Raise an exception from OCaml */
