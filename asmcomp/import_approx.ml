@@ -54,18 +54,20 @@ let import_set_of_closures =
     Flambda.update_function_declarations clos ~funs
   in
   let aux set_of_closures_id =
+    ignore (Compilenv.approx_for_global
+      (Set_of_closures_id.get_compilation_unit set_of_closures_id));
     let ex_info = Compilenv.approx_env () in
     let function_declarations =
       try
-        Set_of_closures_id.Map.find set_of_closures_id
-          ex_info.sets_of_closures
+        Some (Set_of_closures_id.Map.find set_of_closures_id
+          ex_info.sets_of_closures)
       with Not_found ->
-        Misc.fatal_errorf "[functions] does not map set of closures ID %a. \
-            ex_info = %a"
-          Set_of_closures_id.print set_of_closures_id
-          Export_info.print_all ex_info
+        None
     in
-    import_function_declarations function_declarations
+    match function_declarations with
+    | None -> None
+    | Some function_declarations ->
+      Some (import_function_declarations function_declarations)
   in
   Set_of_closures_id.Tbl.memoize Compilenv.imported_sets_of_closures_table aux
 
@@ -73,7 +75,7 @@ let rec import_ex ex =
   ignore (Compilenv.approx_for_global (Export_id.get_compilation_unit ex));
   let ex_info = Compilenv.approx_env () in
   let import_value_set_of_closures ~set_of_closures_id ~bound_vars
-        ~(ex_info : Export_info.t) ~what : A.value_set_of_closures =
+        ~(ex_info : Export_info.t) ~what : A.value_set_of_closures option =
     let bound_vars = Var_within_closure.Map.map import_approx bound_vars in
     match
       Set_of_closures_id.Map.find set_of_closures_id ex_info.invariant_params
@@ -85,13 +87,16 @@ let rec import_ex ex =
         Export_id.print ex
         what
     | invariant_params ->
-      A.create_value_set_of_closures
-        ~function_decls:(import_set_of_closures set_of_closures_id)
-        ~bound_vars
-        ~invariant_params:(lazy invariant_params)
-        ~specialised_args:Variable.Map.empty
-        ~freshening:Freshening.Project_var.empty
-        ~direct_call_surrogates:Closure_id.Map.empty
+      match import_set_of_closures set_of_closures_id with
+      | None -> None
+      | Some function_decls ->
+        Some (A.create_value_set_of_closures
+          ~function_decls
+          ~bound_vars
+          ~invariant_params:(lazy invariant_params)
+          ~specialised_args:Variable.Map.empty
+          ~freshening:Freshening.Project_var.empty
+          ~direct_call_surrogates:Closure_id.Map.empty)
   in
   match Export_info.find_description ex_info ex with
   | exception Not_found -> A.value_unknown Other
@@ -124,17 +129,25 @@ let rec import_ex ex =
       import_value_set_of_closures ~set_of_closures_id ~bound_vars ~ex_info
         ~what:(Format.asprintf "Value_closure %a" Closure_id.print closure_id)
     in
-    A.value_closure ?set_of_closures_symbol:aliased_symbol
-      value_set_of_closures closure_id
+    begin match value_set_of_closures with
+    | None -> A.value_unresolved (Set_of_closures_id set_of_closures_id)
+    | Some value_set_of_closures ->
+      A.value_closure ?set_of_closures_symbol:aliased_symbol
+        value_set_of_closures closure_id
+    end
   | Value_set_of_closures { set_of_closures_id; bound_vars; aliased_symbol } ->
     let value_set_of_closures =
       import_value_set_of_closures ~set_of_closures_id ~bound_vars ~ex_info
         ~what:"Value_set_of_closures"
     in
-    let approx = A.value_set_of_closures value_set_of_closures in
-    match aliased_symbol with
-    | None -> approx
-    | Some symbol -> A.augment_with_symbol approx symbol
+    match value_set_of_closures with
+    | None ->
+      A.value_unresolved (Set_of_closures_id set_of_closures_id)
+    | Some value_set_of_closures ->
+      let approx = A.value_set_of_closures value_set_of_closures in
+      match aliased_symbol with
+      | None -> approx
+      | Some symbol -> A.augment_with_symbol approx symbol
 
 and import_approx (ap : Export_info.approx) =
   match ap with
@@ -153,7 +166,7 @@ let import_symbol sym =
     match Symbol.Map.find sym symbol_id_map with
     | approx -> A.augment_with_symbol (import_ex approx) sym
     | exception Not_found ->
-      A.value_unresolved sym
+      A.value_unresolved (Symbol sym)
 
 (* Note for code reviewers: Observe that [really_import] iterates until
    the approximation description is fully resolved (or a necessary .cmx

@@ -1021,6 +1021,15 @@ let update_function_declarations function_decls ~funs =
     funs;
   }
 
+let import_function_declarations_for_pack function_decls
+    import_set_of_closures_id import_set_of_closures_origin =
+  { set_of_closures_id =
+      import_set_of_closures_id function_decls.set_of_closures_id;
+    set_of_closures_origin =
+      import_set_of_closures_origin function_decls.set_of_closures_origin;
+    funs = function_decls.funs;
+  }
+
 let create_set_of_closures ~function_decls ~free_vars ~specialised_args
       ~direct_call_surrogates =
   if !Clflags.flambda_invariant_checks then begin

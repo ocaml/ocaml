@@ -560,6 +560,12 @@ val update_function_declarations
   -> funs:function_declaration Variable.Map.t
   -> function_declarations
 
+val import_function_declarations_for_pack
+   : function_declarations
+  -> (Set_of_closures_id.t -> Set_of_closures_id.t)
+  -> (Set_of_closures_origin.t -> Set_of_closures_origin.t)
+  -> function_declarations
+
 (** Create a set of closures.  Checks are made to ensure that [free_vars]
     and [specialised_args] are reasonable. *)
 val create_set_of_closures
