@@ -992,6 +992,13 @@ value is stored in "v" for the first time. You must not call any
 of the OCaml runtime functions or macros between registering and
 storing the value.
 
+Only values that are not referenced by other OCaml values can be considered
+as "global". If the one takes a non-empty OCaml list and registers
+the head value "h" (allocated using "CAMLlocalN", i.e. on the stack) of this
+list with "caml_register_global_root(&h)" it will not take expected effect.
+The value to be registered as global root should be allocated outside stack
+and OCaml heap, for example, using "malloc".
+
 A registered global variable "v" can be un-registered by calling
 "caml_remove_global_root(&v)".
 
