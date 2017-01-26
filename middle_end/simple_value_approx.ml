@@ -38,8 +38,12 @@ type value_float_array = {
   size : int;
 }
 
+type unresolved_value =
+  | Set_of_closures_id of Set_of_closures_id.t
+  | Symbol of Symbol.t
+
 type unknown_because_of =
-  | Unresolved_symbol of Symbol.t
+  | Unresolved_value of unresolved_value
   | Other
 
 type t = {
@@ -63,7 +67,8 @@ and descr =
   | Value_bottom
   | Value_extern of Export_id.t
   | Value_symbol of Symbol.t
-  | Value_unresolved of Symbol.t (* No description was found for this symbol *)
+  | Value_unresolved of unresolved_value
+    (* No description was found for this value *)
 
 and value_closure = {
   set_of_closures : t;
@@ -89,6 +94,12 @@ let print_value_set_of_closures ppf
     (Variable.Map.print Variable.Set.print) (Lazy.force invariant_params)
     Freshening.Project_var.print freshening
 
+let print_unresolved_value ppf = function
+  | Set_of_closures_id set ->
+    Format.fprintf ppf "Set_of_closures_id %a" Set_of_closures_id.print set
+  | Symbol symbol ->
+    Format.fprintf ppf "Symbol %a" Symbol.print symbol
+
 let rec print_descr ppf = function
   | Value_int i -> Format.pp_print_int ppf i
   | Value_char c -> Format.fprintf ppf "%c" c
@@ -99,8 +110,8 @@ let rec print_descr ppf = function
     Format.fprintf ppf "[%i:@ @[<1>%a@]]" (Tag.to_int tag) p fields
   | Value_unknown reason ->
     begin match reason with
-    | Unresolved_symbol symbol ->
-      Format.fprintf ppf "?(due to unresolved symbol '%a')" Symbol.print symbol
+    | Unresolved_value value ->
+      Format.fprintf ppf "?(due to unresolved %a)" print_unresolved_value value
     | Other -> Format.fprintf ppf "?"
     end;
   | Value_bottom -> Format.fprintf ppf "bottom"
@@ -111,8 +122,8 @@ let rec print_descr ppf = function
       print set_of_closures
   | Value_set_of_closures set_of_closures ->
     print_value_set_of_closures ppf set_of_closures
-  | Value_unresolved sym ->
-    Format.fprintf ppf "(unresolved %a)" Symbol.print sym
+  | Value_unresolved value ->
+    Format.fprintf ppf "(unresolved %a)" print_unresolved_value value
   | Value_float f -> Format.pp_print_float ppf f
   | Value_string { contents; size } -> begin
       match contents with
@@ -234,7 +245,7 @@ let value_extern ex = approx (Value_extern ex)
 let value_symbol sym =
   { (approx (Value_symbol sym)) with symbol = Some (sym, None) }
 let value_bottom = approx Value_bottom
-let value_unresolved sym = approx (Value_unresolved sym)
+let value_unresolved value = approx (Value_unresolved value)
 
 let value_string size contents = approx (Value_string {size; contents })
 let value_mutable_float_array ~size =
@@ -486,10 +497,10 @@ let get_field t ~field_index:i : get_field_result =
     Ok (value_unknown Other)
   | Value_unknown reason ->
     Ok (value_unknown reason)
-  | Value_unresolved sym ->
+  | Value_unresolved value ->
     (* We don't know anything, but we must remember that it comes
        from another compilation unit in case it contains a closure. *)
-    Ok (value_unresolved sym)
+    Ok (value_unknown (Unresolved_value value))
 
 type checked_approx_for_block =
   | Wrong
@@ -612,16 +623,16 @@ let freshen_and_check_closure_id
 
 type checked_approx_for_set_of_closures =
   | Wrong
-  | Unresolved of Symbol.t
+  | Unresolved of unresolved_value
   | Unknown
-  | Unknown_because_of_unresolved_symbol of Symbol.t
+  | Unknown_because_of_unresolved_value of unresolved_value
   | Ok of Variable.t option * value_set_of_closures
 
 let check_approx_for_set_of_closures t : checked_approx_for_set_of_closures =
   match t.descr with
-  | Value_unresolved symbol -> Unresolved symbol
-  | Value_unknown (Unresolved_symbol symbol) ->
-    Unknown_because_of_unresolved_symbol symbol
+  | Value_unresolved value -> Unresolved value
+  | Value_unknown (Unresolved_value value) ->
+    Unknown_because_of_unresolved_value value
   | Value_set_of_closures value_set_of_closures ->
     (* Note that [var] might be [None]; we might be reaching the set of
        closures via approximations only, with the variable originally bound
@@ -642,13 +653,13 @@ let strict_check_approx_for_set_of_closures t
   match check_approx_for_set_of_closures t with
   | Ok (var, value_set_of_closures) -> Ok (var, value_set_of_closures)
   | Wrong | Unresolved _
-  | Unknown | Unknown_because_of_unresolved_symbol _ -> Wrong
+  | Unknown | Unknown_because_of_unresolved_value _ -> Wrong
 
 type checked_approx_for_closure_allowing_unresolved =
   | Wrong
-  | Unresolved of Symbol.t
+  | Unresolved of unresolved_value
   | Unknown
-  | Unknown_because_of_unresolved_symbol of Symbol.t
+  | Unknown_because_of_unresolved_value of unresolved_value
   | Ok of value_closure * Variable.t option
           * Symbol.t option * value_set_of_closures
 
@@ -671,8 +682,8 @@ let check_approx_for_closure_allowing_unresolved t
     | Value_symbol _ ->
       Wrong
     end
-  | Value_unknown (Unresolved_symbol symbol) ->
-    Unknown_because_of_unresolved_symbol symbol
+  | Value_unknown (Unresolved_value value) ->
+    Unknown_because_of_unresolved_value value
   | Value_unresolved symbol -> Unresolved symbol
   | Value_set_of_closures _ | Value_block _ | Value_int _ | Value_char _
   | Value_constptr _ | Value_float _ | Value_boxed_int _
@@ -694,7 +705,7 @@ let check_approx_for_closure t : checked_approx_for_closure =
       value_set_of_closures) ->
     Ok (value_closure, set_of_closures_var, set_of_closures_symbol,
       value_set_of_closures)
-  | Wrong | Unknown | Unresolved _ | Unknown_because_of_unresolved_symbol _ ->
+  | Wrong | Unknown | Unresolved _ | Unknown_because_of_unresolved_value _ ->
     Wrong
 
 let approx_for_bound_var value_set_of_closures var =
