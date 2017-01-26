@@ -67,13 +67,13 @@ static void clear_table (struct caml_ref_table *tbl)
 /* size in bytes */
 void caml_set_minor_heap_size (asize_t size)
 {
-  struct caml_domain_state* caml_domain_state = CAML_DOMAIN_STATE;
-  if (caml_domain_state->young_ptr != caml_domain_state->young_end) caml_minor_collection ();
+  struct caml_domain_state* domain_state = CAML_DOMAIN_STATE;
+  if (domain_state->young_ptr != domain_state->young_end) caml_minor_collection ();
 
   caml_reallocate_minor_heap(size);
 
-  reset_table (&caml_domain_state->remembered_set->major_ref);
-  reset_table (&caml_domain_state->remembered_set->minor_ref);
+  reset_table (&domain_state->remembered_set->major_ref);
+  reset_table (&domain_state->remembered_set->minor_ref);
 }
 
 //*****************************************************************************

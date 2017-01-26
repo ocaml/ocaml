@@ -28,20 +28,20 @@
 
 CAMLexport void caml_raise(value v)
 {
-  struct caml_domain_state* caml_domain_state = CAML_DOMAIN_STATE;
-  caml_domain_state->exn_bucket = v;
-  if (caml_domain_state->external_raise == NULL) caml_fatal_uncaught_exception(v);
-  while (caml_domain_state->local_roots != CAML_DOMAIN_STATE->external_raise->local_roots) {
-    Assert(caml_domain_state->local_roots != NULL);
-    struct caml__mutex_unwind* m = caml_domain_state->local_roots->mutexes;
+  struct caml_domain_state* domain_state = CAML_DOMAIN_STATE;
+  domain_state->exn_bucket = v;
+  if (domain_state->external_raise == NULL) caml_fatal_uncaught_exception(v);
+  while (domain_state->local_roots != CAML_DOMAIN_STATE->external_raise->local_roots) {
+    Assert(domain_state->local_roots != NULL);
+    struct caml__mutex_unwind* m = domain_state->local_roots->mutexes;
     while (m) {
       /* unlocked in reverse order of locking */
       caml_plat_unlock(m->mutex);
       m = m->next;
     }
-    caml_domain_state->local_roots = caml_domain_state->local_roots->next;
+    domain_state->local_roots = domain_state->local_roots->next;
   }
-  siglongjmp(caml_domain_state->external_raise->jmp->buf, 1);
+  siglongjmp(domain_state->external_raise->jmp->buf, 1);
 }
 
 CAMLexport void caml_raise_constant(value tag)
