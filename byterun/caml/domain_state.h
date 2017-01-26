@@ -32,10 +32,10 @@ struct caml_domain_state {
   #define SET_CAML_DOMAIN_STATE(x) \
       (pthread_setspecific(caml_domain_state_key, x))
 #else
-  CAMLextern __thread struct caml_domain_state* caml_domain_state;
+  CAMLextern __thread struct caml_domain_state* __caml_domain_state;
   #define CAML_INIT_DOMAIN_STATE
-  #define CAML_DOMAIN_STATE caml_domain_state
-  #define SET_CAML_DOMAIN_STATE(x) (caml_domain_state = (x))
+  #define CAML_DOMAIN_STATE __caml_domain_state
+  #define SET_CAML_DOMAIN_STATE(x) (__caml_domain_state = (x))
 #endif
 
 

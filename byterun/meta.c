@@ -98,7 +98,7 @@ CAMLprim value caml_get_current_environment(value unit)
 
 CAMLprim value caml_invoke_traced_function(value codeptr, value env, value arg)
 {
-  struct caml_domain_state* caml_domain_state = CAML_DOMAIN_STATE;
+  struct caml_domain_state* domain_state = CAML_DOMAIN_STATE;
   /* Stack layout on entry:
        return frame into instrument_closure function
        arg3 to call_original_code (arg)
@@ -125,9 +125,9 @@ CAMLprim value caml_invoke_traced_function(value codeptr, value env, value arg)
   value * osp, * nsp;
   int i;
 
-  osp = caml_domain_state->extern_sp;
-  caml_domain_state->extern_sp -= 4;
-  nsp = caml_domain_state->extern_sp;
+  osp = domain_state->extern_sp;
+  domain_state->extern_sp -= 4;
+  nsp = domain_state->extern_sp;
   for (i = 0; i < 6; i++) nsp[i] = osp[i];
   nsp[6] = codeptr;
   nsp[7] = env;
