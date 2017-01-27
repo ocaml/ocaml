@@ -293,7 +293,7 @@ ifeq "$(FLEXDLL_SUBMODULE_PRESENT)" ""
 else
   BOOT_FLEXLINK_CMD = FLEXLINK_CMD="../boot/ocamlrun ../flexdll/flexlink.exe"
   CAMLOPT := OCAML_FLEXLINK="boot/ocamlrun flexdll/flexlink.exe" $(CAMLOPT)
-  FLEXDLL_DIR="+flexdll"
+  FLEXDLL_DIR=$(if $(wildcard flexdll/flexdll_*.$(O)),"+flexdll")
 endif
 else
   FLEXDLL_DIR=
@@ -550,9 +550,14 @@ flexdll/Makefile:
 	fi
 	@false
 
-# Bootstrapping FlexDLL - leaves a bytecode image of flexlink.exe in flexdll/
 .PHONY: flexdll
-flexdll: flexdll/Makefile
+flexdll: flexdll/Makefile flexlink
+	$(MAKE) -C flexdll MSVC_DETECT=0 CHAINS=$(FLEXDLL_CHAIN) NATDYNLINK=false \
+          support
+
+# Bootstrapping flexlink - leaves a bytecode image of flexlink.exe in flexdll/
+.PHONY: flexlink
+flexlink: flexdll/Makefile
 	$(MAKE) -C byterun BOOTSTRAPPING_FLEXLINK=yes ocamlrun$(EXE)
 	cp byterun/ocamlrun$(EXE) boot/ocamlrun$(EXE)
 	$(MAKE) -C stdlib COMPILER=../boot/ocamlc stdlib.cma std_exit.cmo
@@ -560,7 +565,7 @@ flexdll: flexdll/Makefile
 	$(MAKE) -C flexdll MSVC_DETECT=0 TOOLCHAIN=$(TOOLCHAIN) \
 	  TOOLPREF=$(TOOLPREF) CHAINS=$(FLEXDLL_CHAIN) NATDYNLINK=false \
 	  OCAMLOPT="../boot/ocamlrun ../boot/ocamlc -I ../boot" \
-	  flexlink.exe support
+	  flexlink.exe
 	$(MAKE) -C byterun clean
 	$(MAKE) partialclean
 
@@ -583,8 +588,10 @@ install-flexdll:
 	   $(if $(filter-out mingw,$(TOOLCHAIN)),\
 	     flexdll/default$(filter-out _i386,_$(ARCH)).manifest) \
 	   "$(INSTALL_BINDIR)"
-	$(MKDIR) "$(INSTALL_FLEXDLL)"
-	cp flexdll/flexdll_*.$(O) "$(INSTALL_FLEXDLL)"
+	if test -n "$(wildcard flexdll/flexdll_*.$(O))" ; then \
+	  $(MKDIR) "$(INSTALL_FLEXDLL)" ; \
+	  cp flexdll/flexdll_*.$(O) "$(INSTALL_FLEXDLL)" ; \
+	fi
 
 # Installation
 .PHONY: install
