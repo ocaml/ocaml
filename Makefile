@@ -270,6 +270,7 @@ INSTALL_LIBDIR=$(DESTDIR)$(LIBDIR)
 INSTALL_COMPLIBDIR=$(DESTDIR)$(COMPLIBDIR)
 INSTALL_STUBLIBDIR=$(DESTDIR)$(STUBLIBDIR)
 INSTALL_MANDIR=$(DESTDIR)$(MANDIR)
+INSTALL_FLEXDLL=$(INSTALL_LIBDIR)/flexdll
 
 RUNTOP=./byterun/ocamlrun ./ocaml \
   -nostdlib -I stdlib \
@@ -288,10 +289,14 @@ ifeq "$(UNIX_OR_WIN32)" "win32"
 FLEXDLL_SUBMODULE_PRESENT := $(wildcard flexdll/Makefile)
 ifeq "$(FLEXDLL_SUBMODULE_PRESENT)" ""
   BOOT_FLEXLINK_CMD=
+  FLEXDLL_DIR=
 else
   BOOT_FLEXLINK_CMD = FLEXLINK_CMD="../boot/ocamlrun ../flexdll/flexlink.exe"
   CAMLOPT := OCAML_FLEXLINK="boot/ocamlrun flexdll/flexlink.exe" $(CAMLOPT)
+  FLEXDLL_DIR="+flexdll"
 endif
+else
+  FLEXDLL_DIR=
 endif
 
 # The configuration file
@@ -314,6 +319,7 @@ utils/config.ml: utils/config.mlp config/Makefile
 	    -e 's|%%EXT_OBJ%%|$(EXT_OBJ)|' \
 	    -e 's|%%FLAMBDA%%|$(FLAMBDA)|' \
 	    -e 's|%%FLEXLINK_FLAGS%%|$(subst \,\\,$(FLEXLINK_FLAGS))|' \
+	    -e 's|%%FLEXDLL_DIR%%|$(FLEXDLL_DIR)|' \
 	    -e 's|%%HOST%%|$(HOST)|' \
 	    -e 's|%%LIBDIR%%|$(LIBDIR)|' \
 	    -e 's|%%LIBUNWIND_AVAILABLE%%|$(LIBUNWIND_AVAILABLE)|' \
@@ -577,7 +583,8 @@ install-flexdll:
 	   $(if $(filter-out mingw,$(TOOLCHAIN)),\
 	     flexdll/default$(filter-out _i386,_$(ARCH)).manifest) \
 	   "$(INSTALL_BINDIR)"
-	cp flexdll/flexdll_*.$(O) "$(INSTALL_LIBDIR)"
+	$(MKDIR) "$(INSTALL_FLEXDLL)"
+	cp flexdll/flexdll_*.$(O) "$(INSTALL_FLEXDLL)"
 
 # Installation
 .PHONY: install
