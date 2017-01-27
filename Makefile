@@ -313,14 +313,14 @@ utils/config.ml: utils/config.mlp config/Makefile
 	    -e 's|%%EXT_LIB%%|$(EXT_LIB)|' \
 	    -e 's|%%EXT_OBJ%%|$(EXT_OBJ)|' \
 	    -e 's|%%FLAMBDA%%|$(FLAMBDA)|' \
-	    -e 's|%%FLEXLINK_FLAGS%%|$(FLEXLINK_FLAGS)|' \
+	    -e 's|%%FLEXLINK_FLAGS%%|$(subst \,\\,$(FLEXLINK_FLAGS))|' \
 	    -e 's|%%HOST%%|$(HOST)|' \
 	    -e 's|%%LIBDIR%%|$(LIBDIR)|' \
 	    -e 's|%%LIBUNWIND_AVAILABLE%%|$(LIBUNWIND_AVAILABLE)|' \
 	    -e 's|%%LIBUNWIND_LINK_FLAGS%%|$(LIBUNWIND_LINK_FLAGS)|' \
-	    -e 's|%%MKDLL%%|$(MKDLL)|' \
-	    -e 's|%%MKEXE%%|$(MKEXE)|' \
-	    -e 's|%%MKMAINDLL%%|$(MKMAINDLL)|' \
+	    -e 's|%%MKDLL%%|$(subst \,\\,$(MKDLL))|' \
+	    -e 's|%%MKEXE%%|$(subst \,\\,$(MKEXE))|' \
+	    -e 's|%%MKMAINDLL%%|$(subst \,\\,$(MKMAINDLL))|' \
 	    -e 's|%%MODEL%%|$(MODEL)|' \
 	    -e 's|%%NATIVECCLIBS%%|$(NATIVECCLIBS)|' \
 	    -e 's|%%NATIVE_C_COMPILER%%|$(NATIVE_C_COMPILER)|' \
