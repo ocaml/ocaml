@@ -12,6 +12,12 @@ Next minor version (4.04.1):
   with constructors without arguments.
   (Florian Angeletti, report by Xavier Leroy)
 
+### Build system:
+- PR#7373, GPR#1023: New flexlink target in Makefile.nt to bootstrap the
+  flexlink binary only, rather than the flexlink binary and the FlexDLL C
+  objects.
+  (David Allsopp)
+
 ### Bug fixes
 
 - PR#7369: Str.regexp raises "Invalid_argument: index out of bounds"
