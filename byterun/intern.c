@@ -626,7 +626,7 @@ CAMLexport value caml_input_value_from_malloc(char * data, intnat ofs)
   intern_src += 4;  /* Skip block_len */
   obj = input_val_from_block();
   /* Free the input */
-  caml_stat_free(intern_input);
+  free(intern_input);
   return obj;
 }
 
@@ -656,7 +656,7 @@ CAMLexport value caml_input_val_from_string(value str, intnat ofs)
 
   intern_input = caml_stat_alloc(caml_string_length(str));
   intern_input_malloced = 1;
-  memcpy(intern_input, &Byte(str, 0), caml_string_length(str));
+  memcpy(intern_input, &Byte(str, ofs), caml_string_length(str) - ofs);
   intern_src = intern_input + 2*4;
   obj = input_val_from_block();
   caml_stat_free(intern_input);
