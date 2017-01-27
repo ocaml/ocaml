@@ -24,9 +24,11 @@ defaultentry:
 FLEXDLL_SUBMODULE_PRESENT:=$(wildcard flexdll/Makefile)
 ifeq "$(FLEXDLL_SUBMODULE_PRESENT)" ""
   BOOT_FLEXLINK_CMD=
+  FLEXDLL_DIR=
 else
   BOOT_FLEXLINK_CMD=FLEXLINK_CMD="../boot/ocamlrun ../flexdll/flexlink.exe"
   CAMLOPT:=OCAML_FLEXLINK="boot/ocamlrun flexdll/flexlink.exe" $(CAMLOPT)
+  FLEXDLL_DIR="+flexdll"
 endif
 
 # FlexDLL sources missing error messages
@@ -198,6 +200,7 @@ INSTALL_COMPLIBDIR=$(DESTDIR)$(COMPLIBDIR)
 INSTALL_STUBLIBDIR=$(DESTDIR)$(STUBLIBDIR)
 INSTALL_MANDIR=$(DESTDIR)$(MANDIR)
 INSTALL_DISTRIB=$(DESTDIR)$(PREFIX)
+INSTALL_FLEXDLL=$(INSTALL_LIBDIR)/flexdll
 
 install: installbyt installopt
 
@@ -255,7 +258,8 @@ install-flexdll:
 	   $(if $(filter-out mingw,$(TOOLCHAIN)),\
 	     flexdll/default$(filter-out _i386,_$(ARCH)).manifest) \
 	   "$(INSTALL_BINDIR)/"
-	cp flexdll/flexdll_*.$(O) "$(INSTALL_LIBDIR)"
+	mkdir -p "$(INSTALL_FLEXDLL)"
+	cp flexdll/flexdll_*.$(O) "$(INSTALL_FLEXDLL)"
 
 # Installation of the native-code compiler
 installopt:
@@ -422,6 +426,7 @@ utils/config.ml: utils/config.mlp config/Makefile
 	    -e 's|%%FLAMBDA%%|$(FLAMBDA)|' \
 	    -e 's|%%SAFE_STRING%%|$(SAFE_STRING)|' \
 	    -e 's|%%FLEXLINK_FLAGS%%|$(subst \,\\,$(FLEXLINK_FLAGS))|' \
+	    -e 's|%%FLEXDLL_DIR%%|$(FLEXDLL_DIR)|' \
 	    utils/config.mlp > utils/config.ml
 
 partialclean::

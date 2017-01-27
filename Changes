@@ -17,6 +17,13 @@ Next minor version (4.04.1):
 - PR#7369: Str.regexp raises "Invalid_argument: index out of bounds"
   (Damien Doligez, report by John Whitington)
 
+- PR#7373, GPR#1023: Fix ocamlmklib with bootstrapped FlexDLL. Bootstrapped
+  FlexDLL objects are now installed to a subdirectory flexdll of the Standard
+  Library which allows the compilers to pick them up explicitly and also
+  ocamlmklib to include them without unnecessarily adding the entire Standard
+  Library.
+  (David Allsopp)
+
 - PR#7385, GPR#1057: fix incorrect timestamps returned by Unix.stat on Windows
   when either TZ is set or system date is in DST.
   (David Allsopp, report and initial fix by Nicolás Ojeda Bär, review and

@@ -128,6 +128,9 @@ val default_executable_name: string
 val systhread_supported : bool
         (* Whether the system thread library is implemented *)
 
+val flexdll_dirs : string list
+        (* Directories needed for the FlexDLL objects *)
+
 val host : string
         (* Whether the compiler is a cross-compiler *)
 
