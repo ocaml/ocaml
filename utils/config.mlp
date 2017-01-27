@@ -129,6 +129,8 @@ let default_executable_name =
 
 let systhread_supported = %%SYSTHREAD_SUPPORT%%;;
 
+let flexdll_dirs = [%%FLEXDLL_DIR%%];;
+
 let print_config oc =
   let p name valu = Printf.fprintf oc "%s: %s\n" name valu in
   let p_int name valu = Printf.fprintf oc "%s: %d\n" name valu in
