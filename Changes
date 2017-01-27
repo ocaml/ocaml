@@ -242,6 +242,9 @@ Next version (4.05.0):
   `Ovar_name of out_ident * out_type list` becomes `Ovar_type of out_type`.
   (Valentin Gatien-Baron)
 
+- GPR#673: distinguish initialization of block fields from mutation in lambda.
+  (Frédéric Bour, review by Xavier Leroy, Stephen Dolan and Mark Shinwell)
+
 ### Bug fixes
 
 - PR#5115: protect all byterun/fail.c functions against
