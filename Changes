@@ -229,7 +229,8 @@ Next version (4.05.0):
   include(struct ... end : sig ... end)
   (Alain Frisch, report by Hongbo Zhang, review by Jacques Garrigue)
 
-- GPR#673: distinguish initialization of block fields from mutation in lambda.
+- GPR#673, GPR#1007: distinguish initialization of block fields from mutation in
+  lambda.
   (Frédéric Bour, review by Xavier Leroy, Stephen Dolan and Mark Shinwell)
 
 - GPR#744, GPR#781: fix duplicate self-reference in imported cmi_crcs
