@@ -27,7 +27,6 @@ typedef opcode_t * code_t;
 
 #include "domain_state.h"
 
-
 #ifdef __cplusplus
 extern "C" {
 #endif
