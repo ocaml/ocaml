@@ -65,7 +65,7 @@ static __thread dom_internal* domain_self;
      This is slower but works */
   CAMLexport pthread_key_t caml_domain_state_key;
 #else
-  CAMLexport __thread struct caml_domain_state* __caml_domain_state;
+  CAMLexport __thread struct caml_domain_state* caml_domain_state;
 #endif
 
 /* Statically assert that each field of domain_state is one word long and at the right index */
