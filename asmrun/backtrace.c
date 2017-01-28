@@ -90,12 +90,13 @@ frame_descr * caml_next_frame_descriptor(uintnat * pc, char ** sp)
     } else {
       /* Special frame marking the top of a stack chunk for an ML callback.
          Skip C portion of stack and continue with next ML stack chunk. */
-      caml_fatal_error ("caml_next_frame_descriptor");
-      //struct caml_context * next_context = Callback_link(*sp);
-      //*sp = next_context->bottom_of_stack;
-      //*pc = next_context->last_retaddr;
-      /* A null sp means no more ML stack chunks; stop here. */
-      if (*sp == NULL) return NULL;
+      *sp = (char*)CAML_DOMAIN_STATE->stack_high;
+      *pc = Saved_return_address(*sp);
+#ifdef Mask_already_scanned
+      *pc = Mask_already_scanned(*pc);
+#endif
+
+      return d;
     }
   }
 }
@@ -107,16 +108,19 @@ frame_descr * caml_next_frame_descriptor(uintnat * pc, char ** sp)
    implementation -- before the more flexible
    [caml_get_current_callstack] was implemented. */
 
-void caml_stash_backtrace(value exn, uintnat pc, char * sp, char * trapsp)
+void caml_stash_backtrace(value exn, uintnat pc, char * sp, uintnat trapsp_off)
 {
-  if (exn != caml_read_root(CAML_DOMAIN_STATE->backtrace_last_exn)) {
-    CAML_DOMAIN_STATE->backtrace_pos = 0;
-    caml_modify_root(CAML_DOMAIN_STATE->backtrace_last_exn, exn);
+  struct caml_domain_state* domain_state = CAML_DOMAIN_STATE;
+  char* stack_high = (char*)domain_state->stack_high;
+
+  if (exn != caml_read_root(domain_state->backtrace_last_exn)) {
+    domain_state->backtrace_pos = 0;
+    caml_modify_root(domain_state->backtrace_last_exn, exn);
   }
-  if (CAML_DOMAIN_STATE->backtrace_buffer == NULL) {
-    Assert(CAML_DOMAIN_STATE->backtrace_pos == 0);
-    CAML_DOMAIN_STATE->backtrace_buffer = malloc(BACKTRACE_BUFFER_SIZE * sizeof(code_t));
-    if (CAML_DOMAIN_STATE->backtrace_buffer == NULL) return;
+  if (domain_state->backtrace_buffer == NULL) {
+    Assert(domain_state->backtrace_pos == 0);
+    domain_state->backtrace_buffer = malloc(BACKTRACE_BUFFER_SIZE * sizeof(code_t));
+    if (domain_state->backtrace_buffer == NULL) return;
   }
 
   /* iterate on each frame  */
@@ -124,14 +128,14 @@ void caml_stash_backtrace(value exn, uintnat pc, char * sp, char * trapsp)
     frame_descr * descr = caml_next_frame_descriptor(&pc, &sp);
     if (descr == NULL) return;
     /* store its descriptor in the backtrace buffer */
-    if (CAML_DOMAIN_STATE->backtrace_pos >= BACKTRACE_BUFFER_SIZE) return;
-    CAML_DOMAIN_STATE->backtrace_buffer[CAML_DOMAIN_STATE->backtrace_pos++] = (code_t) descr;
+    if (domain_state->backtrace_pos >= BACKTRACE_BUFFER_SIZE) return;
+    domain_state->backtrace_buffer[domain_state->backtrace_pos++] = (code_t) descr;
 
     /* Stop when we reach the current exception handler */
 #ifndef Stack_grows_upwards
-    if (sp > trapsp) return;
+    if (sp > stack_high - trapsp_off) return;
 #else
-    if (sp < trapsp) return;
+    if (sp < stack_high - trapsp_off) return;
 #endif
   }
 }
@@ -146,53 +150,7 @@ void caml_stash_backtrace(value exn, uintnat pc, char * sp, char * trapsp)
 CAMLprim value caml_get_current_callstack(value max_frames_value) {
   CAMLparam1(max_frames_value);
   CAMLlocal1(trace);
-
-  /* we use `intnat` here because, were it only `int`, passing `max_int`
-     from the OCaml side would overflow on 64bits machines. */
-  intnat max_frames = Long_val(max_frames_value);
-  intnat trace_size;
-
-  /* first compute the size of the trace */
-  {
-    caml_fatal_error("caml_get_current_callstack");
-    //uintnat pc = CAML_DOMAIN_STATE->last_return_address;
-    /* note that [caml_bottom_of_stack] always points to the most recent
-     * frame, independently of the [Stack_grows_upwards] setting */
-    //char * sp = CAML_DOMAIN_STATE->bottom_of_stack;
-    //char * limitsp = CAML_DOMAIN_STATE->top_of_stack;
-
-    trace_size = 0;
-    while (1) {
-      //frame_descr * descr = caml_next_frame_descriptor(&pc, &sp);
-      //if (descr == NULL) break;
-      if (trace_size >= max_frames) break;
-      ++trace_size;
-
-#ifndef Stack_grows_upwards
-      //if (sp > limitsp) break;
-#else
-      //if (sp < limitsp) break;
-#endif
-    }
-  }
-
-  trace = caml_alloc((mlsize_t) trace_size, 0);
-
-  /* then collect the trace */
-  {
-    caml_fatal_error("caml_get_current_callstack");
-#if 0
-    uintnat pc = CAML_DOMAIN_STATE->last_return_address;
-    char * sp = CAML_DOMAIN_STATE->bottom_of_stack;
-    intnat trace_pos;
-
-    for (trace_pos = 0; trace_pos < trace_size; trace_pos++) {
-      frame_descr * descr = caml_next_frame_descriptor(&pc, &sp);
-      Assert(descr != NULL);
-      caml_initialize_field(trace, trace_pos, Val_Descrptr(descr));
-    }
-#endif
-  }
+  caml_fatal_error("caml_get_current_callstack");
   CAMLreturn(trace);
 }
 
@@ -214,8 +172,6 @@ CAMLexport void extract_location_info(frame_descr * d,
   uintnat infoptr;
   uint32 info1, info2;
 
-  caml_fatal_error("extract_location_info");
-
   /* If no debugging information available, print nothing.
      When everything is compiled with -g, this corresponds to
      compiler-inserted re-raise operations. */
@@ -224,6 +180,16 @@ CAMLexport void extract_location_info(frame_descr * d,
     li->loc_is_raise = 1;
     return;
   }
+
+  if (d->frame_size == 0xFFFF) {
+    /* Special frame marking the top of a stack chunk for an ML callback. */
+    /* XXX KC: Should the handlers be made distinct from compiler-inserted
+     * re-raise operations (above)? The backtrace ignores them currently. */
+    li->loc_valid = 0;
+    li->loc_is_raise = 1;
+    return;
+  }
+
   /* Recover debugging info */
   infoptr = ((uintnat) d +
              sizeof(char *) + sizeof(short) + sizeof(short) +
