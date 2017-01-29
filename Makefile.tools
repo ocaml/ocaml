@@ -101,6 +101,7 @@ OCAMLYACC=$(TOPDIR)/yacc/ocamlyacc$(EXE)
 DUMPOBJ=$(OCAMLRUN) $(OTOPDIR)/tools/dumpobj
 OBJINFO=$(OCAMLRUN) $(OTOPDIR)/tools/ocamlobjinfo
 OCAMLDEP=$(OCAMLRUN) $(OTOPDIR)/tools/ocamldep
+OCAMLDEBUG=$(OCAMLRUN) `$(CYGPATH) $(TOPDIR)/debugger/ocamldebug$(EXE)`
 BYTECODE_ONLY=[ "$(ARCH)" = "none" -o "$(ASM)" = "none" ]
 NATIVECODE_ONLY=false
 

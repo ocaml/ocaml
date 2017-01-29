@@ -41,8 +41,7 @@ run:
 	@printf " ... testing with ocamlc"
 	@rm -f noev.result
 	@echo 'source input_script' | \
-	 $(OCAMLRUN) `$(CYGPATH) $(TOPDIR)/debugger/ocamldebug$(EXE)` \
-	             c$(EXE) >noev.raw.result 2>&1 \
+	 $(OCAMLDEBUG) c$(EXE) >noev.raw.result 2>&1 \
 	 && sed -e '/Debugger version/d' -e '/^Time:/d' \
 	        -e '/Breakpoint [0-9]* at [0-9]*:/d' -e '$$d' \
 	        noev.raw.result >noev.result \
