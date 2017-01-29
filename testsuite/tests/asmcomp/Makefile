@@ -73,7 +73,7 @@ ARGS_quicksort=-DSORT -DFUN=quicksort main.c
 ARGS_quicksort2=-DSORT -DFUN=quicksort main.c
 ARGS_soli=-DUNIT_INT -DFUN=solitaire main.c
 ARGS_integr=-DINT_FLOAT -DFUN=test main.c
-ARGS_arith=mainarith.c
+ARGS_arith=-I $(OTOPDIR)/byterun mainarith.c
 ARGS_checkbound=-DCHECKBOUND main.c
 ARGS_tagged-fib=-DINT_INT -DFUN=fib main.c
 ARGS_tagged-integr=-DINT_FLOAT -DFUN=test main.c
