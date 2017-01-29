@@ -1,5 +1,6 @@
 
-#                             
+#   - : unit = ()
+#                               
 <----------------------------------------------------------------------
 To check the result file for this test, it suffices to look for "val"
 lines corresponding to toplevel answers. If they start with
@@ -22,7 +23,7 @@ Warning 57: Ambiguous or-pattern variables under guard;
 variable x may match different arguments. (See manual section 8.5)
 val ambiguous_typical_example : expr * expr -> unit = <fun>
 #   Note that an Assert_failure is expected just below.
-#   Exception: Assert_failure ("//toplevel//", 23, 6).
+#   Exception: Assert_failure ("//toplevel//", 25, 6).
 #           val not_ambiguous__no_orpat : int option -> unit = <fun>
 #         val not_ambiguous__no_guard : [< `A | `B | `C ] -> unit = <fun>
 #         val not_ambiguous__no_patvar_in_guard :

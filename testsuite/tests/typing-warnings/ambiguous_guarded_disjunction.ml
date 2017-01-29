@@ -1,3 +1,6 @@
+(* Ignore OCAMLRUNPARAM=b to be reproducible *)
+Printexc.record_backtrace false;;
+
 let () = print_endline "\n\
   <----------------------------------------------------------------------\n\
   To check the result file for this test, it suffices to look for \"val\"\n\
