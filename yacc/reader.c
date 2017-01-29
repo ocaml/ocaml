@@ -31,7 +31,7 @@ int cinc, cache_size;
 int ntags, tagmax;
 char **tag_table;
 
-char saw_eof, unionized;
+char saw_eof;
 char *cptr, *line;
 int linesize;
 
@@ -222,13 +222,13 @@ static void process_quoted_string(char c, FILE *const f)
     }
 }
 
-void process_apostrophe(FILE *const f)
+int process_apostrophe(FILE *const f)
 {
     if (cptr[0] != 0 && cptr[0] != '\\' && cptr[1] == '\'') {
         fwrite(cptr, 1, 2, f);
         cptr += 2;
     } else if (cptr[0] == '\\'
-            && isdigit((unsigned char) cptr[1])
+            && (isdigit((unsigned char) cptr[1]) || cptr[1] == 'x')
             && isdigit((unsigned char) cptr[2])
             && isdigit((unsigned char) cptr[3])
             && cptr[4] == '\'') {
@@ -237,8 +237,22 @@ void process_apostrophe(FILE *const f)
     } else if (cptr[0] == '\\' && cptr[2] == '\'') {
         fwrite(cptr, 1, 3, f);
         cptr += 3;
+    } else {
+        return 0;
+    }
+    return 1;
+}
+
+void process_apostrophe_body(FILE *f)
+{
+    if (!process_apostrophe(f)) {
+        while (In_bitmap(caml_ident_body, *cptr)) {
+           putc(*cptr, f);
+           cptr++;
+        }
     }
 }
+
 
 static void process_open_curly_bracket(FILE *f) {
     if (In_bitmap(caml_ident_start, *cptr) || *cptr == '|')
@@ -560,7 +574,7 @@ loop:
 
     case '\'':
         putc(c, f);
-        process_apostrophe(f);
+        process_apostrophe_body(f);
         goto loop;
 
     case '(':
@@ -1282,13 +1296,13 @@ loop:
             goto loop;
         }
     }
-    if (isalpha(c) || c == '_' || c == '$' || In_bitmap(caml_ident_start, c))
+    if (c == '_' || c == '$' || In_bitmap(caml_ident_start, c))
     {
         do
         {
             putc(c, f);
             c = *++cptr;
-        } while (isalnum(c) || c == '_' || c == '$' || c == '\'' || In_bitmap(caml_ident_body, c));
+        } while (c == '_' || c == '$' || In_bitmap(caml_ident_body, c));
         goto loop;
     }
     if (c == '}' && depth == 1) {
@@ -1334,7 +1348,7 @@ loop:
         goto loop;
 
     case '\'':
-        process_apostrophe(f);
+        process_apostrophe_body(f);
         goto loop;
 
     case '(':
