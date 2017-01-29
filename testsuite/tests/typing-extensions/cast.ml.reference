@@ -1,4 +1,5 @@
 
+#   - : unit = ()
 #           type 'b class_name = .. constraint 'b = < cast : 'a. 'a name -> 'a; .. >
 and 'a name =
     Class : 'a class_name -> (< cast : 'a0. 'a0 name -> 'a0; .. > as 'a) name

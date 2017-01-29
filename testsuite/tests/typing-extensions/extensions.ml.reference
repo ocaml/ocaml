@@ -1,4 +1,5 @@
 
+#   - : unit = ()
 #     type foo = ..
 #         type foo += A | B of int
 #           val is_a : foo -> bool = <fun>

@@ -1,5 +1,6 @@
 
-# Characters 15-18:
+#   - : unit = ()
+#   Characters 16-19:
   let _ = ignore (+);;
                  ^^^
 Warning 5: this function application is partial,
