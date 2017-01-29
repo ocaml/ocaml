@@ -19,6 +19,7 @@ platform:
 branches:
   only:
     - trunk
+    - 4.04
 
 # Do a shallow clone of the repo to speed up the build
 clone_depth: 1
