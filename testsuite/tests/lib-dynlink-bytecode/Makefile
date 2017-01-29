@@ -42,7 +42,7 @@ compile:
 	@rm -f main static custom custom.exe
 	@$(OCAMLC) -o main dynlink.cma registry.cmo main.cmo
 	@$(OCAMLC) -o static -linkall registry.cmo plug1.cma plug2.cma \
-	           -use-runtime $(OTOPDIR)/byterun/ocamlrun$(USE_RUNTIME)$(EXE)
+	           -use-runtime $(OCAMLRUN_DIR)/$(OCAMLRUN_NAME)
 	@$(OCAMLC) -o custom$(EXE) -custom -linkall registry.cmo plug2.cma \
 	           plug1.cma -I .
 
