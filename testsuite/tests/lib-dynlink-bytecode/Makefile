@@ -15,8 +15,13 @@
 
 BASEDIR=../..
 
+ifeq "$(wildcard $(BASEDIR)/../config/Makefile)" ""
+COMPFLAGS=
+LD_PATH=.:$(TOPDIR)/stublibs
+else
 COMPFLAGS=-I $(OTOPDIR)/otherlibs/dynlink
 LD_PATH=.:$(TOPDIR)/otherlibs/dynlink
+endif
 
 .PHONY: default
 default:

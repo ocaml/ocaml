@@ -48,7 +48,13 @@ SET_LD_PATH=CAML_LD_LIBRARY_PATH="$(LD_PATH)"
 #   variable. Note that for Windows we add Unix-syntax directory names in
 #   PATH, and Cygwin will translate it to Windows syntax.
 
+ifeq "$(wildcard $(TOPDIR)/config/Makefile)" ""
+INSTALLED_TESTSUITE=true
+include $(TOPDIR)/Makefile.config
+else
+INSTALLED_TESTSUITE=false
 include $(TOPDIR)/config/Makefile
+endif
 
 ifneq ($(USE_RUNTIME),)
 #Check USE_RUNTIME value
@@ -57,17 +63,30 @@ $(error If set, USE_RUNTIME must be equal to "d" (debug runtime) \
         or "i" (instrumented runtime))
 endif
 
+ifeq "$(INSTALLED_TESTSUITE)" "true"
+RUNTIME_VARIANT=-runtime-variant $(USE_RUNTIME)
+else
 RUNTIME_VARIANT=-I $(OTOPDIR)/asmrun -I $(OTOPDIR)/byterun \
                 -runtime-variant $(USE_RUNTIME)
+endif
 export OCAMLRUNPARAM?=v=0
 endif
 
+ifeq "$(INSTALLED_TESTSUITE)" "true"
+OCAMLRUN_NAME=ocamlrun$(USE_RUNTIME)$(EXE)
+OCAMLRUN_DIR=$(BINDIR)
+OCAMLRUN=$(OCAMLRUN_DIR)/$(OCAMLRUN_NAME)
+
+OCFLAGS=$(COMPFLAGS)
+OCOPTFLAGS=
+else
 OCAMLRUN_NAME=byterun/ocamlrun$(USE_RUNTIME)$(EXE)
 OCAMLRUN_DIR=$(OTOPDIR)
 OCAMLRUN=$(TOPDIR)/$(OCAMLRUN_NAME)
 
 OCFLAGS=-nostdlib -I $(OTOPDIR)/stdlib $(COMPFLAGS)
 OCOPTFLAGS=
+endif
 
 ifeq ($(SUPPORTS_SHARED_LIBRARIES),false)
   CUSTOM = -custom
@@ -75,11 +94,27 @@ else
   CUSTOM =
 endif
 
+ifeq "$(INSTALLED_TESTSUITE)" "true"
+OCAML=$(OCAMLRUN) $(BINDIR)/ocaml$(EXE) $(OCFLAGS) -noinit
+EXPECT_TEST=$(OCAMLRUN) $(LIBDIR)/testsuite/tools/expect_test$(EXE)
+else
 OCAML=$(OCAMLRUN) $(OTOPDIR)/ocaml $(OCFLAGS) -noinit
 EXPECT_TEST=$(OCAMLRUN) $(OTOPDIR)/testsuite/tools/expect_test$(EXE)
+endif
+# TODO Isn't this the wrong way around - shouldn't the submodule detection trump
+#      FLEXLINK detection?
 ifeq "$(FLEXLINK)" ""
   FLEXLINK_PREFIX=
 else
+  ifeq "$(INSTALLED_TESTSUITE)" "true"
+  ifeq "$(wildcard $(BINDIR)/flexlink.exe)" ""
+    FLEXLINK_PREFIX=
+  else
+    # TODO Already the case that opt.opt is required for the testsuite?
+    EMPTY=
+    FLEXLINK_PREFIX=OCAML_FLEXLINK="$(BINDIR)/flexlink.exe" $(EMPTY)
+  endif
+  else
   ifeq "$(wildcard $(TOPDIR)/flexdll/Makefile)" ""
     FLEXLINK_PREFIX=
   else
@@ -87,7 +122,27 @@ else
     FLEXLINK_PREFIX=OCAML_FLEXLINK="$(WINTOPDIR)/boot/ocamlrun \
 	                            $(WINTOPDIR)/flexdll/flexlink.exe" $(EMPTY)
   endif
+  endif
 endif
+ifeq "$(INSTALLED_TESTSUITE)" "true"
+OCAMLC=$(FLEXLINK_PREFIX)$(OCAMLRUN) $(BINDIR)/ocamlc.byte$(EXE) $(CUSTOM) \
+       $(OCFLAGS) $(RUNTIME_VARIANT)
+OCAMLOPT=$(FLEXLINK_PREFIX)$(OCAMLRUN) $(BINDIR)/ocamlopt.byte$(EXE) \
+         $(OCFLAGS) $(RUNTIME_VARIANT)
+OCAMLDOC=$(OCAMLRUN) $(BINDIR)/ocamldoc$(EXE)
+OCAMLLEX=$(OCAMLRUN) $(BINDIR)/ocamllex.byte$(EXE)
+OCAMLMKLIB=$(FLEXLINK_PREFIX)$(OCAMLRUN) $(BINDIR)/ocamlmklib.byte$(EXE) \
+           -ocamlc "$(BINDIR)/ocamlrun$(USE_RUNTIME)$(EXE) \
+                    $(BINDIR)/ocamlc.byte$(EXE) $(OCFLAGS) $(RUNTIME_VARIANT)" \
+           -ocamlopt "$(BINDIR)/ocamlrun$(USE_RUNTIME)$(EXE) \
+                      $(BINDIR)/ocamlopt.byte$(EXE) $(OCFLAGS) \
+                      $(RUNTIME_VARIANT)"
+OCAMLYACC=$(BINDIR)/ocamlyacc$(EXE)
+DUMPOBJ=$(OCAMLRUN) $(BASEDIR)/dumpobj.byte$(EXE)
+OBJINFO=$(OCAMLRUN) $(BINDIR)/ocamlobjinfo.byte$(EXE)
+OCAMLDEP=$(OCAMLRUN) $(BINDIR)/ocamldep.byte$(EXE)
+OCAMLDEBUG=$(OCAMLRUN) `$(CYGPATH) $(BINDIR)/ocamldebug$(EXE)`
+else
 OCAMLC=$(FLEXLINK_PREFIX)$(OCAMLRUN) $(OTOPDIR)/ocamlc $(CUSTOM) $(OCFLAGS) \
        $(RUNTIME_VARIANT)
 OCAMLOPT=$(FLEXLINK_PREFIX)$(OCAMLRUN) $(OTOPDIR)/ocamlopt $(OCFLAGS) \
@@ -104,6 +159,7 @@ DUMPOBJ=$(OCAMLRUN) $(OTOPDIR)/tools/dumpobj
 OBJINFO=$(OCAMLRUN) $(OTOPDIR)/tools/ocamlobjinfo
 OCAMLDEP=$(OCAMLRUN) $(OTOPDIR)/tools/ocamldep
 OCAMLDEBUG=$(OCAMLRUN) `$(CYGPATH) $(TOPDIR)/debugger/ocamldebug$(EXE)`
+endif
 BYTECODE_ONLY=[ "$(ARCH)" = "none" -o "$(ASM)" = "none" ]
 NATIVECODE_ONLY=false
 

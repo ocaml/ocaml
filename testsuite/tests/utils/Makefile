@@ -14,10 +14,16 @@
 #**************************************************************************
 
 BASEDIR=../..
+ifeq "$(wildcard $(BASEDIR)/../config/Makefile)" ""
+MODULES=testing
+INCLUDES= -I +compiler-libs
+ADD_COMPFLAGS=$(INCLUDES) ocamlcommon.cma
+else
 MODULES=testing misc identifiable numbers strongly_connected_components
 INCLUDES= -I $(OTOPDIR)/utils
 ADD_COMPFLAGS=$(INCLUDES)
 CMO_FILES+="misc.cmo"
+endif
 
 include $(BASEDIR)/makefiles/Makefile.several
 include $(BASEDIR)/makefiles/Makefile.common

@@ -12,14 +12,20 @@
 #*                                                                        *
 #**************************************************************************
 
+
 BASEDIR=..
 MAIN=expect_test
 PROG=$(MAIN)$(EXE)
+ifeq "$(wildcard $(BASEDIR)/../config/Makefile)" ""
+COMPFLAGS=-I +compiler-libs
+LIBRARIES=ocamlcommon ocamlbytecomp ocamltoplevel
+else
 COMPFLAGS=-I $(OTOPDIR)/parsing -I $(OTOPDIR)/utils \
           -I $(OTOPDIR)/driver -I $(OTOPDIR)/toplevel
 LIBRARIES=../../compilerlibs/ocamlcommon \
           ../../compilerlibs/ocamlbytecomp \
           ../../compilerlibs/ocamltoplevel
+endif
 
 $(PROG): $(MAIN).cmo
 	$(OCAMLC) -linkall -o $(PROG) $(LIBRARIES:=.cma) $(MAIN).cmo

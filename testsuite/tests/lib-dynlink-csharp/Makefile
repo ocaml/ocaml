@@ -17,9 +17,22 @@ BASEDIR=../..
 CSC_COMMAND=csc
 CSC=$(CSC_COMMAND) $(CSC_FLAGS)
 
+ifeq "$(wildcard $(BASEDIR)/../config/Makefile)" ""
+COMPFLAGS=
+LD_PATH=$(TOPDIR)/stublibs
+LIBASMRUN_DIR=$(LIBDIR)
+LIBCAMLRUN_DIR=$(LIBDIR)
+export UNIX_LIB_DIR=$(LIBDIR)
+export BIGARRAY_LIB_DIR=$(LIBDIR)
+else
 COMPFLAGS=-I $(OTOPDIR)/otherlibs/bigarray -I $(OTOPDIR)/otherlibs/dynlink \
           -I $(OTOPDIR)/byterun
+export UNIX_LIB_DIR=../../../otherlibs/win32unix
+export BIGARRAY_LIB_DIR=../../../otherlibs/bigarray
 LD_PATH=$(TOPDIR)/otherlibs/win32unix:$(TOPDIR)/otherlibs/bigarray:$(TOPDIR)/otherlibs/dynlink
+LIBCAMLRUN_DIR=$(CTOPDIR)/byterun
+LIBASMRUN_DIR=$(CTOPDIR)/asmrun
+endif
 
 default:
 	@$(SET_LD_PATH) $(MAKE) all
@@ -61,7 +74,7 @@ bytecode-dll:
 	  rm -f main.exe main_obj.$(O) main.dll; \
 	  $(OCAMLC) -output-obj -o main_obj.$(O) dynlink.cma entry.c main.ml; \
 	  $(MKDLL) -maindll -o main.dll main_obj.$(O) entry.$(O) \
-	           $(CTOPDIR)/byterun/libcamlrun.$(A)  $(BYTECCLIBS); \
+	           $(LIBCAMLRUN_DIR)/libcamlrun.$(A)  $(BYTECCLIBS); \
 	  $(CSC) /nologo /nowarn:1668 /out:main.exe main.cs; \
 	  ./main.exe >bytecode-dll.result; \
 	  $(DIFF) bytecode.reference bytecode-dll.result >/dev/null \
@@ -94,7 +107,7 @@ native-dll:
 	  $(OCAMLOPT) -output-obj -o main_obj.$(O) dynlink.cmxa entry.c \
 	              main.ml; \
 	  $(MKDLL) -maindll -o main.dll main_obj.$(O) entry.$(O) \
-		         $(CTOPDIR)/asmrun/libasmrun.lib $(NATIVECCLIBS); \
+		         $(LIBASMRUN_DIR)/libasmrun.lib $(NATIVECCLIBS); \
 	  $(CSC) /nologo /nowarn:1668 /out:main.exe main.cs; \
 	  ./main.exe > native-dll.result; \
 	  $(DIFF) native.reference native-dll.result >/dev/null \
@@ -110,8 +123,14 @@ clean: defaultclean
 
 include $(BASEDIR)/makefiles/Makefile.common
 
+ifeq "$(wildcard $(BASEDIR)/../config/Makefile)" ""
+ifneq ($(FLEXLINK_PREFIX),)
+MKDLL=$(BINDIR)/flexlink.exe $(FLEXLINK_FLAGS)
+endif
+else
 ifneq ($(FLEXLINK_PREFIX),)
 MKDLL=$(WINTOPDIR)/boot/ocamlrun $(WINTOPDIR)/flexdll/flexlink.exe $(FLEXLINK_FLAGS)
+endif
 endif
 
 ifeq ($(HOST),msvc)

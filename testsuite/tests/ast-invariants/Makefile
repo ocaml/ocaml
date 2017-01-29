@@ -13,9 +13,15 @@
 #########################################################################
 
 BASEDIR=../..
+
+ifeq "$(wildcard $(BASEDIR)/../config/Makefile)" ""
+COMPFLAGS=-I +compiler-libs
+LIBRARIES=ocamlcommon unix
+else
 COMPFLAGS=-I $(OTOPDIR)/parsing -I $(OTOPDIR)/utils \
           -I $(OTOPDIR)/otherlibs/$(UNIXLIBVAR)unix
 LIBRARIES=../../../compilerlibs/ocamlcommon unix
+endif
 MODULES=
 MAIN_MODULE=test
 

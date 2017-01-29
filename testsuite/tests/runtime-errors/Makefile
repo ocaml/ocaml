@@ -15,6 +15,12 @@
 
 BASEDIR=../..
 
+ifeq "$(wildcard $(BASEDIR)/../config/Makefile)" ""
+CONFIG_HEADER=$(TOPDIR)/caml/config.h
+else
+CONFIG_HEADER=$(TOPDIR)/config/s.h
+endif
+
 .PHONY: default
 default:
 	@$(MAKE) compile
@@ -30,7 +36,7 @@ compile:
 	    $(OCAMLOPT) -w a -o $$F.native$(EXE) $$f; \
 	  fi; \
 	done
-	@grep -q HAS_STACK_OVERFLOW_DETECTION $(TOPDIR)/config/s.h \
+	@grep -q HAS_STACK_OVERFLOW_DETECTION $(CONFIG_HEADER) \
 	  || rm -f stackoverflow.native$(EXE)
 
 # Cygwin doesn't allow the stack limit to be changed - the 4096 is

@@ -15,7 +15,11 @@
 
 BASEDIR=../..
 
+ifeq "$(wildcard $(BASEDIR)/../config/Makefile)" ""
+CC=$(NATIVECC) -I $(CTOPDIR)
+else
 CC=$(NATIVECC) -I $(CTOPDIR)/byterun
+endif
 COMPFLAGS=-I $(OTOPDIR)/otherlibs/unix
 LD_PATH=$(TOPDIR)/otherlibs/unix
 

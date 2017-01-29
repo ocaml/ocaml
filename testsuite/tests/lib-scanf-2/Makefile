@@ -15,8 +15,13 @@
 
 BASEDIR=../..
 
+ifeq "$(wildcard $(BASEDIR)/../config/Makefile)" ""
+COMPFLAGS=
+LD_PATH=$(TOPDIR)/stublibs
+else
 COMPFLAGS=-I $(OTOPDIR)/otherlibs/$(UNIXLIBVAR)unix
 LD_PATH=$(TOPDIR)/otherlibs/$(UNIXLIBVAR)unix
+endif
 
 MYRUNTIME=`if [ -z "$(CUSTOM)" ]; then echo '$(OCAMLRUN)'; fi`
 

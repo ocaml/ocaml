@@ -15,7 +15,13 @@
 
 BASEDIR=../../..
 ADD_COMPFLAGS=-g -custom
+ifeq "$(wildcard $(BASEDIR)/../config/Makefile)" ""
+LD_PATH=$(TOPDIR)/stublibs
+TOPDIRS_SOURCE=$(TOPDIR)/compiler-libs/topdirs.cmi
+else
 LD_PATH=$(TOPDIR)/otherlibs/$(UNIXLIBVAR)unix
+TOPDIRS_SOURCE=$(TOPDIR)/toplevel/topdirs.cmi
+endif
 
 .PHONY: default
 default:
@@ -34,7 +40,7 @@ compile: $(ML_FILES) $(CMO_FILES)
 	@$(OCAMLC) $(ADD_COMPFLAGS) -c b.ml
 	@$(OCAMLC) $(ADD_COMPFLAGS) foo.cmo b.cmo -o c$(EXE)
 	@mkdir -p compiler-libs
-	@cp $(TOPDIR)/toplevel/topdirs.cmi compiler-libs/
+	@cp $(TOPDIRS_SOURCE) compiler-libs/
 
 .PHONY: run
 run:

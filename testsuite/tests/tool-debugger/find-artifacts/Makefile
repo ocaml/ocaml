@@ -16,7 +16,13 @@
 BASEDIR=../../..
 MAIN_MODULE=debuggee
 ADD_COMPFLAGS=-g -custom
+ifeq "$(wildcard $(BASEDIR)/../config/Makefile)" ""
+LD_PATH=$(TOPDIR)/stublibs
+TOPDIRS_SOURCE=$(TOPDIR)/compiler-libs/topdirs.cmi
+else
 LD_PATH=$(TOPDIR)/otherlibs/$(UNIXLIBVAR)unix
+TOPDIRS_SOURCE=$(TOPDIR)/toplevel/topdirs.cmi
+endif
 
 .PHONY: default
 default:
@@ -42,7 +48,7 @@ compile: $(ML_FILES) $(CMO_FILES)
 	           $(O_FILES) $(CMA_FILES) $(CMO_FILES) $(ADD_CMO_FILES) \
 						 out/blah.cmo out/foo.cmo
 	@mkdir -p compiler-libs
-	@cp $(TOPDIR)/toplevel/topdirs.cmi compiler-libs/
+	@cp $(TOPDIRS_SOURCE) compiler-libs/
 
 .PHONY: run
 run:

@@ -17,8 +17,12 @@ BASEDIR=../..
 LIBRARIES=unix bigarray
 C_FILES=bigarrfstub
 F_FILES=bigarrf
+ifeq "$(wildcard $(BASEDIR)/../config/Makefile)" ""
+C_INCLUDES+=-I $(OTOPDIR)/caml
+else
 ADD_COMPFLAGS=-I $(OTOPDIR)/otherlibs/bigarray \
 	      -I $(OTOPDIR)/otherlibs/$(UNIXLIB)
+endif
 
 include $(BASEDIR)/makefiles/Makefile.several
 include $(BASEDIR)/makefiles/Makefile.common

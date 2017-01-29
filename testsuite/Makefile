@@ -18,7 +18,12 @@ NO_PRINT=`$(MAKE) empty --no-print-directory >/dev/null 2>&1 \
 	  && echo --no-print-directory`
 
 FIND=find
+
+ifeq "$(wildcard ../config/Makefile)" ""
+include ../Makefile.config
+else
 include ../config/Makefile
+endif
 
 .PHONY: default
 default:

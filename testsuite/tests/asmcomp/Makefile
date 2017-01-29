@@ -15,6 +15,14 @@
 
 BASEDIR=../..
 
+ifeq "$(wildcard $(BASEDIR)/../config/Makefile)" ""
+INCLUDES=-I +compiler-libs
+
+OTHEROBJS=ocamlcommon.cma ocamloptcomp.cma
+
+ARGS_arith=-I $(BASEDIR)/.. mainarith.c
+ARGS_staticalloc=-I +compiler-libs ocamlcommon.cmxa
+else
 INCLUDES=\
   -I $(OTOPDIR)/parsing \
   -I $(OTOPDIR)/utils \
@@ -26,6 +34,10 @@ INCLUDES=\
 OTHEROBJS=\
   $(OTOPDIR)/compilerlibs/ocamlcommon.cma \
   $(OTOPDIR)/compilerlibs/ocamloptcomp.cma
+
+ARGS_arith=-I $(OTOPDIR)/byterun mainarith.c
+ARGS_staticalloc=-I $(OTOPDIR)/utils config.cmx
+endif
 
 OBJS=parsecmmaux.cmo parsecmm.cmo lexcmm.cmo
 
@@ -43,7 +55,7 @@ all:
 main.cmo: parsecmm.cmo
 
 codegen: parsecmm.ml lexcmm.ml $(OBJS:.cmo=.cmi) $(OBJS) main.cmo
-	@$(OCAMLC) $(LINKFLAGS) -o codegen $(OTHEROBJS) $(OBJS) main.cmo
+	@$(OCAMLC) $(LINKFLAGS) -o codegen $(INCLUDES) $(OTHEROBJS) $(OBJS) main.cmo
 
 parsecmm.mli parsecmm.ml: parsecmm.mly
 	@$(OCAMLYACC) -q parsecmm.mly
@@ -73,13 +85,11 @@ ARGS_quicksort=-DSORT -DFUN=quicksort main.c
 ARGS_quicksort2=-DSORT -DFUN=quicksort main.c
 ARGS_soli=-DUNIT_INT -DFUN=solitaire main.c
 ARGS_integr=-DINT_FLOAT -DFUN=test main.c
-ARGS_arith=-I $(OTOPDIR)/byterun mainarith.c
 ARGS_checkbound=-DCHECKBOUND main.c
 ARGS_tagged-fib=-DINT_INT -DFUN=fib main.c
 ARGS_tagged-integr=-DINT_FLOAT -DFUN=test main.c
 ARGS_tagged-quicksort=-DSORT -DFUN=quicksort main.c
 ARGS_tagged-tak=-DUNIT_INT -DFUN=takmain main.c
-ARGS_staticalloc=-I $(OTOPDIR)/utils config.cmx
 ARGS_catch-try=-DINT_INT -DFUN=catch_exit main.c
 ARGS_catch-rec=-DINT_INT -DFUN=catch_fact main.c
 ARGS_even-odd=-DINT_INT -DFUN=is_even main.c

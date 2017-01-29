@@ -359,3 +359,9 @@ partialclean::
 	rm -f bytecomp/opcodes.ml
 
 beforedepend:: bytecomp/opcodes.ml
+
+install-testsuite:
+	mkdir -p "$(INSTALL_LIBDIR)/testsuite"
+	cp -R testsuite/ "$(INSTALL_LIBDIR)/"
+	cp Makefile.tools "$(INSTALL_LIBDIR)/testsuite/"
+	cp tools/dumpobj "$(INSTALL_LIBDIR)/testsuite/dumpobj.byte$(EXE)"

@@ -14,7 +14,11 @@
 #**************************************************************************
 
 TOPDIR=$(BASEDIR)/..
+ifeq "$(wildcard $(TOPDIR)/Makefile.tools)" ""
+include $(BASEDIR)/Makefile.tools
+else
 include $(TOPDIR)/Makefile.tools
+endif
 
 defaultpromote:
 	@for file in *.reference; do \

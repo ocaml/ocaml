@@ -14,10 +14,15 @@
 #**************************************************************************
 
 BASEDIR=../..
+ifeq "$(wildcard $(BASEDIR)/../config/Makefile)" ""
+COMPFLAGS=-I +compiler-libs
+LIBRARIES=ocamlcommon
+else
 COMPFLAGS=-I $(OTOPDIR)/parsing
+LIBRARIES=../../../compilerlibs/ocamlcommon
+endif
 MODULES=
 MAIN_MODULE=test
-LIBRARIES=../../../compilerlibs/ocamlcommon
 
 include $(BASEDIR)/makefiles/Makefile.one
 include $(BASEDIR)/makefiles/Makefile.common

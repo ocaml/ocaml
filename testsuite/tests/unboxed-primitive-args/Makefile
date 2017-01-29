@@ -18,7 +18,11 @@ LIBRARIES=unix bigarray
 MODULES=common
 MAIN_MODULE=main
 C_FILES=test_common stubs
+ifeq "$(wildcard $(BASEDIR)/../config/Makefile)" ""
+C_INCLUDES=-I $(OTOPDIR)/caml
+else
 C_INCLUDES=-I $(OTOPDIR)/otherlibs/bigarray
+endif
 ADD_COMPFLAGS=-I $(OTOPDIR)/otherlibs/bigarray \
 	      -I $(OTOPDIR)/otherlibs/$(UNIXLIB)
 

@@ -17,10 +17,17 @@ BASEDIR=../..
 LIBRARIES=ocaml
 MODULES=foo cached_cmi
 MAIN_MODULE=main
+ifeq "$(wildcard $(BASEDIR)/../config/Makefile)" ""
+COMPFLAGS=-I +compiler-libs
+LIBRARIES=ocamlcommon ocamlbytecomp ocamltoplevel
+OCAMLCOMMON=ocamlcommon.cma
+else
 COMPFLAGS=-I $(OTOPDIR)/typing -I $(OTOPDIR)/toplevel
 LIBRARIES=../../../compilerlibs/ocamlcommon \
           ../../../compilerlibs/ocamlbytecomp \
           ../../../compilerlibs/ocamltoplevel
+OCAMLCOMMON=../../../compilerlibs/ocamlcommon.cma
+endif
 
 include $(BASEDIR)/makefiles/Makefile.one
 include $(BASEDIR)/makefiles/Makefile.common
@@ -30,5 +37,5 @@ GENERATED_SOURCES+=cached_cmi.ml
 EXEC_ARGS=$(OCFLAGS) -noinit input.ml
 
 cached_cmi.ml: foo.cmi gen_cached_cmi.ml
-	@$(OCAML) ../../../compilerlibs/ocamlcommon.cma -I $(OTOPDIR)/typing \
+	@$(OCAML) $(OCAMLCOMMON) -I $(OTOPDIR)/typing \
 	          gen_cached_cmi.ml > $@
