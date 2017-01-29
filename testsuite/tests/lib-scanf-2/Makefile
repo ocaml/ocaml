@@ -40,7 +40,7 @@ compile: tscanf2_io.cmo
 
 run:
 	@printf " ... testing with ocamlc"
-	@$(MYRUNTIME) ./master.byte "$(OTOPDIR)/boot/ocamlrun$(EXE) \
+	@$(MYRUNTIME) ./master.byte "$(OCAMLRUN_DIR)/$(OCAMLRUN_NAME) \
 	                                     `$(CYGPATH) ./slave.byte`" \
 	             >result.byte 2>&1
 	@$(DIFF) reference result.byte >/dev/null \
