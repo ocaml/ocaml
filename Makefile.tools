@@ -100,6 +100,7 @@ OCAMLMKLIB=$(FLEXLINK_PREFIX)$(OCAMLRUN) $(OTOPDIR)/tools/ocamlmklib \
 OCAMLYACC=$(TOPDIR)/yacc/ocamlyacc$(EXE)
 DUMPOBJ=$(OCAMLRUN) $(OTOPDIR)/tools/dumpobj
 OBJINFO=$(OCAMLRUN) $(OTOPDIR)/tools/ocamlobjinfo
+OCAMLDEP=$(OCAMLRUN) $(OTOPDIR)/tools/ocamldep
 BYTECODE_ONLY=[ "$(ARCH)" = "none" -o "$(ASM)" = "none" ]
 NATIVECODE_ONLY=false
 

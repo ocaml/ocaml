@@ -3,7 +3,6 @@
 #  Makefile.build uses -no-alias-deps only for lib.ml/mli
 #  Makefile.build2 has no lib.ml, and uses -no-alias-deps for components too
 
-OCAMLDEP=$(OCAMLRUN) $(OTOPDIR)/tools/ocamldep
 SOURCES = A.ml B.ml C.ml D.ml
 LINKS = $(SOURCES:%=Lib%)
 DEPENDS = depend.mk depend.mk2 depend.mod depend.mod2 depend.mod3
