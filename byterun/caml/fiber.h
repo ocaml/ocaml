@@ -44,4 +44,8 @@ int  caml_running_main_fiber();
 value caml_switch_stack(value stk);
 value caml_fiber_death();
 
+#ifdef NATIVE_CODE
+void caml_get_stack_sp_pc (value stack, char** sp /* out */, uintnat* pc /* out */);
+#endif
+
 #endif /* CAML_FIBER_H */
