@@ -19,6 +19,7 @@
 
 #include "caml/alloc.h"
 #include "caml/backtrace.h"
+#include "caml/fiber.h"
 #include "caml/memory.h"
 #include "caml/misc.h"
 #include "caml/mlvalues.h"
@@ -83,19 +84,12 @@ frame_descr * caml_next_frame_descriptor(uintnat * pc, char ** sp)
       *sp -= (d->frame_size & 0xFFFC);
 #endif
       *pc = Saved_return_address(*sp);
-#ifdef Mask_already_scanned
-      *pc = Mask_already_scanned(*pc);
-#endif
       return d;
     } else {
       /* Special frame marking the top of a stack chunk for an ML callback.
          Skip C portion of stack and continue with next ML stack chunk. */
       *sp = (char*)CAML_DOMAIN_STATE->stack_high;
-      *pc = Saved_return_address(*sp);
-#ifdef Mask_already_scanned
-      *pc = Mask_already_scanned(*pc);
-#endif
-
+      *pc = 0;
       return d;
     }
   }
@@ -150,7 +144,63 @@ void caml_stash_backtrace(value exn, uintnat pc, char * sp, uintnat trapsp_off)
 CAMLprim value caml_get_current_callstack(value max_frames_value) {
   CAMLparam1(max_frames_value);
   CAMLlocal1(trace);
-  caml_fatal_error("caml_get_current_callstack");
+
+  /* we use `intnat` here because, were it only `int`, passing `max_int`
+     from the OCaml side would overflow on 64bits machines. */
+  intnat max_frames = Long_val(max_frames_value);
+  intnat trace_pos;
+  char *sp;
+  uintnat pc;
+  value stack;
+  char *stack_high;
+
+  /* first compute the size of the trace */
+  {
+    stack = CAML_DOMAIN_STATE->current_stack;
+    stack_high = (char*)Stack_high(stack);
+    caml_get_stack_sp_pc(stack, &sp, &pc);
+    trace_pos = 0;
+
+    while(1) {
+      frame_descr *descr = caml_next_frame_descriptor(&pc, &sp);
+      if (descr == NULL) break;
+      if (trace_pos >= max_frames) break;
+      if (descr->frame_size == 0xFFFF) {
+        stack = Stack_parent(stack);
+        if (stack == Val_unit) break;
+        stack_high = (char*)Stack_high(stack);
+        caml_get_stack_sp_pc(stack, &sp, &pc);
+      } else {
+        ++trace_pos;
+      }
+    }
+  }
+
+  trace = caml_alloc((mlsize_t) trace_pos, 0);
+
+  /* then collect the trace */
+  {
+    stack = CAML_DOMAIN_STATE->current_stack;
+    stack_high = (char*)Stack_high(stack);
+    caml_get_stack_sp_pc(stack, &sp, &pc);
+    trace_pos = 0;
+
+    while(1) {
+      frame_descr *descr = caml_next_frame_descriptor(&pc, &sp);
+      if (descr == NULL) break;
+      if (trace_pos >= max_frames) break;
+      if (descr->frame_size == 0xFFFF) {
+        stack = Stack_parent(stack);
+        if (stack == Val_unit) break;
+        stack_high = (char*)Stack_high(stack);
+        caml_get_stack_sp_pc(stack, &sp, &pc);
+      } else {
+        caml_modify_field(trace, trace_pos, Val_Descrptr(descr));
+        ++trace_pos;
+      }
+    }
+  }
+
   CAMLreturn(trace);
 }
 
