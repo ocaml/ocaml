@@ -34,7 +34,7 @@ cp config/s-nt.h config/s.h
 #cp config/Makefile.msvc config/Makefile
 cp config/Makefile.msvc64 config/Makefile
 
-PREFIX="C:/Program Files/OCaml"
+PREFIX=C:/ocaml
 echo "Edit config/Makefile so set PREFIX=$PREFIX"
 cp config/Makefile config/Makefile.bak
 sed -e "s|PREFIX=.*|PREFIX=$PREFIX|" config/Makefile.bak > config/Makefile
@@ -45,3 +45,4 @@ run "make bootstrap" make -f Makefile.nt bootstrap
 run "make opt" make -f Makefile.nt opt
 run "make opt.opt" make -f Makefile.nt opt.opt
 run "make install" make -f Makefile.nt install
+run "make install-testsuite" make -f Makefile.nt install-testsuite

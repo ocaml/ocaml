@@ -28,7 +28,7 @@ environment:
     CYG_ROOT: C:/cygwin
     CYG_MIRROR: http://mirrors.kernel.org/sourceware/cygwin/
     CYG_CACHE: C:/cygwin/var/cache/setup
-    OCAMLROOT: "%PROGRAMFILES%/OCaml"
+    OCAMLROOT: C:/ocaml
 
 cache:
   - C:\cygwin\var\cache\setup
@@ -68,4 +68,4 @@ build_script:
 test_script:
   - ocamlc -version
   - set CAML_LD_LIBRARY_PATH=%OCAMLROOT%/lib/stublibs
-  - '%CYG_ROOT%/bin/bash -lc "cd $APPVEYOR_BUILD_FOLDER && make -f Makefile.nt tests"'
+  - '%CYG_ROOT%/bin/bash -lc "$APPVEYOR_BUILD_FOLDER/appveyor_test.sh"'
