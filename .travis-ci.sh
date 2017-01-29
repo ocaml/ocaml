@@ -38,8 +38,14 @@ EOF
     make world.opt
     make ocamlnat
     make install
-    (cd testsuite && make all)
-    (cd testsuite && make USE_RUNTIME="d" all)
+    if test "$TESTSUITE" = "install" ; then
+      make install-testsuite
+      (cd $PREFIX/lib/ocaml/testsuite && make all)
+      (cd $PREFIX/lib/ocaml/testsuite && make USE_RUNTIME="d" all)
+    else
+      (cd testsuite && make all)
+      (cd testsuite && make USE_RUNTIME="d" all)
+    fi
     # check_all_arches checks tries to compile all backends in place,
     # we need to redo (small parts of) world.opt afterwards
     make check_all_arches
