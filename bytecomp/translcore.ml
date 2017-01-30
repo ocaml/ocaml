@@ -208,8 +208,6 @@ let primitives_table = create_hashtable 57 [
   "%obj_set_field", Parraysetu Pgenarray;
   "%obj_is_int", Pisint;
   "%lazy_force", Plazyforce;
-  "%perform", Pperform;
-  "%resume", Presume;
   "%nativeint_of_int", Pbintofint Pnativeint;
   "%nativeint_to_int", Pintofbint Pnativeint;
   "%nativeint_neg", Pnegbint Pnativeint;
@@ -333,6 +331,8 @@ let find_primitive loc prim_name =
     | "%loc_LINE" -> Ploc Loc_LINE
     | "%loc_POS" -> Ploc Loc_POS
     | "%loc_MODULE" -> Ploc Loc_MODULE
+    | "%perform" -> Pperform loc 
+    | "%resume"-> Presume loc
     | name -> Hashtbl.find primitives_table name
 
 let transl_prim loc prim args =
@@ -1225,11 +1225,11 @@ and transl_handler e body val_caselist exn_caselist eff_caselist =
        (fn, arg)
     | body ->
        let param = Ident.create "param" in
-       (Lfunction (Curried, [param], body),
+       (Lfunction (Curried, [param], body), 
         Lconst(Const_base(Const_int 0)))
   in
-    Lprim(Presume, [Lprim(prim_alloc_stack, [val_fun; exn_fun; eff_fun]);
-                    body_fun; arg])
+    Lprim(Presume e.exp_loc, [Lprim(prim_alloc_stack, [val_fun; exn_fun; eff_fun]);
+                              body_fun; arg])
 
 (* Wrapper for class compilation *)
 
