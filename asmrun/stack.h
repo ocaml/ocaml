@@ -53,7 +53,7 @@
 
 #ifdef TARGET_amd64
 #define Saved_return_address(sp) *((intnat *)((sp) - 8))
-#define Next_chunk_offset 16
+#define Top_of_stack_offset 16
 #endif
 
 #ifdef TARGET_arm64

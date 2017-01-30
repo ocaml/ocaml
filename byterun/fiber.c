@@ -94,6 +94,19 @@ value caml_alloc_stack (value hval, value hexn, value heff) {
   CAMLreturn (stack);
 }
 
+void caml_get_stack_sp_pc (value stack, char** sp /* out */, uintnat* pc /* out */)
+{
+  Assert(Tag_val(stack) == Stack_tag);
+  char* p = (char*)(Stack_high(stack) + Stack_sp(stack));
+
+#ifndef Stack_grows_upwards
+  p += sizeof(struct caml_context) + sizeof(value);
+#else
+  p -= sizeof(struct caml_context) + sizeof(value);
+#endif
+  *sp = p;
+  *pc = Saved_return_address(*sp);
+}
 
 void caml_scan_stack(scanning_action f, value stack)
 {
@@ -129,11 +142,19 @@ next_chunk:
   if (sp == (char*)Stack_high(stack)) return;
   context = (struct caml_context*)sp;
   regs = context->gc_regs;
+#ifndef Stack_grows_upwards
   sp += sizeof(struct caml_context);
+#else
+  sp -= sizeof(struct caml_context);
+#endif
 
   if (sp == (char*)Stack_high(stack)) return;
   retaddr = *(uintnat*)sp;
+#ifndef Stack_grows_upwards
   sp += sizeof(value);
+#else
+  sp -= sizeof(value);
+#endif
 
   while(1) {
     /* Find the descriptor corresponding to the return address */
@@ -165,9 +186,9 @@ next_chunk:
     } else {
       /* This marks the top of an ML stack chunk. */
 #ifndef Stack_grows_upwards
-      sp += Next_chunk_offset;
+      sp += Top_of_stack_offset;
 #else
-      sp -= Next_chunk_offset;
+      sp -= Top_of_stack_offset;
 #endif
       goto next_chunk;
     }
