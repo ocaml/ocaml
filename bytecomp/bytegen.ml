@@ -311,7 +311,7 @@ let comp_primitive p sz args =
   | Psetfloatfield n -> Ksetfloatfield n
   | Pduprecord _ -> Kccall("caml_obj_dup", 1)
   | Pccall p -> Kccall(p.prim_name, p.prim_arity)
-  | Pperform ->
+  | Pperform loc ->
       check_stack (sz + 4);
       Kperform
   | Pnegint -> Knegint
@@ -632,7 +632,7 @@ let rec comp_expr env exp sz cont =
                  (Kmakeblock(List.length args, 0) ::
                   Kccall("caml_make_array", 1) :: cont)
       end
-  | Lprim(Presume, args) ->
+  | Lprim(Presume loc, args) ->
       let nargs = List.length args - 1 in
       assert (nargs = 2);
       check_stack (sz + 3);
