@@ -532,6 +532,22 @@ void caml_restore_stack()
   load_stack(CAML_DOMAIN_STATE->current_stack);
 }
 
+value caml_reverse_fiber_stack (value stack)
+{
+  Assert(Tag_val(stack) == Stack_tag);
+  value next = Stack_parent(stack);
+  value next_of_next = Val_unit;
+
+  while (next != Val_unit) {
+    next_of_next = Stack_parent(next);
+    Stack_parent(next) = stack;
+    stack = next;
+    next = next_of_next;
+  }
+
+  return stack;
+}
+
 #ifdef DEBUG
 uintnat stack_sp(value stk) {
   return Stack_sp(stk);
