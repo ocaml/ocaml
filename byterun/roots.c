@@ -40,7 +40,6 @@ intnat caml_globals_inited = 0;
 static intnat caml_globals_scanned = 0;
 #endif
 
-CAMLexport __thread struct caml__roots_block *caml_local_roots = NULL;
 CAMLexport void (*caml_scan_roots_hook)(scanning_action, struct domain*) = NULL;
 
 CAMLexport void caml_do_local_roots (scanning_action f, struct domain* domain)
@@ -64,7 +63,7 @@ CAMLexport void caml_do_local_roots (scanning_action f, struct domain* domain)
 #endif
 
   f(domain->state->current_stack, &(domain->state->current_stack));
-  for (lr = *(domain->local_roots); lr != NULL; lr = lr->next) {
+  for (lr = domain->state->local_roots; lr != NULL; lr = lr->next) {
     for (i = 0; i < lr->ntables; i++){
       for (j = 0; j < lr->nitems; j++){
         sp = &(lr->tables[i][j]);

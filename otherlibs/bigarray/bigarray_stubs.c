@@ -732,7 +732,7 @@ static int caml_ba_compare(value v1, value v2)
       if (e1 < e2) return -1; \
       if (e1 > e2) return 1; \
       if (e1 != e2) { \
-        caml_compare_unordered = 1; \
+        CAML_DOMAIN_STATE->compare_unordered = 1; \
         if (e1 == e1) return 1; \
         if (e2 == e2) return -1; \
       } \

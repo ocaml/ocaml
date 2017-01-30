@@ -67,12 +67,13 @@ static void clear_table (struct caml_ref_table *tbl)
 /* size in bytes */
 void caml_set_minor_heap_size (asize_t size)
 {
-  if (caml_domain_state->young_ptr != caml_domain_state->young_end) caml_minor_collection ();
+  struct caml_domain_state* domain_state = CAML_DOMAIN_STATE;
+  if (domain_state->young_ptr != domain_state->young_end) caml_minor_collection ();
 
   caml_reallocate_minor_heap(size);
 
-  reset_table (&caml_domain_state->remembered_set->major_ref);
-  reset_table (&caml_domain_state->remembered_set->minor_ref);
+  reset_table (&domain_state->remembered_set->major_ref);
+  reset_table (&domain_state->remembered_set->minor_ref);
 }
 
 //*****************************************************************************
@@ -87,7 +88,7 @@ static __thread value oldest_promoted = 0;
 static value alloc_shared(mlsize_t wosize, tag_t tag)
 {
   void* mem = caml_shared_try_alloc(caml_domain_self()->shared_heap, wosize, tag, 0 /* not promotion */);
-  caml_domain_state->allocated_words += Whsize_wosize(wosize);
+  CAML_DOMAIN_STATE->allocated_words += Whsize_wosize(wosize);
   if (mem == NULL) {
     caml_fatal_error("allocation failure during minor GC");
   }
@@ -104,7 +105,7 @@ static void oldify_one (value v, value *p, int promote_stack)
   mlsize_t sz, i;
   tag_t tag;
   struct caml_domain_state* domain_state =
-    promote_domain ? promote_domain->state : caml_domain_state;
+    promote_domain ? promote_domain->state : CAML_DOMAIN_STATE;
   struct caml_remembered_set *remembered_set = domain_state->remembered_set;
   char* young_ptr = domain_state->young_ptr;
   char* young_end = domain_state->young_end;
@@ -216,7 +217,7 @@ static void oldify_mopup (int promote_stack)
   value v, new_v, f;
   mlsize_t i;
   struct caml_domain_state* domain_state =
-    promote_domain ? promote_domain->state : caml_domain_state;
+    promote_domain ? promote_domain->state : CAML_DOMAIN_STATE;
   char* young_ptr = domain_state->young_ptr;
   char* young_end = domain_state->young_end;
 
@@ -265,7 +266,7 @@ void forward_pointer (value v, value *p) {
   mlsize_t offset;
   value fwd;
   struct caml_domain_state* domain_state =
-    promote_domain ? promote_domain->state : caml_domain_state;
+    promote_domain ? promote_domain->state : CAML_DOMAIN_STATE;
   char* young_ptr = domain_state->young_ptr;
   char* young_end = domain_state->young_end;
 

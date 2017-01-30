@@ -213,7 +213,7 @@ void caml_debugger_init(void)
   }
   open_connection();
   caml_debugger_in_use = 1;
-  caml_trap_barrier_off = 2; /* Bigger than default caml_trap_sp_off (1) */
+  CAML_DOMAIN_STATE->trap_barrier_off = 2; /* Bigger than default caml_trap_sp_off (1) */
 }
 
 static value getval(struct channel *chan)
@@ -232,19 +232,19 @@ static void putval(struct channel *chan, value val)
 static void safe_output_value(struct channel *chan, value val)
 {
   struct longjmp_buffer raise_buf;
-  struct caml_exception_context exception_ctx = {&raise_buf, caml_local_roots};
+  struct caml_exception_context exception_ctx = {&raise_buf, CAML_LOCAL_ROOTS};
   struct caml_exception_context* saved_external_raise;
 
   /* Catch exceptions raised by [caml_output_val] */
-  saved_external_raise = caml_external_raise;
+  saved_external_raise = CAML_DOMAIN_STATE->external_raise;
   if (sigsetjmp(raise_buf.buf, 0) == 0) {
-    caml_external_raise = &exception_ctx;
+    CAML_DOMAIN_STATE->external_raise = &exception_ctx;
     caml_output_val(chan, val, caml_read_root(marshal_flags));
   } else {
     /* Send wrong magic number, will cause [caml_input_value] to fail */
     caml_really_putblock(chan, "\000\000\000\000", 4);
   }
-  caml_external_raise = saved_external_raise;
+  CAML_DOMAIN_STATE->external_raise = saved_external_raise;
 }
 
 #define Pc(sp) ((code_t)((sp)[0]))
@@ -261,7 +261,7 @@ void caml_debugger(enum event_kind event)
   if (dbg_socket == -1) return;  /* Not connected to a debugger. */
 
   /* Reset current frame */
-  frame = caml_extern_sp + 1;
+  frame = CAML_DOMAIN_STATE->extern_sp + 1;
 
   /* Report the event to the debugger */
   switch(event) {
@@ -285,7 +285,7 @@ void caml_debugger(enum event_kind event)
   }
   caml_putword(dbg_out, caml_event_count);
   if (event == EVENT_COUNT || event == BREAKPOINT) {
-    caml_putword(dbg_out, caml_domain_state->stack_high - frame);
+    caml_putword(dbg_out, CAML_DOMAIN_STATE->stack_high - frame);
     caml_putword(dbg_out, (Pc(frame) - caml_start_code) * sizeof(opcode_t));
   } else {
     /* No PC and no stack frame associated with other events */
@@ -348,11 +348,11 @@ void caml_debugger(enum event_kind event)
 #endif
       break;
     case REQ_INITIAL_FRAME:
-      frame = caml_extern_sp + 1;
+      frame = CAML_DOMAIN_STATE->extern_sp + 1;
       /* Fall through */
     case REQ_GET_FRAME:
-      caml_putword(dbg_out, caml_domain_state->stack_high - frame);
-      if (frame < caml_domain_state->stack_high){
+      caml_putword(dbg_out, CAML_DOMAIN_STATE->stack_high - frame);
+      if (frame < CAML_DOMAIN_STATE->stack_high){
         caml_putword(dbg_out, (Pc(frame) - caml_start_code) * sizeof(opcode_t));
       }else{
         caml_putword (dbg_out, 0);
@@ -361,22 +361,22 @@ void caml_debugger(enum event_kind event)
       break;
     case REQ_SET_FRAME:
       i = caml_getword(dbg_in);
-      frame = caml_domain_state->stack_high - i;
+      frame = CAML_DOMAIN_STATE->stack_high - i;
       break;
     case REQ_UP_FRAME:
       i = caml_getword(dbg_in);
-      if (frame + Extra_args(frame) + i + 3 >= caml_domain_state->stack_high) {
+      if (frame + Extra_args(frame) + i + 3 >= CAML_DOMAIN_STATE->stack_high) {
         caml_putword(dbg_out, -1);
       } else {
         frame += Extra_args(frame) + i + 3;
-        caml_putword(dbg_out, caml_domain_state->stack_high - frame);
+        caml_putword(dbg_out, CAML_DOMAIN_STATE->stack_high - frame);
         caml_putword(dbg_out, (Pc(frame) - caml_start_code) * sizeof(opcode_t));
       }
       caml_flush(dbg_out);
       break;
     case REQ_SET_TRAP_BARRIER:
       i = caml_getword(dbg_in);
-      caml_trap_barrier_off = -i;
+      CAML_DOMAIN_STATE->trap_barrier_off = -i;
       break;
     case REQ_GET_LOCAL:
       i = caml_getword(dbg_in);
@@ -394,7 +394,7 @@ void caml_debugger(enum event_kind event)
       caml_flush(dbg_out);
       break;
     case REQ_GET_ACCU:
-      putval(dbg_out, *caml_extern_sp);
+      putval(dbg_out, *CAML_DOMAIN_STATE->extern_sp);
       caml_flush(dbg_out);
       break;
     case REQ_GET_HEADER:

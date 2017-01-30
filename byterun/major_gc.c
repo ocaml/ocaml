@@ -42,8 +42,8 @@ static uintnat default_slice_budget() {
      (still assuming steady state).
 
      Proportion of G consumed since the previous slice:
-                 PH = caml_domain_state->allocated_words / G
-                    = caml_domain_state->allocated_words * 3 * (100 + caml_percent_free)
+                 PH = CAML_DOMAIN_STATE->allocated_words / G
+                    = CAML_DOMAIN_STATE->allocated_words * 3 * (100 + caml_percent_free)
                       / (2 * caml_stat_heap_size * caml_percent_free)
      Proportion of extra-heap resources consumed since the previous slice:
                  PE = caml_extra_heap_resources
@@ -62,7 +62,7 @@ static uintnat default_slice_budget() {
   */
   uintnat heap_size = caml_heap_size(caml_domain_self()->shared_heap);
   double heap_words = (double)Wsize_bsize(heap_size);
-  double p = (double) caml_domain_state->allocated_words * 3.0 * (100 + caml_percent_free)
+  double p = (double) CAML_DOMAIN_STATE->allocated_words * 3.0 * (100 + caml_percent_free)
       / heap_words / caml_percent_free / 2.0;
 
   double total_work =
@@ -80,9 +80,10 @@ static struct pool* find_pool_to_rescan();
 
 static void mark_stack_push(value v) {
   Assert(Is_block(v));
-  if (caml_domain_state->mark_stack_count >= MARK_STACK_SIZE)
+  struct caml_domain_state* domain_state = CAML_DOMAIN_STATE;
+  if (domain_state->mark_stack_count >= MARK_STACK_SIZE)
     mark_stack_prune();
-  caml_domain_state->mark_stack[caml_domain_state->mark_stack_count++] = v;
+  domain_state->mark_stack[domain_state->mark_stack_count++] = v;
 }
 
 /* to fit scanning_action */
@@ -91,7 +92,8 @@ static void mark_stack_push_act(value v, value* ignored) {
 }
 
 static int mark_stack_pop(value* ret) {
-  if (caml_domain_state->mark_stack_count == 0) {
+  struct caml_domain_state* domain_state = CAML_DOMAIN_STATE;
+  if (domain_state->mark_stack_count == 0) {
     struct pool* p = find_pool_to_rescan();
     if (p) {
       caml_redarken_pool(p, &mark_stack_push_act);
@@ -99,7 +101,7 @@ static int mark_stack_pop(value* ret) {
       return 0;
     }
   }
-  *ret = caml_domain_state->mark_stack[--caml_domain_state->mark_stack_count];
+  *ret = domain_state->mark_stack[--domain_state->mark_stack_count];
   return 1;
 }
 
@@ -207,10 +209,10 @@ intnat caml_major_collection_slice(intnat howmuch)
   mark_work -= budget;
 
   caml_gc_log("Major slice: %lu alloc, %ld work, %ld sweep, %ld mark (%lu blocks)",
-              (unsigned long)caml_domain_state->allocated_words,
+              (unsigned long)CAML_DOMAIN_STATE->allocated_words,
               (long)computed_work, (long)sweep_work, (long)mark_work,
               (unsigned long)(stat_blocks_marked - blocks_marked_before));
-  caml_domain_state->allocated_words = 0;
+  CAML_DOMAIN_STATE->allocated_words = 0;
   caml_restore_stack_gc();
 
   if (budget > 0) {
@@ -238,7 +240,7 @@ void caml_finish_marking () {
   caml_do_local_roots(&caml_darken, caml_domain_self());
   caml_scan_global_roots(&caml_darken);
   caml_empty_mark_stack();
-  caml_domain_state->allocated_words = 0;
+  CAML_DOMAIN_STATE->allocated_words = 0;
   caml_restore_stack_gc();
   //caml_gc_log ("caml_finish_marking(1)");
 }
@@ -255,6 +257,7 @@ void caml_empty_mark_stack_domain (struct domain* domain)
 }
 
 void caml_finish_marking_domain (struct domain* domain) {
+  struct caml_domain_state* domain_state = CAML_DOMAIN_STATE;
   //caml_gc_log("caml_finish_marking_domain(0): domain=%d", domain->id);
   caml_save_stack_gc();
   caml_do_local_roots(&caml_darken, domain);
@@ -262,7 +265,7 @@ void caml_finish_marking_domain (struct domain* domain) {
   /* Previous step might have pushed values into our mark stack. Hence,
    * empty our mark stack */
   caml_empty_mark_stack();
-  caml_domain_state->allocated_words = 0;
+  domain_state->allocated_words = 0;
   caml_restore_stack_gc();
   //caml_gc_log("caml_finish_marking_domain(1): domain=%d", domain->id);
 }
@@ -304,9 +307,10 @@ static void mark_stack_prune ()
 {
   struct addrmap t = ADDRMAP_INIT;
   int count = 0, entry;
+  struct caml_domain_state* domain_state = CAML_DOMAIN_STATE;
   addrmap_iterator i;
-  uintnat mark_stack_count = caml_domain_state->mark_stack_count;
-  value* mark_stack = caml_domain_state->mark_stack;
+  uintnat mark_stack_count = domain_state->mark_stack_count;
+  value* mark_stack = domain_state->mark_stack;
 
   /* space used by the computations below */
   uintnat table_max = mark_stack_count / 100;
@@ -407,11 +411,11 @@ static void mark_stack_prune ()
       mark_stack[out++] = v;
     }
   }
-  caml_domain_state->mark_stack_count = out;
+  domain_state->mark_stack_count = out;
 
   caml_gc_log("Mark stack overflow. Postponing %d pools (%.1f%%, leaving %d).",
               count-start, 100. * (double)total / (double)mark_stack_count,
-              (int)caml_domain_state->mark_stack_count);
+              (int)domain_state->mark_stack_count);
 
 
   /* Add the pools to rescan to the global list.
@@ -435,6 +439,6 @@ static void mark_stack_prune ()
 
 
 void caml_init_major_gc() {
-  caml_domain_state->mark_stack = caml_stat_alloc(MARK_STACK_SIZE * sizeof(value));
-  caml_domain_state->mark_stack_count = 0;
+  CAML_DOMAIN_STATE->mark_stack = caml_stat_alloc(MARK_STACK_SIZE * sizeof(value));
+  CAML_DOMAIN_STATE->mark_stack_count = 0;
 }

@@ -1,0 +1,5 @@
+BYTE_DOMAIN_STATE(value*, extern_sp)
+BYTE_DOMAIN_STATE(intnat, trap_sp_off)
+BYTE_DOMAIN_STATE(intnat, trap_barrier_off)
+BYTE_DOMAIN_STATE(struct caml_exception_context*, external_raise)
+BYTE_DOMAIN_STATE(value, exn_bucket)
