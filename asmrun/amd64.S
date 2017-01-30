@@ -98,31 +98,31 @@
 #include "../byterun/caml/config.h"
 
 #define GET_DOMAIN_STATE(reg) \
-	movq	%r15, reg ; \
-	andq  $(0xffffffffffffffff << Minor_heap_align_bits), reg
+  movq  %r15, reg ; \
+  andq  $(0xffffffffffffffff << Minor_heap_align_bits), reg
 
 /* CR mshinwell: We should optimize the case where there are multiple
    loads/stores in one go to the domain state block. */
 
 #define DOMAIN_STATE(field_num, c_type, name)            \
   .macro load_caml_##name dest_reg:req ;                 \
-	GET_DOMAIN_STATE(\dest_reg) ;                    \
-	movq    (8 * field_num)(\dest_reg), \dest_reg ;  \
+  GET_DOMAIN_STATE(\dest_reg) ;                    \
+  movq    (8 * field_num)(\dest_reg), \dest_reg ;  \
   .endm ; \
   .macro store_caml_##name src_reg:req ;           \
-	GET_DOMAIN_STATE(%r11) ;                   \
-	movq    \src_reg, (8 * field_num)(%r11) ;  \
+  GET_DOMAIN_STATE(%r11) ;                   \
+  movq    \src_reg, (8 * field_num)(%r11) ;  \
   .endm ; \
   .macro test_caml_##name value:req ;            \
-	GET_DOMAIN_STATE(%r11) ;                 \
-	testq   \value, (8 * field_num)(%r11) ;  \
+  GET_DOMAIN_STATE(%r11) ;                 \
+  testq   \value, (8 * field_num)(%r11) ;  \
   .endm ; \
   .macro cmp_caml_##name reg:req ;               \
-	GET_DOMAIN_STATE(%rax) ;                 \
-	cmpq	(8 * field_num)(%rax), \reg ;    \
+  GET_DOMAIN_STATE(%rax) ;                 \
+  cmpq  (8 * field_num)(%rax), \reg ;    \
   .endm ; \
   .macro push_caml_##name ;                      \
-	load_caml_##name %r11 ;                  \
+  load_caml_##name %r11 ;                  \
         pushq   %r11 ;                           \
   .endm ; \
   .macro pop_caml_##name ;                       \
@@ -416,9 +416,9 @@ G(caml_system__code_begin):
         pushq   %rax; CFI_ADJUST (8);                                          \
     /* Update in OCaml stack's context, the pointer to gc_regs */              \
         movq    %rsp, C_ARG_1;                                                 \
-				PREPARE_FOR_C_CALL;																										 \
-				call 		GCALL(caml_update_gc_regs_slot);															 \
-				CLEANUP_AFTER_C_CALL; 																								 \
+        PREPARE_FOR_C_CALL;                                                    \
+        call    GCALL(caml_update_gc_regs_slot);                               \
+        CLEANUP_AFTER_C_CALL;                                                  \
     /* Save caml_young_ptr */                                                  \
         STORE_TL_VAR(%r15, caml_young_ptr);                                    \
     /* Save floating-point registers */                                        \
@@ -778,12 +778,34 @@ CFI_ENDPROC
 FUNCTION(G(caml_raise_exn))
 CFI_STARTPROC
 LBL(caml_raise_exn):
+        TEST_TL_VAR($1, caml_backtrace_active)
+        jne   LBL(116)
+        RESTORE_EXN_HANDLER_OCAML
+        ret
+LBL(116):
+        STORE_TL_VAR($0, caml_backtrace_pos)
+LBL(117):
+        movq    %rsp, %r10        /* Save OCaml stack pointer */
+        movq    %rax, %r12        /* Save exception bucket */
+        LOAD_TL_VAR(caml_system_sp, %rsp)
+        movq    %rax, C_ARG_1     /* arg 1: exception bucket */
+        movq    (%r10), C_ARG_2   /* arg 2: pc of raise */
+        leaq    8(%r10), C_ARG_3  /* arg 3: sp at raise */
+        movq    %r14, C_ARG_4     /* arg 4: sp offset of handler */
+        ENTER_FUNCTION
+        PREPARE_FOR_C_CALL
+        call    GCALL(caml_stash_backtrace)
+        CLEANUP_AFTER_C_CALL
+        LEAVE_FUNCTION
+        movq    %r12, %rax        /* Recover exception bucket */
         RESTORE_EXN_HANDLER_OCAML
         ret
 CFI_ENDPROC
 
 FUNCTION(G(caml_reraise_exn))
 CFI_STARTPROC
+        TEST_TL_VAR($1, caml_backtrace_active)
+        jne   LBL(117)
         RESTORE_EXN_HANDLER_OCAML
         ret
 CFI_ENDPROC
