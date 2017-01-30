@@ -50,8 +50,8 @@
 /* **** array.c */
 
 /* **** backtrace.c */
-#define backtrace_buffer caml_backtrace_buffer
-#define backtrace_last_exn caml_backtrace_last_exn
+/*#define backtrace_buffer (CAML_DOMAIN_STATE->caml_backtrace_buffer)
+  #define backtrace_last_exn (CAML_DOMAIN_STATE->caml_backtrace_last_exn)*/
 #define print_exception_backtrace caml_print_exception_backtrace
 
 /* **** callback.c */
@@ -68,7 +68,7 @@
 /* **** compact.c */
 
 /* **** compare.c */
-#define compare_unordered caml_compare_unordered
+/* #define compare_unordered caml_compare_unordered */
 
 /* **** custom.c */
 #define alloc_custom caml_alloc_custom
@@ -236,7 +236,7 @@
 #define format_caml_exception caml_format_exception /*SP*/
 
 /* **** roots.c */
-#define local_roots caml_local_roots
+//#define local_roots CAML_LOCAL_ROOTS /* seems unnecessary */
 #define do_local_roots caml_do_local_roots
 
 /* **** signals.c */
@@ -251,7 +251,7 @@
 #define stack_low caml_stack_low
 #define stack_high caml_stack_high
 #define stack_threshold caml_stack_threshold
-#define extern_sp caml_extern_sp
+/*#define extern_sp caml_extern_sp*/
 
 /* **** asmrun/startup.c */
 #define static_data_start caml_static_data_start

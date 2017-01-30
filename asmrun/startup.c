@@ -31,6 +31,7 @@
 #include "stack.h"
 #include "caml/sys.h"
 #include "caml/params.h"
+#include "caml/fiber.h"
 #ifdef HAS_UI
 #include "caml/ui.h"
 #endif
@@ -88,6 +89,8 @@ void caml_main(char **argv)
   value res;
   char tos;
 
+  CAML_INIT_DOMAIN_STATE;
+
   caml_init_startup_params();
   caml_init_ieee_floats();
 #ifdef _MSC_VER
@@ -97,7 +100,7 @@ void caml_main(char **argv)
   caml_init_gc ();
 
   /* Capture 16-byte aligned (ceil) system_stack_high */
-  caml_domain_state->system_stack_high =
+  CAML_DOMAIN_STATE->system_stack_high =
     (char*)((((uintnat)&tos + 16) >> 4) << 4);
 
   init_segments();
@@ -116,7 +119,7 @@ void caml_main(char **argv)
     return;
   }
   caml_init_main_stack();
-  res = caml_start_program(caml_domain_state->young_ptr);
+  res = caml_start_program(CAML_DOMAIN_STATE->young_ptr);
   if (Is_exception_result(res))
     caml_fatal_uncaught_exception(Extract_exception(res));
 }

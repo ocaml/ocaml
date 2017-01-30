@@ -52,7 +52,7 @@ extern void caml_raise_exception (char* young_ptr, value bucket) Noreturn;
 
 void caml_raise(value v)
 {
-  if (caml_domain_state->system_exnptr_offset == 0)
+  if (CAML_DOMAIN_STATE->system_exnptr_offset == 0)
     caml_fatal_uncaught_exception(v);
 
 #ifndef Stack_grows_upwards
@@ -60,22 +60,22 @@ void caml_raise(value v)
 #else
 #define PUSHED_AFTER >
 #endif
-  char* exception_pointer = caml_domain_state->system_stack_high
-                          - caml_domain_state->system_exnptr_offset;
-  while (caml_local_roots != NULL &&
-         (char *) caml_local_roots PUSHED_AFTER exception_pointer) {
-    Assert(caml_local_roots != NULL);
-    struct caml__mutex_unwind* m = caml_local_roots->mutexes;
+  char* exception_pointer = CAML_DOMAIN_STATE->system_stack_high
+                          - CAML_DOMAIN_STATE->system_exnptr_offset;
+  while (CAML_LOCAL_ROOTS != NULL &&
+         (char *) CAML_LOCAL_ROOTS PUSHED_AFTER exception_pointer) {
+    Assert(CAML_LOCAL_ROOTS != NULL);
+    struct caml__mutex_unwind* m = CAML_LOCAL_ROOTS->mutexes;
     while (m) {
       /* unlocked in reverse order of locking */
       caml_plat_unlock(m->mutex);
       m = m->next;
     }
-    caml_local_roots = caml_local_roots->next;
+    CAML_LOCAL_ROOTS = CAML_LOCAL_ROOTS->next;
   }
 #undef PUSHED_AFTER
 
-  caml_raise_exception(caml_domain_state->young_ptr, v);
+  caml_raise_exception(CAML_DOMAIN_STATE->young_ptr, v);
 }
 
 void caml_raise_constant(value tag)

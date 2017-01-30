@@ -29,6 +29,7 @@
 #include "caml/callback.h"
 #include "caml/custom.h"
 #include "caml/debugger.h"
+#include "caml/domain_state.h"
 #include "caml/dynlink.h"
 #include "caml/eventlog.h"
 #include "caml/exec.h"
@@ -230,6 +231,9 @@ CAMLexport void caml_main(char **argv)
   char * exe_name;
   static char proc_self_exe[256];
 
+  CAML_INIT_DOMAIN_STATE;
+
+  backtrace_cds_file_init();
   caml_init_startup_params();
   /* Machine-dependent initialization of the floating-point hardware
      so that it behaves as much as possible as specified in IEEE */
@@ -239,7 +243,6 @@ CAMLexport void caml_main(char **argv)
 #endif
   caml_init_custom_operations();
   caml_ext_table_init(&caml_shared_libs_path, 8);
-  caml_external_raise = NULL;
   /* Determine options and position of bytecode file */
   pos = 0;
 
@@ -279,6 +282,7 @@ CAMLexport void caml_main(char **argv)
   caml_read_section_descriptors(fd, &trail);
   /* Initialize the abstract machine */
   caml_init_gc ();
+  CAML_DOMAIN_STATE->external_raise = NULL;
   if (caml_startup_params.backtrace_enabled_init) caml_record_backtrace(Val_int(1));
   if (caml_startup_params.eventlog_enabled) caml_setup_eventlog();
   /* Initialize the interpreter */
@@ -312,13 +316,13 @@ CAMLexport void caml_main(char **argv)
   caml_debugger(PROGRAM_START);
   res = caml_interprete(caml_start_code, caml_code_size);
   if (Is_exception_result(res)) {
-    caml_exn_bucket = Extract_exception(res);
+    CAML_DOMAIN_STATE->exn_bucket = Extract_exception(res);
     if (caml_debugger_in_use) {
-      caml_extern_sp = &caml_exn_bucket; /* The debugger needs the
-                                            exception value.*/
+      CAML_DOMAIN_STATE->extern_sp = &CAML_DOMAIN_STATE->exn_bucket; /* The debugger needs the
+                                               exception value.*/
       caml_debugger(UNCAUGHT_EXC);
     }
-    caml_fatal_uncaught_exception(caml_exn_bucket);
+    caml_fatal_uncaught_exception(CAML_DOMAIN_STATE->exn_bucket);
   }
 }
 
@@ -331,9 +335,10 @@ CAMLexport void caml_startup_code(
            char **argv)
 {
   value res;
-  char * cds_file;
   char * exe_name;
   static char proc_self_exe[256];
+
+  CAML_INIT_DOMAIN_STATE;
 
   caml_init_startup_params();
   caml_init_ieee_floats();
@@ -344,19 +349,16 @@ CAMLexport void caml_startup_code(
 #ifdef DEBUG
   caml_startup_params.verb_gc = 63;
 #endif
-  cds_file = getenv("CAML_DEBUG_FILE");
-  if (cds_file != NULL) {
-    caml_cds_file = caml_strdup(cds_file);
-  }
+  backtrace_cds_file_init();
   exe_name = argv[0];
   if (caml_executable_name(proc_self_exe, sizeof(proc_self_exe)) == 0)
     exe_name = proc_self_exe;
-  caml_external_raise = NULL;
   caml_startup_params.exe_name = exe_name;
   caml_startup_params.main_argv = argv;
   /* Initialize the abstract machine */
   caml_init_gc ();
   if (caml_startup_params.backtrace_enabled_init) caml_record_backtrace(Val_int(1));
+  CAML_DOMAIN_STATE->external_raise = NULL;
   /* Initialize the interpreter */
   caml_interprete(NULL, 0);
   /* Initialize the debugger, if needed */
@@ -385,12 +387,12 @@ CAMLexport void caml_startup_code(
   caml_debugger(PROGRAM_START);
   res = caml_interprete(caml_start_code, caml_code_size);
   if (Is_exception_result(res)) {
-    caml_exn_bucket = Extract_exception(res);
+    CAML_DOMAIN_STATE->exn_bucket = Extract_exception(res);
     if (caml_debugger_in_use) {
-      caml_extern_sp = &caml_exn_bucket; /* The debugger needs the
-                                            exception value.*/
+      CAML_DOMAIN_STATE->extern_sp = &CAML_DOMAIN_STATE->exn_bucket; /* The debugger needs the
+                                               exception value.*/
       caml_debugger(UNCAUGHT_EXC);
     }
-    caml_fatal_uncaught_exception(caml_exn_bucket);
+    caml_fatal_uncaught_exception(CAML_DOMAIN_STATE->exn_bucket);
   }
 }

@@ -46,12 +46,13 @@ CAMLexport value caml_callbackN_exn(value closure, int narg, value args[])
   CAMLlocal1(parent_stack);
   int i;
   value res;
-  parent_stack = Stack_parent(caml_domain_state->current_stack);
-  Stack_parent(caml_domain_state->current_stack) = Val_unit;
+  struct caml_domain_state* domain_state = CAML_DOMAIN_STATE;
+  parent_stack = Stack_parent(domain_state->current_stack);
+  Stack_parent(domain_state->current_stack) = Val_unit;
 
   Assert(narg + 4 <= 256);
-  caml_extern_sp -= narg + 4;
-  for (i = 0; i < narg; i++) caml_extern_sp[i] = args[i]; /* arguments */
+  domain_state->extern_sp -= narg + 4;
+  for (i = 0; i < narg; i++) domain_state->extern_sp[i] = args[i]; /* arguments */
 
   opcode_t code[7] = {
     callback_code[0], narg + 3,
@@ -59,15 +60,15 @@ CAMLexport value caml_callbackN_exn(value closure, int narg, value args[])
     callback_code[4], callback_code[5], callback_code[6]
   };
 
-  caml_extern_sp[narg] = Val_pc (code + 4); /* return address */
-  caml_extern_sp[narg + 1] = Val_unit;    /* environment */
-  caml_extern_sp[narg + 2] = Val_long(0); /* extra args */
-  caml_extern_sp[narg + 3] = closure;
+  domain_state->extern_sp[narg] = Val_pc (code + 4); /* return address */
+  domain_state->extern_sp[narg + 1] = Val_unit;    /* environment */
+  domain_state->extern_sp[narg + 2] = Val_long(0); /* extra args */
+  domain_state->extern_sp[narg + 3] = closure;
   res = caml_interprete(code, sizeof(code));
-  if (Is_exception_result(res)) caml_extern_sp += narg + 4; /* PR#1228 */
+  if (Is_exception_result(res)) domain_state->extern_sp += narg + 4; /* PR#1228 */
 
-  Assert(Stack_parent(caml_domain_state->current_stack) == Val_unit);
-  Stack_parent(caml_domain_state->current_stack) = parent_stack;
+  Assert(Stack_parent(domain_state->current_stack) == Val_unit);
+  Stack_parent(domain_state->current_stack) = parent_stack;
   CAMLreturn (res);
 }
 
@@ -108,12 +109,12 @@ value caml_callback3_asm(char* young_ptr, value closure, value* args);
 
 CAMLexport value caml_callback_exn(value closure, value arg)
 {
-  return caml_callback_asm(caml_domain_state->young_ptr, closure, arg);
+  return caml_callback_asm(CAML_DOMAIN_STATE->young_ptr, closure, arg);
 }
 
 CAMLexport value caml_callback2_exn(value closure, value arg1, value arg2)
 {
-  return caml_callback2_asm(caml_domain_state->young_ptr, closure, arg1, arg2);
+  return caml_callback2_asm(CAML_DOMAIN_STATE->young_ptr, closure, arg1, arg2);
 }
 
 CAMLexport value caml_callback3_exn(value closure,
@@ -121,7 +122,7 @@ CAMLexport value caml_callback3_exn(value closure,
 {
   /* can only pass 4 args in registers on Windows, so we use an array */
   value args[] = {arg1, arg2, arg3};
-  return caml_callback3_asm(caml_domain_state->young_ptr, closure, args);
+  return caml_callback3_asm(CAML_DOMAIN_STATE->young_ptr, closure, args);
 }
 
 /* Native-code callbacks.  caml_callback[123]_exn are implemented in asm. */

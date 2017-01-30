@@ -18,10 +18,6 @@
 #define Stack_handle_effect(stk) (*(Op_val(stk) + 4))
 #define Stack_parent(stk) (*(Op_val(stk) + 5))
 
-CAMLextern __thread value * caml_extern_sp;
-CAMLextern __thread intnat caml_trap_sp_off;
-CAMLextern __thread intnat caml_trap_barrier_off;
-
 value caml_find_performer(value stack);
 
 /* The table of global identifiers */
@@ -31,7 +27,7 @@ extern caml_root caml_global_data;
 #define Trap_link(tp) ((tp)[1])
 
 value caml_alloc_main_stack (uintnat init_size);
-void caml_init_main_stack();
+void caml_init_main_stack(void);
 void caml_scan_dirty_stack(scanning_action, value stack);
 void caml_scan_dirty_stack_domain(scanning_action f, value stack,
                                   struct domain* domain);

@@ -11,7 +11,6 @@ struct domain {
 
   struct dom_internal* internals;
   struct caml_heap_state* shared_heap;
-  struct caml__roots_block** local_roots;
   struct caml_domain_state* state;
   value** mark_stack;
   uintnat* mark_stack_count;
@@ -24,6 +23,7 @@ struct domain {
   #define Caml_check_gc_interrupt(dom_st) \
     ((uintnat)(dom_st)->young_ptr < (dom_st)->young_limit)
 #endif
+
 asize_t caml_norm_minor_heap_size (intnat);
 void caml_reallocate_minor_heap(asize_t);
 

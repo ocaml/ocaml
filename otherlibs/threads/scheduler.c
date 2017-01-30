@@ -546,12 +546,12 @@ static void thread_reschedule(void)
   Assert(curr_thread != NULL);
   /* Pop accu from event frame, making it look like a C_CALL frame
      followed by a RETURN frame */
-  accu = *extern_sp++;
+  accu = *CAML_DOMAIN_STATE->extern_sp++;
   /* Reschedule */
   Assign(curr_thread->retval, accu);
   accu = schedule_thread();
   /* Push accu below C_CALL frame so that it looks like an event frame */
-  *--extern_sp = accu;
+  *--CAML_DOMAIN_STATE->extern_sp = accu;
 }
 
 /* Request a re-scheduling as soon as possible */

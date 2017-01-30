@@ -14,6 +14,7 @@
 static void write_barrier(value obj, int field, value val)
 {
   value old_val;
+  struct caml_domain_state* domain_state = CAML_DOMAIN_STATE;
 
   Assert (Is_block(obj));
 
@@ -23,7 +24,7 @@ static void write_barrier(value obj, int field, value val)
     if (!Is_young(obj)) {
       if (Is_young(val)) {
         /* Add to remembered set */
-        Ref_table_add(&caml_domain_state->remembered_set->major_ref, Op_val(obj) + field);
+        Ref_table_add(&domain_state->remembered_set->major_ref, Op_val(obj) + field);
       } else {
         caml_darken(val, 0);
       }
@@ -36,7 +37,7 @@ static void write_barrier(value obj, int field, value val)
       if (Is_block(old_val) && Is_young(old_val) && old_val < obj)
         return;
 
-      Ref_table_add(&caml_domain_state->remembered_set->minor_ref, Op_val(obj) + field);
+      Ref_table_add(&domain_state->remembered_set->minor_ref, Op_val(obj) + field);
     }
   }
 }
@@ -158,8 +159,8 @@ CAMLexport value caml_alloc_shr (mlsize_t wosize, tag_t tag)
   if (v == NULL) {
     caml_raise_out_of_memory ();
   }
-  caml_domain_state->allocated_words += Whsize_wosize (wosize);
-  if (caml_domain_state->allocated_words > Wsize_bsize (caml_minor_heap_size)) {
+  CAML_DOMAIN_STATE->allocated_words += Whsize_wosize (wosize);
+  if (CAML_DOMAIN_STATE->allocated_words > Wsize_bsize (caml_minor_heap_size)) {
     caml_urge_major_slice();
   }
 
