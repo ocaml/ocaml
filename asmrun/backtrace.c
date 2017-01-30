@@ -19,6 +19,7 @@
 
 #include "caml/alloc.h"
 #include "caml/backtrace.h"
+#include "caml/fail.h"
 #include "caml/fiber.h"
 #include "caml/memory.h"
 #include "caml/misc.h"
@@ -141,9 +142,9 @@ void caml_stash_backtrace(value exn, uintnat pc, char * sp, uintnat trapsp_off)
    [caml_stash_backtrace], we first traverse the stack to compute the
    right size, then allocate space for the trace. */
 
-CAMLprim value caml_get_current_callstack(value max_frames_value) {
-  CAMLparam1(max_frames_value);
-  CAMLlocal1(trace);
+static value get_callstack(value stack, value max_frames_value) {
+  CAMLparam2(stack, max_frames_value);
+  CAMLlocal2(saved_stack, trace);
 
   /* we use `intnat` here because, were it only `int`, passing `max_int`
      from the OCaml side would overflow on 64bits machines. */
@@ -151,13 +152,10 @@ CAMLprim value caml_get_current_callstack(value max_frames_value) {
   intnat trace_pos;
   char *sp;
   uintnat pc;
-  value stack;
-  char *stack_high;
 
+  saved_stack = stack;
   /* first compute the size of the trace */
   {
-    stack = CAML_DOMAIN_STATE->current_stack;
-    stack_high = (char*)Stack_high(stack);
     caml_get_stack_sp_pc(stack, &sp, &pc);
     trace_pos = 0;
 
@@ -168,7 +166,6 @@ CAMLprim value caml_get_current_callstack(value max_frames_value) {
       if (descr->frame_size == 0xFFFF) {
         stack = Stack_parent(stack);
         if (stack == Val_unit) break;
-        stack_high = (char*)Stack_high(stack);
         caml_get_stack_sp_pc(stack, &sp, &pc);
       } else {
         ++trace_pos;
@@ -177,11 +174,10 @@ CAMLprim value caml_get_current_callstack(value max_frames_value) {
   }
 
   trace = caml_alloc((mlsize_t) trace_pos, 0);
+  stack = saved_stack;
 
   /* then collect the trace */
   {
-    stack = CAML_DOMAIN_STATE->current_stack;
-    stack_high = (char*)Stack_high(stack);
     caml_get_stack_sp_pc(stack, &sp, &pc);
     trace_pos = 0;
 
@@ -192,7 +188,6 @@ CAMLprim value caml_get_current_callstack(value max_frames_value) {
       if (descr->frame_size == 0xFFFF) {
         stack = Stack_parent(stack);
         if (stack == Val_unit) break;
-        stack_high = (char*)Stack_high(stack);
         caml_get_stack_sp_pc(stack, &sp, &pc);
       } else {
         caml_modify_field(trace, trace_pos, Val_Descrptr(descr));
@@ -202,6 +197,30 @@ CAMLprim value caml_get_current_callstack(value max_frames_value) {
   }
 
   CAMLreturn(trace);
+}
+
+CAMLprim value caml_get_current_callstack (value max_frames_value) {
+  struct caml_domain_state* domain_state = CAML_DOMAIN_STATE;
+  return get_callstack(domain_state->current_stack, max_frames_value);
+}
+
+CAMLprim value caml_get_continuation_callstack (value cont, value max_frames)
+{
+  CAMLparam1(cont);
+  CAMLlocal2(stack, callstack);
+  intnat bvar_stat;
+
+  bvar_stat = caml_bvar_status(cont);
+  if (bvar_stat & BVAR_EMPTY)
+    caml_invalid_argument ("continuation already taken");
+
+  caml_read_field(cont, 0, &stack);
+
+  stack = caml_reverse_fiber_stack(stack);
+  callstack = get_callstack (stack, max_frames);
+  caml_reverse_fiber_stack(stack);
+
+  CAMLreturn(callstack);
 }
 
 /* Extract location information for the given frame descriptor */
