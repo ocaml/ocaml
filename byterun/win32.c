@@ -364,10 +364,15 @@ static void expand_pattern(char * pat)
     return;
   }
   prefix = caml_strdup(pat);
+  /* We need to stop at the first directory or drive boundary, because the
+   * _findata_t structure contains the filename, not the leading directory. */
   for (i = strlen(prefix); i > 0; i--) {
     char c = prefix[i - 1];
     if (c == '\\' || c == '/' || c == ':') { prefix[i] = 0; break; }
   }
+  /* No separator was found, it's a pattern of the form Foo* */
+  if (i == 0)
+    prefix[0] = 0;
   do {
     name = caml_strconcat(2, prefix, ffblk.name);
     store_argument(name);
