@@ -48,18 +48,22 @@ type compiler_pass =
 let timings : (compiler_pass, float * float option) Hashtbl.t =
   Hashtbl.create 20
 
+(* external time_include_children: bool -> float = "caml_sys_time_include_children"
+ * let cpu_time () = time_include_children true *)
+let cpu_time = Sys.time
+
 let reset () = Hashtbl.clear timings
 
 let start pass =
   (* Cannot assert it is not here: a source file can be compiled
      multiple times on the same command line *)
   (* assert(not (Hashtbl.mem timings pass)); *)
-  let time = Sys.time () in
+  let time = cpu_time () in
   Hashtbl.add timings pass (time, None)
 
 let stop pass =
   assert(Hashtbl.mem timings pass);
-  let time = Sys.time () in
+  let time = cpu_time () in
   let (start, stop) = Hashtbl.find timings pass in
   assert(stop = None);
   Hashtbl.replace timings pass (start, Some (time -. start))
@@ -77,11 +81,11 @@ let restart pass =
     | (_, Some duration) -> duration
     | _, None -> assert false
   in
-  let time = Sys.time () in
+  let time = cpu_time () in
   Hashtbl.replace timings pass (time, Some previous_duration)
 
 let accumulate pass =
-  let time = Sys.time () in
+  let time = cpu_time () in
   match Hashtbl.find timings pass with
   | exception Not_found -> assert false
   | _, None -> assert false
@@ -137,7 +141,7 @@ let timings_list () =
   List.sort (fun (_, (start1, _)) (_, (start2, _)) -> compare start1 start2) l
 
 let print ppf =
-  let current_time = Sys.time () in
+  let current_time = cpu_time () in
   List.iter (fun (pass, (start, stop)) ->
       match stop with
       | Some duration ->
