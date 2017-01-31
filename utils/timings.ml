@@ -67,11 +67,13 @@ let stop pass =
   assert(stop = None);
   Hashtbl.replace timings pass (start, Some (time -. start))
 
-let time pass f x =
+let time_call pass f =
   start pass;
-  let r = f x in
+  let r = f () in
   stop pass;
   r
+
+let time pass f x = time_call pass (fun () -> f x)
 
 let restart pass =
   let previous_duration =
