@@ -26,7 +26,9 @@ type source_provenance =
 type compiler_pass =
   | All
   | Parsing of file
-  | Preprocessing of file
+  | Parser of file
+  | Dash_pp of file
+  | Dash_ppx of file
   | Typing of file
   | Transl of file
   | Generate of file

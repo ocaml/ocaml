@@ -24,7 +24,9 @@ type source_provenance =
 type compiler_pass =
   | All
   | Parsing of file
-  | Preprocessing of file
+  | Parser of file
+  | Dash_pp of file
+  | Dash_ppx of file
   | Typing of file
   | Transl of file
   | Generate of file
@@ -115,7 +117,9 @@ let kind_name = function
 let pass_name = function
   | All -> "all"
   | Parsing file -> Printf.sprintf "parsing(%s)" file
-  | Preprocessing file -> Printf.sprintf "preprocessing(%s)" file
+  | Parser file -> Printf.sprintf "parser(%s)" file
+  | Dash_pp file -> Printf.sprintf "-pp(%s)" file
+  | Dash_ppx file -> Printf.sprintf "-ppx(%s)" file
   | Typing file -> Printf.sprintf "typing(%s)" file
   | Transl file -> Printf.sprintf "transl(%s)" file
   | Generate file -> Printf.sprintf "generate(%s)" file
@@ -148,6 +152,6 @@ let print ppf =
       | Some duration ->
         Format.fprintf ppf "%s: %.03fs@." (pass_name pass) duration
       | None ->
-        Format.fprintf ppf "%s: running since %.03fs@." (pass_name pass)
+        Format.fprintf ppf "%s: running for %.03fs@." (pass_name pass)
           (current_time -. start))
     (timings_list ())
