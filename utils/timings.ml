@@ -143,7 +143,8 @@ let pass_name = function
 
 let timings_list () =
   let l = Hashtbl.fold (fun pass times l -> (pass, times) :: l) timings [] in
-  List.sort (fun (_, (start1, _)) (_, (start2, _)) -> compare start1 start2) l
+  List.sort (fun (pass1, (start1, _)) (pass2, (start2, _)) ->
+    compare (start1, pass1) (start2, pass2)) l
 
 let print ppf =
   let current_time = cpu_time () in
