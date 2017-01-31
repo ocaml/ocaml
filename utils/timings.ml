@@ -48,9 +48,8 @@ type compiler_pass =
 let timings : (compiler_pass, float * float option) Hashtbl.t =
   Hashtbl.create 20
 
-(* external time_include_children: bool -> float = "caml_sys_time_include_children"
- * let cpu_time () = time_include_children true *)
-let cpu_time = Sys.time
+external time_include_children: bool -> float = "caml_sys_time_include_children"
+let cpu_time () = time_include_children true
 
 let reset () = Hashtbl.clear timings
 
