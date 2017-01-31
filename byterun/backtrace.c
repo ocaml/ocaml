@@ -143,14 +143,15 @@ void caml_stash_backtrace(value exn, code_t pc, value * sp, int reraise)
    updates *sp to point to the following one, and *trap_spoff to the next
    trap frame, which we will skip when we reach it  */
 
-code_t caml_next_frame_pointer(value ** sp, intnat * trap_spoff)
+static code_t next_frame_pointer(value* stack_high, value ** sp,
+                                 intnat * trap_spoff)
 {
   code_t end_code = (code_t) ((char *) caml_start_code + caml_code_size);
 
-  while (*sp < CAML_DOMAIN_STATE->stack_high) {
+  while (*sp < stack_high) {
     value* p = (*sp)++;
-    if(&Trap_pc(CAML_DOMAIN_STATE->stack_high + *trap_spoff) == p) {
-      *trap_spoff = Trap_link(CAML_DOMAIN_STATE->stack_high + *trap_spoff);
+    if(&Trap_pc(stack_high + *trap_spoff) == p) {
+      *trap_spoff = Trap_link(stack_high + *trap_spoff);
       continue;
     }
     if (Is_long(*p) &&
@@ -169,8 +170,10 @@ code_t caml_next_frame_pointer(value ** sp, intnat * trap_spoff)
    [caml_stash_backtrace], we first traverse the stack to compute the
    right size, then allocate space for the trace. */
 
-CAMLprim value caml_get_current_callstack(value max_frames_value) {
-  CAMLparam1(max_frames_value);
+value get_callstack(value* sp, intnat trap_spoff, value stack,
+                    value max_frames_value)
+{
+  CAMLparam2(max_frames_value, stack);
   CAMLlocal1(trace);
 
   /* we use `intnat` here because, were it only `int`, passing `max_int`
@@ -178,33 +181,88 @@ CAMLprim value caml_get_current_callstack(value max_frames_value) {
   intnat max_frames = Long_val(max_frames_value);
   intnat trace_size;
 
+  value parent = Stack_parent(stack);
+  value *stack_high = Stack_high(stack);
+  value* saved_sp = sp;
+  intnat saved_trap_spoff = trap_spoff;
+
   /* first compute the size of the trace */
   {
-    value * sp = CAML_DOMAIN_STATE->extern_sp;
-    intnat trap_spoff = CAML_DOMAIN_STATE->trap_sp_off;
-
-    for (trace_size = 0; trace_size < max_frames; trace_size++) {
-      code_t p = caml_next_frame_pointer(&sp, &trap_spoff);
-      if (p == NULL) break;
+    trace_size = 0;
+    while (trace_size < max_frames) {
+      code_t p = next_frame_pointer(stack_high, &sp, &trap_spoff);
+      if (p == NULL) {
+        if (parent == Val_unit) break;
+        sp = Stack_high(parent) + Stack_sp(parent);
+        trap_spoff = Long_val(sp[0]);
+        stack_high = Stack_high(parent);
+        parent = Stack_parent(parent);
+      } else {
+        ++trace_size;
+      }
     }
   }
 
   trace = caml_alloc(trace_size, 0);
 
+  sp = saved_sp;
+  parent = Stack_parent(stack);
+  stack_high = Stack_high(stack);
+  trap_spoff = saved_trap_spoff;
+
   /* then collect the trace */
   {
-    value * sp = CAML_DOMAIN_STATE->extern_sp;
-    intnat trap_spoff = CAML_DOMAIN_STATE->trap_sp_off;
-    uintnat trace_pos;
+    uintnat trace_pos = 0;
 
-    for (trace_pos = 0; trace_pos < trace_size; trace_pos++) {
-      code_t p = caml_next_frame_pointer(&sp, &trap_spoff);
-      Assert(p != NULL);
-      caml_initialize_field(trace, trace_pos, Val_Codet(p));
+    while (trace_pos < trace_size) {
+      code_t p = next_frame_pointer(stack_high, &sp, &trap_spoff);
+      if (p == NULL) {
+        sp = Stack_high(parent) + Stack_sp(parent);
+        trap_spoff = Long_val(sp[0]);
+        stack_high = Stack_high(parent);
+        parent = Stack_parent(parent);
+      } else {
+        caml_initialize_field(trace, trace_pos, Val_Codet(p));
+        ++trace_pos;
+      }
     }
   }
 
   CAMLreturn(trace);
+}
+
+CAMLprim value caml_get_current_callstack (value max_frames_value)
+{
+  CAMLparam1(max_frames_value);
+  CAMLlocal2(stack, callstack);
+  struct caml_domain_state* domain_state = CAML_DOMAIN_STATE;
+
+  callstack =
+    get_callstack (domain_state->extern_sp, domain_state->trap_sp_off,
+                   domain_state->current_stack, max_frames_value);
+
+  CAMLreturn(callstack);
+}
+
+CAMLprim value caml_get_continuation_callstack (value cont, value max_frames)
+{
+  CAMLparam1(cont);
+  CAMLlocal2(stack, callstack);
+  intnat bvar_stat;
+  value *sp;
+
+  bvar_stat = caml_bvar_status(cont);
+  if (bvar_stat & BVAR_EMPTY)
+    caml_invalid_argument ("continuation already taken");
+
+  caml_read_field(cont, 0, &stack);
+
+  stack = caml_reverse_fiber_stack(stack);
+  sp = Stack_high(stack) + Stack_sp(stack);
+  callstack = get_callstack (sp, Long_val(sp[0]), stack, max_frames);
+  caml_reverse_fiber_stack(stack);
+
+  CAMLreturn(callstack);
 }
 
 /* Read the debugging info contained in the current bytecode executable. */
