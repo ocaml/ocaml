@@ -143,6 +143,11 @@ Next version (4.05.0):
 
 ### Standard library:
 
+- PR#7309, GPR#1026: Add update to maps. Allows to update a binding in
+  a map or create a new binding if the key had no binding.
+  (Sébastien Briais, review by Daniel Buenzli, Alain Frisch and
+   Gabriel Scherer)
+
 - PR#6975, GPR#902: Truncate function added to stdlib Buffer module
   (Dhruv Makwana, review by Alain Frisch and Gabriel Scherer)
 
