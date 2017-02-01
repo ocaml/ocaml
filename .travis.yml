@@ -17,6 +17,10 @@ sudo: false
 language: c
 git:
   submodules: false
+addons:
+  apt:
+    packages:
+    - gfortran
 script: bash -ex .travis-ci.sh
 matrix:
   include:

@@ -40,11 +40,11 @@ EOF
     make install
     if test "$TESTSUITE" = "install" ; then
       make install-testsuite
-      (cd $PREFIX/lib/ocaml/testsuite && make all)
-      (cd $PREFIX/lib/ocaml/testsuite && make USE_RUNTIME="d" all)
+      (cd $PREFIX/lib/ocaml/testsuite && make FORTRAN_COMPILER=gfortran FORTRAN_LIBRARY="-cclib -lgfortran" all)
+      (cd $PREFIX/lib/ocaml/testsuite && make USE_RUNTIME="d" FORTRAN_COMPILER=gfortran FORTRAN_LIBRARY="-cclib -lgfortran" all)
     else
-      (cd testsuite && make all)
-      (cd testsuite && make USE_RUNTIME="d" all)
+      (cd testsuite && make FORTRAN_COMPILER=gfortran FORTRAN_LIBRARY="-cclib -lgfortran" all)
+      (cd testsuite && make USE_RUNTIME="d" FORTRAN_COMPILER=gfortran FORTRAN_LIBRARY="-cclib -lgfortran" all)
     fi
     # check_all_arches checks tries to compile all backends in place,
     # we need to redo (small parts of) world.opt afterwards
