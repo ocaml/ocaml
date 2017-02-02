@@ -685,8 +685,8 @@ let env_to_class m =
     MemMap.fold
       (fun _ (tag,s) r ->
          TagMap.update tag (function
-             | None -> StateSetSet.singleton s
-             | Some ss -> StateSetSet.add s ss
+             | None -> Some (StateSetSet.singleton s)
+             | Some ss -> Some (StateSetSet.add s ss)
            ) r)
       m TagMap.empty in
   TagMap.fold
@@ -699,10 +699,10 @@ let inverse_mem_map trans m r =
   TagMap.fold
     (fun tag addr r ->
        MemMap.update addr (function
-           | None -> tag, StateSet.singleton trans
+           | None -> Some (tag, StateSet.singleton trans)
            | Some (otag, s) ->
                assert (tag = otag);
-               (tag, StateSet.add trans s)
+               Some (tag, StateSet.add trans s)
          ) r)
     m r
 
