@@ -240,7 +240,7 @@ let rec lam ppf (flam : t) =
     let print_kind ppf (kind : Lambda.value_kind) =
       match kind with
       | Pgenval -> ()
-      | _ -> Format.fprintf ppf " %s" (Printlambda.value_kind kind)
+      | _ -> Format.fprintf ppf " %a" Printlambda.value_kind kind
     in
     fprintf ppf "@[<2>(let_mutable%a@ @[<2>%a@ %a@]@ %a)@]"
       print_kind contents_kind

@@ -167,6 +167,10 @@ let value_kind env ty =
   | _ ->
       Pgenval
 
+let function_return_value_kind env ty =
+  match is_function_type env ty with
+  | Some (_lhs, rhs) -> value_kind env rhs
+  | None -> Pgenval
 
 let lazy_val_requires_forward env ty =
   match classify env ty with

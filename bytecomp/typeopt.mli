@@ -29,6 +29,7 @@ val array_pattern_kind : Typedtree.pattern -> Lambda.array_kind
 val bigarray_type_kind_and_layout :
       Env.t -> Types.type_expr -> Lambda.bigarray_kind * Lambda.bigarray_layout
 val value_kind : Env.t -> Types.type_expr -> Lambda.value_kind
+val function_return_value_kind : Env.t -> Types.type_expr -> Lambda.value_kind
 
 val lazy_val_requires_forward : Env.t -> Types.type_expr -> bool
   (** Whether a forward block is needed for a lazy thunk on a value, i.e.

@@ -438,18 +438,18 @@ let transl_primitive loc p env ty path =
   match prim with
   | Plazyforce ->
       let parm = Ident.create "prim" in
-      Lfunction{kind = Curried; params = [parm];
+      Lfunction{kind = Curried; params = [parm, Pgenval]; return = Pgenval;
                 body = Matching.inline_lazy_force (Lvar parm) Location.none;
                 loc = loc;
-                attr = default_stub_attribute }
+                attr = default_function_attribute }
   | Ploc kind ->
     let lam = lam_of_loc kind loc in
     begin match p.prim_arity with
       | 0 -> lam
       | 1 -> (* TODO: we should issue a warning ? *)
         let param = Ident.create "prim" in
-        Lfunction{kind = Curried; params = [param];
-                  attr = default_stub_attribute;
+        Lfunction{kind = Curried; params = [param, Pgenval]; return = Pgenval;
+                  attr = default_function_attribute;
                   loc = loc;
                   body = Lprim(Pmakeblock(0, Immutable, None),
                                [lam; Lvar param], loc)}
@@ -457,12 +457,14 @@ let transl_primitive loc p env ty path =
     end
   | _ ->
       let rec make_params n =
-        if n <= 0 then [] else Ident.create "prim" :: make_params (n-1) in
+        if n <= 0 then [] else
+          (Ident.create "prim", Pgenval) :: make_params (n-1) in
       let params = make_params p.prim_arity in
-      Lfunction{ kind = Curried; params;
-                 attr = default_stub_attribute;
+      let body = Lprim(prim, List.map (fun (id, _) -> Lvar id) params, loc) in
+      Lfunction{ kind = Curried; params; return = Pgenval;
+                 attr = default_function_attribute;
                  loc = loc;
-                 body = Lprim(prim, List.map (fun id -> Lvar id) params, loc) }
+                 body }
 
 let transl_primitive_application loc prim env ty path args =
   let prim_name = prim.prim_name in
@@ -708,15 +710,18 @@ and transl_exp0 e =
       if public_send || p.prim_name = "%sendself" then
         let kind = if public_send then Public else Self in
         let obj = Ident.create "obj" and meth = Ident.create "meth" in
-        Lfunction{kind = Curried; params = [obj; meth];
-                  attr = default_stub_attribute;
+        Lfunction{kind = Curried; params = [obj, Pgenval; meth, Pgenval];
+                  return = Pgenval; attr = default_function_attribute;
                   loc = e.exp_loc;
                   body = Lsend(kind, Lvar meth, Lvar obj, [], e.exp_loc)}
       else if p.prim_name = "%sendcache" then
         let obj = Ident.create "obj" and meth = Ident.create "meth" in
         let cache = Ident.create "cache" and pos = Ident.create "pos" in
-        Lfunction{kind = Curried; params = [obj; meth; cache; pos];
-                  attr = default_stub_attribute;
+        Lfunction{kind = Curried;
+                  params = [obj, Pgenval; meth, Pgenval;
+                            cache, Pgenval; pos, Pgenval];
+                  return = Pgenval;
+                  attr = default_function_attribute;
                   loc = e.exp_loc;
                   body = Lsend(Cached, Lvar meth, Lvar obj,
                                [Lvar cache; Lvar pos], e.exp_loc)}
@@ -732,12 +737,13 @@ and transl_exp0 e =
   | Texp_let(rec_flag, pat_expr_list, body) ->
       transl_let rec_flag pat_expr_list (event_before body (transl_exp body))
   | Texp_function { arg_label = _; param; cases; partial; } ->
-      let ((kind, params), body) =
+      let ((kind, params, return), body) =
         event_function e
           (function repr ->
             let pl = push_defaults e.exp_loc [] cases partial in
-            transl_function e.exp_loc !Clflags.native_code repr partial
-              param pl)
+            let return_kind = function_return_value_kind e.exp_env e.exp_type in
+            transl_function e.exp_loc return_kind !Clflags.native_code repr
+              partial param pl)
       in
       let attr = {
         default_function_attribute with
@@ -746,7 +752,7 @@ and transl_exp0 e =
       }
       in
       let loc = e.exp_loc in
-      Lfunction{kind; params; body; attr; loc}
+      Lfunction{kind; params; return; body; attr; loc}
   | Texp_apply({ exp_desc = Texp_ident(path, _, {val_kind = Val_prim p});
                 exp_type = prim_type } as funct, oargs)
     when List.length oargs >= p.prim_arity
@@ -1053,7 +1059,8 @@ and transl_exp0 e =
           else transl_exp e
       (* other cases compile to a lazy block holding a function *)
       | _ ->
-         let fn = Lfunction {kind = Curried; params = [Ident.create "param"];
+         let fn = Lfunction {kind = Curried; params = [Ident.create "param", Pgenval];
+                             return = Pgenval;
                              attr = default_function_attribute;
                              loc = e.exp_loc;
                              body = transl_exp e} in
@@ -1160,15 +1167,21 @@ and transl_apply ?(should_be_tailcall=false) ?(inlined = Default_inline)
         let body =
           match build_apply handle ((Lvar id_arg, optional)::args') l with
             Lfunction{kind = Curried; params = ids; body = lam; attr; loc} ->
-              Lfunction{kind = Curried; params = id_arg::ids; body = lam; attr;
+              Lfunction{kind = Curried;
+                        params = (id_arg, Pgenval)::ids;
+                        return = Pgenval;
+                        body = lam; attr;
                         loc}
           | Levent(Lfunction{kind = Curried; params = ids;
                              body = lam; attr; loc}, _) ->
-              Lfunction{kind = Curried; params = id_arg::ids; body = lam; attr;
+              Lfunction{kind = Curried; params = (id_arg, Pgenval)::ids;
+                        return = Pgenval;
+                        body = lam; attr;
                         loc}
           | lam ->
-              Lfunction{kind = Curried; params = [id_arg]; body = lam;
-                        attr = default_stub_attribute; loc = loc}
+              Lfunction{kind = Curried; params = [id_arg, Pgenval];
+                        return = Pgenval; body = lam;
+                        attr = default_function_attribute; loc = loc}
         in
         List.fold_left
           (fun body (id, lam) -> Llet(Strict, Pgenval, id, lam, body))
@@ -1183,15 +1196,18 @@ and transl_apply ?(should_be_tailcall=false) ?(inlined = Default_inline)
                                 sargs)
      : Lambda.lambda)
 
-and transl_function loc untuplify_fn repr partial param cases =
+and transl_function loc return untuplify_fn repr partial (param:Ident.t) cases =
   match cases with
     [{c_lhs=pat; c_guard=None;
       c_rhs={exp_desc = Texp_function { arg_label = _; param = param'; cases;
-        partial = partial'; }} as exp}]
+        partial = partial'; }; exp_env; exp_type} as exp}]
     when Parmatch.fluid pat ->
-      let ((_, params), body) =
-        transl_function exp.exp_loc false repr partial' param' cases in
-      ((Curried, param :: params),
+      let kind = value_kind pat.pat_env pat.pat_type in
+      let return_kind = function_return_value_kind exp_env exp_type in
+      let ((_, params, return), body) =
+        transl_function exp.exp_loc return_kind false repr partial' param' cases
+      in
+      ((Curried, (param, kind) :: params, return),
        Matching.for_function loc None (Lvar param) [pat, body] partial)
   | {c_lhs={pat_desc = Tpat_tuple pl}} :: _ when untuplify_fn ->
       begin try
@@ -1202,16 +1218,22 @@ and transl_function loc untuplify_fn repr partial param cases =
               (Matching.flatten_pattern size c_lhs, c_guard, c_rhs))
             cases in
         let params = List.map (fun _ -> Ident.create "param") pl in
-        ((Tupled, params),
+        let tparams = List.map (fun p -> p, Pgenval) params in
+        ((Tupled, tparams, return),
          Matching.for_tupled_function loc params
            (transl_tupled_cases pats_expr_list) partial)
       with Matching.Cannot_flatten ->
-        ((Curried, [param]),
+        ((Curried, [param, Pgenval], return),
          Matching.for_function loc repr (Lvar param)
            (transl_cases cases) partial)
       end
-  | _ ->
-      ((Curried, [param]),
+  | {c_lhs=pat} :: _ ->
+      let kind = value_kind pat.pat_env pat.pat_type in
+      ((Curried, [param, kind], return),
+       Matching.for_function loc repr (Lvar param)
+         (transl_cases cases) partial)
+  | [] ->
+      ((Curried, [param, Pgenval], return),
        Matching.for_function loc repr (Lvar param)
          (transl_cases cases) partial)
 

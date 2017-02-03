@@ -507,7 +507,7 @@ let rec comp_expr env exp sz cont =
       let lbl = new_label() in
       let fv = IdentSet.elements(free_variables exp) in
       let to_compile =
-        { params = params; body = body; label = lbl;
+        { params = List.map fst params; body = body; label = lbl;
           free_vars = fv; num_defs = 1; rec_vars = []; rec_pos = 0 } in
       Stack.push to_compile functions_to_compile;
       comp_args env (List.map (fun n -> Lvar n) fv) sz
@@ -529,8 +529,9 @@ let rec comp_expr env exp sz cont =
           | (_id, Lfunction{params; body}) :: rem ->
               let lbl = new_label() in
               let to_compile =
-                { params = params; body = body; label = lbl; free_vars = fv;
-                  num_defs = ndecl; rec_vars = rec_idents; rec_pos = pos} in
+                { params = List.map fst params; body = body; label = lbl;
+                  free_vars = fv; num_defs = ndecl; rec_vars = rec_idents;
+                  rec_pos = pos} in
               Stack.push to_compile functions_to_compile;
               lbl :: comp_fun (pos + 1) rem
           | _ -> assert false in

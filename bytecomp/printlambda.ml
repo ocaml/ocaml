@@ -54,11 +54,17 @@ let boxed_integer_name = function
   | Pint32 -> "int32"
   | Pint64 -> "int64"
 
-let value_kind = function
-  | Pgenval -> ""
-  | Pintval -> "[int]"
-  | Pfloatval -> "[float]"
-  | Pboxedintval bi -> Printf.sprintf "[%s]" (boxed_integer_name bi)
+let value_kind ppf = function
+  | Pgenval -> ()
+  | Pintval -> fprintf ppf "[int]"
+  | Pfloatval -> fprintf ppf "[float]"
+  | Pboxedintval bi -> fprintf ppf "[%s]" (boxed_integer_name bi)
+
+let return_kind ppf = function
+  | Pgenval -> ()
+  | Pintval -> fprintf ppf ": int@ "
+  | Pfloatval -> fprintf ppf ": float@ "
+  | Pboxedintval bi -> fprintf ppf ": %s@ " (boxed_integer_name bi)
 
 let field_kind = function
   | Pgenval -> "*"
@@ -458,34 +464,36 @@ let rec lam ppf = function
         apply_tailcall_attribute ap.ap_should_be_tailcall
         apply_inlined_attribute ap.ap_inlined
         apply_specialised_attribute ap.ap_specialised
-  | Lfunction{kind; params; body; attr} ->
+  | Lfunction{kind; params; return; body; attr} ->
       let pr_params ppf params =
         match kind with
         | Curried ->
-            List.iter (fun param -> fprintf ppf "@ %a" Ident.print param) params
+            List.iter (fun (param, k) ->
+                fprintf ppf "@ %a%a" Ident.print param value_kind k) params
         | Tupled ->
             fprintf ppf " (";
             let first = ref true in
             List.iter
-              (fun param ->
+              (fun (param, k) ->
                 if !first then first := false else fprintf ppf ",@ ";
-                Ident.print ppf param)
+                Ident.print ppf param;
+                value_kind ppf k)
               params;
             fprintf ppf ")" in
-      fprintf ppf "@[<2>(function%a@ %a%a)@]" pr_params params
-        function_attribute attr lam body
+      fprintf ppf "@[<2>(function%a@ %a%a%a)@]" pr_params params
+        function_attribute attr return_kind return lam body
   | Llet(str, k, id, arg, body) ->
       let kind = function
           Alias -> "a" | Strict -> "" | StrictOpt -> "o" | Variable -> "v"
       in
       let rec letbody = function
         | Llet(str, k, id, arg, body) ->
-            fprintf ppf "@ @[<2>%a =%s%s@ %a@]"
-              Ident.print id (kind str) (value_kind k) lam arg;
+            fprintf ppf "@ @[<2>%a =%s%a@ %a@]"
+              Ident.print id (kind str) value_kind k lam arg;
             letbody body
         | expr -> expr in
-      fprintf ppf "@[<2>(let@ @[<hv 1>(@[<2>%a =%s%s@ %a@]"
-        Ident.print id (kind str) (value_kind k) lam arg;
+      fprintf ppf "@[<2>(let@ @[<hv 1>(@[<2>%a =%s%a@ %a@]"
+        Ident.print id (kind str) value_kind k lam arg;
       let expr = letbody body in
       fprintf ppf ")@]@ %a)@]" lam expr
   | Lletrec(id_arg_list, body) ->

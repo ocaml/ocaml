@@ -242,7 +242,8 @@ type lambda =
 
 and lfunction =
   { kind: function_kind;
-    params: Ident.t list;
+    params: (Ident.t * value_kind) list;
+    return: value_kind;
     body: lambda;
     attr: function_attribute; (* specified with [@inline] attribute *)
     loc: Location.t; }
@@ -461,7 +462,7 @@ let free_ids get l =
     fv := List.fold_right IdentSet.add (get l) !fv;
     match l with
       Lfunction{params} ->
-        List.iter (fun param -> fv := IdentSet.remove param !fv) params
+        List.iter (fun (param, _) -> fv := IdentSet.remove param !fv) params
     | Llet(_str, _k, id, _arg, _body) ->
         fv := IdentSet.remove id !fv
     | Lletrec(decl, _body) ->
@@ -556,8 +557,8 @@ let subst_lambda s lam =
   | Lapply ap ->
       Lapply{ap with ap_func = subst ap.ap_func;
                      ap_args = List.map subst ap.ap_args}
-  | Lfunction{kind; params; body; attr; loc} ->
-      Lfunction{kind; params; body = subst body; attr; loc}
+  | Lfunction{kind; params; return; body; attr; loc} ->
+      Lfunction{kind; params; return; body = subst body; attr; loc}
   | Llet(str, k, id, arg, body) -> Llet(str, k, id, subst arg, subst body)
   | Lletrec(decl, body) -> Lletrec(List.map subst_decl decl, subst body)
   | Lprim(p, args, loc) -> Lprim(p, List.map subst args, loc)
@@ -604,8 +605,8 @@ let rec map f lam =
           ap_inlined;
           ap_specialised;
         }
-    | Lfunction { kind; params; body; attr; loc; } ->
-        Lfunction { kind; params; body = map f body; attr; loc; }
+    | Lfunction { kind; params; return; body; attr; loc; } ->
+        Lfunction { kind; params; return; body = map f body; attr; loc; }
     | Llet (str, k, v, e1, e2) ->
         Llet (str, k, v, map f e1, map f e2)
     | Lletrec (idel, e2) ->

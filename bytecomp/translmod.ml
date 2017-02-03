@@ -76,7 +76,7 @@ let rec apply_coercion loc strict restr arg =
   | Tcoerce_functor(cc_arg, cc_res) ->
       let param = Ident.create "funarg" in
       name_lambda strict arg (fun id ->
-        Lfunction{kind = Curried; params = [param];
+        Lfunction{kind = Curried; params = [param, Pgenval]; return = Pgenval;
                   attr = { default_function_attribute with
                            is_a_functor = true };
                   loc = loc;
@@ -365,7 +365,8 @@ let rec transl_module cc rootpath mexp =
           oo_wrap mexp.mod_env true
             (function
               | Tcoerce_none ->
-                  Lfunction{kind = Curried; params = [param];
+                  Lfunction{kind = Curried; params = [param, Pgenval];
+                            return = Pgenval;
                             attr = { inline = inline_attribute;
                                      specialise = Default_specialise;
                                      is_a_functor = true;
@@ -374,7 +375,8 @@ let rec transl_module cc rootpath mexp =
                             body = transl_module Tcoerce_none bodypath body}
               | Tcoerce_functor(ccarg, ccres) ->
                   let param' = Ident.create "funarg" in
-                  Lfunction{kind = Curried; params = [param'];
+                  Lfunction{kind = Curried; params = [param', Pgenval];
+                            return = Pgenval;
                             attr = { inline = inline_attribute;
                                      specialise = Default_specialise;
                                      is_a_functor = true;
