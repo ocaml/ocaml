@@ -586,7 +586,17 @@ val set_close_on_exec : file_descr -> unit
    multithreaded programs, a window of vulnerability exists between the time
    when the file descriptor is created and the time [set_close_on_exec]
    completes.  If another thread spawns another program during this window,
-   the descriptor will leak, as it is still in the ``keep-on-exec'' mode. *)
+   the descriptor will leak, as it is still in the ``keep-on-exec'' mode.
+
+   Regarding the atomicity guarantees given by [~cloexec:true] or by
+   the use of the [O_CLOEXEC] flag: on all platforms it is guaranteed
+   that a concurrently-executing Caml thread cannot leak the descriptor
+   by starting a new process.  On Linux and Windows, this guarantee
+   extends to concurrently-executing C threads.  As of Feb 2017, other
+   operating systems lack the necessary system calls and still expose
+   a window of vulnerability during which a C thread can see the
+   newly-created file descriptor in ``keep-on-exec'' mode.
+ *)
 
 val clear_close_on_exec : file_descr -> unit
 (** Clear the ``close-on-exec'' flag on the given descriptor.
