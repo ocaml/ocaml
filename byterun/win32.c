@@ -370,7 +370,7 @@ static void expand_pattern(char * pat)
     char c = prefix[i - 1];
     if (c == '\\' || c == '/' || c == ':') { prefix[i] = 0; break; }
   }
-  /* No separator was found, it's a pattern of the form Foo* */
+  /* No separator was found, it's a filename pattern without a leading directory. */
   if (i == 0)
     prefix[0] = 0;
   do {
