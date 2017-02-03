@@ -205,6 +205,7 @@ MIDDLE_END=\
   middle_end/base_types/symbol.cmo \
   middle_end/pass_wrapper.cmo \
   middle_end/allocated_const.cmo \
+  middle_end/parameter.cmo \
   middle_end/projection.cmo \
   middle_end/flambda.cmo \
   middle_end/flambda_iterators.cmo \
