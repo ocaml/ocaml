@@ -537,7 +537,7 @@ let id: 'a. 'a -> 'a = fun x -> x + 1;;
 
 \section{Locally abstract types}
 \ikwd{type\@\texttt{type}}
-\ikwd{fun\@\texttt{fun}}
+\ikwd{fun\@\texttt{fun}} \label{s:locally-abstract}
 
 (Introduced in OCaml 3.12, short syntax added in 4.03)
 
