@@ -436,7 +436,7 @@ For example, @module-path'.['expr']'@ is equivalent to
 @module-path'.(['expr'])'@, and @module-path'.[|' pattern '|]'@ is
 equivalent to @module-path'.([|' pattern '|])'@.
 
-\section{Record and object notations}
+\section{Record and object notations} \label{s:record-and-object-notations}
 \ikwd{with\@\texttt{with}}
 
 (Introduced in OCaml 3.12, object copy notation added in Ocaml 4.03)
@@ -500,7 +500,7 @@ Continuing the "point" example above,
 record patterns may need to be modified after new fields are added to a
 record type.
 
-\section{Explicit polymorphic type annotations}
+\section{Explicit polymorphic type annotations} \label{s:explicit-polymorphic-type}
 \ikwd{let\@\texttt{let}}
 
 (Introduced in OCaml 3.12)
@@ -2186,7 +2186,7 @@ let invalid = function
 
 \section{Local exceptions}
 \ikwd{let\@\texttt{let}}
-\ikwd{exception\@\texttt{exception}}
+\ikwd{exception\@\texttt{exception}} \label{s:local-exceptions}
 
 (Introduced in OCaml 4.04)
 
