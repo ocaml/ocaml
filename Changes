@@ -94,6 +94,10 @@ Next version (4.05.0):
 
 ### Manual and documentation:
 
+- PR#6597, GPR#1030: add forward references to language extensions
+  that extend non-terminal symbols in the language reference section.
+  (Florian Angeletti, review by Gabriel Scherer)
+
 - GPR#939: activate the caml_example environment in the language
   extensions section of the manual. Convert some existing code
   examples to this format.
