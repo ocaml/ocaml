@@ -381,7 +381,7 @@ is not inferred, and must be given explicitly.
 
 \section{Local opens}
 \ikwd{let\@\texttt{let}}
-\ikwd{open\@\texttt{open}}
+\ikwd{open\@\texttt{open}} \label{s:local-opens}
 
 (Introduced in OCaml 3.12, extended to patterns in 4.04)
 
