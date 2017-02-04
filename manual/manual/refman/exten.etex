@@ -7,7 +7,7 @@ that are implemented in OCaml, but not described in the
 OCaml reference manual.
 
 \section{Integer literals for types \texttt{int32}, \texttt{int64}
-         and \texttt{nativeint}}
+         and \texttt{nativeint}} \label{s:ext-integer}
 
 (Introduced in Objective Caml 3.07)
 
@@ -2108,7 +2108,7 @@ infix-symbol:
 Operator names starting with a "#" character and containing more than
 one "#" character are reserved for extensions.
 
-\subsection{Extension literals}
+\subsection{Extension literals} \label{s:extension-literals}
 (Introduced in OCaml 4.03)
 \begin{syntax}
 float-literal:
