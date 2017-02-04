@@ -857,7 +857,7 @@ Note that this function uses an explicit polymorphic annotation to obtain
 polymorphic recursion.
 \fi
 
-\section{Recovering the type of a module}
+\section{Recovering the type of a module} \label{s:module-type-of}
 
 \ikwd{module\@\texttt{module}}
 \ikwd{type\@\texttt{type}}
@@ -915,6 +915,7 @@ it to represent sets internally in a different way.
 \ikwd{with\@\texttt{with}}
 \ikwd{module\@\texttt{module}}
 \ikwd{type\@\texttt{type}}
+\label{s:signature-substitution}
 
 (Introduced in OCaml 3.12)
 
