@@ -204,7 +204,7 @@ function component of a safe module is applied during this computation
 Note that, in the @specification@ case, the @module-type@s must be
 parenthesized if they use the @'with' mod-constraint@ construct.
 
-\section{Private types}
+\section{Private types}\label{s:private-types}
 \ikwd{private\@\texttt{private}}
 
 Private type declarations in module signatures, of the form
@@ -2139,7 +2139,7 @@ int-literal:
 Int and float literals followed by an one-letter identifier in the
 range @["g".."z"||"G".."Z"]@ are extension-only literals.
 
-\section{Inline records}
+\section{Inline records} \label{s:inline-records}
 (Introduced in OCaml 4.03)
 \begin{syntax}
   constr-args:
