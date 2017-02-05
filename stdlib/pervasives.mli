@@ -1078,12 +1078,12 @@ type ('a,'b) result = Ok of 'a | Error of 'b
 
     - ['b] is the type of input source for formatted input functions and the
       type of output target for formatted output functions.
-      For [printf]-style functions from module [Printf], ['b] is typically
+      For [printf]-style functions from module {!Printf}, ['b] is typically
       [out_channel];
-      for [printf]-style functions from module [Format], ['b] is typically
-      [Format.formatter];
-      for [scanf]-style functions from module [Scanf], ['b] is typically
-      [Scanf.Scanning.in_channel].
+      for [printf]-style functions from module {!Format}, ['b] is typically
+      {!Format.formatter};
+      for [scanf]-style functions from module {!Scanf}, ['b] is typically
+      {!Scanf.Scanning.in_channel}.
 
       Type argument ['b] is also the type of the first argument given to
       user's defined printing functions for [%a] and [%t] conversions,

@@ -322,7 +322,7 @@ exception HookExnWrapper of
 
 val raise_direct_hook_exn: exn -> 'a
   (** A hook can use [raise_unwrapped_hook_exn] to raise an exception that will
-      not be wrapped into a [HookExnWrapper]. *)
+      not be wrapped into a {!HookExnWrapper}. *)
 
 module type HookSig = sig
   type t

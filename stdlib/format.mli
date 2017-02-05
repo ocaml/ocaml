@@ -457,7 +457,7 @@ type formatter
   margin, maximum indentation limit, maximum number of boxes
   simultaneously opened, ellipsis, and so on, are specific to
   each pretty-printer and may be fixed independently.
-  Given a [Pervasives.out_channel] output channel [oc], a new formatter
+  Given a {!Pervasives.out_channel} output channel [oc], a new formatter
   writing to that channel is simply obtained by calling
   [formatter_of_out_channel oc].
   Alternatively, the [make_formatter] function allocates a new
@@ -500,7 +500,7 @@ val make_formatter :
   (string -> int -> int -> unit) -> (unit -> unit) -> formatter
 (** [make_formatter out flush] returns a new formatter that writes according
   to the output function [out], and the flushing function [flush]. For
-  instance, a formatter to the [Pervasives.out_channel] [oc] is returned by
+  instance, a formatter to the {!Pervasives.out_channel} [oc] is returned by
   [make_formatter (Pervasives.output oc) (fun () -> Pervasives.flush oc)]. *)
 
 (** {6 Basic functions to use with formatters} *)
@@ -604,7 +604,7 @@ val fprintf : formatter -> ('a, formatter, unit) format -> 'a
 
   The format [fmt] is a character string which contains three types of
   objects: plain characters and conversion specifications as specified in
-  the [Printf] module, and pretty-printing indications specific to the
+  the {!Printf} module, and pretty-printing indications specific to the
   [Format] module.
 
   The pretty-printing indication characters are introduced by
