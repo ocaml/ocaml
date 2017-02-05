@@ -106,6 +106,16 @@ parameter:
   | '?' label-name ':' pattern
   | '?' label-name ':' '(' pattern [':' typexpr] ['=' expr] ')'
 \end{syntax}
+See also the following language extensions:
+\hyperref[s:local-opens]{local opens},
+\hyperref[s:record-and-object-notations]{record and object notations},
+\hyperref[s:explicit-polymorphic-type]{explicit polymorphic type annotations},
+\hyperref[s-first-class-modules]{first-class modules},
+\hyperref[s:explicit-overriding-open]{overriding in open statements},
+\hyperref[s:bigarray-access]{syntax for Bigarray access},
+\hyperref[s:attributes]{attributes},
+\hyperref[s:extension-nodes]{extension nodes} and
+\hyperref[s:local-exceptions]{local exceptions}.
 
 The table below shows the relative precedences and associativity of
 operators and non-closed constructions. The constructions with higher
