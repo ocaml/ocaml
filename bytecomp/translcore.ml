@@ -441,7 +441,7 @@ let transl_primitive loc p env ty path =
       Lfunction{kind = Curried; params = [parm, Pgenval]; return = Pgenval;
                 body = Matching.inline_lazy_force (Lvar parm) Location.none;
                 loc = loc;
-                attr = default_function_attribute }
+                attr = default_stub_attribute }
   | Ploc kind ->
     let lam = lam_of_loc kind loc in
     begin match p.prim_arity with
@@ -449,7 +449,7 @@ let transl_primitive loc p env ty path =
       | 1 -> (* TODO: we should issue a warning ? *)
         let param = Ident.create "prim" in
         Lfunction{kind = Curried; params = [param, Pgenval]; return = Pgenval;
-                  attr = default_function_attribute;
+                  attr = default_stub_attribute;
                   loc = loc;
                   body = Lprim(Pmakeblock(0, Immutable, None),
                                [lam; Lvar param], loc)}
@@ -462,7 +462,7 @@ let transl_primitive loc p env ty path =
       let params = make_params p.prim_arity in
       let body = Lprim(prim, List.map (fun (id, _) -> Lvar id) params, loc) in
       Lfunction{ kind = Curried; params; return = Pgenval;
-                 attr = default_function_attribute;
+                 attr = default_stub_attribute;
                  loc = loc;
                  body }
 
@@ -711,7 +711,7 @@ and transl_exp0 e =
         let kind = if public_send then Public else Self in
         let obj = Ident.create "obj" and meth = Ident.create "meth" in
         Lfunction{kind = Curried; params = [obj, Pgenval; meth, Pgenval];
-                  return = Pgenval; attr = default_function_attribute;
+                  return = Pgenval; attr = default_stub_attribute;
                   loc = e.exp_loc;
                   body = Lsend(kind, Lvar meth, Lvar obj, [], e.exp_loc)}
       else if p.prim_name = "%sendcache" then
@@ -721,7 +721,7 @@ and transl_exp0 e =
                   params = [obj, Pgenval; meth, Pgenval;
                             cache, Pgenval; pos, Pgenval];
                   return = Pgenval;
-                  attr = default_function_attribute;
+                  attr = default_stub_attribute;
                   loc = e.exp_loc;
                   body = Lsend(Cached, Lvar meth, Lvar obj,
                                [Lvar cache; Lvar pos], e.exp_loc)}
@@ -1181,7 +1181,7 @@ and transl_apply ?(should_be_tailcall=false) ?(inlined = Default_inline)
           | lam ->
               Lfunction{kind = Curried; params = [id_arg, Pgenval];
                         return = Pgenval; body = lam;
-                        attr = default_function_attribute; loc = loc}
+                        attr = default_stub_attribute; loc = loc}
         in
         List.fold_left
           (fun body (id, lam) -> Llet(Strict, Pgenval, id, lam, body))
