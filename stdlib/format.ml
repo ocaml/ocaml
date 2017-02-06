@@ -1051,6 +1051,66 @@ let flush_buffer_formatter buf ppf =
 let flush_str_formatter () = flush_buffer_formatter stdbuf str_formatter
 
 (*
+  Abstract pretty-printing
+*)
+
+type formatter_output_item =
+  | Output_flush
+  | Output_newline
+  | Output_string of string
+  | Output_spaces of int
+  | Output_indent of int
+;;
+
+type formatter_output_buffer = {
+  mutable formatter_output_contents : formatter_output_item list;
+}
+;;
+
+let make_formatter_output_buffer () =
+  { formatter_output_contents = [] }
+;;
+
+let clear_formatter_output_buffer fo =
+  fo.formatter_output_contents <- []
+;;
+
+let get_formatter_output_buffer fo =
+  List.rev fo.formatter_output_contents
+;;
+
+let flush_formatter_output_buffer fo =
+  let fois = get_formatter_output_buffer fo in
+  clear_formatter_output_buffer fo;
+  fois
+;;
+
+let add_formatter_output_item fo foi =
+  fo.formatter_output_contents <-
+    foi :: fo.formatter_output_contents
+;;
+
+let formatter_of_formatter_output_buffer fo =
+  let formatter_flush fo () =
+    add_formatter_output_item fo Output_flush
+  and formatter_newline fo () =
+    add_formatter_output_item fo Output_newline
+  and formatter_string fo s i n =
+    add_formatter_output_item fo (Output_string (String.sub s i n))
+  and formatter_spaces fo n =
+    add_formatter_output_item fo (Output_spaces n)
+  and formatter_indent fo n =
+    add_formatter_output_item fo (Output_indent n) in
+
+  let f = formatter_string fo
+  and g = formatter_flush fo
+  and h = formatter_newline fo
+  and i = formatter_spaces fo
+  and j = formatter_indent fo in
+  pp_make_formatter f g h i j
+;;
+
+(*
 
   Basic functions on the 'standard' formatter
   (the formatter that prints to [Pervasives.stdout]).
@@ -1337,10 +1397,12 @@ let get_all_formatter_output_functions =
 
 
 (* Deprecated : error prone function, do not use it.
-   Define a formatter of your own writing to the buffer,
-   as in
+   This function is neither compositional nor incremental, since it flushes
+   the pretty-printer queue at each call.
+   To get the same functionality, define a formatter of your own writing to
+   the buffer argument, as in
    let ppf = formatter_of_buffer b
-   then use {!fprintf ppf} as useual. *)
+   then use {!fprintf ppf} as usual. *)
 let bprintf b (Format (fmt, _) : ('a, formatter, unit) format) =
   let k ppf acc = output_acc ppf acc; pp_flush_queue ppf false in
   make_printf k (formatter_of_buffer b) End_of_acc fmt

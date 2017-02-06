@@ -640,6 +640,64 @@ val formatter_of_out_functions :
   @since 4.04.0
 *)
 
+
+(** {6 Symbolic pretty-printing} *)
+
+(**
+  Symbolic pretty-printing is pretty-printing with no low level output.
+  When using a symbolic formatter, all regular pretty-printing activities
+  occur but output material is symbolic and recorded in a buffer of output
+  items. Flushing the buffer allows post-processing of output before low
+  level output operations.
+*)
+
+type formatter_output_item =
+  | Output_flush
+  | Output_newline
+  | Output_string of string
+  | Output_spaces of int
+  | Output_indent of int
+(**
+  The output items that symbolic pretty-printers would record:
+  - [Output_flush]: symbolic flush command.
+  - [Output_newline]: symbolic newline command.
+  - [Output_string s]: symbolic output for string [s].
+  - [Output_spaces n]: symbolic command to output [n] spaces.
+  - [Output_indent i]: symbolic indentation of size [i].
+*)
+
+type formatter_output_buffer = {
+  mutable formatter_output_contents : formatter_output_item list;
+}
+(**
+  The output buffer of a symbolic formatter.
+*)
+
+val make_formatter_output_buffer : unit -> formatter_output_buffer
+(** [make_formatter_output_buffer ()] returns a fresh [formatter_output_buffer] buffer. *)
+
+val clear_formatter_output_buffer : formatter_output_buffer -> unit
+(** [clear_formatter_output_buffer fo] resets [formatter_output_buffer] [fo]. *)
+
+val get_formatter_output_buffer : formatter_output_buffer -> formatter_output_item list
+(** [get_formatter_output_buffer fo] returns the contents of [formatter_output_buffer] [fo]. *)
+
+val flush_formatter_output_buffer : formatter_output_buffer -> formatter_output_item list
+(** [flush_formatter_output_buffer fo] clears buffer [fo] and returns its contents.
+  [flush_formatter_output_buffer fo] is equivalent to
+  [let fois = get_formatter_output_buffer fo in clear_formatter_output_buffer fo; fois]
+*)
+
+val add_formatter_output_item :
+  formatter_output_buffer -> formatter_output_item -> unit
+(** [add_formatter_output_item fo it] adds item [it] to
+  [formatter_output_buffer] [fo]. *)
+
+val formatter_of_formatter_output_buffer : formatter_output_buffer -> formatter
+(** [formatter_of_formatter_output_buffer fo] returns a symbolic formatter
+  that outputs to [formatter_output_buffer] [fo]. *)
+
+
 (** {6 Basic functions to use with formatters} *)
 
 val pp_open_hbox : formatter -> unit -> unit
@@ -875,6 +933,8 @@ val kasprintf : (string -> 'a) -> ('b, formatter, unit, 'a) format4 -> 'b
 val bprintf : Buffer.t -> ('a, formatter, unit) format -> 'a
   [@@ocaml.deprecated]
 (** @deprecated This function is error prone. Do not use it.
+   This function is neither compositional nor incremental, since it flushes
+   the pretty-printer queue at each call.
 
   If you need to print to some buffer [b], you must first define a
   formatter writing to [b], using [let to_b = formatter_of_buffer b]; then
