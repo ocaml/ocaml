@@ -756,20 +756,14 @@ val pp_set_formatter_out_functions :
 
 val pp_get_formatter_out_functions :
   formatter -> unit -> formatter_out_functions
+
+
 (** These functions are the basic ones: usual functions
-   operating on the standard formatter are defined via partial
-   evaluation of these primitives. For instance,
-   [print_string] is equal to [pp_print_string std_formatter].
-   @since 4.01.0 *)
+  operating on the standard formatter are defined via partial
+  evaluation of these primitives. For instance,
+  [print_string] is equal to [pp_print_string std_formatter].
+*)
 
-val pp_flush_formatter : formatter -> unit
-(** [pp_flush_formatter fmt] flushes [fmt]'s internal queue, ensuring that all
-    the printing and flushing actions have been performed. In addition, this
-    operation will close all boxes and reset the state of the formatter.
-
-    This will not flush [fmt]'s output. In most cases, the user may want to use
-    {!pp_print_flush} instead.
-    @since 4.04.0 *)
 
 (** {6 Convenience formatting functions.} *)
 

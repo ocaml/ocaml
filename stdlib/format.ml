@@ -905,9 +905,6 @@ let pp_get_formatter_output_functions state () =
   (state.pp_out_string, state.pp_out_flush)
 
 
-let pp_flush_formatter state =
-  pp_flush_queue state false
-
 (* The default function to output new lines. *)
 let display_newline state () = state.pp_out_string "\n" 0  1
 
