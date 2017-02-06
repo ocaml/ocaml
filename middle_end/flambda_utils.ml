@@ -79,8 +79,6 @@ let compare_const (c1 : Flambda.const) (c2 : Flambda.const) =
   | Char _, _ -> -1
   | _, Char _ -> 1
 
-[@@@ocaml.warning "+9"]
-
 let rec same (l1 : Flambda.t) (l2 : Flambda.t) =
   l1 == l2 || (* it is ok for the string case: if they are physically the same,
                  it is the same original branch *)
@@ -225,8 +223,6 @@ and sameswitch (fs1 : Flambda.switch) (fs2 : Flambda.switch) =
     && Misc.Stdlib.List.equal samecase fs1.consts fs2.consts
     && Misc.Stdlib.List.equal samecase fs1.blocks fs2.blocks
     && Misc.Stdlib.Option.equal same fs1.failaction fs2.failaction
-
-[@@@ocaml.warning "-9"]
 
 let can_be_merged = same
 
