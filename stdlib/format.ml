@@ -176,8 +176,10 @@ type formatter = {
   mutable pp_out_flush : unit -> unit;
   (* Output of new lines. *)
   mutable pp_out_newline : unit -> unit;
-  (* Output of indentation spaces. *)
+  (* Output of break hints spaces. *)
   mutable pp_out_spaces : int -> unit;
+  (* Output of indentation of new lines. *)
+  mutable pp_out_indent : int -> unit;
   (* Are tags printed ? *)
   mutable pp_print_tags : bool;
   (* Are tags marked ? *)
@@ -207,6 +209,7 @@ type formatter_out_functions = {
   out_flush : unit -> unit;
   out_newline : unit -> unit;
   out_spaces : int -> unit;
+  out_indent : int -> unit;
 }
 
 
@@ -284,6 +287,7 @@ let pp_infinity = 1000000010
 let pp_output_string state s = state.pp_out_string s 0 (String.length s)
 and pp_output_newline state = state.pp_out_newline ()
 and pp_output_spaces state n = state.pp_out_spaces n
+and pp_output_indent state n = state.pp_out_indent n
 
 (* To format a break, indenting a new line. *)
 let break_new_line state offset width =
@@ -294,7 +298,7 @@ let break_new_line state offset width =
   let real_indent = min state.pp_max_indent indent in
   state.pp_current_indent <- real_indent;
   state.pp_space_left <- state.pp_margin - state.pp_current_indent;
-  pp_output_spaces state state.pp_current_indent
+  pp_output_indent state state.pp_current_indent
 
 
 (* To force a line break inside a box: no offset is added. *)
@@ -876,18 +880,20 @@ let pp_set_formatter_out_functions state {
       out_flush = g;
       out_newline = h;
       out_spaces = i;
+      out_indent = j;
     } =
   state.pp_out_string <- f;
   state.pp_out_flush <- g;
   state.pp_out_newline <- h;
-  state.pp_out_spaces <- i
-
+  state.pp_out_spaces <- i;
+  state.pp_out_indent <- j
 
 let pp_get_formatter_out_functions state () = {
   out_string = state.pp_out_string;
   out_flush = state.pp_out_flush;
   out_newline = state.pp_out_newline;
   out_spaces = state.pp_out_spaces;
+  out_indent = state.pp_out_indent;
 }
 
 
@@ -916,14 +922,17 @@ let rec display_blanks state n =
   end
 
 
+(* The default function to output indentation of new lines. *)
+let display_indent = display_blanks
+
 (* Setting a formatter basic output functions as printing to a given
    [Pervasive.out_channel] value. *)
-let pp_set_formatter_out_channel state os =
-  state.pp_out_string <- output_substring os;
-  state.pp_out_flush <- (fun () -> flush os);
+let pp_set_formatter_out_channel state oc =
+  state.pp_out_string <- output_substring oc;
+  state.pp_out_flush <- (fun () -> flush oc);
   state.pp_out_newline <- display_newline state;
-  state.pp_out_spaces <- display_blanks state
-
+  state.pp_out_spaces <- display_blanks state;
+  state.pp_out_indent <- display_indent state
 
 (*
 
@@ -939,7 +948,7 @@ let default_pp_print_close_tag = ignore
 
 (* Bulding a formatter given its basic output functions.
    Other fields get reasonable default values. *)
-let pp_make_formatter f g h i =
+let pp_make_formatter f g h i j =
   (* The initial state of the formatter contains a dummy box. *)
   let pp_queue = make_queue () in
   let sys_tok =
@@ -970,6 +979,7 @@ let pp_make_formatter f g h i =
     pp_out_flush = g;
     pp_out_newline = h;
     pp_out_spaces = i;
+    pp_out_indent = j;
     pp_print_tags = false;
     pp_mark_tags = false;
     pp_mark_open_tag = default_pp_mark_open_tag;
@@ -980,11 +990,23 @@ let pp_make_formatter f g h i =
   }
 
 
-(* Make a formatter with default functions to output spaces and new lines. *)
+(* Build a formatter out of its out functions. *)
+let formatter_of_out_functions out_funs =
+  pp_make_formatter
+    out_funs.out_string
+    out_funs.out_flush
+    out_funs.out_newline
+    out_funs.out_spaces
+    out_funs.out_indent
+
+
+(* Make a formatter with default functions to output spaces,
+  indentation, and new lines. *)
 let make_formatter output flush =
-  let ppf = pp_make_formatter output flush ignore ignore in
+  let ppf = pp_make_formatter output flush ignore ignore ignore in
   ppf.pp_out_newline <- display_newline ppf;
   ppf.pp_out_spaces <- display_blanks ppf;
+  ppf.pp_out_indent <- display_indent ppf;
   ppf
 
 
