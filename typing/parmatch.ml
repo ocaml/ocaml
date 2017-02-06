@@ -764,7 +764,10 @@ let complete_constrs p all_tags =
   let not_tags = complete_tags c.cstr_consts c.cstr_nonconsts all_tags in
   let constrs = get_variant_constructors p.pat_env c.cstr_res in
   let others =
-    List.filter (fun cnstr -> List.exists (fun tag -> Types.equal_tag tag cnstr.cstr_tag) not_tags) constrs in
+    List.filter 
+      (fun cnstr -> 
+        List.exists (fun tag -> Types.equal_tag tag cnstr.cstr_tag) not_tags)
+      constrs in
   let const, nonconst =
     List.partition (fun cnstr -> cnstr.cstr_arity = 0) others in
   const @ nonconst
