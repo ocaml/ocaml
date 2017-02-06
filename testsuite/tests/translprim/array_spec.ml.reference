@@ -5,7 +5,7 @@
      addr_a = (makearray[addr] "a" "b" "c"))
     (seq (array.length[int] int_a) (array.length[float] float_a)
       (array.length[addr] addr_a)
-      (function a (array.length[gen] a))
+      (function a : int (array.length[gen] a))
       (array.get[int] int_a 0) (array.get[float] float_a 0)
       (array.get[addr] addr_a 0)
       (function a (array.get[gen] a 0))
