@@ -457,13 +457,18 @@ let simplify_lets lam =
       simplif (beta_reduce params body args)
   | Lapply ap -> Lapply {ap with ap_func = simplif ap.ap_func;
                                  ap_args = List.map simplif ap.ap_args}
-  | Lfunction{kind; params; return; body = l; attr; loc} ->
+  | Lfunction{kind; params; return=return1; body = l; attr; loc} ->
       begin match simplif l with
-        Lfunction{kind=Curried; params=params'; return; body; attr; loc}
+        Lfunction{kind=Curried; params=params'; return=return2; body; attr; loc}
         when kind = Curried && optimize ->
+          (* The return type is the type of the value returned after
+             applying all the parameters to the function. The return
+             type of the merged function taking [params @ params'] as
+             parameters is the type returned after applying [params']. *)
+          let return = return2 in
           Lfunction{kind; params = params @ params'; return; body; attr; loc}
       | body ->
-          Lfunction{kind; params; return; body; attr; loc}
+          Lfunction{kind; params; return = return1; body; attr; loc}
       end
   | Llet(_str, _k, v, Lvar w, l2) when optimize ->
       Hashtbl.add subst v (simplif (Lvar w));
