@@ -26,7 +26,9 @@ type source_provenance =
 type compiler_pass =
   | All
   | Parsing of file
-  | Preprocessing of file
+  | Parser of file
+  | Dash_pp of file
+  | Dash_ppx of file
   | Typing of file
   | Transl of file
   | Generate of file
@@ -53,8 +55,11 @@ val reset : unit -> unit
 val get : compiler_pass -> float option
 (** returns the runtime in seconds of a completed pass *)
 
+val time_call : compiler_pass -> (unit -> 'a) -> 'a
+(** [time_call pass f] calls [f] and records its runtime. *)
+
 val time : compiler_pass -> ('a -> 'b) -> 'a -> 'b
-(** [time pass f arg] Record the runtime of [f arg] *)
+(** [time pass f arg] records the runtime of [f arg] *)
 
 val accumulate_time : compiler_pass -> ('a -> 'b) -> 'a -> 'b
 (** Like time for passes that can run multiple times *)

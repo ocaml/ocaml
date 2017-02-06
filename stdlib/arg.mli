@@ -116,12 +116,12 @@ val parse_argv : ?current: int ref -> string array ->
   (key * spec * doc) list -> anon_fun -> usage_msg -> unit
 (** [Arg.parse_argv ~current args speclist anon_fun usage_msg] parses
   the array [args] as if it were the command line.  It uses and updates
-  the value of [~current] (if given), or [Arg.current].  You must set
+  the value of [~current] (if given), or {!Arg.current}.  You must set
   it before calling [parse_argv].  The initial value of [current]
   is the index of the program name (argument 0) in the array.
-  If an error occurs, [Arg.parse_argv] raises [Arg.Bad] with
+  If an error occurs, [Arg.parse_argv] raises {!Arg.Bad} with
   the error message as argument.  If option [-help] or [--help] is
-  given, [Arg.parse_argv] raises [Arg.Help] with the help message
+  given, [Arg.parse_argv] raises {!Arg.Help} with the help message
   as argument.
 *)
 
@@ -151,13 +151,13 @@ exception Help of string
 exception Bad of string
 (** Functions in [spec] or [anon_fun] can raise [Arg.Bad] with an error
     message to reject invalid arguments.
-    [Arg.Bad] is also raised by [Arg.parse_argv] in case of an error. *)
+    [Arg.Bad] is also raised by {!Arg.parse_argv} in case of an error. *)
 
 val usage : (key * spec * doc) list -> usage_msg -> unit
 (** [Arg.usage speclist usage_msg] prints to standard error
     an error message that includes the list of valid options.  This is
     the same message that {!Arg.parse} prints in case of error.
-    [speclist] and [usage_msg] are the same as for [Arg.parse]. *)
+    [speclist] and [usage_msg] are the same as for {!Arg.parse}. *)
 
 val usage_string : (key * spec * doc) list -> usage_msg -> string
 (** Returns the message that would have been printed by {!Arg.usage},
@@ -181,17 +181,18 @@ val current : int ref
     at the next element. *)
 
 val read_arg: string -> string array
-(** [Arg.read_arg file] reads linefeed terminated command line arguments from
+(** [Arg.read_arg file] reads newline-terminated command line arguments from
     file [file]. *)
 
 val read_arg0: string -> string array
-(** Identical to {!Arg.read_arg} but assumes NUL terminated command line
-    arguments *)
+(** Identical to {!Arg.read_arg} but assumes null character terminated command line
+    arguments. *)
 
 val write_arg: string -> string array -> unit
-(** [Arg.write_arg file args] writes the arguments [args] newline terminated
+(** [Arg.write_arg file args] writes the arguments [args] newline-terminated
     into the file [file]. If the any of the arguments in [args] contains a
-    newline use the function {!Args.write_arg0} instead *)
+    newline, use {!Arg.write_arg0} instead. *)
 
 val write_arg0: string -> string array -> unit
-(** Identical to {!Arg.write_arg} but uses NUL as terminator instead *)
+(** Identical to {!Arg.write_arg} but uses the null character for terminator
+    instead of newline. *)

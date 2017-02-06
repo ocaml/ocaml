@@ -97,7 +97,7 @@ INCLUDES=-I ../utils -I ../parsing -I ../typing -I ../bytecomp -I ../asmcomp \
          -I ../middle_end -I ../middle_end/base_types -I ../driver \
          -I ../toplevel
 COMPFLAGS= -absname -w +a-4-9-41-42-44-45-48 -strict-sequence -warn-error A \
- -safe-string -strict-formats $(INCLUDES)
+ -safe-string -strict-formats -bin-annot $(INCLUDES)
 LINKFLAGS=$(INCLUDES)
 VPATH := $(filter-out -I,$(INCLUDES))
 
@@ -147,7 +147,7 @@ $(call byte_and_opt,ocamloptp,$(ocamlcp_cmos) ocamloptp.cmo,)
 opt:: profiling.cmx
 
 install::
-	cp -- profiling.cmi profiling.cmo "$(INSTALL_LIBDIR)"
+	cp -- profiling.cmi profiling.cmo profiling.cmt profiling.cmti "$(INSTALL_LIBDIR)"
 
 installopt::
 	cp -- profiling.cmx profiling.$(O) "$(INSTALL_LIBDIR)"
@@ -290,20 +290,17 @@ $(call byte_and_opt,dumpobj,misc.cmo identifiable.cmo numbers.cmo tbl.cmo \
                     config.cmo ident.cmo opcodes.cmo bytesections.cmo \
 		    $(DUMPOBJ),)
 
-opnames.ml: ../byterun/caml/instruct.h
-	unset LC_ALL || : ; \
-	unset LC_CTYPE || : ; \
-	unset LC_COLLATE LANG || : ; \
-	sed -e '/[/][*]/d' \
-	    -e '/^#/d' \
-	    -e 's/enum \(.*\) {/let names_of_\1 = [|/' \
-	    -e 's/.*};$$/ |]/' \
-	    -e 's/\([A-Z][A-Z_0-9a-z]*\)/"\1"/g' \
-	    -e 's/,/;/g' \
-	../byterun/caml/instruct.h > opnames.ml
+make_opcodes.ml: make_opcodes.mll
+	$(CAMLLEX) make_opcodes.mll
+
+make_opcodes: make_opcodes.ml
+	$(CAMLC) make_opcodes.ml -o $@
+
+opnames.ml: ../byterun/caml/instruct.h make_opcodes
+	$(CAMLRUN) make_opcodes -opnames < $< > $@
 
 clean::
-	rm -f opnames.ml
+	rm -f opnames.ml make_opcodes make_opcodes.ml
 
 beforedepend:: opnames.ml
 
@@ -342,7 +339,7 @@ install::
 $(call byte_and_opt,primreq,config.cmo primreq.cmo,)
 
 clean::
-	rm -f "objinfo_helper$(EXE)"
+	rm -f "objinfo_helper$(EXE)" "objinfo_helper$(EXE).manifest"
 
 
 # Copy a bytecode executable, stripping debug info

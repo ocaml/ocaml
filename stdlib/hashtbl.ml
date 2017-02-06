@@ -203,6 +203,26 @@ let find h key =
           | Cons{key=k3; data=d3; next=next3} ->
               if compare key k3 = 0 then d3 else find_rec key next3
 
+let rec find_rec_opt key = function
+  | Empty ->
+      None
+  | Cons{key=k; data; next} ->
+      if compare key k = 0 then Some data else find_rec_opt key next
+
+let find_opt h key =
+  match h.data.(key_index h key) with
+  | Empty -> None
+  | Cons{key=k1; data=d1; next=next1} ->
+      if compare key k1 = 0 then Some d1 else
+      match next1 with
+      | Empty -> None
+      | Cons{key=k2; data=d2; next=next2} ->
+          if compare key k2 = 0 then Some d2 else
+          match next2 with
+          | Empty -> None
+          | Cons{key=k3; data=d3; next=next3} ->
+              if compare key k3 = 0 then Some d3 else find_rec_opt key next3
+
 let find_all h key =
   let rec find_in_bucket = function
   | Empty ->
@@ -361,6 +381,7 @@ module type S =
     val add: 'a t -> key -> 'a -> unit
     val remove: 'a t -> key -> unit
     val find: 'a t -> key -> 'a
+    val find_opt: 'a t -> key -> 'a option
     val find_all: 'a t -> key -> 'a list
     val replace : 'a t -> key -> 'a -> unit
     val mem : 'a t -> key -> bool
@@ -382,6 +403,7 @@ module type SeededS =
     val add : 'a t -> key -> 'a -> unit
     val remove : 'a t -> key -> unit
     val find : 'a t -> key -> 'a
+    val find_opt: 'a t -> key -> 'a option
     val find_all : 'a t -> key -> 'a list
     val replace : 'a t -> key -> 'a -> unit
     val mem : 'a t -> key -> bool
@@ -448,6 +470,26 @@ module MakeSeeded(H: SeededHashedType): (SeededS with type key = H.t) =
               | Empty -> raise Not_found
               | Cons{key=k3; data=d3; next=next3} ->
                   if H.equal key k3 then d3 else find_rec key next3
+
+    let rec find_rec_opt key = function
+      | Empty ->
+          None
+      | Cons{key=k; data; next} ->
+          if H.equal key k then Some data else find_rec_opt key next
+
+    let find_opt h key =
+      match h.data.(key_index h key) with
+      | Empty -> None
+      | Cons{key=k1; data=d1; next=next1} ->
+          if H.equal key k1 then Some d1 else
+          match next1 with
+          | Empty -> None
+          | Cons{key=k2; data=d2; next=next2} ->
+              if H.equal key k2 then Some d2 else
+              match next2 with
+              | Empty -> None
+              | Cons{key=k3; data=d3; next=next3} ->
+                  if H.equal key k3 then Some d3 else find_rec_opt key next3
 
     let find_all h key =
       let rec find_in_bucket = function

@@ -50,6 +50,10 @@
     For functions to decode the information recorded by the profiler,
     see the Spacetime offline library in otherlibs/. *)
 
+(** [enabled] is [true] if the compiler is configured with spacetime and [false]
+    otherwise *)
+val enabled : bool
+
 module Series : sig
   (** Type representing a file that will hold a series of heap snapshots
       together with additional information required to interpret those
@@ -62,7 +66,7 @@ module Series : sig
   (** [save_event] writes an event, which is an arbitrary string, into the
       given series file.  This may be used for identifying particular points
       during program execution when analysing the profile.
-      The optional [time] parameter is as for [Snapshot.take].
+      The optional [time] parameter is as for {!Snapshot.take}.
   *)
   val save_event : ?time:float -> t -> event_name:string -> unit
 
@@ -70,7 +74,7 @@ module Series : sig
       interpeting the snapshots that [series] contains and then closes the
       [series] file. This function must be called to produce a valid series
       file.
-      The optional [time] parameter is as for [Snapshot.take].
+      The optional [time] parameter is as for {!Snapshot.take}.
   *)
   val save_and_close : ?time:float -> t -> unit
 end
@@ -81,7 +85,7 @@ module Snapshot : sig
       result to the [series] file.  This function triggers a minor GC but does
       not allocate any memory itself.
       If the optional [time] is specified, it will be used instead of the
-      result of [Sys.time] as the timestamp of the snapshot.  Such [time]s
+      result of {!Sys.time} as the timestamp of the snapshot.  Such [time]s
       should start from zero and be monotonically increasing.  This parameter
       is intended to be used so that snapshots can be correlated against wall
       clock time (which is not supported in the standard library) rather than
@@ -90,6 +94,6 @@ module Snapshot : sig
   val take : ?time:float -> Series.t -> unit
 end
 
-(** Like [Series.save_event], but writes to the automatic snapshot file.
+(** Like {!Series.save_event}, but writes to the automatic snapshot file.
     This function is a no-op if OCAML_SPACETIME_INTERVAL was not set. *)
 val save_event_for_automatic_snapshots : event_name:string -> unit

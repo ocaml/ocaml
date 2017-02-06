@@ -51,8 +51,8 @@ UTILS=utils/config.cmo utils/misc.cmo utils/target_system.cmo \
   utils/targetint.cmo
 
 PARSING=parsing/location.cmo parsing/longident.cmo \
-  parsing/docstrings.cmo parsing/ast_helper.cmo \
-  parsing/syntaxerr.cmo parsing/parser.cmo \
+  parsing/docstrings.cmo parsing/syntaxerr.cmo \
+  parsing/ast_helper.cmo parsing/parser.cmo \
   parsing/lexer.cmo parsing/parse.cmo parsing/printast.cmo \
   parsing/pprintast.cmo \
   parsing/ast_mapper.cmo parsing/ast_iterator.cmo parsing/attr_helper.cmo \
@@ -75,6 +75,7 @@ TYPING=typing/ident.cmo typing/path.cmo \
   typing/typemod.cmo
 
 COMP=bytecomp/lambda.cmo bytecomp/printlambda.cmo \
+  bytecomp/semantics_of_primitives.cmo \
   bytecomp/typeopt.cmo bytecomp/switch.cmo bytecomp/matching.cmo \
   bytecomp/translobj.cmo bytecomp/translattribute.cmo \
   bytecomp/translcore.cmo \
@@ -123,6 +124,7 @@ ASMCOMP=\
   asmcomp/flambda_to_clambda.cmo \
   asmcomp/import_approx.cmo \
   asmcomp/un_anf.cmo \
+  asmcomp/afl_instrument.cmo \
   asmcomp/strmatch.cmo asmcomp/cmmgen.cmo \
   asmcomp/printmach.cmo asmcomp/selectgen.cmo \
   asmcomp/spacetime_profiling.cmo asmcomp/selection.cmo \
@@ -161,7 +163,6 @@ MIDDLE_END=\
   middle_end/base_types/export_id.cmo \
   middle_end/base_types/symbol.cmo \
   middle_end/pass_wrapper.cmo \
-  middle_end/semantics_of_primitives.cmo \
   middle_end/allocated_const.cmo \
   middle_end/projection.cmo \
   middle_end/flambda.cmo \
@@ -230,7 +231,8 @@ compilerlibs/ocamlmiddleend.cma: $(MIDDLE_END)
 compilerlibs/ocamlmiddleend.cmxa: $(MIDDLE_END:%.cmo=%.cmx)
 	$(CAMLOPT) -a -o $@ $^
 partialclean::
-	rm -f compilerlibs/ocamlmiddleend.cma
+	rm -f compilerlibs/ocamlmiddleend.cma compilerlibs/ocamlmiddleend.cmxa \
+	      compilerlibs/ocamlmiddleend.$(A)
 
 
 # Tools
@@ -286,9 +288,11 @@ check_arch:
 ARCHES=amd64 i386 arm arm64 power sparc s390x
 
 check_all_arches:
-	@for i in $(ARCHES); do \
-	  $(MAKEREC) --no-print-directory check_arch ARCH=$$i; \
-	done
+	@STATUS=0; \
+	 for i in $(ARCHES); do \
+	   $(MAKEREC) --no-print-directory check_arch ARCH=$$i || STATUS=1; \
+	 done; \
+	 exit $$STATUS
 
 # Compiler Plugins
 
@@ -347,3 +351,16 @@ partialclean::
 	rm -f ocamlnat$(EXE)
 
 toplevel/opttoploop.cmx: otherlibs/dynlink/dynlink.cmxa
+
+# The numeric opcodes
+
+bytecomp/opcodes.ml: byterun/caml/instruct.h tools/make_opcodes
+	$(CAMLRUN) tools/make_opcodes -opcodes < $< > $@
+
+tools/make_opcodes: tools/make_opcodes.mll
+	cd tools && $(MAKE) make_opcodes
+
+partialclean::
+	rm -f bytecomp/opcodes.ml
+
+beforedepend:: bytecomp/opcodes.ml

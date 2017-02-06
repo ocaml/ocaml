@@ -54,6 +54,12 @@ external is_directory : string -> bool = "caml_sys_is_directory"
 external remove: string -> unit = "caml_sys_remove"
 external rename : string -> string -> unit = "caml_sys_rename"
 external getenv: string -> string = "caml_sys_getenv"
+
+let getenv_opt s =
+  (* TODO: expose a non-raising primitive directly. *)
+  try Some (getenv s)
+  with Not_found -> None
+
 external command: string -> int = "caml_sys_system_command"
 external time: unit -> (float [@unboxed]) =
   "caml_sys_time" "caml_sys_time_unboxed" [@@noalloc]

@@ -125,3 +125,6 @@ manual/tools/texexpand text eol=lf
 # Checking out the parsetree test files with \r\n endings causes all the
 # locations to change, so use \n endings only, even on Windows
 testsuite/tests/parsing/*.ml text eol=lf
+
+# Similarly, the docstring tests fail for the same reason on Windows
+testsuite/tests/docstrings/empty.ml text eol=lf

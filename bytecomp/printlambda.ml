@@ -151,7 +151,8 @@ let primitive ppf = function
       in
       let init =
         match init with
-        | Initialization -> "(init)"
+        | Heap_initialization -> "(heap-init)"
+        | Root_initialization -> "(root-init)"
         | Assignment -> ""
       in
       fprintf ppf "setfield_%s%s %i" instr init n
@@ -159,7 +160,8 @@ let primitive ppf = function
   | Psetfloatfield (n, init) ->
       let init =
         match init with
-        | Initialization -> "(init)"
+        | Heap_initialization -> "(heap-init)"
+        | Root_initialization -> "(root-init)"
         | Assignment -> ""
       in
       fprintf ppf "setfloatfield%s %i" init n
@@ -412,9 +414,11 @@ let name_of_primitive = function
   | Pint_as_pointer -> "Pint_as_pointer"
   | Popaque -> "Popaque"
 
-let function_attribute ppf { inline; specialise; is_a_functor } =
+let function_attribute ppf { inline; specialise; is_a_functor; stub } =
   if is_a_functor then
     fprintf ppf "is_a_functor@ ";
+  if stub then
+    fprintf ppf "stub@ ";
   begin match inline with
   | Default_inline -> ()
   | Always_inline -> fprintf ppf "always_inline@ "

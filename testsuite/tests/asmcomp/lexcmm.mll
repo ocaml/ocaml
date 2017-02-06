@@ -27,6 +27,7 @@ let keyword_table =
     "case", CASE;
     "catch", CATCH;
     "checkbound", CHECKBOUND;
+    "data", DATA;
     "exit", EXIT;
     "extcall", EXTCALL;
     "float", FLOAT;
@@ -34,6 +35,7 @@ let keyword_table =
     "float64", FLOAT64;
     "floatofint", FLOATOFINT;
     "function", FUNCTION;
+    "global", GLOBAL;
     "half", HALF;
     "if", IF;
     "int", INT;
@@ -121,8 +123,12 @@ let report_error lexbuf msg =
 
 }
 
+let newline = ('\013'* '\010')
+
 rule token = parse
-    [' ' '\010' '\013' '\009' '\012'] +
+    newline
+      { Lexing.new_line lexbuf; token lexbuf }
+  | [' ' '\009' '\012'] +
       { token lexbuf }
   | "+a" { ADDA }
   | "+v" { ADDV }
@@ -153,13 +159,12 @@ rule token = parse
   | "<f" { LTF }
   | "<" { LTI }
   | "*f" { MULF }
-  | "*" { MULI }
+  | "*" { STAR }
   | "!=a" { NEA }
   | "!=f" { NEF }
   | "!=" { NEI }
   | "]" { RBRACKET }
   | ")" { RPAREN }
-  | "*" { STAR }
   | "-f" { SUBF }
   | "-" { SUBI }
   | '-'? (['0'-'9']+ | "0x" ['0'-'9' 'a'-'f' 'A'-'F']+
@@ -172,7 +177,7 @@ rule token = parse
       { FLOATCONST(Lexing.lexeme lexbuf) }
   | ['A'-'Z' 'a'-'z' '\223'-'\246' '\248'-'\255' ]
     (['A'-'Z' 'a'-'z' '_' '\192'-'\214' '\216'-'\246' '\248'-'\255'
-      '\'' '0'-'9' ]) *
+      '\'' '0'-'9' ]) * '/'? (['0'-'9'] *)
       { let s = Lexing.lexeme lexbuf in
         try
           Hashtbl.find keyword_table s
@@ -186,6 +191,22 @@ rule token = parse
       { comment_depth := 1;
         comment lexbuf;
         token lexbuf }
+  | '{' ['A' - 'Z' 'a'-'z' '/' ',' '.' '-' '_' ' ''0'-'9']+
+        ':' [ '0'-'9' ]+ ',' ['0'-'9' ]+ '-' ['0'-'9' ]+ '}'
+      {
+        let loc_s = Lexing.lexeme lexbuf in
+        let pos_fname, pos_lnum, start, end_ =
+          Scanf.sscanf loc_s "{%s@:%i,%i-%i}" (fun file line start end_ ->
+              (file, line, start, end_))
+        in
+        let loc_start =
+          Lexing.{ pos_fname; pos_lnum; pos_bol = 0; pos_cnum = start }
+        in
+        let loc_end =
+          Lexing.{ pos_fname; pos_lnum; pos_bol = 0; pos_cnum = end_ }
+        in
+        let location = Location.{ loc_start; loc_end; loc_ghost = false } in
+        LOCATION location }
   | _ { raise(Error(Illegal_character)) }
 
 and comment = parse
@@ -196,6 +217,8 @@ and comment = parse
         if !comment_depth > 0 then comment lexbuf }
   | eof
       { raise (Error(Unterminated_comment)) }
+  | newline
+      { Lexing.new_line lexbuf; comment lexbuf }
   | _
       { comment lexbuf }
 
@@ -215,3 +238,4 @@ and string = parse
   | _
       { store_string_char(Lexing.lexeme_char lexbuf 0);
         string lexbuf }
+

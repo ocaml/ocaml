@@ -51,9 +51,9 @@ CAMLprim value unix_ftruncate_64(value fd, value len)
 #else
 
 CAMLprim value unix_ftruncate(value fd, value len)
-{ invalid_argument("ftruncate not implemented"); }
+{ caml_invalid_argument("ftruncate not implemented"); }
 
 CAMLprim value unix_ftruncate_64(value fd, value len)
-{ invalid_argument("ftruncate not implemented"); }
+{ caml_invalid_argument("ftruncate not implemented"); }
 
 #endif

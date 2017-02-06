@@ -26,11 +26,7 @@ let bunch =
 Random.init 314;;
 
 let random_string n =
-  let result = String.create n in
-  for i = 0 to n - 1 do
-    result.[i] <- Char.chr (32 + Random.int 95);
-  done;
-  result
+  String.init n (fun _ -> Char.chr (32 + Random.int 95))
 ;;
 
 let added = ref 0;;

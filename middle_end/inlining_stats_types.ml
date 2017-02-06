@@ -73,9 +73,9 @@ end
 module Not_inlined = struct
   type t =
     | Classic_mode
-    | Function_obviously_too_large of int
+    | Above_threshold of int
     | Annotation
-    | Unspecialised
+    | No_useful_approximations
     | Unrolling_depth_exceeded
     | Self_call
     | Without_subfunctions of Wsb.t
@@ -86,19 +86,20 @@ module Not_inlined = struct
     | Classic_mode ->
       Format.pp_print_text ppf
         "This function was prevented from inlining by `-Oclassic'."
-    | Function_obviously_too_large size ->
+    | Above_threshold size ->
       Format.pp_print_text ppf
         "This function was not inlined because \
-         it was obviously too large";
+         it was larger than the current size threshold";
         Format.fprintf ppf "(%i)" size
     | Annotation ->
       Format.pp_print_text ppf
         "This function was not inlined because \
          of an annotation."
-    | Unspecialised ->
+    | No_useful_approximations ->
       Format.pp_print_text ppf
         "This function was not inlined because \
-         its parameters could not be specialised."
+         there was no useful information about any of its parameters, \
+         and it was not particularly small."
     | Unrolling_depth_exceeded ->
       Format.pp_print_text ppf
         "This function was not inlined because \
@@ -118,9 +119,9 @@ module Not_inlined = struct
 
   let calculation ~depth ppf = function
     | Classic_mode
-    | Function_obviously_too_large _
+    | Above_threshold _
     | Annotation
-    | Unspecialised
+    | No_useful_approximations
     | Unrolling_depth_exceeded
     | Self_call -> ()
     | Without_subfunctions wsb ->
@@ -169,7 +170,7 @@ end
 module Not_specialised = struct
   type t =
     | Classic_mode
-    | Function_obviously_too_large of int
+    | Above_threshold of int
     | Annotation
     | Not_recursive
     | Not_closed
@@ -183,10 +184,10 @@ module Not_specialised = struct
       Format.pp_print_text ppf
         "This function was prevented from specialising by \
           `-Oclassic'."
-    | Function_obviously_too_large size ->
+    | Above_threshold size ->
       Format.pp_print_text ppf
         "This function was not specialised because \
-         it was obviously too large";
+         it was larger than the current size threshold";
         Format.fprintf ppf "(%i)" size
     | Annotation ->
       Format.pp_print_text ppf
@@ -220,7 +221,7 @@ module Not_specialised = struct
 
   let calculation ~depth ppf = function
     | Classic_mode
-    | Function_obviously_too_large _
+    | Above_threshold _
     | Annotation
     | Not_recursive
     | Not_closed

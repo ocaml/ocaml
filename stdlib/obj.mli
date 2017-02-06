@@ -50,7 +50,7 @@ external field : t -> int -> t = "%obj_field"
 
     For experts only:
     [set_field] et al can be made safe by first wrapping the block in
-    [Sys.opaque_identity], so any information about its contents will not
+    {!Sys.opaque_identity}, so any information about its contents will not
     be propagated.
 *)
 external set_field : t -> int -> t -> unit = "%obj_set_field"

@@ -30,6 +30,6 @@ CAMLprim value unix_listen(value sock, value backlog)
 #else
 
 CAMLprim value unix_listen(value sock, value backlog)
-{ invalid_argument("listen not implemented"); }
+{ caml_invalid_argument("listen not implemented"); }
 
 #endif

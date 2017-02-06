@@ -1100,7 +1100,7 @@ let new_declaration newtype manifest =
     type_loc = Location.none;
     type_attributes = [];
     type_immediate = false;
-    type_unboxed = { unboxed = false; default = false };
+    type_unboxed = unboxed_false_default_false;
   }
 
 let instance_constructor ?in_pattern cstr =
@@ -1384,32 +1384,35 @@ let expand_abbrev_gen kind find_type_expansion env ty =
               ()
             end;
           let ty' = repr ty' in
-          assert (ty != ty');
+          (* assert (ty != ty'); *) (* PR#7324 *)
           ty'
       | None ->
-          let (params, body, lv) =
-            try find_type_expansion path env with Not_found ->
-              raise Cannot_expand
-          in
-          (* prerr_endline
-            ("add a "^string_of_kind kind^" expansion for "^Path.name path);*)
-          let ty' = subst env level kind abbrev (Some ty) params args body in
-          (* Hack to name the variant type *)
-          begin match repr ty' with
-            {desc=Tvariant row} as ty when static_row row ->
-              ty.desc <- Tvariant { row with row_name = Some (path, args) }
-          | _ -> ()
-          end;
-          (* For gadts, remember type as non exportable *)
-          (* The ambiguous level registered for ty' should be the highest *)
-          if !trace_gadt_instances then begin
-            match max lv (Env.gadt_instance_level env ty) with
-              None -> ()
-            | Some lv ->
-                if level < lv then raise (Unify [(ty, newvar2 level)]);
-                Env.add_gadt_instances env lv [ty; ty']
-          end;
-          ty'
+          match find_type_expansion path env with
+          | exception Not_found ->
+            (* another way to expand is to normalize the path itself *)
+            let path' = Env.normalize_path None env path in
+            if Path.same path path' then raise Cannot_expand
+            else newty2 level (Tconstr (path', args, abbrev))
+          | (params, body, lv) ->
+            (* prerr_endline
+              ("add a "^string_of_kind kind^" expansion for "^Path.name path);*)
+            let ty' = subst env level kind abbrev (Some ty) params args body in
+            (* Hack to name the variant type *)
+            begin match repr ty' with
+              {desc=Tvariant row} as ty when static_row row ->
+                ty.desc <- Tvariant { row with row_name = Some (path, args) }
+            | _ -> ()
+            end;
+            (* For gadts, remember type as non exportable *)
+            (* The ambiguous level registered for ty' should be the highest *)
+            if !trace_gadt_instances then begin
+              match max lv (Env.gadt_instance_level env ty) with
+                None -> ()
+              | Some lv ->
+                  if level < lv then raise (Unify [(ty, newvar2 level)]);
+                  Env.add_gadt_instances env lv [ty; ty']
+            end;
+            ty'
       end
   | _ ->
       assert false
@@ -1632,27 +1635,42 @@ let occur_in env ty0 t =
 (* PR#6405: not needed since we allow recursion and work on normalized types *)
 (* PR#6992: we actually need it for contractiveness *)
 (* This is a simplified version of occur, only for the rectypes case *)
-let rec local_non_recursive_abbrev visited env p ty =
+
+let rec local_non_recursive_abbrev strict visited env p ty =
+  (*Format.eprintf "@[Check %s =@ %a@]@." (Path.name p) !Btype.print_raw ty;*)
   let ty = repr ty in
   if not (List.memq ty visited) then begin
     match ty.desc with
       Tconstr(p', args, _abbrev) ->
         if Path.same p p' then raise Occur;
-        if is_contractive env p' then () else
+        if not strict && is_contractive env p' then () else
         let visited = ty :: visited in
         begin try
-          List.iter (local_non_recursive_abbrev visited env p) args
-        with Occur -> try
-          local_non_recursive_abbrev visited env p
+          (* try expanding, since [p] could be hidden *)
+          local_non_recursive_abbrev strict visited env p
             (try_expand_head try_expand_once env ty)
         with Cannot_expand ->
-          raise Occur
+          let params =
+            try (Env.find_type p' env).type_params
+            with Not_found -> args
+          in
+          List.iter2
+            (fun tv ty ->
+              let strict = strict || not (is_Tvar (repr tv)) in
+              local_non_recursive_abbrev strict visited env p ty)
+            params args
         end
-    | _ -> ()
+    | _ ->
+        if strict then (* PR#7374 *)
+          let visited = ty :: visited in
+          iter_type_expr (local_non_recursive_abbrev true visited env p) ty
   end
 
 let local_non_recursive_abbrev env p ty =
-  try local_non_recursive_abbrev [] env p ty; true
+  try (* PR#7397: need to check trace_gadt_instances *)
+    wrap_trace_gadt_instances env
+      (local_non_recursive_abbrev false [] env p) ty;
+    true
   with Occur -> false
 
 
@@ -2408,7 +2426,8 @@ and unify3 env t1 t1' t2 t2' =
     try
       begin match (d1, d2) with
         (Tarrow (l1, t1, u1, c1), Tarrow (l2, t2, u2, c2)) when l1 = l2 ||
-        !Clflags.classic && not (is_optional l1 || is_optional l2) ->
+        (!Clflags.classic || !umode = Pattern) &&
+        not (is_optional l1 || is_optional l2) ->
           unify  env t1 t2; unify env  u1 u2;
           begin match commu_repr c1, commu_repr c2 with
             Clink r, c2 -> set_commu r c2
@@ -4133,12 +4152,21 @@ exception Non_closed0
 let visited = ref TypeSet.empty
 
 let rec closed_schema_rec env ty =
-  let ty = expand_head env ty in
+  let ty = repr ty in
   if TypeSet.mem ty !visited then () else begin
     visited := TypeSet.add ty !visited;
     match ty.desc with
       Tvar _ when ty.level <> generic_level ->
         raise Non_closed0
+    | Tconstr _ ->
+        let old = !visited in
+        begin try iter_type_expr (closed_schema_rec env) ty
+        with Non_closed0 -> try
+          visited := old;
+          closed_schema_rec env (try_expand_head try_expand_safe env ty)
+        with Cannot_expand ->
+          raise Non_closed0
+        end
     | Tfield(_, kind, t1, t2) ->
         if field_kind_repr kind = Fpresent then
           closed_schema_rec env t1;

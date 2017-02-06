@@ -791,7 +791,10 @@ let instr_list _ppf lexbuf =
         | Not_found -> error ("No source file for " ^ mdle ^ ".") in
       let point =
         if column <> -1 then
-          (point_of_coord buffer line 1) + column
+          try
+            (point_of_coord buffer line 1) + column
+          with Out_of_range ->
+            -1
         else
           -1 in
         let beginning =

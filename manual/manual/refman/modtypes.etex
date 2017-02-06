@@ -9,6 +9,7 @@ specify the general shape and type properties of modules.
 \ikwd{end\@\texttt{end}}
 \ikwd{functor\@\texttt{functor}}
 \ikwd{with\@\texttt{with}}
+\ikwd{and\@\texttt{and}}
 \ikwd{val\@\texttt{val}}
 \ikwd{external\@\texttt{external}}
 \ikwd{type\@\texttt{type}}
@@ -50,6 +51,13 @@ specification:
         | 'open' module-path
         | 'include' module-type
 \end{syntax}
+See also the following language extensions:
+\hyperref[s:module-type-of]{recovering the type of a module},
+\hyperref[s:signature-substitution]{substitution inside a signature},
+\hyperref[s:module-alias]{type-level module aliases},
+\hyperref[s:attributes]{attributes},
+\hyperref[s:extension-nodes]{extension nodes} and
+\hyperref[s:generative-functors]{generative functors}.
 
 \subsection{Simple module types}
 

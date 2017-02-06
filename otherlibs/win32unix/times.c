@@ -49,7 +49,7 @@ value unix_times(value unit) {
     uerror("times", Nothing);
   }
 
-  res = alloc_small(4 * Double_wosize, Double_array_tag);
+  res = caml_alloc_small(4 * Double_wosize, Double_array_tag);
   Store_double_field(res, 0, to_sec(utime));
   Store_double_field(res, 1, to_sec(stime));
   Store_double_field(res, 2, 0);

@@ -36,6 +36,12 @@ implicit dependencies.
 \item["-allow-approx"]
 Allow falling back on a lexer-based approximation when parsing fails.
 
+\item["-args" \var{filename}]
+ Read additional newline-terminated command line arguments from \var{filename}.
+
+\item["-args0" \var{filename}]
+ Read additional null character terminated command line arguments from \var{filename}.
+
 \item["-as-map"]
 For the following files, do not include delayed dependencies for
 module aliases.

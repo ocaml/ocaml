@@ -184,7 +184,7 @@ let merge_constraint initial_env loc sg constr =
             type_newtype_level = None;
             type_attributes = [];
             type_immediate = false;
-            type_unboxed = { unboxed = false; default = false };
+            type_unboxed = unboxed_false_default_false;
           }
         and id_row = Ident.create (s^"#row") in
         let initial_env =
@@ -1291,6 +1291,8 @@ and type_structure ?(toplevel = false) funct_body anchor env sstr scope =
             md_loc = pmb_loc;
           }
         in
+        (*prerr_endline (Ident.unique_toplevel_name id);*)
+        Mtype.lower_nongen (Ident.binding_time id - 1) md.md_type;
         let newenv = Env.enter_module_declaration id md env in
         Tstr_module {mb_id=id; mb_name=name; mb_expr=modl;
                      mb_attributes=attrs;  mb_loc=pmb_loc;

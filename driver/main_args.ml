@@ -726,16 +726,25 @@ let mk_no_strict_formats f =
 
 let mk_args f =
   "-args", Arg.Expand f,
-  "<file> Read additional newline separated command line arguments \n\
+  "<file> Read additional newline-terminated command line arguments\n\
   \      from <file>"
 ;;
 
 let mk_args0 f =
   "-args0", Arg.Expand f,
-  "<file> Read additional NUL separated command line arguments from \n\
-  \      <file>"
+  "<file> Read additional null character terminated command line arguments\n\
+          from <file>"
 ;;
 
+let mk_afl_instrument f =
+  "-afl-instrument", Arg.Unit f, "Enable instrumentation for afl-fuzz"
+;;
+
+let mk_afl_inst_ratio f =
+  "-afl-inst-ratio", Arg.Int f,
+  "Configure percentage of branches instrumented\n\
+  \     (advanced, see afl-fuzz docs for AFL_INST_RATIO)"
+;;
 
 let mk__ f =
   "-", Arg.String f,
@@ -841,6 +850,8 @@ module type Toplevel_options = sig
   val _nopromptcont : unit -> unit
   val _plugin : string -> unit
   val _stdin : unit -> unit
+  val _args : string -> string array
+  val _args0 : string -> string array
 end
 ;;
 
@@ -864,6 +875,7 @@ end;;
 module type Bytetop_options = sig
   include Toplevel_options
   val _dinstr : unit -> unit
+
 end;;
 
 module type Optcommon_options = sig
@@ -925,6 +937,8 @@ module type Optcomp_options = sig
   val _pp : string -> unit
   val _S : unit -> unit
   val _shared : unit -> unit
+  val _afl_instrument : unit -> unit
+  val _afl_inst_ratio : int -> unit
 end;;
 
 module type Opttop_options = sig
@@ -1102,6 +1116,9 @@ struct
     mk_drawlambda F._drawlambda;
     mk_dlambda F._dlambda;
     mk_dinstr F._dinstr;
+
+    mk_args F._args;
+    mk_args0 F._args0;
   ]
 end;;
 
@@ -1110,6 +1127,8 @@ struct
   let list = [
     mk_a F._a;
     mk_absname F._absname;
+    mk_afl_instrument F._afl_instrument;
+    mk_afl_inst_ratio F._afl_inst_ratio;
     mk_annot F._annot;
     mk_binannot F._binannot;
     mk_inline_branch_factor F._inline_branch_factor;
