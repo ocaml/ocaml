@@ -424,6 +424,18 @@ opt-core: runtimeopt
 	$(MAKE) ocamlopt
 	$(MAKE) libraryopt
 
+.PHONY: base.opt
+base.opt:
+	$(MAKE) checkstack
+	$(MAKE) runtime
+	$(MAKE) core
+	$(MAKE) ocaml
+	$(MAKE) opt-core
+	$(MAKE) ocamlc.opt
+	$(MAKE) otherlibraries $(WITH_DEBUGGER) $(WITH_OCAMLDOC)
+	$(MAKE) ocamlopt.opt
+	$(MAKE) otherlibrariesopt
+
 # Core bootstrapping cycle
 coreboot:
 # Save the original bootstrap compiler
