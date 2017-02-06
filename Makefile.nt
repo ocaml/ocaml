@@ -13,6 +13,4 @@
 #*                                                                        *
 #**************************************************************************
 
-# The main Makefile
-
-include Makefile.shared
+include Makefile
