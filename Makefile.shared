@@ -543,18 +543,18 @@ flexdll: flexdll/Makefile
 	cd stdlib && $(MAKE) COMPILER=../boot/ocamlc stdlib.cma std_exit.cmo
 	cd stdlib && cp stdlib.cma std_exit.cmo *.cmi ../boot
 	cd flexdll && \
-	 $(MAKECMD) MSVC_DETECT=0 TOOLCHAIN=$(TOOLCHAIN) TOOLPREF=$(TOOLPREF) \
+	 $(MAKE) MSVC_DETECT=0 TOOLCHAIN=$(TOOLCHAIN) TOOLPREF=$(TOOLPREF) \
 	            CHAINS=$(FLEXDLL_CHAIN) NATDYNLINK=false \
 	            OCAMLOPT="../boot/ocamlrun ../boot/ocamlc -I ../boot" \
 	            flexlink.exe support
 	cd byterun && $(MAKE) clean
-	$(MAKEREC) partialclean
+	$(MAKE) partialclean
 
 .PHONY: flexlink.opt
 flexlink.opt:
 	cd flexdll && \
 	mv flexlink.exe flexlink && \
-	$(MAKECMD) OCAML_FLEXLINK="../boot/ocamlrun ./flexlink" MSVC_DETECT=0 \
+	$(MAKE) OCAML_FLEXLINK="../boot/ocamlrun ./flexlink" MSVC_DETECT=0 \
 	           TOOLCHAIN=$(TOOLCHAIN) TOOLPREF=$(TOOLPREF) \
 	           OCAMLOPT="../ocamlopt.opt -I ../stdlib" flexlink.exe && \
 	mv flexlink.exe flexlink.opt && \
@@ -1142,7 +1142,7 @@ beforedepend:: $(ARCH_SPECIFIC)
 check_arch:
 	@echo "========= CHECKING asmcomp/$(ARCH) =============="
 	@rm -f $(ARCH_SPECIFIC) asmcomp/emit.ml asmcomp/*.cm*
-	@$(MAKEREC) compilerlibs/ocamloptcomp.cma \
+	@$(MAKE) compilerlibs/ocamloptcomp.cma \
 	            >/dev/null
 	@rm -f $(ARCH_SPECIFIC) asmcomp/emit.ml asmcomp/*.cm*
 
@@ -1151,7 +1151,7 @@ ARCHES=amd64 i386 arm arm64 power sparc s390x
 check_all_arches:
 	@STATUS=0; \
 	 for i in $(ARCHES); do \
-	   $(MAKEREC) --no-print-directory check_arch ARCH=$$i || STATUS=1; \
+	   $(MAKE) --no-print-directory check_arch ARCH=$$i || STATUS=1; \
 	 done; \
 	 exit $$STATUS
 

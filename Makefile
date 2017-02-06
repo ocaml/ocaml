@@ -15,7 +15,6 @@
 
 # The main Makefile
 
-MAKEREC=$(MAKE)
 include Makefile.shared
 
 # Hard bootstrap how-to:

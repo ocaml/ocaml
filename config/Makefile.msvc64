@@ -205,11 +205,6 @@ OTHERLIBRARIES=win32unix systhreads str num win32graph dynlink bigarray
 BNG_ARCH=generic
 BNG_ASM_LEVEL=0
 
-############# Aliases for common commands
-
-MAKEREC=$(MAKE) -f Makefile.nt
-MAKECMD=$(MAKE)
-
 ############# for the testsuite makefiles
 #ml let topdir = "" and wintopdir = "";;
 OTOPDIR=$(WINTOPDIR)
