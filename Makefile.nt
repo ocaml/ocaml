@@ -17,12 +17,6 @@
 
 include Makefile.shared
 
-# Compile the native-code compiler
-opt-core:
-	$(MAKEREC) runtimeopt
-	$(MAKEREC) ocamlopt
-	$(MAKEREC) libraryopt
-
 opt:
 	$(MAKEREC) opt-core
 	$(MAKEREC) otherlibrariesopt ocamltoolsopt
@@ -43,7 +37,7 @@ natruntop:
 	$(MAKEREC) ocamlnat
 	@rlwrap --help 2>/dev/null && $(EXTRAPATH) rlwrap $(NATRUNTOP) || $(EXTRAPATH) $(NATRUNTOP)
 
-.PHONY: opt-core opt opt.opt
+.PHONY: opt opt.opt
 .PHONY: world.opt
 
 include .depend

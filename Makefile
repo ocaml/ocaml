@@ -33,12 +33,6 @@ world.opt:
 # make clean runtime coreall
 # make coreboot [new system -- now in a stable state]
 
-# Compile the native-code compiler
-opt-core:
-	$(MAKE) runtimeopt
-	$(MAKE) ocamlopt
-	$(MAKE) libraryopt
-
 opt:
 	$(MAKE) runtimeopt
 	$(MAKE) ocamlopt
@@ -76,7 +70,7 @@ natruntop:
 	$(MAKE) ocamlnat
 	@rlwrap --help 2>/dev/null && rlwrap $(NATRUNTOP) || $(NATRUNTOP)
 
-.PHONY: opt-core opt opt.opt
+.PHONY: opt opt.opt
 .PHONY: world.opt
 
 include .depend

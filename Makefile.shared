@@ -418,6 +418,12 @@ promote: promote-cross
 cleanboot:
 	rm -rf boot/Saved/Saved.prev/*
 
+# Compile the native-code compiler
+.PHONY: opt-core
+opt-core: runtimeopt
+	$(MAKE) ocamlopt
+	$(MAKE) libraryopt
+
 # Core bootstrapping cycle
 coreboot:
 # Save the original bootstrap compiler
