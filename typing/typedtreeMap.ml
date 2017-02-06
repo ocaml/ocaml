@@ -259,7 +259,7 @@ module MakeMap(Map : MapArgument) = struct
     match pat_extra with
       | Tpat_constraint ct, loc, attrs ->
           (Tpat_constraint (map_core_type  ct), loc, attrs)
-      | (Tpat_type _ | Tpat_unpack), _, _ -> pat_extra
+      | (Tpat_type _ | Tpat_unpack | Tpat_open _ ), _, _ -> pat_extra
 
   and map_expression exp =
     let exp = Map.enter_expression exp in
@@ -271,8 +271,8 @@ module MakeMap(Map : MapArgument) = struct
           Texp_let (rec_flag,
                     map_bindings list,
                     map_expression exp)
-        | Texp_function (label, cases, partial) ->
-          Texp_function (label, map_cases cases, partial)
+        | Texp_function { arg_label; param; cases; partial; } ->
+          Texp_function { arg_label; param; cases = map_cases cases; partial; }
         | Texp_apply (exp, list) ->
           Texp_apply (map_expression exp,
                       List.map (fun (label, expo) ->
@@ -306,16 +306,19 @@ module MakeMap(Map : MapArgument) = struct
             | Some exp -> Some (map_expression exp)
           in
           Texp_variant (label, expo)
-        | Texp_record (list, expo) ->
-          let list =
-            List.map (fun (lid, lab_desc, exp) ->
-              (lid, lab_desc, map_expression exp)
-            ) list in
-          let expo = match expo with
-              None -> expo
+        | Texp_record { fields; representation; extended_expression } ->
+          let fields =
+            Array.map (function
+                | label, Kept t -> label, Kept t
+                | label, Overridden (lid, exp) ->
+                    label, Overridden (lid, map_expression exp))
+              fields
+          in
+          let extended_expression = match extended_expression with
+              None -> extended_expression
             | Some exp -> Some (map_expression exp)
           in
-          Texp_record (list, expo)
+          Texp_record { fields; representation; extended_expression }
         | Texp_field (exp, lid, label) ->
           Texp_field (map_expression exp, lid, label)
         | Texp_setfield (exp1, lid, label, exp2) ->

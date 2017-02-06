@@ -211,6 +211,11 @@ The multiplier is
 .BR M ,\ or
 .BR G ,
 for multiplication by 2^10, 2^20, and 2^30 respectively.
+
+If the option letter is not recognized, the whole parameter is ignored;
+if the equal sign or the number is missing, the value is taken as 1;
+if the multiplier is not recognized, it is ignored.
+
 For example, on a 32-bit machine under bash, the command
 .B export OCAMLRUNPARAM='s=256k,v=1'
 tells a subsequent
@@ -220,7 +225,7 @@ a message at the start of each major GC cycle.
 .TP
 .B CAMLRUNPARAM
 If OCAMLRUNPARAM is not found in the environment, then CAMLRUNPARAM
-will be used instead.  If CAMLRUNPARAM is not found, then the default
+will be used instead.  If CAMLRUNPARAM is also not found, then the default
 values will be used.
 .TP
 .B PATH

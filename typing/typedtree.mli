@@ -56,6 +56,7 @@ and pat_extra =
                            where [disjunction] is a [Tpat_or _] representing the
                            branches of [tconst].
          *)
+  | Tpat_open of Path.t * Longident.t loc * Env.t
   | Tpat_unpack
         (** (module P)     { pat_desc  = Tpat_var "P"
                            ; pat_extra = (Tpat_unpack, _, _) :: ... }
@@ -142,9 +143,13 @@ and expression_desc =
         (** let P1 = E1 and ... and Pn = EN in E       (flag = Nonrecursive)
             let rec P1 = E1 and ... and Pn = EN in E   (flag = Recursive)
          *)
-  | Texp_function of arg_label * case list * partial
+  | Texp_function of { arg_label : arg_label; param : Ident.t;
+      cases : case list; partial : partial; }
         (** [Pexp_fun] and [Pexp_function] both translate to [Texp_function].
             See {!Parsetree} for more details.
+
+            [param] is the identifier that is to be used to name the
+            parameter of the function.
 
             partial =
               [Partial] if the pattern match is partial
@@ -185,9 +190,22 @@ and expression_desc =
             C (E1, ..., En)  [E1;...;En]
          *)
   | Texp_variant of label * expression option
-  | Texp_record of
-      (Longident.t loc * label_description * expression) list *
-        expression option
+  | Texp_record of {
+      fields : ( Types.label_description * record_label_definition ) array;
+      representation : Types.record_representation;
+      extended_expression : expression option;
+    }
+        (** { l1=P1; ...; ln=Pn }           (extended_expression = None)
+            { E0 with l1=P1; ...; ln=Pn }   (extended_expression = Some E0)
+
+            Invariant: n > 0
+
+            If the type is { l1: t1; l2: t2 }, the expression
+            { E0 with t2=P2 } is represented as
+            Texp_record
+              { fields = [| l1, Kept t1; l2 Override P2 |]; representation;
+                extended_expression = Some E0 }
+        *)
   | Texp_field of expression * Longident.t loc * label_description
   | Texp_setfield of
       expression * Longident.t loc * label_description * expression
@@ -222,6 +240,10 @@ and case =
      c_guard: expression option;
      c_rhs: expression;
     }
+
+and record_label_definition =
+  | Kept of Types.type_expr
+  | Overridden of Longident.t loc * expression
 
 (* Value expressions for the class language *)
 
@@ -614,7 +636,7 @@ and 'a class_infos =
     ci_id_class: Ident.t;
     ci_id_class_type : Ident.t;
     ci_id_object : Ident.t;
-    ci_id_typesharp : Ident.t;
+    ci_id_typehash : Ident.t;
     ci_expr: 'a;
     ci_decl: Types.class_declaration;
     ci_type_decl : Types.class_type_declaration;

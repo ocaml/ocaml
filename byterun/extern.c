@@ -13,6 +13,8 @@
 /*                                                                        */
 /**************************************************************************/
 
+#define CAML_INTERNALS
+
 /* Structured output */
 
 /* The interface of this file is "caml/intext.h" */
@@ -94,7 +96,6 @@ CAMLnoreturn_start
 static void extern_stack_overflow(void)
 CAMLnoreturn_end;
 
-static struct code_fragment * extern_find_code(char *addr);
 static void extern_replay_trail(void);
 static void free_extern_output(void);
 
@@ -383,6 +384,8 @@ static void writecode64(int code, intnat val)
 
 /* Marshal the given value in the output buffer */
 
+int caml_extern_allow_out_of_heap = 0;
+
 static void extern_rec(value v)
 {
   struct code_fragment * cf;
@@ -409,7 +412,7 @@ static void extern_rec(value v)
       writecode32(CODE_INT32, n);
     goto next_item;
   }
-  if (Is_in_value_area(v)) {
+  if (Is_in_value_area(v) || caml_extern_allow_out_of_heap) {
     header_t hd = Hd_val(v);
     tag_t tag = Tag_hd(hd);
     mlsize_t sz = Wosize_hd(hd);
@@ -431,7 +434,11 @@ static void extern_rec(value v)
       if (tag < 16) {
         write(PREFIX_SMALL_BLOCK + tag);
       } else {
+#ifdef WITH_PROFINFO
+        writecode32(CODE_BLOCK32, Hd_no_profinfo(hd));
+#else
         writecode32(CODE_BLOCK32, hd);
+#endif
       }
       goto next_item;
     }
@@ -544,13 +551,18 @@ static void extern_rec(value v)
         write(PREFIX_SMALL_BLOCK + tag + (sz << 4));
       } else {
 #ifdef ARCH_SIXTYFOUR
+#ifdef WITH_PROFINFO
+        header_t hd_erased = Hd_no_profinfo(hd);
+#else
+        header_t hd_erased = hd;
+#endif
         if (sz > 0x3FFFFF && (extern_flags & COMPAT_32))
           extern_failwith("output_value: array cannot be read back on "
                           "32-bit platform");
-        if (hd < (uintnat)1 << 32)
-          writecode32(CODE_BLOCK32, Whitehd_hd (hd));
+        if (hd_erased < (uintnat)1 << 32)
+          writecode32(CODE_BLOCK32, Whitehd_hd (hd_erased));
         else
-          writecode64(CODE_BLOCK64, Whitehd_hd (hd));
+          writecode64(CODE_BLOCK64, Whitehd_hd (hd_erased));
 #else
         writecode32(CODE_BLOCK32, Whitehd_hd (hd));
 #endif
@@ -572,7 +584,7 @@ static void extern_rec(value v)
     }
     }
   }
-  else if ((cf = extern_find_code((char *) v)) != NULL) {
+  else if ((cf = caml_extern_find_code((char *) v)) != NULL) {
     if ((extern_flags & CLOSURES) == 0)
       extern_invalid_argument("output_value: functional value");
     writecode32(CODE_CODEPOINTER, (char *) v - cf->code_start);
@@ -889,7 +901,7 @@ CAMLexport void caml_serialize_block_float_8(void * data, intnat len)
 
 /* Find where a code pointer comes from */
 
-static struct code_fragment * extern_find_code(char *addr)
+CAMLexport struct code_fragment * caml_extern_find_code(char *addr)
 {
   int i;
   for (i = caml_code_fragments_table.size - 1; i >= 0; i--) {

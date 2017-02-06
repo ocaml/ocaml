@@ -41,9 +41,16 @@ let primitive (p : Lambda.primitive) (args, approxs) expr dbg ~size_int
       ~big_endian : Flambda.named * A.t * Inlining_cost.Benefit.t =
   let fpc = !Clflags.float_const_prop in
   match p with
-  | Pmakeblock(tag, Asttypes.Immutable) ->
-    let tag = Tag.create_exn tag in
-    expr, A.value_block tag (Array.of_list approxs), C.Benefit.zero
+  | Pmakeblock(tag_int, Asttypes.Immutable, shape) ->
+    let tag = Tag.create_exn tag_int in
+    let shape = match shape with
+      | None -> List.map (fun _ -> Lambda.Pgenval) args
+      | Some shape -> shape
+    in
+    let approxs = List.map2 A.augment_with_kind approxs shape in
+    let shape = List.map2 A.augment_kind_with_approx approxs shape in
+    Prim (Pmakeblock(tag_int, Asttypes.Immutable, Some shape), args, dbg),
+    A.value_block tag (Array.of_list approxs), C.Benefit.zero
   | Praise _ ->
     expr, A.value_bottom, C.Benefit.zero
   | Pignore -> begin
@@ -59,12 +66,13 @@ let primitive (p : Lambda.primitive) (args, approxs) expr dbg ~size_int
       expr, approx, C.Benefit.zero
   | Pmakearray (Pfloatarray, Immutable) ->
       let approx =
-        A.value_immutable_float_array
-          (Array.of_list (List.map A.check_approx_for_float approxs))
+        A.value_immutable_float_array (Array.of_list approxs)
       in
       expr, approx, C.Benefit.zero
   | Pintcomp Ceq when phys_equal approxs ->
     S.const_bool_expr expr true
+  | Pintcomp Cneq when phys_equal approxs ->
+    S.const_bool_expr expr false
     (* N.B. Having [not (phys_equal approxs)] would not on its own tell us
        anything about whether the two values concerned are unequal.  To judge
        that, it would be necessary to prove that the approximations are
@@ -108,8 +116,8 @@ let primitive (p : Lambda.primitive) (args, approxs) expr dbg ~size_int
       | Paddint -> S.const_int_expr expr (x + y)
       | Psubint -> S.const_int_expr expr (x - y)
       | Pmulint -> S.const_int_expr expr (x * y)
-      | Pdivint when y <> 0 -> S.const_int_expr expr (x / y)
-      | Pmodint when y <> 0 -> S.const_int_expr expr (x mod y)
+      | Pdivint _ when y <> 0 -> S.const_int_expr expr (x / y)
+      | Pmodint _ when y <> 0 -> S.const_int_expr expr (x mod y)
       | Pandint -> S.const_int_expr expr (x land y)
       | Porint -> S.const_int_expr expr (x lor y)
       | Pxorint -> S.const_int_expr expr (x lxor y)
@@ -118,7 +126,11 @@ let primitive (p : Lambda.primitive) (args, approxs) expr dbg ~size_int
       | Pasrint when shift_precond -> S.const_int_expr expr (x asr y)
       | Pintcomp cmp -> S.const_comparison_expr expr cmp x y
       | Pisout -> S.const_bool_expr expr (y > x || y < 0)
-      (* [Psequand] and [Psequor] have special simplification rules, above. *)
+      | _ -> expr, A.value_unknown Other, C.Benefit.zero
+      end
+    | [Value_char x; Value_char y] ->
+      begin match p with
+      | Pintcomp cmp -> S.const_comparison_expr expr cmp x y
       | _ -> expr, A.value_unknown Other, C.Benefit.zero
       end
     | [Value_constptr x] ->
@@ -140,17 +152,19 @@ let primitive (p : Lambda.primitive) (args, approxs) expr dbg ~size_int
         | Ostype_unix -> S.const_bool_expr expr (Sys.os_type = "Unix")
         | Ostype_win32 -> S.const_bool_expr expr (Sys.os_type = "Win32")
         | Ostype_cygwin -> S.const_bool_expr expr (Sys.os_type = "Cygwin")
+        | Backend_type ->
+          S.const_ptr_expr expr 0 (* tag 0 is the same as Native *)
         end
       | _ -> expr, A.value_unknown Other, C.Benefit.zero
       end
-    | [Value_float x] when fpc ->
+    | [Value_float (Some x)] when fpc ->
       begin match p with
       | Pintoffloat -> S.const_int_expr expr (int_of_float x)
       | Pnegfloat -> S.const_float_expr expr (-. x)
       | Pabsfloat -> S.const_float_expr expr (abs_float x)
       | _ -> expr, A.value_unknown Other, C.Benefit.zero
       end
-    | [Value_float n1; Value_float n2] when fpc ->
+    | [Value_float (Some n1); Value_float (Some n2)] when fpc ->
       begin match p with
       | Paddfloat -> S.const_float_expr expr (n1 +. n2)
       | Psubfloat -> S.const_float_expr expr (n1 -. n2)
@@ -183,13 +197,17 @@ let primitive (p : Lambda.primitive) (args, approxs) expr dbg ~size_int
         ~size_int
     | [Value_block _] when p = Lambda.Pisint ->
       S.const_bool_expr expr false
-    | [Value_string { size }] when p = Lambda.Pstringlength ->
+    | [Value_string { size }]
+      when (p = Lambda.Pstringlength || p = Lambda.Pbyteslength) ->
       S.const_int_expr expr size
     | [Value_string { size; contents = Some s };
        (Value_int x | Value_constptr x)] when x >= 0 && x < size ->
         begin match p with
         | Pstringrefu
-        | Pstringrefs -> S.const_char_expr expr s.[x]
+        | Pstringrefs
+        | Pbytesrefu
+        | Pbytesrefs ->
+          S.const_char_expr (Prim(Pstringrefu, args, dbg)) s.[x]
         | _ -> expr, A.value_unknown Other, C.Benefit.zero
         end
     | [Value_string { size; contents = None };
@@ -199,14 +217,22 @@ let primitive (p : Lambda.primitive) (args, approxs) expr dbg ~size_int
           A.value_unknown Other,
           (* we improved it, but there is no way to account for that: *)
           C.Benefit.zero
+    | [Value_string { size; contents = None };
+       (Value_int x | Value_constptr x)]
+      when x >= 0 && x < size && p = Lambda.Pbytesrefs ->
+        Flambda.Prim (Pbytesrefu, args, dbg),
+          A.value_unknown Other,
+          (* we improved it, but there is no way to account for that: *)
+          C.Benefit.zero
+
     | [Value_float_array { size; contents }] ->
         begin match p with
         | Parraylength _ -> S.const_int_expr expr size
         | Pfloatfield i ->
           begin match contents with
           | A.Contents a when i >= 0 && i < size ->
-            begin match a.(i) with
-            | None -> expr, A.value_unknown Other, C.Benefit.zero
+            begin match A.check_approx_for_float a.(i) with
+            | None -> expr, a.(i), C.Benefit.zero
             | Some v -> S.const_float_expr expr v
             end
           | Contents _ | Unknown_or_mutable ->
@@ -214,4 +240,9 @@ let primitive (p : Lambda.primitive) (args, approxs) expr dbg ~size_int
           end
         | _ -> expr, A.value_unknown Other, C.Benefit.zero
         end
-    | _ -> expr, A.value_unknown Other, C.Benefit.zero
+    | _ ->
+      match Semantics_of_primitives.return_type_of_primitive p with
+      | Float ->
+        expr, A.value_any_float, C.Benefit.zero
+      | Other ->
+        expr, A.value_unknown Other, C.Benefit.zero

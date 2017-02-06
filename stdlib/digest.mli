@@ -73,7 +73,9 @@ val input : in_channel -> t
 (** Read a digest from the given input channel. *)
 
 val to_hex : t -> string
-(** Return the printable hexadecimal representation of the given digest. *)
+(** Return the printable hexadecimal representation of the given digest.
+    Raise [Invalid_argument] if the argument is not exactly 16 bytes.
+ *)
 
 val from_hex : string -> t
 (** Convert a hexadecimal representation back into the corresponding digest.

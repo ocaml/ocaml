@@ -41,7 +41,7 @@ labltk: cmds/browser.tex library/liblabltk.tex library/tk.mli
 
 index::
 	cd texstuff && \
-	  ../../tools/fix_index.sh manual.idx && \
+	  sh ../../tools/fix_index.sh manual.idx && \
 	  makeindex manual.idx
 	cd texstuff; makeindex manual.kwd.idx
 
@@ -51,7 +51,7 @@ pdfmanual: files
 
 index::
 	cd texstuff && \
-	  ../../tools/fix_index.sh pdfmanual.idx && \
+	  sh ../../tools/fix_index.sh pdfmanual.idx && \
 	  makeindex pdfmanual.idx
 	cd texstuff; makeindex pdfmanual.kwd.idx
 
@@ -77,7 +77,6 @@ html: files
 	         -e macros.tex ../manual.tex ; \
 	${HACHA} -tocter manual.html ; \
 
-
 info: files
 	cd infoman; rm -f ocaml.info*; \
 	${HEVEA} ${INFO} -o ocaml.info.body -I .. -I ../refman -I ../library \
@@ -91,6 +90,12 @@ text: files
 	${HEVEA} ${TEXT} -I .. -I ../refman -I ../library -I ../cmds \
 	         -I ../tutorials -I ../../styles -I ../texstuff \
 	         ../manual.inf -e macros.tex ../manual.tex
+
+etex-files: $(FILES)
+	cd refman; $(MAKE) etex-files RELEASEDIR=$(SRC)
+	cd library; $(MAKE) etex-files RELEASEDIR=$(SRC)
+	cd cmds; $(MAKE) etex-files RELEASEDIR=$(SRC)
+	cd tutorials; $(MAKE) etex-files RELEASEDIR=$(SRC)
 
 files: $(FILES)
 	cd refman; $(MAKE) all RELEASEDIR=$(SRC)
@@ -139,5 +144,19 @@ version.tex: $(SRC)/VERSION
 	    $(SRC)/VERSION > version.tex
 
 warnings-help.etex: $(SRC)/utils/warnings.ml $(SRC)/ocamlc
+	(echo "% This file is generated from (ocamlc -warn-help)";\
+	 echo "% according to a rule in manual/manual/Makefile.";\
+	 echo "% In particular, the reference to documentation sections";\
+	 echo "% are inserted through the Makefile, which should be updated";\
+	 echo "% when a new warning is documented.";\
+	 echo "%";\
 	$(SRC)/boot/ocamlrun $(SRC)/ocamlc -warn-help \
-	| sed -e 's/^ *\([0-9A-Z][0-9]*\)\(.*\)/\\item[\1] \2/' >$@
+	| sed -e 's/^ *\([0-9A-Z][0-9]*\)\(.*\)/\\item[\1] \2/'\
+	) >$@
+#	sed --inplace is not portable, emulate
+	for i in 52 57; do\
+		sed\
+		  s'/\\item\['$$i'\]/\\item\['$$i' (see \\ref{ss:warn'$$i'})\]/'\
+                  $@ > $@.tmp;\
+		mv $@.tmp $@;\
+	done

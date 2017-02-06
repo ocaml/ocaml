@@ -66,6 +66,8 @@ val generalizable: int -> type_expr -> bool
 val reset_delayed_checks: unit -> unit
 val force_delayed_checks: unit -> unit
 
+val name_pattern : string -> Typedtree.case list -> Ident.t
+
 val self_coercion : (Path.t * Location.t list ref) list ref
 
 type error =
@@ -116,6 +118,7 @@ type error =
   | No_value_clauses
   | Exception_pattern_below_toplevel
   | Inlined_record_escape
+  | Inlined_record_expected
   | Unrefuted_pattern of Typedtree.pattern
   | Invalid_extension_constructor_payload
   | Not_an_extension_constructor

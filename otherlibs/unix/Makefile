@@ -19,6 +19,9 @@ LIBNAME=unix
 
 EXTRACAMLFLAGS=-nolabels
 
+# dllunix.so particularly requires libm for modf symbols
+LDOPTS=$(NATIVECCLIBS)
+
 COBJS=accept.o access.o addrofstr.o alarm.o bind.o chdir.o chmod.o \
   chown.o chroot.o close.o closedir.o connect.o cst2constr.o cstringv.o \
   dup.o dup2.o envir.o errmsg.o execv.o execve.o execvp.o exit.o \
@@ -44,6 +47,6 @@ include ../Makefile
 
 depend:
 	$(CC) -MM $(CFLAGS) *.c > .depend
-	$(CAMLRUN) ../../tools/ocamldep *.mli *.ml >> .depend
+	$(CAMLRUN) ../../tools/ocamldep -slash *.mli *.ml >> .depend
 
 include .depend

@@ -16,9 +16,9 @@
 #ifndef CAML_FAIL_H
 #define CAML_FAIL_H
 
-/* <private> */
+#ifdef CAML_INTERNALS
 #include <setjmp.h>
-/* </private> */
+#endif /* CAML_INTERNALS */
 
 #ifndef CAML_NAME_SPACE
 #include "compatibility.h"
@@ -26,7 +26,7 @@
 #include "misc.h"
 #include "mlvalues.h"
 
-/* <private> */
+#ifdef CAML_INTERNALS
 #define OUT_OF_MEMORY_EXN 0     /* "Out_of_memory" */
 #define SYS_ERROR_EXN 1         /* "Sys_error" */
 #define FAILURE_EXN 2           /* "Failure" */
@@ -56,7 +56,7 @@ CAMLextern struct longjmp_buffer * caml_external_raise;
 extern value caml_exn_bucket;
 int caml_is_special_exception(value exn);
 
-/* </private> */
+#endif /* CAML_INTERNALS */
 
 #ifdef __cplusplus
 extern "C" {
@@ -83,11 +83,19 @@ CAMLextern void caml_raise_with_string (value tag, char const * msg)
 CAMLnoreturn_end;
 
 CAMLnoreturn_start
-CAMLextern void caml_failwith (char const *)
+CAMLextern void caml_failwith (char const *msg)
 CAMLnoreturn_end;
 
 CAMLnoreturn_start
-CAMLextern void caml_invalid_argument (char const *)
+CAMLextern void caml_failwith_value (value msg)
+CAMLnoreturn_end;
+
+CAMLnoreturn_start
+CAMLextern void caml_invalid_argument (char const *msg)
+CAMLnoreturn_end;
+
+CAMLnoreturn_start
+CAMLextern void caml_invalid_argument_value (value msg)
 CAMLnoreturn_end;
 
 CAMLnoreturn_start

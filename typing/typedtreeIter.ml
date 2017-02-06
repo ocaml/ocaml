@@ -224,6 +224,7 @@ module MakeIterator(Iter : IteratorArgument) : sig
       List.iter (fun (cstr, _, _attrs) -> match cstr with
               | Tpat_type _ -> ()
               | Tpat_unpack -> ()
+              | Tpat_open _ -> ()
               | Tpat_constraint ct -> iter_core_type ct) pat.pat_extra;
       begin
         match pat.pat_desc with
@@ -269,7 +270,7 @@ module MakeIterator(Iter : IteratorArgument) : sig
         | Texp_let (rec_flag, list, exp) ->
             iter_bindings rec_flag list;
             iter_expression exp
-        | Texp_function (_label, cases, _) ->
+        | Texp_function { cases; _ } ->
             iter_cases cases
         | Texp_apply (exp, list) ->
             iter_expression exp;
@@ -294,9 +295,12 @@ module MakeIterator(Iter : IteratorArgument) : sig
                 None -> ()
               | Some exp -> iter_expression exp
             end
-        | Texp_record (list, expo) ->
-            List.iter (fun (_, _, exp) -> iter_expression exp) list;
-            begin match expo with
+        | Texp_record { fields; extended_expression; _ } ->
+            Array.iter (function
+                | _, Kept _ -> ()
+                | _, Overridden (_, exp) -> iter_expression exp)
+              fields;
+            begin match extended_expression with
                 None -> ()
               | Some exp -> iter_expression exp
             end

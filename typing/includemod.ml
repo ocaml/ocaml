@@ -227,22 +227,43 @@ let rec modtypes env cxt subst mty1 mty2 =
 
 and try_modtypes env cxt subst mty1 mty2 =
   match (mty1, mty2) with
-  | (Mty_alias p1, Mty_alias p2) ->
+  | (Mty_alias(pres1, p1), Mty_alias(pres2, p2)) -> begin
       if Env.is_functor_arg p2 env then
         raise (Error[cxt, env, Invalid_module_alias p2]);
-      if Path.same p1 p2 then Tcoerce_none else
-      let p1 = Env.normalize_path None env p1
-      and p2 = Env.normalize_path None env (Subst.module_path subst p2) in
-      (* Should actually be Tcoerce_ignore, if it existed *)
-      if Path.same p1 p2 then Tcoerce_none else raise Dont_match
-  | (Mty_alias p1, _) ->
+      if not (Path.same p1 p2) then begin
+        let p1 = Env.normalize_path None env p1
+        and p2 = Env.normalize_path None env (Subst.module_path subst p2) in
+        if not (Path.same p1 p2) then raise Dont_match
+      end;
+      match pres1, pres2 with
+      | Mta_present, Mta_present -> Tcoerce_none
+        (* Should really be Tcoerce_ignore if it existed *)
+      | Mta_absent, Mta_absent -> Tcoerce_none
+        (* Should really be Tcoerce_empty if it existed *)
+      | Mta_present, Mta_absent -> Tcoerce_none
+      | Mta_absent, Mta_present ->
+        let p1 = try
+            Env.normalize_path (Some Location.none) env p1
+          with Env.Error (Env.Missing_module (_, _, path)) ->
+            raise (Error[cxt, env, Unbound_module_path path])
+        in
+        Tcoerce_alias (p1, Tcoerce_none)
+    end
+  | (Mty_alias(pres1, p1), _) -> begin
       let p1 = try
         Env.normalize_path (Some Location.none) env p1
       with Env.Error (Env.Missing_module (_, _, path)) ->
         raise (Error[cxt, env, Unbound_module_path path])
       in
-      let mty1 = Mtype.strengthen env (expand_module_alias env cxt p1) p1 in
-      Tcoerce_alias (p1, modtypes env cxt subst mty1 mty2)
+      let mty1 =
+        Mtype.strengthen ~aliasable:true env
+          (expand_module_alias env cxt p1) p1
+      in
+      let cc = modtypes env cxt subst mty1 mty2 in
+      match pres1 with
+      | Mta_present -> cc
+      | Mta_absent -> Tcoerce_alias (p1, cc)
+    end
   | (Mty_ident p1, _) when may_expand_module_path env p1 ->
       try_modtypes env cxt subst (expand_module_path env cxt p1) mty2
   | (_, Mty_ident _) ->
@@ -389,10 +410,11 @@ and signature_components old_env env cxt subst paired =
       (pos, Tcoerce_none) :: comps_rec rem
   | (Sig_module(id1, mty1, _), Sig_module(_id2, mty2, _), pos) :: rem ->
       let p1 = Pident id1 in
+      Env.mark_module_used env (Ident.name id1) mty1.md_loc;
       let cc =
         modtypes env (Module id1::cxt) subst
-          (Mtype.strengthen (Env.add_functor_arg id1 env) mty1.md_type p1)
-          mty2.md_type in
+          (Mtype.strengthen ~aliasable:true env mty1.md_type p1) mty2.md_type
+      in
       (pos, cc) :: comps_rec rem
   | (Sig_modtype(id1, info1), Sig_modtype(_id2, info2), _pos) :: rem ->
       modtype_infos env cxt subst id1 info1 info2;
@@ -436,10 +458,19 @@ and check_modtype_equiv env cxt mty1 mty2 =
 
 (* Simplified inclusion check between module types (for Env) *)
 
+let can_alias env path =
+  let rec no_apply = function
+    | Pident _ -> true
+    | Pdot(p, _, _) -> no_apply p
+    | Papply _ -> false
+  in
+  no_apply path && not (Env.is_functor_arg path env)
+
 let check_modtype_inclusion env mty1 path1 mty2 =
   try
+    let aliasable = can_alias env path1 in
     ignore(modtypes env [] Subst.identity
-                    (Mtype.strengthen env mty1 path1) mty2)
+                    (Mtype.strengthen ~aliasable env mty1 path1) mty2)
   with Error _ ->
     raise Not_found
 

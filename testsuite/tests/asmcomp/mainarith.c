@@ -91,7 +91,7 @@ void do_test(void)
       INTTEST(R[15], (X - 1));
       INTTEST(R[16], (X - -1));
 
-      INTTEST(R[17], ((intnat) ((char *)R - 8)));
+      INTTEST(R[17], ((intnat) ((uintnat)R - 8)));
       INTTEST(R[18], ((intnat) ((char *)R - Y)));
 
       INTTEST(R[19], (X * 2));

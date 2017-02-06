@@ -22,11 +22,11 @@
 #include "compatibility.h"
 #endif
 #include "config.h"
-/* <private> */
+#ifdef CAML_INTERNALS
 #include "gc.h"
 #include "major_gc.h"
 #include "minor_gc.h"
-/* </private> */
+#endif /* CAML_INTERNALS */
 #include "misc.h"
 #include "mlvalues.h"
 
@@ -36,6 +36,16 @@ extern "C" {
 
 
 CAMLextern value caml_alloc_shr (mlsize_t wosize, tag_t);
+#ifdef WITH_PROFINFO
+CAMLextern value caml_alloc_shr_with_profinfo (mlsize_t, tag_t, intnat);
+CAMLextern value caml_alloc_shr_preserving_profinfo (mlsize_t, tag_t,
+                                                     header_t);
+#else
+#define caml_alloc_shr_with_profinfo(size, tag, profinfo) \
+  caml_alloc_shr(size, tag)
+#define caml_alloc_shr_preserving_profinfo(size, tag, header) \
+  caml_alloc_shr(size, tag)
+#endif /* WITH_PROFINFO */
 CAMLextern value caml_alloc_shr_no_raise (mlsize_t wosize, tag_t);
 CAMLextern void caml_adjust_gc_speed (mlsize_t, mlsize_t);
 CAMLextern void caml_alloc_dependent_memory (mlsize_t bsz);
@@ -49,6 +59,7 @@ CAMLextern void * caml_stat_resize (void *, asize_t);     /* Size in bytes. */
 CAMLextern int caml_init_alloc_for_heap (void);
 CAMLextern char *caml_alloc_for_heap (asize_t request);   /* Size in bytes. */
 CAMLextern void caml_free_for_heap (char *mem);
+CAMLextern void caml_disown_for_heap (char *mem);
 CAMLextern int caml_add_to_heap (char *mem);
 CAMLextern color_t caml_allocation_color (void *hp);
 
@@ -56,7 +67,7 @@ CAMLextern int caml_huge_fallback_count;
 
 /* void caml_shrink_heap (char *);        Only used in compact.c */
 
-/* <private> */
+#ifdef CAML_INTERNALS
 
 extern uintnat caml_use_huge_pages;
 
@@ -83,7 +94,8 @@ int caml_page_table_initialize(mlsize_t bytesize);
 #define DEBUG_clear(result, wosize)
 #endif
 
-#define Alloc_small(result, wosize, tag) do{    CAMLassert ((wosize) >= 1); \
+#define Alloc_small_with_profinfo(result, wosize, tag, profinfo) do {       \
+                                                CAMLassert ((wosize) >= 1); \
                                           CAMLassert ((tag_t) (tag) < 256); \
                                  CAMLassert ((wosize) <= Max_young_wosize); \
   caml_young_ptr -= Whsize_wosize (wosize);                                 \
@@ -95,16 +107,27 @@ int caml_page_table_initialize(mlsize_t bytesize);
     Restore_after_gc;                                                       \
     caml_young_ptr -= Whsize_wosize (wosize);                               \
   }                                                                         \
-  Hd_hp (caml_young_ptr) = Make_header ((wosize), (tag), Caml_black);       \
+  Hd_hp (caml_young_ptr) =                                                  \
+    Make_header_with_profinfo ((wosize), (tag), Caml_black, profinfo);      \
   (result) = Val_hp (caml_young_ptr);                                       \
   DEBUG_clear ((result), (wosize));                                         \
 }while(0)
+
+#if defined(NATIVE_CODE) && defined(WITH_SPACETIME)
+extern uintnat caml_spacetime_my_profinfo(struct ext_table**, uintnat);
+#define Alloc_small(result, wosize, tag) \
+  Alloc_small_with_profinfo(result, wosize, tag, \
+    caml_spacetime_my_profinfo(NULL, wosize))
+#else
+#define Alloc_small(result, wosize, tag) \
+  Alloc_small_with_profinfo(result, wosize, tag, (uintnat) 0)
+#endif
 
 /* Deprecated alias for [caml_modify] */
 
 #define Modify(fp,val) caml_modify((fp), (val))
 
-/* </private> */
+#endif /* CAML_INTERNALS */
 
 struct caml__roots_block {
   struct caml__roots_block *next;
@@ -198,6 +221,7 @@ CAMLextern struct caml__roots_block *caml_local_roots;  /* defined in roots.c */
 #define CAMLxparam1(x) \
   struct caml__roots_block caml__roots_##x; \
   CAMLunused_start int caml__dummy_##x = ( \
+    (void) caml__frame, \
     (caml__roots_##x.next = caml_local_roots), \
     (caml_local_roots = &caml__roots_##x), \
     (caml__roots_##x.nitems = 1), \
@@ -209,6 +233,7 @@ CAMLextern struct caml__roots_block *caml_local_roots;  /* defined in roots.c */
 #define CAMLxparam2(x, y) \
   struct caml__roots_block caml__roots_##x; \
   CAMLunused_start int caml__dummy_##x = ( \
+    (void) caml__frame, \
     (caml__roots_##x.next = caml_local_roots), \
     (caml_local_roots = &caml__roots_##x), \
     (caml__roots_##x.nitems = 1), \
@@ -221,6 +246,7 @@ CAMLextern struct caml__roots_block *caml_local_roots;  /* defined in roots.c */
 #define CAMLxparam3(x, y, z) \
   struct caml__roots_block caml__roots_##x; \
   CAMLunused_start int caml__dummy_##x = ( \
+    (void) caml__frame, \
     (caml__roots_##x.next = caml_local_roots), \
     (caml_local_roots = &caml__roots_##x), \
     (caml__roots_##x.nitems = 1), \
@@ -234,6 +260,7 @@ CAMLextern struct caml__roots_block *caml_local_roots;  /* defined in roots.c */
 #define CAMLxparam4(x, y, z, t) \
   struct caml__roots_block caml__roots_##x; \
   CAMLunused_start int caml__dummy_##x = ( \
+    (void) caml__frame, \
     (caml__roots_##x.next = caml_local_roots), \
     (caml_local_roots = &caml__roots_##x), \
     (caml__roots_##x.nitems = 1), \
@@ -248,6 +275,7 @@ CAMLextern struct caml__roots_block *caml_local_roots;  /* defined in roots.c */
 #define CAMLxparam5(x, y, z, t, u) \
   struct caml__roots_block caml__roots_##x; \
   CAMLunused_start int caml__dummy_##x = ( \
+    (void) caml__frame, \
     (caml__roots_##x.next = caml_local_roots), \
     (caml_local_roots = &caml__roots_##x), \
     (caml__roots_##x.nitems = 1), \
@@ -263,6 +291,7 @@ CAMLextern struct caml__roots_block *caml_local_roots;  /* defined in roots.c */
 #define CAMLxparamN(x, size) \
   struct caml__roots_block caml__roots_##x; \
   CAMLunused_start int caml__dummy_##x = (     \
+    (void) caml__frame, \
     (caml__roots_##x.next = caml_local_roots), \
     (caml_local_roots = &caml__roots_##x), \
     (caml__roots_##x.nitems = (size)), \

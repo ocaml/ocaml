@@ -40,8 +40,7 @@ let scan_info cu =
 
 let scan_obj filename =
   let ic = open_in_bin filename in
-  let buffer = String.create (String.length cmo_magic_number) in
-  really_input ic buffer 0 (String.length cmo_magic_number);
+  let buffer = really_input_string ic (String.length cmo_magic_number) in
   if buffer = cmo_magic_number then begin
     let cu_pos = input_binary_int ic in
     seek_in ic cu_pos;
@@ -70,7 +69,7 @@ let exclude filename =
      | x -> close_in ic; raise x
 
 let main() =
-  Arg.parse
+  Arg.parse_expand
     ["-used", Arg.Unit(fun () -> used := true; defined := false),
         "show primitives referenced in the object files";
      "-defined", Arg.Unit(fun () -> defined := true; used := false),
@@ -78,7 +77,13 @@ let main() =
      "-all", Arg.Unit(fun () -> defined := true; used := true),
         "show primitives defined or referenced in the object files";
      "-exclude", Arg.String(fun s -> exclude_file := s),
-        "<file> don't print the primitives mentioned in <file>"]
+     "<file> don't print the primitives mentioned in <file>";
+     "-args", Arg.Expand Arg.read_arg,
+     "<file> Read additional newline separated command line arguments \n\
+     \      from <file>";
+     "-args0", Arg.Expand Arg.read_arg0,
+     "<file> Read additional NUL separated command line arguments from \n\
+     \      <file>";]
     scan_obj
     "Usage: primreq [options] <.cmo and .cma files>\nOptions are:";
   if String.length !exclude_file > 0 then exclude !exclude_file;

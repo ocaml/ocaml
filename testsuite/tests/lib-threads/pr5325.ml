@@ -1,18 +1,3 @@
-(**************************************************************************)
-(*                                                                        *)
-(*                                OCaml                                   *)
-(*                                                                        *)
-(*             Xavier Leroy, projet Gallium, INRIA Paris                  *)
-(*                                                                        *)
-(*   Copyright 2015 Institut National de Recherche en Informatique et     *)
-(*     en Automatique.                                                    *)
-(*                                                                        *)
-(*   All rights reserved.  This file is distributed under the terms of    *)
-(*   the GNU Lesser General Public License version 2.1, with the          *)
-(*   special exception on linking described in the file LICENSE.          *)
-(*                                                                        *)
-(**************************************************************************)
-
 open Printf
 
 (* Regression test for PR#5325: simultaneous read and write on socket
@@ -28,8 +13,8 @@ open Printf
 *)
 
 let serve_connection s =
-  let buf = String.make 1024 '>' in
-  let n = Unix.read s buf 2 (String.length buf - 2) in
+  let buf = Bytes.make 1024 '>' in
+  let n = Unix.read s buf 2 (Bytes.length buf - 2) in
   ignore (Unix.write s buf 0 (n + 2));
   Unix.close s
 
@@ -45,20 +30,21 @@ let timeout () =
   exit 2
 
 let reader s =
-  let buf = String.make 1024 ' ' in
-  let n = Unix.read s buf 0 (String.length buf) in
-  print_string (String.sub buf 0 n); flush stdout
+  let buf = Bytes.make 1024 ' ' in
+  let n = Unix.read s buf 0 (Bytes.length buf) in
+  print_bytes (Bytes.sub buf 0 n); flush stdout
 
 let writer s msg =
-  ignore (Unix.write s msg 0 (String.length msg));
+  ignore (Unix.write_substring s msg 0 (String.length msg));
   Unix.shutdown s Unix.SHUTDOWN_SEND
 
 let _ =
-  let addr = Unix.ADDR_INET(Unix.inet_addr_loopback, 9876) in
+  let addr = Unix.ADDR_INET(Unix.inet_addr_loopback, 0) in
   let serv =
     Unix.socket (Unix.domain_of_sockaddr addr) Unix.SOCK_STREAM 0 in
   Unix.setsockopt serv Unix.SO_REUSEADDR true;
   Unix.bind serv addr;
+  let addr = Unix.getsockname serv in
   Unix.listen serv 5;
   ignore (Thread.create server serv);
   ignore (Thread.create timeout ());

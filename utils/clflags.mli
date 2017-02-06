@@ -97,6 +97,7 @@ val noprompt : bool ref
 val nopromptcont : bool ref
 val init_file : string option ref
 val noinit : bool ref
+val noversion : bool ref
 val use_prims : string ref
 val use_runtime : string ref
 val principal : bool ref
@@ -192,6 +193,8 @@ val inline_max_depth : Int_arg_helper.parsed ref
 val remove_unused_arguments : bool ref
 val dump_flambda_verbose : bool ref
 val classic_inlining : bool ref
+val afl_instrument : bool ref
+val afl_inst_ratio : int ref
 
 val all_passes : string list ref
 val dumped_pass : string -> bool
@@ -199,3 +202,22 @@ val set_dumped_pass : string -> bool -> unit
 
 val parse_color_setting : string -> Misc.Color.setting option
 val color : Misc.Color.setting ref
+
+val unboxed_types : bool ref
+
+val arg_spec : (string * Arg.spec * string) list ref
+
+(* [add_arguments __LOC__ args] will add the arguments from [args] at
+   the end of [arg_spec], checking that they have not already been
+   added by [add_arguments] before. A warning is printed showing the
+   locations of the function from which the argument was previously
+   added. *)
+val add_arguments : string -> (string * Arg.spec * string) list -> unit
+
+(* [parse_arguments anon_arg usage] will parse the arguments, using
+  the arguments provided in [Clflags.arg_spec]. It allows plugins to
+  provide their own arguments.
+*)
+val parse_arguments : Arg.anon_fun -> string -> unit
+
+val print_arguments : string -> unit

@@ -13,7 +13,7 @@
 (*                                                                        *)
 (**************************************************************************)
 
-(* Source code locations (ranges of positions), used in parsetree. *)
+(** Source code locations (ranges of positions), used in parsetree. *)
 
 open Format
 
@@ -23,7 +23,7 @@ type t = {
   loc_ghost: bool;
 }
 
-(* Note on the use of Lexing.position in this module.
+(** Note on the use of Lexing.position in this module.
    If [pos_fname = ""], then use [!input_name] instead.
    If [pos_lnum = -1], then [pos_bol = 0]. Use [pos_cnum] and
      re-parse the file to get the line and character numbers.
@@ -111,11 +111,6 @@ val error: ?loc:t -> ?sub:error list -> ?if_highlight:string -> string -> error
 
 val errorf: ?loc:t -> ?sub:error list -> ?if_highlight:string
             -> ('a, Format.formatter, unit, error) format4 -> 'a
-
-val errorf_prefixed : ?loc:t -> ?sub:error list -> ?if_highlight:string
-                    -> ('a, Format.formatter, unit, error) format4 -> 'a
-  (* same as {!errorf}, but prints the error prefix "Error:" before yielding
-   * to the format string *)
 
 val raise_errorf: ?loc:t -> ?sub:error list -> ?if_highlight:string
             -> ('a, Format.formatter, unit, 'b) format4 -> 'a

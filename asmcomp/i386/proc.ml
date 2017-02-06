@@ -94,6 +94,8 @@ let edx = phys_reg 3
 let stack_slot slot ty =
   Reg.at_location ty (Stack slot)
 
+let loc_spacetime_node_hole = Reg.dummy  (* Spacetime unsupported *)
+
 (* Instruction selection *)
 
 let word_addressed = false
@@ -182,8 +184,9 @@ let destroyed_at_c_call =               (* ebx, esi, edi, ebp preserved *)
   [|eax; ecx; edx|]
 
 let destroyed_at_oper = function
-    Iop(Icall_ind | Icall_imm _ | Iextcall(_, true)) -> all_phys_regs
-  | Iop(Iextcall(_, false)) -> destroyed_at_c_call
+    Iop(Icall_ind _ | Icall_imm _ | Iextcall { alloc = true; _}) ->
+    all_phys_regs
+  | Iop(Iextcall { alloc = false; }) -> destroyed_at_c_call
   | Iop(Iintop(Idiv | Imod)) -> [| eax; edx |]
   | Iop(Ialloc _ | Iintop Imulh) -> [| eax |]
   | Iop(Iintop(Icomp _) | Iintop_imm(Icomp _, _)) -> [| eax |]
@@ -198,7 +201,7 @@ let destroyed_at_raise = all_phys_regs
 let safe_register_pressure _op = 4
 
 let max_register_pressure = function
-    Iextcall(_, _) -> [| 4; max_int |]
+    Iextcall _ -> [| 4; max_int |]
   | Iintop(Idiv | Imod) -> [| 5; max_int |]
   | Ialloc _ | Iintop(Icomp _) | Iintop_imm(Icomp _, _) |
     Iintoffloat -> [| 6; max_int |]
@@ -208,9 +211,9 @@ let max_register_pressure = function
    registers).  *)
 
 let op_is_pure = function
-  | Icall_ind | Icall_imm _ | Itailcall_ind | Itailcall_imm _
+  | Icall_ind _ | Icall_imm _ | Itailcall_ind _ | Itailcall_imm _
   | Iextcall _ | Istackoffset _ | Istore _ | Ialloc _
-  | Iintop(Icheckbound) | Iintop_imm(Icheckbound, _) -> false
+  | Iintop(Icheckbound _) | Iintop_imm(Icheckbound _, _) -> false
   | Ispecific(Ilea _) -> true
   | Ispecific _ -> false
   | _ -> true

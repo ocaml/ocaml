@@ -59,7 +59,7 @@ let warn_bad_docstrings () =
       (List.rev !docstrings)
 end
 
-(* Docstring constructors and descturctors *)
+(* Docstring constructors and destructors *)
 
 let docstring body loc =
   let ds =
@@ -68,8 +68,10 @@ let docstring body loc =
       ds_attached = Unattached;
       ds_associated = Zero; }
   in
-  docstrings := ds :: !docstrings;
   ds
+
+let register ds =
+  docstrings := ds :: !docstrings
 
 let docstring_body ds = ds.ds_body
 
@@ -100,17 +102,17 @@ let docs_attr ds =
 let add_docs_attrs docs attrs =
   let attrs =
     match docs.docs_pre with
-    | None -> attrs
+    | None | Some { ds_body=""; _ } -> attrs
     | Some ds -> docs_attr ds :: attrs
   in
   let attrs =
     match docs.docs_post with
-    | None -> attrs
+    | None | Some { ds_body=""; _ } -> attrs
     | Some ds -> attrs @ [docs_attr ds]
   in
   attrs
 
-(* Docstrings attached to consturctors or fields *)
+(* Docstrings attached to constructors or fields *)
 
 type info = docstring option
 
@@ -120,7 +122,7 @@ let info_attr = docs_attr
 
 let add_info_attrs info attrs =
   match info with
-  | None -> attrs
+  | None | Some {ds_body=""; _} -> attrs
   | Some ds -> attrs @ [info_attr ds]
 
 (* Docstrings not attached to a specifc item *)
@@ -128,6 +130,7 @@ let add_info_attrs info attrs =
 type text = docstring list
 
 let empty_text = []
+let empty_text_lazy = lazy []
 
 let text_loc = {txt = "ocaml.text"; loc = Location.none}
 
@@ -144,7 +147,8 @@ let text_attr ds =
     (text_loc, PStr [item])
 
 let add_text_attrs dsl attrs =
-  (List.map text_attr dsl) @ attrs
+  let fdsl = List.filter (function {ds_body=""} -> false| _ ->true) dsl in
+  (List.map text_attr fdsl) @ attrs
 
 (* Find the first non-info docstring in a list, attach it and return it *)
 let get_docstring ~info dsl =

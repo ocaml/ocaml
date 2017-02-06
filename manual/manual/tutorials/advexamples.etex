@@ -187,7 +187,10 @@ module Account (M:MONEY) =
     class virtual check_client x =
       let y = if (m 100.)#leq x then x
       else raise (Failure "Insufficient initial deposit") in
-      object (self) initializer self#deposit y end
+      object (self)
+        initializer self#deposit y
+        method virtual deposit: m -> unit
+      end
 
     module Client (B : sig class bank : client_view end) =
       struct

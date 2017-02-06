@@ -28,6 +28,10 @@ poly-typexpr:
 method-type:
     method-name ':' poly-typexpr
 \end{syntax}
+See also the following language extensions:
+\hyperref[s-first-class-modules]{first-class modules},
+\hyperref[s:attributes]{attributes} and
+\hyperref[s:extension-nodes]{extension nodes}.
 
 The table below shows the relative precedences and associativity of
 operators and non-closed type constructions. The constructions with
@@ -128,6 +132,7 @@ denotes either an object or polymorphic variant type, the row variable
 of @typexpr@ is captured by @"'" ident@, and quantified upon.
 
 \subsubsection*{Polymorphic variant types}
+\ikwd{of\@\texttt{of}}
 
 \begin{syntax}
 polymorphic-variant-type:
@@ -142,11 +147,11 @@ tag-spec-first:
       | [ typexpr ] '|' tag-spec
 ;
 tag-spec:
-        '`'tag-name [ "of" typexpr ]
+        '`'tag-name [ 'of' typexpr ]
       | typexpr
 ;
 tag-spec-full:
-        '`'tag-name [ "of" ['&'] typexpr { '&' typexpr } ]
+        '`'tag-name [ 'of' ['&'] typexpr { '&' typexpr } ]
       | typexpr
 \end{syntax}
 

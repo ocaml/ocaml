@@ -39,7 +39,7 @@ the system infers their types from their usage in the
 function. Notice also that integers and floating-point numbers are
 distinct types, with distinct operators: "+" and "*" operate on
 integers, but "+." and "*."  operate on floats.
-\begin{caml_example}
+\begin{caml_example}[error]
 1.0 * 2;;
 \end{caml_example}
 

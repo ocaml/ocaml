@@ -13,7 +13,7 @@
 (*                                                                        *)
 (**************************************************************************)
 
-(* Auxiliary type for reporting syntax errors *)
+(** Auxiliary type for reporting syntax errors *)
 
 open Format
 
@@ -31,7 +31,7 @@ exception Error of error
 exception Escape_error
 
 val report_error: formatter -> error -> unit
- (* Deprecated.  Use Location.{error_of_exn, report_error}. *)
+ (** @deprecated Use {!Location.error_of_exn}, {!Location.report_error}. *)
 
 val location_of_error: error -> Location.t
 val ill_formed_ast: Location.t -> string -> 'a

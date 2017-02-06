@@ -17,7 +17,6 @@
 defaultentry:
 
 # The main Makefile, fragments shared between Makefile and Makefile.nt
-
 include config/Makefile
 CAMLRUN ?= boot/ocamlrun
 CAMLYACC ?= boot/ocamlyacc
@@ -25,11 +24,12 @@ include stdlib/StdlibModules
 
 CAMLC=$(CAMLRUN) boot/ocamlc -g -nostdlib -I boot -use-prims byterun/primitives
 CAMLOPT=$(CAMLRUN) ./ocamlopt -g -nostdlib -I stdlib -I otherlibs/dynlink
-COMPFLAGS=-strict-sequence -principal -absname -w +a-4-9-41-42-44-45-48 -warn-error A \
+COMPFLAGS=-strict-sequence -principal -absname -w +a-4-9-41-42-44-45-48 \
+	  -warn-error A \
           -bin-annot -safe-string -strict-formats $(INCLUDES)
 LINKFLAGS=
 
-YACCFLAGS=-v
+YACCFLAGS=-v --strict
 CAMLLEX=$(CAMLRUN) boot/ocamllex
 CAMLDEP=$(CAMLRUN) tools/ocamldep
 DEPFLAGS=$(INCLUDES)
@@ -47,15 +47,16 @@ UTILS=utils/config.cmo utils/misc.cmo \
   utils/clflags.cmo utils/tbl.cmo utils/timings.cmo \
   utils/terminfo.cmo utils/ccomp.cmo utils/warnings.cmo \
   utils/consistbl.cmo \
-  utils/strongly_connected_components.cmo
+  utils/strongly_connected_components.cmo \
+  utils/targetint.cmo
 
 PARSING=parsing/location.cmo parsing/longident.cmo \
-  parsing/docstrings.cmo parsing/ast_helper.cmo \
-  parsing/syntaxerr.cmo parsing/parser.cmo \
+  parsing/docstrings.cmo parsing/syntaxerr.cmo \
+  parsing/ast_helper.cmo parsing/parser.cmo \
   parsing/lexer.cmo parsing/parse.cmo parsing/printast.cmo \
   parsing/pprintast.cmo \
   parsing/ast_mapper.cmo parsing/ast_iterator.cmo parsing/attr_helper.cmo \
-  parsing/builtin_attributes.cmo parsing/ast_invariants.cmo
+  parsing/builtin_attributes.cmo parsing/ast_invariants.cmo parsing/depend.cmo
 
 TYPING=typing/ident.cmo typing/path.cmo \
   typing/primitive.cmo typing/types.cmo \
@@ -74,12 +75,12 @@ TYPING=typing/ident.cmo typing/path.cmo \
   typing/typemod.cmo
 
 COMP=bytecomp/lambda.cmo bytecomp/printlambda.cmo \
+  bytecomp/semantics_of_primitives.cmo \
   bytecomp/typeopt.cmo bytecomp/switch.cmo bytecomp/matching.cmo \
   bytecomp/translobj.cmo bytecomp/translattribute.cmo \
   bytecomp/translcore.cmo \
   bytecomp/translclass.cmo bytecomp/translmod.cmo \
   bytecomp/simplif.cmo bytecomp/runtimedef.cmo \
-  bytecomp/debuginfo.cmo \
   driver/pparse.cmo driver/main_args.cmo \
   driver/compenv.cmo driver/compmisc.cmo
 
@@ -89,6 +90,7 @@ BYTECOMP=bytecomp/meta.cmo bytecomp/instruct.cmo bytecomp/bytegen.cmo \
   bytecomp/printinstr.cmo bytecomp/opcodes.cmo bytecomp/emitcode.cmo \
   bytecomp/bytesections.cmo bytecomp/dll.cmo bytecomp/symtable.cmo \
   bytecomp/bytelink.cmo bytecomp/bytelibrarian.cmo bytecomp/bytepackager.cmo \
+  driver/compdynlink.cmo driver/compplugin.cmo \
   driver/errors.cmo driver/compile.cmo
 
 INTEL_ASM=\
@@ -120,8 +122,10 @@ ASMCOMP=\
   asmcomp/flambda_to_clambda.cmo \
   asmcomp/import_approx.cmo \
   asmcomp/un_anf.cmo \
+  asmcomp/afl_instrument.cmo \
   asmcomp/strmatch.cmo asmcomp/cmmgen.cmo \
-  asmcomp/printmach.cmo asmcomp/selectgen.cmo asmcomp/selection.cmo \
+  asmcomp/printmach.cmo asmcomp/selectgen.cmo \
+  asmcomp/spacetime_profiling.cmo asmcomp/selection.cmo \
   asmcomp/comballoc.cmo \
   asmcomp/CSEgen.cmo asmcomp/CSE.cmo \
   asmcomp/liveness.cmo \
@@ -138,6 +142,7 @@ ASMCOMP=\
   driver/opterrors.cmo driver/optcompile.cmo
 
 MIDDLE_END=\
+  middle_end/debuginfo.cmo \
   middle_end/base_types/tag.cmo \
   middle_end/base_types/linkage_name.cmo \
   middle_end/base_types/compilation_unit.cmo \
@@ -153,7 +158,6 @@ MIDDLE_END=\
   middle_end/base_types/export_id.cmo \
   middle_end/base_types/symbol.cmo \
   middle_end/pass_wrapper.cmo \
-  middle_end/semantics_of_primitives.cmo \
   middle_end/allocated_const.cmo \
   middle_end/projection.cmo \
   middle_end/flambda.cmo \
@@ -213,14 +217,17 @@ PERVASIVES=$(STDLIB_MODULES) outcometree topdirs toploop
 
 
 # The middle end (whose .cma library is currently only used for linking
-# the "objinfo" program, since we cannot depend on the whole native code
+# the "ocamlobjinfo" program, since we cannot depend on the whole native code
 # compiler for "make world" and the list of dependencies for
 # asmcomp/export_info.cmo is long).
 
 compilerlibs/ocamlmiddleend.cma: $(MIDDLE_END)
 	$(CAMLC) -a -o $@ $(MIDDLE_END)
+compilerlibs/ocamlmiddleend.cmxa: $(MIDDLE_END:%.cmo=%.cmx)
+	$(CAMLOPT) -a -o $@ $^
 partialclean::
-	rm -f compilerlibs/ocamlmiddleend.cma
+	rm -f compilerlibs/ocamlmiddleend.cma compilerlibs/ocamlmiddleend.cmxa \
+	      compilerlibs/ocamlmiddleend.$(A)
 
 
 # Tools
@@ -228,17 +235,127 @@ partialclean::
 ocamltools: ocamlc ocamlyacc ocamllex asmcomp/cmx_format.cmi \
             asmcomp/printclambda.cmo compilerlibs/ocamlmiddleend.cma \
             asmcomp/export_info.cmo
-	cd tools ; $(MAKEREC) all
+	+cd tools ; $(MAKEREC) all
 
 ocamltoolsopt: ocamlopt
-	cd tools; $(MAKEREC) opt
+	+cd tools; $(MAKEREC) opt
 
-ocamltoolsopt.opt: ocamlc.opt ocamlyacc ocamllex asmcomp/cmx_format.cmi \
-                   asmcomp/printclambda.cmx
-	cd tools; $(MAKEREC) opt.opt
+ocamltoolsopt.opt: ocamlc.opt ocamlyacc ocamllex.opt asmcomp/cmx_format.cmi \
+                   asmcomp/printclambda.cmx compilerlibs/ocamlmiddleend.cmxa \
+                   asmcomp/export_info.cmx
+	+cd tools; $(MAKEREC) opt.opt
 
 partialclean::
-	cd tools; $(MAKEREC) clean
+	+cd tools; $(MAKEREC) clean
 
 alldepend::
-	cd tools; $(MAKEREC) depend
+	+cd tools; $(MAKEREC) depend
+
+#config/Makefile: configure
+#	./configure $(CONFIGURE_ARGS)
+
+## Test compilation of backend-specific parts
+
+ARCH_SPECIFIC = \
+  asmcomp/arch.ml asmcomp/proc.ml asmcomp/CSE.ml asmcomp/selection.ml \
+  asmcomp/scheduling.ml asmcomp/reload.ml asmcomp/scheduling.ml \
+  asmcomp/emit.ml
+
+partialclean::
+	rm -f $(ARCH_SPECIFIC)
+
+beforedepend:: $(ARCH_SPECIFIC)
+
+ARCH_OCAMLOPT:=$(ARCH)
+
+.PHONY: check_arch check_all_arches
+
+# This rule provides a quick way to check that machine-dependent
+# files compiles fine for a foreign architecture (passed as ARCH=xxx).
+
+check_arch:
+	@echo "========= CHECKING asmcomp/$(ARCH) =============="
+	@rm -f $(ARCH_SPECIFIC) asmcomp/*.cm*
+	@$(MAKEREC) ARCH_OCAMLOPT=$(ARCH) compilerlibs/ocamloptcomp.cma \
+	            >/dev/null
+	@rm -f $(ARCH_SPECIFIC) asmcomp/*.cm*
+
+ARCHES=amd64 i386 arm arm64 power sparc s390x
+
+check_all_arches:
+	@STATUS=0; \
+	 for i in $(ARCHES); do \
+	   $(MAKEREC) --no-print-directory check_arch ARCH=$$i || STATUS=1; \
+	 done; \
+	 exit $$STATUS
+
+# Compiler Plugins
+
+DYNLINK_DIR=otherlibs/dynlink
+
+driver/compdynlink.mlbyte: $(DYNLINK_DIR)/dynlink.ml driver/compdynlink.mli
+	grep -v 'REMOVE_ME for ../../debugger/dynlink.ml' \
+	     $(DYNLINK_DIR)/dynlink.ml >driver/compdynlink.mlbyte
+
+ifeq ($(NATDYNLINK),true)
+driver/compdynlink.mlopt: $(DYNLINK_DIR)/natdynlink.ml driver/compdynlink.mli
+	cp $(DYNLINK_DIR)/natdynlink.ml driver/compdynlink.mlopt
+else
+driver/compdynlink.mlopt: driver/compdynlink.mlno driver/compdynlink.mli
+	cp driver/compdynlink.mlno driver/compdynlink.mlopt
+endif
+
+driver/compdynlink.mli: $(DYNLINK_DIR)/dynlink.mli
+	cp $(DYNLINK_DIR)/dynlink.mli driver/compdynlink.mli
+
+driver/compdynlink.cmo: driver/compdynlink.mlbyte driver/compdynlink.cmi
+	$(CAMLC) $(COMPFLAGS) -c -impl $<
+
+driver/compdynlink.cmx: driver/compdynlink.mlopt driver/compdynlink.cmi
+	$(CAMLOPT) $(COMPFLAGS) -c -impl $<
+
+beforedepend:: driver/compdynlink.mlbyte driver/compdynlink.mlopt \
+               driver/compdynlink.mli
+partialclean::
+	rm -f driver/compdynlink.mlbyte
+	rm -f driver/compdynlink.mli
+	rm -f driver/compdynlink.mlopt
+
+# The native toplevel
+
+compilerlibs/ocamlopttoplevel.cmxa: $(OPTTOPLEVEL:.cmo=.cmx)
+	$(CAMLOPT) -a -o $@ $(OPTTOPLEVEL:.cmo=.cmx)
+partialclean::
+	rm -f compilerlibs/ocamlopttoplevel.cmxa
+
+# When the native toplevel executable has an extension (e.g. ".exe"),
+# provide a phony 'ocamlnat' synonym
+
+ifneq ($(EXE),)
+.PHONY: ocamlnat
+ocamlnat: ocamlnat$(EXE)
+endif
+
+ocamlnat$(EXE): compilerlibs/ocamlcommon.cmxa compilerlibs/ocamloptcomp.cmxa \
+    compilerlibs/ocamlbytecomp.cmxa \
+    compilerlibs/ocamlopttoplevel.cmxa \
+    $(OPTTOPLEVELSTART:.cmo=.cmx)
+	$(CAMLOPT) $(LINKFLAGS) -linkall -o $@ $^
+
+partialclean::
+	rm -f ocamlnat$(EXE)
+
+toplevel/opttoploop.cmx: otherlibs/dynlink/dynlink.cmxa
+
+# The numeric opcodes
+
+bytecomp/opcodes.ml: byterun/caml/instruct.h tools/make_opcodes
+	$(CAMLRUN) tools/make_opcodes -opcodes < $< > $@
+
+tools/make_opcodes: tools/make_opcodes.mll
+	cd tools && $(MAKE) make_opcodes
+
+partialclean::
+	rm -f bytecomp/opcodes.ml
+
+beforedepend:: bytecomp/opcodes.ml

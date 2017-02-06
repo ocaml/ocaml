@@ -13,6 +13,8 @@
 /*                                                                        */
 /**************************************************************************/
 
+#define CAML_INTERNALS
+
 /* The launcher for bytecode executables (if #! is not working) */
 
 #include <stdio.h>

@@ -58,13 +58,13 @@ CAMLextern void caml_register_custom_operations(struct custom_operations * ops);
 CAMLextern int caml_compare_unordered;
   /* Used by custom comparison to report unordered NaN-like cases. */
 
-/* <private> */
+#ifdef CAML_INTERNALS
 extern struct custom_operations * caml_find_custom_operations(char * ident);
 extern struct custom_operations *
           caml_final_custom_operations(void (*fn)(value));
 
 extern void caml_init_custom_operations(void);
-/* </private> */
+#endif /* CAML_INTERNALS */
 
 #ifdef __cplusplus
 }

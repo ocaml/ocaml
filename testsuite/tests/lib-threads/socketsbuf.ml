@@ -1,18 +1,3 @@
-(**************************************************************************)
-(*                                                                        *)
-(*                                OCaml                                   *)
-(*                                                                        *)
-(*             Xavier Leroy, projet Cristal, INRIA Rocquencourt           *)
-(*                                                                        *)
-(*   Copyright 1996 Institut National de Recherche en Informatique et     *)
-(*     en Automatique.                                                    *)
-(*                                                                        *)
-(*   All rights reserved.  This file is distributed under the terms of    *)
-(*   the GNU Lesser General Public License version 2.1, with the          *)
-(*   special exception on linking described in the file LICENSE.          *)
-(*                                                                        *)
-(**************************************************************************)
-
 open Printf
 
 (* Threads, sockets, and buffered I/O channels *)
@@ -42,11 +27,12 @@ let client (addr, msg) =
   printf "%s\n%!" l
 
 let _ =
-  let addr = Unix.ADDR_INET(Unix.inet_addr_loopback, 9876) in
+  let addr = Unix.ADDR_INET(Unix.inet_addr_loopback, 0) in
   let sock =
     Unix.socket (Unix.domain_of_sockaddr addr) Unix.SOCK_STREAM 0 in
   Unix.setsockopt sock Unix.SO_REUSEADDR true;
   Unix.bind sock addr;
+  let addr = Unix.getsockname sock in
   Unix.listen sock 5;
   ignore (Thread.create server sock);
   ignore (Thread.create client (addr, "Client #1\n"));

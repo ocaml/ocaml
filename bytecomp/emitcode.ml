@@ -365,7 +365,7 @@ let rec emit = function
 
 (* Emission to a file *)
 
-let to_file outchan unit_name objfile code =
+let to_file outchan unit_name objfile ~required_globals code =
   init();
   output_string outchan cmo_magic_number;
   let pos_depl = pos_out outchan in
@@ -392,7 +392,8 @@ let to_file outchan unit_name objfile code =
       cu_imports = Env.imports();
       cu_primitives = List.map Primitive.byte_name
                                !Translmod.primitive_declarations;
-      cu_force_link = false;
+      cu_required_globals = Ident.Set.elements required_globals;
+      cu_force_link = !Clflags.link_everything;
       cu_debug = pos_debug;
       cu_debugsize = size_debug } in
   init();                               (* Free out_buffer and reloc_info *)

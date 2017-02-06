@@ -82,7 +82,7 @@ ListLabels.map succ [1;2;3];;
 \end{caml_example}
 But beware that functions like "ListLabels.fold_left" whose result
 type is a type variable will never be considered as totally applied.
-\begin{caml_example}
+\begin{caml_example}[error]
 ListLabels.fold_left ( + ) 0 [1;2;3];;
 \end{caml_example}
 
@@ -92,7 +92,7 @@ are allowed.
 \begin{caml_example}
 let h g = g ~x:3 ~y:2;;
 h f;;
-h ( + );;
+h ( + ) [@@expect error];;
 \end{caml_example}
 Note that when you don't need an argument, you can still use a wildcard
 pattern, but you must prefix it with the label.
@@ -135,7 +135,7 @@ independently.
 \begin{caml_example}
 test ~y:2 ~x:3 () ();;
 test () () ~z:1 ~y:2 ~x:3;;
-(test () ()) ~z:1;;
+(test () ()) ~z:1 [@@expect error];;
 \end{caml_example}
 Here "(test () ())" is already "(0,0,0)" and cannot be further
 applied.
@@ -173,10 +173,10 @@ cannot be inferred as completely as the rest of the language.
 You can see it in the following two examples.
 \begin{caml_example}
 let h' g = g ~y:2 ~x:3;;
-h' f;;
+h' f [@@expect error];;
 let bump_it bump x =
   bump ~step:2 x;;
-bump_it bump 1;;
+bump_it bump 1 [@@expect error];;
 \end{caml_example}
 The first case is simple: "g"  is passed "~y" and then "~x", but "f"
 expects "~x" and then "~y". This is correctly handled if we know the
@@ -484,7 +484,7 @@ let f = function
 let f : abc -> string = f ;;
 \end{caml_example}
 You can avoid such risks by annotating the definition itself.
-\begin{caml_example}
+\begin{caml_example}[error]
 let f : abc -> string = function
   | `As -> "A"
   | #abc -> "other" ;;

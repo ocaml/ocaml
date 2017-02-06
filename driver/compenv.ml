@@ -20,7 +20,7 @@ let output_prefix name =
     match !output_name with
     | None -> name
     | Some n -> if !compile_only then (output_name := None; n) else name in
-  Misc.chop_extension_if_any oname
+  Filename.remove_extension oname
 
 let print_version_and_library compiler =
   Printf.printf "The OCaml %s, version " compiler;
@@ -106,7 +106,7 @@ type readenv_position =
 exception SyntaxError of string
 
 let parse_args s =
-  let args = Misc.split s ',' in
+  let args = String.split_on_char ',' s in
   let rec iter is_after args before after =
     match args with
       [] ->
@@ -168,6 +168,8 @@ let float_setter ppf name option s =
          ("OCAMLPARAM", Printf.sprintf "non-float parameter for \"%s\"" name))
 *)
 
+let load_plugin = ref (fun _ -> ())
+
 let check_bool ppf name s =
   match s with
   | "0" -> false
@@ -189,6 +191,9 @@ let read_one_param ppf position name v =
   | "g" -> set "g" [ Clflags.debug ] v
   | "p" -> set "p" [ Clflags.gprofile ] v
   | "bin-annot" -> set "bin-annot" [ Clflags.binary_annotations ] v
+  | "afl-instrument" -> set "afl-instrument" [ Clflags.afl_instrument ] v
+  | "afl-inst-ratio" ->
+      int_setter ppf "afl-inst-ratio" afl_inst_ratio v
   | "annot" -> set "annot" [ Clflags.annotations ] v
   | "absname" -> set "absname" [ Location.absname ] v
   | "compat-32" -> set "compat-32" [ bytecode_compatible_32 ] v
@@ -203,6 +208,7 @@ let read_one_param ppf position name v =
   | "strict-sequence" -> set "strict-sequence" [ strict_sequence ] v
   | "strict-formats" -> set "strict-formats" [ strict_formats ] v
   | "thread" -> set "thread" [ use_threads ] v
+  | "unboxed-types" -> set "unboxed-types" [ unboxed_types ] v
   | "unsafe" -> set "unsafe" [ fast ] v
   | "verbose" -> set "verbose" [ verbose ] v
   | "nopervasives" -> set "nopervasives" [ nopervasives ] v
@@ -400,6 +406,8 @@ let read_one_param ppf position name v =
 
   | "timings" -> set "timings" [ print_timings ] v
 
+  | "plugin" -> !load_plugin v
+
   | _ ->
     if not (List.mem name !can_discard) then begin
       can_discard := name :: !can_discard;
@@ -522,5 +530,109 @@ let readenv ppf position =
   all_ccopts := !last_ccopts @ !first_ccopts;
   all_ppx := !last_ppx @ !first_ppx
 
-let get_objfiles () =
-  List.rev (!last_objfiles @ !objfiles @ !first_objfiles)
+let get_objfiles ~with_ocamlparam =
+  if with_ocamlparam then
+    List.rev (!last_objfiles @ !objfiles @ !first_objfiles)
+  else
+    List.rev !objfiles
+
+
+
+
+
+
+type deferred_action =
+  | ProcessImplementation of string
+  | ProcessInterface of string
+  | ProcessCFile of string
+  | ProcessOtherFile of string
+  | ProcessObjects of string list
+  | ProcessDLLs of string list
+
+let c_object_of_filename name =
+  Filename.chop_suffix (Filename.basename name) ".c" ^ Config.ext_obj
+
+let process_action
+    (ppf, implementation, interface, ocaml_mod_ext, ocaml_lib_ext) action =
+  match action with
+  | ProcessImplementation name ->
+      readenv ppf (Before_compile name);
+      let opref = output_prefix name in
+      implementation ppf name opref;
+      objfiles := (opref ^ ocaml_mod_ext) :: !objfiles
+  | ProcessInterface name ->
+      readenv ppf (Before_compile name);
+      let opref = output_prefix name in
+      interface ppf name opref;
+      if !make_package then objfiles := (opref ^ ".cmi") :: !objfiles
+  | ProcessCFile name ->
+      readenv ppf (Before_compile name);
+      Location.input_name := name;
+      if Ccomp.compile_file name <> 0 then exit 2;
+      ccobjs := c_object_of_filename name :: !ccobjs
+  | ProcessObjects names ->
+      ccobjs := names @ !ccobjs
+  | ProcessDLLs names ->
+      dllibs := names @ !dllibs
+  | ProcessOtherFile name ->
+      if Filename.check_suffix name ocaml_mod_ext
+      || Filename.check_suffix name ocaml_lib_ext then
+        objfiles := name :: !objfiles
+      else if Filename.check_suffix name ".cmi" && !make_package then
+        objfiles := name :: !objfiles
+      else if Filename.check_suffix name Config.ext_obj
+           || Filename.check_suffix name Config.ext_lib then
+        ccobjs := name :: !ccobjs
+      else if not !native_code && Filename.check_suffix name Config.ext_dll then
+        dllibs := name :: !dllibs
+      else
+        raise(Arg.Bad("don't know what to do with " ^ name))
+
+
+let action_of_file name =
+  if Filename.check_suffix name ".ml"
+  || Filename.check_suffix name ".mlt" then
+    ProcessImplementation name
+  else if Filename.check_suffix name !Config.interface_suffix then
+    ProcessInterface name
+  else if Filename.check_suffix name ".c" then
+    ProcessCFile name
+  else
+    ProcessOtherFile name
+
+let deferred_actions = ref []
+let defer action =
+  deferred_actions := action :: !deferred_actions
+
+let anonymous filename = defer (action_of_file filename)
+let impl filename = defer (ProcessImplementation filename)
+let intf filename = defer (ProcessInterface filename)
+
+let process_deferred_actions env =
+  let final_output_name = !output_name in
+  (* Make sure the intermediate products don't clash with the final one
+     when we're invoked like: ocamlopt -o foo bar.c baz.ml. *)
+  if not !compile_only then output_name := None;
+  begin
+    match final_output_name with
+    | None -> ()
+    | Some output_name ->
+        if !compile_only then begin
+          if List.filter (function
+              | ProcessCFile name -> c_object_of_filename name <> output_name
+              | _ -> false) !deferred_actions <> [] then
+            fatal "Options -c and -o are incompatible when compiling C files";
+
+          if List.length (List.filter (function
+              | ProcessImplementation _
+              | ProcessInterface _
+              | _ -> false) !deferred_actions) > 1 then
+            fatal "Options -c -o are incompatible with compiling multiple files"
+        end;
+  end;
+  if !make_archive && List.exists (function
+      | ProcessOtherFile name -> Filename.check_suffix name ".cmxa"
+      | _ -> false) !deferred_actions then
+    fatal "Option -a cannot be used with .cmxa input files.";
+  List.iter (process_action env) (List.rev !deferred_actions);
+  output_name := final_output_name;

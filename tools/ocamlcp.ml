@@ -65,11 +65,15 @@ module Options = Main_args.Make_bytecomp_options (struct
   let _intf s = with_intf := true; option_with_arg "-intf" s
   let _intf_suffix s = option_with_arg "-intf-suffix" s
   let _keep_docs = option "-keep-docs"
+  let _no_keep_docs = option "-no-keep-docs"
   let _keep_locs = option "-keep-locs"
+  let _no_keep_locs = option "-no-keep-locs"
   let _labels = option "-labels"
   let _linkall = option "-linkall"
   let _make_runtime = option "-make-runtime"
+  let _alias_deps = option "-alias-deps"
   let _no_alias_deps = option "-no-alias-deps"
+  let _app_funct = option "-app-funct"
   let _no_app_funct = option "-no-app-funct"
   let _no_check_prims = option "-no-check-prims"
   let _noassert = option "-noassert"
@@ -82,17 +86,24 @@ module Options = Main_args.Make_bytecomp_options (struct
   let _output_obj = option "-output-obj"
   let _output_complete_obj = option "-output-complete-obj"
   let _pack = option "-pack"
+  let _plugin = option_with_arg "-plugin"
   let _pp _s = incompatible "-pp"
   let _ppx _s = incompatible "-ppx"
   let _principal = option "-principal"
+  let _no_principal = option "-no-principal"
   let _rectypes = option "-rectypes"
+  let _no_rectypes = option "-no-rectypes"
   let _runtime_variant s = option_with_arg "-runtime-variant" s
   let _safe_string = option "-safe-string"
   let _short_paths = option "-short-paths"
   let _strict_sequence = option "-strict-sequence"
+  let _no_strict_sequence = option "-no-strict-sequence"
   let _strict_formats = option "-strict-formats"
+  let _no_strict_formats = option "-no-strict-formats"
   let _thread () = option "-thread" ()
   let _vmthread () = option "-vmthread" ()
+  let _unboxed_types = option "-unboxed-types"
+  let _no_unboxed_types = option "-no-unboxed-types"
   let _unsafe = option "-unsafe"
   let _unsafe_string = option "-unsafe-string"
   let _use_prims s = option_with_arg "-use-prims" s
@@ -115,6 +126,8 @@ module Options = Main_args.Make_bytecomp_options (struct
   let _dflambda = option "-dflambda"
   let _dinstr = option "-dinstr"
   let _dtimings = option "-dtimings"
+  let _args = Arg.read_arg
+  let _args0 = Arg.read_arg0
   let anonymous = process_file
 end);;
 
@@ -134,7 +147,7 @@ let optlist =
     :: ("-p", Arg.String add_profarg, "[afilmt]  Same as option -P")
     :: Options.list
 in
-Arg.parse optlist process_file usage;
+Arg.parse_expand optlist process_file usage;
 if !with_impl && !with_intf then begin
   fprintf stderr "ocamlcp cannot deal with both \"-impl\" and \"-intf\"\n";
   fprintf stderr "please compile interfaces and implementations separately\n";

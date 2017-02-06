@@ -33,9 +33,9 @@ MANEXT=1
 ### Do #! scripts work on your system?
 ### Beware: on some systems (e.g. SunOS 4), this will work only if
 ### the string "#!$(BINDIR)/ocamlrun" is less than 32 characters long.
-### In doubt, set SHARPBANGSCRIPTS to false.
-SHARPBANGSCRIPTS=true
-#SHARPBANGSCRIPTS=false
+### In doubt, set HASHBANGSCRIPTS to false.
+HASHBANGSCRIPTS=true
+#HASHBANGSCRIPTS=false
 
 ########## Configuration for the bytecode compiler
 
@@ -166,9 +166,9 @@ RANLIBCMD=ranlib
 
 ### Whether profiling with gprof is supported
 # If yes: (e.g. x86/Linux, Sparc/Solaris):
-#PROFILING=prof
+#PROFILING=true
 # If no:
-#PROFILING=noprof
+#PROFILING=false
 
 ### Option to give to the C compiler for profiling
 #CC_PROFILE=-pg

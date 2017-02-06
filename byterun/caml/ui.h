@@ -18,11 +18,15 @@
 #ifndef CAML_UI_H
 #define CAML_UI_H
 
+#ifdef CAML_INTERNALS
+
 #include "config.h"
 
 void ui_exit (int return_code);
 int ui_read (int file_desc, char *buf, unsigned int length);
 int ui_write (int file_desc, char *buf, unsigned int length);
 void ui_print_stderr (char *format, void *arg);
+
+#endif /* CAML_INTERNALS */
 
 #endif /* CAML_UI_H */

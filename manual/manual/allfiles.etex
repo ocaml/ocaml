@@ -72,6 +72,9 @@ and as a
 \input{ocamlbuild.tex}
 % \input emacs.tex
 \input{intf-c.tex}
+\input{flambda.tex}
+\input{spacetime.tex}
+\input{afl-fuzz.tex}
 
 \part{The OCaml library}
 \label{p:library}

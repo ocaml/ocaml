@@ -19,6 +19,8 @@
 #ifndef CAML_INT64_EMUL_H
 #define CAML_INT64_EMUL_H
 
+#ifdef CAML_INTERNALS
+
 #include <math.h>
 
 #ifdef ARCH_BIG_ENDIAN
@@ -285,5 +287,7 @@ static int64_t I64_bswap(int64_t x)
            ((x.h & 0xFF000000) >> 24));
   return res;
 }
+
+#endif /* CAML_INTERNALS */
 
 #endif /* CAML_INT64_EMUL_H */

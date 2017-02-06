@@ -32,6 +32,9 @@ type compilation_unit =
     cu_reloc: (reloc_info * int) list;  (* Relocation information *)
     cu_imports:
       (string * Digest.t option) list; (* Names and CRC of intfs imported *)
+    cu_required_globals: Ident.t list; (* Compilation units whose initialization
+                                          side effects must occur before this
+                                          one. *)
     cu_primitives: string list;         (* Primitives declared inside *)
     mutable cu_force_link: bool;        (* Must be linked even if unref'ed *)
     mutable cu_debug: int;              (* Position of debugging info, or 0 *)
@@ -60,3 +63,9 @@ type library =
      ...
      object code for last library member
      library descriptor *)
+
+(* Tables for numbering objects *)
+
+type 'a numtable =
+  { num_cnt: int;               (* The next number *)
+    num_tbl: ('a, int) Tbl.t }  (* The table of already numbered objects *)

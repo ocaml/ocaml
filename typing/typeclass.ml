@@ -21,6 +21,32 @@ open Typecore
 open Typetexp
 open Format
 
+type 'a class_info = {
+  cls_id : Ident.t;
+  cls_id_loc : string loc;
+  cls_decl : class_declaration;
+  cls_ty_id : Ident.t;
+  cls_ty_decl : class_type_declaration;
+  cls_obj_id : Ident.t;
+  cls_obj_abbr : type_declaration;
+  cls_typesharp_id : Ident.t;
+  cls_abbr : type_declaration;
+  cls_arity : int;
+  cls_pub_methods : string list;
+  cls_info : 'a;
+}
+
+type class_type_info = {
+  clsty_ty_id : Ident.t;
+  clsty_id_loc : string loc;
+  clsty_ty_decl : class_type_declaration;
+  clsty_obj_id : Ident.t;
+  clsty_obj_abbr : type_declaration;
+  clsty_typesharp_id : Ident.t;
+  clsty_abbr : type_declaration;
+  clsty_info : Typedtree.class_type_declaration;
+}
+
 type error =
     Unconsistent_constraint of (type_expr * type_expr) list
   | Field_type_mismatch of string * string * (type_expr * type_expr) list
@@ -397,13 +423,13 @@ let rec class_type_field env self_type meths
       (mkctf (Tctf_inherit parent) :: fields,
        val_sig, concr_meths, inher)
 
-  | Pctf_val (lab, mut, virt, sty) ->
+  | Pctf_val ({txt=lab}, mut, virt, sty) ->
       let cty = transl_simple_type env false sty in
       let ty = cty.ctyp_type in
       (mkctf (Tctf_val (lab, mut, virt, cty)) :: fields,
       add_val lab (mut, virt, ty) val_sig, concr_meths, inher)
 
-  | Pctf_method (lab, priv, virt, sty)  ->
+  | Pctf_method ({txt=lab}, priv, virt, sty)  ->
       let cty =
         declare_method env meths self_type lab priv sty  ctf.pctf_loc in
       let concr_meths =
@@ -564,17 +590,17 @@ let rec class_field self_loc cl_num self_type meths vars
           cl_sig.csig_concr []
       in
       (* Super *)
-      let (val_env, met_env, par_env) =
+      let (val_env, met_env, par_env,super) =
         match super with
           None ->
-            (val_env, met_env, par_env)
-        | Some name ->
+            (val_env, met_env, par_env,None)
+        | Some {txt=name} ->
             let (_id, val_env, met_env, par_env) =
               enter_met_env ~check:(fun s -> Warnings.Unused_ancestor s)
                 sparent.pcl_loc name (Val_anc (inh_meths, cl_num)) self_type
                 val_env met_env par_env
             in
-            (val_env, met_env, par_env)
+            (val_env, met_env, par_env,Some name)
       in
       (val_env, met_env, par_env,
        lazy (mkcf (Tcf_inherit (ovf, parent, super, inh_vars, inh_meths)))
@@ -1217,6 +1243,7 @@ let temp_abbrev loc env id arity =
        type_loc = loc;
        type_attributes = []; (* or keep attrs from the class decl? *)
        type_immediate = false;
+       type_unboxed = unboxed_false_default_false;
       }
       env
   in
@@ -1464,6 +1491,7 @@ let class_infos define_class kind
      type_loc = cl.pci_loc;
      type_attributes = []; (* or keep attrs from cl? *)
      type_immediate = false;
+     type_unboxed = unboxed_false_default_false;
     }
   in
   let (cl_params, cl_ty) =
@@ -1482,6 +1510,7 @@ let class_infos define_class kind
      type_loc = cl.pci_loc;
      type_attributes = []; (* or keep attrs from cl? *)
      type_immediate = false;
+     type_unboxed = unboxed_false_default_false;
     }
   in
   ((cl, id, clty, ty_id, cltydef, obj_id, obj_abbr, cl_id, cl_abbr, ci_params,
@@ -1532,7 +1561,7 @@ let final_decl env define_class
      ci_id_class = id;
      ci_id_class_type = ty_id;
      ci_id_object = obj_id;
-     ci_id_typesharp = cl_id;
+     ci_id_typehash = cl_id;
      ci_expr = expr;
      ci_decl = clty;
      ci_type_decl = cltydef;
@@ -1589,8 +1618,18 @@ let check_coercions env
       if not (Ctype.opened_object cl_ty) then
         raise(Error(loc, env, Cannot_coerce_self obj_ty))
   end;
-  (id, id_loc, clty, ty_id, cltydef, obj_id, obj_abbr, cl_id, cl_abbr,
-   arity, pub_meths, req)
+  {cls_id = id;
+   cls_id_loc = id_loc;
+   cls_decl = clty;
+   cls_ty_id = ty_id;
+   cls_ty_decl = cltydef;
+   cls_obj_id = obj_id;
+   cls_obj_abbr = obj_abbr;
+   cls_typesharp_id = cl_id;
+   cls_abbr = cl_abbr;
+   cls_arity = arity;
+   cls_pub_methods = pub_meths;
+   cls_info=req}
 
 (*******************************)
 
@@ -1637,15 +1676,20 @@ let class_descriptions env cls =
   type_classes true approx_description class_description env cls
 
 let class_type_declarations env cls =
-  let (decl, env) =
+  let (decls, env) =
     type_classes false approx_description class_description env cls
   in
   (List.map
-     (function
-       (_, id_loc, _, ty_id, cltydef, obj_id, obj_abbr, cl_id, cl_abbr,
-        _, _, ci) ->
-       (ty_id, id_loc, cltydef, obj_id, obj_abbr, cl_id, cl_abbr, ci))
-     decl,
+     (fun decl ->
+        {clsty_ty_id = decl.cls_ty_id;
+         clsty_id_loc = decl.cls_id_loc;
+         clsty_ty_decl = decl.cls_ty_decl;
+         clsty_obj_id = decl.cls_obj_id;
+         clsty_obj_abbr = decl.cls_obj_abbr;
+         clsty_typesharp_id = decl.cls_typesharp_id;
+         clsty_abbr = decl.cls_abbr;
+         clsty_info = decl.cls_info})
+     decls,
    env)
 
 let rec unify_parents env ty cl =

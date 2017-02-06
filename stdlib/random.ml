@@ -25,17 +25,17 @@
    passes all the Diehard tests.
 *)
 
-external random_seed: unit -> int array = "caml_sys_random_seed";;
+external random_seed: unit -> int array = "caml_sys_random_seed"
 
 module State = struct
 
-  type t = { st : int array; mutable idx : int };;
+  type t = { st : int array; mutable idx : int }
 
-  let new_state () = { st = Array.make 55 0; idx = 0 };;
+  let new_state () = { st = Array.make 55 0; idx = 0 }
   let assign st1 st2 =
     Array.blit st2.st 0 st1.st 0 55;
-    st1.idx <- st2.idx;
-  ;;
+    st1.idx <- st2.idx
+
 
   let full_init s seed =
     let combine accu x = Digest.string (accu ^ string_of_int x) in
@@ -55,22 +55,22 @@ module State = struct
       accu := combine !accu seed.(k);
       s.st.(j) <- (s.st.(j) lxor extract !accu) land 0x3FFFFFFF;  (* PR#5575 *)
     done;
-    s.idx <- 0;
-  ;;
+    s.idx <- 0
+
 
   let make seed =
     let result = new_state () in
     full_init result seed;
     result
-  ;;
 
-  let make_self_init () = make (random_seed ());;
+
+  let make_self_init () = make (random_seed ())
 
   let copy s =
     let result = new_state () in
     assign result s;
     result
-  ;;
+
 
   (* Returns 30 random bits as an integer 0 <= x < 1073741824 *)
   let bits s =
@@ -81,18 +81,18 @@ module State = struct
     let newval30 = newval land 0x3FFFFFFF in  (* PR#5575 *)
     s.st.(s.idx) <- newval30;
     newval30
-  ;;
+
 
   let rec intaux s n =
     let r = bits s in
     let v = r mod n in
     if r - v > 0x3FFFFFFF - n + 1 then intaux s n else v
-  ;;
+
   let int s bound =
     if bound > 0x3FFFFFFF || bound <= 0
     then invalid_arg "Random.int"
     else intaux s bound
-  ;;
+
 
   let rec int32aux s n =
     let b1 = Int32.of_int (bits s) in
@@ -102,12 +102,12 @@ module State = struct
     if Int32.sub r v > Int32.add (Int32.sub Int32.max_int n) 1l
     then int32aux s n
     else v
-  ;;
+
   let int32 s bound =
     if bound <= 0l
     then invalid_arg "Random.int32"
     else int32aux s bound
-  ;;
+
 
   let rec int64aux s n =
     let b1 = Int64.of_int (bits s) in
@@ -118,18 +118,18 @@ module State = struct
     if Int64.sub r v > Int64.add (Int64.sub Int64.max_int n) 1L
     then int64aux s n
     else v
-  ;;
+
   let int64 s bound =
     if bound <= 0L
     then invalid_arg "Random.int64"
     else int64aux s bound
-  ;;
+
 
   let nativeint =
     if Nativeint.size = 32
     then fun s bound -> Nativeint.of_int32 (int32 s (Nativeint.to_int32 bound))
     else fun s bound -> Int64.to_nativeint (int64 s (Int64.of_nativeint bound))
-  ;;
+
 
   (* Returns a float 0 <= x <= 1 with at most 60 bits of precision. *)
   let rawfloat s =
@@ -137,13 +137,13 @@ module State = struct
     and r1 = Pervasives.float (bits s)
     and r2 = Pervasives.float (bits s)
     in (r1 /. scale +. r2) /. scale
-  ;;
 
-  let float s bound = rawfloat s *. bound;;
 
-  let bool s = (bits s land 1 = 0);;
+  let float s bound = rawfloat s *. bound
 
-end;;
+  let bool s = (bits s land 1 = 0)
+
+end
 
 (* This is the state you get with [init 27182818] and then applying
    the "land 0x3FFFFFFF" filter to them.  See #5575, #5793, #5977. *)
@@ -161,24 +161,24 @@ let default = {
       0x2fbf967a;
     |];
   State.idx = 0;
-};;
+}
 
-let bits () = State.bits default;;
-let int bound = State.int default bound;;
-let int32 bound = State.int32 default bound;;
-let nativeint bound = State.nativeint default bound;;
-let int64 bound = State.int64 default bound;;
-let float scale = State.float default scale;;
-let bool () = State.bool default;;
+let bits () = State.bits default
+let int bound = State.int default bound
+let int32 bound = State.int32 default bound
+let nativeint bound = State.nativeint default bound
+let int64 bound = State.int64 default bound
+let float scale = State.float default scale
+let bool () = State.bool default
 
-let full_init seed = State.full_init default seed;;
-let init seed = State.full_init default [| seed |];;
-let self_init () = full_init (random_seed());;
+let full_init seed = State.full_init default seed
+let init seed = State.full_init default [| seed |]
+let self_init () = full_init (random_seed())
 
 (* Manipulating the current state. *)
 
-let get_state () = State.copy default;;
-let set_state s = State.assign default s;;
+let get_state () = State.copy default
+let set_state s = State.assign default s
 
 (********************
 
@@ -190,19 +190,19 @@ let set_state s = State.assign default s;;
 
   Some results:
 
-init 27182818; chisquare int 100000 1000;;
-init 27182818; chisquare int 100000 100;;
-init 27182818; chisquare int 100000 5000;;
-init 27182818; chisquare int 1000000 1000;;
-init 27182818; chisquare int 100000 1024;;
-init 299792643; chisquare int 100000 1024;;
-init 14142136; chisquare int 100000 1024;;
-init 27182818; init_diff 1024; chisquare diff 100000 1024;;
-init 27182818; init_diff 100; chisquare diff 100000 100;;
-init 27182818; init_diff2 1024; chisquare diff2 100000 1024;;
-init 27182818; init_diff2 100; chisquare diff2 100000 100;;
-init 14142136; init_diff2 100; chisquare diff2 100000 100;;
-init 299792643; init_diff2 100; chisquare diff2 100000 100;;
+init 27182818; chisquare int 100000 1000
+init 27182818; chisquare int 100000 100
+init 27182818; chisquare int 100000 5000
+init 27182818; chisquare int 1000000 1000
+init 27182818; chisquare int 100000 1024
+init 299792643; chisquare int 100000 1024
+init 14142136; chisquare int 100000 1024
+init 27182818; init_diff 1024; chisquare diff 100000 1024
+init 27182818; init_diff 100; chisquare diff 100000 100
+init 27182818; init_diff2 1024; chisquare diff2 100000 1024
+init 27182818; init_diff2 100; chisquare diff2 100000 100
+init 14142136; init_diff2 100; chisquare diff2 100000 100
+init 299792643; init_diff2 100; chisquare diff2 100000 100
 - : float * float * float = (936.754446796632465, 997.5, 1063.24555320336754)
 # - : float * float * float = (80., 89.7400000000052387, 120.)
 # - : float * float * float = (4858.57864376269, 5045.5, 5141.42135623731)
@@ -225,7 +225,7 @@ let rec sumsq v i0 i1 =
   if i0 >= i1 then 0.0
   else if i1 = i0 + 1 then Pervasives.float v.(i0) *. Pervasives.float v.(i0)
   else sumsq v i0 ((i0+i1)/2) +. sumsq v ((i0+i1)/2) i1
-;;
+
 
 let chisquare g n r =
   if n <= 10 * r then invalid_arg "chisquare";
@@ -239,12 +239,12 @@ let chisquare g n r =
   and n = Pervasives.float n in
   let sr = 2.0 *. sqrt r in
   (r -. sr,   (r *. t /. n) -. n,   r +. sr)
-;;
+
 
 (* This is to test for linear dependencies between successive random numbers.
 *)
-let st = ref 0;;
-let init_diff r = st := int r;;
+let st = ref 0
+let init_diff r = st := int r
 let diff r =
   let x1 = !st
   and x2 = int r
@@ -254,16 +254,16 @@ let diff r =
     x1 - x2
   else
     r + x1 - x2
-;;
+
 
 let st1 = ref 0
 and st2 = ref 0
-;;
+
 
 (* This is to test for quadratic dependencies between successive random
    numbers.
 *)
-let init_diff2 r = st1 := int r; st2 := int r;;
+let init_diff2 r = st1 := int r; st2 := int r
 let diff2 r =
   let x1 = !st1
   and x2 = !st2
@@ -272,6 +272,6 @@ let diff2 r =
   st1 := x2;
   st2 := x3;
   (x3 - x2 - x2 + x1 + 2*r) mod r
-;;
+
 
 ********************)

@@ -18,8 +18,6 @@
 
 let print_DEBUG s = print_string s ; print_newline ()
 
-open Config
-open Misc
 open Format
 open Typedtree
 
@@ -29,7 +27,7 @@ open Typedtree
    then the directories specified with the -I option (in command-line order),
    then the standard library directory. *)
 let init_path () =
-  load_path :=
+  Config.load_path :=
     "" :: List.rev (Config.standard_library :: !Clflags.include_dirs);
   Env.reset_cache ()
 
@@ -39,11 +37,24 @@ let initial_env () =
     if !Clflags.unsafe_string then Env.initial_unsafe_string
     else Env.initial_safe_string
   in
-  try
-    if !Clflags.nopervasives then initial else
-    Env.open_pers_signature "Pervasives" initial
-  with Not_found ->
-    fatal_error "cannot open pervasives.cmi"
+  let initial =
+    (* Open the Pervasives module by reading directly the corresponding cmi
+       file to avoid troubles when building the documentation for the
+       Pervasives modules.
+       Another option might be to add a -nopervasives option to ocamldoc and update
+       stdlib documentation's build process. *)
+    try
+      Env.open_pers_signature "Pervasives" initial
+    with Not_found ->
+      Misc.fatal_error @@ Printf.sprintf "cannot open pervasives.cmi" in
+  let open_mod env m =
+    let open Asttypes in
+    let lid = {loc = Location.in_file "ocamldoc command line";
+               txt = Longident.parse m } in
+    snd (Typemod.type_open_ Override env lid.loc lid) in
+  (* Open the list of modules given as arguments of the "-open" flag
+     The list is reversed to open the modules in the left-to-right order *)
+  List.fold_left open_mod initial (List.rev !Clflags.open_modules)
 
 (** Optionally preprocess a source file *)
 let preprocess sourcefile =
@@ -76,7 +87,7 @@ let process_implementation_file sourcefile =
   try
     let parsetree =
       Pparse.file ~tool_name Format.err_formatter inputfile
-        (no_docstring Parse.implementation) ast_impl_magic_number
+        (no_docstring Parse.implementation) Pparse.Structure
     in
     let typedtree =
       Typemod.type_implementation
@@ -107,9 +118,9 @@ let process_interface_file sourcefile =
   let inputfile = preprocess sourcefile in
   let ast =
     Pparse.file ~tool_name Format.err_formatter inputfile
-      (no_docstring Parse.interface) ast_intf_magic_number
+      (no_docstring Parse.interface) Pparse.Signature
   in
-  let sg = Typemod.type_interface (initial_env()) ast in
+  let sg = Typemod.type_interface sourcefile (initial_env()) ast in
   Warnings.check_fatal ();
   (ast, sg, inputfile)
 
@@ -219,15 +230,16 @@ let process_file sourcefile =
           with Odoc_text.Text_syntax (l, c, s) ->
             raise (Failure (Odoc_messages.text_parse_error l c s))
         in
+         let m_info =
+          Some Odoc_types.{dummy_info with i_desc= Some txt } in
         let m =
           {
             Odoc_module.m_name = mod_name ;
             Odoc_module.m_type = Types.Mty_signature [] ;
-            Odoc_module.m_info = None ;
+            Odoc_module.m_info;
             Odoc_module.m_is_interface = true ;
             Odoc_module.m_file = file ;
-            Odoc_module.m_kind = Odoc_module.Module_struct
-              [Odoc_module.Element_module_comment txt] ;
+            Odoc_module.m_kind = Odoc_module.Module_struct [] ;
             Odoc_module.m_loc =
               { Odoc_types.loc_impl = None ;
                 Odoc_types.loc_inter = Some (Location.in_file file) } ;

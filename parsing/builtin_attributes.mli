@@ -23,6 +23,8 @@
    ocaml.explicit_arity (for camlp4/camlp5)
    ocaml.warn_on_literal_pattern
    ocaml.deprecated_mutable
+   ocaml.immediate
+   ocaml.boxed / ocaml.unboxed
 *)
 
 
@@ -45,3 +47,9 @@ val emit_external_warnings: Ast_iterator.iterator
 
 val warn_on_literal_pattern: Parsetree.attributes -> bool
 val explicit_arity: Parsetree.attributes -> bool
+
+
+val immediate: Parsetree.attributes -> bool
+
+val has_unboxed: Parsetree.attributes -> bool
+val has_boxed: Parsetree.attributes -> bool

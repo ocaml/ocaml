@@ -13,6 +13,8 @@
 /*                                                                        */
 /**************************************************************************/
 
+#define CAML_INTERNALS
+
 /* Read and output terminal commands */
 
 #include "caml/config.h"
@@ -74,7 +76,7 @@ CAMLprim value caml_terminfo_setup (value vchan)
 
 static int terminfo_putc (int c)
 {
-  putch (chan, c);
+  caml_putch (chan, c);
   return c;
 }
 

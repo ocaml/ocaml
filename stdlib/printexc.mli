@@ -159,8 +159,8 @@ val set_uncaught_exception_handler: (exn -> raw_backtrace -> unit) -> unit
 
 (** {6 Manipulation of backtrace information}
 
-    Those function allow to traverse the slots of a raw backtrace,
-    extract information from them in a programmer-friendly format.
+    These functions are used to traverse the slots of a raw backtrace
+    and extract information from them in a programmer-friendly format.
 *)
 
 type backtrace_slot
@@ -209,6 +209,14 @@ module Slot : sig
       function call.
 
       @since 4.02
+  *)
+
+  val is_inline : t -> bool
+  (** [is_inline slot] is [true] when [slot] refers to a call
+      that got inlined by the compiler, and [false] when it comes from
+      any other context.
+
+      @since 4.04.0
   *)
 
   val location : t -> location option
@@ -276,6 +284,29 @@ val convert_raw_backtrace_slot : raw_backtrace_slot -> backtrace_slot
     @since 4.02
 *)
 
+
+val get_raw_backtrace_next_slot :
+    raw_backtrace_slot -> raw_backtrace_slot option
+(** [get_raw_backtrace_next_slot slot] returns the next slot inlined, if any.
+
+    Sample code to iterate over all frames (inlined and non-inlined):
+    {[
+      (* Iterate over inlined frames *)
+      let rec iter_raw_backtrace_slot f slot =
+        f slot;
+        match get_raw_backtrace_next_slot slot with
+        | None -> ()
+        | Some slot' -> iter_raw_backtrace_slot f slot'
+
+      (* Iterate over stack frames *)
+      let iter_raw_backtrace f bt =
+        for i = 0 to raw_backtrace_length bt - 1 do
+          iter_raw_backtrace_slot f (get_raw_backtrace_slot bt i)
+        done
+    ]}
+
+    @since 4.04.0
+*)
 
 (** {6 Exception slots} *)
 

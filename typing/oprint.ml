@@ -212,8 +212,8 @@ and print_simple_out_type ppf =
           Ovar_fields fields ->
             print_list print_row_field (fun ppf -> fprintf ppf "@;<1 -2>| ")
               ppf fields
-        | Ovar_name (id, tyl) ->
-            fprintf ppf "@[%a%a@]" print_typargs tyl print_ident id
+        | Ovar_typ typ ->
+           print_simple_out_type ppf typ
       in
       fprintf ppf "%s[%s@[<hv>@[<hv>%a@]%a ]@]" (if non_gen then "_" else "")
         (if closed then if tags = None then " " else "< "
@@ -506,6 +506,9 @@ and print_out_type_decl kwd ppf td =
   let print_immediate ppf =
     if td.otype_immediate then fprintf ppf " [%@%@immediate]" else ()
   in
+  let print_unboxed ppf =
+    if td.otype_unboxed then fprintf ppf " [%@%@unboxed]" else ()
+  in
   let print_out_tkind ppf = function
   | Otyp_abstract -> ()
   | Otyp_record lbls ->
@@ -523,13 +526,19 @@ and print_out_type_decl kwd ppf td =
         print_private td.otype_private
         !out_type ty
   in
-  fprintf ppf "@[<2>@[<hv 2>%t%a@]%t%t@]"
+  fprintf ppf "@[<2>@[<hv 2>%t%a@]%t%t%t@]"
     print_name_params
     print_out_tkind ty
     print_constraints
     print_immediate
+    print_unboxed
 
 and print_out_constr ppf (name, tyl,ret_type_opt) =
+  let name =
+    match name with
+    | "::" -> "(::)"   (* #7200 *)
+    | s -> s
+  in
   match ret_type_opt with
   | None ->
       begin match tyl with

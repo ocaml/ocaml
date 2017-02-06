@@ -15,7 +15,6 @@
 
 # Makefile for the str library
 
-
 LIBNAME=str
 COBJS=strstubs.$(O)
 CLIBNAME=camlstr
@@ -23,13 +22,19 @@ CAMLOBJS=str.cmo
 
 include ../Makefile
 
-depend:
-
 str.cmo: str.cmi
 str.cmx: str.cmi
 
 depend:
 	$(CC) -MM $(CFLAGS) *.c > .depend
-	$(CAMLRUN) ../../tools/ocamldep *.mli *.ml >> .depend
+	$(CAMLRUN) $(ROOTDIR)/tools/ocamldep -slash *.mli *.ml >> .depend
 
+ifeq "$(TOOLCHAIN)" "msvc"
+
+.depend.nt: .depend
+	sed -e 's/\.o/.$(O)/g' $< > $@
+
+include .depend.nt
+else
 include .depend
+endif

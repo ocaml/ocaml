@@ -7,9 +7,15 @@ OCaml distribution. These are just guidelines, not rules, use your
 best judgment and feel free to propose changes to this document itself
 in a pull request.
 
+This document assumes that you have a patch against the sources of the
+compiler distribution, that you wish to submit to the OCaml
+maintainers upstream. See [INSTALL.adoc](INSTALL.adoc) for details on
+how to build the compiler distribution from sources. See
+[HACKING.adoc](HACKING.adoc) for details on how to modify the sources.
+
 ## Contribution
 
-Adding or modifying code is far from the only way to contribute to the
+Modifying its sources is far from the only way to contribute to the
 OCaml distribution. Bug reports (in particular when they come with
 a reproducible example), simple typos or clarifications in the
 documentation also help, and help evaluating and integrating existing
@@ -18,8 +24,8 @@ forums, or asking the good questions that highlight deficiencies in
 existing documentations, also help. We currently have more
 contributors willing to propose changes than contributors willing to
 review other people's changes, so more eyes on the existing change
-requests is a good way to increase the integration bandwidth of external
-contributions.
+requests is a good way to increase the integration bandwidth of
+external contributions.
 
 There are also many valuable ways to contribute to the wider OCaml
 ecosystem that do not involve changes to the OCaml distribution.
@@ -152,7 +158,7 @@ of the OCaml distribution.
 
 ### Changelog
 
-Any user-visible change should have a Changelog entry:
+Any user-visible change should have a `Changes` entry:
 
 - in the right section (named sections if major feature, generic
   "Bug fixes" and "Feature requests" otherwise)
@@ -163,7 +169,8 @@ Any user-visible change should have a Changelog entry:
   (several numbers separated by commas can be used)
 
 - maintaining the order: each section lists Mantis PRs first in ascending
-  numerical order, followed by Github PRs
+  numerical order, followed by Github PRs in ascending numerical order,
+  followed by changes that are not related to a PR.
 
 - with a concise readable description of the change (possibly taken
   from a commit message, but it should make sense to end-users
@@ -252,6 +259,54 @@ log -u` to make sure the rebase patches make sense), but:
   (with a "yolo" commit message, a big ugly commit of unrelated
   changes, or an un-testable intermediary state) is a sure way to
   generate ill will.
+
+## Contributing to the standard library
+
+Contributions to the standard library are very welcome.  There is some
+widespread belief in the community than the stdlib is somehow "frozen"
+and that its evolutions are mostly driven by the need of the OCaml
+compiler itself.  Let's be clear: this is just plain wrong. The
+compiler is happy with its own local utility functions, and many
+recent additions to the stdlib are not used by the compiler.
+
+Another common and wrong idea is that core OCaml maintainers don't
+really care about the standard library.  This is not true, and won't
+be unless one of the "alternative standard" libraries really gains
+enough "market share" in the community.
+
+So: please contribute!
+
+Obviously, the proposals to evolve the standard library will be
+evaluated with very high standards, similar to those applied to the
+evolution of the surface langage, and much higher than those for
+internal compiler changes (optimizations, etc).
+
+A key property of the standard library is its stability.  Backward
+compatibility is not an absolute technical requirement (any addition
+to/of a module can break existing code, formally), but breakage should
+be limited as much as possible (and assessed, when relevant).  A
+corollary is that any addition creates a long-term support commitment.
+For instance, once a concrete type or function is made public,
+changing the exposed definition cannot be done easily.
+
+There is no plan to extend dramatically the functional domain covered
+by the standard library.  For instance, proposals to include support
+for XML, JSON, or network protocols are very likely to be rejected.  Such
+domains are better treated by external libraries.  Small additions to
+existing modules are much simpler to get in, even more so (but not
+necessarily) when:
+
+  - they cannot easily be implemented externally, or when
+  - they facilitate communication between independent external
+    libraries, or when
+  - they fill obvious gaps.
+
+Of course, standard guidelines apply as well: proper documentation,
+proper tests, portability (yes, also Windows!), good justification for
+why the change is desirable and why it should go into stdlib.
+
+So: be prepared for some serious review process!  But yes, yes,
+contributions are welcome and appreciated.  Promised.
 
 
 ## Contributor License Agreement

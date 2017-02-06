@@ -14,7 +14,7 @@
 (*                                                                        *)
 (**************************************************************************)
 
-(** Modules about numbers that satisfy [Identifiable.S]. *)
+(** Modules about numbers that satisfy {!Identifiable.S}. *)
 
 module Int : sig
   include Identifiable.S with type t = int

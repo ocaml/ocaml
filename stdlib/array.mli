@@ -80,7 +80,7 @@ val make_matrix : int -> int -> 'a -> 'a array array
    with the notation [m.(x).(y)].
 
    Raise [Invalid_argument] if [dimx] or [dimy] is negative or
-   greater than [Sys.max_array_length].
+   greater than {!Sys.max_array_length}.
    If the value of [e] is a floating-point number, then the maximum
    size is only [Sys.max_array_length / 2]. *)
 
@@ -93,7 +93,7 @@ val append : 'a array -> 'a array -> 'a array
    concatenation of the arrays [v1] and [v2]. *)
 
 val concat : 'a array list -> 'a array
-(** Same as [Array.append], but concatenates a list of arrays. *)
+(** Same as {!Array.append}, but concatenates a list of arrays. *)
 
 val sub : 'a array -> int -> int -> 'a array
 (** [Array.sub a start len] returns a fresh array of length [len],
@@ -174,13 +174,15 @@ val fold_right : ('b -> 'a -> 'a) -> 'b array -> 'a -> 'a
 val iter2 : ('a -> 'b -> unit) -> 'a array -> 'b array -> unit
 (** [Array.iter2 f a b] applies function [f] to all the elements of [a]
    and [b].
-   Raise [Invalid_argument] if the arrays are not the same size. *)
+   Raise [Invalid_argument] if the arrays are not the same size.
+   @since 4.03.0 *)
 
 val map2 : ('a -> 'b -> 'c) -> 'a array -> 'b array -> 'c array
 (** [Array.map2 f a b] applies function [f] to all the elements of [a]
    and [b], and builds an array with the results returned by [f]:
    [[| f a.(0) b.(0); ...; f a.(Array.length a - 1) b.(Array.length b - 1)|]].
-   Raise [Invalid_argument] if the arrays are not the same size. *)
+   Raise [Invalid_argument] if the arrays are not the same size.
+   @since 4.03.0 *)
 
 
 (** {6 Array scanning} *)
@@ -189,20 +191,24 @@ val map2 : ('a -> 'b -> 'c) -> 'a array -> 'b array -> 'c array
 val for_all : ('a -> bool) -> 'a array -> bool
 (** [Array.for_all p [|a1; ...; an|]] checks if all elements of the array
    satisfy the predicate [p]. That is, it returns
-   [(p a1) && (p a2) && ... && (p an)]. *)
+   [(p a1) && (p a2) && ... && (p an)].
+   @since 4.03.0 *)
 
 val exists : ('a -> bool) -> 'a array -> bool
 (** [Array.exists p [|a1; ...; an|]] checks if at least one element of
     the array satisfies the predicate [p]. That is, it returns
-    [(p a1) || (p a2) || ... || (p an)]. *)
+    [(p a1) || (p a2) || ... || (p an)].
+    @since 4.03.0 *)
 
 val mem : 'a -> 'a array -> bool
 (** [mem a l] is true if and only if [a] is equal
-   to an element of [l]. *)
+   to an element of [l].
+   @since 4.03.0 *)
 
 val memq : 'a -> 'a array -> bool
 (** Same as {!Array.mem}, but uses physical equality instead of structural
-   equality to compare array elements. *)
+   equality to compare array elements.
+   @since 4.03.0 *)
 
 
 (** {6 Sorting} *)

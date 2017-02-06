@@ -170,6 +170,16 @@ external counters : unit -> float * float * float = "caml_gc_counters"
 (** Return [(minor_words, promoted_words, major_words)].  This function
     is as fast as [quick_stat]. *)
 
+external minor_words : unit -> (float [@unboxed])
+  = "caml_gc_minor_words" "caml_gc_minor_words_unboxed" [@@noalloc]
+(** Number of words allocated in the minor heap since the program was
+    started. This number is accurate in byte-code programs, but only an
+    approximation in programs compiled to native code.
+
+    In native code this function does not allocate.
+
+    @since 4.04 *)
+
 external get : unit -> control = "caml_gc_get"
 (** Return the current values of the GC parameters in a [control] record. *)
 
@@ -185,9 +195,8 @@ external major_slice : int -> int = "caml_gc_major_slice"
     Do a minor collection and a slice of major collection. [n] is the
     size of the slice: the GC will do enough work to free (on average)
     [n] words of memory. If [n] = 0, the GC will try to do enough work
-    to ensure that the next slice has no work to do.
-    Return an approximation of the work that the next slice will have
-    to do. *)
+    to ensure that the next automatic slice has no work to do.
+    This function returns an unspecified integer (currently: 0). *)
 
 external major : unit -> unit = "caml_gc_major"
 (** Do a minor collection and finish the current major collection cycle. *)
@@ -211,18 +220,24 @@ val allocated_bytes : unit -> float
    with [int] on 32-bit machines. *)
 
 external get_minor_free : unit -> int = "caml_get_minor_free" [@@noalloc]
-(** Return the current size of the free space inside the minor heap. *)
+(** Return the current size of the free space inside the minor heap.
+
+    @since 4.03.0 *)
 
 external get_bucket : int -> int = "caml_get_major_bucket" [@@noalloc]
 (** [get_bucket n] returns the current size of the [n]-th future bucket
     of the GC smoothing system. The unit is one millionth of a full GC.
     Raise [Invalid_argument] if [n] is negative, return 0 if n is larger
-    than the smoothing window. *)
+    than the smoothing window.
+
+    @since 4.03.0 *)
 
 external get_credit : unit -> int = "caml_get_major_credit" [@@noalloc]
 (** [get_credit ()] returns the current size of the "work done in advance"
     counter of the GC smoothing system. The unit is one millionth of a
-    full GC. *)
+    full GC.
+
+    @since 4.03.0 *)
 
 external huge_fallback_count : unit -> int = "caml_gc_huge_fallback_count"
 (** Return the number of times we tried to map huge pages and had to fall
@@ -258,7 +273,7 @@ val finalise : ('a -> unit) -> 'a -> unit
 
    Instead you should make sure that [v] is not in the closure of
    the finalisation function by writing:
-   - [ let f = fun x -> ... ;; let v = ... in Gc.finalise f v ]
+   - [ let f = fun x -> ...  let v = ... in Gc.finalise f v ]
 
 
    The [f] function can use all features of OCaml, including
@@ -280,14 +295,34 @@ val finalise : ('a -> unit) -> 'a -> unit
    Some constant values can be heap-allocated but never deallocated
    during the lifetime of the program, for example a list of integer
    constants; this is also implementation-dependent.
-   Note that values of types [float] and ['a lazy] (for any ['a]) are
-   sometimes allocated and sometimes not, so finalising them is unsafe,
-   and [finalise] will also raise [Invalid_argument] for them.
+   Note that values of types [float] are sometimes allocated and
+   sometimes not, so finalising them is unsafe, and [finalise] will
+   also raise [Invalid_argument] for them. Values of type ['a Lazy.t]
+   (for any ['a]) are like [float] in this respect, except that the
+   compiler sometimes optimizes them in a way that prevents [finalise]
+   from detecting them. In this case, it will not raise
+   [Invalid_argument], but you should still avoid calling [finalise]
+   on lazy values.
 
 
    The results of calling {!String.make}, {!Bytes.make}, {!Bytes.create},
    {!Array.make}, and {!Pervasives.ref} are guaranteed to be
    heap-allocated and non-constant except when the length argument is [0].
+*)
+
+val finalise_last : (unit -> unit) -> 'a -> unit
+(** same as {!finalise} except the value is not given as argument. So
+    you can't use the given value for the computation of the
+    finalisation function. The benefit is that the function is called
+    after the value is unreachable for the last time instead of the
+    first time. So contrary to {!finalise} the value will never be
+    reachable again or used again. In particular every weak pointer
+    and ephemeron that contained this value as key or data is unset
+    before running the finalisation function. Moreover the
+    finalisation function attached with `GC.finalise` are always
+    called before the finalisation function attached with `GC.finalise_last`.
+
+    @since 4.04
 *)
 
 val finalise_release : unit -> unit

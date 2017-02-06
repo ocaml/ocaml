@@ -17,9 +17,9 @@
 * text=auto
 
 # Binary files
-boot/ocamlc binary
-boot/ocamllex binary
-boot/ocamldep binary
+/boot/ocamlc binary
+/boot/ocamllex binary
+/boot/ocamldep binary
 *.gif binary
 *.png binary
 *.tfm binary
@@ -29,11 +29,12 @@ boot/ocamldep binary
 README*                  ocaml-typo=missing-header
 *.adoc                   ocaml-typo=missing-header,long-line,unused-prop
 
-/.merlin                  ocaml-typo=missing-header
-/Changes                  ocaml-typo=non-ascii,missing-header
-/INSTALL                  ocaml-typo=missing-header
-/LICENSE                  ocaml-typo=non-printing,missing-header
-/appveyor.yml             ocaml-typo=long-line,very-long-line
+/.mailmap                ocaml-typo=long-line,missing-header,non-ascii
+/.merlin                 ocaml-typo=missing-header
+/Changes                 ocaml-typo=non-ascii,missing-header
+/INSTALL                 ocaml-typo=missing-header
+/LICENSE                 ocaml-typo=long-line,very-long-line,missing-header
+/appveyor.yml            ocaml-typo=long-line,very-long-line
 
 
 asmcomp/*/emit.mlp       ocaml-typo=tab,long-line,unused-prop
@@ -63,10 +64,9 @@ otherlibs/win32unix/readlink.c    ocaml-typo=long-line
 otherlibs/win32unix/stat.c        ocaml-typo=long-line
 otherlibs/win32unix/symlink.c     ocaml-typo=long-line
 
-stdlib/sharpbang    ocaml-typo=white-at-eol,missing-lf
+stdlib/hashbang     ocaml-typo=white-at-eol,missing-lf
 
-# FIXME remove headers in testsuite/tests and remove unused-prop in next line:
-testsuite/tests/**                        ocaml-typo=missing-header,unused-prop
+testsuite/tests/**                        ocaml-typo=missing-header
 testsuite/tests/lib-bigarray-2/bigarrf.f  ocaml-typo=missing-header,tab
 testsuite/tests/misc-unsafe/almabench.ml  ocaml-typo=missing-header,long-line
 testsuite/typing                          ocaml-typo=missing-header
@@ -101,6 +101,7 @@ stdlib/sharpbang text eol=lf
 tools/check-typo text eol=lf
 tools/ci-build text eol=lf
 tools/cleanup-header text eol=lf
+tools/msvs-promote-path text eol=lf
 tools/gdb-macros text eol=lf
 tools/magic text eol=lf
 tools/make-opcodes text eol=lf
@@ -124,3 +125,6 @@ manual/tools/texexpand text eol=lf
 # Checking out the parsetree test files with \r\n endings causes all the
 # locations to change, so use \n endings only, even on Windows
 testsuite/tests/parsing/*.ml text eol=lf
+
+# Similarly, the docstring tests fail for the same reason on Windows
+testsuite/tests/docstrings/empty.ml text eol=lf

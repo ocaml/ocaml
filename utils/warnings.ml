@@ -14,10 +14,10 @@
 (**************************************************************************)
 
 (* When you change this, you need to update the documentation:
-   - man/ocamlc.m   in ocaml
-   - man/ocamlopt.m in ocaml
-   - manual/cmds/comp.etex   in the doc sources
-   - manual/cmds/native.etex in the doc sources
+   - man/ocamlc.m
+   - man/ocamlopt.m
+   - manual/manual/cmds/comp.etex
+   - manual/manual/cmds/native.etex
 *)
 
 type t =
@@ -58,7 +58,7 @@ type t =
   | Unused_for_index of string              (* 35 *)
   | Unused_ancestor of string               (* 36 *)
   | Unused_constructor of string * bool * bool  (* 37 *)
-  | Unused_extension of string * bool * bool    (* 38 *)
+  | Unused_extension of string * bool * bool * bool (* 38 *)
   | Unused_rec_flag                         (* 39 *)
   | Name_out_of_scope of string * string list * bool (* 40 *)
   | Ambiguous_name of string list * string list *  bool    (* 41 *)
@@ -80,6 +80,8 @@ type t =
   | Ambiguous_pattern of string list        (* 57 *)
   | No_cmx_file of string                   (* 58 *)
   | Assignment_to_non_mutable_value         (* 59 *)
+  | Unused_module of string                 (* 60 *)
+  | Unboxable_type_in_prim_decl of string   (* 61 *)
 ;;
 
 (* If you remove a warning, leave a hole in the numbering.  NEVER change
@@ -148,9 +150,11 @@ let number = function
   | Ambiguous_pattern _ -> 57
   | No_cmx_file _ -> 58
   | Assignment_to_non_mutable_value -> 59
+  | Unused_module _ -> 60
+  | Unboxable_type_in_prim_decl _ -> 61
 ;;
 
-let last_warning_number = 59
+let last_warning_number = 61
 ;;
 
 (* Must be the max number returned by the [number] function. *)
@@ -265,7 +269,7 @@ let parse_options errflag s =
   current := {error; active}
 
 (* If you change these, don't forget to change them in man/ocamlc.m *)
-let defaults_w = "+a-4-6-7-9-27-29-32..39-41..42-44-45-48-50";;
+let defaults_w = "+a-4-6-7-9-27-29-32..39-41..42-44-45-48-50-60";;
 let defaults_warn_error = "-a+31";;
 
 let () = parse_options false defaults_w;;
@@ -306,7 +310,7 @@ let message = function
   | Partial_match "" -> "this pattern-matching is not exhaustive."
   | Partial_match s ->
       "this pattern-matching is not exhaustive.\n\
-       Here is an example of a value that is not matched:\n" ^ s
+       Here is an example of a case that is not matched:\n" ^ s
   | Non_closed_record_pattern s ->
       "the following labels are not bound in this record pattern:\n" ^ s ^
       "\nEither bind these labels explicitly or add '; _' to the pattern."
@@ -369,16 +373,21 @@ let message = function
       "constructor " ^ s ^
       " is never used to build values.\n\
         Its type is exported as a private type."
-  | Unused_extension (s, false, false) ->
-      "unused extension constructor " ^ s ^ "."
-  | Unused_extension (s, true, _) ->
-      "extension constructor " ^ s ^
-      " is never used to build values.\n\
-        (However, this constructor appears in patterns.)"
-  | Unused_extension (s, false, true) ->
-      "extension constructor " ^ s ^
-      " is never used to build values.\n\
-        It is exported or rebound as a private extension."
+  | Unused_extension (s, is_exception, cu_pattern, cu_privatize) ->
+     let kind =
+       if is_exception then "exception" else "extension constructor" in
+     let name = kind ^ " " ^ s in
+     begin match cu_pattern, cu_privatize with
+       | false, false -> "unused " ^ name
+       | true, _ ->
+          name ^
+          " is never used to build values.\n\
+           (However, this constructor appears in patterns.)"
+       | false, true ->
+          name ^
+          " is never used to build values.\n\
+            It is exported or rebound as a private extension."
+     end
   | Unused_rec_flag ->
       "unused rec flag."
   | Name_out_of_scope (ty, [nm], false) ->
@@ -400,7 +409,8 @@ let message = function
       String.concat " " tl ^
       "\nThe first one was selected. Please disambiguate if this is wrong."
   | Disambiguated_name s ->
-      "this use of " ^ s ^ " required disambiguation."
+      "this use of " ^ s ^ " relies on type-directed disambiguation,\n\
+       it will not compile with OCaml 4.00 or earlier."
   | Nonoptional_label s ->
       "the label " ^ s ^ " is not optional."
   | Open_shadow_identifier (kind, s) ->
@@ -432,9 +442,9 @@ let message = function
       Printf.sprintf "expected tailcall"
   | Fragile_literal_pattern ->
       Printf.sprintf
-        "the argument of this constructor should not be matched against a\n\
-         constant pattern; the actual value of the argument could change\n\
-         in the future"
+        "Code should not depend on the actual values of\n\
+         this constructor's arguments. They are only for information\n\
+         and may change in future versions. (See manual section 8.5)"
   | Unreachable_case ->
       "this match case is unreachable.\n\
        Consider replacing it with a refutation case '<pat> -> .'"
@@ -455,8 +465,8 @@ let message = function
         | _::_ ->
             "variables " ^ String.concat "," vars in
       Printf.sprintf
-        "Ambiguous guarded pattern, %s may match different or-pattern \
-          arguments"
+        "Ambiguous or-pattern variables under guard;\n\
+         %s may match different arguments. (See manual section 8.5)"
         msg
   | No_cmx_file name ->
       Printf.sprintf
@@ -466,6 +476,13 @@ let message = function
       "A potential assignment to a non-mutable value was detected \n\
         in this source file.  Such assignments may generate incorrect code \n\
         when using Flambda."
+  | Unused_module s -> "unused module " ^ s ^ "."
+  | Unboxable_type_in_prim_decl t ->
+      Printf.sprintf
+        "This primitive declaration uses type %s, which is unannotated and\n\
+         unboxable. The representation of such types may change in future\n\
+         versions. You should annotate the declaration of %s with [@@boxed]\n\
+         or [@@unboxed]." t t
 ;;
 
 let nerrors = ref 0;;
@@ -547,7 +564,7 @@ let descriptions =
    39, "Unused rec flag.";
    40, "Constructor or label name used out of scope.";
    41, "Ambiguous constructor or label name.";
-   42, "Disambiguated constructor or label name.";
+   42, "Disambiguated constructor or label name (compatibility warning).";
    43, "Nonoptional label applied as optional.";
    44, "Open statement shadows an already defined identifier.";
    45, "Open statement shadows an already defined label or constructor.";
@@ -562,9 +579,10 @@ let descriptions =
    54, "Attribute used more than once on an expression";
    55, "Inlining impossible";
    56, "Unreachable case in a pattern-matching (based on type information).";
-   57, "Ambiguous binding by pattern.";
+   57, "Ambiguous or-pattern variables under guard";
    58, "Missing cmx file";
    59, "Assignment to non-mutable value";
+   60, "Unused module declaration";
   ]
 ;;
 

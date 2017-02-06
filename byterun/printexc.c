@@ -13,6 +13,8 @@
 /*                                                                        */
 /**************************************************************************/
 
+#define CAML_INTERNALS
+
 /* Print an uncaught exception and abort */
 
 #include <stdio.h>
@@ -129,6 +131,8 @@ static void default_fatal_uncaught_exception(value exn)
     caml_print_exception_backtrace();
 }
 
+int caml_abort_on_uncaught_exn = 0; /* see afl.c */
+
 void caml_fatal_uncaught_exception(value exn)
 {
   value *handle_uncaught_exception;
@@ -141,5 +145,10 @@ void caml_fatal_uncaught_exception(value exn)
   else
     default_fatal_uncaught_exception(exn);
   /* Terminate the process */
-  exit(2);
+  if (caml_abort_on_uncaught_exn) {
+    abort();
+  } else {
+    CAML_SYS_EXIT(2);
+    exit(2); /* Second exit needed for the Noreturn flag */
+  }
 }

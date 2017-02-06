@@ -13,6 +13,8 @@
 /*                                                                        */
 /**************************************************************************/
 
+#define CAML_INTERNALS
+
 /* Raising exceptions from C. */
 
 #include <stdio.h>
@@ -25,7 +27,7 @@
 #include "caml/mlvalues.h"
 #include "caml/printexc.h"
 #include "caml/signals.h"
-#include "stack.h"
+#include "caml/stack.h"
 #include "caml/roots.h"
 #include "caml/callback.h"
 
@@ -119,9 +121,19 @@ void caml_failwith (char const *msg)
   caml_raise_with_string((value) caml_exn_Failure, msg);
 }
 
+void caml_failwith_value (value msg)
+{
+  caml_raise_with_arg((value) caml_exn_Failure, msg);
+}
+
 void caml_invalid_argument (char const *msg)
 {
   caml_raise_with_string((value) caml_exn_Invalid_argument, msg);
+}
+
+void caml_invalid_argument_value (value msg)
+{
+  caml_raise_with_arg((value) caml_exn_Invalid_argument, msg);
 }
 
 void caml_raise_out_of_memory(void)

@@ -208,8 +208,6 @@ _caml_raise_exn:
         pop     _caml_exception_pointer
         ret
 L110:
-        mov     _caml_backtrace_pos, 0
-L111:
         mov     esi, eax                ; Save exception bucket in esi
         mov     edi, _caml_exception_pointer ; SP of handler
         mov     eax, [esp]              ; PC of raise
@@ -224,16 +222,7 @@ L111:
         pop     _caml_exception_pointer
         ret
 
-        PUBLIC  _caml_reraise_exn
-        ALIGN   4
-_caml_reraise_exn:
-        test    _caml_backtrace_active, 1
-        jne     L111
-        mov     esp, _caml_exception_pointer
-        pop     _caml_exception_pointer
-        ret
-
-                                ; Raise an exception from C
+; Raise an exception from C
 
         PUBLIC  _caml_raise_exception
         ALIGN  4

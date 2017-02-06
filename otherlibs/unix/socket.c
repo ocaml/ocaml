@@ -51,6 +51,6 @@ CAMLprim value unix_socket(value domain, value type, value proto)
 #else
 
 CAMLprim value unix_socket(value domain, value type, value proto)
-{ invalid_argument("socket not implemented"); }
+{ caml_invalid_argument("socket not implemented"); }
 
 #endif

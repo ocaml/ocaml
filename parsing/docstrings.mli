@@ -13,6 +13,8 @@
 (*                                                                        *)
 (**************************************************************************)
 
+(** Documentation comments *)
+
 (** (Re)Initialise all docstring state *)
 val init : unit -> unit
 
@@ -26,6 +28,9 @@ type docstring
 
 (** Create a docstring *)
 val docstring : string -> Location.t -> docstring
+
+(** Register a docstring *)
+val register : docstring -> unit
 
 (** Get the text of a docstring *)
 val docstring_body : docstring -> string
@@ -117,6 +122,7 @@ val rhs_info : int -> info
 type text = docstring list
 
 val empty_text : text
+val empty_text_lazy : text Lazy.t
 
 val text_attr : docstring -> Parsetree.attribute
 

@@ -13,6 +13,8 @@
 /*                                                                        */
 /**************************************************************************/
 
+#define CAML_INTERNALS
+
 #include "caml/alloc.h"
 #include "caml/backtrace.h"
 #include "caml/compact.h"
@@ -29,7 +31,7 @@
 #include "caml/mlvalues.h"
 #include "caml/signals.h"
 #ifdef NATIVE_CODE
-#include "stack.h"
+#include "caml/stack.h"
 #else
 #include "caml/stacks.h"
 #endif
@@ -213,6 +215,10 @@ static value heap_stats (int returnstats)
     chunk = Chunk_next (chunk);
   }
 
+#ifdef DEBUG
+  caml_final_invariant_check();
+#endif
+
   Assert (heap_chunks == caml_stat_heap_chunks);
   Assert (live_words + free_words + fragments == caml_stat_heap_wsz);
 
@@ -305,6 +311,18 @@ CAMLprim value caml_gc_quick_stat(value v)
   Store_field (res, 14, Val_long (top_heap_words));
   Store_field (res, 15, Val_long (caml_stack_usage()));
   CAMLreturn (res);
+}
+
+double caml_gc_minor_words_unboxed()
+{
+  return (caml_stat_minor_words
+          + (double) (caml_young_alloc_end - caml_young_ptr));
+}
+
+CAMLprim value caml_gc_minor_words(value v)
+{
+  CAMLparam0 ();   /* v is ignored */
+  CAMLreturn(caml_copy_double(caml_gc_minor_words_unboxed()));
 }
 
 CAMLprim value caml_gc_counters(value v)
@@ -462,7 +480,7 @@ static void test_and_compact (void)
   caml_gc_message (0x200, "Estimated overhead (lower bound) = %"
                           ARCH_INTNAT_PRINTF_FORMAT "u%%\n",
                    (uintnat) fp);
-  if (fp >= caml_percent_max && caml_stat_heap_chunks > 1){
+  if (fp >= caml_percent_max){
     caml_gc_message (0x200, "Automatic compaction triggered.\n", 0);
     caml_compact_heap ();
   }
@@ -501,7 +519,6 @@ CAMLprim value caml_gc_major_slice (value v)
 {
   CAML_INSTR_SETUP (tmr, "");
   Assert (Is_long (v));
-  caml_empty_minor_heap ();
   caml_major_collection_slice (Long_val (v));
   CAML_INSTR_TIME (tmr, "explicit/gc_major_slice");
   return Val_long (0);
@@ -649,7 +666,8 @@ CAMLprim value caml_ml_enable_runtime_warnings(value vbool)
   return Val_unit;
 }
 
-CAMLprim value caml_ml_runtime_warnings_enabled(value vbool)
+CAMLprim value caml_ml_runtime_warnings_enabled(value unit)
 {
+  CAMLassert (unit == Val_unit);
   return Val_bool(caml_runtime_warnings);
 }

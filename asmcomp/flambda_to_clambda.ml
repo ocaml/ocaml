@@ -230,33 +230,18 @@ let to_clambda_const env (const : Flambda.constant_defining_value_block_field)
   | Const (Char c) -> Uconst_int (Char.code c)
   | Const (Const_pointer i) -> Uconst_ptr i
 
-(* CR-someday mshinwell: We should improve debug info / location handling
-   so that we don't need to do this. *)
-(* Erase debug info created with high probability by [Debuginfo.from_filename]
-   (currently only used for emission of warning 59, which happens prior to
-   this pass).  Failure to do this will cause erroneous empty frames in
-   backtraces. *)
-let erase_empty_debuginfo (dbg : Debuginfo.t) =
-  if dbg.dinfo_kind = Debuginfo.Dinfo_call
-    && dbg.dinfo_line = 0
-    && dbg.dinfo_char_start = 0
-    && dbg.dinfo_char_end = 0
-  then
-    Debuginfo.none
-  else
-    dbg
-
 let rec to_clambda t env (flam : Flambda.t) : Clambda.ulambda =
   match flam with
   | Var var -> subst_var env var
   | Let { var; defining_expr; body; _ } ->
+    (* TODO: synthesize proper value_kind *)
     let id, env_body = Env.add_fresh_ident env var in
-    Ulet (id, to_clambda_named t env var defining_expr,
+    Ulet (Immutable, Pgenval, id, to_clambda_named t env var defining_expr,
       to_clambda t env_body body)
-  | Let_mutable (mut_var, var, body) ->
+  | Let_mutable { var = mut_var; initial_value = var; body; contents_kind } ->
     let id, env_body = Env.add_fresh_mutable_ident env mut_var in
     let def = subst_var env var in
-    Ulet (id, def, to_clambda t env_body body)
+    Ulet (Mutable, contents_kind, id, def, to_clambda t env_body body)
   | Let_rec (defs, body) ->
     let env, defs =
       List.fold_right (fun (var, def) (env, defs) ->
@@ -408,19 +393,15 @@ and to_clambda_named t env var (named : Flambda.named) : Clambda.ulambda =
       [check_field (check_closure ulam (Expr (Var closure))) pos (Some named)],
       Debuginfo.none)
   | Prim (Pfield index, [block], dbg) ->
-    let dbg = erase_empty_debuginfo dbg in
     Uprim (Pfield index, [check_field (subst_var env block) index None], dbg)
   | Prim (Psetfield (index, maybe_ptr, init), [block; new_value], dbg) ->
-    let dbg = erase_empty_debuginfo dbg in
     Uprim (Psetfield (index, maybe_ptr, init), [
         check_field (subst_var env block) index None;
         subst_var env new_value;
       ], dbg)
   | Prim (Popaque, args, dbg) ->
-    let dbg = erase_empty_debuginfo dbg in
     Uprim (Pidentity, subst_vars env args, dbg)
   | Prim (p, args, dbg) ->
-    let dbg = erase_empty_debuginfo dbg in
     Uprim (p, subst_vars env args, dbg)
   | Expr expr -> to_clambda t env expr
 
@@ -590,7 +571,7 @@ let to_clambda_initialize_symbol t env symbol fields : Clambda.ulambda =
   let build_setfield (index, field) : Clambda.ulambda =
     (* Note that this will never cause a write barrier hit, owing to
        the [Initialization]. *)
-    Uprim (Psetfield (index, Pointer, Initialization),
+    Uprim (Psetfield (index, Pointer, Root_initialization),
       [to_clambda_symbol env symbol; field],
       Debuginfo.none)
   in

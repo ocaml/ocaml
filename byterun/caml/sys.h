@@ -16,15 +16,30 @@
 #ifndef CAML_SYS_H
 #define CAML_SYS_H
 
+#ifdef CAML_INTERNALS
+
 #include "misc.h"
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 #define NO_ARG Val_int(0)
 
 CAMLextern void caml_sys_error (value);
 CAMLextern void caml_sys_io_error (value);
-extern void caml_sys_init (char * exe_name, char ** argv);
+CAMLextern double caml_sys_time_unboxed(value);
+CAMLextern void caml_sys_init (char * exe_name, char ** argv);
 CAMLextern value caml_sys_exit (value);
+extern double caml_sys_time_unboxed(value);
+CAMLextern value caml_sys_get_argv(value unit);
 
 extern char * caml_exe_name;
+
+#ifdef __cplusplus
+}
+#endif
+
+#endif /* CAML_INTERNALS */
 
 #endif /* CAML_SYS_H */

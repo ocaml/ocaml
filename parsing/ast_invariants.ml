@@ -55,7 +55,13 @@ let iterator =
     | _ -> ()
   in
   let pat self pat =
-    super.pat self pat;
+    begin match pat.ppat_desc with
+    | Ppat_construct (_, Some ({ppat_desc = Ppat_tuple _} as p))
+      when Builtin_attributes.explicit_arity pat.ppat_attributes ->
+        super.pat self p (* allow unary tuple, see GPR#523. *)
+    | _ ->
+        super.pat self pat
+    end;
     let loc = pat.ppat_loc in
     match pat.ppat_desc with
     | Ppat_tuple ([] | [_]) -> invalid_tuple loc
@@ -66,7 +72,13 @@ let iterator =
     | _ -> ()
   in
   let expr self exp =
-    super.expr self exp;
+    begin match exp.pexp_desc with
+    | Pexp_construct (_, Some ({pexp_desc = Pexp_tuple _} as e))
+      when Builtin_attributes.explicit_arity exp.pexp_attributes ->
+        super.expr self e (* allow unary tuple, see GPR#523. *)
+    | _ ->
+        super.expr self exp
+    end;
     let loc = exp.pexp_loc in
     match exp.pexp_desc with
     | Pexp_tuple ([] | [_]) -> invalid_tuple loc

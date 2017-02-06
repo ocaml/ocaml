@@ -50,6 +50,7 @@ let ax  = Reg16 RAX
 let rax = Reg64 RAX
 let r10 = Reg64 R10
 let r11 = Reg64 R11
+let r13 = Reg64 R13
 let r14 = Reg64 R14
 let r15 = Reg64 R15
 let rsp = Reg64 RSP

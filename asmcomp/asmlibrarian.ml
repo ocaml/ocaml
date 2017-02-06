@@ -38,7 +38,7 @@ let read_info name =
     with Not_found ->
       raise(Error(File_not_found name)) in
   let (info, crc) = Compilenv.read_unit_info filename in
-  info.ui_force_link <- !Clflags.link_everything;
+  info.ui_force_link <- info.ui_force_link || !Clflags.link_everything;
   (* There is no need to keep the approximation in the .cmxa file,
      since the compiler will go looking directly for .cmx files.
      The linker, which is the only one that reads .cmxa files, does not
@@ -47,7 +47,7 @@ let read_info name =
   (Filename.chop_suffix filename ".cmx" ^ ext_obj, (info, crc))
 
 let create_archive file_list lib_name =
-  let archive_name = chop_extension_if_any lib_name ^ ext_lib in
+  let archive_name = Filename.remove_extension lib_name ^ ext_lib in
   let outchan = open_out_bin lib_name in
   try
     output_string outchan cmxa_magic_number;

@@ -22,6 +22,12 @@ pattern:
   | '[|' pattern { ';' pattern } [ ';' ] '|]'
   | char-literal '..' char-literal
 \end{syntax}
+See also the following language extensions: \hyperref[s:lazypat]{lazy patterns},
+\hyperref[s:local-opens]{local opens},
+\hyperref[s-first-class-modules]{first-class modules},
+\hyperref[s:attributes]{attributes},
+\hyperref[s:extension-nodes]{extension nodes} and
+\hyperref[s:exception-match]{exception cases in pattern matching}.
 
 The table below shows the relative precedences and associativity of
 operators and non-closed pattern constructions. The constructions with

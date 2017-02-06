@@ -1,18 +1,3 @@
-(**************************************************************************)
-(*                                                                        *)
-(*                                OCaml                                   *)
-(*                                                                        *)
-(*             Xavier Leroy, projet Cristal, INRIA Rocquencourt           *)
-(*                                                                        *)
-(*   Copyright 2001 Institut National de Recherche en Informatique et     *)
-(*     en Automatique.                                                    *)
-(*                                                                        *)
-(*   All rights reserved.  This file is distributed under the terms of    *)
-(*   the GNU Lesser General Public License version 2.1, with the          *)
-(*   special exception on linking described in the file LICENSE.          *)
-(*                                                                        *)
-(**************************************************************************)
-
 module type GLOBREF = sig
   type t
   val register: string -> t
@@ -83,6 +68,9 @@ end
 
 module TestClassic = Test(Classic)
 module TestGenerational = Test(Generational)
+
+external young2old : unit -> unit = "gb_young2old"
+let _ = young2old (); Gc.full_major ()
 
 let _ =
   let n =

@@ -8,7 +8,7 @@ STDLIB_INTF=Arg.tex Array.tex ArrayLabels.tex Char.tex Complex.tex \
   Parsing.tex Printexc.tex Printf.tex Queue.tex Random.tex Scanf.tex \
   Set.tex Sort.tex Stack.tex Stream.tex String.tex StringLabels.tex Sys.tex \
   Weak.tex Callback.tex Buffer.tex StdLabels.tex \
-  Bytes.tex BytesLabels.tex
+  Bytes.tex BytesLabels.tex Spacetime.tex
 
 COMPILER_LIBS_INTF=Asthelper.tex Astmapper.tex Asttypes.tex \
 	Lexer.tex Location.tex Longident.tex Parse.tex Pprintast.tex Printast.tex
@@ -49,7 +49,9 @@ CSLDIR=$(RELEASEDIR)
 
 VPATH=.:$(CSLDIR)/stdlib:$(CSLDIR)/parsing:$(CSLDIR)/otherlibs/unix:$(CSLDIR)/otherlibs/str:$(CSLDIR)/otherlibs/num:$(CSLDIR)/otherlibs/graph:$(CSLDIR)/otherlibs/threads:$(CSLDIR)/otherlibs/dynlink:$(CSLDIR)/otherlibs/bigarray
 
+etex-files: $(BLURB)
 all: libs
+	sh ./check-stdlib-modules $(CSLDIR)
 
 libs: $(FILES)
 
@@ -97,7 +99,10 @@ clean:
 .SUFFIXES: .tex .etex .mli
 
 .etex.tex: $(TEXQUOTE)
-	$(TEXQUOTE) < $*.etex > $*.tex
+	@$(TEXQUOTE) < $*.etex > $*.texquote_error.tex\
+	&& cp $*.texquote_error.tex $*.tex\
+	|| printf "Failure when generating %s\n" $*.tex
+
 
 .mli.tex: $(FORMAT)
 	$(FORMAT) $< > $*.tex < $<

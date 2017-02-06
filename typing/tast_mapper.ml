@@ -186,6 +186,7 @@ let pat sub x =
   let extra = function
     | Tpat_type _
     | Tpat_unpack as d -> d
+    | Tpat_open (path,loc,env) ->  Tpat_open (path, loc, sub.env sub env)
     | Tpat_constraint ct -> Tpat_constraint (sub.typ sub ct)
   in
   let pat_env = sub.env sub x.pat_env in
@@ -229,8 +230,9 @@ let expr sub x =
     | Texp_let (rec_flag, list, exp) ->
         let (rec_flag, list) = sub.value_bindings sub (rec_flag, list) in
         Texp_let (rec_flag, list, sub.expr sub exp)
-    | Texp_function (l, cases, p) ->
-        Texp_function (l, sub.cases sub cases, p)
+    | Texp_function { arg_label; param; cases; partial; } ->
+        Texp_function { arg_label; param; cases = sub.cases sub cases;
+          partial; }
     | Texp_apply (exp, list) ->
         Texp_apply (
           sub.expr sub exp,
@@ -254,11 +256,17 @@ let expr sub x =
         Texp_construct (lid, cd, List.map (sub.expr sub) args)
     | Texp_variant (l, expo) ->
         Texp_variant (l, opt (sub.expr sub) expo)
-    | Texp_record (list, expo) ->
-        Texp_record (
-          List.map (tuple3 id id (sub.expr sub)) list,
-          opt (sub.expr sub) expo
-        )
+    | Texp_record { fields; representation; extended_expression } ->
+        let fields = Array.map (function
+            | label, Kept t -> label, Kept t
+            | label, Overridden (lid, exp) ->
+                label, Overridden (lid, sub.expr sub exp))
+            fields
+        in
+        Texp_record {
+          fields; representation;
+          extended_expression = opt (sub.expr sub) extended_expression;
+        }
     | Texp_field (exp, lid, ld) ->
         Texp_field (sub.expr sub exp, lid, ld)
     | Texp_setfield (exp1, lid, ld, exp2) ->

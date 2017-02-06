@@ -58,6 +58,7 @@
 /asmrun/*.p.c
 /asmrun/*.d.c
 /asmrun/alloc.c
+/asmrun/afl.c
 /asmrun/array.c
 /asmrun/backtrace.c
 /asmrun/callback.c
@@ -94,6 +95,7 @@
 /asmrun/terminfo.c
 /asmrun/unix.c
 /asmrun/weak.c
+/asmrun/win32.c
 
 /boot/Saved
 /boot/ocamlrun
@@ -110,6 +112,7 @@
 /byterun/caml/version.h
 /byterun/ocamlrun
 /byterun/ocamlrund
+/byterun/ocamlruni
 /byterun/ld.conf
 /byterun/interp.a.lst
 /byterun/*.[sd]obj
@@ -120,13 +123,15 @@
 /config/m.h
 /config/s.h
 /config/Makefile
+/config/auto-aux/hashbang4
 
 /debugger/lexer.ml
 /debugger/parser.ml
 /debugger/parser.mli
 /debugger/ocamldebug
-/debugger/dynlink.ml
-/debugger/dynlink.mli
+/driver/compdynlink.mlopt
+/driver/compdynlink.mlbyte
+/driver/compdynlink.mli
 
 /emacs/ocamltags
 /emacs/*.elc
@@ -240,7 +245,13 @@
 /testsuite/tests/asmcomp/*.s
 /testsuite/tests/asmcomp/*.out.manifest
 
+/testsuite/tests/basic/*.safe-string
+/testsuite/tests/basic/pr6322.ml
+
 /testsuite/tests/embedded/caml
+
+/testsuite/tests/float-unboxing/*.flambda
+/testsuite/tests/float-unboxing/float_inline.ml
 
 /testsuite/tests/lib-dynlink-bytecode/main
 /testsuite/tests/lib-dynlink-bytecode/static
@@ -263,6 +274,8 @@
 
 /testsuite/tests/runtime-errors/*.bytecode
 
+/testsuite/tests/self-contained-toplevel/cached_cmi.ml
+
 /testsuite/tests/tool-debugger/**/compiler-libs
 /testsuite/tests/tool-debugger/find-artifacts/out
 /testsuite/tests/tool-debugger/no_debug_event/out
@@ -282,9 +295,23 @@
 
 /testsuite/tests/tool-ocamldoc-2/ocamldoc.sty
 
+/testsuite/tests/tool-ocamldoc-html/*.html
+/testsuite/tests/tool-ocamldoc-html/style.css
+
+/testsuite/tests/tool-ocamldoc-man/*.3o
+
+/testsuite/tests/tool-ocamldoc-open/alias.odoc
+/testsuite/tests/tool-ocamldoc-open/inner.odoc
+/testsuite/tests/tool-ocamldoc-open/main.odoc
+/testsuite/tests/tool-ocamldoc-open/ocamldoc.sty
+
 /testsuite/tests/tool-lexyacc/scanner.ml
 /testsuite/tests/tool-lexyacc/grammar.mli
 /testsuite/tests/tool-lexyacc/grammar.ml
+
+/testsuite/tests/typing-multifile/a.ml
+/testsuite/tests/typing-multifile/b.ml
+/testsuite/tests/typing-multifile/c.ml
 
 /testsuite/tests/unboxed-primitive-args/main.ml
 /testsuite/tests/unboxed-primitive-args/stubs.c
@@ -300,22 +327,31 @@
 /tools/ocamldep.opt
 /tools/ocamldep.bak
 /tools/ocamlprof
+/tools/ocamlprof.opt
 /tools/opnames.ml
 /tools/dumpobj
+/tools/dumpobj.opt
 /tools/dumpapprox
-/tools/objinfo
+/tools/ocamlobjinfo
+/tools/ocamlobjinfo.opt
 /tools/cvt_emit
+/tools/cvt_emit.opt
 /tools/cvt_emit.bak
 /tools/cvt_emit.ml
 /tools/ocamlcp
+/tools/ocamlcp.opt
 /tools/ocamloptp
+/tools/ocamloptp.opt
 /tools/ocamlmktop
+/tools/ocamlmktop.opt
 /tools/primreq
+/tools/primreq.opt
 /tools/ocamldumpobj
 /tools/keywords
 /tools/lexer299.ml
 /tools/ocaml299to3
 /tools/ocamlmklib
+/tools/ocamlmklib.opt
 /tools/ocamlmklibconfig.ml
 /tools/lexer301.ml
 /tools/scrapelabels
@@ -324,7 +360,11 @@
 /tools/read_cmt
 /tools/read_cmt.opt
 /tools/cmpbyt
+/tools/cmpbyt.opt
 /tools/stripdebug
+/tools/stripdebug.opt
+/tools/make_opcodes
+/tools/make_opcodes.ml
 
 /utils/config.ml
 

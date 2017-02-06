@@ -90,6 +90,8 @@ let phys_reg n =
 let stack_slot slot ty =
   Reg.at_location ty (Stack slot)
 
+let loc_spacetime_node_hole = Reg.dummy  (* Spacetime unsupported *)
+
 (* Calling conventions *)
 
 let calling_conventions
@@ -137,20 +139,19 @@ let calling_conventions
              even-numbered register; or in a stack slot that is 8-byte
              aligned. *)
           int := Misc.align !int 2;
-          let pos_least, pos_most = if big_endian then (1, 0) else (0, 1) in
           if !int <= last_int - 1 then begin
-            let reg_least = phys_reg (!int + pos_least) in
-            let reg_most  = phys_reg (!int + pos_most ) in
-            loc.(i) <- [| reg_least; reg_most |];
+            let reg_lower = phys_reg !int in
+            let reg_upper = phys_reg (!int + 1) in
+            loc.(i) <- [| reg_lower; reg_upper |];
             int := !int + 2
           end else begin
             let size_int64 = 8 in
             ofs := Misc.align !ofs size_int64;
-            let ofs_least = !ofs + size_int * pos_least in
-            let ofs_most  = !ofs + size_int * pos_most  in
-            let stack_least = stack_slot (make_stack ofs_least) Int in
-            let stack_most  = stack_slot (make_stack ofs_most ) Int in
-            loc.(i) <- [| stack_least; stack_most |];
+            let ofs_lower = !ofs in
+            let ofs_upper = !ofs + size_int in
+            let stack_lower = stack_slot (make_stack ofs_lower) Int in
+            let stack_upper = stack_slot (make_stack ofs_upper) Int in
+            loc.(i) <- [| stack_lower; stack_upper |];
             ofs := !ofs + size_int64
           end
       | _, _ ->
@@ -268,8 +269,9 @@ let destroyed_at_c_call =
      100; 101; 102; 103; 104; 105; 106; 107; 108; 109; 110; 111; 112])
 
 let destroyed_at_oper = function
-    Iop(Icall_ind | Icall_imm _ | Iextcall(_, true)) -> all_phys_regs
-  | Iop(Iextcall(_, false)) -> destroyed_at_c_call
+    Iop(Icall_ind _ | Icall_imm _ | Iextcall { alloc = true; _ }) ->
+    all_phys_regs
+  | Iop(Iextcall { alloc = false; _ }) -> destroyed_at_c_call
   | _ -> [||]
 
 let destroyed_at_raise = all_phys_regs
@@ -277,20 +279,20 @@ let destroyed_at_raise = all_phys_regs
 (* Maximal register pressure *)
 
 let safe_register_pressure = function
-    Iextcall(_, _) -> 15
+    Iextcall _ -> 15
   | _ -> 23
 
 let max_register_pressure = function
-    Iextcall(_, _) -> [| 15; 18 |]
+    Iextcall _ -> [| 15; 18 |]
   | _ -> [| 23; 30 |]
 
 (* Pure operations (without any side effect besides updating their result
    registers). *)
 
 let op_is_pure = function
-  | Icall_ind | Icall_imm _ | Itailcall_ind | Itailcall_imm _
+  | Icall_ind _ | Icall_imm _ | Itailcall_ind _ | Itailcall_imm _
   | Iextcall _ | Istackoffset _ | Istore _ | Ialloc _
-  | Iintop(Icheckbound) | Iintop_imm(Icheckbound, _) -> false
+  | Iintop(Icheckbound _) | Iintop_imm(Icheckbound _, _) -> false
   | Ispecific(Imultaddf | Imultsubf) -> true
   | Ispecific _ -> false
   | _ -> true

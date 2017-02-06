@@ -13,6 +13,8 @@
 /*                                                                        */
 /**************************************************************************/
 
+#define CAML_INTERNALS
+
 #include <string.h>
 #include "caml/alloc.h"
 #include "caml/fail.h"

@@ -1,18 +1,3 @@
-(**************************************************************************)
-(*                                                                        *)
-(*                                OCaml                                   *)
-(*                                                                        *)
-(*             Xavier Leroy, projet Gallium, INRIA Paris                  *)
-(*                                                                        *)
-(*   Copyright 2015 Institut National de Recherche en Informatique et     *)
-(*     en Automatique.                                                    *)
-(*                                                                        *)
-(*   All rights reserved.  This file is distributed under the terms of    *)
-(*   the GNU Lesser General Public License version 2.1, with the          *)
-(*   special exception on linking described in the file LICENSE.          *)
-(*                                                                        *)
-(**************************************************************************)
-
 open Printf
 
 (* Regression test for PR#4466: select timeout with simultaneous read
@@ -27,9 +12,9 @@ open Printf
 *)
 
 let serve_connection s =
-  let buf = String.make 1024 '>' in
+  let buf = Bytes.make 1024 '>' in
   while true do
-    let n = Unix.recv s buf 2 (String.length buf - 2) [] in
+    let n = Unix.recv s buf 2 (Bytes.length buf - 2) [] in
     if n = 0 then begin
       Unix.close s; Thread.exit ()
     end else begin
@@ -44,24 +29,25 @@ let server sock =
   done
 
 let reader s =
-  let buf = String.make 16 ' ' in
+  let buf = Bytes.make 16 ' ' in
   match Unix.select [s] [] [] 10.0 with
   | (_::_, _, _) ->
       printf "Selected\n%!";
-      let n = Unix.recv s buf 0 (String.length buf) [] in
-      printf "Data read: %s\n%!" (String.sub buf 0 n)
+      let n = Unix.recv s buf 0 (Bytes.length buf) [] in
+      printf "Data read: %s\n%!" (Bytes.sub_string buf 0 n)
   | ([], _, _) ->
       printf "TIMEOUT\n%!"
 
 let writer s msg =
-  ignore (Unix.send s msg 0 (String.length msg) [])
+  ignore (Unix.send_substring s msg 0 (String.length msg) [])
 
 let _ =
-  let addr = Unix.ADDR_INET(Unix.inet_addr_loopback, 9876) in
+  let addr = Unix.ADDR_INET(Unix.inet_addr_loopback, 0) in
   let serv =
     Unix.socket (Unix.domain_of_sockaddr addr) Unix.SOCK_STREAM 0 in
   Unix.setsockopt serv Unix.SO_REUSEADDR true;
   Unix.bind serv addr;
+  let addr = Unix.getsockname serv in
   Unix.listen serv 5;
   ignore (Thread.create server serv);
   Thread.delay 0.2;

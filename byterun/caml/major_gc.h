@@ -16,6 +16,7 @@
 #ifndef CAML_MAJOR_GC_H
 #define CAML_MAJOR_GC_H
 
+#ifdef CAML_INTERNALS
 
 #include "freelist.h"
 #include "misc.h"
@@ -68,6 +69,10 @@ int caml_major_ring_index;
 double caml_major_work_credit;
 extern double caml_gc_clock;
 
+/* [caml_major_gc_hook] is called just between the end of the mark
+   phase and the beginning of the sweep phase of the major GC */
+CAMLextern void (*caml_major_gc_hook)(void);
+
 void caml_init_major_heap (asize_t);           /* size in bytes */
 asize_t caml_clip_heap_chunk_wsz (asize_t wsz);
 void caml_darken (value, value *);
@@ -76,5 +81,6 @@ void major_collection (void);
 void caml_finish_major_cycle (void);
 void caml_set_major_window (int);
 
+#endif /* CAML_INTERNALS */
 
 #endif /* CAML_MAJOR_GC_H */

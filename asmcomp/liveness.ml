@@ -35,18 +35,24 @@ let rec live i finally =
      before the instruction sequence.
      The instruction i is annotated by the set of registers live across
      the instruction. *)
+  let arg =
+    if Config.spacetime
+      && Mach.spacetime_node_hole_pointer_is_live_before i
+    then Array.append i.arg [| Proc.loc_spacetime_node_hole |]
+    else i.arg
+  in
   match i.desc with
     Iend ->
       i.live <- finally;
       finally
-  | Ireturn | Iop(Itailcall_ind) | Iop(Itailcall_imm _) ->
+  | Ireturn | Iop(Itailcall_ind _) | Iop(Itailcall_imm _) ->
       i.live <- Reg.Set.empty; (* no regs are live across *)
-      Reg.set_of_array i.arg
+      Reg.set_of_array arg
   | Iop op ->
       let after = live i.next finally in
       if Proc.op_is_pure op                    (* no side effects *)
       && Reg.disjoint_set_array after i.res    (* results are not used after *)
-      && not (Proc.regs_are_volatile i.arg)    (* no stack-like hard reg *)
+      && not (Proc.regs_are_volatile arg)      (* no stack-like hard reg *)
       && not (Proc.regs_are_volatile i.res)    (*            is involved *)
       then begin
         (* This operation is dead code.  Ignore its arguments. *)
@@ -56,8 +62,8 @@ let rec live i finally =
         let across_after = Reg.diff_set_array after i.res in
         let across =
           match op with
-          | Icall_ind | Icall_imm _ | Iextcall _
-          | Iintop Icheckbound | Iintop_imm(Icheckbound, _) ->
+          | Icall_ind _ | Icall_imm _ | Iextcall _
+          | Iintop (Icheckbound _) | Iintop_imm(Icheckbound _, _) ->
               (* The function call may raise an exception, branching to the
                  nearest enclosing try ... with. Similarly for bounds checks.
                  Hence, everything that must be live at the beginning of
@@ -66,13 +72,13 @@ let rec live i finally =
            | _ ->
                across_after in
         i.live <- across;
-        Reg.add_set_array across i.arg
+        Reg.add_set_array across arg
       end
   | Iifthenelse(_test, ifso, ifnot) ->
       let at_join = live i.next finally in
       let at_fork = Reg.Set.union (live ifso at_join) (live ifnot at_join) in
       i.live <- at_fork;
-      Reg.add_set_array at_fork i.arg
+      Reg.add_set_array at_fork arg
   | Iswitch(_index, cases) ->
       let at_join = live i.next finally in
       let at_fork = ref Reg.Set.empty in
@@ -80,7 +86,7 @@ let rec live i finally =
         at_fork := Reg.Set.union !at_fork (live cases.(i) at_join)
       done;
       i.live <- !at_fork;
-      Reg.add_set_array !at_fork i.arg
+      Reg.add_set_array !at_fork arg
   | Iloop(body) ->
       let at_top = ref Reg.Set.empty in
       (* Yes, there are better algorithms, but we'll just iterate till
@@ -95,14 +101,46 @@ let rec live i finally =
       end;
       i.live <- !at_top;
       !at_top
-  | Icatch(nfail, body, handler) ->
+  | Icatch(rec_flag, handlers, body) ->
       let at_join = live i.next finally in
-      let before_handler = live handler at_join in
-      let before_body =
-          live_at_exit := (nfail,before_handler) :: !live_at_exit ;
-          let before_body = live body at_join in
-          live_at_exit := List.tl !live_at_exit ;
-          before_body in
+      let aux (nfail,handler) (nfail', before_handler) =
+        assert(nfail = nfail');
+        let before_handler' = live handler at_join in
+        nfail, Reg.Set.union before_handler before_handler'
+      in
+      let aux_equal (nfail, before_handler) (nfail', before_handler') =
+        assert(nfail = nfail');
+        Reg.Set.equal before_handler before_handler'
+      in
+      let live_at_exit_before = !live_at_exit in
+      let live_at_exit_add before_handlers =
+        List.map (fun (nfail, before_handler) ->
+            (nfail, before_handler))
+          before_handlers
+      in
+      let rec fixpoint before_handlers =
+        let live_at_exit_add = live_at_exit_add before_handlers in
+        live_at_exit := live_at_exit_add @ !live_at_exit;
+        let before_handlers' = List.map2 aux handlers before_handlers in
+        live_at_exit := live_at_exit_before;
+        match rec_flag with
+        | Cmm.Nonrecursive ->
+            before_handlers'
+        | Cmm.Recursive ->
+            if List.for_all2 aux_equal before_handlers before_handlers'
+            then before_handlers'
+            else fixpoint before_handlers'
+      in
+      let init_state =
+        List.map (fun (nfail, _handler) -> nfail, Reg.Set.empty) handlers
+      in
+      let before_handler = fixpoint init_state in
+      (* We could use handler.live instead of Reg.Set.empty as the initial
+         value but we would need to clean the live field before doing the
+         analysis (to remove remnants of previous passes). *)
+      live_at_exit := (live_at_exit_add before_handler) @ !live_at_exit;
+      let before_body = live body at_join in
+      live_at_exit := live_at_exit_before;
       i.live <- before_body;
       before_body
   | Iexit nfail ->
@@ -120,7 +158,7 @@ let rec live i finally =
       before_body
   | Iraise _ ->
       i.live <- !live_at_raise;
-      Reg.add_set_array !live_at_raise i.arg
+      Reg.add_set_array !live_at_raise arg
 
 let reset () =
   live_at_raise := Reg.Set.empty;
@@ -128,8 +166,13 @@ let reset () =
 
 let fundecl ppf f =
   let initially_live = live f.fun_body Reg.Set.empty in
-  (* Sanity check: only function parameters can be live at entrypoint *)
+  (* Sanity check: only function parameters (and the Spacetime node hole
+     register, if profiling) can be live at entrypoint *)
   let wrong_live = Reg.Set.diff initially_live (Reg.set_of_array f.fun_args) in
+  let wrong_live =
+    if not Config.spacetime then wrong_live
+    else Reg.Set.remove Proc.loc_spacetime_node_hole wrong_live
+  in
   if not (Reg.Set.is_empty wrong_live) then begin
     Format.fprintf ppf "%a@." Printmach.regset wrong_live;
     Misc.fatal_error "Liveness.fundecl"

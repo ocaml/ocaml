@@ -24,7 +24,7 @@ inherit cse_generic (* as super *)
 
 method! is_cheap_operation op =
   match op with
-  | Iconst_int n | Iconst_blockheader n -> n <= 4095n && n >= -4096n
+  | Iconst_int n -> n <= 4095n && n >= -4096n
   | _ -> false
 
 end

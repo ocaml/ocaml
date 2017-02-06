@@ -24,7 +24,7 @@
 #include "misc.h"
 #include "mlvalues.h"
 
-/* <private> */
+#ifdef CAML_INTERNALS
 #include "io.h"
 
 /* Magic number */
@@ -103,7 +103,7 @@
 void caml_output_val (struct channel * chan, value v, value flags);
   /* Output [v] with flags [flags] on the channel [chan]. */
 
-/* </private> */
+#endif /* CAML_INTERNALS */
 
 #ifdef __cplusplus
 extern "C" {
@@ -122,10 +122,21 @@ CAMLextern intnat caml_output_value_to_block(value v, value flags,
      in bytes.  Return the number of bytes actually written in buffer.
      Raise [Failure] if buffer is too short. */
 
-/* <private> */
+#ifdef CAML_INTERNALS
 value caml_input_val (struct channel * chan);
   /* Read a structured value from the channel [chan]. */
-/* </private> */
+
+extern value caml_input_value_to_outside_heap (value channel);
+  /* As for [caml_input_value], but the value is unmarshalled into
+     malloc blocks that are not added to the heap.  Not for the
+     casual user. */
+
+extern int caml_extern_allow_out_of_heap;
+  /* Permit the marshaller to traverse structures that look like OCaml
+     values but do not live in the OCaml heap. */
+
+extern value caml_output_value(value vchan, value v, value flags);
+#endif /* CAML_INTERNALS */
 
 CAMLextern value caml_input_val_from_string (value str, intnat ofs);
   /* Read a structured value from the OCaml string [str], starting
@@ -172,7 +183,7 @@ CAMLextern void caml_deserialize_block_8(void * data, intnat len);
 CAMLextern void caml_deserialize_block_float_8(void * data, intnat len);
 CAMLextern void caml_deserialize_error(char * msg);
 
-/* <private> */
+#ifdef CAML_INTERNALS
 
 /* Auxiliary stuff for sending code pointers */
 
@@ -183,9 +194,11 @@ struct code_fragment {
   char digest_computed;
 };
 
+CAMLextern struct code_fragment * caml_extern_find_code(char *addr);
+
 struct ext_table caml_code_fragments_table;
 
-/* </private> */
+#endif /* CAML_INTERNALS */
 
 #ifdef __cplusplus
 }

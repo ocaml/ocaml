@@ -110,6 +110,7 @@ caml_call_gc:
         .type   caml_c_call, @function
 caml_c_call:
         Storeglobal(%r15, caml_bottom_of_stack)
+.L101:
     /* Save return address */
         ldgr    %f15, %r14
     /* Get ready to call C function (address in r7) */
@@ -125,10 +126,6 @@ caml_c_call:
     /* Reload allocation pointer and allocation limit*/
         Loadglobal(%r11, caml_young_ptr)
         Loadglobal(%r10, caml_young_limit)
-    /* Say we are back into OCaml code */
-        lgfi   %r0, 0
-        Storeglobal(%r0, caml_last_return_address)
-
     /* Return to caller */
         br %r14
 
@@ -148,9 +145,6 @@ caml_raise_exn:
     /* Branch to handler */
         br      %r1
 .L110:
-        lgfi      %r0, 0
-        Storeglobal32(%r0, caml_backtrace_pos)
-.L114:
         ldgr    %f15, %r2       /* preserve exn bucket in callee-save reg */
                                 /* arg1: exception bucket, already in r3 */
         lgr     %r3,%r14        /* arg2: PC of raise */
@@ -162,26 +156,12 @@ caml_raise_exn:
         lgdr    %r2,%f15        /* restore exn bucket */
         j       .L111           /* raise the exn */
 
-        .globl  caml_reraise_exn
-        .type   caml_reraise_exn, @function
-caml_reraise_exn:
-        Loadglobal32(%r0, caml_backtrace_active)
-        cgfi    %r0, 0
-        jne    .L114
-    /* Pop trap frame */
-        lg     %r1, 0(%r13)
-        lgr    %r15, %r13
-        lg    %r13, 8(%r13)
-        agfi   %r15, 16
-    /* Branch to handler */
-        br     %r1;
-
 /* Raise an exception from C */
 
         .globl  caml_raise_exception
         .type   caml_raise_exception, @function
 caml_raise_exception:
-        Loadglobal32(0, caml_backtrace_active)
+        Loadglobal32(%r0, caml_backtrace_active)
         cgfi    %r0, 0
         jne    .L112
 .L113:
@@ -189,9 +169,6 @@ caml_raise_exception:
         Loadglobal(%r15, caml_exception_pointer)
         Loadglobal(%r11, caml_young_ptr)
         Loadglobal(%r10, caml_young_limit)
-    /* Say we are back into OCaml code */
-        lgfi   %r0, 0
-        Storeglobal(%r0, caml_last_return_address)
     /* Pop trap frame */
         lg      %r1, 0(%r15)
         lg      %r13, 8(%r15)
@@ -199,6 +176,8 @@ caml_raise_exception:
     /* Branch to handler */
         br      %r1;
 .L112:
+        lgfi      %r0, 0
+        Storeglobal32(%r0, caml_backtrace_pos)
         ldgr    %f15,%r2        /* preserve exn bucket in callee-save reg */
                                 /* arg1: exception bucket, already in r2 */
         Loadglobal(%r3, caml_last_return_address) /* arg2: PC of raise */
@@ -335,9 +314,12 @@ caml_callback3_exn:
         .globl  caml_ml_array_bound_error
         .type   caml_ml_array_bound_error, @function
 caml_ml_array_bound_error:
+        /* Save return address before decrementing SP, otherwise
+           the frame descriptor for the call site is not correct */
+        Storeglobal(%r15, caml_bottom_of_stack)
         lay     %r15, -160(%r15)    /* Reserve stack space for C call */
         larl    %r7, caml_array_bound_error
-        j       caml_c_call
+        j       .L101
         .globl  caml_system__code_end
 caml_system__code_end:
 

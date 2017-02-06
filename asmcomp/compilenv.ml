@@ -129,7 +129,7 @@ let reset ?packname ~source_provenance:file name =
   current_unit.ui_curry_fun <- [];
   current_unit.ui_apply_fun <- [];
   current_unit.ui_send_fun <- [];
-  current_unit.ui_force_link <- false;
+  current_unit.ui_force_link <- !Clflags.link_everything;
   Hashtbl.clear exported_constants;
   structured_constants := structured_constants_empty;
   current_unit.ui_export_info <- default_ui_export_info;
@@ -431,6 +431,10 @@ let function_label fv =
       (Compilation_unit.get_linkage_name compilation_unit)
   in
   (concat_symbol unitname (Closure_id.unique_name fv))
+
+let require_global global_ident =
+  if not (Ident.is_predef_exn global_ident) then
+    ignore (get_global_info global_ident : Cmx_format.unit_infos option)
 
 (* Error report *)
 

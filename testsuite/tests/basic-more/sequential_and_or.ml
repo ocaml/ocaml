@@ -1,18 +1,3 @@
-(**************************************************************************)
-(*                                                                        *)
-(*                                OCaml                                   *)
-(*                                                                        *)
-(*                       Pierre Chambart, OCamlPro                        *)
-(*                                                                        *)
-(*   Copyright 2016 Institut National de Recherche en Informatique et     *)
-(*     en Automatique.                                                    *)
-(*                                                                        *)
-(*   All rights reserved.  This file is distributed under the terms of    *)
-(*   the GNU Lesser General Public License version 2.1, with the          *)
-(*   special exception on linking described in the file LICENSE.          *)
-(*                                                                        *)
-(**************************************************************************)
-
 let r = ref 0
 
 let true_effect () =
@@ -36,10 +21,10 @@ let () =
   s.[0] <- '\001'
 
 let unknown_true =
-  s.[0] = '\001'
+  Bytes.get s 0 = '\001'
 
 let unknown_false =
-  s.[0] <> '\001'
+  Bytes.get s 0 <> '\001'
 
 let () =
   test 1 (fun () -> true || true);

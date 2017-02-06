@@ -115,11 +115,21 @@ coldstart:
 	cp byterun/ocamlrun.exe boot/ocamlrun.exe
 	cd yacc ; $(MAKEREC) $(BOOT_FLEXLINK_CMD) all
 	cp yacc/ocamlyacc.exe boot/ocamlyacc.exe
-	cd stdlib ; $(MAKEREC) $(BOOT_FLEXLINK_CMD) COMPILER="../boot/ocamlc -use-prims ../byterun/primitives" all
+	cd stdlib ; \
+	  $(MAKEREC) $(BOOT_FLEXLINK_CMD) \
+	             COMPILER="../boot/ocamlc -use-prims ../byterun/primitives"\
+	             all
 	cd stdlib ; cp $(LIBFILES) ../boot
 
 # Build the core system: the minimum needed to make depend and bootstrap
-core: runtime ocamlc ocamllex ocamlyacc ocamltools library
+core:
+	$(MAKEREC) runtime
+	$(MAKEREC) coreall
+
+# Recompile the core system using the bootstrap compiler
+coreall:
+	$(MAKEREC) ocamlc
+	$(MAKEREC) ocamllex ocamlyacc ocamltools library
 
 # Save the current bootstrap compiler
 MAXSAVED=boot/Saved/Saved.prev/Saved.prev/Saved.prev/Saved.prev/Saved.prev
@@ -196,9 +206,7 @@ INSTALL_STUBLIBDIR=$(DESTDIR)$(STUBLIBDIR)
 INSTALL_MANDIR=$(DESTDIR)$(MANDIR)
 INSTALL_DISTRIB=$(DESTDIR)$(PREFIX)
 
-install: installbyt installopt
-
-installbyt:
+install:
 	mkdir -p "$(INSTALL_BINDIR)"
 	mkdir -p "$(INSTALL_LIBDIR)"
 	mkdir -p "$(INSTALL_STUBLIBDIR)"
@@ -207,9 +215,11 @@ installbyt:
 	cd byterun ; $(MAKEREC) install
 	cp ocamlc "$(INSTALL_BINDIR)/ocamlc.exe"
 	cp ocaml "$(INSTALL_BINDIR)/ocaml.exe"
+	cp ocamlc "$(INSTALL_BINDIR)/ocamlc.byte.exe"
 	cd stdlib ; $(MAKEREC) install
 	cp lex/ocamllex "$(INSTALL_BINDIR)/ocamllex.exe"
 	cp yacc/ocamlyacc.exe "$(INSTALL_BINDIR)/ocamlyacc.exe"
+	cp lex/ocamllex "$(INSTALL_BINDIR)/ocamllex.byte.exe"
 	cp utils/*.cmi utils/*.cmt utils/*.cmti \
 	   parsing/*.cmi parsing/*.cmt parsing/*.cmti \
 	   typing/*.cmi typing/*.cmt typing/*.cmti \
@@ -235,10 +245,17 @@ installbyt:
 	  $(MAKEREC) install-flexdll; \
 	fi
 	cp config/Makefile "$(INSTALL_LIBDIR)/Makefile.config"
-	cp README.adoc "$(INSTALL_DISTRIB)/Readme.general.txt"
-	cp README.win32.adoc "$(INSTALL_DISTRIB)/Readme.windows.txt"
-	cp LICENSE "$(INSTALL_DISTRIB)/License.txt"
-	cp Changes "$(INSTALL_DISTRIB)/Changes.txt"
+	if test -n "$(INSTALL_DISTRIB)"; then \
+	   cp README.adoc "$(INSTALL_DISTRIB)/Readme.general.txt"; \
+	   cp README.win32.adoc "$(INSTALL_DISTRIB)/Readme.windows.txt"; \
+	   cp LICENSE "$(INSTALL_DISTRIB)/License.txt"; \
+	   cp Changes "$(INSTALL_DISTRIB)/Changes.txt"; \
+	fi
+	if test -f ocamlopt; then $(MAKEREC) installopt; else \
+	   cd "$(INSTALL_BINDIR)"; \
+	   cp ocamlc.byte$(EXE) ocamlc$(EXE); \
+	   cp ocamllex.byte$(EXE) ocamllex$(EXE); \
+	fi
 
 install-flexdll:
 # The $(if ...) installs the correct .manifest file for MSVC and MSVC64
@@ -254,6 +271,7 @@ install-flexdll:
 installopt:
 	cd asmrun && $(MAKEREC) install
 	cp ocamlopt "$(INSTALL_BINDIR)/ocamlopt.exe"
+	cp ocamlopt "$(INSTALL_BINDIR)/ocamlopt.byte.exe"
 	cd stdlib && $(MAKEREC) installopt
 	cp middle_end/*.cmi middle_end/*.cmt middle_end/*.cmti \
 		"$(INSTALL_COMPLIBDIR)"
@@ -277,6 +295,9 @@ installoptopt:
 	cp ocamlc.opt "$(INSTALL_BINDIR)/ocamlc.opt$(EXE)"
 	cp ocamlopt.opt "$(INSTALL_BINDIR)/ocamlopt.opt$(EXE)"
 	cp lex/ocamllex.opt "$(INSTALL_BINDIR)/ocamllex.opt$(EXE)"
+	cp ocamlc.opt "$(INSTALL_BINDIR)/ocamlc$(EXE)"
+	cp ocamlopt.opt "$(INSTALL_BINDIR)/ocamlopt$(EXE)"
+	cp lex/ocamllex.opt "$(INSTALL_BINDIR)/ocamllex$(EXE)"
 	cp utils/*.cmx parsing/*.cmx typing/*.cmx bytecomp/*.cmx \
            driver/*.cmx asmcomp/*.cmx "$(INSTALL_COMPLIBDIR)"
 	cp compilerlibs/ocamlcommon.cmxa compilerlibs/ocamlcommon.$(A) \
@@ -324,9 +345,11 @@ compilerlibs/ocamloptcomp.cma: $(MIDDLE_END) $(ASMCOMP)
 partialclean::
 	rm -f compilerlibs/ocamloptcomp.cma
 
-ocamlopt: compilerlibs/ocamlcommon.cma compilerlibs/ocamloptcomp.cma $(OPTSTART)
+ocamlopt: compilerlibs/ocamlcommon.cma compilerlibs/ocamloptcomp.cma \
+          compilerlibs/ocamlbytecomp.cma $(OPTSTART)
 	$(CAMLC) $(LINKFLAGS) -o ocamlopt \
-          compilerlibs/ocamlcommon.cma compilerlibs/ocamloptcomp.cma $(OPTSTART)
+          compilerlibs/ocamlcommon.cma compilerlibs/ocamloptcomp.cma \
+	  compilerlibs/ocamlbytecomp.cma $(OPTSTART)
 
 partialclean::
 	rm -f ocamlopt
@@ -349,17 +372,26 @@ ocaml: compilerlibs/ocamlcommon.cma compilerlibs/ocamlbytecomp.cma \
 partialclean::
 	rm -f ocaml
 
-# The native toplevel
+RUNTOP=./byterun/ocamlrun ./ocaml -nostdlib -I stdlib -noinit $(TOPFLAGS) -I otherlibs/win32unix
+NATRUNTOP=./ocamlnat$(EXE) -nostdlib -I stdlib -noinit $(TOPFLAGS)
+EXTRAPATH=PATH=otherlibs/win32unix:"$(PATH)"
 
-ocamlnat: ocamlopt otherlibs/dynlink/dynlink.cmxa $(NATTOPOBJS:.cmo=.cmx)
-	$(CAMLOPT) $(LINKFLAGS) otherlibs/dynlink/dynlink.cmxa -o ocamlnat \
-	           $(NATTOPOBJS:.cmo=.cmx) -linkall
+runtop:
+	$(MAKEREC) core
+	$(MAKEREC) ocaml
+	@rlwrap --help 2>/dev/null && $(EXTRAPATH) rlwrap $(RUNTOP) || $(EXTRAPATH) $(RUNTOP)
 
-toplevel/opttoploop.cmx: otherlibs/dynlink/dynlink.cmxa
+natruntop:
+	$(MAKEREC) runtime
+	$(MAKEREC) coreall
+	$(MAKEREC) opt.opt
+	$(MAKEREC) ocamlnat
+	@rlwrap --help 2>/dev/null && $(EXTRAPATH) rlwrap $(NATRUNTOP) || $(EXTRAPATH) $(NATRUNTOP)
+
+# Native dynlink
 
 otherlibs/dynlink/dynlink.cmxa: otherlibs/dynlink/natdynlink.ml
 	cd otherlibs/dynlink && $(MAKEREC) allopt
-
 
 # The configuration file
 
@@ -368,8 +400,8 @@ utils/config.ml: utils/config.mlp config/Makefile
 	sed -e "s|%%LIBDIR%%|$(LIBDIR)|" \
 	    -e "s|%%BYTERUN%%|ocamlrun|" \
 	    -e 's|%%CCOMPTYPE%%|$(CCOMPTYPE)|' \
-	    -e "s|%%BYTECC%%|$(BYTECC) $(BYTECCCOMPOPTS)|" \
-	    -e "s|%%NATIVECC%%|$(NATIVECC) $(NATIVECCCOMPOPTS)|" \
+	    -e "s|%%BYTECC%%|$(BYTECC)|" \
+	    -e "s|%%NATIVECC%%|$(NATIVECC)|" \
 	    -e "s|%%PARTIALLD%%|$(PARTIALLD)|" \
 	    -e "s|%%PACKLD%%|$(PACKLD)|" \
 	    -e "s|%%BYTECCLIBS%%|$(BYTECCLIBS)|" \
@@ -381,6 +413,7 @@ utils/config.ml: utils/config.mlp config/Makefile
 	    -e "s|%%ARCH%%|$(ARCH)|" \
 	    -e "s|%%MODEL%%|$(MODEL)|" \
 	    -e "s|%%SYSTEM%%|$(SYSTEM)|" \
+	    -e "s|%%EXT_EXE%%|$(EXE)|" \
 	    -e "s|%%EXT_OBJ%%|.$(O)|" \
 	    -e "s|%%EXT_ASM%%|.$(S)|" \
 	    -e "s|%%EXT_LIB%%|.$(A)|" \
@@ -389,13 +422,21 @@ utils/config.ml: utils/config.mlp config/Makefile
 	    -e 's|%%ASM%%|$(ASM)|' \
 	    -e 's|%%ASM_CFI_SUPPORTED%%|false|' \
 	    -e 's|%%WITH_FRAME_POINTERS%%|false|' \
+	    -e 's|%%WITH_PROFINFO%%|$(WITH_PROFINFO)|' \
+	    -e 's|%%WITH_SPACETIME%%|$(WITH_SPACETIME)|' \
+	    -e 's|%%PROFINFO_WIDTH%%|$(PROFINFO_WIDTH)|' \
+	    -e 's|%%LIBUNWIND_AVAILABLE%%|false|' \
+	    -e 's|%%LIBUNWIND_LINK_FLAGS%%||' \
 	    -e 's|%%MKDLL%%|$(MKDLL)|' \
 	    -e 's|%%MKEXE%%|$(MKEXE)|' \
 	    -e 's|%%MKMAINDLL%%|$(MKMAINDLL)|' \
 	    -e 's|%%CC_PROFILE%%||' \
 	    -e 's|%%HOST%%|$(HOST)|' \
 	    -e 's|%%TARGET%%|$(TARGET)|' \
+	    -e 's|%%PROFILING%%|$(PROFILING)|' \
 	    -e 's|%%FLAMBDA%%|$(FLAMBDA)|' \
+	    -e 's|%%SAFE_STRING%%|$(SAFE_STRING)|' \
+	    -e 's|%%AFL_INSTRUMENT%%|$(AFL_INSTRUMENT)|' \
 	    -e 's|%%FLEXLINK_FLAGS%%|$(FLEXLINK_FLAGS)|' \
 	    utils/config.mlp > utils/config.ml
 
@@ -455,27 +496,18 @@ partialclean::
 	rm -f compilerlibs/ocamloptcomp.cmxa compilerlibs/ocamloptcomp.$(A)
 
 ocamlopt.opt: compilerlibs/ocamlcommon.cmxa compilerlibs/ocamloptcomp.cmxa \
+              compilerlibs/ocamlbytecomp.cmxa \
               $(OPTSTART:.cmo=.cmx)
 	$(CAMLOPT) $(LINKFLAGS) -o ocamlopt.opt \
-           compilerlibs/ocamlcommon.cmxa compilerlibs/ocamloptcomp.cmxa \
-           $(OPTSTART:.cmo=.cmx)
+          compilerlibs/ocamlcommon.cmxa compilerlibs/ocamloptcomp.cmxa \
+	  compilerlibs/ocamlbytecomp.cmxa \
+          $(OPTSTART:.cmo=.cmx)
 
 partialclean::
 	rm -f ocamlopt.opt
 
 $(COMMON:.cmo=.cmx) $(BYTECOMP:.cmo=.cmx) $(MIDDLE_END:.cmo=.cmx) \
 $(ASMCOMP:.cmo=.cmx): ocamlopt
-
-# The numeric opcodes
-
-bytecomp/opcodes.ml: byterun/caml/instruct.h
-	sed -n -e "/^enum/p" -e "s|,||g" -e "/^  /p" byterun/caml/instruct.h | \
-	gawk -f tools/make-opcodes > bytecomp/opcodes.ml
-
-partialclean::
-	rm -f bytecomp/opcodes.ml
-
-beforedepend:: bytecomp/opcodes.ml
 
 # The predefined exceptions and primitives
 
@@ -588,7 +620,7 @@ alldepend::
 runtimeopt: makeruntimeopt stdlib/libasmrun.$(A)
 
 makeruntimeopt:
-	cd asmrun ; $(MAKEREC) all
+	cd asmrun ; $(MAKEREC) $(BOOT_FLEXLINK_CMD) all
 stdlib/libasmrun.$(A): asmrun/libasmrun.$(A)
 	cp asmrun/libasmrun.$(A) stdlib/libasmrun.$(A)
 clean::
@@ -704,14 +736,20 @@ partialclean::
 depend: beforedepend
 	(for d in utils parsing typing bytecomp asmcomp middle_end \
 	 middle_end/base_types driver toplevel; \
-	 do $(CAMLDEP) $(DEPFLAGS) $$d/*.mli $$d/*.ml; \
+	 do $(CAMLDEP) -slash $(DEPFLAGS) $$d/*.mli $$d/*.ml; \
 	 done) > .depend
+	$(CAMLDEP) -slash $(DEPFLAGS) -native \
+		-impl driver/compdynlink.mlopt >> .depend
+	$(CAMLDEP) -slash $(DEPFLAGS) -bytecode \
+		-impl driver/compdynlink.mlbyte >> .depend
 
 alldepend:: depend
 
 distclean:
 	$(MAKEREC) clean
-	rm -f asmrun/.depend.nt byterun/.depend.nt
+	rm -f asmrun/.depend.nt byterun/.depend.nt \
+	            otherlibs/bigarray/.depend.nt  \
+		    otherlibs/str/.depend.nt
 	rm -f boot/ocamlrun boot/ocamlrun.exe boot/camlheader boot/ocamlyacc \
 	      boot/*.cm* boot/libcamlrun.a
 	rm -f config/Makefile config/m.h config/s.h

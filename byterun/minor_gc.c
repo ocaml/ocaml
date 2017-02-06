@@ -13,6 +13,8 @@
 /*                                                                        */
 /**************************************************************************/
 
+#define CAML_INTERNALS
+
 #include <string.h>
 #include "caml/custom.h"
 #include "caml/config.h"
@@ -37,7 +39,7 @@
        this interval.
    [caml_young_alloc_start]...[caml_young_alloc_end]
        The allocation arena: newly-allocated blocks are carved from
-       this interval.
+       this interval, starting at [caml_young_alloc_end].
    [caml_young_alloc_mid] is the mid-point of this interval.
    [caml_young_ptr], [caml_young_trigger], [caml_young_limit]
        These pointers are all inside the allocation arena.
@@ -63,12 +65,15 @@ CAMLexport value *caml_young_ptr = NULL, *caml_young_limit = NULL;
 CAMLexport value *caml_young_trigger = NULL;
 
 CAMLexport struct caml_ref_table
-  caml_ref_table = { NULL, NULL, NULL, NULL, NULL, 0, 0},
-  caml_finalize_table = { NULL, NULL, NULL, NULL, NULL, 0, 0};
-/* table of custom blocks containing finalizers in the minor heap */
+  caml_ref_table = { NULL, NULL, NULL, NULL, NULL, 0, 0};
 
 CAMLexport struct caml_ephe_ref_table
   caml_ephe_ref_table = { NULL, NULL, NULL, NULL, NULL, 0, 0};
+
+CAMLexport struct caml_custom_table
+  caml_custom_table = { NULL, NULL, NULL, NULL, NULL, 0, 0};
+/* Table of custom blocks in the minor heap that contain finalizers
+   or GC speed parameters. */
 
 int caml_in_minor_collection = 0;
 
@@ -80,8 +85,8 @@ static void alloc_generic_table (struct generic_table *tbl, asize_t sz,
 
   tbl->size = sz;
   tbl->reserve = rsv;
-  new_table = (void *) caml_stat_alloc ((tbl->size + tbl->reserve)
-                                        * element_size);
+  new_table = (void *) malloc((tbl->size + tbl->reserve) * element_size);
+  if (new_table == NULL) caml_fatal_error ("Fatal error: not enough memory\n");
   if (tbl->base != NULL) caml_stat_free (tbl->base);
   tbl->base = new_table;
   tbl->ptr = tbl->base;
@@ -100,6 +105,13 @@ void caml_alloc_ephe_table (struct caml_ephe_ref_table *tbl, asize_t sz,
 {
   alloc_generic_table ((struct generic_table *) tbl, sz, rsv,
                        sizeof (struct caml_ephe_ref_elt));
+}
+
+void caml_alloc_custom_table (struct caml_custom_table *tbl, asize_t sz,
+                              asize_t rsv)
+{
+  alloc_generic_table ((struct generic_table *) tbl, sz, rsv,
+                       sizeof (struct caml_custom_elt));
 }
 
 static void reset_table (struct generic_table *tbl)
@@ -154,6 +166,7 @@ void caml_set_minor_heap_size (asize_t bsz)
 
   reset_table ((struct generic_table *) &caml_ref_table);
   reset_table ((struct generic_table *) &caml_ephe_ref_table);
+  reset_table ((struct generic_table *) &caml_custom_table);
 }
 
 static value oldify_todo_list = 0;
@@ -180,7 +193,7 @@ void caml_oldify_one (value v, value *p)
         value field0;
 
         sz = Wosize_hd (hd);
-        result = caml_alloc_shr (sz, tag);
+        result = caml_alloc_shr_preserving_profinfo (sz, tag, hd);
         *p = result;
         field0 = Field (v, 0);
         Hd_val (v) = 0;            /* Set forward flag */
@@ -197,7 +210,7 @@ void caml_oldify_one (value v, value *p)
         }
       }else if (tag >= No_scan_tag){
         sz = Wosize_hd (hd);
-        result = caml_alloc_shr (sz, tag);
+        result = caml_alloc_shr_preserving_profinfo (sz, tag, hd);
         for (i = 0; i < sz; i++) Field (result, i) = Field (v, i);
         Hd_val (v) = 0;            /* Set forward flag */
         Field (v, 0) = result;     /*  and forward pointer. */
@@ -226,7 +239,7 @@ void caml_oldify_one (value v, value *p)
         if (!vv || ft == Forward_tag || ft == Lazy_tag || ft == Double_tag){
           /* Do not short-circuit the pointer.  Copy as a normal block. */
           Assert (Wosize_hd (hd) == 1);
-          result = caml_alloc_shr (1, Forward_tag);
+          result = caml_alloc_shr_preserving_profinfo (1, Forward_tag, hd);
           *p = result;
           Hd_val (v) = 0;             /* Set (GC) forward flag */
           Field (v, 0) = result;      /*  and forward pointer. */
@@ -319,6 +332,7 @@ void caml_oldify_mopup (void)
 void caml_empty_minor_heap (void)
 {
   value **r;
+  struct caml_custom_elt *elt;
   uintnat prev_alloc_words;
   struct caml_ephe_ref_elt *re;
 
@@ -353,12 +367,18 @@ void caml_empty_minor_heap (void)
         }
       }
     }
+    /* Update the OCaml finalise_last values */
+    caml_final_update_minor_roots();
     /* Run custom block finalisation of dead minor values */
-    for (r = caml_finalize_table.base; r < caml_finalize_table.ptr; r++){
-      int hd = Hd_val ((value)*r);
-      if (hd != 0){         /* If not oldified the finalizer must be called */
-        void (*final_fun)(value) = Custom_ops_val((value)*r)->finalize;
-        final_fun((value)*r);
+    for (elt = caml_custom_table.base; elt < caml_custom_table.ptr; elt++){
+      value v = elt->block;
+      if (Hd_val (v) == 0){
+        /* Block was copied to the major heap: adjust GC speed numbers. */
+        caml_adjust_gc_speed(elt->mem, elt->max);
+      }else{
+        /* Block will be freed: call finalization function, if any. */
+        void (*final_fun)(value) = Custom_ops_val(v)->finalize;
+        if (final_fun != NULL) final_fun(v);
       }
     }
     CAML_INSTR_TIME (tmr, "minor/update_weak");
@@ -368,7 +388,7 @@ void caml_empty_minor_heap (void)
     caml_young_ptr = caml_young_alloc_end;
     clear_table ((struct generic_table *) &caml_ref_table);
     clear_table ((struct generic_table *) &caml_ephe_ref_table);
-    clear_table ((struct generic_table *) &caml_finalize_table);
+    clear_table ((struct generic_table *) &caml_custom_table);
     caml_gc_message (0x02, ">", 0);
     caml_in_minor_collection = 0;
     caml_final_empty_young ();
@@ -378,6 +398,7 @@ void caml_empty_minor_heap (void)
     ++ caml_stat_minor_collections;
     if (caml_minor_gc_end_hook != NULL) (*caml_minor_gc_end_hook) ();
   }else{
+    /* The minor heap is empty nothing to do. */
     caml_final_empty_young ();
   }
 #ifdef DEBUG
@@ -516,4 +537,14 @@ void caml_realloc_ephe_ref_table (struct caml_ephe_ref_table *tbl)
      "ephe_ref_table threshold crossed\n",
      "Growing ephe_ref_table to %" ARCH_INTNAT_PRINTF_FORMAT "dk bytes\n",
      "Fatal error: ephe_ref_table overflow\n");
+}
+
+void caml_realloc_custom_table (struct caml_custom_table *tbl)
+{
+  realloc_generic_table
+    ((struct generic_table *) tbl, sizeof (struct caml_custom_elt),
+     "request_minor/realloc_custom_table@",
+     "custom_table threshold crossed\n",
+     "Growing custom_table to %" ARCH_INTNAT_PRINTF_FORMAT "dk bytes\n",
+     "Fatal error: custom_table overflow\n");
 }

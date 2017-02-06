@@ -1,18 +1,3 @@
-(**************************************************************************)
-(*                                                                        *)
-(*                                OCaml                                   *)
-(*                                                                        *)
-(*             Xavier Leroy, projet Cristal, INRIA Rocquencourt           *)
-(*                                                                        *)
-(*   Copyright 2001 Institut National de Recherche en Informatique et     *)
-(*     en Automatique.                                                    *)
-(*                                                                        *)
-(*   All rights reserved.  This file is distributed under the terms of    *)
-(*   the GNU Lesser General Public License version 2.1, with the          *)
-(*   special exception on linking described in the file LICENSE.          *)
-(*                                                                        *)
-(**************************************************************************)
-
 (* Test for "include <module-expr>" inside structures *)
 
 module A =
@@ -104,3 +89,19 @@ module G =
 let _ =
   begin try raise (G.Exn "foo") with G.Exn s -> print_string s end;
   print_int ((new G.c)#m); print_newline()
+
+
+
+include (struct
+  let a = 10
+  module X = struct let x = 1 let z = 42 let y = 2 end
+  exception XXX
+end : sig
+  module X : sig val y: int val x: int end
+  exception XXX
+  val a: int
+end)
+
+let () =
+  Printf.printf "%i / %i / %i \n%!" X.x X.y a;
+  Printf.printf "%s\n%!" (Printexc.to_string XXX)

@@ -18,6 +18,7 @@
 #ifndef CAML_STACKS_H
 #define CAML_STACKS_H
 
+#ifdef CAML_INTERNALS
 
 #include "misc.h"
 #include "mlvalues.h"
@@ -39,5 +40,7 @@ void caml_change_max_stack_size (uintnat new_max_size);
 uintnat caml_stack_usage (void);
 
 CAMLextern uintnat (*caml_stack_usage_hook)(void);
+
+#endif /* CAML_INTERNALS */
 
 #endif /* CAML_STACKS_H */

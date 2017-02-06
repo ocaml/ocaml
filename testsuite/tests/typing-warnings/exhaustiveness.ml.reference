@@ -4,7 +4,7 @@
       None, None -> 1
     | Some _, Some _ -> 2..
 Warning 8: this pattern-matching is not exhaustive.
-Here is an example of a value that is not matched:
+Here is an example of a case that is not matched:
 ((Some _, None)|(None, Some _))
 val f : 'a option * 'b option -> int = <fun>
 #             type _ t = A : int t | B : bool t | C : char t | D : float t
@@ -14,7 +14,7 @@ type v = E | F | G
   .function A, A, A, A, A, A, A, _, U, U -> 1
      | _, _, _, _, _, _, _, G, _, _ -> 1
 Warning 8: this pattern-matching is not exhaustive.
-Here is an example of a value that is not matched:
+Here is an example of a case that is not matched:
 (A, A, A, A, A, A, B, (E|F), _, _)
 Characters 172-200:
      | _, _, _, _, _, _, _, G, _, _ -> 1
@@ -52,7 +52,7 @@ val f : unit t option -> int = <fun>
   let f (x : int t option) = match x with None -> 1;; (* warn *)
                              ^^^^^^^^^^^^^^^^^^^^^^
 Warning 8: this pattern-matching is not exhaustive.
-Here is an example of a value that is not matched:
+Here is an example of a case that is not matched:
 Some A
 val f : int t option -> int = <fun>
 #         type 'a box = Box of 'a
@@ -61,11 +61,25 @@ type 'a pair = { left : 'a; right : 'a; }
   let f : (int t box pair * bool) option -> unit = function None -> ();;
                                                    ^^^^^^^^^^^^^^^^^^^
 Warning 8: this pattern-matching is not exhaustive.
-Here is an example of a value that is not matched:
+Here is an example of a case that is not matched:
 Some ({left=Box A; right=Box A}, _)
 val f : (int t box pair * bool) option -> unit = <fun>
 # val f : (string t box pair * bool) option -> unit = <fun>
-#               type _ t = Int : int t | Bool : bool t
+# Characters 8-39:
+  let f = function {left=Box 0; _ } -> ();;
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Warning 8: this pattern-matching is not exhaustive.
+Here is an example of a case that is not matched:
+{left=Box 1; _ }
+val f : int box pair -> unit = <fun>
+# Characters 8-47:
+  let f = function {left=Box 0;right=Box 1} -> ();;
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Warning 8: this pattern-matching is not exhaustive.
+Here is an example of a case that is not matched:
+{left=Box 0; right=Box 0}
+val f : int box pair -> unit = <fun>
+#             type _ t = Int : int t | Bool : bool t
 #         val f : 'a t -> 'a = <fun>
 #     val g : int t -> int = <fun>
 #         val h : 'a t -> 'a t -> bool = <fun>
@@ -75,7 +89,7 @@ module A : sig type a type b val eq : (a, b) cmp end
   let f : (A.a, A.b) cmp -> unit = function Any -> ()
                                    ^^^^^^^^^^^^^^^^^^
 Warning 8: this pattern-matching is not exhaustive.
-Here is an example of a value that is not matched:
+Here is an example of a case that is not matched:
 Eq
 val f : (A.a, A.b) cmp -> unit = <fun>
 #     val deep : char t option -> char = <fun>
@@ -90,7 +104,7 @@ type _ succ = Succ
     function None -> false
     ^^^^^^^^^^^^^^^^^^^^^^
 Warning 8: this pattern-matching is not exhaustive.
-Here is an example of a value that is not matched:
+Here is an example of a case that is not matched:
 Some (PlusS _)
 val harder : (zero succ, zero succ, zero succ) plus option -> bool = <fun>
 #     val harder : (zero succ, zero succ, zero succ) plus option -> bool = <fun>

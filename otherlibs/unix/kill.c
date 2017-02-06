@@ -13,6 +13,8 @@
 /*                                                                        */
 /**************************************************************************/
 
+#define CAML_INTERNALS
+
 #include <caml/mlvalues.h>
 #include <caml/fail.h>
 #include "unixsupport.h"
@@ -22,7 +24,7 @@
 CAMLprim value unix_kill(value pid, value signal)
 {
   int sig;
-  sig = convert_signal_number(Int_val(signal));
+  sig = caml_convert_signal_number(Int_val(signal));
   if (kill(Int_val(pid), sig) == -1)
     uerror("kill", Nothing);
   return Val_unit;

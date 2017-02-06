@@ -30,15 +30,6 @@ type value_string = {
   size : int;
 }
 
-type value_float_array_contents =
-  | Contents of float option array
-  | Unknown_or_mutable
-
-type value_float_array = {
-  contents : value_float_array_contents;
-  size : int;
-}
-
 type unknown_because_of =
   | Unresolved_symbol of Symbol.t
   | Other
@@ -130,7 +121,7 @@ and descr = private
   | Value_int of int
   | Value_char of char
   | Value_constptr of int
-  | Value_float of float
+  | Value_float of float option
   | Value_boxed_int : 'a boxed_int * 'a -> descr
   | Value_set_of_closures of value_set_of_closures
   | Value_closure of value_closure
@@ -160,6 +151,15 @@ and value_set_of_closures = private {
   (* Any freshening that has been applied to [function_decls]. *)
   freshening : Freshening.Project_var.t;
   direct_call_surrogates : Closure_id.t Closure_id.Map.t;
+}
+
+and value_float_array_contents =
+  | Contents of t array
+  | Unknown_or_mutable
+
+and value_float_array = {
+  contents : value_float_array_contents;
+  size : int;
 }
 
 (** Extraction of the description of approximation(s). *)
@@ -193,8 +193,9 @@ val value_unknown : unknown_because_of -> t
 val value_int : int -> t
 val value_char : char -> t
 val value_float : float -> t
+val value_any_float : t
 val value_mutable_float_array : size:int -> t
-val value_immutable_float_array : float option array -> t
+val value_immutable_float_array : t array -> t
 val value_string : int -> string option -> t
 val value_boxed_int : 'i boxed_int -> 'i -> t
 val value_constptr : int -> t
@@ -255,11 +256,17 @@ val augment_with_symbol_field : t -> Symbol.t -> int -> t
 (** Replace the description within an approximation. *)
 val replace_description : t -> descr -> t
 
+(** Improve the description by taking the kind into account *)
+val augment_with_kind : t -> Lambda.value_kind -> t
+
+(** Improve the kind by taking the description into account *)
+val augment_kind_with_approx : t -> Lambda.value_kind -> Lambda.value_kind
+
 val equal_boxed_int : 'a boxed_int -> 'a -> 'b boxed_int -> 'b -> bool
 
 (* CR-soon mshinwell for pchambart: Add comment describing semantics.  (Maybe
    we should move the comment from the .ml file into here.) *)
-val meet : t -> t -> t
+val meet : really_import_approx:(t -> t) -> t -> t -> t
 
 (** An approximation is "known" iff it is not [Value_unknown]. *)
 val known : t -> bool
@@ -399,3 +406,18 @@ val check_approx_for_closure_allowing_unresolved
 
 (** Returns the value if it can be proved to be a constant float *)
 val check_approx_for_float : t -> float option
+
+(** Returns the value if it can be proved to be a constant float array *)
+val float_array_as_constant : value_float_array -> float list option
+
+(** Returns the value if it can be proved to be a constant string *)
+val check_approx_for_string : t -> string option
+
+type switch_branch_selection =
+  | Cannot_be_taken
+  | Can_be_taken
+  | Must_be_taken
+
+(** Check that the branch is compatible with the approximation *)
+val potentially_taken_const_switch_branch : t -> int -> switch_branch_selection
+val potentially_taken_block_switch_branch : t -> int -> switch_branch_selection

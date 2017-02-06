@@ -61,45 +61,57 @@ EXT_OBJ=.$(O)
 EXT_LIB=.$(A)
 EXT_ASM=.$(S)
 MANEXT=1
-SHARPBANGSCRIPTS=false
+HASHBANGSCRIPTS=false
 PTHREAD_LINK=
+PTHREAD_CAML_LINK=
 X11_INCLUDES=
 X11_LINK=
 BYTECCRPATH=
 SUPPORTS_SHARED_LIBRARIES=true
-SHAREDCCCOMPOPTS=-O
+SHAREDCCCOMPOPTS=
 MKSHAREDLIBRPATH=
 NATIVECCPROFOPTS=
 NATIVECCRPATH=
 ASM=$(TOOLPREF)as
 ASPP=$(TOOLPREF)gcc -c
 ASPPPROFFLAGS=
-PROFILING=noprof
+PROFILING=false
 DYNLINKOPTS=
 CC_PROFILE=
 SYSTHREAD_SUPPORT=true
 EXTRALIBS=
 NATDYNLINK=true
 CMXS=cmxs
-RUNTIMED=noruntimed
+RUNTIMED=false
 ASM_CFI_SUPPORTED=false
+UNIX_OR_WIN32=win32
 UNIXLIB=win32unix
 GRAPHLIB=win32graph
 FLAMBDA=false
+WITH_SPACETIME=false
+WITH_PROFINFO=false
+LIBUNWIND_AVAILABLE=false
+LIBUNWIND_LINK_FLAGS=
+PROFINFO_WIDTH=26
+SAFE_STRING=false
+AFL_INSTRUMENT=false
 
 ########## Configuration for the bytecode compiler
 
 ### Which C compiler to use for the bytecode interpreter.
-BYTECC=$(TOOLPREF)gcc
+BYTECC=$(TOOLPREF)gcc -O -mms-bitfields
 
 ### Additional compile-time options for $(BYTECC).  (For static linking.)
-BYTECCCOMPOPTS=-O -mms-bitfields -Wall -Wno-unused
+BYTECCCOMPOPTS=-DCAML_NAME_SPACE -Wall -Wno-unused
+
+### Additional compile-time options for $(BYTECC).  (For debug version.)
+BYTECCDBGCOMPOPTS=-g
+
+### Flag to use to rename object files.  (for debug version.)
+NAME_OBJ_FLAG=-o
 
 ### Additional link-time options for $(BYTECC).  (For static linking.)
 BYTECCLINKOPTS=
-
-### Additional compile-time options for $(BYTECC).  (For building a DLL.)
-DLLCCCOMPOPTS=-O -mms-bitfields -Wall -Wno-unused -DCAML_DLL
 
 ### Libraries needed
 BYTECCLIBS=-lws2_32
@@ -126,6 +138,7 @@ endif
 # or OCAML_FLEXLINK overriding will not work (see utils/config.mlp)
 MKDLL=$(FLEXLINK)
 MKEXE=$(FLEXLINK) -exe
+MKEXEDEBUGFLAG=-g
 MKMAINDLL=$(FLEXLINK) -maindll
 
 ### Native command to build ocamlrun.exe without flexlink
@@ -163,7 +176,7 @@ SYSTEM=mingw
 NATIVECC=$(BYTECC)
 
 ### Additional compile-time options for $(NATIVECC).
-NATIVECCCOMPOPTS=-O -mms-bitfields -Wall -Wno-unused
+NATIVECCCOMPOPTS=-DCAML_NAME_SPACE -Wall -Wno-unused
 
 ### Additional link-time options for $(NATIVECC)
 NATIVECCLINKOPTS=
@@ -189,6 +202,6 @@ MAKECMD=$(MAKE)
 OTOPDIR=$(WINTOPDIR)
 CTOPDIR=$(TOPDIR)
 CYGPATH=cygpath -m
-DIFF=diff -q --strip-trailing-cr
+DIFF=/usr/bin/diff -q --strip-trailing-cr
 SET_LD_PATH=PATH="$(PATH):$(LD_PATH)"
 MAX_TESTSUITE_DIR_RETRIES=1

@@ -56,46 +56,55 @@ EXT_OBJ=.$(O)
 EXT_LIB=.$(A)
 EXT_ASM=.$(S)
 MANEXT=1
-SHARPBANGSCRIPTS=false
+HASHBANGSCRIPTS=false
 PTHREAD_LINK=
+PTHREAD_CAML_LINK=
 X11_INCLUDES=
 X11_LINK=
 BYTECCRPATH=
 SUPPORTS_SHARED_LIBRARIES=true
-SHAREDCCCOMPOPTS=-Ox
+SHAREDCCCOMPOPTS=
 NATIVECCPROFOPTS=
 NATIVECCRPATH=
 ASM=ml64 -nologo -Cp -c -Fo
 ASPP=
 ASPPPROFFLAGS=
-PROFILING=noprof
+PROFILING=false
 DYNLINKOPTS=
 CC_PROFILE=
 SYSTHREAD_SUPPORT=true
 CMXS=cmxs
 NATDYNLINK=true
-RUNTIMED=noruntimed
+RUNTIMED=false
 ASM_CFI_SUPPORTED=false
+UNIX_OR_WIN32=win32
 UNIXLIB=win32unix
 GRAPHLIB=win32graph
 FLAMBDA=false
+WITH_PROFINFO=false
+WITH_SPACETIME=false
+LIBUNWIND_AVAILABLE=false
+LIBUNWIND_LINK_FLAGS=
+PROFINFO_WIDTH=26
+SAFE_STRING=false
+AFL_INSTRUMENT=false
 
 ########## Configuration for the bytecode compiler
 
 ### Which C compiler to use for the bytecode interpreter.
-BYTECC=cl -nologo -D_CRT_SECURE_NO_DEPRECATE
+BYTECC=cl -nologo -D_CRT_SECURE_NO_DEPRECATE -O2 -Gy- -MD
 
 ### Additional compile-time options for $(BYTECC).  (For static linking.)
-BYTECCCOMPOPTS=-O2 -Gy- -MD
+BYTECCCOMPOPTS=-DCAML_NAME_SPACE
 
 ### Additional compile-time options for $(BYTECC).  (For debug version.)
-BYTECCDBGCOMPOPTS=-DDEBUG -Zi -W3 -Wp64
+BYTECCDBGCOMPOPTS=-Zi
+
+### Flag to use to rename object files.  (for debug version.)
+NAME_OBJ_FLAG=-Fo
 
 ### Additional link-time options for $(BYTECC).  (For static linking.)
 BYTECCLINKOPTS=
-
-### Additional compile-time options for $(BYTECC).  (For building a DLL.)
-DLLCCCOMPOPTS=-O2 -Gy- -MD
 
 ### Libraries needed
 #EXTRALIBS=bufferoverflowu.lib  # for the old PSDK compiler only
@@ -124,6 +133,7 @@ endif
 # or OCAML_FLEXLINK overriding will not work (see utils/config.mlp)
 MKDLL=$(FLEXLINK)
 MKEXE=$(FLEXLINK) -exe
+MKEXEDEBUGFLAG=
 MKMAINDLL=$(FLEXLINK) -maindll
 
 ### Native command to build ocamlrun.exe without flexlink
@@ -163,10 +173,10 @@ MODEL=default
 SYSTEM=win64
 
 ### Which C compiler to use for the native-code compiler.
-NATIVECC=cl -nologo
+NATIVECC=cl -nologo -O2 -Gy- -MD
 
 ### Additional compile-time options for $(NATIVECC).
-NATIVECCCOMPOPTS=-O2 -Gy- -MD
+NATIVECCCOMPOPTS=-DCAML_NAME_SPACE
 
 ### Additional link-time options for $(NATIVECC)
 NATIVECCLINKOPTS=
@@ -198,7 +208,7 @@ MAKECMD=$(MAKE)
 OTOPDIR=$(WINTOPDIR)
 CTOPDIR=$(WINTOPDIR)
 CYGPATH=cygpath -m
-DIFF=diff -q --strip-trailing-cr
+DIFF=/usr/bin/diff -q --strip-trailing-cr
 FIND=/usr/bin/find
 SORT=/usr/bin/sort
 SET_LD_PATH=PATH="$(PATH):$(LD_PATH)"

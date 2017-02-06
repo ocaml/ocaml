@@ -59,6 +59,13 @@ type spec =
                                    call the function with the symbol *)
   | Rest of (string -> unit)   (** Stop interpreting keywords and call the
                                    function with each remaining argument *)
+  | Expand of (string -> string array) (** If the remaining arguments to process
+                                           are of the form
+                                           [["-foo"; "arg"] @ rest] where "foo" is
+                                           registered as [Expand f], then the
+                                           arguments [f "arg" @ rest] are
+                                           processed. Only allowed in
+                                           [parse_and_expand_argv_dynamic]. *)
 (** The concrete type describing the behavior associated
    with a keyword. *)
 
@@ -109,12 +116,12 @@ val parse_argv : ?current: int ref -> string array ->
   (key * spec * doc) list -> anon_fun -> usage_msg -> unit
 (** [Arg.parse_argv ~current args speclist anon_fun usage_msg] parses
   the array [args] as if it were the command line.  It uses and updates
-  the value of [~current] (if given), or [Arg.current].  You must set
+  the value of [~current] (if given), or {!Arg.current}.  You must set
   it before calling [parse_argv].  The initial value of [current]
   is the index of the program name (argument 0) in the array.
-  If an error occurs, [Arg.parse_argv] raises [Arg.Bad] with
+  If an error occurs, [Arg.parse_argv] raises {!Arg.Bad} with
   the error message as argument.  If option [-help] or [--help] is
-  given, [Arg.parse_argv] raises [Arg.Help] with the help message
+  given, [Arg.parse_argv] raises {!Arg.Help} with the help message
   as argument.
 *)
 
@@ -125,19 +132,32 @@ val parse_argv_dynamic : ?current:int ref -> string array ->
     See {!Arg.parse_dynamic}.
 *)
 
+val parse_and_expand_argv_dynamic : int ref -> string array ref ->
+  (key * spec * doc) list ref -> anon_fun -> string -> unit
+(** Same as {!Arg.parse_argv_dynamic}, except that the [argv] argument is a
+    reference and may be updated during the parsing of [Expand] arguments.
+    See {!Arg.parse_argv_dynamic}.
+*)
+
+val parse_expand:
+  (key * spec * doc) list -> anon_fun -> usage_msg -> unit
+(** Same as {!Arg.parse}, except that the [Expand] arguments are allowed and
+    the {!current} reference is not updated.
+*)
+
 exception Help of string
 (** Raised by [Arg.parse_argv] when the user asks for help. *)
 
 exception Bad of string
 (** Functions in [spec] or [anon_fun] can raise [Arg.Bad] with an error
     message to reject invalid arguments.
-    [Arg.Bad] is also raised by [Arg.parse_argv] in case of an error. *)
+    [Arg.Bad] is also raised by {!Arg.parse_argv} in case of an error. *)
 
 val usage : (key * spec * doc) list -> usage_msg -> unit
 (** [Arg.usage speclist usage_msg] prints to standard error
     an error message that includes the list of valid options.  This is
     the same message that {!Arg.parse} prints in case of error.
-    [speclist] and [usage_msg] are the same as for [Arg.parse]. *)
+    [speclist] and [usage_msg] are the same as for {!Arg.parse}. *)
 
 val usage_string : (key * spec * doc) list -> usage_msg -> string
 (** Returns the message that would have been printed by {!Arg.usage},
@@ -159,3 +179,20 @@ val current : int ref
     {!Arg.parse} uses the initial value of {!Arg.current} as the index of
     argument 0 (the program name) and starts parsing arguments
     at the next element. *)
+
+val read_arg: string -> string array
+(** [Arg.read_arg file] reads newline-terminated command line arguments from
+    file [file]. *)
+
+val read_arg0: string -> string array
+(** Identical to {!Arg.read_arg} but assumes null character terminated command line
+    arguments. *)
+
+val write_arg: string -> string array -> unit
+(** [Arg.write_arg file args] writes the arguments [args] newline-terminated
+    into the file [file]. If the any of the arguments in [args] contains a
+    newline, use {!Arg.write_arg0} instead. *)
+
+val write_arg0: string -> string array -> unit
+(** Identical to {!Arg.write_arg} but uses the null character for terminator
+    instead of newline. *)

@@ -13,6 +13,8 @@
 /*                                                                        */
 /**************************************************************************/
 
+#define CAML_INTERNALS
+
 /* Win32-specific stuff */
 
 #define WIN32_LEAN_AND_MEAN
@@ -103,9 +105,17 @@ int caml_write_fd(int fd, int flags, void * buf, int n)
 {
   int retcode;
   if ((flags & CHANNEL_FLAG_FROM_SOCKET) == 0) {
+#if defined(NATIVE_CODE) && defined(WITH_SPACETIME)
+  if (flags & CHANNEL_FLAG_BLOCKING_WRITE) {
+    retcode = write(fd, buf, n);
+  } else {
+#endif
     caml_enter_blocking_section();
     retcode = write(fd, buf, n);
     caml_leave_blocking_section();
+#if defined(NATIVE_CODE) && defined(WITH_SPACETIME)
+  }
+#endif
     if (retcode == -1) caml_sys_io_error(NO_ARG);
   } else {
     caml_enter_blocking_section();
@@ -354,10 +364,15 @@ static void expand_pattern(char * pat)
     return;
   }
   prefix = caml_strdup(pat);
+  /* We need to stop at the first directory or drive boundary, because the
+   * _findata_t structure contains the filename, not the leading directory. */
   for (i = strlen(prefix); i > 0; i--) {
     char c = prefix[i - 1];
     if (c == '\\' || c == '/' || c == ':') { prefix[i] = 0; break; }
   }
+  /* No separator was found, it's a filename pattern without a leading directory. */
+  if (i == 0)
+    prefix[0] = 0;
   do {
     name = caml_strconcat(2, prefix, ffblk.name);
     store_argument(name);
@@ -607,13 +622,22 @@ void caml_install_invalid_parameter_handler()
 
 /* Recover executable name  */
 
-int caml_executable_name(char * name, int name_len)
+char * caml_executable_name(void)
 {
-  int retcode;
-
-  int ret = GetModuleFileName(NULL, name, name_len);
-  if (0 == ret || ret >= name_len) return -1;
-  return 0;
+  char * name;
+  DWORD namelen, ret;
+  
+  namelen = 256;
+  while (1) {
+    name = caml_stat_alloc(namelen);
+    ret = GetModuleFileName(NULL, name, namelen);
+    if (ret == 0) { caml_stat_free(name); return NULL; }
+    if (ret < namelen) break;
+    caml_stat_free(name);
+    if (namelen >= 1024*1024) return NULL; /* avoid runaway and overflow */
+    namelen *= 2;
+  }
+  return name;
 }
 
 /* snprintf emulation */

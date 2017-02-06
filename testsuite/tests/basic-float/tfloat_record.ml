@@ -1,17 +1,30 @@
-(**************************************************************************)
-(*                                                                        *)
-(*                                OCaml                                   *)
-(*                                                                        *)
-(*              Pierre Weis, projet Cristal, INRIA Rocquencourt           *)
-(*                                                                        *)
-(*   Copyright 2007 Institut National de Recherche en Informatique et     *)
-(*     en Automatique.                                                    *)
-(*                                                                        *)
-(*   All rights reserved.  This file is distributed under the terms of    *)
-(*   the GNU Lesser General Public License version 2.1, with the          *)
-(*   special exception on linking described in the file LICENSE.          *)
-(*                                                                        *)
-(**************************************************************************)
+module Float_record : sig
+  type t = private float;;
+
+  val make : float -> t;;
+  val from : t -> float;;
+
+  type s = {f : t};;
+end = struct
+  type t = float;;
+
+  let make f = f;;
+
+  let from t = t;;
+
+  type s = {f : t};;
+end
+
+module Float_array = struct
+  let small_float_array x =
+    [|1.;2.;3.|], x
+
+  let longer_float_array x =
+    [|1.;2.;3.;4.;5.;6.;7.;8.;9.;0.;
+      1.;2.;3.;4.;5.;6.;7.;8.;9.;0.;
+      1.;2.;3.;4.;5.;6.;7.;8.;9.;0.;
+      1.;2.;3.;4.;5.;6.;7.;8.;9.;0.;|], x
+end
 
 let s = { Float_record.f = Float_record.make 1.0 };;
 

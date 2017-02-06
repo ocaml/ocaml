@@ -13,6 +13,8 @@
 /*                                                                        */
 /**************************************************************************/
 
+#define CAML_INTERNALS
+
 #include <limits.h>
 #include <math.h>
 
@@ -28,6 +30,7 @@
 #include "caml/misc.h"
 #include "caml/mlvalues.h"
 #include "caml/roots.h"
+#include "caml/signals.h"
 #include "caml/weak.h"
 
 #if defined (NATIVE_CODE) && defined (NO_NAKED_POINTERS)
@@ -398,7 +401,7 @@ static void mark_slice (intnat work)
       if (Tag_hd (hd) < No_scan_tag){
         start = size < start ? size : start;
         end = size < end ? size : end;
-        CAMLassert (end > start);
+        CAMLassert (end >= start);
         INSTR (slice_fields += end - start;)
         INSTR (if (size > end)
                  CAML_INSTR_INT ("major/mark/slice/remain", size - end);)
@@ -468,7 +471,7 @@ static void mark_slice (intnat work)
           /* Subphase_mark_main is done.
              Mark finalised values. */
           gray_vals_cur = gray_vals_ptr;
-          caml_final_update ();
+          caml_final_update_mark_phase ();
           gray_vals_ptr = gray_vals_cur;
           if (gray_vals_ptr > gray_vals){
             v = *--gray_vals_ptr;
@@ -480,17 +483,18 @@ static void mark_slice (intnat work)
       }
         break;
       case Subphase_mark_final: {
+        /** The set of unreachable value will not change anymore for
+            this cycle. Start clean phase. */
+        caml_gc_phase = Phase_clean;
+        caml_final_update_clean_phase ();
         if (caml_ephe_list_head != (value) NULL){
           /* Initialise the clean phase. */
-          caml_gc_phase = Phase_clean;
           ephes_to_check = &caml_ephe_list_head;
-          work = 0;
         } else {
-          /* Initialise the sweep phase,
-           shortcut the unneeded clean phase. */
+          /* Initialise the sweep phase. */
           init_sweep_phase();
-          work = 0;
         }
+          work = 0;
       }
         break;
       default: Assert (0);
@@ -568,6 +572,7 @@ static void sweep_slice (intnat work)
         ++ caml_stat_major_collections;
         work = 0;
         caml_gc_phase = Phase_idle;
+        caml_request_minor_gc ();
       }else{
         caml_gc_sweep_hp = chunk;
         limit = chunk + Chunk_size (chunk);
@@ -753,7 +758,7 @@ void caml_major_collection_slice (intnat howmuch)
   }
 
   if (caml_gc_phase == Phase_mark || caml_gc_phase == Phase_clean){
-    computed_work = (intnat) (p * (caml_stat_heap_wsz * 250
+    computed_work = (intnat) (p * ((double) caml_stat_heap_wsz * 250
                                    / (100 + caml_percent_free)
                                    + caml_incremental_roots_count));
   }else{

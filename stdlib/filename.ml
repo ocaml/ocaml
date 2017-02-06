@@ -74,7 +74,7 @@ module Unix = struct
   let parent_dir_name = ".."
   let dir_sep = "/"
   let is_dir_sep s i = s.[i] = '/'
-  let is_relative n = String.length n < 1 || n.[0] <> '/';;
+  let is_relative n = String.length n < 1 || n.[0] <> '/'
   let is_implicit n =
     is_relative n
     && (String.length n < 2 || String.sub n 0 2 <> "./")
@@ -173,11 +173,6 @@ let (current_dir_name, parent_dir_name, dir_sep, is_dir_sep,
      is_relative, is_implicit, check_suffix, temp_dir_name, quote, basename,
      dirname) =
   match Sys.os_type with
-    "Unix" ->
-      (Unix.current_dir_name, Unix.parent_dir_name, Unix.dir_sep,
-       Unix.is_dir_sep,
-       Unix.is_relative, Unix.is_implicit, Unix.check_suffix,
-       Unix.temp_dir_name, Unix.quote, Unix.basename, Unix.dirname)
   | "Win32" ->
       (Win32.current_dir_name, Win32.parent_dir_name, Win32.dir_sep,
        Win32.is_dir_sep,
@@ -188,7 +183,11 @@ let (current_dir_name, parent_dir_name, dir_sep, is_dir_sep,
        Cygwin.is_dir_sep,
        Cygwin.is_relative, Cygwin.is_implicit, Cygwin.check_suffix,
        Cygwin.temp_dir_name, Cygwin.quote, Cygwin.basename, Cygwin.dirname)
-  | _ -> assert false
+  | _ -> (* normally "Unix" *)
+      (Unix.current_dir_name, Unix.parent_dir_name, Unix.dir_sep,
+       Unix.is_dir_sep,
+       Unix.is_relative, Unix.is_implicit, Unix.check_suffix,
+       Unix.temp_dir_name, Unix.quote, Unix.basename, Unix.dirname)
 
 let concat dirname filename =
   let l = String.length dirname in
@@ -200,22 +199,41 @@ let chop_suffix name suff =
   let n = String.length name - String.length suff in
   if n < 0 then invalid_arg "Filename.chop_suffix" else String.sub name 0 n
 
-let chop_extension name =
+let extension_len name =
+  let rec check i0 i =
+    if i < 0 || is_dir_sep name i then 0
+    else if name.[i] = '.' then check i0 (i - 1)
+    else String.length name - i0
+  in
   let rec search_dot i =
-    if i < 0 || is_dir_sep name i then invalid_arg "Filename.chop_extension"
-    else if name.[i] = '.' then String.sub name 0 i
-    else search_dot (i - 1) in
+    if i < 0 || is_dir_sep name i then 0
+    else if name.[i] = '.' then check i (i - 1)
+    else search_dot (i - 1)
+  in
   search_dot (String.length name - 1)
+
+let extension name =
+  let l = extension_len name in
+  if l = 0 then "" else String.sub name (String.length name - l) l
+
+let chop_extension name =
+  let l = extension_len name in
+  if l = 0 then invalid_arg "Filename.chop_extension"
+  else String.sub name 0 (String.length name - l)
+
+let remove_extension name =
+  let l = extension_len name in
+  if l = 0 then name else String.sub name 0 (String.length name - l)
 
 external open_desc: string -> open_flag list -> int -> int = "caml_sys_open"
 external close_desc: int -> unit = "caml_sys_close"
 
-let prng = lazy(Random.State.make_self_init ());;
+let prng = lazy(Random.State.make_self_init ())
 
 let temp_file_name temp_dir prefix suffix =
   let rnd = (Random.State.bits (Lazy.force prng)) land 0xFFFFFF in
   concat temp_dir (Printf.sprintf "%s%06x%s" prefix rnd suffix)
-;;
+
 
 let current_temp_dir_name = ref temp_dir_name
 

@@ -28,6 +28,7 @@ type error =
   | Unterminated_string_in_comment of Location.t * Location.t
   | Keyword_as_label of string
   | Invalid_literal of string
+  | Invalid_directive of string * string option
 ;;
 
 exception Error of error * Location.t;;
@@ -260,6 +261,12 @@ let report_error ppf = function
       fprintf ppf "`%s' is a keyword, it cannot be used as label name" kwd
   | Invalid_literal s ->
       fprintf ppf "Invalid literal %s" s
+  | Invalid_directive (dir, explanation) ->
+      fprintf ppf "Invalid lexer directive %S" dir;
+      begin match explanation with
+        | None -> ()
+        | Some expl -> fprintf ppf ": %s" expl
+      end
 
 let () =
   Location.register_error_of_exn
@@ -398,7 +405,7 @@ rule token = parse
         else
           COMMENT ("*" ^ s, loc)
       }
-  | "(**" ('*'+) as stars
+  | "(**" (('*'+) as stars)
       { let s, loc =
           with_comment_buffer
             (fun lexbuf ->
@@ -412,8 +419,12 @@ rule token = parse
           Location.prerr_warning (Location.curr lexbuf) Warnings.Comment_start;
         let s, loc = with_comment_buffer comment lexbuf in
         COMMENT (s, loc) }
-  | "(*" ('*'*) as stars "*)"
-      { COMMENT (stars, Location.curr lexbuf) }
+  | "(*" (('*'*) as stars) "*)"
+      { if !handle_docstrings && stars="" then
+         (* (**) is an empty docstring *)
+          DOCSTRING(Docstrings.docstring "" (Location.curr lexbuf))
+        else
+          COMMENT (stars, Location.curr lexbuf) }
   | "*)"
       { let loc = Location.curr lexbuf in
         Location.prerr_warning loc Warnings.Comment_not_end;
@@ -422,13 +433,25 @@ rule token = parse
         lexbuf.lex_curr_p <- { curpos with pos_cnum = curpos.pos_cnum - 1 };
         STAR
       }
-  | "#" [' ' '\t']* (['0'-'9']+ as num) [' ' '\t']*
-        ("\"" ([^ '\010' '\013' '\"' ] * as name) "\"")?
+  | ("#" [' ' '\t']* (['0'-'9']+ as num) [' ' '\t']*
+        ("\"" ([^ '\010' '\013' '\"' ] * as name) "\"")?) as directive
         [^ '\010' '\013'] * newline
-      { update_loc lexbuf name (int_of_string num) true 0;
-        token lexbuf
+      {
+        match int_of_string num with
+        | exception _ ->
+            (* PR#7165 *)
+            let loc = Location.curr lexbuf in
+            let explanation = "line number out of range" in
+            let error = Invalid_directive (directive, Some explanation) in
+            raise (Error (error, loc))
+        | line_num ->
+           (* Documentation says that the line number should be
+              positive, but we have never guarded against this and it
+              might have useful hackish uses. *)
+            update_loc lexbuf name line_num true 0;
+            token lexbuf
       }
-  | "#"  { SHARP }
+  | "#"  { HASH }
   | "&"  { AMPERSAND }
   | "&&" { AMPERAMPER }
   | "`"  { BACKQUOTE }
@@ -492,7 +515,7 @@ rule token = parse
   | ['*' '/' '%'] symbolchar *
             { INFIXOP3(Lexing.lexeme lexbuf) }
   | '#' (symbolchar | '#') +
-            { SHARPOP(Lexing.lexeme lexbuf) }
+            { HASHOP(Lexing.lexeme lexbuf) }
   | eof { EOF }
   | _
       { raise (Error(Illegal_character (Lexing.lexeme_char lexbuf 0),
@@ -652,7 +675,7 @@ and quoted_string delim = parse
       { store_string_char(Lexing.lexeme_char lexbuf 0);
         quoted_string delim lexbuf }
 
-and skip_sharp_bang = parse
+and skip_hash_bang = parse
   | "#!" [^ '\n']* '\n' [^ '\n']* "\n!#\n"
        { update_loc lexbuf None 3 false 0 }
   | "#!" [^ '\n']* '\n'
@@ -731,15 +754,22 @@ and skip_sharp_bang = parse
           in
           loop lines' docs lexbuf
       | DOCSTRING doc ->
+          Docstrings.register doc;
           add_docstring_comment doc;
           let docs' =
-            match docs, lines with
-            | Initial, (NoLine | NewLine) -> After [doc]
-            | Initial, BlankLine -> Before([], [], [doc])
-            | After a, (NoLine | NewLine) -> After (doc :: a)
-            | After a, BlankLine -> Before (a, [], [doc])
-            | Before(a, f, b), (NoLine | NewLine) -> Before(a, f, doc :: b)
-            | Before(a, f, b), BlankLine -> Before(a, b @ f, [doc])
+            if Docstrings.docstring_body doc = "/*" then
+              match docs with
+              | Initial -> Before([], [doc], [])
+              | After a -> Before (a, [doc], [])
+              | Before(a, f, b) -> Before(a, doc :: b @ f, [])
+            else
+              match docs, lines with
+              | Initial, (NoLine | NewLine) -> After [doc]
+              | Initial, BlankLine -> Before([], [], [doc])
+              | After a, (NoLine | NewLine) -> After (doc :: a)
+              | After a, BlankLine -> Before (a, [], [doc])
+              | Before(a, f, b), (NoLine | NewLine) -> Before(a, f, doc :: b)
+              | Before(a, f, b), BlankLine -> Before(a, b @ f, [doc])
           in
           loop NoLine docs' lexbuf
       | tok ->

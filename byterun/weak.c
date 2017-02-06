@@ -13,6 +13,8 @@
 /*                                                                        */
 /**************************************************************************/
 
+#define CAML_INTERNALS
+
 /* Operations on weak arrays and ephemerons (named ephe here)*/
 
 #include <string.h>

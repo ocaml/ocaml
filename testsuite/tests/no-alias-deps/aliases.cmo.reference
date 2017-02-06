@@ -8,5 +8,8 @@ Interfaces imported:
 	--------------------------------	B
 	aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa	Aliases
 	--------------------------------	A
+Required globals:
+	D
+	Pervasives
 Uses unsafe features: no
 Force link: no

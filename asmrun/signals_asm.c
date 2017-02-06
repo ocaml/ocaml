@@ -13,6 +13,8 @@
 /*                                                                        */
 /**************************************************************************/
 
+#define CAML_INTERNALS
+
 /* Signal handling, code specific to the native-code compiler */
 
 #if defined(TARGET_amd64) && defined (SYS_linux)
@@ -27,7 +29,8 @@
 #include "caml/signals.h"
 #include "caml/signals_machdep.h"
 #include "signals_osdep.h"
-#include "stack.h"
+#include "caml/stack.h"
+#include "caml/spacetime.h"
 
 #ifdef HAS_STACK_OVERFLOW_DETECTION
 #include <sys/time.h>
@@ -74,6 +77,13 @@ void caml_garbage_collection(void)
       caml_young_ptr - caml_young_trigger < Max_young_whsize){
     caml_gc_dispatch ();
   }
+
+#ifdef WITH_SPACETIME
+  if (caml_young_ptr == caml_young_alloc_end) {
+    caml_spacetime_automatic_snapshot();
+  }
+#endif
+
   caml_process_pending_signals();
 }
 

@@ -126,7 +126,8 @@ type type_mismatch =
   | Field_arity of Ident.t
   | Field_names of int * Ident.t * Ident.t
   | Field_missing of bool * Ident.t
-  | Record_representation of bool
+  | Record_representation of bool   (* true means second one is unboxed float *)
+  | Unboxed_representation of bool  (* true means second one is unboxed *)
   | Immediate
 
 let report_type_mismatch0 first second decl ppf err =
@@ -154,6 +155,10 @@ let report_type_mismatch0 first second decl ppf err =
       pr "Their internal representations differ:@ %s %s %s"
         (if b then second else first) decl
         "uses unboxed float representation"
+  | Unboxed_representation b ->
+      pr "Their internal representations differ:@ %s %s %s"
+         (if b then second else first) decl
+         "uses unboxed representation"
   | Immediate -> pr "%s is not an immediate type" first
 
 let report_type_mismatch first second decl ppf =
@@ -166,9 +171,9 @@ let rec compare_constructor_arguments env cstr params1 params2 arg1 arg2 =
   match arg1, arg2 with
   | Types.Cstr_tuple arg1, Types.Cstr_tuple arg2 ->
       if List.length arg1 <> List.length arg2 then [Field_arity cstr]
-      else if Misc.for_all2
-          (fun ty1 ty2 -> Ctype.equal env true (ty1::params1) (ty2::params2))
-          (arg1) (arg2)
+      else if
+        (* Ctype.equal must be called on all arguments at once, cf. PR#7378 *)
+        Ctype.equal env true (params1 @ arg1) (params2 @ arg2)
       then [] else [Field_type cstr]
   | Types.Cstr_record l1, Types.Cstr_record l2 ->
       compare_records env params1 params2 0 l1 l2
@@ -212,7 +217,8 @@ and compare_records env params1 params2 n labels1 labels2 =
       else if mut1 <> mut2 then [Field_mutable lab1] else
       if Ctype.equal env true (arg1::params1)
                               (arg2::params2)
-      then compare_records env params1 params2 (n+1) rem1 rem2
+      then (* add arguments to the parameters, cf. PR#7378 *)
+        compare_records env (arg1::params1) (arg2::params2) (n+1) rem1 rem2
       else [Field_type lab1]
 
 let type_declarations ?(equality = false) env name decl1 id decl2 =
@@ -234,6 +240,15 @@ let type_declarations ?(equality = false) env name decl1 id decl2 =
           if Ctype.equal env false [ty1] [ty2] then []
           else [Manifest]
         else [Constraint]
+  in
+  if err <> [] then err else
+  let err =
+    match (decl2.type_kind, decl1.type_unboxed.unboxed,
+           decl2.type_unboxed.unboxed) with
+    | Type_abstract, _, _ -> []
+    | _, true, false -> [Unboxed_representation false]
+    | _, false, true -> [Unboxed_representation true]
+    | _ -> []
   in
   if err <> [] then err else
   let err = match (decl1.type_kind, decl2.type_kind) with

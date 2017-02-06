@@ -27,10 +27,9 @@ let init_path ?(dir="") native =
     else if !Clflags.use_vmthreads && not native then
       "+vmthreads" :: !Clflags.include_dirs
     else
-      !last_include_dirs @
-      !Clflags.include_dirs @
-      !first_include_dirs
+      !Clflags.include_dirs
   in
+  let dirs = !last_include_dirs @ dirs @ !first_include_dirs in
   let exp_dirs =
     List.map (Misc.expand_directory Config.standard_library) dirs in
   Config.load_path := dir ::
@@ -45,7 +44,7 @@ let init_path ?(dir="") native =
 let open_implicit_module m env =
   let open Asttypes in
   let lid = {loc = Location.in_file "command line";
-             txt = Longident.Lident m } in
+             txt = Longident.parse m } in
   snd (Typemod.type_open_ Override env lid.loc lid)
 
 let initial_env () =

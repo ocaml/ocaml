@@ -1,18 +1,3 @@
-(**************************************************************************)
-(*                                                                        *)
-(*                                OCaml                                   *)
-(*                                                                        *)
-(*           Damien Doligez, projet Gallium, INRIA Rocquencourt           *)
-(*                                                                        *)
-(*   Copyright 2013 Institut National de Recherche en Informatique et     *)
-(*     en Automatique.                                                    *)
-(*                                                                        *)
-(*   All rights reserved.  This file is distributed under the terms of    *)
-(*   the GNU Lesser General Public License version 2.1, with the          *)
-(*   special exception on linking described in the file LICENSE.          *)
-(*                                                                        *)
-(**************************************************************************)
-
 (* Exotic OCaml syntax constructs found in the manual that are not *)
 (* used in the source of the OCaml distribution (even in the tests). *)
 
@@ -90,6 +75,13 @@ let get_int2 { contents : int = c } = c
 let set_int contents = { contents : int }
 let set_int2 c = { contents : int = c }
 ;;
+
+(* applying a functor to the unpacking of a first-class module *)
+module M() = struct
+  module type String = module type of String
+  let string = (module String : String)
+  module M = Set.Make(val string)
+end ;;
 
 (* More exotic: not even found in the manual (up to version 4.00),
    but used in some programs found in the wild.

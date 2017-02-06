@@ -13,6 +13,8 @@
 /*                                                                        */
 /**************************************************************************/
 
+#define CAML_INTERNALS
+
 /* Basic system calls */
 
 #include <errno.h>
@@ -55,6 +57,7 @@
 #include "caml/signals.h"
 #include "caml/stacks.h"
 #include "caml/sys.h"
+#include "caml/version.h"
 
 static char * error_message(void)
 {
@@ -108,8 +111,10 @@ static void caml_sys_check_path(value name)
   }
 }
 
-CAMLprim value caml_sys_exit(value retcode)
+CAMLprim value caml_sys_exit(value retcode_v)
 {
+  int retcode = Int_val(retcode_v);
+
   if ((caml_verb_gc & 0x400) != 0) {
     /* cf caml_gc_counters */
     double minwords = caml_stat_minor_words
@@ -139,7 +144,7 @@ CAMLprim value caml_sys_exit(value retcode)
   caml_debugger(PROGRAM_EXIT);
 #endif
   CAML_INSTR_ATEXIT ();
-  exit(Int_val(retcode));
+  CAML_SYS_EXIT(retcode);
   return Val_unit;
 }
 
@@ -174,7 +179,7 @@ CAMLprim value caml_sys_open(value path, value vflags, value vperm)
   perm = Int_val(vperm);
   /* open on a named FIFO can block (PR#1533) */
   caml_enter_blocking_section();
-  fd = open(p, flags, perm);
+  fd = CAML_SYS_OPEN(p, flags, perm);
   /* fcntl on a fd can block (PR#5069)*/
 #if defined(F_SETFD) && defined(FD_CLOEXEC)
   if (fd != -1)
@@ -186,10 +191,11 @@ CAMLprim value caml_sys_open(value path, value vflags, value vperm)
   CAMLreturn(Val_long(fd));
 }
 
-CAMLprim value caml_sys_close(value fd)
+CAMLprim value caml_sys_close(value fd_v)
 {
+  int fd = Int_val(fd_v);
   caml_enter_blocking_section();
-  close(Int_val(fd));
+  CAML_SYS_CLOSE(fd);
   caml_leave_blocking_section();
   return Val_unit;
 }
@@ -210,7 +216,7 @@ CAMLprim value caml_sys_file_exists(value name)
 #ifdef _WIN32
   ret = _stati64(p, &st);
 #else
-  ret = stat(p, &st);
+  ret = CAML_SYS_STAT(p, &st);
 #endif
   caml_leave_blocking_section();
   caml_stat_free(p);
@@ -235,7 +241,7 @@ CAMLprim value caml_sys_is_directory(value name)
 #ifdef _WIN32
   ret = _stati64(p, &st);
 #else
-  ret = stat(p, &st);
+  ret = CAML_SYS_STAT(p, &st);
 #endif
   caml_leave_blocking_section();
   caml_stat_free(p);
@@ -256,7 +262,7 @@ CAMLprim value caml_sys_remove(value name)
   caml_sys_check_path(name);
   p = caml_strdup(String_val(name));
   caml_enter_blocking_section();
-  ret = unlink(p);
+  ret = CAML_SYS_UNLINK(p);
   caml_leave_blocking_section();
   caml_stat_free(p);
   if (ret != 0) caml_sys_error(name);
@@ -273,7 +279,7 @@ CAMLprim value caml_sys_rename(value oldname, value newname)
   p_old = caml_strdup(String_val(oldname));
   p_new = caml_strdup(String_val(newname));
   caml_enter_blocking_section();
-  ret = rename(p_old, p_new);
+  ret = CAML_SYS_RENAME(p_old, p_new);
   caml_leave_blocking_section();
   caml_stat_free(p_new);
   caml_stat_free(p_old);
@@ -290,7 +296,7 @@ CAMLprim value caml_sys_chdir(value dirname)
   caml_sys_check_path(dirname);
   p = caml_strdup(String_val(dirname));
   caml_enter_blocking_section();
-  ret = chdir(p);
+  ret = CAML_SYS_CHDIR(p);
   caml_leave_blocking_section();
   caml_stat_free(p);
   if (ret != 0) caml_sys_error(dirname);
@@ -313,7 +319,7 @@ CAMLprim value caml_sys_getenv(value var)
   char * res;
 
   if (! caml_string_is_c_safe(var)) caml_raise_not_found();
-  res = getenv(String_val(var));
+  res = CAML_SYS_GETENV(String_val(var));
   if (res == 0) caml_raise_not_found();
   return caml_copy_string(res);
 }
@@ -335,6 +341,9 @@ CAMLprim value caml_sys_get_argv(value unit)
 
 void caml_sys_init(char * exe_name, char **argv)
 {
+#ifdef CAML_WITH_CPLUGINS
+  caml_cplugins_init(exe_name, argv);
+#endif
   caml_exe_name = exe_name;
   caml_main_argv = argv;
 }
@@ -362,7 +371,7 @@ CAMLprim value caml_sys_system_command(value command)
   }
   buf = caml_strdup(String_val(command));
   caml_enter_blocking_section ();
-  status = system(buf);
+  status = CAML_SYS_SYSTEM(buf);
   caml_leave_blocking_section ();
   caml_stat_free(buf);
   if (status == -1) caml_sys_error(command);
@@ -373,14 +382,23 @@ CAMLprim value caml_sys_system_command(value command)
   CAMLreturn (Val_int(retcode));
 }
 
-double caml_sys_time_unboxed(value unit)
+double caml_sys_time_include_children_unboxed(value include_children)
 {
 #ifdef HAS_GETRUSAGE
   struct rusage ru;
+  double acc = 0.;
 
   getrusage (RUSAGE_SELF, &ru);
-  return ru.ru_utime.tv_sec + ru.ru_utime.tv_usec / 1e6
+  acc += ru.ru_utime.tv_sec + ru.ru_utime.tv_usec / 1e6
     + ru.ru_stime.tv_sec + ru.ru_stime.tv_usec / 1e6;
+
+  if (Bool_val(include_children)) {
+    getrusage (RUSAGE_CHILDREN, &ru);
+    acc += ru.ru_utime.tv_sec + ru.ru_utime.tv_usec / 1e6
+      + ru.ru_stime.tv_sec + ru.ru_stime.tv_usec / 1e6;
+  }
+
+  return acc;
 #else
   #ifdef HAS_TIMES
     #ifndef CLK_TCK
@@ -391,13 +409,28 @@ double caml_sys_time_unboxed(value unit)
       #endif
     #endif
     struct tms t;
+    clock_t acc = 0;
     times(&t);
-    return (double)(t.tms_utime + t.tms_stime) / CLK_TCK;
+    acc += t.tms_utime + t.tms_stime;
+    if (Bool_val(include_children)) {
+      acc += t.tms_cutime + t.tms_cstime;
+    }
+    return (double)acc / CLK_TCK;
   #else
-    /* clock() is standard ANSI C */
+    /* clock() is standard ANSI C. We have no way of getting
+       subprocess times in this branch. */
     return (double)clock() / CLOCKS_PER_SEC;
   #endif
 #endif
+}
+
+CAMLprim value caml_sys_time_include_children(value include_children)
+{
+  return caml_copy_double(caml_sys_time_include_children_unboxed(include_children));
+}
+
+double caml_sys_time_unboxed(value unit) {
+  return caml_sys_time_include_children_unboxed(Val_false);
 }
 
 CAMLprim value caml_sys_time(value unit)
@@ -493,6 +526,10 @@ CAMLprim value caml_sys_const_ostype_cygwin(value unit)
   return Val_bool(0 == strcmp(OCAML_OS_TYPE,"Cygwin"));
 }
 
+CAMLprim value caml_sys_const_backend_type(value unit)
+{
+  return Val_int(1); /* Bytecode backed */
+}
 CAMLprim value caml_sys_get_config(value unit)
 {
   CAMLparam0 ();   /* unit is unused */
@@ -522,7 +559,7 @@ CAMLprim value caml_sys_read_directory(value path)
   caml_ext_table_init(&tbl, 50);
   p = caml_strdup(String_val(path));
   caml_enter_blocking_section();
-  ret = caml_read_directory(p, &tbl);
+  ret = CAML_SYS_READ_DIRECTORY(p, &tbl);
   caml_leave_blocking_section();
   caml_stat_free(p);
   if (ret == -1){
@@ -552,3 +589,73 @@ CAMLprim value caml_sys_isatty(value chan)
 
   return ret;
 }
+
+/* Load dynamic plugins indicated in the CAML_CPLUGINS environment
+   variable. These plugins can be used to set currently existing
+   hooks, such as GC hooks and system calls tracing (see misc.h).
+ */
+
+#ifdef CAML_WITH_CPLUGINS
+
+value (*caml_cplugins_prim)(int,value,value,value) = NULL;
+
+#define DLL_EXECUTABLE 1
+#define DLL_NOT_GLOBAL 0
+
+static struct cplugin_context cplugin_context;
+
+void caml_load_plugin(char *plugin)
+{
+  void* dll_handle = NULL;
+
+  dll_handle = caml_dlopen(plugin, DLL_EXECUTABLE, DLL_NOT_GLOBAL);
+  if( dll_handle != NULL ){
+   void (* dll_init)(struct cplugin_context*) =
+     caml_dlsym(dll_handle, "caml_cplugin_init");
+   if( dll_init != NULL ){
+     cplugin_context.plugin=plugin;
+     dll_init(&cplugin_context);
+   } else {
+     caml_dlclose(dll_handle);
+   }
+  } else {
+   fprintf(stderr, "Cannot load C plugin %s\nReason: %s\n",
+          plugin, caml_dlerror());
+  }
+}
+
+void caml_cplugins_load(char *env_variable)
+{
+  char *plugins = getenv(env_variable);
+  if(plugins != NULL){
+    char* curs = plugins;
+    while(*curs != 0){
+        if(*curs == ','){
+          if(curs > plugins){
+            *curs = 0;
+            caml_load_plugin(plugins);
+          }
+          plugins = curs+1;
+        }
+        curs++;
+    }
+    if(curs > plugins) caml_load_plugin(plugins);
+  }
+}
+
+void caml_cplugins_init(char * exe_name, char **argv)
+{
+  cplugin_context.api_version = CAML_CPLUGIN_CONTEXT_API;
+  cplugin_context.prims_bitmap = CAML_CPLUGINS_PRIMS_BITMAP;
+  cplugin_context.exe_name = exe_name;
+  cplugin_context.argv = argv;
+  cplugin_context.ocaml_version = OCAML_VERSION_STRING;
+  caml_cplugins_load("CAML_CPLUGINS");
+#ifdef NATIVE_CODE
+  caml_cplugins_load("CAML_NATIVE_CPLUGINS");
+#else
+  caml_cplugins_load("CAML_BYTE_CPLUGINS");
+#endif
+}
+
+#endif /* CAML_WITH_CPLUGINS */

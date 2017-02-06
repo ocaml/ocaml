@@ -15,8 +15,8 @@
 
 (** Interface to the Unix system.
 
-    Note: all the functions of this module (except [error_message] and
-    [handle_unix_error]) are liable to raise the [Unix_error]
+    Note: all the functions of this module (except {!error_message} and
+    {!handle_unix_error}) are liable to raise the {!Unix_error}
     exception whenever the underlying system call signals an error. *)
 
 
@@ -112,7 +112,7 @@ val error_message : error -> string
 
 val handle_unix_error : ('a -> 'b) -> 'a -> 'b
 (** [handle_unix_error f x] applies [f] to [x] and returns the result.
-   If the exception [Unix_error] is raised, it prints a message
+   If the exception {!Unix_error} is raised, it prints a message
    describing the error and exits with code 2. *)
 
 
@@ -459,12 +459,70 @@ module LargeFile :
   regular integers (type [int]), thus allowing operating on files
   whose sizes are greater than [max_int]. *)
 
+(** {6 Mapping files into memory} *)
+
+val map_file :
+  file_descr -> ?pos:int64 -> ('a, 'b) CamlinternalBigarray.kind ->
+  'c CamlinternalBigarray.layout -> bool -> int array ->
+  ('a, 'b, 'c) CamlinternalBigarray.genarray
+(** Memory mapping of a file as a big array.
+  [map_file fd kind layout shared dims]
+  returns a big array of kind [kind], layout [layout],
+  and dimensions as specified in [dims].  The data contained in
+  this big array are the contents of the file referred to by
+  the file descriptor [fd] (as opened previously with
+  [Unix.openfile], for example).  The optional [pos] parameter
+  is the byte offset in the file of the data being mapped;
+  it defaults to 0 (map from the beginning of the file).
+
+  If [shared] is [true], all modifications performed on the array
+  are reflected in the file.  This requires that [fd] be opened
+  with write permissions.  If [shared] is [false], modifications
+  performed on the array are done in memory only, using
+  copy-on-write of the modified pages; the underlying file is not
+  affected.
+
+  [Genarray.map_file] is much more efficient than reading
+  the whole file in a big array, modifying that big array,
+  and writing it afterwards.
+
+  To adjust automatically the dimensions of the big array to
+  the actual size of the file, the major dimension (that is,
+  the first dimension for an array with C layout, and the last
+  dimension for an array with Fortran layout) can be given as
+  [-1].  [Genarray.map_file] then determines the major dimension
+  from the size of the file.  The file must contain an integral
+  number of sub-arrays as determined by the non-major dimensions,
+  otherwise [Failure] is raised.
+
+  If all dimensions of the big array are given, the file size is
+  matched against the size of the big array.  If the file is larger
+  than the big array, only the initial portion of the file is
+  mapped to the big array.  If the file is smaller than the big
+  array, the file is automatically grown to the size of the big array.
+  This requires write permissions on [fd].
+
+  Array accesses are bounds-checked, but the bounds are determined by
+  the initial call to [map_file]. Therefore, you should make sure no
+  other process modifies the mapped file while you're accessing it,
+  or a SIGBUS signal may be raised. This happens, for instance, if the
+  file is shrunk.
+
+  [Invalid_argument] or [Failure] may be raised in cases where argument
+  validation fails. *)
 
 (** {6 Operations on file names} *)
 
 
 val unlink : string -> unit
-(** Removes the named file. *)
+(** Removes the named file.
+
+    If the named file is a directory, raises:
+    {ul
+    {- [EPERM] on POSIX compliant system}
+    {- [EISDIR] on Linux >= 2.1.132}
+    {- [EACCESS] on Windows}}
+*)
 
 val rename : string -> string -> unit
 (** [rename old new] changes the name of a file from [old] to [new]. *)
@@ -716,9 +774,7 @@ val has_symlink : unit -> bool
    simply indicates that the symlink system call is available. *)
 
 val readlink : string -> string
-(** Read the contents of a link.
-
-   On Windows: not implemented. *)
+(** Read the contents of a symbolic link. *)
 
 
 (** {6 Polling} *)
@@ -784,7 +840,7 @@ val lockf : file_descr -> lock_command -> int -> unit
 
 val kill : int -> int -> unit
 (** [kill pid sig] sends signal number [sig] to the process
-   with id [pid].  On Windows, only the [Sys.sigkill] signal
+   with id [pid].  On Windows, only the {!Sys.sigkill} signal
    is emulated. *)
 
 type sigprocmask_command =
@@ -882,7 +938,9 @@ val sleep : int -> unit
 
 val sleepf : float -> unit
 (** Stop execution for the given number of seconds.  Like [sleep],
-    but fractions of seconds are supported. *)
+    but fractions of seconds are supported.
+
+    @since 4.03.0 *)
 
 val times : unit -> process_times
 (** Return the execution times of the process.
@@ -1066,9 +1124,8 @@ type socket_domain =
   | PF_INET                     (** Internet domain (IPv4) *)
   | PF_INET6                    (** Internet domain (IPv6) *)
 (** The type of socket domains.  Not all platforms support
-    IPv6 sockets (type [PF_INET6]).
-    On Windows, the domains [PF_UNIX] and [PF_INET6] are not
-    supported; [PF_INET] is fully supported. *)
+    IPv6 sockets (type [PF_INET6]).  Windows does not support
+    [PF_UNIX]. *)
 
 type socket_type =
     SOCK_STREAM                 (** Stream socket *)
@@ -1076,7 +1133,9 @@ type socket_type =
   | SOCK_RAW                    (** Raw socket *)
   | SOCK_SEQPACKET              (** Sequenced packets socket *)
 (** The type of socket kinds, specifying the semantics of
-   communications. *)
+   communications.  [SOCK_SEQPACKET] is included for completeness,
+   but is rarely supported by the OS, and needs system calls that
+   are not available in this library. *)
 
 type sockaddr =
     ADDR_UNIX of string
@@ -1512,3 +1571,16 @@ val setsid : unit -> int
    its controlling terminal.
 
    On Windows, not implemented. *)
+
+(**/**)
+type map_file_impl =
+  { map_file_impl
+    : 'a 'b 'c. file_descr
+      -> ('a, 'b) CamlinternalBigarray.kind
+      -> 'c CamlinternalBigarray.layout
+      -> bool
+      -> int array
+      -> int64
+      -> ('a, 'b, 'c) CamlinternalBigarray.genarray
+  }
+val map_file_impl : map_file_impl ref

@@ -44,7 +44,7 @@
     full keys are alive and if the ephemeron is alive. When one of the
     keys is not considered alive anymore by the GC, the data is
     emptied from the ephemeron. The data could be alive for another
-    reason and in that case the GC will free it, but the ephemeron
+    reason and in that case the GC will not free it, but the ephemeron
     will not hold the data anymore.
 
     The ephemerons complicate the notion of liveness of values, because
@@ -138,8 +138,8 @@ module K1 : sig
 
   val blit_key : ('k,_) t -> ('k,_) t -> unit
   (** [Ephemeron.K1.blit_key eph1 eph2] sets the key of [eph2] with
-      the key of [eph1]. Contrary to using [Ephemeron.K1.get_key]
-      followed by [Ephemeron.K1.set_key] or [Ephemeon.K1.unset_key]
+      the key of [eph1]. Contrary to using {!Ephemeron.K1.get_key}
+      followed by {!Ephemeron.K1.set_key} or {!Ephemeron.K1.unset_key}
       this function does not prevent the incremental GC from erasing
       the value in its current cycle. *)
 
@@ -172,8 +172,8 @@ module K1 : sig
 
   val blit_data : (_,'d) t -> (_,'d) t -> unit
   (** [Ephemeron.K1.blit_data eph1 eph2] sets the data of [eph2] with
-      the data of [eph1]. Contrary to using [Ephemeron.K1.get_data]
-      followed by [Ephemeron.K1.set_data] or [Ephemeon.K1.unset_data]
+      the data of [eph1]. Contrary to using {!Ephemeron.K1.get_data}
+      followed by {!Ephemeron.K1.set_data} or {!Ephemeron.K1.unset_data}
       this function does not prevent the incremental GC from erasing
       the value in its current cycle. *)
 

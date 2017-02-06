@@ -130,6 +130,9 @@
 /* Define HAS_SYS_SELECT_H if /usr/include/sys/select.h exists
    and should be included before using select(). */
 
+#define HAS_NANOSLEEP
+/* Define HAS_NANOSLEEP if you have nanosleep(). */
+
 #define HAS_SYMLINK
 
 /* Define HAS_SYMLINK if you have symlink() and readlink() and lstat(). */

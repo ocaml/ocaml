@@ -14,7 +14,7 @@
 #**************************************************************************
 
 LIBNAME=bigarray
-EXTRACFLAGS=-I../$(UNIXLIB) -DIN_OCAML_BIGARRAY -DCAML_NAME_SPACE
+EXTRACFLAGS=-I../$(UNIXLIB) -DIN_OCAML_BIGARRAY
 EXTRACAMLFLAGS=-I ../$(UNIXLIB)
 COBJS=bigarray_stubs.$(O) mmap_$(UNIX_OR_WIN32).$(O)
 CAMLOBJS=bigarray.cmo
@@ -24,6 +24,14 @@ include ../Makefile
 
 depend:
 	$(CC) -MM $(CFLAGS) *.c > .depend
-	$(CAMLRUN) ../../tools/ocamldep *.mli *.ml >> .depend
+	$(CAMLRUN) $(ROOTDIR)/tools/ocamldep -slash *.mli *.ml >> .depend
 
+ifeq "$(TOOLCHAIN)" "msvc"
+.depend.nt: .depend
+	sed -e 's/\.o/.$(O)/g' $< > $@
+
+include .depend.nt
+
+else
 include .depend
+endif

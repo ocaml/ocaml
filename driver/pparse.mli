@@ -23,10 +23,19 @@ exception Error of error
 
 val preprocess : string -> string
 val remove_preprocessed : string -> unit
-val file :
-  formatter -> tool_name:string -> string -> (Lexing.lexbuf -> 'a) -> string ->
-  'a
-val apply_rewriters: ?restore:bool -> tool_name:string -> string -> 'a -> 'a
+
+type 'a ast_kind =
+| Structure : Parsetree.structure ast_kind
+| Signature : Parsetree.signature ast_kind
+
+val read_ast : 'a ast_kind -> string -> 'a
+val write_ast : 'a ast_kind -> string -> 'a -> unit
+
+val file : formatter -> tool_name:string -> string ->
+  (Lexing.lexbuf -> 'a) -> 'a ast_kind -> 'a
+
+val apply_rewriters: ?restore:bool -> tool_name:string ->
+  'a ast_kind -> 'a -> 'a
   (** If [restore = true] (the default), cookies set by external
       rewriters will be kept for later calls. *)
 
@@ -36,7 +45,6 @@ val apply_rewriters_str:
 val apply_rewriters_sig:
   ?restore:bool -> tool_name:string -> Parsetree.signature ->
   Parsetree.signature
-
 
 val report_error : formatter -> error -> unit
 
@@ -49,4 +57,6 @@ val parse_interface:
 (* [call_external_preprocessor sourcefile pp] *)
 val call_external_preprocessor : string -> string -> string
 val open_and_check_magic : string -> string -> in_channel * bool
-val read_ast : string -> string -> 'a
+
+module ImplementationHooks : Misc.HookSig with type t = Parsetree.structure
+module InterfaceHooks : Misc.HookSig with type t = Parsetree.signature

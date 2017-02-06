@@ -233,8 +233,11 @@ let make_startup_file ppf units_list =
           units_list));
   compile_phrase(Cmmgen.data_segment_table ("_startup" :: name_list));
   compile_phrase(Cmmgen.code_segment_table ("_startup" :: name_list));
-  compile_phrase
-    (Cmmgen.frame_table("_startup" :: "_system" :: name_list));
+  let all_names = "_startup" :: "_system" :: name_list in
+  compile_phrase (Cmmgen.frame_table all_names);
+  if Config.spacetime then begin
+    compile_phrase (Cmmgen.spacetime_shapes all_names);
+  end;
   Emit.end_assembly ()
 
 let make_shared_startup_file ppf units =
@@ -286,9 +289,14 @@ let call_linker file_list startup_file output_name =
   and main_obj_runtime = !Clflags.output_complete_object
   in
   let files = startup_file :: (List.rev file_list) in
+  let libunwind =
+    if not Config.spacetime then []
+    else if not Config.libunwind_available then []
+    else String.split_on_char ' ' Config.libunwind_link_flags
+  in
   let files, c_lib =
     if (not !Clflags.output_c_object) || main_dll || main_obj_runtime then
-      files @ (List.rev !Clflags.ccobjs) @ runtime_lib (),
+      files @ (List.rev !Clflags.ccobjs) @ runtime_lib () @ libunwind,
       (if !Clflags.nopervasives || main_obj_runtime
        then "" else Config.native_c_libraries)
     else

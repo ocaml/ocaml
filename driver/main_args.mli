@@ -20,7 +20,9 @@ module type Common_options = sig
   val _absname : unit -> unit
   val _I : string -> unit
   val _labels : unit -> unit
+  val _alias_deps : unit -> unit
   val _no_alias_deps : unit -> unit
+  val _app_funct : unit -> unit
   val _no_app_funct : unit -> unit
   val _noassert : unit -> unit
   val _nolabels : unit -> unit
@@ -28,11 +30,17 @@ module type Common_options = sig
   val _open : string -> unit
   val _ppx : string -> unit
   val _principal : unit -> unit
+  val _no_principal : unit -> unit
   val _rectypes : unit -> unit
+  val _no_rectypes : unit -> unit
   val _safe_string : unit -> unit
   val _short_paths : unit -> unit
   val _strict_sequence : unit -> unit
+  val _no_strict_sequence : unit -> unit
   val _strict_formats : unit -> unit
+  val _no_strict_formats : unit -> unit
+  val _unboxed_types : unit -> unit
+  val _no_unboxed_types : unit -> unit
   val _unsafe : unit -> unit
   val _unsafe_string : unit -> unit
   val _version : unit -> unit
@@ -48,9 +56,9 @@ module type Common_options = sig
   val _dlambda : unit -> unit
 
   val anonymous : string -> unit
-end
+end;;
 
-module type Compiler_options =  sig
+module type Compiler_options = sig
   val _a : unit -> unit
   val _annot : unit -> unit
   val _binannot : unit -> unit
@@ -66,7 +74,9 @@ module type Compiler_options =  sig
   val _intf : string -> unit
   val _intf_suffix : string -> unit
   val _keep_docs : unit -> unit
+  val _no_keep_docs : unit -> unit
   val _keep_locs : unit -> unit
+  val _no_keep_locs : unit -> unit
   val _linkall : unit -> unit
   val _noautolink : unit -> unit
   val _o : string -> unit
@@ -74,8 +84,10 @@ module type Compiler_options =  sig
   val _output_obj : unit -> unit
   val _output_complete_obj : unit -> unit
   val _pack : unit -> unit
+  val _plugin : string -> unit
   val _pp : string -> unit
   val _principal : unit -> unit
+  val _no_principal : unit -> unit
   val _rectypes : unit -> unit
   val _runtime_variant : string -> unit
   val _safe_string : unit -> unit
@@ -88,6 +100,24 @@ module type Compiler_options =  sig
 
   val _nopervasives : unit -> unit
   val _dtimings : unit -> unit
+
+  val _args: string -> string array
+  val _args0: string -> string array
+end
+;;
+
+module type Toplevel_options = sig
+  include Common_options
+  val _init : string -> unit
+  val _noinit : unit -> unit
+  val _no_version : unit -> unit
+  val _noprompt : unit -> unit
+  val _nopromptcont : unit -> unit
+  val _plugin : string -> unit
+  val _stdin : unit -> unit
+  val _args: string -> string array
+  val _args0: string -> string array
+
 end
 ;;
 
@@ -109,13 +139,7 @@ module type Bytecomp_options = sig
 end;;
 
 module type Bytetop_options = sig
-  include Common_options
-  val _init : string -> unit
-  val _noinit : unit -> unit
-  val _noprompt : unit -> unit
-  val _nopromptcont : unit -> unit
-  val _stdin : unit -> unit
-
+  include Toplevel_options
   val _dinstr : unit -> unit
 end;;
 
@@ -178,20 +202,18 @@ module type Optcomp_options = sig
   val _pp : string -> unit
   val _S : unit -> unit
   val _shared : unit -> unit
+  val _afl_instrument : unit -> unit
+  val _afl_inst_ratio : int -> unit
 end;;
 
 module type Opttop_options = sig
-  include Common_options
+  include Toplevel_options
   include Optcommon_options
-  val _init : string -> unit
-  val _noinit : unit -> unit
-  val _noprompt : unit -> unit
-  val _nopromptcont : unit -> unit
+  val _verbose : unit -> unit
   val _S : unit -> unit
-  val _stdin : unit -> unit
 end;;
 
-module type Ocamldoc_options =  sig
+module type Ocamldoc_options = sig
   include Common_options
   val _impl : string -> unit
   val _intf : string -> unit
@@ -205,7 +227,7 @@ module type Ocamldoc_options =  sig
   val _v : unit -> unit
   val _verbose : unit -> unit
   val _vmthread : unit -> unit
-end
+end;;
 
 module type Arg_list = sig
     val list : (string * Arg.spec * string) list

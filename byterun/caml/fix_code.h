@@ -18,6 +18,7 @@
 #ifndef CAML_FIX_CODE_H
 #define CAML_FIX_CODE_H
 
+#ifdef CAML_INTERNALS
 
 #include "config.h"
 #include "misc.h"
@@ -38,5 +39,7 @@ extern char ** caml_instr_table;
 extern char * caml_instr_base;
 void caml_thread_code (code_t code, asize_t len);
 #endif
+
+#endif /* CAML_INTERNALS */
 
 #endif /* CAML_FIX_CODE_H */

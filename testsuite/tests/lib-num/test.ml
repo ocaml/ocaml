@@ -1,18 +1,3 @@
-(**************************************************************************)
-(*                                                                        *)
-(*                                OCaml                                   *)
-(*                                                                        *)
-(*     Valerie Menissier-Morain, projet Cristal, INRIA Rocquencourt       *)
-(*                                                                        *)
-(*   Copyright 1996 Institut National de Recherche en Informatique et     *)
-(*     en Automatique.                                                    *)
-(*                                                                        *)
-(*   All rights reserved.  This file is distributed under the terms of    *)
-(*   the GNU Lesser General Public License version 2.1, with the          *)
-(*   special exception on linking described in the file LICENSE.          *)
-(*                                                                        *)
-(**************************************************************************)
-
 open Printf;;
 
 let flush_all () = flush stdout; flush stderr;;
@@ -90,6 +75,7 @@ let end_tests () =
 let eq = (==);;
 let eq_int (i: int) (j: int) = (i = j);;
 let eq_string (i: string) (j: string) = (i = j);;
+let eq_bytes (i: bytes) (j: bytes) = (i = j);;
 let eq_nativeint (i: nativeint) (j: nativeint) = (i = j);;
 let eq_int32 (i: int32) (j: int32) = (i = j);;
 let eq_int64 (i: int64) (j: int64) = (i = j);;

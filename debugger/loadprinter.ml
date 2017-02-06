@@ -23,7 +23,7 @@ open Types
 (* Error report *)
 
 type error =
-  | Load_failure of Dynlink.error
+  | Load_failure of Compdynlink.error
   | Unbound_identifier of Longident.t
   | Unavailable_module of string * Longident.t
   | Wrong_type of Longident.t
@@ -41,8 +41,8 @@ let use_debugger_symtable fn arg =
   let old_symtable = Symtable.current_state() in
   begin match !debugger_symtable with
   | None ->
-      Dynlink.init();
-      Dynlink.allow_unsafe_modules true;
+      Compdynlink.init();
+      Compdynlink.allow_unsafe_modules true;
       debugger_symtable := Some(Symtable.current_state())
   | Some st ->
       Symtable.restore_state st
@@ -63,7 +63,7 @@ open Format
 let rec loadfiles ppf name =
   try
     let filename = find_in_path !Config.load_path name in
-    use_debugger_symtable Dynlink.loadfile filename;
+    use_debugger_symtable Compdynlink.loadfile filename;
     let d = Filename.dirname name in
     if d <> Filename.current_dir_name then begin
       if not (List.mem d !Config.load_path) then
@@ -72,7 +72,7 @@ let rec loadfiles ppf name =
     fprintf ppf "File %s loaded@." filename;
     true
   with
-  | Dynlink.Error (Dynlink.Unavailable_unit unit) ->
+  | Compdynlink.Error (Compdynlink.Unavailable_unit unit) ->
       loadfiles ppf (String.uncapitalize_ascii unit ^ ".cmo")
         &&
       loadfiles ppf name
@@ -82,7 +82,7 @@ let rec loadfiles ppf name =
   | Sys_error msg ->
       fprintf ppf "%s: %s@." name msg;
       false
-  | Dynlink.Error e ->
+  | Compdynlink.Error e ->
       raise(Error(Load_failure e))
 
 let loadfile ppf name =
@@ -109,7 +109,7 @@ let () =
   ignore (Env.read_signature "Topdirs" topdirs)
 
 let match_printer_type desc typename =
-  let (printer_type, _) =
+  let printer_type =
     try
       Env.lookup_type (Ldot(Lident "Topdirs", typename)) Env.empty
     with Not_found ->
@@ -165,7 +165,7 @@ open Format
 let report_error ppf = function
   | Load_failure e ->
       fprintf ppf "@[Error during code loading: %s@]@."
-        (Dynlink.error_message e)
+        (Compdynlink.error_message e)
   | Unbound_identifier lid ->
       fprintf ppf "@[Unbound identifier %a@]@."
       Printtyp.longident lid

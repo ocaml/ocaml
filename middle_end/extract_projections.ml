@@ -83,7 +83,7 @@ let rec analyse_expr ~which_variables expr =
   let for_expr (expr : Flambda.expr) =
     match expr with
     | Var var
-    | Let_mutable (_, var, _) ->
+    | Let_mutable { initial_value = var } ->
       check_free_variable var
     (* CR-soon mshinwell: We don't handle [Apply] for the moment to
        avoid disabling unboxing optimizations whenever we see a recursive

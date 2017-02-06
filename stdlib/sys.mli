@@ -52,6 +52,12 @@ external getenv : string -> string = "caml_sys_getenv"
 (** Return the value associated to a variable in the process
    environment. Raise [Not_found] if the variable is unbound. *)
 
+val getenv_opt: string -> string option
+(** Return the value associated to a variable in the process
+    environment or [None] if the variable is unbound.
+    @since 4.05
+*)
+
 external command : string -> int = "caml_sys_system_command"
 (** Execute the given shell command and return its exit code. *)
 
@@ -85,6 +91,22 @@ val os_type : string
 -  ["Unix"] (for all Unix versions, including Linux and Mac OS X),
 -  ["Win32"] (for MS-Windows, OCaml compiled with MSVC++ or Mingw),
 -  ["Cygwin"] (for MS-Windows, OCaml compiled with Cygwin). *)
+
+type backend_type =
+  | Native
+  | Bytecode
+  | Other of string (**)
+(** Currently, the official distribution only supports [Native] and
+    [Bytecode], but it can be other backends with alternative
+    compilers, for example, javascript.
+
+    @since 4.04.0
+*)
+
+val backend_type : backend_type
+(** Backend type  currently executing the OCaml program.
+    @ since 4.04.0
+ *)
 
 val unix : bool
 (** True if [Sys.os_type = "Unix"].
@@ -278,10 +300,14 @@ val enable_runtime_warnings: bool -> unit
 (** Control whether the OCaml runtime system can emit warnings
     on stderr.  Currently, the only supported warning is triggered
     when a channel created by [open_*] functions is finalized without
-    being closed.  Runtime warnings are enabled by default. *)
+    being closed.  Runtime warnings are enabled by default.
+
+    @since 4.03.0 *)
 
 val runtime_warnings_enabled: unit -> bool
-(** Return whether runtime warnings are currently enabled. *)
+(** Return whether runtime warnings are currently enabled.
+
+    @since 4.03.0 *)
 
 (** {6 Optimization} *)
 
@@ -298,4 +324,6 @@ external opaque_identity : 'a -> 'a = "%opaque"
         ignore (Sys.opaque_identity (my_pure_computation ()))
       done
     ]}
+
+    @since 4.03.0
 *)

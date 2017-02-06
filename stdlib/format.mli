@@ -271,13 +271,13 @@ val set_ellipsis_text : string -> unit
 val get_ellipsis_text : unit -> string
 (** Return the text of the ellipsis. *)
 
-(** {6:tags Semantics Tags} *)
+(** {6:tags Semantic Tags} *)
 
 type tag = string
 
-(** {i Semantics tags} (or simply {e tags}) are used to decorate printed
+(** {i Semantic tags} (or simply {e tags}) are used to decorate printed
   entities for user's defined purposes, e.g. setting font and giving size
-  indications for a display device, or marking delimitation of semantics
+  indications for a display device, or marking delimitation of semantic
   entities (e.g. HTML or TeX elements or terminal escape sequences).
 
   By default, those tags do not influence line splitting calculation:
@@ -310,7 +310,7 @@ type tag = string
   corresponding to tag markers is considered as zero for line
   splitting). In addition, advanced users may take advantage of
   the specificity of tag markers to be precisely output when the
-  pretty printer has already decided where to splitt the lines, and
+  pretty printer has already decided where to split the lines, and
   precisely when the queue is flushed into the output device.
 
   In the spirit of HTML tags, the default tag marking functions
@@ -411,7 +411,7 @@ val get_formatter_out_functions : unit -> formatter_out_functions
   including line splitting and indentation functions. Useful to record the
   current setting and restore it afterwards. *)
 
-(** {6:tagsmeaning Changing the meaning of printing semantics tags} *)
+(** {6:tagsmeaning Changing the meaning of printing semantic tags} *)
 
 type formatter_tag_functions = {
   mark_open_tag : tag -> string;
@@ -457,7 +457,7 @@ type formatter
   margin, maximum indentation limit, maximum number of boxes
   simultaneously opened, ellipsis, and so on, are specific to
   each pretty-printer and may be fixed independently.
-  Given a [Pervasives.out_channel] output channel [oc], a new formatter
+  Given a {!Pervasives.out_channel} output channel [oc], a new formatter
   writing to that channel is simply obtained by calling
   [formatter_of_out_channel oc].
   Alternatively, the [make_formatter] function allocates a new
@@ -500,7 +500,7 @@ val make_formatter :
   (string -> int -> int -> unit) -> (unit -> unit) -> formatter
 (** [make_formatter out flush] returns a new formatter that writes according
   to the output function [out], and the flushing function [flush]. For
-  instance, a formatter to the [Pervasives.out_channel] [oc] is returned by
+  instance, a formatter to the {!Pervasives.out_channel} [oc] is returned by
   [make_formatter (Pervasives.output oc) (fun () -> Pervasives.flush oc)]. *)
 
 (** {6 Basic functions to use with formatters} *)
@@ -565,6 +565,14 @@ val pp_get_formatter_out_functions :
    evaluation of these primitives. For instance,
    [print_string] is equal to [pp_print_string std_formatter]. *)
 
+val pp_flush_formatter : formatter -> unit
+(** [pp_flush_formatter fmt] flushes [fmt]'s internal queue, ensuring that all
+    the printing and flushing actions have been performed. In addition, this
+    operation will close all boxes and reset the state of the formatter.
+
+    This will not flush [fmt]'s output. In most cases, the user may want to use
+    {!pp_print_flush} instead. *)
+
 (** {6 Convenience formatting functions.} *)
 
 val pp_print_list:
@@ -596,7 +604,7 @@ val fprintf : formatter -> ('a, formatter, unit) format -> 'a
 
   The format [fmt] is a character string which contains three types of
   objects: plain characters and conversion specifications as specified in
-  the [Printf] module, and pretty-printing indications specific to the
+  the {!Printf} module, and pretty-printing indications specific to the
   [Format] module.
 
   The pretty-printing indication characters are introduced by

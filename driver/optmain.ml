@@ -13,7 +13,6 @@
 (*                                                                        *)
 (**************************************************************************)
 
-open Config
 open Clflags
 open Compenv
 
@@ -35,58 +34,7 @@ module Backend = struct
 end
 let backend = (module Backend : Backend_intf.S)
 
-let process_interface_file ppf name =
-  let opref = output_prefix name in
-  Optcompile.interface ppf name opref;
-  if !make_package then objfiles := (opref ^ ".cmi") :: !objfiles
-
-let process_implementation_file ppf name =
-  let opref = output_prefix name in
-  Optcompile.implementation ppf name opref ~backend;
-  objfiles := (opref ^ ".cmx") :: !objfiles
-
-let cmxa_present = ref false;;
-
-let process_file ppf name =
-  if Filename.check_suffix name ".ml"
-  || Filename.check_suffix name ".mlt" then
-    process_implementation_file ppf name
-  else if Filename.check_suffix name !Config.interface_suffix then
-    process_interface_file ppf name
-  else if Filename.check_suffix name ".cmx" then
-    objfiles := name :: !objfiles
-  else if Filename.check_suffix name ".cmxa" then begin
-    cmxa_present := true;
-    objfiles := name :: !objfiles
-  end else if Filename.check_suffix name ".cmi" && !make_package then
-    objfiles := name :: !objfiles
-  else if Filename.check_suffix name ext_obj
-       || Filename.check_suffix name ext_lib then
-    ccobjs := name :: !ccobjs
-  else if Filename.check_suffix name ".c" then begin
-    Optcompile.c_file name;
-    ccobjs := (Filename.chop_suffix (Filename.basename name) ".c" ^ ext_obj)
-              :: !ccobjs
-  end
-  else
-    raise(Arg.Bad("don't know what to do with " ^ name))
-
 let usage = "Usage: ocamlopt <options> <files>\nOptions are:"
-
-let ppf = Format.err_formatter
-
-(* Error messages to standard error formatter *)
-let anonymous filename =
-  readenv ppf (Before_compile filename);
-  process_file ppf filename;;
-
-let impl filename =
-  readenv ppf (Before_compile filename);
-  process_implementation_file ppf filename;;
-
-let intf filename =
-  readenv ppf (Before_compile filename);
-  process_interface_file ppf filename;;
 
 let show_config () =
   Config.print_config stdout;
@@ -99,11 +47,13 @@ module Options = Main_args.Make_optcomp_options (struct
 
   let _a = set make_archive
   let _absname = set Location.absname
+  let _afl_instrument = set afl_instrument
+  let _afl_inst_ratio n = afl_inst_ratio := n
   let _annot = set annotations
   let _binannot = set binary_annotations
   let _c = set compile_only
   let _cc s = c_compiler := Some s
-  let _cclib s = ccobjs := Misc.rev_split_words s @ !ccobjs
+  let _cclib s = defer (ProcessObjects (Misc.rev_split_words s))
   let _ccopt s = first_ccopts := s :: !first_ccopts
   let _clambda_checks () = clambda_checks := true
   let _compact = clear optimize_for_speed
@@ -159,14 +109,18 @@ module Options = Main_args.Make_optcomp_options (struct
   let _intf = intf
   let _intf_suffix s = Config.interface_suffix := s
   let _keep_docs = set keep_docs
+  let _no_keep_docs = clear keep_docs
   let _keep_locs = set keep_locs
+  let _no_keep_locs = clear keep_locs
   let _labels = clear classic
   let _linkall = set link_everything
   let _inline_max_depth spec =
     Int_arg_helper.parse spec
       "Syntax: -inline-max-depth <n> | <round>=<n>[,...]"
        inline_max_depth
+  let _alias_deps = clear transparent_modules
   let _no_alias_deps = set transparent_modules
+  let _app_funct = set applicative_functors
   let _no_app_funct = clear applicative_functors
   let _no_float_const_prop = clear float_const_prop
   let _noassert = set noassert
@@ -177,9 +131,15 @@ module Options = Main_args.Make_optcomp_options (struct
   let _no_unbox_free_vars_of_closures = clear unbox_free_vars_of_closures
   let _no_unbox_specialised_args = clear unbox_specialised_args
   let _o s = output_name := Some s
-  (* CR mshinwell: should stop e.g. -O2 -classic-inlining
+  (* CR-someday mshinwell: should stop e.g. -O2 -classic-inlining
      lgesbert: could be done in main() below, like for -pack and -c, but that
-     would prevent overriding using OCAMLPARAM. *)
+     would prevent overriding using OCAMLPARAM.
+     mshinwell: We're going to defer this for the moment and add a note in
+     the manual that the behaviour is unspecified in cases such as this.
+     We should refactor the code so that the user's requirements are
+     collected, then checked all at once for illegal combinations, and then
+     transformed into the settings of the individual parameters.
+  *)
   let _o2 () =
     default_simplify_rounds := 2;
     use_inlining_arguments_set o2_arguments;
@@ -195,21 +155,28 @@ module Options = Main_args.Make_optcomp_options (struct
     set output_c_object (); set output_complete_object ()
   let _p = set gprofile
   let _pack = set make_package
+  let _plugin p = Compplugin.load p
   let _pp s = preprocessor := Some s
   let _ppx s = first_ppx := s :: !first_ppx
   let _principal = set principal
+  let _no_principal = clear principal
   let _rectypes = set recursive_types
+  let _no_rectypes = clear recursive_types
   let _remove_unused_arguments = set remove_unused_arguments
   let _runtime_variant s = runtime_variant := s
   let _safe_string = clear unsafe_string
   let _short_paths = clear real_paths
   let _strict_sequence = set strict_sequence
+  let _no_strict_sequence = clear strict_sequence
   let _strict_formats = set strict_formats
+  let _no_strict_formats = clear strict_formats
   let _shared () = shared := true; dlcode := true
   let _S = set keep_asm_file
   let _thread = set use_threads
   let _unbox_closures = set unbox_closures
   let _unbox_closures_factor f = unbox_closures_factor := f
+  let _unboxed_types = set unboxed_types
+  let _no_unboxed_types = clear unboxed_types
   let _unsafe = set fast
   let _unsafe_string = set unsafe_string
   let _v () = print_version_and_library "native-code compiler"
@@ -258,6 +225,9 @@ module Options = Main_args.Make_optcomp_options (struct
   let _dtimings = set print_timings
   let _opaque = set opaque
 
+  let _args = Arg.read_arg
+  let _args0 = Arg.read_arg0
+
   let anonymous = anonymous
 end);;
 
@@ -266,7 +236,24 @@ let main () =
   let ppf = Format.err_formatter in
   try
     readenv ppf Before_args;
-    Arg.parse (Arch.command_line_options @ Options.list) anonymous usage;
+    Clflags.add_arguments __LOC__ (Arch.command_line_options @ Options.list);
+    Clflags.parse_arguments anonymous usage;
+    if !gprofile && not Config.profiling then
+      fatal "Profiling with \"gprof\" is not supported on this platform.";
+    begin try
+      Compenv.process_deferred_actions
+        (ppf,
+         Optcompile.implementation ~backend,
+         Optcompile.interface,
+         ".cmx",
+         ".cmxa");
+    with Arg.Bad msg ->
+      begin
+        prerr_endline msg;
+        Clflags.print_arguments usage;
+        exit 2
+      end
+    end;
     readenv ppf Before_link;
     if
       List.length (List.filter (fun x -> !x)
@@ -275,24 +262,22 @@ let main () =
     then
       fatal "Please specify at most one of -pack, -a, -shared, -c, -output-obj";
     if !make_archive then begin
-      if !cmxa_present then
-        fatal "Option -a cannot be used with .cmxa input files.";
       Compmisc.init_path true;
       let target = extract_output !output_name in
-      Asmlibrarian.create_archive (get_objfiles ()) target;
+      Asmlibrarian.create_archive (get_objfiles ~with_ocamlparam:false) target;
       Warnings.check_fatal ();
     end
     else if !make_package then begin
       Compmisc.init_path true;
       let target = extract_output !output_name in
       Asmpackager.package_files ppf (Compmisc.initial_env ())
-        (get_objfiles ()) target ~backend;
+        (get_objfiles ~with_ocamlparam:false) target ~backend;
       Warnings.check_fatal ();
     end
     else if !shared then begin
       Compmisc.init_path true;
       let target = extract_output !output_name in
-      Asmlink.link_shared ppf (get_objfiles ()) target;
+      Asmlink.link_shared ppf (get_objfiles ~with_ocamlparam:false) target;
       Warnings.check_fatal ();
     end
     else if not !compile_only && !objfiles <> [] then begin
@@ -312,7 +297,7 @@ let main () =
           default_output !output_name
       in
       Compmisc.init_path true;
-      Asmlink.link ppf (get_objfiles ()) target;
+      Asmlink.link ppf (get_objfiles ~with_ocamlparam:true) target;
       Warnings.check_fatal ();
     end;
   with x ->

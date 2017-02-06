@@ -87,7 +87,7 @@ let rec narrow_unbound_lid_error : 'a. _ -> _ -> _ -> _ -> 'a =
       begin match Env.scrape_alias env md.md_type with
       | Mty_functor _ ->
           raise (Error (loc, env, Access_functor_as_structure mlid))
-      | Mty_alias p ->
+      | Mty_alias(_, p) ->
           raise (Error (loc, env, Cannot_scrape_alias(mlid, p)))
       | _ -> ()
       end
@@ -97,14 +97,14 @@ let rec narrow_unbound_lid_error : 'a. _ -> _ -> _ -> _ -> 'a =
       begin match Env.scrape_alias env fmd.md_type with
       | Mty_signature _ ->
           raise (Error (loc, env, Apply_structure_as_functor flid))
-      | Mty_alias p ->
+      | Mty_alias(_, p) ->
           raise (Error (loc, env, Cannot_scrape_alias(flid, p)))
       | _ -> ()
       end;
-      let mmd = Env.find_module (Env.lookup_module ~load:true mlid env) env in
       check_module mlid;
+      let mmd = Env.find_module (Env.lookup_module ~load:true mlid env) env in
       begin match Env.scrape_alias env mmd.md_type with
-      | Mty_alias p ->
+      | Mty_alias(_, p) ->
           raise (Error (loc, env, Cannot_scrape_alias(mlid, p)))
       | _ ->
           raise (Error (loc, env, Ill_typed_functor_application lid))
@@ -112,25 +112,26 @@ let rec narrow_unbound_lid_error : 'a. _ -> _ -> _ -> _ -> 'a =
   end;
   raise (Error (loc, env, make_error lid))
 
-let find_component lookup make_error env loc lid =
+let find_component (lookup : ?loc:_ -> _) make_error env loc lid =
   try
     match lid with
     | Longident.Ldot (Longident.Lident "*predef*", s) ->
-        lookup ?loc:(Some loc) (Longident.Lident s) Env.initial_safe_string
+        lookup ~loc (Longident.Lident s) Env.initial_safe_string
     | _ ->
-        lookup ?loc:(Some loc) lid env
+        lookup ~loc lid env
   with Not_found ->
     narrow_unbound_lid_error env loc lid make_error
   | Env.Recmodule ->
     raise (Error (loc, env, Illegal_reference_to_recursive_module))
 
 let find_type env loc lid =
-  let (path, decl) as r =
+  let path =
     find_component Env.lookup_type (fun lid -> Unbound_type_constructor lid)
       env loc lid
   in
+  let decl = Env.find_type path env in
   Builtin_attributes.check_deprecated loc decl.type_attributes (Path.name path);
-  r
+  (path, decl)
 
 let find_constructor =
   find_component Env.lookup_constructor (fun lid -> Unbound_constructor lid)
@@ -339,7 +340,7 @@ let rec transl_type env policy styp =
     let ty = newty (Ttuple (List.map (fun ctyp -> ctyp.ctyp_type) ctys)) in
     ctyp (Ttyp_tuple ctys) ty
   | Ptyp_constr(lid, stl) ->
-      let (path, decl) = find_type env styp.ptyp_loc lid.txt in
+      let (path, decl) = find_type env lid.loc lid.txt in
       let stl =
         match stl with
         | [ {ptyp_desc=Ptyp_any} as t ] when decl.type_arity > 1 ->
@@ -373,7 +374,7 @@ let rec transl_type env policy styp =
       ctyp (Ttyp_constr (path, lid, args)) constr
   | Ptyp_object (fields, o) ->
       let fields =
-        List.map (fun (s, a, t) -> (s, a, transl_poly_type env policy t))
+        List.map (fun (s, a, t) -> (s.txt, a, transl_poly_type env policy t))
           fields
       in
       let ty = newobj (transl_fields loc env policy [] o fields) in
@@ -381,7 +382,8 @@ let rec transl_type env policy styp =
   | Ptyp_class(lid, stl) ->
       let (path, decl, _is_variant) =
         try
-          let (path, decl) = Env.lookup_type lid.txt env in
+          let path = Env.lookup_type lid.txt env in
+          let decl = Env.find_type path env in
           let rec check decl =
             match decl.type_manifest with
               None -> raise Not_found
@@ -402,10 +404,11 @@ let rec transl_type env policy styp =
             | Longident.Ldot(r, s)   -> Longident.Ldot (r, "#" ^ s)
             | Longident.Lapply(_, _) -> fatal_error "Typetexp.transl_type"
           in
-          let (path, decl) = Env.lookup_type lid2 env in
+          let path = Env.lookup_type lid2 env in
+          let decl = Env.find_type path env in
           (path, decl, false)
         with Not_found ->
-          ignore (find_class env styp.ptyp_loc lid.txt); assert false
+          ignore (find_class env lid.loc lid.txt); assert false
       in
       if List.length stl <> decl.type_arity then
         raise(Error(styp.ptyp_loc, env,
@@ -595,7 +598,8 @@ let rec transl_type env policy styp =
       in
       let ty = newty (Tvariant row) in
       ctyp (Ttyp_variant (tfields, closed, present)) ty
-   | Ptyp_poly(vars, st) ->
+  | Ptyp_poly(vars, st) ->
+      let vars = List.map (fun v -> v.txt) vars in
       begin_def();
       let new_univars = List.map (fun name -> name, newvar ~name ()) vars in
       let old_univars = !univars in

@@ -23,7 +23,7 @@ let apply_on_subexpressions f f_named (flam : Flambda.t) =
   | Let { defining_expr; body; _ } ->
     f_named defining_expr;
     f body
-  | Let_mutable (_mut_var, _var, body) ->
+  | Let_mutable { body; _ } ->
     f body
   | Let_rec (defs, body) ->
     List.iter (fun (_,l) -> f_named l) defs;
@@ -93,12 +93,12 @@ let map_subexpressions f f_named (tree:Flambda.t) : Flambda.t =
       tree
     else
       Let_rec (new_defs, new_body)
-  | Let_mutable (mut_var, var, body) ->
-    let new_body = f body in
-    if new_body == body then
+  | Let_mutable mutable_let ->
+    let new_body = f mutable_let.body in
+    if new_body == mutable_let.body then
       tree
     else
-      Let_mutable (mut_var, var, new_body)
+      Let_mutable { mutable_let with body = new_body }
   | Switch (arg, sw) ->
     let aux = map_snd_sharing (fun _ v -> f v) in
     let new_consts = list_map_sharing aux sw.consts in
@@ -292,12 +292,12 @@ let map_general ~toplevel f f_named tree =
         | Var _ | Apply _ | Assign _ | Send _ | Proved_unreachable
         | Static_raise _ -> tree
         | Let _ -> assert false
-        | Let_mutable (mut_var, var, body) ->
-          let new_body = aux body in
-          if new_body == body then
+        | Let_mutable mutable_let ->
+          let new_body = aux mutable_let.body in
+          if new_body == mutable_let.body then
             tree
           else
-            Let_mutable (mut_var, var, new_body)
+            Let_mutable { mutable_let with body = new_body }
         | Let_rec (defs, body) ->
           let done_something = ref false in
           let defs =

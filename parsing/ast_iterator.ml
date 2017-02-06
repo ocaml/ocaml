@@ -398,6 +398,9 @@ module P = struct
     | Ppat_unpack s -> iter_loc sub s
     | Ppat_exception p -> sub.pat sub p
     | Ppat_extension x -> sub.extension sub x
+    | Ppat_open (lid, p) ->
+        iter_loc sub lid; sub.pat sub p
+
 end
 
 module CE = struct
@@ -564,7 +567,7 @@ let default_iterator =
       );
 
     label_declaration =
-      (fun this {pld_name; pld_type; pld_loc; pld_mutable = _; pld_attributes} ->
+      (fun this {pld_name; pld_type; pld_loc; pld_mutable = _; pld_attributes}->
          iter_loc this pld_name;
          this.typ this pld_type;
          this.location this pld_loc;

@@ -281,7 +281,7 @@ type 'a printer_type_new = Format.formatter -> 'a -> unit
 type 'a printer_type_old = 'a -> unit
 
 let printer_type ppf typename =
-  let (printer_type, _) =
+  let printer_type =
     try
       Env.lookup_type (Ldot(Lident "Topdirs", typename)) !toplevel_env
     with Not_found ->
@@ -569,9 +569,18 @@ let () =
 let () =
   reg_show_prim "show_module"
     (fun env loc id lid ->
-       let _path, md = Typetexp.find_module env loc lid in
-       [ Sig_module (id, {md with md_type = trim_signature md.md_type},
-                     Trec_not) ]
+       let rec accum_aliases path acc =
+         let md = Env.find_module path env in
+         let acc =
+           Sig_module (id, {md with md_type = trim_signature md.md_type},
+                       Trec_not) :: acc in
+         match md.md_type with
+         | Mty_alias(_, path) -> accum_aliases path acc
+         | Mty_ident _ | Mty_signature _ | Mty_functor _ ->
+             List.rev acc
+       in
+       let path, _ = Typetexp.find_module env loc lid in
+       accum_aliases path []
     )
     "Print the signature of the corresponding module."
 

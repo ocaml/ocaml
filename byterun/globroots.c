@@ -13,6 +13,8 @@
 /*                                                                        */
 /**************************************************************************/
 
+#define CAML_INTERNALS
+
 /* Registration of global memory roots */
 
 #include "caml/memory.h"
@@ -216,9 +218,9 @@ CAMLexport void caml_remove_generational_global_root(value *r)
 {
   value v = *r;
   if (Is_block(v)) {
-    if (Is_young(v))
+    if (Is_in_heap_or_young(v))
       caml_delete_global_root(&caml_global_roots_young, r);
-    else if (Is_in_heap(v))
+    if (Is_in_heap(v))
       caml_delete_global_root(&caml_global_roots_old, r);
   }
 }
@@ -254,9 +256,9 @@ CAMLexport void caml_modify_generational_global_root(value *r, value newval)
        the root should be removed. If [oldval] is young, this will happen
        anyway at the next minor collection, but it is safer to delete it
        here. */
-    if (Is_young(oldval))
+    if (Is_in_heap_or_young(oldval))
       caml_delete_global_root(&caml_global_roots_young, r);
-    else if (Is_in_heap(oldval))
+    if (Is_in_heap(oldval))
       caml_delete_global_root(&caml_global_roots_old, r);
   }
   /* end PR#4704 */

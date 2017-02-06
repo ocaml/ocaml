@@ -59,7 +59,7 @@ type specialised_to = {
 type t =
   | Var of Variable.t
   | Let of let_expr
-  | Let_mutable of Mutable_variable.t * Variable.t * t
+  | Let_mutable of let_mutable
   | Let_rec of (Variable.t * named) list * t
   | Apply of apply
   | Send of send
@@ -93,6 +93,13 @@ and let_expr = {
   body : t;
   free_vars_of_defining_expr : Variable.Set.t;
   free_vars_of_body : Variable.Set.t;
+}
+
+and let_mutable = {
+  var : Mutable_variable.t;
+  initial_value : Variable.t;
+  contents_kind : Lambda.value_kind;
+  body : t;
 }
 
 and set_of_closures = {
@@ -182,7 +189,7 @@ let rec lam ppf (flam : t) =
   match flam with
   | Var (id) ->
       Variable.print ppf id
-  | Apply({func; args; kind; inline}) ->
+  | Apply({func; args; kind; inline; dbg}) ->
     let direct ppf () =
       match kind with
       | Indirect -> ()
@@ -195,7 +202,8 @@ let rec lam ppf (flam : t) =
       | Unroll i -> fprintf ppf "<unroll %i>" i
       | Default_inline -> ()
     in
-    fprintf ppf "@[<2>(apply%a%a@ %a%a)@]" direct () inline ()
+    fprintf ppf "@[<2>(apply%a%a<%s>@ %a%a)@]" direct () inline ()
+      (Debuginfo.to_string dbg)
       Variable.print func Variable.print_list args
   | Assign { being_assigned; new_value; } ->
     fprintf ppf "@[<2>(assign@ %a@ %a)@]"
@@ -228,8 +236,14 @@ let rec lam ppf (flam : t) =
         Variable.print id print_named arg;
       let expr = letbody body in
       fprintf ppf ")@]@ %a)@]" lam expr
-  | Let_mutable (mut_var, var, body) ->
-    fprintf ppf "@[<2>(let_mutable@ @[<2>%a@ %a@]@ %a)@]"
+  | Let_mutable { var = mut_var; initial_value = var; body; contents_kind } ->
+    let print_kind ppf (kind : Lambda.value_kind) =
+      match kind with
+      | Pgenval -> ()
+      | _ -> Format.fprintf ppf " %s" (Printlambda.value_kind kind)
+    in
+    fprintf ppf "@[<2>(let_mutable%a@ @[<2>%a@ %a@]@ %a)@]"
+      print_kind contents_kind
       Mutable_variable.print mut_var
       Variable.print var
       lam body
@@ -330,8 +344,9 @@ and print_named ppf (named : named) =
     print_move_within_set_of_closures ppf move_within_set_of_closures
   | Set_of_closures (set_of_closures) ->
     print_set_of_closures ppf set_of_closures
-  | Prim(prim, args, _) ->
-    fprintf ppf "@[<2>(%a%a)@]" Printlambda.primitive prim
+  | Prim(prim, args, dbg) ->
+    fprintf ppf "@[<2>(%a<%s>%a)@]" Printlambda.primitive prim
+      (Debuginfo.to_string dbg)
       Variable.print_list args
   | Expr expr ->
     fprintf ppf "*%a" lam expr
@@ -479,7 +494,7 @@ let rec print_program_body ppf (program : program_body) =
       (Format.pp_print_list lam) fields;
     print_program_body ppf program
   | Effect (expr, program) ->
-    fprintf ppf "@[effect @[<hv 1>%a@]@@]@."
+    fprintf ppf "@[effect @[<hv 1>%a@]@]@."
       lam expr;
     print_program_body ppf program;
   | End root -> fprintf ppf "End %a" Symbol.print root
@@ -532,7 +547,7 @@ let rec variables_usage ?ignore_uses_as_callee ?ignore_uses_as_argument
           free_variables free_vars_of_defining_expr;
           free_variables free_vars_of_body
         end
-      | Let_mutable (_mut_var, var, body) ->
+      | Let_mutable { initial_value = var; body; _ } ->
         free_variable var;
         aux body
       | Let_rec (bindings, body) ->
@@ -756,7 +771,7 @@ let iter_general ~toplevel f f_named maybe_named =
       | Var _ | Apply _ | Assign _ | Send _ | Proved_unreachable
       | Static_raise _ -> ()
       | Let _ -> assert false
-      | Let_mutable (_mut_var, _var, body) ->
+      | Let_mutable { body; _ } ->
         aux body
       | Let_rec (defs, body) ->
         List.iter (fun (_,l) -> aux_named l) defs;

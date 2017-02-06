@@ -23,10 +23,19 @@ type t
 external repr : 'a -> t = "%identity"
 external obj : t -> 'a = "%identity"
 external magic : 'a -> 'b = "%identity"
-external is_block : t -> bool = "caml_obj_is_block"
+val [@inline always] is_block : t -> bool
 external is_int : t -> bool = "%obj_is_int"
 external tag : t -> int = "caml_obj_tag"
 external size : t -> int = "%obj_size"
+external reachable_words : t -> int = "caml_obj_reachable_words"
+  (**
+     Computes the total size (in words, including the headers) of all
+     heap blocks accessible from the argument.  Statically
+     allocated blocks are excluded.
+
+     @Since 4.04
+  *)
+
 external field : t -> int -> t = "%obj_field"
 
 (** When using flambda:
@@ -41,14 +50,15 @@ external field : t -> int -> t = "%obj_field"
 
     For experts only:
     [set_field] et al can be made safe by first wrapping the block in
-    [Sys.opaque_identity], so any information about its contents will not
+    {!Sys.opaque_identity}, so any information about its contents will not
     be propagated.
 *)
 external set_field : t -> int -> t -> unit = "%obj_set_field"
 external set_tag : t -> int -> unit = "caml_obj_set_tag"
 
-val double_field : t -> int -> float  (* @since 3.11.2 *)
-val set_double_field : t -> int -> float -> unit  (* @since 3.11.2 *)
+val [@inline always] double_field : t -> int -> float  (* @since 3.11.2 *)
+val [@inline always] set_double_field : t -> int -> float -> unit
+  (* @since 3.11.2 *)
 external new_block : int -> int -> t = "caml_obj_block"
 external dup : t -> t = "caml_obj_dup"
 external truncate : t -> int -> unit = "caml_obj_truncate"
@@ -77,8 +87,8 @@ val out_of_heap_tag : int
 val unaligned_tag : int   (* should never happen @since 3.11.0 *)
 
 val extension_constructor : 'a -> extension_constructor
-val extension_name : extension_constructor -> string
-val extension_id : extension_constructor -> int
+val [@inline always] extension_name : extension_constructor -> string
+val [@inline always] extension_id : extension_constructor -> int
 
 (** The following two functions are deprecated.  Use module {!Marshal}
     instead. *)

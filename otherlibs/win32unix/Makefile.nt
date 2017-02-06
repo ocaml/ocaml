@@ -13,6 +13,4 @@
 #*                                                                        *
 #**************************************************************************
 
-include Makefile.common
-
-include ../Makefile.nt
+include Makefile

@@ -70,7 +70,7 @@ type out_type =
 
 and out_variant =
   | Ovar_fields of (string * bool * out_type list) list
-  | Ovar_name of out_ident * out_type list
+  | Ovar_typ of out_type
 
 type out_class_type =
   | Octy_constr of out_ident * out_type list
@@ -106,6 +106,7 @@ and out_type_decl =
     otype_type: out_type;
     otype_private: Asttypes.private_flag;
     otype_immediate: bool;
+    otype_unboxed: bool;
     otype_cstrs: (out_type * out_type) list }
 and out_extension_constructor =
   { oext_name: string;

@@ -95,9 +95,12 @@ let rec same (l1 : Flambda.t) (l2 : Flambda.t) =
     Variable.equal var1 var2 && same_named defining_expr1 defining_expr2
       && same body1 body2
   | Let _, _ | _, Let _ -> false
-  | Let_mutable (mv1, v1, b1), Let_mutable (mv2, v2, b2) ->
+  | Let_mutable {var = mv1; initial_value = v1; contents_kind = ck1; body = b1},
+    Let_mutable {var = mv2; initial_value = v2; contents_kind = ck2; body = b2}
+    ->
     Mutable_variable.equal mv1 mv2
       && Variable.equal v1 v2
+      && ck1 = ck2
       && same b1 b2
   | Let_mutable _, _ | _, Let_mutable _ -> false
   | Let_rec (bl1, a1), Let_rec (bl2, a2) ->
@@ -232,9 +235,9 @@ let toplevel_substitution sb tree =
     | Var var ->
       let var = sb var in
       Var var
-    | Let_mutable (mut_var, var, body) ->
-      let var = sb var in
-      Let_mutable (mut_var, var, body)
+    | Let_mutable mutable_let ->
+      let initial_value = sb mutable_let.initial_value in
+      Let_mutable { mutable_let with initial_value }
     | Assign { being_assigned; new_value; } ->
       let new_value = sb new_value in
       Assign { being_assigned; new_value; }
@@ -633,10 +636,12 @@ let substitute_read_symbol_field_for_variables
         Variable.Map.fold (fun to_substitute fresh expr ->
             bind to_substitute fresh expr)
           bindings expr
-    | Let_mutable (mut_var, var, body) when Variable.Map.mem var substitution ->
-      let fresh = Variable.rename var in
-      bind var fresh (Let_mutable (mut_var, fresh, body))
-    | Let_mutable (_mut_var, _var, _body) ->
+    | Let_mutable let_mutable when
+        Variable.Map.mem let_mutable.initial_value substitution ->
+      let fresh = Variable.rename let_mutable.initial_value in
+      bind let_mutable.initial_value fresh
+        (Let_mutable { let_mutable with initial_value = fresh })
+    | Let_mutable _ ->
       expr
     | Let_rec (defs, body) ->
       let free_variables_of_defs =
@@ -834,3 +839,27 @@ let projection_to_named (projection : Projection.t) : Flambda.named =
   | Move_within_set_of_closures move -> Move_within_set_of_closures move
   | Field (field_index, var) ->
     Prim (Pfield field_index, [var], Debuginfo.none)
+
+type specialised_to_same_as =
+  | Not_specialised
+  | Specialised_and_aliased_to of Variable.Set.t
+
+let parameters_specialised_to_the_same_variable
+      ~(function_decls : Flambda.function_declarations)
+      ~(specialised_args : Flambda.specialised_to Variable.Map.t) =
+  let specialised_arg_aliasing =
+    (* For each external variable involved in a specialisation, which
+       internal variable(s) it maps to via that specialisation. *)
+    Variable.Map.transpose_keys_and_data_set
+      (Variable.Map.map (fun ({ var; _ } : Flambda.specialised_to) -> var)
+        specialised_args)
+  in
+  Variable.Map.map (fun ({ params; _ } : Flambda.function_declaration) ->
+      List.map (fun param ->
+          match Variable.Map.find param specialised_args with
+          | exception Not_found -> Not_specialised
+          | { var; _ } ->
+            Specialised_and_aliased_to
+              (Variable.Map.find var specialised_arg_aliasing))
+        params)
+    function_decls.funs

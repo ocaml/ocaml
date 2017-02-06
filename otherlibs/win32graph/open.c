@@ -104,7 +104,6 @@ static LRESULT CALLBACK GraphicsWndProc(HWND hwnd,UINT msg,WPARAM wParam,
                 // End application
         case WM_DESTROY:
                 ResetForClose(hwnd);
-                gr_check_open();
                 break;
         }
         caml_gr_handle_event(msg, wParam, lParam);
@@ -261,7 +260,7 @@ static DWORD WINAPI gr_open_graph_internal(value arg)
 
 CAMLprim value caml_gr_open_graph(value arg)
 {
-  long tid;
+  DWORD tid;
   if (gr_initialized) return Val_unit;
   open_graph_event = CreateEvent(NULL, FALSE, FALSE, NULL);
   threadHandle =
@@ -360,11 +359,11 @@ void gr_fail(char *fmt, char *arg)
   if (graphic_failure_exn == NULL) {
     graphic_failure_exn = caml_named_value("Graphics.Graphic_failure");
     if (graphic_failure_exn == NULL)
-      invalid_argument("Exception Graphics.Graphic_failure not initialized, "
+      caml_invalid_argument("Exception Graphics.Graphic_failure not initialized, "
                        "must link graphics.cma");
   }
   sprintf(buffer, fmt, arg);
-  raise_with_string(*graphic_failure_exn, buffer);
+  caml_raise_with_string(*graphic_failure_exn, buffer);
 }
 
 void gr_check_open(void)
