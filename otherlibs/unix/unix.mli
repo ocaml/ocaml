@@ -591,11 +591,11 @@ val set_close_on_exec : file_descr -> unit
    Regarding the atomicity guarantees given by [~cloexec:true] or by
    the use of the [O_CLOEXEC] flag: on all platforms it is guaranteed
    that a concurrently-executing Caml thread cannot leak the descriptor
-   by starting a new process.  On Linux and Windows, this guarantee
-   extends to concurrently-executing C threads.  As of Feb 2017, other
-   operating systems lack the necessary system calls and still expose
-   a window of vulnerability during which a C thread can see the
-   newly-created file descriptor in ``keep-on-exec'' mode.
+   by starting a new process.  On Linux, this guarantee extends to
+   concurrently-executing C threads.  As of Feb 2017, other operating
+   systems lack the necessary system calls and still expose a window
+   of vulnerability during which a C thread can see the newly-created
+   file descriptor in ``keep-on-exec'' mode.
  *)
 
 val clear_close_on_exec : file_descr -> unit
