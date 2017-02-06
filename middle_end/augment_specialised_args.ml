@@ -408,17 +408,18 @@ module Make (T : S) = struct
   let rename_function_and_parameters ~fun_var
         ~(function_decl : Flambda.function_declaration) =
     let new_fun_var = Variable.rename fun_var ~append:T.variable_suffix in
+    let params_renaming_list =
+      List.map (fun param ->
+          let new_param = Parameter.rename param ~append:T.variable_suffix in
+          param, new_param)
+        function_decl.params
+    in
+    let renamed_params = List.map snd params_renaming_list in
     let params_renaming =
       Variable.Map.of_list
-        (List.map (fun param ->
-            let new_param = Variable.rename param ~append:T.variable_suffix in
-            param, new_param)
-          (Parameter.vars function_decl.params))
-    in
-    let renamed_params =
-      List.map (fun (param:Parameter.t) : Parameter.t ->
-        { var = Variable.Map.find param.var params_renaming })
-        function_decl.params
+        (List.map (fun (param, new_param) ->
+             Parameter.var param, Parameter.var new_param)
+           params_renaming_list)
     in
     new_fun_var, params_renaming, renamed_params
 
@@ -611,7 +612,7 @@ module Make (T : S) = struct
             for_one_function.new_inner_to_new_outer_vars)
         in
         let new_params =
-          List.map (fun var : Parameter.t -> { var }) new_params
+          List.map Parameter.wrap new_params
         in
         function_decl.params @ new_params
       in

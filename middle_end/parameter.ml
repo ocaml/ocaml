@@ -41,9 +41,13 @@ include Identifiable.Make (struct
     Variable.output o var
   end)
 
+let wrap var = { var }
+
 let var p = p.var
 let vars = List.map var
 let var_set l = Variable.Set.of_list (vars l)
 
 let rename ?current_compilation_unit ?append p =
   { var = Variable.rename ?current_compilation_unit ?append p.var }
+
+let map_var f { var } = { var = f var }

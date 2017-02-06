@@ -201,7 +201,7 @@ let analyse_functions ~backend ~param_to_param
           (* We only track dataflow for parameters of functions, not
              arbitrary variables. *)
           if List.exists
-              (fun ({ var }:Parameter.t) -> Variable.equal var caller_arg)
+              (fun param -> Variable.equal (Parameter.var param) caller_arg)
               params
           then
             param_to_param ~caller ~caller_arg ~callee ~callee_arg !relation
@@ -256,12 +256,14 @@ let analyse_functions ~backend ~param_to_param
     (fun func_var ({ params } : Flambda.function_declaration) ->
        List.iter
          (fun (param : Parameter.t) ->
-            if Variable.Tbl.mem used_variables param.var then
+            if Variable.Tbl.mem used_variables (Parameter.var param) then
               relation :=
-                param_to_anywhere ~caller:func_var ~caller_arg:param.var !relation;
+                param_to_anywhere ~caller:func_var
+                  ~caller_arg:(Parameter.var param) !relation;
             if Variable.Tbl.mem escaping_functions func_var then
               relation :=
-                anything_to_param ~callee:func_var ~callee_arg:param.var !relation)
+                anything_to_param ~callee:func_var
+                  ~callee_arg:(Parameter.var param) !relation)
          params)
     decls.funs;
   transitive_closure !relation

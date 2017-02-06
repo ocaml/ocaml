@@ -96,7 +96,7 @@ let tupled_function_call_stub original_params unboxed_version
         pos + 1, Flambda.create_let param lam body)
       (0, call) params
   in
-  let tuple_param : Parameter.t = { var = tuple_param_var } in
+  let tuple_param = Parameter.wrap tuple_param_var in
   Flambda.create_function_declaration ~params:[tuple_param]
     ~body ~stub:true ~dbg:Debuginfo.none ~inline:Default_inline
     ~specialise:Default_specialise ~is_a_functor:false
@@ -565,7 +565,7 @@ and close_functions t external_env function_declarations : Flambda.named =
        not marked as stub but certainly should *)
     let stub = Function_decl.stub decl in
     let param_vars = List.map (Env.find_var closure_env) params in
-    let params = List.map (fun var : Parameter.t -> { var }) param_vars in
+    let params = List.map Parameter.wrap param_vars in
     let closure_bound_var = Function_decl.closure_bound_var decl in
     let body = close t closure_env body in
     let fun_decl =

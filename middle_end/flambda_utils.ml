@@ -320,7 +320,7 @@ let toplevel_substitution_named sb named =
 
 let make_closure_declaration ~id ~body ~params ~stub : Flambda.t =
   let free_variables = Flambda.free_variables body in
-  let param_set = Variable.Set.of_list params in
+  let param_set = Parameter.var_set params in
   if not (Variable.Set.subset param_set free_variables) then begin
     Misc.fatal_error "Flambda_utils.make_closure_declaration"
   end;
@@ -334,7 +334,7 @@ let make_closure_declaration ~id ~body ~params ~stub : Flambda.t =
      to do something similar to what happens in [Inlining_transforms] now. *)
   let body = toplevel_substitution sb body in
   let subst id = Variable.Map.find id sb in
-  let subst_param var : Parameter.t = { var = subst var } in
+  let subst_param param = Parameter.map_var subst param in
   let function_declaration =
     Flambda.create_function_declaration ~params:(List.map subst_param params)
       ~body ~stub ~dbg:Debuginfo.none ~inline:Default_inline
@@ -856,8 +856,8 @@ let parameters_specialised_to_the_same_variable
         specialised_args)
   in
   Variable.Map.map (fun ({ params; _ } : Flambda.function_declaration) ->
-      List.map (fun (param:Parameter.t) ->
-          match Variable.Map.find param.var specialised_args with
+      List.map (fun param ->
+          match Variable.Map.find (Parameter.var param) specialised_args with
           | exception Not_found -> Not_specialised
           | { var; _ } ->
             Specialised_and_aliased_to

@@ -25,15 +25,15 @@ let rename_var var =
 
 let remove_params unused (fun_decl: Flambda.function_declaration) =
   let unused_params, used_params =
-    List.partition (fun v -> Variable.Set.mem v.Parameter.var unused)
+    List.partition (fun v -> Variable.Set.mem (Parameter.var v) unused)
       fun_decl.params
   in
   let unused_params = List.filter (fun v ->
-      Variable.Set.mem v.Parameter.var fun_decl.free_variables) unused_params
+      Variable.Set.mem (Parameter.var v) fun_decl.free_variables) unused_params
   in
   let body =
-    List.fold_left (fun body (param:Parameter.t) ->
-        Flambda.create_let param.var (Const (Const_pointer 0)) body)
+    List.fold_left (fun body param ->
+        Flambda.create_let (Parameter.var param) (Const (Const_pointer 0)) body)
       fun_decl.body
       unused_params
   in
@@ -48,11 +48,11 @@ let make_stub unused var (fun_decl : Flambda.function_declaration)
     List.map (fun param -> param, Parameter.rename param) fun_decl.params
   in
   let used_args' =
-    List.filter (fun ((param:Parameter.t), _) ->
-      not (Variable.Set.mem param.var unused)) args'
+    List.filter (fun (param, _) ->
+      not (Variable.Set.mem (Parameter.var param) unused)) args'
   in
   let args'_var =
-    List.map (fun (p1, p2) -> p1.Parameter.var, p2.Parameter.var) args'
+    List.map (fun (p1, p2) -> Parameter.var p1, Parameter.var p2) args'
   in
   let args_renaming = Variable.Map.of_list args'_var in
   let additional_specialised_args =
@@ -124,7 +124,7 @@ let separate_unused_arguments ~only_specialised
     let funs, additional_specialised_args =
       Variable.Map.fold (fun fun_id (fun_decl : Flambda.function_declaration)
                           (funs, additional_specialised_args) ->
-          if List.exists (fun v -> Variable.Set.mem v.Parameter.var unused)
+          if List.exists (fun v -> Variable.Set.mem (Parameter.var v) unused)
               fun_decl.params
           then begin
             let stub, renamed_fun_id, additional_specialised_args =

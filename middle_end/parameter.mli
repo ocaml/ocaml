@@ -16,9 +16,13 @@
 
 [@@@ocaml.warning "+a-4-9-30-40-41-42"]
 
-type t = {
-  var : Variable.t;
-}
+(** [Parameter.t] carries a unique [Variable.t] used as function parameter.
+    It can also carries annotation on the usage of the variable *)
+
+type t
+
+(** Make a parameter from a variable with default attributes *)
+val wrap : Variable.t -> t
 
 val var : t -> Variable.t
 val vars : t list -> Variable.t list
@@ -30,5 +34,7 @@ val rename
   -> ?append:string
   -> t
   -> t
+
+val map_var : (Variable.t -> Variable.t) -> t -> t
 
 include Identifiable.S with type t := t
