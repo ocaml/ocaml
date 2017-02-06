@@ -86,7 +86,7 @@ let make_stub unused var (fun_decl : Flambda.function_declaration)
   let body : Flambda.t =
     Apply {
       func = renamed;
-      args = Parameter.vars args;
+      args = Parameter.List.vars args;
       kind;
       dbg = fun_decl.dbg;
       inline = Default_inline;

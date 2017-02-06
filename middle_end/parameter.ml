@@ -51,3 +51,7 @@ let rename ?current_compilation_unit ?append p =
   { var = Variable.rename ?current_compilation_unit ?append p.var }
 
 let map_var f { var } = { var = f var }
+
+module List = struct
+  let vars params = List.map (fun { var } -> var) params
+end

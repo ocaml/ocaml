@@ -470,7 +470,8 @@ module Make (T : S) = struct
         Apply {
           func = new_fun_var;
           args =
-            (Parameter.vars wrapper_params) @ spec_args_bound_in_the_wrapper;
+            (Parameter.List.vars wrapper_params) @
+            spec_args_bound_in_the_wrapper;
           kind = Direct (Closure_id.wrap new_fun_var);
           dbg = Debuginfo.none;
           inline = Default_inline;

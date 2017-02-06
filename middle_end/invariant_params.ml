@@ -161,7 +161,7 @@ let analyse_functions ~backend ~param_to_param
   let function_variable_alias = function_variable_alias ~backend decls in
   let param_indexes_by_fun_vars =
     Variable.Map.map (fun (decl : Flambda.function_declaration) ->
-      Array.of_list (Parameter.vars decl.params))
+      Array.of_list (Parameter.List.vars decl.params))
       decls.funs
   in
   let find_callee_arg ~callee ~callee_pos =
@@ -410,7 +410,7 @@ let unused_arguments (decls : Flambda.function_declarations) ~backend =
               | exception Not_found -> Variable.Set.add param acc
               | Implication _ -> Variable.Set.add param acc
               | Top -> acc)
-           acc (Parameter.vars decl.Flambda.params))
+           acc (Parameter.List.vars decl.Flambda.params))
       decls.funs Variable.Set.empty
   in
   if dump then begin

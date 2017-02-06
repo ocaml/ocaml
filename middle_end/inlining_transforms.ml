@@ -82,7 +82,7 @@ let set_inline_attribute_on_all_apply body inline specialise =
 let copy_of_function's_body_with_freshened_params env
       ~(function_decl : Flambda.function_declaration) =
   let params = function_decl.params in
-  let param_vars = Parameter.vars params in
+  let param_vars = Parameter.List.vars params in
   (* We cannot avoid the substitution in the case where we are inlining
      inside the function itself.  This can happen in two ways: either
      (a) we are inlining the function itself directly inside its declaration;
@@ -99,7 +99,7 @@ let copy_of_function's_body_with_freshened_params env
     let freshened_params = List.map (fun p -> Parameter.rename p) params in
     let subst =
       Variable.Map.of_list
-        (List.combine param_vars (Parameter.vars freshened_params))
+        (List.combine param_vars (Parameter.List.vars freshened_params))
     in
     let body = Flambda_utils.toplevel_substitution subst function_decl.body in
     freshened_params, body
@@ -147,7 +147,7 @@ let inline_by_copying_function_body ~env ~r
     (* Bind the function's parameters to the arguments from the call site. *)
     let args = List.map (fun arg -> Flambda.Expr (Var arg)) args in
     Flambda_utils.bind ~body
-      ~bindings:(List.combine (Parameter.vars freshened_params) args)
+      ~bindings:(List.combine (Parameter.List.vars freshened_params) args)
   in
   (* Add bindings for the variables bound by the closure. *)
   let bindings_for_vars_bound_by_closure_and_params_to_args =
@@ -209,7 +209,7 @@ let inline_by_copying_function_declaration ~env ~r
   let specialised_args_set = Variable.Map.keys specialised_args in
   let worth_specialising_args, specialisable_args, args, args_decl =
     which_function_parameters_can_we_specialise
-      ~params:(Parameter.vars function_decl.params) ~args ~args_approxs
+      ~params:(Parameter.List.vars function_decl.params) ~args ~args_approxs
       ~invariant_params
       ~specialised_args:specialised_args_set
   in

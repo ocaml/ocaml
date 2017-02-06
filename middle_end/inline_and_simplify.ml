@@ -817,7 +817,7 @@ and simplify_partial_application env r ~lhs_of_application
     let body : Flambda.t =
       Apply {
         func = lhs_of_application;
-        args = Parameter.vars freshened_params;
+        args = Parameter.List.vars freshened_params;
         kind = Direct closure_id_being_applied;
         dbg;
         inline = Default_inline;

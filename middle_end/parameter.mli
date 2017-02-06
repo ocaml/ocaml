@@ -25,7 +25,6 @@ type t
 val wrap : Variable.t -> t
 
 val var : t -> Variable.t
-val vars : t list -> Variable.t list
 val var_set : t list -> Variable.Set.t
 
 (** Rename the inner variable of the parameter *)
@@ -38,3 +37,8 @@ val rename
 val map_var : (Variable.t -> Variable.t) -> t -> t
 
 include Identifiable.S with type t := t
+
+module List : sig
+  (** extract variables from a list of parameters, preserving the order *)
+  val vars : t list -> Variable.t list
+end

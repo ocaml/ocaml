@@ -660,7 +660,7 @@ let populate_closure_approximations
           with Not_found -> (A.value_unknown Other)
         in
         E.add env id approx)
-      env (Parameter.vars function_decl.params)
+      env (Parameter.List.vars function_decl.params)
   in
   env
 
