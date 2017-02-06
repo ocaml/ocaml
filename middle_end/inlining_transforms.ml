@@ -82,7 +82,7 @@ let set_inline_attribute_on_all_apply body inline specialise =
 let copy_of_function's_body_with_freshened_params env
       ~(function_decl : Flambda.function_declaration) =
   let params = function_decl.params in
-  let params_var = Parameter.vars params in
+  let param_vars = Parameter.vars params in
   (* We cannot avoid the substitution in the case where we are inlining
      inside the function itself.  This can happen in two ways: either
      (a) we are inlining the function itself directly inside its declaration;
@@ -91,15 +91,15 @@ let copy_of_function's_body_with_freshened_params env
      original [params] may still be referenced; for (b) we cannot do it
      either since the freshening may already be renaming the parameters for
      the first inlining of the function. *)
-  if E.does_not_bind env params_var
-    && E.does_not_freshen env params_var
+  if E.does_not_bind env param_vars
+    && E.does_not_freshen env param_vars
   then
     params, function_decl.body
   else
     let freshened_params = List.map (fun p -> Parameter.rename p) params in
     let subst =
       Variable.Map.of_list
-        (List.combine params_var (Parameter.vars freshened_params))
+        (List.combine param_vars (Parameter.vars freshened_params))
     in
     let body = Flambda_utils.toplevel_substitution subst function_decl.body in
     freshened_params, body

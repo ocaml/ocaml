@@ -141,7 +141,8 @@ let active_add_parameters' t (params:Parameter.t list) =
   List.fold_right (fun (id:Parameter.t) (ids, t) ->
       let id', t = active_add_variable t id.var in
       let param : Parameter.t = { var = id' } in
-      param :: ids, t) params ([], t)
+      param :: ids, t)
+    params ([], t)
 
 let add_variables t defs =
   List.fold_right (fun (id, data) (defs, t) ->
