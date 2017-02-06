@@ -1166,16 +1166,17 @@ and transl_apply ?(should_be_tailcall=false) ?(inlined = Default_inline)
         and id_arg = Ident.create "param" in
         let body =
           match build_apply handle ((Lvar id_arg, optional)::args') l with
-            Lfunction{kind = Curried; params = ids; body = lam; attr; loc} ->
+            Lfunction{kind = Curried; params = ids; return;
+                      body = lam; attr; loc} ->
               Lfunction{kind = Curried;
                         params = (id_arg, Pgenval)::ids;
-                        return = Pgenval;
+                        return;
                         body = lam; attr;
                         loc}
-          | Levent(Lfunction{kind = Curried; params = ids;
+          | Levent(Lfunction{kind = Curried; params = ids; return;
                              body = lam; attr; loc}, _) ->
               Lfunction{kind = Curried; params = (id_arg, Pgenval)::ids;
-                        return = Pgenval;
+                        return;
                         body = lam; attr;
                         loc}
           | lam ->
