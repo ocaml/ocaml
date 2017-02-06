@@ -33,13 +33,6 @@ world.opt:
 # make clean runtime coreall
 # make coreboot [new system -- now in a stable state]
 
-natruntop:
-	$(MAKE) runtime
-	$(MAKE) coreall
-	$(MAKE) opt.opt
-	$(MAKE) ocamlnat
-	@rlwrap --help 2>/dev/null && rlwrap $(NATRUNTOP) || $(NATRUNTOP)
-
 .PHONY: world.opt
 
 include .depend

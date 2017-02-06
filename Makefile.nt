@@ -20,13 +20,6 @@ include Makefile.shared
 # Complete build using fast compilers
 world.opt: coldstart opt.opt
 
-natruntop:
-	$(MAKEREC) runtime
-	$(MAKEREC) coreall
-	$(MAKEREC) opt.opt
-	$(MAKEREC) ocamlnat
-	@rlwrap --help 2>/dev/null && $(EXTRAPATH) rlwrap $(NATRUNTOP) || $(EXTRAPATH) $(NATRUNTOP)
-
 .PHONY: world.opt
 
 include .depend
