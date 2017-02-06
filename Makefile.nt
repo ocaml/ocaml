@@ -17,9 +17,4 @@
 
 include Makefile.shared
 
-# Complete build using fast compilers
-world.opt: coldstart opt.opt
-
-.PHONY: world.opt
-
 include .depend

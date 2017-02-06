@@ -512,6 +512,11 @@ bootstrap: coreboot
 world: coldstart
 	$(MAKE) all
 
+# Compile also native code compiler and libraries, fast
+.PHONY: world.opt
+world.opt: coldstart
+	$(MAKE) opt.opt
+
 # FlexDLL sources missing error messages
 # Different git mechanism displayed depending on whether this source tree came
 # from a git clone or a source tarball.

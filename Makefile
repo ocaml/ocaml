@@ -18,11 +18,6 @@
 MAKEREC=$(MAKE)
 include Makefile.shared
 
-# Compile also native code compiler and libraries, fast
-world.opt:
-	$(MAKE) coldstart
-	$(MAKE) opt.opt
-
 # Hard bootstrap how-to:
 # (only necessary in some cases, for example if you remove some primitive)
 #
@@ -32,7 +27,5 @@ world.opt:
 # <debug your changes>
 # make clean runtime coreall
 # make coreboot [new system -- now in a stable state]
-
-.PHONY: world.opt
 
 include .depend
