@@ -37,6 +37,10 @@ Next version (4.05.0):
 
 ### Compiler user-interface and warnings:
 
+- PR#7473, GPR#1025: perform proper globbing for command-line arguments on
+  Windows
+  (Jonathan Protzenko)
+
 - PR#7315, GPR#736: refine some error locations
   (Gabriel Scherer and Alain Frisch, report by Matej Košík)
 
