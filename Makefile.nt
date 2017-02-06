@@ -16,5 +16,3 @@
 # The main Makefile
 
 include Makefile.shared
-
-include .depend

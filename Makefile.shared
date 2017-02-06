@@ -1270,3 +1270,5 @@ distclean: clean
 	rm -f tools/*.bak
 	rm -f ocaml ocamlc
 	rm -f testsuite/_log
+
+include .depend

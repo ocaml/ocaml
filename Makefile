@@ -27,5 +27,3 @@ include Makefile.shared
 # <debug your changes>
 # make clean runtime coreall
 # make coreboot [new system -- now in a stable state]
-
-include .depend
