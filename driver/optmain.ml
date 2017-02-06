@@ -306,7 +306,7 @@ let main () =
       Location.report_exception ppf x;
       exit 2
 
-let _ =
-  Timings.(time All) main ();
+let () =
+  main ();
   if !Clflags.print_timings then Timings.print Format.std_formatter;
   exit 0

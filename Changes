@@ -41,6 +41,10 @@ Working version
 - MPR#1956, GPR#973: tools/check-symbol-names checks for globally
   linked names not namespaced with caml_
   (Stephen Dolan)
+### Internal/compiler-libs changes:
+
+- GPR#1032: display the output of -dtimings as a hierarchy
+  (Valentin Gatien-Baron, review by Gabriel Scherer)
 
 ### Bug fixes
 
