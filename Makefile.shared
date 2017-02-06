@@ -329,6 +329,12 @@ utils/config.ml: utils/config.mlp config/Makefile
 	    -e 's|%%WITH_SPACETIME%%|$(WITH_SPACETIME)|' \
 	    $< > $@
 
+ifeq "$(UNIX_OR_WIN32)" "unix"
+.PHONY: reconfigure
+reconfigure:
+	./configure $(CONFIGURE_ARGS)
+endif
+
 .PHONY: partialclean
 partialclean::
 	rm -f utils/config.ml

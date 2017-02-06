@@ -23,9 +23,6 @@ world.opt:
 	$(MAKE) coldstart
 	$(MAKE) opt.opt
 
-reconfigure:
-	./configure $(CONFIGURE_ARGS)
-
 # Hard bootstrap how-to:
 # (only necessary in some cases, for example if you remove some primitive)
 #
