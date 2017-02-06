@@ -1218,8 +1218,27 @@ and transl_function loc return untuplify_fn repr partial (param:Ident.t) cases =
             (fun {c_lhs; c_guard; c_rhs} ->
               (Matching.flatten_pattern size c_lhs, c_guard, c_rhs))
             cases in
-        let params = List.map (fun _ -> Ident.create "param") pl in
-        let tparams = List.map (fun p -> p, Pgenval) params in
+        let kinds =
+          (* All the patterns might not share the same types. We must take the
+             union of the patterns types *)
+          match pats_expr_list with
+          | [] -> assert false
+          | (pats, _, _) :: cases ->
+              let first_case_kinds =
+                List.map (fun pat -> value_kind pat.pat_env pat.pat_type) pats
+              in
+              List.fold_left
+                (fun kinds (pats, _, _) ->
+                   List.map2 (fun kind pat ->
+                       value_kind_union kind
+                         (value_kind pat.pat_env pat.pat_type))
+                     kinds pats)
+                first_case_kinds cases
+        in
+        let tparams =
+          List.map (fun kind -> Ident.create "param", kind) kinds
+        in
+        let params = List.map fst tparams in
         ((Tupled, tparams, return),
          Matching.for_tupled_function loc params
            (transl_tupled_cases pats_expr_list) partial)
@@ -1228,15 +1247,21 @@ and transl_function loc return untuplify_fn repr partial (param:Ident.t) cases =
          Matching.for_function loc repr (Lvar param)
            (transl_cases cases) partial)
       end
-  | {c_lhs=pat} :: _ ->
-      let kind = value_kind pat.pat_env pat.pat_type in
+  | {c_lhs=pat} :: other_cases ->
+      let kind =
+        (* All the patterns might not share the same types. We must take the
+           union of the patterns types *)
+        List.fold_left (fun k {c_lhs=pat} ->
+            Typeopt.value_kind_union k
+              (value_kind pat.pat_env pat.pat_type))
+          (value_kind pat.pat_env pat.pat_type) other_cases
+      in
       ((Curried, [param, kind], return),
        Matching.for_function loc repr (Lvar param)
          (transl_cases cases) partial)
   | [] ->
-      ((Curried, [param, Pgenval], return),
-       Matching.for_function loc repr (Lvar param)
-         (transl_cases cases) partial)
+      (* A pattern matching must contain at least one case *)
+      assert false
 
 and transl_let rec_flag pat_expr_list body =
   match rec_flag with

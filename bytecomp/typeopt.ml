@@ -176,3 +176,7 @@ let lazy_val_requires_forward env ty =
   match classify env ty with
   | Any | Float | Lazy -> true
   | Addr | Int -> false
+
+let value_kind_union k1 k2 =
+  if k1 = k2 then k1
+  else Pgenval
