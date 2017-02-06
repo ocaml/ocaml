@@ -461,43 +461,64 @@ val set_formatter_output_functions :
 
   The [flush] function is called whenever the pretty-printer is flushed
   (via conversion [%!], or pretty-printing indications [@?] or [@.], or
-  using low level functions [print_flush] or [print_newline]). *)
+  using low level functions [print_flush] or [print_newline]).
+*)
 
 val get_formatter_output_functions :
   unit -> (string -> int -> int -> unit) * (unit -> unit)
 (** Return the current output functions of the pretty-printer. *)
 
-(** {6:meaning Changing the meaning of standard formatter pretty printing} *)
+(** {6:meaning Changing the meaning of formatter ouput} *)
 
 (** The [Format] module is versatile enough to let you completely redefine
-  the meaning of pretty printing: you may provide your own functions to define
+  the meaning of pretty-printing: you may provide your own functions to define
   how to handle indentation, line splitting, and even printing of all the
-  characters that have to be printed! *)
+  characters that have to be printed!
+*)
 
 type formatter_out_functions = {
   out_string : string -> int -> int -> unit;
   out_flush : unit -> unit;
   out_newline : unit -> unit;
   out_spaces : int -> unit;
-} (** @since 4.01.0 *)
+  out_indent : int -> unit;
+}
+(** The set of output functions specific to a formatter:
+- the [out_string] function performs all the pretty-printer string output.
+  It is called with a string [s], a start position [p], and a number of
+  characters [n]; it is supposed to output characters [p] to [p + n - 1] of
+  [s].
+- the [out_flush] function flushes the pretty-printer output device.
+- [out_newline] is called to open a new line when the pretty-printer splits
+  the line.
+- the [out_spaces] function outputs spaces when a break hint leads to spaces
+  instead of a line split. It is called with the number of spaces to output.
+- the [out_indent] function performs new line indentation when the
+  pretty-printer splits the line. It is called with the indentation value of
+  the new line.
+
+  By default:
+- fields [out_string] and [out_flush] are output device specific;
+  (e.g. [Pervasives.output_string] and [Pervasives.flush] for a
+   [Pervasives.out_channel] device, or [Buffer.add_substring] and
+   [Pervasives.ignore] for a [Buffer.t] output device),
+- field [out_newline] is equivalent to [out_string "\n" 0 1];
+- field [out_spaces] is equivalent to [out_string (String.make n ' ') 0 n];
+- field [out_indent] is the same as field [out_spaces].
+*)
+
 
 val set_formatter_out_functions : formatter_out_functions -> unit
-(** [set_formatter_out_functions f]
-  Redirect the pretty-printer output to the functions [f.out_string]
-  and [f.out_flush] as described in
-  [set_formatter_output_functions]. In addition, the pretty-printer function
-  that outputs a newline is set to the function [f.out_newline] and
-  the function that outputs indentation spaces is set to the function
-  [f.out_spaces].
+(** [set_formatter_out_functions out_funs]
+  Set all the pretty-printer output functions to those of argument
+  [out_funs],
 
   This way, you can change the meaning of indentation (which can be
   something else than just printing space characters) and the meaning of new
   lines opening (which can be connected to any other action needed by the
-  application at hand). The two functions [f.out_spaces] and [f.out_newline]
-  are normally connected to [f.out_string] and [f.out_flush]: respective
-  default values for [f.out_space] and [f.out_newline] are
-  [f.out_string (String.make n ' ') 0 n] and [f.out_string "\n" 0 1].
-  @since 4.01.0 *)
+  application at hand).
+*)
+
 
 val get_formatter_out_functions : unit -> formatter_out_functions
 (** Return the current output functions of the pretty-printer,
@@ -505,7 +526,7 @@ val get_formatter_out_functions : unit -> formatter_out_functions
   current setting and restore it afterwards.
   @since 4.01.0 *)
 
-(** {6:tagsmeaning Changing the meaning of printing semantic tags} *)
+(** {6:tagsmeaning Changing the semantic tags operations} *)
 
 type formatter_tag_functions = {
   mark_open_tag : tag -> string;
