@@ -17,16 +17,6 @@
 
 include Makefile.shared
 
-opt:
-	$(MAKEREC) opt-core
-	$(MAKEREC) otherlibrariesopt ocamltoolsopt
-
-# Native-code versions of the tools
-# If the submodule is initialised, then opt.opt will build a native flexlink
-opt.opt: core opt-core ocamlc.opt all ocamlopt.opt ocamllex.opt \
-         ocamltoolsopt ocamltoolsopt.opt otherlibrariesopt $(OCAMLDOC_OPT) \
-         $(if $(wildcard flexdll/Makefile),flexlink.opt)
-
 # Complete build using fast compilers
 world.opt: coldstart opt.opt
 
@@ -37,7 +27,6 @@ natruntop:
 	$(MAKEREC) ocamlnat
 	@rlwrap --help 2>/dev/null && $(EXTRAPATH) rlwrap $(NATRUNTOP) || $(EXTRAPATH) $(NATRUNTOP)
 
-.PHONY: opt opt.opt
 .PHONY: world.opt
 
 include .depend

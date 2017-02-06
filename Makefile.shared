@@ -424,6 +424,39 @@ opt-core: runtimeopt
 	$(MAKE) ocamlopt
 	$(MAKE) libraryopt
 
+.PHONY: opt
+opt:
+ifeq "$(UNIX_OR_WIN32)" "unix"
+	$(MAKE) runtimeopt
+	$(MAKE) ocamlopt
+	$(MAKE) libraryopt
+	$(MAKE) otherlibrariesopt ocamltoolsopt
+else
+	$(MAKE) opt-core
+	$(MAKE) otherlibrariesopt ocamltoolsopt
+endif
+
+# Native-code versions of the tools
+.PHONY: opt.opt
+ifeq "$(UNIX_OR_WIN32)" "unix"
+opt.opt:
+	$(MAKE) checkstack
+	$(MAKE) runtime
+	$(MAKE) core
+	$(MAKE) ocaml
+	$(MAKE) opt-core
+	$(MAKE) ocamlc.opt
+	$(MAKE) otherlibraries $(WITH_DEBUGGER) $(WITH_OCAMLDOC)
+	$(MAKE) ocamlopt.opt
+	$(MAKE) otherlibrariesopt
+	$(MAKE) ocamllex.opt ocamltoolsopt ocamltoolsopt.opt $(OCAMLDOC_OPT)
+else
+# If the submodule is initialised, then opt.opt will build a native flexlink
+opt.opt: core opt-core ocamlc.opt all ocamlopt.opt ocamllex.opt \
+         ocamltoolsopt ocamltoolsopt.opt otherlibrariesopt $(OCAMLDOC_OPT) \
+         $(if $(wildcard flexdll/Makefile),flexlink.opt)
+endif
+
 .PHONY: base.opt
 base.opt:
 	$(MAKE) checkstack

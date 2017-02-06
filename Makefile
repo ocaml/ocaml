@@ -33,25 +33,6 @@ world.opt:
 # make clean runtime coreall
 # make coreboot [new system -- now in a stable state]
 
-opt:
-	$(MAKE) runtimeopt
-	$(MAKE) ocamlopt
-	$(MAKE) libraryopt
-	$(MAKE) otherlibrariesopt ocamltoolsopt
-
-# Native-code versions of the tools
-opt.opt:
-	$(MAKE) checkstack
-	$(MAKE) runtime
-	$(MAKE) core
-	$(MAKE) ocaml
-	$(MAKE) opt-core
-	$(MAKE) ocamlc.opt
-	$(MAKE) otherlibraries $(WITH_DEBUGGER) $(WITH_OCAMLDOC)
-	$(MAKE) ocamlopt.opt
-	$(MAKE) otherlibrariesopt
-	$(MAKE) ocamllex.opt ocamltoolsopt ocamltoolsopt.opt $(OCAMLDOC_OPT)
-
 natruntop:
 	$(MAKE) runtime
 	$(MAKE) coreall
@@ -59,7 +40,6 @@ natruntop:
 	$(MAKE) ocamlnat
 	@rlwrap --help 2>/dev/null && rlwrap $(NATRUNTOP) || $(NATRUNTOP)
 
-.PHONY: opt opt.opt
 .PHONY: world.opt
 
 include .depend
