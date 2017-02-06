@@ -44,11 +44,8 @@ let remove_params unused (fun_decl: Flambda.function_declaration) =
 let make_stub unused var (fun_decl : Flambda.function_declaration)
     ~specialised_args ~additional_specialised_args =
   let renamed = rename_var var in
-  let rename_param (param:Parameter.t) : Parameter.t =
-    { var = rename_var param.var }
-  in
   let args' =
-    List.map (fun param -> param, rename_param param) fun_decl.params
+    List.map (fun param -> param, Parameter.rename param) fun_decl.params
   in
   let used_args' =
     List.filter (fun ((param:Parameter.t), _) ->

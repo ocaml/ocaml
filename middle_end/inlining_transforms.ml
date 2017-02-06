@@ -96,11 +96,7 @@ let copy_of_function's_body_with_freshened_params env
   then
     params, function_decl.body
   else
-    let freshened_params =
-      List.map (fun (p:Parameter.t) : Parameter.t ->
-        { var = Variable.rename p.var })
-        params
-    in
+    let freshened_params = List.map (fun p -> Parameter.rename p) params in
     let subst =
       Variable.Map.of_list
         (List.combine params_var (Parameter.vars freshened_params))

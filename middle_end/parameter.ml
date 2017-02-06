@@ -44,3 +44,6 @@ include Identifiable.Make (struct
 let var p = p.var
 let vars = List.map var
 let var_set l = Variable.Set.of_list (vars l)
+
+let rename ?current_compilation_unit ?append p =
+  { var = Variable.rename ?current_compilation_unit ?append p.var }

@@ -24,4 +24,11 @@ val var : t -> Variable.t
 val vars : t list -> Variable.t list
 val var_set : t list -> Variable.Set.t
 
+(** Rename the inner variable of the parameter *)
+val rename
+   : ?current_compilation_unit:Compilation_unit.t
+  -> ?append:string
+  -> t
+  -> t
+
 include Identifiable.S with type t := t
