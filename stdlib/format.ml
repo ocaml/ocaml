@@ -31,15 +31,15 @@ external int_of_size : size -> int = "%identity"
 
 (* The pretty-printing boxes definition:
    a pretty-printing box is either
-   - hbox: horizontal (no split in the line)
-   - vbox: vertical (the line is splitted at every break hint)
-   - hvbox: horizontal/vertical
+   - hbox: horizontal box (no line splitting)
+   - vbox: vertical box (every break hint splits the line)
+   - hvbox: horizontal/vertical box
      (the box behaves as an horizontal box if it fits on
       the current line, otherwise the box behaves as a vertical box)
-   - hovbox: horizontal or vertical
-     (the box is compacting material, printing as much material on every
-     lines)
-   - box: horizontal or vertical with box enhanced structure
+   - hovbox: horizontal or vertical compacting box
+     (the box is compacting material, printing as much material as possible
+      on every lines)
+   - box: horizontal or vertical compacting box with enhanced box structure
      (the box behaves as an horizontal or vertical box but break hints split
       the line if splitting would move to the left)
 *)
@@ -667,7 +667,6 @@ let pp_rinit state =
   state.pp_space_left <- state.pp_margin;
   pp_open_sys_box state
 
-
 (* Flushing pretty-printer queue. *)
 let pp_flush_queue state b =
   while state.pp_curr_depth > 1 do
@@ -677,7 +676,6 @@ let pp_flush_queue state b =
   advance_left state;
   if b then pp_output_newline state;
   pp_rinit state
-
 
 (*
 
@@ -722,9 +720,14 @@ and pp_open_hovbox state indent = pp_open_box_gen state indent Pp_hovbox
 and pp_open_box state indent = pp_open_box_gen state indent Pp_box
 
 
-(* Printing all queued text.
-   [print_newline] prints a new line after flushing the queue.
-   [print_flush] on flush the queue without adding a newline. *)
+(* Printing queued text.
+
+   [pp_print_flush] prints all pending items in the pretty-printer queue and
+   then flushes the the low level output device of the formatter to effectively
+   display printing material.
+
+   [pp_print_newline] behaves as [pp_print_flush] after printing an additional
+   new line. *)
 let pp_print_newline state () =
   pp_flush_queue state true; state.pp_out_flush ()
 and pp_print_flush state () =
@@ -1294,7 +1297,6 @@ let pp_set_all_formatter_output_functions state
   pp_set_formatter_output_functions state f g;
   state.pp_out_newline <- h;
   state.pp_out_spaces <- i
-
 
 (* Deprecated : subsumed by pp_get_formatter_out_functions *)
 let pp_get_all_formatter_output_functions state () =
