@@ -89,7 +89,7 @@ let rec compat p q =
   | Tpat_tuple ps, Tpat_tuple qs -> compats ps qs
   | Tpat_lazy p, Tpat_lazy q -> compat p q
   | Tpat_construct (_, c1,ps1), Tpat_construct (_, c2,ps2) ->
-      c1.cstr_tag = c2.cstr_tag && compats ps1 ps2
+      Types.equal_tag c1.cstr_tag  c2.cstr_tag && compats ps1 ps2
   | Tpat_variant(l1,Some p1, r1), Tpat_variant(l2,Some p2,_) ->
       l1=l2 && compat p1 p2
   | Tpat_variant (l1,None,r1), Tpat_variant(l2,None,_) ->
@@ -270,7 +270,7 @@ let pretty_matrix (pss : matrix) =
 let simple_match p1 p2 =
   match p1.pat_desc, p2.pat_desc with
   | Tpat_construct(_, c1, _), Tpat_construct(_, c2, _) ->
-      c1.cstr_tag = c2.cstr_tag
+      Types.equal_tag c1.cstr_tag c2.cstr_tag
   | Tpat_variant(l1, _, _), Tpat_variant(l2, _, _) ->
       l1 = l2
   | Tpat_constant(c1), Tpat_constant(c2) -> const_compare c1 c2 = 0
@@ -758,7 +758,7 @@ let complete_constrs p all_tags =
       let constrs = get_variant_constructors p.pat_env c.cstr_res in
         map_filter
           (fun cnstr ->
-            if List.mem cnstr.cstr_tag not_tags then Some cnstr else None)
+            if List.exists (fun tag -> Types.equal_tag tag cnstr.cstr_tag) not_tags then Some cnstr else None)
           constrs
   | _ -> fatal_error "Parmatch.complete_constr"
 
@@ -1469,7 +1469,7 @@ let rec le_pat p q =
   | _, Tpat_alias(q,_,_) -> le_pat p q
   | Tpat_constant(c1), Tpat_constant(c2) -> const_compare c1 c2 = 0
   | Tpat_construct(_,c1,ps), Tpat_construct(_,c2,qs) ->
-      c1.cstr_tag = c2.cstr_tag && le_pats ps qs
+      Types.equal_tag c1.cstr_tag  c2.cstr_tag && le_pats ps qs
   | Tpat_variant(l1,Some p1,_), Tpat_variant(l2,Some p2,_) ->
       (l1 = l2 && le_pat p1 p2)
   | Tpat_variant(l1,None,r1), Tpat_variant(l2,None,_) ->
@@ -1519,7 +1519,7 @@ let rec lub p q = match p.pat_desc,q.pat_desc with
     let r = lub p q in
     make_pat (Tpat_lazy r) p.pat_type p.pat_env
 | Tpat_construct (lid, c1,ps1), Tpat_construct (_,c2,ps2)
-      when  c1.cstr_tag = c2.cstr_tag  ->
+      when  Types.equal_tag c1.cstr_tag  c2.cstr_tag  ->
         let rs = lubs ps1 ps2 in
         make_pat (Tpat_construct (lid, c1,rs))
           p.pat_type p.pat_env

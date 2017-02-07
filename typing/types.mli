@@ -295,3 +295,5 @@ and ext_status =
     Text_first                     (* first constructor in an extension *)
   | Text_next                      (* not first constructor in an extension *)
   | Text_exception
+
+val equal_tag :  constructor_tag -> constructor_tag -> bool
