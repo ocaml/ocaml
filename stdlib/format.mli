@@ -95,17 +95,19 @@
   Each different pretty-printing box kind introduces a specific line splitting
   policy:
 
-- within an {e horizontal} box, there is no line splitting,
-- within a {e vertical} box, every break hint splits the line,
-- within an {e horizontal/vertical} box there is no line splitting if the
-  box fits on the current line, otherwise every break hint splits the line,
-- within an {e compacting} box, a break hint never splits the line, unless
-  there is no more room on the current line.
+  - within an {e horizontal} box, break hints never split the line (but the
+    line may be split in a box nested deeper),
+  - within a {e vertical} box, break hints always split the line,
+  - within an {e horizontal/vertical} box, if the box fits on the current line
+    then break hints never split the line, otherwise break hint always split
+    the line,
+  - within an {e compacting} box, a break hint never splits the line,
+    unless there is no more room on the current line.
 
-  A 'break hint' tells the pretty-printer to output some space or split the
-  line, whichever way is more appropriate to the current pretty-printing box
-  splitting rules.
-
+  Note that line splitting policy is box specific: the policy of a box does
+  not rule the policy of inner boxes. For instance, if a vertical box is
+  nested in an horizontal box, all break hints within the vertical box will
+  split the line.
 *)
 
 val open_box : int -> unit
