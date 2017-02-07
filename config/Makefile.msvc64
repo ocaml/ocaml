@@ -125,7 +125,7 @@ CPP=cl -nologo -EP
 FLEXLINK_CMD=flexlink
 FLEXDLL_CHAIN=msvc64
 # FLEXLINK_FLAGS must be safe to insert in an OCaml string
-#   (see ocamlmklibconfig.ml in tools/Makefile.nt)
+#   (see ocamlmklibconfig.ml in tools/Makefile)
 FLEXLINK_FLAGS=-x64 -merge-manifest -stack 33554432
 FLEXLINK=$(FLEXLINK_CMD) $(FLEXLINK_FLAGS)
 FLEXDIR:=$(shell $(FLEXLINK) -where 2>/dev/null)
