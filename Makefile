@@ -545,16 +545,15 @@ flexdll/Makefile:
 # Bootstrapping FlexDLL - leaves a bytecode image of flexlink.exe in flexdll/
 .PHONY: flexdll
 flexdll: flexdll/Makefile
-	cd byterun && $(MAKE) BOOTSTRAPPING_FLEXLINK=yes ocamlrun$(EXE)
-	cp byterun/ocamlrun.exe boot/ocamlrun.exe
-	cd stdlib && $(MAKE) COMPILER=../boot/ocamlc stdlib.cma std_exit.cmo
+	$(MAKE) -C byterun BOOTSTRAPPING_FLEXLINK=yes ocamlrun$(EXE)
+	cp byterun/ocamlrun$(EXE) boot/ocamlrun$(EXE)
+	$(MAKE) -C stdlib COMPILER=../boot/ocamlc stdlib.cma std_exit.cmo
 	cd stdlib && cp stdlib.cma std_exit.cmo *.cmi ../boot
-	cd flexdll && \
-	 $(MAKE) MSVC_DETECT=0 TOOLCHAIN=$(TOOLCHAIN) TOOLPREF=$(TOOLPREF) \
-	            CHAINS=$(FLEXDLL_CHAIN) NATDYNLINK=false \
-	            OCAMLOPT="../boot/ocamlrun ../boot/ocamlc -I ../boot" \
-	            flexlink.exe support
-	cd byterun && $(MAKE) clean
+	$(MAKE) -C flexdll MSVC_DETECT=0 TOOLCHAIN=$(TOOLCHAIN) \
+	  TOOLPREF=$(TOOLPREF) CHAINS=$(FLEXDLL_CHAIN) NATDYNLINK=false \
+	  OCAMLOPT="../boot/ocamlrun ../boot/ocamlc -I ../boot" \
+	  flexlink.exe support
+	$(MAKE) -C byterun clean
 	$(MAKE) partialclean
 
 .PHONY: flexlink.opt
