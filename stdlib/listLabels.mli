@@ -73,6 +73,13 @@ val nth_opt: 'a list -> int -> 'a option
 val rev : 'a list -> 'a list
 (** List reversal. *)
 
+val init : len:int -> f:(int -> 'a) -> 'a list
+(** [List.init len f] is [f 0; f 1; ...; f (len-1)], evaluated left to right.
+
+    @raise Invalid_argument if [len < 0].
+    @since 4.06.0
+*)
+
 val append : 'a list -> 'a list -> 'a list
 (** Catenate two lists.  Same function as the infix operator [@].
    Not tail-recursive (length of the first argument).  The [@]

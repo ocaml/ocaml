@@ -24,10 +24,13 @@ Working version
 ### Standard library:
 
 - PR#1771, PR#7309, GPR#1026: Add update to maps. Allows to update a
-  binding in a map or create a new binding if the key had no binding.
+  binding in a map or create a new binding if the key had no binding
   (Sébastien Briais, review by Daniel Buenzli, Alain Frisch and
   Gabriel Scherer)
 
+- GPR#1034: Add List.init
+  (Richard Degenne, review by David Allsopp, Thomas Braibant, Florian
+  Angeletti, Gabriel Scherer, Nathan Moreau, Alain Frisch)
 
 ### Tools:
 
