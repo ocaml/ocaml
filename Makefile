@@ -707,6 +707,7 @@ tests: opt.opt
 
 # Make clean in the test suite
 
+.PHONY: clean
 clean::
 	$(MAKE) -C testsuite clean
 
@@ -717,7 +718,6 @@ manual-pregen: opt.opt
 	cd manual; $(MAKE) clean && $(MAKE) pregen-etex
 
 # The clean target
-.PHONY: clean
 clean:: partialclean
 
 # Shared parts of the system
