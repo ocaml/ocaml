@@ -76,9 +76,6 @@ CAMLLEX=$(CAMLRUN) boot/ocamllex
 CAMLDEP=$(CAMLRUN) tools/ocamldep
 DEPFLAGS=$(INCLUDES)
 
-OCAMLBUILDBYTE=$(WITH_OCAMLBUILD:=.byte)
-OCAMLBUILDNATIVE=$(WITH_OCAMLBUILD:=.native)
-
 OCAMLDOC_OPT=$(WITH_OCAMLDOC:=.opt)
 
 INCLUDES=-I utils -I parsing -I typing -I bytecomp -I middle_end \
