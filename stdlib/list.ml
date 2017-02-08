@@ -56,6 +56,14 @@ let rec rev_append l1 l2 =
 
 let rev l = rev_append l []
 
+let init n f =
+  if n = 0 then [] else
+  if n < 0 then invalid_arg "List.init" else
+  let rec init_aux acc i =
+    if i >= n then acc else
+    init_aux ((f i)::acc) (i+1)
+  in rev (init_aux [] 0)
+
 let rec flatten = function
     [] -> []
   | l::r -> l @ flatten r
