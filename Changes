@@ -251,6 +251,9 @@ Next version (4.05.0):
   opcode information from C headers.
   (Nicolas Ojeda Bar)
 
+- GPR#1033: merge Unix and Windows build systems in the root directory
+  (Sébastien Hinderer, review by Damien Doligez and Adrien Nader)
+
 ### Internal/compiler-libs changes:
 
 - GPR#673: distinguish initialization of block fields from mutation in lambda.
