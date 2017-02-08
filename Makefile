@@ -802,7 +802,7 @@ natruntop:
 # Native dynlink
 
 otherlibs/dynlink/dynlink.cmxa: otherlibs/dynlink/natdynlink.ml
-	cd otherlibs/dynlink && $(MAKE) allopt
+	$(MAKE) -C otherlibs/dynlink allopt
 
 # The parser
 
