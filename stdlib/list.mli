@@ -74,10 +74,7 @@ val rev : 'a list -> 'a list
 (** List reversal. *)
 
 val init : int -> (int -> 'a) -> 'a list
-(** [List.init n f] returns a fresh list of length [n],
-   with element number [i] initialized to the result of [f i].
-   In other terms, [List.init n f] tabulates the results of [f]
-   applied to the integers [0] to [n-1].
+(** [List.init len f] is [f 0; f 1; ...; f (n-1)].
 
    Raise [Invalid_argument] if [n < 0].*)
 
