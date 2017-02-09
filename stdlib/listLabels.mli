@@ -73,7 +73,7 @@ val nth_opt: 'a list -> int -> 'a option
 val rev : 'a list -> 'a list
 (** List reversal. *)
 
-val init : int -> (int -> 'a) -> 'a list
+val init : len:int -> f:(int -> 'a) -> 'a list
 (** [List.init n f] returns a fresh list of length [n],
    with element number [i] initialized to the result of [f i].
    In other terms, [List.init n f] tabulates the results of [f]

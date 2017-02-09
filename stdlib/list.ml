@@ -60,10 +60,10 @@ let rec init_aux acc n f =
   if n < 0 then acc else
   init_aux ((f n)::acc) (n-1) f
 
-let init n f =
-  if n = 0 then [] else
-  if n < 0 then invalid_arg "List.init" else
-  init_aux [] (n-1) f
+let init len f =
+  if len = 0 then [] else
+  if len < 0 then invalid_arg "List.init" else
+  init_aux [] (len-1) f
 
 let rec flatten = function
     [] -> []
