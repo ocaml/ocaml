@@ -79,9 +79,7 @@ val init : int -> (int -> 'a) -> 'a list
    In other terms, [List.init n f] tabulates the results of [f]
    applied to the integers [0] to [n-1].
 
-   Raise [Invalid_argument] if [n < 0] or [n > Sys.max_array_length].
-   If the return type of [f] is [float], then the maximum
-   size is only [Sys.max_array_length / 2].*)
+   Raise [Invalid_argument] if [n < 0].*)
 
 val append : 'a list -> 'a list -> 'a list
 (** Concatenate two lists.  Same as the infix operator [@].
