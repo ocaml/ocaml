@@ -275,6 +275,13 @@ READ_CMT= \
 # Reading cmt files
 $(call byte_and_opt,read_cmt,$(READ_CMT),)
 
+install::
+	if test -f read_cmt.opt; then \
+		cp read_cmt.opt "$(INSTALL_BINDIR)/ocamlcmt$(EXE)"; \
+	else \
+		cp read_cmt "$(INSTALL_BINDIR)/ocamlcmt$(EXE)"; \
+	fi
+
 
 # The bytecode disassembler
 

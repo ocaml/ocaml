@@ -483,6 +483,9 @@ Next major version (4.05.0):
 - clarify ocamldoc text parsing error messages
   (Gabriel Scherer)
 
+- GPR#1036: ocamlcmt (tools/read_cmt) is installed, converts .cmt to .annot
+  (Fabrice Le Fessant)
+
 ### Compiler distribution build system:
 
 - PR#7377: remove -std=gnu99 for newer gcc versions
