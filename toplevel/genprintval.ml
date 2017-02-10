@@ -44,6 +44,8 @@ type ('a, 'b) gen_printer =
   | Zero of 'b
   | Succ of ('a -> ('a, 'b) gen_printer)
 
+exception Printer_exception of exn
+
 module type S =
   sig
     type t
@@ -159,7 +161,7 @@ module Make(O : OBJ)(EVP : EVALPATH with type valu = O.t) = struct
 
     let install_printer path ty fn =
       let print_val ppf obj =
-        try fn ppf obj with _exn -> exn_printer ppf path in
+        try fn ppf obj with _exn -> raise (Printer_exception _exn) in
       let printer obj = Oval_printer (fun ppf -> print_val ppf obj) in
       printers := (path, Simple (ty, printer)) :: !printers
 
@@ -172,7 +174,7 @@ module Make(O : OBJ)(EVP : EVALPATH with type valu = O.t) = struct
         | Zero fn ->
             let out_printer obj =
               let printer ppf =
-                try fn ppf obj with _ -> exn_printer ppf function_path in
+                try fn ppf obj with _exn -> raise (Printer_exception _exn) in
               Oval_printer printer in
             Zero out_printer
         | Succ fn ->

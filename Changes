@@ -162,6 +162,9 @@ Next version (4.05.0):
 - PR#5163: ocamlobjinfo, dump globals defined by bytecode executables
   (Stéphane Glondu)
 
+- PR#7060: toplevel, print exceptions in installed custom printers
+  (Tadeu Zagallo)
+
 - PR#7333: ocamldoc, use the first sentence of text file as
   a short description in overviews.
   (Florian Angeletti)
