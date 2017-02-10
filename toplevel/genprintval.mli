@@ -40,8 +40,6 @@ type ('a, 'b) gen_printer =
   | Zero of 'b
   | Succ of ('a -> ('a, 'b) gen_printer)
 
-exception Printer_exception of exn
-
 module type S =
   sig
     type t

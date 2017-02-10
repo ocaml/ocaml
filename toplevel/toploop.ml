@@ -241,14 +241,6 @@ let add_directive name dir_fun dir_info =
   Hashtbl.add directive_table name dir_fun;
   Hashtbl.add directive_info_table name dir_info
 
-let make_ophr_exn oldenv exn =
-  toplevel_env := oldenv;
-  if exn = Out_of_memory then Gc.full_major();
-  let outv =
-    outval_of_value !toplevel_env (Obj.repr exn) Predef.type_exn
-  in
-  Ophr_exception (exn, outv)
-
 (* Execute a toplevel phrase *)
 
 let execute_phrase print_outcome ppf phr =
@@ -291,7 +283,12 @@ let execute_phrase print_outcome ppf phr =
                   | _ -> Ophr_signature (pr_item newenv sg'))
               else Ophr_signature []
           | Exception exn ->
-              make_ophr_exn oldenv exn
+              toplevel_env := oldenv;
+              if exn = Out_of_memory then Gc.full_major();
+              let outv =
+                outval_of_value !toplevel_env (Obj.repr exn) Predef.type_exn
+              in
+              Ophr_exception (exn, outv)
         in
         !print_out_phrase ppf out_phr;
         if Printexc.backtrace_status ()
@@ -307,13 +304,8 @@ let execute_phrase print_outcome ppf phr =
         | Ophr_eval (_, _) | Ophr_signature _ -> true
         | Ophr_exception _ -> false
         end
-      with
-      | Genprintval.Printer_exception exn ->
-          let ophr_exn = make_ophr_exn oldenv exn in
-          !print_out_phrase ppf ophr_exn;
-          false
-      | x ->
-          toplevel_env := oldenv; raise x
+      with x ->
+        toplevel_env := oldenv; raise x
       end
   | Ptop_dir(dir_name, dir_arg) ->
       let d =

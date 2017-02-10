@@ -44,8 +44,6 @@ type ('a, 'b) gen_printer =
   | Zero of 'b
   | Succ of ('a -> ('a, 'b) gen_printer)
 
-exception Printer_exception of exn
-
 module type S =
   sig
     type t
@@ -153,15 +151,15 @@ module Make(O : OBJ)(EVP : EVALPATH with type valu = O.t) = struct
                 (fun x -> Oval_int64 (O.obj x : int64)) ))
     ] : (Path.t * printer) list)
 
-    let exn_printer ppf path =
-      fprintf ppf "<printer %a raised an exception>" Printtyp.path path
+    let exn_printer ppf path _exn =
+      fprintf ppf "<printer %a raised an exception: %s>" Printtyp.path path (Printexc.to_string _exn)
 
-    let out_exn path =
-      Oval_printer (fun ppf -> exn_printer ppf path)
+    let out_exn path _exn =
+      Oval_printer (fun ppf -> exn_printer ppf path _exn)
 
     let install_printer path ty fn =
       let print_val ppf obj =
-        try fn ppf obj with _exn -> raise (Printer_exception _exn) in
+        try fn ppf obj with _exn -> exn_printer ppf path _exn in
       let printer obj = Oval_printer (fun ppf -> print_val ppf obj) in
       printers := (path, Simple (ty, printer)) :: !printers
 
@@ -174,7 +172,7 @@ module Make(O : OBJ)(EVP : EVALPATH with type valu = O.t) = struct
         | Zero fn ->
             let out_printer obj =
               let printer ppf =
-                try fn ppf obj with _exn -> raise (Printer_exception _exn) in
+                try fn ppf obj with _exn -> exn_printer ppf function_path _exn in
               Oval_printer printer in
             Zero out_printer
         | Succ fn ->
@@ -561,13 +559,13 @@ module Make(O : OBJ)(EVP : EVALPATH with type valu = O.t) = struct
           begin match (Ctype.expand_head env ty).desc with
           | Tconstr (p, args, _) when Path.same p path ->
               begin try apply_generic_printer path (fn depth) args
-              with _ -> (fun _obj -> out_exn path) end
+              with _exn -> (fun _obj -> out_exn path _exn) end
           | _ -> find remainder end in
       find !printers
 
     and apply_generic_printer path printer args =
       match (printer, args) with
-      | (Zero fn, []) -> (fun (obj : O.t)-> try fn obj with _ -> out_exn path)
+      | (Zero fn, []) -> (fun (obj : O.t)-> try fn obj with _exn -> out_exn path _exn)
       | (Succ fn, arg :: args) ->
           let printer = fn (fun depth obj -> tree_of_val depth obj arg) in
           apply_generic_printer path printer args
