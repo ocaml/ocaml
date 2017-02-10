@@ -330,6 +330,11 @@ Next version (4.05.0):
   on macOS by system calls that fill in a struct sockaddr (e.g. getsockname).
   (Anton Bachin)
 
+### Toplevel and debugger:
+
+- PR#7060, GPR#1035: Print exceptions in installed custom printers
+  (Tadeu Zagallo, review by David Allsopp)
+
 Next minor version (4.04.1):
 ----------------------------
 
