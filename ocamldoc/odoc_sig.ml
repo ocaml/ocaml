@@ -1626,7 +1626,15 @@ module Analyser =
       let mod_name = String.capitalize_ascii
           (Filename.basename (try Filename.chop_extension source_file with _ -> source_file))
       in
-      let (len,info_opt) = My_ir.first_special !file_name !file in
+      let len, info_opt =
+        let info = My_ir.first_special !file_name !file in
+        (* Only use as module preamble documentation comments that occur before
+           any module elements *)
+        match ast with
+        | a :: _ when  a.Parsetree.psig_loc.Location.loc_start.Lexing.pos_cnum <
+                       fst info ->
+            (0,None)
+        | _ -> info in
       let elements =
         analyse_parsetree Odoc_env.empty signat mod_name len (String.length !file) ast
       in

@@ -706,6 +706,10 @@ OCaml 4.05.0 (13 Jul 2017):
   a short description in overviews.
   (Florian Angeletti)
 
+- PR#7478, GPR#1037: ocamldoc, do not use as a module preamble documentation
+  comments that occur after the first module element
+  (Florian Angeletti, report by Daniel Bünzli)
+
 - GPR#848: ocamldoc, escape link targets in HTML output
   (Etienne Millon, review by Gabriel Scherer, Florian Angeletti and
   Daniel Bünzli)
