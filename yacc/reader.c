@@ -1231,7 +1231,6 @@ void add_symbol(void)
 
 void copy_action(void)
 {
-    push_stack('{');
     register int c;
     register int i, n;
     int depth;
@@ -1242,6 +1241,7 @@ void copy_action(void)
     char *a_line = dup_line();
     char *a_cptr = a_line + (cptr - line);
 
+    push_stack('{');
     if (last_was_action) syntax_error (lineno, line, cptr);
     last_was_action = 1;
 
