@@ -499,6 +499,10 @@ Next major version (4.05.0):
   to solve ocamlbuild+doc usability issue (ocaml/ocamlbuild#79)
   (Gabriel Scherer, review by Florian Angeletti, discussion with Daniel Bünzli)
 
+* GPR#1012: ocamlyacc, fix parsing of raw strings and nested comments, as well
+  as the handling of ' characters in identifiers.
+  (Demi Obenour)
+
 - GPR#1017: ocamldoc, add an option to detect code fragments that could be
   transformed into a cross-reference to a known element.
   (Florian Angeletti, review and suggestion by David Allsopp)
