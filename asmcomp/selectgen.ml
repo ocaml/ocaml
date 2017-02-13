@@ -199,10 +199,6 @@ let current_function_name = ref ""
 (* Environment parameter for the function being compiled, if any. *)
 let current_function_env_param = ref None
 
-(* The default instruction selection class *)
-
-class virtual selector_generic = object (self)
-
 module Effect = struct
   type t =
     | None
@@ -278,6 +274,10 @@ end = struct
     | x::xs -> List.fold_left (fun acc x -> join acc (f x)) (f x) xs
 end
 
+(* The default instruction selection class *)
+
+class virtual selector_generic = object (self)
+
 (* A syntactic criterion used in addition to judgements about (co)effects as
    to whether the evaluation of a given expression may be deferred by
    [emit_parts].  This criterion is a property of the instruction selection
@@ -295,7 +295,7 @@ method is_simple_expr = function
   | Ctuple el -> List.for_all self#is_simple_expr el
   | Clet(_id, arg, body) -> self#is_simple_expr arg && self#is_simple_expr body
   | Csequence(e1, e2) -> self#is_simple_expr e1 && self#is_simple_expr e2
-  | Cop(op, args) ->
+  | Cop(op, args, _) ->
       begin match op with
         (* The following may have side effects *)
       | Capply _ | Cextcall _ | Calloc | Cstore _ | Craise _ -> false
@@ -331,13 +331,13 @@ method effects_of exp =
   | Cifthenelse (cond, ifso, ifnot) ->
     EC.join (self#effects_of cond)
       (EC.join (self#effects_of ifso) (self#effects_of ifnot))
-  | Cop (op, args) ->
+  | Cop (op, args, _) ->
     let from_op =
       match op with
       | Capply _ | Cextcall _ -> EC.arbitrary
       | Calloc -> EC.none
       | Cstore _ -> EC.effect_only Effect.Arbitrary
-      | Craise _ | Ccheckbound _ -> EC.effect_only Effect.Raise
+      | Craise _ | Ccheckbound -> EC.effect_only Effect.Raise
       | Cload (_, Asttypes.Immutable) -> EC.none
       | Cload (_, Asttypes.Mutable) ->
         (* Loads from the current function's closure are a common case.
@@ -349,7 +349,7 @@ method effects_of exp =
           | None -> false
           | Some env_param ->
             match args with
-            | [Cop (Cadda, [Cvar ident; Cconst_int _])] ->
+            | [Cop (Cadda, [Cvar ident; Cconst_int _], _)] ->
               Ident.same ident env_param
             | _ -> false
         in
