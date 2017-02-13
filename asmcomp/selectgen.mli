@@ -35,6 +35,7 @@ module Coeffect : sig
   type t =
     | None
     | Read_mutable
+    | Arbitrary
 end
 
 module Effect_and_coeffect : sig
@@ -62,6 +63,7 @@ class virtual selector_generic : object
   method virtual select_addressing :
     Cmm.memory_chunk -> Cmm.expression -> Arch.addressing_mode * Cmm.expression
     (* Must be defined to select addressing modes *)
+  method is_simple_expr: Cmm.expression -> bool
   method effects_of : Cmm.expression -> Effect_and_coeffect.t
     (* Can be overridden to reflect special extcalls known to be pure *)
   method select_operation :
@@ -90,7 +92,7 @@ class virtual selector_generic : object
     (* Can be overridden to deal with 2-address instructions
        or instructions with hardwired input/output registers *)
   method emit_extcall_args :
-    environment -> Cmm.expression list -> (Reg.t array * int) option
+    environment -> Cmm.expression list -> (Reg.t array * int)
     (* Can be overridden to deal with stack-based calling conventions *)
   method emit_stores :
     environment -> Cmm.expression list -> Reg.t array -> unit
