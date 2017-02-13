@@ -114,6 +114,11 @@ Next version (4.05.0):
 - GPR#999: Arg, do not repeat thrice usage_msg when reporting an error
   (Florian Angeletti, review by Gabriel Scherer)
 
+- PR#???, GPR#???: Fix escaping of command-line arguments in
+  Unix.create_process{,_env} under Windows.  Arguments should now
+  be received verbatim by the child process.
+  (Nicolas Ojeda Bar, review by ???)
+
 ### Manual and documentation:
 
 - PR#6597, GPR#1030: add forward references to language extensions
