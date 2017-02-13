@@ -72,9 +72,7 @@ let oper_result_type = function
 (* Infer the size in bytes of the result of an expression whose evaluation
    may be deferred (cf. [emit_parts]). *)
 
-exception Size_expr
-
-let size_expr_exn (env:environment) exp =
+let size_expr (env:environment) exp =
   let rec size localenv = function
       Cconst_int _ | Cconst_natint _ -> Arch.size_int
     | Cconst_symbol _ | Cconst_pointer _ | Cconst_natpointer _ ->
@@ -100,30 +98,10 @@ let size_expr_exn (env:environment) exp =
         size (Tbl.add id (size localenv arg) localenv) body
     | Csequence(_e1, e2) ->
         size localenv e2
-    | Cifthenelse (_cond, ifso, ifnot) ->
-        let size_ifso = size localenv ifso in
-        let size_ifnot = size localenv ifnot in
-        let ok =
-          size_ifso = size_ifnot
-            || size_ifso = 0
-            || size_ifnot = 0
-        in
-        if not ok then begin
-          fatal_errorf "Selection.size_expr: Cifthenelse size mismatch \
-              (ifso %d, ifnot %d)"
-            size_ifso size_ifnot
-        end;
-        max size_ifso size_ifnot
     | _ ->
-        raise Size_expr
+        fatal_error "Selection.size_expr"
   in
   size Tbl.empty exp
-
-let size_expr env exp =
-  try size_expr_exn env exp
-  with Size_expr ->
-    fatal_errorf "Selection.size_expr: cannot measure %a"
-      Printcmm.expression exp
 
 (* Swap the two arguments of an integer comparison *)
 
