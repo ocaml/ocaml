@@ -252,6 +252,11 @@ Working version
   calls over the lifetime of a program when using Spacetime profiling
   (Mark Shinwell)
 
+### Toplevel:
+
+- GPR#1041: -nostdlib no longer ignored by toplevel.
+  (David Allsopp, review by Xavier Leroy)
+
 ### Compiler distribution build system
 
 - MPR#6373, GPR#1093: Suppress trigraph warnings from macOS assembler
