@@ -1496,6 +1496,21 @@ if sh ./hasgot nice; then
   echo "#define HAS_NICE" >> s.h
 fi
 
+if sh ./hasgot dup3; then
+  inf "dup3() found"
+  echo "#define HAS_DUP3" >> s.h
+fi
+
+if sh ./hasgot pipe2; then
+  inf "pipe2() found"
+  echo "#define HAS_PIPE2" >> s.h
+fi
+
+if sh ./hasgot accept4; then
+  inf "accept4() found"
+  echo "#define HAS_ACCEPT4" >> s.h
+fi
+
 # Determine if the debugger is supported
 
 if test -n "$with_debugger"; then
