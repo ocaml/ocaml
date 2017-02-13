@@ -221,6 +221,10 @@ let current_function_name = ref ""
 (* Environment parameter for the function being compiled, if any. *)
 let current_function_env_param = ref None
 
+(* The default instruction selection class *)
+
+class virtual selector_generic = object (self)
+
 module Effect = struct
   type t =
     | None
@@ -243,16 +247,18 @@ module Coeffect = struct
   type t =
     | None
     | Read_mutable
+    | Arbitrary
 
   let join t1 t2 =
     match t1, t2 with
-    | None, None -> None
-    | None, Read_mutable | Read_mutable, None
+    | None, t2 -> t2
+    | t1, None -> t1
     | Read_mutable, Read_mutable -> Read_mutable
+    | Arbitrary, _ | _, Arbitrary -> Arbitrary
 
   let copure = function
     | None -> true
-    | Read_mutable -> false
+    | Read_mutable | Arbitrary -> false
 end
 
 module Effect_and_coeffect : sig
@@ -275,7 +281,7 @@ end = struct
   type t = Effect.t * Coeffect.t
 
   let none = Effect.None, Coeffect.None
-  let arbitrary = Effect.Arbitrary, Coeffect.Read_mutable
+  let arbitrary = Effect.Arbitrary, Coeffect.Arbitrary
 
   let effect (e, _ce) = e
   let coeffect (_e, ce) = ce
@@ -294,9 +300,32 @@ end = struct
     | x::xs -> List.fold_left (fun acc x -> join acc (f x)) (f x) xs
 end
 
-(* The default instruction selection class *)
-
-class virtual selector_generic = object (self)
+(* A syntactic criterion used in addition to judgements about (co)effects as
+   to whether the evaluation of a given expression may be deferred by
+   [emit_parts].  This criterion is a property of the instruction selection
+   algorithm in this file rather than a property of the Cmm language.
+*)
+method is_simple_expr = function
+    Cconst_int _ -> true
+  | Cconst_natint _ -> true
+  | Cconst_float _ -> true
+  | Cconst_symbol _ -> true
+  | Cconst_pointer _ -> true
+  | Cconst_natpointer _ -> true
+  | Cblockheader _ -> true
+  | Cvar _ -> true
+  | Ctuple el -> List.for_all self#is_simple_expr el
+  | Clet(_id, arg, body) -> self#is_simple_expr arg && self#is_simple_expr body
+  | Csequence(e1, e2) -> self#is_simple_expr e1 && self#is_simple_expr e2
+  | Cop(op, args) ->
+      begin match op with
+        (* The following may have side effects *)
+      | Capply _ | Cextcall _ | Calloc | Cstore _ | Craise _ -> false
+        (* The remaining operations are simple if their args are *)
+      | _ ->
+          List.for_all self#is_simple_expr args
+      end
+  | _ -> false
 
 (* Analyses the effects and coeffects of an expression.  This is used across
    a whole list of expressions with a view to determining which expressions
@@ -314,7 +343,8 @@ method effects_of exp =
   let module EC = Effect_and_coeffect in
   match exp with
   | Cconst_int _ | Cconst_natint _ | Cconst_float _ | Cconst_symbol _
-  | Cconst_pointer _ | Cconst_natpointer _ | Cblockheader _ | Cvar _ -> EC.none
+  | Cconst_pointer _ | Cconst_natpointer _ | Cblockheader _
+  | Cvar _ -> EC.none
   | Ctuple el -> EC.join_list_map el self#effects_of
   | Clet (_id, arg, body) ->
     EC.join (self#effects_of arg) (self#effects_of body)
@@ -323,13 +353,13 @@ method effects_of exp =
   | Cifthenelse (cond, ifso, ifnot) ->
     EC.join (self#effects_of cond)
       (EC.join (self#effects_of ifso) (self#effects_of ifnot))
-  | Cop (op, args, _dbg) ->
+  | Cop (op, args) ->
     let from_op =
       match op with
       | Capply _ | Cextcall _ -> EC.arbitrary
       | Calloc -> EC.none
       | Cstore _ -> EC.effect_only Effect.Arbitrary
-      | Craise _ | Ccheckbound -> EC.effect_only Effect.Raise
+      | Craise _ | Ccheckbound _ -> EC.effect_only Effect.Raise
       | Cload (_, Asttypes.Immutable) -> EC.none
       | Cload (_, Asttypes.Mutable) ->
         (* Loads from the current function's closure are a common case.
@@ -341,7 +371,7 @@ method effects_of exp =
           | None -> false
           | Some env_param ->
             match args with
-            | [Cop (Cadda, [Cvar ident; Cconst_int _], _)] ->
+            | [Cop (Cadda, [Cvar ident; Cconst_int _])] ->
               Ident.same ident env_param
             | _ -> false
         in
@@ -355,33 +385,6 @@ method effects_of exp =
     EC.join from_op (EC.join_list_map args self#effects_of)
   | Cassign _ | Cswitch _ | Cloop _ | Ccatch _ | Cexit _ | Ctrywith _ ->
     EC.arbitrary
-
-(* A syntactic criterion used in addition to judgements about (co)effects as
-   to whether the evaluation of a given expression may be deferred by
-   [emit_parts].  This criterion is a property of the instruction selection
-   algorithm in this file rather than a property of the Cmm language.
-*)
-method private is_simple_expr = function
-    Cconst_int _ -> true
-  | Cconst_natint _ -> true
-  | Cconst_float _ -> true
-  | Cconst_symbol _ -> true
-  | Cconst_pointer _ -> true
-  | Cconst_natpointer _ -> true
-  | Cblockheader _ -> true
-  | Cvar _ -> true
-  | Ctuple el -> List.for_all self#is_simple_expr el
-  | Clet(_id, arg, body) -> self#is_simple_expr arg && self#is_simple_expr body
-  | Csequence(e1, e2) -> self#is_simple_expr e1 && self#is_simple_expr e2
-  | Cop(op, args, _dbg) ->
-      begin match op with
-        (* The following may have side effects *)
-      | Capply _ | Cextcall _ | Calloc | Cstore _ | Craise _ -> false
-        (* The remaining operations are simple if their args are *)
-      | _ ->
-          List.for_all self#is_simple_expr args
-      end
-  | _ -> false
 
 (* Says whether an integer constant is a suitable immediate argument *)
 
@@ -948,7 +951,7 @@ method private emit_parts (env:environment) ~effects_after exp =
       | Coeffect.None ->
         (* Pure expressions may be moved. *)
         true
-      | Coeffect.Read_mutable ->
+      | Coeffect.Read_mutable -> begin
         (* Read-mutable expressions may only be deferred if evaluation of
            every [exp'] (for [exp'] as in the comment above) has no effects
            "worse" (in the sense of the ordering in [Effect.t]) than raising
@@ -956,10 +959,17 @@ method private emit_parts (env:environment) ~effects_after exp =
         match EC.effect effects_after with
         | Effect.None | Effect.Raise -> true
         | Effect.Arbitrary -> false
+      end
+      | Coeffect.Arbitrary -> begin
+        (* Arbitrary expressions may only be deferred if evaluation of
+           every [exp'] (for [exp'] as in the comment above) has no effects. *)
+        match EC.effect effects_after with
+        | Effect.None -> true
+        | Effect.Arbitrary | Effect.Raise -> false
+      end
   in
   (* Even though some expressions may look like they can be deferred from
-     the (co)effect analysis, it may be forbidden to move them.  (See
-     [cannot_defer], above.) *)
+     the (co)effect analysis, it may be forbidden to move them. *)
   if may_defer_evaluation && self#is_simple_expr exp then
     Some (exp, env)
   else begin
