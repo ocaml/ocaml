@@ -694,7 +694,7 @@ method emit_expr (env:environment) exp =
       begin match self#emit_parts_list env exp_list with
         None -> None
       | Some(simple_list, ext_env) ->
-          self#emit_tuple ext_env simple_list
+          Some(self#emit_tuple ext_env simple_list)
       end
   | Cop(Craise k, [arg], dbg) ->
       begin match self#emit_expr env arg with
@@ -715,54 +715,45 @@ method emit_expr (env:environment) exp =
           let (new_op, new_args) = self#select_operation op simple_args dbg in
           match new_op with
             Icall_ind _ ->
-              begin match self#emit_tuple env new_args with
-              | None -> None
-              | Some r1 ->
-                  let rarg = Array.sub r1 1 (Array.length r1 - 1) in
-                  let rd = self#regs_for ty in
-                  let (loc_arg, stack_ofs) = Proc.loc_arguments rarg in
-                  let loc_res = Proc.loc_results rd in
-                  let spacetime_reg =
-                    self#about_to_emit_call env (Iop new_op) [| r1.(0) |]
-                  in
-                  self#insert_move_args rarg loc_arg stack_ofs;
-                  self#maybe_emit_spacetime_move ~spacetime_reg;
-                  self#insert_debug (Iop new_op) dbg
-                              (Array.append [|r1.(0)|] loc_arg) loc_res;
-                  self#insert_move_results loc_res rd stack_ofs;
-                  Some rd
-              end
+              let r1 = self#emit_tuple env new_args in
+              let rarg = Array.sub r1 1 (Array.length r1 - 1) in
+              let rd = self#regs_for ty in
+              let (loc_arg, stack_ofs) = Proc.loc_arguments rarg in
+              let loc_res = Proc.loc_results rd in
+              let spacetime_reg =
+                self#about_to_emit_call env (Iop new_op) [| r1.(0) |]
+              in
+              self#insert_move_args rarg loc_arg stack_ofs;
+              self#maybe_emit_spacetime_move ~spacetime_reg;
+              self#insert_debug (Iop new_op) dbg
+                          (Array.append [|r1.(0)|] loc_arg) loc_res;
+              self#insert_move_results loc_res rd stack_ofs;
+              Some rd
           | Icall_imm _ ->
-              begin match self#emit_tuple env new_args with
-              | None -> None
-              | Some r1 ->
-                  let rd = self#regs_for ty in
-                  let (loc_arg, stack_ofs) = Proc.loc_arguments r1 in
-                  let loc_res = Proc.loc_results rd in
-                  let spacetime_reg =
-                    self#about_to_emit_call env (Iop new_op) [| |]
-                  in
-                  self#insert_move_args r1 loc_arg stack_ofs;
-                  self#maybe_emit_spacetime_move ~spacetime_reg;
-                  self#insert_debug (Iop new_op) dbg loc_arg loc_res;
-                  self#insert_move_results loc_res rd stack_ofs;
-                  Some rd
-              end
+              let r1 = self#emit_tuple env new_args in
+              let rd = self#regs_for ty in
+              let (loc_arg, stack_ofs) = Proc.loc_arguments r1 in
+              let loc_res = Proc.loc_results rd in
+              let spacetime_reg =
+                self#about_to_emit_call env (Iop new_op) [| |]
+              in
+              self#insert_move_args r1 loc_arg stack_ofs;
+              self#maybe_emit_spacetime_move ~spacetime_reg;
+              self#insert_debug (Iop new_op) dbg loc_arg loc_res;
+              self#insert_move_results loc_res rd stack_ofs;
+              Some rd
           | Iextcall _ ->
               let spacetime_reg =
                 self#about_to_emit_call env (Iop new_op) [| |]
               in
-              begin match self#emit_extcall_args env new_args with
-              | None -> None
-              | Some (loc_arg, stack_ofs) ->
-                  self#maybe_emit_spacetime_move ~spacetime_reg;
-                  let rd = self#regs_for ty in
-                  let loc_res =
-                    self#insert_op_debug new_op dbg
-                      loc_arg (Proc.loc_external_results rd) in
-                  self#insert_move_results loc_res rd stack_ofs;
-                  Some rd
-              end
+              let (loc_arg, stack_ofs) = self#emit_extcall_args env new_args in
+              self#maybe_emit_spacetime_move ~spacetime_reg;
+              let rd = self#regs_for ty in
+              let loc_res =
+                self#insert_op_debug new_op dbg
+                  loc_arg (Proc.loc_external_results rd) in
+              self#insert_move_results loc_res rd stack_ofs;
+              Some rd
           | Ialloc { words = _; spacetime_index; label_after_call_gc; } ->
               let rd = self#regs_for typ_val in
               let size = size_expr env (Ctuple new_args) in
@@ -774,12 +765,9 @@ method emit_expr (env:environment) exp =
               self#emit_stores env new_args rd;
               Some rd
           | op ->
-              begin match self#emit_tuple env new_args with
-              | None -> None
-              | Some r1 ->
-                  let rd = self#regs_for ty in
-                  Some (self#insert_op_debug op dbg r1 rd)
-              end
+              let r1 = self#emit_tuple env new_args in
+              let rd = self#regs_for ty in
+              Some (self#insert_op_debug op dbg r1 rd)
       end
   | Csequence(e1, e2) ->
       begin match self#emit_expr env e1 with
@@ -855,26 +843,23 @@ method emit_expr (env:environment) exp =
       begin match self#emit_parts_list env args with
         None -> None
       | Some (simple_list, ext_env) ->
-          begin match self#emit_tuple ext_env simple_list with
-          | None -> None
-          | Some src ->
-              let dest_args =
-                try env_find_static_exception nfail env
-                with Not_found ->
-                  fatal_error ("Selection.emit_expr: unboun label "^
-                               string_of_int nfail)
-              in
-              (* Intermediate registers to handle cases where some
-                 registers from src are present in dest *)
-              let tmp_regs = Reg.createv_like src in
-              (* Ccatch registers are created with type Val. They must not
-                 contain out of heap pointers *)
-              Array.iter (fun reg -> assert(reg.typ <> Addr)) src;
-              self#insert_moves src tmp_regs ;
-              self#insert_moves tmp_regs (Array.concat dest_args) ;
-              self#insert (Iexit nfail) [||] [||];
-              None
-          end
+          let src = self#emit_tuple ext_env simple_list in
+          let dest_args =
+            try env_find_static_exception nfail env
+            with Not_found ->
+              fatal_error ("Selection.emit_expr: unboun label "^
+                            string_of_int nfail)
+          in
+          (* Intermediate registers to handle cases where some
+              registers from src are present in dest *)
+          let tmp_regs = Reg.createv_like src in
+          (* Ccatch registers are created with type Val. They must not
+              contain out of heap pointers *)
+          Array.iter (fun reg -> assert(reg.typ <> Addr)) src;
+          self#insert_moves src tmp_regs ;
+          self#insert_moves tmp_regs (Array.concat dest_args) ;
+          self#insert (Iexit nfail) [||] [||];
+          None
       end
   | Ctrywith(e1, v, e2) ->
       let (r1, s1) = self#emit_sequence env e1 in
@@ -995,38 +980,32 @@ method private emit_parts_list (env:environment) exp_list =
 
 method private emit_tuple_not_flattened env exp_list =
   let rec emit_list = function
-  | [] -> Some []
+    [] -> []
   | exp :: rem ->
       (* Again, force right-to-left evaluation *)
-      match emit_list rem with
-      | None -> None
-      | Some loc_rem ->
-        match self#emit_expr env exp with
-        | None -> None
-        | Some loc_exp -> Some (loc_exp :: loc_rem)
+      let loc_rem = emit_list rem in
+      match self#emit_expr env exp with
+        None -> assert false  (* should have been caught in emit_parts *)
+      | Some loc_exp -> loc_exp :: loc_rem
   in
   emit_list exp_list
 
 method private emit_tuple env exp_list =
-  match self#emit_tuple_not_flattened env exp_list with
-  | None -> None
-  | Some regs -> Some (Array.concat regs)
+  Array.concat (self#emit_tuple_not_flattened env exp_list)
 
 method emit_extcall_args env args =
-  match self#emit_tuple_not_flattened env args with
-  | None -> None
-  | Some args ->
-    let arg_hard_regs, stack_ofs =
-      Proc.loc_external_arguments (Array.of_list args)
-    in
-    (* Flattening [args] and [arg_hard_regs] causes parts of values split
-      across multiple registers to line up correctly, by virtue of the
-      semantics of [split_int64_for_32bit_target] in cmmgen.ml, and the
-      required semantics of [loc_external_arguments] (see proc.mli). *)
-    let args = Array.concat args in
-    let arg_hard_regs = Array.concat (Array.to_list arg_hard_regs) in
-    self#insert_move_args args arg_hard_regs stack_ofs;
-    Some (arg_hard_regs, stack_ofs)
+  let args = self#emit_tuple_not_flattened env args in
+  let arg_hard_regs, stack_ofs =
+    Proc.loc_external_arguments (Array.of_list args)
+  in
+  (* Flattening [args] and [arg_hard_regs] causes parts of values split
+    across multiple registers to line up correctly, by virtue of the
+    semantics of [split_int64_for_32bit_target] in cmmgen.ml, and the
+    required semantics of [loc_external_arguments] (see proc.mli). *)
+  let args = Array.concat args in
+  let arg_hard_regs = Array.concat (Array.to_list arg_hard_regs) in
+  self#insert_move_args args arg_hard_regs stack_ofs;
+  Some (arg_hard_regs, stack_ofs)
 
 method emit_stores env data regs_addr =
   let a =
@@ -1075,68 +1054,62 @@ method emit_tail (env:environment) exp =
           let (new_op, new_args) = self#select_operation op simple_args dbg in
           match new_op with
             Icall_ind { label_after; } ->
-              begin match self#emit_tuple env new_args with
-              | None -> ()
-              | Some r1 ->
-                  let rarg = Array.sub r1 1 (Array.length r1 - 1) in
-                  let (loc_arg, stack_ofs) = Proc.loc_arguments rarg in
-                  if stack_ofs = 0 then begin
-                    let call = Iop (Itailcall_ind { label_after; }) in
-                    let spacetime_reg =
-                      self#about_to_emit_call env call [| r1.(0) |]
-                    in
-                    self#insert_moves rarg loc_arg;
-                    self#maybe_emit_spacetime_move ~spacetime_reg;
-                    self#insert_debug call dbg
-                                (Array.append [|r1.(0)|] loc_arg) [||];
-                  end else begin
-                    let rd = self#regs_for ty in
-                    let loc_res = Proc.loc_results rd in
-                    let spacetime_reg =
-                      self#about_to_emit_call env (Iop new_op) [| r1.(0) |]
-                    in
-                    self#insert_move_args rarg loc_arg stack_ofs;
-                    self#maybe_emit_spacetime_move ~spacetime_reg;
-                    self#insert_debug (Iop new_op) dbg
-                                (Array.append [|r1.(0)|] loc_arg) loc_res;
-                    self#insert(Iop(Istackoffset(-stack_ofs))) [||] [||];
-                    self#insert Ireturn loc_res [||]
-                  end
+              let r1 = self#emit_tuple env new_args in
+              let rarg = Array.sub r1 1 (Array.length r1 - 1) in
+              let (loc_arg, stack_ofs) = Proc.loc_arguments rarg in
+              if stack_ofs = 0 then begin
+                let call = Iop (Itailcall_ind { label_after; }) in
+                let spacetime_reg =
+                  self#about_to_emit_call env call [| r1.(0) |]
+                in
+                self#insert_moves rarg loc_arg;
+                self#maybe_emit_spacetime_move ~spacetime_reg;
+                self#insert_debug call dbg
+                            (Array.append [|r1.(0)|] loc_arg) [||];
+              end else begin
+                let rd = self#regs_for ty in
+                let loc_res = Proc.loc_results rd in
+                let spacetime_reg =
+                  self#about_to_emit_call env (Iop new_op) [| r1.(0) |]
+                in
+                self#insert_move_args rarg loc_arg stack_ofs;
+                self#maybe_emit_spacetime_move ~spacetime_reg;
+                self#insert_debug (Iop new_op) dbg
+                            (Array.append [|r1.(0)|] loc_arg) loc_res;
+                self#insert(Iop(Istackoffset(-stack_ofs))) [||] [||];
+                self#insert Ireturn loc_res [||]
               end
           | Icall_imm { func; label_after; } ->
-              begin match self#emit_tuple env new_args with
-              | None -> ()
-              | Some r1 ->
-                  let (loc_arg, stack_ofs) = Proc.loc_arguments r1 in
-                  if stack_ofs = 0 then begin
-                    let call = Iop (Itailcall_imm { func; label_after; }) in
-                    let spacetime_reg =
-                      self#about_to_emit_call env call [| |]
-                    in
-                    self#insert_moves r1 loc_arg;
-                    self#maybe_emit_spacetime_move ~spacetime_reg;
-                    self#insert_debug call dbg loc_arg [||];
-                  end else if func = !current_function_name then begin
-                    let call = Iop (Itailcall_imm { func; label_after; }) in
-                    let loc_arg' = Proc.loc_parameters r1 in
-                    let spacetime_reg =
-                      self#about_to_emit_call env call [| |]
-                    in
-                    self#insert_moves r1 loc_arg';
-                    self#maybe_emit_spacetime_move ~spacetime_reg;
-                    self#insert_debug call dbg loc_arg' [||];
-                  end else begin
-                    let rd = self#regs_for ty in
-                    let loc_res = Proc.loc_results rd in
-                    let spacetime_reg =
-                      self#about_to_emit_call env (Iop new_op) [| |]
-                    in
-                    self#insert_move_args r1 loc_arg stack_ofs;
-                    self#maybe_emit_spacetime_move ~spacetime_reg;
-                    self#insert_debug (Iop new_op) dbg loc_arg loc_res;
-                    self#insert(Iop(Istackoffset(-stack_ofs))) [||] [||];
-                    self#insert Ireturn loc_res [||]
-                  end
+              let r1 = self#emit_tuple env new_args in
+              let (loc_arg, stack_ofs) = Proc.loc_arguments r1 in
+              if stack_ofs = 0 then begin
+                let call = Iop (Itailcall_imm { func; label_after; }) in
+                let spacetime_reg =
+                  self#about_to_emit_call env call [| |]
+                in
+                self#insert_moves r1 loc_arg;
+                self#maybe_emit_spacetime_move ~spacetime_reg;
+                self#insert_debug call dbg loc_arg [||];
+              end else if func = !current_function_name then begin
+                let call = Iop (Itailcall_imm { func; label_after; }) in
+                let loc_arg' = Proc.loc_parameters r1 in
+                let spacetime_reg =
+                  self#about_to_emit_call env call [| |]
+                in
+                self#insert_moves r1 loc_arg';
+                self#maybe_emit_spacetime_move ~spacetime_reg;
+                self#insert_debug call dbg loc_arg' [||];
+              end else begin
+                let rd = self#regs_for ty in
+                let loc_res = Proc.loc_results rd in
+                let spacetime_reg =
+                  self#about_to_emit_call env (Iop new_op) [| |]
+                in
+                self#insert_move_args r1 loc_arg stack_ofs;
+                self#maybe_emit_spacetime_move ~spacetime_reg;
+                self#insert_debug (Iop new_op) dbg loc_arg loc_res;
+                self#insert(Iop(Istackoffset(-stack_ofs))) [||] [||];
+                self#insert Ireturn loc_res [||]
               end
           | _ -> fatal_error "Selection.emit_tail"
       end
