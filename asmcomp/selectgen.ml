@@ -1005,7 +1005,7 @@ method emit_extcall_args env args =
   let args = Array.concat args in
   let arg_hard_regs = Array.concat (Array.to_list arg_hard_regs) in
   self#insert_move_args args arg_hard_regs stack_ofs;
-  Some (arg_hard_regs, stack_ofs)
+  arg_hard_regs, stack_ofs
 
 method emit_stores env data regs_addr =
   let a =
