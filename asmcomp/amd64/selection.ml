@@ -131,11 +131,20 @@ method is_immediate n = n <= 0x7FFF_FFFF && n >= (-1-0x7FFF_FFFF)
 
 method is_immediate_natint n = n <= 0x7FFFFFFFn && n >= -0x80000000n
 
+method! is_simple_expr e =
+  match e with
+  | Cop(Cextcall(fn, _, _, _), args)
+    when List.mem fn inline_ops ->
+      (* inlined ops are simple if their arguments are *)
+      List.for_all self#is_simple_expr args
+  | _ ->
+      super#is_simple_expr e
+
 method! effects_of e =
   match e with
-  | Cop(Cextcall (fn, _, _, _), args, _)
+  | Cop(Cextcall(fn, _, _, _), args)
     when List.mem fn inline_ops ->
-      (* inlined ops' purity depends only on that of their arguments *)
+      (* inlined ops' (co)effects depend only on that of their arguments *)
       Selectgen.Effect_and_coeffect.join_list_map args self#effects_of
   | _ ->
       super#effects_of e
