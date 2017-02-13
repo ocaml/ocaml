@@ -7263,3 +7263,14 @@ let foo : type a' b'. a' -> b' = fun a -> assert false
 let foo : type t' . t' = fun (type t') -> (assert false : t')
 let foo : 't . 't = fun (type t) -> (assert false : t)
 let foo : type a' b' c' t. a' -> b' -> c' -> t = fun a b c -> assert false
+
+let f x =
+  x.contents <- (print_string "coucou" ; x.contents)
+
+let ( ~$ ) x = Some x
+let g x =
+  ~$ (x.contents)
+
+let ( ~$ ) x y = (x, y)
+let g x y =
+  ~$ (x.contents) (y.contents)

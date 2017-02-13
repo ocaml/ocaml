@@ -151,8 +151,8 @@ restore:
 # Check if fixpoint reached
 compare:
 	@if $(CAMLRUN) tools/cmpbyt boot/ocamlc ocamlc \
-         && $(CAMLRUN) tools/cmpbyt boot/ocamllex lex/ocamllex \
-         && $(CAMLRUN) tools/cmpbyt boot/ocamldep tools/ocamldep; \
+	 && $(CAMLRUN) tools/cmpbyt boot/ocamllex lex/ocamllex \
+	 && $(CAMLRUN) tools/cmpbyt boot/ocamldep tools/ocamldep; \
 	then echo "Fixpoint reached, bootstrap succeeded."; \
 	else echo "Fixpoint not reached, try one more bootstrapping cycle."; \
 	fi
@@ -240,7 +240,7 @@ install:
 	   $(INSTALL_COMPLIBDIR)
 	cp expunge $(INSTALL_LIBDIR)/expunge$(EXE)
 	cp toplevel/topdirs.cmi toplevel/topdirs.cmt toplevel/topdirs.cmti \
-           toplevel/topdirs.mli $(INSTALL_LIBDIR)
+	   toplevel/topdirs.mli $(INSTALL_LIBDIR)
 	cd tools; $(MAKE) install
 	-cd man; $(MAKE) install
 	for i in $(OTHERLIBRARIES); do \
@@ -271,8 +271,9 @@ installopt:
 	cp compilerlibs/ocamloptcomp.cma $(OPTSTART) $(INSTALL_COMPLIBDIR)
 	if test -n "$(WITH_OCAMLDOC)"; then (cd ocamldoc; $(MAKE) installopt); \
 		else :; fi
-	for i in $(OTHERLIBRARIES); \
-	  do (cd otherlibs/$$i; $(MAKE) installopt) || exit $$?; done
+	for i in $(OTHERLIBRARIES); do \
+	  (cd otherlibs/$$i; $(MAKE) installopt) || exit $$?; \
+	done
 	if test -f ocamlopt.opt ; then $(MAKE) installoptopt; else \
 	   cd $(INSTALL_BINDIR); \
 	   ln -sf ocamlc.byte$(EXE) ocamlc$(EXE); \
@@ -290,7 +291,7 @@ installoptopt:
 	   ln -sf ocamlopt.opt$(EXE) ocamlopt$(EXE); \
 	   ln -sf ocamllex.opt$(EXE) ocamllex$(EXE)
 	cp utils/*.cmx parsing/*.cmx typing/*.cmx bytecomp/*.cmx \
-           driver/*.cmx asmcomp/*.cmx $(INSTALL_COMPLIBDIR)
+	   driver/*.cmx asmcomp/*.cmx $(INSTALL_COMPLIBDIR)
 	cp compilerlibs/ocamlcommon.cmxa compilerlibs/ocamlcommon.a \
 	   compilerlibs/ocamlbytecomp.cmxa compilerlibs/ocamlbytecomp.a \
 	   compilerlibs/ocamloptcomp.cmxa compilerlibs/ocamloptcomp.a \
@@ -503,11 +504,11 @@ partialclean::
 	rm -f compilerlibs/ocamloptcomp.cmxa compilerlibs/ocamloptcomp.a
 
 ocamlopt.opt: compilerlibs/ocamlcommon.cmxa compilerlibs/ocamloptcomp.cmxa \
-              compilerlibs/ocamlbytecomp.cmxa  \
+              compilerlibs/ocamlbytecomp.cmxa \
               $(OPTSTART:.cmo=.cmx)
 	$(CAMLOPT) $(LINKFLAGS) -o ocamlopt.opt \
 	   compilerlibs/ocamlcommon.cmxa compilerlibs/ocamloptcomp.cmxa \
-	   compilerlibs/ocamlbytecomp.cmxa  \
+	   compilerlibs/ocamlbytecomp.cmxa \
 	   $(OPTSTART:.cmo=.cmx)
 
 partialclean::
@@ -681,10 +682,14 @@ partialclean::
 	done
 
 clean::
-	for i in $(OTHERLIBRARIES); do (cd otherlibs/$$i && $(MAKE) clean); done
+	for i in $(OTHERLIBRARIES); do \
+	  (cd otherlibs/$$i && $(MAKE) clean); \
+	done
 
 alldepend::
-	for i in $(OTHERLIBRARIES); do (cd otherlibs/$$i; $(MAKE) depend); done
+	for i in $(OTHERLIBRARIES); do \
+	  (cd otherlibs/$$i; $(MAKE) depend); \
+	done
 
 # The replay debugger
 
@@ -736,15 +741,19 @@ clean::
 	$(CAMLOPT) $(COMPFLAGS) -c $<
 
 partialclean::
-	for d in utils parsing typing bytecomp asmcomp middle_end \
-	         middle_end/base_types driver toplevel tools; \
-	  do rm -f $$d/*.cm[ioxt] $$d/*.cmti $$d/*.annot $$d/*.[so] $$d/*~; done
+	for d in \
+	  utils parsing typing bytecomp asmcomp middle_end \
+	  middle_end/base_types driver toplevel tools; \
+	do \
+	  rm -f $$d/*.cm[ioxt] $$d/*.cmti $$d/*.annot $$d/*.[so] $$d/*~; \
+	done
 	rm -f *~
 
 depend: beforedepend
 	(for d in utils parsing typing bytecomp asmcomp middle_end \
-	 middle_end/base_types driver toplevel; \
-	 do $(CAMLDEP) $(DEPFLAGS) $$d/*.mli $$d/*.ml; \
+	          middle_end/base_types driver toplevel; \
+	 do \
+	   $(CAMLDEP) $(DEPFLAGS) $$d/*.mli $$d/*.ml; \
 	 done) > .depend
 	$(CAMLDEP) $(DEPFLAGS) -native \
 		-impl driver/compdynlink.mlopt >> .depend

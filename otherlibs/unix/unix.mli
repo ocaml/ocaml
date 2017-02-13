@@ -15,8 +15,8 @@
 
 (** Interface to the Unix system.
 
-    Note: all the functions of this module (except [error_message] and
-    [handle_unix_error]) are liable to raise the [Unix_error]
+    Note: all the functions of this module (except {!error_message} and
+    {!handle_unix_error}) are liable to raise the {!Unix_error}
     exception whenever the underlying system call signals an error. *)
 
 
@@ -112,7 +112,7 @@ val error_message : error -> string
 
 val handle_unix_error : ('a -> 'b) -> 'a -> 'b
 (** [handle_unix_error f x] applies [f] to [x] and returns the result.
-   If the exception [Unix_error] is raised, it prints a message
+   If the exception {!Unix_error} is raised, it prints a message
    describing the error and exits with code 2. *)
 
 
@@ -840,7 +840,7 @@ val lockf : file_descr -> lock_command -> int -> unit
 
 val kill : int -> int -> unit
 (** [kill pid sig] sends signal number [sig] to the process
-   with id [pid].  On Windows, only the [Sys.sigkill] signal
+   with id [pid].  On Windows, only the {!Sys.sigkill} signal
    is emulated. *)
 
 type sigprocmask_command =

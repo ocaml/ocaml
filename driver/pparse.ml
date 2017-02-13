@@ -38,7 +38,7 @@ let preprocess sourcefile =
   match !Clflags.preprocessor with
     None -> sourcefile
   | Some pp ->
-      Timings.(time (Preprocessing sourcefile))
+      Timings.(time (Dash_pp sourcefile))
         (call_external_preprocessor sourcefile) pp
 
 
@@ -166,6 +166,7 @@ let parse (type a) (kind : a ast_kind) lexbuf : a =
 let file_aux ppf ~tool_name inputfile (type a) parse_fun invariant_fun
              (kind : a ast_kind) =
   let ast_magic = magic_of_kind kind in
+  let source_file = !Location.input_name in
   let (ic, is_ast_file) = open_and_check_magic inputfile ast_magic in
   let ast =
     try
@@ -181,12 +182,15 @@ let file_aux ppf ~tool_name inputfile (type a) parse_fun invariant_fun
         Location.input_name := inputfile;
         let lexbuf = Lexing.from_channel ic in
         Location.init lexbuf inputfile;
-        parse_fun lexbuf
+        Timings.(time_call (Parser source_file)) (fun () ->
+          parse_fun lexbuf)
       end
     with x -> close_in ic; raise x
   in
   close_in ic;
-  let ast = apply_rewriters ~restore:false ~tool_name kind ast in
+  let ast =
+    Timings.(time_call (Dash_ppx source_file)) (fun () ->
+      apply_rewriters ~restore:false ~tool_name kind ast) in
   if is_ast_file || !Clflags.all_ppx <> [] then invariant_fun ast;
   ast
 
@@ -212,8 +216,7 @@ let parse_file ~tool_name invariant_fun apply_hooks kind ppf sourcefile =
   Location.input_name := sourcefile;
   let inputfile = preprocess sourcefile in
   let ast =
-    let parse_fun = Timings.(time (Parsing sourcefile)) (parse kind) in
-    try file_aux ppf ~tool_name inputfile parse_fun invariant_fun kind
+    try file_aux ppf ~tool_name inputfile (parse kind) invariant_fun kind
     with exn ->
       remove_preprocessed inputfile;
       raise exn
@@ -230,8 +233,10 @@ module InterfaceHooks = Misc.MakeHooks(struct
   end)
 
 let parse_implementation ppf ~tool_name sourcefile =
-  parse_file ~tool_name Ast_invariants.structure
-    ImplementationHooks.apply_hooks Structure ppf sourcefile
+  Timings.(time_call (Parsing sourcefile)) (fun () ->
+    parse_file ~tool_name Ast_invariants.structure
+      ImplementationHooks.apply_hooks Structure ppf sourcefile)
 let parse_interface ppf ~tool_name sourcefile =
-  parse_file ~tool_name Ast_invariants.signature
-    InterfaceHooks.apply_hooks Signature ppf sourcefile
+  Timings.(time_call (Parsing sourcefile)) (fun () ->
+    parse_file ~tool_name Ast_invariants.signature
+      InterfaceHooks.apply_hooks Signature ppf sourcefile)

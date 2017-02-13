@@ -632,7 +632,7 @@ CAMLexport CAMLweakdef void caml_initialize (value *fp, value val)
 {
   CAMLassert(Is_in_heap_or_young(fp));
   *fp = val;
-  if (Is_block (val) && Is_young (val)) {
+  if (!Is_young((value)fp) && Is_block (val) && Is_young (val)) {
     add_to_ref_table (&caml_ref_table, fp);
   }
 }

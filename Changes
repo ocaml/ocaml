@@ -37,6 +37,10 @@ Next version (4.05.0):
 
 ### Compiler user-interface and warnings:
 
+- PR#7473, GPR#1025: perform proper globbing for command-line arguments on
+  Windows
+  (Jonathan Protzenko)
+
 - PR#7315, GPR#736: refine some error locations
   (Gabriel Scherer and Alain Frisch, report by Matej Košík)
 
@@ -68,6 +72,15 @@ Next version (4.05.0):
 - PR#7137, GPR#960: "-open" command line flag now accepts a module path
   (not a module name) (Arseniy Alekseyev and Leo White)
 
+- GPR#1009: "ocamlc -c -linkall" and "ocamlopt -c -linkall" can now be used
+  to set the "always link" flag on individual compilation units.  This
+  controls linking with finer granularity than "-a -linkall", which sets
+  the "always link" flag on all units of the given library.
+  (Xavier Leroy)
+
+- GPR#796: allow compiler plugins to declare their own arguments.
+  (Fabrice Le Fessant)
+
 ### Standard library:
 
 - PR#6975, GPR#902: Truncate function added to stdlib Buffer module
@@ -98,7 +111,14 @@ Next version (4.05.0):
   counterparts.
   (Roma Sokolov)
 
+- GPR#999: Arg, do not repeat thrice usage_msg when reporting an error
+  (Florian Angeletti, review by Gabriel Scherer)
+
 ### Manual and documentation:
+
+- PR#6597, GPR#1030: add forward references to language extensions
+  that extend non-terminal symbols in the language reference section.
+  (Florian Angeletti, review by Gabriel Scherer)
 
 - GPR#939: activate the caml_example environment in the language
   extensions section of the manual. Convert some existing code
@@ -129,6 +149,9 @@ Next version (4.05.0):
   first step towards moving Bigarray to the stdlib
   (Jeremie Dimino)
 
+- GPR#996: correctly update caml_top_of_stack in systhreads
+  (Fabrice Le Fessant)
+
 ### Bytecode debugger (ocamldebug):
 
 - GPR#977: Catch Out_of_range in "list" command
@@ -150,6 +173,10 @@ Next version (4.05.0):
 - GPR#986: ocamldoc, use relative paths in error message
   to solve ocamlbuild+doc usability issue (ocaml/ocamlbuild#79)
   (Gabriel Scherer, review by Florian Angeletti, discussion with Daniel Bünzli)
+
+- GPR#1017: ocamldoc, add an option to detect code fragments that could be
+  transformed into a cross-reference to a known element.
+  (Florian Angeletti, review and suggestion by David Allsopp)
 
 - clarify ocamldoc text parsing error messages
   (Gabriel Scherer)
@@ -209,6 +236,9 @@ Next version (4.05.0):
 
 ### Internal/compiler-libs changes:
 
+- GPR#673: distinguish initialization of block fields from mutation in lambda.
+  (Frédéric Bour, review by Xavier Leroy, Stephen Dolan and Mark Shinwell)
+
 - GPR#744, GPR#781: fix duplicate self-reference in imported cmi_crcs
   list in .cmti files + avoid rebuilding cmi_info record when creating
   .cmti files
@@ -220,12 +250,16 @@ Next version (4.05.0):
   include(struct ... end : sig ... end)
   (Alain Frisch, report by Hongbo Zhang, review by Jacques Garrigue)
 
-- GPR#908: refactor PIC-handling in the s390x backend
-  (Gabriel Scherer)
-
 - GPR#881: change `Outcometree.out_variant` to be more general.
   `Ovar_name of out_ident * out_type list` becomes `Ovar_type of out_type`.
   (Valentin Gatien-Baron)
+
+- GPR#908: refactor PIC-handling in the s390x backend
+  (Gabriel Scherer)
+
+- GPR#1027: various improvements to -dtimings, mostly including time
+  spent in subprocesses like preprocessors
+  (Valentin Gatien-Baron, review by Gabriel Scherer)
 
 ### Bug fixes
 
@@ -302,6 +336,11 @@ Next version (4.05.0):
   on macOS by system calls that fill in a struct sockaddr (e.g. getsockname).
   (Anton Bachin)
 
+### Toplevel and debugger:
+
+- PR#7060, GPR#1035: Print exceptions in installed custom printers
+  (Tadeu Zagallo, review by David Allsopp)
+
 Next minor version (4.04.1):
 ----------------------------
 
@@ -318,6 +357,11 @@ Next minor version (4.04.1):
 - MPR#7417, GPR#930: ensure 16 byte stack alignment inside caml_allocN on x86-64
   for ocaml build with WITH_FRAME_POINTERS defined
   (Christoph Cullmann)
+
+- PR#7460, GPR#1011: catch uncaught exception when unknown files are passed
+  as argument (regression in 4.04.0)
+  (Bernhard Schommer, review by Florian Angeletti and Gabriel Scherer,
+   report by Stephen Dolan)
 
 - GPR#912: Fix segfault in Unix.create_process on Windows caused by wrong header
   configuration.

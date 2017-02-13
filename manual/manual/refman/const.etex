@@ -22,6 +22,10 @@ constant:
   | "[|""|]"
   | "`"tag-name
 \end{syntax}
+See also the following language extensions:
+\hyperref[s:ext-integer]{integer literals for types \texttt{int32}, \texttt{int64}
+and \texttt{nativeint}}, \hyperref[s:quoted-strings]{quoted strings}
+and \hyperref[s:extension-literals]{extension literals}.
 
 The syntactic class of constants comprises literals from the four
 base types (integers, floating-point numbers, characters, character

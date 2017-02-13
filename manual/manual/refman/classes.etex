@@ -37,6 +37,9 @@ class-field-spec:
    |  'method' 'virtual' 'private' method-name ':' poly-typexpr
    |  'constraint' typexpr '=' typexpr
 \end{syntax}
+See also the following language extensions:
+\hyperref[s:attributes]{attributes} and
+\hyperref[s:extension-nodes]{extension nodes}.
 
 \subsubsection*{Simple class expressions}
 
@@ -186,6 +189,11 @@ class-field:
    |  'constraint' typexpr '=' typexpr
    |  'initializer' expr
 \end{syntax}
+See also the following language extensions:
+\hyperref[s:locally-abstract]{locally abstract types},
+\hyperref[s:explicit-overriding]{explicit overriding in class definitions},
+\hyperref[s:attributes]{attributes} and
+\hyperref[s:extension-nodes]{extension nodes}.
 
 \subsubsection*{Simple class expressions}
 

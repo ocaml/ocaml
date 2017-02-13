@@ -547,8 +547,8 @@ and expression ctxt f x =
                   then String.sub s 1 (String.length s -1)
                   else s in
                 begin match l with
-                | [(Nolabel, _) as v] ->
-                  pp f "@[<2>%s@;%a@]" s (label_x_expression_param ctxt) v
+                | [(Nolabel, x)] ->
+                  pp f "@[<2>%s@;%a@]" s (simple_expr ctxt) x
                 | _   ->
                   pp f "@[<2>%a %a@]" (simple_expr ctxt) e
                     (list (label_x_expression_param ctxt)) l
@@ -572,7 +572,7 @@ and expression ctxt f x =
          | _ -> assert false)
     | Pexp_setfield (e1, li, e2) ->
         pp f "@[<2>%a.%a@ <-@ %a@]"
-          (simple_expr ctxt) e1 longident_loc li (expression ctxt) e2
+          (simple_expr ctxt) e1 longident_loc li (simple_expr ctxt) e2
     | Pexp_ifthenelse (e1, e2, eo) ->
         (* @;@[<2>else@ %a@]@] *)
         let fmt:(_,_,_)format ="@[<hv0>@[<2>if@ %a@]@;@[<2>then@ %a@]%a@]" in
