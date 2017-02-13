@@ -144,7 +144,6 @@ method! effects_of e =
   match e with
   | Cop(Cextcall(fn, _, _, _), args, _)
     when List.mem fn inline_ops ->
-      (* inlined ops' (co)effects depend only on that of their arguments *)
       Selectgen.Effect_and_coeffect.join_list_map args self#effects_of
   | _ ->
       super#effects_of e

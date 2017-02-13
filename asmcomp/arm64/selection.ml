@@ -100,6 +100,12 @@ method! is_simple_expr = function
       List.for_all self#is_simple_expr args
   | e -> super#is_simple_expr e
 
+method! effects_of e =
+  match e with
+  | Cop(Cextcall (fn, _, _, _), args, _) when List.mem fn inline_ops ->
+      Selectgen.Effect_and_coeffect.join_list_map args self#effects_of
+  | e -> super#effects_of e
+
 method select_addressing chunk = function
   | Cop((Caddv | Cadda), [Cconst_symbol s; Cconst_int n], _)
     when use_direct_addressing s ->
