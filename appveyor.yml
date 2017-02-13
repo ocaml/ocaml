@@ -69,3 +69,4 @@ test_script:
   - ocamlc -version
   - set CAML_LD_LIBRARY_PATH=%OCAMLROOT%/lib/stublibs
   - '%CYG_ROOT%/bin/bash -lc "cd $APPVEYOR_BUILD_FOLDER && make -f Makefile.nt tests"'
+  - '%CYG_ROOT%/bin/bash -lc "cd $APPVEYOR_BUILD_FOLDER && make -f Makefile.nt install"'
