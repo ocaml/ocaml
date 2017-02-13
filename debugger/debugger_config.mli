@@ -28,13 +28,13 @@ val runtime_program : string
 val history_size : int ref
 val load_path_for : (string, string list) Hashtbl.t
 
-(*** Time travel paramaters. ***)
+(*** Time travel parameters. ***)
 
 val checkpoint_big_step : int64 ref
 val checkpoint_small_step : int64 ref
 val checkpoint_max_count : int ref
 val make_checkpoints : bool ref
 
-(*** Environment variables for debugee. ***)
+(*** Environment variables for debuggee. ***)
 
 val environment : (string * string) list ref

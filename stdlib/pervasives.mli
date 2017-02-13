@@ -594,7 +594,7 @@ external int_of_string : string -> int = "caml_int_of_string"
 
 
 val int_of_string_opt: string -> int option
-(** Same as [int_of_string], but returs [None] instead of raising.
+(** Same as [int_of_string], but returns [None] instead of raising.
     @since 4.05
 *)
 
@@ -619,7 +619,7 @@ external float_of_string : string -> float = "caml_float_of_string"
    representation of a float. *)
 
 val float_of_string_opt: string -> float option
-(** Same as [float_of_string], but returs [None] instead of raising.
+(** Same as [float_of_string], but returns [None] instead of raising.
     @since 4.05
 *)
 
@@ -729,7 +729,7 @@ val read_int : unit -> int
    if the line read is not a valid representation of an integer. *)
 
 val read_int_opt: unit -> int option
-(** Same as [read_int_opt], but returs [None] instead of raising.
+(** Same as [read_int_opt], but returns [None] instead of raising.
     @since 4.05
 *)
 

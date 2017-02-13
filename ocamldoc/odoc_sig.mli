@@ -181,7 +181,7 @@ module Analyser :
         Odoc_name.t -> int -> Parsetree.class_type -> Types.class_type ->
           Odoc_class.class_type_kind
 
-      (** This function takes an interface file name, a file containg the code, a parse tree
+      (** This function takes an interface file name, a file containing the code, a parse tree
          and the signature obtained from the compiler.
          It goes through the parse tree, creating values for encountered
          functions, modules, ..., looking in the source file for comments,

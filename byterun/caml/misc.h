@@ -73,7 +73,7 @@ typedef char * addr;
 #define CAMLprim
 #define CAMLextern extern
 
-/* Weak function definitions that can be overriden by external libs */
+/* Weak function definitions that can be overridden by external libs */
 /* Conservatively restricted to ELF and MacOSX platforms */
 #if defined(__GNUC__) && (defined (__ELF__) || defined(__APPLE__))
 #define CAMLweakdef __attribute__((weak))
