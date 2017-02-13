@@ -54,7 +54,7 @@ build_script:
   - '%CYG_ROOT%/bin/bash -lc "$APPVEYOR_BUILD_FOLDER/appveyor_build.sh"'
 
 test_script:
-  - ocamlc -version
+  - '%APPVEYOR_BUILD_FOLDER%\ocamlc.opt -version'
   - set CAML_LD_LIBRARY_PATH=%OCAMLROOT%/lib/stublibs
   - '%CYG_ROOT%/bin/bash -lc "cd $APPVEYOR_BUILD_FOLDER && make -f Makefile.nt tests"'
   - '%CYG_ROOT%/bin/bash -lc "cd $APPVEYOR_BUILD_FOLDER/../build-mingw32 && make -f Makefile.nt tests"'
