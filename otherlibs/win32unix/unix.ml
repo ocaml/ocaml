@@ -841,11 +841,48 @@ external win_create_process : string -> string -> string option ->
                               file_descr -> file_descr -> file_descr -> int
                             = "win_create_process" "win_create_process_native"
 
+(* See
+
+   https://blogs.msdn.microsoft.com/twistylittlepassagesallalike/2011/04/23/everyone-quotes-command-line-arguments-the-wrong-way/
+
+   for the gory details. *)
+
 let make_cmdline args =
   let maybe_quote f =
-    if String.contains f ' ' || String.contains f '\"' || f = ""
-    then Filename.quote f
-    else f in
+    let needs_quotes =
+      let rec aux i =
+        i < String.length f &&
+        match f.[i] with ' ' | '\t' | '\n' | '"' | '\011' -> true | _ -> aux (i+1)
+      in
+      f = "" || aux 0
+    in
+    if needs_quotes then begin
+      let buf = Buffer.create 0 in
+      Buffer.add_char buf '"';
+      let i = ref 0 in
+      while !i < String.length f do
+        let num_backslashes = ref 0 in
+        while !i < String.length f && f.[!i] = '\\' do
+          incr num_backslashes;
+          incr i
+        done;
+        if !i = String.length f then
+          Buffer.add_string buf (String.make (2 * !num_backslashes) '\\')
+        else if f.[!i] = '"' then begin
+          Buffer.add_string buf (String.make (2 * !num_backslashes + 1) '\\');
+          Buffer.add_char buf '"';
+          incr i
+        end else begin
+          Buffer.add_string buf (String.make !num_backslashes '\\');
+          Buffer.add_char buf f.[!i];
+          incr i
+        end
+      done;
+      Buffer.add_char buf '"';
+      Buffer.contents buf
+    end else
+      f
+  in
   String.concat " " (List.map maybe_quote (Array.to_list args))
 
 let make_process_env env =
