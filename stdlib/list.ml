@@ -58,7 +58,7 @@ let rev l = rev_append l []
 
 let rec init_tailrec_aux acc i n f =
   if i >= n then acc
-  else init_tailrec_aux ((f i)::acc) (i+1) (n) f
+  else init_tailrec_aux (f i::acc) (i+1) n f
 
 let rec init_aux i n f =
   if i >= n then []
