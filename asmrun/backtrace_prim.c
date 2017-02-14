@@ -84,7 +84,7 @@ void caml_stash_backtrace(value exn, uintnat pc, char * sp, char * trapsp)
   if (caml_backtrace_buffer == NULL) {
     Assert(caml_backtrace_pos == 0);
     caml_backtrace_buffer = malloc(BACKTRACE_BUFFER_SIZE
-                                   * sizeof(backtrace_slot));
+                                   * sizeof(caml_backtrace_item));
     if (caml_backtrace_buffer == NULL) return;
   }
 
@@ -93,8 +93,8 @@ void caml_stash_backtrace(value exn, uintnat pc, char * sp, char * trapsp)
     frame_descr * descr = caml_next_frame_descriptor(&pc, &sp);
     if (descr == NULL) return;
     /* store its descriptor in the backtrace buffer */
-    if (caml_backtrace_pos >= BACKTRACE_BUFFER_SIZE) return;
-    caml_backtrace_buffer[caml_backtrace_pos++] = (backtrace_slot) descr;
+
+    caml_store_backtrace_slot( (backtrace_slot) descr );
 
     /* Stop when we reach the current exception handler */
 #ifndef Stack_grows_upwards

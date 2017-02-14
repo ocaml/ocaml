@@ -17,6 +17,7 @@
 
 #include "caml/alloc.h"
 #include "caml/backtrace.h"
+#include "caml/backtrace_prim.h"
 #include "caml/callback.h"
 #include "caml/custom.h"
 #include "caml/fail.h"
@@ -94,7 +95,7 @@ struct caml_thread_struct {
   struct longjmp_buffer * external_raise; /* Saved caml_external_raise */
 #endif
   int backtrace_pos;            /* Saved caml_backtrace_pos */
-  backtrace_slot * backtrace_buffer;    /* Saved caml_backtrace_buffer */
+  caml_backtrace_item * backtrace_buffer;  /* Saved caml_backtrace_buffer */
   value backtrace_last_exn;     /* Saved caml_backtrace_last_exn (root) */
 };
 
@@ -220,6 +221,9 @@ static inline void caml_thread_restore_runtime_state(void)
   caml_external_raise = curr_thread->external_raise;
 #endif
   caml_backtrace_pos = curr_thread->backtrace_pos;
+  /* Since we haven't saved [top_of_backtrace], we only keep the
+     original backtrace filling the [backtrace_buffer]. */
+  if( caml_backtrace_pos < 0 ) caml_backtrace_pos = BACKTRACE_BUFFER_SIZE;
   caml_backtrace_buffer = curr_thread->backtrace_buffer;
   caml_backtrace_last_exn = curr_thread->backtrace_last_exn;
 }

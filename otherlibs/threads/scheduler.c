@@ -23,6 +23,7 @@
 
 #include "caml/alloc.h"
 #include "caml/backtrace.h"
+#include "caml/backtrace_prim.h"
 #include "caml/callback.h"
 #include "caml/config.h"
 #include "caml/fail.h"
@@ -84,7 +85,7 @@ struct caml_thread_struct {
   value * sp;
   value * trapsp;
   value backtrace_pos;          /* The backtrace info for this thread */
-  backtrace_slot * backtrace_buffer;
+  caml_backtrace_item * backtrace_buffer;
   value backtrace_last_exn;
   value status;                 /* RUNNABLE, KILLED. etc (see below) */
   value fd;     /* File descriptor on which we're doing read or write */
@@ -505,6 +506,9 @@ try_again:
   caml_extern_sp = curr_thread->sp;
   caml_trapsp = curr_thread->trapsp;
   caml_backtrace_pos = Int_val(curr_thread->backtrace_pos);
+  /* Since we haven't saved [top_of_backtrace], we only keep the 
+     original backtrace filling the [backtrace_buffer]. */
+  if( caml_backtrace_pos < 0 ) caml_backtrace_pos = BACKTRACE_BUFFER_SIZE;
   caml_backtrace_buffer = curr_thread->backtrace_buffer;
   caml_backtrace_last_exn = curr_thread->backtrace_last_exn;
   return curr_thread->retval;

@@ -314,9 +314,14 @@ let handle_uncaught_exception exn debugger_in_use =
     (* There is not much we can do at this point *)
     ()
 
-external register_named_value : string -> 'a -> unit
-  = "caml_register_named_value"
+(* Don't use directly a polymorphic function without specifying the
+   type, especially at the interface between OCaml and C. *)
+let register_uncaught_exception_printer (f : exn -> bool -> unit) =
+  Callback.register "Printexc.handle_uncaught_exception" f
 
 let () =
-  register_named_value "Printexc.handle_uncaught_exception"
-    handle_uncaught_exception
+  if
+    try Sys.getenv "OCAML_COMPRESSED_BACKTRACE" <> "1"
+    with Not_found -> true
+  then
+    register_uncaught_exception_printer handle_uncaught_exception
