@@ -62,7 +62,9 @@ let rec init_tailrec_aux acc i n f =
 
 let rec init_aux i n f =
   if i >= n then []
-  else (f i)::init_aux (i+1) n f
+  else
+    let fi = f i in
+    fi::init_aux (i+1) n f
 
 let init len f =
   if len < 0 then invalid_arg "List.init" else
