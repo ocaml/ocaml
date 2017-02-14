@@ -133,6 +133,16 @@ Next version (4.05.0):
 
 ### Other libraries:
 
+- GPR#650: in the Unix library, add `?cloexec:bool` optional arguments to
+  functions that create file descriptors (`dup`, `dup2`, `pipe`, `socket`,
+  `socketpair`, `accept`).  Implement these optional arguments in the
+  most atomic manner provided by the operating system to set (or clear)
+  the close-on-exec flag at the same time the file descriptor is created,
+  reducing the risk of race conditions with `exec` or `create_process`
+  calls running in other threads, and improving security.  Also: add a
+  `O_KEEPEXEC` flag for `openfile` by symmetry with `O_CLOEXEC`.
+  (Xavier Leroy)
+
 - MPR#7339, GPR#787: Support the '0 dimension' case for bigarrays
   (see Bigarray documentation)
   (Laurent Mazare,
