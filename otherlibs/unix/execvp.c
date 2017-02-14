@@ -15,6 +15,8 @@
 
 #include <caml/mlvalues.h>
 #include <caml/memory.h>
+#define CAML_INTERNALS
+#include <caml/osdeps.h>
 #include "unixsupport.h"
 
 #ifndef _WIN32
@@ -30,22 +32,23 @@ CAMLprim value unix_execvp(value path, value args)
   caml_stat_free((char *) argv);
   uerror("execvp", path);
   return Val_unit;                  /* never reached, but suppress warnings */
-                                /* from smart compilers */
+                                    /* from smart compilers */
 }
 
 CAMLprim value unix_execvpe(value path, value args, value env)
 {
+  char * exefile;
   char ** argv;
-  char ** saved_environ;
+  char ** envp;
   caml_unix_check_path(path, "execvpe");
+  exefile = caml_search_exe_in_path(String_val(path));
   argv = cstringvect(args, "execvpe");
-  saved_environ = environ;
-  environ = cstringvect(env, "execvpe");
-  (void) execvp(String_val(path), argv);
+  envp = cstringvect(env, "execvpe");
+  (void) execve(exefile, argv, envp);
+  caml_stat_free(exefile);
   caml_stat_free((char *) argv);
-  caml_stat_free((char *) environ);
-  environ = saved_environ;
-  uerror("execvp", path);
+  caml_stat_free((char *) envp);
+  uerror("execvpe", path);
   return Val_unit;                  /* never reached, but suppress warnings */
-                                /* from smart compilers */
+                                    /* from smart compilers */
 }

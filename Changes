@@ -277,6 +277,9 @@ Next version (4.05.0):
   uninitialized caml_global_data (only changes the bytecode behavior)
   (Gabriel Scherer, review by Xavier Leroy)
 
+- PR#6903: Unix.execvpe doesn't change environment on Cygwin
+  (Xavier Leroy)
+
 - PR#7216, GPR#949: don't require double parens in Functor((val x))
   (Jacques Garrigue, review by Valentin Gatien-Baron)
 
