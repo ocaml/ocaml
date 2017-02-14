@@ -114,6 +114,13 @@ Next version (4.05.0):
 - GPR#999: Arg, do not repeat thrice usage_msg when reporting an error
   (Florian Angeletti, review by Gabriel Scherer)
 
+### Debugging and profiling:
+
+- GPR#378: Add [Printexc.raise_with_backtrace] raise an exception using
+  an explicit backtrace
+  (François Bobot, review by Gabriel Scherer, Xavier Leroy, Damien Doligez,
+   Frédéric Bour)
+
 ### Manual and documentation:
 
 - PR#6597, GPR#1030: add forward references to language extensions
