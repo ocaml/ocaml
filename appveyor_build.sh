@@ -40,7 +40,7 @@ cp config/Makefile config/Makefile.bak
 sed -e "s|PREFIX=.*|PREFIX=$PREFIX|" config/Makefile.bak > config/Makefile
 #run "Content of config/Makefile" cat config/Makefile
 
-run "make world" make -f Makefile.nt world
-run "make bootstrap" make -f Makefile.nt bootstrap
-run "make opt" make -f Makefile.nt opt
-run "make opt.opt" make -f Makefile.nt opt.opt
+run "make world" make world
+run "make bootstrap" make bootstrap
+run "make opt" make opt
+run "make opt.opt" make opt.opt

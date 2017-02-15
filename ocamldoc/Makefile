@@ -212,7 +212,7 @@ exeopt: $(OCAMLDOC_OPT)
 libopt: $(OCAMLDOC_LIBCMXA) $(OCAMLDOC_LIBCMI)
 
 .PHONY: generatorsopt
-generatorsopt: $(GENERATORS_CMXS) # Not present in Makefile.nt
+generatorsopt: $(GENERATORS_CMXS)
 
 # TODO: the following debug target could be replaced by a DEBUG variable
 .PHONY: debug
