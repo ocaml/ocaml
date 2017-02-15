@@ -27,9 +27,30 @@ let () =
 
 let () =
   let result = try
-    List.init (-1) (fun x -> x); false
+      let _ = List.init (-1) (fun x -> x) in false
   with Invalid_argument e -> true (* Exception caught *)
   in assert result;
+;;
+
+(* Evaluation order (non tail-recursive) *)
+
+let () =
+  let result = ref false in
+  let _ = List.init 2 (fun x ->
+      if x = 0 then result := false
+      else if x = 1 then result := true
+    )
+  in assert !result
+;;
+
+(* Evaluation order (tail-recursive) *)
+let () =
+  let result = ref false in
+  let _ = List.init 10_001 (fun x ->
+      if x = 9999 then result := false
+      else if x = 10000 then result := true
+    )
+  in assert !result
 ;;
 
 let () = print_endline "OK";;
