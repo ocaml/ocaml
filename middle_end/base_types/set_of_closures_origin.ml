@@ -19,3 +19,4 @@
 include Set_of_closures_id
 
 let create t = t
+let rename f t = f t

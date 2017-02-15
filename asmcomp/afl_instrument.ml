@@ -38,13 +38,13 @@ let rec with_afl_logging b =
     let cur_pos = Ident.create "pos" in
     let afl_area = Ident.create "shared_mem" in
     let op oper args = Cop (oper, args, Debuginfo.none) in
-    Clet(afl_area, op (Cload Word_int) [afl_area_ptr],
-    Clet(cur_pos,  op Cxor [op (Cload Word_int) [afl_prev_loc];
-                            Cconst_int cur_location],
+    Clet(afl_area, op (Cload (Word_int, Asttypes.Mutable)) [afl_area_ptr],
+    Clet(cur_pos,  op Cxor [op (Cload (Word_int, Asttypes.Mutable))
+      [afl_prev_loc]; Cconst_int cur_location],
     Csequence(
       op (Cstore(Byte_unsigned, Assignment))
          [op Cadda [Cvar afl_area; Cvar cur_pos];
-          op Cadda [op (Cload Byte_unsigned)
+          op Cadda [op (Cload (Byte_unsigned, Asttypes.Mutable))
                        [op Cadda [Cvar afl_area; Cvar cur_pos]];
                     Cconst_int 1]],
       op (Cstore(Word_int, Assignment))

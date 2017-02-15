@@ -300,7 +300,7 @@ opnames.ml: ../byterun/caml/instruct.h make_opcodes
 	$(CAMLRUN) make_opcodes -opnames < $< > $@
 
 clean::
-	rm -f opnames.ml
+	rm -f opnames.ml make_opcodes make_opcodes.ml
 
 beforedepend:: opnames.ml
 

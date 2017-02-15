@@ -28,6 +28,10 @@ poly-typexpr:
 method-type:
     method-name ':' poly-typexpr
 \end{syntax}
+See also the following language extensions:
+\hyperref[s-first-class-modules]{first-class modules},
+\hyperref[s:attributes]{attributes} and
+\hyperref[s:extension-nodes]{extension nodes}.
 
 The table below shows the relative precedences and associativity of
 operators and non-closed type constructions. The constructions with

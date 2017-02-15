@@ -248,6 +248,8 @@ type open_flag = Unix.open_flag =
                                     while still open *)
   | O_CLOEXEC                   (** Set the close-on-exec flag on the
                                    descriptor returned by {!openfile} *)
+  | O_KEEPEXEC                  (** Clear the close-on-exec flag.
+                                    This is currently the default. *)
 (** The flags to {!UnixLabels.openfile}. *)
 
 
@@ -461,11 +463,11 @@ val access : string -> perm:access_permission list -> unit
 (** {6 Operations on file descriptors} *)
 
 
-val dup : file_descr -> file_descr
+val dup : ?cloexec:bool -> file_descr -> file_descr
 (** Return a new file descriptor referencing the same file as
    the given descriptor. *)
 
-val dup2 : src:file_descr -> dst:file_descr -> unit
+val dup2 : ?cloexec:bool -> src:file_descr -> dst:file_descr -> unit
 (** [dup2 fd1 fd2] duplicates [fd1] to [fd2], closing [fd2] if already
    opened. *)
 
@@ -531,7 +533,7 @@ val closedir : dir_handle -> unit
 (** {6 Pipes and redirections} *)
 
 
-val pipe : unit -> file_descr * file_descr
+val pipe : ?cloexec:bool -> unit -> file_descr * file_descr
 (** Create a pipe. The first component of the result is opened
    for reading, that's the exit to the pipe. The second component is
    opened for writing, that's the entrance to the pipe. *)
@@ -961,7 +963,8 @@ type sockaddr = Unix.sockaddr =
    [port] is the port number. *)
 
 val socket :
-  domain:socket_domain -> kind:socket_type -> protocol:int -> file_descr
+  ?cloexec:bool -> domain:socket_domain -> kind:socket_type -> protocol:int ->
+     file_descr
 (** Create a new socket in the given domain, and with the
    given kind. The third argument is the protocol type; 0 selects
    the default protocol for that kind of sockets. *)
@@ -970,11 +973,11 @@ val domain_of_sockaddr: sockaddr -> socket_domain
 (** Return the socket domain adequate for the given socket address. *)
 
 val socketpair :
-  domain:socket_domain -> kind:socket_type -> protocol:int ->
+  ?cloexec:bool -> domain:socket_domain -> kind:socket_type -> protocol:int ->
     file_descr * file_descr
 (** Create a pair of unnamed sockets, connected together. *)
 
-val accept : file_descr -> file_descr * sockaddr
+val accept : ?cloexec:bool -> file_descr -> file_descr * sockaddr
 (** Accept connections on the given socket. The returned descriptor
    is a socket connected to the client; the returned address is
    the address of the connecting client. *)
