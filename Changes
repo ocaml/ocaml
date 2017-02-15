@@ -338,6 +338,12 @@ Next version (4.05.0):
 
 - PR#7427, GPR#959: Don't delete let bodies in Cmmgen (Mark Shinwell)
 
+- PR#7346, GPR#966: Fix evaluation order problem whereby expressions could
+  be incorrectly re-ordered when compiling with Flambda.  This also fixes one
+  example of evaluation order in the native code compiler not matching the
+  bytecode compiler (even when not using Flambda)
+  (Mark Shinwell, Leo White, code review by Pierre Chambart)
+
 - GPR#967, PR#6136: Fix Closure so that overapplication evaluation order
   matches the bytecode compiler and Flambda.
   (Mark Shinwell, report by Jeremy Yallop, review by Frédéric Bour)

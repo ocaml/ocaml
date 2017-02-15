@@ -118,6 +118,18 @@ method! is_simple_expr = function
       List.for_all self#is_simple_expr args
   | e -> super#is_simple_expr e
 
+method! effects_of e =
+  match e with
+  | Cop(Cextcall("sqrt", _, _, _), args, _) when !fpu >= VFPv2 ->
+      Selectgen.Effect_and_coeffect.join_list_map args self#effects_of
+  | Cop(Cextcall("caml_bswap16_direct", _, _, _), args, _)
+    when !arch >= ARMv6T2 ->
+      Selectgen.Effect_and_coeffect.join_list_map args self#effects_of
+  | Cop(Cextcall("caml_int32_direct_bswap",_,_,_), args, _)
+    when !arch >= ARMv6 ->
+      Selectgen.Effect_and_coeffect.join_list_map args self#effects_of
+  | e -> super#effects_of e
+
 method select_addressing chunk = function
   | Cop((Cadda | Caddv), [arg; Cconst_int n], _)
     when is_offset chunk n ->
@@ -241,8 +253,9 @@ method private select_operation_softfp op args dbg =
       (Iintop_imm(Icomp(Iunsigned comp), 0),
        [Cop(Cextcall(func, typ_int, false, None), args, dbg)])
   (* Add coercions around loads and stores of 32-bit floats *)
-  | (Cload Single, args) ->
-      (self#iextcall("__aeabi_f2d", false), [Cop(Cload Word_int, args, dbg)])
+  | (Cload (Single, mut), args) ->
+      (self#iextcall("__aeabi_f2d", false),
+        [Cop(Cload (Word_int, mut), args, dbg)])
   | (Cstore (Single, init), [arg1; arg2]) ->
       let arg2' =
         Cop(Cextcall("__aeabi_d2f", typ_int, false, None), [arg2], dbg) in

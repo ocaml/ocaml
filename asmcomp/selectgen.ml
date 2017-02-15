@@ -50,7 +50,7 @@ let env_empty = {
 let oper_result_type = function
     Capply ty -> ty
   | Cextcall(_s, ty, _alloc, _) -> ty
-  | Cload c ->
+  | Cload (c, _) ->
       begin match c with
       | Word_val -> typ_val
       | Single | Double | Double_u -> typ_float
@@ -69,7 +69,8 @@ let oper_result_type = function
   | Craise _ -> typ_void
   | Ccheckbound -> typ_void
 
-(* Infer the size in bytes of the result of a simple expression *)
+(* Infer the size in bytes of the result of an expression whose evaluation
+   may be deferred (cf. [emit_parts]). *)
 
 let size_expr (env:environment) exp =
   let rec size localenv = function
@@ -194,17 +195,90 @@ let join_array rs =
 (* Name of function being compiled *)
 let current_function_name = ref ""
 
+module Effect = struct
+  type t =
+    | None
+    | Raise
+    | Arbitrary
+
+  let join t1 t2 =
+    match t1, t2 with
+    | None, t2 -> t2
+    | t1, None -> t1
+    | Raise, Raise -> Raise
+    | Arbitrary, _ | _, Arbitrary -> Arbitrary
+
+  let pure = function
+    | None -> true
+    | Raise | Arbitrary -> false
+end
+
+module Coeffect = struct
+  type t =
+    | None
+    | Read_mutable
+    | Arbitrary
+
+  let join t1 t2 =
+    match t1, t2 with
+    | None, t2 -> t2
+    | t1, None -> t1
+    | Read_mutable, Read_mutable -> Read_mutable
+    | Arbitrary, _ | _, Arbitrary -> Arbitrary
+
+  let copure = function
+    | None -> true
+    | Read_mutable | Arbitrary -> false
+end
+
+module Effect_and_coeffect : sig
+  type t
+
+  val none : t
+  val arbitrary : t
+
+  val effect : t -> Effect.t
+  val coeffect : t -> Coeffect.t
+
+  val pure_and_copure : t -> bool
+
+  val effect_only : Effect.t -> t
+  val coeffect_only : Coeffect.t -> t
+
+  val join : t -> t -> t
+  val join_list_map : 'a list -> ('a -> t) -> t
+end = struct
+  type t = Effect.t * Coeffect.t
+
+  let none = Effect.None, Coeffect.None
+  let arbitrary = Effect.Arbitrary, Coeffect.Arbitrary
+
+  let effect (e, _ce) = e
+  let coeffect (_e, ce) = ce
+
+  let pure_and_copure (e, ce) = Effect.pure e && Coeffect.copure ce
+
+  let effect_only e = e, Coeffect.None
+  let coeffect_only ce = Effect.None, ce
+
+  let join (e1, ce1) (e2, ce2) =
+    Effect.join e1 e2, Coeffect.join ce1 ce2
+
+  let join_list_map xs f =
+    match xs with
+    | [] -> none
+    | x::xs -> List.fold_left (fun acc x -> join acc (f x)) (f x) xs
+end
+
 (* The default instruction selection class *)
 
 class virtual selector_generic = object (self)
 
-(* Says if an expression is "simple". A "simple" expression has no
-   side-effects and its execution can be delayed until its value
-   is really needed. In the case of e.g. an [alloc] instruction,
-   the non-simple arguments are computed in right-to-left order
-   first, then the block is allocated, then the simple arguments are
-   evaluated and stored. *)
-
+(* A syntactic criterion used in addition to judgements about (co)effects as
+   to whether the evaluation of a given expression may be deferred by
+   [emit_parts].  This criterion is a property of the instruction selection
+   algorithm in this file rather than a property of the Cmm language.
+*)
 method is_simple_expr = function
     Cconst_int _ -> true
   | Cconst_natint _ -> true
@@ -217,15 +291,62 @@ method is_simple_expr = function
   | Ctuple el -> List.for_all self#is_simple_expr el
   | Clet(_id, arg, body) -> self#is_simple_expr arg && self#is_simple_expr body
   | Csequence(e1, e2) -> self#is_simple_expr e1 && self#is_simple_expr e2
-  | Cop(op, args, _dbg) ->
+  | Cop(op, args, _) ->
       begin match op with
         (* The following may have side effects *)
       | Capply _ | Cextcall _ | Calloc | Cstore _ | Craise _ -> false
         (* The remaining operations are simple if their args are *)
-      | _ ->
-          List.for_all self#is_simple_expr args
+      | Cload _ | Caddi | Csubi | Cmuli | Cmulhi | Cdivi | Cmodi | Cand | Cor
+      | Cxor | Clsl | Clsr | Casr | Ccmpi _ | Caddv | Cadda | Ccmpa _ | Cnegf
+      | Cabsf | Caddf | Csubf | Cmulf | Cdivf | Cfloatofint | Cintoffloat
+      | Ccmpf _ | Ccheckbound -> List.for_all self#is_simple_expr args
       end
-  | _ -> false
+  | Cassign _ | Cifthenelse _ | Cswitch _ | Cloop _ | Ccatch _ | Cexit _
+  | Ctrywith _ -> false
+
+(* Analyses the effects and coeffects of an expression.  This is used across
+   a whole list of expressions with a view to determining which expressions
+   may have their evaluation deferred.  The result of this function, modulo
+   target-specific judgements if the [effects_of] method is overridden, is a
+   property of the Cmm language rather than anything particular about the
+   instruction selection algorithm in this file.
+
+   In the case of e.g. an OCaml function call, the arguments whose evaluation
+   cannot be deferred (cf. [emit_parts], below) are computed in right-to-left
+   order first with their results going into temporaries, then the block is
+   allocated, then the remaining arguments are evaluated before being
+   combined with the temporaries. *)
+method effects_of exp =
+  let module EC = Effect_and_coeffect in
+  match exp with
+  | Cconst_int _ | Cconst_natint _ | Cconst_float _ | Cconst_symbol _
+  | Cconst_pointer _ | Cconst_natpointer _ | Cblockheader _
+  | Cvar _ -> EC.none
+  | Ctuple el -> EC.join_list_map el self#effects_of
+  | Clet (_id, arg, body) ->
+    EC.join (self#effects_of arg) (self#effects_of body)
+  | Csequence (e1, e2) ->
+    EC.join (self#effects_of e1) (self#effects_of e2)
+  | Cifthenelse (cond, ifso, ifnot) ->
+    EC.join (self#effects_of cond)
+      (EC.join (self#effects_of ifso) (self#effects_of ifnot))
+  | Cop (op, args, _) ->
+    let from_op =
+      match op with
+      | Capply _ | Cextcall _ -> EC.arbitrary
+      | Calloc -> EC.none
+      | Cstore _ -> EC.effect_only Effect.Arbitrary
+      | Craise _ | Ccheckbound -> EC.effect_only Effect.Raise
+      | Cload (_, Asttypes.Immutable) -> EC.none
+      | Cload (_, Asttypes.Mutable) -> EC.coeffect_only Coeffect.Read_mutable
+      | Caddi | Csubi | Cmuli | Cmulhi | Cdivi | Cmodi | Cand | Cor | Cxor
+      | Clsl | Clsr | Casr | Ccmpi _ | Caddv | Cadda | Ccmpa _ | Cnegf | Cabsf
+      | Caddf | Csubf | Cmulf | Cdivf | Cfloatofint | Cintoffloat | Ccmpf _ ->
+        EC.none
+    in
+    EC.join from_op (EC.join_list_map args self#effects_of)
+  | Cassign _ | Cswitch _ | Cloop _ | Ccatch _ | Cexit _ | Ctrywith _ ->
+    EC.arbitrary
 
 (* Says whether an integer constant is a suitable immediate argument *)
 
@@ -297,7 +418,7 @@ method select_operation op args _dbg =
       | Some label_after -> label_after
     in
     Iextcall { func; alloc; label_after; }, args
-  | (Cload chunk, [arg]) ->
+  | (Cload (chunk, _mut), [arg]) ->
       let (addr, eloc) = self#select_addressing chunk arg in
       (Iload(chunk, addr), [eloc])
   | (Cstore (chunk, init), [arg1; arg2]) ->
@@ -752,8 +873,51 @@ method private bind_let (env:environment) v r1 =
     env_add v rv env
   end
 
-method private emit_parts (env:environment) exp =
-  if self#is_simple_expr exp then
+(* The following two functions, [emit_parts] and [emit_parts_list], force
+   right-to-left evaluation order as required by the Flambda [Un_anf] pass
+   (and to be consistent with the bytecode compiler). *)
+
+method private emit_parts (env:environment) ~effects_after exp =
+  let module EC = Effect_and_coeffect in
+  let may_defer_evaluation =
+    let ec = self#effects_of exp in
+    match EC.effect ec with
+    | Effect.Arbitrary | Effect.Raise ->
+      (* Preserve the ordering of effectful expressions by evaluating them
+         early (in the correct order) and assigning their results to
+         temporaries.  We can avoid this in just one case: if we know that
+         every [exp'] in the original expression list (cf. [emit_parts_list])
+         to be evaluated after [exp] cannot possibly affect the result of
+         [exp] or depend on the result of [exp], then [exp] may be deferred.
+         (Checking purity here is not enough: we need to check copurity too
+         to avoid e.g. moving mutable reads earlier than the raising of
+         an exception.) *)
+      EC.pure_and_copure effects_after
+    | Effect.None ->
+      match EC.coeffect ec with
+      | Coeffect.None ->
+        (* Pure expressions may be moved. *)
+        true
+      | Coeffect.Read_mutable -> begin
+        (* Read-mutable expressions may only be deferred if evaluation of
+           every [exp'] (for [exp'] as in the comment above) has no effects
+           "worse" (in the sense of the ordering in [Effect.t]) than raising
+           an exception. *)
+        match EC.effect effects_after with
+        | Effect.None | Effect.Raise -> true
+        | Effect.Arbitrary -> false
+      end
+      | Coeffect.Arbitrary -> begin
+        (* Arbitrary expressions may only be deferred if evaluation of
+           every [exp'] (for [exp'] as in the comment above) has no effects. *)
+        match EC.effect effects_after with
+        | Effect.None -> true
+        | Effect.Arbitrary | Effect.Raise -> false
+      end
+  in
+  (* Even though some expressions may look like they can be deferred from
+     the (co)effect analysis, it may be forbidden to move them. *)
+  if may_defer_evaluation && self#is_simple_expr exp then
     Some (exp, env)
   else begin
     match self#emit_expr env exp with
@@ -776,18 +940,27 @@ method private emit_parts (env:environment) exp =
         end
   end
 
-method private emit_parts_list (env:environment) exp_list : (_ * environment) option =
-  match exp_list with
-    [] -> Some ([], env)
-  | exp :: rem ->
-      (* This ensures right-to-left evaluation, consistent with the
-         bytecode compiler *)
-      match self#emit_parts_list env rem with
-        None -> None
-      | Some(new_rem, new_env) ->
-          match self#emit_parts new_env exp with
-            None -> None
-          | Some(new_exp, fin_env) -> Some(new_exp :: new_rem, fin_env)
+method private emit_parts_list (env:environment) exp_list =
+  let module EC = Effect_and_coeffect in
+  let exp_list_right_to_left, _effect =
+    (* Annotate each expression with the (co)effects that happen after it
+       when the original expression list is evaluated from right to left.
+       The resulting expression list has the rightmost expression first. *)
+    List.fold_left (fun (exp_list, effects_after) exp ->
+        let exp_effect = self#effects_of exp in
+        (exp, effects_after)::exp_list, EC.join exp_effect effects_after)
+      ([], EC.none)
+      exp_list
+  in
+  List.fold_left (fun results_and_env (exp, effects_after) ->
+      match results_and_env with
+      | None -> None
+      | Some (result, env) ->
+          match self#emit_parts env exp ~effects_after with
+          | None -> None
+          | Some (exp_result, env) -> Some (exp_result :: result, env))
+    (Some ([], env))
+    exp_list_right_to_left
 
 method private emit_tuple_not_flattened env exp_list =
   let rec emit_list = function
