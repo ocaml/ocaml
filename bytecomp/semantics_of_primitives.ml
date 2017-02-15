@@ -94,6 +94,7 @@ let for_primitive (prim : Lambda.primitive) =
   | Pbigarraydim _ ->
       No_effects, Has_coeffects  (* Some people resize bigarrays in place. *)
   | Pfield _
+  | Pfield_computed
   | Pfloatfield _
   | Pgetglobal _
   | Parrayrefu _
@@ -120,6 +121,7 @@ let for_primitive (prim : Lambda.primitive) =
       (* May trigger a bounds check exception. *)
       Arbitrary_effects, Has_coeffects
   | Psetfield _
+  | Psetfield_computed _
   | Psetfloatfield _
   | Psetglobal _
   | Parraysetu _

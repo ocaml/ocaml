@@ -1008,7 +1008,7 @@ and transl_exp0 e =
              ap_inlined=Default_inline;
              ap_specialised=Default_specialise}
   | Texp_instvar(path_self, path, _) ->
-      Lprim(Parrayrefu Paddrarray,
+      Lprim(Pfield_computed,
             [transl_normal_path path_self; transl_normal_path path], e.exp_loc)
   | Texp_setinstvar(path_self, path, _, expr) ->
       transl_setinstvar e.exp_loc (transl_normal_path path_self) path expr
@@ -1278,12 +1278,8 @@ and transl_let rec_flag pat_expr_list body =
       Lletrec(List.map2 transl_case pat_expr_list idlist, body)
 
 and transl_setinstvar loc self var expr =
-  let prim =
-    match maybe_pointer expr with
-    | Pointer -> Paddrarray
-    | Immediate -> Pintarray
-  in
-  Lprim(Parraysetu prim, [self; transl_normal_path var; transl_exp expr], loc)
+  Lprim(Psetfield_computed (maybe_pointer expr, Assignment),
+    [self; transl_normal_path var; transl_exp expr], loc)
 
 and transl_record loc env fields repres opt_init_expr =
   let size = Array.length fields in
