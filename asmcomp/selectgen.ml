@@ -100,8 +100,7 @@ let size_expr (env:environment) exp =
         size localenv e2
     | _ ->
         fatal_error "Selection.size_expr"
-  in
-  size Tbl.empty exp
+  in size Tbl.empty exp
 
 (* Swap the two arguments of an integer comparison *)
 
@@ -195,9 +194,6 @@ let join_array rs =
 
 (* Name of function being compiled *)
 let current_function_name = ref ""
-
-(* Environment parameter for the function being compiled, if any. *)
-let current_function_env_param = ref None
 
 module Effect = struct
   type t =
@@ -300,10 +296,13 @@ method is_simple_expr = function
         (* The following may have side effects *)
       | Capply _ | Cextcall _ | Calloc | Cstore _ | Craise _ -> false
         (* The remaining operations are simple if their args are *)
-      | _ ->
-          List.for_all self#is_simple_expr args
+      | Cload _ | Caddi | Csubi | Cmuli | Cmulhi | Cdivi | Cmodi | Cand | Cor
+      | Cxor | Clsl | Clsr | Casr | Ccmpi _ | Caddv | Cadda | Ccmpa _ | Cnegf
+      | Cabsf | Caddf | Csubf | Cmulf | Cdivf | Cfloatofint | Cintoffloat
+      | Ccmpf _ | Ccheckbound -> List.for_all self#is_simple_expr args
       end
-  | _ -> false
+  | Cassign _ | Cifthenelse _ | Cswitch _ | Cloop _ | Ccatch _ | Cexit _
+  | Ctrywith _ -> false
 
 (* Analyses the effects and coeffects of an expression.  This is used across
    a whole list of expressions with a view to determining which expressions
@@ -339,22 +338,7 @@ method effects_of exp =
       | Cstore _ -> EC.effect_only Effect.Arbitrary
       | Craise _ | Ccheckbound -> EC.effect_only Effect.Raise
       | Cload (_, Asttypes.Immutable) -> EC.none
-      | Cload (_, Asttypes.Mutable) ->
-        (* Loads from the current function's closure are a common case.
-           Such loads are always from immutable blocks, even though for the
-           moment there is insufficient information propagated from the
-           middle-end for them to be marked [Immutable]. *)
-        let is_from_closure =
-          match !current_function_env_param with
-          | None -> false
-          | Some env_param ->
-            match args with
-            | [Cop (Cadda, [Cvar ident; Cconst_int _], _)] ->
-              Ident.same ident env_param
-            | _ -> false
-        in
-        if is_from_closure then EC.none
-        else EC.coeffect_only Coeffect.Read_mutable
+      | Cload (_, Asttypes.Mutable) -> EC.coeffect_only Coeffect.Read_mutable
       | Caddi | Csubi | Cmuli | Cmulhi | Cdivi | Cmodi | Cand | Cor | Cxor
       | Clsl | Clsr | Casr | Ccmpi _ | Caddv | Cadda | Ccmpa _ | Cnegf | Cabsf
       | Caddf | Csubf | Cmulf | Cdivf | Cfloatofint | Cintoffloat | Ccmpf _ ->
@@ -848,13 +832,13 @@ method emit_expr (env:environment) exp =
             try env_find_static_exception nfail env
             with Not_found ->
               fatal_error ("Selection.emit_expr: unboun label "^
-                            string_of_int nfail)
+                           string_of_int nfail)
           in
           (* Intermediate registers to handle cases where some
-              registers from src are present in dest *)
+             registers from src are present in dest *)
           let tmp_regs = Reg.createv_like src in
           (* Ccatch registers are created with type Val. They must not
-              contain out of heap pointers *)
+             contain out of heap pointers *)
           Array.iter (fun reg -> assert(reg.typ <> Addr)) src;
           self#insert_moves src tmp_regs ;
           self#insert_moves tmp_regs (Array.concat dest_args) ;
@@ -999,9 +983,9 @@ method emit_extcall_args env args =
     Proc.loc_external_arguments (Array.of_list args)
   in
   (* Flattening [args] and [arg_hard_regs] causes parts of values split
-    across multiple registers to line up correctly, by virtue of the
-    semantics of [split_int64_for_32bit_target] in cmmgen.ml, and the
-    required semantics of [loc_external_arguments] (see proc.mli). *)
+     across multiple registers to line up correctly, by virtue of the
+     semantics of [split_int64_for_32bit_target] in cmmgen.ml, and the
+     required semantics of [loc_external_arguments] (see proc.mli). *)
   let args = Array.concat args in
   let arg_hard_regs = Array.concat (Array.to_list arg_hard_regs) in
   self#insert_move_args args arg_hard_regs stack_ofs;
@@ -1196,7 +1180,6 @@ method initial_env () = env_empty
 method emit_fundecl f =
   Proc.contains_calls := false;
   current_function_name := f.Cmm.fun_name;
-  current_function_env_param := f.Cmm.fun_env;
   let rargs =
     List.map
       (fun (id, ty) -> let r = self#regs_for ty in name_regs id r; r)

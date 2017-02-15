@@ -115,6 +115,8 @@ let pseudoregs_for_operation op arg res =
   (* Other instructions are regular *)
   | _ -> raise Use_default
 
+(* If you update [inline_ops], you may need to update [is_simple_expr] and/or
+   [effects_of], below. *)
 let inline_ops =
   [ "sqrt"; "caml_bswap16_direct"; "caml_int32_direct_bswap";
     "caml_int64_direct_bswap"; "caml_nativeint_direct_bswap" ]
@@ -133,7 +135,7 @@ method is_immediate_natint n = n <= 0x7FFFFFFFn && n >= -0x80000000n
 
 method! is_simple_expr e =
   match e with
-  | Cop(Cextcall(fn, _, _, _), args, _)
+  | Cop(Cextcall (fn, _, _, _), args, _)
     when List.mem fn inline_ops ->
       (* inlined ops are simple if their arguments are *)
       List.for_all self#is_simple_expr args

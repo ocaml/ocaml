@@ -144,7 +144,8 @@ let code_for_blockheader ~value's_header ~node ~dbg =
       Cconst_int offset_into_node;
     ], dbg),
     Clet (existing_profinfo,
-        Cop (Cload (Word_int, Asttypes.Mutable), [Cvar address_of_profinfo], dbg),
+        Cop (Cload (Word_int, Asttypes.Mutable), [Cvar address_of_profinfo],
+          dbg),
       Clet (profinfo,
         Cifthenelse (
           Cop (Ccmpi Cne, [Cvar existing_profinfo; Cconst_int 1 (* () *)], dbg),

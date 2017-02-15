@@ -73,8 +73,9 @@ let rec select_addr exp =
   | arg ->
       (Alinear arg, 0)
 
-(* C functions to be turned into Ifloatspecial instructions if -ffast-math *)
-
+(* C functions to be turned into Ifloatspecial instructions if -ffast-math.
+   If you update this list, you may need to update [is_simple_expr] and/or
+   [effects_of], below. *)
 let inline_float_ops =
   ["atan"; "atan2"; "cos"; "log"; "log10"; "sin"; "sqrt"; "tan"]
 
