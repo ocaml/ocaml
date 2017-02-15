@@ -615,6 +615,9 @@ let float_array_ref dbg arr ofs =
 let addr_array_set arr ofs newval dbg =
   Cop(Cextcall("caml_modify", typ_void, false, None),
       [array_indexing log2_size_addr arr ofs dbg; newval], dbg)
+let addr_array_initialize arr ofs newval dbg =
+  Cop(Cextcall("caml_initialize", typ_void, false, None),
+      [array_indexing log2_size_addr arr ofs dbg; newval], dbg)
 let int_array_set arr ofs newval dbg =
   Cop(Cstore (Word_int, Assignment),
     [array_indexing log2_size_addr arr ofs dbg; newval], dbg)
@@ -1551,6 +1554,18 @@ let rec is_unboxed_number ~strict env e =
       join (is_unboxed_number ~strict env e1) e2
   | _ -> No_unboxing
 
+(* Helper for compilation of initialization and assignment operations *)
+
+type assignment_kind = Caml_modify | Caml_initialize | Simple
+
+let assignment_kind ptr init =
+  match init, ptr with
+  | Assignment, Pointer -> Caml_modify
+  | Heap_initialization, Pointer -> Caml_initialize
+  | Assignment, Immediate
+  | Heap_initialization, Immediate
+  | Root_initialization, (Immediate | Pointer) -> Simple
+
 (* Translate an expression *)
 
 let functions = (Queue.create() : ufunction Queue.t)
@@ -2019,20 +2034,18 @@ and transl_prim_2 env p arg1 arg2 dbg =
   | Pfield_computed ->
       addr_array_ref (transl env arg1) (transl env arg2) dbg
   | Psetfield(n, ptr, init) ->
-      begin match init, ptr with
-      | Assignment, Pointer ->
+      begin match assignment_kind ptr init with
+      | Caml_modify ->
         return_unit(Cop(Cextcall("caml_modify", typ_void, false, None),
                         [field_address (transl env arg1) n dbg;
                          transl env arg2],
                         dbg))
-      | Heap_initialization, Pointer ->
+      | Caml_initialize ->
         return_unit(Cop(Cextcall("caml_initialize", typ_void, false, None),
                         [field_address (transl env arg1) n dbg;
                          transl env arg2],
                         dbg))
-      | Assignment, Immediate
-      | Heap_initialization, Immediate
-      | Root_initialization, (Immediate | Pointer) ->
+      | Simple ->
         return_unit(set_field (transl env arg1) n (transl env arg2) init dbg)
       end
   | Psetfloatfield (n, init) ->
@@ -2321,14 +2334,16 @@ and transl_prim_3 env p arg1 arg2 arg3 dbg =
   match p with
   (* Heap operations *)
   | Psetfield_computed(ptr, init) ->
-      begin match init, ptr with
-      | (Assignment | Heap_initialization), Pointer ->
+      begin match assignment_kind ptr init with
+      | Caml_modify ->
         return_unit (
           addr_array_set (transl env arg1) (transl env arg2) (transl env arg3)
             dbg)
-      | Assignment, Immediate
-      | Heap_initialization, Immediate
-      | Root_initialization, (Immediate | Pointer) ->
+      | Caml_initialize ->
+        return_unit (
+          addr_array_initialize (transl env arg1) (transl env arg2)
+            (transl env arg3) dbg)
+      | Simple ->
         return_unit (
           int_array_set (transl env arg1) (transl env arg2) (transl env arg3)
             dbg)
