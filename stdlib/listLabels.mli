@@ -74,9 +74,11 @@ val rev : 'a list -> 'a list
 (** List reversal. *)
 
 val init : len:int -> f:(int -> 'a) -> 'a list
-(** [List.init len f] is [f 0; f 1; ...; f (n-1)].
+(** [List.init len f] is [f 0; f 1; ...; f (len-1)], evaluated left to right.
 
-   Raise [Invalid_argument] if [n < 0].*)
+    @raise [Invalid_argument] if [len < 0].
+    @since 4.05.0
+*)
 
 val append : 'a list -> 'a list -> 'a list
 (** Catenate two lists.  Same function as the infix operator [@].
