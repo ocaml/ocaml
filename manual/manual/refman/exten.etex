@@ -1925,20 +1925,24 @@ let y = [%extension_constructor Y];;
 
 Quoted strings provide a different lexical syntax to write string
 literals in OCaml code.  This can be used to embed pieces of foreign
-syntax fragments in OCaml code, to be interpret by a "-ppx" filter or
+syntax fragments in OCaml code, to be interpreted by a "-ppx" filter or
 just a library.
 
 \begin{syntax}
 string-literal: ...
-     |  '{' quoted-string-id '|'  ........ '|' quoted-string-id '}'
+     |  '{' '|'  ........ '|' '}'
+     |  '{' {{quoted-string-id}} '|'  ........ '|' {{quoted-string-id}} '}'
 ;
 quoted-string-id:
-     { 'a'...'z' || '_' }
+     { 'a'...'z' } || '_' ||
+     '!' || '$' || '%' || '&' || '*' || '+' || '-' || '.' ||
+     '/' || ':' || '<' || '=' || '>' || '?' || '@' ||
+     '^' || '~' || '#'
 ;
 \end{syntax}
 
 The opening delimiter has the form "{id|" where "id" is a (possibly
-  empty) sequence of lowercase letters and underscores.  The
+  empty) sequence of lowercase letters, underscores and symbols.  The
   corresponding closing delimiter is "|id}" (with the same
 identifier).  Unlike regular OCaml string literals, quoted
 strings do not interpret any character in a special way.

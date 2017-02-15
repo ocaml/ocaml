@@ -288,8 +288,12 @@ let lowercase_latin1 = ['a'-'z' '\223'-'\246' '\248'-'\255' '_']
 let uppercase_latin1 = ['A'-'Z' '\192'-'\214' '\216'-'\222']
 let identchar_latin1 =
   ['A'-'Z' 'a'-'z' '_' '\192'-'\214' '\216'-'\246' '\248'-'\255' '\'' '0'-'9']
+let common_symbol_char =
+  ['!' '$' '%' '&' '*' '+' '-' '.' '/' ':' '<' '=' '>' '?' '@' '^' '~']
 let symbolchar =
-  ['!' '$' '%' '&' '*' '+' '-' '.' '/' ':' '<' '=' '>' '?' '@' '^' '|' '~']
+  common_symbol_char | '|'
+let quoted_string_id_char =
+  lowercase | common_symbol_char | '#'
 let decimal_literal =
   ['0'-'9'] ['0'-'9' '_']*
 let hex_literal =
@@ -366,7 +370,7 @@ rule token = parse
         is_in_string := false;
         lexbuf.lex_start_p <- string_start;
         STRING (get_stored_string(), None) }
-  | "{" lowercase* "|"
+  | "{" quoted_string_id_char* "|"
       { reset_string_buffer();
         let delim = Lexing.lexeme lexbuf in
         let delim = String.sub delim 1 (String.length delim - 2) in
@@ -554,7 +558,7 @@ and comment = parse
         is_in_string := false;
         store_string_char '\"';
         comment lexbuf }
-  | "{" lowercase* "|"
+  | "{" quoted_string_id_char "|"
       {
         let delim = Lexing.lexeme lexbuf in
         let delim = String.sub delim 1 (String.length delim - 2) in
@@ -664,7 +668,7 @@ and quoted_string delim = parse
   | eof
       { is_in_string := false;
         raise (Error (Unterminated_string, !string_start_loc)) }
-  | "|" lowercase* "}"
+  | "|" quoted_string_id_char* "}"
       {
         let edelim = Lexing.lexeme lexbuf in
         let edelim = String.sub edelim 1 (String.length edelim - 2) in
