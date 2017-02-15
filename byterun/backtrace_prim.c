@@ -217,6 +217,13 @@ CAMLprim value caml_remove_debug_info(code_t start)
   CAMLreturn(Val_unit);
 }
 
+int caml_alloc_backtrace_buffer(void){
+  Assert(caml_backtrace_pos == 0);
+  caml_backtrace_buffer = malloc(BACKTRACE_BUFFER_SIZE * sizeof(code_t));
+  if (caml_backtrace_buffer == NULL) return -1;
+  return 0;
+}
+
 /* Store the return addresses contained in the given stack fragment
    into the backtrace array */
 
@@ -228,11 +235,8 @@ void caml_stash_backtrace(value exn, code_t pc, value * sp, int reraise)
     caml_backtrace_last_exn = exn;
   }
 
-  if (caml_backtrace_buffer == NULL) {
-    Assert(caml_backtrace_pos == 0);
-    caml_backtrace_buffer = malloc(BACKTRACE_BUFFER_SIZE * sizeof(code_t));
-    if (caml_backtrace_buffer == NULL) return;
-  }
+  if (caml_backtrace_buffer == NULL && caml_alloc_backtrace_buffer() == -1)
+    return;
 
   if (caml_backtrace_pos >= BACKTRACE_BUFFER_SIZE) return;
   /* testing the code region is needed: PR#1554 */
