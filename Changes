@@ -356,6 +356,9 @@ Next version (4.05.0):
   on macOS by system calls that fill in a struct sockaddr (e.g. getsockname).
   (Anton Bachin)
 
+- GPR#1019: Fix fatal error in Flambda mode "[functions] does not map set of
+  closures ID" (Pierre Chambart, code review by Mark Shinwell and Leo White)
+
 ### Toplevel and debugger:
 
 - PR#7060, GPR#1035: Print exceptions in installed custom printers
