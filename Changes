@@ -324,6 +324,8 @@ Next version (4.05.0):
 - GPR#881: short-paths did not apply to some polymorphic variants
   (Valentin Gatien-Baron, review by Leo White)
 
+- GPR#886: Fix Ctype.moregeneral's handling of row_name (Leo White)
+
 - GPR#934: check for integer overflow in Bytes.extend
   (Jeremy Yallop, review by Gabriel Scherer)
 
