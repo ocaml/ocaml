@@ -478,6 +478,7 @@ base.opt:
 	$(MAKE) otherlibrariesopt
 
 # Core bootstrapping cycle
+.PHONY: coreboot
 coreboot:
 # Save the original bootstrap compiler
 	$(MAKE) backup
@@ -1262,6 +1263,7 @@ depend: beforedepend
 
 alldepend:: depend
 
+.PHONY: distclean
 distclean: clean
 	rm -f asmrun/.depend.nt byterun/.depend.nt \
 	            otherlibs/bigarray/.depend.nt  \
