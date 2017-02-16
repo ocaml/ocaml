@@ -80,11 +80,16 @@ let classify env ty =
            || Path.same p Predef.path_int64 then Addr
       else begin
         try
-          match (Env.find_type p env).type_kind with
-          | Type_abstract ->
-              Any
-          | Type_record _ | Type_variant _ | Type_open ->
-              Addr
+          let ty = Env.find_type p env in
+          match ty.type_repr with
+          | Asttypes.Repr_immediate -> Int
+          | Asttypes.Repr_address -> Addr
+          | Asttypes.Repr_any ->
+            match ty.type_kind with
+            | Type_abstract ->
+                Any
+            | Type_record _ | Type_variant _ | Type_open ->
+                Addr
         with Not_found ->
           (* This can happen due to e.g. missing -I options,
              causing some .cmi files to be unavailable.

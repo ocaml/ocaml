@@ -315,11 +315,8 @@ let type_declarations ?(equality = false) ~loc env name decl1 id decl2 =
   (* If attempt to assign a non-immediate type (e.g. string) to a type that
    * must be immediate, then we error *)
   let err =
-    if abstr then match decl1.type_repr, decl2.type_repr with
-    | Repr_any, Repr_immediate -> [Immediate]
-    | Repr_immediate, Repr_any
-    | Repr_immediate, Repr_immediate
-    | Repr_any, Repr_any -> []
+    if abstr && not (Ctype.subtype_repr decl2.type_repr decl1.type_repr) then
+      [Immediate]
     else []
   in
   if err <> [] then err else

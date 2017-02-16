@@ -59,4 +59,5 @@ type variance =
 
 type type_repr =
   | Repr_immediate (** Only immediate integers *)
+  | Repr_address (** Only immediate integers or non-float, non-lazy blocks *)
   | Repr_any (** Not specified *)

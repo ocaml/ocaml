@@ -1106,11 +1106,6 @@ let marked_as_immediate decl =
   if Builtin_attributes.immediate decl.type_attributes then Repr_immediate
   else Repr_any
 
-let subtype_repr r1 r2 = match r1, r2 with
-| Repr_any, (Repr_any | Repr_immediate) -> true
-| Repr_immediate, Repr_immediate -> true
-| Repr_immediate, Repr_any -> false
-
 let compute_immediacy env tdecl =
   let from_pointer b = if b then Repr_any else Repr_immediate in
   match (tdecl.type_kind, tdecl.type_manifest) with
@@ -1123,9 +1118,11 @@ let compute_immediacy env tdecl =
     | None -> Repr_any
     end
   | (Type_variant (_ :: _ as cstrs), _) ->
-    from_pointer (List.exists (fun c -> c.Types.cd_args <> Types.Cstr_tuple []) cstrs)
-  | (Type_abstract, Some(typ)) ->
-    from_pointer (Ctype.maybe_pointer_type env typ)
+    if List.exists (fun c -> c.Types.cd_args <> Types.Cstr_tuple []) cstrs then
+      Repr_address
+    else
+      Repr_immediate
+  | (Type_abstract, Some(typ)) -> Ctype.get_type_repr env typ
   | (Type_abstract, None) -> marked_as_immediate tdecl
   | _ -> Repr_any
 
@@ -1166,7 +1163,8 @@ let rec compute_properties_fixpoint env decls required variances immediacies =
       prerr_endline "")
       new_decls; *)
     List.iter (fun (_, decl) ->
-      if not (subtype_repr (marked_as_immediate decl) decl.type_repr) then
+      let repr = marked_as_immediate decl in
+      if not (Ctype.subtype_repr repr decl.type_repr) then
         raise (Error (decl.type_loc, Bad_repr_attribute))
       else ())
       new_decls;
