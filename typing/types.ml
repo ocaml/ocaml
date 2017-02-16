@@ -148,7 +148,7 @@ type type_declaration =
     type_newtype_level: (int * int) option;
     type_loc: Location.t;
     type_attributes: Parsetree.attributes;
-    type_immediate: bool;
+    type_repr: Asttypes.type_repr;
     type_unboxed: unboxed_status;
  }
 

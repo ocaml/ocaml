@@ -1099,7 +1099,7 @@ let new_declaration newtype manifest =
     type_newtype_level = newtype;
     type_loc = Location.none;
     type_attributes = [];
-    type_immediate = false;
+    type_repr = Repr_any;
     type_unboxed = unboxed_false_default_false;
   }
 
@@ -4400,7 +4400,7 @@ let nondep_type_decl env mid id is_covariant decl =
       type_newtype_level = None;
       type_loc = decl.type_loc;
       type_attributes = decl.type_attributes;
-      type_immediate = decl.type_immediate;
+      type_repr = decl.type_repr;
       type_unboxed = decl.type_unboxed;
     }
   with Not_found ->
@@ -4538,7 +4538,9 @@ let maybe_pointer_type env typ =
   | Tconstr(p, _args, _abbrev) ->
     begin try
       let type_decl = Env.find_type p env in
-      not type_decl.type_immediate
+      match type_decl.type_repr with
+      | Repr_immediate -> false
+      | Repr_any -> true
     with Not_found -> true
     (* This can happen due to e.g. missing -I options,
        causing some .cmi files to be unavailable.

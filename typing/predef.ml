@@ -124,11 +124,11 @@ let decl_abstr =
    type_variance = [];
    type_newtype_level = None;
    type_attributes = [];
-   type_immediate = false;
+   type_repr = Asttypes.Repr_any;
    type_unboxed = unboxed_false_default_false;
   }
 
-let decl_abstr_imm = {decl_abstr with type_immediate = true}
+let decl_abstr_imm = {decl_abstr with type_repr = Asttypes.Repr_immediate}
 
 let cstr id args =
   {
@@ -150,11 +150,11 @@ let common_initial_env add_type add_extension empty_env =
   let decl_bool =
     {decl_abstr with
      type_kind = Type_variant([cstr ident_false []; cstr ident_true []]);
-     type_immediate = true}
+     type_repr = Asttypes.Repr_immediate}
   and decl_unit =
     {decl_abstr with
      type_kind = Type_variant([cstr ident_void []]);
-     type_immediate = true}
+     type_repr = Asttypes.Repr_immediate}
   and decl_exn =
     {decl_abstr with
      type_kind = Type_open}

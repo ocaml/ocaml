@@ -56,3 +56,7 @@ type variance =
   | Covariant
   | Contravariant
   | Invariant
+
+type type_repr =
+  | Repr_immediate (** Only immediate integers *)
+  | Repr_any (** Not specified *)
