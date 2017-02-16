@@ -976,6 +976,16 @@ val localtime : float -> tm
 (** Convert a time in seconds, as returned by {!Unix.time}, into a date and
    a time. Assumes the local time zone. *)
 
+val timegm : tm -> float
+(** Convert a date and time, assumed to be UTC, into a time in seconds
+   since the Epoch (00:00:00 GMT, Jan. 1, 1970).  It is the inverse of
+   {!gmtime}. *)
+
+val timelocal : tm -> float
+(** Convert a date and time, assumed to be in the local timezone, into
+   a time in seconds since the Epoch (00:00:00 GMT, Jan. 1, 1970).  It
+   is the inverse of {!localtime}. *)
+
 val mktime : tm -> float * tm
 (** Convert a date and time, specified by the [tm] argument, into
    a time in seconds, as returned by {!Unix.time}.  The [tm_isdst],
