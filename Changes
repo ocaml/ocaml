@@ -1,3 +1,15 @@
+Working version
+---------------
+
+(Changes that can break existing programs are marked with a "*")
+
+### Bug fixes
+
+- PR#7468: possible GC problem in caml_alloc_sprintf
+  (Xavier Leroy, discovery by Olivier Andrieu)
+
+
+
 Next version (4.05.0):
 ----------------------
 
