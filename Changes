@@ -150,6 +150,11 @@ Next version (4.05.0):
   `O_KEEPEXEC` flag for `openfile` by symmetry with `O_CLOEXEC`.
   (Xavier Leroy)
 
+- PR#7158: Event.sync, Mutex.create, Condition.create cause too many GCs.
+  The fix is to no longer consider mutexes and condition variables
+  as rare kernel resources.
+  (Xavier Leroy)
+
 - PR#7264: document the different behaviors of Unix.lockf under POSIX
   and under Win32.
   (Xavier Leroy, report by David Allsopp)
