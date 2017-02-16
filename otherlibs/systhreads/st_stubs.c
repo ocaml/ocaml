@@ -749,7 +749,6 @@ CAMLprim value caml_thread_join(value th)          /* ML */
 /* Mutex operations */
 
 #define Mutex_val(v) (* ((st_mutex *) Data_custom_val(v)))
-#define Max_mutex_number 5000
 
 static void caml_mutex_finalize(value wrapper)
 {
@@ -783,7 +782,7 @@ CAMLprim value caml_mutex_new(value unit)        /* ML */
   value wrapper;
   st_check_error(st_mutex_create(&mut), "Mutex.create");
   wrapper = caml_alloc_custom(&caml_mutex_ops, sizeof(st_mutex *),
-                         1, Max_mutex_number);
+                              0, 1);
   Mutex_val(wrapper) = mut;
   return wrapper;
 }
@@ -828,7 +827,6 @@ CAMLprim value caml_mutex_try_lock(value wrapper)           /* ML */
 /* Conditions operations */
 
 #define Condition_val(v) (* (st_condvar *) Data_custom_val(v))
-#define Max_condition_number 5000
 
 static void caml_condition_finalize(value wrapper)
 {
@@ -863,7 +861,7 @@ CAMLprim value caml_condition_new(value unit)        /* ML */
   value wrapper;
   st_check_error(st_condvar_create(&cond), "Condition.create");
   wrapper = caml_alloc_custom(&caml_condition_ops, sizeof(st_condvar *),
-                         1, Max_condition_number);
+                              0, 1);
   Condition_val(wrapper) = cond;
   return wrapper;
 }
@@ -900,7 +898,6 @@ CAMLprim value caml_condition_broadcast(value wrapper)           /* ML */
 /* Thread status blocks */
 
 #define Threadstatus_val(v) (* ((st_event *) Data_custom_val(v)))
-#define Max_threadstatus_number 500
 
 static void caml_threadstatus_finalize(value wrapper)
 {
@@ -930,7 +927,7 @@ static value caml_threadstatus_new (void)
   value wrapper;
   st_check_error(st_event_create(&ts), "Thread.create");
   wrapper = caml_alloc_custom(&caml_threadstatus_ops, sizeof(st_event *),
-                         1, Max_threadstatus_number);
+                              0, 1);
   Threadstatus_val(wrapper) = ts;
   return wrapper;
 }
