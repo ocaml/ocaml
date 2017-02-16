@@ -150,6 +150,10 @@ Next version (4.05.0):
   `O_KEEPEXEC` flag for `openfile` by symmetry with `O_CLOEXEC`.
   (Xavier Leroy)
 
+- PR#7264: document the different behaviors of Unix.lockf under POSIX
+  and under Win32.
+  (Xavier Leroy, report by David Allsopp)
+  
 - MPR#7339, GPR#787: Support the '0 dimension' case for bigarrays
   (see Bigarray documentation)
   (Laurent Mazare,
