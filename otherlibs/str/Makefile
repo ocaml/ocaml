@@ -21,20 +21,14 @@ CLIBNAME=camlstr
 CAMLOBJS=str.cmo
 
 include ../Makefile
-
 str.cmo: str.cmi
 str.cmx: str.cmi
 
+ifneq "$(TOOLCHAIN)" "msvc"
+.PHONY: depend
 depend:
-	$(CC) -MM $(CFLAGS) *.c > .depend
+	$(CC) -MM $(CFLAGS) *.c | sed -e 's/\.o/.$$(O)/g' > .depend
 	$(CAMLRUN) $(ROOTDIR)/tools/ocamldep -slash *.mli *.ml >> .depend
-
-ifeq "$(TOOLCHAIN)" "msvc"
-
-.depend.nt: .depend
-	sed -e 's/\.o/.$(O)/g' $< > $@
-
-include .depend.nt
-else
-include .depend
 endif
+
+include .depend

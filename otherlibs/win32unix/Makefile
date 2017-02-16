@@ -60,8 +60,12 @@ clean::
 $(UNIX_FILES) $(UNIX_CAML_FILES): %: ../unix/%
 	cp ../unix/$* $*
 
-depend:
-
-$(COBJS): unixsupport.h
+ifneq "$(TOOLCHAIN)" "msvc"
+.PHONY: depend
+depend: $(ALL_FILES) $(UNIX_CAML_FILES) unix.ml
+	$(CC) -MM $(CFLAGS) $(ALL_FILES) | sed -e 's/\.o/.$$(O)/g' > .depend
+	$(CAMLRUN) $(ROOTDIR)/tools/ocamldep -slash $(UNIX_CAML_FILES) \
+	  unix.ml >> .depend
+endif
 
 include .depend
