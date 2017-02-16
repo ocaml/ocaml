@@ -1283,9 +1283,6 @@ alldepend:: depend
 
 .PHONY: distclean
 distclean: clean
-	rm -f asmrun/.depend.nt byterun/.depend.nt \
-	            otherlibs/bigarray/.depend.nt  \
-		    otherlibs/str/.depend.nt
 	rm -f boot/ocamlrun boot/ocamlrun$(EXE) boot/camlheader \
 	      boot/ocamlyacc boot/*.cm* boot/libcamlrun.$(A)
 	rm -f config/Makefile config/m.h config/s.h

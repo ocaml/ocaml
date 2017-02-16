@@ -22,16 +22,10 @@ HEADERS=bigarray.h
 
 include ../Makefile
 
+ifneq "$(TOOLCHAIN)" "msvc"
 depend:
-	$(CC) -MM $(CFLAGS) *.c > .depend
+	$(CC) -MM $(CFLAGS) *.c | sed -e 's/\.o/.$$(O)/g' > .depend
 	$(CAMLRUN) $(ROOTDIR)/tools/ocamldep -slash *.mli *.ml >> .depend
-
-ifeq "$(TOOLCHAIN)" "msvc"
-.depend.nt: .depend
-	sed -e 's/\.o/.$(O)/g' $< > $@
-
-include .depend.nt
-
-else
-include .depend
 endif
+
+include .depend

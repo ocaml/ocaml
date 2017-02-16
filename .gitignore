@@ -28,7 +28,6 @@
 *.exe
 *.exe.manifest
 .depend
-.depend.nt
 .DS_Store
 *.out
 *.out.dSYM
