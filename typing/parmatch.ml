@@ -1869,13 +1869,20 @@ let extendable_path path =
     Path.same path Predef.path_unit ||
     Path.same path Predef.path_option)
 
+let warn_fragile_type ty env =
+  let _,_,decl = Ctype.extract_concrete_typedecl env ty in
+  Builtin_attributes.with_warning_attribute
+    decl.Types.type_attributes
+    (fun () -> Warnings.(is_active (Fragile_match "")))
+
 let rec collect_paths_from_pat r p = match p.pat_desc with
 | Tpat_construct(_, {cstr_tag=(Cstr_constant _|Cstr_block _|Cstr_unboxed)},ps)
   ->
     let path =  get_type_path p.pat_type p.pat_env in
     List.fold_left
       collect_paths_from_pat
-      (if extendable_path path then add_path path r else r)
+      (if extendable_path path && warn_fragile_type p.pat_type p.pat_env
+       then add_path path r else r)
       ps
 | Tpat_any|Tpat_var _|Tpat_constant _| Tpat_variant (_,None,_) -> r
 | Tpat_tuple ps | Tpat_array ps
@@ -1896,7 +1903,7 @@ let rec collect_paths_from_pat r p = match p.pat_desc with
 (*
   Actual fragile check
    1. Collect data types in the patterns of the match.
-   2. One exhautivity check per datatype, considering that
+   2. One exhaustivity check per datatype, considering that
       the type is extended.
 *)
 
@@ -1910,6 +1917,8 @@ let do_check_fragile_param exhaust loc casel pss =
   | _ -> match pss with
     | [] -> ()
     | ps::_ ->
+        let old_status = Warnings.is_active (Warnings.Fragile_match "") in
+        Warnings.parse_options false "+4";
         List.iter
           (fun ext ->
             match exhaust (Some ext) pss (List.length ps) with
@@ -1918,7 +1927,8 @@ let do_check_fragile_param exhaust loc casel pss =
                   loc
                   (Warnings.Fragile_match (Path.name ext))
             | Rsome _ -> ())
-          exts
+          exts;
+        if not old_status then Warnings.parse_options false "-4"
 
 (*let do_check_fragile_normal = do_check_fragile_param exhaust*)
 let do_check_fragile_gadt = do_check_fragile_param exhaust_gadt
@@ -2034,7 +2044,7 @@ let check_partial_param do_check_partial do_check_fragile loc casel =
       let pss = get_mins le_pats pss in
       let total = do_check_partial loc casel pss in
       if
-        total = Total && Warnings.is_active (Warnings.Fragile_match "")
+        total = Total
       then begin
         do_check_fragile loc casel pss
       end ;
