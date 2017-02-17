@@ -103,6 +103,7 @@ be called from C \\
 \item \ahref{libref/ArrayLabels.html}{Module \texttt{ArrayLabels}: array operations (with labels)}
 \item \ahref{libref/Buffer.html}{Module \texttt{Buffer}: extensible buffers}
 \item \ahref{libref/Bytes.html}{Module \texttt{Bytes}: byte sequences}
+\item \ahref{libref/BytesLabels.html}{Module \texttt{BytesLabels}: byte sequences (with labels)}
 \item \ahref{libref/Callback.html}{Module \texttt{Callback}: registering OCaml values with the C runtime}
 \item \ahref{libref/Char.html}{Module \texttt{Char}: character operations}
 \item \ahref{libref/Complex.html}{Module \texttt{Complex}: Complex numbers}
