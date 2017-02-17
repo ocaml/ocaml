@@ -146,8 +146,10 @@ be called from C \\
 \else
 \input{Arg.tex}
 \input{Array.tex}
+\input{ArrayLabels.tex}
 \input{Buffer.tex}
 \input{Bytes.tex}
+\input{BytesLabels.tex}
 \input{Callback.tex}
 \input{Char.tex}
 \input{Complex.tex}
@@ -163,6 +165,7 @@ be called from C \\
 \input{Lazy.tex}
 \input{Lexing.tex}
 \input{List.tex}
+\input{ListLabels.tex}
 \input{Map.tex}
 \input{Marshal.tex}
 \input{MoreLabels.tex}
@@ -181,6 +184,7 @@ be called from C \\
 \input{StdLabels.tex}
 \input{Stream.tex}
 \input{String.tex}
+\input{StringLabels.tex}
 \input{Sys.tex}
 \input{Uchar.tex}
 \input{Weak.tex}
