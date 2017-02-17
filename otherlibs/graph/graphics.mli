@@ -48,7 +48,10 @@ external size_y : unit -> int = "caml_gr_size_y"
 (** Return the size of the graphics window. Coordinates of the screen
    pixels range over [0 .. size_x()-1] and [0 .. size_y()-1].
    Drawings outside of this rectangle are clipped, without causing
-   an error. The origin (0,0) is at the lower left corner. *)
+   an error. The origin (0,0) is at the lower left corner. 
+   Some implementation (e.g. X Windows) represent coordinates by
+   16-bit integers, hence wrong clipping may occur with coordinates
+   below [-32768] or above [32676]. *)
 
 (** {6 Colors} *)
 
