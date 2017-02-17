@@ -303,7 +303,7 @@ external wait_next_event : event list -> status = "caml_gr_wait_event"
    graphics window, the [mouse_x] and [mouse_y] fields of the event are
    outside the range [0..size_x()-1, 0..size_y()-1]. Keypresses
    are queued, and dequeued one by one when the [Key_pressed]
-   event is specified. *)
+   event is specified and the [Poll] event is not specified. *)
 
 val loop_at_exit : event list -> (status -> unit) -> unit
 (** Loop before exiting the program, the list given as argument is the
