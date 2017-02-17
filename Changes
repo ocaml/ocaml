@@ -3,6 +3,12 @@ Working version
 
 (Changes that can break existing programs are marked with a "*")
 
+### Tools:
+
+- GPR#1045: ocamldep, add a "-shared" option to generate dependencies
+  for native plugin files (i.e. .cmxs files)
+  (Florian Angeletti, suggestion by Sébastien Hinderer)
+
 ### Bug fixes
 
 - PR#7468: possible GC problem in caml_alloc_sprintf
