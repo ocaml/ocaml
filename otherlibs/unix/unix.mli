@@ -970,11 +970,14 @@ val gettimeofday : unit -> float
 
 val gmtime : float -> tm
 (** Convert a time in seconds, as returned by {!Unix.time}, into a date and
-   a time. Assumes UTC (Coordinated Universal Time), also known as GMT. *)
+   a time. Assumes UTC (Coordinated Universal Time), also known as GMT.
+   To perform the inverse conversion, set the TZ environment variable
+   to "UTC", use {!mktime}, and then restore the original value of TZ. *)
 
 val localtime : float -> tm
 (** Convert a time in seconds, as returned by {!Unix.time}, into a date and
-   a time. Assumes the local time zone. *)
+   a time. Assumes the local time zone.
+   The function performing the inverse conversion is {!mktime}. *)
 
 val mktime : tm -> float * tm
 (** Convert a date and time, specified by the [tm] argument, into
