@@ -1103,8 +1103,7 @@ let is_hash id =
   String.length s > 0 && s.[0] = '#'
 
 let marked_as_immediate decl =
-  if Builtin_attributes.immediate decl.type_attributes then Repr_immediate
-  else Repr_any
+  Builtin_attributes.type_repr decl.type_attributes
 
 let compute_immediacy env tdecl =
   let from_pointer b = if b then Repr_any else Repr_immediate in

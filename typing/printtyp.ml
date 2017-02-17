@@ -897,10 +897,7 @@ let rec tree_of_type_decl id decl =
         tree_of_manifest Otyp_open,
         Public
   in
-  let repr =
-    if Builtin_attributes.immediate decl.type_attributes then Repr_immediate
-    else Repr_any
-  in
+  let repr = Builtin_attributes.type_repr decl.type_attributes in
     { otype_name = name;
       otype_params = args;
       otype_type = ty;

@@ -136,7 +136,7 @@ type type_mismatch =
   | Field_missing of bool * Ident.t
   | Record_representation of bool   (* true means second one is unboxed float *)
   | Unboxed_representation of bool  (* true means second one is unboxed *)
-  | Immediate
+  | Repr of type_repr * type_repr
 
 let report_type_mismatch0 first second decl ppf err =
   let pr fmt = Format.fprintf ppf fmt in
@@ -167,7 +167,14 @@ let report_type_mismatch0 first second decl ppf err =
       pr "Their internal representations differ:@ %s %s %s"
          (if b then second else first) decl
          "uses unboxed representation"
-  | Immediate -> pr "%s is not an immediate type" first
+  | Repr (r1, r2) ->
+      let pr_repr = function
+      | Repr_any -> "any"
+      | Repr_immediate -> "immediate"
+      | Repr_address -> "address"
+      in
+      pr "Their internal representations differ:@ %s is not a \
+          subrepresentation of %s" (pr_repr r1) (pr_repr r2)
 
 let report_type_mismatch first second decl ppf =
   List.iter
@@ -316,7 +323,7 @@ let type_declarations ?(equality = false) ~loc env name decl1 id decl2 =
    * must be immediate, then we error *)
   let err =
     if abstr && not (Ctype.subtype_repr decl2.type_repr decl1.type_repr) then
-      [Immediate]
+      [Repr (decl2.type_repr, decl1.type_repr)]
     else []
   in
   if err <> [] then err else

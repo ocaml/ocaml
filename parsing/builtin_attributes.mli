@@ -54,8 +54,7 @@ val emit_external_warnings: Ast_iterator.iterator
 val warn_on_literal_pattern: Parsetree.attributes -> bool
 val explicit_arity: Parsetree.attributes -> bool
 
-
-val immediate: Parsetree.attributes -> bool
+val type_repr : Parsetree.attributes -> Asttypes.type_repr
 
 val has_unboxed: Parsetree.attributes -> bool
 val has_boxed: Parsetree.attributes -> bool

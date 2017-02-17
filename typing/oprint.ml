@@ -521,8 +521,8 @@ and print_out_type_decl kwd ppf td =
   in
   let print_immediate ppf =
     match td.otype_repr with
-    | Asttypes.Repr_immediate -> fprintf ppf " [%@%@immediate]"
-    | Asttypes.Repr_address -> () (* FIXME *)
+    | Asttypes.Repr_immediate -> fprintf ppf " [%@%@repr(immediate)]"
+    | Asttypes.Repr_address -> fprintf ppf " [%@%@repr(address)]"
     | Asttypes.Repr_any -> ()
   in
   let print_unboxed ppf =
