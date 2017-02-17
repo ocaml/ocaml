@@ -592,6 +592,7 @@ install:
 	cp ocamlc "$(INSTALL_BINDIR)/ocamlc.byte$(EXE)"
 	$(MAKE) -C stdlib install
 	cp lex/ocamllex "$(INSTALL_BINDIR)/ocamllex.byte$(EXE)"
+	cp yacc/ocamlyacc$(EXE) "$(INSTALL_BINDIR)/ocamlyacc$(EXE)"
 	cp utils/*.cmi utils/*.cmt utils/*.cmti utils/*.mli \
 	   parsing/*.cmi parsing/*.cmt parsing/*.cmti parsing/*.mli \
 	   typing/*.cmi typing/*.cmt typing/*.cmti typing/*.mli \
@@ -629,7 +630,6 @@ endif
 	   cd "$(INSTALL_BINDIR)"; \
 	   $(LN) ocamlc.byte$(EXE) ocamlc$(EXE); \
 	   $(LN) ocamllex.byte$(EXE) ocamllex$(EXE); \
-	   $(LN) ocamlyacc.byte$(EXE) ocamlyacc$(EXE); \
 	fi
 
 # Installation of the native-code compiler
