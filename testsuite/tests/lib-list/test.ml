@@ -32,25 +32,16 @@ let () =
   in assert result;
 ;;
 
-(* Evaluation order (non tail-recursive) *)
-
+(* Evaluation order *)
 let () =
-  let result = ref false in
-  let _ = List.init 2 (fun x ->
-      if x = 0 then result := false
-      else if x = 1 then result := true
-    )
-  in assert !result
-;;
-
-(* Evaluation order (tail-recursive) *)
-let () =
-  let result = ref false in
-  let _ = List.init 10_001 (fun x ->
-      if x = 9999 then result := false
-      else if x = 10000 then result := true
-    )
-  in assert !result
+  let test n =
+    let result = ref false in
+    let _ = List.init n (fun x -> result := (x = n - 1)) in
+    assert !result
+  in
+  let threshold = 10_000 in (* Threshold must equal the value in stdlib/list.ml *)
+  test threshold; (* Non tail-recursive case *)
+  test (threshold + 1) (* Tail-recursive case *)
 ;;
 
 let () = print_endline "OK";;
