@@ -134,6 +134,10 @@ Next version (4.05.0):
 
 ### Debugging and profiling:
 
+- PR#7258: ocamldebug's "install_printer" command had problems with
+  module aliases
+  (Xavier Leroy)
+
 - GPR#378: Add [Printexc.raise_with_backtrace] raise an exception using
   an explicit backtrace
   (François Bobot, review by Gabriel Scherer, Xavier Leroy, Damien Doligez,
