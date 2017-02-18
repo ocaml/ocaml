@@ -112,15 +112,6 @@ of the script:
 
 \end{unix}
 
-\begin{windows}
-In addition to the text-only command "ocaml.exe", which works exactly
-as under Unix (see above), a graphical user interface for the
-toplevel is available under the name "ocamlwin.exe". It should be
-launched from the Windows file manager or program manager.
-This interface provides a text window in which commands can be entered
-and edited, and the toplevel responses are printed.
-\end{windows}
-
 \section{Options} \label{s:toplevel-options}
 
 The following command-line options are recognized by the "ocaml" command.
@@ -135,11 +126,6 @@ The following command-line options are recognized by the "ocaml" command.
 \begin{unix}
 The following environment variables are also consulted:
 \begin{options}
-\item["LC_CTYPE"] If set to "iso_8859_1", accented characters (from the
-ISO Latin-1 character set) in string and character literals are
-printed as is; otherwise, they are printed as decimal escape sequences
-("\\"\var{ddd}).
-
 \item["TERM"] When printing error messages, the toplevel system
 attempts to underline visually the location of the error. It
 consults the "TERM" variable to determines the type of output terminal
