@@ -571,11 +571,13 @@ class latex =
           p fmt " of@ %s"
             (self#normal_cstr_args ~par:false mod_name l);
           [CodePre (flush())]
-      | Cstr_tuple _ as l, Some r ->
-          p fmt " :@ %s@ %s@ %s"
-            (self#normal_cstr_args ~par:false mod_name l)
-            "->"
-            (self#normal_type mod_name r);
+      | Cstr_tuple t as l, Some r ->
+          let res = self#normal_type mod_name r in
+          if t = [] then
+            p fmt " :@ %s" res
+          else
+            p fmt " :@ %s -> %s" (self#normal_cstr_args ~par:false mod_name l) res
+          ;
           [CodePre (flush())]
       | Cstr_record l, None ->
           p fmt " of@ ";
