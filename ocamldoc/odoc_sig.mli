@@ -127,6 +127,15 @@ module Analyser :
          [input_f] into [file].*)
       val prepare_file : string -> string -> unit
 
+      (** [preamble f input_f loc ast ] retrieves the position and contents of
+          the preamble for the file [f]: i.e, the first documentation comment
+          before any elements in [ast].
+          If there is no such preamble, [0,None] is returned.
+          The function [loc] is used to obtain the location of this
+          first element of [ast].*)
+      val preamble: string -> string -> ('a -> Location.t) -> 'a list
+        -> int * Odoc_types.info option
+
       (** The function used to get the comments in a class. *)
       val get_comments_in_class : int -> int ->
         (Odoc_types.info option * Odoc_class.class_element list)

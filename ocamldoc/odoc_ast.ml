@@ -1870,15 +1870,8 @@ module Analyser =
        prepare_file source_file input_file;
        (* We create the t_module for this file. *)
        let mod_name = String.capitalize_ascii (Filename.basename (Filename.chop_extension source_file)) in
-       let len, info_opt =
-         let info = My_ir.first_special !file_name !file in
-       (* Only use as module preamble documentation comments that occur before
-           any module elements *)
-        match parsetree with
-        | a :: _ when a.Parsetree.pstr_loc.Location.loc_start.Lexing.pos_cnum <
-                      fst info ->
-            (0,None)
-        | _ -> info in
+       let len, info_opt = Sig.preamble !file_name !file
+           (fun x -> x.Parsetree.pstr_loc) parsetree in
        (* we must complete the included modules *)
        let elements = analyse_structure Odoc_env.empty mod_name len (String.length !file) parsetree tree_structure in
        let included_modules_from_tt = tt_get_included_module_list tree_structure in
