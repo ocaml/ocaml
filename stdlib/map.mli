@@ -104,6 +104,9 @@ module type S =
     (** [merge f m1 m2] computes a map whose keys is a subset of keys of [m1]
         and of [m2]. The presence of each such binding, and the corresponding
         value, is determined with the function [f].
+        In terms of the [find_opt] operation, we have
+        [find_opt x (merge f m1 m2) = f (find_opt x m1) (find_opt x m2)]
+        for any key [x], provided that [f None None = None].
         @since 3.12.0
      *)
 
@@ -111,6 +114,13 @@ module type S =
     (** [union f m1 m2] computes a map whose keys is the union of keys
         of [m1] and of [m2].  When the same binding is defined in both
         arguments, the function [f] is used to combine them.
+        This is a special case of [merge]: [union f m1 m2] is equivalent
+        to [merge f' m1 m2], where
+        - [f' None None = None]
+        - [f' (Some v) None = Some v]
+        - [f' None (Some v) = Some v]
+        - [f' (Some v1) (Some v2) = f v1 v2]
+
         @since 4.03.0
     *)
 
