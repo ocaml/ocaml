@@ -200,6 +200,17 @@ will result in an ``unbound value "quit"'' error.
     semantics of the compiler.
   \end{options}
 
+For directives that take file names as arguments, if the given file
+name specifies no directory, the file is searched in the following
+directories:
+\begin{enumerate}
+  \item In script mode, the directory containing the script currently
+    executing; in interactive mode, the current working directory.
+  \item Directories added with the "#directory" directive.
+  \item Directories given on the command line with "-I" options.
+  \item The standard library directory.
+\end{enumerate}    
+
 \item[Environment queries]
   \begin{options}
   \item["#show_class "\var{class-path}";;"]\vspace{-4.7ex}
