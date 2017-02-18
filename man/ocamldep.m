@@ -166,6 +166,10 @@ as a preprocessor for each source file.
 Pipe abstract syntax tree through preprocessor
 .IR command .
 .TP
+.B \-shared
+Generate dependencies for native plugin files (.cmxs) in addition to
+native compiled files (.cmx).
+.TP
 .B \-slash
 Under Unix, this option does nothing.
 .TP
