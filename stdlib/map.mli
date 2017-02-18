@@ -233,8 +233,8 @@ module type S =
        or raises [Not_found] if no such binding exists. *)
 
     val find_opt: key -> 'a t -> 'a option
-    (** [find_opt x m] returns the current binding of [x] in [m],
-       or raises [Not_found] if no such binding exists.
+    (** [find_opt x m] returns [Some v] if the current binding of [x]
+        in [m] is [v], or [None] if no such binding exists.
         @since 4.05
     *)
 
