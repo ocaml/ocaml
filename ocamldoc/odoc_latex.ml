@@ -566,7 +566,7 @@ class latex =
 
     method latex_of_cstr_args ( (fmt,flush) as f) mod_name (args, ret) =
       match args, ret with
-      | Cstr_tuple [], None -> []
+      | Cstr_tuple [], None -> [CodePre(flush())]
       | Cstr_tuple _ as l, None ->
           p fmt " of@ %s"
             (self#normal_cstr_args ~par:false mod_name l);
