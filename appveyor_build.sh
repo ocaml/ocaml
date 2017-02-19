@@ -31,13 +31,11 @@ cd $APPVEYOR_BUILD_FOLDER
 
 cp config/m-nt.h config/m.h
 cp config/s-nt.h config/s.h
-#cp config/Makefile.msvc config/Makefile
 cp config/Makefile.msvc64 config/Makefile
 
 PREFIX="C:/Program Files/OCaml"
-echo "Edit config/Makefile so set PREFIX=$PREFIX"
-cp config/Makefile config/Makefile.bak
-sed -e "s|PREFIX=.*|PREFIX=$PREFIX|" config/Makefile.bak > config/Makefile
+echo "Edit config/Makefile to set PREFIX=$PREFIX"
+sed -i -e "s|PREFIX=.*|PREFIX=$PREFIX|" config/Makefile
 #run "Content of config/Makefile" cat config/Makefile
 
 run "make world" make world
