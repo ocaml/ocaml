@@ -49,18 +49,7 @@ install:
   - call "C:\Program Files\Microsoft SDKs\Windows\v7.1\Bin\SetEnv.cmd" /x64
 
 build_script:
-  - set PFPATH=%PROGRAMFILES%
-  - set FLEXDLLDIR=%OCAMLROOT%\bin\flexdll
-  - echo VCPATH="`cygpath -p '%Path%'`" > %CYG_ROOT%\tmp\msenv
-  - echo LIB="%LIB%" >> %CYG_ROOT%\tmp\msenv
-  - echo LIBPATH="%LIBPATH%" >> %CYG_ROOT%\tmp\msenv
-  - echo INCLUDE="%INCLUDE%;%FLEXDLLDIR%" >> %CYG_ROOT%\tmp\msenv
-  - echo FLPATH="`cygpath '%FLEXDLLDIR%'`" >> %CYG_ROOT%\tmp\msenv
-  - echo PATH="$VCPATH:$FLPATH:$PATH" >> %CYG_ROOT%\tmp\msenv
-  - echo export PATH LIB LIBPATH INCLUDE >> %CYG_ROOT%\tmp\msenv
-  - echo export OCAMLBUILD_FIND=/usr/bin/find >> %CYG_ROOT%\tmp\msenv
-  - "%CYG_ROOT%/bin/bash -lc \"tr -d '\\r' </tmp/msenv > ~/.msenv64\""
-  - "%CYG_ROOT%/bin/bash -lc \"echo '. ~/.msenv64' >> ~/.bash_profile\""
+  - "%CYG_ROOT%/bin/bash -lc \"echo 'eval $($APPVEYOR_BUILD_FOLDER/tools/msvs-promote-path)' >> ~/.bash_profile\""
   - '%CYG_ROOT%/bin/bash -lc "$APPVEYOR_BUILD_FOLDER/appveyor_build.sh"'
 
 test_script:
