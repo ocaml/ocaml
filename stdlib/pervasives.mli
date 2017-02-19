@@ -619,7 +619,7 @@ external float_of_string : string -> float = "caml_float_of_string"
    representation of a float. *)
 
 val float_of_string_opt: string -> float option
-(** Same as [float_of_string], but returs [None] instead of raising.
+(** Same as [float_of_string], but returns [None] instead of raising.
     @since 4.05
 *)
 

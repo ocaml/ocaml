@@ -25,6 +25,7 @@ type file_kind = ML | MLI;;
 let load_path = ref ([] : (string * string array) list)
 let ml_synonyms = ref [".ml"]
 let mli_synonyms = ref [".mli"]
+let shared = ref false
 let native_only = ref false
 let bytecode_only = ref false
 let error_occurred = ref false
@@ -317,6 +318,7 @@ let print_ml_dependencies source_file extracted_deps =
     if !all_dependencies
     then [ basename ^ ".cmx"; basename ^ ".o" ]
     else [ basename ^ ".cmx" ] in
+  let shared_targets = [ basename ^ ".cmxs" ] in
   let init_deps = if !all_dependencies then [source_file] else [] in
   let cmi_name = basename ^ ".cmi" in
   let init_deps, extra_targets =
@@ -332,7 +334,11 @@ let print_ml_dependencies source_file extracted_deps =
   if not !native_only then
     print_dependencies (byte_targets @ extra_targets) byt_deps;
   if not !bytecode_only then
-    print_dependencies (native_targets @ extra_targets) native_deps
+    begin
+      print_dependencies (native_targets @ extra_targets) native_deps;
+      if !shared then
+        print_dependencies (shared_targets @ extra_targets) native_deps
+    end
 
 let print_mli_dependencies source_file extracted_deps =
   let basename = Filename.chop_extension source_file in
@@ -584,6 +590,8 @@ let _ =
          "<cmd>  Pipe sources through preprocessor <cmd>";
      "-ppx", Arg.String (add_to_list first_ppx),
          "<cmd>  Pipe abstract syntax trees through preprocessor <cmd>";
+     "-shared", Arg.Set shared,
+         " Generate dependencies for native plugin files (.cmxs targets)";
      "-slash", Arg.Set Clflags.force_slash,
          " (Windows) Use forward slash / instead of backslash \\ in file paths";
      "-sort", Arg.Set sort_files,

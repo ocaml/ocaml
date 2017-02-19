@@ -118,6 +118,10 @@ for each source file.
 \item["-ppx" \var{command}]
 Pipe abstract syntax trees through preprocessor \var{command}.
 
+\item["-shared"]
+Generate dependencies for native plugin files (.cmxs) in addition to
+native compiled files (.cmx).
+
 \item["-slash"]
 Under Windows, use a forward slash (/) as the path separator instead
 of the usual backward slash ($\backslash$).  Under Unix, this option does

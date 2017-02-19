@@ -1,11 +1,3 @@
-generators/odoc_literate.cmo : odoc_info.cmi odoc_html.cmo odoc_gen.cmi \
-    odoc_args.cmi
-generators/odoc_literate.cmx : odoc_info.cmx odoc_html.cmx odoc_gen.cmx \
-    odoc_args.cmx
-generators/odoc_todo.cmo : odoc_module.cmo odoc_info.cmi odoc_html.cmo \
-    odoc_gen.cmi odoc_args.cmi
-generators/odoc_todo.cmx : odoc_module.cmx odoc_info.cmx odoc_html.cmx \
-    odoc_gen.cmx odoc_args.cmx
 odoc.cmo : odoc_messages.cmo odoc_info.cmi odoc_global.cmi odoc_gen.cmi \
     odoc_config.cmi odoc_args.cmi odoc_analyse.cmi
 odoc.cmx : odoc_messages.cmx odoc_info.cmx odoc_global.cmx odoc_gen.cmx \
@@ -272,3 +264,15 @@ odoc_value.cmo : ../typing/types.cmi ../typing/printtyp.cmi odoc_types.cmi \
     odoc_parameter.cmo odoc_name.cmi odoc_misc.cmi ../parsing/asttypes.cmi
 odoc_value.cmx : ../typing/types.cmx ../typing/printtyp.cmx odoc_types.cmx \
     odoc_parameter.cmx odoc_name.cmx odoc_misc.cmx ../parsing/asttypes.cmi
+generators/odoc_literate.cmo : odoc_info.cmi odoc_html.cmo odoc_gen.cmi \
+    odoc_args.cmi
+generators/odoc_literate.cmx : odoc_info.cmx odoc_html.cmx odoc_gen.cmx \
+    odoc_args.cmx
+generators/odoc_literate.cmxs : odoc_info.cmx odoc_html.cmx odoc_gen.cmx \
+    odoc_args.cmx
+generators/odoc_todo.cmo : odoc_module.cmo odoc_info.cmi odoc_html.cmo \
+    odoc_gen.cmi odoc_args.cmi
+generators/odoc_todo.cmx : odoc_module.cmx odoc_info.cmx odoc_html.cmx \
+    odoc_gen.cmx odoc_args.cmx
+generators/odoc_todo.cmxs : odoc_module.cmx odoc_info.cmx odoc_html.cmx \
+    odoc_gen.cmx odoc_args.cmx

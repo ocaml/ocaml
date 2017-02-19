@@ -186,7 +186,7 @@ the top-level of the OCaml distribution by running:
 
   eval $(tools/msvs-promote-path)
 
-If you forget to do this, `make -f Makefile.nt world` will fail relatively
+If you forget to do this, `make world` will fail relatively
 quickly as it will be unable to link `ocamlrun`.
 
 Now run:
@@ -206,9 +206,9 @@ for 64-bit. Then, edit `config/Makefile` as needed, following the comments in
 this file. Normally, the only variable that needs to be changed is `PREFIX`,
 which indicates where to install everything.
 
-Finally, use `make -f Makefile.nt` to build the system, e.g.
+Finally, use `make` to build the system, e.g.
 
-        make -f Makefile.nt world bootstrap opt opt.opt install
+        make world bootstrap opt opt.opt install
 
 After installing, it is not necessary to keep the Cygwin installation (although
 you may require it to build additional third party libraries and tools).  You
@@ -277,9 +277,9 @@ for 64-bit. Then, edit `config/Makefile` as needed, following the comments in
 this file. Normally, the only variable that needs to be changed is `PREFIX`,
 which indicates where to install everything.
 
-Finally, use `make -f Makefile.nt` to build the system, e.g.
+Finally, use `make` to build the system, e.g.
 
-        make -f Makefile.nt world bootstrap opt opt.opt install
+        make world bootstrap opt opt.opt install
 
 After installing, you will need to ensure that `ocamlopt` (or `ocamlc -custom`)
 can access the C compiler.  You can do this either by using OCaml from Cygwin's
@@ -325,16 +325,16 @@ done in one of three ways:
 OCaml is then compiled as normal for the port you require, except that before
 compiling `world`, you must compile `flexdll`, i.e.:
 
-  make -f Makefile.nt flexdll world [bootstrap] opt opt.opt install
+  make flexdll world [bootstrap] opt opt.opt install
 
- * `make -f Makefile.nt install` will install FlexDLL by placing `flexlink.exe`
+ * `make install` will install FlexDLL by placing `flexlink.exe`
    (and the default manifest file for the Microsoft port) in `bin/` and the
    FlexDLL object files in `lib/`.
- * If you don't include `make -f Makefile.nt opt.opt`, `flexlink.exe` will be a
-   bytecode program.  `make -f Makefile.nt install` always installs the "best"
+ * If you don't include `make opt.opt`, `flexlink.exe` will be a
+   bytecode program.  `make install` always installs the "best"
    `flexlink.exe` (i.e. there is never a `flexlink.opt.exe` installed).
  * If you have populated `flexdll/`, you *must* run
-   `make -f Makefile.nt flexdll`.  If you wish to revert to using an externally
+   `make flexdll`.  If you wish to revert to using an externally
    installed FlexDLL, you must erase the contents of `flexdll/` before
    compiling.
 

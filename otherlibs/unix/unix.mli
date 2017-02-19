@@ -881,7 +881,14 @@ val lockf : file_descr -> lock_command -> int -> unit
    the specified region.
    Finally, the [F_TEST] command tests whether a write lock can be
    acquired on the specified region, without actually putting a lock.
-   It returns immediately if successful, or fails otherwise. *)
+   It returns immediately if successful, or fails otherwise.
+
+   What happens when a process tries to lock a region of a file that is
+   already locked by the same process depends on the OS.  On POSIX-compliant
+   systems, the second lock operation succeeds and may "promote" the older
+   lock from read lock to write lock.  On Windows, the second lock
+   operation will block or fail.
+*)
 
 
 (** {6 Signals}

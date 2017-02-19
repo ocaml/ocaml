@@ -1,3 +1,21 @@
+Working version
+---------------
+
+(Changes that can break existing programs are marked with a "*")
+
+### Tools:
+
+- GPR#1045: ocamldep, add a "-shared" option to generate dependencies
+  for native plugin files (i.e. .cmxs files)
+  (Florian Angeletti, suggestion by Sébastien Hinderer)
+
+### Bug fixes
+
+- PR#7468: possible GC problem in caml_alloc_sprintf
+  (Xavier Leroy, discovery by Olivier Andrieu)
+
+
+
 Next version (4.05.0):
 ----------------------
 
@@ -116,6 +134,10 @@ Next version (4.05.0):
 
 ### Debugging and profiling:
 
+- PR#7258: ocamldebug's "install_printer" command had problems with
+  module aliases
+  (Xavier Leroy)
+
 - GPR#378: Add [Printexc.raise_with_backtrace] raise an exception using
   an explicit backtrace
   (François Bobot, review by Gabriel Scherer, Xavier Leroy, Damien Doligez,
@@ -150,6 +172,15 @@ Next version (4.05.0):
   `O_KEEPEXEC` flag for `openfile` by symmetry with `O_CLOEXEC`.
   (Xavier Leroy)
 
+- PR#7158: Event.sync, Mutex.create, Condition.create cause too many GCs.
+  The fix is to no longer consider mutexes and condition variables
+  as rare kernel resources.
+  (Xavier Leroy)
+
+- PR#7264: document the different behaviors of Unix.lockf under POSIX
+  and under Win32.
+  (Xavier Leroy, report by David Allsopp)
+  
 - MPR#7339, GPR#787: Support the '0 dimension' case for bigarrays
   (see Bigarray documentation)
   (Laurent Mazare,
@@ -182,6 +213,10 @@ Next version (4.05.0):
 - PR#7333: ocamldoc, use the first sentence of text file as
   a short description in overviews.
   (Florian Angeletti)
+
+- PR#7488: ocamldoc, wrong Latex output for variant types
+  with constructors without arguments.
+  (Florian Angeletti, report by Xavier Leroy)
 
 - GPR#848: ocamldoc, escape link targets in HTML output
   (Etienne Millon, review by Gabriel Scherer, Florian Angeletti and
@@ -250,6 +285,9 @@ Next version (4.05.0):
 - GPR#803: new ocamllex-based tool to extract bytecode compiler
   opcode information from C headers.
   (Nicolas Ojeda Bar)
+
+- GPR#1033: merge Unix and Windows build systems in the root directory
+  (Sébastien Hinderer, review by Damien Doligez and Adrien Nader)
 
 ### Internal/compiler-libs changes:
 
@@ -324,6 +362,8 @@ Next version (4.05.0):
 - GPR#881: short-paths did not apply to some polymorphic variants
   (Valentin Gatien-Baron, review by Leo White)
 
+- GPR#886: Fix Ctype.moregeneral's handling of row_name (Leo White)
+
 - GPR#934: check for integer overflow in Bytes.extend
   (Jeremy Yallop, review by Gabriel Scherer)
 
@@ -365,6 +405,11 @@ Next version (4.05.0):
 
 - GPR#1019: Fix fatal error in Flambda mode "[functions] does not map set of
   closures ID" (Pierre Chambart, code review by Mark Shinwell and Leo White)
+
+- GPR#1042: Fix escaping of command-line arguments in
+  Unix.create_process{,_env} under Windows.  Arguments with tabs should now
+  be received verbatim by the child process.
+  (Nicolas Ojeda Bar, Andreas Hauptmann review by Xavier Leroy)
 
 - GPR#1043: Allow Windows CRLF line-endings in ocamlyacc on Unix and Cygwin.
   (David Allsopp, review by Damien Doligez and Xavier Leroy)

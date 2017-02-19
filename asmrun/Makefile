@@ -43,7 +43,7 @@ endif
 FLAGS += -DSYS_$(SYSTEM) \
   $(NATIVECCCOMPOPTS) $(IFLEXDIR) \
   $(LIBUNWIND_INCLUDE_FLAGS)
-  
+
 ifeq "$(TOOLCHAIN)" "msvc"
 DFLAGS=$(FLAGS) -DDEBUG
 PFLAGS=$(FLAGS) -DPROFILING $(NATIVECCPROFOPTS)
@@ -182,8 +182,8 @@ ifneq "$(TOOLCHAIN)" "msvc"
 depend: $(COBJS:.$(O)=.c) $(LINKEDFILES)
 	$(CC) -MM $(FLAGS) *.c > .depend
 	$(CC) -MM $(FLAGS) -DPROFILING *.c | sed -e 's/\.o/.p.o/' >> .depend
-	$(CC) -MM $(FLAGS) -DDEBUG *.c | sed -e 's/\.o/.d.o)/' >> .depend
-	$(CC) -MM $(FLAGS) -DCAML_INSTR *.c | sed -e 's/\.o/.i.o' >> .depend
+	$(CC) -MM $(FLAGS) -DDEBUG *.c | sed -e 's/\.o/.d.o/' >> .depend
+	$(CC) -MM $(FLAGS) -DCAML_INSTR *.c | sed -e 's/\.o/.i.o/' >> .depend
 endif
 
 ifeq "$(UNIX_OR_WIN32)" "win32"

@@ -23,6 +23,7 @@
 #include <stdarg.h>
 #include "caml/alloc.h"
 #include "caml/fail.h"
+#include "caml/memory.h"
 #include "caml/mlvalues.h"
 #include "caml/misc.h"
 
@@ -380,7 +381,7 @@ CAMLprim value caml_bitvect_test(value bv, value n)
 CAMLexport value caml_alloc_sprintf(const char * format, ...)
 {
   va_list args;
-  char buf[64];
+  char buf[128];
   int n;
   value res;
 
@@ -393,19 +394,26 @@ CAMLexport value caml_alloc_sprintf(const char * format, ...)
      excluding the terminating '\0'. */
   n = vsnprintf(buf, sizeof(buf), format, args);
   va_end(args);
-  /* Allocate a Caml string with length "n" as computed by vsnprintf. */
-  res = caml_alloc_string(n);
   if (n < sizeof(buf)) {
     /* All output characters were written to buf, including the
-       terminating '\0'.  Just copy them to the result. */
+       terminating '\0'.  Allocate a Caml string with length "n"
+       as computed by vsnprintf, and copy the output of vsnprintf into it. */
+    res = caml_alloc_string(n);
     memcpy(String_val(res), buf, n);
   } else {
+    /* PR#7568: if the format is in the Caml heap, the following 
+       caml_alloc_string could move or free the format.  To prevent
+       this, take a copy of the format outside the Caml heap. */
+    char * saved_format = caml_strdup(format);
+    /* Allocate a Caml string with length "n" as computed by vsnprintf. */
+    res = caml_alloc_string(n);
     /* Re-do the formatting, outputting directly in the Caml string.
        Note that caml_alloc_string left room for a '\0' at position n,
        so the size passed to vsnprintf is n+1. */
     va_start(args, format);
-    vsnprintf(String_val(res), n + 1, format, args);
+    vsnprintf(String_val(res), n + 1, saved_format, args);
     va_end(args);
+    caml_stat_free(saved_format);
   }
   return res;
 #else
@@ -422,10 +430,14 @@ CAMLexport value caml_alloc_sprintf(const char * format, ...)
   if (n >= 0 && n <= sizeof(buf)) {
     /* All output characters were written to buf.
        "n" is the actual length of the output.
-       Copy the characters to a Caml string of length n. */
+       Allocate a Caml string of length "n" and copy the characters into it. */
     res = caml_alloc_string(n);
     memcpy(String_val(res), buf, n);
   } else {
+    /* PR#7568: if the format is in the Caml heap, the following 
+       caml_alloc_string could move or free the format.  To prevent
+       this, take a copy of the format outside the Caml heap. */
+    char * saved_format = caml_strdup(format);
     /* Determine actual length of output, excluding final '\0' */
     va_start(args, format);
     n = _vscprintf(format, args);
@@ -435,8 +447,9 @@ CAMLexport value caml_alloc_sprintf(const char * format, ...)
        Note that caml_alloc_string left room for a '\0' at position n,
        so the size passed to _vsnprintf is n+1. */
     va_start(args, format);
-    _vsnprintf(String_val(res), n + 1, format, args);
+    _vsnprintf(String_val(res), n + 1, saved_format, args);
     va_end(args);
+    caml_stat_free(saved_format);
   }
   return res;
 #endif
