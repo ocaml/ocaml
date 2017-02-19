@@ -22,12 +22,12 @@ ifeq ($(OS),Windows_NT)
 ADD_BYTERUN_FLAGS="-I $(OTOPDIR)/otherlibs/win32unix"
 endif
 
-default: reflector.exe fdstatus.exe
+default: reflector.exe fdstatus.exe cmdline_prog.exe
 	$(MAKE) check
 
 include $(BASEDIR)/makefiles/Makefile.several
 include $(BASEDIR)/makefiles/Makefile.common
 
 %.exe: %.c
-	@$(BYTECC) -o $*.exe $*.c > /dev/null
+	@$(BYTECC) $(if $(filter msvc,$(CCOMPTYPE)),/Fe$*.exe,-o $*.exe) $*.c
 
