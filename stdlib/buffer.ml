@@ -194,3 +194,39 @@ let truncate b len =
       invalid_arg "Buffer.truncate"
     else
       b.position <- len
+
+(** {6 Iterators} *)
+
+let to_iter b =
+  let next i =
+    if i = b.position then Iter.Done
+    else
+      let x = Bytes.get b.buffer i in
+      Iter.Yield (x, i+1)
+  in
+  Iter.Sequence (0, next)
+
+let to_iteri b =
+  let next i =
+    if i = b.position then Iter.Done
+    else
+      let x = Bytes.get b.buffer i in
+      Iter.Yield ((i,x), i+1)
+  in
+  Iter.Sequence (0, next)
+
+let add_iter b (Iter.Sequence (state,next)) =
+  let rec aux state = match next state with
+    | Iter.Done -> ()
+    | Iter.Skip state' -> aux state'
+    | Iter.Yield (c, state') ->
+        add_char b c;
+        aux state'
+  in
+  aux state
+
+let of_iter i =
+  let b = create 32 in
+  add_iter b i;
+  b
+

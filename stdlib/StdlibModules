@@ -43,6 +43,7 @@ STDLIB_MODULES=\
   hashtbl \
   int32 \
   int64 \
+  iter \
   lazy \
   lexing \
   list \

@@ -333,6 +333,20 @@ val split_on_char: char -> string -> string list
     @since 4.04.0
 *)
 
+(** {6 Iterators} *)
+
+val to_iter : t -> char Iter.t
+(** Iterate on the string , in increasing order
+    @since NEXT_RELEASE *)
+
+val to_iteri : t -> (int * char) Iter.t
+(** Iterate on the string, in increasing order, yielding indices along chars
+    @since NEXT_RELEASE *)
+
+val of_iter : char Iter.t -> t
+(** Create a string from the generator
+    @since NEXT_RELEASE *)
+
 (**/**)
 
 (* The following is for system use only. Do not call directly. *)

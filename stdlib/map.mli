@@ -293,7 +293,24 @@ module type S =
     (** Same as {!Map.S.map}, but the function receives as arguments both the
        key and the associated value for each binding of the map. *)
 
+    (** {6 Iterators} *)
 
+    val to_iter : 'a t -> (key * 'a) Iter.t
+    (** Iterate on the whole map, in ascending order
+        @since NEXT_RELEASE *)
+
+    val to_iter_at : key -> 'a t -> (key * 'a) Iter.t
+    (** [to_iter_at k m] iterates on a subset of the bindings of [m],
+        in ascending order, from key [k] or above.
+        @since NEXT_RELEASE *)
+
+    val add_iter : 'a t -> (key * 'a) Iter.t -> 'a t
+    (** Add the given bindings to the map, in order.
+        @since NEXT_RELEASE *)
+
+    val of_iter : (key * 'a) Iter.t -> 'a t
+    (** Build a map from the given bindings
+        @since NEXT_RELEASE *)
   end
 (** Output signature of the functor {!Map.Make}. *)
 

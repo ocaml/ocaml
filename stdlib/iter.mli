@@ -2,9 +2,9 @@
 (*                                                                        *)
 (*                                 OCaml                                  *)
 (*                                                                        *)
-(*             Xavier Leroy, projet Cristal, INRIA Rocquencourt           *)
+(*                 Simon Cruanes                                          *)
 (*                                                                        *)
-(*   Copyright 1996 Institut National de Recherche en Informatique et     *)
+(*   Copyright 2017 Institut National de Recherche en Informatique et     *)
 (*     en Automatique.                                                    *)
 (*                                                                        *)
 (*   All rights reserved.  This file is distributed under the terms of    *)
@@ -13,44 +13,30 @@
 (*                                                                        *)
 (**************************************************************************)
 
-type 'a t = { mutable c : 'a list; mutable len : int; }
+(* Module [Iter]: functional iterators *)
 
-exception Empty
+(** @since NEXT_RELEASE *)
 
-let create () = { c = []; len = 0; }
+type ('a, 's) step =
+  | Done
+  | Skip of 's
+  | Yield of 'a * 's
 
-let clear s = s.c <- []; s.len <- 0
+type +_ t =
+  | Sequence : 's * ('s -> ('a,'s) step) -> 'a t
 
-let copy s = { c = s.c; len = s.len; }
+val empty : 'a t
 
-let push x s = s.c <- x :: s.c; s.len <- s.len + 1
+val return : 'a -> 'a t
 
-let pop s =
-  match s.c with
-  | hd::tl -> s.c <- tl; s.len <- s.len - 1; hd
-  | []     -> raise Empty
+val map : ('a -> 'b) -> 'a t -> 'b t
 
-let top s =
-  match s.c with
-  | hd::_ -> hd
-  | []     -> raise Empty
+val filter : ('a -> bool) -> 'a t -> 'a t
 
-let is_empty s = (s.c = [])
+val filter_map : ('a -> 'b option) -> 'a t -> 'b t
 
-let length s = s.len
+val flat_map : ('a -> 'b t) -> 'a t -> 'b t
 
-let iter f s = List.iter f s.c
+val fold_left : ('a -> 'b -> 'a) -> 'a -> 'b t -> 'a
 
-let fold f acc s = List.fold_left f acc s.c
-
-(** {6 Iterators} *)
-
-let to_iter s = List.to_iter s.c
-
-let add_iter q i = Iter.iter (fun x -> push x q) i
-
-let of_iter g =
-  let s = create() in
-  add_iter s g;
-  s
-
+val iter : ('a -> unit) -> 'a t -> unit

@@ -11,10 +11,10 @@ arrayLabels.cmx : array.cmx arrayLabels.cmi
 arrayLabels.cmi :
 buffer.cmo : sys.cmi string.cmi bytes.cmi buffer.cmi
 buffer.cmx : sys.cmx string.cmx bytes.cmx buffer.cmi
-buffer.cmi :
-bytes.cmo : pervasives.cmi char.cmi bytes.cmi
-bytes.cmx : pervasives.cmx char.cmx bytes.cmi
-bytes.cmi :
+buffer.cmi : iter.cmi
+bytes.cmo : pervasives.cmi list.cmi char.cmi bytes.cmi
+bytes.cmx : pervasives.cmx list.cmx char.cmx bytes.cmi
+bytes.cmi : iter.cmi
 bytesLabels.cmo : bytes.cmi bytesLabels.cmi
 bytesLabels.cmx : bytes.cmx bytesLabels.cmi
 bytesLabels.cmi :
@@ -80,13 +80,16 @@ hashtbl.cmo : sys.cmi string.cmi random.cmi obj.cmi lazy.cmi array.cmi \
     hashtbl.cmi
 hashtbl.cmx : sys.cmx string.cmx random.cmx obj.cmx lazy.cmx array.cmx \
     hashtbl.cmi
-hashtbl.cmi :
+hashtbl.cmi : iter.cmi
 int32.cmo : pervasives.cmi int32.cmi
 int32.cmx : pervasives.cmx int32.cmi
 int32.cmi :
 int64.cmo : pervasives.cmi int64.cmi
 int64.cmx : pervasives.cmx int64.cmi
 int64.cmi :
+iter.cmo : iter.cmi
+iter.cmx : iter.cmi
+iter.cmi :
 lazy.cmo : obj.cmi camlinternalLazy.cmi lazy.cmi
 lazy.cmx : obj.cmx camlinternalLazy.cmx lazy.cmi
 lazy.cmi :
@@ -95,13 +98,13 @@ lexing.cmx : sys.cmx string.cmx bytes.cmx array.cmx lexing.cmi
 lexing.cmi :
 list.cmo : list.cmi
 list.cmx : list.cmi
-list.cmi :
+list.cmi : iter.cmi
 listLabels.cmo : list.cmi listLabels.cmi
 listLabels.cmx : list.cmx listLabels.cmi
 listLabels.cmi :
 map.cmo : map.cmi
 map.cmx : map.cmi
-map.cmi :
+map.cmi : iter.cmi
 marshal.cmo : bytes.cmi marshal.cmi
 marshal.cmx : bytes.cmx marshal.cmi
 marshal.cmi :
@@ -150,7 +153,7 @@ scanf.cmx : string.cmx printf.cmx pervasives.cmx list.cmx \
 scanf.cmi : pervasives.cmi
 set.cmo : list.cmi set.cmi
 set.cmx : list.cmx set.cmi
-set.cmi :
+set.cmi : iter.cmi
 sort.cmo : array.cmi sort.cmi
 sort.cmx : array.cmx sort.cmi
 sort.cmi :
@@ -159,7 +162,7 @@ spacetime.cmx : gc.cmx spacetime.cmi
 spacetime.cmi :
 stack.cmo : list.cmi stack.cmi
 stack.cmx : list.cmx stack.cmi
-stack.cmi :
+stack.cmi : iter.cmi
 stdLabels.cmo : stringLabels.cmi listLabels.cmi bytesLabels.cmi \
     arrayLabels.cmi stdLabels.cmi
 stdLabels.cmx : stringLabels.cmx listLabels.cmx bytesLabels.cmx \
@@ -171,9 +174,9 @@ std_exit.cmx :
 stream.cmo : string.cmi list.cmi lazy.cmi bytes.cmi stream.cmi
 stream.cmx : string.cmx list.cmx lazy.cmx bytes.cmx stream.cmi
 stream.cmi :
-string.cmo : pervasives.cmi bytes.cmi string.cmi
-string.cmx : pervasives.cmx bytes.cmx string.cmi
-string.cmi :
+string.cmo : pervasives.cmi list.cmi bytes.cmi string.cmi
+string.cmx : pervasives.cmx list.cmx bytes.cmx string.cmi
+string.cmi : iter.cmi
 stringLabels.cmo : string.cmi stringLabels.cmi
 stringLabels.cmx : string.cmx stringLabels.cmi
 stringLabels.cmi :
@@ -196,8 +199,8 @@ arrayLabels.cmo : array.cmi arrayLabels.cmi
 arrayLabels.p.cmx : array.cmx arrayLabels.cmi
 buffer.cmo : sys.cmi string.cmi bytes.cmi buffer.cmi
 buffer.p.cmx : sys.cmx string.cmx bytes.cmx buffer.cmi
-bytes.cmo : pervasives.cmi char.cmi bytes.cmi
-bytes.p.cmx : pervasives.cmx char.cmx bytes.cmi
+bytes.cmo : pervasives.cmi list.cmi char.cmi bytes.cmi
+bytes.p.cmx : pervasives.cmx list.cmx char.cmx bytes.cmi
 bytesLabels.cmo : bytes.cmi bytesLabels.cmi
 bytesLabels.p.cmx : bytes.cmx bytesLabels.cmi
 callback.cmo : obj.cmi callback.cmi
@@ -312,8 +315,8 @@ std_exit.cmo :
 std_exit.cmx :
 stream.cmo : string.cmi list.cmi lazy.cmi bytes.cmi stream.cmi
 stream.p.cmx : string.cmx list.cmx lazy.cmx bytes.cmx stream.cmi
-string.cmo : pervasives.cmi bytes.cmi string.cmi
-string.p.cmx : pervasives.cmx bytes.cmx string.cmi
+string.cmo : pervasives.cmi list.cmi bytes.cmi string.cmi
+string.p.cmx : pervasives.cmx list.cmx bytes.cmx string.cmi
 stringLabels.cmo : string.cmi stringLabels.cmi
 stringLabels.p.cmx : string.cmx stringLabels.cmi
 sys.cmo : sys.cmi

@@ -130,3 +130,20 @@ let transfer q1 q2 =
       last.next <- q1.first;
       q2.last <- q1.last;
       clear q1
+
+(** {6 Iterators} *)
+
+let to_iter q =
+  let next = function
+    | Nil -> Iter.Done
+    | Cons { content=x; next; } -> Iter.Yield (x, next)
+  in
+  Iter.Sequence (q.first, next)
+
+let add_iter q i = Iter.iter (fun x -> push x q) i
+
+let of_iter g =
+  let q = create() in
+  add_iter q g;
+  q
+

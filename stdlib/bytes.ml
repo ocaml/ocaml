@@ -327,3 +327,41 @@ let lowercase s = map Char.lowercase s
 
 let capitalize s = apply1 Char.uppercase s
 let uncapitalize s = apply1 Char.lowercase s
+
+(** {6 Iterators} *)
+
+let to_iter s =
+  let next i =
+    if i = length s then Iter.Done
+    else
+      let x = get s i in
+      Iter.Yield (x, i+1)
+  in
+  Iter.Sequence (0, next)
+
+let to_iteri s =
+  let next i =
+    if i = length s then Iter.Done
+    else
+      let x = get s i in
+      Iter.Yield ((i,x), i+1)
+  in
+  Iter.Sequence (0, next)
+
+let of_iter i =
+  let n = ref 0 in
+  let buf = ref (make 256 '\000') in
+  let resize () =
+    (* resize *)
+    let new_buf = make (2 * length !buf) '\000' in
+    blit !buf 0 new_buf 0 !n;
+    buf := new_buf
+  in
+  Iter.iter
+    (fun c ->
+       if !n = length !buf then resize();
+       set !buf !n c;
+       incr n)
+    i;
+  sub !buf 0 !n
+

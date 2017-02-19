@@ -338,3 +338,13 @@ val merge : ('a -> 'a -> int) -> 'a list -> 'a list -> 'a list
     before the elements of [l2].
     Not tail-recursive (sum of the lengths of the arguments).
 *)
+
+(** {6 Iterators} *)
+
+val to_iter : 'a list -> 'a Iter.t
+(** Iterate on the list
+    @since NEXT_RELEASE *)
+
+val of_iter : 'a Iter.t -> 'a list
+(** Create a list from the iterator
+    @since NEXT_RELEASE *)

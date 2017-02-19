@@ -466,3 +466,25 @@ let rec compare_length_with l n =
   | _, 0 -> 1
   | _ :: l, n -> compare_length_with l (n-1)
 ;;
+
+(** {6 Iterators} *)
+
+let to_iter l =
+  let next = function
+    | [] -> Iter.Done
+    | x :: tail -> Iter.Yield (x, tail)
+  in Iter.Sequence (l, next)
+
+let of_iter (Iter.Sequence (state,next)) =
+  let rec direct depth state : _ list =
+    if depth=0
+    then
+      let i' = Iter.Sequence (state, next) in
+      Iter.fold_left (fun acc x -> x::acc) [] i'
+      |> rev (* tailrec *)
+    else match next state with
+      | Iter.Done -> []
+      | Iter.Skip state' -> direct depth state'
+      | Iter.Yield (x, state') -> x :: direct (depth-1) state'
+  in
+  direct 500 state
