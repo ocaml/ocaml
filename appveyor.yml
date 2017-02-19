@@ -30,6 +30,7 @@ environment:
     CYG_MIRROR: http://mirrors.kernel.org/sourceware/cygwin/
     CYG_CACHE: C:/cygwin/var/cache/setup
     OCAMLROOT: "%PROGRAMFILES%/OCaml"
+    OCAMLROOT2: "%PROGRAMFILES%/OCaml-mingw32"
 
 cache:
   - C:\cygwin\var\cache\setup
@@ -44,7 +45,7 @@ install:
   # cygpath behaves crazily), but after the MSVC one.
   - set Path=C:\cygwin\bin;%OCAMLROOT%\bin\flexdll;%Path%
   - '%CYG_ROOT%\bin\bash -lc "cygcheck -dc cygwin"'
-  - '"%CYG_ROOT%\setup-x86.exe" -qgnNdO -R "%CYG_ROOT%" -s "%CYG_MIRROR%" -l "%CYG_CACHE%" -P diffutils -P make >NUL'
+  - '"%CYG_ROOT%\setup-x86.exe" -qgnNdO -R "%CYG_ROOT%" -s "%CYG_MIRROR%" -l "%CYG_CACHE%" -P diffutils -P make -P mingw64-i686-gcc-core >NUL'
   - '%CYG_ROOT%\bin\bash -lc "cygcheck -dc cygwin"'
   - call "C:\Program Files\Microsoft SDKs\Windows\v7.1\Bin\SetEnv.cmd" /x64
 
@@ -56,3 +57,6 @@ test_script:
   - ocamlc -version
   - set CAML_LD_LIBRARY_PATH=%OCAMLROOT%/lib/stublibs
   - '%CYG_ROOT%/bin/bash -lc "cd $APPVEYOR_BUILD_FOLDER && make -f Makefile.nt tests"'
+  - '%CYG_ROOT%/bin/bash -lc "cd $APPVEYOR_BUILD_FOLDER/../build-mingw32 && make -f Makefile.nt tests"'
+  - '%CYG_ROOT%/bin/bash -lc "cd $APPVEYOR_BUILD_FOLDER && make -f Makefile.nt install"'
+  - '%CYG_ROOT%/bin/bash -lc "cd $APPVEYOR_BUILD_FOLDER/../build-mingw32 && make -f Makefile.nt install"'
