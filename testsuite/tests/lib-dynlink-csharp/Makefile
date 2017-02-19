@@ -14,7 +14,8 @@
 #**************************************************************************
 
 BASEDIR=../..
-CSC_COMMAND=csc
+# Only run this test for TOOLCHAIN=msvc
+CSC_COMMAND=$(filter csc,$(subst msvc,csc,$(TOOLCHAIN)))
 CSC=$(CSC_COMMAND) $(CSC_FLAGS)
 
 COMPFLAGS=-I $(OTOPDIR)/otherlibs/bigarray -I $(OTOPDIR)/otherlibs/dynlink \
