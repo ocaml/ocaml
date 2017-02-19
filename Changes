@@ -393,6 +393,9 @@ Next version (4.05.0):
   be received verbatim by the child process.
   (Nicolas Ojeda Bar, Andreas Hauptmann review by Xavier Leroy)
 
+- GPR#1043: Allow Windows CRLF line-endings in ocamlyacc on Unix and Cygwin.
+  (David Allsopp, review by Damien Doligez and Xavier Leroy)
+
 ### Toplevel and debugger:
 
 - PR#7060, GPR#1035: Print exceptions in installed custom printers
