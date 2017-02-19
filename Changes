@@ -56,6 +56,10 @@ Next version (4.05.0):
   int_size, word_size, ext_exe
   (Gabriel Scherer, request by Daniel Buenzli)
 
+- PR#7479: make sure "ocamlc -pack" is only given .cmo and .cmi files,
+  and that "ocamlopt -pack" is only given .cmx and .cmi files.
+  (Xavier Leroy)
+  
 - GPR#829: better error when opening a module aliased to a functor
   (Alain Frisch)
 
