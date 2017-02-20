@@ -86,6 +86,7 @@ set -ex
 # default values
 make=make
 instdir="$HOME/ocaml-tmp-install"
+makefile=Makefile
 configure=unix
 
 case "$branch" in
@@ -104,18 +105,22 @@ case "$arch" in
   cygwin) ;;
   mingw)
     instdir=/cygdrive/c/ocamlmgw
+    makefile=Makefile.nt
     configure=nt
   ;;
   mingw64)
     instdir=/cygdrive/c/ocamlmgw64
+    makefile=Makefile.nt
     configure=nt
   ;;
   msvc)
     instdir=/cygdrive/c/ocamlms
+    makefile=Makefile.nt
     configure=nt
   ;;
   msvc64)
     instdir=/cygdrive/c/ocamlms64
+    makefile=Makefile.nt
     configure=nt
   ;;
   *) error "unknown architecture: $arch";;
@@ -126,6 +131,9 @@ esac
 
 pwd
 cd "$workdir"
+
+# If Makefile.nt is absent, assume the new makefile system.
+if ! [ -f $makefile ]; then makefile=Makefile; fi
 
 #########################################################################
 # parse optional command-line arguments (has to be done after the "cd")
@@ -148,7 +156,7 @@ done
 # Tell gcc to use only ASCII in its diagnostic outputs.
 export LC_ALL=C
 
-$make distclean || :
+$make -f $makefile distclean || :
 
 if $docheckout; then
   git fetch origin
@@ -165,15 +173,15 @@ case $configure in
   *) error "internal error";;
 esac
 
-$make coldstart
-$make core
-$make coreboot
-$make world
+$make -f $makefile coldstart
+$make -f $makefile core
+$make -f $makefile coreboot
+$make -f $makefile world
 if $make_native; then
-  $make opt
-  $make opt.opt
+  $make -f $makefile opt
+  $make -f $makefile opt.opt
 fi
-$make install
+$make -f $makefile install
 
 rm -rf "$instdir"
 cd testsuite
