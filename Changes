@@ -36,6 +36,9 @@ Next version (4.04.1):
   of call at point correctly.
   (Chunhui He)
 
+- GPR#1043: Allow Windows CRLF line-endings in ocamlyacc on Unix and Cygwin.
+  (David Allsopp, review by Damien Doligez and Xavier Leroy)
+
 OCaml 4.04.0 (4 Nov 2016):
 --------------------------
 
