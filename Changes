@@ -564,6 +564,11 @@ Next minor version (4.04.1):
 - PR#7369: Str.regexp raises "Invalid_argument: index out of bounds"
   (Damien Doligez, report by John Whitington)
 
+- PR#7385, GPR#1057: fix incorrect timestamps returned by Unix.stat on Windows
+  when either TZ is set or system date is in DST.
+  (David Allsopp, report and initial fix by Nicolás Ojeda Bär, review and
+   superior implementation suggestion by Xavier Leroy)
+
 - PR#7405, GPR#903: s390x: Fix address of caml_raise_exn in native dynlink modules
   (Richard Jones, review by Xavier Leroy)
 
