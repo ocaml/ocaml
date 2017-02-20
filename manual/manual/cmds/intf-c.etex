@@ -1557,31 +1557,37 @@ to the extension of the resulting file (given with "-o").
 The native-code compiler "ocamlopt" also supports the "-output-obj"
 option, causing it to output a C object file or a shared library
 containing the native code for all OCaml modules on the command-line,
-as well as the OCaml startup code. Initialization is performed by
-calling "caml_startup" as in the case of the bytecode compiler.
+as well as the OCaml startup code and the OCaml runtime system.
+Initialization is performed by calling "caml_startup" as in the case of
+the bytecode compiler.
 
-For the final linking phase, in addition to the object file produced
-by "-output-obj", you will have to provide the OCaml runtime
-library ("libcamlrun.a" for bytecode, "libasmrun.a" for native-code),
-as well as all C libraries that are required by the OCaml libraries
+For the final linking phase, you will have to provide all C libraries
+that are required by the OCaml libraries
 used.  For instance, assume the OCaml part of your program uses the
 Unix library.  With "ocamlc", you should do:
 \begin{alltt}
         ocamlc -output-obj -o camlcode.o unix.cma {\it{other}} .cmo {\it{and}} .cma {\it{files}}
         cc -o myprog {\it{C objects and libraries}} \char92
-           camlcode.o -L`ocamlc -where` -lunix -lcamlrun
+           -L`ocamlc -where` -lunix
 \end{alltt}
 With "ocamlopt", you should do:
 \begin{alltt}
         ocamlopt -output-obj -o camlcode.o unix.cmxa {\it{other}} .cmx {\it{and}} .cmxa {\it{files}}
         cc -o myprog {\it{C objects and libraries}} \char92
-           camlcode.o -L`ocamlc -where` -lunix -lasmrun
+           -L`ocamlc -where` -lunix
 \end{alltt}
 
-% -- This seems completely wrong -- Damien
-% The shared libraries produced by "ocamlc -output-obj" or by "ocamlopt
-% -output-obj" already contains the OCaml runtime library as
-% well as all the needed C libraries.
+Please note that if you intend to produce a shared object (".so" file), you
+should use a version of the runtime system that is compiled with "-fPIC". This
+is not the default (at least on Linux), but some OPAM switches exist for that purpose.
+
+Finally, please note that on OSX, if you intend to build a shared library,
+you will need to produce two files: a ".so" file (or ".bundle") intended for
+link-time (when calling "ld"), and a ".dylib" file, intended for run-time loading
+of external libraries (loadable with "dlopen" on modern OSX versions). The ".so"
+file can be generated with "-output-obj"; the ".dylib" file, however, has to be
+generated using "ocamlopt -ccopt -dynamiclib -o foo.dylib". On this platform, you
+can use "otool -hv" to check that you have both a BUNDLE and a DYLIB file.
 
 \paragraph{Warning:} On some ports, special options are required on the final
 linking phase that links together the object file produced by the
