@@ -38,3 +38,10 @@
 #define LACKS_SANE_NAN
 #define LACKS_VSCPRINTF
 #endif
+/* _mkgmtime64 was introduced in Visual Studio .NET 2002. It's not by default
+ * available in mingw32 because it was only back-ported to msvcrt.dll from
+ * Windows Vista.
+ */
+#if defined(__MINGW64__) || !defined(__MINGW32__) && _MSC_VER >= 1300
+#define HAS_MKGMTIME64
+#endif
