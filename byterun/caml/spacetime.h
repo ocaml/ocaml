@@ -15,11 +15,12 @@
 #ifndef CAML_SPACETIME_H
 #define CAML_SPACETIME_H
 
-#ifdef NATIVE_CODE
+#if defined(NATIVE_CODE) && defined(WITH_SPACETIME)
 
 #include "caml/io.h"
 #include "caml/misc.h"
 #include "caml/stack.h"
+#include "caml/roots.h"
 
 /* Runtime support for Spacetime profiling.
  * This header file is not intended for the casual user.
@@ -146,6 +147,10 @@ typedef struct shape_table {
   uint64_t* table;
   struct shape_table* next;
 } shape_table;
+
+#ifdef CAML_INTERNALS
+extern caml_link* caml_spacetime_saved_trie_node_ptr;
+#endif
 
 extern uint64_t** caml_spacetime_static_shape_tables;
 extern shape_table* caml_spacetime_dynamic_shape_tables;

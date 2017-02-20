@@ -164,6 +164,8 @@ static void do_compaction (void)
   caml_heap_check ();
 #endif
 
+  MAYBE_HOOK1(caml_do_compaction_begin_hook,);
+  
   /* First pass: encode all noninfix headers. */
   {
     ch = caml_heap_start;
@@ -337,6 +339,7 @@ static void do_compaction (void)
     }
   }
 
+  MAYBE_HOOK1(caml_do_compaction_middle_hook,);
 
   /* Fourth pass: reallocate and move objects.
      Use the exact same allocation algorithm as pass 3. */
@@ -411,6 +414,7 @@ static void do_compaction (void)
     }
   }
   ++ caml_stat_compactions;
+  MAYBE_HOOK1(caml_do_compaction_end_hook,);
   caml_gc_message (0x10, "done.\n", 0);
 }
 

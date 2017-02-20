@@ -40,11 +40,7 @@ frame_descr ** caml_frame_descriptors = NULL;
 int caml_frame_descriptors_mask = 0;
 
 /* Linked-list */
-
-typedef struct link {
-  void *data;
-  struct link *next;
-} link;
+typedef caml_link link;
 
 static link *cons(void *data, link *tl) {
   link *lnk = caml_stat_alloc(sizeof(link));

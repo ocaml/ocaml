@@ -21,6 +21,11 @@
 #include "misc.h"
 #include "memory.h"
 
+typedef struct caml_link {
+  void *data;
+  struct caml_link *next;
+} caml_link;
+
 typedef void (*scanning_action) (value, value *);
 
 void caml_oldify_local_roots (void);

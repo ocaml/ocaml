@@ -84,7 +84,7 @@ int caml_write_fd(int fd, int flags, void * buf, int n)
 {
   int retcode;
  again:
-#if defined(NATIVE_CODE) && defined(WITH_SPACETIME)
+#ifdef WITH_PROFINFO
   if (flags & CHANNEL_FLAG_BLOCKING_WRITE) {
     retcode = write(fd, buf, n);
   } else {
@@ -92,7 +92,7 @@ int caml_write_fd(int fd, int flags, void * buf, int n)
   caml_enter_blocking_section();
   retcode = write(fd, buf, n);
   caml_leave_blocking_section();
-#if defined(NATIVE_CODE) && defined(WITH_SPACETIME)
+#ifdef WITH_PROFINFO
   }
 #endif
   if (retcode == -1) {

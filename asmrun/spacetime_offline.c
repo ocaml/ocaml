@@ -38,6 +38,8 @@
 
 #include "../config/s.h"
 
+#ifdef WITH_SPACETIME
+
 #ifdef ARCH_SIXTYFOUR
 
 /* CR-someday lwhite: The following two definitions are copied from spacetime.c
@@ -224,5 +226,7 @@ CAMLprim value caml_spacetime_c_node_allocation_count(value node)
   Assert(!Is_block(c_node->data.allocation.count));
   return c_node->data.allocation.count;
 }
+
+#endif
 
 #endif

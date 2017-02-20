@@ -25,13 +25,7 @@
 #include "caml/osdeps.h"
 #include "caml/fail.h"
 #include "caml/signals.h"
-#ifdef WITH_SPACETIME
-#include "caml/spacetime.h"
-#endif
-
-#include "caml/hooks.h"
-
-CAMLexport void (*caml_natdynlink_hook)(void* handle, char* unit) = NULL;
+#include "caml/dynlink.h"
 
 #include <stdio.h>
 #include <string.h>
@@ -44,7 +38,7 @@ static value Val_handle(void* handle) {
   return res;
 }
 
-static void *getsym(void *handle, char *module, char *name){
+CAMLprim void *caml_natdynlink_getsym(void *handle, char *module, char *name){
   char *fullname = caml_strconcat(3, "caml", module, name);
   void *sym;
   sym = caml_dlsym (handle, fullname);
@@ -102,7 +96,7 @@ CAMLprim value caml_natdynlink_run(value handle_v, value symbol) {
   void* handle = Handle_val(handle_v);
   struct code_fragment * cf;
 
-#define optsym(n) getsym(handle,unit,n)
+#define optsym(n) caml_natdynlink_getsym(handle,unit,n)
   char *unit;
   void (*entrypoint)(void);
 
@@ -110,11 +104,6 @@ CAMLprim value caml_natdynlink_run(value handle_v, value symbol) {
 
   sym = optsym("__frametable");
   if (NULL != sym) caml_register_frametable(sym);
-
-#ifdef WITH_SPACETIME
-  sym = optsym("__spacetime_shapes");
-  if (NULL != sym) caml_spacetime_register_shapes(sym);
-#endif
 
   sym = optsym("__gc_roots");
   if (NULL != sym) caml_register_dyn_global(sym);

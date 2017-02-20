@@ -29,6 +29,7 @@
 #endif /* CAML_INTERNALS */
 #include "misc.h"
 #include "mlvalues.h"
+#include "hooks.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -109,6 +110,7 @@ int caml_page_table_initialize(mlsize_t bytesize);
   }                                                                         \
   Hd_hp (caml_young_ptr) =                                                  \
     Make_header_with_profinfo ((wosize), (tag), Caml_black, profinfo);      \
+  CAML_ALLOC_SMALL_HOOK(wosize);                                            \
   (result) = Val_hp (caml_young_ptr);                                       \
   DEBUG_clear ((result), (wosize));                                         \
 }while(0)

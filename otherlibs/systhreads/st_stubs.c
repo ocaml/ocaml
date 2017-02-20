@@ -83,6 +83,7 @@ struct caml_thread_struct {
   value internal_spacetime_finaliser_trie_root;
   value* spacetime_trie_node_ptr;
   value* spacetime_finaliser_trie_root;
+  caml_link* spacetime_saved_trie_node_ptr;
 #endif
 #else
   value * stack_low;            /* The execution stack for this thread */
@@ -180,6 +181,8 @@ static inline void caml_thread_save_runtime_state(void)
     = caml_spacetime_trie_node_ptr;
   curr_thread->spacetime_finaliser_trie_root
     = caml_spacetime_finaliser_trie_root;
+  curr_thread->spacetime_saved_trie_node_ptr
+    = caml_spacetime_saved_trie_node_ptr;
 #endif
 #else
   curr_thread->stack_low = caml_stack_low;
@@ -209,6 +212,8 @@ static inline void caml_thread_restore_runtime_state(void)
     = curr_thread->spacetime_trie_node_ptr;
   caml_spacetime_finaliser_trie_root
     = curr_thread->spacetime_finaliser_trie_root;
+  caml_spacetime_saved_trie_node_ptr
+    = curr_thread->spacetime_saved_trie_node_ptr;
 #endif
 #else
   caml_stack_low = curr_thread->stack_low;
@@ -360,6 +365,7 @@ static caml_thread_t caml_thread_new_info(void)
   caml_spacetime_register_thread(
     th->spacetime_trie_node_ptr,
     th->spacetime_finaliser_trie_root);
+  th->spacetime_saved_trie_node_ptr = NULL;
 #endif
 #else
   /* Allocate the stacks */
