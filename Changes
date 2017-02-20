@@ -77,7 +77,7 @@ Next version (4.05.0):
 - PR#7479: make sure "ocamlc -pack" is only given .cmo and .cmi files,
   and that "ocamlopt -pack" is only given .cmx and .cmi files.
   (Xavier Leroy)
-  
+
 - GPR#829: better error when opening a module aliased to a functor
   (Alain Frisch)
 
@@ -184,7 +184,7 @@ Next version (4.05.0):
 - PR#7264: document the different behaviors of Unix.lockf under POSIX
   and under Win32.
   (Xavier Leroy, report by David Allsopp)
-  
+
 - MPR#7339, GPR#787: Support the '0 dimension' case for bigarrays
   (see Bigarray documentation)
   (Laurent Mazare,
@@ -346,6 +346,9 @@ Next version (4.05.0):
 
 - PR#7437: typing assert failure with nonrec priv
   (Jacques Garrigue, report by Anil Madhavapeddy)
+
+- PR#7438: warning +34 exposes #row with private types
+  (Alain Frisch, report by Anil Madhavapeddy)
 
 - PR#7443, GPR#990: spurious unused open warning with local open in patterns
   (Florian Angeletti, report by Gabriel Scherer)
