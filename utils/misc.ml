@@ -451,14 +451,14 @@ module Color = struct
     pp_set_mark_tags ppf true; (* enable tags *)
     pp_set_formatter_tag_functions ppf functions'
 
-  external isatty : out_channel -> bool = "caml_sys_isatty"
+  (* external isatty : out_channel -> bool = "caml_sys_isatty" *)
 
   (* reasonable heuristic on whether colors should be enabled *)
-  let should_enable_color () =
-    let term = try Sys.getenv "TERM" with Not_found -> "" in
+   let should_enable_color () = false  
+(*    let term = try Sys.getenv "TERM" with Not_found -> "" in
     term <> "dumb"
-    && term <> ""
-    && isatty stderr
+    && term <> "" *)
+(*    && isatty stderr *)
 
   let setup =
     let first = ref true in (* initialize only once *)
