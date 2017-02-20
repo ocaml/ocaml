@@ -152,6 +152,8 @@ static int safe_do_stat(int do_lstat, int use_64, char* path, mlsize_t l, HANDLE
   HANDLE h;
   unsigned short mode;
   int is_symlink = 0;
+  char* restore_TZ = NULL;
+  int failed = 0;
 
   if (!path) {
     h = fstat;
@@ -258,12 +260,40 @@ static int safe_do_stat(int do_lstat, int use_64, char* path, mlsize_t l, HANDLE
       return 0;
     }
 
+    /* PR#7385: ensure CRT is using system timezone */
+    restore_TZ = getenv("TZ");
+    if (restore_TZ && (i = strlen(restore_TZ)) == 0) {
+      restore_TZ = NULL;
+    } else {
+      if (!(restore_TZ = strdup(restore_TZ))) caml_raise_out_of_memory();
+      _putenv("TZ=");
+    }
+    /* It could be that TZ has been cleared but the CRT globals not updated, so
+     * always call _tzset.
+     */
+    _tzset();
+
     if (!convert_time(&info.ftLastWriteTime, &res->st_mtime, 0) ||
         !convert_time(&info.ftLastAccessTime, &res->st_atime, res->st_mtime) ||
         !convert_time(&info.ftCreationTime, &res->st_ctime, res->st_mtime)) {
       win32_maperr(GetLastError());
-      return 0;
+      failed = 1;
     }
+
+    if (restore_TZ) {
+      char* env = (char*)malloc(i + 4);
+      if (!env) {
+        free(restore_TZ);
+        caml_raise_out_of_memory();
+      }
+      env[0] = 'T'; env[1] = 'Z'; env[2] = '='; env[3] = '\0';
+      _putenv(strcat(env, restore_TZ));
+      free(env);
+      free(restore_TZ);
+      _tzset();
+    }
+
+    if (failed) return 0;
 
     /*
      * Note MS CRT (still) puts st_nlink = 1 and gives st_ino = 0
