@@ -137,7 +137,7 @@ external raise_with_backtrace: exn -> raw_backtrace -> 'a
 (** Reraise the exception using the given raw_backtrace for the
     origin of the exception
 
-    @since 4.03.0
+    @since 4.05.0
 *)
 
 (** {6 Current call stack} *)
@@ -215,6 +215,7 @@ type location = {
     @since 4.02
 *)
 
+(** @since 4.02.0 *)
 module Slot : sig
   type t = backtrace_slot
 
