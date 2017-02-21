@@ -100,10 +100,9 @@ extern void caml_install_invalid_parameter_handler();
 
 #endif
 
-void caml_main(char **argv)
+value caml_startup_exn(char **argv)
 {
   char * exe_name, * proc_self_exe;
-  value res;
   char tos;
 
 #ifdef WITH_SPACETIME
@@ -140,14 +139,21 @@ void caml_main(char **argv)
   caml_sys_init(exe_name, argv);
   if (sigsetjmp(caml_termination_jmpbuf.buf, 0)) {
     if (caml_termination_hook != NULL) caml_termination_hook(NULL);
-    return;
+    return Val_unit;
   }
-  res = caml_start_program();
-  if (Is_exception_result(res))
-    caml_fatal_uncaught_exception(Extract_exception(res));
+  return caml_start_program();
 }
 
 void caml_startup(char **argv)
 {
-  caml_main(argv);
+  value res = caml_startup_exn(argv);
+
+  if (Is_exception_result(res)) {
+    caml_fatal_uncaught_exception(Extract_exception(res));
+  }
+}
+
+void caml_main(char **argv)
+{
+  caml_startup(argv);
 }

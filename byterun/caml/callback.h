@@ -49,6 +49,7 @@ CAMLextern void caml_iterate_named_values(caml_named_action f);
 
 CAMLextern void caml_main (char ** argv);
 CAMLextern void caml_startup (char ** argv);
+CAMLextern value caml_startup_exn (char ** argv);
 
 CAMLextern int caml_callback_depth;
 

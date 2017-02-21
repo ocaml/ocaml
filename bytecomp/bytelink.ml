@@ -501,6 +501,13 @@ let link_bytecode_as_c ppf tolink outfile =
 \n                    caml_sections, sizeof(caml_sections),\
 \n                    argv);\
 \n}\
+\nvalue caml_startup_exn(char ** argv)\
+\n{\
+\n  return caml_startup_code_exn(caml_code, sizeof(caml_code),\
+\n                               caml_data, sizeof(caml_data),\
+\n                               caml_sections, sizeof(caml_sections),\
+\n                               argv);\
+\n}\
 \n#ifdef __cplusplus\
 \n}\
 \n#endif\n";

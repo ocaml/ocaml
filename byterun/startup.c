@@ -396,13 +396,12 @@ CAMLexport void caml_main(char **argv)
 
 /* Main entry point when code is linked in as initialized data */
 
-CAMLexport void caml_startup_code(
+CAMLexport value caml_startup_code_exn(
            code_t code, asize_t code_size,
            char *data, asize_t data_size,
            char *section_table, asize_t section_table_size,
            char **argv)
 {
-  value res;
   char * cds_file;
   char * exe_name;
 
@@ -461,7 +460,20 @@ CAMLexport void caml_startup_code(
   caml_sys_init(exe_name, argv);
   /* Execute the program */
   caml_debugger(PROGRAM_START);
-  res = caml_interprete(caml_start_code, caml_code_size);
+  return caml_interprete(caml_start_code, caml_code_size);
+}
+
+CAMLexport void caml_startup_code(
+           code_t code, asize_t code_size,
+           char *data, asize_t data_size,
+           char *section_table, asize_t section_table_size,
+           char **argv)
+{
+  value res;
+
+  res = caml_startup_code_exn(code, code_size, data, data_size,
+                              section_table, section_table_size,
+                              argv);
   if (Is_exception_result(res)) {
     caml_exn_bucket = Extract_exception(res);
     if (caml_debugger_in_use) {
