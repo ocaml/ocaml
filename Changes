@@ -3,6 +3,19 @@ Working version
 
 (Changes that can break existing programs are marked with a "*")
 
+### Language features:
+
+### Code generation and optimizations:
+
+- PR#5324, GPR#375: An alternative Linear Scan register allocator for
+  ocamlopt, activated with the -linscan command-line flag. This
+  allocator represents a trade-off between worse generated code
+  performance for higher compilation speed (especially interesting in
+  some cases graph coloring is necessarily quadratic).
+  (Marcell Fischbach and Benedikt Meurer, adapted by Nicolas Ojeda
+  Bar, review by Nicolas Ojeda Bar and Alain Frisch)
+
+
 ### Tools:
 
 - GPR#1045: ocamldep, add a "-shared" option to generate dependencies
