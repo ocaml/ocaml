@@ -121,6 +121,7 @@ caml_ba_multov(uintnat a, uintnat b, int * overflow)
   if (p < p1 || p1 < p2) *overflow = 1; /* overflow in sums */
   return p;
 #undef HALF_SIZE
+#undef HALF_MASK
 #undef LOW_HALF
 #undef HIGH_HALF
 }
