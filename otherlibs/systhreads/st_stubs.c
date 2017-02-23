@@ -73,6 +73,7 @@ struct caml_thread_struct {
 #ifdef NATIVE_CODE
   char * top_of_stack;          /* Top of stack for this thread (approx.) */
   char * bottom_of_stack;       /* Saved value of caml_bottom_of_stack */
+  size_t stack_size;            /* Stack size in bytes (0 if unknown) */
   uintnat last_retaddr;         /* Saved value of caml_last_return_address */
   value * gc_regs;              /* Saved value of caml_gc_regs */
   char * exception_pointer;     /* Saved value of caml_exception_pointer */
@@ -171,6 +172,7 @@ static inline void caml_thread_save_runtime_state(void)
 #ifdef NATIVE_CODE
   curr_thread->top_of_stack = caml_top_of_stack;
   curr_thread->bottom_of_stack = caml_bottom_of_stack;
+  curr_thread->stack_size = caml_stack_size;
   curr_thread->last_retaddr = caml_last_return_address;
   curr_thread->gc_regs = caml_gc_regs;
   curr_thread->exception_pointer = caml_exception_pointer;
@@ -200,6 +202,7 @@ static inline void caml_thread_restore_runtime_state(void)
 #ifdef NATIVE_CODE
   caml_top_of_stack = curr_thread->top_of_stack;
   caml_bottom_of_stack= curr_thread->bottom_of_stack;
+  caml_stack_size = curr_thread->stack_size;
   caml_last_return_address = curr_thread->last_retaddr;
   caml_gc_regs = curr_thread->gc_regs;
   caml_exception_pointer = curr_thread->exception_pointer;
@@ -343,6 +346,7 @@ static caml_thread_t caml_thread_new_info(void)
 #ifdef NATIVE_CODE
   th->bottom_of_stack = NULL;
   th->top_of_stack = NULL;
+  th->stack_size = -1;
   th->last_retaddr = 1;
   th->exception_pointer = NULL;
   th->local_roots = NULL;
@@ -387,7 +391,7 @@ static value caml_thread_new_descriptor(value clos)
     /* Create and initialize the termination semaphore */
     mu = caml_threadstatus_new();
     /* Create a descriptor for the new thread */
-    descr = caml_alloc_small(3, 0);
+    descr = caml_alloc_small(4, 0);
     Ident(descr) = Val_long(thread_next_ident);
     Start_closure(descr) = clos;
     Terminated(descr) = mu;
@@ -479,9 +483,13 @@ CAMLprim value caml_thread_initialize(value unit)   /* ML */
   curr_thread->backtrace_last_exn = Val_unit;
 #ifdef NATIVE_CODE
   curr_thread->exit_buf = &caml_termination_jmpbuf;
+  curr_thread->top_of_stack = caml_top_of_stack;
+  curr_thread->stack_size = 0;  /* This is the main thread (see thread.ml). */
+  {
+    char local_var;
+    curr_thread->bottom_of_stack = &local_var;
+  }
 #endif
-  /* The stack-related fields will be filled in at the next
-     caml_enter_blocking_section */
   /* Associate the thread descriptor with the thread */
   st_tls_set(thread_descriptor_key, (void *) curr_thread);
   /* Set up the hooks */
@@ -545,7 +553,11 @@ static ST_THREAD_FUNCTION caml_thread_start(void * arg)
   value clos;
 #ifdef NATIVE_CODE
   struct longjmp_buffer termination_buf;
-  char tos;
+  void* signal_stack;
+  stack_t signal_stack_t;
+
+  /* Record top of stack and stack size */
+  st_determine_thread_stack_size((void**) &th->top_of_stack, &th->stack_size);
 #endif
 
   /* Associate the thread descriptor with the thread */
@@ -553,8 +565,17 @@ static ST_THREAD_FUNCTION caml_thread_start(void * arg)
   /* Acquire the global mutex */
   caml_leave_blocking_section();
 #ifdef NATIVE_CODE
-  /* Record top of stack (approximative) */
-  th->top_of_stack = &tos;
+  /* Establish stack to be used for running signal handlers (in particular
+     [segv_handler]) from the new thread.  At least on Linux it is guaranteed
+     that signals arising from processor faults (e.g. SIGSEGV) are delivered
+     to the faulting thread. */
+  signal_stack_t.ss_size = SIGSTKSZ;
+  signal_stack = malloc(signal_stack_t.ss_size);
+  if (signal_stack != NULL) {
+    signal_stack_t.ss_sp = signal_stack;
+    signal_stack_t.ss_flags = 0;
+    sigaltstack(&signal_stack_t, NULL);
+  }
   /* Setup termination handler (for caml_thread_exit) */
   if (sigsetjmp(termination_buf.buf, 0) == 0) {
     th->exit_buf = &termination_buf;
@@ -565,6 +586,12 @@ static ST_THREAD_FUNCTION caml_thread_start(void * arg)
     caml_callback_exn(clos, Val_unit);
     caml_thread_stop();
 #ifdef NATIVE_CODE
+    if (signal_stack != NULL) {
+      signal_stack_t.ss_flags = SS_DISABLE;
+      if (sigaltstack(&signal_stack_t, NULL) == 0) {
+        free(signal_stack);
+      }
+    }
   }
 #endif
   /* The thread now stops running */
@@ -617,7 +644,7 @@ CAMLexport int caml_c_thread_register(void)
   th = caml_thread_new_info();
   if (th == NULL) return 0;
 #ifdef NATIVE_CODE
-  th->top_of_stack = (char *) &err;
+  st_determine_thread_stack_size((void**) &th->top_of_stack, &th->stack_size);
 #endif
   /* Take master lock to protect access to the chaining of threads */
   st_masterlock_acquire(&caml_master_lock);

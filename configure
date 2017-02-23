@@ -1584,13 +1584,39 @@ if test "$pthread_wanted" = "yes"; then
     bytecccompopts="$bytecccompopts -D_REENTRANT"
     nativecccompopts="$nativecccompopts -D_REENTRANT"
     case "$target" in
+      *,*-*-darwin*)
+          if sh ./hasgot -i pthread.h $pthread_link pthread_get_stacksize_np;
+          then
+            inf "pthread_get_stacksize_np() found"
+            echo "#define HAS_PTHREAD_GET_STACKSIZE_NP" >> s.h
+          fi
+          if sh ./hasgot -i pthread.h $pthread_link pthread_get_stackaddr_np;
+          then
+            inf "pthread_get_stackaddr_np() found"
+            echo "#define HAS_PTHREAD_GET_STACKADDR_NP" >> s.h
+          fi
+          ;;
       *-*-freebsd*|*-*-dragonfly*)
+          if sh ./hasgot -i pthread.h $pthread_link pthread_attr_get_np; then
+            inf "pthread_attr_get_np() found"
+            echo "#define PTHREAD_GETATTR_NP pthread_attr_get_np" >> s.h
+          fi
           bytecccompopts="$bytecccompopts -D_THREAD_SAFE"
           nativecccompopts="$nativecccompopts -D_THREAD_SAFE";;
       *-*-openbsd*)
+          if sh ./hasgot -i pthread.h $pthread_link pthread_stackseg_np; then
+            inf "pthread_stackseg_np() found"
+            echo "#define HAS_PTHREAD_STACKSEG_NP" >> s.h
+          fi
           bytecccompopts="$bytecccompopts -pthread"
           asppflags="$asppflags -pthread"
           nativecccompopts="$nativecccompopts -pthread";;
+      *)
+          if sh ./hasgot -i pthread.h $pthread_link pthread_getattr_np; then
+            inf "pthread_getattr_np() found"
+            echo "#define PTHREAD_GETATTR_NP pthread_getattr_np" >> s.h
+          fi
+          ;;
     esac
     inf "Options for linking with POSIX threads: $pthread_link"
     if sh ./hasgot $pthread_link sigwait; then

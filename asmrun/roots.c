@@ -221,6 +221,7 @@ void caml_unregister_frametable(intnat *table) {
 /* Communication with [caml_start_program] and [caml_call_gc]. */
 
 char * caml_top_of_stack;
+size_t caml_stack_size;
 char * caml_bottom_of_stack = NULL; /* no stack initially */
 uintnat caml_last_return_address = 1; /* not in OCaml code initially */
 value * caml_gc_regs;

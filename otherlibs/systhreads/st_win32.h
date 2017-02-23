@@ -422,3 +422,17 @@ value caml_wait_signal(value sigs) /* ML */
   caml_invalid_argument("Thread.wait_signal not implemented");
   return Val_int(0);            /* not reached */
 }
+
+void st_determine_thread_stack_size(void** top_of_stack, size_t* stack_size)
+{
+#ifdef _WIN64
+  *top_of_stack = (void*) __readgsqword(offsetof(NT_TIB64, StackBase));
+#endif
+#ifdef _WIN32
+  *top_of_stack = (void*) __readfsdword(offsetof(NT_TIB, StackBase));
+#endif
+
+  /* The stack size is only needed for the Unix-style stack overflow
+     detection code. */
+  *stack_size = -1;
+}

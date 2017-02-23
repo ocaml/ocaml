@@ -19,6 +19,9 @@
 #include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
+#ifdef PTHREAD_GETATTR_NP
+#define __USE_GNU
+#endif
 #include <pthread.h>
 #ifdef __sun
 #define _POSIX_PTHREAD_SEMANTICS
@@ -59,6 +62,9 @@ static int st_thread_create(st_thread_id * res,
 
   pthread_attr_init(&attr);
   if (res == NULL) pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED);
+  /* Set the guard page size so that it matches up with the stack-touching
+     code in [caml_c_call]. */
+  pthread_attr_setguardsize(&attr, 32768);
   rc = pthread_create(&thr, &attr, fn, arg);
   if (res != NULL) *res = thr;
   return rc;
@@ -424,5 +430,50 @@ value caml_wait_signal(value sigs) /* ML */
 #else
   caml_invalid_argument("Thread.wait_signal not implemented");
   return Val_int(0);            /* not reached */
+#endif
+}
+
+#include "../../config/s.h"
+
+void st_determine_thread_stack_size(void** top_of_stack, size_t* stack_size)
+{
+  /* Note: at least under NPTL, the returned size will include the guard
+     page size. */
+
+  int local_var;
+
+  *top_of_stack = (void*) &local_var;
+  *stack_size = -1;
+
+#if defined(HAS_PTHREAD_GET_STACKSIZE_NP) \
+ && defined(HAS_PTHREAD_GET_STACKADDR_NP)
+  *top_of_stack = pthread_get_stackaddr_np(pthread_self());
+  *stack_size = pthread_get_stacksize_np(pthread_self());
+  *top_of_stack += *stack_size;
+  return;
+#endif
+#ifdef PTHREAD_GETATTR_NP
+  {
+    pthread_attr_t attr;
+    if (PTHREAD_GETATTR_NP(pthread_self(), &attr) != 0) {
+      return;
+    }
+    if (pthread_attr_getstack(&attr, top_of_stack, stack_size) != 0) {
+      return;
+    }
+    *top_of_stack += *stack_size;
+    return;
+  }
+#endif
+#ifdef PTHREAD_STACKSEG_NP
+  {
+    stack_t stack;
+    if (pthread_stackseg_np(pthread_self(), &stack) != 0) {
+      return;
+    }
+    *top_of_stack = stack.ss_sp + stack.ss_size;
+    *stack_size = stack.ss_size;
+    return;
+  }
 #endif
 }

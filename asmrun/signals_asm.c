@@ -193,17 +193,17 @@ DECLARE_SIGNAL_HANDLER(trap_handler)
 
 #ifdef HAS_STACK_OVERFLOW_DETECTION
 
-static char * system_stack_top;
 static char sig_alt_stack[SIGSTKSZ];
 
 #if defined(SYS_linux)
 /* PR#4746: recent Linux kernels with support for stack randomization
    silently add 2 Mb of stack space on top of RLIMIT_STACK.
-   2 Mb = 0x200000, to which we add 8 kB (=0x2000) for overshoot. */
-#define EXTRA_STACK 0x202000
+   We also always add 8 kB (=0x2000) for overshoot. */
+#define EXTRA_STACK_RLIMIT 0x200000
 #else
-#define EXTRA_STACK 0x2000
+#define EXTRA_STACK_RLIMIT 0
 #endif
+#define EXTRA_STACK 0x2000
 
 #ifdef RETURN_AFTER_STACK_OVERFLOW
 extern void caml_stack_overflow(void);
@@ -214,6 +214,7 @@ DECLARE_SIGNAL_HANDLER(segv_handler)
   struct rlimit limit;
   struct sigaction act;
   char * fault_addr;
+  int handled = 0;
 
   /* Sanity checks:
      - faulting address is word-aligned
@@ -221,31 +222,61 @@ DECLARE_SIGNAL_HANDLER(segv_handler)
      - we are in OCaml code */
   fault_addr = CONTEXT_FAULTING_ADDRESS;
   if (((uintnat) fault_addr & (sizeof(intnat) - 1)) == 0
-      && getrlimit(RLIMIT_STACK, &limit) == 0
-      && fault_addr < system_stack_top
-      && fault_addr >= system_stack_top - limit.rlim_cur - EXTRA_STACK
+      && fault_addr < caml_top_of_stack) {
+    size_t stack_size;
+
+    if (caml_stack_size < 0) {
+      /* A thread (not the main thread) whose stack size couldn't be
+         computed. */
+      stack_size = 0;
+    } else if (caml_stack_size == 0) {
+      /* The current stack is that of the main thread.
+         [getrlimit] is not async signal safe and thus should not be called
+         here, but it isn't clear what else is better.  (In particular the
+         pthread calls that might be used instead are not known to be
+         async signal safe either.)  The stack size for the main thread
+         cannot really be cached as it might grow. */
+      if (getrlimit(RLIMIT_STACK, &limit) == 0) {
+        stack_size = limit.rlim_cur + EXTRA_STACK_RLIMIT;
+      }
+      else {
+        stack_size = 0;
+      }
+    }
+    else {
+      stack_size = caml_stack_size;
+    }
+
+    if (stack_size > 0
+      && fault_addr >= caml_top_of_stack - (stack_size + EXTRA_STACK)
 #ifdef CONTEXT_PC
       && Is_in_code_area(CONTEXT_PC)
 #endif
       ) {
+      handled = 1;
 #ifdef RETURN_AFTER_STACK_OVERFLOW
-    /* Tweak the PC part of the context so that on return from this
-       handler, we jump to the asm function [caml_stack_overflow]
-       (from $ARCH.S). */
+      /* Tweak the PC part of the context so that on return from this
+         handler, we jump to the asm function [caml_stack_overflow]
+         (from $ARCH.S). */
 #ifdef CONTEXT_PC
-    CONTEXT_PC = (context_reg) &caml_stack_overflow;
+      CONTEXT_PC = (context_reg) &caml_stack_overflow;
 #else
 #error "CONTEXT_PC must be defined if RETURN_AFTER_STACK_OVERFLOW is"
 #endif
 #else
-    /* Raise a Stack_overflow exception straight from this signal handler */
+      /* Raise a Stack_overflow exception straight from this signal handler */
 #if defined(CONTEXT_YOUNG_PTR) && defined(CONTEXT_EXCEPTION_POINTER)
-    caml_exception_pointer = (char *) CONTEXT_EXCEPTION_POINTER;
-    caml_young_ptr = (value *) CONTEXT_YOUNG_PTR;
+      caml_exception_pointer = (char *) CONTEXT_EXCEPTION_POINTER;
+      caml_young_ptr = (value *) CONTEXT_YOUNG_PTR;
 #endif
-    caml_raise_stack_overflow();
+      /* This function calls pthread functions via [Unlock_exn] in
+         caml_raise, which might not be async signal safe either... */
+      caml_raise_stack_overflow();
 #endif
-  } else {
+    }
+  }
+
+  if (!handled) {
     /* Otherwise, deactivate our exception handler and return,
        causing fatal signal to be generated at point of error. */
     act.sa_handler = SIG_DFL;
@@ -301,7 +332,6 @@ void caml_init_signals(void)
     SET_SIGACT(act, segv_handler);
     act.sa_flags |= SA_ONSTACK | SA_NODEFER;
     sigemptyset(&act.sa_mask);
-    system_stack_top = (char *) &act;
     if (sigaltstack(&stk, NULL) == 0) { sigaction(SIGSEGV, &act, NULL); }
   }
 #endif

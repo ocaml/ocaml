@@ -122,6 +122,14 @@ extern char caml_globals_map[];
 extern intnat caml_globals_inited;
 extern intnat * caml_frametable[];
 
+/* Size of the stack in bytes for the current thread.  There are two
+   special values:
+
+    0 => this is the main thread, whose size may be dynamic.
+    -1 => stack size unknown (and it's not the main thread)
+*/
+extern size_t caml_stack_size;
+
 CAMLextern frame_descr * caml_next_frame_descriptor(uintnat * pc, char ** sp);
 
 #endif /* CAML_INTERNALS */
