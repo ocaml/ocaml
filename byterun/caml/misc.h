@@ -167,6 +167,9 @@ extern intnat (*caml_cplugins_prim)(int,intnat,intnat,intnat);
 #define CAML_SYS_STRING_PRIM_1(code,prim,arg1)               \
   (caml_cplugins_prim == NULL) ? prim(arg1) :    \
   (char*)caml_cplugins_prim(code,(intnat) (arg1),0,0)
+#define CAML_SYS_VOID_PRIM_1(code,prim,arg1)               \
+  (caml_cplugins_prim == NULL) ? prim(arg1) :    \
+  (void)caml_cplugins_prim(code,(intnat) (arg1),0,0)
 #define CAML_SYS_PRIM_2(code,prim,arg1,arg2)                         \
   (caml_cplugins_prim == NULL) ? prim(arg1,arg2) :              \
   caml_cplugins_prim(code,(intnat) (arg1), (intnat) (arg2),0)
@@ -175,7 +178,7 @@ extern intnat (*caml_cplugins_prim)(int,intnat,intnat,intnat);
   caml_cplugins_prim(code,(intnat) (arg1), (intnat) (arg2),(intnat) (arg3))
 
 #define CAML_SYS_EXIT(retcode) \
-  CAML_SYS_PRIM_1(CAML_CPLUGINS_EXIT,exit,retcode)
+  CAML_SYS_VOID_PRIM_1(CAML_CPLUGINS_EXIT,exit,retcode)
 #define CAML_SYS_OPEN(filename,flags,perm)                      \
   CAML_SYS_PRIM_3(CAML_CPLUGINS_OPEN,open,filename,flags,perm)
 #define CAML_SYS_CLOSE(fd)                      \
