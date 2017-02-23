@@ -523,6 +523,10 @@ OCaml 4.04.0 (4 Nov 2016):
   "transitive" heap size of a value
   (Alain Frisch, review by Mark Shinwell and Damien Doligez)
 
+-* PR#7279 GPR#710: `Weak.get_copy` `Ephemeron.*_copy` doesn't copy anymore custom blocks
+  (François Bobot, Alain Frisch, bug reported by Martin R. Neuhäußer,
+  review by Thomas Braibant and Damien Doligez)
+
 - GPR#473: Provide `Sys.backend_type` so that user can write backend-specific
   code in some cases (for example,  code generator).
   (Hongbo Zhang)
