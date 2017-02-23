@@ -352,6 +352,9 @@ Next version (4.05.0):
 - PR#7216, GPR#949: don't require double parens in Functor((val x))
   (Jacques Garrigue, review by Valentin Gatien-Baron)
 
+- PR#7407: Two not-quite-standard C idioms rejected by SUNWSPro compilers
+  (Xavier Leroy)
+  
 - PR#7414, GPR#929: Soundness bug with non-generalized type variable and functor
   (Jacques Garrigue, report by Leo White)
 
