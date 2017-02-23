@@ -127,8 +127,10 @@ let clean_copy ty =
 let get_type_path ty tenv =
   let ty = Ctype.repr (Ctype.expand_head tenv (clean_copy ty)) in
   match ty.desc with
-  | Tconstr (path,_,_) -> path
-  | _ -> fatal_error "Parmatch.get_type_path"
+  | Tconstr (path,_,_) -> Some path
+  | _ -> None
+   (* Same as PR#6394: we have an incoherence due to recursive module. It
+      will result in a type error later on. *)
 
 (*************************************)
 (* Values as patterns pretty printer *)
@@ -670,7 +672,9 @@ let should_extend ext env = match ext with
       | Tpat_construct
           (_, {cstr_tag=(Cstr_constant _|Cstr_block _|Cstr_unboxed)},_) ->
             let path = get_type_path p.pat_type p.pat_env in
-            Path.same path ext
+            (match path with
+             | Some path -> Path.same path ext
+             | None -> false)
       | Tpat_construct
           (_, {cstr_tag=(Cstr_extension _)},_) -> false
       | Tpat_constant _|Tpat_tuple _|Tpat_variant _
@@ -802,8 +806,11 @@ let build_other ext env = match env with
                             {lid with txt="*extension*"})) Ctype.none Env.empty
 | ({pat_desc = Tpat_construct _} as p,_) :: _ ->
     begin match ext with
-    | Some ext when Path.same ext (get_type_path p.pat_type p.pat_env) ->
-        extra_pat
+    | Some ext ->
+        let path =  (get_type_path p.pat_type p.pat_env) in
+        (match path with
+         | Some path when Path.same ext path -> extra_pat
+         | _ -> build_other_constrs env p)
     | _ ->
         build_other_constrs env p
     end
@@ -1878,12 +1885,14 @@ let warn_fragile_type ty env =
 let rec collect_paths_from_pat r p = match p.pat_desc with
 | Tpat_construct(_, {cstr_tag=(Cstr_constant _|Cstr_block _|Cstr_unboxed)},ps)
   ->
-    let path =  get_type_path p.pat_type p.pat_env in
-    List.fold_left
-      collect_paths_from_pat
-      (if extendable_path path && warn_fragile_type p.pat_type p.pat_env
-       then add_path path r else r)
-      ps
+    (match get_type_path p.pat_type p.pat_env with
+     | Some path ->
+         List.fold_left
+           collect_paths_from_pat
+           (if extendable_path path && warn_fragile_type p.pat_type p.pat_env
+            then add_path path r else r)
+           ps
+     | None -> r)
 | Tpat_any|Tpat_var _|Tpat_constant _| Tpat_variant (_,None,_) -> r
 | Tpat_tuple ps | Tpat_array ps
 | Tpat_construct (_, {cstr_tag=Cstr_extension _}, ps)->
