@@ -43,7 +43,9 @@ let read_member_info pack_path file = (
   let name =
     String.capitalize_ascii(Filename.basename(chop_extensions file)) in
   let kind =
-    if Filename.check_suffix file ".cmx" then begin
+    if Filename.check_suffix file ".cmi" then
+      PM_intf
+    else begin
       let (info, crc) = Compilenv.read_unit_info file in
       if info.ui_name <> name
       then raise(Error(Illegal_renaming(name, file, info.ui_name)));
@@ -53,8 +55,7 @@ let read_member_info pack_path file = (
       Asmlink.check_consistency file info crc;
       Compilenv.cache_unit_info info;
       PM_impl info
-    end else
-      PM_intf in
+    end in
   { pm_file = file; pm_name = name; pm_kind = kind }
 )
 

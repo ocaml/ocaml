@@ -119,7 +119,7 @@ let kill_checkpoint checkpoint =
 
 (*** Cleaning the checkpoint list. ***)
 
-(* Separe checkpoints before (<=) and after (>) `t'. *)
+(* Separate checkpoints before (<=) and after (>) `t'. *)
 (* ### t checkpoints -> (after, before) *)
 let cut t =
   let rec cut_t =
@@ -147,7 +147,7 @@ let cut2 t0 t l =
     let (after, before) = cut (t0 -- _1) l in
       after::(cut2_t0 t before)
 
-(* Separe first elements and last element of a list of checkpoint. *)
+(* Separate first elements and last element of a list of checkpoint. *)
 let chk_merge2 cont =
   let rec chk_merge2_cont =
     function
@@ -160,7 +160,7 @@ let chk_merge2 cont =
           (accepted, a::rejected)
   in chk_merge2_cont
 
-(* Separe the checkpoint list. *)
+(* Separate the checkpoint list. *)
 (* ### list -> accepted * rejected *)
 let rec chk_merge =
   function

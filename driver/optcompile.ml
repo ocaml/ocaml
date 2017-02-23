@@ -35,24 +35,26 @@ let interface ppf sourcefile outputprefix =
   let ast = Pparse.parse_interface ~tool_name ppf sourcefile in
   if !Clflags.dump_parsetree then fprintf ppf "%a@." Printast.interface ast;
   if !Clflags.dump_source then fprintf ppf "%a@." Pprintast.signature ast;
-  let tsg = Typemod.type_interface sourcefile initial_env ast in
-  if !Clflags.dump_typedtree then fprintf ppf "%a@." Printtyped.interface tsg;
-  let sg = tsg.sig_type in
-  if !Clflags.print_types then
-    Printtyp.wrap_printing_env initial_env (fun () ->
-        fprintf std_formatter "%a@."
-          Printtyp.signature (Typemod.simplify_signature sg));
-  ignore (Includemod.signatures initial_env sg sg);
-  Typecore.force_delayed_checks ();
-  Warnings.check_fatal ();
-  if not !Clflags.print_types then begin
-    let deprecated = Builtin_attributes.deprecated_of_sig ast in
-    let sg =
-      Env.save_signature ~deprecated sg modulename (outputprefix ^ ".cmi")
-    in
-    Typemod.save_signature modulename tsg outputprefix sourcefile
-      initial_env sg ;
-  end
+  Timings.(time_call (Typing sourcefile)) (fun () ->
+    let tsg = Typemod.type_interface sourcefile initial_env ast in
+    if !Clflags.dump_typedtree then fprintf ppf "%a@." Printtyped.interface tsg;
+    let sg = tsg.sig_type in
+    if !Clflags.print_types then
+      Printtyp.wrap_printing_env initial_env (fun () ->
+          fprintf std_formatter "%a@."
+            Printtyp.signature (Typemod.simplify_signature sg));
+    ignore (Includemod.signatures initial_env sg sg);
+    Typecore.force_delayed_checks ();
+    Warnings.check_fatal ();
+    if not !Clflags.print_types then begin
+      let deprecated = Builtin_attributes.deprecated_of_sig ast in
+      let sg =
+        Env.save_signature ~deprecated sg modulename (outputprefix ^ ".cmi")
+      in
+      Typemod.save_signature modulename tsg outputprefix sourcefile
+        initial_env sg ;
+    end
+  )
 
 (* Compile a .ml file *)
 
@@ -63,7 +65,7 @@ let print_if ppf flag printer arg =
 let (++) x f = f x
 let (+++) (x, y) f = (x, f y)
 
-let implementation ppf sourcefile outputprefix ~backend =
+let implementation ~backend ppf sourcefile outputprefix =
   let source_provenance = Timings.File sourcefile in
   Compmisc.init_path true;
   let modulename = module_of_filename ppf sourcefile outputprefix in
@@ -138,6 +140,3 @@ let implementation ppf sourcefile outputprefix ~backend =
     remove_file objfile;
     remove_file cmxfile;
     raise x
-
-let c_file name =
-  if Ccomp.compile_file name <> 0 then exit 2

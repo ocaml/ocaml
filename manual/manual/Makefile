@@ -41,7 +41,7 @@ labltk: cmds/browser.tex library/liblabltk.tex library/tk.mli
 
 index::
 	cd texstuff && \
-	  ../../tools/fix_index.sh manual.idx && \
+	  sh ../../tools/fix_index.sh manual.idx && \
 	  makeindex manual.idx
 	cd texstuff; makeindex manual.kwd.idx
 
@@ -51,7 +51,7 @@ pdfmanual: files
 
 index::
 	cd texstuff && \
-	  ../../tools/fix_index.sh pdfmanual.idx && \
+	  sh ../../tools/fix_index.sh pdfmanual.idx && \
 	  makeindex pdfmanual.idx
 	cd texstuff; makeindex pdfmanual.kwd.idx
 
@@ -77,7 +77,6 @@ html: files
 	         -e macros.tex ../manual.tex ; \
 	${HACHA} -tocter manual.html ; \
 
-
 info: files
 	cd infoman; rm -f ocaml.info*; \
 	${HEVEA} ${INFO} -o ocaml.info.body -I .. -I ../refman -I ../library \
@@ -91,6 +90,12 @@ text: files
 	${HEVEA} ${TEXT} -I .. -I ../refman -I ../library -I ../cmds \
 	         -I ../tutorials -I ../../styles -I ../texstuff \
 	         ../manual.inf -e macros.tex ../manual.tex
+
+etex-files: $(FILES)
+	cd refman; $(MAKE) etex-files RELEASEDIR=$(SRC)
+	cd library; $(MAKE) etex-files RELEASEDIR=$(SRC)
+	cd cmds; $(MAKE) etex-files RELEASEDIR=$(SRC)
+	cd tutorials; $(MAKE) etex-files RELEASEDIR=$(SRC)
 
 files: $(FILES)
 	cd refman; $(MAKE) all RELEASEDIR=$(SRC)

@@ -22,7 +22,7 @@
    reasonably efficient: insertion and membership take time
    logarithmic in the size of the set, for instance.
 
-   The [Make] functor constructs implementations for any type, given a
+   The {!Make} functor constructs implementations for any type, given a
    [compare] function.
    For instance:
    {[
@@ -127,7 +127,8 @@ module type S =
 
        If no element of [s] is changed by [f], [s] is returned
        unchanged. (If each output of [f] is physically equal to its
-       input, the returned set is physically equal to [s].) *)
+       input, the returned set is physically equal to [s].)
+       @since 4.04.0 *)
 
     val fold: (elt -> 'a -> 'a) -> t -> 'a -> 'a
     (** [fold f s a] computes [(f xN ... (f x2 (f x1 a))...)],
@@ -168,14 +169,34 @@ module type S =
        (with respect to the [Ord.compare] ordering), or raise
        [Not_found] if the set is empty. *)
 
+    val min_elt_opt: t -> elt option
+    (** Return the smallest element of the given set
+       (with respect to the [Ord.compare] ordering), or [None]
+       if the set is empty.
+        @since 4.05
+    *)
+
     val max_elt: t -> elt
     (** Same as {!Set.S.min_elt}, but returns the largest element of the
        given set. *)
+
+    val max_elt_opt: t -> elt option
+    (** Same as {!Set.S.min_elt_opt}, but returns the largest element of the
+        given set.
+        @since 4.05
+    *)
 
     val choose: t -> elt
     (** Return one element of the given set, or raise [Not_found] if
        the set is empty. Which element is chosen is unspecified,
        but equal elements will be chosen for equal sets. *)
+
+    val choose_opt: t -> elt option
+    (** Return one element of the given set, or [None] if
+        the set is empty. Which element is chosen is unspecified,
+        but equal elements will be chosen for equal sets.
+        @since 4.05
+    *)
 
     val split: elt -> t -> t * bool * t
     (** [split x s] returns a triple [(l, present, r)], where
@@ -191,6 +212,46 @@ module type S =
         to [Ord.compare]), or raise [Not_found] if no such element
         exists.
         @since 4.01.0 *)
+
+    val find_opt: elt -> t -> elt option
+    (** [find_opt x s] returns the element of [s] equal to [x] (according
+        to [Ord.compare]), or [None] if no such element
+        exists.
+        @since 4.05 *)
+
+    val find_first: (elt -> bool) -> t -> elt
+    (** [find_first f s], where [f] is a monotonically increasing function,
+       returns the lowest element [e] of [s] such that [f e],
+       or raises [Not_found] if no such element exists.
+
+       For example, [find_first (fun e -> Ord.compare e x >= 0) s] will return
+       the first element [e] of [s] where [Ord.compare e x >= 0] (intuitively:
+       [e >= x]), or raise [Not_found] if [x] is greater than any element of
+       [s].
+
+        @since 4.05
+       *)
+
+    val find_first_opt: (elt -> bool) -> t -> elt option
+    (** [find_first_opt f s], where [f] is a monotonically increasing function,
+       returns an option containing the lowest element [e] of [s] such that
+       [f e], or [None] if no such element exists.
+        @since 4.05
+       *)
+
+    val find_last: (elt -> bool) -> t -> elt
+    (** [find_last f s], where [f] is a monotonically decreasing function,
+       returns the highest element [e] of [s] such that [f e],
+       or raises [Not_found] if no such element exists.
+        @since 4.05
+       *)
+
+    val find_last_opt: (elt -> bool) -> t -> elt option
+    (** [find_last_opt f s], where [f] is a monotonically decreasing function,
+       returns an option containing the highest element [e] of [s] such that
+       [f e], or [None] if no such element exists.
+        @since 4.05
+       *)
 
     val of_list: elt list -> t
     (** [of_list l] creates a set from a list of elements.

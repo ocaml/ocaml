@@ -43,12 +43,16 @@
 #else
 #include <sys/dir.h>
 #endif
+#ifdef __APPLE__
+#include <mach-o/dyld.h>
+#endif
 #include "caml/fail.h"
 #include "caml/memory.h"
 #include "caml/misc.h"
 #include "caml/osdeps.h"
 #include "caml/signals.h"
 #include "caml/sys.h"
+#include "caml/io.h"
 
 #ifndef S_ISREG
 #define S_ISREG(mode) (((mode) & S_IFMT) == S_IFREG)
@@ -80,9 +84,17 @@ int caml_write_fd(int fd, int flags, void * buf, int n)
 {
   int retcode;
  again:
+#if defined(NATIVE_CODE) && defined(WITH_SPACETIME)
+  if (flags & CHANNEL_FLAG_BLOCKING_WRITE) {
+    retcode = write(fd, buf, n);
+  } else {
+#endif
   caml_enter_blocking_section();
   retcode = write(fd, buf, n);
   caml_leave_blocking_section();
+#if defined(NATIVE_CODE) && defined(WITH_SPACETIME)
+  }
+#endif
   if (retcode == -1) {
     if (errno == EINTR) goto again;
     if ((errno == EAGAIN || errno == EWOULDBLOCK) && n > 1) {
@@ -347,28 +359,50 @@ CAMLexport int caml_read_directory(char * dirname, struct ext_table * contents)
 
 /* Recover executable name from /proc/self/exe if possible */
 
-#ifdef __linux__
-
-int caml_executable_name(char * name, int name_len)
+char * caml_executable_name(void)
 {
-  int retcode;
+#if defined(__linux__)
+  int namelen, retcode;
+  char * name;
   struct stat st;
 
-  retcode = readlink("/proc/self/exe", name, name_len);
-  if (retcode == -1 || retcode >= name_len) return -1;
+  /* lstat("/proc/self/exe") returns st_size == 0 so we cannot use it
+     to determine the size of the buffer.  Instead, we guess and adjust. */
+  namelen = 256;
+  while (1) {
+    name = caml_stat_alloc(namelen + 1);
+    retcode = readlink("/proc/self/exe", name, namelen);
+    if (retcode == -1) { caml_stat_free(name); return NULL; }
+    if (retcode <= namelen) break;
+    caml_stat_free(name);
+    if (namelen >= 1024*1024) return NULL; /* avoid runaway and overflow */
+    namelen *= 2;
+  }
+  /* readlink() does not zero-terminate its result */
   name[retcode] = 0;
   /* Make sure that the contents of /proc/self/exe is a regular file.
      (Old Linux kernels return an inode number instead.) */
-  if (stat(name, &st) != 0) return -1;
-  if (! S_ISREG(st.st_mode)) return -1;
-  return 0;
-}
+  if (stat(name, &st) == -1 || ! S_ISREG(st.st_mode)) {
+    caml_stat_free(name); return NULL;
+  }
+  return name;
 
+#elif defined(__APPLE__)
+  unsigned int namelen;
+  char * name;
+
+  namelen = 256;
+  name = caml_stat_alloc(namelen);
+  if (_NSGetExecutablePath(name, &namelen) == 0) return name;
+  caml_stat_free(name);
+  /* Buffer is too small, but namelen now contains the size needed */
+  name = caml_stat_alloc(namelen);
+  if (_NSGetExecutablePath(name, &namelen) == 0) return name;
+  caml_stat_free(name);
+  return NULL;
+    
 #else
-
-int caml_executable_name(char * name, int name_len)
-{
-  return -1;
-}
+  return NULL;
 
 #endif
+}

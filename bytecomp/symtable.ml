@@ -30,12 +30,6 @@ type error =
 
 exception Error of error
 
-(* Tables for numbering objects *)
-
-type 'a numtable =
-  { num_cnt: int;               (* The next number *)
-    num_tbl: ('a, int) Tbl.t }  (* The table of already numbered objects *)
-
 let empty_numtable = { num_cnt = 0; num_tbl = Tbl.empty }
 
 let find_numtable nt key =

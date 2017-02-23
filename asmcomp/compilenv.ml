@@ -39,7 +39,7 @@ let export_infos_table =
 
 let imported_sets_of_closures_table =
   (Set_of_closures_id.Tbl.create 10
-   : Flambda.function_declarations Set_of_closures_id.Tbl.t)
+   : Flambda.function_declarations option Set_of_closures_id.Tbl.t)
 
 let sourcefile = ref None
 
@@ -129,7 +129,7 @@ let reset ?packname ~source_provenance:file name =
   current_unit.ui_curry_fun <- [];
   current_unit.ui_apply_fun <- [];
   current_unit.ui_send_fun <- [];
-  current_unit.ui_force_link <- false;
+  current_unit.ui_force_link <- !Clflags.link_everything;
   Hashtbl.clear exported_constants;
   structured_constants := structured_constants_empty;
   current_unit.ui_export_info <- default_ui_export_info;

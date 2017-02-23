@@ -37,12 +37,18 @@ run: *.mli
 	@for file in *.mli; do \
 	  printf " ... testing '$$file'"; \
 	  F="`basename $$file .mli`"; \
-	  $(OCAMLDOC) $(DOCFLAGS) -hide-warnings -html $ \
+	  $(OCAMLDOC) $(DOCFLAGS) -colorize-code -hide-warnings -html $ \
 	              -o index $$file; \
 	  cp $$F.html $$F.result; \
 	  $(DIFF) $$F.reference $$F.result >/dev/null \
 	  && echo " => passed" || echo " => failed"; \
-	done
+	done;\
+# For linebreaks.mli, we also compare type_Linebreaks.html and not only
+# themain html file
+	@cp type_Linebreaks.html type_Linebreaks.result;\
+	printf " ... testing 'type_Linebreak.html'";\
+	$(DIFF) type_Linebreaks.reference type_Linebreaks.result\
+	&& echo " => passed" || echo " => failed"
 
 .PHONY: promote
 promote: defaultpromote

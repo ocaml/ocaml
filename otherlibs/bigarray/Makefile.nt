@@ -13,12 +13,4 @@
 #*                                                                        *
 #**************************************************************************
 
-# It would be better to move that to config/Makefile.*
-UNIX_OR_WIN32=win32
-
 include Makefile
-
-.depend.nt: .depend
-	sed -e 's/\.o/.$(O)/g' .depend > .depend.nt
-
-include .depend.nt

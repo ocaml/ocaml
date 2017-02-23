@@ -18,7 +18,7 @@ PREFIX=~/local
 BuildAndTest () {
   case $XARCH in
   i386)
-  echo<<EOF
+  cat<<EOF
 ------------------------------------------------------------------------
 This test builds the OCaml compiler distribution with your pull request,
 runs its testsuite, and then tries to install some important OCaml software
@@ -37,13 +37,14 @@ EOF
     export PATH=$PREFIX/bin:$PATH
     make world.opt
     make ocamlnat
-    make install
     (cd testsuite && make all)
     (cd testsuite && make USE_RUNTIME="d" all)
+    make install
     # check_all_arches checks tries to compile all backends in place,
     # we need to redo (small parts of) world.opt afterwards
     make check_all_arches
     make world.opt
+    make manual-pregen
     mkdir external-packages
     cd external-packages
     git clone git://github.com/ocaml/ocamlbuild
@@ -59,6 +60,7 @@ EOF
         make install)
     git clone git://github.com/ocaml/camlp4
     (cd camlp4 &&
+     sed -i -e "s/5 /6 /" configure &&
      ./configure --bindir=$PREFIX/bin --libdir=$PREFIX/lib/ocaml \
        --pkgdir=$PREFIX/lib/ocaml && \
       make && make install)
@@ -79,7 +81,7 @@ EOF
 }
 
 CheckChangesModified () {
-  echo<<EOF
+  cat<<EOF
 ------------------------------------------------------------------------
 This test checks that the Changes file has been modified by the pull
 request. Most contributions should come with a message in the Changes
@@ -88,16 +90,29 @@ file, as described in our contributor documentation:
   https://github.com/ocaml/ocaml/blob/trunk/CONTRIBUTING.md#changelog
 
 Some very minor changes (typo fixes for example) may not need
-a Changes entry, in which case it is acceptable for this test to fail.
+a Changes entry. In this case, you may explicitly disable this test by
+adding the code word "No change entry needed" (on a single line) to
+a commit message of the PR, or using the "no-change-entry-needed" label
+on the github pull request.
 ------------------------------------------------------------------------
 EOF
   # check that Changes has been modified
   git diff $TRAVIS_COMMIT_RANGE --name-only --exit-code Changes > /dev/null \
-  && exit 1 || echo pass
+  && CheckNoChangesMessage || echo pass
+}
+
+CheckNoChangesMessage () {
+  if test -n "$(git log --grep="[Nn]o [Cc]hange.* needed" --max-count=1 $TRAVIS_COMMIT_RANGE)"
+  then echo pass
+  elif test -n "$(curl https://api.github.com/repos/$TRAVIS_REPO_SLUG/issues/$TRAVIS_PULL_REQUEST/labels \
+       | grep 'no-change-entry-needed')"
+  then echo pass
+  else exit 1
+  fi
 }
 
 CheckTestsuiteModified () {
-  echo<<EOF
+  cat<<EOF
 ------------------------------------------------------------------------
 This test checks that the OCaml testsuite has been modified by the
 pull request. Any new feature should come with tests, bugs should come
@@ -122,8 +137,14 @@ EOF
 
 case $CI_KIND in
 build) BuildAndTest;;
-changes) CheckChangesModified;;
-tests) CheckTestsuiteModified;;
+changes)
+    case $TRAVIS_EVENT_TYPE in
+        pull_request) CheckChangesModified;;
+    esac;;
+tests)
+    case $TRAVIS_EVENT_TYPE in
+        pull_request) CheckTestsuiteModified;;
+    esac;;
 *) echo unknown CI kind
    exit 1
    ;;

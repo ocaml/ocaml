@@ -87,6 +87,11 @@ val find : ('a, 'b) t -> 'a -> 'b
 (** [Hashtbl.find tbl x] returns the current binding of [x] in [tbl],
    or raises [Not_found] if no such binding exists. *)
 
+val find_opt : ('a, 'b) t -> 'a -> 'b option
+(** [Hashtbl.find_opt tbl x] returns the current binding of [x] in [tbl],
+    or [None] if no such binding exists.
+    @since 4.05 *)
+
 val find_all : ('a, 'b) t -> 'a -> 'b list
 (** [Hashtbl.find_all tbl x] returns the list of all data
    associated with [x] in [tbl].
@@ -188,8 +193,9 @@ val randomize : unit -> unit
 val is_randomized : unit -> bool
 (** return if the tables are currently created in randomized mode by default
 
-    @since 4.02.0 *)
+    @since 4.03.0 *)
 
+(** @since 4.00.0 *)
 type statistics = {
   num_bindings: int;
     (** Number of bindings present in the table.
@@ -271,19 +277,25 @@ module type S =
     type 'a t
     val create : int -> 'a t
     val clear : 'a t -> unit
-    val reset : 'a t -> unit
+    val reset : 'a t -> unit (** @since 4.00.0 *)
+
     val copy : 'a t -> 'a t
     val add : 'a t -> key -> 'a -> unit
     val remove : 'a t -> key -> unit
     val find : 'a t -> key -> 'a
+    val find_opt : 'a t -> key -> 'a option
+    (** @since 4.05.0 *)
+
     val find_all : 'a t -> key -> 'a list
     val replace : 'a t -> key -> 'a -> unit
     val mem : 'a t -> key -> bool
     val iter : (key -> 'a -> unit) -> 'a t -> unit
     val filter_map_inplace: (key -> 'a -> 'a option) -> 'a t -> unit
+    (** @since 4.03.0 *)
+
     val fold : (key -> 'a -> 'b -> 'b) -> 'a t -> 'b -> 'b
     val length : 'a t -> int
-    val stats: 'a t -> statistics
+    val stats: 'a t -> statistics (** @since 4.00.0 *)
   end
 (** The output signature of the functor {!Hashtbl.Make}. *)
 
@@ -328,11 +340,15 @@ module type SeededS =
     val add : 'a t -> key -> 'a -> unit
     val remove : 'a t -> key -> unit
     val find : 'a t -> key -> 'a
+    val find_opt : 'a t -> key -> 'a option (** @since 4.05.0 *)
+
     val find_all : 'a t -> key -> 'a list
     val replace : 'a t -> key -> 'a -> unit
     val mem : 'a t -> key -> bool
     val iter : (key -> 'a -> unit) -> 'a t -> unit
     val filter_map_inplace: (key -> 'a -> 'a option) -> 'a t -> unit
+    (** @since 4.03.0 *)
+
     val fold : (key -> 'a -> 'b -> 'b) -> 'a t -> 'b -> 'b
     val length : 'a t -> int
     val stats: 'a t -> statistics

@@ -35,6 +35,6 @@ CAMLprim value unix_fchmod(value fd, value perm)
 #else
 
 CAMLprim value unix_fchmod(value fd, value perm)
-{ invalid_argument("fchmod not implemented"); }
+{ caml_invalid_argument("fchmod not implemented"); }
 
 #endif

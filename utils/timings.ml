@@ -24,7 +24,9 @@ type source_provenance =
 type compiler_pass =
   | All
   | Parsing of file
-  | Preprocessing of file
+  | Parser of file
+  | Dash_pp of file
+  | Dash_ppx of file
   | Typing of file
   | Transl of file
   | Generate of file
@@ -48,27 +50,32 @@ type compiler_pass =
 let timings : (compiler_pass, float * float option) Hashtbl.t =
   Hashtbl.create 20
 
+external time_include_children: bool -> float = "caml_sys_time_include_children"
+let cpu_time () = time_include_children true
+
 let reset () = Hashtbl.clear timings
 
 let start pass =
   (* Cannot assert it is not here: a source file can be compiled
      multiple times on the same command line *)
   (* assert(not (Hashtbl.mem timings pass)); *)
-  let time = Sys.time () in
+  let time = cpu_time () in
   Hashtbl.add timings pass (time, None)
 
 let stop pass =
   assert(Hashtbl.mem timings pass);
-  let time = Sys.time () in
+  let time = cpu_time () in
   let (start, stop) = Hashtbl.find timings pass in
   assert(stop = None);
   Hashtbl.replace timings pass (start, Some (time -. start))
 
-let time pass f x =
+let time_call pass f =
   start pass;
-  let r = f x in
+  let r = f () in
   stop pass;
   r
+
+let time pass f x = time_call pass (fun () -> f x)
 
 let restart pass =
   let previous_duration =
@@ -77,11 +84,11 @@ let restart pass =
     | (_, Some duration) -> duration
     | _, None -> assert false
   in
-  let time = Sys.time () in
+  let time = cpu_time () in
   Hashtbl.replace timings pass (time, Some previous_duration)
 
 let accumulate pass =
-  let time = Sys.time () in
+  let time = cpu_time () in
   match Hashtbl.find timings pass with
   | exception Not_found -> assert false
   | _, None -> assert false
@@ -110,7 +117,9 @@ let kind_name = function
 let pass_name = function
   | All -> "all"
   | Parsing file -> Printf.sprintf "parsing(%s)" file
-  | Preprocessing file -> Printf.sprintf "preprocessing(%s)" file
+  | Parser file -> Printf.sprintf "parser(%s)" file
+  | Dash_pp file -> Printf.sprintf "-pp(%s)" file
+  | Dash_ppx file -> Printf.sprintf "-ppx(%s)" file
   | Typing file -> Printf.sprintf "typing(%s)" file
   | Transl file -> Printf.sprintf "transl(%s)" file
   | Generate file -> Printf.sprintf "generate(%s)" file
@@ -134,15 +143,16 @@ let pass_name = function
 
 let timings_list () =
   let l = Hashtbl.fold (fun pass times l -> (pass, times) :: l) timings [] in
-  List.sort (fun (_, (start1, _)) (_, (start2, _)) -> compare start1 start2) l
+  List.sort (fun (pass1, (start1, _)) (pass2, (start2, _)) ->
+    compare (start1, pass1) (start2, pass2)) l
 
 let print ppf =
-  let current_time = Sys.time () in
+  let current_time = cpu_time () in
   List.iter (fun (pass, (start, stop)) ->
       match stop with
       | Some duration ->
         Format.fprintf ppf "%s: %.03fs@." (pass_name pass) duration
       | None ->
-        Format.fprintf ppf "%s: running since %.03fs@." (pass_name pass)
+        Format.fprintf ppf "%s: running for %.03fs@." (pass_name pass)
           (current_time -. start))
     (timings_list ())

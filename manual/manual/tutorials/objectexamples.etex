@@ -246,7 +246,7 @@ class my_int =
   object (self)
     method n = 1
     method register = ints := self :: !ints
-  end;;
+  end [@@expect error];;
 \end{caml_example}
 You can ignore the first two lines of the error message. What matters
 is the last one: putting self into an external reference would make it
@@ -347,7 +347,7 @@ class restricted_point x_init =
     method bump = self#move 1
   end;;
 let p = new restricted_point 0;;
-p#move 10;;
+p#move 10 [@@expect error] ;;
 p#bump;;
 \end{caml_example}
 Note that this is not the same thing as private and protected methods
@@ -514,7 +514,7 @@ in the order they are introduced.
 
 Reference cells can be implemented as objects.
 The naive definition fails to typecheck:
-\begin{caml_example}
+\begin{caml_example}[error]
 class oref x_init =
   object
     val mutable x = x_init
@@ -637,7 +637,7 @@ does not work in practice.
 let l = new intlist [1; 2; 3];;
 l#fold (fun x y -> x+y) 0;;
 l;;
-l#fold (fun s x -> s ^ string_of_int x ^ " ") "";;
+l#fold (fun s x -> s ^ string_of_int x ^ " ") "" [@@expect error];;
 \end{caml_example}
 Our iterator works, as shows its first use for summation. However,
 since objects themselves are not polymorphic (only their constructors
@@ -700,7 +700,7 @@ type is known at the call site.  Otherwise, the method will be assumed
 to be monomorphic, and given an incompatible type.
 \begin{caml_example}
 let sum lst = lst#fold (fun x y -> x+y) 0;;
-sum l;;
+sum l [@@expect error];;
 \end{caml_example}
 The workaround is easy: you should put a type constraint on the
 parameter.
@@ -765,7 +765,7 @@ let l = [p; (colored_point_to_point q)];;
 An object of type "t" can be seen as an object of type "t'"
 only if "t" is a subtype of "t'". For instance, a point cannot be
 seen as a colored point.
-\begin{caml_example}
+\begin{caml_example}[error]
 (p : point :> colored_point);;
 \end{caml_example}
 Indeed, narrowing coercions without runtime checks would be unsafe.
@@ -873,7 +873,7 @@ Indeed, the type of self cannot be closed: this would prevent any
 further extension of the class. Therefore, a type error is generated
 when the unification of this type with another type would result in a
 closed object type.
-\begin{caml_example}
+\begin{caml_example}[error]
 class c = object method m = 1 end
 and d = object (self)
   inherit c

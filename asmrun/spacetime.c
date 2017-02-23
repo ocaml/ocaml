@@ -22,6 +22,7 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
+#include <signal.h>
 #include "caml/config.h"
 #ifdef HAS_UNISTD
 #include <unistd.h>
@@ -41,7 +42,7 @@
 #include "caml/signals.h"
 #include "caml/stack.h"
 #include "caml/sys.h"
-#include "spacetime.h"
+#include "caml/spacetime.h"
 
 #ifdef WITH_SPACETIME
 
@@ -84,7 +85,7 @@ shape_table* caml_spacetime_dynamic_shape_tables = NULL;
 
 static uintnat caml_spacetime_profinfo = (uintnat) 0;
 
-static value caml_spacetime_trie_root = Val_unit;
+value caml_spacetime_trie_root = Val_unit;
 value* caml_spacetime_trie_node_ptr = &caml_spacetime_trie_root;
 
 static value caml_spacetime_finaliser_trie_root_main_thread = Val_unit;
@@ -157,6 +158,7 @@ static void open_snapshot_channel(void)
   }
   else {
     snapshot_channel = caml_open_descriptor_out(fd);
+    snapshot_channel->flags |= CHANNEL_FLAG_BLOCKING_WRITE;
     pid_when_snapshot_channel_opened = pid;
     caml_spacetime_write_magic_number_internal(snapshot_channel);
   }
@@ -232,6 +234,13 @@ void caml_spacetime_initialize(void)
         automatic_snapshots = 1;
         open_snapshot_channel();
         if (automatic_snapshots) {
+#ifdef SIGINT
+          /* Catch interrupt so that the profile can be completed.
+             We do this by marking the signal as handled without
+             specifying an actual handler. This causes the signal
+             to be handled by a call to exit. */
+          caml_set_signal_action(SIGINT, 2);
+#endif
           snapshot_interval = interval / 1e3;
           time = caml_sys_time_unboxed(Val_unit);
           next_snapshot_time = time + snapshot_interval;
@@ -327,8 +336,10 @@ void save_trie (struct channel *chan, double time_override,
                 int use_time_override)
 {
   value v_time, v_frames, v_shapes;
-  int num_marshalled = 0;
-  per_thread* thr = per_threads;
+  /* CR-someday mshinwell: The commented-out changes here are for multicore,
+     where we think we should have one trie per domain. */
+  /* int num_marshalled = 0;
+  per_thread* thr = per_threads; */
 
   Lock(chan);
 
@@ -344,7 +355,8 @@ void save_trie (struct channel *chan, double time_override,
   caml_output_val(chan, v_shapes, Val_long(0));
   caml_extern_allow_out_of_heap = 0;
 
-  caml_output_val(chan, Val_long(num_per_threads + 1), Val_long(0));
+  caml_output_val(chan, Val_long(1) /* Val_long(num_per_threads + 1) */,
+    Val_long(0));
 
   /* Marshal both the main and finaliser tries, for all threads that have
      been created, to an [out_channel].  This can be done by using the
@@ -355,15 +367,15 @@ void save_trie (struct channel *chan, double time_override,
   caml_output_val(chan, caml_spacetime_trie_root, Val_long(0));
   caml_output_val(chan,
     caml_spacetime_finaliser_trie_root_main_thread, Val_long(0));
-  while (thr != NULL) {
+  /* while (thr != NULL) {
     caml_output_val(chan, *(thr->trie_node_root), Val_long(0));
     caml_output_val(chan, *(thr->finaliser_trie_node_root),
       Val_long(0));
     thr = thr->next;
     num_marshalled++;
   }
+  Assert(num_marshalled == num_per_threads); */
   caml_extern_allow_out_of_heap = 0;
-  Assert(num_marshalled == num_per_threads);
 
   Unlock(chan);
 }
@@ -411,10 +423,12 @@ value caml_spacetime_stored_pointer_of_c_node(c_node* c_node)
   return node;
 }
 
+#ifdef HAS_LIBUNWIND
 static int pc_inside_c_node_matches(c_node* node, void* pc)
 {
   return Decode_c_node_pc(node->pc) == pc;
 }
+#endif
 
 static value allocate_uninitialized_ocaml_node(int size_including_header)
 {
@@ -1061,6 +1075,13 @@ CAMLprim value caml_spacetime_enabled (value v_unit)
   return Val_true;
 }
 
+CAMLprim value caml_register_channel_for_spacetime (value v_channel)
+{
+  struct channel* channel = Channel(v_channel);
+  channel->flags |= CHANNEL_FLAG_BLOCKING_WRITE;
+  return Val_unit;
+}
+
 #else
 
 /* Functions for when the compiler was not configured with "-spacetime". */
@@ -1089,6 +1110,11 @@ CAMLprim value caml_spacetime_save_event_for_automatic_snapshots
 }
 
 CAMLprim value caml_spacetime_save_trie (value ignored)
+{
+  return Val_unit;
+}
+
+CAMLprim value caml_register_channel_for_spacetime (value v_channel)
 {
   return Val_unit;
 }

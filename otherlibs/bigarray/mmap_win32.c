@@ -26,8 +26,6 @@
 
 extern int caml_ba_element_size[];  /* from bigarray_stubs.c */
 
-static void caml_ba_sys_error(void);
-
 #ifndef INVALID_SET_FILE_POINTER
 #define INVALID_SET_FILE_POINTER (-1)
 #endif
@@ -74,9 +72,9 @@ CAMLprim value caml_ba_map_file(value vfd, value vkind, value vlayout,
   }
   /* Determine file size */
   currpos = caml_ba_set_file_pointer(fd, 0, FILE_CURRENT);
-  if (currpos == -1) caml_ba_sys_error();
+  if (currpos == -1) uerror("SetFilePointer", Nothing);
   file_size = caml_ba_set_file_pointer(fd, 0, FILE_END);
-  if (file_size == -1) caml_ba_sys_error();
+  if (file_size == -1) uerror("SetFilePointer", Nothing);
   /* Determine array size in bytes (or size of array without the major
      dimension if that dimension wasn't specified) */
   array_size = caml_ba_element_size[flags & CAML_BA_KIND_MASK];
@@ -105,7 +103,7 @@ CAMLprim value caml_ba_map_file(value vfd, value vkind, value vlayout,
   }
   li.QuadPart = startpos + array_size;
   fmap = CreateFileMapping(fd, NULL, perm, li.HighPart, li.LowPart, NULL);
-  if (fmap == NULL) caml_ba_sys_error();
+  if (fmap == NULL) uerror("CreateFileMapping", Nothing);
   /* Determine offset so that the mapping starts at the given file pos */
   GetSystemInfo(&sysinfo);
   delta = (uintnat) (startpos % sysinfo.dwAllocationGranularity);
@@ -113,7 +111,7 @@ CAMLprim value caml_ba_map_file(value vfd, value vkind, value vlayout,
   li.QuadPart = startpos - delta;
   addr =
     MapViewOfFile(fmap, mode, li.HighPart, li.LowPart, array_size + delta);
-  if (addr == NULL) caml_ba_sys_error();
+  if (addr == NULL) uerror("MapViewOfFile", Nothing);;
   addr = (void *) ((uintnat) addr + delta);
   /* Close the file mapping */
   CloseHandle(fmap);
@@ -135,21 +133,4 @@ void caml_ba_unmap_file(void * addr, uintnat len)
   GetSystemInfo(&sysinfo);
   delta = (uintnat) addr % sysinfo.dwAllocationGranularity;
   UnmapViewOfFile((void *)((uintnat)addr - delta));
-}
-
-static void caml_ba_sys_error(void)
-{
-  char buffer[512];
-  DWORD errnum;
-
-  errnum = GetLastError();
-  if (!FormatMessage(FORMAT_MESSAGE_FROM_SYSTEM|FORMAT_MESSAGE_IGNORE_INSERTS,
-                     NULL,
-                     errnum,
-                     0,
-                     buffer,
-                     sizeof(buffer),
-                     NULL))
-    sprintf(buffer, "Unknown error %ld\n", errnum);
-  caml_raise_sys_error(caml_copy_string(buffer));
 }

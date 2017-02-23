@@ -84,7 +84,8 @@ install::
 	  cp dll$(CLIBNAME)$(EXT_DLL) "$(INSTALL_STUBLIBDIR)/"; fi
 	cp lib$(CLIBNAME).$(A) "$(INSTALL_LIBDIR)/"
 	cd "$(INSTALL_LIBDIR)"; $(RANLIB) lib$(CLIBNAME).$(A)
-	cp $(LIBNAME).cma $(CMIFILES) $(CMIFILES:.cmi=.mli) "$(INSTALL_LIBDIR)/"
+	cp $(LIBNAME).cma $(CMIFILES) $(CMIFILES:.cmi=.mli) \
+          $(CMIFILES:.cmi=.cmti) "$(INSTALL_LIBDIR)/"
 	if test -n "$(HEADERS)"; then \
 	  cp $(HEADERS) "$(INSTALL_LIBDIR)/caml/"; fi
 

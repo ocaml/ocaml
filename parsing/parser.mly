@@ -219,54 +219,6 @@ let exp_of_label lbl pos =
 let pat_of_label lbl pos =
   mkpat (Ppat_var (mkrhs (Longident.last lbl) pos))
 
-let check_variable vl loc v =
-  if List.mem v vl then
-    raise Syntaxerr.(Error(Variable_in_scope(loc,v)))
-
-let varify_constructors var_names t =
-  let rec loop t =
-    let desc =
-      match t.ptyp_desc with
-      | Ptyp_any -> Ptyp_any
-      | Ptyp_var x ->
-          check_variable var_names t.ptyp_loc x;
-          Ptyp_var x
-      | Ptyp_arrow (label,core_type,core_type') ->
-          Ptyp_arrow(label, loop core_type, loop core_type')
-      | Ptyp_tuple lst -> Ptyp_tuple (List.map loop lst)
-      | Ptyp_constr( { txt = Lident s }, []) when List.mem s var_names ->
-          Ptyp_var s
-      | Ptyp_constr(longident, lst) ->
-          Ptyp_constr(longident, List.map loop lst)
-      | Ptyp_object (lst, o) ->
-          Ptyp_object
-            (List.map (fun (s, attrs, t) -> (s, attrs, loop t)) lst, o)
-      | Ptyp_class (longident, lst) ->
-          Ptyp_class (longident, List.map loop lst)
-      | Ptyp_alias(core_type, string) ->
-          check_variable var_names t.ptyp_loc string;
-          Ptyp_alias(loop core_type, string)
-      | Ptyp_variant(row_field_list, flag, lbl_lst_option) ->
-          Ptyp_variant(List.map loop_row_field row_field_list,
-                       flag, lbl_lst_option)
-      | Ptyp_poly(string_lst, core_type) ->
-          List.iter (check_variable var_names t.ptyp_loc) string_lst;
-          Ptyp_poly(string_lst, loop core_type)
-      | Ptyp_package(longident,lst) ->
-          Ptyp_package(longident,List.map (fun (n,typ) -> (n,loop typ) ) lst)
-      | Ptyp_extension (s, arg) ->
-          Ptyp_extension (s, arg)
-    in
-    {t with ptyp_desc = desc}
-  and loop_row_field  =
-    function
-      | Rtag(label,attrs,flag,lst) ->
-          Rtag(label,attrs,flag,List.map loop lst)
-      | Rinherit t ->
-          Rinherit (loop t)
-  in
-  loop t
-
 let mk_newtypes newtypes exp =
   List.fold_right (fun newtype exp -> mkexp (Pexp_newtype (newtype, exp)))
     newtypes exp
@@ -274,7 +226,7 @@ let mk_newtypes newtypes exp =
 let wrap_type_annotation newtypes core_type body =
   let exp = mkexp(Pexp_constraint(body,core_type)) in
   let exp = mk_newtypes newtypes exp in
-  (exp, ghtyp(Ptyp_poly(newtypes,varify_constructors newtypes core_type)))
+  (exp, ghtyp(Ptyp_poly(newtypes, Typ.varify_constructors newtypes core_type)))
 
 let wrap_exp_attrs body (ext, attrs) =
   (* todo: keep exact location for the entire attribute *)
@@ -763,13 +715,20 @@ module_expr:
             (fun acc (n, t) -> mkmod(Pmod_functor(n, t, acc)))
             $5 $3
         in wrap_mod_attrs modexp $2 }
-  | module_expr LPAREN module_expr RPAREN
-      { mkmod(Pmod_apply($1, $3)) }
+  | module_expr paren_module_expr
+      { mkmod(Pmod_apply($1, $2)) }
   | module_expr LPAREN RPAREN
       { mkmod(Pmod_apply($1, mkmod (Pmod_structure []))) }
-  | module_expr LPAREN module_expr error
-      { unclosed "(" 2 ")" 4 }
-  | LPAREN module_expr COLON module_type RPAREN
+  | paren_module_expr
+      { $1 }
+  | module_expr attribute
+      { Mod.attr $1 $2 }
+  | extension
+      { mkmod(Pmod_extension $1) }
+;
+
+paren_module_expr:
+    LPAREN module_expr COLON module_type RPAREN
       { mkmod(Pmod_constraint($2, $4)) }
   | LPAREN module_expr COLON module_type error
       { unclosed "(" 1 ")" 5 }
@@ -799,10 +758,6 @@ module_expr:
       { unclosed "(" 1 ")" 6 }
   | LPAREN VAL attributes expr error
       { unclosed "(" 1 ")" 5 }
-  | module_expr attribute
-      { Mod.attr $1 $2 }
-  | extension
-      { mkmod(Pmod_extension $1) }
 ;
 
 structure:
@@ -1141,7 +1096,7 @@ class_field:
 ;
 parent_binder:
     AS LIDENT
-          { Some $2 }
+          { Some (mkrhs $2 2) }
   | /* empty */
           { None }
 ;
@@ -1234,7 +1189,7 @@ class_sig_field:
     post_item_attributes
       {
        let (p, v) = $3 in
-       mkctf (Pctf_method ($4, p, v, $6)) ~attrs:($2@$7) ~docs:(symbol_docs ())
+       mkctf (Pctf_method (mkrhs $4 4, p, v, $6)) ~attrs:($2@$7) ~docs:(symbol_docs ())
       }
   | CONSTRAINT attributes constrain_field post_item_attributes
       { mkctf (Pctf_constraint $3) ~attrs:($2@$4) ~docs:(symbol_docs ()) }
@@ -1246,11 +1201,11 @@ class_sig_field:
 ;
 value_type:
     VIRTUAL mutable_flag label COLON core_type
-      { $3, $2, Virtual, $5 }
+      { mkrhs $3 3, $2, Virtual, $5 }
   | MUTABLE virtual_flag label COLON core_type
-      { $3, Mutable, $2, $5 }
+      { mkrhs $3 3, Mutable, $2, $5 }
   | label COLON core_type
-      { $1, Immutable, Concrete, $3 }
+      { mkrhs $1 1, Immutable, Concrete, $3 }
 ;
 constrain:
         core_type EQUAL core_type          { $1, $3, symbol_rloc() }
@@ -1565,7 +1520,7 @@ simple_expr:
   | mod_longident DOT LBRACELESS field_expr_list error
       { unclosed "{<" 3 ">}" 5 }
   | simple_expr HASH label
-      { mkexp(Pexp_send($1, $3)) }
+      { mkexp(Pexp_send($1, mkrhs $3 3)) }
   | simple_expr HASHOP simple_expr
       { mkinfix $1 $2 $3 }
   | LPAREN MODULE ext_attributes module_expr RPAREN
@@ -1613,8 +1568,8 @@ label_ident:
     LIDENT   { ($1, mkexp(Pexp_ident(mkrhs (Lident $1) 1))) }
 ;
 lident_list:
-    LIDENT                            { [$1] }
-  | LIDENT lident_list                { $1 :: $2 }
+    LIDENT                            { [mkrhs $1 1] }
+  | LIDENT lident_list                { mkrhs $1 1 :: $2 }
 ;
 let_binding_body:
     val_ident fun_binding
@@ -2187,8 +2142,8 @@ with_type_binder:
 /* Polymorphic types */
 
 typevar_list:
-        QUOTE ident                             { [$2] }
-      | typevar_list QUOTE ident                { $3 :: $1 }
+        QUOTE ident                             { [mkrhs $2 2] }
+      | typevar_list QUOTE ident                { mkrhs $3 3 :: $1 }
 ;
 poly_type:
         core_type
@@ -2336,7 +2291,7 @@ meth_list:
 ;
 field:
   label COLON poly_type_no_attr attributes
-    { ($1, add_info_attrs (symbol_info ()) $4, $3) }
+    { (mkrhs $1 1, add_info_attrs (symbol_info ()) $4, $3) }
 ;
 
 field_semi:
@@ -2346,7 +2301,7 @@ field_semi:
         | Some _ as info_before_semi -> info_before_semi
         | None -> symbol_info ()
       in
-      ($1, add_info_attrs info ($4 @ $6), $3) }
+      (mkrhs $1 1, add_info_attrs info ($4 @ $6), $3) }
 ;
 
 label:

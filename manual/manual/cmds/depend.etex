@@ -36,6 +36,12 @@ implicit dependencies.
 \item["-allow-approx"]
 Allow falling back on a lexer-based approximation when parsing fails.
 
+\item["-args" \var{filename}]
+ Read additional newline-terminated command line arguments from \var{filename}.
+
+\item["-args0" \var{filename}]
+ Read additional null character terminated command line arguments from \var{filename}.
+
 \item["-as-map"]
 For the following files, do not include delayed dependencies for
 module aliases.
@@ -111,6 +117,10 @@ for each source file.
 
 \item["-ppx" \var{command}]
 Pipe abstract syntax trees through preprocessor \var{command}.
+
+\item["-shared"]
+Generate dependencies for native plugin files (.cmxs) in addition to
+native compiled files (.cmx).
 
 \item["-slash"]
 Under Windows, use a forward slash (/) as the path separator instead

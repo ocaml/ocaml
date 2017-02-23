@@ -97,11 +97,11 @@ int caml_attempt_open(char **name, struct exec_trailer *trail,
   char buf [2];
 
   truename = caml_search_exe_in_path(*name);
-  *name = truename;
   caml_gc_message(0x100, "Opening bytecode executable %s\n",
                   (uintnat) truename);
   fd = open(truename, O_RDONLY | O_BINARY);
   if (fd == -1) {
+    caml_stat_free(truename);
     caml_gc_message(0x100, "Cannot open file\n", 0);
     return FILE_NOT_FOUND;
   }
@@ -109,6 +109,7 @@ int caml_attempt_open(char **name, struct exec_trailer *trail,
     err = read (fd, buf, 2);
     if (err < 2 || (buf [0] == '#' && buf [1] == '!')) {
       close(fd);
+      caml_stat_free(truename);
       caml_gc_message(0x100, "Rejected #! script\n", 0);
       return BAD_BYTECODE;
     }
@@ -116,9 +117,11 @@ int caml_attempt_open(char **name, struct exec_trailer *trail,
   err = read_trailer(fd, trail);
   if (err != 0) {
     close(fd);
+    caml_stat_free(truename);
     caml_gc_message(0x100, "Not a bytecode executable\n", 0);
     return err;
   }
+  *name = truename;
   return fd;
 }
 
@@ -279,8 +282,7 @@ CAMLexport void caml_main(char **argv)
   struct channel * chan;
   value res;
   char * shared_lib_path, * shared_libs, * req_prims;
-  char * exe_name;
-  static char proc_self_exe[256];
+  char * exe_name, * proc_self_exe;
 
   ensure_spacetime_dot_o_is_included++;
 
@@ -308,10 +310,13 @@ CAMLexport void caml_main(char **argv)
   exe_name = argv[0];
   fd = caml_attempt_open(&exe_name, &trail, 0);
 
-  /* Should we really do that at all?  The current executable is ocamlrun
-     itself, it's never a bytecode program. */
-  if (fd < 0
-      && caml_executable_name(proc_self_exe, sizeof(proc_self_exe)) == 0) {
+  /* Little grasshopper wonders why we do that at all, since
+     "The current executable is ocamlrun itself, it's never a bytecode
+     program".  Little grasshopper "ocamlc -custom" in mind should keep.
+     With -custom, we have an executable that is ocamlrun itself
+     concatenated with the bytecode.  So, if the attempt with argv[0]
+     failed, it is worth trying again with executable_name. */
+  if (fd < 0 && (proc_self_exe = caml_executable_name()) != NULL) {
     exe_name = proc_self_exe;
     fd = caml_attempt_open(&exe_name, &trail, 0);
   }
@@ -391,16 +396,14 @@ CAMLexport void caml_main(char **argv)
 
 /* Main entry point when code is linked in as initialized data */
 
-CAMLexport void caml_startup_code(
+CAMLexport value caml_startup_code_exn(
            code_t code, asize_t code_size,
            char *data, asize_t data_size,
            char *section_table, asize_t section_table_size,
            char **argv)
 {
-  value res;
   char * cds_file;
   char * exe_name;
-  static char proc_self_exe[256];
 
   caml_init_ieee_floats();
 #if defined(_MSC_VER) && __STDC_SECURE_LIB__ >= 200411L
@@ -415,9 +418,8 @@ CAMLexport void caml_startup_code(
     caml_cds_file = caml_strdup(cds_file);
   }
   caml_parse_ocamlrunparam();
-  exe_name = argv[0];
-  if (caml_executable_name(proc_self_exe, sizeof(proc_self_exe)) == 0)
-    exe_name = proc_self_exe;
+  exe_name = caml_executable_name();
+  if (exe_name == NULL) exe_name = caml_search_exe_in_path(argv[0]);
   caml_external_raise = NULL;
   /* Initialize the abstract machine */
   caml_init_gc (caml_init_minor_heap_wsz, caml_init_heap_wsz,
@@ -458,7 +460,20 @@ CAMLexport void caml_startup_code(
   caml_sys_init(exe_name, argv);
   /* Execute the program */
   caml_debugger(PROGRAM_START);
-  res = caml_interprete(caml_start_code, caml_code_size);
+  return caml_interprete(caml_start_code, caml_code_size);
+}
+
+CAMLexport void caml_startup_code(
+           code_t code, asize_t code_size,
+           char *data, asize_t data_size,
+           char *section_table, asize_t section_table_size,
+           char **argv)
+{
+  value res;
+
+  res = caml_startup_code_exn(code, code_size, data, data_size,
+                              section_table, section_table_size,
+                              argv);
   if (Is_exception_result(res)) {
     caml_exn_bucket = Extract_exception(res);
     if (caml_debugger_in_use) {

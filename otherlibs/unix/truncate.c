@@ -64,9 +64,9 @@ CAMLprim value unix_truncate_64(value path, value vlen)
 #else
 
 CAMLprim value unix_truncate(value path, value len)
-{ invalid_argument("truncate not implemented"); }
+{ caml_invalid_argument("truncate not implemented"); }
 
 CAMLprim value unix_truncate_64(value path, value len)
-{ invalid_argument("truncate not implemented"); }
+{ caml_invalid_argument("truncate not implemented"); }
 
 #endif

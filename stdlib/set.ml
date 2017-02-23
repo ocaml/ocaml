@@ -47,10 +47,18 @@ module type S =
     val cardinal: t -> int
     val elements: t -> elt list
     val min_elt: t -> elt
+    val min_elt_opt: t -> elt option
     val max_elt: t -> elt
+    val max_elt_opt: t -> elt option
     val choose: t -> elt
+    val choose_opt: t -> elt option
     val split: elt -> t -> t * bool * t
     val find: elt -> t -> elt
+    val find_opt: elt -> t -> elt option
+    val find_first: (elt -> bool) -> t -> elt
+    val find_first_opt: (elt -> bool) -> t -> elt option
+    val find_last: (elt -> bool) -> t -> elt
+    val find_last_opt: (elt -> bool) -> t -> elt option
     val of_list: elt list -> t
   end
 
@@ -163,10 +171,20 @@ module Make(Ord: OrderedType) =
       | Node(Empty, v, _, _) -> v
       | Node(l, _, _, _) -> min_elt l
 
+    let rec min_elt_opt = function
+        Empty -> None
+      | Node(Empty, v, _, _) -> Some v
+      | Node(l, _, _, _) -> min_elt_opt l
+
     let rec max_elt = function
         Empty -> raise Not_found
       | Node(_, v, Empty, _) -> v
       | Node(_, _, r, _) -> max_elt r
+
+    let rec max_elt_opt = function
+        Empty -> None
+      | Node(_, v, Empty, _) -> Some v
+      | Node(_, _, r, _) -> max_elt_opt r
 
     (* Remove the smallest element of the given set *)
 
@@ -368,12 +386,102 @@ module Make(Ord: OrderedType) =
 
     let choose = min_elt
 
+    let choose_opt = min_elt_opt
+
     let rec find x = function
         Empty -> raise Not_found
       | Node(l, v, r, _) ->
           let c = Ord.compare x v in
           if c = 0 then v
           else find x (if c < 0 then l else r)
+
+    let rec find_first_aux v0 f = function
+        Empty ->
+          v0
+      | Node(l, v, r, _) ->
+          if f v then
+            find_first_aux v f l
+          else
+            find_first_aux v0 f r
+
+    let rec find_first f = function
+        Empty ->
+          raise Not_found
+      | Node(l, v, r, _) ->
+          if f v then
+            find_first_aux v f l
+          else
+            find_first f r
+
+    let rec find_first_opt_aux v0 f = function
+        Empty ->
+          Some v0
+      | Node(l, v, r, _) ->
+          if f v then
+            find_first_opt_aux v f l
+          else
+            find_first_opt_aux v0 f r
+
+    let rec find_first_opt f = function
+        Empty ->
+          None
+      | Node(l, v, r, _) ->
+          if f v then
+            find_first_opt_aux v f l
+          else
+            find_first_opt f r
+
+    let rec find_last_aux v0 f = function
+        Empty ->
+          v0
+      | Node(l, v, r, _) ->
+          if f v then
+            find_last_aux v f r
+          else
+            find_last_aux v0 f l
+
+    let rec find_last f = function
+        Empty ->
+          raise Not_found
+      | Node(l, v, r, _) ->
+          if f v then
+            find_last_aux v f r
+          else
+            find_last f l
+
+    let rec find_last_opt_aux v0 f = function
+        Empty ->
+          Some v0
+      | Node(l, v, r, _) ->
+          if f v then
+            find_last_opt_aux v f r
+          else
+            find_last_opt_aux v0 f l
+
+    let rec find_last_opt f = function
+        Empty ->
+          None
+      | Node(l, v, r, _) ->
+          if f v then
+            find_last_opt_aux v f r
+          else
+            find_last_opt f l
+
+    let rec find_opt x = function
+        Empty -> None
+      | Node(l, v, r, _) ->
+          let c = Ord.compare x v in
+          if c = 0 then Some v
+          else find_opt x (if c < 0 then l else r)
+
+    let try_join l v r =
+      (* [join l v r] can only be called when (elements of l < v <
+         elements of r); use [try_join l v r] when this property may
+         not hold, but you hope it does hold in the common case *)
+      if (l = Empty || Ord.compare (max_elt l) v < 0)
+      && (r = Empty || Ord.compare v (min_elt r) < 0)
+      then join l v r
+      else union l (add v r)
 
     let rec map f = function
       | Empty -> Empty
@@ -383,12 +491,7 @@ module Make(Ord: OrderedType) =
          let v' = f v in
          let r' = map f r in
          if l == l' && v == v' && r == r' then t
-         else begin
-             if (l' = Empty || Ord.compare (max_elt l') v < 0)
-                && (r' = Empty || Ord.compare v (min_elt r') < 0)
-             then join l' v' r'
-             else union l' (add v' r')
-         end
+         else try_join l' v' r'
 
     let of_sorted_list l =
       let rec sub n l =

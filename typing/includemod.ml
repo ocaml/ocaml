@@ -355,8 +355,7 @@ and signatures env cxt subst sig1 sig2 =
         let name2, report =
           match item2, name2 with
             Sig_type (_, {type_manifest=None}, _), Field_type s
-            when let l = String.length s in
-            l >= 4 && String.sub s (l-4) 4 = "#row" ->
+            when Btype.is_row_name s ->
               (* Do not report in case of failure,
                  as the main type will generate an error *)
               Field_type (String.sub s 0 (String.length s - 4)), false

@@ -53,14 +53,21 @@ module Make_map (T : Thing) = struct
   let of_list l =
     List.fold_left (fun map (id, v) -> add id v map) empty l
 
-  let disjoint_union ?eq m1 m2 =
+  let disjoint_union ?eq ?print m1 m2 =
     union (fun id v1 v2 ->
         let ok = match eq with
           | None -> false
           | Some eq -> eq v1 v2
         in
         if not ok then
-          let err = Format.asprintf "Map.disjoint_union %a" T.print id in
+          let err =
+            match print with
+            | None ->
+              Format.asprintf "Map.disjoint_union %a" T.print id
+            | Some print ->
+              Format.asprintf "Map.disjoint_union %a => %a <> %a"
+                T.print id print v1 print v2
+          in
           Misc.fatal_error err
         else Some v1)
       m1 m2
@@ -104,6 +111,17 @@ module Make_map (T : Thing) = struct
   let of_set f set = T_set.fold (fun e map -> add e (f e) map) set empty
 
   let transpose_keys_and_data map = fold (fun k v m -> add v k m) map empty
+  let transpose_keys_and_data_set map =
+    fold (fun k v m ->
+        let set =
+          match find v m with
+          | exception Not_found ->
+            T_set.singleton k
+          | set ->
+            T_set.add k set
+        in
+        add v set m)
+      map empty
 end
 
 module Make_set (T : Thing) = struct
@@ -184,7 +202,7 @@ module type S = sig
 
     val filter_map : 'a t -> f:(key -> 'a -> 'b option) -> 'b t
     val of_list : (key * 'a) list -> 'a t
-    val disjoint_union : ?eq:('a -> 'a -> bool) -> 'a t -> 'a t -> 'a t
+    val disjoint_union : ?eq:('a -> 'a -> bool) -> ?print:(Format.formatter -> 'a -> unit) -> 'a t -> 'a t -> 'a t
     val union_right : 'a t -> 'a t -> 'a t
     val union_left : 'a t -> 'a t -> 'a t
     val union_merge : ('a -> 'a -> 'a) -> 'a t -> 'a t -> 'a t
@@ -194,6 +212,7 @@ module type S = sig
     val data : 'a t -> 'a list
     val of_set : (key -> 'a) -> Make_set (T).t -> 'a t
     val transpose_keys_and_data : key t -> key t
+    val transpose_keys_and_data_set : key t -> Set.t t
     val print :
       (Format.formatter -> 'a -> unit) -> Format.formatter -> 'a t -> unit
   end

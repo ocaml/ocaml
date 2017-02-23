@@ -212,8 +212,8 @@ and print_simple_out_type ppf =
           Ovar_fields fields ->
             print_list print_row_field (fun ppf -> fprintf ppf "@;<1 -2>| ")
               ppf fields
-        | Ovar_name (id, tyl) ->
-            fprintf ppf "@[%a%a@]" print_typargs tyl print_ident id
+        | Ovar_typ typ ->
+           print_simple_out_type ppf typ
       in
       fprintf ppf "%s[%s@[<hv>@[<hv>%a@]%a ]@]" (if non_gen then "_" else "")
         (if closed then if tags = None then " " else "< "

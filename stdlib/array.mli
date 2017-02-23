@@ -80,7 +80,7 @@ val make_matrix : int -> int -> 'a -> 'a array array
    with the notation [m.(x).(y)].
 
    Raise [Invalid_argument] if [dimx] or [dimy] is negative or
-   greater than [Sys.max_array_length].
+   greater than {!Sys.max_array_length}.
    If the value of [e] is a floating-point number, then the maximum
    size is only [Sys.max_array_length / 2]. *)
 
@@ -93,7 +93,7 @@ val append : 'a array -> 'a array -> 'a array
    concatenation of the arrays [v1] and [v2]. *)
 
 val concat : 'a array list -> 'a array
-(** Same as [Array.append], but concatenates a list of arrays. *)
+(** Same as {!Array.append}, but concatenates a list of arrays. *)
 
 val sub : 'a array -> int -> int -> 'a array
 (** [Array.sub a start len] returns a fresh array of length [len],

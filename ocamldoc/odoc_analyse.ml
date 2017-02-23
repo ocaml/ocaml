@@ -50,7 +50,7 @@ let initial_env () =
   let open_mod env m =
     let open Asttypes in
     let lid = {loc = Location.in_file "ocamldoc command line";
-               txt = Longident.Lident m } in
+               txt = Longident.parse m } in
     snd (Typemod.type_open_ Override env lid.loc lid) in
   (* Open the list of modules given as arguments of the "-open" flag
      The list is reversed to open the modules in the left-to-right order *)
@@ -230,15 +230,16 @@ let process_file sourcefile =
           with Odoc_text.Text_syntax (l, c, s) ->
             raise (Failure (Odoc_messages.text_parse_error l c s))
         in
+         let m_info =
+          Some Odoc_types.{dummy_info with i_desc= Some txt } in
         let m =
           {
             Odoc_module.m_name = mod_name ;
             Odoc_module.m_type = Types.Mty_signature [] ;
-            Odoc_module.m_info = None ;
+            Odoc_module.m_info;
             Odoc_module.m_is_interface = true ;
             Odoc_module.m_file = file ;
-            Odoc_module.m_kind = Odoc_module.Module_struct
-              [Odoc_module.Element_module_comment txt] ;
+            Odoc_module.m_kind = Odoc_module.Module_struct [] ;
             Odoc_module.m_loc =
               { Odoc_types.loc_impl = None ;
                 Odoc_types.loc_inter = Some (Location.in_file file) } ;

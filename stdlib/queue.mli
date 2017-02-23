@@ -41,14 +41,14 @@ val push : 'a -> 'a t -> unit
 
 val take : 'a t -> 'a
 (** [take q] removes and returns the first element in queue [q],
-   or raises [Empty] if the queue is empty. *)
+   or raises {!Empty} if the queue is empty. *)
 
 val pop : 'a t -> 'a
 (** [pop] is a synonym for [take]. *)
 
 val peek : 'a t -> 'a
 (** [peek q] returns the first element in queue [q], without removing
-   it from the queue, or raises [Empty] if the queue is empty. *)
+   it from the queue, or raises {!Empty} if the queue is empty. *)
 
 val top : 'a t -> 'a
 (** [top] is a synonym for [peek]. *)

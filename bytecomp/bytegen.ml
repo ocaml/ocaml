@@ -315,7 +315,9 @@ let comp_primitive p args =
   | Pintcomp cmp -> Kintcomp cmp
   | Pmakeblock(tag, _mut, _) -> Kmakeblock(List.length args, tag)
   | Pfield n -> Kgetfield n
+  | Pfield_computed -> Kgetvectitem
   | Psetfield(n, _ptr, _init) -> Ksetfield n
+  | Psetfield_computed(_ptr, _init) -> Ksetvectitem
   | Pfloatfield n -> Kgetfloatfield n
   | Psetfloatfield (n, _init) -> Ksetfloatfield n
   | Pduprecord _ -> Kccall("caml_obj_dup", 1)
@@ -324,8 +326,8 @@ let comp_primitive p args =
   | Paddint -> Kaddint
   | Psubint -> Ksubint
   | Pmulint -> Kmulint
-  | Pdivint -> Kdivint
-  | Pmodint -> Kmodint
+  | Pdivint _ -> Kdivint
+  | Pmodint _ -> Kmodint
   | Pandint -> Kandint
   | Porint -> Korint
   | Pxorint -> Kxorint
@@ -400,8 +402,8 @@ let comp_primitive p args =
   | Paddbint bi -> comp_bint_primitive bi "add" args
   | Psubbint bi -> comp_bint_primitive bi "sub" args
   | Pmulbint bi -> comp_bint_primitive bi "mul" args
-  | Pdivbint bi -> comp_bint_primitive bi "div" args
-  | Pmodbint bi -> comp_bint_primitive bi "mod" args
+  | Pdivbint { size = bi } -> comp_bint_primitive bi "div" args
+  | Pmodbint { size = bi } -> comp_bint_primitive bi "mod" args
   | Pandbint bi -> comp_bint_primitive bi "and" args
   | Porbint bi -> comp_bint_primitive bi "or" args
   | Pxorbint bi -> comp_bint_primitive bi "xor" args
@@ -581,7 +583,8 @@ let rec comp_expr env exp sz cont =
         in
         comp_init env sz decl_size
       end
-  | Lprim((Pidentity | Popaque | Pbytes_to_string | Pbytes_of_string), [arg], _) ->
+  | Lprim((Pidentity | Popaque | Pbytes_to_string | Pbytes_of_string), [arg], _)
+    ->
       comp_expr env arg sz cont
   | Lprim(Pignore, [arg], _) ->
       comp_expr env arg sz (add_const_unit cont)

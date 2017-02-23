@@ -143,6 +143,7 @@ let primitive ppf = function
   | Pmakeblock(tag, Mutable, shape) ->
       fprintf ppf "makemutable %i%a" tag block_shape shape
   | Pfield n -> fprintf ppf "field %i" n
+  | Pfield_computed -> fprintf ppf "field_computed"
   | Psetfield(n, ptr, init) ->
       let instr =
         match ptr with
@@ -151,15 +152,30 @@ let primitive ppf = function
       in
       let init =
         match init with
-        | Initialization -> "(init)"
+        | Heap_initialization -> "(heap-init)"
+        | Root_initialization -> "(root-init)"
         | Assignment -> ""
       in
       fprintf ppf "setfield_%s%s %i" instr init n
+  | Psetfield_computed (ptr, init) ->
+      let instr =
+        match ptr with
+        | Pointer -> "ptr"
+        | Immediate -> "imm"
+      in
+      let init =
+        match init with
+        | Heap_initialization -> "(heap-init)"
+        | Root_initialization -> "(root-init)"
+        | Assignment -> ""
+      in
+      fprintf ppf "setfield_%s%s_computed" instr init
   | Pfloatfield n -> fprintf ppf "floatfield %i" n
   | Psetfloatfield (n, init) ->
       let init =
         match init with
-        | Initialization -> "(init)"
+        | Heap_initialization -> "(heap-init)"
+        | Root_initialization -> "(root-init)"
         | Assignment -> ""
       in
       fprintf ppf "setfloatfield%s %i" init n
@@ -174,8 +190,10 @@ let primitive ppf = function
   | Paddint -> fprintf ppf "+"
   | Psubint -> fprintf ppf "-"
   | Pmulint -> fprintf ppf "*"
-  | Pdivint -> fprintf ppf "/"
-  | Pmodint -> fprintf ppf "mod"
+  | Pdivint Safe -> fprintf ppf "/"
+  | Pdivint Unsafe -> fprintf ppf "/u"
+  | Pmodint Safe -> fprintf ppf "mod"
+  | Pmodint Unsafe -> fprintf ppf "mod_unsafe"
   | Pandint -> fprintf ppf "and"
   | Porint -> fprintf ppf "or"
   | Pxorint -> fprintf ppf "xor"
@@ -243,8 +261,14 @@ let primitive ppf = function
   | Paddbint bi -> print_boxed_integer "add" ppf bi
   | Psubbint bi -> print_boxed_integer "sub" ppf bi
   | Pmulbint bi -> print_boxed_integer "mul" ppf bi
-  | Pdivbint bi -> print_boxed_integer "div" ppf bi
-  | Pmodbint bi -> print_boxed_integer "mod" ppf bi
+  | Pdivbint { size = bi; is_safe = Safe } ->
+      print_boxed_integer "div" ppf bi
+  | Pdivbint { size = bi; is_safe = Unsafe } ->
+      print_boxed_integer "div_unsafe" ppf bi
+  | Pmodbint { size = bi; is_safe = Safe } ->
+      print_boxed_integer "mod" ppf bi
+  | Pmodbint { size = bi; is_safe = Unsafe } ->
+      print_boxed_integer "mod_unsafe" ppf bi
   | Pandbint bi -> print_boxed_integer "and" ppf bi
   | Porbint bi -> print_boxed_integer "or" ppf bi
   | Pxorbint bi -> print_boxed_integer "xor" ppf bi
@@ -315,7 +339,9 @@ let name_of_primitive = function
   | Psetglobal _ -> "Psetglobal"
   | Pmakeblock _ -> "Pmakeblock"
   | Pfield _ -> "Pfield"
+  | Pfield_computed -> "Pfield_computed"
   | Psetfield _ -> "Psetfield"
+  | Psetfield_computed _ -> "Psetfield_computed"
   | Pfloatfield _ -> "Pfloatfield"
   | Psetfloatfield _ -> "Psetfloatfield"
   | Pduprecord _ -> "Pduprecord"
@@ -329,8 +355,8 @@ let name_of_primitive = function
   | Paddint -> "Paddint"
   | Psubint -> "Psubint"
   | Pmulint -> "Pmulint"
-  | Pdivint -> "Pdivint"
-  | Pmodint -> "Pmodint"
+  | Pdivint _ -> "Pdivint"
+  | Pmodint _ -> "Pmodint"
   | Pandint -> "Pandint"
   | Porint -> "Porint"
   | Pxorint -> "Pxorint"
@@ -404,9 +430,11 @@ let name_of_primitive = function
   | Pint_as_pointer -> "Pint_as_pointer"
   | Popaque -> "Popaque"
 
-let function_attribute ppf { inline; specialise; is_a_functor } =
+let function_attribute ppf { inline; specialise; is_a_functor; stub } =
   if is_a_functor then
     fprintf ppf "is_a_functor@ ";
+  if stub then
+    fprintf ppf "stub@ ";
   begin match inline with
   | Default_inline -> ()
   | Always_inline -> fprintf ppf "always_inline@ "

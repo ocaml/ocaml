@@ -109,8 +109,8 @@ let prim_size prim args =
   | Pfield _ -> 1
   | Psetfield(_f, isptr, init) ->
     begin match init with
-    | Initialization -> 1  (* never causes a write barrier hit *)
-    | Assignment ->
+    | Root_initialization -> 1  (* never causes a write barrier hit *)
+    | Assignment | Heap_initialization ->
       match isptr with
       | Pointer -> 4
       | Immediate -> 1
@@ -201,16 +201,19 @@ let lambda_smaller lam threshold =
   with Exit ->
     false
 
+let is_pure_prim p =
+  let open Semantics_of_primitives in
+  match Semantics_of_primitives.for_primitive p with
+  | (No_effects | Only_generative_effects), _ -> true
+  | Arbitrary_effects, _ -> false
+
 (* Check if a clambda term is ``pure'',
    that is without side-effects *and* not containing function definitions *)
 
 let rec is_pure_clambda = function
     Uvar _ -> true
   | Uconst _ -> true
-  | Uprim((Psetglobal _ | Psetfield _ | Psetfloatfield _ | Pduprecord _ |
-           Pccall _ | Praise _ | Poffsetref _ |  Pbytessetu | Pbytessets |
-           Parraysetu _ | Parraysets _ | Pbigarrayset _), _, _) -> false
-  | Uprim(_, args, _) -> List.for_all is_pure_clambda args
+  | Uprim(p, args, _) -> is_pure_prim p && List.for_all is_pure_clambda args
   | _ -> false
 
 (* Simplify primitive operations on known arguments *)
@@ -265,8 +268,8 @@ let simplif_arith_prim_pure fpc p (args, approxs) dbg =
       | Paddint -> make_const_int (n1 + n2)
       | Psubint -> make_const_int (n1 - n2)
       | Pmulint -> make_const_int (n1 * n2)
-      | Pdivint when n2 <> 0 -> make_const_int (n1 / n2)
-      | Pmodint when n2 <> 0 -> make_const_int (n1 mod n2)
+      | Pdivint _ when n2 <> 0 -> make_const_int (n1 / n2)
+      | Pmodint _ when n2 <> 0 -> make_const_int (n1 mod n2)
       | Pandint -> make_const_int (n1 land n2)
       | Porint -> make_const_int (n1 lor n2)
       | Pxorint -> make_const_int (n1 lxor n2)
@@ -314,9 +317,9 @@ let simplif_arith_prim_pure fpc p (args, approxs) dbg =
       | Paddbint Pnativeint -> make_const_natint (Nativeint.add n1 n2)
       | Psubbint Pnativeint -> make_const_natint (Nativeint.sub n1 n2)
       | Pmulbint Pnativeint -> make_const_natint (Nativeint.mul n1 n2)
-      | Pdivbint Pnativeint when n2 <> 0n ->
+      | Pdivbint {size=Pnativeint} when n2 <> 0n ->
           make_const_natint (Nativeint.div n1 n2)
-      | Pmodbint Pnativeint when n2 <> 0n ->
+      | Pmodbint {size=Pnativeint} when n2 <> 0n ->
           make_const_natint (Nativeint.rem n1 n2)
       | Pandbint Pnativeint -> make_const_natint (Nativeint.logand n1 n2)
       | Porbint Pnativeint ->  make_const_natint (Nativeint.logor n1 n2)
@@ -352,8 +355,10 @@ let simplif_arith_prim_pure fpc p (args, approxs) dbg =
       | Paddbint Pint32 -> make_const_int32 (Int32.add n1 n2)
       | Psubbint Pint32 -> make_const_int32 (Int32.sub n1 n2)
       | Pmulbint Pint32 -> make_const_int32 (Int32.mul n1 n2)
-      | Pdivbint Pint32 when n2 <> 0l -> make_const_int32 (Int32.div n1 n2)
-      | Pmodbint Pint32 when n2 <> 0l -> make_const_int32 (Int32.rem n1 n2)
+      | Pdivbint {size=Pint32} when n2 <> 0l ->
+          make_const_int32 (Int32.div n1 n2)
+      | Pmodbint {size=Pint32} when n2 <> 0l ->
+          make_const_int32 (Int32.rem n1 n2)
       | Pandbint Pint32 -> make_const_int32 (Int32.logand n1 n2)
       | Porbint Pint32 -> make_const_int32 (Int32.logor n1 n2)
       | Pxorbint Pint32 -> make_const_int32 (Int32.logxor n1 n2)
@@ -388,8 +393,10 @@ let simplif_arith_prim_pure fpc p (args, approxs) dbg =
       | Paddbint Pint64 -> make_const_int64 (Int64.add n1 n2)
       | Psubbint Pint64 -> make_const_int64 (Int64.sub n1 n2)
       | Pmulbint Pint64 -> make_const_int64 (Int64.mul n1 n2)
-      | Pdivbint Pint64 when n2 <> 0L -> make_const_int64 (Int64.div n1 n2)
-      | Pmodbint Pint64 when n2 <> 0L -> make_const_int64 (Int64.rem n1 n2)
+      | Pdivbint {size=Pint64} when n2 <> 0L ->
+          make_const_int64 (Int64.div n1 n2)
+      | Pmodbint {size=Pint64} when n2 <> 0L ->
+          make_const_int64 (Int64.rem n1 n2)
       | Pandbint Pint64 -> make_const_int64 (Int64.logand n1 n2)
       | Porbint Pint64 -> make_const_int64 (Int64.logor n1 n2)
       | Pxorbint Pint64 -> make_const_int64 (Int64.logxor n1 n2)
@@ -445,7 +452,9 @@ let simplif_prim_pure fpc p (args, approxs) dbg =
     when n < List.length ul ->
       (List.nth ul n, field_approx n approx)
   (* Strings *)
-  | (Pstringlength | Pbyteslength), _, [ Value_const(Uconst_ref(_, Some (Uconst_string s))) ] ->
+  | (Pstringlength | Pbyteslength),
+     _,
+     [ Value_const(Uconst_ref(_, Some (Uconst_string s))) ] ->
       make_const_int (String.length s)
   (* Identity *)
   | (Pidentity | Pbytes_to_string | Pbytes_of_string), [arg1], [app1] ->
@@ -647,7 +656,7 @@ let is_simple_argument = function
 
 let no_effects = function
   | Uclosure _ -> true
-  | u -> is_simple_argument u
+  | u -> is_pure_clambda u
 
 let rec bind_params_rec loc fpc subst params args body =
   match (params, args) with
@@ -683,10 +692,7 @@ let bind_params loc fpc params args body =
 let rec is_pure = function
     Lvar _ -> true
   | Lconst _ -> true
-  | Lprim((Psetglobal _ | Psetfield _ | Psetfloatfield _ | Pduprecord _ |
-           Pccall _ | Praise _ | Poffsetref _  | Pbytessetu | Pbytessets |
-           Parraysetu _ | Parraysets _ | Pbigarrayset _), _,_) -> false
-  | Lprim(_, args,_) -> List.for_all is_pure args
+  | Lprim(p, args,_) -> is_pure_prim p && List.for_all is_pure args
   | Levent(lam, _ev) -> is_pure lam
   | _ -> false
 
@@ -873,13 +879,24 @@ let rec close fenv cenv = function
 
       | ((ufunct, Value_closure(fundesc, _approx_res)), uargs)
         when fundesc.fun_arity > 0 && nargs > fundesc.fun_arity ->
-          let (first_args, rem_args) = split_list fundesc.fun_arity uargs in
+          let args = List.map (fun arg -> Ident.create "arg", arg) uargs in
+          let (first_args, rem_args) = split_list fundesc.fun_arity args in
+          let first_args = List.map (fun (id, _) -> Uvar id) first_args in
+          let rem_args = List.map (fun (id, _) -> Uvar id) rem_args in
           let dbg = Debuginfo.from_location loc in
           warning_if_forced_inline ~loc ~attribute "Over-application";
-          (Ugeneric_apply(direct_apply ~loc ~attribute
-                            fundesc funct ufunct first_args,
-                          rem_args, dbg),
-           Value_unknown)
+          let body =
+            Ugeneric_apply(direct_apply ~loc ~attribute
+                              fundesc funct ufunct first_args,
+                           rem_args, dbg)
+          in
+          let result =
+            List.fold_left (fun body (id, defining_expr) ->
+                Ulet (Immutable, Pgenval, id, defining_expr, body))
+              body
+              args
+          in
+          result, Value_unknown
       | ((ufunct, _), uargs) ->
           let dbg = Debuginfo.from_location loc in
           warning_if_forced_inline ~loc ~attribute "Unknown function";
@@ -1083,16 +1100,16 @@ and close_functions fenv cenv fun_defs =
       (List.map
          (function
            | (id, Lfunction{kind; params; body; attr; loc}) ->
-               Simplif.split_default_wrapper id kind params body attr loc
+               Simplif.split_default_wrapper ~id ~kind ~params
+                 ~body ~attr ~loc
            | _ -> assert false
          )
          fun_defs)
   in
   let inline_attribute = match fun_defs with
-    | [_, Lfunction{attr = { inline }}] -> inline
+    | [_, Lfunction{attr = { inline; }}] -> inline
     | _ -> Default_inline (* recursive functions can't be inlined *)
   in
-
   (* Update and check nesting depth *)
   incr function_nesting_depth;
   let initially_closed =
@@ -1158,6 +1175,7 @@ and close_functions fenv cenv fun_defs =
         params = fun_params;
         body   = ubody;
         dbg;
+        env = Some env_param;
       }
     in
     (* give more chance of function with default parameters (i.e.

@@ -219,10 +219,6 @@ CAMLprim value caml_ephe_unset_data (value ar)
   return Val_unit;
 }
 
-
-#define Setup_for_gc
-#define Restore_after_gc
-
 CAMLprim value caml_ephe_get_key (value ar, value n)
 {
   CAMLparam2 (ar, n);
@@ -268,9 +264,6 @@ CAMLprim value caml_ephe_get_data (value ar)
   }
   CAMLreturn (res);
 }
-
-#undef Setup_for_gc
-#undef Restore_after_gc
 
 CAMLprim value caml_ephe_get_key_copy (value ar, value n)
 {

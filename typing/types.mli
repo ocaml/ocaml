@@ -333,11 +333,19 @@ and constructor_arguments =
   | Cstr_tuple of type_expr list
   | Cstr_record of label_declaration list
 
-and unboxed_status =
+and unboxed_status = private
+  (* This type must be private in order to ensure perfect sharing of the
+     four possible values. Otherwise, ocamlc.byte and ocamlc.opt produce
+     different executables. *)
   {
     unboxed: bool;
     default: bool; (* True for unannotated unboxable types. *)
   }
+
+val unboxed_false_default_false : unboxed_status
+val unboxed_false_default_true : unboxed_status
+val unboxed_true_default_false : unboxed_status
+val unboxed_true_default_true : unboxed_status
 
 type extension_constructor =
     {

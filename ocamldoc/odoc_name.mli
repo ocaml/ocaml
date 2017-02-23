@@ -36,7 +36,7 @@ val normalize_name : t -> t
 (** Returns the head of a name. *)
 val head : t -> t
 
-(** Returns the depth of the name, i.e. the numer of levels to the root.
+(** Returns the depth of the name, i.e. the number of levels to the root.
    Example : [Toto.Tutu.name] has depth 3. *)
 val depth : t -> int
 

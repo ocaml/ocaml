@@ -34,7 +34,7 @@
 #include "caml/signals.h"
 #include "caml/stack.h"
 #include "caml/sys.h"
-#include "spacetime.h"
+#include "caml/spacetime.h"
 
 #include "../config/s.h"
 

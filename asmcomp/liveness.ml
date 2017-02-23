@@ -101,14 +101,46 @@ let rec live i finally =
       end;
       i.live <- !at_top;
       !at_top
-  | Icatch(nfail, body, handler) ->
+  | Icatch(rec_flag, handlers, body) ->
       let at_join = live i.next finally in
-      let before_handler = live handler at_join in
-      let before_body =
-          live_at_exit := (nfail,before_handler) :: !live_at_exit ;
-          let before_body = live body at_join in
-          live_at_exit := List.tl !live_at_exit ;
-          before_body in
+      let aux (nfail,handler) (nfail', before_handler) =
+        assert(nfail = nfail');
+        let before_handler' = live handler at_join in
+        nfail, Reg.Set.union before_handler before_handler'
+      in
+      let aux_equal (nfail, before_handler) (nfail', before_handler') =
+        assert(nfail = nfail');
+        Reg.Set.equal before_handler before_handler'
+      in
+      let live_at_exit_before = !live_at_exit in
+      let live_at_exit_add before_handlers =
+        List.map (fun (nfail, before_handler) ->
+            (nfail, before_handler))
+          before_handlers
+      in
+      let rec fixpoint before_handlers =
+        let live_at_exit_add = live_at_exit_add before_handlers in
+        live_at_exit := live_at_exit_add @ !live_at_exit;
+        let before_handlers' = List.map2 aux handlers before_handlers in
+        live_at_exit := live_at_exit_before;
+        match rec_flag with
+        | Cmm.Nonrecursive ->
+            before_handlers'
+        | Cmm.Recursive ->
+            if List.for_all2 aux_equal before_handlers before_handlers'
+            then before_handlers'
+            else fixpoint before_handlers'
+      in
+      let init_state =
+        List.map (fun (nfail, _handler) -> nfail, Reg.Set.empty) handlers
+      in
+      let before_handler = fixpoint init_state in
+      (* We could use handler.live instead of Reg.Set.empty as the initial
+         value but we would need to clean the live field before doing the
+         analysis (to remove remnants of previous passes). *)
+      live_at_exit := (live_at_exit_add before_handler) @ !live_at_exit;
+      let before_body = live body at_join in
+      live_at_exit := live_at_exit_before;
       i.live <- before_body;
       before_body
   | Iexit nfail ->

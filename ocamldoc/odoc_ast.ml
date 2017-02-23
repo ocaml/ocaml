@@ -331,7 +331,7 @@ module Analyser =
           in
          (* continue if the body is still a function *)
           match next_exp.exp_desc with
-            Texp_function (_, pat_exp_list, _) ->
+            Texp_function { cases = pat_exp_list ; _ } ->
               p :: (tt_analyse_function_parameters env current_comment_opt pat_exp_list)
           | _ ->
               (* something else ; no more parameter *)
@@ -342,7 +342,7 @@ module Analyser =
      let tt_analyse_value env current_module_name comment_opt loc pat_exp rec_flag =
        let (pat, exp) = pat_exp in
        match (pat.pat_desc, exp.exp_desc) with
-         (Typedtree.Tpat_var (ident, _), Typedtree.Texp_function (_, pat_exp_list2, _partial)) ->
+         (Typedtree.Tpat_var (ident, _), Typedtree.Texp_function { cases = pat_exp_list2; _ }) ->
            (* a new function is defined *)
            let name_pre = Name.from_ident ident in
            let name = Name.parens_if_infix name_pre in
@@ -431,7 +431,7 @@ module Analyser =
     *)
     let rec tt_analyse_method_expression env current_method_name comment_opt ?(first=true) exp =
       match exp.Typedtree.exp_desc with
-        Typedtree.Texp_function (_, pat_exp_list, _) ->
+        Typedtree.Texp_function { cases = pat_exp_list; _ } ->
           (
            match pat_exp_list with
              [] ->
@@ -1867,21 +1867,7 @@ module Analyser =
      let analyse_typed_tree source_file input_file
          (parsetree : Parsetree.structure) (typedtree : typedtree) =
        let (tree_structure, _) = typedtree in
-       let complete_source_file =
-         try
-           let curdir = Sys.getcwd () in
-           let (dirname, basename) = (Filename.dirname source_file, Filename.basename source_file) in
-           Sys.chdir dirname ;
-           let complete = Filename.concat (Sys.getcwd ()) basename in
-           Sys.chdir curdir ;
-           complete
-         with
-           Sys_error s ->
-             prerr_endline s ;
-             incr Odoc_global.errors ;
-             source_file
-       in
-       prepare_file complete_source_file input_file;
+       prepare_file source_file input_file;
        (* We create the t_module for this file. *)
        let mod_name = String.capitalize_ascii (Filename.basename (Filename.chop_extension source_file)) in
        let (len,info_opt) = My_ir.first_special !file_name !file in

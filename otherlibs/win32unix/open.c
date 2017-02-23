@@ -18,21 +18,23 @@
 #include "unixsupport.h"
 #include <fcntl.h>
 
-static int open_access_flags[14] = {
+static int open_access_flags[15] = {
   GENERIC_READ, GENERIC_WRITE, GENERIC_READ|GENERIC_WRITE,
-  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
 };
 
-static int open_create_flags[14] = {
-  0, 0, 0, 0, 0, O_CREAT, O_TRUNC, O_EXCL, 0, 0, 0, 0, 0, 0
+static int open_create_flags[15] = {
+  0, 0, 0, 0, 0, O_CREAT, O_TRUNC, O_EXCL, 0, 0, 0, 0, 0, 0, 0
 };
 
-static int open_share_flags[14] = {
-  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, FILE_SHARE_DELETE, 0
+static int open_share_flags[15] = {
+  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, FILE_SHARE_DELETE, 0, 0
 };
 
-static int open_cloexec_flags[14] = {
-  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1
+enum { CLOEXEC = 1, KEEPEXEC = 2 };
+
+static int open_cloexec_flags[15] = {
+  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, CLOEXEC, KEEPEXEC
 };
 
 CAMLprim value unix_open(value path, value flags, value perm)
@@ -42,11 +44,11 @@ CAMLprim value unix_open(value path, value flags, value perm)
   HANDLE h;
 
   caml_unix_check_path(path, "open");
-  fileaccess = convert_flag_list(flags, open_access_flags);
+  fileaccess = caml_convert_flag_list(flags, open_access_flags);
   sharemode = FILE_SHARE_READ | FILE_SHARE_WRITE
-              | convert_flag_list(flags, open_share_flags);
+              | caml_convert_flag_list(flags, open_share_flags);
 
-  createflags = convert_flag_list(flags, open_create_flags);
+  createflags = caml_convert_flag_list(flags, open_create_flags);
   if ((createflags & (O_CREAT | O_EXCL)) == (O_CREAT | O_EXCL))
     filecreate = CREATE_NEW;
   else if ((createflags & (O_CREAT | O_TRUNC)) == (O_CREAT | O_TRUNC))
@@ -63,10 +65,13 @@ CAMLprim value unix_open(value path, value flags, value perm)
   else
     fileattrib = FILE_ATTRIBUTE_NORMAL;
 
-  cloexec = convert_flag_list(flags, open_cloexec_flags);
+  cloexec = caml_convert_flag_list(flags, open_cloexec_flags);
   attr.nLength = sizeof(attr);
   attr.lpSecurityDescriptor = NULL;
-  attr.bInheritHandle = cloexec ? FALSE : TRUE;
+  attr.bInheritHandle =
+    cloexec & CLOEXEC ? FALSE
+                      : cloexec & KEEPEXEC ? TRUE
+                                           : !unix_cloexec_default;
 
   h = CreateFile(String_val(path), fileaccess,
                  sharemode, &attr,

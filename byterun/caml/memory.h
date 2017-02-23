@@ -36,16 +36,16 @@ extern "C" {
 
 
 CAMLextern value caml_alloc_shr (mlsize_t wosize, tag_t);
-#if defined(NATIVE_CODE) && defined(WITH_SPACETIME)
+#ifdef WITH_PROFINFO
 CAMLextern value caml_alloc_shr_with_profinfo (mlsize_t, tag_t, intnat);
 CAMLextern value caml_alloc_shr_preserving_profinfo (mlsize_t, tag_t,
-  header_t);
+                                                     header_t);
 #else
 #define caml_alloc_shr_with_profinfo(size, tag, profinfo) \
   caml_alloc_shr(size, tag)
 #define caml_alloc_shr_preserving_profinfo(size, tag, header) \
   caml_alloc_shr(size, tag)
-#endif
+#endif /* WITH_PROFINFO */
 CAMLextern value caml_alloc_shr_no_raise (mlsize_t wosize, tag_t);
 CAMLextern void caml_adjust_gc_speed (mlsize_t, mlsize_t);
 CAMLextern void caml_alloc_dependent_memory (mlsize_t bsz);
@@ -113,7 +113,7 @@ int caml_page_table_initialize(mlsize_t bytesize);
   DEBUG_clear ((result), (wosize));                                         \
 }while(0)
 
-#if defined(NATIVE_CODE) && defined(SPACETIME)
+#if defined(NATIVE_CODE) && defined(WITH_SPACETIME)
 extern uintnat caml_spacetime_my_profinfo(struct ext_table**, uintnat);
 #define Alloc_small(result, wosize, tag) \
   Alloc_small_with_profinfo(result, wosize, tag, \

@@ -403,3 +403,20 @@ let remove_aliases env sg =
   (* PathSet.iter (fun p -> Format.eprintf "%a@ " Printtyp.path p) excl;
   Format.eprintf "@."; *)
   remove_aliases env excl sg
+
+
+(* Lower non-generalizable type variables *)
+
+let lower_nongen nglev mty =
+  let open Btype in
+  let it_type_expr it ty =
+    let ty = repr ty in
+    match ty with
+      {desc=Tvar _; level} ->
+        if level < generic_level && level > nglev then set_level ty nglev
+    | _ ->
+        type_iterators.it_type_expr it ty
+  in
+  let it = {type_iterators with it_type_expr} in
+  it.it_module_type it mty;
+  it.it_module_type unmark_iterators mty
