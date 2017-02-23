@@ -124,6 +124,43 @@ CAMLnoreturn_end;
 CAMLextern char * caml_strdup(const char * s);
 CAMLextern char * caml_strconcat(int n, ...); /* n args of const char * type */
 
+/* Integer arithmetic with overflow detection */ 
+
+#ifndef __has_builtin
+#define __has_builtin(x) 0
+#endif  
+
+static inline int caml_addu_overflow(uintnat a, uintnat b, uintnat * res)
+{
+#if __GNUC__ >= 5 || __has_builtin(__builtin_add_overflow)
+  return __builtin_add_overflow(a, b, res);
+#else
+  uintnat c = a + b;
+  *res = c;
+  return c < a;
+#endif
+}
+  
+static inline int caml_subu_overflow(uintnat a, uintnat b, uintnat * res)
+{
+#if __GNUC__ >= 5 || __has_builtin(__builtin_sub_overflow)
+  return __builtin_sub_overflow(a, b, res);
+#else
+  uintnat c = a - b;
+  *res = c;
+  return a < b;
+#endif
+}
+  
+#if __GNUC__ >= 5 || __has_builtin(__builtin_mul_overflow)
+static inline int caml_mulu_overflow(uintnat a, uintnat b, uintnat * res)
+{
+  return __builtin_mul_overflow(a, b, res);
+}
+#else
+extern int caml_mulu_overflow(uintnat a, uintnat b, uintnat * res);
+#endif  
+
 /* Use macros for some system calls being called from OCaml itself.
   These calls can be either traced for security reasons, or changed to
   virtualize the program. */
