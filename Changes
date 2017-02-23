@@ -48,6 +48,9 @@ be mentioned in the 4.06 section below instead of here.)
 
 ### Bug fixes
 
+- MPR#6394, GPR#1425: fix fatal_error from Parmatch.get_type_path
+  (Virgile Prevosto, review by David Allsopp, Thomas Refis and Jacques Garrigue)
+
 * PR#6604, GPR#931: Only allow directives with filename and at the beginning of
   the line
   (Tadeu Zagallo, report by Roberto Di Cosmo,
