@@ -34,7 +34,7 @@ val index : 'a -> 'a list -> int
 (* ### n l -> l' *)
 val list_truncate : int -> 'a list -> 'a list
 
-(* Separe the `n' first elements of `l' and the others. *)
+(* Separate the `n' first elements of `l' and the others. *)
 (* ### n list -> (first, last) *)
 val list_truncate2 : int -> 'a list -> 'a list * 'a list
 

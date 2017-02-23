@@ -174,7 +174,7 @@ val align: ?limit: int -> (key * spec * doc) list -> (key * spec * doc) list
     align the whole string.  The doc strings corresponding to
     [Symbol] arguments are aligned on the next line.
     @param limit options with keyword and message longer than
-    [limit] will not be used to compute the alignement.
+    [limit] will not be used to compute the alignment.
 *)
 
 val current : int ref
