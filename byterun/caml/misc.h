@@ -124,7 +124,12 @@ CAMLnoreturn_end;
 CAMLextern char * caml_strdup(const char * s);
 CAMLextern char * caml_strconcat(int n, ...); /* n args of const char * type */
 
-/* Integer arithmetic with overflow detection */ 
+/* Integer arithmetic with overflow detection.
+   The functions return 0 if no overflow, 1 if overflow.
+   The result of the operation is always stored at [*res].
+   If no overflow is reported, this is the exact result.
+   If overflow is reported, this is the exact result modulo 2 to the word size.
+*/
 
 #ifndef __has_builtin
 #define __has_builtin(x) 0
