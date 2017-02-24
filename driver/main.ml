@@ -118,8 +118,9 @@ module Options = Main_args.Make_bytecomp_options (struct
   let _dlambda = set dump_lambda
   let _dinstr = set dump_instr
   let _dtimings = set print_timings
-  let _package s = Clflags.packages := s :: !Clflags.packages
-  let _predicates s = Clflags.predicates := s :: !Clflags.predicates
+  let _package s = packages := s :: !packages
+  let _predicates s = predicates := s :: !predicates
+  let _linkpkg = set linkpkg
 
   let _args = Arg.read_arg
   let _args0 = Arg.read_arg0
@@ -136,13 +137,12 @@ module Fl = struct
       (fun pkg ->
          let _ = package_directory pkg in
          ()
-      )
-      l
+      ) l
 
   let run () =
-    let predicates = ref ("byte" :: !Clflags.predicates) in
-    check_package_list !Clflags.packages;
-    let eff_packages = package_deep_ancestors !predicates !Clflags.packages in
+    let predicates = ref ("byte" :: !predicates) in
+    check_package_list !packages;
+    let eff_packages = package_deep_ancestors !predicates !packages in
     let eff_packages_dl = Misc.Stdlib.List.remove_dups (List.map package_directory eff_packages) in
     predicates := List.map (fun pkg -> "pkg_" ^ pkg) eff_packages @ !predicates;
     let stdlibdir = Fl_split.norm_dir (Findlib.ocaml_stdlib()) in
@@ -161,7 +161,34 @@ module Fl = struct
            ) eff_packages_dl
         )
     in
-    Clflags.include_dirs := !Clflags.include_dirs @ i_options
+    let archives =
+      List.flatten
+        (List.map
+	   (fun pkg ->
+	      let al = try package_property !predicates pkg "archive"
+	        with Not_found -> "" in
+	      let pkg_dir =
+	        if pkg = "threads" then   (* MAGIC *)
+	          match !threads with
+		    `None -> stdlibdir
+		  | `VM_threads -> vmthreads_dir
+		  | `POSIX_threads -> threads_dir
+	        else
+	          package_directory pkg in
+	      let pkg_dir = slashify pkg_dir in
+	      List.map
+	        (fun arch -> resolve_path ~base:pkg_dir arch)
+	        (Fl_split.in_words al)
+	   )
+	   eff_link)
+    in
+    let dll_options =
+      List.flatten
+        (List.map (fun pkg -> ["-dllpath";  slashify pkg] ) dll_dirs)
+    in
+    include_dirs := !include_dirs @ i_options;
+    if !linkpkg then List.iter anonymous archives; (* before the other anonymous *)
+    List.iter dllpath dll_options
 
   let () =
     let install_dir = Filename.dirname Config.standard_library in

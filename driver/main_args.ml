@@ -471,6 +471,10 @@ let mk_predicates f =
   "-predicates", Arg.String f, " Add predicate when resolving package properties"
 ;;
 
+let mk_linkpkg f =
+  "-linkpkg", Arg.Unit f, " Link the packages in"
+;;
+
 let mk_unbox_closures f =
   "-unbox-closures", Arg.Unit f,
   " Pass free variables via specialised arguments rather than closures"
@@ -889,6 +893,7 @@ module type Bytecomp_options = sig
 
   val _package : string -> unit
   val _predicates : string -> unit
+  val _linkpkg : unit -> unit
 end;;
 
 module type Bytetop_options = sig
