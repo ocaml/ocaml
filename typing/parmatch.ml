@@ -680,6 +680,14 @@ let should_extend ext env = match ext with
       end
 end
 
+module ConstructorTagHashtbl = Hashtbl.Make(
+  struct
+    type t = Types.constructor_tag
+    let hash = Hashtbl.hash
+    let equal = Types.equal_tag
+  end
+)
+
 (* complement constructor tags *)
 let complete_tags nconsts nconstrs tags =
   let seen_const = Array.make nconsts false
@@ -690,16 +698,16 @@ let complete_tags nconsts nconstrs tags =
       | Cstr_block i -> seen_constr.(i) <- true
       | _  -> assert false)
     tags ;
-  let r = ref [] in
+  let r = ConstructorTagHashtbl.create (nconsts+nconstrs) in
   for i = 0 to nconsts-1 do
     if not seen_const.(i) then
-      r := Cstr_constant i :: !r
+      ConstructorTagHashtbl.add r (Cstr_constant i) ()
   done ;
   for i = 0 to nconstrs-1 do
     if not seen_constr.(i) then
-      r := Cstr_block i :: !r
+      ConstructorTagHashtbl.add r (Cstr_block i) ()
   done ;
-  !r
+  r
 
 (* build a pattern from a constructor list *)
 let pat_of_constr ex_pat cstr =
@@ -764,9 +772,8 @@ let complete_constrs p all_tags =
   let not_tags = complete_tags c.cstr_consts c.cstr_nonconsts all_tags in
   let constrs = get_variant_constructors p.pat_env c.cstr_res in
   let others =
-    List.filter 
-      (fun cnstr -> 
-        List.exists (fun tag -> Types.equal_tag tag cnstr.cstr_tag) not_tags)
+    List.filter
+      (fun cnstr -> ConstructorTagHashtbl.mem not_tags cnstr.cstr_tag) 
       constrs in
   let const, nonconst =
     List.partition (fun cnstr -> cnstr.cstr_arity = 0) others in
