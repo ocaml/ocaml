@@ -164,7 +164,10 @@ module Fl = struct
     Clflags.include_dirs := !Clflags.include_dirs @ i_options
 
   let () =
-    init ~config:"" ()
+    let install_dir = Filename.dirname Config.standard_library in
+    let meta_dir = "none" in
+    let search_path = [install_dir] in
+    init_manually ~stdlib:Config.standard_library ~install_dir ~meta_dir ~search_path ()
 end
 
 let main () =
