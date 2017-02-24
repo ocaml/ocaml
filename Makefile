@@ -114,25 +114,6 @@ TYPING=typing/ident.cmo typing/path.cmo \
   typing/typeclass.cmo \
   typing/typemod.cmo
 
-COMP=bytecomp/lambda.cmo bytecomp/printlambda.cmo \
-  bytecomp/semantics_of_primitives.cmo \
-  bytecomp/typeopt.cmo bytecomp/switch.cmo bytecomp/matching.cmo \
-  bytecomp/translobj.cmo bytecomp/translattribute.cmo \
-  bytecomp/translcore.cmo \
-  bytecomp/translclass.cmo bytecomp/translmod.cmo \
-  bytecomp/simplif.cmo bytecomp/runtimedef.cmo \
-  driver/pparse.cmo driver/main_args.cmo \
-  driver/compenv.cmo driver/compmisc.cmo
-
-COMMON=$(UTILS) $(PARSING) $(TYPING) $(COMP)
-
-BYTECOMP=bytecomp/meta.cmo bytecomp/instruct.cmo bytecomp/bytegen.cmo \
-  bytecomp/printinstr.cmo bytecomp/opcodes.cmo bytecomp/emitcode.cmo \
-  bytecomp/bytesections.cmo bytecomp/dll.cmo bytecomp/symtable.cmo \
-  bytecomp/bytelink.cmo bytecomp/bytelibrarian.cmo bytecomp/bytepackager.cmo \
-  driver/compdynlink.cmo driver/compplugin.cmo \
-  driver/errors.cmo driver/compile.cmo
-
 FINDLIB=lib-findlib/src/findlib/findlib_config.cmo \
   lib-findlib/src/findlib/fl_split.cmo \
   lib-findlib/src/findlib/fl_metatoken.cmo \
@@ -143,6 +124,26 @@ FINDLIB=lib-findlib/src/findlib/findlib_config.cmo \
   lib-findlib/src/findlib/findlib.cmo \
   lib-findlib/src/findlib/fl_args.cmo \
   lib-findlib/src/findlib/fl_lint.cmo
+
+COMP=bytecomp/lambda.cmo bytecomp/printlambda.cmo \
+  bytecomp/semantics_of_primitives.cmo \
+  bytecomp/typeopt.cmo bytecomp/switch.cmo bytecomp/matching.cmo \
+  bytecomp/translobj.cmo bytecomp/translattribute.cmo \
+  bytecomp/translcore.cmo \
+  bytecomp/translclass.cmo bytecomp/translmod.cmo \
+  bytecomp/simplif.cmo bytecomp/runtimedef.cmo \
+  driver/pparse.cmo driver/main_args.cmo \
+  $(FINDLIB) \
+  driver/compenv.cmo driver/compmisc.cmo
+
+COMMON=$(UTILS) $(PARSING) $(TYPING) $(COMP)
+
+BYTECOMP=bytecomp/meta.cmo bytecomp/instruct.cmo bytecomp/bytegen.cmo \
+  bytecomp/printinstr.cmo bytecomp/opcodes.cmo bytecomp/emitcode.cmo \
+  bytecomp/bytesections.cmo bytecomp/dll.cmo bytecomp/symtable.cmo \
+  bytecomp/bytelink.cmo bytecomp/bytelibrarian.cmo bytecomp/bytepackager.cmo \
+  driver/compdynlink.cmo driver/compplugin.cmo \
+  driver/errors.cmo driver/compile.cmo
 
 ARCH_SPECIFIC =\
   asmcomp/arch.ml asmcomp/proc.ml asmcomp/CSE.ml asmcomp/selection.ml \
@@ -760,12 +761,12 @@ partialclean::
 
 # The bytecode compiler
 
-compilerlibs/ocamlbytecomp.cma: $(BYTECOMP)
+compilerlibs/ocamlbytecomp.cma: lib-findlib/src/findlib/findlib.cma $(BYTECOMP)
 	$(CAMLC) -a -o $@ $^
 partialclean::
 	rm -f compilerlibs/ocamlbytecomp.cma
 
-ocamlc: compilerlibs/ocamlcommon.cma compilerlibs/ocamlbytecomp.cma lib-findlib/src/findlib/findlib.cma $(BYTESTART)
+ocamlc: compilerlibs/ocamlcommon.cma compilerlibs/ocamlbytecomp.cma $(BYTESTART)
 	$(CAMLC) $(LINKFLAGS) -compat-32 -o $@ $^
 
 partialclean::

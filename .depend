@@ -1987,8 +1987,10 @@ middle_end/base_types/variable.cmi : utils/identifiable.cmi typing/ident.cmi \
     middle_end/base_types/compilation_unit.cmi
 driver/compdynlink.cmi :
 driver/compenv.cmo : utils/warnings.cmi utils/misc.cmi parsing/location.cmi \
+    lib-findlib/src/findlib/fl_split.cmo lib-findlib/src/findlib/findlib.cmi \
     utils/config.cmi utils/clflags.cmi utils/ccomp.cmi driver/compenv.cmi
 driver/compenv.cmx : utils/warnings.cmx utils/misc.cmx parsing/location.cmx \
+    lib-findlib/src/findlib/fl_split.cmx lib-findlib/src/findlib/findlib.cmx \
     utils/config.cmx utils/clflags.cmx utils/ccomp.cmx driver/compenv.cmi
 driver/compenv.cmi :
 driver/compile.cmo : utils/warnings.cmi typing/typemod.cmi \
@@ -2235,6 +2237,89 @@ toplevel/trace.cmx : typing/types.cmx toplevel/toploop.cmx \
     parsing/asttypes.cmi toplevel/trace.cmi
 toplevel/trace.cmi : typing/types.cmi typing/path.cmi parsing/longident.cmi \
     typing/env.cmi
+lib-findlib/src/findlib/findlib.cmo : lib-findlib/src/findlib/fl_split.cmo \
+    lib-findlib/src/findlib/fl_package_base.cmi \
+    lib-findlib/src/findlib/fl_metascanner.cmi \
+    lib-findlib/src/findlib/findlib_config.cmo \
+    lib-findlib/src/findlib/findlib.cmi
+lib-findlib/src/findlib/findlib.cmx : lib-findlib/src/findlib/fl_split.cmx \
+    lib-findlib/src/findlib/fl_package_base.cmx \
+    lib-findlib/src/findlib/fl_metascanner.cmx \
+    lib-findlib/src/findlib/findlib_config.cmx \
+    lib-findlib/src/findlib/findlib.cmi
+lib-findlib/src/findlib/findlib.cmi :
+lib-findlib/src/findlib/findlib_config.cmo :
+lib-findlib/src/findlib/findlib_config.cmx :
+lib-findlib/src/findlib/fl_args.cmo :
+lib-findlib/src/findlib/fl_args.cmx :
+lib-findlib/src/findlib/fl_dynload.cmo : \
+    lib-findlib/src/findlib/fl_split.cmo lib-findlib/src/findlib/findlib.cmi \
+    lib-findlib/src/findlib/fl_dynload.cmi
+lib-findlib/src/findlib/fl_dynload.cmx : \
+    lib-findlib/src/findlib/fl_split.cmx lib-findlib/src/findlib/findlib.cmx \
+    lib-findlib/src/findlib/fl_dynload.cmi
+lib-findlib/src/findlib/fl_dynload.cmi :
+lib-findlib/src/findlib/fl_lint.cmo : \
+    lib-findlib/src/findlib/fl_metascanner.cmi
+lib-findlib/src/findlib/fl_lint.cmx : \
+    lib-findlib/src/findlib/fl_metascanner.cmx
+lib-findlib/src/findlib/fl_meta.cmo : \
+    lib-findlib/src/findlib/fl_metatoken.cmo
+lib-findlib/src/findlib/fl_meta.cmx : \
+    lib-findlib/src/findlib/fl_metatoken.cmx
+lib-findlib/src/findlib/fl_metascanner.cmo : \
+    lib-findlib/src/findlib/fl_metatoken.cmo \
+    lib-findlib/src/findlib/fl_meta.cmo \
+    lib-findlib/src/findlib/fl_metascanner.cmi
+lib-findlib/src/findlib/fl_metascanner.cmx : \
+    lib-findlib/src/findlib/fl_metatoken.cmx \
+    lib-findlib/src/findlib/fl_meta.cmx \
+    lib-findlib/src/findlib/fl_metascanner.cmi
+lib-findlib/src/findlib/fl_metascanner.cmi :
+lib-findlib/src/findlib/fl_metatoken.cmo :
+lib-findlib/src/findlib/fl_metatoken.cmx :
+lib-findlib/src/findlib/fl_package_base.cmo : \
+    lib-findlib/src/findlib/fl_topo.cmi lib-findlib/src/findlib/fl_split.cmo \
+    lib-findlib/src/findlib/fl_metascanner.cmi \
+    lib-findlib/src/findlib/fl_package_base.cmi
+lib-findlib/src/findlib/fl_package_base.cmx : \
+    lib-findlib/src/findlib/fl_topo.cmx lib-findlib/src/findlib/fl_split.cmx \
+    lib-findlib/src/findlib/fl_metascanner.cmx \
+    lib-findlib/src/findlib/fl_package_base.cmi
+lib-findlib/src/findlib/fl_package_base.cmi : \
+    lib-findlib/src/findlib/fl_metascanner.cmi
+lib-findlib/src/findlib/fl_split.cmo :
+lib-findlib/src/findlib/fl_split.cmx :
+lib-findlib/src/findlib/fl_topo.cmo : lib-findlib/src/findlib/fl_topo.cmi
+lib-findlib/src/findlib/fl_topo.cmx : lib-findlib/src/findlib/fl_topo.cmi
+lib-findlib/src/findlib/fl_topo.cmi :
+lib-findlib/src/findlib/frontend.cmo : lib-findlib/src/findlib/fl_split.cmo \
+    lib-findlib/src/findlib/fl_package_base.cmi \
+    lib-findlib/src/findlib/fl_metascanner.cmi \
+    lib-findlib/src/findlib/fl_lint.cmo lib-findlib/src/findlib/fl_args.cmo \
+    lib-findlib/src/findlib/findlib_config.cmo \
+    lib-findlib/src/findlib/findlib.cmi
+lib-findlib/src/findlib/frontend.cmx : lib-findlib/src/findlib/fl_split.cmx \
+    lib-findlib/src/findlib/fl_package_base.cmx \
+    lib-findlib/src/findlib/fl_metascanner.cmx \
+    lib-findlib/src/findlib/fl_lint.cmx lib-findlib/src/findlib/fl_args.cmx \
+    lib-findlib/src/findlib/findlib_config.cmx \
+    lib-findlib/src/findlib/findlib.cmx
+lib-findlib/src/findlib/num_top.cmo : toplevel/toploop.cmi \
+    lib-findlib/src/findlib/num_top.cmi
+lib-findlib/src/findlib/num_top.cmx : toplevel/toploop.cmx \
+    lib-findlib/src/findlib/num_top.cmi
+lib-findlib/src/findlib/num_top.cmi :
+lib-findlib/src/findlib/num_top_printers.cmo : \
+    lib-findlib/src/findlib/num_top_printers.cmi
+lib-findlib/src/findlib/num_top_printers.cmx : \
+    lib-findlib/src/findlib/num_top_printers.cmi
+lib-findlib/src/findlib/num_top_printers.cmi :
+lib-findlib/src/findlib/test_parser.cmo : \
+    lib-findlib/src/findlib/fl_metascanner.cmi
+lib-findlib/src/findlib/test_parser.cmx : \
+    lib-findlib/src/findlib/fl_metascanner.cmx
+lib-findlib/src/findlib/topfind.cmi :
 driver/compdynlink.cmx : asmcomp/cmx_format.cmi driver/compdynlink.cmi
 driver/compdynlink.cmo : bytecomp/symtable.cmi bytecomp/opcodes.cmo \
     utils/misc.cmi bytecomp/meta.cmi bytecomp/dll.cmi utils/consistbl.cmi \

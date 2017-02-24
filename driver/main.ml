@@ -120,85 +120,12 @@ module Options = Main_args.Make_bytecomp_options (struct
   let _dtimings = set print_timings
   let _package s = packages := s :: !packages
   let _predicates s = predicates := s :: !predicates
-  let _linkpkg = set linkpkg
 
   let _args = Arg.read_arg
   let _args0 = Arg.read_arg0
 
   let anonymous = anonymous
 end)
-
-module Fl = struct
-  open Findlib
-
-  let check_package_list l =
-    (* may raise No_such_package *)
-    List.iter
-      (fun pkg ->
-         let _ = package_directory pkg in
-         ()
-      ) l
-
-  let run () =
-    let predicates = ref ("byte" :: !predicates) in
-    check_package_list !packages;
-    let eff_packages = package_deep_ancestors !predicates !packages in
-    let eff_packages_dl = Misc.Stdlib.List.remove_dups (List.map package_directory eff_packages) in
-    predicates := List.map (fun pkg -> "pkg_" ^ pkg) eff_packages @ !predicates;
-    let stdlibdir = Fl_split.norm_dir (Findlib.ocaml_stdlib()) in
-    let threads_dir = Filename.concat stdlibdir "threads" in
-    let vmthreads_dir = Filename.concat stdlibdir "vmthreads" in
-    let exclude_list = [ stdlibdir; threads_dir; vmthreads_dir ] in
-    let i_options =
-      List.flatten
-        (List.map
-	   (fun pkgdir ->
-	      let npkgdir = Fl_split.norm_dir pkgdir in
-	      if List.mem npkgdir exclude_list then
-	        []
-	      else
-                [ Misc.slashify pkgdir]
-           ) eff_packages_dl
-        )
-    in
-    let archives =
-      List.flatten
-        (List.map
-	   (fun pkg ->
-	      let al = try package_property !predicates pkg "archive"
-	        with Not_found -> "" in
-	      let pkg_dir =
-	        (* if pkg = "threads" then   (\* MAGIC *\) *)
-	        (*   match !threads with *)
-		(*     `None -> stdlibdir *)
-		(*   | `VM_threads -> vmthreads_dir *)
-		(*   | `POSIX_threads -> threads_dir *)
-	        (* else *)
-	          package_directory pkg in
-	      let pkg_dir = Misc.slashify pkg_dir in
-	      List.map
-	        (fun arch -> resolve_path ~base:pkg_dir arch)
-	        (Fl_split.in_words al)
-	   )
-	   eff_packages)
-    in
-    let dll_dirs = Misc.Stdlib.List.remove_dups eff_packages_dl in
-    let dll_options = List.map Misc.slashify dll_dirs in
-    include_dirs := !include_dirs @ i_options;
-    List.iter anonymous archives;
-    dllpaths := !dllpaths @ dll_options;
-    packages := []
-
-  let () =
-    let install_dir = Filename.dirname Config.standard_library in
-    let meta_dir = "none" in
-    let search_path = [install_dir] in
-    init_manually ~stdlib:Config.standard_library ~install_dir ~meta_dir ~search_path ()
-end
-
-let anonymous s =
-  Fl.run ();
-  anonymous s
 
 let main () =
   Clflags.add_arguments __LOC__ Options.list;

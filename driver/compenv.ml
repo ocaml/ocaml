@@ -588,6 +588,40 @@ let process_action
       else
         raise(Arg.Bad("don't know what to do with " ^ name))
 
+let check_package_list l =
+  (* may raise No_such_package *)
+  List.iter
+    (fun pkg ->
+       let _ = Findlib.package_directory pkg in
+       ()
+    ) l
+
+let get_packages () =
+  let pkgs = !Clflags.packages in
+  check_package_list pkgs;
+  Findlib.package_deep_ancestors !predicates pkgs
+
+let process_package_includes () =
+  let open Findlib in
+  let pkgs = get_packages () in
+  let pkgs_dirs = Misc.Stdlib.List.remove_dups (List.map package_directory pkgs) in
+  let stdlibdir = Fl_split.norm_dir (Findlib.ocaml_stdlib()) in
+  let threads_dir = Filename.concat stdlibdir "threads" in
+  let vmthreads_dir = Filename.concat stdlibdir "vmthreads" in
+  let exclude_list = [ stdlibdir; threads_dir; vmthreads_dir ] in
+  let i_options =
+    List.flatten
+      (List.map
+	 (fun pkgdir ->
+	    let npkgdir = Fl_split.norm_dir pkgdir in
+	    if List.mem npkgdir exclude_list then
+	      []
+	    else
+              [ Misc.slashify pkgdir]
+         ) pkgs_dirs
+      )
+  in
+  include_dirs := !include_dirs @ i_options
 
 let action_of_file name =
   if Filename.check_suffix name ".ml"
@@ -608,10 +642,37 @@ let anonymous filename = defer (action_of_file filename)
 let impl filename = defer (ProcessImplementation filename)
 let intf filename = defer (ProcessInterface filename)
 
+let get_archives () =
+  let pkgs = get_packages () in
+  List.flatten
+    (List.map
+       (fun pkg ->
+	  let al = try Findlib.package_property ("byte" :: !predicates) pkg "archive"
+            with Not_found -> "" in
+	  let pkg_dir =
+	    Findlib.package_directory pkg in
+	  let pkg_dir = Misc.slashify pkg_dir in
+	  List.map
+	    (fun arch -> Findlib.resolve_path ~base:pkg_dir arch)
+	    (Fl_split.in_words al)
+       ) pkgs
+    )
+
+let () =
+  let install_dir = Filename.dirname Config.standard_library in
+  let meta_dir = "none" in
+  let search_path = [install_dir] in
+  Findlib.init_manually ~stdlib:Config.standard_library ~install_dir ~meta_dir ~search_path ()
+
 let process_deferred_actions env =
+  process_package_includes ();
   let final_output_name = !output_name in
   (* Make sure the intermediate products don't clash with the final one
      when we're invoked like: ocamlopt -o foo bar.c baz.ml. *)
+  let pkg_archives =
+    if !compile_only then []
+    else List.map (fun s -> ProcessOtherFile s) (get_archives ())
+  in
   if not !compile_only then output_name := None;
   begin
     match final_output_name with
@@ -634,5 +695,5 @@ let process_deferred_actions env =
       | ProcessOtherFile name -> Filename.check_suffix name ".cmxa"
       | _ -> false) !deferred_actions then
     fatal "Option -a cannot be used with .cmxa input files.";
-  List.iter (process_action env) (List.rev !deferred_actions);
+  List.iter (process_action env) (pkg_archives @ List.rev !deferred_actions);
   output_name := final_output_name;
