@@ -31,6 +31,10 @@ Next version (4.05.0):
 - GPR#891: Use -fno-builtin-memcmp when building runtime with gcc.
   (Leo White)
 
+- PR#7490, GPR#1062: Fix stack overflow detection for Unix-like
+  platforms in the presence of threads.  Fix stack usage calculation
+  in the presence of threads.  (Pierre Chambart, Mark Shinwell)
+
 ### Type system:
 
 - PR#6608, GPR#901: unify record types when overriding all fields
