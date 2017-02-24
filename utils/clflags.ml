@@ -166,7 +166,6 @@ let afl_inst_ratio = ref 100           (* -afl-inst-ratio *)
 
 let packages = ref []                (* -package *)
 let predicates = ref []               (* -predicates *)
-let linkpkg = ref true                (* -linkpkg *)
 
 let simplify_rounds = ref None        (* -rounds *)
 let default_simplify_rounds = ref 1        (* -rounds *)

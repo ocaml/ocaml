@@ -199,7 +199,6 @@ val afl_instrument : bool ref
 val afl_inst_ratio : int ref
 val packages : string list ref
 val predicates : string list ref
-val linkpkg : bool ref
 
 val all_passes : string list ref
 val dumped_pass : string -> bool
