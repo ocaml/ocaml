@@ -89,6 +89,9 @@ type raw_backtrace
 external get_raw_backtrace:
   unit -> raw_backtrace = "caml_get_exception_raw_backtrace"
 
+external raise_with_backtrace: exn -> raw_backtrace -> 'a
+  = "%raise_with_backtrace"
+
 type backtrace_slot =
   | Known_location of {
       is_raise    : bool;
@@ -237,8 +240,7 @@ external get_raw_backtrace_next_slot :
 
 (* confusingly named:
    returns the *string* corresponding to the global current backtrace *)
-let get_backtrace () =
-  backtrace_to_string (convert_raw_backtrace (get_raw_backtrace ()))
+let get_backtrace () = raw_backtrace_to_string (get_raw_backtrace ())
 
 external record_backtrace: bool -> unit = "caml_record_backtrace"
 external backtrace_status: unit -> bool = "caml_backtrace_status"

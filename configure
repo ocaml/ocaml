@@ -262,6 +262,9 @@ case "$bindir" in
       bindir="$prefix/bin";;
    *) echo "BINDIR=$bindir" >> Makefile;;
 esac
+
+echo 'BYTERUN=$(BINDIR)/ocamlrun' >> Makefile
+
 case "$libdir" in
   "") echo 'LIBDIR=$(PREFIX)/lib/ocaml' >> Makefile
       libdir="$prefix/lib/ocaml";;
@@ -333,9 +336,11 @@ esac
 
 # The BYTECC make variable defines which compiler and options to use
 # to compile C code intended to be used by OCaml bytecode programs.
-# It is used inside OCaml's build system, and also when ocamlc is
-# called on a third-party C source file and no -cc command-line option
-# has been specified.
+# It is used inside OCaml's build system.
+
+# The BYTECODE_C_COMPILER make variable says how the C compiler should be
+# invoked to process a third-party C source file passed to ocamlc
+# when no -cc command-line option has been specified.
 
 # The BYTECCCOMPOPTS make variable contains options to pass to the C
 # compiler but only when compiling C files that belong to the OCaml
@@ -786,13 +791,13 @@ if test $with_sharedlibs = "yes"; then
       mksharedlibrpath="-rpath "
       shared_libraries_supported=true;;
     i[3456]86-*-darwin[89].*)
-      mksharedlib="$bytecc -bundle -flat_namespace -undefined suppress \
+      mksharedlib="$bytecc -shared -flat_namespace -undefined suppress \
                    -read_only_relocs suppress"
       bytecccompopts="$dl_defs $bytecccompopts"
       dl_needs_underscore=false
       shared_libraries_supported=true;;
     *-apple-darwin*)
-      mksharedlib="$bytecc -bundle -flat_namespace -undefined suppress \
+      mksharedlib="$bytecc -shared -flat_namespace -undefined suppress \
                    -Wl,-no_compact_unwind"
       bytecccompopts="$dl_defs $bytecccompopts"
       dl_needs_underscore=false
@@ -862,9 +867,11 @@ fi
 
 # The NATIVECC make variable defines which compiler and options to use
 # to compile C code intended to be used by OCaml native programs.
-# It is used inside OCaml's build system, and also when ocamlopt is
-# called on a third-party C source file and no -cc command-line
-# option has been specified.
+# It is used inside OCaml's build system.
+
+# The NATIVE_C_COMPILER make variable says how the C compiler should be
+# invoked to process a third-party C source file passed to ocamlopt
+# when no -cc command-line option has been specified.
 
 # The NATIVECCCOMPOPTS make variable contains options to pass to the C
 # compiler, but only when compiling C files that belong to the OCaml
@@ -1496,6 +1503,21 @@ if sh ./hasgot nice; then
   echo "#define HAS_NICE" >> s.h
 fi
 
+if sh ./hasgot dup3; then
+  inf "dup3() found"
+  echo "#define HAS_DUP3" >> s.h
+fi
+
+if sh ./hasgot pipe2; then
+  inf "pipe2() found"
+  echo "#define HAS_PIPE2" >> s.h
+fi
+
+if sh ./hasgot accept4; then
+  inf "accept4() found"
+  echo "#define HAS_ACCEPT4" >> s.h
+fi
+
 # Determine if the debugger is supported
 
 if test -n "$with_debugger"; then
@@ -1961,6 +1983,8 @@ fi
 cclibs="$cclibs $mathlib"
 
 echo "BYTECC=$bytecc $bytecccompopts" >> Makefile
+echo "BYTECODE_C_COMPILER=$bytecc $bytecccompopts $sharedcccompopts" \
+  >> Makefile
 echo "BYTECCCOMPOPTS=$byteccprivatecompopts" >> Makefile
 echo "BYTECCLINKOPTS=$bytecclinkopts" >> Makefile
 echo "BYTECCLIBS=$cclibs $dllib $curseslibs $pthread_link \
@@ -1985,6 +2009,7 @@ echo "ARCH=$arch" >> Makefile
 echo "MODEL=$model" >> Makefile
 echo "SYSTEM=$system" >> Makefile
 echo "NATIVECC=$nativecc $nativecccompopts" >> Makefile
+echo "NATIVE_C_COMPILER=$nativecc $nativecccompopts" >> Makefile
 echo "NATIVECCCOMPOPTS=$nativeccprivatecompopts" >> Makefile
 echo "NATIVECCPROFOPTS=$nativeccprofopts" >> Makefile
 echo "NATIVECCLINKOPTS=$nativecclinkopts" >> Makefile
@@ -1998,9 +2023,7 @@ echo "DYNLINKOPTS=$dllib" >> Makefile
 echo "OTHERLIBRARIES=$otherlibraries" >> Makefile
 echo "CC_PROFILE=$cc_profile" >> Makefile
 echo "SYSTHREAD_SUPPORT=$systhread_support" >> Makefile
-echo "PARTIALLD=$partialld" >> Makefile
-echo "PACKLD=\$(PARTIALLD) \$(NATIVECCLINKOPTS) -o " \
-  | sed -e 's/ $/\\ /' >> Makefile
+echo "PACKLD=$partialld $nativecclinkopts -o\\ " >> Makefile
 echo "IFLEXDIR=$iflexdir" >> Makefile
 echo "O=o" >> Makefile
 echo "A=a" >> Makefile

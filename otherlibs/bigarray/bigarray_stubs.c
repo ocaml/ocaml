@@ -106,7 +106,7 @@ caml_ba_multov(uintnat a, uintnat b, int * overflow)
      Overflow occurs if:
         ah * bh is not 0, i.e. ah != 0 and bh != 0
      OR ah * bl has high half != 0
-     OR ah * bl has high half != 0
+     OR al * bh has high half != 0
      OR the sum al * bl + LOW_HALF(ah * bl) << HALF_SIZE
                         + LOW_HALF(al * bh) << HALF_SIZE overflows.
      This sum is equal to p = (a * b) modulo word size. */
@@ -121,6 +121,7 @@ caml_ba_multov(uintnat a, uintnat b, int * overflow)
   if (p < p1 || p1 < p2) *overflow = 1; /* overflow in sums */
   return p;
 #undef HALF_SIZE
+#undef HALF_MASK
 #undef LOW_HALF
 #undef HIGH_HALF
 }

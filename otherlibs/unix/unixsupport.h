@@ -45,6 +45,11 @@ extern void caml_unix_check_path(value path, char * cmdname);
 
 extern char ** cstringvect(value arg, char * cmdname);
 
+extern int unix_cloexec_default;
+extern int unix_cloexec_p(value cloexec);
+extern void unix_set_cloexec(int fd, char * cmdname, value arg);
+extern void unix_clear_cloexec(int fd, char * cmdname, value arg);
+
 #ifdef __cplusplus
 }
 #endif

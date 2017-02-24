@@ -16,14 +16,16 @@
 #include <caml/mlvalues.h>
 #include "unixsupport.h"
 
-CAMLprim value unix_dup2(value fd1, value fd2)
+CAMLprim value unix_dup2(value cloexec, value fd1, value fd2)
 {
   HANDLE oldh, newh;
 
   oldh = Handle_val(fd2);
   if (! DuplicateHandle(GetCurrentProcess(), Handle_val(fd1),
                         GetCurrentProcess(), &newh,
-                        0L, TRUE, DUPLICATE_SAME_ACCESS)) {
+                        0L,
+                        unix_cloexec_p(cloexec) ? FALSE : TRUE,
+                        DUPLICATE_SAME_ACCESS)) {
     win32_maperr(GetLastError());
     return -1;
   }

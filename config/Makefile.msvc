@@ -22,6 +22,9 @@ PREFIX=C:/ocamlms
 ### Where to install the binaries.
 BINDIR=$(PREFIX)/bin
 
+### Standard runtime system
+BYTERUN=ocamlrun
+
 ### Where to install the standard library
 LIBDIR=$(PREFIX)/lib
 
@@ -76,8 +79,10 @@ SYSTHREAD_SUPPORT=true
 EXTRALIBS=
 CMXS=cmxs
 NATDYNLINK=true
+NATDYNLINKOPTS=
 RUNTIMED=false
 ASM_CFI_SUPPORTED=false
+WITH_FRAME_POINTERS=false
 UNIX_OR_WIN32=win32
 UNIXLIB=win32unix
 GRAPHLIB=win32graph
@@ -94,6 +99,7 @@ AFL_INSTRUMENT=false
 
 ### Which C compiler to use for the bytecode interpreter.
 BYTECC=cl -nologo -D_CRT_SECURE_NO_DEPRECATE -O2 -Gy- -MD
+BYTECODE_C_COMPILER=$(BYTECC)
 
 ### Additional compile-time options for $(BYTECC).  (For static linking.)
 BYTECCCOMPOPTS=-DCAML_NAME_SPACE
@@ -118,7 +124,7 @@ CPP=cl -nologo -EP
 FLEXLINK_CMD=flexlink
 FLEXDLL_CHAIN=msvc
 # FLEXLINK_FLAGS must be safe to insert in an OCaml string
-#   (see ocamlmklibconfig.ml in tools/Makefile.nt)
+#   (see ocamlmklibconfig.ml in tools/Makefile)
 FLEXLINK_FLAGS=-merge-manifest -stack 16777216
 FLEXLINK=$(FLEXLINK_CMD) $(FLEXLINK_FLAGS)
 FLEXDIR:=$(shell $(FLEXLINK) -where 2>/dev/null)
@@ -172,7 +178,7 @@ SYSTEM=win32
 
 ### Which C compiler to use for the native-code compiler.
 NATIVECC=cl -nologo -D_CRT_SECURE_NO_DEPRECATE -O2 -Gy- -MD
-
+NATIVE_C_COMPILER=$(NATIVECC)
 ### Additional compile-time options for $(NATIVECC).
 NATIVECCCOMPOPTS=-DCAML_NAME_SPACE
 
@@ -195,11 +201,6 @@ OTHERLIBRARIES=win32unix systhreads str num win32graph dynlink bigarray
 ### Name of the target architecture for the "num" library
 BNG_ARCH=generic
 BNG_ASM_LEVEL=0
-
-############# Aliases for common commands
-
-MAKEREC=$(MAKE) -f Makefile.nt
-MAKECMD=$(MAKE)
 
 ############# for the testsuite makefiles
 #ml let topdir = "" and wintopdir = "";;

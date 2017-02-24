@@ -262,7 +262,11 @@ type open_flag =
   | O_SHARE_DELETE              (** Windows only: allow the file to be deleted
                                    while still open *)
   | O_CLOEXEC                   (** Set the close-on-exec flag on the
-                                   descriptor returned by {!openfile} *)
+                                   descriptor returned by {!openfile}.
+                                   See {!set_close_on_exec} for more
+                                   information. *)
+  | O_KEEPEXEC                  (** Clear the close-on-exec flag.
+                                    This is currently the default. *)
 (** The flags to {!Unix.openfile}. *)
 
 
@@ -297,11 +301,13 @@ val single_write : file_descr -> bytes -> int -> int -> int
 
 val write_substring : file_descr -> string -> int -> int -> int
 (** Same as [write], but take the data from a string instead of a byte
-    sequence. *)
+    sequence.
+    @since 4.02.0 *)
 
 val single_write_substring : file_descr -> string -> int -> int -> int
 (** Same as [single_write], but take the data from a string instead of
-    a byte sequence. *)
+    a byte sequence.
+    @since 4.02.0 *)
 
 (** {6 Interfacing with the standard input/output library} *)
 
@@ -509,7 +515,8 @@ val map_file :
   file is shrunk.
 
   [Invalid_argument] or [Failure] may be raised in cases where argument
-  validation fails. *)
+  validation fails.
+  @since 4.05.0 *)
 
 (** {6 Operations on file names} *)
 
@@ -574,13 +581,17 @@ val access : string -> access_permission list -> unit
 (** {6 Operations on file descriptors} *)
 
 
-val dup : file_descr -> file_descr
+val dup : ?cloexec:bool -> file_descr -> file_descr
 (** Return a new file descriptor referencing the same file as
-   the given descriptor. *)
+   the given descriptor.
+   See {!set_close_on_exec} for documentation on the [cloexec]
+   optional argument. *)
 
-val dup2 : file_descr -> file_descr -> unit
+val dup2 : ?cloexec:bool -> file_descr -> file_descr -> unit
 (** [dup2 fd1 fd2] duplicates [fd1] to [fd2], closing [fd2] if already
-   opened. *)
+   opened.
+   See {!set_close_on_exec} for documentation on the [cloexec]
+   optional argument. *)
 
 val set_nonblock : file_descr -> unit
 (** Set the ``non-blocking'' flag on the given descriptor.
@@ -598,7 +609,48 @@ val set_close_on_exec : file_descr -> unit
 (** Set the ``close-on-exec'' flag on the given descriptor.
    A descriptor with the close-on-exec flag is automatically
    closed when the current process starts another program with
-   one of the [exec] functions. *)
+   one of the [exec], [create_process] and [open_process] functions.
+
+   It is often a security hole to leak file descriptors opened on, say,
+   a private file to an external program: the program, then, gets access
+   to the private file and can do bad things with it.  Hence, it is
+   highly recommended to set all file descriptors ``close-on-exec'',
+   except in the very few cases where a file descriptor actually needs
+   to be transmitted to another program.  
+
+   The best way to set a file descriptor ``close-on-exec'' is to create
+   it in this state.  To this end, the [openfile] function has
+   [O_CLOEXEC] and [O_KEEPEXEC] flags to enforce ``close-on-exec'' mode
+   or ``keep-on-exec'' mode, respectively.  All other operations in
+   the Unix module that create file descriptors have an optional
+   argument [?cloexec:bool] to indicate whether the file descriptor
+   should be created in ``close-on-exec'' mode (by writing
+   [~cloexec:true]) or in ``keep-on-exec'' mode (by writing
+   [~cloexec:false]).  For historical reasons, the default file
+   descriptor creation mode is ``keep-on-exec'', if no [cloexec] optional
+   argument is given.  This is not a safe default, hence it is highly
+   recommended to pass explicit [cloexec] arguments to operations that
+   create file descriptors.
+
+   The [cloexec] optional arguments and the [O_KEEPEXEC] flag were introduced
+   in OCaml 4.05.  Earlier, the common practice was to create file descriptors
+   in the default, ``keep-on-exec'' mode, then call [set_close_on_exec]
+   on those freshly-created file descriptors.  This is not as safe as
+   creating the file descriptor in ``close-on-exec'' mode because, in
+   multithreaded programs, a window of vulnerability exists between the time
+   when the file descriptor is created and the time [set_close_on_exec]
+   completes.  If another thread spawns another program during this window,
+   the descriptor will leak, as it is still in the ``keep-on-exec'' mode.
+
+   Regarding the atomicity guarantees given by [~cloexec:true] or by
+   the use of the [O_CLOEXEC] flag: on all platforms it is guaranteed
+   that a concurrently-executing Caml thread cannot leak the descriptor
+   by starting a new process.  On Linux, this guarantee extends to
+   concurrently-executing C threads.  As of Feb 2017, other operating
+   systems lack the necessary system calls and still expose a window
+   of vulnerability during which a C thread can see the newly-created
+   file descriptor in ``keep-on-exec'' mode.
+ *)
 
 val clear_close_on_exec : file_descr -> unit
 (** Clear the ``close-on-exec'' flag on the given descriptor.
@@ -645,10 +697,12 @@ val closedir : dir_handle -> unit
 (** {6 Pipes and redirections} *)
 
 
-val pipe : unit -> file_descr * file_descr
+val pipe : ?cloexec:bool -> unit -> file_descr * file_descr
 (** Create a pipe. The first component of the result is opened
    for reading, that's the exit to the pipe. The second component is
-   opened for writing, that's the entrance to the pipe. *)
+   opened for writing, that's the entrance to the pipe.
+   See {!set_close_on_exec} for documentation on the [cloexec]
+   optional argument. *)
 
 val mkfifo : string -> file_perm -> unit
 (** Create a named pipe with the given permissions (see {!umask}).
@@ -771,7 +825,8 @@ val has_symlink : unit -> bool
 (** Returns [true] if the user is able to create symbolic links. On Windows,
    this indicates that the user not only has the SeCreateSymbolicLinkPrivilege
    but is also running elevated, if necessary. On other platforms, this is
-   simply indicates that the symlink system call is available. *)
+   simply indicates that the symlink system call is available.
+   @since 4.03.0 *)
 
 val readlink : string -> string
 (** Read the contents of a symbolic link. *)
@@ -830,7 +885,14 @@ val lockf : file_descr -> lock_command -> int -> unit
    the specified region.
    Finally, the [F_TEST] command tests whether a write lock can be
    acquired on the specified region, without actually putting a lock.
-   It returns immediately if successful, or fails otherwise. *)
+   It returns immediately if successful, or fails otherwise.
+
+   What happens when a process tries to lock a region of a file that is
+   already locked by the same process depends on the OS.  On POSIX-compliant
+   systems, the second lock operation succeeds and may "promote" the older
+   lock from read lock to write lock.  On Windows, the second lock
+   operation will block or fail.
+*)
 
 
 (** {6 Signals}
@@ -912,11 +974,14 @@ val gettimeofday : unit -> float
 
 val gmtime : float -> tm
 (** Convert a time in seconds, as returned by {!Unix.time}, into a date and
-   a time. Assumes UTC (Coordinated Universal Time), also known as GMT. *)
+   a time. Assumes UTC (Coordinated Universal Time), also known as GMT.
+   To perform the inverse conversion, set the TZ environment variable
+   to "UTC", use {!mktime}, and then restore the original value of TZ. *)
 
 val localtime : float -> tm
 (** Convert a time in seconds, as returned by {!Unix.time}, into a date and
-   a time. Assumes the local time zone. *)
+   a time. Assumes the local time zone.
+   The function performing the inverse conversion is {!mktime}. *)
 
 val mktime : tm -> float * tm
 (** Convert a date and time, specified by the [tm] argument, into
@@ -1146,22 +1211,30 @@ type sockaddr =
    domain; [addr] is the Internet address of the machine, and
    [port] is the port number. *)
 
-val socket : socket_domain -> socket_type -> int -> file_descr
+val socket :
+    ?cloexec:bool -> socket_domain -> socket_type -> int -> file_descr
 (** Create a new socket in the given domain, and with the
    given kind. The third argument is the protocol type; 0 selects
-   the default protocol for that kind of sockets. *)
+   the default protocol for that kind of sockets.
+   See {!set_close_on_exec} for documentation on the [cloexec]
+   optional argument. *)
 
 val domain_of_sockaddr: sockaddr -> socket_domain
 (** Return the socket domain adequate for the given socket address. *)
 
 val socketpair :
-  socket_domain -> socket_type -> int -> file_descr * file_descr
-(** Create a pair of unnamed sockets, connected together. *)
+     ?cloexec:bool -> socket_domain -> socket_type -> int ->
+                                                 file_descr * file_descr
+(** Create a pair of unnamed sockets, connected together.
+   See {!set_close_on_exec} for documentation on the [cloexec]
+   optional argument. *)
 
-val accept : file_descr -> file_descr * sockaddr
+val accept : ?cloexec:bool -> file_descr -> file_descr * sockaddr
 (** Accept connections on the given socket. The returned descriptor
    is a socket connected to the client; the returned address is
-   the address of the connecting client. *)
+   the address of the connecting client.
+   See {!set_close_on_exec} for documentation on the [cloexec]
+   optional argument. *)
 
 val bind : file_descr -> sockaddr -> unit
 (** Bind a socket to an address. *)
@@ -1212,7 +1285,8 @@ val send : file_descr -> bytes -> int -> int -> msg_flag list -> int
 
 val send_substring : file_descr -> string -> int -> int -> msg_flag list -> int
 (** Same as [send], but take the data from a string instead of a byte
-    sequence. *)
+    sequence.
+    @since 4.02.0 *)
 
 val sendto :
   file_descr -> bytes -> int -> int -> msg_flag list -> sockaddr -> int
@@ -1221,7 +1295,8 @@ val sendto :
 val sendto_substring :
   file_descr -> string -> int -> int -> msg_flag list -> sockaddr -> int
 (** Same as [sendto], but take the data from a string instead of a
-    byte sequence. *)
+    byte sequence.
+    @since 4.02.0 *)
 
 
 (** {6 Socket options} *)

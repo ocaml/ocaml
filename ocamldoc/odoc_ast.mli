@@ -92,7 +92,7 @@ module Typedtree_search :
 module Analyser :
   functor (My_ir : Odoc_sig.Info_retriever) ->
     sig
-      (** This function takes a file name, a file containg the code and
+      (** This function takes a file name, a file containing the code and
          the typed tree obtained from the compiler.
          It goes through the tree, creating values for encountered
          functions, modules, ..., and looking in the source file for comments.*)

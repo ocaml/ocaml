@@ -1,3 +1,34 @@
+Working version
+---------------
+
+(Changes that can break existing programs are marked with a "*")
+
+### Language features:
+
+### Code generation and optimizations:
+
+- PR#5324, GPR#375: An alternative Linear Scan register allocator for
+  ocamlopt, activated with the -linscan command-line flag. This
+  allocator represents a trade-off between worse generated code
+  performance for higher compilation speed (especially interesting in
+  some cases graph coloring is necessarily quadratic).
+  (Marcell Fischbach and Benedikt Meurer, adapted by Nicolas Ojeda
+  Bar, review by Nicolas Ojeda Bar and Alain Frisch)
+
+
+### Tools:
+
+- GPR#1045: ocamldep, add a "-shared" option to generate dependencies
+  for native plugin files (i.e. .cmxs files)
+  (Florian Angeletti, suggestion by Sébastien Hinderer)
+
+### Bug fixes
+
+- PR#7468: possible GC problem in caml_alloc_sprintf
+  (Xavier Leroy, discovery by Olivier Andrieu)
+
+
+
 Next version (4.05.0):
 ----------------------
 
@@ -15,6 +46,10 @@ Next version (4.05.0):
   and "0 mod <expr>" in the case when <expr> was a non-constant
   evaluating to zero (Mark Shinwell)
 
+- MPR#6927, GPR#988: On macOS, when compiling bytecode stubs, plugins,
+  and shared libraries through -output-obj, generate dylibs instead of
+  bundles. (whitequark)
+
 ### Runtime system:
 
 - PR#7423, GPR#946: expose new exception-raising functions
@@ -25,6 +60,8 @@ Next version (4.05.0):
   were inconvient for dynamically-allocated messages; the messages
   passed to the new functions are handled by the garbage collector.
   (Gabriel Scherer, review by Mark Shinwell, request by Immanuel Litzroth)
+
+- GPR#953 (was MPR#385): Add caml_startup_exn (Mark Shinwell)
 
 - GPR#891: Use -fno-builtin-memcmp when building runtime with gcc.
   (Leo White)
@@ -55,6 +92,10 @@ Next version (4.05.0):
 - PR#7172, GPR#970: add extra (ocamlc -config) options
   int_size, word_size, ext_exe
   (Gabriel Scherer, request by Daniel Buenzli)
+
+- PR#7479: make sure "ocamlc -pack" is only given .cmo and .cmi files,
+  and that "ocamlopt -pack" is only given .cmx and .cmi files.
+  (Xavier Leroy)
 
 - GPR#829: better error when opening a module aliased to a functor
   (Alain Frisch)
@@ -114,11 +155,27 @@ Next version (4.05.0):
 - GPR#999: Arg, do not repeat thrice usage_msg when reporting an error
   (Florian Angeletti, review by Gabriel Scherer)
 
+### Debugging and profiling:
+
+- PR#7258: ocamldebug's "install_printer" command had problems with
+  module aliases
+  (Xavier Leroy)
+
+- GPR#378: Add [Printexc.raise_with_backtrace] raise an exception using
+  an explicit backtrace
+  (François Bobot, review by Gabriel Scherer, Xavier Leroy, Damien Doligez,
+   Frédéric Bour)
+
 ### Manual and documentation:
 
 - PR#6597, GPR#1030: add forward references to language extensions
   that extend non-terminal symbols in the language reference section.
   (Florian Angeletti, review by Gabriel Scherer)
+
+- GPR#916: new tool lintapidiff, use it to update the manual with
+  @since annotations for API changes introduced between 4.00-4.05.
+  (Edwin Török, review by Gabriel Scherer, discussion with Alain Frisch,
+   David Allsopp, Sébastien Hinderer, Damien Doligez and Xavier Leroy)
 
 - GPR#939: activate the caml_example environment in the language
   extensions section of the manual. Convert some existing code
@@ -132,6 +189,25 @@ Next version (4.05.0):
   inspired by John Whitington)
 
 ### Other libraries:
+
+- GPR#650: in the Unix library, add `?cloexec:bool` optional arguments to
+  functions that create file descriptors (`dup`, `dup2`, `pipe`, `socket`,
+  `socketpair`, `accept`).  Implement these optional arguments in the
+  most atomic manner provided by the operating system to set (or clear)
+  the close-on-exec flag at the same time the file descriptor is created,
+  reducing the risk of race conditions with `exec` or `create_process`
+  calls running in other threads, and improving security.  Also: add a
+  `O_KEEPEXEC` flag for `openfile` by symmetry with `O_CLOEXEC`.
+  (Xavier Leroy)
+
+- PR#7158: Event.sync, Mutex.create, Condition.create cause too many GCs.
+  The fix is to no longer consider mutexes and condition variables
+  as rare kernel resources.
+  (Xavier Leroy)
+
+- PR#7264: document the different behaviors of Unix.lockf under POSIX
+  and under Win32.
+  (Xavier Leroy, report by David Allsopp)
 
 - MPR#7339, GPR#787: Support the '0 dimension' case for bigarrays
   (see Bigarray documentation)
@@ -165,6 +241,10 @@ Next version (4.05.0):
 - PR#7333: ocamldoc, use the first sentence of text file as
   a short description in overviews.
   (Florian Angeletti)
+
+- PR#7488: ocamldoc, wrong Latex output for variant types
+  with constructors without arguments.
+  (Florian Angeletti, report by Xavier Leroy)
 
 - GPR#848: ocamldoc, escape link targets in HTML output
   (Etienne Millon, review by Gabriel Scherer, Florian Angeletti and
@@ -234,6 +314,9 @@ Next version (4.05.0):
   opcode information from C headers.
   (Nicolas Ojeda Bar)
 
+- GPR#1033: merge Unix and Windows build systems in the root directory
+  (Sébastien Hinderer, review by Damien Doligez and Adrien Nader)
+
 ### Internal/compiler-libs changes:
 
 - GPR#673: distinguish initialization of block fields from mutation in lambda.
@@ -267,9 +350,15 @@ Next version (4.05.0):
   uninitialized caml_global_data (only changes the bytecode behavior)
   (Gabriel Scherer, review by Xavier Leroy)
 
+- PR#6903: Unix.execvpe doesn't change environment on Cygwin
+  (Xavier Leroy)
+
 - PR#7216, GPR#949: don't require double parens in Functor((val x))
   (Jacques Garrigue, review by Valentin Gatien-Baron)
 
+- PR#7407: Two not-quite-standard C idioms rejected by SUNWSPro compilers
+  (Xavier Leroy)
+  
 - PR#7414, GPR#929: Soundness bug with non-generalized type variable and functor
   (Jacques Garrigue, report by Leo White)
 
@@ -284,6 +373,9 @@ Next version (4.05.0):
 
 - PR#7437: typing assert failure with nonrec priv
   (Jacques Garrigue, report by Anil Madhavapeddy)
+
+- PR#7438: warning +34 exposes #row with private types
+  (Alain Frisch, report by Anil Madhavapeddy)
 
 - PR#7443, GPR#990: spurious unused open warning with local open in patterns
   (Florian Angeletti, report by Gabriel Scherer
@@ -308,6 +400,8 @@ Next version (4.05.0):
 - GPR#881: short-paths did not apply to some polymorphic variants
   (Valentin Gatien-Baron, review by Leo White)
 
+- GPR#886: Fix Ctype.moregeneral's handling of row_name (Leo White)
+
 - GPR#934: check for integer overflow in Bytes.extend
   (Jeremy Yallop, review by Gabriel Scherer)
 
@@ -322,6 +416,16 @@ Next version (4.05.0):
 
 - PR#7427, GPR#959: Don't delete let bodies in Cmmgen (Mark Shinwell)
 
+- GPR#965, PR#7426: Fix fatal error during object compilation (also
+  introduces new [Pfield_computed] and [Psetfield_computed] primitives)
+  (Mark Shinwell)
+
+- PR#7346, GPR#966: Fix evaluation order problem whereby expressions could
+  be incorrectly re-ordered when compiling with Flambda.  This also fixes one
+  example of evaluation order in the native code compiler not matching the
+  bytecode compiler (even when not using Flambda)
+  (Mark Shinwell, Leo White, code review by Pierre Chambart)
+
 - GPR#967, PR#6136: Fix Closure so that overapplication evaluation order
   matches the bytecode compiler and Flambda.
   (Mark Shinwell, report by Jeremy Yallop, review by Frédéric Bour)
@@ -333,6 +437,25 @@ Next version (4.05.0):
 - GPR#987: alloc_sockaddr: don't assume a null terminator. It is not inserted
   on macOS by system calls that fill in a struct sockaddr (e.g. getsockname).
   (Anton Bachin)
+
+- GPR#998: Do not delete unused closures in un_anf.ml.
+  (Leo White)
+
+- GPR#1019: Fix fatal error in Flambda mode "[functions] does not map set of
+  closures ID" (Pierre Chambart, code review by Mark Shinwell and Leo White)
+
+- GPR#1042: Fix escaping of command-line arguments in
+  Unix.create_process{,_env} under Windows.  Arguments with tabs should now
+  be received verbatim by the child process.
+  (Nicolas Ojeda Bar, Andreas Hauptmann review by Xavier Leroy)
+
+- GPR#1043: Allow Windows CRLF line-endings in ocamlyacc on Unix and Cygwin.
+  (David Allsopp, review by Damien Doligez and Xavier Leroy)
+
+### Toplevel and debugger:
+
+- PR#7060, GPR#1035: Print exceptions in installed custom printers
+  (Tadeu Zagallo, review by David Allsopp)
 
 Next minor version (4.04.1):
 ----------------------------
@@ -441,6 +564,10 @@ OCaml 4.04.0 (4 Nov 2016):
 - PR#6820, GPR#560: Add Obj.reachable_words to compute the
   "transitive" heap size of a value
   (Alain Frisch, review by Mark Shinwell and Damien Doligez)
+
+-* PR#7279 GPR#710: `Weak.get_copy` `Ephemeron.*_copy` doesn't copy anymore custom blocks
+  (François Bobot, Alain Frisch, bug reported by Martin R. Neuhäußer,
+  review by Thomas Braibant and Damien Doligez)
 
 - GPR#473: Provide `Sys.backend_type` so that user can write backend-specific
   code in some cases (for example,  code generator).

@@ -14,14 +14,20 @@
 #**************************************************************************
 
 BASEDIR=../..
-LIBRARIES=unix bigarray
-ADD_COMPFLAGS=-I $(OTOPDIR)/otherlibs/$(UNIXLIBVAR)unix \
-              -I $(OTOPDIR)/otherlibs/bigarray
-LD_PATH=$(TOPDIR)/otherlibs/$(UNIXLIBVAR)unix:$(TOPDIR)/otherlibs/bigarray
+LIBRARIES=unix
+ADD_COMPFLAGS=-I $(OTOPDIR)/otherlibs/$(UNIXLIBVAR)unix
+LD_PATH=$(TOPDIR)/otherlibs/$(UNIXLIBVAR)unix
 
 ifeq ($(OS),Windows_NT)
 ADD_BYTERUN_FLAGS="-I $(OTOPDIR)/otherlibs/win32unix"
 endif
 
+default: reflector.exe fdstatus.exe cmdline_prog.exe
+	$(MAKE) check
+
 include $(BASEDIR)/makefiles/Makefile.several
 include $(BASEDIR)/makefiles/Makefile.common
+
+%.exe: %.c
+	@$(BYTECC) $(if $(filter msvc,$(CCOMPTYPE)),/Fe$*.exe,-o $*.exe) $*.c
+

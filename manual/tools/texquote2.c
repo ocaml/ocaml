@@ -70,7 +70,7 @@ int main(argc, argv)
     }
     if (incaml) {
       fputs(line, stdout);
-      if (isprefix(line, "\\endcaml")) incaml = 0;
+      if (isprefix(line, "\\endcamlexample")) incaml = 0;
       continue;
     }
     if (inverbatim){
@@ -95,7 +95,7 @@ int main(argc, argv)
       inverbatim_like = 1;
       continue;
     }
-    if (isprefix(line, "\\caml")) {
+    if (isprefix(line, "\\camlexample")) {
       fputs(line, stdout);
       incaml = 1;
       continue;

@@ -33,7 +33,6 @@ A nice exception
 
 \begin{ocamldoccode}
 exception Less of int
-
 \end{ocamldoccode}
 \index{Less@\verb`Less`}
 \begin{ocamldocdescription}
@@ -221,7 +220,6 @@ Error field documentation {\tt{name:string}}
 \end{ocamldoccomment}
 \begin{ocamldoccode}
 {\char125}
-
 \end{ocamldoccode}
 \index{Error@\verb`Error`}
 
@@ -241,7 +239,6 @@ Field documentation for {\tt{E}} in ext
 \end{ocamldoccomment}
 \begin{ocamldoccode}
 {\char125}
-
 \end{ocamldoccode}
 \begin{ocamldoccomment}
 Constructor E documentation
@@ -258,7 +255,6 @@ Some field documentations for {\tt{F}}
 \end{ocamldoccomment}
 \begin{ocamldoccode}
 {\char125}
-
 \end{ocamldoccode}
 \begin{ocamldoccomment}
 Constructor F documentation
@@ -275,7 +271,6 @@ The last and least field documentation
 \end{ocamldoccomment}
 \begin{ocamldoccode}
 {\char125}
-
 \end{ocamldoccode}
 \begin{ocamldoccomment}
 Constructor G documentation

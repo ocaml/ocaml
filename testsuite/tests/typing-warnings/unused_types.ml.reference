@@ -54,4 +54,5 @@ Warning 38: extension constructor Private_ext is never used to build values.
 It is exported or rebound as a private extension.
 module Unused_private_extension :
   sig type t = .. type t += private Private_ext end
+#           module Pr7438 : sig  end
 # 

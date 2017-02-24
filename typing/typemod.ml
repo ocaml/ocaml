@@ -125,7 +125,7 @@ let check_type_decl env loc id row_id newdecl decl rs rem =
   let env =
     match row_id with
     | None -> env
-    | Some id -> Env.add_type ~check:true id newdecl env
+    | Some id -> Env.add_type ~check:false id newdecl env
   in
   let env = if rs = Trec_not then env else add_rec_types env rem in
   Includemod.type_declarations env id newdecl decl;
@@ -188,7 +188,7 @@ let merge_constraint initial_env loc sg constr =
           }
         and id_row = Ident.create (s^"#row") in
         let initial_env =
-          Env.add_type ~check:true id_row decl_row initial_env
+          Env.add_type ~check:false id_row decl_row initial_env
         in
         let tdecl = Typedecl.transl_with_constraint
                         initial_env id (Some(Pident id_row)) decl sdecl in
