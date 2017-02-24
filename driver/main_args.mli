@@ -136,6 +136,9 @@ module type Bytecomp_options = sig
   val _dinstr : unit -> unit
 
   val _use_prims : string -> unit
+
+  val _package : string -> unit
+  val _predicates : string -> unit
 end;;
 
 module type Bytetop_options = sig

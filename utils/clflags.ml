@@ -164,6 +164,9 @@ let inlining_report = ref false    (* -inlining-report *)
 let afl_instrument = ref Config.afl_instrument (* -afl-instrument *)
 let afl_inst_ratio = ref 100           (* -afl-inst-ratio *)
 
+let packages = ref []                (* -package *)
+let predicates = ref []               (* -predicates *)
+
 let simplify_rounds = ref None        (* -rounds *)
 let default_simplify_rounds = ref 1        (* -rounds *)
 let rounds () =

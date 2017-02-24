@@ -56,7 +56,7 @@ CAMLC=$(CAMLRUN) boot/ocamlc -g -nostdlib -I boot -use-prims byterun/primitives
 CAMLOPT=$(CAMLRUN) ./ocamlopt -g -nostdlib -I stdlib -I otherlibs/dynlink
 ARCHES=amd64 i386 arm arm64 power sparc s390x
 INCLUDES=-I utils -I parsing -I typing -I bytecomp -I middle_end \
-        -I middle_end/base_types -I asmcomp -I driver -I toplevel
+        -I middle_end/base_types -I asmcomp -I lib-findlib/src/findlib -I driver -I toplevel
 
 COMPFLAGS=-strict-sequence -principal -absname -w +a-4-9-41-42-44-45-48 \
 	  -warn-error A \
@@ -132,6 +132,17 @@ BYTECOMP=bytecomp/meta.cmo bytecomp/instruct.cmo bytecomp/bytegen.cmo \
   bytecomp/bytelink.cmo bytecomp/bytelibrarian.cmo bytecomp/bytepackager.cmo \
   driver/compdynlink.cmo driver/compplugin.cmo \
   driver/errors.cmo driver/compile.cmo
+
+FINDLIB=lib-findlib/src/findlib/findlib_config.cmo \
+  lib-findlib/src/findlib/fl_split.cmo \
+  lib-findlib/src/findlib/fl_metatoken.cmo \
+  lib-findlib/src/findlib/fl_meta.cmo \
+  lib-findlib/src/findlib/fl_metascanner.cmo \
+  lib-findlib/src/findlib/fl_topo.cmo \
+  lib-findlib/src/findlib/fl_package_base.cmo \
+  lib-findlib/src/findlib/findlib.cmo \
+  lib-findlib/src/findlib/fl_args.cmo \
+  lib-findlib/src/findlib/fl_lint.cmo
 
 ARCH_SPECIFIC =\
   asmcomp/arch.ml asmcomp/proc.ml asmcomp/CSE.ml asmcomp/selection.ml \
@@ -731,6 +742,22 @@ compilerlibs/ocamlcommon.cma: $(COMMON)
 partialclean::
 	rm -f compilerlibs/ocamlcommon.cma
 
+# Findlib
+
+lib-findlib/src/findlib/findlib.cma: $(FINDLIB)
+	$(CAMLC) -a -o $@ $^
+
+partialclean::
+	rm -f lib-findlib/src/findlib/findlib.cma
+
+lib-findlib/src/findlib/fl_meta.ml: lib-findlib/src/findlib/fl_meta.mll
+	$(CAMLLEX) $<
+
+beforedepend:: lib-findlib/src/findlib/fl_meta.ml
+
+partialclean::
+	rm -f lib-findlib/src/findlib/fl_meta.ml
+
 # The bytecode compiler
 
 compilerlibs/ocamlbytecomp.cma: $(BYTECOMP)
@@ -738,7 +765,7 @@ compilerlibs/ocamlbytecomp.cma: $(BYTECOMP)
 partialclean::
 	rm -f compilerlibs/ocamlbytecomp.cma
 
-ocamlc: compilerlibs/ocamlcommon.cma compilerlibs/ocamlbytecomp.cma $(BYTESTART)
+ocamlc: compilerlibs/ocamlcommon.cma compilerlibs/ocamlbytecomp.cma lib-findlib/src/findlib/findlib.cma $(BYTESTART)
 	$(CAMLC) $(LINKFLAGS) -compat-32 -o $@ $^
 
 partialclean::
@@ -1269,7 +1296,7 @@ partialclean::
 .PHONY: depend
 depend: beforedepend
 	(for d in utils parsing typing bytecomp asmcomp middle_end \
-	 middle_end/base_types driver toplevel; \
+	 middle_end/base_types driver toplevel lib-findlib/src/findlib; \
 	 do $(CAMLDEP) -slash $(DEPFLAGS) $$d/*.mli $$d/*.ml; \
 	 done) > .depend
 	$(CAMLDEP) -slash $(DEPFLAGS) -native \

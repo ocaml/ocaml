@@ -118,6 +118,8 @@ module Options = Main_args.Make_bytecomp_options (struct
   let _dlambda = set dump_lambda
   let _dinstr = set dump_instr
   let _dtimings = set print_timings
+  let _package s = Clflags.packages := s :: !Clflags.packages
+  let _predicates s = Clflags.predicates := s :: !Clflags.predicates
 
   let _args = Arg.read_arg
   let _args0 = Arg.read_arg0
@@ -125,11 +127,52 @@ module Options = Main_args.Make_bytecomp_options (struct
   let anonymous = anonymous
 end)
 
+module Fl = struct
+  open Findlib
+
+  let check_package_list l =
+    (* may raise No_such_package *)
+    List.iter
+      (fun pkg ->
+         let _ = package_directory pkg in
+         ()
+      )
+      l
+
+  let run () =
+    let predicates = ref ("byte" :: !Clflags.predicates) in
+    check_package_list !Clflags.packages;
+    let eff_packages = package_deep_ancestors !predicates !Clflags.packages in
+    let eff_packages_dl = Misc.Stdlib.List.remove_dups (List.map package_directory eff_packages) in
+    predicates := List.map (fun pkg -> "pkg_" ^ pkg) eff_packages @ !predicates;
+    let stdlibdir = Fl_split.norm_dir (Findlib.ocaml_stdlib()) in
+    let threads_dir = Filename.concat stdlibdir "threads" in
+    let vmthreads_dir = Filename.concat stdlibdir "vmthreads" in
+    let exclude_list = [ stdlibdir; threads_dir; vmthreads_dir ] in
+    let i_options =
+      List.flatten
+        (List.map
+	   (fun pkgdir ->
+	      let npkgdir = Fl_split.norm_dir pkgdir in
+	      if List.mem npkgdir exclude_list then
+	        []
+	      else
+                [ Misc.slashify pkgdir]
+           ) eff_packages_dl
+        )
+    in
+    Clflags.include_dirs := !Clflags.include_dirs @ i_options
+
+  let () =
+    init ~config:"" ()
+end
+
 let main () =
   Clflags.add_arguments __LOC__ Options.list;
   try
     readenv ppf Before_args;
     Clflags.parse_arguments anonymous usage;
+    Fl.run ();
     begin try
       Compenv.process_deferred_actions
         (ppf,

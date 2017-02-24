@@ -463,6 +463,14 @@ let mk_dtimings f =
   "-dtimings", Arg.Unit f, " Print timings"
 ;;
 
+let mk_package f =
+  "-package", Arg.String f, " Refer to package when compiling"
+;;
+
+let mk_predicates f =
+  "-predicates", Arg.String f, " Add predicate when resolving package properties"
+;;
+
 let mk_unbox_closures f =
   "-unbox-closures", Arg.Unit f,
   " Pass free variables via specialised arguments rather than closures"
@@ -878,6 +886,9 @@ module type Bytecomp_options = sig
   val _dinstr : unit -> unit
 
   val _use_prims : string -> unit
+
+  val _package : string -> unit
+  val _predicates : string -> unit
 end;;
 
 module type Bytetop_options = sig
@@ -1070,6 +1081,9 @@ struct
     mk_dlambda F._dlambda;
     mk_dinstr F._dinstr;
     mk_dtimings F._dtimings;
+
+    mk_package F._package;
+    mk_predicates F._predicates;
 
     mk_args F._args;
     mk_args0 F._args0;

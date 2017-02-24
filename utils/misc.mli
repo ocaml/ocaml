@@ -78,6 +78,8 @@ module Stdlib : sig
     (** [split_at n l] returns the pair [before, after] where [before] is
         the [n] first elements of [l] and [after] the remaining ones.
         If [l] has less than [n] elements, raises Invalid_argument. *)
+
+    val remove_dups: 'a list -> 'a list
   end
 
   module Option : sig
@@ -138,6 +140,8 @@ val no_overflow_mul: int -> int -> bool
 val no_overflow_lsl: int -> int -> bool
         (* [no_overflow_lsl n k] returns [true] if the computation of
            [n lsl k] does not overflow. *)
+
+val slashify: string -> string
 
 module Int_literal_converter : sig
   val int : string -> int
