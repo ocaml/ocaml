@@ -29,6 +29,12 @@ Working version
 - GPR#1253: Private extensible variants
   (Leo White, review by Alain Frisch)
 
+- GPR#1064: extended indexing operators, add a new class of
+  user-defined indexing operators, obtained by adding at least
+  one operator character after the dot symbol to the standard indexing
+  operators: e,g ".%()", ".?[]", ".@{}<-"
+  (Florian Angeletti)
+
 ### Code generation and optimizations:
 
 - MPR#5324, GPR#375: An alternative Linear Scan register allocator for
