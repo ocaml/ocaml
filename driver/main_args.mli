@@ -139,7 +139,6 @@ module type Bytecomp_options = sig
 
   val _package : string -> unit
   val _predicates : string -> unit
-  val _linkpkg : unit -> unit
 end;;
 
 module type Bytetop_options = sig

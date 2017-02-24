@@ -168,27 +168,26 @@ module Fl = struct
 	      let al = try package_property !predicates pkg "archive"
 	        with Not_found -> "" in
 	      let pkg_dir =
-	        if pkg = "threads" then   (* MAGIC *)
-	          match !threads with
-		    `None -> stdlibdir
-		  | `VM_threads -> vmthreads_dir
-		  | `POSIX_threads -> threads_dir
-	        else
+	        (* if pkg = "threads" then   (\* MAGIC *\) *)
+	        (*   match !threads with *)
+		(*     `None -> stdlibdir *)
+		(*   | `VM_threads -> vmthreads_dir *)
+		(*   | `POSIX_threads -> threads_dir *)
+	        (* else *)
 	          package_directory pkg in
-	      let pkg_dir = slashify pkg_dir in
+	      let pkg_dir = Misc.slashify pkg_dir in
 	      List.map
 	        (fun arch -> resolve_path ~base:pkg_dir arch)
 	        (Fl_split.in_words al)
 	   )
-	   eff_link)
+	   eff_packages)
     in
-    let dll_options =
-      List.flatten
-        (List.map (fun pkg -> ["-dllpath";  slashify pkg] ) dll_dirs)
-    in
+    let dll_dirs = Misc.Stdlib.List.remove_dups eff_packages_dl in
+    let dll_options = List.map Misc.slashify dll_dirs in
     include_dirs := !include_dirs @ i_options;
-    if !linkpkg then List.iter anonymous archives; (* before the other anonymous *)
-    List.iter dllpath dll_options
+    List.iter anonymous archives;
+    dllpaths := !dllpaths @ dll_options;
+    packages := []
 
   let () =
     let install_dir = Filename.dirname Config.standard_library in
@@ -197,12 +196,15 @@ module Fl = struct
     init_manually ~stdlib:Config.standard_library ~install_dir ~meta_dir ~search_path ()
 end
 
+let anonymous s =
+  Fl.run ();
+  anonymous s
+
 let main () =
   Clflags.add_arguments __LOC__ Options.list;
   try
     readenv ppf Before_args;
     Clflags.parse_arguments anonymous usage;
-    Fl.run ();
     begin try
       Compenv.process_deferred_actions
         (ppf,
