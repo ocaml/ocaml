@@ -41,6 +41,11 @@ Working version
 
 ### Other libraries:
 
+- GPR#1061: Add ?follow parameter to Unix.link. This allows hardlinking
+  symlinks.
+  (Christopher Zimmermann, review by Xavier Leroy, Damien Doligez, David
+   Allsopp, David Sheets)
+
 ### Compiler user-interface and warnings:
 
 - MPR#7116, GPR#1430: new -config-var option
