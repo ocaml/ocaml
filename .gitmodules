@@ -1,3 +1,6 @@
 [submodule "flexdll"]
     path = flexdll
     url = https://github.com/alainfrisch/flexdll.git
+[submodule "lib-findlib"]
+	path = lib-findlib
+	url = https://gitlab.camlcity.org/gerd/lib-findlib
