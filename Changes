@@ -46,6 +46,10 @@ Next version (4.05.0):
   and "0 mod <expr>" in the case when <expr> was a non-constant
   evaluating to zero (Mark Shinwell)
 
+- MPR#6927, GPR#988: On macOS, when compiling bytecode stubs, plugins,
+  and shared libraries through -output-obj, generate dylibs instead of
+  bundles. (whitequark)
+
 ### Runtime system:
 
 - PR#7423, GPR#946: expose new exception-raising functions
