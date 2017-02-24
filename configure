@@ -65,6 +65,7 @@ afl_instrument=false
 max_testsuite_dir_retries=0
 with_cplugins=true
 with_fpic=false
+with_findlib=false
 
 # Try to turn internationalization off, can cause config.guess to malfunction!
 unset LANG
@@ -208,6 +209,10 @@ while : ; do
         safe_string=true;;
     -afl-instrument)
         afl_instrument=true;;
+    -findlib|--findlib)
+        with_findlib=true;;
+    -no-findlib|--no-findlib)
+        with_findlib=false;;
     *) if echo "$1" | grep -q -e '^--\?[a-zA-Z0-9-]\+='; then
          err "configure expects arguments of the form '-prefix /foo/bar'," \
              "not '-prefix=/foo/bar' (note the '=')."
@@ -2183,6 +2188,11 @@ else
   inf "        afl-fuzz always enabled .. yes"
   else
   inf "        afl-fuzz always enabled .. no"
+  fi
+  if test "$with_findlib" = "true"; then
+  inf "        use findlib .............. yes"
+  else
+  inf "        use findlib .............. no"
   fi
 fi
 
