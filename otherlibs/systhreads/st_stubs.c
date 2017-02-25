@@ -479,6 +479,11 @@ CAMLprim value caml_thread_initialize(value unit)   /* ML */
   curr_thread->backtrace_last_exn = Val_unit;
 #ifdef NATIVE_CODE
   curr_thread->exit_buf = &caml_termination_jmpbuf;
+  curr_thread->top_of_stack = caml_system_stack_top;
+  {
+    char local_var;
+    curr_thread->bottom_of_stack = &local_var;
+  }
 #endif
   /* The stack-related fields will be filled in at the next
      caml_enter_blocking_section */

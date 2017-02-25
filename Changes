@@ -453,6 +453,9 @@ Next version (4.05.0):
 - PR#7060, GPR#1035: Print exceptions in installed custom printers
   (Tadeu Zagallo, review by David Allsopp)
 
+- GPR#961: Incorrect stack size reported in the presence of threads
+  (Mark Shinwell, report by Ben Millwood)
+
 Next minor version (4.04.1):
 ----------------------------
 

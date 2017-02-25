@@ -121,6 +121,7 @@ extern value * caml_globals[];
 extern char caml_globals_map[];
 extern intnat caml_globals_inited;
 extern intnat * caml_frametable[];
+extern char* caml_system_stack_top;
 
 CAMLextern frame_descr * caml_next_frame_descriptor(uintnat * pc, char ** sp);
 

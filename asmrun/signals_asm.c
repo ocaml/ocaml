@@ -189,11 +189,12 @@ DECLARE_SIGNAL_HANDLER(trap_handler)
 }
 #endif
 
+char * caml_system_stack_top;
+
 /* Machine- and OS-dependent handling of stack overflow */
 
 #ifdef HAS_STACK_OVERFLOW_DETECTION
 
-static char * system_stack_top;
 static char sig_alt_stack[SIGSTKSZ];
 
 #if defined(SYS_linux)
@@ -222,8 +223,8 @@ DECLARE_SIGNAL_HANDLER(segv_handler)
   fault_addr = CONTEXT_FAULTING_ADDRESS;
   if (((uintnat) fault_addr & (sizeof(intnat) - 1)) == 0
       && getrlimit(RLIMIT_STACK, &limit) == 0
-      && fault_addr < system_stack_top
-      && fault_addr >= system_stack_top - limit.rlim_cur - EXTRA_STACK
+      && fault_addr < caml_system_stack_top
+      && fault_addr >= caml_system_stack_top - limit.rlim_cur - EXTRA_STACK
 #ifdef CONTEXT_PC
       && Is_in_code_area(CONTEXT_PC)
 #endif
@@ -261,6 +262,8 @@ DECLARE_SIGNAL_HANDLER(segv_handler)
 
 void caml_init_signals(void)
 {
+  char local_var;
+
   /* Bound-check trap handling */
 #if defined(TARGET_sparc) && defined(SYS_solaris)
   { struct sigaction act;
@@ -290,6 +293,9 @@ void caml_init_signals(void)
   }
 #endif
 
+  /* The top-of-system-stack address is also used by the threads library. */
+  caml_system_stack_top = &local_var;
+
   /* Stack overflow handling */
 #ifdef HAS_STACK_OVERFLOW_DETECTION
   {
@@ -301,7 +307,6 @@ void caml_init_signals(void)
     SET_SIGACT(act, segv_handler);
     act.sa_flags |= SA_ONSTACK | SA_NODEFER;
     sigemptyset(&act.sa_mask);
-    system_stack_top = (char *) &act;
     if (sigaltstack(&stk, NULL) == 0) { sigaction(SIGSEGV, &act, NULL); }
   }
 #endif
