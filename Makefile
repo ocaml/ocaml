@@ -59,6 +59,7 @@ INCLUDES=-I utils -I parsing -I typing -I bytecomp -I middle_end \
         -I middle_end/base_types -I asmcomp -I lib-findlib/src/findlib -I driver -I toplevel
 
 COMPFLAGS=-strict-sequence -principal -absname -w +a-4-9-41-42-44-45-48 \
+	  -w -6-27-29-32-33-50 \
 	  -warn-error A \
           -bin-annot -safe-string -strict-formats $(INCLUDES)
 LINKFLAGS=
@@ -758,18 +759,6 @@ beforedepend:: lib-findlib/src/findlib/findlib_config.ml
 partialclean::
 	rm -f lib-findlib/src/findlib/findlib_config.ml
 
-lib-findlib/src/findlib/findlib.cma: COMPFLAGS += -w -6-27-29-32-33-50
-lib-findlib/src/findlib/findlib.cma: $(FINDLIB)
-	$(CAMLC) -a -o $@ $^
-
-lib-findlib/src/findlib/findlib.cmxa: COMPFLAGS += -w -6-27-29-32-33-50
-lib-findlib/src/findlib/findlib.cmxa: $(FINDLIB:.cmo=.cmx)
-	$(CAMLOPT) -a -o $@ $^
-
-partialclean::
-	rm -f lib-findlib/src/findlib/findlib.cma
-	rm -f lib-findlib/src/findlib/findlib.cmxa
-
 lib-findlib/src/findlib/fl_meta.ml: lib-findlib/src/findlib/fl_meta.mll
 	$(CAMLLEX) $<
 
@@ -777,6 +766,14 @@ beforedepend:: lib-findlib/src/findlib/fl_meta.ml
 
 partialclean::
 	rm -f lib-findlib/src/findlib/fl_meta.ml
+
+utils/findlib_helper.ml: utils/findlib_helper.mlp
+	cpp -P -DWITH_FINDLIB=$(WITH_FINDLIB) $< > $@
+
+beforedepend:: utils/findlib_helper.ml
+
+partialclean::
+	rm -f utils/findlib_helper.ml
 
 # The bytecode compiler
 

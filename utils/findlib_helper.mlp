@@ -1,10 +1,11 @@
+#if WITH_FINDLIB
 open Clflags
 open Findlib
 
 let rec remove_dups l =
   match l with
-  | x :: l' ->
-      if List.mem x l' then remove_dups l' else x::remove_dups l'
+  | x :: l ->
+      if List.mem x l then remove_dups l else x::remove_dups l
   | [] -> []
 
 let slashify s =
@@ -129,3 +130,12 @@ let init () =
   let meta_dir = "none" in
   let search_path = [install_dir] in
   init_manually ~stdlib:Config.standard_library ~install_dir ~meta_dir ~search_path ()
+
+#else
+
+let process_package_includes () = ()
+let process_ppx_spec () = []
+let get_archives () = []
+let init () = ()
+
+#endif

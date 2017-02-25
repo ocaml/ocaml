@@ -108,7 +108,7 @@ let libunwind_available = %%LIBUNWIND_AVAILABLE%%
 let libunwind_link_flags = "%%LIBUNWIND_LINK_FLAGS%%"
 let profinfo = %%WITH_PROFINFO%%
 let profinfo_width = %%PROFINFO_WIDTH%%
-let with_findlib = %%WITH_FINDLIB%%
+let with_findlib = %%WITH_FINDLIB%% != 0
 
 let ext_exe = "%%EXT_EXE%%"
 let ext_obj = "%%EXT_OBJ%%"
