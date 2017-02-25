@@ -739,7 +739,7 @@ clean:: partialclean
 
 # Shared parts of the system
 
-compilerlibs/ocamlcommon.cma: lib-findlib/src/findlib/findlib.cma $(COMMON)
+compilerlibs/ocamlcommon.cma: $(FINDLIB) $(COMMON)
 	$(CAMLC) -a -linkall -o $@ $^
 partialclean::
 	rm -f compilerlibs/ocamlcommon.cma
@@ -877,7 +877,7 @@ beforedepend:: parsing/lexer.ml
 
 # Shared parts of the system compiled with the native-code compiler
 
-compilerlibs/ocamlcommon.cmxa: $(COMMON:.cmo=.cmx)
+compilerlibs/ocamlcommon.cmxa: $(FINDLIB:.cmo=.cmx) $(COMMON:.cmo=.cmx)
 	$(CAMLOPT) -a -linkall -o $@ $^
 partialclean::
 	rm -f compilerlibs/ocamlcommon.cmxa compilerlibs/ocamlcommon.$(A)
