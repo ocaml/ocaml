@@ -226,6 +226,7 @@ module Options = Main_args.Make_optcomp_options (struct
   let _dstartup = set keep_startup_file
   let _dtimings = set print_timings
   let _opaque = set opaque
+  let _package s = packages := s :: !packages
 
   let _args = Arg.read_arg
   let _args0 = Arg.read_arg0
@@ -234,11 +235,13 @@ module Options = Main_args.Make_optcomp_options (struct
 end);;
 
 let main () =
+  Clflags.predicates := "native" :: !Clflags.predicates;
   native_code := true;
   let ppf = Format.err_formatter in
   try
     readenv ppf Before_args;
     Clflags.add_arguments __LOC__ (Arch.command_line_options @ Options.list);
+    Findlib_helper.init ();
     Clflags.parse_arguments anonymous usage;
     if !gprofile && not Config.profiling then
       fatal "Profiling with \"gprof\" is not supported on this platform.";

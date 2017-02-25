@@ -119,7 +119,6 @@ module Options = Main_args.Make_bytecomp_options (struct
   let _dinstr = set dump_instr
   let _dtimings = set print_timings
   let _package s = packages := s :: !packages
-  let _predicates s = predicates := s :: !predicates
 
   let _args = Arg.read_arg
   let _args0 = Arg.read_arg0

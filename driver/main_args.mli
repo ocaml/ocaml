@@ -138,7 +138,6 @@ module type Bytecomp_options = sig
   val _use_prims : string -> unit
 
   val _package : string -> unit
-  val _predicates : string -> unit
 end;;
 
 module type Bytetop_options = sig
@@ -209,6 +208,8 @@ module type Optcomp_options = sig
   val _afl_instrument : unit -> unit
   val _afl_inst_ratio : int -> unit
   val _dinterval : unit -> unit
+
+  val _package : string -> unit
 end;;
 
 module type Opttop_options = sig

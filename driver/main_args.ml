@@ -467,10 +467,6 @@ let mk_package f =
   "-package", Arg.String f, " Refer to package when compiling"
 ;;
 
-let mk_predicates f =
-  "-predicates", Arg.String f, " Add predicate when resolving package properties"
-;;
-
 let mk_unbox_closures f =
   "-unbox-closures", Arg.Unit f,
   " Pass free variables via specialised arguments rather than closures"
@@ -888,7 +884,6 @@ module type Bytecomp_options = sig
   val _use_prims : string -> unit
 
   val _package : string -> unit
-  val _predicates : string -> unit
 end;;
 
 module type Bytetop_options = sig
@@ -960,6 +955,8 @@ module type Optcomp_options = sig
   val _afl_instrument : unit -> unit
   val _afl_inst_ratio : int -> unit
   val _dinterval : unit -> unit
+
+  val _package : string -> unit
 end;;
 
 module type Opttop_options = sig
@@ -1083,7 +1080,6 @@ struct
     mk_dtimings F._dtimings;
 
     mk_package F._package;
-    mk_predicates F._predicates;
 
     mk_args F._args;
     mk_args0 F._args0;
@@ -1278,6 +1274,8 @@ struct
     mk_dstartup F._dstartup;
     mk_dtimings F._dtimings;
     mk_dump_pass F._dump_pass;
+
+    mk_package F._package;
 
     mk_args F._args;
     mk_args0 F._args0;

@@ -176,6 +176,8 @@ module Options = Main_args.Make_optcomp_options (struct
   let _dtimings = option "-dtimings"
   let _opaque = option "-opaque"
 
+  let _package s = option_with_arg "-package" s
+
   let _args = Arg.read_arg
   let _args0 = Arg.read_arg0
   let anonymous = process_file
