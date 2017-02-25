@@ -155,6 +155,9 @@ Next version (4.05.0):
 - GPR#999: Arg, do not repeat thrice usage_msg when reporting an error
   (Florian Angeletti, review by Gabriel Scherer)
 
+- GPR#1034: Add List.init.
+  (Richard Degenne)
+
 ### Debugging and profiling:
 
 - PR#7258: ocamldebug's "install_printer" command had problems with

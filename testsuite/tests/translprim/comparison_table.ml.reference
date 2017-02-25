@@ -243,7 +243,7 @@
                 (apply f (field 0 param) (field 1 param)))
             map =
               (function f l
-                (apply (field 15 (global List!)) (apply uncurry f)
+                (apply (field 16 (global List!)) (apply uncurry f)
                   l)))
            (makeblock 0
              (makeblock 0 (apply map gen_cmp vec)
@@ -291,7 +291,7 @@
                     (apply f (field 0 param) (field 1 param)))
                 map =
                   (function f l
-                    (apply (field 15 (global List!))
+                    (apply (field 16 (global List!))
                       (apply uncurry f) l)))
                (makeblock 0
                  (makeblock 0 (apply map eta_gen_cmp vec)
