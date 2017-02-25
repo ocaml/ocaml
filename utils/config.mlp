@@ -178,5 +178,7 @@ let print_config oc =
   p "cmxs_magic_number" cmxs_magic_number;
   p "cmt_magic_number" cmt_magic_number;
 
+  p_bool "with_findlib" with_findlib;
+
   flush oc;
 ;;
