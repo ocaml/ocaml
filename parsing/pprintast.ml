@@ -510,9 +510,15 @@ and sugar_expr ctxt f e =
           begin match other_args with
           | i :: rest ->
               let n = String.length s in
-              let assign = s.[n - 1] = '-' in
+              (* extract operator:
+                 assignment operators end with [right_bracket ^ "<-"],
+                 access operators end with [right_bracket] directly
+              *)
+              let assign =
+                s.[n - 1] = '-'  in
               let kind =
-                if not assign then s.[n - 1] else s.[n-3] in
+                (* extract the right end bracket *)
+                if assign then s.[n - 3] else s.[n - 1] in
               let left, right = match kind with
                 | ')' -> '(', ")"
                 | ']' -> '[', "]"
