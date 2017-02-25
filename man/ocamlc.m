@@ -500,11 +500,12 @@ cmo file, and also sets the module name to the file name up to the
 first dot.
 .TP
 .B \-opaque
-When producing a .cmi file, this option mark the module as opaque:
-dependencies compiled with ocamlopt will not look for cross\-module
-optimization information for it. See also the
-.B \-opaque
-option of the native-code compiler.
+Interface file compiled with this option are marked so that other
+compilation units depending on it will not rely on any implementation
+details of the compiled implementation. The native compiler will not
+access the .cmx file of this unit -- nor warn if it is absent. This can
+improve speed of compilation, for both initial and incremental builds,
+at the expense of performance of the generated code.
 .TP
 .BI \-open \ module
 Opens the given module before processing the interface or

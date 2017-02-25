@@ -390,9 +390,11 @@ cmo file, and also sets the module name to the file name up to the
 first dot.
 .TP
 .B \-opaque
-Disables generation of cross\-module optimization information.
-This reduces necessary recompilation on module change and makes
-library .cmx files not mandatory.
+When compiling a .mli interface file, this has the same effect as the
+.B \-opaque
+option of the bytecode compiler. When compiling a .ml implementation
+file, this produces a .cmx file without cross-module optimization
+information, which reduces recompilation on module change.
 .TP
 .BI \-open \ module
 Opens the given module before processing the interface or
