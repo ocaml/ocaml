@@ -67,7 +67,7 @@ OCaml 4.04.0 (4 Nov 2016):
   (Alain Frisch)
 
 - GPR#508: Allow shortcut for extension on semicolons: ;%foo
-  (Jeremie Dimino)
+  (Jérémie Dimino)
 
 - GPR#606: optimized representation for immutable records with a single
   field, and concrete types with a single constructor with a single argument.
@@ -135,7 +135,7 @@ OCaml 4.04.0 (4 Nov 2016):
   (Alain Frisch)
 
 - GPR#669: Filename.extension and Filename.remove_extension
-  (Alain Frisch, request by Edgar Aroutiounian, review by Daniel Bunzli
+  (Alain Frisch, request by Edgar Aroutiounian, review by Daniel Bünzli
   and Damien Doligez)
 
 - GPR#674: support unknown Sys.os_type in Filename, defaulting to Unix
@@ -509,7 +509,7 @@ OCaml 4.03.0 (25 Apr 2016):
 
 - GPR#112: octal escape sequences for char and string literals
   "Make it \o033[1mBOLD\o033[0m"
-  (Rafaël Bocquet, request by John Whitingthon)
+  (Rafaël Bocquet, request by John Whitington)
 
 - GPR#167: allow to annotate externals' arguments and result types so
   they can be unboxed or untagged: [@unboxed], [@untagged]. Supports
@@ -790,7 +790,7 @@ OCaml 4.03.0 (25 Apr 2016):
 
 * GPR#297: Several changes to improve the worst-case GC pause time.
   Changes Gc.control and Gc.major_slice and adds functions to the Gc module.
-  (Damien Doligez, with help from Francois Bobot, Thomas Braibant, Leo White)
+  (Damien Doligez, with help from François Bobot, Thomas Braibant, Leo White)
 
 - GPR#325: Add v=0x400 flag to OCAMLRUNPARAM to display GC stats on exit
   (Louis Gesbert, review by Alain Frisch)
@@ -1191,7 +1191,7 @@ OCaml 4.03.0 (25 Apr 2016):
   (Jacques Garrigue, report by Leo White)
 
 - PR#6954: Infinite loop in type checker with module aliases
-  (Jacques Garrigue, report by Mark Mottl)
+  (Jacques Garrigue, report by Markus Mottl)
 
 - PR#6972, GPR#276: 4.02.3 regression on documentation comments in .cmt files
   (Leo White, report by Olivier Andrieu)
@@ -1325,7 +1325,7 @@ OCaml 4.03.0 (25 Apr 2016):
   (Krzysztof Pszeniczny)
 
 - GPR#205: Clear caml_backtrace_last_exn before registering as root
-  (report and fix by Frederic Bour)
+  (report and fix by Frédéric Bour)
 
 - GPR#220: minor -dsource error on recursive modules
   (Hongbo Zhang)
@@ -1654,7 +1654,7 @@ Bug fixes:
 - PR#6669: fix 4.02 regression in toplevel printing of lazy values
   (Leo White, review by Gabriel Scherer)
 - PR#6671: Windows: environment variable 'TZ' affects Unix.gettimeofday
-  (Mickael Delahaye and Damien Doligez)
+  (Mickaël Delahaye and Damien Doligez)
 - PR#6680: Missing parentheses in warning about polymorphic variant value
   (Jacques Garrigue and Gabriel Scherer, report by Philippe Veber)
 - PR#6686: Bug in [subst_boxed_number]
@@ -4310,7 +4310,7 @@ Standard library:
 - Module Printf:
     added %S and %C formats (quoted, escaped strings and characters);
     added kprintf (calls user-specified continuation on formatted string).
-- Module Queue: faster implementation (courtesy of Francois Pottier).
+- Module Queue: faster implementation (courtesy of François Pottier).
 - Module Random: added Random.bool.
 - Module Stack: added Stack.is_empty.
 - Module Pervasives:
@@ -5543,7 +5543,7 @@ Objective Caml 1.01 (12 Jun 1996):
 Objective Caml 1.00 (9 May 1996):
 ---------------------------------
 
-* Merge of Jerome Vouillon and Didier Remy's object-oriented
+* Merge of Jérôme Vouillon and Didier Rémy's object-oriented
 extensions.
 
 * All libraries: all "new" functions renamed to "create" because "new"
