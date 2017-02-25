@@ -124,6 +124,52 @@ CAMLnoreturn_end;
 CAMLextern char * caml_strdup(const char * s);
 CAMLextern char * caml_strconcat(int n, ...); /* n args of const char * type */
 
+/* Detection of available C built-in functions, the Clang way. */
+
+#ifdef __has_builtin
+#define Caml_has_builtin(x) __has_builtin(x)
+#else
+#define Caml_has_builtin(x) 0
+#endif  
+
+/* Integer arithmetic with overflow detection.
+   The functions return 0 if no overflow, 1 if overflow.
+   The result of the operation is always stored at [*res].
+   If no overflow is reported, this is the exact result.
+   If overflow is reported, this is the exact result modulo 2 to the word size.
+*/
+
+static inline int caml_uadd_overflow(uintnat a, uintnat b, uintnat * res)
+{
+#if __GNUC__ >= 5 || Caml_has_builtin(__builtin_add_overflow)
+  return __builtin_add_overflow(a, b, res);
+#else
+  uintnat c = a + b;
+  *res = c;
+  return c < a;
+#endif
+}
+  
+static inline int caml_usub_overflow(uintnat a, uintnat b, uintnat * res)
+{
+#if __GNUC__ >= 5 || Caml_has_builtin(__builtin_sub_overflow)
+  return __builtin_sub_overflow(a, b, res);
+#else
+  uintnat c = a - b;
+  *res = c;
+  return a < b;
+#endif
+}
+  
+#if __GNUC__ >= 5 || Caml_has_builtin(__builtin_mul_overflow)
+static inline int caml_umul_overflow(uintnat a, uintnat b, uintnat * res)
+{
+  return __builtin_mul_overflow(a, b, res);
+}
+#else
+extern int caml_umul_overflow(uintnat a, uintnat b, uintnat * res);
+#endif  
+
 /* Use macros for some system calls being called from OCaml itself.
   These calls can be either traced for security reasons, or changed to
   virtualize the program. */
