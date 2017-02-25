@@ -222,11 +222,11 @@ CAMLexport int caml_umul_overflow(uintnat a, uintnat b, uintnat * res)
                         + LOW_HALF(al * bh) << HALF_SIZE overflows.
      This sum is equal to p = (a * b) modulo word size. */
   uintnat p = a * b;
+  uintnat p1 = al * bh;
+  uintnat p2 = ah * bl;
   *res = p;
   if (ah == 0 && bh == 0) return 0;
   if (ah != 0 && bh != 0) return 1;
-  uintnat p1 = al * bh;
-  uintnat p2 = ah * bl;
   if (HIGH_HALF(p1) != 0 || HIGH_HALF(p2) != 0) return 1;
   p1 <<= HALF_SIZE;
   p2 <<= HALF_SIZE;
