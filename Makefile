@@ -746,6 +746,18 @@ partialclean::
 
 # Findlib
 
+lib-findlib/src/findlib/findlib_config.ml: lib-findlib/src/findlib/findlib_config.mlp config/Makefile
+	sed -e 's|@CONFIGFILE@||' \
+	    -e 's|@STDLIB@|$(LIBDIR)|' \
+	    -e 's|@AUTOLINK@|true|' \
+	    -e 's|@SYSTEM@|$(SYSTEM)|' \
+	    $< > $@
+
+beforedepend:: lib-findlib/src/findlib/findlib_config.ml
+
+partialclean::
+	rm -f lib-findlib/src/findlib/findlib_config.ml
+
 lib-findlib/src/findlib/findlib.cma: COMPFLAGS += -w -6-27-29-32-33-50
 lib-findlib/src/findlib/findlib.cma: $(FINDLIB)
 	$(CAMLC) -a -o $@ $^
