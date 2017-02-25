@@ -605,21 +605,19 @@ let process_package_includes () =
   let open Findlib in
   let pkgs = get_packages () in
   let pkgs_dirs = Misc.Stdlib.List.remove_dups (List.map package_directory pkgs) in
-  let stdlibdir = Fl_split.norm_dir (Findlib.ocaml_stdlib()) in
+  let stdlibdir = Fl_split.norm_dir Config.standard_library in
   let threads_dir = Filename.concat stdlibdir "threads" in
   let vmthreads_dir = Filename.concat stdlibdir "vmthreads" in
   let exclude_list = [ stdlibdir; threads_dir; vmthreads_dir ] in
   let i_options =
-    List.flatten
-      (List.map
-	 (fun pkgdir ->
-	    let npkgdir = Fl_split.norm_dir pkgdir in
-	    if List.mem npkgdir exclude_list then
-	      []
-	    else
-              [ Misc.slashify pkgdir]
-         ) pkgs_dirs
-      )
+    Misc.Stdlib.List.filter_map
+      (fun pkgdir ->
+	 let npkgdir = Fl_split.norm_dir pkgdir in
+         if List.mem npkgdir exclude_list then
+           None
+         else
+           Some (Misc.slashify pkgdir)
+      ) pkgs_dirs
   in
   let dll_options = List.map Misc.slashify pkgs_dirs in
   include_dirs := !include_dirs @ i_options;
