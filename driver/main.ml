@@ -130,6 +130,7 @@ end)
 let main () =
   Clflags.predicates := "byte" :: !Clflags.predicates;
   Clflags.add_arguments __LOC__ Options.list;
+  Findlib_helper.init ();
   try
     readenv ppf Before_args;
     Clflags.parse_arguments anonymous usage;

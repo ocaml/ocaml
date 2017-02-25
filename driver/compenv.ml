@@ -588,96 +588,6 @@ let process_action
       else
         raise(Arg.Bad("don't know what to do with " ^ name))
 
-let check_package_list l =
-  (* may raise No_such_package *)
-  List.iter
-    (fun pkg ->
-       let _ = Findlib.package_directory pkg in
-       ()
-    ) l
-
-let get_packages () =
-  let pkgs = !Clflags.packages in
-  check_package_list pkgs;
-  Findlib.package_deep_ancestors !predicates pkgs
-
-let process_package_includes () =
-  let open Findlib in
-  let pkgs = get_packages () in
-  let pkgs_dirs = Misc.remove_dups (List.map package_directory pkgs) in
-  let stdlibdir = Fl_split.norm_dir Config.standard_library in
-  let threads_dir = Filename.concat stdlibdir "threads" in
-  let vmthreads_dir = Filename.concat stdlibdir "vmthreads" in
-  let exclude_list = [ stdlibdir; threads_dir; vmthreads_dir ] in
-  let i_options =
-    Misc.Stdlib.List.filter_map
-      (fun pkgdir ->
-	 let npkgdir = Fl_split.norm_dir pkgdir in
-         if List.mem npkgdir exclude_list then
-           None
-         else
-           Some (Misc.slashify pkgdir)
-      ) pkgs_dirs
-  in
-  let dll_options = List.map Misc.slashify pkgs_dirs in
-  include_dirs := !include_dirs @ i_options;
-  dllpaths := !dllpaths @ dll_options
-
-let process_ppx_spec () =
-  (* Returns: ppx_commands *)
-  (* may raise No_such_package *)
-  let ppx_packages = get_packages () in
-  let ppx_opts = [] in
-  let meta_ppx_opts =
-    List.concat
-      (List.map
-         (fun pname ->
-            try
-              let opts = Findlib.package_property !predicates pname "ppxopt" in
-              (* Split by whitespace to get (package,options) combinations.
-                 Then, split by commas to get individual options. *)
-              List.map
-                (fun opts ->
-                   match Fl_split.in_words opts with
-                   | pkg :: ((_ :: _) as opts) ->
-                       let exists =
-                         try ignore(Findlib.package_directory pkg); true
-                         with Findlib.No_such_package _ -> false in
-                       if not exists then
-                         failwith ("The package named in ppxopt variable does not exist: " ^
-                                   pkg ^ " (from " ^ pname ^ ")");
-                       let base = Findlib.package_directory pname in
-                       pkg, List.map (Findlib.resolve_path ~base ~explicit:true) opts
-                   | _ ->
-                       failwith ("ppxopt variable must include package name, e.g. " ^
-                                 "ppxopt=\"foo,-name bar\" (from " ^ pname ^ ")")
-                )
-                (Fl_split.in_words_ws opts)
-            with Not_found -> []
-         )
-         ppx_packages
-      )
-  in
-  List.iter
-    (fun pname ->
-       let base = Findlib.package_directory pname in
-       let options =
-         try
-           List.concat
-             (List.map (fun (_, opts) -> opts)
-                (List.filter (fun (pname', _) -> pname' = pname)
-                   (meta_ppx_opts @ ppx_opts)))
-         with Not_found -> []
-       in
-       try
-         let preprocessor =
-           Findlib.resolve_path
-             ~base ~explicit:true
-             (Findlib.package_property !predicates pname "ppx")
-         in
-         first_ppx := String.concat " " (preprocessor :: options) :: !first_ppx
-       with Not_found -> ()
-    ) ppx_packages
 
 let action_of_file name =
   if Filename.check_suffix name ".ml"
@@ -698,37 +608,15 @@ let anonymous filename = defer (action_of_file filename)
 let impl filename = defer (ProcessImplementation filename)
 let intf filename = defer (ProcessInterface filename)
 
-let get_archives () =
-  let pkgs = get_packages () in
-  List.flatten
-    (List.map
-       (fun pkg ->
-	  let al = try Findlib.package_property !predicates pkg "archive"
-            with Not_found -> "" in
-	  let pkg_dir =
-	    Findlib.package_directory pkg in
-	  let pkg_dir = Misc.slashify pkg_dir in
-	  List.map
-	    (fun arch -> Findlib.resolve_path ~base:pkg_dir arch)
-	    (Fl_split.in_words al)
-       ) pkgs
-    )
-
-let () =
-  let install_dir = Filename.dirname Config.standard_library in
-  let meta_dir = "none" in
-  let search_path = [install_dir] in
-  Findlib.init_manually ~stdlib:Config.standard_library ~install_dir ~meta_dir ~search_path ()
-
 let process_deferred_actions env =
-  process_package_includes ();
-  process_ppx_spec ();
+  Findlib_helper.process_package_includes ();
+  first_ppx := List.rev_append (Findlib_helper.process_ppx_spec ()) !first_ppx;
   let final_output_name = !output_name in
   (* Make sure the intermediate products don't clash with the final one
      when we're invoked like: ocamlopt -o foo bar.c baz.ml. *)
   let pkg_archives =
     if !compile_only then []
-    else List.map (fun s -> ProcessOtherFile s) (get_archives ())
+    else List.map (fun s -> ProcessOtherFile s) (Findlib_helper.get_archives ())
   in
   if not !compile_only then output_name := None;
   begin
