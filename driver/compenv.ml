@@ -649,7 +649,7 @@ let get_archives () =
   List.flatten
     (List.map
        (fun pkg ->
-	  let al = try Findlib.package_property ("byte" :: !predicates) pkg "archive"
+	  let al = try Findlib.package_property !predicates pkg "archive"
             with Not_found -> "" in
 	  let pkg_dir =
 	    Findlib.package_directory pkg in
