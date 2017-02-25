@@ -762,8 +762,13 @@ lib-findlib/src/findlib/findlib.cma: COMPFLAGS += -w -6-27-29-32-33-50
 lib-findlib/src/findlib/findlib.cma: $(FINDLIB)
 	$(CAMLC) -a -o $@ $^
 
+lib-findlib/src/findlib/findlib.cmxa: COMPFLAGS += -w -6-27-29-32-33-50
+lib-findlib/src/findlib/findlib.cmxa: $(FINDLIB:.cmo=.cmx)
+	$(CAMLOPT) -a -o $@ $^
+
 partialclean::
 	rm -f lib-findlib/src/findlib/findlib.cma
+	rm -f lib-findlib/src/findlib/findlib.cmxa
 
 lib-findlib/src/findlib/fl_meta.ml: lib-findlib/src/findlib/fl_meta.mll
 	$(CAMLLEX) $<

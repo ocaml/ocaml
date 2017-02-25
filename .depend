@@ -2080,17 +2080,19 @@ driver/opterrors.cmi :
 driver/optmain.cmo : utils/warnings.cmi utils/timings.cmi asmcomp/proc.cmi \
     asmcomp/printmach.cmi driver/optcompile.cmi utils/misc.cmi \
     driver/main_args.cmi parsing/location.cmi asmcomp/import_approx.cmi \
-    utils/config.cmi driver/compplugin.cmi driver/compmisc.cmi \
-    asmcomp/compilenv.cmi driver/compenv.cmi utils/clflags.cmi \
-    middle_end/backend_intf.cmi asmcomp/asmpackager.cmi asmcomp/asmlink.cmi \
-    asmcomp/asmlibrarian.cmi asmcomp/arch.cmo driver/optmain.cmi
+    utils/findlib_helper.cmo utils/config.cmi driver/compplugin.cmi \
+    driver/compmisc.cmi asmcomp/compilenv.cmi driver/compenv.cmi \
+    utils/clflags.cmi middle_end/backend_intf.cmi asmcomp/asmpackager.cmi \
+    asmcomp/asmlink.cmi asmcomp/asmlibrarian.cmi asmcomp/arch.cmo \
+    driver/optmain.cmi
 driver/optmain.cmx : utils/warnings.cmx utils/timings.cmx asmcomp/proc.cmx \
     asmcomp/printmach.cmx driver/optcompile.cmx utils/misc.cmx \
     driver/main_args.cmx parsing/location.cmx asmcomp/import_approx.cmx \
-    utils/config.cmx driver/compplugin.cmx driver/compmisc.cmx \
-    asmcomp/compilenv.cmx driver/compenv.cmx utils/clflags.cmx \
-    middle_end/backend_intf.cmi asmcomp/asmpackager.cmx asmcomp/asmlink.cmx \
-    asmcomp/asmlibrarian.cmx asmcomp/arch.cmx driver/optmain.cmi
+    utils/findlib_helper.cmx utils/config.cmx driver/compplugin.cmx \
+    driver/compmisc.cmx asmcomp/compilenv.cmx driver/compenv.cmx \
+    utils/clflags.cmx middle_end/backend_intf.cmi asmcomp/asmpackager.cmx \
+    asmcomp/asmlink.cmx asmcomp/asmlibrarian.cmx asmcomp/arch.cmx \
+    driver/optmain.cmi
 driver/optmain.cmi :
 driver/pparse.cmo : utils/timings.cmi parsing/parsetree.cmi \
     parsing/parse.cmi utils/misc.cmi parsing/location.cmi utils/config.cmi \
