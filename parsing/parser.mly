@@ -1418,18 +1418,24 @@ expr:
   | simple_expr DOTOP LBRACKET expr RBRACKET
       { let id = mkexp @@ Pexp_ident( ghloc @@ Lident ("." ^ $2 ^ "[]")) in
         mkexp @@ Pexp_apply(id, [Nolabel, $1; Nolabel, $4]) }
+  | simple_expr DOTOP LBRACKET expr error
+      { unclosed "[" 3 "]" 5 }
   | simple_expr DOTOP LPAREN expr RPAREN LESSMINUS expr
       { let id = mkexp @@ Pexp_ident( ghloc @@ Lident ("." ^ $2 ^ "()<-")) in
         mkexp @@ Pexp_apply(id , [Nolabel, $1; Nolabel, $4; Nolabel, $7]) }
   | simple_expr DOTOP LPAREN expr RPAREN
       { let id = mkexp @@ Pexp_ident( ghloc @@ Lident ("." ^ $2 ^ "()")) in
         mkexp @@ Pexp_apply(id, [Nolabel, $1; Nolabel, $4]) }
+  | simple_expr DOTOP LPAREN expr error
+      { unclosed "(" 3 ")" 5 }
   | simple_expr DOTOP LBRACE expr RBRACE LESSMINUS expr
       { let id = mkexp @@ Pexp_ident( ghloc @@ Lident ("." ^ $2 ^ "{}<-")) in
         mkexp @@ Pexp_apply(id , [Nolabel, $1; Nolabel, $4; Nolabel, $7]) }
   | simple_expr DOTOP LBRACE expr RBRACE
       { let id = mkexp @@ Pexp_ident( ghloc @@ Lident ("." ^ $2 ^ "{}")) in
         mkexp @@ Pexp_apply(id, [Nolabel, $1; Nolabel, $4]) }
+  | simple_expr DOTOP LBRACE expr error
+      { unclosed "{" 3 "}" 5 }
   | label LESSMINUS expr
       { mkexp(Pexp_setinstvar(mkrhs $1 1, $3)) }
   | ASSERT ext_attributes simple_expr %prec below_HASH
