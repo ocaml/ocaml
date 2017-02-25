@@ -19,10 +19,11 @@ utils/consistbl.cmx : utils/consistbl.cmi
 utils/consistbl.cmi :
 utils/findlib_helper.cmo : utils/misc.cmi \
     lib-findlib/src/findlib/fl_split.cmo lib-findlib/src/findlib/findlib.cmi \
-    utils/config.cmi utils/clflags.cmi
+    utils/config.cmi utils/clflags.cmi utils/findlib_helper.cmi
 utils/findlib_helper.cmx : utils/misc.cmx \
     lib-findlib/src/findlib/fl_split.cmx lib-findlib/src/findlib/findlib.cmx \
-    utils/config.cmx utils/clflags.cmx
+    utils/config.cmx utils/clflags.cmx utils/findlib_helper.cmi
+utils/findlib_helper.cmi :
 utils/identifiable.cmo : utils/misc.cmi utils/identifiable.cmi
 utils/identifiable.cmx : utils/misc.cmx utils/identifiable.cmi
 utils/identifiable.cmi :
@@ -1993,7 +1994,7 @@ middle_end/base_types/variable.cmi : utils/identifiable.cmi typing/ident.cmi \
     middle_end/base_types/compilation_unit.cmi
 driver/compdynlink.cmi :
 driver/compenv.cmo : utils/warnings.cmi utils/misc.cmi parsing/location.cmi \
-    utils/findlib_helper.cmo utils/config.cmi utils/clflags.cmi \
+    utils/findlib_helper.cmi utils/config.cmi utils/clflags.cmi \
     utils/ccomp.cmi driver/compenv.cmi
 driver/compenv.cmx : utils/warnings.cmx utils/misc.cmx parsing/location.cmx \
     utils/findlib_helper.cmx utils/config.cmx utils/clflags.cmx \
@@ -2038,7 +2039,7 @@ driver/errors.cmo : parsing/location.cmi driver/errors.cmi
 driver/errors.cmx : parsing/location.cmx driver/errors.cmi
 driver/errors.cmi :
 driver/main.cmo : utils/warnings.cmi utils/timings.cmi utils/misc.cmi \
-    driver/main_args.cmi parsing/location.cmi utils/findlib_helper.cmo \
+    driver/main_args.cmi parsing/location.cmi utils/findlib_helper.cmi \
     utils/config.cmi driver/compplugin.cmi driver/compmisc.cmi \
     driver/compile.cmi driver/compenv.cmi utils/clflags.cmi \
     bytecomp/bytepackager.cmi bytecomp/bytelink.cmi \
@@ -2080,7 +2081,7 @@ driver/opterrors.cmi :
 driver/optmain.cmo : utils/warnings.cmi utils/timings.cmi asmcomp/proc.cmi \
     asmcomp/printmach.cmi driver/optcompile.cmi utils/misc.cmi \
     driver/main_args.cmi parsing/location.cmi asmcomp/import_approx.cmi \
-    utils/findlib_helper.cmo utils/config.cmi driver/compplugin.cmi \
+    utils/findlib_helper.cmi utils/config.cmi driver/compplugin.cmi \
     driver/compmisc.cmi asmcomp/compilenv.cmi driver/compenv.cmi \
     utils/clflags.cmi middle_end/backend_intf.cmi asmcomp/asmpackager.cmi \
     asmcomp/asmlink.cmi asmcomp/asmlibrarian.cmi asmcomp/arch.cmo \
