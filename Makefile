@@ -745,6 +745,7 @@ partialclean::
 
 # Findlib
 
+lib-findlib/src/findlib/findlib.cma: COMPFLAGS += -w -6-27-29-32-33-50
 lib-findlib/src/findlib/findlib.cma: $(FINDLIB)
 	$(CAMLC) -a -o $@ $^
 
