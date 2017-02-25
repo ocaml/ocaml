@@ -198,7 +198,7 @@ CAMLexport char * caml_strconcat(int n, ...)
 /* Integer arithmetic with overflow detection */ 
 
 #if ! (__GNUC__ >= 5 || __has_builtin(__builtin_mul_overflow))
-CAMLexport int caml_mulu_overflow(uintnat a, uintnat b, uintnat * res)
+CAMLexport int caml_umul_overflow(uintnat a, uintnat b, uintnat * res)
 {
 #define HALF_SIZE (sizeof(uintnat) * 4)
 #define HALF_MASK (((uintnat)1 << HALF_SIZE) - 1)
@@ -225,6 +225,7 @@ CAMLexport int caml_mulu_overflow(uintnat a, uintnat b, uintnat * res)
   uintnat p2 = ah * bl;
   uintnat p = a * b;
   *res = p;
+  if (ah == 0 && bh == 0) return 0;
   if (ah != 0 && bh != 0) return 1;
   if (HIGH_HALF(p1) != 0 || HIGH_HALF(p2) != 0) return 1;
   p1 <<= HALF_SIZE;

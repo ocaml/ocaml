@@ -112,10 +112,10 @@ caml_ba_alloc(int flags, int num_dims, void * data, intnat * dim)
   if (data == NULL) {
     num_elts = 1;
     for (i = 0; i < num_dims; i++) {
-      if (caml_mulu_overflow(num_elts, dimcopy[i], &num_elts))
+      if (caml_umul_overflow(num_elts, dimcopy[i], &num_elts))
         caml_raise_out_of_memory();
     }
-    if (caml_mulu_overflow(num_elts,
+    if (caml_umul_overflow(num_elts,
                            caml_ba_element_size[flags & CAML_BA_KIND_MASK],
                            &size))
       caml_raise_out_of_memory();

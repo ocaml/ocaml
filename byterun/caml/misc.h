@@ -135,7 +135,7 @@ CAMLextern char * caml_strconcat(int n, ...); /* n args of const char * type */
 #define __has_builtin(x) 0
 #endif  
 
-static inline int caml_addu_overflow(uintnat a, uintnat b, uintnat * res)
+static inline int caml_uadd_overflow(uintnat a, uintnat b, uintnat * res)
 {
 #if __GNUC__ >= 5 || __has_builtin(__builtin_add_overflow)
   return __builtin_add_overflow(a, b, res);
@@ -146,7 +146,7 @@ static inline int caml_addu_overflow(uintnat a, uintnat b, uintnat * res)
 #endif
 }
   
-static inline int caml_subu_overflow(uintnat a, uintnat b, uintnat * res)
+static inline int caml_usub_overflow(uintnat a, uintnat b, uintnat * res)
 {
 #if __GNUC__ >= 5 || __has_builtin(__builtin_sub_overflow)
   return __builtin_sub_overflow(a, b, res);
@@ -158,12 +158,12 @@ static inline int caml_subu_overflow(uintnat a, uintnat b, uintnat * res)
 }
   
 #if __GNUC__ >= 5 || __has_builtin(__builtin_mul_overflow)
-static inline int caml_mulu_overflow(uintnat a, uintnat b, uintnat * res)
+static inline int caml_umul_overflow(uintnat a, uintnat b, uintnat * res)
 {
   return __builtin_mul_overflow(a, b, res);
 }
 #else
-extern int caml_mulu_overflow(uintnat a, uintnat b, uintnat * res);
+extern int caml_umul_overflow(uintnat a, uintnat b, uintnat * res);
 #endif  
 
 /* Use macros for some system calls being called from OCaml itself.
