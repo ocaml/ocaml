@@ -621,7 +621,9 @@ let process_package_includes () =
          ) pkgs_dirs
       )
   in
-  include_dirs := !include_dirs @ i_options
+  let dll_options = List.map Misc.slashify pkgs_dirs in
+  include_dirs := !include_dirs @ i_options;
+  dllpaths := !dllpaths @ dll_options
 
 let action_of_file name =
   if Filename.check_suffix name ".ml"
