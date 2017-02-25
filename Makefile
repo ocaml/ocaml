@@ -133,7 +133,6 @@ COMP=bytecomp/lambda.cmo bytecomp/printlambda.cmo \
   bytecomp/translclass.cmo bytecomp/translmod.cmo \
   bytecomp/simplif.cmo bytecomp/runtimedef.cmo \
   driver/pparse.cmo driver/main_args.cmo \
-  $(FINDLIB) \
   driver/compenv.cmo driver/compmisc.cmo
 
 COMMON=$(UTILS) $(PARSING) $(TYPING) $(COMP)
@@ -738,7 +737,7 @@ clean:: partialclean
 
 # Shared parts of the system
 
-compilerlibs/ocamlcommon.cma: $(COMMON)
+compilerlibs/ocamlcommon.cma: lib-findlib/src/findlib/findlib.cma $(COMMON)
 	$(CAMLC) -a -linkall -o $@ $^
 partialclean::
 	rm -f compilerlibs/ocamlcommon.cma
@@ -762,7 +761,7 @@ partialclean::
 
 # The bytecode compiler
 
-compilerlibs/ocamlbytecomp.cma: lib-findlib/src/findlib/findlib.cma $(BYTECOMP)
+compilerlibs/ocamlbytecomp.cma: $(BYTECOMP)
 	$(CAMLC) -a -o $@ $^
 partialclean::
 	rm -f compilerlibs/ocamlbytecomp.cma
@@ -1289,7 +1288,7 @@ beforedepend:: bytecomp/opcodes.ml
 
 partialclean::
 	for d in utils parsing typing bytecomp asmcomp middle_end \
-	         middle_end/base_types driver toplevel tools; do \
+	         middle_end/base_types driver toplevel tools lib-findlib/src/findlib; do \
 	  rm -f $$d/*.cm[ioxt] $$d/*.cmti $$d/*.annot $$d/*.$(S) \
 	    $$d/*.$(O) $$d/*.$(SO) $d/*~; \
 	done
