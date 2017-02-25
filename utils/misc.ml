@@ -73,26 +73,6 @@ let rec split_last = function
       let (lst, last) = split_last tl in
       (hd :: lst, last)
 
-let rec remove_dups l =
-  match l with
-  | x :: l' ->
-      if List.mem x l' then remove_dups l' else x::remove_dups l'
-  | [] -> []
-
-let slashify s =
-  match Sys.os_type with
-  | "Win32" | "Cygwin" ->
-      let b = Buffer.create 80 in
-      String.iter
-        (function
-          | '\\' -> Buffer.add_char b '/'
-          | c -> Buffer.add_char b c
-        )
-        s;
-      Buffer.contents b
-  | _ ->
-      s
-
 module Stdlib = struct
   module List = struct
     type 'a t = 'a list

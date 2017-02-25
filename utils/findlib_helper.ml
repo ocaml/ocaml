@@ -1,6 +1,26 @@
 open Clflags
 open Findlib
 
+let rec remove_dups l =
+  match l with
+  | x :: l' ->
+      if List.mem x l' then remove_dups l' else x::remove_dups l'
+  | [] -> []
+
+let slashify s =
+  match Sys.os_type with
+  | "Win32" | "Cygwin" ->
+      let b = Buffer.create 80 in
+      String.iter
+        (function
+          | '\\' -> Buffer.add_char b '/'
+          | c -> Buffer.add_char b c
+        )
+        s;
+      Buffer.contents b
+  | _ ->
+      s
+
 let check_package pkg =
   (* may raise No_such_package *)
   ignore (Findlib.package_directory pkg : string)
@@ -17,7 +37,7 @@ let get_packages () =
 
 let process_package_includes () =
   let pkgs = get_packages () in
-  let pkgs_dirs = Misc.remove_dups (List.map package_directory pkgs) in
+  let pkgs_dirs = remove_dups (List.map package_directory pkgs) in
   let stdlibdir = Fl_split.norm_dir Config.standard_library in
   let threads_dir = Filename.concat stdlibdir "threads" in
   let vmthreads_dir = Filename.concat stdlibdir "vmthreads" in
@@ -29,10 +49,10 @@ let process_package_includes () =
          if List.mem npkgdir exclude_list then
            None
          else
-           Some (Misc.slashify pkgdir)
+           Some (slashify pkgdir)
       ) pkgs_dirs
   in
-  let dll_options = List.map Misc.slashify pkgs_dirs in
+  let dll_options = List.map slashify pkgs_dirs in
   include_dirs := !include_dirs @ i_options;
   dllpaths := !dllpaths @ dll_options
 
@@ -97,7 +117,7 @@ let get_archives () =
             try package_property !predicates pkg "archive"
             with Not_found -> ""
           in
-          let pkg_dir = Misc.slashify (package_directory pkg) in
+          let pkg_dir = slashify (package_directory pkg) in
           List.map
             (fun arch -> resolve_path ~base:pkg_dir arch)
             (Fl_split.in_words al)
