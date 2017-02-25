@@ -896,12 +896,13 @@ CAMLexport caml_stat_block caml_stat_resize(caml_stat_block b, asize_t sz)
 /* [sz] is a number of bytes */
 CAMLexport caml_stat_block caml_stat_calloc_noexc(asize_t num, asize_t sz)
 {
-  /* todo: an overflow check is desirable here */
-  sz *= num;
-  {
-    caml_stat_block result = caml_stat_alloc_noexc(sz);
+  uintnat total;
+  if (caml_umul_overflow(sz, num, &total))
+    return NULL;
+  else {
+    caml_stat_block result = caml_stat_alloc_noexc(total);
     if (result != NULL)
-      memset(result, 0, sz);
+      memset(result, 0, total);
     return result;
   }
 }
