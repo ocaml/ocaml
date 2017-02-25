@@ -1,21 +1,21 @@
 open Clflags
 open Findlib
 
-let check_package_list l =
+let check_package pkg =
   (* may raise No_such_package *)
-  List.iter
-    (fun pkg ->
-       let _ = Findlib.package_directory pkg in
-       ()
-    ) l
+  ignore (Findlib.package_directory pkg : string)
+
+let package_exists pkg =
+  match package_directory pkg with
+  | _ -> true
+  | exception No_such_package _ -> false
 
 let get_packages () =
-  let pkgs = !Clflags.packages in
-  check_package_list pkgs;
+  let pkgs = !packages in
+  List.iter check_package pkgs;
   package_deep_ancestors !predicates pkgs
 
 let process_package_includes () =
-  let open Findlib in
   let pkgs = get_packages () in
   let pkgs_dirs = Misc.remove_dups (List.map package_directory pkgs) in
   let stdlibdir = Fl_split.norm_dir Config.standard_library in
@@ -25,7 +25,7 @@ let process_package_includes () =
   let i_options =
     Misc.Stdlib.List.filter_map
       (fun pkgdir ->
-	 let npkgdir = Fl_split.norm_dir pkgdir in
+         let npkgdir = Fl_split.norm_dir pkgdir in
          if List.mem npkgdir exclude_list then
            None
          else
@@ -46,19 +46,15 @@ let process_ppx_spec () =
       (List.map
          (fun pname ->
             try
-              let opts = Findlib.package_property !predicates pname "ppxopt" in
+              let opts = package_property !predicates pname "ppxopt" in
               (* Split by whitespace to get (package,options) combinations.
                  Then, split by commas to get individual options. *)
               List.map
                 (fun opts ->
                    match Fl_split.in_words opts with
                    | pkg :: ((_ :: _) as opts) ->
-                       let exists =
-                         try ignore(package_directory pkg); true
-                         with No_such_package _ -> false in
-                       if not exists then
-                         failwith ("The package named in ppxopt variable does not exist: " ^
-                                   pkg ^ " (from " ^ pname ^ ")");
+                       if not (package_exists pkg) then
+                         failwith ("The package named in ppxopt variable does not exist: " ^ pkg ^ " (from " ^ pname ^ ")");
                        let base = package_directory pname in
                        pkg, List.map (resolve_path ~base ~explicit:true) opts
                    | _ ->
@@ -80,13 +76,12 @@ let process_ppx_spec () =
              (List.map (fun (_, opts) -> opts)
                 (List.filter (fun (pname', _) -> pname' = pname)
                    (meta_ppx_opts @ ppx_opts)))
-         with Not_found -> []
+         with Not_found ->
+           []
        in
        try
          let preprocessor =
-           Findlib.resolve_path
-             ~base ~explicit:true
-             (package_property !predicates pname "ppx")
+           resolve_path ~base ~explicit:true (package_property !predicates pname "ppx")
          in
          Some (String.concat " " (preprocessor :: options))
        with Not_found ->
@@ -98,14 +93,14 @@ let get_archives () =
   List.flatten
     (List.map
        (fun pkg ->
-	  let al = try package_property !predicates pkg "archive"
-            with Not_found -> "" in
-	  let pkg_dir =
-	    package_directory pkg in
-	  let pkg_dir = Misc.slashify pkg_dir in
-	  List.map
-	    (fun arch -> resolve_path ~base:pkg_dir arch)
-	    (Fl_split.in_words al)
+          let al =
+            try package_property !predicates pkg "archive"
+            with Not_found -> ""
+          in
+          let pkg_dir = Misc.slashify (package_directory pkg) in
+          List.map
+            (fun arch -> resolve_path ~base:pkg_dir arch)
+            (Fl_split.in_words al)
        ) pkgs
     )
 
