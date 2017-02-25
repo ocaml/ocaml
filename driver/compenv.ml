@@ -604,7 +604,7 @@ let get_packages () =
 let process_package_includes () =
   let open Findlib in
   let pkgs = get_packages () in
-  let pkgs_dirs = Misc.Stdlib.List.remove_dups (List.map package_directory pkgs) in
+  let pkgs_dirs = Misc.remove_dups (List.map package_directory pkgs) in
   let stdlibdir = Fl_split.norm_dir Config.standard_library in
   let threads_dir = Filename.concat stdlibdir "threads" in
   let vmthreads_dir = Filename.concat stdlibdir "vmthreads" in

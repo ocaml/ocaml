@@ -73,6 +73,26 @@ let rec split_last = function
       let (lst, last) = split_last tl in
       (hd :: lst, last)
 
+let rec remove_dups l =
+  match l with
+  | x :: l' ->
+      if List.mem x l' then remove_dups l' else x::remove_dups l'
+  | [] -> []
+
+let slashify s =
+  match Sys.os_type with
+  | "Win32" | "Cygwin" ->
+      let b = Buffer.create 80 in
+      String.iter
+        (function
+          | '\\' -> Buffer.add_char b '/'
+          | c -> Buffer.add_char b c
+        )
+        s;
+      Buffer.contents b
+  | _ ->
+      s
+
 module Stdlib = struct
   module List = struct
     type 'a t = 'a list
@@ -134,12 +154,6 @@ module Stdlib = struct
           | t::q -> aux (n-1) (t::acc) q
       in
       aux n [] l
-
-  let rec remove_dups l =
-    match l with
-    | x :: l' ->
-        if List.mem x l' then remove_dups l' else x::remove_dups l'
-    | [] -> []
   end
 
   module Option = struct
@@ -282,20 +296,6 @@ let no_overflow_mul a b = b <> 0 && (a * b) / b = a
 
 let no_overflow_lsl a k =
   0 <= k && k < Sys.word_size && min_int asr k <= a && a <= max_int asr k
-
-let slashify s =
-  match Sys.os_type with
-  | "Win32" | "Cygwin" ->
-      let b = Buffer.create 80 in
-      String.iter
-        (function
-          | '\\' -> Buffer.add_char b '/'
-          | c -> Buffer.add_char b c
-        )
-        s;
-      Buffer.contents b
-  | _ ->
-      s
 
 module Int_literal_converter = struct
   (* To convert integer literals, allowing max_int + 1 (PR#4210) *)
