@@ -625,6 +625,62 @@ let process_package_includes () =
   include_dirs := !include_dirs @ i_options;
   dllpaths := !dllpaths @ dll_options
 
+let process_ppx_spec () =
+  (* Returns: ppx_commands *)
+  (* may raise No_such_package *)
+  let ppx_packages = get_packages () in
+  let ppx_opts = [] in
+  let meta_ppx_opts =
+    List.concat
+      (List.map
+         (fun pname ->
+            try
+              let opts = Findlib.package_property !predicates pname "ppxopt" in
+              (* Split by whitespace to get (package,options) combinations.
+                 Then, split by commas to get individual options. *)
+              List.map
+                (fun opts ->
+                   match Fl_split.in_words opts with
+                   | pkg :: ((_ :: _) as opts) ->
+                       let exists =
+                         try ignore(Findlib.package_directory pkg); true
+                         with Findlib.No_such_package _ -> false in
+                       if not exists then
+                         failwith ("The package named in ppxopt variable does not exist: " ^
+                                   pkg ^ " (from " ^ pname ^ ")");
+                       let base = Findlib.package_directory pname in
+                       pkg, List.map (Findlib.resolve_path ~base ~explicit:true) opts
+                   | _ ->
+                       failwith ("ppxopt variable must include package name, e.g. " ^
+                                 "ppxopt=\"foo,-name bar\" (from " ^ pname ^ ")")
+                )
+                (Fl_split.in_words_ws opts)
+            with Not_found -> []
+         )
+         ppx_packages
+      )
+  in
+  List.iter
+    (fun pname ->
+       let base = Findlib.package_directory pname in
+       let options =
+         try
+           List.concat
+             (List.map (fun (_, opts) -> opts)
+                (List.filter (fun (pname', _) -> pname' = pname)
+                   (meta_ppx_opts @ ppx_opts)))
+         with Not_found -> []
+       in
+       try
+         let preprocessor =
+           Findlib.resolve_path
+             ~base ~explicit:true
+             (Findlib.package_property !predicates pname "ppx")
+         in
+         first_ppx := String.concat " " (preprocessor :: options) :: !first_ppx
+       with Not_found -> ()
+    ) ppx_packages
+
 let action_of_file name =
   if Filename.check_suffix name ".ml"
   || Filename.check_suffix name ".mlt" then
@@ -668,6 +724,7 @@ let () =
 
 let process_deferred_actions env =
   process_package_includes ();
+  process_ppx_spec ();
   let final_output_name = !output_name in
   (* Make sure the intermediate products don't clash with the final one
      when we're invoked like: ocamlopt -o foo bar.c baz.ml. *)
