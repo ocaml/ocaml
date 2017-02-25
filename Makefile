@@ -83,6 +83,10 @@ DEPFLAGS=$(INCLUDES)
 
 OCAMLDOC_OPT=$(WITH_OCAMLDOC:=.opt)
 
+ifeq ($(WITH_FINDLIB), 1)
+$(shell git submodule update --init lib-findlib)
+endif
+
 UTILS=utils/config.cmo utils/misc.cmo \
   utils/identifiable.cmo utils/numbers.cmo utils/arg_helper.cmo \
   utils/clflags.cmo utils/tbl.cmo utils/timings.cmo \
