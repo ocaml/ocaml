@@ -131,7 +131,7 @@ CAMLDEP_IMPORTS=timings.cmo misc.cmo config.cmo identifiable.cmo numbers.cmo \
   pparse.cmo compenv.cmo depend.cmo
 
 ocamldep: LINKFLAGS += -compat-32
-$(call byte_and_opt,ocamldep, $(FINDLIB) $(CAMLDEP_IMPORTS) $(CAMLDEP_OBJ),)
+$(call byte_and_opt,ocamldep, $(addprefix ../, $(FINDLIB)) $(CAMLDEP_IMPORTS) $(CAMLDEP_OBJ),)
 ocamldep: depend.cmi
 ocamldep.opt: depend.cmi
 
