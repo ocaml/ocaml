@@ -107,6 +107,20 @@ VPATH := $(filter-out -I,$(INCLUDES))
 
 # The dependency generator
 
+FINDLIB=
+ifeq ($(WITH_FINDLIB), 1)
+FINDLIB=lib-findlib/src/findlib/findlib_config.cmo \
+  lib-findlib/src/findlib/fl_split.cmo \
+  lib-findlib/src/findlib/fl_metatoken.cmo \
+  lib-findlib/src/findlib/fl_meta.cmo \
+  lib-findlib/src/findlib/fl_metascanner.cmo \
+  lib-findlib/src/findlib/fl_topo.cmo \
+  lib-findlib/src/findlib/fl_package_base.cmo \
+  lib-findlib/src/findlib/findlib.cmo \
+  lib-findlib/src/findlib/fl_args.cmo \
+  lib-findlib/src/findlib/fl_lint.cmo
+endif
+
 CAMLDEP_OBJ=ocamldep.cmo
 CAMLDEP_IMPORTS=timings.cmo misc.cmo config.cmo identifiable.cmo numbers.cmo \
   arg_helper.cmo clflags.cmo terminfo.cmo \
@@ -117,7 +131,7 @@ CAMLDEP_IMPORTS=timings.cmo misc.cmo config.cmo identifiable.cmo numbers.cmo \
   pparse.cmo compenv.cmo depend.cmo
 
 ocamldep: LINKFLAGS += -compat-32
-$(call byte_and_opt,ocamldep, ../lib-findlib/src/findlib/findlib.cma $(CAMLDEP_IMPORTS) $(CAMLDEP_OBJ),)
+$(call byte_and_opt,ocamldep, $(FINDLIB) $(CAMLDEP_IMPORTS) $(CAMLDEP_OBJ),)
 ocamldep: depend.cmi
 ocamldep.opt: depend.cmi
 

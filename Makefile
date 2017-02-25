@@ -116,6 +116,8 @@ TYPING=typing/ident.cmo typing/path.cmo \
   typing/typeclass.cmo \
   typing/typemod.cmo
 
+FINDLIB=
+ifeq ($(WITH_FINDLIB), 1)
 FINDLIB=lib-findlib/src/findlib/findlib_config.cmo \
   lib-findlib/src/findlib/fl_split.cmo \
   lib-findlib/src/findlib/fl_metatoken.cmo \
@@ -126,6 +128,7 @@ FINDLIB=lib-findlib/src/findlib/findlib_config.cmo \
   lib-findlib/src/findlib/findlib.cmo \
   lib-findlib/src/findlib/fl_args.cmo \
   lib-findlib/src/findlib/fl_lint.cmo
+endif
 
 COMP=bytecomp/lambda.cmo bytecomp/printlambda.cmo \
   bytecomp/semantics_of_primitives.cmo \
@@ -747,6 +750,7 @@ partialclean::
 
 # Findlib
 
+ifeq ($(WITH_FINDLIB), 1)
 lib-findlib/src/findlib/findlib_config.ml: lib-findlib/src/findlib/findlib_config.mlp config/Makefile
 	sed -e 's|@CONFIGFILE@||' \
 	    -e 's|@STDLIB@|$(LIBDIR)|' \
@@ -766,6 +770,7 @@ beforedepend:: lib-findlib/src/findlib/fl_meta.ml
 
 partialclean::
 	rm -f lib-findlib/src/findlib/fl_meta.ml
+endif
 
 utils/findlib_helper.ml: utils/findlib_helper.mlp
 	cpp -P -DWITH_FINDLIB=$(WITH_FINDLIB) $< > $@
