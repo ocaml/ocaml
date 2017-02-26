@@ -42,15 +42,23 @@ Next version (4.05.0):
 
 ### Code generation and optimizations:
 
+- MPR#7201, GPR#954: Correct wrong optimisation of "0 / <expr>"
+  and "0 mod <expr>" in the case when <expr> was a non-constant
+  evaluating to zero
+  (Mark Shinwell)
+
+- MPR#7357, GPR#832: Improve compilation time for toplevel
+  include(struct ... end : sig ... end)
+  (Alain Frisch, report by Hongbo Zhang, review by Jacques Garrigue)
+
 - GPR#504: Instrumentation support for fuzzing with afl-fuzz.
   (Stephen Dolan, review by Alain Frisch, Pierre Chambart, Mark
   Shinwell, Gabriel Scherer and Damien Doligez)
 
-- MPR#7201, GPR#954: Correct wrong optimisation of "0 / <expr>"
-  and "0 mod <expr>" in the case when <expr> was a non-constant
-  evaluating to zero (Mark Shinwell)
-
 ### Runtime system:
+
+- MPR#385, GPR#953: Add caml_startup_exn
+  (Mark Shinwell)
 
 - PR#7423, GPR#946: expose new exception-raising functions
   `void caml_{failwith,invalid_argument}_value(value msg)`
@@ -61,7 +69,8 @@ Next version (4.05.0):
   passed to the new functions are handled by the garbage collector.
   (Gabriel Scherer, review by Mark Shinwell, request by Immanuel Litzroth)
 
-- GPR#953 (was MPR#385): Add caml_startup_exn (Mark Shinwell)
+- GPR#795: remove 256-character limitation on Sys.executable_name
+  (Xavier Leroy)
 
 - GPR#891: Use -fno-builtin-memcmp when building runtime with gcc.
   (Leo White)
@@ -72,14 +81,10 @@ Next version (4.05.0):
   (Tadeu Zagallo and Gabriel Scherer, report by Jeremy Yallop,
   review by David Allsopp, Jacques Garrigue)
 
+* PR#7414, GPR#929: Soundness bug with non-generalized type variables and functors.
+  (Jacques Garrigue, report by Leo White)
+
 ### Compiler user-interface and warnings:
-
-- PR#7473, GPR#1025: perform proper globbing for command-line arguments on
-  Windows
-  (Jonathan Protzenko)
-
-- PR#7315, GPR#736: refine some error locations
-  (Gabriel Scherer and Alain Frisch, report by Matej Košík)
 
 - PR#7050, GPR#748 GPR#843 GPR#864: new `-args/-args0 <file>` parameters to
   provide extra command-line arguments in a file -- see documentation.
@@ -89,13 +94,26 @@ Next version (4.05.0):
    and Damien Doligez, discussion with Alain Frisch and Xavier Leroy,
    feature request from the Coq team)
 
+- PR#7137, GPR#960: "-open" command line flag now accepts a module path
+  (not a module name) (Arseniy Alekseyev and Leo White)
+
 - PR#7172, GPR#970: add extra (ocamlc -config) options
   int_size, word_size, ext_exe
   (Gabriel Scherer, request by Daniel Bünzli)
 
+- PR#7315, GPR#736: refine some error locations
+  (Gabriel Scherer and Alain Frisch, report by Matej Košík)
+
+- PR#7473, GPR#1025: perform proper globbing for command-line arguments on
+  Windows
+  (Jonathan Protzenko)
+
 - PR#7479: make sure "ocamlc -pack" is only given .cmo and .cmi files,
   and that "ocamlopt -pack" is only given .cmx and .cmi files.
   (Xavier Leroy)
+
+- GPR#796: allow compiler plugins to declare their own arguments.
+  (Fabrice Le Fessant)
 
 - GPR#829: better error when opening a module aliased to a functor
   (Alain Frisch)
@@ -104,14 +122,14 @@ Next version (4.05.0):
   compiler when called to compile third-party C source files
   (Sébastien Hinderer)
 
+- GPR#915: fix -dsource (pprintast.ml) bugs
+  (Runhang Li, review by Alain Frisch)
+
 * GPR#933: ocamlopt -p now reports an error on platforms that do not
   support profiling with gprof; dummy profiling libraries are no longer
   installed on such platforms.
   This can be tested with ocamlopt -config
   (Sébastien Hinderer)
-
-- PR#7137, GPR#960: "-open" command line flag now accepts a module path
-  (not a module name) (Arseniy Alekseyev and Leo White)
 
 - GPR#1009: "ocamlc -c -linkall" and "ocamlopt -c -linkall" can now be used
   to set the "always link" flag on individual compilation units.  This
@@ -119,8 +137,9 @@ Next version (4.05.0):
   the "always link" flag on all units of the given library.
   (Xavier Leroy)
 
-- GPR#796: allow compiler plugins to declare their own arguments.
-  (Fabrice Le Fessant)
+- GPR#1027: various improvements to -dtimings, mostly including time
+  spent in subprocesses like preprocessors
+  (Valentin Gatien-Baron, review by Gabriel Scherer)
 
 ### Standard library:
 
@@ -147,13 +166,18 @@ Next version (4.05.0):
   (Gabriel de Perthuis, with contributions from Alain Frisch, review by
   Hezekiah M. Carty and Simon Cruanes, initial report by Gerd Stolpmann)
 
-- Add missing functions to ArrayLabels, BytesLabels, ListLabels,
-  MoreLabels, StringLabels so they are compatible with non-labeled
-  counterparts.
+- GPR#875: Add missing functions to ArrayLabels, BytesLabels,
+  ListLabels, MoreLabels, StringLabels so they are compatible with
+  non-labeled counterparts.
   (Roma Sokolov)
 
 - GPR#999: Arg, do not repeat thrice usage_msg when reporting an error
   (Florian Angeletti, review by Gabriel Scherer)
+
+- GPR#1042: Fix escaping of command-line arguments in
+  Unix.create_process{,_env} under Windows.  Arguments with tabs should now
+  be received verbatim by the child process.
+  (Nicolas Ojeda Bar, Andreas Hauptmann review by Xavier Leroy)
 
 ### Debugging and profiling:
 
@@ -190,16 +214,6 @@ Next version (4.05.0):
 
 ### Other libraries:
 
-- GPR#650: in the Unix library, add `?cloexec:bool` optional arguments to
-  functions that create file descriptors (`dup`, `dup2`, `pipe`, `socket`,
-  `socketpair`, `accept`).  Implement these optional arguments in the
-  most atomic manner provided by the operating system to set (or clear)
-  the close-on-exec flag at the same time the file descriptor is created,
-  reducing the risk of race conditions with `exec` or `create_process`
-  calls running in other threads, and improving security.  Also: add a
-  `O_KEEPEXEC` flag for `openfile` by symmetry with `O_CLOEXEC`.
-  (Xavier Leroy)
-
 - PR#7158: Event.sync, Mutex.create, Condition.create cause too many GCs.
   The fix is to no longer consider mutexes and condition variables
   as rare kernel resources.
@@ -221,12 +235,22 @@ Next version (4.05.0):
 - PR#7457: a case of double free in the systhreads library (POSIX implementation)
   (Xavier Leroy, report by Chet Murthy)
 
-- GPR#997: Deprecate Bigarray.*.map_file and add Unix.map_file as a
-  first step towards moving Bigarray to the stdlib
-  (Jérémie Dimino)
+- GPR#650: in the Unix library, add `?cloexec:bool` optional arguments to
+  functions that create file descriptors (`dup`, `dup2`, `pipe`, `socket`,
+  `socketpair`, `accept`).  Implement these optional arguments in the
+  most atomic manner provided by the operating system to set (or clear)
+  the close-on-exec flag at the same time the file descriptor is created,
+  reducing the risk of race conditions with `exec` or `create_process`
+  calls running in other threads, and improving security.  Also: add a
+  `O_KEEPEXEC` flag for `openfile` by symmetry with `O_CLOEXEC`.
+  (Xavier Leroy)
 
 - GPR#996: correctly update caml_top_of_stack in systhreads
   (Fabrice Le Fessant)
+
+- GPR#997: Deprecate Bigarray.*.map_file and add Unix.map_file as a
+  first step towards moving Bigarray to the stdlib
+  (Jérémie Dimino)
 
 ### Bytecode debugger (ocamldebug):
 
@@ -263,15 +287,6 @@ Next version (4.05.0):
 
 ### Compiler distribution build system:
 
-- GPR#887: allow -with-frame-pointers if clang is used as compiler on Linux
-  (Bernhard Schommer)
-
-- GPR#919: use clang as preprocessor assembler if clang is used as compiler
-  (Bernhard Schommer)
-
-- GPR#927: improve the detection of hashbang support in the configure script
-  (Armaël Guéneau)
-
 - PR#7377: remove -std=gnu99 for newer gcc versions
   (Damien Doligez, report by ygrek)
 
@@ -287,13 +302,26 @@ Next version (4.05.0):
   debugger/
   (Sébastien Hinderer)
 
+- GPR#803: new ocamllex-based tool to extract bytecode compiler
+  opcode information from C headers.
+  (Nicolas Ojeda Bar)
+
 - GPR#827: install missing mli and cmti files, new make target
   install-compiler-sources for installation of compiler-libs ml files
   (Hendrik Tews)
 
+- GPR#887: allow -with-frame-pointers if clang is used as compiler on Linux
+  (Bernhard Schommer)
+
 - GPR#898: fix locale-dependence of primitive list order,
   detected through reproducible-builds.org.
   (Hannes Mehnert, review by Gabriel Scherer and Ximin Luo)
+
+- GPR#919: use clang as preprocessor assembler if clang is used as compiler
+  (Bernhard Schommer)
+
+- GPR#927: improve the detection of hashbang support in the configure script
+  (Armaël Guéneau)
 
 - GPR#932: install ocaml{c,lex}->ocaml{c,lex}.byte symlink correctly
   when the opt target is built but opt.opt target is not.
@@ -310,10 +338,6 @@ Next version (4.05.0):
   built
   (Sébastien Hinderer, review by David Allsopp)
 
-- GPR#803: new ocamllex-based tool to extract bytecode compiler
-  opcode information from C headers.
-  (Nicolas Ojeda Bar)
-
 - GPR#1033: merge Unix and Windows build systems in the root directory
   (Sébastien Hinderer, review by Damien Doligez and Adrien Nader)
 
@@ -326,12 +350,6 @@ Next version (4.05.0):
   list in .cmti files + avoid rebuilding cmi_info record when creating
   .cmti files
   (Alain Frisch, report by Daniel Bünzli, review by Jérémie Dimino)
-- GPR#915: fix -dsource (pprintast.ml) bugs
-  (Runhang Li, review by Alain Frisch)
-
-- GPR#832, MPR#7357: Improve compilation time for toplevel
-  include(struct ... end : sig ... end)
-  (Alain Frisch, report by Hongbo Zhang, review by Jacques Garrigue)
 
 - GPR#881: change `Outcometree.out_variant` to be more general.
   `Ovar_name of out_ident * out_type list` becomes `Ovar_type of out_type`.
@@ -340,15 +358,20 @@ Next version (4.05.0):
 - GPR#908: refactor PIC-handling in the s390x backend
   (Gabriel Scherer)
 
-- GPR#1027: various improvements to -dtimings, mostly including time
-  spent in subprocesses like preprocessors
-  (Valentin Gatien-Baron, review by Gabriel Scherer)
-
 ### Bug fixes
 
 - PR#5115: protect all byterun/fail.c functions against
   uninitialized caml_global_data (only changes the bytecode behavior)
   (Gabriel Scherer, review by Xavier Leroy)
+
+- PR#6136, GPR#967: Fix Closure so that overapplication evaluation order
+  matches the bytecode compiler and Flambda.
+  (Mark Shinwell, report by Jeremy Yallop, review by Frédéric Bour)
+
+- PR#6594, GPR#955: Remove "Istore_symbol" specific operation on x86-64.
+  This is more robust and in particular avoids assembly failures on Win64.
+  (Mark Shinwell, review by Xavier Leroy, testing by David Allsopp and
+   Olivier Andrieu)
 
 - PR#6903: Unix.execvpe doesn't change environment on Cygwin
   (Xavier Leroy)
@@ -356,17 +379,27 @@ Next version (4.05.0):
 - PR#7216, GPR#949: don't require double parens in Functor((val x))
   (Jacques Garrigue, review by Valentin Gatien-Baron)
 
+- PR#7346, GPR#966: Fix evaluation order problem whereby expressions could
+  be incorrectly re-ordered when compiling with Flambda.  This also fixes one
+  example of evaluation order in the native code compiler not matching the
+  bytecode compiler (even when not using Flambda)
+  (Mark Shinwell, Leo White, code review by Pierre Chambart)
+
 - PR#7407: Two not-quite-standard C idioms rejected by SUNWSPro compilers
   (Xavier Leroy)
   
-- PR#7414, GPR#929: Soundness bug with non-generalized type variable and functor
-  (Jacques Garrigue, report by Leo White)
-
 - PR#7421: Soundness bug with GADTs and lazy
   (Jacques Garrigue, report by Leo White)
 
 - PR#7424: Typechecker diverges on unboxed type declaration
   (Jacques Garrigue, report by Stephen Dolan)
+
+- PR#7426, GPR#965: Fix fatal error during object compilation (also
+  introduces new [Pfield_computed] and [Psetfield_computed] primitives)
+  (Mark Shinwell)
+
+- PR#7427, GPR#959: Don't delete let bodies in Cmmgen
+  (Mark Shinwell)
 
 - PR#7432: Linking modules compiled with -labels and -nolabels is not safe
   (Jacques Garrigue, report by Jeremy Yallop)
@@ -379,9 +412,6 @@ Next version (4.05.0):
 
 - PR#7443, GPR#990: spurious unused open warning with local open in patterns
   (Florian Angeletti, report by Gabriel Scherer)
-
-- GPR#795: remove 256-character limitation on Sys.executable_name
-  (Xavier Leroy)
 
 - GPR#805, GPR#815, GPR#833: check for integer overflow in String.concat
   (Jeremy Yallop,
@@ -396,35 +426,15 @@ Next version (4.05.0):
 - GPR#881: short-paths did not apply to some polymorphic variants
   (Valentin Gatien-Baron, review by Leo White)
 
-- GPR#886: Fix Ctype.moregeneral's handling of row_name (Leo White)
+- GPR#886: Fix Ctype.moregeneral's handling of row_name
+  (Leo White)
 
 - GPR#934: check for integer overflow in Bytes.extend
   (Jeremy Yallop, review by Gabriel Scherer)
 
-- MPR#6594, GPR#955: Remove "Istore_symbol" specific operation on x86-64.
-  This is more robust and in particular avoids assembly failures on Win64.
-  (Mark Shinwell, review by Xavier Leroy, testing by David Allsopp and
-   Olivier Andrieu)
-
 - GPR#956 Keep possibly-effectful expressions when optimizing multiplication
   by zero.
   (Jeremy Yallop)
-
-- PR#7427, GPR#959: Don't delete let bodies in Cmmgen (Mark Shinwell)
-
-- GPR#965, PR#7426: Fix fatal error during object compilation (also
-  introduces new [Pfield_computed] and [Psetfield_computed] primitives)
-  (Mark Shinwell)
-
-- PR#7346, GPR#966: Fix evaluation order problem whereby expressions could
-  be incorrectly re-ordered when compiling with Flambda.  This also fixes one
-  example of evaluation order in the native code compiler not matching the
-  bytecode compiler (even when not using Flambda)
-  (Mark Shinwell, Leo White, code review by Pierre Chambart)
-
-- GPR#967, PR#6136: Fix Closure so that overapplication evaluation order
-  matches the bytecode compiler and Flambda.
-  (Mark Shinwell, report by Jeremy Yallop, review by Frédéric Bour)
 
 - GPR#983: Avoid removing effectful expressions in Closure, and
   eliminate more non-effectful ones
@@ -438,12 +448,8 @@ Next version (4.05.0):
   (Leo White)
 
 - GPR#1019: Fix fatal error in Flambda mode "[functions] does not map set of
-  closures ID" (Pierre Chambart, code review by Mark Shinwell and Leo White)
-
-- GPR#1042: Fix escaping of command-line arguments in
-  Unix.create_process{,_env} under Windows.  Arguments with tabs should now
-  be received verbatim by the child process.
-  (Nicolas Ojeda Bar, Andreas Hauptmann review by Xavier Leroy)
+  closures ID"
+  (Pierre Chambart, code review by Mark Shinwell and Leo White)
 
 - GPR#1043: Allow Windows CRLF line-endings in ocamlyacc on Unix and Cygwin.
   (David Allsopp, review by Damien Doligez and Xavier Leroy)
