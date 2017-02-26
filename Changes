@@ -15,6 +15,10 @@ Working version
   (Marcell Fischbach and Benedikt Meurer, adapted by Nicolas Ojeda
   Bar, review by Nicolas Ojeda Bar and Alain Frisch)
 
+- MPR#6927, GPR#988: On macOS, when compiling bytecode stubs, plugins,
+  and shared libraries through -output-obj, generate dylibs instead of
+  bundles.
+  (whitequark)
 
 ### Tools:
 
@@ -45,10 +49,6 @@ Next version (4.05.0):
 - MPR#7201, GPR#954: Correct wrong optimisation of "0 / <expr>"
   and "0 mod <expr>" in the case when <expr> was a non-constant
   evaluating to zero (Mark Shinwell)
-
-- MPR#6927, GPR#988: On macOS, when compiling bytecode stubs, plugins,
-  and shared libraries through -output-obj, generate dylibs instead of
-  bundles. (whitequark)
 
 ### Runtime system:
 
