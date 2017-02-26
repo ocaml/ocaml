@@ -250,6 +250,7 @@ let simplif_arith_prim_pure fpc p (args, approxs) dbg =
       begin match p with
       | Pnot -> make_const_bool (n1 = 0)
       | Pnegint -> make_const_int (- n1)
+      | Pabsint -> make_const_int (abs n1)
       | Poffsetint n -> make_const_int (n + n1)
       | Pfloatofint when fpc -> make_const_float (float_of_int n1)
       | Pbintofint Pnativeint -> make_const_natint (Nativeint.of_int n1)

@@ -101,6 +101,7 @@ let primitive (p : Lambda.primitive) (args, approxs) expr dbg ~size_int
       | Pidentity -> S.const_int_expr expr x
       | Pnot -> S.const_bool_expr expr (x = 0)
       | Pnegint -> S.const_int_expr expr (-x)
+      | Pabsint -> S.const_int_expr expr (abs x)
       | Pbswap16 -> S.const_int_expr expr (S.swap16 x)
       | Poffsetint y -> S.const_int_expr expr (x + y)
       | Pfloatofint when fpc -> S.const_float_expr expr (float_of_int x)
