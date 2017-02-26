@@ -400,6 +400,7 @@ let op_shapes = [
   opBREAK, Nothing;
   opRERAISE, Nothing;
   opRAISE_NOTRACE, Nothing;
+  opABSINT, Nothing;
 ];;
 
 let print_event ev =

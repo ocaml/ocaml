@@ -91,7 +91,7 @@ type instruction =
   | Kraise of raise_kind
   | Kcheck_signals
   | Kccall of string * int
-  | Knegint | Kaddint | Ksubint | Kmulint | Kdivint | Kmodint
+  | Knegint | Kaddint | Ksubint | Kmulint | Kdivint | Kmodint | Kabsint
   | Kandint | Korint | Kxorint | Klslint | Klsrint | Kasrint
   | Kintcomp of comparison
   | Koffsetint of int

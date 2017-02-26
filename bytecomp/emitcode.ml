@@ -269,6 +269,7 @@ let emit_instr = function
   | Kandint -> out opANDINT  | Korint -> out opORINT
   | Kxorint -> out opXORINT  | Klslint -> out opLSLINT
   | Klsrint -> out opLSRINT  | Kasrint -> out opASRINT
+  | Kabsint -> out opABSINT
   | Kintcomp c -> emit_comp c
   | Koffsetint n -> out opOFFSETINT; out_int n
   | Koffsetref n -> out opOFFSETREF; out_int n

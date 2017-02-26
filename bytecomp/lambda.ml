@@ -76,7 +76,7 @@ type primitive =
   (* Boolean operations *)
   | Psequand | Psequor | Pnot
   (* Integer operations *)
-  | Pnegint | Paddint | Psubint | Pmulint
+  | Pnegint | Paddint | Psubint | Pmulint | Pabsint
   | Pdivint of is_safe | Pmodint of is_safe
   | Pandint | Porint | Pxorint
   | Plslint | Plsrint | Pasrint

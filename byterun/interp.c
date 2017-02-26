@@ -976,7 +976,8 @@ value caml_interprete(code_t prog, asize_t prog_size)
       accu = (value)((intnat) accu - (intnat) *sp++ + 1); Next;
     Instruct(MULINT):
       accu = Val_long(Long_val(accu) * Long_val(*sp++)); Next;
-
+    Instruct(ABSINT):
+      if (accu < 0) accu = (value)(2 - (intnat)accu); Next;
     Instruct(DIVINT): {
       intnat divisor = Long_val(*sp++);
       if (divisor == 0) { Setup_for_c_call; caml_raise_zero_divide(); }
