@@ -200,6 +200,8 @@ val afl_inst_ratio : int ref
 val packages : string list ref
 val predicates : string list ref
 
+val add_predicates : string list -> unit
+
 val all_passes : string list ref
 val dumped_pass : string -> bool
 val set_dumped_pass : string -> bool -> unit

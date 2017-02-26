@@ -24,7 +24,7 @@ let slashify s =
 
 let check_package pkg =
   (* may raise No_such_package *)
-  ignore (Findlib.package_directory pkg : string)
+  ignore (package_directory pkg : string)
 
 let package_exists pkg =
   match package_directory pkg with

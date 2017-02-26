@@ -235,7 +235,6 @@ module Options = Main_args.Make_optcomp_options (struct
 end);;
 
 let main () =
-  Clflags.predicates := "native" :: !Clflags.predicates;
   native_code := true;
   let ppf = Format.err_formatter in
   try
@@ -251,7 +250,8 @@ let main () =
          Optcompile.implementation ~backend,
          Optcompile.interface,
          ".cmx",
-         ".cmxa");
+         ".cmxa",
+         "native");
     with Arg.Bad msg ->
       begin
         prerr_endline msg;

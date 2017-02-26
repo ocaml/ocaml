@@ -127,7 +127,6 @@ module Options = Main_args.Make_bytecomp_options (struct
 end)
 
 let main () =
-  Clflags.predicates := "byte" :: !Clflags.predicates;
   Clflags.add_arguments __LOC__ Options.list;
   Findlib_helper.init ();
   try
@@ -139,7 +138,8 @@ let main () =
          Compile.implementation,
          Compile.interface,
          ".cmo",
-         ".cma");
+         ".cma",
+         "byte");
     with Arg.Bad msg ->
       begin
         prerr_endline msg;
