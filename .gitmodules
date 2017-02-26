@@ -3,4 +3,4 @@
     url = https://github.com/alainfrisch/flexdll.git
 [submodule "lib-findlib"]
 	path = lib-findlib
-	url = https://github.com/nojb/lib-findlib
+	url = https://gitlab.camlcity.org/nojb/lib-findlib
