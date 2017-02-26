@@ -27,6 +27,7 @@
 # 'union' merge driver just unions textual content in case of conflict
 #   http://krlmlr.github.io/using-gitattributes-to-avoid-merge-conflicts/
 /.mailmap                merge=union
+/Changes                 merge=union
 
 # No header for text files (would be too obtrusive).
 *.md                     ocaml-typo=missing-header
