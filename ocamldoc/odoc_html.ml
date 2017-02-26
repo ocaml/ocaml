@@ -2618,15 +2618,20 @@ class html =
       try
         let chanout = open_out (Filename.concat !Global.target_dir self#index) in
         let b = new_buf () in
-        let title = match !Global.title with None -> "" | Some t -> self#escape t in
         bs b doctype ;
         bs b "<html>\n";
         self#print_header b self#title;
         bs b "<body>\n";
 
-        bs b "<h1>";
-        bs b title;
-        bs b "</h1>\n" ;
+        (
+        match !Global.title with
+        | None -> ()
+        | Some t ->
+            bs b "<h1>";
+            bs b (self#escape t);
+            bs b "</h1>\n"
+        );
+
         let info = Odoc_info.apply_opt
             (Odoc_info.info_of_comment_file module_list)
             !Odoc_info.Global.intro_file
