@@ -175,6 +175,11 @@ Working version
 
 ### Runtime system:
 
+- GPR#1070: enable gcc typechecking for caml_alloc_sprintf, caml_gc_message.
+  Make caml_gc_message a variadic function. Fix many caml_gc_message format
+  strings.
+  (Olivier Andrieu)
+
 - GPR#71: The runtime can now be shut down gracefully by means of the new
   caml_shutdown and caml_startup_pooled functions. The new 'c' flag in
   OCAMLRUNPARAM enables shutting the runtime properly on process exit.

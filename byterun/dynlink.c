@@ -123,7 +123,7 @@ static void open_shared_lib(char * name)
 
   realname = caml_search_dll_in_path(&caml_shared_libs_path, name);
   caml_gc_message(0x100, "Loading shared library %s\n",
-                  (uintnat) realname);
+                  realname);
   caml_enter_blocking_section();
   handle = caml_dlopen(realname, 1, 1);
   caml_leave_blocking_section();
@@ -218,7 +218,7 @@ CAMLprim value caml_dynlink_open_lib(value mode, value filename)
   char * p;
 
   caml_gc_message(0x100, "Opening shared library %s\n",
-                  (uintnat) String_val(filename));
+                  String_val(filename));
   p = caml_stat_strdup(String_val(filename));
   caml_enter_blocking_section();
   handle = caml_dlopen(p, Int_val(mode), 1);
