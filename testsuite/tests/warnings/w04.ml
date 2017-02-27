@@ -10,3 +10,22 @@ type t = A | B
 let g x = match x with
 | A -> 0
 | _ -> 1
+
+type u = C | D [@@ ocaml.warning "-4"]
+(* should not warn. *)
+let h x = match x with
+| C -> 0
+| _ -> 1
+
+[@@@ocaml.warning "-4"]
+
+type v = F | G [@@ ocaml.warning "+4"]
+
+let k x = match x with
+| F -> 0
+| _ -> 1
+
+(* should not warn. *)
+let l x = match x with
+| A -> 0
+| _ -> 1
