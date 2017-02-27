@@ -505,6 +505,10 @@ Next minor version (4.04.1):
   of call at point correctly.
   (Chunhui He)
 
+- GPR#1072: Fix segfault in Sys.runtime_parameters when exception backtraces
+  are enabled.
+  (Olivier Andrieu)
+
 OCaml 4.04.0 (4 Nov 2016):
 --------------------------
 
