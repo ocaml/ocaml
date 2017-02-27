@@ -178,7 +178,7 @@ void caml_final_do_calls (void)
   if (running_finalisation_function) return;
   if (to_do_hd != NULL){
     if (caml_finalise_begin_hook != NULL) (*caml_finalise_begin_hook) ();
-    caml_gc_message (0x80, "Calling finalisation functions.\n", 0);
+    caml_gc_message (0x80, "Calling finalisation functions.\n");
     while (1){
       while (to_do_hd != NULL && to_do_hd->size == 0){
         struct to_do *next_hd = to_do_hd->next;
@@ -205,7 +205,7 @@ void caml_final_do_calls (void)
       running_finalisation_function = 0;
       if (Is_exception_result (res)) caml_raise (Extract_exception (res));
     }
-    caml_gc_message (0x80, "Done calling finalisation functions.\n", 0);
+    caml_gc_message (0x80, "Done calling finalisation functions.\n");
     if (caml_finalise_end_hook != NULL) (*caml_finalise_end_hook) ();
   }
 }

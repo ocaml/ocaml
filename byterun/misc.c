@@ -17,6 +17,7 @@
 
 #include <stdio.h>
 #include <string.h>
+#include <stdarg.h>
 #include "caml/config.h"
 #include "caml/misc.h"
 #include "caml/memory.h"
@@ -52,10 +53,13 @@ void caml_set_fields (value v, unsigned long start, unsigned long filler)
 
 uintnat caml_verb_gc = 0;
 
-void caml_gc_message (int level, char *msg, uintnat arg)
+void caml_gc_message (int level, char *msg, ...)
 {
   if ((caml_verb_gc & level) != 0){
-    fprintf (stderr, msg, arg);
+    va_list ap;
+    va_start(ap, msg);
+    vfprintf (stderr, msg, ap);
+    va_end(ap);
     fflush (stderr);
   }
 }
@@ -259,11 +263,11 @@ void CAML_INSTR_ATEXIT (void)
     for (p = CAML_INSTR_LOG; p != NULL; p = p->next){
       for (i = 0; i < p->index; i++){
         fprintf (f, "@@ %19ld %19ld %s\n",
-                 Get_time (p, i), Get_time(p, i+1), p->tag[i+1]);
+                 (long) Get_time (p, i), (long) Get_time(p, i+1), p->tag[i+1]);
       }
       if (p->tag[0][0] != '\000'){
         fprintf (f, "@@ %19ld %19ld %s\n",
-                 Get_time (p, 0), Get_time(p, p->index), p->tag[0]);
+                 (long) Get_time (p, 0), (long) Get_time(p, p->index), p->tag[0]);
       }
     }
     fclose (f);

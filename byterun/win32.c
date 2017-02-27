@@ -161,13 +161,13 @@ caml_stat_string caml_search_in_path(struct ext_table * path, const char * name)
     if (dir[0] == 0) continue;
          /* not sure what empty path components mean under Windows */
     fullname = caml_stat_strconcat(3, dir, "\\", name);
-    caml_gc_message(0x100, "Searching %s\n", (uintnat) fullname);
+    caml_gc_message(0x100, "Searching %s\n", fullname);
     if (stat(fullname, &st) == 0 && S_ISREG(st.st_mode))
       return fullname;
     caml_stat_free(fullname);
   }
  not_found:
-  caml_gc_message(0x100, "%s not found in search path\n", (uintnat) name);
+  caml_gc_message(0x100, "%s not found in search path\n", name);
   return caml_stat_strdup(name);
 }
 
@@ -188,8 +188,7 @@ CAMLexport caml_stat_string caml_search_exe_in_path(const char * name)
                          fullname,
                          &filepart);
     if (retcode == 0) {
-      caml_gc_message(0x100, "%s not found in search path\n",
-                      (uintnat) name);
+      caml_gc_message(0x100, "%s not found in search path\n", name);
       caml_stat_free(fullname);
       return caml_stat_strdup(name);
     }
