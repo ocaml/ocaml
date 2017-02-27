@@ -852,6 +852,7 @@ type symbol_defn = string * is_global
 
 type cmm_constant =
   | Const_closure of symbol_defn * ufunction list * uconstant list
+  | Const_block of symbol_defn * int * data_item list
 
 let cmm_constants =
   ref ([] : cmm_constant list)
@@ -1351,7 +1352,29 @@ let transl_isout h arg dbg = tag_int (Cop(Ccmpa Clt, [h ; arg], dbg)) dbg
 (* Build an actual switch (ie jump table) *)
 
 let make_switch arg cases actions dbg =
-  Cswitch (arg,cases,actions,dbg)
+  let is_const = function
+    | Cconst_int n
+    | Cconst_pointer n -> (n land 1) = 1
+    | Cconst_natint n
+    | Cconst_natpointer n -> (Nativeint.(to_int (logand n one) = 1))
+    | Cconst_symbol _ -> true
+    | _ -> false in
+  if Array.for_all is_const actions then
+    let to_data_item = function
+      | Cconst_int n
+      | Cconst_pointer n -> Cint (Nativeint.of_int n)
+      | Cconst_natint n
+      | Cconst_natpointer n -> Cint n
+      | Cconst_symbol s -> Csymbol_address s
+      | _ -> assert false in
+    let const_actions = Array.map to_data_item actions in
+    let table = Compilenv.new_const_symbol () in
+    add_cmm_constant (Const_block ((table, Not_global), 0,
+        Array.to_list (Array.map (fun act ->
+          const_actions.(act)) cases)));
+    addr_array_ref (Cconst_symbol table) (tag_int arg dbg) dbg
+  else
+    Cswitch (arg,cases,actions,dbg)
 
 module SArgBlocks =
 struct
@@ -2909,6 +2932,13 @@ let emit_constant_closure ((_, global_symb) as symb) fundecls clos_vars cont =
         Csymbol_address f1.label ::
         emit_others 4 remainder
 
+(* Emit constant blocks *)
+
+let emit_constant_block symb tag elems =
+  Cint(black_block_header tag (List.length elems)) ::
+  cdefine_symbol symb @
+  elems
+
 (* Emit all structured constants *)
 
 let emit_constants cont (constants:Clambda.preallocated_constant list) =
@@ -2922,7 +2952,9 @@ let emit_constants cont (constants:Clambda.preallocated_constant list) =
   List.iter
     (function
     | Const_closure (symb, fundecls, clos_vars) ->
-        c := Cdata(emit_constant_closure symb fundecls clos_vars []) :: !c)
+        c := Cdata(emit_constant_closure symb fundecls clos_vars []) :: !c
+    | Const_block (symb, tag, elems) ->
+        c := Cdata(emit_constant_block symb tag elems) :: !c)
     !cmm_constants;
   cmm_constants := [];
   !c
