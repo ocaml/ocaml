@@ -848,8 +848,16 @@ let transl_structured_constant cst =
 
 type is_global = Global | Not_global
 
-let constant_closures =
-  ref ([] : ((string * is_global) * ufunction list * uconstant list) list)
+type symbol_defn = string * is_global
+
+type cmm_constant =
+  | Const_closure of symbol_defn * ufunction list * uconstant list
+
+let cmm_constants =
+  ref ([] : cmm_constant list)
+
+let add_cmm_constant c =
+  cmm_constants := c :: !cmm_constants
 
 (* Boxed integers *)
 
@@ -1622,8 +1630,8 @@ let rec transl env e =
       transl_constant sc
   | Uclosure(fundecls, []) ->
       let lbl = Compilenv.new_const_symbol() in
-      constant_closures :=
-        ((lbl, Not_global), fundecls, []) :: !constant_closures;
+      add_cmm_constant (
+        Const_closure ((lbl, Not_global), fundecls, []));
       List.iter (fun f -> Queue.add f functions) fundecls;
       Cconst_symbol lbl
   | Uclosure(fundecls, clos_vars) ->
@@ -2839,7 +2847,7 @@ let rec emit_structured_constant symb cst cont =
         (Misc.map_end (fun f -> Cdouble f) fields cont)
   | Uconst_closure(fundecls, lbl, fv) ->
       assert(lbl = fst symb);
-      constant_closures := (symb, fundecls, fv) :: !constant_closures;
+      add_cmm_constant (Const_closure (symb, fundecls, fv));
       List.iter (fun f -> Queue.add f functions) fundecls;
       cont
 
@@ -2937,10 +2945,11 @@ let emit_constants cont (constants:Clambda.preallocated_constant list) =
          c:= Cdata(cst):: !c)
     constants;
   List.iter
-    (fun (symb, fundecls, clos_vars) ->
+    (function
+    | Const_closure (symb, fundecls, clos_vars) ->
         c := Cdata(emit_constant_closure symb fundecls clos_vars []) :: !c)
-    !constant_closures;
-  constant_closures := [];
+    !cmm_constants;
+  cmm_constants := [];
   !c
 
 let emit_all_constants cont =
