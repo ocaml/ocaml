@@ -1351,32 +1351,7 @@ let transl_isout h arg dbg = tag_int (Cop(Ccmpa Clt, [h ; arg], dbg)) dbg
 (* Build an actual switch (ie jump table) *)
 
 let make_switch arg cases actions dbg =
-  let is_const = function
-    | Cconst_int n
-    | Cconst_pointer n -> (n land 1) = 1
-    | Cconst_natint _
-    | Cconst_float _
-    | Cconst_symbol _ -> true
-    | _ -> false in
-  if Array.for_all is_const actions then
-    let const c =
-      let sym = Compilenv.new_structured_constant ~shared:true c in
-      Uconst_ref(sym, Some c) in
-    let to_uconst = function
-      | Cconst_int n -> Uconst_int (n lsr 1)
-      | Cconst_pointer n -> Uconst_ptr (n lsr 1)
-      | Cconst_symbol s -> Uconst_ref (s, None)
-      | Cconst_natint n -> const (Uconst_nativeint n)
-      | Cconst_float f -> const (Uconst_float f)
-      | _ -> assert false in
-    let const_actions = Array.map to_uconst actions in
-    let table = Compilenv.new_structured_constant ~shared:true
-      (Uconst_block (0,
-        Array.to_list (Array.map (fun act ->
-          const_actions.(act)) cases))) in
-    addr_array_ref (Cconst_symbol table) (tag_int arg dbg) dbg
-  else
-    Cswitch (arg,cases,actions,dbg)
+  Cswitch (arg,cases,actions,dbg)
 
 module SArgBlocks =
 struct
