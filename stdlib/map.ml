@@ -269,15 +269,15 @@ module Make(Ord: OrderedType) = struct
         Empty ->
           begin match f None with
           | None -> Empty
-          | Some data -> Node(Empty, x, data, Empty, 1)
+          | Some data -> Node{l=Empty; v=x; d=data; r=Empty; h=1}
           end
-      | Node(l, v, d, r, h) as m ->
+      | Node {l; v; d; r; h} as m ->
           let c = Ord.compare x v in
           if c = 0 then begin
             match f (Some d) with
             | None -> merge l r
             | Some data ->
-                if d == data then m else Node(l, x, data, r, h)
+                if d == data then m else Node{l; v=x; d=data; r; h}
           end else if c < 0 then
             let ll = update x f l in
             if l == ll then m else bal ll v d r

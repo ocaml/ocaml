@@ -95,7 +95,9 @@ module type S =
         is associated to [z] in the resulting map.  If [x] was already
         bound in [m] to a value that is physically equal to [z], [m]
         is returned unchanged (the result of the function is then
-        physically equal to [m]).  *)
+        physically equal to [m]).
+        @since 4.06.0
+    *)
 
     val singleton: key -> 'a -> 'a t
     (** [singleton x y] returns the one-element map that contains a binding [y]
