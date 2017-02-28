@@ -285,6 +285,26 @@ module Make(Ord: OrderedType) = struct
             let rr = update x f r in
             if r == rr then m else bal l v d rr
 
+    let rec update x f = function
+        Empty ->
+          begin match f None with
+          | None -> Empty
+          | Some data -> Node(Empty, x, data, Empty, 1)
+          end
+      | Node(l, v, d, r, h) as m ->
+          let c = Ord.compare x v in
+          if c = 0 then begin
+            match f (Some d) with
+            | None -> merge l r
+            | Some data ->
+                if d == data then m else Node(l, x, data, r, h)
+          end else if c < 0 then
+            let ll = update x f l in
+            if l == ll then m else bal ll v d r
+          else
+            let rr = update x f r in
+            if r == rr then m else bal l v d rr
+
     let rec iter f = function
         Empty -> ()
       | Node {l; v; d; r} ->
