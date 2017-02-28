@@ -20,6 +20,15 @@ Working version
   bundles.
   (whitequark)
 
+
+### Standard library:
+
+- PR#1771, PR#7309, GPR#1026: Add update to maps. Allows to update a
+  binding in a map or create a new binding if the key had no binding.
+  (Sébastien Briais, review by Daniel Buenzli, Alain Frisch and
+  Gabriel Scherer)
+
+
 ### Tools:
 
 - GPR#1045: ocamldep, add a "-shared" option to generate dependencies
@@ -387,7 +396,7 @@ Next version (4.05.0):
 
 - PR#7407: Two not-quite-standard C idioms rejected by SUNWSPro compilers
   (Xavier Leroy)
-  
+
 - PR#7421: Soundness bug with GADTs and lazy
   (Jacques Garrigue, report by Leo White)
 

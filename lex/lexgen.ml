@@ -684,13 +684,10 @@ let env_to_class m =
   let env1 =
     MemMap.fold
       (fun _ (tag,s) r ->
-        try
-          let ss = TagMap.find tag r in
-          let r = TagMap.remove tag r in
-          TagMap.add tag (StateSetSet.add s ss) r
-        with
-        | Not_found ->
-            TagMap.add tag (StateSetSet.add s StateSetSet.empty) r)
+         TagMap.update tag (function
+             | None -> Some (StateSetSet.singleton s)
+             | Some ss -> Some (StateSetSet.add s ss)
+           ) r)
       m TagMap.empty in
   TagMap.fold
     (fun tag ss r -> MemKey.add {tag=tag ; equiv=ss} r)
@@ -701,14 +698,12 @@ let env_to_class m =
 let inverse_mem_map trans m r =
   TagMap.fold
     (fun tag addr r ->
-      try
-        let otag,s = MemMap.find addr r in
-        assert (tag = otag) ;
-        let r = MemMap.remove addr r in
-        MemMap.add addr (tag,StateSet.add trans s) r
-      with
-      | Not_found ->
-          MemMap.add addr (tag,StateSet.add trans StateSet.empty) r)
+       MemMap.update addr (function
+           | None -> Some (tag, StateSet.singleton trans)
+           | Some (otag, s) ->
+               assert (tag = otag);
+               Some (tag, StateSet.add trans s)
+         ) r)
     m r
 
 let inverse_mem_map_other n (_,m) r = inverse_mem_map (OnChars n) m r
