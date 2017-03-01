@@ -254,8 +254,8 @@ install-flexdll:
 	cp flexdll/flexlink.exe \
 	   $(if $(filter-out mingw,$(TOOLCHAIN)),\
 	     flexdll/default$(filter-out _i386,_$(ARCH)).manifest) \
-	   $(INSTALL_BINDIR)/
-	cp flexdll/flexdll_*.$(O) $(INSTALL_LIBDIR)
+	   "$(INSTALL_BINDIR)/"
+	cp flexdll/flexdll_*.$(O) "$(INSTALL_LIBDIR)"
 
 # Installation of the native-code compiler
 installopt:
