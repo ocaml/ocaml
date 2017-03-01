@@ -566,16 +566,18 @@ class latex =
 
     method latex_of_cstr_args ( (fmt,flush) as f) mod_name (args, ret) =
       match args, ret with
-      | Cstr_tuple [], None -> []
+      | Cstr_tuple [], None -> [CodePre(flush())]
       | Cstr_tuple _ as l, None ->
           p fmt " of@ %s"
             (self#normal_cstr_args ~par:false mod_name l);
           [CodePre (flush())]
-      | Cstr_tuple _ as l, Some r ->
-          p fmt " :@ %s@ %s@ %s"
-            (self#normal_cstr_args ~par:false mod_name l)
-            "->"
-            (self#normal_type mod_name r);
+      | Cstr_tuple t as l, Some r ->
+          let res = self#normal_type mod_name r in
+          if t = [] then
+            p fmt " :@ %s" res
+          else
+            p fmt " :@ %s -> %s" (self#normal_cstr_args ~par:false mod_name l) res
+          ;
           [CodePre (flush())]
       | Cstr_record l, None ->
           p fmt " of@ ";
@@ -700,17 +702,17 @@ class latex =
                    p fmt2 "@[<h 6>  | %s" (Name.simple x.xt_name);
                    let l = self#latex_of_cstr_args f father (x.xt_args, x.xt_ret) in
                    let c =
-                     begin match x.xt_alias with
-                     | None -> ()
+                     match x.xt_alias with
+                     | None -> []
                      | Some xa ->
                          p fmt2 " = %s"
                            (
                              match xa.xa_xt with
                              | None -> xa.xa_name
                              | Some x -> x.xt_name
-                           )
-                     end;
-                       [CodePre (flush2 ())] in
+                           );
+                         [CodePre (flush2 ())]
+                   in
                     Latex (self#make_label (self#extension_label x.xt_name)) :: l @ c
                     @ (match x.xt_text with
                       None -> []
@@ -744,16 +746,17 @@ class latex =
         p fmt2 "@[<hov 2>exception %s" s_name;
         let l = self#latex_of_cstr_args f father (e.ex_args, e.ex_ret) in
         let s =
-          (match e.ex_alias with
-             None -> ()
-           | Some ea ->
-               Format.fprintf fmt " = %s"
-                 (
-                   match ea.ea_ex with
-                     None -> ea.ea_name
-                   | Some e -> e.ex_name
-                 )
-          ); [CodePre (flush2 ())] in
+          match e.ex_alias with
+            None -> []
+          | Some ea ->
+              Format.fprintf fmt " = %s"
+                (
+                  match ea.ea_ex with
+                    None -> ea.ea_name
+                  | Some e -> e.ex_name
+                );
+              [CodePre (flush2 ())]
+        in
        merge_codepre (l @ s ) @
       [Latex ("\\index{"^(self#label s_name)^"@\\verb`"^(self#label ~no_:false s_name)^"`}\n")]
        @ (self#text_of_info e.ex_info) in
