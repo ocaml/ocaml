@@ -152,10 +152,10 @@ let build_intervals fd =
         insert_destroyed_at_oper intervals i !pos;
         walk_instruction body;
         walk_instruction i.next
-    | Icatch(_, body, handler) ->
+    | Icatch(_, handlers, body) ->
         insert_destroyed_at_oper intervals i !pos;
-        List.iter (fun (_, i) -> walk_instruction i) body;
-        walk_instruction handler;
+        List.iter (fun (_, i) -> walk_instruction i) handlers;
+        walk_instruction body;
         walk_instruction i.next
     | Iexit _ ->
         insert_destroyed_at_oper intervals i !pos;
