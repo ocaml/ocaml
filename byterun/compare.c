@@ -63,19 +63,19 @@ static void compare_stack_overflow(struct compare_stack* stk)
 static struct compare_item * compare_resize_stack(struct compare_stack* stk,
                                                   struct compare_item * sp)
 {
-  asize_t newsize = 2 * (stk->limit - stk->stack);
+  asize_t newsize;
   asize_t sp_offset = sp - stk->stack;
   struct compare_item * newstack;
 
-  if (newsize < COMPARE_STACK_MIN_ALLOC_SIZE)
-    newsize = COMPARE_STACK_MIN_ALLOC_SIZE;
-  if (newsize >= COMPARE_STACK_MAX_SIZE) compare_stack_overflow(stk);
   if (stk->stack == stk->init_stack) {
+    newsize = COMPARE_STACK_MIN_ALLOC_SIZE;
     newstack = malloc(sizeof(struct compare_item) * newsize);
     if (newstack == NULL) compare_stack_overflow(stk);
     memcpy(newstack, stk->init_stack,
            sizeof(struct compare_item) * COMPARE_STACK_INIT_SIZE);
   } else {
+    newsize = 2 * (stk->limit - stk->stack);
+    if (newsize >= COMPARE_STACK_MAX_SIZE) compare_stack_overflow(stk);
     newstack =
       realloc(stk->stack, sizeof(struct compare_item) * newsize);
     if (newstack == NULL) compare_stack_overflow(stk);
