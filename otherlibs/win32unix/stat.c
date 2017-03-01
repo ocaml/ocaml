@@ -69,9 +69,9 @@ static value stat_aux(int use_64, __int64 st_ino, struct _stat64 *buf)
   Store_field (v, 7, Val_int (buf->st_rdev));
   Store_field (v, 8,
                use_64 ? caml_copy_int64(buf->st_size) : Val_int (buf->st_size));
-  Store_field (v, 9, caml_copy_double((double) buf->st_atime));
-  Store_field (v, 10, caml_copy_double((double) buf->st_mtime));
-  Store_field (v, 11, caml_copy_double((double) buf->st_ctime));
+  Store_field (v, 9, caml_copy_double((double) buf->st_atime / 10000000.0));
+  Store_field (v, 10, caml_copy_double((double) buf->st_mtime / 10000000.0));
+  Store_field (v, 11, caml_copy_double((double) buf->st_ctime / 10000000.0));
   CAMLreturn (v);
 }
 
@@ -117,32 +117,17 @@ static value stat_aux(int use_64, __int64 st_ino, struct _stat64 *buf)
 
 static int convert_time(FILETIME* time, __time64_t* result, __time64_t def)
 {
-  SYSTEMTIME sys;
-#ifndef HAS_MKGMTIME64
-  SYSTEMTIME utc;
-#endif
+  /* Tempting though it may be, MSDN prohibits casting FILETIME directly
+   * to __int64 for alignment concerns. While this doesn't affect our supported
+   * platforms, it's easier to go with the flow...
+   */
+  ULARGE_INTEGER utime = {{time->dwLowDateTime, time->dwHighDateTime}};
 
-  if (time->dwLowDateTime || time->dwHighDateTime) {
-#ifndef HAS_MKGMTIME64
-    if (!FileTimeToSystemTime(time, &utc) ||
-        !SystemTimeToTzSpecificLocalTime(NULL, &utc, &sys)) {
-#else
-    if (!FileTimeToSystemTime(time, &sys)) {
-#endif
-      win32_maperr(GetLastError());
-      return 0;
-    }
-    else
-    {
-      struct tm stamp = {sys.wSecond, sys.wMinute, sys.wHour,
-                         sys.wDay, sys.wMonth - 1, sys.wYear - 1900,
-                         0, 0, -1};
-#ifndef HAS_MKGMTIME64
-      *result = _mktime64(&stamp);
-#else
-      *result = _mkgmtime64(&stamp);
-#endif
-    }
+  if (utime.QuadPart) {
+    /* There are 11644473600000 seconds between 1 January 1601 (the NT Epoch)
+     * and 1 January 1970 (the Unix Epoch). FILETIME is measured in 100ns ticks.
+     */
+    *result = (utime.QuadPart - INT64_LITERAL(116444736000000000U));
   }
   else {
     *result = def;
@@ -161,10 +146,6 @@ static int safe_do_stat(int do_lstat, int use_64, char* path, mlsize_t l, HANDLE
   HANDLE h;
   unsigned short mode;
   int is_symlink = 0;
-#ifndef HAS_MKGMTIME64
-  char* restore_TZ = NULL;
-  int failed = 0;
-#endif
 
   if (!path) {
     h = fstat;
@@ -271,48 +252,12 @@ static int safe_do_stat(int do_lstat, int use_64, char* path, mlsize_t l, HANDLE
       return 0;
     }
 
-#ifndef HAS_MKGMTIME64
-    /* PR#7385: ensure CRT is using system timezone */
-    restore_TZ = getenv("TZ");
-    if (restore_TZ && (i = strlen(restore_TZ)) == 0) {
-      restore_TZ = NULL;
-    } else {
-      if (!(restore_TZ = strdup(restore_TZ))) caml_raise_out_of_memory();
-      _putenv("TZ=");
-    }
-    /* It could be that TZ has been cleared but the CRT globals not updated, so
-     * always call _tzset.
-     */
-    _tzset();
-#endif
-
     if (!convert_time(&info.ftLastWriteTime, &res->st_mtime, 0) ||
         !convert_time(&info.ftLastAccessTime, &res->st_atime, res->st_mtime) ||
         !convert_time(&info.ftCreationTime, &res->st_ctime, res->st_mtime)) {
       win32_maperr(GetLastError());
-#ifndef HAS_MKGMTIME64
-      failed = 1;
-#else
       return 0;
-#endif
     }
-
-#ifndef HAS_MKGMTIME64
-    if (restore_TZ) {
-      char* env = (char*)malloc(i + 4);
-      if (!env) {
-        free(restore_TZ);
-        caml_raise_out_of_memory();
-      }
-      env[0] = 'T'; env[1] = 'Z'; env[2] = '='; env[3] = '\0';
-      _putenv(strcat(env, restore_TZ));
-      free(env);
-      free(restore_TZ);
-      _tzset();
-    }
-
-    if (failed) return 0;
-#endif
 
     /*
      * Note MS CRT (still) puts st_nlink = 1 and gives st_ino = 0
