@@ -932,11 +932,12 @@ partialclean::
 # The runtime system for the bytecode compiler
 
 .PHONY: runtime
-runtime: makeruntime stdlib/libcamlrun.$(A)
+runtime: stdlib/libcamlrun.$(A)
 
 .PHONY: makeruntime
 makeruntime:
 	$(MAKE) -C byterun $(BOOT_FLEXLINK_CMD) all
+byterun/libcamlrun.$(A): makeruntime ;
 stdlib/libcamlrun.$(A): byterun/libcamlrun.$(A)
 	cd stdlib; $(LN) ../byterun/libcamlrun.$(A) .
 clean::
@@ -950,11 +951,12 @@ alldepend::
 # The runtime system for the native-code compiler
 
 .PHONY: runtimeopt
-runtimeopt: makeruntimeopt stdlib/libasmrun.$(A)
+runtimeopt: stdlib/libasmrun.$(A)
 
 .PHONY: makeruntimeopt
 makeruntimeopt:
 	$(MAKE) -C asmrun $(BOOT_FLEXLINK_CMD) all
+asmrun/libasmrun.$(A): makeruntimeopt ;
 stdlib/libasmrun.$(A): asmrun/libasmrun.$(A)
 	cp $< $@
 clean::
