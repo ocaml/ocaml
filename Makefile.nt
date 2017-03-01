@@ -278,7 +278,7 @@ installopt:
 	if test -f ocamlopt.opt ; then $(MAKEREC) installoptopt; fi
 	cd tools; $(MAKEREC) installopt
 	if test -f ocamlopt.opt -a -f flexdll/flexlink.opt ; then \
-	  cp -f flexdll/flexlink.opt $(INSTALL_BINDIR)/flexlink.exe ; \
+	  cp -f flexdll/flexlink.opt "$(INSTALL_BINDIR)/flexlink.exe" ; \
 	fi
 
 installoptopt:
