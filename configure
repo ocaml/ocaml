@@ -65,6 +65,7 @@ afl_instrument=false
 max_testsuite_dir_retries=0
 with_cplugins=true
 with_fpic=false
+with_findlib=0
 
 # Try to turn internationalization off, can cause config.guess to malfunction!
 unset LANG
@@ -208,6 +209,8 @@ while : ; do
         safe_string=true;;
     -afl-instrument)
         afl_instrument=true;;
+    -with-findlib|--with-findlib)
+        with_findlib=1;;
     *) if echo "$1" | grep -q -e '^--\?[a-zA-Z0-9-]\+='; then
          err "configure expects arguments of the form '-prefix /foo/bar'," \
              "not '-prefix=/foo/bar' (note the '=')."
@@ -2064,7 +2067,7 @@ echo "FLAMBDA=$flambda" >> Makefile
 echo "SAFE_STRING=$safe_string" >> Makefile
 echo "AFL_INSTRUMENT=$afl_instrument" >> Makefile
 echo "MAX_TESTSUITE_DIR_RETRIES=$max_testsuite_dir_retries" >> Makefile
-
+echo "WITH_FINDLIB=$with_findlib" >> Makefile
 
 rm -f tst hasgot.c
 rm -f ../m.h ../s.h ../Makefile
@@ -2183,6 +2186,11 @@ else
   inf "        afl-fuzz always enabled .. yes"
   else
   inf "        afl-fuzz always enabled .. no"
+  fi
+  if test "$with_findlib" = "1"; then
+  inf "        use findlib .............. yes"
+  else
+  inf "        use findlib .............. no"
   fi
 fi
 

@@ -108,6 +108,7 @@ let libunwind_available = %%LIBUNWIND_AVAILABLE%%
 let libunwind_link_flags = "%%LIBUNWIND_LINK_FLAGS%%"
 let profinfo = %%WITH_PROFINFO%%
 let profinfo_width = %%PROFINFO_WIDTH%%
+let with_findlib = %%WITH_FINDLIB%% != 0
 
 let ext_exe = "%%EXT_EXE%%"
 let ext_obj = "%%EXT_OBJ%%"
@@ -176,6 +177,8 @@ let print_config oc =
   p "ast_intf_magic_number" ast_intf_magic_number;
   p "cmxs_magic_number" cmxs_magic_number;
   p "cmt_magic_number" cmt_magic_number;
+
+  p_bool "with_findlib" with_findlib;
 
   flush oc;
 ;;

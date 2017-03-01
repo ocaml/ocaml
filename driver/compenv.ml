@@ -553,7 +553,7 @@ let c_object_of_filename name =
   Filename.chop_suffix (Filename.basename name) ".c" ^ Config.ext_obj
 
 let process_action
-    (ppf, implementation, interface, ocaml_mod_ext, ocaml_lib_ext) action =
+    (ppf, implementation, interface, ocaml_mod_ext, ocaml_lib_ext, _) action =
   match action with
   | ProcessImplementation name ->
       readenv ppf (Before_compile name);
@@ -609,9 +609,22 @@ let impl filename = defer (ProcessImplementation filename)
 let intf filename = defer (ProcessInterface filename)
 
 let process_deferred_actions env =
+  let thread_predicates =
+    if !use_vmthreads then ["mt"; "mt_vm"]
+    else if !use_threads then ["mt"; "mt_posix"]
+    else []
+  in
+  let (_, _, _, _, _, pred) = env in
+  add_predicates (pred :: thread_predicates);
+  Findlib_helper.process_package_includes ();
+  first_ppx := List.rev_append (Findlib_helper.process_ppx_spec ()) !first_ppx;
   let final_output_name = !output_name in
   (* Make sure the intermediate products don't clash with the final one
      when we're invoked like: ocamlopt -o foo bar.c baz.ml. *)
+  let pkg_archives =
+    if !compile_only then []
+    else List.map (fun s -> ProcessOtherFile s) (Findlib_helper.get_archives ())
+  in
   if not !compile_only then output_name := None;
   begin
     match final_output_name with
@@ -634,5 +647,5 @@ let process_deferred_actions env =
       | ProcessOtherFile name -> Filename.check_suffix name ".cmxa"
       | _ -> false) !deferred_actions then
     fatal "Option -a cannot be used with .cmxa input files.";
-  List.iter (process_action env) (List.rev !deferred_actions);
+  List.iter (process_action env) (pkg_archives @ List.rev !deferred_actions);
   output_name := final_output_name;

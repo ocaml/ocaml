@@ -118,6 +118,7 @@ module Options = Main_args.Make_bytecomp_options (struct
   let _dlambda = set dump_lambda
   let _dinstr = set dump_instr
   let _dtimings = set print_timings
+  let _package s = packages := s :: !packages
 
   let _args = Arg.read_arg
   let _args0 = Arg.read_arg0
@@ -127,6 +128,7 @@ end)
 
 let main () =
   Clflags.add_arguments __LOC__ Options.list;
+  Findlib_helper.init ();
   try
     readenv ppf Before_args;
     Clflags.parse_arguments anonymous usage;
@@ -136,7 +138,8 @@ let main () =
          Compile.implementation,
          Compile.interface,
          ".cmo",
-         ".cma");
+         ".cma",
+         "byte");
     with Arg.Bad msg ->
       begin
         prerr_endline msg;

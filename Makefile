@@ -56,9 +56,10 @@ CAMLC=$(CAMLRUN) boot/ocamlc -g -nostdlib -I boot -use-prims byterun/primitives
 CAMLOPT=$(CAMLRUN) ./ocamlopt -g -nostdlib -I stdlib -I otherlibs/dynlink
 ARCHES=amd64 i386 arm arm64 power sparc s390x
 INCLUDES=-I utils -I parsing -I typing -I bytecomp -I middle_end \
-        -I middle_end/base_types -I asmcomp -I driver -I toplevel
+        -I middle_end/base_types -I asmcomp -I lib-findlib/src/findlib -I driver -I toplevel
 
 COMPFLAGS=-strict-sequence -principal -absname -w +a-4-9-41-42-44-45-48 \
+	  -w -6-27-29-32-33-50 \
 	  -warn-error A \
           -bin-annot -safe-string -strict-formats $(INCLUDES)
 LINKFLAGS=
@@ -82,13 +83,18 @@ DEPFLAGS=$(INCLUDES)
 
 OCAMLDOC_OPT=$(WITH_OCAMLDOC:=.opt)
 
+ifeq ($(WITH_FINDLIB), 1)
+$(shell git submodule update --init lib-findlib)
+endif
+
 UTILS=utils/config.cmo utils/misc.cmo \
   utils/identifiable.cmo utils/numbers.cmo utils/arg_helper.cmo \
   utils/clflags.cmo utils/tbl.cmo utils/timings.cmo \
   utils/terminfo.cmo utils/ccomp.cmo utils/warnings.cmo \
   utils/consistbl.cmo \
   utils/strongly_connected_components.cmo \
-  utils/targetint.cmo
+  utils/targetint.cmo \
+  utils/findlib_helper.cmo
 
 PARSING=parsing/location.cmo parsing/longident.cmo \
   parsing/docstrings.cmo parsing/syntaxerr.cmo \
@@ -113,6 +119,20 @@ TYPING=typing/ident.cmo typing/path.cmo \
   typing/stypes.cmo typing/typedecl.cmo typing/typecore.cmo \
   typing/typeclass.cmo \
   typing/typemod.cmo
+
+FINDLIB=
+ifeq ($(WITH_FINDLIB), 1)
+FINDLIB=lib-findlib/src/findlib/findlib_config.cmo \
+  lib-findlib/src/findlib/fl_split.cmo \
+  lib-findlib/src/findlib/fl_metatoken.cmo \
+  lib-findlib/src/findlib/fl_meta.cmo \
+  lib-findlib/src/findlib/fl_metascanner.cmo \
+  lib-findlib/src/findlib/fl_topo.cmo \
+  lib-findlib/src/findlib/fl_package_base.cmo \
+  lib-findlib/src/findlib/findlib.cmo \
+  lib-findlib/src/findlib/fl_args.cmo \
+  lib-findlib/src/findlib/fl_lint.cmo
+endif
 
 COMP=bytecomp/lambda.cmo bytecomp/printlambda.cmo \
   bytecomp/semantics_of_primitives.cmo \
@@ -337,6 +357,7 @@ utils/config.ml: utils/config.mlp config/Makefile
 	    -e 's|%%WITH_FRAME_POINTERS%%|$(WITH_FRAME_POINTERS)|' \
 	    -e 's|%%WITH_PROFINFO%%|$(WITH_PROFINFO)|' \
 	    -e 's|%%WITH_SPACETIME%%|$(WITH_SPACETIME)|' \
+	    -e 's|%%WITH_FINDLIB%%|$(WITH_FINDLIB)|' \
 	    $< > $@
 
 ifeq "$(UNIX_OR_WIN32)" "unix"
@@ -726,10 +747,42 @@ clean:: partialclean
 
 # Shared parts of the system
 
-compilerlibs/ocamlcommon.cma: $(COMMON)
+compilerlibs/ocamlcommon.cma: $(FINDLIB) $(COMMON)
 	$(CAMLC) -a -linkall -o $@ $^
 partialclean::
 	rm -f compilerlibs/ocamlcommon.cma
+
+# Findlib
+
+ifeq ($(WITH_FINDLIB), 1)
+lib-findlib/src/findlib/findlib_config.ml: lib-findlib/src/findlib/findlib_config.mlp config/Makefile
+	sed -e 's|@CONFIGFILE@||' \
+	    -e 's|@STDLIB@|$(LIBDIR)|' \
+	    -e 's|@AUTOLINK@|true|' \
+	    -e 's|@SYSTEM@|$(SYSTEM)|' \
+	    $< > $@
+
+beforedepend:: lib-findlib/src/findlib/findlib_config.ml
+
+partialclean::
+	rm -f lib-findlib/src/findlib/findlib_config.ml
+
+lib-findlib/src/findlib/fl_meta.ml: lib-findlib/src/findlib/fl_meta.mll
+	$(CAMLLEX) $<
+
+beforedepend:: lib-findlib/src/findlib/fl_meta.ml
+
+partialclean::
+	rm -f lib-findlib/src/findlib/fl_meta.ml
+endif
+
+utils/findlib_helper.ml: utils/findlib_helper.mlp
+	cpp -P -DWITH_FINDLIB=$(WITH_FINDLIB) $< > $@
+
+beforedepend:: utils/findlib_helper.ml
+
+partialclean::
+	rm -f utils/findlib_helper.ml
 
 # The bytecode compiler
 
@@ -830,7 +883,7 @@ beforedepend:: parsing/lexer.ml
 
 # Shared parts of the system compiled with the native-code compiler
 
-compilerlibs/ocamlcommon.cmxa: $(COMMON:.cmo=.cmx)
+compilerlibs/ocamlcommon.cmxa: $(FINDLIB:.cmo=.cmx) $(COMMON:.cmo=.cmx)
 	$(CAMLOPT) -a -linkall -o $@ $^
 partialclean::
 	rm -f compilerlibs/ocamlcommon.cmxa compilerlibs/ocamlcommon.$(A)
@@ -1260,7 +1313,7 @@ beforedepend:: bytecomp/opcodes.ml
 
 partialclean::
 	for d in utils parsing typing bytecomp asmcomp middle_end \
-	         middle_end/base_types driver toplevel tools; do \
+	         middle_end/base_types driver toplevel tools lib-findlib/src/findlib; do \
 	  rm -f $$d/*.cm[ioxt] $$d/*.cmti $$d/*.annot $$d/*.$(S) \
 	    $$d/*.$(O) $$d/*.$(SO) $d/*~; \
 	done
@@ -1269,7 +1322,7 @@ partialclean::
 .PHONY: depend
 depend: beforedepend
 	(for d in utils parsing typing bytecomp asmcomp middle_end \
-	 middle_end/base_types driver toplevel; \
+	 middle_end/base_types driver toplevel lib-findlib/src/findlib; \
 	 do $(CAMLDEP) -slash $(DEPFLAGS) $$d/*.mli $$d/*.ml; \
 	 done) > .depend
 	$(CAMLDEP) -slash $(DEPFLAGS) -native \

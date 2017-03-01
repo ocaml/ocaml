@@ -371,3 +371,5 @@
 /yacc/ocamlyacc
 /yacc/version.h
 /yacc/.gdb_history
+
+/utils/findlib_helper.ml
