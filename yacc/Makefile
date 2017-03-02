@@ -20,12 +20,6 @@ include ../config/Makefile
 CC=$(BYTECC)
 CFLAGS=-DNDEBUG $(BYTECCCOMPOPTS)
 
-ifeq "$(TOOLCHAIN)" "mingw"
-  CFLAGS += -DNO_UNIX
-else ifeq "$(TOOLCHAIN)" "msvc"
-  CFLAGS += -DNO_UNIX
-endif
-
 OBJS= closure.$(O) error.$(O) lalr.$(O) lr0.$(O) main.$(O) \
   mkpar.$(O) output.$(O) reader.$(O) \
   skeleton.$(O) symtab.$(O) verbose.$(O) warshall.$(O)
