@@ -108,14 +108,9 @@ VPATH := $(filter-out -I,$(INCLUDES))
 # The dependency generator
 
 CAMLDEP_OBJ=ocamldep.cmo
-CAMLDEP_IMPORTS=timings.cmo misc.cmo config.cmo identifiable.cmo numbers.cmo \
-  arg_helper.cmo clflags.cmo terminfo.cmo \
-  warnings.cmo location.cmo longident.cmo docstrings.cmo \
-  syntaxerr.cmo ast_helper.cmo parser.cmo lexer.cmo parse.cmo \
-  ccomp.cmo ast_mapper.cmo ast_iterator.cmo \
-  builtin_attributes.cmo ast_invariants.cmo \
-  pparse.cmo compenv.cmo depend.cmo
-
+CAMLDEP_IMPORTS= \
+  ../compilerlibs/ocamlcommon.cma \
+  ../compilerlibs/ocamlbytecomp.cma
 ocamldep: LINKFLAGS += -compat-32
 $(call byte_and_opt,ocamldep,$(CAMLDEP_IMPORTS) $(CAMLDEP_OBJ),)
 ocamldep: depend.cmi
