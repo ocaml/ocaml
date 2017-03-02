@@ -386,7 +386,6 @@ CAMLprim value caml_ml_domain_id(value unit)
 }
 
 static const uintnat INTERRUPT_MAGIC = (uintnat)(-1);
-static __thread int volatile caml_force_major_slice = 0;
 
 static atomic_uintnat stw_requested;
 
@@ -420,7 +419,7 @@ void caml_interrupt_self() {
    as soon as possible */
 void caml_urge_major_slice (void)
 {
-  caml_force_major_slice = 1;
+  CAML_DOMAIN_STATE->force_major_slice = 1;
   caml_interrupt_self();
 }
 
@@ -443,9 +442,9 @@ void caml_handle_gc_interrupt() {
 
   if (((uintnat)CAML_DOMAIN_STATE->young_ptr - Bhsize_wosize(Max_young_wosize) <
        domain_self->minor_heap_area) ||
-      caml_force_major_slice) {
+      CAML_DOMAIN_STATE->force_major_slice) {
     /* out of minor heap or collection forced */
-    caml_force_major_slice = 0;
+    CAML_DOMAIN_STATE->force_major_slice = 0;
     caml_minor_collection();
   }
 }

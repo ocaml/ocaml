@@ -53,7 +53,7 @@ CAMLextern value caml_alloc_custom(const struct custom_operations * ops,
 
 CAMLextern void caml_register_custom_operations(const struct custom_operations * ops);
 
-/* In domain_state.tbl: __thread intnat compare_unordered; */
+/* In domain_state.tbl: intnat compare_unordered; */
 /* Used by custom comparison to report unordered NaN-like cases. */
 
 /* <private> */
