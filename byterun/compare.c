@@ -92,9 +92,10 @@ static intnat do_compare_val(struct compare_stack* stk,
 static intnat compare_val(value v1, value v2, int total)
 {
   struct compare_stack stk;
+  intnat res;
   stk.stack = stk.init_stack;
   stk.limit = stk.stack + COMPARE_STACK_INIT_SIZE;
-  intnat res = do_compare_val(&stk, v1, v2, total);
+  res = do_compare_val(&stk, v1, v2, total);
   compare_free_stack(&stk);
   return res;
 }
