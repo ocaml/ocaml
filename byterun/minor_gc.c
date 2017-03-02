@@ -33,10 +33,6 @@
 
 asize_t __thread caml_minor_heap_size;
 
-#ifdef DEBUG
-static __thread unsigned long minor_gc_counter = 0;
-#endif
-
 void caml_alloc_table (struct caml_ref_table *tbl, asize_t sz, asize_t rsv)
 {
   tbl->size = sz;
@@ -522,7 +518,6 @@ void caml_empty_minor_heap_domain (struct domain* domain)
          p < (value *) domain_state->young_end; ++p){
       *p = Debug_free_minor;
     }
-    ++ minor_gc_counter;
   }
 #endif
 }

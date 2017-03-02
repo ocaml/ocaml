@@ -171,13 +171,13 @@ CAMLprim value caml_get_public_method (value obj, value tag)
 #define Id_chunk 1024
 
 static atomic_uintnat oo_next_id;
-static __thread uintnat oo_next_id_local;
 
 CAMLprim value caml_set_oo_id (value obj) {
-  if (oo_next_id_local % Id_chunk == 0) {
-    oo_next_id_local = atomic_fetch_add(&oo_next_id, Id_chunk);
+  if (CAML_DOMAIN_STATE->oo_next_id_local % Id_chunk == 0) {
+    CAML_DOMAIN_STATE->oo_next_id_local =
+      atomic_fetch_add(&oo_next_id, Id_chunk);
   }
-  Op_val(obj)[1] = Val_long(oo_next_id_local++);
+  Op_val(obj)[1] = Val_long(CAML_DOMAIN_STATE->oo_next_id_local++);
   return obj;
 }
 
