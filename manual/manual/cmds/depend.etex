@@ -111,6 +111,14 @@ Output one line per file, regardless of the length.
 Assume that module \var{module} is opened before parsing each of the
 following files.
 
+\item["-plugin" \var{plugin}]
+Dynamically load the code of the given \var{plugin}
+(a ".cmo", ".cma" or ".cmxs" file) in "ocamldep". \var{plugin} must exist in
+the same kind of code as "ocamldep" ("ocamldep.byte" must load bytecode
+plugins, while "ocamldep.opt" must load native code plugins), and
+extension adaptation is done automatically for ".cma" files (to ".cmxs" files
+if "ocamldep" is compiled in native code).
+
 \item["-pp" \var{command}]
 Cause "ocamldep" to call the given \var{command} as a preprocessor
 for each source file.

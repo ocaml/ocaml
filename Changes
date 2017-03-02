@@ -106,6 +106,10 @@ Next version (4.05.0):
   spent in subprocesses like preprocessors
   (Valentin Gatien-Baron, review by Gabriel Scherer)
 
+- GPR#1015: add option "-plugin PLUGIN" to ocamldep too. Use compilerlibs
+  to build ocamldep.
+  (Fabrice Le Fessant)
+
 ### Standard library:
 
 - PR#6975, GPR#902: Truncate function added to stdlib Buffer module
