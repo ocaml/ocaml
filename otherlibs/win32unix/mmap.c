@@ -13,6 +13,8 @@
 /*                                                                        */
 /**************************************************************************/
 
+#define CAML_INTERNALS
+
 #include <stddef.h>
 #include "caml/bigarray.h"
 #include "caml/fail.h"
