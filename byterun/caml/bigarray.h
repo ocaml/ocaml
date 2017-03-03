@@ -17,10 +17,10 @@
 #define CAML_BIGARRAY_H
 
 #ifndef CAML_NAME_SPACE
-#include "caml/compatibility.h"
+#include "compatibility.h"
 #endif
-#include "caml/config.h"
-#include "caml/mlvalues.h"
+#include "config.h"
+#include "mlvalues.h"
 
 typedef signed char caml_ba_int8;
 typedef unsigned char caml_ba_uint8;
