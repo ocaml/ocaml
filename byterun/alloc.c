@@ -158,6 +158,9 @@ CAMLprim value caml_alloc_float_array(mlsize_t len)
 {
   mlsize_t wosize = len * Double_wosize;
   value result;
+  /* For consistency with [caml_make_vect], which can't tell whether it should
+     create a float array or not when the size is zero, the tag is set to
+     zero when the size is zero. */
   if (wosize == 0)
     return Atom(0);
   else if (wosize <= Max_young_wosize){
