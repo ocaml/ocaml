@@ -96,7 +96,11 @@ let black_closure_header sz = black_block_header Obj.closure_tag sz
 let infix_header ofs = block_header Obj.infix_tag ofs
 let float_header = block_header Obj.double_tag (size_float / size_addr)
 let floatarray_header len =
-      block_header Obj.double_array_tag (len * size_float / size_addr)
+  (* Zero-sized float arrays have tag zero for consistency with
+     [caml_alloc_float_array]. *)
+  assert (len >= 0);
+  if len = 0 then block_header 0 0
+  else block_header Obj.double_array_tag (len * size_float / size_addr)
 let string_header len =
       block_header Obj.string_tag ((len + size_addr) / size_addr)
 let boxedint32_header = block_header Obj.custom_tag 2
