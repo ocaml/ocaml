@@ -14,23 +14,34 @@
 /**************************************************************************/
 
 #include <stddef.h>
-#include <stdio.h>
-#include <string.h>
-#include "bigarray.h"
-#include "caml/alloc.h"
-#include "caml/custom.h"
+#include "caml/bigarray.h"
 #include "caml/fail.h"
+#include "caml/io.h"
 #include "caml/mlvalues.h"
+#include "caml/signals.h"
 #include "caml/sys.h"
 #include "unixsupport.h"
 
-extern int caml_ba_element_size[];  /* from bigarray_stubs.c */
+/* Defined in [mmap_ba.c] */
+CAMLextern value
+caml_ba_mapped_alloc(int flags, int num_dims, void * data, intnat * dim);
+
+/* Temporary compatibility stuff so that this file can also be compiled
+   from otherlibs/bigarray/ and included in the bigarray library. */
+
+#ifdef IN_OCAML_BIGARRAY
+#define MAP_FILE "Bigarray.map_file"
+#define MAP_FILE_ERROR() caml_sys_error(NO_ARG)
+#else
+#define MAP_FILE "Unix.map_file"
+#define MAP_FILE_ERROR() uerror("map_file", Nothing)
+#endif
 
 #ifndef INVALID_SET_FILE_POINTER
 #define INVALID_SET_FILE_POINTER (-1)
 #endif
 
-static __int64 caml_ba_set_file_pointer(HANDLE h, __int64 dist, DWORD mode)
+static __int64 caml_set_file_pointer(HANDLE h, __int64 dist, DWORD mode)
 {
   LARGE_INTEGER i;
   DWORD err;
@@ -41,8 +52,8 @@ static __int64 caml_ba_set_file_pointer(HANDLE h, __int64 dist, DWORD mode)
   return i.QuadPart;
 }
 
-CAMLprim value caml_ba_map_file(value vfd, value vkind, value vlayout,
-                                value vshared, value vdim, value vstart)
+CAMLprim value caml_unix_map_file(value vfd, value vkind, value vlayout,
+                                  value vshared, value vdim, value vstart)
 {
   HANDLE fd, fmap;
   int flags, major_dim, mode, perm;
@@ -63,18 +74,18 @@ CAMLprim value caml_ba_map_file(value vfd, value vkind, value vlayout,
   /* Extract dimensions from OCaml array */
   num_dims = Wosize_val(vdim);
   if (num_dims < 1 || num_dims > CAML_BA_MAX_NUM_DIMS)
-    caml_invalid_argument("Bigarray.mmap: bad number of dimensions");
+    caml_invalid_argument(MAP_FILE ": bad number of dimensions");
   for (i = 0; i < num_dims; i++) {
     dim[i] = Long_val(Field(vdim, i));
     if (dim[i] == -1 && i == major_dim) continue;
     if (dim[i] < 0)
-      caml_invalid_argument("Bigarray.create: negative dimension");
+      caml_invalid_argument(MAP_FILE ": negative dimension");
   }
   /* Determine file size */
-  currpos = caml_ba_set_file_pointer(fd, 0, FILE_CURRENT);
-  if (currpos == -1) uerror("SetFilePointer", Nothing);
-  file_size = caml_ba_set_file_pointer(fd, 0, FILE_END);
-  if (file_size == -1) uerror("SetFilePointer", Nothing);
+  currpos = caml_set_file_pointer(fd, 0, FILE_CURRENT);
+  if (currpos == -1) MAP_FILE_ERROR();
+  file_size = caml_set_file_pointer(fd, 0, FILE_END);
+  if (file_size == -1) MAP_FILE_ERROR();
   /* Determine array size in bytes (or size of array without the major
      dimension if that dimension wasn't specified) */
   array_size = caml_ba_element_size[flags & CAML_BA_KIND_MASK];
@@ -84,15 +95,15 @@ CAMLprim value caml_ba_map_file(value vfd, value vkind, value vlayout,
   if (dim[major_dim] == -1) {
     /* Determine first/last dimension from file size */
     if (file_size < startpos)
-      caml_failwith("Bigarray.mmap: file position exceeds file size");
+      caml_failwith(MAP_FILE ": file position exceeds file size");
     data_size = file_size - startpos;
     dim[major_dim] = (uintnat) (data_size / array_size);
     array_size = dim[major_dim] * array_size;
     if (array_size != data_size)
-      caml_failwith("Bigarray.mmap: file size doesn't match array dimensions");
+      caml_failwith(MAP_FILE ": file size doesn't match array dimensions");
   }
   /* Restore original file position */
-  caml_ba_set_file_pointer(fd, currpos, FILE_BEGIN);
+  caml_set_file_pointer(fd, currpos, FILE_BEGIN);
   /* Create the file mapping */
   if (Bool_val(vshared)) {
     perm = PAGE_READWRITE;
@@ -103,7 +114,7 @@ CAMLprim value caml_ba_map_file(value vfd, value vkind, value vlayout,
   }
   li.QuadPart = startpos + array_size;
   fmap = CreateFileMapping(fd, NULL, perm, li.HighPart, li.LowPart, NULL);
-  if (fmap == NULL) uerror("CreateFileMapping", Nothing);
+  if (fmap == NULL) MAP_FILE_ERROR();
   /* Determine offset so that the mapping starts at the given file pos */
   GetSystemInfo(&sysinfo);
   delta = (uintnat) (startpos % sysinfo.dwAllocationGranularity);
@@ -111,21 +122,21 @@ CAMLprim value caml_ba_map_file(value vfd, value vkind, value vlayout,
   li.QuadPart = startpos - delta;
   addr =
     MapViewOfFile(fmap, mode, li.HighPart, li.LowPart, array_size + delta);
-  if (addr == NULL) uerror("MapViewOfFile", Nothing);;
+  if (addr == NULL) MAP_FILE_ERROR();
   addr = (void *) ((uintnat) addr + delta);
   /* Close the file mapping */
   CloseHandle(fmap);
   /* Build and return the OCaml bigarray */
-  return caml_ba_alloc(flags | CAML_BA_MAPPED_FILE, num_dims, addr, dim);
+  return caml_ba_mapped_alloc(flags, num_dims, addr, dim);
 }
 
-CAMLprim value caml_ba_map_file_bytecode(value * argv, int argn)
+CAMLprim value caml_unix_map_file_bytecode(value * argv, int argn)
 {
-  return caml_ba_map_file(argv[0], argv[1], argv[2],
-                          argv[3], argv[4], argv[5]);
+  return caml_unix_map_file(argv[0], argv[1], argv[2],
+                            argv[3], argv[4], argv[5]);
 }
 
-void caml_ba_unmap_file(void * addr, uintnat len)
+void caml_unix_unmap_file(void * addr, uintnat len)
 {
   SYSTEM_INFO sysinfo;
   uintnat delta;

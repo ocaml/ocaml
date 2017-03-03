@@ -100,11 +100,13 @@ struct custom_operations * caml_final_custom_operations(final_fun fn)
 
 extern struct custom_operations caml_int32_ops,
                                 caml_nativeint_ops,
-                                caml_int64_ops;
+                                caml_int64_ops,
+                                caml_ba_ops;
 
 void caml_init_custom_operations(void)
 {
   caml_register_custom_operations(&caml_int32_ops);
   caml_register_custom_operations(&caml_nativeint_ops);
   caml_register_custom_operations(&caml_int64_ops);
+  caml_register_custom_operations(&caml_ba_ops);
 }
