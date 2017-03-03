@@ -43,6 +43,8 @@ Working version
 - PR#7468: possible GC problem in caml_alloc_sprintf
   (Xavier Leroy, discovery by Olivier Andrieu)
 
+- GPR#1075: Ensure that zero-sized float arrays have zero tags.
+  (Mark Shinwell, Leo White)
 
 
 Next version (4.05.0):
