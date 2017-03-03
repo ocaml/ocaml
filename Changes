@@ -5,6 +5,10 @@ Working version
 
 ### Language features:
 
+- GPR#1066: Allow symbol characters in delimiters for quoted
+  strings.
+  (Matthew Wahab)
+
 ### Code generation and optimizations:
 
 - PR#5324, GPR#375: An alternative Linear Scan register allocator for

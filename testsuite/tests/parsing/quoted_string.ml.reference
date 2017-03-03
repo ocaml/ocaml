@@ -1,0 +1,1154 @@
+[
+  structure_item (quoted_string.ml[1,0+0]..[29,550+3])
+    Pstr_value Nonrec
+    [
+      <def>
+        pattern (quoted_string.ml[1,0+4]..[1,0+7])
+          Ppat_var "foo" (quoted_string.ml[1,0+4]..[1,0+7])
+        expression (quoted_string.ml[2,10+2]..[29,550+3])
+          Pexp_construct "::" (quoted_string.ml[3,14+4]..[29,550+3]) ghost
+          Some
+            expression (quoted_string.ml[3,14+4]..[29,550+3]) ghost
+              Pexp_tuple
+              [
+                expression (quoted_string.ml[3,14+4]..[3,14+11])
+                  Pexp_constant PConst_string (" a ",Some "")
+                expression (quoted_string.ml[4,27+4]..[29,550+3]) ghost
+                  Pexp_construct "::" (quoted_string.ml[4,27+4]..[29,550+3]) ghost
+                  Some
+                    expression (quoted_string.ml[4,27+4]..[29,550+3]) ghost
+                      Pexp_tuple
+                      [
+                        expression (quoted_string.ml[4,27+4]..[4,27+13])
+                          Pexp_constant PConst_string (" b ",Some "t")
+                        expression (quoted_string.ml[5,42+4]..[29,550+3]) ghost
+                          Pexp_construct "::" (quoted_string.ml[5,42+4]..[29,550+3]) ghost
+                          Some
+                            expression (quoted_string.ml[5,42+4]..[29,550+3]) ghost
+                              Pexp_tuple
+                              [
+                                expression (quoted_string.ml[5,42+4]..[5,42+19])
+                                  Pexp_constant PConst_string (" c ",Some "x_yz")
+                                expression (quoted_string.ml[6,63+4]..[29,550+3]) ghost
+                                  Pexp_construct "::" (quoted_string.ml[6,63+4]..[29,550+3]) ghost
+                                  Some
+                                    expression (quoted_string.ml[6,63+4]..[29,550+3]) ghost
+                                      Pexp_tuple
+                                      [
+                                        expression (quoted_string.ml[6,63+4]..[6,63+13])
+                                          Pexp_constant PConst_string (" c ",Some "_")
+                                        expression (quoted_string.ml[7,78+4]..[29,550+3]) ghost
+                                          Pexp_construct "::" (quoted_string.ml[7,78+4]..[29,550+3]) ghost
+                                          Some
+                                            expression (quoted_string.ml[7,78+4]..[29,550+3]) ghost
+                                              Pexp_tuple
+                                              [
+                                                expression (quoted_string.ml[7,78+4]..[7,78+13])
+                                                  Pexp_constant PConst_string (" d ",Some "!")
+                                                expression (quoted_string.ml[8,93+4]..[29,550+3]) ghost
+                                                  Pexp_construct "::" (quoted_string.ml[8,93+4]..[29,550+3]) ghost
+                                                  Some
+                                                    expression (quoted_string.ml[8,93+4]..[29,550+3]) ghost
+                                                      Pexp_tuple
+                                                      [
+                                                        expression (quoted_string.ml[8,93+4]..[8,93+13])
+                                                          Pexp_constant PConst_string (" e ",Some "$")
+                                                        expression (quoted_string.ml[9,108+4]..[29,550+3]) ghost
+                                                          Pexp_construct "::" (quoted_string.ml[9,108+4]..[29,550+3]) ghost
+                                                          Some
+                                                            expression (quoted_string.ml[9,108+4]..[29,550+3]) ghost
+                                                              Pexp_tuple
+                                                              [
+                                                                expression (quoted_string.ml[9,108+4]..[9,108+13])
+                                                                  Pexp_constant PConst_string (" f ",Some "%")
+                                                                expression (quoted_string.ml[10,123+4]..[29,550+3]) ghost
+                                                                  Pexp_construct "::" (quoted_string.ml[10,123+4]..[29,550+3]) ghost
+                                                                  Some
+                                                                    expression (quoted_string.ml[10,123+4]..[29,550+3]) ghost
+                                                                      Pexp_tuple
+                                                                      [
+expression (quoted_string.ml[10,123+4]..[10,123+13])
+  Pexp_constant PConst_string (" g ",Some "&")
+expression (quoted_string.ml[11,138+4]..[29,550+3]) ghost
+  Pexp_construct "::" (quoted_string.ml[11,138+4]..[29,550+3]) ghost
+  Some
+    expression (quoted_string.ml[11,138+4]..[29,550+3]) ghost
+      Pexp_tuple
+      [
+        expression (quoted_string.ml[11,138+4]..[11,138+13])
+          Pexp_constant PConst_string (" h ",Some "*")
+        expression (quoted_string.ml[12,153+4]..[29,550+3]) ghost
+          Pexp_construct "::" (quoted_string.ml[12,153+4]..[29,550+3]) ghost
+          Some
+            expression (quoted_string.ml[12,153+4]..[29,550+3]) ghost
+              Pexp_tuple
+              [
+                expression (quoted_string.ml[12,153+4]..[12,153+13])
+                  Pexp_constant PConst_string (" i ",Some "+")
+                expression (quoted_string.ml[13,168+4]..[29,550+3]) ghost
+                  Pexp_construct "::" (quoted_string.ml[13,168+4]..[29,550+3]) ghost
+                  Some
+                    expression (quoted_string.ml[13,168+4]..[29,550+3]) ghost
+                      Pexp_tuple
+                      [
+                        expression (quoted_string.ml[13,168+4]..[13,168+13])
+                          Pexp_constant PConst_string (" j ",Some "-")
+                        expression (quoted_string.ml[14,183+4]..[29,550+3]) ghost
+                          Pexp_construct "::" (quoted_string.ml[14,183+4]..[29,550+3]) ghost
+                          Some
+                            expression (quoted_string.ml[14,183+4]..[29,550+3]) ghost
+                              Pexp_tuple
+                              [
+                                expression (quoted_string.ml[14,183+4]..[14,183+13])
+                                  Pexp_constant PConst_string (" k ",Some ".")
+                                expression (quoted_string.ml[15,198+4]..[29,550+3]) ghost
+                                  Pexp_construct "::" (quoted_string.ml[15,198+4]..[29,550+3]) ghost
+                                  Some
+                                    expression (quoted_string.ml[15,198+4]..[29,550+3]) ghost
+                                      Pexp_tuple
+                                      [
+                                        expression (quoted_string.ml[15,198+4]..[15,198+13])
+                                          Pexp_constant PConst_string (" l ",Some "/")
+                                        expression (quoted_string.ml[16,213+4]..[29,550+3]) ghost
+                                          Pexp_construct "::" (quoted_string.ml[16,213+4]..[29,550+3]) ghost
+                                          Some
+                                            expression (quoted_string.ml[16,213+4]..[29,550+3]) ghost
+                                              Pexp_tuple
+                                              [
+                                                expression (quoted_string.ml[16,213+4]..[16,213+13])
+                                                  Pexp_constant PConst_string (" m ",Some ":")
+                                                expression (quoted_string.ml[17,228+4]..[29,550+3]) ghost
+                                                  Pexp_construct "::" (quoted_string.ml[17,228+4]..[29,550+3]) ghost
+                                                  Some
+                                                    expression (quoted_string.ml[17,228+4]..[29,550+3]) ghost
+                                                      Pexp_tuple
+                                                      [
+                                                        expression (quoted_string.ml[17,228+4]..[17,228+13])
+                                                          Pexp_constant PConst_string (" n ",Some "<")
+                                                        expression (quoted_string.ml[18,243+4]..[29,550+3]) ghost
+                                                          Pexp_construct "::" (quoted_string.ml[18,243+4]..[29,550+3]) ghost
+                                                          Some
+                                                            expression (quoted_string.ml[18,243+4]..[29,550+3]) ghost
+                                                              Pexp_tuple
+                                                              [
+                                                                expression (quoted_string.ml[18,243+4]..[18,243+13])
+                                                                  Pexp_constant PConst_string (" o ",Some "=")
+                                                                expression (quoted_string.ml[19,258+4]..[29,550+3]) ghost
+                                                                  Pexp_construct "::" (quoted_string.ml[19,258+4]..[29,550+3]) ghost
+                                                                  Some
+                                                                    expression (quoted_string.ml[19,258+4]..[29,550+3]) ghost
+                                                                      Pexp_tuple
+                                                                      [
+expression (quoted_string.ml[19,258+4]..[19,258+13])
+  Pexp_constant PConst_string (" p ",Some ">")
+expression (quoted_string.ml[20,273+4]..[29,550+3]) ghost
+  Pexp_construct "::" (quoted_string.ml[20,273+4]..[29,550+3]) ghost
+  Some
+    expression (quoted_string.ml[20,273+4]..[29,550+3]) ghost
+      Pexp_tuple
+      [
+        expression (quoted_string.ml[20,273+4]..[20,273+13])
+          Pexp_constant PConst_string (" q ",Some "?")
+        expression (quoted_string.ml[21,288+4]..[29,550+3]) ghost
+          Pexp_construct "::" (quoted_string.ml[21,288+4]..[29,550+3]) ghost
+          Some
+            expression (quoted_string.ml[21,288+4]..[29,550+3]) ghost
+              Pexp_tuple
+              [
+                expression (quoted_string.ml[21,288+4]..[21,288+13])
+                  Pexp_constant PConst_string (" r ",Some "@")
+                expression (quoted_string.ml[22,303+4]..[29,550+3]) ghost
+                  Pexp_construct "::" (quoted_string.ml[22,303+4]..[29,550+3]) ghost
+                  Some
+                    expression (quoted_string.ml[22,303+4]..[29,550+3]) ghost
+                      Pexp_tuple
+                      [
+                        expression (quoted_string.ml[22,303+4]..[22,303+13])
+                          Pexp_constant PConst_string (" s ",Some "^")
+                        expression (quoted_string.ml[23,318+4]..[29,550+3]) ghost
+                          Pexp_construct "::" (quoted_string.ml[23,318+4]..[29,550+3]) ghost
+                          Some
+                            expression (quoted_string.ml[23,318+4]..[29,550+3]) ghost
+                              Pexp_tuple
+                              [
+                                expression (quoted_string.ml[23,318+4]..[23,318+13])
+                                  Pexp_constant PConst_string (" t ",Some "~")
+                                expression (quoted_string.ml[24,333+4]..[29,550+3]) ghost
+                                  Pexp_construct "::" (quoted_string.ml[24,333+4]..[29,550+3]) ghost
+                                  Some
+                                    expression (quoted_string.ml[24,333+4]..[29,550+3]) ghost
+                                      Pexp_tuple
+                                      [
+                                        expression (quoted_string.ml[24,333+4]..[24,333+13])
+                                          Pexp_constant PConst_string (" u ",Some "#")
+                                        expression (quoted_string.ml[26,349+4]..[29,550+3]) ghost
+                                          Pexp_construct "::" (quoted_string.ml[26,349+4]..[29,550+3]) ghost
+                                          Some
+                                            expression (quoted_string.ml[26,349+4]..[29,550+3]) ghost
+                                              Pexp_tuple
+                                              [
+                                                expression (quoted_string.ml[26,349+4]..[26,349+65])
+                                                  Pexp_constant PConst_string (" d ",Some "abcd_!$%&*+-./:<=>?@~#_efgh")
+                                                expression (quoted_string.ml[27,416+4]..[29,550+3]) ghost
+                                                  Pexp_construct "::" (quoted_string.ml[27,416+4]..[29,550+3]) ghost
+                                                  Some
+                                                    expression (quoted_string.ml[27,416+4]..[29,550+3]) ghost
+                                                      Pexp_tuple
+                                                      [
+                                                        expression (quoted_string.ml[27,416+4]..[27,416+65])
+                                                          Pexp_constant PConst_string (" e ",Some "!$%&*+-./:<=>?@~#_abcd_efgh")
+                                                        expression (quoted_string.ml[28,483+4]..[29,550+3]) ghost
+                                                          Pexp_construct "::" (quoted_string.ml[28,483+4]..[29,550+3]) ghost
+                                                          Some
+                                                            expression (quoted_string.ml[28,483+4]..[29,550+3]) ghost
+                                                              Pexp_tuple
+                                                              [
+                                                                expression (quoted_string.ml[28,483+4]..[28,483+65])
+                                                                  Pexp_constant PConst_string (" f ",Some "abcd_efgh_!$%&*+-./:<=>?@~#")
+                                                                expression (quoted_string.ml[29,550+2]..[29,550+3]) ghost
+                                                                  Pexp_construct "[]" (quoted_string.ml[29,550+2]..[29,550+3]) ghost
+                                                                  None
+                                                              ]
+                                                      ]
+                                              ]
+                                      ]
+                              ]
+                      ]
+              ]
+      ]
+                                                                      ]
+                                                              ]
+                                                      ]
+                                              ]
+                                      ]
+                              ]
+                      ]
+              ]
+      ]
+                                                                      ]
+                                                              ]
+                                                      ]
+                                              ]
+                                      ]
+                              ]
+                      ]
+              ]
+    ]
+  structure_item (quoted_string.ml[31,555+0]..[74,1716+3])
+    Pstr_value Nonrec
+    [
+      <def>
+        pattern (quoted_string.ml[31,555+4]..[31,555+7])
+          Ppat_var "bar" (quoted_string.ml[31,555+4]..[31,555+7])
+        expression (quoted_string.ml[32,565+2]..[74,1716+3])
+          Pexp_construct "::" (quoted_string.ml[33,569+4]..[74,1716+3]) ghost
+          Some
+            expression (quoted_string.ml[33,569+4]..[74,1716+3]) ghost
+              Pexp_tuple
+              [
+                expression (quoted_string.ml[33,569+4]..[33,569+17])
+                  Pexp_apply
+                  expression (quoted_string.ml[33,569+12]..[33,569+13])
+                    Pexp_ident "^" (quoted_string.ml[33,569+12]..[33,569+13])
+                  [
+                    <arg>
+                    Nolabel
+                      expression (quoted_string.ml[33,569+4]..[33,569+11])
+                        Pexp_constant PConst_string (" a ",Some "")
+                    <arg>
+                    Nolabel
+                      expression (quoted_string.ml[33,569+14]..[33,569+17])
+                        Pexp_constant PConst_string("a",None)
+                  ]
+                expression (quoted_string.ml[34,588+4]..[74,1716+3]) ghost
+                  Pexp_construct "::" (quoted_string.ml[34,588+4]..[74,1716+3]) ghost
+                  Some
+                    expression (quoted_string.ml[34,588+4]..[74,1716+3]) ghost
+                      Pexp_tuple
+                      [
+                        expression (quoted_string.ml[34,588+4]..[34,588+19])
+                          Pexp_apply
+                          expression (quoted_string.ml[34,588+14]..[34,588+15])
+                            Pexp_ident "^" (quoted_string.ml[34,588+14]..[34,588+15])
+                          [
+                            <arg>
+                            Nolabel
+                              expression (quoted_string.ml[34,588+4]..[34,588+13])
+                                Pexp_constant PConst_string (" b ",Some "t")
+                            <arg>
+                            Nolabel
+                              expression (quoted_string.ml[34,588+16]..[34,588+19])
+                                Pexp_constant PConst_string("b",None)
+                          ]
+                        expression (quoted_string.ml[35,609+4]..[74,1716+3]) ghost
+                          Pexp_construct "::" (quoted_string.ml[35,609+4]..[74,1716+3]) ghost
+                          Some
+                            expression (quoted_string.ml[35,609+4]..[74,1716+3]) ghost
+                              Pexp_tuple
+                              [
+                                expression (quoted_string.ml[35,609+4]..[35,609+25])
+                                  Pexp_apply
+                                  expression (quoted_string.ml[35,609+20]..[35,609+21])
+                                    Pexp_ident "^" (quoted_string.ml[35,609+20]..[35,609+21])
+                                  [
+                                    <arg>
+                                    Nolabel
+                                      expression (quoted_string.ml[35,609+4]..[35,609+19])
+                                        Pexp_constant PConst_string (" c ",Some "x_yz")
+                                    <arg>
+                                    Nolabel
+                                      expression (quoted_string.ml[35,609+22]..[35,609+25])
+                                        Pexp_constant PConst_string("c",None)
+                                  ]
+                                expression (quoted_string.ml[36,636+4]..[74,1716+3]) ghost
+                                  Pexp_construct "::" (quoted_string.ml[36,636+4]..[74,1716+3]) ghost
+                                  Some
+                                    expression (quoted_string.ml[36,636+4]..[74,1716+3]) ghost
+                                      Pexp_tuple
+                                      [
+                                        expression (quoted_string.ml[36,636+4]..[36,636+19])
+                                          Pexp_apply
+                                          expression (quoted_string.ml[36,636+14]..[36,636+15])
+                                            Pexp_ident "^" (quoted_string.ml[36,636+14]..[36,636+15])
+                                          [
+                                            <arg>
+                                            Nolabel
+                                              expression (quoted_string.ml[36,636+4]..[36,636+13])
+                                                Pexp_constant PConst_string (" d ",Some "_")
+                                            <arg>
+                                            Nolabel
+                                              expression (quoted_string.ml[36,636+16]..[36,636+19])
+                                                Pexp_constant PConst_string("d",None)
+                                          ]
+                                        expression (quoted_string.ml[38,658+4]..[74,1716+3]) ghost
+                                          Pexp_construct "::" (quoted_string.ml[38,658+4]..[74,1716+3]) ghost
+                                          Some
+                                            expression (quoted_string.ml[38,658+4]..[74,1716+3]) ghost
+                                              Pexp_tuple
+                                              [
+                                                expression (quoted_string.ml[38,658+4]..[38,658+17])
+                                                  Pexp_apply
+                                                  expression (quoted_string.ml[38,658+8]..[38,658+9])
+                                                    Pexp_ident "^" (quoted_string.ml[38,658+8]..[38,658+9])
+                                                  [
+                                                    <arg>
+                                                    Nolabel
+                                                      expression (quoted_string.ml[38,658+4]..[38,658+7])
+                                                        Pexp_constant PConst_string("a",None)
+                                                    <arg>
+                                                    Nolabel
+                                                      expression (quoted_string.ml[38,658+10]..[38,658+17])
+                                                        Pexp_constant PConst_string (" a ",Some "")
+                                                  ]
+                                                expression (quoted_string.ml[39,677+4]..[74,1716+3]) ghost
+                                                  Pexp_construct "::" (quoted_string.ml[39,677+4]..[74,1716+3]) ghost
+                                                  Some
+                                                    expression (quoted_string.ml[39,677+4]..[74,1716+3]) ghost
+                                                      Pexp_tuple
+                                                      [
+                                                        expression (quoted_string.ml[39,677+4]..[39,677+25])
+                                                          Pexp_apply
+                                                          expression (quoted_string.ml[39,677+8]..[39,677+9])
+                                                            Pexp_ident "^" (quoted_string.ml[39,677+8]..[39,677+9])
+                                                          [
+                                                            <arg>
+                                                            Nolabel
+                                                              expression (quoted_string.ml[39,677+4]..[39,677+7])
+                                                                Pexp_constant PConst_string("b",None)
+                                                            <arg>
+                                                            Nolabel
+                                                              expression (quoted_string.ml[39,677+10]..[39,677+25])
+                                                                Pexp_apply
+                                                                expression (quoted_string.ml[39,677+20]..[39,677+21])
+                                                                  Pexp_ident "^" (quoted_string.ml[39,677+20]..[39,677+21])
+                                                                [
+                                                                  <arg>
+                                                                  Nolabel
+                                                                    expression (quoted_string.ml[39,677+10]..[39,677+19])
+                                                                      Pexp_constant PConst_string (" b ",Some "t")
+                                                                  <arg>
+                                                                  Nolabel
+                                                                    expression (quoted_string.ml[39,677+22]..[39,677+25])
+                                                                      Pexp_constant PConst_string("b",None)
+                                                                ]
+                                                          ]
+                                                        expression (quoted_string.ml[40,704+4]..[74,1716+3]) ghost
+                                                          Pexp_construct "::" (quoted_string.ml[40,704+4]..[74,1716+3]) ghost
+                                                          Some
+                                                            expression (quoted_string.ml[40,704+4]..[74,1716+3]) ghost
+                                                              Pexp_tuple
+                                                              [
+                                                                expression (quoted_string.ml[40,704+4]..[40,704+31])
+                                                                  Pexp_apply
+                                                                  expression (quoted_string.ml[40,704+8]..[40,704+9])
+                                                                    Pexp_ident "^" (quoted_string.ml[40,704+8]..[40,704+9])
+                                                                  [
+                                                                    <arg>
+                                                                    Nolabel
+                                                                      expression (quoted_string.ml[40,704+4]..[40,704+7])
+Pexp_constant PConst_string("c",None)
+                                                                    <arg>
+                                                                    Nolabel
+                                                                      expression (quoted_string.ml[40,704+10]..[40,704+31])
+Pexp_apply
+expression (quoted_string.ml[40,704+26]..[40,704+27])
+  Pexp_ident "^" (quoted_string.ml[40,704+26]..[40,704+27])
+[
+  <arg>
+  Nolabel
+    expression (quoted_string.ml[40,704+10]..[40,704+25])
+      Pexp_constant PConst_string (" c ",Some "x_yz")
+  <arg>
+  Nolabel
+    expression (quoted_string.ml[40,704+28]..[40,704+31])
+      Pexp_constant PConst_string("c",None)
+]
+                                                                  ]
+                                                                expression (quoted_string.ml[41,737+4]..[74,1716+3]) ghost
+                                                                  Pexp_construct "::" (quoted_string.ml[41,737+4]..[74,1716+3]) ghost
+                                                                  Some
+                                                                    expression (quoted_string.ml[41,737+4]..[74,1716+3]) ghost
+                                                                      Pexp_tuple
+                                                                      [
+expression (quoted_string.ml[41,737+4]..[41,737+25])
+  Pexp_apply
+  expression (quoted_string.ml[41,737+8]..[41,737+9])
+    Pexp_ident "^" (quoted_string.ml[41,737+8]..[41,737+9])
+  [
+    <arg>
+    Nolabel
+      expression (quoted_string.ml[41,737+4]..[41,737+7])
+        Pexp_constant PConst_string("d",None)
+    <arg>
+    Nolabel
+      expression (quoted_string.ml[41,737+10]..[41,737+25])
+        Pexp_apply
+        expression (quoted_string.ml[41,737+20]..[41,737+21])
+          Pexp_ident "^" (quoted_string.ml[41,737+20]..[41,737+21])
+        [
+          <arg>
+          Nolabel
+            expression (quoted_string.ml[41,737+10]..[41,737+19])
+              Pexp_constant PConst_string (" d ",Some "_")
+          <arg>
+          Nolabel
+            expression (quoted_string.ml[41,737+22]..[41,737+25])
+              Pexp_constant PConst_string("d",None)
+        ]
+  ]
+expression (quoted_string.ml[43,765+4]..[74,1716+3]) ghost
+  Pexp_construct "::" (quoted_string.ml[43,765+4]..[74,1716+3]) ghost
+  Some
+    expression (quoted_string.ml[43,765+4]..[74,1716+3]) ghost
+      Pexp_tuple
+      [
+        expression (quoted_string.ml[43,765+4]..[43,765+21])
+          Pexp_apply
+          expression (quoted_string.ml[43,765+8]..[43,765+9])
+            Pexp_ident "^" (quoted_string.ml[43,765+8]..[43,765+9])
+          [
+            <arg>
+            Nolabel
+              expression (quoted_string.ml[43,765+4]..[43,765+7])
+                Pexp_constant PConst_string("1",None)
+            <arg>
+            Nolabel
+              expression (quoted_string.ml[43,765+10]..[43,765+21])
+                Pexp_constant PConst_string (" d ",Some "*!")
+          ]
+        expression (quoted_string.ml[44,788+4]..[74,1716+3]) ghost
+          Pexp_construct "::" (quoted_string.ml[44,788+4]..[74,1716+3]) ghost
+          Some
+            expression (quoted_string.ml[44,788+4]..[74,1716+3]) ghost
+              Pexp_tuple
+              [
+                expression (quoted_string.ml[44,788+4]..[44,788+21])
+                  Pexp_apply
+                  expression (quoted_string.ml[44,788+8]..[44,788+9])
+                    Pexp_ident "^" (quoted_string.ml[44,788+8]..[44,788+9])
+                  [
+                    <arg>
+                    Nolabel
+                      expression (quoted_string.ml[44,788+4]..[44,788+7])
+                        Pexp_constant PConst_string("2",None)
+                    <arg>
+                    Nolabel
+                      expression (quoted_string.ml[44,788+10]..[44,788+21])
+                        Pexp_constant PConst_string (" e ",Some ">$")
+                  ]
+                expression (quoted_string.ml[45,811+4]..[74,1716+3]) ghost
+                  Pexp_construct "::" (quoted_string.ml[45,811+4]..[74,1716+3]) ghost
+                  Some
+                    expression (quoted_string.ml[45,811+4]..[74,1716+3]) ghost
+                      Pexp_tuple
+                      [
+                        expression (quoted_string.ml[45,811+4]..[45,811+21])
+                          Pexp_apply
+                          expression (quoted_string.ml[45,811+8]..[45,811+9])
+                            Pexp_ident "^" (quoted_string.ml[45,811+8]..[45,811+9])
+                          [
+                            <arg>
+                            Nolabel
+                              expression (quoted_string.ml[45,811+4]..[45,811+7])
+                                Pexp_constant PConst_string("3",None)
+                            <arg>
+                            Nolabel
+                              expression (quoted_string.ml[45,811+10]..[45,811+21])
+                                Pexp_constant PConst_string (" f ",Some "/%")
+                          ]
+                        expression (quoted_string.ml[46,834+4]..[74,1716+3]) ghost
+                          Pexp_construct "::" (quoted_string.ml[46,834+4]..[74,1716+3]) ghost
+                          Some
+                            expression (quoted_string.ml[46,834+4]..[74,1716+3]) ghost
+                              Pexp_tuple
+                              [
+                                expression (quoted_string.ml[46,834+4]..[46,834+21])
+                                  Pexp_apply
+                                  expression (quoted_string.ml[46,834+8]..[46,834+9])
+                                    Pexp_ident "^" (quoted_string.ml[46,834+8]..[46,834+9])
+                                  [
+                                    <arg>
+                                    Nolabel
+                                      expression (quoted_string.ml[46,834+4]..[46,834+7])
+                                        Pexp_constant PConst_string("4",None)
+                                    <arg>
+                                    Nolabel
+                                      expression (quoted_string.ml[46,834+10]..[46,834+21])
+                                        Pexp_constant PConst_string (" g ",Some "&&")
+                                  ]
+                                expression (quoted_string.ml[47,857+4]..[74,1716+3]) ghost
+                                  Pexp_construct "::" (quoted_string.ml[47,857+4]..[74,1716+3]) ghost
+                                  Some
+                                    expression (quoted_string.ml[47,857+4]..[74,1716+3]) ghost
+                                      Pexp_tuple
+                                      [
+                                        expression (quoted_string.ml[47,857+4]..[47,857+21])
+                                          Pexp_apply
+                                          expression (quoted_string.ml[47,857+8]..[47,857+9])
+                                            Pexp_ident "^" (quoted_string.ml[47,857+8]..[47,857+9])
+                                          [
+                                            <arg>
+                                            Nolabel
+                                              expression (quoted_string.ml[47,857+4]..[47,857+7])
+                                                Pexp_constant PConst_string("5",None)
+                                            <arg>
+                                            Nolabel
+                                              expression (quoted_string.ml[47,857+10]..[47,857+21])
+                                                Pexp_constant PConst_string (" h ",Some "**")
+                                          ]
+                                        expression (quoted_string.ml[48,880+4]..[74,1716+3]) ghost
+                                          Pexp_construct "::" (quoted_string.ml[48,880+4]..[74,1716+3]) ghost
+                                          Some
+                                            expression (quoted_string.ml[48,880+4]..[74,1716+3]) ghost
+                                              Pexp_tuple
+                                              [
+                                                expression (quoted_string.ml[48,880+4]..[48,880+21])
+                                                  Pexp_apply
+                                                  expression (quoted_string.ml[48,880+8]..[48,880+9])
+                                                    Pexp_ident "^" (quoted_string.ml[48,880+8]..[48,880+9])
+                                                  [
+                                                    <arg>
+                                                    Nolabel
+                                                      expression (quoted_string.ml[48,880+4]..[48,880+7])
+                                                        Pexp_constant PConst_string("6",None)
+                                                    <arg>
+                                                    Nolabel
+                                                      expression (quoted_string.ml[48,880+10]..[48,880+21])
+                                                        Pexp_constant PConst_string (" i ",Some "++")
+                                                  ]
+                                                expression (quoted_string.ml[49,903+4]..[74,1716+3]) ghost
+                                                  Pexp_construct "::" (quoted_string.ml[49,903+4]..[74,1716+3]) ghost
+                                                  Some
+                                                    expression (quoted_string.ml[49,903+4]..[74,1716+3]) ghost
+                                                      Pexp_tuple
+                                                      [
+                                                        expression (quoted_string.ml[49,903+4]..[49,903+21])
+                                                          Pexp_apply
+                                                          expression (quoted_string.ml[49,903+8]..[49,903+9])
+                                                            Pexp_ident "^" (quoted_string.ml[49,903+8]..[49,903+9])
+                                                          [
+                                                            <arg>
+                                                            Nolabel
+                                                              expression (quoted_string.ml[49,903+4]..[49,903+7])
+                                                                Pexp_constant PConst_string("7",None)
+                                                            <arg>
+                                                            Nolabel
+                                                              expression (quoted_string.ml[49,903+10]..[49,903+21])
+                                                                Pexp_constant PConst_string (" j ",Some "--")
+                                                          ]
+                                                        expression (quoted_string.ml[50,926+4]..[74,1716+3]) ghost
+                                                          Pexp_construct "::" (quoted_string.ml[50,926+4]..[74,1716+3]) ghost
+                                                          Some
+                                                            expression (quoted_string.ml[50,926+4]..[74,1716+3]) ghost
+                                                              Pexp_tuple
+                                                              [
+                                                                expression (quoted_string.ml[50,926+4]..[50,926+21])
+                                                                  Pexp_apply
+                                                                  expression (quoted_string.ml[50,926+8]..[50,926+9])
+                                                                    Pexp_ident "^" (quoted_string.ml[50,926+8]..[50,926+9])
+                                                                  [
+                                                                    <arg>
+                                                                    Nolabel
+                                                                      expression (quoted_string.ml[50,926+4]..[50,926+7])
+Pexp_constant PConst_string("8",None)
+                                                                    <arg>
+                                                                    Nolabel
+                                                                      expression (quoted_string.ml[50,926+10]..[50,926+21])
+Pexp_constant PConst_string (" k ",Some "..")
+                                                                  ]
+                                                                expression (quoted_string.ml[51,949+4]..[74,1716+3]) ghost
+                                                                  Pexp_construct "::" (quoted_string.ml[51,949+4]..[74,1716+3]) ghost
+                                                                  Some
+                                                                    expression (quoted_string.ml[51,949+4]..[74,1716+3]) ghost
+                                                                      Pexp_tuple
+                                                                      [
+expression (quoted_string.ml[51,949+4]..[51,949+21])
+  Pexp_apply
+  expression (quoted_string.ml[51,949+8]..[51,949+9])
+    Pexp_ident "^" (quoted_string.ml[51,949+8]..[51,949+9])
+  [
+    <arg>
+    Nolabel
+      expression (quoted_string.ml[51,949+4]..[51,949+7])
+        Pexp_constant PConst_string("9",None)
+    <arg>
+    Nolabel
+      expression (quoted_string.ml[51,949+10]..[51,949+21])
+        Pexp_constant PConst_string (" l ",Some "/$")
+  ]
+expression (quoted_string.ml[52,972+4]..[74,1716+3]) ghost
+  Pexp_construct "::" (quoted_string.ml[52,972+4]..[74,1716+3]) ghost
+  Some
+    expression (quoted_string.ml[52,972+4]..[74,1716+3]) ghost
+      Pexp_tuple
+      [
+        expression (quoted_string.ml[52,972+4]..[52,972+22])
+          Pexp_apply
+          expression (quoted_string.ml[52,972+9]..[52,972+10])
+            Pexp_ident "^" (quoted_string.ml[52,972+9]..[52,972+10])
+          [
+            <arg>
+            Nolabel
+              expression (quoted_string.ml[52,972+4]..[52,972+8])
+                Pexp_constant PConst_string("10",None)
+            <arg>
+            Nolabel
+              expression (quoted_string.ml[52,972+11]..[52,972+22])
+                Pexp_constant PConst_string (" m ",Some "::")
+          ]
+        expression (quoted_string.ml[53,996+4]..[74,1716+3]) ghost
+          Pexp_construct "::" (quoted_string.ml[53,996+4]..[74,1716+3]) ghost
+          Some
+            expression (quoted_string.ml[53,996+4]..[74,1716+3]) ghost
+              Pexp_tuple
+              [
+                expression (quoted_string.ml[53,996+4]..[53,996+22])
+                  Pexp_apply
+                  expression (quoted_string.ml[53,996+9]..[53,996+10])
+                    Pexp_ident "^" (quoted_string.ml[53,996+9]..[53,996+10])
+                  [
+                    <arg>
+                    Nolabel
+                      expression (quoted_string.ml[53,996+4]..[53,996+8])
+                        Pexp_constant PConst_string("11",None)
+                    <arg>
+                    Nolabel
+                      expression (quoted_string.ml[53,996+11]..[53,996+22])
+                        Pexp_constant PConst_string (" n ",Some "<>")
+                  ]
+                expression (quoted_string.ml[54,1020+4]..[74,1716+3]) ghost
+                  Pexp_construct "::" (quoted_string.ml[54,1020+4]..[74,1716+3]) ghost
+                  Some
+                    expression (quoted_string.ml[54,1020+4]..[74,1716+3]) ghost
+                      Pexp_tuple
+                      [
+                        expression (quoted_string.ml[54,1020+4]..[54,1020+22])
+                          Pexp_apply
+                          expression (quoted_string.ml[54,1020+9]..[54,1020+10])
+                            Pexp_ident "^" (quoted_string.ml[54,1020+9]..[54,1020+10])
+                          [
+                            <arg>
+                            Nolabel
+                              expression (quoted_string.ml[54,1020+4]..[54,1020+8])
+                                Pexp_constant PConst_string("12",None)
+                            <arg>
+                            Nolabel
+                              expression (quoted_string.ml[54,1020+11]..[54,1020+22])
+                                Pexp_constant PConst_string (" o ",Some "==")
+                          ]
+                        expression (quoted_string.ml[55,1044+4]..[74,1716+3]) ghost
+                          Pexp_construct "::" (quoted_string.ml[55,1044+4]..[74,1716+3]) ghost
+                          Some
+                            expression (quoted_string.ml[55,1044+4]..[74,1716+3]) ghost
+                              Pexp_tuple
+                              [
+                                expression (quoted_string.ml[55,1044+4]..[55,1044+22])
+                                  Pexp_apply
+                                  expression (quoted_string.ml[55,1044+9]..[55,1044+10])
+                                    Pexp_ident "^" (quoted_string.ml[55,1044+9]..[55,1044+10])
+                                  [
+                                    <arg>
+                                    Nolabel
+                                      expression (quoted_string.ml[55,1044+4]..[55,1044+8])
+                                        Pexp_constant PConst_string("13",None)
+                                    <arg>
+                                    Nolabel
+                                      expression (quoted_string.ml[55,1044+11]..[55,1044+22])
+                                        Pexp_constant PConst_string (" p ",Some "!>")
+                                  ]
+                                expression (quoted_string.ml[56,1068+4]..[74,1716+3]) ghost
+                                  Pexp_construct "::" (quoted_string.ml[56,1068+4]..[74,1716+3]) ghost
+                                  Some
+                                    expression (quoted_string.ml[56,1068+4]..[74,1716+3]) ghost
+                                      Pexp_tuple
+                                      [
+                                        expression (quoted_string.ml[56,1068+4]..[56,1068+22])
+                                          Pexp_apply
+                                          expression (quoted_string.ml[56,1068+9]..[56,1068+10])
+                                            Pexp_ident "^" (quoted_string.ml[56,1068+9]..[56,1068+10])
+                                          [
+                                            <arg>
+                                            Nolabel
+                                              expression (quoted_string.ml[56,1068+4]..[56,1068+8])
+                                                Pexp_constant PConst_string("14",None)
+                                            <arg>
+                                            Nolabel
+                                              expression (quoted_string.ml[56,1068+11]..[56,1068+22])
+                                                Pexp_constant PConst_string (" q ",Some "?@")
+                                          ]
+                                        expression (quoted_string.ml[57,1092+4]..[74,1716+3]) ghost
+                                          Pexp_construct "::" (quoted_string.ml[57,1092+4]..[74,1716+3]) ghost
+                                          Some
+                                            expression (quoted_string.ml[57,1092+4]..[74,1716+3]) ghost
+                                              Pexp_tuple
+                                              [
+                                                expression (quoted_string.ml[57,1092+4]..[57,1092+22])
+                                                  Pexp_apply
+                                                  expression (quoted_string.ml[57,1092+9]..[57,1092+10])
+                                                    Pexp_ident "^" (quoted_string.ml[57,1092+9]..[57,1092+10])
+                                                  [
+                                                    <arg>
+                                                    Nolabel
+                                                      expression (quoted_string.ml[57,1092+4]..[57,1092+8])
+                                                        Pexp_constant PConst_string("15",None)
+                                                    <arg>
+                                                    Nolabel
+                                                      expression (quoted_string.ml[57,1092+11]..[57,1092+22])
+                                                        Pexp_constant PConst_string (" r ",Some "@@")
+                                                  ]
+                                                expression (quoted_string.ml[58,1116+4]..[74,1716+3]) ghost
+                                                  Pexp_construct "::" (quoted_string.ml[58,1116+4]..[74,1716+3]) ghost
+                                                  Some
+                                                    expression (quoted_string.ml[58,1116+4]..[74,1716+3]) ghost
+                                                      Pexp_tuple
+                                                      [
+                                                        expression (quoted_string.ml[58,1116+4]..[58,1116+22])
+                                                          Pexp_apply
+                                                          expression (quoted_string.ml[58,1116+9]..[58,1116+10])
+                                                            Pexp_ident "^" (quoted_string.ml[58,1116+9]..[58,1116+10])
+                                                          [
+                                                            <arg>
+                                                            Nolabel
+                                                              expression (quoted_string.ml[58,1116+4]..[58,1116+8])
+                                                                Pexp_constant PConst_string("16",None)
+                                                            <arg>
+                                                            Nolabel
+                                                              expression (quoted_string.ml[58,1116+11]..[58,1116+22])
+                                                                Pexp_constant PConst_string (" s ",Some "^^")
+                                                          ]
+                                                        expression (quoted_string.ml[59,1140+4]..[74,1716+3]) ghost
+                                                          Pexp_construct "::" (quoted_string.ml[59,1140+4]..[74,1716+3]) ghost
+                                                          Some
+                                                            expression (quoted_string.ml[59,1140+4]..[74,1716+3]) ghost
+                                                              Pexp_tuple
+                                                              [
+                                                                expression (quoted_string.ml[59,1140+4]..[59,1140+22])
+                                                                  Pexp_apply
+                                                                  expression (quoted_string.ml[59,1140+9]..[59,1140+10])
+                                                                    Pexp_ident "^" (quoted_string.ml[59,1140+9]..[59,1140+10])
+                                                                  [
+                                                                    <arg>
+                                                                    Nolabel
+                                                                      expression (quoted_string.ml[59,1140+4]..[59,1140+8])
+Pexp_constant PConst_string("17",None)
+                                                                    <arg>
+                                                                    Nolabel
+                                                                      expression (quoted_string.ml[59,1140+11]..[59,1140+22])
+Pexp_constant PConst_string (" t ",Some "^~")
+                                                                  ]
+                                                                expression (quoted_string.ml[60,1164+4]..[74,1716+3]) ghost
+                                                                  Pexp_construct "::" (quoted_string.ml[60,1164+4]..[74,1716+3]) ghost
+                                                                  Some
+                                                                    expression (quoted_string.ml[60,1164+4]..[74,1716+3]) ghost
+                                                                      Pexp_tuple
+                                                                      [
+expression (quoted_string.ml[60,1164+4]..[60,1164+22])
+  Pexp_apply
+  expression (quoted_string.ml[60,1164+9]..[60,1164+10])
+    Pexp_ident "^" (quoted_string.ml[60,1164+9]..[60,1164+10])
+  [
+    <arg>
+    Nolabel
+      expression (quoted_string.ml[60,1164+4]..[60,1164+8])
+        Pexp_constant PConst_string("18",None)
+    <arg>
+    Nolabel
+      expression (quoted_string.ml[60,1164+11]..[60,1164+22])
+        Pexp_constant PConst_string (" u ",Some "##")
+  ]
+expression (quoted_string.ml[62,1189+4]..[74,1716+3]) ghost
+  Pexp_construct "::" (quoted_string.ml[62,1189+4]..[74,1716+3]) ghost
+  Some
+    expression (quoted_string.ml[62,1189+4]..[74,1716+3]) ghost
+      Pexp_tuple
+      [
+        expression (quoted_string.ml[62,1189+4]..[63,1199+67])
+          Pexp_apply
+          expression (quoted_string.ml[62,1189+8]..[62,1189+9])
+            Pexp_ident "^" (quoted_string.ml[62,1189+8]..[62,1189+9])
+          [
+            <arg>
+            Nolabel
+              expression (quoted_string.ml[62,1189+4]..[62,1189+8])
+                Pexp_constant PConst_string("19",None)
+            <arg>
+            Nolabel
+              expression (quoted_string.ml[63,1199+6]..[63,1199+67])
+                Pexp_constant PConst_string (" d ",Some "abcd_!$%&*+-./:<=>?@~#_efgh")
+          ]
+        expression (quoted_string.ml[64,1268+4]..[74,1716+3]) ghost
+          Pexp_construct "::" (quoted_string.ml[64,1268+4]..[74,1716+3]) ghost
+          Some
+            expression (quoted_string.ml[64,1268+4]..[74,1716+3]) ghost
+              Pexp_tuple
+              [
+                expression (quoted_string.ml[64,1268+4]..[65,1279+67])
+                  Pexp_apply
+                  expression (quoted_string.ml[64,1268+9]..[64,1268+10])
+                    Pexp_ident "^" (quoted_string.ml[64,1268+9]..[64,1268+10])
+                  [
+                    <arg>
+                    Nolabel
+                      expression (quoted_string.ml[64,1268+4]..[64,1268+8])
+                        Pexp_constant PConst_string("20",None)
+                    <arg>
+                    Nolabel
+                      expression (quoted_string.ml[65,1279+6]..[65,1279+67])
+                        Pexp_constant PConst_string (" e ",Some "!$%&*+-./:<=>?@~#_abcd_efgh")
+                  ]
+                expression (quoted_string.ml[66,1348+4]..[74,1716+3]) ghost
+                  Pexp_construct "::" (quoted_string.ml[66,1348+4]..[74,1716+3]) ghost
+                  Some
+                    expression (quoted_string.ml[66,1348+4]..[74,1716+3]) ghost
+                      Pexp_tuple
+                      [
+                        expression (quoted_string.ml[66,1348+4]..[67,1359+67])
+                          Pexp_apply
+                          expression (quoted_string.ml[66,1348+9]..[66,1348+10])
+                            Pexp_ident "^" (quoted_string.ml[66,1348+9]..[66,1348+10])
+                          [
+                            <arg>
+                            Nolabel
+                              expression (quoted_string.ml[66,1348+4]..[66,1348+8])
+                                Pexp_constant PConst_string("21",None)
+                            <arg>
+                            Nolabel
+                              expression (quoted_string.ml[67,1359+6]..[67,1359+67])
+                                Pexp_constant PConst_string (" f ",Some "abcd_efgh_!$%&*+-./:<=>?@~#")
+                          ]
+                        expression (quoted_string.ml[69,1429+4]..[74,1716+3]) ghost
+                          Pexp_construct "::" (quoted_string.ml[69,1429+4]..[74,1716+3]) ghost
+                          Some
+                            expression (quoted_string.ml[69,1429+4]..[74,1716+3]) ghost
+                              Pexp_tuple
+                              [
+                                expression (quoted_string.ml[69,1429+4]..[73,1675+39])
+                                  Pexp_apply
+                                  expression (quoted_string.ml[69,1429+12]..[69,1429+13])
+                                    Pexp_ident "^" (quoted_string.ml[69,1429+12]..[69,1429+13])
+                                  [
+                                    <arg>
+                                    Nolabel
+                                      expression (quoted_string.ml[69,1429+4]..[69,1429+11])
+                                        Pexp_constant PConst_string (" a ",Some "")
+                                    <arg>
+                                    Nolabel
+                                      expression (quoted_string.ml[69,1429+14]..[73,1675+39])
+                                        Pexp_apply
+                                        expression (quoted_string.ml[69,1429+24]..[69,1429+25])
+                                          Pexp_ident "^" (quoted_string.ml[69,1429+24]..[69,1429+25])
+                                        [
+                                          <arg>
+                                          Nolabel
+                                            expression (quoted_string.ml[69,1429+14]..[69,1429+23])
+                                              Pexp_constant PConst_string (" b ",Some "t")
+                                          <arg>
+                                          Nolabel
+                                            expression (quoted_string.ml[69,1429+26]..[73,1675+39])
+                                              Pexp_apply
+                                              expression (quoted_string.ml[69,1429+42]..[69,1429+43])
+                                                Pexp_ident "^" (quoted_string.ml[69,1429+42]..[69,1429+43])
+                                              [
+                                                <arg>
+                                                Nolabel
+                                                  expression (quoted_string.ml[69,1429+26]..[69,1429+41])
+                                                    Pexp_constant PConst_string (" c ",Some "x_yz")
+                                                <arg>
+                                                Nolabel
+                                                  expression (quoted_string.ml[69,1429+44]..[73,1675+39])
+                                                    Pexp_apply
+                                                    expression (quoted_string.ml[70,1483+4]..[70,1483+5])
+                                                      Pexp_ident "^" (quoted_string.ml[70,1483+4]..[70,1483+5])
+                                                    [
+                                                      <arg>
+                                                      Nolabel
+                                                        expression (quoted_string.ml[69,1429+44]..[69,1429+53])
+                                                          Pexp_constant PConst_string (" c ",Some "_")
+                                                      <arg>
+                                                      Nolabel
+                                                        expression (quoted_string.ml[70,1483+6]..[73,1675+39])
+                                                          Pexp_apply
+                                                          expression (quoted_string.ml[70,1483+16]..[70,1483+17])
+                                                            Pexp_ident "^" (quoted_string.ml[70,1483+16]..[70,1483+17])
+                                                          [
+                                                            <arg>
+                                                            Nolabel
+                                                              expression (quoted_string.ml[70,1483+6]..[70,1483+15])
+                                                                Pexp_constant PConst_string (" d ",Some "!")
+                                                            <arg>
+                                                            Nolabel
+                                                              expression (quoted_string.ml[70,1483+18]..[73,1675+39])
+                                                                Pexp_apply
+                                                                expression (quoted_string.ml[70,1483+28]..[70,1483+29])
+                                                                  Pexp_ident "^" (quoted_string.ml[70,1483+28]..[70,1483+29])
+                                                                [
+                                                                  <arg>
+                                                                  Nolabel
+                                                                    expression (quoted_string.ml[70,1483+18]..[70,1483+27])
+                                                                      Pexp_constant PConst_string (" e ",Some "$")
+                                                                  <arg>
+                                                                  Nolabel
+                                                                    expression (quoted_string.ml[70,1483+30]..[73,1675+39])
+                                                                      Pexp_apply
+                                                                      expression (quoted_string.ml[70,1483+40]..[70,1483+41])
+Pexp_ident "^" (quoted_string.ml[70,1483+40]..[70,1483+41])
+                                                                      [
+<arg>
+Nolabel
+  expression (quoted_string.ml[70,1483+30]..[70,1483+39])
+    Pexp_constant PConst_string (" f ",Some "%")
+<arg>
+Nolabel
+  expression (quoted_string.ml[70,1483+42]..[73,1675+39])
+    Pexp_apply
+    expression (quoted_string.ml[70,1483+52]..[70,1483+53])
+      Pexp_ident "^" (quoted_string.ml[70,1483+52]..[70,1483+53])
+    [
+      <arg>
+      Nolabel
+        expression (quoted_string.ml[70,1483+42]..[70,1483+51])
+          Pexp_constant PConst_string (" g ",Some "&")
+      <arg>
+      Nolabel
+        expression (quoted_string.ml[70,1483+54]..[73,1675+39])
+          Pexp_apply
+          expression (quoted_string.ml[71,1547+4]..[71,1547+5])
+            Pexp_ident "^" (quoted_string.ml[71,1547+4]..[71,1547+5])
+          [
+            <arg>
+            Nolabel
+              expression (quoted_string.ml[70,1483+54]..[70,1483+63])
+                Pexp_constant PConst_string (" h ",Some "*")
+            <arg>
+            Nolabel
+              expression (quoted_string.ml[71,1547+6]..[73,1675+39])
+                Pexp_apply
+                expression (quoted_string.ml[71,1547+16]..[71,1547+17])
+                  Pexp_ident "^" (quoted_string.ml[71,1547+16]..[71,1547+17])
+                [
+                  <arg>
+                  Nolabel
+                    expression (quoted_string.ml[71,1547+6]..[71,1547+15])
+                      Pexp_constant PConst_string (" i ",Some "+")
+                  <arg>
+                  Nolabel
+                    expression (quoted_string.ml[71,1547+18]..[73,1675+39])
+                      Pexp_apply
+                      expression (quoted_string.ml[71,1547+28]..[71,1547+29])
+                        Pexp_ident "^" (quoted_string.ml[71,1547+28]..[71,1547+29])
+                      [
+                        <arg>
+                        Nolabel
+                          expression (quoted_string.ml[71,1547+18]..[71,1547+27])
+                            Pexp_constant PConst_string (" j ",Some "-")
+                        <arg>
+                        Nolabel
+                          expression (quoted_string.ml[71,1547+30]..[73,1675+39])
+                            Pexp_apply
+                            expression (quoted_string.ml[71,1547+40]..[71,1547+41])
+                              Pexp_ident "^" (quoted_string.ml[71,1547+40]..[71,1547+41])
+                            [
+                              <arg>
+                              Nolabel
+                                expression (quoted_string.ml[71,1547+30]..[71,1547+39])
+                                  Pexp_constant PConst_string (" k ",Some ".")
+                              <arg>
+                              Nolabel
+                                expression (quoted_string.ml[71,1547+42]..[73,1675+39])
+                                  Pexp_apply
+                                  expression (quoted_string.ml[71,1547+52]..[71,1547+53])
+                                    Pexp_ident "^" (quoted_string.ml[71,1547+52]..[71,1547+53])
+                                  [
+                                    <arg>
+                                    Nolabel
+                                      expression (quoted_string.ml[71,1547+42]..[71,1547+51])
+                                        Pexp_constant PConst_string (" l ",Some "/")
+                                    <arg>
+                                    Nolabel
+                                      expression (quoted_string.ml[71,1547+54]..[73,1675+39])
+                                        Pexp_apply
+                                        expression (quoted_string.ml[72,1611+4]..[72,1611+5])
+                                          Pexp_ident "^" (quoted_string.ml[72,1611+4]..[72,1611+5])
+                                        [
+                                          <arg>
+                                          Nolabel
+                                            expression (quoted_string.ml[71,1547+54]..[71,1547+63])
+                                              Pexp_constant PConst_string (" m ",Some ":")
+                                          <arg>
+                                          Nolabel
+                                            expression (quoted_string.ml[72,1611+6]..[73,1675+39])
+                                              Pexp_apply
+                                              expression (quoted_string.ml[72,1611+16]..[72,1611+17])
+                                                Pexp_ident "^" (quoted_string.ml[72,1611+16]..[72,1611+17])
+                                              [
+                                                <arg>
+                                                Nolabel
+                                                  expression (quoted_string.ml[72,1611+6]..[72,1611+15])
+                                                    Pexp_constant PConst_string (" n ",Some "<")
+                                                <arg>
+                                                Nolabel
+                                                  expression (quoted_string.ml[72,1611+18]..[73,1675+39])
+                                                    Pexp_apply
+                                                    expression (quoted_string.ml[72,1611+28]..[72,1611+29])
+                                                      Pexp_ident "^" (quoted_string.ml[72,1611+28]..[72,1611+29])
+                                                    [
+                                                      <arg>
+                                                      Nolabel
+                                                        expression (quoted_string.ml[72,1611+18]..[72,1611+27])
+                                                          Pexp_constant PConst_string (" o ",Some "=")
+                                                      <arg>
+                                                      Nolabel
+                                                        expression (quoted_string.ml[72,1611+30]..[73,1675+39])
+                                                          Pexp_apply
+                                                          expression (quoted_string.ml[72,1611+40]..[72,1611+41])
+                                                            Pexp_ident "^" (quoted_string.ml[72,1611+40]..[72,1611+41])
+                                                          [
+                                                            <arg>
+                                                            Nolabel
+                                                              expression (quoted_string.ml[72,1611+30]..[72,1611+39])
+                                                                Pexp_constant PConst_string (" p ",Some ">")
+                                                            <arg>
+                                                            Nolabel
+                                                              expression (quoted_string.ml[72,1611+42]..[73,1675+39])
+                                                                Pexp_apply
+                                                                expression (quoted_string.ml[72,1611+52]..[72,1611+53])
+                                                                  Pexp_ident "^" (quoted_string.ml[72,1611+52]..[72,1611+53])
+                                                                [
+                                                                  <arg>
+                                                                  Nolabel
+                                                                    expression (quoted_string.ml[72,1611+42]..[72,1611+51])
+                                                                      Pexp_constant PConst_string (" q ",Some "?")
+                                                                  <arg>
+                                                                  Nolabel
+                                                                    expression (quoted_string.ml[72,1611+54]..[73,1675+39])
+                                                                      Pexp_apply
+                                                                      expression (quoted_string.ml[73,1675+4]..[73,1675+5])
+Pexp_ident "^" (quoted_string.ml[73,1675+4]..[73,1675+5])
+                                                                      [
+<arg>
+Nolabel
+  expression (quoted_string.ml[72,1611+54]..[72,1611+63])
+    Pexp_constant PConst_string (" r ",Some "@")
+<arg>
+Nolabel
+  expression (quoted_string.ml[73,1675+6]..[73,1675+39])
+    Pexp_apply
+    expression (quoted_string.ml[73,1675+16]..[73,1675+17])
+      Pexp_ident "^" (quoted_string.ml[73,1675+16]..[73,1675+17])
+    [
+      <arg>
+      Nolabel
+        expression (quoted_string.ml[73,1675+6]..[73,1675+15])
+          Pexp_constant PConst_string (" s ",Some "^")
+      <arg>
+      Nolabel
+        expression (quoted_string.ml[73,1675+18]..[73,1675+39])
+          Pexp_apply
+          expression (quoted_string.ml[73,1675+28]..[73,1675+29])
+            Pexp_ident "^" (quoted_string.ml[73,1675+28]..[73,1675+29])
+          [
+            <arg>
+            Nolabel
+              expression (quoted_string.ml[73,1675+18]..[73,1675+27])
+                Pexp_constant PConst_string (" t ",Some "~")
+            <arg>
+            Nolabel
+              expression (quoted_string.ml[73,1675+30]..[73,1675+39])
+                Pexp_constant PConst_string (" u ",Some "#")
+          ]
+    ]
+                                                                      ]
+                                                                ]
+                                                          ]
+                                                    ]
+                                              ]
+                                        ]
+                                  ]
+                            ]
+                      ]
+                ]
+          ]
+    ]
+                                                                      ]
+                                                                ]
+                                                          ]
+                                                    ]
+                                              ]
+                                        ]
+                                  ]
+                                expression (quoted_string.ml[74,1716+2]..[74,1716+3]) ghost
+                                  Pexp_construct "[]" (quoted_string.ml[74,1716+2]..[74,1716+3]) ghost
+                                  None
+                              ]
+                      ]
+              ]
+      ]
+                                                                      ]
+                                                              ]
+                                                      ]
+                                              ]
+                                      ]
+                              ]
+                      ]
+              ]
+      ]
+                                                                      ]
+                                                              ]
+                                                      ]
+                                              ]
+                                      ]
+                              ]
+                      ]
+              ]
+      ]
+                                                                      ]
+                                                              ]
+                                                      ]
+                                              ]
+                                      ]
+                              ]
+                      ]
+              ]
+    ]
+]
+
