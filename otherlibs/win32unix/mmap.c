@@ -33,10 +33,12 @@ caml_ba_mapped_alloc(int flags, int num_dims, void * data, intnat * dim);
 
 #ifdef IN_OCAML_BIGARRAY
 #define MAP_FILE "Bigarray.map_file"
-#define MAP_FILE_ERROR() caml_sys_error(NO_ARG)
+static void caml_ba_sys_error(void);
+#define MAP_FILE_ERROR() caml_ba_sys_error()
 #else
 #define MAP_FILE "Unix.map_file"
-#define MAP_FILE_ERROR() uerror("map_file", Nothing)
+#define MAP_FILE_ERROR() \
+  do { win32_maperr(GetLastError()); uerror("map_file", Nothing); } while(0)
 #endif
 
 #ifndef INVALID_SET_FILE_POINTER
@@ -147,3 +149,28 @@ void caml_unix_unmap_file(void * addr, uintnat len)
   delta = (uintnat) addr % sysinfo.dwAllocationGranularity;
   UnmapViewOfFile((void *)((uintnat)addr - delta));
 }
+
+#ifdef IN_OCAML_BIGARRAY
+
+/* This function reports a Win32 error as a Sys_error exception.
+   It is included for backward compatibility with the old
+   Bigarray.*.map_file implementation.  */
+
+static void caml_ba_sys_error(void)
+{
+  char buffer[512];
+  DWORD errnum;
+
+  errnum = GetLastError();
+  if (!FormatMessage(FORMAT_MESSAGE_FROM_SYSTEM|FORMAT_MESSAGE_IGNORE_INSERTS,
+                     NULL,
+                     errnum,
+                     0,
+                     buffer,
+                     sizeof(buffer),
+                     NULL))
+    sprintf(buffer, "Unknown error %ld\n", errnum);
+  caml_raise_sys_error(caml_copy_string(buffer));
+}
+
+#endif
