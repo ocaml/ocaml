@@ -37,6 +37,10 @@ Working version
   them with "Error (warning ..):", instead of "Warning ..:" and
   a trailing "Error: Some fatal warnings were triggered" message.
   (Valentin Gatien-Baron, review by Alain Frisch)
+- GPR#XXX: Add Buffer.add_utf_{8,16le,16be}_uchar to encode Uchar.t
+  values to the corresponding UTF-X transformation formats in Buffer.t
+  values.
+  (Daniel Bünzli, review by Damien Doligez, Max Mouratov)
 
 ### Tools:
 
