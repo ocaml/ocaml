@@ -24,17 +24,28 @@
 /* Allocation of bigarrays for memory-mapped files.
    This is the OS-independent part of [mmap.c]. */
 
-CAMLextern void caml_unix_unmap_file(void * addr, uintnat len);
+/* Temporary compatibility stuff so that this file can also be compiled
+   from otherlibs/bigarray/ and included in the bigarray library. */
+
+#ifdef IN_OCAML_BIGARRAY
+#define UNMAP_FILE_FUNCTION caml_ba_unmap_file
+#define ALLOC_FUNCTION caml_ba_mapped_alloc
+#else
+#define UNMAP_FILE_FUNCTION caml_unix_unmap_file
+#define ALLOC_FUNCTION caml_unix_mapped_alloc
+#endif
+
+CAMLextern void UNMAP_FILE_FUNCTION(void * addr, uintnat len);
 
 static void caml_ba_mapped_finalize(value v)
 {
   struct caml_ba_array * b = Caml_ba_array_val(v);
   CAMLassert(b->flags & CAML_BA_MANAGED_MASK == CAML_BA_MAPPED_FILE);
   if (b->proxy == NULL) {
-    caml_unix_unmap_file(b->data, caml_ba_byte_size(b));
+    UNMAP_FILE_FUNCTION(b->data, caml_ba_byte_size(b));
   } else {
     if (-- b->proxy->refcount == 0) {
-      caml_unix_unmap_file(b->proxy->data, b->proxy->size);
+      UNMAP_FILE_FUNCTION(b->proxy->data, b->proxy->size);
       caml_stat_free(b->proxy);
     }
   }
@@ -57,7 +68,7 @@ static struct custom_operations caml_ba_mapped_ops = {
    corresponding to a memory-mapped file. */
 
 CAMLexport value
-caml_ba_mapped_alloc(int flags, int num_dims, void * data, intnat * dim)
+ALLOC_FUNCTION(int flags, int num_dims, void * data, intnat * dim)
 {
   uintnat asize;
   int i;

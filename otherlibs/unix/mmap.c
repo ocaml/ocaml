@@ -38,20 +38,29 @@
 #include <sys/stat.h>
 #endif
 
-/* Defined in [mmap_ba.c] */
-CAMLextern value
-caml_ba_mapped_alloc(int flags, int num_dims, void * data, intnat * dim);
-
 /* Temporary compatibility stuff so that this file can also be compiled
    from otherlibs/bigarray/ and included in the bigarray library. */
 
 #ifdef IN_OCAML_BIGARRAY
+#define MAP_FILE_FUNCTION caml_ba_map_file
+#define MAP_FILE_FUNCTION_BYTECODE caml_ba_map_file_bytecode
+#define UNMAP_FILE_FUNCTION caml_ba_unmap_file
+#define ALLOC_FUNCTION caml_ba_mapped_alloc
 #define MAP_FILE "Bigarray.map_file"
 #define MAP_FILE_ERROR() caml_sys_error(NO_ARG)
 #else
+#define MAP_FILE_FUNCTION caml_unix_map_file
+#define MAP_FILE_FUNCTION_BYTECODE caml_unix_map_file_bytecode
+#define UNMAP_FILE_FUNCTION caml_unix_unmap_file
+#define ALLOC_FUNCTION caml_unix_mapped_alloc
+#define MAP_FILE_FUNCTION caml_unix_map_file
 #define MAP_FILE "Unix.map_file"
 #define MAP_FILE_ERROR() uerror("map_file", Nothing)
 #endif
+
+/* Defined in [mmap_ba.c] */
+CAMLextern value
+ALLOC_FUNCTION(int flags, int num_dims, void * data, intnat * dim);
 
 #if defined(HAS_MMAP)
 
@@ -105,8 +114,8 @@ static int caml_grow_file(int fd, file_offset size)
 }
 
 
-CAMLprim value caml_unix_map_file(value vfd, value vkind, value vlayout,
-                                  value vshared, value vdim, value vstart)
+CAMLprim value MAP_FILE_FUNCTION(value vfd, value vkind, value vlayout,
+                                 value vshared, value vdim, value vstart)
 {
   int fd, flags, major_dim, shared;
   intnat num_dims, i;
@@ -182,13 +191,13 @@ CAMLprim value caml_unix_map_file(value vfd, value vkind, value vlayout,
   if (addr == (void *) MAP_FAILED) MAP_FILE_ERROR();
   addr = (void *) ((uintnat) addr + delta);
   /* Build and return the OCaml bigarray */
-  return caml_ba_mapped_alloc(flags, num_dims, addr, dim);
+  return ALLOC_FUNCTION(flags, num_dims, addr, dim);
 }
 
 #else
 
-CAMLprim value caml_unix_map_file(value vfd, value vkind, value vlayout,
-                                  value vshared, value vdim, value vpos)
+CAMLprim value MAP_FILE_FUNCTION(value vfd, value vkind, value vlayout,
+                                 value vshared, value vdim, value vpos)
 {
   caml_invalid_argument("Unix.map_file: not supported");
   return Val_unit;
@@ -196,13 +205,13 @@ CAMLprim value caml_unix_map_file(value vfd, value vkind, value vlayout,
 
 #endif
 
-CAMLprim value caml_unix_map_file_bytecode(value * argv, int argn)
+CAMLprim value MAP_FILE_FUNCTION_BYTECODE(value * argv, int argn)
 {
-  return caml_unix_map_file(argv[0], argv[1], argv[2],
-                          argv[3], argv[4], argv[5]);
+  return MAP_FILE_FUNCTION(argv[0], argv[1], argv[2],
+                           argv[3], argv[4], argv[5]);
 }
 
-void caml_unix_unmap_file(void * addr, uintnat len)
+void UNMAP_FILE_FUNCTION(void * addr, uintnat len)
 {
 #if defined(HAS_MMAP)
   uintnat page = sysconf(_SC_PAGESIZE);

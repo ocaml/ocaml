@@ -24,22 +24,29 @@
 #include "caml/sys.h"
 #include "unixsupport.h"
 
-/* Defined in [mmap_ba.c] */
-CAMLextern value
-caml_ba_mapped_alloc(int flags, int num_dims, void * data, intnat * dim);
-
 /* Temporary compatibility stuff so that this file can also be compiled
    from otherlibs/bigarray/ and included in the bigarray library. */
 
 #ifdef IN_OCAML_BIGARRAY
+#define MAP_FILE_FUNCTION caml_ba_map_file
+#define MAP_FILE_FUNCTION_BYTECODE caml_ba_map_file_bytecode
+#define UNMAP_FILE_FUNCTION caml_ba_unmap_file
+#define ALLOC_FUNCTION caml_ba_mapped_alloc
 #define MAP_FILE "Bigarray.map_file"
-static void caml_ba_sys_error(void);
-#define MAP_FILE_ERROR() caml_ba_sys_error()
+#define MAP_FILE_ERROR() caml_sys_error(NO_ARG)
 #else
+#define MAP_FILE_FUNCTION caml_unix_map_file
+#define MAP_FILE_FUNCTION_BYTECODE caml_unix_map_file_bytecode
+#define UNMAP_FILE_FUNCTION caml_unix_unmap_file
+#define ALLOC_FUNCTION caml_unix_mapped_alloc
+#define MAP_FILE_FUNCTION caml_unix_map_file
 #define MAP_FILE "Unix.map_file"
-#define MAP_FILE_ERROR() \
-  do { win32_maperr(GetLastError()); uerror("map_file", Nothing); } while(0)
+#define MAP_FILE_ERROR() uerror("map_file", Nothing)
 #endif
+
+/* Defined in [mmap_ba.c] */
+CAMLextern value
+ALLOC_FUNCTION(int flags, int num_dims, void * data, intnat * dim);
 
 #ifndef INVALID_SET_FILE_POINTER
 #define INVALID_SET_FILE_POINTER (-1)
@@ -56,8 +63,8 @@ static __int64 caml_set_file_pointer(HANDLE h, __int64 dist, DWORD mode)
   return i.QuadPart;
 }
 
-CAMLprim value caml_unix_map_file(value vfd, value vkind, value vlayout,
-                                  value vshared, value vdim, value vstart)
+CAMLprim value MAP_FILE_FUNCTION(value vfd, value vkind, value vlayout,
+                                 value vshared, value vdim, value vstart)
 {
   HANDLE fd, fmap;
   int flags, major_dim, mode, perm;
@@ -131,16 +138,16 @@ CAMLprim value caml_unix_map_file(value vfd, value vkind, value vlayout,
   /* Close the file mapping */
   CloseHandle(fmap);
   /* Build and return the OCaml bigarray */
-  return caml_ba_mapped_alloc(flags, num_dims, addr, dim);
+  return ALLOC_FUNCTION(flags, num_dims, addr, dim);
 }
 
-CAMLprim value caml_unix_map_file_bytecode(value * argv, int argn)
+CAMLprim value MAP_FILE_FUNCTION_BYTECODE(value * argv, int argn)
 {
-  return caml_unix_map_file(argv[0], argv[1], argv[2],
-                            argv[3], argv[4], argv[5]);
+  return MAP_FILE_FUNCTION(argv[0], argv[1], argv[2],
+                           argv[3], argv[4], argv[5]);
 }
 
-void caml_unix_unmap_file(void * addr, uintnat len)
+void UNMAP_FILE_FUNCTION(void * addr, uintnat len)
 {
   SYSTEM_INFO sysinfo;
   uintnat delta;
