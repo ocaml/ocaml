@@ -106,7 +106,7 @@ let tests () =
       begin try
         ignore (Unix.map_file fd float64 c_layout true [|-1; 100|]); false
       with
-      | Unix.Unix_error(Unix.EBADF, _, _) -> true
+      | Unix.Unix_error((Unix.EBADF|Unix.EINVAL), _, _) -> true
       | Unix.Unix_error(err, _, _) ->
           Printf.eprintf "Unexpected error %s\n" (Unix.error_message err);
           false
