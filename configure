@@ -1184,7 +1184,7 @@ echo "GRAPHLIB=$graphlib" >> Makefile
 
 otherlibraries="$unixlib str num dynlink bigarray"
 
-# Spacetime profiling is only available for native code on 64-bit targets.
+# Spacetime profiling is only available for 64-bit targets.
 
 case "$native_compiler" in
     true)
