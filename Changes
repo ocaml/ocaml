@@ -224,6 +224,9 @@ Next version (4.05.0):
   examples to this format.
   (Florian Angeletti)
 
+- GPR#633: manpage and manual documentation for the `-opaque` option
+  (Konstantin Romanov, Gabriel Scherer, review by Mark Shinwell)
+
 - add a HACKING.adoc file to contain various tips and tricks for
   people hacking on the repository. See also CONTRIBUTING.md for
   advice on sending contributions upstream.
