@@ -1022,7 +1022,7 @@ ocamldoc.opt: ocamlc.opt ocamlyacc ocamllex
 
 .PHONY: html_doc
 html_doc: ocamldoc
-	make -C ocamldoc $@
+	$(MAKE) -C ocamldoc $@
 	@echo "documentation is in ./ocamldoc/stdlib_html/"
 
 partialclean::
