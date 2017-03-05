@@ -178,6 +178,12 @@ Next version (4.05.0):
 - GPR#633: manpage and manual documentation for the `-opaque` option
   (Konstantin Romanov, Gabriel Scherer, review by Mark Shinwell)
 
+- GPR#1082: clarify that the use of quoted string for preprocessed
+  foreign quotations still requires the use of an extension node
+  [%foo ...] to mark non-standard interpretation.
+  (Gabriel Scherer, request by Matthew Wahab in GPR#1066,
+   review by Florian Angeletti)
+
 - add a HACKING.adoc file to contain various tips and tricks for
   people hacking on the repository. See also CONTRIBUTING.md for
   advice on sending contributions upstream.
