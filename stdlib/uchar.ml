@@ -13,10 +13,12 @@
 (*                                                                        *)
 (**************************************************************************)
 
+external format_int : string -> int -> string = "caml_format_int"
+
 let err_no_pred = "U+0000 has no predecessor"
 let err_no_succ = "U+10FFFF has no successor"
-let err_not_sv i = Printf.sprintf "%X is not an Unicode scalar value" i
-let err_not_latin1 u = Printf.sprintf "U+%04X is not a latin1 character" u
+let err_not_sv i = format_int "%X" i ^ " is not an Unicode scalar value"
+let err_not_latin1 u = "U+" ^ format_int "%04X" u ^ " is not a latin1 character"
 
 type t = int
 
@@ -51,5 +53,3 @@ let unsafe_to_char = Char.unsafe_chr
 let equal : int -> int -> bool = ( = )
 let compare : int -> int -> int = Pervasives.compare
 let hash = to_int
-
-let dump ppf u = Format.fprintf ppf "U+%04X" u
