@@ -148,12 +148,14 @@ installopt:
 .ml.cmx:
 	$(CAMLOPT) -c $(COMPFLAGS) $(OPTCOMPFLAGS) $<
 
-ifeq "$(UNIX_OR_WIN32)" "unix"
+.PHONY: depend
+ifeq "$(TOOLCHAIN)" "msvc"
+depend:
+	$(error Dependencies cannot be regenerated using the MSVC ports)
+else
 depend: $(GENFILES)
 	-$(CC) -MM -I../../byterun *.c > .depend
 	$(CAMLRUN) ../../tools/ocamldep -slash *.mli *.ml >> .depend
-else # Windows
-depend:
 endif
 
 include .depend
