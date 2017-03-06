@@ -97,7 +97,7 @@ let tests () =
       with
       | Unix.Unix_error((Unix.EACCES | Unix.EPERM), _, _) -> true
       | Unix.Unix_error(err, _, _) ->
-          Printf.eprintf "Unexpected error %s\n" (Unix.error_message err);
+          Printf.eprintf "Unexpected error %s\n%!" (Unix.error_message err);
           false
       end;
     Unix.close fd;
@@ -108,7 +108,7 @@ let tests () =
       with
       | Unix.Unix_error((Unix.EBADF|Unix.EINVAL), _, _) -> true
       | Unix.Unix_error(err, _, _) ->
-          Printf.eprintf "Unexpected error %s\n" (Unix.error_message err);
+          Printf.eprintf "Unexpected error %s\n%!" (Unix.error_message err);
           false
       end
 

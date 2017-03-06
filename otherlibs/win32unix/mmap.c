@@ -41,7 +41,8 @@
 #define ALLOC_FUNCTION caml_unix_mapped_alloc
 #define MAP_FILE_FUNCTION caml_unix_map_file
 #define MAP_FILE "Unix.map_file"
-#define MAP_FILE_ERROR() uerror("map_file", Nothing)
+#define MAP_FILE_ERROR() \
+  do { win32_maperr(GetLastError()); uerror("map_file", Nothing); } while(0)
 #endif
 
 /* Defined in [mmap_ba.c] */
