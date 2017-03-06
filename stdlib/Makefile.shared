@@ -64,7 +64,7 @@ INSTALL_LIBDIR=$(DESTDIR)$(LIBDIR)
 
 install::
 	cp stdlib.cma std_exit.cmo *.cmi *.cmt *.cmti *.mli *.ml \
-	  camlheader_ur \
+	  camlheader_ur ocaml_compiler_internal_params \
 	  "$(INSTALL_LIBDIR)"
 	cp target_camlheader "$(INSTALL_LIBDIR)/camlheader"
 

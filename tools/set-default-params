@@ -1,0 +1,9 @@
+#!/bin/sh
+
+
+stdlib_dir="`dirname "$0"`/../stdlib"
+config_file="$stdlib_dir/ocaml_compiler_internal_params"
+
+for x in "$@"; do
+    echo "*: $x"
+done > "$config_file"
