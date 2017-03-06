@@ -10,6 +10,7 @@
 #                                                                       #
 #########################################################################
 
+
 BASEDIR=../..
 
 CC=$(NATIVECC) -I $(CTOPDIR)/byterun
@@ -26,8 +27,8 @@ default:
 
 .PHONY: run-byte
 run-byte: 
-	@echo " ... testing 'bytecode':"
 	@for f in *.ml; do \
+	  printf " ... testing 'bytecode':"; \
 	  F=`basename $$f .ml`; \
 		$(CC) -c $$F.c; \
 		$(OCAMLC) $(COMPFLAGS) -c $$F.mli; \
@@ -40,8 +41,8 @@ run-byte:
 .PHONY: run-opt
 run-opt: 
 	@if $(BYTECODE_ONLY); then : ; else \
-		echo " ... testing 'nativecode':"; \
 		for f in *.ml; do \
+			printf " ... testing 'nativecode':"; \
 			F=`basename $$f .ml`; \
 			$(CC) -c $$F.c; \
 			mv $$F.$(O) $$F.c.$(O); \
