@@ -1359,8 +1359,8 @@ let make_switch arg cases actions dbg =
       let sym = Compilenv.new_structured_constant ~shared:true c in
       Uconst_ref(sym, Some c) in
     let to_uconst = function
-      | Cconst_int n -> Uconst_int (n lsr 1)
-      | Cconst_pointer n -> Uconst_ptr (n lsr 1)
+      | Cconst_int n -> Uconst_int (n asr 1)
+      | Cconst_pointer n -> Uconst_ptr (n asr 1)
       | Cconst_symbol s -> Uconst_ref (s, None)
       | Cconst_natint n -> const (Uconst_nativeint n)
       | Cconst_float f -> const (Uconst_float f)
