@@ -277,28 +277,28 @@ static void domain_terminate() {
 
 struct domain_startup_params {
   caml_plat_event ev;
-  value callback;
+  caml_root callback;
   dom_internal* newdom;
 };
 
 static void* domain_thread_func(void* v) {
-  CAMLparam0();
-  CAMLlocal1(callback);
   struct domain_startup_params* p = v;
+  caml_root callback = p->callback;
 
-  callback = p->callback;
   create_domain(caml_startup_params.minor_heap_init);
   p->newdom = domain_self;
   caml_plat_event_trigger(&p->ev);
+  /* cannot access p below here */
 
   if (domain_self) {
     caml_gc_log("Domain starting");
-    caml_callback(callback, Val_unit);
+    caml_callback(caml_read_root(callback), Val_unit);
+    caml_delete_root(callback);
     domain_terminate();
   } else {
     caml_gc_log("Failed to create domain");
   }
-  CAMLreturnT(void*, 0);
+  return 0;
 }
 
 
@@ -311,7 +311,7 @@ CAMLprim value caml_domain_spawn(value callback)
 
   caml_plat_event_init(&p.ev);
 
-  p.callback = caml_promote(&domain_self->state, callback);
+  p.callback = caml_create_root(caml_promote(&domain_self->state, callback));
 
   err = pthread_create(&th, 0, domain_thread_func, (void*)&p);
   if (err) {
@@ -323,12 +323,14 @@ CAMLprim value caml_domain_spawn(value callback)
   caml_leave_blocking_section();
 
   if (p.newdom) {
-    /* successfully created a domain */
+    /* successfully created a domain.
+       p.callback is now owned by that domain */
     pthread_detach(th);
   } else {
     /* failed */
     void* r;
     pthread_join(th, &r);
+    caml_delete_root(p.callback);
     caml_failwith("failed to allocate domain");
   }
 
