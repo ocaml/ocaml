@@ -292,17 +292,19 @@ struct caml__roots_block {
 #define CAMLcheck_mutexes do {} while(0)
 #endif
 
+#define CAMLdrop do{              \
+  CAMLcheck_mutexes;              \
+  CAML_LOCAL_ROOTS = caml__frame; \
+}while (0)
 
 #define CAMLreturn0 do{ \
-  CAMLcheck_mutexes; \
-  CAML_LOCAL_ROOTS = caml__frame; \
+  CAMLdrop; \
   return; \
 }while (0)
 
 #define CAMLreturnT(type, result) do{ \
   type caml__temp_result = (result); \
-  CAMLcheck_mutexes; \
-  CAML_LOCAL_ROOTS = caml__frame; \
+  CAMLdrop; \
   return (caml__temp_result); \
 }while(0)
 
