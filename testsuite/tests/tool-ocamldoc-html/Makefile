@@ -33,10 +33,11 @@ default:
 	fi
 
 .PHONY: run
-run: *.mli
-	@for file in *.mli; do \
+run: *.mli *.ml
+	@for file in *.ml *.mli; do \
 	  printf " ... testing '$$file'"; \
 	  F="`basename $$file .mli`"; \
+	  F="`basename $$F .ml`"; \
 	  $(OCAMLDOC) $(DOCFLAGS) -colorize-code -hide-warnings -html $ \
 	              -o index $$file; \
 	  cp $$F.html $$F.result; \
