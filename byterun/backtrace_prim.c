@@ -109,7 +109,7 @@ static int cmp_ev_info(const void *a, const void *b)
   return 0;
 }
 
-struct ev_info *process_debug_events(code_t code_start, value events_heap,
+static struct ev_info *process_debug_events(code_t code_start, value events_heap,
                                      mlsize_t *num_events)
 {
   CAMLparam1(events_heap);
@@ -324,7 +324,7 @@ CAMLprim value caml_get_current_callstack(value max_frames_value)
 #define O_BINARY 0
 #endif
 
-void read_main_debug_info(struct debug_info *di)
+static void read_main_debug_info(struct debug_info *di)
 {
   CAMLparam0();
   CAMLlocal3(events, evl, l);
