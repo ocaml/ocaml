@@ -22,14 +22,21 @@ LINKEDFILES=misc.c freelist.c major_gc.c minor_gc.c memory.c alloc.c array.c \
   $(UNIX_OR_WIN32).c dynlink.c signals.c debugger.c startup_aux.c \
   backtrace.c afl.c
 
+# The following variable stores the list of files for which dependencies
+# should be computed. It includes even the files that won't actually be
+# compiled on the platform where make depend is run
+sources := $(LINKEDFILES)
+
 INSTALL_LIBDIR=$(DESTDIR)$(LIBDIR)
 
 CC=$(NATIVECC)
 
 ifeq "$(UNIX_OR_WIN32)" "win32"
 LN = cp
+sources += ../byterun/unix.c
 else
 LN = ln -s
+sources += ../byterun/win32.c
 endif
 
 FLAGS=\
@@ -182,12 +189,12 @@ ifeq "$(TOOLCHAIN)" "msvc"
 depend:
 	$(error Dependencies cannot be regenerated using the MSVC ports)
 else
-depend: $(COBJS:.$(O)=.c) $(LINKEDFILES)
-	$(CC) -MM $(FLAGS) *.c | sed -e 's/\.o/.$$(O)/' > .depend
-	$(CC) -MM $(FLAGS) -DPROFILING *.c | sed -e 's/\.o/.p.$$(O)/' \
+depend: $(COBJS:.$(O)=.c) $(sources)
+	$(CC) -MM $(FLAGS) $^ | sed -e 's/\.o/.$$(O)/' > .depend
+	$(CC) -MM $(FLAGS) -DPROFILING $^ | sed -e 's/\.o/.p.$$(O)/' \
 	  >> .depend
-	$(CC) -MM $(FLAGS) -DDEBUG *.c | sed -e 's/\.o/.d.$$(O)/' >> .depend
-	$(CC) -MM $(FLAGS) -DCAML_INSTR *.c | sed -e 's/\.o/.i.$$(O)/' \
+	$(CC) -MM $(FLAGS) -DDEBUG $^ | sed -e 's/\.o/.d.$$(O)/' >> .depend
+	$(CC) -MM $(FLAGS) -DCAML_INSTR $^ | sed -e 's/\.o/.i.$$(O)/' \
 	  >> .depend
 endif
 
