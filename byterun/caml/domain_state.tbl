@@ -20,5 +20,5 @@ DOMAIN_STATE(18, code_t*, backtrace_buffer)
 DOMAIN_STATE(19, caml_root, backtrace_last_exn)
 DOMAIN_STATE(20, intnat, compare_unordered)
 DOMAIN_STATE(21, intnat, promoted_in_current_cycle)
-DOMAIN_STATE(22, uintnat, oo_next_id_local);
-DOMAIN_STATE(23, uintnat, force_major_slice);
+DOMAIN_STATE(22, uintnat, oo_next_id_local)
+DOMAIN_STATE(23, uintnat, force_major_slice)
