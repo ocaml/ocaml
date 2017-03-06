@@ -946,9 +946,19 @@ clean::
 	$(MAKE) -C byterun clean
 	rm -f stdlib/libcamlrun.$(A)
 
+subdirs := asmrun byterun debugger lex ocamldoc stdlib tools \
+  $(addprefix otherlibs/, $(OTHERLIBRARIES))
+
 .PHONY: alldepend
-alldepend::
-	$(MAKE) -C byterun depend
+ifeq "$(TOOLCHAIN)" "msvc"
+alldepend:
+	$(error Dependencies cannot be regenerated using the MSVC ports)
+else
+alldepend: depend
+	for dir in $(subdirs); do \
+	  $(MAKE) -C $$dir depend; \
+	done
+endif
 
 # The runtime system for the native-code compiler
 
@@ -964,8 +974,6 @@ stdlib/libasmrun.$(A): asmrun/libasmrun.$(A)
 clean::
 	$(MAKE) -C asmrun clean
 	rm -f stdlib/libasmrun.$(A)
-alldepend::
-	$(MAKE) -C asmrun depend
 
 # The standard library
 
@@ -984,9 +992,6 @@ libraryopt:
 partialclean::
 	$(MAKE) -C stdlib clean
 
-alldepend::
-	$(MAKE) -C stdlib depend
-
 # The lexer and parser generators
 
 .PHONY: ocamllex
@@ -999,9 +1004,6 @@ ocamllex.opt: ocamlopt
 
 partialclean::
 	$(MAKE) -C lex clean
-
-alldepend::
-	$(MAKE) -C lex depend
 
 .PHONY: ocamlyacc
 ocamlyacc:
@@ -1030,9 +1032,6 @@ html_doc: ocamldoc
 partialclean::
 	$(MAKE) -C ocamldoc clean
 
-alldepend::
-	$(MAKE) -C ocamldoc depend
-
 # The extra libraries
 
 .PHONY: otherlibraries
@@ -1057,11 +1056,6 @@ clean::
 	  ($(MAKE) -C otherlibs/$$i clean); \
 	done
 
-alldepend::
-	for i in $(OTHERLIBRARIES); do \
-	  ($(MAKE) -C otherlibs/$$i depend); \
-	done
-
 # The replay debugger
 
 .PHONY: ocamldebugger
@@ -1070,9 +1064,6 @@ ocamldebugger: ocamlc ocamlyacc ocamllex otherlibraries
 
 partialclean::
 	$(MAKE) -C debugger clean
-
-alldepend::
-	$(MAKE) -C debugger depend
 
 # Check that the stack limit is reasonable.
 ifeq "$(UNIX_OR_WIN32)" "unix"
@@ -1146,9 +1137,6 @@ ocamltoolsopt.opt: ocamlc.opt ocamlyacc ocamllex.opt asmcomp/cmx_format.cmi \
 
 partialclean::
 	$(MAKE) -C tools clean
-
-alldepend::
-	$(MAKE) -C tools depend
 
 ## Test compilation of backend-specific parts
 
@@ -1278,8 +1266,6 @@ depend: beforedepend
 		-impl driver/compdynlink.mlopt >> .depend
 	$(CAMLDEP) -slash $(DEPFLAGS) -bytecode \
 		-impl driver/compdynlink.mlbyte >> .depend
-
-alldepend:: depend
 
 .PHONY: distclean
 distclean: clean

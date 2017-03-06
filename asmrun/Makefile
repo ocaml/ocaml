@@ -177,8 +177,11 @@ clean:
 distclean: clean
 	rm -r *~
 
-ifneq "$(TOOLCHAIN)" "msvc"
 .PHONY: depend
+ifeq "$(TOOLCHAIN)" "msvc"
+depend:
+	$(error Dependencies cannot be regenerated using the MSVC ports)
+else
 depend: $(COBJS:.$(O)=.c) $(LINKEDFILES)
 	$(CC) -MM $(FLAGS) *.c | sed -e 's/\.o/.$$(O)/' > .depend
 	$(CC) -MM $(FLAGS) -DPROFILING *.c | sed -e 's/\.o/.p.$$(O)/' \

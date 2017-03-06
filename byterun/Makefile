@@ -214,9 +214,12 @@ libcamlrun_shared.$(SO): $(PICOBJS)
 %.pic.$(O): %.c
 	$(CC) $(PICFLAGS) -c $(OUTPUTOBJ)$@ $<
 
-ifneq "$(TOOLCHAIN)" "msvc"
 .PHONY: depend
-depend : prims.c caml/opnames.h caml/jumptbl.h caml/version.h
+ifeq "$(TOOLCHAIN)" "msvc"
+depend:
+	$(error Dependencies cannot be regenerated using the MSVC ports)
+else
+depend: prims.c caml/opnames.h caml/jumptbl.h caml/version.h
 	$(CC) -MM $(CFLAGS) *.c | sed -e 's/\.o/.$$(O)/' > .depend
 	$(CC) -MM $(DFLAGS) *.c | sed -e 's/\.o/.d.$$(O)/' >> .depend
 	$(CC) -MM $(IFLAGS) *.c | sed -e 's/\.o/.i.$$(O)/' >> .depend
