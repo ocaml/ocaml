@@ -127,6 +127,10 @@ type primitive =
   | Pbbswap of boxed_integer
   (* Integer to external pointer *)
   | Pint_as_pointer
+  (* Atomic operations *)
+  | Patomic_load
+  | Patomic_store
+  | Patomic_cas
 
 and comparison =
     Ceq | Cneq | Clt | Cgt | Cle | Cge
