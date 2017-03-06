@@ -35,6 +35,14 @@ all: lib
 	done 2>&1 | tee _log
 	@$(MAKE) report
 
+.PHONY: all-enabled
+all-enabled: lib
+	@ls tests | fgrep -v -f disabled | \
+	  while read LINE; do \
+	    $(MAKE) $(NO_PRINT) exec-one DIR=tests/$$LINE; \
+	  done 2>&1 | tee _log
+	@$(MAKE) report
+
 .PHONY: list
 list: lib
 	@if [ -z "$(FILE)" ]; \
