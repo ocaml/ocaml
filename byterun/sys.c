@@ -309,7 +309,9 @@ CAMLprim value caml_sys_getcwd(value unit)
 #ifdef HAS_GETCWD
   if (getcwd(buff, sizeof(buff)) == 0) caml_sys_error(NO_ARG);
 #else
-  if (getwd(buff) == 0) caml_sys_error(NO_ARG);
+  #ifdef HAS_GETWD
+    if (getwd(buff) == 0) caml_sys_error(NO_ARG);
+  #endif
 #endif /* HAS_GETCWD */
   return caml_copy_string(buff);
 }
