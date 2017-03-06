@@ -852,7 +852,7 @@ type symbol_defn = string * is_global
 
 type cmm_constant =
   | Const_closure of symbol_defn * ufunction list * uconstant list
-  | Const_block of symbol_defn * int * data_item list
+  | Const_table of symbol_defn * data_item list
 
 let cmm_constants =
   ref ([] : cmm_constant list)
@@ -1353,6 +1353,8 @@ let transl_isout h arg dbg = tag_int (Cop(Ccmpa Clt, [h ; arg], dbg)) dbg
 
 let make_switch arg cases actions dbg =
   let is_const = function
+    (* Constant integers loaded from a table should end in 1,
+       so that Cload never produces untagged integers *)
     | Cconst_int n
     | Cconst_pointer n -> (n land 1) = 1
     | Cconst_natint n
@@ -1369,7 +1371,7 @@ let make_switch arg cases actions dbg =
       | _ -> assert false in
     let const_actions = Array.map to_data_item actions in
     let table = Compilenv.new_const_symbol () in
-    add_cmm_constant (Const_block ((table, Not_global), 0,
+    add_cmm_constant (Const_table ((table, Not_global),
         Array.to_list (Array.map (fun act ->
           const_actions.(act)) cases)));
     addr_array_ref (Cconst_symbol table) (tag_int arg dbg) dbg
@@ -2934,8 +2936,7 @@ let emit_constant_closure ((_, global_symb) as symb) fundecls clos_vars cont =
 
 (* Emit constant blocks *)
 
-let emit_constant_block symb tag elems =
-  Cint(black_block_header tag (List.length elems)) ::
+let emit_constant_table symb elems =
   cdefine_symbol symb @
   elems
 
@@ -2953,8 +2954,8 @@ let emit_constants cont (constants:Clambda.preallocated_constant list) =
     (function
     | Const_closure (symb, fundecls, clos_vars) ->
         c := Cdata(emit_constant_closure symb fundecls clos_vars []) :: !c
-    | Const_block (symb, tag, elems) ->
-        c := Cdata(emit_constant_block symb tag elems) :: !c)
+    | Const_table (symb, elems) ->
+        c := Cdata(emit_constant_table symb elems) :: !c)
     !cmm_constants;
   cmm_constants := [];
   !c
