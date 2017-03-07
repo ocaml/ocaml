@@ -1,0 +1,41 @@
+# This file lists tests that are disabled.
+# Disabled tests must have comments linking to a Github issue number.
+# See https://github.com/ocamllabs/ocaml-multicore/issues/NNN
+
+# Either an entire directory or a specific file can be disabled here.
+# If an entire directory is listed, those tests won't even be run.
+
+
+# These depend on marshalling of closures or Custom_tag (#75)
+tests/lib-bigarray/bigarrays.ml
+tests/lib-marshal/
+tests/lib-num/
+tests/typing-objects/Tests.ml.principal.reference
+tests/typing-objects/Tests.ml.reference
+tests/lib-dynlink-bytecode/main
+tests/lib-dynlink-native/main
+
+# Effect backtraces are buggy (#108)
+tests/backtrace/backtrace_effects.ml
+
+# Unhandled effect semantics are wrong (#105)
+tests/effects/test6.ml
+
+# These depend on weak references and finalisers (#88, #92)
+tests/misc/weaklifetime.ml
+tests/misc/weaktest.ml
+tests/regression/pr5233/
+tests/tool-ocaml/t340-weak.ml
+tests/tool-ocaml/t350-heapcheck.ml
+
+# These depend on GC stats (#29)
+tests/match-exception/allocation.ml
+tests/asmcomp/optargs
+tests/asmcomp/staticalloc
+
+# ocamldebug is broken (#34)
+tool-debugger
+
+# the pre-multicore threads library is broken (#100)
+lib-systhreads
+lib-threads

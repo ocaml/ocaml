@@ -51,23 +51,23 @@ MLCASES=optargs staticalloc
 
 CASES=fib tak quicksort quicksort2 soli \
       arith checkbound tagged-fib tagged-integr tagged-quicksort tagged-tak
-ARGS_fib=-DINT_INT -DFUN=fib main.c
-ARGS_tak=-DUNIT_INT -DFUN=takmain main.c
-ARGS_quicksort=-DSORT -DFUN=quicksort main.c
-ARGS_quicksort2=-DSORT -DFUN=quicksort main.c
-ARGS_soli=-DUNIT_INT -DFUN=solitaire main.c
-ARGS_integr=-DINT_FLOAT -DFUN=test main.c
+ARGS_fib=-ccopt -DINT_INT -ccopt -DFUN=fib main.c
+ARGS_tak=-ccopt -DUNIT_INT -ccopt -DFUN=takmain main.c
+ARGS_quicksort=-ccopt -DSORT -ccopt -DFUN=quicksort main.c
+ARGS_quicksort2=-ccopt -DSORT -ccopt -DFUN=quicksort main.c
+ARGS_soli=-ccopt -DUNIT_INT -ccopt -DFUN=solitaire main.c
+ARGS_integr=-ccopt -DINT_FLOAT -ccopt -DFUN=test main.c
 ARGS_arith=mainarith.c
-ARGS_checkbound=-DCHECKBOUND main.c
-ARGS_tagged-fib=-DINT_INT -DFUN=fib main.c
-ARGS_tagged-integr=-DINT_FLOAT -DFUN=test main.c
-ARGS_tagged-quicksort=-DSORT -DFUN=quicksort main.c
-ARGS_tagged-tak=-DUNIT_INT -DFUN=takmain main.c
+ARGS_checkbound=-ccopt -DCHECKBOUND main.c
+ARGS_tagged-fib=-ccopt -DINT_INT -ccopt -DFUN=fib main.c
+ARGS_tagged-integr=-ccopt -DINT_FLOAT -ccopt -DFUN=test main.c
+ARGS_tagged-quicksort=-ccopt -DSORT -ccopt -DFUN=quicksort main.c
+ARGS_tagged-tak=-ccopt -DUNIT_INT -ccopt -DFUN=takmain main.c
 
 tests: $(CASES:=.o)
 	@for c in $(CASES); do \
 	  printf " ... testing '$$c':"; \
-	  $(MAKE) one CC="$(CC) $(CFLAGS)" NAME=$$c; \
+	  $(MAKE) one NAME=$$c; \
 	done
 	@for c in $(MLCASES); do \
 	  printf " ... testing '$$c':"; \
@@ -79,7 +79,7 @@ one_ml:
 	./$(NAME).exe && echo " => passed" || echo " => failed"
 
 one:
-	@$(CC) -o $(NAME).out $(ARGS_$(NAME)) $(NAME).o $(ARCH).o \
+	@$(OCAMLOPT) -o $(NAME).out $(ARGS_$(NAME)) $(NAME).o $(ARCH).o \
 	&& echo " => passed" || echo " => failed"
 
 clean: defaultclean
