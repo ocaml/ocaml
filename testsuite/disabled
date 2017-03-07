@@ -30,6 +30,8 @@ tests/tool-ocaml/t350-heapcheck.ml
 
 # These depend on GC stats (#29)
 tests/match-exception/allocation.ml
+tests/asmcomp/optargs
+tests/asmcomp/staticalloc
 
 # ocamldebug is broken (#34)
 tool-debugger
@@ -37,6 +39,3 @@ tool-debugger
 # the pre-multicore threads library is broken (#100)
 lib-systhreads
 lib-threads
-
-# FIXME: these test cases depend on old C API/ABI
-asmcomp
