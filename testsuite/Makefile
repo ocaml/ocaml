@@ -37,10 +37,12 @@ all: lib
 
 .PHONY: all-enabled
 all-enabled: lib
-	@ls tests | fgrep -v -f disabled | \
+	@sed -n 's/#.*//; /\//d; /./p' disabled > disabled-dirs
+	@ls tests | fgrep -v -f disabled-dirs | \
 	  while read LINE; do \
 	    $(MAKE) $(NO_PRINT) exec-one DIR=tests/$$LINE; \
 	  done 2>&1 | tee _log
+	@rm disabled-dirs
 	@$(MAKE) report
 
 .PHONY: list

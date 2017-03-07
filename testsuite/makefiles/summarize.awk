@@ -10,6 +10,15 @@
 #                                                                       #
 #########################################################################
 
+BEGIN {
+    while ((getline line < "disabled") > 0) {
+        gsub(/#.*/, "", line);
+        if (line) {
+            disabled[line] = 1;
+        }
+    }
+}
+
 function check() {
     if (!in_test){
         printf("error at line %d: found test result without test start\n", NR);
@@ -36,8 +45,13 @@ function record_skip() {
 
 function record_fail() {
     check();
-    ++ failed;
-    fail[failidx++] = sprintf ("%s/%s", curdir, curfile);
+    testcase = sprintf ("%s/%s", curdir, curfile);
+    if (disabled[testcase]) {
+        ++ ndisabled;
+    } else {
+        ++ failed;
+        fail[failidx++] = testcase;
+    }
     clear();
 }
 
@@ -99,6 +113,7 @@ END {
         printf("Summary:\n");
         printf("  %3d test(s) passed\n", passed);
         printf("  %3d test(s) failed\n", failed);
+        printf("  %3d test(s) disabled\n", ndisabled);
         printf("  %3d unexpected error(s)\n", unexped);
         if (failed != 0){
             printf("\nList of failed tests:\n");
