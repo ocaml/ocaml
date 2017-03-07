@@ -241,7 +241,7 @@ void caml_final_do_roots (scanning_action f)
   }
 }
 
-/* Call invert_root on the values of the finalisable set. This is called
+/* Call caml_invert_root on the values of the finalisable set. This is called
    directly by the compactor.
 */
 void caml_final_invert_finalisable_values ()
@@ -250,13 +250,13 @@ void caml_final_invert_finalisable_values ()
 
   CAMLassert (finalisable_first.old <= finalisable_first.young);
   for (i = 0; i < finalisable_first.young; i++){
-    invert_root(finalisable_first.table[i].val,
+    caml_invert_root(finalisable_first.table[i].val,
                 &finalisable_first.table[i].val);
   };
 
   CAMLassert (finalisable_last.old <= finalisable_last.young);
   for (i = 0; i < finalisable_last.young; i++){
-    invert_root(finalisable_last.table[i].val,
+    caml_invert_root(finalisable_last.table[i].val,
                 &finalisable_last.table[i].val);
   };
 }

@@ -117,7 +117,7 @@ static void invert_pointer_at (word *p)
   }
 }
 
-void invert_root (value v, value *p)
+void caml_invert_root (value v, value *p)
 {
   invert_pointer_at ((word *) p);
 }
@@ -196,7 +196,7 @@ static void do_compaction (void)
     /* Invert roots first because the threads library needs some heap
        data structures to find its roots.  Fortunately, it doesn't need
        the headers (see above). */
-    caml_do_roots (invert_root, 1);
+    caml_do_roots (caml_invert_root, 1);
     /* The values to be finalised are not roots but should still be inverted */
     caml_final_invert_finalisable_values ();
 
