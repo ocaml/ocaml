@@ -23,8 +23,8 @@ utils/identifiable.cmi :
 utils/misc.cmo : utils/misc.cmi
 utils/misc.cmx : utils/misc.cmi
 utils/misc.cmi :
-utils/numbers.cmo : utils/identifiable.cmi utils/numbers.cmi
-utils/numbers.cmx : utils/identifiable.cmx utils/numbers.cmi
+utils/numbers.cmo : utils/misc.cmi utils/identifiable.cmi utils/numbers.cmi
+utils/numbers.cmx : utils/misc.cmx utils/identifiable.cmx utils/numbers.cmi
 utils/numbers.cmi : utils/identifiable.cmi
 utils/strongly_connected_components.cmo : utils/numbers.cmi utils/misc.cmi \
     utils/identifiable.cmi utils/strongly_connected_components.cmi

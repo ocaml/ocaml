@@ -27,7 +27,6 @@
 *.annot
 *.exe
 *.exe.manifest
-.depend
 .DS_Store
 *.out
 *.out.dSYM
