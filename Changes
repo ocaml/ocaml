@@ -73,6 +73,11 @@ Next version (4.05.0):
   (Stephen Dolan, review by Alain Frisch, Pierre Chambart, Mark
   Shinwell, Gabriel Scherer and Damien Doligez)
 
+- GPR#863, GPR#1068, GPR#1069: Optimise matches with constant
+  results to lookup tables.
+  (Stephen Dolan, review by Gabriel Scherer, Pierre Chambart,
+  Mark Shinwell, and bug report by Gabriel Scherer)
+
 ### Runtime system:
 
 - MPR#385, GPR#953: Add caml_startup_exn
