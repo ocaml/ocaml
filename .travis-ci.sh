@@ -17,17 +17,21 @@
 #  ;;
 #esac
 
+PREFIX=~/inst/ocaml
+
+set -e
+
 case $XARCH in
 i386)
   ./configure
   make world
   ;;
 x86_64)
-	./configure
-	make world
-	make world.opt
-	make -C testsuite one DIR=tests/effects
-	;;
+    mkdir -p $PREFIX
+    ./configure -prefix $PREFIX -with-debug-runtime
+    make -j4 world.opt
+    make -C testsuite all-enabled
+    ;;
 *)
   echo unknown arch
   exit 1
