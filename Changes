@@ -117,6 +117,9 @@ Next version (4.05.0):
 
 ### Standard library:
 
+* PR#7500, GPR#1081: Remove Uchar.dump
+  (Daniel Bünzli)
+
 - PR#6975, GPR#902: Truncate function added to stdlib Buffer module
   (Dhruv Makwana, review by Alain Frisch and Gabriel Scherer)
 
