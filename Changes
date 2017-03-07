@@ -326,6 +326,10 @@ Next version (4.05.0):
 - PR#7377: remove -std=gnu99 for newer gcc versions
   (Damien Doligez, report by ygrek)
 
+- GPR#558: enable shared library and natdynlink support on more Linux
+  platforms
+  (Felix Janda, Mark Shinwell)
+
 - GPR#693: fail on unexpected errors or warnings within caml_example
   environment.
   (Florian Angeletti)
