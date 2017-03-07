@@ -17,7 +17,6 @@
 
 val compile_implementation_flambda :
     ?toplevel:(string -> bool) ->
-    source_provenance:Timings.source_provenance ->
     string ->
     required_globals:Ident.Set.t ->
     backend:(module Backend_intf.S) ->
@@ -25,7 +24,6 @@ val compile_implementation_flambda :
 
 val compile_implementation_clambda :
     ?toplevel:(string -> bool) ->
-    source_provenance:Timings.source_provenance ->
     string ->
     Format.formatter -> Lambda.program -> unit
 
@@ -38,7 +36,6 @@ val report_error: Format.formatter -> error -> unit
 
 
 val compile_unit:
-  source_provenance:Timings.source_provenance ->
   string(*prefixname*) ->
   string(*asm file*) -> bool(*keep asm*) ->
   string(*obj file*) -> (unit -> unit) -> unit
