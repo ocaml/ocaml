@@ -63,7 +63,7 @@ ifeq "$(UNIX_OR_WIN32)" "unix"
     OCAMLDOC_RUN=$(OCAMLRUN) ./$(OCAMLDOC)
   endif
 else # Windows
-  OCAMLDOC_RUN = PATH="$$PATH":"$(abspath $(ROOTDIR))/otherlibs/$(UNIXLIB)":"$(abspath $(ROOTDIR))/otherlibs/str" $(OCAMLRUN) ./$(OCAMLDOC)
+  OCAMLDOC_RUN = CAML_LD_LIBRARY_PATH="../otherlibs/win32unix;../otherlibs/str" $(OCAMLRUN) ./$(OCAMLDOC)
 endif
 
 OCAMLDOC_OPT=$(OCAMLDOC).opt
@@ -81,6 +81,7 @@ INSTALL_MANODIR=$(DESTDIR)$(MANDIR)/man3
 
 INSTALL_MLIS=odoc_info.mli
 INSTALL_CMIS=$(INSTALL_MLIS:.mli=.cmi)
+INSTALL_CMTS=$(INSTALL_MLIS:.mli=.cmt) $(INSTALL_MLIS:.mli=.cmti)
 
 ODOC_TEST=odoc_test.cmo
 GENERATORS_CMOS= \
@@ -114,7 +115,7 @@ INCLUDES_NODEP=\
 
 INCLUDES=$(INCLUDES_DEP) $(INCLUDES_NODEP)
 
-COMPFLAGS=$(INCLUDES) -absname -w +a-4-9-41-42-44-45-48 -warn-error A -safe-string -strict-sequence -strict-formats
+COMPFLAGS=$(INCLUDES) -absname -w +a-4-9-41-42-44-45-48 -warn-error A -safe-string -strict-sequence -strict-formats -bin-annot
 LINKFLAGS=$(INCLUDES) -nostdlib
 
 CMOFILES=\
@@ -211,7 +212,7 @@ exeopt: $(OCAMLDOC_OPT)
 libopt: $(OCAMLDOC_LIBCMXA) $(OCAMLDOC_LIBCMI)
 
 .PHONY: generatorsopt
-generatorsopt: $(GENERATORS_CMXS) # Not present in Makefile.nt
+generatorsopt: $(GENERATORS_CMXS)
 
 # TODO: the following debug target could be replaced by a DEBUG variable
 .PHONY: debug
@@ -303,7 +304,7 @@ install:
 	$(MKDIR) "$(INSTALL_MANODIR)"
 	$(CP) $(OCAMLDOC) "$(INSTALL_BINDIR)/$(OCAMLDOC)$(EXE)"
 	$(CP) ocamldoc.hva *.cmi $(OCAMLDOC_LIBCMA) "$(INSTALL_LIBDIR)"
-	$(CP) $(INSTALL_MLIS) $(INSTALL_CMIS) "$(INSTALL_LIBDIR)"
+	$(CP) $(INSTALL_MLIS) $(INSTALL_CMIS) $(INSTALL_CMTS) "$(INSTALL_LIBDIR)"
 	if test -d stdlib_man; then $(CP) stdlib_man/* "$(INSTALL_MANODIR)"; else : ; fi
 
 # Note: at the moment, $(INSTALL_MANODIR) is created even if the doc has
@@ -318,7 +319,7 @@ installopt_really:
 	$(MKDIR) "$(INSTALL_BINDIR)"
 	$(MKDIR) "$(INSTALL_LIBDIR)"
 	$(CP) $(OCAMLDOC_OPT) "$(INSTALL_BINDIR)/$(OCAMLDOC_OPT)$(EXE)"
-	$(CP) $(INSTALL_MLIS) $(INSTALL_CMIS) "$(INSTALL_LIBDIR)"
+	$(CP) $(INSTALL_MLIS) $(INSTALL_CMIS) $(INSTALL_CMTS) "$(INSTALL_LIBDIR)"
 	$(CP) ocamldoc.hva *.cmx $(OCAMLDOC_LIBA) $(OCAMLDOC_LIBCMXA) \
 	  "$(INSTALL_LIBDIR)"
 
@@ -408,12 +409,12 @@ autotest_stdlib:
 .PHONY: clean
 clean:
 	rm -f *~ \#*\#
-	rm -f $(OCAMLDOC) $(OCAMLDOC_OPT) *.cma *.cmxa *.cmo *.cmi *.cmx *.$(A) *.$(O)
+	rm -f $(OCAMLDOC) $(OCAMLDOC_OPT) *.cma *.cmxa *.cmo *.cmi *.cmx *.cmt *.cmti *.$(A) *.$(O)
 	rm -f odoc_parser.output odoc_text_parser.output
 	rm -f odoc_lexer.ml odoc_text_lexer.ml odoc_see_lexer.ml odoc_ocamlhtml.ml
 	rm -f odoc_parser.ml odoc_parser.mli odoc_text_parser.ml odoc_text_parser.mli
 	rm -rf stdlib_man
-	rm -f generators/*.cm[aiox] generators/*.$(A) generators/*.$(O) generators/*.cmx[as]
+	rm -f generators/*.cm[taiox] generators/*.$(A) generators/*.$(O) generators/*.cmx[as]
 
 .PHONY: depend
 depend:
@@ -423,6 +424,7 @@ depend:
 	$(OCAMLLEX) odoc_lexer.mll
 	$(OCAMLLEX) odoc_ocamlhtml.mll
 	$(OCAMLLEX) odoc_see_lexer.mll
-	$(OCAMLDEP) $(INCLUDES_DEP) *.mll *.mly *.ml *.mli generators/*.ml > .depend
+	$(OCAMLDEP) $(INCLUDES_DEP) *.mll *.mly *.ml *.mli > .depend
+	$(OCAMLDEP) $(INCLUDES_DEP) -shared generators/*.ml >> .depend
 
 include .depend

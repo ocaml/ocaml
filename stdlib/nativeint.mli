@@ -165,6 +165,10 @@ external of_string : string -> nativeint = "caml_nativeint_of_string"
    a valid representation of an integer, or if the integer represented
    exceeds the range of integers representable in type [nativeint]. *)
 
+val of_string_opt: string -> nativeint option
+(** Same as [of_string], but return [None] instead of raising.
+    @since 4.05 *)
+
 val to_string : nativeint -> string
 (** Return the string representation of its argument, in decimal. *)
 

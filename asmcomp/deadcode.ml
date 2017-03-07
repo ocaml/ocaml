@@ -58,12 +58,17 @@ let rec deadcode i =
       let (body', _) = deadcode body in
       let (s, _) = deadcode i.next in
       ({i with desc = Iloop body'; next = s}, i.live)
-  | Icatch(nfail, body, handler) ->
+  | Icatch(rec_flag, handlers, body) ->
       let (body', _) = deadcode body in
-      let (handler', _) = deadcode handler in
+      let handlers' =
+        List.map (fun (nfail, handler) ->
+            let (handler', _) = deadcode handler in
+            nfail, handler')
+          handlers
+      in
       let (s, _) = deadcode i.next in
-      ({i with desc = Icatch(nfail, body', handler'); next = s}, i.live)
-  | Iexit _ ->
+      ({i with desc = Icatch(rec_flag, handlers', body'); next = s}, i.live)
+  | Iexit _nfail ->
       (i, i.live)
   | Itrywith(body, handler) ->
       let (body', _) = deadcode body in

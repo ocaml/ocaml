@@ -16,7 +16,7 @@ specify the general shape and type properties of classes.
 \ikwd{mutable\@\texttt{mutable}}
 \ikwd{method\@\texttt{method}}
 \ikwd{private\@\texttt{private}}
-\ikwd{virtual\@\texttt{virtual}}
+\ikwd{virtual\@\texttt{virtual}|see{\texttt{val}, \texttt{method}, \texttt{class}}}
 \ikwd{constraint\@\texttt{constraint}}
 
 \begin{syntax}
@@ -37,6 +37,9 @@ class-field-spec:
    |  'method' 'virtual' 'private' method-name ':' poly-typexpr
    |  'constraint' typexpr '=' typexpr
 \end{syntax}
+See also the following language extensions:
+\hyperref[s:attributes]{attributes} and
+\hyperref[s:extension-nodes]{extension nodes}.
 
 \subsubsection*{Simple class expressions}
 
@@ -85,7 +88,6 @@ into the current class type.
 
 \ikwd{val\@\texttt{val}}
 \ikwd{mutable\@\texttt{mutable}}
-\ikwd{virtual\@\texttt{virtual}}
 
 A specification of an instance variable is written
 @'val' ['mutable'] ['virtual'] inst-var-name ':' typexpr@, where
@@ -125,7 +127,6 @@ Any non-private specification of a method forces it to be public.
 
 \subsubsection*{Virtual method specification}
 
-\ikwd{virtual\@\texttt{virtual}}
 \ikwd{method\@\texttt{method}}
 \ikwd{private\@\texttt{private}}
 
@@ -152,8 +153,6 @@ specifications expressed in class types.
 \ikwd{end\@\texttt{end}}
 \ikwd{fun\@\texttt{fun}}
 \ikwd{let\@\texttt{let}}
-\ikwd{rec\@\texttt{rec}}
-\ikwd{in\@\texttt{in}}
 \ikwd{and\@\texttt{and}}
 \ikwd{inherit\@\texttt{inherit}}
 \ikwd{as\@\texttt{as}}
@@ -161,7 +160,6 @@ specifications expressed in class types.
 \ikwd{mutable\@\texttt{mutable}}
 \ikwd{method\@\texttt{method}}
 \ikwd{private\@\texttt{private}}
-\ikwd{virtual\@\texttt{virtual}}
 \ikwd{constraint\@\texttt{constraint}}
 \ikwd{initializer\@\texttt{initializer}}
 
@@ -191,6 +189,11 @@ class-field:
    |  'constraint' typexpr '=' typexpr
    |  'initializer' expr
 \end{syntax}
+See also the following language extensions:
+\hyperref[s:locally-abstract]{locally abstract types},
+\hyperref[s:explicit-overriding]{explicit overriding in class definitions},
+\hyperref[s:attributes]{attributes} and
+\hyperref[s:extension-nodes]{extension nodes}.
 
 \subsubsection*{Simple class expressions}
 
@@ -321,7 +324,6 @@ other instance variables with the same name.
 
 \subsubsection*{Virtual instance variable definition}
 
-\ikwd{virtual\@\texttt{virtual}}
 \ikwd{val\@\texttt{val}}
 \ikwd{mutable\@\texttt{mutable}}
 
@@ -385,7 +387,6 @@ been replaced by the values of the corresponding expressions @expr_1,
 
 \subsubsection*{Virtual method definition}
 
-\ikwd{virtual\@\texttt{virtual}}
 \ikwd{method\@\texttt{method}}
 \ikwd{private\@\texttt{private}}
 
@@ -416,7 +417,6 @@ all its instance variables have been initialized.
 
 \ikwd{class\@\texttt{class}}
 \ikwd{and\@\texttt{and}}
-\ikwd{virtual\@\texttt{virtual}}
 
 \begin{syntax}
 class-definition:
@@ -445,7 +445,6 @@ section~\ref{s:sharp-types}).
 
 \subsubsection*{Virtual class}
 
-\ikwd{virtual\@\texttt{virtual}}
 A class must be flagged virtual if one of its methods is virtual (that
 is, appears in the class type, but is not actually defined).
 Objects cannot be created from a virtual class.
@@ -464,7 +463,6 @@ parameters or be bound in the constraint clause.
 
 \ikwd{class\@\texttt{class}}
 \ikwd{and\@\texttt{and}}
-\ikwd{virtual\@\texttt{virtual}}
 
 \begin{syntax}
 class-specification:
@@ -485,7 +483,6 @@ type parameters and their types match.
 \ikwd{class\@\texttt{class}}
 \ikwd{type\@\texttt{type}}
 \ikwd{and\@\texttt{and}}
-\ikwd{virtual\@\texttt{virtual}}
 
 \begin{syntax}
 classtype-definition:

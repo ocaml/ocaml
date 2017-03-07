@@ -84,47 +84,6 @@ static struct custom_operations caml_ba_ops = {
   custom_compare_ext_default
 };
 
-/* Multiplication of unsigned longs with overflow detection */
-
-static uintnat
-caml_ba_multov(uintnat a, uintnat b, int * overflow)
-{
-#define HALF_SIZE (sizeof(uintnat) * 4)
-#define HALF_MASK (((uintnat)1 << HALF_SIZE) - 1)
-#define LOW_HALF(x) ((x) & HALF_MASK)
-#define HIGH_HALF(x) ((x) >> HALF_SIZE)
-  /* Cut in half words */
-  uintnat al = LOW_HALF(a);
-  uintnat ah = HIGH_HALF(a);
-  uintnat bl = LOW_HALF(b);
-  uintnat bh = HIGH_HALF(b);
-  /* Exact product is:
-              al * bl
-           +  ah * bl  << HALF_SIZE
-           +  al * bh  << HALF_SIZE
-           +  ah * bh  << 2*HALF_SIZE
-     Overflow occurs if:
-        ah * bh is not 0, i.e. ah != 0 and bh != 0
-     OR ah * bl has high half != 0
-     OR ah * bl has high half != 0
-     OR the sum al * bl + LOW_HALF(ah * bl) << HALF_SIZE
-                        + LOW_HALF(al * bh) << HALF_SIZE overflows.
-     This sum is equal to p = (a * b) modulo word size. */
-  uintnat p1 = al * bh;
-  uintnat p2 = ah * bl;
-  uintnat p = a * b;
-  if (ah != 0 && bh != 0) *overflow = 1;
-  if (HIGH_HALF(p1) != 0 || HIGH_HALF(p2) != 0) *overflow = 1;
-  p1 <<= HALF_SIZE;
-  p2 <<= HALF_SIZE;
-  p1 += p2;
-  if (p < p1 || p1 < p2) *overflow = 1; /* overflow in sums */
-  return p;
-#undef HALF_SIZE
-#undef LOW_HALF
-#undef HIGH_HALF
-}
-
 /* Allocation of a big array */
 
 #define CAML_BA_MAX_MEMORY 1024*1024*1024
@@ -141,7 +100,7 @@ CAMLexport value
 caml_ba_alloc(int flags, int num_dims, void * data, intnat * dim)
 {
   uintnat num_elts, asize, size;
-  int overflow, i;
+  int i;
   value res;
   struct caml_ba_array * b;
   intnat dimcopy[CAML_BA_MAX_NUM_DIMS];
@@ -151,15 +110,15 @@ caml_ba_alloc(int flags, int num_dims, void * data, intnat * dim)
   for (i = 0; i < num_dims; i++) dimcopy[i] = dim[i];
   size = 0;
   if (data == NULL) {
-    overflow = 0;
     num_elts = 1;
     for (i = 0; i < num_dims; i++) {
-      num_elts = caml_ba_multov(num_elts, dimcopy[i], &overflow);
+      if (caml_umul_overflow(num_elts, dimcopy[i], &num_elts))
+        caml_raise_out_of_memory();
     }
-    size = caml_ba_multov(num_elts,
-                          caml_ba_element_size[flags & CAML_BA_KIND_MASK],
-                          &overflow);
-    if (overflow) caml_raise_out_of_memory();
+    if (caml_umul_overflow(num_elts,
+                           caml_ba_element_size[flags & CAML_BA_KIND_MASK],
+                           &size))
+      caml_raise_out_of_memory();
     data = malloc(size);
     if (data == NULL && size != 0) caml_raise_out_of_memory();
     flags |= CAML_BA_MANAGED;

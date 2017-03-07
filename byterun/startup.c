@@ -271,7 +271,7 @@ extern void caml_install_invalid_parameter_handler();
 
 #endif
 
-extern int ensure_spacetime_dot_o_is_included;
+extern int caml_ensure_spacetime_dot_o_is_included;
 
 /* Main entry point when loading code from a file */
 
@@ -284,7 +284,7 @@ CAMLexport void caml_main(char **argv)
   char * shared_lib_path, * shared_libs, * req_prims;
   char * exe_name, * proc_self_exe;
 
-  ensure_spacetime_dot_o_is_included++;
+  caml_ensure_spacetime_dot_o_is_included++;
 
   /* Machine-dependent initialization of the floating-point hardware
      so that it behaves as much as possible as specified in IEEE */
@@ -319,7 +319,6 @@ CAMLexport void caml_main(char **argv)
   if (fd < 0 && (proc_self_exe = caml_executable_name()) != NULL) {
     exe_name = proc_self_exe;
     fd = caml_attempt_open(&exe_name, &trail, 0);
-    caml_stat_free(proc_self_exe);
   }
 
   if (fd < 0) {
@@ -397,13 +396,12 @@ CAMLexport void caml_main(char **argv)
 
 /* Main entry point when code is linked in as initialized data */
 
-CAMLexport void caml_startup_code(
+CAMLexport value caml_startup_code_exn(
            code_t code, asize_t code_size,
            char *data, asize_t data_size,
            char *section_table, asize_t section_table_size,
            char **argv)
 {
-  value res;
   char * cds_file;
   char * exe_name;
 
@@ -460,10 +458,22 @@ CAMLexport void caml_startup_code(
   caml_section_table_size = section_table_size;
   /* Initialize system libraries */
   caml_sys_init(exe_name, argv);
-  caml_stat_free(exe_name);
   /* Execute the program */
   caml_debugger(PROGRAM_START);
-  res = caml_interprete(caml_start_code, caml_code_size);
+  return caml_interprete(caml_start_code, caml_code_size);
+}
+
+CAMLexport void caml_startup_code(
+           code_t code, asize_t code_size,
+           char *data, asize_t data_size,
+           char *section_table, asize_t section_table_size,
+           char **argv)
+{
+  value res;
+
+  res = caml_startup_code_exn(code, code_size, data, data_size,
+                              section_table, section_table_size,
+                              argv);
   if (Is_exception_result(res)) {
     caml_exn_bucket = Extract_exception(res);
     if (caml_debugger_in_use) {

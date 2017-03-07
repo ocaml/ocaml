@@ -326,6 +326,12 @@ flag), setting the
 flag forces all
 subsequent links of programs involving that library to link all the
 modules contained in the library.
+When compiling a module (option
+.BR \-c ),
+setting the
+.B \-linkall
+option ensures that this module will
+always be linked if it is put in a library and this library is linked.
 .TP
 .B \-no-alias-deps
 Do not record dependencies for module aliases.
@@ -382,6 +388,13 @@ This can also be used when compiling an interface or implementation
 file, without linking, in which case it sets the name of the cmi or
 cmo file, and also sets the module name to the file name up to the
 first dot.
+.TP
+.B \-opaque
+When compiling a .mli interface file, this has the same effect as the
+.B \-opaque
+option of the bytecode compiler. When compiling a .ml implementation
+file, this produces a .cmx file without cross-module optimization
+information, which reduces recompilation on module change.
 .TP
 .BI \-open \ module
 Opens the given module before processing the interface or

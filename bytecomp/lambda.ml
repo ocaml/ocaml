@@ -39,8 +39,9 @@ type immediate_or_pointer =
   | Pointer
 
 type initialization_or_assignment =
-  | Initialization
   | Assignment
+  | Heap_initialization
+  | Root_initialization
 
 type is_safe =
   | Safe
@@ -60,7 +61,9 @@ type primitive =
   (* Operations on heap blocks *)
   | Pmakeblock of int * mutable_flag * block_shape
   | Pfield of int
+  | Pfield_computed
   | Psetfield of int * immediate_or_pointer * initialization_or_assignment
+  | Psetfield_computed of immediate_or_pointer * initialization_or_assignment
   | Pfloatfield of int
   | Psetfloatfield of int * initialization_or_assignment
   | Pduprecord of Types.record_representation * int
@@ -86,7 +89,7 @@ type primitive =
   | Paddfloat | Psubfloat | Pmulfloat | Pdivfloat
   | Pfloatcomp of comparison
   (* String operations *)
-  | Pstringlength | Pstringrefu  | Pstringrefs 
+  | Pstringlength | Pstringrefu  | Pstringrefs
   | Pbyteslength | Pbytesrefu | Pbytessetu | Pbytesrefs | Pbytessets
   (* Array operations *)
   | Pmakearray of array_kind * mutable_flag
@@ -213,6 +216,7 @@ type function_attribute = {
   inline : inline_attribute;
   specialise : specialise_attribute;
   is_a_functor: bool;
+  stub: bool;
 }
 
 type lambda =
@@ -286,7 +290,11 @@ let default_function_attribute = {
   inline = Default_inline;
   specialise = Default_specialise;
   is_a_functor = false;
+  stub = false;
 }
+
+let default_stub_attribute =
+  { default_function_attribute with stub = true }
 
 (* Build sharing keys *)
 (*

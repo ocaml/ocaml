@@ -105,9 +105,17 @@ int caml_write_fd(int fd, int flags, void * buf, int n)
 {
   int retcode;
   if ((flags & CHANNEL_FLAG_FROM_SOCKET) == 0) {
+#if defined(NATIVE_CODE) && defined(WITH_SPACETIME)
+  if (flags & CHANNEL_FLAG_BLOCKING_WRITE) {
+    retcode = write(fd, buf, n);
+  } else {
+#endif
     caml_enter_blocking_section();
     retcode = write(fd, buf, n);
     caml_leave_blocking_section();
+#if defined(NATIVE_CODE) && defined(WITH_SPACETIME)
+  }
+#endif
     if (retcode == -1) caml_sys_io_error(NO_ARG);
   } else {
     caml_enter_blocking_section();
@@ -356,10 +364,15 @@ static void expand_pattern(char * pat)
     return;
   }
   prefix = caml_strdup(pat);
+  /* We need to stop at the first directory or drive boundary, because the
+   * _findata_t structure contains the filename, not the leading directory. */
   for (i = strlen(prefix); i > 0; i--) {
     char c = prefix[i - 1];
     if (c == '\\' || c == '/' || c == ':') { prefix[i] = 0; break; }
   }
+  /* No separator was found, it's a filename pattern without a leading directory. */
+  if (i == 0)
+    prefix[0] = 0;
   do {
     name = caml_strconcat(2, prefix, ffblk.name);
     store_argument(name);

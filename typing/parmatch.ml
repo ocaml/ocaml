@@ -654,17 +654,31 @@ let full_match closing env =  match env with
 | ({pat_desc = Tpat_record(_)},_) :: _ -> true
 | ({pat_desc = Tpat_array(_)},_) :: _ -> false
 | ({pat_desc = Tpat_lazy(_)},_) :: _ -> true
-| _ -> fatal_error "Parmatch.full_match"
+| ({pat_desc = (Tpat_any|Tpat_var _|Tpat_alias _|Tpat_or _)},_) :: _
+| []
+  ->
+    assert false
 
+(* Written as a non-fragile matching, PR7451 originated from a fragile matching below. *)
 let should_extend ext env = match ext with
 | None -> false
-| Some ext -> match env with
-  | ({pat_desc =
-      Tpat_construct(_, {cstr_tag=(Cstr_constant _|Cstr_block _)},_)}
-     as p, _) :: _ ->
-      let path = get_type_path p.pat_type p.pat_env in
-      Path.same path ext
-  | _ -> false
+| Some ext -> begin match env with
+  | [] -> assert false
+  | (p,_)::_ ->
+      begin match p.pat_desc with
+      | Tpat_construct
+          (_, {cstr_tag=(Cstr_constant _|Cstr_block _|Cstr_unboxed)},_) ->
+            let path = get_type_path p.pat_type p.pat_env in
+            Path.same path ext
+      | Tpat_construct
+          (_, {cstr_tag=(Cstr_extension _)},_) -> false
+      | Tpat_constant _|Tpat_tuple _|Tpat_variant _
+      | Tpat_record  _|Tpat_array _ | Tpat_lazy _
+        -> false
+      | Tpat_any|Tpat_var _|Tpat_alias _|Tpat_or _
+        -> assert false
+      end
+end
 
 (* complement constructor tags *)
 let complete_tags nconsts nconstrs tags =

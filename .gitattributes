@@ -24,6 +24,11 @@
 *.png binary
 *.tfm binary
 
+# 'union' merge driver just unions textual content in case of conflict
+#   http://krlmlr.github.io/using-gitattributes-to-avoid-merge-conflicts/
+/.mailmap                merge=union
+/Changes                 merge=union
+
 # No header for text files (would be too obtrusive).
 *.md                     ocaml-typo=missing-header
 README*                  ocaml-typo=missing-header
@@ -125,3 +130,6 @@ manual/tools/texexpand text eol=lf
 # Checking out the parsetree test files with \r\n endings causes all the
 # locations to change, so use \n endings only, even on Windows
 testsuite/tests/parsing/*.ml text eol=lf
+
+# Similarly, the docstring tests fail for the same reason on Windows
+testsuite/tests/docstrings/empty.ml text eol=lf

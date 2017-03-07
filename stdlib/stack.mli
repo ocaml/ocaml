@@ -33,11 +33,11 @@ val push : 'a -> 'a t -> unit
 
 val pop : 'a t -> 'a
 (** [pop s] removes and returns the topmost element in stack [s],
-   or raises [Empty] if the stack is empty. *)
+   or raises {!Empty} if the stack is empty. *)
 
 val top : 'a t -> 'a
 (** [top s] returns the topmost element in stack [s],
-   or raises [Empty] if the stack is empty. *)
+   or raises {!Empty} if the stack is empty. *)
 
 val clear : 'a t -> unit
 (** Discard all elements from a stack. *)

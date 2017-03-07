@@ -2,13 +2,13 @@
 \pdfsection{Expressions}
 %HEVEA\cutname{expr.html}
 \ikwd{in\@\texttt{in}|see{\texttt{let}}}
-\ikwd{and\@\texttt{and}|see{\texttt{let}, \texttt{type}, \texttt{class}}}
-\ikwd{rec\@\texttt{rec}|see{\texttt{let}}}
+\ikwd{and\@\texttt{and}}
+\ikwd{rec\@\texttt{rec}|see{\texttt{let}, \texttt{module}}}
 \ikwd{let\@\texttt{let}}
 \ikwd{try\@\texttt{try}}
 \ikwd{function\@\texttt{function}}
 \ikwd{fun\@\texttt{fun}}
-\ikwd{with\@\texttt{with}|see{\texttt{match}, \texttt{try}}}
+\ikwd{with\@\texttt{with}}
 \ikwd{done\@\texttt{done}|see{\texttt{while}, \texttt{for}}}
 \ikwd{do\@\texttt{do}|see{\texttt{while}, \texttt{for}}}
 \ikwd{downto\@\texttt{downto}|see{\texttt{for}}}
@@ -17,7 +17,6 @@
 \ikwd{else\@\texttt{else}|see{\texttt{if}}}
 \ikwd{then\@\texttt{then}|see{\texttt{if}}}
 \ikwd{if\@\texttt{if}}
-\ikwd{of\@\texttt{of}|see{\texttt{type}, \texttt{exception}}}
 \ikwd{or\@\texttt{or}}
 \ikwd{match\@\texttt{match}}
 \ikwd{begin\@\texttt{begin}}
@@ -25,6 +24,7 @@
 \ikwd{when\@\texttt{when}}
 \ikwd{new\@\texttt{new}}
 \ikwd{object\@\texttt{object}}
+\ikwd{lazy\@\texttt{lazy}}
 
 \begin{syntax}
 expr:
@@ -106,6 +106,16 @@ parameter:
   | '?' label-name ':' pattern
   | '?' label-name ':' '(' pattern [':' typexpr] ['=' expr] ')'
 \end{syntax}
+See also the following language extensions:
+\hyperref[s:local-opens]{local opens},
+\hyperref[s:record-and-object-notations]{record and object notations},
+\hyperref[s:explicit-polymorphic-type]{explicit polymorphic type annotations},
+\hyperref[s-first-class-modules]{first-class modules},
+\hyperref[s:explicit-overriding-open]{overriding in open statements},
+\hyperref[s:bigarray-access]{syntax for Bigarray access},
+\hyperref[s:attributes]{attributes},
+\hyperref[s:extension-nodes]{extension nodes} and
+\hyperref[s:local-exceptions]{local exceptions}.
 
 The table below shows the relative precedences and associativity of
 operators and non-closed constructions. The constructions with higher
@@ -118,6 +128,13 @@ precedence come first. For infix and prefix symbols, we write
 \ikwd{match\@\texttt{match}}%
 \ikwd{try\@\texttt{try}}%
 \ikwd{let\@\texttt{let}}%
+\ikwd{mod\@\texttt{mod}}
+\ikwd{land\@\texttt{land}}
+\ikwd{lor\@\texttt{lor}}
+\ikwd{lxor\@\texttt{lxor}}
+\ikwd{lsl\@\texttt{lsl}}
+\ikwd{lsr\@\texttt{lsr}}
+\ikwd{asr\@\texttt{asr}}
 \begin{tableau}{|l|l|}{Construction or operator}{Associativity}
 \entree{prefix-symbol}{--}
 \entree{".   .(   .[   .{" (see section~\ref{s:bigarray-access})}{--}
@@ -622,6 +639,13 @@ future version. New code should use byte sequences and the "Bytes.set"
 function.
 
 \subsection{Operators}
+\ikwd{mod\@\texttt{mod}}
+\ikwd{land\@\texttt{land}}
+\ikwd{lor\@\texttt{lor}}
+\ikwd{lxor\@\texttt{lxor}}
+\ikwd{lsl\@\texttt{lsl}}
+\ikwd{lsr\@\texttt{lsr}}
+\ikwd{asr\@\texttt{asr}}
 
 Symbols from the class @infix-symbol@, as well as the keywords
 @"*"@, @"+"@, @"-"@, @'-.'@, @"="@, @"!="@, @"<"@, @">"@, @"or"@, @"||"@,
@@ -655,6 +679,13 @@ interpreted respectively as the functions @'(~-)'@ and @'(~-.)'@.
 %% operator by enclosing it in backquotes: @expr_1 '`' ident '`' expr_2@
 %% is interpreted as the application @ident expr_1 expr_2@.
 
+\ikwd{mod\@\texttt{mod}}%
+\ikwd{land\@\texttt{land}}%
+\ikwd{lor\@\texttt{lor}}%
+\ikwd{lxor\@\texttt{lxor}}%
+\ikwd{lsl\@\texttt{lsl}}%
+\ikwd{lsr\@\texttt{lsr}}%
+\ikwd{asr\@\texttt{asr}}%
 \begin{tableau}{|l|p{12cm}|}{Operator}{Initial meaning}
 \entree{"+"}{Integer addition.}
 \entree{"-" (infix)}{Integer subtraction.}

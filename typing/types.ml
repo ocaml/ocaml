@@ -193,6 +193,11 @@ and unboxed_status =
     default: bool; (* False if the unboxed field was set from an attribute. *)
   }
 
+let unboxed_false_default_false = {unboxed = false; default = false}
+let unboxed_false_default_true = {unboxed = false; default = true}
+let unboxed_true_default_false = {unboxed = true; default = false}
+let unboxed_true_default_true = {unboxed = true; default = true}
+
 type extension_constructor =
     { ext_type_path: Path.t;
       ext_type_params: type_expr list;

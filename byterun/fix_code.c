@@ -21,6 +21,8 @@
 
 #ifdef HAS_UNISTD
 #include <unistd.h>
+#else
+#include <io.h>
 #endif
 
 #include "caml/debugger.h"

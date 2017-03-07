@@ -39,7 +39,7 @@ CAMLprim value unix_opendir(value path)
   caml_leave_blocking_section();
   caml_stat_free(p);
   if (d == (DIR *) NULL) uerror("opendir", path);
-  res = alloc_small(1, Abstract_tag);
+  res = caml_alloc_small(1, Abstract_tag);
   DIR_Val(res) = d;
   CAMLreturn(res);
 }

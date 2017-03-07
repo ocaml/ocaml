@@ -33,6 +33,7 @@ type error =
   | File_exists of string
   | Cannot_open_dll of string
   | Not_compatible_32
+  | Required_module_unavailable of string
 
 exception Error of error
 

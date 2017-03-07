@@ -354,6 +354,11 @@ let int_of_num = function
 | Big_int bi -> int_of_big_int bi
 | Ratio r -> int_of_ratio r
 
+let int_of_num_opt = function
+  Int i -> Some i
+| Big_int bi -> int_of_big_int_opt bi
+| Ratio r -> (try Some (int_of_ratio r) with Failure _ -> None)
+
 and num_of_int i =
   if i = monster_int
   then Big_int (big_int_of_int i)
@@ -370,11 +375,17 @@ and num_of_nat nat =
   then Int (nth_digit_nat nat 0)
   else Big_int (big_int_of_nat nat)
 
+let nat_of_num_opt x =
+  try Some (nat_of_num x) with Failure _ -> None
+
 (* Coercion with big_int type *)
 let big_int_of_num = function
   Int i -> big_int_of_int i
 | Big_int bi -> bi
 | Ratio r -> big_int_of_ratio r
+
+let big_int_of_num_opt x =
+  try Some (big_int_of_num x) with Failure _ -> None
 
 let string_of_big_int_for_num bi =
   if !approx_printing_flag
@@ -389,6 +400,7 @@ let string_of_normalized_num = function
 | Ratio r -> string_of_ratio r
 let string_of_num n =
     string_of_normalized_num (cautious_normalize_num_when_printing n)
+
 let num_of_string s =
   try
     let flag = !normalize_ratio_flag in
@@ -400,6 +412,9 @@ let num_of_string s =
     else Ratio r
   with Failure _ ->
     failwith "num_of_string"
+
+let num_of_string_opt s =
+  try Some (num_of_string s) with Failure _ -> None
 
 (* Coercion with float type *)
 let float_of_num = function

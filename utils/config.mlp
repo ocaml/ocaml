@@ -30,9 +30,9 @@ let standard_library =
 
 let standard_runtime = "%%BYTERUN%%"
 let ccomp_type = "%%CCOMPTYPE%%"
-let bytecomp_c_compiler = "%%BYTECC%%"
+let bytecomp_c_compiler = "%%BYTECODE_C_COMPILER%%"
 let bytecomp_c_libraries = "%%BYTECCLIBS%%"
-let native_c_compiler = "%%NATIVECC%%"
+let native_c_compiler = "%%NATIVE_C_COMPILER%%"
 let native_c_libraries = "%%NATIVECCLIBS%%"
 let native_pack_linker = "%%PACKLD%%"
 let ranlib = "%%RANLIBCMD%%"
@@ -57,8 +57,11 @@ let mkdll, mkexe, mkmaindll =
   else
     "%%MKDLL%%", "%%MKEXE%%", "%%MKMAINDLL%%"
 
+let profiling = %%PROFILING%%
 let flambda = %%FLAMBDA%%
 let safe_string = %%SAFE_STRING%%
+
+let afl_instrument = %%AFL_INSTRUMENT%%
 
 let exec_magic_number = "Caml1999X011"
 and cmi_magic_number = "Caml1999I021"
@@ -74,10 +77,10 @@ and cmxa_magic_number =
     "Caml1999Z015"
   else
     "Caml1999Z014"
-and ast_impl_magic_number = "Caml1999M019"
+and ast_impl_magic_number = "Caml1999M020"
 and ast_intf_magic_number = "Caml1999N018"
 and cmxs_magic_number = "Caml2007D002"
-and cmt_magic_number = "Caml2012T008"
+and cmt_magic_number = "Caml2012T009"
 
 let load_path = ref ([] : string list)
 
@@ -106,6 +109,7 @@ let libunwind_link_flags = "%%LIBUNWIND_LINK_FLAGS%%"
 let profinfo = %%WITH_PROFINFO%%
 let profinfo_width = %%PROFINFO_WIDTH%%
 
+let ext_exe = "%%EXT_EXE%%"
 let ext_obj = "%%EXT_OBJ%%"
 let ext_asm = "%%EXT_ASM%%"
 let ext_lib = "%%EXT_LIB%%"
@@ -124,6 +128,7 @@ let systhread_supported = %%SYSTHREAD_SUPPORT%%;;
 
 let print_config oc =
   let p name valu = Printf.fprintf oc "%s: %s\n" name valu in
+  let p_int name valu = Printf.fprintf oc "%s: %d\n" name valu in
   let p_bool name valu = Printf.fprintf oc "%s: %B\n" name valu in
   p "version" version;
   p "standard_library_default" standard_library_default;
@@ -139,10 +144,13 @@ let print_config oc =
   p "cc_profile" cc_profile;
   p "architecture" architecture;
   p "model" model;
+  p_int "int_size" Sys.int_size;
+  p_int "word_size" Sys.word_size;
   p "system" system;
   p "asm" asm;
   p_bool "asm_cfi_supported" asm_cfi_supported;
   p_bool "with_frame_pointers" with_frame_pointers;
+  p "ext_exe" ext_exe;
   p "ext_obj" ext_obj;
   p "ext_asm" ext_asm;
   p "ext_lib" ext_lib;
@@ -152,8 +160,10 @@ let print_config oc =
   p_bool "systhread_supported" systhread_supported;
   p "host" host;
   p "target" target;
+  p_bool "profiling" profiling;
   p_bool "flambda" flambda;
   p_bool "spacetime" spacetime;
+  p_bool "safe_string" safe_string;
 
   (* print the magic number *)
   p "exec_magic_number" exec_magic_number;

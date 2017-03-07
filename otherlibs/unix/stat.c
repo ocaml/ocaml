@@ -61,7 +61,7 @@ static value stat_aux(int use_64, struct stat *buf)
                            + (NSEC(buf, c) / 1000000000.0));
   #undef NSEC
   offset = use_64 ? Val_file_offset(buf->st_size) : Val_int (buf->st_size);
-  v = alloc_small(12, 0);
+  v = caml_alloc_small(12, 0);
   Field (v, 0) = Val_int (buf->st_dev);
   Field (v, 1) = Val_int (buf->st_ino);
   Field (v, 2) = cst_to_constr(buf->st_mode & S_IFMT, file_kind_table,

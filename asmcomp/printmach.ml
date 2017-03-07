@@ -19,6 +19,7 @@ open Format
 open Cmm
 open Reg
 open Mach
+open Interval
 
 let reg ppf r =
   if not (Reg.anonymous r) then
@@ -190,10 +191,20 @@ let rec instr ppf i =
       fprintf ppf "@,endswitch"
   | Iloop(body) ->
       fprintf ppf "@[<v 2>loop@,%a@;<0 -2>endloop@]" instr body
-  | Icatch(i, body, handler) ->
-      fprintf
-        ppf "@[<v 2>catch@,%a@;<0 -2>with(%d)@,%a@;<0 -2>endcatch@]"
-        instr body i instr handler
+  | Icatch(flag, handlers, body) ->
+      fprintf ppf "@[<v 2>catch%a@,%a@;<0 -2>with"
+        Printcmm.rec_flag flag instr body;
+      let h (nfail, handler) =
+        fprintf ppf "(%d)@,%a@;" nfail instr handler in
+      let rec aux = function
+        | [] -> ()
+        | [v] -> h v
+        | v :: t ->
+            h v;
+            fprintf ppf "@ and";
+            aux t
+      in
+      aux handlers
   | Iexit i ->
       fprintf ppf "exit(%d)" i
   | Itrywith(body, handler) ->
@@ -231,6 +242,18 @@ let interference ppf r =
 let interferences ppf () =
   fprintf ppf "*** Interferences@.";
   List.iter (interference ppf) (Reg.all_registers())
+
+let interval ppf i =
+  let interv ppf =
+    List.iter
+      (fun r -> fprintf ppf "@ [%d;%d]" r.rbegin r.rend)
+      i.ranges in
+  fprintf ppf "@[<2>%a:%t@]@." reg i.reg interv
+
+let intervals ppf () =
+  fprintf ppf "*** Intervals@.";
+  List.iter (interval ppf) (Interval.all_fixed_intervals());
+  List.iter (interval ppf) (Interval.all_intervals())
 
 let preference ppf r =
   let prefs ppf =

@@ -1299,9 +1299,9 @@ fun k ign fmt -> match ign with
    take_format_readers, and aggegate scanned values into an
    heterogeneous list. *)
 (* Return the heterogeneous list of scanned values. *)
-let rec make_scanf : type a c d e f .
+let rec make_scanf : type a c d e f.
     Scanning.in_channel -> (a, Scanning.in_channel, c, d, e, f) fmt ->
-      (d, _) heter_list -> (a, f) heter_list =
+      (d, e) heter_list -> (a, f) heter_list =
 fun ib fmt readers -> match fmt with
   | Char rest ->
     let _ = scan_char 0 ib in
@@ -1368,9 +1368,13 @@ fun ib fmt readers -> match fmt with
   | Custom _ ->
     invalid_arg "scanf: bad conversion \"%?\" (custom converter)"
   | Reader fmt_rest ->
-    let Cons (reader, readers_rest) = readers in
-    let x = reader ib in
-    Cons (x, make_scanf ib fmt_rest readers_rest)
+    begin match readers with
+    | Cons (reader, readers_rest) ->
+        let x = reader ib in
+        Cons (x, make_scanf ib fmt_rest readers_rest)
+    | Nil -> 
+        invalid_arg "scanf: missing reader"
+    end
   | Flush rest ->
     if Scanning.end_of_input ib then make_scanf ib rest readers
     else bad_input "end of input not found"
@@ -1460,7 +1464,7 @@ fun ib fmt readers -> match fmt with
 (* Pass padding and precision to the generic scanner `scan'. *)
 and pad_prec_scanf : type a c d e f x y z t .
     Scanning.in_channel -> (a, Scanning.in_channel, c, d, e, f) fmt ->
-      (d, _) heter_list -> (x, y) padding -> (y, z -> a) precision ->
+      (d, e) heter_list -> (x, y) padding -> (y, z -> a) precision ->
       (int -> int -> Scanning.in_channel -> t) ->
       (Scanning.in_channel -> z) ->
       (x, f) heter_list =

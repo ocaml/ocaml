@@ -97,7 +97,7 @@ INCLUDES=-I ../utils -I ../parsing -I ../typing -I ../bytecomp -I ../asmcomp \
          -I ../middle_end -I ../middle_end/base_types -I ../driver \
          -I ../toplevel
 COMPFLAGS= -absname -w +a-4-9-41-42-44-45-48 -strict-sequence -warn-error A \
- -safe-string -strict-formats $(INCLUDES)
+ -safe-string -strict-formats -bin-annot $(INCLUDES)
 LINKFLAGS=$(INCLUDES)
 VPATH := $(filter-out -I,$(INCLUDES))
 
@@ -108,14 +108,9 @@ VPATH := $(filter-out -I,$(INCLUDES))
 # The dependency generator
 
 CAMLDEP_OBJ=ocamldep.cmo
-CAMLDEP_IMPORTS=timings.cmo misc.cmo config.cmo identifiable.cmo numbers.cmo \
-  arg_helper.cmo clflags.cmo terminfo.cmo \
-  warnings.cmo location.cmo longident.cmo docstrings.cmo \
-  syntaxerr.cmo ast_helper.cmo parser.cmo lexer.cmo parse.cmo \
-  ccomp.cmo ast_mapper.cmo ast_iterator.cmo \
-  builtin_attributes.cmo ast_invariants.cmo \
-  pparse.cmo compenv.cmo depend.cmo
-
+CAMLDEP_IMPORTS= \
+  ../compilerlibs/ocamlcommon.cma \
+  ../compilerlibs/ocamlbytecomp.cma
 ocamldep: LINKFLAGS += -compat-32
 $(call byte_and_opt,ocamldep,$(CAMLDEP_IMPORTS) $(CAMLDEP_OBJ),)
 ocamldep: depend.cmi
@@ -147,7 +142,7 @@ $(call byte_and_opt,ocamloptp,$(ocamlcp_cmos) ocamloptp.cmo,)
 opt:: profiling.cmx
 
 install::
-	cp -- profiling.cmi profiling.cmo "$(INSTALL_LIBDIR)"
+	cp -- profiling.cmi profiling.cmo profiling.cmt profiling.cmti "$(INSTALL_LIBDIR)"
 
 installopt::
 	cp -- profiling.cmx profiling.$(O) "$(INSTALL_LIBDIR)"
@@ -290,20 +285,17 @@ $(call byte_and_opt,dumpobj,misc.cmo identifiable.cmo numbers.cmo tbl.cmo \
                     config.cmo ident.cmo opcodes.cmo bytesections.cmo \
 		    $(DUMPOBJ),)
 
-opnames.ml: ../byterun/caml/instruct.h
-	unset LC_ALL || : ; \
-	unset LC_CTYPE || : ; \
-	unset LC_COLLATE LANG || : ; \
-	sed -e '/[/][*]/d' \
-	    -e '/^#/d' \
-	    -e 's/enum \(.*\) {/let names_of_\1 = [|/' \
-	    -e 's/.*};$$/ |]/' \
-	    -e 's/\([A-Z][A-Z_0-9a-z]*\)/"\1"/g' \
-	    -e 's/,/;/g' \
-	../byterun/caml/instruct.h > opnames.ml
+make_opcodes.ml: make_opcodes.mll
+	$(CAMLLEX) make_opcodes.mll
+
+make_opcodes: make_opcodes.ml
+	$(CAMLC) make_opcodes.ml -o $@
+
+opnames.ml: ../byterun/caml/instruct.h make_opcodes
+	$(CAMLRUN) make_opcodes -opnames < $< > $@
 
 clean::
-	rm -f opnames.ml
+	rm -f opnames.ml make_opcodes make_opcodes.ml
 
 beforedepend:: opnames.ml
 
@@ -341,8 +333,23 @@ install::
 # Scan object files for required primitives
 $(call byte_and_opt,primreq,config.cmo primreq.cmo,)
 
+LINTAPIDIFF=../compilerlibs/ocamlcommon.cmxa \
+        ../compilerlibs/ocamlbytecomp.cmxa \
+        ../compilerlibs/ocamlmiddleend.cmxa \
+        ../asmcomp/printclambda.cmx \
+        ../asmcomp/export_info.cmx \
+	../otherlibs/str/str.cmxa \
+	lintapidiff.cmx
+
+lintapidiff.opt: INCLUDES+= -I ../otherlibs/str
+lintapidiff.opt: $(LINTAPIDIFF)
+	$(CAMLOPT) $(LINKFLAGS) -I .. -o $@ $(LINTAPIDIFF)
 clean::
-	rm -f "objinfo_helper$(EXE)"
+	rm -f -- lintapidiff.opt lintapidiff.cm? lintapidiff.o
+
+
+clean::
+	rm -f "objinfo_helper$(EXE)" "objinfo_helper$(EXE).manifest"
 
 
 # Copy a bytecode executable, stripping debug info

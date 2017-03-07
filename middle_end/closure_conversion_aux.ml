@@ -82,8 +82,6 @@ module Env = struct
   let not_at_toplevel t = { t with at_toplevel = false; }
 end
 
-let stub_hack_prim_name = "*stub*"
-
 module Function_decls = struct
   module Function_decl = struct
     type t = {
@@ -93,14 +91,12 @@ module Function_decls = struct
       params : Ident.t list;
       body : Lambda.lambda;
       free_idents_of_body : IdentSet.t;
-      inline : Lambda.inline_attribute;
-      specialise : Lambda.specialise_attribute;
-      is_a_functor : bool;
+      attr : Lambda.function_attribute;
       loc : Location.t;
     }
 
-    let create ~let_rec_ident ~closure_bound_var ~kind ~params ~body ~inline
-        ~specialise ~is_a_functor ~loc =
+    let create ~let_rec_ident ~closure_bound_var ~kind ~params ~body
+        ~attr ~loc =
       let let_rec_ident =
         match let_rec_ident with
         | None -> Ident.create "unnamed_function"
@@ -112,9 +108,7 @@ module Function_decls = struct
         params;
         body;
         free_idents_of_body = Lambda.free_variables body;
-        inline;
-        specialise;
-        is_a_functor;
+        attr;
         loc;
       }
 
@@ -124,16 +118,12 @@ module Function_decls = struct
     let params t = t.params
     let body t = t.body
     let free_idents t = t.free_idents_of_body
-    let inline t = t.inline
-    let specialise t = t.specialise
-    let is_a_functor t = t.is_a_functor
+    let inline t = t.attr.inline
+    let specialise t = t.attr.specialise
+    let is_a_functor t = t.attr.is_a_functor
+    let stub t = t.attr.stub
     let loc t = t.loc
 
-    let primitive_wrapper t =
-      match t.body with
-      | Lprim (Pccall { Primitive. prim_name; }, [body], _)
-        when prim_name = stub_hack_prim_name -> Some body
-      | _ -> None
   end
 
   type t = {

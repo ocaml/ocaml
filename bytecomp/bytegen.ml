@@ -315,7 +315,9 @@ let comp_primitive p args =
   | Pintcomp cmp -> Kintcomp cmp
   | Pmakeblock(tag, _mut, _) -> Kmakeblock(List.length args, tag)
   | Pfield n -> Kgetfield n
+  | Pfield_computed -> Kgetvectitem
   | Psetfield(n, _ptr, _init) -> Ksetfield n
+  | Psetfield_computed(_ptr, _init) -> Ksetvectitem
   | Pfloatfield n -> Kgetfloatfield n
   | Psetfloatfield (n, _init) -> Ksetfloatfield n
   | Pduprecord _ -> Kccall("caml_obj_dup", 1)
@@ -581,7 +583,8 @@ let rec comp_expr env exp sz cont =
         in
         comp_init env sz decl_size
       end
-  | Lprim((Pidentity | Popaque | Pbytes_to_string | Pbytes_of_string), [arg], _) ->
+  | Lprim((Pidentity | Popaque | Pbytes_to_string | Pbytes_of_string), [arg], _)
+    ->
       comp_expr env arg sz cont
   | Lprim(Pignore, [arg], _) ->
       comp_expr env arg sz (add_const_unit cont)

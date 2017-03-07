@@ -73,7 +73,7 @@ typedef char * addr;
 #define CAMLprim
 #define CAMLextern extern
 
-/* Weak function definitions that can be overriden by external libs */
+/* Weak function definitions that can be overridden by external libs */
 /* Conservatively restricted to ELF and MacOSX platforms */
 #if defined(__GNUC__) && (defined (__ELF__) || defined(__APPLE__))
 #define CAMLweakdef __attribute__((weak))
@@ -124,6 +124,52 @@ CAMLnoreturn_end;
 CAMLextern char * caml_strdup(const char * s);
 CAMLextern char * caml_strconcat(int n, ...); /* n args of const char * type */
 
+/* Detection of available C built-in functions, the Clang way. */
+
+#ifdef __has_builtin
+#define Caml_has_builtin(x) __has_builtin(x)
+#else
+#define Caml_has_builtin(x) 0
+#endif  
+
+/* Integer arithmetic with overflow detection.
+   The functions return 0 if no overflow, 1 if overflow.
+   The result of the operation is always stored at [*res].
+   If no overflow is reported, this is the exact result.
+   If overflow is reported, this is the exact result modulo 2 to the word size.
+*/
+
+static inline int caml_uadd_overflow(uintnat a, uintnat b, uintnat * res)
+{
+#if __GNUC__ >= 5 || Caml_has_builtin(__builtin_add_overflow)
+  return __builtin_add_overflow(a, b, res);
+#else
+  uintnat c = a + b;
+  *res = c;
+  return c < a;
+#endif
+}
+  
+static inline int caml_usub_overflow(uintnat a, uintnat b, uintnat * res)
+{
+#if __GNUC__ >= 5 || Caml_has_builtin(__builtin_sub_overflow)
+  return __builtin_sub_overflow(a, b, res);
+#else
+  uintnat c = a - b;
+  *res = c;
+  return a < b;
+#endif
+}
+  
+#if __GNUC__ >= 5 || Caml_has_builtin(__builtin_mul_overflow)
+static inline int caml_umul_overflow(uintnat a, uintnat b, uintnat * res)
+{
+  return __builtin_mul_overflow(a, b, res);
+}
+#else
+extern int caml_umul_overflow(uintnat a, uintnat b, uintnat * res);
+#endif  
+
 /* Use macros for some system calls being called from OCaml itself.
   These calls can be either traced for security reasons, or changed to
   virtualize the program. */
@@ -167,6 +213,9 @@ extern intnat (*caml_cplugins_prim)(int,intnat,intnat,intnat);
 #define CAML_SYS_STRING_PRIM_1(code,prim,arg1)               \
   (caml_cplugins_prim == NULL) ? prim(arg1) :    \
   (char*)caml_cplugins_prim(code,(intnat) (arg1),0,0)
+#define CAML_SYS_VOID_PRIM_1(code,prim,arg1)               \
+  (caml_cplugins_prim == NULL) ? prim(arg1) :    \
+  (void)caml_cplugins_prim(code,(intnat) (arg1),0,0)
 #define CAML_SYS_PRIM_2(code,prim,arg1,arg2)                         \
   (caml_cplugins_prim == NULL) ? prim(arg1,arg2) :              \
   caml_cplugins_prim(code,(intnat) (arg1), (intnat) (arg2),0)
@@ -175,7 +224,7 @@ extern intnat (*caml_cplugins_prim)(int,intnat,intnat,intnat);
   caml_cplugins_prim(code,(intnat) (arg1), (intnat) (arg2),(intnat) (arg3))
 
 #define CAML_SYS_EXIT(retcode) \
-  CAML_SYS_PRIM_1(CAML_CPLUGINS_EXIT,exit,retcode)
+  CAML_SYS_VOID_PRIM_1(CAML_CPLUGINS_EXIT,exit,retcode)
 #define CAML_SYS_OPEN(filename,flags,perm)                      \
   CAML_SYS_PRIM_3(CAML_CPLUGINS_OPEN,open,filename,flags,perm)
 #define CAML_SYS_CLOSE(fd)                      \

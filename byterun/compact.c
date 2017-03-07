@@ -117,7 +117,7 @@ static void invert_pointer_at (word *p)
   }
 }
 
-void invert_root (value v, value *p)
+void caml_invert_root (value v, value *p)
 {
   invert_pointer_at ((word *) p);
 }
@@ -196,7 +196,7 @@ static void do_compaction (void)
     /* Invert roots first because the threads library needs some heap
        data structures to find its roots.  Fortunately, it doesn't need
        the headers (see above). */
-    caml_do_roots (invert_root, 1);
+    caml_do_roots (caml_invert_root, 1);
     /* The values to be finalised are not roots but should still be inverted */
     caml_final_invert_finalisable_values ();
 
@@ -532,7 +532,7 @@ void caml_compact_heap_maybe (void)
                    (uintnat) caml_fl_wsz_at_phase_change);
   caml_gc_message (0x200, "FL current size = %"
                           ARCH_INTNAT_PRINTF_FORMAT "u words\n",
-                   (uintnat) caml_fl_cur_wsz);                
+                   (uintnat) caml_fl_cur_wsz);
   caml_gc_message (0x200, "Estimated overhead = %"
                           ARCH_INTNAT_PRINTF_FORMAT "u%%\n",
                    (uintnat) fp);
@@ -548,8 +548,8 @@ void caml_compact_heap_maybe (void)
                      (uintnat) fp);
     if (fp >= caml_percent_max)
          caml_compact_heap ();
-    else 
+    else
          caml_gc_message (0x200, "Automatic compaction aborted.\n", 0);
-         
+
   }
 }

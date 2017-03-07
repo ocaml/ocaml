@@ -308,7 +308,7 @@ let diff env1 env2 =
 (* Forward declarations *)
 
 let components_of_module' =
-  ref ((fun ~deprecated:_ ~loc:__env _sub _path _mty -> assert false) :
+  ref ((fun ~deprecated:_ ~loc:_ _env _sub _path _mty -> assert false) :
          deprecated:string option -> loc:Location.t -> t -> Subst.t ->
        Path.t -> module_type ->
        module_components)
@@ -460,12 +460,16 @@ let read_pers_struct check modname filename =
   acknowledge_pers_struct check modname
     { Persistent_signature.filename; cmi }
 
+let can_load_cmis = ref true
+let without_cmis f x =
+  Misc.(protect_refs [R (can_load_cmis, false)] (fun () -> f x))
+
 let find_pers_struct check name =
   if name = "*predef*" then raise Not_found;
   match Hashtbl.find persistent_structures name with
   | Some ps -> ps
   | None -> raise Not_found
-  | exception Not_found ->
+  | exception Not_found when !can_load_cmis ->
       let ps =
         match !Persistent_signature.load ~unit_name:name with
         | Some ps -> ps
@@ -770,13 +774,7 @@ let find_type_expansion path env =
      private row are still considered unknown to the type system.
      Hence, this case is caught by the following clause that also handles
      purely abstract data types without manifest type definition. *)
-  | _ ->
-      (* another way to expand is to normalize the path itself *)
-      let path' = normalize_path None env path in
-      if Path.same path path' then raise Not_found else
-      (decl.type_params,
-       newgenty (Tconstr (path', decl.type_params, ref Mnil)),
-       may_map snd decl.type_newtype_level)
+  | _ -> raise Not_found
 
 (* Find the manifest type information associated to a type, i.e.
    the necessary information for the compiler's type-based optimisations.
@@ -788,12 +786,7 @@ let find_type_expansion_opt path env =
   (* The manifest type of Private abstract data types can still get
      an approximation using their manifest type. *)
   | Some body -> (decl.type_params, body, may_map snd decl.type_newtype_level)
-  | _ ->
-      let path' = normalize_path None env path in
-      if Path.same path path' then raise Not_found else
-      (decl.type_params,
-       newgenty (Tconstr (path', decl.type_params, ref Mnil)),
-       may_map snd decl.type_newtype_level)
+  | _ -> raise Not_found
 
 let find_modtype_expansion path env =
   match (find_modtype path env).mtd_type with
@@ -1383,12 +1376,8 @@ let prefix_idents_and_subst root sub sg =
   let (pl, sub) = prefix_idents root 0 sub sg in
   pl, sub, lazy (subst_signature sub sg)
 
-let set_nongen_level sub path =
-  Subst.set_nongen_level sub (Path.binding_time path - 1)
-
 let prefix_idents_and_subst root sub sg =
-  let sub = set_nongen_level sub root in
-  if sub = set_nongen_level Subst.identity root then
+  if sub = Subst.identity then
     let sgs =
       try
         Hashtbl.find prefixed_sg root
@@ -1506,7 +1495,7 @@ and components_of_module_maker (env, sub, path, mty) =
           (* fcomp_arg and fcomp_res must be prefixed eagerly, because
              they are interpreted in the outer environment *)
           fcomp_arg = may_map (Subst.modtype sub) ty_arg;
-          fcomp_res = Subst.modtype (set_nongen_level sub path) ty_res;
+          fcomp_res = Subst.modtype sub ty_res;
           fcomp_cache = Hashtbl.create 17;
           fcomp_subst_cache = Hashtbl.create 17 }
   | Mty_ident _

@@ -78,6 +78,6 @@ clean:: partialclean
 	$(CAMLOPT) -c $(COMPFLAGS) $<
 
 depend:
-	$(CAMLRUN) $(ROOTDIR)/tools/ocamldep *.mli *.ml >> .depend
+	$(CAMLRUN) $(ROOTDIR)/tools/ocamldep *.mli *.ml > .depend
 
 include .depend

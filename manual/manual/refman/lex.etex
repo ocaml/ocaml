@@ -211,6 +211,8 @@ operator-char:
         '/' || ':' || '<' || '=' || '>' || '?' || '@' ||
         '^' || '|' || '~'
 \end{syntax}
+See also the following language extension:
+\hyperref[s:ext-ops]{extension operators}.
 
 Sequences of ``operator characters'', such as "<=>" or "!!",
 are read as a single token from the @infix-symbol@ or @prefix-symbol@
@@ -231,10 +233,10 @@ otherwise:
       functor     if          in          include     inherit     initializer
       land        lazy        let         lor         lsl         lsr
       lxor        match       method      mod         module      mutable
-      new         object      of          open        or          private
-      rec         sig         struct      then        to          true
-      try         type        val         virtual     when        while
-      with        nonrec
+      new         nonrec      object      of          open        or
+      private     rec         sig         struct      then        to
+      true        try         type        val         virtual     when
+      while       with
 \end{verbatim}
 %
 \goodbreak%

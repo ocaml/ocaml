@@ -23,6 +23,7 @@ defaultpromote:
 
 defaultclean:
 	@rm -f *.cmo *.cmi *.cmx *.cma *.cmxa *.cmxs *.$(O) *.$(SO) *.$(A) *.exe
+	@rm -f *.exe.manifest
 	@for dsym in *.dSYM; do \
 	  if [ -d $$dsym ]; then \
 	    rm -fr $$dsym; \
@@ -57,9 +58,8 @@ defaultclean:
 .mll.ml:
 	@$(OCAMLLEX) -q $< > /dev/null
 
-.cmm.o:
-	@$(OCAMLRUN) ./codegen $*.cmm > $*.s
-	@$(ASM) -o $*.o $*.s
+.cmm.s:
+	@$(OCAMLRUN) ./codegen -S $*.cmm
 
 .cmm.obj:
 	@$(OCAMLRUN) ./codegen $*.cmm \

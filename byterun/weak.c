@@ -219,10 +219,6 @@ CAMLprim value caml_ephe_unset_data (value ar)
   return Val_unit;
 }
 
-
-#define Setup_for_gc
-#define Restore_after_gc
-
 CAMLprim value caml_ephe_get_key (value ar, value n)
 {
   CAMLparam2 (ar, n);
@@ -269,9 +265,6 @@ CAMLprim value caml_ephe_get_data (value ar)
   CAMLreturn (res);
 }
 
-#undef Setup_for_gc
-#undef Restore_after_gc
-
 CAMLprim value caml_ephe_get_key_copy (value ar, value n)
 {
   CAMLparam2 (ar, n);
@@ -285,7 +278,8 @@ CAMLprim value caml_ephe_get_key_copy (value ar, value n)
 
   if (is_ephe_key_none(ar, offset)) CAMLreturn (None_val);
   v = Field (ar, offset);
-  if (Is_block (v) && Is_in_heap_or_young(v)) {
+  /** Don't copy custom_block #7279 */
+  if (Is_block (v) && Is_in_heap_or_young(v) && Tag_val(v) != Custom_tag ) {
     elt = caml_alloc (Wosize_val (v), Tag_val (v));
           /* The GC may erase or move v during this call to caml_alloc. */
     v = Field (ar, offset);
@@ -303,6 +297,9 @@ CAMLprim value caml_ephe_get_key_copy (value ar, value n)
       memmove (Bp_val (elt), Bp_val (v), Bosize_val (v));
     }
   }else{
+    if ( caml_gc_phase == Phase_mark && Must_be_Marked_during_mark(v) ){
+      caml_darken (v, NULL);
+    };
     elt = v;
   }
   res = caml_alloc_small (1, Some_tag);
@@ -326,7 +323,8 @@ CAMLprim value caml_ephe_get_data_copy (value ar)
   v = Field (ar, offset);
   if (caml_gc_phase == Phase_clean) caml_ephe_clean(ar);
   if (v == caml_ephe_none) CAMLreturn (None_val);
-  if (Is_block (v) && Is_in_heap_or_young(v)) {
+  /** Don't copy custom_block #7279 */
+  if (Is_block (v) && Is_in_heap_or_young(v) && Tag_val(v) != Custom_tag ) {
     elt = caml_alloc (Wosize_val (v), Tag_val (v));
           /* The GC may erase or move v during this call to caml_alloc. */
     v = Field (ar, offset);
@@ -345,6 +343,9 @@ CAMLprim value caml_ephe_get_data_copy (value ar)
       memmove (Bp_val (elt), Bp_val (v), Bosize_val (v));
     }
   }else{
+    if ( caml_gc_phase == Phase_mark && Must_be_Marked_during_mark(v) ){
+      caml_darken (v, NULL);
+    };
     elt = v;
   }
   res = caml_alloc_small (1, Some_tag);

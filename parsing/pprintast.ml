@@ -26,6 +26,7 @@ open Format
 open Location
 open Longident
 open Parsetree
+open Ast_helper
 
 let prefix_symbols  = [ '!'; '?'; '~' ] ;;
 let infix_symbols = [ '='; '<'; '>'; '@'; '^'; '|'; '&'; '+'; '-'; '*'; '/';
@@ -47,7 +48,7 @@ let fixity_of_string  = function
 
 let view_fixity_of_exp = function
   | {pexp_desc = Pexp_ident {txt=Lident l;_};_} -> fixity_of_string l
-  | _ -> `Normal  ;;
+  | _ -> `Normal
 
 let is_infix  = function  | `Infix _ -> true | _  -> false
 
@@ -546,8 +547,8 @@ and expression ctxt f x =
                   then String.sub s 1 (String.length s -1)
                   else s in
                 begin match l with
-                | [(Nolabel, _) as v] ->
-                  pp f "@[<2>%s@;%a@]" s (label_x_expression_param ctxt) v
+                | [(Nolabel, x)] ->
+                  pp f "@[<2>%s@;%a@]" s (simple_expr ctxt) x
                 | _   ->
                   pp f "@[<2>%a %a@]" (simple_expr ctxt) e
                     (list (label_x_expression_param ctxt)) l
@@ -571,7 +572,7 @@ and expression ctxt f x =
          | _ -> assert false)
     | Pexp_setfield (e1, li, e2) ->
         pp f "@[<2>%a.%a@ <-@ %a@]"
-          (simple_expr ctxt) e1 longident_loc li (expression ctxt) e2
+          (simple_expr ctxt) e1 longident_loc li (simple_expr ctxt) e2
     | Pexp_ifthenelse (e1, e2, eo) ->
         (* @;@[<2>else@ %a@]@] *)
         let fmt:(_,_,_)format ="@[<hv0>@[<2>if@ %a@]@;@[<2>then@ %a@]%a@]" in
@@ -1081,25 +1082,51 @@ and binding ctxt f {pvb_pat=p; pvb_expr=x; _} =
           pp f "(type@ %s)@ %a" str.txt pp_print_pexp_function e
       | _ -> pp f "=@;%a" (expression ctxt) x
   in
+  let tyvars_str tyvars = List.map (fun v -> v.txt) tyvars in
+  let is_desugared_gadt p e =
+    let gadt_pattern =
+      match p.ppat_desc with
+      | Ppat_constraint({ppat_desc=Ppat_var _} as pat,
+                        {ptyp_desc=Ptyp_poly (args_tyvars, rt)}) ->
+        Some (pat, args_tyvars, rt)
+      | _ -> None in
+    let rec gadt_exp tyvars e =
+      match e.pexp_desc with
+      | Pexp_newtype (tyvar, e) -> gadt_exp (tyvar :: tyvars) e
+      | Pexp_constraint (e, ct) -> Some (List.rev tyvars, e, ct)
+      | _ -> None in
+    let gadt_exp = gadt_exp [] e in
+    match gadt_pattern, gadt_exp with
+    | Some (p, pt_tyvars, pt_ct), Some (e_tyvars, e, e_ct)
+      when tyvars_str pt_tyvars = tyvars_str e_tyvars ->
+      let ety = Typ.varify_constructors e_tyvars e_ct in
+      if ety = pt_ct then
+      Some (p, pt_tyvars, e_ct, e) else None
+    | _ -> None in
   if x.pexp_attributes <> []
-  then pp f "%a@;=@;%a" (pattern ctxt) p (expression ctxt) x
-  else match (x.pexp_desc,p.ppat_desc) with
-    | ( _ , Ppat_constraint( p ,ty)) -> (* special case for the first*)
-        begin match ty.ptyp_desc with
-        | Ptyp_poly _ ->
-            pp f "%a@;:@;%a@;=@;%a" (simple_pattern ctxt) p
-              (core_type ctxt) ty (expression ctxt) x
-        | _ ->
-            pp f "(%a@;:@;%a)@;=@;%a" (simple_pattern ctxt) p
-              (core_type ctxt) ty (expression ctxt) x
-        end
-    | Pexp_constraint (e,t1),Ppat_var {txt;_} ->
-      pp f "%a@;:@ %a@;=@;%a" protect_ident txt
-        (core_type ctxt) t1 (expression ctxt) e
-    | (_, Ppat_var _) ->
-        pp f "%a@ %a" (simple_pattern ctxt) p pp_print_pexp_function x
-    | _ ->
-        pp f "%a@;=@;%a" (pattern ctxt) p (expression ctxt) x
+  then pp f "%a@;=@;%a" (pattern ctxt) p (expression ctxt) x else
+  match is_desugared_gadt p x with
+  | Some (p, tyvars, ct, e) -> begin
+    pp f "%a@;: type@;%a.%a@;=@;%a"
+    (simple_pattern ctxt) p (list pp_print_string ~sep:"@;")
+    (tyvars_str tyvars) (core_type ctxt) ct (expression ctxt) e
+    end
+  | None -> begin
+      match (x.pexp_desc,p.ppat_desc) with
+      | ( _ , Ppat_constraint( p ,ty)) -> (* special case for the first*)
+          begin match ty.ptyp_desc with
+          | Ptyp_poly _ ->
+              pp f "%a@;:@;%a@;=@;%a" (simple_pattern ctxt) p
+                (core_type ctxt) ty (expression ctxt) x
+          | _ ->
+              pp f "(%a@;:@;%a)@;=@;%a" (simple_pattern ctxt) p
+                (core_type ctxt) ty (expression ctxt) x
+          end
+      | (_, Ppat_var _) ->
+          pp f "%a@ %a" (simple_pattern ctxt) p pp_print_pexp_function x
+      | _ ->
+          pp f "%a@;=@;%a" (pattern ctxt) p (expression ctxt) x
+    end
 
 (* [in] is not printed *)
 and bindings ctxt f (rf,l) =

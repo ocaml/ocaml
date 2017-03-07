@@ -39,11 +39,14 @@ type immediate_or_pointer =
   | Pointer
 
 type initialization_or_assignment =
-  (* CR-someday mshinwell: For multicore, perhaps it might be necessary to
-     split [Initialization] into two cases, depending on whether the place
-     being initialized is in the heap or not. *)
-  | Initialization
   | Assignment
+  (* Initialization of in heap values, like [caml_initialize] C primitive.  The
+     field should not have been read before and initialization should happen
+     only once. *)
+  | Heap_initialization
+  (* Initialization of roots only. Compiles to a simple store.
+     No checks are done to preserve GC invariants.  *)
+  | Root_initialization
 
 type is_safe =
   | Safe
@@ -63,7 +66,9 @@ type primitive =
   (* Operations on heap blocks *)
   | Pmakeblock of int * mutable_flag * block_shape
   | Pfield of int
+  | Pfield_computed
   | Psetfield of int * immediate_or_pointer * initialization_or_assignment
+  | Psetfield_computed of immediate_or_pointer * initialization_or_assignment
   | Pfloatfield of int
   | Psetfloatfield of int * initialization_or_assignment
   | Pduprecord of Types.record_representation * int
@@ -89,7 +94,7 @@ type primitive =
   | Paddfloat | Psubfloat | Pmulfloat | Pdivfloat
   | Pfloatcomp of comparison
   (* String operations *)
-  | Pstringlength | Pstringrefu  | Pstringrefs 
+  | Pstringlength | Pstringrefu  | Pstringrefs
   | Pbyteslength | Pbytesrefu | Pbytessetu | Pbytesrefs | Pbytessets
   (* Array operations *)
   | Pmakearray of array_kind * mutable_flag
@@ -211,7 +216,7 @@ type function_kind = Curried | Tupled
 
 type let_kind = Strict | Alias | StrictOpt | Variable
 (* Meaning of kinds for let x = e in e':
-    Strict: e may have side-effets; always evaluate e first
+    Strict: e may have side-effects; always evaluate e first
       (If e is a simple expression, e.g. a variable or constant,
        we may still substitute e'[x/e].)
     Alias: e is pure, we can substitute e'[x/e] if x has 0 or 1 occurrences
@@ -229,6 +234,7 @@ type function_attribute = {
   inline : inline_attribute;
   specialise : specialise_attribute;
   is_a_functor: bool;
+  stub: bool;
 }
 
 type lambda =
@@ -332,6 +338,7 @@ val commute_comparison : comparison -> comparison
 val negate_comparison : comparison -> comparison
 
 val default_function_attribute : function_attribute
+val default_stub_attribute : function_attribute
 
 (***********************)
 (* For static failures *)

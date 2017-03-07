@@ -25,6 +25,7 @@ type file_kind = ML | MLI;;
 let load_path = ref ([] : (string * string array) list)
 let ml_synonyms = ref [".ml"]
 let mli_synonyms = ref [".mli"]
+let shared = ref false
 let native_only = ref false
 let bytecode_only = ref false
 let error_occurred = ref false
@@ -293,7 +294,7 @@ let read_parse_and_extract parse_function extract_function def ast_kind
       let bound_vars =
         List.fold_left
           (fun bv modname ->
-            Depend.open_module bv (Longident.Lident modname))
+            Depend.open_module bv (Longident.parse modname))
           !module_map ((* PR#7248 *) List.rev !Clflags.open_modules)
       in
       let r = extract_function bound_vars ast in
@@ -317,6 +318,7 @@ let print_ml_dependencies source_file extracted_deps =
     if !all_dependencies
     then [ basename ^ ".cmx"; basename ^ ".o" ]
     else [ basename ^ ".cmx" ] in
+  let shared_targets = [ basename ^ ".cmxs" ] in
   let init_deps = if !all_dependencies then [source_file] else [] in
   let cmi_name = basename ^ ".cmi" in
   let init_deps, extra_targets =
@@ -332,7 +334,11 @@ let print_ml_dependencies source_file extracted_deps =
   if not !native_only then
     print_dependencies (byte_targets @ extra_targets) byt_deps;
   if not !bytecode_only then
-    print_dependencies (native_targets @ extra_targets) native_deps
+    begin
+      print_dependencies (native_targets @ extra_targets) native_deps;
+      if !shared then
+        print_dependencies (shared_targets @ extra_targets) native_deps
+    end
 
 let print_mli_dependencies source_file extracted_deps =
   let basename = Filename.chop_extension source_file in
@@ -546,7 +552,7 @@ let _ =
   Clflags.classic := false;
   add_to_list first_include_dirs Filename.current_dir_name;
   Compenv.readenv ppf Before_args;
-  Arg.parse [
+  Clflags.add_arguments __LOC__ [
      "-absname", Arg.Set Location.absname,
         " Show absolute filenames in error messages";
      "-all", Arg.Set all_dependencies,
@@ -580,10 +586,14 @@ let _ =
         " Output one line per file, regardless of the length";
      "-open", Arg.String (add_to_list Clflags.open_modules),
         "<module>  Opens the module <module> before typing";
+     "-plugin", Arg.String Compplugin.load,
+         "<plugin>  Load dynamic plugin <plugin>";
      "-pp", Arg.String(fun s -> Clflags.preprocessor := Some s),
          "<cmd>  Pipe sources through preprocessor <cmd>";
      "-ppx", Arg.String (add_to_list first_ppx),
          "<cmd>  Pipe abstract syntax trees through preprocessor <cmd>";
+     "-shared", Arg.Set shared,
+         " Generate dependencies for native plugin files (.cmxs targets)";
      "-slash", Arg.Set Clflags.force_slash,
          " (Windows) Use forward slash / instead of backslash \\ in file paths";
      "-sort", Arg.Set sort_files,
@@ -592,7 +602,14 @@ let _ =
          " Print version and exit";
      "-vnum", Arg.Unit print_version_num,
          " Print version number and exit";
-    ] file_dependencies usage;
+     "-args", Arg.Expand Arg.read_arg,
+         "<file> Read additional newline separated command line arguments \n\
+         \      from <file>";
+     "-args0", Arg.Expand Arg.read_arg0,
+         "<file> Read additional NUL separated command line arguments from \n\
+         \      <file>"
+  ];
+  Clflags.parse_arguments file_dependencies usage;
   Compenv.readenv ppf Before_link;
   if !sort_files then sort_files_by_dependencies !files
   else List.iter print_file_dependencies (List.sort compare !files);

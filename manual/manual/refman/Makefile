@@ -6,6 +6,7 @@ TOPDIR=../../..
 
 include $(TOPDIR)/Makefile.tools
 
+CAMLLATEX= $(OCAMLRUN) ../../tools/caml-tex2
 TRANSF=../../tools/transf
 TEXQUOTE=../../tools/texquote2
 
@@ -20,6 +21,15 @@ clean:
 .SUFFIXES:
 .SUFFIXES: .etex .tex
 
+exten.tex:exten.etex
+	@$(CAMLLATEX) -caml "TERM=norepeat $(OCAML)" -n 80 -v false \
+                       -o $*.caml_tex_error.tex $*.etex \
+	&& mv $*.caml_tex_error.tex $*.gen.tex \
+	&& $(OCAMLRUN) $(TRANSF) < $*.gen.tex > $*.transf_error.tex \
+	&& mv $*.transf_error.tex $*.gen.tex\
+	&& $(TEXQUOTE) < $*.gen.tex  > $*.texquote_error.tex\
+	&& mv $*.texquote_error.tex $*.tex\
+	|| printf "Failure when generating %s\n" $*.tex
 .etex.tex:
 	@$(OCAMLRUN) $(TRANSF) < $*.etex > $*.transf_error.tex \
 	&& mv $*.transf_error.tex $*.gen.tex\

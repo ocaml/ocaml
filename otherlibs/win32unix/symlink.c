@@ -15,6 +15,7 @@
 /*
  * Windows Vista functions enabled
  */
+#undef _WIN32_WINNT
 #define _WIN32_WINNT 0x0600
 
 #include <caml/mlvalues.h>
@@ -41,7 +42,7 @@ CAMLprim value unix_symlink(value to_dir, value osource, value odest)
 
 again:
   if (no_symlink) {
-    invalid_argument("symlink not available");
+    caml_invalid_argument("symlink not available");
   }
 
   if (!pCreateSymbolicLink) {

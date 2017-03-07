@@ -20,14 +20,6 @@
   an error.
 *)
 
-type backend_type =
-  | Native
-  | Bytecode
-  | Other of string
-(** Currently, the official distribution only supports [Native] and
-    [Bytecode], but it can be other backends with alternative
-    compilers, for example, javascript *)
-
 val argv : string array
 (** The command line arguments given to the process.
    The first element is the command name used to invoke the program.
@@ -59,6 +51,12 @@ external rename : string -> string -> unit = "caml_sys_rename"
 external getenv : string -> string = "caml_sys_getenv"
 (** Return the value associated to a variable in the process
    environment. Raise [Not_found] if the variable is unbound. *)
+
+val getenv_opt: string -> string option
+(** Return the value associated to a variable in the process
+    environment or [None] if the variable is unbound.
+    @since 4.05
+*)
 
 external command : string -> int = "caml_sys_system_command"
 (** Execute the given shell command and return its exit code. *)
@@ -94,9 +92,20 @@ val os_type : string
 -  ["Win32"] (for MS-Windows, OCaml compiled with MSVC++ or Mingw),
 -  ["Cygwin"] (for MS-Windows, OCaml compiled with Cygwin). *)
 
+type backend_type =
+  | Native
+  | Bytecode
+  | Other of string (**)
+(** Currently, the official distribution only supports [Native] and
+    [Bytecode], but it can be other backends with alternative
+    compilers, for example, javascript.
+
+    @since 4.04.0
+*)
+
 val backend_type : backend_type
 (** Backend type  currently executing the OCaml program.
-    @ since 4.04.0
+    @since 4.04.0
  *)
 
 val unix : bool

@@ -166,16 +166,13 @@ RANLIBCMD=ranlib
 
 ### Whether profiling with gprof is supported
 # If yes: (e.g. x86/Linux, Sparc/Solaris):
-#PROFILING=prof
+#PROFILING=true
 # If no:
-#PROFILING=noprof
+#PROFILING=false
 
 ### Option to give to the C compiler for profiling
 #CC_PROFILE=-pg
 #CC_PROFILE=-xpg
-
-### How to perform a partial link
-PARTIALLD=ld -r $(NATIVECCLINKOPTS)
 
 ############# Configuration for the contributed libraries
 

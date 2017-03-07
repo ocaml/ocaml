@@ -519,6 +519,7 @@ and to_clambda_set_of_closures t env
       params = params @ [env_var];
       body = to_clambda t env_body function_decl.body;
       dbg = function_decl.dbg;
+      env = Some env_var;
     }
   in
   let funs = List.map to_clambda_function all_functions in
@@ -558,6 +559,7 @@ and to_clambda_closed_set_of_closures t env symbol
       params;
       body = to_clambda t env_body function_decl.body;
       dbg = function_decl.dbg;
+      env = None;
     }
   in
   let ufunct = List.map to_clambda_function functions in
@@ -571,7 +573,7 @@ let to_clambda_initialize_symbol t env symbol fields : Clambda.ulambda =
   let build_setfield (index, field) : Clambda.ulambda =
     (* Note that this will never cause a write barrier hit, owing to
        the [Initialization]. *)
-    Uprim (Psetfield (index, Pointer, Initialization),
+    Uprim (Psetfield (index, Pointer, Root_initialization),
       [to_clambda_symbol env symbol; field],
       Debuginfo.none)
   in

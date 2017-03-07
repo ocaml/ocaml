@@ -11,6 +11,9 @@ types. They also bind the value constructors and record fields
 associated with the definition.
 
 \ikwd{type\@\texttt{type}}
+\ikwd{and\@\texttt{and}}
+\ikwd{nonrec\@\texttt{nonrec}}
+\ikwd{of\@\texttt{of}}
 
 \begin{syntax}
 type-definition:
@@ -57,6 +60,13 @@ type-constraint:
 \end{syntax}
 \ikwd{mutable\@\texttt{mutable}}
 \ikwd{constraint\@\texttt{constraint}}
+See also the following language extensions:
+\hyperref[s:private-types]{private types},
+\hyperref[s:gadts]{generalized algebraic datatypes},
+\hyperref[s:attributes]{attributes},
+\hyperref[s:extension-nodes]{extension nodes},
+\hyperref[s:extensible-variants]{extensible variant types} and
+\hyperref[s:inline-records]{inline records}.
 
 Type definitions are introduced by the "type" keyword, and
 consist in one or several simple definitions, possibly mutually

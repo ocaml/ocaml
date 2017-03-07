@@ -480,7 +480,7 @@ static void test_and_compact (void)
   caml_gc_message (0x200, "Estimated overhead (lower bound) = %"
                           ARCH_INTNAT_PRINTF_FORMAT "u%%\n",
                    (uintnat) fp);
-  if (fp >= caml_percent_max && caml_stat_heap_chunks > 1){
+  if (fp >= caml_percent_max){
     caml_gc_message (0x200, "Automatic compaction triggered.\n", 0);
     caml_compact_heap ();
   }
@@ -635,14 +635,14 @@ CAMLprim value caml_runtime_parameters (value unit)
 {
   CAMLassert (unit == Val_unit);
   return caml_alloc_sprintf
-    ("a=%d,b=%s,H=%lu,i=%lu,l=%lu,o=%lu,O=%lu,p=%d,s=%lu,t=%d,v=%lu,w=%d,W=%lu",
-     /* a */ caml_allocation_policy,
+    ("a=%d,b=%d,H=%lu,i=%lu,l=%lu,o=%lu,O=%lu,p=%d,s=%lu,t=%lu,v=%lu,w=%d,W=%lu",
+     /* a */ (int) caml_allocation_policy,
      /* b */ caml_backtrace_active,
      /* h */ /* missing */ /* FIXME add when changed to min_heap_size */
      /* H */ caml_use_huge_pages,
      /* i */ caml_major_heap_increment,
 #ifdef NATIVE_CODE
-     /* l */ 0,
+     /* l */ 0UL,
 #else
      /* l */ caml_max_stack_size,
 #endif

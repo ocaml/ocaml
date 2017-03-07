@@ -425,6 +425,12 @@ setting the
 .B \-linkall
 option forces all subsequent links of programs involving that library
 to link all the modules contained in the library.
+When compiling a module (option
+.BR \-c ),
+setting the
+.B \-linkall
+option ensures that this module will
+always be linked if it is put in a library and this library is linked.
 .TP
 .B \-make\-runtime
 Build a custom runtime system (in the file specified by option
@@ -492,6 +498,14 @@ This can also be used when compiling an interface or implementation
 file, without linking, in which case it sets the name of the cmi or
 cmo file, and also sets the module name to the file name up to the
 first dot.
+.TP
+.B \-opaque
+Interface file compiled with this option are marked so that other
+compilation units depending on it will not rely on any implementation
+details of the compiled implementation. The native compiler will not
+access the .cmx file of this unit -- nor warn if it is absent. This can
+improve speed of compilation, for both initial and incremental builds,
+at the expense of performance of the generated code.
 .TP
 .BI \-open \ module
 Opens the given module before processing the interface or

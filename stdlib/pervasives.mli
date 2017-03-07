@@ -571,6 +571,13 @@ val bool_of_string : string -> bool
    Raise [Invalid_argument "bool_of_string"] if the string is not
    ["true"] or ["false"]. *)
 
+val bool_of_string_opt: string -> bool option
+(** Convert the given string to a boolean.
+    Return [None] if the string is not
+    ["true"] or ["false"].
+    @since 4.05
+*)
+
 val string_of_int : int -> string
 (** Return the string representation of an integer, in decimal. *)
 
@@ -584,6 +591,12 @@ external int_of_string : string -> int = "caml_int_of_string"
    Raise [Failure "int_of_string"] if the given string is not
    a valid representation of an integer, or if the integer represented
    exceeds the range of integers representable in type [int]. *)
+
+
+val int_of_string_opt: string -> int option
+(** Same as [int_of_string], but returns [None] instead of raising.
+    @since 4.05
+*)
 
 val string_of_float : float -> string
 (** Return the string representation of a floating-point number. *)
@@ -604,6 +617,11 @@ external float_of_string : string -> float = "caml_float_of_string"
    floating-point numbers can be accepted, but should not be relied upon.
    Raise [Failure "float_of_string"] if the given string is not a valid
    representation of a float. *)
+
+val float_of_string_opt: string -> float option
+(** Same as [float_of_string], but returns [None] instead of raising.
+    @since 4.05
+*)
 
 (** {6 Pair operations} *)
 
@@ -710,11 +728,23 @@ val read_int : unit -> int
    and convert it to an integer. Raise [Failure "int_of_string"]
    if the line read is not a valid representation of an integer. *)
 
+val read_int_opt: unit -> int option
+(** Same as [read_int_opt], but returns [None] instead of raising.
+    @since 4.05
+*)
+
 val read_float : unit -> float
 (** Flush standard output, then read one line from standard input
    and convert it to a floating-point number.
    The result is unspecified if the line read is not a valid
    representation of a floating-point number. *)
+
+val read_float_opt: unit -> float option
+(** Flush standard output, then read one line from standard input
+    and convert it to a floating-point number.
+    Returns [None] if the line read is not a valid
+    representation of a floating-point number.
+    @since 4.05.0 *)
 
 
 (** {7 General output functions} *)
@@ -747,7 +777,7 @@ val open_out_bin : string -> out_channel
 val open_out_gen : open_flag list -> int -> string -> out_channel
 (** [open_out_gen mode perm filename] opens the named file for writing,
    as described above. The extra argument [mode]
-   specify the opening mode. The extra argument [perm] specifies
+   specifies the opening mode. The extra argument [perm] specifies
    the file permissions, in case the file must be created.
    {!Pervasives.open_out} and {!Pervasives.open_out_bin} are special
    cases of this function. *)
@@ -1003,6 +1033,7 @@ external decr : int ref -> unit = "%decr"
 
 (** {6 Result type} *)
 
+(** @since 4.03.0 *)
 type ('a,'b) result = Ok of 'a | Error of 'b
 
 (** {6 Operations on format strings} *)
@@ -1049,12 +1080,12 @@ type ('a,'b) result = Ok of 'a | Error of 'b
 
     - ['b] is the type of input source for formatted input functions and the
       type of output target for formatted output functions.
-      For [printf]-style functions from module [Printf], ['b] is typically
+      For [printf]-style functions from module {!Printf}, ['b] is typically
       [out_channel];
-      for [printf]-style functions from module [Format], ['b] is typically
-      [Format.formatter];
-      for [scanf]-style functions from module [Scanf], ['b] is typically
-      [Scanf.Scanning.in_channel].
+      for [printf]-style functions from module {!Format}, ['b] is typically
+      {!Format.formatter};
+      for [scanf]-style functions from module {!Scanf}, ['b] is typically
+      {!Scanf.Scanning.in_channel}.
 
       Type argument ['b] is also the type of the first argument given to
       user's defined printing functions for [%a] and [%t] conversions,

@@ -68,10 +68,10 @@ static value stat_aux(int use_64, __int64 st_ino, struct _stat64 *buf)
   Store_field (v, 6, Val_int (buf->st_gid));
   Store_field (v, 7, Val_int (buf->st_rdev));
   Store_field (v, 8,
-               use_64 ? copy_int64(buf->st_size) : Val_int (buf->st_size));
-  Store_field (v, 9, copy_double((double) buf->st_atime));
-  Store_field (v, 10, copy_double((double) buf->st_mtime));
-  Store_field (v, 11, copy_double((double) buf->st_ctime));
+               use_64 ? caml_copy_int64(buf->st_size) : Val_int (buf->st_size));
+  Store_field (v, 9, caml_copy_double((double) buf->st_atime));
+  Store_field (v, 10, caml_copy_double((double) buf->st_mtime));
+  Store_field (v, 11, caml_copy_double((double) buf->st_ctime));
   CAMLreturn (v);
 }
 
