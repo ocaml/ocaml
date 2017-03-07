@@ -359,7 +359,7 @@ Next version (4.05.0):
 
 - PR#7331: ocamldoc, avoid infinite loop in presence of self alias,
   i.e. module rec M:sig end = M
-  (Florian Angeletti)
+  (Florian Angeletti, review Gabriel Scherer)
 
 - PR#7346, GPR#966: Fix evaluation order problem whereby expressions could
   be incorrectly re-ordered when compiling with Flambda.  This also fixes one
