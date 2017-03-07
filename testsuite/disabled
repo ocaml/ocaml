@@ -39,5 +39,4 @@ lib-systhreads
 lib-threads
 
 # FIXME: these test cases depend on old C API/ABI
-gc-roots
 asmcomp
