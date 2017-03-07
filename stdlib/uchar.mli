@@ -82,9 +82,3 @@ val compare : t -> t -> int
 
 val hash : t -> int
 (** [hash u] associates a non-negative integer to [u]. *)
-
-val dump : Format.formatter -> t -> unit
-(** [dump ppf u] prints a representation of [u] on [ppf] using
-    only US-ASCII encoded characters according to the Unicode
-    {{:http://www.unicode.org/versions/latest/appA.pdf}notational
-    convention for code points}. *)
