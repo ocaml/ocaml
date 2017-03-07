@@ -852,8 +852,17 @@ let transl_structured_constant cst =
 
 type is_global = Global | Not_global
 
-let constant_closures =
-  ref ([] : ((string * is_global) * ufunction list * uconstant list) list)
+type symbol_defn = string * is_global
+
+type cmm_constant =
+  | Const_closure of symbol_defn * ufunction list * uconstant list
+  | Const_table of symbol_defn * data_item list
+
+let cmm_constants =
+  ref ([] : cmm_constant list)
+
+let add_cmm_constant c =
+  cmm_constants := c :: !cmm_constants
 
 (* Boxed integers *)
 
@@ -1348,28 +1357,27 @@ let transl_isout h arg dbg = tag_int (Cop(Ccmpa Clt, [h ; arg], dbg)) dbg
 
 let make_switch arg cases actions dbg =
   let is_const = function
+    (* Constant integers loaded from a table should end in 1,
+       so that Cload never produces untagged integers *)
     | Cconst_int n
     | Cconst_pointer n -> (n land 1) = 1
-    | Cconst_natint _
-    | Cconst_float _
+    | Cconst_natint n
+    | Cconst_natpointer n -> (Nativeint.(to_int (logand n one) = 1))
     | Cconst_symbol _ -> true
     | _ -> false in
   if Array.for_all is_const actions then
-    let const c =
-      let sym = Compilenv.new_structured_constant ~shared:true c in
-      Uconst_ref(sym, Some c) in
-    let to_uconst = function
-      | Cconst_int n -> Uconst_int (n lsr 1)
-      | Cconst_pointer n -> Uconst_ptr (n lsr 1)
-      | Cconst_symbol s -> Uconst_ref (s, None)
-      | Cconst_natint n -> const (Uconst_nativeint n)
-      | Cconst_float f -> const (Uconst_float f)
+    let to_data_item = function
+      | Cconst_int n
+      | Cconst_pointer n -> Cint (Nativeint.of_int n)
+      | Cconst_natint n
+      | Cconst_natpointer n -> Cint n
+      | Cconst_symbol s -> Csymbol_address s
       | _ -> assert false in
-    let const_actions = Array.map to_uconst actions in
-    let table = Compilenv.new_structured_constant ~shared:true
-      (Uconst_block (0,
+    let const_actions = Array.map to_data_item actions in
+    let table = Compilenv.new_const_symbol () in
+    add_cmm_constant (Const_table ((table, Not_global),
         Array.to_list (Array.map (fun act ->
-          const_actions.(act)) cases))) in
+          const_actions.(act)) cases)));
     addr_array_ref (Cconst_symbol table) (tag_int arg dbg) dbg
   else
     Cswitch (arg,cases,actions,dbg)
@@ -1626,8 +1634,8 @@ let rec transl env e =
       transl_constant sc
   | Uclosure(fundecls, []) ->
       let lbl = Compilenv.new_const_symbol() in
-      constant_closures :=
-        ((lbl, Not_global), fundecls, []) :: !constant_closures;
+      add_cmm_constant (
+        Const_closure ((lbl, Not_global), fundecls, []));
       List.iter (fun f -> Queue.add f functions) fundecls;
       Cconst_symbol lbl
   | Uclosure(fundecls, clos_vars) ->
@@ -2843,7 +2851,7 @@ let rec emit_structured_constant symb cst cont =
         (Misc.map_end (fun f -> Cdouble f) fields cont)
   | Uconst_closure(fundecls, lbl, fv) ->
       assert(lbl = fst symb);
-      constant_closures := (symb, fundecls, fv) :: !constant_closures;
+      add_cmm_constant (Const_closure (symb, fundecls, fv));
       List.iter (fun f -> Queue.add f functions) fundecls;
       cont
 
@@ -2930,6 +2938,12 @@ let emit_constant_closure ((_, global_symb) as symb) fundecls clos_vars cont =
         Csymbol_address f1.label ::
         emit_others 4 remainder
 
+(* Emit constant blocks *)
+
+let emit_constant_table symb elems =
+  cdefine_symbol symb @
+  elems
+
 (* Emit all structured constants *)
 
 let emit_constants cont (constants:Clambda.preallocated_constant list) =
@@ -2941,10 +2955,13 @@ let emit_constants cont (constants:Clambda.preallocated_constant list) =
          c:= Cdata(cst):: !c)
     constants;
   List.iter
-    (fun (symb, fundecls, clos_vars) ->
-        c := Cdata(emit_constant_closure symb fundecls clos_vars []) :: !c)
-    !constant_closures;
-  constant_closures := [];
+    (function
+    | Const_closure (symb, fundecls, clos_vars) ->
+        c := Cdata(emit_constant_closure symb fundecls clos_vars []) :: !c
+    | Const_table (symb, elems) ->
+        c := Cdata(emit_constant_table symb elems) :: !c)
+    !cmm_constants;
+  cmm_constants := [];
   !c
 
 let emit_all_constants cont =
