@@ -365,6 +365,10 @@ Next version (4.05.0):
 - PR#7216, GPR#949: don't require double parens in Functor((val x))
   (Jacques Garrigue, review by Valentin Gatien-Baron)
 
+- PR#7331: ocamldoc, avoid infinite loop in presence of self alias,
+  i.e. module rec M:sig end = M
+  (Florian Angeletti, review Gabriel Scherer)
+
 - PR#7346, GPR#966: Fix evaluation order problem whereby expressions could
   be incorrectly re-ordered when compiling with Flambda.  This also fixes one
   example of evaluation order in the native code compiler not matching the
