@@ -212,6 +212,7 @@ intnat caml_major_collection_slice(intnat howmuch)
               (unsigned long)CAML_DOMAIN_STATE->allocated_words,
               (long)computed_work, (long)sweep_work, (long)mark_work,
               (unsigned long)(stat_blocks_marked - blocks_marked_before));
+  CAML_DOMAIN_STATE->stat_major_words += CAML_DOMAIN_STATE->allocated_words;
   CAML_DOMAIN_STATE->allocated_words = 0;
   caml_restore_stack_gc();
 
@@ -240,6 +241,7 @@ void caml_finish_marking () {
   caml_do_local_roots(&caml_darken, caml_domain_self());
   caml_scan_global_roots(&caml_darken);
   caml_empty_mark_stack();
+  CAML_DOMAIN_STATE->stat_major_words += CAML_DOMAIN_STATE->allocated_words;
   CAML_DOMAIN_STATE->allocated_words = 0;
   caml_restore_stack_gc();
   //caml_gc_log ("caml_finish_marking(1)");
