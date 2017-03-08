@@ -179,7 +179,7 @@ MODEL=default
 SYSTEM=win64
 
 ### Which C compiler to use for the native-code compiler.
-NATIVECC=cl -nologo -O2 -Gy- -MD
+NATIVECC=cl -nologo -D_CRT_SECURE_NO_DEPRECATE -O2 -Gy- -MD
 NATIVE_C_COMPILER=$(NATIVECC)
 
 ### Additional compile-time options for $(NATIVECC).
