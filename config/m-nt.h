@@ -49,3 +49,10 @@
 #undef NONSTANDARD_DIV_MOD
 
 #define PROFINFO_WIDTH 0
+
+/* Microsoft introduced the LL integer literal suffix in Visual C++ .NET 2003 */
+#if defined(_MSC_VER) && _MSC_VER < 1400
+#define INT64_LITERAL(s) s ## i64
+#else
+#define INT64_LITERAL(s) s ## LL
+#endif
