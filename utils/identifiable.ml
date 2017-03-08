@@ -14,9 +14,6 @@
 (*                                                                        *)
 (**************************************************************************)
 
-module Stdlib_map = Map
-module Stdlib_set = Set
-
 module type Thing = sig
   type t
 
@@ -25,6 +22,65 @@ module type Thing = sig
 
   val output : out_channel -> t -> unit
   val print : Format.formatter -> t -> unit
+end
+
+module type Set = sig
+  module T : Set.OrderedType
+  include Set.S
+    with type elt = T.t
+     and type t = Set.Make (T).t
+
+  val output : out_channel -> t -> unit
+  val print : Format.formatter -> t -> unit
+  val to_string : t -> string
+  val of_list : elt list -> t
+  val map : (elt -> elt) -> t -> t
+end
+
+module type Map = sig
+  module T : Map.OrderedType
+  include Map.S
+    with type key = T.t
+     and type 'a t = 'a Map.Make (T).t
+
+  val filter_map : 'a t -> f:(key -> 'a -> 'b option) -> 'b t
+  val of_list : (key * 'a) list -> 'a t
+
+  val disjoint_union : ?eq:('a -> 'a -> bool) -> ?print:(Format.formatter -> 'a -> unit) -> 'a t -> 'a t -> 'a t
+
+  val union_right : 'a t -> 'a t -> 'a t
+
+  val union_left : 'a t -> 'a t -> 'a t
+
+  val union_merge : ('a -> 'a -> 'a) -> 'a t -> 'a t -> 'a t
+  val rename : key t -> key -> key
+  val map_keys : (key -> key) -> 'a t -> 'a t
+  val keys : 'a t -> Set.Make(T).t
+  val data : 'a t -> 'a list
+  val of_set : (key -> 'a) -> Set.Make(T).t -> 'a t
+  val transpose_keys_and_data : key t -> key t
+  val transpose_keys_and_data_set : key t -> Set.Make(T).t t
+  val print :
+    (Format.formatter -> 'a -> unit) -> Format.formatter -> 'a t -> unit
+end
+
+module type Tbl = sig
+  module T : sig
+    type t
+    include Map.OrderedType with type t := t
+    include Hashtbl.HashedType with type t := t
+  end
+  include Hashtbl.S
+    with type key = T.t
+     and type 'a t = 'a Hashtbl.Make (T).t
+
+  val to_list : 'a t -> (T.t * 'a) list
+  val of_list : (T.t * 'a) list -> 'a t
+
+  val to_map : 'a t -> 'a Map.Make(T).t
+  val of_map : 'a Map.Make(T).t -> 'a t
+  val memoize : 'a t -> (key -> 'a) -> key -> 'a
+  val map : 'a t -> ('a -> 'b) -> 'b t
 end
 
 module Pair (A : Thing) (B : Thing) : Thing with type t = A.t * B.t = struct
@@ -183,53 +239,9 @@ module type S = sig
   module T : Thing with type t = t
   include Thing with type t := T.t
 
-  module Set : sig
-    include Stdlib_set.S
-      with type elt = T.t
-      and type t = Make_set (T).t
-
-    val output : out_channel -> t -> unit
-    val print : Format.formatter -> t -> unit
-    val to_string : t -> string
-    val of_list : elt list -> t
-    val map : (elt -> elt) -> t -> t
-  end
-
-  module Map : sig
-    include Stdlib_map.S
-      with type key = T.t
-      and type 'a t = 'a Make_map (T).t
-
-    val filter_map : 'a t -> f:(key -> 'a -> 'b option) -> 'b t
-    val of_list : (key * 'a) list -> 'a t
-    val disjoint_union : ?eq:('a -> 'a -> bool) -> ?print:(Format.formatter -> 'a -> unit) -> 'a t -> 'a t -> 'a t
-    val union_right : 'a t -> 'a t -> 'a t
-    val union_left : 'a t -> 'a t -> 'a t
-    val union_merge : ('a -> 'a -> 'a) -> 'a t -> 'a t -> 'a t
-    val rename : key t -> key -> key
-    val map_keys : (key -> key) -> 'a t -> 'a t
-    val keys : 'a t -> Make_set (T).t
-    val data : 'a t -> 'a list
-    val of_set : (key -> 'a) -> Make_set (T).t -> 'a t
-    val transpose_keys_and_data : key t -> key t
-    val transpose_keys_and_data_set : key t -> Set.t t
-    val print :
-      (Format.formatter -> 'a -> unit) -> Format.formatter -> 'a t -> unit
-  end
-
-  module Tbl : sig
-    include Hashtbl.S
-      with type key = T.t
-      and type 'a t = 'a Hashtbl.Make (T).t
-
-    val to_list : 'a t -> (T.t * 'a) list
-    val of_list : (T.t * 'a) list -> 'a t
-
-    val to_map : 'a t -> 'a Make_map (T).t
-    val of_map : 'a Make_map (T).t -> 'a t
-    val memoize : 'a t -> (key -> 'a) -> key -> 'a
-    val map : 'a t -> ('a -> 'b) -> 'b t
-  end
+  module Set : Set with module T := T
+  module Map : Map with module T := T
+  module Tbl : Tbl with module T := T
 end
 
 module Make (T : Thing) = struct
