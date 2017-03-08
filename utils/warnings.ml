@@ -487,24 +487,29 @@ let message = function
 
 let nerrors = ref 0;;
 
-let print ppf w =
-  let msg = message w in
-  let num = number w in
-  Format.fprintf ppf "%d: %s" num msg;
-  Format.pp_print_flush ppf ();
-  if (!current).error.(num) then incr nerrors
+type reporting_information =
+  { number : int
+  ; message : string
+  ; is_error : bool
+  }
+
+let report w =
+  match is_active w with
+  | false -> `Inactive
+  | true ->
+     if is_error w then incr nerrors;
+    `Active { number = number w; message = message w; is_error = is_error w }
 ;;
 
-exception Errors of int;;
+exception Errors;;
 
 let reset_fatal () =
   nerrors := 0
 
 let check_fatal () =
   if !nerrors > 0 then begin
-    let e = Errors !nerrors in
     nerrors := 0;
-    raise e;
+    raise Errors;
   end;
 ;;
 

@@ -45,6 +45,12 @@ Working version
 
 - GPR#1032: display the output of -dtimings as a hierarchy
   (Valentin Gatien-Baron, review by Gabriel Scherer)
+### Compiler user-interface and warnings:
+
+- GPR#948: the compiler now reports warnings-as-errors by prefixing
+  them with "Error (warning ..):", instead of "Warning ..:" and
+  a trailing "Error: Some fatal warnings were triggered" message.
+  (Valentin Gatien-Baron, review by Alain Frisch)
 
 ### Bug fixes
 

@@ -40,18 +40,14 @@ Foo ();;
 [%%expect{|
 type t = Foo of unit | Bar
 Line _, characters 0-6:
-Warning 3: deprecated: Foo
-Line _:
-Error: Some fatal warnings were triggered (1 occurrences)
+Error (warning 3): deprecated: Foo
 |}];;
 function
 Foo _ -> () | Bar -> ();;
 (* "Foo _", the whole construct is deprecated *)
 [%%expect{|
 Line _, characters 0-5:
-Warning 3: deprecated: Foo
-Line _:
-Error: Some fatal warnings were triggered (1 occurrences)
+Error (warning 3): deprecated: Foo
 |}];;
 
 
@@ -70,9 +66,7 @@ end);;
    on "open List" as whole rather than "List" *)
 [%%expect{|
 Line _, characters 0-9:
-Warning 33: unused open List.
-Line _:
-Error: Some fatal warnings were triggered (1 occurrences)
+Error (warning 33): unused open List.
 |}];;
 
 type unknown += Foo;;

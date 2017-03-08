@@ -13,8 +13,6 @@
 (*                                                                        *)
 (**************************************************************************)
 
-open Format
-
 type t =
   | Comment_start                           (*  1 *)
   | Comment_not_end                         (*  2 *)
@@ -87,9 +85,15 @@ val is_error : t -> bool;;
 val defaults_w : string;;
 val defaults_warn_error : string;;
 
-val print : formatter -> t -> unit;;
+type reporting_information =
+  { number : int
+  ; message : string
+  ; is_error : bool
+  }
 
-exception Errors of int;;
+val report : t -> [ `Active of reporting_information | `Inactive ]
+
+exception Errors;;
 
 val check_fatal : unit -> unit;;
 val reset_fatal: unit -> unit
