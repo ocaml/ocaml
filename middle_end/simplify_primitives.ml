@@ -59,6 +59,9 @@ let primitive (p : Lambda.primitive) (args, approxs) expr dbg ~size_int
         S.const_ptr_expr (Flambda.Expr (Var arg)) 0
       | _ -> S.const_ptr_expr expr 0
     end
+  | Pmakearray(_, _) when approxs = [] ->
+    Prim (Pmakeblock(0, Asttypes.Immutable, Some []), [], dbg),
+    A.value_block (Tag.create_exn 0) [||], C.Benefit.zero
   | Pmakearray (Pfloatarray, Mutable) ->
       let approx =
         A.value_mutable_float_array ~size:(List.length args)
