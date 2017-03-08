@@ -98,8 +98,8 @@ caml_ba_alloc(int flags, int num_dims, void * data, intnat * dim)
   struct caml_ba_array * b;
   intnat dimcopy[CAML_BA_MAX_NUM_DIMS];
 
-  Assert(num_dims >= 0 && num_dims <= CAML_BA_MAX_NUM_DIMS);
-  Assert((flags & CAML_BA_KIND_MASK) <= CAML_BA_CHAR);
+  CAMLassert(num_dims >= 0 && num_dims <= CAML_BA_MAX_NUM_DIMS);
+  CAMLassert((flags & CAML_BA_KIND_MASK) <= CAML_BA_CHAR);
   for (i = 0; i < num_dims; i++) dimcopy[i] = dim[i];
   size = 0;
   if (data == NULL) {
@@ -137,7 +137,7 @@ CAMLexport value caml_ba_alloc_dims(int flags, int num_dims, void * data, ...)
   int i;
   value res;
 
-  Assert(num_dims <= CAML_BA_MAX_NUM_DIMS);
+  CAMLassert(num_dims <= CAML_BA_MAX_NUM_DIMS);
   va_start(ap, data);
   for (i = 0; i < num_dims; i++) dim[i] = va_arg(ap, intnat);
   va_end(ap);
@@ -247,7 +247,7 @@ CAMLexport int caml_ba_compare(value v1, value v2)
   case CAML_BA_NATIVE_INT:
     DO_INTEGER_COMPARISON(intnat);
   default:
-    Assert(0);
+    CAMLassert(0);
     return 0;                   /* should not happen */
   }
 #undef DO_INTEGER_COMPARISON
@@ -413,7 +413,7 @@ CAMLexport void caml_ba_serialize(value v,
   }
   /* Compute required size in OCaml heap.  Assumes struct caml_ba_array
      is exactly 4 + num_dims words */
-  Assert(SIZEOF_BA_ARRAY == 4 * sizeof(value));
+  CAMLassert(SIZEOF_BA_ARRAY == 4 * sizeof(value));
   *wsize_32 = (4 + b->num_dims) * 4;
   *wsize_64 = (4 + b->num_dims) * 8;
 }
