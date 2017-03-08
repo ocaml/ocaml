@@ -43,7 +43,7 @@ disable_libunwind=false
 graph_wanted=yes
 pthread_wanted=yes
 dl_defs=''
-verbose=no
+verbose=false
 with_curses=yes
 debugruntime=false
 with_instrumented_runtime=false
@@ -167,7 +167,7 @@ while : ; do
     -dllibs*|--dllibs*)
         dllib="$2"; shift;;
     -verbose|--verbose)
-        verbose=yes;;
+        verbose=true;;
     -with-debug-runtime|--with-debug-runtime)
         debugruntime=true;;
     -with-instrumented-runtime|--with-instrumented-runtime)

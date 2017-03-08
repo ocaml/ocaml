@@ -36,7 +36,7 @@ done
  for f in $*; do echo "  (void) & $f;"; done
  echo "  return 0; }") >> hasgot.c
 
-if test "$verbose" = yes; then
+if $verbose; then
   echo "hasgot2 $args: $cc $opts -o tst hasgot.c $libs" >&2
   exec $cc $opts -o tst hasgot.c $libs > /dev/null
 else
