@@ -810,7 +810,7 @@ OCaml 4.04.0 (4 Nov 2016):
 - PR#7355: Gc.finalise and lazy values
   (Jeremy Yallop)
 
-- GPR#841: Document that [Store_field] must not be used to populate
+- GPR#842: Document that [Store_field] must not be used to populate
   arrays of values declared using [CAMLlocalN] (Mark Shinwell)
 
 ### Compiler distribution build system:
