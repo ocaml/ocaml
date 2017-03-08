@@ -560,8 +560,10 @@ static void stw_phase () {
 
   for (i = 0; i < Max_domains; i++) {
     dom_internal* d = &all_domains[i];
-    if ((d == domain_self || domain_is_locked(d)) && d->state.shared_heap)
+    if ((d == domain_self || domain_is_locked(d)) && d->state.shared_heap) {
       caml_cycle_heap(d->state.shared_heap);
+      d->state.state->stat_major_collections++;
+    }
 
     if (inactive_domains_locked[i])
       unlock_domain(d);

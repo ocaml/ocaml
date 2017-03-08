@@ -16,19 +16,6 @@
 
 #include "misc.h"
 
-extern double
-     caml_stat_minor_words,
-     caml_stat_promoted_words,
-     caml_stat_major_words;
-
-extern intnat
-     caml_stat_minor_collections,
-     caml_stat_major_collections,
-     caml_stat_heap_size,
-     caml_stat_top_heap_size,
-     caml_stat_compactions,
-     caml_stat_heap_chunks;
-
 extern uintnat
      caml_max_stack_size,
      caml_fiber_wsz;

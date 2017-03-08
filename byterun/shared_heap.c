@@ -105,6 +105,12 @@ struct caml_heap_state* caml_init_shared_heap() {
   return heap;
 }
 
+static void record_heap_change(intnat delta)
+{
+  CAML_DOMAIN_STATE->stat_heap_bytes += delta;
+  if (CAML_DOMAIN_STATE->stat_heap_bytes > CAML_DOMAIN_STATE->stat_top_heap_bytes)
+    CAML_DOMAIN_STATE->stat_top_heap_bytes = CAML_DOMAIN_STATE->stat_heap_bytes;
+}
 
 /* Allocating and deallocating pools from the global freelist.
    Up to MAX_LOCAL_FREE_POOLS are cached locally */
@@ -121,10 +127,12 @@ static pool* pool_acquire(struct caml_heap_state* local) {
   } else {
     caml_plat_lock(&pool_freelist.lock);
     if (!pool_freelist.free) {
-      void* mem = caml_mem_map(Bsize_wsize(POOL_WSIZE) * POOLS_PER_ALLOCATION,
+      uintnat alloc_size = Bsize_wsize(POOL_WSIZE) * POOLS_PER_ALLOCATION;
+      void* mem = caml_mem_map(alloc_size,
                                Bsize_wsize(POOL_WSIZE), 0 /* allocate */);
       int i;
       if (mem) {
+        record_heap_change(alloc_size);
         pool_freelist.free = mem;
         for (i=1; i<POOLS_PER_ALLOCATION; i++) {
           r = (pool*)(((uintnat)mem) + ((uintnat)i) * Bsize_wsize(POOL_WSIZE));
@@ -151,6 +159,7 @@ static void pool_release(struct caml_heap_state* local, pool* pool) {
     pool->next = local->free_pools;
     local->free_pools = pool;
   } else {
+    /* FIXME: give free pools back to the OS */
     caml_plat_lock(&pool_freelist.lock);
     pool->next = pool_freelist.free;
     pool_freelist.free = pool;
@@ -223,6 +232,7 @@ static void* pool_allocate(struct caml_heap_state* local, sizeclass sz) {
 static void* large_allocate(struct caml_heap_state* local, mlsize_t sz) {
   large_alloc* a = malloc(sz + LARGE_ALLOC_HEADER_SZ);
   if (!a) caml_raise_out_of_memory();
+  record_heap_change((intnat)(sz + LARGE_ALLOC_HEADER_SZ));
   a->owner = local->owner;
   a->next = local->swept_large;
   local->swept_large = a;
@@ -313,6 +323,8 @@ static intnat large_alloc_sweep(struct caml_heap_state* local) {
   header_t hd = *(header_t*)((char*)a + LARGE_ALLOC_HEADER_SZ);
   if (Has_status_hd(hd, global.GARBAGE)) {
     local->large_bytes_allocated -= Bhsize_hd(hd);
+    intnat sz = (intnat)Bsize_wsize(Whsize_hd(hd)) + LARGE_ALLOC_HEADER_SZ;
+    record_heap_change(- sz);
     free(a);
   } else {
     a->next = local->swept_large;

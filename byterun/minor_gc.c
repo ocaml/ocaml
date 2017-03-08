@@ -296,6 +296,7 @@ CAMLexport value caml_promote(struct domain* domain, value root)
   value young_ptr = (value)domain_state->young_ptr;
   value young_end = (value)domain_state->young_end;
   float percent_to_scan;
+  uintnat prev_alloc_words = domain_state->allocated_words;
 
   /* Integers are already shared */
   if (Is_long(root))
@@ -417,6 +418,7 @@ CAMLexport value caml_promote(struct domain* domain, value root)
     promote_domain = 0;
     domain_state->promoted_in_current_cycle = 1;
   }
+  domain_state->stat_promoted_words += domain_state->allocated_words - prev_alloc_words;
   return root;
 }
 
@@ -447,6 +449,7 @@ void caml_empty_minor_heap_domain (struct domain* domain)
   stat_live_bytes = 0;
 
   if (minor_allocated_bytes != 0) {
+    uintnat prev_alloc_words = domain_state->allocated_words;
     caml_gc_log ("Minor collection of domain %d starting", domain->id);
     caml_do_local_roots(&caml_oldify_one, domain);
 
@@ -485,9 +488,10 @@ void caml_empty_minor_heap_domain (struct domain* domain)
 
     clear_table (&remembered_set->major_ref);
     clear_table (&remembered_set->minor_ref);
-
     domain_state->young_ptr = domain_state->young_end;
-    caml_stat_minor_words += Wsize_bsize (minor_allocated_bytes);
+    domain_state->stat_minor_words += Wsize_bsize (minor_allocated_bytes);
+    domain_state->stat_minor_collections++;
+    domain_state->stat_promoted_words += domain_state->allocated_words - prev_alloc_words;
 
     caml_gc_log ("Minor collection of domain %d completed: %2.0f%% of %u KB live, %u pointers rewritten",
                  domain->id,
@@ -533,14 +537,10 @@ void caml_empty_minor_heap ()
 */
 CAMLexport void caml_minor_collection (void)
 {
-  /* !! intnat prev_alloc_words = caml_allocated_words; */
-
   caml_log_event(EVENT_GC_START);
 
   caml_empty_minor_heap ();
 
-  /* !! caml_stat_promoted_words += caml_allocated_words - prev_alloc_words; */
-  ++ caml_stat_minor_collections;
   caml_major_collection_slice (0);
 
   /* !! caml_final_do_calls (); */

@@ -35,17 +35,6 @@
 uintnat caml_max_stack_size;
 uintnat caml_fiber_wsz;
 
-double caml_stat_minor_words = 0.0,
-       caml_stat_promoted_words = 0.0,
-       caml_stat_major_words = 0.0;
-
-intnat caml_stat_minor_collections = 0,
-       caml_stat_major_collections = 0,
-       caml_stat_heap_size = 0,              /* bytes */
-       caml_stat_top_heap_size = 0,          /* bytes */
-       caml_stat_compactions = 0,
-       caml_stat_heap_chunks = 0;
-
 extern uintnat caml_major_heap_increment; /* percent or words; see major_gc.c */
 extern uintnat caml_percent_free;         /*        see major_gc.c */
 extern uintnat caml_percent_max;          /*        see compact.c */
@@ -240,23 +229,21 @@ CAMLprim value caml_gc_quick_stat(value v)
 
 CAMLprim value caml_gc_counters(value v)
 {
-  return Val_unit;
-#if 0
   CAMLparam0 ();   /* v is ignored */
   CAMLlocal1 (res);
 
   /* get a copy of these before allocating anything... */
-  double minwords = caml_stat_minor_words
-                    + (double) Wsize_bsize (caml_young_end - caml_young_ptr);
-  double prowords = caml_stat_promoted_words;
-  double majwords = caml_stat_major_words + (double) caml_allocated_words;
+  double minwords = CAML_DOMAIN_STATE->stat_minor_words
+                    + (double) Wsize_bsize (CAML_DOMAIN_STATE->young_end -
+                                            CAML_DOMAIN_STATE->young_ptr);
+  double prowords = CAML_DOMAIN_STATE->stat_promoted_words;
+  double majwords = CAML_DOMAIN_STATE->stat_major_words + (double) CAML_DOMAIN_STATE->allocated_words;
 
-  res = caml_alloc_tuple (3);
-  Store_field (res, 0, caml_copy_double (minwords));
-  Store_field (res, 1, caml_copy_double (prowords));
-  Store_field (res, 2, caml_copy_double (majwords));
+  res = caml_alloc_3(0,
+    caml_copy_double (minwords),
+    caml_copy_double (prowords),
+    caml_copy_double (majwords));
   CAMLreturn (res);
-#endif
 }
 
 CAMLprim value caml_gc_get(value v)
