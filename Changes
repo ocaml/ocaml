@@ -444,6 +444,9 @@ Next major version (4.05.0):
 - GPR#1075: Ensure that zero-sized float arrays have zero tags.
   (Mark Shinwell, Leo White)
 
+* GPR#1088: Gc.minor_words now returns accurate numbers.
+  (Stephen Dolan)
+
 Next minor version (4.04.1):
 ----------------------------
 
