@@ -68,8 +68,6 @@ struct caml_context {
   value * gc_regs;              /* pointer to register block */
 };
 
-extern uintnat caml_stack_usage (void);
-
 /* Declaration of variables used in the asm code */
 extern value caml_globals[];
 extern intnat caml_globals_inited;

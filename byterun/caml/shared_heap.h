@@ -1,7 +1,9 @@
 #ifndef CAML_SHARED_HEAP_H
 #define CAML_SHARED_HEAP_H
 
+#include "config.h"
 #include "roots.h"
+#include "domain.h"
 
 struct caml_heap_state;
 struct pool;
@@ -9,6 +11,8 @@ struct pool;
 struct caml_heap_state* caml_init_shared_heap();
 
 value* caml_shared_try_alloc(struct caml_heap_state*, mlsize_t wosize, tag_t tag, int is_pinned);
+
+void caml_sample_heap_stats(struct caml_heap_state*, struct heap_stats*);
 
 uintnat caml_heap_size(struct caml_heap_state*);
 
