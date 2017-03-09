@@ -1,5 +1,5 @@
-Next version (4.05.0):
-----------------------
+Next major version (4.05.0):
+----------------------------
 
 (Changes that can break existing programs are marked with a "*")
 
@@ -107,21 +107,25 @@ Next version (4.05.0):
   the "always link" flag on all units of the given library.
   (Xavier Leroy)
 
-- GPR#1027: various improvements to -dtimings, mostly including time
-  spent in subprocesses like preprocessors
-  (Valentin Gatien-Baron, review by Gabriel Scherer)
-
 - GPR#1015: add option "-plugin PLUGIN" to ocamldep too. Use compilerlibs
   to build ocamldep.
   (Fabrice Le Fessant)
 
-### Standard library:
+- GPR#1027: various improvements to -dtimings, mostly including time
+  spent in subprocesses like preprocessors
+  (Valentin Gatien-Baron, review by Gabriel Scherer)
 
-* PR#7500, GPR#1081: Remove Uchar.dump
-  (Daniel Bünzli)
+### Standard library:
 
 - PR#6975, GPR#902: Truncate function added to stdlib Buffer module
   (Dhruv Makwana, review by Alain Frisch and Gabriel Scherer)
+
+- PR#7279 GPR#710: `Weak.get_copy` `Ephemeron.*_copy` doesn't copy anymore custom blocks
+  (François Bobot, Alain Frisch, bug reported by Martin R. Neuhäußer,
+  review by Thomas Braibant and Damien Doligez)
+
+* PR#7500, GPR#1081: Remove Uchar.dump
+  (Daniel Bünzli)
 
 - GPR#760: Add a functions List.compare_lengths and
   List.compare_length_with to avoid full list length computations
@@ -218,9 +222,6 @@ Next version (4.05.0):
   it previously raised an EPIPE error, it now returns 0 like other OSes
   (Jonathan Protzenko)
 
-- PR#7457: a case of double free in the systhreads library (POSIX implementation)
-  (Xavier Leroy, report by Chet Murthy)
-
 - GPR#650: in the Unix library, add `?cloexec:bool` optional arguments to
   functions that create file descriptors (`dup`, `dup2`, `pipe`, `socket`,
   `socketpair`, `accept`).  Implement these optional arguments in the
@@ -251,10 +252,6 @@ Next version (4.05.0):
 - PR#7333: ocamldoc, use the first sentence of text file as
   a short description in overviews.
   (Florian Angeletti)
-
-- PR#7488: ocamldoc, wrong Latex output for variant types
-  with constructors without arguments.
-  (Florian Angeletti, report by Xavier Leroy)
 
 - GPR#848: ocamldoc, escape link targets in HTML output
   (Etienne Millon, review by Gabriel Scherer, Florian Angeletti and
@@ -377,7 +374,7 @@ Next version (4.05.0):
 
 - PR#7407: Two not-quite-standard C idioms rejected by SUNWSPro compilers
   (Xavier Leroy)
-  
+
 - PR#7421: Soundness bug with GADTs and lazy
   (Jacques Garrigue, report by Leo White)
 
@@ -441,9 +438,6 @@ Next version (4.05.0):
   closures ID"
   (Pierre Chambart, code review by Mark Shinwell and Leo White)
 
-- GPR#1043: Allow Windows CRLF line-endings in ocamlyacc on Unix and Cygwin.
-  (David Allsopp, review by Damien Doligez and Xavier Leroy)
-
 - GPR#1075: Ensure that zero-sized float arrays have zero tags.
   (Mark Shinwell, Leo White)
 
@@ -460,7 +454,16 @@ Next minor version (4.04.1):
 - PR#7403, GPR#894: fix a bug in Set.map as introduced in 4.04.0
   (Gabriel Scherer, report by Thomas Leonard)
 
+### Tools:
+
+- PR#7488: ocamldoc, wrong Latex output for variant types
+  with constructors without arguments.
+  (Florian Angeletti, report by Xavier Leroy)
+
 ### Bug fixes
+
+- PR#7369: Str.regexp raises "Invalid_argument: index out of bounds"
+  (Damien Doligez, report by John Whitington)
 
 - PR#7405, GPR#903: s390x: Fix address of caml_raise_exn in native dynlink modules
   (Richard Jones, review by Xavier Leroy)
@@ -468,6 +471,9 @@ Next minor version (4.04.1):
 - MPR#7417, GPR#930: ensure 16 byte stack alignment inside caml_allocN on x86-64
   for ocaml build with WITH_FRAME_POINTERS defined
   (Christoph Cullmann)
+
+- PR#7457: a case of double free in the systhreads library (POSIX implementation)
+  (Xavier Leroy, report by Chet Murthy)
 
 - PR#7460, GPR#1011: catch uncaught exception when unknown files are passed
   as argument (regression in 4.04.0)
@@ -485,6 +491,9 @@ Next minor version (4.04.1):
 - GPR#992: caml-types.el: Fix missing format argument, so that it can show kind
   of call at point correctly.
   (Chunhui He)
+
+- GPR#1043: Allow Windows CRLF line-endings in ocamlyacc on Unix and Cygwin.
+  (David Allsopp, review by Damien Doligez and Xavier Leroy)
 
 - GPR#1072: Fix segfault in Sys.runtime_parameters when exception backtraces
   are enabled.
@@ -564,10 +573,6 @@ OCaml 4.04.0 (4 Nov 2016):
   "transitive" heap size of a value
   (Alain Frisch, review by Mark Shinwell and Damien Doligez)
 
--* PR#7279 GPR#710: `Weak.get_copy` `Ephemeron.*_copy` doesn't copy anymore custom blocks
-  (François Bobot, Alain Frisch, bug reported by Martin R. Neuhäußer,
-  review by Thomas Braibant and Damien Doligez)
-
 - GPR#473: Provide `Sys.backend_type` so that user can write backend-specific
   code in some cases (for example,  code generator).
   (Hongbo Zhang)
@@ -588,6 +593,10 @@ OCaml 4.04.0 (4 Nov 2016):
    Sys.os_type values other than "Unix", "Win32" and "Cygwin";
    mirage-os uses "xen")
   (Anil Madhavapeddy)
+
+- GPR#772 %string_safe_set and %string_unsafe_set are deprecated aliases
+  for %bytes_safe_set and %bytes_unsafe_set.
+  (Hongbo Zhang and Damien Doligez)
 
 ### Other libraries
 
@@ -769,6 +778,9 @@ OCaml 4.04.0 (4 Nov 2016):
   built.
   (Demi Obenour)
 
+- GPR#525: fix build on OpenIndiana
+  (Sergey Avseyev, review by Damien Doligez)
+
 - GPR#687: "./configure -safe-string" to get a system where
   "-unsafe-string" is not allowed, thus giving stronger non-local
   guarantees about immutability of strings
@@ -839,9 +851,6 @@ OCaml 4.04.0 (4 Nov 2016):
 - PR#7330: Missing exhaustivity check for extensible variant
   (Jacques Garrigue, report by Elarnon *)
 
-- PR#7369: Str.regexp raises "Invalid_argument: index out of bounds"
-  (Damien Doligez, report by John Whitington)
-
 - PR#7374: Contractiveness check unsound with constraints
   (Jacques Garrigue, report by Leo White)
 
@@ -850,9 +859,6 @@ OCaml 4.04.0 (4 Nov 2016):
 
 - PR#7389: Unsoundness in GADT exhaustiveness with existential variables
   (Jacques Garrigue, report by Stephen Dolan)
-
-- GPR#525: fix build on OpenIndiana
-  (Sergey Avseyev, review by Damien Doligez)
 
 * GPR#533: Thread library: fixed [Thread.wait_signal] so that it
   converts back the signal number returned by [sigwait] to an
@@ -1199,10 +1205,6 @@ OCaml 4.03.0 (25 Apr 2016):
   deprecated and will be removed in the future, please use
   caml_fill_bytes and caml_create_bytes for migration
   (Hongbo Zhang, review by Damien Doligez, Alain Frisch, and Hugo Heuzard)
-
-- GPR#772 %string_safe_set and %string_unsafe_set are deprecated aliases
-  for %bytes_safe_set and %bytes_unsafe_set.
-  (Hongbo Zhang and Damien Doligez)
 
 - PR#3612, PR#92: allow allocating custom block with finalizers
   in the minor heap.
