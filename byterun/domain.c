@@ -489,7 +489,7 @@ static void stw_phase () {
   /* First, make sure all domains are accounted for. */
   for (i = 0; i < Max_domains; i++) {
     dom_internal* d = &all_domains[i];
-    int mine;
+    int mine = 0;
     SPIN_WAIT {
       if (atomic_load_acq(&domain_accounted_for[i]))
         break;
