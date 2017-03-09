@@ -1,0 +1,9 @@
+#!/bin/bash
+
+[ -z "$@" ] && { echo "Usage: $0 <foo.[oa]>" > /dev/stderr; exit 2; }
+
+nm -A -f sysv "$@" |\
+  awk '
+    BEGIN {FS = " *[|] *"}
+    NF > 1 && $4 != "TLS" && $7 != ".text" && $7 != "*COM*" && $3 !~ /^[TtURr]$/ {print $3 " " $1}
+  '
