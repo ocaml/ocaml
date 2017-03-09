@@ -13,7 +13,7 @@ typedef struct caml_root_private* caml_root;
 /* This structure sits in the TLS area and is also accessed efficiently
  * via native code, which is why the indices are important */
 struct caml_domain_state {
-#define DOMAIN_STATE(idx, type, name) type name;
+#define DOMAIN_STATE(idx, type, name) CAMLalign(8) type name;
 #include "domain_state.tbl"
 #ifndef NATIVE_CODE
   /* Bytecode TLS vars, not used for native code */
@@ -23,6 +23,12 @@ struct caml_domain_state {
 #endif
 #undef DOMAIN_STATE
 };
+
+/* Statically assert that each field of domain_state is at the right index */
+#define DOMAIN_STATE(idx, type, name) \
+    CAML_STATIC_ASSERT(offsetof(struct caml_domain_state, name) == idx * 8);
+#include "domain_state.tbl"
+#undef DOMAIN_STATE
 
 #ifdef __APPLE__
   CAMLextern pthread_key_t caml_domain_state_key;

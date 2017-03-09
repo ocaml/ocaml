@@ -28,11 +28,6 @@ tests/regression/pr5233/
 tests/tool-ocaml/t340-weak.ml
 tests/tool-ocaml/t350-heapcheck.ml
 
-# These depend on GC stats (#29)
-tests/match-exception/allocation.ml
-tests/asmcomp/optargs
-tests/asmcomp/staticalloc
-
 # ocamldebug is broken (#34)
 tool-debugger
 

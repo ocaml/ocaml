@@ -35,6 +35,25 @@ void caml_urge_major_slice (void);
 
 void caml_interrupt_self(void);
 
+struct heap_stats {
+  intnat pool_words;
+  intnat pool_max_words;
+  intnat pool_live_words;
+  intnat pool_live_blocks;
+  intnat pool_frag_words;
+  intnat large_words;
+  intnat large_max_words;
+  intnat large_blocks;
+};
+
+struct gc_stats {
+  uint64 minor_words;
+  uint64 promoted_words;
+  uint64 major_words;
+  intnat minor_collections;
+  struct heap_stats major_heap;
+};
+void caml_sample_gc_stats(struct gc_stats* buf);
 
 CAMLextern void caml_enter_blocking_section(void);
 CAMLextern void caml_leave_blocking_section(void);
