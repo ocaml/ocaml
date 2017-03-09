@@ -233,7 +233,7 @@ Next major version (4.05.0):
   module aliases
   (Xavier Leroy)
 
-- GPR#378: Add [Printexc.raise_with_backtrace] raise an exception using
+- GPR#378: Add [Printexc.raise_with_backtrace] to raise an exception using
   an explicit backtrace
   (François Bobot, review by Gabriel Scherer, Xavier Leroy, Damien Doligez,
    Frédéric Bour)
@@ -244,6 +244,9 @@ Next major version (4.05.0):
   that extend non-terminal symbols in the language reference section.
   (Florian Angeletti, review by Gabriel Scherer)
 
+- GPR#633: manpage and manual documentation for the `-opaque` option
+  (Konstantin Romanov, Gabriel Scherer, review by Mark Shinwell)
+
 - GPR#916: new tool lintapidiff, use it to update the manual with
   @since annotations for API changes introduced between 4.00-4.05.
   (Edwin Török, review by Gabriel Scherer, discussion with Alain Frisch,
@@ -253,9 +256,6 @@ Next major version (4.05.0):
   extensions section of the manual. Convert some existing code
   examples to this format.
   (Florian Angeletti)
-
-- GPR#633: manpage and manual documentation for the `-opaque` option
-  (Konstantin Romanov, Gabriel Scherer, review by Mark Shinwell)
 
 - GPR#1082: clarify that the use of quoted string for preprocessed
   foreign quotations still requires the use of an extension node
@@ -306,10 +306,10 @@ Next major version (4.05.0):
   first step towards moving Bigarray to the stdlib
   (Jérémie Dimino)
 
-### Bytecode debugger (ocamldebug):
+### Toplevel:
 
-- GPR#977: Catch Out_of_range in "list" command
-  (Yunxing Dai)
+- PR#7060, GPR#1035: Print exceptions in installed custom printers
+  (Tadeu Zagallo, review by David Allsopp)
 
 ### Tools:
 
@@ -486,9 +486,12 @@ Next major version (4.05.0):
 - GPR#934: check for integer overflow in Bytes.extend
   (Jeremy Yallop, review by Gabriel Scherer)
 
-- GPR#956 Keep possibly-effectful expressions when optimizing multiplication
+- GPR#956: Keep possibly-effectful expressions when optimizing multiplication
   by zero.
   (Jeremy Yallop)
+
+- GPR#977: Catch Out_of_range in ocamldebug's "list" command
+  (Yunxing Dai)
 
 - GPR#983: Avoid removing effectful expressions in Closure, and
   eliminate more non-effectful ones
@@ -507,11 +510,6 @@ Next major version (4.05.0):
 
 - GPR#1075: Ensure that zero-sized float arrays have zero tags.
   (Mark Shinwell, Leo White)
-
-### Toplevel and debugger:
-
-- PR#7060, GPR#1035: Print exceptions in installed custom printers
-  (Tadeu Zagallo, review by David Allsopp)
 
 Next minor version (4.04.1):
 ----------------------------
