@@ -1264,6 +1264,10 @@ OCaml 4.03.0 (25 Apr 2016):
   caml_fill_bytes and caml_create_bytes for migration
   (Hongbo Zhang, review by Damien Doligez, Alain Frisch, and Hugo Heuzard)
 
+- GPR#772 %string_safe_set and %string_unsafe_set are deprecated aliases
+  for %bytes_safe_set and %bytes_unsafe_set.
+  (Hongbo Zhang and Damien Doligez)
+
 - PR#3612, PR#92: allow allocating custom block with finalizers
   in the minor heap.
   (Pierre Chambart)
