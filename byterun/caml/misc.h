@@ -59,6 +59,13 @@ typedef char * addr;
 #define CAMLweakdef
 #endif
 
+/* Alignment */
+#if defined(__GNUC__)
+#define CAMLalign(n) __attribute__((aligned(n)))
+#else
+#error "How do I align values on this platform?"
+#endif
+
 #ifdef __cplusplus
 extern "C" {
 #endif

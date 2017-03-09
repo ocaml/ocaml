@@ -22,3 +22,10 @@ DOMAIN_STATE(20, intnat, compare_unordered)
 DOMAIN_STATE(21, intnat, promoted_in_current_cycle)
 DOMAIN_STATE(22, uintnat, oo_next_id_local)
 DOMAIN_STATE(23, uintnat, force_major_slice)
+
+/* GC stats (see gc_ctrl.c and the Gc module) */
+DOMAIN_STATE(24, uint64, stat_minor_words)
+DOMAIN_STATE(25, uint64, stat_promoted_words)
+DOMAIN_STATE(26, uint64, stat_major_words)
+DOMAIN_STATE(27, intnat, stat_minor_collections)
+DOMAIN_STATE(28, intnat, stat_major_collections)
