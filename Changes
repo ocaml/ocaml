@@ -20,7 +20,6 @@ Working version
   bundles.
   (whitequark)
 
-
 ### Standard library:
 
 - PR#1771, PR#7309, GPR#1026: Add update to maps. Allows to update a
@@ -32,6 +31,13 @@ Working version
   (Richard Degenne, review by David Allsopp, Thomas Braibant, Florian
   Angeletti, Gabriel Scherer, Nathan Moreau, Alain Frisch)
 
+### Compiler user-interface and warnings:
+
+- GPR#948: the compiler now reports warnings-as-errors by prefixing
+  them with "Error (warning ..):", instead of "Warning ..:" and
+  a trailing "Error: Some fatal warnings were triggered" message.
+  (Valentin Gatien-Baron, review by Alain Frisch)
+
 ### Tools:
 
 - GPR#1045: ocamldep, add a "-shared" option to generate dependencies
@@ -42,25 +48,21 @@ Working version
   linked names not namespaced with caml_
   (Stephen Dolan)
 
+### Compiler distribution build system
+
+- GPR#558: enable shared library and natdynlink support on more Linux
+  platforms
+  (Felix Janda, Mark Shinwell)
+
 ### Internal/compiler-libs changes:
 
 - GPR#1032: display the output of -dtimings as a hierarchy
   (Valentin Gatien-Baron, review by Gabriel Scherer)
 
-### Compiler user-interface and warnings:
-
-- GPR#948: the compiler now reports warnings-as-errors by prefixing
-  them with "Error (warning ..):", instead of "Warning ..:" and
-  a trailing "Error: Some fatal warnings were triggered" message.
-  (Valentin Gatien-Baron, review by Alain Frisch)
-
 ### Bug fixes
 
 - PR#7468: possible GC problem in caml_alloc_sprintf
   (Xavier Leroy, discovery by Olivier Andrieu)
-
-- GPR#1075: Ensure that zero-sized float arrays have zero tags.
-  (Mark Shinwell, Leo White)
 
 
 Next major version (4.05.0):
@@ -338,10 +340,6 @@ Next major version (4.05.0):
 - PR#7377: remove -std=gnu99 for newer gcc versions
   (Damien Doligez, report by ygrek)
 
-- GPR#558: enable shared library and natdynlink support on more Linux
-  platforms
-  (Felix Janda, Mark Shinwell)
-
 - GPR#693: fail on unexpected errors or warnings within caml_example
   environment.
   (Florian Angeletti)
@@ -506,6 +504,9 @@ Next major version (4.05.0):
 - GPR#1019: Fix fatal error in Flambda mode "[functions] does not map set of
   closures ID"
   (Pierre Chambart, code review by Mark Shinwell and Leo White)
+
+- GPR#1075: Ensure that zero-sized float arrays have zero tags.
+  (Mark Shinwell, Leo White)
 
 ### Toplevel and debugger:
 
