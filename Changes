@@ -1,5 +1,5 @@
-Next version (4.04.1):
-----------------------
+Next minor version (4.04.1):
+----------------------------
 
 ### Standard library:
 
@@ -24,8 +24,7 @@ Next version (4.04.1):
   for ocaml build with WITH_FRAME_POINTERS defined
   (Christoph Cullmann)
 
-- PR#7457: a case of double free in the systhreads library (POSIX implementation
-)
+- PR#7457: a case of double free in the systhreads library (POSIX implementation)
   (Xavier Leroy, report by Chet Murthy)
 
 - PR#7460, GPR#1011: catch uncaught exception when unknown files are passed
@@ -119,16 +118,16 @@ OCaml 4.04.0 (4 Nov 2016):
 
 ### Standard library:
 
-- GPR#473: Provide `Sys.backend_type` so that user can write backend-specific
-  code in some cases (for example,  code generator).
-  (Hongbo Zhang)
-
 - PR#6279, GPR#553: implement Set.map
   (Gabriel Scherer)
 
 - PR#6820, GPR#560: Add Obj.reachable_words to compute the
   "transitive" heap size of a value
   (Alain Frisch, review by Mark Shinwell and Damien Doligez)
+
+- GPR#473: Provide `Sys.backend_type` so that user can write backend-specific
+  code in some cases (for example,  code generator).
+  (Hongbo Zhang)
 
 - GPR#589: Add a non-allocating function to recover the number of
   allocated minor words.
@@ -146,6 +145,10 @@ OCaml 4.04.0 (4 Nov 2016):
    Sys.os_type values other than "Unix", "Win32" and "Cygwin";
    mirage-os uses "xen")
   (Anil Madhavapeddy)
+
+- GPR#772 %string_safe_set and %string_unsafe_set are deprecated aliases
+  for %bytes_safe_set and %bytes_unsafe_set.
+  (Hongbo Zhang and Damien Doligez)
 
 ### Other libraries
 
@@ -177,6 +180,10 @@ OCaml 4.04.0 (4 Nov 2016):
   not always preserve the arguments
   (Pierre Chambart, Mark Shinwell, report by Simon Cruanes)
 
+- PR#7328, GPR#702: Do not eliminate boxed int divisions by zero and
+  avoid checking twice if divisor is zero with flambda.
+  (Pierre Chambart, report by Jeremy Yallop)
+
 - GPR#427: Obj.is_block is now an inlined OCaml function instead of a
   C external.  This should be faster.
   (Demi Obenour)
@@ -186,10 +193,6 @@ OCaml 4.04.0 (4 Nov 2016):
 
 - GPR#602: Do not generate dummy code to force module linking
   (Pierre Chambart, reviewed by Jacques Garrigue)
-
-- PR#7328, GPR#702: Do not eliminate boxed int divisions by zero and
-  avoid checking twice if divisor is zero with flambda.
-  (Pierre Chambart, report by Jeremy Yallop)
 
 - GPR#703: Optimize some constant string operations when the "-safe-string"
   configure time option is enabled.
@@ -215,6 +218,10 @@ OCaml 4.04.0 (4 Nov 2016):
   (Alain Frisch)
 
 ### Runtime system:
+
+- PR#7203, GPR#534: Add a new primitive caml_alloc_float_array to allocate an
+  array of floats
+  (Thomas Braibant)
 
 - PR#7210, GPR#562: Allows to register finalisation function that are
   called only when a value will never be reachable anymore. The
@@ -277,12 +284,6 @@ OCaml 4.04.0 (4 Nov 2016):
 
 - GPR#585: Spacetime, a new memory profiler (Mark Shinwell, Leo White)
 
-### Runtime system:
-
-- PR#7203, GPR#534: Add a new primitive caml_alloc_float_array to allocate an
-  array of floats
-  (Thomas Braibant)
-
 ### Manual and documentation:
 
 - PR#7007, PR#7311: document the existence of OCAMLPARAM and
@@ -309,7 +310,7 @@ OCaml 4.04.0 (4 Nov 2016):
 - GPR#841: Document that [Store_field] must not be used to populate
   arrays of values declared using [CAMLlocalN] (Mark Shinwell)
 
-### Build system:
+### Compiler distribution build system:
 
 - GPR#324: Compiler developers: Adding new primitives to the
   standard runtime doesn't require anymore to run `make bootstrap`
@@ -328,6 +329,9 @@ OCaml 4.04.0 (4 Nov 2016):
   now the native-code versions of the tools, if those versions were
   built.
   (Demi Obenour)
+
+- GPR#525: fix build on OpenIndiana
+  (Sergey Avseyev, review by Damien Doligez)
 
 - GPR#687: "./configure -safe-string" to get a system where
   "-unsafe-string" is not allowed, thus giving stronger non-local
@@ -446,9 +450,6 @@ OCaml 4.04.0 (4 Nov 2016):
   (Jeremy Yallop)
 
 - GPR#880: Fix [@@inline] with default parameters in flambda (Leo White)
-
-- GPR#525: fix build on OpenIndiana
-  (Sergey Avseyev, review by Damien Doligez)
 
 ### Internal/compiler-libs changes:
 
@@ -756,10 +757,6 @@ OCaml 4.03.0 (25 Apr 2016):
   deprecated and will be removed in the future, please use
   caml_fill_bytes and caml_create_bytes for migration
   (Hongbo Zhang, review by Damien Doligez, Alain Frisch, and Hugo Heuzard)
-
-- GPR#772 %string_safe_set and %string_unsafe_set are deprecated aliases
-  for %bytes_safe_set and %bytes_unsafe_set.
-  (Hongbo Zhang and Damien Doligez)
 
 - PR#3612, PR#92: allow allocating custom block with finalizers
   in the minor heap.
