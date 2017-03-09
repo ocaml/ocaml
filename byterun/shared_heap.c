@@ -82,7 +82,7 @@ struct caml_heap_state {
 
   struct domain* owner;
 
-  uintnat pools_allocated, large_bytes_allocated;
+  struct heap_stats stats;
 };
 
 struct caml_heap_state* caml_init_shared_heap() {
@@ -100,17 +100,16 @@ struct caml_heap_state* caml_init_shared_heap() {
   heap->swept_large = 0;
   heap->unswept_large = 0;
   heap->owner = caml_domain_self();
-  heap->pools_allocated = 0;
-  heap->large_bytes_allocated = 0;
+  memset(&heap->stats, 0, sizeof(heap->stats));
   return heap;
 }
 
-static void record_heap_change(intnat delta)
+
+void caml_sample_heap_stats(struct caml_heap_state* local, struct heap_stats* h)
 {
-  CAML_DOMAIN_STATE->stat_heap_bytes += delta;
-  if (CAML_DOMAIN_STATE->stat_heap_bytes > CAML_DOMAIN_STATE->stat_top_heap_bytes)
-    CAML_DOMAIN_STATE->stat_top_heap_bytes = CAML_DOMAIN_STATE->stat_heap_bytes;
+  *h = local->stats;
 }
+
 
 /* Allocating and deallocating pools from the global freelist.
    Up to MAX_LOCAL_FREE_POOLS are cached locally */
@@ -127,12 +126,10 @@ static pool* pool_acquire(struct caml_heap_state* local) {
   } else {
     caml_plat_lock(&pool_freelist.lock);
     if (!pool_freelist.free) {
-      uintnat alloc_size = Bsize_wsize(POOL_WSIZE) * POOLS_PER_ALLOCATION;
-      void* mem = caml_mem_map(alloc_size,
+      void* mem = caml_mem_map(Bsize_wsize(POOL_WSIZE) * POOLS_PER_ALLOCATION,
                                Bsize_wsize(POOL_WSIZE), 0 /* allocate */);
       int i;
       if (mem) {
-        record_heap_change(alloc_size);
         pool_freelist.free = mem;
         for (i=1; i<POOLS_PER_ALLOCATION; i++) {
           r = (pool*)(((uintnat)mem) + ((uintnat)i) * Bsize_wsize(POOL_WSIZE));
@@ -146,7 +143,9 @@ static pool* pool_acquire(struct caml_heap_state* local) {
     if (r)
       pool_freelist.free = r->next;
     caml_plat_unlock(&pool_freelist.lock);
-    local->pools_allocated++;
+    local->stats.pool_words += POOL_WSIZE;
+    if (local->stats.pool_words > local->stats.pool_max_words)
+      local->stats.pool_max_words = local->stats.pool_words;
   }
   Assert (r->owner == 0);
   return r;
@@ -164,7 +163,7 @@ static void pool_release(struct caml_heap_state* local, pool* pool) {
     pool->next = pool_freelist.free;
     pool_freelist.free = pool;
     caml_plat_unlock(&pool_freelist.lock);
-    local->pools_allocated--;
+    local->stats.pool_words -= POOL_WSIZE;
   }
 }
 
@@ -232,11 +231,13 @@ static void* pool_allocate(struct caml_heap_state* local, sizeclass sz) {
 static void* large_allocate(struct caml_heap_state* local, mlsize_t sz) {
   large_alloc* a = malloc(sz + LARGE_ALLOC_HEADER_SZ);
   if (!a) caml_raise_out_of_memory();
-  record_heap_change((intnat)(sz + LARGE_ALLOC_HEADER_SZ));
+  local->stats.large_words += Wsize_bsize(sz + LARGE_ALLOC_HEADER_SZ);
+  if (local->stats.large_words > local->stats.large_max_words)
+    local->stats.large_max_words = local->stats.large_words;
+  local->stats.large_blocks++;
   a->owner = local->owner;
   a->next = local->swept_large;
   local->swept_large = a;
-  local->large_bytes_allocated += sz;
   return (char*)a + LARGE_ALLOC_HEADER_SZ;
 }
 
@@ -246,11 +247,18 @@ value* caml_shared_try_alloc(struct caml_heap_state* local, mlsize_t wosize, tag
   Assert (wosize > 0);
   Assert (tag != Infix_tag);
   if (whsize <= SIZECLASS_MAX) {
-    p = pool_allocate(local, sizeclass_wsize[whsize]);
+    sizeclass sz = sizeclass_wsize[whsize];
+    Assert(wsize_sizeclass[sz] >= whsize);
+    p = pool_allocate(local, sz);
+    if (!p) return 0;
+    struct heap_stats* s = &local->stats;
+    s->pool_live_blocks++;
+    s->pool_live_words += whsize;
+    s->pool_frag_words += wsize_sizeclass[sz] - whsize;
   } else {
     p = large_allocate(local, Bsize_wsize(whsize));
+    if (!p) return 0;
   }
-  if (!p) return 0;
   Hd_hp (p) = Make_header(wosize, tag, pinned ? NOT_MARKABLE : global.UNMARKED);
 #ifdef DEBUG
   {
@@ -285,6 +293,7 @@ static intnat pool_sweep(struct caml_heap_state* local, pool** plist, sizeclass 
   value* end = (value*)a + POOL_WSIZE;
   mlsize_t wh = wsize_sizeclass[sz];
   int all_free = 1, all_used = 1;
+  struct heap_stats* s = &local->stats;
 
   while (p + wh <= end) {
     header_t hd = (header_t)*p;
@@ -292,12 +301,17 @@ static intnat pool_sweep(struct caml_heap_state* local, pool** plist, sizeclass 
       /* already on freelist */
       all_used = 0;
     } else if (Has_status_hd(hd, global.GARBAGE)) {
+      Assert(Whsize_hd(hd) <= wh);
       /* add to freelist */
       p[0] = 0;
       p[1] = (value)a->next_obj;
       Assert(Is_block((value)p));
       a->next_obj = p;
       all_used = 0;
+      /* update stats */
+      s->pool_live_blocks--;
+      s->pool_live_words -= Whsize_hd(hd);
+      s->pool_frag_words -= (wh - Whsize_hd(hd));
     } else {
       /* still live */
       all_free = 0;
@@ -322,9 +336,9 @@ static intnat large_alloc_sweep(struct caml_heap_state* local) {
   local->unswept_large = a->next;
   header_t hd = *(header_t*)((char*)a + LARGE_ALLOC_HEADER_SZ);
   if (Has_status_hd(hd, global.GARBAGE)) {
-    local->large_bytes_allocated -= Bhsize_hd(hd);
-    intnat sz = (intnat)Bsize_wsize(Whsize_hd(hd)) + LARGE_ALLOC_HEADER_SZ;
-    record_heap_change(- sz);
+    local->stats.large_words -=
+      Whsize_hd(hd) + Wsize_bsize(LARGE_ALLOC_HEADER_SZ);
+    local->stats.large_blocks--;
     free(a);
   } else {
     a->next = local->swept_large;
@@ -363,9 +377,7 @@ intnat caml_sweep(struct caml_heap_state* local, intnat work) {
 }
 
 uintnat caml_heap_size(struct caml_heap_state* local) {
-  return
-    local->pools_allocated * Bsize_wsize(POOL_WSIZE) +
-    local->large_bytes_allocated;
+  return Bsize_wsize(local->stats.pool_words + local->stats.large_words);
 }
 
 int caml_mark_object(value p) {
