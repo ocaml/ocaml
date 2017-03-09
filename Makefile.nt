@@ -192,8 +192,7 @@ opt:
 # Native-code versions of the tools
 # If the submodule is initialised, then opt.opt will build a native flexlink
 opt.opt: core opt-core ocamlc.opt all ocamlopt.opt ocamllex.opt \
-         ocamltoolsopt ocamltoolsopt.opt otherlibrariesopt $(OCAMLDOC_OPT) \
-         $(if $(wildcard flexdll/Makefile),flexlink.opt)
+         ocamltoolsopt ocamltoolsopt.opt otherlibrariesopt $(OCAMLDOC_OPT)
 
 # Complete build using fast compilers
 world.opt: coldstart opt.opt
