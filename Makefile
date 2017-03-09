@@ -579,13 +579,10 @@ flexlink.opt:
 
 .PHONY: install-flexdll
 install-flexdll:
-# The $(if ...) installs the correct .manifest file for MSVC and MSVC64
-# (GNU make doesn't have ifeq as a function, hence slightly convoluted use of
-#  filter-out)
-	cp flexdll/flexlink$(EXE) \
-	   $(if $(filter-out mingw,$(TOOLCHAIN)),\
-	     flexdll/default$(filter-out _i386,_$(ARCH)).manifest) \
-	   "$(INSTALL_BINDIR)"
+	cat stdlib/camlheader flexdll/flexlink.exe > "$(INSTALL_BINDIR)/flexlink.exe"
+ifneq "$(filter-out mingw,$(TOOLCHAIN))" ""
+	cp flexdll/default$(filter-out _i386,_$(ARCH)).manifest "$(INSTALL_BINDIR)/"
+endif
 	if test -n "$(wildcard flexdll/flexdll_*.$(O))" ; then \
 	  $(MKDIR) "$(INSTALL_FLEXDLL)" ; \
 	  cp flexdll/flexdll_*.$(O) "$(INSTALL_FLEXDLL)" ; \
