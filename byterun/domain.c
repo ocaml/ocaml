@@ -473,6 +473,12 @@ CAMLexport void caml_enter_blocking_section() {
   caml_plat_unlock(&domain_self->roots_lock);
 }
 
+#ifdef CAML_VERIFY_HEAP
+static caml_plat_mutex verify_lock = CAML_PLAT_MUTEX_INITIALIZER;
+static caml_plat_cond verify_cond = CAML_PLAT_COND_INITIALIZER(&verify_lock);
+static unsigned int verify_gen = 0;
+static int verify_heaps = 0;
+#endif
 
 static atomic_uintnat heaps_marked;
 static atomic_uintnat domain_accounted_for[Max_domains];
@@ -576,6 +582,35 @@ static void stw_phase () {
     }
     caml_gc_log("GC cycle completed");
   }
+
+  /* If the heap is to be verified, do it before the domains continue
+     running OCaml code. */
+#ifdef CAML_VERIFY_HEAP
+  for (i = 0; i < Max_domains; i++) {
+    dom_internal* d = &all_domains[i];
+    if (d == domain_self || domain_is_locked(d)) {
+      if (d->state.state)
+        caml_do_local_roots(&caml_verify_root, &d->state);
+    }
+  }
+  caml_scan_global_roots(&caml_verify_root);
+  caml_verify_heap();
+  caml_plat_lock(&verify_lock);
+  unsigned gen = verify_gen;
+  caml_gc_log("Heap verified after cycle %u", gen);
+  verify_heaps += my_heaps;
+  Assert (verify_heaps <= Max_domains);
+  if (verify_heaps == Max_domains) {
+    verify_heaps = 0;
+    verify_gen++;
+    caml_plat_signal(&verify_cond);
+  } else {
+    while (verify_gen == gen)
+      caml_plat_wait(&verify_cond);
+  }
+  caml_plat_unlock(&verify_lock);
+#endif
+
 
   /* Finally, start the next sweeping cycle and
      unlock any inactive domains we locked for GC */

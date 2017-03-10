@@ -42,6 +42,21 @@ int caml_plat_try_lock(caml_plat_mutex* m)
   }
 }
 
+void caml_plat_assert_locked(caml_plat_mutex* m)
+{
+#ifdef DEBUG
+  int r = pthread_mutex_trylock(m);
+  if (r == EBUSY) {
+    /* ok, it was locked */
+    return;
+  } else if (r == 0) {
+    caml_fatal_error("Required mutex not locked");
+  } else {
+    check_err("assert_locked", r);
+  }
+#endif
+}
+
 void caml_plat_unlock(caml_plat_mutex* m)
 {
   check_err("unlock", pthread_mutex_unlock(m));
@@ -50,6 +65,31 @@ void caml_plat_unlock(caml_plat_mutex* m)
 void caml_plat_mutex_free(caml_plat_mutex* m)
 {
   check_err("mutex_free", pthread_mutex_destroy(m));
+}
+
+/* Condition variables */
+void caml_plat_cond_init(caml_plat_cond* cond, caml_plat_mutex* m)
+{
+  pthread_cond_init(&cond->cond, 0);
+  cond->mutex = m;
+}
+
+void caml_plat_wait(caml_plat_cond* cond)
+{
+  caml_plat_assert_locked(cond->mutex);
+  check_err("wait", pthread_cond_wait(&cond->cond, cond->mutex));
+}
+
+void caml_plat_signal(caml_plat_cond* cond)
+{
+  caml_plat_assert_locked(cond->mutex);
+  check_err("signal", pthread_cond_broadcast(&cond->cond));
+}
+
+void caml_plat_cond_free(caml_plat_cond* cond)
+{
+  check_err("cond_free", pthread_cond_destroy(&cond->cond));
+  cond->mutex=0;
 }
 
 
