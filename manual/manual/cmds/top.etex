@@ -394,7 +394,7 @@ not opened, though; you still have to do
 \end{verbatim}
 yourself, if this is what you wish.
 
-\section{The native toplevel: \texttt{ocamlnat} (experimental)}
+\section{The native toplevel: \texttt{ocamlnat}\ (experimental)}
 
 {\bf This section describes a tool that is not yet officially supported %
 but may be found useful.}
