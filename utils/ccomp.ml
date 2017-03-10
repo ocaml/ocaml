@@ -101,6 +101,19 @@ let compile_file name =
   then display_msvc_output file name;
   exit
 
+let macos_create_empty_archive ~quoted_archive =
+  let result =
+    command (Printf.sprintf "%s rc %s /dev/null" Config.ar quoted_archive)
+  in
+  if result <> 0 then result
+  else
+    let result =
+      command (Printf.sprintf "%s %s 2> /dev/null" Config.ranlib quoted_archive)
+    in
+    if result <> 0 then result
+    else
+      command (Printf.sprintf "%s d %s /dev/null" Config.ar quoted_archive)
+
 let create_archive archive file_list =
   Misc.remove_file archive;
   let quoted_archive = Filename.quote archive in
@@ -110,12 +123,20 @@ let create_archive archive file_list =
                              quoted_archive (quote_files file_list))
   | _ ->
       assert(String.length Config.ar > 0);
-      let r1 =
-        command(Printf.sprintf "%s rc %s %s"
-                Config.ar quoted_archive (quote_files file_list)) in
-      if r1 <> 0 || String.length Config.ranlib = 0
-      then r1
-      else command(Config.ranlib ^ " " ^ quoted_archive)
+      let is_macosx =
+        match Config.system with
+        | "macosx" -> true
+        | _ -> false
+      in
+      if is_macosx && file_list = [] then  (* PR#6550 *)
+        macos_create_empty_archive ~quoted_archive
+      else
+        let r1 =
+          command(Printf.sprintf "%s rc %s %s"
+                  Config.ar quoted_archive (quote_files file_list)) in
+        if r1 <> 0 || String.length Config.ranlib = 0
+        then r1
+        else command(Config.ranlib ^ " " ^ quoted_archive)
 
 let expand_libname name =
   if String.length name < 2 || String.sub name 0 2 <> "-l"
