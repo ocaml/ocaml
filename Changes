@@ -471,6 +471,9 @@ Next major version (4.05.0):
   (Jeremy Yallop,
    review by Damien Doligez, Alain Frisch, Daniel Bünzli, Fabrice Le Fessant)
 
+- PR#7447, GPR#995: incorrect code generation for nested recursive bindings
+  (Leo White and Jeremy Yallop, report by Stephen Dolan)
+
 - GPR#810: check for integer overflow in Array.concat
   (Jeremy Yallop)
 

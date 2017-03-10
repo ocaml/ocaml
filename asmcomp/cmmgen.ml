@@ -787,7 +787,12 @@ let rec expr_size env = function
       RHS_block (fundecls_size fundecls + List.length clos_vars)
   | Ulet(_str, _kind, id, exp, body) ->
       expr_size (Ident.add id (expr_size env exp) env) body
-  | Uletrec(_bindings, body) ->
+  | Uletrec(bindings, body) ->
+      let env =
+        List.fold_right
+          (fun (id, exp) env -> Ident.add id (expr_size env exp) env)
+          bindings env
+      in
       expr_size env body
   | Uprim(Pmakeblock _, args, _) ->
       RHS_block (List.length args)
