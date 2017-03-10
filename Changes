@@ -351,6 +351,9 @@ Next major version (4.05.0):
   matches the bytecode compiler and Flambda.
   (Mark Shinwell, report by Jeremy Yallop, review by Frédéric Bour)
 
+- PR#6550, GPR#1094: Allow creation of empty .cmxa files on macOS
+  (Mark Shinwell)
+
 - PR#6594, GPR#955: Remove "Istore_symbol" specific operation on x86-64.
   This is more robust and in particular avoids assembly failures on Win64.
   (Mark Shinwell, review by Xavier Leroy, testing by David Allsopp and
