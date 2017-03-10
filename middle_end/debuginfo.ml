@@ -76,6 +76,11 @@ let inline loc t =
 let concat dbg1 dbg2 =
   dbg1 @ dbg2
 
+(* CR-someday afrisch: FWIW, the current compare function does not seem very
+   good, since it reverses the two lists. I don't know how long the lists are,
+   nor if the specific currently implemented ordering is useful in other
+   contexts, but if one wants to use Map, a more efficient comparison should
+   be considered. *)
 let compare dbg1 dbg2 =
   let rec loop ds1 ds2 =
     match ds1, ds2 with
