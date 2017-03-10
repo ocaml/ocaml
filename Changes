@@ -38,6 +38,11 @@ Working version
   a trailing "Error: Some fatal warnings were triggered" message.
   (Valentin Gatien-Baron, review by Alain Frisch)
 
+### Manual and documentation:
+
+- PR#6676, GPR#1110: move record notation to tutorial
+  (Florian Angeletti)
+
 ### Tools:
 
 - GPR#1045: ocamldep, add a "-shared" option to generate dependencies
