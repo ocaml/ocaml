@@ -59,6 +59,11 @@ Working version
 - GPR#1032: display the output of -dtimings as a hierarchy
   (Valentin Gatien-Baron, review by Gabriel Scherer)
 
+### Manual and documentation:
+
+- PR#7254, GPR#1096: Rudimentary documentation of ocamlnat
+  (Mark Shinwell)
+
 ### Bug fixes
 
 - PR#7468: possible GC problem in caml_alloc_sprintf
