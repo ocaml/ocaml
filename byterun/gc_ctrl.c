@@ -65,7 +65,7 @@ CAMLprim value caml_gc_quick_stat(value v)
   Store_field (res, 8, Val_long (
     s.major_heap.pool_live_blocks + s.major_heap.large_blocks));
   Store_field (res, 9, Val_long (
-    s.major_heap.pool_words - s.major_heap.pool_live_words));
+    s.major_heap.pool_words - s.major_heap.pool_live_words - s.major_heap.pool_frag_words));
   Store_field (res, 10, Val_long (0));
   Store_field (res, 11, Val_long (0));
   Store_field (res, 12, Val_long (s.major_heap.pool_frag_words));

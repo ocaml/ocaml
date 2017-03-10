@@ -134,8 +134,15 @@ typedef pthread_mutex_t caml_plat_mutex;
 void caml_plat_mutex_init(caml_plat_mutex*);
 void caml_plat_lock(caml_plat_mutex*);
 int caml_plat_try_lock(caml_plat_mutex*);
+void caml_plat_assert_locked(caml_plat_mutex*);
 void caml_plat_unlock(caml_plat_mutex*);
 void caml_plat_mutex_free(caml_plat_mutex*);
+typedef struct { pthread_cond_t cond; caml_plat_mutex* mutex; } caml_plat_cond;
+#define CAML_PLAT_COND_INITIALIZER(m) { PTHREAD_COND_INITIALIZER, m }
+void caml_plat_cond_init(caml_plat_cond*, caml_plat_mutex*);
+void caml_plat_wait(caml_plat_cond*);
+void caml_plat_signal(caml_plat_cond*);
+void caml_plat_cond_free(caml_plat_cond*);
 
 struct caml__mutex_unwind {
   caml_plat_mutex* mutex;

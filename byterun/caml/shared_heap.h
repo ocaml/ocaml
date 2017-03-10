@@ -4,6 +4,7 @@
 #include "config.h"
 #include "roots.h"
 #include "domain.h"
+#include "misc.h"
 
 struct caml_heap_state;
 struct pool;
@@ -35,8 +36,13 @@ void caml_cycle_heap_stw(void);
    (after caml_cycle_heap_stw) */
 void caml_cycle_heap(struct caml_heap_state*);
 
-#ifdef DEBUG
+#ifdef CAML_VERIFY_HEAP
+/* must only be called while all domains are paused */
+void caml_verify_root(value, value*);
+void caml_verify_heap(void);
+#endif
 
+#ifdef DEBUG
 /* [is_garbage(v)] returns true if [v] is a garbage value */
 int is_garbage (value);
 

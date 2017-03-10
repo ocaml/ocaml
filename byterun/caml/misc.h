@@ -79,12 +79,17 @@ extern caml_timing_hook caml_finalise_begin_hook, caml_finalise_end_hook;
 
 /* Assertions */
 
-#if defined(DEBUG)
+#if !defined(CAML_NOASSERT) && defined(DEBUG)
 #define CAMLassert(x) \
   ((x) ? (void) 0 : caml_failed_assert ( #x , __FILE__, __LINE__))
 CAMLextern int caml_failed_assert (char *, char *, int);
 #else
 #define CAMLassert(x) ((void) 0)
+#endif
+
+/* Enable heap verification for now */
+#if !defined(CAML_NOASSERT)
+#define CAML_VERIFY_HEAP
 #endif
 
 #ifndef CAML_AVOID_CONFLICTS
