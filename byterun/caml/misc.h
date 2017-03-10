@@ -341,10 +341,6 @@ extern void caml_set_fields (intnat v, unsigned long, unsigned long);
 #endif /* DEBUG */
 
 
-#ifndef CAML_AVOID_CONFLICTS
-#define Assert CAMLassert
-#endif
-
 /* snprintf emulation for Win32 */
 
 #if defined(_WIN32) && !defined(_UCRT)

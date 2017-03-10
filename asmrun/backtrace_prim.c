@@ -70,7 +70,7 @@ frame_descr * caml_next_frame_descriptor(uintnat * pc, char ** sp)
 }
 
 int caml_alloc_backtrace_buffer(void){
-  Assert(caml_backtrace_pos == 0);
+  CAMLassert(caml_backtrace_pos == 0);
   caml_backtrace_buffer = malloc(BACKTRACE_BUFFER_SIZE
                                  * sizeof(backtrace_slot));
   if (caml_backtrace_buffer == NULL) return -1;
@@ -159,7 +159,7 @@ CAMLprim value caml_get_current_callstack(value max_frames_value)
 
     for (trace_pos = 0; trace_pos < trace_size; trace_pos++) {
       frame_descr * descr = caml_next_frame_descriptor(&pc, &sp);
-      Assert(descr != NULL);
+      CAMLassert(descr != NULL);
       Field(trace, trace_pos) = Val_backtrace_slot((backtrace_slot) descr);
     }
   }

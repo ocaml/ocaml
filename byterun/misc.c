@@ -85,7 +85,7 @@ char *caml_aligned_malloc (asize_t size, int modulo, void **block)
 {
   char *raw_mem;
   uintnat aligned_mem;
-                                                  Assert (modulo < Page_size);
+                                                  CAMLassert (modulo < Page_size);
   raw_mem = (char *) malloc (size + Page_size);
   if (raw_mem == NULL) return NULL;
   *block = raw_mem;
