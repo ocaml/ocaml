@@ -102,7 +102,10 @@ let rec add_type bv ty =
   | Ptyp_arrow(_, t1, t2) -> add_type bv t1; add_type bv t2
   | Ptyp_tuple tl -> List.iter (add_type bv) tl
   | Ptyp_constr(c, tl) -> add bv c; List.iter (add_type bv) tl
-  | Ptyp_object (fl, _) -> List.iter (fun (_, _, t) -> add_type bv t) fl
+  | Ptyp_object (fl, _) ->
+      List.iter
+       (function Otag (_, _, t) -> add_type bv t
+         | Oinherit t -> add_type bv t) fl
   | Ptyp_class(c, tl) -> add bv c; List.iter (add_type bv) tl
   | Ptyp_alias(t, _) -> add_type bv t
   | Ptyp_variant(fl, _, _) ->

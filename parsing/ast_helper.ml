@@ -64,6 +64,7 @@ module Typ = struct
   let force_poly t =
     match t.ptyp_desc with
     | Ptyp_poly _ -> t
+    (* TODO(objmagic): why dropping attributes here? *)
     | _ -> poly ~loc:t.ptyp_loc [] t (* -> ghost? *)
 
   let varify_constructors var_names t =
@@ -87,8 +88,7 @@ module Typ = struct
         | Ptyp_constr(longident, lst) ->
             Ptyp_constr(longident, List.map loop lst)
         | Ptyp_object (lst, o) ->
-            Ptyp_object
-              (List.map (fun (s, attrs, t) -> (s, attrs, loop t)) lst, o)
+            Ptyp_object (List.map loop_object_field lst, o)
         | Ptyp_class (longident, lst) ->
             Ptyp_class (longident, List.map loop lst)
         | Ptyp_alias(core_type, string) ->
@@ -113,6 +113,12 @@ module Typ = struct
             Rtag(label,attrs,flag,List.map loop lst)
         | Rinherit t ->
             Rinherit (loop t)
+    and loop_object_field =
+      function
+        | Otag(label, attrs, t) ->
+            Otag(label, attrs, loop t)
+        | Oinherit t ->
+            Oinherit (loop t)
     in
     loop t
 

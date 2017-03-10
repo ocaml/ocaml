@@ -1447,3 +1447,28 @@ type u
 type 'a t = u
 val c : (u -> u) -> < apply : 'a. 'a t -> 'a t > = <fun>
 |}]
+
+type t = <m:int>
+type g = <n:string; t>
+type h = <x:string; y:int; g>
+[%%expect{|
+type t = < m : int >
+type g = < m : int; n : string >
+type h = < m : int; n : string; x : string; y : int >
+|}]
+
+type t = <g>
+and g = <a:t>
+[%%expect{|
+Line _, characters 10-11:
+Error: The type constructor g
+is not yet completely defined
+|}]
+
+type t = int
+type g = <t>
+[%%expect{|
+type t = int
+Line _, characters 10-11:
+Error: The type int is not an object type
+|}]

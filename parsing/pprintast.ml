@@ -275,7 +275,7 @@ and core_type1 ctxt f x =
         let type_variant_helper f x =
           match x with
           | Rtag (l, attrs, _, ctl) ->
-              pp f "@[<2>%a%a@;%a@]" string_quot l
+              pp f "@[<2>%a%a@;%a@]" string_quot l.txt
                 (fun f l -> match l with
                    |[] -> ()
                    | _ -> pp f "@;of@;%a"
@@ -300,9 +300,12 @@ and core_type1 ctxt f x =
                  pp f ">@ %a"
                    (list string_quot) xs) low
     | Ptyp_object (l, o) ->
-        let core_field_type f (s, attrs, ct) =
-          pp f "@[<hov2>%s: %a@ %a@ @]" s.txt
-            (core_type ctxt) ct (attributes ctxt) attrs (* Cf #7200 *)
+        let core_field_type f = function
+          | Otag (l, attrs, ct) ->
+            pp f "@[<hov2>%s: %a@ %a@ @]" l.txt
+              (core_type ctxt) ct (attributes ctxt) attrs (* Cf #7200 *)
+          | Oinherit ct ->
+            pp f "@[<hov2>%a@ @]" (core_type ctxt) ct
         in
         let field_var f = function
           | Asttypes.Closed -> ()

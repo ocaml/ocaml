@@ -47,6 +47,7 @@ type mapper =
     package_type: mapper -> package_type -> package_type;
     pat: mapper -> pattern -> pattern;
     row_field: mapper -> row_field -> row_field;
+    object_field: mapper -> object_field -> object_field;
     signature: mapper -> signature -> signature;
     signature_item: mapper -> signature_item -> signature_item;
     structure: mapper -> structure -> structure;
@@ -576,10 +577,7 @@ let typ sub x =
     | Ttyp_constr (path, lid, list) ->
         Ttyp_constr (path, lid, List.map (sub.typ sub) list)
     | Ttyp_object (list, closed) ->
-        Ttyp_object (
-          List.map (tuple3 id id (sub.typ sub)) list,
-          closed
-        )
+        Ttyp_object ((List.map (sub.object_field sub) list), closed)
     | Ttyp_class (path, lid, list) ->
         Ttyp_class
           (path,
@@ -606,6 +604,11 @@ let row_field sub = function
   | Ttag (label, attrs, b, list) ->
       Ttag (label, attrs, b, List.map (sub.typ sub) list)
   | Tinherit ct -> Tinherit (sub.typ sub ct)
+
+let object_field sub = function
+  | OTtag (label, attrs, ct) ->
+      OTtag (label, attrs, (sub.typ sub ct))
+  | OTinherit ct -> OTinherit (sub.typ sub ct)
 
 let class_field_kind sub = function
   | Tcfk_virtual ct -> Tcfk_virtual (sub.typ sub ct)
@@ -676,6 +679,7 @@ let default =
     package_type;
     pat;
     row_field;
+    object_field;
     signature;
     signature_item;
     structure;

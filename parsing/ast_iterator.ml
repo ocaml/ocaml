@@ -87,6 +87,11 @@ module T = struct
         sub.attributes sub attrs; List.iter (sub.typ sub) tl
     | Rinherit t -> sub.typ sub t
 
+  let object_field sub = function
+    | Otag (_, attrs, t) ->
+        sub.attributes sub attrs; sub.typ sub t
+    | Oinherit t -> sub.typ sub t
+
   let iter sub {ptyp_desc = desc; ptyp_loc = loc; ptyp_attributes = attrs} =
     sub.location sub loc;
     sub.attributes sub attrs;
@@ -98,9 +103,8 @@ module T = struct
     | Ptyp_tuple tyl -> List.iter (sub.typ sub) tyl
     | Ptyp_constr (lid, tl) ->
         iter_loc sub lid; List.iter (sub.typ sub) tl
-    | Ptyp_object (l, _o) ->
-        let f (_, a, t) = sub.attributes sub a; sub.typ sub t in
-        List.iter f l
+    | Ptyp_object (ol, _o) ->
+        List.iter (object_field sub) ol
     | Ptyp_class (lid, tl) ->
         iter_loc sub lid; List.iter (sub.typ sub) tl
     | Ptyp_alias (t, _) -> sub.typ sub t

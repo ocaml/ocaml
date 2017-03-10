@@ -2254,9 +2254,10 @@ row_field:
 ;
 tag_field:
     name_tag OF opt_ampersand amper_type_list attributes
-      { Rtag ($1, add_info_attrs (symbol_info ()) $5, $3, List.rev $4) }
+      { Rtag (mkrhs $1 1, add_info_attrs (symbol_info ()) $5,
+               $3, List.rev $4) }
   | name_tag attributes
-      { Rtag ($1, add_info_attrs (symbol_info ()) $2, true, []) }
+      { Rtag (mkrhs $1 1, add_info_attrs (symbol_info ()) $2, true, []) }
 ;
 opt_ampersand:
     AMPERSAND                                   { true }
@@ -2284,14 +2285,17 @@ core_type_list:
   | core_type_list STAR simple_core_type        { $3 :: $1 }
 ;
 meth_list:
-    field_semi meth_list                     { let (f, c) = $2 in ($1 :: f, c) }
+    field_semi meth_list                        { let (f, c) = $2 in ($1 :: f, c) }
+  | inherit_field_semi meth_list                { let (f, c) = $2 in ($1 :: f, c) }
   | field_semi                                  { [$1], Closed }
   | field                                       { [$1], Closed }
+  | inherit_field_semi                          { [$1], Closed }
+  | simple_core_type                            { [Oinherit $1], Closed }
   | DOTDOT                                      { [], Open }
 ;
 field:
   label COLON poly_type_no_attr attributes
-    { (mkrhs $1 1, add_info_attrs (symbol_info ()) $4, $3) }
+    { Otag (mkrhs $1 1, add_info_attrs (symbol_info ()) $4, $3) }
 ;
 
 field_semi:
@@ -2301,8 +2305,11 @@ field_semi:
         | Some _ as info_before_semi -> info_before_semi
         | None -> symbol_info ()
       in
-      (mkrhs $1 1, add_info_attrs info ($4 @ $6), $3) }
+      ( Otag (mkrhs $1 1, add_info_attrs info ($4 @ $6), $3)) }
 ;
+
+inherit_field_semi:
+  simple_core_type SEMI { Oinherit $1 }
 
 label:
     LIDENT                                      { $1 }

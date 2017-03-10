@@ -57,6 +57,8 @@ type error =
   | Access_functor_as_structure of Longident.t
   | Apply_structure_as_functor of Longident.t
   | Cannot_scrape_alias of Longident.t * Path.t
+  | Opened_object of Path.t option
+  | Not_an_object of type_expr
 
 exception Error of Location.t * Env.t * error
 exception Error_forward of Location.error
@@ -373,12 +375,8 @@ let rec transl_type env policy styp =
       end;
       ctyp (Ttyp_constr (path, lid, args)) constr
   | Ptyp_object (fields, o) ->
-      let fields =
-        List.map (fun (s, a, t) -> (s.txt, a, transl_poly_type env policy t))
-          fields
-      in
-      let ty = newobj (transl_fields loc env policy [] o fields) in
-      ctyp (Ttyp_object (fields, o)) ty
+      let ty, fields = transl_fields env policy [] o fields in
+      ctyp (Ttyp_object (fields, o)) (newobj ty)
   | Ptyp_class(lid, stl) ->
       let (path, decl, _is_variant) =
         try
@@ -522,17 +520,18 @@ let rec transl_type env policy styp =
             name := None;
             let tl = List.map (transl_type env policy) stl in
             let f = match present with
-              Some present when not (List.mem l present) ->
+              Some present when not (List.mem l.txt present) ->
                 let ty_tl = List.map (fun cty -> cty.ctyp_type) tl in
                 Reither(c, ty_tl, false, ref None)
             | _ ->
                 if List.length stl > 1 || c && stl <> [] then
-                  raise(Error(styp.ptyp_loc, env, Present_has_conjunction l));
+                  raise(Error(styp.ptyp_loc, env,
+                              Present_has_conjunction l.txt));
                 match tl with [] -> Rpresent None
                 | st :: _ ->
                       Rpresent (Some st.ctyp_type)
             in
-            add_typed_field styp.ptyp_loc l f;
+            add_typed_field styp.ptyp_loc l.txt f;
               Ttag (l,attrs,c,tl)
         | Rinherit sty ->
             let cty = transl_type env policy sty in
@@ -651,18 +650,53 @@ let rec transl_type env policy styp =
 and transl_poly_type env policy t =
   transl_type env policy (Ast_helper.Typ.force_poly t)
 
-and transl_fields loc env policy seen o =
+and transl_fields env policy seen o =
   function
     [] ->
       begin match o, policy with
-      | Closed, _ -> newty Tnil
-      | Open, Univars -> new_pre_univar ()
-      | Open, _ -> newvar ()
+      | Closed, _ -> newty Tnil, []
+      | Open, Univars -> new_pre_univar (), []
+      | Open, _ -> newvar (), []
       end
-  | (s, _attrs, ty1) :: l ->
-      if List.mem s seen then raise (Error (loc, env, Repeated_method_label s));
-      let ty2 = transl_fields loc env policy (s :: seen) o l in
-      newty (Tfield (s, Fpresent, ty1.ctyp_type, ty2))
+  | Otag (s, a, ty1) :: l -> begin
+      if List.mem s.txt seen then
+        raise (Error (s.loc, env, Repeated_method_label s.txt));
+      let ty1 = transl_poly_type env policy ty1 in
+      let field = OTtag (s, a, ty1) in
+      let ty, fields = transl_fields env policy (s.txt :: seen) o l in
+      newty (Tfield (s.txt, Fpresent, ty1.ctyp_type, ty)), (field :: fields)
+    end
+  | Oinherit sty :: l -> begin
+      let cty = transl_type env policy sty in
+      let nm =
+        match repr cty.ctyp_type with
+          {desc=Tconstr(p, _, _)} -> Some p
+        | _                        -> None in
+      let t = expand_head env cty.ctyp_type in
+      match t, nm with
+        {desc=Tobject ({desc=(Tfield _) as tf}, {contents=None})}, _ -> begin
+          if opened_object t then
+            raise (Error (sty.ptyp_loc, env, Opened_object nm));
+          let rec collect_seen = function
+              Tfield (s, _, _, t) -> s :: collect_seen t.desc | _ -> [] in
+          let seen' = collect_seen tf in
+          List.iter (fun s ->
+              if List.mem s seen then
+                raise (Error (sty.ptyp_loc, env, Repeated_method_label s)))
+            seen';
+          let ty, fields' = transl_fields env policy (seen' @ seen) o l in
+          let rec append = function
+            | Tfield (s, k, t1, t) ->
+                newty (Tfield (s, k, t1, append t.desc))
+            | _ -> ty in
+          append tf, (OTinherit cty :: fields')
+          end
+      | {desc=Tvar _}, Some p ->
+          raise (Error (sty.ptyp_loc, env, Unbound_type_constructor_2 p))
+      | _ -> raise (Error (sty.ptyp_loc, env, Not_an_object t))
+    end
+
+
 
 (* Make the rows "fixed" in this type, to make universal check easier *)
 let rec make_fixed_univars ty =
@@ -904,6 +938,16 @@ let report_error env ppf = function
       fprintf ppf
         "The module %a is an alias for module %a, which is missing"
         longident lid path p
+  | Opened_object nm ->
+      fprintf ppf
+        "Illegal open object type%a"
+        (fun ppf -> function
+             Some p -> fprintf ppf "@ %a" path p
+           | None -> fprintf ppf "") nm
+  | Not_an_object ty ->
+      Printtyp.reset_and_mark_loops ty;
+      fprintf ppf "@[The type %a@ is not an object type@]"
+        Printtyp.type_expr ty
 
 let () =
   Location.register_error_of_exn
