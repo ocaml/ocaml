@@ -95,6 +95,9 @@ let compare dbg1 dbg2 =
   in
   loop (List.rev dbg1) (List.rev dbg2)
 
+let hash t =
+  List.fold_left (fun hash item -> Hashtbl.hash (hash, item)) 0 t
+
 let rec print_compact ppf t =
   let print_item item =
     Format.fprintf ppf "%a:%i"
