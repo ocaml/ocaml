@@ -277,7 +277,7 @@ module Color : sig
 
   type setting = Auto | Always | Never
 
-  val setup : setting -> unit
+  val setup : setting option -> unit
   (* [setup opt] will enable or disable color handling on standard formatters
      according to the value of color setting [opt].
      Only the first call to this function has an effect. *)

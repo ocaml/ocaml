@@ -187,9 +187,9 @@ module Options = Main_args.Make_optcomp_options (struct
   let _warn_error s = Warnings.parse_options true s
   let _warn_help = Warnings.help_warnings
   let _color option =
-    begin match Clflags.parse_color_setting option with
+    begin match parse_color_setting option with
           | None -> ()
-          | Some setting -> Clflags.color := setting
+          | Some setting -> color := Some setting
     end
   let _where () = print_standard_library ()
 
@@ -238,6 +238,7 @@ let main () =
     readenv ppf Before_args;
     Clflags.add_arguments __LOC__ (Arch.command_line_options @ Options.list);
     Clflags.parse_arguments anonymous usage;
+    Compmisc.read_color_env ppf;
     if !gprofile && not Config.profiling then
       fatal "Profiling with \"gprof\" is not supported on this platform.";
     begin try

@@ -15,3 +15,5 @@
 
 val init_path : ?dir:string -> bool -> unit
 val initial_env : unit -> Env.t
+
+val read_color_env : Format.formatter -> unit
