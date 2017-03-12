@@ -269,6 +269,8 @@
 
 /testsuite/tests/lib-threads/*.byt
 
+/testsuite/tests/lib-unix/win-stat/*-file
+
 /testsuite/tests/opaque/*/*.mli
 
 /testsuite/tests/runtime-errors/*.bytecode
