@@ -37,6 +37,10 @@ Working version
   them with "Error (warning ..):", instead of "Warning ..:" and
   a trailing "Error: Some fatal warnings were triggered" message.
   (Valentin Gatien-Baron, review by Alain Frisch)
+### Manual and documentation:
+
+- PR#7497, GPR#1095: manual, enable numbering for table of contents
+  (Florian Angeletti, request by Daniel Bünzli)
 
 ### Tools:
 
