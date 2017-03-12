@@ -57,6 +57,10 @@ Working version
   linked names not namespaced with caml_
   (Stephen Dolan)
 
+- PR#6928: ocamldoc, do not introduce an empty <h1> in index.html when
+  no -title has been provided
+  (Pierre Boutillier)
+
 ### Compiler distribution build system
 
 - GPR#558: enable shared library and natdynlink support on more Linux
