@@ -178,21 +178,21 @@ is safe to expand directly the argument "r" in a record pattern:
 \begin{caml_example}
 let integer_part {num=num; denom=denom} = num / denom;;
 \end{caml_example}
+Unneeded fields can be omitted:
+\begin{caml_example}
+let get_denom {denom=denom} = denom;;
+\end{caml_example}
+Optionally, missing fields can be made explicit by ending the list of
+fields with a trailing wildcard "_"::
+\begin{caml_example}
+let get_num {num=num; _ } = num;;
+\end{caml_example}
 When both sides of the "=" sign are the same, it is possible to avoid
 repeating the field name by eliding the "=field" part:
 \begin{caml_example}
 let integer_part {num; denom} = num / denom;;
 \end{caml_example}
-Similarly, unneeded fields can be omitted
-\begin{caml_example}
-let get_denom {denom} = denom;;
-\end{caml_example}
-Optionally, missing fields can be made explicit by ending the list of
-fields with a trailing wildcard "_"::
-\begin{caml_example}
-let get_num {num; _ } = num;;
-\end{caml_example}
-The short notation for fields also works when constructing records:
+This short notation for fields also works when constructing records:
 \begin{caml_example}
 let ratio num denom = {num; denom};;
 \end{caml_example}
