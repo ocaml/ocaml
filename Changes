@@ -42,6 +42,11 @@ Working version
 - PR#7497, GPR#1095: manual, enable numbering for table of contents
   (Florian Angeletti, request by Daniel Bünzli)
 
+### Manual and documentation:
+
+- PR#6676, GPR#1110: move record notation to tutorial
+  (Florian Angeletti, review by Gabriel Scherer)
+
 ### Tools:
 
 - GPR#1045: ocamldep, add a "-shared" option to generate dependencies

@@ -343,6 +343,25 @@ command line, and possibly the "-custom" option.
 
 This section describes and explains in detail some warnings:
 
+\subsection{Warning 9: missing fields in a record pattern}
+
+  When pattern matching on records, it can be useful to match only few
+  fields of a record. Eliding fields can be done either implicitly
+  or explicitly by ending the record pattern with "; _".
+  However, implicit field elision is at odd with pattern matching
+  exhaustiveness checks.
+  Enabling warning 9 prioritizes exhaustiveness checks over the
+  convenience of implicit field elision and will warn on implicit
+  field elision in record patterns. In particular, this warning can
+  help to spot exhaustive record pattern that may need to be updated
+  after the addition of new fields to a record type.
+
+\begin{verbatim}
+type 'a point = {x='a ;y='a}
+let dx { x } = x (* implicit field elision: trigger warning 9 *)
+let dy { y; _ } = y (* explicit field elision: do not trigger warning 9 *)
+\end{verbatim}
+
 \subsection{Warning 52: fragile constant pattern}
 \label{ss:warn52}
 
