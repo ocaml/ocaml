@@ -33,6 +33,7 @@
 #define UNMAP_FILE_FUNCTION caml_ba_unmap_file
 #define ALLOC_FUNCTION caml_ba_mapped_alloc
 #define MAP_FILE "Bigarray.map_file"
+static void caml_ba_sys_error(void);
 #define MAP_FILE_ERROR() caml_ba_sys_error()
 #else
 #define MAP_FILE_FUNCTION caml_unix_map_file
