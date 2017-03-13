@@ -586,15 +586,18 @@ static void stw_phase () {
   /* If the heap is to be verified, do it before the domains continue
      running OCaml code. */
 #ifdef CAML_VERIFY_HEAP
+  struct heap_verify_state* ver = caml_verify_begin();
   for (i = 0; i < Max_domains; i++) {
     dom_internal* d = &all_domains[i];
     if (d == domain_self || domain_is_locked(d)) {
       if (d->state.state)
-        caml_do_local_roots(&caml_verify_root, 0, &d->state);
+        caml_do_local_roots(&caml_verify_root, ver, &d->state);
     }
   }
-  caml_scan_global_roots(&caml_verify_root, 0);
-  caml_verify_heap();
+  caml_scan_global_roots(&caml_verify_root, ver);
+  caml_verify_heap(ver);
+
+  /* synchronise, ensuring no domain continues before all domains verify */
   caml_plat_lock(&verify_lock);
   unsigned gen = verify_gen;
   caml_gc_log("Heap verified after cycle %u", gen);
