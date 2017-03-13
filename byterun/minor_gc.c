@@ -249,10 +249,6 @@ static void oldify_mopup (int promote_stack)
   }
 }
 
-static void caml_oldify_mopup (void) {
-  oldify_mopup (1);
-}
-
 //*****************************************************************************
 
 void forward_pointer (value v, value *p) {
@@ -459,7 +455,7 @@ void caml_empty_minor_heap_domain (struct domain* domain)
       caml_oldify_one (x, &x);
     }
 
-    caml_oldify_mopup ();
+    oldify_mopup (1);
 
     for (r = remembered_set->major_ref.base; r < remembered_set->major_ref.ptr; r++) {
       value v = **r;
