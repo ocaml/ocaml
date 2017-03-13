@@ -16,13 +16,18 @@
 LIBNAME=bigarray
 EXTRACFLAGS=-I../$(UNIXLIB) -DIN_OCAML_BIGARRAY
 EXTRACAMLFLAGS=-I ../$(UNIXLIB)
-COBJS=bigarray_stubs.$(O) mmap_$(UNIX_OR_WIN32).$(O)
+COBJS=bigarray_stubs.$(O) mmap_ba.$(O) mmap.$(O)
 CAMLOBJS=bigarray.cmo
-HEADERS=bigarray.h
 
 include ../Makefile
 
+mmap.$(O): ../$(UNIXLIB)/mmap.c
+	$(BYTECC) $(BYTECCCOMPOPTS) $(CFLAGS) -c $<
+mmap_ba.$(O): ../unix/mmap_ba.c
+	$(BYTECC) $(BYTECCCOMPOPTS) $(CFLAGS) -c $<
+
 .PHONY: depend
+
 depend:
 ifeq "$(TOOLCHAIN)" "msvc"
 	$(error Dependencies cannot be regenerated using the MSVC ports)

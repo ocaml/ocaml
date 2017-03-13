@@ -20,7 +20,7 @@ LINKEDFILES=misc.c freelist.c major_gc.c minor_gc.c memory.c alloc.c array.c \
   parsing.c gc_ctrl.c terminfo.c md5.c obj.c lexing.c printexc.c callback.c \
   weak.c compact.c finalise.c meta.c custom.c main.c globroots.c \
   $(UNIX_OR_WIN32).c dynlink.c signals.c debugger.c startup_aux.c \
-  backtrace.c afl.c
+  backtrace.c afl.c bigarray.c
 
 # The following variable stores the list of files for which dependencies
 # should be computed. It includes even the files that won't actually be
@@ -84,7 +84,7 @@ COBJS=startup_aux.$(O) startup.$(O) main.$(O) fail.$(O)		\
   custom.$(O) globroots.$(O) backtrace_prim.$(O) backtrace.$(O)		\
   natdynlink.$(O) debugger.$(O) meta.$(O) dynlink.$(O)			\
   clambda_checks.$(O) spacetime.$(O) spacetime_snapshot.$(O)		\
-  spacetime_offline.$(O) afl.$(O)
+  spacetime_offline.$(O) afl.$(O) bigarray.$(O)
 
 OBJS=$(COBJS) $(ASMOBJS)
 

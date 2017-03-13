@@ -1647,15 +1647,3 @@ val setsid : unit -> int
 
    On Windows, not implemented. *)
 
-(**/**)
-type map_file_impl =
-  { map_file_impl
-    : 'a 'b 'c. file_descr
-      -> ('a, 'b) CamlinternalBigarray.kind
-      -> 'c CamlinternalBigarray.layout
-      -> bool
-      -> int array
-      -> int64
-      -> ('a, 'b, 'c) CamlinternalBigarray.genarray
-  }
-val map_file_impl : map_file_impl ref
