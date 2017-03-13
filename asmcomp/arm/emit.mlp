@@ -283,7 +283,7 @@ let gotrel_literals = ref ([] : (label * label) list)
 (* Pending symbol literals *)
 let symbol_literals = ref ([] : (string * label) list)
 (* Total space (in words) occupied by pending literals *)
-let num_literals = ref 0
+let size_literals = ref 0
 
 (* Label a floating-point literal *)
 let float_literal f =
@@ -291,14 +291,14 @@ let float_literal f =
     List.assoc f !float_literals
   with Not_found ->
     let lbl = new_label() in
-    num_literals := !num_literals + 2;
+    size_literals := !size_literals + 2;
     float_literals := (f, lbl) :: !float_literals;
     lbl
 
 (* Label a GOTREL literal *)
 let gotrel_literal l =
   let lbl = new_label() in
-  num_literals := !num_literals + 1;
+  size_literals := !size_literals + 1;
   gotrel_literals := (l, lbl) :: !gotrel_literals;
   lbl
 
@@ -308,7 +308,7 @@ let symbol_literal s =
     List.assoc s !symbol_literals
   with Not_found ->
     let lbl = new_label() in
-    num_literals := !num_literals + 1;
+    size_literals := !size_literals + 1;
     symbol_literals := (s, lbl) :: !symbol_literals;
     lbl
 
@@ -337,7 +337,7 @@ let emit_literals() =
     gotrel_literals := [];
     symbol_literals := []
   end;
-  num_literals := 0
+  size_literals := 0
 
 (* Emit code to load the address of a symbol *)
 
@@ -811,7 +811,7 @@ let max_instruction_size i =
       then 1 + (Array.length jumptbl + 1) / 2 + Array.length jumptbl
       else 2 + Array.length jumptbl
   | _ ->
-      4   (* conservative upper bound *)
+      8   (* conservative upper bound; the true upper bound is probably 5 *)
 
 (* Emission of an instruction sequence *)
 
@@ -825,12 +825,12 @@ let rec emit_all ninstr fallthrough i =
     let limit = (if !fpu >= VFPv2 && !float_literals <> []
                  then 127
                  else 511) in
-    let limit = limit - !num_literals - max_instruction_size i in
+    let limit = limit - !size_literals - max_instruction_size i in
     let ninstr' =
       if ninstr >= limit - 64 && not fallthrough then begin
         emit_literals();
         0
-      end else if !num_literals != 0 && ninstr >= limit then begin
+      end else if !size_literals != 0 && ninstr >= limit then begin
         let lbl = new_label() in
         `	b	{emit_label lbl}\n`;
         emit_literals();
