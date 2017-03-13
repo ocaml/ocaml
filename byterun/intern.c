@@ -630,7 +630,7 @@ CAMLexport value caml_input_value_from_malloc(char * data, intnat ofs)
   return obj;
 }
 
-CAMLexport value caml_input_value_from_block(char * data, intnat len)
+CAMLexport value caml_input_value_from_block(const char * data, intnat len)
 {
   uint32 magic;
   mlsize_t block_len;

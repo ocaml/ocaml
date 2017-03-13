@@ -138,3 +138,10 @@ void caml_init_argv(const char* exe_name, char** main_argv)
   params.exe_name = exe_name;
   params.main_argv = (const char* const*)main_argv;
 }
+
+void caml_init_section_table(const char* section_table,
+                             asize_t section_table_size)
+{
+  params.section_table = section_table;
+  params.section_table_size = section_table_size;
+}

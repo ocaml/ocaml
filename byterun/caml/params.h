@@ -9,6 +9,10 @@ struct caml_params {
   const char* exe_name;
   const char* const* main_argv;
 
+  /* for meta.c */
+  const char* section_table;
+  asize_t section_table_size;
+
   uintnat verb_gc;
   int parser_trace;
   int trace_flag;
@@ -30,5 +34,7 @@ extern const struct caml_params* const caml_params;
 void caml_init_startup_params();
 int caml_parse_command_line(char** argv);
 void caml_init_argv(const char* exe_name, char** main_argv);
+void caml_init_section_table(const char* section_table,
+                             asize_t section_table_size);
 
 #endif /* CAML_PARAMS_H */
