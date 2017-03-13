@@ -85,7 +85,7 @@ CAMLexport void caml_modify_root(caml_root root, value newv)
   caml_modify_field(v, 0, newv);
 }
 
-static void scan_global_roots(scanning_action f)
+static void scan_global_roots(scanning_action f, void* fdata)
 {
   value r, newr;
   caml_plat_lock(&roots_mutex);
@@ -94,7 +94,7 @@ static void scan_global_roots(scanning_action f)
 
   Assert(!Is_minor(r));
   newr = r;
-  f(newr, &newr);
+  f(fdata, newr, &newr);
   Assert(r == newr); /* GC should not move r, it is not young */
 }
 
@@ -154,7 +154,7 @@ void caml_register_dyn_global(void *v) {
   caml_plat_unlock(&roots_mutex);
 }
 
-static void scan_native_globals(scanning_action f)
+static void scan_native_globals(scanning_action f, void* fdata)
 {
   int i, j;
   static link* dyn_globals;
@@ -169,23 +169,23 @@ static void scan_native_globals(scanning_action f)
   for (i = 0; caml_globals[i] != 0; i++) {
     glob = caml_globals[i];
     for (j = 0; j < Wosize_val(glob); j++)
-      f (Op_val(glob)[j], &Op_val(glob)[j]);
+      f (fdata, Op_val(glob)[j], &Op_val(glob)[j]);
   }
 
   /* Dynamic (natdynlink) global roots */
   iter_list(dyn_globals, lnk) {
     glob = (value) lnk->data;
     for (j = 0; j < Wosize_val(glob); j++){
-      f (Op_val(glob)[j], &Op_val(glob)[j]);
+      f (fdata, Op_val(glob)[j], &Op_val(glob)[j]);
     }
   }
 }
 
 #endif
 
-void caml_scan_global_roots(scanning_action f) {
-  scan_global_roots(f);
+void caml_scan_global_roots(scanning_action f, void* fdata) {
+  scan_global_roots(f, fdata);
 #ifdef NATIVE_CODE
-  scan_native_globals(f);
+  scan_native_globals(f, fdata);
 #endif
 }

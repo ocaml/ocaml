@@ -52,7 +52,7 @@ static void load_stack (value stack) {
   domain_state->stack_high = Stack_high(stack);
   domain_state->current_stack = stack;
   if (domain_state->promoted_in_current_cycle)
-    caml_scan_stack (forward_pointer, stack);
+    caml_scan_stack (forward_pointer, 0, stack);
 }
 
 extern void caml_fiber_exn_handler (value) Noreturn;
@@ -108,7 +108,7 @@ void caml_get_stack_sp_pc (value stack, char** sp /* out */, uintnat* pc /* out 
   *pc = Saved_return_address(*sp);
 }
 
-void caml_scan_stack(scanning_action f, value stack)
+void caml_scan_stack(scanning_action f, void* fdata, value stack)
 {
   char * sp;
   uintnat retaddr;
@@ -126,11 +126,11 @@ void caml_scan_stack(scanning_action f, value stack)
   frame_descr** frame_descriptors;
   int frame_descriptors_mask;
 
-  f(caml_frame_descriptor_table, &caml_frame_descriptor_table);
-  f(Stack_handle_value(stack), &Stack_handle_value(stack));
-  f(Stack_handle_exception(stack), &Stack_handle_exception(stack));
-  f(Stack_handle_effect(stack), &Stack_handle_effect(stack));
-  f(Stack_parent(stack), &Stack_parent(stack));
+  f(fdata, caml_frame_descriptor_table, &caml_frame_descriptor_table);
+  f(fdata, Stack_handle_value(stack), &Stack_handle_value(stack));
+  f(fdata, Stack_handle_exception(stack), &Stack_handle_exception(stack));
+  f(fdata, Stack_handle_effect(stack), &Stack_handle_effect(stack));
+  f(fdata, Stack_parent(stack), &Stack_parent(stack));
 
   if (Stack_sp(stack) == 0) return;
   sp = (char*)(Stack_high(stack) + Stack_sp(stack));
@@ -173,7 +173,7 @@ next_chunk:
         } else {
           root = (value *)(sp + ofs);
         }
-        f (*root, root);
+        f (fdata, *root, root);
       }
       /* Move to next frame */
 #ifndef Stack_grows_upwards
@@ -250,7 +250,7 @@ static void load_stack(value newstack)
   domain_state->extern_sp = domain_state->stack_high + Stack_sp(newstack);
   domain_state->current_stack = newstack;
   if (domain_state->promoted_in_current_cycle)
-    caml_scan_stack (forward_pointer, newstack);
+    caml_scan_stack (forward_pointer, 0, newstack);
 }
 
 CAMLprim value caml_alloc_stack(value hval, value hexn, value heff)
@@ -326,20 +326,20 @@ void caml_change_max_stack_size (uintnat new_max_size)
   Used by the GC to find roots on the stacks of running or runnable fibers.
 */
 
-void caml_scan_stack(scanning_action f, value stack)
+void caml_scan_stack(scanning_action f, void* fdata, value stack)
 {
   value *low, *high, *sp;
   Assert(Is_block(stack) && Tag_val(stack) == Stack_tag);
 
-  f(Stack_handle_value(stack), &Stack_handle_value(stack));
-  f(Stack_handle_exception(stack), &Stack_handle_exception(stack));
-  f(Stack_handle_effect(stack), &Stack_handle_effect(stack));
-  f(Stack_parent(stack), &Stack_parent(stack));
+  f(fdata, Stack_handle_value(stack), &Stack_handle_value(stack));
+  f(fdata, Stack_handle_exception(stack), &Stack_handle_exception(stack));
+  f(fdata, Stack_handle_effect(stack), &Stack_handle_effect(stack));
+  f(fdata, Stack_parent(stack), &Stack_parent(stack));
 
   high = Stack_high(stack);
   low = high + Stack_sp(stack);
   for (sp = low; sp < high; sp++) {
-    f(*sp, sp);
+    f(fdata, *sp, sp);
   }
 }
 
@@ -374,12 +374,12 @@ void caml_clean_stack_domain(value stack, struct domain* domain)
   }
 }
 
-void caml_scan_dirty_stack_domain(scanning_action f, value stack,
+void caml_scan_dirty_stack_domain(scanning_action f, void* fdata, value stack,
                                   struct domain* domain)
 {
   Assert (Tag_val(stack) == Stack_tag);
   if (Stack_dirty_domain(stack) == domain) {
-    caml_scan_stack(f, stack);
+    caml_scan_stack(f, fdata, stack);
   }
 }
 

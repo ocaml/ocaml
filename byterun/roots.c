@@ -40,9 +40,9 @@ intnat caml_globals_inited = 0;
 static intnat caml_globals_scanned = 0;
 #endif
 
-CAMLexport void (*caml_scan_roots_hook)(scanning_action, struct domain*) = NULL;
+CAMLexport void (*caml_scan_roots_hook)(scanning_action, void* fdata, struct domain*) = NULL;
 
-CAMLexport void caml_do_local_roots (scanning_action f, struct domain* domain)
+CAMLexport void caml_do_local_roots (scanning_action f, void* fdata, struct domain* domain)
 {
   struct caml__roots_block *lr;
   int i, j;
@@ -57,22 +57,22 @@ CAMLexport void caml_do_local_roots (scanning_action f, struct domain* domain)
   for (i = 0; i <= caml_globals_inited && caml_globals[i] != 0; i++) {
     glob = caml_globals[i];
     for (j = 0; j < Wosize_val(glob); j++){
-      f(Op_val(glob)[j], &Op_val(glob)[j]);
+      f(fdata, Op_val(glob)[j], &Op_val(glob)[j]);
     }
   }
 #endif
 
-  f(domain->state->current_stack, &(domain->state->current_stack));
+  f(fdata, domain->state->current_stack, &(domain->state->current_stack));
   for (lr = domain->state->local_roots; lr != NULL; lr = lr->next) {
     for (i = 0; i < lr->ntables; i++){
       for (j = 0; j < lr->nitems; j++){
         sp = &(lr->tables[i][j]);
         if (*sp != 0) {
-          f (*sp, sp);
+          f (fdata, *sp, sp);
         }
       }
     }
   }
   /* Hook */
-  if (caml_scan_roots_hook != NULL) (*caml_scan_roots_hook)(f, domain);
+  if (caml_scan_roots_hook != NULL) (*caml_scan_roots_hook)(f, fdata, domain);
 }

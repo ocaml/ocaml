@@ -123,9 +123,9 @@ extern void (*caml_termination_hook)(void);
 
 /* Hook for scanning the stacks of the other threads */
 
-static void (*prev_scan_roots_hook) (scanning_action, struct domain* domain);
+static void (*prev_scan_roots_hook) (scanning_action, void*, struct domain* domain);
 
-static void caml_thread_scan_roots(scanning_action action, struct domain* domain)
+static void caml_thread_scan_roots(scanning_action action, void* fdata, struct domain* domain)
 {
   caml_thread_t th;
   struct caml__roots_block *lr;
@@ -134,16 +134,16 @@ static void caml_thread_scan_roots(scanning_action action, struct domain* domain
 
   th = curr_thread;
   do {
-    (*action)(th->descr, &th->descr);
+    (*action)(fdata, th->descr, &th->descr);
     /* Don't rescan the stack of the current thread, it was done already */
     if (th != curr_thread) {
-      (*action)(th->current_stack, &th->current_stack);
+      (*action)(fdata, th->current_stack, &th->current_stack);
 
       for (lr = th->local_roots; lr != NULL; lr = lr->next) {
         for (i = 0; i < lr->ntables; i++){
           for (j = 0; j < lr->nitems; j++){
             sp = &(lr->tables[i][j]);
-            (*action)(*sp, sp);
+            (*action)(fdata, *sp, sp);
           }
         }
       }
@@ -152,7 +152,7 @@ static void caml_thread_scan_roots(scanning_action action, struct domain* domain
     th = th->next;
   } while (th != curr_thread);
   /* Hook */
-  if (prev_scan_roots_hook != NULL) (*prev_scan_roots_hook)(action, domain);
+  if (prev_scan_roots_hook != NULL) (*prev_scan_roots_hook)(action, fdata, domain);
 }
 
 /* Hooks for enter_blocking_section and leave_blocking_section */
