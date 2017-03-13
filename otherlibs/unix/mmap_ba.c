@@ -76,8 +76,8 @@ ALLOC_FUNCTION(int flags, int num_dims, void * data, intnat * dim)
   struct caml_ba_array * b;
   intnat dimcopy[CAML_BA_MAX_NUM_DIMS];
 
-  Assert(num_dims >= 0 && num_dims <= CAML_BA_MAX_NUM_DIMS);
-  Assert((flags & CAML_BA_KIND_MASK) <= CAML_BA_CHAR);
+  CAMLassert(num_dims >= 0 && num_dims <= CAML_BA_MAX_NUM_DIMS);
+  CAMLassert((flags & CAML_BA_KIND_MASK) <= CAML_BA_CHAR);
   for (i = 0; i < num_dims; i++) dimcopy[i] = dim[i];
   asize = SIZEOF_BA_ARRAY + num_dims * sizeof(intnat);
   res = caml_alloc_custom(&caml_ba_mapped_ops, asize, 0, 1);
