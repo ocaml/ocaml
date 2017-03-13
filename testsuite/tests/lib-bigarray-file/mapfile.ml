@@ -33,14 +33,14 @@ let tests () =
      Unix.openfile mapped_file
                    [Unix.O_RDWR; Unix.O_TRUNC; Unix.O_CREAT] 0o666 in
     let a =
-      array1_of_genarray (Unix.map_file fd float64 c_layout true [|10000|])
+      array1_of_genarray (Genarray.map_file fd float64 c_layout true [|10000|])
     in
     Unix.close fd;
     for i = 0 to 9999 do a.{i} <- float i done;
     let fd = Unix.openfile mapped_file [Unix.O_RDONLY] 0 in
     let b =
       array2_of_genarray
-        (Unix.map_file fd float64 fortran_layout false [|100; -1|])
+        (Genarray.map_file fd float64 fortran_layout false [|100; -1|])
     in
     Unix.close fd;
     let ok = ref true in
@@ -53,7 +53,7 @@ let tests () =
     b.{50,50} <- (-1.0);
     let fd = Unix.openfile mapped_file [Unix.O_RDONLY] 0 in
     let c =
-      array2_of_genarray (Unix.map_file fd float64 c_layout false [|-1; 100|])
+      array2_of_genarray (Genarray.map_file fd float64 c_layout false [|-1; 100|])
     in
     Unix.close fd;
     let ok = ref true in
@@ -66,7 +66,7 @@ let tests () =
     let fd = Unix.openfile mapped_file [Unix.O_RDONLY] 0 in
     let c =
       array2_of_genarray
-        (Unix.map_file fd ~pos:800L float64 c_layout false [|-1; 100|])
+        (Genarray.map_file fd ~pos:800L float64 c_layout false [|-1; 100|])
     in
     Unix.close fd;
     let ok = ref true in
@@ -79,7 +79,7 @@ let tests () =
     let fd = Unix.openfile mapped_file [Unix.O_RDONLY] 0 in
     let c =
       array2_of_genarray
-        (Unix.map_file fd ~pos:79200L float64 c_layout false [|-1; 100|])
+        (Genarray.map_file fd ~pos:79200L float64 c_layout false [|-1; 100|])
     in
     Unix.close fd;
     let ok = ref true in

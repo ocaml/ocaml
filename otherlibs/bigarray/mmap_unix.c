@@ -28,7 +28,6 @@
 #include "caml/mlvalues.h"
 #include "caml/sys.h"
 #include "caml/signals.h"
-#include "unixsupport.h"
 
 extern int caml_ba_element_size[];  /* from bigarray_stubs.c */
 
@@ -126,7 +125,7 @@ CAMLprim value caml_ba_map_file(value vfd, value vkind, value vlayout,
   caml_enter_blocking_section();
   if (fstat(fd, &st) == -1) {
     caml_leave_blocking_section();
-    uerror("fstat", Nothing);
+    caml_sys_error(NO_ARG);
   }
   file_size = st.st_size;
   /* Determine array size in bytes (or size of array without the major
@@ -153,7 +152,7 @@ CAMLprim value caml_ba_map_file(value vfd, value vkind, value vlayout,
     if (file_size < startpos + array_size) {
       if (caml_grow_file(fd, startpos + array_size) == -1) { /* PR#5543 */
         caml_leave_blocking_section();
-        uerror("caml_grow_file", Nothing);
+        caml_sys_error(NO_ARG);
       }
     }
   }
@@ -168,7 +167,7 @@ CAMLprim value caml_ba_map_file(value vfd, value vkind, value vlayout,
   else
     addr = NULL;                /* PR#5463 - mmap fails on empty region */
   caml_leave_blocking_section();
-  if (addr == (void *) MAP_FAILED) uerror("mmap", Nothing);
+  if (addr == (void *) MAP_FAILED) caml_sys_error(NO_ARG);
   addr = (void *) ((uintnat) addr + delta);
   /* Build and return the OCaml bigarray */
   return caml_ba_alloc(flags | CAML_BA_MAPPED_FILE, num_dims, addr, dim);

@@ -235,10 +235,6 @@ Next major version (4.05.0):
 - GPR#996: correctly update caml_top_of_stack in systhreads
   (Fabrice Le Fessant)
 
-- GPR#997: Deprecate Bigarray.*.map_file and add Unix.map_file as a
-  first step towards moving Bigarray to the stdlib
-  (Jérémie Dimino)
-
 ### Toplevel:
 
 - PR#7060, GPR#1035: Print exceptions in installed custom printers
