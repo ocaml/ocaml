@@ -9,7 +9,7 @@
 /* Configuration parameters and flags */
 
 static struct caml_params params;
-const struct caml_params* caml_params = &params;
+const struct caml_params* const caml_params = &params;
 
 static void init_startup_params()
 {

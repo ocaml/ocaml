@@ -24,7 +24,7 @@ struct caml_params {
   int backtrace_enabled_init;
 };
 
-extern const struct caml_params* caml_params;
+extern const struct caml_params* const caml_params;
 
 /* Called only from startup.c */
 void caml_init_startup_params();
