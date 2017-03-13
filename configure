@@ -727,7 +727,7 @@ shared_libraries_supported=false
 dl_needs_underscore=false
 sharedcccompopts=''
 mksharedlib='shared-libs-not-available'
-byteccrpath=''
+rpath=''
 mksharedlibrpath=''
 natdynlinkopts=""
 
@@ -746,13 +746,13 @@ if test $with_sharedlibs = "yes"; then
         *gcc*)
           sharedcccompopts="-fPIC"
           mksharedlib="$bytecc -shared"
-          byteccrpath="-Wl,-rpath,"
+          rpath="-Wl,-rpath,"
           mksharedlibrpath="-Wl,-rpath,"
           shared_libraries_supported=true;;
         cc*)
           sharedcccompopts=""
           mksharedlib="ld -shared -expect_unresolved '*'"
-          byteccrpath="-Wl,-rpath,"
+          rpath="-Wl,-rpath,"
           mksharedlibrpath="-rpath "
           shared_libraries_supported=true;;
       esac;;
@@ -762,19 +762,19 @@ if test $with_sharedlibs = "yes"; then
           sharedcccompopts="-fPIC"
           if sh ./solaris-ld; then
             mksharedlib="ld -G"
-            byteccrpath="-R"
+            rpath="-R"
             mksharedlibrpath="-R"
           else
             mksharedlib="$bytecc -shared"
             ldflags="$ldflags -Wl,-E"
             natdynlinkopts="-Wl,-E"
-            byteccrpath="-Wl,-rpath,"
+            rpath="-Wl,-rpath,"
             mksharedlibrpath="-Wl,-rpath,"
           fi
           shared_libraries_supported=true;;
         *)
           sharedcccompopts="-KPIC"
-          byteccrpath="-R"
+          rpath="-R"
           mksharedlibrpath="-R"
           mksharedlib="/usr/ccs/bin/ld -G"
           shared_libraries_supported=true;;
@@ -785,7 +785,7 @@ if test $with_sharedlibs = "yes"; then
         *gcc*) sharedcccompopts="-fPIC";;
       esac
       mksharedlib="ld -shared -rdata_shared"
-      byteccrpath="-Wl,-rpath,"
+      rpath="-Wl,-rpath,"
       mksharedlibrpath="-rpath "
       shared_libraries_supported=true;;
     i[3456]86-*-darwin[89].*)
@@ -805,7 +805,7 @@ if test $with_sharedlibs = "yes"; then
       sharedcccompopts="-fPIC"
       mksharedlib="$bytecc -shared"
       ldflags="$ldflags -Wl,-E"
-      byteccrpath="-Wl,-rpath,"
+      rpath="-Wl,-rpath,"
       mksharedlibrpath="-Wl,-rpath,"
       natdynlinkopts="-Wl,-E"
       shared_libraries_supported=true;;
@@ -960,7 +960,6 @@ fi
 nativecccompopts="$bytecccompopts"
 nativeccprivatecompopts="$byteccprivatecompopts"
 nativeccprofopts=''
-nativeccrpath="$byteccrpath"
 
 case "$arch,$nativecc,$system,$model" in
   *,*,rhapsody,*)      if $arch64; then partialld="ld -r -arch ppc64"; fi;;
@@ -1999,7 +1998,7 @@ echo "BYTECCCOMPOPTS=$byteccprivatecompopts" >> Makefile
 echo "LDFLAGS=$ldflags" >> Makefile
 echo "BYTECCLIBS=$cclibs $dllib $curseslibs $pthread_link \
                  $instrumented_runtime_libs" >> Makefile
-echo "BYTECCRPATH=$byteccrpath" >> Makefile
+echo "RPATH=$rpath" >> Makefile
 echo "EXE=$exe" >> Makefile
 echo "SUPPORTS_SHARED_LIBRARIES=$shared_libraries_supported" >> Makefile
 echo "SHAREDCCCOMPOPTS=$sharedcccompopts" >> Makefile
@@ -2022,7 +2021,6 @@ echo "NATIVECC=$nativecc $nativecccompopts" >> Makefile
 echo "NATIVE_C_COMPILER=$nativecc $nativecccompopts" >> Makefile
 echo "NATIVECCCOMPOPTS=$nativeccprivatecompopts" >> Makefile
 echo "NATIVECCPROFOPTS=$nativeccprofopts" >> Makefile
-echo "NATIVECCRPATH=$nativeccrpath" >> Makefile
 echo "NATIVECCLIBS=$cclibs $dllib" >> Makefile
 echo "ASM=$as" >> Makefile
 echo "ASPP=$aspp" >> Makefile

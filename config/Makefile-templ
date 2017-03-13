@@ -99,7 +99,7 @@ RANLIBCMD=ranlib
 #MKSHAREDLIB=gcc -shared -o
 # Compile-time option to $(BYTECC) to add a directory to be searched
 # at run-time for shared libraries
-#BYTECCRPATH=-Wl,-rpath
+#RPATH=-Wl,-rpath
 
 ############# Configuration for the native-code compiler
 
@@ -147,7 +147,7 @@ RANLIBCMD=ranlib
 
 # Compile-time option to $(NATIVECC) to add a directory to be searched
 # at run-time for shared libraries
-#NATIVECCRPATH=-Wl,-rpath
+#RPATH=-Wl,-rpath
 
 ### Command and flags to use for assembling ocamlopt-generated code
 #ASM=as
