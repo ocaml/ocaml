@@ -277,7 +277,7 @@ static void* domain_thread_func(void* v) {
   struct domain_startup_params* p = v;
   caml_root callback = p->callback;
 
-  create_domain(caml_startup_params.minor_heap_init);
+  create_domain(caml_params->minor_heap_init);
   p->newdom = domain_self;
   caml_plat_event_trigger(&p->ev);
   /* cannot access p below here */

@@ -272,8 +272,8 @@ CAMLprim value caml_sys_get_argv(value unit)
 {
   CAMLparam0 ();   /* unit is unused */
   CAMLlocal3 (exe_name, argv, res);
-  exe_name = caml_copy_string(caml_startup_params.exe_name);
-  argv = caml_copy_string_array((char const **) caml_startup_params.main_argv);
+  exe_name = caml_copy_string(caml_params->exe_name);
+  argv = caml_copy_string_array(caml_params->main_argv);
   res = caml_alloc_small(2, 0);
   caml_initialize_field(res, 0, exe_name);
   caml_initialize_field(res, 1, argv);

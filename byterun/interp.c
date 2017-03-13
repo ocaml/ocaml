@@ -310,9 +310,9 @@ value caml_interprete(code_t prog, asize_t prog_size)
 
     caml_bcodcount++;
     if (caml_icount-- == 0) caml_stop_here ();
-    if (caml_startup_params.trace_flag>1) printf("\n##%ld\n", caml_bcodcount);
-    if (caml_startup_params.trace_flag) caml_disasm_instr(pc);
-    if (caml_startup_params.trace_flag>1) {
+    if (caml_params->trace_flag>1) printf("\n##%ld\n", caml_bcodcount);
+    if (caml_params->trace_flag) caml_disasm_instr(pc);
+    if (caml_params->trace_flag>1) {
       printf("env=");
       caml_trace_value_file(env,prog,prog_size,stdout);
       putchar('\n');

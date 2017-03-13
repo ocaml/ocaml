@@ -199,7 +199,7 @@ CAMLexport value caml_copy_string(char const *s)
 }
 
 CAMLexport value caml_alloc_array(value (*funct)(char const *),
-                                  char const ** arr)
+                                  char const * const* arr)
 {
   CAMLparam0 ();
   mlsize_t nbr, n;
@@ -218,7 +218,7 @@ CAMLexport value caml_alloc_array(value (*funct)(char const *),
   }
 }
 
-CAMLexport value caml_copy_string_array(char const ** arr)
+CAMLexport value caml_copy_string_array(char const * const* arr)
 {
   return caml_alloc_array(caml_copy_string, arr);
 }

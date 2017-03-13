@@ -34,3 +34,6 @@ DOMAIN_STATE(29, uintnat, stat_blocks_marked)
 /* Phase of the current domain's major GC. Phases are
    not necessarily synchronised between domains. */
 DOMAIN_STATE(30, int, gc_phase)
+
+/* See parsing.c */
+DOMAIN_STATE(31, int, parser_trace)

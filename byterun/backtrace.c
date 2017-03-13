@@ -294,7 +294,7 @@ static void read_debug_info()
 {
   CAMLparam0();
   CAMLlocal1(events_heap);
-  char * exec_name;
+  const char * exec_name;
   int fd;
   struct exec_trailer trail;
   struct channel * chan;
@@ -308,7 +308,7 @@ static void read_debug_info()
   if (caml_cds_file != NULL) {
     exec_name = caml_cds_file;
   } else {
-    exec_name = caml_startup_params.exe_name;
+    exec_name = caml_params->exe_name;
   }
   fd = caml_attempt_open(&exec_name, &trail, 1);
   if (fd < 0){

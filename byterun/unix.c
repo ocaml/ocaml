@@ -46,7 +46,7 @@
 #define S_ISREG(mode) (((mode) & S_IFMT) == S_IFREG)
 #endif
 
-char * caml_decompose_path(struct ext_table * tbl, char * path)
+char * caml_decompose_path(struct ext_table * tbl, const char * path)
 {
   char * p, * q;
   size_t n;
@@ -65,9 +65,10 @@ char * caml_decompose_path(struct ext_table * tbl, char * path)
   return p;
 }
 
-char * caml_search_in_path(struct ext_table * path, char * name)
+char * caml_search_in_path(struct ext_table * path, const char * name)
 {
-  char * p, * dir, * fullname;
+  const char * p;
+  char * dir, * fullname;
   int i;
   struct stat st;
 
@@ -91,7 +92,7 @@ char * caml_search_in_path(struct ext_table * path, char * name)
 /* Cygwin needs special treatment because of the implicit ".exe" at the
    end of executable file names */
 
-static int cygwin_file_exists(char * name)
+static int cygwin_file_exists(const char * name)
 {
   int fd;
   /* Cannot use stat() here because it adds ".exe" implicitly */
@@ -101,7 +102,7 @@ static int cygwin_file_exists(char * name)
   return 1;
 }
 
-static char * cygwin_search_exe_in_path(struct ext_table * path, char * name)
+static char * cygwin_search_exe_in_path(struct ext_table * path, const char * name)
 {
   char * p, * dir, * fullname;
   int i;
@@ -129,7 +130,7 @@ static char * cygwin_search_exe_in_path(struct ext_table * path, char * name)
 
 #endif
 
-char * caml_search_exe_in_path(char * name)
+char * caml_search_exe_in_path(const char * name)
 {
   struct ext_table path;
   char * tofree;
@@ -147,7 +148,7 @@ char * caml_search_exe_in_path(char * name)
   return res;
 }
 
-char * caml_search_dll_in_path(struct ext_table * path, char * name)
+char * caml_search_dll_in_path(struct ext_table * path, const char * name)
 {
   char * dllname;
   char * res;
