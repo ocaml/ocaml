@@ -26,7 +26,7 @@ static void write_barrier(value obj, int field, value val)
         /* Add to remembered set */
         Ref_table_add(&domain_state->remembered_set->major_ref, Op_val(obj) + field);
       } else {
-        caml_darken(val, 0);
+        caml_darken(0, val, 0);
       }
     } else if (Is_young(val) && val < obj) {
       /* Both obj and val are young and val is more recent than obj. */

@@ -129,23 +129,23 @@ static value next_ident = Val_int(0);
 
 /* Scan the stacks of the other threads */
 
-static void (*prev_scan_roots_hook) (scanning_action);
+static void (*prev_scan_roots_hook) (scanning_action, void*);
 
-static void thread_scan_roots(scanning_action action)
+static void thread_scan_roots(scanning_action action, void* fdata)
 {
 #if 0
   caml_thread_t th, start;
 
   /* Scan all active descriptors */
   start = curr_thread;
-  (*action)((value) curr_thread, (value *) &curr_thread);
+  (*action)(fdata, (value) curr_thread, (value *) &curr_thread);
   /* Don't scan curr_thread->sp, this has already been done.
      Don't scan local roots either, for the same reason. */
   for (th = start->next; th != start; th = th->next) {
-    do_local_roots(action, th->sp, th->stack_high, NULL);
+    do_local_roots(action, fdata, th->sp, th->stack_high, NULL);
   }
   /* Hook */
-  if (prev_scan_roots_hook != NULL) (*prev_scan_roots_hook)(action);
+  if (prev_scan_roots_hook != NULL) (*prev_scan_roots_hook)(action, fdata);
 #endif
 }
 

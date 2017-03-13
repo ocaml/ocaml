@@ -590,10 +590,10 @@ static void stw_phase () {
     dom_internal* d = &all_domains[i];
     if (d == domain_self || domain_is_locked(d)) {
       if (d->state.state)
-        caml_do_local_roots(&caml_verify_root, &d->state);
+        caml_do_local_roots(&caml_verify_root, 0, &d->state);
     }
   }
-  caml_scan_global_roots(&caml_verify_root);
+  caml_scan_global_roots(&caml_verify_root, 0);
   caml_verify_heap();
   caml_plat_lock(&verify_lock);
   unsigned gen = verify_gen;

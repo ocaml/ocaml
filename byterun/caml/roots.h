@@ -17,9 +17,9 @@
 #include "misc.h"
 #include "memory.h"
 
-typedef void (*scanning_action) (value, value *);
-CAMLexport void (*caml_scan_roots_hook)(scanning_action, struct domain*);
+typedef void (*scanning_action) (void*, value, value *);
+CAMLexport void (*caml_scan_roots_hook)(scanning_action, void*, struct domain*);
 
-void caml_do_local_roots(scanning_action, struct domain*);
+void caml_do_local_roots(scanning_action, void*, struct domain*);
 
 #endif /* CAML_ROOTS_H */

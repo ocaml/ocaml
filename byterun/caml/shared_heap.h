@@ -24,7 +24,7 @@ void caml_shared_unpin(value v);
 
 int caml_mark_object(value);
 
-void caml_redarken_pool(struct pool*, scanning_action);
+void caml_redarken_pool(struct pool*, scanning_action, void*);
 
 intnat caml_sweep(struct caml_heap_state*, intnat);
 
@@ -38,7 +38,7 @@ void caml_cycle_heap(struct caml_heap_state*);
 
 #ifdef CAML_VERIFY_HEAP
 /* must only be called while all domains are paused */
-void caml_verify_root(value, value*);
+void caml_verify_root(void*, value, value*);
 void caml_verify_heap(void);
 #endif
 

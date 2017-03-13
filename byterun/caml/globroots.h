@@ -20,7 +20,7 @@
 #include "roots.h"
 #include "memory.h"
 
-void caml_scan_global_roots(scanning_action f);
+void caml_scan_global_roots(scanning_action f, void*);
 
 void caml_cleanup_deleted_roots(void);
 

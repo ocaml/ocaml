@@ -402,7 +402,7 @@ int caml_mark_object(value p) {
   }
 }
 
-void caml_redarken_pool(struct pool* r, scanning_action f) {
+void caml_redarken_pool(struct pool* r, scanning_action f, void* fdata) {
   mlsize_t wh = wsize_sizeclass[r->sz];
   value* p = (value*)((char*)r + POOL_HEADER_SZ);
   value* end = (value*)((char*)r + Bsize_wsize(POOL_WSIZE));
@@ -410,7 +410,7 @@ void caml_redarken_pool(struct pool* r, scanning_action f) {
   while (p + wh <= end) {
     header_t hd = p[0];
     if (hd != 0 && Has_status_hd(hd, global.MARKED)) {
-      f(Val_hp(p), 0);
+      f(fdata, Val_hp(p), 0);
     }
     p += wh;
   }
@@ -473,7 +473,7 @@ static __thread int verify_sp;
 static __thread intnat verify_objs = 0;
 static __thread struct addrmap verify_seen = ADDRMAP_INIT;
 
-static void verify_push(value v, value* p) {
+static void verify_push(void* state, value v, value* p) {
   if (!Is_block(v)) return;
 
   // caml_gc_log ("verify_push: 0x%lx", v);
@@ -485,9 +485,9 @@ static void verify_push(value v, value* p) {
   verify_stack[verify_sp++] = v;
 }
 
-void caml_verify_root(value v, value* p)
+void caml_verify_root(void* state, value v, value* p)
 {
-  verify_push(v, p);
+  verify_push(state, v, p);
 }
 
 static void verify_object(value v) {
@@ -512,7 +512,7 @@ static void verify_object(value v) {
   }
 
   if (Tag_val(v) == Stack_tag) {
-    caml_scan_stack(verify_push, v);
+    caml_scan_stack(verify_push, 0, v);
   } else if (Tag_val(v) < No_scan_tag) {
     int i;
     for (i = 0; i < Wosize_val(v); i++) {
@@ -521,7 +521,7 @@ static void verify_object(value v) {
         Assert(caml_owner_of_young_block(v) ==
                caml_owner_of_young_block(f));
       }
-      if (Is_block(f)) verify_push(f, 0);
+      if (Is_block(f)) verify_push(0, f, 0);
     }
   }
 }
