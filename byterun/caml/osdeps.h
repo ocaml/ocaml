@@ -20,18 +20,18 @@
 
 /* Decompose the given path into a list of directories, and add them
    to the given table.  Return the block to be freed later. */
-extern char * caml_decompose_path(struct ext_table * tbl, char * path);
+extern char * caml_decompose_path(struct ext_table * tbl, const char * path);
 
 /* Search the given file in the given list of directories.
    If not found, return a copy of [name].  Result is allocated with
    [caml_stat_alloc]. */
-extern char * caml_search_in_path(struct ext_table * path, char * name);
+extern char * caml_search_in_path(struct ext_table * path, const char * name);
 
 /* Same, but search an executable name in the system path for executables. */
-CAMLextern char * caml_search_exe_in_path(char * name);
+CAMLextern char * caml_search_exe_in_path(const char * name);
 
 /* Same, but search a shared library in the given path. */
-extern char * caml_search_dll_in_path(struct ext_table * path, char * name);
+extern char * caml_search_dll_in_path(struct ext_table * path, const char * name);
 
 /* Open a shared library and return a handle on it.
    If [for_execution] is true, perform full symbol resolution and

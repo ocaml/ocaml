@@ -8,24 +8,24 @@
 
 /* Configuration parameters and flags */
 
-struct caml_startup_params caml_startup_params;
+static struct caml_params params;
+const struct caml_params* caml_params = &params;
 
 static void init_startup_params()
 {
-  struct caml_startup_params *p = &caml_startup_params;
-  p->percent_free_init = Percent_free_def;
-  p->max_percent_free_init = Max_percent_free_def;
-  p->minor_heap_init = Minor_heap_def;
-  p->heap_chunk_init = Heap_chunk_def;
-  p->heap_size_init = Init_heap_def;
-  p->max_stack_init = Max_stack_def;
+  params.percent_free_init = Percent_free_def;
+  params.max_percent_free_init = Max_percent_free_def;
+  params.minor_heap_init = Minor_heap_def;
+  params.heap_chunk_init = Heap_chunk_def;
+  params.heap_size_init = Init_heap_def;
+  params.max_stack_init = Max_stack_def;
 #ifdef PROFILING
-  p->fiber_wsz_init = Profile_slop + (Stack_threshold * 2) / sizeof(value);
+  params.fiber_wsz_init = Profile_slop + (Stack_threshold * 2) / sizeof(value);
 #else
-  p->fiber_wsz_init = (Stack_threshold * 2) / sizeof(value);
+  params.fiber_wsz_init = (Stack_threshold * 2) / sizeof(value);
 #endif
 #ifdef DEBUG
-  p->verb_gc = 1;
+  params.verb_gc = 1;
 #endif
 }
 
@@ -63,21 +63,21 @@ void caml_init_startup_params(void)
   if (opt != NULL){
     while (*opt != '\0'){
       switch (*opt++){
-      case 'b': caml_startup_params.backtrace_enabled_init = 1; break;
-      case 'h': scanmult (opt, &caml_startup_params.heap_size_init); break;
-      case 'i': scanmult (opt, &caml_startup_params.heap_chunk_init); break;
-      case 'l': scanmult (opt, &caml_startup_params.max_stack_init); break;
-      case 'o': scanmult (opt, &caml_startup_params.percent_free_init); break;
-      case 'O': scanmult (opt, &caml_startup_params.max_percent_free_init); break;
-      case 'p': caml_startup_params.parser_trace = 1; break;
+      case 'b': params.backtrace_enabled_init = 1; break;
+      case 'h': scanmult (opt, &params.heap_size_init); break;
+      case 'i': scanmult (opt, &params.heap_chunk_init); break;
+      case 'l': scanmult (opt, &params.max_stack_init); break;
+      case 'o': scanmult (opt, &params.percent_free_init); break;
+      case 'O': scanmult (opt, &params.max_percent_free_init); break;
+      case 'p': params.parser_trace = 1; break;
       /* case 'R': see stdlib/hashtbl.mli */
-      case 's': scanmult (opt, &caml_startup_params.minor_heap_init); break;
+      case 's': scanmult (opt, &params.minor_heap_init); break;
 #ifdef DEBUG
-      case 't': caml_startup_params.trace_flag = 1; break;
+      case 't': params.trace_flag = 1; break;
 #endif
-      case 'v': scanmult (opt, &caml_startup_params.verb_gc); break;
-      case 'f': scanmult (opt, &caml_startup_params.fiber_wsz_init); break;
-      case 'e': caml_startup_params.eventlog_enabled = 1; break;
+      case 'v': scanmult (opt, &params.verb_gc); break;
+      case 'f': scanmult (opt, &params.fiber_wsz_init); break;
+      case 'e': params.eventlog_enabled = 1; break;
       }
     }
   }
@@ -94,7 +94,7 @@ int caml_parse_command_line(char **argv)
     switch(argv[i][1]) {
 #ifdef DEBUG
     case 't':
-      caml_startup_params.trace_flag++;
+      params.trace_flag++;
       break;
 #endif
     case 'v':
@@ -105,7 +105,7 @@ int caml_parse_command_line(char **argv)
         printf (OCAML_VERSION_STRING "\n");
         exit (0);
       }else{
-        caml_startup_params.verb_gc = 0x001+0x004+0x008+0x010+0x020;
+        params.verb_gc = 0x001+0x004+0x008+0x010+0x020;
       }
       break;
 #ifndef NATIVE_CODE
@@ -116,7 +116,7 @@ int caml_parse_command_line(char **argv)
       break;
 #endif
     case 'b':
-      caml_startup_params.backtrace_enabled_init = 1;
+      params.backtrace_enabled_init = 1;
       break;
 #ifndef NATIVE_CODE
     case 'I':
@@ -131,4 +131,10 @@ int caml_parse_command_line(char **argv)
     }
   }
   return i;
+}
+
+void caml_init_argv(const char* exe_name, char** main_argv)
+{
+  params.exe_name = exe_name;
+  params.main_argv = (const char* const*)main_argv;
 }

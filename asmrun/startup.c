@@ -99,8 +99,8 @@ void caml_main(char **argv)
   caml_init_custom_operations();
   caml_init_gc ();
 
-  if (caml_startup_params.backtrace_enabled_init) caml_record_backtrace(Val_int(1));
-  if (caml_startup_params.eventlog_enabled) caml_setup_eventlog();
+  if (caml_params->backtrace_enabled_init) caml_record_backtrace(Val_int(1));
+  if (caml_params->eventlog_enabled) caml_setup_eventlog();
 
   /* Capture 16-byte aligned (ceil) system_stack_high */
   CAML_DOMAIN_STATE->system_stack_high =
@@ -115,8 +115,7 @@ void caml_main(char **argv)
     exe_name = proc_self_exe;
   else
     exe_name = caml_search_exe_in_path(exe_name);
-  caml_startup_params.exe_name = exe_name;
-  caml_startup_params.main_argv = argv;
+  caml_init_argv(exe_name, argv);
   if (sigsetjmp(caml_termination_jmpbuf.buf, 0)) {
     if (caml_termination_hook != NULL) caml_termination_hook(NULL);
     return;

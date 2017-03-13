@@ -63,7 +63,7 @@ void caml_gc_log (char *msg, ...)
 
   char fmtbuf[512];
 
-  if (caml_startup_params.verb_gc) {
+  if (caml_params->verb_gc) {
     struct domain* self = caml_domain_self();
     sprintf(fmtbuf, "[%02d] %s\n", self ? self->id : -1, msg);
     vfprintf(stderr, fmtbuf, args);
@@ -73,20 +73,20 @@ void caml_gc_log (char *msg, ...)
   va_end (args);
 }
 
-CAMLexport void caml_fatal_error (char *msg)
+CAMLexport void caml_fatal_error (const char *msg)
 {
   fprintf (stderr, "%s", msg);
   exit(2);
 }
 
-CAMLexport void caml_fatal_error_arg (char *fmt, char *arg)
+CAMLexport void caml_fatal_error_arg (const char *fmt, const char *arg)
 {
   fprintf (stderr, fmt, arg);
   exit(2);
 }
 
-CAMLexport void caml_fatal_error_arg2 (char *fmt1, char *arg1,
-                                       char *fmt2, char *arg2)
+CAMLexport void caml_fatal_error_arg2 (const char *fmt1, const char *arg1,
+                                       const char *fmt2, const char *arg2)
 {
   fprintf (stderr, fmt1, arg1);
   fprintf (stderr, fmt2, arg2);

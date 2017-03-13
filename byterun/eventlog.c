@@ -85,7 +85,7 @@ void caml_setup_eventlog() {
   caml_gc_log("No gettimeofday() on this system, event logging disabled");
 #endif
 
-  sprintf(filename, "%.200s.eventlog", caml_startup_params.exe_name);
+  sprintf(filename, "%.200s.eventlog", caml_params->exe_name);
   output = fopen(filename, "w");
   if (!output) {
     caml_gc_log("Failed to open event log '%s': %s", filename,

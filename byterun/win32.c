@@ -39,7 +39,7 @@
 #define S_ISREG(mode) (((mode) & S_IFMT) == S_IFREG)
 #endif
 
-char * caml_decompose_path(struct ext_table * tbl, char * path)
+char * caml_decompose_path(struct ext_table * tbl, const char * path)
 {
   char * p, * q;
   int n;
@@ -58,9 +58,10 @@ char * caml_decompose_path(struct ext_table * tbl, char * path)
   return p;
 }
 
-char * caml_search_in_path(struct ext_table * path, char * name)
+char * caml_search_in_path(struct ext_table * path, const char * name)
 {
-  char * p, * dir, * fullname;
+  const char * p;
+  char * dir, * fullname;
   int i;
   struct stat st;
 
@@ -82,7 +83,7 @@ char * caml_search_in_path(struct ext_table * path, char * name)
   return caml_strdup(name);
 }
 
-CAMLexport char * caml_search_exe_in_path(char * name)
+CAMLexport char * caml_search_exe_in_path(const char * name)
 {
   char * fullname, * filepart;
   size_t fullnamelen;
@@ -111,7 +112,7 @@ CAMLexport char * caml_search_exe_in_path(char * name)
   }
 }
 
-char * caml_search_dll_in_path(struct ext_table * path, char * name)
+char * caml_search_dll_in_path(struct ext_table * path, const char * name)
 {
   char * dllname;
   char * res;
@@ -128,7 +129,7 @@ void * caml_dlopen(char * libname, int for_execution, int global)
   int flags = (global ? FLEXDLL_RTLD_GLOBAL : 0);
   if (!for_execution) flags |= FLEXDLL_RTLD_NOEXEC;
   handle = flexdll_dlopen(libname, flags);
-  if ((handle != NULL) && ((caml_startup_params.verb_gc & 0x100) != 0)) {
+  if ((handle != NULL) && ((caml_params->verb_gc & 0x100) != 0)) {
     flexdll_dump_exports(handle);
     fflush(stdout);
   }

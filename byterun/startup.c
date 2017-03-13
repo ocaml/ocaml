@@ -84,7 +84,7 @@ static int read_trailer(int fd, struct exec_trailer *trail)
     return BAD_BYTECODE;
 }
 
-int caml_attempt_open(char **name, struct exec_trailer *trail,
+int caml_attempt_open(const char **name, struct exec_trailer *trail,
                       int do_open_script)
 {
   char * truename;
@@ -228,7 +228,7 @@ CAMLexport void caml_main(char **argv)
   struct channel * chan;
   value res;
   char * shared_lib_path, * shared_libs, * req_prims;
-  char * exe_name;
+  const char * exe_name;
   static char proc_self_exe[256];
 
   CAML_INIT_DOMAIN_STATE;
@@ -275,16 +275,15 @@ CAMLexport void caml_main(char **argv)
       break;
     }
   }
-  caml_startup_params.exe_name = exe_name;
-  caml_startup_params.main_argv = argv + pos;
+  caml_init_argv(exe_name, argv + pos);
 
   /* Read the table of contents (section descriptors) */
   caml_read_section_descriptors(fd, &trail);
   /* Initialize the abstract machine */
   caml_init_gc ();
   CAML_DOMAIN_STATE->external_raise = NULL;
-  if (caml_startup_params.backtrace_enabled_init) caml_record_backtrace(Val_int(1));
-  if (caml_startup_params.eventlog_enabled) caml_setup_eventlog();
+  if (caml_params->backtrace_enabled_init) caml_record_backtrace(Val_int(1));
+  if (caml_params->eventlog_enabled) caml_setup_eventlog();
   /* Initialize the interpreter */
   caml_interprete(NULL, 0);
   /* Initialize the debugger, if needed */
@@ -346,18 +345,14 @@ CAMLexport void caml_startup_code(
   caml_install_invalid_parameter_handler();
 #endif
   caml_init_custom_operations();
-#ifdef DEBUG
-  caml_startup_params.verb_gc = 63;
-#endif
   backtrace_cds_file_init();
   exe_name = argv[0];
   if (caml_executable_name(proc_self_exe, sizeof(proc_self_exe)) == 0)
     exe_name = proc_self_exe;
-  caml_startup_params.exe_name = exe_name;
-  caml_startup_params.main_argv = argv;
+  caml_init_argv(exe_name, argv);
   /* Initialize the abstract machine */
   caml_init_gc ();
-  if (caml_startup_params.backtrace_enabled_init) caml_record_backtrace(Val_int(1));
+  if (caml_params->backtrace_enabled_init) caml_record_backtrace(Val_int(1));
   CAML_DOMAIN_STATE->external_raise = NULL;
   /* Initialize the interpreter */
   caml_interprete(NULL, 0);
