@@ -27,6 +27,12 @@ static void init_startup_params()
 #ifdef DEBUG
   params.verb_gc = 1;
 #endif
+#ifndef NATIVE_CODE
+  params.cds_file = getenv("CAML_DEBUG_FILE");
+  if (params.cds_file != NULL) {
+    params.cds_file = caml_strdup(params.cds_file);
+  }
+#endif
 }
 
 

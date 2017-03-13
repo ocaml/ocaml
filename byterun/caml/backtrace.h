@@ -22,7 +22,6 @@ CAMLprim value caml_get_current_callstack(value max_frames);
 CAMLprim value caml_get_continuation_callstack(value stack, value max_frames);
 #ifndef NATIVE_CODE
 extern void caml_stash_backtrace(value exn, code_t pc, value * sp, int reraise);
-extern void backtrace_cds_file_init();
 #endif
 CAMLextern void caml_print_exception_backtrace(void);
 

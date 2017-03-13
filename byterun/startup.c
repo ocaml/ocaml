@@ -233,7 +233,6 @@ CAMLexport void caml_main(char **argv)
 
   CAML_INIT_DOMAIN_STATE;
 
-  backtrace_cds_file_init();
   caml_init_startup_params();
   /* Machine-dependent initialization of the floating-point hardware
      so that it behaves as much as possible as specified in IEEE */
@@ -345,7 +344,6 @@ CAMLexport void caml_startup_code(
   caml_install_invalid_parameter_handler();
 #endif
   caml_init_custom_operations();
-  backtrace_cds_file_init();
   exe_name = argv[0];
   if (caml_executable_name(proc_self_exe, sizeof(proc_self_exe)) == 0)
     exe_name = proc_self_exe;
