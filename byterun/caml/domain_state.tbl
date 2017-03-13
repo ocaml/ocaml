@@ -29,3 +29,8 @@ DOMAIN_STATE(25, uint64, stat_promoted_words)
 DOMAIN_STATE(26, uint64, stat_major_words)
 DOMAIN_STATE(27, intnat, stat_minor_collections)
 DOMAIN_STATE(28, intnat, stat_major_collections)
+DOMAIN_STATE(29, uintnat, stat_blocks_marked)
+
+/* Phase of the current domain's major GC. Phases are
+   not necessarily synchronised between domains. */
+DOMAIN_STATE(30, int, gc_phase)
