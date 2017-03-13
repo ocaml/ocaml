@@ -376,8 +376,7 @@ CAMLexport void caml_startup_code(
   /* Load the globals */
   caml_modify_root(caml_global_data, caml_input_value_from_block(data, data_size));
   /* Record the sections (for caml_get_section_table in meta.c) */
-  caml_section_table = section_table;
-  caml_section_table_size = section_table_size;
+  caml_init_section_table(section_table, section_table_size);
   /* Execute the program */
   caml_debugger(PROGRAM_START);
   res = caml_interprete(caml_start_code, caml_code_size);

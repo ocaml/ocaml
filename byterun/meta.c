@@ -27,6 +27,7 @@
 #include "caml/mlvalues.h"
 #include "caml/prims.h"
 #include "caml/fiber.h"
+#include "caml/params.h"
 
 #ifndef NATIVE_CODE
 
@@ -35,14 +36,11 @@ CAMLprim value caml_get_global_data(value unit)
   return caml_read_root(caml_global_data);
 }
 
-char * caml_section_table = NULL;
-asize_t caml_section_table_size;
-
 CAMLprim value caml_get_section_table(value unit)
 {
-  if (caml_section_table == NULL) caml_raise_not_found();
-  return caml_input_value_from_block(caml_section_table,
-                                     caml_section_table_size);
+  if (caml_params->section_table == NULL) caml_raise_not_found();
+  return caml_input_value_from_block(caml_params->section_table,
+                                     caml_params->section_table_size);
 }
 
 CAMLprim value caml_reify_bytecode(value prog, value len)
