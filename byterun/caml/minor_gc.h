@@ -44,13 +44,6 @@ struct domain;
 CAMLextern value caml_promote(struct domain*, value root);
 int caml_stack_is_saved (void);
 
-#define Oldify(p) do{ \
-    value __oldify__v__ = *p; \
-    if (Is_block (__oldify__v__) && Is_young (__oldify__v__)){ \
-      caml_oldify_one (__oldify__v__, (p)); \
-    } \
-  }while(0)
-
 #define Ref_table_add(ref_table, x) do {                                \
     struct caml_ref_table* ref = (ref_table);                           \
     if (ref->ptr >= ref->limit) {                                       \
