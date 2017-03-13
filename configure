@@ -323,6 +323,10 @@ fi
 
 inf "Using compiler $cc."
 
+# Configure compiler to use in further tests.
+
+export cc
+
 # Determine the C compiler family (GCC, Clang, etc)
 
 ccfamily=`$cc -E cckind.c | grep '^[a-z]' | tr -s ' ' '-'`
@@ -431,7 +435,7 @@ case "$bytecc,$target" in
     # No -lm library
     mathlib="";;
   *gcc,alpha*-*-osf*)
-    if cc="$bytecc" sh ./hasgot -mieee; then
+    if sh ./hasgot -mieee; then
       bytecccompopts="-mieee $bytecccompopts";
     fi
     # Put code and static data in lower 4GB
@@ -441,7 +445,7 @@ case "$bytecc,$target" in
   cc,alpha*-*-osf*)
     bytecccompopts="-std1 -ieee";;
   *gcc*,alpha*-*-linux*)
-    if cc="$bytecc" sh ./hasgot -mieee; then
+    if sh ./hasgot -mieee; then
       bytecccompopts="-mieee $bytecccompopts";
     fi;;
   *,mips-*-irix6*)
@@ -509,14 +513,13 @@ case "$bytecc,$target" in
     echo "#endif" >> m.h;;
 esac
 
-# Configure compiler to use in further tests.
+# Configure compiler options to use in further tests.
 
-cc="$bytecc $ldflags"
-export cc cclibs verbose
+export cclibs ldflags verbose
 
 # Check C compiler.
 
-cc="$bytecc $bytecccompopts $byteccprivatecompopts $ldflags" sh ./runtest ansi.c
+cflags="$bytecccompopts $byteccprivatecompopts" sh ./runtest ansi.c
 case $? in
   0) inf "The C compiler is ISO C99 compliant." ;;
   1) wrn "The C compiler is ANSI / ISO C90 compliant, but not ISO C99" \
