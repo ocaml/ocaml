@@ -1595,10 +1595,7 @@ With "ocamlopt", you should do:
 linking phase that links together the object file produced by the
 "-output-obj" option and the remainder of the program.  Those options
 are shown in the configuration file "config/Makefile" generated during
-compilation of OCaml, as the variables "BYTECCLINKOPTS"
-(for object files produced by "ocamlc -output-obj") and
-"NATIVECCLINKOPTS" (for object files produced by "ocamlopt
--output-obj").
+compilation of OCaml, as the variable "BYTECCLINKOPTS".
 \begin{itemize}
 \item Windows with the MSVC compiler: the object file produced by
 OCaml have been compiled with the "/MD" flag, and therefore

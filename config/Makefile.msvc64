@@ -185,9 +185,6 @@ NATIVE_C_COMPILER=$(NATIVECC)
 ### Additional compile-time options for $(NATIVECC).
 NATIVECCCOMPOPTS=-DCAML_NAME_SPACE
 
-### Additional link-time options for $(NATIVECC)
-NATIVECCLINKOPTS=
-
 ### Build partially-linked object file
 PACKLD=link -lib -nologo -machine:AMD64 -out:# must have no space after '-out:'
 

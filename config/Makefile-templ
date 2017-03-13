@@ -145,9 +145,6 @@ RANLIBCMD=ranlib
 # For gcc if cautious:
 #NATIVECCCOMPOPTS=-Wall
 
-### Additional link-time options for $(NATIVECC)
-#NATIVECCLINKOPTS=
-
 # Compile-time option to $(NATIVECC) to add a directory to be searched
 # at run-time for shared libraries
 #NATIVECCRPATH=-Wl,-rpath

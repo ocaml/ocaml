@@ -957,9 +957,6 @@ fi
 nativecccompopts="$bytecccompopts"
 nativeccprivatecompopts="$byteccprivatecompopts"
 nativeccprofopts=''
-nativecclinkopts=''
-# FIXME the naming of nativecclinkopts is broken: these are options for
-# ld (for shared libs), not for cc
 nativeccrpath="$byteccrpath"
 
 case "$arch,$nativecc,$system,$model" in
@@ -1851,7 +1848,6 @@ if test "$with_frame_pointers" = "true"; then
     x86_64-*-linux*,gcc*|x86_64-*-linux*,clang*)
        nativecccompopts="$nativecccompopts -g  -fno-omit-frame-pointer"
        bytecccompopts="$bytecccompopts -g  -fno-omit-frame-pointer"
-       nativecclinkopts="$nativecclinkopts -g"
        echo "#define WITH_FRAME_POINTERS" >> m.h
        ;;
     *) err "Unsupported architecture with frame pointers";;
@@ -2023,7 +2019,6 @@ echo "NATIVECC=$nativecc $nativecccompopts" >> Makefile
 echo "NATIVE_C_COMPILER=$nativecc $nativecccompopts" >> Makefile
 echo "NATIVECCCOMPOPTS=$nativeccprivatecompopts" >> Makefile
 echo "NATIVECCPROFOPTS=$nativeccprofopts" >> Makefile
-echo "NATIVECCLINKOPTS=$nativecclinkopts" >> Makefile
 echo "NATIVECCRPATH=$nativeccrpath" >> Makefile
 echo "NATIVECCLIBS=$cclibs $dllib" >> Makefile
 echo "ASM=$as" >> Makefile
@@ -2034,7 +2029,7 @@ echo "DYNLINKOPTS=$dllib" >> Makefile
 echo "OTHERLIBRARIES=$otherlibraries" >> Makefile
 echo "CC_PROFILE=$cc_profile" >> Makefile
 echo "SYSTHREAD_SUPPORT=$systhread_support" >> Makefile
-echo "PACKLD=$partialld $nativecclinkopts -o\\ " >> Makefile
+echo "PACKLD=$partialld -o\\ " >> Makefile
 echo "IFLEXDIR=$iflexdir" >> Makefile
 echo "O=o" >> Makefile
 echo "A=a" >> Makefile
@@ -2119,7 +2114,7 @@ else
   fi
   inf "        C compiler used........... $nativecc"
   inf "        options for compiling..... $nativecccompopts"
-  inf "        options for linking....... $nativecclinkopts $cclibs"
+  inf "        options for linking....... $cclibs"
   inf "        assembler ................ $as"
   inf "        preprocessed assembler ... $aspp"
   if test "$asm_cfi_supported" = "true"; then
