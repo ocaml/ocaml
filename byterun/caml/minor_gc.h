@@ -17,8 +17,6 @@
 #include "misc.h"
 #include "addrmap.h"
 
-extern __thread asize_t caml_minor_heap_size;
-
 struct caml_ref_table {
   value **base;
   value **end;
