@@ -13,6 +13,8 @@ struct caml_params {
   const char* section_table;
   asize_t section_table_size;
 
+  const char* cds_file;
+
   uintnat verb_gc;
   int parser_trace;
   int trace_flag;
