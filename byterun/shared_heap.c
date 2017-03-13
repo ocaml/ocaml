@@ -466,23 +466,33 @@ void caml_init_major_heap (asize_t size) {
    everything should be unmarked. If something reachable marked after
    cycling the heap, it means that garbage was reachable beforehand.
 */
+struct heap_verify_state {
+  value* stack;
+  int stack_len;
+  int sp;
+  intnat objs;
+  struct addrmap seen;
+};
 
-static __thread value* verify_stack;
-static __thread int verify_stack_len;
-static __thread int verify_sp;
-static __thread intnat verify_objs = 0;
-static __thread struct addrmap verify_seen = ADDRMAP_INIT;
+struct heap_verify_state* caml_verify_begin()
+{
+  struct heap_verify_state init = {0, 0, 0, 0, ADDRMAP_INIT};
+  struct heap_verify_state* st = caml_stat_alloc(sizeof init);
+  *st = init;
+  return st;
+}
 
-static void verify_push(void* state, value v, value* p) {
+void verify_push(void* st_v, value v, value* p)
+{
+  struct heap_verify_state* st = st_v;
   if (!Is_block(v)) return;
 
-  // caml_gc_log ("verify_push: 0x%lx", v);
-  if (verify_sp == verify_stack_len) {
-    verify_stack_len = verify_stack_len * 2 + 100;
-    verify_stack = caml_stat_resize(verify_stack,
-         sizeof(value*) * verify_stack_len);
+  if (st->sp == st->stack_len) {
+    st->stack_len = st->stack_len * 2 + 100;
+    st->stack = caml_stat_resize(st->stack,
+         sizeof(value*) * st->stack_len);
   }
-  verify_stack[verify_sp++] = v;
+  st->stack[st->sp++] = v;
 }
 
 void caml_verify_root(void* state, value v, value* p)
@@ -490,7 +500,7 @@ void caml_verify_root(void* state, value v, value* p)
   verify_push(state, v, p);
 }
 
-static void verify_object(value v) {
+static void verify_object(struct heap_verify_state* st, value v) {
   if (!Is_block(v)) return;
 
   Assert (Hd_val(v));
@@ -499,12 +509,12 @@ static void verify_object(value v) {
     Assert(Tag_val(v) == Closure_tag);
   }
 
-  intnat* entry = caml_addrmap_insert_pos(&verify_seen, v);
+  intnat* entry = caml_addrmap_insert_pos(&st->seen, v);
   if (*entry != ADDRMAP_NOT_PRESENT) return;
   *entry = 1;
 
   if (Has_status_hd(Hd_val(v), NOT_MARKABLE)) return;
-  verify_objs++;
+  st->objs++;
 
   // caml_gc_log ("verify_object: v=0x%lx hd=0x%lx tag=%u", v, Hd_val(v), Tag_val(v));
   if (!Is_minor(v)) {
@@ -512,7 +522,7 @@ static void verify_object(value v) {
   }
 
   if (Tag_val(v) == Stack_tag) {
-    caml_scan_stack(verify_push, 0, v);
+    caml_scan_stack(verify_push, st, v);
   } else if (Tag_val(v) < No_scan_tag) {
     int i;
     for (i = 0; i < Wosize_val(v); i++) {
@@ -521,21 +531,18 @@ static void verify_object(value v) {
         Assert(caml_owner_of_young_block(v) ==
                caml_owner_of_young_block(f));
       }
-      if (Is_block(f)) verify_push(0, f, 0);
+      if (Is_block(f)) verify_push(st, f, 0);
     }
   }
 }
 
-void caml_verify_heap() {
+void caml_verify_heap(struct heap_verify_state* st) {
   caml_save_stack_gc();
-  while (verify_sp) verify_object(verify_stack[--verify_sp]);
+  while (st->sp) verify_object(st, st->stack[--st->sp]);
 
-  caml_addrmap_clear(&verify_seen);
-  verify_objs = 0;
-  caml_stat_free(verify_stack);
-  verify_stack = 0;
-  verify_stack_len = 0;
-  verify_sp = 0;
+  caml_addrmap_clear(&st->seen);
+  caml_stat_free(st->stack);
+  caml_stat_free(st);
   caml_restore_stack_gc();
 }
 
