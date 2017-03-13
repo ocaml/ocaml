@@ -97,19 +97,17 @@ AFL_INSTRUMENT=false
 ########## Configuration for the bytecode compiler
 
 ### Which C compiler to use for the bytecode interpreter.
-BYTECC=cl -nologo -D_CRT_SECURE_NO_DEPRECATE -O2 -Gy- -MD
-BYTECODE_C_COMPILER=$(BYTECC)
+CC=cl
+BYTECFLAGS=-nologo -D_CRT_SECURE_NO_DEPRECATE -O2 -Gy- -MD
+BYTECODE_C_COMPILER=$(CC) $(BYTECFLAGS)
 
-### Additional compile-time options for $(BYTECC).  (For static linking.)
 BYTECCCOMPOPTS=-DCAML_NAME_SPACE
 
-### Additional compile-time options for $(BYTECC).  (For debug version.)
 BYTECCDBGCOMPOPTS=-Zi
 
 ### Flag to use to rename object files.  (for debug version.)
 NAME_OBJ_FLAG=-Fo
 
-### Additional link-time options for $(BYTECC).  (For static linking.)
 LDFLAGS=
 
 ### Libraries needed
@@ -144,7 +142,7 @@ MKMAINDLL=$(FLEXLINK) -maindll
 MERGEMANIFESTEXE=test ! -f $(1).manifest \
 	         || mt -nologo -outputresource:$(1) -manifest $(1).manifest \
 	            && rm -f $(1).manifest
-MKEXE_BOOT=$(BYTECC) /Fe$(1) $(2) /link /subsystem:console \
+MKEXE_BOOT=$(CC) $(BYTECFLAGS) /Fe$(1) $(2) /link /subsystem:console \
 	   && ($(MERGEMANIFESTEXE))
 
 ### How to build a static library
@@ -176,9 +174,9 @@ MODEL=default
 SYSTEM=win32
 
 ### Which C compiler to use for the native-code compiler.
-NATIVECC=cl -nologo -D_CRT_SECURE_NO_DEPRECATE -O2 -Gy- -MD
-NATIVE_C_COMPILER=$(NATIVECC)
-### Additional compile-time options for $(NATIVECC).
+NATIVECFLAGS=-nologo -D_CRT_SECURE_NO_DEPRECATE -O2 -Gy- -MD
+NATIVE_C_COMPILER=$(CC) $(NATIVECFLAGS)
+### Additional compile-time options
 NATIVECCCOMPOPTS=-DCAML_NAME_SPACE
 
 ### Build partially-linked object file

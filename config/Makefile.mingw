@@ -103,19 +103,17 @@ AFL_INSTRUMENT=false
 ########## Configuration for the bytecode compiler
 
 ### Which C compiler to use for the bytecode interpreter.
-BYTECC=$(TOOLPREF)gcc -O -mms-bitfields
-BYTECODE_C_COMPILER=$(BYTECC)
+CC=$(TOOLPREF)gcc
+BYTECFLAGS=-O -mms-bitfields
+BYTECODE_C_COMPILER=$(CC) $(BYTECFLAGS)
 
-### Additional compile-time options for $(BYTECC).  (For static linking.)
 BYTECCCOMPOPTS=-DCAML_NAME_SPACE -Wall -Wno-unused
 
-### Additional compile-time options for $(BYTECC).  (For debug version.)
 BYTECCDBGCOMPOPTS=-g
 
 ### Flag to use to rename object files.  (for debug version.)
 NAME_OBJ_FLAG=-o
 
-### Additional link-time options for $(BYTECC).  (For static linking.)
 LDFLAGS=
 
 ### Libraries needed
@@ -123,7 +121,7 @@ BYTECCLIBS=-lws2_32
 NATIVECCLIBS=-lws2_32
 
 ### How to invoke the C preprocessor
-CPP=$(BYTECC) -E
+CPP=$(CC) -E
 
 ### Flexlink
 FLEXLINK_CMD=flexlink
@@ -147,7 +145,7 @@ MKEXEDEBUGFLAG=-g
 MKMAINDLL=$(FLEXLINK) -maindll
 
 ### Native command to build ocamlrun.exe without flexlink
-MKEXE_BOOT=$(BYTECC) -o $(1) $(2)
+MKEXE_BOOT=$(CC) $(BYTECFLAGS) -o $(1) $(2)
 
 ### How to build a static library
 MKLIB=rm -f $(1); $(TOOLPREF)ar rc $(1) $(2); $(RANLIB) $(1)
@@ -177,11 +175,10 @@ MODEL=default
 ### Name of operating system family for the native-code compiler.
 SYSTEM=mingw
 
-### Which C compiler to use for the native-code compiler.
-NATIVECC=$(BYTECC)
-NATIVE_C_COMPILER=$(NATIVECC)
+NATIVECFLAGS=-O -mms-bitfields
 
-### Additional compile-time options for $(NATIVECC).
+NATIVE_C_COMPILER=$(CC) $(NATIVECFLAGS)
+
 NATIVECCCOMPOPTS=-DCAML_NAME_SPACE -Wall -Wno-unused
 
 ### Build partially-linked object file

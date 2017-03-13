@@ -41,12 +41,10 @@ LIBRARIES += libcamlrun_pic.$(A) libcamlrun_shared.$(SO)
 endif
 endif
 
-CC=$(BYTECC)
+CFLAGS := $(BYTECFLAGS)
 
 ifdef BOOTSTRAPPING_FLEXLINK
-CFLAGS=-DBOOTSTRAPPING_FLEXLINK
-else
-CFLAGS=
+CFLAGS += -DBOOTSTRAPPING_FLEXLINK
 endif
 
 # On Windows, OCAML_STDLIB_DIR needs to be defined dynamically

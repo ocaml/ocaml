@@ -29,8 +29,6 @@ sources := $(LINKEDFILES)
 
 INSTALL_LIBDIR=$(DESTDIR)$(LIBDIR)
 
-CC=$(NATIVECC)
-
 ifeq "$(UNIX_OR_WIN32)" "win32"
 LN = cp
 sources += ../byterun/unix.c
@@ -39,7 +37,7 @@ LN = ln -s
 sources += ../byterun/win32.c
 endif
 
-FLAGS=\
+FLAGS = $(NATIVECFLAGS) \
   -I../byterun \
   -DNATIVE_CODE -DTARGET_$(ARCH)
 
@@ -69,9 +67,9 @@ PICFLAGS=$(FLAGS) $(SHAREDCCCOMPOPTS)
 ASPPFLAGS = -DSYS_$(SYSTEM)
 ifeq "$(UNIX_OR_WIN32)" "unix"
 ASPPFLAGS += -DMODEL_$(MODEL)
-CFLAGS=$(FLAGS) -g
+CFLAGS = $(FLAGS) -g
 else
-CFLAGS=$(FLAGS)
+CFLAGS = $(FLAGS)
 endif
 
 COBJS=startup_aux.$(O) startup.$(O) main.$(O) fail.$(O)		\

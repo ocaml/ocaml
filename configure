@@ -336,12 +336,6 @@ case $? in
          "Make sure the C compiler $cc is properly installed.";;
 esac
 
-# Configure the bytecode compiler
-
-# The BYTECC make variable defines which compiler and options to use
-# to compile C code intended to be used by OCaml bytecode programs.
-# It is used inside OCaml's build system.
-
 # The BYTECODE_C_COMPILER make variable says how the C compiler should be
 # invoked to process a third-party C source file passed to ocamlc
 # when no -cc command-line option has been specified.
@@ -358,8 +352,7 @@ esac
 # in the OCaml distribution and third-party C source files compiled
 # with ocamlc.
 
-bytecc="$cc"
-mkexe="\$(BYTECC)"
+mkexe="\$(CC) \$(BYTECFLAGS)"
 mkexedebugflag="-g"
 bytecccompopts=""
 byteccprivatecompopts=""
@@ -416,7 +409,7 @@ byteccprivatecompopts="-DCAML_NAME_SPACE $byteccprivatecompopts"
 
 # Adjust according to target
 
-case "$bytecc,$target" in
+case "$cc,$target" in
   *,*-*-rhapsody*)
     bytecccompopts="$bytecccompopts -DSHRINKED_GNUC"
     mathlib="";;
@@ -742,10 +735,10 @@ if test $with_sharedlibs = "yes"; then
       mkmaindll="$flexlink -maindll"
       shared_libraries_supported=true;;
     alpha*-*-osf*)
-      case "$bytecc" in
+      case "$cc" in
         *gcc*)
           sharedcccompopts="-fPIC"
-          mksharedlib="$bytecc -shared"
+          mksharedlib="$cc -shared"
           rpath="-Wl,-rpath,"
           mksharedlibrpath="-Wl,-rpath,"
           shared_libraries_supported=true;;
@@ -757,7 +750,7 @@ if test $with_sharedlibs = "yes"; then
           shared_libraries_supported=true;;
       esac;;
     *-*-solaris2*)
-      case "$bytecc" in
+      case "$cc" in
         *gcc*)
           sharedcccompopts="-fPIC"
           if sh ./solaris-ld; then
@@ -765,7 +758,7 @@ if test $with_sharedlibs = "yes"; then
             rpath="-R"
             mksharedlibrpath="-R"
           else
-            mksharedlib="$bytecc -shared"
+            mksharedlib="$cc -shared"
             ldflags="$ldflags -Wl,-E"
             natdynlinkopts="-Wl,-E"
             rpath="-Wl,-rpath,"
@@ -780,7 +773,7 @@ if test $with_sharedlibs = "yes"; then
           shared_libraries_supported=true;;
       esac;;
     mips*-*-irix[56]*)
-      case "$bytecc" in
+      case "$cc" in
         cc*) sharedcccompopts="";;
         *gcc*) sharedcccompopts="-fPIC";;
       esac
@@ -789,13 +782,13 @@ if test $with_sharedlibs = "yes"; then
       mksharedlibrpath="-rpath "
       shared_libraries_supported=true;;
     i[3456]86-*-darwin[89].*)
-      mksharedlib="$bytecc -shared -flat_namespace -undefined suppress \
+      mksharedlib="$cc -shared -flat_namespace -undefined suppress \
                    -read_only_relocs suppress"
       bytecccompopts="$dl_defs $bytecccompopts"
       dl_needs_underscore=false
       shared_libraries_supported=true;;
     *-apple-darwin*)
-      mksharedlib="$bytecc -shared -flat_namespace -undefined suppress \
+      mksharedlib="$cc -shared -flat_namespace -undefined suppress \
                    -Wl,-no_compact_unwind"
       bytecccompopts="$dl_defs $bytecccompopts"
       dl_needs_underscore=false
@@ -803,7 +796,7 @@ if test $with_sharedlibs = "yes"; then
     *-*-linux*|*-*-freebsd[3-9]*|*-*-freebsd[1-9][0-9]*\
     |*-*-openbsd*|*-*-netbsd*|*-*-dragonfly*|*-*-gnu*|*-*-haiku*)
       sharedcccompopts="-fPIC"
-      mksharedlib="$bytecc -shared"
+      mksharedlib="$cc -shared"
       ldflags="$ldflags -Wl,-E"
       rpath="-Wl,-rpath,"
       mksharedlibrpath="-Wl,-rpath,"
@@ -951,17 +944,11 @@ case "$native_compiler" in
       arch=none; model=default; system=unknown; natdynlink=false;;
 esac
 
-if test -z "$ccoption"; then
-  nativecc="$bytecc"
-else
-  nativecc="$ccoption"
-fi
-
 nativecccompopts="$bytecccompopts"
 nativeccprivatecompopts="$byteccprivatecompopts"
 nativeccprofopts=''
 
-case "$arch,$nativecc,$system,$model" in
+case "$arch,$cc,$system,$model" in
   *,*,rhapsody,*)      if $arch64; then partialld="ld -r -arch ppc64"; fi;;
   amd64,gcc*,macosx,*) partialld="ld -r -arch x86_64";;
   amd64,gcc*,solaris,*) partialld="ld -r -m elf_x86_64";;
@@ -1029,7 +1016,7 @@ case "$arch,$system" in
   sparc,bsd) profiling='true';;
   sparc,solaris)
     profiling='true'
-    case "$nativecc" in gcc*) ;; *) cc_profile='-xpg';; esac;;
+    case "$cc" in gcc*) ;; *) cc_profile='-xpg';; esac;;
   amd64,linux) profiling='true';;
   amd64,openbsd) profiling='true';;
   amd64,freebsd) profiling='true';;
@@ -1991,8 +1978,9 @@ fi
 
 cclibs="$cclibs $mathlib"
 
-echo "BYTECC=$bytecc $bytecccompopts" >> Makefile
-echo "BYTECODE_C_COMPILER=$bytecc $bytecccompopts $sharedcccompopts" \
+echo CC="$cc" >> Makefile
+echo "BYTECFLAGS=$bytecccompopts" >> Makefile
+echo "BYTECODE_C_COMPILER=$cc $bytecccompopts $sharedcccompopts" \
   >> Makefile
 echo "BYTECCCOMPOPTS=$byteccprivatecompopts" >> Makefile
 echo "LDFLAGS=$ldflags" >> Makefile
@@ -2017,8 +2005,8 @@ EOF
 echo "ARCH=$arch" >> Makefile
 echo "MODEL=$model" >> Makefile
 echo "SYSTEM=$system" >> Makefile
-echo "NATIVECC=$nativecc $nativecccompopts" >> Makefile
-echo "NATIVE_C_COMPILER=$nativecc $nativecccompopts" >> Makefile
+echo "NATIVECFLAGS=$nativecccompopts" >> Makefile
+echo "NATIVE_C_COMPILER=$cc $nativecccompopts" >> Makefile
 echo "NATIVECCCOMPOPTS=$nativeccprivatecompopts" >> Makefile
 echo "NATIVECCPROFOPTS=$nativeccprofopts" >> Makefile
 echo "NATIVECCLIBS=$cclibs $dllib" >> Makefile
@@ -2088,7 +2076,7 @@ inf "        standard library.......... $libdir"
 inf "        manual pages.............. $mandir (with extension .$manext)"
 
 inf "Configuration for the bytecode compiler:"
-inf "        C compiler used........... $bytecc"
+inf "        C compiler used........... $cc"
 inf "        options for compiling..... $bytecccompopts"
 inf "        options for linking....... $ldflags $cclibs $dllib" \
                                        "$curseslibs $pthread_link"
@@ -2113,7 +2101,7 @@ else
   if test "$system" = "unknown"; then : ; else
   inf "        OS variant................ $system"
   fi
-  inf "        C compiler used........... $nativecc"
+  inf "        C compiler used........... $cc"
   inf "        options for compiling..... $nativecccompopts"
   inf "        options for linking....... $cclibs"
   inf "        assembler ................ $as"

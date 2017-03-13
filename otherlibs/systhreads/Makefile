@@ -107,11 +107,11 @@ else
 endif
 
 st_stubs_b.$(O): st_stubs.c $(HEADER)
-	$(BYTECC) -I$(ROOTDIR)/byterun $(BYTECCCOMPOPTS) $(SHAREDCCCOMPOPTS) \
-	  $(CCOUTPUT)$@ -c $<
+	$(CC) $(BYTECFLAGS) -I$(ROOTDIR)/byterun $(BYTECCCOMPOPTS) \
+	  $(SHAREDCCCOMPOPTS) $(CCOUTPUT)$@ -c $<
 
 st_stubs_n.$(O): st_stubs.c $(HEADER)
-	$(NATIVECC) -I$(ROOTDIR)/asmrun -I$(ROOTDIR)/byterun \
+	$(CC) $(NATIVECFLAGS) -I$(ROOTDIR)/asmrun -I$(ROOTDIR)/byterun \
 	  $(NATIVECCCOMPOPTS) $(SHAREDCCCOMPOPTS) -DNATIVE_CODE \
 	  -DTARGET_$(ARCH) -DMODEL_$(MODEL) -DSYS_$(SYSTEM) \
 	  $(CCOUTPUT)$@ -c $<
@@ -159,11 +159,11 @@ depend:
 	$(error Dependencies cannot be regenerated using the MSVC ports)
 else
 depend:
-	$(BYTECC) -MM -I$(ROOTDIR)/byterun $(BYTECCCOMPOPTS) \
+	$(CC) $(BYTECFLAGS) -MM -I$(ROOTDIR)/byterun $(BYTECCCOMPOPTS) \
 	  $(SHAREDCCCOMPOPTS) st_stubs.c \
 	  | sed -e 's/st_stubs\.o/st_stubs_b.$$(O)/' \
 	  -e 's/ st_\(posix\|win32\)\.h//g' > .depend
-	$(NATIVECC) -MM -I$(ROOTDIR)/asmrun -I$(ROOTDIR)/byterun \
+	$(CC) $(NATIVECFLAGS) -MM -I$(ROOTDIR)/asmrun -I$(ROOTDIR)/byterun \
 	  $(NATIVECCCOMPOPTS) $(SHAREDCCCOMPOPTS) -DNATIVE_CODE \
 	  -DTARGET_$(ARCH) -DMODEL_$(MODEL) -DSYS_$(SYSTEM) st_stubs.c \
 	  | sed -e 's/st_stubs\.o/st_stubs_n.$$(O)/' \
