@@ -162,7 +162,7 @@ static struct ev_info *process_debug_events(code_t code_start, value events_heap
     }
   }
 
-  Assert(j == *num_events);
+  CAMLassert(j == *num_events);
 
   qsort(events, *num_events, sizeof(struct ev_info), cmp_ev_info);
 
@@ -218,7 +218,7 @@ CAMLprim value caml_remove_debug_info(code_t start)
 }
 
 int caml_alloc_backtrace_buffer(void){
-  Assert(caml_backtrace_pos == 0);
+  CAMLassert(caml_backtrace_pos == 0);
   caml_backtrace_buffer = malloc(BACKTRACE_BUFFER_SIZE * sizeof(code_t));
   if (caml_backtrace_buffer == NULL) return -1;
   return 0;
@@ -310,7 +310,7 @@ CAMLprim value caml_get_current_callstack(value max_frames_value)
 
     for (trace_pos = 0; trace_pos < trace_size; trace_pos++) {
       code_t p = caml_next_frame_pointer(&sp, &trsp);
-      Assert(p != NULL);
+      CAMLassert(p != NULL);
       Field(trace, trace_pos) = Val_backtrace_slot(p);
     }
   }
@@ -333,7 +333,7 @@ static void read_main_debug_info(struct debug_info *di)
   struct channel *chan;
   struct exec_trailer trail;
 
-  Assert(di->already_read == 0);
+  CAMLassert(di->already_read == 0);
   di->already_read = 1;
 
   if (caml_cds_file != NULL) {

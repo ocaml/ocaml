@@ -100,7 +100,7 @@ CAMLexport struct channel * caml_open_descriptor_out(int fd)
 static void unlink_channel(struct channel *channel)
 {
   if (channel->prev == NULL) {
-    Assert (channel == caml_all_opened_channels);
+    CAMLassert (channel == caml_all_opened_channels);
     caml_all_opened_channels = caml_all_opened_channels->next;
     if (caml_all_opened_channels != NULL)
       caml_all_opened_channels->prev = NULL;

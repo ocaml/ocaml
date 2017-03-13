@@ -32,7 +32,7 @@ CAMLexport mlsize_t caml_string_length(value s)
 {
   mlsize_t temp;
   temp = Bosize_val(s) - 1;
-  Assert (Byte (s, temp - Byte (s, temp)) == 0);
+  CAMLassert (Byte (s, temp - Byte (s, temp)) == 0);
   return temp - Byte (s, temp);
 }
 
@@ -41,7 +41,7 @@ CAMLprim value caml_ml_string_length(value s)
 {
   mlsize_t temp;
   temp = Bosize_val(s) - 1;
-  Assert (Byte (s, temp - Byte (s, temp)) == 0);
+  CAMLassert (Byte (s, temp - Byte (s, temp)) == 0);
   return Val_long(temp - Byte (s, temp));
 }
 

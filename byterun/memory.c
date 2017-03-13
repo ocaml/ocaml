@@ -157,7 +157,7 @@ static int caml_page_table_modify(uintnat page, int toclear, int toset)
 {
   uintnat h;
 
-  Assert ((page & ~Page_mask) == 0);
+  CAMLassert ((page & ~Page_mask) == 0);
 
   /* Resize to keep load factor below 1/2 */
   if (caml_page_table.occupancy * 2 >= caml_page_table.size) {
@@ -373,7 +373,7 @@ static value *expand_heap (mlsize_t request)
   value *mem, *hp, *prev;
   asize_t over_request, malloc_request, remain;
 
-  Assert (request <= Max_wosize);
+  CAMLassert (request <= Max_wosize);
   over_request = request + request / 100 * caml_percent_free;
   malloc_request = caml_clip_heap_chunk_wsz (over_request);
   mem = (value *) caml_alloc_for_heap (Bsize_wsize (malloc_request));
@@ -407,7 +407,7 @@ static value *expand_heap (mlsize_t request)
       Hd_hp (hp) = Make_header_allocated_here (0, 0, Caml_white);
     }
   }
-  Assert (Wosize_hp (mem) >= request);
+  CAMLassert (Wosize_hp (mem) >= request);
   if (caml_add_to_heap ((char *) mem) != 0){
     caml_free_for_heap ((char *) mem);
     return NULL;
@@ -464,7 +464,7 @@ color_t caml_allocation_color (void *hp)
       || (caml_gc_phase == Phase_sweep && (addr)hp >= (addr)caml_gc_sweep_hp)){
     return Caml_black;
   }else{
-    Assert (caml_gc_phase == Phase_idle
+    CAMLassert (caml_gc_phase == Phase_idle
             || (caml_gc_phase == Phase_sweep
                 && (addr)hp < (addr)caml_gc_sweep_hp));
     return Caml_white;
@@ -498,19 +498,19 @@ static inline value caml_alloc_shr_aux (mlsize_t wosize, tag_t tag,
     hp = caml_fl_allocate (wosize);
   }
 
-  Assert (Is_in_heap (Val_hp (hp)));
+  CAMLassert (Is_in_heap (Val_hp (hp)));
 
   /* Inline expansion of caml_allocation_color. */
   if (caml_gc_phase == Phase_mark || caml_gc_phase == Phase_clean
       || (caml_gc_phase == Phase_sweep && (addr)hp >= (addr)caml_gc_sweep_hp)){
     Hd_hp (hp) = Make_header_with_profinfo (wosize, tag, Caml_black, profinfo);
   }else{
-    Assert (caml_gc_phase == Phase_idle
+    CAMLassert (caml_gc_phase == Phase_idle
             || (caml_gc_phase == Phase_sweep
                 && (addr)hp < (addr)caml_gc_sweep_hp));
     Hd_hp (hp) = Make_header_with_profinfo (wosize, tag, Caml_white, profinfo);
   }
-  Assert (Hd_hp (hp)
+  CAMLassert (Hd_hp (hp)
     == Make_header_with_profinfo (wosize, tag, caml_allocation_color (hp),
                                   profinfo));
   caml_allocated_words += Whsize_wosize (wosize);
