@@ -57,9 +57,9 @@ HASHBANGSCRIPTS=true
 ### Additional link-time options for $(BYTECC)
 # To support dynamic loading of shared libraries (they need to look at
 # our own symbols):
-#BYTECCLINKOPTS=-Wl,-E
+#LDFLAGS=-Wl,-E
 # Otherwise:
-#BYTECCLINKOPTS=
+#LDFLAGS=
 
 ### Libraries needed
 # On most platforms:

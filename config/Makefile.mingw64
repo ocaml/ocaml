@@ -117,7 +117,7 @@ BYTECCDBGCOMPOPTS=-g
 NAME_OBJ_FLAG=-o
 
 ### Additional link-time options for $(BYTECC).  (For static linking.)
-BYTECCLINKOPTS=
+LDFLAGS=
 
 ### Libraries needed
 BYTECCLIBS=-lws2_32

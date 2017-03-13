@@ -69,10 +69,10 @@ else
 OCAML_NATDYNLINKOPTS = -ccopt "$(NATDYNLINKOPTS)"
 endif
 
-ifeq "$(strip $(BYTECCLINKOPTS))" ""
-OCAML_BYTECCLINKOPTS=
+ifeq "$(strip $(LDFLAGS))" ""
+OCAML_LDFLAGS=
 else
-OCAML_BYTECCLINKOPTS = -ccopt "$(BYTECCLINKOPTS)"
+OCAML_LDFLAGS = -ccopt "$(LDFLAGS)"
 endif
 
 YACCFLAGS=-v --strict
@@ -845,7 +845,7 @@ partialclean::
 
 ocamlc.opt: compilerlibs/ocamlcommon.cmxa compilerlibs/ocamlbytecomp.cmxa \
             $(BYTESTART:.cmo=.cmx)
-	$(CAMLOPT) $(LINKFLAGS) $(OCAML_BYTECCLINKOPTS) -o $@ \
+	$(CAMLOPT) $(LINKFLAGS) $(OCAML_LDFLAGS) -o $@ \
 	  $^ -cclib "$(BYTECCLIBS)"
 
 partialclean::

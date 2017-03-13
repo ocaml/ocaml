@@ -359,7 +359,7 @@ mkexe="\$(BYTECC)"
 mkexedebugflag="-g"
 bytecccompopts=""
 byteccprivatecompopts=""
-bytecclinkopts=""
+ldflags=""
 ostype="Unix"
 exe=""
 iflexdir=""
@@ -435,7 +435,7 @@ case "$bytecc,$target" in
       bytecccompopts="-mieee $bytecccompopts";
     fi
     # Put code and static data in lower 4GB
-    bytecclinkopts="-Wl,-T,12000000 -Wl,-D,14000000"
+    ldflags="-Wl,-T,12000000 -Wl,-D,14000000"
     # Tell gcc that we can use 32-bit code addresses for threaded code
     echo "#define ARCH_CODE32" >> m.h;;
   cc,alpha*-*-osf*)
@@ -446,7 +446,7 @@ case "$bytecc,$target" in
     fi;;
   *,mips-*-irix6*)
     # Turn off warning "unused library"
-    bytecclinkopts="-n32 -Wl,-woff,84";;
+    ldflags="-n32 -Wl,-woff,84";;
   *,alpha*-*-unicos*)
     # For the Cray T3E
     bytecccompopts="$bytecccompopts -DUMK";;
@@ -474,7 +474,7 @@ case "$bytecc,$target" in
     fi
     if test $with_sharedlibs = no; then
       mkexe="$mkexe -Wl,--stack,16777216"
-      bytecclinkopts="-Wl,--stack,16777216"
+      ldflags="-Wl,--stack,16777216"
     fi
     exe=".exe"
     ostype="Cygwin";;
@@ -511,12 +511,12 @@ esac
 
 # Configure compiler to use in further tests.
 
-cc="$bytecc $bytecclinkopts"
+cc="$bytecc $ldflags"
 export cc cclibs verbose
 
 # Check C compiler.
 
-cc="$bytecc $bytecccompopts $byteccprivatecompopts $bytecclinkopts" sh ./runtest ansi.c
+cc="$bytecc $bytecccompopts $byteccprivatecompopts $ldflags" sh ./runtest ansi.c
 case $? in
   0) inf "The C compiler is ISO C99 compliant." ;;
   1) wrn "The C compiler is ANSI / ISO C90 compliant, but not ISO C99" \
@@ -763,7 +763,7 @@ if test $with_sharedlibs = "yes"; then
             mksharedlibrpath="-R"
           else
             mksharedlib="$bytecc -shared"
-            bytecclinkopts="$bytecclinkopts -Wl,-E"
+            ldflags="$ldflags -Wl,-E"
             natdynlinkopts="-Wl,-E"
             byteccrpath="-Wl,-rpath,"
             mksharedlibrpath="-Wl,-rpath,"
@@ -801,7 +801,7 @@ if test $with_sharedlibs = "yes"; then
     |*-*-openbsd*|*-*-netbsd*|*-*-dragonfly*|*-*-gnu*|*-*-haiku*)
       sharedcccompopts="-fPIC"
       mksharedlib="$bytecc -shared"
-      bytecclinkopts="$bytecclinkopts -Wl,-E"
+      ldflags="$ldflags -Wl,-E"
       byteccrpath="-Wl,-rpath,"
       mksharedlibrpath="-Wl,-rpath,"
       natdynlinkopts="-Wl,-E"
@@ -1993,7 +1993,7 @@ echo "BYTECC=$bytecc $bytecccompopts" >> Makefile
 echo "BYTECODE_C_COMPILER=$bytecc $bytecccompopts $sharedcccompopts" \
   >> Makefile
 echo "BYTECCCOMPOPTS=$byteccprivatecompopts" >> Makefile
-echo "BYTECCLINKOPTS=$bytecclinkopts" >> Makefile
+echo "LDFLAGS=$ldflags" >> Makefile
 echo "BYTECCLIBS=$cclibs $dllib $curseslibs $pthread_link \
                  $instrumented_runtime_libs" >> Makefile
 echo "BYTECCRPATH=$byteccrpath" >> Makefile
@@ -2089,7 +2089,7 @@ inf "        manual pages.............. $mandir (with extension .$manext)"
 inf "Configuration for the bytecode compiler:"
 inf "        C compiler used........... $bytecc"
 inf "        options for compiling..... $bytecccompopts"
-inf "        options for linking....... $bytecclinkopts $cclibs $dllib" \
+inf "        options for linking....... $ldflags $cclibs $dllib" \
                                        "$curseslibs $pthread_link"
 if $shared_libraries_supported; then
 inf "        shared libraries are supported"

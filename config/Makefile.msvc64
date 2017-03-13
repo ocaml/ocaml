@@ -110,7 +110,7 @@ BYTECCDBGCOMPOPTS=-Zi
 NAME_OBJ_FLAG=-Fo
 
 ### Additional link-time options for $(BYTECC).  (For static linking.)
-BYTECCLINKOPTS=
+LDFLAGS=
 
 ### Libraries needed
 #EXTRALIBS=bufferoverflowu.lib  # for the old PSDK compiler only
