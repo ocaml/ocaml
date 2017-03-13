@@ -37,7 +37,7 @@ done
  for f in $*; do echo "  $f();"; done
  echo "  return 0; }") >> hasgot.c
 
-cmd="$cc $opts -o tst hasgot.c $libs"
+cmd="$cc $cflags $opts -o tst hasgot.c $ldflags $libs"
 
 if $verbose; then
   echo "hasgot $args: $cmd" >&2

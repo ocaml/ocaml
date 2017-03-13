@@ -15,7 +15,7 @@
 #*                                                                        *
 #**************************************************************************
 
-cmd="$cc -o tst $* $cclibs"
+cmd="$cc $cflags -o tst $* $ldflags $cclibs"
 
 if $verbose; then
   echo "trycompile: $cmd" >&2
