@@ -67,6 +67,9 @@ Working version
   platforms
   (Felix Janda, Mark Shinwell)
 
+* GPR#1104: remove support for the NeXTStep platform
+  (Sébastien Hinderer)
+
 ### Internal/compiler-libs changes:
 
 - GPR#1032: display the output of -dtimings as a hierarchy
