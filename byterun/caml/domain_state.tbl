@@ -37,3 +37,5 @@ DOMAIN_STATE(30, int, gc_phase)
 
 /* See parsing.c */
 DOMAIN_STATE(31, int, parser_trace)
+
+DOMAIN_STATE(32, asize_t, minor_heap_size)

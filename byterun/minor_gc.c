@@ -31,8 +31,6 @@
 #include "caml/fiber.h"
 #include "caml/eventlog.h"
 
-asize_t __thread caml_minor_heap_size;
-
 void caml_alloc_table (struct caml_ref_table *tbl, asize_t sz, asize_t rsv)
 {
   tbl->size = sz;
@@ -562,7 +560,7 @@ void caml_realloc_ref_table (struct caml_ref_table *tbl)
                                       Assert (tbl->limit >= tbl->threshold);
 
   if (tbl->base == NULL){
-    caml_alloc_table (tbl, caml_minor_heap_size / sizeof (value) / 8, 256);
+    caml_alloc_table (tbl, CAML_DOMAIN_STATE->minor_heap_size / sizeof (value) / 8, 256);
   }else if (tbl->limit == tbl->threshold){
     caml_gc_log ("ref_table threshold crossed");
     tbl->limit = tbl->end;

@@ -114,7 +114,7 @@ CAMLprim value caml_gc_get(value v)
   CAMLlocal1 (res);
 
   res = caml_alloc_tuple (7);
-  Store_field (res, 0, Val_long (Wsize_bsize (caml_minor_heap_size)));  /* s */
+  Store_field (res, 0, Val_long (Wsize_bsize (CAML_DOMAIN_STATE->minor_heap_size)));  /* s */
   Store_field (res, 1, Val_long (caml_major_heap_increment));           /* i */
   Store_field (res, 2, Val_long (caml_percent_free));                   /* o */
   Store_field (res, 3, Val_long (caml_params->verb_gc));         /* v */
@@ -189,7 +189,7 @@ CAMLprim value caml_gc_set(value v)
     /* Minor heap size comes last because it will trigger a minor collection
        (thus invalidating [v]) and it can raise [Out_of_memory]. */
   newminsize = caml_norm_minor_heap_size (Long_field (v, 0));
-  if (newminsize != caml_minor_heap_size){
+  if (newminsize != CAML_DOMAIN_STATE->minor_heap_size){
     caml_gc_message (0x20, "New minor heap size: %luk bytes\n",
                      newminsize/1024);
     caml_set_minor_heap_size (newminsize);
@@ -267,7 +267,7 @@ void caml_init_gc ()
   caml_percent_max = norm_pmax (percent_m);
   caml_init_major_heap (major_heap_size);
   caml_gc_message (0x20, "Initial minor heap size: %luk bytes\n",
-                   caml_minor_heap_size / 1024);
+                   CAML_DOMAIN_STATE->minor_heap_size / 1024);
   caml_gc_message (0x20, "Initial major heap size: %luk bytes\n",
                    major_heap_size / 1024);
   caml_gc_message (0x20, "Initial space overhead: %lu%%\n", caml_percent_free);

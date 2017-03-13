@@ -138,7 +138,7 @@ void caml_reallocate_minor_heap(asize_t size)
   }
 #endif
 
-  caml_minor_heap_size = size;
+  CAML_DOMAIN_STATE->minor_heap_size = size;
   domain_state->young_start = (char*)domain_self->minor_heap_area;
   domain_state->young_end = (char*)(domain_self->minor_heap_area + size);
   domain_state->young_ptr = domain_state->young_end;
