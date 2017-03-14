@@ -82,6 +82,7 @@ type t =
   | Assignment_to_non_mutable_value         (* 59 *)
   | Unused_module of string                 (* 60 *)
   | Unboxable_type_in_prim_decl of string   (* 61 *)
+  | Constraint_on_gadt                      (* 62 *)
 ;;
 
 (* If you remove a warning, leave a hole in the numbering.  NEVER change
@@ -152,9 +153,10 @@ let number = function
   | Assignment_to_non_mutable_value -> 59
   | Unused_module _ -> 60
   | Unboxable_type_in_prim_decl _ -> 61
+  | Constraint_on_gadt -> 62
 ;;
 
-let last_warning_number = 61
+let last_warning_number = 62
 ;;
 
 (* Must be the max number returned by the [number] function. *)
@@ -483,6 +485,8 @@ let message = function
          unboxable. The representation of such types may change in future\n\
          versions. You should annotate the declaration of %s with [@@boxed]\n\
          or [@@unboxed]." t t
+  | Constraint_on_gadt ->
+      "Type constraints do not apply to GADT cases of variant types."
 ;;
 
 let nerrors = ref 0;;
@@ -588,6 +592,8 @@ let descriptions =
    58, "Missing cmx file";
    59, "Assignment to non-mutable value";
    60, "Unused module declaration";
+   61, "Unboxable type in primitive declaration";
+   62, "Type constraint on GADT type declaration"
   ]
 ;;
 

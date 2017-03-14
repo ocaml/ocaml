@@ -363,6 +363,12 @@ let transl_declaration env sdecl id =
       | Ptype_abstract -> Ttype_abstract, Type_abstract
       | Ptype_variant scstrs ->
         assert (scstrs <> []);
+        if List.exists (fun cstr -> cstr.pcd_res <> None) scstrs then begin
+          match cstrs with
+            [] -> ()
+          | (_,_,loc)::_ ->
+              Location.prerr_warning loc Warnings.Constraint_on_gadt
+        end;
         let all_constrs = ref StringSet.empty in
         List.iter
           (fun {pcd_name = {txt = name}} ->

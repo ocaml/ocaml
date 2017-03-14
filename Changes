@@ -84,6 +84,9 @@ Working version
   with themselves
   (Jacques Garrigue, report by Leo White)
 
+- PR#7261: Warn on type constraints in GADT declarations
+  (Jacques Garrigue, report by Fabrice Le Botlan)
+
 
 Next major version (4.05.0):
 ----------------------------
