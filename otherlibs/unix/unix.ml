@@ -884,11 +884,18 @@ let system cmd =
           end
   | id -> snd(waitpid_non_intr id)
 
+let safe_close fd =
+  try close fd with Unix_error(_,_,_) -> ()
+
 (* Make sure [fd] is not one of the standard descriptors 0, 1, 2,
    by duplicating it if needed. *)
 
 let rec file_descr_not_standard fd =
   if fd >= 3 then fd else begin
+    (* In [dup] below the "cloexec" mode doesn't matter, because
+       the descriptor returned by [dup] will be closed before the [exec],
+       and because no other thread is running concurrently
+       (we are in the child process of a fork).  *)
     let res = file_descr_not_standard (dup fd) in
     close fd;
     res
@@ -898,9 +905,13 @@ let perform_redirections new_stdin new_stdout new_stderr =
   let new_stdin = file_descr_not_standard new_stdin in
   let new_stdout = file_descr_not_standard new_stdout in
   let new_stderr = file_descr_not_standard new_stderr in
-  dup2 ~cloexec:false new_stdin stdin; close new_stdin;
-  dup2 ~cloexec:false new_stdout stdout; close new_stdout;
-  dup2 ~cloexec:false new_stderr stderr; close new_stderr
+  dup2 ~cloexec:false new_stdin stdin;
+  dup2 ~cloexec:false new_stdout stdout;
+  dup2 ~cloexec:false new_stderr stderr;
+  (* GPR#1105: close after the three dup2, and safe_close instead of close,
+     because several of new_stdin, new_stdout and new_stderr
+     can be the same descriptor. *)
+  safe_close new_stdin; safe_close new_stdout; safe_close new_stderr
 
 let create_process cmd args new_stdin new_stdout new_stderr =
   match fork() with
