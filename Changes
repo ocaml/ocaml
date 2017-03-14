@@ -500,6 +500,9 @@ Next major version (4.05.0):
 - PR#7443, GPR#990: spurious unused open warning with local open in patterns
   (Florian Angeletti, report by Gabriel Scherer)
 
+- PR#7504: fix warning 8 with unconstrained records
+  (Florian Angeletti, report by John Whitington)
+
 - GPR#805, GPR#815, GPR#833: check for integer overflow in String.concat
   (Jeremy Yallop,
    review by Damien Doligez, Alain Frisch, Daniel Bünzli, Fabrice Le Fessant)
