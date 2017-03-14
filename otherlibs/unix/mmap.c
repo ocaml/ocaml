@@ -46,7 +46,7 @@
 #define MAP_FILE_FUNCTION_BYTECODE caml_ba_map_file_bytecode
 #define UNMAP_FILE_FUNCTION caml_ba_unmap_file
 #define ALLOC_FUNCTION caml_ba_mapped_alloc
-#define MAP_FILE "Bigarray.map_file"
+#define CAML_MAP_FILE "Bigarray.map_file"
 #define MAP_FILE_ERROR() caml_sys_error(NO_ARG)
 #else
 #define MAP_FILE_FUNCTION caml_unix_map_file
@@ -54,7 +54,7 @@
 #define UNMAP_FILE_FUNCTION caml_unix_unmap_file
 #define ALLOC_FUNCTION caml_unix_mapped_alloc
 #define MAP_FILE_FUNCTION caml_unix_map_file
-#define MAP_FILE "Unix.map_file"
+#define CAML_MAP_FILE "Unix.map_file"
 #define MAP_FILE_ERROR() uerror("map_file", Nothing)
 #endif
 
@@ -133,12 +133,12 @@ CAMLprim value MAP_FILE_FUNCTION(value vfd, value vkind, value vlayout,
   /* Extract dimensions from OCaml array */
   num_dims = Wosize_val(vdim);
   if (num_dims < 1 || num_dims > CAML_BA_MAX_NUM_DIMS)
-    caml_invalid_argument(MAP_FILE ": bad number of dimensions");
+    caml_invalid_argument(CAML_MAP_FILE ": bad number of dimensions");
   for (i = 0; i < num_dims; i++) {
     dim[i] = Long_val(Field(vdim, i));
     if (dim[i] == -1 && i == major_dim) continue;
     if (dim[i] < 0)
-      caml_invalid_argument(MAP_FILE ": negative dimension");
+      caml_invalid_argument(CAML_MAP_FILE ": negative dimension");
   }
   /* Determine file size. We avoid lseek here because it is fragile,
      and because some mappable file types do not support it
@@ -159,14 +159,14 @@ CAMLprim value MAP_FILE_FUNCTION(value vfd, value vkind, value vlayout,
     /* Determine major dimension from file size */
     if (file_size < startpos) {
       caml_leave_blocking_section();
-      caml_failwith(MAP_FILE ": file position exceeds file size");
+      caml_failwith(CAML_MAP_FILE ": file position exceeds file size");
     }
     data_size = file_size - startpos;
     dim[major_dim] = (uintnat) (data_size / array_size);
     array_size = dim[major_dim] * array_size;
     if (array_size != data_size) {
       caml_leave_blocking_section();
-      caml_failwith(MAP_FILE ": file size doesn't match array dimensions");
+      caml_failwith(CAML_MAP_FILE ": file size doesn't match array dimensions");
     }
   } else {
     /* Check that file is large enough, and grow it otherwise */
