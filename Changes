@@ -80,6 +80,10 @@ Working version
 - PR#7468: possible GC problem in caml_alloc_sprintf
   (Xavier Leroy, discovery by Olivier Andrieu)
 
+- PR#7496: Fixed conjunctive polymorphic variant tags do not unify
+  with themselves
+  (Jacques Garrigue, report by Leo White)
+
 
 Next major version (4.05.0):
 ----------------------------

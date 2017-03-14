@@ -1447,3 +1447,18 @@ type u
 type 'a t = u
 val c : (u -> u) -> < apply : 'a. 'a t -> 'a t > = <fun>
 |}]
+
+(* PR#7496 *)
+
+let f (x : < m: 'a. ([< `Foo of int & float] as 'a) -> unit>)
+         : < m: 'a. ([< `Foo of int & float] as 'a) -> unit> = x;;
+
+type t = { x : 'a. ([< `Foo of int & float ] as 'a) -> unit };;
+let f t = { x = t.x };;
+[%%expect{|
+val f :
+  < m : 'a. ([< `Foo of int & float ] as 'a) -> unit > ->
+  < m : 'b. ([< `Foo of int & float ] as 'b) -> unit > = <fun>
+type t = { x : 'a. ([< `Foo of int & float ] as 'a) -> unit; }
+val f : t -> t = <fun>
+|}]
