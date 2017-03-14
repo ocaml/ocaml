@@ -894,13 +894,21 @@ let rec file_descr_not_standard fd =
     res
   end
 
+let safe_close fd =
+  try close fd with Unix_error(_,_,_) -> ()
+
+(* [perform_redirection] is protected against duplicates among [new_stdin],
+   [new_stdout] and [new_stderr] *)
 let perform_redirections new_stdin new_stdout new_stderr =
-  let new_stdin = file_descr_not_standard new_stdin in
-  let new_stdout = file_descr_not_standard new_stdout in
-  let new_stderr = file_descr_not_standard new_stderr in
-  dup2 ~cloexec:false new_stdin stdin; close new_stdin;
-  dup2 ~cloexec:false new_stdout stdout; close new_stdout;
-  dup2 ~cloexec:false new_stderr stderr; close new_stderr
+  let newnewstdin = file_descr_not_standard (dup new_stdin) in
+  let newnewstdout = file_descr_not_standard (dup new_stdout) in
+  let newnewstderr = file_descr_not_standard (dup new_stderr) in
+  safe_close new_stdin;
+  safe_close new_stdout;
+  safe_close new_stderr;
+  dup2 ~cloexec:false newnewstdin stdin; close newnewstdin;
+  dup2 ~cloexec:false newnewstdout stdout; close newnewstdout;
+  dup2 ~cloexec:false newnewstderr stderr; close newnewstderr
 
 let create_process cmd args new_stdin new_stdout new_stderr =
   match fork() with
