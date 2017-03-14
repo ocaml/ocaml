@@ -3330,9 +3330,9 @@ and eqtype_row rename type_pairs subst env row1 row2 =
       match row_field_repr f1, row_field_repr f2 with
         Rpresent(Some t1), Rpresent(Some t2) ->
           eqtype rename type_pairs subst env t1 t2
-      | Reither(true, [], _, _), Reither(true, [], _, _) ->
+      | Reither(c1, [], _, _), Reither(c2, [], _, _) when c1 = c2 ->
           ()
-      | Reither(false, t1::tl1, _, _), Reither(false, t2::tl2, _, _) ->
+      | Reither(c1, t1::tl1, _, _), Reither(c2, t2::tl2, _, _) when c1 = c2 ->
           eqtype rename type_pairs subst env t1 t2;
           if List.length tl1 = List.length tl2 then
             (* if same length allow different types (meaning?) *)
