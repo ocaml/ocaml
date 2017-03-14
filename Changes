@@ -358,6 +358,10 @@ Next major version (4.05.0):
 - PR#6903: Unix.execvpe doesn't change environment on Cygwin
   (Xavier Leroy)
 
+- PR#6987: Strange error message probably caused by universal variable escape
+  (with polymorphic variants)
+  (report by Leo White)
+
 - PR#7216, GPR#949: don't require double parens in Functor((val x))
   (Jacques Garrigue, review by Valentin Gatien-Baron)
 
