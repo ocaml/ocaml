@@ -3,7 +3,7 @@
 type t = [ 'A_name | `Hi ];;
 [%%expect{|
 Line _, characters 11-18:
-Error: The type 'A_name is not a polymorphic variant type
+Error: The type 'A_name does not expand to a polymorphic variant type
 Hint: Did you mean `A_name?
 |}];;
 
