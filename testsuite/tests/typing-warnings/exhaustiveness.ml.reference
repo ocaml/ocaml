@@ -133,4 +133,11 @@ Error: This match case could not be refuted.
 Warning 8: this pattern-matching is not exhaustive.
 All clauses in this pattern-matching are guarded.
 val f : 'a -> 'a -> int = <fun>
+#     Characters 62-91:
+  let f = function {contents=_}, 0 -> 0;;
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Warning 8: this pattern-matching is not exhaustive.
+Here is an example of a case that is not matched:
+(_, 1)
+val f : 'a ref * int -> int = <fun>
 # 
