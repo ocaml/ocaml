@@ -1425,6 +1425,33 @@ Error: This expression has type M.t but an expression was expected of type 'x
        The type constructor M.t would escape its scope
 |}];;
 
+
+(* PR#6987 *)
+type 'a t = V1 of 'a
+
+type ('c,'t) pvariant = [ `V of ('c * 't t) ]
+
+class ['c] clss =
+  object
+    method mthod : 't . 'c -> 't t -> ('c, 't) pvariant = fun c x ->
+      `V (c, x)
+  end;;
+
+let f2 = fun o c x -> match x with | V1 _ -> x
+
+let rec f1 o c x =
+  match (o :> _ clss)#mthod c x with
+  | `V c -> f2 o c x;;
+[%%expect{|
+type 'a t = V1 of 'a
+type ('c, 't) pvariant = [ `V of 'c * 't t ]
+class ['c] clss : object method mthod : 'c -> 't t -> ('c, 't) pvariant end
+val f2 : 'a -> 'b -> 'c t -> 'c t = <fun>
+val f1 :
+  < mthod : 't. 'a -> 't t -> [< ('a, 't) pvariant ]; .. > ->
+  'a -> 'b t -> 'b t = <fun>
+|}]
+
 (* PR#7285 *)
 type (+'a,-'b) foo = private int;;
 let f (x : int) : ('a,'a) foo = Obj.magic x;;
