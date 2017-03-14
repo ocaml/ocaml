@@ -11,27 +11,27 @@
 #include "caml/alloc.h"
 #include "caml/fiber.h"
 
-static void write_barrier(value obj, int field, value val)
+/* The write barrier does not read or write the heap, it just
+   modifies domain-local data structures. */
+static void write_barrier(value obj, int field, value old_val, value new_val)
 {
-  value old_val;
   struct caml_domain_state* domain_state = CAML_DOMAIN_STATE;
 
   Assert (Is_block(obj));
 
-  if (Is_block(val)) {
+  if (Is_block(new_val)) {
     // caml_gc_log ("write_barrier: obj=%p field=%d val=%p",
     //             (value*)obj, field, (value*)val);
     if (!Is_young(obj)) {
-      if (Is_young(val)) {
+      if (Is_young(new_val)) {
         /* Add to remembered set */
         Ref_table_add(&domain_state->remembered_set->major_ref, Op_val(obj) + field);
       } else {
-        caml_darken(0, val, 0);
+        caml_darken(0, new_val, 0);
       }
-    } else if (Is_young(val) && val < obj) {
-      /* Both obj and val are young and val is more recent than obj. */
-      old_val = Op_val(obj)[field];
-      /* If old_val is also young, and younger than obj, then it must be the
+    } else if (Is_young(new_val) && new_val < obj) {
+      /* Both obj and new_val are young and new_val is more recent than obj.
+       * If old_val is also young, and younger than obj, then it must be the
        * case that `Op_val(obj)+field` is already in minor_ref. We can safely
        * skip adding it again. */
       if (Is_block(old_val) && Is_young(old_val) && old_val < obj)
@@ -50,7 +50,7 @@ CAMLexport void caml_modify_field (value obj, int field, value val)
 
   Assert(field >= 0 && field < Wosize_val(obj));
 
-  write_barrier(obj, field, val);
+  write_barrier(obj, field, Op_val(obj)[field], val);
   Op_val(obj)[field] = val;
 }
 
@@ -70,7 +70,7 @@ CAMLexport void caml_initialize_field (value obj, int field, value val)
     val = caml_promote(caml_domain_self(), val);
     End_roots();
   }
-  write_barrier(obj, field, val);
+  write_barrier(obj, field, Op_val(obj)[field], val);
   Op_val(obj)[field] = val;
 }
 
@@ -81,7 +81,7 @@ CAMLexport int caml_atomic_cas_field (value obj, int field, value oldval, value 
     /* non-atomic CAS since only this thread can access the object */
     if (*p == oldval) {
       *p = newval;
-      write_barrier(obj, field, newval);
+      write_barrier(obj, field, oldval, newval);
       return 1;
     } else {
       return 0;
@@ -89,7 +89,7 @@ CAMLexport int caml_atomic_cas_field (value obj, int field, value oldval, value 
   } else {
     /* need a real CAS */
     if (__sync_bool_compare_and_swap(p, oldval, newval)) {
-      write_barrier(obj, field, newval);
+      write_barrier(obj, field, oldval, newval);
       return 1;
     } else {
       return 0;
