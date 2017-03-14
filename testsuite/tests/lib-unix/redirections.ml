@@ -39,6 +39,22 @@ let test_createprocess () =
   Sys.remove "./tmpout.txt";
   Sys.remove "./tmperr.txt"
 
+let test_2ampsup1 () =    (* 2>&1 redirection, cf. GPR#1105 *)
+  let f =
+    Unix.(openfile "./tmpout.txt" [O_WRONLY;O_TRUNC;O_CREAT;O_CLOEXEC] 0o600) in
+  let pid =
+    Unix.create_process
+      refl
+      [| refl; "o"; "123"; "e"; "456"; "o"; "789" |]
+      Unix.stdin f f in
+  let (_, status) = Unix.waitpid [] pid in
+  Unix.close f;
+  if status <> Unix.WEXITED 0 then
+    out Unix.stdout "!!! reflector exited with an error\n";
+  out Unix.stdout "---- File tmpout.txt\n";
+  cat "./tmpout.txt";
+  Sys.remove "./tmpout.txt"
+
 let test_open_process_in () =
   let ic = Unix.open_process_in (refl ^ " o 123 o 456") in
   out Unix.stdout (input_line ic ^ "\n");
@@ -77,6 +93,8 @@ let _ =
   (* Unix.close Unix.stdin; *)
   out Unix.stdout "** create_process\n";
   test_createprocess();
+  out Unix.stdout "** create_process 2>&1 redirection\n";
+  test_2ampsup1();
   out Unix.stdout "** open_process_in\n";
   test_open_process_in();
   out Unix.stdout "** open_process_out\n";
