@@ -61,6 +61,13 @@ Working version
   no -title has been provided
   (Pierre Boutillier)
 
+* PR#7351: ocamldoc, use semantic tags rather than <br> tags in the html
+  backend
+  (Florian Angeletti, request and review by Daniel Bünzli )
+
+* PR#7352,PR#7353: ocamldoc, better paragraphs in html output
+  (Florian Angeletti, request by Daniel Bünzli)
+
 ### Compiler distribution build system
 
 - GPR#558: enable shared library and natdynlink support on more Linux
@@ -74,6 +81,11 @@ Working version
 
 - GPR#1032: display the output of -dtimings as a hierarchy
   (Valentin Gatien-Baron, review by Gabriel Scherer)
+
+### Manual and documentation:
+
+- PR#7254, GPR#1096: Rudimentary documentation of ocamlnat
+  (Mark Shinwell)
 
 ### Bug fixes
 
@@ -148,6 +160,9 @@ Next major version (4.05.0):
 - GPR#891: Use -fno-builtin-memcmp when building runtime with gcc.
   (Leo White)
 
+- GPR#1073: Remove statically allocated compare stack.
+  (Stephen Dolan)
+
 ### Type system:
 
 - PR#6608, GPR#901: unify record types when overriding all fields
@@ -217,6 +232,13 @@ Next major version (4.05.0):
 - GPR#1027: various improvements to -dtimings, mostly including time
   spent in subprocesses like preprocessors
   (Valentin Gatien-Baron, review by Gabriel Scherer)
+
+- GPR#1098: the compiler now takes the boolean "OCAML_COLOR" environment
+  variable into account if "-color" is not provided.  This allows users
+  to override the default behaviour without modifying invocations of ocaml
+  manually.
+  (Hannes Mehnert, Guillaume Bury,
+   review by Daniel Bünzli, Gabriel Scherer, Damien Doligez)
 
 ### Standard library:
 
@@ -512,6 +534,10 @@ Next major version (4.05.0):
 
 - PR#7504: fix warning 8 with unconstrained records
   (Florian Angeletti, report by John Whitington)
+
+- PR#7456, GPR#1092: fix slow compilation on source files containing a lot
+  of similar debugging information location entries
+  (Mark Shinwell)
 
 - GPR#805, GPR#815, GPR#833: check for integer overflow in String.concat
   (Jeremy Yallop,

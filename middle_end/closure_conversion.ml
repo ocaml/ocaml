@@ -461,7 +461,7 @@ let rec close t env (lam : Lambda.lambda) : Flambda.t =
       ~create_body:(fun args ->
         name_expr (Prim (p, args, dbg))
           ~name)
-  | Lswitch (arg, sw) ->
+  | Lswitch (arg, sw, _loc) ->
     let scrutinee = Variable.create "switch" in
     let aux (i, lam) = i, close t env lam in
     let zero_to_n = Numbers.Int.zero_to_n in

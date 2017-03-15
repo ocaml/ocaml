@@ -360,7 +360,7 @@ let parse_color_setting = function
   | "always" -> Some Misc.Color.Always
   | "never" -> Some Misc.Color.Never
   | _ -> None
-let color = ref Misc.Color.Auto ;; (* -color *)
+let color = ref None ;; (* -color *)
 
 let unboxed_types = ref false
 
