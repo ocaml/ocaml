@@ -80,15 +80,18 @@ Working version
 - PR#5927: Type equality broken for conjunctive polymorphic variant tags
   (Jacques Garrigue, report by Leo White)
 
+- PR#7261: Warn on type constraints in GADT declarations
+  (Jacques Garrigue, report by Fabrice Le Botlan)
+
+- PR#7344: Inconsistent behavior with type annotations on let
+  (Jacques Garrigue, report by Leo White)
+
 - PR#7468: possible GC problem in caml_alloc_sprintf
   (Xavier Leroy, discovery by Olivier Andrieu)
 
 - PR#7496: Fixed conjunctive polymorphic variant tags do not unify
   with themselves
   (Jacques Garrigue, report by Leo White)
-
-- PR#7261: Warn on type constraints in GADT declarations
-  (Jacques Garrigue, report by Fabrice Le Botlan)
 
 
 Next major version (4.05.0):

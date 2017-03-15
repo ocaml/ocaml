@@ -1462,6 +1462,16 @@ val f : int -> ('a, 'a) foo = <fun>
 val x : ('_a, '_a) foo = 3
 |}]
 
+(* PR#7344*)
+let rec f : unit -> < m: 'a. 'a -> 'a> = fun () ->
+  let x = f () in
+  ignore (x#m 1);
+  ignore (x#m "hello");
+  assert false;;
+[%%expect{|
+val f : unit -> < m : 'a. 'a -> 'a > = <fun>
+|}]
+
 (* PR#7395 *)
 type u
 type 'a t = u;;
