@@ -47,6 +47,13 @@ Working version
 - PR#6676, GPR#1110: move record notation to tutorial
   (Florian Angeletti, review by Gabriel Scherer)
 
+- GPR#1098: the compiler now takes the boolean "OCAML_COLOR" environment
+  variable into account if "-color" is not provided.  This allows users
+  to override the default behaviour without modifying invocations of ocaml
+  manually.
+  (Hannes Mehnert, Guillaume Bury,
+   review by Daniel Bünzli, Gabriel Scherer, Damien Doligez)
+
 ### Tools:
 
 - GPR#1045: ocamldep, add a "-shared" option to generate dependencies
