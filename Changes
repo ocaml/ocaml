@@ -83,6 +83,10 @@ Working version
 - PR#7261: Warn on type constraints in GADT declarations
   (Jacques Garrigue, report by Fabrice Le Botlan)
 
+- PR#7321: Private type in signature clashes with type definition via
+  functor instantiation
+  (Jacques Garrigue, report by Markus Mottl)
+
 - PR#7344: Inconsistent behavior with type annotations on let
   (Jacques Garrigue, report by Leo White)
 
