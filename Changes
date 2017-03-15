@@ -47,6 +47,7 @@ Working version
 - PR#6676, GPR#1110: move record notation to tutorial
   (Florian Angeletti, review by Gabriel Scherer)
 
+
 ### Tools:
 
 - GPR#1045: ocamldep, add a "-shared" option to generate dependencies
@@ -88,6 +89,10 @@ Working version
 
 - PR#5927: Type equality broken for conjunctive polymorphic variant tags
   (Jacques Garrigue, report by Leo White)
+
+- PR#6587: only elide Pervasives from printed type paths in
+  unambiguous context
+  (Florian Angeletti)
 
 - PR#7261: Warn on type constraints in GADT declarations
   (Jacques Garrigue, report by Fabrice Le Botlan)
