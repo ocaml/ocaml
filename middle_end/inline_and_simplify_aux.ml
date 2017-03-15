@@ -543,7 +543,7 @@ let prepare_to_simplify_set_of_closures ~env
           match only_for_function_decl with
           | None -> true
           | Some function_decl ->
-            Variable.Set.mem param (Parameter.var_set function_decl.params)
+            Variable.Set.mem param (Parameter.Set.vars function_decl.params)
         in
         if not keep then None
         else

@@ -26,7 +26,6 @@ type parameter = t
 val wrap : Variable.t -> t
 
 val var : t -> Variable.t
-val var_set : t list -> Variable.Set.t
 
 (** Rename the inner variable of the parameter *)
 val rename

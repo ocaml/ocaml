@@ -334,7 +334,7 @@ let invariant_params_in_recursion (decls : Flambda.function_declarations)
   in
   let params = Variable.Map.fold (fun _
         ({ params } : Flambda.function_declaration) set ->
-      Variable.Set.union (Parameter.var_set params) set)
+      Variable.Set.union (Parameter.Set.vars params) set)
     decls.funs Variable.Set.empty
   in
   let unchanging = Variable.Set.diff params not_unchanging in

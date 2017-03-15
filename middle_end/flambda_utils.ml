@@ -44,7 +44,7 @@ let function_arity (f : Flambda.function_declaration) = List.length f.params
 let variables_bound_by_the_closure cf
       (decls : Flambda.function_declarations) =
   let func = find_declaration cf decls in
-  let params = Parameter.var_set func.params in
+  let params = Parameter.Set.vars func.params in
   let functions = Variable.Map.keys decls.funs in
   Variable.Set.diff
     (Variable.Set.diff func.free_variables params)
@@ -320,7 +320,7 @@ let toplevel_substitution_named sb named =
 
 let make_closure_declaration ~id ~body ~params ~stub : Flambda.t =
   let free_variables = Flambda.free_variables body in
-  let param_set = Parameter.var_set params in
+  let param_set = Parameter.Set.vars params in
   if not (Variable.Set.subset param_set free_variables) then begin
     Misc.fatal_error "Flambda_utils.make_closure_declaration"
   end;
@@ -804,7 +804,7 @@ let closures_required_by_entry_point ~(entry_point : Closure_id.t) ~backend
 
 let all_functions_parameters (function_decls : Flambda.function_declarations) =
   Variable.Map.fold (fun _ ({ params } : Flambda.function_declaration) set ->
-      Variable.Set.union set (Parameter.var_set params))
+      Variable.Set.union set (Parameter.Set.vars params))
     function_decls.funs Variable.Set.empty
 
 let all_free_symbols (function_decls : Flambda.function_declarations) =

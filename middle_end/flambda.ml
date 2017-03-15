@@ -1056,7 +1056,7 @@ let create_set_of_closures ~function_decls ~free_vars ~specialised_args
       Variable.Map.fold (fun _fun_var function_decl expected_free_vars ->
           let free_vars =
             Variable.Set.diff function_decl.free_variables
-              (Variable.Set.union (Parameter.var_set function_decl.params)
+              (Variable.Set.union (Parameter.Set.vars function_decl.params)
                 all_fun_vars)
           in
           Variable.Set.union free_vars expected_free_vars)
@@ -1089,7 +1089,7 @@ let create_set_of_closures ~function_decls ~free_vars ~specialised_args
     end;
     let all_params =
       Variable.Map.fold (fun _fun_var function_decl all_params ->
-          Variable.Set.union (Parameter.var_set function_decl.params)
+          Variable.Set.union (Parameter.Set.vars function_decl.params)
             all_params)
         function_decls.funs
         Variable.Set.empty
@@ -1114,7 +1114,7 @@ let create_set_of_closures ~function_decls ~free_vars ~specialised_args
 let used_params function_decl =
   Variable.Set.filter
     (fun param -> Variable.Set.mem param function_decl.free_variables)
-    (Parameter.var_set function_decl.params)
+    (Parameter.Set.vars function_decl.params)
 
 let compare_const (c1:const) (c2:const) =
   match c1, c2 with

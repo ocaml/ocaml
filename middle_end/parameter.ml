@@ -27,8 +27,6 @@ type parameter = {
 let wrap var = { var }
 
 let var p = p.var
-let vars = List.map var
-let var_set l = Variable.Set.of_list (vars l)
 
 module M =
   Identifiable.Make (struct
@@ -57,7 +55,7 @@ module Map = M.Map
 module Tbl = M.Tbl
 module Set = struct
   include M.Set
-  let vars = var_set
+  let vars l = Variable.Set.of_list (List.map var l)
 end
 
 let rename ?current_compilation_unit ?append p =

@@ -109,7 +109,7 @@ let separate_unused_arguments ~only_specialised
         if decl.stub then
           acc
         else
-          Variable.Set.union acc (Parameter.var_set decl.Flambda.params))
+          Variable.Set.union acc (Parameter.Set.vars decl.Flambda.params))
       function_decls.funs Variable.Set.empty
   in
   let unused = Variable.Set.inter non_stub_arguments unused in
