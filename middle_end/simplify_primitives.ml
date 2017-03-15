@@ -55,6 +55,9 @@ let is_known_to_be_some_kind_of_block (arg:A.descr) =
 
 let rec structurally_different (arg1:A.t) (arg2:A.t) =
   match arg1.descr, arg2.descr with
+  | (Value_int n1 | Value_constptr n1), (Value_int n2 | Value_constptr n2)
+    when n1 <> n2 ->
+    true
   | Value_block (tag1, fields1), Value_block (tag2, fields2) ->
     not (Tag.equal tag1 tag2)
     || (Array.length fields1 <> Array.length fields2)
