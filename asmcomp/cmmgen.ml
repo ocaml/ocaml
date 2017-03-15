@@ -1407,8 +1407,8 @@ struct
   let make_isout h arg = Cop (Ccmpa Clt, [h ; arg], Debuginfo.none)
   let make_isin h arg = Cop (Ccmpa Cge, [h ; arg], Debuginfo.none)
   let make_if cond ifso ifnot = Cifthenelse (cond, ifso, ifnot)
-  let make_switch arg cases actions =
-    make_switch arg cases actions Debuginfo.none
+  let make_switch loc arg cases actions =
+    make_switch arg cases actions (Debuginfo.from_location loc)
   let bind arg body = bind "switcher" arg body
 
   let make_catch handler = match handler with
@@ -1448,7 +1448,7 @@ module SwitcherBlocks = Switch.Make(SArgBlocks)
 (* Int switcher, arg in [low..high],
    cases is list of individual cases, and is sorted by first component *)
 
-let transl_int_switch arg low high cases default = match cases with
+let transl_int_switch loc arg low high cases default = match cases with
 | [] -> assert false
 | _::_ ->
     let store = StoreExp.mk_store () in
@@ -1488,6 +1488,7 @@ let transl_int_switch arg low high cases default = match cases with
     bind "switcher" arg
       (fun a ->
         SwitcherBlocks.zyva
+          loc
           (low,high)
           a
           (Array.of_list inters) store)
@@ -1589,7 +1590,7 @@ let rec is_unboxed_number ~strict env e =
       end
   | Ulet (_, _, _, _, e) | Uletrec (_, e) | Usequence (_, e) ->
       is_unboxed_number ~strict env e
-  | Uswitch (_, switch) ->
+  | Uswitch (_, switch, _dbg) ->
       let k = Array.fold_left join No_result switch.us_actions_consts in
       Array.fold_left join k switch.us_actions_blocks
   | Ustringswitch (_, actions, default_opt) ->
@@ -1787,8 +1788,8 @@ let rec transl env e =
       end
 
   (* Control structures *)
-  | Uswitch(arg, s) ->
-      let dbg = Debuginfo.none in
+  | Uswitch(arg, s, dbg) ->
+      let loc = Debuginfo.to_location dbg in
       (* As in the bytecode interpreter, only matching against constants
          can be checked *)
       if Array.length s.us_index_blocks = 0 then
@@ -1798,15 +1799,15 @@ let rec transl env e =
           (Array.map (transl env) s.us_actions_consts)
           dbg
       else if Array.length s.us_index_consts = 0 then
-        transl_switch dbg env (get_tag (transl env arg) dbg)
+        transl_switch loc env (get_tag (transl env arg) dbg)
           s.us_index_blocks s.us_actions_blocks
       else
         bind "switch" (transl env arg) (fun arg ->
           Cifthenelse(
           Cop(Cand, [arg; Cconst_int 1], dbg),
-          transl_switch dbg env
+          transl_switch loc env
             (untag_int arg dbg) s.us_index_consts s.us_actions_consts,
-          transl_switch dbg env
+          transl_switch loc env
             (get_tag arg dbg) s.us_index_blocks s.us_actions_blocks))
   | Ustringswitch(arg,sw,d) ->
       let dbg = Debuginfo.none in
@@ -2705,7 +2706,7 @@ and exit_if_false dbg env cond otherwise nfail =
       if_then_else (test_bool dbg (transl env cond), otherwise,
         Cexit (nfail, []))
 
-and transl_switch _dbg env arg index cases = match Array.length cases with
+and transl_switch loc env arg index cases = match Array.length cases with
 | 0 -> fatal_error "Cmmgen.transl_switch"
 | 1 -> transl env cases.(0)
 | _ ->
@@ -2738,6 +2739,7 @@ and transl_switch _dbg env arg index cases = match Array.length cases with
         bind "switcher" arg
           (fun a ->
             SwitcherBlocks.zyva
+              loc
               (0,n_index-1)
               a
               (Array.of_list inters) store)

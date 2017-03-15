@@ -279,7 +279,8 @@ let rec to_clambda t env (flam : Flambda.t) : Clambda.ulambda =
           us_actions_consts = const_actions;
           us_index_blocks = block_index;
           us_actions_blocks = block_actions;
-        })
+        },
+        Debuginfo.none)  (* debug info will be added by GPR#855 *)
     in
     (* Check that the [failaction] may be duplicated.  If this is not the
        case, share it through a static raise / static catch. *)
