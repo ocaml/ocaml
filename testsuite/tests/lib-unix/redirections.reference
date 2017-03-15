@@ -7,6 +7,10 @@ xvar
 ---- File tmperr.txt
 bbbb
 456
+** create_process 2>&1 redirection
+123
+456
+789
 ** open_process_in
 123
 456

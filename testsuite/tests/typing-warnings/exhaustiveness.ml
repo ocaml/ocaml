@@ -108,3 +108,6 @@ let f x = match x with _ -> () | None -> .;; (* do not warn *)
 (* #7059, all clauses guarded *)
 
 let f x y = match 1 with 1 when x = y -> 1;;
+
+(* #7504, Example with no constraints on a record *)
+let f = function {contents=_}, 0 -> 0;;

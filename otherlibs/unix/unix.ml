@@ -884,23 +884,36 @@ let system cmd =
           end
   | id -> snd(waitpid_non_intr id)
 
-(* Make sure [fd] is not one of the standard descriptors 0, 1, 2,
-   by duplicating it if needed. *)
+(* Duplicate [fd] and make sure that the resulting descriptor
+   is not one of the standard descriptors 0, 1, 2.
+   The "cloexec" mode doesn't matter, because
+   the descriptor returned by [dup] will be closed before the [exec],
+   and because no other thread is running concurrently
+   (we are in the child process of a fork). *)
 
-let rec file_descr_not_standard fd =
-  if fd >= 3 then fd else begin
-    let res = file_descr_not_standard (dup fd) in
-    close fd;
+let rec safe_dup fd =
+  let new_fd = dup fd in
+  if new_fd >= 3 then
+    new_fd
+  else begin
+    let res = safe_dup fd in
+    close new_fd;
     res
   end
 
+let safe_close fd =
+  try close fd with Unix_error(_,_,_) -> ()
+
 let perform_redirections new_stdin new_stdout new_stderr =
-  let new_stdin = file_descr_not_standard new_stdin in
-  let new_stdout = file_descr_not_standard new_stdout in
-  let new_stderr = file_descr_not_standard new_stderr in
-  dup2 ~cloexec:false new_stdin stdin; close new_stdin;
-  dup2 ~cloexec:false new_stdout stdout; close new_stdout;
-  dup2 ~cloexec:false new_stderr stderr; close new_stderr
+  let newnewstdin = safe_dup new_stdin in
+  let newnewstdout = safe_dup new_stdout in
+  let newnewstderr = safe_dup new_stderr in
+  safe_close new_stdin;
+  safe_close new_stdout;
+  safe_close new_stderr;
+  dup2 ~cloexec:false newnewstdin stdin; close newnewstdin;
+  dup2 ~cloexec:false newnewstdout stdout; close newnewstdout;
+  dup2 ~cloexec:false newnewstderr stderr; close newnewstderr
 
 let create_process cmd args new_stdin new_stdout new_stderr =
   match fork() with
