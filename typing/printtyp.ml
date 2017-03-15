@@ -49,12 +49,19 @@ let ident ppf id = pp_print_string ppf (ident_name id)
 (* Print a path *)
 
 let ident_pervasive = Ident.create_persistent "Pervasives"
+let printing_env = ref Env.empty
 
 let rec tree_of_path = function
   | Pident id ->
       Oide_ident (ident_name id)
-  | Pdot(Pident id, s, _pos) when Ident.same id ident_pervasive ->
-      Oide_ident s
+   | Pdot(Pident id as parent, s, _pos) as p when Ident.same id ident_pervasive ->
+       if try
+           Path.same p (Env.lookup_type (Lident s) !printing_env)
+         with Not_found -> true
+       then
+          Oide_ident s
+        else
+          Oide_dot (tree_of_path parent, s)
   | Pdot(p, s, _pos) ->
       Oide_dot (tree_of_path p, s)
   | Papply(p1, p2) ->
@@ -238,7 +245,6 @@ let apply_subst s1 tyl =
 
 type best_path = Paths of Path.t list | Best of Path.t
 
-let printing_env = ref Env.empty
 let printing_depth = ref 0
 let printing_cont = ref ([] : Env.iter_cont list)
 let printing_old = ref Env.empty
@@ -305,8 +311,9 @@ let same_printing_env env =
   Env.same_types !printing_old env && Concr.equal !printing_pers used_pers
 
 let set_printing_env env =
-  printing_env := if !Clflags.real_paths then Env.empty else env;
-  if !printing_env == Env.empty || same_printing_env env then () else
+  printing_env := env;
+  if !Clflags.real_paths
+  || !printing_env == Env.empty || same_printing_env env then () else
   begin
     (* printf "Reset printing_map@."; *)
     printing_old := env;
