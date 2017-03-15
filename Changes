@@ -145,6 +145,9 @@ Next major version (4.05.0):
 - GPR#891: Use -fno-builtin-memcmp when building runtime with gcc.
   (Leo White)
 
+- GPR#1073: Remove statically allocated compare stack.
+  (Stephen Dolan)
+
 ### Type system:
 
 - PR#6608, GPR#901: unify record types when overriding all fields
