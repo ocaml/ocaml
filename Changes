@@ -518,6 +518,10 @@ Next major version (4.05.0):
 - PR#7504: fix warning 8 with unconstrained records
   (Florian Angeletti, report by John Whitington)
 
+- PR#7456, GPR#1092: fix slow compilation on source files containing a lot
+  of similar debugging information location entries
+  (Mark Shinwell)
+
 - GPR#805, GPR#815, GPR#833: check for integer overflow in String.concat
   (Jeremy Yallop,
    review by Damien Doligez, Alain Frisch, Daniel Bünzli, Fabrice Le Fessant)
