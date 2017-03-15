@@ -80,6 +80,9 @@ Working version
 - PR#5927: Type equality broken for conjunctive polymorphic variant tags
   (Jacques Garrigue, report by Leo White)
 
+- PR#6934: nonrec misbehaves with GADTs
+  (Jacques Garrigue, report by Markus Mottl)
+
 - PR#7261: Warn on type constraints in GADT declarations
   (Jacques Garrigue, report by Fabrice Le Botlan)
 
