@@ -40,13 +40,18 @@ let phys_equal (approxs:A.t list) =
 let is_known_to_be_some_kind_of_int (arg:A.descr) =
   match arg with
   | Value_int _ | Value_char _ | Value_constptr _ -> true
-  | _ -> false
+  | Value_block (_, _) | Value_float _ | Value_set_of_closures _
+  | Value_closure _ | Value_string _ | Value_float_array _
+  | A.Value_boxed_int _ | Value_unknown _ | Value_extern _
+  | Value_symbol _ | Value_unresolved _ | Value_bottom -> false
 
 let is_known_to_be_some_kind_of_block (arg:A.descr) =
   match arg with
   | Value_block _ | Value_float _ | Value_float_array _ | A.Value_boxed_int _
   | Value_closure _ | Value_string _ -> true
-  | _ -> false
+  | Value_set_of_closures _ | Value_int _ | Value_char _ | Value_constptr _
+  | Value_unknown _ | Value_extern _ | Value_symbol _
+  | Value_unresolved _ | Value_bottom -> false
 
 let rec structurally_different (arg1:A.t) (arg2:A.t) =
   match arg1.descr, arg2.descr with
