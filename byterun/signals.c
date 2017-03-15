@@ -55,7 +55,7 @@ void caml_process_pending_signals(void)
     for (i = 0; i < NSIG; i++) {
       if (caml_pending_signals[i]) {
         caml_pending_signals[i] = 0;
-        caml_execute_signal(i, 0);
+        caml_execute_signal(i);
       }
     }
   }
@@ -136,7 +136,7 @@ CAMLexport void caml_leave_blocking_section(void)
 
 static value caml_signal_handlers = 0;
 
-void caml_execute_signal(int signal_number, int in_signal_handler)
+void caml_execute_signal(int signal_number)
 {
   value res;
   value handler;
@@ -182,14 +182,8 @@ void caml_execute_signal(int signal_number, int in_signal_handler)
   caml_spacetime_trie_node_ptr = saved_spacetime_trie_node_ptr;
 #endif
 #ifdef POSIX_SIGNALS
-  if (! in_signal_handler) {
-    /* Restore the original signal mask */
-    sigprocmask(SIG_SETMASK, &sigs, NULL);
-  } else if (Is_exception_result(res)) {
-    /* Restore the original signal mask and unblock the signal itself */
-    sigdelset(&sigs, signal_number);
-    sigprocmask(SIG_SETMASK, &sigs, NULL);
-  }
+  /* Restore the original signal mask */
+  sigprocmask(SIG_SETMASK, &sigs, NULL);
 #endif
   if (Is_exception_result(res)) caml_raise(Extract_exception(res));
 }
