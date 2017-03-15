@@ -439,6 +439,10 @@ OCaml 4.04.0 (4 Nov 2016):
   FlexDLL if there was also a system-installed flexlink
   (David Allsopp, report Michael Soegtrop)
 
+- PR#7456, GPR#1092: fix slow compilation on source files containing a lot
+  of similar debugging information location entries
+  (Mark Shinwell)
+
 - GPR#805, GPR#815, GPR#833: check for integer overflow in String.concat
   (Jeremy Yallop,
    review by Damien Doligez, Alain Frisch, Daniel Bünzli, Fabrice Le Fessant)
