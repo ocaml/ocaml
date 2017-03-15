@@ -270,8 +270,44 @@ class virtual text =
       | None -> Printf.sprintf "%d_%s" n (self#label_of_text t)
 
     (** Print the html code corresponding to the [text] parameter. *)
-    method html_of_text b t =
-      List.iter (self#html_of_text_element b) t
+    method html_of_text ?(with_p=false) b t =
+      if not with_p then
+        List.iter (self#html_of_text_element b) t
+      else
+        self#html_of_text_with_p b t
+
+    method html_of_text_with_p b t =
+      (* In order to enclose the generated text in <p> </p>, we first
+         output the content inside a inner buffer b', and then generate
+         the whole paragraph, if the content is not empty,
+         either at the end of the text, at a Newline element or when
+         encountering an element that cannot be part of a paragraph element
+      *)
+      let b' = Buffer.create 17 (* paragraph buffer *) in
+      let flush b' =
+        (* trim the inner string to avoid outputing empty <p></p> *)
+        let s = String.trim @@ Buffer.contents b' in
+        if s <> "" then
+          begin
+            bp b "<p>";
+            bs b s;
+            bp b "</p>\n"
+          end;
+        Buffer.clear b' in
+      let rec iter txt =
+        match txt with
+        | [] ->
+            flush b' (* flush b' at the end of the text *)
+        | (List _ | Enum _ | Title _ | CodePre _ | Verbatim _ | Center _
+          | Left _ | Right _ | Newline | Index_list ) as a :: q
+          (* these elements cannot be part of <p> element *)
+          ->
+            flush b'; (* stop the current paragraph *)
+            self#html_of_text_element b a; (*output [a] directly on [b] *)
+            iter q
+        | a :: q  -> self#html_of_text_element b' a; iter q
+      in
+      iter t
 
     (** Print the html code for the [text_element] in parameter. *)
     method html_of_text_element b txt =
@@ -413,7 +449,7 @@ class virtual text =
         tl;
       bs b "</OL>\n"
 
-    method html_of_Newline b = bs b "\n<p>\n"
+    method html_of_Newline b = bs b "\n"
 
     method html_of_Block b t =
       bs b "<blockquote>\n";
@@ -572,7 +608,8 @@ class virtual info =
     val mutable tag_functions = ([] : (string * (Odoc_info.text -> string)) list)
 
     (** The method used to get html code from a [text]. *)
-    method virtual html_of_text : Buffer.t -> Odoc_info.text -> unit
+    method virtual html_of_text :
+      ?with_p:bool -> Buffer.t -> Odoc_info.text -> unit
 
     (** Print html for an author list. *)
     method html_of_author_list b l =
@@ -712,7 +749,7 @@ class virtual info =
            | Some d when d = [Odoc_info.Raw ""] -> ()
            | Some d ->
                bs b "<div class=\"info-desc\">\n";
-               self#html_of_text b d;
+               self#html_of_text ~with_p:true b d;
                bs b "</div>\n"
           );
 
@@ -748,7 +785,7 @@ class virtual info =
              None -> ()
            | Some d when d = [Odoc_info.Raw ""] -> ()
            | Some d ->
-               self#html_of_text b
+               self#html_of_text ~with_p:true b
                  (Odoc_info.text_no_title_no_list
                     (Odoc_info.first_sentence_of_text d));
                bs b "\n"
@@ -881,7 +918,9 @@ class html =
 
         "ul.indexlist { margin-left: 0; padding-left: 0;}";
         "ul.indexlist li { list-style-type: none ; margin-left: 0; padding-left: 0; }";
-        "ul.info-attributes {list-style: none; margin: 0; padding: 0; }"
+        "ul.info-attributes {list-style: none; margin: 0; padding: 0; }";
+        "div.info > p:first-child { margin-top:0; }";
+        "div.info-desc > p:first-child { margin-top:0; margin-bottom:0; }"
       ]
 
     (** The style file for all pages. *)
@@ -2240,7 +2279,7 @@ class html =
 
     (** Print html code for a module comment.*)
     method html_of_module_comment b text =
-      self#html_of_text b text
+      self#html_of_text ~with_p:true b text
 
     (** Print html code for a class comment.*)
     method html_of_class_comment b text =
@@ -2251,7 +2290,7 @@ class html =
             (Odoc_info.Title (2, None, [Odoc_info.Raw s])) :: q
         | _ -> text
       in
-      self#html_of_text b text2
+      self#html_of_text ~with_p:true b text2
 
     (** Generate html code for the given list of inherited classes.*)
     method generate_inheritance_info b inher_l =

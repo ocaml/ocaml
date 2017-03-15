@@ -65,6 +65,9 @@ Working version
   backend
   (Florian Angeletti, request and review by Daniel Bünzli )
 
+* PR#7352,PR#7353: ocamldoc, better paragraphs in html output
+  (Florian Angeletti, request by Daniel Bünzli)
+
 ### Compiler distribution build system
 
 - GPR#558: enable shared library and natdynlink support on more Linux
