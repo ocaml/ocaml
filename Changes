@@ -48,6 +48,14 @@ Working version
   (Florian Angeletti, review by Gabriel Scherer)
 
 
+- GRP#1091 Add the Uchar.{bom,rep} constants.
+  (Daniel Bünzli, Alain Frisch)
+
+- GPR#1091: Add Buffer.add_utf_{8,16le,16be}_uchar to encode Uchar.t
+  values to the corresponding UTF-X transformation formats in Buffer.t
+  values.
+  (Daniel Bünzli, review by Damien Doligez, Max Mouratov)
+
 ### Tools:
 
 - GPR#1045: ocamldep, add a "-shared" option to generate dependencies
