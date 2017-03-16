@@ -619,6 +619,10 @@ Working version
   (Alain Frisch, review by Armaël Guéneau and Gabriel Scherer,
   report by Hugo Heuzard)
 
+- MPR#6638, GPR #1110: "unused open" warning incorrectly suppressed by "open!"
+  (Alain Frisch, report by dwang)
+
+
 OCaml 4.07.1 (4 October 2018)
 -----------------------------
 
