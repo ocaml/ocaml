@@ -47,7 +47,7 @@ static void compare_free_stack(struct compare_stack* stk)
 {
   if (stk->stack != stk->init_stack) {
     free(stk->stack);
-    stk->stack = 0;
+    stk->stack = NULL;
   }
 }
 
