@@ -314,8 +314,8 @@ CCOUT = -o $(EMPTY)
 endif
 
 objinfo_helper$(EXE): objinfo_helper.c ../config/s.h
-	$(CC) $(BYTECFLAGS) $(CCOUT)objinfo_helper$(EXE) $(BYTECCCOMPOPTS) \
-          $(DEF_SYMBOL_PREFIX) $(LIBBFD_INCLUDE) objinfo_helper.c $(LIBBFD_LINK)
+	$(CC) $(CFLAGS) $(CPPFLAGS) $(CCOUT)objinfo_helper$(EXE) \
+          $(DEF_SYMBOL_PREFIX) $(LIBBFD_INCLUDE) $< $(LIBBFD_LINK)
 
 OBJINFO=../compilerlibs/ocamlcommon.cma \
         ../compilerlibs/ocamlbytecomp.cma \

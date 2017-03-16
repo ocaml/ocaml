@@ -128,10 +128,8 @@ endif
 
 ifeq ($(CCOMPTYPE),msvc)
 CCOMP=set -o pipefail ; $(CC) $(CFLAGS) /Fe$(1) | tail -n +2
-CFLAGS=$(NATIVECFLAGS) $(NATIVECCCOMPOPTS)
 else
 CCOMP=$(CC) $(CFLAGS) -o $(1)
-CFLAGS=$(NATIVECFLAGS) $(NATIVECCCOMPOPTS) -g
 endif
 tests: $(CASES:=.$(O))
 	@for c in $(CASES); do \

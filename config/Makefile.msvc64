@@ -96,11 +96,11 @@ AFL_INSTRUMENT=false
 ########## Configuration for the bytecode compiler
 
 ### Which C compiler to use for the bytecode interpreter.
-CC=cl
-BYTECFLAGS=-nologo -D_CRT_SECURE_NO_DEPRECATE -O2 -Gy- -MD
-BYTECODE_C_COMPILER=$(CC) $(BYTECFLAGS)
-
-BYTECCCOMPOPTS=-DCAML_NAME_SPACE
+CC = cl
+CFLAGS = -nologo -O2 -Gy- -MD
+CPPFLAGS = -D_CRT_SECURE_NO_DEPRECATE -DCAML_NAME_SPACE
+OCAMLC_CFLAGS = -nologo -O2 -Gy- -MD
+OCAMLC_CPPFLAGS = -D_CRT_SECURE_NO_DEPRECATE
 
 BYTECCDBGCOMPOPTS=-Zi
 
@@ -143,7 +143,7 @@ MKMAINDLL=$(FLEXLINK) -maindll
 MERGEMANIFESTEXE=test ! -f $(1).manifest \
 	         || mt -nologo -outputresource:$(1) -manifest $(1).manifest \
 	            && rm -f $(1).manifest
-MKEXE_BOOT=$(CC) $(BYTECFLAGS) /Fe$(1) $(2) /link /subsystem:console \
+MKEXE_BOOT=$(CC) $(CFLAGS) /Fe$(1) $(2) /link /subsystem:console \
            && ($(MERGEMANIFESTEXE))
 
 ### How to build a static library
@@ -175,11 +175,8 @@ MODEL=default
 ### Name of operating system family for the native-code compiler.
 SYSTEM=win64
 
-### Which C compiler to use for the native-code compiler.
-NATIVECFLAGS=-nologo -D_CRT_SECURE_NO_DEPRECATE -O2 -Gy- -MD
-NATIVE_C_COMPILER=$(CC) $(NATIVECFLAGS)
-
-NATIVECCCOMPOPTS=-DCAML_NAME_SPACE
+OCAMLOPT_CFLAGS = -nologo -O2 -Gy- -MD
+OCAMLOPT_CPPFLAGS = -D_CRT_SECURE_NO_DEPRECATE
 
 ### Build partially-linked object file
 PACKLD=link -lib -nologo -machine:AMD64 -out:# must have no space after '-out:'

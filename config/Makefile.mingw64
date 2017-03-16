@@ -103,11 +103,10 @@ AFL_INSTRUMENT=false
 ########## Configuration for the bytecode compiler
 
 ### Which C compiler to use for the bytecode interpreter.
-CC=$(TOOLPREF)gcc
-BYTECFLAGS=-O -mms-bitfields
-BYTECODE_C_COMPILER=$(CC) $(BYTECFLAGS)
-
-BYTECCCOMPOPTS=-DCAML_NAME_SPACE -Wall -Wno-unused
+CC = $(TOOLPREF)gcc
+CFLAGS = -O -mms-bitfields -Wall -Wno-unused
+CPPFLAGS = -DCAML_NAME_SPACE
+OCAMLC_CFLAGS = -O -mms-bitfields
 
 BYTECCDBGCOMPOPTS=-g
 
@@ -145,7 +144,7 @@ MKEXEDEBUGFLAG=-g
 MKMAINDLL=$(FLEXLINK) -maindll
 
 ### Native command to build ocamlrun.exe without flexlink
-MKEXE_BOOT=$(CC) $(BYTECFLAGS) -o $(1) $(2)
+MKEXE_BOOT=$(CC) $(CFLAGS) -o $(1) $(2)
 
 ### How to build a static library
 MKLIB=rm -f $(1); $(TOOLPREF)ar rc $(1) $(2); $(RANLIB) $(1)
@@ -175,10 +174,7 @@ MODEL=default
 ### Name of operating system family for the native-code compiler.
 SYSTEM=mingw64
 
-NATIVECFLAGS=-O -mms-bitfields
-NATIVE_C_COMPILER=$(CC) $(NATIVECFLAGS)
-
-NATIVECCCOMPOPTS=-DCAML_NAME_SPACE -Wall -Wno-unused
+OCAMLOPT_CFLAGS = -O -mms-bitfields
 
 ### Build partially-linked object file
 PACKLD=$(TOOLPREF)ld -r -o # must have a space after '-o'

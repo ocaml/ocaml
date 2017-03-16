@@ -41,8 +41,6 @@ LIBRARIES += libcamlrun_pic.$(A) libcamlrun_shared.$(SO)
 endif
 endif
 
-CFLAGS := $(BYTECFLAGS)
-
 ifdef BOOTSTRAPPING_FLEXLINK
 CFLAGS += -DBOOTSTRAPPING_FLEXLINK
 endif
@@ -53,7 +51,7 @@ ifeq "$(UNIX_OR_WIN32)" "win32"
 CFLAGS += -DOCAML_STDLIB_DIR='"$(LIBDIR)"'
 endif
 
-CFLAGS += $(IFLEXDIR) $(BYTECCCOMPOPTS)
+CFLAGS += $(IFLEXDIR)
 
 DFLAGS=$(CFLAGS) -DDEBUG
 IFLAGS=$(CFLAGS) -DCAML_INSTR
@@ -201,16 +199,16 @@ libcamlrun_shared.$(SO): $(PICOBJS)
 	$(MKDLL) -o $@ $^ $(BYTECCLIBS)
 
 %.$(O): %.c
-	$(CC) $(CFLAGS) -c $<
+	$(CC) -c $(CFLAGS) $(CPPFLAGS) $<
 
 %.$(DBGO): %.c
-	$(CC) $(DFLAGS) -c $(OUTPUTOBJ)$@ $<
+	$(CC) -c $(DFLAGS) $(CPPFLAGS) $(OUTPUTOBJ)$@ $<
 
 %.i.$(O): %.c
-	$(CC) $(IFLAGS) -c $(OUTPUTOBJ)$@ $<
+	$(CC) -c $(IFLAGS) $(CPPFLAGS) $(OUTPUTOBJ)$@ $<
 
 %.pic.$(O): %.c
-	$(CC) $(PICFLAGS) -c $(OUTPUTOBJ)$@ $<
+	$(CC) -c $(PICFLAGS) $(CPPFLAGS) $(OUTPUTOBJ)$@ $<
 
 .PHONY: depend
 ifeq "$(TOOLCHAIN)" "msvc"
@@ -218,10 +216,10 @@ depend:
 	$(error Dependencies cannot be regenerated using the MSVC ports)
 else
 depend: prims.c caml/opnames.h caml/jumptbl.h caml/version.h
-	$(CC) -MM $(CFLAGS) *.c | sed -e 's/\.o/.$$(O)/' > .depend
-	$(CC) -MM $(DFLAGS) *.c | sed -e 's/\.o/.d.$$(O)/' >> .depend
-	$(CC) -MM $(IFLAGS) *.c | sed -e 's/\.o/.i.$$(O)/' >> .depend
-	$(CC) -MM $(PICFLAGS) *.c | sed -e 's/\.o/.pic.$$(O)/' >> .depend
+	$(CC) -MM $(CFLAGS) $(CPPFLAGS) *.c | sed -e 's/\.o/.$$(O)/' > .depend
+	$(CC) -MM $(DFLAGS) $(CPPFLAGS) *.c | sed -e 's/\.o/.d.$$(O)/' >> .depend
+	$(CC) -MM $(IFLAGS) $(CPPFLAGS) *.c | sed -e 's/\.o/.i.$$(O)/' >> .depend
+	$(CC) -MM $(PICFLAGS) $(CPPFLAGS) *.c | sed -e 's/\.o/.pic.$$(O)/' >> .depend
 endif
 
 include .depend

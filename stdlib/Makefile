@@ -138,12 +138,12 @@ $(CAMLHEADERS): $(HEADERPROGRAM) ../config/Makefile
 ifeq "$(UNIX_OR_WIN32)" "unix"
 $(CAMLHEADERS):
 	for suff in '' d i; do \
-	  $(CC) $(BYTECFLAGS) $(BYTECCCOMPOPTS) $(LDFLAGS) \
+	  $(CC) $(CFLAGS) $(CPPFLAGS) $(LDFLAGS) \
 	            -DRUNTIME_NAME='"$(BINDIR)/ocamlrun'$$suff'"' \
 	            header.c -o tmpheader$(EXE) && \
 	  strip tmpheader$(EXE) && \
 	  mv tmpheader$(EXE) camlheader$$suff && \
-	  $(CC) $(BYTECFLAGS) $(BYTECCCOMPOPTS) $(LDFLAGS) \
+	  $(CC) $(CFLAGS) $(CPPFLAGS) $(LDFLAGS) \
 	            -DRUNTIME_NAME='"$(TARGET_BINDIR)/ocamlrun'$$suff'"' \
 	            header.c -o tmpheader$(EXE) && \
 	  strip tmpheader$(EXE) && \
@@ -157,7 +157,7 @@ else # Windows
 # with those above
 
 camlheader target_camlheader camlheader_ur:
-	$(CC) $(BYTECFLAGS) $(BYTECCCOMPOPTS) -c -I../byterun \
+	$(CC) -c $(CFLAGS) $(CPPFLAGS) -I../byterun \
 	          -DRUNTIME_NAME='"ocamlrun"' headernt.c
 	$(MKEXE) -o tmpheader.exe headernt.$(O) $(EXTRALIBS)
 	rm -f camlheader.exe
@@ -166,14 +166,14 @@ camlheader target_camlheader camlheader_ur:
 	cp camlheader camlheader_ur
 
 camlheaderd target_camlheaderd:
-	$(CC) $(BYTECFLAGS) $(BYTECCCOMPOPTS) -c -I../byterun \
+	$(CC) -c $(CFLAGS) $(CPPFLAGS) -I../byterun \
 	          -DRUNTIME_NAME='"ocamlrund"' headernt.c
 	$(MKEXE) -o tmpheader.exe headernt.$(O) $(EXTRALIBS)
 	mv tmpheader.exe camlheaderd
 	cp camlheaderd target_camlheaderd
 
 camlheaderi:
-	$(CC) $(BYTECFLAGS) $(BYTECCCOMPOPTS) -c -I../byterun \
+	$(CC) -c $(CFLAGS) $(CPPFLAGS) -I../byterun \
 	          -DRUNTIME_NAME='"ocamlruni"' headernt.c
 	$(MKEXE) -o tmpheader.exe headernt.$(O) $(EXTRALIBS)
 	mv tmpheader.exe camlheaderi

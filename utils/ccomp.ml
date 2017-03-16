@@ -82,9 +82,11 @@ let compile_file name =
          (match !Clflags.c_compiler with
           | Some cc -> cc
           | None ->
-              if !Clflags.native_code
-              then Config.native_c_compiler
-              else Config.bytecomp_c_compiler)
+              let (cflags, cppflags) =
+                  if !Clflags.native_code
+                  then (Config.ocamlopt_cflags, Config.ocamlopt_cppflags)
+                  else (Config.ocamlc_cflags, Config.ocamlc_cppflags) in
+              (String.concat " " [Config.c_compiler; cflags; cppflags]))
          (if !Clflags.debug && Config.ccomp_type <> "msvc" then "-g" else "")
          (String.concat " " (List.rev !Clflags.all_ccopts))
          (quote_prefixed "-I" (List.rev !Clflags.include_dirs))

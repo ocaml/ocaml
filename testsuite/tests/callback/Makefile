@@ -15,7 +15,6 @@
 
 BASEDIR=../..
 
-CFLAGS=$(NATIVECFLAGS) -I $(CTOPDIR)/byterun
 COMPFLAGS=-I $(OTOPDIR)/otherlibs/unix
 LD_PATH=$(TOPDIR)/otherlibs/unix
 
@@ -29,7 +28,7 @@ default:
 
 .PHONY: common
 common:
-	@$(CC) $(CFLAGS) -c callbackprim.c
+	@$(CC) -c $(CFLAGS) $(CPPFLAGS)  -I$(CTOPDIR)/byterun callbackprim.c
 
 .PHONY: skip
 skip:
