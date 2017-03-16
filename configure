@@ -47,7 +47,7 @@ verbose=false
 with_curses=yes
 debugruntime=false
 with_instrumented_runtime=false
-with_sharedlibs=yes
+with_sharedlibs=true
 partialld="ld -r"
 with_debugger=ocamldebugger
 with_ocamldoc=ocamldoc
@@ -150,7 +150,7 @@ while : ; do
     -no-curses|--no-curses)
         with_curses=no;;
     -no-shared-libs|--no-shared-libs)
-        with_sharedlibs=no;;
+        with_sharedlibs=false;;
     -x11include*|--x11include*)
         x11_include_dir=$2; shift;;
     -x11lib*|--x11lib*)
@@ -457,19 +457,19 @@ case "$cc,$target" in
       *) err "unknown cygwin variant";;
     esac
     bytecccompopts="$bytecccompopts -U_WIN32"
-    if test $with_sharedlibs = yes; then
+    if $with_sharedlibs; then
       flexlink="flexlink -chain $flavor -merge-manifest -stack 16777216"
       flexdir=`$flexlink -where | tr -d '\015'`
       if test -z "$flexdir"; then
         wrn "flexlink not found: native shared libraries won't be available."
-        with_sharedlibs=no
+        with_sharedlibs=false
       else
         iflexdir="-I\"$flexdir\""
         mkexe="$flexlink -exe"
         mkexedebugflag="-link -g"
       fi
     fi
-    if test $with_sharedlibs = no; then
+    if ! $with_sharedlibs; then
       mkexe="$mkexe -Wl,--stack,16777216"
       ldflags="-Wl,--stack,16777216"
     fi
@@ -477,7 +477,7 @@ case "$cc,$target" in
     ostype="Cygwin";;
   *,*-*-mingw*)
     dllccompopt="-DCAML_DLL"
-    if test $with_sharedlibs = yes; then
+    if $with_sharedlibs; then
       case "$target" in
         i686-*-*)   flexlink_chain="mingw";;
         x86_64-*-*) flexlink_chain="mingw64";;
@@ -486,7 +486,7 @@ case "$cc,$target" in
       flexdir=`$flexlink -where`
       if test -z "$flexdir"; then
         wrn "flexlink not found: native shared libraries won't be available."
-        with_sharedlibs=no
+        with_sharedlibs=false
       else
         iflexdir="-I\"$flexdir\""
         mkexe="$flexlink -exe"
@@ -724,7 +724,7 @@ rpath=''
 mksharedlibrpath=''
 natdynlinkopts=""
 
-if test $with_sharedlibs = "yes"; then
+if $with_sharedlibs; then
   case "$target" in
     *-*-cygwin*)
       mksharedlib="$flexlink"
@@ -813,7 +813,7 @@ fi
 
 natdynlink=false
 
-if test $with_sharedlibs = "yes"; then
+if $with_sharedlibs; then
   case "$target" in
     *-*-cygwin*)                  natdynlink=true;;
     *-*-mingw*)                   natdynlink=true;;
