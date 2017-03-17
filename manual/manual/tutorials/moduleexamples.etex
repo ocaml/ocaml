@@ -53,6 +53,33 @@ inside the structure "PrioQueue" and "PrioQueue.queue" is the type
 PrioQueue.insert PrioQueue.empty 1 "hello";;
 \end{caml_example}
 
+Another possibility is to open the module, which brings all
+identifiers defined inside the module in the scope of the current
+structure.
+
+\begin{caml_example}
+  open PrioQueue;;
+  insert empty 1 "hello";;
+\end{caml_example}
+
+It is also possible to copy the components of a module inside
+another module by using an "include" statement. This can be
+particularly useful to extend existing modules. As an illustration,
+we could add functions that returns an optional value rather than
+an exception when the priority queue is empty.
+\begin{caml_example}
+  module PrioQueueOpt =
+  struct
+    include PrioQueue
+
+    let remove_top_opt x =
+      try Some(remove_top x) with Queue_is_empty -> None
+
+    let extract_opt x =
+      try Some(extract x) with Queue_is_empty -> None
+  end;;
+\end{caml_example}
+
 \section{Signatures}
 \pdfsection{Signatures}
 
@@ -93,6 +120,20 @@ An alternate syntax is provided for the above:
 \begin{verbatim}
 module PrioQueue : PRIOQUEUE = struct ... end;;
 \end{verbatim}
+
+Like for modules, it is possible to include a signature to copy
+its components inside the current signature. For instance, we
+can extend the PRIOQUEUE signature with the "extract_opt"
+function:
+
+\begin{caml_example}
+module type PRIOQUEUE_WITH_OPT =
+  sig
+    include PRIOQUEUE
+    val extract_opt : 'a queue -> (int * 'a * 'a queue) option
+  end;;
+\end{caml_example}
+
 
 \section{Functors}
 \pdfsection{Functors}
