@@ -1,3 +1,4 @@
+
 Next major version (4.05.0):
 ----------------------------
 
@@ -183,6 +184,9 @@ Next major version (4.05.0):
 - PR#6597, GPR#1030: add forward references to language extensions
   that extend non-terminal symbols in the language reference section.
   (Florian Angeletti, review by Gabriel Scherer)
+
+- PR#7497, GPR#1095: manual, enable numbering for table of contents
+  (Florian Angeletti, request by Daniel Bünzli)
 
 - GPR#633: manpage and manual documentation for the `-opaque` option
   (Konstantin Romanov, Gabriel Scherer, review by Mark Shinwell)
