@@ -31,23 +31,6 @@ Working version
   (Richard Degenne, review by David Allsopp, Thomas Braibant, Florian
   Angeletti, Gabriel Scherer, Nathan Moreau, Alain Frisch)
 
-### Compiler user-interface and warnings:
-
-- GPR#948: the compiler now reports warnings-as-errors by prefixing
-  them with "Error (warning ..):", instead of "Warning ..:" and
-  a trailing "Error: Some fatal warnings were triggered" message.
-  (Valentin Gatien-Baron, review by Alain Frisch)
-### Manual and documentation:
-
-- PR#7497, GPR#1095: manual, enable numbering for table of contents
-  (Florian Angeletti, request by Daniel Bünzli)
-
-### Manual and documentation:
-
-- PR#6676, GPR#1110: move record notation to tutorial
-  (Florian Angeletti, review by Gabriel Scherer)
-
-
 - GRP#1091 Add the Uchar.{bom,rep} constants.
   (Daniel Bünzli, Alain Frisch)
 
@@ -55,6 +38,21 @@ Working version
   values to the corresponding UTF-X transformation formats in Buffer.t
   values.
   (Daniel Bünzli, review by Damien Doligez, Max Mouratov)
+
+### Compiler user-interface and warnings:
+
+- GPR#948: the compiler now reports warnings-as-errors by prefixing
+  them with "Error (warning ..):", instead of "Warning ..:" and
+  a trailing "Error: Some fatal warnings were triggered" message.
+  (Valentin Gatien-Baron, review by Alain Frisch)
+
+### Manual and documentation:
+
+- PR#6676, GPR#1110: move record notation to tutorial
+  (Florian Angeletti, review by Gabriel Scherer)
+
+- PR#7254, GPR#1096: Rudimentary documentation of ocamlnat
+  (Mark Shinwell)
 
 ### Tools:
 
@@ -90,11 +88,6 @@ Working version
 
 - GPR#1032: display the output of -dtimings as a hierarchy
   (Valentin Gatien-Baron, review by Gabriel Scherer)
-
-### Manual and documentation:
-
-- PR#7254, GPR#1096: Rudimentary documentation of ocamlnat
-  (Mark Shinwell)
 
 ### Bug fixes
 
