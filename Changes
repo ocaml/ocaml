@@ -20,6 +20,10 @@ Working version
   bundles.
   (whitequark)
 
+- GPR#1113: Pervasives.abs is now a built-in function with an optimized
+  branchless implementation.
+  (Max Mouratov)
+
 ### Standard library:
 
 - PR#1771, PR#7309, GPR#1026: Add update to maps. Allows to update a
