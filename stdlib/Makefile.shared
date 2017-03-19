@@ -85,7 +85,7 @@ stdlib.cmxa: $(OBJS:.cmo=.cmx)
 	$(CAMLOPT) -a -o stdlib.cmxa $(OBJS:.cmo=.cmx)
 
 sys.ml: sys.mlp ../VERSION
-	sed -e "s|%%VERSION%%|`sed -e 1q ../VERSION`|" sys.mlp >sys.ml
+	sed -e "s|%%VERSION%%|`sed -e 1q ../VERSION | tr -d '\r'`|" sys.mlp > $@
 
 clean::
 	rm -f sys.ml

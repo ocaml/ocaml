@@ -514,6 +514,7 @@ $(ASMCOMP:.cmo=.cmx): ocamlopt
 
 bytecomp/opcodes.ml: byterun/caml/instruct.h
 	sed -n -e '/^enum/p' -e 's/,//g' -e '/^  /p' byterun/caml/instruct.h | \
+	tr -d '\r' | \
 	awk -f tools/make-opcodes > bytecomp/opcodes.ml
 
 partialclean::
@@ -528,8 +529,8 @@ byterun/primitives:
 
 bytecomp/runtimedef.ml: byterun/primitives byterun/caml/fail.h
 	(echo 'let builtin_exceptions = [|'; \
-	 sed -n -e 's|.*/\* \("[A-Za-z_]*"\) \*/$$|  \1;|p' \
-	     byterun/caml/fail.h; \
+	 cat byterun/caml/fail.h | tr -d '\r' | \
+	 sed -n -e 's|.*/\* \("[A-Za-z_]*"\) \*/$$|  \1;|p'; \
 	 echo '|]'; \
 	 echo 'let builtin_primitives = [|'; \
 	 sed -e 's/.*/  "&";/' byterun/primitives; \
