@@ -1099,7 +1099,7 @@ let end_assembly () =
   `	.globl	{emit_symbol lbl}\n`;
   `{emit_symbol lbl}:\n`;
   let efa_label kind lbl =
-    if macosx && !thumb then
+    if macosx && !thumb && kind = "%function" then
       `	.thumb_func     {emit_label lbl}\n`;
     if not macosx then
       `	.type	{emit_label lbl}, {emit_string kind}\n`;
