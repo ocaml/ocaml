@@ -36,7 +36,7 @@ ocamlyacc$(EXE): $(OBJS)
 	$(MKEXE) -o ocamlyacc$(EXE) $(OBJS) $(EXTRALIBS)
 
 version.h : ../VERSION
-	echo "#define OCAML_VERSION \"`sed -e 1q ../VERSION`\"" >version.h
+	echo "#define OCAML_VERSION \"`sed -e 1q $^ | tr -d '\r'`\"" > $@
 
 clean:
 	rm -f *.$(O) ocamlyacc$(EXE) *~ version.h

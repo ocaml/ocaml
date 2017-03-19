@@ -550,8 +550,8 @@ flexdll/Makefile:
 
 .PHONY: flexdll
 flexdll: flexdll/Makefile flexlink
-	$(MAKE) -C flexdll MSVC_DETECT=0 CHAINS=$(FLEXDLL_CHAIN) NATDYNLINK=false \
-          support
+	$(MAKE) -C flexdll \
+             MSVC_DETECT=0 CHAINS=$(FLEXDLL_CHAIN) NATDYNLINK=false support
 
 # Bootstrapping flexlink - leaves a bytecode image of flexlink.exe in flexdll/
 .PHONY: flexlink
@@ -579,9 +579,11 @@ flexlink.opt:
 
 .PHONY: install-flexdll
 install-flexdll:
-	cat stdlib/camlheader flexdll/flexlink.exe > "$(INSTALL_BINDIR)/flexlink.exe"
+	cat stdlib/camlheader flexdll/flexlink.exe > \
+	  "$(INSTALL_BINDIR)/flexlink.exe"
 ifneq "$(filter-out mingw,$(TOOLCHAIN))" ""
-	cp flexdll/default$(filter-out _i386,_$(ARCH)).manifest "$(INSTALL_BINDIR)/"
+	cp flexdll/default$(filter-out _i386,_$(ARCH)).manifest \
+    "$(INSTALL_BINDIR)/"
 endif
 	if test -n "$(wildcard flexdll/flexdll_*.$(O))" ; then \
 	  $(MKDIR) "$(INSTALL_FLEXDLL)" ; \
@@ -882,8 +884,8 @@ byterun/primitives:
 
 bytecomp/runtimedef.ml: byterun/primitives byterun/caml/fail.h
 	(echo 'let builtin_exceptions = [|'; \
-	 sed -n -e 's|.*/\* \("[A-Za-z_]*"\) \*/$$|  \1;|p' \
-	     byterun/caml/fail.h; \
+	 cat byterun/caml/fail.h | tr -d '\r' | \
+	 sed -n -e 's|.*/\* \("[A-Za-z_]*"\) \*/$$|  \1;|p'; \
 	 echo '|]'; \
 	 echo 'let builtin_primitives = [|'; \
 	 sed -e 's/.*/  "&";/' byterun/primitives; \
