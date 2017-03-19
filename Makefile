@@ -1075,7 +1075,7 @@ partialclean::
 ifeq "$(UNIX_OR_WIN32)" "unix"
 .PHONY: checkstack
 checkstack:
-	if $(MKEXE) -o tools/checkstack$(EXE) tools/checkstack.c; \
+	if $(MKEXE) $(OUTPUTEXE)tools/checkstack$(EXE) tools/checkstack.c; \
 	  then tools/checkstack$(EXE); \
 	  else :; \
 	fi

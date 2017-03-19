@@ -22,9 +22,9 @@ CAMLOBJS=bigarray.cmo
 include ../Makefile
 
 mmap.$(O): ../$(UNIXLIB)/mmap.c
-	$(CC) -c $(CFLAGS) $(CPPFLAGS) $<
+	$(CC) -c $(CFLAGS) $(CPPFLAGS) $(OUTPUTOBJ)$@ $<
 mmap_ba.$(O): ../unix/mmap_ba.c
-	$(CC) -c $(CFLAGS) $(CPPFLAGS) $<
+	$(CC) -c $(CFLAGS) $(CPPFLAGS) $(OUTPUTOBJ)$@ $<
 
 .PHONY: depend
 

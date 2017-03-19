@@ -140,12 +140,12 @@ $(CAMLHEADERS):
 	for suff in '' d i; do \
 	  $(CC) $(CFLAGS) $(CPPFLAGS) $(LDFLAGS) \
 	            -DRUNTIME_NAME='"$(BINDIR)/ocamlrun'$$suff'"' \
-	            header.c -o tmpheader$(EXE) && \
+	            header.c $(OUTPUTEXE)tmpheader$(EXE) && \
 	  strip tmpheader$(EXE) && \
 	  mv tmpheader$(EXE) camlheader$$suff && \
 	  $(CC) $(CFLAGS) $(CPPFLAGS) $(LDFLAGS) \
 	            -DRUNTIME_NAME='"$(TARGET_BINDIR)/ocamlrun'$$suff'"' \
-	            header.c -o tmpheader$(EXE) && \
+	            header.c $(OUTPUTEXE)tmpheader$(EXE) && \
 	  strip tmpheader$(EXE) && \
 	  mv tmpheader$(EXE) target_camlheader$$suff; \
 	done && \
@@ -156,25 +156,25 @@ else # Windows
 # TODO: see whether there is a way to further merge the rules below
 # with those above
 
-camlheader target_camlheader camlheader_ur:
+camlheader target_camlheader camlheader_ur: headernt.c
 	$(CC) -c $(CFLAGS) $(CPPFLAGS) -I../byterun \
-	          -DRUNTIME_NAME='"ocamlrun"' headernt.c
+	          -DRUNTIME_NAME='"ocamlrun"' $(OUTPUTOBJ)headernt.$(O) $<
 	$(MKEXE) -o tmpheader.exe headernt.$(O) $(EXTRALIBS)
 	rm -f camlheader.exe
 	mv tmpheader.exe camlheader
 	cp camlheader target_camlheader
 	cp camlheader camlheader_ur
 
-camlheaderd target_camlheaderd:
+camlheaderd target_camlheaderd: headernt.c
 	$(CC) -c $(CFLAGS) $(CPPFLAGS) -I../byterun \
-	          -DRUNTIME_NAME='"ocamlrund"' headernt.c
+	          -DRUNTIME_NAME='"ocamlrund"' $(OUTPUTOBJ)headernt.$(O) $<
 	$(MKEXE) -o tmpheader.exe headernt.$(O) $(EXTRALIBS)
 	mv tmpheader.exe camlheaderd
 	cp camlheaderd target_camlheaderd
 
-camlheaderi:
+camlheaderi: headernt.c
 	$(CC) -c $(CFLAGS) $(CPPFLAGS) -I../byterun \
-	          -DRUNTIME_NAME='"ocamlruni"' headernt.c
+	          -DRUNTIME_NAME='"ocamlruni"' $(OUTPUTOBJ)headernt.$(O)
 	$(MKEXE) -o tmpheader.exe headernt.$(O) $(EXTRALIBS)
 	mv tmpheader.exe camlheaderi
 

@@ -306,15 +306,8 @@ else
 DEF_SYMBOL_PREFIX = '-Dsymbol_prefix=""'
 endif
 
-ifeq "$(CCOMPTYPE)" "msvc"
-CCOUT = -Fe
-else
-EMPTY =
-CCOUT = -o $(EMPTY)
-endif
-
 objinfo_helper$(EXE): objinfo_helper.c ../config/s.h
-	$(CC) $(CFLAGS) $(CPPFLAGS) $(CCOUT)objinfo_helper$(EXE) \
+	$(CC) $(CFLAGS) $(CPPFLAGS) $(OUTPUTEXE)$@ \
           $(DEF_SYMBOL_PREFIX) $(LIBBFD_INCLUDE) $< $(LIBBFD_LINK)
 
 OBJINFO=../compilerlibs/ocamlcommon.cma \

@@ -113,4 +113,4 @@ clean:: partialclean
 	$(CAMLOPT) -c $(COMPFLAGS) $(OPTCOMPFLAGS) $<
 
 .c.$(O):
-	$(CC) -c $(CFLAGS) $(CPPFLAGS) $<
+	$(CC) -c $(CFLAGS) $(CPPFLAGS) $(OUTPUTOBJ)$@ $<

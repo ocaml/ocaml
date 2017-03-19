@@ -61,11 +61,6 @@ ifneq "$(CCOMPTYPE)" "msvc"
 DFLAGS += -g
 endif
 
-ifeq "$(CCOMPTYPE)" "msvc"
-OUTPUTOBJ=-Fo
-else
-OUTPUTOBJ=-o
-endif
 DBGO=d.$(O)
 
 ifeq "$(UNIX_OR_WIN32)" "win32"

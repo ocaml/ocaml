@@ -59,8 +59,10 @@ A=a
 S=s
 SO=s.o
 EXE=.exe
+OUTPUTEXE=-o
 EXT_DLL=.dll
 EXT_OBJ=.$(O)
+OUTPUTOBJ=-o
 EXT_LIB=.$(A)
 EXT_ASM=.$(S)
 MANEXT=1
@@ -110,9 +112,6 @@ OCAMLC_CFLAGS = -O -mms-bitfields
 
 BYTECCDBGCOMPOPTS=-g
 
-### Flag to use to rename object files.  (for debug version.)
-NAME_OBJ_FLAG=-o
-
 LDFLAGS=
 
 ### Libraries needed
@@ -144,7 +143,7 @@ MKEXEDEBUGFLAG=-g
 MKMAINDLL=$(FLEXLINK) -maindll
 
 ### Native command to build ocamlrun.exe without flexlink
-MKEXE_BOOT=$(CC) $(CFLAGS) -o $(1) $(2)
+MKEXE_BOOT=$(CC) $(CFLAGS) $(OUTPUTEXE)$(1) $(2)
 
 ### How to build a static library
 MKLIB=rm -f $(1); $(TOOLPREF)ar rc $(1) $(2); $(RANLIB) $(1)

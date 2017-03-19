@@ -51,4 +51,4 @@ warshall.$(O): defs.h
 # also works for .obj files.
 
 %.$(O): %.c
-	$(CC) -c $(CFLAGS) $(CPPFLAGS) $<
+	$(CC) -c $(CFLAGS) $(CPPFLAGS) $(OUTPUTOBJ)$@ $<

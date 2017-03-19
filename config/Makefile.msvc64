@@ -54,8 +54,10 @@ A=lib
 S=asm
 SO=s.obj
 EXE=.exe
+OUTPUTEXE=-Fe
 EXT_DLL=.dll
 EXT_OBJ=.$(O)
+OUTPUTOBJ=-Fo
 EXT_LIB=.$(A)
 EXT_ASM=.$(S)
 MANEXT=1
@@ -104,9 +106,6 @@ OCAMLC_CPPFLAGS = -D_CRT_SECURE_NO_DEPRECATE
 
 BYTECCDBGCOMPOPTS=-Zi
 
-### Flag to use to rename object files.  (for debug version.)
-NAME_OBJ_FLAG=-Fo
-
 LDFLAGS=
 
 ### Libraries needed
@@ -143,7 +142,7 @@ MKMAINDLL=$(FLEXLINK) -maindll
 MERGEMANIFESTEXE=test ! -f $(1).manifest \
 	         || mt -nologo -outputresource:$(1) -manifest $(1).manifest \
 	            && rm -f $(1).manifest
-MKEXE_BOOT=$(CC) $(CFLAGS) /Fe$(1) $(2) /link /subsystem:console \
+MKEXE_BOOT=$(CC) $(CFLAGS) $(OUTPUTEXE)$(1) $(2) /link /subsystem:console \
            && ($(MERGEMANIFESTEXE))
 
 ### How to build a static library

@@ -1972,6 +1972,7 @@ echo "BYTECCLIBS=$cclibs $dllib $curseslibs $pthread_link \
                  $instrumented_runtime_libs" >> Makefile
 echo "RPATH=$rpath" >> Makefile
 echo "EXE=$exe" >> Makefile
+echo "OUTPUTEXE=-o" >> Makefile
 echo "SUPPORTS_SHARED_LIBRARIES=$shared_libraries_supported" >> Makefile
 echo "SHAREDCCCOMPOPTS=$sharedcccompopts" >> Makefile
 echo "MKSHAREDLIBRPATH=$mksharedlibrpath" >> Makefile
@@ -2007,6 +2008,7 @@ echo "O=o" >> Makefile
 echo "A=a" >> Makefile
 echo "SO=$SO" >> Makefile
 echo "EXT_OBJ=.o" >> Makefile
+echo "OUTPUTOBJ=-o" >> Makefile
 echo "EXT_ASM=.s" >> Makefile
 echo "EXT_LIB=.a" >> Makefile
 echo "EXT_DLL=.$SO" >> Makefile
