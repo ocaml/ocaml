@@ -11,6 +11,8 @@ bbbb
 123
 456
 789
+** create_process swap 1-2
+123
 ** open_process_in
 123
 456
