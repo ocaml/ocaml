@@ -1996,11 +1996,11 @@ driver/compile.cmx : utils/warnings.cmx typing/typemod.cmx \
     driver/compmisc.cmx driver/compenv.cmx utils/clflags.cmx \
     bytecomp/bytegen.cmx parsing/builtin_attributes.cmx driver/compile.cmi
 driver/compile.cmi :
-driver/compmisc.cmo : typing/typemod.cmi utils/misc.cmi \
+driver/compmisc.cmo : utils/warnings.cmi typing/typemod.cmi utils/misc.cmi \
     parsing/longident.cmi parsing/location.cmi typing/ident.cmi \
     typing/env.cmi utils/config.cmi driver/compenv.cmi utils/clflags.cmi \
     parsing/asttypes.cmi driver/compmisc.cmi
-driver/compmisc.cmx : typing/typemod.cmx utils/misc.cmx \
+driver/compmisc.cmx : utils/warnings.cmx typing/typemod.cmx utils/misc.cmx \
     parsing/longident.cmx parsing/location.cmx typing/ident.cmx \
     typing/env.cmx utils/config.cmx driver/compenv.cmx utils/clflags.cmx \
     parsing/asttypes.cmi driver/compmisc.cmi

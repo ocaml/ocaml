@@ -13,8 +13,7 @@ mmap_unix.o: mmap_unix.c bigarray.h ../../byterun/caml/compatibility.h \
   ../../byterun/caml/../../config/s.h ../../byterun/caml/mlvalues.h \
   ../../byterun/caml/misc.h ../../byterun/caml/custom.h \
   ../../byterun/caml/fail.h ../../byterun/caml/io.h \
-  ../../byterun/caml/sys.h ../../byterun/caml/signals.h \
-  ../unix/unixsupport.h
+  ../../byterun/caml/sys.h ../../byterun/caml/signals.h
 mmap_win32.o: mmap_win32.c bigarray.h ../../byterun/caml/compatibility.h \
   ../../byterun/caml/config.h ../../byterun/caml/../../config/m.h \
   ../../byterun/caml/../../config/s.h ../../byterun/caml/mlvalues.h \
