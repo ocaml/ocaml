@@ -743,7 +743,7 @@ static struct pool_block* get_pool_block(caml_stat_block b)
     struct pool_block *pb =
       (struct pool_block*)(((char*)b) - SIZEOF_POOL_BLOCK);
 #ifdef DEBUG
-    Assert(pb->magic == Debug_pool_magic);
+    caml_assert(pb->magic == Debug_pool_magic);
 #endif
     return pb;
   }
