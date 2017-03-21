@@ -195,7 +195,8 @@ CAMLprim value caml_gr_draw_arc(value *argv, int argc)
                              argv[4], argv[5], FALSE);
 }
 
-CAMLprim value caml_gr_draw_arc_nat(vx, vy, vrx, vry, vstart, vend)
+CAMLprim value caml_gr_draw_arc_nat(value vx, value vy, value vrx, value vry,
+                                    value vstart, value vend)
 {
   return gr_draw_or_fill_arc(vx, vy, vrx, vry, vstart, vend, FALSE);
 }
@@ -413,7 +414,8 @@ CAMLprim value caml_gr_fill_arc(value *argv, int argc)
                              argv[4], argv[5], TRUE);
 }
 
-CAMLprim value caml_gr_fill_arc_nat(vx, vy, vrx, vry, vstart, vend)
+CAMLprim value caml_gr_fill_arc_nat(value vx, value vy, value vrx, value vry,
+                                    value vstart, value vend)
 {
   return gr_draw_or_fill_arc(vx, vy, vrx, vry, vstart, vend, TRUE);
 }
