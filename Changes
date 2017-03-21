@@ -117,6 +117,14 @@ Working version
   with themselves
   (Jacques Garrigue, report by Leo White)
 
+### Runtime system:
+
+- GPR#71: The runtime can now be shut down gracefully by means of the new
+  caml_shutdown and caml_startup_pooled functions. The new 'c' flag in
+  OCAMLRUNPARAM enables shutting the runtime properly on process exit.
+  (Max Mouratov, review and discussion by Damien Doligez, Gabriel Scherer,
+  Mark Shinwell, Thomas Braibant, Stephen Dolan, Pierre Chambart,
+  François Bobot, Jacques Garrigue, and David Allsopp)
 
 Next major version (4.05.0):
 ----------------------------

@@ -128,8 +128,9 @@ static void realloc_gray_vals (void)
     caml_gc_message (0x08, "Growing gray_vals to %"
                            ARCH_INTNAT_PRINTF_FORMAT "uk bytes\n",
                      (intnat) gray_vals_size * sizeof (value) / 512);
-    new = (value *) realloc ((char *) gray_vals,
-                             2 * gray_vals_size * sizeof (value));
+    new = (value *) caml_stat_resize_noexc ((char *) gray_vals,
+                                            2 * gray_vals_size *
+                                            sizeof (value));
     if (new == NULL){
       caml_gc_message (0x08, "No room for growing gray_vals\n", 0);
       gray_vals_cur = gray_vals;
@@ -878,7 +879,7 @@ void caml_init_major_heap (asize_t heap_size)
                          caml_stat_heap_wsz, 1, Caml_white);
   caml_gc_phase = Phase_idle;
   gray_vals_size = 2048;
-  gray_vals = (value *) malloc (gray_vals_size * sizeof (value));
+  gray_vals = (value *) caml_stat_alloc_noexc (gray_vals_size * sizeof (value));
   if (gray_vals == NULL)
     caml_fatal_error ("Fatal error: not enough memory for the gray cache.\n");
   gray_vals_cur = gray_vals;
@@ -903,4 +904,21 @@ void caml_set_major_window (int w){
     caml_major_ring[i] = total / w;
   }
   caml_major_window = w;
+}
+
+void caml_finalise_heap (void)
+{
+  /* Finishing major cycle (all values become white) */
+  caml_empty_minor_heap ();
+  caml_finish_major_cycle ();
+  CAMLassert (caml_gc_phase == Phase_idle);
+
+  /* Finalising all values (by means of forced sweeping) */
+  caml_fl_init_merge ();
+  caml_gc_phase = Phase_sweep;
+  chunk = caml_heap_start;
+  caml_gc_sweep_hp = chunk;
+  limit = chunk + Chunk_size (chunk);
+  while (caml_gc_phase == Phase_sweep)
+    sweep_slice (LONG_MAX);
 }

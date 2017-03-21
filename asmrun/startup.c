@@ -100,10 +100,23 @@ extern void caml_install_invalid_parameter_handler();
 
 #endif
 
-value caml_startup_exn(char **argv)
+value caml_startup_common(char **argv, int pooling)
 {
   char * exe_name, * proc_self_exe;
   char tos;
+
+  /* Determine options */
+#ifdef DEBUG
+  caml_verb_gc = 0x3F;
+#endif
+  caml_parse_ocamlrunparam();
+#ifdef DEBUG
+  caml_gc_message (-1, "### OCaml runtime: debug mode ###\n", 0);
+#endif
+  if (caml_cleanup_on_exit)
+    pooling = 1;
+  if (!caml_startup_aux(pooling))
+    return Val_unit;
 
 #ifdef WITH_SPACETIME
   caml_spacetime_initialize();
@@ -115,13 +128,6 @@ value caml_startup_exn(char **argv)
 #endif
   caml_init_custom_operations();
   caml_top_of_stack = &tos;
-#ifdef DEBUG
-  caml_verb_gc = 0x3F;
-#endif
-  caml_parse_ocamlrunparam();
-#ifdef DEBUG
-  caml_gc_message (-1, "### OCaml runtime: debug mode ###\n", 0);
-#endif
   caml_init_gc (caml_init_minor_heap_wsz, caml_init_heap_wsz,
                 caml_init_heap_chunk_sz, caml_init_percent_free,
                 caml_init_max_percent_free, caml_init_major_window);
@@ -144,16 +150,31 @@ value caml_startup_exn(char **argv)
   return caml_start_program();
 }
 
+value caml_startup_exn(char **argv)
+{
+  return caml_startup_common(argv, /* pooling */ 0);
+}
+
 void caml_startup(char **argv)
 {
   value res = caml_startup_exn(argv);
-
-  if (Is_exception_result(res)) {
+  if (Is_exception_result(res))
     caml_fatal_uncaught_exception(Extract_exception(res));
-  }
 }
 
 void caml_main(char **argv)
 {
   caml_startup(argv);
+}
+
+value caml_startup_pooled_exn(char **argv)
+{
+  return caml_startup_common(argv, /* pooling */ 1);
+}
+
+void caml_startup_pooled(char **argv)
+{
+  value res = caml_startup_pooled_exn(argv);
+  if (Is_exception_result(res))
+    caml_fatal_uncaught_exception(Extract_exception(res));
 }

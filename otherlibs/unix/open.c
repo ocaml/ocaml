@@ -73,7 +73,7 @@ CAMLprim value unix_open(value path, value flags, value perm)
 #if defined(O_CLOEXEC)
   if (cloexec) cv_flags |= O_CLOEXEC;
 #endif
-  p = caml_strdup(String_val(path));
+  p = caml_stat_strdup(String_val(path));
   /* open on a named FIFO can block (PR#1533) */
   caml_enter_blocking_section();
   fd = open(p, cv_flags, Int_val(perm));

@@ -24,7 +24,7 @@ CAMLprim value unix_rmdir(value path)
   char * p;
   int ret;
   caml_unix_check_path(path, "rmdir");
-  p = caml_strdup(String_val(path));
+  p = caml_stat_strdup(String_val(path));
   caml_enter_blocking_section();
   ret = rmdir(p);
   caml_leave_blocking_section();
