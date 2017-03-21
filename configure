@@ -1790,12 +1790,30 @@ echo "X11_LINK=$x11_link" >> Makefile
 
 # Look for BFD library
 
-if sh ./hasgot -DPACKAGE=ocaml -i bfd.h && \
-   sh ./hasgot -DPACKAGE=ocaml -lbfd -ldl -liberty -lz bfd_openr; then
+if $shared_libraries_supported && ./hasgot -DPACKAGE=ocaml -i bfd.h ; then
   inf "BFD library found."
-  echo "#define HAS_LIBBFD" >> s.h
-  echo "LIBBFD_LINK=-lbfd -ldl -liberty -lz" >> Makefile
   echo LIBBFD_INCLUDE= >>Makefile
+  if sh ./hasgot -DPACKAGE=ocaml -lbfd bfd_openr; then
+    LIBBFD_LINK="-lbfd"
+    inf "BFD links with $LIBBFD_LINK"
+    echo "#define HAS_LIBBFD" >> s.h
+  elif sh ./hasgot -DPACKAGE=ocaml -lbfd -ldl bfd_openr; then
+    LIBBFD_LINK="-lbfd -ldl"
+    inf "BFD links with $LIBBFD_LINK"
+    echo "#define HAS_LIBBFD" >> s.h
+  elif sh ./hasgot -DPACKAGE=ocaml -lbfd -ldl -liberty bfd_openr; then
+    LIBBFD_LINK="-lbfd -ldl -liberty"
+    inf "BFD links with $LIBBFD_LINK"
+    echo "#define HAS_LIBBFD" >> s.h
+  elif sh ./hasgot -DPACKAGE=ocaml -lbfd -ldl -liberty -lz bfd_openr; then
+    LIBBFD_LINK="-lbfd -ldl -liberty -lz"
+    inf "BFD links with $LIBBFD_LINK"
+    echo "#define HAS_LIBBFD" >> s.h
+  else
+    wrn "Could not determine link options for the BFD library"
+    LIBBFD_LINK=
+  fi
+  echo "LIBBFD_LINK=$LIBBFD_LINK" >> Makefile
 elif sh ./hasgot -DPACKAGE=ocaml -I/opt/local/include -i bfd.h && \
      sh ./hasgot -DPACKAGE=ocaml -L/opt/local/lib -lbfd -ldl \
                  -liberty -lz -lintl bfd_openr
