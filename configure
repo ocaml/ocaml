@@ -325,7 +325,7 @@ inf "Using compiler $cc."
 
 # Configure compiler to use in further tests.
 
-export cc
+export cc verbose
 
 # Determine the C compiler family (GCC, Clang, etc)
 
@@ -514,7 +514,7 @@ esac
 
 # Configure compiler options to use in further tests.
 
-export cclibs ldflags verbose
+export cclibs ldflags
 
 # Check C compiler.
 
