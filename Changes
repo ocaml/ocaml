@@ -418,14 +418,6 @@ Next major version (4.05.0):
   environment.
   (Florian Angeletti)
 
-- GPR#729: Make sure ocamlnat is built with a $(EXE) extension, merge
-  rules between Unix and Windows Makefiles
-  (Sébastien Hinderer, review by Alain Frisch)
-
-- GPR#762, GPR#764: Merge Unix and Windows Makefiles in yacc/ and
-  debugger/
-  (Sébastien Hinderer)
-
 - GPR#803: new ocamllex-based tool to extract bytecode compiler
   opcode information from C headers.
   (Nicolas Ojeda Bar)
@@ -440,6 +432,12 @@ Next major version (4.05.0):
 - GPR#898: fix locale-dependence of primitive list order,
   detected through reproducible-builds.org.
   (Hannes Mehnert, review by Gabriel Scherer and Ximin Luo)
+
+- GPR#907: Remove unused variable from the build system
+  (Sébastien Hinderer, review by whitequark, Gabriel Scherer, Adrien Nader)
+
+- GPR#911: Clarify the use of C compiler related variables in the build system.
+  (Sébastien Hinderer, review by Adrien Nader, Alain Frisch, David Allsopp)
 
 - GPR#919: use clang as preprocessor assembler if clang is used as compiler
   (Bernhard Schommer)
@@ -464,6 +462,65 @@ Next major version (4.05.0):
 
 - GPR#1033: merge Unix and Windows build systems in the root directory
   (Sébastien Hinderer, review by Damien Doligez and Adrien Nader)
+
+- GPR#1047: Make .depend files generated for C sources more portable
+  (Sébastien Hinderer, review by Xavier Leroy and David Allsopp)
+
+- GPR#1076: Simplify ocamlyacc's build system
+  (Sébastien Hinderer, review by David Allsopp)
+
+### Compiler distribution build system: Makefile factorization
+
+The compiler distribution build system (the set of Makefiles used to
+build the compiler distribution) traditionally had separate Makefiles
+for Unix and Windows, which lead to some amount of duplication and
+subtle differences and technical debt in general -- for people working
+on the compiler distribution, but also cross-compilation or porting to
+new systems. During the 4.05 development period, Sébastien Hinderer
+worked on harmonizing the build rules and merging the two build
+systems.
+
+- GPR#705: update Makefile.nt so that ocamlnat compiles
+  for non-Cygwin Windows ports.
+  (Sébastien Hinderer, review by Alain Frisch)
+
+- GPR#729: Make sure ocamlnat is built with a $(EXE) extension, merge
+  rules between Unix and Windows Makefiles
+  (Sébastien Hinderer, review by Alain Frisch)
+
+- GPR#762: Merge build systems in the yacc/ directory.
+  (Sébastien Hinderer, review by David Allsopp, Alain Frisch)
+
+- GPR#764: Merge build systems in the debugger/ directory.
+  (Sébastien Hinderer, review by Alain Frisch)
+
+- GPR#785: Merge build systems in otherlibs/systhreads/
+  (Sébastien Hinderer, review by Alain Frisch, David Allsopp,
+   testing and regression fix by Jérémie Dimino)
+
+- GPR#788: Merge build systems in subdirectories of otherlibs/.
+  (Sébastien Hinderer, review by Alain Frisch)
+
+- GPR#808, GPR#906: Merge Unix and Windows build systems
+  in the ocamldoc/ directory
+  (Sébastien Hinderer, review by Alain Frisch)
+
+- GPR#812: Merge build systems in the tools/ subdirectory
+  (Sébastien Hinderer, review by Alain Frisch)
+
+- GPR#866: Merge build systems in the stdlib/ directory
+  (Sébastien Hinderer, review by David Allsopp and Adrien Nader)
+
+- GPR#941: Merge Unix and Windows build systems in the asmrun/ directory
+  (Sébastien Hinderer, review by Mark Shinwell, Adrien Nader,
+   Xavier Leroy, David Allsopp, Damien Doligez)
+
+- GPR#981: Merge build systems in the byterun/ directory
+  (Sébastien Hinderer, review by Adrien Nader)
+
+- GPR#1033, GPR#1048: Merge build systems in the root directory
+  (Sébastien Hinderer, review by Adrien Nader and Damien Doligez,
+   testing and regression fix by Andreas Hauptmann)
 
 ### Internal/compiler-libs changes:
 
