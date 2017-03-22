@@ -480,6 +480,26 @@ new systems. During the 4.05 development period, Sébastien Hinderer
 worked on harmonizing the build rules and merging the two build
 systems.
 
+* Some changes were made to the config/Makefile file which
+  is exported as $(ocamlc -where)/Makefile.config, and on
+  which some advanced users might rely. The changes are
+  as follows:
+  - a BYTERUN variable was added that points to the installed ocamlrun
+  - the PARTIALLD variable was removed (PACKLD is more complete)
+  - the always-empty DLLCCCOMPOPTS was removed
+  - the SHARED variable was removed; its value is "shared" or "noshared",
+    which duplicates the existing and more convenient
+    SUPPORTS_SHARED_LIBRARIES variable whose value is "true" or "false".
+
+  Note that Makefile.config may change further in the future and relying
+  on it is a bit fragile. We plan to make `ocamlc -config` easier to use
+  for scripting purposes, and have a stable interface there. If you rely
+  on Makefile.config, you may want to get in touch with Sébastien Hinderer
+  or participate to MPR#7116 (Allow easy retrieval of Makefile.config's values)
+  or MPR#7172 (More information in ocamlc -config).
+
+The complete list of changes is listed below.
+
 - GPR#705: update Makefile.nt so that ocamlnat compiles
   for non-Cygwin Windows ports.
   (Sébastien Hinderer, review by Alain Frisch)
