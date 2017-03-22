@@ -37,10 +37,17 @@ git submodule update --init flexdll
 
 cd $APPVEYOR_BUILD_FOLDER
 
+PREFIX="C:/Program Files/OCaml"
+
+tar -xzf flexdll.tar.gz
+cd flexdll-0.35
+make MSVC_DETECT=0 CHAINS=msvc64 support
+cp flexdll*_msvc64.obj "$PREFIX/bin/flexdll"
+cd ..
+
 cp config/m-nt.h config/m.h
 cp config/s-nt.h config/s.h
 
-PREFIX="C:/Program Files/OCaml"
 echo "Edit config/Makefile to set PREFIX=$PREFIX"
 sed -e "s|PREFIX=.*|PREFIX=$PREFIX|" -e "/\(BYTE\|NATIVE\)CCCOMPOPTS=./s/\r\?$/ -WX\0/" config/Makefile.msvc64 > config/Makefile
 #run "Content of config/Makefile" cat config/Makefile
