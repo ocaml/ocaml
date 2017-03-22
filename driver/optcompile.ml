@@ -44,7 +44,8 @@ let interface ppf sourcefile outputprefix =
       if !Clflags.print_types then
         Printtyp.wrap_printing_env ~error:false initial_env (fun () ->
             fprintf std_formatter "%a@."
-              Printtyp.signature (Typemod.simplify_signature sg));
+              (Printtyp.printed_signature sourcefile)
+              (Typemod.simplify_signature sg));
       ignore (Includemod.signatures initial_env sg sg);
       Typecore.force_delayed_checks ();
       Warnings.check_fatal ();

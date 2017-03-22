@@ -43,6 +43,9 @@ Working version
 
 ### Compiler user-interface and warnings:
 
+- PR#6416, GPR#1120: unique printed names for identifiers
+  (Florian Angeletti, review by Jacques Garrigue)
+
 - MPR#7116, GPR#1430: new -config-var option
   to get the value of a single configuration variable in scripts.
   (Gabriel Scherer, review by Sébastien Hinderer and David Allsopp,

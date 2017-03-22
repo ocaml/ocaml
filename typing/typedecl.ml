@@ -2013,15 +2013,20 @@ let report_error ppf = function
   | Constraint_failed (ty, ty') ->
       Printtyp.reset_and_mark_loops ty;
       Printtyp.mark_loops ty';
+      Printtyp.Naming_context.reset ();
       fprintf ppf "@[%s@ @[<hv>Type@ %a@ should be an instance of@ %a@]@]"
         "Constraints are not satisfied in this type."
-        Printtyp.type_expr ty Printtyp.type_expr ty'
+        !Oprint.out_type (Printtyp.tree_of_typexp false ty)
+        !Oprint.out_type (Printtyp.tree_of_typexp false ty')
   | Parameters_differ (path, ty, ty') ->
       Printtyp.reset_and_mark_loops ty;
       Printtyp.mark_loops ty';
+      Printtyp.Naming_context.reset ();
       fprintf ppf
         "@[<hv>In the definition of %s, type@ %a@ should be@ %a@]"
-        (Path.name path) Printtyp.type_expr ty Printtyp.type_expr ty'
+        (Path.name path)
+        !Oprint.out_type (Printtyp.tree_of_typexp false ty)
+        !Oprint.out_type (Printtyp.tree_of_typexp false ty')
   | Inconsistent_constraint (env, trace) ->
       fprintf ppf "The type constraints are not consistent.@.";
       Printtyp.report_unification_error ppf env trace
@@ -2050,7 +2055,7 @@ let report_error ppf = function
             )
             "case" (fun ppf c ->
                 fprintf ppf
-                  "%s of %a" (Ident.name c.Types.cd_id)
+                  "%a of %a" Printtyp.ident c.Types.cd_id
                   Printtyp.constructor_arguments c.Types.cd_args)
       | Type_record (tl, _), _ ->
           explain_unbound ppf ty tl (fun l -> l.Types.ld_type)

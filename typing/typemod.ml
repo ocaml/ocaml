@@ -1862,7 +1862,9 @@ let type_implementation sourcefile outputprefix modulename initial_env ast =
   if !Clflags.print_types then begin
     Typecore.force_delayed_checks ();
     Printtyp.wrap_printing_env ~error:false initial_env
-      (fun () -> fprintf std_formatter "%a@." Printtyp.signature simple_sg);
+      (fun () -> fprintf std_formatter "%a@."
+          (Printtyp.printed_signature sourcefile) simple_sg
+      );
     (str, Tcoerce_none)   (* result is ignored by Compile.implementation *)
   end else begin
     let sourceintf =

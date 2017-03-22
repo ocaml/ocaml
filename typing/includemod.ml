@@ -81,7 +81,7 @@ let value_descriptions ~loc env ~mark cxt subst id vd1 vd2 =
 
 (* Inclusion between type declarations *)
 
-let type_declarations ~loc env ~mark ?(old_env=env) cxt subst id decl1 decl2 =
+let type_declarations ~loc env ~mark ?old_env:_ cxt subst id decl1 decl2 =
   let mark = mark_positive mark in
   if mark then
     Env.mark_type_used (Ident.name id) decl1;
@@ -91,7 +91,7 @@ let type_declarations ~loc env ~mark ?(old_env=env) cxt subst id decl1 decl2 =
       (Ident.name id) decl1 id decl2
   in
   if err <> [] then
-    raise(Error[cxt, old_env, Type_declarations(id, decl1, decl2, err)])
+    raise(Error[cxt, env, Type_declarations(id, decl1, decl2, err)])
 
 (* Inclusion between extension constructors *)
 
@@ -104,20 +104,20 @@ let extension_constructors ~loc env ~mark cxt subst id ext1 ext2 =
 
 (* Inclusion between class declarations *)
 
-let class_type_declarations ~loc ~old_env env cxt subst id decl1 decl2 =
+let class_type_declarations ~loc ~old_env:_ env cxt subst id decl1 decl2 =
   let decl2 = Subst.cltype_declaration subst decl2 in
   match Includeclass.class_type_declarations ~loc env decl1 decl2 with
     []     -> ()
   | reason ->
-      raise(Error[cxt, old_env,
+      raise(Error[cxt, env,
                   Class_type_declarations(id, decl1, decl2, reason)])
 
-let class_declarations ~old_env env cxt subst id decl1 decl2 =
+let class_declarations ~old_env:_ env cxt subst id decl1 decl2 =
   let decl2 = Subst.class_declaration subst decl2 in
   match Includeclass.class_declarations env decl1 decl2 with
     []     -> ()
   | reason ->
-      raise(Error[cxt, old_env, Class_declarations(id, decl1, decl2, reason)])
+      raise(Error[cxt, env, Class_declarations(id, decl1, decl2, reason)])
 
 (* Expand a module type identifier when possible *)
 
@@ -575,14 +575,15 @@ let include_err ppf = function
   | Value_descriptions(id, d1, d2) ->
       fprintf ppf
         "@[<hv 2>Values do not match:@ %a@;<1 -2>is not included in@ %a@]"
-        (value_description id) d1 (value_description id) d2;
-      show_locs ppf (d1.val_loc, d2.val_loc);
+        !Oprint.out_sig_item (tree_of_value_description id d1)
+        !Oprint.out_sig_item (tree_of_value_description id d2);
+      show_locs ppf (d1.val_loc, d2.val_loc)
   | Type_declarations(id, d1, d2, errs) ->
       fprintf ppf "@[<v>@[<hv>%s:@;<1 2>%a@ %s@;<1 2>%a@]%a%a@]"
         "Type declarations do not match"
-        (type_declaration id) d1
+        !Oprint.out_sig_item (tree_of_type_declaration id d1 Trec_first)
         "is not included in"
-        (type_declaration id) d2
+        !Oprint.out_sig_item (tree_of_type_declaration id d2 Trec_first)
         show_locs (d1.type_loc, d2.type_loc)
         (Includecore.report_type_mismatch
            "the first" "the second" "declaration") errs
@@ -590,21 +591,21 @@ let include_err ppf = function
       fprintf ppf
        "@[<hv 2>Extension declarations do not match:@ \
         %a@;<1 -2>is not included in@ %a@]"
-      (extension_constructor id) x1
-      (extension_constructor id) x2;
+       !Oprint.out_sig_item (tree_of_extension_constructor id x1 Text_first)
+       !Oprint.out_sig_item (tree_of_extension_constructor id x2 Text_first);
       show_locs ppf (x1.ext_loc, x2.ext_loc)
   | Module_types(mty1, mty2)->
       fprintf ppf
        "@[<hv 2>Modules do not match:@ \
         %a@;<1 -2>is not included in@ %a@]"
-      modtype mty1
-      modtype mty2
+      !Oprint.out_module_type (tree_of_modtype mty1)
+      !Oprint.out_module_type (tree_of_modtype mty2)
   | Modtype_infos(id, d1, d2) ->
       fprintf ppf
        "@[<hv 2>Module type declarations do not match:@ \
         %a@;<1 -2>does not match@ %a@]"
-      (modtype_declaration id) d1
-      (modtype_declaration id) d2
+      !Oprint.out_sig_item (tree_of_modtype_declaration id d1)
+      !Oprint.out_sig_item (tree_of_modtype_declaration id d2)
   | Modtype_permutation ->
       fprintf ppf "Illegal permutation of structure fields"
   | Interface_mismatch(impl_name, intf_name) ->
@@ -614,15 +615,15 @@ let include_err ppf = function
       fprintf ppf
        "@[<hv 2>Class type declarations do not match:@ \
         %a@;<1 -2>does not match@ %a@]@ %a"
-      (Printtyp.cltype_declaration id) d1
-      (Printtyp.cltype_declaration id) d2
+      !Oprint.out_sig_item (tree_of_cltype_declaration id d1 Trec_first)
+      !Oprint.out_sig_item (tree_of_cltype_declaration id d2 Trec_first)
       Includeclass.report_error reason
   | Class_declarations(id, d1, d2, reason) ->
       fprintf ppf
        "@[<hv 2>Class declarations do not match:@ \
         %a@;<1 -2>does not match@ %a@]@ %a"
-      (Printtyp.class_declaration id) d1
-      (Printtyp.class_declaration id) d2
+      !Oprint.out_sig_item (tree_of_class_declaration id d1 Trec_first)
+      !Oprint.out_sig_item (tree_of_class_declaration id d2 Trec_first)
       Includeclass.report_error reason
   | Unbound_modtype_path path ->
       fprintf ppf "Unbound module type %a" Printtyp.path path
@@ -696,8 +697,8 @@ let report_error ppf errs =
     else if !pe then (fprintf ppf "...@ "; pe := false)
   in
   let print_errs ppf = List.iter (include_err' ppf) in
-  fprintf ppf "@[<v>%a%a@]" print_errs errs include_err err
-
+  Conflicts.reset();
+  fprintf ppf "@[<v>%a%a%t@]" print_errs errs include_err err Conflicts.print
 
 (* We could do a better job to split the individual error items
    as sub-messages of the main interface mismatch on the whole unit. *)
