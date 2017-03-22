@@ -16,6 +16,8 @@
 platform:
   - x64
 
+image: Visual Studio 2015
+
 branches:
   only:
     - trunk
@@ -47,7 +49,7 @@ install:
   - '%CYG_ROOT%\bin\bash -lc "cygcheck -dc cygwin"'
   - '"%CYG_ROOT%\setup-x86.exe" -qgnNdO -R "%CYG_ROOT%" -s "%CYG_MIRROR%" -l "%CYG_CACHE%" -P diffutils -P make -P mingw64-i686-gcc-core >NUL'
   - '%CYG_ROOT%\bin\bash -lc "cygcheck -dc cygwin"'
-  - call "C:\Program Files\Microsoft SDKs\Windows\v7.1\Bin\SetEnv.cmd" /x64
+  - call "C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\bin\amd64\vcvars64.bat"
 
 build_script:
   - "%CYG_ROOT%/bin/bash -lc \"echo 'eval $($APPVEYOR_BUILD_FOLDER/tools/msvs-promote-path)' >> ~/.bash_profile\""
