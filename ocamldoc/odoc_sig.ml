@@ -1571,7 +1571,6 @@ module Analyser =
         (Parsetree.Pcty_constr (_, _) (*of Longident.t * core_type list *),
          Types.Cty_constr (p, typ_list, _) (*of Path.t * type_expr list * class_type*)) ->
           print_DEBUG "Cty_constr _";
-          print_DEBUG "Cty_constr _";
           Class_type
             {
               cta_name = Odoc_env.full_class_or_class_type_name env (Name.from_path p) ;

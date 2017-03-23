@@ -64,7 +64,6 @@ module Typ = struct
   let force_poly t =
     match t.ptyp_desc with
     | Ptyp_poly _ -> t
-    (* TODO(objmagic): why dropping attributes here? *)
     | _ -> poly ~loc:t.ptyp_loc [] t (* -> ghost? *)
 
   let varify_constructors var_names t =
