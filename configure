@@ -1792,7 +1792,6 @@ echo "X11_LINK=$x11_link" >> Makefile
 
 if $shared_libraries_supported && ./hasgot -DPACKAGE=ocaml -i bfd.h ; then
   inf "BFD library found."
-  echo LIBBFD_INCLUDE= >>Makefile
   if sh ./hasgot -DPACKAGE=ocaml -lbfd bfd_openr; then
     LIBBFD_LINK="-lbfd"
     inf "BFD links with $LIBBFD_LINK"
@@ -1814,6 +1813,7 @@ if $shared_libraries_supported && ./hasgot -DPACKAGE=ocaml -i bfd.h ; then
     LIBBFD_LINK=
   fi
   echo "LIBBFD_LINK=$LIBBFD_LINK" >> Makefile
+  echo LIBBFD_INCLUDE= >>Makefile
 elif sh ./hasgot -DPACKAGE=ocaml -I/opt/local/include -i bfd.h && \
      sh ./hasgot -DPACKAGE=ocaml -L/opt/local/lib -lbfd -ldl \
                  -liberty -lz -lintl bfd_openr
