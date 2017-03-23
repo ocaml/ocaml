@@ -22,8 +22,7 @@ Working version
 
 ### Standard library:
 
-- GRP#1119: Change Set (private) type to inline records. Changes the
-  (private) definition of Maps to use inline records instead of tuples.
+- GRP#1119: Change Set (private) type to inline records.
   (Albin Coquereau)
 
 - PR#1771, PR#7309, GPR#1026: Add update to maps. Allows to update a
