@@ -24,7 +24,7 @@ CAMLprim value unix_chroot(value path)
   char * p;
   int ret;
   caml_unix_check_path(path, "chroot");
-  p = caml_strdup(String_val(path));
+  p = caml_stat_strdup(String_val(path));
   caml_enter_blocking_section();
   ret = chroot(p);
   caml_leave_blocking_section();

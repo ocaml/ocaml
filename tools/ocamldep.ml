@@ -221,15 +221,7 @@ let print_raw_dependencies source_file deps =
 
 let report_err exn =
   error_occurred := true;
-  match exn with
-    | Sys_error msg ->
-        Format.fprintf Format.err_formatter "@[I/O error:@ %s@]@." msg
-    | x ->
-        match Location.error_of_exn x with
-        | Some err ->
-            Format.fprintf Format.err_formatter "@[%a@]@."
-              Location.report_error err
-        | None -> raise x
+  Location.report_exception Format.err_formatter exn
 
 let tool_name = "ocamldep"
 

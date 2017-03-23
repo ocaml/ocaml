@@ -57,3 +57,18 @@ let f x (g : [< `Foo]) =
 val revapply : 'a -> ('a -> 'b) -> 'b = <fun>
 val f : 'a -> [< `Foo ] -> 'a = <fun>
 |}];;
+
+(* PR#6124 *)
+let f : ([`A | `B ] as 'a) -> [> 'a] -> unit = fun x (y : [> 'a]) -> ();;
+let f (x : [`A | `B] as 'a) (y : [> 'a]) = ();;
+[%%expect{|
+Line _, characters 61-63:
+Error: The type 'a does not expand to a polymorphic variant type
+Hint: Did you mean `a?
+|}]
+
+(* PR#5927 *)
+type 'a foo = 'a constraint 'a = [< `Tag of & int];;
+[%%expect{|
+type 'a foo = 'a constraint 'a = [< `Tag of & int ]
+|}]

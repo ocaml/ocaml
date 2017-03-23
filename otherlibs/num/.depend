@@ -1,13 +1,13 @@
-bng.o: bng.c bng.h ../../byterun/caml/config.h \
+bng.$(O): bng.c bng.h ../../byterun/caml/config.h \
  ../../byterun/caml/../../config/m.h ../../byterun/caml/../../config/s.h \
  ../../byterun/caml/compatibility.h bng_amd64.c bng_digit.c
-bng_amd64.o: bng_amd64.c
-bng_arm64.o: bng_arm64.c
-bng_digit.o: bng_digit.c
-bng_ia32.o: bng_ia32.c
-bng_ppc.o: bng_ppc.c
-bng_sparc.o: bng_sparc.c
-nat_stubs.o: nat_stubs.c ../../byterun/caml/alloc.h \
+bng_amd64.$(O): bng_amd64.c
+bng_arm64.$(O): bng_arm64.c
+bng_digit.$(O): bng_digit.c
+bng_ia32.$(O): bng_ia32.c
+bng_ppc.$(O): bng_ppc.c
+bng_sparc.$(O): bng_sparc.c
+nat_stubs.$(O): nat_stubs.c ../../byterun/caml/alloc.h \
  ../../byterun/caml/compatibility.h ../../byterun/caml/misc.h \
  ../../byterun/caml/config.h ../../byterun/caml/../../config/m.h \
  ../../byterun/caml/../../config/s.h ../../byterun/caml/mlvalues.h \

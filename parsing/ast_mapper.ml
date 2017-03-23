@@ -808,9 +808,10 @@ end
 
 let ppx_context = PpxContext.make
 
-let ext_of_exn exn =
+let extension_of_exn exn =
   match error_of_exn exn with
-  | Some error -> extension_of_error error
+  | Some (`Ok error) -> extension_of_error error
+  | Some `Already_displayed -> { loc = Location.none; txt = "ocaml.error" }, PStr []
   | None -> raise exn
 
 
@@ -828,7 +829,7 @@ let apply_lazy ~source ~target mapper =
         let mapper = mapper () in
         mapper.structure mapper ast
       with exn ->
-        [{pstr_desc = Pstr_extension (ext_of_exn exn, []);
+        [{pstr_desc = Pstr_extension (extension_of_exn exn, []);
           pstr_loc  = Location.none}]
     in
     let fields = PpxContext.update_cookies fields in
@@ -847,7 +848,7 @@ let apply_lazy ~source ~target mapper =
         let mapper = mapper () in
         mapper.signature mapper ast
       with exn ->
-        [{psig_desc = Psig_extension (ext_of_exn exn, []);
+        [{psig_desc = Psig_extension (extension_of_exn exn, []);
           psig_loc  = Location.none}]
     in
     let fields = PpxContext.update_cookies fields in

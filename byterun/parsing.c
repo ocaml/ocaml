@@ -288,7 +288,7 @@ CAMLprim value caml_parse_engine(struct parser_tables *tables,
     goto loop;
 
   default:                      /* Should not happen */
-    Assert(0);
+    CAMLassert(0);
     return RAISE_PARSE_ERROR;   /* Keeps gcc -Wall happy */
   }
 

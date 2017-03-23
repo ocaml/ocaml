@@ -413,12 +413,7 @@ byteccprivatecompopts="-DCAML_NAME_SPACE $byteccprivatecompopts"
 # Adjust according to target
 
 case "$bytecc,$target" in
-  cc,*-*-nextstep*)
-    # GNU C extensions disabled, but __GNUC__ still defined!
-    bytecccompopts="$bytecccompopts -U__GNUC__ -posix"
-    bytecclinkopts="-posix";;
   *,*-*-rhapsody*)
-    # Almost the same as NeXTStep
     bytecccompopts="$bytecccompopts -DSHRINKED_GNUC"
     mathlib="";;
   *,*-*-darwin*)
@@ -802,7 +797,7 @@ if test $with_sharedlibs = "yes"; then
       bytecccompopts="$dl_defs $bytecccompopts"
       dl_needs_underscore=false
       shared_libraries_supported=true;;
-    *-*-linux-gnu|*-*-linux|*-*-freebsd[3-9]*|*-*-freebsd[1-9][0-9]*\
+    *-*-linux*|*-*-freebsd[3-9]*|*-*-freebsd[1-9][0-9]*\
     |*-*-openbsd*|*-*-netbsd*|*-*-dragonfly*|*-*-gnu*|*-*-haiku*)
       sharedcccompopts="-fPIC"
       mksharedlib="$bytecc -shared"
@@ -890,7 +885,6 @@ case "$target" in
   sparc*-*-gnu*)                arch=sparc; system=gnu;;
   i[3456]86-*-linux*)           arch=i386; system=linux_`sh ./runtest elf.c`;;
   i[3456]86-*-*bsd*)            arch=i386; system=bsd_`sh ./runtest elf.c`;;
-  i[3456]86-*-nextstep*)        arch=i386; system=nextstep;;
   i[3456]86-*-solaris*)         if $arch64; then
                                   arch=amd64; system=solaris
                                 else
@@ -969,7 +963,6 @@ nativecclinkopts=''
 nativeccrpath="$byteccrpath"
 
 case "$arch,$nativecc,$system,$model" in
-  *,*,nextstep,*)      nativecclinkopts="-posix";;
   *,*,rhapsody,*)      if $arch64; then partialld="ld -r -arch ppc64"; fi;;
   amd64,gcc*,macosx,*) partialld="ld -r -arch x86_64";;
   amd64,gcc*,solaris,*) partialld="ld -r -m elf_x86_64";;

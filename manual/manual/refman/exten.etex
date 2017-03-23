@@ -436,38 +436,21 @@ For example, @module-path'.['expr']'@ is equivalent to
 @module-path'.(['expr'])'@, and @module-path'.[|' pattern '|]'@ is
 equivalent to @module-path'.([|' pattern '|])'@.
 
-\section{Record and object notations} \label{s:record-and-object-notations}
+\section{Object copy short notations} \label{s:object-notations}
 \ikwd{with\@\texttt{with}}
 
-(Introduced in OCaml 3.12, object copy notation added in Ocaml 4.03)
+(Introduced in OCaml 4.03)
 
 \begin{syntax}
-pattern:
-    ...
-  | '{' field ['=' pattern] { ';' field ['=' pattern] } [';' '_' ] [';'] '}'
-;
 expr:
      ...
-  | '{' field ['=' expr] { ';' field ['=' expr] } [';'] '}'
-  | '{' expr 'with' field ['=' expr] { ';' field ['=' expr] } [';'] '}'
   | '{' '<' expr 'with' field ['=' expr] { ';' field ['=' expr] } [';'] '>' '}'
-
 \end{syntax}
 
-In a record pattern, a record construction expression or an object copy expression,
+In an object copy expression,
 a single identifier @id@ stands for @id '=' id@, and a qualified identifier
 @module-path '.' id@ stands for @module-path '.' id '=' id@.
-For example, assuming the record type
-\begin{verbatim}
-          type point = { x: float; y: float }
-\end{verbatim}
-has been declared, the following expressions are equivalent:
-\begin{verbatim}
-          let x = 1. and y = 2. in { x = x; y = y },
-          let x = 1. and y = 2. in { x; y },
-          let x = 1. and y = 2. in { x = x; y }
-\end{verbatim}
-On the object side, all following methods are equivalent:
+For example, all following methods are equivalent:
 \begin{verbatim}
           object
             val x=0. val y=0. val z=0.
@@ -476,29 +459,6 @@ On the object side, all following methods are equivalent:
             method f_2 x y = {< x=x ; y = y >}
           end
 \end{verbatim}
-Likewise, the following functions are equivalent:
-\begin{verbatim}
-          fun {x = x; y = y} -> x +. y
-          fun {x; y} -> x +. y
-\end{verbatim}
-
-Optionally, a record pattern can be terminated by @';' '_'@ to convey the
-fact that not all fields of the record type are listed in the record
-pattern and that it is intentional.  By default, the compiler ignores
-the @';' '_'@ annotation.  If warning 9 is turned on,
-the compiler will warn when a record pattern fails to list all fields of
-the corresponding record type and is not terminated by @';' '_'@.
-Continuing the "point" example above,
-\begin{verbatim}
-          fun {x} -> x +. 1.
-\end{verbatim}
-\noindent will warn if warning 9 is on, while
-\begin{verbatim}
-          fun {x; _} -> x +. 1.
-\end{verbatim}
-\noindent will not warn.  This warning can help spot program points where
-record patterns may need to be modified after new fields are added to a
-record type.
 
 \section{Explicit polymorphic type annotations} \label{s:explicit-polymorphic-type}
 \ikwd{let\@\texttt{let}}
@@ -1923,10 +1883,11 @@ let y = [%extension_constructor Y];;
 
 (Introduced in OCaml 4.02)
 
-Quoted strings provide a different lexical syntax to write string
-literals in OCaml code.  This can be used to embed pieces of foreign
-syntax fragments in OCaml code, to be interpret by a "-ppx" filter or
-just a library.
+Quoted strings "{foo|...|foo}" provide a different lexical syntax to
+write string literals in OCaml code. They are useful to represent
+strings of arbitrary content without escaping -- as long as the
+delimiter you chose (here "|foo}") does not occur in the string
+itself.
 
 \begin{syntax}
 string-literal: ...
@@ -1938,9 +1899,9 @@ quoted-string-id:
 \end{syntax}
 
 The opening delimiter has the form "{id|" where "id" is a (possibly
-  empty) sequence of lowercase letters and underscores.  The
-  corresponding closing delimiter is "|id}" (with the same
-identifier).  Unlike regular OCaml string literals, quoted
+empty) sequence of lowercase letters and underscores.  The
+corresponding closing delimiter is "|id}" (with the same
+identifier). Unlike regular OCaml string literals, quoted
 strings do not interpret any character in a special way.
 
 Example:
@@ -1950,6 +1911,19 @@ String.length {|\"|}         (* returns 2 *)
 String.length {foo|\"|foo}   (* returns 2 *)
 \end{verbatim}
 
+Quoted strings are interesting in particular in conjunction to
+extension nodes "[%foo ...]" (see \ref{s:extension-nodes}) to embed
+foreign syntax fragments to be interpreted by a preprocessor and
+turned into OCaml code: you can use "[%sql {|...|}]" for example to
+represent arbitrary SQL statements -- assuming you have a ppx-rewriter
+that recognizes the "%sql" extension -- without requiring escaping
+quotes.
+
+Note that the non-extension form, for example "{sql|...|sql}", should
+not be used for this purpose, as the user cannot see in the code that
+this string literal has a different semantics than they expect, and
+giving a semantics to a specific delimiter limits the freedom to
+change the delimiter to avoid escaping issues.
 
 \section{Exception cases in pattern matching}\label{s:exception-match}
 

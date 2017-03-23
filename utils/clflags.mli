@@ -203,7 +203,7 @@ val dumped_pass : string -> bool
 val set_dumped_pass : string -> bool -> unit
 
 val parse_color_setting : string -> Misc.Color.setting option
-val color : Misc.Color.setting ref
+val color : Misc.Color.setting option ref
 
 val unboxed_types : bool ref
 

@@ -2703,7 +2703,14 @@ and unify_row_field env fixed1 fixed2 more l f1 f2 =
   | Rpresent None, Rpresent None -> ()
   | Reither(c1, tl1, m1, e1), Reither(c2, tl2, m2, e2) ->
       if e1 == e2 then () else
-      let redo =
+      if (fixed1 || fixed2) && not (c1 || c2)
+      && List.length tl1 = List.length tl2 then begin
+        (* PR#7496 *)
+        let f = Reither (c1 || c2, [], m1 || m2, ref None) in
+        set_row_field e1 f; set_row_field e2 f;
+        List.iter2 (unify env) tl1 tl2
+      end
+      else let redo =
         not !passive_variants &&
         (m1 || m2 || fixed1 || fixed2 ||
          !rigid_variants && (List.length tl1 = 1 || List.length tl2 = 1)) &&
@@ -3323,9 +3330,9 @@ and eqtype_row rename type_pairs subst env row1 row2 =
       match row_field_repr f1, row_field_repr f2 with
         Rpresent(Some t1), Rpresent(Some t2) ->
           eqtype rename type_pairs subst env t1 t2
-      | Reither(true, [], _, _), Reither(true, [], _, _) ->
+      | Reither(c1, [], _, _), Reither(c2, [], _, _) when c1 = c2 ->
           ()
-      | Reither(false, t1::tl1, _, _), Reither(false, t2::tl2, _, _) ->
+      | Reither(c1, t1::tl1, _, _), Reither(c2, t2::tl2, _, _) when c1 = c2 ->
           eqtype rename type_pairs subst env t1 t2;
           if List.length tl1 = List.length tl2 then
             (* if same length allow different types (meaning?) *)

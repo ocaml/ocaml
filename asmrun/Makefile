@@ -20,7 +20,12 @@ LINKEDFILES=misc.c freelist.c major_gc.c minor_gc.c memory.c alloc.c array.c \
   parsing.c gc_ctrl.c terminfo.c md5.c obj.c lexing.c printexc.c callback.c \
   weak.c compact.c finalise.c meta.c custom.c main.c globroots.c \
   $(UNIX_OR_WIN32).c dynlink.c signals.c debugger.c startup_aux.c \
-  backtrace.c afl.c
+  backtrace.c afl.c bigarray.c
+
+# The following variable stores the list of files for which dependencies
+# should be computed. It includes even the files that won't actually be
+# compiled on the platform where make depend is run
+sources := $(LINKEDFILES)
 
 INSTALL_LIBDIR=$(DESTDIR)$(LIBDIR)
 
@@ -28,8 +33,10 @@ CC=$(NATIVECC)
 
 ifeq "$(UNIX_OR_WIN32)" "win32"
 LN = cp
+sources += ../byterun/unix.c
 else
 LN = ln -s
+sources += ../byterun/win32.c
 endif
 
 FLAGS=\
@@ -77,7 +84,7 @@ COBJS=startup_aux.$(O) startup.$(O) main.$(O) fail.$(O)		\
   custom.$(O) globroots.$(O) backtrace_prim.$(O) backtrace.$(O)		\
   natdynlink.$(O) debugger.$(O) meta.$(O) dynlink.$(O)			\
   clambda_checks.$(O) spacetime.$(O) spacetime_snapshot.$(O)		\
-  spacetime_offline.$(O) afl.$(O)
+  spacetime_offline.$(O) afl.$(O) bigarray.$(O)
 
 OBJS=$(COBJS) $(ASMOBJS)
 
@@ -177,21 +184,18 @@ clean:
 distclean: clean
 	rm -r *~
 
-ifneq "$(TOOLCHAIN)" "msvc"
 .PHONY: depend
-depend: $(COBJS:.$(O)=.c) $(LINKEDFILES)
-	$(CC) -MM $(FLAGS) *.c > .depend
-	$(CC) -MM $(FLAGS) -DPROFILING *.c | sed -e 's/\.o/.p.o/' >> .depend
-	$(CC) -MM $(FLAGS) -DDEBUG *.c | sed -e 's/\.o/.d.o/' >> .depend
-	$(CC) -MM $(FLAGS) -DCAML_INSTR *.c | sed -e 's/\.o/.i.o/' >> .depend
-endif
-
-ifeq "$(UNIX_OR_WIN32)" "win32"
-.depend.nt: .depend
-	sed -e 's/\.o/.$(O)/g' .depend > .depend.nt
-
-include .depend.nt
-
+ifeq "$(TOOLCHAIN)" "msvc"
+depend:
+	$(error Dependencies cannot be regenerated using the MSVC ports)
 else
-include .depend
+depend: $(COBJS:.$(O)=.c) $(sources)
+	$(CC) -MM $(FLAGS) $^ | sed -e 's/\.o/.$$(O)/' > .depend
+	$(CC) -MM $(FLAGS) -DPROFILING $^ | sed -e 's/\.o/.p.$$(O)/' \
+	  >> .depend
+	$(CC) -MM $(FLAGS) -DDEBUG $^ | sed -e 's/\.o/.d.$$(O)/' >> .depend
+	$(CC) -MM $(FLAGS) -DCAML_INSTR $^ | sed -e 's/\.o/.i.$$(O)/' \
+	  >> .depend
 endif
+
+include .depend

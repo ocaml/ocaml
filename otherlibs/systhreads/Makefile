@@ -46,6 +46,11 @@ else # Windows
 HEADER = st_win32.h
 endif
 
+# Note: the header on which object files produced from st_stubs.c
+# should actually depend is known for sure only at compile-time.
+# That's why this dependency is handled in the Makefile directly
+# and removed from the output of the C compiler during make depend
+
 BYTECODE_C_OBJS=st_stubs_b.$(O)
 NATIVECODE_C_OBJS=st_stubs_n.$(O)
 
@@ -89,7 +94,7 @@ $(LIBNAME).cmxa: $(THREADS_NCOBJS)
 
 # The following lines produce two object files st_stubs_b.$(O) and
 # st_stubs_n.$(O) from the same source file st_stubs.c (it is compiled
-# twice, each time with different of options).
+# twice, each time with different options).
 # Since the source and object file have a different basename, the name of
 # the object file to produce must be given to the C compiler.
 # For gcc this is done with the -ofoo.$(O) option.
@@ -148,12 +153,22 @@ installopt:
 .ml.cmx:
 	$(CAMLOPT) -c $(COMPFLAGS) $(OPTCOMPFLAGS) $<
 
-ifeq "$(UNIX_OR_WIN32)" "unix"
-depend: $(GENFILES)
-	-$(CC) -MM -I../../byterun *.c > .depend
-	$(CAMLRUN) ../../tools/ocamldep -slash *.mli *.ml >> .depend
-else # Windows
+.PHONY: depend
+ifeq "$(TOOLCHAIN)" "msvc"
 depend:
+	$(error Dependencies cannot be regenerated using the MSVC ports)
+else
+depend:
+	$(BYTECC) -MM -I$(ROOTDIR)/byterun $(BYTECCCOMPOPTS) \
+	  $(SHAREDCCCOMPOPTS) st_stubs.c \
+	  | sed -e 's/st_stubs\.o/st_stubs_b.$$(O)/' \
+	  -e 's/ st_\(posix\|win32\)\.h//g' > .depend
+	$(NATIVECC) -MM -I$(ROOTDIR)/asmrun -I$(ROOTDIR)/byterun \
+	  $(NATIVECCCOMPOPTS) $(SHAREDCCCOMPOPTS) -DNATIVE_CODE \
+	  -DTARGET_$(ARCH) -DMODEL_$(MODEL) -DSYS_$(SYSTEM) st_stubs.c \
+	  | sed -e 's/st_stubs\.o/st_stubs_n.$$(O)/' \
+	  -e 's/ st_\(posix\|win32\)\.h//g' >> .depend
+	$(CAMLRUN) ../../tools/ocamldep -slash *.mli *.ml >> .depend
 endif
 
 include .depend

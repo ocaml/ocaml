@@ -58,6 +58,7 @@ type error =
   | Bad_unboxed_attribute of string
   | Wrong_unboxed_type_float
   | Boxed_and_unboxed
+  | Nonrec_gadt
 
 open Typedtree
 
@@ -81,7 +82,15 @@ let get_unboxed_from_attributes sdecl =
 let enter_type rec_flag env sdecl id =
   let needed =
     match rec_flag with
-    | Asttypes.Nonrecursive -> Btype.is_row_name (Ident.name id)
+    | Asttypes.Nonrecursive ->
+        begin match sdecl.ptype_kind with
+        | Ptype_variant scds ->
+            List.iter (fun cd ->
+              if cd.pcd_res <> None then raise (Error(cd.pcd_loc, Nonrec_gadt)))
+              scds
+        | _ -> ()
+        end;
+        Btype.is_row_name (Ident.name id)
     | Asttypes.Recursive -> true
   in
   if not needed then env else
@@ -363,6 +372,12 @@ let transl_declaration env sdecl id =
       | Ptype_abstract -> Ttype_abstract, Type_abstract
       | Ptype_variant scstrs ->
         assert (scstrs <> []);
+        if List.exists (fun cstr -> cstr.pcd_res <> None) scstrs then begin
+          match cstrs with
+            [] -> ()
+          | (_,_,loc)::_ ->
+              Location.prerr_warning loc Warnings.Constraint_on_gadt
+        end;
         let all_constrs = ref StringSet.empty in
         List.iter
           (fun {pcd_name = {txt = name}} ->
@@ -2053,6 +2068,9 @@ let report_error ppf = function
                    You should annotate it with [%@%@ocaml.boxed].@]"
   | Boxed_and_unboxed ->
       fprintf ppf "@[A type cannot be boxed and unboxed at the same time.@]"
+  | Nonrec_gadt ->
+      fprintf ppf
+        "@[GADT case syntax cannot be used in a 'nonrec' block.@]"
 
 let () =
   Location.register_error_of_exn

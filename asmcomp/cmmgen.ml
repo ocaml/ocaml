@@ -787,7 +787,12 @@ let rec expr_size env = function
       RHS_block (fundecls_size fundecls + List.length clos_vars)
   | Ulet(_str, _kind, id, exp, body) ->
       expr_size (Ident.add id (expr_size env exp) env) body
-  | Uletrec(_bindings, body) ->
+  | Uletrec(bindings, body) ->
+      let env =
+        List.fold_right
+          (fun (id, exp) env -> Ident.add id (expr_size env exp) env)
+          bindings env
+      in
       expr_size env body
   | Uprim(Pmakeblock _, args, _) ->
       RHS_block (List.length args)
@@ -852,8 +857,17 @@ let transl_structured_constant cst =
 
 type is_global = Global | Not_global
 
-let constant_closures =
-  ref ([] : ((string * is_global) * ufunction list * uconstant list) list)
+type symbol_defn = string * is_global
+
+type cmm_constant =
+  | Const_closure of symbol_defn * ufunction list * uconstant list
+  | Const_table of symbol_defn * data_item list
+
+let cmm_constants =
+  ref ([] : cmm_constant list)
+
+let add_cmm_constant c =
+  cmm_constants := c :: !cmm_constants
 
 (* Boxed integers *)
 
@@ -1348,28 +1362,27 @@ let transl_isout h arg dbg = tag_int (Cop(Ccmpa Clt, [h ; arg], dbg)) dbg
 
 let make_switch arg cases actions dbg =
   let is_const = function
+    (* Constant integers loaded from a table should end in 1,
+       so that Cload never produces untagged integers *)
     | Cconst_int n
     | Cconst_pointer n -> (n land 1) = 1
-    | Cconst_natint _
-    | Cconst_float _
+    | Cconst_natint n
+    | Cconst_natpointer n -> (Nativeint.(to_int (logand n one) = 1))
     | Cconst_symbol _ -> true
     | _ -> false in
   if Array.for_all is_const actions then
-    let const c =
-      let sym = Compilenv.new_structured_constant ~shared:true c in
-      Uconst_ref(sym, Some c) in
-    let to_uconst = function
-      | Cconst_int n -> Uconst_int (n lsr 1)
-      | Cconst_pointer n -> Uconst_ptr (n lsr 1)
-      | Cconst_symbol s -> Uconst_ref (s, None)
-      | Cconst_natint n -> const (Uconst_nativeint n)
-      | Cconst_float f -> const (Uconst_float f)
+    let to_data_item = function
+      | Cconst_int n
+      | Cconst_pointer n -> Cint (Nativeint.of_int n)
+      | Cconst_natint n
+      | Cconst_natpointer n -> Cint n
+      | Cconst_symbol s -> Csymbol_address s
       | _ -> assert false in
-    let const_actions = Array.map to_uconst actions in
-    let table = Compilenv.new_structured_constant ~shared:true
-      (Uconst_block (0,
+    let const_actions = Array.map to_data_item actions in
+    let table = Compilenv.new_const_symbol () in
+    add_cmm_constant (Const_table ((table, Not_global),
         Array.to_list (Array.map (fun act ->
-          const_actions.(act)) cases))) in
+          const_actions.(act)) cases)));
     addr_array_ref (Cconst_symbol table) (tag_int arg dbg) dbg
   else
     Cswitch (arg,cases,actions,dbg)
@@ -1394,8 +1407,8 @@ struct
   let make_isout h arg = Cop (Ccmpa Clt, [h ; arg], Debuginfo.none)
   let make_isin h arg = Cop (Ccmpa Cge, [h ; arg], Debuginfo.none)
   let make_if cond ifso ifnot = Cifthenelse (cond, ifso, ifnot)
-  let make_switch arg cases actions =
-    make_switch arg cases actions Debuginfo.none
+  let make_switch loc arg cases actions =
+    make_switch arg cases actions (Debuginfo.from_location loc)
   let bind arg body = bind "switcher" arg body
 
   let make_catch handler = match handler with
@@ -1435,7 +1448,7 @@ module SwitcherBlocks = Switch.Make(SArgBlocks)
 (* Int switcher, arg in [low..high],
    cases is list of individual cases, and is sorted by first component *)
 
-let transl_int_switch arg low high cases default = match cases with
+let transl_int_switch loc arg low high cases default = match cases with
 | [] -> assert false
 | _::_ ->
     let store = StoreExp.mk_store () in
@@ -1475,6 +1488,7 @@ let transl_int_switch arg low high cases default = match cases with
     bind "switcher" arg
       (fun a ->
         SwitcherBlocks.zyva
+          loc
           (low,high)
           a
           (Array.of_list inters) store)
@@ -1576,7 +1590,7 @@ let rec is_unboxed_number ~strict env e =
       end
   | Ulet (_, _, _, _, e) | Uletrec (_, e) | Usequence (_, e) ->
       is_unboxed_number ~strict env e
-  | Uswitch (_, switch) ->
+  | Uswitch (_, switch, _dbg) ->
       let k = Array.fold_left join No_result switch.us_actions_consts in
       Array.fold_left join k switch.us_actions_blocks
   | Ustringswitch (_, actions, default_opt) ->
@@ -1626,8 +1640,8 @@ let rec transl env e =
       transl_constant sc
   | Uclosure(fundecls, []) ->
       let lbl = Compilenv.new_const_symbol() in
-      constant_closures :=
-        ((lbl, Not_global), fundecls, []) :: !constant_closures;
+      add_cmm_constant (
+        Const_closure ((lbl, Not_global), fundecls, []));
       List.iter (fun f -> Queue.add f functions) fundecls;
       Cconst_symbol lbl
   | Uclosure(fundecls, clos_vars) ->
@@ -1774,8 +1788,8 @@ let rec transl env e =
       end
 
   (* Control structures *)
-  | Uswitch(arg, s) ->
-      let dbg = Debuginfo.none in
+  | Uswitch(arg, s, dbg) ->
+      let loc = Debuginfo.to_location dbg in
       (* As in the bytecode interpreter, only matching against constants
          can be checked *)
       if Array.length s.us_index_blocks = 0 then
@@ -1785,15 +1799,15 @@ let rec transl env e =
           (Array.map (transl env) s.us_actions_consts)
           dbg
       else if Array.length s.us_index_consts = 0 then
-        transl_switch dbg env (get_tag (transl env arg) dbg)
+        transl_switch loc env (get_tag (transl env arg) dbg)
           s.us_index_blocks s.us_actions_blocks
       else
         bind "switch" (transl env arg) (fun arg ->
           Cifthenelse(
           Cop(Cand, [arg; Cconst_int 1], dbg),
-          transl_switch dbg env
+          transl_switch loc env
             (untag_int arg dbg) s.us_index_consts s.us_actions_consts,
-          transl_switch dbg env
+          transl_switch loc env
             (get_tag arg dbg) s.us_index_blocks s.us_actions_blocks))
   | Ustringswitch(arg,sw,d) ->
       let dbg = Debuginfo.none in
@@ -1974,19 +1988,17 @@ and transl_prim_1 env p arg dbg =
   | Pnegint ->
       Cop(Csubi, [Cconst_int 2; transl env arg], dbg)
   | Pctconst c ->
-      let const_of_bool b = tag_int (Cconst_int (if b then 1 else 0)) dbg in
+      let const_of_bool b = int_const (if b then 1 else 0) in
       begin
         match c with
         | Big_endian -> const_of_bool Arch.big_endian
-        | Word_size -> tag_int (Cconst_int (8*Arch.size_int)) dbg
-        | Int_size -> tag_int (Cconst_int ((8*Arch.size_int) - 1)) dbg
-        | Max_wosize ->
-            tag_int (Cconst_int ((1 lsl ((8*Arch.size_int) - 10)) - 1 )) dbg
+        | Word_size -> int_const (8*Arch.size_int)
+        | Int_size -> int_const (8*Arch.size_int - 1)
+        | Max_wosize -> int_const ((1 lsl ((8*Arch.size_int) - 10)) - 1)
         | Ostype_unix -> const_of_bool (Sys.os_type = "Unix")
         | Ostype_win32 -> const_of_bool (Sys.os_type = "Win32")
         | Ostype_cygwin -> const_of_bool (Sys.os_type = "Cygwin")
-        | Backend_type ->
-            tag_int (Cconst_int 0) dbg (* tag 0 is the same as Native here *)
+        | Backend_type -> int_const 0 (* tag 0 is the same as Native here *)
       end
   | Poffsetint n ->
       if no_overflow_lsl n 1 then
@@ -2692,7 +2704,7 @@ and exit_if_false dbg env cond otherwise nfail =
       if_then_else (test_bool dbg (transl env cond), otherwise,
         Cexit (nfail, []))
 
-and transl_switch _dbg env arg index cases = match Array.length cases with
+and transl_switch loc env arg index cases = match Array.length cases with
 | 0 -> fatal_error "Cmmgen.transl_switch"
 | 1 -> transl env cases.(0)
 | _ ->
@@ -2725,6 +2737,7 @@ and transl_switch _dbg env arg index cases = match Array.length cases with
         bind "switcher" arg
           (fun a ->
             SwitcherBlocks.zyva
+              loc
               (0,n_index-1)
               a
               (Array.of_list inters) store)
@@ -2843,7 +2856,7 @@ let rec emit_structured_constant symb cst cont =
         (Misc.map_end (fun f -> Cdouble f) fields cont)
   | Uconst_closure(fundecls, lbl, fv) ->
       assert(lbl = fst symb);
-      constant_closures := (symb, fundecls, fv) :: !constant_closures;
+      add_cmm_constant (Const_closure (symb, fundecls, fv));
       List.iter (fun f -> Queue.add f functions) fundecls;
       cont
 
@@ -2930,6 +2943,12 @@ let emit_constant_closure ((_, global_symb) as symb) fundecls clos_vars cont =
         Csymbol_address f1.label ::
         emit_others 4 remainder
 
+(* Emit constant blocks *)
+
+let emit_constant_table symb elems =
+  cdefine_symbol symb @
+  elems
+
 (* Emit all structured constants *)
 
 let emit_constants cont (constants:Clambda.preallocated_constant list) =
@@ -2941,10 +2960,13 @@ let emit_constants cont (constants:Clambda.preallocated_constant list) =
          c:= Cdata(cst):: !c)
     constants;
   List.iter
-    (fun (symb, fundecls, clos_vars) ->
-        c := Cdata(emit_constant_closure symb fundecls clos_vars []) :: !c)
-    !constant_closures;
-  constant_closures := [];
+    (function
+    | Const_closure (symb, fundecls, clos_vars) ->
+        c := Cdata(emit_constant_closure symb fundecls clos_vars []) :: !c
+    | Const_table (symb, elems) ->
+        c := Cdata(emit_constant_table symb elems) :: !c)
+    !cmm_constants;
+  cmm_constants := [];
   !c
 
 let emit_all_constants cont =

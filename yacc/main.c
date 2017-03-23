@@ -38,7 +38,7 @@ char *file_prefix = 0;
 char *myname = "yacc";
 char temp_form[] = "yacc.XXXXXXX";
 
-#ifdef NO_UNIX
+#ifdef _WIN32
 char dirsep = '\\';
 #else
 char dirsep = '/';
@@ -104,7 +104,7 @@ char *nullable;
 #if !defined(HAS_MKSTEMP)
 extern char *mktemp(char *);
 #endif
-#ifndef NO_UNIX
+#ifdef _WIN32
 extern char *getenv(const char *);
 #endif
 
@@ -284,7 +284,7 @@ void create_file_names(void)
     int i, len;
     char *tmpdir;
 
-#ifdef NO_UNIX
+#ifdef _WIN32
     tmpdir = getenv("TEMP");
     if (tmpdir == 0) tmpdir = ".";
 #else

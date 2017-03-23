@@ -82,6 +82,7 @@ let set_inline_attribute_on_all_apply body inline specialise =
 let copy_of_function's_body_with_freshened_params env
       ~(function_decl : Flambda.function_declaration) =
   let params = function_decl.params in
+  let param_vars = Parameter.List.vars params in
   (* We cannot avoid the substitution in the case where we are inlining
      inside the function itself.  This can happen in two ways: either
      (a) we are inlining the function itself directly inside its declaration;
@@ -90,13 +91,16 @@ let copy_of_function's_body_with_freshened_params env
      original [params] may still be referenced; for (b) we cannot do it
      either since the freshening may already be renaming the parameters for
      the first inlining of the function. *)
-  if E.does_not_bind env params
-    && E.does_not_freshen env params
+  if E.does_not_bind env param_vars
+    && E.does_not_freshen env param_vars
   then
     params, function_decl.body
   else
-    let freshened_params = List.map (fun var -> Variable.rename var) params in
-    let subst = Variable.Map.of_list (List.combine params freshened_params) in
+    let freshened_params = List.map (fun p -> Parameter.rename p) params in
+    let subst =
+      Variable.Map.of_list
+        (List.combine param_vars (Parameter.List.vars freshened_params))
+    in
     let body = Flambda_utils.toplevel_substitution subst function_decl.body in
     freshened_params, body
 
@@ -142,7 +146,8 @@ let inline_by_copying_function_body ~env ~r
   let bindings_for_params_to_args =
     (* Bind the function's parameters to the arguments from the call site. *)
     let args = List.map (fun arg -> Flambda.Expr (Var arg)) args in
-    Flambda_utils.bind ~body ~bindings:(List.combine freshened_params args)
+    Flambda_utils.bind ~body
+      ~bindings:(List.combine (Parameter.List.vars freshened_params) args)
   in
   (* Add bindings for the variables bound by the closure. *)
   let bindings_for_vars_bound_by_closure_and_params_to_args =
@@ -204,7 +209,7 @@ let inline_by_copying_function_declaration ~env ~r
   let specialised_args_set = Variable.Map.keys specialised_args in
   let worth_specialising_args, specialisable_args, args, args_decl =
     which_function_parameters_can_we_specialise
-      ~params:function_decl.params ~args ~args_approxs
+      ~params:(Parameter.List.vars function_decl.params) ~args ~args_approxs
       ~invariant_params
       ~specialised_args:specialised_args_set
   in

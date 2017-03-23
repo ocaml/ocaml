@@ -39,10 +39,10 @@ expr:
   | expr '::' expr
   | '[' expr { ';' expr } [';'] ']'
   | '[|' expr { ';' expr } [';'] '|]'
-  | '{' field [':' typexpr] '=' expr%
-    { ';' field [':' typexpr] '=' expr } [';'] '}'
-  | '{' expr 'with' field [':' typexpr] '=' expr%
-    { ';' field [':' typexpr] '=' expr } [';'] '}'
+  | '{' field [':' typexpr] ['=' expr]%
+    { ';' field [':' typexpr] ['=' expr] } [';'] '}'
+  | '{' expr 'with' field [':' typexpr] ['=' expr]%
+    { ';' field [':' typexpr] ['=' expr] } [';'] '}'
   | expr {{ argument }}
   | prefix-symbol expr
   | '-' expr
@@ -108,7 +108,7 @@ parameter:
 \end{syntax}
 See also the following language extensions:
 \hyperref[s:local-opens]{local opens},
-\hyperref[s:record-and-object-notations]{record and object notations},
+\hyperref[s:object-notations]{object notations},
 \hyperref[s:explicit-polymorphic-type]{explicit polymorphic type annotations},
 \hyperref[s-first-class-modules]{first-class modules},
 \hyperref[s:explicit-overriding-open]{overriding in open statements},
@@ -565,10 +565,13 @@ value whose tag is @tag-name@, and whose argument is the value of @expr@.
 
 \subsubsection*{Records}
 
-The expression @'{' field_1 '=' expr_1 ';' \ldots ';' field_n '='
-expr_n '}'@ evaluates to the record value
+The expression @'{' field_1 ['=' expr_1] ';' \ldots ';' field_n ['='
+expr_n ']}'@ evaluates to the record value
 $\{ field_1 = v_1; \ldots; field_n = v_n \}$
 where $v_i$ is the value of @expr_i@ for \fromoneto{i}{n}.
+A single identifier @field_k@ stands for @field_k '=' field_k@,
+and a qualified identifier @module-path '.' field_k@ stands for
+@module-path '.' field_k '=' field_k@.
 The fields @field_1@ to @field_n@ must all belong to the same record
 type; each field of this record type must appear exactly
 once in the record expression, though they can appear in any
@@ -579,12 +582,15 @@ specified. Optional type constraints can be added after each field
 to force the type of @field_k@ to be compatible with @typexpr_k@.
 
 The expression
-@"{" expr "with" field_1 "=" expr_1 ";" \ldots ";" field_n "=" expr_n "}"@
+@"{" expr "with" field_1 ["=" expr_1] ";" \ldots ";" field_n ["=" expr_n] "}"@
 builds a fresh record with fields @field_1 \ldots field_n@ equal to
 @expr_1 \ldots expr_n@, and all other fields having the same value as
 in the record @expr@.  In other terms, it returns a shallow copy of
 the record @expr@, except for the fields @field_1 \ldots field_n@,
-which are initialized to @expr_1 \ldots expr_n@. As previously, it is
+which are initialized to @expr_1 \ldots expr_n@. As previously,
+single identifier @field_k@ stands for @field_k '=' field_k@,
+a qualified identifier @module-path '.' field_k@ stands for
+@module-path '.' field_k '=' field_k@ and it is
 possible to add an optional type constraint on each field being updated
 with
 @"{" expr "with" field_1 ':' typexpr_1 "=" expr_1 ";" %

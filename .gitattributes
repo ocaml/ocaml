@@ -133,3 +133,6 @@ testsuite/tests/parsing/*.ml text eol=lf
 
 # Similarly, the docstring tests fail for the same reason on Windows
 testsuite/tests/docstrings/empty.ml text eol=lf
+
+# And w04.ml
+testsuite/tests/warnings/w04.ml text eol=lf

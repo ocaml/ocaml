@@ -320,7 +320,7 @@ static void hash_aux(value obj)
   /* Pointers into the heap are well-structured blocks. So are atoms.
      We can inspect the block contents. */
 
-  Assert (Is_block (obj));
+  CAMLassert (Is_block (obj));
   if (Is_in_value_area(obj)) {
     tag = Tag_val(obj);
     switch (tag) {
