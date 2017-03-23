@@ -1532,3 +1532,13 @@ Line _, characters 13-14:
 Error: This is the second method `a' of this object type.
        Multiple occurences are not allowed.
 |}]
+
+type t = <a:string> and s = <b:int; c:float>
+type c = <t;s;d:string>
+let s:c = object method a="1"; method b=1; method c=1.0; method d="123" end
+[%%expect{|
+type t = < a : string >
+and s = < b : int; c : float >
+type c = < a : string; b : int; c : float; d : string >
+val s : c = <obj>
+|}]
