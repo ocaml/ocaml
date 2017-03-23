@@ -262,6 +262,9 @@ case "$bindir" in
       bindir="$prefix/bin";;
    *) echo "BINDIR=$bindir" >> Makefile;;
 esac
+
+echo 'BYTERUN=$(BINDIR)/ocamlrun' >> Makefile
+
 case "$libdir" in
   "") echo 'LIBDIR=$(PREFIX)/lib/ocaml' >> Makefile
       libdir="$prefix/lib/ocaml";;
@@ -333,9 +336,11 @@ esac
 
 # The BYTECC make variable defines which compiler and options to use
 # to compile C code intended to be used by OCaml bytecode programs.
-# It is used inside OCaml's build system, and also when ocamlc is
-# called on a third-party C source file and no -cc command-line option
-# has been specified.
+# It is used inside OCaml's build system.
+
+# The BYTECODE_C_COMPILER make variable says how the C compiler should be
+# invoked to process a third-party C source file passed to ocamlc
+# when no -cc command-line option has been specified.
 
 # The BYTECCCOMPOPTS make variable contains options to pass to the C
 # compiler but only when compiling C files that belong to the OCaml
@@ -393,7 +398,8 @@ case "$ccfamily" in
     bytecccompopts="-std=gnu99 -O";
     byteccprivatecompopts="$gcc_warnings";;
   gcc-4-*)
-    bytecccompopts="-std=gnu99 -O2 -fno-strict-aliasing -fwrapv";
+    bytecccompopts="-std=gnu99 -O2 -fno-strict-aliasing -fwrapv \
+-fno-builtin-memcmp";
     byteccprivatecompopts="$gcc_warnings";;
   gcc-*)
     bytecccompopts="-O2 -fno-strict-aliasing -fwrapv";
@@ -407,12 +413,7 @@ byteccprivatecompopts="-DCAML_NAME_SPACE $byteccprivatecompopts"
 # Adjust according to target
 
 case "$bytecc,$target" in
-  cc,*-*-nextstep*)
-    # GNU C extensions disabled, but __GNUC__ still defined!
-    bytecccompopts="$bytecccompopts -U__GNUC__ -posix"
-    bytecclinkopts="-posix";;
   *,*-*-rhapsody*)
-    # Almost the same as NeXTStep
     bytecccompopts="$bytecccompopts -DSHRINKED_GNUC"
     mathlib="";;
   *,*-*-darwin*)
@@ -785,18 +786,18 @@ if test $with_sharedlibs = "yes"; then
       mksharedlibrpath="-rpath "
       shared_libraries_supported=true;;
     i[3456]86-*-darwin[89].*)
-      mksharedlib="$bytecc -bundle -flat_namespace -undefined suppress \
+      mksharedlib="$bytecc -shared -flat_namespace -undefined suppress \
                    -read_only_relocs suppress"
       bytecccompopts="$dl_defs $bytecccompopts"
       dl_needs_underscore=false
       shared_libraries_supported=true;;
     *-apple-darwin*)
-      mksharedlib="$bytecc -bundle -flat_namespace -undefined suppress \
+      mksharedlib="$bytecc -shared -flat_namespace -undefined suppress \
                    -Wl,-no_compact_unwind"
       bytecccompopts="$dl_defs $bytecccompopts"
       dl_needs_underscore=false
       shared_libraries_supported=true;;
-    *-*-linux-gnu|*-*-linux|*-*-freebsd[3-9]*|*-*-freebsd[1-9][0-9]*\
+    *-*-linux*|*-*-freebsd[3-9]*|*-*-freebsd[1-9][0-9]*\
     |*-*-openbsd*|*-*-netbsd*|*-*-dragonfly*|*-*-gnu*|*-*-haiku*)
       sharedcccompopts="-fPIC"
       mksharedlib="$bytecc -shared"
@@ -861,9 +862,11 @@ fi
 
 # The NATIVECC make variable defines which compiler and options to use
 # to compile C code intended to be used by OCaml native programs.
-# It is used inside OCaml's build system, and also when ocamlopt is
-# called on a third-party C source file and no -cc command-line
-# option has been specified.
+# It is used inside OCaml's build system.
+
+# The NATIVE_C_COMPILER make variable says how the C compiler should be
+# invoked to process a third-party C source file passed to ocamlopt
+# when no -cc command-line option has been specified.
 
 # The NATIVECCCOMPOPTS make variable contains options to pass to the C
 # compiler, but only when compiling C files that belong to the OCaml
@@ -882,7 +885,6 @@ case "$target" in
   sparc*-*-gnu*)                arch=sparc; system=gnu;;
   i[3456]86-*-linux*)           arch=i386; system=linux_`sh ./runtest elf.c`;;
   i[3456]86-*-*bsd*)            arch=i386; system=bsd_`sh ./runtest elf.c`;;
-  i[3456]86-*-nextstep*)        arch=i386; system=nextstep;;
   i[3456]86-*-solaris*)         if $arch64; then
                                   arch=amd64; system=solaris
                                 else
@@ -961,7 +963,6 @@ nativecclinkopts=''
 nativeccrpath="$byteccrpath"
 
 case "$arch,$nativecc,$system,$model" in
-  *,*,nextstep,*)      nativecclinkopts="-posix";;
   *,*,rhapsody,*)      if $arch64; then partialld="ld -r -arch ppc64"; fi;;
   amd64,gcc*,macosx,*) partialld="ld -r -arch x86_64";;
   amd64,gcc*,solaris,*) partialld="ld -r -m elf_x86_64";;
@@ -1495,6 +1496,21 @@ if sh ./hasgot nice; then
   echo "#define HAS_NICE" >> s.h
 fi
 
+if sh ./hasgot dup3; then
+  inf "dup3() found"
+  echo "#define HAS_DUP3" >> s.h
+fi
+
+if sh ./hasgot pipe2; then
+  inf "pipe2() found"
+  echo "#define HAS_PIPE2" >> s.h
+fi
+
+if sh ./hasgot accept4; then
+  inf "accept4() found"
+  echo "#define HAS_ACCEPT4" >> s.h
+fi
+
 # Determine if the debugger is supported
 
 if test -n "$with_debugger"; then
@@ -1960,6 +1976,8 @@ fi
 cclibs="$cclibs $mathlib"
 
 echo "BYTECC=$bytecc $bytecccompopts" >> Makefile
+echo "BYTECODE_C_COMPILER=$bytecc $bytecccompopts $sharedcccompopts" \
+  >> Makefile
 echo "BYTECCCOMPOPTS=$byteccprivatecompopts" >> Makefile
 echo "BYTECCLINKOPTS=$bytecclinkopts" >> Makefile
 echo "BYTECCLIBS=$cclibs $dllib $curseslibs $pthread_link \
@@ -1984,6 +2002,7 @@ echo "ARCH=$arch" >> Makefile
 echo "MODEL=$model" >> Makefile
 echo "SYSTEM=$system" >> Makefile
 echo "NATIVECC=$nativecc $nativecccompopts" >> Makefile
+echo "NATIVE_C_COMPILER=$nativecc $nativecccompopts" >> Makefile
 echo "NATIVECCCOMPOPTS=$nativeccprivatecompopts" >> Makefile
 echo "NATIVECCPROFOPTS=$nativeccprofopts" >> Makefile
 echo "NATIVECCLINKOPTS=$nativecclinkopts" >> Makefile
@@ -1997,9 +2016,7 @@ echo "DYNLINKOPTS=$dllib" >> Makefile
 echo "OTHERLIBRARIES=$otherlibraries" >> Makefile
 echo "CC_PROFILE=$cc_profile" >> Makefile
 echo "SYSTHREAD_SUPPORT=$systhread_support" >> Makefile
-echo "PARTIALLD=$partialld" >> Makefile
-echo "PACKLD=\$(PARTIALLD) \$(NATIVECCLINKOPTS) -o " \
-  | sed -e 's/ $/\\ /' >> Makefile
+echo "PACKLD=$partialld $nativecclinkopts -o\\ " >> Makefile
 echo "IFLEXDIR=$iflexdir" >> Makefile
 echo "O=o" >> Makefile
 echo "A=a" >> Makefile

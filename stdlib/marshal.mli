@@ -36,7 +36,7 @@
    belong to the given type.
 
    Values of extensible variant types, for example exceptions (of
-   extensible type [exn]), returned by the unmarhsaller should not be
+   extensible type [exn]), returned by the unmarshaller should not be
    pattern-matched over through [match ... with] or [try ... with],
    because unmarshalling does not preserve the information required for
    matching their constructors. Structural equalities with other

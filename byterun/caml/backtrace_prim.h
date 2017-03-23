@@ -70,6 +70,9 @@ void caml_debuginfo_location(debuginfo dbg, /*out*/ struct caml_loc_info * li);
 #define Val_backtrace_slot(bslot) (Val_long(((uintnat)(bslot))>>1))
 #define Backtrace_slot_val(vslot) ((backtrace_slot)(Long_val(vslot) << 1))
 
+/* Allocate the caml_backtrace_buffer. Returns 0 on success, -1 otherwise */
+int caml_alloc_backtrace_buffer(void);
+
 #define BACKTRACE_BUFFER_SIZE 1024
 
 /* Besides decoding backtrace info, [backtrace_prim] has two other

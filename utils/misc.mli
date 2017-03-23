@@ -277,7 +277,7 @@ module Color : sig
 
   type setting = Auto | Always | Never
 
-  val setup : setting -> unit
+  val setup : setting option -> unit
   (* [setup opt] will enable or disable color handling on standard formatters
      according to the value of color setting [opt].
      Only the first call to this function has an effect. *)
@@ -322,7 +322,7 @@ exception HookExnWrapper of
 
 val raise_direct_hook_exn: exn -> 'a
   (** A hook can use [raise_unwrapped_hook_exn] to raise an exception that will
-      not be wrapped into a [HookExnWrapper]. *)
+      not be wrapped into a {!HookExnWrapper}. *)
 
 module type HookSig = sig
   type t

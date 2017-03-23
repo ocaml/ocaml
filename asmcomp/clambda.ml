@@ -46,7 +46,7 @@ and ulambda =
   | Ulet of mutable_flag * value_kind * Ident.t * ulambda * ulambda
   | Uletrec of (Ident.t * ulambda) list * ulambda
   | Uprim of primitive * ulambda list * Debuginfo.t
-  | Uswitch of ulambda * ulambda_switch
+  | Uswitch of ulambda * ulambda_switch * Debuginfo.t
   | Ustringswitch of ulambda * (string * ulambda) list * ulambda option
   | Ustaticfail of int * ulambda list
   | Ucatch of int * Ident.t list * ulambda * ulambda
@@ -64,7 +64,8 @@ and ufunction = {
   arity  : int;
   params : Ident.t list;
   body   : ulambda;
-  dbg    : Debuginfo.t
+  dbg    : Debuginfo.t;
+  env    : Ident.t option;
 }
 
 and ulambda_switch =

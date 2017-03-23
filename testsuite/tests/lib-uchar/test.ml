@@ -4,6 +4,8 @@ let assert_raise_invalid_argument f v =
 let test_constants () =
   assert (Uchar.(to_int min) = 0x0000);
   assert (Uchar.(to_int max) = 0x10FFFF);
+  assert (Uchar.(to_int bom) = 0xFEFF);
+  assert (Uchar.(to_int rep) = 0xFFFD);
   ()
 
 let test_succ () =
@@ -67,16 +69,6 @@ let test_compare () =
   assert (Uchar.(compare max min) = 1);
   ()
 
-let test_dump () =
-  let str u = Format.asprintf "%a" Uchar.dump u in
-  assert (str Uchar.min = "U+0000");
-  assert (str Uchar.(succ min) = "U+0001");
-  assert (str Uchar.(of_int 0xFFFF) = "U+FFFF");
-  assert (str Uchar.(succ (of_int 0xFFFF)) = "U+10000");
-  assert (str Uchar.(pred max) = "U+10FFFE");
-  assert (str Uchar.max = "U+10FFFF");
-  ()
-
 let tests () =
   test_constants ();
   test_succ ();
@@ -87,7 +79,6 @@ let tests () =
   test_to_char ();
   test_equal ();
   test_compare ();
-  test_dump ();
   ()
 
 let () =

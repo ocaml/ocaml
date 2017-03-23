@@ -142,7 +142,9 @@ let rec check_recordwith_updates id e =
   | _ -> false
 ;;
 
-let rec size_of_lambda = function
+let rec size_of_lambda env = function
+  | Lvar id ->
+      begin try Ident.find_same id env with Not_found -> RHS_nonrec end
   | Lfunction{params} as funct ->
       RHS_function (1 + IdentSet.cardinal(free_variables funct),
                     List.length params)
@@ -154,8 +156,14 @@ let rec size_of_lambda = function
       | Record_float -> RHS_floatblock size
       | Record_extension -> RHS_block (size + 1)
       end
-  | Llet(_str, _k, _id, _arg, body) -> size_of_lambda body
-  | Lletrec(_bindings, body) -> size_of_lambda body
+  | Llet(_str, _k, id, arg, body) ->
+      size_of_lambda (Ident.add id (size_of_lambda env arg) env) body
+  | Lletrec(bindings, body) ->
+      let env = List.fold_right
+        (fun (id, e) env -> Ident.add id (size_of_lambda env e) env)
+        bindings env
+      in
+      size_of_lambda env body
   | Lprim(Pmakeblock _, args, _) -> RHS_block (List.length args)
   | Lprim (Pmakearray ((Paddrarray|Pintarray), _), args, _) ->
       RHS_block (List.length args)
@@ -169,8 +177,8 @@ let rec size_of_lambda = function
   | Lprim (Pduprecord (Record_extension, size), _, _) ->
       RHS_block (size + 1)
   | Lprim (Pduprecord (Record_float, size), _, _) -> RHS_floatblock size
-  | Levent (lam, _) -> size_of_lambda lam
-  | Lsequence (_lam, lam') -> size_of_lambda lam'
+  | Levent (lam, _) -> size_of_lambda env lam
+  | Lsequence (_lam, lam') -> size_of_lambda env lam'
   | _ -> RHS_nonrec
 
 (**** Merging consecutive events ****)
@@ -315,7 +323,9 @@ let comp_primitive p args =
   | Pintcomp cmp -> Kintcomp cmp
   | Pmakeblock(tag, _mut, _) -> Kmakeblock(List.length args, tag)
   | Pfield n -> Kgetfield n
+  | Pfield_computed -> Kgetvectitem
   | Psetfield(n, _ptr, _init) -> Ksetfield n
+  | Psetfield_computed(_ptr, _init) -> Ksetvectitem
   | Pfloatfield n -> Kgetfloatfield n
   | Psetfloatfield (n, _init) -> Ksetfloatfield n
   | Pduprecord _ -> Kccall("caml_obj_dup", 1)
@@ -541,7 +551,7 @@ let rec comp_expr env exp sz cont =
                        (add_pop ndecl cont)))
       end else begin
         let decl_size =
-          List.map (fun (id, exp) -> (id, exp, size_of_lambda exp)) decl in
+          List.map (fun (id, exp) -> (id, exp, size_of_lambda Ident.empty exp)) decl in
         let rec comp_init new_env sz = function
           | [] -> comp_nonrec new_env sz ndecl decl_size
           | (id, _exp, RHS_floatblock blocksize) :: rem ->
@@ -753,7 +763,7 @@ let rec comp_expr env exp sz cont =
              (Kacc 1 :: Kpush :: Koffsetint offset :: Kassign 2 ::
               Kacc 1 :: Kintcomp Cneq :: Kbranchif lbl_loop ::
               Klabel lbl_exit :: add_const_unit (add_pop 2 cont))))
-  | Lswitch(arg, sw) ->
+  | Lswitch(arg, sw, _loc) ->
       let (branch, cont1) = make_branch cont in
       let c = ref (discard_dead_code cont1) in
 

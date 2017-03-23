@@ -31,60 +31,77 @@
 
 struct compare_item { value * v1, * v2; mlsize_t count; };
 
-#define COMPARE_STACK_INIT_SIZE 256
+#define COMPARE_STACK_INIT_SIZE 8
+#define COMPARE_STACK_MIN_ALLOC_SIZE 32
 #define COMPARE_STACK_MAX_SIZE (1024*1024)
-
-static struct compare_item compare_stack_init[COMPARE_STACK_INIT_SIZE];
-
-static struct compare_item * compare_stack = compare_stack_init;
-static struct compare_item * compare_stack_limit = compare_stack_init
-                                                   + COMPARE_STACK_INIT_SIZE;
-
 CAMLexport int caml_compare_unordered;
 
+struct compare_stack {
+  struct compare_item init_stack[COMPARE_STACK_INIT_SIZE];
+  struct compare_item* stack;
+  struct compare_item* limit;
+};
+
 /* Free the compare stack if needed */
-static void compare_free_stack(void)
+static void compare_free_stack(struct compare_stack* stk)
 {
-  if (compare_stack != compare_stack_init) {
-    free(compare_stack);
-    /* Reinitialize the globals for next time around */
-    compare_stack = compare_stack_init;
-    compare_stack_limit = compare_stack + COMPARE_STACK_INIT_SIZE;
+  if (stk->stack != stk->init_stack) {
+    caml_stat_free(stk->stack);
+    stk->stack = NULL;
   }
 }
 
 /* Same, then raise Out_of_memory */
-static void compare_stack_overflow(void)
+static void compare_stack_overflow(struct compare_stack* stk)
 {
   caml_gc_message (0x04, "Stack overflow in structural comparison\n", 0);
-  compare_free_stack();
+  compare_free_stack(stk);
   caml_raise_out_of_memory();
 }
 
 /* Grow the compare stack */
-static struct compare_item * compare_resize_stack(struct compare_item * sp)
+static struct compare_item * compare_resize_stack(struct compare_stack* stk,
+                                                  struct compare_item * sp)
 {
-  asize_t newsize = 2 * (compare_stack_limit - compare_stack);
-  asize_t sp_offset = sp - compare_stack;
+  asize_t newsize;
+  asize_t sp_offset = sp - stk->stack;
   struct compare_item * newstack;
 
-  if (newsize >= COMPARE_STACK_MAX_SIZE) compare_stack_overflow();
-  if (compare_stack == compare_stack_init) {
-    newstack = malloc(sizeof(struct compare_item) * newsize);
-    if (newstack == NULL) compare_stack_overflow();
-    memcpy(newstack, compare_stack_init,
+  if (stk->stack == stk->init_stack) {
+    newsize = COMPARE_STACK_MIN_ALLOC_SIZE;
+    newstack = caml_stat_alloc_noexc(sizeof(struct compare_item) * newsize);
+    if (newstack == NULL) compare_stack_overflow(stk);
+    memcpy(newstack, stk->init_stack,
            sizeof(struct compare_item) * COMPARE_STACK_INIT_SIZE);
   } else {
-    newstack =
-      realloc(compare_stack, sizeof(struct compare_item) * newsize);
-    if (newstack == NULL) compare_stack_overflow();
+    newsize = 2 * (stk->limit - stk->stack);
+    if (newsize >= COMPARE_STACK_MAX_SIZE) compare_stack_overflow(stk);
+    newstack = caml_stat_resize_noexc(stk->stack,
+                                      sizeof(struct compare_item) * newsize);
+    if (newstack == NULL) compare_stack_overflow(stk);
   }
-  compare_stack = newstack;
-  compare_stack_limit = newstack + newsize;
+  stk->stack = newstack;
+  stk->limit = newstack + newsize;
   return newstack + sp_offset;
 }
 
+
+static intnat do_compare_val(struct compare_stack* stk,
+                             value v1, value v2, int total);
+
+static intnat compare_val(value v1, value v2, int total)
+{
+  struct compare_stack stk;
+  intnat res;
+  stk.stack = stk.init_stack;
+  stk.limit = stk.stack + COMPARE_STACK_INIT_SIZE;
+  res = do_compare_val(&stk, v1, v2, total);
+  compare_free_stack(&stk);
+  return res;
+}
+
 /* Structural comparison */
+
 
 #define LESS -1
 #define EQUAL 0
@@ -97,12 +114,13 @@ static struct compare_item * compare_resize_stack(struct compare_item * sp)
       < 0 and > UNORDERED v1 is less than v2
       UNORDERED           v1 and v2 cannot be compared */
 
-static intnat compare_val(value v1, value v2, int total)
+static intnat do_compare_val(struct compare_stack* stk,
+                             value v1, value v2, int total)
 {
   struct compare_item * sp;
   tag_t t1, t2;
 
-  sp = compare_stack;
+  sp = stk->stack;
   while (1) {
     if (v1 == v2 && total) goto next_item;
     if (Is_long(v1)) {
@@ -236,11 +254,11 @@ static intnat compare_val(value v1, value v2, int total)
       break;
     }
     case Abstract_tag:
-      compare_free_stack();
+      compare_free_stack(stk);
       caml_invalid_argument("compare: abstract value");
     case Closure_tag:
     case Infix_tag:
-      compare_free_stack();
+      compare_free_stack(stk);
       caml_invalid_argument("compare: functional value");
     case Object_tag: {
       intnat oid1 = Oid_val(v1);
@@ -258,7 +276,7 @@ static intnat compare_val(value v1, value v2, int total)
                ? LESS : GREATER;
       }
       if (compare == NULL) {
-        compare_free_stack();
+        compare_free_stack(stk);
         caml_invalid_argument("compare: abstract value");
       }
       caml_compare_unordered = 0;
@@ -276,7 +294,7 @@ static intnat compare_val(value v1, value v2, int total)
       /* Remember that we still have to compare fields 1 ... sz - 1 */
       if (sz1 > 1) {
         sp++;
-        if (sp >= compare_stack_limit) sp = compare_resize_stack(sp);
+        if (sp >= stk->limit) sp = compare_resize_stack(stk, sp);
         sp->v1 = &Field(v1, 1);
         sp->v2 = &Field(v2, 1);
         sp->count = sz1 - 1;
@@ -289,7 +307,7 @@ static intnat compare_val(value v1, value v2, int total)
     }
   next_item:
     /* Pop one more item to compare, if any */
-    if (sp == compare_stack) return EQUAL; /* we're done */
+    if (sp == stk->stack) return EQUAL; /* we're done */
     v1 = *((sp->v1)++);
     v2 = *((sp->v2)++);
     if (--(sp->count) == 0) sp--;
@@ -300,7 +318,6 @@ CAMLprim value caml_compare(value v1, value v2)
 {
   intnat res = compare_val(v1, v2, 1);
   /* Free stack if needed */
-  if (compare_stack != compare_stack_init) compare_free_stack();
   if (res < 0)
     return Val_int(LESS);
   else if (res > 0)
@@ -312,41 +329,35 @@ CAMLprim value caml_compare(value v1, value v2)
 CAMLprim value caml_equal(value v1, value v2)
 {
   intnat res = compare_val(v1, v2, 0);
-  if (compare_stack != compare_stack_init) compare_free_stack();
   return Val_int(res == 0);
 }
 
 CAMLprim value caml_notequal(value v1, value v2)
 {
   intnat res = compare_val(v1, v2, 0);
-  if (compare_stack != compare_stack_init) compare_free_stack();
   return Val_int(res != 0);
 }
 
 CAMLprim value caml_lessthan(value v1, value v2)
 {
   intnat res = compare_val(v1, v2, 0);
-  if (compare_stack != compare_stack_init) compare_free_stack();
   return Val_int(res < 0 && res != UNORDERED);
 }
 
 CAMLprim value caml_lessequal(value v1, value v2)
 {
   intnat res = compare_val(v1, v2, 0);
-  if (compare_stack != compare_stack_init) compare_free_stack();
   return Val_int(res <= 0 && res != UNORDERED);
 }
 
 CAMLprim value caml_greaterthan(value v1, value v2)
 {
   intnat res = compare_val(v1, v2, 0);
-  if (compare_stack != compare_stack_init) compare_free_stack();
   return Val_int(res > 0);
 }
 
 CAMLprim value caml_greaterequal(value v1, value v2)
 {
   intnat res = compare_val(v1, v2, 0);
-  if (compare_stack != compare_stack_init) compare_free_stack();
   return Val_int(res >= 0);
 }

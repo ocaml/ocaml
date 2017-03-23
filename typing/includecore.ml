@@ -288,6 +288,9 @@ let type_declarations ?(equality = false) env name decl1 id decl2 =
     else []
   in
   if err <> [] then err else
+  let need_variance =
+    abstr || decl1.type_private = Private || decl1.type_kind = Type_open in
+  if not need_variance then [] else
   let abstr = abstr || decl2.type_private = Private in
   let opn = decl2.type_kind = Type_open && decl2.type_manifest = None in
   let constrained ty = not (Btype.(is_Tvar (repr ty))) in

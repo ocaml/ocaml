@@ -20,8 +20,7 @@
 #include "unixsupport.h"
 #include "socketaddr.h"
 
-CAMLprim value unix_accept(sock)
-     value sock;
+CAMLprim value unix_accept(value cloexec, value sock)
 {
   SOCKET sconn = Socket_val(sock);
   SOCKET snew;
@@ -39,6 +38,10 @@ CAMLprim value unix_accept(sock)
     win32_maperr(err);
     uerror("accept", Nothing);
   }
+  /* This is a best effort, not guaranteed to work, so don't fail on error */
+  SetHandleInformation((HANDLE) snew,
+                       HANDLE_FLAG_INHERIT,
+                       unix_cloexec_p(cloexec) ? 0 : HANDLE_FLAG_INHERIT);
   Begin_roots2 (fd, adr)
     fd = win_alloc_socket(snew);
     adr = alloc_sockaddr(&addr, addr_len, snew);

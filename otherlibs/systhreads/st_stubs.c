@@ -64,7 +64,7 @@ struct caml_thread_descr {
 #define Start_closure(v) (((struct caml_thread_descr *)(v))->start_closure)
 #define Terminated(v) (((struct caml_thread_descr *)(v))->terminated)
 
-/* The infos on threads (allocated via malloc()) */
+/* The infos on threads (allocated via caml_stat_alloc()) */
 
 struct caml_thread_struct {
   value descr;                  /* The heap-allocated descriptor (root) */
@@ -169,6 +169,7 @@ static void caml_thread_scan_roots(scanning_action action)
 static inline void caml_thread_save_runtime_state(void)
 {
 #ifdef NATIVE_CODE
+  curr_thread->top_of_stack = caml_top_of_stack;
   curr_thread->bottom_of_stack = caml_bottom_of_stack;
   curr_thread->last_retaddr = caml_last_return_address;
   curr_thread->gc_regs = caml_gc_regs;
@@ -197,6 +198,7 @@ static inline void caml_thread_save_runtime_state(void)
 static inline void caml_thread_restore_runtime_state(void)
 {
 #ifdef NATIVE_CODE
+  caml_top_of_stack = curr_thread->top_of_stack;
   caml_bottom_of_stack= curr_thread->bottom_of_stack;
   caml_last_return_address = curr_thread->last_retaddr;
   caml_gc_regs = curr_thread->gc_regs;
@@ -259,7 +261,10 @@ static int caml_thread_try_leave_blocking_section(void)
 static void caml_io_mutex_free(struct channel *chan)
 {
   st_mutex mutex = chan->mutex;
-  if (mutex != NULL) st_mutex_destroy(mutex);
+  if (mutex != NULL) {
+    st_mutex_destroy(mutex);
+    chan->mutex = NULL;
+  }
 }
 
 static void caml_io_mutex_lock(struct channel *chan)
@@ -313,7 +318,9 @@ static uintnat caml_thread_stack_usage(void)
        th != curr_thread;
        th = th->next) {
 #ifdef NATIVE_CODE
-    sz += (value *) th->top_of_stack - (value *) th->bottom_of_stack;
+  if(th->top_of_stack != NULL && th->bottom_of_stack != NULL &&
+     th->top_of_stack > th->bottom_of_stack)
+       sz += (value *) th->top_of_stack - (value *) th->bottom_of_stack;
 #else
     sz += th->stack_high - th->sp;
 #endif
@@ -330,7 +337,7 @@ static uintnat caml_thread_stack_usage(void)
 static caml_thread_t caml_thread_new_info(void)
 {
   caml_thread_t th;
-  th = (caml_thread_t) malloc(sizeof(struct caml_thread_struct));
+  th = (caml_thread_t) caml_stat_alloc_noexc(sizeof(struct caml_thread_struct));
   if (th == NULL) return NULL;
   th->descr = Val_unit;         /* filled later */
 #ifdef NATIVE_CODE
@@ -403,7 +410,7 @@ static void caml_thread_remove_info(caml_thread_t th)
 #ifndef NATIVE_CODE
   caml_stat_free(th->stack_low);
 #endif
-  if (th->backtrace_buffer != NULL) free(th->backtrace_buffer);
+  if (th->backtrace_buffer != NULL) caml_stat_free(th->backtrace_buffer);
 #ifndef WITH_SPACETIME
   caml_stat_free(th);
   /* CR-soon mshinwell: consider what to do about the Spacetime trace.  Could
@@ -683,7 +690,7 @@ CAMLprim value caml_thread_uncaught_exception(value exn)  /* ML */
   char * msg = caml_format_exception(exn);
   fprintf(stderr, "Thread %d killed on uncaught exception %s\n",
           Int_val(Ident(curr_thread->descr)), msg);
-  free(msg);
+  caml_stat_free(msg);
   if (caml_backtrace_active) caml_print_exception_backtrace();
   fflush(stderr);
   return Val_unit;
@@ -742,7 +749,6 @@ CAMLprim value caml_thread_join(value th)          /* ML */
 /* Mutex operations */
 
 #define Mutex_val(v) (* ((st_mutex *) Data_custom_val(v)))
-#define Max_mutex_number 5000
 
 static void caml_mutex_finalize(value wrapper)
 {
@@ -776,7 +782,7 @@ CAMLprim value caml_mutex_new(value unit)        /* ML */
   value wrapper;
   st_check_error(st_mutex_create(&mut), "Mutex.create");
   wrapper = caml_alloc_custom(&caml_mutex_ops, sizeof(st_mutex *),
-                         1, Max_mutex_number);
+                              0, 1);
   Mutex_val(wrapper) = mut;
   return wrapper;
 }
@@ -821,7 +827,6 @@ CAMLprim value caml_mutex_try_lock(value wrapper)           /* ML */
 /* Conditions operations */
 
 #define Condition_val(v) (* (st_condvar *) Data_custom_val(v))
-#define Max_condition_number 5000
 
 static void caml_condition_finalize(value wrapper)
 {
@@ -856,7 +861,7 @@ CAMLprim value caml_condition_new(value unit)        /* ML */
   value wrapper;
   st_check_error(st_condvar_create(&cond), "Condition.create");
   wrapper = caml_alloc_custom(&caml_condition_ops, sizeof(st_condvar *),
-                         1, Max_condition_number);
+                              0, 1);
   Condition_val(wrapper) = cond;
   return wrapper;
 }
@@ -893,7 +898,6 @@ CAMLprim value caml_condition_broadcast(value wrapper)           /* ML */
 /* Thread status blocks */
 
 #define Threadstatus_val(v) (* ((st_event *) Data_custom_val(v)))
-#define Max_threadstatus_number 500
 
 static void caml_threadstatus_finalize(value wrapper)
 {
@@ -923,7 +927,7 @@ static value caml_threadstatus_new (void)
   value wrapper;
   st_check_error(st_event_create(&ts), "Thread.create");
   wrapper = caml_alloc_custom(&caml_threadstatus_ops, sizeof(st_event *),
-                         1, Max_threadstatus_number);
+                              0, 1);
   Threadstatus_val(wrapper) = ts;
   return wrapper;
 }

@@ -174,9 +174,6 @@ RANLIBCMD=ranlib
 #CC_PROFILE=-pg
 #CC_PROFILE=-xpg
 
-### How to perform a partial link
-PARTIALLD=ld -r $(NATIVECCLINKOPTS)
-
 ############# Configuration for the contributed libraries
 
 ### Which libraries to compile and install

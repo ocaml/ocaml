@@ -137,13 +137,6 @@ let get_type_path ty tenv =
 open Format
 ;;
 
-let pretty_record_elision_mark ppf = function
-  | [] -> () (* should not happen, empty record pattern *)
-  | (_, lbl, _) :: q ->
-      (* we assume that there is no label repetitions here *)
-      if Array.length lbl.lbl_all > 1 + List.length q then
-        fprintf ppf ";@ _@ "
-
 let is_cons = function
 | {cstr_name = "::"} -> true
 | _ -> false
@@ -198,9 +191,17 @@ let rec pretty_val ppf v =
           (function
             | (_,_,{pat_desc=Tpat_any}) -> false (* do not show lbl=_ *)
             | _ -> true) lvs in
-      fprintf ppf "@[{%a%a}@]"
-        pretty_lvals filtered_lvs
-        pretty_record_elision_mark filtered_lvs
+      begin match filtered_lvs with
+      | [] -> fprintf ppf "_"
+      | (_, lbl, _) :: q ->
+          let elision_mark ppf =
+            (* we assume that there is no label repetitions here *)
+             if Array.length lbl.lbl_all > 1 + List.length q then
+               fprintf ppf ";@ _@ "
+             else () in
+          fprintf ppf "@[{%a%t}@]"
+            pretty_lvals filtered_lvs elision_mark
+      end
   | Tpat_array vs ->
       fprintf ppf "@[[| %a |]@]" (pretty_vals " ;") vs
   | Tpat_lazy v ->
@@ -654,17 +655,31 @@ let full_match closing env =  match env with
 | ({pat_desc = Tpat_record(_)},_) :: _ -> true
 | ({pat_desc = Tpat_array(_)},_) :: _ -> false
 | ({pat_desc = Tpat_lazy(_)},_) :: _ -> true
-| _ -> fatal_error "Parmatch.full_match"
+| ({pat_desc = (Tpat_any|Tpat_var _|Tpat_alias _|Tpat_or _)},_) :: _
+| []
+  ->
+    assert false
 
+(* Written as a non-fragile matching, PR7451 originated from a fragile matching below. *)
 let should_extend ext env = match ext with
 | None -> false
-| Some ext -> match env with
-  | ({pat_desc =
-      Tpat_construct(_, {cstr_tag=(Cstr_constant _|Cstr_block _)},_)}
-     as p, _) :: _ ->
-      let path = get_type_path p.pat_type p.pat_env in
-      Path.same path ext
-  | _ -> false
+| Some ext -> begin match env with
+  | [] -> assert false
+  | (p,_)::_ ->
+      begin match p.pat_desc with
+      | Tpat_construct
+          (_, {cstr_tag=(Cstr_constant _|Cstr_block _|Cstr_unboxed)},_) ->
+            let path = get_type_path p.pat_type p.pat_env in
+            Path.same path ext
+      | Tpat_construct
+          (_, {cstr_tag=(Cstr_extension _)},_) -> false
+      | Tpat_constant _|Tpat_tuple _|Tpat_variant _
+      | Tpat_record  _|Tpat_array _ | Tpat_lazy _
+        -> false
+      | Tpat_any|Tpat_var _|Tpat_alias _|Tpat_or _
+        -> assert false
+      end
+end
 
 (* complement constructor tags *)
 let complete_tags nconsts nconstrs tags =

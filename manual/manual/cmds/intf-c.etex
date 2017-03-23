@@ -1543,6 +1543,13 @@ parameter containing the command-line parameters. Unlike "caml_main",
 this "argv" parameter is used only to initialize "Sys.argv", but not
 for finding the name of the executable file.
 
+The "caml_startup" function calls the uncaught exception handler (or
+enters the debugger, if running under ocamldebug) if an exception escapes
+from a top-level module initialiser.  Such exceptions may be caught in the
+C code by instead using the "caml_startup_exn" function and testing the result
+using {\tt Is_exception_result} (followed by {\tt Extract_exception} if
+appropriate).
+
 The "-output-obj" option can also be used to obtain the C source file.
 More interestingly, the same option can also produce directly a shared
 library (".so" file, ".dll" under Windows) that contains the OCaml
@@ -1558,7 +1565,8 @@ The native-code compiler "ocamlopt" also supports the "-output-obj"
 option, causing it to output a C object file or a shared library
 containing the native code for all OCaml modules on the command-line,
 as well as the OCaml startup code. Initialization is performed by
-calling "caml_startup" as in the case of the bytecode compiler.
+calling "caml_startup" (or "caml_startup_exn") as in the case of the
+bytecode compiler.
 
 For the final linking phase, in addition to the object file produced
 by "-output-obj", you will have to provide the OCaml runtime
@@ -1610,6 +1618,42 @@ turned on programmatically.   This can be achieved from the OCaml side
 by calling "Printexc.record_backtrace true" in the initialization of
 one of the OCaml modules.  This can also be achieved from the C side
 by calling "caml_record_backtrace(Val_int(1));" in the OCaml-C glue code.
+
+\paragraph{Unloading the runtime.}
+
+In case the shared library produced with "-output-obj" is to be loaded and
+unloaded repeatedly by a single process, care must be taken to unload the
+OCaml runtime explicitly, in order to avoid various system resource leaks.
+
+Since 4.05, "caml_shutdown" function can be used to shut the runtime down
+gracefully, which equals the following:
+\begin{itemize}
+\item Running the functions that were registered with "Pervasives.at_exit".
+\item Triggering finalization of allocated custom blocks (see
+section~\ref{s:custom}). For example, "Pervasives.in_channel" and
+"Pervasives.out_channel" are represented by custom blocks that enclose file
+descriptors, which are to be released.
+\item Unloading the dependent shared libraries that were loaded by the runtime,
+including "dynlink" plugins.
+\item Freeing the memory blocks that were allocated by the runtime with
+"malloc". Inside C primitives, it is advised to use "caml_stat_*" functions
+from "memory.h" for managing static (that is, non-moving) blocks of heap
+memory, as all the blocks allocated with these functions are automatically
+freed by "caml_shutdown". For ensuring compatibility with legacy C stubs that
+have used "caml_stat_*" incorrectly, this behaviour is only enabled if the
+runtime is started with a specialized "caml_startup_pooled" function.
+\end{itemize}
+
+As a shared library may have several clients simultaneously, it is made for
+convenience that "caml_startup" (and "caml_startup_pooled") may be called
+multiple times, given that each such call is paired with a corresponding call
+to "caml_shutdown" (in a nested fashion). The runtime will be unloaded once
+there are no outstanding calls to "caml_startup".
+
+Once a runtime is unloaded, it cannot be started up again without reloading the
+shared library and reinitializing its static data. Therefore, at the moment, the
+facility is only useful for building reloadable shared libraries.
+
 
 \section{Advanced example with callbacks}
 \pdfsection{Advanced example with callbacks}
@@ -1675,7 +1719,7 @@ runtime library) by "libasmrun.a" (the native-code runtime library).)
 
 Now, we can use the two functions "fib" and "format_result" in any C
 program, just like regular C functions. Just remember to call
-"caml_startup" once before.
+"caml_startup" (or "caml_startup_exn") once before.
 
 \begin{verbatim}
 /* File main.c -- a sample client for the OCaml functions */

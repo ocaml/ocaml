@@ -212,14 +212,14 @@ let simplify_project_closure env r ~(project_closure : Flambda.project_closure)
     | Wrong ->
       Misc.fatal_errorf "Wrong approximation when projecting closure: %a"
         Flambda.print_project_closure project_closure
-    | Unresolved symbol ->
+    | Unresolved value ->
       (* A set of closures coming from another compilation unit, whose .cmx is
          missing; as such, we cannot have rewritten the function and don't
          need to do any freshening. *)
       Project_closure {
         set_of_closures;
         closure_id = project_closure.closure_id;
-      }, ret r (A.value_unresolved symbol)
+      }, ret r (A.value_unresolved value)
     | Unknown ->
       (* CR-soon mshinwell: see CR comment in e.g. simple_value_approx.ml
          [check_approx_for_closure_allowing_unresolved] *)
@@ -227,11 +227,11 @@ let simplify_project_closure env r ~(project_closure : Flambda.project_closure)
         set_of_closures;
         closure_id = project_closure.closure_id;
       }, ret r (A.value_unknown Other)
-    | Unknown_because_of_unresolved_symbol symbol ->
+    | Unknown_because_of_unresolved_value value ->
       Project_closure {
         set_of_closures;
         closure_id = project_closure.closure_id;
-      }, ret r (A.value_unknown (Unresolved_symbol symbol))
+      }, ret r (A.value_unknown (Unresolved_value value))
     | Ok (set_of_closures_var, value_set_of_closures) ->
       let closure_id =
         A.freshen_and_check_closure_id value_set_of_closures
@@ -300,7 +300,7 @@ let simplify_move_within_set_of_closures env r
           move_to = move_within_set_of_closures.move_to;
         },
         ret r (A.value_unknown Other)
-    | Unknown_because_of_unresolved_symbol sym ->
+    | Unknown_because_of_unresolved_value value ->
       (* For example: a move upon a (move upon a closure whose .cmx file
          is missing). *)
       Move_within_set_of_closures {
@@ -308,7 +308,7 @@ let simplify_move_within_set_of_closures env r
           start_from = move_within_set_of_closures.start_from;
           move_to = move_within_set_of_closures.move_to;
         },
-        ret r (A.value_unknown (Unresolved_symbol sym))
+        ret r (A.value_unknown (Unresolved_value value))
     | Ok (_value_closure, set_of_closures_var, set_of_closures_symbol,
           value_set_of_closures) ->
       let freshen =
@@ -491,9 +491,9 @@ let rec simplify_project_var env r ~(project_var : Flambda.project_var)
     | Unknown ->
       Project_var { project_var with closure },
         ret r (A.value_unknown Other)
-    | Unknown_because_of_unresolved_symbol symbol ->
+    | Unknown_because_of_unresolved_value value ->
       Project_var { project_var with closure },
-        ret r (A.value_unknown (Unresolved_symbol symbol))
+        ret r (A.value_unknown (Unresolved_value value))
     | Wrong ->
       (* We must have the correct approximation of the value to ensure
          we take account of all freshenings. *)
@@ -807,7 +807,7 @@ and simplify_partial_application env r ~lhs_of_application
   | Default_specialise -> ()
   end;
   let freshened_params =
-    List.map (fun id -> Variable.rename id) function_decl.Flambda.params
+    List.map (fun p -> Parameter.rename p) function_decl.Flambda.params
   in
   let applied_args, remaining_args =
     Misc.Stdlib.List.map2_prefix (fun arg id' -> id', arg)
@@ -817,7 +817,7 @@ and simplify_partial_application env r ~lhs_of_application
     let body : Flambda.t =
       Apply {
         func = lhs_of_application;
-        args = freshened_params;
+        args = Parameter.List.vars freshened_params;
         kind = Direct closure_id_being_applied;
         dbg;
         inline = Default_inline;
@@ -836,8 +836,8 @@ and simplify_partial_application env r ~lhs_of_application
   in
   let with_known_args =
     Flambda_utils.bind
-      ~bindings:(List.map (fun (var, arg) ->
-          var, Flambda.Expr (Var arg)) applied_args)
+      ~bindings:(List.map (fun (param, arg) ->
+          Parameter.var param, Flambda.Expr (Var arg)) applied_args)
       ~body:wrapper_accepting_remaining_args
   in
   simplify env r with_known_args
@@ -989,6 +989,7 @@ and simplify_named env r (tree : Flambda.named) : Flambda.named * R.t =
       begin match prim, args, args_approxs with
       | Pgetglobal _, _, _ ->
         Misc.fatal_error "Pgetglobal is forbidden in Inline_and_simplify"
+      (* CR-someday mshinwell: Optimise [Pfield_computed]. *)
       | Pfield field_index, [arg], [arg_approx] ->
         let projection : Projection.t = Field (field_index, arg) in
         begin match E.find_projection env ~projection with
@@ -1437,7 +1438,7 @@ let constant_defining_value_approx
           | Flambda.Symbol sym -> begin
               match E.find_symbol_opt env sym with
               | Some approx -> approx
-              | None -> A.value_unresolved sym
+              | None -> A.value_unresolved (Symbol sym)
             end
           | Flambda.Const cst -> simplify_const cst)
         fields
@@ -1466,7 +1467,7 @@ let constant_defining_value_approx
   | Project_closure (set_of_closures_symbol, closure_id) -> begin
       match E.find_symbol_opt env set_of_closures_symbol with
       | None ->
-        A.value_unresolved set_of_closures_symbol
+        A.value_unresolved (Symbol set_of_closures_symbol)
       | Some set_of_closures_approx ->
         let checked_approx =
           A.check_approx_for_set_of_closures set_of_closures_approx
@@ -1479,8 +1480,8 @@ let constant_defining_value_approx
           A.value_closure value_set_of_closures closure_id
         | Unresolved sym -> A.value_unresolved sym
         | Unknown -> A.value_unknown Other
-        | Unknown_because_of_unresolved_symbol sym ->
-          A.value_unknown (Unresolved_symbol sym)
+        | Unknown_because_of_unresolved_value value ->
+          A.value_unknown (Unresolved_value value)
         | Wrong ->
           Misc.fatal_errorf "Wrong approximation for [Project_closure] \
                              when being used as a [constant_defining_value]: %a"
@@ -1492,7 +1493,7 @@ let define_let_rec_symbol_approx env defs =
   (* First declare an empty version of the symbols *)
   let env =
     List.fold_left (fun env (symbol, _) ->
-        E.add_symbol env symbol (A.value_unresolved symbol))
+        E.add_symbol env symbol (A.value_unresolved (Symbol symbol)))
       env defs
   in
   let rec loop times env =
@@ -1552,8 +1553,8 @@ let simplify_constant_defining_value
           A.value_closure value_set_of_closures closure_id
         | Unresolved sym -> A.value_unresolved sym
         | Unknown -> A.value_unknown Other
-        | Unknown_because_of_unresolved_symbol sym ->
-          A.value_unknown (Unresolved_symbol sym)
+        | Unknown_because_of_unresolved_value value ->
+          A.value_unknown (Unresolved_value value)
         | Wrong ->
           Misc.fatal_errorf "Wrong approximation for [Project_closure] \
                              when being used as a [constant_defining_value]: %a"

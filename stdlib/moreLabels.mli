@@ -44,6 +44,7 @@ module Hashtbl : sig
         ('a, 'b) t -> init:'c -> 'c
   val length : ('a, 'b) t -> int
   val randomize : unit -> unit
+  val is_randomized : unit -> bool
   type statistics = Hashtbl.statistics
   val stats : ('a, 'b) t -> statistics
   module type HashedType = Hashtbl.HashedType
@@ -114,6 +115,7 @@ module Map : sig
       val is_empty: 'a t -> bool
       val mem : key -> 'a t -> bool
       val add : key:key -> data:'a -> 'a t -> 'a t
+      val update: key:key -> f:('a option -> 'a option) -> 'a t -> 'a t
       val singleton: key -> 'a -> 'a t
       val remove : key -> 'a t -> 'a t
       val merge:

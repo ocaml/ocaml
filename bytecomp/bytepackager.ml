@@ -101,26 +101,28 @@ let read_member_info file = (
   let name =
     String.capitalize_ascii(Filename.basename(chop_extensions file)) in
   let kind =
-    if Filename.check_suffix file ".cmo" then begin
-    let ic = open_in_bin file in
-    try
-      let buffer =
-        really_input_string ic (String.length Config.cmo_magic_number)
-      in
-      if buffer <> Config.cmo_magic_number then
-        raise(Error(Not_an_object_file file));
-      let compunit_pos = input_binary_int ic in
-      seek_in ic compunit_pos;
-      let compunit = (input_value ic : compilation_unit) in
-      if compunit.cu_name <> name
-      then raise(Error(Illegal_renaming(name, file, compunit.cu_name)));
-      close_in ic;
-      PM_impl compunit
-    with x ->
-      close_in ic;
-      raise x
-    end else
-      PM_intf in
+    (* PR#7479: make sure it is either a .cmi or a .cmo *)
+    if Filename.check_suffix file ".cmi" then
+      PM_intf
+    else begin
+      let ic = open_in_bin file in
+      try
+        let buffer =
+          really_input_string ic (String.length Config.cmo_magic_number)
+        in
+        if buffer <> Config.cmo_magic_number then
+          raise(Error(Not_an_object_file file));
+        let compunit_pos = input_binary_int ic in
+        seek_in ic compunit_pos;
+        let compunit = (input_value ic : compilation_unit) in
+        if compunit.cu_name <> name
+        then raise(Error(Illegal_renaming(name, file, compunit.cu_name)));
+        close_in ic;
+        PM_impl compunit
+      with x ->
+        close_in ic;
+        raise x
+    end in
   { pm_file = file; pm_name = name; pm_kind = kind }
 )
 

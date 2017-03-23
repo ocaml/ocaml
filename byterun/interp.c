@@ -267,8 +267,8 @@ value caml_interprete(code_t prog, asize_t prog_size)
 #ifdef DEBUG
  next_instr:
   if (caml_icount-- == 0) caml_stop_here ();
-  Assert(sp >= caml_stack_low);
-  Assert(sp <= caml_stack_high);
+  CAMLassert(sp >= caml_stack_low);
+  CAMLassert(sp <= caml_stack_high);
 #endif
   goto *(void *)(jumptbl_base + *pc++); /* Jump to the first instruction */
 #else
@@ -285,8 +285,8 @@ value caml_interprete(code_t prog, asize_t prog_size)
       caml_trace_accu_sp_file(accu,sp,prog,prog_size,stdout);
       fflush(stdout);
     };
-    Assert(sp >= caml_stack_low);
-    Assert(sp <= caml_stack_high);
+    CAMLassert(sp >= caml_stack_low);
+    CAMLassert(sp <= caml_stack_high);
 #endif
     curr_instr = *pc++;
 
@@ -801,11 +801,11 @@ value caml_interprete(code_t prog, asize_t prog_size)
       uint32_t sizes = *pc++;
       if (Is_block(accu)) {
         intnat index = Tag_val(accu);
-        Assert ((uintnat) index < (sizes >> 16));
+        CAMLassert ((uintnat) index < (sizes >> 16));
         pc += pc[(sizes & 0xFFFF) + index];
       } else {
         intnat index = Long_val(accu);
-        Assert ((uintnat) index < (sizes & 0xFFFF)) ;
+        CAMLassert ((uintnat) index < (sizes & 0xFFFF)) ;
         pc += pc[index];
       }
       Next;
@@ -1155,8 +1155,8 @@ void caml_prepare_bytecode(code_t prog, asize_t prog_size) {
   /* other implementations of the interpreter (such as an hypothetical
      JIT translator) might want to do something with a bytecode before
      running it */
-  Assert(prog);
-  Assert(prog_size>0);
+  CAMLassert(prog);
+  CAMLassert(prog_size>0);
   /* actually, the threading of the bytecode might be done here */
 }
 
@@ -1164,6 +1164,6 @@ void caml_release_bytecode(code_t prog, asize_t prog_size) {
   /* other implementations of the interpreter (such as an hypothetical
      JIT translator) might want to know when a bytecode is removed */
   /* check that we have a program */
-  Assert(prog);
-  Assert(prog_size>0);
+  CAMLassert(prog);
+  CAMLassert(prog_size>0);
 }

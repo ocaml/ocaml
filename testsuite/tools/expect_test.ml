@@ -138,23 +138,10 @@ module Compiler_messages = struct
       Format.fprintf ppf ", characters %d-%d" startchar endchar;
     Format.fprintf ppf ":@."
 
-  let rec error_reporter ppf ({loc; msg; sub; if_highlight=_} : Location.error)=
-    print_loc ppf loc;
-    Format.fprintf ppf "%a %s" Location.print_error_prefix () msg;
-    List.iter sub ~f:(fun err ->
-      Format.fprintf ppf "@\n@[<2>%a@]" error_reporter err)
-
-  let warning_printer loc ppf w =
-    if Warnings.is_active w then begin
-      print_loc ppf loc;
-      Format.fprintf ppf "Warning %a@." Warnings.print w
-    end
-
   let capture ppf ~f =
     Misc.protect_refs
-      [ R (Location.formatter_for_warnings , ppf            )
-      ; R (Location.warning_printer        , warning_printer)
-      ; R (Location.error_reporter         , error_reporter )
+      [ R (Location.formatter_for_warnings , ppf)
+      ; R (Location.printer                , print_loc)
       ]
       f
 end

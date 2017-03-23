@@ -76,6 +76,8 @@ let rec run_automata nbits state input =
 let is_logical_immediate n =
   n <> 0 && n <> -1 && run_automata 64 0 n
 
+(* If you update [inline_ops], you may need to update [is_simple_expr] and/or
+   [effects_of], below. *)
 let inline_ops =
   [ "sqrt"; "caml_bswap16_direct"; "caml_int32_direct_bswap";
     "caml_int64_direct_bswap"; "caml_nativeint_direct_bswap" ]
@@ -99,6 +101,12 @@ method! is_simple_expr = function
   | Cop(Cextcall (fn, _, _, _), args, _) when List.mem fn inline_ops ->
       List.for_all self#is_simple_expr args
   | e -> super#is_simple_expr e
+
+method! effects_of e =
+  match e with
+  | Cop(Cextcall (fn, _, _, _), args, _) when List.mem fn inline_ops ->
+      Selectgen.Effect_and_coeffect.join_list_map args self#effects_of
+  | e -> super#effects_of e
 
 method select_addressing chunk = function
   | Cop((Caddv | Cadda), [Cconst_symbol s; Cconst_int n], _)

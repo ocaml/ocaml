@@ -1,3 +1,17 @@
+/**************************************************************************/
+/*                                                                        */
+/*                                 OCaml                                  */
+/*                                                                        */
+/*                 Stephen Dolan, University of Cambridge                 */
+/*                                                                        */
+/*   Copyright 2016 Stephen Dolan.                                        */
+/*                                                                        */
+/*   All rights reserved.  This file is distributed under the terms of    */
+/*   the GNU Lesser General Public License version 2.1, with the          */
+/*   special exception on linking described in the file LICENSE.          */
+/*                                                                        */
+/**************************************************************************/
+
 /* Runtime support for afl-fuzz */
 
 /* Android's libc does not implement System V shared memory. */
@@ -10,6 +24,11 @@ CAMLprim value caml_setup_afl (value unit)
   return Val_unit;
 }
 
+CAMLprim value caml_reset_afl_instrumentation(value unused)
+{
+  return Val_unit;
+}
+
 #else
 
 #include <unistd.h>
@@ -18,6 +37,7 @@ CAMLprim value caml_setup_afl (value unit)
 #include <sys/shm.h>
 #include <sys/wait.h>
 #include <stdio.h>
+#include <string.h>
 #include "caml/misc.h"
 #include "caml/mlvalues.h"
 
@@ -78,7 +98,12 @@ CAMLprim value caml_setup_afl(value unit)
   caml_afl_area_ptr[0] = 1;
 
   /* synchronise with afl-fuzz */
-  afl_write(0);
+  uint32_t startup_msg = 0;
+  if (write(FORKSRV_FD_WRITE, &startup_msg, 4) != 4) {
+    /* initial write failed, so assume we're not meant to fork.
+       afl-tmin uses this mode. */
+    return Val_unit;
+  }
   afl_read();
 
   while (1) {
@@ -99,6 +124,7 @@ CAMLprim value caml_setup_afl(value unit)
       /* WUNTRACED means wait until termination or SIGSTOP */
       if (waitpid(child_pid, &status, WUNTRACED) < 0)
         caml_fatal_error("afl-fuzz: waitpid failed");
+
       afl_write((uint32_t)status);
 
       uint32_t was_killed = afl_read();
@@ -109,6 +135,7 @@ CAMLprim value caml_setup_afl(value unit)
              we should wait for it before forking another child */
           if (waitpid(child_pid, &status, 0) < 0)
             caml_fatal_error("afl-fuzz: waitpid failed");
+          break;
         } else {
           kill(child_pid, SIGCONT);
         }
@@ -118,6 +145,15 @@ CAMLprim value caml_setup_afl(value unit)
       }
     }
   }
+}
+
+CAMLprim value caml_reset_afl_instrumentation(value full)
+{
+  if (full != Val_int(0)) {
+    memset(caml_afl_area_ptr, 0, sizeof(afl_area_initial));
+  }
+  caml_afl_prev_loc = 0;
+  return Val_unit;
 }
 
 #endif /* _WIN32 */

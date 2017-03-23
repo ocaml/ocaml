@@ -29,43 +29,33 @@ environment:
     CYG_MIRROR: http://mirrors.kernel.org/sourceware/cygwin/
     CYG_CACHE: C:/cygwin/var/cache/setup
     OCAMLROOT: "%PROGRAMFILES%/OCaml"
+    OCAMLROOT2: "%PROGRAMFILES%/OCaml-mingw32"
 
 cache:
   - C:\cygwin\var\cache\setup
 
 install:
-  - mkdir "%OCAMLROOT%"
-  - mkdir "%OCAMLROOT%/bin"
   - mkdir "%OCAMLROOT%/bin/flexdll"
   - appveyor DownloadFile "http://alain.frisch.fr/flexdll/flexdll-bin-0.35.zip" -FileName "flexdll.zip"
   - cinst 7zip.commandline
   - 7za x -y flexdll.zip
-  - for %%F in (*.c *.h *.exe *.o *.obj) do copy %%F "%OCAMLROOT%\bin\flexdll"
+  - for %%F in (flexdll.h flexlink.exe flexdll*_msvc64.obj default_amd64.manifest) do copy %%F "%OCAMLROOT%\bin\flexdll"
   # Make sure the Cygwin path comes before the Git one (otherwise
   # cygpath behaves crazily), but after the MSVC one.
-  - set Path=C:\cygwin\bin;%Path%
+  - set Path=C:\cygwin\bin;%OCAMLROOT%\bin\flexdll;%Path%
   - '%CYG_ROOT%\bin\bash -lc "cygcheck -dc cygwin"'
-  - '"%CYG_ROOT%\setup-x86.exe" -qgnNdO -R "%CYG_ROOT%" -s "%CYG_MIRROR%" -l "%CYG_CACHE%" -P diffutils -P dos2unix -P gcc-core -P make -P ncurses >NUL'
+  - '"%CYG_ROOT%\setup-x86.exe" -qgnNdO -R "%CYG_ROOT%" -s "%CYG_MIRROR%" -l "%CYG_CACHE%" -P diffutils -P make -P mingw64-i686-gcc-core >NUL'
   - '%CYG_ROOT%\bin\bash -lc "cygcheck -dc cygwin"'
   - call "C:\Program Files\Microsoft SDKs\Windows\v7.1\Bin\SetEnv.cmd" /x64
-  - set Path=%OCAMLROOT%\bin;%OCAMLROOT%\bin\flexdll;%Path%
 
 build_script:
-  - set PFPATH=%PROGRAMFILES%
-  - set FLEXDLLDIR=%OCAMLROOT%\bin\flexdll
-  - echo VCPATH="`cygpath -p '%Path%'`" > %CYG_ROOT%\tmp\msenv
-  - echo LIB="%LIB%" >> %CYG_ROOT%\tmp\msenv
-  - echo LIBPATH="%LIBPATH%" >> %CYG_ROOT%\tmp\msenv
-  - echo INCLUDE="%INCLUDE%;%FLEXDLLDIR%" >> %CYG_ROOT%\tmp\msenv
-  - echo FLPATH="`cygpath '%FLEXDLLDIR%'`" >> %CYG_ROOT%\tmp\msenv
-  - echo PATH="$VCPATH:$FLPATH:$PATH" >> %CYG_ROOT%\tmp\msenv
-  - echo export PATH LIB LIBPATH INCLUDE >> %CYG_ROOT%\tmp\msenv
-  - echo export OCAMLBUILD_FIND=/usr/bin/find >> %CYG_ROOT%\tmp\msenv
-  - "%CYG_ROOT%/bin/bash -lc \"tr -d '\\r' </tmp/msenv > ~/.msenv64\""
-  - "%CYG_ROOT%/bin/bash -lc \"echo '. ~/.msenv64' >> ~/.bash_profile\""
+  - "%CYG_ROOT%/bin/bash -lc \"echo 'eval $($APPVEYOR_BUILD_FOLDER/tools/msvs-promote-path)' >> ~/.bash_profile\""
   - '%CYG_ROOT%/bin/bash -lc "$APPVEYOR_BUILD_FOLDER/appveyor_build.sh"'
 
 test_script:
-  - ocamlc -version
+  - '%APPVEYOR_BUILD_FOLDER%\ocamlc.opt -version'
   - set CAML_LD_LIBRARY_PATH=%OCAMLROOT%/lib/stublibs
-  - '%CYG_ROOT%/bin/bash -lc "cd $APPVEYOR_BUILD_FOLDER && make -f Makefile.nt tests"'
+  - '%CYG_ROOT%/bin/bash -lc "cd $APPVEYOR_BUILD_FOLDER && make tests"'
+  - '%CYG_ROOT%/bin/bash -lc "cd $APPVEYOR_BUILD_FOLDER/../build-mingw32 && make tests"'
+  - '%CYG_ROOT%/bin/bash -lc "cd $APPVEYOR_BUILD_FOLDER && make install"'
+  - '%CYG_ROOT%/bin/bash -lc "cd $APPVEYOR_BUILD_FOLDER/../build-mingw32 && make install"'

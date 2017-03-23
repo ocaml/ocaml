@@ -273,4 +273,4 @@ val round_futur_last_digit : bytes -> int -> int -> bool
 val approx_big_int: int -> big_int -> string
 
 val round_big_int_to_float: big_int -> bool -> float
-(* @since 4.03.0 *)
+(** @since 4.03.0 *)

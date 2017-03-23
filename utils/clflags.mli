@@ -75,6 +75,7 @@ val print_types : bool ref
 val make_archive : bool ref
 val debug : bool ref
 val fast : bool ref
+val use_linscan : bool ref
 val link_everything : bool ref
 val custom_runtime : bool ref
 val no_check_prims : bool ref
@@ -141,6 +142,7 @@ val dump_regalloc : bool ref
 val dump_reload : bool ref
 val dump_scheduling : bool ref
 val dump_linear : bool ref
+val dump_interval : bool ref
 val keep_startup_file : bool ref
 val dump_combine : bool ref
 val native_code : bool ref
@@ -201,6 +203,23 @@ val dumped_pass : string -> bool
 val set_dumped_pass : string -> bool -> unit
 
 val parse_color_setting : string -> Misc.Color.setting option
-val color : Misc.Color.setting ref
+val color : Misc.Color.setting option ref
 
 val unboxed_types : bool ref
+
+val arg_spec : (string * Arg.spec * string) list ref
+
+(* [add_arguments __LOC__ args] will add the arguments from [args] at
+   the end of [arg_spec], checking that they have not already been
+   added by [add_arguments] before. A warning is printed showing the
+   locations of the function from which the argument was previously
+   added. *)
+val add_arguments : string -> (string * Arg.spec * string) list -> unit
+
+(* [parse_arguments anon_arg usage] will parse the arguments, using
+  the arguments provided in [Clflags.arg_spec]. It allows plugins to
+  provide their own arguments.
+*)
+val parse_arguments : Arg.anon_fun -> string -> unit
+
+val print_arguments : string -> unit

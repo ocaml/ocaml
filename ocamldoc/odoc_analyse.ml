@@ -133,13 +133,11 @@ module Sig_analyser = Odoc_sig.Analyser (Odoc_comments.Basic_info_retriever)
 (** Handle an error. *)
 
 let process_error exn =
-  match Location.error_of_exn exn with
-  | Some err ->
-      fprintf Format.err_formatter "@[%a@]@." Location.report_error err
-  | None ->
-      fprintf Format.err_formatter
-        "Compilation error(%s). Use the OCaml compiler to get more details.@."
-        (Printexc.to_string exn)
+  try Location.report_exception Format.err_formatter exn
+  with exn ->
+    fprintf Format.err_formatter
+      "Compilation error(%s). Use the OCaml compiler to get more details.@."
+      (Printexc.to_string exn)
 
 (** Process the given file, according to its extension. Return the Module.t created, if any.*)
 let process_file sourcefile =
@@ -164,7 +162,7 @@ let process_file sourcefile =
              None
          | Some (parsetree, typedtree) ->
              let file_module = Ast_analyser.analyse_typed_tree file
-                 !Location.input_name parsetree typedtree
+                 input_file parsetree typedtree
              in
              file_module.Odoc_module.m_top_deps <- Odoc_dep.impl_dependencies parsetree ;
 
@@ -192,7 +190,7 @@ let process_file sourcefile =
        try
          let (ast, signat, input_file) = process_interface_file file in
          let file_module = Sig_analyser.analyse_signature file
-             !Location.input_name ast signat.sig_type
+             input_file ast signat.sig_type
          in
 
          file_module.Odoc_module.m_top_deps <- Odoc_dep.intf_dependencies ast ;

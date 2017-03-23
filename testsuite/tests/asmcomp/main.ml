@@ -7,7 +7,7 @@ let compile_file filename =
     Emitaux.output_channel := open_out out_name
   end; (* otherwise, stdout *)
   Clflags.dlcode := false;
-  Compilenv.reset ~source_provenance:(Timings.File filename) "test";
+  Compilenv.reset "test";
   Emit.begin_assembly();
   let ic = open_in filename in
   let lb = Lexing.from_channel ic in
@@ -61,6 +61,7 @@ let main() =
      "-dtimings", Arg.Set print_timings, "";
     ] compile_file usage
 
-let _ = (*Printexc.catch*) Timings.(time All) main ();
+let () =
+  main ();
   if !Clflags.print_timings then Timings.print Format.std_formatter;
   exit 0

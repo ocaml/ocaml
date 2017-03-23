@@ -30,9 +30,9 @@ let standard_library =
 
 let standard_runtime = "%%BYTERUN%%"
 let ccomp_type = "%%CCOMPTYPE%%"
-let bytecomp_c_compiler = "%%BYTECC%%"
+let bytecomp_c_compiler = "%%BYTECODE_C_COMPILER%%"
 let bytecomp_c_libraries = "%%BYTECCLIBS%%"
-let native_c_compiler = "%%NATIVECC%%"
+let native_c_compiler = "%%NATIVE_C_COMPILER%%"
 let native_c_libraries = "%%NATIVECCLIBS%%"
 let native_pack_linker = "%%PACKLD%%"
 let ranlib = "%%RANLIBCMD%%"

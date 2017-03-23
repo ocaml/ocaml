@@ -104,9 +104,9 @@ module Options = Main_args.Make_bytecomp_options (struct
   let _warn_error = (Warnings.parse_options true)
   let _warn_help = Warnings.help_warnings
   let _color option =
-    begin match Clflags.parse_color_setting option with
+    begin match parse_color_setting option with
           | None -> ()
-          | Some setting -> Clflags.color := setting
+          | Some setting -> color := Some setting
     end
   let _where = print_standard_library
   let _verbose = set verbose
@@ -126,15 +126,25 @@ module Options = Main_args.Make_bytecomp_options (struct
 end)
 
 let main () =
+  Clflags.add_arguments __LOC__ Options.list;
   try
     readenv ppf Before_args;
-    Arg.parse_expand Options.list anonymous usage;
-    Compenv.process_deferred_actions
-      (ppf,
-       Compile.implementation,
-       Compile.interface,
-       ".cmo",
-       ".cma");
+    Clflags.parse_arguments anonymous usage;
+    Compmisc.read_color_env ppf;
+    begin try
+      Compenv.process_deferred_actions
+        (ppf,
+         Compile.implementation,
+         Compile.interface,
+         ".cmo",
+         ".cma");
+    with Arg.Bad msg ->
+      begin
+        prerr_endline msg;
+        Clflags.print_arguments usage;
+        exit 2
+      end
+    end;
     readenv ppf Before_link;
     if
       List.length (List.filter (fun x -> !x)
@@ -186,7 +196,7 @@ let main () =
     Location.report_exception ppf x;
     exit 2
 
-let _ =
-  Timings.(time All) main ();
+let () =
+  main ();
   if !Clflags.print_timings then Timings.print Format.std_formatter;
   exit 0

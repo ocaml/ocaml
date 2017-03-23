@@ -163,7 +163,7 @@ void caml_thread_code (code_t code, asize_t len)
       p += l[instr];
     }
   }
-  Assert(p == code + len);
+  CAMLassert(p == code + len);
 }
 
 #else

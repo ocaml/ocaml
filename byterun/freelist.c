@@ -82,25 +82,25 @@ static void fl_check (void)
   cur = Next (prev);
   while (cur != Val_NULL){
     size_found += Whsize_bp (cur);
-    Assert (Is_in_heap (cur));
+    CAMLassert (Is_in_heap (cur));
     if (cur == fl_prev) prev_found = 1;
     if (policy == Policy_first_fit && Wosize_bp (cur) > sz){
       sz = Wosize_bp (cur);
       if (flp_found < flp_size){
-        Assert (Next (flp[flp_found]) == cur);
+        CAMLassert (Next (flp[flp_found]) == cur);
         ++ flp_found;
       }else{
-        Assert (beyond == Val_NULL || cur >= Next (beyond));
+        CAMLassert (beyond == Val_NULL || cur >= Next (beyond));
       }
     }
     if (cur == caml_fl_merge) merge_found = 1;
     prev = cur;
     cur = Next (prev);
   }
-  if (policy == Policy_next_fit) Assert (prev_found || fl_prev == Fl_head);
-  if (policy == Policy_first_fit) Assert (flp_found == flp_size);
-  Assert (merge_found || caml_fl_merge == Fl_head);
-  Assert (size_found == caml_fl_cur_wsz);
+  if (policy == Policy_next_fit) CAMLassert (prev_found || fl_prev == Fl_head);
+  if (policy == Policy_first_fit) CAMLassert (flp_found == flp_size);
+  CAMLassert (merge_found || caml_fl_merge == Fl_head);
+  CAMLassert (size_found == caml_fl_cur_wsz);
 }
 
 #endif
@@ -123,11 +123,11 @@ static header_t *allocate_block (mlsize_t wh_sz, int flpi, value prev,
                                  value cur)
 {
   header_t h = Hd_bp (cur);
-                                             Assert (Whsize_hd (h) >= wh_sz);
+                                             CAMLassert (Whsize_hd (h) >= wh_sz);
   if (Wosize_hd (h) < wh_sz + 1){                        /* Cases 0 and 1. */
     caml_fl_cur_wsz -= Whsize_hd (h);
     Next (prev) = Next (cur);
-                  Assert (Is_in_heap (Next (prev)) || Next (prev) == Val_NULL);
+                  CAMLassert (Is_in_heap (Next (prev)) || Next (prev) == Val_NULL);
     if (caml_fl_merge == cur) caml_fl_merge = prev;
 #ifdef DEBUG
     fl_last = Val_NULL;
@@ -191,8 +191,8 @@ header_t *caml_fl_allocate (mlsize_t wo_sz)
   header_t *result;
   int i;
   mlsize_t sz, prevsz;
-                                  Assert (sizeof (char *) == sizeof (value));
-                                  Assert (wo_sz >= 1);
+                                  CAMLassert (sizeof (char *) == sizeof (value));
+                                  CAMLassert (wo_sz >= 1);
 #ifdef CAML_INSTR
   if (wo_sz < 10){
     ++instr_size[wo_sz];
@@ -205,11 +205,11 @@ header_t *caml_fl_allocate (mlsize_t wo_sz)
 
   switch (policy){
   case Policy_next_fit:
-                                  Assert (fl_prev != Val_NULL);
+                                  CAMLassert (fl_prev != Val_NULL);
     /* Search from [fl_prev] to the end of the list. */
     prev = fl_prev;
     cur = Next (prev);
-    while (cur != Val_NULL){                         Assert (Is_in_heap (cur));
+    while (cur != Val_NULL){                         CAMLassert (Is_in_heap (cur));
       if (Wosize_bp (cur) >= wo_sz){
         return allocate_block (Whsize_wosize (wo_sz), 0, prev, cur);
       }
@@ -299,10 +299,10 @@ header_t *caml_fl_allocate (mlsize_t wo_sz)
       prev = flp[flp_size - 1];
     }
     prevsz = Wosize_bp (Next (flp[FLP_MAX-1]));
-    Assert (prevsz < wo_sz);
+    CAMLassert (prevsz < wo_sz);
     cur = Next (prev);
     while (cur != Val_NULL){
-      Assert (Is_in_heap (cur));
+      CAMLassert (Is_in_heap (cur));
       sz = Wosize_bp (cur);
       if (sz < prevsz){
         beyond = cur;
@@ -317,7 +317,7 @@ header_t *caml_fl_allocate (mlsize_t wo_sz)
 
   update_flp: /* (i, sz) */
     /* The block at [i] was removed or reduced.  Update the table. */
-    Assert (0 <= i && i < flp_size + 1);
+    CAMLassert (0 <= i && i < flp_size + 1);
     if (i < flp_size){
       if (i > 0){
         prevsz = Wosize_bp (Next (flp[i-1]));
@@ -344,7 +344,7 @@ header_t *caml_fl_allocate (mlsize_t wo_sz)
             buf[j++] = prev;
             prevsz = sz;
             if (sz >= oldsz){
-              Assert (sz == oldsz);
+              CAMLassert (sz == oldsz);
               break;
             }
           }
@@ -380,7 +380,7 @@ header_t *caml_fl_allocate (mlsize_t wo_sz)
   break;
 
   default:
-    Assert (0);   /* unknown policy */
+    CAMLassert (0);   /* unknown policy */
     break;
   }
   return NULL;  /* NOT REACHED */
@@ -434,7 +434,7 @@ void caml_fl_reset (void)
     truncate_flp (Fl_head);
     break;
   default:
-    Assert (0);
+    CAMLassert (0);
     break;
   }
   caml_fl_cur_wsz = 0;
@@ -459,8 +459,8 @@ header_t *caml_fl_merge_block (value bp)
   cur = Next (prev);
   /* The sweep code makes sure that this is the right place to insert
      this block: */
-  Assert (prev < bp || prev == Fl_head);
-  Assert (cur > bp || cur == Val_NULL);
+  CAMLassert (prev < bp || prev == Fl_head);
+  CAMLassert (cur > bp || cur == Val_NULL);
 
   if (policy == Policy_first_fit) truncate_flp (prev);
 
@@ -505,7 +505,7 @@ header_t *caml_fl_merge_block (value bp)
 #ifdef DEBUG
     Hd_val (bp) = Debug_free_major;
 #endif
-    Assert (caml_fl_merge == prev);
+    CAMLassert (caml_fl_merge == prev);
   }else if (Wosize_hd (hd) != 0){
     Hd_val (bp) = Bluehd_hd (hd);
     Next (bp) = cur;
@@ -533,8 +533,8 @@ header_t *caml_fl_merge_block (value bp)
 */
 void caml_fl_add_blocks (value bp)
 {
-                                                   Assert (fl_last != Val_NULL);
-                                            Assert (Next (fl_last) == Val_NULL);
+                                                   CAMLassert (fl_last != Val_NULL);
+                                            CAMLassert (Next (fl_last) == Val_NULL);
   caml_fl_cur_wsz += Whsize_bp (bp);
 
   if (bp > fl_last){
@@ -551,12 +551,12 @@ void caml_fl_add_blocks (value bp)
     prev = Fl_head;
     cur = Next (prev);
     while (cur != Val_NULL && cur < bp){
-      Assert (prev < bp || prev == Fl_head);
+      CAMLassert (prev < bp || prev == Fl_head);
       /* XXX TODO: extend flp on the fly */
       prev = cur;
       cur = Next (prev);
-    }                                  Assert (prev < bp || prev == Fl_head);
-                                       Assert (cur > bp || cur == Val_NULL);
+    }                                  CAMLassert (prev < bp || prev == Fl_head);
+                                       CAMLassert (cur > bp || cur == Val_NULL);
     Next (Field (bp, 1)) = cur;
     Next (prev) = bp;
     /* When inserting blocks between [caml_fl_merge] and [caml_gc_sweep_hp],

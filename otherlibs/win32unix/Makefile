@@ -22,7 +22,7 @@ WIN_FILES = accept.c bind.c channels.c close.c \
   close_on.c connect.c createprocess.c dup.c dup2.c errmsg.c \
   getpeername.c getpid.c getsockname.c gettimeofday.c \
   link.c listen.c lockf.c lseek.c nonblock.c \
-  mkdir.c open.c pipe.c read.c readlink.c rename.c \
+  mkdir.c mmap.c open.c pipe.c read.c readlink.c rename.c \
   select.c sendrecv.c \
   shutdown.c sleep.c socket.c sockopt.c startup.c stat.c \
   symlink.c system.c times.c unixsupport.c windir.c winwait.c write.c \
@@ -33,7 +33,7 @@ UNIX_FILES = access.c addrofstr.c chdir.c chmod.c cst2constr.c \
   cstringv.c envir.c execv.c execve.c execvp.c \
   exit.c getaddrinfo.c getcwd.c gethost.c gethostname.c \
   getnameinfo.c getproto.c \
-  getserv.c gmtime.c putenv.c rmdir.c \
+  getserv.c gmtime.c mmap_ba.c putenv.c rmdir.c \
   socketaddr.c strofaddr.c time.c unlink.c utimes.c
 
 UNIX_CAML_FILES = unix.mli unixLabels.mli unixLabels.ml
@@ -60,8 +60,15 @@ clean::
 $(UNIX_FILES) $(UNIX_CAML_FILES): %: ../unix/%
 	cp ../unix/$* $*
 
+.PHONY: depend
+ifeq "$(TOOLCHAIN)" "msvc"
 depend:
-
-$(COBJS): unixsupport.h
+	$(error Dependencies cannot be regenerated using the MSVC ports)
+else
+depend: $(ALL_FILES) $(UNIX_CAML_FILES) unix.ml
+	$(CC) -MM $(CFLAGS) $(ALL_FILES) | sed -e 's/\.o/.$$(O)/g' > .depend
+	$(CAMLRUN) $(ROOTDIR)/tools/ocamldep -slash $(UNIX_CAML_FILES) \
+	  unix.ml >> .depend
+endif
 
 include .depend

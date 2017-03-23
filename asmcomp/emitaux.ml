@@ -143,10 +143,21 @@ let emit_frames a =
       Hashtbl.add filenames name lbl;
       lbl
   in
-  let debuginfos = Hashtbl.create 7 in
+  let module Label_table =
+    Hashtbl.Make (struct
+      type t = bool * Debuginfo.t
+
+      let equal ((rs1 : bool), dbg1) (rs2, dbg2) =
+        rs1 = rs2 && Debuginfo.compare dbg1 dbg2 = 0
+
+      let hash (rs, dbg) =
+        Hashtbl.hash (rs, Debuginfo.hash dbg)
+    end)
+  in
+  let debuginfos = Label_table.create 7 in
   let rec label_debuginfos rs rdbg =
     let key = (rs, rdbg) in
-    try fst (Hashtbl.find debuginfos key)
+    try fst (Label_table.find debuginfos key)
     with Not_found ->
       let lbl = Cmm.new_label () in
       let next =
@@ -155,7 +166,7 @@ let emit_frames a =
         | _ :: [] -> None
         | _ :: ((_ :: _) as rdbg') -> Some (label_debuginfos false rdbg')
       in
-      Hashtbl.add debuginfos key (lbl, next);
+      Label_table.add debuginfos key (lbl, next);
       lbl
   in
   let emit_debuginfo_label rs rdbg =
@@ -204,7 +215,7 @@ let emit_frames a =
   in
   a.efa_word (List.length !frame_descriptors);
   List.iter emit_frame !frame_descriptors;
-  Hashtbl.iter emit_debuginfo debuginfos;
+  Label_table.iter emit_debuginfo debuginfos;
   Hashtbl.iter emit_filename filenames;
   frame_descriptors := []
 

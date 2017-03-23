@@ -248,6 +248,8 @@ type open_flag = Unix.open_flag =
                                     while still open *)
   | O_CLOEXEC                   (** Set the close-on-exec flag on the
                                    descriptor returned by {!openfile} *)
+  | O_KEEPEXEC                  (** Clear the close-on-exec flag.
+                                    This is currently the default. *)
 (** The flags to {!UnixLabels.openfile}. *)
 
 
@@ -282,12 +284,14 @@ val single_write : file_descr -> buf:bytes -> pos:int -> len:int -> int
 
 val write_substring : file_descr -> buf:string -> pos:int -> len:int -> int
 (** Same as [write], but take the data from a string instead of a byte
-    sequence. *)
+    sequence.
+    @since 4.02.0 *)
 
 val single_write_substring :
   file_descr -> buf:string -> pos:int -> len:int -> int
 (** Same as [single_write], but take the data from a string instead of
-    a byte sequence. *)
+    a byte sequence.
+    @since 4.02.0 *)
 
 (** {6 Interfacing with the standard input/output library} *)
 
@@ -461,11 +465,11 @@ val access : string -> perm:access_permission list -> unit
 (** {6 Operations on file descriptors} *)
 
 
-val dup : file_descr -> file_descr
+val dup : ?cloexec:bool -> file_descr -> file_descr
 (** Return a new file descriptor referencing the same file as
    the given descriptor. *)
 
-val dup2 : src:file_descr -> dst:file_descr -> unit
+val dup2 : ?cloexec:bool -> src:file_descr -> dst:file_descr -> unit
 (** [dup2 fd1 fd2] duplicates [fd1] to [fd2], closing [fd2] if already
    opened. *)
 
@@ -531,7 +535,7 @@ val closedir : dir_handle -> unit
 (** {6 Pipes and redirections} *)
 
 
-val pipe : unit -> file_descr * file_descr
+val pipe : ?cloexec:bool -> unit -> file_descr * file_descr
 (** Create a pipe. The first component of the result is opened
    for reading, that's the exit to the pipe. The second component is
    opened for writing, that's the entrance to the pipe. *)
@@ -628,7 +632,8 @@ val has_symlink : unit -> bool
 (** Returns [true] if the user is able to create symbolic links. On Windows,
    this indicates that the user not only has the SeCreateSymbolicLinkPrivilege
    but is also running elevated, if necessary. On other platforms, this is
-   simply indicates that the symlink system call is available. *)
+   simply indicates that the symlink system call is available.
+   @since 4.03.0 *)
 
 val readlink : string -> string
 (** Read the contents of a link. *)
@@ -961,7 +966,8 @@ type sockaddr = Unix.sockaddr =
    [port] is the port number. *)
 
 val socket :
-  domain:socket_domain -> kind:socket_type -> protocol:int -> file_descr
+  ?cloexec:bool -> domain:socket_domain -> kind:socket_type -> protocol:int ->
+     file_descr
 (** Create a new socket in the given domain, and with the
    given kind. The third argument is the protocol type; 0 selects
    the default protocol for that kind of sockets. *)
@@ -970,11 +976,11 @@ val domain_of_sockaddr: sockaddr -> socket_domain
 (** Return the socket domain adequate for the given socket address. *)
 
 val socketpair :
-  domain:socket_domain -> kind:socket_type -> protocol:int ->
+  ?cloexec:bool -> domain:socket_domain -> kind:socket_type -> protocol:int ->
     file_descr * file_descr
 (** Create a pair of unnamed sockets, connected together. *)
 
-val accept : file_descr -> file_descr * sockaddr
+val accept : ?cloexec:bool -> file_descr -> file_descr * sockaddr
 (** Accept connections on the given socket. The returned descriptor
    is a socket connected to the client; the returned address is
    the address of the connecting client. *)
@@ -1032,7 +1038,8 @@ val send :
 val send_substring :
   file_descr -> buf:string -> pos:int -> len:int -> mode:msg_flag list -> int
 (** Same as [send], but take the data from a string instead of a byte
-    sequence. *)
+    sequence.
+    @since 4.02.0 *)
 
 val sendto :
   file_descr -> buf:bytes -> pos:int -> len:int -> mode:msg_flag list ->
@@ -1043,7 +1050,8 @@ val sendto_substring :
   file_descr -> buf:string -> pos:int -> len:int -> mode:msg_flag list
   -> sockaddr -> int
 (** Same as [sendto], but take the data from a string instead of a
-    byte sequence. *)
+    byte sequence.
+    @since 4.02.0 *)
 
 
 

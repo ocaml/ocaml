@@ -170,7 +170,7 @@ val force_newline : unit -> unit
 (** Forces a new line in the current box.
   Not the normal way of pretty-printing, since the new line does not reset
   the current line count.
-  You should prefer using break hints within a vertcal box. *)
+  You should prefer using break hints within a vertical box. *)
 
 val print_if_newline : unit -> unit
 (** Executes the next formatting command if the preceding line
@@ -387,7 +387,7 @@ type formatter_out_functions = {
   out_flush : unit -> unit;
   out_newline : unit -> unit;
   out_spaces : int -> unit;
-}
+} (** @since 4.01.0 *)
 
 val set_formatter_out_functions : formatter_out_functions -> unit
 (** [set_formatter_out_functions f]
@@ -404,12 +404,14 @@ val set_formatter_out_functions : formatter_out_functions -> unit
   application at hand). The two functions [f.out_spaces] and [f.out_newline]
   are normally connected to [f.out_string] and [f.out_flush]: respective
   default values for [f.out_space] and [f.out_newline] are
-  [f.out_string (String.make n ' ') 0 n] and [f.out_string "\n" 0 1]. *)
+  [f.out_string (String.make n ' ') 0 n] and [f.out_string "\n" 0 1].
+  @since 4.01.0 *)
 
 val get_formatter_out_functions : unit -> formatter_out_functions
 (** Return the current output functions of the pretty-printer,
   including line splitting and indentation functions. Useful to record the
-  current setting and restore it afterwards. *)
+  current setting and restore it afterwards.
+  @since 4.01.0 *)
 
 (** {6:tagsmeaning Changing the meaning of printing semantic tags} *)
 
@@ -457,7 +459,7 @@ type formatter
   margin, maximum indentation limit, maximum number of boxes
   simultaneously opened, ellipsis, and so on, are specific to
   each pretty-printer and may be fixed independently.
-  Given a [Pervasives.out_channel] output channel [oc], a new formatter
+  Given a {!Pervasives.out_channel} output channel [oc], a new formatter
   writing to that channel is simply obtained by calling
   [formatter_of_out_channel oc].
   Alternatively, the [make_formatter] function allocates a new
@@ -500,7 +502,7 @@ val make_formatter :
   (string -> int -> int -> unit) -> (unit -> unit) -> formatter
 (** [make_formatter out flush] returns a new formatter that writes according
   to the output function [out], and the flushing function [flush]. For
-  instance, a formatter to the [Pervasives.out_channel] [oc] is returned by
+  instance, a formatter to the {!Pervasives.out_channel} [oc] is returned by
   [make_formatter (Pervasives.output oc) (fun () -> Pervasives.flush oc)]. *)
 
 (** {6 Basic functions to use with formatters} *)
@@ -557,13 +559,15 @@ val pp_get_formatter_tag_functions :
 
 val pp_set_formatter_out_functions :
   formatter -> formatter_out_functions -> unit
+(** @since 4.01.0 *)
 
 val pp_get_formatter_out_functions :
   formatter -> unit -> formatter_out_functions
 (** These functions are the basic ones: usual functions
    operating on the standard formatter are defined via partial
    evaluation of these primitives. For instance,
-   [print_string] is equal to [pp_print_string std_formatter]. *)
+   [print_string] is equal to [pp_print_string std_formatter].
+   @since 4.01.0 *)
 
 val pp_flush_formatter : formatter -> unit
 (** [pp_flush_formatter fmt] flushes [fmt]'s internal queue, ensuring that all
@@ -571,7 +575,8 @@ val pp_flush_formatter : formatter -> unit
     operation will close all boxes and reset the state of the formatter.
 
     This will not flush [fmt]'s output. In most cases, the user may want to use
-    {!pp_print_flush} instead. *)
+    {!pp_print_flush} instead.
+    @since 4.04.0 *)
 
 (** {6 Convenience formatting functions.} *)
 
@@ -604,7 +609,7 @@ val fprintf : formatter -> ('a, formatter, unit) format -> 'a
 
   The format [fmt] is a character string which contains three types of
   objects: plain characters and conversion specifications as specified in
-  the [Printf] module, and pretty-printing indications specific to the
+  the {!Printf} module, and pretty-printing indications specific to the
   [Format] module.
 
   The pretty-printing indication characters are introduced by

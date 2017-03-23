@@ -97,7 +97,7 @@ OBJS=$(addsuffix .$(O), \
   compare ints floats str array io extern intern \
   hash sys meta parsing gc_ctrl terminfo md5 obj \
   lexing callback debugger weak compact finalise custom \
-  dynlink spacetime afl $(UNIX_OR_WIN32) main)
+  dynlink spacetime afl $(UNIX_OR_WIN32) bigarray main)
 
 DOBJS=$(OBJS:.$(O)=.$(DBGO)) instrtrace.$(DBGO)
 IOBJS=$(OBJS:.$(O)=.i.$(O))
@@ -214,38 +214,16 @@ libcamlrun_shared.$(SO): $(PICOBJS)
 %.pic.$(O): %.c
 	$(CC) $(PICFLAGS) -c $(OUTPUTOBJ)$@ $<
 
-ifneq "$(TOOLCHAIN)" "msvc"
 .PHONY: depend
-depend : prims.c caml/opnames.h caml/jumptbl.h caml/version.h
-	-$(CC) -MM $(BYTECCCOMPOPTS) *.c > .depend
-	-$(CC) -MM $(BYTECCCOMPOPTS) -DDEBUG *.c | sed -e 's/\.o/.d.o/' \
-	       >> .depend
-	-$(CC) -MM $(BYTECCCOMPOPTS) -DCAML_INSTR *.c | sed -e 's/\.o/.i.o/' \
-	       >> .depend
-	-$(CC) -MM $(BYTECCCOMPOPTS) *.c | sed -e 's/\.o/.pic.o/' >> .depend
-endif
-
-ifeq "$(UNIX_OR_WIN32)" "win32"
-.depend.nt: .depend
-	rm -f .depend.win32
-	echo "win32.o: win32.c caml/fail.h caml/compatibility.h \\"\
-	  >> .depend.win32
-	echo " caml/misc.h caml/config.h ../config/m.h ../config/s.h \\"\
-	  >> .depend.win32
-	echo " caml/mlvalues.h caml/memory.h caml/gc.h caml/major_gc.h \\"\
-	  >> .depend.win32
-	echo " caml/freelist.h caml/minor_gc.h caml/osdeps.h caml/signals.h"\
-	  >> .depend.win32
-	cat .depend >> .depend.win32
-	sed -ne '/\.pic\.o/q' \
-	    -e 's/^\(.*\)\.d\.o:/\1.$$(DBGO):/' \
-	    -e 's/^\(.*\)\.o:/\1.$$(O):/' \
-	    -e p \
-	    .depend.win32 > .depend.nt
-	rm -f .depend.win32
-
-include .depend.nt
-
+ifeq "$(TOOLCHAIN)" "msvc"
+depend:
+	$(error Dependencies cannot be regenerated using the MSVC ports)
 else
-include .depend
+depend: prims.c caml/opnames.h caml/jumptbl.h caml/version.h
+	$(CC) -MM $(CFLAGS) *.c | sed -e 's/\.o/.$$(O)/' > .depend
+	$(CC) -MM $(DFLAGS) *.c | sed -e 's/\.o/.d.$$(O)/' >> .depend
+	$(CC) -MM $(IFLAGS) *.c | sed -e 's/\.o/.i.$$(O)/' >> .depend
+	$(CC) -MM $(PICFLAGS) *.c | sed -e 's/\.o/.pic.$$(O)/' >> .depend
 endif
+
+include .depend
