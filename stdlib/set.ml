@@ -498,9 +498,11 @@ module Make(Ord: OrderedType) =
         match n, l with
         | 0, l -> Empty, l
         | 1, x0 :: l -> Node {l=Empty; v=x0; r=Empty; h=1}, l
-        | 2, x0 :: x1 :: l -> Node{l=Node{l=Empty; v=x0; r=Empty; h=1}; v=x1; r=Empty; h=2}, l
+        | 2, x0 :: x1 :: l ->
+            Node{l=Node{l=Empty; v=x0; r=Empty; h=1}; v=x1; r=Empty; h=2}, l
         | 3, x0 :: x1 :: x2 :: l ->
-            Node{l=Node{l=Empty; v=x0; r=Empty; h=1}; v=x1; r=Node{l=Empty; v=x2; r=Empty; h=1}; h=2},l
+            Node{l=Node{l=Empty; v=x0; r=Empty; h=1}; v=x1;
+                 r=Node{l=Empty; v=x2; r=Empty; h=1}; h=2}, l
         | n, l ->
           let nl = n / 2 in
           let left, l = sub nl l in
