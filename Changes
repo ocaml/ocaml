@@ -4,6 +4,8 @@ Working version
 (Changes that can break existing programs are marked with a "*")
 
 ### Language features:
+- GPR#1118: Support inherited field in object type expression
+  (Runhang Li, reivew by <TBD>)
 
 ### Code generation and optimizations:
 
