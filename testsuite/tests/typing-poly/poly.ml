@@ -1542,3 +1542,22 @@ and s = < b : int; c : float >
 type c = < a : string; b : int; c : float; d : string >
 val s : c = <obj>
 |}]
+
+type 'a t = < m: 'a >
+type s = < int t >
+module M = struct type t = < m: int > end
+type u = < M.t >
+type r = < a : int; < b : int > >
+type e = < >
+type r1 = < a : int; e >
+type r2 = < a : int; < < < > > > >
+[%%expect{|
+type 'a t = < m : 'a >
+type s = < m : int >
+module M : sig type t = < m : int > end
+type u = < m : int >
+type r = < a : int; b : int >
+type e = <  >
+type r1 = < a : int >
+type r2 = < a : int >
+|}]

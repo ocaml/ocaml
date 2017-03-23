@@ -674,7 +674,8 @@ and transl_fields env policy seen o =
         | _                        -> None in
       let t = expand_head env cty.ctyp_type in
       match t, nm with
-        {desc=Tobject ({desc=(Tfield _) as tf}, {contents=None})}, _ -> begin
+        {desc=Tobject ({desc=(Tfield _ | Tnil) as tf},
+                       {contents=None})}, _ -> begin
           if opened_object t then
             raise (Error (sty.ptyp_loc, env, Opened_object nm));
           let rec collect_seen = function
