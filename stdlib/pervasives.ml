@@ -86,8 +86,7 @@ external ( - ) : int -> int -> int = "%subint"
 external ( * ) : int -> int -> int = "%mulint"
 external ( / ) : int -> int -> int = "%divint"
 external ( mod ) : int -> int -> int = "%modint"
-
-let abs x = if x >= 0 then x else -x
+external abs : int -> int = "%absint"
 
 external ( land ) : int -> int -> int = "%andint"
 external ( lor ) : int -> int -> int = "%orint"

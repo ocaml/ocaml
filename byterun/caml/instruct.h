@@ -60,6 +60,7 @@ enum instructions {
   STOP,
   EVENT, BREAK,
   RERAISE, RAISE_NOTRACE,
+  ABSINT,
 FIRST_UNIMPLEMENTED_OP};
 
 #endif /* CAML_INTERNALS */

@@ -199,6 +199,7 @@ let primitives_table = create_hashtable 57 [
   "%addint", Paddint;
   "%subint", Psubint;
   "%mulint", Pmulint;
+  "%absint", Pabsint;
   "%divint", Pdivint Safe;
   "%modint", Pmodint Safe;
   "%andint", Pandint;

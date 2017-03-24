@@ -1987,6 +1987,8 @@ and transl_prim_1 env p arg dbg =
   (* Integer operations *)
   | Pnegint ->
       Cop(Csubi, [Cconst_int 2; transl env arg], dbg)
+  | Pabsint ->
+      transl_abs env arg dbg
   | Pctconst c ->
       let const_of_bool b = int_const (if b then 1 else 0) in
       begin
@@ -2556,6 +2558,28 @@ and transl_prim_3 env p arg1 arg2 arg3 dbg =
 
   | prim ->
       fatal_errorf "Cmmgen.transl_prim_3: %a" Printlambda.primitive prim
+
+(* Branchless computation of the integer absolute value.
+   Behaviour is undefined for [arg] = min_int.
+
+   let abs arg =
+     let mask = arg asr (8*Arch.size_int - 2) in
+     mask lxor (arg + mask)
+
+   Depending on the sign of [arg], [mask] is either all zeroes or all ones.
+   In the concrete implementation below, [mask] is added to [arg] not once,
+   but thrice, in order to account for the tag bit. If [arg] was negative,
+   after three additions it becomes [arg-1] with the bit tag set to 0, which
+   is later flipped back to 1 with the xor operation.
+*)
+and transl_abs env arg dbg =
+  bind "ref" (transl env arg) (fun arg ->
+    let bits = Cconst_int (8*Arch.size_int - 1) in
+    bind "mask" (Cop (Casr, [ arg; bits ], dbg)) (fun mask ->
+      let arg = (Cop (Caddi, [ arg; mask ], dbg)) in
+      let arg = (Cop (Caddi, [ arg; mask ], dbg)) in
+      let arg = (Cop (Caddi, [ arg; mask ], dbg)) in
+      Cop (Cxor, [ mask; arg ], dbg)))
 
 and transl_unbox_float dbg env = function
     Uconst(Uconst_ref(_, Some (Uconst_float f))) -> Cconst_float f

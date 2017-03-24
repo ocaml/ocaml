@@ -78,6 +78,7 @@ let instruction ppf = function
   | Kaddint -> fprintf ppf "\taddint"
   | Ksubint -> fprintf ppf "\tsubint"
   | Kmulint -> fprintf ppf "\tmulint"
+  | Kabsint -> fprintf ppf "\tabsint"
   | Kdivint -> fprintf ppf "\tdivint"
   | Kmodint -> fprintf ppf "\tmodint"
   | Kandint -> fprintf ppf "\tandint"

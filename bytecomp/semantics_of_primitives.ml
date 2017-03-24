@@ -43,6 +43,7 @@ let for_primitive (prim : Lambda.primitive) =
   | Paddint
   | Psubint
   | Pmulint
+  | Pabsint
   | Pandint
   | Porint
   | Pxorint

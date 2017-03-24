@@ -265,9 +265,9 @@ external ( mod ) : int -> int -> int = "%modint"
    Note that [x mod y] is negative only if [x < 0].
    Raise [Division_by_zero] if [y] is zero. *)
 
-val abs : int -> int
-(** Return the absolute value of the argument.  Note that this may be
-  negative if the argument is [min_int]. *)
+external abs : int -> int = "%absint"
+(** Return the absolute value of the argument.
+    Result is undefined if the argument is [min_int]. *)
 
 val max_int : int
 (** The greatest representable integer. *)
