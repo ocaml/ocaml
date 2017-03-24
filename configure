@@ -25,6 +25,7 @@ target_bindir=''
 libdir=''
 mandir=''
 manext=1
+lib_manext=3
 host_type=unknown
 target_type=""
 ccoption=''
@@ -277,6 +278,7 @@ case "$mandir" in
    *) echo "MANDIR=$mandir" >> Makefile;;
 esac
 echo "MANEXT=$manext" >> Makefile
+echo "LIB_MANEXT=$lib_manext" >> Makefile
 
 # Determine the system type
 
