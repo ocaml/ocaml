@@ -560,6 +560,7 @@ conflicts.
 The precedences must be listed from low to high.
 */
 
+%nonassoc DO
 %nonassoc IN
 %nonassoc below_SEMI
 %nonassoc SEMI                          /* below EQUAL ({lbl=...; lbl=...}) */
@@ -1308,6 +1309,14 @@ let_pattern:
   | pattern COLON core_type
       { mkpat(Ppat_constraint($1, $3)) }
 ;
+do_done:
+  | DO ext_attributes seq_expr DONE
+      { wrap_exp_attrs $3 $2 }
+  | DO ext_attributes DONE
+      { let loc = mkloc (Lident "()") (symbol_rloc ()) in
+        mkexp_attrs (Pexp_construct (loc, None)) $2 }
+  | DO ext_attributes seq_expr error
+      { unclosed "do" 1 "done" 4 }
 expr:
     simple_expr %prec below_HASH
       { $1 }
@@ -1321,6 +1330,9 @@ expr:
       { mkexp_attrs (Pexp_letexception($4, $6)) $3 }
   | LET OPEN override_flag ext_attributes mod_longident IN seq_expr
       { mkexp_attrs (Pexp_open($3, mkrhs $5 5, $7)) $4 }
+  | do_done
+      /* do [expr] done -> ([expr]: unit) */
+      { mkexp_constraint $1 (Some (mktyp (Ptyp_var "unit")), None) }
   | FUNCTION ext_attributes opt_bar match_cases
       { mkexp_attrs (Pexp_function(List.rev $4)) $2 }
   | FUN ext_attributes labeled_simple_pattern fun_def
@@ -1344,11 +1356,10 @@ expr:
       { mkexp_attrs(Pexp_ifthenelse($3, $5, Some $7)) $2 }
   | IF ext_attributes seq_expr THEN expr
       { mkexp_attrs (Pexp_ifthenelse($3, $5, None)) $2 }
-  | WHILE ext_attributes seq_expr DO seq_expr DONE
-      { mkexp_attrs (Pexp_while($3, $5)) $2 }
-  | FOR ext_attributes pattern EQUAL seq_expr direction_flag seq_expr DO
-    seq_expr DONE
-      { mkexp_attrs(Pexp_for($3, $5, $7, $6, $9)) $2 }
+  | WHILE ext_attributes seq_expr do_done
+      { mkexp_attrs (Pexp_while($3, $4)) $2 }
+  | FOR ext_attributes pattern EQUAL seq_expr direction_flag seq_expr do_done
+      { mkexp_attrs (Pexp_for($3, $5, $7, $6, $8)) $2 }
   | expr COLONCOLON expr
       { mkexp_cons (rhs_loc 2) (ghexp(Pexp_tuple[$1;$3])) (symbol_rloc()) }
   | LPAREN COLONCOLON RPAREN LPAREN expr COMMA expr RPAREN
