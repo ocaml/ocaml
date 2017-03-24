@@ -169,13 +169,13 @@ let rec find_name name = function
   | Node(l, k, r, _) ->
       let c = compare name k.ident.name in
       if c = 0 then
-        k.data
+        k.ident, k.data
       else
         find_name name (if c < 0 then l else r)
 
 let rec get_all = function
   | None -> []
-  | Some k -> k.data :: get_all k.previous
+  | Some k -> (k.ident, k.data) :: get_all k.previous
 
 let rec find_all name = function
     Empty ->
@@ -183,7 +183,7 @@ let rec find_all name = function
   | Node(l, k, r, _) ->
       let c = compare name k.ident.name in
       if c = 0 then
-        k.data :: get_all k.previous
+        (k.ident, k.data) :: get_all k.previous
       else
         find_all name (if c < 0 then l else r)
 

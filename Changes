@@ -86,6 +86,9 @@ Working version
 
 ### Internal/compiler-libs changes:
 
+- PR#6826, GPR#828, GPR#834: improve compilation time for open
+  (Alain Frisch, review by Frédéric Bour and Jacques Garrigue)
+
 - GPR#1032: display the output of -dtimings as a hierarchy
   (Valentin Gatien-Baron, review by Gabriel Scherer)
 
@@ -106,6 +109,9 @@ Working version
 - PR#7321: Private type in signature clashes with type definition via
   functor instantiation
   (Jacques Garrigue, report by Markus Mottl)
+
+- PR#7372, GPR#834: fix type-checker bug with GADT and inline records
+  (Alain Frisch, review by Frédéric Bour and Jacques Garrigue)
 
 - PR#7344: Inconsistent behavior with type annotations on let
   (Jacques Garrigue, report by Leo White)
