@@ -987,45 +987,39 @@ with the garbage collector using the "caml_register_global_root" function.
 \end{gcrule}
 
 The one may need to access values in OCaml heap from external code, for
-example when main loop of the program is implemented in C++. In this case two
-aspects of OCaml virtual machine are important. First, when one saves a pointer
-to OCaml value on C side and allows OCaml runtime to work for some time, the
-saved value may be collected by GC. So, it should be explicitly explained
-to the GC that this value should be \emph{alive} as far as program runs,
-i.e. this value should be a \emph{root} in the graph of references between
+example when main loop of the program is implemented in C++. In this case the
+value of type "value" can be stored outside the OCaml heap for later use. In this
+subsection this external locations will be called \emph{global} values.
+
+Saving an OCaml value outside OCaml heap will work
+well when a value is unboxed integer and may work well when the value is a pointer
+outside OCaml heap. However, if a value is a \emph{pointer to OCaml heap} the
+one needs to register its another location in OCaml runtime.
+Registration of a global variable "v" of type "value" is achieved by calling
+"caml_register_global_root(&v)" just before or just after a valid
+value is stored in "v" for the first time. No any of the OCaml runtime functions
+or macros should be called between registering and storing the value.
+
+A registered global variable "v" can be un-registered by calling
+"caml_remove_global_root(&v)".
+
+The importance of registering global values consists of two aspects. The first
+is that a value being registered may be sweeped by garbage collector. In that
+case it should be explicitly explained
+to the GC that this value should be \emph{alive} as far as program runs
+(or until the value will be unregistered as global root),
+i.e. the value should be a \emph{root} in the graph of references between
 all OCaml values.
 
 The second aspect is related to a number of heaps in OCaml runtime. There are
 two generations: the minor heaps for ``young'' values and the major one
-for ``old'' ones. When a young value becomes old enough it is promoted to the
+for ``old'' ones. When a ``young'' value becomes old enough it is promoted to the
 major heap. If this value was registered as global root the OCaml runtime should
-guarantee that C location (where this value is stored) still point to the right
-data. This issue is resolved in the function "caml_register_global_root" which
-has the signature "void caml_register_global_root(value*)". It take a
-\emph{location} where value is stored; this location should be outside any
-OCaml heap and should not be created on the stack using any ``CamlLocalN``
-macro. When a value is promoted to the major heap the runtime updates memory
-pointed out by function argument with new correct OCaml value.
-
-% I have a feeling that it is still not obvious why we need a pointer in the
-% signature. I have had for a long time an idea that type `value` hold a
-% block itself and not `a pointer to a block` or integer.
-
-Registration of a global variable "v" is achieved by calling
-"caml_register_global_root(&v)" just before or just after a valid
-value is stored in "v" for the first time. You must not call any
-of the OCaml runtime functions or macros between registering and
-storing the value.
-
-%Only values that are not referenced by other OCaml values can be considered
-%as "global". If the one takes a non-empty OCaml list and registers
-%the head value "h" (allocated using "CAMLlocalN", i.e. on the stack) of this
-%list with "caml_register_global_root(&h)" it will not take expected effect.
-%The value to be registered as global root should be allocated outside stack
-%and OCaml heap, for example, using "malloc".
-
-A registered global variable "v" can be un-registered by calling
-"caml_remove_global_root(&v)".
+guarantee that global value still point to the right
+data. This issue is resolved by the function "caml_register_global_root" which
+has the signature "void caml_register_global_root(value*)". It takes a
+pointer to a global value and when a value is promoted to the major heap
+the runtime updates global value with new correct OCaml value.
 
 If the contents of the global variable "v" are seldom modified after
 registration, better performance can be achieved by calling
