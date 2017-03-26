@@ -520,7 +520,8 @@ static void caml_ba_update_proxy(struct caml_ba_array * b1,
     ++ b1->proxy->refcount;
   } else {
     /* Otherwise, create proxy and attach it to both b1 and b2 */
-    proxy = caml_stat_alloc(sizeof(struct caml_ba_proxy));
+    proxy = malloc(sizeof(struct caml_ba_proxy));
+    if (proxy == NULL) caml_raise_out_of_memory();
     proxy->refcount = 2;      /* original array + sub array */
     proxy->data = b1->data;
     proxy->size =

@@ -130,7 +130,7 @@ Working version
   OCAMLRUNPARAM enables shutting the runtime properly on process exit.
   (Max Mouratov, review and discussion by Damien Doligez, Gabriel Scherer,
   Mark Shinwell, Thomas Braibant, Stephen Dolan, Pierre Chambart,
-  François Bobot, Jacques Garrigue, and David Allsopp)
+  François Bobot, Jacques Garrigue, David Allsopp, and Alain Frisch)
 
 Next major version (4.05.0):
 ----------------------------

@@ -46,7 +46,7 @@ static void caml_ba_mapped_finalize(value v)
   } else {
     if (-- b->proxy->refcount == 0) {
       UNMAP_FILE_FUNCTION(b->proxy->data, b->proxy->size);
-      caml_stat_free(b->proxy);
+      free(b->proxy);
     }
   }
 }
