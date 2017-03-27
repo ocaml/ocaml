@@ -1525,21 +1525,16 @@ Error: The type int is not an object type
 |}]
 
 type t = <a:int>
-type g = <t; t>
+type g = <t; t; t;>
 [%%expect{|
 type t = < a : int >
-Line _, characters 13-14:
-Error: This is the second method `a' of this object type.
-       Multiple occurences are not allowed.
+type g = < a : int >
 |}]
 
-type t = <a:string> and s = <b:int; c:float>
-type c = <t;s;d:string>
-let s:c = object method a="1"; method b=1; method c=1.0; method d="123" end
+type c = <a:int; d:string>
+let s:c = object method a=1; method d="123" end
 [%%expect{|
-type t = < a : string >
-and s = < b : int; c : float >
-type c = < a : string; b : int; c : float; d : string >
+type c = < a : int; d : string >
 val s : c = <obj>
 |}]
 
@@ -1560,4 +1555,18 @@ type r = < a : int; b : int >
 type e = <  >
 type r1 = < a : int >
 type r2 = < a : int >
+|}]
+
+type gg = <a:int->float; a:int>
+[%%expect{|
+Line _, characters 27-30:
+Error: Method 'a' has type int, which should be int -> float
+|}]
+
+type t = <a:int; b:string>
+type g = <b:float; t;>
+[%%expect{|
+type t = < a : int; b : string >
+Line _, characters 19-20:
+Error: Method 'b' has type string, which should be float
 |}]

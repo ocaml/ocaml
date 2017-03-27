@@ -44,7 +44,7 @@ type error =
   | Invalid_variable_name of string
   | Cannot_quantify of string * type_expr
   | Multiple_constraints_on_type of Longident.t
-  | Repeated_method_label of string
+  | Method_mismatch of string * type_expr * type_expr
   | Unbound_value of Longident.t
   | Unbound_constructor of Longident.t
   | Unbound_label of Longident.t
@@ -375,7 +375,7 @@ let rec transl_type env policy styp =
       end;
       ctyp (Ttyp_constr (path, lid, args)) constr
   | Ptyp_object (fields, o) ->
-      let ty, fields = transl_fields env policy [] o fields in
+      let ty, fields = transl_fields env policy o fields in
       ctyp (Ttyp_object (fields, o)) (newobj ty)
   | Ptyp_class(lid, stl) ->
       let (path, decl, _is_variant) =
@@ -650,53 +650,60 @@ let rec transl_type env policy styp =
 and transl_poly_type env policy t =
   transl_type env policy (Ast_helper.Typ.force_poly t)
 
-and transl_fields env policy seen o =
-  function
-    [] ->
-      begin match o, policy with
-      | Closed, _ -> newty Tnil, []
-      | Open, Univars -> new_pre_univar (), []
-      | Open, _ -> newvar (), []
+and transl_fields env policy o fields =
+  let hfields = Hashtbl.create 17 in
+  let add_typed_field loc l ty =
+    try
+      let ty' = Hashtbl.find hfields l in
+      if equal env false [ty] [ty'] then () else
+        try unify env ty ty'
+        with Unify _trace ->
+          raise(Error(loc, env, Method_mismatch (l, ty, ty')))
+    with Not_found ->
+      Hashtbl.add hfields l ty in
+  let add_field = function
+    | Otag (s, a, ty1) -> begin
+        let ty1 = transl_poly_type env policy ty1 in
+        let field = OTtag (s, a, ty1) in
+        add_typed_field ty1.ctyp_loc s.txt ty1.ctyp_type;
+        field
       end
-  | Otag (s, a, ty1) :: l -> begin
-      if List.mem s.txt seen then
-        raise (Error (s.loc, env, Repeated_method_label s.txt));
-      let ty1 = transl_poly_type env policy ty1 in
-      let field = OTtag (s, a, ty1) in
-      let ty, fields = transl_fields env policy (s.txt :: seen) o l in
-      newty (Tfield (s.txt, Fpresent, ty1.ctyp_type, ty)), (field :: fields)
-    end
-  | Oinherit sty :: l -> begin
-      let cty = transl_type env policy sty in
-      let nm =
-        match repr cty.ctyp_type with
-          {desc=Tconstr(p, _, _)} -> Some p
-        | _                        -> None in
-      let t = expand_head env cty.ctyp_type in
-      match t, nm with
-        {desc=Tobject ({desc=(Tfield _ | Tnil) as tf},
-                       {contents=None})}, _ -> begin
-          if opened_object t then
-            raise (Error (sty.ptyp_loc, env, Opened_object nm));
-          let rec collect_seen = function
-              Tfield (s, _, _, t) -> s :: collect_seen t.desc | _ -> [] in
-          let seen' = collect_seen tf in
-          List.iter (fun s ->
-              if List.mem s seen then
-                raise (Error (sty.ptyp_loc, env, Repeated_method_label s)))
-            seen';
-          let ty, fields' = transl_fields env policy (seen' @ seen) o l in
-          let rec append = function
-            | Tfield (s, k, t1, t) ->
-                newty (Tfield (s, k, t1, append t.desc))
-            | _ -> ty in
-          append tf, (OTinherit cty :: fields')
-          end
-      | {desc=Tvar _}, Some p ->
-          raise (Error (sty.ptyp_loc, env, Unbound_type_constructor_2 p))
-      | _ -> raise (Error (sty.ptyp_loc, env, Not_an_object t))
-    end
-
+    | Oinherit sty -> begin
+        let cty = transl_type env policy sty in
+        let nm =
+          match repr cty.ctyp_type with
+            {desc=Tconstr(p, _, _)} -> Some p
+          | _                        -> None in
+        let t = expand_head env cty.ctyp_type in
+        match t, nm with
+          {desc=Tobject ({desc=(Tfield _ | Tnil) as tf},
+                         {contents=None})}, _ -> begin
+            if opened_object t then
+              raise (Error (sty.ptyp_loc, env, Opened_object nm));
+            let rec iter_add = function
+              | Tfield (s, _k, ty1, ty2) -> begin
+                  add_typed_field sty.ptyp_loc s ty1;
+                  iter_add ty2.desc
+                end
+              | Tnil -> ()
+              | _ -> assert false in
+            iter_add tf;
+            OTinherit cty
+            end
+        | {desc=Tvar _}, Some p ->
+            raise (Error (sty.ptyp_loc, env, Unbound_type_constructor_2 p))
+        | _ -> raise (Error (sty.ptyp_loc, env, Not_an_object t))
+      end in
+  let object_fields = List.map add_field fields in
+  let fields = Hashtbl.fold (fun s ty l -> (s, ty) :: l) hfields [] in
+  let ty_init =
+     match o, policy with
+     | Closed, _ -> newty Tnil
+     | Open, Univars -> new_pre_univar ()
+     | Open, _ -> newvar () in
+  let ty = List.fold_left (fun ty (s, ty') ->
+      newty (Tfield (s, Fpresent, ty', ty))) ty_init fields in
+  ty, object_fields
 
 
 (* Make the rows "fixed" in this type, to make universal check easier *)
@@ -904,9 +911,11 @@ let report_error env ppf = function
          else "it is not a variable")
   | Multiple_constraints_on_type s ->
       fprintf ppf "Multiple constraints for type %a" longident s
-  | Repeated_method_label s ->
-      fprintf ppf "@[This is the second method `%s' of this object type.@ %s@]"
-        s "Multiple occurences are not allowed."
+  | Method_mismatch (l, ty, ty') ->
+      wrap_printing_env env (fun ()  ->
+        Printtyp.reset_and_mark_loops_list [ty; ty'];
+        fprintf ppf "@[<hov>Method '%s' has type %a,@ which should be %a@]"
+          l Printtyp.type_expr ty Printtyp.type_expr ty')
   | Unbound_value lid ->
       fprintf ppf "Unbound value %a" longident lid;
       spellcheck ppf fold_values env lid;
