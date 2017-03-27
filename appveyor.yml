@@ -53,13 +53,25 @@ install:
   - '%CYG_ROOT%\bin\bash -lc "cygcheck -dc cygwin"'
   - '"%CYG_ROOT%\setup-x86.exe" -qgnNdO -R "%CYG_ROOT%" -s "%CYG_MIRROR%" -l "%CYG_CACHE%" -P diffutils -P make -P mingw64-i686-gcc-core >NUL'
   - '%CYG_ROOT%\bin\bash -lc "cygcheck -dc cygwin"'
+  - set OCAML_PREV_PATH=%PATH%
+  - set OCAML_PREV_LIB=%LIB%
+  - set OCAML_PREV_INCLUDE=%INCLUDE%
   - call "C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\bin\amd64\vcvars64.bat"
 
 build_script:
   - "%CYG_ROOT%/bin/bash -lc \"echo 'eval $($APPVEYOR_BUILD_FOLDER/tools/msvs-promote-path)' >> ~/.bash_profile\""
   - '%CYG_ROOT%/bin/bash -lc "$APPVEYOR_BUILD_FOLDER/appveyor_build.sh"'
+  - set PATH=%OCAML_PREV_PATH%
+  - set LIB=%OCAML_PREV_LIB%
+  - set INCLUDE=%OCAML_PREV_INCLUDE%
+  - call "C:\Program Files\Microsoft SDKs\Windows\v7.1\Bin\SetEnv.cmd" /x86
+  - '%CYG_ROOT%/bin/bash -lc "$APPVEYOR_BUILD_FOLDER/appveyor_build.sh msvc32-only"'
 
 test_script:
+  - set PATH=%OCAML_PREV_PATH%
+  - set LIB=%OCAML_PREV_LIB%
+  - set INCLUDE=%OCAML_PREV_INCLUDE%
+  - call "C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\bin\amd64\vcvars64.bat"
   - '%APPVEYOR_BUILD_FOLDER%\ocamlc.opt -version'
   - set CAML_LD_LIBRARY_PATH=%OCAMLROOT%/lib/stublibs
   - '%CYG_ROOT%/bin/bash -lc "cd $APPVEYOR_BUILD_FOLDER && make tests"'
