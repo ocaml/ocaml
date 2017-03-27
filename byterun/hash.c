@@ -280,39 +280,42 @@ CAMLprim value caml_hash(value count, value limit, value seed, value obj)
 
 /* The old implementation */
 
-static uintnat hash_accu;
-static intnat hash_univ_limit, hash_univ_count;
+struct hash_state {
+  uintnat accu;
+  intnat univ_limit, univ_count;
+};
 
-static void hash_aux(value obj);
+static void hash_aux(struct hash_state*, value obj);
 
 CAMLprim value caml_hash_univ_param(value count, value limit, value obj)
 {
-  hash_univ_limit = Long_val(limit);
-  hash_univ_count = Long_val(count);
-  hash_accu = 0;
-  hash_aux(obj);
-  return Val_long(hash_accu & 0x3FFFFFFF);
+  struct hash_state h;
+  h.univ_limit = Long_val(limit);
+  h.univ_count = Long_val(count);
+  h.accu = 0;
+  hash_aux(&h, obj);
+  return Val_long(h.accu & 0x3FFFFFFF);
   /* The & has two purposes: ensure that the return value is positive
      and give the same result on 32 bit and 64 bit architectures. */
 }
 
 #define Alpha 65599
 #define Beta 19
-#define Combine(new)  (hash_accu = hash_accu * Alpha + (new))
-#define Combine_small(new) (hash_accu = hash_accu * Beta + (new))
+#define Combine(new)  (h->accu = h->accu * Alpha + (new))
+#define Combine_small(new) (h->accu = h->accu * Beta + (new))
 
-static void hash_aux(value obj)
+static void hash_aux(struct hash_state* h, value obj)
 {
   unsigned char * p;
   mlsize_t i, j;
   tag_t tag;
 
-  hash_univ_limit--;
-  if (hash_univ_count < 0 || hash_univ_limit < 0) return;
+  h->univ_limit--;
+  if (h->univ_count < 0 || h->univ_limit < 0) return;
 
  again:
   if (Is_long(obj)) {
-    hash_univ_count--;
+    h->univ_count--;
     Combine(Long_val(obj));
     return;
   }
@@ -325,7 +328,7 @@ static void hash_aux(value obj)
     tag = Tag_val(obj);
     switch (tag) {
     case String_tag:
-      hash_univ_count--;
+      h->univ_count--;
       i = caml_string_length(obj);
       for (p = &Byte_u(obj, 0); i > 0; i--, p++)
         Combine_small(*p);
@@ -333,7 +336,7 @@ static void hash_aux(value obj)
     case Double_tag:
       /* For doubles, we inspect their binary representation, LSB first.
          The results are consistent among all platforms with IEEE floats. */
-      hash_univ_count--;
+      h->univ_count--;
 #ifdef ARCH_BIG_ENDIAN
       for (p = &Byte_u(obj, sizeof(double) - 1), i = sizeof(double);
            i > 0;
@@ -346,7 +349,7 @@ static void hash_aux(value obj)
         Combine_small(*p);
       break;
     case Double_array_tag:
-      hash_univ_count--;
+      h->univ_count--;
       for (j = 0; j < Bosize_val(obj); j += sizeof(double)) {
 #ifdef ARCH_BIG_ENDIAN
       for (p = &Byte_u(obj, j + sizeof(double) - 1), i = sizeof(double);
@@ -365,29 +368,29 @@ static void hash_aux(value obj)
          Better do nothing. */
       break;
     case Infix_tag:
-      hash_aux(obj - Infix_offset_val(obj));
+      hash_aux(h, obj - Infix_offset_val(obj));
       break;
     case Forward_tag:
       obj = Forward_val (obj);
       goto again;
     case Object_tag:
-      hash_univ_count--;
+      h->univ_count--;
       Combine(Oid_val(obj));
       break;
     case Custom_tag:
       /* If no hashing function provided, do nothing */
       if (Custom_ops_val(obj)->hash != NULL) {
-        hash_univ_count--;
+        h->univ_count--;
         Combine(Custom_ops_val(obj)->hash(obj));
       }
       break;
     default:
-      hash_univ_count--;
+      h->univ_count--;
       Combine_small(tag);
       i = Wosize_val(obj);
       while (i != 0) {
         i--;
-        hash_aux(Field(obj, i));
+        hash_aux(h, Field(obj, i));
       }
       break;
     }
