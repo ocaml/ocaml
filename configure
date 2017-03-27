@@ -24,8 +24,8 @@ bindir=''
 target_bindir=''
 libdir=''
 mandir=''
-manext=1
-lib_manext=3
+programs_man_section=1
+libraries_man_section=3
 host_type=unknown
 target_type=""
 ccoption=''
@@ -120,10 +120,9 @@ while : ; do
         case "$2" in
           */man[1-9ln])
             mandir=`echo $2 | sed -e 's|^\(.*\)/man.$|\1|'`
-            manext=`echo $2 | sed -e 's/^.*\(.\)$/\1/'`;;
+            programs_man_section=`echo $2 | sed -e 's/^.*\(.\)$/\1/'`;;
           *)
-            mandir=$2
-            manext=1;;
+            mandir=$2;;
         esac
         shift;;
     -libunwinddir|--libunwinddir)
@@ -277,8 +276,8 @@ case "$mandir" in
       mandir="$prefix/man";;
    *) echo "MANDIR=$mandir" >> Makefile;;
 esac
-echo "MANEXT=$manext" >> Makefile
-echo "LIB_MANEXT=$lib_manext" >> Makefile
+echo "PROGRAMS_MAN_SECTION=$programs_man_section" >> Makefile
+echo "LIBRARIES_MAN_SECTION=$libraries_man_section" >> Makefile
 
 # Determine the system type
 
@@ -2060,7 +2059,7 @@ inf
 inf "Directories where OCaml will be installed:"
 inf "        binaries.................. $bindir"
 inf "        standard library.......... $libdir"
-inf "        manual pages.............. $mandir (with extension .$manext)"
+inf "        manual pages.............. $mandir (with extension .$programs_man_section)"
 
 inf "Configuration for the bytecode compiler:"
 inf "        C compiler used........... $cc"
