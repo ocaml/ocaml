@@ -358,10 +358,10 @@ module GenHashTable: sig
     (** [get_key cont] returns the keys if they are all alive *)
 
     val get_data: 'a container -> 'a option
-    (** [get_data cont] return the data if it is alive *)
+    (** [get_data cont] returns the data if it is alive *)
 
     val set_key_data: 'a container -> t -> 'a -> unit
-    (** [set_key_data cont] modify the key and data *)
+    (** [set_key_data cont] modifies the key and data *)
 
     val check_key: 'a container -> bool
     (** [check_key cont] checks if all the keys contained in the data

@@ -182,7 +182,7 @@ val compare: t -> t -> int
     {!Set.Make} and {!Map.Make}. *)
 
 val equal: t -> t -> bool
-(** The equal function for natives ints.
+(** The equal function for native ints.
     @since 4.03.0 *)
 
 (**/**)

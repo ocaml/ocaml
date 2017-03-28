@@ -48,7 +48,7 @@ external length : bytes -> int = "%bytes_length"
 external get : bytes -> int -> char = "%bytes_safe_get"
 (** [get s n] returns the byte at index [n] in argument [s].
 
-    Raise [Invalid_argument] if [n] not a valid index in [s]. *)
+    Raise [Invalid_argument] if [n] is not a valid index in [s]. *)
 
 external set : bytes -> int -> char -> unit = "%bytes_safe_set"
 (** [set s n c] modifies [s] in place, replacing the byte at index [n]
