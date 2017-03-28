@@ -16,11 +16,11 @@
 #ifndef CAML_CONFIG_H
 #define CAML_CONFIG_H
 
-/* <include ../config/m.h> */
-/* <include ../config/s.h> */
+/* <include m.h> */
+/* <include s.h> */
 /* <private> */
-#include "../../config/m.h"
-#include "../../config/s.h"
+#include "m.h"
+#include "s.h"
 #ifdef BOOTSTRAPPING_FLEXLINK
 #undef SUPPORT_DYNAMIC_LINKING
 #endif

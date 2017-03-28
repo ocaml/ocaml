@@ -36,7 +36,7 @@
 #include "caml/sys.h"
 #include "caml/spacetime.h"
 
-#include "../config/s.h"
+#include "caml/s.h"
 
 #ifdef ARCH_SIXTYFOUR
 

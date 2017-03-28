@@ -6,7 +6,7 @@ LD_PATH=
 default:
 	@if ! $(SUPPORTS_SHARED_LIBRARIES) || $(BYTECODE_ONLY) ; then \
 	  echo 'skipped (.cmxs not built)'; \
-	elif ! grep -q HAS_LIBBFD $(TOPDIR)/config/s.h ; then \
+	elif ! grep -q HAS_LIBBFD $(TOPDIR)/byterun/caml/s.h ; then \
 	  echo 'skipped (BFD library not available)'; \
 	else \
 	  case " $(OTHERLIBRARIES) " in \

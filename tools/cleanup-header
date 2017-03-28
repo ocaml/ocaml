@@ -18,12 +18,12 @@
 # Remove private parts from runtime include files, before installation
 # in /usr/local/lib/ocaml/caml
 
-/\/\* <include \.\.\/config\/m\.h> \*\// {
-  r ../config/m.h
+/\/\* <include m\.h> \*\// {
+  r m.h
   d
 }
-/\/\* <include \.\.\/config\/s\.h> \*\// {
-  r ../config/s.h
+/\/\* <include s\.h> \*\// {
+  r s.h
   d
 }
 /\/\* <private> \*\//,/\/\* <\/private> \*\//d

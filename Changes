@@ -115,6 +115,11 @@ Working version
 - GPR#1032: display the output of -dtimings as a hierarchy
   (Valentin Gatien-Baron, review by Gabriel Scherer)
 
+- GPR#1127: move config/{m,s}.h to byterun/caml and install them.
+  User code should not have to include them directly since they are
+  included by other header files
+  (Sébastien Hinderer)
+
 ### Bug fixes
 
 - PR#5927: Type equality broken for conjunctive polymorphic variant tags

@@ -138,12 +138,12 @@ $(CAMLHEADERS): $(HEADERPROGRAM) ../config/Makefile
 ifeq "$(UNIX_OR_WIN32)" "unix"
 $(CAMLHEADERS):
 	for suff in '' d i; do \
-	  $(CC) $(CFLAGS) $(CPPFLAGS) $(LDFLAGS) \
+	  $(CC) $(CFLAGS) $(CPPFLAGS) -I../byterun $(LDFLAGS) \
 	            -DRUNTIME_NAME='"$(BINDIR)/ocamlrun'$$suff'"' \
 	            header.c $(OUTPUTEXE)tmpheader$(EXE) && \
 	  strip tmpheader$(EXE) && \
 	  mv tmpheader$(EXE) camlheader$$suff && \
-	  $(CC) $(CFLAGS) $(CPPFLAGS) $(LDFLAGS) \
+	  $(CC) $(CFLAGS) $(CPPFLAGS) -I../byterun $(LDFLAGS) \
 	            -DRUNTIME_NAME='"$(TARGET_BINDIR)/ocamlrun'$$suff'"' \
 	            header.c $(OUTPUTEXE)tmpheader$(EXE) && \
 	  strip tmpheader$(EXE) && \
