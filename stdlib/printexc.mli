@@ -271,7 +271,7 @@ val raw_backtrace_length : raw_backtrace -> int
 *)
 
 val get_raw_backtrace_slot : raw_backtrace -> int -> raw_backtrace_slot
-(** [get_slot bckt pos] returns the slot in position [pos] in the
+(** [get_raw_backtrace_slot bckt pos] returns the slot in position [pos] in the
     backtrace [bckt].
 
     @since 4.02
@@ -319,7 +319,7 @@ val exn_slot_id: exn -> int
 *)
 
 val exn_slot_name: exn -> string
-(** [Printexc.exn_slot_id exn] returns the internal name of the constructor
+(** [Printexc.exn_slot_name exn] returns the internal name of the constructor
     used to create the exception value [exn].
 
     @since 4.02.0
