@@ -164,7 +164,7 @@ module K1 : sig
   *)
 
   val unset_data: ('k,'d) t -> unit
-  (** [Ephemeron.K1.unset_key eph el] sets the key of [eph] to be an
+  (** [Ephemeron.K1.unset_data eph el] sets the key of [eph] to be an
       empty key. The ephemeron starts behaving like a weak pointer.
   *)
 
@@ -219,7 +219,7 @@ module K2 : sig
   (** Same as {!Ephemeron.K1.get_key_copy} *)
 
   val set_key2: ('k1,'k2,'d) t -> 'k2 -> unit
-  (** Same as {!Ephemeron.K1.get_key} *)
+  (** Same as {!Ephemeron.K1.set_key} *)
 
   val unset_key2: ('k1,'k2,'d) t -> unit
   (** Same as {!Ephemeron.K1.unset_key} *)
