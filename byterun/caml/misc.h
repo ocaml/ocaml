@@ -48,7 +48,7 @@ typedef char * addr;
    which supports both GCC/Clang and MSVC.
 
    Note: CAMLnoreturn is a different macro defined in memory.h,
-   to be used in function bodies rather than  aprototype attribute.
+   to be used in function bodies rather than as a prototype attribute.
 */
 #ifdef __GNUC__
   /* Works only in GCC 2.5 and later */

@@ -90,7 +90,7 @@ val to_channel : out_channel -> 'a -> extern_flags list -> unit
    digest of the code transmitted along with the code position.)
 
    The exact definition of which free variables are captured in a
-   closure is not specified and can very between bytecode and native
+   closure is not specified and can vary between bytecode and native
    code (and according to optimization flags).  In particular, a
    function value accessing a global reference may or may not include
    the reference in its closure.  If it does, unmarshaling the

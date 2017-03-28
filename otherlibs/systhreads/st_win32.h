@@ -38,7 +38,7 @@ typedef DWORD st_retcode;
 
 #define SIGPREEMPTION SIGTERM
 
-/* Thread-local storage assocaiting a Win32 event to every thread. */
+/* Thread-local storage associating a Win32 event to every thread. */
 static DWORD st_thread_sem_key;
 
 /* OS-specific initialization */

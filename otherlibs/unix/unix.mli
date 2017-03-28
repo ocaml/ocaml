@@ -795,7 +795,7 @@ val symlink : ?to_dir:bool -> string -> string -> unit
    points to a directory or a file; if omitted, [symlink] examines [source]
    using [stat] and picks appropriately, if [source] does not exist then [false]
    is assumed (for this reason, it is recommended that the [~to_dir] parameter
-   be specified in new code). On Unix, [~to_dir] ignored.
+   be specified in new code). On Unix, [~to_dir] is ignored.
 
    Windows symbolic links are available in Windows Vista onwards. There are some
    important differences between Windows symlinks and their POSIX counterparts.
