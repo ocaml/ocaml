@@ -1570,3 +1570,18 @@ type t = < a : int; b : string >
 Line _, characters 19-20:
 Error: Method 'b' has type string, which should be float
 |}]
+
+module A = struct
+  class type ['a] t1 = object method f : 'a end
+end
+type t = < int A.t1 >
+[%%expect{|
+module A : sig class type ['a] t1 = object method f : 'a end end
+type t = < f : int >
+|}]
+
+type t = < int #A.t1 >
+[%%expect{|
+Line _, characters 11-20:
+Error: The type int #A.t1 is not an object type
+|}]
