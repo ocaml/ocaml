@@ -378,11 +378,11 @@ Next version (4.05.0):
   (Alain Frisch, report by Anil Madhavapeddy)
 
 - PR#7443, GPR#990: spurious unused open warning with local open in patterns
-  (Florian Angeletti, report by Gabriel Scherer
+  (Florian Angeletti, report by Gabriel Scherer)
 
 - GPR#406: remove polymorphic comparison for Types.constructor_tag in compiler
-  (Dwight Guth,
-   review by Gabriel Radanne, Pierre Chambart, Mark Shinwell)
+  (Dwight Guth, review by Gabriel Radanne, Damien Doligez, Gabriel Scherer,
+   Pierre Chambart, Mark Shinwell)
 
 - GPR#795: remove 256-character limitation on Sys.executable_name
   (Xavier Leroy)
