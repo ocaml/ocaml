@@ -83,7 +83,7 @@ Priorities are assigned to `interesting' caml operators as follows:
 (make-variable-buffer-local 'caml-class-indent)
 
 (defvar caml-exception-indent 2
-  "*How many spaces to indent from a exception keyword in caml mode.")
+  "*How many spaces to indent from an exception keyword in caml mode.")
 (make-variable-buffer-local 'caml-exception-indent)
 
 (defvar caml-for-indent 2
@@ -99,7 +99,7 @@ Priorities are assigned to `interesting' caml operators as follows:
 (make-variable-buffer-local 'caml-function-indent)
 
 (defvar caml-if-indent  2
-  "*How many spaces to indent from a if keyword in caml mode.")
+  "*How many spaces to indent from an if keyword in caml mode.")
 (make-variable-buffer-local 'caml-if-indent)
 
 (defvar caml-if-else-indent 0
@@ -107,15 +107,15 @@ Priorities are assigned to `interesting' caml operators as follows:
 (make-variable-buffer-local 'caml-if-else-indent)
 
 (defvar caml-inherit-indent 2
-  "*How many spaces to indent from a inherit keyword in caml mode.")
+  "*How many spaces to indent from an inherit keyword in caml mode.")
 (make-variable-buffer-local 'caml-inherit-indent)
 
 (defvar caml-initializer-indent 2
-  "*How many spaces to indent from a initializer keyword in caml mode.")
+  "*How many spaces to indent from an initializer keyword in caml mode.")
 (make-variable-buffer-local 'caml-initializer-indent)
 
 (defvar caml-include-indent 2
-  "*How many spaces to indent from a include keyword in caml mode.")
+  "*How many spaces to indent from an include keyword in caml mode.")
 (make-variable-buffer-local 'caml-include-indent)
 
 (defvar caml-let-indent 2
@@ -139,11 +139,11 @@ Priorities are assigned to `interesting' caml operators as follows:
 (make-variable-buffer-local 'caml-module-indent)
 
 (defvar caml-object-indent 2
-  "*How many spaces to indent from a object keyword in caml mode.")
+  "*How many spaces to indent from an object keyword in caml mode.")
 (make-variable-buffer-local 'caml-object-indent)
 
 (defvar caml-of-indent 2
-  "*How many spaces to indent from a of keyword in caml mode.")
+  "*How many spaces to indent from an of keyword in caml mode.")
 (make-variable-buffer-local 'caml-of-indent)
 
 (defvar caml-parser-indent 4
@@ -261,7 +261,7 @@ Usually negative. nil is align on master.")
 (make-variable-buffer-local 'caml-|-extra-indent)
 
 (defvar caml-rb-extra-indent -2
-  "*Extra indent for caml lines statring with ].
+  "*Extra indent for caml lines starting with ].
 Usually negative. nil is align on master.")
 
 (defvar caml-rc-extra-indent -2
@@ -275,13 +275,13 @@ Usually negative. nil is align on master.")
 (defvar caml-electric-indent t
   "*Non-nil means electrically indent lines starting with |, ] or }.
 
-Many people find eletric keys irritating, so you can disable them if
+Many people find electric keys irritating, so you can disable them if
 you are one.")
 
 (defvar caml-electric-close-vector t
   "*Non-nil means electrically insert a | before a vector-closing ].
 
-Many people find eletric keys irritating, so you can disable them if
+Many people find electric keys irritating, so you can disable them if
 you are one. You should probably have this on, though, if you also
 have caml-electric-indent on, which see.")
 
@@ -623,8 +623,8 @@ have caml-electric-indent on, which see.")
 (defun caml-eval-phrase (arg &optional min max)
   "Send the phrase containing the point to the CAML process.
 With prefix-arg send as many phrases as its numeric value,
-If an error occurs during evalutaion, stop at this phrase and
-repport the error.
+If an error occurs during evaluation, stop at this phrase and
+report the error.
 
 Return nil if noerror and position of error if any.
 
@@ -1136,7 +1136,7 @@ to the end.
 
 (defun caml-in-comment-p ()
   "Returns non-nil if point is inside a caml comment.
-Returns nil for the parenthesis openning a comment."
+Returns nil for the parenthesis opening a comment."
   ;;we look for comments differently than literals. there are two
   ;;reasons for this. first, caml has nested comments and it is not so
   ;;clear that parse-partial-sexp supports them; second, if proper
@@ -1266,7 +1266,7 @@ Used to distinguish it from toplevel let construct.")
   "Look back for a caml keyword or operator matching KWOP-REGEXP.
 Second optional argument MIN-POS bounds the search.
 
-Ignore occurences inside literals. If found, return a list of two
+Ignore occurrences inside literals. If found, return a list of two
 values: the actual text of the keyword or operator, and a boolean
 indicating whether the keyword was one we looked for explicitly
 {non-nil}, or on the other hand one of the block-terminating
@@ -1971,7 +1971,7 @@ with prefix arg, indent that many phrases starting with the current phrase."
   "Explore type annotations by mouse dragging." t)
 
 (autoload 'caml-help "caml-help"
-  "Show documentation for qualilifed OCaml identifier." t)
+  "Show documentation for qualified OCaml identifier." t)
 (autoload 'caml-complete "caml-help"
   "Does completion for documented qualified OCaml identifier." t)
 (autoload 'ocaml-open-module "caml-help"
