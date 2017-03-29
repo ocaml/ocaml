@@ -1583,5 +1583,5 @@ type t = < f : int >
 type t = < int #A.t1 >
 [%%expect{|
 Line _, characters 11-20:
-Error: The type int #A.t1 is not an object type
+Error: Illegal open object type
 |}]
