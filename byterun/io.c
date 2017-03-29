@@ -97,6 +97,42 @@ CAMLexport struct channel * caml_open_descriptor_out(int fd)
   return channel;
 }
 
+CAMLnoreturn_start
+static void raise_error(io_result)
+CAMLnoreturn_end;
+
+static void raise_error(io_result err)
+{
+  CAMLassert(err);
+  caml_process_pending_signals();
+  errno = err;
+  caml_sys_error(NO_ARG);
+}
+
+static int check_retry(struct channel* chan, io_result err)
+{
+  if (err == EINTR) {
+    /* interrupted by signal, retry */
+    Unlock(chan);
+    caml_process_pending_signals();
+    Lock(chan);
+    return 1;
+  } else if (err) {
+    /* operation failed, raise */
+    Unlock(chan);
+    raise_error(err);
+  } else if (caml_signals_are_pending) {
+    /* the operation succeeded, but a signal arrived since */
+    Unlock(chan);
+    caml_process_pending_signals();
+    Lock(chan);
+    return 0;
+  } else {
+    /* success, don't retry */
+    return 0;
+  }
+}
+
 static void unlink_channel(struct channel *channel)
 {
   if (channel->prev == NULL) {
@@ -118,25 +154,45 @@ CAMLexport void caml_close_channel(struct channel *channel)
   unlink_channel(channel);
   caml_stat_free(channel->name);
   caml_stat_free(channel);
+  return;
+}
+
+static io_result caml_lseek_end(int fd, file_offset* end)
+{
+  caml_enter_blocking_section();
+  *end = lseek(fd, 0, SEEK_END);
+  caml_leave_blocking_section_nosig();
+  if (*end == -1) return errno;
+  return 0;
+}
+
+static io_result caml_lseek_set(int fd, file_offset offset)
+{
+  file_offset off;
+  off = lseek(fd, offset, SEEK_SET);
+  if (off == -1) {
+    return errno;
+  } else if (off != offset) {
+    return EIO;
+  } else {
+    return 0;
+  }
 }
 
 CAMLexport file_offset caml_channel_size(struct channel *channel)
 {
-  file_offset offset;
   file_offset end;
-  int fd;
+  io_result err;
 
-  /* We extract data from [channel] before dropping the OCaml lock, in case
-     someone else touches the block. */
-  fd = channel->fd;
-  offset = channel->offset;
-  caml_enter_blocking_section();
-  end = lseek(fd, 0, SEEK_END);
-  if (end == -1 || lseek(fd, offset, SEEK_SET) != offset) {
-    caml_leave_blocking_section();
-    caml_sys_error(NO_ARG);
-  }
-  caml_leave_blocking_section();
+  Lock(channel);
+  do {
+    err = caml_lseek_end(channel->fd, &end);
+  } while (check_retry(channel, err));
+  do {
+    err = caml_lseek_set(channel->fd, channel->offset);
+  } while (check_retry(channel, err));
+  Unlock(channel);
+
   return end;
 }
 
@@ -154,47 +210,65 @@ CAMLexport int caml_channel_binary_mode(struct channel *channel)
 /* Output */
 
 /* Attempt to flush the buffer. This will make room in the buffer for
-   at least one character. Returns true if the buffer is empty at the
-   end of the flush, or false if some data remains in the buffer.
+   at least one character. Returns an error code, or 0 on success.
+   *emptied is set to true if the buffer was emptied, or false
+   if some data remains in the buffer or an error occurred.
  */
 
-CAMLexport int caml_flush_partial(struct channel *channel)
+static io_result flush_partial(struct channel *channel, int* emptied)
 {
+  io_result err;
   int towrite, written;
 
   towrite = channel->curr - channel->buff;
   CAMLassert (towrite >= 0);
   if (towrite > 0) {
-    written = caml_write_fd(channel->fd, channel->flags,
-                            channel->buff, towrite);
+    err = caml_write_fd(channel->fd, channel->flags,
+                        channel->buff, towrite,
+                        &written);
+    if (err) {
+      *emptied = 0;
+      return err;
+    }
     channel->offset += written;
     if (written < towrite)
       memmove(channel->buff, channel->buff + written, towrite - written);
     channel->curr -= written;
   }
-  return (channel->curr == channel->buff);
+  *emptied = (channel->curr == channel->buff);
+  return 0;
 }
 
 /* Flush completely the buffer. */
 
 CAMLexport void caml_flush(struct channel *channel)
 {
-  while (! caml_flush_partial(channel)) /*nothing*/;
+  io_result err;
+  int emptied;
+  Lock(channel);
+  do {
+    err = flush_partial(channel, &emptied);
+  } while (check_retry(channel, err) || !emptied);
+  Unlock(channel);
 }
 
 /* Output data */
 
-CAMLexport void caml_putword(struct channel *channel, uint32_t w)
+CAMLexport void caml_putch(struct channel* channel, unsigned char ch)
 {
-  if (! caml_channel_binary_mode(channel))
-    caml_failwith("output_binary_int: not a binary channel");
-  caml_putch(channel, w >> 24);
-  caml_putch(channel, w >> 16);
-  caml_putch(channel, w >> 8);
-  caml_putch(channel, w);
+  caml_putblock(channel, (char*)&ch, 1);
 }
 
-CAMLexport int caml_putblock(struct channel *channel, char *p, intnat len)
+CAMLexport void caml_putword(struct channel *channel, uint32_t w)
+{
+  unsigned char out[] = {w >> 24, w >> 16, w >> 8, w};
+  if (! caml_channel_binary_mode(channel))
+    caml_failwith("output_binary_int: not a binary channel");
+  caml_really_putblock(channel, (char*)out, 4);
+}
+
+CAMLexport io_result caml_try_putblock(struct channel *channel, char *p,
+                                       intnat len, int* written_out)
 {
   int n, free, towrite, written;
 
@@ -204,43 +278,72 @@ CAMLexport int caml_putblock(struct channel *channel, char *p, intnat len)
     /* Write request small enough to fit in buffer: transfer to buffer. */
     memmove(channel->curr, p, n);
     channel->curr += n;
-    return n;
+    *written_out = n;
+    return 0;
   } else {
     /* Write request overflows buffer (or just fills it up): transfer whatever
        fits to buffer and write the buffer */
+    io_result err;
     memmove(channel->curr, p, free);
     towrite = channel->end - channel->buff;
-    written = caml_write_fd(channel->fd, channel->flags,
-                            channel->buff, towrite);
+    err = caml_write_fd(channel->fd, channel->flags,
+                        channel->buff, towrite, &written);
+    if (err) {
+      *written_out = 0;
+      return err;
+    }
+
     if (written < towrite)
       memmove(channel->buff, channel->buff + written, towrite - written);
     channel->offset += written;
     channel->curr = channel->end - written;
-    return free;
+    *written_out = free;
+    return 0;
   }
+}
+
+CAMLexport int caml_putblock(struct channel* channel, char* p, intnat len)
+{
+  int written;
+  io_result err;
+  Lock(channel);
+  do {
+    err = caml_try_putblock(channel, p, len, &written);
+  } while (check_retry(channel, err));
+  Unlock(channel);
+  return written;
 }
 
 CAMLexport void caml_really_putblock(struct channel *channel,
                                      char *p, intnat len)
 {
   int written;
+  Lock(channel);
   while (len > 0) {
-    written = caml_putblock(channel, p, len);
+    io_result err;
+    do {
+      err = caml_try_putblock(channel, p, len, &written);
+    } while (check_retry(channel, err));
     p += written;
     len -= written;
   }
+  Unlock(channel);
 }
 
-CAMLexport void caml_seek_out(struct channel *channel, file_offset dest)
+static io_result caml_try_seek_out(struct channel *channel,
+                                       file_offset dest)
 {
-  caml_flush(channel);
-  caml_enter_blocking_section();
-  if (lseek(channel->fd, dest, SEEK_SET) != dest) {
-    caml_leave_blocking_section();
-    caml_sys_error(NO_ARG);
-  }
-  caml_leave_blocking_section();
-  channel->offset = dest;
+  io_result err;
+  int emptied;
+  do {
+    err = flush_partial(channel, &emptied);
+  } while (!err && !emptied);
+  if (err) return err;
+
+  err = caml_lseek_set(channel->fd, dest);
+  if (err) return err;
+
+  return 0;
 }
 
 CAMLexport file_offset caml_pos_out(struct channel *channel)
@@ -253,60 +356,92 @@ CAMLexport file_offset caml_pos_out(struct channel *channel)
 /* caml_do_read is exported for Cash */
 CAMLexport int caml_do_read(int fd, char *p, unsigned int n)
 {
-  return caml_read_fd(fd, 0, p, n);
+  io_result err;
+  int res;
+  err = caml_read_fd(fd, 0, p, n, &res);
+  if (err) raise_error(err);
+  return res;
 }
 
-CAMLexport unsigned char caml_refill(struct channel *channel)
+CAMLexport unsigned char caml_getch(struct channel* channel)
 {
-  int n;
-
-  n = caml_read_fd(channel->fd, channel->flags,
-                   channel->buff, channel->end - channel->buff);
-  if (n == 0) caml_raise_end_of_file();
-  channel->offset += n;
-  channel->max = channel->buff + n;
-  channel->curr = channel->buff + 1;
-  return (unsigned char)(channel->buff[0]);
+  char ch;
+  if (caml_getblock(channel, &ch, 1) != 1)
+    caml_raise_end_of_file();
+  return (unsigned char)ch;
 }
 
 CAMLexport uint32_t caml_getword(struct channel *channel)
 {
   int i;
+  unsigned char w[4];
   uint32_t res;
 
   if (! caml_channel_binary_mode(channel))
     caml_failwith("input_binary_int: not a binary channel");
+  if (caml_really_getblock(channel, (char*)w, 4) != 4)
+    caml_raise_end_of_file();
   res = 0;
   for(i = 0; i < 4; i++) {
-    res = (res << 8) + caml_getch(channel);
+    res = (res << 8) + w[i];
   }
   return res;
 }
 
-CAMLexport int caml_getblock(struct channel *channel, char *p, intnat len)
+static io_result try_refill(struct channel* channel, intnat len,
+                            int* found_len)
 {
   int n, avail, nread;
 
   n = len >= INT_MAX ? INT_MAX : (int) len;
   avail = channel->max - channel->curr;
   if (n <= avail) {
-    memmove(p, channel->curr, n);
-    channel->curr += n;
-    return n;
+    *found_len = n;
+    return 0;
   } else if (avail > 0) {
-    memmove(p, channel->curr, avail);
-    channel->curr += avail;
-    return avail;
+    *found_len = avail;
+    return 0;
   } else {
-    nread = caml_read_fd(channel->fd, channel->flags, channel->buff,
-                         channel->end - channel->buff);
+    io_result err;
+    err = caml_read_fd(channel->fd, channel->flags, channel->buff,
+                       channel->end - channel->buff,
+                       &nread);
+    if (err) {
+      *found_len = 0;
+      return err;
+    }
     channel->offset += nread;
     channel->max = channel->buff + nread;
+    channel->curr = channel->buff;
     if (n > nread) n = nread;
-    memmove(p, channel->buff, n);
-    channel->curr = channel->buff + n;
-    return n;
+    *found_len = n;
+    return 0;
   }
+}
+
+CAMLexport io_result caml_try_getblock(struct channel *channel, char *p,
+                                       intnat len, int* n)
+{
+  io_result err;
+
+  err = try_refill(channel, len, n);
+  if (err) return err;
+
+  memmove(p, channel->curr, *n);
+  channel->curr += *n;
+  return 0;
+}
+
+CAMLexport int caml_getblock(struct channel* channel, char* p, intnat len)
+{
+  io_result err;
+  int read;
+  Lock(channel);
+  do {
+    err = caml_try_getblock(channel, p, len, &read);
+  } while (check_retry(channel, err));
+  Unlock(channel);
+  return read;
 }
 
 /* Returns the number of bytes read. */
@@ -314,29 +449,34 @@ CAMLexport intnat caml_really_getblock(struct channel *chan, char *p, intnat n)
 {
   intnat k = n;
   int r;
+  Lock (chan);
   while (k > 0) {
-    r = caml_getblock(chan, p, k);
+    io_result err;
+    do {
+      err = caml_try_getblock(chan, p, k, &r);
+    } while (check_retry(chan, err));
     if (r == 0) break;
     p += r;
     k -= r;
   }
+  Unlock (chan);
   return n - k;
 }
 
-CAMLexport void caml_seek_in(struct channel *channel, file_offset dest)
+CAMLexport io_result caml_try_seek_in(struct channel *channel, file_offset dest)
 {
   if (dest >= channel->offset - (channel->max - channel->buff) &&
       dest <= channel->offset) {
     channel->curr = channel->max - (channel->offset - dest);
+    return 0;
   } else {
-    caml_enter_blocking_section();
-    if (lseek(channel->fd, dest, SEEK_SET) != dest) {
-      caml_leave_blocking_section();
-      caml_sys_error(NO_ARG);
-    }
-    caml_leave_blocking_section();
+    io_result err;
+    err = caml_lseek_set(channel->fd, dest);
+    if (err) return err;
+
     channel->offset = dest;
     channel->curr = channel->max = channel->buff;
+    return 0;
   }
 }
 
@@ -345,10 +485,12 @@ CAMLexport file_offset caml_pos_in(struct channel *channel)
   return channel->offset - (file_offset)(channel->max - channel->curr);
 }
 
-CAMLexport intnat caml_input_scan_line(struct channel *channel)
+static io_result caml_try_input_scan_line(struct channel *channel,
+                                          intnat* length)
 {
   char * p;
   int n;
+  io_result err;
 
   p = channel->curr;
   do {
@@ -367,23 +509,31 @@ CAMLexport intnat caml_input_scan_line(struct channel *channel)
         /* Buffer is full, no room to read more characters from the input.
            Return the number of characters in the buffer, with negative
            sign to indicate that no newline was encountered. */
-        return -(channel->max - channel->curr);
+        *length = -(channel->max - channel->curr);
+        return 0;
       }
       /* Fill the buffer as much as possible */
-      n = caml_read_fd(channel->fd, channel->flags,
-                       channel->max, channel->end - channel->max);
+      err = caml_read_fd(channel->fd, channel->flags,
+                         channel->max, channel->end - channel->max,
+                         &n);
+      if (err) {
+        *length = 0;
+        return err;
+      }
       if (n == 0) {
         /* End-of-file encountered. Return the number of characters in the
            buffer, with negative sign since we haven't encountered
            a newline. */
-        return -(channel->max - channel->curr);
+        *length = -(channel->max - channel->curr);
+        return 0;
       }
       channel->offset += n;
       channel->max += n;
     }
   } while (*p++ != '\n');
   /* Found a newline. Return the length of the line, newline included. */
-  return (p - channel->curr);
+  *length = (p - channel->curr);
+  return 0;
 }
 
 /* OCaml entry points for the I/O functions.  Wrap struct channel *
@@ -528,8 +678,9 @@ CAMLprim value caml_ml_close_channel(value vchannel)
     result = 0;
   }
   /* Ensure that every read or write on the channel will cause an
-     immediate caml_flush_partial or caml_refill, thus raising a Sys_error
+     immediate flush_partial or refill, thus raising a Sys_error
      exception */
+  // FIXME really?
   channel->curr = channel->max = channel->end;
 
   if (do_syscall) {
@@ -594,10 +745,13 @@ CAMLprim value caml_ml_flush_partial(value vchannel)
   CAMLparam1 (vchannel);
   struct channel * channel = Channel(vchannel);
   int res;
+  io_result err;
 
   if (channel->fd == -1) CAMLreturn(Val_true);
   Lock(channel);
-  res = caml_flush_partial(channel);
+  do {
+    err = flush_partial(channel, &res);
+  } while (check_retry(channel, err));
   Unlock(channel);
   CAMLreturn (Val_bool(res));
 }
@@ -608,31 +762,21 @@ CAMLprim value caml_ml_flush(value vchannel)
   struct channel * channel = Channel(vchannel);
 
   if (channel->fd == -1) CAMLreturn(Val_unit);
-  Lock(channel);
   caml_flush(channel);
-  Unlock(channel);
   CAMLreturn (Val_unit);
 }
 
 CAMLprim value caml_ml_output_char(value vchannel, value ch)
 {
   CAMLparam2 (vchannel, ch);
-  struct channel * channel = Channel(vchannel);
-
-  Lock(channel);
-  caml_putch(channel, Long_val(ch));
-  Unlock(channel);
+  caml_putch(Channel(vchannel), Long_val(ch));
   CAMLreturn (Val_unit);
 }
 
 CAMLprim value caml_ml_output_int(value vchannel, value w)
 {
   CAMLparam2 (vchannel, w);
-  struct channel * channel = Channel(vchannel);
-
-  Lock(channel);
-  caml_putword(channel, Long_val(w));
-  Unlock(channel);
+  caml_putword(Channel(vchannel), Long_val(w));
   CAMLreturn (Val_unit);
 }
 
@@ -643,9 +787,7 @@ CAMLprim value caml_ml_output_partial(value vchannel, value buff, value start,
   struct channel * channel = Channel(vchannel);
   int res;
 
-  Lock(channel);
   res = caml_putblock(channel, &Byte(buff, Long_val(start)), Long_val(length));
-  Unlock(channel);
   CAMLreturn (Val_int(res));
 }
 
@@ -661,7 +803,11 @@ CAMLprim value caml_ml_output_bytes(value vchannel, value buff, value start,
     /* We cannot call caml_really_putblock here because buff may move
        during caml_write_fd */
     while (len > 0) {
-      int written = caml_putblock(channel, &Byte(buff, pos), len);
+      io_result err;
+      int written;
+      do {
+        err = caml_try_putblock(channel, &Byte(buff, pos), len, &written);
+      } while (check_retry(channel, err));
       pos += written;
       len -= written;
     }
@@ -679,9 +825,12 @@ CAMLprim value caml_ml_seek_out(value vchannel, value pos)
 {
   CAMLparam2 (vchannel, pos);
   struct channel * channel = Channel(vchannel);
+  io_result err;
 
   Lock(channel);
-  caml_seek_out(channel, Long_val(pos));
+  do {
+    err = caml_try_seek_out(channel, Long_val(pos));
+  } while (check_retry(channel, err));
   Unlock(channel);
   CAMLreturn (Val_unit);
 }
@@ -690,9 +839,12 @@ CAMLprim value caml_ml_seek_out_64(value vchannel, value pos)
 {
   CAMLparam2 (vchannel, pos);
   struct channel * channel = Channel(vchannel);
+  io_result err;
 
   Lock(channel);
-  caml_seek_out(channel, File_offset_val(pos));
+  do {
+    err = caml_try_seek_out(channel, File_offset_val(pos));
+  } while (check_retry(channel, err));
   Unlock(channel);
   CAMLreturn (Val_unit);
 }
@@ -715,9 +867,7 @@ CAMLprim value caml_ml_input_char(value vchannel)
   struct channel * channel = Channel(vchannel);
   unsigned char c;
 
-  Lock(channel);
   c = caml_getch(channel);
-  Unlock(channel);
   CAMLreturn (Val_long(c));
 }
 
@@ -727,9 +877,7 @@ CAMLprim value caml_ml_input_int(value vchannel)
   struct channel * channel = Channel(vchannel);
   intnat i;
 
-  Lock(channel);
   i = caml_getword(channel);
-  Unlock(channel);
 #ifdef ARCH_SIXTYFOUR
   i = (i << 32) >> 32;          /* Force sign extension */
 #endif
@@ -741,33 +889,19 @@ CAMLprim value caml_ml_input(value vchannel, value buff, value vstart,
 {
   CAMLparam4 (vchannel, buff, vstart, vlength);
   struct channel * channel = Channel(vchannel);
-  intnat start, len;
-  int n, avail, nread;
+  int n;
+  io_result err;
 
   Lock(channel);
-  /* We cannot call caml_getblock here because buff may move during
+  /* We cannot call caml_try_getblock here because buff may move during
      caml_read_fd */
-  start = Long_val(vstart);
-  len = Long_val(vlength);
-  n = len >= INT_MAX ? INT_MAX : (int) len;
-  avail = channel->max - channel->curr;
-  if (n <= avail) {
-    memmove(&Byte(buff, start), channel->curr, n);
-    channel->curr += n;
-  } else if (avail > 0) {
-    memmove(&Byte(buff, start), channel->curr, avail);
-    channel->curr += avail;
-    n = avail;
-  } else {
-    nread = caml_read_fd(channel->fd, channel->flags, channel->buff,
-                         channel->end - channel->buff);
-    channel->offset += nread;
-    channel->max = channel->buff + nread;
-    if (n > nread) n = nread;
-    memmove(&Byte(buff, start), channel->buff, n);
-    channel->curr = channel->buff + n;
-  }
+  do {
+    err = try_refill(channel, Long_val(vlength), &n);
+  } while (check_retry(channel, err));
+  memmove(&Byte(buff, Long_val(vstart)), channel->curr, n);
+  channel->curr += n;
   Unlock(channel);
+
   CAMLreturn (Val_long(n));
 }
 
@@ -775,10 +909,14 @@ CAMLprim value caml_ml_seek_in(value vchannel, value pos)
 {
   CAMLparam2 (vchannel, pos);
   struct channel * channel = Channel(vchannel);
+  io_result err;
 
   Lock(channel);
-  caml_seek_in(channel, Long_val(pos));
+  do {
+    err = caml_try_seek_in(channel, Long_val(pos));
+  } while (check_retry(channel, err));
   Unlock(channel);
+
   CAMLreturn (Val_unit);
 }
 
@@ -786,10 +924,14 @@ CAMLprim value caml_ml_seek_in_64(value vchannel, value pos)
 {
   CAMLparam2 (vchannel, pos);
   struct channel * channel = Channel(vchannel);
+  io_result err;
 
   Lock(channel);
-  caml_seek_in(channel, File_offset_val(pos));
+  do {
+    err = caml_try_seek_in(channel, File_offset_val(pos));
+  } while (check_retry(channel, err));
   Unlock(channel);
+
   CAMLreturn (Val_unit);
 }
 
@@ -810,9 +952,13 @@ CAMLprim value caml_ml_input_scan_line(value vchannel)
   CAMLparam1 (vchannel);
   struct channel * channel = Channel(vchannel);
   intnat res;
+  io_result err;
 
   Lock(channel);
-  res = caml_input_scan_line(channel);
+  do {
+    err = caml_try_input_scan_line(channel, &res);
+  } while (check_retry(channel, err));
   Unlock(channel);
+
   CAMLreturn (Val_long(res));
 }

@@ -54,9 +54,6 @@ struct channel {
 
 enum {
   CHANNEL_FLAG_FROM_SOCKET = 1,  /* For Windows */
-#if defined(NATIVE_CODE) && defined(WITH_SPACETIME)
-  CHANNEL_FLAG_BLOCKING_WRITE = 2,
-#endif
 };
 
 /* For an output channel:
@@ -66,17 +63,7 @@ enum {
 */
 
 /* Functions and macros that can be called from C.  Take arguments of
-   type struct channel *.  No locking is performed. */
-
-#define caml_putch(channel, ch) do{                                       \
-  if ((channel)->curr >= (channel)->end) caml_flush_partial(channel);     \
-  *((channel)->curr)++ = (ch);                                            \
-}while(0)
-
-#define caml_getch(channel)                                                 \
-  ((channel)->curr >= (channel)->max                                        \
-   ? caml_refill(channel)                                                   \
-   : (unsigned char) *((channel)->curr)++)
+   type struct channel *. */
 
 CAMLextern struct channel * caml_open_descriptor_in (int);
 CAMLextern struct channel * caml_open_descriptor_out (int);
@@ -84,16 +71,38 @@ CAMLextern void caml_close_channel (struct channel *);
 CAMLextern int caml_channel_binary_mode (struct channel *);
 CAMLextern value caml_alloc_channel(struct channel *chan);
 
-CAMLextern int caml_flush_partial (struct channel *);
+/* High-level I/O operations.
+   These functions raise exceptions if errors occur.
+   They may run signal handlers.
+   The provided channel must *not* be locked:
+     these functions lock the channel themselves. */
+
 CAMLextern void caml_flush (struct channel *);
+CAMLextern void caml_putch(struct channel*, unsigned char ch);
 CAMLextern void caml_putword (struct channel *, uint32_t);
 CAMLextern int caml_putblock (struct channel *, char *, intnat);
 CAMLextern void caml_really_putblock (struct channel *, char *, intnat);
 
-CAMLextern unsigned char caml_refill (struct channel *);
+CAMLextern unsigned char caml_getch(struct channel*);
 CAMLextern uint32_t caml_getword (struct channel *);
 CAMLextern int caml_getblock (struct channel *, char *, intnat);
 CAMLextern intnat caml_really_getblock (struct channel *, char *, intnat);
+
+/* Low-level I/O operations.
+   These functions return an error code (0 for success).
+   They never raise exceptions nor run signal handlers,
+     but may return EINTR if a signal arrives.
+     (In such cases, the caller should unlock the channel
+      and run caml_process_pending_signals).
+   The provided channel must be locked by the caller. */
+
+typedef int io_result;
+
+CAMLextern io_result caml_try_flush (struct channel *);
+CAMLextern io_result caml_try_putblock (struct channel *, char *, intnat,
+                                        int* written);
+CAMLextern io_result caml_try_getblock (struct channel *, char *, intnat,
+                                        int* read);
 
 /* Extract a struct channel * from the heap object representing it */
 

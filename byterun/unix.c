@@ -68,35 +68,28 @@
 #define EWOULDBLOCK (-1)
 #endif
 
-int caml_read_fd(int fd, int flags, void * buf, int n)
+io_result caml_read_fd(int fd, int flags, void * buf, int n, int* nread)
 {
   int retcode;
-  do {
-    caml_enter_blocking_section();
-    retcode = read(fd, buf, n);
-    caml_leave_blocking_section();
-  } while (retcode == -1 && errno == EINTR);
-  if (retcode == -1) caml_sys_io_error(NO_ARG);
-  return retcode;
+  caml_enter_blocking_section();
+  retcode = read(fd, buf, n);
+  caml_leave_blocking_section();
+  if (retcode < 0) {
+    return errno;
+  } else {
+    *nread = retcode;
+    return 0;
+  }
 }
 
-int caml_write_fd(int fd, int flags, void * buf, int n)
+io_result caml_write_fd(int fd, int flags, void * buf, int n, int* nwritten)
 {
   int retcode;
  again:
-#if defined(NATIVE_CODE) && defined(WITH_SPACETIME)
-  if (flags & CHANNEL_FLAG_BLOCKING_WRITE) {
-    retcode = write(fd, buf, n);
-  } else {
-#endif
   caml_enter_blocking_section();
   retcode = write(fd, buf, n);
-  caml_leave_blocking_section();
-#if defined(NATIVE_CODE) && defined(WITH_SPACETIME)
-  }
-#endif
-  if (retcode == -1) {
-    if (errno == EINTR) goto again;
+  caml_leave_blocking_section_nosig();
+  if (retcode < 0) {
     if ((errno == EAGAIN || errno == EWOULDBLOCK) && n > 1) {
       /* We couldn't do a partial write here, probably because
          n <= PIPE_BUF and POSIX says that writes of less than
@@ -104,11 +97,13 @@ int caml_write_fd(int fd, int flags, void * buf, int n)
          We first try again with a partial write of 1 character.
          If that fails too, we'll return an error code. */
       n = 1; goto again;
+    } else {
+      return errno;
     }
+  } else {
+    *nwritten = retcode;
+    return 0;
   }
-  if (retcode == -1) caml_sys_io_error(NO_ARG);
-  CAMLassert (retcode > 0);
-  return retcode;
 }
 
 caml_stat_string caml_decompose_path(struct ext_table * tbl, char * path)

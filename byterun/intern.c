@@ -755,9 +755,7 @@ CAMLprim value caml_input_value(value vchan)
   struct channel * chan = Channel(vchan);
   CAMLlocal1 (res);
 
-  Lock(chan);
   res = caml_input_val(chan);
-  Unlock(chan);
   CAMLreturn (res);
 }
 
@@ -769,9 +767,7 @@ CAMLprim value caml_input_value_to_outside_heap(value vchan)
   struct channel * chan = Channel(vchan);
   CAMLlocal1 (res);
 
-  Lock(chan);
   res = caml_input_val_core(chan, 1);
-  Unlock(chan);
   CAMLreturn (res);
 }
 

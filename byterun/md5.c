@@ -45,7 +45,6 @@ CAMLexport value caml_md5_channel(struct channel *chan, intnat toread)
   intnat read;
   char buffer[4096];
 
-  Lock(chan);
   caml_MD5Init(&ctx);
   if (toread < 0){
     while (1){
@@ -64,7 +63,6 @@ CAMLexport value caml_md5_channel(struct channel *chan, intnat toread)
   }
   res = caml_alloc_string(16);
   caml_MD5Final(&Byte_u(res, 0), &ctx);
-  Unlock(chan);
   CAMLreturn (res);
 }
 

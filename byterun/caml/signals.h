@@ -51,6 +51,7 @@ CAMLextern void (* volatile caml_async_action_hook)(void);
 
 CAMLextern void caml_enter_blocking_section (void);
 CAMLextern void caml_leave_blocking_section (void);
+CAMLextern void caml_leave_blocking_section_nosig (void);
 
 #ifdef __cplusplus
 }

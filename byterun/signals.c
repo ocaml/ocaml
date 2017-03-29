@@ -111,23 +111,24 @@ CAMLexport int (*caml_try_leave_blocking_section_hook)(void) =
 
 CAMLexport void caml_enter_blocking_section(void)
 {
-  while (1){
-    /* Process all pending signals now */
-    caml_process_pending_signals();
-    caml_enter_blocking_section_hook ();
-    /* Check again for pending signals.
-       If none, done; otherwise, try again */
-    if (! caml_signals_are_pending) break;
-    caml_leave_blocking_section_hook ();
-  }
+  caml_enter_blocking_section_hook ();
 }
 
-CAMLexport void caml_leave_blocking_section(void)
+CAMLexport void caml_leave_blocking_section_nosig(void)
 {
   int saved_errno;
   /* Save the value of errno (PR#5982). */
   saved_errno = errno;
   caml_leave_blocking_section_hook ();
+  errno = saved_errno;
+}
+
+CAMLexport void caml_leave_blocking_section(void)
+{
+  int saved_errno;
+  caml_leave_blocking_section_nosig();
+  /* Save the value of errno (PR#5982). */
+  saved_errno = errno;
   caml_process_pending_signals();
   errno = saved_errno;
 }
