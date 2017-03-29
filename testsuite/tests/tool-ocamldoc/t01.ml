@@ -17,6 +17,11 @@ module type MT = sig
       (string * string * string) -> unit
   val y : int
 
+  type ob = < f : int >
+
   type obj_type =
-     < foo : int ; bar : float -> string ; gee : int -> (int * string) >
+     < foo : int ; bar : float -> string ; ob ; gee : int -> (int * string) >
+
+  type g = [`A]
+  type h = [`B of int | g | `C of string]
 end
