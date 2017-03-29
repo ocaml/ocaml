@@ -69,10 +69,10 @@ else
 OCAML_NATDYNLINKOPTS = -ccopt "$(NATDYNLINKOPTS)"
 endif
 
-ifeq "$(strip $(BYTECCLINKOPTS))" ""
-OCAML_BYTECCLINKOPTS=
+ifeq "$(strip $(LDFLAGS))" ""
+OCAML_LDFLAGS=
 else
-OCAML_BYTECCLINKOPTS = -ccopt "$(BYTECCLINKOPTS)"
+OCAML_LDFLAGS = -ccopt "$(LDFLAGS)"
 endif
 
 YACCFLAGS=-v --strict
@@ -306,8 +306,8 @@ utils/config.ml: utils/config.mlp config/Makefile
 	    -e 's|%%ASM%%|$(ASM)|' \
 	    -e 's|%%ASM_CFI_SUPPORTED%%|$(ASM_CFI_SUPPORTED)|' \
 	    -e 's|%%BYTECCLIBS%%|$(BYTECCLIBS)|' \
-	    -e 's|%%BYTECODE_C_COMPILER%%|$(BYTECODE_C_COMPILER)|' \
 	    -e 's|%%BYTERUN%%|$(BYTERUN)|' \
+	    -e 's|%%CC%%|$(CC)|' \
 	    -e 's|%%CCOMPTYPE%%|$(CCOMPTYPE)|' \
 	    -e 's|%%CC_PROFILE%%|$(CC_PROFILE)|' \
 	    -e 's|%%EXT_ASM%%|$(EXT_ASM)|' \
@@ -326,7 +326,10 @@ utils/config.ml: utils/config.mlp config/Makefile
 	    -e 's|%%MKMAINDLL%%|$(MKMAINDLL)|' \
 	    -e 's|%%MODEL%%|$(MODEL)|' \
 	    -e 's|%%NATIVECCLIBS%%|$(NATIVECCLIBS)|' \
-	    -e 's|%%NATIVE_C_COMPILER%%|$(NATIVE_C_COMPILER)|' \
+	    -e 's|%%OCAMLC_CFLAGS%%|$(OCAMLC_CFLAGS)|' \
+	    -e 's|%%OCAMLC_CPPFLAGS%%|$(OCAMLC_CPPFLAGS)|' \
+	    -e 's|%%OCAMLOPT_CFLAGS%%|$(OCAMLOPT_CFLAGS)|' \
+	    -e 's|%%OCAMLOPT_CPPFLAGS%%|$(OCAMLOPT_CPPFLAGS)|' \
 	    -e 's|%%PACKLD%%|$(PACKLD)|' \
 	    -e 's|%%PROFILING%%|$(PROFILING)|' \
 	    -e 's|%%PROFINFO_WIDTH%%|$(PROFINFO_WIDTH)|' \
@@ -611,7 +614,7 @@ install:
            toplevel/topdirs.mli "$(INSTALL_LIBDIR)"
 	$(MAKE) -C tools install
 ifeq "$(UNIX_OR_WIN32)" "unix" # Install manual pages only on Unix
-	$(MKDIR) "$(INSTALL_MANDIR)/man$(MANEXT)"
+	$(MKDIR) "$(INSTALL_MANDIR)/man$(PROGRAMS_MAN_SECTION)"
 	-$(MAKE) -C man install
 endif
 	for i in $(OTHERLIBRARIES); do \
@@ -845,7 +848,7 @@ partialclean::
 
 ocamlc.opt: compilerlibs/ocamlcommon.cmxa compilerlibs/ocamlbytecomp.cmxa \
             $(BYTESTART:.cmo=.cmx)
-	$(CAMLOPT) $(LINKFLAGS) $(OCAML_BYTECCLINKOPTS) -o $@ \
+	$(CAMLOPT) $(LINKFLAGS) $(OCAML_LDFLAGS) -o $@ \
 	  $^ -cclib "$(BYTECCLIBS)"
 
 partialclean::
@@ -1072,7 +1075,7 @@ partialclean::
 ifeq "$(UNIX_OR_WIN32)" "unix"
 .PHONY: checkstack
 checkstack:
-	if $(MKEXE) -o tools/checkstack$(EXE) tools/checkstack.c; \
+	if $(MKEXE) $(OUTPUTEXE)tools/checkstack$(EXE) tools/checkstack.c; \
 	  then tools/checkstack$(EXE); \
 	  else :; \
 	fi

@@ -95,10 +95,6 @@ $(LIBNAME).cmxa: $(THREADS_NCOBJS)
 # The following lines produce two object files st_stubs_b.$(O) and
 # st_stubs_n.$(O) from the same source file st_stubs.c (it is compiled
 # twice, each time with different options).
-# Since the source and object file have a different basename, the name of
-# the object file to produce must be given to the C compiler.
-# For gcc this is done with the -ofoo.$(O) option.
-# For msvc it's the /Fofoo.$(O) option.
 
 ifeq "$(TOOLCHAIN)" "msvc"
   CCOUTPUT=/Fo
@@ -107,14 +103,14 @@ else
 endif
 
 st_stubs_b.$(O): st_stubs.c $(HEADER)
-	$(BYTECC) -I$(ROOTDIR)/byterun $(BYTECCCOMPOPTS) $(SHAREDCCCOMPOPTS) \
-	  $(CCOUTPUT)$@ -c $<
+	$(CC) -c $(CFLAGS) $(CPPFLAGS) -I$(ROOTDIR)/byterun  \
+	  $(SHAREDCCCOMPOPTS) $(OUTPUTOBJ)$@ $<
 
 st_stubs_n.$(O): st_stubs.c $(HEADER)
-	$(NATIVECC) -I$(ROOTDIR)/asmrun -I$(ROOTDIR)/byterun \
-	  $(NATIVECCCOMPOPTS) $(SHAREDCCCOMPOPTS) -DNATIVE_CODE \
+	$(CC) $(CFLAGS) $(CPPFLAGS) -I$(ROOTDIR)/asmrun -I$(ROOTDIR)/byterun \
+	  $(SHAREDCCCOMPOPTS) -DNATIVE_CODE \
 	  -DTARGET_$(ARCH) -DMODEL_$(MODEL) -DSYS_$(SYSTEM) \
-	  $(CCOUTPUT)$@ -c $<
+	  $(OUTPUTOBJ)$@ -c $<
 
 partialclean:
 	rm -f *.cm*
@@ -159,14 +155,12 @@ depend:
 	$(error Dependencies cannot be regenerated using the MSVC ports)
 else
 depend:
-	$(BYTECC) -MM -I$(ROOTDIR)/byterun $(BYTECCCOMPOPTS) \
-	  $(SHAREDCCCOMPOPTS) st_stubs.c \
+	$(CPP) -MM $(CPPFLAGS) -I$(ROOTDIR)/byterun st_stubs.c \
 	  | sed -e 's/st_stubs\.o/st_stubs_b.$$(O)/' \
 	  -e 's/ st_\(posix\|win32\)\.h//g' > .depend
-	$(NATIVECC) -MM -I$(ROOTDIR)/asmrun -I$(ROOTDIR)/byterun \
-	  $(NATIVECCCOMPOPTS) $(SHAREDCCCOMPOPTS) -DNATIVE_CODE \
-	  -DTARGET_$(ARCH) -DMODEL_$(MODEL) -DSYS_$(SYSTEM) st_stubs.c \
-	  | sed -e 's/st_stubs\.o/st_stubs_n.$$(O)/' \
+	$(CPP) -MM $(CPPFLAGS) -I$(ROOTDIR)/asmrun -I$(ROOTDIR)/byterun \
+	  -DNATIVE_CODE -DTARGET_$(ARCH) -DMODEL_$(MODEL) -DSYS_$(SYSTEM) \
+	  st_stubs.c | sed -e 's/st_stubs\.o/st_stubs_n.$$(O)/' \
 	  -e 's/ st_\(posix\|win32\)\.h//g' >> .depend
 	$(CAMLRUN) ../../tools/ocamldep -slash *.mli *.ml >> .depend
 endif
