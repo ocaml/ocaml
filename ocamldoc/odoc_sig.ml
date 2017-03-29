@@ -290,7 +290,7 @@ module Analyser =
                 let (_,comment_opt) = just_after_special pos pos_end in
                 [name, comment_opt]
               | Otag ({txt=name}, _, ct) ::
-                  ((Oinherit ct2 | Otag (_, _, ct2)) as ele2) :: q
+                  ((Oinherit ct2 | Otag (_, _, ct2)) as ele2) :: q ->
                 let pos = Loc.ptyp_end ct in
                 let pos2 = Loc.ptyp_start ct2 in
                 let (_,comment_opt) = just_after_special pos pos2 in
