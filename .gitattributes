@@ -24,6 +24,11 @@
 *.png binary
 *.tfm binary
 
+# 'union' merge driver just unions textual content in case of conflict
+#   http://krlmlr.github.io/using-gitattributes-to-avoid-merge-conflicts/
+/.mailmap                merge=union
+/Changes                 merge=union
+
 # No header for text files (would be too obtrusive).
 *.md                     ocaml-typo=missing-header
 README*                  ocaml-typo=missing-header
@@ -128,3 +133,6 @@ testsuite/tests/parsing/*.ml text eol=lf
 
 # Similarly, the docstring tests fail for the same reason on Windows
 testsuite/tests/docstrings/empty.ml text eol=lf
+
+# And w04.ml
+testsuite/tests/warnings/w04.ml text eol=lf

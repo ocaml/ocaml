@@ -29,8 +29,7 @@ val imported_sets_of_closures_table
   : Flambda.function_declarations option Set_of_closures_id.Tbl.t
         (* flambda-only *)
 
-val reset: ?packname:string -> source_provenance:Timings.source_provenance ->
-        string -> unit
+val reset: ?packname:string -> string -> unit
         (* Reset the environment and record the name of the unit being
            compiled (arg).  Optional argument is [-for-pack] prefix. *)
 
@@ -47,10 +46,6 @@ val current_unit_name: unit -> string
 val current_unit_linkage_name: unit -> Linkage_name.t
         (* Return the linkage_name of the unit being compiled.
            flambda-only *)
-
-val current_build: unit -> Timings.source_provenance
-        (* Return the kind of build source being compiled. If it is a
-           file compilation it also provides the filename. *)
 
 val current_unit: unit -> Compilation_unit.t
         (* flambda-only *)

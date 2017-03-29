@@ -158,6 +158,10 @@ export LC_ALL=C
 
 $make -f $makefile distclean || :
 
+# `make distclean` does not clean the files from previous versions that
+# are not produced by the current version, so use `git clean` in addition.
+git clean -f -d -x
+
 if $docheckout; then
   git fetch origin
   git reset --hard FETCH_HEAD

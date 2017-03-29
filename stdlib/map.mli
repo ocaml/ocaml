@@ -86,6 +86,19 @@ module type S =
        of [x] in [m] disappears.
        @before 4.03 Physical equality was not ensured. *)
 
+    val update: key -> ('a option -> 'a option) -> 'a t -> 'a t
+    (** [update x f m] returns a map containing the same bindings as
+        [m], except for the binding of [x]. Depending on the value of
+        [y] where [y] is [f (find_opt x m)], the binding of [x] is
+        added, removed or updated. If [y] is [None], the binding is
+        removed if it exists; otherwise, if [y] is [Some z] then [x]
+        is associated to [z] in the resulting map.  If [x] was already
+        bound in [m] to a value that is physically equal to [z], [m]
+        is returned unchanged (the result of the function is then
+        physically equal to [m]).
+        @since 4.06.0
+    *)
+
     val singleton: key -> 'a -> 'a t
     (** [singleton x y] returns the one-element map that contains a binding [y]
         for [x].

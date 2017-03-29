@@ -84,3 +84,103 @@ let reset_zero : unit =
   else
     failed msg
 ;;
+
+let utf_8_spec =
+  (* UTF-8 byte sequences, cf. table 3.7 Unicode 9. *)
+  [(0x0000,0x007F),     [|(0x00,0x7F)|];
+   (0x0080,0x07FF),     [|(0xC2,0xDF); (0x80,0xBF)|];
+   (0x0800,0x0FFF),     [|(0xE0,0xE0); (0xA0,0xBF); (0x80,0xBF)|];
+   (0x1000,0xCFFF),     [|(0xE1,0xEC); (0x80,0xBF); (0x80,0xBF)|];
+   (0xD000,0xD7FF),     [|(0xED,0xED); (0x80,0x9F); (0x80,0xBF)|];
+   (0xE000,0xFFFF),     [|(0xEE,0xEF); (0x80,0xBF); (0x80,0xBF)|];
+   (0x10000,0x3FFFF),   [|(0xF0,0xF0); (0x90,0xBF); (0x80,0xBF); (0x80,0xBF)|];
+   (0x40000,0xFFFFF),   [|(0xF1,0xF3); (0x80,0xBF); (0x80,0xBF); (0x80,0xBF)|];
+   (0x100000,0x10FFFF), [|(0xF4,0xF4); (0x80,0x8F); (0x80,0xBF); (0x80,0xBF)|]]
+;;
+
+let utf_16be_spec =
+  (* UTF-16BE byte sequences, derived from table 3.5 Unicode 9. *)
+  [(0x0000,0xD7FF), [|(0x00,0xD7); (0x00,0xFF)|];
+   (0xE000,0xFFFF), [|(0xE0,0xFF); (0x00,0xFF)|];
+   (0x10000,0x10FFFF), [|(0xD8,0xDB); (0x00,0xFF); (0xDC,0xDF); (0x00,0xFF)|]]
+;;
+
+let uchar_map_of_spec spec =
+  (* array mapping Uchar.t as ints to byte sequences according to [spec]. *)
+  let map = Array.make ((Uchar.to_int Uchar.max) + 1) "" in
+  let add_range ((umin, umax), bytes) =
+    let len = Array.length bytes in
+    let bmin i = if i < len then fst bytes.(i) else max_int in
+    let bmax i = if i < len then snd bytes.(i) else min_int in
+    let uchar = ref umin in
+    let buf = Bytes.create len in
+    let add len' =
+      if len <> len' then () else
+      begin
+        let bytes = Bytes.to_string buf in
+        map.(!uchar) <- bytes;
+        incr uchar;
+      end
+    in
+    for b0 = bmin 0 to bmax 0 do
+      Bytes.unsafe_set buf 0 (Char.chr b0);
+      for b1 = bmin 1 to bmax 1 do
+        Bytes.unsafe_set buf 1 (Char.chr b1);
+        for b2 = bmin 2 to bmax 2 do
+          Bytes.unsafe_set buf 2 (Char.chr b2);
+          for b3 = bmin 3 to bmax 3 do
+            Bytes.unsafe_set buf 3 (Char.chr b3);
+            add 4;
+          done;
+          add 3;
+        done;
+        add 2;
+      done;
+      add 1;
+    done;
+    assert (!uchar - 1 = umax)
+  in
+  List.iter add_range spec;
+  map
+;;
+
+let test_spec_map msg utf_x_map buffer_add_utf_x_uchar =
+  let b = Buffer.create 4 in
+  let rec loop u =
+    Buffer.clear b; buffer_add_utf_x_uchar b u;
+    match Buffer.contents b = utf_x_map.(Uchar.to_int u) with
+    | false -> failed (sprintf "%s of U+%04X" msg (Uchar.to_int u))
+    | true ->
+        if Uchar.equal u Uchar.max then passed msg else loop (Uchar.succ u)
+  in
+  loop Uchar.min
+;;
+
+let add_utf_8_uchar : unit =
+  let map = uchar_map_of_spec utf_8_spec in
+  test_spec_map
+    "add_utf_8_uchar: test against spec" map Buffer.add_utf_8_uchar
+;;
+
+let add_utf_16be_uchar : unit =
+  let map = uchar_map_of_spec utf_16be_spec in
+  test_spec_map
+    "add_utf_16be_uchar: test against spec" map Buffer.add_utf_16be_uchar
+;;
+
+let add_utf_16le_uchar : unit =
+  (* The uchar_map_of_spec generation function doesn't work on a LE spec since
+     uchars and byte seqs have to increase and map together; simply swap
+     the map obtained with utf_16be_spec. *)
+  let map =
+    let swap bytes =
+      let swap i = match i with
+      | 0 -> 1 | 1 -> 0 | 2 -> 3 | 3 -> 2 | _ -> assert false
+      in
+      String.init (String.length bytes) (fun i -> bytes.[swap i])
+    in
+    Array.map swap (uchar_map_of_spec utf_16be_spec)
+  in
+  test_spec_map
+    "add_utf_16le_uchar: test against spec" map Buffer.add_utf_16le_uchar
+;;

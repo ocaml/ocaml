@@ -29,7 +29,7 @@ CAMLprim value unix_readlink(value opath)
   char* path;
   DWORD attributes;
   caml_unix_check_path(opath, "readlink");
-  path = caml_strdup(String_val(opath));
+  path = caml_stat_strdup(String_val(opath));
 
   caml_enter_blocking_section();
   attributes = GetFileAttributes(path);

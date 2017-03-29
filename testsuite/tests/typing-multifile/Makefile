@@ -14,9 +14,9 @@
 #**************************************************************************
 
 BASEDIR=../..
-GENERATED= a.ml b.ml c.ml
+GENERATED= a.ml b.ml c.ml d.mli e.ml
 
-default: pr7325
+default: pr7325 pr6372
 
 pr7325:
 	@printf " ... testing pr7325:"
@@ -24,6 +24,13 @@ pr7325:
 	@echo "type 'a t = 'a A.t" > b.ml
 	@echo 'external f : unit -> unit B.t = "%identity"' > c.ml
 	@$(OCAMLC) -c a.ml b.ml && rm a.cmi && $(OCAMLC) -c c.ml \
+	  && echo " => passed" || echo " => failed"
+
+pr6372:
+	@printf " ... testing pr6372:"
+	@echo "type _ t =  C: { f: ('a -> [<\`X]) t } -> [<\`X] t" > d.mli
+	@echo "open D;; let f (C {f}) = ()" > e.ml
+	@$(OCAMLC) -c d.mli e.ml \
 	  && echo " => passed" || echo " => failed"
 
 clean: defaultclean

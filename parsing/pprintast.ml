@@ -245,6 +245,8 @@ and core_type ctxt f x =
           (type_with_label ctxt) (l,ct1) (core_type ctxt) ct2
     | Ptyp_alias (ct, s) ->
         pp f "@[<2>%a@;as@;'%s@]" (core_type1 ctxt) ct s
+    | Ptyp_poly ([], ct) ->
+        core_type ctxt f ct
     | Ptyp_poly (sl, ct) ->
         pp f "@[<2>%a%a@]"
           (fun f l ->
@@ -1106,6 +1108,9 @@ and binding ctxt f {pvb_pat=p; pvb_expr=x; _} =
   if x.pexp_attributes <> []
   then pp f "%a@;=@;%a" (pattern ctxt) p (expression ctxt) x else
   match is_desugared_gadt p x with
+  | Some (p, [], ct, e) ->
+      pp f "%a@;: %a@;=@;%a"
+        (simple_pattern ctxt) p (core_type ctxt) ct (expression ctxt) e
   | Some (p, tyvars, ct, e) -> begin
     pp f "%a@;: type@;%a.%a@;=@;%a"
     (simple_pattern ctxt) p (list pp_print_string ~sep:"@;")

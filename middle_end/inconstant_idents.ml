@@ -439,7 +439,7 @@ module Inconstants (P:Param) (Backend:Backend_intf.S) = struct
             | outer_var ->
               register_implication ~in_nc:(Var outer_var.var)
                 ~implies_in_nc:[Var param])
-          ffunc.params;
+          (Parameter.List.vars ffunc.params);
         mark_loop ~toplevel:false [] ffunc.body)
       function_decls.funs
 

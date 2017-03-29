@@ -26,7 +26,7 @@
    it might belong to. */
 
 #define Is_young(val) \
-  (Assert (Is_block (val)), \
+  (CAMLassert (Is_block (val)), \
    (addr)(val) < (addr)caml_young_end && (addr)(val) > (addr)caml_young_start)
 
 #define Is_in_heap(a) (Classify_addr(a) & In_heap)

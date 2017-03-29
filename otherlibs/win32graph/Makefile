@@ -27,6 +27,7 @@ graphics.ml: ../graph/graphics.ml
 graphics.mli: ../graph/graphics.mli
 	cp ../graph/graphics.mli graphics.mli
 
+.PHONY:
 depend:
 
 graphics.cmo: graphics.cmi

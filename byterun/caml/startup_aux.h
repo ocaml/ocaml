@@ -30,8 +30,14 @@ extern uintnat caml_init_heap_wsz;
 extern uintnat caml_init_max_stack_wsz;
 extern uintnat caml_init_major_window;
 extern uintnat caml_trace_level;
+extern uintnat caml_cleanup_on_exit;
 
 extern void caml_parse_ocamlrunparam (void);
+
+/* Common entry point to caml_startup.
+   Returns 0 if the runtime is already initialized.
+   If [pooling] is 0, [caml_stat_*] functions will not be backed by a pool. */
+extern int caml_startup_aux (int pooling);
 
 #endif /* CAML_INTERNALS */
 

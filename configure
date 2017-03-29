@@ -24,7 +24,8 @@ bindir=''
 target_bindir=''
 libdir=''
 mandir=''
-manext=1
+programs_man_section=1
+libraries_man_section=3
 host_type=unknown
 target_type=""
 ccoption=''
@@ -43,11 +44,11 @@ disable_libunwind=false
 graph_wanted=yes
 pthread_wanted=yes
 dl_defs=''
-verbose=no
+verbose=false
 with_curses=yes
 debugruntime=false
 with_instrumented_runtime=false
-with_sharedlibs=yes
+with_sharedlibs=true
 partialld="ld -r"
 with_debugger=ocamldebugger
 with_ocamldoc=ocamldoc
@@ -119,10 +120,9 @@ while : ; do
         case "$2" in
           */man[1-9ln])
             mandir=`echo $2 | sed -e 's|^\(.*\)/man.$|\1|'`
-            manext=`echo $2 | sed -e 's/^.*\(.\)$/\1/'`;;
+            programs_man_section=`echo $2 | sed -e 's/^.*\(.\)$/\1/'`;;
           *)
-            mandir=$2
-            manext=1;;
+            mandir=$2;;
         esac
         shift;;
     -libunwinddir|--libunwinddir)
@@ -150,7 +150,7 @@ while : ; do
     -no-curses|--no-curses)
         with_curses=no;;
     -no-shared-libs|--no-shared-libs)
-        with_sharedlibs=no;;
+        with_sharedlibs=false;;
     -x11include*|--x11include*)
         x11_include_dir=$2; shift;;
     -x11lib*|--x11lib*)
@@ -167,7 +167,7 @@ while : ; do
     -dllibs*|--dllibs*)
         dllib="$2"; shift;;
     -verbose|--verbose)
-        verbose=yes;;
+        verbose=true;;
     -with-debug-runtime|--with-debug-runtime)
         debugruntime=true;;
     -with-instrumented-runtime|--with-instrumented-runtime)
@@ -276,7 +276,8 @@ case "$mandir" in
       mandir="$prefix/man";;
    *) echo "MANDIR=$mandir" >> Makefile;;
 esac
-echo "MANEXT=$manext" >> Makefile
+echo "PROGRAMS_MAN_SECTION=$programs_man_section" >> Makefile
+echo "LIBRARIES_MAN_SECTION=$libraries_man_section" >> Makefile
 
 # Determine the system type
 
@@ -323,6 +324,10 @@ fi
 
 inf "Using compiler $cc."
 
+# Configure compiler to use in further tests.
+
+export cc verbose
+
 # Determine the C compiler family (GCC, Clang, etc)
 
 ccfamily=`$cc -E cckind.c | grep '^[a-z]' | tr -s ' ' '-'`
@@ -331,12 +336,6 @@ case $? in
   *) err "Unable to preprocess the test program.\n" \
          "Make sure the C compiler $cc is properly installed.";;
 esac
-
-# Configure the bytecode compiler
-
-# The BYTECC make variable defines which compiler and options to use
-# to compile C code intended to be used by OCaml bytecode programs.
-# It is used inside OCaml's build system.
 
 # The BYTECODE_C_COMPILER make variable says how the C compiler should be
 # invoked to process a third-party C source file passed to ocamlc
@@ -354,12 +353,17 @@ esac
 # in the OCaml distribution and third-party C source files compiled
 # with ocamlc.
 
-bytecc="$cc"
-mkexe="\$(BYTECC)"
+mkexe="\$(CC) \$(CFLAGS) \$(CPPFLAGS)"
 mkexedebugflag="-g"
-bytecccompopts=""
-byteccprivatecompopts=""
-bytecclinkopts=""
+common_cflags=""
+common_cppflags=""
+internal_cflags=""
+internal_cppflags=""
+ocamlc_cflags=""
+ocamlc_cppflags=""
+ocamlopt_cflags=""
+ocamlopt_cppflags=""
+ldflags=""
 ostype="Unix"
 exe=""
 iflexdir=""
@@ -384,8 +388,8 @@ esac
 
 case "$ccfamily" in
   clang-*)
-    bytecccompopts="-O2 -fno-strict-aliasing -fwrapv";
-    byteccprivatecompopts="$gcc_warnings";;
+    common_cflags="-O2 -fno-strict-aliasing -fwrapv";
+    internal_cflags="$gcc_warnings";;
   gcc-[012]-*)
     # Some versions known to miscompile OCaml, e,g, 2.7.2.1, some 2.96.
     # Plus: C99 support unknown.
@@ -395,31 +399,26 @@ case "$ccfamily" in
     # Known problems with -fwrapv fixed in 4.2 only.
     wrn "This version of GCC is rather old.  Reducing optimization level."
     wrn "Consider using GCC version 4.2 or above."
-    bytecccompopts="-std=gnu99 -O";
-    byteccprivatecompopts="$gcc_warnings";;
+    common_cflags="-std=gnu99 -O";
+    internal_cflags="$gcc_warnings";;
   gcc-4-*)
-    bytecccompopts="-std=gnu99 -O2 -fno-strict-aliasing -fwrapv \
+    common_cflags="-std=gnu99 -O2 -fno-strict-aliasing -fwrapv \
 -fno-builtin-memcmp";
-    byteccprivatecompopts="$gcc_warnings";;
+    internal_cflags="$gcc_warnings";;
   gcc-*)
-    bytecccompopts="-O2 -fno-strict-aliasing -fwrapv";
-    byteccprivatecompopts="$gcc_warnings";;
+    common_cflags="-O2 -fno-strict-aliasing -fwrapv";
+    internal_cflags="$gcc_warnings";;
   *)
-    bytecccompopts="-O";;
+    common_cflags="-O";;
 esac
 
-byteccprivatecompopts="-DCAML_NAME_SPACE $byteccprivatecompopts"
+internal_cppflags="-DCAML_NAME_SPACE $internal_cppflags"
 
 # Adjust according to target
 
-case "$bytecc,$target" in
-  cc,*-*-nextstep*)
-    # GNU C extensions disabled, but __GNUC__ still defined!
-    bytecccompopts="$bytecccompopts -U__GNUC__ -posix"
-    bytecclinkopts="-posix";;
+case "$cc,$target" in
   *,*-*-rhapsody*)
-    # Almost the same as NeXTStep
-    bytecccompopts="$bytecccompopts -DSHRINKED_GNUC"
+    common_cppflags="-DSHRINKED_GNUC $common_cppflags"
     mathlib="";;
   *,*-*-darwin*)
     mathlib=""
@@ -436,56 +435,56 @@ case "$bytecc,$target" in
     # No -lm library
     mathlib="";;
   *gcc,alpha*-*-osf*)
-    if cc="$bytecc" sh ./hasgot -mieee; then
-      bytecccompopts="-mieee $bytecccompopts";
+    if sh ./hasgot -mieee; then
+      common_cflags="-mieee $common_cflags";
     fi
     # Put code and static data in lower 4GB
-    bytecclinkopts="-Wl,-T,12000000 -Wl,-D,14000000"
+    ldflags="-Wl,-T,12000000 -Wl,-D,14000000"
     # Tell gcc that we can use 32-bit code addresses for threaded code
     echo "#define ARCH_CODE32" >> m.h;;
   cc,alpha*-*-osf*)
-    bytecccompopts="-std1 -ieee";;
+    common_cflags="-std1 -ieee";;
   *gcc*,alpha*-*-linux*)
-    if cc="$bytecc" sh ./hasgot -mieee; then
-      bytecccompopts="-mieee $bytecccompopts";
+    if sh ./hasgot -mieee; then
+      common_cflags="-mieee $common_cflags";
     fi;;
   *,mips-*-irix6*)
     # Turn off warning "unused library"
-    bytecclinkopts="-n32 -Wl,-woff,84";;
+    ldflags="-n32 -Wl,-woff,84";;
   *,alpha*-*-unicos*)
     # For the Cray T3E
-    bytecccompopts="$bytecccompopts -DUMK";;
+    common_cppflags="$common_cppflags -DUMK";;
   *,powerpc-*-aix*)
     # Avoid name-space pollution by requiring Unix98-conformant includes
-    bytecccompopts="$bytecccompopts -D_XOPEN_SOURCE=500 -D_ALL_SOURCE";;
+    common_cppflags="$common_cppflags -D_XOPEN_SOURCE=500 -D_ALL_SOURCE";;
   *,*-*-cygwin*)
     case $target in
       i686-*) flavor=cygwin;;
       x86_64-*) flavor=cygwin64;;
       *) err "unknown cygwin variant";;
     esac
-    bytecccompopts="$bytecccompopts -U_WIN32"
-    if test $with_sharedlibs = yes; then
+    common_cppflags="$common_cppflags -U_WIN32"
+    if $with_sharedlibs; then
       flexlink="flexlink -chain $flavor -merge-manifest -stack 16777216"
       flexdir=`$flexlink -where | tr -d '\015'`
       if test -z "$flexdir"; then
         wrn "flexlink not found: native shared libraries won't be available."
-        with_sharedlibs=no
+        with_sharedlibs=false
       else
         iflexdir="-I\"$flexdir\""
         mkexe="$flexlink -exe"
         mkexedebugflag="-link -g"
       fi
     fi
-    if test $with_sharedlibs = no; then
+    if ! $with_sharedlibs; then
       mkexe="$mkexe -Wl,--stack,16777216"
-      bytecclinkopts="-Wl,--stack,16777216"
+      ldflags="-Wl,--stack,16777216"
     fi
     exe=".exe"
     ostype="Cygwin";;
   *,*-*-mingw*)
     dllccompopt="-DCAML_DLL"
-    if test $with_sharedlibs = yes; then
+    if $with_sharedlibs; then
       case "$target" in
         i686-*-*)   flexlink_chain="mingw";;
         x86_64-*-*) flexlink_chain="mingw64";;
@@ -494,7 +493,7 @@ case "$bytecc,$target" in
       flexdir=`$flexlink -where`
       if test -z "$flexdir"; then
         wrn "flexlink not found: native shared libraries won't be available."
-        with_sharedlibs=no
+        with_sharedlibs=false
       else
         iflexdir="-I\"$flexdir\""
         mkexe="$flexlink -exe"
@@ -514,14 +513,13 @@ case "$bytecc,$target" in
     echo "#endif" >> m.h;;
 esac
 
-# Configure compiler to use in further tests.
+# Configure compiler options to use in further tests.
 
-cc="$bytecc $bytecclinkopts"
-export cc cclibs verbose
+export cclibs ldflags
 
 # Check C compiler.
 
-cc="$bytecc $bytecccompopts $byteccprivatecompopts $bytecclinkopts" sh ./runtest ansi.c
+cflags="$common_cflags $internal_cflags" sh ./runtest ansi.c
 case $? in
   0) inf "The C compiler is ISO C99 compliant." ;;
   1) wrn "The C compiler is ANSI / ISO C90 compliant, but not ISO C99" \
@@ -729,11 +727,11 @@ shared_libraries_supported=false
 dl_needs_underscore=false
 sharedcccompopts=''
 mksharedlib='shared-libs-not-available'
-byteccrpath=''
+rpath=''
 mksharedlibrpath=''
 natdynlinkopts=""
 
-if test $with_sharedlibs = "yes"; then
+if $with_sharedlibs; then
   case "$target" in
     *-*-cygwin*)
       mksharedlib="$flexlink"
@@ -744,70 +742,70 @@ if test $with_sharedlibs = "yes"; then
       mkmaindll="$flexlink -maindll"
       shared_libraries_supported=true;;
     alpha*-*-osf*)
-      case "$bytecc" in
+      case "$cc" in
         *gcc*)
           sharedcccompopts="-fPIC"
-          mksharedlib="$bytecc -shared"
-          byteccrpath="-Wl,-rpath,"
+          mksharedlib="$cc -shared"
+          rpath="-Wl,-rpath,"
           mksharedlibrpath="-Wl,-rpath,"
           shared_libraries_supported=true;;
         cc*)
           sharedcccompopts=""
           mksharedlib="ld -shared -expect_unresolved '*'"
-          byteccrpath="-Wl,-rpath,"
+          rpath="-Wl,-rpath,"
           mksharedlibrpath="-rpath "
           shared_libraries_supported=true;;
       esac;;
     *-*-solaris2*)
-      case "$bytecc" in
+      case "$cc" in
         *gcc*)
           sharedcccompopts="-fPIC"
           if sh ./solaris-ld; then
             mksharedlib="ld -G"
-            byteccrpath="-R"
+            rpath="-R"
             mksharedlibrpath="-R"
           else
-            mksharedlib="$bytecc -shared"
-            bytecclinkopts="$bytecclinkopts -Wl,-E"
+            mksharedlib="$cc -shared"
+            ldflags="$ldflags -Wl,-E"
             natdynlinkopts="-Wl,-E"
-            byteccrpath="-Wl,-rpath,"
+            rpath="-Wl,-rpath,"
             mksharedlibrpath="-Wl,-rpath,"
           fi
           shared_libraries_supported=true;;
         *)
           sharedcccompopts="-KPIC"
-          byteccrpath="-R"
+          rpath="-R"
           mksharedlibrpath="-R"
           mksharedlib="/usr/ccs/bin/ld -G"
           shared_libraries_supported=true;;
       esac;;
     mips*-*-irix[56]*)
-      case "$bytecc" in
+      case "$cc" in
         cc*) sharedcccompopts="";;
         *gcc*) sharedcccompopts="-fPIC";;
       esac
       mksharedlib="ld -shared -rdata_shared"
-      byteccrpath="-Wl,-rpath,"
+      rpath="-Wl,-rpath,"
       mksharedlibrpath="-rpath "
       shared_libraries_supported=true;;
     i[3456]86-*-darwin[89].*)
-      mksharedlib="$bytecc -shared -flat_namespace -undefined suppress \
+      mksharedlib="$cc -shared -flat_namespace -undefined suppress \
                    -read_only_relocs suppress"
-      bytecccompopts="$dl_defs $bytecccompopts"
+      common_cflags="$dl_defs $common_cflags"
       dl_needs_underscore=false
       shared_libraries_supported=true;;
     *-apple-darwin*)
-      mksharedlib="$bytecc -shared -flat_namespace -undefined suppress \
+      mksharedlib="$cc -shared -flat_namespace -undefined suppress \
                    -Wl,-no_compact_unwind"
-      bytecccompopts="$dl_defs $bytecccompopts"
+      common_cflags="$dl_defs $common_cflags"
       dl_needs_underscore=false
       shared_libraries_supported=true;;
-    *-*-linux-gnu|*-*-linux|*-*-freebsd[3-9]*|*-*-freebsd[1-9][0-9]*\
+    *-*-linux*|*-*-freebsd[3-9]*|*-*-freebsd[1-9][0-9]*\
     |*-*-openbsd*|*-*-netbsd*|*-*-dragonfly*|*-*-gnu*|*-*-haiku*)
       sharedcccompopts="-fPIC"
-      mksharedlib="$bytecc -shared"
-      bytecclinkopts="$bytecclinkopts -Wl,-E"
-      byteccrpath="-Wl,-rpath,"
+      mksharedlib="$cc -shared"
+      ldflags="$ldflags -Wl,-E"
+      rpath="-Wl,-rpath,"
       mksharedlibrpath="-Wl,-rpath,"
       natdynlinkopts="-Wl,-E"
       shared_libraries_supported=true;;
@@ -822,7 +820,7 @@ fi
 
 natdynlink=false
 
-if test $with_sharedlibs = "yes"; then
+if $with_sharedlibs; then
   case "$target" in
     *-*-cygwin*)                  natdynlink=true;;
     *-*-mingw*)                   natdynlink=true;;
@@ -865,20 +863,6 @@ fi
 
 # Configure the native-code compiler
 
-# The NATIVECC make variable defines which compiler and options to use
-# to compile C code intended to be used by OCaml native programs.
-# It is used inside OCaml's build system.
-
-# The NATIVE_C_COMPILER make variable says how the C compiler should be
-# invoked to process a third-party C source file passed to ocamlopt
-# when no -cc command-line option has been specified.
-
-# The NATIVECCCOMPOPTS make variable contains options to pass to the C
-# compiler, but only when compiling C files that belong to the OCaml
-# distribution.
-# In other words, when ocamlopt is called to compile a third-party C
-# source file, it will _not_ pass these options to the C compiler.
-
 arch=none
 model=default
 system=unknown
@@ -890,7 +874,6 @@ case "$target" in
   sparc*-*-gnu*)                arch=sparc; system=gnu;;
   i[3456]86-*-linux*)           arch=i386; system=linux_`sh ./runtest elf.c`;;
   i[3456]86-*-*bsd*)            arch=i386; system=bsd_`sh ./runtest elf.c`;;
-  i[3456]86-*-nextstep*)        arch=i386; system=nextstep;;
   i[3456]86-*-solaris*)         if $arch64; then
                                   arch=amd64; system=solaris
                                 else
@@ -954,22 +937,9 @@ case "$native_compiler" in
       arch=none; model=default; system=unknown; natdynlink=false;;
 esac
 
-if test -z "$ccoption"; then
-  nativecc="$bytecc"
-else
-  nativecc="$ccoption"
-fi
-
-nativecccompopts="$bytecccompopts"
-nativeccprivatecompopts="$byteccprivatecompopts"
 nativeccprofopts=''
-nativecclinkopts=''
-# FIXME the naming of nativecclinkopts is broken: these are options for
-# ld (for shared libs), not for cc
-nativeccrpath="$byteccrpath"
 
-case "$arch,$nativecc,$system,$model" in
-  *,*,nextstep,*)      nativecclinkopts="-posix";;
+case "$arch,$cc,$system,$model" in
   *,*,rhapsody,*)      if $arch64; then partialld="ld -r -arch ppc64"; fi;;
   amd64,gcc*,macosx,*) partialld="ld -r -arch x86_64";;
   amd64,gcc*,solaris,*) partialld="ld -r -m elf_x86_64";;
@@ -1037,7 +1007,7 @@ case "$arch,$system" in
   sparc,bsd) profiling='true';;
   sparc,solaris)
     profiling='true'
-    case "$nativecc" in gcc*) ;; *) cc_profile='-xpg';; esac;;
+    case "$cc" in gcc*) ;; *) cc_profile='-xpg';; esac;;
   amd64,linux) profiling='true';;
   amd64,openbsd) profiling='true';;
   amd64,freebsd) profiling='true';;
@@ -1100,8 +1070,7 @@ fi
 
 # Use 64-bit file offset if possible
 
-bytecccompopts="$bytecccompopts -D_FILE_OFFSET_BITS=64"
-nativecccompopts="$nativecccompopts -D_FILE_OFFSET_BITS=64"
+common_cppflags="$common_cppflags -D_FILE_OFFSET_BITS=64"
 
 # Check the semantics of signal handlers
 
@@ -1581,16 +1550,13 @@ if test "$pthread_wanted" = "yes"; then
     inf "POSIX threads library supported."
     systhread_support=true
     otherlibraries="$otherlibraries systhreads"
-    bytecccompopts="$bytecccompopts -D_REENTRANT"
-    nativecccompopts="$nativecccompopts -D_REENTRANT"
+    common_cppflags="$common_cppflags -D_REENTRANT"
     case "$target" in
       *-*-freebsd*|*-*-dragonfly*)
-          bytecccompopts="$bytecccompopts -D_THREAD_SAFE"
-          nativecccompopts="$nativecccompopts -D_THREAD_SAFE";;
+          common_cppflags="$common_cppflags -D_THREAD_SAFE";;
       *-*-openbsd*)
-          bytecccompopts="$bytecccompopts -pthread"
-          asppflags="$asppflags -pthread"
-          nativecccompopts="$nativecccompopts -pthread";;
+          common_cflags="$common_cflags -pthread";
+          asppflags="$asppflags -pthread";;
     esac
     inf "Options for linking with POSIX threads: $pthread_link"
     if sh ./hasgot $pthread_link sigwait; then
@@ -1797,11 +1763,29 @@ echo "X11_LINK=$x11_link" >> Makefile
 
 # Look for BFD library
 
-if sh ./hasgot -DPACKAGE=ocaml -i bfd.h && \
-   sh ./hasgot -DPACKAGE=ocaml -lbfd -ldl -liberty -lz bfd_openr; then
+if $shared_libraries_supported && ./hasgot -DPACKAGE=ocaml -i bfd.h ; then
   inf "BFD library found."
-  echo "#define HAS_LIBBFD" >> s.h
-  echo "LIBBFD_LINK=-lbfd -ldl -liberty -lz" >> Makefile
+  if sh ./hasgot -DPACKAGE=ocaml -lbfd bfd_openr; then
+    LIBBFD_LINK="-lbfd"
+    inf "BFD links with $LIBBFD_LINK"
+    echo "#define HAS_LIBBFD" >> s.h
+  elif sh ./hasgot -DPACKAGE=ocaml -lbfd -ldl bfd_openr; then
+    LIBBFD_LINK="-lbfd -ldl"
+    inf "BFD links with $LIBBFD_LINK"
+    echo "#define HAS_LIBBFD" >> s.h
+  elif sh ./hasgot -DPACKAGE=ocaml -lbfd -ldl -liberty bfd_openr; then
+    LIBBFD_LINK="-lbfd -ldl -liberty"
+    inf "BFD links with $LIBBFD_LINK"
+    echo "#define HAS_LIBBFD" >> s.h
+  elif sh ./hasgot -DPACKAGE=ocaml -lbfd -ldl -liberty -lz bfd_openr; then
+    LIBBFD_LINK="-lbfd -ldl -liberty -lz"
+    inf "BFD links with $LIBBFD_LINK"
+    echo "#define HAS_LIBBFD" >> s.h
+  else
+    wrn "Could not determine link options for the BFD library"
+    LIBBFD_LINK=
+  fi
+  echo "LIBBFD_LINK=$LIBBFD_LINK" >> Makefile
   echo LIBBFD_INCLUDE= >>Makefile
 elif sh ./hasgot -DPACKAGE=ocaml -I/opt/local/include -i bfd.h && \
      sh ./hasgot -DPACKAGE=ocaml -L/opt/local/lib -lbfd -ldl \
@@ -1838,9 +1822,7 @@ fi
 if test "$with_frame_pointers" = "true"; then
   case "$target,$cc" in
     x86_64-*-linux*,gcc*|x86_64-*-linux*,clang*)
-       nativecccompopts="$nativecccompopts -g  -fno-omit-frame-pointer"
-       bytecccompopts="$bytecccompopts -g  -fno-omit-frame-pointer"
-       nativecclinkopts="$nativecclinkopts -g"
+       common_cflags="$common_cflags -g  -fno-omit-frame-pointer"
        echo "#define WITH_FRAME_POINTERS" >> m.h
        ;;
     *) err "Unsupported architecture with frame pointers";;
@@ -1964,8 +1946,7 @@ if ! $shared_libraries_supported; then
 fi
 
 if $with_fpic; then
-  bytecccompopts="$bytecccompopts $sharedcccompopts"
-  nativecccompopts="$nativecccompopts $sharedcccompopts"
+  common_cflags="$common_cflags $sharedcccompopts"
   aspp="$aspp $sharedcccompopts"
 fi
 
@@ -1982,15 +1963,17 @@ fi
 
 cclibs="$cclibs $mathlib"
 
-echo "BYTECC=$bytecc $bytecccompopts" >> Makefile
-echo "BYTECODE_C_COMPILER=$bytecc $bytecccompopts $sharedcccompopts" \
-  >> Makefile
-echo "BYTECCCOMPOPTS=$byteccprivatecompopts" >> Makefile
-echo "BYTECCLINKOPTS=$bytecclinkopts" >> Makefile
+echo CC="$cc" >> Makefile
+echo "CFLAGS=$common_cflags $internal_cflags" >> Makefile
+echo "CPPFLAGS=$common_cppflags $internal_cppflags" >> Makefile
+echo "OCAMLC_CFLAGS=$common_cflags $sharedcccompopts" >> Makefile
+echo "OCAMLC_CPPFLAGS=$common_cppflags" >> Makefile
+echo "LDFLAGS=$ldflags" >> Makefile
 echo "BYTECCLIBS=$cclibs $dllib $curseslibs $pthread_link \
                  $instrumented_runtime_libs" >> Makefile
-echo "BYTECCRPATH=$byteccrpath" >> Makefile
+echo "RPATH=$rpath" >> Makefile
 echo "EXE=$exe" >> Makefile
+echo "OUTPUTEXE=-o" >> Makefile
 echo "SUPPORTS_SHARED_LIBRARIES=$shared_libraries_supported" >> Makefile
 echo "SHAREDCCCOMPOPTS=$sharedcccompopts" >> Makefile
 echo "MKSHAREDLIBRPATH=$mksharedlibrpath" >> Makefile
@@ -2008,12 +1991,9 @@ EOF
 echo "ARCH=$arch" >> Makefile
 echo "MODEL=$model" >> Makefile
 echo "SYSTEM=$system" >> Makefile
-echo "NATIVECC=$nativecc $nativecccompopts" >> Makefile
-echo "NATIVE_C_COMPILER=$nativecc $nativecccompopts" >> Makefile
-echo "NATIVECCCOMPOPTS=$nativeccprivatecompopts" >> Makefile
+echo "OCAMLOPT_CFLAGS=$common_cflags" >> Makefile
+echo "OCAMLOPT_CPPFLAGS=$common_cppflags" >> Makefile
 echo "NATIVECCPROFOPTS=$nativeccprofopts" >> Makefile
-echo "NATIVECCLINKOPTS=$nativecclinkopts" >> Makefile
-echo "NATIVECCRPATH=$nativeccrpath" >> Makefile
 echo "NATIVECCLIBS=$cclibs $dllib" >> Makefile
 echo "ASM=$as" >> Makefile
 echo "ASPP=$aspp" >> Makefile
@@ -2023,12 +2003,13 @@ echo "DYNLINKOPTS=$dllib" >> Makefile
 echo "OTHERLIBRARIES=$otherlibraries" >> Makefile
 echo "CC_PROFILE=$cc_profile" >> Makefile
 echo "SYSTHREAD_SUPPORT=$systhread_support" >> Makefile
-echo "PACKLD=$partialld $nativecclinkopts -o\\ " >> Makefile
+echo "PACKLD=$partialld -o\\ " >> Makefile
 echo "IFLEXDIR=$iflexdir" >> Makefile
 echo "O=o" >> Makefile
 echo "A=a" >> Makefile
 echo "SO=$SO" >> Makefile
 echo "EXT_OBJ=.o" >> Makefile
+echo "OUTPUTOBJ=-o" >> Makefile
 echo "EXT_ASM=.s" >> Makefile
 echo "EXT_LIB=.a" >> Makefile
 echo "EXT_DLL=.$SO" >> Makefile
@@ -2078,16 +2059,16 @@ inf
 inf "Directories where OCaml will be installed:"
 inf "        binaries.................. $bindir"
 inf "        standard library.......... $libdir"
-inf "        manual pages.............. $mandir (with extension .$manext)"
+inf "        manual pages.............. $mandir (with extension .$programs_man_section)"
 
 inf "Configuration for the bytecode compiler:"
-inf "        C compiler used........... $bytecc"
-inf "        options for compiling..... $bytecccompopts"
-inf "        options for linking....... $bytecclinkopts $cclibs $dllib" \
+inf "        C compiler used........... $cc"
+inf "        options for compiling..... $common_cflags"
+inf "        options for linking....... $ldflags $cclibs $dllib" \
                                        "$curseslibs $pthread_link"
 if $shared_libraries_supported; then
 inf "        shared libraries are supported"
-inf "        options for compiling..... $sharedcccompopts $bytecccompopts"
+inf "        options for compiling..... $sharedcccompopts $common_cflags"
 inf "        command for building...... $mksharedlib -o lib.so" \
                                        "$mksharedlibrpath/a/path objs"
 else
@@ -2106,9 +2087,9 @@ else
   if test "$system" = "unknown"; then : ; else
   inf "        OS variant................ $system"
   fi
-  inf "        C compiler used........... $nativecc"
-  inf "        options for compiling..... $nativecccompopts"
-  inf "        options for linking....... $nativecclinkopts $cclibs"
+  inf "        C compiler used........... $cc"
+  inf "        options for compiling..... $common_cflags"
+  inf "        options for linking....... $cclibs"
   inf "        assembler ................ $as"
   inf "        preprocessed assembler ... $aspp"
   if test "$asm_cfi_supported" = "true"; then

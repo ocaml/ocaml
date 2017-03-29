@@ -119,10 +119,51 @@ CAMLextern void caml_fatal_error_arg2 (char *fmt1, char *arg1,
                                        char *fmt2, char *arg2)
 CAMLnoreturn_end;
 
-/* Safe string operations */
+/* Detection of available C built-in functions, the Clang way. */
 
-CAMLextern char * caml_strdup(const char * s);
-CAMLextern char * caml_strconcat(int n, ...); /* n args of const char * type */
+#ifdef __has_builtin
+#define Caml_has_builtin(x) __has_builtin(x)
+#else
+#define Caml_has_builtin(x) 0
+#endif
+
+/* Integer arithmetic with overflow detection.
+   The functions return 0 if no overflow, 1 if overflow.
+   The result of the operation is always stored at [*res].
+   If no overflow is reported, this is the exact result.
+   If overflow is reported, this is the exact result modulo 2 to the word size.
+*/
+
+static inline int caml_uadd_overflow(uintnat a, uintnat b, uintnat * res)
+{
+#if __GNUC__ >= 5 || Caml_has_builtin(__builtin_add_overflow)
+  return __builtin_add_overflow(a, b, res);
+#else
+  uintnat c = a + b;
+  *res = c;
+  return c < a;
+#endif
+}
+
+static inline int caml_usub_overflow(uintnat a, uintnat b, uintnat * res)
+{
+#if __GNUC__ >= 5 || Caml_has_builtin(__builtin_sub_overflow)
+  return __builtin_sub_overflow(a, b, res);
+#else
+  uintnat c = a - b;
+  *res = c;
+  return a < b;
+#endif
+}
+
+#if __GNUC__ >= 5 || Caml_has_builtin(__builtin_mul_overflow)
+static inline int caml_umul_overflow(uintnat a, uintnat b, uintnat * res)
+{
+  return __builtin_mul_overflow(a, b, res);
+}
+#else
+extern int caml_umul_overflow(uintnat a, uintnat b, uintnat * res);
+#endif
 
 /* Use macros for some system calls being called from OCaml itself.
   These calls can be either traced for security reasons, or changed to
@@ -251,9 +292,10 @@ void caml_gc_message (int, char *, uintnat);
 extern uintnat caml_runtime_warnings;
 int caml_runtime_warnings_active(void);
 
-/* Memory routines */
-
-char *caml_aligned_malloc (asize_t bsize, int, void **);
+/* Deprecated aliases */
+#define caml_aligned_malloc caml_stat_alloc_aligned_noexc
+#define caml_strdup caml_stat_strdup
+#define caml_strconcat caml_stat_strconcat
 
 #ifdef DEBUG
 #ifdef ARCH_SIXTYFOUR
@@ -271,8 +313,9 @@ char *caml_aligned_malloc (asize_t bsize, int, void **);
   04 -> fields deallocated by [caml_obj_truncate]
   10 -> uninitialised fields of minor objects
   11 -> uninitialised fields of major objects
-  15 -> uninitialised words of [caml_aligned_malloc] blocks
-  85 -> filler bytes of [caml_aligned_malloc]
+  15 -> uninitialised words of [caml_stat_alloc_aligned] blocks
+  85 -> filler bytes of [caml_stat_alloc_aligned]
+  99 -> the magic prefix of a memory block allocated by [caml_stat_alloc]
 
   special case (byte by byte):
   D7 -> uninitialised words of [caml_stat_alloc] blocks
@@ -285,6 +328,7 @@ char *caml_aligned_malloc (asize_t bsize, int, void **);
 #define Debug_uninit_major   Debug_tag (0x11)
 #define Debug_uninit_align   Debug_tag (0x15)
 #define Debug_filler_align   Debug_tag (0x85)
+#define Debug_pool_magic     Debug_tag (0x99)
 
 #define Debug_uninit_stat    0xD7
 
@@ -294,10 +338,6 @@ char *caml_aligned_malloc (asize_t bsize, int, void **);
 extern void caml_set_fields (intnat v, unsigned long, unsigned long);
 #endif /* DEBUG */
 
-
-#ifndef CAML_AVOID_CONFLICTS
-#define Assert CAMLassert
-#endif
 
 /* snprintf emulation for Win32 */
 
@@ -333,7 +373,7 @@ extern struct CAML_INSTR_BLOCK *CAML_INSTR_LOG;
 #define CAML_INSTR_ALLOC(t) do{                                     \
     if (caml_stat_minor_collections >= CAML_INSTR_STARTTIME         \
         && caml_stat_minor_collections < CAML_INSTR_STOPTIME){      \
-      t = malloc (sizeof (struct CAML_INSTR_BLOCK));                \
+      t = caml_stat_alloc_noexc (sizeof (struct CAML_INSTR_BLOCK)); \
       t->index = 0;                                                 \
       t->tag[0] = "";                                               \
       t->next = CAML_INSTR_LOG;                                     \

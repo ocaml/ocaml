@@ -21,6 +21,7 @@ type ('a, 'b) t
 val empty: ('a, 'b) t
 val add: 'a -> 'b -> ('a, 'b) t -> ('a, 'b) t
 val find: 'a -> ('a, 'b) t -> 'b
+val find_str: string -> (string, 'b) t -> 'b
 val mem: 'a -> ('a, 'b) t -> bool
 val remove: 'a -> ('a,  'b) t -> ('a, 'b) t
 val iter: ('a -> 'b -> unit) -> ('a, 'b) t -> unit

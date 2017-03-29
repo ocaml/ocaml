@@ -72,8 +72,8 @@ static struct to_do *to_do_tl = NULL;
 /* [size] is a number of elements for the [to_do.item] array */
 static void alloc_to_do (int size)
 {
-  struct to_do *result = malloc (sizeof (struct to_do)
-                                 + size * sizeof (struct final));
+  struct to_do *result = caml_stat_alloc_noexc (sizeof (struct to_do) +
+                                                size * sizeof (struct final));
   if (result == NULL) caml_fatal_error ("out of memory");
   result->next = NULL;
   result->size = size;
@@ -81,7 +81,7 @@ static void alloc_to_do (int size)
     to_do_hd = result;
     to_do_tl = result;
   }else{
-    Assert (to_do_tl->next == NULL);
+    CAMLassert (to_do_tl->next == NULL);
     to_do_tl->next = result;
     to_do_tl = result;
   }
@@ -95,10 +95,10 @@ static void generic_final_update (struct finalisable * final, int darken_value)
   uintnat i, j, k;
   uintnat todo_count = 0;
 
-  Assert (final->old <= final->young);
+  CAMLassert (final->old <= final->young);
   for (i = 0; i < final->old; i++){
-    Assert (Is_block (final->table[i].val));
-    Assert (Is_in_heap (final->table[i].val));
+    CAMLassert (Is_block (final->table[i].val));
+    CAMLassert (Is_in_heap (final->table[i].val));
     if (Is_white_val (final->table[i].val)){
       ++ todo_count;
     }
@@ -117,9 +117,9 @@ static void generic_final_update (struct finalisable * final, int darken_value)
     alloc_to_do (todo_count);
     j = k = 0;
     for (i = 0; i < final->old; i++){
-      Assert (Is_block (final->table[i].val));
-      Assert (Is_in_heap (final->table[i].val));
-      Assert (Tag_val (final->table[i].val) != Forward_tag);
+      CAMLassert (Is_block (final->table[i].val));
+      CAMLassert (Is_in_heap (final->table[i].val));
+      CAMLassert (Tag_val (final->table[i].val) != Forward_tag);
       if(Is_white_val (final->table[i].val)){
         /** dead */
         to_do_tl->item[k] = final->table[i];
@@ -182,12 +182,12 @@ void caml_final_do_calls (void)
     while (1){
       while (to_do_hd != NULL && to_do_hd->size == 0){
         struct to_do *next_hd = to_do_hd->next;
-        free (to_do_hd);
+        caml_stat_free (to_do_hd);
         to_do_hd = next_hd;
         if (to_do_hd == NULL) to_do_tl = NULL;
       }
       if (to_do_hd == NULL) break;
-      Assert (to_do_hd->size > 0);
+      CAMLassert (to_do_hd->size > 0);
       -- to_do_hd->size;
       f = to_do_hd->item[to_do_hd->size];
       running_finalisation_function = 1;
@@ -223,12 +223,12 @@ void caml_final_do_roots (scanning_action f)
   uintnat i;
   struct to_do *todo;
 
-  Assert (finalisable_first.old <= finalisable_first.young);
+  CAMLassert (finalisable_first.old <= finalisable_first.young);
   for (i = 0; i < finalisable_first.young; i++){
     Call_action (f, finalisable_first.table[i].fun);
   };
 
-  Assert (finalisable_last.old <= finalisable_last.young);
+  CAMLassert (finalisable_last.old <= finalisable_last.young);
   for (i = 0; i < finalisable_last.young; i++){
     Call_action (f, finalisable_last.table[i].fun);
   };
@@ -241,7 +241,7 @@ void caml_final_do_roots (scanning_action f)
   }
 }
 
-/* Call invert_root on the values of the finalisable set. This is called
+/* Call caml_invert_root on the values of the finalisable set. This is called
    directly by the compactor.
 */
 void caml_final_invert_finalisable_values ()
@@ -250,13 +250,13 @@ void caml_final_invert_finalisable_values ()
 
   CAMLassert (finalisable_first.old <= finalisable_first.young);
   for (i = 0; i < finalisable_first.young; i++){
-    invert_root(finalisable_first.table[i].val,
+    caml_invert_root(finalisable_first.table[i].val,
                 &finalisable_first.table[i].val);
   };
 
   CAMLassert (finalisable_last.old <= finalisable_last.young);
   for (i = 0; i < finalisable_last.young; i++){
-    invert_root(finalisable_last.table[i].val,
+    caml_invert_root(finalisable_last.table[i].val,
                 &finalisable_last.table[i].val);
   };
 }
@@ -268,7 +268,7 @@ void caml_final_oldify_young_roots ()
 {
   uintnat i;
 
-  Assert (finalisable_first.old <= finalisable_first.young);
+  CAMLassert (finalisable_first.old <= finalisable_first.young);
   for (i = finalisable_first.old; i < finalisable_first.young; i++){
     caml_oldify_one(finalisable_first.table[i].fun,
                     &finalisable_first.table[i].fun);
@@ -276,7 +276,7 @@ void caml_final_oldify_young_roots ()
                     &finalisable_first.table[i].val);
   }
 
-  Assert (finalisable_last.old <= finalisable_last.young);
+  CAMLassert (finalisable_last.old <= finalisable_last.young);
   for (i = finalisable_last.old; i < finalisable_last.young; i++){
     caml_oldify_one(finalisable_last.table[i].fun,
                     &finalisable_last.table[i].fun);
@@ -289,10 +289,10 @@ static void generic_final_minor_update (struct finalisable * final)
   uintnat i, j, k;
   uintnat todo_count = 0;
 
-  Assert (final->old <= final->young);
+  CAMLassert (final->old <= final->young);
   for (i = final->old; i < final->young; i++){
-    Assert (Is_block (final->table[i].val));
-    Assert (Is_in_heap_or_young (final->table[i].val));
+    CAMLassert (Is_block (final->table[i].val));
+    CAMLassert (Is_in_heap_or_young (final->table[i].val));
     if (Is_young(final->table[i].val) && Hd_val(final->table[i].val) != 0){
       ++ todo_count;
     }
@@ -311,9 +311,9 @@ static void generic_final_minor_update (struct finalisable * final)
     k = 0;
     j = final->old;
     for (i = final->old; i < final->young; i++){
-      Assert (Is_block (final->table[i].val));
-      Assert (Is_in_heap_or_young (final->table[i].val));
-      Assert (Tag_val (final->table[i].val) != Forward_tag);
+      CAMLassert (Is_block (final->table[i].val));
+      CAMLassert (Is_in_heap_or_young (final->table[i].val));
+      CAMLassert (Tag_val (final->table[i].val) != Forward_tag);
       if(Is_young(final->table[j].val) && Hd_val(final->table[i].val) != 0){
         /** dead */
         to_do_tl->item[k] = final->table[i];
@@ -334,8 +334,8 @@ static void generic_final_minor_update (struct finalisable * final)
 
   /** update the minor value to the copied major value */
   for (i = final->old; i < final->young; i++){
-    Assert (Is_block (final->table[i].val));
-    Assert (Is_in_heap_or_young (final->table[i].val));
+    CAMLassert (Is_block (final->table[i].val));
+    CAMLassert (Is_in_heap_or_young (final->table[i].val));
     if (Is_young(final->table[i].val)) {
       CAMLassert (Hd_val(final->table[i].val) == 0);
       final->table[i].val = Field(final->table[i].val,0);
@@ -343,7 +343,7 @@ static void generic_final_minor_update (struct finalisable * final)
   }
 
   /** check invariant */
-  Assert (final->old <= final->young);
+  CAMLassert (final->old <= final->young);
   for (i = 0; i < final->young; i++){
     CAMLassert( Is_in_heap(final->table[i].val) );
   };
@@ -379,14 +379,14 @@ static void generic_final_register (struct finalisable *final, value f, value v)
       || Tag_val (v) == Forward_tag) {
     caml_invalid_argument ("Gc.finalise");
   }
-  Assert (final->old <= final->young);
+  CAMLassert (final->old <= final->young);
 
   if (final->young >= final->size){
     if (final->table == NULL){
       uintnat new_size = 30;
       final->table = caml_stat_alloc (new_size * sizeof (struct final));
-      Assert (final->old == 0);
-      Assert (final->young == 0);
+      CAMLassert (final->old == 0);
+      CAMLassert (final->young == 0);
       final->size = new_size;
     }else{
       uintnat new_size = final->size * 2;
@@ -395,7 +395,7 @@ static void generic_final_register (struct finalisable *final, value f, value v)
       final->size = new_size;
     }
   }
-  Assert (final->young < final->size);
+  CAMLassert (final->young < final->size);
   final->table[final->young].fun = f;
   if (Tag_val (v) == Infix_tag){
     final->table[final->young].offset = Infix_offset_val (v);

@@ -63,6 +63,9 @@ val prerr_warning: t -> Warnings.t -> unit
 val echo_eof: unit -> unit
 val reset: unit -> unit
 
+val default_printer : formatter -> t -> unit
+val printer : (formatter -> t -> unit) ref
+
 val warning_printer : (t -> formatter -> Warnings.t -> unit) ref
 (** Hook for intercepting warnings. *)
 
@@ -92,7 +95,7 @@ val show_filename: string -> string
 
 val absname: bool ref
 
-(* Support for located errors *)
+(** Support for located errors *)
 
 type error =
   {
@@ -102,10 +105,8 @@ type error =
     if_highlight: string; (* alternative message if locations are highlighted *)
   }
 
+exception Already_displayed_error
 exception Error of error
-
-val print_error_prefix: formatter -> unit -> unit
-  (* print the prefix "Error:" possibly with style *)
 
 val error: ?loc:t -> ?sub:error list -> ?if_highlight:string -> string -> error
 
@@ -119,15 +120,15 @@ val error_of_printer: t -> (formatter -> 'a -> unit) -> 'a -> error
 
 val error_of_printer_file: (formatter -> 'a -> unit) -> 'a -> error
 
-val error_of_exn: exn -> error option
+val error_of_exn: exn -> [ `Ok of error | `Already_displayed ] option
 
 val register_error_of_exn: (exn -> error option) -> unit
-  (* Each compiler module which defines a custom type of exception
-     which can surface as a user-visible error should register
-     a "printer" for this exception using [register_error_of_exn].
-     The result of the printer is an [error] value containing
-     a location, a message, and optionally sub-messages (each of them
-     being located as well). *)
+(** Each compiler module which defines a custom type of exception
+    which can surface as a user-visible error should register
+    a "printer" for this exception using [register_error_of_exn].
+    The result of the printer is an [error] value containing
+    a location, a message, and optionally sub-messages (each of them
+    being located as well). *)
 
 val report_error: formatter -> error -> unit
 
@@ -138,4 +139,4 @@ val default_error_reporter : formatter -> error -> unit
 (** Original error reporter for use in hooks. *)
 
 val report_exception: formatter -> exn -> unit
-  (* Reraise the exception if it is unknown. *)
+(** Reraise the exception if it is unknown. *)

@@ -9,9 +9,9 @@ array.cmi :
 arrayLabels.cmo : array.cmi arrayLabels.cmi
 arrayLabels.cmx : array.cmx arrayLabels.cmi
 arrayLabels.cmi :
-buffer.cmo : sys.cmi string.cmi bytes.cmi buffer.cmi
-buffer.cmx : sys.cmx string.cmx bytes.cmx buffer.cmi
-buffer.cmi :
+buffer.cmo : sys.cmi string.cmi bytes.cmi buffer.cmi uchar.cmi
+buffer.cmx : sys.cmx string.cmx bytes.cmx buffer.cmi uchar.cmi
+buffer.cmi : uchar.cmi
 bytes.cmo : pervasives.cmi char.cmi bytes.cmi
 bytes.cmx : pervasives.cmx char.cmx bytes.cmi
 bytes.cmi :
@@ -180,9 +180,9 @@ stringLabels.cmi :
 sys.cmo : sys.cmi
 sys.cmx : sys.cmi
 sys.cmi :
-uchar.cmo : printf.cmi pervasives.cmi format.cmi char.cmi uchar.cmi
-uchar.cmx : printf.cmx pervasives.cmx format.cmx char.cmx uchar.cmi
-uchar.cmi : format.cmi
+uchar.cmo : pervasives.cmi char.cmi uchar.cmi
+uchar.cmx : pervasives.cmx char.cmx uchar.cmi
+uchar.cmi :
 weak.cmo : sys.cmi obj.cmi hashtbl.cmi array.cmi weak.cmi
 weak.cmx : sys.cmx obj.cmx hashtbl.cmx array.cmx weak.cmi
 weak.cmi : hashtbl.cmi
@@ -194,8 +194,8 @@ array.cmo : array.cmi
 array.p.cmx : array.cmi
 arrayLabels.cmo : array.cmi arrayLabels.cmi
 arrayLabels.p.cmx : array.cmx arrayLabels.cmi
-buffer.cmo : sys.cmi string.cmi bytes.cmi buffer.cmi
-buffer.p.cmx : sys.cmx string.cmx bytes.cmx buffer.cmi
+buffer.cmo : sys.cmi string.cmi bytes.cmi buffer.cmi uchar.cmi
+buffer.p.cmx : sys.cmx string.cmx bytes.cmx buffer.cmi uchar.cmi
 bytes.cmo : pervasives.cmi char.cmi bytes.cmi
 bytes.p.cmx : pervasives.cmx char.cmx bytes.cmi
 bytesLabels.cmo : bytes.cmi bytesLabels.cmi
@@ -318,7 +318,7 @@ stringLabels.cmo : string.cmi stringLabels.cmi
 stringLabels.p.cmx : string.cmx stringLabels.cmi
 sys.cmo : sys.cmi
 sys.p.cmx : sys.cmi
-uchar.cmo : printf.cmi pervasives.cmi format.cmi char.cmi uchar.cmi
-uchar.p.cmx : printf.cmx pervasives.cmx format.cmx char.cmx uchar.cmi
+uchar.cmo : pervasives.cmi char.cmi uchar.cmi
+uchar.p.cmx : pervasives.cmx char.cmx uchar.cmi
 weak.cmo : sys.cmi obj.cmi hashtbl.cmi array.cmi weak.cmi
 weak.p.cmx : sys.cmx obj.cmx hashtbl.cmx array.cmx weak.cmi

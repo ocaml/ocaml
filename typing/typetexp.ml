@@ -845,7 +845,8 @@ let report_error env ppf = function
           Printtyp.type_expr ty')
   | Not_a_variant ty ->
       Printtyp.reset_and_mark_loops ty;
-      fprintf ppf "@[The type %a@ is not a polymorphic variant type@]"
+      fprintf ppf
+        "@[The type %a@ does not expand to a polymorphic variant type@]"
         Printtyp.type_expr ty;
       begin match ty.desc with
         | Tvar (Some s) ->

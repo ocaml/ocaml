@@ -90,7 +90,7 @@ CAMLprim value caml_static_release_bytecode(value prog, value len)
 
   if (!cf) {
       /* [cf] Not matched with a caml_reify_bytecode call; impossible. */
-      Assert (0);
+      CAMLassert (0);
   } else {
       caml_ext_table_remove(&caml_code_fragments_table, cf);
   }

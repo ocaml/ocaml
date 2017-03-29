@@ -342,20 +342,15 @@ module LargeFile =
     external fstat : file_descr -> stats = "unix_fstat_64"
   end
 
-type map_file_impl =
-  { map_file_impl
-    : 'a 'b 'c. file_descr
-      -> ('a, 'b) CamlinternalBigarray.kind
-      -> 'c CamlinternalBigarray.layout
-      -> bool
-      -> int array
-      -> int64
-      -> ('a, 'b, 'c) CamlinternalBigarray.genarray
-  }
-let map_file_impl =
-  ref { map_file_impl = fun _ _ _ _ _ _ -> failwith "Bigarray not initialized!" }
+external map_internal:
+   file_descr -> ('a, 'b) CamlinternalBigarray.kind
+              -> 'c CamlinternalBigarray.layout
+              -> bool -> int array -> int64
+              -> ('a, 'b, 'c) CamlinternalBigarray.genarray
+     = "caml_unix_map_file_bytecode" "caml_unix_map_file"
+
 let map_file fd ?(pos=0L) kind layout shared dims =
-  !map_file_impl.map_file_impl fd kind layout shared dims pos
+  map_internal fd kind layout shared dims pos
 
 type access_permission =
     R_OK
@@ -889,23 +884,34 @@ let system cmd =
           end
   | id -> snd(waitpid_non_intr id)
 
-(* Make sure [fd] is not one of the standard descriptors 0, 1, 2,
-   by duplicating it if needed. *)
-
+(* Duplicate [fd] if needed to make sure it isn't one of the
+   standard descriptors (stdin, stdout, stderr).
+   Note that this function always leaves the standard descriptors open,
+   the caller must take care of closing them if needed.
+   The "cloexec" mode doesn't matter, because
+   the descriptor returned by [dup] will be closed before the [exec],
+   and because no other thread is running concurrently
+   (we are in the child process of a fork).
+ *)
 let rec file_descr_not_standard fd =
-  if fd >= 3 then fd else begin
-    let res = file_descr_not_standard (dup fd) in
-    close fd;
-    res
-  end
+  if fd >= 3 then fd else file_descr_not_standard (dup fd)
+
+let safe_close fd =
+  try close fd with Unix_error(_,_,_) -> ()
 
 let perform_redirections new_stdin new_stdout new_stderr =
   let new_stdin = file_descr_not_standard new_stdin in
   let new_stdout = file_descr_not_standard new_stdout in
   let new_stderr = file_descr_not_standard new_stderr in
-  dup2 ~cloexec:false new_stdin stdin; close new_stdin;
-  dup2 ~cloexec:false new_stdout stdout; close new_stdout;
-  dup2 ~cloexec:false new_stderr stderr; close new_stderr
+  (*  The three dup2 close the original stdin, stdout, stderr,
+      which are the descriptors possibly left open
+      by file_descr_not_standard *)
+  dup2 ~cloexec:false new_stdin stdin;
+  dup2 ~cloexec:false new_stdout stdout;
+  dup2 ~cloexec:false new_stderr stderr;
+  safe_close new_stdin;
+  safe_close new_stdout;
+  safe_close new_stderr
 
 let create_process cmd args new_stdin new_stdout new_stderr =
   match fork() with

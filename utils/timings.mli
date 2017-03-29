@@ -17,52 +17,23 @@
 
 type file = string
 
-type source_provenance =
-  | File of file
-  | Pack of string
-  | Startup
-  | Toplevel
-
-type compiler_pass =
-  | All
-  | Parsing of file
-  | Parser of file
-  | Dash_pp of file
-  | Dash_ppx of file
-  | Typing of file
-  | Transl of file
-  | Generate of file
-  | Assemble of source_provenance
-  | Clambda of source_provenance
-  | Cmm of source_provenance
-  | Compile_phrases of source_provenance
-  | Selection of source_provenance
-  | Comballoc of source_provenance
-  | CSE of source_provenance
-  | Liveness of source_provenance
-  | Deadcode of source_provenance
-  | Spill of source_provenance
-  | Split of source_provenance
-  | Regalloc of source_provenance
-  | Linearize of source_provenance
-  | Scheduling of source_provenance
-  | Emit of source_provenance
-  | Flambda_pass of string * source_provenance
+val cpu_time : unit -> float
 
 val reset : unit -> unit
 (** erase all recorded times *)
 
-val get : compiler_pass -> float option
-(** returns the runtime in seconds of a completed pass *)
-
-val time_call : compiler_pass -> (unit -> 'a) -> 'a
+val time_call : ?accumulate:bool -> string -> (unit -> 'a) -> 'a
 (** [time_call pass f] calls [f] and records its runtime. *)
 
-val time : compiler_pass -> ('a -> 'b) -> 'a -> 'b
+val time : ?accumulate:bool -> string -> ('a -> 'b) -> 'a -> 'b
 (** [time pass f arg] records the runtime of [f arg] *)
 
-val accumulate_time : compiler_pass -> ('a -> 'b) -> 'a -> 'b
-(** Like time for passes that can run multiple times *)
-
-val print : Format.formatter -> unit
+val print : ?total:float -> Format.formatter -> unit
 (** Prints all recorded timings to the formatter. *)
+
+(** A few pass names that are needed in several places, and shared to
+    avoid typos. *)
+
+val generate : string
+val transl : string
+val typing : string

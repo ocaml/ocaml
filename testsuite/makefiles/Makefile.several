@@ -13,7 +13,6 @@
 #*                                                                        *
 #**************************************************************************
 
-CC=$(NATIVECC) $(NATIVECCCOMPOPTS)
 FC=$(FORTAN_COMPILER)
 CMO_FILES=$(MODULES:=.cmo)
 CMX_FILES=$(MODULES:=.cmx)

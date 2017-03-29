@@ -167,6 +167,42 @@ let add_ratio r1 r2 =
    denom = r1.denom * r2.denom};;
 add_ratio {num=1; denom=3} {num=2; denom=5};;
 \end{caml_example}
+Record fields can also be accessed through pattern-matching:
+\begin{caml_example}
+let integer_part r =
+  match r with
+    {num=num; denom=denom} -> num / denom;;
+\end{caml_example}
+Since there is only one case in this pattern matching, it
+is safe to expand directly the argument "r" in a record pattern:
+\begin{caml_example}
+let integer_part {num=num; denom=denom} = num / denom;;
+\end{caml_example}
+Unneeded fields can be omitted:
+\begin{caml_example}
+let get_denom {denom=denom} = denom;;
+\end{caml_example}
+Optionally, missing fields can be made explicit by ending the list of
+fields with a trailing wildcard "_"::
+\begin{caml_example}
+let get_num {num=num; _ } = num;;
+\end{caml_example}
+When both sides of the "=" sign are the same, it is possible to avoid
+repeating the field name by eliding the "=field" part:
+\begin{caml_example}
+let integer_part {num; denom} = num / denom;;
+\end{caml_example}
+This short notation for fields also works when constructing records:
+\begin{caml_example}
+let ratio num denom = {num; denom};;
+\end{caml_example}
+At last, it is possible to update few fields of a record at once:
+\begin{caml_example}
+  let integer_product integer ratio = { ratio with num = integer * ratio.num };;
+\end{caml_example}
+With this functional update notation, the record on the left-hand side
+of "with" is copied except for the fields on the right-hand side which
+are updated.
 
 The declaration of a variant type lists all possible shapes for values
 of that type. Each case is identified by a name, called a constructor,
