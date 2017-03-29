@@ -5,7 +5,8 @@ Working version
 
 ### Language features:
 - GPR#1118: Support inherited field in object type expression
-  (Runhang Li, reivew by Jeremy Yallop and Leo White)
+  (Runhang Li, reivew by Jeremy Yallop, Leo White, Jacques Garrigue,
+   and Florian Angeletti)
 
 ### Code generation and optimizations:
 
