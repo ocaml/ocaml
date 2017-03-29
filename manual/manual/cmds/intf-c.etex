@@ -2228,8 +2228,7 @@ CAMLprim stub_gethostbyname(value vname)
 
   /* Copy the string argument to a C string, allocated outside the
      OCaml heap. */
-  name = caml_stat_alloc(caml_string_length(vname) + 1);
-  name = caml_strdup(String_val(vname));
+  name = caml_stat_strdup(String_val(vname));
   /* Release the OCaml run-time system */
   caml_release_runtime_system();
   /* Resolve the name */
