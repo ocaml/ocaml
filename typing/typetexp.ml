@@ -871,7 +871,7 @@ let report_error env ppf = function
       fprintf ppf "Multiple constraints for type %a" longident s
   | Repeated_method_label s ->
       fprintf ppf "@[This is the second method `%s' of this object type.@ %s@]"
-        s "Multiple occurences are not allowed."
+        s "Multiple occurrences are not allowed."
   | Unbound_value lid ->
       fprintf ppf "Unbound value %a" longident lid;
       spellcheck ppf fold_values env lid;

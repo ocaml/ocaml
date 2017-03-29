@@ -35,7 +35,7 @@ Error: This pattern cannot match self: it only matches values of type
     method f x = (x : bool c)
   end..
 Error: The abbreviation c is used with parameters bool c
-       wich are incompatible with constraints int c
+       which are incompatible with constraints int c
 #             class ['a, 'b] c :
   unit ->
   object

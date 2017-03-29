@@ -1833,7 +1833,7 @@ let report_error env ppf = function
       Printtyp.reset_and_mark_loops_list [params; cstrs];
       fprintf ppf
         "@[The abbreviation %a@ is used with parameters@ %a@ \
-           wich are incompatible with constraints@ %a@]"
+           which are incompatible with constraints@ %a@]"
         Printtyp.ident id Printtyp.type_expr params Printtyp.type_expr cstrs
   | Class_match_failure error ->
       Includeclass.report_error ppf error
