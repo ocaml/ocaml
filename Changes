@@ -51,6 +51,9 @@ Working version
 - PR#6676, GPR#1110: move record notation to tutorial
   (Florian Angeletti, review by Gabriel Scherer)
 
+- PR#6676, GPR#1112: move local opens to tutorial
+  (Florian Angeletti)
+
 - PR#7254, GPR#1096: Rudimentary documentation of ocamlnat
   (Mark Shinwell)
 
