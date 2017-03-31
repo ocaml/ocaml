@@ -191,8 +191,6 @@ static void create_domain(uintnat initial_minor_heap_size) {
 
     caml_init_main_stack();
 
-    d->state.mark_stack = &domain_state->mark_stack;
-    d->state.mark_stack_count = &domain_state->mark_stack_count;
     d->state.state = domain_state;
     d->state.vm_inited = 1;
 
