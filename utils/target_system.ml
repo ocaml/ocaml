@@ -54,3 +54,13 @@ let masm =
   match system with
   | S_win32 | S_win64 -> true
   | _ -> false
+
+type machine_width =
+  | Thirty_two
+  | Sixty_four
+
+let machine_width () =
+  match Targetint.size with
+  | 32 -> Thirty_two
+  | 64 -> Sixty_four
+  | bits -> Misc.fatal_errorf "Unknown machine width: %d" bits

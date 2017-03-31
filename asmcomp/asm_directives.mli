@@ -20,13 +20,17 @@
 include Asm_directives_intf.S
 
 module Directive : sig
-  type constant =
+  type constant = private
     | Const of int64
     | This
     | Named_thing of string
     (** [Named_thing] covers symbols, labels and variables. *)
     | Add of constant * constant
     | Sub of constant * constant
+
+  type thing_after_label = private
+    | Code
+    | Machine_width_data
 
   (** Internal representation of directives.  Only needed if writing a custom
       assembler or printer instead of using [print], below. *)
@@ -39,7 +43,7 @@ module Directive : sig
     | Const16 of constant
     | Const32 of constant
     | Const64 of constant
-    | NewLabel of string
+    | NewLabel of string * thing_after_label
     | Section of string list * string option * string list
     | Space of { bytes : int; }
     (* gas only (the masm emitter will fail on them): *)
@@ -50,8 +54,10 @@ module Directive : sig
     | Indirect_symbol of string
     | Loc of { file_num : int; line : int; col : int; }
     | Private_extern of string
+(*
     (* Note that on Mac OS X, [Set] always makes the expression absolute. *)
     | Set of string * constant
+*)
     | Size of string * constant
     | Sleb128 of constant
     | Type of string * string
@@ -78,4 +84,4 @@ val reset : unit -> unit
 val string_of_symbol : string -> string
 
 (** Like [string_of_symbol] but for labels. *)
-val string_of_label : Linearize.label -> string
+val string_of_label : Cmm.label -> string

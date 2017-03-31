@@ -30,6 +30,8 @@ open Emitaux
 open X86_ast
 open X86_dsl
 
+module D = Asm_directives
+
 let label_operand lbl = X86_ast.Sym (D.string_of_label lbl)
 let symbol_operand sym = X86_ast.Sym (D.string_of_symbol sym)
 
@@ -50,17 +52,6 @@ let float_reg_name = Array.init 16 (fun i -> XMM i)
 let register_name r =
   if r < 100 then Reg64 (int_reg_name.(r))
   else Regf (float_reg_name.(r - 100))
-
-(* CFI directives *)
-
-let cfi_startproc () =
-  if Config.asm_cfi_supported then D.cfi_startproc ()
-
-let cfi_endproc () =
-  if Config.asm_cfi_supported then D.cfi_endproc ()
-
-let cfi_adjust_cfa_offset bytes =
-  if Config.asm_cfi_supported then D.cfi_adjust_cfa_offset ~bytes
 
 let emit_debug_info dbg =
   emit_debug_info_gen dbg D.file D.loc
@@ -119,7 +110,7 @@ let get_imp_symbol s =
 
 let emit_imp_table () =
   let f s imps =
-    D.define_data_symbol imps;
+    D.define_symbol' imps;
     D.symbol' s
   in
   D.switch_to_section Data;
@@ -422,13 +413,13 @@ let output_epilogue f =
     if n <> 0
     then begin
       I.add (int n) rsp;
-      cfi_adjust_cfa_offset (-n);
+      D.cfi_adjust_cfa_offset (-n);
     end;
     if fp then I.pop rbp;
     f ();
     (* reset CFA back cause function body may continue *)
     if n <> 0
-    then cfi_adjust_cfa_offset n
+    then D.cfi_adjust_cfa_offset n
   end
   else
     f ()
@@ -454,7 +445,7 @@ let emit_global_symbol s =
   add_def_symbol sym;
   let sym = D.string_of_symbol sym in
   D.global sym;
-  D.define_symbol sym
+  D.define_symbol' sym
 
 (* Output the assembly code for an instruction *)
 
@@ -554,7 +545,7 @@ let emit_instr fallthrough i =
       else if n > 0
       then I.sub (int n) rsp;
       if n <> 0
-      then cfi_adjust_cfa_offset n;
+      then D.cfi_adjust_cfa_offset n;
       stack_offset := !stack_offset + n
   | Lop(Iload(chunk, addr)) ->
       let dest = res i 0 in
@@ -811,18 +802,18 @@ let emit_instr fallthrough i =
       done;
       D.switch_to_section Text
   | Lsetuptrap lbl ->
-      I.call (label_operand lbl)
+     I.call (label_operand lbl)
   | Lpushtrap ->
-      cfi_adjust_cfa_offset 8;
+      D.cfi_adjust_cfa_offset 8;
       I.push r14;
-      cfi_adjust_cfa_offset 8;
+      D.cfi_adjust_cfa_offset 8;
       I.mov rsp r14;
       stack_offset := !stack_offset + 16
   | Lpoptrap ->
       I.pop r14;
-      cfi_adjust_cfa_offset (-8);
+      D.cfi_adjust_cfa_offset (-8);
       I.add (int 8) rsp;
-      cfi_adjust_cfa_offset (-8);
+      D.cfi_adjust_cfa_offset (-8);
       stack_offset := !stack_offset - 16
   | Lraise k ->
       (* No Spacetime instrumentation is required for [caml_raise_exn] and
@@ -889,10 +880,10 @@ let fundecl fundecl =
   end;
   D.define_function_symbol' fundecl.fun_name;
   emit_debug_info fundecl.fun_dbg;
-  cfi_startproc ();
+  D.cfi_startproc ();
   if fp then begin
     I.push rbp;
-    cfi_adjust_cfa_offset 8;
+    D.cfi_adjust_cfa_offset 8;
     I.mov rsp rbp;
   end;
   if !Clflags.gprofile then emit_profile();
@@ -901,7 +892,7 @@ let fundecl fundecl =
     if n <> 0
     then begin
       I.sub (int n) rsp;
-      cfi_adjust_cfa_offset n;
+      D.cfi_adjust_cfa_offset n;
     end;
   end;
   D.define_label !tailrec_entry_point;
@@ -912,31 +903,11 @@ let fundecl fundecl =
     let n = frame_size() - 8 - (if fp then 8 else 0) in
     if n <> 0
     then begin
-      cfi_adjust_cfa_offset (-n);
+      D.cfi_adjust_cfa_offset (-n);
     end;
   end;
-  cfi_endproc ();
+  D.cfi_endproc ();
   D.size fundecl.fun_name
-
-(* Emission of data *)
-
-let emit_item = function
-  | Cglobal_symbol s -> D.global s
-  | Cdefine_symbol s -> add_def_symbol s; D.define_symbol' s
-  | Cint8 n -> D.int8 (Numbers.Int8.of_int_exn n)
-  | Cint16 n -> D.int16 (Numbers.Int16.of_int_exn n)
-  | Cint32 n -> D.int32 (Nativeint.to_int32 n)
-  | Cint n -> D.int64 (Int64.of_nativeint n)
-  | Csingle f -> D.int32 (Int32.bits_of_float f)
-  | Cdouble f -> D.int64 (Int64.bits_of_float f)
-  | Csymbol_address s -> add_used_symbol s; D.symbol' s
-  | Cstring s -> D.string s
-  | Cskip bytes -> if bytes > 0 then D.space ~bytes
-  | Calign bytes -> D.align ~bytes
-
-let data l =
-  D.switch_to_section Data;
-  List.iter emit_item l
 
 (* Beginning / end of an assembly file *)
 
@@ -1044,28 +1015,13 @@ let end_assembly () =
   D.int32 0l;
 
   emit_global_symbol "frametable";
-
-  emit_frames
-    { efa_code_label = (fun l -> D.label l);
-      efa_data_label = (fun l -> D.label l);
-      efa_16 = (fun n -> D.int16 (Numbers.Int16.of_int_exn n));
-      efa_32 = (fun n -> D.int32 n);
-      efa_word = (fun n -> D.int64 (Int64.of_int n));
-      efa_align = (fun bytes -> D.align ~bytes);
-      efa_label_rel =
-        (fun lbl ofs ->
-          D.between_this_and_label_offset_32bit ~upper:lbl
-            ~offset_upper:(Targetint.of_int32 ofs));
-      efa_def_label = (fun l -> D.define_label l);
-      efa_string = (fun s -> D.string (s ^ "\000"))
-    };
+  emit_frames ();
 
   if Config.spacetime then begin
     emit_spacetime_shapes ()
   end;
 
-  (* Mark stack as non-executable, PR#4564 *)
-  D.mark_stack_non_executable ();
+  D.mark_stack_non_executable ();  (* PR#4564 *)
 
   begin match Target_system.system with
   | S_win64 ->

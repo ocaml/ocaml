@@ -29,21 +29,10 @@ open X86_ast
 open X86_proc
 open X86_dsl
 
-let _label s = D.label ~typ:DWORD s
+module D = Asm_directives
 
 let mem_sym typ ?(ofs = 0) sym =
   mem32 typ ~scale:0 ?base:None ~sym ofs RAX (*ignored since scale=0*)
-
-(* CFI directives *)
-
-let cfi_startproc () =
-  if Config.asm_cfi_supported then D.cfi_startproc ()
-
-let cfi_endproc () =
-  if Config.asm_cfi_supported then D.cfi_endproc ()
-
-let cfi_adjust_cfa_offset n =
-  if Config.asm_cfi_supported then D.cfi_adjust_cfa_offset n
 
 let emit_debug_info dbg =
   emit_debug_info_gen dbg D.file D.loc
@@ -85,40 +74,13 @@ let add_used_symbol s = symbols_used := StringSet.add s !symbols_used
 
 let trap_frame_size = Misc.align 8 stack_alignment
 
-(* Prefixing of symbols with "_" *)
-
-let symbol_prefix =
-  match system with
-  | S_linux_elf -> ""
-  | S_bsd_elf -> ""
-  | S_solaris -> ""
-  | S_beos -> ""
-  | S_gnu -> ""
-  | _ -> "_" (* win32 & others *)
-
-let emit_symbol s = string_of_symbol symbol_prefix s
-
-let immsym s = sym (emit_symbol s)
+let immsym s = sym (D.string_of_symbol s)
 
 let emit_call s = I.call (immsym s)
 
 (* Output a label *)
 
-let label_prefix =
-  match system with
-  | S_linux_elf -> ".L"
-  | S_bsd_elf -> ".L"
-  | S_solaris -> ".L"
-  | S_beos -> ".L"
-  | S_gnu -> ".L"
-  | _ -> "L"
-
-let emit_label lbl =
-  Printf.sprintf "%s%d" label_prefix lbl
-
-let label s = sym (emit_label s)
-
-let def_label s = D.label (emit_label s)
+let def_label l = D.label l
 
 let emit_Llabel fallthrough lbl =
   if not fallthrough && !fastcode_flag then D.align 16 ;
@@ -134,7 +96,7 @@ let register_name r =
   if r < 100 then Reg32 (int_reg_name.(r))
   else Regf (float_reg_name.(r - 100))
 
-let sym32 ?ofs s = mem_sym ?ofs DWORD (emit_symbol s)
+let sym32 ?ofs s = mem_sym ?ofs DWORD (D.string_of_symbol s)
 
 let reg = function
   | { loc = Reg r } -> register_name r
@@ -176,7 +138,7 @@ let addressing addr typ i n =
   match addr with
   | Ibased(s, ofs) ->
       add_used_symbol s;
-      mem_sym typ (emit_symbol s) ~ofs
+      mem_sym typ (D.string_of_symbol s) ~ofs
   | Iindexed d ->
       mem32 typ d (arg32 i n)
   | Iindexed2 d ->
@@ -342,10 +304,10 @@ let output_epilogue f =
   if n > 0 then
     begin
       I.add (int n) esp;
-      cfi_adjust_cfa_offset (-n);
+      D.cfi_adjust_cfa_offset (-n);
       f ();
       (* reset CFA back cause function body may continue *)
-      cfi_adjust_cfa_offset n
+      D.cfi_adjust_cfa_offset n
     end
   else
     f ()
@@ -461,7 +423,7 @@ let emit_float_constant cst lbl =
 let emit_global_label s =
   let lbl = Compilenv.make_symbol (Some s) in
   add_def_symbol lbl;
-  let lbl = emit_symbol lbl in
+  let lbl = D.string_of_symbol lbl in
   D.global lbl;
   _label lbl
 
@@ -547,7 +509,7 @@ let emit_instr fallthrough i =
           external_symbols_indirect :=
             StringSet.add func !external_symbols_indirect;
           I.mov (mem_sym DWORD (Printf.sprintf "L%s$non_lazy_ptr"
-                              (emit_symbol func))) eax
+                              (D.string_of_symbol func))) eax
         end;
         emit_call "caml_c_call";
         record_frame i.live false i.dbg ~label:label_after
@@ -557,14 +519,14 @@ let emit_instr fallthrough i =
         else begin
           external_symbols_direct :=
             StringSet.add func !external_symbols_direct;
-          I.call (sym (Printf.sprintf "L%s$stub" (emit_symbol func)))
+          I.call (sym (Printf.sprintf "L%s$stub" (D.string_of_symbol func)))
         end
       end
   | Lop(Istackoffset n) ->
       if n < 0
       then I.add (int (-n)) esp
       else I.sub (int n) esp;
-      cfi_adjust_cfa_offset n;
+      D.cfi_adjust_cfa_offset n;
       stack_offset := !stack_offset + n
   | Lop(Iload(chunk, addr)) ->
       let dest = i.res.(0) in
@@ -710,7 +672,7 @@ let emit_instr fallthrough i =
         I.fld (reg i.arg.(0));
       stack_offset := !stack_offset - 8;
       I.sub (int 8) esp;
-      cfi_adjust_cfa_offset 8;
+      D.cfi_adjust_cfa_offset 8;
       I.fnstcw (mem32 NONE 4 RSP);
       I.mov (mem32 WORD 4 RSP) ax;
       I.mov (int 12) ah;
@@ -725,7 +687,7 @@ let emit_instr fallthrough i =
       end;
       I.fldcw (mem32 NONE 4 RSP);
       I.add (int 8) esp;
-      cfi_adjust_cfa_offset (-8);
+      D.cfi_adjust_cfa_offset (-8);
       stack_offset := !stack_offset + 8
   | Lop(Ispecific(Ilea addr)) ->
       I.lea (addressing addr DWORD i 0) (reg i.res.(0))
@@ -743,7 +705,7 @@ let emit_instr fallthrough i =
         match r with
           {loc = Reg _; typ = Float} ->
             I.sub (int 8) esp;
-            cfi_adjust_cfa_offset 8;
+            D.cfi_adjust_cfa_offset 8;
             I.fstp (mem32 REAL8 0 RSP);
             stack_offset := !stack_offset + 8
         | {loc = Stack sl; typ = Float} ->
@@ -754,31 +716,31 @@ let emit_instr fallthrough i =
             *)
             I.fld (mem32 REAL8 ofs RSP);
             I.sub (int 8) esp;
-            cfi_adjust_cfa_offset 8;
+            D.cfi_adjust_cfa_offset 8;
             I.fstp (mem32 REAL8 0 RSP);
             stack_offset := !stack_offset + 8
         | _ ->
             I.push (reg r);
-            cfi_adjust_cfa_offset 4;
+            D.cfi_adjust_cfa_offset 4;
             stack_offset := !stack_offset + 4
       done
   | Lop(Ispecific(Ipush_int n)) ->
       I.push (nat n);
-      cfi_adjust_cfa_offset 4;
+      D.cfi_adjust_cfa_offset 4;
       stack_offset := !stack_offset + 4
   | Lop(Ispecific(Ipush_symbol s)) ->
       add_used_symbol s;
       I.push (immsym s);
-      cfi_adjust_cfa_offset 4;
+      D.cfi_adjust_cfa_offset 4;
       stack_offset := !stack_offset + 4
   | Lop(Ispecific(Ipush_load addr)) ->
       I.push (addressing addr DWORD i 0);
-      cfi_adjust_cfa_offset 4;
+      D.cfi_adjust_cfa_offset 4;
       stack_offset := !stack_offset + 4
   | Lop(Ispecific(Ipush_load_float addr)) ->
       I.push (addressing (offset_addressing addr 4) DWORD i 0);
       I.push (addressing addr DWORD i 0);
-      cfi_adjust_cfa_offset 8;
+      D.cfi_adjust_cfa_offset 8;
       stack_offset := !stack_offset + 8
   | Lop(Ispecific(Ifloatarithmem(double, op, addr))) ->
       if not (is_tos i.arg.(0)) then
@@ -862,13 +824,13 @@ let emit_instr fallthrough i =
       if trap_frame_size > 8 then
         I.sub (int (trap_frame_size - 8)) esp;
       I.push (sym32 "caml_exception_pointer");
-      cfi_adjust_cfa_offset trap_frame_size;
+      D.cfi_adjust_cfa_offset trap_frame_size;
       I.mov esp (sym32 "caml_exception_pointer");
       stack_offset := !stack_offset + trap_frame_size
   | Lpoptrap ->
       I.pop (sym32 "caml_exception_pointer");
       I.add (int (trap_frame_size - 4)) esp;
-      cfi_adjust_cfa_offset (-trap_frame_size);
+      D.cfi_adjust_cfa_offset (-trap_frame_size);
       stack_offset := !stack_offset - trap_frame_size
   | Lraise k  ->
       begin match k with
@@ -892,16 +854,16 @@ let rec emit_all fallthrough i =
         (system = S_win32 || Linearize.has_fallthrough i.desc)
         i.next
 
-(* Emission of external symbol references (for MacOSX) *)
+(* Emission of external symbol references (for macOS) *)
 
 let emit_external_symbol_direct s =
-  _label (Printf.sprintf "L%s$stub" (emit_symbol s));
-  D.indirect_symbol (emit_symbol s);
+  D.label (Printf.sprintf "L%s$stub" (D.string_of_symbol s));
+  D.indirect_symbol s;
   I.hlt (); I.hlt (); I.hlt (); I.hlt () ; I.hlt ()
 
 let emit_external_symbol_indirect s =
-  _label (Printf.sprintf "L%s$non_lazy_ptr" (emit_symbol s));
-  D.indirect_symbol (emit_symbol s);
+  D.label (Printf.sprintf "L%s$non_lazy_ptr" (D.string_of_symbol s));
+  D.indirect_symbol s;
   D.long (const 0)
 
 let emit_external_symbols () =
@@ -954,30 +916,30 @@ let fundecl fundecl =
   && not !Clflags.output_c_object
   && is_generic_function fundecl.fun_name
   then (* PR#4690 *)
-    D.private_extern (emit_symbol fundecl.fun_name)
+    D.private_extern (D.string_of_symbol fundecl.fun_name)
   else
-    D.global (emit_symbol fundecl.fun_name);
-  D.label (emit_symbol fundecl.fun_name);
+    D.global (D.string_of_symbol fundecl.fun_name);
+  D.label (D.string_of_symbol fundecl.fun_name);
   emit_debug_info fundecl.fun_dbg;
-  cfi_startproc ();
+  D.cfi_startproc ();
   if !Clflags.gprofile then emit_profile();
   let n = frame_size() - 4 in
   if n > 0 then  begin
     I.sub (int n) esp;
-    cfi_adjust_cfa_offset n;
+    D.cfi_adjust_cfa_offset n;
   end;
   def_label !tailrec_entry_point;
   emit_all true fundecl.fun_body;
   List.iter emit_call_gc !call_gc_sites;
   emit_call_bound_errors ();
-  cfi_endproc ();
+  D.cfi_endproc ();
   begin match system with
   | S_linux_elf | S_bsd_elf | S_gnu ->
-      D.type_ (emit_symbol fundecl.fun_name) "@function";
-      D.size (emit_symbol fundecl.fun_name)
+      D.type_ (D.string_of_symbol fundecl.fun_name) "@function";
+      D.size (D.string_of_symbol fundecl.fun_name)
         (ConstSub (
             ConstThis,
-            ConstLabel (emit_symbol fundecl.fun_name)))
+            ConstLabel (D.string_of_symbol fundecl.fun_name)))
   | _ -> ()
   end
 
@@ -985,15 +947,15 @@ let fundecl fundecl =
 (* Emission of data *)
 
 let emit_item = function
-  | Cglobal_symbol s -> D.global (emit_symbol s)
-  | Cdefine_symbol s -> add_def_symbol s; _label (emit_symbol s)
+  | Cglobal_symbol s -> D.global (D.string_of_symbol s)
+  | Cdefine_symbol s -> add_def_symbol s; _label (D.string_of_symbol s)
   | Cint8 n -> D.byte (const n)
   | Cint16 n -> D.word (const n)
   | Cint32 n -> D.long (const_nat n)
   | Cint n -> D.long (const_nat n)
   | Csingle f -> D.long (Const (Int64.of_int32 (Int32.bits_of_float f)))
   | Cdouble f -> emit_float64_split_directive (Int64.bits_of_float f)
-  | Csymbol_address s -> add_used_symbol s; D.long (ConstLabel (emit_symbol s))
+  | Csymbol_address s -> add_used_symbol s; D.long (ConstLabel (D.string_of_symbol s))
   | Cstring s -> D.bytes s
   | Cskip n -> if n > 0 then D.space n
   | Calign n -> D.align n
@@ -1077,7 +1039,7 @@ let end_assembly() =
     StringSet.iter
       (fun s ->
          if not (StringSet.mem s !symbols_defined) then
-           D.extrn (emit_symbol s) PROC)
+           D.extrn (D.string_of_symbol s) PROC)
       !symbols_used;
     symbols_used := StringSet.empty;
     symbols_defined := StringSet.empty;

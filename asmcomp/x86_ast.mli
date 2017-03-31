@@ -178,7 +178,6 @@ type instruction =
   | XORPD of arg * arg
 
 type masm_directive =
-  | NewLabel of string * data_type
   | External of string * data_type
   | Mode386
   | Model of string

@@ -78,27 +78,16 @@ let emit_symbol s = Emitaux.emit_symbol '.' s
 
 (* Output a label *)
 
-let label_prefix = ".L"
-
 let emit_label lbl =
   emit_string label_prefix; emit_int lbl
 
 (* Section switching *)
 
-let code_space =
-  "	.section \".text\"\n"
-
-let function_descr_space =
+let function_descr_space () =
   match abi with
-  | ELF32 -> code_space
-  | ELF64v1 -> "	.section \".opd\",\"aw\"\n"
-  | ELF64v2 -> code_space
-
-let data_space =
-  "	.section \".data\"\n"
-
-let rodata_space =
-  "	.section \".rodata\"\n"
+  | ELF32 -> D.switch_to_section Text
+  | ELF64v1 -> D.switch_to_section (POWER Function_descriptors)
+  | ELF64v2 -> D.switch_to_section Text
 
 let toc_space =
   " .section \".toc\",\"aw\"\n"
@@ -179,10 +168,10 @@ type tocentry =
 let tocref_entries : (tocentry, label) Hashtbl.t = Hashtbl.create 64
 
 let emit_tocentry = function
-  | TocSym s -> emit_symbol s
-  | TocInt i -> emit_nativeint i
-  | TocFloat f -> emit_printf "0x%Lx # %.12g" f (Int64.float_of_bits f)
-  | TocLabel lbl -> emit_label lbl
+  | TocSym s -> D.symbol s
+  | TocInt i -> D.nativeint i
+  | TocFloat f -> D.hex_float f
+  | TocLabel lbl -> D.label lbl
 
 let label_for_tocref entry =
   try
@@ -195,7 +184,8 @@ let label_for_tocref entry =
 let emit_toctable () =
   Hashtbl.iter
     (fun entry lbl ->
-      `{emit_label lbl}:	.quad	{emit_tocentry entry}\n`)
+      D.define_label lbl;
+      emit_tocentry entry)
     tocref_entries
 
 (* Emit a load from a TOC entry *)
@@ -203,10 +193,10 @@ let emit_toctable () =
 let emit_tocload emit_dest dest entry =
   let lbl = label_for_tocref entry in
   if !big_toc || !Clflags.for_package <> None then begin
-    `	addis	{emit_dest dest}, 2, {emit_label lbl}@toc@ha\n`;
-    `	ld	{emit_dest dest}, {emit_label lbl}@toc@l({emit_dest dest}) # {emit_tocentry entry}\n`
+    `	addis	{emit_dest dest}, 2, {D.label lbl}@toc@ha\n`;
+    `	ld	{emit_dest dest}, {D.label lbl}@toc@l({emit_dest dest}) # {emit_tocentry entry}\n`
   end else begin
-    `	ld	{emit_dest dest}, {emit_label lbl}@toc(2) # {emit_tocentry entry}\n`
+    `	ld	{emit_dest dest}, {D.label lbl}@toc(2) # {emit_tocentry entry}\n`
   end
 
 (* Output a "upper 16 bits" or "lower 16 bits" operator. *)
@@ -296,7 +286,7 @@ let emit_reload_toc () =
 
 let adjust_stack_offset delta =
   stack_offset := !stack_offset + delta;
-  cfi_adjust_cfa_offset delta
+  D.cfi_adjust_cfa_offset delta
 
 (* Record live pointers at call points *)
 
@@ -319,7 +309,7 @@ let record_frame ?label live raise_ dbg =
     live;
   record_frame_descr ~label:lbl ~frame_size:(frame_size())
     ~live_offset:!live_offset ~raise_frame:raise_ dbg;
-  `{emit_label lbl}:\n`
+  D.define_label lbl
 
 (* Record floating-point literals (for PPC32) *)
 
@@ -905,12 +895,12 @@ let emit_instr i =
         if ppc64 then begin
           jumptables := List.rev_append (Array.to_list jumptbl) !jumptables
         end else begin
-          emit_string rodata_space;
+          D.switch_to_section Read_only_data;
           `{emit_label lbl}:`;
           for i = 0 to Array.length jumptbl - 1 do
             `	.long	{emit_label jumptbl.(i)} - {emit_label lbl}\n`
           done;
-          emit_string code_space
+          D.switch_to_section Text
         end
     | Lsetuptrap lbl ->
         `	bl	{emit_label lbl}\n`;
@@ -991,52 +981,50 @@ let fundecl fundecl =
   call_gc_label := 0;
   float_literals := [];
   jumptables := []; jumptables_lbl := -1;
+  let fun_name_v1 = "L." ^ fundecl.fun_name in
   begin match abi with
   | ELF32 ->
-    emit_string code_space;
-    `	.globl	{emit_symbol fundecl.fun_name}\n`;
-    `	.type	{emit_symbol fundecl.fun_name}, @function\n`;
-    `	.align	2\n`;
-    `{emit_symbol fundecl.fun_name}:\n`
+    D.switch_to_section Text;
+    D.global fundecl.fun_name;
+    D.define_function_symbol' fundecl.fun_name;
+    D.align 4
   | ELF64v1 ->
-    emit_string function_descr_space;
-    `	.align 3\n`;
-    `	.globl	{emit_symbol fundecl.fun_name}\n`;
-    `	.type   {emit_symbol fundecl.fun_name}, @function\n`;
-    `{emit_symbol fundecl.fun_name}:\n`;
+    D.switch_to_section (POWER Function_descriptors);
+    D.align 8;
+    D.global fundecl.fun_name;
+    D.define_function_symbol' fundecl.fun_name;
     `	.quad .L.{emit_symbol fundecl.fun_name}, .TOC.@tocbase\n`;
-    emit_string code_space;
-    `	.align  2\n`;
-    `.L.{emit_symbol fundecl.fun_name}:\n`
+    D.switch_to_section Text;
+    D.align ~bytes:4;
+    D.define_function_symbol' fun_name_v1
   | ELF64v2 ->
-    emit_string code_space;
-    `	.globl	{emit_symbol fundecl.fun_name}\n`;
-    `	.type	{emit_symbol fundecl.fun_name}, @function\n`;
-    `	.align	2\n`;
-    `{emit_symbol fundecl.fun_name}:\n`;
+    D.switch_to_section Text;
+    D.global fundecl.fun_name;
+    D.align ~bytes:4;
+    D.define_function_symbol' fundecl.fun_name;
     `0:	addis	2, 12, (.TOC. - 0b)@ha\n`;
     `	addi	2, 2, (.TOC. - 0b)@l\n`;
     `	.localentry {emit_symbol fundecl.fun_name}, . - 0b\n`
   end;
   emit_debug_info fundecl.fun_dbg;
-  cfi_startproc();
+  D.cfi_startproc();
   if !Clflags.gprofile then emit_profile();
   let n = frame_size() in
   if n > 0 then begin
     `	addi	1, 1, {emit_int(-n)}\n`;
-    cfi_adjust_cfa_offset n
+    D.cfi_adjust_cfa_offset n
   end;
   if !contains_calls then begin
     let ra = retaddr_offset() in
     `	mflr	0\n`;
     `	{emit_string stg}	0, {emit_int ra}(1)\n`;
-    cfi_offset ~reg: 65 (* LR *) ~offset: (ra - n);
+    D.cfi_offset ~reg: 65 (* LR *) ~offset: (ra - n);
     match abi with
     | ELF32 -> ()
     | ELF64v1 | ELF64v2 ->
       `	std	2, {emit_int(toc_save_offset())}(1)\n`
   end;
-  `{emit_label !tailrec_entry_point}:\n`;
+  D.define_label !tailrec_entry_point;
   (* On this target, there is at most one "out of line" code block per
      function: a single "call GC" point.  It comes immediately after the
      function's body. *)
@@ -1044,10 +1032,10 @@ let fundecl fundecl =
   emit_all fundecl.fun_body;
   (* Emit the glue code to call the GC *)
   if !call_gc_label > 0 then begin
-    `{emit_label !call_gc_label}:\n`;
+    D.define_label !call_gc_label;
     match abi with
     | ELF32 ->
-      `	b	{emit_symbol "caml_call_gc"}\n`
+      `	b	{D.string_of_symbol "caml_call_gc"}\n`
     | ELF64v1 ->
       `	std	2, 40(1)\n`;
              (* save our TOC, will be restored by caml_call_gc *)
@@ -1063,100 +1051,56 @@ let fundecl fundecl =
       `	mtctr	12\n`;
       `	bctr\n`
   end;
-  cfi_endproc();
+  D.cfi_endproc();
   begin match abi with
-  | ELF32 | ELF64v2 ->
-    `	.size	{emit_symbol fundecl.fun_name}, . - {emit_symbol fundecl.fun_name}\n`
-  | ELF64v1 ->
-    `	.size	{emit_symbol fundecl.fun_name}, . - .L.{emit_symbol fundecl.fun_name}\n`
+  | ELF32 | ELF64v2 -> D.size fundecl.fun_name
+  | ELF64v1 -> D.size ~size_of:fundecl.fun_name fun_name_v1
   end;
   (* Emit the numeric literals *)
   if !float_literals <> [] then begin
-    emit_string rodata_space;
-    `	.align	3\n`;
-    List.iter
-      (fun (f, lbl) ->
-        `{emit_label lbl}:`;
-        emit_float64_split_directive ".long" f)
+    D.switch_to_section Read_only_data;
+    D.align ~bytes:8;
+    List.iter (fun (f, lbl) ->
+        D.define_label lbl;
+        D.float64 f)
       !float_literals
   end;
   (* Emit the jump tables *)
   if !jumptables <> [] then begin
-    emit_string rodata_space;
-    `	.align	2\n`;
-    `{emit_label !jumptables_lbl}:`;
-    List.iter
-      (fun  lbl ->
-          `	.long	{emit_label lbl} - {emit_label !jumptables_lbl}\n`)
+    D.switch_to_section Read_only_data;
+    D.align ~bytes:4;
+    D.define_label !jumptables_lbl;
+    List.iter (fun lbl ->
+        D.between_labels_32bit ~upper:lbl ~lower:!jumptables_lbl)
       (List.rev !jumptables)
   end
-
-(* Emission of data *)
-
-let declare_global_data s =
-  `	.globl	{emit_symbol s}\n`;
-  `	.type	{emit_symbol s}, @object\n`
-
-let emit_item = function
-    Cglobal_symbol s ->
-      declare_global_data s
-  | Cdefine_symbol s ->
-      `{emit_symbol s}:\n`;
-  | Cint8 n ->
-      `	.byte	{emit_int n}\n`
-  | Cint16 n ->
-      `	.short	{emit_int n}\n`
-  | Cint32 n ->
-      `	.long	{emit_nativeint n}\n`
-  | Cint n ->
-      `	{emit_string datag}	{emit_nativeint n}\n`
-  | Csingle f ->
-      emit_float32_directive ".long" (Int32.bits_of_float f)
-  | Cdouble f ->
-      if ppc64
-      then emit_float64_directive ".quad" (Int64.bits_of_float f)
-      else emit_float64_split_directive ".long" (Int64.bits_of_float f)
-  | Csymbol_address s ->
-      `	{emit_string datag}	{emit_symbol s}\n`
-  | Cstring s ->
-      emit_bytes_directive "	.byte	" s
-  | Cskip n ->
-      if n > 0 then `	.space	{emit_int n}\n`
-  | Calign n ->
-      `	.align	{emit_int (Misc.log2 n)}\n`
-
-let data l =
-  emit_string data_space;
-  `	.align  {emit_int (if ppc64 then 3 else 2)}\n`;
-  List.iter emit_item l
 
 (* Beginning / end of an assembly file *)
 
 let begin_assembly() =
   reset_debug_info();
-  `	.file	\"\"\n`;  (* PR#7037 *)
   begin match abi with
-  | ELF64v2 -> `	.abiversion 2\n`
+  | ELF64v2 -> D.power_abi_version 2
   | _ -> ()
   end;
   Hashtbl.clear tocref_entries;
   (* Emit the beginning of the segments *)
-  let lbl_begin = Compilenv.make_symbol (Some "data_begin") in
-  emit_string data_space;
-  declare_global_data lbl_begin;
-  `{emit_symbol lbl_begin}:\n`;
-  let lbl_begin = Compilenv.make_symbol (Some "code_begin") in
-  emit_string function_descr_space;
+  let sym_begin = Compilenv.make_symbol (Some "data_begin") in
+  D.switch_to_section Data;
+  declare_global_data sym_begin;
+  D.define_symbol' sym_begin;
+  let sym_begin = Compilenv.make_symbol (Some "code_begin") in
+  D.switch_to_section (POWER Function_descriptors);
   (* For the ELF64v1 ABI, we must make sure that the .opd and .data
      sections are in different pages.  .opd comes after .data,
      so aligning .opd is enough.  To save space, we do it only
      for the startup file, not for every OCaml compilation unit. *)
   let c = Compilenv.current_unit_name() in
   if abi = ELF64v1 && (c = "_startup" || c = "_shared_startup") then begin
-    `	.p2align	12\n`
+    D.align ~bytes:(1 lsl 12)
   end;
-  declare_global_data lbl_begin;
-  `{emit_symbol lbl_begin}:\n`
+  declare_global_data sym_begin;
+  D.define_symbol' sym_begin
 
 let end_assembly() =
   (* In profiling mode, for ELF64, emit the helper functions
@@ -1167,16 +1111,16 @@ let end_assembly() =
   if ppc64 && !Clflags.gprofile then begin
     let save_area = reserved_stack_space + (if abi = ELF64v1 then 8*8 else 0) in
     let stacksize = save_area + 8*8 in
-    emit_string code_space;
-    `	.align	2\n`;
-    `{emit_symbol "caml_before_mcount"}:\n`;
+    D.switch_to_section Text;
+    D.align ~bytes:4;
+    D.define_symbol' "caml_before_mcount";
     `	stdu	1, {emit_int (-stacksize)}(1)\n`;
     `	std	0, {emit_int (16 + stacksize)}(1)\n`;
     for i = 3 to 10 do
     `	std	{emit_gpr i}, {emit_int (save_area + (i - 3) * 8)}(1)\n`
     done;
     `	blr\n`;
-    `{emit_symbol "caml_after_mcount"}:\n`;
+    D.define_symbol' "caml_after_mcount";
     `	ld	0, {emit_int (16 + stacksize)}(1)\n`;
     for i = 3 to 10 do
     `	ld	{emit_gpr i}, {emit_int (save_area + (i - 3) * 8)}(1)\n`
@@ -1188,38 +1132,25 @@ let end_assembly() =
   emit_string function_descr_space;
   let lbl_end = Compilenv.make_symbol (Some "code_end") in
   declare_global_data lbl_end;
-  `{emit_symbol lbl_end}:\n`;
-  if abi <> ELF64v1 then `	.long	0\n`;
-  emit_string data_space;
+  D.define_symbol' lbl_end;
+  if abi <> ELF64v1 then D.int32 0l;
+  D.switch_to_section Data;
   let lbl_end = Compilenv.make_symbol (Some "data_end") in
   declare_global_data lbl_end;
-  `{emit_symbol lbl_end}:\n`;
+  D.define_symbol' lbl_end;
   `	{emit_string datag}	0\n`;
   (* Emit the frame descriptors *)
-  emit_string rodata_space;
+  D.switch_to_section Read_only_data;
   let lbl = Compilenv.make_symbol (Some "frametable") in
   declare_global_data lbl;
-  `{emit_symbol lbl}:\n`;
-  emit_frames
-    { efa_code_label =
-         (fun l -> `	{emit_string datag}	{emit_label l}\n`);
-      efa_data_label =
-         (fun l -> `	{emit_string datag}	{emit_label l}\n`);
-      efa_16 = (fun n -> `	.short	{emit_int n}\n`);
-      efa_32 = (fun n -> `	.long	{emit_int32 n}\n`);
-      efa_word = (fun n -> `	{emit_string datag}	{emit_int n}\n`);
-      efa_align = (fun n -> `	.balign	{emit_int n}\n`);
-      efa_label_rel = (fun lbl ofs ->
-                           `	.long	({emit_label lbl} - .) + {emit_int32 ofs}\n`);
-      efa_def_label = (fun l -> `{emit_label l}:\n`);
-      efa_string = (fun s -> emit_bytes_directive "	.byte	" (s ^ "\000"))
-     };
+  D.define_symbol' lbl;
+  emit_frames ();
   (* Emit the TOC entries *)
   begin match abi with
   | ELF32 -> ()
   | ELF64v1 | ELF64v2 ->
-      emit_string toc_space;
+      D.switch_to_section (POWER Table_of_contents);
       emit_toctable();
       Hashtbl.clear tocref_entries
   end;
-  `	.section .note.GNU-stack,\"\",%progbits\n`
+  D.mark_stack_non_executable ()

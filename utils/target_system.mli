@@ -17,21 +17,21 @@
 (** Target systems of the OCaml native code compiler. *)
 type system = private
   (* 32 and 64 bit *)
-  | S_macosx
-  | S_gnu
-  | S_cygwin
+  | MacOS
+  | Gnu
+  | Cygwin
   (* 32 bit only *)
-  | S_solaris
-  | S_win32
-  | S_linux_elf
-  | S_bsd_elf
-  | S_beos
-  | S_mingw
+  | Solaris
+  | Win32
+  | Linux_elf
+  | Bsd_elf
+  | Beos
+  | Mingw
   (* 64 bit only *)
-  | S_win64
-  | S_linux
-  | S_mingw64
-  | S_unknown
+  | Win64
+  | Linux
+  | Mingw64
+  | Unknown
 
 (** The selected target system of the OCaml compiler. *)
 val system : system
@@ -41,3 +41,14 @@ val windows : bool
 
 (** Whether the target system uses the MASM assembler. *)
 val masm : bool
+
+type platform = private
+  | X86_32
+  | X86_64
+  | ARM_32
+  | ARM_64
+  | POWER
+  | SPARC
+  | S390
+
+val platform : platform

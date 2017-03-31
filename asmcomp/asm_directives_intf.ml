@@ -32,20 +32,27 @@ module type S = sig
     | Debug_str
     | Debug_line
 
+  (** Sections for POWER architectures only. *)
+  type power_section =
+    | Function_descriptors
+    | Table_of_contents
+
   (** The linker may share constants in [Eight_byte_literals] and
       [Sixteen_byte_literals] sections. *)
   type section =
     | Text
     | Data
+    | Read_only_data
     | Eight_byte_literals
     | Sixteen_byte_literals
     | Jump_tables
-    | Dwarf of dwarf_section
+    | DWARF of dwarf_section
+    | POWER of power_section
 
   (** Retrieve the label that [switch_to_section] (below) will put at the start
       of the given section.  This function may be called before
       [switch_to_section] for the section concerned. *)
-  val label_for_section : section -> Linearize.label
+  val label_for_section : section -> Cmm.label
 
   (** Emit subsequent directives to the given section.  If this function
       has not been called before on the particular section, a label
@@ -69,6 +76,12 @@ module type S = sig
   (** Emit a 64-bit integer. *)
   val int64 : Int64.t -> unit
 
+  (** Emit a native integer. *)
+  val nativeint : Nativeint.t -> unit
+
+  (** Emit a float in hex representation, 64 bits wide. *)
+  val hex_float : float -> unit
+
   (** Emit an integer whose width is that of an address on the target
       machine. *)
   val target_address : Targetint.t -> unit
@@ -89,7 +102,7 @@ module type S = sig
       not emit anything.  (See [emit_cached_strings], below.)
       If a string is supplied to this function that is already in the cache
       then the previously-assigned label is returned, not a new one. *)
-  val cache_string : string -> Linearize.label
+  val cache_string : string -> Cmm.label
 
   (** Emit the sequence of:
         label definition:
@@ -120,13 +133,18 @@ module type S = sig
       supported on all platforms. *)
   val mark_stack_non_executable : unit -> unit
 
+  (** Set the POWER ABI version. *)
+  val power_abi_version : int -> unit
+
   (** Leave as much space as is required to achieve the given alignment. *)
   val align : bytes:int -> unit
 
   (** Emit a directive giving the displacement between the given symbol and
-      the current position.  This should only be used to calculate sizes of
-      functions. *)
-  val size : string -> unit
+      the current position.  This should only be used to state sizes of
+      functions.  [size_of] may be specified when the symbol used for
+      measurement differs from that whose size is being stated (e.g. on POWER
+      with ELF ABI v1). *)
+  val size : ?size_of:string -> string -> unit
 
   (** Leave a gap in the object file. *)
   val space : bytes:int -> unit
@@ -164,10 +182,10 @@ module type S = sig
   (** Define a label at the current position in the current section.
       The treatment for MASM when emitting into non-text sections is as for
       [define_symbol], above. *)
-  val define_label : Linearize.label -> unit
+  val define_label : Cmm.label -> unit
 
   (** Emit a machine-width reference to the given label. *)
-  val label : Linearize.label -> unit
+  val label : Cmm.label -> unit
 
   (** Emit a machine-width reference to the address formed by adding the
       given byte offset to the address of the given symbol. *)
@@ -196,7 +214,7 @@ module type S = sig
       lower symbol and the sum of the address of the upper label plus
       [offset_upper]. *)
   val between_symbol_and_label_offset
-     : upper:Linearize.label
+     : upper:Cmm.label
     -> lower:Symbol.t
     -> offset_upper:Targetint.t
     -> unit
@@ -207,7 +225,7 @@ module type S = sig
   (* CR mshinwell: Make sure that emit_label lines up with what Asm_directives
      does for int -> string label conversion *)
   val between_this_and_label_offset_32bit
-     : upper:Linearize.label
+     : upper:Cmm.label
     -> offset_upper:Targetint.t
     -> unit
 
@@ -216,7 +234,7 @@ module type S = sig
       size of the integer. *)
   val offset_into_section_label
      : section:section
-    -> label:Linearize.label
+    -> label:Cmm.label
     -> width:width
     -> unit
 

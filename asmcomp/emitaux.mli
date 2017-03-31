@@ -16,27 +16,10 @@
 (* Common functions for emitting assembly code *)
 
 val output_channel: out_channel ref
-val emit_string: string -> unit
-val emit_int: int -> unit
-val emit_nativeint: nativeint -> unit
-val emit_int32: int32 -> unit
-val emit_symbol: char -> string -> unit
-val emit_printf: ('a, out_channel, unit) format -> 'a
-val emit_char: char -> unit
-val emit_string_literal: string -> unit
-val emit_string_directive: string -> string -> unit
-val emit_bytes_directive: string -> string -> unit
-val emit_float64_directive: string -> int64 -> unit
-val emit_float64_split_directive: string -> int64 -> unit
-val emit_float32_directive: string -> int32 -> unit
 
 val reset : unit -> unit
 val reset_debug_info: unit -> unit
 val emit_debug_info: Debuginfo.t -> unit
-val emit_debug_info_gen :
-  Debuginfo.t ->
-  (file_num:int -> file_name:string -> unit) ->
-  (file_num:int -> line:int -> col:int -> unit) -> unit
 
 val record_frame_descr :
   label:int ->              (* Return address *)
@@ -46,26 +29,9 @@ val record_frame_descr :
   Debuginfo.t ->            (* Location, if any *)
   unit
 
-type emit_frame_actions =
-  { efa_code_label: int -> unit;
-    efa_data_label: int -> unit;
-    efa_16: int -> unit;
-    efa_32: int32 -> unit;
-    efa_word: int -> unit;
-    efa_align: int -> unit;
-    efa_label_rel: int -> int32 -> unit;
-    efa_def_label: int -> unit;
-    efa_string: string -> unit }
-
-val emit_frames: emit_frame_actions -> unit
+val emit_frames: unit -> unit
 
 val is_generic_function: string -> bool
-
-val cfi_startproc : unit -> unit
-val cfi_endproc : unit -> unit
-val cfi_adjust_cfa_offset : int -> unit
-val cfi_offset : reg:int -> offset:int -> unit
-
 
 val binary_backend_available: bool ref
     (** Is a binary backend available.  If yes, we don't need
