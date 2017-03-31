@@ -7,7 +7,7 @@
 (*                                                                        *)
 (*   Copyright 2014 Institut National de Recherche en Informatique et     *)
 (*     en Automatique.                                                    *)
-(*   Copyright 2016 Jane Street Group LLC                                 *)
+(*   Copyright 2016--2017 Jane Street Group LLC                           *)
 (*                                                                        *)
 (*   All rights reserved.  This file is distributed under the terms of    *)
 (*   the GNU Lesser General Public License version 2.1, with the          *)
@@ -51,6 +51,22 @@ type section =
   | Sixteen_byte_literals
   | Jump_tables
   | Dwarf of dwarf_section
+
+let current_section = ref None
+
+let section_is_text = function
+  | Text -> true
+  | Data
+  | Eight_byte_literals
+  | Sixteen_byte_literals
+  | Jump_tables
+  | Dwarf _ -> false
+
+let current_section_is_text () =
+  match !current_section with
+  | None ->
+    Misc.fatal_error "Asm_directives.initialize has not been called"
+  | Some section -> section_is_text section
 
 let text_label = Cmm.new_label ()
 let data_label = Cmm.new_label ()
@@ -125,6 +141,10 @@ module Directive = struct
     | Add of constant * constant
     | Sub of constant * constant
 
+  type thing_after_label =
+    | Code
+    | Machine_width_data
+
   type t =
     | Align of { bytes : int; }
     | Bytes of string
@@ -134,7 +154,7 @@ module Directive = struct
     | Const16 of constant
     | Const32 of constant
     | Const64 of constant
-    | NewLabel of string
+    | NewLabel of string * thing_after_label
     | Section of string list * string option * string list
     | Space of { bytes : int; }
     | Cfi_adjust_cfa_offset of int
@@ -229,7 +249,7 @@ module Directive = struct
       end
     | Comment s -> bprintf buf "\t\t\t\t/* %s */" s
     | Global s -> bprintf buf "\t.globl\t%s" s;
-    | NewLabel s -> bprintf buf "%s:" s
+    | NewLabel (s, _typ) -> bprintf buf "%s:" s
     | Section ([".data" ], _, _) -> bprintf buf "\t.data"
     | Section ([".text" ], _, _) -> bprintf buf "\t.text"
     | Section (name, flags, args) ->
@@ -297,6 +317,8 @@ module Directive = struct
     | Section ([".text"], None, []) -> bprintf buf "\t.CODE"
     | Section _ -> assert false
     | Space { bytes; } -> bprintf buf "\tBYTE\t%d DUP (?)" bytes
+    | NewLabel (label, typ) ->
+      ...
     | Cfi_adjust_cfa_offset _
     | Cfi_endproc
     | Cfi_startproc
@@ -310,7 +332,6 @@ module Directive = struct
     | Type _
     | Uleb128 _
     | Direct_assignment _
-    | NewLabel _ ->
       Misc.fatal_error "Unsupported asm directive for MASM"
 
   let print b t =
@@ -360,10 +381,19 @@ let const16 cst = emit (Const16 (lower_constant cst))
 let const32 cst = emit (Const32 (lower_constant cst))
 let const64 cst = emit (Const64 (lower_constant cst))
 
+let size symbol =
+  match TS.system with
+  | S_gnu | S_linux -> size symbol (Sub (This, string_of_symbol name))
+  | _ -> ()
+
 let label label_name = const64 (Label label_name)
 
 let define_label label_name =
-  emit (NewLabel (string_of_label label_name))
+  let typ =
+    if current_section_is_text () then Code
+    else Machine_width_data
+  in
+  emit (NewLabel (string_of_label label_name, typ))
 
 let sections_seen = ref []
 
@@ -375,6 +405,7 @@ let switch_to_section (section : section) =
       true
     end
   in
+  current_section := Some section;
   let section_name, middle_part, attrs =
     let text () = [".text"], None, [] in
     let data () = [".data"], None, [] in
@@ -454,13 +485,13 @@ let reset () =
 let initialize ~emit =
   emit_ref := Some emit;
   reset ();
+  switch_to_section Text;
   match TS.system with
   | S_macosx -> ()
   | _ ->
     if !Clflags.debug then begin
       (* Forward label references are illegal in gas.  Just put them in for
          all assemblers, they won't harm. *)
-      switch_to_section Text;
       switch_to_section Data;
       switch_to_section Eight_byte_literals;
       switch_to_section Sixteen_byte_literals;
@@ -473,10 +504,22 @@ let initialize ~emit =
     end
 
 let define_symbol' symbol_name =
-  emit (NewLabel (string_of_symbol symbol_name))
+  let typ =
+    if current_section_is_text () then Code
+    else Machine_width_data
+  in
+  emit (NewLabel (string_of_symbol symbol_name, typ))
 
 let define_symbol sym =
   define_symbol' (Linkage_name.to_string (Symbol.label sym))
+
+let define_function_symbol' symbol_name =
+  if not (current_section_is_text ()) then begin
+    Misc.fatal_error "define_function_symbol' can only be called when \
+      emitting to a text section"
+  end;
+  define_symbol' symbol_name;
+  type_ symbol_name ~type_:"@function"
 
 let symbol' sym =
   const64 (Symbol sym)

@@ -7,7 +7,7 @@
 (*                                                                        *)
 (*   Copyright 2014 Institut National de Recherche en Informatique et     *)
 (*     en Automatique.                                                    *)
-(*   Copyright 2016 Jane Street Group LLC                                 *)
+(*   Copyright 2016--2017 Jane Street Group LLC                           *)
 (*                                                                        *)
 (*   All rights reserved.  This file is distributed under the terms of    *)
 (*   the GNU Lesser General Public License version 2.1, with the          *)
@@ -18,17 +18,6 @@
 (** Emission of assembler directives that are supported on multiple targets. *)
 
 module type S = sig
-  (** Expressions computing assembly- or link- time constants.  (Which of these
-      is computed depends on the assembler's semantics, except when using
-      the higher-level functions for computing displacements below.) *)
-  type constant =
-    | Const of int64
-    | This
-    | Label of Linearize.label
-    | Symbol of string
-    | Add of constant * constant
-    | Sub of constant * constant
-
   (** Widths of data types. *)
   type width =
     | Thirty_two
@@ -68,49 +57,6 @@ module type S = sig
       (e.g. during linking). *)
   val switch_to_section : section -> unit
 
-  (** Leave as much space as is required to achieve the given alignment. *)
-  val align : bytes:int -> unit
-
-  (** Adjust the current frame address offset by the given number of bytes. *)
-  val cfi_adjust_cfa_offset : bytes:int -> unit
-
-  (** Mark the beginning of a function, for CFI purposes. *)
-  val cfi_startproc : unit -> unit
-
-  (** Mark the end of a function, for CFI purposes. *)
-  val cfi_endproc : unit -> unit
-
-  (** Emit a comment. *)
-  val comment : string -> unit
-
-  (** Emit an 8-bit constant.  There is no padding or sign extension. *)
-  val const8 : constant -> unit
-
-  (** Emit a 16-bit constant.  There is no padding or sign extension. *)
-  val const16 : constant -> unit
-
-  (** Emit a 32-bit constant.  There is no padding or sign extension. *)
-  val const32 : constant -> unit
-
-  (** Emit a 64-bit constant. *)
-  val const64 : constant -> unit
-
-  (** Emit a direct assignment statement (Mac OS X only; required if the
-      behaviour of ".set" which makes expressions non-relocatable is
-      undesirable).  If about to write a displacement calculation it is better
-      to use the high-level functions below instead. *)
-  val direct_assignment : string -> constant -> unit
-
-  (** Assign a file number to a filename. *)
-  val file : file_num:int -> file_name:string -> unit
-
-  (** Mark a symbol as global. *)
-  val global : string -> unit
-
-  (** Marker inside the definition of a lazy symbol stub (see platform or
-      assembler documentation for details). *)
-  val indirect_symbol : string -> unit
-
   (** Emit an 8-bit integer.  There is no padding or sign extension. *)
   val int8 : Numbers.Int8.t -> unit
 
@@ -123,61 +69,6 @@ module type S = sig
   (** Emit a 64-bit integer. *)
   val int64 : Int64.t -> unit
 
-  (** Mark the source location of the current assembly position. *)
-  val loc : file_num:int -> line:int -> col:int -> unit
-
-  (** Mark that the call stack is not to be executable at runtime.  Not
-      supported on all platforms. *)
-  val mark_stack_non_executable : unit -> unit
-
-  (** Mark a symbol as "private extern" (see assembler documentation for
-      exactly what this means). *)
-  val private_extern : string -> unit
-
-  (** Set the given variable to the given expression.  Note that on Mac OS X
-      such an expression is evaluated to an _absolute_ assembly-time constant.
-      If about to write a displacement calculation it is better to use the
-      high-level functions below instead. *)
-  val set : string -> constant -> unit
-
-  (** Identify the size of the entity pointed at by the given symbol. *)
-  val size : string -> constant -> unit
-
-  (** Leave a gap in the object file. *)
-  val space : bytes:int -> unit
-
-  (** Emit a string (directly into the current section).  This function
-      does not write a terminating null. *)
-  val string : string -> unit
-
-  (** Set the type of a symbol. *)
-  val type_ : string -> type_:string -> unit
-
-  (** Emit a machine-width reference to the given symbol. *)
-  val symbol : Symbol.t -> unit
-
-  (** Like [symbol], but when not using the middle-end type. *)
-  val symbol' : string -> unit
-
-  (** Define a symbol at the current output position. *)
-  val define_symbol : Symbol.t -> unit
-
-  (** Like [define_symbol], but when not using the middle-end type. *)
-  val define_symbol' : string -> unit
-
-  (** Emit a machine-width reference to the address formed by adding the
-      given byte offset to the address of the given symbol. *)
-  val symbol_plus_offset
-    : Symbol.t
-    -> offset_in_bytes:Targetint.t
-    -> unit
-
-  (** Emit a machine-width reference to the given label. *)
-  val label : Linearize.label -> unit
-
-  (** Define a label at the current position in the current section. *)
-  val define_label : Linearize.label -> unit
-
   (** Emit an integer whose width is that of an address on the target
       machine. *)
   val target_address : Targetint.t -> unit
@@ -188,6 +79,10 @@ module type S = sig
 
   (** Emit a 64-bit integer in signed LEB128 variable-length encoding. *)
   val sleb128 : Int64.t -> unit
+
+  (** Emit a string (directly into the current section).  This function
+      does not write a terminating null. *)
+  val string : string -> unit
 
   (** Cache a string for later emission.  The returned label may be used to
       obtain the address of the string in the section.  This function does
@@ -202,6 +97,83 @@ module type S = sig
       pairs as per previous calls to [cache_string].  This function clears
       the cache. *)
   val emit_cached_strings : unit -> unit
+
+  (** Emit a comment. *)
+  val comment : string -> unit
+
+  (** Assign a file number to a filename. *)
+  val file : file_num:int -> file_name:string -> unit
+
+  (** Mark the source location of the current assembly position. *)
+  val loc : file_num:int -> line:int -> col:int -> unit
+
+  (** Adjust the current frame address offset by the given number of bytes. *)
+  val cfi_adjust_cfa_offset : bytes:int -> unit
+
+  (** Mark the beginning of a function, for CFI purposes. *)
+  val cfi_startproc : unit -> unit
+
+  (** Mark the end of a function, for CFI purposes. *)
+  val cfi_endproc : unit -> unit
+
+  (** Mark that the call stack is not to be executable at runtime.  Not
+      supported on all platforms. *)
+  val mark_stack_non_executable : unit -> unit
+
+  (** Leave as much space as is required to achieve the given alignment. *)
+  val align : bytes:int -> unit
+
+  (** Emit a directive giving the displacement between the given symbol and
+      the current position. *)
+  val size : string -> unit
+
+  (** Leave a gap in the object file. *)
+  val space : bytes:int -> unit
+
+  (** Define a symbol at the current output position.  When emitting for MASM
+      into a non-text section this will cause loads and stores to/from the
+      symbol to be treated as if they are loading machine-width words (unless
+      the instruction has an explicit width suffix). *)
+  val define_symbol : Symbol.t -> unit
+
+  (** Like [define_symbol], but when not using the middle-end type. *)
+  val define_symbol' : string -> unit
+
+  (** Define a function symbol.  An exception will be raised if the current
+      section is not a text section. *)
+  val define_function_symbol' : string -> unit
+
+  (** Mark a symbol as global. *)
+  val global : string -> unit
+
+  (** Emit a machine-width reference to the given symbol. *)
+  val symbol : Symbol.t -> unit
+
+  (** Like [symbol], but when not using the middle-end type. *)
+  val symbol' : string -> unit
+
+  (** Mark a symbol as "private extern" (see assembler documentation for
+      details). *)
+  val private_extern : string -> unit
+
+  (** Marker inside the definition of a lazy symbol stub (see platform or
+      assembler documentation for details). *)
+  val indirect_symbol : string -> unit
+
+  (** Define a label at the current position in the current section.
+      The treatment for MASM when emitting into non-text sections is as for
+      [define_symbol], above. *)
+  val define_label : Linearize.label -> unit
+
+  (** Emit a machine-width reference to the given label. *)
+  val label : Linearize.label -> unit
+
+  (** Emit a machine-width reference to the address formed by adding the
+      given byte offset to the address of the given symbol. *)
+  val symbol_plus_offset
+     : Symbol.t
+    -> offset_in_bytes:Targetint.t
+    -> unit
 
   (** The following functions calculate distances between various entities
       such as labels and symbols.  These distances are calculated at link time
@@ -223,7 +195,7 @@ module type S = sig
       lower symbol and the sum of the address of the upper label plus
       [offset_upper]. *)
   val between_symbol_and_label_offset
-    : upper:Linearize.label
+     : upper:Linearize.label
     -> lower:Symbol.t
     -> offset_upper:Targetint.t
     -> unit
@@ -232,9 +204,9 @@ module type S = sig
       by subtracting the current assembly location from the sum of the address
       of the given label plus the given offset. *)
   (* CR mshinwell: Make sure that emit_label lines up with what Asm_directives
-    does for int -> string label conversion *)
+     does for int -> string label conversion *)
   val between_this_and_label_offset_32bit
-    : upper:Linearize.label
+     : upper:Linearize.label
     -> offset_upper:Targetint.t
     -> unit
 
@@ -242,7 +214,7 @@ module type S = sig
       address of [base] from the address of [label].  [width] specifies the
       size of the integer. *)
   val offset_into_section_label
-    : section:section
+     : section:section
     -> label:Linearize.label
     -> width:width
     -> unit
@@ -250,7 +222,7 @@ module type S = sig
   (** As for [offset_into_section_label], but using a symbol instead of
       a label as one end of the measurement. *)
   val offset_into_section_symbol
-    : section:section
+     : section:section
     -> symbol:Symbol.t
     -> width:width
     -> unit

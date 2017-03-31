@@ -7,7 +7,7 @@
 (*                                                                        *)
 (*   Copyright 2014 Institut National de Recherche en Informatique et     *)
 (*     en Automatique.                                                    *)
-(*   Copyright 2016 Jane Street Group LLC                                 *)
+(*   Copyright 2016--2017 Jane Street Group LLC                           *)
 (*                                                                        *)
 (*   All rights reserved.  This file is distributed under the terms of    *)
 (*   the GNU Lesser General Public License version 2.1, with the          *)
@@ -66,7 +66,8 @@ end
 
 (** To be called by the emitter at the very start of code generation.
     Calling the functions below will cause directives to be passed to the
-    given [emit] function. *)
+    given [emit] function.
+    This function switches to the text section. *)
 val initialize : emit:(Directive.t -> unit) -> unit
 
 (** Reinitialize the emitter before compiling a different source file. *)
