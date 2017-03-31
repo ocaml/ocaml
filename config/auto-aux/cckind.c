@@ -25,6 +25,8 @@ icc __INTEL_COMPILER
 clang __clang_major__ __clang_minor__
 #elif defined(__GNUC__) && defined(__GNUC_MINOR__)
 gcc __GNUC__ __GNUC_MINOR__
+#elif defined(__xlc__) && (__xlC__)
+xlc __xlC__ __xlC_ver__
 #else
 unknown
 #endif

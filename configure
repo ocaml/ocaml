@@ -809,6 +809,16 @@ if $with_sharedlibs; then
       mksharedlibrpath="-Wl,-rpath,"
       natdynlinkopts="-Wl,-E"
       shared_libraries_supported=true;;
+    powerpc-*-aix*)
+      case "$ccfamily" in
+        xlc-*)sharedcccompopts="-qpic"
+              mksharedlib="$cc -qmkshrobj -G"
+              mksharedlibrpath="-Wl,-blibpath,"
+              ldflags="$ldflags -brtl -bexpfull"
+              dl_needs_underscore=false
+              rpath="-Wl,-blibpath,"
+              shared_libraries_supported=true;;
+      esac
   esac
 fi
 
