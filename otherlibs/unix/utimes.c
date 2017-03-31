@@ -43,7 +43,7 @@ CAMLprim value unix_utimes(value path, value atime, value mtime)
     tv[1].tv_usec = (mt - tv[1].tv_sec) * 1000000;
     t = tv;
   }
-  p = caml_strdup(String_val(path));
+  p = caml_stat_strdup(String_val(path));
   caml_enter_blocking_section();
   ret = utimes(p, t);
   caml_leave_blocking_section();
@@ -78,7 +78,7 @@ CAMLprim value unix_utimes(value path, value atime, value mtime)
     times.modtime = mt;
     t = &times;
   }
-  p = caml_strdup(String_val(path));
+  p = caml_stat_strdup(String_val(path));
   caml_enter_blocking_section();
   ret = utime(p, t);
   caml_leave_blocking_section();

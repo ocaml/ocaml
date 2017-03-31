@@ -37,9 +37,11 @@ done
  for f in $*; do echo "  $f();"; done
  echo "  return 0; }") >> hasgot.c
 
-if test "$verbose" = yes; then
-  echo "hasgot $args: $cc $opts -o tst hasgot.c $libs" >&2
-  exec $cc $opts -o tst hasgot.c $libs > /dev/null
+cmd="$cc $cflags $opts -o tst hasgot.c $ldflags $libs"
+
+if $verbose; then
+  echo "hasgot $args: $cmd" >&2
+  exec $cmd > /dev/null
 else
-  exec $cc $opts -o tst hasgot.c $libs > /dev/null 2>/dev/null
+  exec $cmd > /dev/null 2>/dev/null
 fi

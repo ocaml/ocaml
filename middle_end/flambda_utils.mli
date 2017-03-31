@@ -69,7 +69,7 @@ val make_key : Flambda.t -> sharing_key option
 val make_closure_declaration
    : id:Variable.t
   -> body:Flambda.t
-  -> params:Variable.t list
+  -> params:Parameter.t list
   -> stub:bool
   -> Flambda.t
 

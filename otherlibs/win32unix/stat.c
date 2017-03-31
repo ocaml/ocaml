@@ -304,7 +304,7 @@ static int do_stat(int do_lstat, int use_64, char* opath, mlsize_t l, HANDLE fst
 {
   char* path;
   int ret;
-  path = caml_strdup(opath);
+  path = caml_stat_strdup(opath);
   ret = safe_do_stat(do_lstat, use_64, path, l, fstat, st_ino, res);
   caml_stat_free(path);
   return ret;

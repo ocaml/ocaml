@@ -335,7 +335,7 @@ let specialise env r ~lhs_of_application
          (fun id approx ->
             not ((A.useful approx)
                  && Variable.Map.mem id (Lazy.force invariant_params)))
-         function_decl.params args_approxs)
+         (Parameter.List.vars function_decl.params) args_approxs)
   in
   let always_specialise, never_specialise =
     (* Merge call site annotation and function annotation.

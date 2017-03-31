@@ -66,7 +66,11 @@ val get_copy : 'a t -> int -> 'a option
    the incremental GC from erasing the value in its current cycle
    ([get] may delay the erasure to the next GC cycle).
    Raise [Invalid_argument "Weak.get"] if [n] is not in the range
-   0 to {!Weak.length}[ a - 1].*)
+   0 to {!Weak.length}[ a - 1].
+
+   If the element is a custom block it is not copied.
+
+*)
 
 
 val check : 'a t -> int -> bool

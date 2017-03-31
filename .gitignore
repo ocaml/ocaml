@@ -27,8 +27,6 @@
 *.annot
 *.exe
 *.exe.manifest
-.depend
-.depend.nt
 .DS_Store
 *.out
 *.out.dSYM
@@ -61,6 +59,7 @@
 /asmrun/afl.c
 /asmrun/array.c
 /asmrun/backtrace.c
+/asmrun/bigarray.c
 /asmrun/callback.c
 /asmrun/compact.c
 /asmrun/compare.c
@@ -201,6 +200,7 @@
 /otherlibs/win32unix/getproto.c
 /otherlibs/win32unix/getserv.c
 /otherlibs/win32unix/gmtime.c
+/otherlibs/win32unix/mmap_ba.c
 /otherlibs/win32unix/putenv.c
 /otherlibs/win32unix/rmdir.c
 /otherlibs/win32unix/socketaddr.c

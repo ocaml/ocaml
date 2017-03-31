@@ -85,13 +85,13 @@ static intnat volatile caml_async_signal_mode = 0;
 
 static void caml_enter_blocking_section_default(void)
 {
-  Assert (caml_async_signal_mode == 0);
+  CAMLassert (caml_async_signal_mode == 0);
   caml_async_signal_mode = 1;
 }
 
 static void caml_leave_blocking_section_default(void)
 {
-  Assert (caml_async_signal_mode == 1);
+  CAMLassert (caml_async_signal_mode == 1);
   caml_async_signal_mode = 0;
 }
 

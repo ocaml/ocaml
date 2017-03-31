@@ -17,14 +17,17 @@
 #define CAML_BIGARRAY_H
 
 #ifndef CAML_NAME_SPACE
-#include "caml/compatibility.h"
+#include "compatibility.h"
 #endif
-#include "caml/config.h"
-#include "caml/mlvalues.h"
+#include "config.h"
+#include "mlvalues.h"
 
 typedef signed char caml_ba_int8;
 typedef unsigned char caml_ba_uint8;
-#if SIZEOF_SHORT == 2
+#if defined(HAS_STDINT_H)
+typedef int16_t caml_ba_int16;
+typedef uint16_t caml_ba_uint16;
+#elif SIZEOF_SHORT == 2
 typedef short caml_ba_int16;
 typedef unsigned short caml_ba_uint16;
 #else
@@ -102,24 +105,30 @@ struct caml_ba_array {
 
 #define Caml_ba_data_val(v) (Caml_ba_array_val(v)->data)
 
-#if defined(IN_OCAML_BIGARRAY)
-#define CAMLBAextern CAMLexport
-#else
-#define CAMLBAextern CAMLextern
-#endif
-
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-CAMLBAextern value
+CAMLextern value
     caml_ba_alloc(int flags, int num_dims, void * data, intnat * dim);
-CAMLBAextern value caml_ba_alloc_dims(int flags, int num_dims, void * data,
+CAMLextern value caml_ba_alloc_dims(int flags, int num_dims, void * data,
                                  ... /*dimensions, with type intnat */);
-CAMLBAextern uintnat caml_ba_byte_size(struct caml_ba_array * b);
+CAMLextern uintnat caml_ba_byte_size(struct caml_ba_array * b);
+CAMLextern uintnat caml_ba_num_elts(struct caml_ba_array * b);
 
 #ifdef __cplusplus
 }
+#endif
+
+#ifdef CAML_INTERNALS
+
+CAMLextern int caml_ba_element_size[];
+CAMLextern void caml_ba_finalize(value v);
+CAMLextern int caml_ba_compare(value v1, value v2);
+CAMLextern intnat caml_ba_hash(value v);
+CAMLextern void caml_ba_serialize(value, uintnat *, uintnat *);
+CAMLextern uintnat caml_ba_deserialize(void * dst);
+
 #endif
 
 #endif /* CAML_BIGARRAY_H */

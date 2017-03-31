@@ -111,13 +111,13 @@ int caml_write_fd(int fd, int flags, void * buf, int n)
   return retcode;
 }
 
-char * caml_decompose_path(struct ext_table * tbl, char * path)
+caml_stat_string caml_decompose_path(struct ext_table * tbl, char * path)
 {
   char * p, * q;
   size_t n;
 
   if (path == NULL) return NULL;
-  p = caml_strdup(path);
+  p = caml_stat_strdup(path);
   q = p;
   while (1) {
     for (n = 0; q[n] != 0 && q[n] != ':'; n++) /*nothing*/;
@@ -130,7 +130,7 @@ char * caml_decompose_path(struct ext_table * tbl, char * path)
   return p;
 }
 
-char * caml_search_in_path(struct ext_table * path, char * name)
+caml_stat_string caml_search_in_path(struct ext_table * path, char * name)
 {
   char * p, * dir, * fullname;
   int i;
@@ -142,13 +142,13 @@ char * caml_search_in_path(struct ext_table * path, char * name)
   for (i = 0; i < path->size; i++) {
     dir = path->contents[i];
     if (dir[0] == 0) dir = ".";  /* empty path component = current dir */
-    fullname = caml_strconcat(3, dir, "/", name);
+    fullname = caml_stat_strconcat(3, dir, "/", name);
     if (stat(fullname, &st) == 0 && S_ISREG(st.st_mode))
       return fullname;
     caml_stat_free(fullname);
   }
  not_found:
-  return caml_strdup(name);
+  return caml_stat_strdup(name);
 }
 
 #ifdef __CYGWIN__
@@ -166,7 +166,7 @@ static int cygwin_file_exists(char * name)
   return 1;
 }
 
-static char * cygwin_search_exe_in_path(struct ext_table * path, char * name)
+static caml_stat_string cygwin_search_exe_in_path(struct ext_table * path, char * name)
 {
   char * p, * dir, * fullname;
   int i;
@@ -177,28 +177,28 @@ static char * cygwin_search_exe_in_path(struct ext_table * path, char * name)
   for (i = 0; i < path->size; i++) {
     dir = path->contents[i];
     if (dir[0] == 0) dir = ".";  /* empty path component = current dir */
-    fullname = caml_strconcat(3, dir, "/", name);
+    fullname = caml_stat_strconcat(3, dir, "/", name);
     if (cygwin_file_exists(fullname)) return fullname;
     caml_stat_free(fullname);
-    fullname = caml_strconcat(4, dir, "/", name, ".exe");
+    fullname = caml_stat_strconcat(4, dir, "/", name, ".exe");
     if (cygwin_file_exists(fullname)) return fullname;
     caml_stat_free(fullname);
   }
  not_found:
-  if (cygwin_file_exists(name)) return caml_strdup(name);
-  fullname = caml_strconcat(2, name, ".exe");
+  if (cygwin_file_exists(name)) return caml_stat_strdup(name);
+  fullname = caml_stat_strconcat(2, name, ".exe");
   if (cygwin_file_exists(fullname)) return fullname;
   caml_stat_free(fullname);
-  return caml_strdup(name);
+  return caml_stat_strdup(name);
 }
 
 #endif
 
-char * caml_search_exe_in_path(char * name)
+caml_stat_string caml_search_exe_in_path(char * name)
 {
   struct ext_table path;
   char * tofree;
-  char * res;
+  caml_stat_string res;
 
   caml_ext_table_init(&path, 8);
   tofree = caml_decompose_path(&path, getenv("PATH"));
@@ -212,12 +212,12 @@ char * caml_search_exe_in_path(char * name)
   return res;
 }
 
-char * caml_search_dll_in_path(struct ext_table * path, char * name)
+caml_stat_string caml_search_dll_in_path(struct ext_table * path, char * name)
 {
-  char * dllname;
-  char * res;
+  caml_stat_string dllname;
+  caml_stat_string res;
 
-  dllname = caml_strconcat(2, name, ".so");
+  dllname = caml_stat_strconcat(2, name, ".so");
   res = caml_search_in_path(path, dllname);
   caml_stat_free(dllname);
   return res;
@@ -263,14 +263,10 @@ char * caml_dlerror(void)
 #ifndef RTLD_LOCAL
 #define RTLD_LOCAL 0
 #endif
-#ifndef RTLD_NODELETE
-#define RTLD_NODELETE 0
-#endif
 
 void * caml_dlopen(char * libname, int for_execution, int global)
 {
-  return dlopen(libname, RTLD_NOW | (global ? RTLD_GLOBAL : RTLD_LOCAL)
-                         | RTLD_NODELETE);
+  return dlopen(libname, RTLD_NOW | (global ? RTLD_GLOBAL : RTLD_LOCAL));
   /* Could use RTLD_LAZY if for_execution == 0, but needs testing */
 }
 
@@ -351,7 +347,7 @@ CAMLexport int caml_read_directory(char * dirname, struct ext_table * contents)
     e = readdir(d);
     if (e == NULL) break;
     if (strcmp(e->d_name, ".") == 0 || strcmp(e->d_name, "..") == 0) continue;
-    caml_ext_table_add(contents, caml_strdup(e->d_name));
+    caml_ext_table_add(contents, caml_stat_strdup(e->d_name));
   }
   closedir(d);
   return 0;

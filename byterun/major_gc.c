@@ -123,13 +123,14 @@ static void realloc_gray_vals (void)
 {
   value *new;
 
-  Assert (gray_vals_cur == gray_vals_end);
+  CAMLassert (gray_vals_cur == gray_vals_end);
   if (gray_vals_size < caml_stat_heap_wsz / 32){
     caml_gc_message (0x08, "Growing gray_vals to %"
                            ARCH_INTNAT_PRINTF_FORMAT "uk bytes\n",
                      (intnat) gray_vals_size * sizeof (value) / 512);
-    new = (value *) realloc ((char *) gray_vals,
-                             2 * gray_vals_size * sizeof (value));
+    new = (value *) caml_stat_resize_noexc ((char *) gray_vals,
+                                            2 * gray_vals_size *
+                                            sizeof (value));
     if (new == NULL){
       caml_gc_message (0x08, "No room for growing gray_vals\n", 0);
       gray_vals_cur = gray_vals;
@@ -185,8 +186,8 @@ void caml_darken (value v, value *p /* not used */)
 
 static void start_cycle (void)
 {
-  Assert (caml_gc_phase == Phase_idle);
-  Assert (gray_vals_cur == gray_vals);
+  CAMLassert (caml_gc_phase == Phase_idle);
+  CAMLassert (gray_vals_cur == gray_vals);
   caml_gc_message (0x01, "Starting new major GC cycle\n", 0);
   caml_darken_all_roots_start ();
   caml_gc_phase = Phase_mark;
@@ -303,7 +304,7 @@ static value* mark_ephe_aux (value *gray_vals_ptr, intnat *work,
 
   v = *ephes_to_check;
   hd = Hd_val(v);
-  Assert(Tag_val (v) == Abstract_tag);
+  CAMLassert(Tag_val (v) == Abstract_tag);
   data = Field(v,CAML_EPHE_DATA_OFFSET);
   if ( data != caml_ephe_none &&
        Is_block (data) && Is_in_heap (data) && Is_white_val (data)){
@@ -395,7 +396,7 @@ static void mark_slice (intnat work)
     }
     if (v != 0){
       hd = Hd_val(v);
-      Assert (Is_gray_hd (hd));
+      CAMLassert (Is_gray_hd (hd));
       size = Wosize_hd (hd);
       end = start + work;
       if (Tag_hd (hd) < No_scan_tag){
@@ -440,7 +441,7 @@ static void mark_slice (intnat work)
         }
       }else{
         if (Is_gray_val (Val_hp (markhp))){
-          Assert (gray_vals_ptr == gray_vals);
+          CAMLassert (gray_vals_ptr == gray_vals);
           CAMLassert (v == 0 && start == 0);
           v = Val_hp (markhp);
         }
@@ -497,7 +498,7 @@ static void mark_slice (intnat work)
           work = 0;
       }
         break;
-      default: Assert (0);
+      default: CAMLassert (0);
       }
     }
   }
@@ -560,11 +561,11 @@ static void sweep_slice (intnat work)
         caml_fl_merge = Bp_hp (hp);
         break;
       default:          /* gray or black */
-        Assert (Color_hd (hd) == Caml_black);
+        CAMLassert (Color_hd (hd) == Caml_black);
         Hd_hp (hp) = Whitehd_hd (hd);
         break;
       }
-      Assert (caml_gc_sweep_hp <= limit);
+      CAMLassert (caml_gc_sweep_hp <= limit);
     }else{
       chunk = Chunk_next (chunk);
       if (chunk == NULL){
@@ -774,7 +775,7 @@ void caml_major_collection_slice (intnat howmuch)
     clean_slice (computed_work);
     caml_gc_message (0x02, "%%", 0);
   }else{
-    Assert (caml_gc_phase == Phase_sweep);
+    CAMLassert (caml_gc_phase == Phase_sweep);
     CAML_INSTR_INT ("major/work/sweep#", computed_work);
     sweep_slice (computed_work);
     CAML_INSTR_TIME (tmr, "major/sweep");
@@ -818,9 +819,9 @@ void caml_finish_major_cycle (void)
   if (caml_gc_phase == Phase_idle) start_cycle ();
   while (caml_gc_phase == Phase_mark) mark_slice (LONG_MAX);
   while (caml_gc_phase == Phase_clean) clean_slice (LONG_MAX);
-  Assert (caml_gc_phase == Phase_sweep);
+  CAMLassert (caml_gc_phase == Phase_sweep);
   while (caml_gc_phase == Phase_sweep) sweep_slice (LONG_MAX);
-  Assert (caml_gc_phase == Phase_idle);
+  CAMLassert (caml_gc_phase == Phase_idle);
   caml_stat_major_words += caml_allocated_words;
   caml_allocated_words = 0;
 }
@@ -856,7 +857,7 @@ void caml_init_major_heap (asize_t heap_size)
 
   caml_stat_heap_wsz = caml_clip_heap_chunk_wsz (Wsize_bsize (heap_size));
   caml_stat_top_heap_wsz = caml_stat_heap_wsz;
-  Assert (Bsize_wsize (caml_stat_heap_wsz) % Page_size == 0);
+  CAMLassert (Bsize_wsize (caml_stat_heap_wsz) % Page_size == 0);
   caml_heap_start =
     (char *) caml_alloc_for_heap (Bsize_wsize (caml_stat_heap_wsz));
   if (caml_heap_start == NULL)
@@ -878,7 +879,7 @@ void caml_init_major_heap (asize_t heap_size)
                          caml_stat_heap_wsz, 1, Caml_white);
   caml_gc_phase = Phase_idle;
   gray_vals_size = 2048;
-  gray_vals = (value *) malloc (gray_vals_size * sizeof (value));
+  gray_vals = (value *) caml_stat_alloc_noexc (gray_vals_size * sizeof (value));
   if (gray_vals == NULL)
     caml_fatal_error ("Fatal error: not enough memory for the gray cache.\n");
   gray_vals_cur = gray_vals;
@@ -903,4 +904,21 @@ void caml_set_major_window (int w){
     caml_major_ring[i] = total / w;
   }
   caml_major_window = w;
+}
+
+void caml_finalise_heap (void)
+{
+  /* Finishing major cycle (all values become white) */
+  caml_empty_minor_heap ();
+  caml_finish_major_cycle ();
+  CAMLassert (caml_gc_phase == Phase_idle);
+
+  /* Finalising all values (by means of forced sweeping) */
+  caml_fl_init_merge ();
+  caml_gc_phase = Phase_sweep;
+  chunk = caml_heap_start;
+  caml_gc_sweep_hp = chunk;
+  limit = chunk + Chunk_size (chunk);
+  while (caml_gc_phase == Phase_sweep)
+    sweep_slice (LONG_MAX);
 }

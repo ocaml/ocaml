@@ -50,6 +50,7 @@ and print_types = ref false             (* -i *)
 and make_archive = ref false            (* -a *)
 and debug = ref false                   (* -g *)
 and fast = ref false                    (* -unsafe *)
+and use_linscan = ref false             (* -linscan *)
 and link_everything = ref false         (* -linkall *)
 and custom_runtime = ref false          (* -custom *)
 and no_check_prims = ref false          (* -no-check-prims *)
@@ -120,6 +121,7 @@ let dump_regalloc = ref false           (* -dalloc *)
 let dump_reload = ref false             (* -dreload *)
 let dump_scheduling = ref false         (* -dscheduling *)
 let dump_linear = ref false             (* -dlinear *)
+let dump_interval = ref false           (* -dinterval *)
 let keep_startup_file = ref false       (* -dstartup *)
 let dump_combine = ref false            (* -dcombine *)
 let print_timings = ref false           (* -dtimings *)
@@ -358,7 +360,7 @@ let parse_color_setting = function
   | "always" -> Some Misc.Color.Always
   | "never" -> Some Misc.Color.Never
   | _ -> None
-let color = ref Misc.Color.Auto ;; (* -color *)
+let color = ref None ;; (* -color *)
 
 let unboxed_types = ref false
 

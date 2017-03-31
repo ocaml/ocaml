@@ -27,6 +27,7 @@
 #include "caml/misc.h"
 #include "caml/mlvalues.h"
 #include "caml/printexc.h"
+#include "caml/memory.h"
 
 struct stringbuf {
   char * ptr;
@@ -92,7 +93,7 @@ CAMLexport char * caml_format_exception(value exn)
 
   *buf.ptr = 0;              /* Terminate string */
   i = buf.ptr - buf.data + 1;
-  res = malloc(i);
+  res = caml_stat_alloc_noexc(i);
   if (res == NULL) return NULL;
   memmove(res, buf.data, i);
   return res;
@@ -125,7 +126,7 @@ static void default_fatal_uncaught_exception(value exn)
   caml_backtrace_pos = saved_backtrace_pos;
   /* Display the uncaught exception */
   fprintf(stderr, "Fatal error: exception %s\n", msg);
-  free(msg);
+  caml_stat_free(msg);
   /* Display the backtrace if available */
   if (caml_backtrace_active && !DEBUGGER_IN_USE)
     caml_print_exception_backtrace();

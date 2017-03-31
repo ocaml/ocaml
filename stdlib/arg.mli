@@ -110,6 +110,7 @@ val parse_dynamic :
     is to parse command lines of the form:
 -     command subcommand [options]
     where the list of options depends on the value of the subcommand argument.
+    @since 4.01.0
 *)
 
 val parse_argv : ?current: int ref -> string array ->
@@ -130,6 +131,7 @@ val parse_argv_dynamic : ?current:int ref -> string array ->
 (** Same as {!Arg.parse_argv}, except that the [speclist] argument is a
     reference and may be updated during the parsing.
     See {!Arg.parse_dynamic}.
+    @since 4.01.0
 *)
 
 val parse_and_expand_argv_dynamic : int ref -> string array ref ->
@@ -137,12 +139,14 @@ val parse_and_expand_argv_dynamic : int ref -> string array ref ->
 (** Same as {!Arg.parse_argv_dynamic}, except that the [argv] argument is a
     reference and may be updated during the parsing of [Expand] arguments.
     See {!Arg.parse_argv_dynamic}.
+    @since 4.05.0
 *)
 
 val parse_expand:
   (key * spec * doc) list -> anon_fun -> usage_msg -> unit
 (** Same as {!Arg.parse}, except that the [Expand] arguments are allowed and
     the {!current} reference is not updated.
+    @since 4.05.0
 *)
 
 exception Help of string
@@ -170,7 +174,7 @@ val align: ?limit: int -> (key * spec * doc) list -> (key * spec * doc) list
     align the whole string.  The doc strings corresponding to
     [Symbol] arguments are aligned on the next line.
     @param limit options with keyword and message longer than
-    [limit] will not be used to compute the alignement.
+    [limit] will not be used to compute the alignment.
 *)
 
 val current : int ref
@@ -182,17 +186,22 @@ val current : int ref
 
 val read_arg: string -> string array
 (** [Arg.read_arg file] reads newline-terminated command line arguments from
-    file [file]. *)
+    file [file].
+    @since 4.05.0 *)
 
 val read_arg0: string -> string array
 (** Identical to {!Arg.read_arg} but assumes null character terminated command line
-    arguments. *)
+    arguments.
+    @since 4.05.0 *)
+
 
 val write_arg: string -> string array -> unit
 (** [Arg.write_arg file args] writes the arguments [args] newline-terminated
     into the file [file]. If the any of the arguments in [args] contains a
-    newline, use {!Arg.write_arg0} instead. *)
+    newline, use {!Arg.write_arg0} instead.
+    @since 4.05.0 *)
 
 val write_arg0: string -> string array -> unit
 (** Identical to {!Arg.write_arg} but uses the null character for terminator
-    instead of newline. *)
+    instead of newline.
+    @since 4.05.0 *)

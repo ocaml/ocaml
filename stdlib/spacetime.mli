@@ -71,7 +71,7 @@ module Series : sig
   val save_event : ?time:float -> t -> event_name:string -> unit
 
   (** [save_and_close series] writes information into [series] required for
-      interpeting the snapshots that [series] contains and then closes the
+      interpreting the snapshots that [series] contains and then closes the
       [series] file. This function must be called to produce a valid series
       file.
       The optional [time] parameter is as for {!Snapshot.take}.

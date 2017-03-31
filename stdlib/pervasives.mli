@@ -594,7 +594,7 @@ external int_of_string : string -> int = "caml_int_of_string"
 
 
 val int_of_string_opt: string -> int option
-(** Same as [int_of_string], but returs [None] instead of raising.
+(** Same as [int_of_string], but returns [None] instead of raising.
     @since 4.05
 *)
 
@@ -619,7 +619,7 @@ external float_of_string : string -> float = "caml_float_of_string"
    representation of a float. *)
 
 val float_of_string_opt: string -> float option
-(** Same as [float_of_string], but returs [None] instead of raising.
+(** Same as [float_of_string], but returns [None] instead of raising.
     @since 4.05
 *)
 
@@ -729,7 +729,7 @@ val read_int : unit -> int
    if the line read is not a valid representation of an integer. *)
 
 val read_int_opt: unit -> int option
-(** Same as [read_int_opt], but returs [None] instead of raising.
+(** Same as [read_int_opt], but returns [None] instead of raising.
     @since 4.05
 *)
 
@@ -743,7 +743,8 @@ val read_float_opt: unit -> float option
 (** Flush standard output, then read one line from standard input
     and convert it to a floating-point number.
     Returns [None] if the line read is not a valid
-    representation of a floating-point number. *)
+    representation of a floating-point number.
+    @since 4.05.0 *)
 
 
 (** {7 General output functions} *)
@@ -776,7 +777,7 @@ val open_out_bin : string -> out_channel
 val open_out_gen : open_flag list -> int -> string -> out_channel
 (** [open_out_gen mode perm filename] opens the named file for writing,
    as described above. The extra argument [mode]
-   specify the opening mode. The extra argument [perm] specifies
+   specifies the opening mode. The extra argument [perm] specifies
    the file permissions, in case the file must be created.
    {!Pervasives.open_out} and {!Pervasives.open_out_bin} are special
    cases of this function. *)
@@ -1032,6 +1033,7 @@ external decr : int ref -> unit = "%decr"
 
 (** {6 Result type} *)
 
+(** @since 4.03.0 *)
 type ('a,'b) result = Ok of 'a | Error of 'b
 
 (** {6 Operations on format strings} *)

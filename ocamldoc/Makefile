@@ -212,7 +212,7 @@ exeopt: $(OCAMLDOC_OPT)
 libopt: $(OCAMLDOC_LIBCMXA) $(OCAMLDOC_LIBCMI)
 
 .PHONY: generatorsopt
-generatorsopt: $(GENERATORS_CMXS) # Not present in Makefile.nt
+generatorsopt: $(GENERATORS_CMXS)
 
 # TODO: the following debug target could be replaced by a DEBUG variable
 .PHONY: debug
@@ -424,6 +424,7 @@ depend:
 	$(OCAMLLEX) odoc_lexer.mll
 	$(OCAMLLEX) odoc_ocamlhtml.mll
 	$(OCAMLLEX) odoc_see_lexer.mll
-	$(OCAMLDEP) $(INCLUDES_DEP) *.mll *.mly *.ml *.mli generators/*.ml > .depend
+	$(OCAMLDEP) $(INCLUDES_DEP) *.mll *.mly *.ml *.mli > .depend
+	$(OCAMLDEP) $(INCLUDES_DEP) -shared generators/*.ml >> .depend
 
 include .depend

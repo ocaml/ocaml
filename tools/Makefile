@@ -108,14 +108,9 @@ VPATH := $(filter-out -I,$(INCLUDES))
 # The dependency generator
 
 CAMLDEP_OBJ=ocamldep.cmo
-CAMLDEP_IMPORTS=timings.cmo misc.cmo config.cmo identifiable.cmo numbers.cmo \
-  arg_helper.cmo clflags.cmo terminfo.cmo \
-  warnings.cmo location.cmo longident.cmo docstrings.cmo \
-  syntaxerr.cmo ast_helper.cmo parser.cmo lexer.cmo parse.cmo \
-  ccomp.cmo ast_mapper.cmo ast_iterator.cmo \
-  builtin_attributes.cmo ast_invariants.cmo \
-  pparse.cmo compenv.cmo depend.cmo
-
+CAMLDEP_IMPORTS= \
+  ../compilerlibs/ocamlcommon.cma \
+  ../compilerlibs/ocamlbytecomp.cma
 ocamldep: LINKFLAGS += -compat-32
 $(call byte_and_opt,ocamldep,$(CAMLDEP_IMPORTS) $(CAMLDEP_OBJ),)
 ocamldep: depend.cmi
@@ -161,8 +156,7 @@ $(call byte_and_opt,ocamlmklib,ocamlmklibconfig.cmo config.cmo \
 ocamlmklibconfig.ml: ../config/Makefile Makefile
 	(echo 'let bindir = "$(BINDIR)"'; \
          echo 'let supports_shared_libraries = $(SUPPORTS_SHARED_LIBRARIES)';\
-         echo 'let byteccrpath = "$(BYTECCRPATH)"'; \
-         echo 'let nativeccrpath = "$(NATIVECCRPATH)"'; \
+         echo 'let default_rpath = "$(RPATH)"'; \
          echo 'let mksharedlibrpath = "$(MKSHAREDLIBRPATH)"'; \
          echo 'let toolpref = "$(TOOLPREF)"'; \
          sed -n -e 's/^#ml //p' ../config/Makefile) \
@@ -312,16 +306,9 @@ else
 DEF_SYMBOL_PREFIX = '-Dsymbol_prefix=""'
 endif
 
-ifeq "$(CCOMPTYPE)" "msvc"
-CCOUT = -Fe
-else
-EMPTY =
-CCOUT = -o $(EMPTY)
-endif
-
 objinfo_helper$(EXE): objinfo_helper.c ../config/s.h
-	$(BYTECC) $(CCOUT)objinfo_helper$(EXE) $(BYTECCCOMPOPTS) \
-          $(DEF_SYMBOL_PREFIX) $(LIBBFD_INCLUDE) objinfo_helper.c $(LIBBFD_LINK)
+	$(CC) $(CFLAGS) $(CPPFLAGS) $(OUTPUTEXE)$@ \
+          $(DEF_SYMBOL_PREFIX) $(LIBBFD_INCLUDE) $< $(LIBBFD_LINK)
 
 OBJINFO=../compilerlibs/ocamlcommon.cma \
         ../compilerlibs/ocamlbytecomp.cma \
@@ -337,6 +324,21 @@ install::
 
 # Scan object files for required primitives
 $(call byte_and_opt,primreq,config.cmo primreq.cmo,)
+
+LINTAPIDIFF=../compilerlibs/ocamlcommon.cmxa \
+        ../compilerlibs/ocamlbytecomp.cmxa \
+        ../compilerlibs/ocamlmiddleend.cmxa \
+        ../asmcomp/printclambda.cmx \
+        ../asmcomp/export_info.cmx \
+	../otherlibs/str/str.cmxa \
+	lintapidiff.cmx
+
+lintapidiff.opt: INCLUDES+= -I ../otherlibs/str
+lintapidiff.opt: $(LINTAPIDIFF)
+	$(CAMLOPT) $(LINKFLAGS) -I .. -o $@ $(LINTAPIDIFF)
+clean::
+	rm -f -- lintapidiff.opt lintapidiff.cm? lintapidiff.o
+
 
 clean::
 	rm -f "objinfo_helper$(EXE)" "objinfo_helper$(EXE).manifest"

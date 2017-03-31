@@ -131,6 +131,9 @@ The following modes are supported:
 The default setting is 'auto', and the current heuristic
 checks that the "TERM" environment variable exists and is
 not empty or "dumb", and that 'isatty(stderr)' holds.
+
+The environment variable "OCAML_COLOR" is considered if "-color" is not
+provided. Its values are auto/always/never as above.
 }%notop
 
 \comp{%
@@ -385,6 +388,35 @@ file produced.}
 \comp{If the "-c" option is given, specify the name of the object
 file produced for the {\em next} source file that appears on the
 command line.}
+}%notop
+
+\notop{%
+\item["-opaque"]
+When the native compiler compiles an implementation, by default it
+produces a ".cmx" file containing information for cross-module
+optimization. It also expects ".cmx" files to be present for the
+dependencies of the currently compiled source, and uses them for
+optimization. Since OCaml 4.03, the compiler will emit a warning if it
+is unable to locate the ".cmx" file of one of those dependencies.
+
+The "-opaque" option, available since 4.04, disables cross-module
+optimization information for the currently compiled unit. When
+compiling ".mli" interface, using "-opaque" marks the compiled ".cmi"
+interface so that subsequent compilations of modules that depend on it
+will not rely on the corresponding ".cmx" file, nor warn if it is
+absent. When the native compiler compiles a ".ml" implementation,
+using "-opaque" generates a ".cmx" that does not contain any
+cross-module optimization information.
+
+Using this option may degrade the quality of generated code, but it
+reduces compilation time, both on clean and incremental
+builds. Indeed, with the native compiler, when the implementation of
+a compilation unit changes, all the units that depend on it may need
+to be recompiled -- because the cross-module information may have
+changed. If the compilation unit whose implementation changed was
+compiled with "-opaque", no such recompilation needs to occur. This
+option can thus be used, for example, to get faster edit-compile-test
+feedback loops.
 }%notop
 
 \notop{%

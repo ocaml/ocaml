@@ -62,10 +62,12 @@ let rec live i finally =
         let across_after = Reg.diff_set_array after i.res in
         let across =
           match op with
-          | Icall_ind _ | Icall_imm _ | Iextcall _
+          | Icall_ind _ | Icall_imm _ | Iextcall _ | Ialloc _
           | Iintop (Icheckbound _) | Iintop_imm(Icheckbound _, _) ->
               (* The function call may raise an exception, branching to the
-                 nearest enclosing try ... with. Similarly for bounds checks.
+                 nearest enclosing try ... with. Similarly for bounds checks
+                 and allocation (for the latter: finalizers may throw
+                 exceptions, as may signal handlers).
                  Hence, everything that must be live at the beginning of
                  the exception handler must also be live across this instr. *)
                Reg.Set.union across_after !live_at_raise

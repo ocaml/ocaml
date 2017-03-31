@@ -30,13 +30,15 @@ value win_create_process_native(value cmd, value cmdline, value env,
   PROCESS_INFORMATION pi;
   STARTUPINFO si;
   char * exefile, * envp;
-  int flags;
+  DWORD flags, err;
+  HANDLE hp;
 
   caml_unix_check_path(cmd, "create_process");
   if (! caml_string_is_c_safe(cmdline))
     unix_error(EINVAL, "create_process", cmdline);
   /* [env] is checked for null bytes at construction time, see unix.ml */
 
+  err = ERROR_SUCCESS;
   exefile = caml_search_exe_in_path(String_val(cmd));
   if (env != Val_int(0)) {
     envp = String_val(Field(env, 0));
@@ -47,9 +49,20 @@ value win_create_process_native(value cmd, value cmdline, value env,
   ZeroMemory(&si, sizeof(STARTUPINFO));
   si.cb = sizeof(STARTUPINFO);
   si.dwFlags = STARTF_USESTDHANDLES;
-  si.hStdInput = Handle_val(fd1);
-  si.hStdOutput = Handle_val(fd2);
-  si.hStdError = Handle_val(fd3);
+  /* Duplicate the handles fd1, fd2, fd3 to make sure they are inheritable */
+  hp = GetCurrentProcess();
+  if (! DuplicateHandle(hp, Handle_val(fd1), hp, &(si.hStdInput),
+                        0, TRUE, DUPLICATE_SAME_ACCESS)) {
+    err = GetLastError(); goto ret1;
+  }
+  if (! DuplicateHandle(hp, Handle_val(fd2), hp, &(si.hStdOutput),
+                        0, TRUE, DUPLICATE_SAME_ACCESS)) {
+    err = GetLastError(); goto ret2;
+  }
+  if (! DuplicateHandle(hp, Handle_val(fd3), hp, &(si.hStdError),
+                        0, TRUE, DUPLICATE_SAME_ACCESS)) {
+    err = GetLastError(); goto ret3;
+  }
   /* If we do not have a console window, then we must create one
      before running the process (keep it hidden for apparence).
      If we are starting a GUI application, the newly created
@@ -64,12 +77,21 @@ value win_create_process_native(value cmd, value cmdline, value env,
   /* Create the process */
   if (! CreateProcess(exefile, String_val(cmdline), NULL, NULL,
                       TRUE, flags, envp, NULL, &si, &pi)) {
-    caml_stat_free(exefile);
-    win32_maperr(GetLastError());
+    err = GetLastError(); goto ret4;
+  }
+  CloseHandle(pi.hThread);
+ ret4:
+  CloseHandle(si.hStdError);
+ ret3:
+  CloseHandle(si.hStdOutput);
+ ret2:
+  CloseHandle(si.hStdInput);
+ ret1:
+  caml_stat_free(exefile);
+  if (err != ERROR_SUCCESS) {
+    win32_maperr(err);
     uerror("create_process", cmd);
   }
-  caml_stat_free(exefile);
-  CloseHandle(pi.hThread);
   /* Return the process handle as pseudo-PID
      (this is consistent with the wait() emulation in the MSVC C library */
   return Val_long(pi.hProcess);

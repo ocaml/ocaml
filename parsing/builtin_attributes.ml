@@ -39,6 +39,7 @@ let rec error_of_extension ext =
       | [] -> []
     in
     begin match p with
+    | PStr [] -> raise Location.Already_displayed_error
     | PStr({pstr_desc=Pstr_eval
               ({pexp_desc=Pexp_constant(Pconst_string(msg,_))}, _)}::
            {pstr_desc=Pstr_eval

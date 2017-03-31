@@ -82,7 +82,7 @@ val max_int : t
     or 2{^63} - 1 on a 64-bit platform. *)
 
 val min_int : t
-(** The greatest representable target integer,
+(** The smallest representable target integer,
    either -2{^31} on a 32-bit platform,
    or -2{^63} on a 64-bit platform. *)
 

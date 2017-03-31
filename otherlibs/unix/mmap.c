@@ -20,17 +20,13 @@
 #define _XOPEN_SOURCE 600
 
 #include <stddef.h>
-#include <string.h>
-#include "bigarray.h"
-#include "caml/custom.h"
+#include "caml/bigarray.h"
 #include "caml/fail.h"
 #include "caml/io.h"
 #include "caml/mlvalues.h"
-#include "caml/sys.h"
 #include "caml/signals.h"
+#include "caml/sys.h"
 #include "unixsupport.h"
-
-extern int caml_ba_element_size[];  /* from bigarray_stubs.c */
 
 #include <errno.h>
 #ifdef HAS_UNISTD
@@ -41,6 +37,30 @@ extern int caml_ba_element_size[];  /* from bigarray_stubs.c */
 #include <sys/mman.h>
 #include <sys/stat.h>
 #endif
+
+/* Temporary compatibility stuff so that this file can also be compiled
+   from otherlibs/bigarray/ and included in the bigarray library. */
+
+#ifdef IN_OCAML_BIGARRAY
+#define MAP_FILE_FUNCTION caml_ba_map_file
+#define MAP_FILE_FUNCTION_BYTECODE caml_ba_map_file_bytecode
+#define UNMAP_FILE_FUNCTION caml_ba_unmap_file
+#define ALLOC_FUNCTION caml_ba_mapped_alloc
+#define CAML_MAP_FILE "Bigarray.map_file"
+#define MAP_FILE_ERROR() caml_sys_error(NO_ARG)
+#else
+#define MAP_FILE_FUNCTION caml_unix_map_file
+#define MAP_FILE_FUNCTION_BYTECODE caml_unix_map_file_bytecode
+#define UNMAP_FILE_FUNCTION caml_unix_unmap_file
+#define ALLOC_FUNCTION caml_unix_mapped_alloc
+#define MAP_FILE_FUNCTION caml_unix_map_file
+#define CAML_MAP_FILE "Unix.map_file"
+#define MAP_FILE_ERROR() uerror("map_file", Nothing)
+#endif
+
+/* Defined in [mmap_ba.c] */
+CAMLextern value
+ALLOC_FUNCTION(int flags, int num_dims, void * data, intnat * dim);
 
 #if defined(HAS_MMAP)
 
@@ -94,8 +114,8 @@ static int caml_grow_file(int fd, file_offset size)
 }
 
 
-CAMLprim value caml_ba_map_file(value vfd, value vkind, value vlayout,
-                                value vshared, value vdim, value vstart)
+CAMLprim value MAP_FILE_FUNCTION(value vfd, value vkind, value vlayout,
+                                 value vshared, value vdim, value vstart)
 {
   int fd, flags, major_dim, shared;
   intnat num_dims, i;
@@ -113,12 +133,12 @@ CAMLprim value caml_ba_map_file(value vfd, value vkind, value vlayout,
   /* Extract dimensions from OCaml array */
   num_dims = Wosize_val(vdim);
   if (num_dims < 1 || num_dims > CAML_BA_MAX_NUM_DIMS)
-    caml_invalid_argument("Bigarray.mmap: bad number of dimensions");
+    caml_invalid_argument(CAML_MAP_FILE ": bad number of dimensions");
   for (i = 0; i < num_dims; i++) {
     dim[i] = Long_val(Field(vdim, i));
     if (dim[i] == -1 && i == major_dim) continue;
     if (dim[i] < 0)
-      caml_invalid_argument("Bigarray.create: negative dimension");
+      caml_invalid_argument(CAML_MAP_FILE ": negative dimension");
   }
   /* Determine file size. We avoid lseek here because it is fragile,
      and because some mappable file types do not support it
@@ -126,7 +146,7 @@ CAMLprim value caml_ba_map_file(value vfd, value vkind, value vlayout,
   caml_enter_blocking_section();
   if (fstat(fd, &st) == -1) {
     caml_leave_blocking_section();
-    uerror("fstat", Nothing);
+    MAP_FILE_ERROR();
   }
   file_size = st.st_size;
   /* Determine array size in bytes (or size of array without the major
@@ -139,21 +159,21 @@ CAMLprim value caml_ba_map_file(value vfd, value vkind, value vlayout,
     /* Determine major dimension from file size */
     if (file_size < startpos) {
       caml_leave_blocking_section();
-      caml_failwith("Bigarray.mmap: file position exceeds file size");
+      caml_failwith(CAML_MAP_FILE ": file position exceeds file size");
     }
     data_size = file_size - startpos;
     dim[major_dim] = (uintnat) (data_size / array_size);
     array_size = dim[major_dim] * array_size;
     if (array_size != data_size) {
       caml_leave_blocking_section();
-      caml_failwith("Bigarray.mmap: file size doesn't match array dimensions");
+      caml_failwith(CAML_MAP_FILE ": file size doesn't match array dimensions");
     }
   } else {
     /* Check that file is large enough, and grow it otherwise */
     if (file_size < startpos + array_size) {
       if (caml_grow_file(fd, startpos + array_size) == -1) { /* PR#5543 */
         caml_leave_blocking_section();
-        uerror("caml_grow_file", Nothing);
+        MAP_FILE_ERROR();
       }
     }
   }
@@ -168,30 +188,30 @@ CAMLprim value caml_ba_map_file(value vfd, value vkind, value vlayout,
   else
     addr = NULL;                /* PR#5463 - mmap fails on empty region */
   caml_leave_blocking_section();
-  if (addr == (void *) MAP_FAILED) uerror("mmap", Nothing);
+  if (addr == (void *) MAP_FAILED) MAP_FILE_ERROR();
   addr = (void *) ((uintnat) addr + delta);
   /* Build and return the OCaml bigarray */
-  return caml_ba_alloc(flags | CAML_BA_MAPPED_FILE, num_dims, addr, dim);
+  return ALLOC_FUNCTION(flags, num_dims, addr, dim);
 }
 
 #else
 
-CAMLprim value caml_ba_map_file(value vfd, value vkind, value vlayout,
-                                value vshared, value vdim, value vpos)
+CAMLprim value MAP_FILE_FUNCTION(value vfd, value vkind, value vlayout,
+                                 value vshared, value vdim, value vpos)
 {
-  caml_invalid_argument("Bigarray.map_file: not supported");
+  caml_invalid_argument("Unix.map_file: not supported");
   return Val_unit;
 }
 
 #endif
 
-CAMLprim value caml_ba_map_file_bytecode(value * argv, int argn)
+CAMLprim value MAP_FILE_FUNCTION_BYTECODE(value * argv, int argn)
 {
-  return caml_ba_map_file(argv[0], argv[1], argv[2],
-                          argv[3], argv[4], argv[5]);
+  return MAP_FILE_FUNCTION(argv[0], argv[1], argv[2],
+                           argv[3], argv[4], argv[5]);
 }
 
-void caml_ba_unmap_file(void * addr, uintnat len)
+void UNMAP_FILE_FUNCTION(void * addr, uintnat len)
 {
 #if defined(HAS_MMAP)
   uintnat page = sysconf(_SC_PAGESIZE);

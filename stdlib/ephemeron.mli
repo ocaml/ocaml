@@ -64,6 +64,7 @@
     Ephemerons are defined in a language agnostic way in this paper:
     B. Hayes, Ephemerons: a New Finalization Mechanism, OOPSLA'9
 
+    @since 4.03.0
 *)
 
 module type S = sig
@@ -116,6 +117,8 @@ module K1 : sig
   (** [Ephemeron.K1.get_key_copy eph] returns [None] if the key of [eph] is
       empty, [Some x] (where [x] is a (shallow) copy of the key) if
       it is full. This function has the same GC friendliness as {!Weak.get_copy}
+
+      If the element is a custom block it is not copied.
   *)
 
   val set_key: ('k,'d) t -> 'k -> unit
@@ -151,6 +154,8 @@ module K1 : sig
   (** [Ephemeron.K1.get_data_copy eph] returns [None] if the data of [eph] is
       empty, [Some x] (where [x] is a (shallow) copy of the data) if
       it is full. This function has the same GC friendliness as {!Weak.get_copy}
+
+      If the element is a custom block it is not copied.
   *)
 
   val set_data: ('k,'d) t -> 'd -> unit

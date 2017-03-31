@@ -49,7 +49,7 @@ val compare_length_with : 'a list -> len:int -> int
 
 val cons : 'a -> 'a list -> 'a list
 (** [cons x xs] is [x :: xs]
-    @since 4.03.0
+    @since 4.05.0
 *)
 
 val tl : 'a list -> 'a list
@@ -72,6 +72,13 @@ val nth_opt: 'a list -> int -> 'a option
 
 val rev : 'a list -> 'a list
 (** List reversal. *)
+
+val init : len:int -> f:(int -> 'a) -> 'a list
+(** [List.init len f] is [f 0; f 1; ...; f (len-1)], evaluated left to right.
+
+    @raise Invalid_argument if [len < 0].
+    @since 4.06.0
+*)
 
 val append : 'a list -> 'a list -> 'a list
 (** Catenate two lists.  Same function as the infix operator [@].
@@ -261,7 +268,8 @@ val assq : 'a -> ('a * 'b) list -> 'b
 
 val assq_opt: 'a -> ('a * 'b) list -> 'b option
 (** Same as {!List.assoc_opt}, but uses physical equality instead of
-   structural equality to compare keys. *)
+   structural equality to compare keys.
+   @since 4.05.0 *)
 
 val mem_assoc : 'a -> map:('a * 'b) list -> bool
 (** Same as {!List.assoc}, but simply return true if a binding exists,
@@ -332,13 +340,13 @@ val fast_sort : cmp:('a -> 'a -> int) -> 'a list -> 'a list
 
 val sort_uniq : cmp:('a -> 'a -> int) -> 'a list -> 'a list
 (** Same as {!List.sort}, but also remove duplicates.
-    @since 4.02.0 *)
+    @since 4.03.0 *)
 
 val merge : cmp:('a -> 'a -> int) -> 'a list -> 'a list -> 'a list
 (** Merge two lists:
     Assuming that [l1] and [l2] are sorted according to the
     comparison function [cmp], [merge cmp l1 l2] will return a
-    sorted list containting all the elements of [l1] and [l2].
+    sorted list containing all the elements of [l1] and [l2].
     If several elements compare equal, the elements of [l1] will be
     before the elements of [l2].
     Not tail-recursive (sum of the lengths of the arguments).

@@ -137,13 +137,6 @@ let get_type_path ty tenv =
 open Format
 ;;
 
-let pretty_record_elision_mark ppf = function
-  | [] -> () (* should not happen, empty record pattern *)
-  | (_, lbl, _) :: q ->
-      (* we assume that there is no label repetitions here *)
-      if Array.length lbl.lbl_all > 1 + List.length q then
-        fprintf ppf ";@ _@ "
-
 let is_cons = function
 | {cstr_name = "::"} -> true
 | _ -> false
@@ -198,9 +191,17 @@ let rec pretty_val ppf v =
           (function
             | (_,_,{pat_desc=Tpat_any}) -> false (* do not show lbl=_ *)
             | _ -> true) lvs in
-      fprintf ppf "@[{%a%a}@]"
-        pretty_lvals filtered_lvs
-        pretty_record_elision_mark filtered_lvs
+      begin match filtered_lvs with
+      | [] -> fprintf ppf "_"
+      | (_, lbl, _) :: q ->
+          let elision_mark ppf =
+            (* we assume that there is no label repetitions here *)
+             if Array.length lbl.lbl_all > 1 + List.length q then
+               fprintf ppf ";@ _@ "
+             else () in
+          fprintf ppf "@[{%a%t}@]"
+            pretty_lvals filtered_lvs elision_mark
+      end
   | Tpat_array vs ->
       fprintf ppf "@[[| %a |]@]" (pretty_vals " ;") vs
   | Tpat_lazy v ->

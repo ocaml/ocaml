@@ -460,11 +460,7 @@ let link_bytecode_as_c ppf tolink outfile =
 \nextern \"C\" {\
 \n#endif\
 \n#include <caml/mlvalues.h>\
-\nCAMLextern void caml_startup_code(\
-\n           code_t code, asize_t code_size,\
-\n           char *data, asize_t data_size,\
-\n           char *section_table, asize_t section_table_size,\
-\n           char **argv);\n";
+\n#include <caml/startup.h>\n";
     output_string outchan "static int caml_code[] = {\n";
     Symtable.init();
     clear_crc_interfaces ();
@@ -499,7 +495,35 @@ let link_bytecode_as_c ppf tolink outfile =
 \n  caml_startup_code(caml_code, sizeof(caml_code),\
 \n                    caml_data, sizeof(caml_data),\
 \n                    caml_sections, sizeof(caml_sections),\
+\n                    /* pooling */ 0,\
 \n                    argv);\
+\n}\
+\n\
+\nvalue caml_startup_exn(char ** argv)\
+\n{\
+\n  return caml_startup_code_exn(caml_code, sizeof(caml_code),\
+\n                               caml_data, sizeof(caml_data),\
+\n                               caml_sections, sizeof(caml_sections),\
+\n                               /* pooling */ 0,\
+\n                               argv);\
+\n}\
+\n\
+\nvoid caml_startup_pooled(char ** argv)\
+\n{\
+\n  caml_startup_code(caml_code, sizeof(caml_code),\
+\n                    caml_data, sizeof(caml_data),\
+\n                    caml_sections, sizeof(caml_sections),\
+\n                    /* pooling */ 1,\
+\n                    argv);\
+\n}\
+\n\
+\nvalue caml_startup_pooled_exn(char ** argv)\
+\n{\
+\n  return caml_startup_code_exn(caml_code, sizeof(caml_code),\
+\n                               caml_data, sizeof(caml_data),\
+\n                               caml_sections, sizeof(caml_sections),\
+\n                               /* pooling */ 1,\
+\n                               argv);\
 \n}\
 \n#ifdef __cplusplus\
 \n}\

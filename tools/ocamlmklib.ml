@@ -278,7 +278,7 @@ let build_libs () =
                   (Filename.basename !output_c)
                   (Filename.basename !output_c)
                   (String.concat " " (prefix_list "-ccopt " !c_opts))
-                  (make_rpath_ccopt byteccrpath)
+                  (make_rpath_ccopt default_rpath)
                   (String.concat " " (prefix_list "-cclib " !c_libs))
                   (String.concat " " !caml_libs));
   if !native_objs <> [] then
@@ -292,7 +292,7 @@ let build_libs () =
                   (String.concat " " !native_objs)
                   (Filename.basename !output_c)
                   (String.concat " " (prefix_list "-ccopt " !c_opts))
-                  (make_rpath_ccopt nativeccrpath)
+                  (make_rpath_ccopt default_rpath)
                   (String.concat " " (prefix_list "-cclib " !c_libs))
                   (String.concat " " !caml_libs))
 

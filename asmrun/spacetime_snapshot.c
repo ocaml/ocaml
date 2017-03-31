@@ -88,7 +88,7 @@ static value allocate_outside_heap_with_tag(mlsize_t size_in_bytes, tag_t tag)
   /* CR-soon mshinwell: this function should live somewhere else */
   header_t* block;
 
-  Assert(size_in_bytes % sizeof(value) == 0);
+  CAMLassert(size_in_bytes % sizeof(value) == 0);
   block = caml_stat_alloc(sizeof(header_t) + size_in_bytes);
   *block = Make_header(size_in_bytes / sizeof(value), tag, Caml_black);
   return (value) &block[1];
@@ -96,7 +96,7 @@ static value allocate_outside_heap_with_tag(mlsize_t size_in_bytes, tag_t tag)
 
 static value allocate_outside_heap(mlsize_t size_in_bytes)
 {
-  Assert(size_in_bytes > 0);
+  CAMLassert(size_in_bytes > 0);
   return allocate_outside_heap_with_tag(size_in_bytes, 0);
 }
 
@@ -138,7 +138,7 @@ static value get_total_allocations(void)
     Field(v_total, 2) = v_total_allocations;
     v_total_allocations = v_total;
 
-    Assert (total->next == Val_unit
+    CAMLassert (total->next == Val_unit
       || (Is_block(total->next) && Tag_val(total->next) == Infix_tag));
     if (total->next == Val_unit) {
       total = NULL;
@@ -217,7 +217,7 @@ static value take_snapshot(double time_override, int use_time_override)
             words_scanned += Whsize_hd(hd);
             if (profinfo > 0 && profinfo < PROFINFO_MASK) {
               words_scanned_with_profinfo += Whsize_hd(hd);
-              Assert (raw_entries[profinfo].num_blocks >= 0);
+              CAMLassert (raw_entries[profinfo].num_blocks >= 0);
               if (raw_entries[profinfo].num_blocks == 0) {
                 num_distinct_profinfos++;
               }
@@ -229,7 +229,7 @@ static value take_snapshot(double time_override, int use_time_override)
           break;
       }
       hp += Bhsize_hd (hd);
-      Assert (hp <= limit);
+      CAMLassert (hp <= limit);
     }
 
     chunk = Chunk_next (chunk);
@@ -241,9 +241,9 @@ static value take_snapshot(double time_override, int use_time_override)
     entries = (snapshot_entries*) v_entries;
     target_index = 0;
     for (index = 0; index <= PROFINFO_MASK; index++) {
-      Assert(raw_entries[index].num_blocks >= 0);
+      CAMLassert(raw_entries[index].num_blocks >= 0);
       if (raw_entries[index].num_blocks > 0) {
-        Assert(target_index < num_distinct_profinfos);
+        CAMLassert(target_index < num_distinct_profinfos);
         entries->entries[target_index].profinfo = Val_long(index);
         entries->entries[target_index].num_blocks
           = Val_long(raw_entries[index].num_blocks);
@@ -256,7 +256,7 @@ static value take_snapshot(double time_override, int use_time_override)
     v_entries = Atom(0);
   }
 
-  Assert(sizeof(double) == sizeof(value));
+  CAMLassert(sizeof(double) == sizeof(value));
   v_time = allocate_outside_heap_with_tag(sizeof(double), Double_tag);
   Double_field(v_time, 0) = time;
 
@@ -497,7 +497,7 @@ static void add_unit_to_shape_table(uint64_t *unit_table, value *list)
           break;
 
         default:
-          Assert(0);
+          CAMLassert(0);
           abort();  /* silence compiler warning */
       }
 
@@ -569,7 +569,6 @@ value caml_spacetime_shape_table(void)
 static value spacetime_disabled()
 {
   caml_failwith("Spacetime profiling not enabled");
-  Assert(0);  /* unreachable */
 }
 
 CAMLprim value caml_spacetime_take_snapshot(value ignored)
