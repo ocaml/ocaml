@@ -336,7 +336,7 @@ module Directive = struct
     | Global s ->
       bprintf buf "\t.globl\t%s" s;
       begin match current_section_is_text (), TS.platform with
-      | false, POWER ->
+      | false, (POWER | AArch64) ->
         bprintf buf "	.type	{emit_symbol %a}, @object\n" string_of_symbol s
       | _ -> ()
       end
@@ -632,9 +632,7 @@ let initialize ~emit =
       switch_to_section (DWARF Debug_line)
     end
   end;
-  begin match TS.hardware with
-  | POWER ->
-    emit (File { file_num = None; filename = ""; })  (* PR#7037 *)
+  emit (File { file_num = None; filename = ""; })  (* PR#7037 *)
 
 let define_symbol' symbol_name =
   let typ : Directive.thing_after_label =

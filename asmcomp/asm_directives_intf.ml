@@ -141,9 +141,9 @@ module type S = sig
 
   (** Emit a directive giving the displacement between the given symbol and
       the current position.  This should only be used to state sizes of
-      functions.  [size_of] may be specified when the symbol used for
-      measurement differs from that whose size is being stated (e.g. on POWER
-      with ELF ABI v1). *)
+      blocks (e.g. functions) just emitted into the assembly stream.
+      [size_of] may be specified when the symbol used for measurement differs
+      from that whose size is being stated (e.g. on POWER with ELF ABI v1). *)
   val size : ?size_of:string -> string -> unit
 
   (** Leave a gap in the object file. *)

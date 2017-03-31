@@ -90,12 +90,6 @@ let slot_offset loc cl =
 (* Record symbols used and defined - at the end generate extern for those
    used but not defined *)
 
-let symbols_defined = ref StringSet.empty
-let symbols_used = ref StringSet.empty
-
-let add_def_symbol s = symbols_defined := StringSet.add s !symbols_defined
-let add_used_symbol s = symbols_used := StringSet.add s !symbols_used
-
 let imp_table = Hashtbl.create 16
 
 let reset_imp_table () = Hashtbl.clear imp_table
@@ -439,13 +433,6 @@ let add_float_constant cst =
 let emit_float_constant f lbl =
   D.define_label lbl;
   D.int64 f
-
-let emit_global_symbol s =
-  let sym = Compilenv.make_symbol (Some s) in
-  add_def_symbol sym;
-  let sym = D.string_of_symbol sym in
-  D.global sym;
-  D.define_symbol' sym
 
 (* Output the assembly code for an instruction *)
 
@@ -859,28 +846,11 @@ let all_functions = ref []
 (* Emission of a function declaration *)
 
 let fundecl fundecl =
-  function_name := fundecl.fun_name;
-  fastcode_flag := fundecl.fun_fast;
-  tailrec_entry_point := new_label();
   stack_offset := 0;
   call_gc_sites := [];
   bound_error_sites := [];
   bound_error_call := 0;
   all_functions := fundecl :: !all_functions;
-  D.switch_to_section Text;
-  D.align ~bytes:16;
-  add_def_symbol fundecl.fun_name;
-  begin match Target_system.system with
-  | S_macosx
-    when not !Clflags.output_c_object
-      && is_generic_function fundecl.fun_name ->  (* PR#4690 *)
-    D.private_extern fundecl.fun_name
-  | _ ->
-    D.global fundecl.fun_name
-  end;
-  D.define_function_symbol' fundecl.fun_name;
-  emit_debug_info fundecl.fun_dbg;
-  D.cfi_startproc ();
   if fp then begin
     I.push rbp;
     D.cfi_adjust_cfa_offset 8;
@@ -905,9 +875,11 @@ let fundecl fundecl =
     then begin
       D.cfi_adjust_cfa_offset (-n);
     end;
-  end;
-  D.cfi_endproc ();
-  D.size fundecl.fun_name
+  end
+
+let fundecl decl =
+  Emitaux.fundecl decl ~f:(fun () -> fundecl decl)
+    ~alignment_in_bytes:16
 
 (* Beginning / end of an assembly file *)
 
@@ -915,7 +887,6 @@ let begin_assembly() =
   X86_proc.reset_asm_code ();
   Asm_directives.initialize ~emit:(fun directive ->
     X86_proc.directive (Directive directive));
-  reset_debug_info();                   (* PR#5603 *)
   reset_imp_table();
   float_constants := [];
   all_functions := [];
@@ -935,7 +906,6 @@ let begin_assembly() =
     D.extrn "caml_raise_exn" NEAR
   | _ -> ()
   end;
-
   if !Clflags.dlcode || Arch.win64 then begin
     (* from amd64.S; could emit these constants on demand *)
     D.switch_to_section Sixteen_byte_literals;
@@ -948,81 +918,19 @@ let begin_assembly() =
     D.int64 0x7FFFFFFFFFFFFFFFL;
     D.int64 0xFFFFFFFFFFFFFFFFL;
   end;
-
-  D.switch_to_section Data;
-  emit_global_symbol "data_begin";
-
-  D.switch_to_section Text;
-  emit_global_symbol "code_begin";
+  Emitaux.begin_assembly ();
   begin match Target_system.system with
   | S_macosx -> I.nop () (* PR#4690 *)
   | _ -> ()
   end
-
-let emit_spacetime_shapes () =
-  D.switch_to_section Data;
-  D.align ~bytes:8;
-  emit_global_symbol "spacetime_shapes";
-  List.iter (fun fundecl ->
-      (* CR-someday mshinwell: some of this should be platform independent *)
-      begin match fundecl.fun_spacetime_shape with
-      | None -> ()
-      | Some shape ->
-        let funsym = D.string_of_symbol fundecl.fun_name in
-        D.comment ("Shape for " ^ funsym ^ ":");
-        D.symbol' fundecl.fun_name;
-        List.iter (fun (part_of_shape, label) ->
-            let tag =
-              match part_of_shape with
-              | Direct_call_point _ -> 1
-              | Indirect_call_point -> 2
-              | Allocation_point -> 3
-            in
-            D.int64 (Int64.of_int tag);
-            D.label label;
-            begin match part_of_shape with
-            | Direct_call_point { callee; } -> D.symbol' callee;
-            | Indirect_call_point -> ()
-            | Allocation_point -> ()
-            end)
-          shape;
-          D.int64 0L
-      end)
-    !all_functions;
-  D.int64 0L;
-  D.comment "End of Spacetime shapes."
 
 let end_assembly () =
   if !float_constants <> [] then begin
     D.switch_to_section Eight_byte_literals;
     List.iter (fun (cst, lbl) -> emit_float_constant cst lbl) !float_constants
   end;
-
-  D.switch_to_section Text;
-  begin match Target_system.system with
-  | S_macosx ->
-    (* suppress "ld warning: atom sorting error" *)
-    I.nop ()
-  | _ -> ()
-  end;
-
-  emit_global_symbol "code_end";
-
   emit_imp_table();
-
-  D.switch_to_section Data;
-  emit_global_symbol "data_end";
-  D.int32 0l;
-
-  emit_global_symbol "frametable";
-  emit_frames ();
-
-  if Config.spacetime then begin
-    emit_spacetime_shapes ()
-  end;
-
-  D.mark_stack_non_executable ();  (* PR#4564 *)
-
+  Emitaux.end_assembly ();
   begin match Target_system.system with
   | S_win64 ->
     D.comment "External functions";
@@ -1030,12 +938,9 @@ let end_assembly () =
       (fun s ->
          if not (StringSet.mem s !symbols_defined) then
            X86_dsl.D.extrn (D.string_of_symbol s) NEAR)
-      !symbols_used;
-    symbols_used := StringSet.empty;
-    symbols_defined := StringSet.empty;
+      !symbols_used
   | _ -> ()
   end;
-
   let asm =
     if !Emitaux.create_asm_file then
       Some

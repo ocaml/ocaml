@@ -192,9 +192,121 @@ let data l =
   D.align ~bytes:Targetint.size;
   List.iter emit_item l
 
+let symbols_defined = ref StringSet.empty
+let symbols_used = ref StringSet.empty
+
+let add_def_symbol s = symbols_defined := StringSet.add s !symbols_defined
+let add_used_symbol s = symbols_used := StringSet.add s !symbols_used
+
+let emit_global_symbol s =
+  let sym = Compilenv.make_symbol (Some s) in
+  add_def_symbol sym;
+  let sym = D.string_of_symbol sym in
+  D.global sym;
+  D.define_symbol' sym
+
+let emit_global_symbol_with_size s ~f =
+  let sym = Compilenv.make_symbol (Some s) in
+  add_def_symbol sym;
+  let sym = D.string_of_symbol sym in
+  D.global sym;
+  D.define_symbol' sym;
+  f ();
+  D.size sym
+
+let begin_assembly () =
+  reset_debug_info ();
+  D.switch_to_section Data;
+  emit_global_symbol "data_begin";
+  D.switch_to_section Text;
+  emit_global_symbol "code_begin";
+
+(* Tradeoff between code size and code speed *)
+let fastcode_flag = ref true
+
+(* Name of current function *)
+let function_name = ref ""
+
+(* Entry point for tail recursive calls *)
+let tailrec_entry_point = ref 0
+
+let fundecl fundecl ~f ~alignment_in_bytes =
+  function_name := fundecl.fun_name;
+  fastcode_flag := fundecl.fun_fast;
+  tailrec_entry_point := new_label ()
+  D.switch_to_section Text;
+  D.align ~bytes:alignment_in_bytes;
+  match TS.system with
+  | S_macosx
+    when not !Clflags.output_c_object
+      && is_generic_function fundecl.fun_name ->  (* PR#4690 *)
+    D.private_extern fundecl.fun_name
+  | _ ->
+    D.global fundecl.fun_name
+  end;
+  D.define_function_symbol' fundecl.fun_name;
+  emit_debug_info fundecl.fun_dbg;
+  D.cfi_startproc ();
+  f ();
+  D.cfi_endproc ();
+  D.size fundecl.fun_name
+
+let emit_spacetime_shapes () =
+  D.switch_to_section Data;
+  D.align ~bytes:8;
+  emit_global_symbol "spacetime_shapes";
+  List.iter (fun fundecl ->
+      begin match fundecl.fun_spacetime_shape with
+      | None -> ()
+      | Some shape ->
+        let funsym = D.string_of_symbol fundecl.fun_name in
+        D.comment ("Shape for " ^ funsym ^ ":");
+        D.symbol' fundecl.fun_name;
+        List.iter (fun (part_of_shape, label) ->
+            let tag =
+              match part_of_shape with
+              | Direct_call_point _ -> 1
+              | Indirect_call_point -> 2
+              | Allocation_point -> 3
+            in
+            D.int64 (Int64.of_int tag);
+            D.label label;
+            begin match part_of_shape with
+            | Direct_call_point { callee; } -> D.symbol' callee;
+            | Indirect_call_point -> ()
+            | Allocation_point -> ()
+            end)
+          shape;
+          D.int64 0L
+      end)
+    !all_functions;
+  D.int64 0L;
+  D.comment "End of Spacetime shapes."
+
+let end_assembly () =
+  D.switch_to_section Text;
+  begin match Target_system.system with
+  | S_macosx ->
+    (* suppress "ld warning: atom sorting error" *)
+    I.nop ()
+  | _ -> ()
+  end;
+  if Config.spacetime then begin
+    emit_spacetime_shapes ()
+  end;
+  emit_global_symbol_with_size "frametable" ~f:(fun () ->
+    emit_frames ());
+  D.mark_stack_as_non_executable ();  (* PR#4564 *)
+  emit_global_symbol "code_end";
+  D.switch_to_section Data;
+  emit_global_symbol "data_end";
+  D.int32 0l
+
 let reset () =
   reset_debug_info ();
-  frame_descriptors := []
+  frame_descriptors := [];
+  symbols_defined := StringSet.empty;
+  symbols_used := StringSet.empty
 
 let binary_backend_available = ref false
 let create_asm_file = ref true
