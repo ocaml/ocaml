@@ -201,9 +201,6 @@ let print_instr b = function
 let print_line b = function
   | Ins instr -> print_instr b instr
   | Directive d -> Asm_directives.Directive.print b d
-  | MASM_directive (NewLabel (s, NONE)) -> bprintf b "%s:" s
-  | MASM_directive (NewLabel (s, ptr)) ->
-    bprintf b "%s LABEL %s" s (string_of_datatype ptr)
   | MASM_directive (External (s, ptr)) ->
     bprintf b "\tEXTRN\t%s: %s" s (string_of_datatype ptr)
   | MASM_directive Mode386 -> bprintf b "\t.386"

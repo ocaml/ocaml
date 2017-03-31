@@ -317,8 +317,13 @@ module Directive = struct
     | Section ([".text"], None, []) -> bprintf buf "\t.CODE"
     | Section _ -> assert false
     | Space { bytes; } -> bprintf buf "\tBYTE\t%d DUP (?)" bytes
-    | NewLabel (label, typ) ->
-      ...
+    | NewLabel (label, Code) -> bprintf b "%s:" s
+    | NewLabel (label, Machine_width_data) ->
+      begin match Targetint.size with
+      | 32 -> bprintf b "%s LABEL DWORD"
+      | 64 -> bprintf b "%s LABEL QWORD"
+      | bits -> Misc.fatal_errorf "Unknown machine word width %d" bits
+      end
     | Cfi_adjust_cfa_offset _
     | Cfi_endproc
     | Cfi_startproc
@@ -331,7 +336,7 @@ module Directive = struct
     | Sleb128 _
     | Type _
     | Uleb128 _
-    | Direct_assignment _
+    | Direct_assignment _ ->
       Misc.fatal_error "Unsupported asm directive for MASM"
 
   let print b t =

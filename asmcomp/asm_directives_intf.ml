@@ -124,7 +124,8 @@ module type S = sig
   val align : bytes:int -> unit
 
   (** Emit a directive giving the displacement between the given symbol and
-      the current position. *)
+      the current position.  This should only be used to calculate sizes of
+      functions. *)
   val size : string -> unit
 
   (** Leave a gap in the object file. *)
