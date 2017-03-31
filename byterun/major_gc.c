@@ -244,8 +244,8 @@ void caml_finish_marking () {
 
 void caml_empty_mark_stack_domain (struct domain* domain)
 {
-  value* mark_stack = *domain->mark_stack;
-  uintnat* mark_stack_count = domain->mark_stack_count;
+  value* mark_stack = *domain->state->mark_stack;
+  uintnat* mark_stack_count = domain->state->mark_stack_count;
 
   while (*mark_stack_count) {
     *mark_stack_count = *mark_stack_count - 1;
