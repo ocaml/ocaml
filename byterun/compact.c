@@ -66,7 +66,7 @@ typedef uintnat word;
 static void invert_pointer_at (word *p)
 {
   word q = *p;
-                                            CAMLassert (Ecolor ((intnat) p) == 0);
+  CAMLassert (Ecolor ((intnat) p) == 0);
 
   /* Use Ecolor (q) == 0 instead of Is_block (q) because q could be an
      inverted pointer for an infix header (with Ecolor == 2). */
@@ -88,7 +88,7 @@ static void invert_pointer_at (word *p)
         word *hp = (word *) Hp_val (val);
 
         while (Ecolor (*hp) == 0) hp = (word *) *hp;
-                                                   CAMLassert (Ecolor (*hp) == 3);
+        CAMLassert (Ecolor (*hp) == 3);
         if (Tag_ehd (*hp) == Closure_tag){
           /* This is the first infix found in this block. */
           /* Save original header. */
@@ -98,7 +98,8 @@ static void invert_pointer_at (word *p)
           /* Change block header's tag to Infix_tag, and change its size
              to point to the infix list. */
           *hp = Make_ehd (Wosize_bhsize (q - val), Infix_tag, 3, (uintnat) 0);
-        }else{                            CAMLassert (Tag_ehd (*hp) == Infix_tag);
+        }else{
+          CAMLassert (Tag_ehd (*hp) == Infix_tag);
           /* Point the last of this infix list to the current first infix
              list of the block. */
           *p = (word) &Field (val, Wosize_ehd (*hp)) | 1;
@@ -147,7 +148,8 @@ static char *compact_allocate (mlsize_t size)
   }
   chunk = compact_fl;
   while (Chunk_size (chunk) - Chunk_alloc (chunk) < size){
-    chunk = Chunk_next (chunk);                         CAMLassert (chunk != NULL);
+    chunk = Chunk_next (chunk);
+    CAMLassert (chunk != NULL);
   }
   adr = chunk + Chunk_alloc (chunk);
   Chunk_alloc (chunk) += size;
@@ -157,7 +159,7 @@ static char *compact_allocate (mlsize_t size)
 static void do_compaction (void)
 {
   char *ch, *chend;
-                                          CAMLassert (caml_gc_phase == Phase_idle);
+  CAMLassert (caml_gc_phase == Phase_idle);
   caml_gc_message (0x10, "Compacting heap...\n", 0);
 
 #ifdef DEBUG
@@ -178,7 +180,8 @@ static void do_compaction (void)
         if (Is_blue_hd (hd)){
           /* Free object.  Give it a string tag. */
           Hd_hp (p) = Make_ehd (sz, String_tag, 3, (uintnat) 0);
-        }else{                                      CAMLassert (Is_white_hd (hd));
+        }else{
+          CAMLassert (Is_white_hd (hd));
           /* Live object.  Keep its tag. */
           Hd_hp (p) = Make_ehd (sz, Tag_hd (hd), 3, Profinfo_hd (hd));
         }
@@ -287,7 +290,8 @@ static void do_compaction (void)
           if (t == Infix_tag){
             /* Get the original header of this block. */
             infixes = p + sz;
-            q = *infixes;                             CAMLassert (Ecolor (q) == 2);
+            q = *infixes;
+            CAMLassert (Ecolor (q) == 2);
             while (Ecolor (q) != 3) q = * (word *) (q & ~(uintnat)3);
             sz = Whsize_ehd (q);
             t = Tag_ehd (q);
@@ -314,7 +318,8 @@ static void do_compaction (void)
                 next = * (word *) q;
                 * (word *) q = (word) Val_hp ((word *) newadr + (infixes - p));
                 q = next;
-              }                    CAMLassert (Ecolor (q) == 1 || Ecolor (q) == 3);
+              }
+              CAMLassert (Ecolor (q) == 1 || Ecolor (q) == 3);
               /* No need to preserve any profinfo value on the [Infix_tag]
                  headers; the Spacetime profiling heap snapshot code doesn't
                  look at them. */
@@ -323,7 +328,8 @@ static void do_compaction (void)
             }
           }
           p += sz;
-        }else{                                        CAMLassert (Ecolor (q) == 3);
+        }else{
+          CAMLassert (Ecolor (q) == 3);
           /* This is guaranteed only if caml_compact_heap was called after a
              nonincremental major GC:       CAMLassert (Tag_ehd (q) == String_tag);
           */
@@ -507,7 +513,7 @@ void caml_compact_heap_maybe (void)
      We compact the heap if FP > caml_percent_max
   */
   float fw, fp;
-                                          CAMLassert (caml_gc_phase == Phase_idle);
+  CAMLassert (caml_gc_phase == Phase_idle);
   if (caml_percent_max >= 1000000) return;
   if (caml_stat_major_collections < 3) return;
   if (caml_stat_heap_wsz <= 2 * caml_clip_heap_chunk_wsz (0)) return;
