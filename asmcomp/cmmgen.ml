@@ -1981,18 +1981,19 @@ and transl_prim_1 env p arg dbg =
      (* always a pointer outside the heap *)
   (* Pointer operations *)
   | Pload_8 ->
-     tag_int (Cop(Cload Byte_unsigned,
-                  [transl_unbox_int env Pnativeint arg]))
+     tag_int (Cop(Cload (Byte_unsigned, Mutable),
+                  [transl_unbox_int dbg env Pnativeint arg], dbg))
+       dbg
   | Pload_16 ->
-     let unboxed_arg = transl_unbox_int env Pnativeint arg in
-     tag_int (unaligned_load_16 unboxed_arg (Cconst_int 0))
+     let unboxed_arg = transl_unbox_int dbg env Pnativeint arg in
+     tag_int (unaligned_load_16 unboxed_arg (Cconst_int 0) dbg) dbg
   | Pload_32 ->
-     let unboxed_arg = transl_unbox_int env Pnativeint arg in
-     box_int dbg Pint32 (unaligned_load_32 unboxed_arg (Cconst_int 0))
+     let unboxed_arg = transl_unbox_int dbg env Pnativeint arg in
+     box_int dbg Pint32 (unaligned_load_32 unboxed_arg (Cconst_int 0) dbg)
   | Pload_64 ->
      assert(size_int = 8);
-     let unboxed_arg = transl_unbox_int env Pnativeint arg in
-     box_int dbg Pint64 (unaligned_load_64 unboxed_arg (Cconst_int 0))
+     let unboxed_arg = transl_unbox_int dbg env Pnativeint arg in
+     box_int dbg Pint64 (unaligned_load_64 unboxed_arg (Cconst_int 0) dbg)
   (* Exceptions *)
   | Praise _ when not (!Clflags.debug) ->
       Cop(Craise Cmm.Raise_notrace, [transl env arg], dbg)
@@ -2282,22 +2283,22 @@ and transl_prim_2 env p arg1 arg2 dbg =
 
   (* Pointer operations *)
   | Pstore_8 ->
-     let unboxed_ptr = transl_unbox_int env Pnativeint arg1 in
+     let unboxed_ptr = transl_unbox_int dbg env Pnativeint arg1 in
      return_unit(Cop(Cstore (Byte_unsigned, Assignment),
                      [unboxed_ptr;
-                      untag_int(transl env arg2)]))
+                      untag_int (transl env arg2) dbg], dbg))
   | Pstore_16 ->
-     let unboxed_ptr = transl_unbox_int env Pnativeint arg1 in
+     let unboxed_ptr = transl_unbox_int dbg env Pnativeint arg1 in
      return_unit(unaligned_set_16 unboxed_ptr (Cconst_int 0)
-                   (untag_int (transl env arg2)))
+                   (untag_int (transl env arg2) dbg) dbg)
   | Pstore_32 ->
-     let unboxed_ptr = transl_unbox_int env Pnativeint arg1 in
+     let unboxed_ptr = transl_unbox_int dbg env Pnativeint arg1 in
      return_unit(unaligned_set_32 unboxed_ptr (Cconst_int 0)
-                   (transl_unbox_int env Pint32 arg2))
+                   (transl_unbox_int dbg env Pint32 arg2) dbg)
   | Pstore_64 ->
-     let unboxed_ptr = transl_unbox_int env Pnativeint arg1 in
+     let unboxed_ptr = transl_unbox_int dbg env Pnativeint arg1 in
      return_unit(unaligned_set_64 unboxed_ptr (Cconst_int 0)
-                   (transl_unbox_int env Pint64 arg2))
+                   (transl_unbox_int dbg env Pint64 arg2) dbg)
 
   (* Array operations *)
   | Parrayrefu kind ->
