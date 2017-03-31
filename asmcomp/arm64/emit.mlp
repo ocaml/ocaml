@@ -896,7 +896,7 @@ let fundecl fundecl =
   List.iter emit_call_gc !call_gc_sites;
   List.iter emit_call_bound_error !bound_error_sites;
   assert (List.length !call_gc_sites = num_call_gc);
-  assert (List.length !bound_error_sites = num_check_bound);
+  assert (List.length !bound_error_sites = num_check_bound)
 
 let fundecl decl =
   Emitaux.fundecl decl ~f:(fun () -> fundecl decl)

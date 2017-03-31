@@ -89,9 +89,6 @@ let function_descr_space () =
   | ELF64v1 -> D.switch_to_section (POWER Function_descriptors)
   | ELF64v2 -> D.switch_to_section Text
 
-let toc_space =
-  " .section \".toc\",\"aw\"\n"
-
 (* Names of instructions that differ in 32 and 64-bit modes *)
 
 let lg = if ppc64 then "ld" else "lwz"
