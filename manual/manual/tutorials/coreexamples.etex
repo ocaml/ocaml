@@ -260,7 +260,7 @@ structures. Consider for example the type of binary trees:
 \begin{caml_example}
 type 'a btree = Empty | Node of 'a * 'a btree * 'a btree;;
 \end{caml_example}
-This definition reads as follow: a binary tree containing values of
+This definition reads as follows: a binary tree containing values of
 type "'a" (an arbitrary type) is either empty, or is a node containing
 one value of type "'a" and two subtrees containing also values of type
 "'a", that is, two "'a btree".
