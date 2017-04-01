@@ -136,3 +136,32 @@ testsuite/tests/docstrings/empty.ml text eol=lf
 
 # And w04.ml
 testsuite/tests/warnings/w04.ml text eol=lf
+
+# These are forced to \n to allow the Cygwin testsuite to pass on a
+# Windows-checkout
+testsuite/tests/formatting/margins.ml text eol=lf
+testsuite/tests/match-exception-warnings/exhaustiveness_warnings.ml text eol=lf
+testsuite/tests/typing-extension-constructor/test.ml text eol=lf
+testsuite/tests/typing-extensions/extensions.ml text eol=lf
+testsuite/tests/typing-extensions/open_types.ml text eol=lf
+testsuite/tests/typing-objects/Exemples.ml text eol=lf
+testsuite/tests/typing-objects/pr5619_bad.ml text eol=lf
+testsuite/tests/typing-objects/pr6123_bad.ml text eol=lf
+testsuite/tests/typing-objects/pr6907_bad.ml text eol=lf
+testsuite/tests/typing-objects/Tests.ml text eol=lf
+testsuite/tests/typing-pattern_open/pattern_open.ml text eol=lf
+testsuite/tests/typing-private/private.ml text eol=lf
+testsuite/tests/typing-recordarg/recordarg.ml text eol=lf
+testsuite/tests/typing-short-paths/pr5918.ml text eol=lf
+testsuite/tests/typing-sigsubst/sigsubst.ml text eol=lf
+testsuite/tests/typing-typeparam/newtype.ml text eol=lf
+testsuite/tests/typing-unboxed/test.ml text eol=lf
+testsuite/tests/typing-unboxed-types/test.ml text eol=lf
+testsuite/tests/typing-warnings/ambiguous_guarded_disjunction.ml text eol=lf
+testsuite/tests/typing-warnings/coercions.ml text eol=lf
+testsuite/tests/typing-warnings/exhaustiveness.ml text eol=lf
+testsuite/tests/typing-warnings/pr6872.ml text eol=lf
+testsuite/tests/typing-warnings/pr7085.ml text eol=lf
+testsuite/tests/typing-warnings/pr7115.ml text eol=lf
+testsuite/tests/typing-warnings/records.ml text eol=lf
+testsuite/tests/typing-warnings/unused_types.ml text eol=lf
