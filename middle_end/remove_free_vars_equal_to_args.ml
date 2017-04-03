@@ -38,7 +38,7 @@ let rewrite_one_function_decl ~(function_decl : Flambda.function_declaration)
             Variable.Set.fold (fun free_var subst ->
                 Variable.Map.add free_var param subst)
               set subst)
-      Variable.Map.empty function_decl.params
+      Variable.Map.empty (Parameter.List.vars function_decl.params)
   in
   if Variable.Map.is_empty params_for_equal_free_vars then
     function_decl

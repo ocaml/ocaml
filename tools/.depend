@@ -30,14 +30,22 @@ eqparsetree.cmo : ../parsing/parsetree.cmi ../parsing/longident.cmi \
     ../parsing/location.cmi ../parsing/asttypes.cmi
 eqparsetree.cmx : ../parsing/parsetree.cmi ../parsing/longident.cmx \
     ../parsing/location.cmx ../parsing/asttypes.cmi
-objinfo.cmo : ../middle_end/base_types/symbol.cmi \
+lintapidiff.cmo : ../typing/printtyp.cmi ../driver/pparse.cmi \
+    ../typing/path.cmi ../parsing/parsetree.cmi ../parsing/parse.cmi \
+    ../utils/misc.cmi ../parsing/location.cmi ../typing/ident.cmi
+lintapidiff.cmx : ../typing/printtyp.cmx ../driver/pparse.cmx \
+    ../typing/path.cmx ../parsing/parsetree.cmi ../parsing/parse.cmx \
+    ../utils/misc.cmx ../parsing/location.cmx ../typing/ident.cmx
+make_opcodes.cmo :
+make_opcodes.cmx :
+objinfo.cmo : ../utils/tbl.cmi ../middle_end/base_types/symbol.cmi \
     ../asmcomp/printclambda.cmi ../utils/misc.cmi \
     ../middle_end/base_types/linkage_name.cmi ../typing/ident.cmi \
     ../asmcomp/export_info.cmi ../utils/config.cmi \
     ../middle_end/base_types/compilation_unit.cmi ../asmcomp/cmx_format.cmi \
     ../typing/cmt_format.cmi ../bytecomp/cmo_format.cmi \
     ../typing/cmi_format.cmi ../bytecomp/bytesections.cmi
-objinfo.cmx : ../middle_end/base_types/symbol.cmx \
+objinfo.cmx : ../utils/tbl.cmx ../middle_end/base_types/symbol.cmx \
     ../asmcomp/printclambda.cmx ../utils/misc.cmx \
     ../middle_end/base_types/linkage_name.cmx ../typing/ident.cmx \
     ../asmcomp/export_info.cmx ../utils/config.cmx \
@@ -51,13 +59,13 @@ ocamlcp.cmx : ../driver/main_args.cmx
 ocamldep.cmo : ../driver/pparse.cmi ../parsing/parsetree.cmi \
     ../parsing/parser.cmi ../parsing/parse.cmi ../utils/misc.cmi \
     ../parsing/longident.cmi ../parsing/location.cmi ../parsing/lexer.cmi \
-    ../parsing/depend.cmi ../utils/config.cmi ../driver/compenv.cmi \
-    ../utils/clflags.cmi
+    ../parsing/depend.cmi ../utils/config.cmi ../driver/compplugin.cmi \
+    ../driver/compenv.cmi ../utils/clflags.cmi
 ocamldep.cmx : ../driver/pparse.cmx ../parsing/parsetree.cmi \
     ../parsing/parser.cmx ../parsing/parse.cmx ../utils/misc.cmx \
     ../parsing/longident.cmx ../parsing/location.cmx ../parsing/lexer.cmx \
-    ../parsing/depend.cmx ../utils/config.cmx ../driver/compenv.cmx \
-    ../utils/clflags.cmx
+    ../parsing/depend.cmx ../utils/config.cmx ../driver/compplugin.cmx \
+    ../driver/compenv.cmx ../utils/clflags.cmx
 ocamlmklib.cmo : ocamlmklibconfig.cmo ../utils/config.cmi
 ocamlmklib.cmx : ocamlmklibconfig.cmx ../utils/config.cmx
 ocamlmklibconfig.cmo :

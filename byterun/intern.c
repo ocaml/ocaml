@@ -140,7 +140,7 @@ static void intern_init(void * src, void * input)
   /* This is asserted at the beginning of demarshaling primitives.
      If it fails, it probably means that an exception was raised
      without calling intern_cleanup() during the previous demarshaling. */
-  Assert (intern_input == NULL && intern_obj_table == NULL \
+  CAMLassert (intern_input == NULL && intern_obj_table == NULL \
      && intern_extra_block == NULL && intern_block == 0);
   intern_src = src;
   intern_input = input;
@@ -256,7 +256,7 @@ static struct intern_item * intern_stack_limit = intern_stack_init
 static void intern_free_stack(void)
 {
   if (intern_stack != intern_stack_init) {
-    free(intern_stack);
+    caml_stat_free(intern_stack);
     /* Reinitialize the globals for next time around */
     intern_stack = intern_stack_init;
     intern_stack_limit = intern_stack + INTERN_STACK_INIT_SIZE;
@@ -279,13 +279,13 @@ static struct intern_item * intern_resize_stack(struct intern_item * sp)
 
   if (newsize >= INTERN_STACK_MAX_SIZE) intern_stack_overflow();
   if (intern_stack == intern_stack_init) {
-    newstack = malloc(sizeof(struct intern_item) * newsize);
+    newstack = caml_stat_alloc_noexc(sizeof(struct intern_item) * newsize);
     if (newstack == NULL) intern_stack_overflow();
     memcpy(newstack, intern_stack_init,
            sizeof(struct intern_item) * INTERN_STACK_INIT_SIZE);
   } else {
-    newstack =
-      realloc(intern_stack, sizeof(struct intern_item) * newsize);
+    newstack = caml_stat_resize_noexc(intern_stack,
+                                      sizeof(struct intern_item) * newsize);
     if (newstack == NULL) intern_stack_overflow();
   }
   intern_stack = newstack;
@@ -369,7 +369,7 @@ static void intern_rec(value *dest)
         intern_dest += 1 + size;
         /* For objects, we need to freshen the oid */
         if (tag == Object_tag) {
-          Assert(size >= 2);
+          CAMLassert(size >= 2);
           /* Request to read rest of the elements of the block */
           ReadItems(&Field(v, 2), size - 2);
           /* Request freshing OID */
@@ -424,9 +424,9 @@ static void intern_rec(value *dest)
       case CODE_SHARED8:
         ofs = read8u();
       read_shared:
-        Assert (ofs > 0);
-        Assert (ofs <= obj_counter);
-        Assert (intern_obj_table != NULL);
+        CAMLassert (ofs > 0);
+        CAMLassert (ofs <= obj_counter);
+        CAMLassert (intern_obj_table != NULL);
         v = intern_obj_table[obj_counter - ofs];
         break;
       case CODE_SHARED16:
@@ -552,7 +552,7 @@ static void intern_rec(value *dest)
   *dest = v;
   break;
   default:
-    Assert(0);
+    CAMLassert(0);
   }
   }
   /* We are done. Cleanup the stack and leave the function */
@@ -565,7 +565,7 @@ static void intern_alloc(mlsize_t whsize, mlsize_t num_objects,
   mlsize_t wosize;
 
   if (whsize == 0) {
-    Assert (intern_extra_block == NULL && intern_block == 0
+    CAMLassert (intern_extra_block == NULL && intern_block == 0
          && intern_obj_table == NULL);
     return;
   }
@@ -582,7 +582,7 @@ static void intern_alloc(mlsize_t whsize, mlsize_t num_objects,
     intern_color =
       outside_heap ? Caml_black : caml_allocation_color(intern_extra_block);
     intern_dest = (header_t *) intern_extra_block;
-    Assert (intern_block == 0);
+    CAMLassert (intern_block == 0);
   } else {
     /* this is a specialised version of caml_alloc from alloc.c */
     if (wosize == 0){
@@ -592,7 +592,7 @@ static void intern_alloc(mlsize_t whsize, mlsize_t num_objects,
     }else{
       intern_block = caml_alloc_shr_no_raise (wosize, String_tag);
       /* do not do the urgent_gc check here because it might darken
-         intern_block into gray and break the Assert 3 lines down */
+         intern_block into gray and break the intern_color assertion below */
       if (intern_block == 0) {
         intern_cleanup();
         caml_raise_out_of_memory();
@@ -600,19 +600,19 @@ static void intern_alloc(mlsize_t whsize, mlsize_t num_objects,
     }
     intern_header = Hd_val(intern_block);
     intern_color = Color_hd(intern_header);
-    Assert (intern_color == Caml_white || intern_color == Caml_black);
+    CAMLassert (intern_color == Caml_white || intern_color == Caml_black);
     intern_dest = (header_t *) Hp_val(intern_block);
-    Assert (intern_extra_block == NULL);
+    CAMLassert (intern_extra_block == NULL);
   }
   obj_counter = 0;
   if (num_objects > 0) {
-    intern_obj_table = (value *) malloc(num_objects * sizeof(value));
+    intern_obj_table = (value *) caml_stat_alloc_noexc(num_objects * sizeof(value));
     if (intern_obj_table == NULL) {
       intern_cleanup();
       caml_raise_out_of_memory();
     }
   } else
-    Assert(intern_obj_table == NULL);
+    CAMLassert(intern_obj_table == NULL);
 }
 
 static void intern_add_to_heap(mlsize_t whsize)
@@ -623,8 +623,8 @@ static void intern_add_to_heap(mlsize_t whsize)
     asize_t request = Chunk_size (intern_extra_block);
     header_t * end_extra_block =
       (header_t *) intern_extra_block + Wsize_bsize(request);
-    Assert(intern_block == 0);
-    Assert(intern_dest <= end_extra_block);
+    CAMLassert(intern_block == 0);
+    CAMLassert(intern_dest <= end_extra_block);
     if (intern_dest < end_extra_block){
       caml_make_free_blocks ((value *) intern_dest,
                              end_extra_block - intern_dest, 0, Caml_white);

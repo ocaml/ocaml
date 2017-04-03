@@ -601,10 +601,10 @@ module Color = struct
         Format.set_mark_tags true;
         List.iter set_color_tag_handling formatter_l;
         color_enabled := (match o with
-          | Always -> true
-          | Auto -> should_enable_color ()
-          | Never -> false
-        )
+            | Some Always -> true
+            | Some Auto -> should_enable_color ()
+            | Some Never -> false
+            | None -> should_enable_color ())
       );
       ()
 end

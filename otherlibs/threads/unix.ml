@@ -199,6 +199,7 @@ type open_flag =
   | O_RSYNC
   | O_SHARE_DELETE
   | O_CLOEXEC
+  | O_KEEPEXEC
 
 type file_perm = int
 
@@ -345,8 +346,9 @@ external fchown : file_descr -> int -> int -> unit = "unix_fchown"
 external umask : int -> int = "unix_umask"
 external access : string -> access_permission list -> unit = "unix_access"
 
-external dup : file_descr -> file_descr = "unix_dup"
-external dup2 : file_descr -> file_descr -> unit = "unix_dup2"
+external dup : ?cloexec: bool -> file_descr -> file_descr = "unix_dup"
+external dup2 :
+   ?cloexec: bool -> file_descr -> file_descr -> unit = "unix_dup2"
 external set_nonblock : file_descr -> unit = "unix_set_nonblock"
 external clear_nonblock : file_descr -> unit = "unix_clear_nonblock"
 external set_close_on_exec : file_descr -> unit = "unix_set_close_on_exec"
@@ -365,10 +367,11 @@ external readdir : dir_handle -> string = "unix_readdir"
 external rewinddir : dir_handle -> unit = "unix_rewinddir"
 external closedir : dir_handle -> unit = "unix_closedir"
 
-external _pipe : unit -> file_descr * file_descr = "unix_pipe"
+external _pipe :
+  ?cloexec: bool -> unit -> file_descr * file_descr = "unix_pipe"
 
-let pipe() =
-  let (out_fd, in_fd as fd_pair) = _pipe() in
+let pipe ?cloexec () =
+  let (out_fd, in_fd as fd_pair) = _pipe ?cloexec () in
   set_nonblock in_fd;
   set_nonblock out_fd;
   fd_pair
@@ -573,28 +576,31 @@ type msg_flag =
   | MSG_DONTROUTE
   | MSG_PEEK
 
-external _socket : socket_domain -> socket_type -> int -> file_descr
-                                  = "unix_socket"
+external _socket : 
+  ?cloexec: bool -> socket_domain -> socket_type -> int -> file_descr
+  = "unix_socket"
 external _socketpair :
-        socket_domain -> socket_type -> int -> file_descr * file_descr
-                                  = "unix_socketpair"
+  ?cloexec: bool -> socket_domain -> socket_type -> int ->
+                                           file_descr * file_descr
+  = "unix_socketpair"
 
-let socket dom typ proto =
-  let s = _socket dom typ proto in
+let socket ?cloexec dom typ proto =
+  let s = _socket ?cloexec dom typ proto in
   set_nonblock s;
   s
 
-let socketpair dom typ proto =
-  let (s1, s2 as spair) = _socketpair dom typ proto in
+let socketpair ?cloexec dom typ proto =
+  let (s1, s2 as spair) = _socketpair ?cloexec dom typ proto in
   set_nonblock s1; set_nonblock s2;
   spair
 
-external _accept : file_descr -> file_descr * sockaddr = "unix_accept"
+external _accept :
+  ?cloexec: bool -> file_descr -> file_descr * sockaddr = "unix_accept"
 
-let rec accept req =
+let rec accept ?cloexec req =
   wait_read req;
   try
-    let (s, caller as result) = _accept req in
+    let (s, caller as result) = _accept ?cloexec req in
     set_nonblock s;
     result
   with Unix_error((EAGAIN | EWOULDBLOCK), _, _) -> accept req
@@ -952,6 +958,10 @@ external setsid : unit -> int = "unix_setsid"
 
 (* High-level process management (system, popen) *)
 
+let rec waitpid_non_intr pid =
+  try waitpid [] pid
+  with Unix_error (EINTR, _, _) -> waitpid_non_intr pid
+
 let system cmd =
   match fork() with
      0 -> begin try
@@ -959,31 +969,25 @@ let system cmd =
           with _ ->
             exit 127
           end
-  | id -> snd(waitpid [] id)
+  | id -> snd(waitpid_non_intr id)
 
-let rec safe_dup fd =
-  let new_fd = dup fd in
-  if new_fd >= 3 then
-    new_fd
-  else begin
-    let res = safe_dup fd in
-    close new_fd;
+(* Make sure [fd] is not one of the standard descriptors 0, 1, 2,
+   by duplicating it if needed. *)
+
+let rec file_descr_not_standard fd =
+  if fd >= 3 then fd else begin
+    let res = file_descr_not_standard (dup fd) in
+    close fd;
     res
   end
 
-let safe_close fd =
-  try close fd with Unix_error(_,_,_) -> ()
-
 let perform_redirections new_stdin new_stdout new_stderr =
-  let newnewstdin = safe_dup new_stdin in
-  let newnewstdout = safe_dup new_stdout in
-  let newnewstderr = safe_dup new_stderr in
-  safe_close new_stdin;
-  safe_close new_stdout;
-  safe_close new_stderr;
-  dup2 newnewstdin stdin; close newnewstdin;
-  dup2 newnewstdout stdout; close newnewstdout;
-  dup2 newnewstderr stderr; close newnewstderr
+  let new_stdin = file_descr_not_standard new_stdin in
+  let new_stdout = file_descr_not_standard new_stdout in
+  let new_stderr = file_descr_not_standard new_stderr in
+  dup2 ~cloexec:false new_stdin stdin; close new_stdin;
+  dup2 ~cloexec:false new_stdout stdout; close new_stdout;
+  dup2 ~cloexec:false new_stderr stderr; close new_stderr
 
 let create_process cmd args new_stdin new_stdout new_stderr =
   match fork() with
@@ -1015,65 +1019,127 @@ type popen_process =
 
 let popen_processes = (Hashtbl.create 7 : (popen_process, int) Hashtbl.t)
 
-let open_proc cmd proc input output toclose =
+let open_proc cmd envopt proc input output error =
   match fork() with
-     0 -> if input <> stdin then begin dup2 input stdin; close input end;
-          if output <> stdout then begin dup2 output stdout; close output end;
-          List.iter close toclose;
-          begin try execv "/bin/sh" [| "/bin/sh"; "-c"; cmd |]
-          with _ -> exit 127
+     0 -> begin try
+            perform_redirections input output error;
+            let shell = "/bin/sh" in
+            let argv = [| shell; "-c"; cmd |] in
+            match envopt with
+            | Some env -> execve shell argv env
+            | None     -> execv shell argv
+          with _ ->
+            exit 127
           end
   | id -> Hashtbl.add popen_processes proc id
 
 let open_process_in cmd =
-  let (in_read, in_write) = pipe() in
+  let (in_read, in_write) = pipe ~cloexec:true () in
   let inchan = in_channel_of_descr in_read in
-  open_proc cmd (Process_in inchan) stdin in_write [in_read];
-  close in_write;
-  inchan
+  try
+    open_proc cmd None (Process_in inchan) stdin in_write stderr;
+    close in_write;
+    inchan
+  with e ->
+    close_in inchan;
+    close in_write;
+    raise e
 
 let open_process_out cmd =
-  let (out_read, out_write) = pipe() in
+  let (out_read, out_write) = pipe ~cloexec:true () in
   let outchan = out_channel_of_descr out_write in
-  open_proc cmd (Process_out outchan) out_read stdout [out_write];
-  close out_read;
-  outchan
+  try
+    open_proc cmd None (Process_out outchan) out_read stdout stderr;
+    close out_read;
+    outchan
+  with e ->
+    close_out outchan;
+    close out_read;
+    raise e
 
 let open_process cmd =
-  let (in_read, in_write) = pipe() in
-  let (out_read, out_write) = pipe() in
+  let (in_read, in_write) = pipe ~cloexec:true () in
   let inchan = in_channel_of_descr in_read in
-  let outchan = out_channel_of_descr out_write in
-  open_proc cmd (Process(inchan, outchan)) out_read in_write
-                                           [in_read; out_write];
-  close out_read;
-  close in_write;
-  (inchan, outchan)
-
-let open_proc_full cmd env proc input output error toclose =
-  match fork() with
-     0 -> dup2 input stdin; close input;
-          dup2 output stdout; close output;
-          dup2 error stderr; close error;
-          List.iter close toclose;
-          begin try execve "/bin/sh" [| "/bin/sh"; "-c"; cmd |] env
-          with _ -> exit 127
-          end
-  | id -> Hashtbl.add popen_processes proc id
+  try
+    let (out_read, out_write) = pipe ~cloexec:true () in
+    let outchan = out_channel_of_descr out_write in
+    try
+      open_proc cmd None (Process(inchan, outchan)) out_read in_write stderr;
+      close out_read;
+      close in_write;
+      (inchan, outchan)
+    with e ->
+      close_out outchan;
+      close out_read;
+      raise e
+  with e ->
+    close_in inchan;
+    close in_write;
+    raise e    
 
 let open_process_full cmd env =
-  let (in_read, in_write) = pipe() in
-  let (out_read, out_write) = pipe() in
-  let (err_read, err_write) = pipe() in
+  let (in_read, in_write) = pipe ~cloexec:true () in
   let inchan = in_channel_of_descr in_read in
-  let outchan = out_channel_of_descr out_write in
-  let errchan = in_channel_of_descr err_read in
-  open_proc_full cmd env (Process_full(inchan, outchan, errchan))
-                 out_read in_write err_write [in_read; out_write; err_read];
-  close out_read;
-  close in_write;
-  close err_write;
-  (inchan, outchan, errchan)
+  try
+    let (out_read, out_write) = pipe ~cloexec:true () in
+    let outchan = out_channel_of_descr out_write in
+    try
+      let (err_read, err_write) = pipe ~cloexec:true () in
+      let errchan = in_channel_of_descr err_read in
+      try
+        open_proc cmd (Some env) (Process_full(inchan, outchan, errchan))
+                  out_read in_write err_write;
+        close out_read;
+        close in_write;
+        close err_write;
+        (inchan, outchan, errchan)
+      with e ->
+        close_in errchan;
+        close err_write;
+        raise e
+    with e ->
+      close_out outchan;
+      close out_read;
+      raise e
+  with e ->
+    close_in inchan;
+    close in_write;
+    raise e    
+
+let find_proc_id fun_name proc =
+  try
+    let pid = Hashtbl.find popen_processes proc in
+    Hashtbl.remove popen_processes proc;
+    pid
+  with Not_found ->
+    raise(Unix_error(EBADF, fun_name, ""))
+
+let close_process_in inchan =
+  let pid = find_proc_id "close_process_in" (Process_in inchan) in
+  close_in inchan;
+  snd(waitpid_non_intr pid)
+
+let close_process_out outchan =
+  let pid = find_proc_id "close_process_out" (Process_out outchan) in
+  (* The application may have closed [outchan] already to signal
+     end-of-input to the process.  *)
+  begin try close_out outchan with Sys_error _ -> () end;
+  snd(waitpid_non_intr pid)
+
+let close_process (inchan, outchan) =
+  let pid = find_proc_id "close_process" (Process(inchan, outchan)) in
+  close_in inchan;
+  begin try close_out outchan with Sys_error _ -> () end;
+  snd(waitpid_non_intr pid)
+
+let close_process_full (inchan, outchan, errchan) =
+  let pid =
+    find_proc_id "close_process_full"
+                 (Process_full(inchan, outchan, errchan)) in
+  close_in inchan;
+  begin try close_out outchan with Sys_error _ -> () end;
+  close_in errchan;
+  snd(waitpid_non_intr pid)
 
 let find_proc_id fun_name proc =
   try
@@ -1116,7 +1182,7 @@ let close_process_full (inchan, outchan, errchan) =
 
 let open_connection sockaddr =
   let sock =
-    socket (domain_of_sockaddr sockaddr) SOCK_STREAM 0 in
+    socket ~cloexec:true (domain_of_sockaddr sockaddr) SOCK_STREAM 0 in
   try
     connect sock sockaddr;
     (in_channel_of_descr sock, out_channel_of_descr sock)
@@ -1126,25 +1192,29 @@ let open_connection sockaddr =
 let shutdown_connection inchan =
   shutdown (descr_of_in_channel inchan) SHUTDOWN_SEND
 
+let rec accept_non_intr s =
+  try accept ~cloexec:true s
+  with Unix_error (EINTR, _, _) -> accept_non_intr s
+
 let establish_server server_fun sockaddr =
   let sock =
-    socket (domain_of_sockaddr sockaddr) SOCK_STREAM 0 in
+    socket ~cloexec:true (domain_of_sockaddr sockaddr) SOCK_STREAM 0 in
   setsockopt sock SO_REUSEADDR true;
   bind sock sockaddr;
   listen sock 5;
   while true do
-    let (s, caller) = accept sock in
+    let (s, caller) = accept_non_intr sock in
     (* The "double fork" trick, the process which calls server_fun will not
        leave a zombie process *)
     match fork() with
        0 -> if fork() <> 0 then exit 0; (* The son exits, the grandson works *)
+            close sock;
             let inchan = in_channel_of_descr s in
             let outchan = out_channel_of_descr s in
             server_fun inchan outchan;
-            close_out outchan;
-            (* The file descriptor was already closed by close_out.
-               close_in inchan;
-            *)
+            (* Do not close inchan nor outchan, as the server_fun could
+               have done it already, and we are about to exit anyway
+               (PR#3794) *)
             exit 0
-    | id -> close s; ignore(waitpid [] id) (* Reclaim the son *)
+    | id -> close s; ignore(waitpid_non_intr id) (* Reclaim the son *)
   done

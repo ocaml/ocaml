@@ -45,34 +45,14 @@ CAMLprim value unix_clear_nonblock(value fd)
   return Val_unit;
 }
 
-#ifdef FD_CLOEXEC
-
 CAMLprim value unix_set_close_on_exec(value fd)
 {
-  int retcode;
-  retcode = fcntl(Int_val(fd), F_GETFD, 0);
-  if (retcode == -1 ||
-      fcntl(Int_val(fd), F_SETFD, retcode | FD_CLOEXEC) == -1)
-    uerror("set_close_on_exec", Nothing);
+  unix_set_cloexec(Int_val(fd), "set_close_on_exec", Nothing);
   return Val_unit;
 }
 
 CAMLprim value unix_clear_close_on_exec(value fd)
 {
-  int retcode;
-  retcode = fcntl(Int_val(fd), F_GETFD, 0);
-  if (retcode == -1 ||
-      fcntl(Int_val(fd), F_SETFD, retcode & ~FD_CLOEXEC) == -1)
-    uerror("clear_close_on_exec", Nothing);
+  unix_clear_cloexec(Int_val(fd), "set_close_on_exec", Nothing);
   return Val_unit;
 }
-
-#else
-
-CAMLprim value unix_set_close_on_exec(value fd)
-{ caml_invalid_argument("set_close_on_exec not implemented"); }
-
-CAMLprim value unix_clear_close_on_exec(value fd)
-{ caml_invalid_argument("clear_close_on_exec not implemented"); }
-
-#endif

@@ -231,7 +231,9 @@ let primitives_table = create_hashtable 57 [
   "%gefloat", Pfloatcomp Cge;
   "%string_length", Pstringlength;
   "%string_safe_get", Pstringrefs;
+  "%string_safe_set", Pbytessets;
   "%string_unsafe_get", Pstringrefu;
+  "%string_unsafe_set", Pbytessetu;
   "%bytes_length", Pbyteslength;
   "%bytes_safe_get", Pbytesrefs;
   "%bytes_safe_set", Pbytessets;
@@ -356,6 +358,9 @@ let primitives_table = create_hashtable 57 [
 
 let find_primitive prim_name =
   Hashtbl.find primitives_table prim_name
+
+let prim_restore_raw_backtrace =
+  Primitive.simple ~name:"caml_restore_raw_backtrace" ~arity:2 ~alloc:false
 
 let specialize_comparison table env ty =
   let (gencomp, intcomp, floatcomp, stringcomp, bytescomp,
@@ -785,6 +790,26 @@ and transl_exp0 e =
         match argl with [obj; meth; cache; pos] ->
           wrap (Lsend(Cached, meth, obj, [cache; pos], e.exp_loc))
         | _ -> assert false
+      else if p.prim_name = "%raise_with_backtrace" then begin
+        let texn1 = List.hd args (* Should not fail by typing *) in
+        let texn2,bt = match argl with
+          | [a;b] -> a,b
+          | _ -> assert false (* idem *)
+        in
+        let vexn = Ident.create "exn" in
+        Llet(Strict, Pgenval, vexn, texn2,
+             event_before e begin
+               Lsequence(
+                 wrap  (Lprim (Pccall prim_restore_raw_backtrace,
+                               [Lvar vexn;bt],
+                               e.exp_loc)),
+                 wrap0 (Lprim(Praise Raise_reraise,
+                              [event_after texn1 (Lvar vexn)],
+                              e.exp_loc))
+               )
+             end
+            )
+      end
       else begin
         let prim = transl_primitive_application
             e.exp_loc p e.exp_env prim_type (Some path) args in
@@ -985,7 +1010,7 @@ and transl_exp0 e =
              ap_inlined=Default_inline;
              ap_specialised=Default_specialise}
   | Texp_instvar(path_self, path, _) ->
-      Lprim(Parrayrefu Paddrarray,
+      Lprim(Pfield_computed,
             [transl_normal_path path_self; transl_normal_path path], e.exp_loc)
   | Texp_setinstvar(path_self, path, _, expr) ->
       transl_setinstvar e.exp_loc (transl_normal_path path_self) path expr
@@ -1255,12 +1280,8 @@ and transl_let rec_flag pat_expr_list body =
       Lletrec(List.map2 transl_case pat_expr_list idlist, body)
 
 and transl_setinstvar loc self var expr =
-  let prim =
-    match maybe_pointer expr with
-    | Pointer -> Paddrarray
-    | Immediate -> Pintarray
-  in
-  Lprim(Parraysetu prim, [self; transl_normal_path var; transl_exp expr], loc)
+  Lprim(Psetfield_computed (maybe_pointer expr, Assignment),
+    [self; transl_normal_path var; transl_exp expr], loc)
 
 and transl_record loc env fields repres opt_init_expr =
   let size = Array.length fields in

@@ -73,8 +73,9 @@ let rec select_addr exp =
   | arg ->
       (Alinear arg, 0)
 
-(* C functions to be turned into Ifloatspecial instructions if -ffast-math *)
-
+(* C functions to be turned into Ifloatspecial instructions if -ffast-math.
+   If you update this list, you may need to update [is_simple_expr] and/or
+   [effects_of], below. *)
 let inline_float_ops =
   ["atan"; "atan2"; "cos"; "log"; "log10"; "sin"; "sqrt"; "tan"]
 
@@ -161,12 +162,20 @@ method is_immediate (_n : int) = true
 
 method! is_simple_expr e =
   match e with
-  | Cop(Cextcall(fn, _, _, _), args, _)
+  | Cop(Cextcall(fn, _, _alloc, _), args, _)
     when !fast_math && List.mem fn inline_float_ops ->
       (* inlined float ops are simple if their arguments are *)
       List.for_all self#is_simple_expr args
   | _ ->
       super#is_simple_expr e
+
+method! effects_of e =
+  match e with
+  | Cop(Cextcall(fn, _, _, _), args, _)
+    when !fast_math && List.mem fn inline_float_ops ->
+      Selectgen.Effect_and_coeffect.join_list_map args self#effects_of
+  | _ ->
+      super#effects_of e
 
 method select_addressing _chunk exp =
   match select_addr exp with
@@ -241,11 +250,11 @@ method! select_operation op args dbg =
 
 method select_floatarith regular_op reversed_op mem_op mem_rev_op args =
   match args with
-    [arg1; Cop(Cload chunk, [loc2], _)] ->
+    [arg1; Cop(Cload (chunk, _), [loc2], _)] ->
       let (addr, arg2) = self#select_addressing chunk loc2 in
       (Ispecific(Ifloatarithmem(chunk_double chunk, mem_op, addr)),
                  [arg1; arg2])
-  | [Cop(Cload chunk, [loc1], _); arg2] ->
+  | [Cop(Cload (chunk, _), [loc1], _); arg2] ->
       let (addr, arg1) = self#select_addressing chunk loc1 in
       (Ispecific(Ifloatarithmem(chunk_double chunk, mem_rev_op, addr)),
                  [arg2; arg1])
@@ -283,10 +292,10 @@ method select_push exp =
   | Cconst_pointer n -> (Ispecific(Ipush_int(Nativeint.of_int n)), Ctuple [])
   | Cconst_natpointer n -> (Ispecific(Ipush_int n), Ctuple [])
   | Cconst_symbol s -> (Ispecific(Ipush_symbol s), Ctuple [])
-  | Cop(Cload (Word_int | Word_val as chunk), [loc], _) ->
+  | Cop(Cload ((Word_int | Word_val as chunk), _), [loc], _) ->
       let (addr, arg) = self#select_addressing chunk loc in
       (Ispecific(Ipush_load addr), arg)
-  | Cop(Cload Double_u, [loc], _) ->
+  | Cop(Cload (Double_u, _), [loc], _) ->
       let (addr, arg) = self#select_addressing Double_u loc in
       (Ispecific(Ipush_load_float addr), arg)
   | _ -> (Ispecific(Ipush), exp)

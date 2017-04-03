@@ -218,6 +218,30 @@ causes the C linker to search for C libraries in
 directory
 .IR dir .
 .TP
+.BI \-color \ mode
+Enable or disable colors in compiler messages (especially warnings and errors).
+The following modes are supported:
+
+.B auto
+use heuristics to enable colors only if the output supports them (an
+ANSI-compatible tty terminal);
+
+.B always
+enable colors unconditionally;
+
+.B never
+disable color output.
+
+The default setting is
+.B auto,
+and the current heuristic
+checks that the "TERM" environment variable exists and is
+not empty or "dumb", and that isatty(stderr) holds.
+
+The environment variable "OCAML_COLOR" is considered if \-color is not
+provided. Its values are auto/always/never as above.
+
+.TP
 .B \-compact
 Optimize the produced code for space rather than for time. This
 results in smaller but slightly slower programs. The default is to
@@ -388,6 +412,13 @@ This can also be used when compiling an interface or implementation
 file, without linking, in which case it sets the name of the cmi or
 cmo file, and also sets the module name to the file name up to the
 first dot.
+.TP
+.B \-opaque
+When compiling a .mli interface file, this has the same effect as the
+.B \-opaque
+option of the bytecode compiler. When compiling a .ml implementation
+file, this produces a .cmx file without cross-module optimization
+information, which reduces recompilation on module change.
 .TP
 .BI \-open \ module
 Opens the given module before processing the interface or

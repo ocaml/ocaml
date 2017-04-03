@@ -31,7 +31,7 @@ unwind_test:
 	@$(OCAMLOPT) -c -opaque mylib.mli
 	@$(OCAMLOPT) -c driver.ml
 	@$(OCAMLOPT) -c mylib.ml
-	@$(OCAMLOPT) -c stack_walker.c
+	@$(OCAMLOPT) -ccopt -I -ccopt $(CTOPDIR)/byterun -c stack_walker.c
 	@$(OCAMLOPT) -cclib -Wl,-keep_dwarf_unwind -o unwind_test mylib.cmx \
 	             driver.cmx stack_walker.o
 

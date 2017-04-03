@@ -15,7 +15,7 @@
 
 (** Types for the information collected in comments. *)
 
-(** The differents kinds of element references. *)
+(** The different kinds of element references. *)
 type ref_kind =
     RK_module
   | RK_module_type

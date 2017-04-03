@@ -102,7 +102,12 @@ void get_line(void)
             line = REALLOC(line, linesize);
             if (line ==  0) no_space();
         }
-        if (c == '\n') { line[i] = '\0'; cptr = line; return; }
+        if (c == '\n') {
+          if (i >= 2 && line[i-2] == '\r') {
+            line[i-2] = '\n'; i--;
+          }
+          line[i] = '\0'; cptr = line; return;
+        }
         c = getc(f);
         if (c ==  EOF) { saw_eof = 1; c = '\n'; }
     }

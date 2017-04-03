@@ -248,6 +248,10 @@ let mk_linkall f =
   "-linkall", Arg.Unit f, " Link all modules, even unused ones"
 ;;
 
+let mk_linscan f =
+  "-linscan", Arg.Unit f, " Use the linear scan register allocator"
+;;
+
 let mk_make_runtime f =
   "-make-runtime", Arg.Unit f,
   " Build a runtime system with given C objects and libraries"
@@ -697,6 +701,10 @@ let mk_dlinear f =
   "-dlinear", Arg.Unit f, " (undocumented)"
 ;;
 
+let mk_dinterval f =
+  "-dinterval", Arg.Unit f, " (undocumented)"
+;;
+
 let mk_dstartup f =
   "-dstartup", Arg.Unit f, " (undocumented)"
 ;;
@@ -931,6 +939,7 @@ module type Optcomp_options = sig
   include Common_options
   include Compiler_options
   include Optcommon_options
+  val _linscan : unit -> unit
   val _no_float_const_prop : unit -> unit
   val _nodynlink : unit -> unit
   val _p : unit -> unit
@@ -939,6 +948,7 @@ module type Optcomp_options = sig
   val _shared : unit -> unit
   val _afl_instrument : unit -> unit
   val _afl_inst_ratio : int -> unit
+  val _dinterval : unit -> unit
 end;;
 
 module type Opttop_options = sig
@@ -1167,6 +1177,7 @@ struct
     mk_inline_max_depth F._inline_max_depth;
     mk_alias_deps F._alias_deps;
     mk_no_alias_deps F._no_alias_deps;
+    mk_linscan F._linscan;
     mk_app_funct F._app_funct;
     mk_no_app_funct F._no_app_funct;
     mk_no_float_const_prop F._no_float_const_prop;
@@ -1249,6 +1260,7 @@ struct
     mk_dreload F._dreload;
     mk_dscheduling F._dscheduling;
     mk_dlinear F._dlinear;
+    mk_dinterval F._dinterval;
     mk_dstartup F._dstartup;
     mk_dtimings F._dtimings;
     mk_dump_pass F._dump_pass;

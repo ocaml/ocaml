@@ -112,15 +112,6 @@ of the script:
 
 \end{unix}
 
-\begin{windows}
-In addition to the text-only command "ocaml.exe", which works exactly
-as under Unix (see above), a graphical user interface for the
-toplevel is available under the name "ocamlwin.exe". It should be
-launched from the Windows file manager or program manager.
-This interface provides a text window in which commands can be entered
-and edited, and the toplevel responses are printed.
-\end{windows}
-
 \section{Options} \label{s:toplevel-options}
 
 The following command-line options are recognized by the "ocaml" command.
@@ -135,11 +126,6 @@ The following command-line options are recognized by the "ocaml" command.
 \begin{unix}
 The following environment variables are also consulted:
 \begin{options}
-\item["LC_CTYPE"] If set to "iso_8859_1", accented characters (from the
-ISO Latin-1 character set) in string and character literals are
-printed as is; otherwise, they are printed as decimal escape sequences
-("\\"\var{ddd}).
-
 \item["TERM"] When printing error messages, the toplevel system
 attempts to underline visually the location of the error. It
 consults the "TERM" variable to determines the type of output terminal
@@ -213,6 +199,17 @@ will result in an ``unbound value "quit"'' error.
     same name as capitalized file name without extensions, following
     semantics of the compiler.
   \end{options}
+
+For directives that take file names as arguments, if the given file
+name specifies no directory, the file is searched in the following
+directories:
+\begin{enumerate}
+  \item In script mode, the directory containing the script currently
+    executing; in interactive mode, the current working directory.
+  \item Directories added with the "#directory" directive.
+  \item Directories given on the command line with "-I" options.
+  \item The standard library directory.
+\end{enumerate}    
 
 \item[Environment queries]
   \begin{options}
@@ -397,7 +394,7 @@ not opened, though; you still have to do
 \end{verbatim}
 yourself, if this is what you wish.
 
-\section{Options}
+\subsection{Options}
 
 The following command-line options are recognized by "ocamlmktop".
 
@@ -426,3 +423,25 @@ Specify the name of the toplevel file produced by the linker.
 The default is "a.out".
 
 \end{options}
+
+\section{The native toplevel: \texttt{ocamlnat}\ (experimental)}
+
+{\bf This section describes a tool that is not yet officially supported %
+but may be found useful.}
+
+OCaml code executing in the traditional toplevel system uses the bytecode
+interpreter.  When increased performance is required, or for testing
+programs that will only execute correctly when compiled to native code,
+the {\em native toplevel} may be used instead.
+
+For the majority of installations the native toplevel will not have been
+installed along with the rest of the OCaml toolchain.  In such circumstances
+it will be necessary to build the OCaml distribution from source.
+From the built source tree of the distribution you may use
+{\tt make natruntop} to build and execute a native toplevel.  (Alternatively
+{\tt make ocamlnat} can be used, which just performs the build step.)
+
+If the {\tt make install} command is run after having built the native
+toplevel then the {\tt ocamlnat} program (either from the source or the
+installation directory) may be invoked directly rather than using
+{\tt make natruntop}.

@@ -13,7 +13,6 @@
 #*                                                                        *
 #**************************************************************************
 
-CC=$(NATIVECC) $(NATIVECCCOMPOPTS)
 FC=$(FORTAN_COMPILER)
 CMO_FILES=$(MODULES:=.cmo)
 CMX_FILES=$(MODULES:=.cmx)
@@ -28,7 +27,7 @@ FORTRAN_LIB=`if [ -n "$(F_FILES)" ]; then echo $(FORTRAN_LIBRARY); fi`
 ADD_CFLAGS+=$(FORTRAN_LIB)
 ADD_OPTFLAGS+=$(FORTRAN_LIB)
 
-C_INCLUDES+=-I $(CTOPDIR)/byterun -I$(CTOPDIR)/otherlibs/bigarray
+C_INCLUDES+=-I $(CTOPDIR)/byterun -I $(CTOPDIR)/otherlibs/bigarray
 
 GENERATED_SOURCES=
 

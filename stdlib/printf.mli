@@ -150,7 +150,7 @@ val kfprintf : (out_channel -> 'd) -> out_channel ->
 val ikfprintf : ('b -> 'd) -> 'b -> ('a, 'b, 'c, 'd) format4 -> 'a
 (** Same as [kfprintf] above, but does not print anything.
    Useful to ignore some material when conditionally printing.
-   @since 4.0
+   @since 4.01.0
 *)
 
 val ksprintf : (string -> 'd) -> ('a, unit, string, 'd) format4 -> 'a

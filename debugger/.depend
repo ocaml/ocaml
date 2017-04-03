@@ -79,14 +79,14 @@ lexer.cmx : parser.cmx lexer.cmi
 lexer.cmi : parser.cmi
 loadprinter.cmo : ../typing/types.cmi ../bytecomp/symtable.cmi printval.cmi \
     ../typing/printtyp.cmi ../typing/path.cmi ../utils/misc.cmi \
-    ../parsing/longident.cmi ../typing/ident.cmi ../typing/env.cmi \
-    ../typing/ctype.cmi ../utils/config.cmi ../driver/compdynlink.cmi \
-    loadprinter.cmi
+    ../parsing/longident.cmi ../parsing/location.cmi ../typing/ident.cmi \
+    ../typing/env.cmi ../typing/ctype.cmi ../utils/config.cmi \
+    ../driver/compdynlink.cmi loadprinter.cmi
 loadprinter.cmx : ../typing/types.cmx ../bytecomp/symtable.cmx printval.cmx \
     ../typing/printtyp.cmx ../typing/path.cmx ../utils/misc.cmx \
-    ../parsing/longident.cmx ../typing/ident.cmx ../typing/env.cmx \
-    ../typing/ctype.cmx ../utils/config.cmx ../driver/compdynlink.cmi \
-    loadprinter.cmi
+    ../parsing/longident.cmx ../parsing/location.cmx ../typing/ident.cmx \
+    ../typing/env.cmx ../typing/ctype.cmx ../utils/config.cmx \
+    ../driver/compdynlink.cmi loadprinter.cmi
 loadprinter.cmi : ../parsing/longident.cmi ../driver/compdynlink.cmi
 main.cmo : unix_tools.cmi $(UNIXDIR)/unix.cmi time_travel.cmi \
     show_information.cmi question.cmi program_management.cmi primitives.cmi \

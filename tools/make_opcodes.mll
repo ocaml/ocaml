@@ -11,7 +11,7 @@
 (***********************************************************************)
 
 let ident = ['a'-'z''A'-'Z''_']['a'-'z''A'-'Z''0'-'9''_']*
-let space = [' ''\n''\t']*
+let space = [' ''\n''\r''\t']*
 
 rule find_enum = parse
 | "enum" space (ident as id) space '{' { id, opnames lexbuf }

@@ -99,6 +99,7 @@ type error =
   | Bad_unboxed_attribute of string
   | Wrong_unboxed_type_float
   | Boxed_and_unboxed
+  | Nonrec_gadt
 
 exception Error of Location.t * error
 

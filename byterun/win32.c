@@ -127,13 +127,13 @@ int caml_write_fd(int fd, int flags, void * buf, int n)
   return retcode;
 }
 
-char * caml_decompose_path(struct ext_table * tbl, char * path)
+caml_stat_string caml_decompose_path(struct ext_table * tbl, char * path)
 {
   char * p, * q;
   int n;
 
   if (path == NULL) return NULL;
-  p = caml_strdup(path);
+  p = caml_stat_strdup(path);
   q = p;
   while (1) {
     for (n = 0; q[n] != 0 && q[n] != ';'; n++) /*nothing*/;
@@ -146,7 +146,7 @@ char * caml_decompose_path(struct ext_table * tbl, char * path)
   return p;
 }
 
-char * caml_search_in_path(struct ext_table * path, char * name)
+caml_stat_string caml_search_in_path(struct ext_table * path, char * name)
 {
   char * p, * dir, * fullname;
   int i;
@@ -159,7 +159,7 @@ char * caml_search_in_path(struct ext_table * path, char * name)
     dir = path->contents[i];
     if (dir[0] == 0) continue;
          /* not sure what empty path components mean under Windows */
-    fullname = caml_strconcat(3, dir, "\\", name);
+    fullname = caml_stat_strconcat(3, dir, "\\", name);
     caml_gc_message(0x100, "Searching %s\n", (uintnat) fullname);
     if (stat(fullname, &st) == 0 && S_ISREG(st.st_mode))
       return fullname;
@@ -167,10 +167,10 @@ char * caml_search_in_path(struct ext_table * path, char * name)
   }
  not_found:
   caml_gc_message(0x100, "%s not found in search path\n", (uintnat) name);
-  return caml_strdup(name);
+  return caml_stat_strdup(name);
 }
 
-CAMLexport char * caml_search_exe_in_path(char * name)
+CAMLexport caml_stat_string caml_search_exe_in_path(char * name)
 {
   char * fullname, * filepart;
   size_t fullnamelen;
@@ -190,7 +190,7 @@ CAMLexport char * caml_search_exe_in_path(char * name)
       caml_gc_message(0x100, "%s not found in search path\n",
                       (uintnat) name);
       caml_stat_free(fullname);
-      return caml_strdup(name);
+      return caml_stat_strdup(name);
     }
     if (retcode < fullnamelen)
       return fullname;
@@ -199,12 +199,12 @@ CAMLexport char * caml_search_exe_in_path(char * name)
   }
 }
 
-char * caml_search_dll_in_path(struct ext_table * path, char * name)
+caml_stat_string caml_search_dll_in_path(struct ext_table * path, char * name)
 {
-  char * dllname;
-  char * res;
+  caml_stat_string dllname;
+  caml_stat_string res;
 
-  dllname = caml_strconcat(2, name, ".dll");
+  dllname = caml_stat_strconcat(2, name, ".dll");
   res = caml_search_in_path(path, dllname);
   caml_stat_free(dllname);
   return res;
@@ -332,7 +332,7 @@ static void store_argument(char * arg)
 {
   if (argc + 1 >= argvsize) {
     argvsize *= 2;
-    argv = (char **) realloc(argv, argvsize * sizeof(char *));
+    argv = (char **) caml_stat_resize_noexc(argv, argvsize * sizeof(char *));
     if (argv == NULL) out_of_memory();
   }
   argv[argc++] = arg;
@@ -363,13 +363,18 @@ static void expand_pattern(char * pat)
     store_argument(pat); /* a la Bourne shell */
     return;
   }
-  prefix = caml_strdup(pat);
+  prefix = caml_stat_strdup(pat);
+  /* We need to stop at the first directory or drive boundary, because the
+   * _findata_t structure contains the filename, not the leading directory. */
   for (i = strlen(prefix); i > 0; i--) {
     char c = prefix[i - 1];
     if (c == '\\' || c == '/' || c == ':') { prefix[i] = 0; break; }
   }
+  /* No separator was found, it's a filename pattern without a leading directory. */
+  if (i == 0)
+    prefix[0] = 0;
   do {
-    name = caml_strconcat(2, prefix, ffblk.name);
+    name = caml_stat_strconcat(2, prefix, ffblk.name);
     store_argument(name);
   } while (_findnext(handle, &ffblk) != -1);
   _findclose(handle);
@@ -382,7 +387,7 @@ CAMLexport void caml_expand_command_line(int * argcp, char *** argvp)
   int i;
   argc = 0;
   argvsize = 16;
-  argv = (char **) malloc(argvsize * sizeof(char *));
+  argv = (char **) caml_stat_alloc_noexc(argvsize * sizeof(char *));
   if (argv == NULL) out_of_memory();
   for (i = 0; i < *argcp; i++) expand_argument((*argvp)[i]);
   argv[argc] = NULL;
@@ -410,9 +415,9 @@ int caml_read_directory(char * dirname, struct ext_table * contents)
       (dirname[dirnamelen - 1] == '/'
        || dirname[dirnamelen - 1] == '\\'
        || dirname[dirnamelen - 1] == ':'))
-    template = caml_strconcat(2, dirname, "*.*");
+    template = caml_stat_strconcat(2, dirname, "*.*");
   else
-    template = caml_strconcat(2, dirname, "\\*.*");
+    template = caml_stat_strconcat(2, dirname, "\\*.*");
   h = _findfirst(template, &fileinfo);
   if (h == -1) {
     caml_stat_free(template);
@@ -420,7 +425,7 @@ int caml_read_directory(char * dirname, struct ext_table * contents)
   }
   do {
     if (strcmp(fileinfo.name, ".") != 0 && strcmp(fileinfo.name, "..") != 0) {
-      caml_ext_table_add(contents, caml_strdup(fileinfo.name));
+      caml_ext_table_add(contents, caml_stat_strdup(fileinfo.name));
     }
   } while (_findnext(h, &fileinfo) == 0);
   _findclose(h);
@@ -621,7 +626,7 @@ char * caml_executable_name(void)
 {
   char * name;
   DWORD namelen, ret;
-  
+
   namelen = 256;
   while (1) {
     name = caml_stat_alloc(namelen);

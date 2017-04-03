@@ -61,7 +61,9 @@ type primitive =
   (* Operations on heap blocks *)
   | Pmakeblock of int * mutable_flag * block_shape
   | Pfield of int
+  | Pfield_computed
   | Psetfield of int * immediate_or_pointer * initialization_or_assignment
+  | Psetfield_computed of immediate_or_pointer * initialization_or_assignment
   | Pfloatfield of int
   | Psetfloatfield of int * initialization_or_assignment
   | Pduprecord of Types.record_representation * int
@@ -225,7 +227,7 @@ type lambda =
   | Llet of let_kind * value_kind * Ident.t * lambda * lambda
   | Lletrec of (Ident.t * lambda) list * lambda
   | Lprim of primitive * lambda list * Location.t
-  | Lswitch of lambda * lambda_switch
+  | Lswitch of lambda * lambda_switch * Location.t
   | Lstringswitch of
       lambda * (string * lambda) list * lambda option * Location.t
   | Lstaticraise of int * lambda list
@@ -337,8 +339,8 @@ let make_key e =
         Llet (str,k,y,ex,tr_rec (Ident.add x (Lvar y) env) e)
     | Lprim (p,es,_) ->
         Lprim (p,tr_recs env es, Location.none)
-    | Lswitch (e,sw) ->
-        Lswitch (tr_rec env e,tr_sw env sw)
+    | Lswitch (e,sw,loc) ->
+        Lswitch (tr_rec env e,tr_sw env sw,loc)
     | Lstringswitch (e,sw,d,_) ->
         Lstringswitch
           (tr_rec env e,
@@ -419,7 +421,7 @@ let iter f = function
       List.iter (fun (_id, exp) -> f exp) decl
   | Lprim(_p, args, _loc) ->
       List.iter f args
-  | Lswitch(arg, sw) ->
+  | Lswitch(arg, sw,_) ->
       f arg;
       List.iter (fun (_key, case) -> f case) sw.sw_consts;
       List.iter (fun (_key, case) -> f case) sw.sw_blocks;
@@ -561,11 +563,12 @@ let subst_lambda s lam =
   | Llet(str, k, id, arg, body) -> Llet(str, k, id, subst arg, subst body)
   | Lletrec(decl, body) -> Lletrec(List.map subst_decl decl, subst body)
   | Lprim(p, args, loc) -> Lprim(p, List.map subst args, loc)
-  | Lswitch(arg, sw) ->
+  | Lswitch(arg, sw, loc) ->
       Lswitch(subst arg,
               {sw with sw_consts = List.map subst_case sw.sw_consts;
                        sw_blocks = List.map subst_case sw.sw_blocks;
-                       sw_failaction = subst_opt  sw.sw_failaction; })
+                       sw_failaction = subst_opt  sw.sw_failaction; },
+              loc)
   | Lstringswitch (arg,cases,default,loc) ->
       Lstringswitch
         (subst arg,List.map subst_strcase cases,subst_opt default,loc)
@@ -612,14 +615,15 @@ let rec map f lam =
         Lletrec (List.map (fun (v, e) -> (v, map f e)) idel, map f e2)
     | Lprim (p, el, loc) ->
         Lprim (p, List.map (map f) el, loc)
-    | Lswitch (e, sw) ->
+    | Lswitch (e, sw, loc) ->
         Lswitch (map f e,
           { sw_numconsts = sw.sw_numconsts;
             sw_consts = List.map (fun (n, e) -> (n, map f e)) sw.sw_consts;
             sw_numblocks = sw.sw_numblocks;
             sw_blocks = List.map (fun (n, e) -> (n, map f e)) sw.sw_blocks;
             sw_failaction = Misc.may_map (map f) sw.sw_failaction;
-          })
+          },
+          loc)
     | Lstringswitch (e, sw, default, loc) ->
         Lstringswitch (
           map f e,

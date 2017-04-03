@@ -26,43 +26,9 @@ let test test_number answer correct_answer =
 (* Tests *)
 
 let tests () =
-  let drain pipe =
-    let max = 2048 in
-    let buf = Buffer.create 2048 in
-    let tmp = Bytes.create max in
-    while begin
-      try
-        let len = Unix.read pipe tmp 0 max in
-        Buffer.add_subbytes buf tmp 0 len;
-        len > 0
-      with Unix.Unix_error (Unix.EPIPE, _, _) when false ->
-        false
-    end do () done;
-    Buffer.contents buf
-  in
-
-  let run exe args =
-    let out_in, out_out = Unix.pipe () in
-    let err_in, err_out = Unix.pipe () in
-    let args = Array.append [| exe |] args in
-    let pid = Unix.create_process exe args Unix.stdin out_out err_out in
-    Unix.close out_out;
-    Unix.close err_out;
-    let output = drain out_in in
-    let error = drain err_in in
-    Unix.close out_in;
-    Unix.close err_in;
-    let _pid, status = Unix.waitpid [ ] pid in
-    status, output, error
-  in
-
-  testing_function "create_process";
-  ignore (run "cp" [||]);
-  test 1 () ();
-
-  testing_function "map_file";
   let mapped_file = Filename.temp_file "bigarray" ".data" in
   begin
+    testing_function "map_file";
     let fd =
      Unix.openfile mapped_file
                    [Unix.O_RDWR; Unix.O_TRUNC; Unix.O_CREAT] 0o666 in
@@ -120,7 +86,32 @@ let tests () =
     for j = 0 to 99 do
       if c.{0,j} <> float (100 * 99 + j) then ok := false
     done;
-    test 4 !ok true
+    test 4 !ok true;
+
+    testing_function "map_file errors";
+    (* Insufficient permissions *)
+    let fd = Unix.openfile mapped_file [Unix.O_RDONLY] 0 in
+    test 1 true
+      begin try
+        ignore (Unix.map_file fd float64 c_layout true [|-1; 100|]); false
+      with
+      | Unix.Unix_error((Unix.EACCES | Unix.EPERM), _, _) -> true
+      | Unix.Unix_error(err, _, _) ->
+          Printf.eprintf "Unexpected error %s\n%!" (Unix.error_message err);
+          false
+      end;
+    Unix.close fd;
+    (* Invalid handle *)
+    test 2 true
+      begin try
+        ignore (Unix.map_file fd float64 c_layout true [|-1; 100|]); false
+      with
+      | Unix.Unix_error((Unix.EBADF|Unix.EINVAL), _, _) -> true
+      | Unix.Unix_error(err, _, _) ->
+          Printf.eprintf "Unexpected error %s\n%!" (Unix.error_message err);
+          false
+      end
+
   end;
   (* Force garbage collection of the mapped bigarrays above, otherwise
      Win32 doesn't let us erase the file.  Notice the begin...end above
@@ -130,7 +121,6 @@ let tests () =
 
   ()
   [@@inline never]
-
 
 (********* End of test *********)
 

@@ -215,7 +215,7 @@ let insert_move srcs dsts i =
 
 class cse_generic = object (self)
 
-(* Default classification of operations.  Can be overriden in
+(* Default classification of operations.  Can be overridden in
    processor-specific files to classify specific operations better. *)
 
 method class_of_operation op =

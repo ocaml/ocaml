@@ -20,51 +20,47 @@ LINKEDFILES=misc.c freelist.c major_gc.c minor_gc.c memory.c alloc.c array.c \
   parsing.c gc_ctrl.c terminfo.c md5.c obj.c lexing.c printexc.c callback.c \
   weak.c compact.c finalise.c meta.c custom.c main.c globroots.c \
   $(UNIX_OR_WIN32).c dynlink.c signals.c debugger.c startup_aux.c \
-  backtrace.c afl.c
+  backtrace.c afl.c bigarray.c
+
+# The following variable stores the list of files for which dependencies
+# should be computed. It includes even the files that won't actually be
+# compiled on the platform where make depend is run
+sources := $(LINKEDFILES)
 
 INSTALL_LIBDIR=$(DESTDIR)$(LIBDIR)
 
-CC=$(NATIVECC)
-
 ifeq "$(UNIX_OR_WIN32)" "win32"
 LN = cp
+sources += ../byterun/unix.c
 else
 LN = ln -s
+sources += ../byterun/win32.c
 endif
 
-FLAGS=\
-  -I../byterun \
-  -DNATIVE_CODE -DTARGET_$(ARCH)
+CPPFLAGS += -I../byterun -DNATIVE_CODE -DTARGET_$(ARCH)
 
 ifeq "$(UNIX_OR_WIN32)" "unix"
-FLAGS += -DMODEL_$(MODEL)
+CPPFLAGS += -DMODEL_$(MODEL)
 endif
 
-FLAGS += -DSYS_$(SYSTEM) \
-  $(NATIVECCCOMPOPTS) $(IFLEXDIR) \
-  $(LIBUNWIND_INCLUDE_FLAGS)
-  
+CPPFLAGS += -DSYS_$(SYSTEM) $(IFLEXDIR) $(LIBUNWIND_INCLUDE_FLAGS)
+
 ifeq "$(TOOLCHAIN)" "msvc"
-DFLAGS=$(FLAGS) -DDEBUG
-PFLAGS=$(FLAGS) -DPROFILING $(NATIVECCPROFOPTS)
-OUTPUTOBJ = -Fo
+DFLAGS = $(CFLAGS) -DDEBUG
+PFLAGS=$(CFLAGS) -DPROFILING $(NATIVECCPROFOPTS)
 ASMOBJS=$(ARCH)nt.$(O)
 else
-DFLAGS=$(FLAGS) -g -DDEBUG
-PFLAGS=$(FLAGS) -pg -DPROFILING $(NATIVECCPROFOPTS)
-OUTPUTOBJ = -o
+DFLAGS = $(CFLAGS) -g -DDEBUG
+PFLAGS=$(CFLAGS) -pg -DPROFILING $(NATIVECCPROFOPTS)
 ASMOBJS=$(ARCH).$(O)
 endif
 
-IFLAGS=$(FLAGS) -DCAML_INSTR
-PICFLAGS=$(FLAGS) $(SHAREDCCCOMPOPTS)
+IFLAGS=$(CFLAGS) -DCAML_INSTR
+PICFLAGS=$(CFLAGS) $(SHAREDCCCOMPOPTS)
 
 ASPPFLAGS = -DSYS_$(SYSTEM)
 ifeq "$(UNIX_OR_WIN32)" "unix"
 ASPPFLAGS += -DMODEL_$(MODEL)
-CFLAGS=$(FLAGS) -g
-else
-CFLAGS=$(FLAGS)
 endif
 
 COBJS=startup_aux.$(O) startup.$(O) main.$(O) fail.$(O)		\
@@ -77,7 +73,7 @@ COBJS=startup_aux.$(O) startup.$(O) main.$(O) fail.$(O)		\
   custom.$(O) globroots.$(O) backtrace_prim.$(O) backtrace.$(O)		\
   natdynlink.$(O) debugger.$(O) meta.$(O) dynlink.$(O)			\
   clambda_checks.$(O) spacetime.$(O) spacetime_snapshot.$(O)		\
-  spacetime_offline.$(O) afl.$(O)
+  spacetime_offline.$(O) afl.$(O) bigarray.$(O)
 
 OBJS=$(COBJS) $(ASMOBJS)
 
@@ -135,19 +131,19 @@ $(LINKEDFILES): %.c: ../byterun/%.c
 	$(LN) $< $@
 
 %.d.$(O): %.c
-	$(CC) -c $(DFLAGS) $(OUTPUTOBJ)$@ $<
+	$(CC) -c $(DFLAGS) $(CPPFLAGS) $(OUTPUTOBJ)$@ $<
 
 %.i.$(O): %.c
-	$(CC) -c $(IFLAGS) $(OUTPUTOBJ)$@ $<
+	$(CC) -c $(IFLAGS) $(CPPFLAGS) $(OUTPUTOBJ)$@ $<
 
 %.p.$(O): %.c
-	$(CC) -c $(PFLAGS) $(OUTPUTOBJ)$@ $<
+	$(CC) -c $(PFLAGS) $(CPPFLAGS) $(OUTPUTOBJ)$@ $<
 
 %.pic.$(O): %.c
-	$(CC) -c $(PICFLAGS) $(OUTPUTOBJ)$@ $<
+	$(CC) -c $(PICFLAGS) $(CPPFLAGS) $(OUTPUTOBJ)$@ $<
 
 %.$(O): %.c
-	$(CC) $(CFLAGS) -c $<
+	$(CC) -c $(CFLAGS) $(CPPFLAGS) $<
 
 %.o: %.S
 	$(ASPP) $(ASPPFLAGS) -o $@ $< || \
@@ -177,21 +173,18 @@ clean:
 distclean: clean
 	rm -r *~
 
-ifneq "$(TOOLCHAIN)" "msvc"
 .PHONY: depend
-depend: $(COBJS:.$(O)=.c) $(LINKEDFILES)
-	$(CC) -MM $(FLAGS) *.c > .depend
-	$(CC) -MM $(FLAGS) -DPROFILING *.c | sed -e 's/\.o/.p.o/' >> .depend
-	$(CC) -MM $(FLAGS) -DDEBUG *.c | sed -e 's/\.o/.d.o)/' >> .depend
-	$(CC) -MM $(FLAGS) -DCAML_INSTR *.c | sed -e 's/\.o/.i.o' >> .depend
-endif
-
-ifeq "$(UNIX_OR_WIN32)" "win32"
-.depend.nt: .depend
-	sed -e 's/\.o/.$(O)/g' .depend > .depend.nt
-
-include .depend.nt
-
+ifeq "$(TOOLCHAIN)" "msvc"
+depend:
+	$(error Dependencies cannot be regenerated using the MSVC ports)
 else
-include .depend
+depend: $(COBJS:.$(O)=.c) $(sources)
+	$(CC) -MM $(CFLAGS) $(CPPFLAGS) $^ | sed -e 's/\.o/.$$(O)/' > .depend
+	$(CC) -MM $(PFLAGS) $^ | sed -e 's/\.o/.p.$$(O)/' \
+	  >> .depend
+	$(CC) -MM $(DFLAGS) $^ | sed -e 's/\.o/.d.$$(O)/' >> .depend
+	$(CC) -MM $(IFLAGS) $^ | sed -e 's/\.o/.i.$$(O)/' \
+	  >> .depend
 endif
+
+include .depend

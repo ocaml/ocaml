@@ -42,13 +42,20 @@ val print_backtrace: out_channel -> unit
     on the output channel [oc].  The backtrace lists the program
     locations where the most-recently raised exception was raised
     and where it was propagated through function calls.
+
+    If the call is not inside an exception handler, the returned
+    backtrace is unspecified. If the call is after some
+    exception-catching code (before in the handler, or in a when-guard
+    during the matching of the exception handler), the backtrace may
+    correspond to a later exception than the handled one.
+
     @since 3.11.0
 *)
 
 val get_backtrace: unit -> string
 (** [Printexc.get_backtrace ()] returns a string containing the
     same exception backtrace that [Printexc.print_backtrace] would
-    print.
+    print. Same restriction usage than {!print_backtrace}.
     @since 3.11.0
 *)
 
@@ -106,7 +113,7 @@ type raw_backtrace
 val get_raw_backtrace: unit -> raw_backtrace
 (** [Printexc.get_raw_backtrace ()] returns the same exception
     backtrace that [Printexc.print_backtrace] would print, but in
-    a raw format.
+    a raw format. Same restriction usage than {!print_backtrace}.
 
     @since 4.01.0
 *)
@@ -123,6 +130,14 @@ val raw_backtrace_to_string: raw_backtrace -> string
     [Printexc.get_backtrace] uses.
 
     @since 4.01.0
+*)
+
+external raise_with_backtrace: exn -> raw_backtrace -> 'a
+  = "%raise_with_backtrace"
+(** Reraise the exception using the given raw_backtrace for the
+    origin of the exception
+
+    @since 4.05.0
 *)
 
 (** {6 Current call stack} *)
@@ -200,6 +215,7 @@ type location = {
     @since 4.02
 *)
 
+(** @since 4.02.0 *)
 module Slot : sig
   type t = backtrace_slot
 

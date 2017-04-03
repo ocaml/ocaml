@@ -399,7 +399,7 @@ let bytes_length (s : bytes) =
 
    The caller may not mutate [s] while the string is borrowed (it has
    temporarily given up ownership). This affects concurrent programs,
-   but also higher-order functions: if [String.length] returned
+   but also higher-order functions: if {!String.length} returned
    a closure to be called later, [s] should not be mutated until this
    closure is fully applied and returns ownership.
 *)

@@ -20,7 +20,7 @@ open Format;;
 val show_current_event : formatter -> unit;;
 
 (* Display information about the current frame. *)
-(* --- `select frame' must have succeded before calling this function. *)
+(* --- `select frame' must have succeeded before calling this function. *)
 val show_current_frame : formatter -> bool -> unit;;
 
 (* Display short information about one frame. *)

@@ -120,6 +120,7 @@ module Options = Main_args.Make_optcomp_options (struct
        inline_max_depth
   let _alias_deps = clear transparent_modules
   let _no_alias_deps = set transparent_modules
+  let _linscan = set use_linscan
   let _app_funct = set applicative_functors
   let _no_app_funct = clear applicative_functors
   let _no_float_const_prop = clear float_const_prop
@@ -187,9 +188,9 @@ module Options = Main_args.Make_optcomp_options (struct
   let _warn_error s = Warnings.parse_options true s
   let _warn_help = Warnings.help_warnings
   let _color option =
-    begin match Clflags.parse_color_setting option with
+    begin match parse_color_setting option with
           | None -> ()
-          | Some setting -> Clflags.color := setting
+          | Some setting -> color := Some setting
     end
   let _where () = print_standard_library ()
 
@@ -221,6 +222,7 @@ module Options = Main_args.Make_optcomp_options (struct
   let _dreload = set dump_reload
   let _dscheduling = set dump_scheduling
   let _dlinear = set dump_linear
+  let _dinterval = set dump_interval
   let _dstartup = set keep_startup_file
   let _dtimings = set print_timings
   let _opaque = set opaque
@@ -238,6 +240,7 @@ let main () =
     readenv ppf Before_args;
     Clflags.add_arguments __LOC__ (Arch.command_line_options @ Options.list);
     Clflags.parse_arguments anonymous usage;
+    Compmisc.read_color_env ppf;
     if !gprofile && not Config.profiling then
       fatal "Profiling with \"gprof\" is not supported on this platform.";
     begin try
@@ -304,7 +307,7 @@ let main () =
       Location.report_exception ppf x;
       exit 2
 
-let _ =
-  Timings.(time All) main ();
+let () =
+  main ();
   if !Clflags.print_timings then Timings.print Format.std_formatter;
   exit 0

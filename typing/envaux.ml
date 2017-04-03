@@ -14,8 +14,6 @@
 (*                                                                        *)
 (**************************************************************************)
 
-open Misc
-open Types
 open Env
 
 type error =
@@ -29,11 +27,6 @@ let env_cache =
 let reset_cache () =
   Hashtbl.clear env_cache;
   Env.reset_cache()
-
-let extract_sig env mty =
-  match Env.scrape_alias env mty with
-    Mty_signature sg -> sg
-  | _ -> fatal_error "Envaux.extract_sig"
 
 let rec env_from_summary sum subst =
   try
@@ -70,14 +63,10 @@ let rec env_from_summary sum subst =
       | Env_open(s, path) ->
           let env = env_from_summary s subst in
           let path' = Subst.module_path subst path in
-          let md =
-            try
-              Env.find_module path' env
-            with Not_found ->
-              raise (Error (Module_not_found path'))
-          in
-          Env.open_signature Asttypes.Override path'
-            (extract_sig env md.md_type) env
+          begin match Env.open_signature Asttypes.Override path' env with
+          | Some env -> env
+          | None -> assert false
+          end
       | Env_functor_arg(Env_module(s, id, desc), id') when Ident.same id id' ->
           Env.add_module_declaration ~check:false
             id (Subst.module_declaration subst desc)
@@ -89,6 +78,8 @@ let rec env_from_summary sum subst =
               Env.add_local_type (Subst.type_path subst path)
                 (Subst.type_declaration subst info))
             map (env_from_summary s subst)
+      | Env_copy_types (s, sl) ->
+          Env.copy_types sl (env_from_summary s subst)
     in
       Hashtbl.add env_cache (sum, subst) env;
       env
