@@ -13,7 +13,7 @@ In this chapter, we show some larger examples using objects, classes
 and modules.  We review many of the object features simultaneously on
 the example of a bank account.  We show how modules taken from the
 standard library can be expressed as classes.  Lastly, we describe a
-programming pattern know of as {\em virtual types} through the example
+programming pattern known as {\em virtual types} through the example
 of window managers.
 
 \section{Extended example: bank accounts}
