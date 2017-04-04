@@ -131,9 +131,9 @@ let label_prefix =
     | Mingw64
     | Unknown -> ".L" ^ string_of_int label_name
     end
+  | ARM_64
   | POWER -> ".L"
   | ARM_32
-  | ARM_64
   | SPARC
   | S390 -> "L"
 
@@ -174,8 +174,8 @@ let symbol_prefix =
     | Unknown -> ""
     end
   | POWER -> "."
+  | ARM_64 -> "$"
   | ARM_32
-  | ARM_64
   | SPARC
   | S390 -> ""
 

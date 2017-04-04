@@ -37,13 +37,11 @@ let reg_x15 = phys_reg 15
 
 (* Output a label *)
 
-let emit_label lbl =
-  emit_string ".L"; emit_int lbl
+let emit_label lbl = emit_string (D.string_of_label lbl)
 
 (* Symbols *)
 
-let emit_symbol s =
-  Emitaux.emit_symbol '$' s
+let emit_symbol s = emit_string (D.string_of_symbol s)
 
 (* Output a pseudo-register *)
 
@@ -112,70 +110,11 @@ let emit_addressing addr r =
   | Ibased(s, ofs) ->
       `[{emit_reg r}, #:lo12:{emit_symbol_offset s ofs}]`
 
-(* Record live pointers at call points *)
-
-let record_frame_label ?label live raise_ dbg =
-  let lbl =
-    match label with
-    | None -> new_label()
-    | Some label -> label
-  in
-  let live_offset = ref [] in
-  Reg.Set.iter
-    (function
-      | {typ = Val; loc = Reg r} ->
-          live_offset := ((r lsl 1) + 1) :: !live_offset
-      | {typ = Val; loc = Stack s} as reg ->
-          live_offset := slot_offset s (register_class reg) :: !live_offset
-      | {typ = Addr} as r ->
-          Misc.fatal_error ("bad GC root " ^ Reg.name r)
-      | _ -> ())
-    live;
-  record_frame_descr ~label:lbl ~frame_size:(frame_size())
-    ~live_offset:!live_offset ~raise_frame:raise_ dbg;
-  lbl
-
-let record_frame ?label live raise_ dbg =
-  let lbl = record_frame_label ?label live raise_ dbg in `{emit_label lbl}:`
-
-(* Record calls to the GC -- we've moved them out of the way *)
-
-type gc_call =
-  { gc_lbl: label;                      (* Entry label *)
-    gc_return_lbl: label;               (* Where to branch after GC *)
-    gc_frame_lbl: label }               (* Label of frame descriptor *)
-
-let call_gc_sites = ref ([] : gc_call list)
-
 let emit_call_gc gc =
-  `{emit_label gc.gc_lbl}:	bl	{emit_symbol "caml_call_gc"}\n`;
-  `{emit_label gc.gc_frame_lbl}:	b	{emit_label gc.gc_return_lbl}\n`
-
-(* Record calls to caml_ml_array_bound_error.
-   In debug mode, we maintain one call to caml_ml_array_bound_error
-   per bound check site. Otherwise, we can share a single call. *)
-
-type bound_error_call =
-  { bd_lbl: label;                    (* Entry label *)
-    bd_frame_lbl: label }             (* Label of frame descriptor *)
-
-let bound_error_sites = ref ([] : bound_error_call list)
-
-let bound_error_label ?label dbg =
-  if !Clflags.debug || !bound_error_sites = [] then begin
-    let lbl_bound_error = new_label() in
-    let lbl_frame = record_frame_label ?label Reg.Set.empty false dbg in
-    bound_error_sites :=
-      { bd_lbl = lbl_bound_error;
-        bd_frame_lbl = lbl_frame } :: !bound_error_sites;
-    lbl_bound_error
-  end else begin
-    let bd = List.hd !bound_error_sites in bd.bd_lbl
-  end
-
-let emit_call_bound_error bd =
-  `{emit_label bd.bd_lbl}:	bl	{emit_symbol "caml_ml_array_bound_error"}\n`;
-  `{emit_label bd.bd_frame_lbl}:\n`
+  D.define_label gc.gc_lbl;
+  `	bl	{emit_symbol "caml_call_gc"}\n`;
+  D.define_label gc.gc_frame_lbl;
+  `	b	{emit_label gc.gc_return_lbl}\n`
 
 (* Names of various instructions *)
 
@@ -288,29 +227,6 @@ let output_epilogue f =
   f();
   (* reset CFA back because function body may continue *)
   if n > 0 then D.cfi_adjust_cfa_offset n
-
-(* Pending floating-point literals *)
-let float_literals = ref ([] : (int64 * label) list)
-
-(* Label a floating-point literal *)
-let float_literal f =
-  try
-    List.assoc f !float_literals
-  with Not_found ->
-    let lbl = new_label() in
-    float_literals := (f, lbl) :: !float_literals;
-    lbl
-
-(* Emit all pending literals *)
-let emit_literals() =
-  if !float_literals <> [] then begin
-    `	.align	3\n`;
-    List.iter
-      (fun (f, lbl) ->
-        `{emit_label lbl}:`; emit_float64_directive ".quad" f)
-      !float_literals;
-    float_literals := []
-  end
 
 (* Emit code to load the address of a symbol *)
 
@@ -510,7 +426,7 @@ let assembly_code_for_allocation ?label_after_call_gc i ~n ~far =
   if !fastcode_flag then begin
     let lbl_redo = new_label() in
     let lbl_call_gc = new_label() in
-    `{emit_label lbl_redo}:`;
+    D.define_label lbl_redo;
     `	sub	{emit_reg reg_alloc_ptr}, {emit_reg reg_alloc_ptr}, #{emit_int n}\n`;
     `	cmp	{emit_reg reg_alloc_ptr}, {emit_reg reg_alloc_limit}\n`;
     `	add	{emit_reg i.res.(0)}, {emit_reg reg_alloc_ptr}, #8\n`;
@@ -520,7 +436,7 @@ let assembly_code_for_allocation ?label_after_call_gc i ~n ~far =
       let lbl = new_label () in
       `	b.cs	{emit_label lbl}\n`;
       `	b	{emit_label lbl_call_gc}\n`;
-      `{emit_label lbl}:\n`
+      D.define_label lbl
     end;
     call_gc_sites :=
       { gc_lbl = lbl_call_gc;
@@ -534,7 +450,8 @@ let assembly_code_for_allocation ?label_after_call_gc i ~n ~far =
     | _  -> emit_intconst reg_x15 (Nativeint.of_int n);
             `	bl	{emit_symbol "caml_allocN"}\n`
     end;
-    `{emit_label lbl_frame}:	add	{emit_reg i.res.(0)}, {emit_reg reg_alloc_ptr}, #8\n`
+    D.define_label lbl_frame;
+    `	add	{emit_reg i.res.(0)}, {emit_reg reg_alloc_ptr}, #8\n`
   end
 
 (* Output the assembly code for an instruction *)
@@ -663,7 +580,7 @@ let emit_instr i =
         `	cmp	{emit_reg i.arg.(0)}, {emit_reg i.arg.(1)}\n`;
         `	b.hi	{emit_label lbl2}\n`;
         `	b	{emit_label lbl}\n`;
-        `{emit_label lbl2}:\n`;
+        D.define_label lbl2;
     | Lop(Iintop_imm(Icheckbound { label_after_error; }, n)) ->
         let lbl = bound_error_label i.dbg ?label:label_after_error in
         `	cmp	{emit_reg i.arg.(0)}, #{emit_int n}\n`;
@@ -675,7 +592,7 @@ let emit_instr i =
         `	cmp	{emit_reg i.arg.(0)}, #{emit_int bound}\n`;
         `	b.hi	{emit_label lbl2}\n`;
         `	b	{emit_label lbl}\n`;
-        `{emit_label lbl2}:\n`;
+        D.define_label lbl2;
     | Lop(Ispecific(Ishiftcheckbound { shift; label_after_error; })) ->
         let lbl = bound_error_label i.dbg ?label:label_after_error in
         `	cmp	{emit_reg i.arg.(1)}, {emit_reg i.arg.(0)}, lsr #{emit_int shift}\n`;
@@ -686,7 +603,7 @@ let emit_instr i =
         `	cmp	{emit_reg i.arg.(1)}, {emit_reg i.arg.(0)}, lsr #{emit_int shift}\n`;
         `	b.lo	{emit_label lbl2}\n`;
         `	b	{emit_label lbl}\n`;
-        `{emit_label lbl2}:\n`;
+        D.define_label lbl2;
     | Lop(Iintop Imod) ->
         `	sdiv	{emit_reg reg_tmp1}, {emit_reg i.arg.(0)}, {emit_reg i.arg.(1)}\n`;
         `	msub	{emit_reg i.res.(0)}, {emit_reg reg_tmp1}, {emit_reg i.arg.(1)}, {emit_reg i.arg.(0)}\n`
@@ -755,7 +672,7 @@ let emit_instr i =
     | Lreturn ->
         output_epilogue (fun () -> `	ret\n`)
     | Llabel lbl ->
-        `{emit_label lbl}:\n`
+        D.define_label lbl
     | Lbranch lbl ->
         `	b	{emit_label lbl}\n`
     | Lcondbranch(tst, lbl) ->
@@ -810,7 +727,7 @@ let emit_instr i =
         `	adr	{emit_reg reg_tmp1}, {emit_label lbltbl}\n`;
         `	add	{emit_reg reg_tmp1}, {emit_reg reg_tmp1}, {emit_reg i.arg.(0)}, lsl #2\n`;
         `	br	{emit_reg reg_tmp1}\n`;
-        `{emit_label lbltbl}:`;
+        D.define_label lbltbl;
         for j = 0 to Array.length jumptbl - 1 do
             `	b	{emit_label jumptbl.(j)}\n`
         done
@@ -820,7 +737,7 @@ let emit_instr i =
         `	ldr	{emit_wreg reg_tmp2}, [{emit_reg reg_tmp1}, {emit_reg i.arg.(0)}, lsl #2]\n`;
         `	add	{emit_reg reg_tmp1}, {emit_wreg reg_tmp2}, sxtb\n`;
         `	br	{emit_reg reg_tmp1}\n`;
-        `{emit_label lbltbl}:\n`;
+        D.define_label lbltbl;
         for j = 0 to Array.length jumptbl - 1 do
             `	.word	{emit_label jumptbl.(j)} - {emit_label lbltbl}\n`
         done
@@ -829,7 +746,7 @@ let emit_instr i =
         let lblnext = new_label() in
         `	adr	{emit_reg reg_tmp1}, {emit_label lblnext}\n`;
         `	b	{emit_label lbl}\n`;
-        `{emit_label lblnext}:\n`
+        D.define_label lblnext;
     | Lpushtrap ->
         stack_offset := !stack_offset + 16;
         `	str	{emit_reg reg_trap_ptr}, [sp, -16]!\n`;
@@ -871,10 +788,7 @@ let emit_profile() = ()   (* TODO *)
 (* Emission of a function declaration *)
 
 let fundecl fundecl =
-  float_literals := [];
   stack_offset := 0;
-  call_gc_sites := [];
-  bound_error_sites := [];
   if !Clflags.gprofile then emit_profile();
   let n = frame_size() in
   if n > 0 then
@@ -892,16 +806,12 @@ let fundecl fundecl =
       ~num_check_bound
   in
   BR.relax fundecl.fun_body ~max_out_of_line_code_offset;
-  emit_all fundecl.fun_body;
-  List.iter emit_call_gc !call_gc_sites;
-  List.iter emit_call_bound_error !bound_error_sites;
-  assert (List.length !call_gc_sites = num_call_gc);
-  assert (List.length !bound_error_sites = num_check_bound)
+  emit_all fundecl.fun_body
 
 let fundecl decl =
   Emitaux.fundecl decl ~f:(fun () -> fundecl decl)
     ~alignment_in_bytes:8
-  emit_literals()
+    ~emit_floating_point_constants:true
 
 (* Beginning / end of an assembly file *)
 
@@ -910,4 +820,4 @@ let begin_assembly () =
   Emitaux.begin_assembly ()
 
 let end_assembly () =
-  Emitaux.end_assembly ()
+  Emitaux.end_assembly ~emit_floating_point_constants:false

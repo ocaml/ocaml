@@ -28,13 +28,35 @@ type frame_descr =
 
 let frame_descriptors = ref([] : frame_descr list)
 
-let record_frame_descr ~label ~frame_size ~live_offset ~raise_frame debuginfo =
+let record_frame_label ?label live raise_ dbg ~frame_size =
+  let lbl =
+    match label with
+    | None -> new_label()
+    | Some label -> label
+  in
+  let live_offset = ref [] in
+  Reg.Set.iter
+    (function
+      | {typ = Val; loc = Reg r} ->
+          live_offset := ((r lsl 1) + 1) :: !live_offset
+      | {typ = Val; loc = Stack s} as reg ->
+          live_offset := slot_offset s (register_class reg) :: !live_offset
+      | {typ = Addr} as r ->
+          Misc.fatal_error ("bad GC root " ^ Reg.name r)
+      | _ -> ()
+    )
+    live;
   frame_descriptors :=
     { fd_lbl = label;
-      fd_frame_size = frame_size;
-      fd_live_offset = List.sort_uniq (-) live_offset;
-      fd_raise = raise_frame;
+      fd_frame_size = frame_size ();
+      fd_live_offset = List.sort_uniq (-) !live_offset;
+      fd_raise = raise_;
       fd_debuginfo = debuginfo } :: !frame_descriptors
+  lbl
+
+let record_frame ?label live raise_ dbg ~frame_size =
+  let lbl = record_frame_label ?label live raise_ dbg in
+  D.define_label lbl
 
 let emit_frames () =
   let filenames = Hashtbl.create 7 in
@@ -230,10 +252,98 @@ let function_name = ref ""
 (* Entry point for tail recursive calls *)
 let tailrec_entry_point = ref 0
 
-let fundecl fundecl ~f ~alignment_in_bytes =
+(* Pending floating-point constants *)
+let float_constants = ref ([] : (int64 * label) list)
+
+(* Label a floating-point constant *)
+let float_constant f =
+  try
+    List.assoc f !float_constants
+  with Not_found ->
+    let lbl = new_label() in
+    float_constants := (f, lbl) :: !float_constants;
+    lbl
+
+(* Emit all pending floating-point constants *)
+let emit_float_constants () =
+  if !float_constants <> [] then begin
+    D.switch_to_section Eight_byte_literals;
+    D.align ~bytes:8;
+    List.iter
+      (fun (f, lbl) ->
+        D.define_label lbl;
+        D.float64 f)
+      !float_constants;
+    float_constants := []
+  end
+
+(* Record calls to the GC -- we've moved them out of the way *)
+
+type gc_call =
+  { gc_lbl: label;                      (* Entry label *)
+    gc_return_lbl: label;               (* Where to branch after GC *)
+    gc_frame: label;                    (* Label of frame descriptor *)
+    gc_spacetime : (X86_ast.arg * int) option;
+    (* Spacetime node hole pointer and index *)
+  }
+
+let call_gc_sites = ref ([] : gc_call list)
+
+(* Record calls to caml_ml_array_bound_error.
+   In -g mode, or when using Spacetime profiling, we maintain one call to
+   caml_ml_array_bound_error per bound check site.  Without -g, we can share
+   a single call. *)
+
+type bound_error_call =
+  { bd_lbl: label;                      (* Entry label *)
+    bd_frame: label;                    (* Label of frame descriptor *)
+    bd_spacetime : (X86_ast.arg * int) option;
+    (* As for [gc_call]. *)
+  }
+
+let bound_error_sites = ref ([] : bound_error_call list)
+let bound_error_call = ref 0
+
+let bound_error_label ?label dbg ~spacetime =
+  if !Clflags.debug || Config.spacetime then begin
+    let lbl_bound_error = new_label() in
+    let lbl_frame = record_frame_label ?label Reg.Set.empty false dbg in
+    bound_error_sites :=
+      { bd_lbl = lbl_bound_error; bd_frame = lbl_frame;
+        bd_spacetime = spacetime; } :: !bound_error_sites;
+    lbl_bound_error
+  end else begin
+    if !bound_error_call = 0 then bound_error_call := new_label();
+    !bound_error_call
+  end
+
+let emit_call_bound_error bd =
+  D.define_label bd.bd_lbl;
+  begin match bd.bd_spacetime with
+  | None -> ()
+  | Some (node_ptr, index) ->
+    spacetime_before_uninstrumented_call ~node_ptr ~index
+  end;
+  emit_call "caml_ml_array_bound_error";
+  D.define_label bd.bd_frame
+
+let emit_call_bound_errors () =
+  List.iter emit_call_bound_error !bound_error_sites;
+  if !bound_error_call > 0 then begin
+    D.define_label !bound_error_call;
+    emit_call "caml_ml_array_bound_error"
+  end
+
+let all_functions = ref []
+
+let fundecl fundecl ~f ~alignment_in_bytes ~emit_floating_point_constants =
+  all_functions := fundecl :: !all_functions;
   function_name := fundecl.fun_name;
   fastcode_flag := fundecl.fun_fast;
-  tailrec_entry_point := new_label ()
+  tailrec_entry_point := new_label ();
+  call_gc_sites := [];
+  bound_error_sites := [];
+  bound_error_call := 0;
   D.switch_to_section Text;
   D.align ~bytes:alignment_in_bytes;
   match TS.system with
@@ -249,7 +359,14 @@ let fundecl fundecl ~f ~alignment_in_bytes =
   D.cfi_startproc ();
   f ();
   D.cfi_endproc ();
-  D.size fundecl.fun_name
+  D.size fundecl.fun_name;
+  List.iter emit_call_gc !call_gc_sites;
+  emit_call_bound_errors ();
+  assert (List.length !call_gc_sites = num_call_gc);
+  assert (List.length !bound_error_sites = num_check_bound);
+  if emit_floating_point_constants then begin
+    emit_float_constants ()
+  end
 
 let emit_spacetime_shapes () =
   D.switch_to_section Data;
@@ -283,7 +400,7 @@ let emit_spacetime_shapes () =
   D.int64 0L;
   D.comment "End of Spacetime shapes."
 
-let end_assembly () =
+let end_assembly ~emit_floating_point_constants =
   D.switch_to_section Text;
   begin match Target_system.system with
   | S_macosx ->
@@ -296,6 +413,9 @@ let end_assembly () =
   end;
   emit_global_symbol_with_size "frametable" ~f:(fun () ->
     emit_frames ());
+  if emit_floating_point_constants then begin
+    emit_float_constants ()
+  end;
   D.mark_stack_as_non_executable ();  (* PR#4564 *)
   emit_global_symbol "code_end";
   D.switch_to_section Data;
