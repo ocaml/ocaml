@@ -29,10 +29,6 @@ open Emitaux
 
 let solaris = Config.system = "solaris"
 
-(* Tradeoff between code size and code speed *)
-
-let fastcode_flag = ref true
-
 (* Layout of the stack *)
 (* Always keep the stack 8-aligned.
    Always leave 96 bytes at the bottom of the stack *)
@@ -152,59 +148,6 @@ let emit_store instr addr arg src =
         `	{emit_string instr}	{emit_reg src}, [{emit_reg arg.(1)} + %g1]\n`
       end
 
-(* Record live pointers at call points *)
-
-type frame_descr =
-  { fd_lbl: int;                        (* Return address *)
-    fd_frame_size: int;                 (* Size of stack frame *)
-    fd_live_offset: int list }          (* Offsets/regs of live addresses *)
-
-let frame_descriptors = ref([] : frame_descr list)
-
-let record_frame ?label live =
-  let lbl =
-    match label with
-    | None -> new_label()
-    | Some label -> label
-  in
-  let live_offset = ref [] in
-  Reg.Set.iter
-    (function
-      | {typ = Val; loc = Reg r} ->
-          live_offset := ((r lsl 1) + 1) :: !live_offset
-      | {typ = Val; loc = Stack s} as reg ->
-          live_offset := slot_offset s (register_class reg) :: !live_offset
-      | {typ = Addr} as r ->
-          Misc.fatal_error ("bad GC root " ^ Reg.name r)
-      | _ -> ())
-    live;
-  live_offset := List.sort_uniq (-) !live_offset;
-  frame_descriptors :=
-    { fd_lbl = lbl;
-      fd_frame_size = frame_size();
-      fd_live_offset = !live_offset } :: !frame_descriptors;
-  `{emit_label lbl}:`
-
-let emit_frame fd =
-  `	.word	{emit_label fd.fd_lbl}\n`;
-  `	.half	{emit_int fd.fd_frame_size}\n`;
-  `	.half	{emit_int (List.length fd.fd_live_offset)}\n`;
-  List.iter
-    (fun n ->
-      `	.half	{emit_int n}\n`)
-    fd.fd_live_offset;
-  `	.align	4\n`
-
-(* Record floating-point constants *)
-
-let float_constants = ref ([] : (int * int64) list)
-
-let emit_float_constant (lbl, cst) =
-  rodata ();
-  `	.align	8\n`;
-  `{emit_label lbl}:`;
-  emit_float64_split_directive ".word" cst
-
 (* Emission of the profiling prelude *)
 let emit_profile () =
   begin match Config.system with
@@ -271,8 +214,6 @@ let name_for_float_comparison cmp neg =
 
 (* Output the assembly code for an instruction *)
 
-let function_name = ref ""
-let tailrec_entry_point = ref 0
 let range_check_trap = ref 0
 
 let rec emit_instr i dslot =
@@ -677,12 +618,8 @@ let rec emit_all i =
 (* Emission of a function declaration *)
 
 let fundecl fundecl =
-  function_name := fundecl.fun_name;
-  fastcode_flag := fundecl.fun_fast;
-  tailrec_entry_point := new_label();
   range_check_trap := 0;
   stack_offset := 0;
-  float_constants := [];
   `	.text\n`;
   `	.align	4\n`;
   `	.global	{emit_symbol fundecl.fun_name}\n`;
@@ -705,67 +642,12 @@ let fundecl fundecl =
   emit_size fundecl.fun_name;
   List.iter emit_float_constant !float_constants
 
-(* Emission of data *)
-
-let emit_item = function
-    Cglobal_symbol s ->
-      `	.global	{emit_symbol s}\n`;
-  | Cdefine_symbol s ->
-      `{emit_symbol s}:\n`
-  | Cint8 n ->
-      `	.byte	{emit_int n}\n`
-  | Cint16 n ->
-      `	.half	{emit_int n}\n`
-  | Cint32 n ->
-      `	.word	{emit_nativeint n}\n`
-  | Cint n ->
-      `	.word	{emit_nativeint n}\n`
-  | Csingle f ->
-      emit_float32_directive ".word" (Int32.bits_of_float f)
-  | Cdouble f ->
-      emit_float64_split_directive ".word" (Int64.bits_of_float f)
-  | Csymbol_address s ->
-      `	.word	{emit_symbol s}\n`
-  | Cstring s ->
-      emit_string_directive "	.ascii	" s
-  | Cskip n ->
-      if n > 0 then `	.skip	{emit_int n}\n`
-  | Calign n ->
-      `	.align	{emit_int n}\n`
-
-let data l =
-  `	.data\n`;
-  List.iter emit_item l
+let fundecl decl =
+  Emitaux.fundecl decl ~f:(fun () -> fundecl decl)
+    ~alignment_in_bytes:4
+    ~emit_numeric_constants:true
 
 (* Beginning / end of an assembly file *)
 
-let begin_assembly() =
-  let lbl_begin = Compilenv.make_symbol (Some "data_begin") in
-  `	.data\n`;
-  `	.global	{emit_symbol lbl_begin}\n`;
-  `{emit_symbol lbl_begin}:\n`;
-  let lbl_begin = Compilenv.make_symbol (Some "code_begin") in
-  `	.text\n`;
-  `	.global	{emit_symbol lbl_begin}\n`;
-  `{emit_symbol lbl_begin}:\n`
-
-let end_assembly() =
-  `	.text\n`;
-  let lbl_end = Compilenv.make_symbol (Some "code_end") in
-  `	.global	{emit_symbol lbl_end}\n`;
-  `{emit_symbol lbl_end}:\n`;
-  `	.data\n`;
-  let lbl_end = Compilenv.make_symbol (Some "data_end") in
-  `	.global	{emit_symbol lbl_end}\n`;
-  `{emit_symbol lbl_end}:\n`;
-  `	.word	0\n`;
-  let lbl = Compilenv.make_symbol (Some "frametable") in
-  rodata ();
-  `	.global	{emit_symbol lbl}\n`;
-  if Config.system = "solaris" then
-    `	.type   {emit_symbol lbl},#object\n`;
-  `{emit_symbol lbl}:\n`;
-  `	.word	{emit_int (List.length !frame_descriptors)}\n`;
-  List.iter emit_frame !frame_descriptors;
-  emit_size lbl;
-  frame_descriptors := []
+let begin_assembly () = Emitaux.begin_assembly ()
+let end_assembly () = Emitaux.end_assembly ~emit_numeric_constants:false

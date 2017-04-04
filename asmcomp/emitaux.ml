@@ -382,15 +382,16 @@ let fundecl fundecl ~f ~alignment_in_bytes ~emit_numeric_constants =
   bound_error_call := 0;
   D.switch_to_section Text;
   D.align ~bytes:alignment_in_bytes;
+  let fun_name = Linkage_name.create fundecl.fun_name in
   match TS.system with
-  | S_macosx
+  | MacOS
     when not !Clflags.output_c_object
       && is_generic_function fundecl.fun_name ->  (* PR#4690 *)
-    D.private_extern fundecl.fun_name
+    D.private_extern fun_name
   | _ ->
-    D.global fundecl.fun_name
+    D.global fun_name
   end;
-  D.define_function_symbol' fundecl.fun_name;
+  D.define_function_symbol fun_name;
   emit_debug_info fundecl.fun_dbg;
   D.cfi_startproc ();
   f ();
@@ -405,6 +406,10 @@ let fundecl fundecl ~f ~alignment_in_bytes ~emit_numeric_constants =
   end
 
 let emit_spacetime_shapes () =
+  if Targetint.size <> 64 then begin
+    Misc.fatal_error "Compiler is configured for Spacetime on a non-64-bit \
+      target"
+  end;
   D.switch_to_section Data;
   D.align ~bytes:8;
   emit_global_symbol "spacetime_shapes";

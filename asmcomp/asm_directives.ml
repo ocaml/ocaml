@@ -131,10 +131,10 @@ let label_prefix =
     | Mingw64
     | Unknown -> ".L" ^ string_of_int label_name
     end
+  | ARM
   | AArch64
   | POWER
   | S390 -> ".L"
-  | ARM
   | SPARC -> "L"
 
 let string_of_label label_name = label_prefix ^ (string_of_int label_name)
@@ -174,9 +174,9 @@ let symbol_prefix =
     | Unknown -> ""
     end
   | POWER -> "."
+  | ARM
   | AArch64 -> "$"
   | S390 -> "."
-  | ARM
   | SPARC -> ""
 
 let string_of_symbol s =
@@ -337,8 +337,9 @@ module Directive = struct
     | Comment s -> bprintf buf "\t\t\t\t/* %s */" s
     | Global s ->
       bprintf buf "\t.globl\t%s" s;
-      begin match current_section_is_text (), TS.platform with
-      | false, (POWER | ARM | AArch64 | S390) ->
+      begin match current_section_is_text (), TS.platform, TS.system with
+      | (false, (POWER | ARM | AArch64 | S390), _)
+      | (false, _, Solaris) ->
         bprintf buf "	.type	{emit_symbol %a}, @object\n" string_of_symbol s
       | _ -> ()
       end
@@ -556,8 +557,8 @@ let switch_to_section (section : section) =
           []
       in
       [name], middle_part, attrs
-    | (Eight_byte_literals | Sixteen_byte_literals) when TS.hardware = S390 ->
-      (* CR mshinwell: Is this really needed? *)
+    | (Eight_byte_literals | Sixteen_byte_literals)
+        when TS.hardware = S390 || TS.platform = Solaris ->
       [".rodata"], None, []
     | Sixteen_byte_literals, MacOS ->
       ["__TEXT";"__literal16"], None, ["16byte_literals"]
@@ -627,6 +628,8 @@ let initialize ~emit =
     if !Clflags.debug then begin
       (* Forward label references are illegal in gas.  Just put them in for
          all assemblers, they won't harm. *)
+      (* CR mshinwell: Careful: the POWER backend relies on .opd being after
+         .data *)
       switch_to_section Data;
       switch_to_section Eight_byte_literals;
       switch_to_section Sixteen_byte_literals;

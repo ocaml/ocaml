@@ -74,12 +74,11 @@ let (trap_size, trap_handler_offset, trap_previous_offset) =
 
 (* Output a symbol *)
 
-let emit_symbol s = Emitaux.emit_symbol '.' s
+let emit_symbol s = emit_string (D.string_of_symbol (Linkage_name.create s))
 
 (* Output a label *)
 
-let emit_label lbl =
-  emit_string label_prefix; emit_int lbl
+let emit_label lbl = emit_string (D.string_of_label lbl)
 
 (* Section switching *)
 
@@ -285,33 +284,6 @@ let adjust_stack_offset delta =
   stack_offset := !stack_offset + delta;
   D.cfi_adjust_cfa_offset delta
 
-(* Record live pointers at call points *)
-
-let record_frame ?label live raise_ dbg =
-  let lbl =
-    match label with
-    | None -> new_label()
-    | Some label -> label
-  in
-  let live_offset = ref [] in
-  Reg.Set.iter
-    (function
-      | {typ = Val; loc = Reg r} ->
-          live_offset := ((r lsl 1) + 1) :: !live_offset
-      | {typ = Val; loc = Stack s} as reg ->
-          live_offset := slot_offset s (register_class reg) :: !live_offset
-      | {typ = Addr} as r ->
-          Misc.fatal_error ("bad GC root " ^ Reg.name r)
-      | _ -> ())
-    live;
-  record_frame_descr ~label:lbl ~frame_size:(frame_size())
-    ~live_offset:!live_offset ~raise_frame:raise_ dbg;
-  D.define_label lbl
-
-(* Record floating-point literals (for PPC32) *)
-
-let float_literals = ref ([] : (int64 * int) list)
-
 (* Record jump tables (for PPC64).  In order to reduce the size of the TOC,
    we concatenate all jumptables and emit them at the end of the compilation
    unit. *)
@@ -486,6 +458,8 @@ module BR = Branch_relaxation.Make (struct
   let relax_intop_checkbound ~label_after_error:_ = assert false
   let relax_intop_imm_checkbound ~bound:_ ~label_after_error:_ = assert false
 end)
+
+let branch_relaxation = (module BR : Branch_relaxation.S)
 
 (* Output the assembly code for an instruction *)
 
@@ -978,30 +952,32 @@ let fundecl fundecl =
   call_gc_label := 0;
   float_literals := [];
   jumptables := []; jumptables_lbl := -1;
-  let fun_name_v1 = "L." ^ fundecl.fun_name in
+  let fun_name = Linkage_name.create fundecl.fun_name in
+  let fun_name_v1 = Linkage_name.create ("L." ^ fundecl.fun_name) in
   begin match abi with
   | ELF32 ->
     D.switch_to_section Text;
-    D.global fundecl.fun_name;
-    D.define_function_symbol' fundecl.fun_name;
+    D.global fun_name;
+    D.define_function_symbol fun_name;
     D.align 4
   | ELF64v1 ->
     D.switch_to_section (POWER Function_descriptors);
     D.align 8;
-    D.global fundecl.fun_name;
-    D.define_function_symbol' fundecl.fun_name;
-    `	.quad .L.{emit_symbol fundecl.fun_name}, .TOC.@tocbase\n`;
+    D.global fun_name;
+    D.define_function_symbol fun_name;
+    D.symbol fun_name_v1;
+    D.symbol (Linkage_name.create ".TOC.@tocbase");
     D.switch_to_section Text;
     D.align ~bytes:4;
     D.define_function_symbol' fun_name_v1
   | ELF64v2 ->
     D.switch_to_section Text;
-    D.global fundecl.fun_name;
+    D.global fun_name;
     D.align ~bytes:4;
-    D.define_function_symbol' fundecl.fun_name;
+    D.define_function_symbol fun_name;
     `0:	addis	2, 12, (.TOC. - 0b)@ha\n`;
     `	addi	2, 2, (.TOC. - 0b)@l\n`;
-    `	.localentry {emit_symbol fundecl.fun_name}, . - 0b\n`
+    `	.localentry {emit_symbol fun_name}, . - 0b\n`
   end;
   emit_debug_info fundecl.fun_dbg;
   D.cfi_startproc();
@@ -1022,6 +998,7 @@ let fundecl fundecl =
       `	std	2, {emit_int(toc_save_offset())}(1)\n`
   end;
   D.define_label !tailrec_entry_point;
+
   (* On this target, there is at most one "out of line" code block per
      function: a single "call GC" point.  It comes immediately after the
      function's body. *)
@@ -1032,7 +1009,7 @@ let fundecl fundecl =
     D.define_label !call_gc_label;
     match abi with
     | ELF32 ->
-      `	b	{D.string_of_symbol "caml_call_gc"}\n`
+      `	b	{D.string_of_symbol Linkage_name.caml_call_gc}\n`
     | ELF64v1 ->
       `	std	2, 40(1)\n`;
              (* save our TOC, will be restored by caml_call_gc *)
@@ -1054,14 +1031,7 @@ let fundecl fundecl =
   | ELF64v1 -> D.size ~size_of:fundecl.fun_name fun_name_v1
   end;
   (* Emit the numeric literals *)
-  if !float_literals <> [] then begin
-    D.switch_to_section Read_only_data;
-    D.align ~bytes:8;
-    List.iter (fun (f, lbl) ->
-        D.define_label lbl;
-        D.float64 f)
-      !float_literals
-  end;
+  emit_constants ();
   (* Emit the jump tables *)
   if !jumptables <> [] then begin
     D.switch_to_section Read_only_data;
@@ -1070,7 +1040,17 @@ let fundecl fundecl =
     List.iter (fun lbl ->
         D.between_labels_32bit ~upper:lbl ~lower:!jumptables_lbl)
       (List.rev !jumptables)
-  end
+    end
+
+let fundecl decl =
+  Emitaux.fundecl decl ~f:(fun () -> fundecl decl)
+    ~alignment_in_bytes:4
+    ~emit_numeric_constants:true
+    ~branch_relaxation
+    (* On this target, there is at most one "out of line" code block per
+      function: a single "call GC" point.  It comes immediately after the
+      function's body. *)
+    ~max_out_of_line_code_offset:0
 
 (* Beginning / end of an assembly file *)
 

@@ -17,7 +17,14 @@
 open Mach
 open Linearize
 
-module Make (T : Branch_relaxation_intf.S) = struct
+module type S = sig
+  val relax
+     : Linearize.instruction
+    -> max_out_of_line_code_offset:T.distance
+    -> unit
+end
+
+module Make (T : Branch_relaxation_intf.S) : S = struct
   let label_map code =
     let map = Hashtbl.create 37 in
     let rec fill_map pc instr =

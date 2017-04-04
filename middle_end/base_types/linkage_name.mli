@@ -22,3 +22,4 @@ val create : string -> t
 val to_string : t -> string
 
 val _GLOBAL_OFFSET_TABLE_ : t
+val caml_call_gc : t
