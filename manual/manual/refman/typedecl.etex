@@ -137,7 +137,7 @@ The field declaration @'mutable' field-name ':' poly-typexpr@
 behaves similarly; in addition, it allows physical modification of
 this field.
 Immutable fields are covariant, mutable fields are non-variant.
-Both mutable and immutable fields may have a explicitly polymorphic
+Both mutable and immutable fields may have explicitly polymorphic
 types.  The polymorphism of the contents is statically checked whenever
 a record value is created or modified.  Extracted values may have their
 types instantiated.
