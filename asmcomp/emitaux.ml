@@ -207,7 +207,9 @@ let emit_item = function
   | Csymbol_address s -> add_used_symbol s; D.symbol' s
   | Cstring s -> D.string s
   | Cskip bytes -> if bytes > 0 then D.space ~bytes
-  | Calign bytes -> D.align ~bytes
+  | Calign bytes ->
+    if bytes < Targetint.size then D.align ~bytes:Targetint.size
+    else D.align ~bytes
 
 let data l =
   D.switch_to_section Data;
@@ -254,6 +256,9 @@ let tailrec_entry_point = ref 0
 
 (* Pending floating-point constants *)
 let float_constants = ref ([] : (int64 * label) list)
+
+(* Pending integer constants *)
+let int_literals = ref ([] : (nativeint * int) list)
 
 (* Label a floating-point constant *)
 let float_constant f =
@@ -317,7 +322,7 @@ let bound_error_label ?label dbg ~spacetime =
     !bound_error_call
   end
 
-let emit_call_bound_error bd =
+let emit_call_bound_error bd ~emit_call =
   D.define_label bd.bd_lbl;
   begin match bd.bd_spacetime with
   | None -> ()
@@ -327,8 +332,8 @@ let emit_call_bound_error bd =
   emit_call "caml_ml_array_bound_error";
   D.define_label bd.bd_frame
 
-let emit_call_bound_errors () =
-  List.iter emit_call_bound_error !bound_error_sites;
+let emit_call_bound_errors ~emit_call =
+  List.iter (fun bd -> emit_call_bound_error bd ~emit_call) !bound_error_sites;
   if !bound_error_call > 0 then begin
     D.define_label !bound_error_call;
     emit_call "caml_ml_array_bound_error"
@@ -418,9 +423,10 @@ let end_assembly ~emit_floating_point_constants =
   end;
   D.mark_stack_as_non_executable ();  (* PR#4564 *)
   emit_global_symbol "code_end";
+  D.int64 0L;
   D.switch_to_section Data;
   emit_global_symbol "data_end";
-  D.int32 0l
+  D.int64 0L
 
 let reset () =
   reset_debug_info ();

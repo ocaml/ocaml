@@ -131,11 +131,11 @@ let label_prefix =
     | Mingw64
     | Unknown -> ".L" ^ string_of_int label_name
     end
-  | ARM_64
-  | POWER -> ".L"
+  | AArch64
+  | POWER
+  | S390 -> ".L"
   | ARM_32
-  | SPARC
-  | S390 -> "L"
+  | SPARC -> "L"
 
 let string_of_label label_name = label_prefix ^ (string_of_int label_name)
 
@@ -174,10 +174,10 @@ let symbol_prefix =
     | Unknown -> ""
     end
   | POWER -> "."
-  | ARM_64 -> "$"
+  | AArch64 -> "$"
+  | S390 -> "."
   | ARM_32
-  | SPARC
-  | S390 -> ""
+  | SPARC -> ""
 
 let string_of_symbol s =
   let spec = ref false in
@@ -336,7 +336,7 @@ module Directive = struct
     | Global s ->
       bprintf buf "\t.globl\t%s" s;
       begin match current_section_is_text (), TS.platform with
-      | false, (POWER | AArch64) ->
+      | false, (POWER | AArch64 | S390) ->
         bprintf buf "	.type	{emit_symbol %a}, @object\n" string_of_symbol s
       | _ -> ()
       end
@@ -591,7 +591,7 @@ let switch_to_section (section : section) =
       | X86_32
       | X86_64
       | ARM_32
-      | ARM_64
+      | AArch64
       | SPARC
       | S390 ->
         Misc.fatal_error "Cannot switch to POWER section on non-POWER \
