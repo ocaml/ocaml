@@ -97,70 +97,13 @@ let emit_addressing addr r n =
     Iindexed ofs ->
       `[{emit_reg r.(n)}, #{emit_int ofs}]`
 
-(* Record live pointers at call points *)
-
-let record_frame_label ?label live raise_ dbg =
-  let lbl =
-    match label with
-    | None -> new_label()
-    | Some label -> label
-  in
-  let live_offset = ref [] in
-  Reg.Set.iter
-    (function
-      | {typ = Val; loc = Reg r} ->
-          live_offset := ((r lsl 1) + 1) :: !live_offset
-      | {typ = Val; loc = Stack s} as reg ->
-          live_offset := slot_offset s (register_class reg) :: !live_offset
-      | {typ = Addr} as r ->
-          Misc.fatal_error ("bad GC root " ^ Reg.name r)
-      | _ -> ())
-    live;
-  record_frame_descr ~label:lbl ~frame_size:(frame_size())
-    ~live_offset:!live_offset ~raise_frame:raise_ dbg;
-  lbl
-
-let record_frame ?label live raise_ dbg =
-  let lbl = record_frame_label ?label live raise_ dbg in `{emit_label lbl}:`
-
-(* Record calls to the GC -- we've moved them out of the way *)
-
-type gc_call =
-  { gc_lbl: label;                      (* Entry label *)
-    gc_return_lbl: label;               (* Where to branch after GC *)
-    gc_frame_lbl: label }               (* Label of frame descriptor *)
-
-let call_gc_sites = ref ([] : gc_call list)
+(* Calls to the GC -- we've moved them out of the way *)
 
 let emit_call_gc gc =
-  `{emit_label gc.gc_lbl}:	{emit_call "caml_call_gc"}\n`;
-  `{emit_label gc.gc_frame_lbl}:	b	{emit_label gc.gc_return_lbl}\n`
-
-(* Record calls to caml_ml_array_bound_error.
-   In debug mode, we maintain one call to caml_ml_array_bound_error
-   per bound check site. Otherwise, we can share a single call. *)
-
-type bound_error_call =
-  { bd_lbl: label;                    (* Entry label *)
-    bd_frame_lbl: label }             (* Label of frame descriptor *)
-
-let bound_error_sites = ref ([] : bound_error_call list)
-
-let bound_error_label ?label dbg =
-  if !Clflags.debug || !bound_error_sites = [] then begin
-    let lbl_bound_error = new_label() in
-    let lbl_frame = record_frame_label ?label Reg.Set.empty false dbg in
-    bound_error_sites :=
-      { bd_lbl = lbl_bound_error;
-        bd_frame_lbl = lbl_frame } :: !bound_error_sites;
-    lbl_bound_error
-  end else begin
-    let bd = List.hd !bound_error_sites in bd.bd_lbl
-  end
-
-let emit_call_bound_error bd =
-  `{emit_label bd.bd_lbl}:	{emit_call "caml_ml_array_bound_error"}\n`;
-  `{emit_label bd.bd_frame_lbl}:\n`
+  D.define_label gc.gc_lbl;
+  `	{emit_call "caml_call_gc"}\n`;
+  D.define_label gc.gc_frame_lbl;
+  `	b	{emit_label gc.gc_return_lbl}\n`
 
 (* Negate a comparison *)
 
@@ -272,28 +215,10 @@ let output_epilogue f =
   end else
     f ()
 
-(* Name of current function *)
-let function_name = ref ""
-(* Entry point for tail recursive calls *)
-let tailrec_entry_point = ref 0
-(* Pending floating-point literals *)
-let float_literals = ref ([] : (int64 * label) list)
 (* Pending relative references to the global offset table *)
 let gotrel_literals = ref ([] : (label * label) list)
 (* Pending symbol literals *)
 let symbol_literals = ref ([] : (string * label) list)
-(* Total space (in words) occupied by pending literals *)
-let size_literals = ref 0
-
-(* Label a floating-point literal *)
-let float_literal f =
-  try
-    List.assoc f !float_literals
-  with Not_found ->
-    let lbl = new_label() in
-    size_literals := !size_literals + 2;
-    float_literals := (f, lbl) :: !float_literals;
-    lbl
 
 (* Label a GOTREL literal *)
 let gotrel_literal l =
@@ -312,27 +237,27 @@ let symbol_literal s =
     symbol_literals := (s, lbl) :: !symbol_literals;
     lbl
 
-(* Emit all pending literals *)
-let emit_literals() =
-  if !float_literals <> [] then begin
-    `	.align	3\n`;
-    List.iter
-      (fun (f, lbl) ->
-        `{emit_label lbl}:`; emit_float64_split_directive ".long" f)
-      !float_literals;
-    float_literals := []
-  end;
+(* Emit all pending GOTREL and symbol literals *)
+let emit_gotrel_and_symbol_literals() =
   if !symbol_literals <> [] then begin
     let offset = if !thumb then 4 else 8 in
-    let suffix = if !Clflags.pic_code then "(GOT)" else "" in
-    `	.align	2\n`;
+    D.align ~bytes:4;
     List.iter
       (fun (l, lbl) ->
-        `{emit_label lbl}:	.word	_GLOBAL_OFFSET_TABLE_-({emit_label l}+{emit_int offset})\n`)
+        D.define_label lbl;
+        D.between_symbol_and_label_offset'
+          ~upper:Linkage_name._GLOBAL_OFFSET_TABLE_
+          ~lower:l
+          ~lower_offset:offset)
       !gotrel_literals;
     List.iter
       (fun (s, lbl) ->
-        `{emit_label lbl}:	.word	{emit_symbol s}{emit_string suffix}\n`)
+        D.define_label lbl;
+        if !Clflags.pic_code then begin
+          D.symbol ~got:() s
+        end else begin
+          D.symbol s
+        end)
       !symbol_literals;
     gotrel_literals := [];
     symbol_literals := []
@@ -354,7 +279,8 @@ let emit_load_symbol_addr dst s =
               else phys_reg 8 (*r12*) in
     `	ldr	{emit_reg tmp}, {emit_label lbl_got}\n`;
     `	ldr	{emit_reg dst}, {emit_label lbl_sym}\n`;
-    `{emit_label lbl_pic}:	add	{emit_reg tmp}, pc, {emit_reg tmp}\n`;
+    D.define_label lbl_pic;
+    `	add	{emit_reg tmp}, pc, {emit_reg tmp}\n`;
     `	ldr	{emit_reg dst}, [{emit_reg tmp}, {emit_reg dst}] @ {emit_symbol s}\n`;
     4
   end else if !arch > ARMv6 && not !Clflags.dlcode && !fastcode_flag then begin
@@ -568,7 +494,8 @@ let emit_instr i =
             |  _ -> let ninstr = emit_intconst (phys_reg 7) (Int32.of_int n) in
                     `	{emit_call "caml_allocN"}\n`; 1 + ninstr
             end in
-          `{emit_label lbl_frame}:	add	{emit_reg i.res.(0)}, alloc_ptr, #4\n`;
+          D.define_label lbl_frame;
+          `	add	{emit_reg i.res.(0)}, alloc_ptr, #4\n`;
           1 + ninstr
         end
     | Lop(Iintop(Icomp cmp)) ->
@@ -753,13 +680,16 @@ let emit_instr i =
               | Llabel lbl when lbl = tramtbl.(j) -> lbl
               | _ -> label i.next in
             tramtbl.(j) <- label i.next;
-            `	.short	({emit_label tramtbl.(j)}-.)/2+{emit_int j}\n`
+            D.scaled_distance_between_this_and_label_offset
+              ~upper:tramtbl.(j)
+              ~divide_by:(2 + j)
           done;
           let sz = ref (1 + (Array.length jumptbl + 1) / 2) in
           (* Generate the necessary trampolines *)
           for j = 0 to Array.length tramtbl - 1 do
             if tramtbl.(j) <> jumptbl.(j) then begin
-              `{emit_label tramtbl.(j)}:	b	{emit_label jumptbl.(j)}\n`;
+              D.define_label tramtbl.(j);
+              `	b	{emit_label jumptbl.(j)}\n`;
               incr sz
             end
           done;
@@ -768,7 +698,7 @@ let emit_instr i =
           `	ldr	pc, [pc, {emit_reg i.arg.(0)}, lsl #2]\n`;
           `	nop\n`;
           for j = 0 to Array.length jumptbl - 1 do
-            `	.word	{emit_label jumptbl.(j)}\n`
+            D.label jumptbl.(j)
           done;
           2 + Array.length jumptbl
         end else begin
@@ -822,19 +752,21 @@ let rec emit_all ninstr fallthrough i =
     (* Make sure literals not yet emitted remain addressable,
        or emit them in a new constant island. *)
     (* fldd can address up to +/-1KB, ldr can address up to +/-4KB *)
-    let limit = (if !fpu >= VFPv2 && !float_literals <> []
+    let limit = (if !fpu >= VFPv2 && !float_constants <> []
                  then 127
                  else 511) in
     let limit = limit - !size_literals - max_instruction_size i in
     let ninstr' =
       if ninstr >= limit - 64 && not fallthrough then begin
-        emit_literals();
+        emit_constants ();
+        emit_gotrel_and_symbol_literals ();
         0
       end else if !size_literals != 0 && ninstr >= limit then begin
         let lbl = new_label() in
         `	b	{emit_label lbl}\n`;
-        emit_literals();
-        `{emit_label lbl}:\n`;
+        emit_constants ();
+        emit_gotrel_and_symbol_literals ();
+        D.define_label lbl;
         0
       end else
         ninstr in
@@ -855,26 +787,13 @@ let emit_profile() =
 (* Emission of a function declaration *)
 
 let fundecl fundecl =
-  function_name := fundecl.fun_name;
-  fastcode_flag := fundecl.fun_fast;
-  tailrec_entry_point := new_label();
-  float_literals := [];
   gotrel_literals := [];
   symbol_literals := [];
   stack_offset := 0;
-  call_gc_sites := [];
-  bound_error_sites := [];
-  `	.text\n`;
-  `	.align	2\n`;
-  `	.globl	{emit_symbol fundecl.fun_name}\n`;
   if !arch > ARMv6 && !thumb then
     `	.thumb\n`
   else
     `	.arm\n`;
-  `	.type	{emit_symbol fundecl.fun_name}, %function\n`;
-  `{emit_symbol fundecl.fun_name}:\n`;
-  emit_debug_info fundecl.fun_dbg;
-  cfi_startproc();
   if !Clflags.gprofile then emit_profile();
   let n = frame_size() in
   if n > 0 then begin
@@ -886,38 +805,16 @@ let fundecl fundecl =
   end;
   `{emit_label !tailrec_entry_point}:\n`;
   emit_all 0 true fundecl.fun_body;
-  emit_literals();
-  List.iter emit_call_gc !call_gc_sites;
-  List.iter emit_call_bound_error !bound_error_sites;
-  cfi_endproc();
-  `	.type	{emit_symbol fundecl.fun_name}, %function\n`;
-  `	.size	{emit_symbol fundecl.fun_name}, .-{emit_symbol fundecl.fun_name}\n`
+  emit_gotrel_and_symbol_literals ()
 
-(* Emission of data *)
-
-let emit_item = function
-    Cglobal_symbol s -> `	.globl	{emit_symbol s}\n`;
-  | Cdefine_symbol s -> `{emit_symbol s}:\n`
-  | Cint8 n -> `	.byte	{emit_int n}\n`
-  | Cint16 n -> `	.short	{emit_int n}\n`
-  | Cint32 n -> `	.long	{emit_int32 (Nativeint.to_int32 n)}\n`
-  | Cint n -> `	.long	{emit_int32 (Nativeint.to_int32 n)}\n`
-  | Csingle f -> emit_float32_directive ".long" (Int32.bits_of_float f)
-  | Cdouble f -> emit_float64_split_directive ".long" (Int64.bits_of_float f)
-  | Csymbol_address s -> `	.word	{emit_symbol s}\n`
-  | Cstring s -> emit_string_directive "	.ascii  " s
-  | Cskip n -> if n > 0 then `	.space	{emit_int n}\n`
-  | Calign n -> `	.align	{emit_int(Misc.log2 n)}\n`
-
-let data l =
-  `	.data\n`;
-  List.iter emit_item l
+let fundecl decl =
+  Emitaux.fundecl decl ~f:(fun () -> fundecl decl)
+    ~alignment_in_bytes:4
+    ~emit_numeric_constants:true
 
 (* Beginning / end of an assembly file *)
 
 let begin_assembly() =
-  reset_debug_info();
-  `	.file	\"\"\n`;  (* PR#7037 *)
   `	.syntax	unified\n`;
   begin match !arch with
   | ARMv4   -> `	.arch	armv4t\n`
@@ -928,7 +825,7 @@ let begin_assembly() =
   | ARMv7   -> `	.arch	armv7-a\n`
   end;
   begin match !fpu with
-    Soft      -> `	.fpu	softvfp\n`
+  | Soft      -> `	.fpu	softvfp\n`
   | VFPv2     -> `	.fpu	vfpv2\n`
   | VFPv3_D16 -> `	.fpu	vfpv3-d16\n`
   | VFPv3     -> `	.fpu	vfpv3\n`
@@ -936,48 +833,6 @@ let begin_assembly() =
   `trap_ptr	.req	r8\n`;
   `alloc_ptr	.req	r10\n`;
   `alloc_limit	.req	r11\n`;
-  let lbl_begin = Compilenv.make_symbol (Some "data_begin") in
-  `	.data\n`;
-  `	.globl	{emit_symbol lbl_begin}\n`;
-  `{emit_symbol lbl_begin}:\n`;
-  let lbl_begin = Compilenv.make_symbol (Some "code_begin") in
-  `	.text\n`;
-  `	.globl	{emit_symbol lbl_begin}\n`;
-  `{emit_symbol lbl_begin}:\n`
+  Emitaux.begin_assembly ()
 
-let end_assembly () =
-  let lbl_end = Compilenv.make_symbol (Some "code_end") in
-  `	.text\n`;
-  `	.globl	{emit_symbol lbl_end}\n`;
-  `{emit_symbol lbl_end}:\n`;
-  let lbl_end = Compilenv.make_symbol (Some "data_end") in
-  `	.data\n`;
-  `	.globl	{emit_symbol lbl_end}\n`;
-  `{emit_symbol lbl_end}:\n`;
-  `	.long	0\n`;
-  let lbl = Compilenv.make_symbol (Some "frametable") in
-  `	.globl	{emit_symbol lbl}\n`;
-  `{emit_symbol lbl}:\n`;
-  emit_frames
-    { efa_code_label = (fun lbl ->
-                       `	.type	{emit_label lbl}, %function\n`;
-                       `	.word	{emit_label lbl}\n`);
-      efa_data_label = (fun lbl ->
-                       `	.type	{emit_label lbl}, %object\n`;
-                       `	.word	{emit_label lbl}\n`);
-      efa_16 = (fun n -> `	.short	{emit_int n}\n`);
-      efa_32 = (fun n -> `	.long	{emit_int32 n}\n`);
-      efa_word = (fun n -> `	.word	{emit_int n}\n`);
-      efa_align = (fun n -> `	.align	{emit_int(Misc.log2 n)}\n`);
-      efa_label_rel = (fun lbl ofs ->
-                           `	.word	{emit_label lbl} - . + {emit_int32 ofs}\n`);
-      efa_def_label = (fun lbl -> `{emit_label lbl}:\n`);
-      efa_string = (fun s -> emit_string_directive "	.asciz	" s) };
-  `	.type	{emit_symbol lbl}, %object\n`;
-  `	.size	{emit_symbol lbl}, .-{emit_symbol lbl}\n`;
-  begin match Config.system with
-    "linux_eabihf" | "linux_eabi" | "netbsd" ->
-      (* Mark stack as non-executable *)
-      `	.section	.note.GNU-stack,\"\",%progbits\n`
-  | _ -> ()
-  end
+let end_assembly () = Emitaux.end_assembly ~emit_numeric_constants:false

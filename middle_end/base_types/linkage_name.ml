@@ -27,3 +27,5 @@ end)
 
 let create t = t
 let to_string t = t
+
+let _GLOBAL_OFFSET_TABLE_ = create "_GLOBAL_OFFSET_TABLE_"

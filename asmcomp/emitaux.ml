@@ -260,6 +260,9 @@ let float_constants = ref ([] : (int64 * label) list)
 (* Pending integer constants *)
 let int_literals = ref ([] : (nativeint * int) list)
 
+(* Total space (in words) occupied by pending integer and FP literals *)
+let size_literals = ref 0
+
 (* Label a floating-point constant *)
 let float_constant f =
   try
@@ -267,6 +270,7 @@ let float_constant f =
   with Not_found ->
     let lbl = new_label() in
     float_constants := (f, lbl) :: !float_constants;
+    size_literals += 64 / Targetint.size;
     lbl
 
 (* Emit all pending floating-point constants *)
@@ -281,6 +285,33 @@ let emit_float_constants () =
       !float_constants;
     float_constants := []
   end
+
+(* Label an integer constant *)
+let int_constant f =
+  try
+    List.assoc n !int_constants
+  with Not_found ->
+    let lbl = new_label() in
+    int_constants := (n, lbl) :: !int_constants;
+    size_literals += 64 / Targetint.size;
+    lbl
+
+(* Emit all pending integer constants *)
+let emit_int_constants () =
+  if !int_constants <> [] then begin
+    D.switch_to_section Eight_byte_literals;
+    D.align ~bytes:8;
+    List.iter
+      (fun (n, lbl) ->
+        D.define_label lbl;
+        D.nativeint n)
+      !int_constants;
+    int_constants := []
+  end
+
+let emit_constants () =
+  emit_float_constants ();
+  emit_int_constants
 
 (* Record calls to the GC -- we've moved them out of the way *)
 
@@ -341,7 +372,7 @@ let emit_call_bound_errors ~emit_call =
 
 let all_functions = ref []
 
-let fundecl fundecl ~f ~alignment_in_bytes ~emit_floating_point_constants =
+let fundecl fundecl ~f ~alignment_in_bytes ~emit_numeric_constants =
   all_functions := fundecl :: !all_functions;
   function_name := fundecl.fun_name;
   fastcode_flag := fundecl.fun_fast;
@@ -369,8 +400,8 @@ let fundecl fundecl ~f ~alignment_in_bytes ~emit_floating_point_constants =
   emit_call_bound_errors ();
   assert (List.length !call_gc_sites = num_call_gc);
   assert (List.length !bound_error_sites = num_check_bound);
-  if emit_floating_point_constants then begin
-    emit_float_constants ()
+  if emit_numeric_constants then begin
+    emit_constants ()
   end
 
 let emit_spacetime_shapes () =
@@ -405,7 +436,7 @@ let emit_spacetime_shapes () =
   D.int64 0L;
   D.comment "End of Spacetime shapes."
 
-let end_assembly ~emit_floating_point_constants =
+let end_assembly ~emit_numeric_constants =
   D.switch_to_section Text;
   begin match Target_system.system with
   | S_macosx ->
@@ -418,8 +449,8 @@ let end_assembly ~emit_floating_point_constants =
   end;
   emit_global_symbol_with_size "frametable" ~f:(fun () ->
     emit_frames ());
-  if emit_floating_point_constants then begin
-    emit_float_constants ()
+  if emit_numeric_constants then begin
+    emit_constants ()
   end;
   D.mark_stack_as_non_executable ();  (* PR#4564 *)
   emit_global_symbol "code_end";

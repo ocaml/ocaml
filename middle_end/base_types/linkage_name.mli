@@ -20,3 +20,5 @@ include Identifiable.S
 
 val create : string -> t
 val to_string : t -> string
+
+val _GLOBAL_OFFSET_TABLE_ : t

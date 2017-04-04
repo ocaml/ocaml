@@ -811,7 +811,7 @@ let fundecl fundecl =
 let fundecl decl =
   Emitaux.fundecl decl ~f:(fun () -> fundecl decl)
     ~alignment_in_bytes:8
-    ~emit_floating_point_constants:true
+    ~emit_numeric_constants:true
 
 (* Beginning / end of an assembly file *)
 
@@ -820,4 +820,4 @@ let begin_assembly () =
   Emitaux.begin_assembly ()
 
 let end_assembly () =
-  Emitaux.end_assembly ~emit_floating_point_constants:false
+  Emitaux.end_assembly ~emit_numeric_constants:false

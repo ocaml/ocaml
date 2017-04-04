@@ -133,9 +133,6 @@ module type S = sig
       supported on all platforms. *)
   val mark_stack_non_executable : unit -> unit
 
-  (** Set the POWER ABI version. *)
-  val power_abi_version : int -> unit
-
   (** Leave as much space as is required to achieve the given alignment. *)
   val align : bytes:int -> unit
 
@@ -144,7 +141,7 @@ module type S = sig
       blocks (e.g. functions) just emitted into the assembly stream.
       [size_of] may be specified when the symbol used for measurement differs
       from that whose size is being stated (e.g. on POWER with ELF ABI v1). *)
-  val size : ?size_of:string -> string -> unit
+  val size : ?size_of:Linkage_name.t -> Linkage_name.t -> unit
 
   (** Leave a gap in the object file. *)
   val space : bytes:int -> unit
@@ -153,31 +150,27 @@ module type S = sig
       into a non-text section this will cause loads and stores to/from the
       symbol to be treated as if they are loading machine-width words (unless
       the instruction has an explicit width suffix). *)
-  val define_symbol : Symbol.t -> unit
-
-  (** Like [define_symbol], but when not using the middle-end type. *)
-  val define_symbol' : string -> unit
+  val define_symbol : Linkage_name.t -> unit
 
   (** Define a function symbol.  An exception will be raised if the current
       section is not a text section. *)
-  val define_function_symbol' : string -> unit
+  val define_function_symbol : Linkage_name.t -> unit
 
   (** Mark a symbol as global. *)
-  val global : string -> unit
+  val global : Linkage_name.t -> unit
 
-  (** Emit a machine-width reference to the given symbol. *)
-  val symbol : Symbol.t -> unit
-
-  (** Like [symbol], but when not using the middle-end type. *)
-  val symbol' : string -> unit
+  (** Emit a machine-width reference to the given symbol.
+      If [got], then the reference is marked as being via the global offset
+      table. *)
+  val symbol : ?got:() -> Linkage_name.t -> unit
 
   (** Mark a symbol as "private extern" (see assembler documentation for
       details). *)
-  val private_extern : string -> unit
+  val private_extern : Linkage_name.t -> unit
 
   (** Marker inside the definition of a lazy symbol stub (see platform or
       assembler documentation for details). *)
-  val indirect_symbol : string -> unit
+  val indirect_symbol : Linkage_name.t -> unit
 
   (** Define a label at the current position in the current section.
       The treatment for MASM when emitting into non-text sections is as for
@@ -190,7 +183,7 @@ module type S = sig
   (** Emit a machine-width reference to the address formed by adding the
       given byte offset to the address of the given symbol. *)
   val symbol_plus_offset
-     : Symbol.t
+     : Linkage_name.t
     -> offset_in_bytes:Targetint.t
     -> unit
 
@@ -204,7 +197,7 @@ module type S = sig
   (** Emit a machine-width reference giving the displacement between two given
       labels.  To obtain a positive result the symbol at the lower address
       should be the second argument, as for normal subtraction. *)
-  val between_symbols : upper:Symbol.t -> lower:Symbol.t -> unit
+  val between_symbols : upper:Linkage_name.t -> lower:Linkage_name.t -> unit
 
   (** Like [between_symbols], but for two labels, emitting a 32-bit-wide
       reference.  The behaviour upon overflow is unspecified. *)
@@ -215,8 +208,16 @@ module type S = sig
       [offset_upper]. *)
   val between_symbol_and_label_offset
      : upper:Cmm.label
-    -> lower:Symbol.t
+    -> lower:Linkage_name.t
     -> offset_upper:Targetint.t
+    -> unit
+
+  (* CR mshinwell: naming of these two *)
+
+  val between_symbol_and_label_offset'
+     : upper:Linkage_name.t
+    -> lower:Cmm.label
+    -> offset_lower:Targetint.t
     -> unit
 
   (** Emit a 32-bit-wide reference giving the displacement between obtained
@@ -227,6 +228,11 @@ module type S = sig
   val between_this_and_label_offset_32bit
      : upper:Cmm.label
     -> offset_upper:Targetint.t
+    -> unit
+
+  val scaled_distance_between_this_and_label_offset
+     : upper:Cmm.label
+    -> divide_by:int
     -> unit
 
   (** Emit an integer giving the distance obtained by subtracting the
@@ -242,7 +248,7 @@ module type S = sig
       a label as one end of the measurement. *)
   val offset_into_section_symbol
      : section:section
-    -> symbol:Symbol.t
+    -> symbol:Linkage_name.t
     -> width:width
     -> unit
 end

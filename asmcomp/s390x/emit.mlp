@@ -48,7 +48,7 @@ let slot_offset loc cls =
 
 (* Output a symbol *)
 
-let emit_symbol s = Emitaux.emit_symbol '.' s
+let emit_symbol s = emit_string (D.string_of_symbol' s)
 
 (* Output function call *)
 
@@ -61,14 +61,6 @@ let emit_call s =
 (* Output a label *)
 
 let emit_label lbl = emit_string (D.string_of_label lbl)
-
-(* Section switching *)
-
-let data_space = "	.section \".data\"\n"
-
-let code_space = "	.section \".text\"\n"
-
-let rodata_space = "	.section \".rodata\"\n"
 
 (* Output a pseudo-register *)
 
@@ -160,8 +152,10 @@ let emit_set_comp cmp res =
 (* Record calls to caml_call_gc, emitted out of line. *)
 
 let emit_call_gc gc =
-  `{emit_label gc.gc_lbl}:`; emit_call "caml_call_gc";
-  `{emit_label gc.gc_frame_lbl}:	brcl	15, {emit_label gc.gc_return_lbl}\n`
+  D.define_label gc.gc_lbl;
+  emit_call "caml_call_gc";
+  D.define_label gc.gc_frame_lbl;
+  `	brcl	15, {emit_label gc.gc_return_lbl}\n`
 
 (* Masks for conditional branches after comparisons *)
 
@@ -214,11 +208,6 @@ let name_for_floatop2 = function
 let name_for_specific = function
     Imultaddf -> "madbr"
   | Imultsubf -> "msdbr"
-
-(* Name of current function *)
-let function_name = ref ""
-(* Entry point for tail recursive calls *)
-let tailrec_entry_point = ref 0
 
 (* Output the assembly code for an instruction *)
 
@@ -341,7 +330,7 @@ let emit_instr i =
           { gc_lbl = lbl_call_gc;
             gc_return_lbl = lbl_redo;
             gc_frame_lbl = lbl_frame } :: !call_gc_sites;
-        `{emit_label lbl_redo}:`;
+        D.define_label lbl_redo;
         `	lay	%r11, {emit_int(-n)}(%r11)\n`;
         `	clgr	%r11, %r10\n`;
         `	brcl	4, {emit_label lbl_call_gc}\n`;  (* less than *)
@@ -388,7 +377,7 @@ let emit_instr i =
         `	lghi	{emit_reg i.res.(0)}, 1\n`;
         `	brc	{emit_int mask}, {emit_label lbl}\n`;
         `	lghi	{emit_reg i.res.(0)}, 0\n`;
-        `{emit_label lbl}:\n`
+        D.define_label lbl;
     | Lop(Iintop (Icheckbound { label_after_error; })) ->
         let lbl = bound_error_label i.dbg ?label:label_after_error in
         `	clgr	{emit_reg i.arg.(0)}, {emit_reg i.arg.(1)}\n`;
@@ -408,7 +397,7 @@ let emit_instr i =
         `	lghi	{emit_reg i.res.(0)}, 1\n`;
         `	brc	{emit_int mask}, {emit_label lbl}\n`;
         `	lghi	{emit_reg i.res.(0)}, 0\n`;
-        `{emit_label lbl}:\n`
+        D.define_label lbl
     | Lop(Iintop_imm(Icheckbound { label_after_error; }, n)) ->
        let lbl = bound_error_label i.dbg ?label:label_after_error in
        if n >= 0 then begin
@@ -461,7 +450,7 @@ let emit_instr i =
         emit_stack_adjust (-n);
         `	br	%r14\n`
     | Llabel lbl ->
-        `{emit_label lbl}:\n`
+        D.define_label lbl
     | Lbranch lbl ->
         `	brcl	15,{emit_label lbl}\n`
     | Lcondbranch(tst, lbl) ->
@@ -515,7 +504,7 @@ let emit_instr i =
         `	br	%r1\n`;
         D.switch_to_section Read_only_data;
         D.align ~bytes:8
-        `{emit_label lbl}:`;
+        D.define_label lbl;
         for i = 0 to Array.length jumptbl - 1 do
           `	.long	{emit_label jumptbl.(i)} - {emit_label lbl}\n`
         done;
@@ -559,38 +548,19 @@ let rec emit_all i =
 
 let fundecl fundecl =
   stack_offset := 0;
-  `	.globl	{emit_symbol fundecl.fun_name}\n`;
-  emit_debug_info fundecl.fun_dbg;
-  `	.type	{emit_symbol fundecl.fun_name}, @function\n`;
-  D.switch_to_section Text;
-  D.align ~bytes:8
-  `{emit_symbol fundecl.fun_name}:\n`;
   let n = frame_size() in
   emit_stack_adjust n;
   if !contains_calls then
     `	stg	%r14, {emit_int(n - size_addr)}(%r15)\n`;
-  `{emit_label !tailrec_entry_point}:\n`;
-  emit_all fundecl.fun_body;
-  (* Emit the glue code to call the GC *)
-  List.iter emit_call_gc !call_gc_sites;
-  (* Emit the glue code to handle bound errors *)
-  emit_call_bound_errors();
-  (* Emit the numeric literals *)
-  if !float_literals <> [] || !int_literals <> [] then begin
-    D.switch_to_section Read_only_data;
-    D.align ~bytes:8
-    List.iter
-      (fun (f, lbl) ->
-        `{emit_label lbl}:`;
-        emit_float64_directive ".quad" f)
-      !float_literals;
-    List.iter
-      (fun (n, lbl) ->
-        `{emit_label lbl}:	.quad	{emit_nativeint n}\n`)
-      !int_literals
-  end
+  D.define_label !tailrec_entry_point;
+  emit_all fundecl.fun_body
+
+let fundecl decl =
+  Emitaux.fundecl decl ~f:(fun () -> fundecl decl)
+    ~alignment_in_bytes:8
+    ~emit_numeric_constants:true
 
 (* Beginning / end of an assembly file *)
 
 let begin_assembly () = Emitaux.begin_assembly ()
-let end_assembly () = Emitaux.end_assembly ~emit_floating_point_constants:false
+let end_assembly () = Emitaux.end_assembly ~emit_numeric_constants:false

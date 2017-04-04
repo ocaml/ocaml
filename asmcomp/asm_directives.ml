@@ -134,7 +134,7 @@ let label_prefix =
   | AArch64
   | POWER
   | S390 -> ".L"
-  | ARM_32
+  | ARM
   | SPARC -> "L"
 
 let string_of_label label_name = label_prefix ^ (string_of_int label_name)
@@ -176,7 +176,7 @@ let symbol_prefix =
   | POWER -> "."
   | AArch64 -> "$"
   | S390 -> "."
-  | ARM_32
+  | ARM
   | SPARC -> ""
 
 let string_of_symbol s =
@@ -198,6 +198,9 @@ let string_of_symbol s =
       )
       s;
     Buffer.contents b
+
+type arm_arch = ARMv4 | ARMv5 | ARMv5TE | ARMv6 | ARMv6T2 | ARMv7
+type arm_fpu = Soft | VFPv2 | VFPv3_D16 | VFPv3
 
 module Directive = struct
   type constant =
@@ -238,7 +241,6 @@ module Directive = struct
     | Type of string * string
     | Uleb128 of constant
     | Direct_assignment of string * constant
-    | POWER_abi_version of int
 
   let bprintf = Printf.bprintf
 
@@ -336,7 +338,7 @@ module Directive = struct
     | Global s ->
       bprintf buf "\t.globl\t%s" s;
       begin match current_section_is_text (), TS.platform with
-      | false, (POWER | AArch64 | S390) ->
+      | false, (POWER | ARM | AArch64 | S390) ->
         bprintf buf "	.type	{emit_symbol %a}, @object\n" string_of_symbol s
       | _ -> ()
       end
@@ -386,7 +388,6 @@ module Directive = struct
       | MacOS -> bprintf buf "%s = %a" var cst const
       | _ -> failwith "Cannot emit Direct_assignment"
       end
-    | POWER_abi_version num -> bprintf buf "\t.abiversion\t%d" num
 
   let rec cst buf = function
     | Named_thing _ | Const _ | This as c -> scst buf c
@@ -433,7 +434,9 @@ module Directive = struct
     | Type _
     | Uleb128 _
     | Direct_assignment _
-    | POWER_abi_version _ ->
+    | POWER_abi_version _
+    | ARM_architecture _
+    | ARM_floating_point_unit _ ->
       Misc.fatal_error "Unsupported asm directive for MASM"
 
   let print b t =
@@ -553,6 +556,9 @@ let switch_to_section (section : section) =
           []
       in
       [name], middle_part, attrs
+    | (Eight_byte_literals | Sixteen_byte_literals) when TS.hardware = S390 ->
+      (* CR mshinwell: Is this really needed? *)
+      [".rodata"], None, []
     | Sixteen_byte_literals, MacOS ->
       ["__TEXT";"__literal16"], None, ["16byte_literals"]
     | Sixteen_byte_literals, (Mingw64 | Cygwin) ->
@@ -590,7 +596,7 @@ let switch_to_section (section : section) =
         end
       | X86_32
       | X86_64
-      | ARM_32
+      | ARM
       | AArch64
       | SPARC
       | S390 ->
@@ -801,3 +807,22 @@ let mark_stack_non_executable () =
   match TS.system with
   | Linux -> section [".note.GNU-stack"] (Some "") [ "%progbits" ]
   | _ -> ()
+
+let arm_architecture_version arch =
+
+(** Set the ARM floating-point unit kind. *)
+val arm_floating_point_unit fpu =
+  begin match !arch with
+  | ARMv4   -> `	.arch	armv4t\n`
+  | ARMv5   -> `	.arch	armv5t\n`
+  | ARMv5TE -> `	.arch	armv5te\n`
+  | ARMv6   -> `	.arch	armv6\n`
+  | ARMv6T2 -> `	.arch	armv6t2\n`
+  | ARMv7   -> `	.arch	armv7-a\n`
+  end;
+  begin match !fpu with
+    Soft      -> `	.fpu	softvfp\n`
+  | VFPv2     -> `	.fpu	vfpv2\n`
+  | VFPv3_D16 -> `	.fpu	vfpv3-d16\n`
+  | VFPv3     -> `	.fpu	vfpv3\n`
+  end;

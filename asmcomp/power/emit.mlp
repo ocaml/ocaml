@@ -1077,7 +1077,7 @@ let fundecl fundecl =
 let begin_assembly() =
   reset_debug_info();
   begin match abi with
-  | ELF64v2 -> D.power_abi_version 2
+  | ELF64v2 -> `	.abiversion 2\n`
   | _ -> ()
   end;
   Hashtbl.clear tocref_entries;
