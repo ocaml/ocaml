@@ -97,6 +97,7 @@ let current_section_is_text () =
 
 let text_label = Cmm.new_label ()
 let data_label = Cmm.new_label ()
+let read_only_data_label = Cmm.new_label ()
 let eight_byte_literals_label = Cmm.new_label ()
 let sixteen_byte_literals_label = Cmm.new_label ()
 let jump_tables_label = Cmm.new_label ()
@@ -106,10 +107,13 @@ let debug_aranges_label = Cmm.new_label ()
 let debug_loc_label = Cmm.new_label ()
 let debug_str_label = Cmm.new_label ()
 let debug_line_label = Cmm.new_label ()
+let power_function_descriptors_label = Cmm.new_label ()
+let power_table_of_contents_label = Cmm.new_label ()
 
 let label_for_section = function
   | Text -> text_label
   | Data -> data_label
+  | Read_only_data -> read_only_data_label
   | Eight_byte_literals -> eight_byte_literals_label
   | Sixteen_byte_literals -> sixteen_byte_literals_label
   | Jump_tables -> jump_tables_label
@@ -119,6 +123,8 @@ let label_for_section = function
   | DWARF Debug_loc -> debug_loc_label
   | DWARF Debug_str -> debug_str_label
   | DWARF Debug_line -> debug_line_label
+  | POWER Function_descriptors -> power_function_descriptors_label
+  | POWER Table_of_contents -> power_table_of_contents_label
 
 let label_prefix =
   match TS.architecture () with
@@ -132,8 +138,8 @@ let label_prefix =
     | OpenBSD
     | Other_BSD
     | Solaris
-    | Beos
-    | Gnu
+    | BeOS
+    | GNU
     | Unknown -> ".L"
     | MacOS_like
     | Windows Native -> "L"
@@ -148,8 +154,8 @@ let label_prefix =
     | OpenBSD
     | Other_BSD
     | Solaris
-    | Beos
-    | Gnu -> ".L"
+    | BeOS
+    | GNU -> ".L"
     | MacOS_like
     | Windows Native
     | Unknown -> "L"
@@ -172,14 +178,14 @@ let symbol_prefix =
     | OpenBSD
     | Other_BSD
     | Solaris
-    | Beos
-    | Gnu -> ""
+    | BeOS
+    | GNU -> ""
     | MacOS_like
     | Windows _
     | Unknown -> "_"
     end
   | IA64 ->
-    begin match TS.system with
+    begin match TS.system () with
     | MacOS_like -> "_"
     | Linux _
     | FreeBSD
@@ -187,15 +193,15 @@ let symbol_prefix =
     | OpenBSD
     | Other_BSD
     | Solaris
-    | Beos
-    | Gnu
+    | BeOS
+    | GNU
     | Windows _
     | Unknown -> ""
     end
   | POWER -> "."
   | ARM
   | AArch64 -> "$"
-  | S390 -> "."
+  | S390x -> "."
   | SPARC -> ""
 
 let string_of_symbol s =
@@ -220,9 +226,8 @@ let string_of_symbol s =
 
 module Directive = struct
   type constant =
+    | Const32 of Int32.t
     | Const of int64
-    | Float32 of float
-    | Float64 of float
     | This
     | Named_thing of string
     | Add of constant * constant
@@ -232,20 +237,23 @@ module Directive = struct
     | Code
     | Machine_width_data
 
+  type comment = string
+
   type t =
     | Align of { bytes : int; }
     | Bytes of string
-    | Comment of string
+    | Comment of comment
     | Global of string
     | Const8 of constant
     | Const16 of constant
-    | Const32 of constant
-    | Const64 of constant
+    | Const32 of constant * (comment option)
+    | Const64 of constant * (comment option)
     | New_label of string * thing_after_label
     | Section of string list * string option * string list
     | Space of { bytes : int; }
     | Cfi_adjust_cfa_offset of int
     | Cfi_endproc
+    | Cfi_offset of { reg : int; offset : int; }
     | Cfi_startproc
     | File of { file_num : int option; filename : string; }
     | Indirect_symbol of string
@@ -295,30 +303,29 @@ module Directive = struct
       if !pos >= 16 then begin pos := 0 end
     done
 
-  let rec cst buf = function
-    | Named_thing _ | Const _ | Float _ | This as c -> scst buf c
+  let gas_comment_opt = function
+    | None -> ""
+    | Some comment -> Printf.sprintf "\t/* %s */" comment
+
+  let masm_comment_opt = function
+    | None -> ""
+    | Some comment -> Printf.sprintf "\t; %s" comment
+
+  let rec cst buf (const : constant) =
+    match const with
+    | Named_thing _ | Const _ | This as c -> scst buf c
+    | Const32 c -> bprintf buf "0x%lx" c
     | Add (c1, c2) -> bprintf buf "%a + %a" scst c1 scst c2
     | Sub (c1, c2) -> bprintf buf "%a - %a" scst c1 scst c2
 
-  and scst buf = function
+  and scst buf (const : constant) =
+    match const with
     | This -> Buffer.add_string buf "."
     | Named_thing name -> Buffer.add_string buf name
     | Const n when n <= 0x7FFF_FFFFL && n >= -0x8000_0000L ->
       Buffer.add_string buf (Int64.to_string n)
     | Const n -> bprintf buf "0x%Lx" n
-    | Float32 f -> bprintf buf "\t.long\t0x%lx\n" f
-    | Float64 f ->
-      begin match TS.machine_width () with
-      | Sixty_four ->
-        bprintf buf "\t.quad\t0x%Lx # %.12g" f (Int64.float_of_bits f)
-      | Thirty_two ->
-        let lo = Int64.logand x 0xFFFF_FFFFL
-        and hi = Int64.shift_right_logical x 32 in
-        emit_printf "\t.long\t0x%Lx, 0x%Lx\n"
-          directive
-          (if Arch.big_endian then hi else lo)
-          (if Arch.big_endian then lo else hi)
-      end
+    | Const32 c -> bprintf buf "0x%lx" c
     | Add (c1, c2) -> bprintf buf "(%a + %a)" scst c1 scst c2
     | Sub (c1, c2) -> bprintf buf "(%a - %a)" scst c1 scst c2
 
@@ -342,8 +349,12 @@ module Directive = struct
             ".short" instead. *)
         bprintf buf "\t.short\t%a" cst n
       end
-    | Const32 n -> bprintf buf "\t.long\t%a" cst n
-    | Const64 n -> bprintf buf "\t.quad\t%a" cst n
+    | Const32 (n, comment) ->
+      let comment = gas_comment_opt comment in
+      bprintf buf "\t.long\t%a%s" cst n comment
+    | Const64 (n, comment) ->
+      let comment = gas_comment_opt comment in
+      bprintf buf "\t.quad\t%a%s" cst n comment
     | Bytes s ->
       begin match TS.system (), TS.architecture () with
       | Solaris, _
@@ -353,10 +364,12 @@ module Directive = struct
     | Comment s -> bprintf buf "\t\t\t\t/* %s */" s
     | Global s ->
       bprintf buf "\t.globl\t%s" s;
-      begin match current_section_is_text (), TS.architecture (), TS.system () with
+      begin match
+        current_section_is_text (), TS.architecture (), TS.system ()
+      with
       | (false, (POWER | ARM | AArch64 | S390x), _)
       | (false, _, Solaris) ->
-        bprintf buf "	.type	{emit_symbol %a}, @object\n" string_of_symbol s
+        bprintf buf "	.type	{emit_symbol %s}, @object\n" (string_of_symbol s)
       | _ -> ()
       end
     | New_label (s, _typ) -> bprintf buf "%s:" s
@@ -383,7 +396,7 @@ module Directive = struct
       bprintf buf "\t.cfi_offset %d, %d" reg offset
     | Cfi_startproc -> bprintf buf "\t.cfi_startproc"
     | File { file_num = None; filename; } ->
-      bprintf buf "\t.file\t\"%s\""
+      bprintf buf "\t.file\t\"%s\"" filename
     | File { file_num = Some file_num; filename; } ->
       bprintf buf "\t.file\t%d\t\"%s\""
         file_num (string_of_string_literal filename)
@@ -408,17 +421,21 @@ module Directive = struct
           assemblers"
       end
 
-  let rec cst buf = function
+  let rec cst buf (const : constant) =
+    match const with
     | Named_thing _ | Const _ | This as c -> scst buf c
+    | Const32 c -> bprintf buf "0%lxH" c
     | Add (c1, c2) -> bprintf buf "%a + %a" scst c1 scst c2
     | Sub (c1, c2) -> bprintf buf "%a - %a" scst c1 scst c2
 
-  and scst buf = function
+  and scst buf (const : constant) =
+    match const with
     | This -> Buffer.add_string buf "THIS BYTE"
     | Named_thing name -> Buffer.add_string buf name
     | Const n when n <= 0x7FFF_FFFFL && n >= -0x8000_0000L ->
         Buffer.add_string buf (Int64.to_string n)
     | Const n -> bprintf buf "0%LxH" n
+    | Const32 c -> bprintf buf "0%lxH" c
     | Add (c1, c2) -> bprintf buf "(%a + %a)" scst c1 scst c2
     | Sub (c1, c2) -> bprintf buf "(%a - %a)" scst c1 scst c2
 
@@ -428,8 +445,12 @@ module Directive = struct
     | Comment s -> bprintf buf " ; %s " s
     | Const8 n -> bprintf buf "\tBYTE\t%a" cst n
     | Const16 n -> bprintf buf "\tWORD\t%a" cst n
-    | Const32 n -> bprintf buf "\tDWORD\t%a" cst n
-    | Const64 n -> bprintf buf "\tQUAD\t%a" cst n
+    | Const32 (n, comment) ->
+      let comment = masm_comment_opt comment in
+      bprintf buf "\tDWORD\t%a%s" cst n comment
+    | Const64 (n, comment) ->
+      let comment = masm_comment_opt comment in
+      bprintf buf "\tQUAD\t%a%s" cst n comment
     | Global s -> bprintf buf "\tPUBLIC\t%s" s
     | Section ([".data"], None, []) -> bprintf buf "\t.DATA"
     | Section ([".text"], None, []) -> bprintf buf "\t.CODE"
@@ -443,6 +464,7 @@ module Directive = struct
       end
     | Cfi_adjust_cfa_offset _
     | Cfi_endproc
+    | Cfi_offset _
     | Cfi_startproc
     | File _
     | Indirect_symbol _
@@ -456,8 +478,9 @@ module Directive = struct
       Misc.fatal_error "Unsupported asm directive for MASM"
 
   let print b t =
-    if TS.masm then print_masm b t
-    else print_gas b t
+    match TS.assembler () with
+    | MASM -> print_masm b t
+    | MacOS | GAS_like -> print_gas b t
 end
 
 let rec lower_constant (cst : constant) : Directive.constant =
@@ -504,12 +527,35 @@ let uleb128 i = emit (Uleb128 (Const i))
 
 let const8 cst = emit (Const8 (lower_constant cst))
 let const16 cst = emit (Const16 (lower_constant cst))
-let const32 cst = emit (Const32 (lower_constant cst))
-let const64 cst = emit (Const64 (lower_constant cst))
+let const32 cst = emit (Const32 (lower_constant cst, None))
+let const64 cst = emit (Const64 (lower_constant cst, None))
+
+let float32 f =
+  let comment = Printf.sprintf "%.12f" f in
+  emit (Const32 (Const32 (Int32.bits_of_float f), Some comment))
+
+let float64 f =
+  match TS.machine_width () with
+  | Sixty_four ->
+    let comment = Printf.sprintf "%.12g" f in
+    emit (Const64 (Const (Int64.bits_of_float f), Some comment))
+  | Thirty_two ->
+    let comment_lo = Printf.sprintf "low part of %.12g" f in
+    let comment_hi = Printf.sprintf "high part of %.12g" f in
+    let f = Int64.bits_of_float f in
+    let lo : Directive.constant = Const (Int64.logand f 0xFFFF_FFFFL) in
+    let hi : Directive.constant = Const (Int64.shift_right_logical f 32) in
+    if Arch.big_endian then begin
+      emit (Const64 (hi, Some comment_hi));
+      emit (Const64 (lo, Some comment_lo))
+    end else begin
+      emit (Const64 (lo, Some comment_lo));
+      emit (Const64 (hi, Some comment_hi))
+    end
 
 let size symbol =
   match TS.system () with
-  | Gnu | Linux _ -> size symbol (Sub (This, Symbol symbol))
+  | GNU | Linux _ -> size symbol (Sub (This, Symbol symbol))
   | _ -> ()
 
 let label label_name = const64 (Label label_name)
@@ -826,9 +872,6 @@ let nativeint n =
   match TS.machine_width () with
   | Thirty_two -> const32 (Const (Int64.of_nativeint n))
   | Sixty_four -> const64 (Const (Int64.of_nativeint n))
-
-let hex_float f =
-  const64 (Hex_float f)
 
 let target_address addr =
   match Targetint.repr addr with

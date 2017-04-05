@@ -43,7 +43,7 @@ type operation =
   | Ireload
   | Iconst_int of nativeint
   | Iconst_float of int64
-  | Iconst_symbol of string
+  | Iconst_symbol of Linkage_name.t
   | Icall_ind of { label_after : label; }
   | Icall_imm of { func : Linkage_name.t; label_after : label; }
   | Itailcall_ind of { label_after : label; }
@@ -81,7 +81,7 @@ and instruction_desc =
   | Iraise of Cmm.raise_kind
 
 type spacetime_part_of_shape =
-  | Direct_call_point of { callee : string; }
+  | Direct_call_point of { callee : Linkage_name.t; }
   | Indirect_call_point
   | Allocation_point
 

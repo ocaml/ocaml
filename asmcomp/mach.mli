@@ -91,7 +91,7 @@ and instruction_desc =
   | Iraise of Cmm.raise_kind
 
 type spacetime_part_of_shape =
-  | Direct_call_point of { callee : string; (* the symbol *) }
+  | Direct_call_point of { callee : Linkage_name.t; }
   | Indirect_call_point
   | Allocation_point
 
