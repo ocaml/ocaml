@@ -28,13 +28,10 @@ type constant =
   | Const of int64
   | This
   | Label of Cmm.label
-  | Symbol of string
+  | Symbol of Linkage_name.t
   | Add of constant * constant
   | Sub of constant * constant
-
-type width =
-  | Thirty_two
-  | Sixty_four
+  | Div of constant * int
 
 type dwarf_section =
   | Debug_info
@@ -205,6 +202,7 @@ let symbol_prefix =
   | SPARC -> ""
 
 let string_of_symbol s =
+  let s = Linkage_name.to_string s in
   let spec = ref false in
   for i = 0 to String.length s - 1 do
     match String.unsafe_get s i with
@@ -232,6 +230,7 @@ module Directive = struct
     | Named_thing of string
     | Add of constant * constant
     | Sub of constant * constant
+    | Div of constant * int
 
   type thing_after_label =
     | Code
@@ -317,6 +316,7 @@ module Directive = struct
     | Const32 c -> bprintf buf "0x%lx" c
     | Add (c1, c2) -> bprintf buf "%a + %a" scst c1 scst c2
     | Sub (c1, c2) -> bprintf buf "%a - %a" scst c1 scst c2
+    | Div (c1, c2) -> bprintf buf "%a / %d" scst c1 c2
 
   and scst buf (const : constant) =
     match const with
@@ -328,6 +328,7 @@ module Directive = struct
     | Const32 c -> bprintf buf "0x%lx" c
     | Add (c1, c2) -> bprintf buf "(%a + %a)" scst c1 scst c2
     | Sub (c1, c2) -> bprintf buf "(%a - %a)" scst c1 scst c2
+    | Div (c1, c2) -> bprintf buf "(%a / %d)" scst c1 c2
 
   let print_gas buf = function
     | Align { bytes = n; } ->
@@ -369,7 +370,7 @@ module Directive = struct
       with
       | (false, (POWER | ARM | AArch64 | S390x), _)
       | (false, _, Solaris) ->
-        bprintf buf "	.type	{emit_symbol %s}, @object\n" (string_of_symbol s)
+        bprintf buf "	.type	{emit_symbol %s}, @object\n" s
       | _ -> ()
       end
     | New_label (s, _typ) -> bprintf buf "%s:" s
@@ -427,6 +428,7 @@ module Directive = struct
     | Const32 c -> bprintf buf "0%lxH" c
     | Add (c1, c2) -> bprintf buf "%a + %a" scst c1 scst c2
     | Sub (c1, c2) -> bprintf buf "%a - %a" scst c1 scst c2
+    | Div (c1, c2) -> bprintf buf "%a / %d" scst c1 c2
 
   and scst buf (const : constant) =
     match const with
@@ -438,6 +440,7 @@ module Directive = struct
     | Const32 c -> bprintf buf "0%lxH" c
     | Add (c1, c2) -> bprintf buf "(%a + %a)" scst c1 scst c2
     | Sub (c1, c2) -> bprintf buf "(%a - %a)" scst c1 scst c2
+    | Div (c1, c2) -> bprintf buf "(%a / %d)" scst c1 c2
 
   let print_masm buf = function
     | Align { bytes; } -> bprintf buf "\tALIGN\t%d" bytes
@@ -488,9 +491,10 @@ let rec lower_constant (cst : constant) : Directive.constant =
   | Const i -> Const i
   | This -> This
   | Label lbl -> Named_thing (string_of_label lbl)
-  | Symbol sym -> Named_thing (string_of_symbol sym)
+  | Symbol sym -> Named_thing (Linkage_name.to_string sym)
   | Add (cst1, cst2) -> Add (lower_constant cst1, lower_constant cst2)
   | Sub (cst1, cst2) -> Sub (lower_constant cst1, lower_constant cst2)
+  | Div (cst1, cst2) -> Div (lower_constant cst1, cst2)
 
 let emit_ref = ref None
 
@@ -530,6 +534,11 @@ let const16 cst = emit (Const16 (lower_constant cst))
 let const32 cst = emit (Const32 (lower_constant cst, None))
 let const64 cst = emit (Const64 (lower_constant cst, None))
 
+let const_machine_width cst =
+  match TS.machine_width () with
+  | Thirty_two -> const32 cst
+  | Sixty_four -> const64 cst
+
 let float32 f =
   let comment = Printf.sprintf "%.12f" f in
   emit (Const32 (Const32 (Int32.bits_of_float f), Some comment))
@@ -553,9 +562,15 @@ let float64 f =
       emit (Const64 (hi, Some comment_hi))
     end
 
-let size symbol =
+let size ?size_of symbol =
   match TS.system () with
-  | GNU | Linux _ -> size symbol (Sub (This, Symbol symbol))
+  | GNU | Linux _ ->
+    let size_of =
+      match size_of with
+      | None -> symbol
+      | Some size_of -> size_of
+    in
+    size size_of (Sub (This, Symbol symbol))
   | _ -> ()
 
 let label label_name = const64 (Label label_name)
@@ -622,7 +637,7 @@ let switch_to_section (section : section) =
     match section, TS.architecture (), system with
     | Text, _, _ -> text ()
     | Data, _, _ -> data ()
-    | DWARF dwarf, _, MacOS ->
+    | DWARF dwarf, _, MacOS_like ->
       let name =
         match dwarf with
         | Debug_info -> "__debug_info"
@@ -661,27 +676,27 @@ let switch_to_section (section : section) =
       [".rodata"], None, []
     | Sixteen_byte_literals, _, MacOS_like ->
       ["__TEXT";"__literal16"], None, ["16byte_literals"]
-    | Sixteen_byte_literals, _, (Mingw64 | Cygwin) ->
+    | Sixteen_byte_literals, _, (MinGW_64 | Cygwin) ->
       [".rdata"], Some "dr", []
     | Sixteen_byte_literals, _, Win64 ->
       data ()
     | Sixteen_byte_literals, _, _ ->
       [".rodata.cst8"], Some "a", ["@progbits"]
-    | Eight_byte_literals, _, MacOS ->
+    | Eight_byte_literals, _, MacOS_like ->
       ["__TEXT";"__literal8"], None, ["8byte_literals"]
-    | Eight_byte_literals, _, (Mingw64 | Cygwin) ->
+    | Eight_byte_literals, _, (MinGW_64 | Cygwin) ->
       [".rdata"], Some "dr", []
     | Eight_byte_literals, _, Win64 ->
       data ()
     | Eight_byte_literals, _, _ ->
       [".rodata.cst8"], Some "a", ["@progbits"]
-    | Jump_tables, _, (Mingw64 | Cygwin) ->
+    | Jump_tables, _, (MinGW_64 | Cygwin) ->
       [".rdata"], Some "dr", []
-    | Jump_tables, _, (MacOS | Win64) ->
+    | Jump_tables, _, (MacOS_like | Win64) ->
       text () (* with LLVM/OS X and MASM, use the text segment *)
     | Jump_tables, _, _ ->
       [".rodata"], None, []
-    | Read_only_data, _, (Mingw64 | Cygwin) ->
+    | Read_only_data, _, (MinGW_64 | Cygwin) ->
       [".rdata"], Some "dr", []
     | Read_only_data, _, _ ->
       [".rodata"], None, []
@@ -706,7 +721,7 @@ let reset () =
   sections_seen := [];
   temp_var_counter := 0
 
-let initialize ~emit =
+let initialize ~(emit : Directive.t -> unit) =
   emit_ref := Some emit;
   reset ();
   switch_to_section Text;
@@ -727,42 +742,32 @@ let initialize ~emit =
         | POWER _ ->
           match TS.architecture () with
           | POWER -> switch_to_section section
-          | IA32 | IA64 | ARM | AArch64 | POWER | SPARC | S390x -> ())
+          | IA32 | IA64 | ARM | AArch64 | SPARC | S390x -> ())
       all_sections_in_order
   end;
   emit (File { file_num = None; filename = ""; })  (* PR#7037 *)
 
-let define_symbol' symbol_name =
+let define_symbol symbol =
   let typ : Directive.thing_after_label =
     if current_section_is_text () then Code
     else Machine_width_data
   in
-  emit (New_label (string_of_symbol symbol_name, typ))
+  emit (New_label (string_of_symbol symbol, typ))
 
-let define_symbol sym =
-  define_symbol' (Linkage_name.to_string (Symbol.label sym))
-
-let define_function_symbol' symbol_name =
+let define_function_symbol symbol =
   if not (current_section_is_text ()) then begin
-    Misc.fatal_error "define_function_symbol' can only be called when \
+    Misc.fatal_error "define_function_symbol can only be called when \
       emitting to a text section"
   end;
-  define_symbol' symbol_name;
+  define_symbol symbol;
   begin match TS.system () with
-  | Gnu | Linux _ -> type_ symbol_name ~type_:"@function"
+  | GNU | Linux _ -> type_ symbol ~type_:"@function"
   | _ -> ()
   end
 
-let symbol' sym =
-  match TS.machine_width () with
-  | Thirty_two -> const32 (Symbol sym)
-  | Sixty_four -> const64 (Symbol sym)
-
-let symbol sym =
-  symbol' (Linkage_name.to_string (Symbol.label sym))
+let symbol sym = const_machine_width (Symbol sym)
 
 let symbol_plus_offset sym ~offset_in_bytes =
-  let sym = Linkage_name.to_string (Symbol.label sym) in
   let offset_in_bytes = Targetint.to_int64 offset_in_bytes in
   const64 (Add (Symbol sym, Const offset_in_bytes))
 
@@ -784,31 +789,37 @@ let new_temp_var () =
 let force_relocatable expr =
   match TS.assembler () with
   | MacOS ->
-    let temp = new_temp_var () in
+    let temp = Linkage_name.create (new_temp_var ()) in
     direct_assignment temp expr;
     Symbol temp  (* not really a symbol, but this is OK (same below) *)
   | GAS_like | MASM ->
     expr
 
 let between_symbols ~upper ~lower =
-  let upper = Linkage_name.to_string (Symbol.label upper) in
-  let lower = Linkage_name.to_string (Symbol.label lower) in
   let expr = Sub (Symbol upper, Symbol lower) in
-  const64 (force_relocatable expr)
+  const_machine_width (force_relocatable expr)
 
 let between_labels_32bit ~upper ~lower =
   let expr = Sub (Label upper, Label lower) in
   const32 (force_relocatable expr)
 
 let between_symbol_and_label_offset ~upper ~lower ~offset_upper =
-  let lower = Linkage_name.to_string (Symbol.label lower) in
   let offset_upper = Targetint.to_int64 offset_upper in
   let expr =
     Sub (
       Add (Label upper, Const offset_upper),
       Symbol lower)
   in
-  const64 (force_relocatable expr)
+  const_machine_width (force_relocatable expr)
+
+let between_symbol_and_label_offset' ~upper ~lower ~offset_lower =
+  let offset_lower = Targetint.to_int64 offset_lower in
+  let expr =
+    Sub (
+      Symbol upper,
+      Add (Label lower, Const offset_lower))
+  in
+  const_machine_width (force_relocatable expr)
 
 let between_this_and_label_offset_32bit ~upper ~offset_upper =
   let offset_upper = Targetint.to_int64 offset_upper in
@@ -817,7 +828,11 @@ let between_this_and_label_offset_32bit ~upper ~offset_upper =
   in
   const32 (force_relocatable expr)
 
-let constant_with_width expr ~(width : width) =
+let scaled_distance_between_this_and_label_offset ~upper ~divide_by =
+  let expr = Div (Sub (Label upper, This), divide_by) in
+  const_machine_width (force_relocatable expr)
+
+let constant_with_width expr ~(width : Target_system.machine_width) =
   match width with
   (* CR mshinwell: make sure this behaves properly on 32-bit platforms.
      This width is independent of the natural machine width. *)
@@ -834,7 +849,7 @@ let offset_into_section_label ~section ~label:upper ~width =
          current section. *)
     match TS.assembler () with
     | MacOS ->
-      let temp = new_temp_var () in
+      let temp = Linkage_name.create (new_temp_var ()) in
       direct_assignment temp (Sub (Label upper, Label lower));
       Symbol temp
     | GAS_like | MASM ->
@@ -842,14 +857,13 @@ let offset_into_section_label ~section ~label:upper ~width =
   in
   constant_with_width expr ~width
 
-let offset_into_section_symbol ~section ~symbol ~width =
+let offset_into_section_symbol ~section ~symbol:upper ~width =
   let lower = label_for_section section in
-  let upper = Linkage_name.to_string (Symbol.label symbol) in
   let expr : constant =
     (* The same thing as for [offset_into_section_label] applies here. *)
     match TS.assembler () with
     | MacOS ->
-      let temp = new_temp_var () in
+      let temp = Linkage_name.create (new_temp_var ()) in
       direct_assignment temp (Sub (Symbol upper, Label lower));
       Symbol temp
     | GAS_like | MASM -> Symbol upper
@@ -896,5 +910,5 @@ let emit_cached_strings () =
 
 let mark_stack_non_executable () =
   match TS.system () with
-  | Linux -> section [".note.GNU-stack"] (Some "") [ "%progbits" ]
+  | Linux _ -> section [".note.GNU-stack"] (Some "") [ "%progbits" ]
   | _ -> ()

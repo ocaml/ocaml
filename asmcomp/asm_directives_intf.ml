@@ -70,9 +70,6 @@ module type S = sig
   (** Emit a native integer. *)
   val nativeint : Nativeint.t -> unit
 
-  (** Emit a float in hex representation, 64 bits wide. *)
-  val hex_float : float -> unit
-
   (** Emit an integer whose width is that of an address on the target
       machine. *)
   val target_address : Targetint.t -> unit
@@ -83,6 +80,12 @@ module type S = sig
 
   (** Emit a 64-bit integer in signed LEB128 variable-length encoding. *)
   val sleb128 : Int64.t -> unit
+
+  (** Emit a 32-bit-wide floating point number. *)
+  val float32 : float -> unit
+
+  (** Emit a 64-bit-wide floating point number. *)
+  val float64 : float -> unit
 
   (** Emit a string (directly into the current section).  This function
       does not write a terminating null. *)
