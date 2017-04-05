@@ -28,7 +28,7 @@ val time_call : ?accumulate:bool -> string -> (unit -> 'a) -> 'a
 val time : ?accumulate:bool -> string -> ('a -> 'b) -> 'a -> 'b
 (** [time pass f arg] records the runtime of [f arg] *)
 
-val print : ?total:float -> Format.formatter -> unit
+val print : ?total:(float * float) -> Format.formatter -> unit
 (** Prints all recorded timings to the formatter. *)
 
 (** A few pass names that are needed in several places, and shared to
