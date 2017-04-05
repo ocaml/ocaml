@@ -188,6 +188,9 @@ Working version
 - GPR#1155: Fix a race condition with WAIT_NOHANG on Windows
   (Jérémie Dimino and David Allsopp)
 
+- PR#7513: List.compare_length_with mishandles negative numbers / overflow
+  (Fabrice Le Fessant, report by Jeremy Yallop)
+
 ### Runtime system:
 
 - GPR#938: Stack overflow detection on 64-bit Windows
