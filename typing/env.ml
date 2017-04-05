@@ -538,8 +538,8 @@ let components_of_functor_appl' =
           functor_components -> t -> Path.t -> Path.t -> module_components)
 let check_modtype_inclusion =
   (* to be filled with Includemod.check_modtype_inclusion *)
-  ref ((fun _env _mty1 _path1 _mty2 -> assert false) :
-          t -> module_type -> Path.t -> module_type -> unit)
+  ref ((fun ~loc:_ _env _mty1 _path1 _mty2 -> assert false) :
+          loc:Location.t -> t -> module_type -> Path.t -> module_type -> unit)
 let strengthen =
   (* to be filled with Mtype.strengthen *)
   ref ((fun ~aliasable:_ _env _mty _path -> assert false) :
@@ -1026,9 +1026,7 @@ let report_deprecated ?loc p deprecated =
   match loc, deprecated with
   | Some loc, Some txt ->
       let txt = if txt = "" then "" else "\n" ^ txt in
-      Location.prerr_warning loc
-        (Warnings.Deprecated (Printf.sprintf "module %s%s"
-                                (Path.name p) txt))
+      Location.deprecated loc (Printf.sprintf "module %s%s" (Path.name p) txt)
   | _ -> ()
 
 let mark_module_used env name loc =
@@ -1061,7 +1059,7 @@ let rec lookup_module_descr_aux ?loc lid env =
       let {md_type=mty2} = find_module p2 env in
       begin match get_components desc1 with
         Functor_comps f ->
-          Misc.may (!check_modtype_inclusion env mty2 p2) f.fcomp_arg;
+          Misc.may (!check_modtype_inclusion ~loc:(match loc with Some l -> l | None -> Location.none) env mty2 p2) f.fcomp_arg;
           (Papply(p1, p2), !components_of_functor_appl' f env p1 p2)
       | Structure_comps _ ->
           raise Not_found
@@ -1125,7 +1123,7 @@ and lookup_module ~load ?loc lid env : Path.t =
       let p = Papply(p1, p2) in
       begin match get_components desc1 with
         Functor_comps f ->
-          Misc.may (!check_modtype_inclusion env mty2 p2) f.fcomp_arg;
+          Misc.may (!check_modtype_inclusion ~loc:(match loc with Some l -> l | None -> Location.none) env mty2 p2) f.fcomp_arg;
           p
       | Structure_comps _ ->
           raise Not_found

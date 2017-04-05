@@ -19,7 +19,7 @@ open Typedtree
 open Types
 open Format
 
-val modtypes: Env.t -> module_type -> module_type -> module_coercion
+val modtypes: loc:Location.t -> Env.t -> module_type -> module_type -> module_coercion
 val signatures: Env.t -> signature -> signature -> module_coercion
 val compunit:
       Env.t -> string -> signature -> string -> signature -> module_coercion

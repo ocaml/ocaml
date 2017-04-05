@@ -17,7 +17,7 @@
 
 open Format
 
-type t = {
+type t = Warnings.loc = {
   loc_start: Lexing.position;
   loc_end: Lexing.position;
   loc_ghost: bool;
@@ -140,3 +140,5 @@ val default_error_reporter : formatter -> error -> unit
 
 val report_exception: formatter -> exn -> unit
 (** Reraise the exception if it is unknown. *)
+
+val deprecated: ?def:t -> ?use:t -> t -> string -> unit

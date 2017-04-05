@@ -1747,8 +1747,7 @@ let transl_with_constraint env id row_path orig_decl sdecl =
   in
   if arity_ok && orig_decl.type_kind <> Type_abstract
   && sdecl.ptype_private = Private then
-    Location.prerr_warning sdecl.ptype_loc
-      (Warnings.Deprecated "spurious use of private");
+    Location.deprecated sdecl.ptype_loc "spurious use of private";
   let type_kind, type_unboxed =
     if arity_ok && man <> None then
       orig_decl.type_kind, orig_decl.type_unboxed

@@ -13,10 +13,16 @@
 (*                                                                        *)
 (**************************************************************************)
 
+type loc = {
+  loc_start: Lexing.position;
+  loc_end: Lexing.position;
+  loc_ghost: bool;
+}
+
 type t =
   | Comment_start                           (*  1 *)
   | Comment_not_end                         (*  2 *)
-  | Deprecated of string                    (*  3 *)
+  | Deprecated of string * loc * loc        (*  3 *)
   | Fragile_match of string                 (*  4 *)
   | Partial_application                     (*  5 *)
   | Labels_omitted of string list           (*  6 *)
@@ -90,6 +96,7 @@ type reporting_information =
   { number : int
   ; message : string
   ; is_error : bool
+  ; sub_locs : (loc * string) list;
   }
 
 val report : t -> [ `Active of reporting_information | `Inactive ]

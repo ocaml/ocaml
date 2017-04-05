@@ -66,9 +66,16 @@ let rec deprecated_of_attrs = function
 let check_deprecated loc attrs s =
   match deprecated_of_attrs attrs with
   | None -> ()
-  | Some "" -> Location.prerr_warning loc (Warnings.Deprecated s)
-  | Some txt ->
-      Location.prerr_warning loc (Warnings.Deprecated (s ^ "\n" ^ txt))
+  | Some "" -> Location.deprecated loc s
+  | Some txt -> Location.deprecated loc (s ^ "\n" ^ txt)
+
+let check_deprecated_inclusion ~def ~use loc attrs1 attrs2 s =
+  match deprecated_of_attrs attrs1, deprecated_of_attrs attrs2 with
+  | None, _ | Some _, Some _ -> ()
+  | Some "", None ->
+      Location.deprecated ~def ~use loc s
+  | Some txt, None ->
+      Location.deprecated ~def ~use loc (s ^ "\n" ^ txt)
 
 let rec check_deprecated_mutable loc attrs s =
   match attrs with
@@ -79,9 +86,7 @@ let rec check_deprecated_mutable loc attrs s =
         | Some txt -> "\n" ^ txt
         | None -> ""
       in
-      Location.prerr_warning loc
-        (Warnings.Deprecated (Printf.sprintf "mutating field %s%s"
-           s txt))
+      Location.deprecated loc (Printf.sprintf "mutating field %s%s" s txt)
   | _ :: tl -> check_deprecated_mutable loc tl s
 
 let rec deprecated_of_sig = function
