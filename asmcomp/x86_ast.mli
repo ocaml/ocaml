@@ -73,10 +73,8 @@ type arg =
   | Imm of int64
   (** Operand is an immediate constant integer *)
 
-  | Sym of  string
-  (** Address of a symbol (absolute address except for call/jmp target
-      where it is interpreted as a relative displacement *)
-  | Label of Cmm.label
+  | Named_thing of string
+  (** Reference to a symbol or label, with name mangling already applied. *)
 
   | Reg8L of reg64
   | Reg8H of reg8h

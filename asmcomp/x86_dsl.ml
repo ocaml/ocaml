@@ -34,7 +34,7 @@
 open X86_ast
 open X86_proc
 
-let sym s = Sym s
+let sym s = Named_thing s
 
 let nat n = Imm (Int64.of_nativeint n)
 let int n = Imm (Int64.of_int n)

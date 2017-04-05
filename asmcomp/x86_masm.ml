@@ -73,7 +73,7 @@ let arg_mem b {arch; typ; idx; scale; base; sym; displ} =
   Buffer.add_char b ']'
 
 let arg b = function
-  | Sym s -> bprintf b "OFFSET %s" s
+  | Named_thing s -> bprintf b "OFFSET %s" s
   | Imm n when n <= 0x7FFF_FFFFL && n >= -0x8000_0000L -> bprintf b "%Ld" n
   | Imm int -> bprintf b "0%LxH" int (* force ml64 to use mov reg, imm64 *)
   | Reg8L x -> Buffer.add_string b (string_of_reg8l x)
@@ -97,7 +97,7 @@ let i1 b s x = bprintf b "\t%s\t%a" s arg x
 let i2 b s x y = bprintf b "\t%s\t%a, %a" s arg y arg x
 
 let i1_call_jmp b s = function
-  | Sym x -> bprintf b "\t%s\t%s" s x
+  | Named_thing x -> bprintf b "\t%s\t%s" s x
   | x -> i1 b s x
 
 let print_instr b = function

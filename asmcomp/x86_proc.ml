@@ -137,11 +137,13 @@ let register_internal_assembler f = internal_assembler := Some f
 let binary_content = ref None
 
 let compile infile outfile =
-  if Target_system.masm then
+  let module TS = Target_system in
+  match TS.assembler () with
+  | TS.MASM ->
     Ccomp.command (Config.asm ^
                    Filename.quote outfile ^ " " ^ Filename.quote infile ^
                    (if !Clflags.verbose then "" else ">NUL"))
-  else
+  | TS.MacOS | TS.GAS_like ->
     Ccomp.command (Config.asm ^ " -o " ^
                    Filename.quote outfile ^ " " ^ Filename.quote infile)
 

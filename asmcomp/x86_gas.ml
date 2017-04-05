@@ -54,7 +54,7 @@ let arg_mem b {arch; typ=_; idx; scale; base; sym; displ} =
   end
 
 let arg b = function
-  | Sym x -> Buffer.add_char b '$'; Buffer.add_string b x
+  | Named_thing x -> Buffer.add_string b x
   | Imm x -> bprintf b "$%Ld" x
   | Reg8L x -> print_reg b string_of_reg8l x
   | Reg8H x -> print_reg b string_of_reg8h x
@@ -71,7 +71,7 @@ let typeof = function
   | Reg16 _ -> WORD
   | Reg32 _ -> DWORD
   | Reg64 _ -> QWORD
-  | Imm _ | Sym _ -> NONE
+  | Imm _ | Named_thing _ -> NONE
   | Regf _ -> assert false
 
 let suf arg =
@@ -97,7 +97,7 @@ let i1_call_jmp b s = function
       i1 b s x
   | Reg32 _ | Reg64 _ | Mem _  | Mem64_RIP _ as x ->
       bprintf b "\t%s\t*%a" s arg x
-  | Sym x -> bprintf b "\t%s\t%s" s x
+  | Named_thing x -> bprintf b "\t%s\t%s" s x
   | _ -> assert false
 
 let print_instr b = function
@@ -171,7 +171,8 @@ let print_instr b = function
   | MOV ((Imm n as arg1), (Reg64 _ as arg2))
     when not (n <= 0x7FFF_FFFFL && n >= -0x8000_0000L) ->
       i2 b "movabsq" arg1 arg2
-  | MOV ((Sym _ as arg1), (Reg64 _ as arg2)) when Target_system.windows ->
+  | MOV ((Named_thing _ as arg1), (Reg64 _ as arg2))
+      when Target_system.windows () ->
       i2 b "movabsq" arg1 arg2
   | MOV (arg1, arg2) -> i2_s b "mov" arg1 arg2
   | MOVAPD (arg1, arg2) -> i2 b "movapd" arg1 arg2
