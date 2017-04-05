@@ -156,7 +156,6 @@ ASMCOMP=\
   asmcomp/arch.cmo \
   asmcomp/cmm.cmo asmcomp/printcmm.cmo \
   asmcomp/reg.cmo asmcomp/mach.cmo \
-  asmcomp/asm_directives_intf.cmo \
   asmcomp/asm_directives.cmo \
   $(ARCH_SPECIFIC_ASMCOMP) \
   asmcomp/proc.cmo \

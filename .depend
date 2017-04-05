@@ -722,20 +722,15 @@ asmcomp/afl_instrument.cmi : asmcomp/cmm.cmi
 asmcomp/arch.cmo : utils/config.cmi utils/clflags.cmi
 asmcomp/arch.cmx : utils/config.cmx utils/clflags.cmx
 asmcomp/asm_directives.cmo : utils/targetint.cmi utils/target_system.cmi \
-    middle_end/base_types/symbol.cmi utils/numbers.cmi utils/misc.cmi \
-    middle_end/base_types/linkage_name.cmi utils/config.cmi asmcomp/cmm.cmi \
-    utils/clflags.cmi asmcomp/arch.cmo asmcomp/asm_directives.cmi
+    utils/numbers.cmi utils/misc.cmi middle_end/base_types/linkage_name.cmi \
+    utils/config.cmi asmcomp/cmm.cmi utils/clflags.cmi asmcomp/arch.cmo \
+    asmcomp/asm_directives.cmi
 asmcomp/asm_directives.cmx : utils/targetint.cmx utils/target_system.cmx \
-    middle_end/base_types/symbol.cmx utils/numbers.cmx utils/misc.cmx \
-    middle_end/base_types/linkage_name.cmx utils/config.cmx asmcomp/cmm.cmx \
-    utils/clflags.cmx asmcomp/arch.cmx asmcomp/asm_directives.cmi
-asmcomp/asm_directives.cmi : asmcomp/cmm.cmi asmcomp/asm_directives_intf.cmo
-asmcomp/asm_directives_intf.cmo : utils/targetint.cmi \
-    utils/target_system.cmi utils/numbers.cmi \
-    middle_end/base_types/linkage_name.cmi asmcomp/cmm.cmi
-asmcomp/asm_directives_intf.cmx : utils/targetint.cmx \
-    utils/target_system.cmx utils/numbers.cmx \
-    middle_end/base_types/linkage_name.cmx asmcomp/cmm.cmx
+    utils/numbers.cmx utils/misc.cmx middle_end/base_types/linkage_name.cmx \
+    utils/config.cmx asmcomp/cmm.cmx utils/clflags.cmx asmcomp/arch.cmx \
+    asmcomp/asm_directives.cmi
+asmcomp/asm_directives.cmi : utils/targetint.cmi utils/target_system.cmi \
+    utils/numbers.cmi middle_end/base_types/linkage_name.cmi asmcomp/cmm.cmi
 asmcomp/asmgen.cmo : asmcomp/un_anf.cmi bytecomp/translmod.cmi \
     utils/timings.cmi middle_end/base_types/symbol.cmi asmcomp/split.cmi \
     asmcomp/spill.cmi asmcomp/selection.cmi asmcomp/scheduling.cmi \
