@@ -107,12 +107,15 @@ let concat_symbol unitname id =
 
 let make_symbol ?(unitname = current_unit.ui_symbol) idopt =
   let prefix = "caml" ^ unitname in
-  match idopt with
-  | None -> prefix
-  | Some id -> concat_symbol prefix id
+  let as_string =
+    match idopt with
+    | None -> prefix
+    | Some id -> concat_symbol prefix id
+  in
+  Linkage_name.create as_string
 
 let current_unit_linkage_name () =
-  Linkage_name.create (make_symbol ~unitname:current_unit.ui_symbol None)
+  make_symbol ~unitname:current_unit.ui_symbol None
 
 let reset ?packname name =
   Hashtbl.clear global_infos_table;

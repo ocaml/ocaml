@@ -26,7 +26,7 @@
 
 open X86_ast
 
-val sym: string -> arg
+val sym: Linkage_name.t -> arg
 val nat: nativeint -> arg
 val int: int -> arg
 (*
@@ -57,18 +57,18 @@ val st0: arg
 val st1: arg
 
 val mem32:
-  data_type -> ?scale:int -> ?base:reg64 -> ?sym:string ->
+  data_type -> ?scale:int -> ?base:reg64 -> ?sym:Linkage_name.t ->
   int -> reg64 -> arg
 
 val mem64:
-  data_type -> ?scale:int -> ?base:reg64 -> ?sym:string ->
+  data_type -> ?scale:int -> ?base:reg64 -> ?sym:Linkage_name.t ->
   int -> reg64 -> arg
 
-val mem64_rip: data_type -> ?ofs:int -> string -> arg
+val mem64_rip: data_type -> ?ofs:int -> Linkage_name.t -> arg
 
 module D : sig
   (** MASM-specific assembler directives. *)
-  val extrn: string -> data_type -> unit
+  val extrn: Linkage_name.t -> data_type -> unit
   val mode386: unit -> unit
   val model: string -> unit
 end

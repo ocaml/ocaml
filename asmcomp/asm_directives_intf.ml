@@ -156,12 +156,8 @@ module type S = sig
   (** Mark a symbol as global. *)
   val global : Linkage_name.t -> unit
 
-  (** Emit a machine-width reference to the given symbol.
-      If [got], then the reference is marked as being via the global offset
-      table.
-      If [plt], then the reference is marked as being via the procedure
-      linkage table. *)
-  val symbol : ?got:() -> ?plt:() -> Linkage_name.t -> unit
+  (** Emit a machine-width reference to the given symbol. *)
+  val symbol : Linkage_name.t -> unit
 
   (** Mark a symbol as "private extern" (see assembler documentation for
       details). *)

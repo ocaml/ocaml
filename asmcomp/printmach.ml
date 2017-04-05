@@ -226,8 +226,9 @@ let fundecl ppf f =
       ""
     else
       " " ^ Debuginfo.to_string f.fun_dbg in
-  fprintf ppf "@[<v 2>%s(%a)%s@,%a@]"
-    f.fun_name regs f.fun_args dbg instr f.fun_body
+  fprintf ppf "@[<v 2>%a(%a)%s@,%a@]"
+    Linkage_name.print f.fun_name
+    regs f.fun_args dbg instr f.fun_body
 
 let phase msg ppf f =
   fprintf ppf "*** %s@.%a@." msg fundecl f

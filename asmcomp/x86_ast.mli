@@ -76,6 +76,7 @@ type arg =
   | Sym of  string
   (** Address of a symbol (absolute address except for call/jmp target
       where it is interpreted as a relative displacement *)
+  | Label of Cmm.label
 
   | Reg8L of reg64
   | Reg8H of reg8h

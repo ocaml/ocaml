@@ -31,10 +31,10 @@ open X86_ast
 open X86_dsl
 
 module D = Asm_directives
-module Int = Numbers.int
+module Int = Numbers.Int
 
-let label_operand lbl = X86_ast.Sym (D.string_of_label lbl)
-let symbol_operand sym = X86_ast.Sym (D.string_of_symbol sym)
+let label_operand lbl = X86_ast.Label lbl
+let symbol_operand sym = X86_ast.Sym sym
 
 (* Override proc.ml *)
 
@@ -88,15 +88,15 @@ let reset_imp_table () = Hashtbl.clear imp_table
 let get_imp_symbol s =
   match Hashtbl.find imp_table s with
   | exception Not_found ->
-      let imps = "__caml_imp_" ^ s in
+      let imps = Linkage_name.prefix s ~with_:"__caml_imp_" in
       Hashtbl.add imp_table s imps;
       imps
   | imps -> imps
 
 let emit_imp_table () =
   let f s imps =
-    D.define_symbol' imps;
-    D.symbol' s
+    D.define_symbol imps;
+    D.symbol s
   in
   D.switch_to_section Data;
   D.comment "relocation table start";
@@ -105,22 +105,24 @@ let emit_imp_table () =
   D.comment "relocation table end"
 
 let mem__imp s =
-  let imp_s = get_imp_symbol s in
-  mem64_rip QWORD (D.string_of_symbol imp_s)
+  mem64_rip QWORD (get_imp_symbol s)
 
 let rel_plt s =
-  if Target_system.windows () && !Clflags.dlcode then mem__imp s
-  else
-    let use_plt =
-      match Target_system.system (), Target_system.machine_width () with
-      | MacOS_like, _
-      | Windows MinGW, Sixty_four
-      | Windows Cygwin, (Thirty_two | Sixty_four)
-      | Windows Native, Sixty_four -> false
-      | _, _ -> !Clflags.dlcode
-    in
-    sym
-    (if use_plt then D.string_of_symbol ~plt:() s else D.string_of_symbol s)
+  let sym =
+    if Target_system.windows () && !Clflags.dlcode then mem__imp s
+    else
+      let use_plt =
+        match Target_system.system (), Target_system.machine_width () with
+        | MacOS_like, _
+        | Windows MinGW, Sixty_four
+        | Windows Cygwin, (Thirty_two | Sixty_four)
+        | Windows Native, Sixty_four -> false
+        | _, _ -> !Clflags.dlcode
+      in
+      sym
+      (if use_plt then Linkage_name.plt s else s)
+  in
+  symbol_operand sym
 
 let emit_call s = I.call (rel_plt s)
 
@@ -133,9 +135,10 @@ let load_symbol_addr s arg =
     if Target_system.windows () then begin
       (* I.mov (mem__imp s) arg (\* mov __caml_imp_foo(%rip), ... *\) *)
       I.mov (symbol_operand s) arg (* movabsq $foo, ... *)
-    end else I.mov (mem64_rip QWORD (D.string_of_symbol s ^ "@GOTPCREL")) arg
+    end else
+      I.mov (mem64_rip QWORD (Linkage_name.gotpcrel s)) arg
   else if !Clflags.pic_code then
-    I.lea (mem64_rip NONE (D.string_of_symbol s)) arg
+    I.lea (mem64_rip NONE s) arg
   else
     I.mov (symbol_operand s) arg
 
@@ -191,7 +194,7 @@ let addressing addr typ i n =
   match addr with
   | Ibased(s, ofs) ->
       add_used_symbol s;
-      mem64_rip typ (D.string_of_symbol s) ~ofs
+      mem64_rip typ s ~ofs
   | Iindexed d ->
       mem64 typ d (arg64 i n)
   | Iindexed2 d ->
@@ -387,7 +390,7 @@ let emit_instr fallthrough i =
       add_used_symbol func;
       if alloc then begin
         load_symbol_addr func rax;
-        emit_call "caml_c_call";
+        emit_call Linkage_name.caml_c_call;
         record_frame i.live false i.dbg ~label:label_after;
         if Target_system.win64 () then begin
           (* TODO: investigate why such a diff.
@@ -399,7 +402,7 @@ let emit_instr fallthrough i =
           *)
           ()
         end else begin
-          load_symbol_addr "caml_young_ptr" r11;
+          load_symbol_addr Linkage_name.caml_young_ptr r11;
           I.mov (mem64 QWORD 0 R11) r15
         end
       end else begin
@@ -471,13 +474,13 @@ let emit_instr fallthrough i =
           if spacetime_node_hole_ptr_is_in_rax then begin
             I.push rax
           end;
-          load_symbol_addr "caml_young_limit" rax;
+          load_symbol_addr Linkage_name.caml_young_limit rax;
           I.cmp (mem64 QWORD 0 RAX) r15;
           if spacetime_node_hole_ptr_is_in_rax then begin
             I.pop rax  (* this does not affect the flags *)
           end
         end else
-          I.cmp (mem64_rip QWORD (D.string_of_symbol "caml_young_limit")) r15;
+          I.cmp (mem64_rip QWORD Linkage_name.caml_young_limit) r15;
         let lbl_call_gc = new_label() in
         let dbg =
           if not Config.spacetime then Debuginfo.none
@@ -504,12 +507,12 @@ let emit_instr fallthrough i =
             ~index:spacetime_index;
         end;
         begin match n with
-        | 16 -> emit_call "caml_alloc1"
-        | 24 -> emit_call "caml_alloc2"
-        | 32 -> emit_call "caml_alloc3"
+        | 16 -> emit_call Linkage_name.caml_alloc1
+        | 24 -> emit_call Linkage_name.caml_alloc2
+        | 32 -> emit_call Linkage_name.caml_alloc3
         | _  ->
             I.mov (int n) rax;
-            emit_call "caml_allocN"
+            emit_call Linkage_name.caml_allocN
         end;
         let label =
           record_frame_label ?label:label_after_call_gc i.live false
@@ -563,9 +566,9 @@ let emit_instr fallthrough i =
       (* We have i.arg.(0) = i.res.(0) *)
       instr_for_intop op (int n) (res i 0)
   | Lop(Inegf) ->
-      I.xorpd (mem64_rip OWORD (D.string_of_symbol "caml_negf_mask")) (res i 0)
+      I.xorpd (mem64_rip OWORD Linkage_name.caml_negf_mask) (res i 0)
   | Lop(Iabsf) ->
-      I.andpd (mem64_rip OWORD (D.string_of_symbol "caml_absf_mask")) (res i 0)
+      I.andpd (mem64_rip OWORD Linkage_name.caml_absf_mask) (res i 0)
   | Lop(Iaddf | Isubf | Imulf | Idivf as floatop) ->
       instr_for_floatop floatop (arg i 1) (res i 0)
   | Lop(Ifloatofint) ->
@@ -692,7 +695,7 @@ let emit_instr fallthrough i =
          trie is [caml_stash_backtrace], and it does not. *)
       begin match k with
       | Cmm.Raise_withtrace ->
-          emit_call "caml_raise_exn";
+          emit_call Linkage_name.caml_raise_exn;
           record_frame Reg.Set.empty true i.dbg
       | Cmm.Raise_notrace ->
           I.mov r14 rsp;
@@ -710,8 +713,8 @@ let rec emit_all fallthrough i =
 (* Emission of the profiling prelude *)
 
 let emit_profile () =
-  match Target_system.system with
-  | S_gnu | S_linux ->
+  match Target_system.system () with
+  | GNU | Linux _ ->
     (* mcount preserves rax, rcx, rdx, rsi, rdi, r8, r9 explicitly
        and rbx, rbp, r12-r15 like all C functions.  This includes
        all the registers used for argument passing, so we don't
@@ -721,7 +724,7 @@ let emit_profile () =
     if not fp then I.mov rsp rbp;
     (* No Spacetime instrumentation needed: [mcount] cannot call anything
        OCaml-related. *)
-    emit_call "mcount";
+    emit_call Linkage_name.mcount;
     I.pop r10
   | _ -> ()
 
@@ -769,47 +772,46 @@ let begin_assembly() =
   Asm_directives.initialize ~emit:(fun directive ->
     X86_proc.directive (Directive directive));
   reset_imp_table();
+  Emitaux.begin_assembly ~frame_size;
+  let module L = Linkage_name in
   if Target_system.win64 () then begin
     let module D = X86_dsl.D in
-    D.extrn "caml_young_ptr" QWORD;
-    D.extrn "caml_young_limit" QWORD;
-    D.extrn "caml_exception_pointer" QWORD;
-    D.extrn "caml_call_gc" NEAR;
-    D.extrn "caml_c_call" NEAR;
-    D.extrn "caml_allocN" NEAR;
-    D.extrn "caml_alloc1" NEAR;
-    D.extrn "caml_alloc2" NEAR;
-    D.extrn "caml_alloc3" NEAR;
-    D.extrn "caml_ml_array_bound_error" NEAR;
-    D.extrn "caml_raise_exn" NEAR
+    D.extrn L.caml_young_ptr QWORD;
+    D.extrn L.caml_young_limit QWORD;
+    D.extrn L.caml_exception_pointer QWORD;
+    D.extrn L.caml_call_gc NEAR;
+    D.extrn L.caml_c_call NEAR;
+    D.extrn L.caml_allocN NEAR;
+    D.extrn L.caml_alloc1 NEAR;
+    D.extrn L.caml_alloc2 NEAR;
+    D.extrn L.caml_alloc3 NEAR;
+    D.extrn L.caml_ml_array_bound_error NEAR;
+    D.extrn L.caml_raise_exn NEAR
   end;
   if !Clflags.dlcode || Target_system.win64 () then begin
     (* from amd64.S; could emit these constants on demand *)
     D.switch_to_section Sixteen_byte_literals;
     D.align ~bytes:16;
-    D.define_symbol' "caml_negf_mask";
+    D.define_symbol L.caml_negf_mask;
     D.int64 0x8000000000000000L;
     D.int64 0L;
     D.align ~bytes:16;
-    D.define_symbol' "caml_absf_mask";
+    D.define_symbol L.caml_absf_mask;
     D.int64 0x7FFFFFFFFFFFFFFFL;
     D.int64 0xFFFFFFFFFFFFFFFFL;
-  end;
-  Emitaux.begin_assembly ~frame_size
+  end
 
 let end_assembly () =
   emit_imp_table();
   Emitaux.end_assembly ~emit_floating_point_constants:true;
   if Target_system.win64 () then begin
     D.comment "External functions";
-    StringSet.iter
-      (fun s ->
-         if not (StringSet.mem s !symbols_defined) then
-           X86_dsl.D.extrn (D.string_of_symbol s) NEAR)
+    Linkage_name.Set.iter (fun s ->
+        if not (Linkage_name.Set.mem s !symbols_defined) then
+          X86_dsl.D.extrn s NEAR)
       !symbols_used
   end;
   let asm =
-    if !Emitaux.create_asm_file then
     match !Emitaux.create_asm_file, Target_system.assembler () with
     | true, MASM -> Some X86_masm.generate_asm
     | true, (MacOS | GAS_like) -> Some X86_gas.generate_asm

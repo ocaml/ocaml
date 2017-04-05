@@ -218,46 +218,34 @@ let data l =
   D.align ~bytes:Targetint.size;
   List.iter emit_item l
 
-let symbols_defined = ref StringSet.empty
-let symbols_used = ref StringSet.empty
+let symbols_defined = ref Linkage_name.Set.empty
+let symbols_used = ref Linkage_name.Set.empty
 
-let add_def_symbol s = symbols_defined := StringSet.add s !symbols_defined
-let add_used_symbol s = symbols_used := StringSet.add s !symbols_used
+let add_def_symbol s =
+  symbols_defined := Linkage_name.Set.add s !symbols_defined
+
+let add_used_symbol s =
+  symbols_used := Linkage_name.Set.add s !symbols_used
 
 let emit_global_symbol s =
-  let sym = Compilenv.make_symbol (Some s) in
   add_def_symbol sym;
-  let sym = D.string_of_symbol sym in
   D.global sym;
-  D.define_symbol' sym
+  D.define_symbol sym
 
 let emit_global_symbol_with_size s ~f =
-  let sym = Compilenv.make_symbol (Some s) in
   add_def_symbol sym;
-  let sym = D.string_of_symbol sym in
   D.global sym;
-  D.define_symbol' sym;
+  D.define_symbol sym;
   f ();
   D.size sym
 
-let begin_assembly ~frame_size:frame_size' =
-  reset_debug_info ();
-  all_functions := [];
-  frame_size := frame_size';
-  D.switch_to_section Data;
-  emit_global_symbol "data_begin";
-  D.switch_to_section Text;
-  emit_global_symbol "code_begin";
-  begin match Target_system.system () with
-  | MacOS_like -> I.nop () (* PR#4690 *)
-  | _ -> ()
-  end
+let all_functions = ref []
 
 (* Tradeoff between code size and code speed *)
 let fastcode_flag = ref true
 
 (* Name of current function *)
-let function_name = ref ""
+let function_name = ref (Linkage_name.create "")
 
 (* Entry point for tail recursive calls *)
 let tailrec_entry_point = ref 0
@@ -339,7 +327,7 @@ let emit_call_gc gc ~spacetime_before_uninstrumented_call ~emit_call
       ~emit_jump_to_label =
   D.define_label gc.gc_lbl;
   spacetime_before_uninstrumented_call gc.gc_lbl;
-  emit_call "caml_call_gc";
+  emit_call Linkage_name.caml_call_gc;
   D.define_label gc.gc_frame;
   emit_jump_to_label gc.gc_return_lbl
 
@@ -377,7 +365,7 @@ let emit_call_bound_error bd ~emit_call
   | Some (node_ptr, index) ->
     spacetime_before_uninstrumented_call ~node_ptr ~index
   end;
-  emit_call "caml_ml_array_bound_error";
+  emit_call Linkage_name.caml_ml_array_bound_error;
   D.define_label bd.bd_frame
 
 let emit_call_bound_errors ~emit_call ~spacetime_before_uninstrumented_call =
@@ -387,10 +375,21 @@ let emit_call_bound_errors ~emit_call ~spacetime_before_uninstrumented_call =
     !bound_error_sites;
   if !bound_error_call > 0 then begin
     D.define_label !bound_error_call;
-    emit_call "caml_ml_array_bound_error"
+    emit_call Linkage_name.caml_ml_array_bound_error
   end
 
-let all_functions = ref []
+let begin_assembly ~frame_size:frame_size' =
+  reset_debug_info ();
+  all_functions := [];
+  frame_size := frame_size';
+  D.switch_to_section Data;
+  emit_global_symbol Linkage_name.caml_data_begin;
+  D.switch_to_section Text;
+  emit_global_symbol Linkage_name.caml_code_begin;
+  begin match Target_system.system () with
+  | MacOS_like -> I.nop () (* PR#4690 *)
+  | _ -> ()
+  end
 
 let fundecl ?branch_relaxation fundecl ~prepare ~emit_all ~alignment_in_bytes
       ~emit_call ~emit_jump_to_label ~spacetime_before_uninstrumented_call
@@ -445,7 +444,7 @@ let emit_spacetime_shapes () =
   end;
   D.switch_to_section Data;
   D.align ~bytes:8;
-  emit_global_symbol "spacetime_shapes";
+  emit_global_symbol Linkage_name.caml_spacetime_shapes;
   List.iter (fun fundecl ->
       begin match fundecl.fun_spacetime_shape with
       | None -> ()
@@ -476,8 +475,8 @@ let emit_spacetime_shapes () =
 
 let end_assembly ~emit_numeric_constants =
   D.switch_to_section Text;
-  begin match Target_system.system with
-  | S_macosx ->
+  begin match Target_system.system () with
+  | MacOS_like ->
     (* suppress "ld warning: atom sorting error" *)
     I.nop ()
   | _ -> ()
@@ -485,23 +484,23 @@ let end_assembly ~emit_numeric_constants =
   if Config.spacetime then begin
     emit_spacetime_shapes ()
   end;
-  emit_global_symbol_with_size "frametable" ~f:(fun () ->
+  emit_global_symbol_with_size Linkage_name.caml_frametable ~f:(fun () ->
     emit_frames ());
   if emit_numeric_constants then begin
     emit_constants ()
   end;
   D.mark_stack_as_non_executable ();  (* PR#4564 *)
-  emit_global_symbol "code_end";
+  emit_global_symbol Linkage_name.caml_code_end;
   D.int64 0L;
   D.switch_to_section Data;
-  emit_global_symbol "data_end";
+  emit_global_symbol Linkage_name.caml_data_end;
   D.int64 0L
 
 let reset () =
   reset_debug_info ();
   frame_descriptors := [];
-  symbols_defined := StringSet.empty;
-  symbols_used := StringSet.empty
+  symbols_defined := Linkage_name.Set.empty;
+  symbols_used := Linkage_name.Set.empty
 
 let binary_backend_available = ref false
 let create_asm_file = ref true

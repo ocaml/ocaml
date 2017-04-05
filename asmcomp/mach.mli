@@ -50,12 +50,12 @@ type operation =
   | Ireload
   | Iconst_int of nativeint
   | Iconst_float of int64
-  | Iconst_symbol of string
+  | Iconst_symbol of Linkage_name.t
   | Icall_ind of { label_after : label; }
-  | Icall_imm of { func : string; label_after : label; }
+  | Icall_imm of { func : Linkage_name.t; label_after : label; }
   | Itailcall_ind of { label_after : label; }
-  | Itailcall_imm of { func : string; label_after : label; }
-  | Iextcall of { func : string; alloc : bool; label_after : label; }
+  | Itailcall_imm of { func : Linkage_name.t; label_after : label; }
+  | Iextcall of { func : Linkage_name.t; alloc : bool; label_after : label; }
   | Istackoffset of int
   | Iload of Cmm.memory_chunk * Arch.addressing_mode
   | Istore of Cmm.memory_chunk * Arch.addressing_mode * bool
@@ -104,7 +104,7 @@ type spacetime_part_of_shape =
 type spacetime_shape = (spacetime_part_of_shape * Cmm.label) list
 
 type fundecl =
-  { fun_name: string;
+  { fun_name: Linkage_name.t;
     fun_args: Reg.t array;
     fun_body: instruction;
     fun_fast: bool;
