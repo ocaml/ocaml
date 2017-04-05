@@ -63,6 +63,10 @@ val system : unit -> system
 (** Whether the target system is a Windows platform. *)
 val windows : unit -> bool
 
+(** Whether the target system is a Windows 64-bit native platform (not
+    MinGW or Cygwin). *)
+val win64 : unit -> bool
+
 (** The hardware of the target system. *)
 val hardware : unit -> hardware
 

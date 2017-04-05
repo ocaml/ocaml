@@ -158,8 +158,10 @@ module type S = sig
 
   (** Emit a machine-width reference to the given symbol.
       If [got], then the reference is marked as being via the global offset
-      table. *)
-  val symbol : ?got:() -> Linkage_name.t -> unit
+      table.
+      If [plt], then the reference is marked as being via the procedure
+      linkage table. *)
+  val symbol : ?got:() -> ?plt:() -> Linkage_name.t -> unit
 
   (** Mark a symbol as "private extern" (see assembler documentation for
       details). *)
@@ -260,5 +262,4 @@ module type S = sig
       at the start of these sections get relocated correctly when those
       places become not at the start (e.g. during linking). *)
   val label_for_section : section -> Cmm.label
-
 end

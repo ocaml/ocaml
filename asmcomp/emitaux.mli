@@ -40,3 +40,36 @@ val binary_backend_available: bool ref
 
 val create_asm_file: bool ref
     (** Are we actually generating the textual assembly file? *)
+
+(** Recording of calls to the GC. *)
+type gc_call = private {
+  gc_lbl : label;
+  (** Entry label *)
+  gc_return_lbl : label;
+  (** Where to branch after GC *)
+  gc_frame : label;
+  (** Label of frame descriptor *)
+}
+
+(** Recording of calls to [caml_ml_array_bound_error]. *)
+type bound_error_call = private {
+  bd_lbl : label;
+  (** Entry label *)
+  bd_frame : label;
+  (** Label of frame descriptor *)
+}
+
+val begin_assembly : unit -> unit
+
+val fundecl
+   : ?branch_relaxation:(module Branch_relaxation.S)
+  -> prepare:(unit -> unit)
+  -> emit_all:(Linearize.fundecl -> unit)
+  -> alignment_in_bytes:int
+  -> emit_call:(Linkage_name.t -> unit)
+  -> emit_jump_to_label:(Cmm.label -> unit)
+  -> spacetime_before_uninstrumented_call:(Cmm.label -> unit)
+  -> emit_numeric_constants:bool
+  -> unit
+
+val end_assembly : emit_numeric_constants:bool -> unit

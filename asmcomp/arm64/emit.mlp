@@ -110,12 +110,6 @@ let emit_addressing addr r =
   | Ibased(s, ofs) ->
       `[{emit_reg r}, #:lo12:{emit_symbol_offset s ofs}]`
 
-let emit_call_gc gc =
-  D.define_label gc.gc_lbl;
-  `	bl	{emit_symbol "caml_call_gc"}\n`;
-  D.define_label gc.gc_frame_lbl;
-  `	b	{emit_label gc.gc_return_lbl}\n`
-
 (* Names of various instructions *)
 
 let name_for_comparison = function
@@ -438,10 +432,8 @@ let assembly_code_for_allocation ?label_after_call_gc i ~n ~far =
       `	b	{emit_label lbl_call_gc}\n`;
       D.define_label lbl
     end;
-    call_gc_sites :=
-      { gc_lbl = lbl_call_gc;
-        gc_return_lbl = lbl_redo;
-        gc_frame_lbl = lbl_frame } :: !call_gc_sites
+    record_call_gc_site ~label:lbl_call_gc ~return_label:lbl_redo
+      ~frame_label:lbl_frame
   end else begin
     begin match n with
     | 16 -> `	bl	{emit_symbol "caml_alloc1"}\n`
@@ -787,7 +779,7 @@ let emit_profile() = ()   (* TODO *)
 
 (* Emission of a function declaration *)
 
-let fundecl fundecl =
+let prepare_for_fundecl fundecl =
   stack_offset := 0;
   if !Clflags.gprofile then emit_profile();
   let n = frame_size() in
@@ -796,20 +788,25 @@ let fundecl fundecl =
   if !contains_calls then begin
     D.cfi_offset ~reg:30 (* return address *) ~offset:(-8);
     `	str	x30, [sp, #{emit_int (n-8)}]\n`
-  end;
-  D.define_symbol' !tailrec_entry_point;
-  let num_call_gc, num_check_bound =
-    num_call_gc_and_check_bound_points fundecl.fun_body
-  in
+  end
+
+let fundecl decl =
   let max_out_of_line_code_offset =
+    let num_call_gc, num_check_bound =
+      num_call_gc_and_check_bound_points fundecl.fun_body
+    in
     max_out_of_line_code_offset ~num_call_gc
       ~num_check_bound
   in
-  BR.relax fundecl.fun_body ~max_out_of_line_code_offset;
-  emit_all fundecl.fun_body
-
-let fundecl decl =
-  Emitaux.fundecl decl ~f:(fun () -> fundecl decl)
+  let branch_relaxation =
+    ((module BR : Branch_relaxation.S), max_out_of_line_code_offset)
+  in
+  Emitaux.fundecl decl ~branch_relaxation
+    ~prepare:prepare_for_fundecl
+    ~emit_all
+    ~emit_call:(fun symbol -> `bl	{emit_symbol symbol}`)
+    ~emit_jump_to_label:...
+    ~spacetime_before_uninstrumented_call
     ~alignment_in_bytes:8
     ~emit_numeric_constants:true
 
@@ -817,7 +814,7 @@ let fundecl decl =
 
 let begin_assembly () =
   Asm_directives.initialize ~emit:(fun directive -> ...)
-  Emitaux.begin_assembly ()
+  Emitaux.begin_assembly ~frame_size
 
 let end_assembly () =
   Emitaux.end_assembly ~emit_numeric_constants:false

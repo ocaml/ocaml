@@ -28,7 +28,9 @@ type frame_descr =
 
 let frame_descriptors = ref([] : frame_descr list)
 
-let record_frame_label ?label live raise_ dbg ~frame_size =
+let frame_size = ref (fun () -> assert false)
+
+let record_frame_label ?label live raise_ dbg =
   let lbl =
     match label with
     | None -> new_label()
@@ -48,13 +50,13 @@ let record_frame_label ?label live raise_ dbg ~frame_size =
     live;
   frame_descriptors :=
     { fd_lbl = label;
-      fd_frame_size = frame_size ();
+      fd_frame_size = (!frame_size) ();
       fd_live_offset = List.sort_uniq (-) !live_offset;
       fd_raise = raise_;
       fd_debuginfo = debuginfo } :: !frame_descriptors
   lbl
 
-let record_frame ?label live raise_ dbg ~frame_size =
+let record_frame ?label live raise_ dbg =
   let lbl = record_frame_label ?label live raise_ dbg in
   D.define_label lbl
 
@@ -238,8 +240,10 @@ let emit_global_symbol_with_size s ~f =
   f ();
   D.size sym
 
-let begin_assembly () =
+let begin_assembly ~frame_size:frame_size' =
   reset_debug_info ();
+  all_functions := [];
+  frame_size := frame_size';
   D.switch_to_section Data;
   emit_global_symbol "data_begin";
   D.switch_to_section Text;
@@ -316,14 +320,24 @@ let emit_constants () =
 (* Record calls to the GC -- we've moved them out of the way *)
 
 type gc_call =
-  { gc_lbl: label;                      (* Entry label *)
-    gc_return_lbl: label;               (* Where to branch after GC *)
-    gc_frame: label;                    (* Label of frame descriptor *)
-    gc_spacetime : (X86_ast.arg * int) option;
-    (* Spacetime node hole pointer and index *)
+  { gc_lbl: label;
+    gc_return_lbl: label;
+    gc_frame: label;
   }
 
 let call_gc_sites = ref ([] : gc_call list)
+
+let record_call_gc_site ~label:gc_lbl ~return_label:gc_return_lbl
+      ~frame_label:gc_frame =
+  call_gc_sites := { gc_lbl; gc_return_lbl; gc_frame; } :: !call_gc_sites
+
+let emit_call_gc gc ~spacetime_before_uninstrumented_call ~emit_call
+      ~emit_jump_to_label =
+  D.define_label gc.gc_lbl;
+  spacetime_before_uninstrumented_call gc.gc_lbl;
+  emit_call "caml_call_gc";
+  D.define_label gc.gc_frame;
+  emit_jump_to_label gc.gc_return_lbl
 
 (* Record calls to caml_ml_array_bound_error.
    In -g mode, or when using Spacetime profiling, we maintain one call to
@@ -333,27 +347,26 @@ let call_gc_sites = ref ([] : gc_call list)
 type bound_error_call =
   { bd_lbl: label;                      (* Entry label *)
     bd_frame: label;                    (* Label of frame descriptor *)
-    bd_spacetime : (X86_ast.arg * int) option;
-    (* As for [gc_call]. *)
   }
 
 let bound_error_sites = ref ([] : bound_error_call list)
 let bound_error_call = ref 0
 
-let bound_error_label ?label dbg ~spacetime =
+let bound_error_label ?label dbg =
   if !Clflags.debug || Config.spacetime then begin
     let lbl_bound_error = new_label() in
     let lbl_frame = record_frame_label ?label Reg.Set.empty false dbg in
     bound_error_sites :=
-      { bd_lbl = lbl_bound_error; bd_frame = lbl_frame;
-        bd_spacetime = spacetime; } :: !bound_error_sites;
+      { bd_lbl = lbl_bound_error; bd_frame = lbl_frame; }
+        :: !bound_error_sites;
     lbl_bound_error
   end else begin
     if !bound_error_call = 0 then bound_error_call := new_label();
     !bound_error_call
   end
 
-let emit_call_bound_error bd ~emit_call =
+let emit_call_bound_error bd ~emit_call
+      ~spacetime_before_uninstrumented_call =
   D.define_label bd.bd_lbl;
   begin match bd.bd_spacetime with
   | None -> ()
@@ -363,8 +376,11 @@ let emit_call_bound_error bd ~emit_call =
   emit_call "caml_ml_array_bound_error";
   D.define_label bd.bd_frame
 
-let emit_call_bound_errors ~emit_call =
-  List.iter (fun bd -> emit_call_bound_error bd ~emit_call) !bound_error_sites;
+let emit_call_bound_errors ~emit_call ~spacetime_before_uninstrumented_call =
+  List.iter (fun bd ->
+      emit_call_bound_error bd ~emit_call
+        ~spacetime_before_uninstrumented_call)
+    !bound_error_sites;
   if !bound_error_call > 0 then begin
     D.define_label !bound_error_call;
     emit_call "caml_ml_array_bound_error"
@@ -372,7 +388,8 @@ let emit_call_bound_errors ~emit_call =
 
 let all_functions = ref []
 
-let fundecl ?branch_relaxation fundecl ~f ~alignment_in_bytes
+let fundecl ?branch_relaxation fundecl ~prepare ~emit_all ~alignment_in_bytes
+      ~emit_call ~emit_jump_to_label ~spacetime_before_uninstrumented_call
       ~emit_numeric_constants =
   all_functions := fundecl :: !all_functions;
   function_name := fundecl.fun_name;
@@ -384,8 +401,8 @@ let fundecl ?branch_relaxation fundecl ~f ~alignment_in_bytes
   D.switch_to_section Text;
   D.align ~bytes:alignment_in_bytes;
   let fun_name = Linkage_name.create fundecl.fun_name in
-  match TS.system with
-  | MacOS
+  match TS.system () with
+  | MacOS_like
     when not !Clflags.output_c_object
       && is_generic_function fundecl.fun_name ->  (* PR#4690 *)
     D.private_extern fun_name
@@ -406,8 +423,11 @@ let fundecl ?branch_relaxation fundecl ~f ~alignment_in_bytes
   emit_all ~fun_body:fundecl.fun_body;
   D.cfi_endproc ();
   D.size fundecl.fun_name;
-  List.iter emit_call_gc !call_gc_sites;
-  emit_call_bound_errors ();
+  List.iter (fun gc ->
+      emit_call_gc gc ~spacetime_before_uninstrumented_call ~emit_call
+        ~emit_jump_to_label)
+    !call_gc_sites;
+  emit_call_bound_errors ~emit_call ~spacetime_before_uninstrumented_call;
   assert (List.length !call_gc_sites = num_call_gc);
   assert (List.length !bound_error_sites = num_check_bound);
   if emit_numeric_constants then begin

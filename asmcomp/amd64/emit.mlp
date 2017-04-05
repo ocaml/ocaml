@@ -31,6 +31,7 @@ open X86_ast
 open X86_dsl
 
 module D = Asm_directives
+module Int = Numbers.int
 
 let label_operand lbl = X86_ast.Sym (D.string_of_label lbl)
 let symbol_operand sym = X86_ast.Sym (D.string_of_symbol sym)
@@ -108,23 +109,28 @@ let mem__imp s =
   mem64_rip QWORD (D.string_of_symbol imp_s)
 
 let rel_plt s =
-  if Target_system.windows && !Clflags.dlcode then mem__imp s
+  if Target_system.windows () && !Clflags.dlcode then mem__imp s
   else
     let use_plt =
-      match Target_system.system with
-      | S_macosx | S_mingw64 | S_cygwin | S_win64 -> false
-      | _ -> !Clflags.dlcode
+      match Target_system.system (), Target_system.machine_width () with
+      | MacOS_like, _
+      | Windows MinGW, Sixty_four
+      | Windows Cygwin, (Thirty_two | Sixty_four)
+      | Windows Native, Sixty_four -> false
+      | _, _ -> !Clflags.dlcode
     in
     sym
-    (if use_plt then D.string_of_symbol s ^ "@PLT" else D.string_of_symbol s)
+    (if use_plt then D.string_of_symbol ~plt:() s else D.string_of_symbol s)
 
 let emit_call s = I.call (rel_plt s)
 
 let emit_jump s = I.jmp (rel_plt s)
 
+let emit_jump_to_label lbl = I.jmp (label_operand lbl)
+
 let load_symbol_addr s arg =
   if !Clflags.dlcode then
-    if Target_system.windows then begin
+    if Target_system.windows () then begin
       (* I.mov (mem__imp s) arg (\* mov __caml_imp_foo(%rip), ... *\) *)
       I.mov (symbol_operand s) arg (* movabsq $foo, ... *)
     end else I.mov (mem64_rip QWORD (D.string_of_symbol s ^ "@GOTPCREL")) arg
@@ -199,30 +205,21 @@ let addressing addr typ i n =
 
 (* Spacetime instrumentation *)
 
-let spacetime_before_uninstrumented_call ~node_ptr ~index =
-  (* At the moment, [node_ptr] is pointing at the node for the current
-     OCaml function.  Get hold of the node itself and move the pointer
-     forwards, saving it into the distinguished register.  This is used
-     for instrumentation of function calls (e.g. caml_call_gc and bounds
-     check failures) not inserted until this stage of the compiler
-     pipeline. *)
-  I.mov node_ptr (reg Proc.loc_spacetime_node_hole);
-  assert (index >= 2);
-  I.add (int (index * 8)) (reg Proc.loc_spacetime_node_hole)
+let spacetime_uninstrumented_calls = ref Int.Map.empty
 
-(* Call-GC points *)
-
-let emit_call_gc gc =
-  D.define_label gc.gc_lbl;
-  begin match gc.gc_spacetime with
-  | None -> assert (not Config.spacetime)
-  | Some (node_ptr, index) ->
-    assert Config.spacetime;
-    spacetime_before_uninstrumented_call ~node_ptr ~index
-  end;
-  emit_call "caml_call_gc";
-  D.define_label gc.gc_frame;
-  I.jmp (label_operand gc.gc_return_lbl)
+let spacetime_before_uninstrumented_call label =
+  match Int.Map.find label !spacetime_uninstrumented_calls with
+  | exception Not_found -> assert (not Config.spacetime)
+  | (node_ptr, index) ->
+    (* At the moment, [node_ptr] is pointing at the node for the current
+       OCaml function.  Get hold of the node itself and move the pointer
+       forwards, saving it into the distinguished register.  This is used
+       for instrumentation of function calls (e.g. caml_call_gc and bounds
+       check failures) not inserted until this stage of the compiler
+       pipeline. *)
+    I.mov node_ptr (reg Proc.loc_spacetime_node_hole);
+    assert (index >= 2);
+    I.add (int (index * 8)) (reg Proc.loc_spacetime_node_hole)
 
 (* Names for instructions *)
 
@@ -392,8 +389,7 @@ let emit_instr fallthrough i =
         load_symbol_addr func rax;
         emit_call "caml_c_call";
         record_frame i.live false i.dbg ~label:label_after;
-        begin match Target_system.system with
-        | S_win64 -> ()
+        if Target_system.win64 () then begin
           (* TODO: investigate why such a diff.
              This comes from:
             http://caml.inria.fr/cgi-bin/viewvc.cgi?view=revision&revision=12664
@@ -401,7 +397,8 @@ let emit_instr fallthrough i =
              If we do the same for Win64, we probably need to change
              amd64nt.asm accordingly.
           *)
-        | _ ->
+          ()
+        end else begin
           load_symbol_addr "caml_young_ptr" r11;
           I.mov (mem64 QWORD 0 R11) r15
         end
@@ -409,6 +406,7 @@ let emit_instr fallthrough i =
         emit_call func;
         if Config.spacetime then begin
           record_frame Reg.Set.empty false i.dbg ~label:label_after
+           
         end
       end
   | Lop(Istackoffset n) ->
@@ -487,18 +485,19 @@ let emit_instr fallthrough i =
         in
         let lbl_frame =
           record_frame_label ?label:label_after_call_gc i.live false dbg
+           
         in
         I.jb (label_operand lbl_call_gc);
         I.lea (mem64 NONE 8 R15) (res i 0);
-        let gc_spacetime =
+        let spacetime_info =
           if not Config.spacetime then None
           else Some (arg i 0, spacetime_index)
         in
-        call_gc_sites :=
-          { gc_lbl = lbl_call_gc;
-            gc_return_lbl = lbl_redo;
-            gc_frame = lbl_frame;
-            gc_spacetime; } :: !call_gc_sites
+        call_gc_spacetime_info :=
+          Int.Map.add lbl_call_gc spacetime_info !call_gc_spacetime_info;
+        record_call_gc_site ~label:lbl_call_gc
+          ~return_label:lbl_redo
+          ~frame_label:lbl_frame
       end else begin
         if Config.spacetime then begin
           spacetime_before_uninstrumented_call ~node_ptr:(arg i 0)
@@ -746,8 +745,12 @@ let prepare_for_fundecl fundecl =
   end
 
 let fundecl decl =
-  Emitaux.fundecl decl ~prepare:(fun () -> prepare_for_fundecl decl)
+  Emitaux.fundecl decl
+    ~prepare:prepare_for_fundecl
     ~emit_all:(fun fun_body -> emit_all true fun_body)
+    ~emit_call
+    ~emit_jump_to_label
+    ~spacetime_before_uninstrumented_call
     ~alignment_in_bytes:16
     ~emit_floating_point_constants:false;
   if frame_required() then begin
@@ -761,13 +764,12 @@ let fundecl decl =
 (* Beginning / end of an assembly file *)
 
 let begin_assembly() =
+  call_gc_spacetime_info := Int.Map.empty;
   X86_proc.reset_asm_code ();
   Asm_directives.initialize ~emit:(fun directive ->
     X86_proc.directive (Directive directive));
   reset_imp_table();
-  all_functions := [];
-  begin match Target_system.system with
-  | S_win64 ->
+  if Target_system.win64 () then begin
     let module D = X86_dsl.D in
     D.extrn "caml_young_ptr" QWORD;
     D.extrn "caml_young_limit" QWORD;
@@ -780,9 +782,8 @@ let begin_assembly() =
     D.extrn "caml_alloc3" NEAR;
     D.extrn "caml_ml_array_bound_error" NEAR;
     D.extrn "caml_raise_exn" NEAR
-  | _ -> ()
   end;
-  if !Clflags.dlcode || Arch.win64 then begin
+  if !Clflags.dlcode || Target_system.win64 () then begin
     (* from amd64.S; could emit these constants on demand *)
     D.switch_to_section Sixteen_byte_literals;
     D.align ~bytes:16;
@@ -794,24 +795,22 @@ let begin_assembly() =
     D.int64 0x7FFFFFFFFFFFFFFFL;
     D.int64 0xFFFFFFFFFFFFFFFFL;
   end;
-  Emitaux.begin_assembly ();
-  begin match Target_system.system with
-  | S_macosx -> I.nop () (* PR#4690 *)
+  Emitaux.begin_assembly ~frame_size;
+  begin match Target_system.system () with
+  | MacOS_like -> I.nop () (* PR#4690 *)
   | _ -> ()
   end
 
 let end_assembly () =
   emit_imp_table();
   Emitaux.end_assembly ~emit_floating_point_constants:true;
-  begin match Target_system.system with
-  | S_win64 ->
+  if Target_system.win64 () then begin
     D.comment "External functions";
     StringSet.iter
       (fun s ->
          if not (StringSet.mem s !symbols_defined) then
            X86_dsl.D.extrn (D.string_of_symbol s) NEAR)
       !symbols_used
-  | _ -> ()
   end;
   let asm =
     if !Emitaux.create_asm_file then
