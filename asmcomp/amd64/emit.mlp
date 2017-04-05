@@ -795,11 +795,7 @@ let begin_assembly() =
     D.int64 0x7FFFFFFFFFFFFFFFL;
     D.int64 0xFFFFFFFFFFFFFFFFL;
   end;
-  Emitaux.begin_assembly ~frame_size;
-  begin match Target_system.system () with
-  | MacOS_like -> I.nop () (* PR#4690 *)
-  | _ -> ()
-  end
+  Emitaux.begin_assembly ~frame_size
 
 let end_assembly () =
   emit_imp_table();
@@ -814,12 +810,9 @@ let end_assembly () =
   end;
   let asm =
     if !Emitaux.create_asm_file then
-      Some
-        (
-         (if Target_system.masm then X86_masm.generate_asm
-          else X86_gas.generate_asm) !Emitaux.output_channel
-        )
-    else
-      None
+    match !Emitaux.create_asm_file, Target_system.assembler () with
+    | true, MASM -> Some X86_masm.generate_asm
+    | true, (MacOS | GAS_like) -> Some X86_gas.generate_asm
+    | false -> None
   in
   X86_proc.generate_code asm

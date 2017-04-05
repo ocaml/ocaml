@@ -248,6 +248,10 @@ let begin_assembly ~frame_size:frame_size' =
   emit_global_symbol "data_begin";
   D.switch_to_section Text;
   emit_global_symbol "code_begin";
+  begin match Target_system.system () with
+  | MacOS_like -> I.nop () (* PR#4690 *)
+  | _ -> ()
+  end
 
 (* Tradeoff between code size and code speed *)
 let fastcode_flag = ref true
