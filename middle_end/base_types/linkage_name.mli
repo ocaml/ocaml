@@ -23,6 +23,7 @@ include Identifiable.S
 val create : string -> t
 val to_string : t -> string
 
+(** Add a prefix to a linkage name. *)
 val prefix : t -> with_:string -> t
 
 (** Mark a symbol as being a reference via the global offset table. *)
@@ -35,16 +36,20 @@ val gotpcrel : t -> t
 (** Mark a symbol as being a reference via the procedure linkage table. *)
 val plt : t -> t
 
+(** Distinguished identifier referencing the global offset table. *)
 val _GLOBAL_OFFSET_TABLE_ : t
 
+(** External variables used for gprof profiling. *)
 val mcount : t
 
+(** Global variables in the OCaml runtime accessed by OCaml code. *)
 val caml_young_ptr : t
 val caml_young_limit : t
 val caml_exception_pointer : t
 val caml_negf_mask : t
 val caml_absf_mask : t
 
+(** Entry points to the OCaml runtime from OCaml code. *)
 val caml_call_gc : t
 val caml_c_call : t
 val caml_allocN : t
@@ -54,9 +59,11 @@ val caml_alloc3 : t
 val caml_ml_array_bound_error : t
 val caml_raise_exn : t
 
+(** Standard OCaml auxiliary data structures. *)
 val caml_frametable : t
 val caml_spacetime_shapes : t
 
+(** Standard OCaml section delimiters. *)
 val caml_code_begin : t
 val caml_code_end : t
 val caml_data_begin : t

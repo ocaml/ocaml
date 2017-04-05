@@ -33,10 +33,11 @@ type system =
   | Solaris
   | GNU
   | BeOS
+  | Unknown
 
-type hardware = 
-  | X86_32
-  | X86_64
+type architecture = 
+  | IA32
+  | IA64
   | ARM
   | AArch64
   | POWER
@@ -55,7 +56,7 @@ type machine_width =
 let system () =
   match Config.system with
   | "solaris" -> Solaris
-  | "bsd" -> Other_bsd
+  | "bsd" -> Other_BSD
   | "linux" -> Linux SVR4
   | "gnu" -> GNU
   | "beos" -> BeOS
@@ -69,6 +70,17 @@ let system () =
   | "linux_eabi" -> Linux ARM_EABI
   | "win64" -> Windows Native
   | _ -> Unknown
+
+let architecture () =
+  match Config.architecture with
+  | "i386" -> IA32
+  | "amd64" -> IA64
+  | "arm" -> ARM
+  | "arm64" -> AArch64
+  | "power" -> POWER
+  | "sparc" -> SPARC
+  | "s390x" -> S390x
+  | arch -> Misc.fatal_errorf "Unknown architecture `%s'" arch
 
 let windows () =
   match system () with

@@ -15,6 +15,8 @@
 
 (* Common functions for emitting assembly code *)
 
+module D = Asm_directives
+
 let output_channel = ref stdout
 
 (* Record live pointers at call points *)
@@ -404,7 +406,7 @@ let fundecl ?branch_relaxation fundecl ~prepare ~emit_all ~alignment_in_bytes
   D.switch_to_section Text;
   D.align ~bytes:alignment_in_bytes;
   let fun_name = Linkage_name.create fundecl.fun_name in
-  match TS.system () with
+  begin match TS.system () with
   | MacOS_like
     when not !Clflags.output_c_object
       && is_generic_function fundecl.fun_name ->  (* PR#4690 *)

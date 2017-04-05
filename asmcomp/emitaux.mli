@@ -63,8 +63,8 @@ val begin_assembly : unit -> unit
 
 val fundecl
    : ?branch_relaxation:(module Branch_relaxation.S)
-  -> prepare:(unit -> unit)
-  -> emit_all:(Linearize.fundecl -> unit)
+  -> prepare:(Linearize.fundecl -> unit)
+  -> emit_all:(fun_body:Linearize.instruction -> unit)
   -> alignment_in_bytes:int
   -> emit_call:(Linkage_name.t -> unit)
   -> emit_jump_to_label:(Cmm.label -> unit)

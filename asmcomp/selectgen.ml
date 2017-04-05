@@ -406,12 +406,14 @@ method select_checkbound_extra_args () = []
 method select_operation op args _dbg =
   match (op, args) with
   | (Capply _, Cconst_symbol func :: rem) ->
+    let func = Linkage_name.create func in
     let label_after = Cmm.new_label () in
     (Icall_imm { func; label_after; }, rem)
   | (Capply _, _) ->
     let label_after = Cmm.new_label () in
     (Icall_ind { label_after; }, args)
   | (Cextcall(func, _ty, alloc, label_after), _) ->
+    let func = Linkage_name.create func in
     let label_after =
       match label_after with
       | None -> Cmm.new_label ()

@@ -121,8 +121,8 @@ let label_for_section = function
   | DWARF Debug_line -> debug_line_label
 
 let label_prefix =
-  match TS.hardware () with
-  | X86_32 ->
+  match TS.architecture () with
+  | IA32 ->
     begin match TS.system () with
     | Linux _
     | Windows Cygwin
@@ -138,7 +138,7 @@ let label_prefix =
     | MacOS_like
     | Windows Native -> "L"
     end
-  | X86_64 ->
+  | IA64 ->
     begin match TS.system () with
     | Linux _
     | Windows Cygwin
@@ -163,8 +163,8 @@ let label_prefix =
 let string_of_label label_name = label_prefix ^ (string_of_int label_name)
 
 let symbol_prefix =
-  match TS.hardware () with
-  | X86_32 ->
+  match TS.architecture () with
+  | IA32 ->
     begin match TS.system () with
     | Linux _
     | FreeBSD
@@ -178,7 +178,7 @@ let symbol_prefix =
     | Windows _
     | Unknown -> "_"
     end
-  | X86_64 ->
+  | IA64 ->
     begin match TS.system with
     | MacOS_like -> "_"
     | Linux _
@@ -217,9 +217,6 @@ let string_of_symbol s =
       )
       s;
     Buffer.contents b
-
-type arm_arch = ARMv4 | ARMv5 | ARMv5TE | ARMv6 | ARMv6T2 | ARMv7
-type arm_fpu = Soft | VFPv2 | VFPv3_D16 | VFPv3
 
 module Directive = struct
   type constant =
@@ -330,7 +327,7 @@ module Directive = struct
       (* Mac OS X's assembler interprets the integer n as a 2^n alignment;
          same apparently for gas on POWER. *)
       let n =
-        match TS.assembler (), TS.hardware () with
+        match TS.assembler (), TS.architecture () with
         | MacOS, _
         | GAS_like, POWER -> Misc.log2 n
         | _, _ -> n
@@ -348,7 +345,7 @@ module Directive = struct
     | Const32 n -> bprintf buf "\t.long\t%a" cst n
     | Const64 n -> bprintf buf "\t.quad\t%a" cst n
     | Bytes s ->
-      begin match TS.system (), TS.hardware () with
+      begin match TS.system (), TS.architecture () with
       | Solaris, _
       | _, POWER -> buf_bytes_directive buf ~directive:".byte" s
       | _ -> bprintf buf "\t.ascii\t\"%s\"" (string_of_string_literal s)
@@ -356,7 +353,7 @@ module Directive = struct
     | Comment s -> bprintf buf "\t\t\t\t/* %s */" s
     | Global s ->
       bprintf buf "\t.globl\t%s" s;
-      begin match current_section_is_text (), TS.hardware (), TS.system () with
+      begin match current_section_is_text (), TS.architecture (), TS.system () with
       | (false, (POWER | ARM | AArch64 | S390x), _)
       | (false, _, Solaris) ->
         bprintf buf "	.type	{emit_symbol %a}, @object\n" string_of_symbol s
@@ -576,7 +573,7 @@ let switch_to_section (section : section) =
     let text () = [".text"], None, [] in
     let data () = [".data"], None, [] in
     let system = derived_system () in
-    match section, TS.hardware (), system with
+    match section, TS.architecture (), system with
     | Text, _, _ -> text ()
     | Data, _, _ -> data ()
     | DWARF dwarf, _, MacOS ->
@@ -616,7 +613,7 @@ let switch_to_section (section : section) =
     | (Eight_byte_literals | Sixteen_byte_literals), S390x, _
     | (Eight_byte_literals | Sixteen_byte_literals), _, Solaris ->
       [".rodata"], None, []
-    | Sixteen_byte_literals, _, MacOS_like, ->
+    | Sixteen_byte_literals, _, MacOS_like ->
       ["__TEXT";"__literal16"], None, ["16byte_literals"]
     | Sixteen_byte_literals, _, (Mingw64 | Cygwin) ->
       [".rdata"], Some "dr", []
@@ -682,11 +679,10 @@ let initialize ~emit =
         | Jump_tables -> switch_to_section section
         | DWARF _ -> if !Clflags.debug then switch_to_section section
         | POWER _ ->
-          match TS.hardware () with
+          match TS.architecture () with
           | POWER -> switch_to_section section
-          | X86_32 | X86_64 | ARM | AArch64 | POWER | SPARC | S390x -> ())
+          | IA32 | IA64 | ARM | AArch64 | POWER | SPARC | S390x -> ())
       all_sections_in_order
-    end
   end;
   emit (File { file_num = None; filename = ""; })  (* PR#7037 *)
 

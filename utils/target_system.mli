@@ -39,9 +39,9 @@ type system =
      GNU and BeOS. *)
   | Unknown
 
-type hardware =
-  | X86_32
-  | X86_64
+type architecture = 
+  | IA32
+  | IA64
   | ARM
   | AArch64
   | POWER
@@ -67,8 +67,8 @@ val windows : unit -> bool
     MinGW or Cygwin). *)
 val win64 : unit -> bool
 
-(** The hardware of the target system. *)
-val hardware : unit -> hardware
+(** The architecture of the target system. *)
+val architecture : unit -> architecture
 
 (** The assembler being used. *)
 val assembler : unit -> assembler
