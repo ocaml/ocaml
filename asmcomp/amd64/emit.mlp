@@ -35,12 +35,6 @@ module D = Asm_directives
 let label_operand lbl = X86_ast.Sym (D.string_of_label lbl)
 let symbol_operand sym = X86_ast.Sym (D.string_of_symbol sym)
 
-(* [Branch_relaxation] is not used in this file, but is required by
-   emit.mlp files for certain other targets; the reference here ensures
-   that when releases are being prepared the .depend files are correct
-   for all targets. *)
-open! Branch_relaxation
-
 (* Override proc.ml *)
 
 let int_reg_name =
@@ -734,7 +728,7 @@ let emit_profile () =
 
 (* Emission of a function declaration *)
 
-let fundecl fundecl =
+let prepare_for_fundecl fundecl =
   stack_offset := 0;
   if fp then begin
     I.push rbp;
@@ -749,12 +743,11 @@ let fundecl fundecl =
       I.sub (int n) rsp;
       D.cfi_adjust_cfa_offset n;
     end;
-  end;
-  D.define_label !tailrec_entry_point;
-  emit_all true fundecl.fun_body
+  end
 
 let fundecl decl =
-  Emitaux.fundecl decl ~f:(fun () -> fundecl decl)
+  Emitaux.fundecl decl ~prepare:(fun () -> prepare_for_fundecl decl)
+    ~emit_all:(fun fun_body -> emit_all true fun_body)
     ~alignment_in_bytes:16
     ~emit_floating_point_constants:false;
   if frame_required() then begin
@@ -772,7 +765,6 @@ let begin_assembly() =
   Asm_directives.initialize ~emit:(fun directive ->
     X86_proc.directive (Directive directive));
   reset_imp_table();
-  float_constants := [];
   all_functions := [];
   begin match Target_system.system with
   | S_win64 ->

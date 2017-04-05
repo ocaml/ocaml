@@ -14,17 +14,17 @@
 
 (** Types corresponding to the compiler's target machine. *)
 
-type linux_abi = private
+type linux_abi =
   | SVR4
   | ARM_EABI
   | ARM_EABI_hard_float
 
-type windows_system = private
+type windows_system =
   | Cygwin
-  | Mingw
+  | MinGW
   | Native
 
-type system = private
+type system =
   | Linux of linux_abi
   | Windows of windows_system
   | MacOS_like
@@ -35,9 +35,11 @@ type system = private
   | Solaris
   | GNU
   | BeOS
+  (* CR mshinwell: I think we should delete "Unknown".  Likewise probably
+     GNU and BeOS. *)
   | Unknown
 
-type hardware = private
+type hardware =
   | X86_32
   | X86_64
   | ARM
@@ -46,11 +48,12 @@ type hardware = private
   | SPARC
   | S390x
 
-type assembler = private
-  | GAS_compatible
+type assembler =
+  | GAS_like
+  | MacOS
   | MASM
 
-type machine_width = private
+type machine_width =
   | Thirty_two
   | Sixty_four
 

@@ -33,7 +33,6 @@ type system =
   | Solaris
   | GNU
   | BeOS
-  | Unknown
 
 type hardware = 
   | X86_32
@@ -45,7 +44,8 @@ type hardware =
   | S390x
 
 type assembler = 
-  | GNU_compatible
+  | GAS_like
+  | MacOS
   | MASM
 
 type machine_width = 
@@ -85,8 +85,19 @@ let windows () =
   | Unknown -> false
 
 let assembler () =
-  if windows () then MASM
-  else GAS_compatible
+  match system () with
+  | Windows Native -> MASM
+  | MacOS_like -> MacOS
+  | Linux _
+  | Windows _
+  | FreeBSD
+  | NetBSD
+  | OpenBSD
+  | Other_BSD
+  | Solaris
+  | GNU
+  | BeOS
+  | Unknown -> GAS_like
 
 let machine_width () =
   match Targetint.size with

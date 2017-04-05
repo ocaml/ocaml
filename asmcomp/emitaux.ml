@@ -395,10 +395,15 @@ let fundecl ?branch_relaxation fundecl ~f ~alignment_in_bytes
   D.define_function_symbol fun_name;
   emit_debug_info fundecl.fun_dbg;
   D.cfi_startproc ();
-  let fun_body =
-
-  in
-  f ~fun_body;
+  prepare ();
+  begin match branch_relaxation with
+  | None -> ()
+  | Some (branch_relaxation, max_out_of_line_code_offset) ->
+    let module BR = (val branch_relaxation : Branch_relaxation.S) in
+    BR.relax fundecl.fun_body ~max_out_of_line_code_offset
+  end;
+  D.define_label !tailrec_entry_point;
+  emit_all ~fun_body:fundecl.fun_body;
   D.cfi_endproc ();
   D.size fundecl.fun_name;
   List.iter emit_call_gc !call_gc_sites;

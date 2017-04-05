@@ -15,14 +15,10 @@
 (*                                                                        *)
 (**************************************************************************)
 
-(** Emission of assembler directives that are supported on multiple targets. *)
+(** Abstraction layer for the emission of assembly directives that conceals
+    many intricate details differing between target systems. *)
 
 module type S = sig
-  (** Widths of data types. *)
-  type width =
-    | Thirty_two
-    | Sixty_four
-
   (** Sections that hold for DWARF debugging information. *)
   type dwarf_section =
     | Debug_info
@@ -48,11 +44,6 @@ module type S = sig
     | Jump_tables
     | DWARF of dwarf_section
     | POWER of power_section
-
-  (** Retrieve the label that [switch_to_section] (below) will put at the start
-      of the given section.  This function may be called before
-      [switch_to_section] for the section concerned. *)
-  val label_for_section : section -> Cmm.label
 
   (** Emit subsequent directives to the given section.  If this function
       has not been called before on the particular section, a label
@@ -120,8 +111,14 @@ module type S = sig
   (** Mark the source location of the current assembly position. *)
   val loc : file_num:int -> line:int -> col:int -> unit
 
-  (** Adjust the current frame address offset by the given number of bytes. *)
+  (** Adjust the current frame address offset by the given number of bytes.
+      This and other CFI functions will not emit anything in the case where
+      CFI is not supported on the target. *)
   val cfi_adjust_cfa_offset : bytes:int -> unit
+
+  (** Note that the previous value of [reg] is saved at [offset] from
+      the current frame address. *)
+  val cfi_offset : reg:int -> offset:int -> unit
 
   (** Mark the beginning of a function, for CFI purposes. *)
   val cfi_startproc : unit -> unit
@@ -241,7 +238,7 @@ module type S = sig
   val offset_into_section_label
      : section:section
     -> label:Cmm.label
-    -> width:width
+    -> width:Target_system.machine_width
     -> unit
 
   (** As for [offset_into_section_label], but using a symbol instead of
@@ -249,6 +246,19 @@ module type S = sig
   val offset_into_section_symbol
      : section:section
     -> symbol:Linkage_name.t
-    -> width:width
+    -> width:Target_system.machine_width
     -> unit
+
+  (** Retrieve the label that [switch_to_section] (below) will put at the start
+      of the given section.  This function may be called before
+      [switch_to_section] for the section concerned.
+
+      Aside: Why do we need labels at the start of sections rather than
+      just referencing sections directly?
+      They are necessary so that references (e.g. DW_FORM_ref_addr or
+      DW_FORM_sec_offset when emitting DWARF) to places that are currently
+      at the start of these sections get relocated correctly when those
+      places become not at the start (e.g. during linking). *)
+  val label_for_section : section -> Cmm.label
+
 end

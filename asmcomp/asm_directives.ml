@@ -44,6 +44,10 @@ type dwarf_section =
   | Debug_str
   | Debug_line
 
+type power_section =
+  | Function_descriptors
+  | Table_of_contents
+
 type section =
   | Text
   | Data
@@ -53,6 +57,25 @@ type section =
   | Jump_tables
   | DWARF of dwarf_section
   | POWER of power_section
+
+(* Note: the POWER backend relies on .opd being after .data, so an
+   alignment constraint can be enforced. *)
+let all_sections_in_order = [
+  Text;
+  Data;
+  Read_only_data;
+  Eight_byte_literals;
+  Sixteen_byte_literals;
+  Jump_tables;
+  DWARF Debug_info;
+  DWARF Debug_abbrev;
+  DWARF Debug_aranges;
+  DWARF Debug_loc;
+  DWARF Debug_str;
+  DWARF Debug_line;
+  POWER Function_descriptors;
+  POWER Table_of_contents;
+]
 
 let current_section = ref None
 
@@ -98,79 +121,75 @@ let label_for_section = function
   | DWARF Debug_line -> debug_line_label
 
 let label_prefix =
-  match TS.platform with
+  match TS.hardware () with
   | X86_32 ->
-    begin match TS.system with
-    | Linux_elf -> ".L"
-    | Bsd_elf -> ".L"
-    | Solaris -> ".L"
-    | Beos -> ".L"
-    | Gnu -> ".L"
-    | MacOS
-    | Win64
-    | Cygwin
-    | Win32
-    | Mingw
-    | Linux
-    | Mingw64
-    | Unknown -> "L"
+    begin match TS.system () with
+    | Linux _
+    | Windows Cygwin
+    | Windows MinGW
+    | FreeBSD
+    | NetBSD
+    | OpenBSD
+    | Other_BSD
+    | Solaris
+    | Beos
+    | Gnu
+    | Unknown -> ".L"
+    | MacOS_like
+    | Windows Native -> "L"
     end
   | X86_64 ->
-    begin match TS.system with
-    | MacOS
-    | Win64 -> "L" ^ string_of_int label_name
-    | Gnu
-    | Cygwin
+    begin match TS.system () with
+    | Linux _
+    | Windows Cygwin
+    | Windows MinGW
+    | FreeBSD
+    | NetBSD
+    | OpenBSD
+    | Other_BSD
     | Solaris
-    | Win32
-    | Linux_elf
-    | Bsd_elf
     | Beos
-    | Mingw
-    | Linux
-    | Mingw64
-    | Unknown -> ".L" ^ string_of_int label_name
+    | Gnu -> ".L"
+    | MacOS_like
+    | Windows Native
+    | Unknown -> "L"
     end
   | ARM
   | AArch64
   | POWER
-  | S390 -> ".L"
+  | S390x -> ".L"
   | SPARC -> "L"
 
 let string_of_label label_name = label_prefix ^ (string_of_int label_name)
 
 let symbol_prefix =
-  match TS.platform with
+  match TS.hardware () with
   | X86_32 ->
-    begin match TS.system with
-    | Linux_elf
-    | Bsd_elf
+    begin match TS.system () with
+    | Linux _
+    | FreeBSD
+    | NetBSD
+    | OpenBSD
+    | Other_BSD
     | Solaris
     | Beos
     | Gnu -> ""
-    | MacOS
-    | Win64
-    | Cygwin
-    | Win32
-    | Mingw
-    | Linux
-    | Mingw64
+    | MacOS_like
+    | Windows _
     | Unknown -> "_"
     end
   | X86_64 ->
     begin match TS.system with
-    | MacOS -> "_"
-    | Win64
-    | Gnu
-    | Cygwin
+    | MacOS_like -> "_"
+    | Linux _
+    | FreeBSD
+    | NetBSD
+    | OpenBSD
+    | Other_BSD
     | Solaris
-    | Win32
-    | Linux_elf
-    | Bsd_elf
     | Beos
-    | Mingw
-    | Linux
-    | Mingw64
+    | Gnu
+    | Windows _
     | Unknown -> ""
     end
   | POWER -> "."
@@ -292,7 +311,7 @@ module Directive = struct
     | Const n -> bprintf buf "0x%Lx" n
     | Float32 f -> bprintf buf "\t.long\t0x%lx\n" f
     | Float64 f ->
-      begin match TS.machine_width with
+      begin match TS.machine_width () with
       | Sixty_four ->
         bprintf buf "\t.quad\t0x%Lx # %.12g" f (Int64.float_of_bits f)
       | Thirty_two ->
@@ -311,15 +330,15 @@ module Directive = struct
       (* Mac OS X's assembler interprets the integer n as a 2^n alignment;
          same apparently for gas on POWER. *)
       let n =
-        match TS.system, TS.platform with
+        match TS.assembler (), TS.hardware () with
         | MacOS, _
-        | _, POWER -> Misc.log2 n
-        | _ -> n
+        | GAS_like, POWER -> Misc.log2 n
+        | _, _ -> n
       in
       bprintf buf "\t.align\t%d" n
     | Const8 n -> bprintf buf "\t.byte\t%a" cst n
     | Const16 n ->
-      begin match TS.system with
+      begin match TS.system () with
       | Solaris -> bprintf buf "\t.value\t%a" cst n
       | _ ->
         (* Apple's documentation says that ".word" is i386-specific, so we use
@@ -329,7 +348,7 @@ module Directive = struct
     | Const32 n -> bprintf buf "\t.long\t%a" cst n
     | Const64 n -> bprintf buf "\t.quad\t%a" cst n
     | Bytes s ->
-      begin match TS.system, TS.platform with
+      begin match TS.system (), TS.hardware () with
       | Solaris, _
       | _, POWER -> buf_bytes_directive buf ~directive:".byte" s
       | _ -> bprintf buf "\t.ascii\t\"%s\"" (string_of_string_literal s)
@@ -337,8 +356,8 @@ module Directive = struct
     | Comment s -> bprintf buf "\t\t\t\t/* %s */" s
     | Global s ->
       bprintf buf "\t.globl\t%s" s;
-      begin match current_section_is_text (), TS.platform, TS.system with
-      | (false, (POWER | ARM | AArch64 | S390), _)
+      begin match current_section_is_text (), TS.hardware (), TS.system () with
+      | (false, (POWER | ARM | AArch64 | S390x), _)
       | (false, _, Solaris) ->
         bprintf buf "	.type	{emit_symbol %a}, @object\n" string_of_symbol s
       | _ -> ()
@@ -357,7 +376,7 @@ module Directive = struct
       | _ -> bprintf buf ",%s" (String.concat "," args)
       end
     | Space { bytes; } ->
-      begin match TS.system with
+      begin match TS.system () with
       | Solaris -> bprintf buf "\t.zero\t%d" bytes
       | _ -> bprintf buf "\t.space\t%d" bytes
       end
@@ -385,9 +404,11 @@ module Directive = struct
     | Type (s, typ) -> bprintf buf "\t.type %s,%s" s typ
     | Uleb128 c -> bprintf buf "\t.uleb128 %a" cst c
     | Direct_assignment (var, const) ->
-      begin match TS.system with
+      begin match TS.assembler () with
       | MacOS -> bprintf buf "%s = %a" var cst const
-      | _ -> failwith "Cannot emit Direct_assignment"
+      | _ ->
+        Misc.fatal_error "Cannot emit Direct_assignment except on macOS-like \
+          assemblers"
       end
 
   let rec cst buf = function
@@ -434,10 +455,7 @@ module Directive = struct
     | Sleb128 _
     | Type _
     | Uleb128 _
-    | Direct_assignment _
-    | POWER_abi_version _
-    | ARM_architecture _
-    | ARM_floating_point_unit _ ->
+    | Direct_assignment _ ->
       Misc.fatal_error "Unsupported asm directive for MASM"
 
   let print b t =
@@ -493,8 +511,8 @@ let const32 cst = emit (Const32 (lower_constant cst))
 let const64 cst = emit (Const64 (lower_constant cst))
 
 let size symbol =
-  match TS.system with
-  | Gnu | Linux -> size symbol (Sub (This, Symbol symbol))
+  match TS.system () with
+  | Gnu | Linux _ -> size symbol (Sub (This, Symbol symbol))
   | _ -> ()
 
 let label label_name = const64 (Label label_name)
@@ -508,6 +526,43 @@ let define_label label_name =
 
 let sections_seen = ref []
 
+(* Modified version of [Target_system.system] for easier matching in
+   [switch_to_section], below. *)
+type derived_system =
+  | Linux
+  | Cygwin
+  | MinGW_32
+  | MinGW_64
+  | Win32
+  | Win64
+  | MacOS_like
+  | FreeBSD
+  | NetBSD
+  | OpenBSD
+  | Other_BSD
+  | Solaris
+  | GNU
+  | BeOS
+  | Unknown
+
+let derived_system () =
+  match TS.system (), TS.machine_width () with
+  | Linux _, _ -> Linux
+  | Windows Cygwin, _ -> Cygwin
+  | Windows MinGW, Thirty_two -> MinGW_32
+  | Windows MinGW, Sixty_four -> MinGW_64
+  | Windows Native, Thirty_two -> Win32
+  | Windows Native, Sixty_four -> Win64
+  | MacOS_like, _ -> MacOS_like
+  | FreeBSD, _ -> FreeBSD
+  | NetBSD, _ -> NetBSD
+  | OpenBSD, _ -> OpenBSD
+  | Other_BSD, _ -> Other_BSD
+  | Solaris, _ -> Solaris
+  | GNU, _ -> GNU
+  | BeOS, _ -> BeOS
+  | Unknown, _ -> Unknown
+
 let switch_to_section (section : section) =
   let first_occurrence =
     if List.mem section !sections_seen then false
@@ -520,10 +575,11 @@ let switch_to_section (section : section) =
   let section_name, middle_part, attrs =
     let text () = [".text"], None, [] in
     let data () = [".data"], None, [] in
-    match section, TS.system with
-    | Text, _ -> text ()
-    | Data, _ -> data ()
-    | DWARF dwarf, MacOS ->
+    let system = derived_system () in
+    match section, TS.hardware (), system with
+    | Text, _, _ -> text ()
+    | Data, _, _ -> data ()
+    | DWARF dwarf, _, MacOS ->
       let name =
         match dwarf with
         | Debug_info -> "__debug_info"
@@ -534,7 +590,7 @@ let switch_to_section (section : section) =
         | Debug_line -> "__debug_line"
       in
       ["__DWARF"; name], None, ["regular"; "debug"]
-    | DWARF dwarf, _ ->
+    | DWARF dwarf, _, _ ->
       let name =
         match dwarf with
         | Debug_info -> ".debug_info"
@@ -557,53 +613,42 @@ let switch_to_section (section : section) =
           []
       in
       [name], middle_part, attrs
-    | (Eight_byte_literals | Sixteen_byte_literals)
-        when TS.hardware = S390 || TS.platform = Solaris ->
+    | (Eight_byte_literals | Sixteen_byte_literals), S390x, _
+    | (Eight_byte_literals | Sixteen_byte_literals), _, Solaris ->
       [".rodata"], None, []
-    | Sixteen_byte_literals, MacOS ->
+    | Sixteen_byte_literals, _, MacOS_like, ->
       ["__TEXT";"__literal16"], None, ["16byte_literals"]
-    | Sixteen_byte_literals, (Mingw64 | Cygwin) ->
+    | Sixteen_byte_literals, _, (Mingw64 | Cygwin) ->
       [".rdata"], Some "dr", []
-    | Sixteen_byte_literals, Win64 ->
+    | Sixteen_byte_literals, _, Win64 ->
       data ()
-    | Sixteen_byte_literals, _ ->
+    | Sixteen_byte_literals, _, _ ->
       [".rodata.cst8"], Some "a", ["@progbits"]
-    | Eight_byte_literals, MacOS ->
+    | Eight_byte_literals, _, MacOS ->
       ["__TEXT";"__literal8"], None, ["8byte_literals"]
-    | Eight_byte_literals, (Mingw64 | Cygwin) ->
+    | Eight_byte_literals, _, (Mingw64 | Cygwin) ->
       [".rdata"], Some "dr", []
-    | Eight_byte_literals, Win64 ->
+    | Eight_byte_literals, _, Win64 ->
       data ()
-    | Eight_byte_literals, _ ->
+    | Eight_byte_literals, _, _ ->
       [".rodata.cst8"], Some "a", ["@progbits"]
-    | Jump_tables, (Mingw64 | Cygwin) ->
+    | Jump_tables, _, (Mingw64 | Cygwin) ->
       [".rdata"], Some "dr", []
-    | Jump_tables, (MacOS | Win64) ->
+    | Jump_tables, _, (MacOS | Win64) ->
       text () (* with LLVM/OS X and MASM, use the text segment *)
-    | Jump_tables, _ ->
+    | Jump_tables, _, _ ->
       [".rodata"], None, []
-    | Read_only_data, (Mingw64 | Cygwin) ->
+    | Read_only_data, _, (Mingw64 | Cygwin) ->
       [".rdata"], Some "dr", []
-    | Read_only_data, _ ->
+    | Read_only_data, _, _ ->
       [".rodata"], None, []
-    | POWER power, _ ->
-      begin match TS.hardware with
-      | POWER ->
-        begin match power with
-        | Function_descriptors ->
-          [".opd"], Some "aw", []
-        | Table_of_contents ->
-          [".toc"], Some "aw", []
-        end
-      | X86_32
-      | X86_64
-      | ARM
-      | AArch64
-      | SPARC
-      | S390 ->
-        Misc.fatal_error "Cannot switch to POWER section on non-POWER \
-          architecture"
-      end
+    | POWER Function_descriptors, POWER, _ ->
+      [".opd"], Some "aw", []
+    | POWER Table_of_contents, POWER, _ ->
+      [".toc"], Some "aw", []
+    | POWER _, _, _ ->
+      Misc.fatal_error "Cannot switch to POWER section on non-POWER \
+        architecture"
   in
   emit (Section (section_name, middle_part, attrs));
   if first_occurrence then begin
@@ -622,23 +667,25 @@ let initialize ~emit =
   emit_ref := Some emit;
   reset ();
   switch_to_section Text;
-  begin match TS.system with
-  | MacOS -> ()
-  | _ ->
-    if !Clflags.debug then begin
-      (* Forward label references are illegal in gas.  Just put them in for
-         all assemblers, they won't harm. *)
-      (* CR mshinwell: Careful: the POWER backend relies on .opd being after
-         .data *)
-      switch_to_section Data;
-      switch_to_section Eight_byte_literals;
-      switch_to_section Sixteen_byte_literals;
-      switch_to_section (DWARF Debug_info);
-      switch_to_section (DWARF Debug_abbrev);
-      switch_to_section (DWARF Debug_aranges);
-      switch_to_section (DWARF Debug_loc);
-      switch_to_section (DWARF Debug_str);
-      switch_to_section (DWARF Debug_line)
+  begin match TS.assembler () with
+  | MASM | MacOS -> ()
+  | GAS_like ->
+    (* Forward label references are illegal in gas.  Just put them in for
+       all assemblers, they won't harm. *)
+    List.iter (fun section ->
+        match section with
+        | Text
+        | Data
+        | Read_only_data
+        | Eight_byte_literals
+        | Sixteen_byte_literals
+        | Jump_tables -> switch_to_section section
+        | DWARF _ -> if !Clflags.debug then switch_to_section section
+        | POWER _ ->
+          match TS.hardware () with
+          | POWER -> switch_to_section section
+          | X86_32 | X86_64 | ARM | AArch64 | POWER | SPARC | S390x -> ())
+      all_sections_in_order
     end
   end;
   emit (File { file_num = None; filename = ""; })  (* PR#7037 *)
@@ -659,13 +706,13 @@ let define_function_symbol' symbol_name =
       emitting to a text section"
   end;
   define_symbol' symbol_name;
-  begin match TS.system with
-  | Gnu | Linux -> type_ symbol_name ~type_:"@function"
+  begin match TS.system () with
+  | Gnu | Linux _ -> type_ symbol_name ~type_:"@function"
   | _ -> ()
   end
 
 let symbol' sym =
-  match TS.machine_width with
+  match TS.machine_width () with
   | Thirty_two -> const32 (Symbol sym)
   | Sixty_four -> const64 (Symbol sym)
 
@@ -686,17 +733,19 @@ let new_temp_var () =
    involved in displacement calculations are or are not relocatable, and to
    guard against clever linkers doing e.g. branch relaxation at link time, we
    always force such calculations to be done in a relocatable manner at
-   link time.  On Mac OS X this requires use of the "direct assignment"
+   link time.  On macOS this requires use of the "direct assignment"
    syntax rather than ".set": the latter forces expressions to be evaluated
    as absolute assembly-time constants. *)
 
+(* CR mshinwell: This all needs testing for MASM. *)
+
 let force_relocatable expr =
-  match TS.system with
+  match TS.assembler () with
   | MacOS ->
     let temp = new_temp_var () in
     direct_assignment temp expr;
     Symbol temp  (* not really a symbol, but this is OK (same below) *)
-  | _ ->
+  | GAS_like | MASM ->
     expr
 
 let between_symbols ~upper ~lower =
@@ -741,12 +790,12 @@ let offset_into_section_label ~section ~label:upper ~width =
          the start of the assembly file.
        - On gas, it is the distance from the label back to the start of the
          current section. *)
-    match TS.system with
+    match TS.assembler () with
     | MacOS ->
       let temp = new_temp_var () in
       direct_assignment temp (Sub (Label upper, Label lower));
       Symbol temp
-    | _ ->
+    | GAS_like | MASM ->
       Label upper
   in
   constant_with_width expr ~width
@@ -756,12 +805,12 @@ let offset_into_section_symbol ~section ~symbol ~width =
   let upper = Linkage_name.to_string (Symbol.label symbol) in
   let expr : constant =
     (* The same thing as for [offset_into_section_label] applies here. *)
-    match TS.system with
+    match TS.assembler () with
     | MacOS ->
       let temp = new_temp_var () in
       direct_assignment temp (Sub (Symbol upper, Label lower));
       Symbol temp
-    | _ -> Symbol upper
+    | GAS_like | MASM -> Symbol upper
   in
   constant_with_width expr ~width
 
@@ -778,7 +827,7 @@ let int64 i =
   const64 (Const i)
 
 let nativeint n =
-  match TS.machine_width with
+  match TS.machine_width () with
   | Thirty_two -> const32 (Const (Int64.of_nativeint n))
   | Sixty_four -> const64 (Const (Int64.of_nativeint n))
 
@@ -807,25 +856,6 @@ let emit_cached_strings () =
   cached_strings := []
 
 let mark_stack_non_executable () =
-  match TS.system with
+  match TS.system () with
   | Linux -> section [".note.GNU-stack"] (Some "") [ "%progbits" ]
   | _ -> ()
-
-let arm_architecture_version arch =
-
-(** Set the ARM floating-point unit kind. *)
-val arm_floating_point_unit fpu =
-  begin match !arch with
-  | ARMv4   -> `	.arch	armv4t\n`
-  | ARMv5   -> `	.arch	armv5t\n`
-  | ARMv5TE -> `	.arch	armv5te\n`
-  | ARMv6   -> `	.arch	armv6\n`
-  | ARMv6T2 -> `	.arch	armv6t2\n`
-  | ARMv7   -> `	.arch	armv7-a\n`
-  end;
-  begin match !fpu with
-    Soft      -> `	.fpu	softvfp\n`
-  | VFPv2     -> `	.fpu	vfpv2\n`
-  | VFPv3_D16 -> `	.fpu	vfpv3-d16\n`
-  | VFPv3     -> `	.fpu	vfpv3\n`
-  end;
