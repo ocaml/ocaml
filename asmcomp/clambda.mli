@@ -19,7 +19,7 @@
 open Asttypes
 open Lambda
 
-type function_label = string
+type function_label = Linkage_name.t
 
 type ustructured_constant =
   | Uconst_float of float
@@ -29,10 +29,10 @@ type ustructured_constant =
   | Uconst_block of int * uconstant list
   | Uconst_float_array of float list
   | Uconst_string of string
-  | Uconst_closure of ufunction list * string * uconstant list
+  | Uconst_closure of ufunction list * Linkage_name.t * uconstant list
 
 and uconstant =
-  | Uconst_ref of string * ustructured_constant option
+  | Uconst_ref of Linkage_name.t * ustructured_constant option
   | Uconst_int of int
   | Uconst_ptr of int
 
@@ -91,7 +91,7 @@ type value_approximation =
   | Value_tuple of value_approximation array
   | Value_unknown
   | Value_const of uconstant
-  | Value_global_field of string * int
+  | Value_global_field of Linkage_name.t * int
 
 (* Comparison functions for constants *)
 
@@ -101,14 +101,14 @@ val compare_constants:
         uconstant -> uconstant -> int
 
 type preallocated_block = {
-  symbol : string;
+  symbol : Linkage_name.t;
   exported : bool;
   tag : int;
   size : int;
 }
 
 type preallocated_constant = {
-  symbol : string;
+  symbol : Linkage_name.t;
   exported : bool;
   definition : ustructured_constant;
 }

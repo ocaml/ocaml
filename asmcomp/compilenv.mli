@@ -70,7 +70,7 @@ val is_predefined_exception: Symbol.t -> bool
 val unit_for_global: Ident.t -> Compilation_unit.t
         (* flambda-only *)
 
-val symbol_for_global: Ident.t -> string
+val symbol_for_global: Ident.t -> Linkage_name.t
         (* Return the asm symbol that refers to the given global identifier
            flambda-only *)
 val symbol_for_global': Ident.t -> Symbol.t
@@ -101,23 +101,23 @@ val need_send_fun: int -> unit
         (* Record the need of a currying (resp. application,
            message sending) function with the given arity *)
 
-val new_const_symbol : unit -> string
+val new_const_symbol : unit -> Linkage_name.t
 val closure_symbol : Closure_id.t -> Symbol.t
         (* Symbol of a function if the function is
            closed (statically allocated)
            flambda-only *)
-val function_label : Closure_id.t -> string
+val function_label : Closure_id.t -> Linkage_name.t
         (* linkage name of the code of a function
            flambda-only *)
 
 val new_structured_constant:
   Clambda.ustructured_constant ->
   shared:bool -> (* can be shared with another structurally equal constant *)
-  string
+  Linkage_name.t
 val structured_constants:
   unit -> Clambda.preallocated_constant list
 val clear_structured_constants: unit -> unit
-val add_exported_constant: string -> unit
+val add_exported_constant: Linkage_name.t -> unit
         (* clambda-only *)
 type structured_constants
         (* clambda-only *)

@@ -51,8 +51,8 @@ module CstMap =
 
 type structured_constants =
   {
-    strcst_shared: string CstMap.t;
-    strcst_all: (string * Clambda.ustructured_constant) list;
+    strcst_shared: Linkage_name.t CstMap.t;
+    strcst_all: (Linkage_name.t * Clambda.ustructured_constant) list;
   }
 
 let structured_constants_empty  =
@@ -64,7 +64,7 @@ let structured_constants_empty  =
 let structured_constants = ref structured_constants_empty
 
 
-let exported_constants = Hashtbl.create 17
+let exported_constants = Linkage_name.Tbl.create 17
 
 let merged_environment = ref Export_info.empty
 
@@ -130,7 +130,7 @@ let reset ?packname name =
   current_unit.ui_apply_fun <- [];
   current_unit.ui_send_fun <- [];
   current_unit.ui_force_link <- !Clflags.link_everything;
-  Hashtbl.clear exported_constants;
+  Linkage_name.Tbl.clear exported_constants;
   structured_constants := structured_constants_empty;
   current_unit.ui_export_info <- default_ui_export_info;
   merged_environment := Export_info.empty;
@@ -150,9 +150,12 @@ let current_unit_name () =
 
 let make_symbol ?(unitname = current_unit.ui_symbol) idopt =
   let prefix = "caml" ^ unitname in
-  match idopt with
-  | None -> prefix
-  | Some id -> prefix ^ "__" ^ id
+  let as_string =
+    match idopt with
+    | None -> prefix
+    | Some id -> prefix ^ "__" ^ id
+  in
+  Linkage_name.create as_string
 
 let symbol_in_current_unit name =
   let prefix = "caml" ^ current_unit.ui_symbol in
@@ -252,7 +255,7 @@ let global_approx id =
 
 let symbol_for_global id =
   if Ident.is_predef_exn id then
-    "caml_exn_" ^ Ident.name id
+    Linkage_name.create ("caml_exn_" ^ Ident.name id)
   else begin
     let unitname = Ident.name id in
     match
@@ -266,8 +269,7 @@ let symbol_for_global id =
 (* Register the approximation of the module being compiled *)
 
 let unit_for_global id =
-  let sym_label = Linkage_name.create (symbol_for_global id) in
-  Compilation_unit.create id sym_label
+  Compilation_unit.create id (symbol_for_global id)
 
 let predefined_exception_compilation_unit =
   Compilation_unit.create (Ident.create_persistent "__dummy__")
@@ -279,7 +281,7 @@ let is_predefined_exception sym =
     (Symbol.compilation_unit sym)
 
 let symbol_for_global' id =
-  let sym_label = Linkage_name.create (symbol_for_global id) in
+  let sym_label = symbol_for_global id in
   if Ident.is_predef_exn id then
     Symbol.unsafe_create predefined_exception_compilation_unit sym_label
   else
@@ -352,7 +354,7 @@ let save_unit_info filename =
   write_unit_info current_unit filename
 
 let current_unit_linkage_name () =
-  Linkage_name.create (make_symbol ~unitname:current_unit.ui_symbol None)
+  make_symbol ~unitname:current_unit.ui_symbol None
 
 let current_unit () =
   match Compilation_unit.get_current () with
@@ -394,7 +396,7 @@ let new_structured_constant cst ~shared =
     lbl
 
 let add_exported_constant s =
-  Hashtbl.replace exported_constants s ()
+  Linkage_name.Tbl.replace exported_constants s ()
 
 let clear_structured_constants () =
   structured_constants := structured_constants_empty
@@ -403,8 +405,9 @@ let structured_constants () =
   List.map
     (fun (symbol, definition) ->
        {
-         Clambda.symbol;
-         exported = Hashtbl.mem exported_constants symbol;
+         Clambda.
+         symbol;
+         exported = Linkage_name.Tbl.mem exported_constants symbol;
          definition;
        })
     (!structured_constants).strcst_all
@@ -425,7 +428,7 @@ let function_label fv =
     Linkage_name.to_string
       (Compilation_unit.get_linkage_name compilation_unit)
   in
-  (concat_symbol unitname (Closure_id.unique_name fv))
+  Linkage_name.create (concat_symbol unitname (Closure_id.unique_name fv))
 
 let require_global global_ident =
   if not (Ident.is_predef_exn global_ident) then

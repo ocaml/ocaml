@@ -18,5 +18,5 @@
     work correctly. *)
 val apply
    : Clambda.ulambda
-  -> what:string
+  -> what:Linkage_name.t
   -> Clambda.ulambda

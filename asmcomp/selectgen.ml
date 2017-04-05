@@ -193,7 +193,7 @@ let join_array rs =
       Some res
 
 (* Name of function being compiled *)
-let current_function_name = ref ""
+let current_function_name = ref (Linkage_name.create "")
 
 module Effect = struct
   type t =
@@ -406,14 +406,12 @@ method select_checkbound_extra_args () = []
 method select_operation op args _dbg =
   match (op, args) with
   | (Capply _, Cconst_symbol func :: rem) ->
-    let func = Linkage_name.create func in
     let label_after = Cmm.new_label () in
     (Icall_imm { func; label_after; }, rem)
   | (Capply _, _) ->
     let label_after = Cmm.new_label () in
     (Icall_ind { label_after; }, args)
   | (Cextcall(func, _ty, alloc, label_after), _) ->
-    let func = Linkage_name.create func in
     let label_after =
       match label_after with
       | None -> Cmm.new_label ()
@@ -1076,7 +1074,8 @@ method emit_tail (env:environment) exp =
                 self#insert_moves r1 loc_arg;
                 self#maybe_emit_spacetime_move ~spacetime_reg;
                 self#insert_debug call dbg loc_arg [||];
-              end else if func = !current_function_name then begin
+              end else if Linkage_name.equal func !current_function_name
+              then begin
                 let call = Iop (Itailcall_imm { func; label_after; }) in
                 let loc_arg' = Proc.loc_parameters r1 in
                 let spacetime_reg =
@@ -1238,4 +1237,4 @@ let _ =
   Simplif.is_tail_native_heuristic := is_tail_call
 
 let reset () =
-  current_function_name := ""
+  current_function_name := Linkage_name.create ""
