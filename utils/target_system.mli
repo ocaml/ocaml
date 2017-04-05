@@ -4,7 +4,7 @@
 (*                                                                        *)
 (*                  Mark Shinwell, Jane Street Europe                     *)
 (*                                                                        *)
-(*   Copyright 2015--2016 Jane Street Group LLC                           *)
+(*   Copyright 2017 Jane Street Group LLC                                 *)
 (*                                                                        *)
 (*   All rights reserved.  This file is distributed under the terms of    *)
 (*   the GNU Lesser General Public License version 2.1, with the          *)
@@ -14,33 +14,28 @@
 
 (** Types corresponding to the compiler's target machine. *)
 
-(** Target systems of the OCaml native code compiler. *)
-type system = private
-  (* 32 and 64 bit *)
-  | MacOS
-  | Gnu
+type linux_abi = private
+  | SVR4
+  | ARM_EABI
+  | ARM_EABI_hard_float
+
+type windows_system = private
   | Cygwin
-  (* 32 bit only *)
-  | Solaris
-  | Win32
-  | Linux_elf
-  | Bsd_elf
-  | Beos
   | Mingw
-  (* 64 bit only *)
-  | Win64
-  | Linux
-  | Mingw64
+  | Native
+
+type system = private
+  | Linux of linux_abi
+  | Windows of windows_system
+  | MacOS_like
+  | FreeBSD
+  | NetBSD
+  | OpenBSD
+  | Other_BSD
+  | Solaris
+  | GNU
+  | BeOS
   | Unknown
-
-(** The selected target system of the OCaml compiler. *)
-val system : system
-
-(** Whether the target system is a Windows platform. *)
-val windows : bool
-
-(** Whether the target system uses the MASM assembler. *)
-val masm : bool
 
 type hardware = private
   | X86_32
@@ -49,8 +44,27 @@ type hardware = private
   | AArch64
   | POWER
   | SPARC
-  | S390
+  | S390x
 
-val hardware : hardware
+type assembler = private
+  | GAS_compatible
+  | MASM
 
+type machine_width = private
+  | Thirty_two
+  | Sixty_four
 
+(** The target system of the OCaml compiler. *)
+val system : unit -> system
+
+(** Whether the target system is a Windows platform. *)
+val windows : unit -> bool
+
+(** The hardware of the target system. *)
+val hardware : unit -> hardware
+
+(** The assembler being used. *)
+val assembler : unit -> assembler
+
+(** The natural machine width of the target system. *)
+val machine_width : unit -> machine_width

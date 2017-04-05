@@ -3,11 +3,8 @@
 (*                                 OCaml                                  *)
 (*                                                                        *)
 (*                  Mark Shinwell, Jane Street Europe                     *)
-(*          Fabrice Le Fessant, projet Gallium, INRIA Rocquencourt        *)
 (*                                                                        *)
-(*   Copyright 2016 Jane Street Group LLC                                 *)
-(*   Copyright 2014 Institut National de Recherche en Informatique et     *)
-(*     en Automatique.                                                    *)
+(*   Copyright 2017 Jane Street Group LLC                                 *)
 (*                                                                        *)
 (*   All rights reserved.  This file is distributed under the terms of    *)
 (*   the GNU Lesser General Public License version 2.1, with the          *)
@@ -15,49 +12,81 @@
 (*                                                                        *)
 (**************************************************************************)
 
-type system =
-  | S_macosx
-  | S_gnu
-  | S_cygwin
-  | S_solaris
-  | S_win32
-  | S_linux_elf
-  | S_bsd_elf
-  | S_beos
-  | S_mingw
-  | S_win64
-  | S_linux
-  | S_mingw64
-  | S_unknown
+type linux_abi =
+  | SVR4
+  | ARM_EABI
+  | ARM_EABI_hard_float
 
-let system = match Config.system with
-  | "macosx" -> S_macosx
-  | "solaris" -> S_solaris
-  | "win32" -> S_win32
-  | "linux_elf" -> S_linux_elf
-  | "bsd_elf" -> S_bsd_elf
-  | "beos" -> S_beos
-  | "gnu" -> S_gnu
-  | "cygwin" -> S_cygwin
-  | "mingw" -> S_mingw
-  | "mingw64" -> S_mingw64
-  | "win64" -> S_win64
-  | "linux" -> S_linux
-  | _ -> S_unknown
+type windows_system =
+  | Cygwin
+  | MinGW
+  | Native
 
-let windows =
-  match system with
-  | S_mingw64 | S_cygwin | S_win64 -> true
-  | _ -> false
+type system = 
+  | Linux of linux_abi
+  | Windows of windows_system
+  | MacOS_like
+  | FreeBSD
+  | NetBSD
+  | OpenBSD
+  | Other_BSD
+  | Solaris
+  | GNU
+  | BeOS
+  | Unknown
 
-let masm =
-  match system with
-  | S_win32 | S_win64 -> true
-  | _ -> false
+type hardware = 
+  | X86_32
+  | X86_64
+  | ARM
+  | AArch64
+  | POWER
+  | SPARC
+  | S390x
 
-type machine_width =
+type assembler = 
+  | GNU_compatible
+  | MASM
+
+type machine_width = 
   | Thirty_two
   | Sixty_four
+
+let system () =
+  match Config.system with
+  | "solaris" -> Solaris
+  | "bsd" -> Other_bsd
+  | "linux" -> Linux SVR4
+  | "gnu" -> GNU
+  | "beos" -> BeOS
+  | "cygwin" -> Windows Cygwin
+  | "macosx" -> MacOS_like
+  | "mingw" -> Windows MinGW
+  | "freebsd" -> FreeBSD
+  | "netbsd" -> NetBSD
+  | "openbsd" -> OpenBSD
+  | "linux_eabihf" -> Linux ARM_EABI_hard_float
+  | "linux_eabi" -> Linux ARM_EABI
+  | "win64" -> Windows Native
+  | _ -> Unknown
+
+let windows () =
+  match system () with
+  | Windows _ -> true
+  | Linux _
+  | MacOS_like
+  | FreeBSD
+  | NetBSD
+  | OpenBSD
+  | Other_BSD
+  | Solaris
+  | GNU
+  | BeOS
+  | Unknown -> false
+
+let assembler () =
+  if windows () then MASM
+  else GAS_compatible
 
 let machine_width () =
   match Targetint.size with

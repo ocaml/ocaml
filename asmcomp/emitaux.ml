@@ -372,7 +372,8 @@ let emit_call_bound_errors ~emit_call =
 
 let all_functions = ref []
 
-let fundecl fundecl ~f ~alignment_in_bytes ~emit_numeric_constants =
+let fundecl ?branch_relaxation fundecl ~f ~alignment_in_bytes
+      ~emit_numeric_constants =
   all_functions := fundecl :: !all_functions;
   function_name := fundecl.fun_name;
   fastcode_flag := fundecl.fun_fast;
@@ -394,7 +395,10 @@ let fundecl fundecl ~f ~alignment_in_bytes ~emit_numeric_constants =
   D.define_function_symbol fun_name;
   emit_debug_info fundecl.fun_dbg;
   D.cfi_startproc ();
-  f ();
+  let fun_body =
+
+  in
+  f ~fun_body;
   D.cfi_endproc ();
   D.size fundecl.fun_name;
   List.iter emit_call_gc !call_gc_sites;
