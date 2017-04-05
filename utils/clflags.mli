@@ -183,6 +183,7 @@ val keep_locs : bool ref
 val unsafe_string : bool ref
 val opaque : bool ref
 val print_timings : bool ref
+val record_max_live_words : bool ref
 val flambda_invariant_checks : bool ref
 val unbox_closures : bool ref
 val unbox_closures_factor : int ref

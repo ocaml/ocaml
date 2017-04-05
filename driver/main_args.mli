@@ -100,6 +100,7 @@ module type Compiler_options = sig
 
   val _nopervasives : unit -> unit
   val _dtimings : unit -> unit
+  val _dlive_words : unit -> unit
 
   val _args: string -> string array
   val _args0: string -> string array

@@ -174,6 +174,7 @@ module Options = Main_args.Make_optcomp_options (struct
   let _dstartup = option "-dstartup"
   let _dinterval = option "-dinterval"
   let _dtimings = option "-dtimings"
+  let _dlive_words = option "-dlive-words"
   let _opaque = option "-opaque"
 
   let _args = Arg.read_arg

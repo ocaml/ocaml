@@ -118,6 +118,7 @@ module Options = Main_args.Make_bytecomp_options (struct
   let _dlambda = set dump_lambda
   let _dinstr = set dump_instr
   let _dtimings = set print_timings
+  let _dlive_words = set record_max_live_words
 
   let _args = Arg.read_arg
   let _args0 = Arg.read_arg0

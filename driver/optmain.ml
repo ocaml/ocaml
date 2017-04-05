@@ -225,6 +225,7 @@ module Options = Main_args.Make_optcomp_options (struct
   let _dinterval = set dump_interval
   let _dstartup = set keep_startup_file
   let _dtimings = set print_timings
+  let _dlive_words = set record_max_live_words
   let _opaque = set opaque
 
   let _args = Arg.read_arg
