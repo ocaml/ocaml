@@ -73,6 +73,9 @@ val plt : t -> t
     program (PR#4690). *)
 val is_generic_function : t -> bool
 
+(** Nothing in particular. *)
+val __dummy__ : t
+
 (** Distinguished identifier referencing the global offset table. *)
 val _GLOBAL_OFFSET_TABLE_ : t
 

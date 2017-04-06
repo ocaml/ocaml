@@ -110,6 +110,7 @@ let symbol_prefix =
   | SPARC -> ""
 
 let _GLOBAL_OFFSET_TABLE_ = "_GLOBAL_OFFSET_TABLE_"
+let __dummy__ = "__dummy__"
 
 let create name =
   if String.length name > 1 then begin
@@ -119,6 +120,7 @@ let create name =
     if String.length symbol_prefix > 0
       && Misc.Stdlib.String.is_prefix symbol_prefix ~of_:name
       && not (String.equal name _GLOBAL_OFFSET_TABLE_)
+      && not (String.equal name __dummy__)
     then begin
       Misc.fatal_errorf "Suspicious creation of [Linkage_name.t]: has this \
           symbol name already been mangled? '%s'"
@@ -180,6 +182,8 @@ let plt t =
 
 let mcount = create "mcount"
 let sqrt = create "sqrt"
+
+let __dummy__ = create __dummy__
 
 let _GLOBAL_OFFSET_TABLE_ = create _GLOBAL_OFFSET_TABLE_
 

@@ -272,8 +272,7 @@ let unit_for_global id =
   Compilation_unit.create id (symbol_for_global id)
 
 let predefined_exception_compilation_unit =
-  Compilation_unit.create (Ident.create_persistent "__dummy__")
-    (Linkage_name.create "__dummy__")
+  Compilation_unit.create (Ident.create_persistent "__dummy__") L.__dummy__
 
 let is_predefined_exception sym =
   Compilation_unit.equal
