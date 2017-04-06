@@ -214,11 +214,6 @@ let caml_data_segments = create "caml_data_segments"
 let caml_frametable = create "caml_frametable"
 let caml_spacetime_shapes = create "caml_spacetime_shapes"
 
-let caml_code_begin = create "caml_code_begin"
-let caml_code_end = create "caml_code_end"
-let caml_data_begin = create "caml_data_begin"
-let caml_data_end = create "caml_data_end"
-
 let caml_afl_area_ptr = create "caml_afl_area_ptr"
 let caml_afl_prev_loc = create "caml_afl_prev_loc"
 let caml_setup_afl = create "caml_setup_afl"

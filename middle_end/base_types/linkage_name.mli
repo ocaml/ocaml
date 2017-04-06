@@ -142,12 +142,6 @@ val caml_spacetime_generate_profinfo : t
 val caml_frametable : t
 val caml_spacetime_shapes : t
 
-(** Standard OCaml section delimiters. *)
-val caml_code_begin : t
-val caml_code_end : t
-val caml_data_begin : t
-val caml_data_end : t
-
 (** AFL instrumentation. *)
 val caml_afl_area_ptr : t
 val caml_afl_prev_loc : t

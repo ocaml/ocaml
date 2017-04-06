@@ -136,14 +136,14 @@ let emit_frames () =
   let emit_debuginfo (rs, rdbg) (lbl,next) =
     let d = List.hd rdbg in
     D.align ~bytes:Arch.size_addr;
-    D.define_label lbl;
+    D.label lbl;
     let info = pack_info rs d in
     D.between_this_and_label_offset_32bit
       ~upper:(label_filename d.Debuginfo.dinfo_file)
       ~offset_upper:(Targetint.of_int32 (Int64.to_int32 info));
     D.int32 (Int64.to_int32 (Int64.shift_right info 32));
     begin match next with
-    | Some next -> D.define_label next
+    | Some next -> D.label next
     | None -> D.int64 0L
     end
   in
@@ -198,12 +198,14 @@ let add_def_symbol s =
 let add_used_symbol s =
   symbols_used := Linkage_name.Set.add s !symbols_used
 
-let emit_global_symbol sym =
+let emit_global_symbol name =
+  let sym = Compilenv.make_symbol (Some name) in
   add_def_symbol sym;
   D.global sym;
   D.define_symbol sym
 
-let emit_global_symbol_with_size sym ~f =
+let emit_global_symbol_with_size name ~f =
+  let sym = Compilenv.make_symbol (Some name) in
   add_def_symbol sym;
   D.global sym;
   D.define_symbol sym;
@@ -352,9 +354,9 @@ let begin_assembly () =
   reset_debug_info ();
   all_functions := [];
   D.switch_to_section Data;
-  emit_global_symbol Linkage_name.caml_data_begin;
+  emit_global_symbol "data_begin";
   D.switch_to_section Text;
-  emit_global_symbol Linkage_name.caml_code_begin
+  emit_global_symbol "code_begin"
 
 let fundecl ?branch_relaxation (fundecl : Linearize.fundecl) ~prepare
       ~emit_all ~alignment_in_bytes ~emit_call ~emit_jump_to_label
@@ -406,7 +408,7 @@ let emit_spacetime_shapes () =
   end;
   D.switch_to_section Data;
   D.align ~bytes:8;
-  emit_global_symbol Linkage_name.caml_spacetime_shapes;
+  emit_global_symbol "spacetime_shapes";
   List.iter (fun (fundecl : Linearize.fundecl) ->
       begin match fundecl.fun_spacetime_shape with
       | None -> ()
@@ -440,16 +442,16 @@ let end_assembly ~emit_numeric_constants =
   if Config.spacetime then begin
     emit_spacetime_shapes ()
   end;
-  emit_global_symbol_with_size Linkage_name.caml_frametable ~f:(fun () ->
+  emit_global_symbol_with_size "frametable" ~f:(fun () ->
     emit_frames ());
   if emit_numeric_constants then begin
     emit_constants ()
   end;
   D.mark_stack_non_executable ();  (* PR#4564 *)
-  emit_global_symbol Linkage_name.caml_code_end;
+  emit_global_symbol "code_end";
   D.int64 0L;
   D.switch_to_section Data;
-  emit_global_symbol Linkage_name.caml_data_end;
+  emit_global_symbol "data_end";
   D.int64 0L
 
 (* Emission of data *)
