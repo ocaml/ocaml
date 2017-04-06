@@ -14,8 +14,21 @@
 (*                                                                        *)
 (**************************************************************************)
 
-(** Names of object file symbols, but without any platform-specific
-    name mangling conventions having been applied. *)
+(** Names of object file symbols.
+
+    The hierarchy of names is as follows:
+
+    - [Symbol.t] (Flambda only): names assigned to toplevel values in a
+      hierarchical namespace indexed by compilation unit.
+
+    - [Linkage_name.t] (this file): names assigned to toplevel values in
+      a flat namespace, together with names of external C library functions,
+      functions from the runtime, and so forth.
+
+    - [string] (used in e.g. [X86_dsl]): mangled versions of [Linkage_name.t]
+      that take account of platform-specific conventions for naming symbols.
+      They should be treated as unstructured data.
+*)
 
 [@@@ocaml.warning "+a-4-9-30-40-41-42"]
 
@@ -25,10 +38,15 @@ module List : sig
   val mem : t list -> t -> bool
 end
 
-(** Create a linkage name with no special attributes (GOT, PLT, etc). *)
+(** Create a linkage name with no special attributes (GOT, PLT, etc).
+    The given string should neither contain any platform-specific mangling
+    (for example special prefixes) nor any attributes such as "@GOT". *)
 val create : string -> t
 
-(** Produce the platform-specific mangling of the given linkage name. *)
+(** Produce the platform-specific mangling of the given linkage name
+    including any attributes (see below) with which it has been marked.
+    The results from this function may be used directly in an assembly
+    file. *)
 val to_string : t -> string
 
 (** Add a prefix to a linkage name. *)
