@@ -109,13 +109,16 @@ let symbol_prefix =
   | Z -> "."
   | SPARC -> ""
 
+let _GLOBAL_OFFSET_TABLE_ = "_GLOBAL_OFFSET_TABLE_"
+
 let create name =
   if String.length name > 1 then begin
     (* It's not technically a problem for this condition to fail, but we
-      shouldn't need to be in that position, and this check should catch
-      bugs. *)
+       shouldn't need to be in that position, and this check should catch
+       bugs. *)
     if String.length symbol_prefix > 0
       && Misc.Stdlib.String.is_prefix symbol_prefix ~of_:name
+      && not (String.equal name _GLOBAL_OFFSET_TABLE_)
     then begin
       Misc.fatal_errorf "Suspicious creation of [Linkage_name.t]: has this \
           symbol name already been mangled? '%s'"
@@ -178,7 +181,7 @@ let plt t =
 let mcount = create "mcount"
 let sqrt = create "sqrt"
 
-let _GLOBAL_OFFSET_TABLE_ = create "_GLOBAL_OFFSET_TABLE_"
+let _GLOBAL_OFFSET_TABLE_ = create _GLOBAL_OFFSET_TABLE_
 
 let caml_young_ptr = create "caml_young_ptr"
 let caml_young_limit = create "caml_young_limit"
