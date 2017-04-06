@@ -254,8 +254,8 @@ CAMLexport caml_root caml_named_root(char const *name)
 
 CAMLexport value* caml_named_value(char const* name)
 {
-  extern value* caml__root_as_ptr(caml_root r);
-  return caml__root_as_ptr(caml_named_root(name));
+  extern value* caml_deprecated_root_as_ptr(caml_root r);
+  return caml_deprecated_root_as_ptr(caml_named_root(name));
 }
 
 CAMLexport void caml_iterate_named_roots(caml_named_action f)

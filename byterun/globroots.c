@@ -298,7 +298,7 @@ struct caml_root_private {
 
 /* It would be better if caml_roots used the generational API,
    but they can't if they are to support the caml_named_value call,
-   which raw value pointers */
+   which returns raw value pointers */
 
 CAMLexport caml_root caml_create_root(value v)
 {
@@ -325,7 +325,7 @@ CAMLexport void caml_modify_root(caml_root r, value v)
 }
 
 /* used only for backward compatibility with caml_named_value in callback.c */
-CAMLexport value* caml__root_as_ptr(caml_root r)
+CAMLexport value* caml_deprecated_root_as_ptr(caml_root r)
 {
   return &r->val;
 }

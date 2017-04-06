@@ -187,12 +187,17 @@ bits  63        (64-P) (63-P)        10 9     8 7   0
 #define Field(x, i) (((value *)(x)) [i])           /* Also an l-value. */
 #endif
 
+/* The result of [caml_read_field] must be stored in a variable
+   which has already been declared with CAMLlocalN/CAMLparamN.
+
+   To help ensure this, [caml_read_field] takes the address of such
+   a variable as a parameter, rather than directly returning a value. */
 static inline void caml_read_field (value obj, mlsize_t f, value* ret)
 {
   *ret = Op_val(obj)[f];
 }
 
-static inline value Field_imm (value obj, mlsize_t f)
+static inline value Field_immut (value obj, mlsize_t f)
 {
   return Op_val(obj)[f];
 }
@@ -228,8 +233,8 @@ typedef opcode_t * code_t;
 
 /* Another special case: objects */
 #define Object_tag 248
-#define Class_val(val) Field_imm((val), 0)
-#define Oid_val(val) Long_val(Field_imm((val), 1))
+#define Class_val(val) Field_immut((val), 0)
+#define Oid_val(val) Long_val(Field_immut((val), 1))
 CAMLextern value caml_get_public_method (value obj, value tag);
 /* Called as:
    caml_callback(caml_get_public_method(obj, caml_hash_variant(name)), obj) */
