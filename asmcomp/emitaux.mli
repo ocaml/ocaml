@@ -72,6 +72,7 @@ val record_call_gc_site
    : label:Cmm.label
   -> return_label:Cmm.label
   -> frame_label:Cmm.label
+  -> stack_offset:int
   -> unit
 
 (** Recording of calls to [caml_ml_array_bound_error]. *)
@@ -80,6 +81,7 @@ val bound_error_label
   -> slot_offset:(Reg.stack_location -> int -> int)
   -> ?label:Cmm.label
   -> Debuginfo.t
+  -> stack_offset:int
   -> Cmm.label
 
 (** Label a floating-point constant. *)
@@ -94,7 +96,7 @@ val fundecl
    : ?branch_relaxation:((module Branch_relaxation.S) * int)
   -> Linearize.fundecl
   -> prepare:(Linearize.fundecl -> unit)
-  -> emit_all:(fun_body:Linearize.instruction -> unit)
+  -> emit_all:(fun_body:Linearize.instruction -> int)
   -> alignment_in_bytes:int
   -> emit_call:(Linkage_name.t -> unit)
   -> emit_jump_to_label:(Cmm.label -> unit)

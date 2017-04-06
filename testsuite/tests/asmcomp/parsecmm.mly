@@ -146,8 +146,8 @@ fundecl:
          fun_dbg = debuginfo ()} }
 ;
 fun_name:
-    STRING              { $1 }
-  | IDENT               { $1 }
+    STRING              { (Linkage_name.create $1) }
+  | IDENT               { (Linkage_name.create $1) }
 params:
     oneparam params     { $1 :: $2 }
   | /**/                { [] }
@@ -172,7 +172,7 @@ componentlist:
 expr:
     INTCONST    { Cconst_int $1 }
   | FLOATCONST  { Cconst_float (float_of_string $1) }
-  | STRING      { Cconst_symbol $1 }
+  | STRING      { Cconst_symbol (Linkage_name.create $1) }
   | POINTER     { Cconst_pointer $1 }
   | IDENT       { Cvar(find_ident $1) }
   | LBRACKET RBRACKET { Ctuple [] }
@@ -181,7 +181,7 @@ expr:
   | LPAREN APPLY location expr exprlist machtype RPAREN
                 { Cop(Capply $6, $4 :: List.rev $5, debuginfo ?loc:$3 ()) }
   | LPAREN EXTCALL STRING exprlist machtype RPAREN
-               {Cop(Cextcall($3, $5, false, None), List.rev $4, debuginfo ())}
+               {Cop(Cextcall(Linkage_name.create $3, $5, false, None), List.rev $4, debuginfo ())}
   | LPAREN ALLOC exprlist RPAREN { Cop(Calloc, List.rev $3, debuginfo ()) }
   | LPAREN SUBF expr RPAREN { Cop(Cnegf, [$3], debuginfo ()) }
   | LPAREN SUBF expr expr RPAREN { Cop(Csubf, [$3; $4], debuginfo ()) }
@@ -326,17 +326,17 @@ datalist:
   | /**/                        { [] }
 ;
 dataitem:
-    STRING COLON                { Cdefine_symbol $1 }
+    STRING COLON                { Cdefine_symbol (Linkage_name.create $1) }
   | BYTE INTCONST               { Cint8 $2 }
   | HALF INTCONST               { Cint16 $2 }
   | INT INTCONST                { Cint(Nativeint.of_int $2) }
   | FLOAT FLOATCONST            { Cdouble (float_of_string $2) }
-  | ADDR STRING                 { Csymbol_address $2 }
-  | VAL STRING                 { Csymbol_address $2 }
+  | ADDR STRING                 { Csymbol_address (Linkage_name.create $2) }
+  | VAL STRING                  { Csymbol_address (Linkage_name.create $2) }
   | KSTRING STRING              { Cstring $2 }
   | SKIP INTCONST               { Cskip $2 }
   | ALIGN INTCONST              { Calign $2 }
-  | GLOBAL STRING               { Cglobal_symbol $2 }
+  | GLOBAL STRING               { Cglobal_symbol (Linkage_name.create $2) }
 ;
 catch_handlers:
   | catch_handler

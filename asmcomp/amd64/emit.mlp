@@ -511,6 +511,7 @@ let emit_instr fallthrough i =
         record_call_gc_site ~label:lbl_call_gc
           ~return_label:lbl_redo
           ~frame_label:lbl_frame
+          ~stack_offset:!stack_offset
       end else begin
         if Config.spacetime then begin
           spacetime_before_uninstrumented_call' ~node_ptr:(arg i 0)
@@ -540,7 +541,10 @@ let emit_instr fallthrough i =
       I.set (cond cmp) al;
       I.movzx al (res i 0)
   | Lop(Iintop (Icheckbound { label_after_error; spacetime_index; } )) ->
-      let lbl = bound_error_label ?label:label_after_error i.dbg in
+      let lbl =
+        bound_error_label ?label:label_after_error i.dbg
+          ~stack_offset:!stack_offset
+      in
       if Config.spacetime then begin
         spacetime_uninstrumented_calls :=
           Int.Map.add lbl (arg i 2, spacetime_index)
@@ -549,7 +553,10 @@ let emit_instr fallthrough i =
       I.cmp (arg i 1) (arg i 0);
       I.jbe (label_operand lbl)
   | Lop(Iintop_imm(Icheckbound { label_after_error; spacetime_index; }, n)) ->
-      let lbl = bound_error_label ?label:label_after_error i.dbg in
+      let lbl =
+        bound_error_label ?label:label_after_error i.dbg
+          ~stack_offset:!stack_offset
+      in
       if Config.spacetime then begin
         spacetime_uninstrumented_calls :=
           Int.Map.add lbl (arg i 1, spacetime_index)
@@ -723,13 +730,8 @@ let emit_all ~fun_body =
         emit_all (Linearize.has_fallthrough i.desc) i.next
   in
   emit_all true fun_body;
-  if frame_required() then begin
-    let n = frame_size() - 8 - (if fp then 8 else 0) in
-    if n <> 0
-    then begin
-      D.cfi_adjust_cfa_offset ~bytes:(-n);
-    end;
-  end
+  if not (frame_required ()) then 0
+  else frame_size() - 8 - (if fp then 8 else 0)
 
 (* Emission of the profiling prelude *)
 

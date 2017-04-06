@@ -449,14 +449,26 @@ let emit (d : Directive.t) =
 
 let section segment flags args = emit (Section (segment, flags, args))
 let align ~bytes = emit (Align { bytes; })
+
+let should_generate_cfi () =
+  Config.asm_cfi_supported && !Clflags.debug
+
 let cfi_adjust_cfa_offset ~bytes =
-  if Config.asm_cfi_supported then emit (Cfi_adjust_cfa_offset bytes)
+  if should_generate_cfi () && bytes <> 0 then begin
+    emit (Cfi_adjust_cfa_offset bytes)
+    end
+
 let cfi_endproc () =
-  if Config.asm_cfi_supported then emit Cfi_endproc
+  if should_generate_cfi () then emit Cfi_endproc
+
 let cfi_offset ~reg ~offset =
-  if Config.asm_cfi_supported then emit (Cfi_offset { reg; offset; })
+  if should_generate_cfi () && offset <> 0 then begin
+    emit (Cfi_offset { reg; offset; })
+  end
+
 let cfi_startproc () =
-  if Config.asm_cfi_supported then emit Cfi_startproc
+  if should_generate_cfi () then emit Cfi_startproc
+
 let comment s = emit (Comment s)
 let direct_assignment var cst =
   emit (Direct_assignment (L.to_string var, lower_constant cst))

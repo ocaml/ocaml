@@ -289,21 +289,25 @@ type gc_call =
   { gc_lbl: Cmm.label;
     gc_return_lbl: Cmm.label;
     gc_frame: Cmm.label;
+    stack_offset : int;
   }
 
 let call_gc_sites = ref ([] : gc_call list)
 
 let record_call_gc_site ~label:gc_lbl ~return_label:gc_return_lbl
-      ~frame_label:gc_frame =
-  call_gc_sites := { gc_lbl; gc_return_lbl; gc_frame; } :: !call_gc_sites
+      ~frame_label:gc_frame ~stack_offset =
+  call_gc_sites :=
+    { gc_lbl; gc_return_lbl; gc_frame; stack_offset; } :: !call_gc_sites
 
 let emit_call_gc gc ~spacetime_before_uninstrumented_call ~emit_call
       ~emit_jump_to_label =
   D.define_label gc.gc_lbl;
+  D.cfi_adjust_cfa_offset ~bytes:gc.stack_offset;
   spacetime_before_uninstrumented_call gc.gc_lbl;
   emit_call Linkage_name.caml_call_gc;
   D.define_label gc.gc_frame;
-  emit_jump_to_label gc.gc_return_lbl
+  emit_jump_to_label gc.gc_return_lbl;
+  D.cfi_adjust_cfa_offset ~bytes:(-gc.stack_offset)
 
 (* Record calls to caml_ml_array_bound_error.
    In -g mode, or when using Spacetime profiling, we maintain one call to
@@ -313,12 +317,13 @@ let emit_call_gc gc ~spacetime_before_uninstrumented_call ~emit_call
 type bound_error_call =
   { bd_lbl: Cmm.label;                      (* Entry label *)
     bd_frame: Cmm.label;                    (* Label of frame descriptor *)
+    stack_offset : int;
   }
 
 let bound_error_sites = ref ([] : bound_error_call list)
 let bound_error_call = ref 0
 
-let bound_error_label ~frame_size ~slot_offset ?label dbg =
+let bound_error_label ~frame_size ~slot_offset ?label dbg ~stack_offset =
   if !Clflags.debug || Config.spacetime then begin
     let lbl_bound_error = Cmm.new_label() in
     let lbl_frame =
@@ -326,7 +331,7 @@ let bound_error_label ~frame_size ~slot_offset ?label dbg =
         ?label ~live:Reg.Set.empty ~raise_:false dbg
     in
     bound_error_sites :=
-      { bd_lbl = lbl_bound_error; bd_frame = lbl_frame; }
+      { bd_lbl = lbl_bound_error; bd_frame = lbl_frame; stack_offset; }
         :: !bound_error_sites;
     lbl_bound_error
   end else begin
@@ -337,9 +342,11 @@ let bound_error_label ~frame_size ~slot_offset ?label dbg =
 let emit_call_bound_error bd ~emit_call
       ~spacetime_before_uninstrumented_call =
   D.define_label bd.bd_lbl;
+  D.cfi_adjust_cfa_offset ~bytes:bd.stack_offset;
   spacetime_before_uninstrumented_call bd.bd_lbl;
   emit_call Linkage_name.caml_ml_array_bound_error;
-  D.define_label bd.bd_frame
+  D.define_label bd.bd_frame;
+  D.cfi_adjust_cfa_offset ~bytes:(-bd.stack_offset)
 
 let emit_call_bound_errors ~emit_call ~spacetime_before_uninstrumented_call =
   List.iter (fun bd ->
@@ -347,6 +354,10 @@ let emit_call_bound_errors ~emit_call ~spacetime_before_uninstrumented_call =
         ~spacetime_before_uninstrumented_call)
     !bound_error_sites;
   if !bound_error_call > 0 then begin
+    (* There might not be a unique offset from the CFA if there is only a
+       single check-bound point.  However we should never be here if
+       generating CFI (see [bound_error_label], above). *)
+    assert (not !Clflags.debug);
     D.define_label !bound_error_call;
     emit_call Linkage_name.caml_ml_array_bound_error
   end
@@ -390,9 +401,8 @@ let fundecl ?branch_relaxation (fundecl : Linearize.fundecl) ~prepare
     BR.relax fundecl.fun_body ~max_out_of_line_code_offset
   end;
   D.define_label !tailrec_entry_point;
-  emit_all ~fun_body:fundecl.fun_body;
-  D.cfi_endproc ();
-  D.size fundecl.fun_name;
+  let cfi_offset = emit_all ~fun_body:fundecl.fun_body in
+  D.cfi_adjust_cfa_offset ~bytes:(-cfi_offset);
   List.iter (fun gc ->
       emit_call_gc gc ~spacetime_before_uninstrumented_call ~emit_call
         ~emit_jump_to_label)
@@ -400,7 +410,9 @@ let fundecl ?branch_relaxation (fundecl : Linearize.fundecl) ~prepare
   emit_call_bound_errors ~emit_call ~spacetime_before_uninstrumented_call;
   if emit_numeric_constants then begin
     emit_constants ()
-  end
+    end;
+  D.cfi_endproc ();
+  D.size fundecl.fun_name
 
 let emit_spacetime_shapes () =
   if Targetint.size <> 64 then begin
