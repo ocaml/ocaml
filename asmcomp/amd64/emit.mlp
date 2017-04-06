@@ -18,7 +18,6 @@
 
 [@@@ocaml.warning "-40"]
 
-open Misc
 open Cmm
 open Arch
 open Proc
@@ -34,8 +33,13 @@ module D = Asm_directives
 module L = Linkage_name
 module Int = Numbers.Int
 
-let label_operand lbl = X86_ast.Label lbl
-let symbol_operand sym = X86_ast.Sym sym
+let label_operand lbl = X86_ast.Named_thing (D.string_of_label lbl)
+let symbol_operand sym = X86_ast.Named_thing (D.string_of_symbol sym)
+
+let mem64_rip_symbol ?ofs width sym =
+  mem64_rip ?ofs width (D.string_of_symbol sym)
+let mem64_rip_label ?ofs width lbl =
+  mem64_rip ?ofs width (D.string_of_label lbl)
 
 (* Override proc.ml *)
 
@@ -48,9 +52,6 @@ let float_reg_name = Array.init 16 (fun i -> XMM i)
 let register_name r =
   if r < 100 then Reg64 (int_reg_name.(r))
   else Regf (float_reg_name.(r - 100))
-
-let emit_debug_info dbg =
-  emit_debug_info_gen dbg D.file D.loc
 
 let fp = Config.with_frame_pointers
 
@@ -70,7 +71,7 @@ let frame_size () =                     (* includes return address *)
   end else
     !stack_offset + 8
 
-let slot_offset loc cl =
+let slot_offset (loc : Reg.stack_location) cl =
   match loc with
   | Incoming n -> frame_size() + n
   | Local n ->
@@ -81,19 +82,20 @@ let slot_offset loc cl =
 
 let record_frame = record_frame ~frame_size ~slot_offset
 let record_frame_label = record_frame_label ~frame_size ~slot_offset
+let bound_error_label = bound_error_label ~frame_size ~slot_offset
 
 (* Record symbols used and defined - at the end generate extern for those
    used but not defined *)
 
-let imp_table = Hashtbl.create 16
+let imp_table = L.Tbl.create 16
 
-let reset_imp_table () = Hashtbl.clear imp_table
+let reset_imp_table () = L.Tbl.clear imp_table
 
 let get_imp_symbol s =
-  match Hashtbl.find imp_table s with
+  match L.Tbl.find imp_table s with
   | exception Not_found ->
       let imps = L.prefix s ~with_:"__caml_imp_" in
-      Hashtbl.add imp_table s imps;
+      L.Tbl.add imp_table s imps;
       imps
   | imps -> imps
 
@@ -105,28 +107,24 @@ let emit_imp_table () =
   D.switch_to_section Data;
   D.comment "relocation table start";
   D.align ~bytes:8;
-  Hashtbl.iter f imp_table;
+  L.Tbl.iter f imp_table;
   D.comment "relocation table end"
 
 let mem__imp s =
-  mem64_rip QWORD (get_imp_symbol s)
+  mem64_rip_symbol QWORD (get_imp_symbol s)
 
 let rel_plt s =
-  let sym =
-    if Target_system.windows () && !Clflags.dlcode then mem__imp s
-    else
-      let use_plt =
-        match Target_system.system (), Target_system.machine_width () with
-        | MacOS_like, _
-        | Windows MinGW, Sixty_four
-        | Windows Cygwin, (Thirty_two | Sixty_four)
-        | Windows Native, Sixty_four -> false
-        | _, _ -> !Clflags.dlcode
-      in
-      sym
-      (if use_plt then L.plt s else s)
-  in
-  symbol_operand sym
+  if Target_system.windows () && !Clflags.dlcode then mem__imp s
+  else
+    let use_plt =
+      match Target_system.system (), Target_system.machine_width () with
+      | MacOS_like, _
+      | Windows MinGW, Sixty_four
+      | Windows Cygwin, (Thirty_two | Sixty_four)
+      | Windows Native, Sixty_four -> false
+      | _, _ -> !Clflags.dlcode
+    in
+    symbol_operand (if use_plt then L.plt s else s)
 
 let emit_call s = I.call (rel_plt s)
 
@@ -140,9 +138,9 @@ let load_symbol_addr s arg =
       (* I.mov (mem__imp s) arg (\* mov __caml_imp_foo(%rip), ... *\) *)
       I.mov (symbol_operand s) arg (* movabsq $foo, ... *)
     end else
-      I.mov (mem64_rip QWORD (L.gotpcrel s)) arg
+      I.mov (mem64_rip_symbol QWORD (L.gotpcrel s)) arg
   else if !Clflags.pic_code then
-    I.lea (mem64_rip NONE s) arg
+    I.lea (mem64_rip_symbol NONE s) arg
   else
     I.mov (symbol_operand s) arg
 
@@ -198,7 +196,7 @@ let addressing addr typ i n =
   match addr with
   | Ibased(s, ofs) ->
       add_used_symbol s;
-      mem64_rip typ s ~ofs
+      mem64_rip_symbol typ s ~ofs
   | Iindexed d ->
       mem64 typ d (arg64 i n)
   | Iindexed2 d ->
@@ -214,19 +212,21 @@ let addressing addr typ i n =
 
 let spacetime_uninstrumented_calls = ref Int.Map.empty
 
+let spacetime_before_uninstrumented_call' ~node_ptr ~index =
+  (* At the moment, [node_ptr] is pointing at the node for the current
+      OCaml function.  Get hold of the node itself and move the pointer
+      forwards, saving it into the distinguished register.  This is used
+      for instrumentation of function calls (e.g. caml_call_gc and bounds
+      check failures) not inserted until this stage of the compiler
+      pipeline. *)
+  I.mov node_ptr (reg Proc.loc_spacetime_node_hole);
+  assert (index >= 2);
+  I.add (int (index * 8)) (reg Proc.loc_spacetime_node_hole)
+
 let spacetime_before_uninstrumented_call label =
   match Int.Map.find label !spacetime_uninstrumented_calls with
   | exception Not_found -> assert (not Config.spacetime)
-  | (node_ptr, index) ->
-    (* At the moment, [node_ptr] is pointing at the node for the current
-       OCaml function.  Get hold of the node itself and move the pointer
-       forwards, saving it into the distinguished register.  This is used
-       for instrumentation of function calls (e.g. caml_call_gc and bounds
-       check failures) not inserted until this stage of the compiler
-       pipeline. *)
-    I.mov node_ptr (reg Proc.loc_spacetime_node_hole);
-    assert (index >= 2);
-    I.add (int (index * 8)) (reg Proc.loc_spacetime_node_hole)
+  | (node_ptr, index) -> spacetime_before_uninstrumented_call' ~node_ptr ~index
 
 (* Names for instructions *)
 
@@ -318,13 +318,13 @@ let output_epilogue f =
     if n <> 0
     then begin
       I.add (int n) rsp;
-      D.cfi_adjust_cfa_offset (-n);
+      D.cfi_adjust_cfa_offset ~bytes:(-n);
     end;
     if fp then I.pop rbp;
     f ();
     (* reset CFA back cause function body may continue *)
     if n <> 0
-    then D.cfi_adjust_cfa_offset n
+    then D.cfi_adjust_cfa_offset ~bytes:n
   end
   else
     f ()
@@ -356,29 +356,30 @@ let emit_instr fallthrough i =
       | 0x0000_0000_0000_0000L ->       (* +0.0 *)
           I.xorpd (res i 0) (res i 0)
       | _ ->
-          let lbl = add_float_constant f in
-          I.movsd (mem64_rip NONE (D.string_of_label lbl)) (res i 0)
+          let lbl = float_constant f in
+          I.movsd (mem64_rip_label NONE lbl) (res i 0)
       end
   | Lop(Iconst_symbol s) ->
       add_used_symbol s;
       load_symbol_addr s (res i 0)
   | Lop(Icall_ind { label_after; }) ->
       I.call (arg i 0);
-      record_frame i.live false i.dbg ~label:label_after
+      record_frame ~live:i.live ~raise_:false i.dbg ~label:label_after
   | Lop(Icall_imm { func; label_after; }) ->
       add_used_symbol func;
       emit_call func;
-      record_frame i.live false i.dbg ~label:label_after
+      record_frame ~live:i.live ~raise_:false i.dbg ~label:label_after
   | Lop(Itailcall_ind { label_after; }) ->
       output_epilogue begin fun () ->
         I.jmp (arg i 0);
         if Config.spacetime then begin
-          record_frame Reg.Set.empty false i.dbg ~label:label_after
+          record_frame ~live:Reg.Set.empty ~raise_:false i.dbg
+            ~label:label_after
         end
       end
   | Lop(Itailcall_imm { func; label_after; }) ->
       begin
-        if func = !function_name then
+        if L.equal func !function_name then
           I.jmp (label_operand !tailrec_entry_point)
         else begin
           output_epilogue begin fun () ->
@@ -388,14 +389,14 @@ let emit_instr fallthrough i =
         end
       end;
       if Config.spacetime then begin
-        record_frame Reg.Set.empty false i.dbg ~label:label_after
+        record_frame ~live:Reg.Set.empty ~raise_:false i.dbg ~label:label_after
       end
   | Lop(Iextcall { func; alloc; label_after; }) ->
       add_used_symbol func;
       if alloc then begin
         load_symbol_addr func rax;
         emit_call L.caml_c_call;
-        record_frame i.live false i.dbg ~label:label_after;
+        record_frame ~live:i.live ~raise_:false i.dbg ~label:label_after;
         if Target_system.win64 () then begin
           (* TODO: investigate why such a diff.
              This comes from:
@@ -412,7 +413,8 @@ let emit_instr fallthrough i =
       end else begin
         emit_call func;
         if Config.spacetime then begin
-          record_frame Reg.Set.empty false i.dbg ~label:label_after
+          record_frame ~live:Reg.Set.empty ~raise_:false i.dbg
+            ~label:label_after
         end
       end
   | Lop(Istackoffset n) ->
@@ -421,7 +423,7 @@ let emit_instr fallthrough i =
       else if n > 0
       then I.sub (int n) rsp;
       if n <> 0
-      then D.cfi_adjust_cfa_offset n;
+      then D.cfi_adjust_cfa_offset ~bytes:n;
       stack_offset := !stack_offset + n
   | Lop(Iload(chunk, addr)) ->
       let dest = res i 0 in
@@ -483,29 +485,29 @@ let emit_instr fallthrough i =
             I.pop rax  (* this does not affect the flags *)
           end
         end else
-          I.cmp (mem64_rip QWORD L.caml_young_limit) r15;
+          I.cmp (mem64_rip_symbol QWORD L.caml_young_limit) r15;
         let lbl_call_gc = new_label() in
         let dbg =
           if not Config.spacetime then Debuginfo.none
           else i.dbg
         in
         let lbl_frame =
-          record_frame_label ?label:label_after_call_gc i.live false dbg
+          record_frame_label ?label:label_after_call_gc ~live:i.live
+            ~raise_:false dbg
         in
         I.jb (label_operand lbl_call_gc);
         I.lea (mem64 NONE 8 R15) (res i 0);
-        let spacetime_info =
-          if not Config.spacetime then None
-          else Some (arg i 0, spacetime_index)
-        in
-        call_gc_spacetime_info :=
-          Int.Map.add lbl_call_gc spacetime_info !call_gc_spacetime_info;
+        if Config.spacetime then begin
+          spacetime_uninstrumented_calls :=
+            Int.Map.add lbl_call_gc (arg i 0, spacetime_index)
+              !spacetime_uninstrumented_calls
+        end;
         record_call_gc_site ~label:lbl_call_gc
           ~return_label:lbl_redo
           ~frame_label:lbl_frame
       end else begin
         if Config.spacetime then begin
-          spacetime_before_uninstrumented_call ~node_ptr:(arg i 0)
+          spacetime_before_uninstrumented_call' ~node_ptr:(arg i 0)
             ~index:spacetime_index;
         end;
         begin match n with
@@ -517,8 +519,8 @@ let emit_instr fallthrough i =
             emit_call L.caml_allocN
         end;
         let label =
-          record_frame_label ?label:label_after_call_gc i.live false
-            Debuginfo.none
+          record_frame_label ?label:label_after_call_gc ~live:i.live
+            ~raise_:false Debuginfo.none
         in
         D.define_label label;
         I.lea (mem64 NONE 8 R15) (res i 0)
@@ -532,19 +534,21 @@ let emit_instr fallthrough i =
       I.set (cond cmp) al;
       I.movzx al (res i 0)
   | Lop(Iintop (Icheckbound { label_after_error; spacetime_index; } )) ->
-      let spacetime =
-        if not Config.spacetime then None
-        else Some (arg i 2, spacetime_index)
-      in
-      let lbl = bound_error_label ?label:label_after_error i.dbg ~spacetime in
+      let lbl = bound_error_label ?label:label_after_error i.dbg in
+      if Config.spacetime then begin
+        spacetime_uninstrumented_calls :=
+          Int.Map.add lbl (arg i 2, spacetime_index)
+            !spacetime_uninstrumented_calls
+      end;
       I.cmp (arg i 1) (arg i 0);
       I.jbe (label_operand lbl)
   | Lop(Iintop_imm(Icheckbound { label_after_error; spacetime_index; }, n)) ->
-      let spacetime =
-        if not Config.spacetime then None
-        else Some (arg i 1, spacetime_index)
-      in
-      let lbl = bound_error_label ?label:label_after_error i.dbg ~spacetime in
+      let lbl = bound_error_label ?label:label_after_error i.dbg in
+      if Config.spacetime then begin
+        spacetime_uninstrumented_calls :=
+          Int.Map.add lbl (arg i 1, spacetime_index)
+            !spacetime_uninstrumented_calls
+      end;
       I.cmp (int n) (arg i 0);
       I.jbe (label_operand lbl)
   | Lop(Iintop(Idiv | Imod)) ->
@@ -568,9 +572,9 @@ let emit_instr fallthrough i =
       (* We have i.arg.(0) = i.res.(0) *)
       instr_for_intop op (int n) (res i 0)
   | Lop(Inegf) ->
-      I.xorpd (mem64_rip OWORD L.caml_negf_mask) (res i 0)
+      I.xorpd (mem64_rip_symbol OWORD L.caml_negf_mask) (res i 0)
   | Lop(Iabsf) ->
-      I.andpd (mem64_rip OWORD L.caml_absf_mask) (res i 0)
+      I.andpd (mem64_rip_symbol OWORD L.caml_absf_mask) (res i 0)
   | Lop(Iaddf | Isubf | Imulf | Idivf as floatop) ->
       instr_for_floatop floatop (arg i 1) (res i 0)
   | Lop(Ifloatofint) ->
@@ -653,7 +657,6 @@ let emit_instr fallthrough i =
       end
   | Lswitch jumptbl ->
       let lbl = new_label () in
-      let lbl' = D.string_of_label lbl in
       (* rax and rdx are clobbered by the Lswitch,
          meaning that no variable that is live across the Lswitch
          is assigned to rax or rdx.  However, the argument to Lswitch
@@ -664,7 +667,7 @@ let emit_instr fallthrough i =
         then (phys_reg 4 (*rdx*), phys_reg 0 (*rax*))
         else (phys_reg 0 (*rax*), phys_reg 4 (*rdx*)) in
 
-      I.lea (mem64_rip NONE lbl') (reg tmp1);
+      I.lea (mem64_rip_label NONE lbl) (reg tmp1);
       I.movsxd (mem64 DWORD 0 (arg64 i 0) ~scale:4 ~base:(reg64 tmp1))
                (reg tmp2);
       I.add (reg tmp2) (reg tmp1);
@@ -680,16 +683,16 @@ let emit_instr fallthrough i =
   | Lsetuptrap lbl ->
      I.call (label_operand lbl)
   | Lpushtrap ->
-      D.cfi_adjust_cfa_offset 8;
+      D.cfi_adjust_cfa_offset ~bytes:8;
       I.push r14;
-      D.cfi_adjust_cfa_offset 8;
+      D.cfi_adjust_cfa_offset ~bytes:8;
       I.mov rsp r14;
       stack_offset := !stack_offset + 16
   | Lpoptrap ->
       I.pop r14;
-      D.cfi_adjust_cfa_offset (-8);
+      D.cfi_adjust_cfa_offset ~bytes:(-8);
       I.add (int 8) rsp;
-      D.cfi_adjust_cfa_offset (-8);
+      D.cfi_adjust_cfa_offset ~bytes:(-8);
       stack_offset := !stack_offset - 16
   | Lraise k ->
       (* No Spacetime instrumentation is required for [caml_raise_exn] and
@@ -698,7 +701,7 @@ let emit_instr fallthrough i =
       begin match k with
       | Cmm.Raise_withtrace ->
           emit_call L.caml_raise_exn;
-          record_frame Reg.Set.empty true i.dbg
+          record_frame ~live:Reg.Set.empty ~raise_:true i.dbg
       | Cmm.Raise_notrace ->
           I.mov r14 rsp;
           I.pop r14;
@@ -732,11 +735,11 @@ let emit_profile () =
 
 (* Emission of a function declaration *)
 
-let prepare_for_fundecl fundecl =
+let prepare_for_fundecl _fundecl =
   stack_offset := 0;
   if fp then begin
     I.push rbp;
-    D.cfi_adjust_cfa_offset 8;
+    D.cfi_adjust_cfa_offset ~bytes:8;
     I.mov rsp rbp;
   end;
   if !Clflags.gprofile then emit_profile();
@@ -745,7 +748,7 @@ let prepare_for_fundecl fundecl =
     if n <> 0
     then begin
       I.sub (int n) rsp;
-      D.cfi_adjust_cfa_offset n;
+      D.cfi_adjust_cfa_offset ~bytes:n;
     end;
   end
 
@@ -757,37 +760,37 @@ let fundecl decl =
     ~emit_jump_to_label
     ~spacetime_before_uninstrumented_call
     ~alignment_in_bytes:16
-    ~emit_floating_point_constants:false;
+    ~emit_numeric_constants:false;
   if frame_required() then begin
     let n = frame_size() - 8 - (if fp then 8 else 0) in
     if n <> 0
     then begin
-      D.cfi_adjust_cfa_offset (-n);
+      D.cfi_adjust_cfa_offset ~bytes:(-n);
     end;
   end
 
 (* Beginning / end of an assembly file *)
 
 let begin_assembly() =
-  call_gc_spacetime_info := Int.Map.empty;
+  spacetime_uninstrumented_calls := Int.Map.empty;
   X86_proc.reset_asm_code ();
   Asm_directives.initialize ~emit:(fun directive ->
     X86_proc.directive (Directive directive));
   reset_imp_table();
   Emitaux.begin_assembly ();
   if Target_system.win64 () then begin
-    let module D = X86_dsl.D in
-    D.extrn L.caml_young_ptr QWORD;
-    D.extrn L.caml_young_limit QWORD;
-    D.extrn L.caml_exception_pointer QWORD;
-    D.extrn L.caml_call_gc NEAR;
-    D.extrn L.caml_c_call NEAR;
-    D.extrn L.caml_allocN NEAR;
-    D.extrn L.caml_alloc1 NEAR;
-    D.extrn L.caml_alloc2 NEAR;
-    D.extrn L.caml_alloc3 NEAR;
-    D.extrn L.caml_ml_array_bound_error NEAR;
-    D.extrn L.caml_raise_exn NEAR
+    let extrn sym width = X86_dsl.D.extrn (L.to_string sym) width in
+    extrn L.caml_young_ptr QWORD;
+    extrn L.caml_young_limit QWORD;
+    extrn L.caml_exception_pointer QWORD;
+    extrn L.caml_call_gc NEAR;
+    extrn L.caml_c_call NEAR;
+    extrn L.caml_allocN NEAR;
+    extrn L.caml_alloc1 NEAR;
+    extrn L.caml_alloc2 NEAR;
+    extrn L.caml_alloc3 NEAR;
+    extrn L.caml_ml_array_bound_error NEAR;
+    extrn L.caml_raise_exn NEAR
   end;
   if !Clflags.dlcode || Target_system.win64 () then begin
     (* from amd64.S; could emit these constants on demand *)
@@ -815,18 +818,18 @@ let end_assembly () =
   | _ -> ()
   end;
   emit_imp_table();
-  Emitaux.end_assembly ~emit_floating_point_constants:true;
+  Emitaux.end_assembly ~emit_numeric_constants:true;
   if Target_system.win64 () then begin
     D.comment "External functions";
     L.Set.iter (fun s ->
-        if not (L.Set.mem s !symbols_defined) then
-          X86_dsl.D.extrn s NEAR)
-      !symbols_used
+        if not (L.Set.mem s (symbols_defined ())) then
+          X86_dsl.D.extrn (L.to_string s) NEAR)
+      (symbols_used ())
   end;
   let asm =
     match !Emitaux.create_asm_file, Target_system.assembler () with
-    | true, MASM -> Some X86_masm.generate_asm
-    | true, (MacOS | GAS_like) -> Some X86_gas.generate_asm
-    | false -> None
+    | true, MASM -> Some (X86_masm.generate_asm !output_channel)
+    | true, (MacOS | GAS_like) -> Some (X86_gas.generate_asm !output_channel)
+    | false, _ -> None
   in
   X86_proc.generate_code asm

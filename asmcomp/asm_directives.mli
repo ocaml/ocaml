@@ -87,6 +87,10 @@ val float32 : float -> unit
 (** Emit a 64-bit-wide floating point number. *)
 val float64 : float -> unit
 
+(** Emit a 64-bit-wide floating point number whose bits are contained
+    in an [Int64.t]. *)
+val float64_from_bits : Int64.t -> unit
+
 (** Emit a string (directly into the current section).  This function
     does not write a terminating null. *)
 val string : string -> unit

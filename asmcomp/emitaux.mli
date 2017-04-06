@@ -49,6 +49,24 @@ val binary_backend_available: bool ref
 val create_asm_file: bool ref
     (** Are we actually generating the textual assembly file? *)
 
+(** Whether optimising for speed. *)
+val fastcode_flag : bool ref
+
+(** Linkage name of the function currently being compiled. *)
+val function_name : Linkage_name.t ref
+
+(** The entry point to the current function for a self-tail-recursive call. *)
+val tailrec_entry_point : Cmm.label ref
+
+(** Record the use of a symbol. *)
+val add_used_symbol : Linkage_name.t -> unit
+
+(** Symbols defined by the current compilation unit. *)
+val symbols_defined : unit -> Linkage_name.Set.t
+
+(** Symbols used by the current compilation unit. *)
+val symbols_used : unit -> Linkage_name.Set.t
+
 (** Recording of calls to the GC. *)
 val record_call_gc_site
    : label:Cmm.label
@@ -65,7 +83,7 @@ val bound_error_label
   -> Cmm.label
 
 (** Label a floating-point constant. *)
-val float_constant : float -> Cmm.label
+val float_constant : Int64.t -> Cmm.label
 
 (** Label an integer constant. *)
 val int_constant : nativeint -> Cmm.label

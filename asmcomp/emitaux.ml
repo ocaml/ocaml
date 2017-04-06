@@ -221,7 +221,7 @@ let function_name = ref (Linkage_name.create "")
 let tailrec_entry_point = ref 0
 
 (* Pending floating-point constants *)
-let float_constants = ref ([] : (float * Cmm.label) list)
+let float_constants = ref ([] : (Int64.t * Cmm.label) list)
 
 (* Pending integer constants *)
 let int_constants = ref ([] : (nativeint * int) list)
@@ -247,7 +247,7 @@ let emit_float_constants () =
     List.iter
       (fun (f, lbl) ->
         D.define_label lbl;
-        D.float64 f)
+        D.float64_from_bits f)
       !float_constants;
     float_constants := []
   end
@@ -483,3 +483,6 @@ let reset () =
 
 let binary_backend_available = ref false
 let create_asm_file = ref true
+
+let symbols_defined () = !symbols_defined
+let symbols_used () = !symbols_used

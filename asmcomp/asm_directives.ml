@@ -543,17 +543,20 @@ let float32 f =
   let comment = Printf.sprintf "%.12f" f in
   emit (Const32 (Const32 (Int32.bits_of_float f), Some comment))
 
-let float64 f =
+let float64_core f f_int64 =
   match TS.machine_width () with
   | Sixty_four ->
     let comment = Printf.sprintf "%.12g" f in
-    emit (Const64 (Const (Int64.bits_of_float f), Some comment))
+    emit (Const64 (Const f_int64, Some comment))
   | Thirty_two ->
     let comment_lo = Printf.sprintf "low part of %.12g" f in
     let comment_hi = Printf.sprintf "high part of %.12g" f in
-    let f = Int64.bits_of_float f in
-    let lo : Directive.constant = Const (Int64.logand f 0xFFFF_FFFFL) in
-    let hi : Directive.constant = Const (Int64.shift_right_logical f 32) in
+    let lo : Directive.constant =
+      Const (Int64.logand f_int64 0xFFFF_FFFFL)
+    in
+    let hi : Directive.constant =
+      Const (Int64.shift_right_logical f_int64 32)
+    in
     if Arch.big_endian then begin
       emit (Const64 (hi, Some comment_hi));
       emit (Const64 (lo, Some comment_lo))
@@ -561,6 +564,9 @@ let float64 f =
       emit (Const64 (lo, Some comment_lo));
       emit (Const64 (hi, Some comment_hi))
     end
+
+let float64 f = float64_core f (Int64.bits_of_float f)
+let float64_from_bits f = float64_core (Int64.float_of_bits f) f
 
 let size ?size_of symbol =
   match TS.system () with
