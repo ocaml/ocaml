@@ -708,12 +708,22 @@ let emit_instr fallthrough i =
           I.ret ()
       end
 
-let rec emit_all fallthrough i =
-  match i.desc with
-  | Lend -> ()
-  | _ ->
-      emit_instr fallthrough i;
-      emit_all (Linearize.has_fallthrough i.desc) i.next
+let emit_all ~fun_body =
+  let rec emit_all fallthrough i =
+    match i.desc with
+    | Lend -> ()
+    | _ ->
+        emit_instr fallthrough i;
+        emit_all (Linearize.has_fallthrough i.desc) i.next
+  in
+  emit_all true fun_body;
+  if frame_required() then begin
+    let n = frame_size() - 8 - (if fp then 8 else 0) in
+    if n <> 0
+    then begin
+      D.cfi_adjust_cfa_offset ~bytes:(-n);
+    end;
+  end
 
 (* Emission of the profiling prelude *)
 
@@ -755,19 +765,12 @@ let prepare_for_fundecl _fundecl =
 let fundecl decl =
   Emitaux.fundecl decl
     ~prepare:prepare_for_fundecl
-    ~emit_all:(fun ~fun_body -> emit_all true fun_body)
+    ~emit_all
     ~emit_call
     ~emit_jump_to_label
     ~spacetime_before_uninstrumented_call
     ~alignment_in_bytes:16
-    ~emit_numeric_constants:false;
-  if frame_required() then begin
-    let n = frame_size() - 8 - (if fp then 8 else 0) in
-    if n <> 0
-    then begin
-      D.cfi_adjust_cfa_offset ~bytes:(-n);
-    end;
-  end
+    ~emit_numeric_constants:false
 
 (* Beginning / end of an assembly file *)
 
