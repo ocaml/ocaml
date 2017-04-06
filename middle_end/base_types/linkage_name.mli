@@ -40,7 +40,9 @@ end
 
 (** Create a linkage name with no special attributes (GOT, PLT, etc).
     The given string should neither contain any platform-specific mangling
-    (for example special prefixes) nor any attributes such as "@GOT". *)
+    (for example special prefixes) nor any attributes such as "@GOT".
+    (In particular, it should not come from a previous call to this module's
+    [to_string] function.) *)
 val create : string -> t
 
 (** Produce the platform-specific mangling of the given linkage name
@@ -48,6 +50,9 @@ val create : string -> t
     The results from this function may be used directly in an assembly
     file. *)
 val to_string : t -> string
+
+(** The name as passed to [create].  Not for emission into assembly. *)
+val name : t -> string
 
 (** Add a prefix to a linkage name. *)
 (* CR mshinwell: rename to "prepend"? *)

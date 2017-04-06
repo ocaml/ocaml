@@ -51,7 +51,7 @@ let rec build_closure_env env_param pos = function
    contain the right names if the -for-pack option is active. *)
 
 let getglobal dbg id =
-  let sym = Linkage_name.to_string (Compilenv.symbol_for_global id) in
+  let sym = Linkage_name.name (Compilenv.symbol_for_global id) in
   Uprim(Pgetglobal (Ident.create_persistent sym), [], dbg)
 
 (* Check if a variable occurs in a [clambda] term. *)
@@ -746,7 +746,7 @@ let check_constant_result lam ulam approx =
       | Uprim(Pfield _, [Uprim(Pgetglobal _, _, _)], _) -> (ulam, approx)
       | _ ->
           let glb =
-            let id = Linkage_name.to_string id in
+            let id = Linkage_name.name id in
             Uprim(Pgetglobal (Ident.create_persistent id), [], Debuginfo.none)
           in
           Uprim(Pfield i, [glb], Debuginfo.none), approx

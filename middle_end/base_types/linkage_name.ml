@@ -153,6 +153,8 @@ let to_string t =
   in
   without_kind ^ (Kind.to_string t.kind)
 
+let name t = t.name
+
 let prefix t ~with_ =
   { t with
     name = with_ ^ t.name;
