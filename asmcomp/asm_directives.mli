@@ -18,7 +18,7 @@
 (** Abstraction layer for the emission of assembly directives that conceals
     many intricate details differing between target systems. *)
 
-(** Sections that hold for DWARF debugging information. *)
+(** Sections that hold DWARF debugging information. *)
 type dwarf_section =
   | Debug_info
   | Debug_abbrev
@@ -67,6 +67,7 @@ val int32 : Int32.t -> unit
 val int64 : Int64.t -> unit
 
 (** Emit a native integer. *)
+(* CR mshinwell: what is this supposed to do? *)
 val nativeint : Nativeint.t -> unit
 
 (** Emit an integer whose width is that of an address on the target
@@ -204,7 +205,7 @@ val between_labels_32bit : upper:Cmm.label -> lower:Cmm.label -> unit
     lower symbol and the sum of the address of the upper label plus
     [offset_upper]. *)
 val between_symbol_and_label_offset
-    : upper:Cmm.label
+   : upper:Cmm.label
   -> lower:Linkage_name.t
   -> offset_upper:Targetint.t
   -> unit
@@ -212,7 +213,7 @@ val between_symbol_and_label_offset
 (* CR mshinwell: naming of these two *)
 
 val between_symbol_and_label_offset'
-    : upper:Linkage_name.t
+   : upper:Linkage_name.t
   -> lower:Cmm.label
   -> offset_lower:Targetint.t
   -> unit
@@ -223,12 +224,12 @@ val between_symbol_and_label_offset'
 (* CR mshinwell: Make sure that emit_label lines up with what Asm_directives
     does for int -> string label conversion *)
 val between_this_and_label_offset_32bit
-    : upper:Cmm.label
+   : upper:Cmm.label
   -> offset_upper:Targetint.t
   -> unit
 
 val scaled_distance_between_this_and_label_offset
-    : upper:Cmm.label
+   : upper:Cmm.label
   -> divide_by:int
   -> unit
 
@@ -236,7 +237,7 @@ val scaled_distance_between_this_and_label_offset
     address of [base] from the address of [label].  [width] specifies the
     size of the integer. *)
 val offset_into_section_label
-    : section:section
+   : section:section
   -> label:Cmm.label
   -> width:Target_system.machine_width
   -> unit
@@ -244,7 +245,7 @@ val offset_into_section_label
 (** As for [offset_into_section_label], but using a symbol instead of
     a label as one end of the measurement. *)
 val offset_into_section_symbol
-    : section:section
+   : section:section
   -> symbol:Linkage_name.t
   -> width:Target_system.machine_width
   -> unit

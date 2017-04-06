@@ -48,6 +48,10 @@ val gotpcrel : t -> t
 (** Mark a symbol as being a reference via the procedure linkage table. *)
 val plt : t -> t
 
+(** Whether the function may be duplicated between a DLL and the main
+    program (PR#4690). *)
+val is_generic_function : t -> bool
+
 (** Distinguished identifier referencing the global offset table. *)
 val _GLOBAL_OFFSET_TABLE_ : t
 

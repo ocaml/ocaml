@@ -79,6 +79,9 @@ let slot_offset loc cl =
       else !stack_offset + (num_stack_slots.(0) + n) * 8
   | Outgoing n -> n
 
+let record_frame = record_frame ~frame_size ~slot_offset
+let record_frame_label = record_frame_label ~frame_size ~slot_offset
+
 (* Record symbols used and defined - at the end generate extern for those
    used but not defined *)
 
@@ -771,7 +774,7 @@ let begin_assembly() =
   Asm_directives.initialize ~emit:(fun directive ->
     X86_proc.directive (Directive directive));
   reset_imp_table();
-  Emitaux.begin_assembly ~frame_size;
+  Emitaux.begin_assembly ();
   if Target_system.win64 () then begin
     let module D = X86_dsl.D in
     D.extrn L.caml_young_ptr QWORD;
@@ -796,10 +799,21 @@ let begin_assembly() =
     D.align ~bytes:16;
     D.define_symbol L.caml_absf_mask;
     D.int64 0x7FFFFFFFFFFFFFFFL;
-    D.int64 0xFFFFFFFFFFFFFFFFL;
+    D.int64 0xFFFFFFFFFFFFFFFFL
+  end;
+  begin match Target_system.system () with
+  | MacOS_like -> I.nop () (* PR#4690 *)
+  | _ -> ()
   end
 
 let end_assembly () =
+  D.switch_to_section Text;
+  begin match Target_system.system () with
+  | MacOS_like ->
+    (* suppress "ld warning: atom sorting error" *)
+    I.nop ()
+  | _ -> ()
+  end;
   emit_imp_table();
   Emitaux.end_assembly ~emit_floating_point_constants:true;
   if Target_system.win64 () then begin

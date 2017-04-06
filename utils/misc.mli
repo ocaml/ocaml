@@ -90,6 +90,12 @@ module Stdlib : sig
     val fold : ('a -> 'b -> 'b) -> 'a t -> 'b -> 'b
     val value_default : ('a -> 'b) -> default:'b -> 'a t -> 'b
   end
+
+  module String : sig
+    type t = string
+
+    val is_prefix : t -> of_:t -> bool
+  end
 end
 
 val find_in_path: string list -> string -> string

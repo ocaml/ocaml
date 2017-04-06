@@ -25,11 +25,6 @@ include Identifiable.Make (struct
   let output chan t = output_string chan t
 end)
 
-module List = struct
-  let mem ts t =
-    Set.mem t (Set.of_list ts)
-end
-
 let create t = t
 let to_string t = t
 
@@ -107,3 +102,13 @@ let caml_spacetime_indirect_node_hole_ptr =
   create "caml_spacetime_indirect_node_hole_ptr"
 let caml_spacetime_generate_profinfo =
   create "caml_spacetime_generate_profinfo"
+
+let is_generic_function t =
+  let name = to_string t in
+  List.exists (fun p -> Misc.Stdlib.String.is_prefix p ~of_:name)
+    ["caml_apply"; "caml_curry"; "caml_send"; "caml_tuplify"]
+
+module List = struct
+  let mem ts t =
+    Set.mem t (Set.of_list ts)
+end
