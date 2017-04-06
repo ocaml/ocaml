@@ -859,6 +859,12 @@ let emit_cached_strings () =
   cached_strings := []
 
 let mark_stack_non_executable () =
+  let current_section = !current_section in
   match TS.system () with
-  | Linux _ -> section [".note.GNU-stack"] (Some "") [ "%progbits" ]
+  | Linux _ ->
+    section [".note.GNU-stack"] (Some "") [ "%progbits" ];
+    begin match current_section with
+    | None -> ()
+    | Some current_section -> switch_to_section current_section
+    end
   | _ -> ()

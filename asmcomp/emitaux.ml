@@ -136,7 +136,7 @@ let emit_frames () =
   let emit_debuginfo (rs, rdbg) (lbl,next) =
     let d = List.hd rdbg in
     D.align ~bytes:Arch.size_addr;
-    D.label lbl;
+    D.define_label lbl;
     let info = pack_info rs d in
     D.between_this_and_label_offset_32bit
       ~upper:(label_filename d.Debuginfo.dinfo_file)
@@ -442,12 +442,14 @@ let end_assembly ~emit_numeric_constants =
   if Config.spacetime then begin
     emit_spacetime_shapes ()
   end;
+  D.switch_to_section Data;
   emit_global_symbol_with_size "frametable" ~f:(fun () ->
     emit_frames ());
   if emit_numeric_constants then begin
     emit_constants ()
   end;
   D.mark_stack_non_executable ();  (* PR#4564 *)
+  D.switch_to_section Text;
   emit_global_symbol "code_end";
   D.int64 0L;
   D.switch_to_section Data;
