@@ -16,25 +16,151 @@
 
 [@@@ocaml.warning "+a-4-9-30-40-41-42"]
 
-type t = string
+module TS = Target_system
+
+module Kind = struct
+  type t =
+    | Normal
+    | GOT
+    | GOTPCREL
+    | PLT
+
+  let to_string = function
+    | Normal -> ""
+    | GOT -> "@GOT"
+    | GOTPCREL -> "@GOTPCREL"
+    | PLT -> "@PLT"
+
+  include Identifiable.Make (struct
+    type nonrec t = t
+
+    let compare = Pervasives.compare
+    let equal (t1 : t) t2 = (t1 = t2)
+    let hash = Hashtbl.hash
+
+    let print ppf t = Format.fprintf ppf "%s" (to_string t)
+    let output chan t = output_string chan (to_string t)
+  end)
+
+  let check_normal t =
+    match t with
+    | Normal -> ()
+    | _ -> Misc.fatal_error "Cannot change symbol kind twice"
+end
+
+type t = {
+  name : string;
+  kind : Kind.t;
+}
 
 include Identifiable.Make (struct
-  include String
-  let hash = Hashtbl.hash
-  let print ppf t = Format.pp_print_string ppf t
-  let output chan t = output_string chan t
+  type nonrec t = t
+
+  let compare t1 t2 =
+    let c = Pervasives.compare t1.name t2.name in
+    if c <> 0 then c
+    else Kind.compare t1.kind t2.kind
+
+  let equal t1 t2 = (compare t1 t2 = 0)
+
+  let hash t =
+    Hashtbl.hash (t.name, Kind.hash t.kind)
+
+  let print ppf t = Format.fprintf ppf "%s%a" t.name Kind.print t.kind
+
+  let output chan t =
+    output_string chan t.name;
+    output_string chan (Kind.to_string t.kind)
 end)
 
-let create t = t
-let to_string t = t
+let create name = { name; kind = Normal; }
 
-let prefix t ~with_ = with_ ^ t
-let append_int t i = t ^ (string_of_int i)
-let append t ~suffix = t ^ suffix
+let symbol_prefix =
+  match TS.architecture () with
+  | IA32 ->
+    begin match TS.system () with
+    | Linux _
+    | FreeBSD
+    | NetBSD
+    | OpenBSD
+    | Other_BSD
+    | Solaris
+    | BeOS
+    | GNU -> ""
+    | MacOS_like
+    | Windows _
+    | Unknown -> "_"
+    end
+  | IA64 ->
+    begin match TS.system () with
+    | MacOS_like -> "_"
+    | Linux _
+    | FreeBSD
+    | NetBSD
+    | OpenBSD
+    | Other_BSD
+    | Solaris
+    | BeOS
+    | GNU
+    | Windows _
+    | Unknown -> ""
+    end
+  | POWER -> "."
+  | ARM
+  | AArch64 -> "$"
+  | S390x -> "."
+  | SPARC -> ""
 
-let got t = t ^ "@GOT"
-let gotpcrel t = t ^ "@GOTPCREL"
-let plt t = t ^ "@PLT"
+let to_string t =
+  let s = t.name in
+  let spec = ref false in
+  for i = 0 to String.length s - 1 do
+    match String.unsafe_get s i with
+    | 'A'..'Z' | 'a'..'z' | '0'..'9' | '_' -> ()
+    | _ -> spec := true;
+  done;
+  let without_kind =
+    if not !spec then if symbol_prefix = "" then s else symbol_prefix ^ s
+    else
+      let b = Buffer.create (String.length s + 10) in
+      Buffer.add_string b symbol_prefix;
+      String.iter
+        (function
+          | ('A'..'Z' | 'a'..'z' | '0'..'9' | '_') as c -> Buffer.add_char b c
+          | c -> Printf.bprintf b "$%02x" (Char.code c)
+          (* CR mshinwell: may need another char instead of '$' *)
+        )
+        s;
+      Buffer.contents b
+  in
+  without_kind ^ (Kind.to_string t.kind)
+
+let prefix t ~with_ =
+  { t with
+    name = with_ ^ t.name;
+  }
+
+let append_int t i =
+  { t with
+    name = t.name ^ (string_of_int i);
+  }
+
+let append t ~suffix =
+  { t with
+    name = t.name ^ suffix;
+  }
+
+let got t =
+  Kind.check_normal t.kind;
+  { t with kind = GOT; }
+
+let gotpcrel t =
+  Kind.check_normal t.kind;
+  { t with kind = GOTPCREL; }
+
+let plt t =
+  Kind.check_normal t.kind;
+  { t with kind = PLT; }
 
 let mcount = create "mcount"
 let sqrt = create "sqrt"
@@ -93,9 +219,9 @@ let caml_code_end = create "caml_code_end"
 let caml_data_begin = create "caml_data_begin"
 let caml_data_end = create "caml_data_end"
 
-let caml_afl_area_ptr = "caml_afl_area_ptr"
-let caml_afl_prev_loc = "caml_afl_prev_loc"
-let caml_setup_afl = "caml_setup_afl"
+let caml_afl_area_ptr = create "caml_afl_area_ptr"
+let caml_afl_prev_loc = create "caml_afl_prev_loc"
+let caml_setup_afl = create "caml_setup_afl"
 
 let caml_spacetime_allocate_node = create "caml_spacetime_allocate_node"
 let caml_spacetime_indirect_node_hole_ptr =

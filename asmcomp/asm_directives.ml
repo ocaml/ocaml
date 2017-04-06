@@ -22,6 +22,7 @@
 
 module Int8 = Numbers.Int8
 module Int16 = Numbers.Int16
+module L = Linkage_name
 module TS = Target_system
 
 type constant =
@@ -164,63 +165,6 @@ let label_prefix =
   | SPARC -> "L"
 
 let string_of_label label_name = label_prefix ^ (string_of_int label_name)
-
-let symbol_prefix =
-  match TS.architecture () with
-  | IA32 ->
-    begin match TS.system () with
-    | Linux _
-    | FreeBSD
-    | NetBSD
-    | OpenBSD
-    | Other_BSD
-    | Solaris
-    | BeOS
-    | GNU -> ""
-    | MacOS_like
-    | Windows _
-    | Unknown -> "_"
-    end
-  | IA64 ->
-    begin match TS.system () with
-    | MacOS_like -> "_"
-    | Linux _
-    | FreeBSD
-    | NetBSD
-    | OpenBSD
-    | Other_BSD
-    | Solaris
-    | BeOS
-    | GNU
-    | Windows _
-    | Unknown -> ""
-    end
-  | POWER -> "."
-  | ARM
-  | AArch64 -> "$"
-  | S390x -> "."
-  | SPARC -> ""
-
-let string_of_symbol s =
-  let s = Linkage_name.to_string s in
-  let spec = ref false in
-  for i = 0 to String.length s - 1 do
-    match String.unsafe_get s i with
-    | 'A'..'Z' | 'a'..'z' | '0'..'9' | '_' -> ()
-    | _ -> spec := true;
-  done;
-  if not !spec then if symbol_prefix = "" then s else symbol_prefix ^ s
-  else
-    let b = Buffer.create (String.length s + 10) in
-    Buffer.add_string b symbol_prefix;
-    String.iter
-      (function
-        | ('A'..'Z' | 'a'..'z' | '0'..'9' | '_') as c -> Buffer.add_char b c
-        | c -> Printf.bprintf b "$%02x" (Char.code c)
-        (* CR mshinwell: may need another char instead of '$' *)
-      )
-      s;
-    Buffer.contents b
 
 module Directive = struct
   type constant =
@@ -515,18 +459,18 @@ let cfi_startproc () =
   if Config.asm_cfi_supported then emit Cfi_startproc
 let comment s = emit (Comment s)
 let direct_assignment var cst =
-  emit (Direct_assignment (string_of_symbol var, lower_constant cst))
+  emit (Direct_assignment (L.to_string var, lower_constant cst))
 let file ~file_num ~file_name =
   emit (File { file_num = Some file_num; filename = file_name; })
-let global s = emit (Global (string_of_symbol s))
-let indirect_symbol s = emit (Indirect_symbol (string_of_symbol s))
+let global s = emit (Global (L.to_string s))
+let indirect_symbol s = emit (Indirect_symbol (L.to_string s))
 let loc ~file_num ~line ~col = emit (Loc { file_num; line; col; })
-let private_extern s = emit (Private_extern (string_of_symbol s))
-let size name cst = emit (Size (string_of_symbol name, (lower_constant cst)))
+let private_extern s = emit (Private_extern (L.to_string s))
+let size name cst = emit (Size (L.to_string name, (lower_constant cst)))
 let sleb128 i = emit (Sleb128 (Const i))
 let space ~bytes = emit (Space { bytes; })
 let string s = emit (Bytes s)
-let type_ name ~type_ = emit (Type (string_of_symbol name, type_))
+let type_ name ~type_ = emit (Type (L.to_string name, type_))
 let uleb128 i = emit (Uleb128 (Const i))
 
 let const8 cst = emit (Const8 (lower_constant cst))
@@ -758,7 +702,7 @@ let define_symbol symbol =
     if current_section_is_text () then Code
     else Machine_width_data
   in
-  emit (New_label (string_of_symbol symbol, typ))
+  emit (New_label (L.to_string symbol, typ))
 
 let define_function_symbol symbol =
   if not (current_section_is_text ()) then begin

@@ -34,10 +34,10 @@ module L = Linkage_name
 module Int = Numbers.Int
 
 let label_operand lbl = X86_ast.Named_thing (D.string_of_label lbl)
-let symbol_operand sym = X86_ast.Named_thing (D.string_of_symbol sym)
+let symbol_operand sym = X86_ast.Named_thing (L.to_string sym)
 
 let mem64_rip_symbol ?ofs width sym =
-  mem64_rip ?ofs width (D.string_of_symbol sym)
+  mem64_rip ?ofs width (L.to_string sym)
 let mem64_rip_label ?ofs width lbl =
   mem64_rip ?ofs width (D.string_of_label lbl)
 

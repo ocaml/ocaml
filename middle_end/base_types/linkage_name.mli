@@ -25,7 +25,10 @@ module List : sig
   val mem : t list -> t -> bool
 end
 
+(** Create a linkage name with no special attributes (GOT, PLT, etc). *)
 val create : string -> t
+
+(** Produce the platform-specific mangling of the given linkage name. *)
 val to_string : t -> string
 
 (** Add a prefix to a linkage name. *)

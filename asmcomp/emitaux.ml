@@ -18,6 +18,7 @@
 [@@@ocaml.warning "-40"]
 
 module D = Asm_directives
+module L = Linkage_name
 module Int16 = Numbers.Int16
 
 let output_channel = ref stdout
@@ -410,7 +411,7 @@ let emit_spacetime_shapes () =
       begin match fundecl.fun_spacetime_shape with
       | None -> ()
       | Some shape ->
-        let funsym = D.string_of_symbol fundecl.fun_name in
+        let funsym = L.to_string fundecl.fun_name in
         D.comment ("Shape for " ^ funsym ^ ":");
         D.symbol fundecl.fun_name;
         List.iter

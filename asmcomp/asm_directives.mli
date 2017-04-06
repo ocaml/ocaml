@@ -333,9 +333,7 @@ val initialize : emit:(Directive.t -> unit) -> unit
 (** Reinitialize the emitter before compiling a different source file. *)
 val reset : unit -> unit
 
-(** The name mangling used for symbols.  This may be useful e.g. when
-    emitting an instruction referencing a symbol. *)
-val string_of_symbol : Linkage_name.t -> string
-
-(** Like [string_of_symbol] but for labels. *)
+(** The name mangling used for labels.  This may be useful e.g. when
+    emitting an instruction referencing a label.
+    (For symbols, use [Linkage_name.to_string].) *)
 val string_of_label : Cmm.label -> string
