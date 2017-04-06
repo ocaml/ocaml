@@ -107,6 +107,7 @@ let emit_frames () =
   in
   let emit_frame fd =
     D.label fd.fd_lbl;
+    (* CR-soon mshinwell: There should be overflow checks here. *)
     D.int16 (if Debuginfo.is_none fd.fd_debuginfo
              then Int16.of_int_exn fd.fd_frame_size
              else Int16.of_int_exn (fd.fd_frame_size + 1));
@@ -147,7 +148,7 @@ let emit_frames () =
     | None -> D.int64 0L
     end
   in
-  D.int32 (Int32.of_int (List.length !frame_descriptors));
+  D.int64 (Int64.of_int (List.length !frame_descriptors));
   List.iter emit_frame !frame_descriptors;
   Label_table.iter emit_debuginfo debuginfos;
   Hashtbl.iter emit_filename filenames;
@@ -472,12 +473,12 @@ let emit_item (item : Cmm.data_item) =
   | Cstring s -> D.string s
   | Cskip bytes -> if bytes > 0 then D.space ~bytes
   | Calign bytes ->
-    if bytes < Targetint.size then D.align ~bytes:Targetint.size
+    if bytes < Targetint.size then D.align ~bytes:(Targetint.size / 8)
     else D.align ~bytes
 
 let data l =
   D.switch_to_section Data;
-  D.align ~bytes:Targetint.size;
+  D.align ~bytes:(Targetint.size / 8);
   List.iter emit_item l
 
 let reset () =

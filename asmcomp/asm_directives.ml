@@ -674,7 +674,6 @@ let reset () =
 let initialize ~(emit : Directive.t -> unit) =
   emit_ref := Some emit;
   reset ();
-  switch_to_section Text;
   begin match TS.assembler () with
   | MASM | MacOS -> ()
   | GAS_like ->
@@ -695,7 +694,8 @@ let initialize ~(emit : Directive.t -> unit) =
           | IA32 | IA64 | ARM | AArch64 | SPARC | Z -> ())
       all_sections_in_order
   end;
-  emit (File { file_num = None; filename = ""; })  (* PR#7037 *)
+  emit (File { file_num = None; filename = ""; });  (* PR#7037 *)
+  switch_to_section Text
 
 let define_symbol symbol =
   let typ : Directive.thing_after_label =
