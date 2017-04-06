@@ -161,7 +161,7 @@ let label_prefix =
   | ARM
   | AArch64
   | POWER
-  | S390x -> ".L"
+  | Z -> ".L"
   | SPARC -> "L"
 
 let string_of_label label_name = label_prefix ^ (string_of_int label_name)
@@ -312,7 +312,7 @@ module Directive = struct
       begin match
         current_section_is_text (), TS.architecture (), TS.system ()
       with
-      | (false, (POWER | ARM | AArch64 | S390x), _)
+      | (false, (POWER | ARM | AArch64 | Z), _)
       | (false, _, Solaris) ->
         bprintf buf "	.type	{emit_symbol %s}, @object\n" s
       | _ -> ()
@@ -621,7 +621,7 @@ let switch_to_section (section : section) =
           []
       in
       [name], middle_part, attrs
-    | (Eight_byte_literals | Sixteen_byte_literals), S390x, _
+    | (Eight_byte_literals | Sixteen_byte_literals), Z, _
     | (Eight_byte_literals | Sixteen_byte_literals), _, Solaris ->
       [".rodata"], None, []
     | Sixteen_byte_literals, _, MacOS_like ->
@@ -692,7 +692,7 @@ let initialize ~(emit : Directive.t -> unit) =
         | POWER _ ->
           match TS.architecture () with
           | POWER -> switch_to_section section
-          | IA32 | IA64 | ARM | AArch64 | SPARC | S390x -> ())
+          | IA32 | IA64 | ARM | AArch64 | SPARC | Z -> ())
       all_sections_in_order
   end;
   emit (File { file_num = None; filename = ""; })  (* PR#7037 *)

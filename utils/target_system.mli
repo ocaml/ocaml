@@ -46,7 +46,7 @@ type architecture =
   | AArch64
   | POWER
   | SPARC
-  | S390x
+  | Z
 
 type assembler =
   | GAS_like

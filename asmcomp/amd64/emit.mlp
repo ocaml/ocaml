@@ -33,6 +33,12 @@ module D = Asm_directives
 module L = Linkage_name
 module Int = Numbers.Int
 
+(* [Branch_relaxation] is not used in this file, but is required by
+   emit.mlp files for certain other targets; the reference here ensures
+   that when releases are being prepared the .depend files are correct
+   for all targets. *)
+open! Branch_relaxation
+
 let label_operand lbl = X86_ast.Named_thing (D.string_of_label lbl)
 let symbol_operand sym = X86_ast.Named_thing (L.to_string sym)
 

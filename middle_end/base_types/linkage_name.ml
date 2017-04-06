@@ -73,8 +73,6 @@ include Identifiable.Make (struct
     output_string chan (Kind.to_string t.kind)
 end)
 
-let create name = { name; kind = Normal; }
-
 let symbol_prefix =
   match TS.architecture () with
   | IA32 ->
@@ -108,8 +106,23 @@ let symbol_prefix =
   | POWER -> "."
   | ARM
   | AArch64 -> "$"
-  | S390x -> "."
+  | Z -> "."
   | SPARC -> ""
+
+let create name =
+  if String.length name > 1 then begin
+    (* It's not technically a problem for this condition to fail, but we
+      shouldn't need to be in that position, and this check should catch
+      bugs. *)
+    if String.length symbol_prefix > 0
+      && Misc.Stdlib.String.is_prefix symbol_prefix ~of_:name
+    then begin
+      Misc.fatal_errorf "Suspicious creation of [Linkage_name.t]: has this \
+          symbol name already been mangled? '%s'"
+        name
+    end
+  end;
+  { name; kind = Normal; }
 
 let to_string t =
   let s = t.name in

@@ -42,7 +42,7 @@ type architecture =
   | AArch64
   | POWER
   | SPARC
-  | S390x
+  | Z
 
 type assembler = 
   | GAS_like
@@ -79,7 +79,7 @@ let architecture () =
   | "arm64" -> AArch64
   | "power" -> POWER
   | "sparc" -> SPARC
-  | "s390x" -> S390x
+  | "s390x" -> Z
   | arch -> Misc.fatal_errorf "Unknown architecture `%s'" arch
 
 let windows () =
