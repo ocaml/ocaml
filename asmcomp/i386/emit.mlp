@@ -72,6 +72,7 @@ let bound_error_label = bound_error_label ~frame_size ~slot_offset
 let trap_frame_size = Misc.align 8 stack_alignment
 
 let sym s = X86_ast.Named_thing (Linkage_name.to_string s)
+let immsym s = X86_ast.Named_thing ("$" ^ (Linkage_name.to_string s))
 
 let emit_call s = I.call (sym s)
 
@@ -377,7 +378,7 @@ let emit_instr fallthrough i =
       end
   | Lop(Iconst_symbol s) ->
       add_used_symbol s;
-      I.mov (sym s) (reg i.res.(0))
+      I.mov (immsym s) (reg i.res.(0))
   | Lop(Icall_ind { label_after; }) ->
       I.call (reg i.arg.(0));
       record_frame ~live:i.live ~raise_:false i.dbg ~label:label_after
@@ -402,7 +403,7 @@ let emit_instr fallthrough i =
       add_used_symbol func;
       if alloc then begin
         if not (TS.macos_like ()) then
-          I.mov (sym func) eax
+          I.mov (immsym func) eax
         else begin
           external_symbols_indirect :=
             L.Set.add func !external_symbols_indirect;
@@ -599,7 +600,7 @@ let emit_instr fallthrough i =
       I.mov (nat n) (addressing addr DWORD i 0)
   | Lop(Ispecific(Istore_symbol(s, addr, _))) ->
       add_used_symbol s;
-      I.mov (sym s) (addressing addr DWORD i 0)
+      I.mov (immsym s) (addressing addr DWORD i 0)
   | Lop(Ispecific(Ioffset_loc(n, addr))) ->
       I.add (int n) (addressing addr DWORD i 0)
   | Lop(Ispecific(Ipush)) ->
@@ -634,7 +635,7 @@ let emit_instr fallthrough i =
       stack_offset := !stack_offset + 4
   | Lop(Ispecific(Ipush_symbol s)) ->
       add_used_symbol s;
-      I.push (sym s);
+      I.push (immsym s);
       D.cfi_adjust_cfa_offset ~bytes:4;
       stack_offset := !stack_offset + 4
   | Lop(Ispecific(Ipush_load addr)) ->
