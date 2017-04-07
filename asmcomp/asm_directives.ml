@@ -681,14 +681,14 @@ let switch_to_section (section : section) =
     | POWER _, _, _ ->
       Misc.fatal_error "Cannot switch to POWER section on non-POWER \
         architecture"
-    | IA32 Non_lazy_symbol_pointers, IA32, _ ->
+    | IA32 Non_lazy_symbol_pointers, IA32, MacOS_like ->
       [ "__IMPORT"; "__pointers"], None, ["non_lazy_symbol_pointers" ]
-    | IA32 Jump_table, IA32, _ ->
+    | IA32 Jump_table, IA32, MacOS_like ->
       [ "__IMPORT"; "__jump_table"], None,
         [ "symbol_stubs"; "self_modifying_code+pure_instructions"; "5" ]
     | IA32 _, _, _ ->
       Misc.fatal_error "Cannot switch to IA32 section on non-IA32 \
-        architecture"
+        architecture or IA32 non-Darwin system"
   in
   emit (Section (section_name, middle_part, attrs));
   if first_occurrence then begin
@@ -720,15 +720,15 @@ let initialize ~(emit : Directive.t -> unit) =
         | Sixteen_byte_literals
         | Jump_tables -> switch_to_section section
         | DWARF _ -> if !Clflags.debug then switch_to_section section
-        | POWER _ ->
+        | POWER (Function_descriptors | Table_of_contents) ->
           begin match TS.architecture () with
           | POWER -> switch_to_section section
           | IA32 | IA64 | ARM | AArch64 | SPARC | Z -> ()
           end
-        | IA32 _ ->
+        | IA32 (Non_lazy_symbol_pointers | Jump_table) ->
           begin match TS.architecture () with
-          | IA32 -> switch_to_section section
-          | POWER | IA64 | ARM | AArch64 | SPARC | Z -> ()
+          | IA32 when TS.macos_like () -> switch_to_section section
+          | IA32 | POWER | IA64 | ARM | AArch64 | SPARC | Z -> ()
           end)
       all_sections_in_order
   end;
