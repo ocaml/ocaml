@@ -325,8 +325,8 @@ module Directive : sig
 end
 
 (** To be called by the emitter at the very start of code generation.
-    Calling the functions below will cause directives to be passed to the
-    given [emit] function.
+    Calling the functions in this module will cause directives to be passed
+    to the given [emit] function.
     This function switches to the text section. *)
 val initialize : emit:(Directive.t -> unit) -> unit
 

@@ -106,7 +106,7 @@ let symbol_prefix =
   | POWER -> "."
   | ARM
   | AArch64 -> "$"
-  | Z -> "."
+  | Z
   | SPARC -> ""
 
 let _GLOBAL_OFFSET_TABLE_ = "_GLOBAL_OFFSET_TABLE_"
