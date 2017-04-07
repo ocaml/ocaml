@@ -16,6 +16,14 @@
 (* Common functions for emitting assembly code *)
 
 val output_channel: out_channel ref
+val emit_string: string -> unit
+val emit_int: int -> unit
+val emit_nativeint: nativeint -> unit
+val emit_int32: int32 -> unit
+val emit_printf: ('a, out_channel, unit) format -> 'a
+val emit_char: char -> unit
+
+val emit_directive : Asm_directives.Directive.t -> unit
 
 val reset : unit -> unit
 val reset_debug_info: unit -> unit

@@ -16,6 +16,8 @@
 
 (* Emission of Linux on Z 64-bit assembly code *)
 
+[@@@ocaml.warning "-40"]
+
 open Misc
 open Cmm
 open Arch
@@ -24,6 +26,9 @@ open Reg
 open Mach
 open Linearize
 open Emitaux
+
+module D = Asm_directives
+module L = Linkage_name
 
 (* Layout of the stack.  The stack is kept 8-aligned. *)
 
@@ -46,9 +51,13 @@ let slot_offset loc cls =
   | Incoming n -> frame_size() + n
   | Outgoing n -> n
 
+let record_frame = record_frame ~frame_size ~slot_offset
+let record_frame_label = record_frame_label ~frame_size ~slot_offset
+let bound_error_label = bound_error_label ~frame_size ~slot_offset
+
 (* Output a symbol *)
 
-let emit_symbol s = emit_string (D.string_of_symbol' s)
+let emit_symbol s = emit_string (Linkage_name.to_string s)
 
 (* Output function call *)
 
@@ -58,9 +67,12 @@ let emit_call s =
   else
    `	brasl	%r14, {emit_symbol s}\n`
 
-(* Output a label *)
+(* Labels *)
 
 let emit_label lbl = emit_string (D.string_of_label lbl)
+
+let emit_jump_to_label lbl =
+  `	brcl	15, {emit_label lbl}\n`
 
 (* Output a pseudo-register *)
 
@@ -88,6 +100,9 @@ let emit_stack r =
       let ofs = slot_offset s (register_class r) in `{emit_int ofs}(%r15)`
   | _ -> fatal_error "Emit.emit_stack"
 
+(* Spacetime (not yet supported) *)
+
+let spacetime_before_uninstrumented_call _label = ()
 
 (* Output a load of the address of a global symbol *)
 
@@ -110,14 +125,17 @@ let emit_load_store instr addressing_mode addr n arg =
    Choose the shortest instruction possible for the value of N. *)
 
 let emit_stack_adjust n =
-  let n = -n in
-  if n = 0 then ()
-  else if n >= 0 && n < 4096 then
-    `	la	%r15, {emit_int n}(%r15)\n`
-  else if n >= -0x80000 && n < 0x80000 then
-    `	lay	%r15, {emit_int n}(%r15)\n`
-  else
-    `	agfi	%r15, {emit_int n}\n`
+  begin
+    let n = -n in
+    if n = 0 then ()
+    else if n >= 0 && n < 4096 then
+      `	la	%r15, {emit_int n}(%r15)\n`
+    else if n >= -0x80000 && n < 0x80000 then
+      `	lay	%r15, {emit_int n}(%r15)\n`
+    else
+      `	agfi	%r15, {emit_int n}\n`
+  end;
+  D.cfi_adjust_cfa_offset ~bytes:n
 
 (* Emit a 'add immediate' *)
 
@@ -148,14 +166,6 @@ let emit_set_comp cmp res =
     | Cge -> `	locgrnl	{emit_reg res}, %r1\n`
   end
 *)
-
-(* Record calls to caml_call_gc, emitted out of line. *)
-
-let emit_call_gc gc =
-  D.define_label gc.gc_lbl;
-  emit_call "caml_call_gc";
-  D.define_label gc.gc_frame_lbl;
-  `	brcl	15, {emit_label gc.gc_return_lbl}\n`
 
 (* Masks for conditional branches after comparisons *)
 
@@ -240,24 +250,22 @@ let emit_instr i =
         end else if n >= -0x8000_0000n && n <= 0x7FFF_FFFFn then begin
           `	lgfi	{emit_reg i.res.(0)}, {emit_nativeint n}\n`;
         end else begin
-          let lbl = new_label() in
-          int_literals := (n, lbl) :: !int_literals;
+          let lbl = int_constant n in
           `	lgrl	{emit_reg i.res.(0)}, {emit_label lbl}\n`;
           end
     | Lop(Iconst_float f) ->
-        let lbl = new_label() in
-        float_literals := (f, lbl) :: !float_literals;
+        let lbl = float_constant f in
         `	larl	%r1, {emit_label lbl}\n`;
         `	ld	{emit_reg i.res.(0)}, 0(%r1)\n`
      | Lop(Iconst_symbol s) ->
         emit_load_symbol_addr i.res.(0) s
     | Lop(Icall_ind { label_after; }) ->
         `	basr	%r14, {emit_reg i.arg.(0)}\n`;
-        `{record_frame i.live false i.dbg ~label:label_after}\n`
+        `{record_frame ~live:i.live ~raise_:false i.dbg ~label:label_after}\n`
 
     | Lop(Icall_imm { func; label_after; }) ->
         emit_call func;
-        `{record_frame i.live false i.dbg ~label:label_after}\n`
+        `{record_frame ~live:i.live ~raise_:false i.dbg ~label:label_after}\n`
     | Lop(Itailcall_ind { label_after = _; }) ->
         let n = frame_size() in
         if !contains_calls then
@@ -282,8 +290,8 @@ let emit_instr i =
         if not alloc then emit_call func
         else begin
           emit_load_symbol_addr reg_r7 func;
-          emit_call "caml_c_call";
-          `{record_frame i.live false i.dbg ~label:label_after}\n`
+          emit_call L.caml_c_call;
+          `{record_frame ~live:i.live ~raise_:false i.dbg ~label:label_after}\n`
         end
 
      | Lop(Istackoffset n) ->
@@ -324,12 +332,10 @@ let emit_instr i =
         let lbl_redo = new_label() in
         let lbl_call_gc = new_label() in
         let lbl_frame =
-          record_frame_label i.live false i.dbg ?label:label_after_call_gc
+          record_frame_label ~live:i.live ~raise_:false i.dbg ?label:label_after_call_gc
         in
-        call_gc_sites :=
-          { gc_lbl = lbl_call_gc;
-            gc_return_lbl = lbl_redo;
-            gc_frame_lbl = lbl_frame } :: !call_gc_sites;
+        record_call_gc_site ~label:lbl_call_gc ~return_label:lbl_redo
+          ~frame_label:lbl_frame ~stack_offset:!stack_offset;
         D.define_label lbl_redo;
         `	lay	%r11, {emit_int(-n)}(%r11)\n`;
         `	clgr	%r11, %r10\n`;
@@ -379,7 +385,7 @@ let emit_instr i =
         `	lghi	{emit_reg i.res.(0)}, 0\n`;
         D.define_label lbl;
     | Lop(Iintop (Icheckbound { label_after_error; })) ->
-        let lbl = bound_error_label i.dbg ?label:label_after_error in
+        let lbl = bound_error_label i.dbg ?label:label_after_error ~stack_offset:!stack_offset in
         `	clgr	{emit_reg i.arg.(0)}, {emit_reg i.arg.(1)}\n`;
         `	brcl	12, {emit_label lbl}\n`  (* branch if unsigned le *)
     | Lop(Iintop op) ->
@@ -399,7 +405,7 @@ let emit_instr i =
         `	lghi	{emit_reg i.res.(0)}, 0\n`;
         D.define_label lbl
     | Lop(Iintop_imm(Icheckbound { label_after_error; }, n)) ->
-       let lbl = bound_error_label i.dbg ?label:label_after_error in
+       let lbl = bound_error_label i.dbg ?label:label_after_error ~stack_offset:!stack_offset in
        if n >= 0 then begin
         `	clgfi	{emit_reg i.arg.(0)}, {emit_int n}\n`;
         `	brcl	12, {emit_label lbl}\n`  (* branch if unsigned le *)
@@ -503,7 +509,7 @@ let emit_instr i =
         `	agr	%r1, %r0\n`;
         `	br	%r1\n`;
         D.switch_to_section Read_only_data;
-        D.align ~bytes:8
+        D.align ~bytes:8;
         D.define_label lbl;
         for i = 0 to Array.length jumptbl - 1 do
           `	.long	{emit_label jumptbl.(i)} - {emit_label lbl}\n`
@@ -524,8 +530,8 @@ let emit_instr i =
     | Lraise k ->
         begin match k with
         | Cmm.Raise_withtrace ->
-          emit_call "caml_raise_exn";
-          `{record_frame Reg.Set.empty true i.dbg}\n`
+          emit_call L.caml_raise_exn;
+          `{record_frame ~live:Reg.Set.empty ~raise_:true i.dbg}\n`
         | Cmm.Raise_notrace ->
           `	lg	%r1, 0(%r13)\n`;
           `	lgr	%r15, %r13\n`;
@@ -537,30 +543,41 @@ let emit_instr i =
 
 (* Emit a sequence of instructions *)
 
-let rec emit_all i =
-  match i with
-    {desc = Lend} -> ()
-  | _ ->
-      emit_instr i;
-      emit_all i.next
+let emit_all ~fun_body =
+  let rec emit_all i =
+    match i with
+      {desc = Lend} -> ()
+    | _ ->
+        emit_instr i;
+        emit_all i.next
+  in
+  emit_all fun_body;
+  frame_size ()
 
 (* Emission of a function declaration *)
 
-let fundecl fundecl =
+let prepare _fundecl =
   stack_offset := 0;
   let n = frame_size() in
   emit_stack_adjust n;
-  if !contains_calls then
-    `	stg	%r14, {emit_int(n - size_addr)}(%r15)\n`;
-  D.define_label !tailrec_entry_point;
-  emit_all fundecl.fun_body
+  if !contains_calls then begin
+    `	stg	%r14, {emit_int(n - size_addr)}(%r15)\n`
+  end
 
 let fundecl decl =
-  Emitaux.fundecl decl ~f:(fun () -> fundecl decl)
+  Emitaux.fundecl decl
+    ~prepare
+    ~emit_all
+    ~emit_call
+    ~emit_jump_to_label
+    ~spacetime_before_uninstrumented_call
     ~alignment_in_bytes:8
     ~emit_numeric_constants:true
 
 (* Beginning / end of an assembly file *)
 
-let begin_assembly () = Emitaux.begin_assembly ()
+let begin_assembly () =
+  Asm_directives.initialize ~emit:emit_directive;
+  Emitaux.begin_assembly ()
+
 let end_assembly () = Emitaux.end_assembly ~emit_numeric_constants:false
