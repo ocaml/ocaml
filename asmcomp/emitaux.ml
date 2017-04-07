@@ -169,7 +169,7 @@ let emit_frames () =
     | None -> D.targetint Targetint.zero
     end
   in
-  D.int64 (Int64.of_int (List.length !frame_descriptors));
+  D.targetint (Targetint.of_int (List.length !frame_descriptors));
   List.iter emit_frame !frame_descriptors;
   Label_table.iter emit_debuginfo debuginfos;
   Hashtbl.iter emit_filename filenames;
