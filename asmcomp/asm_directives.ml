@@ -314,7 +314,7 @@ module Directive = struct
       with
       | (false, (POWER | ARM | AArch64 | Z), _)
       | (false, _, Solaris) ->
-        bprintf buf "	.type	{emit_symbol %s}, @object\n" s
+        bprintf buf "\n .type %s, @object" s
       | _ -> ()
       end
     | New_label (s, _typ) -> bprintf buf "%s:" s

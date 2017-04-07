@@ -432,6 +432,7 @@ let fundecl ?branch_relaxation (fundecl : Linearize.fundecl) ~prepare
   if emit_numeric_constants then begin
     emit_constants ()
     end;
+  D.switch_to_section Text;
   D.cfi_endproc ();
   D.size fundecl.fun_name
 
