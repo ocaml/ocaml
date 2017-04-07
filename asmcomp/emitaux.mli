@@ -18,7 +18,7 @@
 val output_channel: out_channel ref
 val emit_string: string -> unit
 val emit_int: int -> unit
-val emit_nativeint: nativeint -> unit
+val emit_targetint: Targetint.t -> unit
 val emit_int32: int32 -> unit
 val emit_printf: ('a, out_channel, unit) format -> 'a
 val emit_char: char -> unit
@@ -96,7 +96,7 @@ val bound_error_label
 val float_constant : Int64.t -> Cmm.label
 
 (** Label an integer constant. *)
-val int_constant : nativeint -> Cmm.label
+val int_constant : Targetint.t -> Cmm.label
 
 val begin_assembly : unit -> unit
 

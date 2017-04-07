@@ -41,7 +41,7 @@ type operation =
     Imove
   | Ispill
   | Ireload
-  | Iconst_int of nativeint
+  | Iconst_int of Targetint.t
   | Iconst_float of int64
   | Iconst_symbol of Linkage_name.t
   | Icall_ind of { label_after : label; }

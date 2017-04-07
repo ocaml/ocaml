@@ -547,7 +547,7 @@ let size ?size_of symbol =
     size size_of (Sub (This, Symbol symbol))
   | _ -> ()
 
-let label label_name = const64 (Label label_name)
+let label label_name = const_machine_width (Label label_name)
 
 let define_label label_name =
   let typ : Directive.thing_after_label =
@@ -870,15 +870,10 @@ let int32 i =
 let int64 i =
   const64 (Const i)
 
-let nativeint n =
+let targetint n =
   match TS.machine_width () with
-  | Thirty_two -> const32 (Const (Int64.of_nativeint n))
-  | Sixty_four -> const64 (Const (Int64.of_nativeint n))
-
-let target_address addr =
-  match Targetint.repr addr with
-  | Int32 i -> int32 i
-  | Int64 i -> int64 i
+  | Thirty_two -> const32 (Const (Int64.of_int32 (Targetint.to_int32 n)))
+  | Sixty_four -> const64 (Const (Targetint.to_int64 n))
 
 let cache_string str =
   match List.assoc str !cached_strings with

@@ -72,13 +72,9 @@ val int32 : Int32.t -> unit
 (** Emit a 64-bit integer. *)
 val int64 : Int64.t -> unit
 
-(** Emit a native integer. *)
-(* CR mshinwell: what is this supposed to do? *)
-val nativeint : Nativeint.t -> unit
-
 (** Emit an integer whose width is that of an address on the target
     machine. *)
-val target_address : Targetint.t -> unit
+val targetint : Targetint.t -> unit
 
 (** Emit a 64-bit integer in unsigned LEB128 variable-length encoding
     (cf. DWARF debugging information standard). *)

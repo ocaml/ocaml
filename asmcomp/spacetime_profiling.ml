@@ -12,6 +12,8 @@
 (*                                                                        *)
 (**************************************************************************)
 
+[@@@ocaml.warning "-40"]
+
 module L = Linkage_name
 
 let node_num_header_words = 2 (* [Node_num_header_words] in the runtime. *)
@@ -112,6 +114,14 @@ let code_for_function_prologue ~function_name ~node_hole =
                   initialize_direct_tail_call_points_and_return_node))))))
 
 let code_for_blockheader ~value's_header ~node ~dbg =
+  (* CR-someday mshinwell: Remove this when [Cmm] talks about [Targetint.t]. *)
+  let value's_header =
+    match Target_system.machine_width () with
+    | Thirty_two ->
+      Nativeint.of_int32 (Targetint.to_int32 value's_header)
+    | Sixty_four ->
+      Int64.to_nativeint (Targetint.to_int64 value's_header)
+  in
   let num_words = Nativeint.shift_right_logical value's_header 10 in
   let existing_profinfo = Ident.create "existing_profinfo" in
   let existing_count = Ident.create "existing_count" in

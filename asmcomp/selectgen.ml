@@ -633,10 +633,10 @@ method emit_expr (env:environment) exp =
   match exp with
     Cconst_int n ->
       let r = self#regs_for typ_int in
-      Some(self#insert_op (Iconst_int(Nativeint.of_int n)) [||] r)
+      Some(self#insert_op (Iconst_int(Targetint.of_int n)) [||] r)
   | Cconst_natint n ->
       let r = self#regs_for typ_int in
-      Some(self#insert_op (Iconst_int n) [||] r)
+      Some(self#insert_op (Iconst_int (Targetint.of_nativeint_exn n)) [||] r)
   | Cconst_float n ->
       let r = self#regs_for typ_float in
       Some(self#insert_op (Iconst_float (Int64.bits_of_float n)) [||] r)
@@ -645,12 +645,12 @@ method emit_expr (env:environment) exp =
       Some(self#insert_op (Iconst_symbol n) [||] r)
   | Cconst_pointer n ->
       let r = self#regs_for typ_val in  (* integer as Caml value *)
-      Some(self#insert_op (Iconst_int(Nativeint.of_int n)) [||] r)
+      Some(self#insert_op (Iconst_int(Targetint.of_int n)) [||] r)
   | Cconst_natpointer n ->
       let r = self#regs_for typ_val in  (* integer as Caml value *)
-      Some(self#insert_op (Iconst_int n) [||] r)
+      Some(self#insert_op (Iconst_int (Targetint.of_nativeint_exn n)) [||] r)
   | Cblockheader(n, dbg) ->
-      self#emit_blockheader env n dbg
+      self#emit_blockheader env (Targetint.of_nativeint_exn n) dbg
   | Cvar v ->
       begin try
         Some(env_find v env)

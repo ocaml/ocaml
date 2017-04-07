@@ -125,6 +125,11 @@ val of_int_exn : int -> t
 (** Convert the given integer (type [int]) to a target integer
     (type [t]).  Raises a fatal error if the conversion is not exact. *)
 
+val of_nativeint_exn : nativeint -> t
+(** Convert the given integer (type [nativeint]) to a target integer
+    (type [t]).  Raises a fatal error if the conversion is not exact. *)
+(* CR mshinwell: this exception-raising property needs to be checked *)
+
 val to_int : t -> int
 (** Convert the given target integer (type [t]) to an
     integer (type [int]).  The high-order bit is lost during
@@ -186,3 +191,14 @@ type repr =
 
 val repr : t -> repr
 (** The concrete representation of a native integer. *)
+
+val fits_in_16_bits : t -> bool
+(** Whether the given target integer fits within 16 bits without loss of
+    information. *)
+
+val fits_in_32_bits : t -> bool
+(** Whether the given target integer fits within 32 bits without loss of
+    information. *)
+
+val is_zero : t -> bool
+(** Whether the given target integer is zero. *)

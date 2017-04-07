@@ -38,6 +38,7 @@ let sym s = Named_thing s
 
 let nat n = Imm (Int64.of_nativeint n)
 let int n = Imm (Int64.of_int n)
+let targetint n = Imm (Targetint.to_int64 n)
 (*
 let const_32 n = Const (Int64.of_int32 n)
 let const_nat n = Const (Int64.of_nativeint n)

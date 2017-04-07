@@ -29,7 +29,7 @@ let emit_int n = output_string !output_channel (string_of_int n)
 
 let emit_char c = output_char !output_channel c
 
-let emit_nativeint n = output_string !output_channel (Nativeint.to_string n)
+let emit_targetint n = output_string !output_channel (Targetint.to_string n)
 
 let emit_printf fmt =
   Printf.fprintf !output_channel fmt
@@ -166,7 +166,7 @@ let emit_frames () =
     D.int32 (Int64.to_int32 (Int64.shift_right info 32));
     begin match next with
     | Some next -> D.label next
-    | None -> D.int64 0L
+    | None -> D.targetint Targetint.zero
     end
   in
   D.int64 (Int64.of_int (List.length !frame_descriptors));
@@ -249,7 +249,7 @@ let tailrec_entry_point = ref 0
 let float_constants = ref ([] : (Int64.t * Cmm.label) list)
 
 (* Pending integer constants *)
-let int_constants = ref ([] : (nativeint * int) list)
+let int_constants = ref ([] : (Targetint.t * int) list)
 
 (* Total space (in words) occupied by pending integer and FP literals *)
 let size_constants = ref 0
@@ -295,7 +295,7 @@ let emit_int_constants () =
     List.iter
       (fun (n, lbl) ->
         D.define_label lbl;
-        D.nativeint n)
+        D.targetint n)
       !int_constants;
     int_constants := []
   end
@@ -500,7 +500,7 @@ let emit_item (item : Cmm.data_item) =
   | Cint8 n -> D.int8 (Numbers.Int8.of_int_exn n)
   | Cint16 n -> D.int16 (Numbers.Int16.of_int_exn n)
   | Cint32 n -> D.int32 (Nativeint.to_int32 n)
-  | Cint n -> D.nativeint n
+  | Cint n -> D.targetint (Targetint.of_nativeint_exn n)
   | Csingle f -> D.float32 f
   | Cdouble f -> D.float64 f
   | Csymbol_address s -> add_used_symbol s; D.symbol s
