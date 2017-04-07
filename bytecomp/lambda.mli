@@ -37,6 +37,8 @@ type tag_info =
   | Blk_variant of string 
   | Blk_record of string array
   | Blk_module of string list option
+  | Blk_exception
+  | Blk_extension
   | Blk_na
 
 val default_tag_info : tag_info
