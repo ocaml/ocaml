@@ -23,6 +23,27 @@ module Int16 = Numbers.Int16
 
 let output_channel = ref stdout
 
+let emit_string s = output_string !output_channel s
+
+let emit_int n = output_string !output_channel (string_of_int n)
+
+let emit_char c = output_char !output_channel c
+
+let emit_nativeint n = output_string !output_channel (Nativeint.to_string n)
+
+let emit_printf fmt =
+  Printf.fprintf !output_channel fmt
+
+let emit_int32 n = emit_printf "0x%lx" n
+
+let emit_directive =
+  let buf = Buffer.create 42 in
+  fun dir ->
+    Buffer.clear buf;
+    D.Directive.print buf dir;
+    emit_string (Buffer.contents buf);
+    emit_string "\n"
+
 (* Record live pointers at call points *)
 
 type frame_descr =
@@ -411,6 +432,7 @@ let fundecl ?branch_relaxation (fundecl : Linearize.fundecl) ~prepare
   if emit_numeric_constants then begin
     emit_constants ()
     end;
+  D.switch_to_section Text;
   D.cfi_endproc ();
   D.size fundecl.fun_name
 
