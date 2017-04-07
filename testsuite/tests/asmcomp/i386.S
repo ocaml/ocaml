@@ -16,7 +16,7 @@
 /* Linux with ELF binaries does not prefix identifiers with _.
    Linux with a.out binaries, FreeBSD, and NextStep do. */
 
-#if defined(SYS_linux_elf) || defined(SYS_bsd_elf) \
+#if defined(SYS_linux) || defined(SYS_bsd) \
  || defined(SYS_solaris) || defined(SYS_beos) || defined(SYS_gnu)
 #define G(x) x
 #define FUNCTION_ALIGN 16

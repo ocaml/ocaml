@@ -27,7 +27,7 @@
 #define CONCAT(a,b) a##b
 #endif
 
-#if defined(SYS_linux) || defined(SYS_bsd_elf) \
+#if defined(SYS_linux) || defined(SYS_bsd) \
  || defined(SYS_solaris) || defined(SYS_beos) || defined(SYS_gnu)
 #define G(x) x
 #define LBL(x) CONCAT(.L,x)
@@ -36,7 +36,7 @@
 #define LBL(x) CONCAT(L,x)
 #endif
 
-#if defined(SYS_linux) || defined(SYS_bsd_elf) \
+#if defined(SYS_linux) || defined(SYS_bsd) \
  || defined(SYS_solaris) || defined(SYS_beos) || defined(SYS_cygwin) \
  || defined(SYS_mingw) || defined(SYS_gnu)
 #define FUNCTION_ALIGN 4
@@ -77,7 +77,7 @@
         movl %esp, %ebp; \
         call mcount; \
         popl %ebp; CFI_ADJUST(-4)
-#elif defined(SYS_bsd_elf)
+#elif defined(SYS_bsd)
 #define PROFILE_CAML \
         pushl %ebp; CFI_ADJUST(4); \
         movl %esp, %ebp; \

@@ -526,11 +526,11 @@ let float64_core f f_int64 =
       Const (Int64.shift_right_logical f_int64 32)
     in
     if Arch.big_endian then begin
-      emit (Const64 (hi, Some comment_hi));
-      emit (Const64 (lo, Some comment_lo))
+      emit (Const32 (hi, Some comment_hi));
+      emit (Const32 (lo, Some comment_lo))
     end else begin
-      emit (Const64 (lo, Some comment_lo));
-      emit (Const64 (hi, Some comment_hi))
+      emit (Const32 (lo, Some comment_lo));
+      emit (Const32 (hi, Some comment_hi))
     end
 
 let float64 f = float64_core f (Int64.bits_of_float f)
