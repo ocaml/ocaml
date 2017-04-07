@@ -46,6 +46,10 @@ type power_section =
   | Function_descriptors
   | Table_of_contents
 
+type ia32_section =
+  | Non_lazy_symbol_pointers
+  | Jump_table
+
 type section =
   | Text
   | Data
@@ -55,6 +59,7 @@ type section =
   | Jump_tables
   | DWARF of dwarf_section
   | POWER of power_section
+  | IA32 of ia32_section
 
 (* Note: the POWER backend relies on .opd being after .data, so an
    alignment constraint can be enforced. *)
@@ -73,6 +78,8 @@ let all_sections_in_order = [
   DWARF Debug_line;
   POWER Function_descriptors;
   POWER Table_of_contents;
+  IA32 Non_lazy_symbol_pointers;
+  IA32 Jump_table;
 ]
 
 let current_section = ref None
@@ -85,7 +92,8 @@ let section_is_text = function
   | Sixteen_byte_literals
   | Jump_tables
   | DWARF _
-  | POWER _ -> false
+  | POWER _
+  | IA32 _ -> false
 
 let current_section_is_text () =
   match !current_section with
@@ -107,6 +115,8 @@ let debug_str_label = Cmm.new_label ()
 let debug_line_label = Cmm.new_label ()
 let power_function_descriptors_label = Cmm.new_label ()
 let power_table_of_contents_label = Cmm.new_label ()
+let ia32_non_lazy_symbol_pointers_label = Cmm.new_label ()
+let ia32_jump_table_label = Cmm.new_label ()
 
 let label_for_section = function
   | Text -> text_label
@@ -123,6 +133,8 @@ let label_for_section = function
   | DWARF Debug_line -> debug_line_label
   | POWER Function_descriptors -> power_function_descriptors_label
   | POWER Table_of_contents -> power_table_of_contents_label
+  | IA32 Non_lazy_symbol_pointers -> ia32_non_lazy_symbol_pointers_label
+  | IA32 Jump_table -> ia32_jump_table_label
 
 let label_prefix =
   match TS.architecture () with
@@ -526,7 +538,7 @@ let float64_from_bits f = float64_core (Int64.float_of_bits f) f
 
 let size ?size_of symbol =
   match TS.system () with
-  | GNU | Linux _ ->
+  | GNU | Linux _ | FreeBSD | NetBSD | OpenBSD | Other_BSD ->
     let size_of =
       match size_of with
       | None -> symbol
@@ -669,6 +681,14 @@ let switch_to_section (section : section) =
     | POWER _, _, _ ->
       Misc.fatal_error "Cannot switch to POWER section on non-POWER \
         architecture"
+    | IA32 Non_lazy_symbol_pointers, IA32, _ ->
+      [ "__IMPORT"; "__pointers"], None, ["non_lazy_symbol_pointers" ]
+    | IA32 Jump_table, IA32, _ ->
+      [ "__IMPORT"; "__jump_table"], None,
+        [ "symbol_stubs"; "self_modifying_code+pure_instructions"; "5" ]
+    | IA32 _, _, _ ->
+      Misc.fatal_error "Cannot switch to IA32 section on non-IA32 \
+        architecture"
   in
   emit (Section (section_name, middle_part, attrs));
   if first_occurrence then begin
@@ -701,9 +721,15 @@ let initialize ~(emit : Directive.t -> unit) =
         | Jump_tables -> switch_to_section section
         | DWARF _ -> if !Clflags.debug then switch_to_section section
         | POWER _ ->
-          match TS.architecture () with
+          begin match TS.architecture () with
           | POWER -> switch_to_section section
-          | IA32 | IA64 | ARM | AArch64 | SPARC | Z -> ())
+          | IA32 | IA64 | ARM | AArch64 | SPARC | Z -> ()
+          end
+        | IA32 _ ->
+          begin match TS.architecture () with
+          | IA32 -> switch_to_section section
+          | POWER | IA64 | ARM | AArch64 | SPARC | Z -> ()
+          end)
       all_sections_in_order
   end;
   emit (File { file_num = None; filename = ""; });  (* PR#7037 *)

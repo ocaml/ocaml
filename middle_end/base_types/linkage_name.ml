@@ -24,12 +24,24 @@ module Kind = struct
     | GOT
     | GOTPCREL
     | PLT
+    | I386_stub
+    | I386_non_lazy_ptr
+
+  let prefix = function
+    | Normal
+    | GOT
+    | GOTPCREL
+    | PLT -> ""
+    | I386_stub
+    | I386_non_lazy_ptr -> "L"
 
   let to_string = function
     | Normal -> ""
     | GOT -> "@GOT"
     | GOTPCREL -> "@GOTPCREL"
     | PLT -> "@PLT"
+    | I386_stub -> "$stub"
+    | I386_non_lazy_ptr -> "$non_lazy_ptr"
 
   include Identifiable.Make (struct
     type nonrec t = t
@@ -66,7 +78,10 @@ include Identifiable.Make (struct
   let hash t =
     Hashtbl.hash (t.name, Kind.hash t.kind)
 
-  let print ppf t = Format.fprintf ppf "%s%a" t.name Kind.print t.kind
+  let print ppf t =
+    (* CR mshinwell: think a bit more about this; is it misleading that it's
+       different from [to_string]? *)
+    Format.fprintf ppf "%s%s%a" (Kind.prefix t.kind) t.name Kind.print t.kind
 
   let output chan t =
     output_string chan t.name;
@@ -151,7 +166,7 @@ let to_string t =
         s;
       Buffer.contents b
   in
-  without_kind ^ (Kind.to_string t.kind)
+  (Kind.prefix t.kind) ^ without_kind ^ (Kind.to_string t.kind)
 
 let name t = t.name
 
@@ -181,6 +196,14 @@ let gotpcrel t =
 let plt t =
   Kind.check_normal t.kind;
   { t with kind = PLT; }
+
+let i386_stub t =
+  Kind.check_normal t.kind;
+  { t with kind = I386_stub; }
+
+let i386_non_lazy_ptr t =
+  Kind.check_normal t.kind;
+  { t with kind = I386_non_lazy_ptr; }
 
 let mcount = create "mcount"
 let sqrt = create "sqrt"
@@ -245,6 +268,8 @@ let caml_spacetime_indirect_node_hole_ptr =
   create "caml_spacetime_indirect_node_hole_ptr"
 let caml_spacetime_generate_profinfo =
   create "caml_spacetime_generate_profinfo"
+
+let caml_extra_params = create "caml_extra_params"
 
 let is_generic_function t =
   let name = to_string t in

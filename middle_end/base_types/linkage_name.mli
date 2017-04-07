@@ -74,6 +74,12 @@ val gotpcrel : t -> t
 (** Mark a symbol as being a reference via the procedure linkage table. *)
 val plt : t -> t
 
+(** Construct an i386 "stub" symbol from a linkage name. *)
+val i386_stub : t -> t
+
+(** Construct an i386 "non lazy pointer" symbol from a linkage name. *)
+val i386_non_lazy_ptr : t -> t
+
 (** Whether the function may be duplicated between a DLL and the main
     program (PR#4690). *)
 val is_generic_function : t -> bool
@@ -154,3 +160,6 @@ val caml_spacetime_shapes : t
 val caml_afl_area_ptr : t
 val caml_afl_prev_loc : t
 val caml_setup_afl : t
+
+(** i386 target-specific symbols. *)
+val caml_extra_params : t

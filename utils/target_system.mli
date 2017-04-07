@@ -63,9 +63,17 @@ val system : unit -> system
 (** Whether the target system is a Windows platform. *)
 val windows : unit -> bool
 
+(** Whether the target system is a Windows 32-bit native platform (not
+    MinGW or Cygwin). *)
+val win32 : unit -> bool
+
 (** Whether the target system is a Windows 64-bit native platform (not
     MinGW or Cygwin). *)
 val win64 : unit -> bool
+
+(** Whether the target system is Mac OS X, macOS, or some other system
+    running a Darwin kernel and associated userland tools. *)
+val macos_like : unit -> bool
 
 (** The architecture of the target system. *)
 val architecture : unit -> architecture

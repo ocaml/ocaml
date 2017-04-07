@@ -27,10 +27,15 @@ type dwarf_section =
   | Debug_str
   | Debug_line
 
-(** Sections for POWER architectures only. *)
+(** Sections for the POWER architecture only. *)
 type power_section =
   | Function_descriptors
   | Table_of_contents
+
+(** Sections for the IA32 architecture only. *)
+type ia32_section =
+  | Non_lazy_symbol_pointers
+  | Jump_table
 
 (** The linker may share constants in [Eight_byte_literals] and
     [Sixteen_byte_literals] sections. *)
@@ -43,6 +48,7 @@ type section =
   | Jump_tables
   | DWARF of dwarf_section
   | POWER of power_section
+  | IA32 of ia32_section
 
 (** Emit subsequent directives to the given section.  If this function
     has not been called before on the particular section, a label

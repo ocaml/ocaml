@@ -156,7 +156,7 @@
 
 /****************** I386, Linux */
 
-#elif defined(TARGET_i386) && defined(SYS_linux_elf)
+#elif defined(TARGET_i386) && defined(SYS_linux)
 
   #define DECLARE_SIGNAL_HANDLER(name) \
     static void name(int sig, struct sigcontext context)
@@ -169,7 +169,7 @@
 
 /****************** I386, BSD_ELF */
 
-#elif defined(TARGET_i386) && defined(SYS_bsd_elf)
+#elif defined(TARGET_i386) && defined(SYS_bsd)
 
  #if defined (__NetBSD__)
   #include <ucontext.h>
@@ -190,19 +190,6 @@
   #define CONTEXT_PC (context->sc_eip)
  #endif
  #define CONTEXT_FAULTING_ADDRESS ((char *) info->si_addr)
-
-/****************** I386, BSD */
-
-#elif defined(TARGET_i386) && defined(SYS_bsd)
-
-  #define DECLARE_SIGNAL_HANDLER(name) \
-    static void name(int sig, siginfo_t * info, void * context)
-
-  #define SET_SIGACT(sigact,name) \
-     sigact.sa_sigaction = (name); \
-     sigact.sa_flags = SA_SIGINFO
-
-  #define CONTEXT_FAULTING_ADDRESS ((char *) info->si_addr)
 
 /****************** I386, MacOS X */
 

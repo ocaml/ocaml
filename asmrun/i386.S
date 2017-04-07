@@ -27,7 +27,7 @@
 #define CONCAT(a,b) a##b
 #endif
 
-#if defined(SYS_linux_elf) || defined(SYS_bsd_elf) \
+#if defined(SYS_linux) || defined(SYS_bsd_elf) \
  || defined(SYS_solaris) || defined(SYS_beos) || defined(SYS_gnu)
 #define G(x) x
 #define LBL(x) CONCAT(.L,x)
@@ -36,7 +36,7 @@
 #define LBL(x) CONCAT(L,x)
 #endif
 
-#if defined(SYS_linux_elf) || defined(SYS_bsd_elf) \
+#if defined(SYS_linux) || defined(SYS_bsd_elf) \
  || defined(SYS_solaris) || defined(SYS_beos) || defined(SYS_cygwin) \
  || defined(SYS_mingw) || defined(SYS_gnu)
 #define FUNCTION_ALIGN 4
@@ -60,7 +60,7 @@
 #endif
 
 #if defined(PROFILING)
-#if defined(SYS_linux_elf) || defined(SYS_gnu)
+#if defined(SYS_linux) || defined(SYS_gnu)
 #define PROFILE_CAML \
         pushl %ebp; CFI_ADJUST(4); \
         movl %esp, %ebp; \
@@ -482,7 +482,7 @@ Lmcount$stub:
         .subsections_via_symbols
 #endif
 
-#if defined(SYS_linux_elf)
+#if defined(SYS_linux)
     /* Mark stack as non-executable, PR#4564 */
         .section .note.GNU-stack,"",%progbits
 #endif

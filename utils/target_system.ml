@@ -117,7 +117,17 @@ let machine_width () =
   | 64 -> Sixty_four
   | bits -> Misc.fatal_errorf "Unknown machine width: %d" bits
 
+let win32 () =
+  match system (), machine_width () with
+  | Windows Native, Thirty_two -> true
+  | _, _ -> false
+
 let win64 () =
   match system (), machine_width () with
   | Windows Native, Sixty_four -> true
   | _, _ -> false
+
+let macos_like () =
+  match system () with
+  | MacOS_like -> true
+  | _ -> false

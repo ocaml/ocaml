@@ -32,6 +32,7 @@ open X86_dsl
 module D = Asm_directives
 module L = Linkage_name
 module Int = Numbers.Int
+module TS = Target_system
 
 (* [Branch_relaxation] is not used in this file, but is required by
    emit.mlp files for certain other targets; the reference here ensures
@@ -120,10 +121,10 @@ let mem__imp s =
   mem64_rip_symbol QWORD (get_imp_symbol s)
 
 let rel_plt s =
-  if Target_system.windows () && !Clflags.dlcode then mem__imp s
+  if TS.windows () && !Clflags.dlcode then mem__imp s
   else
     let use_plt =
-      match Target_system.system (), Target_system.machine_width () with
+      match TS.system (), TS.machine_width () with
       | MacOS_like, _
       | Windows MinGW, Sixty_four
       | Windows Cygwin, (Thirty_two | Sixty_four)
@@ -140,7 +141,7 @@ let emit_jump_to_label lbl = I.jmp (label_operand lbl)
 
 let load_symbol_addr s arg =
   if !Clflags.dlcode then
-    if Target_system.windows () then begin
+    if TS.windows () then begin
       (* I.mov (mem__imp s) arg (\* mov __caml_imp_foo(%rip), ... *\) *)
       I.mov (symbol_operand s) arg (* movabsq $foo, ... *)
     end else
@@ -403,7 +404,7 @@ let emit_instr fallthrough i =
         load_symbol_addr func rax;
         emit_call L.caml_c_call;
         record_frame ~live:i.live ~raise_:false i.dbg ~label:label_after;
-        if Target_system.win64 () then begin
+        if TS.win64 () then begin
           (* TODO: investigate why such a diff.
              This comes from:
             http://caml.inria.fr/cgi-bin/viewvc.cgi?view=revision&revision=12664
@@ -736,7 +737,7 @@ let emit_all ~fun_body =
 (* Emission of the profiling prelude *)
 
 let emit_profile () =
-  match Target_system.system () with
+  match TS.system () with
   | GNU | Linux _ ->
     (* mcount preserves rax, rcx, rdx, rsi, rdi, r8, r9 explicitly
        and rbx, rbp, r12-r15 like all C functions.  This includes
@@ -789,7 +790,7 @@ let begin_assembly() =
     X86_proc.directive (Directive directive));
   reset_imp_table();
   Emitaux.begin_assembly ();
-  if Target_system.win64 () then begin
+  if TS.win64 () then begin
     let extrn sym width = X86_dsl.D.extrn (L.to_string sym) width in
     extrn L.caml_young_ptr QWORD;
     extrn L.caml_young_limit QWORD;
@@ -803,7 +804,7 @@ let begin_assembly() =
     extrn L.caml_ml_array_bound_error NEAR;
     extrn L.caml_raise_exn NEAR
   end;
-  if !Clflags.dlcode || Target_system.win64 () then begin
+  if !Clflags.dlcode || TS.win64 () then begin
     (* from amd64.S; could emit these constants on demand *)
     D.switch_to_section Sixteen_byte_literals;
     D.align ~bytes:16;
@@ -815,22 +816,20 @@ let begin_assembly() =
     D.int64 0x7FFFFFFFFFFFFFFFL;
     D.int64 0xFFFFFFFFFFFFFFFFL
   end;
-  begin match Target_system.system () with
-  | MacOS_like -> I.nop () (* PR#4690 *)
-  | _ -> ()
+  if TS.macos_like () then begin
+    (* suppress "ld warning: atom sorting error" *)
+    I.nop ()
   end
 
 let end_assembly () =
   D.switch_to_section Text;
-  begin match Target_system.system () with
-  | MacOS_like ->
+  if TS.macos_like () then begin
     (* suppress "ld warning: atom sorting error" *)
     I.nop ()
-  | _ -> ()
   end;
   emit_imp_table();
   Emitaux.end_assembly ~emit_numeric_constants:true;
-  if Target_system.win64 () then begin
+  if TS.win64 () then begin
     D.comment "External functions";
     L.Set.iter (fun s ->
         if not (L.Set.mem s (symbols_defined ())) then
@@ -838,7 +837,7 @@ let end_assembly () =
       (symbols_used ())
   end;
   let asm =
-    match !Emitaux.create_asm_file, Target_system.assembler () with
+    match !Emitaux.create_asm_file, TS.assembler () with
     | true, MASM -> Some (X86_masm.generate_asm !output_channel)
     | true, (MacOS | GAS_like) -> Some (X86_gas.generate_asm !output_channel)
     | false, _ -> None
