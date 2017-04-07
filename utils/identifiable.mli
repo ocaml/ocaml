@@ -57,7 +57,7 @@ module type S = sig
     (** [disjoint_union m1 m2] contains all bindings from [m1] and
         [m2]. If some binding is present in both and the associated
         value is not equal, a Fatal_error is raised *)
-    val disjoint_union : ?eq:('a -> 'a -> bool) -> 'a t -> 'a t -> 'a t
+    val disjoint_union : ?eq:('a -> 'a -> bool) -> ?print:(Format.formatter -> 'a -> unit) -> 'a t -> 'a t -> 'a t
 
     (** [union_right m1 m2] contains all bindings from [m1] and [m2]. If
         some binding is present in both, the one from [m2] is taken *)
