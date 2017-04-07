@@ -24,9 +24,15 @@ defaultentry:
 FLEXDLL_SUBMODULE_PRESENT:=$(wildcard flexdll/Makefile)
 ifeq "$(FLEXDLL_SUBMODULE_PRESENT)" ""
   BOOT_FLEXLINK_CMD=
+  FLEXDLL_DIR=
 else
   BOOT_FLEXLINK_CMD=FLEXLINK_CMD="../boot/ocamlrun ../flexdll/flexlink.exe"
   CAMLOPT:=OCAML_FLEXLINK="boot/ocamlrun flexdll/flexlink.exe" $(CAMLOPT)
+  ifeq "$(wildcard flexdll/flexdll_*.$(O))$(filter flexdll,$(MAKECMDGOALS))" ""
+    FLEXDLL_DIR=
+  else
+    FLEXDLL_DIR="+flexdll"
+  endif
 endif
 
 # FlexDLL sources missing error messages
@@ -47,8 +53,12 @@ flexdll/Makefile:
 	fi
 	@false
 
-# Bootstrapping FlexDLL - leaves a bytecode image of flexlink.exe in flexdll/
-flexdll: flexdll/Makefile
+flexdll: flexdll/Makefile flexlink
+	$(MAKECMD) -C flexdll MSVC_DETECT=0 CHAINS=$(FLEXDLL_CHAIN) NATDYNLINK=false \
+             support
+
+# Bootstrapping flexlink - leaves a bytecode image of flexlink.exe in flexdll/
+flexlink: flexdll/Makefile
 	cd byterun && $(MAKEREC) BOOTSTRAPPING_FLEXLINK=yes ocamlrun$(EXE)
 	cp byterun/ocamlrun.exe boot/ocamlrun.exe
 	cd stdlib && $(MAKEREC) COMPILER=../boot/ocamlc stdlib.cma std_exit.cmo
@@ -57,7 +67,7 @@ flexdll: flexdll/Makefile
 	 $(MAKECMD) MSVC_DETECT=0 TOOLCHAIN=$(TOOLCHAIN) TOOLPREF=$(TOOLPREF) \
 	            CHAINS=$(FLEXDLL_CHAIN) NATDYNLINK=false \
 	            OCAMLOPT="../boot/ocamlrun ../boot/ocamlc -I ../boot" \
-	            flexlink.exe support
+	            flexlink.exe
 	cd byterun && $(MAKEREC) clean
 	$(MAKEREC) partialclean
 
@@ -182,8 +192,7 @@ opt:
 # Native-code versions of the tools
 # If the submodule is initialised, then opt.opt will build a native flexlink
 opt.opt: core opt-core ocamlc.opt all ocamlopt.opt ocamllex.opt \
-         ocamltoolsopt ocamltoolsopt.opt otherlibrariesopt $(OCAMLDOC_OPT) \
-         $(if $(wildcard flexdll/Makefile),flexlink.opt)
+         ocamltoolsopt ocamltoolsopt.opt otherlibrariesopt $(OCAMLDOC_OPT)
 
 # Complete build using fast compilers
 world.opt: coldstart opt.opt
@@ -198,6 +207,7 @@ INSTALL_COMPLIBDIR=$(DESTDIR)$(COMPLIBDIR)
 INSTALL_STUBLIBDIR=$(DESTDIR)$(STUBLIBDIR)
 INSTALL_MANDIR=$(DESTDIR)$(MANDIR)
 INSTALL_DISTRIB=$(DESTDIR)$(PREFIX)
+INSTALL_FLEXDLL=$(INSTALL_LIBDIR)/flexdll
 
 install: installbyt installopt
 
@@ -248,14 +258,14 @@ installbyt:
 	fi
 
 install-flexdll:
-# The $(if ...) installs the correct .manifest file for MSVC and MSVC64
-# (GNU make doesn't have ifeq as a function, hence slightly convoluted use of
-#  filter-out)
-	cp flexdll/flexlink.exe \
-	   $(if $(filter-out mingw,$(TOOLCHAIN)),\
-	     flexdll/default$(filter-out _i386,_$(ARCH)).manifest) \
-	   "$(INSTALL_BINDIR)/"
-	cp flexdll/flexdll_*.$(O) "$(INSTALL_LIBDIR)"
+	cat stdlib/camlheader flexdll/flexlink.exe > "$(INSTALL_BINDIR)/flexlink.exe"
+ifneq "$(filter-out mingw,$(TOOLCHAIN))" ""
+	cp flexdll/default$(filter-out _i386,_$(ARCH)).manifest "$(INSTALL_BINDIR)/"
+endif
+	if test -n "$(wildcard flexdll/flexdll_*.$(O))" ; then \
+	  mkdir -p "$(INSTALL_FLEXDLL)" ; \
+	  cp flexdll/flexdll_*.$(O) "$(INSTALL_FLEXDLL)" ; \
+	fi
 
 # Installation of the native-code compiler
 installopt:
@@ -413,15 +423,16 @@ utils/config.ml: utils/config.mlp config/Makefile
 	    -e 's|%%PROFINFO_WIDTH%%|$(PROFINFO_WIDTH)|' \
 	    -e 's|%%LIBUNWIND_AVAILABLE%%|false|' \
 	    -e 's|%%LIBUNWIND_LINK_FLAGS%%||' \
-	    -e 's|%%MKDLL%%|$(MKDLL)|' \
-	    -e 's|%%MKEXE%%|$(MKEXE)|' \
-	    -e 's|%%MKMAINDLL%%|$(MKMAINDLL)|' \
+	    -e 's|%%MKDLL%%|$(subst \,\\,$(MKDLL))|' \
+	    -e 's|%%MKEXE%%|$(subst \,\\,$(MKEXE))|' \
+	    -e 's|%%MKMAINDLL%%|$(subst \,\\,$(MKMAINDLL))|' \
 	    -e 's|%%CC_PROFILE%%||' \
 	    -e 's|%%HOST%%|$(HOST)|' \
 	    -e 's|%%TARGET%%|$(TARGET)|' \
 	    -e 's|%%FLAMBDA%%|$(FLAMBDA)|' \
 	    -e 's|%%SAFE_STRING%%|$(SAFE_STRING)|' \
-	    -e 's|%%FLEXLINK_FLAGS%%|$(FLEXLINK_FLAGS)|' \
+	    -e 's|%%FLEXLINK_FLAGS%%|$(subst \,\\,$(FLEXLINK_FLAGS))|' \
+	    -e 's|%%FLEXDLL_DIR%%|$(FLEXDLL_DIR)|' \
 	    utils/config.mlp > utils/config.ml
 
 partialclean::
