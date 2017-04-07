@@ -1616,6 +1616,8 @@ let rec is_nonexpansive exp =
       is_nonexpansive_mod mexp && is_nonexpansive e
   | Texp_pack mexp ->
       is_nonexpansive_mod mexp
+  | Texp_assert exp ->
+      is_nonexpansive exp
   | _ -> false
 
 and is_nonexpansive_mod mexp =
