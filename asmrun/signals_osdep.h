@@ -304,7 +304,7 @@
   #define CONTEXT_SP (context->regs->gpr[1])
 
 /****************** s390x, ELF (Linux) */
-#elif defined(TARGET_s390x) && defined(SYS_elf)
+#elif defined(TARGET_s390x) && defined(SYS_linux)
 
   #define DECLARE_SIGNAL_HANDLER(name) \
     static void name(int sig, struct sigcontext * context)
