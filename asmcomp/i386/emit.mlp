@@ -837,6 +837,7 @@ let begin_assembly() =
   X86_proc.reset_asm_code ();
   Asm_directives.initialize ~emit:(fun directive ->
     X86_proc.directive (Directive directive));
+  Emitaux.begin_assembly ();
   if TS.win32 () then begin
     let extrn sym width = X86_dsl.D.extrn (L.to_string sym) width in
     X86_dsl.D.mode386 ();
