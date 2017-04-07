@@ -87,6 +87,12 @@ Working version
 * GPR#1104: remove support for the NeXTStep platform
   (Sébastien Hinderer)
 
+- PR#1130: enable detection of IBM XL C compiler (one need to run configure
+  with "-cc <path to xlc compiler>"). Enable shared library support for
+  bytecode executables on AIX/xlc (tested on AIX 7.1, XL C 12).
+  To enable 64-bit, run both "configure" and "make world" with OBJECT_MODE=64.
+  (Konstantin Romanov, Enrique Naudon)
+
 ### Internal/compiler-libs changes:
 
 - PR#6826, GPR#828, GPR#834: improve compilation time for open
