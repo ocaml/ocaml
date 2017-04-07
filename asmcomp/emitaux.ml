@@ -121,7 +121,7 @@ let emit_frames () =
   in
   let emit_filename name lbl =
     D.define_label lbl;
-    D.string name;
+    D.string (name ^ "\000");
     D.align ~bytes:Arch.size_addr
   in
   let pack_info fd_raise d =

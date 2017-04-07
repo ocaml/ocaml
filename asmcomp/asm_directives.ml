@@ -291,7 +291,7 @@ module Directive = struct
       | Solaris -> bprintf buf "\t.value\t%a" cst n
       | _ ->
         (* Apple's documentation says that ".word" is i386-specific, so we use
-            ".short" instead. *)
+           ".short" instead. *)
         bprintf buf "\t.short\t%a" cst n
       end
     | Const32 (n, comment) ->
