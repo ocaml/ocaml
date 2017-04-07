@@ -10,6 +10,9 @@ Working version
   (Gabriel Radanne, Leo White and Gabriel Scherer,
    request by Bikal Lem)
 
+- #6673, #1132: Relax the handling of explicit polymorphic types
+  (Leo White, review by Jacques Garrigue and Gabriel Scherer)
+
 ### Runtime system:
 
 - #9119: Make [caml_stat_resize_noexc] compatible with the [realloc]
