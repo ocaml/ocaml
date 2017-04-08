@@ -570,7 +570,7 @@ static void intern_alloc(mlsize_t whsize, mlsize_t num_objects,
     return;
   }
   wosize = Wosize_whsize(whsize);
-  if (wosize > Max_wosize || outside_heap) {
+  if (outside_heap || wosize > Max_wosize) {
     /* Round desired size up to next page */
     asize_t request =
       ((Bsize_wsize(whsize) + Page_size - 1) >> Page_log) << Page_log;
@@ -585,10 +585,12 @@ static void intern_alloc(mlsize_t whsize, mlsize_t num_objects,
     CAMLassert (intern_block == 0);
   } else {
     /* this is a specialised version of caml_alloc from alloc.c */
-    if (wosize == 0){
-      intern_block = Atom (String_tag);
-    }else if (wosize <= Max_young_wosize){
-      intern_block = caml_alloc_small (wosize, String_tag);
+    if (wosize <= Max_young_wosize){
+      if (wosize == 0){
+        intern_block = Atom (String_tag);
+      } else {
+        intern_block = caml_alloc_small (wosize, String_tag);
+      }
     }else{
       intern_block = caml_alloc_shr_no_raise (wosize, String_tag);
       /* do not do the urgent_gc check here because it might darken
