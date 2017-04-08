@@ -256,7 +256,10 @@ let setup_colors () =
 let print_loc ppf loc =
   setup_colors ();
   let (file, line, startchar) = get_pos_info loc.loc_start in
-  let startchar = try ignore @@ Sys.getenv "BS_VSCODE" ; startchar + 1 with _ -> startchar in 
+#if undefined BS_NO_COMPILER_PATCH then 
+  let startchar = 
+    if Clflags.bs_vscode then startchar + 1 else startchar in 
+#end    
   let endchar = loc.loc_end.pos_cnum - loc.loc_start.pos_cnum + startchar in
   if file = "//toplevel//" then begin
     if highlight_locations ppf [loc] then () else

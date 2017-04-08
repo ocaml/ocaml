@@ -99,7 +99,14 @@ let check_deprecated loc attrs s =
     | ({txt = "ocaml.deprecated"|"deprecated"; _}, p) ->
       begin match string_of_payload p with
       | Some txt ->
-          Location.prerr_warning loc (Warnings.Deprecated (s ^ "\n" ^ txt))
+#if undefined BS_NO_COMPILER_PATCH then 
+if Clflags.bs_vscode then    
+     Location.prerr_warning loc (Warnings.Deprecated (s ^ " " ^ txt))
+else           
+     Location.prerr_warning loc (Warnings.Deprecated (s ^ "\n" ^ txt))
+#else 
+     Location.prerr_warning loc (Warnings.Deprecated (s ^ "\n" ^ txt))
+#end          
       | None ->
           Location.prerr_warning loc (Warnings.Deprecated s)
       end

@@ -104,6 +104,7 @@ type mli_status = Mli_na | Mli_exists | Mli_non_exists
 val no_implicit_current_dir : bool ref
 val assume_no_mli : mli_status ref 
 val record_event_when_debug : bool ref 
+val bs_vscode : bool
 #end
 
 type color_setting = Auto | Always | Never

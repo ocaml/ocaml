@@ -120,6 +120,11 @@ type mli_status = Mli_na | Mli_exists | Mli_non_exists
 let no_implicit_current_dir = ref false
 let assume_no_mli = ref Mli_na
 let record_event_when_debug = ref true (* turned off in BuckleScript*)
+let bs_vscode = 
+    try ignore @@ Sys.getenv "BS_VSCODE" ; true with _ -> false
+    (* We get it from environment variable mostly due to 
+       we don't want to rebuild when flip on or off
+    *)
 #end
 
 type color_setting = Auto | Always | Never
