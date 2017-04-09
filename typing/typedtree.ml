@@ -38,7 +38,7 @@ type pattern =
 and pat_extra =
   | Tpat_constraint of core_type
   | Tpat_type of Path.t * Longident.t loc
-  | Tpat_open of Path.t * Longident.t loc * Env.t
+  | Tpat_open of Longident.t loc * Env.t
   | Tpat_unpack
 
 and pattern_desc =
@@ -69,7 +69,7 @@ and expression =
 and exp_extra =
   | Texp_constraint of core_type
   | Texp_coerce of core_type option * core_type
-  | Texp_open of override_flag * Path.t * Longident.t loc * Env.t
+  | Texp_open of override_flag * Longident.t loc * Env.t
   | Texp_poly of core_type option
   | Texp_newtype of string
 
@@ -330,8 +330,7 @@ and module_type_declaration =
 
 and open_description =
     {
-     open_path: Path.t;
-     open_txt: Longident.t loc;
+     open_expr: module_expr;
      open_override: override_flag;
      open_loc: Location.t;
      open_attributes: attribute list;

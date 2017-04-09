@@ -43,9 +43,10 @@ let init_path ?(dir="") native =
 
 let open_implicit_module m env =
   let open Asttypes in
-  let lid = {loc = Location.in_file "command line";
-             txt = Longident.parse m } in
-  snd (Typemod.type_open_ Override env lid.loc lid)
+  let loc = Location.in_file "command line" in
+  let lid = {loc; txt = Longident.parse m } in
+  let me = Parsetree.({pmod_desc=Pmod_ident lid; pmod_loc=loc; pmod_attributes=[]}) in
+  snd (Typemod.type_open_ ?toplevel:None false Override env lid.loc me)
 
 let initial_env () =
   Ident.reinit();

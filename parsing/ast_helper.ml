@@ -407,9 +407,9 @@ end
 
 module Opn = struct
   let mk ?(loc = !default_loc) ?(attrs = []) ?(docs = empty_docs)
-        ?(override = Fresh) lid =
+        ?(override = Fresh) expr =
     {
-     popen_lid = lid;
+     popen_expr = expr;
      popen_override = override;
      popen_loc = loc;
      popen_attributes = add_docs_attrs docs attrs;

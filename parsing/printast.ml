@@ -680,9 +680,9 @@ and signature_item i ppf x =
       attributes i ppf x.pmtd_attributes;
       modtype_declaration i ppf x.pmtd_type
   | Psig_open od ->
-      line i ppf "Psig_open %a %a\n"
+      line i ppf "Psig_open %a\n%a\n"
         fmt_override_flag od.popen_override
-        fmt_longident_loc od.popen_lid;
+        (module_expr i) od.popen_expr;
       attributes i ppf od.popen_attributes
   | Psig_include incl ->
       line i ppf "Psig_include\n";
@@ -787,9 +787,9 @@ and structure_item i ppf x =
       attributes i ppf x.pmtd_attributes;
       modtype_declaration i ppf x.pmtd_type
   | Pstr_open od ->
-      line i ppf "Pstr_open %a %a\n"
+      line i ppf "Pstr_open %a\n%a\n"
         fmt_override_flag od.popen_override
-        fmt_longident_loc od.popen_lid;
+        (module_expr i) od.popen_expr;
       attributes i ppf od.popen_attributes
   | Pstr_class (l) ->
       line i ppf "Pstr_class\n";

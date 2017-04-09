@@ -363,7 +363,10 @@ and add_sig_item (bv, m) item =
       end;
       (bv, m)
   | Psig_open od ->
-      (open_module bv od.popen_lid.txt, m)
+      let Node (s, m') = add_module_binding bv od.popen_expr in
+      add_names s;
+      let add = StringMap.fold StringMap.add m' in
+      (add bv, add m)
   | Psig_include incl ->
       let Node (s, m') = add_modtype_binding bv incl.pincl_mod in
       add_names s;
@@ -454,7 +457,10 @@ and add_struct_item (bv, m) item : _ StringMap.t * _ StringMap.t =
       end;
       (bv, m)
   | Pstr_open od ->
-      (open_module bv od.popen_lid.txt, m)
+      let Node (s, m') = add_module_binding bv od.popen_expr in
+      add_names s;
+      let add = StringMap.fold StringMap.add m' in
+      (add bv, add m)
   | Pstr_class cdl ->
       List.iter (add_class_declaration bv) cdl; (bv, m)
   | Pstr_class_type cdtl ->

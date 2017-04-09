@@ -756,7 +756,10 @@
     Pstr_extension "foo"
     [
       structure_item (shortcut_ext_attr.ml[88,1754+0]..[88,1754+16])
-        Pstr_open Fresh "M" (shortcut_ext_attr.ml[88,1754+15]..[88,1754+16])
+        Pstr_open Fresh
+        module_expr (shortcut_ext_attr.ml[88,1754+15]..[88,1754+16])
+          Pmod_ident "M" (shortcut_ext_attr.ml[88,1754+15]..[88,1754+16])
+
           attribute "foo"
             []
     ]
@@ -929,7 +932,10 @@
             Psig_extension "foo"
             [
               signature_item (shortcut_ext_attr.ml[109,2116+2]..[109,2116+18])
-                Psig_open Fresh "M" (shortcut_ext_attr.ml[109,2116+17]..[109,2116+18])
+                Psig_open Fresh
+                module_expr (shortcut_ext_attr.ml[109,2116+17]..[109,2116+18])
+                  Pmod_ident "M" (shortcut_ext_attr.ml[109,2116+17]..[109,2116+18])
+
                   attribute "foo"
                     []
             ]

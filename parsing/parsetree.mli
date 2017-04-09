@@ -727,7 +727,7 @@ and module_type_declaration =
 
 and open_description =
     {
-     popen_lid: Longident.t loc;
+     popen_expr: module_expr;
      popen_override: override_flag;
      popen_loc: Location.t;
      popen_attributes: attributes;

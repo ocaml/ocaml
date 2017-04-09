@@ -36,8 +36,9 @@ val transl_signature:
 val check_nongen_schemes:
         Env.t -> Types.signature -> unit
 val type_open_:
-        ?toplevel:bool -> Asttypes.override_flag ->
-        Env.t -> Location.t -> Longident.t Asttypes.loc -> Path.t * Env.t
+        ?toplevel:bool -> bool -> Asttypes.override_flag ->
+        Env.t -> Location.t -> Parsetree.module_expr ->
+        Typedtree.module_expr * Env.t
 val modtype_of_package:
         Env.t -> Location.t ->
         Path.t -> Longident.t list -> type_expr list -> module_type
@@ -74,6 +75,8 @@ type error =
   | Recursive_module_require_explicit_type
   | Apply_generative
   | Cannot_scrape_alias of Path.t
+  | Invalid_open of Parsetree.module_expr
+  | Cannot_eliminate_anon_module of Ident.t * signature
 
 exception Error of Location.t * Env.t * error
 exception Error_forward of Location.error

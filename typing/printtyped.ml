@@ -224,8 +224,8 @@ and pattern i ppf x =
         line i ppf "Tpat_type %a\n" fmt_path id;
         attributes i ppf attrs;
         pattern i ppf { x with pat_extra = rem }
-    | (Tpat_open (id,_,_), _, attrs)::rem ->
-        line i ppf "Tpat_open \"%a\"\n" fmt_path id;
+    | (Tpat_open (id,_), _, attrs)::rem ->
+        line i ppf "Tpat_open \"%a\"\n" fmt_longident id;
         attributes i ppf attrs;
         pattern i ppf { x with pat_extra = rem }
     | [] ->
@@ -270,8 +270,8 @@ and expression_extra i ppf x attrs =
       attributes i ppf attrs;
       option i core_type ppf cto1;
       core_type i ppf cto2;
-  | Texp_open (ovf, m, _, _) ->
-      line i ppf "Texp_open %a \"%a\"\n" fmt_override_flag ovf fmt_path m;
+  | Texp_open (ovf, lid, _) ->
+      line i ppf "Texp_open %a \"%a\"\n" fmt_override_flag ovf fmt_longident lid;
       attributes i ppf attrs;
   | Texp_poly cto ->
       line i ppf "Texp_poly\n";
@@ -662,9 +662,8 @@ and signature_item i ppf x =
       attributes i ppf x.mtd_attributes;
       modtype_declaration i ppf x.mtd_type
   | Tsig_open od ->
-      line i ppf "Tsig_open %a %a\n"
-           fmt_override_flag od.open_override
-           fmt_path od.open_path;
+      line i ppf "Tsig_open %a\n"
+        fmt_override_flag od.open_override;
       attributes i ppf od.open_attributes
   | Tsig_include incl ->
       line i ppf "Tsig_include\n";
@@ -767,9 +766,8 @@ and structure_item i ppf x =
       attributes i ppf x.mtd_attributes;
       modtype_declaration i ppf x.mtd_type
   | Tstr_open od ->
-      line i ppf "Tstr_open %a %a\n"
-           fmt_override_flag od.open_override
-           fmt_path od.open_path;
+      line i ppf "Tstr_open %a\n"
+        fmt_override_flag od.open_override;
       attributes i ppf od.open_attributes
   | Tstr_class (l) ->
       line i ppf "Tstr_class\n";

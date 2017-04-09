@@ -39,9 +39,11 @@ let initial_env () =
   in
   let open_mod env m =
     let open Asttypes in
-    let lid = {loc = Location.in_file "ocamldoc command line";
-               txt = Longident.parse m } in
-    snd (Typemod.type_open_ Override env lid.loc lid) in
+    let loc = Location.in_file "ocamldoc command line" in
+    let lid = {loc; txt = Longident.parse m } in
+    let me = Parsetree.({pmod_desc=Pmod_ident lid;
+                         pmod_loc=loc; pmod_attributes=[]}) in
+    snd (Typemod.type_open_ ?toplevel:None false Override env lid.loc me) in
   (* Open the list of modules given as arguments of the "-open" flag
      The list is reversed to open the modules in the left-to-right order *)
   let to_open = List.rev !Clflags.open_modules in

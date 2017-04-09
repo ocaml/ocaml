@@ -135,7 +135,7 @@ let open_description sub od =
   let attrs = sub.attributes sub od.open_attributes in
   Opn.mk ~loc ~attrs
     ~override:od.open_override
-    (map_loc sub od.open_txt)
+    (sub.module_expr sub od.open_expr)
 
 let structure_item sub item =
   let loc = sub.location sub item.str_loc in
@@ -328,7 +328,7 @@ let exp_extra sub (extra, loc, attrs) sexp =
                      sub.typ sub cty2)
     | Texp_constraint cty ->
         Pexp_constraint (sexp, sub.typ sub cty)
-    | Texp_open (ovf, _path, lid, _) ->
+    | Texp_open (ovf, lid, _) ->
         Pexp_open (ovf, map_loc sub lid, sexp)
     | Texp_poly cto -> Pexp_poly (sexp, map_opt (sub.typ sub) cto)
     | Texp_newtype s -> Pexp_newtype (mkloc s loc, sexp)

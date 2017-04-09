@@ -917,9 +917,9 @@ signature_item:
         mksig(Psig_attribute $1) }
 ;
 open_statement:
-  | OPEN override_flag ext_attributes mod_longident post_item_attributes
+  | OPEN override_flag ext_attributes module_expr post_item_attributes
       { let (ext, attrs) = $3 in
-        Opn.mk (mkrhs $4 4) ~override:$2 ~attrs:(attrs@$5)
+        Opn.mk $4 ~override:$2 ~attrs:(attrs@$5)
           ~loc:(symbol_rloc()) ~docs:(symbol_docs ())
       , ext}
 ;

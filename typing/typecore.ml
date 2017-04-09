@@ -1366,12 +1366,13 @@ let rec type_pat ~constrs ~labels ~no_existentials ~mode ~explode ~env
       k { p with pat_extra =
         (Tpat_type (path, lid), loc, sp.ppat_attributes) :: p.pat_extra }
   | Ppat_open (lid,p) ->
-      let path, new_env =
-        !type_open Asttypes.Fresh !env sp.ppat_loc lid in
+      let me = {pmod_desc=Pmod_ident lid; pmod_loc=lid.loc; pmod_attributes=[]} in
+      let _tme, new_env =
+        !type_open Asttypes.Fresh !env sp.ppat_loc me in
       let new_env = ref new_env in
       type_pat ~env:new_env p expected_ty ( fun p ->
         env := Env.copy_local !env ~from:!new_env;
-        k { p with pat_extra =( Tpat_open (path,lid,!new_env),
+        k { p with pat_extra =( Tpat_open (lid,!new_env),
                             loc, sp.ppat_attributes) :: p.pat_extra }
       )
   | Ppat_exception _ ->
@@ -1853,7 +1854,9 @@ let contains_gadt env p =
         with Not_found -> ()
         end; iter_ppat (loop env) p
       | Ppat_open (lid,sub_p) ->
-        let _, new_env = !type_open Asttypes.Override env p.ppat_loc lid in
+        let me = {pmod_desc=Pmod_ident lid; pmod_loc=lid.loc;
+                  pmod_attributes=[]} in
+        let _, new_env = !type_open Asttypes.Override env p.ppat_loc me in
         loop new_env sub_p
     | _ -> iter_ppat (loop env) p
   in
@@ -2966,10 +2969,12 @@ and type_expect_ ?in_function ?(recarg=Rejected) env sexp ty_expected =
         exp_attributes = sexp.pexp_attributes;
         exp_env = env }
   | Pexp_open (ovf, lid, e) ->
-      let (path, newenv) = !type_open ovf env sexp.pexp_loc lid in
+      let me = {pmod_desc=Pmod_ident lid; pmod_loc=lid.loc;
+                pmod_attributes=[]} in
+      let (_tme, newenv) = !type_open ovf env sexp.pexp_loc me in
       let exp = type_expect newenv e ty_expected in
       { exp with
-        exp_extra = (Texp_open (ovf, path, lid, newenv), loc,
+        exp_extra = (Texp_open (ovf, lid, newenv), loc,
                      sexp.pexp_attributes) ::
                       exp.exp_extra;
       }

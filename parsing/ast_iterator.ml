@@ -526,8 +526,8 @@ let default_iterator =
 
 
     open_description =
-      (fun this {popen_lid; popen_override = _; popen_attributes; popen_loc} ->
-         iter_loc this popen_lid;
+      (fun this {popen_expr; popen_override = _; popen_attributes; popen_loc} ->
+         this.module_expr this popen_expr;
          this.location this popen_loc;
          this.attributes this popen_attributes
       );
