@@ -133,10 +133,10 @@ method! is_simple_expr = function
       List.for_all self#is_simple_expr args
   (* inlined byte-swap ops are simple if their arguments are *)
   | Cop(Cextcall(fn, _, _, _), args, _)
-    when !arch >= ARMv6T2 && L.equal fn caml_bswap16_direct ->
+    when !arch >= ARMv6T2 && L.equal fn L.caml_bswap16_direct ->
       List.for_all self#is_simple_expr args
   | Cop(Cextcall(fn,_,_,_), args, _)
-    when !arch >= ARMv6 && L.equal fn caml_int32_direct_bswap ->
+    when !arch >= ARMv6 && L.equal fn L.caml_int32_direct_bswap ->
       List.for_all self#is_simple_expr args
   | e -> super#is_simple_expr e
 
@@ -146,10 +146,10 @@ method! effects_of e =
       when !fpu >= VFPv2 && L.equal fn L.sqrt ->
       Selectgen.Effect_and_coeffect.join_list_map args self#effects_of
   | Cop(Cextcall(fn, _, _, _), args, _)
-    when !arch >= ARMv6T2 && L.equal fn caml_bswap16_direct ->
+    when !arch >= ARMv6T2 && L.equal fn L.caml_bswap16_direct ->
       Selectgen.Effect_and_coeffect.join_list_map args self#effects_of
   | Cop(Cextcall(fn,_,_,_), args, _)
-    when !arch >= ARMv6 && L.equal fn caml_int32_direct_bswap ->
+    when !arch >= ARMv6 && L.equal fn L.caml_int32_direct_bswap ->
       Selectgen.Effect_and_coeffect.join_list_map args self#effects_of
   | e -> super#effects_of e
 
