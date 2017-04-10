@@ -17,9 +17,6 @@
 
 include ../config/Makefile
 
-CC=$(BYTECC)
-CFLAGS=-DNDEBUG $(BYTECCCOMPOPTS)
-
 OBJS= closure.$(O) error.$(O) lalr.$(O) lr0.$(O) main.$(O) \
   mkpar.$(O) output.$(O) reader.$(O) \
   skeleton.$(O) symtab.$(O) verbose.$(O) warshall.$(O)
@@ -54,4 +51,4 @@ warshall.$(O): defs.h
 # also works for .obj files.
 
 %.$(O): %.c
-	$(CC) $(CFLAGS) -c $<
+	$(CC) -c $(CFLAGS) $(CPPFLAGS) $(OUTPUTOBJ)$@ $<

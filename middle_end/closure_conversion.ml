@@ -72,7 +72,7 @@ let add_default_argument_wrappers lam =
     manner from the tuple. *)
 let tupled_function_call_stub original_params unboxed_version
       : Flambda.function_declaration =
-  let tuple_param =
+  let tuple_param_var =
     Variable.rename ~append:"tupled_stub_param" unboxed_version
   in
   let params = List.map (fun p -> Variable.rename p) original_params in
@@ -91,11 +91,12 @@ let tupled_function_call_stub original_params unboxed_version
   let _, body =
     List.fold_left (fun (pos, body) param ->
         let lam : Flambda.named =
-          Prim (Pfield pos, [tuple_param], Debuginfo.none)
+          Prim (Pfield pos, [tuple_param_var], Debuginfo.none)
         in
         pos + 1, Flambda.create_let param lam body)
       (0, call) params
   in
+  let tuple_param = Parameter.wrap tuple_param_var in
   Flambda.create_function_declaration ~params:[tuple_param]
     ~body ~stub:true ~dbg:Debuginfo.none ~inline:Default_inline
     ~specialise:Default_specialise ~is_a_functor:false
@@ -461,7 +462,7 @@ let rec close t env (lam : Lambda.lambda) : Flambda.t =
       ~create_body:(fun args ->
         name_expr (Prim (p, args, dbg))
           ~name)
-  | Lswitch (arg, sw) ->
+  | Lswitch (arg, sw, _loc) ->
     let scrutinee = Variable.create "switch" in
     let aux (i, lam) = i, close t env lam in
     let zero_to_n = Numbers.Int.zero_to_n in
@@ -563,7 +564,8 @@ and close_functions t external_env function_declarations : Flambda.named =
        CR-someday pchambart: eta-expansion wrapper for a primitive are
        not marked as stub but certainly should *)
     let stub = Function_decl.stub decl in
-    let params = List.map (Env.find_var closure_env) params in
+    let param_vars = List.map (Env.find_var closure_env) params in
+    let params = List.map Parameter.wrap param_vars in
     let closure_bound_var = Function_decl.closure_bound_var decl in
     let body = close t closure_env body in
     let fun_decl =
@@ -577,7 +579,7 @@ and close_functions t external_env function_declarations : Flambda.named =
     | Tupled ->
       let unboxed_version = Variable.rename closure_bound_var in
       let generic_function_stub =
-        tupled_function_call_stub params unboxed_version
+        tupled_function_call_stub param_vars unboxed_version
       in
       Variable.Map.add unboxed_version fun_decl
         (Variable.Map.add closure_bound_var generic_function_stub map)

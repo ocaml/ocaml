@@ -15,10 +15,6 @@
 
 (* Module [Bigarray]: large, multi-dimensional, numerical arrays *)
 
-external init : unit -> unit = "caml_ba_init"
-
-let _ = init()
-
 include CamlinternalBigarray
 
 (* Keep those constants in sync with the caml_ba_kind enumeration
@@ -100,12 +96,8 @@ module Genarray = struct
   external map_internal: Unix.file_descr -> ('a, 'b) kind -> 'c layout ->
                      bool -> int array -> int64 -> ('a, 'b, 'c) t
      = "caml_ba_map_file_bytecode" "caml_ba_map_file"
-  let () = Unix.map_file_impl := { Unix.map_file_impl = map_internal }
-  let map_file fd ?pos kind layout shared dims =
-    try
-      Unix.map_file fd ?pos kind layout shared dims
-    with Unix.Unix_error (error, _, _) ->
-      raise (Sys_error (Unix.error_message error))
+  let map_file fd ?(pos = 0L) kind layout shared dims =
+    map_internal fd kind layout shared dims pos
 end
 
 module Array0 = struct

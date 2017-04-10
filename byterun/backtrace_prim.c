@@ -126,7 +126,7 @@ static struct ev_info *process_debug_events(code_t code_start, value events_heap
   if (*num_events == 0)
       CAMLreturnT(struct ev_info *, NULL);
 
-  events = malloc(*num_events * sizeof(struct ev_info));
+  events = caml_stat_alloc_noexc(*num_events * sizeof(struct ev_info));
   if(events == NULL)
     caml_fatal_error ("caml_add_debug_info: out of memory");
 
@@ -142,7 +142,7 @@ static struct ev_info *process_debug_events(code_t code_start, value events_heap
 
       {
         uintnat fnsz = caml_string_length(Field(ev_start, POS_FNAME)) + 1;
-        events[j].ev_filename = (char*)malloc(fnsz);
+        events[j].ev_filename = (char*)caml_stat_alloc_noexc(fnsz);
         if(events[j].ev_filename == NULL)
           caml_fatal_error ("caml_add_debug_info: out of memory");
         memcpy(events[j].ev_filename,
@@ -162,7 +162,7 @@ static struct ev_info *process_debug_events(code_t code_start, value events_heap
     }
   }
 
-  Assert(j == *num_events);
+  CAMLassert(j == *num_events);
 
   qsort(events, *num_events, sizeof(struct ev_info), cmp_ev_info);
 
@@ -218,8 +218,9 @@ CAMLprim value caml_remove_debug_info(code_t start)
 }
 
 int caml_alloc_backtrace_buffer(void){
-  Assert(caml_backtrace_pos == 0);
-  caml_backtrace_buffer = malloc(BACKTRACE_BUFFER_SIZE * sizeof(code_t));
+  CAMLassert(caml_backtrace_pos == 0);
+  caml_backtrace_buffer =
+    caml_stat_alloc_noexc(BACKTRACE_BUFFER_SIZE * sizeof(code_t));
   if (caml_backtrace_buffer == NULL) return -1;
   return 0;
 }
@@ -310,7 +311,7 @@ CAMLprim value caml_get_current_callstack(value max_frames_value)
 
     for (trace_pos = 0; trace_pos < trace_size; trace_pos++) {
       code_t p = caml_next_frame_pointer(&sp, &trsp);
-      Assert(p != NULL);
+      CAMLassert(p != NULL);
       Field(trace, trace_pos) = Val_backtrace_slot(p);
     }
   }
@@ -333,7 +334,7 @@ static void read_main_debug_info(struct debug_info *di)
   struct channel *chan;
   struct exec_trailer trail;
 
-  Assert(di->already_read == 0);
+  CAMLassert(di->already_read == 0);
   di->already_read = 1;
 
   if (caml_cds_file != NULL) {

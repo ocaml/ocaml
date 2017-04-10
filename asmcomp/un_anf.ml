@@ -118,12 +118,13 @@ let make_ident_info (clam : Clambda.ulambda) : ident_info =
       List.iter loop args;
       ignore_debuginfo dbg
     | Uswitch (cond, { us_index_consts; us_actions_consts;
-          us_index_blocks; us_actions_blocks }) ->
+          us_index_blocks; us_actions_blocks }, dbg) ->
       loop cond;
       ignore_int_array us_index_consts;
       Array.iter loop us_actions_consts;
       ignore_int_array us_index_blocks;
-      Array.iter loop us_actions_blocks
+      Array.iter loop us_actions_blocks;
+      ignore_debuginfo dbg
     | Ustringswitch (cond, branches, default) ->
       loop cond;
       List.iter (fun (str, branch) ->
@@ -305,7 +306,7 @@ let let_bound_vars_that_can_be_moved ident_info (clam : Clambda.ulambda) =
       examine_argument_list args;
       ignore_debuginfo dbg
     | Uswitch (cond, { us_index_consts; us_actions_consts;
-          us_index_blocks; us_actions_blocks }) ->
+          us_index_blocks; us_actions_blocks }, dbg) ->
       examine_argument_list [cond];
       ignore_int_array us_index_consts;
       Array.iter (fun action ->
@@ -317,6 +318,7 @@ let let_bound_vars_that_can_be_moved ident_info (clam : Clambda.ulambda) =
           let_stack := [];
           loop action)
         us_actions_blocks;
+      ignore_debuginfo dbg;
       let_stack := []
     | Ustringswitch (cond, branches, default) ->
       examine_argument_list [cond];
@@ -451,7 +453,7 @@ let rec substitute_let_moveable is_let_moveable env (clam : Clambda.ulambda)
   | Uprim (prim, args, dbg) ->
     let args = substitute_let_moveable_list is_let_moveable env args in
     Uprim (prim, args, dbg)
-  | Uswitch (cond, sw) ->
+  | Uswitch (cond, sw, dbg) ->
     let cond = substitute_let_moveable is_let_moveable env cond in
     let sw =
       { sw with
@@ -463,7 +465,7 @@ let rec substitute_let_moveable is_let_moveable env (clam : Clambda.ulambda)
             sw.us_actions_blocks;
       }
     in
-    Uswitch (cond, sw)
+    Uswitch (cond, sw, dbg)
   | Ustringswitch (cond, branches, default) ->
     let cond = substitute_let_moveable is_let_moveable env cond in
     let branches =
@@ -654,7 +656,7 @@ let rec un_anf_and_moveable ident_info env (clam : Clambda.ulambda)
       both_moveable args_moveable (primitive_moveable prim args ident_info)
     in
     Uprim (prim, args, dbg), moveable
-  | Uswitch (cond, sw) ->
+  | Uswitch (cond, sw, dbg) ->
     let cond = un_anf ident_info env cond in
     let sw =
       { sw with
@@ -662,7 +664,7 @@ let rec un_anf_and_moveable ident_info env (clam : Clambda.ulambda)
         us_actions_blocks = un_anf_array ident_info env sw.us_actions_blocks;
       }
     in
-    Uswitch (cond, sw), Fixed
+    Uswitch (cond, sw, dbg), Fixed
   | Ustringswitch (cond, branches, default) ->
     let cond = un_anf ident_info env cond in
     let branches =

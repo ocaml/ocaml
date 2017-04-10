@@ -21,6 +21,7 @@
 #include <caml/memory.h>
 #include "unixsupport.h"
 #include <fcntl.h>
+#include <io.h>
 
 #if defined(_MSC_VER) && !defined(_INTPTR_T_DEFINED)
 typedef int intptr_t;

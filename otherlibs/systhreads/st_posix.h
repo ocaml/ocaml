@@ -116,7 +116,7 @@ static INLINE void st_tls_set(st_tlskey k, void * v)
 }
 
 /* The master lock.  This is a mutex that is held most of the time,
-   so we implement it in a slightly consoluted way to avoid
+   so we implement it in a slightly convoluted way to avoid
    all risks of busy-waiting.  Also, we count the number of waiting
    threads. */
 
@@ -167,10 +167,10 @@ typedef pthread_mutex_t * st_mutex;
 static int st_mutex_create(st_mutex * res)
 {
   int rc;
-  st_mutex m = malloc(sizeof(pthread_mutex_t));
+  st_mutex m = caml_stat_alloc_noexc(sizeof(pthread_mutex_t));
   if (m == NULL) return ENOMEM;
   rc = pthread_mutex_init(m, NULL);
-  if (rc != 0) { free(m); return rc; }
+  if (rc != 0) { caml_stat_free(m); return rc; }
   *res = m;
   return 0;
 }
@@ -179,7 +179,7 @@ static int st_mutex_destroy(st_mutex m)
 {
   int rc;
   rc = pthread_mutex_destroy(m);
-  free(m);
+  caml_stat_free(m);
   return rc;
 }
 
@@ -208,10 +208,10 @@ typedef pthread_cond_t * st_condvar;
 static int st_condvar_create(st_condvar * res)
 {
   int rc;
-  st_condvar c = malloc(sizeof(pthread_cond_t));
+  st_condvar c = caml_stat_alloc_noexc(sizeof(pthread_cond_t));
   if (c == NULL) return ENOMEM;
   rc = pthread_cond_init(c, NULL);
-  if (rc != 0) { free(c); return rc; }
+  if (rc != 0) { caml_stat_free(c); return rc; }
   *res = c;
   return 0;
 }
@@ -220,7 +220,7 @@ static int st_condvar_destroy(st_condvar c)
 {
   int rc;
   rc = pthread_cond_destroy(c);
-  free(c);
+  caml_stat_free(c);
   return rc;
 }
 
@@ -250,12 +250,12 @@ typedef struct st_event_struct {
 static int st_event_create(st_event * res)
 {
   int rc;
-  st_event e = malloc(sizeof(struct st_event_struct));
+  st_event e = caml_stat_alloc_noexc(sizeof(struct st_event_struct));
   if (e == NULL) return ENOMEM;
   rc = pthread_mutex_init(&e->lock, NULL);
-  if (rc != 0) { free(e); return rc; }
+  if (rc != 0) { caml_stat_free(e); return rc; }
   rc = pthread_cond_init(&e->triggered, NULL);
-  if (rc != 0) { pthread_mutex_destroy(&e->lock); free(e); return rc; }
+  if (rc != 0) { pthread_mutex_destroy(&e->lock); caml_stat_free(e); return rc; }
   e->status = 0;
   *res = e;
   return 0;
@@ -266,7 +266,7 @@ static int st_event_destroy(st_event e)
   int rc1, rc2;
   rc1 = pthread_mutex_destroy(&e->lock);
   rc2 = pthread_cond_destroy(&e->triggered);
-  free(e);
+  caml_stat_free(e);
   return rc1 != 0 ? rc1 : rc2;
 }
 

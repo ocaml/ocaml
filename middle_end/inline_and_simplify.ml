@@ -807,7 +807,7 @@ and simplify_partial_application env r ~lhs_of_application
   | Default_specialise -> ()
   end;
   let freshened_params =
-    List.map (fun id -> Variable.rename id) function_decl.Flambda.params
+    List.map (fun p -> Parameter.rename p) function_decl.Flambda.params
   in
   let applied_args, remaining_args =
     Misc.Stdlib.List.map2_prefix (fun arg id' -> id', arg)
@@ -817,7 +817,7 @@ and simplify_partial_application env r ~lhs_of_application
     let body : Flambda.t =
       Apply {
         func = lhs_of_application;
-        args = freshened_params;
+        args = Parameter.List.vars freshened_params;
         kind = Direct closure_id_being_applied;
         dbg;
         inline = Default_inline;
@@ -836,8 +836,8 @@ and simplify_partial_application env r ~lhs_of_application
   in
   let with_known_args =
     Flambda_utils.bind
-      ~bindings:(List.map (fun (var, arg) ->
-          var, Flambda.Expr (Var arg)) applied_args)
+      ~bindings:(List.map (fun (param, arg) ->
+          Parameter.var param, Flambda.Expr (Var arg)) applied_args)
       ~body:wrapper_accepting_remaining_args
   in
   simplify env r with_known_args

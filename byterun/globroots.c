@@ -61,7 +61,7 @@ static int random_level(void)
      "less random" than the most significant bits with a modulus of 2^m,
      so consume most significant bits first */
   while ((r & 0xC0000000U) == 0xC0000000U) { level++; r = r << 2; }
-  Assert(level < NUM_LEVELS);
+  CAMLassert(level < NUM_LEVELS);
   return level;
 }
 
@@ -74,7 +74,7 @@ static void caml_insert_global_root(struct global_root_list * rootlist,
   struct global_root * e, * f;
   int i, new_level;
 
-  Assert(0 <= rootlist->level && rootlist->level < NUM_LEVELS);
+  CAMLassert(0 <= rootlist->level && rootlist->level < NUM_LEVELS);
 
   /* Init "cursor" to list head */
   e = (struct global_root *) rootlist;
@@ -115,7 +115,7 @@ static void caml_delete_global_root(struct global_root_list * rootlist,
   struct global_root * e, * f;
   int i;
 
-  Assert(0 <= rootlist->level && rootlist->level < NUM_LEVELS);
+  CAMLassert(0 <= rootlist->level && rootlist->level < NUM_LEVELS);
 
   /* Init "cursor" to list head */
   e = (struct global_root *) rootlist;
@@ -163,7 +163,7 @@ static void caml_empty_global_roots(struct global_root_list * rootlist)
   struct global_root * gr, * next;
   int i;
 
-  Assert(0 <= rootlist->level && rootlist->level < NUM_LEVELS);
+  CAMLassert(0 <= rootlist->level && rootlist->level < NUM_LEVELS);
 
   for (gr = rootlist->forward[0]; gr != NULL; /**/) {
     next = gr->forward[0];
@@ -187,7 +187,7 @@ struct global_root_list caml_global_roots_old = { NULL, { NULL, }, 0 };
 
 CAMLexport void caml_register_global_root(value *r)
 {
-  Assert (((intnat) r & 3) == 0);  /* compact.c demands this (for now) */
+  CAMLassert (((intnat) r & 3) == 0);  /* compact.c demands this (for now) */
   caml_insert_global_root(&caml_global_roots, r);
 }
 
@@ -203,7 +203,7 @@ CAMLexport void caml_remove_global_root(value *r)
 CAMLexport void caml_register_generational_global_root(value *r)
 {
   value v = *r;
-  Assert (((intnat) r & 3) == 0);  /* compact.c demands this (for now) */
+  CAMLassert (((intnat) r & 3) == 0);  /* compact.c demands this (for now) */
   if (Is_block(v)) {
     if (Is_young(v))
       caml_insert_global_root(&caml_global_roots_young, r);

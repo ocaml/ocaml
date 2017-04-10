@@ -80,6 +80,84 @@ let add_char b c =
   Bytes.unsafe_set b.buffer pos c;
   b.position <- pos + 1
 
+ let add_utf_8_uchar b u = match Uchar.to_int u with
+ | u when u < 0 -> assert false
+ | u when u <= 0x007F ->
+     add_char b (Char.unsafe_chr u)
+ | u when u <= 0x07FF ->
+     let pos = b.position in
+     if pos + 2 > b.length then resize b 2;
+     Bytes.unsafe_set b.buffer (pos    )
+       (Char.unsafe_chr (0xC0 lor (u lsr 6)));
+     Bytes.unsafe_set b.buffer (pos + 1)
+       (Char.unsafe_chr (0x80 lor (u land 0x3F)));
+     b.position <- pos + 2
+ | u when u <= 0xFFFF ->
+     let pos = b.position in
+     if pos + 3 > b.length then resize b 3;
+     Bytes.unsafe_set b.buffer (pos    )
+       (Char.unsafe_chr (0xE0 lor (u lsr 12)));
+     Bytes.unsafe_set b.buffer (pos + 1)
+       (Char.unsafe_chr (0x80 lor ((u lsr 6) land 0x3F)));
+     Bytes.unsafe_set b.buffer (pos + 2)
+       (Char.unsafe_chr (0x80 lor (u land 0x3F)));
+     b.position <- pos + 3
+ | u when u <= 0x10FFFF ->
+     let pos = b.position in
+     if pos + 4 > b.length then resize b 4;
+     Bytes.unsafe_set b.buffer (pos    )
+       (Char.unsafe_chr (0xF0 lor (u lsr 18)));
+     Bytes.unsafe_set b.buffer (pos + 1)
+       (Char.unsafe_chr (0x80 lor ((u lsr 12) land 0x3F)));
+     Bytes.unsafe_set b.buffer (pos + 2)
+       (Char.unsafe_chr (0x80 lor ((u lsr 6) land 0x3F)));
+     Bytes.unsafe_set b.buffer (pos + 3)
+       (Char.unsafe_chr (0x80 lor (u land 0x3F)));
+     b.position <- pos + 4
+ | _ -> assert false
+
+ let add_utf_16be_uchar b u = match Uchar.to_int u with
+ | u when u < 0 -> assert false
+ | u when u <= 0xFFFF ->
+     let pos = b.position in
+     if pos + 2 > b.length then resize b 2;
+     Bytes.unsafe_set b.buffer (pos    ) (Char.unsafe_chr (u lsr 8));
+     Bytes.unsafe_set b.buffer (pos + 1) (Char.unsafe_chr (u land 0xFF));
+     b.position <- pos + 2
+ | u when u <= 0x10FFFF ->
+     let u' = u - 0x10000 in
+     let hi = 0xD800 lor (u' lsr 10) in
+     let lo = 0xDC00 lor (u' land 0x3FF) in
+     let pos = b.position in
+     if pos + 4 > b.length then resize b 4;
+     Bytes.unsafe_set b.buffer (pos    ) (Char.unsafe_chr (hi lsr 8));
+     Bytes.unsafe_set b.buffer (pos + 1) (Char.unsafe_chr (hi land 0xFF));
+     Bytes.unsafe_set b.buffer (pos + 2) (Char.unsafe_chr (lo lsr 8));
+     Bytes.unsafe_set b.buffer (pos + 3) (Char.unsafe_chr (lo land 0xFF));
+     b.position <- pos + 4
+ | _ -> assert false
+
+ let add_utf_16le_uchar b u = match Uchar.to_int u with
+ | u when u < 0 -> assert false
+ | u when u <= 0xFFFF ->
+     let pos = b.position in
+     if pos + 2 > b.length then resize b 2;
+     Bytes.unsafe_set b.buffer (pos    ) (Char.unsafe_chr (u land 0xFF));
+     Bytes.unsafe_set b.buffer (pos + 1) (Char.unsafe_chr (u lsr 8));
+     b.position <- pos + 2
+ | u when u <= 0x10FFFF ->
+     let u' = u - 0x10000 in
+     let hi = 0xD800 lor (u' lsr 10) in
+     let lo = 0xDC00 lor (u' land 0x3FF) in
+     let pos = b.position in
+     if pos + 4 > b.length then resize b 4;
+     Bytes.unsafe_set b.buffer (pos    ) (Char.unsafe_chr (hi land 0xFF));
+     Bytes.unsafe_set b.buffer (pos + 1) (Char.unsafe_chr (hi lsr 8));
+     Bytes.unsafe_set b.buffer (pos + 2) (Char.unsafe_chr (lo land 0xFF));
+     Bytes.unsafe_set b.buffer (pos + 3) (Char.unsafe_chr (lo lsr 8));
+     b.position <- pos + 4
+ | _ -> assert false
+
 let add_substring b s offset len =
   if offset < 0 || len < 0 || offset > String.length s - len
   then invalid_arg "Buffer.add_substring/add_subbytes";

@@ -394,7 +394,7 @@ not opened, though; you still have to do
 \end{verbatim}
 yourself, if this is what you wish.
 
-\section{Options}
+\subsection{Options}
 
 The following command-line options are recognized by "ocamlmktop".
 
@@ -423,3 +423,25 @@ Specify the name of the toplevel file produced by the linker.
 The default is "a.out".
 
 \end{options}
+
+\section{The native toplevel: \texttt{ocamlnat}\ (experimental)}
+
+{\bf This section describes a tool that is not yet officially supported %
+but may be found useful.}
+
+OCaml code executing in the traditional toplevel system uses the bytecode
+interpreter.  When increased performance is required, or for testing
+programs that will only execute correctly when compiled to native code,
+the {\em native toplevel} may be used instead.
+
+For the majority of installations the native toplevel will not have been
+installed along with the rest of the OCaml toolchain.  In such circumstances
+it will be necessary to build the OCaml distribution from source.
+From the built source tree of the distribution you may use
+{\tt make natruntop} to build and execute a native toplevel.  (Alternatively
+{\tt make ocamlnat} can be used, which just performs the build step.)
+
+If the {\tt make install} command is run after having built the native
+toplevel then the {\tt ocamlnat} program (either from the source or the
+installation directory) may be invoked directly rather than using
+{\tt make natruntop}.

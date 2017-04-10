@@ -335,7 +335,7 @@ static value caml_array_gather(intnat num_arrays,
              lengths[i] * sizeof(double));
       pos += lengths[i];
     }
-    Assert(pos == size);
+    CAMLassert(pos == size);
   }
   else if (size > Max_wosize) {
     /* Array of values, too big. */
@@ -351,7 +351,7 @@ static value caml_array_gather(intnat num_arrays,
              lengths[i] * sizeof(value));
       pos += lengths[i];
     }
-    Assert(pos == size);
+    CAMLassert(pos == size);
   } else {
     /* Array of values, must be allocated in old generation and filled
        using caml_initialize. */
@@ -363,7 +363,7 @@ static value caml_array_gather(intnat num_arrays,
         caml_initialize(&Field(res, pos), *src);
       }
     }
-    Assert(pos == size);
+    CAMLassert(pos == size);
 
     /* Many caml_initialize in a row can create a lot of old-to-young
        refs.  Give the minor GC a chance to run if it needs to. */
@@ -406,12 +406,12 @@ CAMLprim value caml_array_concat(value al)
     lengths = static_lengths;
   } else {
     arrays = caml_stat_alloc(n * sizeof(value));
-    offsets = malloc(n * sizeof(intnat));
+    offsets = caml_stat_alloc_noexc(n * sizeof(intnat));
     if (offsets == NULL) {
       caml_stat_free(arrays);
       caml_raise_out_of_memory();
     }
-    lengths = malloc(n * sizeof(value));
+    lengths = caml_stat_alloc_noexc(n * sizeof(value));
     if (lengths == NULL) {
       caml_stat_free(offsets);
       caml_stat_free(arrays);

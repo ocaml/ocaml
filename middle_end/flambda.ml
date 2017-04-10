@@ -116,7 +116,7 @@ and function_declarations = {
 }
 
 and function_declaration = {
-  params : Variable.t list;
+  params : Parameter.t list;
   body : t;
   free_variables : Variable.Set.t;
   free_symbols : Symbol.Set.t;
@@ -353,8 +353,11 @@ and print_named ppf (named : named) =
     (* lam ppf expr *)
 
 and print_function_declaration ppf var (f : function_declaration) =
-  let idents ppf =
-    List.iter (fprintf ppf "@ %a" Variable.print) in
+  let param ppf p =
+    Variable.print ppf (Parameter.var p)
+  in
+  let params ppf =
+    List.iter (fprintf ppf "@ %a" param) in
   let stub =
     if f.stub then
       " *stub*"
@@ -382,7 +385,7 @@ and print_function_declaration ppf var (f : function_declaration) =
   in
   fprintf ppf "@[<2>(%a%s%s%s%s@ =@ fun@[<2>%a@] ->@ @[<2>%a@])@]@ "
     Variable.print var stub is_a_functor inline specialise
-    idents f.params lam f.body
+    params f.params lam f.body
 
 and print_set_of_closures ppf (set_of_closures : set_of_closures) =
   match set_of_closures with
@@ -1053,7 +1056,7 @@ let create_set_of_closures ~function_decls ~free_vars ~specialised_args
       Variable.Map.fold (fun _fun_var function_decl expected_free_vars ->
           let free_vars =
             Variable.Set.diff function_decl.free_variables
-              (Variable.Set.union (Variable.Set.of_list function_decl.params)
+              (Variable.Set.union (Parameter.Set.vars function_decl.params)
                 all_fun_vars)
           in
           Variable.Set.union free_vars expected_free_vars)
@@ -1086,7 +1089,7 @@ let create_set_of_closures ~function_decls ~free_vars ~specialised_args
     end;
     let all_params =
       Variable.Map.fold (fun _fun_var function_decl all_params ->
-          Variable.Set.union (Variable.Set.of_list function_decl.params)
+          Variable.Set.union (Parameter.Set.vars function_decl.params)
             all_params)
         function_decls.funs
         Variable.Set.empty
@@ -1111,7 +1114,7 @@ let create_set_of_closures ~function_decls ~free_vars ~specialised_args
 let used_params function_decl =
   Variable.Set.filter
     (fun param -> Variable.Set.mem param function_decl.free_variables)
-    (Variable.Set.of_list function_decl.params)
+    (Parameter.Set.vars function_decl.params)
 
 let compare_const (c1:const) (c2:const) =
   match c1, c2 with

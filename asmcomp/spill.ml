@@ -328,7 +328,7 @@ let rec spill i finally =
       let before1 = Reg.diff_set_array after i.res in
       let before =
         match i.desc with
-          Iop Icall_ind _ | Iop(Icall_imm _) | Iop(Iextcall _)
+          Iop Icall_ind _ | Iop(Icall_imm _) | Iop(Iextcall _) | Iop(Ialloc _)
         | Iop(Iintop (Icheckbound _)) | Iop(Iintop_imm((Icheckbound _), _)) ->
             Reg.Set.union before1 !spill_at_raise
         | _ ->

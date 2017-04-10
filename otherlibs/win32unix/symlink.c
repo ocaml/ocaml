@@ -52,8 +52,8 @@ again:
   }
 
   /* Copy source and dest outside the OCaml heap */
-  source = caml_strdup(String_val(osource));
-  dest = caml_strdup(String_val(odest));
+  source = caml_stat_strdup(String_val(osource));
+  dest = caml_stat_strdup(String_val(odest));
 
   caml_enter_blocking_section();
   result = pCreateSymbolicLink(dest, source, flags);

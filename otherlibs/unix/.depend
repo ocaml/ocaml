@@ -105,7 +105,7 @@ execvp.o: execvp.c ../../byterun/caml/mlvalues.h \
  ../../byterun/caml/compatibility.h ../../byterun/caml/config.h \
  ../../byterun/caml/../../config/m.h ../../byterun/caml/../../config/s.h \
  ../../byterun/caml/misc.h ../../byterun/caml/memory.h \
- ../../byterun/caml/mlvalues.h unixsupport.h
+ ../../byterun/caml/mlvalues.h ../../byterun/caml/osdeps.h unixsupport.h
 exit.o: exit.c ../../byterun/caml/mlvalues.h \
  ../../byterun/caml/compatibility.h ../../byterun/caml/config.h \
  ../../byterun/caml/../../config/m.h ../../byterun/caml/../../config/s.h \

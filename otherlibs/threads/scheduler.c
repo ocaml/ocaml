@@ -523,7 +523,7 @@ static void check_callback(void)
 
 value thread_yield(value unit)        /* ML */
 {
-  Assert(curr_thread != NULL);
+  CAMLassert(curr_thread != NULL);
   Assign(curr_thread->retval, Val_unit);
   return schedule_thread();
 }
@@ -534,7 +534,7 @@ static void thread_reschedule(void)
 {
   value accu;
 
-  Assert(curr_thread != NULL);
+  CAMLassert(curr_thread != NULL);
   /* Pop accu from event frame, making it look like a C_CALL frame
      followed by a RETURN frame */
   accu = *caml_extern_sp++;
@@ -558,7 +558,7 @@ value thread_request_reschedule(value unit)    /* ML */
 
 value thread_sleep(value unit)        /* ML */
 {
-  Assert(curr_thread != NULL);
+  CAMLassert(curr_thread != NULL);
   check_callback();
   curr_thread->status = SUSPENDED;
   return schedule_thread();
@@ -673,7 +673,7 @@ value thread_outchan_ready(value vchan, value vsize) /* ML */
 value thread_delay(value time)          /* ML */
 {
   double date = timeofday() + Double_val(time);
-  Assert(curr_thread != NULL);
+  CAMLassert(curr_thread != NULL);
   check_callback();
   curr_thread->status = BLOCKED_DELAY;
   Assign(curr_thread->delay, caml_copy_double(date));
@@ -685,7 +685,7 @@ value thread_delay(value time)          /* ML */
 value thread_join(value th)          /* ML */
 {
   check_callback();
-  Assert(curr_thread != NULL);
+  CAMLassert(curr_thread != NULL);
   if (((caml_thread_t)th)->status == KILLED) return Val_unit;
   curr_thread->status = BLOCKED_JOIN;
   Assign(curr_thread->joining, th);
@@ -696,7 +696,7 @@ value thread_join(value th)          /* ML */
 
 value thread_wait_pid(value pid)          /* ML */
 {
-  Assert(curr_thread != NULL);
+  CAMLassert(curr_thread != NULL);
   check_callback();
   curr_thread->status = BLOCKED_WAIT;
   curr_thread->waitpid = pid;
@@ -725,7 +725,7 @@ value thread_wakeup(value thread)     /* ML */
 
 value thread_self(value unit)         /* ML */
 {
-  Assert(curr_thread != NULL);
+  CAMLassert(curr_thread != NULL);
   return (value) curr_thread;
 }
 
@@ -758,7 +758,7 @@ value thread_kill(value thread)       /* ML */
   th->sp = NULL;
   th->trapsp = NULL;
   if (th->backtrace_buffer != NULL) {
-    free(th->backtrace_buffer);
+    caml_stat_free(th->backtrace_buffer);
     th->backtrace_buffer = NULL;
   }
   return retval;
@@ -771,7 +771,7 @@ value thread_uncaught_exception(value exn)  /* ML */
   char * msg = caml_format_exception(exn);
   fprintf(stderr, "Thread %d killed on uncaught exception %s\n",
           Int_val(curr_thread->ident), msg);
-  free(msg);
+  caml_stat_free(msg);
   if (caml_backtrace_active) caml_print_exception_backtrace();
   fflush(stderr);
   return Val_unit;

@@ -59,22 +59,25 @@ A=a
 S=s
 SO=s.o
 EXE=.exe
+EMPTY=
+OUTPUTEXE=-o $(EMPTY)
 EXT_DLL=.dll
 EXT_OBJ=.$(O)
+OUTPUTOBJ=-o $(EMPTY)
 EXT_LIB=.$(A)
 EXT_ASM=.$(S)
-MANEXT=1
+PROGRAMS_MAN_SECTION=1
+LIBRARIES_MAN_SECTION=3
 HASHBANGSCRIPTS=false
 PTHREAD_LINK=
 PTHREAD_CAML_LINK=
 X11_INCLUDES=
 X11_LINK=
-BYTECCRPATH=
+RPATH=
 SUPPORTS_SHARED_LIBRARIES=true
 SHAREDCCCOMPOPTS=
 MKSHAREDLIBRPATH=
 NATIVECCPROFOPTS=
-NATIVECCRPATH=
 ASM=$(TOOLPREF)as
 ASPP=$(TOOLPREF)gcc -c
 ASPPPROFFLAGS=
@@ -104,27 +107,21 @@ AFL_INSTRUMENT=false
 ########## Configuration for the bytecode compiler
 
 ### Which C compiler to use for the bytecode interpreter.
-BYTECC=$(TOOLPREF)gcc -O -mms-bitfields
-BYTECODE_C_COMPILER=$(BYTECC)
+CC = $(TOOLPREF)gcc
+CFLAGS = -O -mms-bitfields -Wall -Wno-unused
+CPPFLAGS = -DCAML_NAME_SPACE
+OCAMLC_CFLAGS = -O -mms-bitfields
 
-### Additional compile-time options for $(BYTECC).  (For static linking.)
-BYTECCCOMPOPTS=-DCAML_NAME_SPACE -Wall -Wno-unused
-
-### Additional compile-time options for $(BYTECC).  (For debug version.)
 BYTECCDBGCOMPOPTS=-g
 
-### Flag to use to rename object files.  (for debug version.)
-NAME_OBJ_FLAG=-o
-
-### Additional link-time options for $(BYTECC).  (For static linking.)
-BYTECCLINKOPTS=
+LDFLAGS=
 
 ### Libraries needed
 BYTECCLIBS=-lws2_32
 NATIVECCLIBS=-lws2_32
 
 ### How to invoke the C preprocessor
-CPP=$(BYTECC) -E
+CPP=$(CC) -E
 
 ### Flexlink
 FLEXLINK_CMD=flexlink
@@ -148,7 +145,7 @@ MKEXEDEBUGFLAG=-g
 MKMAINDLL=$(FLEXLINK) -maindll
 
 ### Native command to build ocamlrun.exe without flexlink
-MKEXE_BOOT=$(BYTECC) -o $(1) $(2)
+MKEXE_BOOT=$(CC) $(CFLAGS) $(OUTPUTEXE)$(1) $(2)
 
 ### How to build a static library
 MKLIB=rm -f $(1); $(TOOLPREF)ar rc $(1) $(2); $(RANLIB) $(1)
@@ -178,18 +175,10 @@ MODEL=default
 ### Name of operating system family for the native-code compiler.
 SYSTEM=mingw64
 
-### Which C compiler to use for the native-code compiler.
-NATIVECC=$(BYTECC)
-NATIVE_C_COMPILER=$(NATIVECC)
-
-### Additional compile-time options for $(NATIVECC).
-NATIVECCCOMPOPTS=-DCAML_NAME_SPACE -Wall -Wno-unused
-
-### Additional link-time options for $(NATIVECC)
-NATIVECCLINKOPTS=
+OCAMLOPT_CFLAGS = -O -mms-bitfields
 
 ### Build partially-linked object file
-PACKLD=$(TOOLPREF)ld -r $(NATIVECCLINKOPTS) -o # must have a space after '-o'
+PACKLD=$(TOOLPREF)ld -r -o # must have a space after '-o'
 
 ############# Configuration for the contributed libraries
 

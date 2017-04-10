@@ -302,20 +302,20 @@ void caml_debugger(enum event_kind event)
     switch(caml_getch(dbg_in)) {
     case REQ_SET_EVENT:
       pos = caml_getword(dbg_in);
-      Assert (pos >= 0);
-      Assert (pos < caml_code_size);
+      CAMLassert (pos >= 0);
+      CAMLassert (pos < caml_code_size);
       caml_set_instruction(caml_start_code + pos / sizeof(opcode_t), EVENT);
       break;
     case REQ_SET_BREAKPOINT:
       pos = caml_getword(dbg_in);
-      Assert (pos >= 0);
-      Assert (pos < caml_code_size);
+      CAMLassert (pos >= 0);
+      CAMLassert (pos < caml_code_size);
       caml_set_instruction(caml_start_code + pos / sizeof(opcode_t), BREAK);
       break;
     case REQ_RESET_INSTR:
       pos = caml_getword(dbg_in);
-      Assert (pos >= 0);
-      Assert (pos < caml_code_size);
+      CAMLassert (pos >= 0);
+      CAMLassert (pos < caml_code_size);
       pos = pos / sizeof(opcode_t);
       caml_set_instruction(caml_start_code + pos, caml_saved_code[pos]);
       break;

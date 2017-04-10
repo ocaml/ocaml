@@ -1425,6 +1425,33 @@ Error: This expression has type M.t but an expression was expected of type 'x
        The type constructor M.t would escape its scope
 |}];;
 
+
+(* PR#6987 *)
+type 'a t = V1 of 'a
+
+type ('c,'t) pvariant = [ `V of ('c * 't t) ]
+
+class ['c] clss =
+  object
+    method mthod : 't . 'c -> 't t -> ('c, 't) pvariant = fun c x ->
+      `V (c, x)
+  end;;
+
+let f2 = fun o c x -> match x with | V1 _ -> x
+
+let rec f1 o c x =
+  match (o :> _ clss)#mthod c x with
+  | `V c -> f2 o c x;;
+[%%expect{|
+type 'a t = V1 of 'a
+type ('c, 't) pvariant = [ `V of 'c * 't t ]
+class ['c] clss : object method mthod : 'c -> 't t -> ('c, 't) pvariant end
+val f2 : 'a -> 'b -> 'c t -> 'c t = <fun>
+val f1 :
+  < mthod : 't. 'a -> 't t -> [< ('a, 't) pvariant ]; .. > ->
+  'a -> 'b t -> 'b t = <fun>
+|}]
+
 (* PR#7285 *)
 type (+'a,-'b) foo = private int;;
 let f (x : int) : ('a,'a) foo = Obj.magic x;;
@@ -1433,6 +1460,16 @@ let x = f 3;;
 type (+'a, -'b) foo = private int
 val f : int -> ('a, 'a) foo = <fun>
 val x : ('_a, '_a) foo = 3
+|}]
+
+(* PR#7344*)
+let rec f : unit -> < m: 'a. 'a -> 'a> = fun () ->
+  let x = f () in
+  ignore (x#m 1);
+  ignore (x#m "hello");
+  assert false;;
+[%%expect{|
+val f : unit -> < m : 'a. 'a -> 'a > = <fun>
 |}]
 
 (* PR#7395 *)
@@ -1446,4 +1483,19 @@ let c (f : u -> u) =
 type u
 type 'a t = u
 val c : (u -> u) -> < apply : 'a. 'a t -> 'a t > = <fun>
+|}]
+
+(* PR#7496 *)
+
+let f (x : < m: 'a. ([< `Foo of int & float] as 'a) -> unit>)
+         : < m: 'a. ([< `Foo of int & float] as 'a) -> unit> = x;;
+
+type t = { x : 'a. ([< `Foo of int & float ] as 'a) -> unit };;
+let f t = { x = t.x };;
+[%%expect{|
+val f :
+  < m : 'a. ([< `Foo of int & float ] as 'a) -> unit > ->
+  < m : 'b. ([< `Foo of int & float ] as 'b) -> unit > = <fun>
+type t = { x : 'a. ([< `Foo of int & float ] as 'a) -> unit; }
+val f : t -> t = <fun>
 |}]

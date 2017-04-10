@@ -795,7 +795,7 @@ val symlink : ?to_dir:bool -> string -> string -> unit
    points to a directory or a file; if omitted, [symlink] examines [source]
    using [stat] and picks appropriately, if [source] does not exist then [false]
    is assumed (for this reason, it is recommended that the [~to_dir] parameter
-   be specified in new code). On Unix, [~to_dir] ignored.
+   be specified in new code). On Unix, [~to_dir] is ignored.
 
    Windows symbolic links are available in Windows Vista onwards. There are some
    important differences between Windows symlinks and their POSIX counterparts.
@@ -1647,15 +1647,3 @@ val setsid : unit -> int
 
    On Windows, not implemented. *)
 
-(**/**)
-type map_file_impl =
-  { map_file_impl
-    : 'a 'b 'c. file_descr
-      -> ('a, 'b) CamlinternalBigarray.kind
-      -> 'c CamlinternalBigarray.layout
-      -> bool
-      -> int array
-      -> int64
-      -> ('a, 'b, 'c) CamlinternalBigarray.genarray
-  }
-val map_file_impl : map_file_impl ref

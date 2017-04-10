@@ -195,7 +195,8 @@ CAMLprim value caml_gr_draw_arc(value *argv, int argc)
                              argv[4], argv[5], FALSE);
 }
 
-CAMLprim value caml_gr_draw_arc_nat(vx, vy, vrx, vry, vstart, vend)
+CAMLprim value caml_gr_draw_arc_nat(value vx, value vy, value vrx, value vry,
+                                    value vstart, value vend)
 {
   return gr_draw_or_fill_arc(vx, vy, vrx, vry, vstart, vend, FALSE);
 }
@@ -386,7 +387,7 @@ CAMLprim value caml_gr_fill_poly(value vect)
         if (n_points < 3)
                 gr_fail("fill_poly: not enough points",0);
 
-        poly = (POINT *)malloc(n_points*sizeof(POINT));
+        poly = (POINT *)caml_stat_alloc(n_points*sizeof(POINT));
 
         p = poly;
         for( i = 0; i < n_points; i++ ){
@@ -402,7 +403,7 @@ CAMLprim value caml_gr_fill_poly(value vect)
                 SelectObject(grwindow.gcBitmap,grwindow.CurrentBrush);
                 Polygon(grwindow.gc,poly,n_points);
         }
-        free(poly);
+        caml_stat_free(poly);
 
         return Val_unit;
 }
@@ -413,7 +414,8 @@ CAMLprim value caml_gr_fill_arc(value *argv, int argc)
                              argv[4], argv[5], TRUE);
 }
 
-CAMLprim value caml_gr_fill_arc_nat(vx, vy, vrx, vry, vstart, vend)
+CAMLprim value caml_gr_fill_arc_nat(value vx, value vy, value vrx, value vry,
+                                    value vstart, value vend)
 {
   return gr_draw_or_fill_arc(vx, vy, vrx, vry, vstart, vend, TRUE);
 }

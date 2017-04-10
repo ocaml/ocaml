@@ -26,9 +26,9 @@ let test test_number answer correct_answer =
 (* Tests *)
 
 let tests () =
-  testing_function "map_file";
   let mapped_file = Filename.temp_file "bigarray" ".data" in
   begin
+    testing_function "map_file";
     let fd =
      Unix.openfile mapped_file
                    [Unix.O_RDWR; Unix.O_TRUNC; Unix.O_CREAT] 0o666 in
@@ -86,7 +86,32 @@ let tests () =
     for j = 0 to 99 do
       if c.{0,j} <> float (100 * 99 + j) then ok := false
     done;
-    test 4 !ok true
+    test 4 !ok true;
+
+    testing_function "map_file errors";
+    (* Insufficient permissions *)
+    let fd = Unix.openfile mapped_file [Unix.O_RDONLY] 0 in
+    test 1 true
+      begin try
+        ignore (Unix.map_file fd float64 c_layout true [|-1; 100|]); false
+      with
+      | Unix.Unix_error((Unix.EACCES | Unix.EPERM), _, _) -> true
+      | Unix.Unix_error(err, _, _) ->
+          Printf.eprintf "Unexpected error %s\n%!" (Unix.error_message err);
+          false
+      end;
+    Unix.close fd;
+    (* Invalid handle *)
+    test 2 true
+      begin try
+        ignore (Unix.map_file fd float64 c_layout true [|-1; 100|]); false
+      with
+      | Unix.Unix_error((Unix.EBADF|Unix.EINVAL), _, _) -> true
+      | Unix.Unix_error(err, _, _) ->
+          Printf.eprintf "Unexpected error %s\n%!" (Unix.error_message err);
+          false
+      end
+
   end;
   (* Force garbage collection of the mapped bigarrays above, otherwise
      Win32 doesn't let us erase the file.  Notice the begin...end above
@@ -96,7 +121,6 @@ let tests () =
 
   ()
   [@@inline never]
-
 
 (********* End of test *********)
 

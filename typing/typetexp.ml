@@ -845,7 +845,8 @@ let report_error env ppf = function
           Printtyp.type_expr ty')
   | Not_a_variant ty ->
       Printtyp.reset_and_mark_loops ty;
-      fprintf ppf "@[The type %a@ is not a polymorphic variant type@]"
+      fprintf ppf
+        "@[The type %a@ does not expand to a polymorphic variant type@]"
         Printtyp.type_expr ty;
       begin match ty.desc with
         | Tvar (Some s) ->
@@ -870,7 +871,7 @@ let report_error env ppf = function
       fprintf ppf "Multiple constraints for type %a" longident s
   | Repeated_method_label s ->
       fprintf ppf "@[This is the second method `%s' of this object type.@ %s@]"
-        s "Multiple occurences are not allowed."
+        s "Multiple occurrences are not allowed."
   | Unbound_value lid ->
       fprintf ppf "Unbound value %a" longident lid;
       spellcheck ppf fold_values env lid;

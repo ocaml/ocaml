@@ -1595,10 +1595,7 @@ With "ocamlopt", you should do:
 linking phase that links together the object file produced by the
 "-output-obj" option and the remainder of the program.  Those options
 are shown in the configuration file "config/Makefile" generated during
-compilation of OCaml, as the variables "BYTECCLINKOPTS"
-(for object files produced by "ocamlc -output-obj") and
-"NATIVECCLINKOPTS" (for object files produced by "ocamlopt
--output-obj").
+compilation of OCaml, as the variable "LDFLAGS".
 \begin{itemize}
 \item Windows with the MSVC compiler: the object file produced by
 OCaml have been compiled with the "/MD" flag, and therefore
@@ -1618,6 +1615,42 @@ turned on programmatically.   This can be achieved from the OCaml side
 by calling "Printexc.record_backtrace true" in the initialization of
 one of the OCaml modules.  This can also be achieved from the C side
 by calling "caml_record_backtrace(Val_int(1));" in the OCaml-C glue code.
+
+\paragraph{Unloading the runtime.}
+
+In case the shared library produced with "-output-obj" is to be loaded and
+unloaded repeatedly by a single process, care must be taken to unload the
+OCaml runtime explicitly, in order to avoid various system resource leaks.
+
+Since 4.05, "caml_shutdown" function can be used to shut the runtime down
+gracefully, which equals the following:
+\begin{itemize}
+\item Running the functions that were registered with "Pervasives.at_exit".
+\item Triggering finalization of allocated custom blocks (see
+section~\ref{s:custom}). For example, "Pervasives.in_channel" and
+"Pervasives.out_channel" are represented by custom blocks that enclose file
+descriptors, which are to be released.
+\item Unloading the dependent shared libraries that were loaded by the runtime,
+including "dynlink" plugins.
+\item Freeing the memory blocks that were allocated by the runtime with
+"malloc". Inside C primitives, it is advised to use "caml_stat_*" functions
+from "memory.h" for managing static (that is, non-moving) blocks of heap
+memory, as all the blocks allocated with these functions are automatically
+freed by "caml_shutdown". For ensuring compatibility with legacy C stubs that
+have used "caml_stat_*" incorrectly, this behaviour is only enabled if the
+runtime is started with a specialized "caml_startup_pooled" function.
+\end{itemize}
+
+As a shared library may have several clients simultaneously, it is made for
+convenience that "caml_startup" (and "caml_startup_pooled") may be called
+multiple times, given that each such call is paired with a corresponding call
+to "caml_shutdown" (in a nested fashion). The runtime will be unloaded once
+there are no outstanding calls to "caml_startup".
+
+Once a runtime is unloaded, it cannot be started up again without reloading the
+shared library and reinitializing its static data. Therefore, at the moment, the
+facility is only useful for building reloadable shared libraries.
+
 
 \section{Advanced example with callbacks}
 \pdfsection{Advanced example with callbacks}
@@ -2192,8 +2225,7 @@ CAMLprim stub_gethostbyname(value vname)
 
   /* Copy the string argument to a C string, allocated outside the
      OCaml heap. */
-  name = caml_stat_alloc(caml_string_length(vname) + 1);
-  name = caml_strdup(String_val(vname));
+  name = caml_stat_strdup(String_val(vname));
   /* Release the OCaml run-time system */
   caml_release_runtime_system();
   /* Resolve the name */

@@ -24,7 +24,7 @@ external get : string -> int -> char = "%string_safe_get"
 
    Raise [Invalid_argument] if [n] not a valid index in [s]. *)
 
-external set : bytes -> int -> char -> unit = "%bytes_safe_set"
+external set : bytes -> int -> char -> unit = "%string_safe_set"
   [@@ocaml.deprecated "Use BytesLabels.set instead."]
 (** [String.set s n c] modifies byte sequence [s] in place,
    replacing the byte at index [n] with [c].
@@ -34,7 +34,7 @@ external set : bytes -> int -> char -> unit = "%bytes_safe_set"
 
    @deprecated This is a deprecated alias of {!BytesLabels.set}. *)
 
-external create : int -> bytes = "caml_create_bytes"
+external create : int -> bytes = "caml_create_string"
   [@@ocaml.deprecated "Use BytesLabels.create instead."]
 (** [String.create n] returns a fresh byte sequence of length [n].
    The sequence is uninitialized and contains arbitrary bytes.
@@ -293,11 +293,11 @@ val split_on_char: sep:char -> string -> string list
 (* The following is for system use only. Do not call directly. *)
 
 external unsafe_get : string -> int -> char = "%string_unsafe_get"
-external unsafe_set : bytes -> int -> char -> unit = "%bytes_unsafe_set"
+external unsafe_set : bytes -> int -> char -> unit = "%string_unsafe_set"
   [@@ocaml.deprecated]
 external unsafe_blit :
   src:string -> src_pos:int -> dst:bytes -> dst_pos:int -> len:int ->
     unit = "caml_blit_string" [@@noalloc]
 external unsafe_fill :
-  bytes -> pos:int -> len:int -> char -> unit = "caml_fill_bytes" [@@noalloc]
+  bytes -> pos:int -> len:int -> char -> unit = "caml_fill_string" [@@noalloc]
   [@@ocaml.deprecated]
