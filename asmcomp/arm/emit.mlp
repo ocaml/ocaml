@@ -770,13 +770,13 @@ let rec emit_all ninstr fallthrough i =
     let limit = limit - !size_constants - max_instruction_size i in
     let ninstr' =
       if ninstr >= limit - 64 && not fallthrough then begin
-        emit_constants ();
+        emit_constants ~in_current_section:true;
         emit_gotrel_and_symbol_literals ();
         0
       end else if !size_constants != 0 && ninstr >= limit then begin
         let lbl = new_label() in
         `	b	{emit_label lbl}\n`;
-        emit_constants ();
+        emit_constants ~in_current_section:true;
         emit_gotrel_and_symbol_literals ();
         D.define_label lbl;
         0
