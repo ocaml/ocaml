@@ -158,6 +158,7 @@ let make_symbol ?(unitname = current_unit.ui_symbol) idopt =
   Linkage_name.create as_string
 
 let symbol_in_current_unit name =
+  let name = Linkage_name.name name in
   let prefix = "caml" ^ current_unit.ui_symbol in
   name = prefix ||
   (let lp = String.length prefix in

@@ -60,7 +60,7 @@ val make_symbol: ?unitname:string -> string option -> Linkage_name.t
            corresponds to symbol [id] in the compilation unit [u]
            (or the current unit). *)
 
-val symbol_in_current_unit: string -> bool
+val symbol_in_current_unit: Linkage_name.t -> bool
         (* Return true if the given asm symbol belongs to the
            current compilation unit, false otherwise. *)
 

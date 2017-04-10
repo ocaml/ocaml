@@ -101,7 +101,7 @@ method is_immediate n =
 method! is_simple_expr = function
   (* inlined floating-point ops are simple if their arguments are *)
   | Cop(Cextcall (fn, _, _, _), args, _)
-        when L.List.mem fn inline_ops ->
+        when L.List.mem inline_ops fn ->
       List.for_all self#is_simple_expr args
   | e -> super#is_simple_expr e
 
