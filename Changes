@@ -20,6 +20,10 @@ Working version
   bundles.
   (whitequark)
 
+- MPR#7501, GPR#1089: Consider arrays of length zero as constants
+  when using Flambda.
+  (Pierre Chambart, review by Mark Shinwell and Leo White)
+
 ### Standard library:
 
 - PR#1771, PR#7309, GPR#1026: Add update to maps. Allows to update a
