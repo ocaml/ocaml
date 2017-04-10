@@ -37,15 +37,35 @@ module Kind = struct
 
   let to_string = function
     | Normal -> ""
-    | GOT -> "@GOT"
-    | GOTPCREL -> "@GOTPCREL"
+    | GOT ->
+      begin match TS.architecture () with
+      | IA32 | IA64 | AArch64 | POWER | SPARC | Z -> "@GOT"
+      | ARM -> "(GOT)"
+      end
+    | GOTPCREL ->
+      begin match TS.architecture () with
+      | IA64 -> "@GOTPCREL"
+      | IA32 | ARM | AArch64 | POWER | SPARC | Z ->
+        Misc.fatal_error "GOTPCREL relocations only supported on IA64"
     | PLT ->
       begin match TS.architecture () with
       | IA32 | IA64 | AArch64 | POWER | SPARC | Z -> "@PLT"
       | ARM -> "(PLT)"
       end
-    | I386_stub -> "$stub"
-    | I386_non_lazy_ptr -> "$non_lazy_ptr"
+    | I386_stub ->
+      begin match TS.architecture () with
+      | IA32 -> "$stub"
+      | IA64 | ARM | AArch64 | POWER | SPARC | Z ->
+        Misc.fatal_error "Cannot use IA32-specific stub markers on non-IA32 \
+          platforms"
+      end
+    | I386_non_lazy_ptr ->
+      begin match TS.architecture () with
+      | IA32 -> "$non_lazy_ptr"
+      | IA64 | ARM | AArch64 | POWER | SPARC | Z ->
+        Misc.fatal_error "Cannot use IA32-specific non lazy pointer markers \
+          on non-IA32 platforms"
+      end
 
   include Identifiable.Make (struct
     type nonrec t = t
@@ -124,7 +144,7 @@ let symbol_prefix =
     end
   | POWER -> "."
   | ARM
-  | AArch64 -> "$"
+  | AArch64
   | Z
   | SPARC -> ""
 
