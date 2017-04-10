@@ -288,12 +288,12 @@ module Directive = struct
 
   let print_gas buf = function
     | Align { bytes = n; } ->
-      (* Mac OS X's assembler interprets the integer n as a 2^n alignment;
-         same apparently for gas on POWER. *)
+      (* Some assemblers interpret the integer n as a 2^n alignment and
+         others as a number of bytes. *)
       let n =
         match TS.assembler (), TS.architecture () with
         | MacOS, _
-        | GAS_like, POWER -> Misc.log2 n
+        | GAS_like, (ARM | AArch64 | POWER) -> Misc.log2 n
         | _, _ -> n
       in
       bprintf buf "\t.align\t%d" n

@@ -3,17 +3,17 @@
 (*                                 OCaml                                  *)
 (*                                                                        *)
 (*             Xavier Leroy, projet Cristal, INRIA Rocquencourt           *)
+(*                  Mark Shinwell, Jane Street Europe                     *)
 (*                                                                        *)
 (*   Copyright 1996 Institut National de Recherche en Informatique et     *)
 (*     en Automatique.                                                    *)
+(*   Copyright 2017 Jane Street Group LLC                                 *)
 (*                                                                        *)
 (*   All rights reserved.  This file is distributed under the terms of    *)
 (*   the GNU Lesser General Public License version 2.1, with the          *)
 (*   special exception on linking described in the file LICENSE.          *)
 (*                                                                        *)
 (**************************************************************************)
-
-(* Common functions for emitting assembly code *)
 
 [@@@ocaml.warning "-40"]
 
@@ -267,9 +267,9 @@ let float_constant f =
     lbl
 
 (* Emit all pending floating-point constants *)
-let emit_float_constants () =
+let emit_float_constants ~in_current_section =
   if !float_constants <> [] then begin
-    D.switch_to_section Eight_byte_literals;
+    if not in_current_section then D.switch_to_section Eight_byte_literals;
     D.align ~bytes:8;
     List.iter
       (fun (f, lbl) ->
@@ -290,9 +290,9 @@ let int_constant n =
     lbl
 
 (* Emit all pending integer constants *)
-let emit_int_constants () =
+let emit_int_constants ~in_current_section =
   if !int_constants <> [] then begin
-    D.switch_to_section Eight_byte_literals;
+    if not in_current_section then D.switch_to_section Eight_byte_literals;
     D.align ~bytes:8;
     List.iter
       (fun (n, lbl) ->
@@ -302,9 +302,9 @@ let emit_int_constants () =
     int_constants := []
   end
 
-let emit_constants () =
-  emit_float_constants ();
-  emit_int_constants ();
+let emit_constants ~in_current_section =
+  emit_float_constants ~in_current_section;
+  emit_int_constants ~in_current_section;
   size_constants := 0
 
 (* Record calls to the GC -- we've moved them out of the way *)
@@ -433,8 +433,8 @@ let fundecl ?branch_relaxation (fundecl : Linearize.fundecl) ~prepare
     !call_gc_sites;
   emit_call_bound_errors ~emit_call ~spacetime_before_uninstrumented_call;
   if emit_numeric_constants then begin
-    emit_constants ()
-    end;
+    emit_constants ~in_current_section:true
+  end;
   D.switch_to_section Text;
   D.cfi_endproc ();
   D.size fundecl.fun_name
@@ -484,7 +484,7 @@ let end_assembly ~emit_numeric_constants =
   emit_global_data_symbol_with_size "frametable" ~f:(fun () ->
     emit_frames ());
   if emit_numeric_constants then begin
-    emit_constants ()
+    emit_constants ~in_current_section:false
   end;
   D.mark_stack_non_executable ();  (* PR#4564 *)
   D.switch_to_section Text;

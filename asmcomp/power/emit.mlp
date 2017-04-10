@@ -524,8 +524,7 @@ let emit_instr i =
     | Lop(Iconst_float f) ->
         begin match abi with
         | ELF32 ->
-          let lbl = new_label() in
-          float_literals := (f, lbl) :: !float_literals;
+          let lbl = float_constant f in
           `	addis	11, 0, {emit_upper emit_label lbl}\n`;
           `	lfd	{emit_reg i.res.(0)}, {emit_lower emit_label lbl}(11)\n`
         | ELF64v1 | ELF64v2 ->
@@ -551,26 +550,26 @@ let emit_instr i =
         | ELF32 ->
           `	mtctr	{emit_reg i.arg.(0)}\n`;
           `	bctrl\n`;
-          record_frame i.live false i.dbg ~label:label_after
+          record_frame ~live:i.live ~raise_:false i.dbg ~label:label_after
         | ELF64v1 ->
           `	ld	0, 0({emit_reg i.arg.(0)})\n`;  (* code pointer *)
           `	mtctr	0\n`;
           `	ld	2, 8({emit_reg i.arg.(0)})\n`;  (* TOC for callee *)
           `	bctrl\n`;
-          record_frame i.live false i.dbg ~label:label_after;
+          record_frame ~live:i.live ~raise_:false i.dbg ~label:label_after;
           emit_reload_toc()
         | ELF64v2 ->
           `	mtctr	{emit_reg i.arg.(0)}\n`;
           `	mr	12, {emit_reg i.arg.(0)}\n`;  (* addr of fn in r12 *)
           `	bctrl\n`;
-          record_frame i.live false i.dbg ~label:label_after;
+          record_frame ~live:i.live ~raise_:false i.dbg ~label:label_after;
           emit_reload_toc()
         end
     | Lop(Icall_imm { func; label_after; }) ->
         begin match abi with
         | ELF32 ->
             emit_call func;
-            record_frame i.live false i.dbg ~label:label_after
+            record_frame ~live:i.live ~raise_:false i.dbg ~label:label_after
         | ELF64v1 | ELF64v2 ->
         (* For PPC64, we cannot just emit a "bl s; nop" sequence, because
            of the following scenario:
@@ -590,7 +589,7 @@ let emit_instr i =
                 Cost: 3 instructions if same TOC, 7 if different TOC.
            Let's try option 2. *)
             emit_call func;
-            record_frame i.live false i.dbg ~label:label_after;
+            record_frame ~live:i.live ~raise_:false i.dbg ~label:label_after;
             `	nop\n`;
             emit_reload_toc()
         end
@@ -649,11 +648,11 @@ let emit_instr i =
           | ELF32 ->
             `	addis	28, 0, {emit_upper emit_symbol func}\n`;
             `	addi	28, 28, {emit_lower emit_symbol func}\n`;
-            emit_call "caml_c_call";
+            emit_call L.caml_c_call;
             record_frame i.live false i.dbg
           | ELF64v1 | ELF64v2 ->
             emit_tocload emit_gpr 28 (TocSym func);
-            emit_call "caml_c_call";
+            emit_call L.caml_c_call;
             record_frame i.live false i.dbg;
             `	nop\n`
         end
@@ -696,7 +695,7 @@ let emit_instr i =
         `	addi	{emit_reg i.res.(0)}, 31, {emit_int size_addr}\n`;
         `	bltl	{emit_label !call_gc_label}\n`;
         (* Exactly 4 instructions after the beginning of the alloc sequence *)
-        record_frame i.live false Debuginfo.none
+        record_frame ~live:i.live ~raise_:false Debuginfo.none
     | Lop(Ispecific(Ialloc_far { words = n; label_after_call_gc; })) ->
         if !call_gc_label = 0 then begin
           match label_after_call_gc with
@@ -709,7 +708,7 @@ let emit_instr i =
         `	bge	{emit_label lbl}\n`;
         `	bl	{emit_label !call_gc_label}\n`;
         (* Exactly 4 instructions after the beginning of the alloc sequence *)
-        record_frame i.live false Debuginfo.none;
+        record_frame ~live:i.live ~raise_:false Debuginfo.none;
         `{emit_label lbl}:	addi	{emit_reg i.res.(0)}, 31, {emit_int size_addr}\n`
     | Lop(Iintop Isub) ->               (* subfc has swapped arguments *)
         `	subfc	{emit_reg i.res.(0)}, {emit_reg i.arg.(1)}, {emit_reg i.arg.(0)}\n`
@@ -728,7 +727,8 @@ let emit_instr i =
         end
     | Lop(Iintop (Icheckbound { label_after_error; })) ->
         if !Clflags.debug then
-          record_frame Reg.Set.empty false i.dbg ?label:label_after_error;
+          record_frame ~live:Reg.Set.empty ~raise_:false i.dbg
+            ?label:label_after_error;
         `	{emit_string tglle}   {emit_reg i.arg.(0)}, {emit_reg i.arg.(1)}\n`
     | Lop(Iintop op) ->
         let instr = name_for_intop op in
@@ -746,7 +746,8 @@ let emit_instr i =
         end
     | Lop(Iintop_imm(Icheckbound { label_after_error; }, n)) ->
         if !Clflags.debug then
-          record_frame Reg.Set.empty false i.dbg ?label:label_after_error;
+          record_frame ~live:Reg.Set.empty ~raise_:false i.dbg
+            ?label:label_after_error;
         `	{emit_string tglle}i   {emit_reg i.arg.(0)}, {emit_int n}\n`
     | Lop(Iintop_imm(op, n)) ->
         let instr = name_for_intop_imm op in
@@ -764,8 +765,7 @@ let emit_instr i =
           `	lfd	{emit_reg i.res.(0)}, -16(1)\n`;
           `	fcfid	{emit_reg i.res.(0)}, {emit_reg i.res.(0)}\n`
 	end else begin
-          let lbl = new_label() in
-          float_literals := (0x4330000080000000L, lbl) :: !float_literals;
+          let lbl = float_constant 0x4330000080000000L in
           `	addis	11, 0, {emit_upper emit_label lbl}\n`;
           `	lfd	0, {emit_lower emit_label lbl}(11)\n`;
           `	lis	0, 0x4330\n`;
@@ -878,9 +878,9 @@ let emit_instr i =
           jumptables := List.rev_append (Array.to_list jumptbl) !jumptables
         end else begin
           D.switch_to_section Read_only_data;
-          `{emit_label lbl}:`;
+          D.define_label lbl;
           for i = 0 to Array.length jumptbl - 1 do
-            `	.long	{emit_label jumptbl.(i)} - {emit_label lbl}\n`
+            D.between_labels_32bit ~upper:lbl ~lower:jumptbl.(i)
           done;
           D.switch_to_section Text
         end
@@ -913,8 +913,8 @@ let emit_instr i =
     | Lraise k ->
         begin match k with
         | Cmm.Raise_withtrace ->
-            emit_call "caml_raise_exn";
-            record_frame Reg.Set.empty true i.dbg;
+            emit_call L.caml_raise_exn;
+            record_frame ~live:Reg.Set.empty ~raise_:true i.dbg;
             emit_call_nop()
         | Cmm.Raise_notrace ->
             `	{emit_string lg}	0, {emit_int trap_handler_offset}(29)\n`;
@@ -1104,14 +1104,14 @@ let end_assembly() =
     let stacksize = save_area + 8*8 in
     D.switch_to_section Text;
     D.align ~bytes:4;
-    D.define_function_symbol "caml_before_mcount";
+    D.define_function_symbol L.caml_before_mcount;
     `	stdu	1, {emit_int (-stacksize)}(1)\n`;
     `	std	0, {emit_int (16 + stacksize)}(1)\n`;
     for i = 3 to 10 do
     `	std	{emit_gpr i}, {emit_int (save_area + (i - 3) * 8)}(1)\n`
     done;
     `	blr\n`;
-    D.define_function_symbol "caml_after_mcount";
+    D.define_function_symbol L.caml_after_mcount;
     `	ld	0, {emit_int (16 + stacksize)}(1)\n`;
     for i = 3 to 10 do
     `	ld	{emit_gpr i}, {emit_int (save_area + (i - 3) * 8)}(1)\n`

@@ -103,7 +103,7 @@ let print_addressing printreg addr ppf arg =
   match addr with
   | Ibased(s, n) ->
       let idx = if n <> 0 then Printf.sprintf " + %i" n else "" in
-      fprintf ppf "\"%s\"%s" s idx
+      fprintf ppf "\"%a\"%s" Linkage_name.print s idx
   | Iindexed n ->
       let idx = if n <> 0 then Printf.sprintf " + %i" n else "" in
       fprintf ppf "%a%s" printreg arg.(0) idx
