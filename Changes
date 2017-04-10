@@ -1,6 +1,12 @@
 Next minor version (4.04.1):
 ----------------------------
 
+### Code generation and optimizations:
+
+- MPR#7501, GPR#1089: Consider arrays of length zero as constants
+  when using Flambda.
+  (Pierre Chambart, review by Mark Shinwell and Leo White)
+
 ### Standard library:
 
 - PR#7403, GPR#894: fix a bug in Set.map as introduced in 4.04.0
