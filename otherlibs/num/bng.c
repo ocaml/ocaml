@@ -23,8 +23,6 @@
 #include "bng_amd64.c"
 #elif defined(BNG_ARCH_ppc)
 #include "bng_ppc.c"
-#elif defined (BNG_ARCH_sparc)
-#include "bng_sparc.c"
 #elif defined (BNG_ARCH_arm64)
 #include "bng_arm64.c"
 #endif

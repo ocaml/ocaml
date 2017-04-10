@@ -51,5 +51,4 @@ Here are the processors for which such optimizations are available:
   AMD64 (Opteron)  (carry, dwmult, dwdiv)
   PowerPC          (carry, dwmult)
   Alpha            (dwmult)
-  SPARC            (carry, dwmult, dwdiv)
   MIPS             (dwmult)

@@ -126,15 +126,6 @@ the default.
 \item["-fno-PIC"] Generate position-dependent machine code.
 \end{options}
 
-\paragraph{Options for the Sparc architecture}
-The Sparc code generator supports the following additional options:
-\begin{options}
-\item["-march=v8"] Generate SPARC version 8 code.
-\item["-march=v9"] Generate SPARC version 9 code.
-\end{options}
-The default is to generate code for SPARC version 7, which runs on all
-SPARC processors.
-
 \paragraph{Contextual control of command-line options}
 
 The compiler command line can be modified ``from the outside''

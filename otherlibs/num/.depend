@@ -6,7 +6,6 @@ bng_arm64.$(O): bng_arm64.c
 bng_digit.$(O): bng_digit.c
 bng_ia32.$(O): bng_ia32.c
 bng_ppc.$(O): bng_ppc.c
-bng_sparc.$(O): bng_sparc.c
 nat_stubs.$(O): nat_stubs.c ../../byterun/caml/alloc.h \
  ../../byterun/caml/compatibility.h ../../byterun/caml/misc.h \
  ../../byterun/caml/config.h ../../byterun/caml/../../config/m.h \

@@ -20,6 +20,9 @@ Working version
   bundles.
   (whitequark)
 
+* GPR#659: Remove support for SPARC native code generation
+  (Mark Shinwell)
+
 ### Standard library:
 
 - PR#1771, PR#7309, GPR#1026: Add update to maps. Allows to update a
