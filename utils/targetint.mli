@@ -202,3 +202,6 @@ val fits_in_32_bits : t -> bool
 
 val is_zero : t -> bool
 (** Whether the given target integer is zero. *)
+
+val strictly_negative : t -> bool
+(** Whether the given target integer is strictly less than zero. *)

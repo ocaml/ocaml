@@ -50,7 +50,7 @@ let emit_jump_to_label lbl =
 let emit_symbol s = emit_string (L.to_string s)
 
 let emit_call sym =
-  `bl	{emit_symbol symbol}`
+  `bl	{emit_symbol sym}`
 
 (* Output a pseudo-register *)
 
@@ -147,16 +147,17 @@ let name_for_int_operation = function
 (* Load an integer constant into a register *)
 
 let emit_intconst dst n =
+  let ffff = Targetint.of_int 0xffff in
   let rec emit_pos first shift =
     if shift < 0 then begin
       if first then `	mov	{emit_reg dst}, xzr\n`
     end else begin
-      let s = Nativeint.(logand (shift_right_logical n shift) 0xFFFFn) in
-      if s = 0n then emit_pos first (shift - 16) else begin
+      let s = Targetint.(logand (shift_right_logical n shift) ffff) in
+      if Targetint.equal s Targetint.zero then emit_pos first (shift - 16) else begin
         if first then
-          `	movz	{emit_reg dst}, #{emit_nativeint s}, lsl #{emit_int shift}\n`
+          `	movz	{emit_reg dst}, #{emit_targetint s}, lsl #{emit_int shift}\n`
         else
-           `	movk	{emit_reg dst}, #{emit_nativeint s}, lsl #{emit_int shift}\n`;
+           `	movk	{emit_reg dst}, #{emit_targetint s}, lsl #{emit_int shift}\n`;
         emit_pos false (shift - 16)
       end
     end
@@ -164,17 +165,17 @@ let emit_intconst dst n =
     if shift < 0 then begin
       if first then `	movn	{emit_reg dst}, #0\n`
     end else begin
-      let s = Nativeint.(logand (shift_right_logical n shift) 0xFFFFn) in
-      if s = 0xFFFFn then emit_neg first (shift - 16) else begin
+      let s = Targetint.(logand (shift_right_logical n shift) ffff) in
+      if Targetint.equal s ffff then emit_neg first (shift - 16) else begin
         if first then
-          `	movn	{emit_reg dst}, #{emit_nativeint (Nativeint.logxor s 0xFFFFn)}, lsl #{emit_int shift}\n`
+          `	movn	{emit_reg dst}, #{emit_targetint (Targetint.logxor s ffff)}, lsl #{emit_int shift}\n`
         else
-           `	movk	{emit_reg dst}, #{emit_nativeint s}, lsl #{emit_int shift}\n`;
+           `	movk	{emit_reg dst}, #{emit_targetint s}, lsl #{emit_int shift}\n`;
         emit_neg false (shift - 16)
       end
     end
   in
-    if n < 0n then emit_neg true 48 else emit_pos true 48
+  if Targetint.strictly_negative n then emit_neg true 48 else emit_pos true 48
 
 let num_instructions_for_intconst n =
   let num_instructions = ref 0 in

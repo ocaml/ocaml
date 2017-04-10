@@ -59,6 +59,7 @@ module type S = sig
   val fits_in_16_bits : t -> bool
   val fits_in_32_bits : t -> bool
   val is_zero : t -> bool
+  val strictly_negative : t -> bool
 end
 
 let size = Sys.word_size
@@ -93,6 +94,7 @@ module Int32 = struct
     n >= -0x8000_0000l && n <= 0x7FFF_FFFFl
 
   let is_zero n = (n = 0l)
+  let strictly_negative n = (n < 0l)
 end
 
 module Int64 = struct
@@ -110,6 +112,7 @@ module Int64 = struct
     n >= -0x8000_0000L && n <= 0x7FFF_FFFFL
 
   let is_zero n = (n = 0L)
+  let strictly_negative n = (n < 0L)
 end
 
 include (val
