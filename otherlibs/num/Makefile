@@ -28,7 +28,7 @@ clean::
 	rm -f *~
 
 bng.$(O): bng.h bng_digit.c \
-       bng_amd64.c bng_ia32.c bng_ppc.c
+       bng_amd64.c bng_ia32.c bng_ppc.c bng_sparc.c
 
 .PHONY: depend
 depend:
