@@ -47,6 +47,7 @@ module Kind = struct
       | IA64 -> "@GOTPCREL"
       | IA32 | ARM | AArch64 | POWER | SPARC | Z ->
         Misc.fatal_error "GOTPCREL relocations only supported on IA64"
+      end
     | PLT ->
       begin match TS.architecture () with
       | IA32 | IA64 | AArch64 | POWER | SPARC | Z -> "@PLT"
