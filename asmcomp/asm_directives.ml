@@ -601,6 +601,7 @@ let switch_to_section (section : section) =
   let section_name, middle_part, attrs =
     let text () = [".text"], None, [] in
     let data () = [".data"], None, [] in
+    let rodata () = [".rodata"], None, [] in
     let system = derived_system () in
     match section, TS.architecture (), system with
     | Text, _, _ -> text ()
@@ -639,9 +640,9 @@ let switch_to_section (section : section) =
           []
       in
       [name], middle_part, attrs
-    | (Eight_byte_literals | Sixteen_byte_literals), Z, _
+    | (Eight_byte_literals | Sixteen_byte_literals), (ARM | AArch64 | Z), _
     | (Eight_byte_literals | Sixteen_byte_literals), _, Solaris ->
-      [".rodata"], None, []
+      rodata ()
     | Sixteen_byte_literals, _, MacOS_like ->
       ["__TEXT";"__literal16"], None, ["16byte_literals"]
     | Sixteen_byte_literals, _, (MinGW_64 | Cygwin) ->
@@ -667,7 +668,7 @@ let switch_to_section (section : section) =
     | Read_only_data, _, (MinGW_64 | Cygwin) ->
       [".rdata"], Some "dr", []
     | Read_only_data, _, _ ->
-      [".rodata"], None, []
+      rodata ()
     | POWER Function_descriptors, POWER, _ ->
       [".opd"], Some "aw", []
     | POWER Table_of_contents, POWER, _ ->
