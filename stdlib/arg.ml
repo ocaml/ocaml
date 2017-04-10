@@ -304,20 +304,32 @@ let parse_expand l f msg =
 
 let second_word s =
   let len = String.length s in
-  let rec loop n =
-    if n >= len then len
-    else if s.[n] = ' ' then loop (n+1)
-    else n
+  let rec loop sep n =
+    if n >= len then sep, len
+    else if s.[n] = sep then loop sep (n+1)
+    else sep, n
   in
-  try loop (String.index s ' ')
-  with Not_found -> len
+  match String.index s '\t' with
+  | n -> loop '\t' n
+  | exception Not_found ->
+      begin match String.index s ' ' with
+      | n -> loop ' ' n
+      | exception Not_found -> ' ', len
+      end
 
 
 let max_arg_len cur (kwd, spec, doc) =
   match spec with
   | Symbol _ -> max cur (String.length kwd)
-  | _ -> max cur (String.length kwd + second_word doc)
+  | _ -> max cur (String.length kwd + snd (second_word doc))
 
+
+let sub_subst s n sep =
+  let last_sep = ref (-1) in
+  let f i =
+    if s.[i] = sep && (!last_sep < 0 || !last_sep = i-1) then (last_sep := i; ' ') else s.[i]
+  in
+  String.init n f
 
 let add_padding len ksd =
   match ksd with
@@ -326,18 +338,18 @@ let add_padding len ksd =
        * run through [usage] or [parse]. *)
       ksd
   | (kwd, (Symbol _ as spec), msg) ->
-      let cutcol = second_word msg in
+      let sep, cutcol = second_word msg in
       let spaces = String.make ((max 0 (len - cutcol)) + 3) ' ' in
-      (kwd, spec, "\n" ^ spaces ^ msg)
+      (kwd, spec, "\n" ^ spaces ^ sub_subst msg (String.length msg) sep)
   | (kwd, spec, msg) ->
-      let cutcol = second_word msg in
+      let sep, cutcol = second_word msg in
       let kwd_len = String.length kwd in
       let diff = len - kwd_len - cutcol in
       if diff <= 0 then
-        (kwd, spec, msg)
+        (kwd, spec, sub_subst msg (String.length msg) sep)
       else
         let spaces = String.make diff ' ' in
-        let prefix = String.sub msg 0 cutcol in
+        let prefix = sub_subst msg cutcol sep in
         let suffix = String.sub msg cutcol (String.length msg - cutcol) in
         (kwd, spec, prefix ^ spaces ^ suffix)
 
