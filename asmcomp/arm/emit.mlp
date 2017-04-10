@@ -262,6 +262,9 @@ let emit_gotrel_and_symbol_literals() =
     gotrel_literals := [];
     symbol_literals := []
   end;
+  (* CR mshinwell: this has probably already been reset.
+     Maybe this module should keep its own counter, and Emitaux its own too,
+     then we just add them *)
   size_constants := 0
 
 (* Emit code to load the address of a symbol *)

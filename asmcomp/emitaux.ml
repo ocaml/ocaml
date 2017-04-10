@@ -328,6 +328,7 @@ let emit_call_gc gc ~spacetime_before_uninstrumented_call ~emit_call
   D.define_label gc.gc_lbl;
   D.cfi_adjust_cfa_offset ~bytes:gc.stack_offset;
   spacetime_before_uninstrumented_call gc.gc_lbl;
+  (* CR mshinwell: .s file formatting of this call is a bit crappy *)
   emit_call Linkage_name.caml_call_gc;
   D.define_label gc.gc_frame;
   emit_jump_to_label gc.gc_return_lbl;

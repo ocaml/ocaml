@@ -303,7 +303,9 @@ module Directive = struct
       | Solaris -> bprintf buf "\t.value\t%a" cst n
       | _ ->
         (* Apple's documentation says that ".word" is i386-specific, so we use
-           ".short" instead. *)
+           ".short" instead.
+           Additionally, it appears on ARM that ".word" may be 32 bits wide,
+           not 16 bits. *)
         bprintf buf "\t.short\t%a" cst n
       end
     | Const32 (n, comment) ->
