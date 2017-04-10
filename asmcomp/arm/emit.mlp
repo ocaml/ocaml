@@ -26,24 +26,29 @@ open Mach
 open Linearize
 open Emitaux
 
-(* Output a label *)
+module L = Linkage_name
+
+(* Labels *)
 
 let emit_label lbl =
   emit_string (D.string_of_label lbl)
 
+let emit_jump_to_label lbl =
+  `	b	{emit_label lbl}\n`
+
 (* Symbols *)
 
 let emit_symbol s =
-  emit_string (D.string_of_symbol (Linkage_name.of_symbol s))
+  emit_string (L.to_string s)
 
 let emit_call s =
   if !Clflags.dlcode || !Clflags.pic_code
-  then `bl	{emit_symbol s}(PLT)`
+  then `bl	{emit_symbol (L.plt s)}`
   else `bl	{emit_symbol s}`
 
 let emit_jump s =
   if !Clflags.dlcode || !Clflags.pic_code
-  then `b	{emit_symbol s}(PLT)`
+  then `b	{emit_symbol (L.plt s)}`
   else `b	{emit_symbol s}`
 
 (* Output a pseudo-register *)
@@ -78,6 +83,13 @@ let slot_offset loc cl =
       assert (n >= 0);
       n
 
+let record_frame ?label ~live ~raise_ dbg =
+  let lbl = record_frame ~frame_size ~slot_offset ~live ~raise_ ~dbg in
+  emit_label lbl
+
+let record_frame_label = record_frame_label ~frame_size ~slot_offset
+let bound_error_label = bound_error_label ~frame_size ~slot_offset
+
 (* Output a stack reference *)
 
 let emit_stack r =
@@ -92,14 +104,6 @@ let emit_addressing addr r n =
   match addr with
     Iindexed ofs ->
       `[{emit_reg r.(n)}, #{emit_int ofs}]`
-
-(* Calls to the GC -- we've moved them out of the way *)
-
-let emit_call_gc gc =
-  D.define_label gc.gc_lbl;
-  `	{emit_call "caml_call_gc"}\n`;
-  D.define_label gc.gc_frame_lbl;
-  `	b	{emit_label gc.gc_return_lbl}\n`
 
 (* Negate a comparison *)
 
@@ -194,7 +198,7 @@ let emit_stack_adjustment n =
     let ninstr = decompose_intconst (Int32.of_int (abs n))
                    (fun bits ->
                      `	{emit_string instr}	sp, sp, #{emit_int32 bits}\n`) in
-    D.cfi_adjust_cfa_offset (-n);
+    D.cfi_adjust_cfa_offset ~bytes:(-n);
     ninstr
   end
 
@@ -206,7 +210,7 @@ let output_epilogue f =
     let ninstr = emit_stack_adjustment n in
     let ninstr = ninstr + f () in
     (* reset CFA back cause function body may continue *)
-    D.cfi_adjust_cfa_offset n;
+    D.cfi_adjust_cfa_offset ~bytes:n;
     ninstr
   end else
     f ()
@@ -242,7 +246,7 @@ let emit_gotrel_and_symbol_literals() =
       (fun (l, lbl) ->
         D.define_label lbl;
         D.between_symbol_and_label_offset'
-          ~upper:Linkage_name._GLOBAL_OFFSET_TABLE_
+          ~upper:L._GLOBAL_OFFSET_TABLE_
           ~lower:l
           ~lower_offset:offset)
       !gotrel_literals;
@@ -288,6 +292,10 @@ let emit_load_symbol_addr dst s =
     `	ldr	{emit_reg dst}, {emit_label lbl} @ {emit_symbol s}\n`;
     1
   end
+
+(* Spacetime (not supported on 32-bit platforms) *)
+
+let spacetime_before_uninstrumented_call _label = ()
 
 (* Output the assembly code for an instruction *)
 
@@ -361,15 +369,18 @@ let emit_instr i =
     | Lop(Icall_ind { label_after; }) ->
         if !arch >= ARMv5 then begin
           `	blx	{emit_reg i.arg.(0)}\n`;
-          `{record_frame i.live false i.dbg ~label:label_after}\n`; 1
+          `{record_frame ~live:i.live ~raise_:false i.dbg ~label:label_after}\n`;
+          1
         end else begin
           `	mov	lr, pc\n`;
           `	bx	{emit_reg i.arg.(0)}\n`;
-          `{record_frame i.live false i.dbg ~label:label_after}\n`; 2
+          `{record_frame ~live:i.live ~raise_:false i.dbg ~label:label_after}\n`;
+          2
         end
     | Lop(Icall_imm { func; label_after; }) ->
         `	{emit_call func}\n`;
-        `{record_frame i.live false i.dbg ~label:label_after}\n`; 1
+        `{record_frame ~live:i.live ~raise_:false i.dbg ~label:label_after}\n`;
+        1
     | Lop(Itailcall_ind { label_after = _; }) ->
         output_epilogue begin fun () ->
           if !contains_calls then
@@ -391,7 +402,7 @@ let emit_instr i =
     | Lop(Iextcall { func; alloc = true; label_after; }) ->
         let ninstr = emit_load_symbol_addr (phys_reg 7 (* r7 *)) func in
         `	{emit_call "caml_c_call"}\n`;
-        `{record_frame i.live false i.dbg ~label:label_after}\n`;
+        `{record_frame ~live:i.live ~raise_:false i.dbg ~label:label_after}\n`;
         1 + ninstr
     | Lop(Istackoffset n) ->
         assert (n mod 8 = 0);
@@ -463,7 +474,8 @@ let emit_instr i =
         `	{emit_string instr}	{emit_reg r}, {emit_addressing addr i.arg 1}\n`; 1
     | Lop(Ialloc { words = n; label_after_call_gc; }) ->
         let lbl_frame =
-          record_frame_label i.live false i.dbg ?label:label_after_call_gc
+          record_frame_label ~live:i.live ~raise_:false i.dbg
+            ?label:label_after_call_gc
         in
         if !fastcode_flag then begin
           let lbl_redo = new_label() in
@@ -476,10 +488,8 @@ let emit_instr i =
           `	add	{emit_reg i.res.(0)}, alloc_ptr, #4\n`;
           let lbl_call_gc = new_label() in
           `	bcc	{emit_label lbl_call_gc}\n`;
-          call_gc_sites :=
-            { gc_lbl = lbl_call_gc;
-              gc_return_lbl = lbl_redo;
-              gc_frame_lbl = lbl_frame } :: !call_gc_sites;
+          record_call_gc_site ~label:lbl_call_gc ~return_label:lbl_redo
+            ~frame_label:lbl_frame ~stack_offset:!stack_offset;
           3 + ninstr
         end else begin
           let ninstr =
@@ -770,14 +780,17 @@ let rec emit_all ninstr fallthrough i =
     emit_all (ninstr' + n) (has_fallthrough i.desc) i.next
   end
 
+let emit_all ~fun_body =
+  emit_all 0 true fun_body;
+  emit_gotrel_and_symbol_literals ()
 
 (* Emission of the profiling prelude *)
 
 let emit_profile() =
-  match Config.system with
-    "linux_eabi" | "linux_eabihf" | "netbsd" ->
+  match TS.system () with
+  | Linux ARM_EABI | Linux ARM_EABI_hard_float | NetBSD ->
       `	push	\{lr}\n`;
-      `	{emit_call "__gnu_mcount_nc"}\n`
+      `	{emit_call L.__gnu_mcount_nc}\n`
   | _ -> ()
 
 (* Emission of a function declaration *)
@@ -798,13 +811,15 @@ let fundecl fundecl =
       D.cfi_offset ~reg:14 (* lr *) ~offset:(-4);
       `	str	lr, [sp, #{emit_int(n - 4)}]\n`
     end
-  end;
-  `{emit_label !tailrec_entry_point}:\n`;
-  emit_all 0 true fundecl.fun_body;
-  emit_gotrel_and_symbol_literals ()
+  end
 
 let fundecl decl =
-  Emitaux.fundecl decl ~f:(fun () -> fundecl decl)
+  Emitaux.fundecl decl
+    ~prepare:prepare_for_fundecl
+    ~emit_all
+    ~emit_call
+    ~emit_jump_to_label
+    ~spacetime_before_uninstrumented_call
     ~alignment_in_bytes:4
     ~emit_numeric_constants:true
 

@@ -39,7 +39,11 @@ module Kind = struct
     | Normal -> ""
     | GOT -> "@GOT"
     | GOTPCREL -> "@GOTPCREL"
-    | PLT -> "@PLT"
+    | PLT ->
+      begin match TS.architecture with
+      | IA32 | IA64 | AArch64 | POWER | SPARC | Z -> "@PLT"
+      | ARM -> "(PLT)"
+      end
     | I386_stub -> "$stub"
     | I386_non_lazy_ptr -> "$non_lazy_ptr"
 
@@ -206,6 +210,7 @@ let i386_non_lazy_ptr t =
   { t with kind = I386_non_lazy_ptr; }
 
 let mcount = create "mcount"
+let __gnu_mcount_nc = create "__gnu_mcount_nc"
 let sqrt = create "sqrt"
 
 let __dummy__ = create __dummy__

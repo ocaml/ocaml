@@ -92,6 +92,7 @@ val _GLOBAL_OFFSET_TABLE_ : t
 
 (** External variables from the C library. *)
 val mcount : t
+val __gnu_mcount_nc : t
 val sqrt : t
 
 (** Global variables in the OCaml runtime accessed by OCaml code. *)
