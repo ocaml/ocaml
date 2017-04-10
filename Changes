@@ -136,6 +136,9 @@ Working version
   with themselves
   (Jacques Garrigue, report by Leo White)
 
+- PR#7506: pprintast ignores attributes in tails of a list
+  (Alain Frisch, report by Kenichi Asai)
+
 ### Runtime system:
 
 - GPR#71: The runtime can now be shut down gracefully by means of the new

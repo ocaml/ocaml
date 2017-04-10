@@ -7274,3 +7274,11 @@ let g x =
 let ( ~$ ) x y = (x, y)
 let g x y =
   ~$ (x.contents) (y.contents)
+
+
+
+(* PR#7506: attributes on list tail *)
+
+let tail1 = ([1; 2])[@hello]
+let tail2 = 0::(([1; 2])[@hello])
+let tail3 = 0::(([])[@hello])

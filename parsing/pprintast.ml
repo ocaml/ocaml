@@ -103,11 +103,14 @@ let view_expr x =
   | Pexp_construct ( {txt= Lident "[]";_},_) -> `nil
   | Pexp_construct ( {txt= Lident"::";_},Some _) ->
       let rec loop exp acc = match exp with
-          | {pexp_desc=Pexp_construct ({txt=Lident "[]";_},_);_} ->
+          | {pexp_desc=Pexp_construct ({txt=Lident "[]";_},_);_}
+            when exp.pexp_attributes = [] ->
               (List.rev acc,true)
           | {pexp_desc=
              Pexp_construct ({txt=Lident "::";_},
-                             Some ({pexp_desc= Pexp_tuple([e1;e2]);_}));_} ->
+                             Some ({pexp_desc= Pexp_tuple([e1;e2]);_}));_}
+            when exp.pexp_attributes = []
+            ->
               loop e2 (e1::acc)
           | e -> (List.rev (e::acc),false) in
       let (ls,b) = loop x []  in
