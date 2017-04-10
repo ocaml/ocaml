@@ -247,7 +247,7 @@ method! select_operation op args dbg =
       (Ispecific(Ibswap 16), args)
   (* Recognize 32-bit bswap instructions (ARMv6 and above) *)
   | (Cextcall(fn, _, _, _), args)
-        when !arch >= ARMv6 && L.equal fn caml_int32_direct_bswap ->
+        when !arch >= ARMv6 && L.equal fn L.caml_int32_direct_bswap ->
       (Ispecific(Ibswap 32), args)
   (* Turn floating-point operations into runtime ABI calls for softfp *)
   | (op, args) when !fpu = Soft -> self#select_operation_softfp op args dbg
