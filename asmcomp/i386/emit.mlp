@@ -769,12 +769,14 @@ let emit_all ~fun_body =
 let mcount_stub = L.i386_stub L.mcount
 
 let emit_external_symbol_direct s =
-  D.define_symbol (L.i386_stub s);
+  (* CR mshinwell: Are these stub and non_lazy_ptr things supposed to be
+     function or object symbols? *)
+  D.define_data_symbol (L.i386_stub s);
   D.indirect_symbol s;
   I.hlt (); I.hlt (); I.hlt (); I.hlt () ; I.hlt ()
 
 let emit_external_symbol_indirect s =
-  D.define_symbol (L.i386_non_lazy_ptr s);
+  D.define_data_symbol (L.i386_non_lazy_ptr s);
   D.indirect_symbol s;
   D.int32 0l
 
@@ -786,7 +788,7 @@ let emit_external_symbols () =
   L.Set.iter emit_external_symbol_direct !external_symbols_direct;
   external_symbols_direct := L.Set.empty;
   if !Clflags.gprofile then begin
-    D.define_symbol mcount_stub;
+    D.define_data_symbol mcount_stub;
     D.indirect_symbol L.mcount;
     I.hlt (); I.hlt (); I.hlt () ; I.hlt () ; I.hlt ()
   end

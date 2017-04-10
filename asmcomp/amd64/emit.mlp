@@ -108,7 +108,7 @@ let get_imp_symbol s =
 
 let emit_imp_table () =
   let f s imps =
-    D.define_symbol imps;
+    D.define_data_symbol imps;
     D.symbol s
   in
   D.switch_to_section Data;
@@ -808,11 +808,11 @@ let begin_assembly() =
     (* from amd64.S; could emit these constants on demand *)
     D.switch_to_section Sixteen_byte_literals;
     D.align ~bytes:16;
-    D.define_symbol L.caml_negf_mask;
+    D.define_data_symbol L.caml_negf_mask;
     D.int64 0x8000000000000000L;
     D.int64 0L;
     D.align ~bytes:16;
-    D.define_symbol L.caml_absf_mask;
+    D.define_data_symbol L.caml_absf_mask;
     D.int64 0x7FFFFFFFFFFFFFFFL;
     D.int64 0xFFFFFFFFFFFFFFFFL
   end;

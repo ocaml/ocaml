@@ -220,17 +220,17 @@ let add_def_symbol s =
 let add_used_symbol s =
   symbols_used := Linkage_name.Set.add s !symbols_used
 
-let emit_global_symbol name =
+let emit_global_data_symbol name =
   let sym = Compilenv.make_symbol (Some name) in
   add_def_symbol sym;
   D.global sym;
-  D.define_symbol sym
+  D.define_data_symbol sym
 
-let emit_global_symbol_with_size name ~f =
+let emit_global_data_symbol_with_size name ~f =
   let sym = Compilenv.make_symbol (Some name) in
   add_def_symbol sym;
   D.global sym;
-  D.define_symbol sym;
+  D.define_data_symbol sym;
   f ();
   D.size sym
 
@@ -390,9 +390,9 @@ let begin_assembly () =
   reset_debug_info ();
   all_functions := [];
   D.switch_to_section Data;
-  emit_global_symbol "data_begin";
+  emit_global_data_symbol "data_begin";
   D.switch_to_section Text;
-  emit_global_symbol "code_begin"
+  emit_global_data_symbol "code_begin"
 
 let fundecl ?branch_relaxation (fundecl : Linearize.fundecl) ~prepare
       ~emit_all ~alignment_in_bytes ~emit_call ~emit_jump_to_label
@@ -446,7 +446,7 @@ let emit_spacetime_shapes () =
   end;
   D.switch_to_section Data;
   D.align ~bytes:8;
-  emit_global_symbol "spacetime_shapes";
+  emit_global_data_symbol "spacetime_shapes";
   List.iter (fun (fundecl : Linearize.fundecl) ->
       begin match fundecl.fun_spacetime_shape with
       | None -> ()
@@ -481,17 +481,17 @@ let end_assembly ~emit_numeric_constants =
     emit_spacetime_shapes ()
   end;
   D.switch_to_section Data;
-  emit_global_symbol_with_size "frametable" ~f:(fun () ->
+  emit_global_data_symbol_with_size "frametable" ~f:(fun () ->
     emit_frames ());
   if emit_numeric_constants then begin
     emit_constants ()
   end;
   D.mark_stack_non_executable ();  (* PR#4564 *)
   D.switch_to_section Text;
-  emit_global_symbol "code_end";
+  emit_global_data_symbol "code_end";
   D.int64 0L;
   D.switch_to_section Data;
-  emit_global_symbol "data_end";
+  emit_global_data_symbol "data_end";
   D.int64 0L
 
 (* Emission of data *)
@@ -499,7 +499,7 @@ let end_assembly ~emit_numeric_constants =
 let emit_item (item : Cmm.data_item) =
   match item with
   | Cglobal_symbol s -> D.global s
-  | Cdefine_symbol s -> add_def_symbol s; D.define_symbol s
+  | Cdefine_symbol s -> add_def_symbol s; D.define_data_symbol s
   | Cint8 n -> D.int8 (Numbers.Int8.of_int_exn n)
   | Cint16 n -> D.int16 (Numbers.Int16.of_int_exn n)
   | Cint32 n -> D.int32 (Nativeint.to_int32 n)

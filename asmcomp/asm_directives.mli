@@ -152,14 +152,14 @@ val size : ?size_of:Linkage_name.t -> Linkage_name.t -> unit
 (** Leave a gap in the object file. *)
 val space : bytes:int -> unit
 
-(** Define a symbol at the current output position.  When emitting for MASM
-    into a non-text section this will cause loads and stores to/from the
-    symbol to be treated as if they are loading machine-width words (unless
-    the instruction has an explicit width suffix). *)
-val define_symbol : Linkage_name.t -> unit
+(** Define a data ("object") symbol at the current output position.  When
+    emitting for MASM this will cause loads and stores to/from the symbol to
+    be treated as if they are loading machine-width words (unless the
+    instruction has an explicit width suffix). *)
+val define_data_symbol : Linkage_name.t -> unit
 
-(** Define a function symbol.  An exception will be raised if the current
-    section is not a text section. *)
+(** Define a function symbol at the current output position.  An exception
+    will be raised if the current section is not a text section. *)
 val define_function_symbol : Linkage_name.t -> unit
 
 (** Mark a symbol as global. *)

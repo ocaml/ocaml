@@ -1065,7 +1065,7 @@ let begin_assembly() =
   let sym_begin = Compilenv.make_symbol (Some "data_begin") in
   D.switch_to_section Data;
   declare_global_data sym_begin;
-  D.define_symbol' sym_begin;
+  D.define_data_symbol sym_begin;
   let sym_begin = Compilenv.make_symbol (Some "code_begin") in
   D.switch_to_section (POWER Function_descriptors);
   (* For the ELF64v1 ABI, we must make sure that the .opd and .data
@@ -1077,7 +1077,7 @@ let begin_assembly() =
     D.align ~bytes:(1 lsl 12)
   end;
   declare_global_data sym_begin;
-  D.define_symbol' sym_begin
+  D.define_data_symbol sym_begin
 
 let end_assembly() =
   (* In profiling mode, for ELF64, emit the helper functions
@@ -1090,14 +1090,14 @@ let end_assembly() =
     let stacksize = save_area + 8*8 in
     D.switch_to_section Text;
     D.align ~bytes:4;
-    D.define_symbol' "caml_before_mcount";
+    D.define_function_symbol "caml_before_mcount";
     `	stdu	1, {emit_int (-stacksize)}(1)\n`;
     `	std	0, {emit_int (16 + stacksize)}(1)\n`;
     for i = 3 to 10 do
     `	std	{emit_gpr i}, {emit_int (save_area + (i - 3) * 8)}(1)\n`
     done;
     `	blr\n`;
-    D.define_symbol' "caml_after_mcount";
+    D.define_function_symbol "caml_after_mcount";
     `	ld	0, {emit_int (16 + stacksize)}(1)\n`;
     for i = 3 to 10 do
     `	ld	{emit_gpr i}, {emit_int (save_area + (i - 3) * 8)}(1)\n`
@@ -1109,18 +1109,18 @@ let end_assembly() =
   emit_string function_descr_space;
   let lbl_end = Compilenv.make_symbol (Some "code_end") in
   declare_global_data lbl_end;
-  D.define_symbol' lbl_end;
+  D.define_data_symbol lbl_end;
   if abi <> ELF64v1 then D.int32 0l;
   D.switch_to_section Data;
   let lbl_end = Compilenv.make_symbol (Some "data_end") in
   declare_global_data lbl_end;
-  D.define_symbol' lbl_end;
+  D.define_data_symbol lbl_end;
   `	{emit_string datag}	0\n`;
   (* Emit the frame descriptors *)
   D.switch_to_section Read_only_data;
   let lbl = Compilenv.make_symbol (Some "frametable") in
   declare_global_data lbl;
-  D.define_symbol' lbl;
+  D.define_data_symbol lbl;
   emit_frames ();
   (* Emit the TOC entries *)
   begin match abi with

@@ -319,16 +319,7 @@ module Directive = struct
       | _ -> bprintf buf "\t.ascii\t\"%s\"" (string_of_string_literal s)
       end
     | Comment s -> bprintf buf "\t\t\t\t/* %s */" s
-    | Global s ->
-      bprintf buf "\t.globl\t%s" s;
-      begin match
-        current_section_is_text (), TS.architecture (), TS.system ()
-      with
-      | (false, (POWER | ARM | AArch64 | Z), _)
-      | (false, _, Solaris) ->
-        bprintf buf "\n .type %s, @object" s
-      | _ -> ()
-      end
+    | Global s -> bprintf buf "\t.globl\t%s" s
     | New_label (s, _typ) -> bprintf buf "%s:" s
     | Section ([".data" ], _, _) -> bprintf buf "\t.data"
     | Section ([".text" ], _, _) -> bprintf buf "\t.text"
@@ -368,7 +359,10 @@ module Directive = struct
 *)
     | Size (s, c) -> bprintf buf "\t.size %s,%a" s cst c
     | Sleb128 c -> bprintf buf "\t.sleb128 %a" cst c
-    | Type (s, typ) -> bprintf buf "\t.type %s,%s" s typ
+    | Type (s, typ) ->
+      (* We use the "STT" forms as they are unambiguous across platforms
+         (cf. https://sourceware.org/binutils/docs/as/Type.html ). *)
+      bprintf buf "\t.type %s %s" s typ
     | Uleb128 c -> bprintf buf "\t.uleb128 %a" cst c
     | Direct_assignment (var, const) ->
       begin match TS.assembler () with
@@ -735,22 +729,22 @@ let initialize ~(emit : Directive.t -> unit) =
   emit (File { file_num = None; filename = ""; });  (* PR#7037 *)
   switch_to_section Text
 
-let define_symbol symbol =
-  let typ : Directive.thing_after_label =
-    if current_section_is_text () then Code
-    else Machine_width_data
-  in
-  emit (New_label (L.to_string symbol, typ))
+let define_data_symbol symbol =
+  emit (New_label (L.to_string symbol, Machine_width_data));
+  begin match TS.assembler () with
+  | GAS_like | MacOS -> type_ symbol ~type_:"STT_OBJECT"
+  | MASM -> ()
+  end
 
 let define_function_symbol symbol =
   if not (current_section_is_text ()) then begin
     Misc.fatal_error "define_function_symbol can only be called when \
       emitting to a text section"
   end;
-  define_symbol symbol;
-  begin match TS.system () with
-  | GNU | Linux _ -> type_ symbol ~type_:"@function"
-  | _ -> ()
+  emit (New_label (L.to_string symbol, Code));
+  begin match TS.assembler () with
+  | GAS_like | MacOS -> type_ symbol ~type_:"STT_FUNC"
+  | MASM -> ()
   end
 
 let symbol sym = const_machine_width (Symbol sym)
