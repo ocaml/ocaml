@@ -25,6 +25,9 @@ open Mach
 open Linearize
 open Emitaux
 
+module D = Asm_directives
+module L = Linkage_name
+
 (* Reserved space at bottom of stack *)
 
 let reserved_stack_space =
@@ -72,9 +75,13 @@ let (trap_size, trap_handler_offset, trap_previous_offset) =
   | ELF64v1 -> (32, 56, 64)
   | ELF64v2 -> (32, 40, 48)
 
+let record_frame = record_frame ~frame_size ~slot_offset
+let record_frame_label = record_frame_label ~frame_size ~slot_offset
+let bound_error_label = bound_error_label ~frame_size ~slot_offset
+
 (* Output a symbol *)
 
-let emit_symbol s = emit_string (D.string_of_symbol (Linkage_name.create s))
+let emit_symbol s = emit_string (L.to_string s)
 
 (* Output a label *)
 
@@ -131,9 +138,12 @@ let emit_symbol_offset (s, d) =
 let low_high_u n = (n land 0xFFFF, n asr 16)
   (* unsigned low half, for use with "ori" *)
 
+let _8000 = Targetint.of_int 0x8000
+let ffff = Targetint.of_int 0xffff
+
 let native_low_high_u n =
-  (Nativeint.(to_int (logand n 0xFFFFn)),
-   Nativeint.(to_int (shift_right n 16)))
+  (Targetint.(to_int (logand n 0xFFFFn)),
+   Targetint.(to_int (shift_right n 16)))
   (* unsigned low half, for use with "ori" *)
 
 let low_high_s n =
@@ -142,16 +152,17 @@ let low_high_s n =
   (* signed low half, for use with "addi" *)
 
 let native_low_high_s n =
-  let lo = Nativeint.(sub (logand (add n 0x8000n) 0xFFFFn) 0x8000n) in
-  (Nativeint.to_int lo,
-   Nativeint.(to_int (shift_right (sub n lo) 16)))
+  let lo = Targetint.(sub (logand (add n _8000) ffff) _8000) in
+  (Targetint.to_int lo,
+   Targetint.(to_int (shift_right (sub n lo) 16)))
   (* signed low half, for use with "addi" *)
 
 let is_immediate n =
   n <= 32767 && n >= -32768
 
 let is_native_immediate n =
-  n <= 32767n && n >= -32768n
+  Targetint.compare n (Targetint.of_int 32767) <= 0
+    && Targetint.compare n (Targetint.of_int (-32768)) >= 0
 
 (* Record TOC entries *)
 
@@ -262,7 +273,7 @@ let emit_free_frame () =
 let emit_call s =
   match abi with
   | ELF32 when !Clflags.dlcode || !Clflags.pic_code ->
-    `	bl	{emit_symbol s}@plt\n`
+    `	bl	{emit_symbol (L.plt s)}\n`
   | _ ->
     `	bl	{emit_symbol s}\n`
 
@@ -923,6 +934,9 @@ let rec emit_all i =
 
 (* Emission of the profiling prelude *)
 
+let caml_before_mcount = L.create "caml_before_mcount"
+let caml_after_mcount = L.create "caml_after_mcount"
+
 let emit_profile () =
   match abi with
   | ELF32 ->
@@ -931,16 +945,16 @@ let emit_profile () =
       `	stw	0, 4(1)\n`;
       (* _mcount preserves the registers used for parameter passing *)
       (* when it returns, lr contains the original return address *)
-      `	bl	{emit_symbol "_mcount"}\n`;
+      `	bl	{emit_symbol L._mcount}\n`;
       `	addi	1, 1, 16\n`
   | ELF64v1 | ELF64v2 ->
       `	mflr	0\n`;
       (* save the registers used for parameter passing *)
-      `	bl	{emit_symbol "caml_before_mcount"}\n`;
-      `	bl	{emit_symbol "_mcount"}\n`;
+      `	bl	{emit_symbol caml_before_mcount}\n`;
+      `	bl	{emit_symbol L._mcount}\n`;
       `	nop\n`;
       (* restore the registers used for parameter passing *)
-      `	bl	{emit_symbol "caml_after_mcount"}\n`;
+      `	bl	{emit_symbol caml_after_mcount}\n`;
       `	mtlr	0\n`
 
 (* Emission of a function declaration *)
@@ -952,8 +966,8 @@ let fundecl fundecl =
   call_gc_label := 0;
   float_literals := [];
   jumptables := []; jumptables_lbl := -1;
-  let fun_name = Linkage_name.create fundecl.fun_name in
-  let fun_name_v1 = Linkage_name.create ("L." ^ fundecl.fun_name) in
+  let fun_name = L.create fundecl.fun_name in
+  let fun_name_v1 = L.create ("L." ^ fundecl.fun_name) in
   begin match abi with
   | ELF32 ->
     D.switch_to_section Text;
@@ -966,7 +980,7 @@ let fundecl fundecl =
     D.global fun_name;
     D.define_function_symbol fun_name;
     D.symbol fun_name_v1;
-    D.symbol (Linkage_name.create ".TOC.@tocbase");
+    D.symbol (L.create ".TOC.@tocbase");
     D.switch_to_section Text;
     D.align ~bytes:4;
     D.define_function_symbol' fun_name_v1
@@ -1009,11 +1023,11 @@ let fundecl fundecl =
     D.define_label !call_gc_label;
     match abi with
     | ELF32 ->
-      `	b	{D.string_of_symbol Linkage_name.caml_call_gc}\n`
+      `	b	{D.string_of_symbol L.caml_call_gc}\n`
     | ELF64v1 ->
       `	std	2, 40(1)\n`;
              (* save our TOC, will be restored by caml_call_gc *)
-      emit_tocload emit_gpr 11 (TocSym "caml_call_gc");
+      emit_tocload emit_gpr 11 (TocSym L.caml_call_gc);
       `	ld	0, 0(11)\n`;
       `	mtctr	0\n`;
       `	ld	2, 8(11)\n`;
@@ -1021,7 +1035,7 @@ let fundecl fundecl =
     | ELF64v2 ->
       `	std	2, 24(1)\n`;
              (* save our TOC, will be restored by caml_call_gc *)
-      emit_tocload emit_gpr 12 (TocSym "caml_call_gc");
+      emit_tocload emit_gpr 12 (TocSym L.caml_call_gc);
       `	mtctr	12\n`;
       `	bctr\n`
   end;

@@ -59,7 +59,7 @@ let spacetime_node_hole_pointer_is_live_before = function
 (* Addressing modes *)
 
 type addressing_mode =
-    Ibased of string * int              (* symbol + displ *)
+    Ibased of Linkage_name.t * int      (* symbol + displ *)
   | Iindexed of int                     (* reg + displ *)
   | Iindexed2                           (* reg + reg *)
 

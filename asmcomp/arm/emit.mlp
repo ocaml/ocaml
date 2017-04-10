@@ -824,7 +824,7 @@ let fundecl decl =
   Emitaux.fundecl decl
     ~prepare
     ~emit_all
-    ~emit_call
+    ~emit_call:(fun sym -> emit_call sym; emit_string "\n")
     ~emit_jump_to_label
     ~spacetime_before_uninstrumented_call
     ~alignment_in_bytes:4
