@@ -302,7 +302,8 @@ let emit_int_constants () =
 
 let emit_constants () =
   emit_float_constants ();
-  emit_int_constants ()
+  emit_int_constants ();
+  size_constants := 0
 
 (* Record calls to the GC -- we've moved them out of the way *)
 
@@ -519,7 +520,8 @@ let reset () =
   reset_debug_info ();
   frame_descriptors := [];
   symbols_defined := Linkage_name.Set.empty;
-  symbols_used := Linkage_name.Set.empty
+  symbols_used := Linkage_name.Set.empty;
+  size_constants := 0
 
 let binary_backend_available = ref false
 let create_asm_file = ref true

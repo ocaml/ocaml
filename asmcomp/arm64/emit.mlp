@@ -27,6 +27,9 @@ open Mach
 open Linearize
 open Emitaux
 
+module D = Asm_directives
+module L = Linkage_name
+
 (* Names for special regs *)
 
 let reg_trap_ptr = phys_reg 23
@@ -39,9 +42,15 @@ let reg_x15 = phys_reg 15
 
 let emit_label lbl = emit_string (D.string_of_label lbl)
 
+let emit_jump_to_label lbl =
+  `b	{emit_label lbl}`
+
 (* Symbols *)
 
-let emit_symbol s = emit_string (D.string_of_symbol s)
+let emit_symbol s = emit_string (L.to_string s)
+
+let emit_call sym =
+  `bl	{emit_symbol symbol}`
 
 (* Output a pseudo-register *)
 
@@ -86,6 +95,10 @@ let slot_offset loc cl =
   | Outgoing n ->
       assert (n >= 0);
       n
+
+let record_frame = record_frame ~frame_size ~slot_offset
+let record_frame_label = record_frame_label ~frame_size ~slot_offset
+let bound_error_label = bound_error_label ~frame_size ~slot_offset
 
 (* Output a stack reference *)
 
@@ -411,11 +424,16 @@ module BR = Branch_relaxation.Make (struct
     | _ -> assert false
 end)
 
+(* Spacetime (not yet supported) *)
+
+let spacetime_before_uninstrumented_call _label = ()
+
 (* Output the assembly code for allocation. *)
 
 let assembly_code_for_allocation ?label_after_call_gc i ~n ~far =
   let lbl_frame =
-    record_frame_label ?label:label_after_call_gc i.live false i.dbg
+    record_frame_label ?label:label_after_call_gc ~live:i.live ~raise_:false
+      i.dbg
   in
   if !fastcode_flag then begin
     let lbl_redo = new_label() in
@@ -436,11 +454,11 @@ let assembly_code_for_allocation ?label_after_call_gc i ~n ~far =
       ~frame_label:lbl_frame
   end else begin
     begin match n with
-    | 16 -> `	bl	{emit_symbol "caml_alloc1"}\n`
-    | 24 -> `	bl	{emit_symbol "caml_alloc2"}\n`
-    | 32 -> `	bl	{emit_symbol "caml_alloc3"}\n`
+    | 16 -> `	bl	{emit_symbol caml_alloc1}\n`
+    | 24 -> `	bl	{emit_symbol caml_alloc2}\n`
+    | 32 -> `	bl	{emit_symbol caml_alloc3}\n`
     | _  -> emit_intconst reg_x15 (Nativeint.of_int n);
-            `	bl	{emit_symbol "caml_allocN"}\n`
+            `	bl	{emit_symbol caml_allocN}\n`
     end;
     D.define_label lbl_frame;
     `	add	{emit_reg i.res.(0)}, {emit_reg reg_alloc_ptr}, #8\n`
@@ -483,10 +501,10 @@ let emit_instr i =
         emit_load_symbol_addr i.res.(0) s
     | Lop(Icall_ind { label_after; }) ->
         `	blr	{emit_reg i.arg.(0)}\n`;
-        `{record_frame i.live false i.dbg ~label:label_after}\n`
+        record_frame ~live:i.live ~raise_:false i.dbg ~label:label_after;
     | Lop(Icall_imm { func; label_after; }) ->
         `	bl	{emit_symbol func}\n`;
-        `{record_frame i.live false i.dbg ~label:label_after}\n`
+        record_frame ~live:i.live ~raise_:false i.dbg ~label:label_after
     | Lop(Itailcall_ind { label_after = _; }) ->
         output_epilogue (fun () -> `	br	{emit_reg i.arg.(0)}\n`)
     | Lop(Itailcall_imm { func; label_after = _; }) ->
@@ -498,8 +516,8 @@ let emit_instr i =
         `	bl	{emit_symbol func}\n`
     | Lop(Iextcall { func; alloc = true; label_after; }) ->
         emit_load_symbol_addr reg_x15 func;
-        `	bl	{emit_symbol "caml_c_call"}\n`;
-        `{record_frame i.live false i.dbg ~label:label_after}\n`
+        `	bl	{emit_symbol caml_c_call}\n`;
+        record_frame ~live:i.live ~raise_:false i.dbg ~label:label_after
     | Lop(Istackoffset n) ->
         assert (n mod 16 = 0);
         emit_stack_adjustment (-n);
@@ -563,34 +581,52 @@ let emit_instr i =
         `	cmp	{emit_reg i.arg.(0)}, #{emit_int n}\n`;
         `	cset	{emit_reg i.res.(0)}, {emit_string (name_for_comparison cmp)}\n`
     | Lop(Iintop (Icheckbound { label_after_error; })) ->
-        let lbl = bound_error_label i.dbg ?label:label_after_error in
+        let lbl =
+          bound_error_label i.dbg ?label:label_after_error
+            ~stack_offset:!stack_offset
+        in
         `	cmp	{emit_reg i.arg.(0)}, {emit_reg i.arg.(1)}\n`;
         `	b.ls	{emit_label lbl}\n`
     | Lop(Ispecific Ifar_intop_checkbound { label_after_error; }) ->
-        let lbl = bound_error_label i.dbg ?label:label_after_error in
+        let lbl =
+          bound_error_label i.dbg ?label:label_after_error
+            ~stack_offset:!stack_offset
+        in
         let lbl2 = new_label () in
         `	cmp	{emit_reg i.arg.(0)}, {emit_reg i.arg.(1)}\n`;
         `	b.hi	{emit_label lbl2}\n`;
         `	b	{emit_label lbl}\n`;
         D.define_label lbl2;
     | Lop(Iintop_imm(Icheckbound { label_after_error; }, n)) ->
-        let lbl = bound_error_label i.dbg ?label:label_after_error in
+        let lbl =
+          bound_error_label i.dbg ?label:label_after_error
+            ~stack_offset:!stack_offset
+        in
         `	cmp	{emit_reg i.arg.(0)}, #{emit_int n}\n`;
         `	b.ls	{emit_label lbl}\n`
     | Lop(Ispecific(
           Ifar_intop_imm_checkbound { bound; label_after_error; })) ->
-        let lbl = bound_error_label i.dbg ?label:label_after_error in
+        let lbl =
+          bound_error_label i.dbg ?label:label_after_error
+            ~stack_offset:!stack_offset
+        in
         let lbl2 = new_label () in
         `	cmp	{emit_reg i.arg.(0)}, #{emit_int bound}\n`;
         `	b.hi	{emit_label lbl2}\n`;
         `	b	{emit_label lbl}\n`;
         D.define_label lbl2;
     | Lop(Ispecific(Ishiftcheckbound { shift; label_after_error; })) ->
-        let lbl = bound_error_label i.dbg ?label:label_after_error in
+        let lbl =
+          bound_error_label i.dbg ?label:label_after_error
+            ~stack_offset:!stack_offset
+        in
         `	cmp	{emit_reg i.arg.(1)}, {emit_reg i.arg.(0)}, lsr #{emit_int shift}\n`;
         `	b.cs	{emit_label lbl}\n`
     | Lop(Ispecific(Ifar_shiftcheckbound { shift; label_after_error; })) ->
-        let lbl = bound_error_label i.dbg ?label:label_after_error in
+        let lbl =
+          bound_error_label i.dbg ?label:label_after_error
+            ~stack_offset:!stack_offset
+        in
         let lbl2 = new_label () in
         `	cmp	{emit_reg i.arg.(1)}, {emit_reg i.arg.(0)}, lsr #{emit_int shift}\n`;
         `	b.lo	{emit_label lbl2}\n`;
@@ -752,8 +788,8 @@ let emit_instr i =
     | Lraise k ->
         begin match k with
         | Cmm.Raise_withtrace ->
-          `	bl	{emit_symbol "caml_raise_exn"}\n`;
-          `{record_frame Reg.Set.empty true i.dbg}\n`
+          `	bl	{emit_symbol caml_raise_exn}\n`;
+          record_frame ~live:Reg.Set.empty ~raise_:true i.dbg
         | Cmm.Raise_notrace ->
           `	mov	sp, {emit_reg reg_trap_ptr}\n`;
           `	ldr	{emit_reg reg_tmp1}, [sp, #8]\n`;
@@ -804,8 +840,8 @@ let fundecl decl =
   Emitaux.fundecl decl ~branch_relaxation
     ~prepare:prepare_for_fundecl
     ~emit_all
-    ~emit_call:(fun symbol -> `bl	{emit_symbol symbol}`)
-    ~emit_jump_to_label:...
+    ~emit_call
+    ~emit_jump_to_label
     ~spacetime_before_uninstrumented_call
     ~alignment_in_bytes:8
     ~emit_numeric_constants:true
@@ -813,7 +849,7 @@ let fundecl decl =
 (* Beginning / end of an assembly file *)
 
 let begin_assembly () =
-  Asm_directives.initialize ~emit:(fun directive -> ...)
+  Asm_directives.initialize ~emit:emit_directive;
   Emitaux.begin_assembly ~frame_size
 
 let end_assembly () =
