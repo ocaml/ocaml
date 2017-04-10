@@ -21,6 +21,8 @@ open Arch
 open Cmm
 open Mach
 
+module L = Linkage_name
+
 let is_offset chunk n =
    (n >= -256 && n <= 255)               (* 9 bits signed unscaled *)
 || (n >= 0 &&
@@ -79,8 +81,8 @@ let is_logical_immediate n =
 (* If you update [inline_ops], you may need to update [is_simple_expr] and/or
    [effects_of], below. *)
 let inline_ops =
-  [ "sqrt"; "caml_bswap16_direct"; "caml_int32_direct_bswap";
-    "caml_int64_direct_bswap"; "caml_nativeint_direct_bswap" ]
+  [ L.sqrt; L.caml_bswap16_direct; L.caml_int32_direct_bswap;
+    L.caml_int64_direct_bswap; L.caml_nativeint_direct_bswap ]
 
 let use_direct_addressing symb =
   (not !Clflags.dlcode) || Compilenv.symbol_in_current_unit symb
@@ -98,7 +100,8 @@ method is_immediate n =
 
 method! is_simple_expr = function
   (* inlined floating-point ops are simple if their arguments are *)
-  | Cop(Cextcall (fn, _, _, _), args, _) when List.mem fn inline_ops ->
+  | Cop(Cextcall (fn, _, _, _), args, _)
+        when L.List.mem fn inline_ops ->
       List.for_all self#is_simple_expr args
   | e -> super#is_simple_expr e
 
@@ -227,15 +230,18 @@ method! select_operation op args dbg =
           super#select_operation op args dbg
       end
   (* Recognize floating-point square root *)
-  | Cextcall("sqrt", _, _, _) ->
+  | Cextcall(fn, _, _, _) when L.equal fn L.sqrt ->
       (Ispecific Isqrtf, args)
   (* Recognize bswap instructions *)
-  | Cextcall("caml_bswap16_direct", _, _, _) ->
+  | Cextcall(fn, _, _, _)
+      when L.equal fn L.caml_bswap16_direct ->
       (Ispecific(Ibswap 16), args)
-  | Cextcall("caml_int32_direct_bswap", _, _, _) ->
+  | Cextcall(fn, _, _, _)
+      when L.equal fn L.caml_int32_direct_bswap ->
       (Ispecific(Ibswap 32), args)
-  | Cextcall(("caml_int64_direct_bswap"|"caml_nativeint_direct_bswap"),
-              _, _, _) ->
+  | Cextcall(fn, _, _, _)
+      when L.equal fn L.caml_int64_direct_bswap
+        || L.equal fn L.caml_nativeint_direct_bswap ->
       (Ispecific (Ibswap 64), args)
   (* Other operations are regular *)
   | _ ->
