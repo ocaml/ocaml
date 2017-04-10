@@ -75,6 +75,9 @@ val symbols_defined : unit -> Linkage_name.Set.t
 (** Symbols used by the current compilation unit. *)
 val symbols_used : unit -> Linkage_name.Set.t
 
+(** Total number of words occupied by constant literals not yet emitted. *)
+val size_constants : int ref
+
 (** Recording of calls to the GC. *)
 val record_call_gc_site
    : label:Cmm.label
@@ -95,8 +98,13 @@ val bound_error_label
 (** Label a floating-point constant. *)
 val float_constant : Int64.t -> Cmm.label
 
+val num_float_constants : unit -> int
+
 (** Label an integer constant. *)
 val int_constant : Targetint.t -> Cmm.label
+
+(** Force emission of pending constant literals immediately. *)
+val emit_constants : unit -> unit
 
 val begin_assembly : unit -> unit
 

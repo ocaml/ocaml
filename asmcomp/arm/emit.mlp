@@ -17,6 +17,8 @@
 
 (* Emission of ARM assembly code *)
 
+[@@@ocaml.warning "-40"]
+
 open Misc
 open Cmm
 open Arch
@@ -26,6 +28,7 @@ open Mach
 open Linearize
 open Emitaux
 
+module D = Asm_directives
 module L = Linkage_name
 
 (* Labels *)
@@ -83,10 +86,7 @@ let slot_offset loc cl =
       assert (n >= 0);
       n
 
-let record_frame ?label ~live ~raise_ dbg =
-  let lbl = record_frame ~frame_size ~slot_offset ~live ~raise_ ~dbg in
-  emit_label lbl
-
+let record_frame = record_frame ~frame_size ~slot_offset
 let record_frame_label = record_frame_label ~frame_size ~slot_offset
 let bound_error_label = bound_error_label ~frame_size ~slot_offset
 
@@ -218,12 +218,12 @@ let output_epilogue f =
 (* Pending relative references to the global offset table *)
 let gotrel_literals = ref ([] : (label * label) list)
 (* Pending symbol literals *)
-let symbol_literals = ref ([] : (string * label) list)
+let symbol_literals = ref ([] : (L.t * label) list)
 
 (* Label a GOTREL literal *)
 let gotrel_literal l =
   let lbl = new_label() in
-  size_literals := !size_literals + 1;
+  size_constants := !size_constants + 1;
   gotrel_literals := (l, lbl) :: !gotrel_literals;
   lbl
 
@@ -233,7 +233,7 @@ let symbol_literal s =
     List.assoc s !symbol_literals
   with Not_found ->
     let lbl = new_label() in
-    size_literals := !size_literals + 1;
+    size_constants := !size_constants + 1;
     symbol_literals := (s, lbl) :: !symbol_literals;
     lbl
 
@@ -248,13 +248,13 @@ let emit_gotrel_and_symbol_literals() =
         D.between_symbol_and_label_offset'
           ~upper:L._GLOBAL_OFFSET_TABLE_
           ~lower:l
-          ~lower_offset:offset)
+          ~offset_lower:(Targetint.of_int offset))
       !gotrel_literals;
     List.iter
       (fun (s, lbl) ->
         D.define_label lbl;
         if !Clflags.pic_code then begin
-          D.symbol ~got:() s
+          D.symbol (L.got s)
         end else begin
           D.symbol s
         end)
@@ -262,7 +262,7 @@ let emit_gotrel_and_symbol_literals() =
     gotrel_literals := [];
     symbol_literals := []
   end;
-  size_literals := 0
+  size_constants := 0
 
 (* Emit code to load the address of a symbol *)
 
@@ -322,7 +322,7 @@ let emit_instr i =
           end; 1
         end
     | Lop(Iconst_int n) ->
-        emit_intconst i.res.(0) (Nativeint.to_int32 n)
+        emit_intconst i.res.(0) (Targetint.to_int32 n)
     | Lop(Iconst_float f) when !fpu = Soft ->
         let high_bits = Int64.to_int32 (Int64.shift_right_logical f 32)
         and low_bits = Int64.to_int32 f in
@@ -331,13 +331,13 @@ let emit_instr i =
           and ninstr_high = emit_intconst i.res.(1) high_bits in
           ninstr_low + ninstr_high
         end else begin
-          let lbl = float_literal f in
+          let lbl = float_constant f in
           `	ldr	{emit_reg i.res.(0)}, {emit_label lbl}\n`;
           `	ldr	{emit_reg i.res.(1)}, {emit_label lbl} + 4\n`;
           2
         end
     | Lop(Iconst_float f) when !fpu = VFPv2 ->
-        let lbl = float_literal f in
+        let lbl = float_constant f in
         `	fldd	{emit_reg i.res.(0)}, {emit_label lbl}\n`;
         1
     | Lop(Iconst_float f) ->
@@ -359,7 +359,7 @@ let emit_instr i =
           end in
         begin match encode f with
           None ->
-            let lbl = float_literal f in
+            let lbl = float_constant f in
             `	fldd	{emit_reg i.res.(0)}, {emit_label lbl}\n`
         | Some imm8 ->
             `	fconstd	{emit_reg i.res.(0)}, #{emit_int imm8}\n`
@@ -369,17 +369,17 @@ let emit_instr i =
     | Lop(Icall_ind { label_after; }) ->
         if !arch >= ARMv5 then begin
           `	blx	{emit_reg i.arg.(0)}\n`;
-          `{record_frame ~live:i.live ~raise_:false i.dbg ~label:label_after}\n`;
+          record_frame ~live:i.live ~raise_:false i.dbg ~label:label_after;
           1
         end else begin
           `	mov	lr, pc\n`;
           `	bx	{emit_reg i.arg.(0)}\n`;
-          `{record_frame ~live:i.live ~raise_:false i.dbg ~label:label_after}\n`;
+          record_frame ~live:i.live ~raise_:false i.dbg ~label:label_after;
           2
         end
     | Lop(Icall_imm { func; label_after; }) ->
         `	{emit_call func}\n`;
-        `{record_frame ~live:i.live ~raise_:false i.dbg ~label:label_after}\n`;
+        record_frame ~live:i.live ~raise_:false i.dbg ~label:label_after;
         1
     | Lop(Itailcall_ind { label_after = _; }) ->
         output_epilogue begin fun () ->
@@ -401,8 +401,8 @@ let emit_instr i =
         `	{emit_call func}\n`; 1
     | Lop(Iextcall { func; alloc = true; label_after; }) ->
         let ninstr = emit_load_symbol_addr (phys_reg 7 (* r7 *)) func in
-        `	{emit_call "caml_c_call"}\n`;
-        `{record_frame ~live:i.live ~raise_:false i.dbg ~label:label_after}\n`;
+        `	{emit_call L.caml_c_call}\n`;
+        record_frame ~live:i.live ~raise_:false i.dbg ~label:label_after;
         1 + ninstr
     | Lop(Istackoffset n) ->
         assert (n mod 8 = 0);
@@ -494,11 +494,11 @@ let emit_instr i =
         end else begin
           let ninstr =
             begin match n with
-               8 -> `	{emit_call "caml_alloc1"}\n`; 1
-            | 12 -> `	{emit_call "caml_alloc2"}\n`; 1
-            | 16 -> `	{emit_call "caml_alloc3"}\n`; 1
+               8 -> `	{emit_call L.caml_alloc1}\n`; 1
+            | 12 -> `	{emit_call L.caml_alloc2}\n`; 1
+            | 16 -> `	{emit_call L.caml_alloc3}\n`; 1
             |  _ -> let ninstr = emit_intconst (phys_reg 7) (Int32.of_int n) in
-                    `	{emit_call "caml_allocN"}\n`; 1 + ninstr
+                    `	{emit_call L.caml_allocN}\n`; 1 + ninstr
             end in
           D.define_label lbl_frame;
           `	add	{emit_reg i.res.(0)}, alloc_ptr, #4\n`;
@@ -519,15 +519,21 @@ let emit_instr i =
         `	mov{emit_string	compthen}	{emit_reg i.res.(0)}, #1\n`;
         `	mov{emit_string compelse}	{emit_reg i.res.(0)}, #0\n`; 4
     | Lop(Iintop (Icheckbound { label_after_error; } )) ->
-        let lbl = bound_error_label ?label:label_after_error i.dbg in
+        let lbl =
+          bound_error_label ?label:label_after_error i.dbg
+            ~stack_offset:!stack_offset
+        in
         `	cmp	{emit_reg i.arg.(0)}, {emit_reg i.arg.(1)}\n`;
         `	bls	{emit_label lbl}\n`; 2
     | Lop(Iintop_imm(Icheckbound { label_after_error; }, n)) ->
-        let lbl = bound_error_label ?label:label_after_error i.dbg in
+        let lbl =
+          bound_error_label ?label:label_after_error i.dbg
+            ~stack_offset:!stack_offset
+        in
         `	cmp	{emit_reg i.arg.(0)}, #{emit_int n}\n`;
         `	bls	{emit_label lbl}\n`; 2
     | Lop(Ispecific(Ishiftcheckbound(shiftop, n))) ->
-        let lbl = bound_error_label i.dbg in
+        let lbl = bound_error_label i.dbg ~stack_offset:!stack_offset in
         let op = name_for_shift_operation shiftop in
         `	cmp	{emit_reg i.arg.(1)}, {emit_reg i.arg.(0)}, {emit_string op} #{emit_int n}\n`;
         `	bcs	{emit_label lbl}\n`; 2
@@ -721,17 +727,17 @@ let emit_instr i =
     | Lpushtrap ->
         stack_offset := !stack_offset + 8;
         `	push	\{trap_ptr, lr}\n`;
-        D.cfi_adjust_cfa_offset 8;
+        D.cfi_adjust_cfa_offset ~bytes:8;
         `	mov	trap_ptr, sp\n`; 2
     | Lpoptrap ->
         `	pop	\{trap_ptr, lr}\n`;
-        D.cfi_adjust_cfa_offset (-8);
+        D.cfi_adjust_cfa_offset ~bytes:(-8);
         stack_offset := !stack_offset - 8; 1
     | Lraise k ->
         begin match k with
         | Cmm.Raise_withtrace ->
-          `	{emit_call "caml_raise_exn"}\n`;
-          `{record_frame Reg.Set.empty true i.dbg}\n`; 1
+          `	{emit_call L.caml_raise_exn}\n`;
+          record_frame ~live:Reg.Set.empty ~raise_:true i.dbg; 1
         | Cmm.Raise_notrace ->
           `	mov	sp, trap_ptr\n`;
           `	pop	\{trap_ptr, pc}\n`; 2
@@ -758,16 +764,16 @@ let rec emit_all ninstr fallthrough i =
     (* Make sure literals not yet emitted remain addressable,
        or emit them in a new constant island. *)
     (* fldd can address up to +/-1KB, ldr can address up to +/-4KB *)
-    let limit = (if !fpu >= VFPv2 && !float_constants <> []
+    let limit = (if !fpu >= VFPv2 && num_float_constants () > 0
                  then 127
                  else 511) in
-    let limit = limit - !size_literals - max_instruction_size i in
+    let limit = limit - !size_constants - max_instruction_size i in
     let ninstr' =
       if ninstr >= limit - 64 && not fallthrough then begin
         emit_constants ();
         emit_gotrel_and_symbol_literals ();
         0
-      end else if !size_literals != 0 && ninstr >= limit then begin
+      end else if !size_constants != 0 && ninstr >= limit then begin
         let lbl = new_label() in
         `	b	{emit_label lbl}\n`;
         emit_constants ();
@@ -782,12 +788,13 @@ let rec emit_all ninstr fallthrough i =
 
 let emit_all ~fun_body =
   emit_all 0 true fun_body;
-  emit_gotrel_and_symbol_literals ()
+  emit_gotrel_and_symbol_literals ();
+  frame_size ()
 
 (* Emission of the profiling prelude *)
 
 let emit_profile() =
-  match TS.system () with
+  match Target_system.system () with
   | Linux ARM_EABI | Linux ARM_EABI_hard_float | NetBSD ->
       `	push	\{lr}\n`;
       `	{emit_call L.__gnu_mcount_nc}\n`
@@ -795,7 +802,7 @@ let emit_profile() =
 
 (* Emission of a function declaration *)
 
-let fundecl fundecl =
+let prepare _fundecl =
   gotrel_literals := [];
   symbol_literals := [];
   stack_offset := 0;
@@ -815,7 +822,7 @@ let fundecl fundecl =
 
 let fundecl decl =
   Emitaux.fundecl decl
-    ~prepare:prepare_for_fundecl
+    ~prepare
     ~emit_all
     ~emit_call
     ~emit_jump_to_label
@@ -844,6 +851,7 @@ let begin_assembly() =
   `trap_ptr	.req	r8\n`;
   `alloc_ptr	.req	r10\n`;
   `alloc_limit	.req	r11\n`;
+  Asm_directives.initialize ~emit:emit_directive;
   Emitaux.begin_assembly ()
 
 let end_assembly () = Emitaux.end_assembly ~emit_numeric_constants:false

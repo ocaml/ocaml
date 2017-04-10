@@ -248,6 +248,8 @@ let tailrec_entry_point = ref 0
 (* Pending floating-point constants *)
 let float_constants = ref ([] : (Int64.t * Cmm.label) list)
 
+let num_float_constants () = List.length !float_constants
+
 (* Pending integer constants *)
 let int_constants = ref ([] : (Targetint.t * int) list)
 
