@@ -137,7 +137,7 @@ Working version
   (Jacques Garrigue, report by Leo White)
 
 - PR#7506: pprintast ignores attributes in tails of a list
-  (Alain Frisch, report by Kenichi Asai)
+  (Alain Frisch, report by Kenichi Asai and Gabriel Scherer)
 
 ### Runtime system:
 
