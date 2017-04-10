@@ -43,7 +43,7 @@ let reg_x15 = phys_reg 15
 let emit_label lbl = emit_string (D.string_of_label lbl)
 
 let emit_jump_to_label lbl =
-  `b	{emit_label lbl}`
+  `b	{emit_label lbl}\n`
 
 (* Symbols *)
 
