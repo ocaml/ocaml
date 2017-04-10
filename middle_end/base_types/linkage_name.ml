@@ -40,7 +40,7 @@ module Kind = struct
     | GOT -> "@GOT"
     | GOTPCREL -> "@GOTPCREL"
     | PLT ->
-      begin match TS.architecture with
+      begin match TS.architecture () with
       | IA32 | IA64 | AArch64 | POWER | SPARC | Z -> "@PLT"
       | ARM -> "(PLT)"
       end
