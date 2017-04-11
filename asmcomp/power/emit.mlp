@@ -422,7 +422,7 @@ module BR = Branch_relaxation.Make (struct
     | Lop(Icall_imm _) -> size 1 3 3
     | Lop(Itailcall_ind _) -> size 5 7 6
     | Lop(Itailcall_imm { func; _ }) ->
-        if func = !function_name
+        if LU.has_name func !function_name
         then 1
         else size 4 (7 + tocload_size()) (6 + tocload_size())
     | Lop(Iextcall { alloc = true; _ }) ->
@@ -610,7 +610,7 @@ let emit_instr i =
         emit_free_frame();
         `	bctr\n`
     | Lop(Itailcall_imm { func; label_after = _; }) ->
-        if func = !function_name then
+        if LU.has_name func !function_name then
           `	b	{emit_label !tailrec_entry_point}\n`
         else begin
           begin match abi with
@@ -931,7 +931,7 @@ let emit_all ~fun_body =
   | ELF64v2 ->
     `0:	addis	2, 12, (.TOC. - 0b)@ha\n`;
     `	addi	2, 2, (.TOC. - 0b)@l\n`;
-    `	.localentry {emit_symbol !function_name}, . - 0b\n`
+    `	.localentry {emit_symbol (LU.use !function_name)}, . - 0b\n`
   end;
   let rec emit_all i =
     match i.desc with
@@ -954,16 +954,16 @@ let emit_profile () =
       `	stw	0, 4(1)\n`;
       (* _mcount preserves the registers used for parameter passing *)
       (* when it returns, lr contains the original return address *)
-      `	bl	{emit_symbol (LU.use L._mcount)}\n`;
+      `	bl	{emit_symbol LU._mcount}\n`;
       `	addi	1, 1, 16\n`
   | ELF64v1 | ELF64v2 ->
       `	mflr	0\n`;
       (* save the registers used for parameter passing *)
-      `	bl	{emit_symbol caml_before_mcount}\n`;
-      `	bl	{emit_symbol (LU.use L._mcount)}\n`;
+      `	bl	{emit_symbol (LU.use caml_before_mcount)}\n`;
+      `	bl	{emit_symbol LU._mcount}\n`;
       `	nop\n`;
       (* restore the registers used for parameter passing *)
-      `	bl	{emit_symbol caml_after_mcount}\n`;
+      `	bl	{emit_symbol (LU.use caml_after_mcount)}\n`;
       `	mtlr	0\n`
 
 (* Emission of a function declaration *)
