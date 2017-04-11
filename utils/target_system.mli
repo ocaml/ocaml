@@ -41,7 +41,7 @@ type system =
 
 type architecture = 
   | IA32
-  | IA64
+  | X86_64
   | ARM
   | AArch64
   | POWER

@@ -34,7 +34,7 @@ let symbol_prefix =
     | Windows _
     | Unknown -> "_"
     end
-  | IA64 ->
+  | X86_64 ->
     begin match TS.system () with
     | MacOS_like -> "_"
     | Linux _
@@ -236,24 +236,24 @@ module Reloc = struct
     | Normal -> ""
     | GOT ->
       begin match TS.architecture () with
-      | IA32 | IA64 | AArch64 | POWER | SPARC | Z -> "@GOT"
+      | IA32 | X86_64 | AArch64 | POWER | SPARC | Z -> "@GOT"
       | ARM -> "(GOT)"
       end
     | GOTPCREL ->
       begin match TS.architecture () with
-      | IA64 -> "@GOTPCREL"
+      | X86_64 -> "@GOTPCREL"
       | IA32 | ARM | AArch64 | POWER | SPARC | Z ->
         Misc.fatal_error "Wrong architecture for GOTPCREL"
       end
     | PLT ->
       begin match TS.architecture () with
-      | IA32 | IA64 | AArch64 | POWER | SPARC | Z -> "@PLT"
+      | IA32 | X86_64 | AArch64 | POWER | SPARC | Z -> "@PLT"
       | ARM -> "(PLT)"
       end
     | POWER_tocbase ->
       begin match TS.architecture () with
       | POWER -> "@tocbase"
-      | IA32 | IA64 | ARM | AArch64 | SPARC | Z ->
+      | IA32 | X86_64 | ARM | AArch64 | SPARC | Z ->
         Misc.fatal_error "Wrong architecture for @tocbase"
       end
 
@@ -334,7 +334,7 @@ module Use = struct
 
   let got t = set_reloc t None GOT
   let plt t = set_reloc t None PLT
-  let gotpcrel t = set_reloc t (Some TS.IA64) GOTPCREL
+  let gotpcrel t = set_reloc t (Some TS.X86_64) GOTPCREL
   let power_tocbase t = set_reloc t (Some TS.POWER) POWER_tocbase
 
   let mcount = use mcount

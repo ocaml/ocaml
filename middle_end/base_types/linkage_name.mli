@@ -109,7 +109,7 @@ module Use : sig
   val plt : t -> t
 
   (** A position-independent symbol reference via the global offset table
-      (IA64 architecture only). *)
+      (X86_64 architecture only). *)
   val gotpcrel : t -> t
 
   (** A symbol reference via the table of contents (POWER architecture

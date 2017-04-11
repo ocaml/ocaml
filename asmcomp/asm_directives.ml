@@ -157,7 +157,7 @@ let label_prefix =
     | MacOS_like
     | Windows Native -> "L"
     end
-  | IA64 ->
+  | X86_64 ->
     begin match TS.system () with
     | Linux _
     | Windows Cygwin
@@ -722,12 +722,12 @@ let initialize ~(emit : Directive.t -> unit) =
         | POWER (Function_descriptors | Table_of_contents) ->
           begin match TS.architecture () with
           | POWER -> switch_to_section section
-          | IA32 | IA64 | ARM | AArch64 | SPARC | Z -> ()
+          | IA32 | X86_64 | ARM | AArch64 | SPARC | Z -> ()
           end
         | IA32 (Non_lazy_symbol_pointers | Jump_table) ->
           begin match TS.architecture () with
           | IA32 when TS.macos_like () -> switch_to_section section
-          | IA32 | POWER | IA64 | ARM | AArch64 | SPARC | Z -> ()
+          | IA32 | POWER | X86_64 | ARM | AArch64 | SPARC | Z -> ()
           end)
       all_sections_in_order
   end;

@@ -37,7 +37,7 @@ type system =
 
 type architecture = 
   | IA32
-  | IA64
+  | X86_64
   | ARM
   | AArch64
   | POWER
@@ -74,7 +74,7 @@ let system () =
 let architecture () =
   match Config.architecture with
   | "i386" -> IA32
-  | "amd64" -> IA64
+  | "amd64" -> X86_64
   | "arm" -> ARM
   | "arm64" -> AArch64
   | "power" -> POWER
@@ -85,7 +85,7 @@ let architecture () =
 let string_of_architecture arch =
   match arch with
   | IA32 -> "IA32"
-  | IA64 -> "IA64"
+  | X86_64 -> "X86_64"
   | ARM -> "ARM"
   | AArch64 -> "AArch64"
   | POWER -> "POWER"
