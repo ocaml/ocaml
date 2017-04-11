@@ -962,7 +962,7 @@ case "$arch,$system" in
                   aspp="${TOOLPREF}gcc -m64 -c";;
   i386,solaris)   as="${TOOLPREF}as"
                   aspp="${TOOLPREF}gcc -c";;
-  power,elf)      if $arch64; then
+  power,linux)    if $arch64; then
                     as="${TOOLPREF}as -a64 -mppc64"
                     aspp="${TOOLPREF}gcc -m64 -c"
                   else
