@@ -243,6 +243,7 @@ let power_tocbase t =
   { t with kind = POWER_tocbase; }
 
 let mcount = create "mcount"
+let _mcount = create "_mcount"
 let __gnu_mcount_nc = create "__gnu_mcount_nc"
 let sqrt = create "sqrt"
 
