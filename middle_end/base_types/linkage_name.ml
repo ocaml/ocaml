@@ -71,7 +71,7 @@ module Kind = struct
       end
     | POWER_tocbase ->
       begin match TS.architecture () with
-      | POWER -> "@tocbase"
+      | POWER -> ".@tocbase"
       | IA32 | IA64 | ARM | AArch64 | SPARC | Z ->
         Misc.fatal_error "tocbase relocations only supported on POWER"
       end
