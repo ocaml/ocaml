@@ -151,7 +151,7 @@ let symbol_prefix =
     | Windows _
     | Unknown -> ""
     end
-  | POWER -> "."
+  | POWER
   | ARM
   | AArch64
   | Z
@@ -183,7 +183,10 @@ let to_string t =
   for i = 0 to String.length s - 1 do
     match String.unsafe_get s i with
     | 'A'..'Z' | 'a'..'z' | '0'..'9' | '_' -> ()
-    | _ -> spec := true;
+    | _ ->
+      (* If the first character is a special character, assume the whole is
+         not to be mangled. *)
+      if i > 0 then spec := true;
   done;
   let without_kind =
     if not !spec then if symbol_prefix = "" then s else symbol_prefix ^ s
