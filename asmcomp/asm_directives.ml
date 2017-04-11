@@ -85,7 +85,8 @@ let all_sections_in_order = [
 let current_section = ref None
 
 let section_is_text = function
-  | Text -> true
+  | Text
+  | POWER Function_descriptors -> true
   | Data
   | Read_only_data
   | Eight_byte_literals
