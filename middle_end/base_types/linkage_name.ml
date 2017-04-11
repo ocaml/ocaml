@@ -66,16 +66,19 @@ module Linkage_name = struct
   let to_string t =
     let s = t.name in
     let spec = ref false in
+    let first_char_special = ref false in
     for i = 0 to String.length s - 1 do
       match String.unsafe_get s i with
       | 'A'..'Z' | 'a'..'z' | '0'..'9' | '_' -> ()
       | _ ->
-        (* If the first character is a special character, assume the whole is
-            not to be mangled. *)
-        if i > 0 then spec := true;
+        if i = 0 then first_char_special := true;
+        spec := true
     done;
+    (* If the first character is a special character, assume the whole is
+       not to be mangled. *)
+    let spec = !spec && not !first_char_special in
     let without_suffix =
-      if not !spec then if symbol_prefix = "" then s else symbol_prefix ^ s
+      if not spec then if symbol_prefix = "" then s else symbol_prefix ^ s
       else
         let b = Buffer.create (String.length s + 10) in
         Buffer.add_string b symbol_prefix;
