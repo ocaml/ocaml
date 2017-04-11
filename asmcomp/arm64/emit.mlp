@@ -843,7 +843,8 @@ let fundecl fundecl =
   let branch_relaxation =
     ((module BR : Branch_relaxation.S), max_out_of_line_code_offset)
   in
-  Emitaux.fundecl fundecl ~branch_relaxation
+  Emitaux.fundecl fundecl
+    ~branch_relaxation
     ~prepare
     ~emit_all
     ~emit_call

@@ -278,8 +278,6 @@ module Directive = struct
     match const with
     | This -> Buffer.add_string buf "."
     | Named_thing name -> Buffer.add_string buf name
-    | Const n when n <= 0x7FFF_FFFFL && n >= -0x8000_0000L ->
-      Buffer.add_string buf (Int64.to_string n)
     | Const n -> bprintf buf "0x%Lx" n
     | Const32 c -> bprintf buf "0x%lx" c
     | Add (c1, c2) -> bprintf buf "(%a + %a)" scst c1 scst c2

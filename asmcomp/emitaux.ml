@@ -387,16 +387,17 @@ let emit_call_bound_errors ~emit_call ~spacetime_before_uninstrumented_call =
     emit_call Linkage_name.caml_ml_array_bound_error
   end
 
-let begin_assembly () =
+let begin_assembly ?(code_section = D.Text) () =
   reset_debug_info ();
   all_functions := [];
   D.switch_to_section Data;
   emit_global_data_symbol "data_begin";
-  D.switch_to_section Text;
+  D.switch_to_section code_section;
   emit_global_data_symbol "code_begin"
 
-let fundecl ?branch_relaxation (fundecl : Linearize.fundecl) ~prepare
-      ~emit_all ~alignment_in_bytes ~emit_call ~emit_jump_to_label
+let fundecl ?branch_relaxation ?after_body ?alternative_name
+      (fundecl : Linearize.fundecl)
+      ~prepare ~emit_all ~alignment_in_bytes ~emit_call ~emit_jump_to_label
       ~spacetime_before_uninstrumented_call ~emit_numeric_constants =
   all_functions := fundecl :: !all_functions;
   function_name := fundecl.fun_name;
@@ -407,15 +408,21 @@ let fundecl ?branch_relaxation (fundecl : Linearize.fundecl) ~prepare
   bound_error_call := 0;
   D.switch_to_section Text;
   D.align ~bytes:alignment_in_bytes;
-  begin match Target_system.system () with
-  | MacOS_like
+  begin match alternative_name, Target_system.system () with
+  | Some _alternative_name, _ -> ()
+  | _, MacOS_like
     when not !Clflags.output_c_object
       && Linkage_name.is_generic_function fundecl.fun_name ->  (* PR#4690 *)
     D.private_extern fundecl.fun_name
-  | _ ->
+  | _, _ ->
     D.global fundecl.fun_name
   end;
-  D.define_function_symbol fundecl.fun_name;
+  let fun_symbol =
+    match alternative_name with
+'   | None -> fundecl.fun_name
+    | Some alternative_name -> alternative_name
+  in
+  D.define_function_symbol fun_symbol;
   emit_debug_info fundecl.fun_dbg;
   D.cfi_startproc ();
   prepare fundecl;
@@ -438,7 +445,7 @@ let fundecl ?branch_relaxation (fundecl : Linearize.fundecl) ~prepare
   end;
   D.switch_to_section Text;
   D.cfi_endproc ();
-  D.size fundecl.fun_name
+  D.size ~size_of:fundecl.fun_name fun_symbol
 
 let emit_spacetime_shapes () =
   if Targetint.size <> 64 then begin
@@ -477,7 +484,7 @@ let emit_spacetime_shapes () =
   D.int64 0L;
   D.comment "End of Spacetime shapes."
 
-let end_assembly ~emit_numeric_constants =
+let end_assembly ?(code_section = D.Text) ~emit_numeric_constants =
   if Config.spacetime then begin
     emit_spacetime_shapes ()
   end;
@@ -488,7 +495,7 @@ let end_assembly ~emit_numeric_constants =
     emit_constants ~in_current_section:false
   end;
   D.mark_stack_non_executable ();  (* PR#4564 *)
-  D.switch_to_section Text;
+  D.switch_to_section code_section;
   emit_global_data_symbol "code_end";
   D.int64 0L;
   D.switch_to_section Data;

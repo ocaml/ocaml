@@ -128,12 +128,15 @@ val num_float_constants : unit -> int
     may be used to reference it. *)
 val int_constant : Targetint.t -> Cmm.label
 
-(** Start assembly output for a compilation unit. *)
-val begin_assembly : unit -> unit
+(** Start assembly output for a compilation unit.
+    If the "code_begin" marker needs to live in a section other than [Text]
+    then [code_section] should be set accordingly. *)
+val begin_assembly : ?code_section:Asm_directives.section -> unit -> unit
 
 (** Emit assembly for a function declaration. *)
 val fundecl
    : ?branch_relaxation:((module Branch_relaxation.S) * int)
+  -> ?after_body:(unit -> unit)
   -> Linearize.fundecl
   -> prepare:(Linearize.fundecl -> unit)
   -> emit_all:(fun_body:Linearize.instruction -> int)
@@ -163,11 +166,18 @@ val data : Cmm.data_item list -> unit
 val emit_constants : in_current_section:bool -> unit
 
 (** Finish assembly output for a compilation unit.
+
     If [emit_numeric_constants] is [true] then float and integer constants
     will be emitted into the appropriate read-only data / read-only
     shared constant sections.  Otherwise they will not be emitted (typically
-    used when [emit_numeric_constants] to [fundecl], above, was [true]). *)
-val end_assembly : emit_numeric_constants:bool -> unit
+    used when [emit_numeric_constants] to [fundecl], above, was [true]).
+
+    If the "code_begin" marker needs to live in a section other than [Text]
+    then [code_section] should be set accordingly. *)
+val end_assembly
+   : ?code_section:Asm_directives.section
+  -> emit_numeric_constants:bool
+  -> unit
 
 (** Reset the emitter, to be used between compilation units. *)
 val reset : unit -> unit
