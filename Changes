@@ -51,6 +51,10 @@ Next minor version (4.04.1):
   for ocaml build with WITH_FRAME_POINTERS defined
   (Christoph Cullmann)
 
+- PR#7456, GPR#1092: fix slow compilation on source files containing a lot
+  of similar debugging information location entries
+  (Mark Shinwell)
+
 - PR#7457: a case of double free in the systhreads library (POSIX implementation)
   (Xavier Leroy, report by Chet Murthy)
 
@@ -469,10 +473,6 @@ OCaml 4.04.0 (4 Nov 2016):
 - GPR#779: Building native runtime on Windows could fail when bootstrapping
   FlexDLL if there was also a system-installed flexlink
   (David Allsopp, report Michael Soegtrop)
-
-- PR#7456, GPR#1092: fix slow compilation on source files containing a lot
-  of similar debugging information location entries
-  (Mark Shinwell)
 
 - GPR#805, GPR#815, GPR#833: check for integer overflow in String.concat
   (Jeremy Yallop,
