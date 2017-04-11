@@ -53,6 +53,11 @@ val create : string -> t
 (** The name as passed to [create].  Not for emission into assembly. *)
 val name : t -> string
 
+(** Produce the platform-specific mangling of the given linkage name.
+    The results from this function should not be used directly in an assembly
+    file (use [Use.to_string] instead). *)
+val to_string : t -> string
+
 (** Add a prefix to a linkage name. *)
 (* CR mshinwell: rename to "prepend"? *)
 val prefix : t -> with_:string -> t

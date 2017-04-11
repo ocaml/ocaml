@@ -96,7 +96,7 @@ let code_for_function_prologue ~function_name ~node_hole =
         Cop (Ccmpi Cne, [Cvar must_allocate_node; Cconst_int 1], dbg),
         Cvar node,
         Clet (is_new_node,
-          Clet (pc, Cconst_symbol (LU.create function_name),
+          Clet (pc, Cconst_symbol (LU.use function_name),
             Cop (Cextcall (LU.caml_spacetime_allocate_node,
                 [| Int |], false, None),
               [Cconst_int (1 (* header *) + !index_within_node);

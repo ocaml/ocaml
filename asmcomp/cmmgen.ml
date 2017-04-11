@@ -718,7 +718,7 @@ let call_cached_method obj tag cache pos args dbg =
   let arity = List.length args in
   let cache = array_indexing log2_size_addr cache pos dbg in
   Compilenv.need_send_fun arity;
-  let send_func = L.Use.create (L.append_int L.caml_send arity) in
+  let send_func = LU.use (L.append_int L.caml_send arity) in
   Cop(Capply typ_val,
       Cconst_symbol send_func :: obj :: tag :: cache :: args,
       dbg)
@@ -851,11 +851,11 @@ let transl_constant = function
       else Cconst_natpointer
               (Nativeint.add (Nativeint.shift_left (Nativeint.of_int n) 1) 1n)
   | Uconst_ref (label, _) ->
-      Cconst_symbol (L.Use.create label)
+      Cconst_symbol (LU.use label)
 
 let transl_structured_constant cst =
   let label = Compilenv.new_structured_constant cst ~shared:true in
-  Cconst_symbol (L.Use.create label)
+  Cconst_symbol (LU.use label)
 
 (* Translate constant closures *)
 
@@ -1387,7 +1387,7 @@ let make_switch arg cases actions dbg =
     add_cmm_constant (Const_table ((table, Not_global),
         Array.to_list (Array.map (fun act ->
           const_actions.(act)) cases)));
-    addr_array_ref (Cconst_symbol (LU.create table)) (tag_int arg dbg) dbg
+    addr_array_ref (Cconst_symbol (LU.use table)) (tag_int arg dbg) dbg
   else
     Cswitch (arg,cases,actions,dbg)
 
@@ -1647,7 +1647,7 @@ let rec transl env e =
       add_cmm_constant (
         Const_closure ((lbl, Not_global), fundecls, []));
       List.iter (fun f -> Queue.add f functions) fundecls;
-      Cconst_symbol (LU.create lbl)
+      Cconst_symbol (LU.use lbl)
   | Uclosure(fundecls, clos_vars) ->
       let block_size =
         fundecls_size fundecls + List.length clos_vars in
@@ -1662,14 +1662,14 @@ let rec transl env e =
               else alloc_infix_header pos f.dbg in
             if f.arity = 1 || f.arity = 0 then
               header ::
-              Cconst_symbol (LU.create f.label) ::
+              Cconst_symbol (LU.use f.label) ::
               int_const f.arity ::
               transl_fundecls (pos + 3) rem
             else
               header ::
-              Cconst_symbol(LU.create (curry_function f.arity)) ::
+              Cconst_symbol(LU.use (curry_function f.arity)) ::
               int_const f.arity ::
-              Cconst_symbol (LU.create f.label) ::
+              Cconst_symbol (LU.use f.label) ::
               transl_fundecls (pos + 4) rem in
       Cop(Calloc, transl_fundecls 0 fundecls, Debuginfo.none)
   | Uoffset(arg, offset) ->
@@ -1686,7 +1686,7 @@ let rec transl env e =
           dbg))
   | Ugeneric_apply(clos, args, dbg) ->
       let arity = List.length args in
-      let cargs = Cconst_symbol(LU.create (apply_function arity)) ::
+      let cargs = Cconst_symbol(LU.use (apply_function arity)) ::
         List.map (transl env) (args @ [clos]) in
       Cop(Capply typ_val, cargs, dbg)
   | Usend(kind, met, obj, args, dbg) ->
@@ -1695,7 +1695,7 @@ let rec transl env e =
           Cop(Capply typ_val, [get_field env clos 0 dbg; obj; clos], dbg)
         else
           let arity = List.length args + 1 in
-          let cargs = Cconst_symbol(LU.create (apply_function arity)) :: obj ::
+          let cargs = Cconst_symbol(LU.use (apply_function arity)) :: obj ::
             (List.map (transl env) args) @ [clos] in
           Cop(Capply typ_val, cargs, dbg)
       in
@@ -1720,7 +1720,7 @@ let rec transl env e =
   | Uprim(prim, args, dbg) ->
       begin match (simplif_primitive prim, args) with
         (Pgetglobal id, []) ->
-          Cconst_symbol (LU.create (Linkage_name.create (Ident.name id)))
+          Cconst_symbol (LU.use (Linkage_name.create (Ident.name id)))
       | (Pmakeblock _, []) ->
           assert false
       | (Pmakeblock(tag, _mut, _kind), args) ->
@@ -1956,7 +1956,7 @@ and transl_ccall env prim args dbg =
   in
   let args = transl_args prim.prim_native_repr_args args in
   wrap_result
-    (Cop(Cextcall(LU.create (Linkage_name.create (Primitive.native_name prim)),
+    (Cop(Cextcall(LU.use (Linkage_name.create (Primitive.native_name prim)),
                   typ_res, prim.prim_alloc, None), args, dbg))
 
 and transl_prim_1 env p arg dbg =
@@ -2863,7 +2863,7 @@ and emit_constant cst cont =
       cint_const n
       :: cont
   | Uconst_ref (label, _) ->
-      Csymbol_address (LU.create label) :: cont
+      Csymbol_address (LU.use label) :: cont
 
 and emit_string_constant s cont =
   let n = size_int - 1 - (String.length s) mod size_int in
@@ -2916,28 +2916,28 @@ let emit_constant_closure ((_, global_symb) as symb) fundecls clos_vars cont =
           if f2.arity = 1 || f2.arity = 0 then
             Cint(infix_header pos) ::
             (closure_symbol f2) @
-            Csymbol_address (LU.create f2.label) ::
+            Csymbol_address (LU.use f2.label) ::
             cint_const f2.arity ::
             emit_others (pos + 3) rem
           else
             Cint(infix_header pos) ::
             (closure_symbol f2) @
-            Csymbol_address (LU.create (curry_function f2.arity)) ::
+            Csymbol_address (LU.use (curry_function f2.arity)) ::
             cint_const f2.arity ::
-            Csymbol_address (LU.create f2.label) ::
+            Csymbol_address (LU.use f2.label) ::
             emit_others (pos + 4) rem in
       Cint(black_closure_header (fundecls_size fundecls
                                  + List.length clos_vars)) ::
       cdefine_symbol symb @
       (closure_symbol f1) @
       if f1.arity = 1 || f1.arity = 0 then
-        Csymbol_address (LU.create f1.label) ::
+        Csymbol_address (LU.use f1.label) ::
         cint_const f1.arity ::
         emit_others 3 remainder
       else
-        Csymbol_address (LU.create (curry_function f1.arity)) ::
+        Csymbol_address (LU.use (curry_function f1.arity)) ::
         cint_const f1.arity ::
-        Csymbol_address (LU.create f1.label) ::
+        Csymbol_address (LU.use f1.label) ::
         emit_others 4 remainder
 
 (* Emit constant blocks *)
@@ -3000,7 +3000,7 @@ let emit_gc_roots_table ~symbols cont =
   let table_symbol = Compilenv.make_symbol (Some "gc_roots") in
   Cdata(Cglobal_symbol table_symbol ::
         Cdefine_symbol table_symbol ::
-        List.map (fun s -> Csymbol_address (LU.create s)) symbols @
+        List.map (fun s -> Csymbol_address (LU.use s)) symbols @
         [Cint 0n])
   :: cont
 
@@ -3308,11 +3308,11 @@ let rec intermediate_curry_functions arity num =
            Cop(Calloc,
                [alloc_closure_header 5 Debuginfo.none;
                 Cconst_symbol(
-                  LU.create (
+                  LU.use (
                     L.append name1 ~suffix:("_" ^ string_of_int (num+1))));
                 int_const (arity - num - 1);
                 Cconst_symbol(
-                  LU.create (L.append name1
+                  LU.use (L.append name1
                     ~suffix:("_" ^ string_of_int (num+1) ^ "_app")));
                 Cvar arg; Cvar clos],
                dbg)
@@ -3320,7 +3320,7 @@ let rec intermediate_curry_functions arity num =
            Cop(Calloc,
                 [alloc_closure_header 4 Debuginfo.none;
                  Cconst_symbol(
-                   LU.create (
+                   LU.use (
                     L.append name1 ~suffix:("_" ^ string_of_int (num+1))));
                  int_const 1; Cvar arg; Cvar clos],
                 dbg);
@@ -3410,7 +3410,7 @@ let entry_point namelist =
       (fun name next ->
         let entry_sym = Compilenv.make_symbol ~unitname:name (Some "entry") in
         Csequence(Cop(Capply typ_void,
-                         [Cconst_symbol (LU.create entry_sym)], dbg),
+                         [Cconst_symbol (LU.use entry_sym)], dbg),
                   Csequence(incr_global_inited, next)))
       namelist (Cconst_int 1) in
   Cfunction {fun_name = L.caml_program;
@@ -3425,7 +3425,7 @@ let cint_zero = Cint 0n
 
 let global_table namelist =
   let mksym name =
-    Csymbol_address (LU.create (
+    Csymbol_address (LU.use (
       Compilenv.make_symbol ~unitname:name (Some "gc_roots")))
   in
   Cdata(Cglobal_symbol L.caml_globals ::
@@ -3434,7 +3434,7 @@ let global_table namelist =
         [cint_zero])
 
 let reference_symbols namelist =
-  let mksym name = Csymbol_address (LU.create name) in
+  let mksym name = Csymbol_address (LU.use name) in
   Cdata(List.map mksym namelist)
 
 let global_data name v =
@@ -3447,7 +3447,7 @@ let globals_map v = global_data L.caml_globals_map v
 
 let frame_table namelist =
   let mksym name =
-    Csymbol_address (LU.create (
+    Csymbol_address (LU.use (
       Compilenv.make_symbol ~unitname:name (Some "frametable")))
   in
   Cdata(Cglobal_symbol L.caml_frametable ::
@@ -3459,7 +3459,7 @@ let frame_table namelist =
 
 let spacetime_shapes namelist =
   let mksym name =
-    Csymbol_address (LU.create (
+    Csymbol_address (LU.use (
       Compilenv.make_symbol ~unitname:name (Some "spacetime_shapes")))
   in
   Cdata(Cglobal_symbol L.caml_spacetime_shapes ::
@@ -3471,9 +3471,9 @@ let spacetime_shapes namelist =
 
 let segment_table namelist symbol begname endname =
   let addsyms name lst =
-    Csymbol_address (LU.create (
+    Csymbol_address (LU.use (
       Compilenv.make_symbol ~unitname:name (Some begname))) ::
-    Csymbol_address (LU.create (
+    Csymbol_address (LU.use (
       Compilenv.make_symbol ~unitname:name (Some endname))) ::
     lst
   in

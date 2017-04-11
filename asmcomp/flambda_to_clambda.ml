@@ -434,7 +434,7 @@ and to_clambda_direct_apply t func args direct_func dbg env : Clambda.ulambda =
        dropping any side effects.) *)
     if closed then uargs else uargs @ [subst_var env func]
   in
-  Udirect_apply (LU.create label, uargs, dbg)
+  Udirect_apply (LU.use label, uargs, dbg)
 
 (* Describe how to build a runtime closure block that corresponds to the
    given Flambda set of closures.

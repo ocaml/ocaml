@@ -30,7 +30,8 @@ type constant =
   | Const of int64
   | This
   | Label of Cmm.label
-  | Symbol of LU.t
+  | Symbol of L.t
+  | Symbol_use of LU.t
   | Add of constant * constant
   | Sub of constant * constant
   | Div of constant * int
@@ -443,7 +444,8 @@ let rec lower_constant (cst : constant) : Directive.constant =
   | Const i -> Const i
   | This -> This
   | Label lbl -> Named_thing (string_of_label lbl)
-  | Symbol sym -> Named_thing (LU.to_string sym)
+  | Symbol sym -> Named_thing (L.to_string sym)
+  | Symbol_use sym -> Named_thing (LU.to_string sym)
   | Add (cst1, cst2) -> Add (lower_constant cst1, lower_constant cst2)
   | Sub (cst1, cst2) -> Sub (lower_constant cst1, lower_constant cst2)
   | Div (cst1, cst2) -> Div (lower_constant cst1, cst2)
@@ -750,11 +752,11 @@ let define_function_symbol symbol =
   | MASM -> ()
   end
 
-let symbol sym = const_machine_width (Symbol sym)
+let symbol sym = const_machine_width (Symbol_use sym)
 
 let symbol_plus_offset sym ~offset_in_bytes =
   let offset_in_bytes = Targetint.to_int64 offset_in_bytes in
-  const64 (Add (Symbol sym, Const offset_in_bytes))
+  const64 (Add (Symbol_use sym, Const offset_in_bytes))
 
 let new_temp_var () =
   let id = !temp_var_counter in
@@ -775,13 +777,13 @@ let force_relocatable expr =
   match TS.assembler () with
   | MacOS ->
     let temp = Linkage_name.create (new_temp_var ()) in
-    direct_assignment temp expr;
-    Symbol temp  (* not really a symbol, but this is OK (same below) *)
+    direct_assignment (LU.use temp) expr;
+    Symbol_use (LU.use temp)  (* not really a symbol, but OK (same below) *)
   | GAS_like | MASM ->
     expr
 
 let between_symbols ~upper ~lower =
-  let expr = Sub (Symbol upper, Symbol lower) in
+  let expr = Sub (Symbol_use upper, Symbol_use lower) in
   const_machine_width (force_relocatable expr)
 
 let between_labels_32bit ~upper ~lower =
@@ -793,7 +795,7 @@ let between_symbol_and_label_offset ~upper ~lower ~offset_upper =
   let expr =
     Sub (
       Add (Label upper, Const offset_upper),
-      Symbol lower)
+      Symbol_use lower)
   in
   const_machine_width (force_relocatable expr)
 
@@ -801,7 +803,7 @@ let between_symbol_and_label_offset' ~upper ~lower ~offset_lower =
   let offset_lower = Targetint.to_int64 offset_lower in
   let expr =
     Sub (
-      Symbol upper,
+      Symbol_use upper,
       Add (Label lower, Const offset_lower))
   in
   const_machine_width (force_relocatable expr)
@@ -835,8 +837,8 @@ let offset_into_section_label ~section ~label:upper ~width =
     match TS.assembler () with
     | MacOS ->
       let temp = Linkage_name.create (new_temp_var ()) in
-      direct_assignment temp (Sub (Label upper, Label lower));
-      Symbol temp
+      direct_assignment (LU.use temp) (Sub (Label upper, Label lower));
+      Symbol_use (LU.use temp)
     | GAS_like | MASM ->
       Label upper
   in
@@ -849,9 +851,9 @@ let offset_into_section_symbol ~section ~symbol:upper ~width =
     match TS.assembler () with
     | MacOS ->
       let temp = Linkage_name.create (new_temp_var ()) in
-      direct_assignment temp (Sub (Symbol upper, Label lower));
-      Symbol temp
-    | GAS_like | MASM -> Symbol upper
+      direct_assignment (LU.use temp) (Sub (Symbol_use upper, Label lower));
+      Symbol_use (LU.use temp)
+    | GAS_like | MASM -> Symbol_use upper
   in
   constant_with_width expr ~width
 

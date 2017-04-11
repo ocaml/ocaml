@@ -65,13 +65,13 @@ val function_name : Linkage_name.t ref
 val tailrec_entry_point : Cmm.label ref
 
 (** Record the use of a symbol. *)
-val add_used_symbol : Linkage_name.t -> unit
+val add_used_symbol : Linkage_name.Use.t -> unit
 
 (** Symbols defined by the current compilation unit. *)
 val symbols_defined : unit -> Linkage_name.Set.t
 
 (** Symbols used by the current compilation unit. *)
-val symbols_used : unit -> Linkage_name.Set.t
+val symbols_used : unit -> Linkage_name.Use.Set.t
 
 (** Total number of words occupied by constant literals not yet emitted. *)
 val size_constants : int ref
@@ -147,7 +147,7 @@ val fundecl
   -> emit_all:(fun_body:Linearize.instruction -> int)
   -> alignment_in_bytes:int
      (** The desired alignment of the function entry point. *)
-  -> emit_call:(Linkage_name.t -> unit)
+  -> emit_call:(Linkage_name.Use.t -> unit)
   -> emit_jump_to_label:(Cmm.label -> unit)
   -> spacetime_before_uninstrumented_call:(Cmm.label -> unit)
   -> emit_numeric_constants:bool
