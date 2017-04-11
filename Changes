@@ -20,6 +20,9 @@ Working version
   bundles.
   (whitequark)
 
+* GPR#659: Remove support for SPARC native code generation
+  (Mark Shinwell)
+
 - MPR#7501, GPR#1089: Consider arrays of length zero as constants
   when using Flambda.
   (Pierre Chambart, review by Mark Shinwell and Leo White)
