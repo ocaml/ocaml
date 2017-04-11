@@ -91,7 +91,7 @@ export LC_ALL=C
 # Special case for recursive call from the find command (see IGNORE_DIRS).
 case "$1" in
   --check-prune)
-    case `git check-attr ocaml-typo "$2" 2>/dev/null` in
+    case `git check-attr $OCAML_CT_CA_FLAG ocaml-typo "$2" 2>/dev/null` in
       *prune*) echo "INFO: pruned directory $2 (ocaml-typo=prune)" >&2; exit 0;;
       *) exit 3;;
     esac;;
@@ -112,6 +112,8 @@ while : ; do
     *) break;;
   esac
 done
+
+OCAML_CT_CAT=${OCAML_CT_CAT:-cat}
 
 IGNORE_DIRS="
   -name .git -prune -o
@@ -149,7 +151,8 @@ IGNORE_DIRS="
       EMPTY=`git hash-object -t tree /dev/null`
       git diff-tree --numstat $EMPTY HEAD -- "$f" | grep -q "^-[[:blank:]]-" \
         && continue
-      svnrules=`git check-attr ocaml-typo "$f" | sed -e 's/.*: //'`
+      svnrules=`git check-attr $OCAML_CT_CA_FLAG ocaml-typo "$f" \
+                  | sed -e 's/.*: //'`
       case $svnrules in unspecified) svnrules= ;; esac
     fi
     rules="$userrules"
@@ -169,14 +172,15 @@ IGNORE_DIRS="
         # requires the entire line to match. This specifically detects the
         # presence of lines containing malformed UTF-8. It may be tested using
         # https://www.cl.cam.ac.uk/~mgk25/ucs/examples/UTF-8-test.txt
-        if LC_ALL=en_US.UTF8 grep -qaxv '.*' "$f" ; then
+        if $OCAML_CT_CAT "$OCAML_CT_PREFIX$f" \
+             | LC_ALL=en_US.UTF8 grep -qaxv '.*' ; then
           echo File "$f" is not correctly encoded in UTF-8
           exit 2
         fi
         ;;
     esac
 
-    (cat "$f" | tr -d '\r'; echo) \
+    ($OCAML_CT_CAT "$OCAML_CT_PREFIX$f" | tr -d '\r'; echo) \
     | awk -v rules="$rules" -v svnrules="$svnrules" -v file="$f" \
       '
         function is_err(name) {
