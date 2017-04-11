@@ -26,12 +26,14 @@ module Kind = struct
     | PLT
     | I386_stub
     | I386_non_lazy_ptr
+    | POWER_tocbase
 
   let prefix = function
     | Normal
     | GOT
     | GOTPCREL
-    | PLT -> ""
+    | PLT
+    | POWER_tocbase -> ""
     | I386_stub
     | I386_non_lazy_ptr -> "L"
 
@@ -66,6 +68,12 @@ module Kind = struct
       | IA64 | ARM | AArch64 | POWER | SPARC | Z ->
         Misc.fatal_error "Cannot use IA32-specific non lazy pointer markers \
           on non-IA32 platforms"
+      end
+    | POWER_tocbase ->
+      begin match TS.architecture () with
+      | POWER -> "@tocbase"
+      | IA32 | IA64 | ARM | AArch64 | POWER | SPARC | Z ->
+        Misc.fatal_error "tocbase relocations only supported on POWER"
       end
 
   include Identifiable.Make (struct
@@ -229,6 +237,10 @@ let i386_stub t =
 let i386_non_lazy_ptr t =
   Kind.check_normal t.kind;
   { t with kind = I386_non_lazy_ptr; }
+
+let power_tocbase t =
+  Kind.check_normal t.kind;
+  { t with kind = POWER_tocbase; }
 
 let mcount = create "mcount"
 let __gnu_mcount_nc = create "__gnu_mcount_nc"

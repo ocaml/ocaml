@@ -80,6 +80,9 @@ val i386_stub : t -> t
 (** Construct an i386 "non lazy pointer" symbol from a linkage name. *)
 val i386_non_lazy_ptr : t -> t
 
+(** Construct a POWER table of contents base symbol from a linkage name. *)
+val power_tocbase : t -> t
+
 (** Whether the function may be duplicated between a DLL and the main
     program (PR#4690). *)
 val is_generic_function : t -> bool

@@ -1033,18 +1033,16 @@ let fundecl decl =
   let alternative_name =
     match abi with
     | ELF32 | ELF64v2 -> None
-    | ELF64v1 -> L.create ("L." ^ fundecl.fun_name)
+    | ELF64v1 ->
+      let alternative_name = L.create ("L." ^ fundecl.fun_name) in
+      D.switch_to_section (POWER Function_descriptors);
+      D.align ~bytes:8;
+      D.global decl.fun_name;
+      D.define_function_symbol decl.fun_name;
+      D.symbol alternative_name;
+      D.symbol (L.power_tocbase (L.create ".TOC."));
+      Some alternative_name
   in
-  begin match alternative_name with
-  | None -> ()
-  | Some alternative_name ->
-    D.switch_to_section (POWER Function_descriptors);
-    D.align ~bytes:8;
-    D.global decl.fun_name;
-    D.define_function_symbol decl.fun_name;
-    D.symbol alternative_name;
-    D.symbol (L.create ".TOC.@tocbase")
-  end;
   let branch_relaxation =
     (* On this target, there is at most one "out of line" code block per
        function: a single "call GC" point.  It comes immediately after the
