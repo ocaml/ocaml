@@ -16,6 +16,8 @@
 
 (* Emission of PowerPC assembly code *)
 
+[@@@ocaml.warning "-40"]
+
 open Misc
 open Cmm
 open Arch
@@ -142,7 +144,7 @@ let _8000 = Targetint.of_int 0x8000
 let ffff = Targetint.of_int 0xffff
 
 let native_low_high_u n =
-  (Targetint.(to_int (logand n 0xFFFFn)),
+  (Targetint.(to_int (logand n ffff)),
    Targetint.(to_int (shift_right n 16)))
   (* unsigned low half, for use with "ori" *)
 
@@ -169,15 +171,15 @@ let is_native_immediate n =
 type tocentry =
   | TocSym of L.t
   | TocLabel of int
-  | TocInt of nativeint
+  | TocInt of Targetint.t
   | TocFloat of int64
 
 let tocref_entries : (tocentry, label) Hashtbl.t = Hashtbl.create 64
 
 let emit_tocentry = function
   | TocSym s -> D.symbol s
-  | TocInt i -> D.nativeint i
-  | TocFloat f -> D.hex_float f
+  | TocInt i -> D.targetint i
+  | TocFloat f -> D.float64_from_bits f
   | TocLabel lbl -> D.label lbl
 
 let label_for_tocref entry =
@@ -293,7 +295,7 @@ let emit_reload_toc () =
 
 let adjust_stack_offset delta =
   stack_offset := !stack_offset + delta;
-  D.cfi_adjust_cfa_offset delta
+  D.cfi_adjust_cfa_offset ~bytes:delta
 
 (* Record jump tables (for PPC64).  In order to reduce the size of the TOC,
    we concatenate all jumptables and emit them at the end of the compilation
@@ -499,7 +501,7 @@ let emit_instr i =
         end
     | Lop(Iconst_int n) ->
         if is_native_immediate n then
-          `	li	{emit_reg i.res.(0)}, {emit_nativeint n}\n`
+          `	li	{emit_reg i.res.(0)}, {emit_targetint n}\n`
         else begin
         (* Try a signed decomposition first, because the sequence
            addis/addi is eligible for instruction fusion. *)
@@ -649,11 +651,11 @@ let emit_instr i =
             `	addis	28, 0, {emit_upper emit_symbol func}\n`;
             `	addi	28, 28, {emit_lower emit_symbol func}\n`;
             emit_call L.caml_c_call;
-            record_frame i.live false i.dbg
+            record_frame ~live:i.live ~raise_:false i.dbg
           | ELF64v1 | ELF64v2 ->
             emit_tocload emit_gpr 28 (TocSym func);
             emit_call L.caml_c_call;
-            record_frame i.live false i.dbg;
+            record_frame ~live:i.live ~raise_:false i.dbg;
             `	nop\n`
         end
     | Lop(Istackoffset n) ->
@@ -933,7 +935,7 @@ let emit_all ~fun_body =
   | ELF64v2 ->
     `0:	addis	2, 12, (.TOC. - 0b)@ha\n`;
     `	addi	2, 2, (.TOC. - 0b)@l\n`;
-    `	.localentry {emit_symbol fun_name}, . - 0b\n`
+    `	.localentry {emit_symbol !function_name}, . - 0b\n`
   end;
   let rec emit_all i =
     match i.desc with
