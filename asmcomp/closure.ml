@@ -713,7 +713,8 @@ let direct_apply fundesc funct ufunct uargs ~loc ~attribute =
       let dbg = Debuginfo.from_location loc in
         warning_if_forced_inline ~loc ~attribute
           "Function information unavailable";
-        Udirect_apply(fundesc.fun_label, app_args, dbg)
+        Udirect_apply(Linkage_name.Use.create fundesc.fun_label,
+          app_args, dbg)
     | Some(params, body), _  ->
         bind_params loc fundesc.fun_float_const_prop params app_args body
   in
@@ -746,7 +747,7 @@ let check_constant_result lam ulam approx =
       | Uprim(Pfield _, [Uprim(Pgetglobal _, _, _)], _) -> (ulam, approx)
       | _ ->
           let glb =
-            let id = Linkage_name.name id in
+            let id = Linkage_name.Use.name id in
             Uprim(Pgetglobal (Ident.create_persistent id), [], Debuginfo.none)
           in
           Uprim(Pfield i, [glb], Debuginfo.none), approx
@@ -1360,7 +1361,7 @@ let reset () =
 
 let intro size lam =
   reset ();
-  let id = Compilenv.make_symbol None in
+  let id = Linkage_name.Use.create (Compilenv.make_symbol None) in
   global_approx := Array.init size (fun i -> Value_global_field (id, i));
   Compilenv.set_global_approx(Value_tuple !global_approx);
   let (ulam, _approx) = close Tbl.empty Tbl.empty lam in

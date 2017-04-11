@@ -64,7 +64,7 @@ let raise_kind fmt = function
 let operation d = function
   | Capply _ty -> "app" ^ Debuginfo.to_string d
   | Cextcall(lbl, _ty, _alloc, _) ->
-      Format.asprintf "extcall \"%a\"%s" Linkage_name.print lbl
+      Format.asprintf "extcall \"%a\"%s" Linkage_name.Use.print lbl
         (Debuginfo.to_string d)
   | Cload (c, Asttypes.Immutable) -> Printf.sprintf "load %s" (chunk c)
   | Cload (c, Asttypes.Mutable) -> Printf.sprintf "load_mut %s" (chunk c)
@@ -113,7 +113,7 @@ let rec expr ppf = function
     fprintf ppf "block-hdr(%s)%s"
       (Nativeint.to_string n) (Debuginfo.to_string d)
   | Cconst_float n -> fprintf ppf "%F" n
-  | Cconst_symbol s -> fprintf ppf "\"%a\"" Linkage_name.print s
+  | Cconst_symbol s -> fprintf ppf "\"%a\"" Linkage_name.Use.print s
   | Cconst_pointer n -> fprintf ppf "%ia" n
   | Cconst_natpointer n -> fprintf ppf "%sa" (Nativeint.to_string n)
   | Cvar id -> Ident.print ppf id
@@ -221,7 +221,7 @@ let data_item ppf = function
   | Cint n -> fprintf ppf "int %s" (Nativeint.to_string n)
   | Csingle f -> fprintf ppf "single %F" f
   | Cdouble f -> fprintf ppf "double %F" f
-  | Csymbol_address s -> fprintf ppf "addr \"%a\"" Linkage_name.print s
+  | Csymbol_address s -> fprintf ppf "addr \"%a\"" Linkage_name.Use.print s
   | Cstring s -> fprintf ppf "string \"%s\"" s
   | Cskip n -> fprintf ppf "skip %i" n
   | Calign n -> fprintf ppf "align %i" n

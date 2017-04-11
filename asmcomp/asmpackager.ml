@@ -90,7 +90,7 @@ let make_package_object ppf members targetobj targetname coercion
            to avoid collisions with MSVC's link /lib in case of successive
            packs *)
         Filename.temp_file
-          (Linkage_name.to_string (Compilenv.make_symbol (Some "")))
+          (Linkage_name.name (Compilenv.make_symbol (Some "")))
           Config.ext_obj in
     let components =
       List.map
