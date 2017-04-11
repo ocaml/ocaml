@@ -356,12 +356,12 @@ let name_for_specific = function
   | Imultsubf -> "fmsub"
   | _ -> Misc.fatal_error "Emit.Ispecific"
 
-(* Name of current function *)
-let function_name = ref ""
-(* Entry point for tail recursive calls *)
-let tailrec_entry_point = ref 0
 (* Label of glue code for calling the GC *)
 let call_gc_label = ref 0
+
+(* Spacetime (not yet supported) *)
+
+let spacetime_before_uninstrumented_call _label = ()
 
 (* Relaxation of branches that exceed the span of a relative branch. *)
 
