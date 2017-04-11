@@ -90,12 +90,12 @@ module Use : sig
       file. *)
   val to_string : t -> string
 
-  (** The name as passed to [Linkage_name.create].  Not for emission into
-      assembly. *)
-  val name : t -> string
+  val name : t -> linkage_name
+
+  val has_name : t -> linkage_name -> bool
 
   (** A symbol reference without relocation. *)
-  val create : linkage_name -> t
+  val use : linkage_name -> t
 
   (** A symbol reference via the global offset table. *)
   val got : t -> t

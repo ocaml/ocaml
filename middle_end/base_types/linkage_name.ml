@@ -304,7 +304,9 @@ module Use = struct
   let to_string t =
     (Linkage_name.to_string t.name) ^ (Reloc.to_string t.reloc)
 
-  let name t = Linkage_name.name t.name
+  let name t = t.name
+
+  let has_name t name = Linkage_name.equal t.name name
 
   let set_reloc t required_arch reloc =
     begin match required_arch with

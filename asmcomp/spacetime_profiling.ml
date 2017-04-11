@@ -14,7 +14,7 @@
 
 [@@@ocaml.warning "-40"]
 
-module L = Linkage_name
+module LU = Linkage_name.Use
 
 let node_num_header_words = 2 (* [Node_num_header_words] in the runtime. *)
 let index_within_node = ref node_num_header_words
@@ -96,8 +96,8 @@ let code_for_function_prologue ~function_name ~node_hole =
         Cop (Ccmpi Cne, [Cvar must_allocate_node; Cconst_int 1], dbg),
         Cvar node,
         Clet (is_new_node,
-          Clet (pc, Cconst_symbol function_name,
-            Cop (Cextcall (L.caml_spacetime_allocate_node,
+          Clet (pc, Cconst_symbol (LU.create function_name),
+            Cop (Cextcall (LU.caml_spacetime_allocate_node,
                 [| Int |], false, None),
               [Cconst_int (1 (* header *) + !index_within_node);
                Cvar pc;
@@ -142,7 +142,7 @@ let code_for_blockheader ~value's_header ~node ~dbg =
        the latter table to be used for resolving a program counter at such
        a point to a location.
     *)
-    Cop (Cextcall (L.caml_spacetime_generate_profinfo, [| Int |],
+    Cop (Cextcall (LU.caml_spacetime_generate_profinfo, [| Int |],
         false, Some label),
       [Cvar address_of_profinfo;
        Cconst_int (index_within_node + 1)],
@@ -195,7 +195,7 @@ let code_for_blockheader ~value's_header ~node ~dbg =
             Cop (Cxor, [Cvar profinfo; Cconst_natint value's_header], dbg))))))
 
 type callee =
-  | Direct of Linkage_name.t
+  | Direct of Linkage_name.Use.t
   | Indirect of Cmm.expression
 
 let code_for_call ~node ~callee ~is_tail ~label =
@@ -203,7 +203,7 @@ let code_for_call ~node ~callee ~is_tail ~label =
      graph. *)
   let is_self_recursive_call =
     match callee with
-    | Direct callee -> Linkage_name.equal callee !current_function_label
+    | Direct callee -> Linkage_name.Use.has_name callee !current_function_label
     | Indirect _ -> false
   in
   let is_tail = is_tail || is_self_recursive_call in
@@ -239,7 +239,7 @@ let code_for_call ~node ~callee ~is_tail ~label =
         if is_tail then node
         else Cconst_int 1  (* [Val_unit] *)
       in
-      Cop (Cextcall (L.caml_spacetime_indirect_node_hole_ptr,
+      Cop (Cextcall (LU.caml_spacetime_indirect_node_hole_ptr,
           [| Int |], false, None),
         [callee; Cvar place_within_node; caller_node],
         dbg))
@@ -356,7 +356,7 @@ class virtual instruction_selection = object (self)
       let label = Cmm.new_label () in
       let index =
         next_index_within_node
-          ~part_of_shape:(Mach.Direct_call_point { callee = L.caml_call_gc; })
+          ~part_of_shape:(Mach.Direct_call_point { callee = LU.caml_call_gc; })
           ~label
       in
       Mach.Ialloc {
@@ -385,7 +385,7 @@ class virtual instruction_selection = object (self)
       let index =
         next_index_within_node
           ~part_of_shape:(
-            Mach.Direct_call_point { callee = L.caml_ml_array_bound_error; })
+            Mach.Direct_call_point { callee = LU.caml_ml_array_bound_error; })
           ~label
       in
       Mach.Icheckbound {
