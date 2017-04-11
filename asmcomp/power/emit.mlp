@@ -78,8 +78,6 @@ let (trap_size, trap_handler_offset, trap_previous_offset) =
   | ELF64v2 -> (32, 40, 48)
 
 let record_frame = record_frame ~frame_size ~slot_offset
-let record_frame_label = record_frame_label ~frame_size ~slot_offset
-let bound_error_label = bound_error_label ~frame_size ~slot_offset
 
 (* Output a symbol *)
 
@@ -104,7 +102,6 @@ let stg = if ppc64 then "std" else "stw"
 let lwa = if ppc64 then "lwa" else "lwz"
 let cmpg = if ppc64 then "cmpd" else "cmpw"
 let cmplg = if ppc64 then "cmpld" else "cmplw"
-let datag = if ppc64 then ".quad" else ".long"
 let mullg = if ppc64 then "mulld" else "mullw"
 let divg = if ppc64 then "divd" else "divw"
 let tglle = if ppc64 then "tdlle" else "twlle"
@@ -471,8 +468,6 @@ module BR = Branch_relaxation.Make (struct
   let relax_intop_checkbound ~label_after_error:_ = assert false
   let relax_intop_imm_checkbound ~bound:_ ~label_after_error:_ = assert false
 end)
-
-let branch_relaxation = (module BR : Branch_relaxation.S)
 
 (* Output the assembly code for an instruction *)
 
@@ -1003,7 +998,7 @@ let after_body () =
     D.define_label !call_gc_label;
     match abi with
     | ELF32 ->
-      `	b	{L.to_string L.caml_call_gc}\n`
+      `	b	{emit_symbol L.caml_call_gc}\n`
     | ELF64v1 ->
       `	std	2, 40(1)\n`;
              (* save our TOC, will be restored by caml_call_gc *)
@@ -1036,7 +1031,7 @@ let fundecl decl =
     match abi with
     | ELF32 | ELF64v2 -> None
     | ELF64v1 ->
-      let alternative_name = L.create ("L." ^ fundecl.fun_name) in
+      let alternative_name = Linkage_name.prefix decl.fun_name ~with_:"L." in
       D.switch_to_section (POWER Function_descriptors);
       D.align ~bytes:8;
       D.global decl.fun_name;
@@ -1059,7 +1054,7 @@ let fundecl decl =
     ~emit_all
     ~after_body
     ~emit_call
-    ~emit_jump_to_label
+    ~emit_jump_to_label:(fun _ -> assert false)
     ~spacetime_before_uninstrumented_call
     ~alignment_in_bytes:16
     ~emit_numeric_constants:true
@@ -1067,6 +1062,7 @@ let fundecl decl =
 (* Beginning / end of an assembly file *)
 
 let begin_assembly() =
+  Asm_directives.initialize ~emit:emit_directive;
   begin match abi with
   | ELF64v2 -> `	.abiversion 2\n`
   | _ -> ()
@@ -1093,14 +1089,14 @@ let end_assembly() =
     let stacksize = save_area + 8*8 in
     D.switch_to_section Text;
     D.align ~bytes:4;
-    D.define_function_symbol L.caml_before_mcount;
+    D.define_function_symbol caml_before_mcount;
     `	stdu	1, {emit_int (-stacksize)}(1)\n`;
     `	std	0, {emit_int (16 + stacksize)}(1)\n`;
     for i = 3 to 10 do
     `	std	{emit_gpr i}, {emit_int (save_area + (i - 3) * 8)}(1)\n`
     done;
     `	blr\n`;
-    D.define_function_symbol L.caml_after_mcount;
+    D.define_function_symbol caml_after_mcount;
     `	ld	0, {emit_int (16 + stacksize)}(1)\n`;
     for i = 3 to 10 do
     `	ld	{emit_gpr i}, {emit_int (save_area + (i - 3) * 8)}(1)\n`
@@ -1116,4 +1112,4 @@ let end_assembly() =
       emit_toctable();
       Hashtbl.clear tocref_entries
   end;
-  Emitaux.end_assembly ~code_section ()
+  Emitaux.end_assembly ~code_section ~emit_numeric_constants:false ()
