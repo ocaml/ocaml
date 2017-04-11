@@ -857,4 +857,4 @@ let begin_assembly() =
   Asm_directives.initialize ~emit:emit_directive;
   Emitaux.begin_assembly ()
 
-let end_assembly () = Emitaux.end_assembly ~emit_numeric_constants:false
+let end_assembly () = Emitaux.end_assembly ~emit_numeric_constants:false ()

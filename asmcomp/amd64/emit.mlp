@@ -828,7 +828,7 @@ let end_assembly () =
     I.nop ()
   end;
   emit_imp_table();
-  Emitaux.end_assembly ~emit_numeric_constants:true;
+  Emitaux.end_assembly ~emit_numeric_constants:true ();
   if TS.win64 () then begin
     D.comment "External functions";
     L.Set.iter (fun s ->

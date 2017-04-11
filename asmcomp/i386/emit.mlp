@@ -869,7 +869,7 @@ let end_assembly() =
     (* suppress "ld warning: atom sorting error" *)
     I.nop ()
   end;
-  Emitaux.end_assembly ~emit_numeric_constants:true;
+  Emitaux.end_assembly ~emit_numeric_constants:true ();
   if TS.macos_like () then emit_external_symbols ();
   if TS.win32 () then begin
     D.comment "External functions";

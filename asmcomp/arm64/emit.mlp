@@ -860,4 +860,4 @@ let begin_assembly () =
   Emitaux.begin_assembly ()
 
 let end_assembly () =
-  Emitaux.end_assembly ~emit_numeric_constants:false
+  Emitaux.end_assembly ~emit_numeric_constants:false ()

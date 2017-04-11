@@ -419,7 +419,7 @@ let fundecl ?branch_relaxation ?after_body ?alternative_name
   end;
   let fun_symbol =
     match alternative_name with
-'   | None -> fundecl.fun_name
+    | None -> fundecl.fun_name
     | Some alternative_name -> alternative_name
   in
   D.define_function_symbol fun_symbol;
@@ -435,6 +435,10 @@ let fundecl ?branch_relaxation ?after_body ?alternative_name
   D.define_label !tailrec_entry_point;
   let cfi_offset = emit_all ~fun_body:fundecl.fun_body in
   D.cfi_adjust_cfa_offset ~bytes:(-cfi_offset);
+  begin match after_body with
+  | None -> ()
+  | Some f -> f ()
+  end;
   List.iter (fun gc ->
       emit_call_gc gc ~spacetime_before_uninstrumented_call ~emit_call
         ~emit_jump_to_label)
@@ -484,7 +488,7 @@ let emit_spacetime_shapes () =
   D.int64 0L;
   D.comment "End of Spacetime shapes."
 
-let end_assembly ?(code_section = D.Text) ~emit_numeric_constants =
+let end_assembly ?(code_section = D.Text) ~emit_numeric_constants () =
   if Config.spacetime then begin
     emit_spacetime_shapes ()
   end;

@@ -137,6 +137,11 @@ val begin_assembly : ?code_section:Asm_directives.section -> unit -> unit
 val fundecl
    : ?branch_relaxation:((module Branch_relaxation.S) * int)
   -> ?after_body:(unit -> unit)
+     (** Called after the function's body has been emitted _and_ the CFI
+         offset has been reset. *)
+  -> ?alternative_name:Linkage_name.t
+     (** For when one name per function is not good enough (e.g. POWER
+         ELF64v1 ABI). *)
   -> Linearize.fundecl
   -> prepare:(Linearize.fundecl -> unit)
   -> emit_all:(fun_body:Linearize.instruction -> int)
@@ -177,6 +182,7 @@ val emit_constants : in_current_section:bool -> unit
 val end_assembly
    : ?code_section:Asm_directives.section
   -> emit_numeric_constants:bool
+  -> unit
   -> unit
 
 (** Reset the emitter, to be used between compilation units. *)
