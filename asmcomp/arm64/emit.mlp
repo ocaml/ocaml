@@ -29,12 +29,14 @@ let fastcode_flag = ref true
 
 (* Names for special regs *)
 
-let reg_trap_ptr = phys_reg 23
-let reg_alloc_ptr = phys_reg 24
-let reg_alloc_limit = phys_reg 25
-let reg_tmp1 = phys_reg 26
-let reg_tmp2 = phys_reg 27
-let reg_x15 = phys_reg 15
+let reg_trap_off = phys_reg 23      (* x26 *)
+let reg_alloc_ptr = phys_reg 24     (* x27 *)
+let reg_alloc_limit = phys_reg 25   (* x28 *)
+let reg_tmp1 = phys_reg 26          (* x16 *)
+let reg_tmp2 = phys_reg 27          (* x17 *)
+let reg_x15 = phys_reg 15           (* x15*)
+let reg_callee_saved1 = phys_reg 16  (* x19 *)
+let reg_callee_saved2 = phys_reg 17  (* x20 *)
 
 (* Output a label *)
 
@@ -68,6 +70,8 @@ let emit_wreg = function
   | _ -> fatal_error "Emit.emit_wreg"
 
 (* Layout of the stack frame *)
+
+let stack_threshold_size = Config.stack_threshold * 8 (* bytes *)
 
 let stack_offset = ref 0
 
@@ -142,14 +146,16 @@ let record_frame live dbg =
 (* Record calls to the GC -- we've moved them out of the way *)
 
 type gc_call =
-  { gc_lbl: label;                      (* Entry label *)
+  { gc_size: int;                       (* Allocation size, in bytes *)
+    gc_lbl: label;                      (* Entry label *)
     gc_return_lbl: label;               (* Where to branch after GC *)
     gc_frame_lbl: label }               (* Label of frame descriptor *)
 
 let call_gc_sites = ref ([] : gc_call list)
 
 let emit_call_gc gc =
-  `{emit_label gc.gc_lbl}:	bl	{emit_symbol "caml_call_gc"}\n`;
+  `{emit_label gc.gc_lbl}:	add {emit_reg reg_alloc_ptr}, {emit_reg reg_alloc_ptr}, #{emit_int gc.gc_size}\n`;
+  `	bl	{emit_symbol "caml_call_gc"}\n`;
   `{emit_label gc.gc_frame_lbl}:	b	{emit_label gc.gc_return_lbl}\n`
 
 (* Record calls to caml_ml_array_bound_error.
@@ -430,8 +436,10 @@ module BR = Branch_relaxation.Make (struct
     | Lop (Itailcall_ind) -> epilogue_size ()
     | Lop (Itailcall_imm s) ->
       if s = !function_name then 1 else epilogue_size ()
-    | Lop (Iextcall (_, false)) -> 1
-    | Lop (Iextcall (_, true)) -> 3
+    | Lop (Iextcall (_, alloc, stack_off)) ->
+      if stack_off > 0 then 5
+      else if alloc then 3
+      else 8
     | Lop (Istackoffset _) -> 2
     | Lop (Iload (size, addr)) | Lop (Istore (size, addr, _)) ->
       let based = match addr with Iindexed _ -> 0 | Ibased _ -> 1 in
@@ -525,7 +533,8 @@ let assembly_code_for_allocation i ~n ~far =
       `{emit_label lbl}:\n`
     end;
     call_gc_sites :=
-      { gc_lbl = lbl_call_gc;
+      { gc_size = n;
+        gc_lbl = lbl_call_gc;
         gc_return_lbl = lbl_redo;
         gc_frame_lbl = lbl_frame } :: !call_gc_sites
   end else begin
@@ -538,6 +547,14 @@ let assembly_code_for_allocation i ~n ~far =
     end;
     `{emit_label lbl_frame}:	add	{emit_reg i.res.(0)}, {emit_reg reg_alloc_ptr}, #8\n`
   end
+
+let load_domain_field f r =
+  let domain_field = Domainstate.idx_of_field f * 8 in
+  let bits = Domainstate.minor_heap_align_bits in
+  let dom_mask = Nativeint.(lognot (sub (shift_left one bits) one)) in
+  `	mov {emit_reg r}, {emit_reg reg_alloc_ptr}\n`;
+  `	and {emit_reg r}, {emit_reg r}, #{emit_nativeint dom_mask}\n`;
+  `	ldr {emit_reg r}, [{emit_reg r}, #{emit_int domain_field}]`
 
 (* Output the assembly code for an instruction *)
 
@@ -588,12 +605,28 @@ let emit_instr i =
           `	b	{emit_label !tailrec_entry_point}\n`
         else
           output_epilogue (fun () -> `	b	{emit_symbol s}\n`)
-    | Lop(Iextcall(s, false)) ->
-        `	bl	{emit_symbol s}\n`
-    | Lop(Iextcall(s, true)) ->
-        emit_load_symbol_addr reg_x15 s;
-        `	bl	{emit_symbol "caml_c_call"}\n`;
-        `{record_frame i.live i.dbg}\n`
+    | Lop(Iextcall(s, alloc, stack_off)) ->
+        if stack_off > 0 then begin
+          `	mov {emit_reg reg_callee_saved2}, sp\n`;
+          `	add {emit_reg reg_callee_saved1}, sp, #{emit_int stack_off}\n`;
+          emit_load_symbol_addr reg_x15 s;
+          `	bl	{emit_symbol "caml_c_call_stack_args"}\n`;
+          `{record_frame i.live i.dbg}\n`;
+        end else if alloc then begin
+          emit_load_symbol_addr reg_x15 s;
+          `	bl	{emit_symbol "caml_c_call"}\n`;
+          `{record_frame i.live i.dbg}\n`;
+        end else begin
+          `	mov {emit_reg reg_tmp1}, sp\n`;
+          `{load_domain_field Domainstate.Domain_system_sp reg_tmp2}\n`;
+          `	mov sp, {emit_reg reg_tmp2}\n`;
+          `	str {emit_reg reg_tmp1}, [sp, -8]!\n`;
+          cfi_adjust_cfa_offset (8);
+          `	bl {emit_symbol s}\n`;
+          `	ldr {emit_reg reg_tmp1}, [sp], 8\n`;
+          cfi_adjust_cfa_offset (-8);
+          `	mov sp, {emit_reg reg_tmp1}\n`;
+        end
     | Lop(Istackoffset n) ->
         assert (n mod 16 = 0);
         emit_stack_adjustment (-n);
@@ -605,7 +638,8 @@ let emit_instr i =
           | Iindexed ofs -> i.arg.(0)
           | Ibased(s, ofs) ->
               `	adrp	{emit_reg reg_tmp1}, {emit_symbol_offset s ofs}\n`;
-              reg_tmp1 in
+              reg_tmp1
+        in
         begin match size with
         | Byte_unsigned ->
             `	ldrb	{emit_wreg dst}, {emit_addressing addr base}\n`
@@ -834,12 +868,14 @@ let emit_instr i =
         `{emit_label lblnext}:\n`
     | Lpushtrap ->
         stack_offset := !stack_offset + 16;
-        `	str	{emit_reg reg_trap_ptr}, [sp, -16]!\n`;
+        `	str	{emit_reg reg_trap_off}, [sp, -16]!\n`;
         `	str	{emit_reg reg_tmp1}, [sp, #8]\n`;
         cfi_adjust_cfa_offset 16;
-        `	mov	{emit_reg reg_trap_ptr}, sp\n`
+        `{load_domain_field Domainstate.Domain_stack_high reg_trap_off}\n`;
+        ` mov {emit_reg reg_tmp1}, sp\n`;
+        `	sub {emit_reg reg_trap_off}, {emit_reg reg_trap_off}, {emit_reg reg_tmp1}\n`
     | Lpoptrap ->
-        `	ldr	{emit_reg reg_trap_ptr}, [sp], 16\n`;
+        `	ldr	{emit_reg reg_trap_off}, [sp], 16\n`;
         cfi_adjust_cfa_offset (-16);
         stack_offset := !stack_offset - 16
     | Lraise k ->
@@ -849,10 +885,11 @@ let emit_instr i =
           `{record_frame Reg.Set.empty i.dbg}\n`
         | false, _
         | true, Lambda.Raise_notrace ->
-          `	mov	sp, {emit_reg reg_trap_ptr}\n`;
-          `	ldr	{emit_reg reg_tmp1}, [sp, #8]\n`;
-          `	ldr	{emit_reg reg_trap_ptr}, [sp], 16\n`;
-          `	br	{emit_reg reg_tmp1}\n`
+            `{load_domain_field Domainstate.Domain_stack_high reg_tmp1}\n`;
+            `	sub sp, {emit_reg reg_tmp1}, {emit_reg reg_trap_off}\n`;
+            `	ldr	{emit_reg reg_tmp1}, [sp, #8]\n`;
+            `	ldr	{emit_reg reg_trap_off}, [sp], 16\n`;
+            `	br	{emit_reg reg_tmp1}\n`
         end
 
 (* Emission of an instruction sequence *)
@@ -871,6 +908,38 @@ let emit_profile() = ()   (* TODO *)
   | _ -> ()
 *)
 
+type fun_preproc_info =
+  {max_stack_size : int;
+   contains_nontail_calls : bool;
+   contains_external_calls : bool}
+
+let preproc_fun fun_body fun_name =
+  let rec proc_instr r a i =
+    if i.desc = Lend then r else
+      let upd_size r delta =
+        {r with max_stack_size = max r.max_stack_size (a+delta)}
+      in
+      let (r',a') = match i.desc with
+        | Lop (Istackoffset n) -> (upd_size r n, a+n)
+        | Lpushtrap -> (upd_size r 16, a+16)
+        | Lpoptrap -> (r, a-16)
+        | Lop (Iextcall _ | Ialloc _ | Iintop Icheckbound
+                | Iintop_imm (Icheckbound, _)) ->
+            ({r with contains_external_calls = true}, a)
+        | Lop (Icall_ind | Icall_imm _ ) ->
+            ({r with contains_nontail_calls = true}, a)
+        | _ -> (r, a)
+      in
+      proc_instr r' a' i.next
+  in
+  let fs = frame_size () in
+  let r =
+    {max_stack_size = fs;
+     contains_nontail_calls = false;
+     contains_external_calls = false}
+  in
+  proc_instr r fs fun_body
+
 (* Emission of a function declaration *)
 
 let fundecl fundecl =
@@ -883,6 +952,9 @@ let fundecl fundecl =
   bound_error_sites := [];
   `	.text\n`;
   `	.align	3\n`;
+  Emitaux.emit_block_header_for_closure ~word_directive:".quad"
+    ~comment_string:"//"
+    ~function_entry_points_are_doubleword_aligned:false;
   `	.globl	{emit_symbol fundecl.fun_name}\n`;
   `	.type	{emit_symbol fundecl.fun_name}, %function\n`;
   `{emit_symbol fundecl.fun_name}:\n`;
@@ -896,7 +968,7 @@ let fundecl fundecl =
     cfi_offset ~reg:30 (* return address *) ~offset:(-8);
     `	str	x30, [sp, #{emit_int (n-8)}]\n`
   end;
-  `{emit_label !tailrec_entry_point}:\n`;
+
   let num_call_gc, num_check_bound =
     num_call_gc_and_check_bound_points fundecl.fun_body
   in
@@ -905,9 +977,53 @@ let fundecl fundecl =
       ~num_check_bound
   in
   BR.relax fundecl.fun_body ~max_out_of_line_code_offset;
-  emit_all fundecl.fun_body;
-  List.iter emit_call_gc !call_gc_sites;
-  List.iter emit_call_bound_error !bound_error_sites;
+
+  let preproc_res = preproc_fun fundecl.fun_body fundecl.fun_name in
+  let s = !Clflags.stack_slop + preproc_res.max_stack_size in
+
+  (* Extra 1k bytes slop space if profiling is enabled. Ensures that `mcount`
+   * and signal handlers do not stack overflow. *)
+  let profile_slop =
+    if !Clflags.gprofile then Config.profile_slop * 8 else 0
+  in
+  let s = s + profile_slop in
+
+  (* Extra 24 bytes for caml_context at the bottom of OCaml stack if the
+   * function makes external calls *)
+  let s = if preproc_res.contains_external_calls then s + 24 else s in
+
+  if not preproc_res.contains_nontail_calls &&
+     s < stack_threshold_size + profile_slop
+  then begin
+    `{emit_label !tailrec_entry_point}:\n`;
+      emit_all fundecl.fun_body;
+      List.iter emit_call_gc !call_gc_sites;
+      List.iter emit_call_bound_error !bound_error_sites;
+  end
+  else begin
+    (* XXX KC: fundecl.fun_body.live does not capture liveness at the start of
+    the function properly. *)
+    let live_initially =
+      Reg.Set.(fold (fun r s -> add {r with typ = Addr} s)
+        fundecl.fun_args empty)
+    in
+    let handle_overflow = new_label() in
+    let after_overflow = record_frame_label live_initially Debuginfo.none in
+
+    `{load_domain_field Domainstate.Domain_stack_threshold reg_tmp1}\n`;
+    `	add {emit_reg reg_tmp1}, {emit_reg reg_tmp1}, #{emit_int s}\n`;
+    `	cmp sp, {emit_reg reg_tmp1}\n`;
+    `	bcc {emit_label handle_overflow}\n`;
+    `{emit_label !tailrec_entry_point}:\n`;
+    emit_all fundecl.fun_body;
+    List.iter emit_call_gc !call_gc_sites;
+    List.iter emit_call_bound_error !bound_error_sites;
+    `{emit_label handle_overflow}:\n`;
+    `	bl {emit_symbol "caml_call_realloc_stack"}\n`;
+    `{emit_label after_overflow}:\n`;
+    `	b {emit_label !tailrec_entry_point}\n`;
+  end;
+
   assert (List.length !call_gc_sites = num_call_gc);
   assert (List.length !bound_error_sites = num_check_bound);
   cfi_endproc();
