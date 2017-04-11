@@ -202,10 +202,10 @@ let emit_toctable () =
 let emit_tocload emit_dest dest entry =
   let lbl = label_for_tocref entry in
   if !big_toc || !Clflags.for_package <> None then begin
-    `	addis	{emit_dest dest}, 2, {D.label lbl}@toc@ha\n`;
-    `	ld	{emit_dest dest}, {D.label lbl}@toc@l({emit_dest dest}) # {emit_tocentry entry}\n`
+    `	addis	{emit_dest dest}, 2, {emit_label lbl}@toc@ha\n`;
+    `	ld	{emit_dest dest}, {emit_label lbl}@toc@l({emit_dest dest}) # {emit_tocentry entry}\n`
   end else begin
-    `	ld	{emit_dest dest}, {D.label lbl}@toc(2) # {emit_tocentry entry}\n`
+    `	ld	{emit_dest dest}, {emit_label lbl}@toc(2) # {emit_tocentry entry}\n`
   end
 
 (* Output a "upper 16 bits" or "lower 16 bits" operator. *)
