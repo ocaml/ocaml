@@ -234,7 +234,7 @@ module Use = struct
   let to_string t =
     (Linkage_name.to_string t.name) ^ (Reloc.to_string t.reloc)
 
-  let with_reloc name required_arch reloc =
+  let set_reloc t required_arch reloc =
     begin match required_arch with
     | None -> ()
     | Some arch ->
@@ -244,15 +244,24 @@ module Use = struct
           Reloc.print reloc
           (TS.string_of_architecture arch)
           (TS.string_of_architecture (TS.architecture ()))
-          Linkage_name.print name
+          Linkage_name.print t.name
       end
     end;
-    { name; reloc; }
+    begin match t.reloc with
+    | Normal -> ()
+    | _ ->
+      Misc.fatal_errorf "Attempt to set %a relocation on use of symbol %a, but \
+          relocation %a has already been applied"
+        Reloc.print reloc
+        Linkage_name.print t.name
+        Reloc.print t.reloc
+    end;
+    { t with reloc; }
 
-  let got name = with_reloc name None GOT
-  let plt name = with_reloc name None PLT
-  let gotpcrel name = with_reloc name (Some TS.IA64) GOTPCREL
-  let power_tocbase name = with_reloc name (Some TS.POWER) POWER_tocbase
+  let got t = set_reloc t None GOT
+  let plt t = set_reloc t None PLT
+  let gotpcrel t = set_reloc t (Some TS.IA64) GOTPCREL
+  let power_tocbase t = set_reloc t (Some TS.POWER) POWER_tocbase
 end
 
 include Linkage_name

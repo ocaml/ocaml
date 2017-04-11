@@ -90,18 +90,18 @@ module Use : sig
   val create : linkage_name -> t
 
   (** A symbol reference via the global offset table. *)
-  val got : linkage_name -> t
+  val got : t -> t
 
   (** A symbol reference via the procedure linkage table. *)
-  val plt : linkage_name -> t
+  val plt : t -> t
 
   (** A position-independent symbol reference via the global offset table
       (IA64 architecture only). *)
-  val gotpcrel : linkage_name -> t
+  val gotpcrel : t -> t
 
   (** A symbol reference via the table of contents (POWER architecture
       only). *)
-  val power_tocbase : linkage_name -> t
+  val power_tocbase : t -> t
 end
 
 (** Nothing in particular. *)
