@@ -205,3 +205,5 @@ val is_zero : t -> bool
 
 val strictly_negative : t -> bool
 (** Whether the given target integer is strictly less than zero. *)
+
+val print : Format.formatter -> t -> unit

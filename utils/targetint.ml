@@ -60,6 +60,7 @@ module type S = sig
   val fits_in_32_bits : t -> bool
   val is_zero : t -> bool
   val strictly_negative : t -> bool
+  val print : Format.formatter -> t -> unit
 end
 
 let size = Sys.word_size
@@ -95,6 +96,8 @@ module Int32 = struct
 
   let is_zero n = (n = 0l)
   let strictly_negative n = (n < 0l)
+
+  let print ppf t = Format.fprintf ppf "%ld" t
 end
 
 module Int64 = struct
@@ -113,6 +116,8 @@ module Int64 = struct
 
   let is_zero n = (n = 0L)
   let strictly_negative n = (n < 0L)
+
+  let print ppf t = Format.fprintf ppf "%Ld" t
 end
 
 include (val

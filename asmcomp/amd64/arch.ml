@@ -34,7 +34,7 @@ type addressing_mode =
 
 type specific_operation =
     Ilea of addressing_mode             (* "lea" gives scaled adds *)
-  | Istore_int of nativeint * addressing_mode * bool
+  | Istore_int of Targetint.t * addressing_mode * bool
                                         (* Store an integer constant *)
   | Ioffset_loc of int * addressing_mode (* Add a constant to a location *)
   | Ifloatarithmem of float_operation * addressing_mode
@@ -105,8 +105,9 @@ let print_specific_operation printreg op ppf arg =
   match op with
   | Ilea addr -> print_addressing printreg addr ppf arg
   | Istore_int(n, addr, is_assign) ->
-      fprintf ppf "[%a] := %nd %s"
-         (print_addressing printreg addr) arg n
+      fprintf ppf "[%a] := %a %s"
+         (print_addressing printreg addr) arg
+         Targetint.print n
          (if is_assign then "(assign)" else "(init)")
   | Ioffset_loc(n, addr) ->
       fprintf ppf "[%a] +:= %i" (print_addressing printreg addr) arg n

@@ -133,7 +133,7 @@ method is_immediate n = n <= 0x7FFF_FFFF && n >= (-1-0x7FFF_FFFF)
   (* -1-.... : hack so that this can be compiled on 32-bit
      (cf 'make check_all_arches') *)
 
-method is_immediate_natint n = n <= 0x7FFFFFFFn && n >= -0x80000000n
+method is_immediate_targetint n = n <= 0x7FFFFFFFn && n >= -0x80000000n
 
 method! is_simple_expr e =
   match e with
@@ -172,16 +172,19 @@ method select_addressing _chunk exp =
 method! select_store is_assign addr exp =
   match exp with
     Cconst_int n when self#is_immediate n ->
-      (Ispecific(Istore_int(Nativeint.of_int n, addr, is_assign)), Ctuple [])
-  | (Cconst_natint n) when self#is_immediate_natint n ->
-      (Ispecific(Istore_int(n, addr, is_assign)), Ctuple [])
+      (Ispecific(Istore_int(Targetint.of_int n, addr, is_assign)), Ctuple [])
+  | (Cconst_natint n) when self#is_immediate_targetint n ->
+      (Ispecific(Istore_int(Targetint.of_nativeint_exn n, addr, is_assign)),
+        Ctuple [])
   | (Cblockheader(n, _dbg))
-      when self#is_immediate_natint n && not Config.spacetime ->
-      (Ispecific(Istore_int(n, addr, is_assign)), Ctuple [])
+      when self#is_immediate_targetint n && not Config.spacetime ->
+      (Ispecific(Istore_int(Targetint.of_nativeint_exn n, addr, is_assign)),
+        Ctuple [])
   | Cconst_pointer n when self#is_immediate n ->
-      (Ispecific(Istore_int(Nativeint.of_int n, addr, is_assign)), Ctuple [])
-  | Cconst_natpointer n when self#is_immediate_natint n ->
-      (Ispecific(Istore_int(n, addr, is_assign)), Ctuple [])
+      (Ispecific(Istore_int(Targetint.of_int n, addr, is_assign)), Ctuple [])
+  | Cconst_natpointer n when self#is_immediate_targetint n ->
+      (Ispecific(Istore_int(Targetint.of_nativeint_exn n, addr, is_assign)),
+        Ctuple [])
   | _ ->
       super#select_store is_assign addr exp
 
