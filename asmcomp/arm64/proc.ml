@@ -175,10 +175,12 @@ let destroyed_at_c_call =
      124;125;126;127;128;129;130;131])
 
 let destroyed_at_oper = function
-  | Iop(Icall_ind | Icall_imm _) | Iop(Iextcall(_, true)) ->
+  | Iop(Icall_ind | Icall_imm _) ->
       all_phys_regs
-  | Iop(Iextcall(_, false)) ->
-      destroyed_at_c_call
+  | Iop(Iextcall(_, alloc, stack_ofs)) ->
+      assert (stack_ofs >= 0);
+      if alloc || stack_ofs > 0 then all_phys_regs
+      else destroyed_at_c_call
   | Iop(Ialloc _) ->
       [| reg_x15 |]
   | Iop(Iintoffloat | Ifloatofint | Iload(Single, _) | Istore(Single, _, _)) ->
@@ -190,12 +192,12 @@ let destroyed_at_raise = all_phys_regs
 (* Maximal register pressure *)
 
 let safe_register_pressure = function
-  | Iextcall(_, _) -> 8
+  | Iextcall(_, _, _) -> 8
   | Ialloc _ -> 25
   | _ -> 26
 
 let max_register_pressure = function
-  | Iextcall(_, _) -> [| 10; 8 |]
+  | Iextcall(_, _, _) -> [| 10; 8 |]
   | Ialloc _ -> [| 25; 32 |]
   | Iintoffloat | Ifloatofint
   | Iload(Single, _) | Istore(Single, _, _) -> [| 26; 31 |]

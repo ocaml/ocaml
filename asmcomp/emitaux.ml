@@ -246,8 +246,8 @@ let emit_debug_info dbg =
   end
 
 (* Emission of block headers immediately prior to function entry points *)
- 
-let emit_block_header_for_closure ~word_directive ~comment_char
+
+let emit_block_header_for_closure ~word_directive ~comment_string
       ~function_entry_points_are_doubleword_aligned =
   if true (* Config.no_naked_pointers *) then begin
     let header =
@@ -270,7 +270,7 @@ let emit_block_header_for_closure ~word_directive ~comment_char
       emit_string "\t";
       emit_nativeint Nativeint.zero;
       emit_string "  ";
-      emit_char comment_char;
+      emit_string comment_string;
       emit_string " preserve entry point alignment\n"
     end;
     emit_string "\t";
@@ -278,7 +278,7 @@ let emit_block_header_for_closure ~word_directive ~comment_char
     emit_string "\t";
     emit_nativeint header;
     emit_string "  ";
-    emit_char comment_char;
+    emit_string comment_string;
     emit_string " GC block header\n"
   end
 
