@@ -547,6 +547,9 @@ The complete list of changes is listed below.
 
 Next minor version (4.04.1):
 ----------------------------
+- PR#7501, GPR#1089: Consider arrays of length zero as constants
+  when using Flambda.
+  (Pierre Chambart, review by Mark Shinwell and Leo White)
 
 ### Standard library:
 
@@ -589,9 +592,13 @@ Next minor version (4.04.1):
 - PR#7405, GPR#903: s390x: Fix address of caml_raise_exn in native dynlink modules
   (Richard Jones, review by Xavier Leroy)
 
-- MPR#7417, GPR#930: ensure 16 byte stack alignment inside caml_allocN on x86-64
+- PR#7417, GPR#930: ensure 16 byte stack alignment inside caml_allocN on x86-64
   for ocaml build with WITH_FRAME_POINTERS defined
   (Christoph Cullmann)
+
+- PR#7456, GPR#1092: fix slow compilation on source files containing a lot
+  of similar debugging information location entries
+  (Mark Shinwell)
 
 - PR#7457: a case of double free in the systhreads library (POSIX implementation)
   (Xavier Leroy, report by Chet Murthy)
