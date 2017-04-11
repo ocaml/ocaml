@@ -23,13 +23,14 @@
 module Int8 = Numbers.Int8
 module Int16 = Numbers.Int16
 module L = Linkage_name
+module LU = Linkage_name.Use
 module TS = Target_system
 
 type constant =
   | Const of int64
   | This
   | Label of Cmm.label
-  | Symbol of Linkage_name.t
+  | Symbol of LU.t
   | Add of constant * constant
   | Sub of constant * constant
   | Div of constant * int
@@ -442,7 +443,7 @@ let rec lower_constant (cst : constant) : Directive.constant =
   | Const i -> Const i
   | This -> This
   | Label lbl -> Named_thing (string_of_label lbl)
-  | Symbol sym -> Named_thing (Linkage_name.to_string sym)
+  | Symbol sym -> Named_thing (LU.to_string sym)
   | Add (cst1, cst2) -> Add (lower_constant cst1, lower_constant cst2)
   | Sub (cst1, cst2) -> Sub (lower_constant cst1, lower_constant cst2)
   | Div (cst1, cst2) -> Div (lower_constant cst1, cst2)
@@ -478,7 +479,7 @@ let cfi_startproc () =
 
 let comment s = emit (Comment s)
 let direct_assignment var cst =
-  emit (Direct_assignment (L.to_string var, lower_constant cst))
+  emit (Direct_assignment (LU.to_string var, lower_constant cst))
 let file ~file_num ~file_name =
   emit (File { file_num = Some file_num; filename = file_name; })
 let global s = emit (Global (L.to_string s))

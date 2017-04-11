@@ -19,8 +19,6 @@
 open Asttypes
 open Lambda
 
-type function_label = Linkage_name.t
-
 type ustructured_constant =
   | Uconst_float of float
   | Uconst_int32 of int32
@@ -39,7 +37,7 @@ and uconstant =
 and ulambda =
     Uvar of Ident.t
   | Uconst of uconstant
-  | Udirect_apply of function_label * ulambda list * Debuginfo.t
+  | Udirect_apply of Linkage_name.Use.t * ulambda list * Debuginfo.t
   | Ugeneric_apply of ulambda * ulambda list * Debuginfo.t
   | Uclosure of ufunction list * ulambda list
   | Uoffset of ulambda * int
@@ -60,7 +58,7 @@ and ulambda =
   | Uunreachable
 
 and ufunction = {
-  label  : function_label;
+  label  : Linkage_name.t;
   arity  : int;
   params : Ident.t list;
   body   : ulambda;
@@ -77,7 +75,7 @@ and ulambda_switch =
 (* Description of known functions *)
 
 type function_description =
-  { fun_label: function_label;          (* Label of direct entry point *)
+  { fun_label: Linkage_name.t;          (* Label of direct entry point *)
     fun_arity: int;                     (* Number of arguments *)
     mutable fun_closed: bool;           (* True if environment not used *)
     mutable fun_inline: (Ident.t list * ulambda) option;
@@ -91,7 +89,7 @@ type value_approximation =
   | Value_tuple of value_approximation array
   | Value_unknown
   | Value_const of uconstant
-  | Value_global_field of Linkage_name.t * int
+  | Value_global_field of Linkage_name.Use.t * int
 
 (* Comparison functions for constants *)
 

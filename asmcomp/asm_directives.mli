@@ -166,7 +166,7 @@ val define_function_symbol : Linkage_name.t -> unit
 val global : Linkage_name.t -> unit
 
 (** Emit a machine-width reference to the given symbol. *)
-val symbol : Linkage_name.t -> unit
+val symbol : Linkage_name.Use.t -> unit
 
 (** Mark a symbol as "private extern" (see assembler documentation for
     details). *)
@@ -187,7 +187,7 @@ val label : Cmm.label -> unit
 (** Emit a machine-width reference to the address formed by adding the
     given byte offset to the address of the given symbol. *)
 val symbol_plus_offset
-    : Linkage_name.t
+   : Linkage_name.Use.t
   -> offset_in_bytes:Targetint.t
   -> unit
 
@@ -201,7 +201,10 @@ val symbol_plus_offset
 (** Emit a machine-width reference giving the displacement between two given
     labels.  To obtain a positive result the symbol at the lower address
     should be the second argument, as for normal subtraction. *)
-val between_symbols : upper:Linkage_name.t -> lower:Linkage_name.t -> unit
+val between_symbols
+   : upper:Linkage_name.Use.t
+  -> lower:Linkage_name.Use.t
+  -> unit
 
 (** Like [between_symbols], but for two labels, emitting a 32-bit-wide
     reference.  The behaviour upon overflow is unspecified. *)
@@ -212,14 +215,14 @@ val between_labels_32bit : upper:Cmm.label -> lower:Cmm.label -> unit
     [offset_upper]. *)
 val between_symbol_and_label_offset
    : upper:Cmm.label
-  -> lower:Linkage_name.t
+  -> lower:Linkage_name.Use.t
   -> offset_upper:Targetint.t
   -> unit
 
 (* CR mshinwell: naming of these two *)
 
 val between_symbol_and_label_offset'
-   : upper:Linkage_name.t
+   : upper:Linkage_name.Use.t
   -> lower:Cmm.label
   -> offset_lower:Targetint.t
   -> unit
@@ -252,7 +255,7 @@ val offset_into_section_label
     a label as one end of the measurement. *)
 val offset_into_section_symbol
    : section:section
-  -> symbol:Linkage_name.t
+  -> symbol:Linkage_name.Use.t
   -> width:Target_system.machine_width
   -> unit
 
@@ -275,7 +278,7 @@ module Directive : sig
     | This
     | Named_thing of string
     (** [Named_thing] covers symbols, labels and variables.  (These are all
-        represented as [string] rather than [Linkage_name.t] and so forth
+        represented as [string] rather than [Linkage_name.Use.t] and so forth
         because name mangling conventions have by now been applied. *)
     | Add of constant * constant
     | Sub of constant * constant
@@ -337,5 +340,5 @@ val reset : unit -> unit
 
 (** The name mangling used for labels.  This may be useful e.g. when
     emitting an instruction referencing a label.
-    (For symbols, use [Linkage_name.to_string].) *)
+    (For symbols, use [Linkage_name.Use.to_string].) *)
 val string_of_label : Cmm.label -> string

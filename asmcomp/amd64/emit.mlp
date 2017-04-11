@@ -31,6 +31,7 @@ open X86_dsl
 
 module D = Asm_directives
 module L = Linkage_name
+module LR = Linkage_name.Reference
 module Int = Numbers.Int
 module TS = Target_system
 
@@ -131,7 +132,7 @@ let rel_plt s =
       | Windows Native, Sixty_four -> false
       | _, _ -> !Clflags.dlcode
     in
-    symbol_operand (if use_plt then L.plt s else s)
+    symbol_operand (if use_plt then LR.plt s else LR.none s)
 
 let emit_call s = I.call (rel_plt s)
 
@@ -221,11 +222,11 @@ let spacetime_uninstrumented_calls = ref Int.Map.empty
 
 let spacetime_before_uninstrumented_call' ~node_ptr ~index =
   (* At the moment, [node_ptr] is pointing at the node for the current
-      OCaml function.  Get hold of the node itself and move the pointer
-      forwards, saving it into the distinguished register.  This is used
-      for instrumentation of function calls (e.g. caml_call_gc and bounds
-      check failures) not inserted until this stage of the compiler
-      pipeline. *)
+     OCaml function.  Get hold of the node itself and move the pointer
+     forwards, saving it into the distinguished register.  This is used
+     for instrumentation of function calls (e.g. caml_call_gc and bounds
+     check failures) not inserted until this stage of the compiler
+     pipeline. *)
   I.mov node_ptr (reg Proc.loc_spacetime_node_hole);
   assert (index >= 2);
   I.add (int (index * 8)) (reg Proc.loc_spacetime_node_hole)

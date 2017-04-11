@@ -43,12 +43,13 @@ type operation =
   | Ireload
   | Iconst_int of Targetint.t
   | Iconst_float of int64
-  | Iconst_symbol of Linkage_name.t
+  | Iconst_symbol of Linkage_name.Use.t
   | Icall_ind of { label_after : label; }
-  | Icall_imm of { func : Linkage_name.t; label_after : label; }
+  | Icall_imm of { func : Linkage_name.Use.t; label_after : label; }
   | Itailcall_ind of { label_after : label; }
-  | Itailcall_imm of { func : Linkage_name.t; label_after : label; }
-  | Iextcall of { func : Linkage_name.t; alloc : bool; label_after : label; }
+  | Itailcall_imm of { func : Linkage_name.Use.t; label_after : label; }
+  | Iextcall of { func : Linkage_name.Use.t; alloc : bool;
+      label_after : label; }
   | Istackoffset of int
   | Iload of Cmm.memory_chunk * Arch.addressing_mode
   | Istore of Cmm.memory_chunk * Arch.addressing_mode * bool
@@ -81,7 +82,7 @@ and instruction_desc =
   | Iraise of Cmm.raise_kind
 
 type spacetime_part_of_shape =
-  | Direct_call_point of { callee : Linkage_name.t; }
+  | Direct_call_point of { callee : Linkage_name.Use.t; }
   | Indirect_call_point
   | Allocation_point
 

@@ -26,30 +26,25 @@
       functions from the runtime, and so forth.
 
     - [string] (used in e.g. [X86_dsl]): mangled versions of [Linkage_name.t]
-      that take account of platform-specific conventions for naming symbols.
-      They should be treated as unstructured data.
+      that take account of platform-specific conventions for naming symbols
+      and may include relocation information.  They should be treated as
+      unstructured data.
 *)
 
 [@@@ocaml.warning "+a-4-9-30-40-41-42"]
 
 include Identifiable.S
 
+type linkage_name = t
+
 module List : sig
   val mem : t list -> t -> bool
 end
 
-(** Create a linkage name with no special attributes (GOT, PLT, etc).
+(** Create a linkage name.
     The given string should neither contain any platform-specific mangling
-    (for example special prefixes) nor any attributes such as "@GOT".
-    (In particular, it should not come from a previous call to this module's
-    [to_string] function.) *)
+    (for example special prefixes) nor any attributes such as "@GOT". *)
 val create : string -> t
-
-(** Produce the platform-specific mangling of the given linkage name
-    including any attributes (see below) with which it has been marked.
-    The results from this function may be used directly in an assembly
-    file. *)
-val to_string : t -> string
 
 (** The name as passed to [create].  Not for emission into assembly. *)
 val name : t -> string
@@ -64,28 +59,46 @@ val append : t -> suffix:string -> t
 (** Add an integer suffix to a linkage name. *)
 val append_int : t -> int -> t
 
-(** Mark a symbol as being a reference via the global offset table. *)
-val got : t -> t
-
-(** Mark a symbol as being a position-independent reference via the
-    global offset table. *)
-val gotpcrel : t -> t
-
-(** Mark a symbol as being a reference via the procedure linkage table. *)
-val plt : t -> t
-
-(** Construct an i386 "stub" symbol from a linkage name. *)
+(** Construct an i386 "stub" name from a linkage name. *)
 val i386_stub : t -> t
 
-(** Construct an i386 "non lazy pointer" symbol from a linkage name. *)
+(** Construct an i386 "non lazy pointer" name from a linkage name. *)
 val i386_non_lazy_ptr : t -> t
-
-(** Construct a POWER table of contents base symbol from a linkage name. *)
-val power_tocbase : t -> t
 
 (** Whether the function may be duplicated between a DLL and the main
     program (PR#4690). *)
 val is_generic_function : t -> bool
+
+module Use : sig
+  (** A use of a linkage name.  This contains the name itself together
+      with information about how the reference emitted into the object file
+      should be relocated. *)
+
+  include Identifiable.S
+
+  (** Produce the platform-specific mangling of the given linkage name
+      including any relocation information with which it has been marked.
+      The results from this function may be used directly in an assembly
+      file. *)
+  val to_string : t -> string
+
+  (** A symbol reference without relocation. *)
+  val create : linkage_name -> t
+
+  (** A symbol reference via the global offset table. *)
+  val got : linkage_name -> t
+
+  (** A symbol reference via the procedure linkage table. *)
+  val plt : linkage_name -> t
+
+  (** A position-independent symbol reference via the global offset table
+      (IA64 architecture only). *)
+  val gotpcrel : linkage_name -> t
+
+  (** A symbol reference via the table of contents (POWER architecture
+      only). *)
+  val power_tocbase : linkage_name -> t
+end
 
 (** Nothing in particular. *)
 val __dummy__ : t

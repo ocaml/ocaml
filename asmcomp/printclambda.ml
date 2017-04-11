@@ -53,7 +53,8 @@ let rec structured_constant ppf = function
         List.iter (fprintf ppf "@ %a" Ident.print)in
       let one_fun ppf f =
         fprintf ppf "(fun@ %a@ %d@ @[<2>%a@]@ @[<2>%a@])"
-          Linkage_name.print f.label f.arity idents f.params lam f.body in
+          Linkage_name.print f.label
+          f.arity idents f.params lam f.body in
       let funs ppf =
         List.iter (fprintf ppf "@ %a" one_fun) in
       let sconsts ppf scl =
@@ -64,8 +65,8 @@ let rec structured_constant ppf = function
 
 and uconstant ppf = function
   | Uconst_ref (s, Some c) ->
-      fprintf ppf "%S=%a" (Linkage_name.to_string s) structured_constant c
-  | Uconst_ref (s, None) -> fprintf ppf "%S" (Linkage_name.to_string s)
+      fprintf ppf "%S=%a" (Linkage_name.name s) structured_constant c
+  | Uconst_ref (s, None) -> fprintf ppf "%S" (Linkage_name.name s)
   | Uconst_int i -> fprintf ppf "%i" i
   | Uconst_ptr i -> fprintf ppf "%ia" i
 
@@ -76,7 +77,8 @@ and lam ppf = function
   | Udirect_apply(f, largs, _) ->
       let lams ppf largs =
         List.iter (fun l -> fprintf ppf "@ %a" lam l) largs in
-      fprintf ppf "@[<2>(apply*@ %a %a)@]" Linkage_name.print f lams largs
+      fprintf ppf "@[<2>(apply*@ %a %a)@]"
+        Linkage_name.Use.print f lams largs
   | Ugeneric_apply(lfun, largs, _) ->
       let lams ppf largs =
         List.iter (fun l -> fprintf ppf "@ %a" lam l) largs in
@@ -86,7 +88,8 @@ and lam ppf = function
         List.iter (fprintf ppf "@ %a" Ident.print)in
       let one_fun ppf f =
         fprintf ppf "@[<2>(fun@ %a@ %d @[<2>%a@]@ @[<2>%a@]@])"
-          Linkage_name.print f.label f.arity idents f.params lam f.body in
+          Linkage_name.print f.label
+          f.arity idents f.params lam f.body in
       let funs ppf =
         List.iter (fprintf ppf "@ %a" one_fun) in
       let lams ppf =
@@ -225,4 +228,4 @@ let rec approx ppf = function
   | Value_const c ->
       fprintf ppf "@[const(%a)@]" uconstant c
   | Value_global_field (s, i) ->
-      fprintf ppf "@[global(%a,%i)@]" Linkage_name.print s i
+      fprintf ppf "@[global(%a,%i)@]" Linkage_name.Use.print s i
