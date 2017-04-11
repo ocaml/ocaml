@@ -78,6 +78,9 @@ val macos_like : unit -> bool
 (** The architecture of the target system. *)
 val architecture : unit -> architecture
 
+(** Convert an architecture to a string. *)
+val string_of_architecture : architecture -> string
+
 (** The assembler being used. *)
 val assembler : unit -> assembler
 

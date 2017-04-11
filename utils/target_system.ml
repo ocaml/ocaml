@@ -82,6 +82,16 @@ let architecture () =
   | "s390x" -> Z
   | arch -> Misc.fatal_errorf "Unknown architecture `%s'" arch
 
+let string_of_architecture arch =
+  match arch with
+  | IA32 -> "IA32"
+  | IA64 -> "IA64"
+  | ARM -> "ARM"
+  | AArch64 -> "AArch64"
+  | POWER -> "POWER"
+  | SPARC -> "SPARC"
+  | Z -> "Z"
+
 let windows () =
   match system () with
   | Windows _ -> true

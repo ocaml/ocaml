@@ -25,6 +25,10 @@
       a flat namespace, together with names of external C library functions,
       functions from the runtime, and so forth.
 
+    - [Linkage_name.Use.t]: as for [Linkage_name.t] but optionally equipped
+      with relocation information.  Intended for uses of linkage names
+      rather than definitions.
+
     - [string] (used in e.g. [X86_dsl]): mangled versions of [Linkage_name.t]
       that take account of platform-specific conventions for naming symbols
       and may include relocation information.  They should be treated as

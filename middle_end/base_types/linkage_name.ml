@@ -18,109 +18,6 @@
 
 module TS = Target_system
 
-module Kind = struct
-  type t =
-    | Normal
-    | GOT
-    | GOTPCREL
-    | PLT
-    | I386_stub
-    | I386_non_lazy_ptr
-    | POWER_tocbase
-
-  let prefix = function
-    | Normal
-    | GOT
-    | GOTPCREL
-    | PLT
-    | POWER_tocbase -> ""
-    | I386_stub
-    | I386_non_lazy_ptr -> "L"
-
-  let to_string = function
-    | Normal -> ""
-    | GOT ->
-      begin match TS.architecture () with
-      | IA32 | IA64 | AArch64 | POWER | SPARC | Z -> "@GOT"
-      | ARM -> "(GOT)"
-      end
-    | GOTPCREL ->
-      begin match TS.architecture () with
-      | IA64 -> "@GOTPCREL"
-      | IA32 | ARM | AArch64 | POWER | SPARC | Z ->
-        Misc.fatal_error "GOTPCREL relocations only supported on IA64"
-      end
-    | PLT ->
-      begin match TS.architecture () with
-      | IA32 | IA64 | AArch64 | POWER | SPARC | Z -> "@PLT"
-      | ARM -> "(PLT)"
-      end
-    | I386_stub ->
-      begin match TS.architecture () with
-      | IA32 -> "$stub"
-      | IA64 | ARM | AArch64 | POWER | SPARC | Z ->
-        Misc.fatal_error "Cannot use IA32-specific stub markers on non-IA32 \
-          platforms"
-      end
-    | I386_non_lazy_ptr ->
-      begin match TS.architecture () with
-      | IA32 -> "$non_lazy_ptr"
-      | IA64 | ARM | AArch64 | POWER | SPARC | Z ->
-        Misc.fatal_error "Cannot use IA32-specific non lazy pointer markers \
-          on non-IA32 platforms"
-      end
-    | POWER_tocbase ->
-      begin match TS.architecture () with
-      | POWER -> ".@tocbase"
-      | IA32 | IA64 | ARM | AArch64 | SPARC | Z ->
-        Misc.fatal_error "tocbase relocations only supported on POWER"
-      end
-
-  include Identifiable.Make (struct
-    type nonrec t = t
-
-    let compare = Pervasives.compare
-    let equal (t1 : t) t2 = (t1 = t2)
-    let hash = Hashtbl.hash
-
-    let print ppf t = Format.fprintf ppf "%s" (to_string t)
-    let output chan t = output_string chan (to_string t)
-  end)
-
-  let check_normal t =
-    match t with
-    | Normal -> ()
-    | _ -> Misc.fatal_error "Cannot change symbol kind twice"
-end
-
-type t = {
-  name : string;
-  kind : Kind.t;
-}
-
-include Identifiable.Make (struct
-  type nonrec t = t
-
-  let compare t1 t2 =
-    let c = Pervasives.compare t1.name t2.name in
-    if c <> 0 then c
-    else Kind.compare t1.kind t2.kind
-
-  let equal t1 t2 = (compare t1 t2 = 0)
-
-  let hash t =
-    Hashtbl.hash (t.name, Kind.hash t.kind)
-
-  let print ppf t =
-    (* CR mshinwell: think a bit more about this; is it misleading that it's
-       different from [to_string]? *)
-    Format.fprintf ppf "%s%s%a" (Kind.prefix t.kind) t.name Kind.print t.kind
-
-  let output chan t =
-    output_string chan t.name;
-    output_string chan (Kind.to_string t.kind)
-end)
-
 let symbol_prefix =
   match TS.architecture () with
   | IA32 ->
@@ -160,90 +57,207 @@ let symbol_prefix =
 let _GLOBAL_OFFSET_TABLE_ = "_GLOBAL_OFFSET_TABLE_"
 let __dummy__ = "__dummy__"
 
-let create name =
-  if String.length name > 1 then begin
-    (* It's not technically a problem for this condition to fail, but we
-       shouldn't need to be in that position, and this check should catch
-       bugs. *)
-    if String.length symbol_prefix > 0
-      && Misc.Stdlib.String.is_prefix symbol_prefix ~of_:name
-      && not (String.equal name _GLOBAL_OFFSET_TABLE_)
-      && not (String.equal name __dummy__)
-    then begin
-      Misc.fatal_errorf "Suspicious creation of [Linkage_name.t]: has this \
-          symbol name already been mangled? '%s'"
-        name
+module Linkage_name = struct
+  type t = {
+    name : string;
+    suffix : string;
+  }
+
+  let to_string t =
+    let s = t.name in
+    let spec = ref false in
+    for i = 0 to String.length s - 1 do
+      match String.unsafe_get s i with
+      | 'A'..'Z' | 'a'..'z' | '0'..'9' | '_' -> ()
+      | _ ->
+        (* If the first character is a special character, assume the whole is
+            not to be mangled. *)
+        if i > 0 then spec := true;
+    done;
+    let without_suffix =
+      if not !spec then if symbol_prefix = "" then s else symbol_prefix ^ s
+      else
+        let b = Buffer.create (String.length s + 10) in
+        Buffer.add_string b symbol_prefix;
+        String.iter
+          (function
+            | ('A'..'Z' | 'a'..'z' | '0'..'9' | '_') as c ->
+              Buffer.add_char b c
+            | c -> Printf.bprintf b "$%02x" (Char.code c)
+            (* CR mshinwell: may need another char instead of '$' *)
+          )
+          s;
+        Buffer.contents b
+    in
+    without_suffix ^ t.suffix
+
+  include Identifiable.Make (struct
+    type nonrec t = t
+
+    let compare = Pervasives.compare
+    let equal (t1 : t) t2 = (t1 = t2)
+    let hash = Hashtbl.hash
+
+    let print ppf t = Format.fprintf ppf "%s" (to_string t)
+    let output chan t = output_string chan (to_string t)
+  end)
+
+  let create name =
+    if String.length name > 1 then begin
+      (* It's not technically a problem for this condition to fail, but we
+         shouldn't need to be in that position, and this check should catch
+         bugs. *)
+      if String.length symbol_prefix > 0
+        && Misc.Stdlib.String.is_prefix symbol_prefix ~of_:name
+        && not (String.equal name _GLOBAL_OFFSET_TABLE_)
+        && not (String.equal name __dummy__)
+      then begin
+        Misc.fatal_errorf "Suspicious creation of [Linkage_name.t]: has this \
+            symbol name already been mangled? '%s'"
+          name
+      end
+    end;
+    { name; suffix = ""; }
+
+  let name t = t.name
+
+  let prefix t ~with_ =
+    { t with
+      name = with_ ^ t.name;
+    }
+
+  let append_int t i =
+    { t with
+      name = t.name ^ (string_of_int i);
+    }
+
+  let append t ~suffix =
+    { t with
+      name = t.name ^ suffix;
+    }
+
+  let require_architecture arch =
+    if TS.architecture () <> arch then begin
+      Misc.fatal_error "Unsupported on current architecture"
     end
-  end;
-  { name; kind = Normal; }
 
-let to_string t =
-  let s = t.name in
-  let spec = ref false in
-  for i = 0 to String.length s - 1 do
-    match String.unsafe_get s i with
-    | 'A'..'Z' | 'a'..'z' | '0'..'9' | '_' -> ()
-    | _ ->
-      (* If the first character is a special character, assume the whole is
-         not to be mangled. *)
-      if i > 0 then spec := true;
-  done;
-  let without_kind =
-    if not !spec then if symbol_prefix = "" then s else symbol_prefix ^ s
-    else
-      let b = Buffer.create (String.length s + 10) in
-      Buffer.add_string b symbol_prefix;
-      String.iter
-        (function
-          | ('A'..'Z' | 'a'..'z' | '0'..'9' | '_') as c -> Buffer.add_char b c
-          | c -> Printf.bprintf b "$%02x" (Char.code c)
-          (* CR mshinwell: may need another char instead of '$' *)
-        )
-        s;
-      Buffer.contents b
-  in
-  (Kind.prefix t.kind) ^ without_kind ^ (Kind.to_string t.kind)
+  let i386_stub t =
+    require_architecture IA32;
+    { t with suffix = "$stub"; }
 
-let name t = t.name
+  let i386_non_lazy_ptr t =
+    require_architecture IA32;
+    { t with suffix = "$non_lazy_ptr"; }
 
-let prefix t ~with_ =
-  { t with
-    name = with_ ^ t.name;
+  let is_generic_function t =
+    List.exists (fun p -> Misc.Stdlib.String.is_prefix p ~of_:t.name)
+      ["caml_apply"; "caml_curry"; "caml_send"; "caml_tuplify"]
+end
+
+module Reloc = struct
+  type t =
+    | Normal
+    | GOT
+    | GOTPCREL
+    | PLT
+    | POWER_tocbase
+
+  let to_string = function
+    | Normal -> ""
+    | GOT ->
+      begin match TS.architecture () with
+      | IA32 | IA64 | AArch64 | POWER | SPARC | Z -> "@GOT"
+      | ARM -> "(GOT)"
+      end
+    | GOTPCREL ->
+      begin match TS.architecture () with
+      | IA64 -> "@GOTPCREL"
+      | IA32 | ARM | AArch64 | POWER | SPARC | Z ->
+        Misc.fatal_error "Wrong architecture for GOTPCREL"
+      end
+    | PLT ->
+      begin match TS.architecture () with
+      | IA32 | IA64 | AArch64 | POWER | SPARC | Z -> "@PLT"
+      | ARM -> "(PLT)"
+      end
+    | POWER_tocbase ->
+      begin match TS.architecture () with
+      | POWER -> "@tocbase"
+      | IA32 | IA64 | ARM | AArch64 | SPARC | Z ->
+        Misc.fatal_error "Wrong architecture for @tocbase"
+      end
+
+  include Identifiable.Make (struct
+    type nonrec t = t
+
+    let compare = Pervasives.compare
+    let equal (t1 : t) t2 = (t1 = t2)
+    let hash = Hashtbl.hash
+
+    let print ppf t = Format.fprintf ppf "%s" (to_string t)
+    let output chan t = output_string chan (to_string t)
+  end)
+end
+
+module Use = struct
+  type t = {
+    name : Linkage_name.t;
+    reloc : Reloc.t;
   }
 
-let append_int t i =
-  { t with
-    name = t.name ^ (string_of_int i);
-  }
+  include Identifiable.Make (struct
+    type nonrec t = t
 
-let append t ~suffix =
-  { t with
-    name = t.name ^ suffix;
-  }
+    let compare t1 t2 =
+      let c = Linkage_name.compare t1.name t2.name in
+      if c <> 0 then c
+      else Reloc.compare t1.reloc t2.reloc
 
-let got t =
-  Kind.check_normal t.kind;
-  { t with kind = GOT; }
+    let equal t1 t2 = (compare t1 t2 = 0)
 
-let gotpcrel t =
-  Kind.check_normal t.kind;
-  { t with kind = GOTPCREL; }
+    let hash t =
+      Hashtbl.hash (Linkage_name.hash t.name, Reloc.hash t.reloc)
 
-let plt t =
-  Kind.check_normal t.kind;
-  { t with kind = PLT; }
+    let print ppf t =
+      Format.fprintf ppf "%a%a" Linkage_name.print t.name Reloc.print t.reloc
 
-let i386_stub t =
-  Kind.check_normal t.kind;
-  { t with kind = I386_stub; }
+    let output chan t =
+      output_string chan (Linkage_name.to_string t.name);
+      output_string chan (Reloc.to_string t.reloc)
+  end)
 
-let i386_non_lazy_ptr t =
-  Kind.check_normal t.kind;
-  { t with kind = I386_non_lazy_ptr; }
+  let create name =
+    { name;
+      reloc = Normal;
+    }
 
-let power_tocbase t =
-  Kind.check_normal t.kind;
-  { t with kind = POWER_tocbase; }
+  let to_string t =
+    (Linkage_name.to_string t.name) ^ (Reloc.to_string t.reloc)
+
+  let with_reloc name required_arch reloc =
+    begin match required_arch with
+    | None -> ()
+    | Some arch ->
+      if TS.architecture () <> arch then begin
+        Misc.fatal_errorf "Attempt to use %a relocation, which is only \
+            available on %s architecture, on %s architecture (use of symbol %a)"
+          Reloc.print reloc
+          (TS.string_of_architecture arch)
+          (TS.string_of_architecture (TS.architecture ()))
+          Linkage_name.print name
+      end
+    end;
+    { name; reloc; }
+
+  let got name = with_reloc name None GOT
+  let plt name = with_reloc name None PLT
+  let gotpcrel name = with_reloc name (Some TS.IA64) GOTPCREL
+  let power_tocbase name = with_reloc name (Some TS.POWER) POWER_tocbase
+end
+
+include Linkage_name
+
+type linkage_name = t
 
 let mcount = create "mcount"
 let _mcount = create "_mcount"
@@ -312,11 +326,6 @@ let caml_spacetime_generate_profinfo =
   create "caml_spacetime_generate_profinfo"
 
 let caml_extra_params = create "caml_extra_params"
-
-let is_generic_function t =
-  let name = to_string t in
-  List.exists (fun p -> Misc.Stdlib.String.is_prefix p ~of_:name)
-    ["caml_apply"; "caml_curry"; "caml_send"; "caml_tuplify"]
 
 module List = struct
   let mem ts t =
