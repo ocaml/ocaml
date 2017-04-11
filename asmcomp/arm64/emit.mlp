@@ -29,6 +29,7 @@ open Emitaux
 
 module D = Asm_directives
 module L = Linkage_name
+module LU = Linkage_name.Use
 
 (* Names for special regs *)
 
