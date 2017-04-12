@@ -29,7 +29,7 @@ open Emitaux
 
 module D = Asm_directives
 module L = Linkage_name
-module LU = Linkage_name.Use
+module LR = Linkage_name.With_reloc
 
 (* Reserved space at bottom of stack *)
 
@@ -82,7 +82,7 @@ let record_frame = record_frame ~frame_size ~slot_offset
 
 (* Output a symbol *)
 
-let emit_symbol s = emit_string (LU.to_string s)
+let emit_symbol s = emit_string (LR.to_string s)
 
 (* Output a label *)
 
@@ -167,7 +167,7 @@ let is_native_immediate n =
 (* Record TOC entries *)
 
 type tocentry =
-  | TocSym of LU.t
+  | TocSym of LR.t
   | TocLabel of int
   | TocInt of Targetint.t
   | TocFloat of int64
@@ -222,6 +222,7 @@ let valid_offset instr ofs =
 let emit_load_store instr addressing_mode addr n arg =
   match addressing_mode with
   | Ibased(s, d) ->
+      let s = LR.no_reloc s in
       begin match abi with
       | ELF32 ->
         `	addis	11, 0, {emit_upper emit_symbol_offset (s,d)}\n`;
@@ -271,9 +272,10 @@ let emit_free_frame () =
 (* Emit a "bl" instruction to a given symbol *)
 
 let emit_call s =
+  let s = LR.no_reloc s in
   match abi with
   | ELF32 when !Clflags.dlcode || !Clflags.pic_code ->
-    `	bl	{emit_symbol (LU.plt s)}\n`
+    `	bl	{emit_symbol (LR.plt s)}\n`
   | _ ->
     `	bl	{emit_symbol s}\n`
 
@@ -422,7 +424,7 @@ module BR = Branch_relaxation.Make (struct
     | Lop(Icall_imm _) -> size 1 3 3
     | Lop(Itailcall_ind _) -> size 5 7 6
     | Lop(Itailcall_imm { func; _ }) ->
-        if LU.has_name func !function_name
+        if L.equal func !function_name
         then 1
         else size 4 (7 + tocload_size()) (6 + tocload_size())
     | Lop(Iextcall { alloc = true; _ }) ->
@@ -536,6 +538,7 @@ let emit_instr i =
           end
         end
     | Lop(Iconst_symbol s) ->
+        let s = LR.no_reloc s in
         begin match abi with
         | ELF32 ->
           `	addis	{emit_reg i.res.(0)}, 0, {emit_upper emit_symbol s}\n`;
@@ -610,9 +613,10 @@ let emit_instr i =
         emit_free_frame();
         `	bctr\n`
     | Lop(Itailcall_imm { func; label_after = _; }) ->
-        if LU.has_name func !function_name then
+        if L.equal func !function_name then
           `	b	{emit_label !tailrec_entry_point}\n`
         else begin
+          let func = LR.no_reloc func in
           begin match abi with
           | ELF32 ->
             ()
@@ -642,15 +646,16 @@ let emit_instr i =
           emit_call func;
           emit_call_nop()
         end else begin
+          let func = LR.no_reloc func in
           match abi with
           | ELF32 ->
             `	addis	28, 0, {emit_upper emit_symbol func}\n`;
             `	addi	28, 28, {emit_lower emit_symbol func}\n`;
-            emit_call LU.caml_c_call;
+            emit_call L.caml_c_call;
             record_frame ~live:i.live ~raise_:false i.dbg
           | ELF64v1 | ELF64v2 ->
             emit_tocload emit_gpr 28 (TocSym func);
-            emit_call LU.caml_c_call;
+            emit_call L.caml_c_call;
             record_frame ~live:i.live ~raise_:false i.dbg;
             `	nop\n`
         end
@@ -911,7 +916,7 @@ let emit_instr i =
     | Lraise k ->
         begin match k with
         | Cmm.Raise_withtrace ->
-            emit_call LU.caml_raise_exn;
+            emit_call L.caml_raise_exn;
             record_frame ~live:Reg.Set.empty ~raise_:true i.dbg;
             emit_call_nop()
         | Cmm.Raise_notrace ->
@@ -931,7 +936,7 @@ let emit_all ~fun_body =
   | ELF64v2 ->
     `0:	addis	2, 12, (.TOC. - 0b)@ha\n`;
     `	addi	2, 2, (.TOC. - 0b)@l\n`;
-    `	.localentry {emit_symbol (LU.use !function_name)}, . - 0b\n`
+    `	.localentry {emit_symbol (LR.no_reloc !function_name)}, . - 0b\n`
   end;
   let rec emit_all i =
     match i.desc with
@@ -954,16 +959,16 @@ let emit_profile () =
       `	stw	0, 4(1)\n`;
       (* _mcount preserves the registers used for parameter passing *)
       (* when it returns, lr contains the original return address *)
-      `	bl	{emit_symbol LU._mcount}\n`;
+      `	bl	{emit_symbol (LR.no_reloc L._mcount)}\n`;
       `	addi	1, 1, 16\n`
   | ELF64v1 | ELF64v2 ->
       `	mflr	0\n`;
       (* save the registers used for parameter passing *)
-      `	bl	{emit_symbol (LU.use caml_before_mcount)}\n`;
-      `	bl	{emit_symbol LU._mcount}\n`;
+      `	bl	{emit_symbol (LR.no_reloc caml_before_mcount)}\n`;
+      `	bl	{emit_symbol (LR.no_reloc L._mcount)}\n`;
       `	nop\n`;
       (* restore the registers used for parameter passing *)
-      `	bl	{emit_symbol (LU.use caml_after_mcount)}\n`;
+      `	bl	{emit_symbol (LR.no_reloc caml_after_mcount)}\n`;
       `	mtlr	0\n`
 
 (* Emission of a function declaration *)
@@ -997,13 +1002,14 @@ let after_body () =
   if !call_gc_label > 0 then begin
     D.switch_to_section Text;
     D.define_label !call_gc_label;
+    let caml_call_gc = LR.no_reloc L.caml_call_gc in
     match abi with
     | ELF32 ->
-      `	b	{emit_symbol LU.caml_call_gc}\n`
+      `	b	{emit_symbol caml_call_gc}\n`
     | ELF64v1 ->
       `	std	2, 40(1)\n`;
              (* save our TOC, will be restored by caml_call_gc *)
-      emit_tocload emit_gpr 11 (TocSym LU.caml_call_gc);
+      emit_tocload emit_gpr 11 (TocSym caml_call_gc);
       `	ld	0, 0(11)\n`;
       `	mtctr	0\n`;
       `	ld	2, 8(11)\n`;
@@ -1011,7 +1017,7 @@ let after_body () =
     | ELF64v2 ->
       `	std	2, 24(1)\n`;
              (* save our TOC, will be restored by caml_call_gc *)
-      emit_tocload emit_gpr 12 (TocSym LU.caml_call_gc);
+      emit_tocload emit_gpr 12 (TocSym caml_call_gc);
       `	mtctr	12\n`;
       `	bctr\n`
   end;
@@ -1037,8 +1043,8 @@ let fundecl decl =
       D.align ~bytes:8;
       D.global decl.fun_name;
       D.define_function_symbol decl.fun_name;
-      D.symbol (LU.use alternative_name);
-      D.symbol (LU.power_tocbase (LU.use (L.create ".TOC.")));
+      D.symbol (LR.no_reloc alternative_name);
+      D.symbol (LR.power_tocbase (LR.no_reloc (L.create ".TOC.")));
       Some alternative_name
   in
   let branch_relaxation =
