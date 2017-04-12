@@ -532,7 +532,7 @@ void caml_empty_minor_heap ()
 */
 CAMLexport void caml_minor_collection (void)
 {
-  caml_log_event(EVENT_GC_START);
+  caml_ev_start_gc();
 
   caml_empty_minor_heap ();
 
@@ -541,7 +541,7 @@ CAMLexport void caml_minor_collection (void)
   /* !! caml_final_do_calls (); */
 
   caml_empty_minor_heap ();
-  caml_log_event(EVENT_GC_END);
+  caml_ev_end_gc();
 }
 
 CAMLexport value caml_check_urgent_gc (value extra_root)
