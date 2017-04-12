@@ -161,9 +161,13 @@ let emit_frames () =
     D.align ~bytes:Arch.size_addr;
     D.define_label lbl;
     let info = pack_info rs d in
+    let offset_upper =
+      Targetint.logand (Targetint.of_int64 info)
+        (Targetint.of_int64 0xffff_ffffL)  (* undo sign extension *)
+    in
     D.between_this_and_label_offset_32bit
       ~upper:(label_filename d.Debuginfo.dinfo_file)
-      ~offset_upper:(Targetint.of_int32 (Int64.to_int32 info));
+      ~offset_upper;
     D.int32 (Int64.to_int32 (Int64.shift_right info 32));
     begin match next with
     | Some next -> D.label next

@@ -117,6 +117,10 @@ val shift_right_logical : t -> int -> t
     regardless of the sign of [x].
     The result is unspecified if [y < 0] or [y >= bitsize]. *)
 
+(* CR mshinwell: we need to add comments concerning the sign extension
+   semantics here.  For example [of_int32] sign extends.
+   Maybe there should be a [Target_ptr.t] or similar which zero extends. *)
+
 val of_int : int -> t
 (** Convert the given integer (type [int]) to a target integer
     (type [t]), module the target word size. *)
