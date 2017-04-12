@@ -53,9 +53,8 @@ val create : string -> t
 (** The name as passed to [create].  Not for emission into assembly. *)
 val name : t -> string
 
-(** Produce the platform-specific mangling of the given linkage name.
-    The results from this function should not be used directly in an assembly
-    file (use [Use.to_string] instead). *)
+(** The mangled name, for emission into assembly (when no relocation is
+    required; otherwise use [With_reloc.to_string], below). *)
 val to_string : t -> string
 
 (** Add a prefix to a linkage name. *)
