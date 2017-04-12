@@ -28,7 +28,7 @@ let () =
     (Invalid_argument "index out of bounds")
 
 
-external raise : exn -> 'a = "%raise"
+external raise : exn -> 'a = "%reraise"
 external raise_notrace : exn -> 'a = "%raise_notrace"
 
 let failwith s = raise(Failure s)

@@ -27,7 +27,7 @@
 
 (** {1 Exceptions} *)
 
-external raise : exn -> 'a = "%raise"
+external raise : exn -> 'a = "%reraise"
 (** Raise the given exception value *)
 
 external raise_notrace : exn -> 'a = "%raise_notrace"
