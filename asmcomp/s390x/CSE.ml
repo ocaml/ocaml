@@ -33,7 +33,8 @@ method! class_of_operation op =
 method! is_cheap_operation op =
   match op with
   | Iconst_int n ->
-      n >= -0x8000_0000n && n <= 0x7FFF_FFFFn
+      Targetint.compare n (Targetint.of_int (-0x8000_0000)) >= 0
+        && Targetint.compare n (Targetint.of_int 0x7fff_ffff) <= 0
   | _ -> false
 
 end
