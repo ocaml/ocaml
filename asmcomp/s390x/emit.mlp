@@ -29,6 +29,7 @@ open Emitaux
 
 module D = Asm_directives
 module L = Linkage_name
+module LR = Linkage_name.With_reloc
 
 (* Layout of the stack.  The stack is kept 8-aligned. *)
 
@@ -57,7 +58,7 @@ let bound_error_label = bound_error_label ~frame_size ~slot_offset
 
 (* Output a symbol *)
 
-let emit_symbol s = emit_string (Linkage_name.to_string s)
+let emit_symbol s = emit_string (LR.to_string (LR.no_reloc s))
 
 (* Output function call *)
 
@@ -580,4 +581,4 @@ let begin_assembly () =
   Asm_directives.initialize ~emit:emit_directive;
   Emitaux.begin_assembly ()
 
-let end_assembly () = Emitaux.end_assembly ~emit_numeric_constants:false
+let end_assembly () = Emitaux.end_assembly ~emit_numeric_constants:false ()
