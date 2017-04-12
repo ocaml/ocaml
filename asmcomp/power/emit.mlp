@@ -883,7 +883,7 @@ let emit_instr i =
           D.switch_to_section Read_only_data;
           D.define_label lbl;
           for i = 0 to Array.length jumptbl - 1 do
-            D.between_labels_32bit ~upper:lbl ~lower:jumptbl.(i)
+            D.between_labels_32bit ~upper:jumptbl.(i) ~lower:lbl
           done;
           D.switch_to_section Text
         end
