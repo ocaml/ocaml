@@ -1032,7 +1032,7 @@ let fundecl decl =
     match abi with
     | ELF32 | ELF64v2 -> None
     | ELF64v1 ->
-      let alternative_name = Linkage_name.prefix decl.fun_name ~with_:"L." in
+      let alternative_name = Linkage_name.prefix decl.fun_name ~with_:"L_" in
       D.switch_to_section (POWER Function_descriptors);
       D.align ~bytes:8;
       D.global decl.fun_name;
@@ -1057,7 +1057,7 @@ let fundecl decl =
     ~emit_call
     ~emit_jump_to_label:(fun _ -> assert false)
     ~spacetime_before_uninstrumented_call
-    ~alignment_in_bytes:16
+    ~alignment_in_bytes:4
     ~emit_numeric_constants:true
 
 (* Beginning / end of an assembly file *)

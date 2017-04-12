@@ -68,7 +68,7 @@ module Linkage_name = struct
     let spec = ref false in
     let first_char_special = ref false in
     for i = 0 to String.length s - 1 do
-      match String.unsafe_get s i with
+      match String.get s i with
       | 'A'..'Z' | 'a'..'z' | '0'..'9' | '_' -> ()
       | _ ->
         if i = 0 then first_char_special := true;
