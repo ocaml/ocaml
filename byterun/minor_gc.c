@@ -538,10 +538,16 @@ CAMLexport void caml_minor_collection (void)
 
   caml_major_collection_slice (0);
 
-  /* !! caml_final_do_calls (); */
+  /* FIXME: run finalisers.
+     If finalisers run, need to rerun caml_empty_minor_heap.
+   */
 
-  caml_empty_minor_heap ();
+  Assert (CAML_DOMAIN_STATE->young_end == CAML_DOMAIN_STATE->young_ptr);
+
   caml_ev_end_gc();
+
+  /* If the major slice triggered a STW, do that now */
+  caml_handle_gc_interrupt();
 }
 
 CAMLexport value caml_check_urgent_gc (value extra_root)
