@@ -1038,7 +1038,7 @@ let fundecl decl =
     match abi with
     | ELF32 | ELF64v2 -> None
     | ELF64v1 ->
-      let alternative_name = Linkage_name.prefix decl.fun_name ~with_:"L_" in
+      let alternative_name = L.power_function_entry_point decl.fun_name in
       D.switch_to_section (POWER Function_descriptors);
       D.align ~bytes:8;
       D.global decl.fun_name;
