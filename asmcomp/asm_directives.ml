@@ -363,7 +363,8 @@ module Directive = struct
     | Size (s, c) -> bprintf buf "\t.size %s,%a" s cst c
     | Sleb128 c -> bprintf buf "\t.sleb128 %a" cst c
     | Type (s, typ) ->
-      (* We use the "STT" forms as they are unambiguous across platforms
+      (* We use the "STT" forms when they are supported as they are
+         unambiguous across platforms
          (cf. https://sourceware.org/binutils/docs/as/Type.html ). *)
       bprintf buf "\t.type %s %s" s typ
     | Uleb128 c -> bprintf buf "\t.uleb128 %a" cst c
@@ -737,8 +738,8 @@ let initialize ~(emit : Directive.t -> unit) =
 let define_data_symbol symbol =
   emit (New_label (L.to_string symbol, Machine_width_data));
   begin match TS.assembler () with
-  | GAS_like | MacOS -> type_ symbol ~type_:"STT_OBJECT"
-  | MASM -> ()
+  | GAS_like -> type_ symbol ~type_:"STT_OBJECT"
+  | MacOS | MASM -> ()
   end
 
 let define_function_symbol symbol =
@@ -748,8 +749,8 @@ let define_function_symbol symbol =
   end;
   emit (New_label (L.to_string symbol, Code));
   begin match TS.assembler () with
-  | GAS_like | MacOS -> type_ symbol ~type_:"STT_FUNC"
-  | MASM -> ()
+  | GAS_like -> type_ symbol ~type_:"STT_FUNC"
+  | MacOS | MASM -> ()
   end
 
 let symbol sym = const_machine_width (Symbol_reloc sym)

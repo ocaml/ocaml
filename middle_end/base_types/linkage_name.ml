@@ -56,6 +56,8 @@ let symbol_prefix =
 
 let _GLOBAL_OFFSET_TABLE_ = "_GLOBAL_OFFSET_TABLE_"
 let __dummy__ = "__dummy__"
+let _mcount = "_mcount"
+let __gnu_mcount_nc = "__gnu_mcount_nc"
 
 module Linkage_name = struct
   type t = {
@@ -115,6 +117,8 @@ module Linkage_name = struct
         && Misc.Stdlib.String.is_prefix symbol_prefix ~of_:name
         && not (String.equal name _GLOBAL_OFFSET_TABLE_)
         && not (String.equal name __dummy__)
+        && not (String.equal name _mcount)
+        && not (String.equal name __gnu_mcount_nc)
       then begin
         Misc.fatal_errorf "Suspicious creation of [Linkage_name.t]: has this \
             symbol name already been mangled? '%s'"
@@ -165,8 +169,8 @@ end
 let create = Linkage_name.create
 
 let mcount = create "mcount"
-let _mcount = create "_mcount"
-let __gnu_mcount_nc = create "__gnu_mcount_nc"
+let _mcount = create _mcount
+let __gnu_mcount_nc = create __gnu_mcount_nc
 let sqrt = create "sqrt"
 
 let __dummy__ = create __dummy__
