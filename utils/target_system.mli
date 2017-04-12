@@ -39,7 +39,7 @@ type system =
      GNU and BeOS. *)
   | Unknown
 
-type architecture = 
+type architecture =
   | IA32
   | X86_64
   | ARM
