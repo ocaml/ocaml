@@ -3,8 +3,8 @@ BASEDIR=../..
 # The -keep_dwarf_unwind option of ld was introduced in ld version 224.1.
 # (The last released version where it is not supported is version 136.)
 default:
-	@printf " ... testing 'unwind_test':"
-	@if [ ! $(SYSTEM) = macosx ]; then \
+	printf " ... testing 'unwind_test':"
+	if [ ! $(SYSTEM) = macosx ]; then \
 	  echo " => skipped (not on Mac OSX)"; \
 	elif $(BYTECODE_ONLY); then \
 	  echo " => skipped (bytecode only)"; \
@@ -24,15 +24,15 @@ default:
 	fi
 
 native_macosx_tests:
-	@$(MAKE) clean ; $(MAKE) unwind_test && \
+	$(MAKE) clean ; $(MAKE) unwind_test && \
 	./unwind_test >/dev/null 2>&1 && echo " => passed" || echo " => failed"
 
 unwind_test:
-	@$(OCAMLOPT) -c -opaque mylib.mli
-	@$(OCAMLOPT) -c driver.ml
-	@$(OCAMLOPT) -c mylib.ml
-	@$(OCAMLOPT) -ccopt -I -ccopt $(CTOPDIR)/byterun -c stack_walker.c
-	@$(OCAMLOPT) -cclib -Wl,-keep_dwarf_unwind -o unwind_test mylib.cmx \
+	$(OCAMLOPT) -c -opaque mylib.mli
+	$(OCAMLOPT) -c driver.ml
+	$(OCAMLOPT) -c mylib.ml
+	$(OCAMLOPT) -ccopt -I -ccopt $(CTOPDIR)/byterun -c stack_walker.c
+	$(OCAMLOPT) -cclib -Wl,-keep_dwarf_unwind -o unwind_test mylib.cmx \
 	             driver.cmx stack_walker.o
 
 clean:
