@@ -1600,9 +1600,8 @@ type 'a t = < m : 'a > constraint 'a = int
 (* GPR#1142 *)
 module M () = struct
   let f : 'a -> 'a = assert false
-  let g : 'a -> 'a = raise Not_found
 end
 
 [%%expect{|
-module M : functor () -> sig val f : 'a -> 'a val g : 'a -> 'a end
+module M : functor () -> sig val f : 'a -> 'a end
 |}]
