@@ -1039,6 +1039,7 @@ let fundecl decl =
       D.define_function_symbol decl.fun_name;
       D.symbol (LU.use alternative_name);
       D.symbol (LU.power_tocbase (LU.use (L.create ".TOC.")));
+      D.int64 0L;
       Some alternative_name
   in
   let branch_relaxation =
