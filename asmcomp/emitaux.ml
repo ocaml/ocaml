@@ -19,7 +19,7 @@
 
 module D = Asm_directives
 module L = Linkage_name
-module LU = Linkage_name.Use
+module LR = Linkage_name.With_reloc
 module Int16 = Numbers.Int16
 
 let output_channel = ref stdout
@@ -213,13 +213,13 @@ let emit_debug_info dbg =
   end
 
 let symbols_defined = ref L.Set.empty
-let symbols_used = ref LU.Set.empty
+let symbols_used = ref L.Set.empty
 
 let add_def_symbol s =
   symbols_defined := L.Set.add s !symbols_defined
 
 let add_used_symbol s =
-  symbols_used := LU.Set.add s !symbols_used
+  symbols_used := L.Set.add s !symbols_used
 
 let emit_global_data_symbol name =
   let sym = Compilenv.make_symbol (Some name) in
@@ -330,7 +330,7 @@ let emit_call_gc gc ~spacetime_before_uninstrumented_call ~emit_call
   D.cfi_adjust_cfa_offset ~bytes:gc.stack_offset;
   spacetime_before_uninstrumented_call gc.gc_lbl;
   (* CR mshinwell: .s file formatting of this call is a bit crappy *)
-  emit_call LU.caml_call_gc;
+  emit_call L.caml_call_gc;
   D.define_label gc.gc_frame;
   emit_jump_to_label gc.gc_return_lbl;
   D.cfi_adjust_cfa_offset ~bytes:(-gc.stack_offset)
@@ -370,7 +370,7 @@ let emit_call_bound_error bd ~emit_call
   D.define_label bd.bd_lbl;
   D.cfi_adjust_cfa_offset ~bytes:bd.stack_offset;
   spacetime_before_uninstrumented_call bd.bd_lbl;
-  emit_call LU.caml_ml_array_bound_error;
+  emit_call L.caml_ml_array_bound_error;
   D.define_label bd.bd_frame;
   D.cfi_adjust_cfa_offset ~bytes:(-bd.stack_offset)
 
@@ -385,7 +385,7 @@ let emit_call_bound_errors ~emit_call ~spacetime_before_uninstrumented_call =
        generating CFI (see [bound_error_label], above). *)
     assert (not !Clflags.debug);
     D.define_label !bound_error_call;
-    emit_call LU.caml_ml_array_bound_error
+    emit_call L.caml_ml_array_bound_error
   end
 
 let begin_assembly ?(code_section = D.Text) () =
@@ -466,7 +466,7 @@ let emit_spacetime_shapes () =
       | Some shape ->
         let funsym = L.name fundecl.fun_name in
         D.comment ("Shape for " ^ funsym ^ ":");
-        D.symbol (LU.use fundecl.fun_name);
+        D.symbol (LR.no_reloc fundecl.fun_name);
         List.iter
           (fun ((part_of_shape : Mach.spacetime_part_of_shape), label) ->
             let tag =
@@ -478,7 +478,8 @@ let emit_spacetime_shapes () =
             D.int64 (Int64.of_int tag);
             D.label label;
             begin match part_of_shape with
-            | Direct_call_point { callee; } -> D.symbol callee;
+            | Direct_call_point { callee; } ->
+              D.symbol (LR.no_reloc callee);
             | Indirect_call_point -> ()
             | Allocation_point -> ()
             end)
@@ -519,7 +520,7 @@ let emit_item (item : Cmm.data_item) =
   | Cint n -> D.targetint (Targetint.of_nativeint_exn n)
   | Csingle f -> D.float32 f
   | Cdouble f -> D.float64 f
-  | Csymbol_address s -> add_used_symbol s; D.symbol s
+  | Csymbol_address s -> add_used_symbol s; D.symbol (LR.no_reloc s)
   | Cstring s -> D.string s
   | Cskip bytes -> if bytes > 0 then D.space ~bytes
   | Calign bytes ->
@@ -535,7 +536,7 @@ let reset () =
   reset_debug_info ();
   frame_descriptors := [];
   symbols_defined := L.Set.empty;
-  symbols_used := LU.Set.empty;
+  symbols_used := L.Set.empty;
   size_constants := 0
 
 let binary_backend_available = ref false

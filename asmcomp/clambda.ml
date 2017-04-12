@@ -37,7 +37,7 @@ and uconstant =
 and ulambda =
     Uvar of Ident.t
   | Uconst of uconstant
-  | Udirect_apply of Linkage_name.Use.t * ulambda list * Debuginfo.t
+  | Udirect_apply of Linkage_name.t * ulambda list * Debuginfo.t
   | Ugeneric_apply of ulambda * ulambda list * Debuginfo.t
   | Uclosure of ufunction list * ulambda list
   | Uoffset of ulambda * int
@@ -89,7 +89,7 @@ type value_approximation =
   | Value_tuple of value_approximation array
   | Value_unknown
   | Value_const of uconstant
-  | Value_global_field of Linkage_name.Use.t * int
+  | Value_global_field of Linkage_name.t * int
 
 (* Preallocated globals *)
 

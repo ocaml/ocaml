@@ -26,7 +26,7 @@ let command_line_options =
 open Format
 
 type addressing_mode =
-    Ibased of Linkage_name.Use.t * int  (* symbol + displ *)
+    Ibased of Linkage_name.t * int      (* symbol + displ *)
   | Iindexed of int                     (* reg + displ *)
   | Iindexed2 of int                    (* reg + reg + displ *)
   | Iscaled of int * int                (* reg * scale + displ *)
@@ -85,9 +85,9 @@ let num_args_addressing = function
 let print_addressing printreg addr ppf arg =
   match addr with
   | Ibased(s, 0) ->
-      fprintf ppf "\"%a\"" Linkage_name.Use.print s
+      fprintf ppf "\"%a\"" Linkage_name.print s
   | Ibased(s, n) ->
-      fprintf ppf "\"%a\" + %i" Linkage_name.Use.print s n
+      fprintf ppf "\"%a\" + %i" Linkage_name.print s n
   | Iindexed n ->
       let idx = if n <> 0 then Printf.sprintf " + %i" n else "" in
       fprintf ppf "%a%s" printreg arg.(0) idx

@@ -53,9 +53,8 @@ val create : string -> t
 (** The name as passed to [create].  Not for emission into assembly. *)
 val name : t -> string
 
-(** Produce the platform-specific mangling of the given linkage name.
-    The results from this function should not be used directly in an assembly
-    file (use [Use.to_string] instead). *)
+(** The mangled name, for emission into assembly (when no relocation is
+    required; otherwise use [With_reloc.to_string], below). *)
 val to_string : t -> string
 
 (** Add a prefix to a linkage name. *)
@@ -78,10 +77,9 @@ val i386_non_lazy_ptr : t -> t
     program (PR#4690). *)
 val is_generic_function : t -> bool
 
-module Use : sig
-  (** A use of a linkage name.  This contains the name itself together
-      with information about how the reference emitted into the object file
-      should be relocated. *)
+module With_reloc : sig
+  (** A linkage name together with information about how the reference emitted
+      into the object file should be relocated. *)
 
   include Identifiable.S
 
@@ -100,7 +98,7 @@ module Use : sig
   val has_name : t -> linkage_name -> bool
 
   (** A symbol reference without relocation. *)
-  val use : linkage_name -> t
+  val no_reloc : linkage_name -> t
 
   (** A symbol reference via the global offset table. *)
   val got : t -> t
@@ -115,58 +113,6 @@ module Use : sig
   (** A symbol reference via the table of contents (POWER architecture
       only). *)
   val power_tocbase : t -> t
-
-  (** External variables from the C library. *)
-  val mcount : t
-  val _mcount : t
-  val __gnu_mcount_nc : t
-  val sqrt : t
-
-  (** Global variables in the OCaml runtime accessed by OCaml code. *)
-  val caml_young_ptr : t
-  val caml_young_limit : t
-  val caml_exception_pointer : t
-  val caml_negf_mask : t
-  val caml_absf_mask : t
-  val caml_backtrace_pos : t
-  val caml_exn_Division_by_zero : t
-  val caml_nativeint_ops : t
-  val caml_int32_ops : t
-  val caml_int64_ops : t
-  val caml_globals_inited : t
-
-  (** Entry points to the OCaml runtime from OCaml code.  (Note that this is
-      not an exhaustive list of such entry points.) *)
-  val caml_call_gc : t
-  val caml_c_call : t
-  val caml_modify : t
-  val caml_initialize : t
-  val caml_get_public_method : t
-  val caml_alloc : t
-  val caml_allocN : t
-  val caml_alloc1 : t
-  val caml_alloc2 : t
-  val caml_alloc3 : t
-  val caml_ml_array_bound_error : t
-  val caml_raise_exn : t
-  val caml_make_array : t
-  val caml_bswap16_direct : t
-  val caml_nativeint_direct_bswap : t
-  val caml_int32_direct_bswap : t
-  val caml_int64_direct_bswap : t
-  val caml_alloc_dummy : t
-  val caml_alloc_dummy_float : t
-  val caml_update_dummy : t
-
-  (** AFL instrumentation. *)
-  val caml_afl_area_ptr : t
-  val caml_afl_prev_loc : t
-  val caml_setup_afl : t
-
-  (** Entry points to the Spacetime runtime from OCaml code. *)
-  val caml_spacetime_allocate_node : t
-  val caml_spacetime_indirect_node_hole_ptr : t
-  val caml_spacetime_generate_profinfo : t
 end
 
 (** Nothing in particular. *)
@@ -174,6 +120,58 @@ val __dummy__ : t
 
 (** Distinguished identifier referencing the global offset table. *)
 val _GLOBAL_OFFSET_TABLE_ : t
+
+(** External variables from the C library. *)
+val mcount : t
+val _mcount : t
+val __gnu_mcount_nc : t
+val sqrt : t
+
+(** Global variables in the OCaml runtime accessed by OCaml code. *)
+val caml_young_ptr : t
+val caml_young_limit : t
+val caml_exception_pointer : t
+val caml_negf_mask : t
+val caml_absf_mask : t
+val caml_backtrace_pos : t
+val caml_exn_Division_by_zero : t
+val caml_nativeint_ops : t
+val caml_int32_ops : t
+val caml_int64_ops : t
+val caml_globals_inited : t
+
+(** Entry points to the OCaml runtime from OCaml code.  (Note that this is
+    not an exhaustive list of such entry points.) *)
+val caml_call_gc : t
+val caml_c_call : t
+val caml_modify : t
+val caml_initialize : t
+val caml_get_public_method : t
+val caml_alloc : t
+val caml_allocN : t
+val caml_alloc1 : t
+val caml_alloc2 : t
+val caml_alloc3 : t
+val caml_ml_array_bound_error : t
+val caml_raise_exn : t
+val caml_make_array : t
+val caml_bswap16_direct : t
+val caml_nativeint_direct_bswap : t
+val caml_int32_direct_bswap : t
+val caml_int64_direct_bswap : t
+val caml_alloc_dummy : t
+val caml_alloc_dummy_float : t
+val caml_update_dummy : t
+
+(** AFL instrumentation. *)
+val caml_afl_area_ptr : t
+val caml_afl_prev_loc : t
+val caml_setup_afl : t
+
+(** Entry points to the Spacetime runtime from OCaml code. *)
+val caml_spacetime_allocate_node : t
+val caml_spacetime_indirect_node_hole_ptr : t
+val caml_spacetime_generate_profinfo : t
 
 (** Name of the OCaml entry point. *)
 val caml_program : t

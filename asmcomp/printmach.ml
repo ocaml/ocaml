@@ -122,15 +122,15 @@ let operation op arg ppf res =
   | Ireload -> fprintf ppf "%a (reload)" regs arg
   | Iconst_int n -> fprintf ppf "%s" (Targetint.to_string n)
   | Iconst_float f -> fprintf ppf "%F" (Int64.float_of_bits f)
-  | Iconst_symbol s -> fprintf ppf "\"%a\"" Linkage_name.Use.print s
+  | Iconst_symbol s -> fprintf ppf "\"%a\"" Linkage_name.print s
   | Icall_ind _ -> fprintf ppf "call %a" regs arg
   | Icall_imm { func; _ } ->
-      fprintf ppf "call \"%a\" %a" Linkage_name.Use.print func regs arg
+      fprintf ppf "call \"%a\" %a" Linkage_name.print func regs arg
   | Itailcall_ind _ -> fprintf ppf "tailcall %a" regs arg
   | Itailcall_imm { func; } ->
-      fprintf ppf "tailcall \"%a\" %a" Linkage_name.Use.print func regs arg
+      fprintf ppf "tailcall \"%a\" %a" Linkage_name.print func regs arg
   | Iextcall { func; alloc; _ } ->
-      fprintf ppf "extcall \"%a\" %a%s" Linkage_name.Use.print func regs arg
+      fprintf ppf "extcall \"%a\" %a%s" Linkage_name.print func regs arg
       (if alloc then "" else " (noalloc)")
   | Istackoffset n ->
       fprintf ppf "offset stack %i" n

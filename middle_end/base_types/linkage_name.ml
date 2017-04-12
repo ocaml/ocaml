@@ -272,7 +272,7 @@ module Reloc = struct
   end)
 end
 
-module Use = struct
+module With_reloc = struct
   type t = {
     name : Linkage_name.t;
     reloc : Reloc.t;
@@ -299,7 +299,7 @@ module Use = struct
       output_string chan (Reloc.to_string t.reloc)
   end)
 
-  let use name =
+  let no_reloc name =
     { name;
       reloc = Normal;
     }
@@ -339,58 +339,6 @@ module Use = struct
   let plt t = set_reloc t None PLT
   let gotpcrel t = set_reloc t (Some TS.X86_64) GOTPCREL
   let power_tocbase t = set_reloc t (Some TS.POWER) POWER_tocbase
-
-  let mcount = use mcount
-  let _mcount = use _mcount
-  let __gnu_mcount_nc = use __gnu_mcount_nc
-  let sqrt = use sqrt
-
-  let __dummy__ = use __dummy__
-
-  let _GLOBAL_OFFSET_TABLE_ = use _GLOBAL_OFFSET_TABLE_
-
-  let caml_young_ptr = use caml_young_ptr
-  let caml_young_limit = use caml_young_limit
-  let caml_exception_pointer = use caml_exception_pointer
-  let caml_negf_mask = use caml_negf_mask
-  let caml_absf_mask = use caml_absf_mask
-  let caml_backtrace_pos = use caml_backtrace_pos
-  let caml_exn_Division_by_zero = use caml_exn_Division_by_zero
-  let caml_nativeint_ops = use caml_nativeint_ops
-  let caml_int32_ops = use caml_int32_ops
-  let caml_int64_ops = use caml_int64_ops
-
-  let caml_call_gc = use caml_call_gc
-  let caml_modify = use caml_modify
-  let caml_initialize = use caml_initialize
-  let caml_get_public_method = use caml_get_public_method
-  let caml_c_call = use caml_c_call
-  let caml_alloc = use caml_alloc
-  let caml_alloc1 = use caml_alloc1
-  let caml_alloc2 = use caml_alloc2
-  let caml_alloc3 = use caml_alloc3
-  let caml_allocN = use caml_allocN
-  let caml_ml_array_bound_error = use caml_ml_array_bound_error
-  let caml_raise_exn = use caml_raise_exn
-  let caml_make_array = use caml_make_array
-  let caml_bswap16_direct = use caml_bswap16_direct
-  let caml_nativeint_direct_bswap = use caml_nativeint_direct_bswap
-  let caml_int32_direct_bswap = use caml_int32_direct_bswap
-  let caml_int64_direct_bswap = use caml_int64_direct_bswap
-  let caml_alloc_dummy = use caml_alloc_dummy
-  let caml_alloc_dummy_float = use caml_alloc_dummy_float
-  let caml_update_dummy = use caml_update_dummy
-  let caml_globals_inited = use caml_globals_inited
-
-  let caml_afl_area_ptr = use caml_afl_area_ptr
-  let caml_afl_prev_loc = use caml_afl_prev_loc
-  let caml_setup_afl = use caml_setup_afl
-
-  let caml_spacetime_allocate_node = use caml_spacetime_allocate_node
-  let caml_spacetime_indirect_node_hole_ptr =
-    use caml_spacetime_indirect_node_hole_ptr
-  let caml_spacetime_generate_profinfo =
-    use caml_spacetime_generate_profinfo
 
   module List = struct
     let mem ts t =
