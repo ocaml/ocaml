@@ -60,6 +60,7 @@ let __dummy__ = "__dummy__"
 module Linkage_name = struct
   type t = {
     name : string;
+    prefix : string;
     suffix : string;
   }
 
@@ -92,7 +93,7 @@ module Linkage_name = struct
           s;
         Buffer.contents b
     in
-    without_suffix ^ t.suffix
+    t.prefix ^ without_suffix ^ t.suffix
 
   include Identifiable.Make (struct
     type nonrec t = t
@@ -120,7 +121,7 @@ module Linkage_name = struct
           name
       end
     end;
-    { name; suffix = ""; }
+    { name; prefix = ""; suffix = ""; }
 
   let name t = t.name
 
@@ -151,6 +152,10 @@ module Linkage_name = struct
   let i386_non_lazy_ptr t =
     require_architecture IA32;
     { t with suffix = "$non_lazy_ptr"; }
+
+  let power_function_entry_point t =
+    require_architecture POWER;
+    { t with prefix = "."; }
 
   let is_generic_function t =
     List.exists (fun p -> Misc.Stdlib.String.is_prefix p ~of_:t.name)
