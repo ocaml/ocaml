@@ -22,7 +22,7 @@ type windows_system =
   | MinGW
   | Native
 
-type system = 
+type system =
   | Linux of linux_abi
   | Windows of windows_system
   | MacOS_like
@@ -35,7 +35,7 @@ type system =
   | BeOS
   | Unknown
 
-type architecture = 
+type architecture =
   | IA32
   | X86_64
   | ARM
@@ -44,12 +44,12 @@ type architecture =
   | SPARC
   | Z
 
-type assembler = 
+type assembler =
   | GAS_like
   | MacOS
   | MASM
 
-type machine_width = 
+type machine_width =
   | Thirty_two
   | Sixty_four
 

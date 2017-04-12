@@ -219,8 +219,8 @@ val between_symbol_and_label_offset
   -> offset_upper:Targetint.t
   -> unit
 
-(* CR mshinwell: naming of these two *)
-
+(** As for [between_symbol_and_label_offset], but with the types of the
+    lower and upper bounds transposed. *)
 val between_symbol_and_label_offset'
    : upper:Linkage_name.With_reloc.t
   -> lower:Cmm.label
@@ -230,8 +230,6 @@ val between_symbol_and_label_offset'
 (** Emit a 32-bit-wide reference giving the displacement between obtained
     by subtracting the current assembly location from the sum of the address
     of the given label plus the given offset. *)
-(* CR mshinwell: Make sure that emit_label lines up with what Asm_directives
-    does for int -> string label conversion *)
 val between_this_and_label_offset_32bit
    : upper:Cmm.label
   -> offset_upper:Targetint.t
@@ -278,8 +276,8 @@ module Directive : sig
     | This
     | Named_thing of string
     (** [Named_thing] covers symbols, labels and variables.  (These are all
-        represented as [string] rather than [Linkage_name.With_reloc.t] and so forth
-        because name mangling conventions have by now been applied. *)
+        represented as [string] rather than [Linkage_name.With_reloc.t] and so
+        forth because name mangling conventions have by now been applied. *)
     | Add of constant * constant
     | Sub of constant * constant
     | Div of constant * int
@@ -313,10 +311,6 @@ module Directive : sig
     | Indirect_symbol of string
     | Loc of { file_num : int; line : int; col : int; }
     | Private_extern of string
-(*
-    (* Note that on Mac OS X, [Set] always makes the expression absolute. *)
-    | Set of string * constant
-*)
     | Size of string * constant
     | Sleb128 of constant
     | Type of string * string
