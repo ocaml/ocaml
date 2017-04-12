@@ -466,7 +466,7 @@ let emit_spacetime_shapes () =
       | Some shape ->
         let funsym = L.name fundecl.fun_name in
         D.comment ("Shape for " ^ funsym ^ ":");
-        D.symbol (LR.create fundecl.fun_name);
+        D.symbol (LR.no_reloc fundecl.fun_name);
         List.iter
           (fun ((part_of_shape : Mach.spacetime_part_of_shape), label) ->
             let tag =
@@ -479,7 +479,7 @@ let emit_spacetime_shapes () =
             D.label label;
             begin match part_of_shape with
             | Direct_call_point { callee; } ->
-              D.symbol (LR.create callee);
+              D.symbol (LR.no_reloc callee);
             | Indirect_call_point -> ()
             | Allocation_point -> ()
             end)
@@ -520,7 +520,7 @@ let emit_item (item : Cmm.data_item) =
   | Cint n -> D.targetint (Targetint.of_nativeint_exn n)
   | Csingle f -> D.float32 f
   | Cdouble f -> D.float64 f
-  | Csymbol_address s -> add_used_symbol s; D.symbol (LR.create s)
+  | Csymbol_address s -> add_used_symbol s; D.symbol (LR.no_reloc s)
   | Cstring s -> D.string s
   | Cskip bytes -> if bytes > 0 then D.space ~bytes
   | Calign bytes ->

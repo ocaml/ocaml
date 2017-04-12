@@ -777,8 +777,8 @@ let force_relocatable expr =
   match TS.assembler () with
   | MacOS ->
     let temp = Linkage_name.create (new_temp_var ()) in
-    direct_assignment (LR.create temp) expr;
-    Symbol_reloc (LR.create temp)  (* not really a symbol, but OK (same below) *)
+    direct_assignment (LR.no_reloc temp) expr;
+    Symbol_reloc (LR.no_reloc temp)  (* not really a symbol, but OK (same below) *)
   | GAS_like | MASM ->
     expr
 
@@ -837,8 +837,8 @@ let offset_into_section_label ~section ~label:upper ~width =
     match TS.assembler () with
     | MacOS ->
       let temp = Linkage_name.create (new_temp_var ()) in
-      direct_assignment (LR.create temp) (Sub (Label upper, Label lower));
-      Symbol_reloc (LR.create temp)
+      direct_assignment (LR.no_reloc temp) (Sub (Label upper, Label lower));
+      Symbol_reloc (LR.no_reloc temp)
     | GAS_like | MASM ->
       Label upper
   in
@@ -851,8 +851,8 @@ let offset_into_section_symbol ~section ~symbol:upper ~width =
     match TS.assembler () with
     | MacOS ->
       let temp = Linkage_name.create (new_temp_var ()) in
-      direct_assignment (LR.create temp) (Sub (Symbol_reloc upper, Label lower));
-      Symbol_reloc (LR.create temp)
+      direct_assignment (LR.no_reloc temp) (Sub (Symbol_reloc upper, Label lower));
+      Symbol_reloc (LR.no_reloc temp)
     | GAS_like | MASM -> Symbol_reloc upper
   in
   constant_with_width expr ~width
