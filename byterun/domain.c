@@ -18,6 +18,7 @@
 #include "caml/fiber.h"
 #include "caml/callback.h"
 #include "caml/minor_gc.h"
+#include "caml/eventlog.h"
 
 /* Since we support both heavyweight OS threads and lightweight
    userspace threads, the word "thread" is ambiguous. This file deals
@@ -199,6 +200,8 @@ static void create_domain(uintnat initial_minor_heap_size) {
     domain_state->external_raise = NULL;
     domain_state->trap_sp_off = 1;
 #endif
+    caml_setup_eventlog();
+    caml_ev_resume();
   }
   caml_plat_unlock(&all_domains_lock);
 }
@@ -262,6 +265,7 @@ static void domain_terminate() {
 
   /* FIXME: proper domain termination and reuse */
   /* interrupt_word_address must not go away */
+  caml_teardown_eventlog();
   pause();
 }
 
@@ -388,6 +392,7 @@ static void interrupt_domain(dom_internal* d) {
 
 static void request_stw() {
   int i;
+  caml_ev_request_stw();
   atomic_store_rel(&stw_requested, 1);
   /* interrupt all running domains */
   caml_plat_lock(&all_domains_lock);
@@ -426,10 +431,12 @@ void caml_handle_gc_interrupt() {
     while (atomic_load_acq(young_limit) == INTERRUPT_MAGIC) {
       atomic_cas(young_limit, INTERRUPT_MAGIC, domain_self->minor_heap_area);
     }
+    caml_ev_pause(EV_PAUSE_GC);
     check_rpc();
     if (atomic_load_acq(&stw_requested)) {
       stw_phase();
     }
+    caml_ev_resume();
   }
 
   if (((uintnat)CAML_DOMAIN_STATE->young_ptr - Bhsize_wosize(Max_young_wosize) <
@@ -459,6 +466,7 @@ CAMLexport void (*caml_leave_blocking_section_hook)(void) =
 
 CAMLexport void caml_leave_blocking_section() {
   caml_plat_lock(&domain_self->roots_lock);
+  caml_ev_resume();
   caml_leave_blocking_section_hook();
   caml_restore_stack_gc();
   caml_process_pending_signals();
@@ -468,6 +476,7 @@ CAMLexport void caml_enter_blocking_section() {
   caml_process_pending_signals();
   caml_save_stack_gc();
   caml_enter_blocking_section_hook();
+  caml_ev_pause(EV_PAUSE_BLOCK);
   caml_plat_unlock(&domain_self->roots_lock);
 }
 
@@ -531,6 +540,7 @@ static void stw_phase () {
 
   /* Finish GC on the domains we've locked */
 
+  caml_ev_start_gc();
   for (i = 0; i < Max_domains; i++) {
     dom_internal* d = &all_domains[i];
     if (!d->state.shared_heap)
@@ -549,6 +559,8 @@ static void stw_phase () {
       caml_finish_marking_domain(&d->state);
     }
   }
+  caml_ev_end_gc();
+
 
   /* Wait until all threads finish GC */
 
@@ -656,7 +668,6 @@ static int handle_rpc(dom_internal* target)
 {
   int r = 0;
   if (atomic_load_acq(&target->rpc_request) != RPC_IDLE) {
-
     /* wait until we know what the request is */
     SPIN_WAIT {
       if (atomic_load_acq(&target->rpc_request) != RPC_REQUEST_INITIALISING) break;
@@ -672,7 +683,9 @@ static int handle_rpc(dom_internal* target)
       /* we have a copy of the request, it is now safe for other domains to overwrite it */
       atomic_store_rel(&target->rpc_request, RPC_IDLE);
       /* handle the request */
+      caml_ev_msg("RPC");
       rpc_handler(&target->state, rpc_data);
+      caml_ev_wakeup(&target->state);
       /* signal completion */
       atomic_store_rel(rpc_completion_signal, 1);
     }
@@ -725,6 +738,8 @@ CAMLexport void caml_domain_rpc(struct domain* domain,
     return;
   }
 
+
+  caml_ev_pause(EV_PAUSE_RPC(domain->id));
   /* Wait until we can send an RPC to the target.
      Need to keep handling incoming RPCs while waiting.
      The target may have deactivated, so try taking it over */
@@ -754,4 +769,5 @@ CAMLexport void caml_domain_rpc(struct domain* domain,
       if (attempt_rpc_takeover(target)) break;
     }
   }
+  caml_ev_resume();
 }

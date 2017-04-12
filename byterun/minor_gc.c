@@ -532,6 +532,7 @@ void caml_empty_minor_heap ()
 */
 CAMLexport void caml_minor_collection (void)
 {
+  caml_ev_pause(EV_PAUSE_GC);
   caml_ev_start_gc();
 
   caml_empty_minor_heap ();
@@ -545,6 +546,7 @@ CAMLexport void caml_minor_collection (void)
   Assert (CAML_DOMAIN_STATE->young_end == CAML_DOMAIN_STATE->young_ptr);
 
   caml_ev_end_gc();
+  caml_ev_resume();
 
   /* If the major slice triggered a STW, do that now */
   caml_handle_gc_interrupt();

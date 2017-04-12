@@ -12,6 +12,7 @@
 #include "caml/eventlog.h"
 #include "caml/startup.h"
 #include "caml/domain.h"
+#include "caml/platform.h"
 
 struct event_details {
   int type;
@@ -23,23 +24,37 @@ enum {
   sz_capset_type = 2,
   sz_block_length = 4,
   sz_timestamp = 8,
-  sz_cap = 2
+  sz_cap = 2,
+  sz_tid = 4,
+  sz_stop_status = 2
 };
 
 static const struct event_details
   ev_capset_create = { 25, (sz_capset + sz_capset_type), "Create capability set" },
   ev_block_marker = { 18, (sz_block_length + sz_timestamp + sz_cap), "Block marker" },
+  ev_request_par_gc = { 12, 0, "Request global GC" },
   ev_gc_start = { 9, 0, "Starting GC" },
-  ev_gc_end = { 10, 0, "Finished GC" };
+  ev_gc_end = { 10, 0, "Finished GC" },
+  ev_run_thread = { 1, sz_tid, "Run thread" },
+  ev_stop_thread = { 2, (sz_tid + sz_stop_status + sz_tid), "Stop thread" },
+  ev_wakeup_thread = { 8, (sz_tid + sz_cap), "Wakeup thread" },
+  ev_user_msg = { 19, 0xffff, "User message" };
 
 static const struct event_details* all_events[] = {
   &ev_capset_create,
   &ev_block_marker,
+  &ev_request_par_gc,
   &ev_gc_start,
-  &ev_gc_end
+  &ev_gc_end,
+  &ev_run_thread,
+  &ev_stop_thread,
+  &ev_wakeup_thread,
+  &ev_user_msg
 };
 
+static caml_plat_mutex lock = CAML_PLAT_MUTEX_INITIALIZER;
 static FILE* output;
+static int num_users;
 static uint64 initial_timestamp;
 
 #define EVENT_BUFFER_SIZE 8192
@@ -71,21 +86,25 @@ static void output_initial_events();
 void caml_setup_eventlog() {
   char filename[200 + sizeof(".eventlog")];
 #if !defined(HAS_GETTIMEOFDAY)
-  caml_gc_log("No gettimeofday() on this system, event logging disabled");
+  caml_fatal_error("No gettimeofday() on this system, event logging doesn't work");
 #endif
 
-  sprintf(filename, "%.200s.eventlog", 
-          caml_params->exe_name ? caml_params->exe_name : "program");
-  output = fopen(filename, "w");
+  caml_plat_lock(&lock);
+  num_users++;
   if (!output) {
-    caml_gc_log("Failed to open event log '%s': %s", filename,
-                strerror(errno));
-    return;
+    sprintf(filename, "%.200s.eventlog", 
+            caml_params->exe_name ? caml_params->exe_name : "program");
+    output = fopen(filename, "w");
+    if (!output) {
+      caml_fatal_error_arg2("Failed to open event log '%s'", filename,
+                            ": %s", strerror(errno));
+    }
+    caml_gc_log("Logging events to '%s'", filename);
+    initial_timestamp = timestamp();
+    output_event_descriptions();
+    output_initial_events();
   }
-  caml_gc_log("Logging events to '%s'", filename);
-  initial_timestamp = timestamp();
-  output_event_descriptions();
-  output_initial_events();
+  caml_plat_unlock(&lock);
   atexit(&caml_teardown_eventlog);
 }
 
@@ -135,6 +154,9 @@ static void output_buffer(char* buf, mlsize_t len)
     caml_gc_log("fwrite() failed, wrote %lu instead of %lu bytes",
                 (unsigned long)written, (unsigned long)len);
   }
+  if (fflush(output)) {
+    caml_gc_log("fflush() failed: %s", strerror(errno));
+  }
 }
 
 static void output_event_descriptions()
@@ -165,8 +187,8 @@ static void output_event_descriptions()
 
 void flush_eventlog()
 {
-  caml_gc_log("Flushing event log");
   if (evbuf.buffer && evbuf.remaining < EVENT_BUFFER_SIZE) {
+    caml_gc_log("Flushing event log");
     uint32 len = (uint32)(evbuf.pos - evbuf.buffer);
     char* p = evbuf.buffer;
     p += 2;  /* skip EVENT_BLOCK_MARKER */
@@ -237,15 +259,81 @@ void caml_ev_end_gc()
   append_event(&ev_gc_end);
 }
 
+void caml_ev_request_stw()
+{
+  if (!output) return;
+  append_event(&ev_request_par_gc);
+}
+
+void caml_ev_pause(long reason)
+{
+  char* p;
+  if (!output) return;
+  p = append_event(&ev_stop_thread);
+  p = write_32(p, caml_domain_self()->id);
+  if (reason == EV_PAUSE_GC) {
+    p = write_16(p, 1 /* HeapOverflow */);
+    p = write_32(p, 0 /* unused */);
+  } else if (reason == EV_PAUSE_BLOCK) {
+    p = write_16(p, 14 /* BlockedOnCCall */);
+    p = write_32(p, 0 /* Unused */);
+  } else if (reason == EV_PAUSE_TERMINATE) {
+    p = write_16(p, 5 /* ThreadFinished */);
+    p = write_32(p, 0 /* Unused */);
+  } else {
+    /* reason == EV_PAUSE_RPC(dom) */
+    p = write_16(p, 8 /* BlockedOnBlackHole */);
+    p = write_32(p, reason);
+  }
+}
+
+void caml_ev_resume()
+{
+  char* p;
+  if (!output) return;
+  p = append_event(&ev_run_thread);
+  p = write_32(p, caml_domain_self()->id);
+}
+
+void caml_ev_wakeup(struct domain* dom)
+{
+  char* p;
+  if (!output) return;
+  p = append_event(&ev_wakeup_thread);
+  p = write_32(p, dom->id);
+  p = write_32(p, dom->id);
+}
+
+void caml_ev_msg(const char* msg)
+{
+  char* p;
+  int len;
+  if (!output) return;
+  len = strlen(msg);
+  struct event_details ev = ev_user_msg;
+  ev.payload_size = 2 + len;
+  p = append_event(&ev);
+  p = write_16(p, len);
+  p = write_string(p, msg);
+}
+
 void caml_teardown_eventlog()
 {
+  caml_plat_lock(&lock);
   if (output) {
-    /*char* p = caml_append_data(2);
-      p = write_16(p, EVENT_END); */
-    flush_eventlog();
-    fputc(0xff, output);
-    fputc(0xff, output);
-    fclose(output);
-    output = 0;
+    num_users--;
+    if (evbuf.buffer) {
+      caml_ev_pause(EV_PAUSE_TERMINATE);
+      flush_eventlog();
+      free(evbuf.buffer);
+      evbuf.buffer = NULL;
+    }
+    if (num_users == 0) {
+      fputc(0xff, output);
+      fputc(0xff, output);
+      fclose(output);
+      output = 0;
+    }
   }
+  caml_plat_unlock(&lock);
 }
