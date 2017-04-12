@@ -1074,7 +1074,7 @@ method emit_tail (env:environment) exp =
                 self#insert_moves r1 loc_arg;
                 self#maybe_emit_spacetime_move ~spacetime_reg;
                 self#insert_debug call dbg loc_arg [||];
-              end else if Linkage_name.Use.has_name func !current_function_name
+              end else if Linkage_name.equal func !current_function_name
               then begin
                 let call = Iop (Itailcall_imm { func; label_after; }) in
                 let loc_arg' = Proc.loc_parameters r1 in

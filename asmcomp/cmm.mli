@@ -107,7 +107,7 @@ type memory_chunk =
 
 and operation =
     Capply of machtype
-  | Cextcall of Linkage_name.Use.t * machtype * bool * label option
+  | Cextcall of Linkage_name.t * machtype * bool * label option
   | Cload of memory_chunk * Asttypes.mutable_flag
   | Calloc
   | Cstore of memory_chunk * Lambda.initialization_or_assignment
@@ -132,7 +132,7 @@ and expression =
     Cconst_int of int
   | Cconst_natint of nativeint
   | Cconst_float of float
-  | Cconst_symbol of Linkage_name.Use.t
+  | Cconst_symbol of Linkage_name.t
   | Cconst_pointer of int
   | Cconst_natpointer of nativeint
   | Cblockheader of nativeint * Debuginfo.t
@@ -166,7 +166,7 @@ type data_item =
   | Cint of nativeint
   | Csingle of float
   | Cdouble of float
-  | Csymbol_address of Linkage_name.Use.t
+  | Csymbol_address of Linkage_name.t
   | Cstring of string
   | Cskip of int
   | Calign of int

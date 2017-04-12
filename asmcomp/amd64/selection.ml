@@ -20,12 +20,12 @@ open Proc
 open Cmm
 open Mach
 
-module LU = Linkage_name.Use
+module L = Linkage_name
 
 (* Auxiliary for recognizing addressing modes *)
 
 type addressing_expr =
-    Asymbol of LU.t
+    Asymbol of L.t
   | Alinear of expression
   | Aadd of expression * expression
   | Ascale of expression * int
@@ -120,8 +120,8 @@ let pseudoregs_for_operation op arg res =
 (* If you update [inline_ops], you may need to update [is_simple_expr] and/or
    [effects_of], below. *)
 let inline_ops =
-  [ LU.sqrt; LU.caml_bswap16_direct; LU.caml_int32_direct_bswap;
-    LU.caml_int64_direct_bswap; LU.caml_nativeint_direct_bswap ]
+  [ L.sqrt; L.caml_bswap16_direct; L.caml_int32_direct_bswap;
+    L.caml_int64_direct_bswap; L.caml_nativeint_direct_bswap ]
 
 (* The selector class *)
 
@@ -138,7 +138,7 @@ method is_immediate_targetint n = n <= 0x7FFFFFFFn && n >= -0x80000000n
 method! is_simple_expr e =
   match e with
   | Cop(Cextcall (fn, _, _, _), args, _)
-    when LU.List.mem inline_ops fn ->
+    when L.List.mem inline_ops fn ->
       (* inlined ops are simple if their arguments are *)
       List.for_all self#is_simple_expr args
   | _ ->
@@ -147,7 +147,7 @@ method! is_simple_expr e =
 method! effects_of e =
   match e with
   | Cop(Cextcall(fn, _, _, _), args, _)
-    when LU.List.mem inline_ops fn ->
+    when L.List.mem inline_ops fn ->
       Selectgen.Effect_and_coeffect.join_list_map args self#effects_of
   | _ ->
       super#effects_of e
@@ -206,7 +206,7 @@ method! select_operation op args dbg =
       self#select_floatarith true Imulf Ifloatmul args
   | Cdivf ->
       self#select_floatarith false Idivf Ifloatdiv args
-  | Cextcall(sqrt, _, false, _) when LU.equal sqrt LU.sqrt ->
+  | Cextcall(sqrt, _, false, _) when L.equal sqrt L.sqrt ->
      begin match args with
        [Cop(Cload ((Double|Double_u as chunk), _), [loc], _dbg)] ->
          let (addr, arg) = self#select_addressing chunk loc in
@@ -227,17 +227,17 @@ method! select_operation op args dbg =
           super#select_operation op args dbg
       end
   | Cextcall(caml_bswap16_direct, _, _, _)
-        when LU.equal caml_bswap16_direct LU.caml_bswap16_direct ->
+        when L.equal caml_bswap16_direct L.caml_bswap16_direct ->
       (Ispecific (Ibswap 16), args)
   | Cextcall(caml_int32_direct_bswap, _, _, _)
-        when LU.equal caml_int32_direct_bswap LU.caml_int32_direct_bswap ->
+        when L.equal caml_int32_direct_bswap L.caml_int32_direct_bswap ->
       (Ispecific (Ibswap 32), args)
   | Cextcall(caml_int64_direct_bswap, _, _, _)
-        when LU.equal caml_int64_direct_bswap LU.caml_int64_direct_bswap ->
+        when L.equal caml_int64_direct_bswap L.caml_int64_direct_bswap ->
       (Ispecific (Ibswap 64), args)
   | Cextcall(caml_nativeint_direct_bswap, _, _, _)
-        when LU.equal caml_nativeint_direct_bswap
-          LU.caml_nativeint_direct_bswap ->
+        when L.equal caml_nativeint_direct_bswap
+          L.caml_nativeint_direct_bswap ->
       (Ispecific (Ibswap 64), args)
   (* AMD64 does not support immediate operands for multiply high signed *)
   | Cmulhi ->

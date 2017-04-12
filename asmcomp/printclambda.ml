@@ -78,7 +78,7 @@ and lam ppf = function
       let lams ppf largs =
         List.iter (fun l -> fprintf ppf "@ %a" lam l) largs in
       fprintf ppf "@[<2>(apply*@ %a %a)@]"
-        Linkage_name.Use.print f lams largs
+        Linkage_name.print f lams largs
   | Ugeneric_apply(lfun, largs, _) ->
       let lams ppf largs =
         List.iter (fun l -> fprintf ppf "@ %a" lam l) largs in
@@ -228,4 +228,4 @@ let rec approx ppf = function
   | Value_const c ->
       fprintf ppf "@[const(%a)@]" uconstant c
   | Value_global_field (s, i) ->
-      fprintf ppf "@[global(%a,%i)@]" Linkage_name.Use.print s i
+      fprintf ppf "@[global(%a,%i)@]" Linkage_name.print s i

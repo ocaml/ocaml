@@ -32,7 +32,6 @@ let ignore_uconstant (_ : Clambda.uconstant) = ()
 let ignore_ulambda (_ : Clambda.ulambda) = ()
 let ignore_ulambda_list (_ : Clambda.ulambda list) = ()
 let ignore_linkage_name (_ : Linkage_name.t) = ()
-let ignore_linkage_name_use (_ : Linkage_name.Use.t) = ()
 let ignore_debuginfo (_ : Debuginfo.t) = ()
 let ignore_int (_ : int) = ()
 let ignore_ident (_ : Ident.t) = ()
@@ -79,7 +78,7 @@ let make_ident_info (clam : Clambda.ulambda) : ident_info =
          [Cmmgen.transl_function].) *)
       ignore_uconstant const
     | Udirect_apply (label, args, dbg) ->
-      ignore_linkage_name_use label;
+      ignore_linkage_name label;
       List.iter loop args;
       ignore_debuginfo dbg
     | Ugeneric_apply (func, args, dbg) ->
@@ -246,7 +245,7 @@ let let_bound_vars_that_can_be_moved ident_info (clam : Clambda.ulambda) =
     | Uconst const ->
       ignore_uconstant const
     | Udirect_apply (label, args, dbg) ->
-      ignore_linkage_name_use label;
+      ignore_linkage_name label;
       examine_argument_list args;
       (* We don't currently traverse [args]; they should all be variables
          anyway.  If this is added in the future, take care to traverse [args]
