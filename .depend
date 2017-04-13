@@ -938,6 +938,7 @@ asmcomp/export_info.cmi : middle_end/base_types/variable.cmi \
 asmcomp/export_info_for_pack.cmo : middle_end/base_types/variable.cmi \
     middle_end/base_types/var_within_closure.cmi \
     middle_end/base_types/symbol.cmi \
+    middle_end/base_types/set_of_closures_origin.cmi \
     middle_end/base_types/set_of_closures_id.cmi utils/misc.cmi \
     middle_end/flambda_utils.cmi middle_end/flambda_iterators.cmi \
     middle_end/flambda.cmi asmcomp/export_info.cmi \
@@ -947,6 +948,7 @@ asmcomp/export_info_for_pack.cmo : middle_end/base_types/variable.cmi \
 asmcomp/export_info_for_pack.cmx : middle_end/base_types/variable.cmx \
     middle_end/base_types/var_within_closure.cmx \
     middle_end/base_types/symbol.cmx \
+    middle_end/base_types/set_of_closures_origin.cmx \
     middle_end/base_types/set_of_closures_id.cmx utils/misc.cmx \
     middle_end/flambda_utils.cmx middle_end/flambda_iterators.cmx \
     middle_end/flambda.cmx asmcomp/export_info.cmx \
@@ -1737,7 +1739,8 @@ middle_end/share_constants.cmi : middle_end/flambda.cmi
 middle_end/simple_value_approx.cmo : middle_end/base_types/variable.cmi \
     middle_end/base_types/var_within_closure.cmi \
     middle_end/base_types/tag.cmi middle_end/base_types/symbol.cmi \
-    utils/misc.cmi bytecomp/lambda.cmi middle_end/inlining_cost.cmi \
+    middle_end/base_types/set_of_closures_id.cmi utils/misc.cmi \
+    bytecomp/lambda.cmi middle_end/inlining_cost.cmi \
     middle_end/freshening.cmi middle_end/flambda_utils.cmi \
     middle_end/flambda.cmi middle_end/base_types/export_id.cmi \
     middle_end/effect_analysis.cmi middle_end/base_types/closure_id.cmi \
@@ -1745,7 +1748,8 @@ middle_end/simple_value_approx.cmo : middle_end/base_types/variable.cmi \
 middle_end/simple_value_approx.cmx : middle_end/base_types/variable.cmx \
     middle_end/base_types/var_within_closure.cmx \
     middle_end/base_types/tag.cmx middle_end/base_types/symbol.cmx \
-    utils/misc.cmx bytecomp/lambda.cmx middle_end/inlining_cost.cmx \
+    middle_end/base_types/set_of_closures_id.cmx utils/misc.cmx \
+    bytecomp/lambda.cmx middle_end/inlining_cost.cmx \
     middle_end/freshening.cmx middle_end/flambda_utils.cmx \
     middle_end/flambda.cmx middle_end/base_types/export_id.cmx \
     middle_end/effect_analysis.cmx middle_end/base_types/closure_id.cmx \
@@ -1753,7 +1757,8 @@ middle_end/simple_value_approx.cmx : middle_end/base_types/variable.cmx \
 middle_end/simple_value_approx.cmi : middle_end/base_types/variable.cmi \
     middle_end/base_types/var_within_closure.cmi \
     middle_end/base_types/tag.cmi middle_end/base_types/symbol.cmi \
-    bytecomp/lambda.cmi middle_end/freshening.cmi middle_end/flambda.cmi \
+    middle_end/base_types/set_of_closures_id.cmi bytecomp/lambda.cmi \
+    middle_end/freshening.cmi middle_end/flambda.cmi \
     middle_end/base_types/export_id.cmi middle_end/base_types/closure_id.cmi
 middle_end/simplify_boxed_integer_ops.cmo : middle_end/simplify_common.cmi \
     middle_end/simplify_boxed_integer_ops_intf.cmi \
