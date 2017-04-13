@@ -33,6 +33,14 @@ error () {
   exit 3
 }
 
+# Kill a task on Windows
+# Errors (e.g. non-existing tasks) are ignored
+kill_task()
+{
+  task=$1
+  taskkill /f /im ${task} || true
+}
+
 quote1 () {
   printf "'%s'" "`printf %s "$1" | sed -e "s/'/'\\\\\\\\''/g"`";
 }
@@ -88,6 +96,7 @@ make=make
 instdir="$HOME/ocaml-tmp-install"
 makefile=Makefile
 configure=unix
+cleanup=false
 
 case "$branch" in
   .) workdir="$jenkinsdir"
@@ -102,29 +111,42 @@ case "$arch" in
   bsd) make=gmake ;;
   macos) ;;
   linux) ;;
-  cygwin) ;;
+  cygwin)
+    cleanup=true;;
   mingw)
     instdir=/cygdrive/c/ocamlmgw
     makefile=Makefile.nt
     configure=nt
+    cleanup=true
   ;;
   mingw64)
     instdir=/cygdrive/c/ocamlmgw64
     makefile=Makefile.nt
     configure=nt
+    cleanup=true
   ;;
   msvc)
     instdir=/cygdrive/c/ocamlms
     makefile=Makefile.nt
     configure=nt
+    cleanup=true
   ;;
   msvc64)
     instdir=/cygdrive/c/ocamlms64
     makefile=Makefile.nt
     configure=nt
+    cleanup=true
   ;;
   *) error "unknown architecture: $arch";;
 esac
+
+#########################################################################
+# On Windows, cleanup processes that may remain from previous run
+
+if $cleanup; then
+  tasks="tee ocamlrun program"
+  for task in ${tasks}; do kill_task ${task}.exe; done
+fi
 
 #########################################################################
 # Go to the right directory
