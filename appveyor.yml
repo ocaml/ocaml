@@ -28,14 +28,14 @@ clone_depth: 1
 
 environment:
   global:
-    CYG_ROOT: C:/cygwin
+    CYG_ROOT: C:/cygwin64
     CYG_MIRROR: http://mirrors.kernel.org/sourceware/cygwin/
-    CYG_CACHE: C:/cygwin/var/cache/setup
+    CYG_CACHE: C:/cygwin64/var/cache/setup
     OCAMLROOT: "%PROGRAMFILES%/OCaml"
     OCAMLROOT2: "%PROGRAMFILES%/OCaml-mingw32"
 
 cache:
-  - C:\cygwin\var\cache\setup
+  - C:\cygwin64\var\cache\setup
 
 install:
   - mkdir "%OCAMLROOT%/bin/flexdll"
@@ -49,9 +49,9 @@ install:
   - cd ..
   # Make sure the Cygwin path comes before the Git one (otherwise
   # cygpath behaves crazily), but after the MSVC one.
-  - set Path=C:\cygwin\bin;%OCAMLROOT%\bin\flexdll;%Path%
+  - set Path=C:\cygwin64\bin;%OCAMLROOT%\bin\flexdll;%Path%
   - '%CYG_ROOT%\bin\bash -lc "cygcheck -dc cygwin"'
-  - '"%CYG_ROOT%\setup-x86.exe" -qgnNdO -R "%CYG_ROOT%" -s "%CYG_MIRROR%" -l "%CYG_CACHE%" -P diffutils -P make -P mingw64-i686-gcc-core >NUL'
+  - '"%CYG_ROOT%\setup-x86_64.exe" -qgnNdO -R "%CYG_ROOT%" -s "%CYG_MIRROR%" -l "%CYG_CACHE%" -P diffutils -P make -P mingw64-i686-gcc-core >NUL'
   - '%CYG_ROOT%\bin\bash -lc "cygcheck -dc cygwin"'
   - set OCAML_PREV_PATH=%PATH%
   - set OCAML_PREV_LIB=%LIB%
