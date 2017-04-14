@@ -17,8 +17,6 @@
 
 type file = string
 
-val cpu_time : unit -> float
-
 val reset : unit -> unit
 (** erase all recorded times *)
 
@@ -28,8 +26,15 @@ val time_call : ?accumulate:bool -> string -> (unit -> 'a) -> 'a
 val time : ?accumulate:bool -> string -> ('a -> 'b) -> 'a -> 'b
 (** [time pass f arg] records the runtime of [f arg] *)
 
-val print : ?total:float -> Format.formatter -> unit
+type column = [ `Time | `Alloc | `Top_heap | `Abs_top_heap ]
+
+val print : Format.formatter -> column list -> unit
 (** Prints all recorded timings to the formatter. *)
+
+(** Command line flags *)
+
+val options_doc : string
+val all_columns : column list
 
 (** A few pass names that are needed in several places, and shared to
     avoid typos. *)

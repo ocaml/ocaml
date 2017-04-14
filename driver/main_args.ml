@@ -460,7 +460,11 @@ let mk_thread f =
 ;;
 
 let mk_dtimings f =
-  "-dtimings", Arg.Unit f, " Print timings"
+  "-dtimings", Arg.Unit f, " Print timings information for each pass";
+;;
+
+let mk_dprofile f =
+  "-dprofile", Arg.Unit f, Timings.options_doc
 ;;
 
 let mk_unbox_closures f =
@@ -843,6 +847,7 @@ module type Compiler_options = sig
 
   val _nopervasives : unit -> unit
   val _dtimings : unit -> unit
+  val _dprofile : unit -> unit
 
   val _args: string -> string array
   val _args0: string -> string array
@@ -1070,6 +1075,7 @@ struct
     mk_dlambda F._dlambda;
     mk_dinstr F._dinstr;
     mk_dtimings F._dtimings;
+    mk_dprofile F._dprofile;
 
     mk_args F._args;
     mk_args0 F._args0;
@@ -1263,6 +1269,7 @@ struct
     mk_dinterval F._dinterval;
     mk_dstartup F._dstartup;
     mk_dtimings F._dtimings;
+    mk_dprofile F._dprofile;
     mk_dump_pass F._dump_pass;
 
     mk_args F._args;

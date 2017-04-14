@@ -133,8 +133,8 @@ CSLPROF_IMPORTS=misc.cmo config.cmo identifiable.cmo numbers.cmo \
 
 $(call byte_and_opt,ocamlprof,$(CSLPROF_IMPORTS) profiling.cmo $(CSLPROF),)
 
-ocamlcp_cmos = misc.cmo warnings.cmo config.cmo identifiable.cmo numbers.cmo \
-	       arg_helper.cmo clflags.cmo main_args.cmo
+ocamlcp_cmos = misc.cmo timings.cmo warnings.cmo config.cmo identifiable.cmo \
+               numbers.cmo arg_helper.cmo clflags.cmo main_args.cmo
 
 $(call byte_and_opt,ocamlcp,$(ocamlcp_cmos) ocamlcp.cmo,)
 $(call byte_and_opt,ocamloptp,$(ocamlcp_cmos) ocamloptp.cmo,)
