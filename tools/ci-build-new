@@ -169,11 +169,15 @@ $make distclean || :
 git clean -f -d -x
 
 case $configure in
-  unix) eval "./configure -prefix '$instdir' $confoptions";;
+  unix)
+    confoptions="$confoptions -with-debug-runtime"
+    eval "./configure -prefix '$instdir' $confoptions"
+  ;;
   nt)
     cp config/m-nt.h config/m.h
     cp config/s-nt.h config/s.h
     cp config/Makefile.${OCAML_ARCH} config/Makefile
+    sed -i 's%RUNTIMED=.\+%RUNTIMED=true%' config/Makefile
   ;;
   *) error "internal error";;
 esac
