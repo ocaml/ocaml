@@ -86,13 +86,13 @@ let middle_end ppf ~source_provenance ~prefixname ~backend
       +-+ ("lift_lets 1", Lift_code.lift_lets)
       +-+ ("Lift_constants", Lift_constants.lift_constants ~backend)
       +-+ ("Share_constants", Share_constants.share_constants)
+      +-+ ("Ref_to_variables",
+           Ref_to_variables.eliminate_ref)
       +-+ ("Lift_let_to_initialize_symbol",
            Lift_let_to_initialize_symbol.lift ~backend)
       +-+ ("Inline_and_simplify",
            Inline_and_simplify.run ~never_inline:false ~backend
              ~prefixname ~round)
-      +-+ ("Ref_to_variables",
-           Ref_to_variables.eliminate_ref)
       +-+ ("Remove_unused_closure_vars 2",
            Remove_unused_closure_vars.remove_unused_closure_variables
              ~remove_direct_call_surrogates:false)
@@ -113,6 +113,8 @@ let middle_end ppf ~source_provenance ~prefixname ~backend
         +-+ ("Share_constants", Share_constants.share_constants)
         +-+ ("Remove_unused_program_constructs",
              Remove_unused_program_constructs.remove_unused_program_constructs)
+        +-+ ("Ref_to_variables",
+             Ref_to_variables.eliminate_ref)
         +-+ ("Lift_let_to_initialize_symbol",
              Lift_let_to_initialize_symbol.lift ~backend)
         +-+ ("lift_lets 2", Lift_code.lift_lets)
@@ -126,8 +128,6 @@ let middle_end ppf ~source_provenance ~prefixname ~backend
              Remove_unused_closure_vars.remove_unused_closure_variables
               ~remove_direct_call_surrogates:false)
         +-+ ("lift_lets 3", Lift_code.lift_lets)
-        +-+ ("Ref_to_variables",
-             Ref_to_variables.eliminate_ref)
         +-+ ("Inline_and_simplify noinline",
              Inline_and_simplify.run ~never_inline:true ~backend
               ~prefixname ~round)
