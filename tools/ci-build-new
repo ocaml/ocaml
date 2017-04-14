@@ -96,12 +96,16 @@ set -ex
 make=make
 instdir="$HOME/ocaml-tmp-install"
 configure=unix
+confoptions="${OCAML_CONFIGURE_OPTIONS}"
+make_native=true
 cleanup=false
 
 case "${OCAML_ARCH}" in
   bsd) make=gmake ;;
   macos) ;;
-  linux) ;;
+  linux)
+    confoptions="${confoptions} -with-instrumented-runtime"
+  ;;
   cygwin)
     cleanup=true;;
   mingw)
@@ -144,8 +148,6 @@ cd "$jenkinsdir"
 #########################################################################
 # parse optional command-line arguments (has to be done after the "cd")
 
-confoptions="${OCAML_CONFIGURE_OPTIONS}"
-make_native=true
 while [ $# -gt 0 ]; do
   case $1 in
     -conf) confoptions="$confoptions `quote1 "$2"`"; shift;;
