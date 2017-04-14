@@ -4,7 +4,7 @@
 
 This chapter describes the OCaml high-performance
 native-code compiler "ocamlopt", which compiles OCaml source files to
-native code object files and link these object files to produce
+native code object files and links these object files to produce
 standalone executables.
 
 The native-code compiler is only available on certain platforms.
