@@ -125,7 +125,9 @@ module Env : sig
       from the given environment.  However, the freshening activation state
       is preserved.  This function is used when rewriting inside a function
       declaration, to avoid (due to a compiler bug) accidental use of
-      variables from outer scopes that are not accessible. *)
+      variables from outer scopes that are not accessible.
+      This function resets the "in tail position" flag to [true].
+  *)
   val local : t -> t
 
   (** Note that the inliner is descending into a function body from the given
@@ -266,6 +268,14 @@ module Env : sig
 
   (** Appends the locations of inlined call-sites to the [~dbg] argument *)
   val add_inlined_debuginfo : t -> dbg:Debuginfo.t -> Debuginfo.t
+
+  (** Returns [true] if the environment corresponds syntactically to tail
+      position. *)
+  val in_tail_position : t -> bool
+
+  (** Note that the current environment no longer corresponds to tail
+      position. *)
+  val set_not_in_tail_position : t -> t
 end
 
 module Result : sig

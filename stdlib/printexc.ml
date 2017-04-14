@@ -132,9 +132,8 @@ let format_backtrace_slot pos slot =
       else
         Some (sprintf "%s unknown location" (info false))
   | Known_location l ->
-      Some (sprintf "%s file \"%s\"%s, line %d, characters %d-%d"
+      Some (sprintf "%s file \"%s\", line %d, characters %d-%d"
               (info l.is_raise) l.filename
-              (if l.is_inline then " (inlined)" else "")
               l.line_number l.start_char l.end_char)
 
 let print_exception_backtrace outchan backtrace =

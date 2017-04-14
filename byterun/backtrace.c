@@ -73,7 +73,6 @@ CAMLprim value caml_backtrace_status(value vunit)
 static void print_location(struct caml_loc_info * li, int index)
 {
   char * info;
-  char * inlined;
 
   /* Ignore compiler-inserted raise */
   if (!li->loc_valid && li->loc_is_raise) return;
@@ -90,16 +89,11 @@ static void print_location(struct caml_loc_info * li, int index)
     else
       info = "Called from";
   }
-  if (li->loc_is_inlined) {
-    inlined = " (inlined)";
-  } else {
-    inlined = "";
-  }
   if (! li->loc_valid) {
-    fprintf(stderr, "%s unknown location%s\n", info, inlined);
+    fprintf(stderr, "%s unknown location\n", info);
   } else {
-    fprintf (stderr, "%s file \"%s\"%s, line %d, characters %d-%d\n",
-             info, li->loc_filename, inlined, li->loc_lnum,
+    fprintf (stderr, "%s file \"%s\", line %d, characters %d-%d\n",
+             info, li->loc_filename, li->loc_lnum,
              li->loc_startchr, li->loc_endchr);
   }
 }

@@ -1091,7 +1091,9 @@ and simplify env r (tree : Flambda.t) : Flambda.t * R.t =
     simplify_apply env r ~apply
   | Let _ ->
     let for_defining_expr (env, r) var defining_expr =
-      let defining_expr, r = simplify_named env r defining_expr in
+      let defining_expr, r =
+        simplify_named (E.set_not_in_tail_position env) r defining_expr
+      in
       let var, sb = Freshening.add_variable (E.freshening env) var in
       let env = E.set_freshening env sb in
       let env = E.add env var (R.approx r) in
@@ -1138,6 +1140,7 @@ and simplify env r (tree : Flambda.t) : Flambda.t * R.t =
           E.add env_acc id (A.value_unknown Other))
         env defs
     in
+    let def_env = E.set_not_in_tail_position def_env in
     let defs, body_env, r =
       List.fold_right (fun (id, lam) (defs, env_acc, r) ->
           let lam, r = simplify_named def_env r lam in
@@ -1196,7 +1199,7 @@ and simplify env r (tree : Flambda.t) : Flambda.t * R.t =
         end
     end
   | Try_with (body, id, handler) ->
-    let body, r = simplify env r body in
+    let body, r = simplify (E.set_not_in_tail_position env) r body in
     let id, sb = Freshening.add_variable (E.freshening env) id in
     let env = E.add (E.set_freshening env sb) id (A.value_unknown Other) in
     let env = E.inside_branch env in
@@ -1224,7 +1227,7 @@ and simplify env r (tree : Flambda.t) : Flambda.t * R.t =
           R.meet_approx r env ifso_approx
       end)
   | While (cond, body) ->
-    let cond, r = simplify env r cond in
+    let cond, r = simplify (E.set_not_in_tail_position env) r cond in
     let body, r = simplify env r body in
     While (cond, body), ret r (A.value_unknown Other)
   | Send { kind; meth; obj; args; dbg; } ->

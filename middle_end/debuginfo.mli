@@ -17,7 +17,8 @@ type item = private {
   dinfo_file: string;
   dinfo_line: int;
   dinfo_char_start: int;
-  dinfo_char_end: int
+  dinfo_char_end: int;
+  dinfo_is_tail_call: bool;
 }
 
 type t = item list
@@ -33,6 +34,10 @@ val from_location : Location.t -> t
 val to_location : t -> Location.t
 
 val concat: t -> t -> t
+
+val mark_as_tail_call : t -> t
+
+val filter_tail_calls : t -> t
 
 val inline: Location.t -> t -> t
 
