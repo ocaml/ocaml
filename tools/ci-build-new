@@ -173,6 +173,9 @@ git clean -f -d -x
 case $configure in
   unix)
     confoptions="$confoptions -with-debug-runtime"
+    if $flambda; then
+      confoptions="$confoptions -flambda"
+    fi
     eval "./configure -prefix '$instdir' $confoptions"
   ;;
   nt)
@@ -180,6 +183,9 @@ case $configure in
     cp config/s-nt.h config/s.h
     cp config/Makefile.${OCAML_ARCH} config/Makefile
     sed -i 's%RUNTIMED=.\+%RUNTIMED=true%' config/Makefile
+    if $flambda; then
+      sed -i 's%FLAMBDA=.\+%FLAMBDA=true%' config/Makefile
+    fi
   ;;
   *) error "internal error";;
 esac
