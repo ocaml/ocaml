@@ -1006,34 +1006,6 @@ you use @'Mylib.A'@, only @'Mylib_A'@ will be linked in, not
 %name the interface @'Mylib.mli'@, but this would require that all
 %clients are compiled with the @'-no-alias-deps'@ flag.
 
-\section{Explicit overriding in class definitions}\label{s:explicit-overriding}
-\ikwd{method.\@\texttt{method\char33}}
-\ikwd{val.\@\texttt{val\char33}}
-\ikwd{inherit.\@\texttt{inherit\char33}}
-
-(Introduced in OCaml 3.12)
-
-\begin{syntax}
-class-field:
-      ...
-   |  'inherit!' class-expr ['as' lowercase-ident]
-   |  'val!' ['mutable'] inst-var-name [':' typexpr] '=' expr
-   |  'method!' ['private'] method-name {parameter} [':' typexpr] '=' expr
-   |  'method!' ['private'] method-name ':' poly-typexpr '=' expr
-\end{syntax}
-
-The keywords @"inherit!"@, @"val!"@ and @"method!"@ have the same semantics
-as @"inherit"@, @"val"@ and @"method"@, but they additionally require the
-definition they introduce to be an overriding. Namely, @"method!"@
-requires @method-name@ to be already defined in this class, @"val!"@
-requires @inst-var-name@ to be already defined in this class, and
-@"inherit!"@ requires @class-expr@ to override some definitions.
-If no such overriding occurs, an error is signaled.
-
-As a side-effect, these 3 keywords avoid the warnings~7
-(method override) and~13 (instance variable override).
-Note that warning~7 is disabled by default.
-
 \section{Overriding in open statements}\label{s:explicit-overriding-open}
 \ikwd{open.\@\texttt{open\char33}}
 
