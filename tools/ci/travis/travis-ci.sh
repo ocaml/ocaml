@@ -182,10 +182,14 @@ CheckTypoAllCommits () {
   rm -f check-typo-failed
   if test -z "$TRAVIS_COMMIT_RANGE"
   then CheckTypo $TRAVIS_COMMIT
-  else for commit in $(git rev-list $TRAVIS_COMMIT_RANGE --reverse)
-       do
-         CheckTypo $commit
-       done
+  else
+    if [ "$TRAVIS_EVENT_TYPE" = "pull_request" ]
+    then TRAVIS_COMMIT_RANGE=$TRAVIS_BRANCH..$TRAVIS_PULL_REQUEST_SHA
+    fi
+    for commit in $(git rev-list $TRAVIS_COMMIT_RANGE --reverse)
+      do
+        CheckTypo $commit
+      done
   fi
   echo complete
   if [ -e check-typo-failed ]
