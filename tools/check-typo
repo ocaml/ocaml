@@ -91,7 +91,8 @@ export LC_ALL=C
 # Special case for recursive call from the find command (see IGNORE_DIRS).
 case "$1" in
   --check-prune)
-    case `git check-attr $OCAML_CT_CA_FLAG ocaml-typo "$2" 2>/dev/null` in
+    case `env $OCAML_CT_GIT_INDEX git check-attr $OCAML_CT_CA_FLAG \
+                                                 ocaml-typo "$2" 2>/dev/null` in
       *prune*) echo "INFO: pruned directory $2 (ocaml-typo=prune)" >&2; exit 0;;
       *) exit 3;;
     esac;;
@@ -114,6 +115,13 @@ while : ; do
 done
 
 OCAML_CT_CAT=${OCAML_CT_CAT:-cat}
+OCAML_CT_LS_FILES=${OCAML_CT_LS_FILES:-git ls-files}
+OCAML_CT_HEAD=${OCAML_CT_HEAD:-HEAD}
+if [ -z "${OCAML_CT_GIT_INDEX+x}" ] ; then
+  OCAML_CT_GIT_INDEX=
+else
+  OCAML_CT_GIT_INDEX="GIT_INDEX_FILE=$OCAML_CT_GIT_INDEX"
+fi
 
 IGNORE_DIRS="
   -name .git -prune -o
@@ -126,7 +134,7 @@ IGNORE_DIRS="
   esac
 ) | (
   while read f; do
-    case `git ls-files "$f" 2>&1` in
+    case `$OCAML_CT_LS_FILES "$f" 2>&1` in
       "") is_svn=false;;
       *) is_svn=true;;
     esac
@@ -149,9 +157,10 @@ IGNORE_DIRS="
       #    the documentation for the --numstat option. Commands designated as
       #    "plumbing" commands in git have stable output intended for parsing)
       EMPTY=`git hash-object -t tree /dev/null`
-      git diff-tree --numstat $EMPTY HEAD -- "$f" | grep -q "^-[[:blank:]]-" \
-        && continue
-      svnrules=`git check-attr $OCAML_CT_CA_FLAG ocaml-typo "$f" \
+      git diff-tree --numstat $EMPTY $OCAML_CT_HEAD -- "$f" \
+        | grep -q "^-[[:blank:]]-" && continue
+      svnrules=`env $OCAML_CT_GIT_INDEX git check-attr $OCAML_CT_CA_FLAG \
+                                                       ocaml-typo "$f" \
                   | sed -e 's/.*: //'`
       case $svnrules in unspecified) svnrules= ;; esac
     fi
