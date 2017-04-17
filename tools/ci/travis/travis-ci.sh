@@ -157,6 +157,43 @@ EOF
     testsuite > /dev/null && exit 1 || echo pass
 }
 
+CheckTypo () {
+  export OCAML_CT_HEAD=$1
+  export OCAML_CT_LS_FILES="git diff-tree --no-commit-id --name-only -r $1 --"
+  export OCAML_CT_CAT="git cat-file --textconv"
+  export OCAML_CT_PREFIX="$1:"
+  GIT_INDEX_FILE=tmp-index git read-tree --reset -i $1
+  git diff-tree --no-commit-id --name-only -r $1 | (while IFS= read -r path
+  do
+    echo "Checking $1: $path"
+    if ! tools/check-typo $path ; then
+      touch check-typo-failed
+    fi
+  done)
+  rm -f tmp-index
+}
+
+CheckTypoAllCommits () {
+  export OCAML_CT_GIT_INDEX="tmp-index"
+  export OCAML_CT_CA_FLAG="--cached"
+  # Work around an apparent bug in Ubuntu 12.4.5
+  # See https://bugs.launchpad.net/ubuntu/+source/gawk/+bug/1647879
+  export OCAML_CT_AWK="awk --re-interval"
+  rm -f check-typo-failed
+  if test -z "$TRAVIS_COMMIT_RANGE"
+  then CheckTypo $TRAVIS_COMMIT
+  else for commit in $(git rev-list $TRAVIS_COMMIT_RANGE --reverse)
+       do
+         CheckTypo $commit
+       done
+  fi
+  echo complete
+  if [ -e check-typo-failed ]
+  then exit 1
+  fi
+}
+
+
 case $CI_KIND in
 build) BuildAndTest;;
 changes)
@@ -169,6 +206,9 @@ tests)
     case $TRAVIS_EVENT_TYPE in
         pull_request) CheckTestsuiteModified;;
     esac;;
+check-typo)
+   set +x
+   CheckTypoAllCommits;;
 *) echo unknown CI kind
    exit 1
    ;;
