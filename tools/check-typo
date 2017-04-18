@@ -117,6 +117,7 @@ done
 OCAML_CT_CAT=${OCAML_CT_CAT:-cat}
 OCAML_CT_LS_FILES=${OCAML_CT_LS_FILES:-git ls-files}
 OCAML_CT_HEAD=${OCAML_CT_HEAD:-HEAD}
+OCAML_CT_AWK=${OCAML_CT_AWK:-awk}
 if [ -z "${OCAML_CT_GIT_INDEX+x}" ] ; then
   OCAML_CT_GIT_INDEX=
 else
@@ -190,7 +191,7 @@ IGNORE_DIRS="
     esac
 
     ($OCAML_CT_CAT "$OCAML_CT_PREFIX$f" | tr -d '\r'; echo) \
-    | awk -v rules="$rules" -v svnrules="$svnrules" -v file="$f" \
+    | $OCAML_CT_AWK -v rules="$rules" -v svnrules="$svnrules" -v file="$f" \
       '
         function is_err(name) {
           return (("," rules svnrules ",") !~ ("[, ]" name "[, ]"));
