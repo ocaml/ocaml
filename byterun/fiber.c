@@ -72,6 +72,9 @@ value caml_alloc_stack (value hval, value hexn, value heff) {
   Stack_parent(stack) = Val_unit;
 
   sp = (char*)Stack_high(stack);
+  /* Add required offset on top of stack. This is required to ensure sp
+   * alignment. */
+  sp -= Top_of_stack_offset;
   /* Fiber exception handler that returns to parent */
   sp -= sizeof(value);
   *(value**)sp = (value*)caml_fiber_exn_handler;
@@ -87,7 +90,7 @@ value caml_alloc_stack (value hval, value hexn, value heff) {
   ctxt = (struct caml_context*)sp;
   ctxt->exception_ptr_offset = 2 * sizeof(value);
   ctxt->gc_regs = NULL;
-  Stack_sp(stack) = -(3 + sizeof(struct caml_context) / sizeof(value));
+  Stack_sp(stack) = -(3 + (sizeof(struct caml_context) + Top_of_stack_offset) / sizeof(value));
 
   caml_gc_log ("Allocate stack=0x%lx of %lu words", stack, caml_fiber_wsz);
 
@@ -184,11 +187,13 @@ next_chunk:
       retaddr = Saved_return_address(sp);
       /* XXX KC: disabled already scanned optimization. */
     } else {
-      /* This marks the top of an ML stack chunk. */
+      /* This marks the top of an ML stack chunk. Move sp to the previous stack
+       * chunk. This includes skipping over the trap frame (2 words) + fixed
+       * offset. */
 #ifndef Stack_grows_upwards
-      sp += Top_of_stack_offset;
+      sp += 2 * sizeof(value) + Top_of_stack_offset;
 #else
-      sp -= Top_of_stack_offset;
+      sp -= 2 * sizeof(value) + Top_of_stack_offset;
 #endif
       goto next_chunk;
     }
@@ -460,7 +465,11 @@ value caml_alloc_main_stack (uintnat init_size)
      The GC is not initialised yet, so we use caml_alloc_shr
      which cannot trigger it */
   stack = caml_alloc_shr(init_size, Stack_tag);
+#ifdef NATIVE_CODE
+  Stack_sp(stack) = -Top_of_stack_offset / sizeof(value);
+#else
   Stack_sp(stack) = 0;
+#endif
   Stack_dirty_domain(stack) = 0;
   Stack_handle_value(stack) = Val_long(0);
   Stack_handle_exception(stack) = Val_long(0);
