@@ -53,12 +53,12 @@
 
 #ifdef TARGET_amd64
 #define Saved_return_address(sp) *((intnat *)((sp) - 8))
-#define Top_of_stack_offset 16
+#define Top_of_stack_offset 0
 #endif
 
 #ifdef TARGET_arm64
 #define Saved_return_address(sp) *((intnat *)((sp) - 8))
-#define Top_of_stack_offset 16
+#define Top_of_stack_offset 8
 #endif
 
 /* Structure of OCaml callback contexts */

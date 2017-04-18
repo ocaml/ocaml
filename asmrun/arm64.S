@@ -66,10 +66,6 @@
         .macro store_caml_##name src_reg:req ; \
         GET_DOMAIN_STATE(TMP) ; \
         str     \src_reg, [TMP, (8 * field_num)]; \
-        .endm ; \
-        .macro cmp_caml_##name value:req ; \
-        load_caml_##name TMP ; \
-        cmp     TMP, \value ; \
         .endm
 
 #include "../byterun/caml/domain_state.tbl"
@@ -82,10 +78,6 @@
 /* Store to the current domain state block.  Clobbers TMP. */
 #define STORE_TL_VAR(srcreg, var) \
         store_##var srcreg
-
-/* Compare against a value or reg in the current domain block.  Clobbers TMP. */
-#define CMP_TL_VAR(var, x) \
-        cmp_##var x
 
 /* Push pair of values from current domain state block to the stack. Clobbers
    TMP. */
@@ -166,7 +158,7 @@
         SWITCH_C_TO_OCAML_NO_CTXT(REG); \
     /* Pop the caml_context from the bottom of stack updating TRAP_OFF. */ \
     /* sp is not 16-byte aligned here. Hence, make sp aligned before loading TRAP_OFF. */ \
-        sub     sp, sp, 24; CFI_ADJUST(-24); \
+        add     sp, sp, 24; CFI_ADJUST(-24); \
         ldr     x30, [sp, -8]; \
         ldr     TRAP_OFF, [sp, -24]
 
@@ -489,10 +481,10 @@ CFI_STARTPROC
         adr     TMP, .Lc_trap_handler
         stp     xzr, TMP, [sp, -16]!    /* xzr => dummy previous trap */
         CFI_ADJUST(16)
-        mov     TMP, sp
-        STORE_TL_VAR(TMP, caml_system_sp)
+        mov     TMP2, sp
+        STORE_TL_VAR(TMP2, caml_system_sp)
         LOAD_TL_VAR(caml_system_stack_high, TRAP_OFF)
-        sub     TRAP_OFF, TRAP_OFF, TMP
+        sub     TRAP_OFF, TRAP_OFF, TMP2
         STORE_TL_VAR(TRAP_OFF, caml_system_exnptr_offset)
     /*  Save callback args */
         stp     x29, x30, [sp, -64]!
