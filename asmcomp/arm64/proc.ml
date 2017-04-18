@@ -135,10 +135,10 @@ let outgoing ofs = Outgoing ofs
 let not_supported ofs = fatal_error "Proc.loc_results: cannot call"
 
 (* OCaml calling convention:
-     first integer args in r0...r15
+     first integer args in x0...x15
      first float args in d0...d15
      remaining args on stack.
-   Return values in r0...r15 or d0...d15. *)
+   Return values in x0...x15 or d0...d15. *)
 
 let loc_arguments arg =
   calling_conventions 0 15 100 115 outgoing arg
@@ -148,10 +148,10 @@ let loc_results res =
   let (loc, _) = calling_conventions 0 15 100 115 not_supported res in loc
 
 (* C calling convention:
-     first integer args in r0...r7
+     first integer args in x0...x7
      first float args in d0...d7
      remaining args on stack.
-   Return values in r0...r1 or d0. *)
+   Return values in x0...x1 or d0. *)
 
 let loc_external_arguments arg =
   calling_conventions 0 7 100 107 outgoing arg

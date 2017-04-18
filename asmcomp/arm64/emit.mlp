@@ -35,8 +35,8 @@ let reg_alloc_limit = phys_reg 25   (* x28 *)
 let reg_tmp1 = phys_reg 26          (* x16 *)
 let reg_tmp2 = phys_reg 27          (* x17 *)
 let reg_x15 = phys_reg 15           (* x15*)
-let reg_callee_saved1 = phys_reg 16  (* x19 *)
-let reg_callee_saved2 = phys_reg 17  (* x20 *)
+let reg_stack_arg_start = phys_reg 16  (* x19 *)
+let reg_stack_arg_end  = phys_reg 17  (* x20 *)
 
 (* Output a label *)
 
@@ -607,8 +607,8 @@ let emit_instr i =
           output_epilogue (fun () -> `	b	{emit_symbol s}\n`)
     | Lop(Iextcall(s, alloc, stack_off)) ->
         if stack_off > 0 then begin
-          `	mov {emit_reg reg_callee_saved2}, sp\n`;
-          `	add {emit_reg reg_callee_saved1}, sp, #{emit_int stack_off}\n`;
+          `	mov {emit_reg reg_stack_arg_start}, sp\n`;
+          `	add {emit_reg reg_stack_arg_end}, sp, #{emit_int (Misc.align stack_off 16)}\n`;
           emit_load_symbol_addr reg_x15 s;
           `	bl	{emit_symbol "caml_c_call_stack_args"}\n`;
           `{record_frame i.live i.dbg}\n`;
@@ -620,11 +620,11 @@ let emit_instr i =
           `	mov {emit_reg reg_tmp1}, sp\n`;
           `{load_domain_field Domainstate.Domain_system_sp reg_tmp2}\n`;
           `	mov sp, {emit_reg reg_tmp2}\n`;
-          `	str {emit_reg reg_tmp1}, [sp, -8]!\n`;
-          cfi_adjust_cfa_offset (8);
+          `	str {emit_reg reg_tmp1}, [sp, #-16]!\n`;
+          cfi_adjust_cfa_offset (16);
           `	bl {emit_symbol s}\n`;
-          `	ldr {emit_reg reg_tmp1}, [sp], 8\n`;
-          cfi_adjust_cfa_offset (-8);
+          `	ldr {emit_reg reg_tmp1}, [sp], #16\n`;
+          cfi_adjust_cfa_offset (-16);
           `	mov sp, {emit_reg reg_tmp1}\n`;
         end
     | Lop(Istackoffset n) ->
@@ -868,14 +868,14 @@ let emit_instr i =
         `{emit_label lblnext}:\n`
     | Lpushtrap ->
         stack_offset := !stack_offset + 16;
-        `	str	{emit_reg reg_trap_off}, [sp, -16]!\n`;
+        `	str	{emit_reg reg_trap_off}, [sp, #-16]!\n`;
         `	str	{emit_reg reg_tmp1}, [sp, #8]\n`;
         cfi_adjust_cfa_offset 16;
         `{load_domain_field Domainstate.Domain_stack_high reg_trap_off}\n`;
         ` mov {emit_reg reg_tmp1}, sp\n`;
         `	sub {emit_reg reg_trap_off}, {emit_reg reg_trap_off}, {emit_reg reg_tmp1}\n`
     | Lpoptrap ->
-        `	ldr	{emit_reg reg_trap_off}, [sp], 16\n`;
+        `	ldr	{emit_reg reg_trap_off}, [sp], #16\n`;
         cfi_adjust_cfa_offset (-16);
         stack_offset := !stack_offset - 16
     | Lraise k ->
@@ -888,7 +888,7 @@ let emit_instr i =
             `{load_domain_field Domainstate.Domain_stack_high reg_tmp1}\n`;
             `	sub sp, {emit_reg reg_tmp1}, {emit_reg reg_trap_off}\n`;
             `	ldr	{emit_reg reg_tmp1}, [sp, #8]\n`;
-            `	ldr	{emit_reg reg_trap_off}, [sp], 16\n`;
+            `	ldr	{emit_reg reg_trap_off}, [sp], #16\n`;
             `	br	{emit_reg reg_tmp1}\n`
         end
 
