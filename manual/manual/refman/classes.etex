@@ -402,7 +402,7 @@ polymorphic, the type must be explicitly polymorphic.
 
 Since Ocaml 3.12, the keywords @"inherit!"@, @"val!"@ and @"method!"@
 have the same semantics as @"inherit"@, @"val"@ and @"method"@, but
-they additionally require the definition they introduce to be an
+they additionally require the definition they introduce to be
 overriding. Namely, @"method!"@ requires @method-name@ to be already
 defined in this class, @"val!"@ requires @inst-var-name@ to be already
 defined in this class, and @"inherit!"@ requires @class-expr@ to
@@ -416,7 +416,6 @@ Note that warning~7 is disabled by default.
 \subsubsection*{Constraints on type parameters}
 
 \ikwd{constraint\@\texttt{constraint}}
-
 The construct @'constraint' typexpr_1 '=' typexpr_2@ forces the two
 type expressions to be equals. This is typically used to specify type
 parameters: in that way they can be bound to specific type
