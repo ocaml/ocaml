@@ -1,0 +1,38 @@
+
+#                 type t = ..
+type t += Alpha
+module M : sig type w = .. type w += Alpha | Beta  end
+#   module F : functor (X : sig  end) -> sig type t += Gamma end
+# module X : sig  end
+#   Characters 12-16:
+  let x: t = Alha;;
+             ^^^^
+Error: This variant expression is expected to have type t
+       The constructor Alha does not belong to type t
+Hint: Did you mean Alpha?
+# # Characters 12-16:
+  let y : w = Alha;;
+              ^^^^
+Error: This variant expression is expected to have type M.w
+       The constructor Alha does not belong to type M.w
+Hint: Did you mean Alpha?
+# Characters 11-16:
+  let z: t = Alpha;;
+             ^^^^^
+Warning 40: Alpha was selected from type t.
+It is not visible in the current scope, and will not 
+be selected if the type becomes unknown.
+val z : t = <extension>
+#   module N : sig type t += Gamma end
+# Characters 11-17:
+  let g: t = N.Gamm ;;
+             ^^^^^^
+Error: Unbound constructor N.Gamm
+Hint: Did you mean Gamma?
+#   Characters 7-16:
+  raise Not_Found;;
+        ^^^^^^^^^
+Error: This variant expression is expected to have type exn
+       The constructor Not_Found does not belong to type exn
+Hint: Did you mean Not_found?
+#   

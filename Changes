@@ -30,6 +30,11 @@ Working version
 
 - GPR#1150: Fix typo in arm64 assembler directives
   (KC Sivaramakrishnan)
+### Type system:
+
+    GPR#1154: enable spellchecker hints and type-directed
+    disambiguation for extensible sum type constructors
+    (Florian Angeletti)
 
 ### Standard library:
 

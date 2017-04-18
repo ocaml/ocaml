@@ -408,6 +408,7 @@ type t = {
   cltypes: class_type_declaration IdTbl.t;
   functor_args: unit Ident.tbl;
   summary: summary;
+  extension_constructors: constructor_description list PathMap.t list;
   local_constraints: type_declaration PathMap.t;
   gadt_instances: (int * TypeSet.t ref) list;
   flags: int;
@@ -430,6 +431,7 @@ and 'a comp_tbl = (string, ('a * int)) Tbl.t
 and structure_components = {
   mutable comp_values: value_description comp_tbl;
   mutable comp_constrs: (string, constructor_description list) Tbl.t;
+  mutable comp_ext_constrs: constructor_description list PathMap.t;
   mutable comp_labels: (string, label_description list) Tbl.t;
   mutable comp_types: (type_declaration * type_descriptions) comp_tbl;
   mutable comp_modules:
@@ -491,6 +493,7 @@ let empty = {
   modules = IdTbl.empty; modtypes = IdTbl.empty;
   components = IdTbl.empty; classes = IdTbl.empty;
   cltypes = IdTbl.empty;
+  extension_constructors = [PathMap.empty] ;
   summary = Env_empty; local_constraints = PathMap.empty; gadt_instances = [];
   flags = 0;
   functor_args = Ident.empty;
@@ -824,14 +827,24 @@ let find proj1 proj2 path env =
 
 let find_value =
   find (fun env -> env.values) (fun sc -> sc.comp_values)
-and find_type_full =
-  find (fun env -> env.types) (fun sc -> sc.comp_types)
 and find_modtype =
   find (fun env -> env.modtypes) (fun sc -> sc.comp_modtypes)
 and find_class =
   find (fun env -> env.classes) (fun sc -> sc.comp_classes)
 and find_cltype =
   find (fun env -> env.cltypes) (fun sc -> sc.comp_cltypes)
+
+let find_type_full p env =
+  let find0 = find (fun env -> env.types) (fun sc -> sc.comp_types) in
+    let tyd, (constrs, lbls) as classical = find0 p env in
+  match tyd.type_kind with
+  | Type_abstract | Type_record _ | Type_variant _ -> classical
+  | Type_open ->
+      let constrs =
+        List.fold_left (fun l map ->
+            try (PathMap.find p map) @ l with Not_found -> l
+          ) constrs env.extension_constructors in
+      tyd, (constrs , lbls)
 
 let type_of_cstr path = function
   | {cstr_inlined = Some d; _} ->
@@ -1583,6 +1596,11 @@ let add_to_tbl id decl tbl =
     try Tbl.find_str id tbl with Not_found -> [] in
   Tbl.add id (decl :: decls) tbl
 
+let add_ext_constrs m descr =
+ let p = ty_path descr.cstr_res in
+ let d = try PathMap.find p m with Not_found -> [] in
+ PathMap.add p (descr::d) m
+
 let rec components_of_module ~deprecated ~loc env sub path mty =
   {
     deprecated;
@@ -1596,6 +1614,7 @@ and components_of_module_maker (env, sub, path, mty) =
       let c =
         { comp_values = Tbl.empty;
           comp_constrs = Tbl.empty;
+          comp_ext_constrs = PathMap.empty;
           comp_labels = Tbl.empty; comp_types = Tbl.empty;
           comp_modules = Tbl.empty; comp_modtypes = Tbl.empty;
           comp_components = Tbl.empty; comp_classes = Tbl.empty;
@@ -1616,6 +1635,11 @@ and components_of_module_maker (env, sub, path, mty) =
             let decl' = Subst.type_declaration sub decl in
             let constructors =
               List.map snd (Datarepr.constructors_of_type path decl') in
+            let ext_constructors =
+              constructors
+              |> List.filter
+                (function {Types.cstr_tag = Cstr_extension _; _ } -> true
+                | _ -> false ) in
             let labels =
               List.map snd (Datarepr.labels_of_type path decl') in
             c.comp_types <-
@@ -1629,6 +1653,11 @@ and components_of_module_maker (env, sub, path, mty) =
               constructors;
             List.iter
               (fun descr ->
+                 c.comp_ext_constrs <-
+                   add_ext_constrs c.comp_ext_constrs descr)
+              ext_constructors;
+            List.iter
+              (fun descr ->
                 c.comp_labels <-
                   add_to_tbl descr.lbl_name descr c.comp_labels)
               labels;
@@ -1636,6 +1665,7 @@ and components_of_module_maker (env, sub, path, mty) =
         | Sig_typext(id, ext, _) ->
             let ext' = Subst.extension_constructor sub ext in
             let descr = Datarepr.extension_descr path ext' in
+            c.comp_ext_constrs <- add_ext_constrs c.comp_ext_constrs descr;
             c.comp_constrs <-
               add_to_tbl (Ident.name id) descr c.comp_constrs;
             incr pos
@@ -1683,6 +1713,7 @@ and components_of_module_maker (env, sub, path, mty) =
   | Mty_alias _ ->
         Structure_comps {
           comp_values = Tbl.empty;
+          comp_ext_constrs = PathMap.empty;
           comp_constrs = Tbl.empty;
           comp_labels = Tbl.empty;
           comp_types = Tbl.empty;
@@ -1802,10 +1833,16 @@ and store_extension ~check id ext env =
         )
     end;
   end;
+  let descr = Datarepr.extension_descr (Pident id) ext in
+  let extension_constructors =
+    match env.extension_constructors with
+    | [] -> assert false
+    (* empty extension constructors map stack is not allowed *)
+    | a :: q ->
+        add_ext_constrs a descr :: q in
   { env with
-    constrs = TycompTbl.add id
-                (Datarepr.extension_descr (Pident id) ext)
-                env.constrs;
+    extension_constructors;
+    constrs = TycompTbl.add id descr env.constrs;
     summary = Env_extension(env.summary, id, ext) }
 
 and store_module ~check id md env =
@@ -1955,6 +1992,10 @@ let add_components slot root env0 comps =
   let constrs =
     add_l (fun x -> `Constructor x) comps.comp_constrs env0.constrs
   in
+
+  let extension_constructors =
+    comps.comp_ext_constrs :: env0.extension_constructors in
+
   let labels =
     add_l (fun x -> `Label x) comps.comp_labels env0.labels
   in
@@ -1982,8 +2023,10 @@ let add_components slot root env0 comps =
     add (fun x -> `Module x) comps.comp_modules env0.modules
   in
 
+
   { env0 with
     summary = Env_open(env0.summary, root);
+    extension_constructors;
     constrs;
     labels;
     values;
