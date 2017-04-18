@@ -162,7 +162,7 @@ typedef uint64_t uintnat;
 #define Minor_heap_max (1 << 28)
 
 /* Default size of the minor zone. (words)  */
-#define Minor_heap_def 262144
+#define Minor_heap_def 1048576
 
 
 /* Minimum size increment when growing the heap (words).
@@ -172,7 +172,7 @@ typedef uint64_t uintnat;
 /* Default size increment when growing the heap.
    If this is <= 1000, it's a percentage of the current heap size.
    If it is > 1000, it's a number of words. */
-#define Heap_chunk_def 15
+#define Heap_chunk_def 1048576
 
 /* Default initial size of the major heap (words);
    Must be a multiple of [Page_size / sizeof (value)]. */
