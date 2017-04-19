@@ -1635,11 +1635,6 @@ and components_of_module_maker (env, sub, path, mty) =
             let decl' = Subst.type_declaration sub decl in
             let constructors =
               List.map snd (Datarepr.constructors_of_type path decl') in
-            let ext_constructors =
-              constructors
-              |> List.filter
-                (function {Types.cstr_tag = Cstr_extension _; _ } -> true
-                | _ -> false ) in
             let labels =
               List.map snd (Datarepr.labels_of_type path decl') in
             c.comp_types <-
@@ -1651,11 +1646,6 @@ and components_of_module_maker (env, sub, path, mty) =
                 c.comp_constrs <-
                   add_to_tbl descr.cstr_name descr c.comp_constrs)
               constructors;
-            List.iter
-              (fun descr ->
-                 c.comp_ext_constrs <-
-                   add_ext_constrs c.comp_ext_constrs descr)
-              ext_constructors;
             List.iter
               (fun descr ->
                 c.comp_labels <-
