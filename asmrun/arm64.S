@@ -463,6 +463,7 @@ CFI_ENDPROC
 FUNCTION(caml_start_program)
 CFI_STARTPROC
         PROFILE
+        PUSH_CALLEE_SAVE_REGS
     /* Load caml_young_ptr into ALLOC_PTR (was passed as an argument from C) */
         mov     ALLOC_PTR, x0
     /* Initial entry point is caml_program */
