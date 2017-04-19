@@ -331,6 +331,10 @@ let extract_concrete_variant env ty =
   match extract_concrete_typedecl env ty with
     (p0, p, {type_kind=Type_variant cstrs}) -> (p0, p, cstrs)
   | (p0, p, {type_kind=Type_open}) -> (p0, p, [])
+  | (p0, p, {type_kind=Type_abstract}) ->
+      if Env.has_extension_constructors env p then
+        (p0,p,[])
+      else raise Not_found
   | _ -> raise Not_found
 
 let extract_label_names env ty =

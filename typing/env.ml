@@ -834,20 +834,23 @@ and find_class =
 and find_cltype =
   find (fun env -> env.cltypes) (fun sc -> sc.comp_cltypes)
 
-let rec normalize_path_ext p env =
+let normalize_path_ext p env =
   let find0 p env =
     fst @@ find (fun env -> env.types) (fun sc -> sc.comp_types) p env in
+  let module S = Set.Make(Path) in
+  let rec normalize s p env =
   let tyd = try Some (find0 p env) with Not_found -> None in
   match tyd with
   | None -> p
   | Some tyd ->
       match tyd.type_kind, tyd.type_manifest with
-      | Type_open, Some t ->
+      | (Type_open|Type_abstract) , Some t ->
           begin match t.desc with
-          | Tconstr (p,_,_) -> normalize_path_ext p env
+          | Tconstr (p,_,_) when not (S.mem p s) -> normalize (S.add p s) p env
           | _ -> p
           end
-      | _ -> p
+      | _ -> p in
+  normalize S.empty p env
 
 
 let find_type_full p env =
@@ -1204,6 +1207,10 @@ let lookup_all_simple proj1 proj2 shadow ?loc lid env =
       end
   | Lapply _ ->
       raise Not_found
+
+let has_extension_constructors env p =
+  let p = normalize_path_ext p env in
+  List.exists (PathMap.mem p) env.extension_constructors
 
 let has_local_constraints env = not (PathMap.is_empty env.local_constraints)
 

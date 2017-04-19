@@ -35,3 +35,26 @@ open M.N;;
 type exn += Foo;;
 
 let x : r = Foo;;
+
+;; (** Closed open extensible type support *)
+
+module M : sig
+  type t
+  type t += Aleph
+end = struct
+  type t = ..
+  type t += Aleph
+end;;
+open M;;
+
+type exn += Aleph
+;;
+let x : t = Aleph;;
+
+;;
+
+module F(X: sig type t = .. end ) = struct type X.t+= Beth end
+module X = struct type t = .. end
+module FX = F(X) open FX
+type exn += Beth;;
+let x : X.t = Beth;;

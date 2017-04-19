@@ -50,4 +50,24 @@ Warning 40: Foo was selected from type r.
 It is not visible in the current scope, and will not 
 be selected if the type becomes unknown.
 val x : r = M.N.Foo
+#   #               module M : sig type t type t += Aleph end
+# #     type exn += Aleph
+# Characters 12-17:
+  let x : t = Aleph;;
+              ^^^^^
+Warning 40: Aleph was selected from type M.t.
+It is not visible in the current scope, and will not 
+be selected if the type becomes unknown.
+val x : M.t = <abstr>
+#   #         module F : functor (X : sig type t = .. end) -> sig type X.t += Beth end
+module X : sig type t = .. end
+module FX : sig type X.t += Beth end
+type exn += Beth
+# Characters 14-18:
+  let x : X.t = Beth;;
+                ^^^^
+Warning 40: Beth was selected from type X.t.
+It is not visible in the current scope, and will not 
+be selected if the type becomes unknown.
+val x : X.t = <extension>
 # 
