@@ -10,7 +10,10 @@
 /* One word at the base of the stack is used to store the stack pointer */
 #define Stack_ctx_words 6
 #define Stack_base(stk) (Op_val(stk) + Stack_ctx_words)
-#define Stack_high(stk) (Op_val(stk) + Wosize_val(stk))
+/* 16-byte align-down caml_stack_high for certain architectures like arm64
+ * demand 16-byte alignment. Leaves a word unused at the bottom of the stack if
+ * the Op_val(stk) + Wosize_val(stk) is not 16-byte aligned. */
+#define Stack_high(stk) ((value*)(((value)(Op_val(stk) + Wosize_val(stk))) & ((value)-1 << 4)))
 #define Stack_sp(stk) (*(long*)(Op_val(stk) + 0))
 #define Stack_dirty_domain(stk) (*(struct domain**)(Op_val(stk) + 1))
 #define Stack_handle_value(stk) (*(Op_val(stk) + 2))

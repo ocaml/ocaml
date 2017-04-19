@@ -52,8 +52,7 @@
 #include "../byterun/caml/config.h"
 
 #define GET_DOMAIN_STATE(reg) \
-        mov     reg, ALLOC_PTR ; \
-        and     reg, reg, (0xffffffffffffffff << Minor_heap_align_bits)
+        and     reg, ALLOC_PTR, (0xffffffffffffffff << Minor_heap_align_bits)
 
 /* CR mshinwell: We should optimize the case where there are multiple
    loads/stores in one go to the domain state block. */
@@ -172,7 +171,7 @@
 /* Load [caml_system_stack_high - TRAP_OFF] into sp. Cuts the stack, and loads the target address in TMP. */
 #define RESTORE_EXN_HANDLER_SYS \
         LOAD_TL_VAR(caml_system_stack_high, TMP); \
-        sub     sp, TMP, TRAP_OFF
+        sub     sp, TMP, TRAP_OFF; \
         ldr     TMP, [sp, 8]; \
         ldr     TRAP_OFF, [sp], 16
 
@@ -207,8 +206,7 @@ caml_system__code_begin:
         stp     x29, x30, [sp, -400]!; \
         CFI_ADJUST(400); \
         add     x29, sp, 0 ; \
-    /* Save allocatable integer registers on the stack, in the order \
-       given in proc.ml */ \
+    /* Save allocatable integer registers on the stack, in the order given in proc.ml */ \
         stp     x0, x1, [sp, 16]; \
         stp     x2, x3, [sp, 32]; \
         stp     x4, x5, [sp, 48]; \
@@ -235,13 +233,16 @@ caml_system__code_begin:
         stp     d26, d27, [sp, 352]; \
         stp     d28, d29, [sp, 368]; \
         stp     d30, d31, [sp, 384]; \
-    /* Update in OCaml stack's context, the pointer to gc_regs */ \
+    /* Update in OCaml stack's context, the pointer to gc_regs. */ \
     /* Store pointer to saved integer registers in caml_gc_regs */ \
         add     x0, sp, 16 ; \
         bl      caml_update_gc_regs_slot; \
     /* Save current allocation pointer for debugging purposes */ \
         STORE_TL_VAR(ALLOC_PTR, caml_young_ptr); \
-    /* Call the garbage collector */ \
+    /* Args are relevant only for caml_realloc_stack */ \
+        mov     x0, 0; \
+        mov     x1, 0; \
+        mov     x2, 0; \
         bl      TARGET_FUN; \
     /* Restore registers */ \
         ldp     x0, x1, [sp, 16]; \
@@ -612,6 +613,8 @@ CFI_STARTPROC
         RESTORE_EXN_HANDLER_SYS
         br      TMP
 CFI_ENDPROC
+        .type   caml_raise_exception, %function
+        .size   caml_raise_exception, .-caml_raise_exception
 
 /******************************************************************************/
 /* Callback from C to OCaml */
@@ -795,8 +798,8 @@ CFI_STARTPROC
         SWITCH_OCAML_STACKS
         mov     x0, x19       /* x0 = first argument */
         mov     x1, x20       /* x1 = closure environment */
-        ldr     ARG, [x21]
-        blr     ARG
+        ldr     ARG, [x1]
+        br     ARG
 CFI_ENDPROC
         .type caml_resume, %function
         .size caml_resume, .-caml_resume

@@ -395,7 +395,6 @@ G(caml_system__code_begin):
         movsd   %xmm13, 13*8(%rsp);                                            \
         movsd   %xmm14, 14*8(%rsp);                                            \
         movsd   %xmm15, 15*8(%rsp);                                            \
-    /* Call the garbage collector */                                           \
         PREPARE_FOR_C_CALL;                                                    \
     /* Args are relevant only for caml_realloc_stack */                        \
         movq    $0, C_ARG_1;                                                   \

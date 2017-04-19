@@ -72,9 +72,6 @@ value caml_alloc_stack (value hval, value hexn, value heff) {
   Stack_parent(stack) = Val_unit;
 
   sp = (char*)Stack_high(stack);
-  /* Add required offset on top of stack. This is required to ensure sp
-   * alignment. */
-  sp -= Top_of_stack_offset;
   /* Fiber exception handler that returns to parent */
   sp -= sizeof(value);
   *(value**)sp = (value*)caml_fiber_exn_handler;
@@ -90,7 +87,7 @@ value caml_alloc_stack (value hval, value hexn, value heff) {
   ctxt = (struct caml_context*)sp;
   ctxt->exception_ptr_offset = 2 * sizeof(value);
   ctxt->gc_regs = NULL;
-  Stack_sp(stack) = -(3 + (sizeof(struct caml_context) + Top_of_stack_offset) / sizeof(value));
+  Stack_sp(stack) = -(3 + sizeof(struct caml_context) / sizeof(value));
 
   caml_gc_log ("Allocate stack=0x%lx of %lu words", stack, caml_fiber_wsz);
 
@@ -191,9 +188,9 @@ next_chunk:
        * chunk. This includes skipping over the trap frame (2 words) + fixed
        * offset. */
 #ifndef Stack_grows_upwards
-      sp += 2 * sizeof(value) + Top_of_stack_offset;
+      sp += 2 * sizeof(value);
 #else
-      sp -= 2 * sizeof(value) + Top_of_stack_offset;
+      sp -= 2 * sizeof(value);
 #endif
       goto next_chunk;
     }
@@ -465,11 +462,7 @@ value caml_alloc_main_stack (uintnat init_size)
      The GC is not initialised yet, so we use caml_alloc_shr
      which cannot trigger it */
   stack = caml_alloc_shr(init_size, Stack_tag);
-#ifdef NATIVE_CODE
-  Stack_sp(stack) = -Top_of_stack_offset / sizeof(value);
-#else
   Stack_sp(stack) = 0;
-#endif
   Stack_dirty_domain(stack) = 0;
   Stack_handle_value(stack) = Val_long(0);
   Stack_handle_exception(stack) = Val_long(0);
@@ -500,6 +493,7 @@ CAMLprim value caml_clone_continuation (value cont)
   CAMLlocal3(new_cont, prev_target, source);
   value target;
   intnat bvar_stat;
+  int stack_used;
 
   bvar_stat = caml_bvar_status(cont);
   if (bvar_stat & BVAR_EMPTY)
@@ -511,8 +505,13 @@ CAMLprim value caml_clone_continuation (value cont)
   do {
     Assert (Is_block (source) && Tag_val(source) == Stack_tag);
 
+    /* Ensure that the stack remains 16-byte aligned. Note: Stack_high
+     * always returns 16-byte aligned down address. */
+    stack_used = -Stack_sp(source);
     target = caml_alloc (Wosize_val(source), Stack_tag);
-    memcpy ((void*)target, (void*)source, Wosize_val(source) * sizeof(value));
+    memcpy((void*)target, (void*)source, sizeof(value) * Stack_ctx_words);
+    memcpy(Stack_high(target) - stack_used, Stack_high(source) - stack_used,
+           stack_used * sizeof(value));
 
     if (prev_target == Val_unit) {
       new_cont = caml_bvar_create (target);
