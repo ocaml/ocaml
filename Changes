@@ -34,7 +34,7 @@ Working version
 
     GPR#1154: enable spellchecker hints and type-directed
     disambiguation for extensible sum type constructors
-    (Florian Angeletti)
+    (Florian Angeletti, review by Alain Frisch, Gabriel Scherer and Leo White)
 
 ### Standard library:
 
