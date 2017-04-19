@@ -21,3 +21,17 @@ let g: t = N.Gamm ;;
 
 raise Not_Found;;
 
+type r = ..;;
+module M = struct
+  type t = r = ..
+  type s = t = ..
+  module N = struct
+    type u = s = ..
+    type u += Foo
+  end
+end
+open M.N;;
+
+type exn += Foo;;
+
+let x : r = Foo;;

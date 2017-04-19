@@ -834,12 +834,29 @@ and find_class =
 and find_cltype =
   find (fun env -> env.cltypes) (fun sc -> sc.comp_cltypes)
 
+let rec normalize_path_ext p env =
+  let find0 p env =
+    fst @@ find (fun env -> env.types) (fun sc -> sc.comp_types) p env in
+  let tyd = try Some (find0 p env) with Not_found -> None in
+  match tyd with
+  | None -> p
+  | Some tyd ->
+      match tyd.type_kind, tyd.type_manifest with
+      | Type_open, Some t ->
+          begin match t.desc with
+          | Tconstr (p,_,_) -> normalize_path_ext p env
+          | _ -> p
+          end
+      | _ -> p
+
+
 let find_type_full p env =
   let find0 = find (fun env -> env.types) (fun sc -> sc.comp_types) in
     let tyd, (constrs, lbls) as classical = find0 p env in
   match tyd.type_kind with
-  | Type_abstract | Type_record _ | Type_variant _ -> classical
-  | Type_open ->
+  | Type_record _ | Type_variant _ -> classical
+  | Type_open | Type_abstract ->
+      let p = normalize_path_ext p env in
       let constrs =
         List.fold_left (fun l map ->
             try (PathMap.find p map) @ l with Not_found -> l
@@ -1596,10 +1613,15 @@ let add_to_tbl id decl tbl =
     try Tbl.find_str id tbl with Not_found -> [] in
   Tbl.add id (decl :: decls) tbl
 
-let add_ext_constrs m descr =
- let p = ty_path descr.cstr_res in
- let d = try PathMap.find p m with Not_found -> [] in
- PathMap.add p (descr::d) m
+let add_ext_constrs env m descr =
+  let p = normalize_path_ext (ty_path descr.cstr_res) env in
+  let d = try PathMap.find p m with Not_found -> [] in
+  PathMap.add p (descr::d) m
+
+let renormalize_ext env m =
+  List.fold_left ( fun m (p,constrs) ->
+      PathMap.add (normalize_path_ext p env) constrs m )
+    PathMap.empty (PathMap.bindings m)
 
 let rec components_of_module ~deprecated ~loc env sub path mty =
   {
@@ -1655,7 +1677,7 @@ and components_of_module_maker (env, sub, path, mty) =
         | Sig_typext(id, ext, _) ->
             let ext' = Subst.extension_constructor sub ext in
             let descr = Datarepr.extension_descr path ext' in
-            c.comp_ext_constrs <- add_ext_constrs c.comp_ext_constrs descr;
+            c.comp_ext_constrs <- add_ext_constrs !env c.comp_ext_constrs descr;
             c.comp_constrs <-
               add_to_tbl (Ident.name id) descr c.comp_constrs;
             incr pos
@@ -1829,7 +1851,7 @@ and store_extension ~check id ext env =
     | [] -> assert false
     (* empty extension constructors map stack is not allowed *)
     | a :: q ->
-        add_ext_constrs a descr :: q in
+        add_ext_constrs env a descr :: q in
   { env with
     extension_constructors;
     constrs = TycompTbl.add id descr env.constrs;
@@ -1983,9 +2005,6 @@ let add_components slot root env0 comps =
     add_l (fun x -> `Constructor x) comps.comp_constrs env0.constrs
   in
 
-  let extension_constructors =
-    comps.comp_ext_constrs :: env0.extension_constructors in
-
   let labels =
     add_l (fun x -> `Label x) comps.comp_labels env0.labels
   in
@@ -2013,10 +2032,9 @@ let add_components slot root env0 comps =
     add (fun x -> `Module x) comps.comp_modules env0.modules
   in
 
-
+  let env1 =
   { env0 with
     summary = Env_open(env0.summary, root);
-    extension_constructors;
     constrs;
     labels;
     values;
@@ -2026,7 +2044,11 @@ let add_components slot root env0 comps =
     cltypes;
     components;
     modules;
-  }
+  } in
+
+  let extension_constructors =
+    renormalize_ext env1 comps.comp_ext_constrs :: env0.extension_constructors in
+  { env1 with extension_constructors }
 
 let open_signature slot root env0 =
   match get_components (find_module_descr root env0) with

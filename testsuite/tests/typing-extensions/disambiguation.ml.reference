@@ -35,4 +35,19 @@ Hint: Did you mean Gamma?
 Error: This variant expression is expected to have type exn
        The constructor Not_Found does not belong to type exn
 Hint: Did you mean Not_found?
-#   
+#   type r = ..
+#                 module M :
+  sig
+    type t = r = ..
+    type s = t = ..
+    module N : sig type u = s = .. type u += Foo end
+  end
+#   type exn += Foo
+#   Characters 13-16:
+  let x : r = Foo;;
+              ^^^
+Warning 40: Foo was selected from type r.
+It is not visible in the current scope, and will not 
+be selected if the type becomes unknown.
+val x : r = M.N.Foo
+# 
