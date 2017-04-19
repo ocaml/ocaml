@@ -135,10 +135,10 @@
  * the bottom of the OCaml stack. Clobbers REG & TRAP_OFF. */
 #define SWITCH_OCAML_TO_C(REG) \
     /* Build caml_context at the bottom of the stack */ \
-        str     x30, [sp, -8]; \
-        str     xzr, [sp, -16]; \
-        str     TRAP_OFF, [sp, -24]!; CFI_ADJUST(24); \
-    /* sp is not 16-byte aligned. But this is fine since we won't use this sp to access memory. */ \
+        str     TRAP_OFF, [sp, -32]!; /* save trap_off */ \
+        CFI_ADJUST(24); \
+        str     x30, [sp, 24];        /* return address */ \
+        str     xzr, [sp, 8];         /* gc_regs_slot <- 0 */ \
         SWITCH_OCAML_TO_C_NO_CTXT(REG)
 
 /* Switch from C to OCaml stack.  Clobbers REG. */
@@ -155,11 +155,9 @@
  * from the bottom of the OCaml stack. Clobbers REG. */
 #define SWITCH_C_TO_OCAML(REG) \
         SWITCH_C_TO_OCAML_NO_CTXT(REG); \
-    /* Pop the caml_context from the bottom of stack updating TRAP_OFF. */ \
-    /* sp is not 16-byte aligned here. Hence, make sp aligned before loading TRAP_OFF. */ \
-        add     sp, sp, 24; CFI_ADJUST(-24); \
-        ldr     x30, [sp, -8]; \
-        ldr     TRAP_OFF, [sp, -24]
+    /* Pop the caml_context from the bottom of stack updating TRAP_OFF and return address. */ \
+        ldr     x30, [sp, 24]; \
+        ldr     TRAP_OFF, [sp], 32
 
 /* Restore exception handler for OCaml code. Cuts stack, and loads target address in TMP. */
 #define RESTORE_EXN_HANDLER_OCAML \
@@ -411,6 +409,7 @@ CFI_STARTPROC
         b.lo    2f
         ldr     TMP, [x20]
         str     TMP, [TMP2, -8]!; CFI_ADJUST(8)
+        b       1b
 2:  /* Call the function */
         blr     ARG
     /* Reload alloc ptr and alloc limit */
@@ -473,11 +472,14 @@ CFI_STARTPROC
 .Ljump_to_caml:
     /* Save system stack state. */
         PUSH_TL_PAIR(caml_system_exnptr_offset, caml_system_sp)
-    /* Save parent stack reference and reset it. */
+    /* Save parent stack reference and reset it. This ensures that callbacks do
+     * not inherit the handler from the previous stack chunk. */
         LOAD_TL_VAR(caml_current_stack, TMP)
-        ldr     TMP, Stack_parent(TMP)
-        str     TMP, [sp, -16]!       /* 16-byte alignment */
+        ldr     TMP2, Stack_parent(TMP)
+        str     TMP2, [sp, -16]!        /* 16-byte alignment */
         CFI_ADJUST(16)
+        mov     TMP2, 1
+        str     TMP2, Stack_parent(TMP)
     /* Build a handler for exceptions raised in C */
         adr     TMP, .Lc_trap_handler
         stp     xzr, TMP, [sp, -16]!    /* xzr => dummy previous trap */
@@ -638,6 +640,7 @@ CFI_ENDPROC
 FUNCTION(caml_callback2_asm)
 CFI_STARTPROC
         PROFILE
+        PUSH_CALLEE_SAVE_REGS
     /* Initial shuffling of arguments
        (x0 = alloc ptr, x1 = closure, x2 = arg1, x3 = arg2) */
         mov     ALLOC_PTR, x0   /* young ptr */
@@ -654,6 +657,7 @@ CFI_ENDPROC
 FUNCTION(caml_callback3_asm)
 CFI_STARTPROC
         PROFILE
+        PUSH_CALLEE_SAVE_REGS
     /* Initial shuffling of arguments
        (x0 = alloc ptr, x1 = closure, x2 = arg1, x3 = arg2, x4 = arg3) */
         mov     ALLOC_PTR, x0   /* young ptr */
