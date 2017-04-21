@@ -149,6 +149,9 @@ Working version
 - PR#7506: pprintast ignores attributes in tails of a list
   (Alain Frisch, report by Kenichi Asai and Gabriel Scherer)
 
+- GPR#1155: Fix a race condition with WAIT_NOHANG on Windows
+  (Jérémie Dimino and David Allsopp)
+
 ### Runtime system:
 
 - GPR#71: The runtime can now be shut down gracefully by means of the new
