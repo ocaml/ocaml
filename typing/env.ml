@@ -833,38 +833,35 @@ and find_class =
   find (fun env -> env.classes) (fun sc -> sc.comp_classes)
 and find_cltype =
   find (fun env -> env.cltypes) (fun sc -> sc.comp_cltypes)
+and proto_find_type =
+  find (fun env -> env.types) (fun sc -> sc.comp_types)
 
 let normalize_path_ext p env =
-  let find0 p env =
-    fst @@ find (fun env -> env.types) (fun sc -> sc.comp_types) p env in
   let module S = Set.Make(Path) in
   let rec normalize s p env =
-  let tyd = try Some (find0 p env) with Not_found -> None in
-  match tyd with
-  | None -> p
-  | Some tyd ->
-      match tyd.type_kind, tyd.type_manifest with
-      | (Type_open|Type_abstract) , Some t ->
-          begin match t.desc with
-          | Tconstr (p,_,_) when not (S.mem p s) -> normalize (S.add p s) p env
-          | _ -> p
-          end
-      | _ -> p in
+  match fst @@ proto_find_type p env with
+    | exception Not_found -> p
+    | { type_kind=Type_open|Type_abstract;
+        type_manifest = Some { desc= Tconstr(p,_,_) ; _ } ; _ }
+      when not (S.mem p s) -> normalize (S.add p s) p env
+    | _ -> p in
   normalize S.empty p env
 
-
 let find_type_full p env =
-  let find0 = find (fun env -> env.types) (fun sc -> sc.comp_types) in
-    let tyd, (constrs, lbls) as classical = find0 p env in
-  match tyd.type_kind with
-  | Type_record _ | Type_variant _ -> classical
-  | Type_open | Type_abstract ->
-      let p = normalize_path_ext p env in
-      let constrs =
-        List.fold_left (fun l map ->
-            try (PathMap.find p map) @ l with Not_found -> l
-          ) constrs env.extension_constructors in
-      tyd, (constrs , lbls)
+    let tyd, (constrs, lbls) as classical = proto_find_type p env in
+    (* Extensible type constructors are not caught by proto_find_type,
+       and require the following specialized code path. *)
+    match tyd.type_kind with
+    | Type_variant _ | Type_record _ -> classical
+    | Type_open | Type_abstract ->
+        let p = match tyd.type_manifest with
+          | Some { desc = Tconstr(p,_,_) ; _ } -> normalize_path_ext p env
+          | _ -> p in
+        let constrs =
+          List.fold_left (fun l map ->
+              try (PathMap.find p map) @ l with Not_found -> l
+            ) constrs env.extension_constructors in
+        tyd, (constrs, lbls)
 
 let type_of_cstr path = function
   | {cstr_inlined = Some d; _} ->
