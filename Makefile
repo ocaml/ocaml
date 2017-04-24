@@ -54,7 +54,7 @@ include stdlib/StdlibModules
 
 CAMLC=$(CAMLRUN) boot/ocamlc -g -nostdlib -I boot -use-prims byterun/primitives
 CAMLOPT=$(CAMLRUN) ./ocamlopt -g -nostdlib -I stdlib -I otherlibs/dynlink
-ARCHES=amd64 i386 arm arm64 power sparc s390x
+ARCHES=amd64 i386 arm arm64 power s390x
 INCLUDES=-I utils -I parsing -I typing -I bytecomp -I middle_end \
         -I middle_end/base_types -I asmcomp -I driver -I toplevel
 
@@ -276,6 +276,7 @@ INSTALL_LIBDIR=$(DESTDIR)$(LIBDIR)
 INSTALL_COMPLIBDIR=$(DESTDIR)$(COMPLIBDIR)
 INSTALL_STUBLIBDIR=$(DESTDIR)$(STUBLIBDIR)
 INSTALL_MANDIR=$(DESTDIR)$(MANDIR)
+INSTALL_FLEXDLL=$(INSTALL_LIBDIR)/flexdll
 
 RUNTOP=./byterun/ocamlrun ./ocaml \
   -nostdlib -I stdlib \
@@ -294,10 +295,14 @@ ifeq "$(UNIX_OR_WIN32)" "win32"
 FLEXDLL_SUBMODULE_PRESENT := $(wildcard flexdll/Makefile)
 ifeq "$(FLEXDLL_SUBMODULE_PRESENT)" ""
   BOOT_FLEXLINK_CMD=
+  FLEXDLL_DIR=
 else
   BOOT_FLEXLINK_CMD = FLEXLINK_CMD="../boot/ocamlrun ../flexdll/flexlink.exe"
   CAMLOPT := OCAML_FLEXLINK="boot/ocamlrun flexdll/flexlink.exe" $(CAMLOPT)
+  FLEXDLL_DIR=$(if $(wildcard flexdll/flexdll_*.$(O)),"+flexdll")
 endif
+else
+  FLEXDLL_DIR=
 endif
 
 # The configuration file
@@ -319,14 +324,15 @@ utils/config.ml: utils/config.mlp config/Makefile
 	    -e 's|%%EXT_LIB%%|$(EXT_LIB)|' \
 	    -e 's|%%EXT_OBJ%%|$(EXT_OBJ)|' \
 	    -e 's|%%FLAMBDA%%|$(FLAMBDA)|' \
-	    -e 's|%%FLEXLINK_FLAGS%%|$(FLEXLINK_FLAGS)|' \
+	    -e 's|%%FLEXLINK_FLAGS%%|$(subst \,\\,$(FLEXLINK_FLAGS))|' \
+	    -e 's|%%FLEXDLL_DIR%%|$(FLEXDLL_DIR)|' \
 	    -e 's|%%HOST%%|$(HOST)|' \
 	    -e 's|%%LIBDIR%%|$(LIBDIR)|' \
 	    -e 's|%%LIBUNWIND_AVAILABLE%%|$(LIBUNWIND_AVAILABLE)|' \
 	    -e 's|%%LIBUNWIND_LINK_FLAGS%%|$(LIBUNWIND_LINK_FLAGS)|' \
-	    -e 's|%%MKDLL%%|$(MKDLL)|' \
-	    -e 's|%%MKEXE%%|$(MKEXE)|' \
-	    -e 's|%%MKMAINDLL%%|$(MKMAINDLL)|' \
+	    -e 's|%%MKDLL%%|$(subst \,\\,$(MKDLL))|' \
+	    -e 's|%%MKEXE%%|$(subst \,\\,$(MKEXE))|' \
+	    -e 's|%%MKMAINDLL%%|$(subst \,\\,$(MKMAINDLL))|' \
 	    -e 's|%%MODEL%%|$(MODEL)|' \
 	    -e 's|%%NATIVECCLIBS%%|$(NATIVECCLIBS)|' \
 	    -e 's|%%OCAMLC_CFLAGS%%|$(OCAMLC_CFLAGS)|' \
@@ -468,10 +474,8 @@ opt.opt:
 	$(MAKE) otherlibrariesopt
 	$(MAKE) ocamllex.opt ocamltoolsopt ocamltoolsopt.opt $(OCAMLDOC_OPT)
 else
-# If the submodule is initialised, then opt.opt will build a native flexlink
 opt.opt: core opt-core ocamlc.opt all ocamlopt.opt ocamllex.opt \
-         ocamltoolsopt ocamltoolsopt.opt otherlibrariesopt $(OCAMLDOC_OPT) \
-         $(if $(wildcard flexdll/Makefile),flexlink.opt)
+         ocamltoolsopt ocamltoolsopt.opt otherlibrariesopt $(OCAMLDOC_OPT)
 endif
 
 .PHONY: base.opt
@@ -553,9 +557,14 @@ flexdll/Makefile:
 	fi
 	@false
 
-# Bootstrapping FlexDLL - leaves a bytecode image of flexlink.exe in flexdll/
 .PHONY: flexdll
-flexdll: flexdll/Makefile
+flexdll: flexdll/Makefile flexlink
+	$(MAKE) -C flexdll \
+             MSVC_DETECT=0 CHAINS=$(FLEXDLL_CHAIN) NATDYNLINK=false support
+
+# Bootstrapping flexlink - leaves a bytecode image of flexlink.exe in flexdll/
+.PHONY: flexlink
+flexlink: flexdll/Makefile
 	$(MAKE) -C byterun BOOTSTRAPPING_FLEXLINK=yes ocamlrun$(EXE)
 	cp byterun/ocamlrun$(EXE) boot/ocamlrun$(EXE)
 	$(MAKE) -C stdlib COMPILER=../boot/ocamlc stdlib.cma std_exit.cmo
@@ -563,7 +572,7 @@ flexdll: flexdll/Makefile
 	$(MAKE) -C flexdll MSVC_DETECT=0 TOOLCHAIN=$(TOOLCHAIN) \
 	  TOOLPREF=$(TOOLPREF) CHAINS=$(FLEXDLL_CHAIN) NATDYNLINK=false \
 	  OCAMLOPT="../boot/ocamlrun ../boot/ocamlc -I ../boot" \
-	  flexlink.exe support
+	  flexlink.exe
 	$(MAKE) -C byterun clean
 	$(MAKE) partialclean
 
@@ -579,14 +588,16 @@ flexlink.opt:
 
 .PHONY: install-flexdll
 install-flexdll:
-# The $(if ...) installs the correct .manifest file for MSVC and MSVC64
-# (GNU make doesn't have ifeq as a function, hence slightly convoluted use of
-#  filter-out)
-	cp flexdll/flexlink$(EXE) \
-	   $(if $(filter-out mingw,$(TOOLCHAIN)),\
-	     flexdll/default$(filter-out _i386,_$(ARCH)).manifest) \
-	   "$(INSTALL_BINDIR)"
-	cp flexdll/flexdll_*.$(O) "$(INSTALL_LIBDIR)"
+	cat stdlib/camlheader flexdll/flexlink.exe > \
+	  "$(INSTALL_BINDIR)/flexlink.exe"
+ifneq "$(filter-out mingw,$(TOOLCHAIN))" ""
+	cp flexdll/default$(filter-out _i386,_$(ARCH)).manifest \
+    "$(INSTALL_BINDIR)/"
+endif
+	if test -n "$(wildcard flexdll/flexdll_*.$(O))" ; then \
+	  $(MKDIR) "$(INSTALL_FLEXDLL)" ; \
+	  cp flexdll/flexdll_*.$(O) "$(INSTALL_FLEXDLL)" ; \
+	fi
 
 # Installation
 .PHONY: install
@@ -882,8 +893,8 @@ byterun/primitives:
 
 bytecomp/runtimedef.ml: byterun/primitives byterun/caml/fail.h
 	(echo 'let builtin_exceptions = [|'; \
-	 sed -n -e 's|.*/\* \("[A-Za-z_]*"\) \*/$$|  \1;|p' \
-	     byterun/caml/fail.h; \
+	 cat byterun/caml/fail.h | tr -d '\r' | \
+	 sed -n -e 's|.*/\* \("[A-Za-z_]*"\) \*/$$|  \1;|p'; \
 	 echo '|]'; \
 	 echo 'let builtin_primitives = [|'; \
 	 sed -e 's/.*/  "&";/' byterun/primitives; \

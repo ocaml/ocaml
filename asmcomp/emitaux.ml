@@ -385,9 +385,7 @@ let emit_call_bound_errors ~emit_call ~spacetime_before_uninstrumented_call =
     !bound_error_sites;
   if !bound_error_call > 0 then begin
     (* There might not be a unique offset from the CFA if there is only a
-       single check-bound point.  However we should never be here if
-       generating CFI (see [bound_error_label], above). *)
-    assert (not !Clflags.debug);
+       single check-bound point.  We just have to put up with this. *)
     D.define_label !bound_error_call;
     emit_call L.caml_ml_array_bound_error
   end
@@ -398,7 +396,12 @@ let begin_assembly ?(code_section = D.Text) () =
   D.switch_to_section Data;
   emit_global_data_symbol "data_begin";
   D.switch_to_section code_section;
-  emit_global_data_symbol "code_begin"
+  emit_global_data_symbol "code_begin";
+  if TS.macos_like () then begin
+    (* suppress "ld warning: atom sorting error" *)
+    D.switch_to_section Text;
+    I.nop ()
+  end
 
 let fundecl ?branch_relaxation ?after_body ?alternative_name
       (fundecl : Linearize.fundecl)
@@ -495,6 +498,11 @@ let emit_spacetime_shapes () =
   D.comment "End of Spacetime shapes."
 
 let end_assembly ?(code_section = D.Text) ~emit_numeric_constants () =
+  if TS.macos_like () then begin
+    (* suppress "ld warning: atom sorting error" *)
+    D.switch_to_section Text;
+    I.nop ()
+  end;
   if Config.spacetime then begin
     emit_spacetime_shapes ()
   end;

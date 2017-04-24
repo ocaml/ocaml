@@ -756,7 +756,7 @@ let emit_profile () =
 
 (* Emission of a function declaration *)
 
-let prepare_for_fundecl _fundecl =
+let prepare _fundecl =
   stack_offset := 0;
   if fp then begin
     I.push rbp;
@@ -775,7 +775,7 @@ let prepare_for_fundecl _fundecl =
 
 let fundecl decl =
   Emitaux.fundecl decl
-    ~prepare:prepare_for_fundecl
+    ~prepare
     ~emit_all
     ~emit_call
     ~emit_jump_to_label
@@ -817,18 +817,9 @@ let begin_assembly() =
     D.define_data_symbol L.caml_absf_mask;
     D.int64 0x7FFFFFFFFFFFFFFFL;
     D.int64 0xFFFFFFFFFFFFFFFFL
-  end;
-  if TS.macos_like () then begin
-    (* suppress "ld warning: atom sorting error" *)
-    I.nop ()
   end
 
 let end_assembly () =
-  D.switch_to_section Text;
-  if TS.macos_like () then begin
-    (* suppress "ld warning: atom sorting error" *)
-    I.nop ()
-  end;
   emit_imp_table();
   Emitaux.end_assembly ~emit_numeric_constants:true ();
   if TS.win64 () then begin

@@ -195,7 +195,7 @@ stdlib.p.cmxa: $(OBJS:.cmo=.p.cmx)
 	$(CAMLOPT) -a -o $@ $^
 
 sys.ml: sys.mlp ../VERSION
-	sed -e "s|%%VERSION%%|`sed -e 1q ../VERSION`|" sys.mlp >sys.ml
+	sed -e "s|%%VERSION%%|`sed -e 1q ../VERSION | tr -d '\r'`|" sys.mlp > $@
 
 .PHONY: clean
 clean::
