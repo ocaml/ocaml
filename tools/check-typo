@@ -159,7 +159,7 @@ IGNORE_DIRS="
       ocamldoc/*|*/ocamldoc/*) rules="long-line,$rules";;
     esac
 
-    (cat "$f"; echo) \
+    (cat "$f" | tr -d '\r'; echo) \
     | awk -v rules="$rules" -v svnrules="$svnrules" -v file="$f" \
       '
         function err(name, msg) {

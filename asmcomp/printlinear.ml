@@ -80,4 +80,6 @@ let fundecl ppf f =
       ""
     else
       " " ^ Debuginfo.to_string f.fun_dbg in
-  fprintf ppf "@[<v 2>%s:%s@,%a@]" f.fun_name dbg all_instr f.fun_body
+  fprintf ppf "@[<v 2>%a:%s@,%a@]"
+    Linkage_name.print f.fun_name
+    dbg all_instr f.fun_body

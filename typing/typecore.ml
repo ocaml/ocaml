@@ -1883,12 +1883,7 @@ let check_absent_variant env =
 let duplicate_ident_types caselist env =
   let caselist =
     List.filter (fun {pc_lhs} -> contains_gadt env pc_lhs) caselist in
-  let idents = all_idents_cases caselist in
-  let upd desc = {desc with val_type = correct_levels desc.val_type} in
-  (* Be careful not the mark the original value as being used, and
-     to keep the same internal 'slot' to track unused opens. *)
-  List.fold_left (fun env s -> Env.update_value s upd env) env idents
-
+  Env.copy_types (all_idents_cases caselist) env
 
 (* Getting proper location of already typed expressions.
 

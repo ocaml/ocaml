@@ -90,7 +90,8 @@ method! reload_operation op arg res =
       (* Result must be in register, but argument can be on stack *)
       (arg, (if stackp res.(0) then [| self#makereg res.(0) |] else res))
   | Iconst_int n ->
-      if n <= 0x7FFFFFFFn && n >= -0x80000000n
+      if Targetint.compare n (Targetint.of_int 0x7FFFFFFF) <= 0
+        && Targetint.compare n (Targetint.of_int (-0x80000000)) >= 0
       then (arg, res)
       else super#reload_operation op arg res
   | Iconst_symbol _ ->

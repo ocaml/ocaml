@@ -50,12 +50,12 @@ end)
 
 let create compilation_unit label =
   let unit_linkage_name =
-    Linkage_name.to_string
+    Linkage_name.name
       (Compilation_unit.get_linkage_name compilation_unit)
   in
   let label =
     Linkage_name.create
-      (unit_linkage_name ^ "__" ^ (Linkage_name.to_string label))
+      (unit_linkage_name ^ "__" ^ (Linkage_name.name label))
   in
   let hash = Linkage_name.hash label in
   { compilation_unit; label; hash; }

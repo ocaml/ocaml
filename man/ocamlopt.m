@@ -717,18 +717,6 @@ Generate position-independent machine code.  This is the default.
 .B \-fno\-PIC
 Generate position-dependent machine code.
 
-.SH OPTIONS FOR THE SPARC ARCHITECTURE
-The Sparc code generator supports the following additional options:
-.TP
-.B \-march=v8
-Generate SPARC version 8 code.
-.TP
-.B \-march=v9
-Generate SPARC version 9 code.
-.P
-The default is to generate code for SPARC version 7, which runs on all
-SPARC processors.
-
 .SH OPTIONS FOR THE ARM ARCHITECTURE
 The ARM code generator supports the following additional options:
 .TP

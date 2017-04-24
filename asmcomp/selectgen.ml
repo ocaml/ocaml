@@ -193,7 +193,7 @@ let join_array rs =
       Some res
 
 (* Name of function being compiled *)
-let current_function_name = ref ""
+let current_function_name = ref (Linkage_name.create "")
 
 module Effect = struct
   type t =
@@ -633,10 +633,10 @@ method emit_expr (env:environment) exp =
   match exp with
     Cconst_int n ->
       let r = self#regs_for typ_int in
-      Some(self#insert_op (Iconst_int(Nativeint.of_int n)) [||] r)
+      Some(self#insert_op (Iconst_int(Targetint.of_int n)) [||] r)
   | Cconst_natint n ->
       let r = self#regs_for typ_int in
-      Some(self#insert_op (Iconst_int n) [||] r)
+      Some(self#insert_op (Iconst_int (Targetint.of_nativeint_exn n)) [||] r)
   | Cconst_float n ->
       let r = self#regs_for typ_float in
       Some(self#insert_op (Iconst_float (Int64.bits_of_float n)) [||] r)
@@ -645,12 +645,12 @@ method emit_expr (env:environment) exp =
       Some(self#insert_op (Iconst_symbol n) [||] r)
   | Cconst_pointer n ->
       let r = self#regs_for typ_val in  (* integer as Caml value *)
-      Some(self#insert_op (Iconst_int(Nativeint.of_int n)) [||] r)
+      Some(self#insert_op (Iconst_int(Targetint.of_int n)) [||] r)
   | Cconst_natpointer n ->
       let r = self#regs_for typ_val in  (* integer as Caml value *)
-      Some(self#insert_op (Iconst_int n) [||] r)
+      Some(self#insert_op (Iconst_int (Targetint.of_nativeint_exn n)) [||] r)
   | Cblockheader(n, dbg) ->
-      self#emit_blockheader env n dbg
+      self#emit_blockheader env (Targetint.of_nativeint_exn n) dbg
   | Cvar v ->
       begin try
         Some(env_find v env)
@@ -1074,7 +1074,8 @@ method emit_tail (env:environment) exp =
                 self#insert_moves r1 loc_arg;
                 self#maybe_emit_spacetime_move ~spacetime_reg;
                 self#insert_debug call dbg loc_arg [||];
-              end else if func = !current_function_name then begin
+              end else if Linkage_name.equal func !current_function_name
+              then begin
                 let call = Iop (Itailcall_imm { func; label_after; }) in
                 let loc_arg' = Proc.loc_parameters r1 in
                 let spacetime_reg =
@@ -1236,4 +1237,4 @@ let _ =
   Simplif.is_tail_native_heuristic := is_tail_call
 
 let reset () =
-  current_function_name := ""
+  current_function_name := Linkage_name.create ""

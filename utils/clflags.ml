@@ -105,7 +105,7 @@ and dump_flambda_let = ref (None : int option) (* -dflambda-let=... *)
 and dump_flambda_verbose = ref false    (* -dflambda-verbose *)
 and dump_instr = ref false              (* -dinstr *)
 
-let keep_asm_file = ref false           (* -S *)
+let keep_asm_file = ref true            (* -S *)
 let optimize_for_speed = ref true       (* -compact *)
 and opaque = ref false                  (* -opaque *)
 

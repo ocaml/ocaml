@@ -3,9 +3,11 @@
 (*                                 OCaml                                  *)
 (*                                                                        *)
 (*             Xavier Leroy, projet Cristal, INRIA Rocquencourt           *)
+(*                  Mark Shinwell, Jane Street Europe                     *)
 (*                                                                        *)
 (*   Copyright 1996 Institut National de Recherche en Informatique et     *)
 (*     en Automatique.                                                    *)
+(*   Copyright 2017 Jane Street Group LLC                                 *)
 (*                                                                        *)
 (*   All rights reserved.  This file is distributed under the terms of    *)
 (*   the GNU Lesser General Public License version 2.1, with the          *)
@@ -13,69 +15,182 @@
 (*                                                                        *)
 (**************************************************************************)
 
-(* Common functions for emitting assembly code *)
+(** Common functions for emitting assembly code *)
 
-val output_channel: out_channel ref
-val emit_string: string -> unit
-val emit_int: int -> unit
-val emit_nativeint: nativeint -> unit
+(** The channel for textual assembly emission. *)
+val output_channel : out_channel ref
+
+(** Emit a string to the output channel for textual assembly emission. *)
+val emit_string : string -> unit
+
+(** Emit an integer to the output channel for textual assembly emission. *)
+val emit_int : int -> unit
+
+(** Emit a character to the output channel for textual assembly emission. *)
+val emit_char : char -> unit
+
+(** Emit an integer, whose width is the natural width of the target
+    machine, to the output channel for textual assembly emission. *)
+val emit_targetint : Targetint.t -> unit
+
+(** Emit a 32-bit integer to the output channel for textual assembly
+    emission. *)
 val emit_int32: int32 -> unit
-val emit_symbol: char -> string -> unit
-val emit_printf: ('a, out_channel, unit) format -> 'a
-val emit_char: char -> unit
-val emit_string_literal: string -> unit
-val emit_string_directive: string -> string -> unit
-val emit_bytes_directive: string -> string -> unit
-val emit_float64_directive: string -> int64 -> unit
-val emit_float64_split_directive: string -> int64 -> unit
-val emit_float32_directive: string -> int32 -> unit
 
-val reset : unit -> unit
-val reset_debug_info: unit -> unit
-val emit_debug_info: Debuginfo.t -> unit
-val emit_debug_info_gen :
-  Debuginfo.t ->
-  (file_num:int -> file_name:string -> unit) ->
-  (file_num:int -> line:int -> col:int -> unit) -> unit
+(** Printing using format strings to the output channel for textual
+    assembly emission. *)
+val emit_printf : ('a, out_channel, unit) format -> 'a
 
+(** Emit a block header into the text section immediately prior to the
+    first instruction of a function.  Such headers enable scanning of code
+    pointers within closures. *)
 val emit_block_header_for_closure
-   : emit_word_directive:(Nativeint.t -> comment:string -> unit)
-  -> function_entry_points_are_doubleword_aligned:bool
+   : function_entry_point_alignment_in_bytes:int
   -> unit
 
-val record_frame_descr :
-  label:int ->              (* Return address *)
-  frame_size:int ->         (* Size of stack frame *)
-  live_offset:int list ->   (* Offsets/regs of live addresses *)
-  raise_frame:bool ->       (* Is frame for a raise? *)
-  Debuginfo.t ->            (* Location, if any *)
-  unit
+(** Emit an assembly directive as text. *)
+val emit_directive : Asm_directives.Directive.t -> unit
 
-type emit_frame_actions =
-  { efa_code_label: int -> unit;
-    efa_data_label: int -> unit;
-    efa_16: int -> unit;
-    efa_32: int32 -> unit;
-    efa_word: int -> unit;
-    efa_align: int -> unit;
-    efa_label_rel: int -> int32 -> unit;
-    efa_def_label: int -> unit;
-    efa_string: string -> unit }
+(** Emit location information into the assembly output for the given
+    debug info. *)
+val emit_debug_info: Debuginfo.t -> unit
 
-val emit_frames: emit_frame_actions -> unit
-
-val is_generic_function: string -> bool
-
-val cfi_startproc : unit -> unit
-val cfi_endproc : unit -> unit
-val cfi_adjust_cfa_offset : int -> unit
-val cfi_offset : reg:int -> offset:int -> unit
-
-
+(** Whether a binary backend is available.  If yes, we don't need to generate
+    the textual assembly file (unless the user requests it with -S). *)
 val binary_backend_available: bool ref
-    (** Is a binary backend available.  If yes, we don't need
-        to generate the textual assembly file (unless the user
-        request it with -S). *)
 
+(** Are we actually generating the textual assembly file? *)
 val create_asm_file: bool ref
-    (** Are we actually generating the textual assembly file? *)
+
+(** Whether optimising for speed. *)
+val fastcode_flag : bool ref
+
+(** Linkage name of the function currently being compiled. *)
+val function_name : Linkage_name.t ref
+
+(** The entry point to the current function for a self-tail-recursive call. *)
+val tailrec_entry_point : Cmm.label ref
+
+(** Record the use of a symbol. *)
+val add_used_symbol : Linkage_name.t -> unit
+
+(** Symbols defined by the current compilation unit. *)
+val symbols_defined : unit -> Linkage_name.Set.t
+
+(** Symbols used by the current compilation unit. *)
+val symbols_used : unit -> Linkage_name.Set.t
+
+(** Total number of words occupied by constant literals not yet emitted. *)
+val size_constants : int ref
+
+(** Record a frame descriptor at the current position and return the label
+    that points at it.
+    In a backend it will be found convenient to specialise this function
+    (and others below) to the particular target-specific [frame_size] and
+    [slot_offset] functions. *)
+val record_frame_label
+   : frame_size:(unit -> int)
+  -> slot_offset:(Reg.stack_location -> int -> int)
+  -> ?label:Cmm.label
+  -> live:Reg.Set.t
+  -> raise_:bool
+  -> Debuginfo.t
+  -> Cmm.label
+
+(** Record a frame descriptor at the current position. *)
+val record_frame
+   : frame_size:(unit -> int)
+  -> slot_offset:(Reg.stack_location -> int -> int)
+  -> ?label:Cmm.label
+  -> live:Reg.Set.t
+  -> raise_:bool
+  -> Debuginfo.t
+  -> unit
+
+(** Record a call to the GC. *)
+val record_call_gc_site
+   : label:Cmm.label
+  -> return_label:Cmm.label
+  -> frame_label:Cmm.label
+  -> stack_offset:int
+  -> unit
+
+(** Record a call to [caml_ml_array_bound_error]. *)
+val bound_error_label
+   : frame_size:(unit -> int)
+  -> slot_offset:(Reg.stack_location -> int -> int)
+  -> ?label:Cmm.label
+  -> Debuginfo.t
+  -> stack_offset:int
+  -> Cmm.label
+
+(** Store a floating point constant for later emission.  The returned label
+    may be used to reference it. *)
+val float_constant : Int64.t -> Cmm.label
+
+(** How many floating point constants there are awaiting emission. *)
+val num_float_constants : unit -> int
+
+(** Store an integer constant for later emission.  The returned label
+    may be used to reference it. *)
+val int_constant : Targetint.t -> Cmm.label
+
+(** Start assembly output for a compilation unit.
+    If the "code_begin" marker needs to live in a section other than [Text]
+    then [code_section] should be set accordingly. *)
+val begin_assembly : ?code_section:Asm_directives.section -> unit -> unit
+
+(** Emit assembly for a function declaration. *)
+val fundecl
+   : ?branch_relaxation:((module Branch_relaxation.S) * int)
+  -> ?after_body:(unit -> unit)
+     (** Called after the function's body has been emitted _and_ the CFI
+         offset has been reset. *)
+  -> ?alternative_name:Linkage_name.t
+     (** For when one name per function is not good enough (e.g. POWER
+         ELF64v1 ABI). *)
+  -> Linearize.fundecl
+  -> prepare:(Linearize.fundecl -> unit)
+  -> emit_all:(fun_body:Linearize.instruction -> int)
+  -> alignment_in_bytes:int
+     (** The desired alignment of the function entry point. *)
+  -> emit_call:(Linkage_name.t -> unit)
+  -> emit_jump_to_label:(Cmm.label -> unit)
+  -> spacetime_before_uninstrumented_call:(Cmm.label -> unit)
+  -> emit_numeric_constants:bool
+     (** [true] if float and integer constants are to be emitted in the text
+         section following the function's body. *)
+  -> unit
+
+(** Emit items of Cmm data into the data section. *)
+val data : Cmm.data_item list -> unit
+
+(** Force emission of pending constant literals immediately.
+
+    This is only needed when the functionality provided below (via
+    [emit_numeric_constants]) is insufficient for target-specific reasons,
+    such as strict requirements on the placement of constants.
+
+    If [in_current_section] is [false] then the constants will be emitted
+    into the appropriate read-only data / shared constant sections.  After
+    that the caller of this function must switch to the section in which they
+    desire to continue emission. *)
+val emit_constants : in_current_section:bool -> unit
+
+(** Finish assembly output for a compilation unit.
+
+    If [emit_numeric_constants] is [true] then float and integer constants
+    will be emitted into the appropriate read-only data / read-only
+    shared constant sections.  Otherwise they will not be emitted (typically
+    used when [emit_numeric_constants] to [fundecl], above, was [true]).
+
+    If the "code_begin" marker needs to live in a section other than [Text]
+    then [code_section] should be set accordingly. *)
+val end_assembly
+   : ?code_section:Asm_directives.section
+  -> emit_numeric_constants:bool
+  -> unit
+  -> unit
+
+(** Reset the emitter, to be used between compilation units. *)
+val reset : unit -> unit

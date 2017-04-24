@@ -120,15 +120,17 @@ let operation op arg ppf res =
   | Imove -> regs ppf arg
   | Ispill -> fprintf ppf "%a (spill)" regs arg
   | Ireload -> fprintf ppf "%a (reload)" regs arg
-  | Iconst_int n -> fprintf ppf "%s" (Nativeint.to_string n)
+  | Iconst_int n -> fprintf ppf "%s" (Targetint.to_string n)
   | Iconst_float f -> fprintf ppf "%F" (Int64.float_of_bits f)
-  | Iconst_symbol s -> fprintf ppf "\"%s\"" s
+  | Iconst_symbol s -> fprintf ppf "\"%a\"" Linkage_name.print s
   | Icall_ind _ -> fprintf ppf "call %a" regs arg
-  | Icall_imm { func; _ } -> fprintf ppf "call \"%s\" %a" func regs arg
+  | Icall_imm { func; _ } ->
+      fprintf ppf "call \"%a\" %a" Linkage_name.print func regs arg
   | Itailcall_ind _ -> fprintf ppf "tailcall %a" regs arg
-  | Itailcall_imm { func; } -> fprintf ppf "tailcall \"%s\" %a" func regs arg
+  | Itailcall_imm { func; } ->
+      fprintf ppf "tailcall \"%a\" %a" Linkage_name.print func regs arg
   | Iextcall { func; alloc; _ } ->
-      fprintf ppf "extcall \"%s\" %a%s" func regs arg
+      fprintf ppf "extcall \"%a\" %a%s" Linkage_name.print func regs arg
       (if alloc then "" else " (noalloc)")
   | Istackoffset n ->
       fprintf ppf "offset stack %i" n
@@ -226,8 +228,9 @@ let fundecl ppf f =
       ""
     else
       " " ^ Debuginfo.to_string f.fun_dbg in
-  fprintf ppf "@[<v 2>%s(%a)%s@,%a@]"
-    f.fun_name regs f.fun_args dbg instr f.fun_body
+  fprintf ppf "@[<v 2>%a(%a)%s@,%a@]"
+    Linkage_name.print f.fun_name
+    regs f.fun_args dbg instr f.fun_body
 
 let phase msg ppf f =
   fprintf ppf "*** %s@.%a@." msg fundecl f

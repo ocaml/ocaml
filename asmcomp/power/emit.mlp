@@ -16,6 +16,8 @@
 
 (* Emission of PowerPC assembly code *)
 
+[@@@ocaml.warning "-40"]
+
 open Misc
 open Cmm
 open Arch
@@ -24,6 +26,10 @@ open Reg
 open Mach
 open Linearize
 open Emitaux
+
+module D = Asm_directives
+module L = Linkage_name
+module LR = Linkage_name.With_reloc
 
 (* Reserved space at bottom of stack *)
 
@@ -72,36 +78,23 @@ let (trap_size, trap_handler_offset, trap_previous_offset) =
   | ELF64v1 -> (32, 56, 64)
   | ELF64v2 -> (32, 40, 48)
 
+let record_frame = record_frame ~frame_size ~slot_offset
+
 (* Output a symbol *)
 
-let emit_symbol s = Emitaux.emit_symbol '.' s
+let emit_symbol s = emit_string (LR.to_string s)
 
 (* Output a label *)
 
-let label_prefix = ".L"
+let emit_label lbl = emit_string (D.string_of_label lbl)
 
-let emit_label lbl =
-  emit_string label_prefix; emit_int lbl
+(* The section containing machine instructions *)
 
-(* Section switching *)
-
-let code_space =
-  "	.section \".text\"\n"
-
-let function_descr_space =
+let code_section : D.section =
   match abi with
-  | ELF32 -> code_space
-  | ELF64v1 -> "	.section \".opd\",\"aw\"\n"
-  | ELF64v2 -> code_space
-
-let data_space =
-  "	.section \".data\"\n"
-
-let rodata_space =
-  "	.section \".rodata\"\n"
-
-let toc_space =
-  " .section \".toc\",\"aw\"\n"
+  | ELF32 -> Text
+  | ELF64v1 -> POWER Function_descriptors
+  | ELF64v2 -> Text
 
 (* Names of instructions that differ in 32 and 64-bit modes *)
 
@@ -110,7 +103,6 @@ let stg = if ppc64 then "std" else "stw"
 let lwa = if ppc64 then "lwa" else "lwz"
 let cmpg = if ppc64 then "cmpd" else "cmpw"
 let cmplg = if ppc64 then "cmpld" else "cmplw"
-let datag = if ppc64 then ".quad" else ".long"
 let mullg = if ppc64 then "mulld" else "mullw"
 let divg = if ppc64 then "divd" else "divw"
 let tglle = if ppc64 then "tdlle" else "twlle"
@@ -146,9 +138,12 @@ let emit_symbol_offset (s, d) =
 let low_high_u n = (n land 0xFFFF, n asr 16)
   (* unsigned low half, for use with "ori" *)
 
+let _8000 = Targetint.of_int 0x8000
+let ffff = Targetint.of_int 0xffff
+
 let native_low_high_u n =
-  (Nativeint.(to_int (logand n 0xFFFFn)),
-   Nativeint.(to_int (shift_right n 16)))
+  (Targetint.(to_int (logand n ffff)),
+   Targetint.(to_int (shift_right n 16)))
   (* unsigned low half, for use with "ori" *)
 
 let low_high_s n =
@@ -157,32 +152,33 @@ let low_high_s n =
   (* signed low half, for use with "addi" *)
 
 let native_low_high_s n =
-  let lo = Nativeint.(sub (logand (add n 0x8000n) 0xFFFFn) 0x8000n) in
-  (Nativeint.to_int lo,
-   Nativeint.(to_int (shift_right (sub n lo) 16)))
+  let lo = Targetint.(sub (logand (add n _8000) ffff) _8000) in
+  (Targetint.to_int lo,
+   Targetint.(to_int (shift_right (sub n lo) 16)))
   (* signed low half, for use with "addi" *)
 
 let is_immediate n =
   n <= 32767 && n >= -32768
 
 let is_native_immediate n =
-  n <= 32767n && n >= -32768n
+  Targetint.compare n (Targetint.of_int 32767) <= 0
+    && Targetint.compare n (Targetint.of_int (-32768)) >= 0
 
 (* Record TOC entries *)
 
 type tocentry =
-  | TocSym of string
+  | TocSym of LR.t
   | TocLabel of int
-  | TocInt of nativeint
+  | TocInt of Targetint.t
   | TocFloat of int64
 
 let tocref_entries : (tocentry, label) Hashtbl.t = Hashtbl.create 64
 
 let emit_tocentry = function
-  | TocSym s -> emit_symbol s
-  | TocInt i -> emit_nativeint i
-  | TocFloat f -> emit_printf "0x%Lx # %.12g" f (Int64.float_of_bits f)
-  | TocLabel lbl -> emit_label lbl
+  | TocSym s -> D.symbol s
+  | TocInt i -> D.targetint i
+  | TocFloat f -> D.float64_from_bits f
+  | TocLabel lbl -> D.label lbl
 
 let label_for_tocref entry =
   try
@@ -195,7 +191,8 @@ let label_for_tocref entry =
 let emit_toctable () =
   Hashtbl.iter
     (fun entry lbl ->
-      `{emit_label lbl}:	.quad	{emit_tocentry entry}\n`)
+      D.define_label lbl;
+      emit_tocentry entry)
     tocref_entries
 
 (* Emit a load from a TOC entry *)
@@ -225,6 +222,7 @@ let valid_offset instr ofs =
 let emit_load_store instr addressing_mode addr n arg =
   match addressing_mode with
   | Ibased(s, d) ->
+      let s = LR.no_reloc s in
       begin match abi with
       | ELF32 ->
         `	addis	11, 0, {emit_upper emit_symbol_offset (s,d)}\n`;
@@ -274,9 +272,10 @@ let emit_free_frame () =
 (* Emit a "bl" instruction to a given symbol *)
 
 let emit_call s =
+  let s = LR.no_reloc s in
   match abi with
   | ELF32 when !Clflags.dlcode || !Clflags.pic_code ->
-    `	bl	{emit_symbol s}@plt\n`
+    `	bl	{emit_symbol (LR.plt s)}\n`
   | _ ->
     `	bl	{emit_symbol s}\n`
 
@@ -296,34 +295,7 @@ let emit_reload_toc () =
 
 let adjust_stack_offset delta =
   stack_offset := !stack_offset + delta;
-  cfi_adjust_cfa_offset delta
-
-(* Record live pointers at call points *)
-
-let record_frame ?label live raise_ dbg =
-  let lbl =
-    match label with
-    | None -> new_label()
-    | Some label -> label
-  in
-  let live_offset = ref [] in
-  Reg.Set.iter
-    (function
-      | {typ = Val; loc = Reg r} ->
-          live_offset := ((r lsl 1) + 1) :: !live_offset
-      | {typ = Val; loc = Stack s} as reg ->
-          live_offset := slot_offset s (register_class reg) :: !live_offset
-      | {typ = Addr} as r ->
-          Misc.fatal_error ("bad GC root " ^ Reg.name r)
-      | _ -> ())
-    live;
-  record_frame_descr ~label:lbl ~frame_size:(frame_size())
-    ~live_offset:!live_offset ~raise_frame:raise_ dbg;
-  `{emit_label lbl}:\n`
-
-(* Record floating-point literals (for PPC32) *)
-
-let float_literals = ref ([] : (int64 * int) list)
+  D.cfi_adjust_cfa_offset ~bytes:delta
 
 (* Record jump tables (for PPC64).  In order to reduce the size of the TOC,
    we concatenate all jumptables and emit them at the end of the compilation
@@ -386,12 +358,12 @@ let name_for_specific = function
   | Imultsubf -> "fmsub"
   | _ -> Misc.fatal_error "Emit.Ispecific"
 
-(* Name of current function *)
-let function_name = ref ""
-(* Entry point for tail recursive calls *)
-let tailrec_entry_point = ref 0
 (* Label of glue code for calling the GC *)
 let call_gc_label = ref 0
+
+(* Spacetime (not yet supported) *)
+
+let spacetime_before_uninstrumented_call _label = ()
 
 (* Relaxation of branches that exceed the span of a relative branch. *)
 
@@ -452,7 +424,7 @@ module BR = Branch_relaxation.Make (struct
     | Lop(Icall_imm _) -> size 1 3 3
     | Lop(Itailcall_ind _) -> size 5 7 6
     | Lop(Itailcall_imm { func; _ }) ->
-        if func = !function_name
+        if L.equal func !function_name
         then 1
         else size 4 (7 + tocload_size()) (6 + tocload_size())
     | Lop(Iextcall { alloc = true; _ }) ->
@@ -527,7 +499,7 @@ let emit_instr i =
         end
     | Lop(Iconst_int n) ->
         if is_native_immediate n then
-          `	li	{emit_reg i.res.(0)}, {emit_nativeint n}\n`
+          `	li	{emit_reg i.res.(0)}, {emit_targetint n}\n`
         else begin
         (* Try a signed decomposition first, because the sequence
            addis/addi is eligible for instruction fusion. *)
@@ -552,8 +524,7 @@ let emit_instr i =
     | Lop(Iconst_float f) ->
         begin match abi with
         | ELF32 ->
-          let lbl = new_label() in
-          float_literals := (f, lbl) :: !float_literals;
+          let lbl = float_constant f in
           `	addis	11, 0, {emit_upper emit_label lbl}\n`;
           `	lfd	{emit_reg i.res.(0)}, {emit_lower emit_label lbl}(11)\n`
         | ELF64v1 | ELF64v2 ->
@@ -567,6 +538,7 @@ let emit_instr i =
           end
         end
     | Lop(Iconst_symbol s) ->
+        let s = LR.no_reloc s in
         begin match abi with
         | ELF32 ->
           `	addis	{emit_reg i.res.(0)}, 0, {emit_upper emit_symbol s}\n`;
@@ -579,26 +551,26 @@ let emit_instr i =
         | ELF32 ->
           `	mtctr	{emit_reg i.arg.(0)}\n`;
           `	bctrl\n`;
-          record_frame i.live false i.dbg ~label:label_after
+          record_frame ~live:i.live ~raise_:false i.dbg ~label:label_after
         | ELF64v1 ->
           `	ld	0, 0({emit_reg i.arg.(0)})\n`;  (* code pointer *)
           `	mtctr	0\n`;
           `	ld	2, 8({emit_reg i.arg.(0)})\n`;  (* TOC for callee *)
           `	bctrl\n`;
-          record_frame i.live false i.dbg ~label:label_after;
+          record_frame ~live:i.live ~raise_:false i.dbg ~label:label_after;
           emit_reload_toc()
         | ELF64v2 ->
           `	mtctr	{emit_reg i.arg.(0)}\n`;
           `	mr	12, {emit_reg i.arg.(0)}\n`;  (* addr of fn in r12 *)
           `	bctrl\n`;
-          record_frame i.live false i.dbg ~label:label_after;
+          record_frame ~live:i.live ~raise_:false i.dbg ~label:label_after;
           emit_reload_toc()
         end
     | Lop(Icall_imm { func; label_after; }) ->
         begin match abi with
         | ELF32 ->
             emit_call func;
-            record_frame i.live false i.dbg ~label:label_after
+            record_frame ~live:i.live ~raise_:false i.dbg ~label:label_after
         | ELF64v1 | ELF64v2 ->
         (* For PPC64, we cannot just emit a "bl s; nop" sequence, because
            of the following scenario:
@@ -618,7 +590,7 @@ let emit_instr i =
                 Cost: 3 instructions if same TOC, 7 if different TOC.
            Let's try option 2. *)
             emit_call func;
-            record_frame i.live false i.dbg ~label:label_after;
+            record_frame ~live:i.live ~raise_:false i.dbg ~label:label_after;
             `	nop\n`;
             emit_reload_toc()
         end
@@ -641,9 +613,10 @@ let emit_instr i =
         emit_free_frame();
         `	bctr\n`
     | Lop(Itailcall_imm { func; label_after = _; }) ->
-        if func = !function_name then
+        if L.equal func !function_name then
           `	b	{emit_label !tailrec_entry_point}\n`
         else begin
+          let func = LR.no_reloc func in
           begin match abi with
           | ELF32 ->
             ()
@@ -673,16 +646,17 @@ let emit_instr i =
           emit_call func;
           emit_call_nop()
         end else begin
+          let func = LR.no_reloc func in
           match abi with
           | ELF32 ->
             `	addis	28, 0, {emit_upper emit_symbol func}\n`;
             `	addi	28, 28, {emit_lower emit_symbol func}\n`;
-            emit_call "caml_c_call";
-            record_frame i.live false i.dbg
+            emit_call L.caml_c_call;
+            record_frame ~live:i.live ~raise_:false i.dbg
           | ELF64v1 | ELF64v2 ->
             emit_tocload emit_gpr 28 (TocSym func);
-            emit_call "caml_c_call";
-            record_frame i.live false i.dbg;
+            emit_call L.caml_c_call;
+            record_frame ~live:i.live ~raise_:false i.dbg;
             `	nop\n`
         end
     | Lop(Istackoffset n) ->
@@ -724,7 +698,7 @@ let emit_instr i =
         `	addi	{emit_reg i.res.(0)}, 31, {emit_int size_addr}\n`;
         `	bltl	{emit_label !call_gc_label}\n`;
         (* Exactly 4 instructions after the beginning of the alloc sequence *)
-        record_frame i.live false Debuginfo.none
+        record_frame ~live:i.live ~raise_:false Debuginfo.none
     | Lop(Ispecific(Ialloc_far { words = n; label_after_call_gc; })) ->
         if !call_gc_label = 0 then begin
           match label_after_call_gc with
@@ -737,7 +711,7 @@ let emit_instr i =
         `	bge	{emit_label lbl}\n`;
         `	bl	{emit_label !call_gc_label}\n`;
         (* Exactly 4 instructions after the beginning of the alloc sequence *)
-        record_frame i.live false Debuginfo.none;
+        record_frame ~live:i.live ~raise_:false Debuginfo.none;
         `{emit_label lbl}:	addi	{emit_reg i.res.(0)}, 31, {emit_int size_addr}\n`
     | Lop(Iintop Isub) ->               (* subfc has swapped arguments *)
         `	subfc	{emit_reg i.res.(0)}, {emit_reg i.arg.(1)}, {emit_reg i.arg.(0)}\n`
@@ -756,7 +730,8 @@ let emit_instr i =
         end
     | Lop(Iintop (Icheckbound { label_after_error; })) ->
         if !Clflags.debug then
-          record_frame Reg.Set.empty false i.dbg ?label:label_after_error;
+          record_frame ~live:Reg.Set.empty ~raise_:false i.dbg
+            ?label:label_after_error;
         `	{emit_string tglle}   {emit_reg i.arg.(0)}, {emit_reg i.arg.(1)}\n`
     | Lop(Iintop op) ->
         let instr = name_for_intop op in
@@ -774,7 +749,8 @@ let emit_instr i =
         end
     | Lop(Iintop_imm(Icheckbound { label_after_error; }, n)) ->
         if !Clflags.debug then
-          record_frame Reg.Set.empty false i.dbg ?label:label_after_error;
+          record_frame ~live:Reg.Set.empty ~raise_:false i.dbg
+            ?label:label_after_error;
         `	{emit_string tglle}i   {emit_reg i.arg.(0)}, {emit_int n}\n`
     | Lop(Iintop_imm(op, n)) ->
         let instr = name_for_intop_imm op in
@@ -792,8 +768,7 @@ let emit_instr i =
           `	lfd	{emit_reg i.res.(0)}, -16(1)\n`;
           `	fcfid	{emit_reg i.res.(0)}, {emit_reg i.res.(0)}\n`
 	end else begin
-          let lbl = new_label() in
-          float_literals := (0x4330000080000000L, lbl) :: !float_literals;
+          let lbl = float_constant 0x4330000080000000L in
           `	addis	11, 0, {emit_upper emit_label lbl}\n`;
           `	lfd	0, {emit_lower emit_label lbl}(11)\n`;
           `	lis	0, 0x4330\n`;
@@ -905,12 +880,12 @@ let emit_instr i =
         if ppc64 then begin
           jumptables := List.rev_append (Array.to_list jumptbl) !jumptables
         end else begin
-          emit_string rodata_space;
-          `{emit_label lbl}:`;
+          D.switch_to_section Read_only_data;
+          D.define_label lbl;
           for i = 0 to Array.length jumptbl - 1 do
-            `	.long	{emit_label jumptbl.(i)} - {emit_label lbl}\n`
+            D.between_labels_32bit ~upper:jumptbl.(i) ~lower:lbl
           done;
-          emit_string code_space
+          D.switch_to_section Text
         end
     | Lsetuptrap lbl ->
         `	bl	{emit_label lbl}\n`;
@@ -941,8 +916,8 @@ let emit_instr i =
     | Lraise k ->
         begin match k with
         | Cmm.Raise_withtrace ->
-            emit_call "caml_raise_exn";
-            record_frame Reg.Set.empty true i.dbg;
+            emit_call L.caml_raise_exn;
+            record_frame ~live:Reg.Set.empty ~raise_:true i.dbg;
             emit_call_nop()
         | Cmm.Raise_notrace ->
             `	{emit_string lg}	0, {emit_int trap_handler_offset}(29)\n`;
@@ -953,14 +928,28 @@ let emit_instr i =
             `	bctr\n`
         end
 
-(* Emit a sequence of instructions *)
+(* Emit the sequence of instructions forming the function's body *)
 
-let rec emit_all i =
-  match i.desc with
-  | Lend -> ()
-  |  _   -> emit_instr i; emit_all i.next
+let emit_all ~fun_body =
+  begin match abi with
+  | ELF32 | ELF64v1 -> ()
+  | ELF64v2 ->
+    `0:	addis	2, 12, (.TOC. - 0b)@ha\n`;
+    `	addi	2, 2, (.TOC. - 0b)@l\n`;
+    `	.localentry {emit_symbol (LR.no_reloc !function_name)}, . - 0b\n`
+  end;
+  let rec emit_all i =
+    match i.desc with
+    | Lend -> ()
+    |  _   -> emit_instr i; emit_all i.next
+  in
+  emit_all fun_body;
+  frame_size ()
 
 (* Emission of the profiling prelude *)
+
+let caml_before_mcount = L.create "caml_before_mcount"
+let caml_after_mcount = L.create "caml_after_mcount"
 
 let emit_profile () =
   match abi with
@@ -970,92 +959,57 @@ let emit_profile () =
       `	stw	0, 4(1)\n`;
       (* _mcount preserves the registers used for parameter passing *)
       (* when it returns, lr contains the original return address *)
-      `	bl	{emit_symbol "_mcount"}\n`;
+      `	bl	{emit_symbol (LR.no_reloc L._mcount)}\n`;
       `	addi	1, 1, 16\n`
   | ELF64v1 | ELF64v2 ->
       `	mflr	0\n`;
       (* save the registers used for parameter passing *)
-      `	bl	{emit_symbol "caml_before_mcount"}\n`;
-      `	bl	{emit_symbol "_mcount"}\n`;
+      `	bl	{emit_symbol (LR.no_reloc caml_before_mcount)}\n`;
+      `	bl	{emit_symbol (LR.no_reloc L._mcount)}\n`;
       `	nop\n`;
       (* restore the registers used for parameter passing *)
-      `	bl	{emit_symbol "caml_after_mcount"}\n`;
+      `	bl	{emit_symbol (LR.no_reloc caml_after_mcount)}\n`;
       `	mtlr	0\n`
 
 (* Emission of a function declaration *)
 
-let fundecl fundecl =
-  function_name := fundecl.fun_name;
-  tailrec_entry_point := new_label();
+let prepare _fundecl =
   stack_offset := 0;
   call_gc_label := 0;
-  float_literals := [];
   jumptables := []; jumptables_lbl := -1;
-+  Emitaux.emit_block_header_for_closure
-+    ~word_directive:(if ppc64 then ".quad" else ".long")
-+    ~comment_char:'#'
-+    ~function_entry_points_are_doubleword_aligned:false;
-  begin match abi with
-  | ELF32 ->
-    emit_string code_space;
-    `	.globl	{emit_symbol fundecl.fun_name}\n`;
-    `	.type	{emit_symbol fundecl.fun_name}, @function\n`;
-    `	.align	2\n`;
-    `{emit_symbol fundecl.fun_name}:\n`
-  | ELF64v1 ->
-    emit_string function_descr_space;
-    `	.align 3\n`;
-    `	.globl	{emit_symbol fundecl.fun_name}\n`;
-    `	.type   {emit_symbol fundecl.fun_name}, @function\n`;
-    `{emit_symbol fundecl.fun_name}:\n`;
-    `	.quad .L.{emit_symbol fundecl.fun_name}, .TOC.@tocbase\n`;
-    emit_string code_space;
-    `	.align  2\n`;
-    `.L.{emit_symbol fundecl.fun_name}:\n`
-  | ELF64v2 ->
-    emit_string code_space;
-    `	.globl	{emit_symbol fundecl.fun_name}\n`;
-    `	.type	{emit_symbol fundecl.fun_name}, @function\n`;
-    `	.align	2\n`;
-    `{emit_symbol fundecl.fun_name}:\n`;
-    `0:	addis	2, 12, (.TOC. - 0b)@ha\n`;
-    `	addi	2, 2, (.TOC. - 0b)@l\n`;
-    `	.localentry {emit_symbol fundecl.fun_name}, . - 0b\n`
-  end;
-  emit_debug_info fundecl.fun_dbg;
-  cfi_startproc();
   if !Clflags.gprofile then emit_profile();
   let n = frame_size() in
   if n > 0 then begin
     `	addi	1, 1, {emit_int(-n)}\n`;
-    cfi_adjust_cfa_offset n
+    D.cfi_adjust_cfa_offset ~bytes:n
   end;
   if !contains_calls then begin
     let ra = retaddr_offset() in
     `	mflr	0\n`;
     `	{emit_string stg}	0, {emit_int ra}(1)\n`;
-    cfi_offset ~reg: 65 (* LR *) ~offset: (ra - n);
+    D.cfi_offset ~reg:65 (* LR *) ~offset:(ra - n);
     match abi with
     | ELF32 -> ()
     | ELF64v1 | ELF64v2 ->
       `	std	2, {emit_int(toc_save_offset())}(1)\n`
-  end;
-  `{emit_label !tailrec_entry_point}:\n`;
-  (* On this target, there is at most one "out of line" code block per
-     function: a single "call GC" point.  It comes immediately after the
-     function's body. *)
-  BR.relax fundecl.fun_body ~max_out_of_line_code_offset:0;
-  emit_all fundecl.fun_body;
-  (* Emit the glue code to call the GC *)
+  end
+
+let after_body () =
+  (* Emit the glue code to call the GC.
+     Since there is only a single call GC point, which might be called from
+     places with different stack offsets, we have to put up with the fact that
+     we can't produce accurate CFI information here. *)
   if !call_gc_label > 0 then begin
-    `{emit_label !call_gc_label}:\n`;
+    D.switch_to_section Text;
+    D.define_label !call_gc_label;
+    let caml_call_gc = LR.no_reloc L.caml_call_gc in
     match abi with
     | ELF32 ->
-      `	b	{emit_symbol "caml_call_gc"}\n`
+      `	b	{emit_symbol caml_call_gc}\n`
     | ELF64v1 ->
       `	std	2, 40(1)\n`;
              (* save our TOC, will be restored by caml_call_gc *)
-      emit_tocload emit_gpr 11 (TocSym "caml_call_gc");
+      emit_tocload emit_gpr 11 (TocSym caml_call_gc);
       `	ld	0, 0(11)\n`;
       `	mtctr	0\n`;
       `	ld	2, 8(11)\n`;
@@ -1063,104 +1017,74 @@ let fundecl fundecl =
     | ELF64v2 ->
       `	std	2, 24(1)\n`;
              (* save our TOC, will be restored by caml_call_gc *)
-      emit_tocload emit_gpr 12 (TocSym "caml_call_gc");
+      emit_tocload emit_gpr 12 (TocSym caml_call_gc);
       `	mtctr	12\n`;
       `	bctr\n`
   end;
-  cfi_endproc();
-  begin match abi with
-  | ELF32 | ELF64v2 ->
-    `	.size	{emit_symbol fundecl.fun_name}, . - {emit_symbol fundecl.fun_name}\n`
-  | ELF64v1 ->
-    `	.size	{emit_symbol fundecl.fun_name}, . - .L.{emit_symbol fundecl.fun_name}\n`
-  end;
-  (* Emit the numeric literals *)
-  if !float_literals <> [] then begin
-    emit_string rodata_space;
-    `	.align	3\n`;
-    List.iter
-      (fun (f, lbl) ->
-        `{emit_label lbl}:`;
-        emit_float64_split_directive ".long" f)
-      !float_literals
-  end;
   (* Emit the jump tables *)
   if !jumptables <> [] then begin
-    emit_string rodata_space;
-    `	.align	2\n`;
-    `{emit_label !jumptables_lbl}:`;
-    List.iter
-      (fun  lbl ->
-          `	.long	{emit_label lbl} - {emit_label !jumptables_lbl}\n`)
+    D.switch_to_section Read_only_data;
+    D.align ~bytes:4;
+    D.define_label !jumptables_lbl;
+    List.iter (fun lbl ->
+        D.between_labels_32bit ~upper:lbl ~lower:!jumptables_lbl)
       (List.rev !jumptables)
-  end
+    end
 
-(* Emission of data *)
-
-let declare_global_data s =
-  `	.globl	{emit_symbol s}\n`;
-  `	.type	{emit_symbol s}, @object\n`
-
-let emit_item = function
-    Cglobal_symbol s ->
-      declare_global_data s
-  | Cdefine_symbol s ->
-      `{emit_symbol s}:\n`;
-  | Cint8 n ->
-      `	.byte	{emit_int n}\n`
-  | Cint16 n ->
-      `	.short	{emit_int n}\n`
-  | Cint32 n ->
-      `	.long	{emit_nativeint n}\n`
-  | Cint n ->
-      `	{emit_string datag}	{emit_nativeint n}\n`
-  | Csingle f ->
-      emit_float32_directive ".long" (Int32.bits_of_float f)
-  | Cdouble f ->
-      if ppc64
-      then emit_float64_directive ".quad" (Int64.bits_of_float f)
-      else emit_float64_split_directive ".long" (Int64.bits_of_float f)
-  | Csymbol_address s ->
-      `	{emit_string datag}	{emit_symbol s}\n`
-  | Cstring s ->
-      emit_bytes_directive "	.byte	" s
-  | Cskip n ->
-      if n > 0 then `	.space	{emit_int n}\n`
-  | Calign n ->
-      `	.align	{emit_int (Misc.log2 n)}\n`
-
-let data l =
-  emit_string data_space;
-  `	.align  {emit_int (if ppc64 then 3 else 2)}\n`;
-  List.iter emit_item l
+let fundecl decl =
+  (* Emit the function descriptor if using the ELF64v1 ABI.  The function's
+     body itself is then identified by what we call the "alternative name". *)
+  let alternative_name =
+    match abi with
+    | ELF32 | ELF64v2 -> None
+    | ELF64v1 ->
+      let alternative_name = L.power_function_entry_point decl.fun_name in
+      D.switch_to_section (POWER Function_descriptors);
+      D.align ~bytes:8;
+      D.global decl.fun_name;
+      D.define_function_symbol decl.fun_name;
+      D.symbol (LR.no_reloc alternative_name);
+      D.symbol (LR.power_tocbase (LR.no_reloc (L.create ".TOC.")));
+      Some alternative_name
+  in
+  let branch_relaxation =
+    (* On this target, there is at most one "out of line" code block per
+       function: a single "call GC" point.  It comes immediately after the
+       function's body. *)
+    let max_out_of_line_code_offset = 0 in
+    ((module BR : Branch_relaxation.S), max_out_of_line_code_offset)
+  in
+  Emitaux.fundecl decl
+    ?alternative_name
+    ~branch_relaxation
+    ~prepare
+    ~emit_all
+    ~after_body
+    ~emit_call
+    ~emit_jump_to_label:(fun _ -> assert false)
+    ~spacetime_before_uninstrumented_call
+    ~alignment_in_bytes:4
+    ~emit_numeric_constants:true
 
 (* Beginning / end of an assembly file *)
 
 let begin_assembly() =
-  reset_debug_info();
-  `	.file	\"\"\n`;  (* PR#7037 *)
+  Asm_directives.initialize ~emit:emit_directive;
   begin match abi with
   | ELF64v2 -> `	.abiversion 2\n`
   | _ -> ()
   end;
   Hashtbl.clear tocref_entries;
-  (* Emit the beginning of the segments *)
-  let lbl_begin = Compilenv.make_symbol (Some "data_begin") in
-  emit_string data_space;
-  declare_global_data lbl_begin;
-  `{emit_symbol lbl_begin}:\n`;
-  let lbl_begin = Compilenv.make_symbol (Some "code_begin") in
-  emit_string function_descr_space;
   (* For the ELF64v1 ABI, we must make sure that the .opd and .data
-     sections are in different pages.  .opd comes after .data,
-     so aligning .opd is enough.  To save space, we do it only
-     for the startup file, not for every OCaml compilation unit. *)
+     sections are in different pages.  .opd comes after .data, so aligning .opd
+     is enough.  To save space, we do it only for the startup file, not for every
+     OCaml compilation unit. *)
   let c = Compilenv.current_unit_name() in
   if abi = ELF64v1 && (c = "_startup" || c = "_shared_startup") then begin
-    `	.p2align	12\n`
+    D.switch_to_section (POWER Function_descriptors);
+    D.align ~bytes:(1 lsl 12)
   end;
-  declare_global_data lbl_begin;
-  `{emit_symbol lbl_begin}:\n`
+  Emitaux.begin_assembly ~code_section ()
 
 let end_assembly() =
   (* In profiling mode, for ELF64, emit the helper functions
@@ -1171,16 +1095,16 @@ let end_assembly() =
   if ppc64 && !Clflags.gprofile then begin
     let save_area = reserved_stack_space + (if abi = ELF64v1 then 8*8 else 0) in
     let stacksize = save_area + 8*8 in
-    emit_string code_space;
-    `	.align	2\n`;
-    `{emit_symbol "caml_before_mcount"}:\n`;
+    D.switch_to_section Text;
+    D.align ~bytes:4;
+    D.define_function_symbol caml_before_mcount;
     `	stdu	1, {emit_int (-stacksize)}(1)\n`;
     `	std	0, {emit_int (16 + stacksize)}(1)\n`;
     for i = 3 to 10 do
     `	std	{emit_gpr i}, {emit_int (save_area + (i - 3) * 8)}(1)\n`
     done;
     `	blr\n`;
-    `{emit_symbol "caml_after_mcount"}:\n`;
+    D.define_function_symbol caml_after_mcount;
     `	ld	0, {emit_int (16 + stacksize)}(1)\n`;
     for i = 3 to 10 do
     `	ld	{emit_gpr i}, {emit_int (save_area + (i - 3) * 8)}(1)\n`
@@ -1188,42 +1112,12 @@ let end_assembly() =
     `	addi	1, 1, {emit_int stacksize}\n`;
     `	blr\n`
   end;
-  (* Emit the end of the segments *)
-  emit_string function_descr_space;
-  let lbl_end = Compilenv.make_symbol (Some "code_end") in
-  declare_global_data lbl_end;
-  `{emit_symbol lbl_end}:\n`;
-  if abi <> ELF64v1 then `	.long	0\n`;
-  emit_string data_space;
-  let lbl_end = Compilenv.make_symbol (Some "data_end") in
-  declare_global_data lbl_end;
-  `{emit_symbol lbl_end}:\n`;
-  `	{emit_string datag}	0\n`;
-  (* Emit the frame descriptors *)
-  emit_string rodata_space;
-  let lbl = Compilenv.make_symbol (Some "frametable") in
-  declare_global_data lbl;
-  `{emit_symbol lbl}:\n`;
-  emit_frames
-    { efa_code_label =
-         (fun l -> `	{emit_string datag}	{emit_label l}\n`);
-      efa_data_label =
-         (fun l -> `	{emit_string datag}	{emit_label l}\n`);
-      efa_16 = (fun n -> `	.short	{emit_int n}\n`);
-      efa_32 = (fun n -> `	.long	{emit_int32 n}\n`);
-      efa_word = (fun n -> `	{emit_string datag}	{emit_int n}\n`);
-      efa_align = (fun n -> `	.balign	{emit_int n}\n`);
-      efa_label_rel = (fun lbl ofs ->
-                           `	.long	({emit_label lbl} - .) + {emit_int32 ofs}\n`);
-      efa_def_label = (fun l -> `{emit_label l}:\n`);
-      efa_string = (fun s -> emit_bytes_directive "	.byte	" (s ^ "\000"))
-     };
   (* Emit the TOC entries *)
   begin match abi with
   | ELF32 -> ()
   | ELF64v1 | ELF64v2 ->
-      emit_string toc_space;
+      D.switch_to_section (POWER Table_of_contents);
       emit_toctable();
       Hashtbl.clear tocref_entries
   end;
-  `	.section .note.GNU-stack,\"\",%progbits\n`
+  Emitaux.end_assembly ~code_section ~emit_numeric_constants:false ()

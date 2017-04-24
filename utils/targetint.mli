@@ -82,7 +82,7 @@ val max_int : t
     or 2{^63} - 1 on a 64-bit platform. *)
 
 val min_int : t
-(** The greatest representable target integer,
+(** The smallest representable target integer,
    either -2{^31} on a 32-bit platform,
    or -2{^63} on a 64-bit platform. *)
 
@@ -117,6 +117,10 @@ val shift_right_logical : t -> int -> t
     regardless of the sign of [x].
     The result is unspecified if [y < 0] or [y >= bitsize]. *)
 
+(* CR mshinwell: we need to add comments concerning the sign extension
+   semantics here.  For example [of_int32] sign extends.
+   Maybe there should be a [Target_ptr.t] or similar which zero extends. *)
+
 val of_int : int -> t
 (** Convert the given integer (type [int]) to a target integer
     (type [t]), module the target word size. *)
@@ -124,6 +128,11 @@ val of_int : int -> t
 val of_int_exn : int -> t
 (** Convert the given integer (type [int]) to a target integer
     (type [t]).  Raises a fatal error if the conversion is not exact. *)
+
+val of_nativeint_exn : nativeint -> t
+(** Convert the given integer (type [nativeint]) to a target integer
+    (type [t]).  Raises a fatal error if the conversion is not exact. *)
+(* CR mshinwell: this exception-raising property needs to be checked *)
 
 val to_int : t -> int
 (** Convert the given target integer (type [t]) to an
@@ -186,3 +195,19 @@ type repr =
 
 val repr : t -> repr
 (** The concrete representation of a native integer. *)
+
+val fits_in_16_bits : t -> bool
+(** Whether the given target integer fits within 16 bits without loss of
+    information. *)
+
+val fits_in_32_bits : t -> bool
+(** Whether the given target integer fits within 32 bits without loss of
+    information. *)
+
+val is_zero : t -> bool
+(** Whether the given target integer is zero. *)
+
+val strictly_negative : t -> bool
+(** Whether the given target integer is strictly less than zero. *)
+
+val print : Format.formatter -> t -> unit

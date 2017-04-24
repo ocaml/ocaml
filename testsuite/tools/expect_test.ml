@@ -147,6 +147,9 @@ module Compiler_messages = struct
 end
 
 let collect_formatters buf pps ~f =
+  let ppb = Format.formatter_of_buffer buf in
+  let out_functions = Format.pp_get_formatter_out_functions ppb () in
+
   List.iter (fun pp -> Format.pp_print_flush pp ()) pps;
   let save =
     List.map (fun pp -> Format.pp_get_formatter_out_functions pp ()) pps
@@ -157,13 +160,6 @@ let collect_formatters buf pps ~f =
          Format.pp_print_flush pp ();
          Format.pp_set_formatter_out_functions pp out_functions)
       pps save
-  in
-  let out_string str ofs len = Buffer.add_substring buf str ofs len
-  and out_flush = ignore
-  and out_newline () = Buffer.add_char buf '\n'
-  and out_spaces n = for i = 1 to n do Buffer.add_char buf ' ' done in
-  let out_functions =
-    { Format.out_string; out_flush; out_newline; out_spaces }
   in
   List.iter
     (fun pp -> Format.pp_set_formatter_out_functions pp out_functions)
@@ -344,6 +340,7 @@ let usage = "Usage: expect_test <options> [script-file [arguments]]\n\
              options are:"
 
 let () =
+  Clflags.error_size := 0;
   try
     Arg.parse args main usage;
     Printf.eprintf "expect_test: no input file\n";

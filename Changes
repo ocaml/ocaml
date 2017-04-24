@@ -20,7 +20,21 @@ Working version
   bundles.
   (whitequark)
 
+* GPR#659: Remove support for SPARC native code generation
+  (Mark Shinwell)
+
+- MPR#7501, GPR#1089: Consider arrays of length zero as constants
+- PR#7501, GPR#1089: Consider arrays of length zero as constants
+  when using Flambda.
+  (Pierre Chambart, review by Mark Shinwell and Leo White)
+
+- GPR#1150: Fix typo in arm64 assembler directives
+  (KC Sivaramakrishnan)
+
 ### Standard library:
+
+- GRP#1119: Change Set (private) type to inline records.
+  (Albin Coquereau)
 
 - PR#1771, PR#7309, GPR#1026: Add update to maps. Allows to update a
   binding in a map or create a new binding if the key had no binding
@@ -50,6 +64,9 @@ Working version
 
 - PR#6676, GPR#1110: move record notation to tutorial
   (Florian Angeletti, review by Gabriel Scherer)
+
+- PR#6676, GPR#1112: move local opens to tutorial
+  (Florian Angeletti)
 
 - PR#7254, GPR#1096: Rudimentary documentation of ocamlnat
   (Mark Shinwell)
@@ -84,7 +101,16 @@ Working version
 * GPR#1104: remove support for the NeXTStep platform
   (Sébastien Hinderer)
 
+- PR#1130: enable detection of IBM XL C compiler (one need to run configure
+  with "-cc <path to xlc compiler>"). Enable shared library support for
+  bytecode executables on AIX/xlc (tested on AIX 7.1, XL C 12).
+  To enable 64-bit, run both "configure" and "make world" with OBJECT_MODE=64.
+  (Konstantin Romanov, Enrique Naudon)
+
 ### Internal/compiler-libs changes:
+
+- PR#6826, GPR#828, GPR#834: improve compilation time for open
+  (Alain Frisch, review by Frédéric Bour and Jacques Garrigue)
 
 - GPR#1032: display the output of -dtimings as a hierarchy
   (Valentin Gatien-Baron, review by Gabriel Scherer)
@@ -107,6 +133,9 @@ Working version
   functor instantiation
   (Jacques Garrigue, report by Markus Mottl)
 
+- PR#7372, GPR#834: fix type-checker bug with GADT and inline records
+  (Alain Frisch, review by Frédéric Bour and Jacques Garrigue)
+
 - PR#7344: Inconsistent behavior with type annotations on let
   (Jacques Garrigue, report by Leo White)
 
@@ -117,6 +146,9 @@ Working version
   with themselves
   (Jacques Garrigue, report by Leo White)
 
+- PR#7506: pprintast ignores attributes in tails of a list
+  (Alain Frisch, report by Kenichi Asai and Gabriel Scherer)
+
 ### Runtime system:
 
 - GPR#71: The runtime can now be shut down gracefully by means of the new
@@ -124,7 +156,7 @@ Working version
   OCAMLRUNPARAM enables shutting the runtime properly on process exit.
   (Max Mouratov, review and discussion by Damien Doligez, Gabriel Scherer,
   Mark Shinwell, Thomas Braibant, Stephen Dolan, Pierre Chambart,
-  François Bobot, Jacques Garrigue, and David Allsopp)
+  François Bobot, Jacques Garrigue, David Allsopp, and Alain Frisch)
 
 Next major version (4.05.0):
 ----------------------------
@@ -692,21 +724,47 @@ Next minor version (4.04.1):
 
 ### Tools:
 
+- PR#7411: ocamldoc, avoid nested <pre> tags in module description.
+  (Florian Angeletti, report by user 'kosik')
+
 - PR#7488: ocamldoc, wrong Latex output for variant types
   with constructors without arguments.
   (Florian Angeletti, report by Xavier Leroy)
+
+### Build system:
+
+- PR#7373, GPR#1023: New flexlink target in Makefile.nt to bootstrap the
+  flexlink binary only, rather than the flexlink binary and the FlexDLL C
+  objects.
+  (David Allsopp)
 
 ### Bug fixes
 
 - PR#7369: Str.regexp raises "Invalid_argument: index out of bounds"
   (Damien Doligez, report by John Whitington)
 
+- PR#7373, GPR#1023: Fix ocamlmklib with bootstrapped FlexDLL. Bootstrapped
+  FlexDLL objects are now installed to a subdirectory flexdll of the Standard
+  Library which allows the compilers to pick them up explicitly and also
+  ocamlmklib to include them without unnecessarily adding the entire Standard
+  Library.
+  (David Allsopp)
+
+- PR#7385, GPR#1057: fix incorrect timestamps returned by Unix.stat on Windows
+  when either TZ is set or system date is in DST.
+  (David Allsopp, report and initial fix by Nicolás Ojeda Bär, review and
+   superior implementation suggestion by Xavier Leroy)
+
 - PR#7405, GPR#903: s390x: Fix address of caml_raise_exn in native dynlink modules
   (Richard Jones, review by Xavier Leroy)
 
-- MPR#7417, GPR#930: ensure 16 byte stack alignment inside caml_allocN on x86-64
+- PR#7417, GPR#930: ensure 16 byte stack alignment inside caml_allocN on x86-64
   for ocaml build with WITH_FRAME_POINTERS defined
   (Christoph Cullmann)
+
+- PR#7456, GPR#1092: fix slow compilation on source files containing a lot
+  of similar debugging information location entries
+  (Mark Shinwell)
 
 - PR#7457: a case of double free in the systhreads library (POSIX implementation)
   (Xavier Leroy, report by Chet Murthy)
@@ -715,6 +773,10 @@ Next minor version (4.04.1):
   as argument (regression in 4.04.0)
   (Bernhard Schommer, review by Florian Angeletti and Gabriel Scherer,
    report by Stephen Dolan)
+
+- PR#7505: Memory cannot be released after calling
+    Bigarray.Genarray.change_layout.
+  (Damien Doligez and Xavier Leroy, report by Liang Wang)
 
 - GPR#912: Fix segfault in Unix.create_process on Windows caused by wrong header
   configuration.

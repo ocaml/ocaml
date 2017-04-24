@@ -27,7 +27,7 @@ val curry_function: int -> Cmm.phrase list
 val generic_functions: bool -> Cmx_format.unit_infos list -> Cmm.phrase list
 val entry_point: string list -> Cmm.phrase
 val global_table: string list -> Cmm.phrase
-val reference_symbols: string list -> Cmm.phrase
+val reference_symbols: Linkage_name.t list -> Cmm.phrase
 val globals_map: (string * Digest.t * Digest.t * string list) list ->
   Cmm.phrase
 val frame_table: string list -> Cmm.phrase

@@ -173,7 +173,6 @@
 /ocamldoc/test
 
 /otherlibs/dynlink/extract_crc
-/otherlibs/systhreads/thread.ml
 /otherlibs/threads/marshal.mli
 /otherlibs/threads/pervasives.mli
 /otherlibs/threads/unix.mli
@@ -312,6 +311,8 @@
 /testsuite/tests/typing-multifile/a.ml
 /testsuite/tests/typing-multifile/b.ml
 /testsuite/tests/typing-multifile/c.ml
+/testsuite/tests/typing-multifile/d.mli
+/testsuite/tests/typing-multifile/e.ml
 
 /testsuite/tests/unboxed-primitive-args/main.ml
 /testsuite/tests/unboxed-primitive-args/stubs.c

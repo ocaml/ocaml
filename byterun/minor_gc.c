@@ -489,9 +489,9 @@ static void realloc_generic_table
 (struct generic_table *tbl, asize_t element_size,
  char * msg_intr_int, char *msg_threshold, char *msg_growing, char *msg_error)
 {
-                                            CAMLassert (tbl->ptr == tbl->limit);
-                                            CAMLassert (tbl->limit <= tbl->end);
-                                      CAMLassert (tbl->limit >= tbl->threshold);
+  CAMLassert (tbl->ptr == tbl->limit);
+  CAMLassert (tbl->limit <= tbl->end);
+  CAMLassert (tbl->limit >= tbl->threshold);
 
   if (tbl->base == NULL){
     alloc_generic_table (tbl, caml_minor_heap_wsz / 8, 256,

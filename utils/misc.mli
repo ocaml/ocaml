@@ -90,6 +90,12 @@ module Stdlib : sig
     val fold : ('a -> 'b -> 'b) -> 'a t -> 'b -> 'b
     val value_default : ('a -> 'b) -> default:'b -> 'a t -> 'b
   end
+
+  module String : sig
+    type t = string
+
+    val is_prefix : t -> of_:t -> bool
+  end
 end
 
 val find_in_path: string list -> string -> string
@@ -130,7 +136,7 @@ val no_overflow_add: int -> int -> bool
         (* [no_overflow_add n1 n2] returns [true] if the computation of
            [n1 + n2] does not overflow. *)
 val no_overflow_sub: int -> int -> bool
-        (* [no_overflow_add n1 n2] returns [true] if the computation of
+        (* [no_overflow_sub n1 n2] returns [true] if the computation of
            [n1 - n2] does not overflow. *)
 val no_overflow_mul: int -> int -> bool
         (* [no_overflow_mul n1 n2] returns [true] if the computation of
@@ -160,8 +166,8 @@ val search_substring: string -> string -> int -> int
            does not occur. *)
 
 val replace_substring: before:string -> after:string -> string -> string
-        (* [search_substring ~before ~after str] replaces all
-           occurences of [before] with [after] in [str] and returns
+        (* [replace_substring ~before ~after str] replaces all
+           occurrences of [before] with [after] in [str] and returns
            the resulting string. *)
 
 val rev_split_words: string -> string list

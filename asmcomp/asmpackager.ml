@@ -89,7 +89,9 @@ let make_package_object ppf members targetobj targetname coercion
         (* Put the full name of the module in the temporary file name
            to avoid collisions with MSVC's link /lib in case of successive
            packs *)
-        Filename.temp_file (Compilenv.make_symbol (Some "")) Config.ext_obj in
+        Filename.temp_file
+          (Linkage_name.name (Compilenv.make_symbol (Some "")))
+          Config.ext_obj in
     let components =
       List.map
         (fun m ->

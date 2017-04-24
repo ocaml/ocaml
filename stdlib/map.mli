@@ -166,7 +166,7 @@ module type S =
 
     val exists: (key -> 'a -> bool) -> 'a t -> bool
     (** [exists p m] checks if at least one binding of the map
-        satisfy the predicate [p].
+        satisfies the predicate [p].
         @since 3.12.0
      *)
 

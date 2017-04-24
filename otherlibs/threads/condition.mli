@@ -27,7 +27,7 @@
        Condition.wait c m
      done;
      (* Modify D *)
-     if (* the predicate P over D is now satified *) then Condition.signal c;
+     if (* the predicate P over D is now satisfied *) then Condition.signal c;
      Mutex.unlock m
    ]}
 *)

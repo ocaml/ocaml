@@ -53,6 +53,73 @@ inside the structure "PrioQueue" and "PrioQueue.queue" is the type
 PrioQueue.insert PrioQueue.empty 1 "hello";;
 \end{caml_example}
 
+Another possibility is to open the module, which brings all
+identifiers defined inside the module in the scope of the current
+structure.
+
+\begin{caml_example}
+  open PrioQueue;;
+  insert empty 1 "hello";;
+\end{caml_example}
+
+Opening a module enables lighter access to its components, at the
+cost of making it harder to identify in which module a identifier
+has been defined. In particular, opened modules can shadow
+identifiers present in the current scope, potentially leading
+to confusing errors:
+
+\begin{caml_example}
+  let empty = []
+  open PrioQueue;;
+  let x = 1 :: empty [@@expect error];;
+\end{caml_example}
+
+
+A partial solution to this conundrum is to open modules locally,
+making the components of the module available only in the
+concerned expression. This can also make the code easier to read
+-- the open statement is closer to where it is used-- and to refactor
+-- the code fragment is more self-contained.
+Two constructions are available for this purpose:
+\begin{caml_example}
+  let open PrioQueue in
+  insert empty 1 "hello";;
+\end{caml_example}
+and
+\begin{caml_example}
+  PrioQueue.(insert empty 1 "hello");;
+\end{caml_example}
+In the second form, when the body of a local open is itself delimited
+by parentheses, braces or bracket, the parentheses of the local open
+can be omitted. For instance,
+\begin{caml_example}
+  PrioQueue.[empty] = PrioQueue.([empty]);;
+  PrioQueue.[|empty|] = PrioQueue.([|empty|]);;
+   PrioQueue.{ contents = empty } = PrioQueue.({ contents = empty });;
+\end{caml_example}
+becomes
+\begin{caml_example}
+  PrioQueue.[insert empty 1 "hello"];;
+\end{caml_example}
+
+It is also possible to copy the components of a module inside
+another module by using an "include" statement. This can be
+particularly useful to extend existing modules. As an illustration,
+we could add functions that returns an optional value rather than
+an exception when the priority queue is empty.
+\begin{caml_example}
+  module PrioQueueOpt =
+  struct
+    include PrioQueue
+
+    let remove_top_opt x =
+      try Some(remove_top x) with Queue_is_empty -> None
+
+    let extract_opt x =
+      try Some(extract x) with Queue_is_empty -> None
+  end;;
+\end{caml_example}
+
 \section{Signatures}
 \pdfsection{Signatures}
 
@@ -93,6 +160,20 @@ An alternate syntax is provided for the above:
 \begin{verbatim}
 module PrioQueue : PRIOQUEUE = struct ... end;;
 \end{verbatim}
+
+Like for modules, it is possible to include a signature to copy
+its components inside the current signature. For instance, we
+can extend the PRIOQUEUE signature with the "extract_opt"
+function:
+
+\begin{caml_example}
+module type PRIOQUEUE_WITH_OPT =
+  sig
+    include PRIOQUEUE
+    val extract_opt : 'a queue -> (int * 'a * 'a queue) option
+  end;;
+\end{caml_example}
+
 
 \section{Functors}
 \pdfsection{Functors}

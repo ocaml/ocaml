@@ -183,10 +183,6 @@ On a 64-bit POWER architecture host running Linux, OCaml only operates in a
 
     ./configure -cc "acc -fast" -libs "-lucb"
 
-* For Sun Solaris on Sparc 64bit, to compile natively (32bit only)
-
-    ./configure -cc "gcc -m32" -as "as -32" -aspp "gcc -m32 -c"
-
 * For AIX 4.3 with the IBM compiler `xlc`:
 
     ./configure -cc "xlc_r -D_AIX43 -Wl,-bexpall,-brtl -qmaxmem=8192"
@@ -317,7 +313,7 @@ In the latter case, the destination directory defaults to the
 Read the "common problems" and "machine-specific hints" section at the end of
 this file.
 
-Check the files `m.h` and `s.h` in `config/`. Wrong endian-ness or alignment
+Check the files `m.h` and `s.h` in `config/`. Wrong endianness or alignment
 constraints in `m.h` will immediately crash the bytecode interpreter.
 
 If you get a "segmentation violation" signal, check the limits on the stack size

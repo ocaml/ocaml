@@ -31,13 +31,6 @@ type rounding =
   | RoundNearest
   | RoundTruncate
 
-type constant =
-  | Const of int64
-  | ConstThis
-  | ConstLabel of string
-  | ConstAdd of constant * constant
-  | ConstSub of constant * constant
-
 (* data_type is used mainly on memory addressing to specify
    the size of the addressed memory chunk.  It is directly
    used by the MASM emitter and indirectly by the GAS emitter
@@ -80,9 +73,8 @@ type arg =
   | Imm of int64
   (** Operand is an immediate constant integer *)
 
-  | Sym of  string
-  (** Address of a symbol (absolute address except for call/jmp target
-      where it is interpreted as a relative displacement *)
+  | Named_thing of string
+  (** Reference to a symbol or label, with name mangling already applied. *)
 
   | Reg8L of reg64
   | Reg8H of reg8h
@@ -184,36 +176,14 @@ type instruction =
   | XOR of arg * arg
   | XORPD of arg * arg
 
-type asm_line =
-  | Ins of instruction
-
-  | Align of bool * int
-  | Byte of constant
-  | Bytes of string
-  | Comment of string
-  | Global of string
-  | Long of constant
-  | NewLabel of string * data_type
-  | Quad of constant
-  | Section of string list * string option * string list
-  | Space of int
-  | Word of constant
-
-  (* masm only (the gas emitter will fail on them) *)
+type masm_directive =
   | External of string * data_type
   | Mode386
   | Model of string
 
-  (* gas only (the masm emitter will fail on them) *)
-  | Cfi_adjust_cfa_offset of int
-  | Cfi_endproc
-  | Cfi_startproc
-  | File of int * string (* (file_num, file_name) *)
-  | Indirect_symbol of string
-  | Loc of int * int * int (* (file_num, line, col) *)
-  | Private_extern of string
-  | Set of string * constant
-  | Size of string * constant
-  | Type of string * string
+type asm_line =
+  | Ins of instruction
+  | Directive of Asm_directives.Directive.t
+  | MASM_directive of masm_directive
 
 type asm_program = asm_line list

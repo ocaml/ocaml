@@ -20,11 +20,13 @@ INCLUDES=\
   -I $(OTOPDIR)/utils \
   -I $(OTOPDIR)/typing \
   -I $(OTOPDIR)/middle_end \
+  -I $(OTOPDIR)/middle_end/base_types \
   -I $(OTOPDIR)/bytecomp \
   -I $(OTOPDIR)/asmcomp
 
 OTHEROBJS=\
   $(OTOPDIR)/compilerlibs/ocamlcommon.cma \
+  $(OTOPDIR)/compilerlibs/ocamlmiddleend.cma \
   $(OTOPDIR)/compilerlibs/ocamloptcomp.cma
 
 OBJS=parsecmmaux.cmo parsecmm.cmo lexcmm.cmo
@@ -104,7 +106,7 @@ one_ml_flambda:
 	 fi
 
 one:
-	@$(call CC,$(NAME).out $(ARGS_$(NAME)) $(NAME).$(O) $(ARCH).$(O)) \
+	@$(call CCOMP,$(NAME).out $(ARGS_$(NAME)) $(NAME).$(O) $(ARCH).$(O)) \
 	&& echo " => passed" || echo " => failed"
 
 clean: defaultclean
@@ -127,11 +129,9 @@ SKIP=true
 endif
 
 ifeq ($(CCOMPTYPE),msvc)
-CC=set -o pipefail ; $(NATIVECC) $(CFLAGS) /Fe$(1) | tail -n +2
-CFLAGS=$(NATIVECCCOMPOPTS)
+CCOMP=set -o pipefail ; $(CC) $(CFLAGS) /Fe$(1) | tail -n +2
 else
-CC=$(NATIVECC) $(CFLAGS) -o $(1)
-CFLAGS=$(NATIVECCCOMPOPTS) -g
+CCOMP=$(CC) $(CFLAGS) -o $(1)
 endif
 tests: $(CASES:=.$(O))
 	@for c in $(CASES); do \

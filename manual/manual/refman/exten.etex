@@ -379,61 +379,31 @@ Similarly to abstract types, the variance of type parameters
 is not inferred, and must be given explicitly.
 
 
-\section{Local opens}
+\section{Local opens for patterns}
 \ikwd{let\@\texttt{let}}
 \ikwd{open\@\texttt{open}} \label{s:local-opens}
 
-(Introduced in OCaml 3.12, extended to patterns in 4.04)
+(Introduced in OCaml 4.04)
 
 \begin{syntax}
-expr:
-       ...
-     | "let" "open" module-path "in" expr
-     | module-path '.(' expr ')'
-;
 pattern:
        ...
      | module-path '.(' pattern ')'
-\end{syntax}
-
-The expressions
-@"let" "open" module-path "in" expr@
-and
-@module-path'.('expr')'@ are strictly equivalent. On the pattern side,
-only the pattern @module-path'.('pattern')'@ is available. These
-constructions locally open the module referred to by the module path
-@module-path@ in the respective scope of the expression @expr@ or
-pattern @pattern@.
-
-Restricting opening to the scope of a single expression or pattern
-instead of a whole structure allows one to benefit from shorter syntax
-to refer to components of the opened module, without polluting the
-global scope. Also, this can make the code easier to read (the open
-statement is closer to where it is used) and to refactor (because the
-code fragment is more self-contained).
-
-\paragraph{Local opens for delimited expressions or patterns} (Introduced in OCaml 4.02)
-
-\begin{syntax}
-expr:
-       ...
-     | module-path '.[' expr ']'
-     | module-path '.[|' expr '|]'
-     | module-path '.{' expr '}'
-     | module-path '.{<' expr '>}'
-;
-pattern:
-       ...
      | module-path '.[' pattern ']'
      | module-path '.[|' pattern '|]'
      | module-path '.{' pattern '}'
+
 \end{syntax}
 
-When the body of a local open expression or pattern is delimited by
+For patterns, local opens are limited to the
+@module-path'.('pattern')'@ construction. This
+construction locally open the module referred to by the module path
+@module-path@ in the scope of the pattern @pattern@.
+
+When the body of a local open pattern is delimited by
 @'[' ']'@,  @'[|' '|]'@,  or @'{' '}'@, the parentheses can be omitted.
-For expression, parentheses can also be omitted for @'{<' '>}'@.
-For example, @module-path'.['expr']'@ is equivalent to
-@module-path'.(['expr'])'@, and @module-path'.[|' pattern '|]'@ is
+For example, @module-path'.['pattern']'@ is equivalent to
+@module-path'.(['pattern'])'@, and @module-path'.[|' pattern '|]'@ is
 equivalent to @module-path'.([|' pattern '|])'@.
 
 \section{Object copy short notations} \label{s:object-notations}

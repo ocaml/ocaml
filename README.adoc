@@ -33,7 +33,6 @@ AMD64::              FreeBSD, OpenBSD, NetBSD
 IA32 (Pentium)::     NetBSD, OpenBSD, Solaris 9
 PowerPC::            NetBSD
 ARM::                NetBSD
-SPARC::              Solaris, Linux, NetBSD
 
 Other operating systems for the processors above have not been tested, but
 the compiler may work under other operating systems with little work.

@@ -163,6 +163,14 @@ module Stdlib = struct
       | None -> default
       | Some a -> f a
   end
+
+  module String = struct
+    type t = string
+
+    let is_prefix t ~of_ =
+      String.length t <= String.length of_
+        && String.sub of_ 0 (String.length t) = t
+  end
 end
 
 let may = Stdlib.Option.iter

@@ -42,8 +42,8 @@ HASHBANGSCRIPTS=true
 ### Which C compiler to use for the bytecode interpreter.
 ### Performance of the bytecode interpreter is *much* improved
 ### if Gnu CC version 2 is used.
-#BYTECC=gcc
-#BYTECC=cc
+#CC=gcc
+#BYTECFLAGS=
 
 ### Additional compile-time options for $(BYTECC).
 # If using gcc on Intel x86:
@@ -57,9 +57,9 @@ HASHBANGSCRIPTS=true
 ### Additional link-time options for $(BYTECC)
 # To support dynamic loading of shared libraries (they need to look at
 # our own symbols):
-#BYTECCLINKOPTS=-Wl,-E
+#LDFLAGS=-Wl,-E
 # Otherwise:
-#BYTECCLINKOPTS=
+#LDFLAGS=
 
 ### Libraries needed
 # On most platforms:
@@ -99,7 +99,7 @@ RANLIBCMD=ranlib
 #MKSHAREDLIB=gcc -shared -o
 # Compile-time option to $(BYTECC) to add a directory to be searched
 # at run-time for shared libraries
-#BYTECCRPATH=-Wl,-rpath
+#RPATH=-Wl,-rpath
 
 ############# Configuration for the native-code compiler
 
@@ -107,13 +107,11 @@ RANLIBCMD=ranlib
 ### Currently supported:
 ###
 ### i386        Intel Pentium PCs under Linux, *BSD*, NextStep
-### sparc       Sun Sparcstation under SunOS 4.1 or Solaris 2
 ### power       Macintosh under Mac OS X and Linux
 ### arm         ARM under Linux
 ###
 ### Set ARCH=none if your machine is not supported
 #ARCH=i386
-#ARCH=sparc
 #ARCH=power
 #ARCH=arm
 #ARCH=none
@@ -137,20 +135,14 @@ RANLIBCMD=ranlib
 #SYSTEM=bsd
 #SYSTEM=unknown
 
-### Which C compiler to use for the native-code compiler.
-#NATIVECC=cc
-#NATIVECC=gcc
+#NATIVECFLAGS=
 
-### Additional compile-time options for $(NATIVECC).
 # For gcc if cautious:
 #NATIVECCCOMPOPTS=-Wall
 
-### Additional link-time options for $(NATIVECC)
-#NATIVECCLINKOPTS=
-
 # Compile-time option to $(NATIVECC) to add a directory to be searched
 # at run-time for shared libraries
-#NATIVECCRPATH=-Wl,-rpath
+#RPATH=-Wl,-rpath
 
 ### Command and flags to use for assembling ocamlopt-generated code
 #ASM=as
@@ -165,7 +157,7 @@ RANLIBCMD=ranlib
 #ASPPPROFFLAGS=-DPROFILING
 
 ### Whether profiling with gprof is supported
-# If yes: (e.g. x86/Linux, Sparc/Solaris):
+# If yes: (e.g. x86/Linux):
 #PROFILING=true
 # If no:
 #PROFILING=false
@@ -195,7 +187,6 @@ OTHERLIBRARIES=unix str num threads graph dynlink bigarray
 #	ia32	(Intel x86)
 #	amd64	(AMD Opteron, Athlon64)
 #	ppc	(Power PC)
-#	sparc
 # If you don't know, leave BNG_ARCH=generic, which selects a portable
 # C implementation of these routines.
 BNG_ARCH=generic

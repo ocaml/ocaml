@@ -22,7 +22,7 @@ open Mach
 (* Recognition of addressing modes *)
 
 type addressing_expr =
-    Asymbol of string
+    Asymbol of Linkage_name.t
   | Alinear of expression
   | Aadd of expression * expression
 
