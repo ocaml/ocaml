@@ -86,3 +86,6 @@ val assembler : unit -> assembler
 
 (** The natural machine width of the target system. *)
 val machine_width : unit -> machine_width
+
+(** As for [machine_width], but returns a number of bytes. *)
+val machine_width_in_bytes : unit -> int

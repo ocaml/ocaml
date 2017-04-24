@@ -45,6 +45,36 @@ let emit_directive =
     emit_string (Buffer.contents buf);
     emit_string "\n"
 
+(* Emit a block header into the text section immediately prior to the
+   first instruction of a function.  Such headers enable scanning of code
+   pointers within closures when using "no naked pointers" mode. *)
+
+let emit_block_header_for_closure ~function_entry_point_alignment_in_bytes =
+  if Config.no_naked_pointers then begin
+    (* The caller of this function is responsible for setting the alignment
+       to [function_entry_point_alignment_in_bytes] first. *)
+    let padding =
+      function_entry_point_alignment_in_bytes
+        - Target_system.machine_width_in_bytes ()
+    in
+    if padding > 0 then begin
+      D.comment "Padding before GC block header";
+      D.space ~bytes:padding
+    end;
+    let header =
+      (* Claim that the function is a zero-size [Abstract_tag] block
+         marked black. *)
+      (* CR-someday mshinwell: For multicore, to make marshalling work,
+         this will need to use a distinguished tag. *)
+      (* CR mshinwell: factor this definition out from here and cmmgen.ml,
+         and make sure it matches [Caml_black]. *)
+      let caml_black = Targetint.shift_left (Targetint.of_int 3) 8 in
+      Targetint.logor caml_black (Targetint.of_int Obj.abstract_tag)
+    in
+    D.comment "GC block header";
+    D.targetint header
+  end
+
 (* Record live pointers at call points *)
 
 type frame_descr =
@@ -430,6 +460,8 @@ let fundecl ?branch_relaxation ?after_body ?alternative_name
     | None -> fundecl.fun_name
     | Some alternative_name -> alternative_name
   in
+  emit_block_header_for_closure
+    ~function_entry_point_alignment_in_bytes:alignment_in_bytes;
   D.define_function_symbol fun_symbol;
   emit_debug_info fundecl.fun_dbg;
   D.cfi_startproc ();
@@ -543,50 +575,6 @@ let data l =
   D.switch_to_section Data;
   D.align ~bytes:(Targetint.size / 8);
   List.iter emit_item l
-
-(* Emission of block headers immediately prior to function entry points *)
-
-let emit_block_header_for_closure ~emit_word_directive
-      ~function_entry_points_are_doubleword_aligned =
-  if Config.no_naked_pointers then begin
-    let header =
-      (* Claim that the function is a zero-size [Abstract_tag] block
-         marked black. *)
-      (* CR-someday mshinwell: For multicore, to make marshalling work,
-         this will need to use a distinguished tag. *)
-      (* CR mshinwell: factor this definition out from here and cmmgen.ml,
-         and make sure it matches [Caml_black]. *)
-      let caml_black = Nativeint.shift_left (Nativeint.of_int 3) 8 in
-      Nativeint.logor caml_black (Nativeint.of_int Obj.abstract_tag)
-    in
-    (* The caller of [emit_block_header_for_closure] must ensure that we are
-       already sufficiently aligned.  If that involved doubleword alignment,
-       we emit a zero word here, to ensure that the function entry point
-       remains doubleword-aligned. *)
-    if function_entry_points_are_doubleword_aligned then begin
-      emit_word_directive Nativeint.zero
-        ~comment:" preserve entry point alignment"
-(*
-      emit_string "\t";
-      emit_string word_directive;
-      emit_string "\t";
-      emit_nativeint Nativeint.zero;
-      emit_string "  ";
-      emit_char comment_char;
-      emit_string " preserve entry point alignment\n"
-*)
-    end;
-    emit_word_directive header ~comment:" GC block header"
-(*
-    emit_string "\t";
-    emit_string word_directive;
-    emit_string "\t";
-    emit_nativeint header;
-    emit_string "  ";
-    emit_char comment_char;
-    emit_string " GC block header\n"
-*)
-  end
 
 let reset () =
   reset_debug_info ();

@@ -41,13 +41,6 @@ val emit_int32: int32 -> unit
     assembly emission. *)
 val emit_printf : ('a, out_channel, unit) format -> 'a
 
-(** Emit a block header into the text section immediately prior to the
-    first instruction of a function.  Such headers enable scanning of code
-    pointers within closures. *)
-val emit_block_header_for_closure
-   : function_entry_point_alignment_in_bytes:int
-  -> unit
-
 (** Emit an assembly directive as text. *)
 val emit_directive : Asm_directives.Directive.t -> unit
 
