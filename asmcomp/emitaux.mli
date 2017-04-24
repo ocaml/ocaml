@@ -39,8 +39,7 @@ val emit_debug_info_gen :
   (file_num:int -> line:int -> col:int -> unit) -> unit
 
 val emit_block_header_for_closure
-   : word_directive:string
-  -> comment_char:char
+   : emit_word_directive:(Nativeint.t -> comment:string -> unit)
   -> function_entry_points_are_doubleword_aligned:bool
   -> unit
 

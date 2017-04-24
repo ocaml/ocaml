@@ -895,8 +895,10 @@ let fundecl fundecl =
   D.text ();
   D.align 16;
   add_def_symbol fundecl.fun_name;
-  Emitaux.emit_block_header_for_closure ~word_directive:".quad"
-    ~comment_char:'#'
+  Emitaux.emit_block_header_for_closure
+    ~emit_word_directive:(fun word ~comment ->
+      D.comment comment;
+      D.qword word)
     ~function_entry_points_are_doubleword_aligned:true;
   if system = S_macosx
   && not !Clflags.output_c_object
