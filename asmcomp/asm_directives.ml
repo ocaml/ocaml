@@ -461,7 +461,11 @@ let section segment flags args = emit (Section (segment, flags, args))
 let align ~bytes = emit (Align { bytes; })
 
 let should_generate_cfi () =
-  Config.asm_cfi_supported && !Clflags.debug
+  (* We generate CFI info even if we're not generating any other debugging
+     information.  This is in fact necessary on macOS, where it may be
+     expected that OCaml stack frames are unwindable (see
+     testsuite/tests/unwind/README for more information). *)
+  Config.asm_cfi_supported
 
 let cfi_adjust_cfa_offset ~bytes =
   if should_generate_cfi () && bytes <> 0 then begin
