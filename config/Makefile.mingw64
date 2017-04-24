@@ -173,7 +173,7 @@ ARCH=amd64
 MODEL=default
 
 ### Name of operating system family for the native-code compiler.
-SYSTEM=mingw64
+SYSTEM=mingw
 
 OCAMLOPT_CFLAGS = -O -mms-bitfields
 

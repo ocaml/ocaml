@@ -170,7 +170,7 @@ ARCH=i386
 MODEL=default
 
 ### Name of operating system family for the native-code compiler.
-SYSTEM=win32
+SYSTEM=windows
 
 OCAMLOPT_CFLAGS = -nologo -O2 -Gy- -MD
 OCAMLOPT_CPPFLAGS = -D_CRT_SECURE_NO_DEPRECATE

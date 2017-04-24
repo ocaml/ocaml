@@ -68,7 +68,7 @@ let system () =
   | "openbsd" -> OpenBSD
   | "linux_eabihf" -> Linux ARM_EABI_hard_float
   | "linux_eabi" -> Linux ARM_EABI
-  | "win64" -> Windows Native
+  | "windows" -> Windows Native
   | _ -> Unknown
 
 let architecture () =
