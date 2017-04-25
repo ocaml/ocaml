@@ -49,7 +49,7 @@ let emit_directive =
    first instruction of a function.  Such headers enable scanning of code
    pointers within closures when using "no naked pointers" mode. *)
 
-let emit_block_header_for_closure ~function_entry_point_alignment_in_bytes =
+let emit_block_header_for_function ~function_entry_point_alignment_in_bytes =
   if Config.no_naked_pointers then begin
     (* The caller of this function is responsible for setting the alignment
        to [function_entry_point_alignment_in_bytes] first. *)
@@ -57,10 +57,7 @@ let emit_block_header_for_closure ~function_entry_point_alignment_in_bytes =
       function_entry_point_alignment_in_bytes
         - Target_system.machine_width_in_bytes ()
     in
-    if padding > 0 then begin
-      D.comment "Padding before GC block header";
-      D.space ~bytes:padding
-    end;
+    if padding > 0 then D.space ~bytes:padding;
     let header =
       (* Claim that the function is a zero-size [Abstract_tag] block
          marked black. *)
@@ -71,7 +68,6 @@ let emit_block_header_for_closure ~function_entry_point_alignment_in_bytes =
       let caml_black = Targetint.shift_left (Targetint.of_int 3) 8 in
       Targetint.logor caml_black (Targetint.of_int Obj.abstract_tag)
     in
-    D.comment "GC block header";
     D.targetint header
   end
 
@@ -426,12 +422,7 @@ let begin_assembly ?(code_section = D.Text) () =
   D.switch_to_section Data;
   emit_global_data_symbol "data_begin";
   D.switch_to_section code_section;
-  emit_global_data_symbol "code_begin";
-  if TS.macos_like () then begin
-    (* suppress "ld warning: atom sorting error" *)
-    D.switch_to_section Text;
-    I.nop ()
-  end
+  emit_global_data_symbol "code_begin"
 
 let fundecl ?branch_relaxation ?after_body ?alternative_name
       (fundecl : Linearize.fundecl)
@@ -446,6 +437,11 @@ let fundecl ?branch_relaxation ?after_body ?alternative_name
   bound_error_call := 0;
   D.switch_to_section Text;
   D.align ~bytes:alignment_in_bytes;
+  let fun_symbol =
+    match alternative_name with
+    | None -> fundecl.fun_name
+    | Some alternative_name -> alternative_name
+  in
   begin match alternative_name, Target_system.system () with
   | Some _alternative_name, _ -> ()
   | _, MacOS_like
@@ -455,13 +451,12 @@ let fundecl ?branch_relaxation ?after_body ?alternative_name
   | _, _ ->
     D.global fundecl.fun_name
   end;
-  let fun_symbol =
-    match alternative_name with
-    | None -> fundecl.fun_name
-    | Some alternative_name -> alternative_name
-  in
-  emit_block_header_for_closure
-    ~function_entry_point_alignment_in_bytes:alignment_in_bytes;
+  begin match alternative_name with
+  | None ->
+    emit_block_header_for_function
+      ~function_entry_point_alignment_in_bytes:alignment_in_bytes
+  | Some _ -> ()
+  end;
   D.define_function_symbol fun_symbol;
   emit_debug_info fundecl.fun_dbg;
   D.cfi_startproc ();
@@ -530,11 +525,6 @@ let emit_spacetime_shapes () =
   D.comment "End of Spacetime shapes."
 
 let end_assembly ?(code_section = D.Text) ~emit_numeric_constants () =
-  if TS.macos_like () then begin
-    (* suppress "ld warning: atom sorting error" *)
-    D.switch_to_section Text;
-    I.nop ()
-  end;
   if Config.spacetime then begin
     emit_spacetime_shapes ()
   end;

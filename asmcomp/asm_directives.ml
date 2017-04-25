@@ -320,7 +320,7 @@ module Directive = struct
       | _, POWER -> buf_bytes_directive buf ~directive:".byte" s
       | _ -> bprintf buf "\t.ascii\t\"%s\"" (string_of_string_literal s)
       end
-    | Comment s -> bprintf buf "\t\t\t\t/* %s */" s
+    | Comment s -> bprintf buf "\t/* %s */" s
     | Global s -> bprintf buf "\t.globl\t%s" s
     | New_label (s, _typ) -> bprintf buf "%s:" s
     | Section ([".data" ], _, _) -> bprintf buf "\t.data"

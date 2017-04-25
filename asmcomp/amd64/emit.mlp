@@ -817,9 +817,19 @@ let begin_assembly() =
     D.define_data_symbol L.caml_absf_mask;
     D.int64 0x7FFFFFFFFFFFFFFFL;
     D.int64 0xFFFFFFFFFFFFFFFFL
+  end;
+  if TS.macos_like () then begin
+    (* suppress "ld warning: atom sorting error" *)
+    D.switch_to_section Text;
+    I.nop ()
   end
 
 let end_assembly () =
+  if TS.macos_like () then begin
+    (* suppress "ld warning: atom sorting error" *)
+    D.switch_to_section Text;
+    I.nop ()
+  end;
   emit_imp_table();
   Emitaux.end_assembly ~emit_numeric_constants:true ();
   if TS.win64 () then begin

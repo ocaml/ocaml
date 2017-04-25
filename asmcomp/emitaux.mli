@@ -48,6 +48,12 @@ val emit_directive : Asm_directives.Directive.t -> unit
     debug info. *)
 val emit_debug_info: Debuginfo.t -> unit
 
+(** Emit a block header to go immediately before the first instruction of
+    a function. *)
+val emit_block_header_for_function
+   : function_entry_point_alignment_in_bytes:int
+  -> unit
+
 (** Whether a binary backend is available.  If yes, we don't need to generate
     the textual assembly file (unless the user requests it with -S). *)
 val binary_backend_available: bool ref

@@ -1040,11 +1040,21 @@ let fundecl decl =
     | ELF64v1 ->
       let alternative_name = L.power_function_entry_point decl.fun_name in
       D.switch_to_section (POWER Function_descriptors);
-      D.align ~bytes:8;
       D.global decl.fun_name;
       D.define_function_symbol decl.fun_name;
       D.symbol (LR.no_reloc alternative_name);
       D.symbol (LR.power_tocbase (LR.no_reloc (L.create ".TOC.")));
+      if Config.no_naked_pointers then begin
+        (* Closures on ELF64v1 contain pointers to function descriptors, not
+           function entry points, so block headers need to be in .opd.
+           Thankfully the ABI provides for .opd entries being three words rather
+           than two; we can use the third word which is effectively reserved for
+           language implementations.  Here we are emitting the header for the
+           _next_ function in the compilation unit; the header for the first is
+           emitted in [begin_assembly], below. *)
+        Emitaux.emit_block_header_for_function
+          ~function_entry_point_alignment_in_bytes:4
+      end;
       Some alternative_name
   in
   let branch_relaxation =
@@ -1080,11 +1090,26 @@ let begin_assembly() =
      is enough.  To save space, we do it only for the startup file, not for every
      OCaml compilation unit. *)
   let c = Compilenv.current_unit_name() in
+  D.switch_to_section (POWER Function_descriptors);
   if abi = ELF64v1 && (c = "_startup" || c = "_shared_startup") then begin
-    D.switch_to_section (POWER Function_descriptors);
     D.align ~bytes:(1 lsl 12)
+  end else begin
+    D.align ~bytes:8
   end;
-  Emitaux.begin_assembly ~code_section ()
+  Emitaux.begin_assembly ~code_section ();
+  (* Ensure that before any function descriptor for an OCaml function, there
+     exists a valid GC header, when using "no naked pointers". *)
+  if abi = ELF64v1 && Config.no_naked_pointers then begin
+    let dummy_function = Compilenv.make_symbol ".dummy" in
+    let dummy_entry_point = L.power_function_entry_point dummy_function in
+    D.switch_to_section Text;
+    D.define_function_symbol dummy_entry_point;
+    D.switch_to_section (POWER Function_descriptors);
+    D.symbol (LR.no_reloc dummy_entry_point);
+    D.symbol (LR.power_tocbase (LR.no_reloc (L.create ".TOC.")));
+    Emitaux.emit_block_header_for_function
+      ~function_entry_point_alignment_in_bytes:4
+  end
 
 let end_assembly() =
   (* In profiling mode, for ELF64, emit the helper functions
