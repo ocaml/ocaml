@@ -537,7 +537,9 @@ let end_assembly ?(code_section = D.Text) ~emit_numeric_constants () =
   D.mark_stack_non_executable ();  (* PR#4564 *)
   D.switch_to_section code_section;
   emit_global_data_symbol "code_end";
-  D.int64 0L;
+  (* CR mshinwell: check what this word was for.  We can't put a zero here
+     on POWER ELF64v1 *)
+  if code_section = D.Text then D.int64 0L;
   D.switch_to_section Data;
   emit_global_data_symbol "data_end";
   D.int64 0L

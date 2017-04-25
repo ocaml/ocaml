@@ -1100,7 +1100,7 @@ let begin_assembly() =
   (* Ensure that before any function descriptor for an OCaml function, there
      exists a valid GC header, when using "no naked pointers". *)
   if abi = ELF64v1 && Config.no_naked_pointers then begin
-    let dummy_function = Compilenv.make_symbol ".dummy" in
+    let dummy_function = Compilenv.make_symbol (Some ".dummy") in
     let dummy_entry_point = L.power_function_entry_point dummy_function in
     D.switch_to_section Text;
     D.define_function_symbol dummy_entry_point;
