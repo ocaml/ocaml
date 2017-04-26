@@ -180,10 +180,11 @@ depend:
 else
 depend: $(COBJS:.$(O)=.c) $(sources)
 	$(CC) -MM $(CFLAGS) $(CPPFLAGS) $^ | sed -e 's/\.o/.$$(O)/' > .depend
-	$(CC) -MM $(PFLAGS) $^ | sed -e 's/\.o/.p.$$(O)/' \
+	$(CC) -MM $(PFLAGS) $(CPPFLAGS) $^ | sed -e 's/\.o/.p.$$(O)/' \
 	  >> .depend
-	$(CC) -MM $(DFLAGS) $^ | sed -e 's/\.o/.d.$$(O)/' >> .depend
-	$(CC) -MM $(IFLAGS) $^ | sed -e 's/\.o/.i.$$(O)/' \
+	$(CC) -MM $(DFLAGS) $(CPPFLAGS) $^ | sed -e 's/\.o/.d.$$(O)/' \
+	  >> .depend
+	$(CC) -MM $(IFLAGS) $(CPPFLAGS) $^ | sed -e 's/\.o/.i.$$(O)/' \
 	  >> .depend
 endif
 
