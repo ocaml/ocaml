@@ -973,7 +973,7 @@ alldepend:
 else
 alldepend: depend
 	for dir in $(subdirs); do \
-	  $(MAKE) -C $$dir depend; \
+	  $(MAKE) -C $$dir depend || exit; \
 	done
 endif
 
@@ -1277,7 +1277,7 @@ partialclean::
 depend: beforedepend
 	(for d in utils parsing typing bytecomp asmcomp middle_end \
 	 middle_end/base_types driver toplevel; \
-	 do $(CAMLDEP) -slash $(DEPFLAGS) $$d/*.mli $$d/*.ml; \
+	 do $(CAMLDEP) -slash $(DEPFLAGS) $$d/*.mli $$d/*.ml || exit; \
 	 done) > .depend
 	$(CAMLDEP) -slash $(DEPFLAGS) -native \
 		-impl driver/compdynlink.mlopt >> .depend
