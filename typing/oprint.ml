@@ -490,7 +490,19 @@ and print_out_sig_item ppf =
           [] -> ()
         | s :: sl ->
             fprintf ppf "@ = \"%s\"" s;
-            List.iter (fun s -> fprintf ppf "@ \"%s\"" s) sl
+            List.iter (fun s ->
+(* TODO: in general, we should print bs attributes, some attributes like
+  bs.splice does need it *)
+#if undefined BS_NO_COMPILER_PATCH then
+    let len = String.length s in
+    if len >= 3 && s.[0] = 'B' && s.[1] = 'S' && s.[2] = ':' then
+      fprintf ppf "@ \"BS-EXTERNAL\"" 
+    else
+      fprintf ppf "@ \"%s\"" s
+#else    
+      fprintf ppf "@ \"%s\"" s
+#end                  
+              ) sl
       in
       fprintf ppf "@[<2>%s %a :@ %a%a@]" kwd value_ident name !out_type
         ty pr_prims prims
