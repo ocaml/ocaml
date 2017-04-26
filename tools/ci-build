@@ -99,24 +99,30 @@ configure=unix
 confoptions="${OCAML_CONFIGURE_OPTIONS}"
 make_native=true
 cleanup=false
+check_make_alldepend=false
 
 case "${OCAML_ARCH}" in
   bsd) make=gmake ;;
   macos) ;;
   linux)
     confoptions="${confoptions} -with-instrumented-runtime"
+    check_make_alldepend=true
   ;;
   cygwin)
-    cleanup=true;;
+    cleanup=true
+    check_make_alldepend=true
+  ;;
   mingw)
     instdir='C:/ocamlmgw'
     configure=nt
     cleanup=true
+    check_make_alldepend=true
   ;;
   mingw64)
     instdir='C:/ocamlmgw64'
     configure=nt
     cleanup=true
+    check_make_alldepend=true
   ;;
   msvc)
     instdir='C:/ocamlms'
@@ -202,6 +208,7 @@ if $make_native; then
   $make opt
   $make opt.opt
 fi
+if $check_make_alldepend; then $make alldepend; fi
 $make install
 
 rm -rf "$instdir"
