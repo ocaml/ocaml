@@ -182,6 +182,7 @@ case $configure in
     cp config/m-nt.h config/m.h
     cp config/s-nt.h config/s.h
     cp config/Makefile.${OCAML_ARCH} config/Makefile
+    sed -i "s%PREFIX=\(.\+\)%PREFIX=${instdir}%" config/Makefile
     sed -i 's%RUNTIMED=.\+%RUNTIMED=true%' config/Makefile
     if $flambda; then
       sed -i 's%FLAMBDA=.\+%FLAMBDA=true%' config/Makefile
