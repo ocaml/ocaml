@@ -118,11 +118,9 @@ static value stat_aux(int use_64, __int64 st_ino, struct _stat64 *buf)
 static int convert_time(FILETIME* time, __time64_t* result, __time64_t def)
 {
   SYSTEMTIME sys;
-  FILETIME local;
 
   if (time->dwLowDateTime || time->dwHighDateTime) {
-    if (!FileTimeToLocalFileTime(time, &local) ||
-        !FileTimeToSystemTime(&local, &sys))
+    if (!FileTimeToSystemTime(time, &sys))
     {
       win32_maperr(GetLastError());
       return 0;
@@ -132,7 +130,7 @@ static int convert_time(FILETIME* time, __time64_t* result, __time64_t def)
       struct tm stamp = {sys.wSecond, sys.wMinute, sys.wHour,
                          sys.wDay, sys.wMonth - 1, sys.wYear - 1900,
                          0, 0, 0};
-      *result = _mktime64(&stamp);
+      *result = _mkgmtime64(&stamp);
     }
   }
   else {
