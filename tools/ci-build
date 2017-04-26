@@ -109,22 +109,22 @@ case "${OCAML_ARCH}" in
   cygwin)
     cleanup=true;;
   mingw)
-    instdir=/cygdrive/c/ocamlmgw
+    instdir='C:/ocamlmgw'
     configure=nt
     cleanup=true
   ;;
   mingw64)
-    instdir=/cygdrive/c/ocamlmgw64
+    instdir='C:/ocamlmgw64'
     configure=nt
     cleanup=true
   ;;
   msvc)
-    instdir=/cygdrive/c/ocamlms
+    instdir='C:/ocamlms'
     configure=nt
     cleanup=true
   ;;
   msvc64)
-    instdir=/cygdrive/c/ocamlms64
+    instdir='C:/ocamlms64'
     configure=nt
     cleanup=true
   ;;
