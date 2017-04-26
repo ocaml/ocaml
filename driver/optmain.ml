@@ -225,7 +225,7 @@ module Options = Main_args.Make_optcomp_options (struct
   let _dinterval = set dump_interval
   let _dstartup = set keep_startup_file
   let _dtimings () = profile_columns := [ `Time ]
-  let _dprofile () = profile_columns := Timings.all_columns
+  let _dprofile () = profile_columns := Profile.all_columns
   let _opaque = set opaque
 
   let _args = Arg.read_arg
@@ -310,5 +310,5 @@ let main () =
 
 let () =
   main ();
-  Timings.print Format.std_formatter !Clflags.profile_columns;
+  Profile.print Format.std_formatter !Clflags.profile_columns;
   exit 0

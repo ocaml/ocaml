@@ -118,7 +118,7 @@ module Options = Main_args.Make_bytecomp_options (struct
   let _dlambda = set dump_lambda
   let _dinstr = set dump_instr
   let _dtimings () = profile_columns := [ `Time ]
-  let _dprofile () = profile_columns := Timings.all_columns
+  let _dprofile () = profile_columns := Profile.all_columns
 
   let _args = Arg.read_arg
   let _args0 = Arg.read_arg0
@@ -199,5 +199,5 @@ let main () =
 
 let () =
   main ();
-  Timings.print Format.std_formatter !Clflags.profile_columns;
+  Profile.print Format.std_formatter !Clflags.profile_columns;
   exit 0

@@ -71,13 +71,13 @@ let hierarchy = ref (create ())
 let initial_measure = ref None
 let reset () = hierarchy := create (); initial_measure := None
 
-let time_call ?(accumulate = false) name f =
+let record_call ?(accumulate = false) name f =
   let E prev_hierarchy = !hierarchy in
   let start_measure = Measure.create () in
   if !initial_measure = None then initial_measure := Some start_measure;
   let this_measure_diff, this_table =
     (* We allow the recording of multiple categories by the same name, for tools
-       like ocamldoc that use the compiler libs but don't care about timings
+       like ocamldoc that use the compiler libs but don't care about profile
        information, and so may record, say, "parsing" multiple times. *)
     if accumulate
     then
@@ -97,7 +97,7 @@ let time_call ?(accumulate = false) name f =
          Measure_diff.accumulate this_measure_diff start_measure end_measure in
        Hashtbl.add prev_hierarchy name (measure_diff, E this_table))
 
-let time ?accumulate pass f x = time_call ?accumulate pass (fun () -> f x)
+let record ?accumulate pass f x = record_call ?accumulate pass (fun () -> f x)
 
 type display = {
   to_string : max:float -> width:int -> string;
@@ -167,7 +167,7 @@ let memory_word_display =
     in
     { to_string; worth_displaying }
 
-let timings_list (E table) =
+let profile_list (E table) =
   let l = Hashtbl.fold (fun k d l -> (k, d) :: l) table [] in
   List.sort (fun (_, (p1, _)) (_, (p2, _)) ->
     compare p1.Measure_diff.timestamp p2.Measure_diff.timestamp) l
@@ -198,7 +198,7 @@ let rec rows_of_hierarchy ~nesting make_row name measure_diff hierarchy env =
   R (name, values, rows), env
 
 and rows_of_hierarchy_list ~nesting make_row hierarchy total env =
-  let list = timings_list hierarchy in
+  let list = profile_list hierarchy in
   let list =
     if list <> [] || nesting = 0
     then list @ [ "other", (compute_other_category hierarchy total, create ()) ]

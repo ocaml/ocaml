@@ -28,7 +28,7 @@ open Compenv
 let tool_name = "ocamlopt"
 
 let interface ppf sourcefile outputprefix =
-  Timings.time_call sourcefile (fun () ->
+  Profile.record_call sourcefile (fun () ->
     Compmisc.init_path false;
     let modulename = module_of_filename ppf sourcefile outputprefix in
     Env.set_unit_name modulename;
@@ -36,7 +36,7 @@ let interface ppf sourcefile outputprefix =
     let ast = Pparse.parse_interface ~tool_name ppf sourcefile in
     if !Clflags.dump_parsetree then fprintf ppf "%a@." Printast.interface ast;
     if !Clflags.dump_source then fprintf ppf "%a@." Pprintast.signature ast;
-    Timings.(time_call typing) (fun () ->
+    Profile.(record_call typing) (fun () ->
       let tsg = Typemod.type_interface sourcefile initial_env ast in
       if !Clflags.dump_typedtree then fprintf ppf "%a@." Printtyped.interface tsg;
       let sg = tsg.sig_type in
@@ -68,7 +68,7 @@ let (++) x f = f x
 let (+++) (x, y) f = (x, f y)
 
 let implementation ~backend ppf sourcefile outputprefix =
-  Timings.time_call sourcefile (fun () ->
+  Profile.record_call sourcefile (fun () ->
     Compmisc.init_path true;
     let modulename = module_of_filename ppf sourcefile outputprefix in
     Env.set_unit_name modulename;
@@ -81,7 +81,7 @@ let implementation ~backend ppf sourcefile outputprefix =
         ast
         ++ print_if ppf Clflags.dump_parsetree Printast.implementation
         ++ print_if ppf Clflags.dump_source Pprintast.structure
-        ++ Timings.(time typing)
+        ++ Profile.(record typing)
             (Typemod.type_implementation sourcefile outputprefix modulename env)
         ++ print_if ppf Clflags.dump_typedtree
             Printtyped.implementation_with_coercion
@@ -95,9 +95,9 @@ let implementation ~backend ppf sourcefile outputprefix =
             Clflags.unbox_specialised_args := false
           end;
           (typedtree, coercion)
-          ++ Timings.(time transl)
+          ++ Profile.(record transl)
               (Translmod.transl_implementation_flambda modulename)
-          ++ Timings.(time generate)
+          ++ Profile.(record generate)
             (fun { Lambda.module_ident; main_module_block_size;
                    required_globals; code } ->
             ((module_ident, main_module_block_size), code)
@@ -119,10 +119,10 @@ let implementation ~backend ppf sourcefile outputprefix =
         else begin
           Clflags.use_inlining_arguments_set Clflags.classic_arguments;
           (typedtree, coercion)
-          ++ Timings.(time transl)
+          ++ Profile.(record transl)
               (Translmod.transl_store_implementation modulename)
           ++ print_if ppf Clflags.dump_rawlambda Printlambda.program
-          ++ Timings.(time generate)
+          ++ Profile.(record generate)
               (fun program ->
                 { program with
                   Lambda.code = Simplif.simplify_lambda sourcefile

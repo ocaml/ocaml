@@ -63,5 +63,5 @@ let main() =
 
 let () =
   main ();
-  Timings.print Format.std_formatter !Clflags.profile_columns;
+  Profile.print Format.std_formatter !Clflags.profile_columns;
   exit 0

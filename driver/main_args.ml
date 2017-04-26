@@ -464,7 +464,7 @@ let mk_dtimings f =
 ;;
 
 let mk_dprofile f =
-  "-dprofile", Arg.Unit f, Timings.options_doc
+  "-dprofile", Arg.Unit f, Profile.options_doc
 ;;
 
 let mk_unbox_closures f =

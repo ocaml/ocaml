@@ -18,18 +18,18 @@
 type file = string
 
 val reset : unit -> unit
-(** erase all recorded times *)
+(** erase all recorded profile information *)
 
-val time_call : ?accumulate:bool -> string -> (unit -> 'a) -> 'a
-(** [time_call pass f] calls [f] and records its runtime. *)
+val record_call : ?accumulate:bool -> string -> (unit -> 'a) -> 'a
+(** [record_call pass f] calls [f] and records its profile information. *)
 
-val time : ?accumulate:bool -> string -> ('a -> 'b) -> 'a -> 'b
-(** [time pass f arg] records the runtime of [f arg] *)
+val record : ?accumulate:bool -> string -> ('a -> 'b) -> 'a -> 'b
+(** [record pass f arg] records the profile information of [f arg] *)
 
 type column = [ `Time | `Alloc | `Top_heap | `Abs_top_heap ]
 
 val print : Format.formatter -> column list -> unit
-(** Prints all recorded timings to the formatter. *)
+(** Prints the selected recorded profiling information to the formatter. *)
 
 (** Command line flags *)
 
