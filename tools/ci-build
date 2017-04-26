@@ -131,6 +131,9 @@ case "${OCAML_ARCH}" in
   *) arch_error;;
 esac
 
+# Make sure two builds won't use the same install directory
+instdir="$instdir-$$"
+
 #########################################################################
 # On Windows, cleanup processes that may remain from previous run
 
