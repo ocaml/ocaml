@@ -44,5 +44,4 @@ struct caml_domain_state {
   #define SET_CAML_DOMAIN_STATE(x) (caml_domain_state = (x))
 #endif
 
-
 #endif

@@ -100,6 +100,7 @@ static void oldify_one (void* st_v, value v, value *p)
   header_t hd;
   mlsize_t sz, i;
   tag_t tag;
+  int stack_used;
   struct caml_domain_state* domain_state =
     st->promote_domain ? st->promote_domain->state : CAML_DOMAIN_STATE;
   struct caml_remembered_set *remembered_set = domain_state->remembered_set;
@@ -132,7 +133,13 @@ static void oldify_one (void* st_v, value v, value *p)
           // caml_gc_log ("promoting object %p (referred from %p) tag=%d size=%lu to %p", (value*)v, p, tag, sz, (value*)result);
           *p = result;
           if (tag == Stack_tag) {
-            memcpy((void*)result, (void*)v, sizeof(value) * sz);
+            /* Ensure that the stack remains 16-byte aligned. Note: Stack_high
+             * always returns 16-byte aligned down address. */
+            stack_used = -Stack_sp(v);
+            memcpy((void*)result, (void*)v, sizeof(value) * Stack_ctx_words);
+            memcpy(Stack_high(result) - stack_used, Stack_high(v) - stack_used,
+                   stack_used * sizeof(value));
+
             Hd_val (v) = 0;
             Op_val(v)[0] = result;
             Op_val(v)[1] = st->todo_list;
@@ -322,7 +329,7 @@ CAMLexport value caml_promote(struct domain* domain, value root)
       /* While we do not in general promote stacks that we find, we
          certainly want to promote the root if it happens to be a
          stack */
-      st.should_promote_stacks = 1;      
+      st.should_promote_stacks = 1;
       oldify_one (&st, root, &root);
       st.should_promote_stacks = 0;
     } else {

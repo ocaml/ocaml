@@ -60,6 +60,6 @@ val cfi_offset : reg:int -> offset:int -> unit
 
 val emit_block_header_for_closure
    : word_directive:string
-  -> comment_char:char
+  -> comment_string:string
   -> function_entry_points_are_doubleword_aligned:bool
   -> unit

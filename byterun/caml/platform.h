@@ -28,12 +28,6 @@ FIXME: This file should use C11 atomics if they are available.
 #endif
 
 #if defined(__GNUC__)
-#define compiler_barrier() __asm__ __volatile__ ("" ::: "memory");
-#else
-#error "no compiler barrier defined for this compiler"
-#endif
-
-#if defined(__GNUC__)
 #define compiler_expect_1(c) __builtin_expect((c), 1)
 #else
 #define compiler_expect_1(c) c
@@ -43,6 +37,12 @@ FIXME: This file should use C11 atomics if they are available.
 /* Loads and stores with acquire and release semantics respectively */
 
 #if defined(__x86_64__) || defined(__i386__)
+
+#if defined(__GNUC__)
+#define compiler_barrier() __asm__ __volatile__ ("" ::: "memory");
+#else
+#error "no compiler barrier defined for this compiler"
+#endif
 
 INLINE void cpu_relax() {
   asm volatile("pause" ::: "memory");
@@ -62,6 +62,34 @@ INLINE uintnat atomic_load_acq(atomic_uintnat* p) {
 INLINE void atomic_store_rel(atomic_uintnat* p, uintnat v) {
   compiler_barrier();
   p->val = v;
+}
+
+#elif defined(__aarch64__)
+
+#if defined(__GNUC__)
+#define dmb() __asm__ __volatile__ ("dmb sy" ::: "memory");
+#else
+#error "no compiler barrier defined for this compiler"
+#endif
+
+#define ATOMIC_UINTNAT_INIT(x) { (x) }
+
+INLINE void cpu_relax() {
+  asm volatile ("yield" ::: "memory");
+}
+
+INLINE uintnat atomic_load_acq(atomic_uintnat* p) {
+  uintnat v;
+  dmb();
+  v = p->val;
+  dmb();
+  return v;
+}
+
+INLINE void atomic_store_rel(atomic_uintnat* p, uintnat v) {
+  dmb();
+  p->val = v;
+  dmb();
 }
 
 #else
