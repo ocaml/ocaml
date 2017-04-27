@@ -104,30 +104,30 @@
 /* CR mshinwell: We should optimize the case where there are multiple
    loads/stores in one go to the domain state block. */
 
-#define DOMAIN_STATE(field_num, c_type, name)            \
-  .macro load_caml_##name dest_reg:req ;                 \
-  GET_DOMAIN_STATE(\dest_reg) ;                    \
-  movq    (8 * field_num)(\dest_reg), \dest_reg ;  \
-  .endm ; \
-  .macro store_caml_##name src_reg:req ;           \
-  GET_DOMAIN_STATE(%r11) ;                   \
-  movq    \src_reg, (8 * field_num)(%r11) ;  \
-  .endm ; \
-  .macro test_caml_##name value:req ;            \
-  GET_DOMAIN_STATE(%r11) ;                 \
-  testq   \value, (8 * field_num)(%r11) ;  \
-  .endm ; \
-  .macro cmp_caml_##name reg:req ;               \
-  GET_DOMAIN_STATE(%rax) ;                 \
-  cmpq  (8 * field_num)(%rax), \reg ;    \
-  .endm ; \
-  .macro push_caml_##name ;                      \
-  load_caml_##name %r11 ;                  \
-        pushq   %r11 ;                           \
-  .endm ; \
-  .macro pop_caml_##name ;                       \
-        popq    %r13 ;                           \
-        store_caml_##name %r13 ;                 \
+#define DOMAIN_STATE(field_num, c_type, name)             \
+  .macro load_caml_##name dest_reg:req ;                  \
+  GET_DOMAIN_STATE(\dest_reg) ;                           \
+  movq    (8 * field_num)(\dest_reg), \dest_reg ;         \
+  .endm ;                                                 \
+  .macro store_caml_##name src_reg:req ;                  \
+  GET_DOMAIN_STATE(%r11) ;                                \
+  movq    \src_reg, (8 * field_num)(%r11) ;               \
+  .endm ;                                                 \
+  .macro test_caml_##name value:req ;                     \
+  GET_DOMAIN_STATE(%r11) ;                                \
+  testq   \value, (8 * field_num)(%r11) ;                 \
+  .endm ;                                                 \
+  .macro cmp_caml_##name reg:req ;                        \
+  GET_DOMAIN_STATE(%rax) ;                                \
+  cmpq  (8 * field_num)(%rax), \reg ;                     \
+  .endm ;                                                 \
+  .macro push_caml_##name ;                               \
+  load_caml_##name %r11 ;                                 \
+        pushq   %r11 ;                                    \
+  .endm ;                                                 \
+  .macro pop_caml_##name ;                                \
+        popq    %r13 ;                                    \
+        store_caml_##name %r13 ;                          \
   .endm
 #include "../byterun/caml/domain_state.tbl"
 #undef DOMAIN_STATE
@@ -171,14 +171,6 @@
 /* Stack switching operations */
 /******************************************************************************/
 
-#if defined(__PIC__) && !defined(SYS_mingw64) && !defined(SYS_cygwin)
-
-/* Position-independent operations on global variables. */
-
-/* Load address of global [label] in register [dst]. */
-#define LEA_VAR(label,dst) \
-        movq    GREL(label)(%rip), dst
-
 /* Switch from OCaml to C stack. Clobbers REG & %r14. */
 #define SWITCH_OCAML_TO_C_NO_CTXT(REG) \
     /* Save OCaml SP in the stack slot */ \
@@ -207,42 +199,6 @@
         movq    (REG), REG; \
         salq    $3, REG; \
         addq    REG, %rsp
-#else
-
-/* Non-PIC operations on global variables.  Slightly faster. */
-
-#define LEA_VAR(label,dst) \
-        leaq    G(label)(%rip), dst
-
-/* Switch from OCaml to C stack. Clobbers REG & %r14. */
-#define SWITCH_OCAML_TO_C_NO_CTXT(REG) \
-    /* Save OCaml SP in the stack slot */ \
-        LOAD_TL_VAR(caml_stack_high, %r14); \
-        subq    %r14, %rsp; \
-        sarq    $3, %rsp; \
-        LOAD_TL_VAR(caml_current_stack, REG); \
-        movq    %rsp, (REG); \
-    /* Switch to system stack */ \
-        LOAD_TL_VAR(caml_system_sp, %rsp)
-
-/* Switch from OCaml to C stack. Also builds a context at
- * the bottom of the OCaml stack. Clobbers REG & %r14. */
-#define SWITCH_OCAML_TO_C(REG) \
-    /* Build caml_context at the bottom of the stack */ \
-        pushq   $0 ; CFI_ADJUST(8); \
-        pushq   %r14; CFI_ADJUST(8); \
-        SWITCH_OCAML_TO_C_NO_CTXT(REG)
-
-/* Switch from C to OCaml stack. Clobbers REG. */
-#define SWITCH_C_TO_OCAML_NO_CTXT(REG) \
-    /* Switch to OCaml stack */ \
-        LOAD_TL_VAR(caml_stack_high, %rsp); \
-        LOAD_TL_VAR(caml_current_stack, REG); \
-        movq    (REG), REG; \
-        salq    $3, REG; \
-        addq    REG, %rsp
-
-#endif
 
 /* Switch from C to OCaml stack. Also pops the context
  * from the bottom of the OCaml stack. Clobbers REG. */
@@ -439,7 +395,6 @@ G(caml_system__code_begin):
         movsd   %xmm13, 13*8(%rsp);                                            \
         movsd   %xmm14, 14*8(%rsp);                                            \
         movsd   %xmm15, 15*8(%rsp);                                            \
-    /* Call the garbage collector */                                           \
         PREPARE_FOR_C_CALL;                                                    \
     /* Args are relevant only for caml_realloc_stack */                        \
         movq    $0, C_ARG_1;                                                   \
@@ -637,10 +592,10 @@ CFI_STARTPROC
         STORE_TL_VAR(%r15, caml_young_ptr)
     /* Copy arguments from OCaml to C stack */
 LBL(105):
-        subq    $8, %r12; CFI_ADJUST(8)
+        subq    $8, %r12
         cmpq    %r13,%r12
         jl      LBL(106)
-        push    (%r12)
+        push    (%r12); CFI_ADJUST(8)
         jmp     LBL(105)
 LBL(106):
     /* Call the function (address in %rax) */
@@ -879,7 +834,9 @@ CFI_STARTPROC
         jmp     LBL(caml_start_program)
 CFI_ENDPROC
 
+/******************************************************************************/
 /* Fibers */
+/******************************************************************************/
 
 FUNCTION(G(caml_fiber_exn_handler))
 CFI_STARTPROC

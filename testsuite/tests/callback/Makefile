@@ -26,7 +26,7 @@ default:
 
 
 .PHONY: run-byte
-run-byte: 
+run-byte:
 	@for f in *.ml; do \
 	  printf " ... testing 'bytecode':"; \
 	  F=`basename $$f .ml`; \
@@ -39,7 +39,7 @@ run-byte:
 	done
 
 .PHONY: run-opt
-run-opt: 
+run-opt:
 	@if $(BYTECODE_ONLY); then : ; else \
 		for f in *.ml; do \
 			printf " ... testing 'nativecode':"; \

@@ -53,12 +53,11 @@
 
 #ifdef TARGET_amd64
 #define Saved_return_address(sp) *((intnat *)((sp) - 8))
-#define Top_of_stack_offset 16
 #endif
 
 #ifdef TARGET_arm64
 #define Saved_return_address(sp) *((intnat *)((sp) - 8))
-#define Callback_link(sp) ((struct caml_context *)((sp) + 16)) //FIXME KC
+#define Context_needs_padding /* keep stack 16-byte aligned */
 #endif
 
 /* Structure of OCaml callback contexts */
@@ -66,6 +65,9 @@
 struct caml_context {
   uintnat exception_ptr_offset; /* exception pointer offset from top of stack */
   value * gc_regs;              /* pointer to register block */
+#ifdef Context_needs_padding
+  value padding;
+#endif
 };
 
 /* Declaration of variables used in the asm code */

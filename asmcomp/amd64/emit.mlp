@@ -678,7 +678,7 @@ let emit_instr fallthrough i =
         if macosx then
           `	.const\n`
         else if mingw64 || cygwin then
-          `	.section .rdata,\"dr\"\n` 
+          `	.section .rdata,\"dr\"\n`
         else
           `	.section .rodata\n`;
         emit_align 4;
@@ -793,7 +793,7 @@ let fundecl fundecl =
   `	.text\n`;
   emit_align 16;
   Emitaux.emit_block_header_for_closure ~word_directive:".quad"
-    ~comment_char:'#'
+    ~comment_string:"#"
     ~function_entry_points_are_doubleword_aligned:true;
   if macosx
   && not !Clflags.output_c_object
@@ -837,6 +837,7 @@ let fundecl fundecl =
     `{emit_label !tailrec_entry_point}:\n`;
     emit_all true fundecl.fun_body;
     List.iter emit_call_gc !call_gc_sites;
+    emit_call_bound_errors ();
   end
   else begin
     (* XXX KC: fundecl.fun_body.live does not capture liveness at the start of
@@ -857,13 +858,13 @@ let fundecl fundecl =
     `{emit_label !tailrec_entry_point}:\n`;
     emit_all true fundecl.fun_body;
     List.iter emit_call_gc !call_gc_sites;
+    emit_call_bound_errors ();
     `{emit_label handle_overflow}:\n`;
     ` {emit_call "caml_call_realloc_stack"}\n`;
     `{emit_label after_overflow}:\n`;
     ` jmp {emit_label !tailrec_entry_point}\n`;
   end;
 
-  emit_call_bound_errors ();
   cfi_endproc ();
   begin match Config.system with
     "linux" | "gnu" ->
