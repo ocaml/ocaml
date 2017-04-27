@@ -242,12 +242,7 @@ static inline value* mark_slice_darken(value *gray_vals_ptr, value v, int i,
 #ifdef NATIVE_CODE_AND_NO_NAKED_POINTERS
   if (Is_block (child)
         && ! Is_young (child)
-        && Wosize_val (child) > 0  /* Atoms never need to be marked. */
-        /* Closure blocks contain code pointers at offsets that cannot
-           be reliably determined, so we always use the page table when
-           marking such values. */
-        && (!(Tag_val (v) == Closure_tag || Tag_val (v) == Infix_tag) ||
-            Is_in_heap (child))) {
+        && Wosize_val (child) > 0  /* Atoms never need to be marked. */) {
 #else
   if (Is_block (child) && Is_in_heap (child)) {
 #endif
@@ -400,6 +395,12 @@ static void mark_slice (intnat work)
       size = Wosize_hd (hd);
       end = start + work;
       if (Tag_hd (hd) < No_scan_tag){
+#ifdef NATIVE_CODE_AND_NO_NAKED_POINTERS
+        if (Tag_hd(hd) == Closure_tag && start == 0) {
+          start = caml_distance_to_closure_environment(v);
+          end = start + work;
+        }
+#endif
         start = size < start ? size : start;
         end = size < end ? size : end;
         CAMLassert (end >= start);

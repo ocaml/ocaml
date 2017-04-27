@@ -31,6 +31,12 @@
 #include "caml/signals.h"
 #include "caml/weak.h"
 
+#if defined (NATIVE_CODE) && defined (NO_NAKED_POINTERS)
+#define NATIVE_CODE_AND_NO_NAKED_POINTERS
+#else
+#undef NATIVE_CODE_AND_NO_NAKED_POINTERS
+#endif
+
 /* Pointers into the minor heap.
    [caml_young_base]
        The [malloc] block that contains the heap.
@@ -170,6 +176,56 @@ void caml_set_minor_heap_size (asize_t bsz)
   reset_table ((struct generic_table *) &caml_custom_table);
 }
 
+mlsize_t caml_distance_to_closure_environment(value closure)
+{
+#ifndef NATIVE_CODE_AND_NO_NAKED_POINTERS
+  return 0;
+#else
+  int finished = 0;
+  value* start;
+  value* pos;
+  mlsize_t skip;
+
+  CAMLassert(Is_block(closure));
+  CAMLassert(Tag_val(closure) == Closure_tag);
+  CAMLassert(Wosize_val(closure) >= 2);
+
+  start = (value*) closure;
+  pos = start;
+
+  while (!finished) {
+    uintnat arity;
+
+    CAMLassert ((pos - start) < Wosize_val(start));
+
+    arity = Long_val(pos[1]);
+    finished = (arity & (uintnat) 1) != 0;
+
+    arity >>= 1;
+
+    if (arity <= 1) {
+      pos += 2;
+    }
+    else {
+      pos += 3;
+    }
+
+    if (!finished) {
+      CAMLassert (Tag_hd(pos[0]) == Infix_tag);
+
+      pos++;
+    }
+  }
+
+  skip = pos - start;
+
+  CAMLassert (skip >= 2);
+  CAMLassert (skip <= Wosize_val(start));
+
+  return skip;
+#endif
+}
+
 static value oldify_todo_list = 0;
 
 /* Note that the tests on the tag depend on the fact that Infix_tag,
@@ -190,9 +246,29 @@ void caml_oldify_one (value v, value *p)
       *p = Field (v, 0);  /*  then forward pointer is first field. */
     }else{
       tag = Tag_hd (hd);
+#ifdef NATIVE_CODE_AND_NO_NAKED_POINTERS
+      if (tag == Closure_tag) {
+        uintnat first_part = caml_distance_to_closure_environment(v);
+        sz = Wosize_hd (hd);
+        result = caml_alloc_shr_preserving_profinfo (sz, tag, hd);
+        for (i = 0; i < sz; i++) {
+          value field = Field (v, i);
+          if (i >= first_part && Is_block (field) && Is_young (field)) {
+            /* This seems most unlikely to cause a stack overflow. */
+            caml_oldify_one(field, &Field(result, i));
+          }
+          else {
+            Field(result, i) = field;
+          }
+        }
+        Hd_val (v) = 0;            /* Set forward flag */
+        Field (v, 0) = result;     /*  and forward pointer. */
+        *p = result;
+      }
+      else
+#endif
       if (tag < Infix_tag){
         value field0;
-
         sz = Wosize_hd (hd);
         result = caml_alloc_shr_preserving_profinfo (sz, tag, hd);
         *p = result;

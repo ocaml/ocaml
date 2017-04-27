@@ -1656,15 +1656,29 @@ let rec transl env e =
               if pos = 0
               then alloc_closure_header block_size f.dbg
               else alloc_infix_header pos f.dbg in
+            let last_one =
+              match rem with
+              | [] -> true
+              | _::_ -> false
+            in
+            let arity_word =
+              (* Having read the arity word as an OCaml integer, the bottom
+                 bit being set indicates that there follow no more closures in
+                 the block.  This enables the GC to skip to the environment
+                 entries.  (Without this flag there would be an ambiguity
+                 between an [Infix_tag] header and the first environment entry
+                 happening to look like such a tag.) *)
+              (f.arity lsl 1) lor (if last_one then 1 else 0)
+            in
             if f.arity = 1 || f.arity = 0 then
               header ::
               Cconst_symbol f.label ::
-              int_const f.arity ::
+              int_const arity_word ::
               transl_fundecls (pos + 3) rem
             else
               header ::
               Cconst_symbol(curry_function f.arity) ::
-              int_const f.arity ::
+              int_const arity_word ::
               Cconst_symbol f.label ::
               transl_fundecls (pos + 4) rem in
       Cop(Calloc, transl_fundecls 0 fundecls, Debuginfo.none)
@@ -2916,30 +2930,43 @@ let emit_constant_closure ((_, global_symb) as symb) fundecls clos_vars cont =
           [] ->
             List.fold_right emit_constant clos_vars cont
       | f2 :: rem ->
+          let last_one =
+            match rem with
+            | [] -> true
+            | _::_ -> false
+          in
+          let arity_word = (f2.arity lsl 1) lor (if last_one then 1 else 0) in
           if f2.arity = 1 || f2.arity = 0 then
             Cint(infix_header pos) ::
             (closure_symbol f2) @
             Csymbol_address f2.label ::
-            cint_const f2.arity ::
+            cint_const arity_word ::
             emit_others (pos + 3) rem
           else
             Cint(infix_header pos) ::
             (closure_symbol f2) @
             Csymbol_address(curry_function f2.arity) ::
-            cint_const f2.arity ::
+            cint_const arity_word ::
             Csymbol_address f2.label ::
-            emit_others (pos + 4) rem in
+            emit_others (pos + 4) rem
+      in
+      let last_one =
+        match remainder with
+        | [] -> true
+        | _::_ -> false
+      in
+      let arity_word = (f1.arity lsl 1) lor (if last_one then 1 else 0) in
       Cint(black_closure_header (fundecls_size fundecls
                                  + List.length clos_vars)) ::
       cdefine_symbol symb @
       (closure_symbol f1) @
       if f1.arity = 1 || f1.arity = 0 then
         Csymbol_address f1.label ::
-        cint_const f1.arity ::
+        cint_const arity_word ::
         emit_others 3 remainder
       else
         Csymbol_address(curry_function f1.arity) ::
-        cint_const f1.arity ::
+        cint_const arity_word ::
         Csymbol_address f1.label ::
         emit_others 4 remainder
 
@@ -3142,7 +3169,10 @@ let apply_function_body arity =
   (args, clos,
    if arity = 1 then app_fun clos 0 else
    Cifthenelse(
-   Cop(Ccmpi Ceq, [get_field env (Cvar clos) 1 dbg; int_const arity], dbg),
+   Cop(Ccmpi Ceq, [
+       Cop (Clsr, [get_field env (Cvar clos) 1 dbg; Cconst_int 1], dbg);
+       int_const arity
+     ], dbg),
    Cop(Capply typ_val,
        get_field env (Cvar clos) 2 dbg :: List.map (fun s -> Cvar s) all_args,
        dbg),
@@ -3308,7 +3338,7 @@ let rec intermediate_curry_functions arity num =
            Cop(Calloc,
                [alloc_closure_header 5 Debuginfo.none;
                 Cconst_symbol(name1 ^ "_" ^ string_of_int (num+1));
-                int_const (arity - num - 1);
+                int_const (((arity - num - 1) lsl 1) lor 1);
                 Cconst_symbol(name1 ^ "_" ^ string_of_int (num+1) ^ "_app");
                 Cvar arg; Cvar clos],
                dbg)
@@ -3316,7 +3346,7 @@ let rec intermediate_curry_functions arity num =
            Cop(Calloc,
                 [alloc_closure_header 4 Debuginfo.none;
                  Cconst_symbol(name1 ^ "_" ^ string_of_int (num+1));
-                 int_const 1; Cvar arg; Cvar clos],
+                 int_const ((1 lsl 1) lor 1); Cvar arg; Cvar clos],
                 dbg);
       fun_fast = true;
       fun_dbg  = Debuginfo.none }

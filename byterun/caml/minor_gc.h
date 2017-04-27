@@ -72,6 +72,8 @@ extern void caml_alloc_custom_table (struct caml_custom_table *,
 extern void caml_oldify_one (value, value *);
 extern void caml_oldify_mopup (void);
 
+extern mlsize_t caml_distance_to_closure_environment(value closure);
+
 #define Oldify(p) do{ \
     value __oldify__v__ = *p; \
     if (Is_block (__oldify__v__) && Is_young (__oldify__v__)){ \
