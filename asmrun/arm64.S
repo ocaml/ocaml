@@ -231,12 +231,12 @@ caml_system__code_begin:
         stp     d26, d27, [sp, 352]; \
         stp     d28, d29, [sp, 368]; \
         stp     d30, d31, [sp, 384]; \
+    /* Save current allocation pointer */ \
+        STORE_TL_VAR(ALLOC_PTR, caml_young_ptr); \
     /* Update in OCaml stack's context, the pointer to gc_regs. */ \
     /* Store pointer to saved integer registers in caml_gc_regs */ \
         add     x0, sp, 16 ; \
         bl      caml_update_gc_regs_slot; \
-    /* Save current allocation pointer for debugging purposes */ \
-        STORE_TL_VAR(ALLOC_PTR, caml_young_ptr); \
     /* Args are relevant only for caml_realloc_stack */ \
         mov     x0, 0; \
         mov     x1, 0; \
@@ -663,9 +663,9 @@ CFI_STARTPROC
        (x0 = alloc ptr, x1 = closure, x2 = arg1, x3 = arg2, x4 = arg3) */
         mov     ALLOC_PTR, x0   /* young ptr */
         mov     TMP, x1
-        mov     x0, x2          /* x0 = first arg */
-        mov     x1, x3          /* x1 = second arg */
-        mov     x2, x4          /* x2 = third arg */
+        ldr     x0, [x2]        /* x0 = first arg */
+        ldr     x1, [x2,8]      /* x1 = second arg */
+        ldr     x2, [x2,16]     /* x2 = third arg */
         mov     x3, TMP         /* x3 = closure environment */
         ADDRGLOBAL(ARG, caml_apply3)
         b       .Ljump_to_caml

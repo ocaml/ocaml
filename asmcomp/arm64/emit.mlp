@@ -552,8 +552,7 @@ let load_domain_field f r =
   let domain_field = Domainstate.idx_of_field f * 8 in
   let bits = Domainstate.minor_heap_align_bits in
   let dom_mask = Nativeint.(lognot (sub (shift_left one bits) one)) in
-  `	mov {emit_reg r}, {emit_reg reg_alloc_ptr}\n`;
-  `	and {emit_reg r}, {emit_reg r}, #{emit_nativeint dom_mask}\n`;
+  `	and {emit_reg r}, {emit_reg reg_alloc_ptr}, #{emit_nativeint dom_mask}\n`;
   `	ldr {emit_reg r}, [{emit_reg r}, #{emit_int domain_field}]`
 
 (* Output the assembly code for an instruction *)
@@ -923,8 +922,7 @@ let preproc_fun fun_body fun_name =
         | Lop (Istackoffset n) -> (upd_size r n, a+n)
         | Lpushtrap -> (upd_size r 16, a+16)
         | Lpoptrap -> (r, a-16)
-        | Lop (Iextcall _ | Ialloc _ | Iintop Icheckbound
-                | Iintop_imm (Icheckbound, _)) ->
+        | Lop (Iextcall _ | Ialloc _ | Iintop Icheckbound | Iintop_imm (Icheckbound, _)) ->
             ({r with contains_external_calls = true}, a)
         | Lop (Icall_ind | Icall_imm _ ) ->
             ({r with contains_nontail_calls = true}, a)
@@ -988,9 +986,9 @@ let fundecl fundecl =
   in
   let s = s + profile_slop in
 
-  (* Extra 24 bytes for caml_context at the bottom of OCaml stack if the
+  (* Extra 32 bytes for caml_context at the bottom of OCaml stack if the
    * function makes external calls *)
-  let s = if preproc_res.contains_external_calls then s + 24 else s in
+  let s = if preproc_res.contains_external_calls then s + 32 else s in
 
   if not preproc_res.contains_nontail_calls &&
      s < stack_threshold_size + profile_slop
