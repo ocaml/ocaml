@@ -932,7 +932,9 @@ asmcomp/emit.ml: asmcomp/$(ARCH)/emit.mlp tools/cvt_emit
 partialclean::
 	rm -f asmcomp/emit.ml
 
+ifneq ($(ARCH),none)
 beforedepend:: asmcomp/emit.ml
+endif
 
 tools/cvt_emit: tools/cvt_emit.mll
 	$(MAKE) -C tools cvt_emit
@@ -1160,7 +1162,9 @@ partialclean::
 partialclean::
 	rm -f $(ARCH_SPECIFIC)
 
+ifneq ($(ARCH),none)
 beforedepend:: $(ARCH_SPECIFIC)
+endif
 
 # This rule provides a quick way to check that machine-dependent
 # files compiles fine for a foreign architecture (passed as ARCH=xxx).
