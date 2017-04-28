@@ -33,10 +33,10 @@ error () {
 }
 
 arch_error() {
-  configure_url = "https://ci.inria.fr/ocaml/computer/${NODE_NAME}/configure"
-  msg = "Unknown architecture. Make sure the OCAML_ARCH environemnt"
-  msg = "$msg variable has been defined."
-  msg = "$msg\nSee ${configure_url}"
+  configure_url="https://ci.inria.fr/ocaml/computer/${NODE_NAME}/configure"
+  msg="Unknown architecture. Make sure the OCAML_ARCH environemnt"
+  msg="$msg variable has been defined."
+  msg="$msg\nSee ${configure_url}"
   error "$msg"
 }
 
