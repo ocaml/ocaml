@@ -207,8 +207,8 @@ $make world
 if $make_native; then
   $make opt
   $make opt.opt
+  if $check_make_alldepend; then $make alldepend; fi
 fi
-if $check_make_alldepend; then $make alldepend; fi
 $make install
 
 rm -rf "$instdir"
