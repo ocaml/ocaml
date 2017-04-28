@@ -29,3 +29,15 @@ let k x = match x with
 let l x = match x with
 | A -> 0
 | _ -> 1
+
+[@@@ocaml.warning "--4"]
+(* should not warn. *)
+let m x = match x with
+| F -> 0
+| _ -> 1
+
+[@@@ocaml.warning "++4"]
+(*should warn. *)
+let n x = match x with
+| C -> 0
+| _ -> 1
