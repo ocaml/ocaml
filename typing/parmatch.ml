@@ -1878,9 +1878,14 @@ let extendable_path path =
 
 let warn_fragile_type ty env =
   let _,_,decl = Ctype.extract_concrete_typedecl env ty in
-  Builtin_attributes.with_warning_attribute
-    decl.Types.type_attributes
-    (fun () -> Warnings.(is_active (Fragile_match "")))
+  let warn = Warnings.Fragile_match "" in
+  match Warnings.status warn with
+    | Warnings.Always -> true
+    | Warnings.Never -> false
+    | Warnings.Implicit | Warnings.Explicit ->
+        Builtin_attributes.with_warning_attribute
+          decl.Types.type_attributes
+          (fun () -> Warnings.(is_active warn))
 
 let rec collect_paths_from_pat r p = match p.pat_desc with
 | Tpat_construct(_, {cstr_tag=(Cstr_constant _|Cstr_block _|Cstr_unboxed)},ps)

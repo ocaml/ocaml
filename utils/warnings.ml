@@ -193,9 +193,12 @@ let letter = function
   | _ -> assert false
 ;;
 
+type status = Always | Implicit | Explicit | Never
+
 type state =
   {
     active: bool array;
+    flexible: bool array;
     error: bool array;
   }
 
@@ -203,6 +206,7 @@ let current =
   ref
     {
       active = Array.make (last_warning_number + 1) true;
+      flexible = Array.make (last_warning_number + 1) true;
       error = Array.make (last_warning_number + 1) false;
     }
 
@@ -211,12 +215,27 @@ let backup () = !current
 let restore x = current := x
 
 let is_active x = (!current).active.(number x);;
+
+let status x =
+  let n = number x in
+  match (!current).active.(n), (!current).flexible.(n) with
+    | true, false -> Always
+    | true, true -> Implicit
+    | false, true -> Explicit
+    | false, false -> Never
+;;
+
 let is_error x = (!current).error.(number x);;
 
-let parse_opt error active flags s =
-  let set i = flags.(i) <- true in
-  let clear i = flags.(i) <- false in
-  let set_all i = active.(i) <- true; error.(i) <- true in
+let parse_opt error active flexible flags s =
+  let set i = flags.(i) <- true; flexible.(i) <- true in
+  let set_strict i = flags.(i) <- true; flexible.(i) <- false in
+  let clear i = flags.(i) <- false; flexible.(i) <- true in
+  let clear_strict i = flags.(i) <- false; flexible.(i) <- false in
+  let set_all i = active.(i) <- true; error.(i) <- true; flexible.(i) <- true in
+  let set_all_strict i =
+    active.(i) <- true; error.(i) <- true; flexible.(i) <- false
+  in
   let error () = raise (Arg.Bad "Ill-formed list of warnings") in
   let rec get_num n i =
     if i >= String.length s then i, n
@@ -233,6 +252,7 @@ let parse_opt error active flags s =
     else
       i, n1, n1
   in
+  let need_char i = if i + 1 >= String.length s then error () in
   let rec loop i =
     if i >= String.length s then () else
     match s.[i] with
@@ -242,9 +262,18 @@ let parse_opt error active flags s =
     | 'a' .. 'z' ->
        List.iter clear (letter s.[i]);
        loop (i+1)
-    | '+' -> loop_letter_num set (i+1)
-    | '-' -> loop_letter_num clear (i+1)
-    | '@' -> loop_letter_num set_all (i+1)
+    | '+' ->
+        need_char i;
+        if s.[i+1] = '+' then loop_letter_num set_strict (i+2)
+        else loop_letter_num set (i+1)
+    | '-' ->
+        need_char i;
+        if s.[i+1] = '-' then loop_letter_num clear_strict (i+2)
+        else loop_letter_num clear (i+1)
+    | '@' ->
+        need_char i;
+        if s.[i+1] = '@' then loop_letter_num set_all_strict (i+2)
+        else loop_letter_num set_all (i+1)
     | _ -> error ()
   and loop_letter_num myset i =
     if i >= String.length s then error () else
@@ -267,8 +296,9 @@ let parse_opt error active flags s =
 let parse_options errflag s =
   let error = Array.copy (!current).error in
   let active = Array.copy (!current).active in
-  parse_opt error active (if errflag then error else active) s;
-  current := {error; active}
+  let flexible = Array.copy (!current).flexible in
+  parse_opt error active flexible (if errflag then error else active) s;
+  current := {error; active; flexible}
 
 (* If you change these, don't forget to change them in man/ocamlc.m *)
 let defaults_w = "+a-4-6-7-9-27-29-32..39-41..42-44-45-48-50-60";;
