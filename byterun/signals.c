@@ -76,7 +76,7 @@ void caml_record_signal(int signal_number)
 static caml_root caml_signal_handlers;
 
 void caml_init_signal_handling() {
-  caml_signal_handlers = caml_create_root(caml_alloc(NSIG, 0));
+  caml_signal_handlers = caml_create_root(caml_alloc_shr(NSIG, 0));
 }
 
 static void caml_execute_signal(int signal_number)

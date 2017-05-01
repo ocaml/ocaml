@@ -36,12 +36,12 @@ void caml_cycle_heap_stw(void);
    (after caml_cycle_heap_stw) */
 void caml_cycle_heap(struct caml_heap_state*);
 
-#ifdef CAML_VERIFY_HEAP
-/* must only be called while all domains are paused */
-struct heap_verify_state* caml_verify_begin();
+/* Heap invariant verification (for debugging) */
+
+/* caml_verify_begin must only be called while all domains are paused */
+struct heap_verify_state* caml_verify_begin(); 
 void caml_verify_root(void*, value, value*);
 void caml_verify_heap(struct heap_verify_state*); /* deallocates arg */
-#endif
 
 #ifdef DEBUG
 /* [is_garbage(v)] returns true if [v] is a garbage value */

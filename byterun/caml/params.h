@@ -19,6 +19,7 @@ struct caml_params {
   int parser_trace;
   int trace_flag;
   int eventlog_enabled;
+  int verify_heap;
 
   uintnat percent_free_init;
   uintnat max_percent_free_init;

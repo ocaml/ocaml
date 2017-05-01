@@ -212,7 +212,6 @@ intnat caml_major_collection_slice(intnat howmuch)
 
   if (budget > 0) {
     caml_trigger_stw_gc();
-    caml_handle_gc_interrupt();
   }
 
 
@@ -244,12 +243,11 @@ void caml_finish_marking () {
 
 void caml_empty_mark_stack_domain (struct domain* domain)
 {
-  value* mark_stack = *domain->mark_stack;
-  uintnat* mark_stack_count = domain->mark_stack_count;
+  struct caml_domain_state* state = domain->state;
 
-  while (*mark_stack_count) {
-    *mark_stack_count = *mark_stack_count - 1;
-    mark (mark_stack[*mark_stack_count], 10000000);
+  while (state->mark_stack_count) {
+    state->mark_stack_count = state->mark_stack_count - 1;
+    mark (state->mark_stack[state->mark_stack_count], 10000000);
   }
 }
 

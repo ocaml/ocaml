@@ -100,7 +100,6 @@ void caml_main(char **argv)
   caml_init_gc ();
 
   if (caml_params->backtrace_enabled_init) caml_record_backtrace(Val_int(1));
-  if (caml_params->eventlog_enabled) caml_setup_eventlog();
 
   /* Capture 16-byte aligned (ceil) system_stack_high */
   CAML_DOMAIN_STATE->system_stack_high =

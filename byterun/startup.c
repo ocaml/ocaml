@@ -282,7 +282,6 @@ CAMLexport void caml_main(char **argv)
   caml_init_gc ();
   CAML_DOMAIN_STATE->external_raise = NULL;
   if (caml_params->backtrace_enabled_init) caml_record_backtrace(Val_int(1));
-  if (caml_params->eventlog_enabled) caml_setup_eventlog();
   /* Initialize the interpreter */
   caml_interprete(NULL, 0);
   /* Initialize the debugger, if needed */

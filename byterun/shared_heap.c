@@ -10,6 +10,7 @@
 #include "caml/roots.h"
 #include "caml/globroots.h"
 #include "caml/shared_heap.h"
+#include "caml/params.h"
 #include "caml/fiber.h" /* for verification */
 
 typedef unsigned int sizeclass;
@@ -349,9 +350,7 @@ static intnat large_alloc_sweep(struct caml_heap_state* local) {
   return Whsize_hd(hd);
 }
 
-#ifdef CAML_VERIFY_HEAP
 static void verify_swept(struct caml_heap_state*);
-#endif
 
 intnat caml_sweep(struct caml_heap_state* local, intnat work) {
   /* Sweep local pools */
@@ -372,12 +371,10 @@ intnat caml_sweep(struct caml_heap_state* local, intnat work) {
     work -= large_alloc_sweep(local);
   }
 
-#ifdef CAML_VERIFY_HEAP
-  if (work > 0) {
+  if (caml_params->verify_heap && work > 0) {
     /* sweeping is complete, check everything worked */
     verify_swept(local);
   }
-#endif
   return work;
 }
 
@@ -457,8 +454,6 @@ CAMLexport value caml_atom(tag_t tag) {
 void caml_init_major_heap (asize_t size) {
 }
 
-
-#ifdef CAML_VERIFY_HEAP
 
 /* Verify heap invariants.
 
@@ -630,8 +625,6 @@ static void verify_swept (struct caml_heap_state* local) {
   Assert(local->stats.large_words == large_stats.alloced);
   Assert(local->stats.large_blocks == large_stats.live_blocks);
 }
-
-#endif /* CAML_VERIFY_HEAP */
 
 void caml_cycle_heap_stw() {
   struct global_heap_state oldg = global;

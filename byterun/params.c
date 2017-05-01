@@ -82,6 +82,7 @@ void caml_init_startup_params(void)
       case 't': params.trace_flag = 1; break;
 #endif
       case 'v': scanmult (opt, &params.verb_gc); break;
+      case 'V': params.verify_heap = 1; break;
       case 'f': scanmult (opt, &params.fiber_wsz_init); break;
       case 'e': params.eventlog_enabled = 1; break;
       }
