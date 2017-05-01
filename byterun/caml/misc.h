@@ -87,11 +87,6 @@ CAMLextern int caml_failed_assert (char *, char *, int);
 #define CAMLassert(x) ((void) 0)
 #endif
 
-/* Enable heap verification for now */
-#if !defined(CAML_NOASSERT)
-#define CAML_VERIFY_HEAP
-#endif
-
 #ifndef CAML_AVOID_CONFLICTS
 #define Assert CAMLassert
 #endif  

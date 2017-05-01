@@ -1,20 +1,24 @@
 #ifndef CAML_EVENTLOG_H
 #define CAML_EVENTLOG_H
+#include "domain.h"
 
 void caml_setup_eventlog();
 void caml_teardown_eventlog();
 
-typedef enum  {
-  EVENT_GC_START = 9,
-  EVENT_GC_END = 10,
 
-  EVENT_BLOCK_MARKER = 18,
+void caml_ev_start_gc();
+void caml_ev_end_gc();
+void caml_ev_request_stw();
 
-  EVENT_END = 0xffff,
 
-  EVENT_MAX = 100 /* some number bigger than all events */
-} EventType;
+#define EV_PAUSE_BLOCK -1
+#define EV_PAUSE_GC -2
+#define EV_PAUSE_TERMINATE -3
+#define EV_PAUSE_RPC(domain) (domain)
+void caml_ev_pause(long reason);
+void caml_ev_resume();
+void caml_ev_wakeup(struct domain* domain);
 
-void caml_log_event(EventType);
+void caml_ev_msg(const char* msg);
 
 #endif

@@ -19,6 +19,9 @@
 
 PREFIX=~/inst/ocaml
 
+# turn on heap verifier for CI builds
+export OCAMLRUNPARAM=V
+
 set -e
 
 case $XARCH in
