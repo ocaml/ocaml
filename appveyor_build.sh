@@ -82,7 +82,7 @@ run "make opt.opt" make opt.opt
 cd ../build-mingw32
 
 cp config/m-nt.h byterun/caml/m.h
-cp config/s-nt.h caml/byterun/s.h
+cp config/s-nt.h byterun/caml/s.h
 
 PREFIX="C:/Program Files/OCaml-mingw32"
 echo "Edit config/Makefile to set PREFIX=$PREFIX"
