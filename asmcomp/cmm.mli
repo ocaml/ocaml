@@ -54,6 +54,7 @@ type operation =
     Capply of machtype * Debuginfo.t
   | Cextcall of string * machtype * bool * Debuginfo.t
   | Cload of memory_chunk
+  | Cloadmut
   | Calloc
   | Cstore of memory_chunk
   | Caddi | Csubi | Cmuli | Cmulhi | Cdivi | Cmodi
