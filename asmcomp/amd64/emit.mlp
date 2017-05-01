@@ -88,7 +88,7 @@ let load_symbol_addr s =
 
 let locate_domain_state () =
   let bits = Domainstate.minor_heap_align_bits in
-  let dom_mask = Nativeint.(lognot (sub (shift_left one bits) one)) in
+  let dom_mask = Nativeint.(shift_left minus_one bits) in
   (* CR mshinwell: could do (-1) lsl bits *)
   `andq	${emit_nativeint dom_mask}`
 
@@ -244,6 +244,27 @@ let emit_call_bound_errors () =
   List.iter emit_call_bound_error !bound_error_sites;
   if !bound_error_call > 0 then
     `{emit_label !bound_error_call}:	{emit_call "caml_ml_array_bound_error"}\n`
+
+(* read barrier calls *)
+
+type read_barrier_call =
+  { rb_base       : Reg.t;              (* Base register *)
+    rb_off        : Reg.t;              (* Offset register *)
+    rb_dest       : Reg.t;              (* Destination register *)
+    rb_lbl        : label;              (* Entry label *)
+    rb_return_lbl : label;              (* Where to branch after read barrier *)
+    rb_frame      : label }             (* Label of frame descriptor *)
+
+let read_barrier_call_sites = ref ([] : read_barrier_call list)
+
+let emit_call_read_barrier rb =
+  `{emit_label rb.rb_lbl}:\n`;
+  `	movq	{emit_reg rb.rb_base}, %rax\n`;
+  `	movq  {emit_reg rb.rb_off}, %rdx\n`;
+  `	{emit_call "caml_call_read_barrier"}\n`;
+  `{emit_label rb.rb_frame}:\n`;
+  `	movq	%rax, {emit_reg rb.rb_dest}\n`;
+  `	jmp	{emit_label rb.rb_return_lbl}\n`
 
 (* Names for instructions *)
 
@@ -489,6 +510,28 @@ let emit_instr fallthrough i =
           | Double | Double_u ->
             `	movsd	{emit_addressing addr i.arg 0}, {emit_reg dest}\n`
         end
+    | Lop Iloadmut ->
+        `	movq	({emit_reg i.arg.(0)},{emit_reg i.arg.(1)},8), {emit_reg i.res.(0)}\n`;
+        `	movq	{emit_reg i.res.(0)}, %rax\n`;
+        `	xorq	%r15, %rax\n`;
+        let s = Nativeint.(shift_left one Domainstate.minor_heap_align_bits) in
+        `	subq	${emit_nativeint s}, %rax\n`;
+        let bits = Domainstate.minor_heap_align_bits + Domainstate.minor_heap_sel_bits in
+        let minor_val_bitmask = Nativeint.(logor one (shift_left minus_one bits)) in
+        `	movabsq	${emit_nativeint minor_val_bitmask}, %rdx\n`;
+        `	testq	%rdx, %rax\n`;
+        let lbl_call_read_barrier = new_label () in
+        let lbl_return = new_label () in
+        let lbl_frame = record_frame_label i.live Debuginfo.none in
+        `	jz	{emit_label lbl_call_read_barrier}\n`;
+        `{emit_label lbl_return}:\n`;
+        read_barrier_call_sites :=
+          { rb_base = i.arg.(0);
+            rb_off = i.arg.(1);
+            rb_dest = i.res.(0);
+            rb_lbl = lbl_call_read_barrier;
+            rb_return_lbl = lbl_return;
+            rb_frame = lbl_frame } :: !read_barrier_call_sites
     | Lop(Istore(chunk, addr, _)) ->
         begin match chunk with
           | Word ->
@@ -678,7 +721,7 @@ let emit_instr fallthrough i =
         if macosx then
           `	.const\n`
         else if mingw64 || cygwin then
-          `	.section .rdata,\"dr\"\n` 
+          `	.section .rdata,\"dr\"\n`
         else
           `	.section .rodata\n`;
         emit_align 4;
@@ -790,6 +833,7 @@ let fundecl fundecl =
   call_gc_sites := [];
   bound_error_sites := [];
   bound_error_call := 0;
+  read_barrier_call_sites := [];
   `	.text\n`;
   emit_align 16;
   Emitaux.emit_block_header_for_closure ~word_directive:".quad"
@@ -837,6 +881,7 @@ let fundecl fundecl =
     `{emit_label !tailrec_entry_point}:\n`;
     emit_all true fundecl.fun_body;
     List.iter emit_call_gc !call_gc_sites;
+    List.iter emit_call_read_barrier !read_barrier_call_sites;
   end
   else begin
     (* XXX KC: fundecl.fun_body.live does not capture liveness at the start of
@@ -857,6 +902,7 @@ let fundecl fundecl =
     `{emit_label !tailrec_entry_point}:\n`;
     emit_all true fundecl.fun_body;
     List.iter emit_call_gc !call_gc_sites;
+    List.iter emit_call_read_barrier !read_barrier_call_sites;
     `{emit_label handle_overflow}:\n`;
     ` {emit_call "caml_call_realloc_stack"}\n`;
     `{emit_label after_overflow}:\n`;

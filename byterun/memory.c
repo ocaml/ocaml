@@ -80,8 +80,8 @@ CAMLexport int caml_atomic_cas_field (value obj, int field, value oldval, value 
   if (Is_young(obj)) {
     /* non-atomic CAS since only this thread can access the object */
     if (*p == oldval) {
-      *p = newval;
       write_barrier(obj, field, newval);
+      *p = newval;
       return 1;
     } else {
       return 0;
