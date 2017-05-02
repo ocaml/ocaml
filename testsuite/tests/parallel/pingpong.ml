@@ -2,7 +2,7 @@ let r = ref (Some 0)
 
 let () = Gc.minor ()
 
-                            
+
 let rec even lim put =
   match !r with
   | Some n when n = lim -> ()
@@ -25,7 +25,7 @@ let rec odd lim put =
      odd lim put
   | _ -> let _ = [!r] in odd lim put
 
-                                         
+
 
 
 let go n put =
@@ -37,7 +37,7 @@ let go n put =
      Printf.printf "%d\n%!" n
   | None ->
      assert false
-  
+
 
 let () =
   go 100_000 (fun x -> r := Gc.promote_to x r);
