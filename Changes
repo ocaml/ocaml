@@ -115,6 +115,11 @@ Working version
 - GPR#1032: display the output of -dtimings as a hierarchy
   (Valentin Gatien-Baron, review by Gabriel Scherer)
 
+- GPR#1127: move config/{m,s}.h to byterun/caml and install them.
+  User code should not have to include them directly since they are
+  included by other header files
+  (Sébastien Hinderer)
+
 ### Bug fixes
 
 - PR#5927: Type equality broken for conjunctive polymorphic variant tags
@@ -148,6 +153,9 @@ Working version
 
 - PR#7506: pprintast ignores attributes in tails of a list
   (Alain Frisch, report by Kenichi Asai and Gabriel Scherer)
+
+- GPR#1155: Fix a race condition with WAIT_NOHANG on Windows
+  (Jérémie Dimino and David Allsopp)
 
 ### Runtime system:
 
@@ -657,6 +665,12 @@ The complete list of changes is listed below.
 - PR#7443, GPR#990: spurious unused open warning with local open in patterns
   (Florian Angeletti, report by Gabriel Scherer)
 
+- GPR#406: remove polymorphic comparison for Types.constructor_tag in compiler
+  (Dwight Guth, review by Gabriel Radanne, Damien Doligez, Gabriel Scherer,
+   Pierre Chambart, Mark Shinwell)
+
+- GPR#795: remove 256-character limitation on Sys.executable_name
+  (Xavier Leroy)
 - PR#7504: fix warning 8 with unconstrained records
   (Florian Angeletti, report by John Whitington)
 

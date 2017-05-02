@@ -306,8 +306,8 @@ else
 DEF_SYMBOL_PREFIX = '-Dsymbol_prefix=""'
 endif
 
-objinfo_helper$(EXE): objinfo_helper.c ../config/s.h
-	$(CC) $(CFLAGS) $(CPPFLAGS) $(OUTPUTEXE)$@ \
+objinfo_helper$(EXE): objinfo_helper.c ../byterun/caml/s.h
+	$(CC) $(CFLAGS) $(CPPFLAGS) -I../byterun $(OUTPUTEXE)$@ \
           $(DEF_SYMBOL_PREFIX) $(LIBBFD_INCLUDE) $< $(LIBBFD_LINK)
 
 OBJINFO=../compilerlibs/ocamlcommon.cma \

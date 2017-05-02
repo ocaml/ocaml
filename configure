@@ -2045,8 +2045,9 @@ echo "MAX_TESTSUITE_DIR_RETRIES=$max_testsuite_dir_retries" >> Makefile
 
 
 rm -f tst hasgot.c
-rm -f ../m.h ../s.h ../Makefile
-mv m.h s.h Makefile ..
+rm -f ../../byterun/caml/m.h ../../byterun/caml/s.h ../Makefile
+mv m.h s.h ../../byterun/caml/
+mv Makefile ..
 
 # Print a summary
 

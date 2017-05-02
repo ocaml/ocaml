@@ -17,6 +17,7 @@ include ../config/Makefile
 
 INSTALL_BINDIR=$(DESTDIR)$(BINDIR)
 INSTALL_LIBDIR=$(DESTDIR)$(LIBDIR)
+INSTALL_INCDIR=$(INSTALL_LIBDIR)/caml
 
 # The PROGRAMS (resp. LIBRARIES) variable list the files to build and
 # install as programs in $(INSTALL_BINDIR) (resp. libraries in
@@ -105,11 +106,8 @@ ld.conf: ../config/Makefile
 install:
 	cp $(PROGRAMS) "$(INSTALL_BINDIR)"
 	cp $(LIBRARIES) "$(INSTALL_LIBDIR)"
-	mkdir -p "$(INSTALL_LIBDIR)/caml"
-	for i in caml/*.h; do \
-	  sed -f ../tools/cleanup-header $$i \
-	      > "$(INSTALL_LIBDIR)/$$i"; \
-	done
+	mkdir -p "$(INSTALL_INCDIR)"
+	cp caml/*.h "$(INSTALL_INCDIR)"
 
 # If primitives contain duplicated lines (e.g. because the code is defined
 # like

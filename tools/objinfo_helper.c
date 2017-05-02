@@ -12,7 +12,7 @@
 /*                                                                        */
 /**************************************************************************/
 
-#include "../config/s.h"
+#include "caml/s.h"
 #include <stdio.h>
 
 #ifdef HAS_LIBBFD

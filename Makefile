@@ -976,7 +976,7 @@ alldepend:
 else
 alldepend: depend
 	for dir in $(subdirs); do \
-	  $(MAKE) -C $$dir depend; \
+	  $(MAKE) -C $$dir depend || exit; \
 	done
 endif
 
@@ -1280,7 +1280,7 @@ partialclean::
 depend: beforedepend
 	(for d in utils parsing typing bytecomp asmcomp middle_end \
 	 middle_end/base_types driver toplevel; \
-	 do $(CAMLDEP) -slash $(DEPFLAGS) $$d/*.mli $$d/*.ml; \
+	 do $(CAMLDEP) -slash $(DEPFLAGS) $$d/*.mli $$d/*.ml || exit; \
 	 done) > .depend
 	$(CAMLDEP) -slash $(DEPFLAGS) -native \
 		-impl driver/compdynlink.mlopt >> .depend
@@ -1291,7 +1291,7 @@ depend: beforedepend
 distclean: clean
 	rm -f boot/ocamlrun boot/ocamlrun$(EXE) boot/camlheader \
 	      boot/ocamlyacc boot/*.cm* boot/libcamlrun.$(A)
-	rm -f config/Makefile config/m.h config/s.h
+	rm -f config/Makefile byterun/caml/m.h byterun/caml/s.h
 	rm -f tools/*.bak
 	rm -f ocaml ocamlc
 	rm -f testsuite/_log

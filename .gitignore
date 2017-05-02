@@ -105,6 +105,8 @@
 /bytecomp/opcodes.ml
 
 /byterun/caml/jumptbl.h
+/byterun/caml/m.h
+/byterun/caml/s.h
 /byterun/primitives
 /byterun/prims.c
 /byterun/caml/opnames.h
@@ -119,8 +121,6 @@
 /byterun/*.d.c
 /byterun/*.pic.c
 
-/config/m.h
-/config/s.h
 /config/Makefile
 /config/auto-aux/hashbang4
 
