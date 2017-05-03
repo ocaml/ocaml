@@ -190,6 +190,7 @@ method class_of_operation op =
   | Iextcall _ -> assert false                 (* treated specially *)
   | Istackoffset _ -> Op_other
   | Iload(_,_) -> Op_load
+  | Iloadmut -> assert false                   (* treated speacially *)
   | Istore(_,_,asg) -> Op_store asg
   | Ialloc _ -> assert false                   (* treated specially *)
   | Iintop(Icheckbound) -> Op_checkbound
@@ -248,6 +249,10 @@ method private cse n i =
          block).  In the absence of more precise typing information,
          we just forget everything. *)
        {i with next = self#cse empty_numbering i.next}
+  | Iop Iloadmut ->
+      let n1 = set_unknown_regs n (Proc.destroyed_at_oper i.desc) in
+      let n2 = set_unknown_regs n1 i.res in
+      {i with next = self#cse n2 i.next}
   | Iop op ->
       begin match self#class_of_operation op with
       | Op_pure | Op_checkbound | Op_load ->

@@ -53,6 +53,7 @@ let operation = function
   | Cextcall(lbl, ty, alloc, d) ->
       Printf.sprintf "extcall \"%s\"%s" lbl (Debuginfo.to_string d)
   | Cload Word -> "load"
+  | Cloadmut -> "load_mut"
   | Cload c -> Printf.sprintf "load %s" (chunk c)
   | Calloc -> "alloc"
   | Cstore Word -> "store"
