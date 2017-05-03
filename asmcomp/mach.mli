@@ -46,6 +46,7 @@ type operation =
   | Iextcall of string * bool * int (* false = noalloc, true = alloc, n = stack_args *)
   | Istackoffset of int
   | Iload of Cmm.memory_chunk * Arch.addressing_mode
+  | Iloadmut
   | Istore of Cmm.memory_chunk * Arch.addressing_mode * bool
                                  (* false = initialization, true = assignment *)
   | Ialloc of int

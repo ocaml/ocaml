@@ -479,6 +479,109 @@ CFI_STARTPROC
         ret
 CFI_ENDPROC
 
+/* Arguments: %rax = base; %rdx = offset. */
+FUNCTION(G(caml_call_read_barrier))
+CFI_STARTPROC
+        /* Save %r10, and use it as a temp to switch stacks. */
+        pushq   %r10; CFI_ADJUST(8)
+        LOAD_TL_VAR(caml_system_sp, %r10)
+        popq    -8(%r10); CFI_ADJUST(-8)
+        SWITCH_OCAML_TO_C(%r10)
+        movq    -8(%rsp), %r10
+#ifdef WITH_FRAME_POINTERS
+        ENTER_FUNCTION
+#else
+        pushq   %rbp; CFI_ADJUST(8);
+#endif
+    /* Build array of registers, save it into OCaml stack's gc_regs slot */
+        pushq   %r11; CFI_ADJUST (8);
+        pushq   %r10; CFI_ADJUST (8);
+        pushq   %r13; CFI_ADJUST (8);
+        pushq   %r12; CFI_ADJUST (8);
+        pushq   %r9; CFI_ADJUST (8);
+        pushq   %r8; CFI_ADJUST (8);
+        pushq   %rcx; CFI_ADJUST (8);
+        pushq   %rdx; CFI_ADJUST (8);
+        pushq   %rsi; CFI_ADJUST (8);
+        pushq   %rdi; CFI_ADJUST (8);
+        pushq   %rbx; CFI_ADJUST (8);
+        pushq   %rax; CFI_ADJUST (8);
+    /* Update in OCaml stack's context, the pointer to gc_regs */
+        movq    %rsp, C_ARG_1;
+        PREPARE_FOR_C_CALL;
+        call    GCALL(caml_update_gc_regs_slot);
+        CLEANUP_AFTER_C_CALL;
+    /* Set up arguments for caml_read_barrier */
+        movq    (%rsp), C_ARG_1;        /* rax = base */
+        movq    32(%rsp), C_ARG_2;      /* rdx = offset */
+    /* Save caml_young_ptr */
+        STORE_TL_VAR(%r15, caml_young_ptr);
+    /* Save floating-point registers */
+        subq    $(16*8), %rsp; CFI_ADJUST (16*8);
+        movsd   %xmm0, 0*8(%rsp);
+        movsd   %xmm1, 1*8(%rsp);
+        movsd   %xmm2, 2*8(%rsp);
+        movsd   %xmm3, 3*8(%rsp);
+        movsd   %xmm4, 4*8(%rsp);
+        movsd   %xmm5, 5*8(%rsp);
+        movsd   %xmm6, 6*8(%rsp);
+        movsd   %xmm7, 7*8(%rsp);
+        movsd   %xmm8, 8*8(%rsp);
+        movsd   %xmm9, 9*8(%rsp);
+        movsd   %xmm10, 10*8(%rsp);
+        movsd   %xmm11, 11*8(%rsp);
+        movsd   %xmm12, 12*8(%rsp);
+        movsd   %xmm13, 13*8(%rsp);
+        movsd   %xmm14, 14*8(%rsp);
+        movsd   %xmm15, 15*8(%rsp);
+    /* Call the read barrier */
+        PREPARE_FOR_C_CALL;
+        call    GCALL(caml_read_barrier);
+    /* Result is in %rax */
+        CLEANUP_AFTER_C_CALL;
+    /* Restore caml_young_ptr */
+        LOAD_TL_VAR(caml_young_ptr, %r15);
+    /* Restore all regs used by the code generator */
+        movsd   0*8(%rsp), %xmm0;
+        movsd   1*8(%rsp), %xmm1;
+        movsd   2*8(%rsp), %xmm2;
+        movsd   3*8(%rsp), %xmm3;
+        movsd   4*8(%rsp), %xmm4;
+        movsd   5*8(%rsp), %xmm5;
+        movsd   6*8(%rsp), %xmm6;
+        movsd   7*8(%rsp), %xmm7;
+        movsd   8*8(%rsp), %xmm8;
+        movsd   9*8(%rsp), %xmm9;
+        movsd   10*8(%rsp), %xmm10;
+        movsd   11*8(%rsp), %xmm11;
+        movsd   12*8(%rsp), %xmm12;
+        movsd   13*8(%rsp), %xmm13;
+        movsd   14*8(%rsp), %xmm14;
+        movsd   15*8(%rsp), %xmm15;
+        addq    $(16*8), %rsp; CFI_ADJUST(-16*8);
+        addq    $8, %rsp; CFI_ADJUST(-8); /* Don't overwrite result in %rax */
+        popq    %rbx; CFI_ADJUST(-8);
+        popq    %rdi; CFI_ADJUST(-8);
+        popq    %rsi; CFI_ADJUST(-8);
+        addq    $8, %rsp; CFI_ADJUST(-8); /* Don't bother restoring  %rdx. */
+        popq    %rcx; CFI_ADJUST(-8);
+        popq    %r8; CFI_ADJUST(-8);
+        popq    %r9; CFI_ADJUST(-8);
+        popq    %r12; CFI_ADJUST(-8);
+        popq    %r13; CFI_ADJUST(-8);
+        popq    %r10; CFI_ADJUST(-8);
+        popq    %r11; CFI_ADJUST(-8)
+#ifdef WITH_FRAME_POINTERS
+        LEAVE_FUNCTION;
+#else
+        popq    %rbp; CFI_ADJUST(-8)
+#endif
+    /* %rdx is not live at this point. */
+        SWITCH_C_TO_OCAML(%rdx)
+    /* Return to caller */
+        ret
+CFI_ENDPROC
+
 FUNCTION(G(caml_alloc1))
 CFI_STARTPROC
 LBL(caml_alloc1):

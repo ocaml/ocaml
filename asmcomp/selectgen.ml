@@ -31,6 +31,7 @@ let oper_result_type = function
       | Single | Double | Double_u -> typ_float
       | _ -> typ_int
       end
+  | Cloadmut -> typ_addr
   | Calloc -> typ_addr
   | Cstore c -> typ_void
   | Caddi | Csubi | Cmuli | Cmulhi | Cdivi | Cmodi |
@@ -253,6 +254,7 @@ method select_operation op args =
   | (Cload chunk, [arg]) ->
       let (addr, eloc) = self#select_addressing chunk arg in
       (Iload(chunk, addr), [eloc])
+  | (Cloadmut, _) -> (Iloadmut, args)
   | (Cstore chunk, [arg1; arg2]) ->
       let (addr, eloc) = self#select_addressing chunk arg1 in
       if chunk = Word then begin

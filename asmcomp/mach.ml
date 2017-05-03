@@ -46,6 +46,7 @@ type operation =
   | Iextcall of string * bool * int
   | Istackoffset of int
   | Iload of Cmm.memory_chunk * Arch.addressing_mode
+  | Iloadmut
   | Istore of Cmm.memory_chunk * Arch.addressing_mode * bool
   | Ialloc of int
   | Iintop of integer_operation

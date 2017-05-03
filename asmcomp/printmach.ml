@@ -119,6 +119,8 @@ let operation op arg ppf res =
   | Iload(chunk, addr) ->
       fprintf ppf "%s[%a]"
        (Printcmm.chunk chunk) (Arch.print_addressing reg addr) arg
+  | Iloadmut ->
+      fprintf ppf "mut_load(%a + %a)" reg arg.(0) reg arg.(1)
   | Istore(chunk, addr, is_assign) ->
       fprintf ppf "%s[%a] := %a %s"
        (Printcmm.chunk chunk)

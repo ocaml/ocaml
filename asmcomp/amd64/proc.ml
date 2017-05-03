@@ -270,6 +270,7 @@ let destroyed_at_oper = function
   | Iop(Ialloc _ | Iintop(Imulh | Icomp _) | Iintop_imm((Icomp _), _))
         -> [| rax |]
   | Iswitch(_, _) -> [| rax; rdx |]
+  | Iop Iloadmut -> [| rax; rdx |]
   | _ ->
     if fp then
 (* prevent any use of the frame pointer ! *)
@@ -306,7 +307,7 @@ let max_register_pressure = function
 
 let op_is_pure = function
   | Icall_ind | Icall_imm _ | Itailcall_ind | Itailcall_imm _
-  | Iextcall _ | Istackoffset _ | Istore _ | Ialloc _
+  | Iextcall _ | Istackoffset _ | Istore _ | Ialloc _ | Iloadmut
   | Iintop(Icheckbound) | Iintop_imm(Icheckbound, _) -> false
   | Ispecific(Ilea _) -> true
   | Ispecific _ -> false
