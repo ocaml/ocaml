@@ -95,6 +95,8 @@ let all_phys_regs =
 let phys_reg n =
   if n < 100 then hard_int_reg.(n) else hard_float_reg.(n - 100)
 
+let reg_x0 = phys_reg 0
+let reg_x1 = phys_reg 1
 let reg_x15 = phys_reg 15
 let reg_d7 = phys_reg 107
 
@@ -183,6 +185,7 @@ let destroyed_at_oper = function
       else destroyed_at_c_call
   | Iop(Ialloc _) ->
       [| reg_x15 |]
+  | Iop Iloadmut -> [| reg_x0; reg_x1 |]
   | Iop(Iintoffloat | Ifloatofint | Iload(Single, _) | Istore(Single, _, _)) ->
       [| reg_d7 |]            (* d7 / s7 destroyed *)
   | _ -> [||]
@@ -208,7 +211,7 @@ let max_register_pressure = function
 
 let op_is_pure = function
   | Icall_ind | Icall_imm _ | Itailcall_ind | Itailcall_imm _
-  | Iextcall _ | Istackoffset _ | Istore _ | Ialloc _
+  | Iextcall _ | Istackoffset _ | Istore _ | Ialloc _ | Iloadmut
   | Iintop(Icheckbound) | Iintop_imm(Icheckbound, _)
   | Ispecific(Ishiftcheckbound _) -> false
   | _ -> true
