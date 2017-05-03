@@ -479,10 +479,15 @@ CFI_STARTPROC
         ret
 CFI_ENDPROC
 
-/* Arguments: %rax = base; %rdx = offset. Temp register: %rcx */
+/* Arguments: %rax = base; %rdx = offset. */
 FUNCTION(G(caml_call_read_barrier))
 CFI_STARTPROC
-        SWITCH_OCAML_TO_C(%rcx)
+        /* Save %r10, and use it as a temp to switch stacks. */
+        pushq   %r10; CFI_ADJUST(8)
+        LOAD_TL_VAR(caml_system_sp, %r10)
+        popq    -8(%r10); CFI_ADJUST(-8)
+        SWITCH_OCAML_TO_C(%r10)
+        movq    -8(%rsp), %r10
 #ifdef WITH_FRAME_POINTERS
         ENTER_FUNCTION
 #else
@@ -554,11 +559,11 @@ CFI_STARTPROC
         movsd   14*8(%rsp), %xmm14;
         movsd   15*8(%rsp), %xmm15;
         addq    $(16*8), %rsp; CFI_ADJUST(-16*8);
-        addq    $8,%rsp; CFI_ADJUST(-8); /* Don't overwrite result in %rax */
+        addq    $8, %rsp; CFI_ADJUST(-8); /* Don't overwrite result in %rax */
         popq    %rbx; CFI_ADJUST(-8);
         popq    %rdi; CFI_ADJUST(-8);
         popq    %rsi; CFI_ADJUST(-8);
-        popq    %rdx; CFI_ADJUST(-8);
+        addq    $8, %rsp; CFI_ADJUST(-8); /* Don't bother restoring  %rdx. */
         popq    %rcx; CFI_ADJUST(-8);
         popq    %r8; CFI_ADJUST(-8);
         popq    %r9; CFI_ADJUST(-8);
@@ -571,7 +576,8 @@ CFI_STARTPROC
 #else
         popq    %rbp; CFI_ADJUST(-8)
 #endif
-        SWITCH_C_TO_OCAML(%rcx)
+    /* %rdx is not live at this point. */
+        SWITCH_C_TO_OCAML(%rdx)
     /* Return to caller */
         ret
 CFI_ENDPROC
