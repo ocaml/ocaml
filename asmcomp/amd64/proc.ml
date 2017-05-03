@@ -270,7 +270,7 @@ let destroyed_at_oper = function
   | Iop(Ialloc _ | Iintop(Imulh | Icomp _) | Iintop_imm((Icomp _), _))
         -> [| rax |]
   | Iswitch(_, _) -> [| rax; rdx |]
-  | Iop Iloadmut -> [| rax; rdx; rcx |]
+  | Iop Iloadmut -> [| rax; rdx |]
   | _ ->
     if fp then
 (* prevent any use of the frame pointer ! *)
