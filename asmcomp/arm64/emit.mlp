@@ -35,8 +35,11 @@ let reg_alloc_limit = phys_reg 25   (* x28 *)
 let reg_tmp1 = phys_reg 26          (* x16 *)
 let reg_tmp2 = phys_reg 27          (* x17 *)
 let reg_x15 = phys_reg 15           (* x15*)
-let reg_stack_arg_start = phys_reg 16  (* x19 *)
-let reg_stack_arg_end  = phys_reg 17  (* x20 *)
+let reg_x19 = phys_reg 16           (* x19 *)
+let reg_x20 = phys_reg 17           (* x20 *)
+let reg_x0 = phys_reg 0             (* x19 *)
+let reg_x1 = phys_reg 1             (* x20 *)
+
 
 (* Output a label *)
 
@@ -183,6 +186,27 @@ let bound_error_label dbg =
 let emit_call_bound_error bd =
   `{emit_label bd.bd_lbl}:	bl	{emit_symbol "caml_ml_array_bound_error"}\n`;
   `{emit_label bd.bd_frame_lbl}:\n`
+
+(* read barrier calls *)
+
+type read_barrier_call =
+  { rb_base       : Reg.t;              (* Base register *)
+    rb_off        : Reg.t;              (* Offset register *)
+    rb_dest       : Reg.t;              (* Destination register *)
+    rb_lbl        : label;              (* Entry label *)
+    rb_return_lbl : label;              (* Where to branch after read barrier *)
+    rb_frame      : label }             (* Label of frame descriptor *)
+
+let read_barrier_call_sites = ref ([] : read_barrier_call list)
+
+let emit_call_read_barrier rb =
+  `{emit_label rb.rb_lbl}:\n`;
+  `	mov	{emit_reg reg_x0}, {emit_reg rb.rb_base}\n`;
+  `	mov	{emit_reg reg_x1}, {emit_reg rb.rb_off}\n`;
+  `	bl	{emit_symbol "caml_call_read_barrier"}\n`;
+  `{emit_label rb.rb_frame}:\n`;
+  `	mov	{emit_reg rb.rb_dest}, {emit_reg reg_x0}\n`;
+  `	b	{emit_label rb.rb_return_lbl}\n`
 
 (* Names of various instructions *)
 
@@ -444,6 +468,7 @@ module BR = Branch_relaxation.Make (struct
     | Lop (Iload (size, addr)) | Lop (Istore (size, addr, _)) ->
       let based = match addr with Iindexed _ -> 0 | Ibased _ -> 1 in
       based + begin match size with Single -> 2 | _ -> 1 end
+    | Lop Iloadmut -> 6
     | Lop (Ialloc _) when !fastcode_flag -> 4
     | Lop (Ispecific (Ifar_alloc _)) when !fastcode_flag -> 5
     | Lop (Ialloc num_words) | Lop (Ispecific (Ifar_alloc num_words)) ->
@@ -606,8 +631,8 @@ let emit_instr i =
           output_epilogue (fun () -> `	b	{emit_symbol s}\n`)
     | Lop(Iextcall(s, alloc, stack_off)) ->
         if stack_off > 0 then begin
-          `	mov {emit_reg reg_stack_arg_start}, sp\n`;
-          `	add {emit_reg reg_stack_arg_end}, sp, #{emit_int (Misc.align stack_off 16)}\n`;
+          `	mov {emit_reg reg_x19}, sp\n`;
+          `	add {emit_reg reg_x20}, sp, #{emit_int (Misc.align stack_off 16)}\n`;
           emit_load_symbol_addr reg_x15 s;
           `	bl	{emit_symbol "caml_c_call_stack_args"}\n`;
           `{record_frame i.live i.dbg}\n`;
@@ -658,6 +683,27 @@ let emit_instr i =
         | Word | Double | Double_u ->
             `	ldr	{emit_reg dst}, {emit_addressing addr base}\n`
         end
+    | Lop Iloadmut ->
+        `	ldr	{emit_reg i.res.(0)}, [{emit_reg i.arg.(0)},{emit_reg i.arg.(1)}, lsl 3]\n`;
+        `	eor {emit_reg reg_x0}, {emit_reg i.res.(0)}, {emit_reg reg_alloc_ptr}\n`;
+        let s = Nativeint.(shift_left one Domainstate.minor_heap_align_bits) in
+        `	mov {emit_reg reg_x1}, #{emit_nativeint s}\n`;
+        `	sub	{emit_reg reg_x0}, {emit_reg reg_x0}, {emit_reg reg_x1}\n`;
+        let bits = Domainstate.minor_heap_align_bits + Domainstate.minor_heap_sel_bits in
+        let minor_val_bitmask = Nativeint.(logor one (shift_left minus_one bits)) in
+        `	tst	{emit_reg reg_x0}, #{emit_nativeint minor_val_bitmask}\n`;
+        let lbl_call_read_barrier = new_label () in
+        let lbl_return = new_label () in
+        let lbl_frame = record_frame_label i.live Debuginfo.none in
+        `	b.eq	{emit_label lbl_call_read_barrier}\n`;
+        `{emit_label lbl_return}:\n`;
+        read_barrier_call_sites :=
+          { rb_base = i.arg.(0);
+            rb_off = i.arg.(1);
+            rb_dest = i.res.(0);
+            rb_lbl = lbl_call_read_barrier;
+            rb_return_lbl = lbl_return;
+            rb_frame = lbl_frame } :: !read_barrier_call_sites
     | Lop(Istore(size, addr, _)) ->
         let src = i.arg.(0) in
         let base =
@@ -948,6 +994,7 @@ let fundecl fundecl =
   stack_offset := 0;
   call_gc_sites := [];
   bound_error_sites := [];
+  read_barrier_call_sites := [];
   `	.text\n`;
   `	.align	3\n`;
   Emitaux.emit_block_header_for_closure ~word_directive:".quad"
@@ -994,9 +1041,10 @@ let fundecl fundecl =
      s < stack_threshold_size + profile_slop
   then begin
     `{emit_label !tailrec_entry_point}:\n`;
-      emit_all fundecl.fun_body;
-      List.iter emit_call_gc !call_gc_sites;
-      List.iter emit_call_bound_error !bound_error_sites;
+    emit_all fundecl.fun_body;
+    List.iter emit_call_gc !call_gc_sites;
+    List.iter emit_call_read_barrier !read_barrier_call_sites;
+    List.iter emit_call_bound_error !bound_error_sites;
   end
   else begin
     (* XXX KC: fundecl.fun_body.live does not capture liveness at the start of
@@ -1015,6 +1063,7 @@ let fundecl fundecl =
     `{emit_label !tailrec_entry_point}:\n`;
     emit_all fundecl.fun_body;
     List.iter emit_call_gc !call_gc_sites;
+    List.iter emit_call_read_barrier !read_barrier_call_sites;
     List.iter emit_call_bound_error !bound_error_sites;
     `{emit_label handle_overflow}:\n`;
     `	bl {emit_symbol "caml_call_realloc_stack"}\n`;
