@@ -493,7 +493,7 @@ class printable_colored_point y c =
     val c = c
     method color = c
     inherit printable_point y as super
-    method print =
+    method! print =
       print_string "(";
       super#print;
       print_string ", ";
@@ -507,6 +507,27 @@ A private method that has been hidden in the parent class is no longer
 visible, and is thus not overridden. Since initializers are treated as
 private methods, all initializers along the class hierarchy are evaluated,
 in the order they are introduced.
+
+Note that for clarity's sake, the method "print" is explicitly marked as
+overriding another definition by annotating the "method" keyword with
+an exclamation mark "!". If the method "print" were not overriding the
+"print" method of "printable_point", the compiler would raise an error:
+\begin{caml_example}[error]
+  object
+    method! m = ()
+  end;;
+\end{caml_example}
+
+This explicit overriding annotation also works
+for "val" and "inherit":
+\begin{caml_example}
+class another_printable_colored_point y c c' =
+  object (self)
+  inherit printable_point y
+  inherit! printable_colored_point y c
+  val! c = c'
+  end;;
+\end{caml_example}
 
 \section{Parameterized classes}
 \pdfsection{Parameterized classes}
@@ -677,7 +698,7 @@ Here is an example of method overriding.
 class intlist_rev l =
   object
     inherit intlist l
-    method fold f accu = List.fold_left f accu (List.rev l)
+    method! fold f accu = List.fold_left f accu (List.rev l)
   end;;
 \end{caml_example*}
 The following idiom separates description and definition.
