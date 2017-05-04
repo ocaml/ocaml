@@ -238,6 +238,10 @@ CAMLprim value caml_hash(value count, value limit, value seed, value obj)
         #endif
         h = 42;
         break;
+      case Stack_tag:
+        /* All stacks hash to the same value, since we have no idea how to distinguish them. */
+        h = 42;
+        break;
       case Forward_tag:
         /* PR#6361: we can have a loop here, so limit the number of
            Forward_tag links being followed */
