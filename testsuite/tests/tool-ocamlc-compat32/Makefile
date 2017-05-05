@@ -1,7 +1,16 @@
 BASEDIR=../..
 
-compile:
-	printf " ... testing -compat-32"
+.PHONY: default
+default:
+	@$(OCAMLC) is_64bit.ml -o is_64bit.byte
+	@if $(OCAMLRUN) ./is_64bit.byte; \
+	then $(MAKE) run; \
+	else echo 'skipped (not compiled in 64bit)'; \
+	fi
+
+.PHONY: run
+run:
+	@printf " ... testing -compat-32"
 	@$(OCAMLC) -compat-32 -c a.ml 2>&1 | xargs echo ${} > test.result  
 	@$(OCAMLC) -c a.ml
 	@$(OCAMLC) -compat-32 -a a.cmo -o a.cma 2>&1 | xargs echo ${} >> test.result 
