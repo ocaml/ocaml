@@ -35,8 +35,8 @@ if [[ $1 = "msvc32-only" ]] ; then
   cp flexdll*_msvc.obj "$PREFIX/bin/flexdll"
 
   cd $APPVEYOR_BUILD_FOLDER/../build-msvc32
-  cp config/m-nt.h config/m.h
-  cp config/s-nt.h config/s.h
+  cp config/m-nt.h byterun/caml/m.h
+  cp config/s-nt.h byterun/caml/s.h
 
   eval $(tools/msvs-promote-path)
 
