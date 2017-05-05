@@ -55,6 +55,9 @@ Working version
 
 ### Compiler user-interface and warnings:
 
+- GPR#896: "-compat-32" is now taken into account when building .cmo/.cma
+  (Hugo Heuzard)
+
 - GPR#948: the compiler now reports warnings-as-errors by prefixing
   them with "Error (warning ..):", instead of "Warning ..:" and
   a trailing "Error: Some fatal warnings were triggered" message.

@@ -266,7 +266,9 @@ let package_object_files ppf files targetfile targetname coercion =
         cu_force_link = !force_link;
         cu_debug = if pos_final > pos_debug then pos_debug else 0;
         cu_debugsize = pos_final - pos_debug } in
-    output_value oc compunit;
+    Emitcode.marshal_to_channel_with_possibly_32bit_compat
+      ~filename:targetfile ~kind:"bytecode unit"
+      oc compunit;
     seek_out oc pos_depl;
     output_binary_int oc pos_final;
     close_out oc
