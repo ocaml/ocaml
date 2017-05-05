@@ -59,6 +59,9 @@ Working version
   values.
   (Daniel Bünzli, review by Damien Doligez, Max Mouratov)
 
+- Add Unix.LongInode module for stat calls returning 64bit inode numbers
+  (Christopher Zimmermann, review by Gabriel Scherer and Xavier Leroy)
+
 ### Compiler user-interface and warnings:
 
 - GPR#896: "-compat-32" is now taken into account when building .cmo/.cma
