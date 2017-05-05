@@ -31,6 +31,12 @@ Working version
 - GPR#1150: Fix typo in arm64 assembler directives
   (KC Sivaramakrishnan)
 
+- GPR#1143: tweaked several allocation functions in the runtime by
+  checking for likely conditions before unlikely ones and eliminating
+  some redundant checks.
+  (Markus Mottl, review by Alain Frisch, Xavier Leroy, Gabriel Scherer,
+  Mark Shinwell and Leo White)
+
 ### Standard library:
 
 - GRP#1119: Change Set (private) type to inline records.
