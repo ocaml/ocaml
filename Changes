@@ -59,6 +59,9 @@ Working version
   values.
   (Daniel Bünzli, review by Damien Doligez, Max Mouratov)
 
+- Resurrect tabulation boxes in module Format. Rewrite/extend documentation
+  of tabulation boxes.
+
 ### Compiler user-interface and warnings:
 
 - GPR#896: "-compat-32" is now taken into account when building .cmo/.cma
