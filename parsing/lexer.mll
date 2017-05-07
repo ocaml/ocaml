@@ -22,12 +22,14 @@ type directive_value =
   | Dir_float of float
   | Dir_int of int
   | Dir_string of string
+  | Dir_null 
 
 type directive_type = 
   | Dir_type_bool 
   | Dir_type_float 
   | Dir_type_int 
   | Dir_type_string 
+  | Dir_type_null 
 
 let type_of_directive x =
   match x with 
@@ -35,6 +37,7 @@ let type_of_directive x =
   | Dir_float _ -> Dir_type_float
   | Dir_int _ -> Dir_type_int
   | Dir_string _ -> Dir_type_string
+  | Dir_null -> Dir_type_null
 
 let string_of_type_directive x = 
   match x with 
@@ -42,6 +45,7 @@ let string_of_type_directive x =
   | Dir_type_float  -> "float"
   | Dir_type_int  -> "int"
   | Dir_type_string  -> "string"
+  | Dir_type_null -> "null"
 
 type error =
   | Illegal_character of char
@@ -76,6 +80,18 @@ let directive_built_in_values  =
 
 let replace_directive_built_in_value k v = 
   Hashtbl.replace directive_built_in_values k v 
+
+let remove_directive_built_in_value k  = 
+  Hashtbl.replace directive_built_in_values k Dir_null
+
+let replace_directive_int k v = 
+  Hashtbl.replace directive_built_in_values k (Dir_int v)
+
+let replace_directive_bool k v = 
+  Hashtbl.replace directive_built_in_values k (Dir_bool v)
+
+let replace_directive_string k v = 
+  Hashtbl.replace directive_built_in_values k (Dir_string v)
 
 let () =
   (* Note we use {!Config} instead of {!Sys} becasue 
@@ -188,34 +204,79 @@ let semver loc lhs str =
     | `Exact -> lversion = version 
 
 
-    
-let defined str = 
-  try ignore @@ Sys.getenv str; true with _ -> 
-    try ignore @@ find_directive_built_in_value str ; true with _ ->  false
+let pp_directive_value fmt (x : directive_value) =
+  match x with
+  | Dir_bool b -> Format.pp_print_bool fmt b
+  | Dir_int b -> Format.pp_print_int fmt b
+  | Dir_float b -> Format.pp_print_float fmt b
+  | Dir_string s  -> Format.fprintf fmt "%S" s
+  | Dir_null -> Format.pp_print_string fmt "null"    
+
+let list_variables fmt = 
+  iter_directive_built_in_value 
+    (fun s  dir_value ->
+       Format.fprintf
+         fmt "@[%s@ %a@]@."
+         s pp_directive_value dir_value
+    )
+
+let defined str =
+  begin match  find_directive_built_in_value str with 
+  |  Dir_null -> false 
+  | _ ->  true
+  | exception _ -> 
+      try ignore @@ Sys.getenv str; true with _ ->  false 
+  end
+
 let query loc str =
-  match Sys.getenv str with
-  | v ->
-      begin 
+  begin match find_directive_built_in_value str with
+  | Dir_null -> Dir_bool false
+  | v -> v
+  | exception Not_found ->
+      begin match Sys.getenv str with 
+      | v -> 
+          begin 
+            try Dir_bool (bool_of_string v) with 
+              _ -> 
+                begin 
+                  try Dir_int (int_of_string v )
+                  with 
+                    _ -> 
+                      begin try (Dir_float (float_of_string v)) 
+                      with _ -> Dir_string v
+                      end
+                end
+          end
+      | exception Not_found -> 
+          Dir_bool false
+      end
+  end
+
+
+let define_key_value key v  =
+  if String.length key > 0
+      && Char.uppercase (key.[0]) = key.[0] then 
+    begin 
+      replace_directive_built_in_value key
+      begin
+        (* NEED Sync up across {!lexer.mll} {!bspp.ml} and here,
+           TODO: put it in {!lexer.mll}
+        *)
         try Dir_bool (bool_of_string v) with 
           _ -> 
-            begin 
-              try Dir_int (int_of_string v )
-              with 
-                _ -> 
-                  begin try (Dir_float (float_of_string v)) 
-                  with _ -> Dir_string v
-                  end
-            end
-      end
+          begin 
+            try Dir_int (int_of_string v )
+            with 
+              _ -> 
+              begin try (Dir_float (float_of_string v)) 
+                with _ -> Dir_string v
+              end
+          end
+      end;
+    true
+    end
+  else false 
 
-
-  | exception Not_found ->
-      begin
-        try find_directive_built_in_value str 
-        with
-        | Not_found ->
-            Dir_bool false
-      end
 
 let value_of_token loc (t : Parser.token)  = 
   match t with 

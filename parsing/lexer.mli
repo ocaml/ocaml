@@ -16,17 +16,14 @@ val init : unit -> unit
 val token: Lexing.lexbuf -> Parser.token
 val skip_sharp_bang: Lexing.lexbuf -> unit
 
-type directive_type = 
-  | Dir_type_bool 
-  | Dir_type_float 
-  | Dir_type_int 
-  | Dir_type_string 
+type directive_type 
 
-type directive_value =
-  | Dir_bool of bool 
-  | Dir_float of float
-  | Dir_int of int
-  | Dir_string of string
+(* type directive_value = *)
+(*   | Dir_bool of bool  *)
+(*   | Dir_float of float *)
+(*   | Dir_int of int *)
+(*   | Dir_string of string *)
+(*   | Dir_null *)
 
 type error =
   | Illegal_character of char
@@ -78,18 +75,27 @@ val set_preprocessor :
   unit
 
 
-val replace_directive_built_in_value : 
-  string ->  directive_value -> unit
+(* val replace_directive_built_in_value :  *)
+(*   string ->  directive_value -> unit *)
 
 (** Raises Not_found *)
-val find_directive_built_in_value :
-  string -> directive_value
+(* val find_directive_built_in_value : *)
+(*   string -> directive_value *)
 
-val iter_directive_built_in_value : 
-  (string -> directive_value -> unit) -> unit
+(* val iter_directive_built_in_value :  *)
+(*   (string -> directive_value -> unit) -> unit *)
 
 
 (** semantic version predicate *)
 val semver : Location.t ->   string -> string -> bool
 
 val filter_directive_from_lexbuf : Lexing.lexbuf -> (int * int) list
+
+val replace_directive_int : string -> int -> unit
+val replace_directive_string : string -> string -> unit
+val replace_directive_bool : string -> bool -> unit 
+val remove_directive_built_in_value : string -> unit
+
+(** @return false means failed to define *)
+val define_key_value : string -> string -> bool
+val list_variables : Format.formatter -> unit
