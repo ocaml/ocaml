@@ -35,8 +35,8 @@ if [[ $1 = "msvc32-only" ]] ; then
   cp flexdll*_msvc.obj "$PREFIX/bin/flexdll"
 
   cd $APPVEYOR_BUILD_FOLDER/../build-msvc32
-  cp config/m-nt.h config/m.h
-  cp config/s-nt.h config/s.h
+  cp config/m-nt.h byterun/caml/m.h
+  cp config/s-nt.h byterun/caml/s.h
 
   eval $(tools/msvs-promote-path)
 
@@ -67,8 +67,8 @@ make MSVC_DETECT=0 CHAINS=msvc64 support
 cp flexdll*_msvc64.obj "$PREFIX/bin/flexdll"
 cd ..
 
-cp config/m-nt.h config/m.h
-cp config/s-nt.h config/s.h
+cp config/m-nt.h byterun/caml/m.h
+cp config/s-nt.h byterun/caml/s.h
 
 echo "Edit config/Makefile to set PREFIX=$PREFIX"
 sed -e "s|PREFIX=.*|PREFIX=$PREFIX|" -e "/\(BYTE\|NATIVE\)CCCOMPOPTS=./s/\r\?$/ -WX\0/" config/Makefile.msvc64 > config/Makefile
@@ -81,8 +81,8 @@ run "make opt.opt" make opt.opt
 
 cd ../build-mingw32
 
-cp config/m-nt.h config/m.h
-cp config/s-nt.h config/s.h
+cp config/m-nt.h byterun/caml/m.h
+cp config/s-nt.h byterun/caml/s.h
 
 PREFIX="C:/Program Files/OCaml-mingw32"
 echo "Edit config/Makefile to set PREFIX=$PREFIX"

@@ -1629,11 +1629,11 @@ let type_implementation sourcefile outputprefix modulename initial_env ast =
         (Cmt_format.Implementation str) (Some sourcefile) initial_env None;
       (str, coercion)
     end else begin
-      check_nongen_schemes finalenv sg;
-      normalize_signature finalenv simple_sg;
       let coercion =
         Includemod.compunit initial_env sourcefile sg
                             "(inferred signature)" simple_sg in
+      check_nongen_schemes finalenv simple_sg;
+      normalize_signature finalenv simple_sg;
       Typecore.force_delayed_checks ();
       (* See comment above. Here the target signature contains all
          the value being exported. We can still capture unused

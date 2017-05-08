@@ -20,7 +20,27 @@ Working version
   bundles.
   (whitequark)
 
+* GPR#659: Remove support for SPARC native code generation
+  (Mark Shinwell)
+
+- MPR#7501, GPR#1089: Consider arrays of length zero as constants
+- PR#7501, GPR#1089: Consider arrays of length zero as constants
+  when using Flambda.
+  (Pierre Chambart, review by Mark Shinwell and Leo White)
+
+- GPR#1150: Fix typo in arm64 assembler directives
+  (KC Sivaramakrishnan)
+
+- GPR#1143: tweaked several allocation functions in the runtime by
+  checking for likely conditions before unlikely ones and eliminating
+  some redundant checks.
+  (Markus Mottl, review by Alain Frisch, Xavier Leroy, Gabriel Scherer,
+  Mark Shinwell and Leo White)
+
 ### Standard library:
+
+- GRP#1119: Change Set (private) type to inline records.
+  (Albin Coquereau)
 
 - PR#1771, PR#7309, GPR#1026: Add update to maps. Allows to update a
   binding in a map or create a new binding if the key had no binding
@@ -39,7 +59,13 @@ Working version
   values.
   (Daniel Bünzli, review by Damien Doligez, Max Mouratov)
 
+- Resurrect tabulation boxes in module Format. Rewrite/extend documentation
+  of tabulation boxes.
+
 ### Compiler user-interface and warnings:
+
+- GPR#896: "-compat-32" is now taken into account when building .cmo/.cma
+  (Hugo Heuzard)
 
 - GPR#948: the compiler now reports warnings-as-errors by prefixing
   them with "Error (warning ..):", instead of "Warning ..:" and
@@ -52,6 +78,10 @@ Working version
   (Florian Angeletti, review by Gabriel Scherer)
 
 - PR#6676, GPR#1112: move local opens to tutorial
+  (Florian Angeletti)
+
+- PR#6676, GPR#1153: move overriding class definitions to reference
+  manual and tutorial
   (Florian Angeletti)
 
 - PR#7254, GPR#1096: Rudimentary documentation of ocamlnat
@@ -78,6 +108,9 @@ Working version
 * PR#7352,PR#7353: ocamldoc, better paragraphs in html output
   (Florian Angeletti, request by Daniel Bünzli)
 
+- PR#7521, GPR#1159: ocamldoc, end generated latex file with a new line
+  (Florian Angeletti)
+
 ### Compiler distribution build system
 
 - GPR#558: enable shared library and natdynlink support on more Linux
@@ -101,6 +134,11 @@ Working version
 - GPR#1032: display the output of -dtimings as a hierarchy
   (Valentin Gatien-Baron, review by Gabriel Scherer)
 
+- GPR#1127: move config/{m,s}.h to byterun/caml and install them.
+  User code should not have to include them directly since they are
+  included by other header files
+  (Sébastien Hinderer)
+
 ### Bug fixes
 
 - PR#5927: Type equality broken for conjunctive polymorphic variant tags
@@ -111,6 +149,10 @@ Working version
 
 - PR#6934: nonrec misbehaves with GADTs
   (Jacques Garrigue, report by Markus Mottl)
+
+- PR#7070, GPR#1139: Unexported values can cause non-generalisable variables
+  error
+  (Leo White)
 
 - PR#7261: Warn on type constraints in GADT declarations
   (Jacques Garrigue, report by Fabrice Le Botlan)
@@ -131,6 +173,12 @@ Working version
 - PR#7496: Fixed conjunctive polymorphic variant tags do not unify
   with themselves
   (Jacques Garrigue, report by Leo White)
+
+- PR#7506: pprintast ignores attributes in tails of a list
+  (Alain Frisch, report by Kenichi Asai and Gabriel Scherer)
+
+- GPR#1155: Fix a race condition with WAIT_NOHANG on Windows
+  (Jérémie Dimino and David Allsopp)
 
 ### Runtime system:
 
@@ -641,6 +689,12 @@ The complete list of changes is listed below.
 - PR#7443, GPR#990: spurious unused open warning with local open in patterns
   (Florian Angeletti, report by Gabriel Scherer)
 
+- GPR#406: remove polymorphic comparison for Types.constructor_tag in compiler
+  (Dwight Guth, review by Gabriel Radanne, Damien Doligez, Gabriel Scherer,
+   Pierre Chambart, Mark Shinwell)
+
+- GPR#795: remove 256-character limitation on Sys.executable_name
+  (Xavier Leroy)
 - PR#7504: fix warning 8 with unconstrained records
   (Florian Angeletti, report by John Whitington)
 
@@ -742,9 +796,13 @@ Next minor version (4.04.1):
 - PR#7405, GPR#903: s390x: Fix address of caml_raise_exn in native dynlink modules
   (Richard Jones, review by Xavier Leroy)
 
-- MPR#7417, GPR#930: ensure 16 byte stack alignment inside caml_allocN on x86-64
+- PR#7417, GPR#930: ensure 16 byte stack alignment inside caml_allocN on x86-64
   for ocaml build with WITH_FRAME_POINTERS defined
   (Christoph Cullmann)
+
+- PR#7456, GPR#1092: fix slow compilation on source files containing a lot
+  of similar debugging information location entries
+  (Mark Shinwell)
 
 - PR#7457: a case of double free in the systhreads library (POSIX implementation)
   (Xavier Leroy, report by Chet Murthy)

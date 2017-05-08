@@ -138,12 +138,12 @@ $(CAMLHEADERS): $(HEADERPROGRAM) ../config/Makefile
 ifeq "$(UNIX_OR_WIN32)" "unix"
 $(CAMLHEADERS):
 	for suff in '' d i; do \
-	  $(CC) $(CFLAGS) $(CPPFLAGS) $(LDFLAGS) \
+	  $(CC) $(CFLAGS) $(CPPFLAGS) -I../byterun $(LDFLAGS) \
 	            -DRUNTIME_NAME='"$(BINDIR)/ocamlrun'$$suff'"' \
 	            header.c $(OUTPUTEXE)tmpheader$(EXE) && \
 	  strip tmpheader$(EXE) && \
 	  mv tmpheader$(EXE) camlheader$$suff && \
-	  $(CC) $(CFLAGS) $(CPPFLAGS) $(LDFLAGS) \
+	  $(CC) $(CFLAGS) $(CPPFLAGS) -I../byterun $(LDFLAGS) \
 	            -DRUNTIME_NAME='"$(TARGET_BINDIR)/ocamlrun'$$suff'"' \
 	            header.c $(OUTPUTEXE)tmpheader$(EXE) && \
 	  strip tmpheader$(EXE) && \
@@ -195,7 +195,7 @@ stdlib.p.cmxa: $(OBJS:.cmo=.p.cmx)
 	$(CAMLOPT) -a -o $@ $^
 
 sys.ml: sys.mlp ../VERSION
-	sed -e "s|%%VERSION%%|`sed -e 1q ../VERSION`|" sys.mlp >sys.ml
+	sed -e "s|%%VERSION%%|`sed -e 1q ../VERSION | tr -d '\r'`|" sys.mlp > $@
 
 .PHONY: clean
 clean::

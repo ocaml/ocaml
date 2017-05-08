@@ -222,7 +222,7 @@ val print_bool : bool -> unit
 *)
 
 val print_space : unit -> unit
-(** [print_space ()] prints a 'space' break hint:
+(** [print_space ()] emits a 'space' break hint:
   the pretty-printer may split the line at this point,
   otherwise it prints one space.
 
@@ -230,7 +230,7 @@ val print_space : unit -> unit
 *)
 
 val print_cut : unit -> unit
-(** [print_cut ()] prints a 'cut' break hint:
+(** [print_cut ()] emits a 'cut' break hint:
   the pretty-printer may split the line at this point,
   otherwise it prints nothing.
 
@@ -238,7 +238,7 @@ val print_cut : unit -> unit
 *)
 
 val print_break : int -> int -> unit
-(** [print_break nspaces offset] prints a 'full' break hint:
+(** [print_break nspaces offset] emits a 'full' break hint:
   the pretty-printer may split the line at this point,
   otherwise it prints [nspaces] spaces.
 
@@ -357,6 +357,67 @@ val over_max_boxes : unit -> bool
 (** Tests if the maximum number of pretty-printing boxes allowed have already
   been open.
 *)
+
+(** {6 Tabulation boxes} *)
+
+(**
+
+  A {e tabulation box} prints material on lines divided into cells of fixed
+  length. A tabulation box provides a simple way to display vertical columns
+  of left adjusted text.
+
+  This box features command [set_tab] to define cell boundaries, and command
+  [print_tab] to move from cell to cell and split the line when there is no
+  more cells to print on the line.
+
+  Note: printing within tabulation box is line directed, so arbitrary line
+  splitting inside a tabulation box leads to poor rendering. Yet, controlled
+  use of tabulation boxes allows simple printing of columns within {!Format}.
+
+*)
+
+val open_tbox : unit -> unit
+(** [open_tbox ()] opens a new tabulation box.
+
+  This box prints lines separated into cells of fixed width.
+
+  Inside a tabulation box, special {e tabulation markers} defines points of
+  interest on the line (for instance to delimit cell boundaries).
+  Function {!Format.set_tab} sets a tabulation marker at insertion point.
+
+  A tabulation box features specific {e tabulation breaks} to move to next
+  tabulation marker or split the line. Function {!Format.print_tbreak} prints
+  a tabulation break.
+
+*)
+
+val close_tbox : unit -> unit
+(** Closes the most recently opened tabulation box. *)
+
+val set_tab : unit -> unit
+(** Sets a tabulation marker at current insertion point. *)
+
+val print_tab : unit -> unit
+(** [print_tab ()] emits a 'next' tabulation break hint: if not already set on
+  a tabulation marker, the insertion point moves to the first tabulation
+  marker on the right, or the pretty-printer splits the line and insertion
+  point moves to the leftmost tabulation marker.
+
+  It is equivalent to [print_tbreak 0 0]. *)
+
+val print_tbreak : int -> int -> unit
+(** [print_tbreak nspaces offset] emits a 'full' tabulation break hint.
+
+  If not already set on a tabulation marker, the insertion point moves to the
+  first tabulation marker on the right and the pretty-printer prints
+  [nspaces] spaces.
+
+  If there is no next tabulation marker on the right, the pretty-printer
+  splits the line at this point, then insertion point moves to the leftmost
+  tabulation marker of the box.
+
+  If the pretty-printer splits the line, [offset] is added to
+  the current indentation. *)
 
 (** {6 Ellipsis} *)
 
@@ -1054,45 +1115,3 @@ val pp_get_all_formatter_output_functions :
   (int -> unit)
 [@@ocaml.deprecated "Use Format.pp_get_formatter_out_functions instead."]
 (** @deprecated Subsumed by [pp_get_formatter_out_functions]. *)
-
-(** Tabulation pretty-printing boxes are deprecated. *)
-
-val pp_open_tbox : formatter -> unit -> unit
-[@@ocaml.deprecated "Tabulation pretty-printing boxes are not supported any more."]
-(** @deprecated since 4.03.0 *)
-
-val pp_close_tbox : formatter -> unit -> unit
-[@@ocaml.deprecated "Tabulation pretty-printing boxes are not supported any more."]
-(** @deprecated since 4.03.0 *)
-
-val pp_print_tbreak : formatter -> int -> int -> unit
-[@@ocaml.deprecated "Tabulation pretty-printing boxes are not supported any more."]
-(** @deprecated since 4.03.0 *)
-
-val pp_set_tab : formatter -> unit -> unit
-[@@ocaml.deprecated "Tabulation pretty-printing boxes are not supported any more."]
-(** @deprecated since 4.03.0 *)
-
-val pp_print_tab : formatter -> unit -> unit
-[@@ocaml.deprecated "Tabulation pretty-printing boxes are not supported any more."]
-(** @deprecated since 4.03.0 *)
-
-val open_tbox : unit -> unit
-[@@ocaml.deprecated "Tabulation pretty-printing boxes are not supported any more."]
-(** @deprecated since 4.03.0 *)
-
-val close_tbox : unit -> unit
-[@@ocaml.deprecated "Tabulation pretty-printing boxes are not supported any more."]
-(** @deprecated since 4.03.0 *)
-
-val print_tbreak : int -> int -> unit
-[@@ocaml.deprecated "Tabulation pretty-printing boxes are not supported any more."]
-(** @deprecated since 4.03.0 *)
-
-val set_tab : unit -> unit
-[@@ocaml.deprecated "Tabulation pretty-printing boxes are not supported any more."]
-(** @deprecated since 4.03.0 *)
-
-val print_tab : unit -> unit
-[@@ocaml.deprecated "Tabulation pretty-printing boxes are not supported any more."]
-(** @deprecated since 4.03.0 *)

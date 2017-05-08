@@ -54,7 +54,7 @@ include stdlib/StdlibModules
 
 CAMLC=$(CAMLRUN) boot/ocamlc -g -nostdlib -I boot -use-prims byterun/primitives
 CAMLOPT=$(CAMLRUN) ./ocamlopt -g -nostdlib -I stdlib -I otherlibs/dynlink
-ARCHES=amd64 i386 arm arm64 power sparc s390x
+ARCHES=amd64 i386 arm arm64 power s390x
 INCLUDES=-I utils -I parsing -I typing -I bytecomp -I middle_end \
         -I middle_end/base_types -I asmcomp -I driver -I toplevel
 
@@ -556,8 +556,8 @@ flexdll/Makefile:
 
 .PHONY: flexdll
 flexdll: flexdll/Makefile flexlink
-	$(MAKE) -C flexdll MSVC_DETECT=0 CHAINS=$(FLEXDLL_CHAIN) NATDYNLINK=false \
-          support
+	$(MAKE) -C flexdll \
+             MSVC_DETECT=0 CHAINS=$(FLEXDLL_CHAIN) NATDYNLINK=false support
 
 # Bootstrapping flexlink - leaves a bytecode image of flexlink.exe in flexdll/
 .PHONY: flexlink
@@ -585,9 +585,11 @@ flexlink.opt:
 
 .PHONY: install-flexdll
 install-flexdll:
-	cat stdlib/camlheader flexdll/flexlink.exe > "$(INSTALL_BINDIR)/flexlink.exe"
+	cat stdlib/camlheader flexdll/flexlink.exe > \
+	  "$(INSTALL_BINDIR)/flexlink.exe"
 ifneq "$(filter-out mingw,$(TOOLCHAIN))" ""
-	cp flexdll/default$(filter-out _i386,_$(ARCH)).manifest "$(INSTALL_BINDIR)/"
+	cp flexdll/default$(filter-out _i386,_$(ARCH)).manifest \
+    "$(INSTALL_BINDIR)/"
 endif
 	if test -n "$(wildcard flexdll/flexdll_*.$(O))" ; then \
 	  $(MKDIR) "$(INSTALL_FLEXDLL)" ; \
@@ -888,8 +890,8 @@ byterun/primitives:
 
 bytecomp/runtimedef.ml: byterun/primitives byterun/caml/fail.h
 	(echo 'let builtin_exceptions = [|'; \
-	 sed -n -e 's|.*/\* \("[A-Za-z_]*"\) \*/$$|  \1;|p' \
-	     byterun/caml/fail.h; \
+	 cat byterun/caml/fail.h | tr -d '\r' | \
+	 sed -n -e 's|.*/\* \("[A-Za-z_]*"\) \*/$$|  \1;|p'; \
 	 echo '|]'; \
 	 echo 'let builtin_primitives = [|'; \
 	 sed -e 's/.*/  "&";/' byterun/primitives; \
@@ -971,7 +973,7 @@ alldepend:
 else
 alldepend: depend
 	for dir in $(subdirs); do \
-	  $(MAKE) -C $$dir depend; \
+	  $(MAKE) -C $$dir depend || exit; \
 	done
 endif
 
@@ -1275,7 +1277,7 @@ partialclean::
 depend: beforedepend
 	(for d in utils parsing typing bytecomp asmcomp middle_end \
 	 middle_end/base_types driver toplevel; \
-	 do $(CAMLDEP) -slash $(DEPFLAGS) $$d/*.mli $$d/*.ml; \
+	 do $(CAMLDEP) -slash $(DEPFLAGS) $$d/*.mli $$d/*.ml || exit; \
 	 done) > .depend
 	$(CAMLDEP) -slash $(DEPFLAGS) -native \
 		-impl driver/compdynlink.mlopt >> .depend
@@ -1286,7 +1288,7 @@ depend: beforedepend
 distclean: clean
 	rm -f boot/ocamlrun boot/ocamlrun$(EXE) boot/camlheader \
 	      boot/ocamlyacc boot/*.cm* boot/libcamlrun.$(A)
-	rm -f config/Makefile config/m.h config/s.h
+	rm -f config/Makefile byterun/caml/m.h byterun/caml/s.h
 	rm -f tools/*.bak
 	rm -f ocaml ocamlc
 	rm -f testsuite/_log
