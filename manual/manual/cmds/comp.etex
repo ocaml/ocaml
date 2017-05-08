@@ -458,7 +458,7 @@ match int_of_string count_str with
 \end{verbatim}
 
 The only case where that transformation is not possible is if a given
-function call may raises distinct exceptions with the same constructor
+function call may raise distinct exceptions with the same constructor
 but different string values. In this case, you will have to check for
 specific string values. This is dangerous API design and it should be
 discouraged: it's better to define more precise exception constructors
