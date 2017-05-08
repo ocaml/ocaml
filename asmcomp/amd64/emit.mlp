@@ -792,6 +792,11 @@ let begin_assembly() =
     X86_proc.directive (Directive directive));
   reset_imp_table();
   Emitaux.begin_assembly ();
+  if TS.macos_like () then begin
+    (* suppress "ld warning: atom sorting error" *)
+    D.switch_to_section Text;
+    I.nop ()
+  end;
   if TS.win64 () then begin
     let extrn sym width = X86_dsl.D.extrn (L.to_string sym) width in
     extrn L.caml_young_ptr QWORD;
@@ -821,6 +826,11 @@ let begin_assembly() =
 
 let end_assembly () =
   emit_imp_table();
+  if TS.macos_like () then begin
+    (* suppress "ld warning: atom sorting error" *)
+    D.switch_to_section Text;
+    I.nop ()
+  end;
   Emitaux.end_assembly ~emit_numeric_constants:true ();
   if TS.win64 () then begin
     D.comment "External functions";

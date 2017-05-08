@@ -396,12 +396,7 @@ let begin_assembly ?(code_section = D.Text) () =
   D.switch_to_section Data;
   emit_global_data_symbol "data_begin";
   D.switch_to_section code_section;
-  emit_global_data_symbol "code_begin";
-  if TS.macos_like () then begin
-    (* suppress "ld warning: atom sorting error" *)
-    D.switch_to_section Text;
-    I.nop ()
-  end
+  emit_global_data_symbol "code_begin"
 
 let fundecl ?branch_relaxation ?after_body ?alternative_name
       (fundecl : Linearize.fundecl)
@@ -498,11 +493,6 @@ let emit_spacetime_shapes () =
   D.comment "End of Spacetime shapes."
 
 let end_assembly ?(code_section = D.Text) ~emit_numeric_constants () =
-  if TS.macos_like () then begin
-    (* suppress "ld warning: atom sorting error" *)
-    D.switch_to_section Text;
-    I.nop ()
-  end;
   if Config.spacetime then begin
     emit_spacetime_shapes ()
   end;
