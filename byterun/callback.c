@@ -20,6 +20,8 @@
 #include "caml/mlvalues.h"
 #include "caml/platform.h"
 
+static __thread int callback_depth = 0;
+
 #ifndef NATIVE_CODE
 
 /* Bytecode callbacks */
@@ -29,7 +31,6 @@
 #include "caml/fix_code.h"
 #include "caml/fiber.h"
 
-CAMLexport __thread int caml_callback_depth = 0;
 
 static opcode_t callback_code[] = { ACC, 0, APPLY, 0, POP, 1, STOP };
 
@@ -259,4 +260,19 @@ CAMLexport caml_root caml_named_root(char const *name)
   caml_plat_unlock(&named_value_lock);
 
   return ret;
+}
+
+CAMLexport int caml_get_callback_depth ()
+{
+  return callback_depth;
+}
+
+void caml_incr_callback_depth ()
+{
+  callback_depth++;
+}
+
+void caml_decr_callback_depth ()
+{
+  callback_depth--;
 }
