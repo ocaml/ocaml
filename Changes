@@ -91,6 +91,10 @@ Working version
 - PR#7254, GPR#1096: Rudimentary documentation of ocamlnat
   (Mark Shinwell)
 
+- PR#7507: Align the description of the printf conversion
+  specification "%g" with the ISO C90 description.
+  (Florian Angeletti)
+
 ### Tools:
 
 - GPR#1045: ocamldep, add a "-shared" option to generate dependencies
