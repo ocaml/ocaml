@@ -2,8 +2,7 @@ BASEDIR=../..
 
 .PHONY: default
 default:
-	@$(OCAMLC) is_64bit.ml -o is_64bit.byte
-	@if $(OCAMLRUN) ./is_64bit.byte; \
+	@if ($(OCAMLC) -config | grep "word_size: *64") \
 	then $(MAKE) run; \
 	else echo 'skipped (not compiled in 64bit)'; \
 	fi
@@ -11,11 +10,11 @@ default:
 .PHONY: run
 run:
 	@printf " ... testing -compat-32"
-	@$(OCAMLC) -compat-32 -c a.ml 2>&1 | xargs echo ${} > test.result  
+	@$(OCAMLC) -compat-32 -c a.ml > test.result 2>&1 || true
 	@$(OCAMLC) -c a.ml
-	@$(OCAMLC) -compat-32 -a a.cmo -o a.cma 2>&1 | xargs echo ${} >> test.result 
+	@$(OCAMLC) -compat-32 -a a.cmo -o a.cma >> test.result 2>&1 || true
 	@$(OCAMLC) -a a.cmo -o a.cma
-	@$(OCAMLC) -compat-32    a.cma -o a.byte -linkall 2>&1 | xargs echo ${} >> test.result
+	@$(OCAMLC) -compat-32    a.cma -o a.byte -linkall >> test.result 2>&1 || true
 	@$(DIFF) test.reference test.result >/dev/null \
 	&& echo " => passed" || echo " => failed"; \
 
