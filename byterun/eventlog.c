@@ -89,6 +89,8 @@ void caml_setup_eventlog() {
   caml_fatal_error("No gettimeofday() on this system, event logging doesn't work");
 #endif
 
+  if (!caml_params->eventlog_enabled) return;
+
   caml_plat_lock(&lock);
   num_users++;
   if (!output) {
