@@ -276,9 +276,6 @@ declares a type that is distinct from its implementation type @typexpr@.
 However, coercions from the type to @typexpr@ are permitted.
 Moreover, the compiler ``knows'' the implementation type and can take
 advantage of this knowledge to perform type-directed optimizations.
-For ambiguity reasons, @typexpr@ cannot be an object or polymorphic
-variant type, but a similar behaviour can be obtained through private
-row types.
 
 The following example uses a private type abbreviation to define a
 module of nonnegative integers:
