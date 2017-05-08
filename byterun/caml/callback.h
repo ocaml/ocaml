@@ -49,7 +49,9 @@ CAMLextern caml_root caml_named_root (char const * name);
 CAMLextern void caml_main (char ** argv);
 CAMLextern void caml_startup (char ** argv);
 
-CAMLextern __thread int caml_callback_depth;
+CAMLextern int caml_get_callback_depth (void);
+void caml_incr_callback_depth (void);
+void caml_decr_callback_depth (void);
 
 #ifdef __cplusplus
 }

@@ -272,7 +272,7 @@ value caml_interprete(code_t prog, asize_t prog_size)
   initial_trap_sp_off = domain_state->trap_sp_off;
   initial_stack_words = domain_state->stack_high - domain_state->extern_sp;
   initial_external_raise = domain_state->external_raise;
-  caml_callback_depth++;
+  caml_incr_callback_depth ();
   saved_pc = NULL;
 
   if (sigsetjmp(raise_buf.buf, 0)) {
@@ -936,7 +936,7 @@ value caml_interprete(code_t prog, asize_t prog_size)
           domain_state->external_raise = initial_external_raise;
           domain_state->trap_sp_off = initial_trap_sp_off;
           domain_state->extern_sp = domain_state->stack_high - initial_stack_words ;
-          caml_callback_depth--;
+          caml_decr_callback_depth ();
           return Make_exception_result(accu);
         } else {
           value parent_stack = Stack_parent(domain_state->current_stack);
@@ -1224,7 +1224,7 @@ value caml_interprete(code_t prog, asize_t prog_size)
       domain_state->external_raise = initial_external_raise;
       domain_state->trap_sp_off = initial_trap_sp_off;
       domain_state->extern_sp = sp;
-      caml_callback_depth--;
+      caml_decr_callback_depth ();
       return accu;
 
     Instruct(EVENT):
