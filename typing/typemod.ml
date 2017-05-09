@@ -132,7 +132,7 @@ let check_type_decl env loc id row_id newdecl decl rs rem =
     | Some id -> Env.add_type ~check:false id newdecl env
   in
   let env = if rs = Trec_not then env else add_rec_types env rem in
-  Includemod.type_declarations env id newdecl decl;
+  Includemod.type_declarations ~loc env id newdecl decl;
   Typedecl.check_coherence env loc id newdecl
 
 let update_rec_next rs rem =

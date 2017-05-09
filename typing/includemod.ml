@@ -64,10 +64,12 @@ let value_descriptions ~loc env cxt subst id vd1 vd2 =
 
 (* Inclusion between type declarations *)
 
-let type_declarations env ?(old_env=env) cxt subst id decl1 decl2 =
+let type_declarations ~loc env ?(old_env=env) cxt subst id decl1 decl2 =
   Env.mark_type_used env (Ident.name id) decl1;
   let decl2 = Subst.type_declaration subst decl2 in
-  let err = Includecore.type_declarations env (Ident.name id) decl1 id decl2 in
+  let err =
+    Includecore.type_declarations ~loc env (Ident.name id) decl1 id decl2
+  in
   if err <> [] then
     raise(Error[cxt, old_env, Type_declarations(id, decl1, decl2, err)])
 
@@ -402,7 +404,7 @@ and signature_components ~loc old_env env cxt subst paired =
       | _ -> (pos, cc) :: comps_rec rem
       end
   | (Sig_type(id1, tydecl1, _), Sig_type(_id2, tydecl2, _), _pos) :: rem ->
-      type_declarations ~old_env env cxt subst id1 tydecl1 tydecl2;
+      type_declarations ~loc ~old_env env cxt subst id1 tydecl1 tydecl2;
       comps_rec rem
   | (Sig_typext(id1, ext1, _), Sig_typext(_id2, ext2, _), pos)
     :: rem ->
@@ -492,8 +494,8 @@ let compunit env impl_name impl_sig intf_name intf_sig =
 let modtypes ~loc env mty1 mty2 = modtypes ~loc env [] Subst.identity mty1 mty2
 let signatures env sig1 sig2 =
   signatures ~loc:Location.none env [] Subst.identity sig1 sig2
-let type_declarations env id decl1 decl2 =
-  type_declarations env [] Subst.identity id decl1 decl2
+let type_declarations ~loc env id decl1 decl2 =
+  type_declarations ~loc env [] Subst.identity id decl1 decl2
 
 (*
 let modtypes env m1 m2 =

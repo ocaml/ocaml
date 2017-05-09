@@ -620,7 +620,7 @@ let check_coherence env loc id decl =
               else if not (Ctype.equal env false args decl.type_params)
               then [Includecore.Constraint]
               else
-                Includecore.type_declarations ~equality:true env
+                Includecore.type_declarations ~loc ~equality:true env
                   (Path.last path)
                   decl'
                   id
