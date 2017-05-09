@@ -20,12 +20,26 @@ open Types
 let class_types env cty1 cty2 =
   Ctype.match_class_types env cty1 cty2
 
-let class_type_declarations env cty1 cty2 =
+let class_type_declarations ~loc env cty1 cty2 =
+  Builtin_attributes.check_deprecated_inclusion
+    ~def:cty1.clty_loc
+    ~use:cty2.clty_loc
+    loc
+    cty1.clty_attributes cty2.clty_attributes
+    (Path.last cty1.clty_path);
+
   Ctype.match_class_declarations env
     cty1.clty_params cty1.clty_type
     cty2.clty_params cty2.clty_type
 
-let class_declarations env cty1 cty2 =
+let class_declarations ~loc env cty1 cty2 =
+  Builtin_attributes.check_deprecated_inclusion
+    ~def:cty1.cty_loc
+    ~use:cty2.cty_loc
+    loc
+    cty1.cty_attributes cty2.cty_attributes
+    (Path.last cty1.cty_path);
+
   match cty1.cty_new, cty2.cty_new with
     None, Some _ ->
       [Ctype.CM_Virtual_class]

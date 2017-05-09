@@ -83,17 +83,17 @@ let extension_constructors ~loc env cxt subst id ext1 ext2 =
 
 (* Inclusion between class declarations *)
 
-let class_type_declarations ~old_env env cxt subst id decl1 decl2 =
+let class_type_declarations ~loc ~old_env env cxt subst id decl1 decl2 =
   let decl2 = Subst.cltype_declaration subst decl2 in
-  match Includeclass.class_type_declarations env decl1 decl2 with
+  match Includeclass.class_type_declarations ~loc env decl1 decl2 with
     []     -> ()
   | reason ->
       raise(Error[cxt, old_env,
                   Class_type_declarations(id, decl1, decl2, reason)])
 
-let class_declarations ~old_env env cxt subst id decl1 decl2 =
+let class_declarations ~loc ~old_env env cxt subst id decl1 decl2 =
   let decl2 = Subst.class_declaration subst decl2 in
-  match Includeclass.class_declarations env decl1 decl2 with
+  match Includeclass.class_declarations ~loc env decl1 decl2 with
     []     -> ()
   | reason ->
       raise(Error[cxt, old_env, Class_declarations(id, decl1, decl2, reason)])
@@ -422,11 +422,11 @@ and signature_components ~loc old_env env cxt subst paired =
       modtype_infos ~loc env cxt subst id1 info1 info2;
       comps_rec rem
   | (Sig_class(id1, decl1, _), Sig_class(_id2, decl2, _), pos) :: rem ->
-      class_declarations ~old_env env cxt subst id1 decl1 decl2;
+      class_declarations ~loc ~old_env env cxt subst id1 decl1 decl2;
       (pos, Tcoerce_none) :: comps_rec rem
   | (Sig_class_type(id1, info1, _),
      Sig_class_type(_id2, info2, _), _pos) :: rem ->
-      class_type_declarations ~old_env env cxt subst id1 info1 info2;
+      class_type_declarations ~loc ~old_env env cxt subst id1 info1 info2;
       comps_rec rem
   | _ ->
       assert false

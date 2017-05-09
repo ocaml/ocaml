@@ -252,6 +252,13 @@ and compare_records ~loc env params1 params2 n
       end
 
 let type_declarations ?(equality = false) ~loc env name decl1 id decl2 =
+  Builtin_attributes.check_deprecated_inclusion
+    ~def:decl1.type_loc
+    ~use:decl2.type_loc
+    loc
+    decl1.type_attributes decl2.type_attributes
+    name;
+
   if decl1.type_arity <> decl2.type_arity then [Arity] else
   if not (private_flags decl1 decl2) then [Privacy] else
   let err = match (decl1.type_manifest, decl2.type_manifest) with
