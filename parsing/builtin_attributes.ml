@@ -25,6 +25,11 @@ let string_of_payload = function
       string_of_cst c
   | _ -> None
 
+let string_of_opt_payload p =
+  match string_of_payload p with
+  | Some s -> s
+  | None -> ""
+
 let rec error_of_extension ext =
   match ext with
   | ({txt = ("ocaml.error"|"error") as txt; loc}, p) ->
@@ -54,39 +59,31 @@ let rec error_of_extension ext =
   | ({txt; loc}, _) ->
       Location.errorf ~loc "Uninterpreted extension '%s'." txt
 
+let cat s1 s2 =
+  if s1 = "" then s2 else s1 ^ "\n" ^ s2
+
 let rec deprecated_of_attrs = function
   | [] -> None
   | ({txt = "ocaml.deprecated"|"deprecated"; _}, p) :: _ ->
-      begin match string_of_payload p with
-      | Some txt ->  Some txt
-      | None -> Some ""
-      end
+      Some (string_of_opt_payload p)
   | _ :: tl -> deprecated_of_attrs tl
 
 let check_deprecated loc attrs s =
   match deprecated_of_attrs attrs with
   | None -> ()
-  | Some "" -> Location.deprecated loc s
-  | Some txt -> Location.deprecated loc (s ^ "\n" ^ txt)
+  | Some txt -> Location.deprecated loc (cat s txt)
 
 let check_deprecated_inclusion ~def ~use loc attrs1 attrs2 s =
   match deprecated_of_attrs attrs1, deprecated_of_attrs attrs2 with
   | None, _ | Some _, Some _ -> ()
-  | Some "", None ->
-      Location.deprecated ~def ~use loc s
-  | Some txt, None ->
-      Location.deprecated ~def ~use loc (s ^ "\n" ^ txt)
+  | Some txt, None -> Location.deprecated ~def ~use loc (cat s txt)
 
 let rec check_deprecated_mutable loc attrs s =
   match attrs with
   | [] -> ()
   | ({txt = "ocaml.deprecated_mutable"|"deprecated_mutable"; _}, p) :: _ ->
-      let txt =
-        match string_of_payload p with
-        | Some txt -> "\n" ^ txt
-        | None -> ""
-      in
-      Location.deprecated loc (Printf.sprintf "mutating field %s%s" s txt)
+      let txt = string_of_opt_payload p in
+      Location.deprecated loc (Printf.sprintf "mutating field %s" (cat s txt))
   | _ :: tl -> check_deprecated_mutable loc tl s
 
 let rec deprecated_of_sig = function
