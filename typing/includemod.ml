@@ -411,12 +411,7 @@ and signature_components ~loc old_env env cxt subst paired =
       extension_constructors ~loc env cxt subst id1 ext1 ext2;
       (pos, Tcoerce_none) :: comps_rec rem
   | (Sig_module(id1, mty1, _), Sig_module(_id2, mty2, _), pos) :: rem ->
-      let p1 = Pident id1 in
-      Env.mark_module_used env (Ident.name id1) mty1.md_loc;
-      let cc =
-        modtypes ~loc env (Module id1::cxt) subst
-          (Mtype.strengthen ~aliasable:true env mty1.md_type p1) mty2.md_type
-      in
+      let cc = module_declarations ~loc env cxt subst id1 mty1 mty2 in
       (pos, cc) :: comps_rec rem
   | (Sig_modtype(id1, info1), Sig_modtype(_id2, info2), _pos) :: rem ->
       modtype_infos ~loc env cxt subst id1 info1 info2;
@@ -431,9 +426,29 @@ and signature_components ~loc old_env env cxt subst paired =
   | _ ->
       assert false
 
+and module_declarations ~loc env cxt subst id1 md1 md2 =
+  Builtin_attributes.check_deprecated_inclusion
+    ~def:md1.md_loc
+    ~use:md2.md_loc
+    loc
+    md1.md_attributes md2.md_attributes
+    (Ident.name id1);
+
+  let p1 = Pident id1 in
+  Env.mark_module_used env (Ident.name id1) md1.md_loc;
+  modtypes ~loc env (Module id1::cxt) subst
+    (Mtype.strengthen ~aliasable:true env md1.md_type p1) md2.md_type
+
 (* Inclusion between module type specifications *)
 
 and modtype_infos ~loc env cxt subst id info1 info2 =
+  Builtin_attributes.check_deprecated_inclusion
+    ~def:info1.mtd_loc
+    ~use:info2.mtd_loc
+    loc
+    info1.mtd_attributes info2.mtd_attributes
+    (Ident.name id);
+
   let info2 = Subst.modtype_declaration subst info2 in
   let cxt' = Modtype id :: cxt in
   try
