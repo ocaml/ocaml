@@ -54,19 +54,24 @@ external ( = ) : 'a -> 'a -> bool = "%equal"
    if and only if their current contents are structurally equal,
    even if the two mutable objects are not the same physical object.
    Equality between functional values raises [Invalid_argument].
-   Equality between cyclic data structures may not terminate. *)
+   Equality between cyclic data structures may not terminate.
+   Left associative operator with precedence level 4/9. *)
 
 external ( <> ) : 'a -> 'a -> bool = "%notequal"
-(** Negation of {!Pervasives.( = )}. *)
+(** Negation of {!Pervasives.( = )}.
+    Left associative operator with precedence level 4/9. *)
 
 external ( < ) : 'a -> 'a -> bool = "%lessthan"
-(** See {!Pervasives.( >= )}. *)
+(** See {!Pervasives.( >= )}.
+    Left associative operator with precedence level 4/9. *)
 
 external ( > ) : 'a -> 'a -> bool = "%greaterthan"
-(** See {!Pervasives.( >= )}. *)
+(** See {!Pervasives.( >= )}.
+    Left associative operator with precedence level 4/9. *)
 
 external ( <= ) : 'a -> 'a -> bool = "%lessequal"
-(** See {!Pervasives.( >= )}. *)
+(** See {!Pervasives.( >= )}.
+    Left associative operator with precedence level 4/9. *)
 
 external ( >= ) : 'a -> 'a -> bool = "%greaterequal"
 (** Structural ordering functions. These functions coincide with
@@ -76,7 +81,8 @@ external ( >= ) : 'a -> 'a -> bool = "%greaterequal"
    The ordering is compatible with [( = )]. As in the case
    of [( = )], mutable structures are compared by contents.
    Comparison between functional values raises [Invalid_argument].
-   Comparison between cyclic structures may not terminate. *)
+   Comparison between cyclic structures may not terminate.
+   Left associative operator with precedence level 4/9. *)
 
 external compare : 'a -> 'a -> int = "%compare"
 (** [compare x y] returns [0] if [x] is equal to [y],
@@ -115,10 +121,12 @@ external ( == ) : 'a -> 'a -> bool = "%eq"
    also affects [e2].
    On non-mutable types, the behavior of [( == )] is
    implementation-dependent; however, it is guaranteed that
-   [e1 == e2] implies [compare e1 e2 = 0]. *)
+   [e1 == e2] implies [compare e1 e2 = 0].
+   Left associative operator with precedence level 4/9. *)
 
 external ( != ) : 'a -> 'a -> bool = "%noteq"
-(** Negation of {!Pervasives.( == )}. *)
+(** Negation of {!Pervasives.( == )}.
+    Left associative operator with precedence level 4/9. *)
 
 
 (** {6 Boolean operations} *)
@@ -129,20 +137,25 @@ external not : bool -> bool = "%boolnot"
 external ( && ) : bool -> bool -> bool = "%sequand"
 (** The boolean 'and'. Evaluation is sequential, left-to-right:
    in [e1 && e2], [e1] is evaluated first, and if it returns [false],
-   [e2] is not evaluated at all. *)
+   [e2] is not evaluated at all.
+   Right associative operator with precedence level 3/9. *)
 
 external ( & ) : bool -> bool -> bool = "%sequand"
   [@@ocaml.deprecated "Use (&&) instead."]
-(** @deprecated {!Pervasives.( && )} should be used instead. *)
+(** @deprecated {!Pervasives.( && )} should be used instead.
+    Right associative operator with precedence level 3/9. *)
 
 external ( || ) : bool -> bool -> bool = "%sequor"
 (** The boolean 'or'. Evaluation is sequential, left-to-right:
    in [e1 || e2], [e1] is evaluated first, and if it returns [true],
-   [e2] is not evaluated at all. *)
+   [e2] is not evaluated at all.
+   Right associative operator with precedence level 2/9.
+*)
 
 external ( or ) : bool -> bool -> bool = "%sequor"
   [@@ocaml.deprecated "Use (||) instead."]
-(** @deprecated {!Pervasives.( || )} should be used instead.*)
+(** @deprecated {!Pervasives.( || )} should be used instead.
+    Right associative operator with precedence level 2/9. *)
 
 (** {6 Debugging} *)
 
@@ -210,12 +223,14 @@ external __POS_OF__ : 'a -> (string * int * int * int) * 'a = "%loc_POS"
 external ( |> ) : 'a -> ('a -> 'b) -> 'b = "%revapply"
 (** Reverse-application operator: [x |> f |> g] is exactly equivalent
  to [g (f (x))].
+ Left associative operator with precedence level 4/9.
    @since 4.01
-*)
+ *)
 
 external ( @@ ) : ('a -> 'b) -> 'a -> 'b = "%apply"
 (** Application operator: [g @@ f @@ x] is exactly equivalent to
  [g (f (x))].
+ Right associative operator with precedence level 5/9.
    @since 4.01
 *)
 
@@ -240,13 +255,16 @@ external pred : int -> int = "%predint"
 (** [pred x] is [x - 1]. *)
 
 external ( + ) : int -> int -> int = "%addint"
-(** Integer addition. *)
+(** Integer addition.
+    Left associative operator with precedence level 6/9. *)
 
 external ( - ) : int -> int -> int = "%subint"
-(** Integer subtraction. *)
+(** Integer subtraction.
+    Left associative operator with precedence level 6/9. *)
 
 external ( * ) : int -> int -> int = "%mulint"
-(** Integer multiplication. *)
+(** Integer multiplication.
+    Left associative operator with precedence level 7/9. *)
 
 external ( / ) : int -> int -> int = "%divint"
 (** Integer division.
@@ -254,7 +272,8 @@ external ( / ) : int -> int -> int = "%divint"
    Integer division rounds the real quotient of its arguments towards zero.
    More precisely, if [x >= 0] and [y > 0], [x / y] is the greatest integer
    less than or equal to the real quotient of [x] by [y].  Moreover,
-   [(- x) / y = x / (- y) = - (x / y)].  *)
+   [(- x) / y = x / (- y) = - (x / y)].
+   Left associative operator with precedence level 7/9. *)
 
 external ( mod ) : int -> int -> int = "%modint"
 (** Integer remainder.  If [y] is not zero, the result
@@ -263,7 +282,8 @@ external ( mod ) : int -> int -> int = "%modint"
    [abs(x mod y) <= abs(y) - 1].
    If [y = 0], [x mod y] raises [Division_by_zero].
    Note that [x mod y] is negative only if [x < 0].
-   Raise [Division_by_zero] if [y] is zero. *)
+   Raise [Division_by_zero] if [y] is zero.
+   Left associative operator with precedence level 7/9. *)
 
 val abs : int -> int
 (** Return the absolute value of the argument.  Note that this may be
@@ -279,13 +299,16 @@ val min_int : int
 (** {7 Bitwise operations} *)
 
 external ( land ) : int -> int -> int = "%andint"
-(** Bitwise logical and. *)
+(** Bitwise logical and.
+    Left associative operator with precedence level 7/9. *)
 
 external ( lor ) : int -> int -> int = "%orint"
-(** Bitwise logical or. *)
+(** Bitwise logical or.
+    Left associative operator with precedence level 7/9. *)
 
 external ( lxor ) : int -> int -> int = "%xorint"
-(** Bitwise logical exclusive or. *)
+(** Bitwise logical exclusive or.
+    Left associative operator with precedence level 7/9. *)
 
 val lnot : int -> int
 (** Bitwise logical negation. *)
@@ -294,18 +317,21 @@ external ( lsl ) : int -> int -> int = "%lslint"
 (** [n lsl m] shifts [n] to the left by [m] bits.
    The result is unspecified if [m < 0] or [m >= bitsize],
    where [bitsize] is [32] on a 32-bit platform and
-   [64] on a 64-bit platform. *)
+   [64] on a 64-bit platform.
+   Right associative operator with precedence level 8/9. *)
 
 external ( lsr ) : int -> int -> int = "%lsrint"
 (** [n lsr m] shifts [n] to the right by [m] bits.
    This is a logical shift: zeroes are inserted regardless of
    the sign of [n].
-   The result is unspecified if [m < 0] or [m >= bitsize]. *)
+   The result is unspecified if [m < 0] or [m >= bitsize].
+   Right associative operator with precedence level 8/9. *)
 
 external ( asr ) : int -> int -> int = "%asrint"
 (** [n asr m] shifts [n] to the right by [m] bits.
    This is an arithmetic shift: the sign bit of [n] is replicated.
-   The result is unspecified if [m < 0] or [m >= bitsize]. *)
+   The result is unspecified if [m < 0] or [m >= bitsize].
+   Right associative operator with precedence level 8/9. *)
 
 
 (** {6 Floating-point arithmetic}
@@ -331,20 +357,25 @@ external ( ~+. ) : float -> float = "%identity"
 *)
 
 external ( +. ) : float -> float -> float = "%addfloat"
-(** Floating-point addition *)
+(** Floating-point addition.
+    Left associative operator with precedence level 6/9. *)
 
 external ( -. ) : float -> float -> float = "%subfloat"
-(** Floating-point subtraction *)
+(** Floating-point subtraction.
+    Left associative operator with precedence level 6/9. *)
 
 external ( *. ) : float -> float -> float = "%mulfloat"
-(** Floating-point multiplication *)
+(** Floating-point multiplication.
+    Left associative operator with precedence level 7/9. *)
 
 external ( /. ) : float -> float -> float = "%divfloat"
-(** Floating-point division. *)
+(** Floating-point division.
+    Left associative operator with precedence level 7/9. *)
 
 external ( ** ) : float -> float -> float = "caml_power_float" "pow"
   [@@unboxed] [@@noalloc]
-(** Exponentiation. *)
+(** Exponentiation.
+    Right associative operator with precedence level 8/9. *)
 
 external sqrt : float -> float = "caml_sqrt_float" "sqrt"
   [@@unboxed] [@@noalloc]
@@ -531,7 +562,8 @@ external classify_float : (float [@unboxed]) -> fpclass =
 *)
 
 val ( ^ ) : string -> string -> string
-(** String concatenation. *)
+(** String concatenation.
+    Right associative operator with precedence level 5/9. *)
 
 
 (** {6 Character operations}
@@ -638,7 +670,8 @@ external snd : 'a * 'b -> 'b = "%field1"
 *)
 
 val ( @ ) : 'a list -> 'a list -> 'a list
-(** List concatenation.  Not tail-recursive (length of the first argument). *)
+(** List concatenation.  Not tail-recursive (length of the first argument).
+    Right associative operator with precedence level 5/9. *)
 
 
 (** {6 Input/output}
@@ -1021,7 +1054,8 @@ external ( ! ) : 'a ref -> 'a = "%field0"
 
 external ( := ) : 'a ref -> 'a -> unit = "%setfield0"
 (** [r := a] stores the value of [a] in reference [r].
-   Equivalent to [fun r v -> r.contents <- v]. *)
+   Equivalent to [fun r v -> r.contents <- v].
+   Right associative operator with precedence level 1/9. *)
 
 external incr : int ref -> unit = "%incr"
 (** Increment the integer contained in the given reference.
@@ -1135,7 +1169,7 @@ val ( ^^ ) :
   [f2]: in case of formatted output, it accepts arguments from [f1], then
   arguments from [f2]; in case of formatted input, it returns results from
   [f1], then results from [f2].
-*)
+  Right associative operator with precedence level 5/9. *)
 
 
 (** {6 Program termination} *)
