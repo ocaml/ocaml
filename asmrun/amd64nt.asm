@@ -37,6 +37,11 @@
 
         .CODE
 
+        PUBLIC  caml_system__code_begin
+caml_system__code_begin:
+        ret  ; just one instruction, so that debuggers don't display
+             ; caml_system__code_begin instead of caml_call_gc
+
 ; Allocation
 
         PUBLIC  caml_call_gc
@@ -48,6 +53,11 @@ caml_call_gc:
         lea     rax, [rsp+8]
         mov     caml_bottom_of_stack, rax
 L105:
+    ; Touch the stack to trigger a recoverable segfault
+    ; if insufficient space remains
+        sub     rsp, 01000h
+        mov     [rsp], rax
+        add     rsp, 01000h
     ; Save caml_young_ptr, caml_exception_pointer
         mov     caml_young_ptr, r15
         mov     caml_exception_pointer, r14
@@ -202,6 +212,11 @@ caml_c_call:
         pop     r12
         mov     caml_last_return_address, r12
         mov     caml_bottom_of_stack, rsp
+    ; Touch the stack to trigger a recoverable segfault
+    ; if insufficient space remains
+        sub     rsp, 01000h
+        mov     [rsp], rax
+        add     rsp, 01000h
     ; Make the exception handler and alloc ptr available to the C code
         mov     caml_young_ptr, r15
         mov     caml_exception_pointer, r14
@@ -444,6 +459,9 @@ caml_callback3_exn:
 caml_ml_array_bound_error:
         lea     rax, caml_array_bound_error
         jmp     caml_c_call
+
+	PUBLIC caml_system__code_end
+caml_system__code_end:
 
         .DATA
         PUBLIC  caml_system__frametable

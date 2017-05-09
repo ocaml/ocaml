@@ -190,6 +190,9 @@ Working version
 
 ### Runtime system:
 
+- GPR#938: Stack overflow detection on 64-bit Windows
+  (Olivier Andrieu)
+
 - GPR#71: The runtime can now be shut down gracefully by means of the new
   caml_shutdown and caml_startup_pooled functions. The new 'c' flag in
   OCAMLRUNPARAM enables shutting the runtime properly on process exit.
