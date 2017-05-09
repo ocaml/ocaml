@@ -24,7 +24,15 @@ open Typedtree
 
 exception Dont_match
 
-let value_descriptions env vd1 vd2 =
+let value_descriptions ~loc env name
+    (vd1 : Types.value_description)
+    (vd2 : Types.value_description) =
+  Builtin_attributes.check_deprecated_inclusion
+    ~def:vd1.val_loc
+    ~use:vd2.val_loc
+    loc
+    vd1.val_attributes vd2.val_attributes
+    name;
   if Ctype.moregeneral env true vd1.val_type vd2.val_type then begin
     match (vd1.val_kind, vd2.val_kind) with
         (Val_prim p1, Val_prim p2) ->

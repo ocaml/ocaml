@@ -57,14 +57,8 @@ let value_descriptions ~loc env cxt subst id vd1 vd2 =
   Cmt_format.record_value_dependency vd1 vd2;
   Env.mark_value_used env (Ident.name id) vd1;
   let vd2 = Subst.value_description subst vd2 in
-  Builtin_attributes.check_deprecated_inclusion
-    ~def:vd1.val_loc
-    ~use:vd2.val_loc
-    loc
-    vd1.val_attributes vd2.val_attributes
-    (Ident.name id);
   try
-    Includecore.value_descriptions env vd1 vd2
+    Includecore.value_descriptions ~loc env (Ident.name id) vd1 vd2
   with Includecore.Dont_match ->
     raise(Error[cxt, env, Value_descriptions(id, vd1, vd2)])
 
