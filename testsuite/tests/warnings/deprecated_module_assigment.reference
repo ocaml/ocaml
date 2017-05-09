@@ -5,10 +5,10 @@ DEPRECATED
   Definition
   File "deprecated_module_assigment.ml", line 7, characters 15-26:
   Expected signature
-File "deprecated_module_assigment.ml", line 11, characters 13-14:
+File "deprecated_module_assigment.ml", line 13, characters 13-14:
 Warning 3: deprecated: x
 DEPRECATED
   File "deprecated_module_assigment.ml", line 2, characters 2-41:
   Definition
-  File "deprecated_module_assigment.ml", line 9, characters 17-28:
+  File "deprecated_module_assigment.ml", line 11, characters 17-28:
   Expected signature
