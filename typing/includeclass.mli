@@ -26,7 +26,6 @@ val class_type_declarations:
   Env.t -> class_type_declaration -> class_type_declaration ->
   class_match_failure list
 val class_declarations:
-  loc:Location.t ->
   Env.t -> class_declaration -> class_declaration ->
   class_match_failure list
 
