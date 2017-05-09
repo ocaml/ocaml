@@ -38,6 +38,9 @@ val deprecated_of_str: Parsetree.structure -> string option
 
 val check_deprecated_mutable:
     Location.t -> Parsetree.attributes -> string -> unit
+val check_deprecated_mutable_inclusion:
+  def:Location.t -> use:Location.t -> Location.t -> Parsetree.attributes ->
+  Parsetree.attributes -> string -> unit
 
 val error_of_extension: Parsetree.extension -> Location.error
 

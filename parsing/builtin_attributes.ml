@@ -60,7 +60,7 @@ let rec error_of_extension ext =
       Location.errorf ~loc "Uninterpreted extension '%s'." txt
 
 let cat s1 s2 =
-  if s1 = "" then s2 else s1 ^ "\n" ^ s2
+  if s2 = "" then s1 else s1 ^ "\n" ^ s2
 
 let rec deprecated_of_attrs = function
   | [] -> None
@@ -78,13 +78,26 @@ let check_deprecated_inclusion ~def ~use loc attrs1 attrs2 s =
   | None, _ | Some _, Some _ -> ()
   | Some txt, None -> Location.deprecated ~def ~use loc (cat s txt)
 
-let rec check_deprecated_mutable loc attrs s =
-  match attrs with
-  | [] -> ()
+let rec deprecated_mutable_of_attrs = function
+  | [] -> None
   | ({txt = "ocaml.deprecated_mutable"|"deprecated_mutable"; _}, p) :: _ ->
-      let txt = string_of_opt_payload p in
+      Some (string_of_opt_payload p)
+  | _ :: tl -> deprecated_mutable_of_attrs tl
+
+let check_deprecated_mutable loc attrs s =
+  match deprecated_mutable_of_attrs attrs with
+  | None -> ()
+  | Some txt ->
       Location.deprecated loc (Printf.sprintf "mutating field %s" (cat s txt))
-  | _ :: tl -> check_deprecated_mutable loc tl s
+
+let check_deprecated_mutable_inclusion ~def ~use loc attrs1 attrs2 s =
+  match deprecated_mutable_of_attrs attrs1,
+        deprecated_mutable_of_attrs attrs2
+  with
+  | None, _ | Some _, Some _ -> ()
+  | Some txt, None ->
+      Location.deprecated ~def ~use loc
+        (Printf.sprintf "mutating field %s" (cat s txt))
 
 let rec deprecated_of_sig = function
   | {psig_desc = Psig_attribute a} :: tl ->

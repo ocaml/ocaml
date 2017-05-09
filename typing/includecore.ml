@@ -175,7 +175,7 @@ let report_type_mismatch first second decl ppf =
       if err = Manifest then () else
       Format.fprintf ppf "@ %a." (report_type_mismatch0 first second decl) err)
 
-let rec compare_constructor_arguments env cstr params1 params2 arg1 arg2 =
+let rec compare_constructor_arguments ~loc env cstr params1 params2 arg1 arg2 =
   match arg1, arg2 with
   | Types.Cstr_tuple arg1, Types.Cstr_tuple arg2 ->
       if List.length arg1 <> List.length arg2 then [Field_arity cstr]
@@ -184,7 +184,7 @@ let rec compare_constructor_arguments env cstr params1 params2 arg1 arg2 =
         Ctype.equal env true (params1 @ arg1) (params2 @ arg2)
       then [] else [Field_type cstr]
   | Types.Cstr_record l1, Types.Cstr_record l2 ->
-      compare_records env params1 params2 0 l1 l2
+      compare_records env ~loc params1 params2 0 l1 l2
   | _ -> [Field_type cstr]
 
 and compare_variants ~loc env params1 params2 n
@@ -209,13 +209,13 @@ and compare_variants ~loc env params1 params2 n
           match cd1.cd_res, cd2.cd_res with
           | Some r1, Some r2 ->
               if Ctype.equal env true [r1] [r2] then
-                compare_constructor_arguments env cd1.cd_id [r1] [r2]
+                compare_constructor_arguments ~loc env cd1.cd_id [r1] [r2]
                   cd1.cd_args cd2.cd_args
               else [Field_type cd1.cd_id]
           | Some _, None | None, Some _ ->
               [Field_type cd1.cd_id]
           | _ ->
-              compare_constructor_arguments env cd1.cd_id
+              compare_constructor_arguments ~loc env cd1.cd_id
                 params1 params2 cd1.cd_args cd2.cd_args
         in
         if r <> [] then r
@@ -223,21 +223,33 @@ and compare_variants ~loc env params1 params2 n
       end
 
 
-and compare_records env params1 params2 n labels1 labels2 =
+and compare_records ~loc env params1 params2 n
+    (labels1 : Types.label_declaration list)
+    (labels2 : Types.label_declaration list) =
   match labels1, labels2 with
     [], []           -> []
   | [], l::_ -> [Field_missing (true, l.Types.ld_id)]
   | l::_, [] -> [Field_missing (false, l.Types.ld_id)]
-  | {Types.ld_id=lab1; ld_mutable=mut1; ld_type=arg1}::rem1,
-    {Types.ld_id=lab2; ld_mutable=mut2; ld_type=arg2}::rem2 ->
-      if Ident.name lab1 <> Ident.name lab2
-      then [Field_names (n, lab1, lab2)]
-      else if mut1 <> mut2 then [Field_mutable lab1] else
-      if Ctype.equal env true (arg1::params1)
-                              (arg2::params2)
-      then (* add arguments to the parameters, cf. PR#7378 *)
-        compare_records env (arg1::params1) (arg2::params2) (n+1) rem1 rem2
-      else [Field_type lab1]
+  | ld1::rem1, ld2::rem2 ->
+      if Ident.name ld1.ld_id <> Ident.name ld2.ld_id
+      then [Field_names (n, ld1.ld_id, ld2.ld_id)]
+      else if ld1.ld_mutable <> ld2.ld_mutable then [Field_mutable ld1.ld_id] else begin
+        Builtin_attributes.check_deprecated_mutable_inclusion
+          ~def:ld1.ld_loc
+          ~use:ld2.ld_loc
+          loc
+          ld1.ld_attributes ld2.ld_attributes
+          (Ident.name ld1.ld_id);
+
+        if Ctype.equal env true (ld1.ld_type::params1)(ld2.ld_type::params2)
+        then (* add arguments to the parameters, cf. PR#7378 *)
+          compare_records ~loc env
+            (ld1.ld_type::params1) (ld2.ld_type::params2)
+            (n+1)
+            rem1 rem2
+        else
+          [Field_type ld1.ld_id]
+      end
 
 let type_declarations ?(equality = false) ~loc env name decl1 id decl2 =
   if decl1.type_arity <> decl2.type_arity then [Arity] else
@@ -287,7 +299,7 @@ let type_declarations ?(equality = false) ~loc env name decl1 id decl2 =
         if equality then mark cstrs2 Env.Positive (Ident.name id) decl2;
         compare_variants ~loc env decl1.type_params decl2.type_params 1 cstrs1 cstrs2
     | (Type_record(labels1,rep1), Type_record(labels2,rep2)) ->
-        let err = compare_records env decl1.type_params decl2.type_params
+        let err = compare_records ~loc env decl1.type_params decl2.type_params
             1 labels1 labels2 in
         if err <> [] || rep1 = rep2 then err else
         [Record_representation (rep2 = Record_float)]
@@ -327,7 +339,7 @@ let type_declarations ?(equality = false) ~loc env name decl1 id decl2 =
 
 (* Inclusion between extension constructors *)
 
-let extension_constructors env id ext1 ext2 =
+let extension_constructors ~loc env id ext1 ext2 =
   let usage =
     if ext1.ext_private = Private || ext2.ext_private = Public
     then Env.Positive else Env.Privatize
@@ -343,7 +355,7 @@ let extension_constructors env id ext1 ext2 =
        (ty1 :: ext1.ext_type_params)
        (ty2 :: ext2.ext_type_params)
   then
-    if compare_constructor_arguments env (Ident.create "")
+    if compare_constructor_arguments ~loc env (Ident.create "")
         ext1.ext_type_params ext2.ext_type_params
         ext1.ext_args ext2.ext_args = [] then
       if match ext1.ext_ret_type, ext2.ext_ret_type with
