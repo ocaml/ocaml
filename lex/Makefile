@@ -14,7 +14,7 @@
 #**************************************************************************
 
 # The lexer generator
-include ../config/Makefile
+include ../Makefile.config
 CAMLRUN ?= ../boot/ocamlrun
 CAMLYACC ?= ../boot/ocamlyacc
 

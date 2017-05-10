@@ -25,7 +25,7 @@
 # make clean runtime coreall
 # make coreboot [new system -- now in a stable state]
 
-include config/Makefile
+include Makefile.config
 
 # For users who don't read the INSTALL file
 .PHONY: defaultentry
@@ -304,7 +304,7 @@ endif
 
 # The configuration file
 
-utils/config.ml: utils/config.mlp config/Makefile
+utils/config.ml: utils/config.mlp Makefile.config
 	sed -e 's|%%AFL_INSTRUMENT%%|$(AFL_INSTRUMENT)|' \
 	    -e 's|%%ARCH%%|$(ARCH)|' \
 	    -e 's|%%ARCMD%%|$(ARCMD)|' \
@@ -642,7 +642,7 @@ ifeq "$(UNIX_OR_WIN32)" "win32"
 	  $(MAKE) install-flexdll; \
 	fi
 endif
-	cp config/Makefile "$(INSTALL_LIBDIR)/Makefile.config"
+	cp Makefile.config "$(INSTALL_LIBDIR)"
 	if test -f ocamlopt; then $(MAKE) installopt; else \
 	   cd "$(INSTALL_BINDIR)"; \
 	   $(LN) ocamlc.byte$(EXE) ocamlc$(EXE); \
@@ -1288,7 +1288,7 @@ depend: beforedepend
 distclean: clean
 	rm -f boot/ocamlrun boot/ocamlrun$(EXE) boot/camlheader \
 	      boot/ocamlyacc boot/*.cm* boot/libcamlrun.$(A)
-	rm -f config/Makefile byterun/caml/m.h byterun/caml/s.h
+	rm -f Makefile.config byterun/caml/m.h byterun/caml/s.h
 	rm -f tools/*.bak
 	rm -f ocaml ocamlc
 	rm -f testsuite/_log

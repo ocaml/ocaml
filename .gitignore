@@ -121,7 +121,7 @@
 /byterun/*.d.c
 /byterun/*.pic.c
 
-/config/Makefile
+/Makefile.config
 /config/auto-aux/hashbang4
 
 /debugger/lexer.ml

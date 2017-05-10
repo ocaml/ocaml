@@ -147,6 +147,9 @@ Working version
   included by other header files
   (Sébastien Hinderer)
 
+- GPR#1168: move config/Makefile to Makefile.config.
+  (Sébastien Hinderer)
+
 ### Bug fixes
 
 - PR#5927: Type equality broken for conjunctive polymorphic variant tags
