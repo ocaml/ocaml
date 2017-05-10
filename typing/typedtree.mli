@@ -229,6 +229,7 @@ and expression_desc =
   | Texp_pack of module_expr
   | Texp_unreachable
   | Texp_extension_constructor of Longident.t loc * Path.t
+  | Texp_return of expression
 
 and meth =
     Tmeth_name of string

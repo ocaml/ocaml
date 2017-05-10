@@ -349,6 +349,8 @@ let expr sub x =
         Texp_unreachable
     | Texp_extension_constructor _ as e ->
         e
+    | Texp_return exp ->
+        Texp_return (sub.expr sub exp)
   in
   {x with exp_extra; exp_desc; exp_env}
 

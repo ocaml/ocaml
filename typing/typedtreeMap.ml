@@ -389,6 +389,8 @@ module MakeMap(Map : MapArgument) = struct
           Texp_unreachable
         | Texp_extension_constructor _ as e ->
           e
+        | Texp_return exp ->
+          Texp_return (map_expression exp)
     in
     let exp_extra = List.map map_exp_extra exp.exp_extra in
     Map.leave_expression {

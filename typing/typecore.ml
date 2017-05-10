@@ -2991,6 +2991,30 @@ and type_expect_ ?in_function ?(recarg=Rejected) env sexp ty_expected =
                       exp.exp_extra;
       }
 
+  | Pexp_extension ({ txt = ("ocaml.return"
+                             |"return"); _ },
+                    payload) ->
+      begin match payload with
+      | PStr [ { pstr_desc = Pstr_eval (body, _) } ] ->
+          let body =
+            match Env.find_return env with
+            | None ->
+                failwith "TODO error: toplevel return"
+            | Some return_type ->
+                let return_type = correct_levels return_type in
+                type_expect env body return_type
+          in
+          let exp_type = instance env ty_expected in
+          rue {
+            exp_desc = Texp_return body;
+            exp_loc = loc; exp_extra = [];
+            exp_type;
+            exp_attributes = sexp.pexp_attributes;
+            exp_env = env;
+          }
+      | _ ->
+          raise (Error (loc, env, Invalid_extension_constructor_payload))
+      end
   | Pexp_extension ({ txt = ("ocaml.extension_constructor"
                              |"extension_constructor"); _ },
                     payload) ->
@@ -3055,6 +3079,7 @@ and type_function ?in_function loc attrs env ty_expected l caselist =
     generalize_structure ty_res
   end;
   let cases, partial =
+    let env = Env.add_return ty_res env in
     type_cases ~in_function:(loc_fun,ty_fun) env ty_arg ty_res
       true loc caselist in
   let not_function ty =

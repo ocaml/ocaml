@@ -698,6 +698,8 @@ let rec cut n l =
 
 let try_ids = Hashtbl.create 8
 
+let current_return = ref 0
+
 let rec transl_exp e =
   List.iter (Translattribute.check_attribute e) e.exp_attributes;
   let eval_once =
@@ -740,6 +742,9 @@ and transl_exp0 e =
   | Texp_let(rec_flag, pat_expr_list, body) ->
       transl_let rec_flag pat_expr_list (event_before body (transl_exp body))
   | Texp_function { arg_label = _; param; cases; partial; } ->
+      let prev_return = !current_return in
+      let new_return = next_negative_raise_count () in
+      current_return := new_return;
       let ((kind, params), body) =
         event_function e
           (function repr ->
@@ -754,6 +759,11 @@ and transl_exp0 e =
       }
       in
       let loc = e.exp_loc in
+      let body =
+        let ret_var = Ident.create "return" in
+        Lstaticcatch (body, (new_return, [ret_var]), Lvar ret_var)
+      in
+      current_return := prev_return;
       Lfunction{kind; params; body; attr; loc}
   | Texp_apply({ exp_desc = Texp_ident(path, _, {val_kind = Val_prim p});
                 exp_type = prim_type } as funct, oargs)
@@ -1105,6 +1115,8 @@ and transl_exp0 e =
          }
   | Texp_unreachable ->
       raise (Error (e.exp_loc, Unreachable_reached))
+  | Texp_return exp ->
+      Lstaticraise (!current_return, [transl_exp exp])
 
 and transl_list expr_list =
   List.map transl_exp expr_list
