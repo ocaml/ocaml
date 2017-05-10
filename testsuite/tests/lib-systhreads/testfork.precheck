@@ -13,11 +13,11 @@
 #*                                                                        *
 #**************************************************************************
 
-case `grep '^SYSTEM=' ../../../config/Makefile` in
+case `grep '^SYSTEM=' ../../../Makefile.config` in
   SYSTEM=bsd_elf) exit 3;;
 esac
 
-case `sed -n -e '/OTHERLIBRARIES=/s// /p' ../../../config/Makefile` in
+case `sed -n -e '/OTHERLIBRARIES=/s// /p' ../../../Makefile.config` in
   *' unix'*) exit 0;;
   *) exit 3;;
 esac

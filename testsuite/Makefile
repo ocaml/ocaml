@@ -18,7 +18,7 @@ NO_PRINT=`$(MAKE) empty --no-print-directory >/dev/null 2>&1 \
 	  && echo --no-print-directory`
 
 FIND=find
-include ../config/Makefile
+include ../Makefile.config
 
 .PHONY: default
 default:

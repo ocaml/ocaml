@@ -13,7 +13,7 @@
 #*                                                                        *
 #**************************************************************************
 
-include ../config/Makefile
+include ../Makefile.config
 
 INSTALL_BINDIR=$(DESTDIR)$(BINDIR)
 INSTALL_LIBDIR=$(DESTDIR)$(LIBDIR)
@@ -98,7 +98,7 @@ PICOBJS=$(OBJS:.$(O)=.pic.$(O))
 .PHONY: all
 all: $(LIBRARIES) $(PROGRAMS)
 
-ld.conf: ../config/Makefile
+ld.conf: ../Makefile.config
 	echo "$(STUBLIBDIR)" > $@
 	echo "$(LIBDIR)" >> $@
 

@@ -28,7 +28,7 @@ function run {
 }
 
 PREFIX="C:/Program Files/OCaml"
-
+conffile="Makefile.config"
 if [[ $1 = "msvc32-only" ]] ; then
   cd $APPVEYOR_BUILD_FOLDER/flexdll-0.35
   make MSVC_DETECT=0 CHAINS=msvc MSVC_FLAGS="-nologo -MD -D_CRT_NO_DEPRECATE -GS- -WX" support
@@ -41,8 +41,8 @@ if [[ $1 = "msvc32-only" ]] ; then
   eval $(tools/msvs-promote-path)
 
   PREFIX="C:/Program Files/OCaml-msmvc32"
-  echo "Edit config/Makefile to set PREFIX=$PREFIX"
-  sed -e "s|PREFIX=.*|PREFIX=$PREFIX|" -e "/\(BYTE\|NATIVE\)CCCOMPOPTS=./s/\r\?$/ -WX\0/" config/Makefile.msvc > config/Makefile
+  echo "Edit ${conffile} to set PREFIX=$PREFIX"
+  sed -e "s|PREFIX=.*|PREFIX=$PREFIX|" -e "/\(BYTE\|NATIVE\)CCCOMPOPTS=./s/\r\?$/ -WX\0/" config/Makefile.msvc > ${conffile}
 
   run "make world" make world
   run "make runtimeopt" make runtimeopt
@@ -70,9 +70,9 @@ cd ..
 cp config/m-nt.h byterun/caml/m.h
 cp config/s-nt.h byterun/caml/s.h
 
-echo "Edit config/Makefile to set PREFIX=$PREFIX"
-sed -e "s|PREFIX=.*|PREFIX=$PREFIX|" -e "/\(BYTE\|NATIVE\)CCCOMPOPTS=./s/\r\?$/ -WX\0/" config/Makefile.msvc64 > config/Makefile
-#run "Content of config/Makefile" cat config/Makefile
+echo "Edit ${conffile} to set PREFIX=$PREFIX"
+sed -e "s|PREFIX=.*|PREFIX=$PREFIX|" -e "/\(BYTE\|NATIVE\)CCCOMPOPTS=./s/\r\?$/ -WX\0/" config/Makefile.msvc64 > ${conffile}
+#run "Content of ${conffile}" cat ${conffile}
 
 run "make world" make world
 run "make bootstrap" make bootstrap
@@ -85,9 +85,9 @@ cp config/m-nt.h byterun/caml/m.h
 cp config/s-nt.h byterun/caml/s.h
 
 PREFIX="C:/Program Files/OCaml-mingw32"
-echo "Edit config/Makefile to set PREFIX=$PREFIX"
-sed -e "s|PREFIX=.*|PREFIX=$PREFIX|" -e "/\(BYTE\|NATIVE\)CCCOMPOPTS=./s/\r\?$/ -Werror\0/" config/Makefile.mingw > config/Makefile
-#run "Content of config/Makefile" cat config/Makefile
+echo "Edit ${conffile} to set PREFIX=$PREFIX"
+sed -e "s|PREFIX=.*|PREFIX=$PREFIX|" -e "/\(BYTE\|NATIVE\)CCCOMPOPTS=./s/\r\?$/ -Werror\0/" config/Makefile.mingw > ${conffile}
+#run "Content of ${conffile}" cat ${conffile}
 
 run "make flexdll" make flexdll
 run "make world.opt" make world.opt

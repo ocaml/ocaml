@@ -13,7 +13,7 @@
 #*                                                                        *
 #**************************************************************************
 
-include ../config/Makefile
+include ../Makefile.config
 
 LINKEDFILES=misc.c freelist.c major_gc.c minor_gc.c memory.c alloc.c array.c \
   compare.c ints.c floats.c str.c io.c extern.c intern.c hash.c sys.c \

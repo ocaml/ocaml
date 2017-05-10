@@ -16,7 +16,7 @@
 # Common Makefile for otherlibs
 
 ROOTDIR=../..
-include $(ROOTDIR)/config/Makefile
+include $(ROOTDIR)/Makefile.config
 CAMLRUN ?= $(ROOTDIR)/boot/ocamlrun
 CAMLYACC ?= $(ROOTDIR)/boot/ocamlyacc
 
