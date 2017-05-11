@@ -191,16 +191,19 @@ and print_simple_out_type ppf =
         print_ident id
 #if undefined BS_NO_COMPILER_PATCH then         
   | Otyp_constr ((Oide_dot (Oide_ident "Js", ("fn" | "meth" as name )) as id) ,
-                 ([Otyp_variant(_,Ovar_fields [ _, _, tys], _,_); result] as tyl))
+                 ([Otyp_variant(_,Ovar_fields [ variant, _, tys], _,_); result] as tyl))
     ->
       (* Otyp_arrow*)
       let make tys result =
         if tys = [] then
           Otyp_arrow ("", Otyp_constr (Oide_ident "unit", []),result)
         else
-          match tys with
-          | [ Otyp_tuple tys] -> 
-              List.fold_right (fun x acc  -> Otyp_arrow("",x,acc) ) tys result
+            match tys with
+          | [ Otyp_tuple tys as single] -> 
+              if variant = "Arity_1" then
+                Otyp_arrow ("", single, result)
+              else 
+                List.fold_right (fun x acc  -> Otyp_arrow("",x,acc) ) tys result
           | [single] ->
               Otyp_arrow ("", single, result)
           | _ -> 
@@ -224,12 +227,14 @@ and print_simple_out_type ppf =
           end
       end
   | Otyp_constr ((Oide_dot (Oide_ident "Js", "meth_callback" ) as id) ,
-                 ([Otyp_variant(_,Ovar_fields [ _, _, tys], _,_); result] as tyl))
+                 ([Otyp_variant(_,Ovar_fields [ variant, _, tys], _,_); result] as tyl))
     ->
       let make tys result =
           match tys with
-          | [ Otyp_tuple tys] -> 
-              List.fold_right (fun x acc  -> Otyp_arrow("",x,acc) ) tys result
+          | [ Otyp_tuple tys as single ] -> 
+              if variant = "Arity_1" then Otyp_arrow ("", single, result)
+              else 
+                List.fold_right (fun x acc  -> Otyp_arrow("",x,acc) ) tys result
           | [single] ->
               Otyp_arrow ("", single, result)
           | _ -> 
