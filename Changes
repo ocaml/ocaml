@@ -147,6 +147,10 @@ Working version
   included by other header files
   (Sébastien Hinderer)
 
+- GPR#1058, MPR#7127, GPR#454: in toplevel, print bytes and strip
+  strings longer than the size specified by the "print_length" directive
+  (Fabrice Le Fessant, initial PR by Junsong Li)
+
 ### Bug fixes
 
 - PR#5927: Type equality broken for conjunctive polymorphic variant tags
