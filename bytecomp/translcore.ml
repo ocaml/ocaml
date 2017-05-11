@@ -708,8 +708,25 @@ let rec transl_exp e =
       Texp_function _ | Texp_for _ | Texp_while _ -> false
     | _ -> true
   in
-  if eval_once then transl_exp0 e else
-  Translobj.oo_wrap e.exp_env true transl_exp0 e
+  let has_newtype e =
+    List.exists (function (Texp_newtype _, _, _) -> true | _ -> false) e.exp_extra
+  in
+  let transl e =
+    if eval_once then transl_exp0 e else
+    Translobj.oo_wrap e.exp_env true transl_exp0 e
+  in
+  if has_newtype e then begin
+    let prev_return = !current_return in
+    let new_return = next_negative_raise_count () in
+    current_return := new_return;
+    let lam =
+      let ret_var = Ident.create "return" in
+      Lstaticcatch (transl e, (new_return, [ret_var]), Lvar ret_var)
+    in
+    current_return := prev_return;
+    lam
+  end
+  else transl e
 
 and transl_exp0 e =
   match e.exp_desc with

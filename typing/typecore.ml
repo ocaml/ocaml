@@ -2935,7 +2935,9 @@ and type_expect_ ?in_function ?(recarg=Rejected) env sexp ty_expected =
       let (id, new_env) = Env.enter_type name decl env in
       Ctype.init_def(Ident.current_time());
 
-      let body = type_exp new_env sbody in
+      let return_type = newvar () in
+      let new_env = Env.add_return return_type new_env in
+      let body = type_expect new_env sbody return_type in
       (* Replace every instance of this type constructor in the resulting
          type. *)
       let seen = Hashtbl.create 8 in
