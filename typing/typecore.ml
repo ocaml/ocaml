@@ -2852,6 +2852,7 @@ and type_expect_ ?in_function ?(recarg=Rejected) env sexp ty_expected =
       let ty = newgenvar () in
       let to_unify = Predef.type_lazy_t ty in
       unify_exp_types loc env to_unify ty_expected;
+      let env = Env.add_return ty env in
       let arg = type_expect env e ty in
       re {
         exp_desc = Texp_lazy arg;

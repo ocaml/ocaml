@@ -1114,10 +1114,17 @@ and transl_exp0 e =
           else transl_exp e
       (* other cases compile to a lazy block holding a function *)
       | _ ->
+         let prev_return = !current_return in
+         let new_return = next_negative_raise_count () in
+         current_return := new_return;
+         let ret_var = Ident.create "return" in
+         let body = transl_exp e in
+         let body = Lstaticcatch (body, (new_return, [ret_var]), Lvar ret_var) in
+         current_return := prev_return;
          let fn = Lfunction {kind = Curried; params = [Ident.create "param"];
                              attr = default_function_attribute;
                              loc = e.exp_loc;
-                             body = transl_exp e} in
+                             body} in
           Lprim(Pmakeblock(Config.lazy_tag, Mutable, None), [fn], e.exp_loc)
       end
   | Texp_object (cs, meths) ->
