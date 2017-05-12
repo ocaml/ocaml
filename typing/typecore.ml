@@ -1616,8 +1616,16 @@ let rec is_nonexpansive exp =
       is_nonexpansive_mod mexp && is_nonexpansive e
   | Texp_pack mexp ->
       is_nonexpansive_mod mexp
+  (* Computations which raise exceptions are nonexpansive, since (raise e) is equivalent
+     to (raise e; diverge), and a nonexpansive "diverge" can be produced using lazy values
+     or the relaxed value restriction. See GPR#1142 *)
   | Texp_assert exp ->
       is_nonexpansive exp
+  | Texp_apply (
+      { exp_desc = Texp_ident (_, _, {val_kind =
+             Val_prim {Primitive.prim_name = "%raise"}}) },
+      [Nolabel, Some e]) ->
+     is_nonexpansive e
   | _ -> false
 
 and is_nonexpansive_mod mexp =
