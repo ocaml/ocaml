@@ -473,14 +473,19 @@ let emit_instr fallthrough i =
           `	{locate_domain_state ()}, %r15\n`;
           `	movq	{domain_field Domainstate.Domain_young_ptr}(%r15), %r15\n`;
         end else begin
-          ` movq  %rsp, %r10\n`;
-          ` movq  %r15, %r11\n`;
+          `	movq  %rsp, %r10\n`;
+          `	movq  %r15, %r11\n`;
           `	{locate_domain_state ()}, %r11\n`;
+          `	.cfi_remember_state\n`;
           `	movq	{domain_field Domainstate.Domain_system_sp}(%r11), %rsp\n`;
-          ` pushq %r10\n`;
+          `	.cfi_def_cfa_offset 8\n`;
+          `	pushq %r10\n`;
+          cfi_adjust_cfa_offset (8);
           `	{emit_call s}\n`;
-          ` popq  %r10\n`;
-          ` movq  %r10, %rsp\n`
+          `	popq  %r10\n`;
+          cfi_adjust_cfa_offset (-8);
+          `	movq  %r10, %rsp\n`;
+          `	.cfi_restore_state\n`;
         end
     | Lop(Istackoffset n) ->
         if n < 0
