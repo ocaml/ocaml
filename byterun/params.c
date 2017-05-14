@@ -33,6 +33,7 @@ static void init_startup_params()
     params.cds_file = caml_strdup(params.cds_file);
   }
 #endif
+  params.profile_slop_wsz = 0;
 }
 
 
@@ -84,6 +85,7 @@ void caml_init_startup_params(void)
       case 'v': scanmult (opt, &params.verb_gc); break;
       case 'V': params.verify_heap = 1; break;
       case 'f': scanmult (opt, &params.fiber_wsz_init); break;
+      case 'w': params.profile_slop_wsz = 128; break;
       case 'e': params.eventlog_enabled = 1; break;
       }
     }
