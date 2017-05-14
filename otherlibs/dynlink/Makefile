@@ -17,7 +17,8 @@
 
 # FIXME reduce redundancy by including ../Makefile
 
-include ../../Makefile.config
+ROOTDIR=../..
+include $(ROOTDIR)/Makefile.config
 CAMLRUN ?= ../../boot/ocamlrun
 CAMLYACC ?= ../../boot/ocamlyacc
 

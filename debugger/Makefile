@@ -13,7 +13,8 @@
 #*                                                                        *
 #**************************************************************************
 
-include ../Makefile.config
+ROOTDIR=..
+include $(ROOTDIR)/Makefile.config
 UNIXDIR=../otherlibs/$(UNIXLIB)
 CAMLRUN ?= ../boot/ocamlrun
 CAMLYACC ?= ../boot/ocamlyacc

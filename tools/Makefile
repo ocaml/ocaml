@@ -14,7 +14,8 @@
 #**************************************************************************
 
 MAKEFLAGS := -r -R
-include ../Makefile.config
+ROOTDIR=..
+include $(ROOTDIR)/Makefile.config
 INSTALL_BINDIR:=$(DESTDIR)$(BINDIR)
 INSTALL_LIBDIR:=$(DESTDIR)$(LIBDIR)
 INSTALL_COMPLIBDIR:=$(DESTDIR)$(COMPLIBDIR)
@@ -153,13 +154,13 @@ $(call byte_and_opt,ocamlmklib,ocamlmklibconfig.cmo config.cmo misc.cmo \
 	         ocamlmklib.cmo,)
 
 
-ocamlmklibconfig.ml: ../Makefile.config Makefile
+ocamlmklibconfig.ml: ../config/Makefile Makefile
 	(echo 'let bindir = "$(BINDIR)"'; \
          echo 'let supports_shared_libraries = $(SUPPORTS_SHARED_LIBRARIES)';\
          echo 'let default_rpath = "$(RPATH)"'; \
          echo 'let mksharedlibrpath = "$(MKSHAREDLIBRPATH)"'; \
          echo 'let toolpref = "$(TOOLPREF)"'; \
-         sed -n -e 's/^#ml //p' ../Makefile.config) \
+         sed -n -e 's/^#ml //p' ../config/Makefile) \
         > ocamlmklibconfig.ml
 
 beforedepend:: ocamlmklibconfig.ml

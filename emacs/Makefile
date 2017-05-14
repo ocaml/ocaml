@@ -12,7 +12,8 @@
 #*                                                                        *
 #**************************************************************************
 
-include ../Makefile.config
+ROOTDIR=..
+include $(ROOTDIR)/Makefile.config
 
 # Files to install
 FILES=	caml-font.el caml-hilit.el caml.el camldebug.el \

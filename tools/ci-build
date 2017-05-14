@@ -93,7 +93,7 @@ set -ex
 # set up variables
 
 # default values
-conffile=Makefile.config
+conffile=config/Makefile
 make=make
 instdir="$HOME/ocaml-tmp-install"
 configure=unix
