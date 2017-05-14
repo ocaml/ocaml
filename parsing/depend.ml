@@ -18,6 +18,8 @@ open Location
 open Longident
 open Parsetree
 
+let pp_deps = ref []
+
 module StringSet = Set.Make(struct type t = string let compare = compare end)
 module StringMap = Map.Make(String)
 

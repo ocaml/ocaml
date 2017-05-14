@@ -171,6 +171,12 @@ this would remove the bytecode part of the executable.
 \end{unix}
 }%comp
 
+\notop{%
+\item["-depend" \var{ocamldep-args}]
+Compute dependencies, as the "ocamldep" command would do. The remaining
+arguments are interpreted as if they were given to the "ocamldep" command.
+}%notop
+
 \comp{
 \item["-dllib" "-l"\var{libname}]
 Arrange for the C shared library "dll"\var{libname}".so"

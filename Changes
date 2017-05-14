@@ -111,6 +111,11 @@ Working version
 
 ### Tools:
 
+- GPR#1078: add a subcommand "-depend" to "ocamlc" and "ocamlopt",
+  to behave as ocamldep. Should be used mostly to replace "ocamldep" in the
+  "boot" directory to reduce its size in the future.
+  (Fabrice Le Fessant)
+
 - GPR#1045: ocamldep, add a "-shared" option to generate dependencies
   for native plugin files (i.e. .cmxs files)
   (Florian Angeletti, suggestion by Sébastien Hinderer)
@@ -342,7 +347,8 @@ Next major version (4.05.0):
   (Xavier Leroy)
 
 - GPR#1015: add option "-plugin PLUGIN" to ocamldep too. Use compilerlibs
-  to build ocamldep.
+  to build ocamldep. Add option "-depend" to ocamlc/ocamlopt to behave
+  as ocamldep. Remove any use of ocamldep to build the distribution.
   (Fabrice Le Fessant)
 
 - GPR#1027: various improvements to -dtimings, mostly including time
