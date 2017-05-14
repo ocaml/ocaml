@@ -88,6 +88,10 @@ Working version
   manual and tutorial
   (Florian Angeletti)
 
+- PR#6709: document the associativity and precedence level of
+  pervasive operators
+  (Florian Angeletti, review by David Allsopp)
+
 - PR#7254, GPR#1096: Rudimentary documentation of ocamlnat
   (Mark Shinwell)
 
