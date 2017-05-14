@@ -366,6 +366,11 @@ let unboxed_types = ref false
 
 let arg_spec = ref []
 let arg_names = ref Misc.StringMap.empty
+
+let reset_arguments () =
+  arg_spec := [];
+  arg_names := Misc.StringMap.empty
+
 let add_arguments loc args =
   List.iter (function (arg_name, _, _) as arg ->
     try

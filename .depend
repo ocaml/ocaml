@@ -2256,3 +2256,18 @@ driver/compdynlink.cmo : bytecomp/symtable.cmi bytecomp/opcodes.cmo \
     utils/misc.cmi bytecomp/meta.cmi bytecomp/dll.cmi utils/consistbl.cmi \
     utils/config.cmi bytecomp/cmo_format.cmi typing/cmi_format.cmi \
     driver/compdynlink.cmi
+
+driver/makedepend.cmo : driver/pparse.cmi parsing/parsetree.cmi \
+    parsing/parser.cmi parsing/parse.cmi utils/misc.cmi parsing/longident.cmi \
+    parsing/location.cmi parsing/lexer.cmi parsing/depend.cmi \
+    utils/config.cmi driver/compplugin.cmi driver/compenv.cmi \
+    utils/clflags.cmi driver/makedepend.cmi
+driver/makedepend.cmx : driver/pparse.cmx parsing/parsetree.cmi \
+    parsing/parser.cmx parsing/parse.cmx utils/misc.cmx parsing/longident.cmx \
+    parsing/location.cmx parsing/lexer.cmx parsing/depend.cmx \
+    utils/config.cmx driver/compplugin.cmx driver/compenv.cmx \
+    utils/clflags.cmx driver/makedepend.cmi
+driver/main.cmo : driver/makedepend.cmi
+driver/main.cmx : driver/makedepend.cmx
+driver/optmain.cmo : driver/makedepend.cmi
+driver/optmain.cmx : driver/makedepend.cmx

@@ -127,6 +127,9 @@ end)
 
 let main () =
   Clflags.add_arguments __LOC__ Options.list;
+  Clflags.add_arguments __LOC__
+    ["-depend", Arg.Unit Makedepend.main_from_option,
+     "<options> Compute dependencies (use 'ocamlc -depend -help' for details)"];
   try
     readenv ppf Before_args;
     Clflags.parse_arguments anonymous usage;
