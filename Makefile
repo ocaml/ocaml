@@ -1289,7 +1289,7 @@ depend: beforedepend
 distclean: clean
 	rm -f boot/ocamlrun boot/ocamlrun$(EXE) boot/camlheader \
 	      boot/ocamlyacc boot/*.cm* boot/libcamlrun.$(A)
-	rm -f $(CONFIG_MAKEFILE) byterun/caml/m.h byterun/caml/s.h
+	rm -f $(CONFIG_MAKEFILE) config/m.h config/s.h
 	rm -f tools/*.bak
 	rm -f ocaml ocamlc
 	rm -f testsuite/_log

@@ -166,7 +166,7 @@ caml/version.h : ../VERSION ../tools/make-version-header.sh
 clean:
 	rm -f $(LIBRARIES) $(PROGRAMS) *.$(O) *.$(A) *.$(SO)
 	rm -f primitives prims.c caml/opnames.h caml/jumptbl.h
-	rm -f caml/version.h
+	rm -f caml/version.h caml/m.h caml/s.h
 
 ocamlrun$(EXE): prims.$(O) libcamlrun.$(A)
 	$(call MAKE_OCAMLRUN,$@,$^ $(LIBS))

@@ -2046,9 +2046,8 @@ echo "CONFIG_MAKEFILE=config/Makefile" >> Makefile
 
 
 rm -f tst hasgot.c
-rm -f ../../byterun/caml/m.h ../../byterun/caml/s.h ../Makefile
-mv m.h s.h ../../byterun/caml/
-mv Makefile ..
+rm -f ../m.h ../s.h ../Makefile
+mv m.h s.h Makefile ..
 
 # Print a summary
 
