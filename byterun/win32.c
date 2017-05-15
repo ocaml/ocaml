@@ -521,16 +521,6 @@ static void caml_reset_stack (void *faulting_address)
   caml_raise_stack_overflow();
 }
 
-/* Do not use the macro from address_class.h here. */
-#undef Is_in_code_area
-#define Is_in_code_area(pc) \
- ( ((char *)(pc) >= caml_code_area_start && \
-    (char *)(pc) <= caml_code_area_end)     \
-|| ((char *)(pc) >= &caml_system__code_begin && \
-    (char *)(pc) <= &caml_system__code_end)     \
-|| (Classify_addr(pc) & In_code_area) )
-extern char caml_system__code_begin, caml_system__code_end;
-
 
 #ifndef _WIN64
 static LONG CALLBACK
@@ -564,6 +554,17 @@ static LONG CALLBACK
 #else
 extern char *caml_exception_pointer;
 extern value *caml_young_ptr;
+
+/* Do not use the macro from address_class.h here. */
+#undef Is_in_code_area
+#define Is_in_code_area(pc) \
+ ( ((char *)(pc) >= caml_code_area_start && \
+    (char *)(pc) <= caml_code_area_end)     \
+|| ((char *)(pc) >= &caml_system__code_begin && \
+    (char *)(pc) <= &caml_system__code_end)     \
+|| (Classify_addr(pc) & In_code_area) )
+extern char caml_system__code_begin, caml_system__code_end;
+
 
 static LONG CALLBACK
     caml_stack_overflow_VEH (EXCEPTION_POINTERS* exn_info)
