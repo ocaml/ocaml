@@ -27,7 +27,6 @@ let class_type_declarations ~loc env cty1 cty2 =
     loc
     cty1.clty_attributes cty2.clty_attributes
     (Path.last cty1.clty_path);
-
   Ctype.match_class_declarations env
     cty1.clty_params cty1.clty_type
     cty2.clty_params cty2.clty_type

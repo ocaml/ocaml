@@ -433,7 +433,6 @@ and module_declarations ~loc env cxt subst id1 md1 md2 =
     loc
     md1.md_attributes md2.md_attributes
     (Ident.name id1);
-
   let p1 = Pident id1 in
   Env.mark_module_used env (Ident.name id1) md1.md_loc;
   modtypes ~loc env (Module id1::cxt) subst
@@ -448,7 +447,6 @@ and modtype_infos ~loc env cxt subst id info1 info2 =
     loc
     info1.mtd_attributes info2.mtd_attributes
     (Ident.name id);
-
   let info2 = Subst.modtype_declaration subst info2 in
   let cxt' = Modtype id :: cxt in
   try

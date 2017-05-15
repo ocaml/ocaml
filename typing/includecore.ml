@@ -204,7 +204,6 @@ and compare_variants ~loc env params1 params2 n
           loc
           cd1.cd_attributes cd2.cd_attributes
           (Ident.name cd1.cd_id);
-
         let r =
           match cd1.cd_res, cd2.cd_res with
           | Some r1, Some r2 ->
@@ -240,7 +239,6 @@ and compare_records ~loc env params1 params2 n
           loc
           ld1.ld_attributes ld2.ld_attributes
           (Ident.name ld1.ld_id);
-
         if Ctype.equal env true (ld1.ld_type::params1)(ld2.ld_type::params2)
         then (* add arguments to the parameters, cf. PR#7378 *)
           compare_records ~loc env
@@ -258,7 +256,6 @@ let type_declarations ?(equality = false) ~loc env name decl1 id decl2 =
     loc
     decl1.type_attributes decl2.type_attributes
     name;
-
   if decl1.type_arity <> decl2.type_arity then [Arity] else
   if not (private_flags decl1 decl2) then [Privacy] else
   let err = match (decl1.type_manifest, decl2.type_manifest) with
