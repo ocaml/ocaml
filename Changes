@@ -59,6 +59,10 @@ Working version
   values.
   (Daniel Bünzli, review by Damien Doligez, Max Mouratov)
 
+- GPR#1175: bigarray, add a change_layout function to each Array[N]
+  submodules.
+  (Florian Angeletti)
+
 - Resurrect tabulation boxes in module Format. Rewrite/extend documentation
   of tabulation boxes.
 
