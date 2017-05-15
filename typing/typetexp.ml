@@ -394,8 +394,8 @@ let rec transl_type env policy styp =
                     check (Env.find_type path env)
                 | _ -> raise Not_found
           in check decl;
-          Location.prerr_warning styp.ptyp_loc
-            (Warnings.Deprecated "old syntax for polymorphic variant type");
+          Location.deprecated styp.ptyp_loc
+            "old syntax for polymorphic variant type";
           (path, decl,true)
         with Not_found -> try
           let lid2 =

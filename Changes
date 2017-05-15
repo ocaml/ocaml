@@ -72,6 +72,10 @@ Working version
   a trailing "Error: Some fatal warnings were triggered" message.
   (Valentin Gatien-Baron, review by Alain Frisch)
 
+- MPR#7444, GPR#1138: trigger deprecation warning when a "deprecated"
+  attribute is hidden by signature coercion
+  (Alain Frisch, report by bmillwood, review by Leo White)
+
 ### Manual and documentation:
 
 - PR#6548: remove obsolete limitation in the description of private

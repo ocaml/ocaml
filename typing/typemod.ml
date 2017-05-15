@@ -132,7 +132,7 @@ let check_type_decl env loc id row_id newdecl decl rs rem =
     | Some id -> Env.add_type ~check:false id newdecl env
   in
   let env = if rs = Trec_not then env else add_rec_types env rem in
-  Includemod.type_declarations env id newdecl decl;
+  Includemod.type_declarations ~loc env id newdecl decl;
   Typedecl.check_coherence env loc id newdecl
 
 let update_rec_next rs rem =
@@ -227,14 +227,14 @@ let merge_constraint initial_env loc sg constr =
         let path, md' = Typetexp.find_module initial_env loc lid'.txt in
         let md'' = {md' with md_type = Mtype.remove_aliases env md'.md_type} in
         let newmd = Mtype.strengthen_decl ~aliasable:false env md'' path in
-        ignore(Includemod.modtypes env newmd.md_type md.md_type);
+        ignore(Includemod.modtypes ~loc env newmd.md_type md.md_type);
         (Pident id, lid, Twith_module (path, lid')),
         Sig_module(id, newmd, rs) :: rem
     | (Sig_module(id, md, rs) :: rem, [s], Pwith_modsubst (_, lid'))
       when Ident.name id = s ->
         let path, md' = Typetexp.find_module initial_env loc lid'.txt in
         let newmd = Mtype.strengthen_decl ~aliasable:false env md' path in
-        ignore(Includemod.modtypes env newmd.md_type md.md_type);
+        ignore(Includemod.modtypes ~loc env newmd.md_type md.md_type);
         real_id := Some id;
         (Pident id, lid, Twith_modsubst (path, lid')),
         update_rec_next rs rem
@@ -972,7 +972,7 @@ let check_recmodule_inclusion env bindings =
         and mty_actual' = subst_and_strengthen env s id mty_actual in
         let coercion =
           try
-            Includemod.modtypes env mty_actual' mty_decl'
+            Includemod.modtypes ~loc:modl.mod_loc env mty_actual' mty_decl'
           with Includemod.Error msg ->
             raise(Error(modl.mod_loc, env, Not_included msg)) in
         let modl' =
@@ -1047,7 +1047,7 @@ let package_subtype env p1 nl1 tl1 p2 nl2 tl2 =
     modtype_of_package env Location.none p nl tl
   in
   let mty1 = mkmty p1 nl1 tl1 and mty2 = mkmty p2 nl2 tl2 in
-  try Includemod.modtypes env mty1 mty2 = Tcoerce_none
+  try Includemod.modtypes ~loc:Location.none env mty1 mty2 = Tcoerce_none
   with Includemod.Error _msg -> false
     (* raise(Error(Location.none, env, Not_included msg)) *)
 
@@ -1056,7 +1056,7 @@ let () = Ctype.package_subtype := package_subtype
 let wrap_constraint env arg mty explicit =
   let coercion =
     try
-      Includemod.modtypes env arg.mod_type mty
+      Includemod.modtypes ~loc:arg.mod_loc env arg.mod_type mty
     with Includemod.Error msg ->
       raise(Error(arg.mod_loc, env, Not_included msg)) in
   { mod_desc = Tmod_constraint(arg, mty, explicit, coercion);
@@ -1142,7 +1142,7 @@ let rec type_module ?(alias=false) sttn funct_body anchor env smod =
           end;
           let coercion =
             try
-              Includemod.modtypes env arg.mod_type mty_param
+              Includemod.modtypes ~loc:sarg.pmod_loc env arg.mod_type mty_param
             with Includemod.Error msg ->
               raise(Error(sarg.pmod_loc, env, Not_included msg)) in
           let mty_appl =
