@@ -174,13 +174,16 @@
 /* Switch from OCaml to C stack. Clobbers REG & %r14. */
 #define SWITCH_OCAML_TO_C_NO_CTXT(REG) \
     /* Save OCaml SP in the stack slot */ \
+        mov     %rsp, REG; \
         LOAD_TL_VAR(caml_stack_high, %r14); \
-        subq    %r14, %rsp; \
-        sarq    $3, %rsp; \
-        LOAD_TL_VAR(caml_current_stack, REG); \
-        movq    %rsp, (REG); \
+        subq    %r14, REG; \
+        sarq    $3, REG; \
+        LOAD_TL_VAR(caml_current_stack, %r14); \
+        movq    REG, (%r14); \
     /* Switch to system stack */ \
-        LOAD_TL_VAR(caml_system_sp, %rsp)
+        LOAD_TL_VAR(caml_system_sp, REG); \
+        movq    REG, %rsp; \
+        .cfi_def_cfa_offset 8 /* SYSCFAXXX */
 
 /* Switch from OCaml to C stack. Also builds a context at
  * the bottom of the OCaml stack. Clobbers REG & %r14. */
@@ -190,35 +193,41 @@
         pushq   %r14; CFI_ADJUST(8); \
         SWITCH_OCAML_TO_C_NO_CTXT(REG)
 
-/* Switch from C to OCaml stack.  Clobbers REG. */
-#define SWITCH_C_TO_OCAML_NO_CTXT(REG) \
+/* Switch from C to OCaml stack.  Clobbers REG & %r14. */
+#define SWITCH_C_TO_OCAML_NO_CTXT(REG,CFA_OFF) \
     /* Switch to OCaml stack */ \
-        LOAD_TL_VAR(caml_stack_high, %rsp); \
+        LOAD_TL_VAR(caml_stack_high, %r14); \
         LOAD_TL_VAR(caml_current_stack, REG); \
     /* REG is Stack_sp(caml_current_stack) */ \
         movq    (REG), REG; \
         salq    $3, REG; \
-        addq    REG, %rsp
+        addq    REG, %r14; \
+        movq    %r14, %rsp; \
+        .cfi_def_cfa_offset CFA_OFF
 
 /* Switch from C to OCaml stack. Also pops the context
- * from the bottom of the OCaml stack. Clobbers REG. */
+ * from the bottom of the OCaml stack. Clobbers REG & %r14. */
 #define SWITCH_C_TO_OCAML(REG) \
-        SWITCH_C_TO_OCAML_NO_CTXT(REG); \
+        SWITCH_C_TO_OCAML_NO_CTXT(REG,24); \
     /* Pop the caml_context from the bottom of stack updating %r14 */ \
         popq    %r14; CFI_ADJUST(-8); \
-        popq    REG; CFI_ADJUST(-8)
+        popq    REG; CFI_ADJUST(-8); \
 
 /* Load [caml_stack_high - %r14] into %rsp. %r14 is an offset. Clobbers %r11. */
 #define RESTORE_EXN_HANDLER_OCAML \
-        LOAD_TL_VAR(caml_stack_high, %rsp); \
-        sub     %r14, %rsp; \
-        popq    %r14
+        LOAD_TL_VAR(caml_stack_high, %r11); \
+        sub     %r14, %r11; \
+        movq    %r11, %rsp; \
+        .cfi_def_cfa_offset 16; \
+        popq    %r14; CFI_ADJUST(-8)
 
 /* Load [caml_stack_high - %r14] into %rsp. %r14 is an offset. Clobbers %r11. */
 #define RESTORE_EXN_HANDLER_SYS \
-        LOAD_TL_VAR(caml_system_stack_high, %rsp); \
-        sub     %r14, %rsp; \
-        popq    %r14
+        LOAD_TL_VAR(caml_system_stack_high, %r11); \
+        sub     %r14, %r11; \
+        movq    %r11, %rsp; \
+        .cfi_def_cfa_offset 16; \
+        popq    %r14; CFI_ADJUST(-8)
 
 /* Switch between OCaml stacks.
  * arguments : target stack (%rdi)
@@ -642,9 +651,9 @@ LBL(caml_allocN):
 LBL(103):
         /* Save desired size on system stack */
         LOAD_TL_VAR(caml_system_sp, %rax)
-        popq    -8(%rax)
+        popq    -8(%rax); CFI_ADJUST(-8)
         SWITCH_OCAML_TO_C(%rax)
-        subq    $16, %rsp
+        subq    $16, %rsp; CFI_ADJUST(16)
         ENTER_FUNCTION
         call    LBL(do_gc)
         LEAVE_FUNCTION
@@ -735,17 +744,19 @@ LBL(caml_start_program):
     /* Save system stack state. System stack is captured unalinged. Hence, any
      * OCaml to C calls are expected to explicitly align stack using
      * ENTER_FUNCTION and such. */
-        PUSH_TL_VAR(caml_system_exnptr_offset)
-        PUSH_TL_VAR(caml_system_sp)
+        PUSH_TL_VAR(caml_system_exnptr_offset); CFI_ADJUST(8)
+        PUSH_TL_VAR(caml_system_sp); CFI_ADJUST(8)
     /* Save the reference to parent stack on C stack and reset it in
      * the OCaml stack */
         LOAD_TL_VAR(caml_current_stack, %r13)
-        pushq   Stack_parent(%r13)
+        pushq   Stack_parent(%r13); CFI_ADJUST(8)
         movq    $1, Stack_parent(%r13)
     /* Build a handler for exceptions raised in C */
         lea     LBL(115)(%rip), %r13
         pushq   %r13; CFI_ADJUST(8)
-        pushq   $0 ; CFI_ADJUST(8)     /* dummy prev trap */
+    /* dummy prev trap. Important that this is 0 for indicating CFI last frame.
+     * See SYSCFAXXX. */
+        pushq   $0 ; CFI_ADJUST(8)
         STORE_TL_VAR(%rsp, caml_system_sp)
     /* Load C exception handler */
         LOAD_TL_VAR(caml_system_stack_high, %r14)
@@ -773,14 +784,16 @@ LBL(caml_start_program):
         popq    %rax; CFI_ADJUST(-8)
         popq    %r12; CFI_ADJUST(-8)
         addq    $8, %rsp; CFI_ADJUST(-8)
-    /* Switch from C to OCaml stack. */
-        SWITCH_C_TO_OCAML_NO_CTXT(%r10)
+    /* Switch from C to OCaml stack. CFA offset -8 refers to OCAMLCFAXXX. */
+        SWITCH_C_TO_OCAML_NO_CTXT(%r10,-8)
     /* Setup alloc ptr */
         LOAD_TL_VAR(caml_young_ptr, %r15)
     /* Build a handler for exceptions raised in OCaml */
         lea     LBL(109)(%rip), %r13
         pushq   %r13; CFI_ADJUST(8)
-        pushq   %r14; CFI_ADJUST(8)
+    /* dummy prev trap. Important that this is 0 for indicating CFI last frame.
+     * See OCAMLCFAXXX. */
+        pushq   $0 ; CFI_ADJUST(8)
         LOAD_TL_VAR(caml_stack_high, %r14); \
         sub     %rsp, %r14
     /* Call the OCaml code */
@@ -789,7 +802,6 @@ LBL(108):
     /* Pop the OCaml exception handler */
         popq    %r14; CFI_ADJUST(-8)
         popq    %r12; CFI_ADJUST(-8)   /* dummy register */
-        CFI_ADJUST(-16)
 LBL(110):
     /* Update alloc ptr */
         STORE_TL_VAR(%r15,caml_young_ptr)
@@ -799,10 +811,10 @@ LBL(110):
         addq    $16, %rsp; CFI_ADJUST(-16)
     /* Restore previous parent stack */
         LOAD_TL_VAR(caml_current_stack, %r10)
-        popq    Stack_parent(%r10)
+        popq    Stack_parent(%r10); CFI_ADJUST(-8)
     /* Restore previous system stack state */
-        POP_TL_VAR(caml_system_sp)
-        POP_TL_VAR(caml_system_exnptr_offset)
+        POP_TL_VAR(caml_system_sp); CFI_ADJUST(-8)
+        POP_TL_VAR(caml_system_exnptr_offset); CFI_ADJUST(-8)
     /* Restore callee-save registers. */
         POP_CALLEE_SAVE_REGS
     /* Return to caller. */
@@ -962,6 +974,13 @@ CFI_STARTPROC
         jmp     *%rsi
 CFI_ENDPROC
 
+/* Dummy function so that fiber backtrace shows `caml_handler` instead of
+ * `caml_fiber_exn_handler`. */
+FUNCTION(G(caml_handler))
+CFI_STARTPROC
+        ret
+CFI_ENDPROC
+
 FUNCTION(G(caml_fiber_val_handler))
 CFI_STARTPROC
 LBL(111):
@@ -972,8 +991,8 @@ LBL(111):
         movq    Stack_handle_value(%rsi), %r12    /* value handler */
         movq    Stack_parent(%rsi), %rdi          /* parent stack. Never NULL here. */
     /* Reset stack. First pop off fiber exn handler. */
-        popq    %r10
-        popq    %r10
+        popq    %r10; CFI_ADJUST(-8)
+        popq    %r10; CFI_ADJUST(-8)
         movq    $1, Stack_handle_value(%rsi)
         movq    $1, Stack_handle_exception(%rsi)
         movq    $1, Stack_handle_effect(%rsi)
