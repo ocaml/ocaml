@@ -97,6 +97,49 @@ CAMLexport int caml_atomic_cas_field (value obj, int field, value oldval, value 
   }
 }
 
+
+/* FIXME: is __sync_synchronize a C11 SC fence? Is that enough? */
+
+CAMLprim value caml_atomic_load (value ref)
+{
+  if (Is_young(ref)) {
+    return Op_val(ref)[0];
+  } else {
+    CAMLparam1(ref);
+    CAMLlocal1(v);
+    __sync_synchronize();
+    caml_read_field(ref, 0, &v);
+    __sync_synchronize();
+    CAMLreturn (v);
+  }
+}
+
+CAMLprim value caml_atomic_store (value ref, value v)
+{
+  __sync_synchronize();
+  caml_modify_field(ref, 0, v);
+  __sync_synchronize();
+  return Val_unit;
+}
+
+CAMLprim value caml_atomic_cas (value ref, value oldv, value newv)
+{
+  value* p = Op_val(ref);
+  if (Is_young(ref)) {
+    if (*p == oldv) {
+      *p = newv;
+      write_barrier(ref, 0, oldv, newv);
+      return Val_int(1);
+    } else {
+      return Val_int(0);
+    }
+  } else {
+    int r = __sync_bool_compare_and_swap(p, oldv, newv);
+    if (r) write_barrier(ref, 0, oldv, newv);
+    return Val_int(r);
+  }
+}
+
 CAMLexport void caml_set_fields (value obj, value v)
 {
   int i;

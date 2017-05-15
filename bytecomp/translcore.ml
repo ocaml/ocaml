@@ -312,6 +312,9 @@ let primitives_table = create_hashtable 57 [
   "%bswap_int64", Pbbswap(Pint64);
   "%bswap_native", Pbbswap(Pnativeint);
   "%int_as_pointer", Pint_as_pointer;
+  "%atomic_load", Patomic_load;
+  "%atomic_store", Patomic_store;
+  "%atomic_cas", Patomic_cas;
 ]
 
 let prim_makearray =
