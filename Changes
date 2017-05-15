@@ -48,7 +48,7 @@ Working version
 
 - MPR#7444, GPR#1138: trigger deprecation warning when a "deprecated"
   attribute is hidden by signature coercion
-  (Alain Frisch, report by bmillwood)
+  (Alain Frisch, report by bmillwood, review by Leo White)
 
 ### Manual and documentation:
 
