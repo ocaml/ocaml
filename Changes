@@ -26,6 +26,10 @@ Next major version (4.05.0):
   (Stephen Dolan, review by Gabriel Scherer, Pierre Chambart,
   Mark Shinwell, and bug report by Gabriel Scherer)
 
+- PR#7533, GPR#1173: Correctly perform side effects for certain
+  cases of "/" and "mod"
+  (Mark Shinwell, report by Mantis user jmi)
+
 ### Runtime system:
 
 - MPR#385, GPR#953: Add caml_startup_exn
