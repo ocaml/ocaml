@@ -199,6 +199,10 @@ Working version
 - PR#7513: List.compare_length_with mishandles negative numbers / overflow
   (Fabrice Le Fessant, report by Jeremy Yallop)
 
+- PR#7531a: Default argument is not evaluated even after passing a
+  non-labeled argument
+  (Jacques Garrigue, report by Stephen Dolan)
+
 ### Runtime system:
 
 - GPR#71: The runtime can now be shut down gracefully by means of the new
