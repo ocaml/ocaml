@@ -28,7 +28,7 @@ Next major version (4.05.0):
 
 - PR#7533, GPR#1173: Correctly perform side effects for certain
   cases of "/" and "mod"
-  (Mark Shinwell, report by Mantis user jmi)
+  (Mark Shinwell, report by Jan Mitgaard)
 
 ### Runtime system:
 
