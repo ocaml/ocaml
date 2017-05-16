@@ -85,7 +85,7 @@ void caml_disasm_instr(code_t pc)
   default:
     snprintf(buf, sizeof(buf), "%s\n", opbuf);
   }
-  printf("[%02d] %s", caml_domain_self()->id, buf);
+  printf("[%02d] %s", Caml_state->id, buf);
   fflush (stdout);
 }
 

@@ -438,7 +438,7 @@ CAMLprim value caml_thread_new(value clos)          /* ML */
   struct st_thread_info *info =
     (struct st_thread_info*)malloc(sizeof(struct st_thread_info));
   info->thread_info = th;
-  info->domain_id = caml_domain_self()->id;
+  info->domain_id = Caml_state->id;
   domain_id = info->domain_id;
   err = st_thread_create(NULL, caml_thread_start, (void *) info);
   if (err != 0) {

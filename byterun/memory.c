@@ -198,7 +198,7 @@ CAMLexport void caml_blit_fields (value src, int srcoff, value dst, int dstoff, 
 
 CAMLexport value caml_alloc_shr (mlsize_t wosize, tag_t tag)
 {
-  value* v = caml_shared_try_alloc(caml_domain_self()->shared_heap, wosize, tag, 0);
+  value* v = caml_shared_try_alloc(Caml_state->shared_heap, wosize, tag, 0);
   if (v == NULL) {
     caml_raise_out_of_memory ();
   }
@@ -281,7 +281,7 @@ CAMLexport value caml_read_barrier(value obj, int field)
 
 CAMLprim value caml_bvar_create(value v)
 {
-  return caml_alloc_2(0, v, Val_long(caml_domain_self()->id));
+  return caml_alloc_2(0, v, Val_long(Caml_state->id));
 }
 
 struct bvar_transfer_req {
@@ -296,7 +296,7 @@ static void handle_bvar_transfer(struct domain* self, void *reqp)
   intnat stat = Long_val(Op_val(bv)[1]);
   int owner = stat & BVAR_OWNER_MASK;
 
-  if (owner == self->id) {
+  if (owner == self->state->id) {
     // caml_gc_log("Handling bvar transfer [%02d] -> [%02d]", owner, req->new_owner);
     caml_modify_field (bv, 0, caml_promote(self, Op_val(bv)[0]));
     Op_val(bv)[1] = Val_long((stat & ~BVAR_OWNER_MASK) | req->new_owner);
@@ -318,11 +318,11 @@ intnat caml_bvar_status(value bv)
   while (1) {
     intnat stat = Long_val(Op_val(bv)[1]);
     int owner = stat & BVAR_OWNER_MASK;
-    if (owner == caml_domain_self()->id)
+    if (owner == Caml_state->id)
       return stat;
 
     /* Otherwise, need to transfer */
-    struct bvar_transfer_req req = {bv, caml_domain_self()->id};
+    struct bvar_transfer_req req = {bv, Caml_state->id};
     // caml_gc_log("Transferring bvar from domain [%02d]", owner);
     caml_domain_rpc(caml_domain_of_id(owner), &handle_bvar_transfer, &req);
 
@@ -336,11 +336,11 @@ CAMLprim value caml_bvar_take(value bv)
 {
   intnat stat = caml_bvar_status(bv);
   if (stat & BVAR_EMPTY) caml_raise_not_found();
-  CAMLassert(stat == caml_domain_self()->id);
+  CAMLassert(stat == Caml_state->id);
 
   value v = Op_val(bv)[0];
   Op_val(bv)[0] = Val_unit;
-  Op_val(bv)[1] = Val_long(caml_domain_self()->id | BVAR_EMPTY);
+  Op_val(bv)[1] = Val_long(Caml_state->id | BVAR_EMPTY);
 
   return v;
 }
@@ -349,10 +349,10 @@ CAMLprim value caml_bvar_put(value bv, value v)
 {
   intnat stat = caml_bvar_status(bv);
   if (!(stat & BVAR_EMPTY)) caml_invalid_argument("Put to a full bvar");
-  CAMLassert(stat == (caml_domain_self()->id | BVAR_EMPTY));
+  CAMLassert(stat == (Caml_state->id | BVAR_EMPTY));
 
   caml_modify_field(bv, 0, v);
-  Op_val(bv)[1] = Val_long(caml_domain_self()->id);
+  Op_val(bv)[1] = Val_long(Caml_state->id);
 
   return Val_unit;
 }
