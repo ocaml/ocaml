@@ -637,7 +637,7 @@ void caml_cycle_heap_stw() {
 
 void caml_cycle_heap(struct caml_heap_state* local) {
   int i;
-  caml_gc_log("Cycling heap [%02d]", local->owner->id);
+  caml_gc_log("Cycling heap [%02d]", local->owner->state->id);
   for (i = 0; i < NUM_SIZECLASSES; i++) {
     local->unswept_avail_pools[i] = local->avail_pools[i];
     local->avail_pools[i] = 0;

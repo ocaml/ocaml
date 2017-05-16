@@ -54,7 +54,7 @@ static uintnat default_slice_budget() {
      Amount of work to do for this slice:
                  W = P * TW
   */
-  uintnat heap_size = caml_heap_size(caml_domain_self()->shared_heap);
+  uintnat heap_size = caml_heap_size(Caml_state->shared_heap);
   double heap_words = (double)Wsize_bsize(heap_size);
   double p = (double) Caml_state->allocated_words * 3.0 * (100 + caml_percent_free)
       / heap_words / caml_percent_free / 2.0;
@@ -188,7 +188,7 @@ intnat caml_major_collection_slice(intnat howmuch)
   caml_save_stack_gc();
 
   sweep_work = budget;
-  budget = caml_sweep(caml_domain_self()->shared_heap, budget);
+  budget = caml_sweep(Caml_state->shared_heap, budget);
   sweep_work -= budget;
 
   if (Caml_state->gc_phase == Phase_idle) {

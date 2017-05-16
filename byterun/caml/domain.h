@@ -6,10 +6,7 @@
 #include "memory.h"
 
 struct domain {
-  int id;
-
   struct dom_internal* internals;
-  struct caml_heap_state* shared_heap;
   caml_domain_state* state;
 };
 

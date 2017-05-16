@@ -82,7 +82,7 @@ struct oldify_state {
 
 static value alloc_shared(mlsize_t wosize, tag_t tag)
 {
-  void* mem = caml_shared_try_alloc(caml_domain_self()->shared_heap, wosize, tag, 0 /* not promotion */);
+  void* mem = caml_shared_try_alloc(Caml_state->shared_heap, wosize, tag, 0 /* not promotion */);
   Caml_state->allocated_words += Whsize_wosize(wosize);
   if (mem == NULL) {
     caml_fatal_error("allocation failure during minor GC");
@@ -453,7 +453,7 @@ void caml_empty_minor_heap_domain (struct domain* domain)
 
   if (minor_allocated_bytes != 0) {
     uintnat prev_alloc_words = domain_state->allocated_words;
-    caml_gc_log ("Minor collection of domain %d starting", domain->id);
+    caml_gc_log ("Minor collection of domain %d starting", domain->state->id);
     caml_do_local_roots(&oldify_one, &st, domain);
 
     for (r = remembered_set->fiber_ref.base; r < remembered_set->fiber_ref.ptr; r++) {
@@ -497,12 +497,12 @@ void caml_empty_minor_heap_domain (struct domain* domain)
     domain_state->stat_promoted_words += domain_state->allocated_words - prev_alloc_words;
 
     caml_gc_log ("Minor collection of domain %d completed: %2.0f%% of %u KB live, %u pointers rewritten",
-                 domain->id,
+                 domain->state->id,
                  100.0 * (double)st.live_bytes / (double)minor_allocated_bytes,
                  (unsigned)(minor_allocated_bytes + 512)/1024, rewritten);
   }
   else {
-    caml_gc_log ("Minor collection of domain %d: skipping", domain->id);
+    caml_gc_log ("Minor collection of domain %d: skipping", domain->state->id);
   }
 
   for (r = remembered_set->fiber_ref.base; r < remembered_set->fiber_ref.ptr; r++) {
