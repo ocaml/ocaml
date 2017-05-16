@@ -7,7 +7,6 @@
 
 struct domain {
   int id;
-  int vm_inited;
 
   struct dom_internal* internals;
   struct caml_heap_state* shared_heap;
