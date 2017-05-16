@@ -80,7 +80,7 @@ void caml_plat_wait(caml_plat_cond* cond)
   check_err("wait", pthread_cond_wait(&cond->cond, cond->mutex));
 }
 
-void caml_plat_signal(caml_plat_cond* cond)
+void caml_plat_broadcast(caml_plat_cond* cond)
 {
   caml_plat_assert_locked(cond->mutex);
   check_err("signal", pthread_cond_broadcast(&cond->cond));
