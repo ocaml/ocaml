@@ -614,7 +614,7 @@ static void stw_phase () {
     if (verify_heaps == Max_domains) {
       verify_heaps = 0;
       verify_gen++;
-      caml_plat_signal(&verify_cond);
+      caml_plat_broadcast(&verify_cond);
     } else {
       while (verify_gen == gen)
         caml_plat_wait(&verify_cond);
