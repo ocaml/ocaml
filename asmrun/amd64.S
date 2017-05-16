@@ -974,12 +974,14 @@ CFI_STARTPROC
         jmp     *%rsi
 CFI_ENDPROC
 
-/* Dummy function so that fiber backtrace shows `caml_handler` instead of
- * `caml_fiber_exn_handler`. */
-FUNCTION(G(caml_handler))
-CFI_STARTPROC
-        ret
-CFI_ENDPROC
+#define DW_CFA_val_expression     0x16
+#define DW_CFA_expression         0x10
+#define DW_CFA_def_cfa_expression 0x0f
+#define DW_OP_breg7               0x77
+#define DW_OP_nop                 0x96
+#define DW_OP_deref               0x06
+#define DW_OP_const1u             0x08
+#define DW_OP_minus               0x1c
 
 FUNCTION(G(caml_fiber_val_handler))
 CFI_STARTPROC
@@ -1052,9 +1054,19 @@ LBL(113):
         jmp LBL(caml_raise_exn)
 CFI_ENDPROC
 
+FUNCTION(G(caml_handler))
+CFI_STARTPROC
+LBL(118):
+        .cfi_signal_frame
+        .cfi_escape DW_CFA_val_expression, 0x7, 0x3, DW_OP_breg7, 0x8, DW_OP_deref
+        call *%rsi
+        ret
+CFI_ENDPROC
+
 FUNCTION(G(caml_resume))
 CFI_STARTPROC
     /* %rax -> tail of stack list, %rbx -> fun, %rdi -> arg */
+        movq    %rsp, %r13
         movq    %rdi, %r12      /* Save arg (callee-saved) */
         LOAD_TL_VAR(caml_current_stack, %rcx)
 LBL(114):
@@ -1067,8 +1079,11 @@ LBL(114):
         jne     LBL(114)
     /* %rdi now has the desired head of stack list */
         SWITCH_OCAML_STACKS
+        cmpq    $1, %rax
+        movq    %r13, 8(%rsp)
         movq    %r12, %rax    /* first argument */
         movq    (%rbx), %rsi  /* closure in %rbx (second argument) */
+        je      LBL(118)
         jmp     *%rsi
 CFI_ENDPROC
 

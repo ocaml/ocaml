@@ -60,6 +60,8 @@ static void load_stack (value stack) {
 extern void caml_fiber_exn_handler (value) Noreturn;
 extern void caml_fiber_val_handler (value) Noreturn;
 
+#define INIT_FIBER_USED (3 + sizeof(struct caml_context) / sizeof(value))
+
 value caml_alloc_stack (value hval, value hexn, value heff) {
   CAMLparam3(hval, hexn, heff);
   CAMLlocal1(stack);
@@ -89,7 +91,7 @@ value caml_alloc_stack (value hval, value hexn, value heff) {
   ctxt = (struct caml_context*)sp;
   ctxt->exception_ptr_offset = 2 * sizeof(value);
   ctxt->gc_regs = NULL;
-  Stack_sp(stack) = -(3 + sizeof(struct caml_context) / sizeof(value));
+  Stack_sp(stack) = -INIT_FIBER_USED;
 
   caml_gc_log ("Allocate stack=0x%lx of %lu words", stack, caml_fiber_wsz);
 
@@ -400,11 +402,13 @@ void caml_clean_stack(value stack)
   }
 }
 
-value caml_switch_stack(value stk)
+int caml_switch_stack(value stk)
 {
   value s = save_stack();
   load_stack(stk);
-  return s;
+  if (Stack_sp(stk) == -INIT_FIBER_USED)
+    return 1;
+  return 0;
 }
 
 /*
