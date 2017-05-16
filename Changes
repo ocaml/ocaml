@@ -670,6 +670,7 @@ The complete list of changes is listed below.
   (Mark Shinwell, report by Jeremy Yallop, review by Frédéric Bour)
 
 - PR#6550, GPR#1094: Allow creation of empty .cmxa files on macOS
+- PR#6373, GPR#1093: Suppress trigraph warnings from macOS assembler
   (Mark Shinwell)
 
 - PR#6594, GPR#955: Remove "Istore_symbol" specific operation on x86-64.
