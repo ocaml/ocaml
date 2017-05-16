@@ -162,7 +162,6 @@ static void create_domain(uintnat initial_minor_heap_size) {
 
   if (d) {
     d->running = 1;
-    d->state.vm_inited = 0;
     d->state.internals = d;
     /* FIXME: shutdown RPC? */
     atomic_store_rel(&d->rpc_request, RPC_IDLE);
@@ -174,11 +173,16 @@ static void create_domain(uintnat initial_minor_heap_size) {
     caml_plat_lock(&d->roots_lock);
 
     if (!d->interrupt_word_address) {
+      /* FIXME: caml_mem_commit can fail! */
       caml_mem_commit((void*)d->tls_area, (d->tls_area_end - d->tls_area));
       atomic_uintnat* young_limit = (atomic_uintnat*)&domain_state->young_limit;
       d->interrupt_word_address = young_limit;
       atomic_store_rel(young_limit, d->minor_heap_area);
     }
+
+    /* FIXME: code below does not handle failure to allocate memory
+       early in a domain's lifetime correctly */
+
     domain_state->young_start = domain_state->young_end =
       domain_state->young_ptr = 0;
     domain_state->remembered_set =
@@ -193,7 +197,6 @@ static void create_domain(uintnat initial_minor_heap_size) {
     caml_init_main_stack();
 
     d->state.state = domain_state;
-    d->state.vm_inited = 1;
 
     domain_state->backtrace_buffer = NULL;
 #ifndef NATIVE_CODE

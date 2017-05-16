@@ -93,10 +93,6 @@ static value get_exception(int exn, const char* exn_name)
     fprintf(stderr, "Fatal error %s during initialisation\n", exn_name);
     exit(2);
   }
-  if (caml_domain_self() == 0 || !caml_domain_self()->vm_inited) {
-    fprintf(stderr, "Fatal error %s during domain creation\n", exn_name);
-    exit(2);
-  }
   return Field_imm(caml_read_root(caml_global_data), exn);
 }
 
