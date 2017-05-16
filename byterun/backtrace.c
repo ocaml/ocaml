@@ -64,14 +64,14 @@ CAMLprim value caml_record_backtrace(value vflag)
 {
   intnat flag = Int_val(vflag);
 
-  if (flag != CAML_DOMAIN_STATE->backtrace_active) {
-    CAML_DOMAIN_STATE->backtrace_active = flag;
-    CAML_DOMAIN_STATE->backtrace_pos = 0;
+  if (flag != Caml_state->backtrace_active) {
+    Caml_state->backtrace_active = flag;
+    Caml_state->backtrace_pos = 0;
     if (flag) {
-      CAML_DOMAIN_STATE->backtrace_last_exn = caml_create_root(Val_unit);
+      Caml_state->backtrace_last_exn = caml_create_root(Val_unit);
     } else {
-      caml_delete_root(CAML_DOMAIN_STATE->backtrace_last_exn);
-      CAML_DOMAIN_STATE->backtrace_last_exn = NULL;
+      caml_delete_root(Caml_state->backtrace_last_exn);
+      Caml_state->backtrace_last_exn = NULL;
     }
     /* Note: lazy initialization of caml_backtrace_buffer in
        caml_stash_backtrace to simplify the interface with the thread
@@ -84,7 +84,7 @@ CAMLprim value caml_record_backtrace(value vflag)
 
 CAMLprim value caml_backtrace_status(value vunit)
 {
-  return Val_bool(CAML_DOMAIN_STATE->backtrace_active);
+  return Val_bool(Caml_state->backtrace_active);
 }
 
 /* Store the return addresses contained in the given stack fragment
@@ -94,24 +94,24 @@ void caml_stash_backtrace(value exn, code_t pc, value * sp, int reraise)
 {
   code_t end_code = (code_t) ((char *) caml_start_code + caml_code_size);
   if (pc != NULL) pc = pc - 1;
-  if (exn != caml_read_root(CAML_DOMAIN_STATE->backtrace_last_exn) || !reraise) {
-    CAML_DOMAIN_STATE->backtrace_pos = 0;
-    caml_modify_root(CAML_DOMAIN_STATE->backtrace_last_exn, exn);
+  if (exn != caml_read_root(Caml_state->backtrace_last_exn) || !reraise) {
+    Caml_state->backtrace_pos = 0;
+    caml_modify_root(Caml_state->backtrace_last_exn, exn);
   }
-  if (CAML_DOMAIN_STATE->backtrace_buffer == NULL) {
-    Assert(CAML_DOMAIN_STATE->backtrace_pos == 0);
-    CAML_DOMAIN_STATE->backtrace_buffer = malloc(BACKTRACE_BUFFER_SIZE * sizeof(code_t));
-    if (CAML_DOMAIN_STATE->backtrace_buffer == NULL) return;
+  if (Caml_state->backtrace_buffer == NULL) {
+    Assert(Caml_state->backtrace_pos == 0);
+    Caml_state->backtrace_buffer = malloc(BACKTRACE_BUFFER_SIZE * sizeof(code_t));
+    if (Caml_state->backtrace_buffer == NULL) return;
   }
-  if (CAML_DOMAIN_STATE->backtrace_pos >= BACKTRACE_BUFFER_SIZE) return;
+  if (Caml_state->backtrace_pos >= BACKTRACE_BUFFER_SIZE) return;
   if (pc >= caml_start_code && pc < end_code){
     /* testing the code region is needed: PR#1554 */
-    CAML_DOMAIN_STATE->backtrace_buffer[CAML_DOMAIN_STATE->backtrace_pos++] = pc;
+    Caml_state->backtrace_buffer[Caml_state->backtrace_pos++] = pc;
   }
-  for (/*nothing*/; sp < CAML_DOMAIN_STATE->stack_high + CAML_DOMAIN_STATE->trap_sp_off; sp++) {
+  for (/*nothing*/; sp < Caml_state->stack_high + Caml_state->trap_sp_off; sp++) {
     if (Is_long(*sp) && Pc_val(*sp) >= caml_start_code && Pc_val(*sp) < end_code) {
-      if (CAML_DOMAIN_STATE->backtrace_pos >= BACKTRACE_BUFFER_SIZE) break;
-      CAML_DOMAIN_STATE->backtrace_buffer[CAML_DOMAIN_STATE->backtrace_pos++] = Pc_val(*sp);
+      if (Caml_state->backtrace_pos >= BACKTRACE_BUFFER_SIZE) break;
+      Caml_state->backtrace_buffer[Caml_state->backtrace_pos++] = Pc_val(*sp);
     }
   }
 }
@@ -223,7 +223,7 @@ CAMLprim value caml_get_current_callstack (value max_frames_value)
 {
   CAMLparam1(max_frames_value);
   CAMLlocal2(stack, callstack);
-  struct caml_domain_state* domain_state = CAML_DOMAIN_STATE;
+  caml_domain_state* domain_state = Caml_state;
 
   callstack =
     get_callstack (domain_state->extern_sp, domain_state->trap_sp_off,
@@ -471,8 +471,8 @@ CAMLexport void caml_print_exception_backtrace(void)
             read_debug_info_error);
     return;
   }
-  for (i = 0; i < CAML_DOMAIN_STATE->backtrace_pos; i++) {
-    extract_location_info(CAML_DOMAIN_STATE->backtrace_buffer[i], &li);
+  for (i = 0; i < Caml_state->backtrace_pos; i++) {
+    extract_location_info(Caml_state->backtrace_buffer[i], &li);
     print_location(&li, i);
   }
 }
@@ -512,11 +512,11 @@ CAMLprim value caml_get_exception_raw_backtrace(value unit)
   CAMLparam0();
   CAMLlocal1(res);
 
-  res = caml_alloc(CAML_DOMAIN_STATE->backtrace_pos, 0);
-  if(CAML_DOMAIN_STATE->backtrace_buffer != NULL) {
+  res = caml_alloc(Caml_state->backtrace_pos, 0);
+  if(Caml_state->backtrace_buffer != NULL) {
     intnat i;
-    for(i = 0; i < CAML_DOMAIN_STATE->backtrace_pos; i++)
-      caml_initialize_field(res, i, Val_Codet(CAML_DOMAIN_STATE->backtrace_buffer[i]));
+    for(i = 0; i < Caml_state->backtrace_pos; i++)
+      caml_initialize_field(res, i, Val_Codet(Caml_state->backtrace_buffer[i]));
   }
 
   CAMLreturn(res);
@@ -541,13 +541,13 @@ CAMLprim value caml_get_exception_backtrace(value unit)
   if (events == NULL) {
       res = Val_int(0); /* None */
   } else {
-      arr = caml_alloc(CAML_DOMAIN_STATE->backtrace_pos, 0);
-      if(CAML_DOMAIN_STATE->backtrace_buffer == NULL) {
-          Assert(CAML_DOMAIN_STATE->backtrace_pos == 0);
+      arr = caml_alloc(Caml_state->backtrace_pos, 0);
+      if(Caml_state->backtrace_buffer == NULL) {
+          Assert(Caml_state->backtrace_pos == 0);
       } else {
           intnat i;
-          for(i = 0; i < CAML_DOMAIN_STATE->backtrace_pos; i++) {
-              raw_slot = Val_Codet(CAML_DOMAIN_STATE->backtrace_buffer[i]);
+          for(i = 0; i < Caml_state->backtrace_pos; i++) {
+              raw_slot = Val_Codet(Caml_state->backtrace_buffer[i]);
               /* caml_convert_raw_backtrace_slot will not fail with
                caml_failwith as we checked (events != NULL) already */
               slot = caml_convert_raw_backtrace_slot(raw_slot);

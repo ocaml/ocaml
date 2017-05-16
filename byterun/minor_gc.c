@@ -61,7 +61,7 @@ static void clear_table (struct caml_ref_table *tbl)
 /* size in bytes */
 void caml_set_minor_heap_size (asize_t size)
 {
-  struct caml_domain_state* domain_state = CAML_DOMAIN_STATE;
+  caml_domain_state* domain_state = Caml_state;
   if (domain_state->young_ptr != domain_state->young_end) caml_minor_collection ();
 
   caml_reallocate_minor_heap(size);
@@ -83,7 +83,7 @@ struct oldify_state {
 static value alloc_shared(mlsize_t wosize, tag_t tag)
 {
   void* mem = caml_shared_try_alloc(caml_domain_self()->shared_heap, wosize, tag, 0 /* not promotion */);
-  CAML_DOMAIN_STATE->allocated_words += Whsize_wosize(wosize);
+  Caml_state->allocated_words += Whsize_wosize(wosize);
   if (mem == NULL) {
     caml_fatal_error("allocation failure during minor GC");
   }
@@ -101,8 +101,8 @@ static void oldify_one (void* st_v, value v, value *p)
   mlsize_t sz, i;
   tag_t tag;
   int stack_used;
-  struct caml_domain_state* domain_state =
-    st->promote_domain ? st->promote_domain->state : CAML_DOMAIN_STATE;
+  caml_domain_state* domain_state =
+    st->promote_domain ? st->promote_domain->state : Caml_state;
   struct caml_remembered_set *remembered_set = domain_state->remembered_set;
   char* young_ptr = domain_state->young_ptr;
   char* young_end = domain_state->young_end;
@@ -215,8 +215,8 @@ static void oldify_mopup (struct oldify_state* st)
 {
   value v, new_v, f;
   mlsize_t i;
-  struct caml_domain_state* domain_state =
-    st->promote_domain ? st->promote_domain->state : CAML_DOMAIN_STATE;
+  caml_domain_state* domain_state =
+    st->promote_domain ? st->promote_domain->state : Caml_state;
   char* young_ptr = domain_state->young_ptr;
   char* young_end = domain_state->young_end;
 
@@ -261,8 +261,8 @@ void forward_pointer (void* state, value v, value *p) {
   mlsize_t offset;
   value fwd;
   struct domain* promote_domain = state;
-  struct caml_domain_state* domain_state =
-    promote_domain ? promote_domain->state : CAML_DOMAIN_STATE;
+  caml_domain_state* domain_state =
+    promote_domain ? promote_domain->state : Caml_state;
   char* young_ptr = domain_state->young_ptr;
   char* young_end = domain_state->young_end;
 
@@ -291,7 +291,7 @@ CAMLexport value caml_promote(struct domain* domain, value root)
   mlsize_t sz, i;
   tag_t tag;
   int saved_stack = 0;
-  struct caml_domain_state *domain_state = domain->state;
+  caml_domain_state* domain_state = domain->state;
   struct caml_remembered_set *remembered_set = domain_state->remembered_set;
   value young_ptr = (value)domain_state->young_ptr;
   value young_end = (value)domain_state->young_end;
@@ -433,7 +433,7 @@ CAMLexport value caml_promote(struct domain* domain, value root)
 
 void caml_empty_minor_heap_domain (struct domain* domain)
 {
-  struct caml_domain_state* domain_state = domain->state;
+  caml_domain_state* domain_state = domain->state;
   struct caml_remembered_set *remembered_set = domain_state->remembered_set;
   unsigned rewritten = 0;
   int saved_stack = 0;
@@ -550,7 +550,7 @@ CAMLexport void caml_minor_collection (void)
      If finalisers run, need to rerun caml_empty_minor_heap.
    */
 
-  Assert (CAML_DOMAIN_STATE->young_end == CAML_DOMAIN_STATE->young_ptr);
+  Assert (Caml_state->young_end == Caml_state->young_ptr);
 
   caml_ev_end_gc();
   caml_ev_resume();
@@ -572,7 +572,7 @@ void caml_realloc_ref_table (struct caml_ref_table *tbl)
                                       Assert (tbl->limit >= tbl->threshold);
 
   if (tbl->base == NULL){
-    caml_alloc_table (tbl, CAML_DOMAIN_STATE->minor_heap_size / sizeof (value) / 8, 256);
+    caml_alloc_table (tbl, Caml_state->minor_heap_size / sizeof (value) / 8, 256);
   }else if (tbl->limit == tbl->threshold){
     caml_gc_log ("ref_table threshold crossed");
     tbl->limit = tbl->end;

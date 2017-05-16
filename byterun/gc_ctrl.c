@@ -49,7 +49,7 @@ CAMLprim value caml_gc_quick_stat(value v)
   /* get a copy of these before allocating anything... */
   struct gc_stats s;
   caml_sample_gc_stats(&s);
-  intnat majcoll = CAML_DOMAIN_STATE->stat_major_collections;
+  intnat majcoll = Caml_state->stat_major_collections;
 
   res = caml_alloc_tuple (16);
   Store_field (res, 0, caml_copy_double ((double)s.minor_words));
@@ -82,11 +82,11 @@ CAMLprim value caml_gc_counters(value v)
   CAMLlocal1 (res);
 
   /* get a copy of these before allocating anything... */
-  double minwords = CAML_DOMAIN_STATE->stat_minor_words
-                    + (double) Wsize_bsize (CAML_DOMAIN_STATE->young_end -
-                                            CAML_DOMAIN_STATE->young_ptr);
-  double prowords = CAML_DOMAIN_STATE->stat_promoted_words;
-  double majwords = CAML_DOMAIN_STATE->stat_major_words + (double) CAML_DOMAIN_STATE->allocated_words;
+  double minwords = Caml_state->stat_minor_words
+                    + (double) Wsize_bsize (Caml_state->young_end -
+                                            Caml_state->young_ptr);
+  double prowords = Caml_state->stat_promoted_words;
+  double majwords = Caml_state->stat_major_words + (double) Caml_state->allocated_words;
 
   res = caml_alloc_3(0,
     caml_copy_double (minwords),
@@ -114,7 +114,7 @@ CAMLprim value caml_gc_get(value v)
   CAMLlocal1 (res);
 
   res = caml_alloc_tuple (7);
-  Store_field (res, 0, Val_long (Wsize_bsize (CAML_DOMAIN_STATE->minor_heap_size)));  /* s */
+  Store_field (res, 0, Val_long (Wsize_bsize (Caml_state->minor_heap_size)));  /* s */
   Store_field (res, 1, Val_long (caml_major_heap_increment));           /* i */
   Store_field (res, 2, Val_long (caml_percent_free));                   /* o */
   Store_field (res, 3, Val_long (caml_params->verb_gc));         /* v */
@@ -189,7 +189,7 @@ CAMLprim value caml_gc_set(value v)
     /* Minor heap size comes last because it will trigger a minor collection
        (thus invalidating [v]) and it can raise [Out_of_memory]. */
   newminsize = caml_norm_minor_heap_size (Long_field (v, 0));
-  if (newminsize != CAML_DOMAIN_STATE->minor_heap_size){
+  if (newminsize != Caml_state->minor_heap_size){
     caml_gc_message (0x20, "New minor heap size: %luk bytes\n",
                      newminsize/1024);
     caml_set_minor_heap_size (newminsize);
@@ -270,7 +270,7 @@ void caml_init_gc ()
   caml_percent_max = norm_pmax (percent_m);
   caml_init_major_heap (major_heap_size);
   caml_gc_message (0x20, "Initial minor heap size: %luk bytes\n",
-                   CAML_DOMAIN_STATE->minor_heap_size / 1024);
+                   Caml_state->minor_heap_size / 1024);
   caml_gc_message (0x20, "Initial major heap size: %luk bytes\n",
                    major_heap_size / 1024);
   caml_gc_message (0x20, "Initial space overhead: %lu%%\n", caml_percent_free);

@@ -73,7 +73,7 @@ static struct gc_stats sampled_gc_stats[2][Max_domains];
      This is slower but works */
   CAMLexport pthread_key_t caml_domain_state_key;
 #else
-  CAMLexport __thread struct caml_domain_state* caml_domain_state;
+  CAMLexport __thread caml_domain_state* caml_domain_curr_state;
 #endif
 
 static __thread char domains_locked[Max_domains];
@@ -118,7 +118,7 @@ asize_t caml_norm_minor_heap_size (intnat wsize)
 
 void caml_reallocate_minor_heap(asize_t size)
 {
-  struct caml_domain_state* domain_state = CAML_DOMAIN_STATE;
+  caml_domain_state* domain_state = Caml_state;
   Assert(domain_state->young_ptr == domain_state->young_end);
 
   /* free old minor heap.
@@ -139,7 +139,7 @@ void caml_reallocate_minor_heap(asize_t size)
   }
 #endif
 
-  CAML_DOMAIN_STATE->minor_heap_size = size;
+  Caml_state->minor_heap_size = size;
   domain_state->young_start = (char*)domain_self->minor_heap_area;
   domain_state->young_end = (char*)(domain_self->minor_heap_area + size);
   domain_state->young_ptr = domain_state->young_end;
@@ -167,9 +167,9 @@ static void create_domain(uintnat initial_minor_heap_size) {
     atomic_store_rel(&d->rpc_request, RPC_IDLE);
 
     domain_self = d;
-    SET_CAML_DOMAIN_STATE((void*)(d->tls_area));
-    struct caml_domain_state* domain_state =
-      (struct caml_domain_state*)(d->tls_area);
+    SET_Caml_state((void*)(d->tls_area));
+    caml_domain_state* domain_state =
+      (caml_domain_state*)(d->tls_area);
     caml_plat_lock(&d->roots_lock);
 
     if (!d->interrupt_word_address) {
@@ -242,7 +242,7 @@ void caml_init_domains(uintnat minor_size) {
     dom->tls_area = domain_minor_heap_base;
     dom->tls_area_end =
       caml_mem_round_up_pages(dom->tls_area +
-                              sizeof(struct caml_domain_state));
+                              sizeof(caml_domain_state));
     dom->minor_heap_area = /* skip guard page */
       caml_mem_round_up_pages(dom->tls_area_end + 1);
     dom->minor_heap_area_end =
@@ -259,7 +259,7 @@ void caml_init_domains(uintnat minor_size) {
 void caml_init_domain_self(int domain_id) {
   Assert (domain_id >= 0 && domain_id < Max_domains);
   domain_self = &all_domains[domain_id];
-  SET_CAML_DOMAIN_STATE(domain_self->state.state);
+  SET_Caml_state(domain_self->state.state);
 }
 
 static void domain_terminate() {
@@ -419,7 +419,7 @@ void caml_interrupt_self() {
    as soon as possible */
 void caml_urge_major_slice (void)
 {
-  CAML_DOMAIN_STATE->force_major_slice = 1;
+  Caml_state->force_major_slice = 1;
   caml_interrupt_self();
 }
 
@@ -442,11 +442,11 @@ void caml_handle_gc_interrupt() {
     caml_ev_resume();
   }
 
-  if (((uintnat)CAML_DOMAIN_STATE->young_ptr - Bhsize_wosize(Max_young_wosize) <
+  if (((uintnat)Caml_state->young_ptr - Bhsize_wosize(Max_young_wosize) <
        domain_self->minor_heap_area) ||
-      CAML_DOMAIN_STATE->force_major_slice) {
+      Caml_state->force_major_slice) {
     /* out of minor heap or collection forced */
-    CAML_DOMAIN_STATE->force_major_slice = 0;
+    Caml_state->force_major_slice = 0;
     caml_minor_collection();
   }
 }
@@ -497,7 +497,7 @@ extern void caml_finish_marking_domain (struct domain*);
 static void stw_phase () {
   int i;
   int my_heaps = 0;
-  int stats_phase = CAML_DOMAIN_STATE->stat_major_collections & 1;
+  int stats_phase = Caml_state->stat_major_collections & 1;
   char inactive_domains_locked[Max_domains] = {0};
 
   /* First, make sure all domains are accounted for. */
@@ -647,7 +647,7 @@ void caml_sample_gc_stats(struct gc_stats* buf)
   /* we read from the buffers that are not currently being
      written to. that way, we pick up the numbers written
      at the end of the most recently completed GC cycle */
-  int phase = ! (CAML_DOMAIN_STATE->stat_major_collections & 1);
+  int phase = ! (Caml_state->stat_major_collections & 1);
   int i;
   for (i=0; i<Max_domains; i++) {
     struct gc_stats* s = &sampled_gc_stats[phase][i];
@@ -778,7 +778,7 @@ CAMLexport void caml_domain_rpc(struct domain* domain,
 /* Generate functions for accessing domain state variables in debug mode */
 #ifdef DEBUG
   #define DOMAIN_STATE(idx, type, name) \
-    type get_##name() { return CAML_DOMAIN_STATE->name; }
+    type get_##name() { return Caml_state->name; }
   #include "caml/domain_state.tbl"
   #undef DOMAIN_STATE
 #endif
