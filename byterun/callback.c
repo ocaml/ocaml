@@ -47,7 +47,7 @@ CAMLexport value caml_callbackN_exn(value closure, int narg, value args[])
   CAMLlocal1(parent_stack);
   int i;
   value res;
-  struct caml_domain_state* domain_state = CAML_DOMAIN_STATE;
+  caml_domain_state* domain_state = Caml_state;
   parent_stack = Stack_parent(domain_state->current_stack);
   Stack_parent(domain_state->current_stack) = Val_unit;
 
@@ -110,12 +110,12 @@ value caml_callback3_asm(char* young_ptr, value closure, value* args);
 
 CAMLexport value caml_callback_exn(value closure, value arg)
 {
-  return caml_callback_asm(CAML_DOMAIN_STATE->young_ptr, closure, arg);
+  return caml_callback_asm(Caml_state->young_ptr, closure, arg);
 }
 
 CAMLexport value caml_callback2_exn(value closure, value arg1, value arg2)
 {
-  return caml_callback2_asm(CAML_DOMAIN_STATE->young_ptr, closure, arg1, arg2);
+  return caml_callback2_asm(Caml_state->young_ptr, closure, arg1, arg2);
 }
 
 CAMLexport value caml_callback3_exn(value closure,
@@ -123,7 +123,7 @@ CAMLexport value caml_callback3_exn(value closure,
 {
   /* can only pass 4 args in registers on Windows, so we use an array */
   value args[] = {arg1, arg2, arg3};
-  return caml_callback3_asm(CAML_DOMAIN_STATE->young_ptr, closure, args);
+  return caml_callback3_asm(Caml_state->young_ptr, closure, args);
 }
 
 /* Native-code callbacks.  caml_callback[123]_exn are implemented in asm. */

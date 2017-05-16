@@ -15,7 +15,7 @@
    modifies domain-local data structures. */
 static void write_barrier(value obj, int field, value old_val, value new_val)
 {
-  struct caml_domain_state* domain_state = CAML_DOMAIN_STATE;
+  caml_domain_state* domain_state = Caml_state;
 
   Assert (Is_block(obj));
 
@@ -202,8 +202,8 @@ CAMLexport value caml_alloc_shr (mlsize_t wosize, tag_t tag)
   if (v == NULL) {
     caml_raise_out_of_memory ();
   }
-  CAML_DOMAIN_STATE->allocated_words += Whsize_wosize (wosize);
-  if (CAML_DOMAIN_STATE->allocated_words > Wsize_bsize (CAML_DOMAIN_STATE->minor_heap_size)) {
+  Caml_state->allocated_words += Whsize_wosize (wosize);
+  if (Caml_state->allocated_words > Wsize_bsize (Caml_state->minor_heap_size)) {
     caml_urge_major_slice();
   }
 

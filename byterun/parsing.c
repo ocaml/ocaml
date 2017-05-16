@@ -137,7 +137,7 @@ static void print_token(struct parser_tables *tables, int state, value tok)
 
 static int trace()
 {
-  return caml_params->parser_trace || CAML_DOMAIN_STATE->parser_trace;
+  return caml_params->parser_trace || Caml_state->parser_trace;
 }
 
 /* The pushdown automata */
@@ -305,6 +305,6 @@ CAMLprim value caml_parse_engine(struct parser_tables *tables,
 CAMLprim value caml_set_parser_trace(value flag)
 {
   value oldflag = Val_bool(trace());
-  CAML_DOMAIN_STATE->parser_trace = Bool_val(flag);
+  Caml_state->parser_trace = Bool_val(flag);
   return oldflag;
 }

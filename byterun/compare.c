@@ -127,9 +127,9 @@ static intnat do_compare_val(struct compare_stack* stk,
         int res;
         int (*compare)(value v1, value v2) = Custom_ops_val(v2)->compare_ext;
         if (compare == NULL) break;  /* for backward compatibility */
-        CAML_DOMAIN_STATE->compare_unordered = 0;
+        Caml_state->compare_unordered = 0;
         res = compare(v1, v2);
-        if (CAML_DOMAIN_STATE->compare_unordered && !total) return UNORDERED;
+        if (Caml_state->compare_unordered && !total) return UNORDERED;
         if (res != 0) return res;
         goto next_item;
       }
@@ -147,9 +147,9 @@ static intnat do_compare_val(struct compare_stack* stk,
         int res;
         int (*compare)(value v1, value v2) = Custom_ops_val(v1)->compare_ext;
         if (compare == NULL) break;  /* for backward compatibility */
-        CAML_DOMAIN_STATE->compare_unordered = 0;
+        Caml_state->compare_unordered = 0;
         res = compare(v1, v2);
-        if (CAML_DOMAIN_STATE->compare_unordered && !total) return UNORDERED;
+        if (Caml_state->compare_unordered && !total) return UNORDERED;
         if (res != 0) return res;
         goto next_item;
       }
@@ -238,9 +238,9 @@ static intnat do_compare_val(struct compare_stack* stk,
         compare_free_stack(stk);
         caml_invalid_argument("compare: abstract value");
       }
-      CAML_DOMAIN_STATE->compare_unordered = 0;
+      Caml_state->compare_unordered = 0;
       res = compare(v1, v2);
-      if (CAML_DOMAIN_STATE->compare_unordered && !total) return UNORDERED;
+      if (Caml_state->compare_unordered && !total) return UNORDERED;
       if (res != 0) return res;
       break;
     }

@@ -280,7 +280,7 @@ CAMLexport void caml_main(char **argv)
   caml_read_section_descriptors(fd, &trail);
   /* Initialize the abstract machine */
   caml_init_gc ();
-  CAML_DOMAIN_STATE->external_raise = NULL;
+  Caml_state->external_raise = NULL;
   if (caml_params->backtrace_enabled_init) caml_record_backtrace(Val_int(1));
   /* Initialize the interpreter */
   caml_interprete(NULL, 0);
@@ -313,13 +313,13 @@ CAMLexport void caml_main(char **argv)
   caml_debugger(PROGRAM_START);
   res = caml_interprete(caml_start_code, caml_code_size);
   if (Is_exception_result(res)) {
-    CAML_DOMAIN_STATE->exn_bucket = Extract_exception(res);
+    Caml_state->exn_bucket = Extract_exception(res);
     if (caml_debugger_in_use) {
-      CAML_DOMAIN_STATE->extern_sp = &CAML_DOMAIN_STATE->exn_bucket; /* The debugger needs the
+      Caml_state->extern_sp = &Caml_state->exn_bucket; /* The debugger needs the
                                                exception value.*/
       caml_debugger(UNCAUGHT_EXC);
     }
-    caml_fatal_uncaught_exception(CAML_DOMAIN_STATE->exn_bucket);
+    caml_fatal_uncaught_exception(Caml_state->exn_bucket);
   }
 }
 
@@ -350,7 +350,7 @@ CAMLexport void caml_startup_code(
   /* Initialize the abstract machine */
   caml_init_gc ();
   if (caml_params->backtrace_enabled_init) caml_record_backtrace(Val_int(1));
-  CAML_DOMAIN_STATE->external_raise = NULL;
+  Caml_state->external_raise = NULL;
   /* Initialize the interpreter */
   caml_interprete(NULL, 0);
   /* Initialize the debugger, if needed */
@@ -378,12 +378,12 @@ CAMLexport void caml_startup_code(
   caml_debugger(PROGRAM_START);
   res = caml_interprete(caml_start_code, caml_code_size);
   if (Is_exception_result(res)) {
-    CAML_DOMAIN_STATE->exn_bucket = Extract_exception(res);
+    Caml_state->exn_bucket = Extract_exception(res);
     if (caml_debugger_in_use) {
-      CAML_DOMAIN_STATE->extern_sp = &CAML_DOMAIN_STATE->exn_bucket; /* The debugger needs the
+      Caml_state->extern_sp = &Caml_state->exn_bucket; /* The debugger needs the
                                                exception value.*/
       caml_debugger(UNCAUGHT_EXC);
     }
-    caml_fatal_uncaught_exception(CAML_DOMAIN_STATE->exn_bucket);
+    caml_fatal_uncaught_exception(Caml_state->exn_bucket);
   }
 }
