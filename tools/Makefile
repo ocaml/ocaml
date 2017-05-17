@@ -137,7 +137,7 @@ ocamlcp_cmos = misc.cmo warnings.cmo config.cmo identifiable.cmo numbers.cmo \
 	       arg_helper.cmo clflags.cmo main_args.cmo
 
 $(call byte_and_opt,ocamlcp,$(ocamlcp_cmos) ocamlcp.cmo,)
-$(call byte_and_opt,ocamloptp,$(ocamlcp_cmos) ocamloptp.cmo,)
+$(call byte_and_opt,ocamloptp,$(ocamloptp_cmos) ocamloptp.cmo,)
 
 opt:: profiling.cmx
 
