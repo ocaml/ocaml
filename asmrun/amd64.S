@@ -1056,10 +1056,12 @@ CFI_ENDPROC
 
 FUNCTION(G(caml_handler))
 CFI_STARTPROC
-LBL(118):
+LBL(caml_handler):
         .cfi_signal_frame
         .cfi_escape DW_CFA_val_expression, 0x7, 0x3, DW_OP_breg7, 0x8, DW_OP_deref
         call *%rsi
+LBL(118):
+        movq  $0, 16(%rsp)
         ret
 CFI_ENDPROC
 
@@ -1083,7 +1085,7 @@ LBL(114):
         movq    %r13, 8(%rsp)
         movq    %r12, %rax    /* first argument */
         movq    (%rbx), %rsi  /* closure in %rbx (second argument) */
-        je      LBL(118)
+        je      LBL(caml_handler)
         jmp     *%rsi
 CFI_ENDPROC
 
@@ -1101,13 +1103,17 @@ G(caml_system__code_end):
         .globl  G(caml_system__frametable)
         .align  EIGHT_ALIGN
 G(caml_system__frametable):
-        .quad   2           /* two descriptors */
+        .quad   3           /* three descriptors */
         .quad   LBL(108)    /* return address into callback */
         .value  -1          /* negative frame size => use callback link */
         .value  0           /* no roots here */
         .align  EIGHT_ALIGN
         .quad   LBL(111)    /* return address into fiber_val_handler */
         .value  -1          /* negative frame size => use callback link */
+        .value  0           /* no roots here */
+        .align  EIGHT_ALIGN
+        .quad   LBL(118)    /* return address into caml_handler */
+        .value  8           /* frame size = 8 */
         .value  0           /* no roots here */
         .align  EIGHT_ALIGN
 
