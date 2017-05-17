@@ -402,12 +402,16 @@ void caml_clean_stack(value stack)
   }
 }
 
+/* Returns 1 if the target stack is a fresh stack to which control is switching
+ * to. */
 int caml_switch_stack(value stk)
 {
   value s = save_stack();
   load_stack(stk);
+#ifdef NATIVE_CODE
   if (Stack_sp(stk) == -INIT_FIBER_USED)
     return 1;
+#endif
   return 0;
 }
 
