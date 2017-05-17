@@ -114,7 +114,7 @@ run-file:
 	} || true
 	@rm -f program program$(EXE)
 	@if [ -f "$(FILE).silent-compilation" ]; then \
-          temp="$$(mktemp)"; \
+          temp="$$(mktemp "$${TMPDIR:-/tmp}/ocaml-test-XXXXXXXX")"; \
           $(COMP) $(COMPFLAGS) $(FILE) -o program$(EXE) >$$temp 2>&1 ; \
           if [ -s "$$temp" ]; then \
             rm -f $$temp; \
