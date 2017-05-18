@@ -79,9 +79,9 @@ value caml_alloc_stack (value hval, value hexn, value heff) {
   /* Fiber exception handler that returns to parent */
   sp -= sizeof(value);
   *(value**)sp = (value*)caml_fiber_exn_handler;
-  /* No previous exception frame */
+  /* No previous exception frame. Infact, this is the debugger slot. Initialize it. */
   sp -= sizeof(value);
-  *(uintnat*)sp = 0;
+  Stack_debugger_slot(stack) = Stack_debugger_slot_offset_to_parent_slot(stack);
   /* Value handler that returns to parent */
   sp -= sizeof(value);
   *(value**)sp = (value*)caml_fiber_val_handler;
@@ -455,6 +455,8 @@ void caml_realloc_stack(asize_t required_space, value* saved_vals, int nsaved)
   Stack_handle_exception(new_stack) = Stack_handle_exception(old_stack);
   Stack_handle_effect(new_stack) = Stack_handle_effect(old_stack);
   Stack_parent(new_stack) = Stack_parent(old_stack);
+  Stack_debugger_slot(new_stack) =
+    Stack_debugger_slot_offset_to_parent_slot(new_stack);
 
   Stack_dirty_domain(new_stack) = 0;
   if (Stack_dirty_domain(old_stack)) {
