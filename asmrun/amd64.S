@@ -974,15 +974,6 @@ CFI_STARTPROC
         jmp     *%rsi
 CFI_ENDPROC
 
-#define DW_CFA_val_expression     0x16
-#define DW_CFA_expression         0x10
-#define DW_CFA_def_cfa_expression 0x0f
-#define DW_OP_breg7               0x77
-#define DW_OP_nop                 0x96
-#define DW_OP_deref               0x06
-#define DW_OP_const1u             0x08
-#define DW_OP_minus               0x1c
-
 FUNCTION(G(caml_fiber_val_handler))
 CFI_STARTPROC
 LBL(111):
@@ -1054,11 +1045,46 @@ LBL(113):
         jmp LBL(caml_raise_exn)
 CFI_ENDPROC
 
+#define DW_CFA_val_expression     0x16
+#define DW_CFA_expression         0x10
+#define DW_CFA_def_cfa_expression 0x0f
+#define DW_OP_breg7               0x77
+#define DW_OP_nop                 0x96
+#define DW_OP_deref               0x06
+#define DW_OP_const1u             0x08
+#define DW_OP_plus                0x22
+#define DW_OP_minus               0x1c
+#define DW_OP_shl                 0x24
+#define DW_OP_shr                 0x25
+#define DW_OP_dup                 0x12
+#define DW_OP_reg7                0x57
+#define DW_OP_piece               0x93
+#define DW_OP_swap                0x16
+#define DW_OP_const8u             0x0e
+#define DW_OP_and                 0x1a
+
 FUNCTION(G(caml_handler))
 CFI_STARTPROC
 LBL(caml_handler):
         .cfi_signal_frame
-        .cfi_escape DW_CFA_val_expression, 0x7, 0x3, DW_OP_breg7, 0x8, DW_OP_deref
+        .cfi_escape DW_CFA_val_expression, 0x7, 37, \
+            /* DWARF_stack = [cfa] */ \
+          DW_OP_breg7, 0x8, DW_OP_deref, \
+            /* DWARF_stack = [offset; cfa] */ \
+          DW_OP_minus, DW_OP_deref, \
+            /* DWARF_stack = [parent] */ \
+          DW_OP_dup, DW_OP_dup, \
+            /* DWARF stack = [parent; parent; parent] */ \
+          DW_OP_const1u, 0x08, DW_OP_minus, DW_OP_deref, \
+            /* DWARF_stack = [Hd_val(parent); parent; parent] */ \
+          DW_OP_const1u, 0x0a, DW_OP_shr, DW_OP_const1u, 0x03, DW_OP_shl, DW_OP_plus, \
+            /* DWARF_stack = [Stack_high(parent) || Stack_high(parent) + 8; parent] */ \
+          DW_OP_const8u, 0xf0,0xff,0xff,0xff,0xff,0xff,0xff,0xff, DW_OP_and, \
+            /* DWARF_stack = [Stack_high(parent); parent] */ \
+          DW_OP_swap, DW_OP_deref, DW_OP_const1u, 0x03, DW_OP_shl, DW_OP_plus, \
+            /* DWARF_stack = [Sp(parent)] */ \
+          DW_OP_const1u, 0x10, DW_OP_plus \
+            /* DWARF_stack = [CFA of last frame] */
         call *%rsi
 LBL(118):
         movq  $0, 16(%rsp)
@@ -1068,7 +1094,6 @@ CFI_ENDPROC
 FUNCTION(G(caml_resume))
 CFI_STARTPROC
     /* %rax -> tail of stack list, %rbx -> fun, %rdi -> arg */
-        movq    %rsp, %r13
         movq    %rdi, %r12      /* Save arg (callee-saved) */
         LOAD_TL_VAR(caml_current_stack, %rcx)
 LBL(114):
@@ -1082,7 +1107,6 @@ LBL(114):
     /* %rdi now has the desired head of stack list */
         SWITCH_OCAML_STACKS
         cmpq    $1, %rax
-        movq    %r13, 8(%rsp)
         movq    %r12, %rax    /* first argument */
         movq    (%rbx), %rsi  /* closure in %rbx (second argument) */
         je      LBL(caml_handler)
