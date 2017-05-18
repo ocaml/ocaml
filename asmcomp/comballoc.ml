@@ -31,21 +31,17 @@ let rec combine i allocstate =
       (i, allocated_size allocstate)
   | Iop(Ialloc sz) ->
       begin match allocstate with
-        No_alloc ->
-          let (newnext, newsz) =
-            combine i.next (Pending_alloc(i.res.(0), sz)) in
-          (instr_cons (Iop(Ialloc newsz)) i.arg i.res newnext, 0)
-      | Pending_alloc(reg, ofs) ->
-          if ofs + sz < Config.max_young_wosize * Arch.size_addr then begin
-            let (newnext, newsz) =
+      | Pending_alloc(reg, ofs)
+          when ofs + sz < Config.max_young_wosize * Arch.size_addr ->
+         let (newnext, newsz) =
               combine i.next (Pending_alloc(reg, ofs + sz)) in
             (instr_cons (Iop(Iintop_imm(Iadd, ofs))) [| reg |] i.res newnext,
              newsz)
-          end else begin
-            let (newnext, newsz) =
-              combine i.next (Pending_alloc(i.res.(0), sz)) in
-            (instr_cons (Iop(Ialloc newsz)) i.arg i.res newnext, ofs)
-          end
+      | _ ->
+         let (newnext, newsz) =
+            combine i.next (Pending_alloc(i.res.(0), sz)) in
+         (instr_cons (Iop(Ialloc newsz)) i.arg i.res newnext,
+          allocated_size allocstate)
       end
   | Iop(Icall_ind | Icall_imm _ | Iextcall _ |
         Itailcall_ind | Itailcall_imm _) ->
