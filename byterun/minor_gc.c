@@ -281,14 +281,32 @@ void forward_pointer (void* state, value v, value *p) {
   }
 }
 
+static value next_minor_block(caml_domain_state* domain_state, value curr_hp)
+{
+  mlsize_t wsz;
+  header_t hd;
+  value curr_val;
+  Assert ((value)domain_state->young_ptr <= curr_hp);
+  Assert (curr_hp < (value)domain_state->young_end);
+  hd = Hd_hp(curr_hp);
+  curr_val = Val_hp(curr_hp);
+  if (hd == 0) {
+    /* Forwarded object, find the promoted version */
+    curr_val = Op_val(curr_val)[0];
+  }
+  Assert (Is_block(curr_val) && Hd_val(curr_val) != 0 && Tag_val(curr_val) != Infix_tag);
+  wsz = Wosize_val(curr_val);
+  Assert (wsz <= Max_young_wosize);
+  return curr_hp + Bsize_wsize(Whsize_wosize(wsz));
+}
+
 void caml_empty_minor_heap_domain (struct domain* domain);
 
 CAMLexport value caml_promote(struct domain* domain, value root)
 {
   value **r;
   value iter, f;
-  header_t hd;
-  mlsize_t sz, i;
+  mlsize_t i;
   tag_t tag;
   int saved_stack = 0;
   caml_domain_state* domain_state = domain->state;
@@ -382,38 +400,56 @@ CAMLexport value caml_promote(struct domain* domain, value root)
       }
     }
 
+#ifdef DEBUG
+    /* In DEBUG mode, verify that the minor_ref table contains all young-young pointers
+       from older to younger objects */
+    struct addrmap young_young_ptrs = ADDRMAP_INIT;
+    for (r = remembered_set->minor_ref.base; r < remembered_set->minor_ref.ptr; r++) {
+      *caml_addrmap_insert_pos(&young_young_ptrs, (value)*r) = 1;
+    }
+    for (iter = young_ptr;
+         iter < young_end;
+         iter = next_minor_block(domain_state, iter)) {
+      value hd = Hd_hp(iter);
+      if (hd != 0) {
+        value curr = Val_hp(iter);
+        tag_t tag = Tag_hd (hd);
+        if (tag < No_scan_tag && tag != Stack_tag) {
+          for (i = 0; i < Wosize_hd(hd); i++) {
+            value* f = Op_val(curr) + i;
+            if (Is_block(*f) && young_ptr <= *f && *f < young_end && *f < curr) {
+              Assert(caml_addrmap_contains(&young_young_ptrs, (value)f));
+            }
+          }
+        }
+      }
+    }
+    caml_addrmap_clear(&young_young_ptrs);
+#endif
+
     /* Scan young to young pointers */
     for (r = remembered_set->minor_ref.base; r < remembered_set->minor_ref.ptr; r++) {
       forward_pointer (st.promote_domain, **r, *r);
     }
 
     /* Scan newer objects */
-    iter = young_ptr;
-    Assert(st.oldest_promoted < young_end);
-    while (iter <= st.oldest_promoted) {
-      hd = Hd_hp(iter);
-      iter = Val_hp(iter);
-      if (hd == 0) {
-        /* Fowarded object. */
-        mlsize_t wsz = Wosize_val(Op_val(iter)[0]);
-        Assert (wsz <= Max_young_wosize);
-        sz = Bsize_wsize(wsz);
-      } else {
-        tag = Tag_hd (hd);
-        Assert (tag != Infix_tag);
-        sz = Bosize_hd (hd);
-        Assert (Wosize_hd(hd) <= Max_young_wosize);
-        //caml_gc_log ("Scan: iter=%p sz=%lu tag=%u", (value*)iter, Wsize_bsize(sz), tag);
+    for (iter = young_ptr;
+         iter <= st.oldest_promoted;
+         iter = next_minor_block(domain_state, iter)) {
+      value hd = Hd_hp(iter);
+      value curr = Val_hp(iter);
+      if (hd != 0) {
+        tag_t tag = Tag_hd (hd);
+        //caml_gc_log ("Scan: curr=%p sz=%lu tag=%u", (value*)curr, Wsize_bsize(sz), tag);
         if (tag < No_scan_tag && tag != Stack_tag) { /* Stacks will be scanned lazily, so skip. */
-          for (i = 0; i < Wsize_bsize(sz); i++) {
-            f = Op_val(iter)[i];
+          for (i = 0; i < Wosize_hd (hd); i++) {
+            f = Op_val(curr)[i];
             if (Is_block(f)) {
-              forward_pointer (st.promote_domain, f,((value*)iter) + i);
+              forward_pointer (st.promote_domain, f,((value*)curr) + i);
             }
           }
         }
       }
-      iter += sz;
     }
 
     if (saved_stack)
