@@ -57,6 +57,40 @@ CAMLprim value unix_localtime(value t)
   return alloc_tm(tm);
 }
 
+static void set_tm(struct tm tm, value v)
+{
+  tm.tm_sec  = Int_val(Field(v,0));
+  tm.tm_min  = Int_val(Field(v,1));
+  tm.tm_hour = Int_val(Field(v,2));
+  tm.tm_mday = Int_val(Field(v,3));
+  tm.tm_mon  = Int_val(Field(v,4));
+  tm.tm_year = Int_val(Field(v,5));
+  tm.tm_wday = Int_val(Field(v,6));
+  tm.tm_yday = Int_val(Field(v,7));
+  tm.tm_isdst = Bool_val(Field(v,8));
+}
+
+CAMLprim value unix_timegm(value vtm)
+{
+  struct tm tm;
+  time_t clock;
+  set_tm(tm, vtm);
+  clock = timegm(&tm);
+  if (clock == -1) unix_error(EINVAL, "timegm", Nothing);
+  return caml_copy_double((double) clock);
+}
+
+CAMLprim double unix_timelocal(value vtm)
+{
+  struct tm tm;
+  time_t clock;
+  set_tm(tm, vtm);
+  clock = timelocal(&tm);
+  if (clock == -1) unix_error(EINVAL, "timelocal", Nothing);
+  return caml_copy_double((double) clock);
+}
+
+
 #ifdef HAS_MKTIME
 
 CAMLprim value unix_mktime(value t)
