@@ -6,12 +6,8 @@
 #include "memory.h"
 
 struct domain {
-  int id;
-  int vm_inited;
-
   struct dom_internal* internals;
-  struct caml_heap_state* shared_heap;
-  struct caml_domain_state* state;
+  caml_domain_state* state;
 };
 
 #ifdef __GNUC__
