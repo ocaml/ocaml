@@ -48,7 +48,6 @@ static value save_stack ()
 }
 
 static void load_stack (value stack) {
-  struct caml_domain_state* domain_state = CAML_DOMAIN_STATE;
   caml_domain_state* domain_state = Caml_state;
   domain_state->stack_threshold = Stack_base(stack)
     + caml_params->profile_slop_wsz + Stack_threshold / sizeof(value);
