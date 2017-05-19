@@ -23,7 +23,7 @@ ADD_BYTERUN_FLAGS="-I $(OTOPDIR)/otherlibs/win32unix"
 endif
 
 default: reflector.exe fdstatus.exe cmdline_prog.exe
-	$(MAKE) check
+	@$(MAKE) check
 
 include $(BASEDIR)/makefiles/Makefile.several
 include $(BASEDIR)/makefiles/Makefile.common
