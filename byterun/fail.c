@@ -28,10 +28,10 @@
 
 CAMLexport void caml_raise(value v)
 {
-  struct caml_domain_state* domain_state = CAML_DOMAIN_STATE;
+  caml_domain_state* domain_state = Caml_state;
   domain_state->exn_bucket = v;
   if (domain_state->external_raise == NULL) caml_fatal_uncaught_exception(v);
-  while (domain_state->local_roots != CAML_DOMAIN_STATE->external_raise->local_roots) {
+  while (domain_state->local_roots != Caml_state->external_raise->local_roots) {
     Assert(domain_state->local_roots != NULL);
     struct caml__mutex_unwind* m = domain_state->local_roots->mutexes;
     while (m) {
@@ -91,10 +91,6 @@ static value get_exception(int exn, const char* exn_name)
 {
   if (caml_global_data == 0 || !Is_block(caml_read_root(caml_global_data))) {
     fprintf(stderr, "Fatal error %s during initialisation\n", exn_name);
-    exit(2);
-  }
-  if (caml_domain_self() == 0 || !caml_domain_self()->vm_inited) {
-    fprintf(stderr, "Fatal error %s during domain creation\n", exn_name);
     exit(2);
   }
   return Field_imm(caml_read_root(caml_global_data), exn);

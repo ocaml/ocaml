@@ -39,3 +39,6 @@ DOMAIN_STATE(30, int, gc_phase)
 DOMAIN_STATE(31, int, parser_trace)
 
 DOMAIN_STATE(32, asize_t, minor_heap_size)
+
+DOMAIN_STATE(33, struct caml_heap_state*, shared_heap)
+DOMAIN_STATE(34, int, id)

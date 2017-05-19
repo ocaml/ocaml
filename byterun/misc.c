@@ -45,9 +45,8 @@ void print_trace (void)
 
 int caml_failed_assert (char * expr, char * file, int line)
 {
-  struct domain* self = caml_domain_self ();
   fprintf (stderr, "[%02d] file %s; line %d ### Assertion failed: %s\n",
-           self ? self->id : -1, file, line, expr);
+           Caml_state ? Caml_state->id : -1, file, line, expr);
   print_trace ();
   fflush (stderr);
   abort();
@@ -64,8 +63,7 @@ void caml_gc_log (char *msg, ...)
   char fmtbuf[512];
 
   if (caml_params->verb_gc) {
-    struct domain* self = caml_domain_self();
-    sprintf(fmtbuf, "[%02d] %s\n", self ? self->id : -1, msg);
+    sprintf(fmtbuf, "[%02d] %s\n", Caml_state ? Caml_state->id : -1, msg);
     vfprintf(stderr, fmtbuf, args);
   }
   fflush(stderr);

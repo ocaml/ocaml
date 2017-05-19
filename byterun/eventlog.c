@@ -216,7 +216,7 @@ static char* append_data(int size) {
     p = write_timestamp(p);
     p = write_32(p, 0);     /* overwritten later */
     p = write_timestamp(p); /* overwritten later */
-    p = write_16(p, caml_domain_self()->id);
+    p = write_16(p, Caml_state->id);
     evbuf.pos = p;
     evbuf.remaining = EVENT_BUFFER_SIZE - (p - evbuf.buffer);
   }
@@ -272,7 +272,7 @@ void caml_ev_pause(long reason)
   char* p;
   if (!output) return;
   p = append_event(&ev_stop_thread);
-  p = write_32(p, caml_domain_self()->id);
+  p = write_32(p, Caml_state->id);
   if (reason == EV_PAUSE_GC) {
     p = write_16(p, 1 /* HeapOverflow */);
     p = write_32(p, 0 /* unused */);
@@ -294,7 +294,7 @@ void caml_ev_resume()
   char* p;
   if (!output) return;
   p = append_event(&ev_run_thread);
-  p = write_32(p, caml_domain_self()->id);
+  p = write_32(p, Caml_state->id);
 }
 
 void caml_ev_wakeup(struct domain* dom)
@@ -302,8 +302,8 @@ void caml_ev_wakeup(struct domain* dom)
   char* p;
   if (!output) return;
   p = append_event(&ev_wakeup_thread);
-  p = write_32(p, dom->id);
-  p = write_32(p, dom->id);
+  p = write_32(p, dom->state->id);
+  p = write_32(p, dom->state->id);
 }
 
 void caml_ev_msg(const char* msg)
