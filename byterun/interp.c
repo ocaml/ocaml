@@ -237,7 +237,7 @@ value caml_interprete(code_t prog, asize_t prog_size)
   intnat initial_trap_sp_off;
   volatile code_t saved_pc = NULL;
   struct longjmp_buffer raise_buf;
-  struct caml_domain_state* domain_state = CAML_DOMAIN_STATE;
+  caml_domain_state* domain_state = Caml_state;
   struct caml_exception_context exception_ctx = { &raise_buf, domain_state->local_roots};
 #ifndef THREADED_CODE
   opcode_t curr_instr;

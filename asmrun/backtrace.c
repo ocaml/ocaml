@@ -46,14 +46,14 @@ CAMLprim value caml_record_backtrace(value vflag)
 {
   intnat flag = Int_val(vflag);
 
-  if (flag != CAML_DOMAIN_STATE->backtrace_active) {
-    CAML_DOMAIN_STATE->backtrace_active = flag;
-    CAML_DOMAIN_STATE->backtrace_pos = 0;
+  if (flag != Caml_state->backtrace_active) {
+    Caml_state->backtrace_active = flag;
+    Caml_state->backtrace_pos = 0;
     if (flag) {
-      CAML_DOMAIN_STATE->backtrace_last_exn = caml_create_root(Val_unit);
+      Caml_state->backtrace_last_exn = caml_create_root(Val_unit);
     } else {
-      caml_delete_root(CAML_DOMAIN_STATE->backtrace_last_exn);
-      CAML_DOMAIN_STATE->backtrace_last_exn = NULL;
+      caml_delete_root(Caml_state->backtrace_last_exn);
+      Caml_state->backtrace_last_exn = NULL;
     }
   }
   return Val_unit;
@@ -63,7 +63,7 @@ CAMLprim value caml_record_backtrace(value vflag)
 
 CAMLprim value caml_backtrace_status(value vunit)
 {
-  return Val_bool(CAML_DOMAIN_STATE->backtrace_active);
+  return Val_bool(Caml_state->backtrace_active);
 }
 
 /* returns the next frame descriptor (or NULL if none is available),
@@ -89,7 +89,7 @@ frame_descr * caml_next_frame_descriptor(uintnat * pc, char ** sp)
     } else {
       /* Special frame marking the top of a stack chunk for an ML callback.
          Skip C portion of stack and continue with next ML stack chunk. */
-      *sp = (char*)CAML_DOMAIN_STATE->stack_high;
+      *sp = (char*)Caml_state->stack_high;
       *pc = 0;
       return d;
     }
@@ -105,7 +105,7 @@ frame_descr * caml_next_frame_descriptor(uintnat * pc, char ** sp)
 
 void caml_stash_backtrace(value exn, uintnat pc, char * sp, uintnat trapsp_off)
 {
-  struct caml_domain_state* domain_state = CAML_DOMAIN_STATE;
+  caml_domain_state* domain_state = Caml_state;
   char* stack_high = (char*)domain_state->stack_high;
 
   if (exn != caml_read_root(domain_state->backtrace_last_exn)) {
@@ -200,7 +200,7 @@ static value get_callstack(value stack, value max_frames_value) {
 }
 
 CAMLprim value caml_get_current_callstack (value max_frames_value) {
-  struct caml_domain_state* domain_state = CAML_DOMAIN_STATE;
+  caml_domain_state* domain_state = Caml_state;
   return get_callstack(domain_state->current_stack, max_frames_value);
 }
 
@@ -327,8 +327,8 @@ void caml_print_exception_backtrace(void)
   intnat i;
   struct caml_loc_info li;
 
-  for (i = 0; i < CAML_DOMAIN_STATE->backtrace_pos; i++) {
-    extract_location_info((frame_descr *) (CAML_DOMAIN_STATE->backtrace_buffer[i]), &li);
+  for (i = 0; i < Caml_state->backtrace_pos; i++) {
+    extract_location_info((frame_descr *) (Caml_state->backtrace_buffer[i]), &li);
     print_location(&li, i);
   }
 }
@@ -371,7 +371,7 @@ CAMLprim value caml_get_exception_raw_backtrace(value unit)
      if the finalizer raises then catches an exception).  We choose to ignore
      any such finalizer backtraces and return the original one. */
 
-  if (CAML_DOMAIN_STATE->backtrace_buffer == NULL || CAML_DOMAIN_STATE->backtrace_pos == 0) {
+  if (Caml_state->backtrace_buffer == NULL || Caml_state->backtrace_pos == 0) {
     res = caml_alloc(0, tag);
   }
   else {
@@ -379,13 +379,13 @@ CAMLprim value caml_get_exception_raw_backtrace(value unit)
     intnat saved_backtrace_pos;
     intnat i;
 
-    saved_backtrace_pos = CAML_DOMAIN_STATE->backtrace_pos;
+    saved_backtrace_pos = Caml_state->backtrace_pos;
 
     if (saved_backtrace_pos > BACKTRACE_BUFFER_SIZE) {
       saved_backtrace_pos = BACKTRACE_BUFFER_SIZE;
     }
 
-    memcpy(saved_caml_backtrace_buffer, CAML_DOMAIN_STATE->backtrace_buffer,
+    memcpy(saved_caml_backtrace_buffer, Caml_state->backtrace_buffer,
            saved_backtrace_pos * sizeof(code_t));
 
     res = caml_alloc(saved_backtrace_pos, tag);

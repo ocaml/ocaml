@@ -102,7 +102,7 @@ void caml_main(char **argv)
   if (caml_params->backtrace_enabled_init) caml_record_backtrace(Val_int(1));
 
   /* Capture 16-byte aligned (ceil) system_stack_high */
-  CAML_DOMAIN_STATE->system_stack_high =
+  Caml_state->system_stack_high =
     (char*)((((uintnat)&tos + 16) >> 4) << 4);
 
   init_segments();
@@ -120,7 +120,7 @@ void caml_main(char **argv)
     return;
   }
   caml_init_main_stack();
-  res = caml_start_program(CAML_DOMAIN_STATE->young_ptr);
+  res = caml_start_program(Caml_state->young_ptr);
   if (Is_exception_result(res))
     caml_fatal_uncaught_exception(Extract_exception(res));
 }

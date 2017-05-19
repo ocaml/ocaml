@@ -91,12 +91,12 @@ CAMLprim value caml_realloc_global(value size)
 
 CAMLprim value caml_get_current_environment(value unit)
 {
-  return *CAML_DOMAIN_STATE->extern_sp;
+  return *Caml_state->extern_sp;
 }
 
 CAMLprim value caml_invoke_traced_function(value codeptr, value env, value arg)
 {
-  struct caml_domain_state* domain_state = CAML_DOMAIN_STATE;
+  caml_domain_state* domain_state = Caml_state;
   /* Stack layout on entry:
        return frame into instrument_closure function
        arg3 to call_original_code (arg)
