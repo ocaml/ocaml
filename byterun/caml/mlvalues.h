@@ -189,17 +189,17 @@ bits  63    10 9     8 7   0
    Since the minor heap is allocated in one aligned block, this can be tested
    via bitmasking. */
 #define Is_young(val) \
-  ((((uintnat)(val) ^ (uintnat)CAML_DOMAIN_STATE) & Young_val_bitmask) == 0)
+  ((((uintnat)(val) ^ (uintnat)Caml_state) & Young_val_bitmask) == 0)
 
 /* Is_minor(val) is true iff val is a block in any domain's minor heap. */
 #define Is_minor(val) \
-  ((((uintnat)(val) ^ (uintnat)CAML_DOMAIN_STATE) & Minor_val_bitmask) == 0)
+  ((((uintnat)(val) ^ (uintnat)Caml_state) & Minor_val_bitmask) == 0)
 
 /* Is_foreign(val) is true iff val is a block in another domain's minor heap.
    Since all minor heaps lie in one aligned block, this can be tested via
    more bitmasking. */
 #define Is_foreign(val) \
-  (((((uintnat)(val) ^ (uintnat)CAML_DOMAIN_STATE) - (1 << Minor_heap_align_bits)) & \
+  (((((uintnat)(val) ^ (uintnat)Caml_state) - (1 << Minor_heap_align_bits)) & \
     Minor_val_bitmask) == 0)
 
 

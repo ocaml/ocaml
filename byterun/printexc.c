@@ -124,7 +124,7 @@ static void default_fatal_uncaught_exception(value exn)
   caml_root at_exit;
   int saved_backtrace_active;
   intnat saved_backtrace_pos;
-  struct caml_domain_state* domain_state = CAML_DOMAIN_STATE;
+  caml_domain_state* domain_state = Caml_state;
 
   /* Build a string representation of the exception */
   msg = caml_format_exception(exn);
@@ -141,7 +141,7 @@ static void default_fatal_uncaught_exception(value exn)
   fprintf(stderr, "Fatal error: exception %s\n", msg);
   free(msg);
   /* Display the backtrace if available */
-  if (CAML_DOMAIN_STATE->backtrace_active && !DEBUGGER_IN_USE)
+  if (Caml_state->backtrace_active && !DEBUGGER_IN_USE)
     caml_print_exception_backtrace();
 }
 

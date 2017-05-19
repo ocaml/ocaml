@@ -15,7 +15,7 @@
    modifies domain-local data structures. */
 static void write_barrier(value obj, int field, value old_val, value new_val)
 {
-  struct caml_domain_state* domain_state = CAML_DOMAIN_STATE;
+  caml_domain_state* domain_state = Caml_state;
 
   Assert (Is_block(obj));
 
@@ -97,6 +97,49 @@ CAMLexport int caml_atomic_cas_field (value obj, int field, value oldval, value 
   }
 }
 
+
+/* FIXME: is __sync_synchronize a C11 SC fence? Is that enough? */
+
+CAMLprim value caml_atomic_load (value ref)
+{
+  if (Is_young(ref)) {
+    return Op_val(ref)[0];
+  } else {
+    CAMLparam1(ref);
+    CAMLlocal1(v);
+    __sync_synchronize();
+    caml_read_field(ref, 0, &v);
+    __sync_synchronize();
+    CAMLreturn (v);
+  }
+}
+
+CAMLprim value caml_atomic_store (value ref, value v)
+{
+  __sync_synchronize();
+  caml_modify_field(ref, 0, v);
+  __sync_synchronize();
+  return Val_unit;
+}
+
+CAMLprim value caml_atomic_cas (value ref, value oldv, value newv)
+{
+  value* p = Op_val(ref);
+  if (Is_young(ref)) {
+    if (*p == oldv) {
+      *p = newv;
+      write_barrier(ref, 0, oldv, newv);
+      return Val_int(1);
+    } else {
+      return Val_int(0);
+    }
+  } else {
+    int r = __sync_bool_compare_and_swap(p, oldv, newv);
+    if (r) write_barrier(ref, 0, oldv, newv);
+    return Val_int(r);
+  }
+}
+
 CAMLexport void caml_set_fields (value obj, value v)
 {
   int i;
@@ -155,12 +198,12 @@ CAMLexport void caml_blit_fields (value src, int srcoff, value dst, int dstoff, 
 
 CAMLexport value caml_alloc_shr (mlsize_t wosize, tag_t tag)
 {
-  value* v = caml_shared_try_alloc(caml_domain_self()->shared_heap, wosize, tag, 0);
+  value* v = caml_shared_try_alloc(Caml_state->shared_heap, wosize, tag, 0);
   if (v == NULL) {
     caml_raise_out_of_memory ();
   }
-  CAML_DOMAIN_STATE->allocated_words += Whsize_wosize (wosize);
-  if (CAML_DOMAIN_STATE->allocated_words > Wsize_bsize (CAML_DOMAIN_STATE->minor_heap_size)) {
+  Caml_state->allocated_words += Whsize_wosize (wosize);
+  if (Caml_state->allocated_words > Wsize_bsize (Caml_state->minor_heap_size)) {
     caml_urge_major_slice();
   }
 
@@ -238,7 +281,7 @@ CAMLexport value caml_read_barrier(value obj, int field)
 
 CAMLprim value caml_bvar_create(value v)
 {
-  return caml_alloc_2(0, v, Val_long(caml_domain_self()->id));
+  return caml_alloc_2(0, v, Val_long(Caml_state->id));
 }
 
 struct bvar_transfer_req {
@@ -253,7 +296,7 @@ static void handle_bvar_transfer(struct domain* self, void *reqp)
   intnat stat = Long_val(Op_val(bv)[1]);
   int owner = stat & BVAR_OWNER_MASK;
 
-  if (owner == self->id) {
+  if (owner == self->state->id) {
     // caml_gc_log("Handling bvar transfer [%02d] -> [%02d]", owner, req->new_owner);
     caml_modify_field (bv, 0, caml_promote(self, Op_val(bv)[0]));
     Op_val(bv)[1] = Val_long((stat & ~BVAR_OWNER_MASK) | req->new_owner);
@@ -275,11 +318,11 @@ intnat caml_bvar_status(value bv)
   while (1) {
     intnat stat = Long_val(Op_val(bv)[1]);
     int owner = stat & BVAR_OWNER_MASK;
-    if (owner == caml_domain_self()->id)
+    if (owner == Caml_state->id)
       return stat;
 
     /* Otherwise, need to transfer */
-    struct bvar_transfer_req req = {bv, caml_domain_self()->id};
+    struct bvar_transfer_req req = {bv, Caml_state->id};
     // caml_gc_log("Transferring bvar from domain [%02d]", owner);
     caml_domain_rpc(caml_domain_of_id(owner), &handle_bvar_transfer, &req);
 
@@ -293,11 +336,11 @@ CAMLprim value caml_bvar_take(value bv)
 {
   intnat stat = caml_bvar_status(bv);
   if (stat & BVAR_EMPTY) caml_raise_not_found();
-  CAMLassert(stat == caml_domain_self()->id);
+  CAMLassert(stat == Caml_state->id);
 
   value v = Op_val(bv)[0];
   Op_val(bv)[0] = Val_unit;
-  Op_val(bv)[1] = Val_long(caml_domain_self()->id | BVAR_EMPTY);
+  Op_val(bv)[1] = Val_long(Caml_state->id | BVAR_EMPTY);
 
   return v;
 }
@@ -306,10 +349,10 @@ CAMLprim value caml_bvar_put(value bv, value v)
 {
   intnat stat = caml_bvar_status(bv);
   if (!(stat & BVAR_EMPTY)) caml_invalid_argument("Put to a full bvar");
-  CAMLassert(stat == (caml_domain_self()->id | BVAR_EMPTY));
+  CAMLassert(stat == (Caml_state->id | BVAR_EMPTY));
 
   caml_modify_field(bv, 0, v);
-  Op_val(bv)[1] = Val_long(caml_domain_self()->id);
+  Op_val(bv)[1] = Val_long(Caml_state->id);
 
   return Val_unit;
 }

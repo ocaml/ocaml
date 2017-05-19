@@ -17,13 +17,13 @@ open Mach
 type allocation_state =
     No_alloc                            (* no allocation is pending *)
   | Pending_alloc of Reg.t * int        (* an allocation is pending *)
-(* The arguments of Pending_alloc(reg, ofs) are:
-     reg  the register holding the result of the last allocation
-     ofs  the alloc position in the allocated block *)
+(* The arguments of Pending_alloc(reg, totalsz) are:
+     reg      the register holding the result of the last allocation
+     totalsz  the amount to be allocated in this block *)
 
 let allocated_size = function
     No_alloc -> 0
-  | Pending_alloc(reg, ofs) -> ofs
+  | Pending_alloc(reg, totalsz) -> totalsz
 
 let rec combine i allocstate =
   match i.desc with
@@ -31,21 +31,20 @@ let rec combine i allocstate =
       (i, allocated_size allocstate)
   | Iop(Ialloc sz) ->
       begin match allocstate with
-        No_alloc ->
-          let (newnext, newsz) =
-            combine i.next (Pending_alloc(i.res.(0), sz)) in
-          (instr_cons (Iop(Ialloc newsz)) i.arg i.res newnext, 0)
-      | Pending_alloc(reg, ofs) ->
-          if ofs + sz < Config.max_young_wosize * Arch.size_addr then begin
-            let (newnext, newsz) =
-              combine i.next (Pending_alloc(reg, ofs + sz)) in
-            (instr_cons (Iop(Iintop_imm(Iadd, ofs))) [| reg |] i.res newnext,
+      | Pending_alloc(reg, totalsz)
+          when totalsz + sz < Config.max_young_wosize * Arch.size_addr ->
+         let (newnext, newsz) =
+              combine i.next (Pending_alloc(i.res.(0), totalsz + sz)) in
+            (instr_cons (Iop(Iintop_imm(Iadd, -sz))) [| reg |] i.res newnext,
              newsz)
-          end else begin
-            let (newnext, newsz) =
-              combine i.next (Pending_alloc(i.res.(0), sz)) in
-            (instr_cons (Iop(Ialloc newsz)) i.arg i.res newnext, ofs)
-          end
+      | _ ->
+         let (newnext, newsz) =
+            combine i.next (Pending_alloc(i.res.(0), sz)) in
+         let newnext =
+           if newsz = sz then newnext else
+             instr_cons (Iop(Iintop_imm(Iadd, newsz - sz))) i.res i.res newnext in
+         (instr_cons (Iop(Ialloc newsz)) i.arg i.res newnext,
+          allocated_size allocstate)
       end
   | Iop(Icall_ind | Icall_imm _ | Iextcall _ |
         Itailcall_ind | Itailcall_imm _) ->
