@@ -69,7 +69,6 @@
 #define Stack_debugger_slot(stk) (*(value*)(Stack_high(stk) - 2))
 #define Stack_debugger_slot_offset_to_parent_slot(stk) \
   (sizeof(value) * ((Stack_high(stk) - (value*)stk) - 2 - Stack_parent_offset))
-//#define Stack_debugger_slot_offset_to_parent_slot(stk) (sizeof(value) * (Wosize_val(stk) - 3 - Stack_parent_offset))
 #endif
 
 value caml_find_performer(value stack);
