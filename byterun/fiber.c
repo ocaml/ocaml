@@ -11,6 +11,7 @@
 #include "caml/minor_gc.h"
 #include "caml/shared_heap.h"
 #include "caml/memory.h"
+#include "caml/params.h"
 #ifdef NATIVE_CODE
 #include "stack.h"
 #include "frame_descriptors.h"
@@ -48,7 +49,8 @@ static value save_stack ()
 
 static void load_stack (value stack) {
   caml_domain_state* domain_state = Caml_state;
-  domain_state->stack_threshold = Stack_base(stack) + Stack_threshold / sizeof(value);
+  domain_state->stack_threshold = Stack_base(stack)
+    + caml_params->profile_slop_wsz + Stack_threshold / sizeof(value);
   domain_state->stack_high = Stack_high(stack);
   domain_state->current_stack = stack;
   if (domain_state->promoted_in_current_cycle)
@@ -64,7 +66,7 @@ value caml_alloc_stack (value hval, value hexn, value heff) {
   char* sp;
   struct caml_context *ctxt;
 
-  stack = caml_alloc(caml_fiber_wsz, Stack_tag);
+  stack = caml_alloc(caml_fiber_wsz + caml_params->profile_slop_wsz, Stack_tag);
   Stack_dirty_domain(stack) = 0;
   Stack_handle_value(stack) = hval;
   Stack_handle_exception(stack) = hexn;
@@ -208,7 +210,8 @@ void caml_maybe_expand_stack (value* gc_regs)
                   /* Stack_sp() is a -ve value in words */
                   + Stack_sp (Caml_state->current_stack)
                   - Stack_ctx_words;
-  if (stack_available < 2 * Stack_threshold / sizeof(value))
+  if (stack_available < caml_params->profile_slop_wsz
+                      + 2 * Stack_threshold / sizeof(value))
     caml_realloc_stack (0, 0, 0);
 
   CAMLreturn0;
@@ -233,7 +236,8 @@ static value save_stack ()
           (Is_minor(domain_state->current_stack) || !is_garbage(domain_state->current_stack)));
   value old_stack = domain_state->current_stack;
   Stack_sp(old_stack) = domain_state->extern_sp - domain_state->stack_high;
-  Assert(domain_state->stack_threshold == Stack_base(old_stack) + Stack_threshold / sizeof(value));
+  Assert(domain_state->stack_threshold ==
+         Stack_base(old_stack) + caml_params->profile_slop_wsz + Stack_threshold / sizeof(value));
   Assert(domain_state->stack_high == Stack_high(old_stack));
   Assert(domain_state->extern_sp == domain_state->stack_high + Stack_sp(old_stack));
   dirty_stack(old_stack);
@@ -247,7 +251,8 @@ static void load_stack(value newstack)
   Assert(Tag_val(newstack) == Stack_tag);
   caml_domain_state* domain_state = Caml_state;
   Assert(Stack_dirty_domain(newstack) == 0 || Stack_dirty_domain(newstack) == caml_domain_self());
-  domain_state->stack_threshold = Stack_base(newstack) + Stack_threshold / sizeof(value);
+  domain_state->stack_threshold =
+    Stack_base(newstack) + caml_params->profile_slop_wsz + Stack_threshold / sizeof(value);
   domain_state->stack_high = Stack_high(newstack);
   domain_state->extern_sp = domain_state->stack_high + Stack_sp(newstack);
   domain_state->current_stack = newstack;
@@ -312,6 +317,7 @@ CAMLprim value caml_ensure_stack_capacity(value required_space)
 void caml_change_max_stack_size (uintnat new_max_size)
 {
   asize_t size = Caml_state->stack_high - Caml_state->extern_sp
+                 + caml_params->profile_slop_wsz
                  + Stack_threshold / sizeof (value);
 
   if (new_max_size < size) new_max_size = size;
@@ -344,6 +350,7 @@ void caml_scan_stack(scanning_action f, void* fdata, value stack)
     f(fdata, *sp, sp);
   }
 }
+
 
 #endif /* end BYTE_CODE */
 
@@ -391,6 +398,13 @@ void caml_clean_stack(value stack)
   if (Stack_dirty_domain(stack) == caml_domain_self()) {
     Stack_dirty_domain(stack) = 0;
   }
+}
+
+value caml_switch_stack(value stk)
+{
+  value s = save_stack();
+  load_stack(stk);
+  return s;
 }
 
 /*
@@ -475,16 +489,9 @@ value caml_alloc_main_stack (uintnat init_size)
 void caml_init_main_stack ()
 {
   value stack;
-
-  stack = caml_alloc_main_stack (Stack_size/sizeof(value));
+  stack = caml_alloc_main_stack (caml_params->profile_slop_wsz +
+                            Stack_size/sizeof(value));
   load_stack(stack);
-}
-
-value caml_switch_stack(value stk)
-{
-  value s = save_stack();
-  load_stack(stk);
-  return s;
 }
 
 CAMLprim value caml_clone_continuation (value cont)
