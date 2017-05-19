@@ -29,5 +29,8 @@ include $(BASEDIR)/makefiles/Makefile.several
 include $(BASEDIR)/makefiles/Makefile.common
 
 %.exe: %.c
-	@$(BYTECC) $(if $(filter msvc,$(CCOMPTYPE)),/Fe$*.exe,-o $*.exe) $*.c
-
+ifeq ($(CCOMPTYPE),msvc)
+	@set -o pipefail ; $(BYTECC) /Fe$*.exe $*.c | tail -n +2
+else
+	@$(BYTECC) -o $*.exe $*.c
+endif
