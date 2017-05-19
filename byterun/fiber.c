@@ -467,7 +467,7 @@ void caml_realloc_stack(asize_t required_space, value* saved_vals, int nsaved)
   CAMLreturn0;
 }
 
-static value alloc_main_stack (uintnat init_size)
+value caml_alloc_main_stack (uintnat init_size)
 {
   CAMLparam0();
   CAMLlocal1(stack);
@@ -489,7 +489,7 @@ static value alloc_main_stack (uintnat init_size)
 void caml_init_main_stack ()
 {
   value stack;
-  stack = alloc_main_stack (caml_params->profile_slop_wsz +
+  stack = caml_alloc_main_stack (caml_params->profile_slop_wsz +
                             Stack_size/sizeof(value));
   load_stack(stack);
 }
