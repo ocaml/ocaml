@@ -227,6 +227,17 @@ void caml_update_gc_regs_slot (value* gc_regs)
   ctxt->gc_regs = gc_regs;
 }
 
+/* Returns 1 if the target stack is a fresh stack to which control is switching
+ * to. */
+int caml_switch_stack(value stk)
+{
+  save_stack();
+  load_stack(stk);
+  if (Stack_sp(stk) == -INIT_FIBER_USED)
+    return 1;
+  return 0;
+}
+
 #else /* End NATIVE_CODE, begin BYTE_CODE */
 
 caml_root caml_global_data;
@@ -353,6 +364,12 @@ void caml_scan_stack(scanning_action f, void* fdata, value stack)
   }
 }
 
+value caml_switch_stack(value stk)
+{
+  value s = save_stack();
+  load_stack(stk);
+  return s;
+}
 
 #endif /* end BYTE_CODE */
 
@@ -402,19 +419,6 @@ void caml_clean_stack(value stack)
   }
 }
 
-/* Returns 1 if the target stack is a fresh stack to which control is switching
- * to. */
-int caml_switch_stack(value stk)
-{
-  save_stack();
-  load_stack(stk);
-#ifdef NATIVE_CODE
-  if (Stack_sp(stk) == -INIT_FIBER_USED)
-    return 1;
-#endif
-  return 0;
-}
-
 /*
   Stack management.
 
@@ -455,8 +459,10 @@ void caml_realloc_stack(asize_t required_space, value* saved_vals, int nsaved)
   Stack_handle_exception(new_stack) = Stack_handle_exception(old_stack);
   Stack_handle_effect(new_stack) = Stack_handle_effect(old_stack);
   Stack_parent(new_stack) = Stack_parent(old_stack);
+#ifdef NATIVE_CODE
   Stack_debugger_slot(new_stack) =
     Stack_debugger_slot_offset_to_parent_slot(new_stack);
+#endif
 
   Stack_dirty_domain(new_stack) = 0;
   if (Stack_dirty_domain(old_stack)) {

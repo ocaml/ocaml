@@ -93,7 +93,11 @@ void caml_realloc_stack (asize_t required_size, value* save, int nsave);
 void caml_change_max_stack_size (uintnat new_max_size);
 int  caml_on_current_stack(value*);
 int  caml_running_main_fiber();
-int  caml_switch_stack(value stk);
+#ifdef NATIVE_CODE
+int caml_switch_stack(value stk);
+#else
+value caml_switch_stack(value stk);
+#endif
 value caml_fiber_death();
 value caml_reverse_fiber_stack(value stack);
 
