@@ -384,6 +384,7 @@ G(caml_system__code_begin):
 #define DW_CFA_def_cfa_expression 0x0f
 #define DW_OP_breg3               0x73  /* rbx */
 #define DW_OP_breg7               0x77  /* rsp */
+#define DW_OP_breg13              0x7d  /* r13 */
 #define DW_OP_nop                 0x96
 #define DW_OP_deref               0x06
 #define DW_OP_const1u             0x08
@@ -437,6 +438,16 @@ CFI_ENDPROC
         nop; \
         .cfi_restore_state; \
         LEAVE_FUNCTION
+
+FUNCTION(G(caml_enter_caml))
+CFI_STARTPROC
+        .cfi_signal_frame
+        .cfi_escape DW_CFA_val_expression, 0x7, 2, \
+          DW_OP_breg13, 0x0
+        call    *%r12
+LBL(119):
+        ret
+CFI_ENDPROC
 
 /******************************************************************************/
 /* Allocation */
@@ -791,7 +802,7 @@ LBL(105):
 LBL(106):
     /* Call the function (address in %rax) */
         PREPARE_FOR_C_CALL
-        CAML_CALL_ENTER_C
+        call    *%rax
         CLEANUP_AFTER_C_CALL
     /* Prepare for return to OCaml */
         LOAD_TL_VAR(caml_young_ptr, %r15)
@@ -876,8 +887,13 @@ LBL(caml_start_program):
         LOAD_TL_VAR(caml_stack_high, %r14); \
         sub     %rsp, %r14
     /* Call the OCaml code */
-        call    *%r12
+        .cfi_remember_state
+        LOAD_TL_VAR(caml_system_sp, %r13)
+        call    GCALL(caml_enter_caml)
 LBL(108):
+        .cfi_def_cfa_offset 104
+        nop
+        .cfi_restore_state
     /* Pop the OCaml exception handler */
         popq    %r14; CFI_ADJUST(-8)
         popq    %r12; CFI_ADJUST(-8)   /* dummy register */
@@ -1177,7 +1193,7 @@ G(caml_system__code_end):
         .globl  G(caml_system__frametable)
         .align  EIGHT_ALIGN
 G(caml_system__frametable):
-        .quad   3           /* three descriptors */
+        .quad   4           /* three descriptors */
         .quad   LBL(108)    /* return address into callback */
         .value  -1          /* negative frame size => use callback link */
         .value  0           /* no roots here */
@@ -1187,6 +1203,10 @@ G(caml_system__frametable):
         .value  0           /* no roots here */
         .align  EIGHT_ALIGN
         .quad   LBL(118)    /* return address into caml_handler */
+        .value  8           /* frame size = 8 */
+        .value  0           /* no roots here */
+        .align  EIGHT_ALIGN
+        .quad   LBL(119)    /* return address into caml_enter_caml */
         .value  8           /* frame size = 8 */
         .value  0           /* no roots here */
         .align  EIGHT_ALIGN
