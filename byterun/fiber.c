@@ -60,6 +60,8 @@ static void load_stack (value stack) {
 extern void caml_fiber_exn_handler (value) Noreturn;
 extern void caml_fiber_val_handler (value) Noreturn;
 
+#define INIT_FIBER_USED (3 + sizeof(struct caml_context) / sizeof(value))
+
 value caml_alloc_stack (value hval, value hexn, value heff) {
   CAMLparam3(hval, hexn, heff);
   CAMLlocal1(stack);
@@ -77,9 +79,9 @@ value caml_alloc_stack (value hval, value hexn, value heff) {
   /* Fiber exception handler that returns to parent */
   sp -= sizeof(value);
   *(value**)sp = (value*)caml_fiber_exn_handler;
-  /* No previous exception frame */
+  /* No previous exception frame. Infact, this is the debugger slot. Initialize it. */
   sp -= sizeof(value);
-  *(uintnat*)sp = 0;
+  Stack_debugger_slot(stack) = Stack_debugger_slot_offset_to_parent_slot(stack);
   /* Value handler that returns to parent */
   sp -= sizeof(value);
   *(value**)sp = (value*)caml_fiber_val_handler;
@@ -89,7 +91,7 @@ value caml_alloc_stack (value hval, value hexn, value heff) {
   ctxt = (struct caml_context*)sp;
   ctxt->exception_ptr_offset = 2 * sizeof(value);
   ctxt->gc_regs = NULL;
-  Stack_sp(stack) = -(3 + sizeof(struct caml_context) / sizeof(value));
+  Stack_sp(stack) = -INIT_FIBER_USED;
 
   caml_gc_log ("Allocate stack=0x%lx of %lu words", stack, caml_fiber_wsz);
 
@@ -225,6 +227,17 @@ void caml_update_gc_regs_slot (value* gc_regs)
   ctxt->gc_regs = gc_regs;
 }
 
+/* Returns 1 if the target stack is a fresh stack to which control is switching
+ * to. */
+int caml_switch_stack(value stk)
+{
+  save_stack();
+  load_stack(stk);
+  if (Stack_sp(stk) == -INIT_FIBER_USED)
+    return 1;
+  return 0;
+}
+
 #else /* End NATIVE_CODE, begin BYTE_CODE */
 
 caml_root caml_global_data;
@@ -351,6 +364,12 @@ void caml_scan_stack(scanning_action f, void* fdata, value stack)
   }
 }
 
+value caml_switch_stack(value stk)
+{
+  value s = save_stack();
+  load_stack(stk);
+  return s;
+}
 
 #endif /* end BYTE_CODE */
 
@@ -400,13 +419,6 @@ void caml_clean_stack(value stack)
   }
 }
 
-value caml_switch_stack(value stk)
-{
-  value s = save_stack();
-  load_stack(stk);
-  return s;
-}
-
 /*
   Stack management.
 
@@ -447,6 +459,10 @@ void caml_realloc_stack(asize_t required_space, value* saved_vals, int nsaved)
   Stack_handle_exception(new_stack) = Stack_handle_exception(old_stack);
   Stack_handle_effect(new_stack) = Stack_handle_effect(old_stack);
   Stack_parent(new_stack) = Stack_parent(old_stack);
+#ifdef NATIVE_CODE
+  Stack_debugger_slot(new_stack) =
+    Stack_debugger_slot_offset_to_parent_slot(new_stack);
+#endif
 
   Stack_dirty_domain(new_stack) = 0;
   if (Stack_dirty_domain(old_stack)) {
