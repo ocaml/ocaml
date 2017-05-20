@@ -449,6 +449,23 @@ LBL(119):
         ret
 CFI_ENDPROC
 
+FUNCTION(G(caml_handler))
+CFI_STARTPROC
+LBL(caml_handler):
+        .cfi_signal_frame
+        .cfi_escape DW_CFA_val_expression, 0x7, 37, \
+            /* DWARF_stack = [cfa] */ \
+          DW_OP_breg7, 0x8, DW_OP_deref, \
+            /* DWARF_stack = [offset; cfa] */ \
+          DW_OP_minus, DW_OP_deref, \
+            /* DWARF_stack = [parent] */ \
+          DW_cfa_of_stack
+        call *%rsi
+LBL(118):
+        movq  $0, 16(%rsp)
+        ret
+CFI_ENDPROC
+
 /******************************************************************************/
 /* Allocation */
 /******************************************************************************/
@@ -1140,23 +1157,6 @@ LBL(113):
         jmp LBL(caml_raise_exn)
 CFI_ENDPROC
 
-FUNCTION(G(caml_handler))
-CFI_STARTPROC
-LBL(caml_handler):
-        .cfi_signal_frame
-        .cfi_escape DW_CFA_val_expression, 0x7, 37, \
-            /* DWARF_stack = [cfa] */ \
-          DW_OP_breg7, 0x8, DW_OP_deref, \
-            /* DWARF_stack = [offset; cfa] */ \
-          DW_OP_minus, DW_OP_deref, \
-            /* DWARF_stack = [parent] */ \
-          DW_cfa_of_stack
-        call *%rsi
-LBL(118):
-        movq  $0, 16(%rsp)
-        ret
-CFI_ENDPROC
-
 FUNCTION(G(caml_resume))
 CFI_STARTPROC
     /* %rax -> tail of stack list, %rbx -> fun, %rdi -> arg */
@@ -1172,6 +1172,7 @@ LBL(114):
         jne     LBL(114)
     /* %rdi now has the desired head of stack list */
         SWITCH_OCAML_STACKS
+    /* Return value is 1 if switching to a fresh stack. */
         cmpq    $1, %rax
         movq    %r12, %rax    /* first argument */
         movq    (%rbx), %rsi  /* closure in %rbx (second argument) */
