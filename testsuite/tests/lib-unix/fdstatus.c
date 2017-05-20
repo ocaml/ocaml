@@ -16,7 +16,11 @@ void process_fd(char * s)
   HANDLE h;
   DWORD flags;
 
+#ifdef _WIN64
+  h = (HANDLE) _atoi64(s);
+#else
   h = (HANDLE) atoi(s);
+#endif
   if (GetHandleInformation(h, &flags)) {
     printf("open\n");
   } else if (GetLastError() == ERROR_INVALID_HANDLE) {
