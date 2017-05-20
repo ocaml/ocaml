@@ -105,6 +105,10 @@
    loads/stores in one go to the domain state block. */
 
 #define DOMAIN_STATE(field_num, c_type, name)             \
+  .macro addr_caml_##name dest_reg:req ;                  \
+  GET_DOMAIN_STATE(\dest_reg) ;                           \
+  leaq    (8 * field_num)(\dest_reg), \dest_reg ;         \
+  .endm ;                                                 \
   .macro load_caml_##name dest_reg:req ;                  \
   GET_DOMAIN_STATE(\dest_reg) ;                           \
   movq    (8 * field_num)(\dest_reg), \dest_reg ;         \
@@ -131,6 +135,11 @@
   .endm
 #include "../byterun/caml/domain_state.tbl"
 #undef DOMAIN_STATE
+
+/* Load address of field from the current domain state block.  Clobbers only
+ * the destination. */
+#define ADDR_TL_VAR(var,dstreg) \
+        addr_##var dstreg
 
 /* Load from the current domain state block.  Clobbers only the destination. */
 #define LOAD_TL_VAR(var,dstreg) \
@@ -354,12 +363,91 @@
 #define Stack_handle_effect(REG)    32(REG)
 #define Stack_parent(REG)           40(REG)
 
+/******************************************************************************/
+/* text section
+/******************************************************************************/
+
         .text
 
         .globl  G(caml_system__code_begin)
 G(caml_system__code_begin):
         ret  /* just one instruction, so that debuggers don't display
         caml_system__code_begin instead of caml_call_gc */
+
+
+/******************************************************************************/
+/* DWARF
+/******************************************************************************/
+
+#define DW_CFA_val_expression     0x16
+#define DW_CFA_expression         0x10
+#define DW_CFA_def_cfa_expression 0x0f
+#define DW_OP_breg3               0x73  /* rbx */
+#define DW_OP_breg7               0x77  /* rsp */
+#define DW_OP_breg13              0x7d  /* r13 */
+#define DW_OP_nop                 0x96
+#define DW_OP_deref               0x06
+#define DW_OP_const1u             0x08
+#define DW_OP_plus                0x22
+#define DW_OP_minus               0x1c
+#define DW_OP_shl                 0x24
+#define DW_OP_shr                 0x25
+#define DW_OP_dup                 0x12
+#define DW_OP_piece               0x93
+#define DW_OP_swap                0x16
+#define DW_OP_const8u             0x0e
+#define DW_OP_and                 0x1a
+
+
+/* Given a OCaml stack on DWARF stack, returns the CFA of the last OCaml frame. Length = 32 bytes. */
+#define DW_cfa_of_stack \
+          /* DWARF_stack = [stack] */ \
+        DW_OP_dup, DW_OP_dup, \
+          /* DWARF stack = [stack; stack; stack] */ \
+        DW_OP_const1u, 0x08, DW_OP_minus, DW_OP_deref, \
+          /* DWARF_stack = [Hd_val(stack); stack; stack] */ \
+        DW_OP_const1u, 0x0a, DW_OP_shr, DW_OP_const1u, 0x03, DW_OP_shl, DW_OP_plus, \
+          /* DWARF_stack = [Stack_high(stack) || Stack_high(stack) + 8; stack] */ \
+        DW_OP_const8u, 0xf0,0xff,0xff,0xff,0xff,0xff,0xff,0xff, DW_OP_and, \
+          /* DWARF_stack = [Stack_high(stack); stack] */ \
+        DW_OP_swap, DW_OP_deref, DW_OP_const1u, 0x03, DW_OP_shl, DW_OP_plus, \
+          /* DWARF_stack = [Sp(stack)] */ \
+        DW_OP_const1u, 0x10, DW_OP_plus \
+          /* DWARF_stack = [CFA of last frame] */
+
+/* Expects target function in %rax. Clobbers %rbx. */
+FUNCTION(G(caml_enter_c))
+CFI_STARTPROC
+        .cfi_signal_frame
+        .cfi_escape DW_CFA_val_expression, 0x7, 35, \
+            /* DWARF_stack = [cfa] */ \
+          DW_OP_breg3, 0x0, DW_OP_deref, \
+            /* DWARF_stack = [stack] */ \
+          DW_cfa_of_stack
+        call    *%rax
+        ret
+CFI_ENDPROC
+
+#define CAML_CALL_ENTER_C \
+        ENTER_FUNCTION; \
+        .cfi_remember_state; \
+        ADDR_TL_VAR(caml_current_stack, %rbx); \
+        call    GCALL(caml_enter_c); \
+        .cfi_def_cfa_offset 8; \
+    /* XXX KC: backtrace corrupted at this instruction, but fine before and after. */ \
+        nop; \
+        .cfi_restore_state; \
+        LEAVE_FUNCTION
+
+FUNCTION(G(caml_enter_caml))
+CFI_STARTPROC
+        .cfi_signal_frame
+        .cfi_escape DW_CFA_val_expression, 0x7, 2, \
+          DW_OP_breg13, 0x0
+        call    *%r12
+LBL(119):
+        ret
+CFI_ENDPROC
 
 /******************************************************************************/
 /* Allocation */
@@ -409,7 +497,8 @@ G(caml_system__code_begin):
         movq    $0, C_ARG_1;                                                   \
         movq    $0, C_ARG_2;                                                   \
         movq    $0, C_ARG_3;                                                   \
-        call    GCALL(TARGET_FUN);                                             \
+        LEA_VAR(TARGET_FUN, %rax);                                             \
+        CAML_CALL_ENTER_C;                                                     \
         CLEANUP_AFTER_C_CALL;                                                  \
     /* Restore caml_young_ptr */                                               \
         LOAD_TL_VAR(caml_young_ptr, %r15);                                     \
@@ -545,7 +634,8 @@ CFI_STARTPROC
         movsd   %xmm15, 15*8(%rsp);
     /* Call the read barrier */
         PREPARE_FOR_C_CALL;
-        call    GCALL(caml_read_barrier);
+        LEA_VAR(caml_read_barrier, %rax);
+        CAML_CALL_ENTER_C;
     /* Result is in %rax */
         CLEANUP_AFTER_C_CALL;
     /* Restore caml_young_ptr */
@@ -680,7 +770,7 @@ LBL(caml_c_call):
         STORE_TL_VAR(%r15, caml_young_ptr)
     /* Call the function (address in %rax) */
         PREPARE_FOR_C_CALL
-        call    *%rax
+        CAML_CALL_ENTER_C
         CLEANUP_AFTER_C_CALL
     /* Prepare for return to OCaml */
         LOAD_TL_VAR(caml_young_ptr, %r15)
@@ -797,8 +887,13 @@ LBL(caml_start_program):
         LOAD_TL_VAR(caml_stack_high, %r14); \
         sub     %rsp, %r14
     /* Call the OCaml code */
-        call    *%r12
+        .cfi_remember_state
+        LOAD_TL_VAR(caml_system_sp, %r13)
+        call    GCALL(caml_enter_caml)
 LBL(108):
+        .cfi_def_cfa_offset 104
+        nop
+        .cfi_restore_state
     /* Pop the OCaml exception handler */
         popq    %r14; CFI_ADJUST(-8)
         popq    %r12; CFI_ADJUST(-8)   /* dummy register */
@@ -974,13 +1069,6 @@ CFI_STARTPROC
         jmp     *%rsi
 CFI_ENDPROC
 
-/* Dummy function so that fiber backtrace shows `caml_handler` instead of
- * `caml_fiber_exn_handler`. */
-FUNCTION(G(caml_handler))
-CFI_STARTPROC
-        ret
-CFI_ENDPROC
-
 FUNCTION(G(caml_fiber_val_handler))
 CFI_STARTPROC
 LBL(111):
@@ -1052,6 +1140,23 @@ LBL(113):
         jmp LBL(caml_raise_exn)
 CFI_ENDPROC
 
+FUNCTION(G(caml_handler))
+CFI_STARTPROC
+LBL(caml_handler):
+        .cfi_signal_frame
+        .cfi_escape DW_CFA_val_expression, 0x7, 37, \
+            /* DWARF_stack = [cfa] */ \
+          DW_OP_breg7, 0x8, DW_OP_deref, \
+            /* DWARF_stack = [offset; cfa] */ \
+          DW_OP_minus, DW_OP_deref, \
+            /* DWARF_stack = [parent] */ \
+          DW_cfa_of_stack
+        call *%rsi
+LBL(118):
+        movq  $0, 16(%rsp)
+        ret
+CFI_ENDPROC
+
 FUNCTION(G(caml_resume))
 CFI_STARTPROC
     /* %rax -> tail of stack list, %rbx -> fun, %rdi -> arg */
@@ -1067,8 +1172,10 @@ LBL(114):
         jne     LBL(114)
     /* %rdi now has the desired head of stack list */
         SWITCH_OCAML_STACKS
+        cmpq    $1, %rax
         movq    %r12, %rax    /* first argument */
         movq    (%rbx), %rsi  /* closure in %rbx (second argument) */
+        je      LBL(caml_handler)
         jmp     *%rsi
 CFI_ENDPROC
 
@@ -1086,13 +1193,21 @@ G(caml_system__code_end):
         .globl  G(caml_system__frametable)
         .align  EIGHT_ALIGN
 G(caml_system__frametable):
-        .quad   2           /* two descriptors */
+        .quad   4           /* three descriptors */
         .quad   LBL(108)    /* return address into callback */
         .value  -1          /* negative frame size => use callback link */
         .value  0           /* no roots here */
         .align  EIGHT_ALIGN
         .quad   LBL(111)    /* return address into fiber_val_handler */
         .value  -1          /* negative frame size => use callback link */
+        .value  0           /* no roots here */
+        .align  EIGHT_ALIGN
+        .quad   LBL(118)    /* return address into caml_handler */
+        .value  8           /* frame size = 8 */
+        .value  0           /* no roots here */
+        .align  EIGHT_ALIGN
+        .quad   LBL(119)    /* return address into caml_enter_caml */
+        .value  8           /* frame size = 8 */
         .value  0           /* no roots here */
         .align  EIGHT_ALIGN
 
