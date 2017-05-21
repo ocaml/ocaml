@@ -166,6 +166,9 @@ CAMLprim value set_fake_clock(value time)
                     "api-ms-win-core-sysinfo-l1-2-1.dll", &FakeClock);
     ReplaceFunction("GetSystemTimeAsFileTime",
                     "api-ms-win-core-sysinfo-l1-2-1.dll", &FakeClock);
+    /* Patch Windows 7 API Set */
+    ReplaceFunction("GetSystemTimeAsFileTime",
+                    "api-ms-win-core-sysinfo-l1-1-0.dll", &FakeClock);
     /* Patch Windows 7 and previous (standard CRT) */
     ReplaceFunction("GetSystemTimeAsFileTime",
                     "kernel32.dll", &FakeClock);
