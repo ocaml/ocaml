@@ -415,13 +415,13 @@ G(caml_system__code_begin):
         DW_OP_const1u, 0x10, DW_OP_plus \
           /* DWARF_stack = [CFA of last frame] */
 
-/* Expects target function in %rax. Clobbers %rbx. */
+/* Expects target function in %rax. */
 FUNCTION(G(caml_enter_c))
 CFI_STARTPROC
         .cfi_signal_frame
-        .cfi_escape DW_CFA_val_expression, 0x7, 35, \
+        .cfi_escape DW_CFA_val_expression, 0x7, 34, \
             /* DWARF_stack = [cfa] */ \
-          DW_OP_breg3, 0x0, DW_OP_deref, \
+          DW_OP_deref, DW_OP_deref, \
             /* DWARF_stack = [stack] */ \
           DW_cfa_of_stack
         call    *%rax
@@ -430,22 +430,29 @@ CFI_ENDPROC
 
 #define CAML_CALL_ENTER_C \
         ENTER_FUNCTION; \
-        .cfi_remember_state; \
         ADDR_TL_VAR(caml_current_stack, %rbx); \
+        subq    $16, %rsp; CFI_ADJUST(16); \
+        movq    %rbx, (%rsp); \
+        .cfi_remember_state; \
         call    GCALL(caml_enter_c); \
         .cfi_def_cfa_offset 8; \
     /* XXX KC: backtrace corrupted at this instruction, but fine before and after. */ \
         nop; \
         .cfi_restore_state; \
+        addq    $16, %rsp; CFI_ADJUST(-16); \
         LEAVE_FUNCTION
 
 FUNCTION(G(caml_enter_caml))
 CFI_STARTPROC
         .cfi_signal_frame
-        .cfi_escape DW_CFA_val_expression, 0x7, 2, \
-          DW_OP_breg13, 0x0
+        pushq   %r13; CFI_ADJUST(8)
+        .cfi_escape DW_CFA_val_expression, 0x7, 4, \
+            /* DWARF_stack = [cfa] */ \
+          DW_OP_const1u, 0x10, DW_OP_minus, DW_OP_deref \
+            /* DWARF_stack = [caml_system_sp] */
         call    *%r12
 LBL(119):
+        addq    $8, %rsp; CFI_ADJUST(-8)
         ret
 CFI_ENDPROC
 
@@ -1208,7 +1215,7 @@ G(caml_system__frametable):
         .value  0           /* no roots here */
         .align  EIGHT_ALIGN
         .quad   LBL(119)    /* return address into caml_enter_caml */
-        .value  8           /* frame size = 8 */
+        .value  16          /* frame size = 16 */
         .value  0           /* no roots here */
         .align  EIGHT_ALIGN
 
