@@ -190,8 +190,9 @@
         LOAD_TL_VAR(caml_current_stack, %r14); \
         movq    REG, (%r14); \
     /* Switch to system stack */ \
-        LOAD_TL_VAR(caml_system_sp, REG); \
-        movq    REG, %rsp; \
+        LOAD_TL_VAR(caml_system_sp, %r14); \
+        movq    %r14, %rsp; \
+        movq    REG, 16(%rsp); /* For DWARF CFI. See OFFXXX. */ \
         .cfi_def_cfa_offset 8 /* SYSCFAXXX */
 
 /* Switch from OCaml to C stack. Also builds a context at
@@ -399,48 +400,44 @@ G(caml_system__code_begin):
 #define DW_OP_and                 0x1a
 
 
-/* Given a OCaml stack on DWARF stack, returns the CFA of the last OCaml frame. Length = 32 bytes. */
-#define DW_cfa_of_stack \
-          /* DWARF_stack = [stack] */ \
-        DW_OP_dup, DW_OP_dup, \
-          /* DWARF stack = [stack; stack; stack] */ \
-        DW_OP_const1u, 0x08, DW_OP_minus, DW_OP_deref, \
-          /* DWARF_stack = [Hd_val(stack); stack; stack] */ \
-        DW_OP_const1u, 0x0a, DW_OP_shr, DW_OP_const1u, 0x03, DW_OP_shl, DW_OP_plus, \
-          /* DWARF_stack = [Stack_high(stack) || Stack_high(stack) + 8; stack] */ \
-        DW_OP_const8u, 0xf0,0xff,0xff,0xff,0xff,0xff,0xff,0xff, DW_OP_and, \
-          /* DWARF_stack = [Stack_high(stack); stack] */ \
-        DW_OP_swap, DW_OP_deref, DW_OP_const1u, 0x03, DW_OP_shl, DW_OP_plus, \
-          /* DWARF_stack = [Sp(stack)] */ \
-        DW_OP_const1u, 0x10, DW_OP_plus \
-          /* DWARF_stack = [CFA of last frame] */
-
 /* Expects target function in %rax. */
 FUNCTION(G(caml_enter_c))
 CFI_STARTPROC
         .cfi_signal_frame
-        .cfi_escape DW_CFA_val_expression, 0x7, 34, \
+        .cfi_escape DW_CFA_val_expression, 0x7, 40, \
             /* DWARF_stack = [cfa] */ \
-          DW_OP_deref, DW_OP_deref, \
-            /* DWARF_stack = [stack] */ \
-          DW_cfa_of_stack
+          DW_OP_dup, DW_OP_const1u, 24, DW_OP_plus, DW_OP_deref, DW_OP_const1u, 0x03, DW_OP_shl, \
+            /* DWARF_stack = [sp offset (bytes); cfa] */ \
+          DW_OP_swap, DW_OP_const1u, 32, DW_OP_plus, DW_OP_deref, DW_OP_deref, \
+            /* DWARF_stack = [stack; offset] */ \
+          DW_OP_dup, DW_OP_const1u, 0x08, DW_OP_minus, DW_OP_deref, \
+            /* DWARF_stack = [Hd_val(stack); stack; offset] */ \
+          DW_OP_const1u, 0x0a, DW_OP_shr, DW_OP_const1u, 0x03, DW_OP_shl, DW_OP_plus, \
+            /* DWARF_stack = [Stack_high(stack) || Stack_high(stack) + 8; offset] */ \
+          DW_OP_const8u, 0xf0,0xff,0xff,0xff,0xff,0xff,0xff,0xff, DW_OP_and, \
+            /* DWARF_stack = [Stack_high(stack); offset] */ \
+          DW_OP_plus, DW_OP_const1u, 0x10, DW_OP_plus \
+            /* DWARF_stack = [desired rsp] */
+        ENTER_FUNCTION
         call    *%rax
+        LEAVE_FUNCTION
         ret
 CFI_ENDPROC
 
 #define CAML_CALL_ENTER_C \
-        ENTER_FUNCTION; \
+        subq    $8, %rsp; CFI_ADJUST(8); \
         ADDR_TL_VAR(caml_current_stack, %rbx); \
-        subq    $16, %rsp; CFI_ADJUST(16); \
-        movq    %rbx, (%rsp); \
+        pushq   %rbx; CFI_ADJUST(8); \
+        movq    (%rbx), %rbx; \
+        pushq   (%rbx); CFI_ADJUST(8); \
+        subq    $24, %rsp; CFI_ADJUST(24); \
         .cfi_remember_state; \
         call    GCALL(caml_enter_c); \
         .cfi_def_cfa_offset 8; \
     /* XXX KC: backtrace corrupted at this instruction, but fine before and after. */ \
         nop; \
         .cfi_restore_state; \
-        addq    $16, %rsp; CFI_ADJUST(-16); \
-        LEAVE_FUNCTION
+        addq    $48, %rsp; CFI_ADJUST(-48)
 
 FUNCTION(G(caml_enter_caml))
 CFI_STARTPROC
@@ -465,8 +462,19 @@ LBL(caml_handler):
           DW_OP_breg7, 0x8, DW_OP_deref, \
             /* DWARF_stack = [offset; cfa] */ \
           DW_OP_minus, DW_OP_deref, \
-            /* DWARF_stack = [parent] */ \
-          DW_cfa_of_stack
+            /* DWARF_stack = [parent stack] */ \
+          DW_OP_dup, DW_OP_dup, \
+            /* DWARF stack = [stack; stack; stack] */ \
+          DW_OP_const1u, 0x08, DW_OP_minus, DW_OP_deref, \
+            /* DWARF_stack = [Hd_val(stack); stack; stack] */ \
+          DW_OP_const1u, 0x0a, DW_OP_shr, DW_OP_const1u, 0x03, DW_OP_shl, DW_OP_plus, \
+            /* DWARF_stack = [Stack_high(stack) || Stack_high(stack) + 8; stack] */ \
+          DW_OP_const8u, 0xf0,0xff,0xff,0xff,0xff,0xff,0xff,0xff, DW_OP_and, \
+            /* DWARF_stack = [Stack_high(stack); stack] */ \
+          DW_OP_swap, DW_OP_deref, DW_OP_const1u, 0x03, DW_OP_shl, DW_OP_plus, \
+            /* DWARF_stack = [Sp(stack)] */ \
+          DW_OP_const1u, 0x10, DW_OP_plus \
+            /* DWARF_stack = [rsp of last frame] */
         call *%rsi
 LBL(118):
         movq  $0, 16(%rsp)
@@ -794,7 +802,11 @@ LBL(caml_c_call):
         STORE_TL_VAR(%r15, caml_young_ptr)
     /* Call the function (address in %rax) */
         PREPARE_FOR_C_CALL
-        CAML_CALL_ENTER_C
+        .cfi_remember_state
+        call    GCALL(caml_enter_c)
+        .cfi_def_cfa_offset 8
+        nop
+        .cfi_restore_state
         CLEANUP_AFTER_C_CALL
     /* Prepare for return to OCaml */
         LOAD_TL_VAR(caml_young_ptr, %r15)
@@ -865,6 +877,10 @@ LBL(caml_start_program):
         LOAD_TL_VAR(caml_current_stack, %r13)
         pushq   Stack_parent(%r13); CFI_ADJUST(8)
         movq    $1, Stack_parent(%r13)
+    /* Build context on system stack for DWARF CFI */
+        ADDR_TL_VAR(caml_current_stack, %r13)
+        pushq   %r13; CFI_ADJUST(8)
+        pushq   $0 ; CFI_ADJUST(8) /* will be filled in at SWITCH_OCAML_TO_C. See OFFXXX. */
     /* Build a handler for exceptions raised in C */
         lea     LBL(115)(%rip), %r13
         pushq   %r13; CFI_ADJUST(8)
@@ -915,7 +931,7 @@ LBL(caml_start_program):
         LOAD_TL_VAR(caml_system_sp, %r13)
         call    GCALL(caml_enter_caml)
 LBL(108):
-        .cfi_def_cfa_offset 104
+        .cfi_def_cfa_offset 120
         nop
         .cfi_restore_state
     /* Pop the OCaml exception handler */
@@ -926,8 +942,8 @@ LBL(110):
         STORE_TL_VAR(%r15,caml_young_ptr)
     /* Return to C stack. */
         SWITCH_OCAML_TO_C_NO_CTXT(%r10)
-    /* Pop the C exception handler */
-        addq    $16, %rsp; CFI_ADJUST(-16)
+    /* Pop the C exception handler and DWARF cfi info. */
+        addq    $32, %rsp; CFI_ADJUST(-32)
     /* Restore previous parent stack */
         LOAD_TL_VAR(caml_current_stack, %r10)
         popq    Stack_parent(%r10); CFI_ADJUST(-8)
