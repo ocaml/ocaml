@@ -119,3 +119,12 @@ module T : sig
 end = struct
   type t = A of int [@@ocaml.unboxed]
 end;;
+
+(* regression test for PR#7511 (wrong determination of unboxability for GADTs)
+*)
+type 'a s = S : 'a -> 'a s [@@unboxed];;
+type t = T : _ s -> t [@@unboxed];;
+
+(* regression test for GPR#1133 (follow-up to PR#7511) *)
+type 'a s = S : 'a -> 'a option s [@@unboxed];;
+type t = T : _ s -> t [@@unboxed];;

@@ -159,4 +159,18 @@ Error: Signature mismatch:
        Their internal representations differ:
        the first declaration uses unboxed float representation.
 #     * *           module T : sig type t [@@immediate] end
+#   *   type 'a s = S : 'a -> 'a s [@@unboxed]
+# Characters 0-33:
+  type t = T : _ s -> t [@@unboxed];;
+  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Error: This type cannot be unboxed because
+       it might contain both float and non-float values.
+       You should annotate it with [@@ocaml.boxed].
+#     type 'a s = S : 'a -> 'a option s [@@unboxed]
+# Characters 0-33:
+  type t = T : _ s -> t [@@unboxed];;
+  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Error: This type cannot be unboxed because
+       it might contain both float and non-float values.
+       You should annotate it with [@@ocaml.boxed].
 # 
