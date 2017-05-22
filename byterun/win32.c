@@ -463,7 +463,7 @@ void caml_signal_thread(void * lpParam)
 
 #endif /* NATIVE_CODE */
 
-#if defined(NATIVE_CODE) && !defined(_WIN64)
+#if defined(NATIVE_CODE)
 
 /* Handling of system stack overflow.
  * Based on code provided by Olivier Andrieu.
@@ -486,7 +486,7 @@ void caml_signal_thread(void * lpParam)
  * exception handler because at this point we are using the page that
  * is to be protected.
  *
- * A solution is to used an alternate stack when restoring the
+ * A solution is to use an alternate stack when restoring the
  * protection. However it's not possible to use _resetstkoflw() then
  * since it determines the stack pointer by calling alloca(): it would
  * try to protect the alternate stack.
@@ -495,28 +495,16 @@ void caml_signal_thread(void * lpParam)
  * caml_raise_exception which switches back to the normal stack, or
  * call caml_fatal_uncaught_exception which terminates the program
  * quickly.
- *
- * NB: The PAGE_GUARD protection is only available on WinNT, not
- * Win9x. There is an equivalent mechanism on Win9x with
- * PAGE_NOACCESS.
- *
- * Currently, does not work under Win64.
  */
 
 static uintnat win32_alt_stack[0x80];
 
 static void caml_reset_stack (void *faulting_address)
 {
-  OSVERSIONINFO osi;
   SYSTEM_INFO si;
   DWORD page_size;
   MEMORY_BASIC_INFORMATION mbi;
   DWORD oldprot;
-
-  /* get the os version (Win9x or WinNT ?) */
-  osi.dwOSVersionInfoSize = sizeof osi;
-  if (! GetVersionEx (&osi))
-    goto failed;
 
   /* get the system's page size. */
   GetSystemInfo (&si);
@@ -526,26 +514,17 @@ static void caml_reset_stack (void *faulting_address)
   if (! VirtualQuery (faulting_address, &mbi, sizeof mbi))
     goto failed;
 
-  /* restore the PAGE_GUARD protection on this page */
-  switch (osi.dwPlatformId) {
-  case VER_PLATFORM_WIN32_NT:
-    VirtualProtect (mbi.BaseAddress, page_size,
-                    mbi.Protect | PAGE_GUARD, &oldprot);
-    break;
-  case VER_PLATFORM_WIN32_WINDOWS:
-    VirtualProtect (mbi.BaseAddress, page_size,
-                    PAGE_NOACCESS, &oldprot);
-    break;
-  }
+  VirtualProtect (mbi.BaseAddress, page_size,
+                  mbi.Protect | PAGE_GUARD, &oldprot);
 
  failed:
   caml_raise_stack_overflow();
 }
 
-CAMLextern int caml_is_in_code(void *);
 
+#ifndef _WIN64
 static LONG CALLBACK
-    caml_UnhandledExceptionFilter (EXCEPTION_POINTERS* exn_info)
+    caml_stack_overflow_VEH (EXCEPTION_POINTERS* exn_info)
 {
   DWORD code   = exn_info->ExceptionRecord->ExceptionCode;
   CONTEXT *ctx = exn_info->ContextRecord;
@@ -572,12 +551,58 @@ static LONG CALLBACK
   return EXCEPTION_CONTINUE_SEARCH;
 }
 
-void caml_win32_overflow_detection()
+#else
+extern char *caml_exception_pointer;
+extern value *caml_young_ptr;
+
+/* Do not use the macro from address_class.h here. */
+#undef Is_in_code_area
+#define Is_in_code_area(pc) \
+ ( ((char *)(pc) >= caml_code_area_start && \
+    (char *)(pc) <= caml_code_area_end)     \
+|| ((char *)(pc) >= &caml_system__code_begin && \
+    (char *)(pc) <= &caml_system__code_end)     \
+|| (Classify_addr(pc) & In_code_area) )
+extern char caml_system__code_begin, caml_system__code_end;
+
+
+static LONG CALLBACK
+    caml_stack_overflow_VEH (EXCEPTION_POINTERS* exn_info)
 {
-  SetUnhandledExceptionFilter (caml_UnhandledExceptionFilter);
+  DWORD code   = exn_info->ExceptionRecord->ExceptionCode;
+  CONTEXT *ctx = exn_info->ContextRecord;
+
+  if (code == EXCEPTION_STACK_OVERFLOW && Is_in_code_area (ctx->Rip))
+    {
+      uintnat faulting_address;
+      uintnat * alt_rsp;
+
+      /* grab the address that caused the fault */
+      faulting_address = exn_info->ExceptionRecord->ExceptionInformation[1];
+
+      /* refresh runtime parameters from registers */
+      caml_exception_pointer =  (char *) ctx->R14;
+      caml_young_ptr         = (value *) ctx->R15;
+
+      /* call caml_reset_stack(faulting_address) using the alternate stack */
+      alt_rsp  = win32_alt_stack + sizeof(win32_alt_stack) / sizeof(uintnat);
+      ctx->Rcx = faulting_address;
+      ctx->Rsp = (uintnat) (alt_rsp - 4 - 1);
+      ctx->Rip = (uintnat) &caml_reset_stack;
+
+      return EXCEPTION_CONTINUE_EXECUTION;
+    }
+
+  return EXCEPTION_CONTINUE_SEARCH;
+}
+#endif /* _WIN64 */
+
+void caml_win32_overflow_detection(void)
+{
+  AddVectoredExceptionHandler(1, caml_stack_overflow_VEH);
 }
 
-#endif
+#endif /* NATIVE_CODE */
 
 /* Seeding of pseudo-random number generators */
 

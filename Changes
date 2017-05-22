@@ -23,7 +23,27 @@ Working version
   bundles.
   (whitequark)
 
+* GPR#659: Remove support for SPARC native code generation
+  (Mark Shinwell)
+
+- MPR#7501, GPR#1089: Consider arrays of length zero as constants
+- PR#7501, GPR#1089: Consider arrays of length zero as constants
+  when using Flambda.
+  (Pierre Chambart, review by Mark Shinwell and Leo White)
+
+- GPR#1150: Fix typo in arm64 assembler directives
+  (KC Sivaramakrishnan)
+
+- GPR#1143: tweaked several allocation functions in the runtime by
+  checking for likely conditions before unlikely ones and eliminating
+  some redundant checks.
+  (Markus Mottl, review by Alain Frisch, Xavier Leroy, Gabriel Scherer,
+  Mark Shinwell and Leo White)
+
 ### Standard library:
+
+- GRP#1119: Change Set (private) type to inline records.
+  (Albin Coquereau)
 
 - PR#1771, PR#7309, GPR#1026: Add update to maps. Allows to update a
   binding in a map or create a new binding if the key had no binding
@@ -42,20 +62,49 @@ Working version
   values.
   (Daniel Bünzli, review by Damien Doligez, Max Mouratov)
 
+- Resurrect tabulation boxes in module Format. Rewrite/extend documentation
+  of tabulation boxes.
+
 ### Compiler user-interface and warnings:
+
+- GPR#896: "-compat-32" is now taken into account when building .cmo/.cma
+  (Hugo Heuzard)
 
 - GPR#948: the compiler now reports warnings-as-errors by prefixing
   them with "Error (warning ..):", instead of "Warning ..:" and
   a trailing "Error: Some fatal warnings were triggered" message.
   (Valentin Gatien-Baron, review by Alain Frisch)
 
+- MPR#7444, GPR#1138: trigger deprecation warning when a "deprecated"
+  attribute is hidden by signature coercion
+  (Alain Frisch, report by bmillwood, review by Leo White)
+
 ### Manual and documentation:
+
+- PR#6548: remove obsolete limitation in the description of private
+  type abbreviations
+  (Florian Angeletti, suggestion by Leo White)
 
 - PR#6676, GPR#1110: move record notation to tutorial
   (Florian Angeletti, review by Gabriel Scherer)
 
+- PR#6676, GPR#1112: move local opens to tutorial
+  (Florian Angeletti)
+
+- PR#6676, GPR#1153: move overriding class definitions to reference
+  manual and tutorial
+  (Florian Angeletti)
+
+- PR#6709: document the associativity and precedence level of
+  pervasive operators
+  (Florian Angeletti, review by David Allsopp)
+
 - PR#7254, GPR#1096: Rudimentary documentation of ocamlnat
   (Mark Shinwell)
+
+- PR#7507: Align the description of the printf conversion
+  specification "%g" with the ISO C90 description.
+  (Florian Angeletti)
 
 ### Tools:
 
@@ -78,6 +127,9 @@ Working version
 * PR#7352,PR#7353: ocamldoc, better paragraphs in html output
   (Florian Angeletti, request by Daniel Bünzli)
 
+- PR#7521, GPR#1159: ocamldoc, end generated latex file with a new line
+  (Florian Angeletti)
+
 ### Compiler distribution build system
 
 - GPR#558: enable shared library and natdynlink support on more Linux
@@ -87,10 +139,28 @@ Working version
 * GPR#1104: remove support for the NeXTStep platform
   (Sébastien Hinderer)
 
+- PR#1130: enable detection of IBM XL C compiler (one need to run configure
+  with "-cc <path to xlc compiler>"). Enable shared library support for
+  bytecode executables on AIX/xlc (tested on AIX 7.1, XL C 12).
+  To enable 64-bit, run both "configure" and "make world" with OBJECT_MODE=64.
+  (Konstantin Romanov, Enrique Naudon)
+
 ### Internal/compiler-libs changes:
+
+- PR#6826, GPR#828, GPR#834: improve compilation time for open
+  (Alain Frisch, review by Frédéric Bour and Jacques Garrigue)
 
 - GPR#1032: display the output of -dtimings as a hierarchy
   (Valentin Gatien-Baron, review by Gabriel Scherer)
+
+- GPR#1127: move config/{m,s}.h to byterun/caml and install them.
+  User code should not have to include them directly since they are
+  included by other header files
+  (Sébastien Hinderer)
+
+- GPR#1058, MPR#7127, GPR#454: in toplevel, print bytes and strip
+  strings longer than the size specified by the "print_length" directive
+  (Fabrice Le Fessant, initial PR by Junsong Li)
 
 ### Bug fixes
 
@@ -103,12 +173,19 @@ Working version
 - PR#6934: nonrec misbehaves with GADTs
   (Jacques Garrigue, report by Markus Mottl)
 
+- PR#7070, GPR#1139: Unexported values can cause non-generalisable variables
+  error
+  (Leo White)
+
 - PR#7261: Warn on type constraints in GADT declarations
   (Jacques Garrigue, report by Fabrice Le Botlan)
 
 - PR#7321: Private type in signature clashes with type definition via
   functor instantiation
   (Jacques Garrigue, report by Markus Mottl)
+
+- PR#7372, GPR#834: fix type-checker bug with GADT and inline records
+  (Alain Frisch, review by Frédéric Bour and Jacques Garrigue)
 
 - PR#7344: Inconsistent behavior with type annotations on let
   (Jacques Garrigue, report by Leo White)
@@ -120,6 +197,19 @@ Working version
   with themselves
   (Jacques Garrigue, report by Leo White)
 
+- PR#7506: pprintast ignores attributes in tails of a list
+  (Alain Frisch, report by Kenichi Asai and Gabriel Scherer)
+
+- GPR#1155: Fix a race condition with WAIT_NOHANG on Windows
+  (Jérémie Dimino and David Allsopp)
+
+- PR#7513: List.compare_length_with mishandles negative numbers / overflow
+  (Fabrice Le Fessant, report by Jeremy Yallop)
+
+- PR#7531a: Default argument is not evaluated even after passing a
+  non-labeled argument
+  (Jacques Garrigue, report by Stephen Dolan)
+
 ### Runtime system:
 
 - GPR#71: The runtime can now be shut down gracefully by means of the new
@@ -127,7 +217,10 @@ Working version
   OCAMLRUNPARAM enables shutting the runtime properly on process exit.
   (Max Mouratov, review and discussion by Damien Doligez, Gabriel Scherer,
   Mark Shinwell, Thomas Braibant, Stephen Dolan, Pierre Chambart,
-  François Bobot, Jacques Garrigue, and David Allsopp)
+  François Bobot, Jacques Garrigue, David Allsopp, and Alain Frisch)
+
+- GPR#938, GPR#1170: Stack overflow detection on 64-bit Windows
+  (Olivier Andrieu)
 
 Next major version (4.05.0):
 ----------------------------
@@ -155,6 +248,10 @@ Next major version (4.05.0):
   results to lookup tables.
   (Stephen Dolan, review by Gabriel Scherer, Pierre Chambart,
   Mark Shinwell, and bug report by Gabriel Scherer)
+
+- PR#7533, GPR#1173: Correctly perform side effects for certain
+  cases of "/" and "mod"
+  (Mark Shinwell, report by Jan Mitgaard)
 
 ### Runtime system:
 
@@ -405,12 +502,19 @@ Next major version (4.05.0):
   to solve ocamlbuild+doc usability issue (ocaml/ocamlbuild#79)
   (Gabriel Scherer, review by Florian Angeletti, discussion with Daniel Bünzli)
 
+* GPR#1012: ocamlyacc, fix parsing of raw strings and nested comments, as well
+  as the handling of ' characters in identifiers.
+  (Demi Obenour)
+
 - GPR#1017: ocamldoc, add an option to detect code fragments that could be
   transformed into a cross-reference to a known element.
   (Florian Angeletti, review and suggestion by David Allsopp)
 
 - clarify ocamldoc text parsing error messages
   (Gabriel Scherer)
+
+- GPR#1036: ocamlcmt (tools/read_cmt) is installed, converts .cmt to .annot
+  (Fabrice Le Fessant)
 
 ### Compiler distribution build system:
 
@@ -573,6 +677,7 @@ The complete list of changes is listed below.
   (Mark Shinwell, report by Jeremy Yallop, review by Frédéric Bour)
 
 - PR#6550, GPR#1094: Allow creation of empty .cmxa files on macOS
+- PR#6373, GPR#1093: Suppress trigraph warnings from macOS assembler
   (Mark Shinwell)
 
 - PR#6594, GPR#955: Remove "Istore_symbol" specific operation on x86-64.
@@ -628,6 +733,12 @@ The complete list of changes is listed below.
 - PR#7443, GPR#990: spurious unused open warning with local open in patterns
   (Florian Angeletti, report by Gabriel Scherer)
 
+- GPR#406: remove polymorphic comparison for Types.constructor_tag in compiler
+  (Dwight Guth, review by Gabriel Radanne, Damien Doligez, Gabriel Scherer,
+   Pierre Chambart, Mark Shinwell)
+
+- GPR#795: remove 256-character limitation on Sys.executable_name
+  (Xavier Leroy)
 - PR#7504: fix warning 8 with unconstrained records
   (Florian Angeletti, report by John Whitington)
 
@@ -695,21 +806,47 @@ Next minor version (4.04.1):
 
 ### Tools:
 
+- PR#7411: ocamldoc, avoid nested <pre> tags in module description.
+  (Florian Angeletti, report by user 'kosik')
+
 - PR#7488: ocamldoc, wrong Latex output for variant types
   with constructors without arguments.
   (Florian Angeletti, report by Xavier Leroy)
+
+### Build system:
+
+- PR#7373, GPR#1023: New flexlink target in Makefile.nt to bootstrap the
+  flexlink binary only, rather than the flexlink binary and the FlexDLL C
+  objects.
+  (David Allsopp)
 
 ### Bug fixes
 
 - PR#7369: Str.regexp raises "Invalid_argument: index out of bounds"
   (Damien Doligez, report by John Whitington)
 
+- PR#7373, GPR#1023: Fix ocamlmklib with bootstrapped FlexDLL. Bootstrapped
+  FlexDLL objects are now installed to a subdirectory flexdll of the Standard
+  Library which allows the compilers to pick them up explicitly and also
+  ocamlmklib to include them without unnecessarily adding the entire Standard
+  Library.
+  (David Allsopp)
+
+- PR#7385, GPR#1057: fix incorrect timestamps returned by Unix.stat on Windows
+  when either TZ is set or system date is in DST.
+  (David Allsopp, report and initial fix by Nicolás Ojeda Bär, review and
+   superior implementation suggestion by Xavier Leroy)
+
 - PR#7405, GPR#903: s390x: Fix address of caml_raise_exn in native dynlink modules
   (Richard Jones, review by Xavier Leroy)
 
-- MPR#7417, GPR#930: ensure 16 byte stack alignment inside caml_allocN on x86-64
+- PR#7417, GPR#930: ensure 16 byte stack alignment inside caml_allocN on x86-64
   for ocaml build with WITH_FRAME_POINTERS defined
   (Christoph Cullmann)
+
+- PR#7456, GPR#1092: fix slow compilation on source files containing a lot
+  of similar debugging information location entries
+  (Mark Shinwell)
 
 - PR#7457: a case of double free in the systhreads library (POSIX implementation)
   (Xavier Leroy, report by Chet Murthy)
@@ -718,6 +855,10 @@ Next minor version (4.04.1):
   as argument (regression in 4.04.0)
   (Bernhard Schommer, review by Florian Angeletti and Gabriel Scherer,
    report by Stephen Dolan)
+
+- PR#7505: Memory cannot be released after calling
+    Bigarray.Genarray.change_layout.
+  (Damien Doligez and Xavier Leroy, report by Liang Wang)
 
 - GPR#912: Fix segfault in Unix.create_process on Windows caused by wrong header
   configuration.

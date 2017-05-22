@@ -179,11 +179,15 @@ class-expr:
 %END LATEX
 class-field:
       'inherit' class-expr ['as' lowercase-ident]
+   |  'inherit!' class-expr ['as' lowercase-ident]
    |  'val' ['mutable'] inst-var-name [':' typexpr] '=' expr
+   |  'val!' ['mutable'] inst-var-name [':' typexpr] '=' expr
    |  'val' ['mutable'] 'virtual' inst-var-name ':' typexpr
    |  'val' 'virtual' 'mutable' inst-var-name ':' typexpr
    |  'method' ['private'] method-name {parameter} [':' typexpr] '=' expr
+   |  'method!' ['private'] method-name {parameter} [':' typexpr] '=' expr
    |  'method' ['private'] method-name ':' poly-typexpr '=' expr
+   |  'method!' ['private'] method-name ':' poly-typexpr '=' expr
    |  'method' ['private'] 'virtual' method-name ':' poly-typexpr
    |  'method' 'virtual' 'private' method-name ':' poly-typexpr
    |  'constraint' typexpr '=' typexpr
@@ -191,7 +195,6 @@ class-field:
 \end{syntax}
 See also the following language extensions:
 \hyperref[s:locally-abstract]{locally abstract types},
-\hyperref[s:explicit-overriding]{explicit overriding in class definitions},
 \hyperref[s:attributes]{attributes} and
 \hyperref[s:extension-nodes]{extension nodes}.
 
@@ -395,10 +398,24 @@ method-name ':' poly-typexpr@.  It specifies whether the method is
 public or private, and gives its type. If the method is intended to be
 polymorphic, the type must be explicitly polymorphic.
 
+\subsubsection*{Explicit overriding}
+
+Since Ocaml 3.12, the keywords @"inherit!"@, @"val!"@ and @"method!"@
+have the same semantics as @"inherit"@, @"val"@ and @"method"@, but
+they additionally require the definition they introduce to be
+overriding. Namely, @"method!"@ requires @method-name@ to be already
+defined in this class, @"val!"@ requires @inst-var-name@ to be already
+defined in this class, and @"inherit!"@ requires @class-expr@ to
+override some definitions. If no such overriding occurs, an error is
+signaled.
+
+As a side-effect, these 3 keywords avoid the warnings~7
+(method override) and~13 (instance variable override).
+Note that warning~7 is disabled by default.
+
 \subsubsection*{Constraints on type parameters}
 
 \ikwd{constraint\@\texttt{constraint}}
-
 The construct @'constraint' typexpr_1 '=' typexpr_2@ forces the two
 type expressions to be equals. This is typically used to specify type
 parameters: in that way they can be bound to specific type

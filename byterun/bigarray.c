@@ -85,7 +85,7 @@ CAMLexport struct custom_operations caml_ba_ops = {
 
 /* [caml_ba_alloc] will allocate a new bigarray object in the heap.
    If [data] is NULL, the memory for the contents is also allocated
-   (with [caml_stat_alloc]) by [caml_ba_alloc].
+   (with [malloc]) by [caml_ba_alloc].
    [data] cannot point into the OCaml heap.
    [dim] may point into an object in the OCaml heap.
 */
@@ -112,7 +112,7 @@ caml_ba_alloc(int flags, int num_dims, void * data, intnat * dim)
                            caml_ba_element_size[flags & CAML_BA_KIND_MASK],
                            &size))
       caml_raise_out_of_memory();
-    data = caml_stat_alloc_noexc(size);
+    data = malloc(size);
     if (data == NULL && size != 0) caml_raise_out_of_memory();
     flags |= CAML_BA_MANAGED;
   }
@@ -156,11 +156,11 @@ CAMLexport void caml_ba_finalize(value v)
     break;
   case CAML_BA_MANAGED:
     if (b->proxy == NULL) {
-      caml_stat_free(b->data);
+      free(b->data);
     } else {
       if (-- b->proxy->refcount == 0) {
-        caml_stat_free(b->proxy->data);
-        caml_stat_free(b->proxy);
+        free(b->proxy->data);
+        free(b->proxy);
       }
     }
     break;
@@ -455,7 +455,7 @@ CAMLexport uintnat caml_ba_deserialize(void * dst)
     caml_deserialize_error("input_value: bad bigarray kind");
   elt_size = caml_ba_element_size[b->flags & CAML_BA_KIND_MASK];
   /* Allocate room for data */
-  b->data = caml_stat_alloc_noexc(elt_size * num_elts);
+  b->data = malloc(elt_size * num_elts);
   if (b->data == NULL)
     caml_deserialize_error("input_value: out of memory for bigarray");
   /* Read data */

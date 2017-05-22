@@ -22,7 +22,6 @@ CAMLRUN ?= $(ROOTDIR)/boot/ocamlrun
 CAMLC=$(CAMLRUN) $(ROOTDIR)/ocamlc -nostdlib -I $(ROOTDIR)/stdlib
 CAMLOPT=$(CAMLRUN) $(ROOTDIR)/ocamlopt -nostdlib \
         -I $(ROOTDIR)/stdlib
-CFLAGS=-I$(ROOTDIR)/byterun $(SHAREDCCCOMPOPTS) $(EXTRACFLAGS)
 
 # The remainder of this file could probably be simplified by including
 # ../Makefile.
@@ -30,7 +29,6 @@ CFLAGS=-I$(ROOTDIR)/byterun $(SHAREDCCCOMPOPTS) $(EXTRACFLAGS)
 LIBNAME=raw_spacetime_lib
 CAMLOBJS=raw_spacetime_lib.cmo
 
-CC=$(BYTECC)
 COMPFLAGS=-w +33..39 -warn-error A -bin-annot -g -safe-string $(EXTRACAMLFLAGS)
 
 CMIFILES=$(CAMLOBJS:.cmo=.cmi)

@@ -475,9 +475,11 @@ let rec compare_lengths l1 l2 =
 ;;
 
 let rec compare_length_with l n =
-  match l, n with
-  | [], 0 -> 0
-  | [], _ -> if n > 0 then -1 else 1
-  | _, 0 -> 1
-  | _ :: l, n -> compare_length_with l (n-1)
+  match l with
+  | [] ->
+    if n = 0 then 0 else
+      if n > 0 then -1 else 1
+  | _ :: l ->
+    if n <= 0 then 1 else
+      compare_length_with l (n-1)
 ;;

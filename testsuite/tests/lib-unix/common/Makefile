@@ -1,12 +1,10 @@
-#!/bin/sed -f
-
 #**************************************************************************
 #*                                                                        *
-#*                                 OCaml                                  *
+#*                                OCaml                                   *
 #*                                                                        *
-#*             Xavier Leroy, projet Cristal, INRIA Rocquencourt           *
+#*                 Xavier Clerc, SED, INRIA Rocquencourt                  *
 #*                                                                        *
-#*   Copyright 2002 Institut National de Recherche en Informatique et     *
+#*   Copyright 2010 Institut National de Recherche en Informatique et     *
 #*     en Automatique.                                                    *
 #*                                                                        *
 #*   All rights reserved.  This file is distributed under the terms of    *
@@ -15,15 +13,21 @@
 #*                                                                        *
 #**************************************************************************
 
-# Remove private parts from runtime include files, before installation
-# in /usr/local/lib/ocaml/caml
+BASEDIR=../../..
+LIBRARIES=unix
+ADD_COMPFLAGS=-I $(OTOPDIR)/otherlibs/$(UNIXLIBVAR)unix
+LD_PATH=$(TOPDIR)/otherlibs/$(UNIXLIBVAR)unix
 
-/\/\* <include \.\.\/config\/m\.h> \*\// {
-  r ../config/m.h
-  d
-}
-/\/\* <include \.\.\/config\/s\.h> \*\// {
-  r ../config/s.h
-  d
-}
-/\/\* <private> \*\//,/\/\* <\/private> \*\//d
+ifeq ($(OS),Windows_NT)
+ADD_BYTERUN_FLAGS="-I $(OTOPDIR)/otherlibs/win32unix"
+endif
+
+default: reflector.exe fdstatus.exe cmdline_prog.exe
+	$(MAKE) check
+
+include $(BASEDIR)/makefiles/Makefile.several
+include $(BASEDIR)/makefiles/Makefile.common
+
+%.exe: %.c
+	@$(CC) $(CFLAGS) $(CPPFLAGS) $(if $(filter msvc,$(CCOMPTYPE)),/Fe$*.exe,-o $*.exe) $*.c
+

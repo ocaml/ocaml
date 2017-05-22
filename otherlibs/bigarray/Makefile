@@ -22,9 +22,9 @@ CAMLOBJS=bigarray.cmo
 include ../Makefile
 
 mmap.$(O): ../$(UNIXLIB)/mmap.c
-	$(BYTECC) $(BYTECCCOMPOPTS) $(CFLAGS) -c $<
+	$(CC) -c $(CFLAGS) $(CPPFLAGS) $(OUTPUTOBJ)$@ $<
 mmap_ba.$(O): ../unix/mmap_ba.c
-	$(BYTECC) $(BYTECCCOMPOPTS) $(CFLAGS) -c $<
+	$(CC) -c $(CFLAGS) $(CPPFLAGS) $(OUTPUTOBJ)$@ $<
 
 .PHONY: depend
 
@@ -32,7 +32,7 @@ depend:
 ifeq "$(TOOLCHAIN)" "msvc"
 	$(error Dependencies cannot be regenerated using the MSVC ports)
 else
-	$(CC) -MM $(CFLAGS) *.c | sed -e 's/\.o/.$$(O)/g' > .depend
+	$(CC) -MM $(CFLAGS) $(CPPFLAGS) *.c | sed -e 's/\.o/.$$(O)/g' > .depend
 	$(CAMLRUN) $(ROOTDIR)/tools/ocamldep -slash *.mli *.ml >> .depend
 endif
 

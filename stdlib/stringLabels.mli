@@ -56,7 +56,7 @@ val init : int -> f:(int -> char) -> string
    Raise [Invalid_argument] if [n < 0] or [n > ]{!Sys.max_string_length}.
    @since 4.02.0 *)
 
-val copy : string -> string
+val copy : string -> string  [@@ocaml.deprecated]
 (** Return a copy of the given string. *)
 
 val sub : string -> pos:int -> len:int -> string

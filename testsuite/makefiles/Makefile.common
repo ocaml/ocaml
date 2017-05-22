@@ -75,7 +75,7 @@ defaultclean:
 	@$(ASPP) $(ASPPFLAGS) -DSYS_$(SYSTEM) -o $*.o $*.s
 
 .c.o:
-	@$(CC) -c -I$(CTOPDIR)/byterun $*.c -o $*.$(O)
+	@$(CC) $(CFLAGS) -c -I$(CTOPDIR)/byterun $*.c -o $*.$(O)
 
 .f.o:
 	@$(FORTRAN_COMPILER) -c -I$(CTOPDIR)/byterun $*.f -o $*.$(O)

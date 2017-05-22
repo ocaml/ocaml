@@ -276,9 +276,6 @@ declares a type that is distinct from its implementation type @typexpr@.
 However, coercions from the type to @typexpr@ are permitted.
 Moreover, the compiler ``knows'' the implementation type and can take
 advantage of this knowledge to perform type-directed optimizations.
-For ambiguity reasons, @typexpr@ cannot be an object or polymorphic
-variant type, but a similar behaviour can be obtained through private
-row types.
 
 The following example uses a private type abbreviation to define a
 module of nonnegative integers:
@@ -379,61 +376,31 @@ Similarly to abstract types, the variance of type parameters
 is not inferred, and must be given explicitly.
 
 
-\section{Local opens}
+\section{Local opens for patterns}
 \ikwd{let\@\texttt{let}}
 \ikwd{open\@\texttt{open}} \label{s:local-opens}
 
-(Introduced in OCaml 3.12, extended to patterns in 4.04)
+(Introduced in OCaml 4.04)
 
 \begin{syntax}
-expr:
-       ...
-     | "let" "open" module-path "in" expr
-     | module-path '.(' expr ')'
-;
 pattern:
        ...
      | module-path '.(' pattern ')'
-\end{syntax}
-
-The expressions
-@"let" "open" module-path "in" expr@
-and
-@module-path'.('expr')'@ are strictly equivalent. On the pattern side,
-only the pattern @module-path'.('pattern')'@ is available. These
-constructions locally open the module referred to by the module path
-@module-path@ in the respective scope of the expression @expr@ or
-pattern @pattern@.
-
-Restricting opening to the scope of a single expression or pattern
-instead of a whole structure allows one to benefit from shorter syntax
-to refer to components of the opened module, without polluting the
-global scope. Also, this can make the code easier to read (the open
-statement is closer to where it is used) and to refactor (because the
-code fragment is more self-contained).
-
-\paragraph{Local opens for delimited expressions or patterns} (Introduced in OCaml 4.02)
-
-\begin{syntax}
-expr:
-       ...
-     | module-path '.[' expr ']'
-     | module-path '.[|' expr '|]'
-     | module-path '.{' expr '}'
-     | module-path '.{<' expr '>}'
-;
-pattern:
-       ...
      | module-path '.[' pattern ']'
      | module-path '.[|' pattern '|]'
      | module-path '.{' pattern '}'
+
 \end{syntax}
 
-When the body of a local open expression or pattern is delimited by
+For patterns, local opens are limited to the
+@module-path'.('pattern')'@ construction. This
+construction locally open the module referred to by the module path
+@module-path@ in the scope of the pattern @pattern@.
+
+When the body of a local open pattern is delimited by
 @'[' ']'@,  @'[|' '|]'@,  or @'{' '}'@, the parentheses can be omitted.
-For expression, parentheses can also be omitted for @'{<' '>}'@.
-For example, @module-path'.['expr']'@ is equivalent to
-@module-path'.(['expr'])'@, and @module-path'.[|' pattern '|]'@ is
+For example, @module-path'.['pattern']'@ is equivalent to
+@module-path'.(['pattern'])'@, and @module-path'.[|' pattern '|]'@ is
 equivalent to @module-path'.([|' pattern '|])'@.
 
 \section{Object copy short notations} \label{s:object-notations}
@@ -1035,34 +1002,6 @@ you use @'Mylib.A'@, only @'Mylib_A'@ will be linked in, not
 %Note that in the above @'Mylib.cmo'@ is actually empty, and one could
 %name the interface @'Mylib.mli'@, but this would require that all
 %clients are compiled with the @'-no-alias-deps'@ flag.
-
-\section{Explicit overriding in class definitions}\label{s:explicit-overriding}
-\ikwd{method.\@\texttt{method\char33}}
-\ikwd{val.\@\texttt{val\char33}}
-\ikwd{inherit.\@\texttt{inherit\char33}}
-
-(Introduced in OCaml 3.12)
-
-\begin{syntax}
-class-field:
-      ...
-   |  'inherit!' class-expr ['as' lowercase-ident]
-   |  'val!' ['mutable'] inst-var-name [':' typexpr] '=' expr
-   |  'method!' ['private'] method-name {parameter} [':' typexpr] '=' expr
-   |  'method!' ['private'] method-name ':' poly-typexpr '=' expr
-\end{syntax}
-
-The keywords @"inherit!"@, @"val!"@ and @"method!"@ have the same semantics
-as @"inherit"@, @"val"@ and @"method"@, but they additionally require the
-definition they introduce to be an overriding. Namely, @"method!"@
-requires @method-name@ to be already defined in this class, @"val!"@
-requires @inst-var-name@ to be already defined in this class, and
-@"inherit!"@ requires @class-expr@ to override some definitions.
-If no such overriding occurs, an error is signaled.
-
-As a side-effect, these 3 keywords avoid the warnings~7
-(method override) and~13 (instance variable override).
-Note that warning~7 is disabled by default.
 
 \section{Overriding in open statements}\label{s:explicit-overriding-open}
 \ikwd{open.\@\texttt{open\char33}}

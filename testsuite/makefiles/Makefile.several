@@ -13,7 +13,6 @@
 #*                                                                        *
 #**************************************************************************
 
-CC=$(NATIVECC) $(NATIVECCCOMPOPTS)
 FC=$(FORTAN_COMPILER)
 CMO_FILES=$(MODULES:=.cmo)
 CMX_FILES=$(MODULES:=.cmx)
@@ -114,7 +113,18 @@ run-file:
 	  rm -f "$$T"; \
 	} || true
 	@rm -f program program$(EXE)
-	@$(COMP) $(COMPFLAGS) $(FILE) -o program$(EXE)
+	@if [ -f "$(FILE).silent-compilation" ]; then \
+          temp="$$(mktemp "$${TMPDIR:-/tmp}/ocaml-test-XXXXXXXX")"; \
+          $(COMP) $(COMPFLAGS) $(FILE) -o program$(EXE) >$$temp 2>&1 ; \
+          if [ -s "$$temp" ]; then \
+            rm -f $$temp; \
+            printf "  Error: compilation wrote to stdout/stderr!\n"; \
+            exit 1; \
+          fi; \
+          rm -f $$temp; \
+        else \
+          $(COMP) $(COMPFLAGS) $(FILE) -o program$(EXE); \
+        fi
 	@F="`basename $(FILE) .ml`"; \
 	if [ -f $$F.runner ]; then \
 	  RUNTIME="$(RUNTIME)" sh $$F.runner; \

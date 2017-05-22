@@ -213,7 +213,8 @@ static value heap_stats (int returnstats)
       prev_hp = cur_hp;
 #endif
       cur_hp = Next (cur_hp);
-    }                           CAMLassert (cur_hp == (header_t *) chunk_end);
+    }
+    CAMLassert (cur_hp == (header_t *) chunk_end);
     chunk = Chunk_next (chunk);
   }
 

@@ -105,6 +105,8 @@
 /bytecomp/opcodes.ml
 
 /byterun/caml/jumptbl.h
+/byterun/caml/m.h
+/byterun/caml/s.h
 /byterun/primitives
 /byterun/prims.c
 /byterun/caml/opnames.h
@@ -119,8 +121,6 @@
 /byterun/*.d.c
 /byterun/*.pic.c
 
-/config/m.h
-/config/s.h
 /config/Makefile
 /config/auto-aux/hashbang4
 
@@ -173,7 +173,6 @@
 /ocamldoc/test
 
 /otherlibs/dynlink/extract_crc
-/otherlibs/systhreads/thread.ml
 /otherlibs/threads/marshal.mli
 /otherlibs/threads/pervasives.mli
 /otherlibs/threads/unix.mli
@@ -270,6 +269,8 @@
 
 /testsuite/tests/lib-threads/*.byt
 
+/testsuite/tests/lib-unix/win-stat/*-file
+
 /testsuite/tests/opaque/*/*.mli
 
 /testsuite/tests/runtime-errors/*.bytecode
@@ -312,6 +313,8 @@
 /testsuite/tests/typing-multifile/a.ml
 /testsuite/tests/typing-multifile/b.ml
 /testsuite/tests/typing-multifile/c.ml
+/testsuite/tests/typing-multifile/d.mli
+/testsuite/tests/typing-multifile/e.ml
 
 /testsuite/tests/unboxed-primitive-args/main.ml
 /testsuite/tests/unboxed-primitive-args/stubs.c

@@ -1595,10 +1595,7 @@ With "ocamlopt", you should do:
 linking phase that links together the object file produced by the
 "-output-obj" option and the remainder of the program.  Those options
 are shown in the configuration file "config/Makefile" generated during
-compilation of OCaml, as the variables "BYTECCLINKOPTS"
-(for object files produced by "ocamlc -output-obj") and
-"NATIVECCLINKOPTS" (for object files produced by "ocamlopt
--output-obj").
+compilation of OCaml, as the variable "LDFLAGS".
 \begin{itemize}
 \item Windows with the MSVC compiler: the object file produced by
 OCaml have been compiled with the "/MD" flag, and therefore
@@ -2228,8 +2225,7 @@ CAMLprim stub_gethostbyname(value vname)
 
   /* Copy the string argument to a C string, allocated outside the
      OCaml heap. */
-  name = caml_stat_alloc(caml_string_length(vname) + 1);
-  name = caml_strdup(String_val(vname));
+  name = caml_stat_strdup(String_val(vname));
   /* Release the OCaml run-time system */
   caml_release_runtime_system();
   /* Resolve the name */
