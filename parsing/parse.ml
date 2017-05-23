@@ -65,3 +65,11 @@ and use_file = wrap Parser.use_file
 and core_type = wrap Parser.parse_core_type
 and expression = wrap Parser.parse_expression
 and pattern = wrap Parser.parse_pattern
+
+let implementation_menhir = wrap Parser_menhir.implementation
+and interface_menhir = wrap Parser_menhir.interface
+and toplevel_phrase_menhir = wrap Parser_menhir.toplevel_phrase
+and use_file_menhir = wrap Parser_menhir.use_file
+and core_type_menhir = wrap Parser_menhir.parse_core_type
+and expression_menhir = wrap Parser_menhir.parse_expression
+and pattern_menhir = wrap Parser_menhir.parse_pattern

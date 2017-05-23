@@ -22,3 +22,11 @@ val use_file : Lexing.lexbuf -> Parsetree.toplevel_phrase list
 val core_type : Lexing.lexbuf -> Parsetree.core_type
 val expression : Lexing.lexbuf -> Parsetree.expression
 val pattern : Lexing.lexbuf -> Parsetree.pattern
+
+val implementation_menhir : Lexing.lexbuf -> Parsetree.structure
+val interface_menhir : Lexing.lexbuf -> Parsetree.signature
+val toplevel_phrase_menhir : Lexing.lexbuf -> Parsetree.toplevel_phrase
+val use_file_menhir : Lexing.lexbuf -> Parsetree.toplevel_phrase list
+val core_type_menhir : Lexing.lexbuf -> Parsetree.core_type
+val expression_menhir : Lexing.lexbuf -> Parsetree.expression
+val pattern_menhir : Lexing.lexbuf -> Parsetree.pattern
