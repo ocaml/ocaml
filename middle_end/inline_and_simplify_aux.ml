@@ -434,7 +434,8 @@ let initial_inlining_toplevel_threshold ~round : Inlining_cost.Threshold.t =
 module Result = struct
   type t =
     { approx : Simple_value_approx.t;
-      used_static_exceptions : Static_exception.Set.t;
+      used_static_exceptions :
+        Simple_value_approx.t list Static_exception.Map.t;
       inlining_threshold : Inlining_cost.Threshold.t option;
       benefit : Inlining_cost.Benefit.t;
       num_direct_applications : int;
@@ -442,7 +443,7 @@ module Result = struct
 
   let create () =
     { approx = Simple_value_approx.value_unknown Other;
-      used_static_exceptions = Static_exception.Set.empty;
+      used_static_exceptions = Static_exception.Map.empty;
       inlining_threshold = None;
       benefit = Inlining_cost.Benefit.zero;
       num_direct_applications = 0;
@@ -458,19 +459,36 @@ module Result = struct
     in
     set_approx t meet
 
-  let use_static_exception t i =
+  let use_static_exception t env i approxs =
+    let approxs =
+      match Static_exception.Map.find i t.used_static_exceptions with
+      | exception Not_found ->
+        approxs
+      | previous_approxs ->
+        let really_import_approx = Env.really_import_approx env in
+        List.map2 (Simple_value_approx.meet ~really_import_approx)
+          previous_approxs approxs
+    in
     { t with
       used_static_exceptions =
-        Static_exception.Set.add i t.used_static_exceptions;
+        Static_exception.Map.add i approxs t.used_static_exceptions;
     }
 
-  let used_static_exceptions t = t.used_static_exceptions
+  let is_used_static_exception t i =
+    Static_exception.Map.mem i t.used_static_exceptions
+
+  let used_static_exceptions t =
+    Static_exception.Map.keys t.used_static_exceptions
+
+  let no_defined_static_exceptions t =
+    Static_exception.Map.is_empty t.used_static_exceptions
 
   let exit_scope_catch t i =
+    let approxs = Static_exception.Map.find i t.used_static_exceptions in
     { t with
       used_static_exceptions =
-        Static_exception.Set.remove i t.used_static_exceptions;
-    }
+        Static_exception.Map.remove i t.used_static_exceptions;
+    }, approxs
 
   let map_benefit t f =
     { t with benefit = f t.benefit }
