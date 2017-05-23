@@ -843,7 +843,7 @@ let rec close fenv cenv = function
             direct_apply ~loc ~attribute fundesc funct ufunct uargs in
           (app, strengthen_approx app approx_res)
 
-      | ((ufunct, Value_closure(fundesc, _approx_res)), uargs)
+      | ((ufunct, (Value_closure(fundesc, _) as fapprox)), uargs)
           when nargs < fundesc.fun_arity ->
         let first_args = List.map (fun arg ->
           (Ident.create "arg", arg) ) uargs in
@@ -862,6 +862,7 @@ let rec close fenv cenv = function
           @ (List.map (fun arg -> Lvar arg ) final_args)
         in
         let funct_var = Ident.create "funct" in
+        let fenv = Tbl.add funct_var fapprox fenv in
         let (new_fun, approx) = close fenv cenv
           (Lfunction{
                kind = Curried;
