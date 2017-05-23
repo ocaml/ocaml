@@ -1,0 +1,60 @@
+#**************************************************************************
+#*                                                                        *
+#*                                 OCaml                                  *
+#*                                                                        *
+#*            Gabriel Scherer, projet Parsifal, INRIA Saclay              *
+#*                                                                        *
+#*   Copyright 2018 Institut National de Recherche en Informatique et     *
+#*     en Automatique.                                                    *
+#*                                                                        *
+#*   All rights reserved.  This file is distributed under the terms of    *
+#*   the GNU Lesser General Public License version 2.1, with the          *
+#*   special exception on linking described in the file LICENSE.          *
+#*                                                                        *
+#**************************************************************************
+
+MENHIR ?= menhir
+
+MENHIRFLAGS=--explain --ocamlc "$(CAMLC) $(COMPFLAGS)" --infer\
+	--table --external-tokens Parser
+
+.PHONY: import-menhirLib
+
+import-menhirLib:
+	mkdir -p boot/menhir
+	cp \
+           $(addprefix `$(MENHIR) --suggest-menhirLib`/menhirLib.,ml mli) \
+           boot/menhir
+
+# The import-menhirLib invocation ensures that each call to $(MENHIR)
+# is paired with an update of the imported menhirLib; otherwise it
+# would be easy to generate a parser and keep an incompatible version of
+# menhirLib, which would fail at compile-time.
+#
+# We assume that parser.ml and parser_menhir.ml depend
+# on the same modules, so that the dependency on
+# parsing/parser.cmo makes --infer work: the .cmi
+# of all modules that parser{_menhir}.mly semantic
+# actions depend on have already been built.
+promote-menhir: parsing/parser_menhir.mly parsing/parser.cmo
+	$(MAKE) import-menhirLib
+	$(MENHIR) $(MENHIRFLAGS) parsing/parser_menhir.mly
+	cp $(addprefix parsing/parser_menhir.,ml mli) boot/menhir
+
+.PHONY: test-menhir
+test-menhir: parsing/parser_menhir.mly
+	$(MENHIR) $(MENHIRFLAGS) parsing/parser_menhir.mly
+	$(MAKE) parsing/parser_menhir.cmo
+
+partialclean-menhir::
+	rm -f \
+	  $(addprefix parsing/parser_menhir.,ml mli) \
+	  $(addprefix parsing/menhirLib.,ml mli)
+
+parsing/parser_menhir.mly: parsing/parser_menhir.mlyp
+	gcc -E -x c -P parsing/parser_menhir.mlyp > parsing/parser_menhir.mly
+
+partialclean-menhir::
+	rm -f parsing/parser_menhir.mly
+
+clean-menhir: partialclean-menhir
