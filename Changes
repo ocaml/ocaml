@@ -192,6 +192,9 @@ Next major version (4.05.0):
 - PR#7497, GPR#1095: manual, enable numbering for table of contents
   (Florian Angeletti, request by Daniel Bünzli)
 
+- PR#7539, GPR#1181: manual, update dead links in ocamldoc chapter
+  (Florian Angeletti)
+
 - GPR#633: manpage and manual documentation for the `-opaque` option
   (Konstantin Romanov, Gabriel Scherer, review by Mark Shinwell)
 
