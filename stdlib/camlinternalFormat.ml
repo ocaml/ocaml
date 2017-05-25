@@ -1420,19 +1420,25 @@ let format_of_fconv fconv prec =
 let transform_int_alt iconv s =
   match iconv with
   | Int_Cd | Int_Ci | Int_Cu ->
-    let buf = Buffer.create (String.length s * 4 / 3) in
-    let left = ref 0 in
-    for i = String.length s - 1 downto 0 do
-      match s.[i] with
-      | '0'..'9' -> if !left = 3 then left := 1 else incr left
-      | _ -> ()
-    done;
+    let digits =
+      let n = ref 0 in
+      for i = 0 to String.length s - 1 do
+        match String.unsafe_get s i with
+        | '0'..'9' -> incr n
+        | _ -> ()
+      done;
+      !n
+    in
+    let buf = Bytes.create (String.length s + (digits - 1) / 3) in
+    let pos = ref 0 in
+    let put c = Bytes.set buf !pos c; incr pos in
+    let left = ref ((digits - 1) mod 3 + 1) in
     for i = 0 to String.length s - 1 do
-      match s.[i] with
-      | '0'..'9' as c -> if !left = 0 then (Buffer.add_char buf '_'; left := 3); decr left; Buffer.add_char buf c
-      | c -> Buffer.add_char buf c
+      match String.unsafe_get s i with
+      | '0'..'9' as c -> if !left = 0 then (put '_'; left := 3); decr left; put c
+      | c -> put c
     done;
-    Buffer.contents buf
+    Bytes.unsafe_to_string buf
   | _ -> s
 
 (* Convert an integer to a string according to a conversion. *)
