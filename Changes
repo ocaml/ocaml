@@ -37,6 +37,12 @@ Working version
   (Markus Mottl, review by Alain Frisch, Xavier Leroy, Gabriel Scherer,
   Mark Shinwell and Leo White)
 
+- GPR#1183: compile curried functors to multi-argument functions
+  earlier in the compiler pipeline; correctly propagate [@@inline]
+  attributes on such functors; mark functor coercion veneers as
+  stubs.
+  (Mark Shinwell, Leo White)
+
 ### Standard library:
 
 - GRP#1119: Change Set (private) type to inline records.
