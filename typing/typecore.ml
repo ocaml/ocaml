@@ -3312,7 +3312,8 @@ and type_format loc str env =
         | Int_x  -> mk_constr "Int_x"  [] | Int_Cx -> mk_constr "Int_Cx" []
         | Int_X  -> mk_constr "Int_X"  [] | Int_CX -> mk_constr "Int_CX" []
         | Int_o  -> mk_constr "Int_o"  [] | Int_Co -> mk_constr "Int_Co" []
-        | Int_u  -> mk_constr "Int_u"  []
+        | Int_u  -> mk_constr "Int_u"  [] | Int_Cd -> mk_constr "Int_Cd" []
+        | Int_Ci -> mk_constr "Int_Ci" [] | Int_Cu -> mk_constr "Int_Cu" []
       and mk_fconv fconv = match fconv with
         | Float_f  -> mk_constr "Float_f"  []
         | Float_pf -> mk_constr "Float_pf" []
