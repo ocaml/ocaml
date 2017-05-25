@@ -23,11 +23,14 @@ ADD_BYTERUN_FLAGS="-I $(OTOPDIR)/otherlibs/win32unix"
 endif
 
 default: reflector.exe fdstatus.exe cmdline_prog.exe
-	$(MAKE) check
+	@$(MAKE) check
 
 include $(BASEDIR)/makefiles/Makefile.several
 include $(BASEDIR)/makefiles/Makefile.common
 
 %.exe: %.c
-	@$(BYTECC) $(if $(filter msvc,$(CCOMPTYPE)),/Fe$*.exe,-o $*.exe) $*.c
-
+ifeq ($(CCOMPTYPE),msvc)
+	@set -o pipefail ; $(BYTECC) /Fe$*.exe $*.c | tail -n +2
+else
+	@$(BYTECC) -o $*.exe $*.c
+endif
