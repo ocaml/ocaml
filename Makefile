@@ -1066,7 +1066,18 @@ clean::
 # we store the result of the parser generator (which
 # are OCaml source files) and Menhir's runtime libraries
 # (that the parser files rely on) in boot/
-parsing/parser_menhir.ml: boot/menhir/parser_menhir.ml
+parsing/parser_menhir.ml: \
+  boot/menhir/parser_menhir.ml parsing/parser_menhir.mlyp
+	@if [ parsing/parser_menhir.mlyp -nt boot/menhir/parser_menhir.ml ]; \
+	then \
+	  echo; \
+	  tput setaf 3; tput bold; printf "Warning: "; tput sgr0; \
+	  echo "Your 'parser_menhir.mlyp' file is more recent \
+	than the parser in 'boot/'."; \
+	  echo "Its changes will be ignored unless you run:"; \
+	  echo "    make promote-menhir"; \
+	  echo; \
+	fi
 	cp $< parsing
 parsing/parser_menhir.mli: boot/menhir/parser_menhir.mli
 	cp $< parsing
