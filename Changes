@@ -12,6 +12,10 @@ Working version
 
 ### Standard library:
 
+- MPR#6701, GPR#1185, GPR#1803: make float_of_string and string_of_float
+  locale-independent
+  (ygrek, review by Xavier Leroy and Damien Doligez)
+
 - GPR#1590: ocamllex-generated lexers can be instructed not to update
   their lex_curr_p/lex_start_p fields, resulting in a significant
   performance gain when those fields are not required

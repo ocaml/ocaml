@@ -17,6 +17,12 @@
 
 /* The interface of this file is in "caml/mlvalues.h" and "caml/alloc.h" */
 
+/* Needed for uselocale */
+#define _XOPEN_SOURCE 700
+
+/* Needed for strtod_l */
+#define _GNU_SOURCE
+
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -31,6 +37,10 @@
 #include "caml/misc.h"
 #include "caml/reverse.h"
 #include "caml/stacks.h"
+
+#ifdef HAS_LOCALE
+#include <locale.h>
+#endif
 
 #ifdef _MSC_VER
 #include <float.h>
@@ -66,6 +76,34 @@ CAMLexport void caml_Store_double_val(value val, double dbl)
 
 #endif
 
+/*
+ OCaml runtime itself doesn't call setlocale, i.e. it is using
+ standard "C" locale by default, but it is possible that
+ thirt-party code loaded into process does.
+*/
+#ifdef HAS_LOCALE
+locale_t caml_locale = 0;
+#endif
+
+void caml_init_locale(void)
+{
+#ifdef HAS_LOCALE
+  if (0 == caml_locale)
+  {
+    caml_locale = duplocale(LC_GLOBAL_LOCALE);
+    caml_locale = newlocale(LC_NUMERIC_MASK,"C",caml_locale);
+  }
+#endif
+}
+
+void caml_free_locale(void)
+{
+#ifdef HAS_LOCALE
+  if (0 != caml_locale) freelocale(caml_locale);
+  caml_locale = 0;
+#endif
+}
+
 CAMLexport value caml_copy_double(double d)
 {
   value res;
@@ -99,7 +137,13 @@ CAMLprim value caml_format_float(value fmt, value arg)
 #ifdef HAS_BROKEN_PRINTF
   if (isfinite(d)) {
 #endif
+#ifdef HAS_LOCALE
+    locale_t saved_locale = uselocale(caml_locale);
+#endif
     res = caml_alloc_sprintf(String_val(fmt), d);
+#ifdef HAS_LOCALE
+    uselocale(saved_locale);
+#endif
 #ifdef HAS_BROKEN_PRINTF
   } else {
     if (isnan(d)) {
@@ -321,8 +365,18 @@ CAMLprim value caml_float_of_string(value vs)
   }
   *dst = 0;
   if (dst == buf) goto error;
+#ifdef HAS_STRTOD_L
+  d = strtod_l((const char *) buf, &end, caml_locale);
+#else
+#ifdef HAS_LOCALE
+  locale_t saved_locale = uselocale(caml_locale);
+#endif
   /* Convert using strtod */
   d = strtod((const char *) buf, &end);
+#ifdef HAS_LOCALE
+  uselocale(saved_locale);
+#endif
+#endif /* HAS_STRTOD_L */
   if (end != dst) goto error;
   if (buf != parse_buffer) caml_stat_free(buf);
   return caml_copy_double(d);
