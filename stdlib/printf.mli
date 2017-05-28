@@ -100,9 +100,9 @@ val fprintf : out_channel -> ('a, out_channel, unit) format -> 'a
      sign if positive.
    - space: for signed numerical conversions, prefix number with a
      space if positive.
-   - [#]: request an alternate formatting style for the hexadecimal
-     and octal integer types ([x], [X], [o], [lx], [lX], [lo], [Lx],
-     [LX], [Lo]).
+   - [#]: request an alternate formatting style for the integer types
+     ([x], [X], [o], [lx], [lX], [lo], [Lx], [LX], [Lo], [d], [i], [u],
+     [ld], [li], [lu], [Ld], [Li], [Lu], [nd], [ni], [nu]).
 
    The optional [width] is an integer indicating the minimal
    width of the result. For instance, [%6d] prints an integer,
