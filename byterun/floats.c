@@ -91,7 +91,7 @@ void caml_init_locale(void)
   if (0 == caml_locale)
   {
     caml_locale = duplocale(LC_GLOBAL_LOCALE);
-    caml_locale = newlocale(LC_ALL,"C",caml_locale);
+    caml_locale = newlocale(LC_NUMERIC_MASK,"C",caml_locale);
   }
 #endif
 }
