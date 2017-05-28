@@ -62,6 +62,9 @@ Working version
 - Resurrect tabulation boxes in module Format. Rewrite/extend documentation
   of tabulation boxes.
 
+- GPR#1185: make float_of_string and string_of_float locale-independent
+  (ygrek)
+
 ### Compiler user-interface and warnings:
 
 - GPR#896: "-compat-32" is now taken into account when building .cmo/.cma

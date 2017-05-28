@@ -157,6 +157,7 @@ CAMLexport void caml_shutdown(void)
 
   do_at_exit();
   caml_finalise_heap();
+  caml_free_locale();
 #ifndef NATIVE_CODE
   caml_free_shared_libs();
 #endif
