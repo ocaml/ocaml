@@ -38,10 +38,10 @@
 #include "caml/reverse.h"
 #include "caml/stacks.h"
 
-#ifdef HAS_LOCALE
+#if defined(HAS_LOCALE) || defined(__MINGW32__)
 #include <locale.h>
 
-#if defined(_MSC_VER) || defined(__MINGW32__)
+#if defined(_MSC_VER)
 #ifndef locale_t
 #define locale_t _locale_t
 #endif
@@ -96,30 +96,29 @@ CAMLexport void caml_Store_double_val(value val, double dbl)
 */
 #ifdef HAS_LOCALE
 locale_t caml_locale = (locale_t)0;
+#endif
 
 #if defined(_MSC_VER) || defined(__MINGW32__)
 /* there is no analogue to uselocale in MSVC so just set locale for thread */
 #define USE_LOCALE setlocale(LC_NUMERIC,"C")
 #define RESTORE_LOCALE do {} while(0)
-#else
+#elif defined(HAS_LOCALE)
 #define USE_LOCALE locale_t saved_locale = uselocale(caml_locale)
 #define RESTORE_LOCALE uselocale(saved_locale)
-#endif
-
 #else
-
 #define USE_LOCALE do {} while(0)
 #define RESTORE_LOCALE do {} while(0)
-
 #endif
 
 void caml_init_locale(void)
 {
+#if defined(_MSC_VER) || defined(__MINGW32__)
+  _configthreadlocale(_ENABLE_PER_THREAD_LOCALE);
+#endif
 #ifdef HAS_LOCALE
   if ((locale_t)0 == caml_locale)
   {
-#if defined(_MSC_VER) || defined(__MINGW32__)
-    _configthreadlocale(_ENABLE_PER_THREAD_LOCALE);
+#if defined(_MSC_VER)
     caml_locale = _create_locale(LC_NUMERIC, "C");
 #else
     caml_locale = newlocale(LC_NUMERIC_MASK,"C",(locale_t)0);
