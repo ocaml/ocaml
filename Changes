@@ -26,6 +26,9 @@ Next major version (4.05.0):
   (Stephen Dolan, review by Gabriel Scherer, Pierre Chambart,
   Mark Shinwell, and bug report by Gabriel Scherer)
 
+- GPR#1150: Fix typo in arm64 assembler directives
+  (KC Sivaramakrishnan)
+
 - PR#7533, GPR#1173: Correctly perform side effects for certain
   cases of "/" and "mod"
   (Mark Shinwell, report by Jan Mitgaard)
