@@ -40,6 +40,19 @@
 
 #ifdef HAS_LOCALE
 #include <locale.h>
+
+#if defined(_MSC_VER) || defined(__MINGW32__)
+#ifndef locale_t
+#define locale_t _locale_t
+#endif
+#ifndef freelocale
+#define freelocale _free_locale
+#endif
+#ifndef strtod_l
+#define strtod_l _strtod_l
+#endif
+#endif
+
 #endif
 
 #ifdef _MSC_VER
@@ -82,24 +95,21 @@ CAMLexport void caml_Store_double_val(value val, double dbl)
  third-party code loaded into process does.
 */
 #ifdef HAS_LOCALE
-
-#ifdef _MSC_VER
-
-#ifndef locale_t
-#define locale_t _locale_t
-#endif
-
-#ifndef freelocale
-#define freelocale _free_locale
-#endif
-
-#ifndef strtod_l
-#define strtod_l _strtod_l
-#endif
-
-#endif
-
 locale_t caml_locale = (locale_t)0;
+
+#if defined(_MSC_VER) || defined(__MINGW32__)
+/* there is no analogue to uselocale in MSVC so just set locale for thread */
+#define USE_LOCALE setlocale(LC_NUMERIC,"C")
+#define RESTORE_LOCALE do {} while(0)
+#else
+#define USE_LOCALE locale_t saved_locale = uselocale(caml_locale)
+#define RESTORE_LOCALE uselocale(saved_locale)
+#endif
+
+#else
+
+#define USE_LOCALE do {} while(0)
+#define RESTORE_LOCALE do {} while(0)
 
 #endif
 
@@ -108,7 +118,7 @@ void caml_init_locale(void)
 #ifdef HAS_LOCALE
   if ((locale_t)0 == caml_locale)
   {
-#ifdef _MSC_VER
+#if defined(_MSC_VER) || defined(__MINGW32__)
     _configthreadlocale(_ENABLE_PER_THREAD_LOCALE);
     caml_locale = _create_locale(LC_NUMERIC, "C");
 #else
@@ -147,20 +157,9 @@ CAMLprim value caml_format_float(value fmt, value arg)
 #ifdef HAS_BROKEN_PRINTF
   if (isfinite(d)) {
 #endif
-#ifdef HAS_LOCALE
-#ifdef _MSC_VER
-    /* there is no analogue to uselocale in MSVC so just set locale for thread */
-    setlocale(LC_NUMERIC,"C");
-#else
-    locale_t saved_locale = uselocale(caml_locale);
-#endif
-#endif
+    USE_LOCALE;
     res = caml_alloc_sprintf(String_val(fmt), d);
-#ifdef HAS_LOCALE
-#ifndef _MSC_VER
-    uselocale(saved_locale);
-#endif
-#endif
+    RESTORE_LOCALE;
 #ifdef HAS_BROKEN_PRINTF
   } else {
     if (isnan(d)) {
@@ -363,20 +362,10 @@ CAMLprim value caml_float_of_string(value vs)
 #if defined(HAS_STRTOD_L) && defined(HAS_LOCALE)
   d = strtod_l((const char *) buf, &end, caml_locale);
 #else
-#ifdef HAS_LOCALE
-#ifdef _MSC_VER
-  setlocale(LC_NUMERIC,"C");
-#else
-  locale_t saved_locale = uselocale(caml_locale);
-#endif
-#endif
+  USE_LOCALE;
   /* Convert using strtod */
   d = strtod((const char *) buf, &end);
-#ifdef HAS_LOCALE
-#ifndef _MSC_VER
-  uselocale(saved_locale);
-#endif
-#endif
+  RESTORE_LOCALE;
 #endif /* HAS_STRTOD_L */
   if (end != dst) goto error;
   if (buf != parse_buffer) caml_stat_free(buf);
