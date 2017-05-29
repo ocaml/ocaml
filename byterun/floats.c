@@ -79,7 +79,7 @@ CAMLexport void caml_Store_double_val(value val, double dbl)
 /*
  OCaml runtime itself doesn't call setlocale, i.e. it is using
  standard "C" locale by default, but it is possible that
- thirt-party code loaded into process does.
+ third-party code loaded into process does.
 */
 #ifdef HAS_LOCALE
 
@@ -99,21 +99,20 @@ CAMLexport void caml_Store_double_val(value val, double dbl)
 
 #endif
 
-locale_t caml_locale = 0;
+locale_t caml_locale = (locale_t)0;
 
 #endif
 
 void caml_init_locale(void)
 {
 #ifdef HAS_LOCALE
-  if (0 == caml_locale)
+  if ((locale_t)0 == caml_locale)
   {
 #ifdef _MSC_VER
     _configthreadlocale(_ENABLE_PER_THREAD_LOCALE);
     caml_locale = _create_locale(LC_NUMERIC, "C");
 #else
-    caml_locale = duplocale(LC_GLOBAL_LOCALE);
-    caml_locale = newlocale(LC_NUMERIC_MASK,"C",caml_locale);
+    caml_locale = newlocale(LC_NUMERIC_MASK,"C",(locale_t)0);
 #endif
   }
 #endif
@@ -122,8 +121,8 @@ void caml_init_locale(void)
 void caml_free_locale(void)
 {
 #ifdef HAS_LOCALE
-  if (0 != caml_locale) freelocale(caml_locale);
-  caml_locale = 0;
+  if ((locale_t)0 != caml_locale) freelocale(caml_locale);
+  caml_locale = (locale_t)0;
 #endif
 }
 
