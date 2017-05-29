@@ -82,7 +82,25 @@ CAMLexport void caml_Store_double_val(value val, double dbl)
  thirt-party code loaded into process does.
 */
 #ifdef HAS_LOCALE
+
+#ifdef _MSC_VER
+
+#ifndef locale_t
+#define locale_t _locale_t
+#endif
+
+#ifndef freelocale
+#define freelocale _free_locale
+#endif
+
+#ifndef strtod_l
+#define strtod_l _strtod_l
+#endif
+
+#endif
+
 locale_t caml_locale = 0;
+
 #endif
 
 void caml_init_locale(void)
@@ -90,8 +108,13 @@ void caml_init_locale(void)
 #ifdef HAS_LOCALE
   if (0 == caml_locale)
   {
+#ifdef _MSC_VER
+    _configthreadlocale(_ENABLE_PER_THREAD_LOCALE);
+    caml_locale = _create_locale(LC_NUMERIC, "C");
+#else
     caml_locale = duplocale(LC_GLOBAL_LOCALE);
     caml_locale = newlocale(LC_NUMERIC_MASK,"C",caml_locale);
+#endif
   }
 #endif
 }
@@ -126,11 +149,18 @@ CAMLprim value caml_format_float(value fmt, value arg)
   if (isfinite(d)) {
 #endif
 #ifdef HAS_LOCALE
+#ifdef _MSC_VER
+    /* there is no analogue to uselocale in MSVC so just set locale for thread */
+    setlocale(LC_NUMERIC,"C");
+#else
     locale_t saved_locale = uselocale(caml_locale);
+#endif
 #endif
     res = caml_alloc_sprintf(String_val(fmt), d);
 #ifdef HAS_LOCALE
+#ifndef _MSC_VER
     uselocale(saved_locale);
+#endif
 #endif
 #ifdef HAS_BROKEN_PRINTF
   } else {
@@ -331,16 +361,22 @@ CAMLprim value caml_float_of_string(value vs)
   }
   *dst = 0;
   if (dst == buf) goto error;
-#ifdef HAS_STRTOD_L
+#if defined(HAS_STRTOD_L) && defined(HAS_LOCALE)
   d = strtod_l((const char *) buf, &end, caml_locale);
 #else
 #ifdef HAS_LOCALE
+#ifdef _MSC_VER
+  setlocale(LC_NUMERIC,"C");
+#else
   locale_t saved_locale = uselocale(caml_locale);
+#endif
 #endif
   /* Convert using strtod */
   d = strtod((const char *) buf, &end);
 #ifdef HAS_LOCALE
+#ifndef _MSC_VER
   uselocale(saved_locale);
+#endif
 #endif
 #endif /* HAS_STRTOD_L */
   if (end != dst) goto error;
