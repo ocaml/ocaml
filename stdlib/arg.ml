@@ -304,32 +304,29 @@ let parse_expand l f msg =
 
 let second_word s =
   let len = String.length s in
-  let rec loop sep n =
-    if n >= len then sep, len
-    else if s.[n] = sep then loop sep (n+1)
-    else sep, n
+  let rec loop n =
+    if n >= len then len
+    else if s.[n] = ' ' then loop (n+1)
+    else n
   in
   match String.index s '\t' with
-  | n -> loop '\t' n
+  | n -> loop (n+1)
   | exception Not_found ->
       begin match String.index s ' ' with
-      | n -> loop ' ' n
-      | exception Not_found -> ' ', len
+      | n -> loop n
+      | exception Not_found -> len
       end
 
 
 let max_arg_len cur (kwd, spec, doc) =
   match spec with
   | Symbol _ -> max cur (String.length kwd)
-  | _ -> max cur (String.length kwd + snd (second_word doc))
+  | _ -> max cur (String.length kwd + second_word doc)
 
 
-let sub_subst s n sep =
-  let last_sep = ref (-1) in
-  let f i =
-    if s.[i] = sep && (!last_sep < 0 || !last_sep = i-1) then (last_sep := i; ' ') else s.[i]
-  in
-  String.init n f
+let replace_leading_tab s n =
+  let seen = ref false in
+  String.init n (fun i -> match s.[i] with '\t' when not !seen -> seen := true; ' ' | c -> c)
 
 let add_padding len ksd =
   match ksd with
@@ -338,18 +335,18 @@ let add_padding len ksd =
        * run through [usage] or [parse]. *)
       ksd
   | (kwd, (Symbol _ as spec), msg) ->
-      let sep, cutcol = second_word msg in
+      let cutcol = second_word msg in
       let spaces = String.make ((max 0 (len - cutcol)) + 3) ' ' in
-      (kwd, spec, "\n" ^ spaces ^ sub_subst msg (String.length msg) sep)
+      (kwd, spec, "\n" ^ spaces ^ replace_leading_tab msg (String.length msg))
   | (kwd, spec, msg) ->
-      let sep, cutcol = second_word msg in
+      let cutcol = second_word msg in
       let kwd_len = String.length kwd in
       let diff = len - kwd_len - cutcol in
       if diff <= 0 then
-        (kwd, spec, sub_subst msg (String.length msg) sep)
+        (kwd, spec, replace_leading_tab msg (String.length msg))
       else
         let spaces = String.make diff ' ' in
-        let prefix = sub_subst msg cutcol sep in
+        let prefix = replace_leading_tab msg cutcol in
         let suffix = String.sub msg cutcol (String.length msg - cutcol) in
         (kwd, spec, prefix ^ spaces ^ suffix)
 
