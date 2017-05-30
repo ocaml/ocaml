@@ -1565,6 +1565,8 @@ let type_package env m p nl =
   let tl' =
     List.map
       (fun name -> Btype.newgenty (Tconstr (mkpath mp name,[],ref Mnil)))
+      (* beware of interactions with Printtyp and short-path:
+         mp.name may have an arity > 0, cf. PR#7534 *)
       nl in
   (* go back to original level *)
   Ctype.end_def ();
